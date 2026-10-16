@@ -1,0 +1,394 @@
+#############################################################################
+#                                tests.txt                                  #
+#                                                                           #
+# The tests of ADS, one per line: the program (a chapter of the book), the  #
+# name of the test in it, and where it comes from. Both the CMakeLists.txt  #
+# and the makefile read this list, ctest runs each line as the test         #
+# <program>.<name>, and the test <program>.registry checks that the list    #
+# and the tests in the program are the same.                                #
+#                                                                           #
+# The book is A. Montresor, Algoritmi e Strutture Dati, 2025, whose         #
+# chapter NN is                                                             #
+#   https://algoritmicamente.it/materiali/libro/capitoli/capNN.pdf          #
+#############################################################################
+
+# chapter 1, Introduzione
+ch01  sec1.2.min         sezione 1.2, minimo
+ch01  sec1.2.binary-search sezione 1.2, ricerca binaria
+ch01  sec1.4.ahmes       sezione 1.4, moltiplicazione di Ahmes
+
+# chapter 2, Analisi di algoritmi
+ch02  sec2.6.binary-add  sezione 2.6, Figura 2.3, somma di interi binari
+ch02  sec2.6.multiply    sezione 2.6, Figura 2.4, prodotti e Karatsuba
+ch02  sec2.7.1.selection sezione 2.7.1, Figura 2.8, Selection Sort
+ch02  sec2.7.2.insertion sezione 2.7.2, Figura 2.9, Insertion Sort
+ch02  sec2.7.3.merge-sort sezione 2.7.3, Figure 2.10 e 2.11, Merge Sort
+ch02  sec2.7.4.lower-bound sezione 2.7.4, Figura 2.14, limite inferiore
+ch02  sec2.7.5.counting-sort sezione 2.7.5, Counting Sort
+ch02  sec2.9.recurrences sezione 2.9, Teoremi 2.2-2.5
+ch02  sec2.10.factorial  sezione 2.10, costo uniforme e fattoriale
+
+# chapter 3, Tipi di dato e strutture di dati
+ch03  ex3.1-3.2          Esercizi 3.1 e 3.2, numeri complessi
+ch03  ex3.3              Esercizio 3.3, matrice per colonne
+ch03  ex3.4              Esercizio 3.4, matrice per righe
+ch03  ex3.5              Esercizio 3.5, polinomi
+ch03  ex3.6              Esercizio 3.6, stampaDifferenze
+ch03  ex3.7              Esercizio 3.7, dispari prima dei pari
+ch03  ex3.8              Esercizio 3.8, rango
+
+# chapter 4, Strutture di dati elementari
+ch04  spec.List          sezione 4.1, lista bidirezionale circolare
+ch04  spec.ArraySequence sezione 4.2, realizzazione con vettori
+ch04  sec4.2.doubling    sezione 4.2, raddoppio del vettore
+ch04  sec4.2.1.counter   sezione 4.2.1, contatore binario
+ch04  sec4.3.1.stack-on-list  sezione 4.3.1, pila simulata con una lista
+ch04  spec.ArrayStack    sezione 4.3.2, pila con vettore
+ch04  spec.ArrayQueue    sezione 4.3.3, coda con vettore circolare
+ch04  sec4.donGiovanni   inizio del capitolo 4, il catalogo
+ch04  sec4.4.hanoi       sezione 4.4 e Figura 4.8, torri di Hanoi
+ch04  ex4.1              Esercizio 4.1, i primi n interi
+ch04  ex4.2              Esercizio 4.2, epurazione
+ch04  ex4.3              Esercizio 4.3, somma di numeri come liste
+ch04  ex4.4              Esercizio 4.4, tangentopoli (Giuseppe Flavio)
+ch04  ex4.5              Esercizio 4.5, replica dei dispari
+ch04  ex4.6              Esercizio 4.6, lista monodirezionale
+ch04  ex4.7              Esercizio 4.7, due pile in un vettore
+ch04  ex4.8              Esercizio 4.8, firstN iterativa
+ch04  ex4.9              Esercizio 4.9, DEQUEUE
+ch04  ex4.10             Esercizio 4.10, coda con testa e fondo
+ch04  ex4.11             Esercizio 4.11, Pigeonhole Sort
+
+# chapter 5, Alberi
+ch05  spec.Tree          sezioni 5.1 e 5.3, Figura 5.5, albero ordinato
+ch05  sec5.2.visits      sezione 5.2, le quattro visite della Figura 5.1
+ch05  sec5.4.parents     sezione 5.4, vettore dei padri di T1 (Figura 5.4)
+ch05  spec.BinaryTree    sezione 5.5, albero binario e sue visite
+ch05  sec5.5.binary-representation  Figura 5.9, albero ordinato come binario
+ch05  sec5.5.choices     Figura 5.8, albero delle scelte, limite n log n
+ch05  sec5.6.dary        sezione 5.6, albero d-ario completo in un vettore
+ch05  ex5.1              Esercizio 5.1, altezza
+ch05  ex5.2              Esercizio 5.2, cancella le foglie con somma k
+ch05  ex5.3              Esercizio 5.3, larghezza
+ch05  ex5.4              Esercizio 5.4, albero dalle visite
+ch05  ex5.5              Esercizio 5.5, numero di nodi per sottoalbero
+ch05  ex5.6              Esercizio 5.6, cancella foglie
+ch05  ex5.7              Esercizio 5.7, inserisci foglie
+ch05  ex5.8              Esercizio 5.8, raggruppa le foglie con 0 e 1
+ch05  ex5.9              Esercizio 5.9, albero inverso
+ch05  ex5.10             Esercizio 5.10, somma del cammino nelle foglie
+ch05  ex5.11             Esercizio 5.11, foglie = nodi con due figli + 1
+ch05  ex5.12             Esercizio 5.12, albero binario completo
+ch05  ex5.13             Esercizio 5.13, visite iterative
+
+# chapter 6, Alberi bilanciati di ricerca
+ch06  sec6.1.search-tree sezione 6.1, Figura 6.1, ABR e sue operazioni
+ch06  sec6.1.remove      Figura 6.2, i tre casi di cancellazione
+ch06  spec.RedBlackTree  sezione 6.2, Figura 6.5, casi di inserimento
+ch06  sec6.2.figure      Figura 6.3, albero Red-Black di 10 nodi
+ch06  sec6.2.theorems    Teoremi 6.1, 6.2, 6.3 su alberi casuali
+ch06  sec6.2.against-map ABR e Red-Black contro std::map
+ch06  sec6.3.bplus-figure  Figure 6.7 e 6.8, inserimenti nel B+-albero
+ch06  sec6.3.bplus-random  B+-alberi di vari ordini contro std::map
+ch06  ex6.1              Esercizio 6.1, costruire un ABR ordina
+ch06  ex6.2              Esercizio 6.2, insertNode() ricorsiva
+ch06  ex6.3              Esercizio 6.3, verifica di ABR
+ch06  ex6.4              Esercizio 6.4, stampa intervallo
+ch06  ex6.5              Esercizio 6.5, invisita iterativa
+ch06  ex6.6              Esercizio 6.6, concatenazione
+ch06  ex6.7              Esercizio 6.7, insiemi con ABR
+ch06  ex6.8              Esercizio 6.8, insiemi con alberi Red-Black
+ch06  ex6.9              Esercizio 6.9, colorazione Red-Black
+ch06  ex6.10             Esercizio 6.10, dimensioni degli alberi Red-Black
+
+# chapter 7, Tabelle hash
+ch07  sec7.direct-access tabella ad accesso diretto, Ritardatreno, telefoni
+ch07  sec7.1.functions   sezione 7.1, estrazione, XOR, divisione, prodotto
+ch07  sec7.1.uniformity  uniformità semplice, test del chi quadrato
+ch07  sec7.2.deleted     Figura 7.6, celle cancellate
+ch07  sec7.2.against-map tabelle hash contro std::map
+ch07  sec7.3.complexity  sezione 7.3, I(alpha) e S(alpha) misurati
+ch07  sec7.4.restructure sezione 7.4, ristrutturazione e costo ammortizzato
+ch07  ex7.1              Esercizio 7.1, ispezione lineare con cancellazioni
+ch07  ex7.2              Esercizio 7.2, ispezione quadratica
+ch07  ex7.3              Esercizio 7.3, chiavi di 8 bit
+ch07  ex7.4              Esercizio 7.4, ispezione lineare e quadratica
+ch07  ex7.5              Esercizio 7.5, chiavi frequenti in testa
+ch07  ex7.6              Esercizio 7.6, file replicati
+ch07  ex7.7              Esercizio 7.7, ricerca confrontando gli hash
+ch07  ex7.8              Esercizio 7.8, m = 2^p - 1 e permutazioni
+ch07  ex7.9              Esercizio 7.9, eliminare i duplicati
+ch07  ex7.10             Esercizio 7.10, liste di trabocco ordinate
+
+# chapter 8, Insiemi e dizionari
+ch08  sec8.1.boolean     sezione 8.1, insiemi con vettori booleani
+ch08  sec8.2.unsorted-list sezione 8.2, insiemi con liste non ordinate
+ch08  sec8.3.sorted-list sezione 8.3, insiemi con liste ordinate
+ch08  sec8.4.hash        sezione 8.4, insiemi con tabelle hash
+ch08  sec8.5.tree        sezione 8.5, insiemi con alberi Red-Black
+ch08  ex8.1              Esercizio 8.1, intersezione di liste non ordinate
+ch08  ex8.2              Esercizio 8.2, unione di liste non ordinate
+ch08  ex8.3              Esercizio 8.3, unione di liste ordinate
+ch08  ex8.4              Esercizio 8.4, differenza con liste ordinate
+ch08  ex8.5              Esercizio 8.5, differenza simmetrica
+ch08  ex8.6              Esercizio 8.6, insiemi con tabelle hash
+ch08  ex8.7              Esercizio 8.7, unione con alberi Red-Black
+ch08  ex8.8              Esercizio 8.8, codominio di un dizionario
+ch08  ex8.9              Esercizio 8.9, LinkedHashSet
+ch08  ex8.10             Esercizio 8.10, multinsieme
+
+# chapter 9, Grafi
+ch09  spec.ListGraph     sezione 9.4, liste di adiacenza
+ch09  spec.MatrixGraph   sezione 9.3, matrice di adiacenza
+ch09  sec9.1.definitions Figure 9.1 e 9.2, cammini, connessione
+ch09  sec9.1.mcpollock   Figura 9.5, chi ha ucciso il duca McPollock?
+ch09  sec9.3.matrices    Figure 9.6, 9.7 e 9.8, matrici e vettori di adiacenza
+ch09  sec9.5.1.bfs       sezioni 9.5.1-9.5.3, visita bfs, numero di Erdos
+ch09  sec9.5.4.dfs       sezione 9.5.4, visita dfs
+ch09  sec9.5.5.cc        sezione 9.5.5, Figura 9.3, componenti connesse
+ch09  sec9.5.6.schema    sezione 9.5.6, Figura 9.10, tipi di archi
+ch09  sec9.5.7.cycle     sezione 9.5.7, grafo aciclico
+ch09  sec9.5.8.topsort   sezioni 9.5.8 e 9.6, ordinamento topologico, tsort
+ch09  sec9.5.9.scc       sezione 9.5.9, componenti fortemente connesse
+ch09  ex9.1              Esercizio 9.1, occupazione di memoria
+ch09  ex9.2              Esercizio 9.2, dfs iterativa
+ch09  ex9.3              Esercizio 9.3, grafo bipartito
+ch09  ex9.4              Esercizio 9.4, grafo bipartito con la bfs
+ch09  ex9.5              Esercizio 9.5, larghezza di un albero radicato
+ch09  ex9.6              Esercizio 9.6, albero libero
+ch09  ex9.7              Esercizio 9.7, scheduling
+ch09  ex9.8              Esercizio 9.8, massima sovrapposizione di intervalli
+ch09  ex9.9              Esercizio 9.9, distanza massima
+ch09  ex9.10             Esercizio 9.10, grafo quadrato
+ch09  ex9.11             Esercizio 9.11, diametro
+
+# chapter 10, Strutture dati speciali
+ch10  spec.HeapPriorityQueue sezione 10.1.3, coda con priorità su heap
+ch10  spec.ListPriorityQueue sezione 10.1.1, coda con priorità su liste
+ch10  spec.TreePriorityQueue sezione 10.1.2, coda con priorità su albero
+ch10  sec10.1.3.heap     Figure 10.1-10.4, heap, cancellazione, inserimento
+ch10  sec10.1.4.heapsort sezione 10.1.4, heapBuild() e heapsort()
+ch10  sec10.2.1.lists    sezione 10.2.1, Mfset su liste
+ch10  sec10.2.2.forest   sezione 10.2.2, Figura 10.5, Mfset su foresta
+ch10  sec10.2.3.rank     sezione 10.2.3, euristica del rango, Teorema 10.1
+ch10  sec10.2.4.compression sezione 10.2.4, Figura 10.6
+ch10  sec10.2.5.incremental sezione 10.2.5, componenti incrementali
+ch10  ex10.1             Esercizio 10.1, heap e ABR
+ch10  ex10.2             Esercizio 10.2, heapsort passo per passo
+ch10  ex10.3             Esercizio 10.3, k-merging
+ch10  ex10.4             Esercizio 10.4, maxHeapRestore() iterativa
+ch10  ex10.5             Esercizio 10.5, vettori da 0
+ch10  ex10.6             Esercizio 10.6, heap d-ario
+ch10  ex10.7             Esercizio 10.7, rango e altezza
+ch10  ex10.8             Esercizio 10.8, compressione senza ricorsione
+ch10  ex10.9             Esercizio 10.9, arco minimo della componente
+
+# chapter 11, Strutture di dati e progettazione di algoritmi
+ch11  sec11.1.bellman    sezione 11.1, Figura 11.1, Teorema di Bellman
+ch11  sec11.2.prototype  sezione 11.2, il prototipo con sei strutture
+ch11  sec11.3.dijkstra   sezioni 11.3-11.5, Dijkstra, Johnson, Fredman-Tarjan
+ch11  sec11.5.fibonacci  sezione 11.5, heap di Fibonacci
+ch11  sec11.6.bellman-ford-moore sezione 11.6, Figura 11.3
+ch11  sec11.7.stack      sezione 11.7, Figura 11.4, utilizzo di una pila
+ch11  sec11.8.pape       sezione 11.8, Pape-D'Esopo
+ch11  ex11.1             Esercizio 11.1, Dijkstra e costi negativi
+ch11  ex11.2             Esercizio 11.2, cicli negativi
+ch11  ex11.3             Esercizio 11.3, affidabilità
+ch11  ex11.4             Esercizio 11.4, insieme indipendente di intervalli
+ch11  ex11.5             Esercizio 11.5, insieme dominante di intervalli
+ch11  ex11.6             Esercizio 11.6, insieme dominante totale pesato
+ch11  ex11.7             Esercizio 11.7, numero di cammini minimi
+ch11  ex11.8             Esercizio 11.8, cammino con arco più corto
+ch11  ex11.9             Esercizio 11.9, costi sui nodi
+ch11  ex11.10            Esercizio 11.10, pesi quadrati
+
+# chapter 12, Divide et impera
+ch12  sec12.1.interpolation sezione 12.1, ricerca per interpolazione
+ch12  sec12.2.perno      sezione 12.2, Figura 12.1, perno()
+ch12  sec12.2.quicksort  Figure 12.2 e 12.3, Quicksort, caso medio
+ch12  sec12.2.tuned      sezione 12.2, gli accorgimenti di Quicksort
+ch12  sec12.3.polynomials sezione 12.3, moltiplicazione di polinomi
+ch12  sec12.4.strassen   sezione 12.4, Strassen
+ch12  ex12.1             Esercizio 12.1, ordinamento su lista
+ch12  ex12.2             Esercizio 12.2, massima somma di sottovettori
+ch12  ex12.3             Esercizio 12.3, inversioni
+ch12  ex12.4             Esercizio 12.4, Quicksort su elementi uguali
+ch12  ex12.5             Esercizio 12.5, Merge Sort iterativo
+ch12  ex12.6             Esercizio 12.6, ricerca in matrice ordinata
+ch12  ex12.7             Esercizio 12.7, torneo di tennis
+ch12  ex12.8             Esercizio 12.8, prodotto di numeri complessi
+ch12  ex12.9             Esercizio 12.9, conta gli zeri
+ch12  ex12.10            Esercizio 12.10, minimo in una matrice
+ch12  ex12.11            Esercizio 12.11, chi manca?
+ch12  ex12.12            Esercizio 12.12, massimo in sequenza unimodale
+ch12  ex12.13            Esercizio 12.13, occorrenze
+
+# chapter 13, Programmazione dinamica
+ch13  sec13.binomial     coefficiente binomiale, triangolo di Tartaglia
+ch13  sec13.1.matching   sezione 13.1, Figura 13.2, string matching
+ch13  sec13.2.intervals  sezione 13.2, intervalli pesati
+ch13  sec13.3.matrix-chain sezione 13.3, catena di matrici
+ch13  sec13.4.fibonacci  sezione 13.4, occupazione di memoria
+ch13  sec13.5.floyd-warshall sezione 13.5, Figura 13.3, Floyd-Warshall
+ch13  sec13.6.knapsack   sezione 13.6, zaino e memoization
+ch13  sec13.7.lcs        sezione 13.7, sottosequenza comune massimale
+ch13  ex13.1             Esercizio 13.1, k-occorrenza
+ch13  ex13.2             Esercizio 13.2, massima sottostringa comune
+ch13  ex13.3             Esercizio 13.3, Bellman-Ford-Moore
+ch13  ex13.4             Esercizio 13.4, cammini minimi su grafi aciclici
+ch13  ex13.5             Esercizio 13.5, cammini minimi dinamici
+ch13  ex13.6             Esercizio 13.6, massima sottosequenza crescente
+ch13  ex13.7             Esercizio 13.7, allineamento globale
+ch13  ex13.8             Esercizio 13.8, allineamento semiglobale
+ch13  ex13.9             Esercizio 13.9, allineamento locale
+ch13  ex13.10            Esercizio 13.10, diff
+ch13  ex13.11            Esercizio 13.11, Harry Potter
+ch13  ex13.12            Esercizio 13.12, massima somma di sottovettori
+ch13  ex13.13            Esercizio 13.13, ma è italiano?
+
+# chapter 14, Greedy
+ch14  sec14.change       resto col numero minimo di monete
+ch14  sec14.1.real-knapsack sezione 14.1, zaino reale
+ch14  sec14.2.intervals  sezione 14.2, insieme indipendente di intervalli
+ch14  sec14.3.mst        sezione 14.3, Figure 14.1-14.3, Kruskal e Prim
+ch14  sec14.3.3.cut      sezione 14.3.3, Teorema 14.1
+ch14  sec14.4.huffman    sezione 14.4, codifica di Huffman
+ch14  ex14.1             Esercizio 14.1, zaino intero
+ch14  ex14.2             Esercizio 14.2, Kruskal con pesi interi
+ch14  ex14.3             Esercizio 14.3, grafi blu
+ch14  ex14.4             Esercizio 14.4, Prim con heap di Fibonacci
+ch14  ex14.5             Esercizio 14.5, Shortest Job First
+ch14  ex14.6             Esercizio 14.6, minima colorazione di intervalli
+ch14  ex14.7             Esercizio 14.7, torri cellulari lineari
+ch14  ex14.8             Esercizio 14.8, sciatori e sci
+ch14  ex14.9             Esercizio 14.9, archi minimi
+ch14  ex14.10            Esercizio 14.10, massimizzazione e minimizzazione
+
+# chapter 15, Ricerca locale
+ch15  sec15.local-search Figure 15.1 e 15.3, ricerca locale sull'albero
+ch15  sec15.1.neighbourhood sezione 15.1, intorno di una sequenza
+ch15  sec15.1.shell-sort sezione 15.1, Figura 15.4, Shell Sort
+ch15  sec15.2.max-flow   sezione 15.2, Figura 15.5, flusso massimo
+ch15  ex15.1             Esercizio 15.1, tagli minimi
+ch15  ex15.2             Esercizio 15.2, scheduling
+ch15  ex15.3             Esercizio 15.3, ciclo euleriano
+ch15  ex15.4             Esercizio 15.4, riempimento di matrice
+ch15  ex15.5             Esercizio 15.5, somma di matrici
+ch15  ex15.6             Esercizio 15.6, formulazioni flusso massimo
+ch15  ex15.7             Esercizio 15.7, cammini indipendenti
+ch15  ex15.8             Esercizio 15.8, intorno per abbinamento massimo
+ch15  ex15.9             Esercizio 15.9, abbinamento bipartito
+ch15  ex15.10            Esercizio 15.10, connettività
+
+# chapter 16, Backtrack
+ch16  sec16.1.same-side  sezione 16.1, stessaparte()
+ch16  sec16.1.hull       sezione 16.1, inviluppo convesso, Graham
+ch16  sec16.2.subsets    sezione 16.2, Figura 16.5, sottoinsiemi
+ch16  sec16.3.sudoku     sezione 16.3, Sudoku
+ch16  ex16.1             Esercizio 16.1, angoli alfa
+ch16  ex16.2             Esercizio 16.2, tutte le permutazioni
+ch16  ex16.3             Esercizio 16.3, tutte le dismutazioni
+ch16  ex16.4             Esercizio 16.4, sottoinsiemi con somma k
+ch16  ex16.5             Esercizio 16.5, n regine
+ch16  ex16.6             Esercizio 16.6, giro di cavallo
+ch16  ex16.7             Esercizio 16.7, Sudoku, check()
+ch16  ex16.8             Esercizio 16.8, anagrammi
+
+# chapter 17, Algoritmi probabilistici
+ch17  sec17.monte-carlo  testa o croce, espressione polinomiale nulla
+ch17  sec17.1.selection  sezione 17.1, selezione
+ch17  sec17.2.primality  sezione 17.2, primalità, Miller-Rabin
+ch17  sec17.3.rsa        sezione 17.3, RSA
+ch17  ex17.1             Esercizio 17.1, potenze
+ch17  ex17.2             Esercizio 17.2, algoritmo esteso di Euclide
+ch17  ex17.3             Esercizio 17.3, inverso moltiplicativo
+ch17  ex17.4             Esercizio 17.4, prodotto di matrici
+ch17  ex17.5             Esercizio 17.5, 1/2-soddisfattibilità
+
+# chapter 18, Teoria dell'NP-completezza
+ch18  sec18.examples     gli esempi dei problemi, Figure 18.2 e 18.3
+ch18  sec18.2.nondeterminism sezioni 18.2 e 18.3, ndCricca() e ndTsp()
+ch18  sec18.5.linear-tiling sezione 18.5, domino lineare in P
+ch18  sec18.5.hull-sort  sezione 18.5, ordinamento e inviluppo convesso
+ch18  sec18.7.domino     sezione 18.7, Figura 18.8, Teoremi 18.2-18.4
+ch18  sec18.7.reductions sezione 18.7, Teoremi 18.5-18.9
+ch18  ex18.1             Esercizio 18.1, Tangentopoli
+ch18  ex18.2             Esercizio 18.2, zaino non deterministico
+ch18  ex18.3             Esercizio 18.3, colorazione non deterministica
+ch18  ex18.4             Esercizio 18.4, Tangentopoli per enumerazione
+ch18  ex18.5             Esercizio 18.5, zaino per enumerazione
+ch18  ex18.6             Esercizio 18.6, colorazione per enumerazione
+ch18  ex18.7             Esercizio 18.7, 3-copertura di insiemi
+ch18  ex18.8             Esercizio 18.8, dimensione
+ch18  ex18.9             Esercizio 18.9, Counting Sort
+ch18  ex18.10            Esercizio 18.10, coefficiente binomiale
+ch18  ex18.11            Esercizio 18.11, copertura con nodi
+ch18  ex18.12            Esercizio 18.12, ciclo hamiltoniano
+ch18  ex18.13            Esercizio 18.13, cammino hamiltoniano
+ch18  ex18.14            Esercizio 18.14, catena hamiltoniana
+ch18  ex18.15            Esercizio 18.15, cammino massimo
+ch18  ex18.16            Esercizio 18.16, albero di copertura limitato
+
+# chapter 19, Tecniche risolutive per problemi intrattabili
+ch19  sec19.1.subset-sum sezione 19.1, subsetSum()
+ch19  sec19.2.bin-packing sezione 19.2.1, ff e ffd
+ch19  sec19.2.delta-tsp  sezione 19.2.1, Figure 19.2 e 19.3
+ch19  sec19.2.gap        sezione 19.2.2, Teorema 19.2
+ch19  sec19.2.ap-subset-sum sezione 19.2.3, apSubsetSum()
+ch19  sec19.3.bb-tsp     sezione 19.3.1, Figure 19.5 e 19.6
+ch19  sec19.4.greedy-tsp sezione 19.4.1, greedyTsp()
+ch19  sec19.4.local-search sezione 19.4.2, Figura 19.8
+ch19  sec19.4.bisection  sezione 19.4.1, min-max-greedy
+ch19  sec19.5.fifteen    sezione 19.5, Figura 19.9
+ch19  ex19.1             Esercizio 19.1, partizione
+ch19  ex19.2             Esercizio 19.2, scheduling multiprocessore
+ch19  ex19.3             Esercizio 19.3, algoritmo di McNaughton
+ch19  ex19.4             Esercizio 19.4, real-time scheduling
+ch19  ex19.5             Esercizio 19.5, i soliti ignoti
+ch19  ex19.6             Esercizio 19.6, minima copertura con nodi
+ch19  ex19.7             Esercizio 19.7, TSP euclideo
+ch19  ex19.8             Esercizio 19.8, zaino approssimato
+ch19  ex19.9             Esercizio 19.9, cricca di peso massimo
+ch19  ex19.10            Esercizio 19.10, 1-albero minimo
+ch19  ex19.11            Esercizio 19.11, riduzione della matrice
+ch19  ex19.12            Esercizio 19.12, zaino branch-and-bound
+ch19  ex19.13            Esercizio 19.13, minima superstringa comune
+ch19  ex19.14            Esercizio 19.14, ottimo locale del TSP
+ch19  ex19.15            Esercizio 19.15, cardinalita' di I_k
+ch19  ex19.16            Esercizio 19.16, partizione per ricerca locale
+ch19  ex19.17            Esercizio 19.17, cestini di min-max-greedy
+ch19  ex19.18            Esercizio 19.18, allineamento globale multiplo
+ch19  ex19.19            Esercizio 19.19, colorazione
+
+# Conclusione
+conclusion table19.1.sat  Tabella 19.1, 2-soddisfattibilita'
+conclusion table19.1.coloring Tabella 19.1, 2-colorazione
+conclusion table19.1.matching Tabella 19.1, abbinamento 2-dimensionale
+conclusion table19.1.circuits Tabella 19.1, circuito euleriano
+conclusion table19.1.knapsack Tabella 19.1, zaino reale
+conclusion table19.1.spanning-tree Tabella 19.1, albero di copertura
+conclusion intervals      grafi di intervalli
+
+# beyond the book
+beyond  array-binary-tree   albero binario su vettore posizionale
+beyond  cursor-binary-tree  albero binario a cursori
+beyond  cursor-tree         albero ordinato a cursori
+beyond  preorder-array-tree albero ordinato su vettore in preordine
+beyond  linked-heap         heap su albero binario a puntatori
+beyond  pointer-graph       grafo a puntatori
+beyond  multistack          k pile in un vettore
+beyond  deep-copy           copia profonda di alberi
+beyond  queue-contains-sequence-equal contains() e ==
+beyond  hashing             ispezione triangolare, doppio hashing
+beyond  rectangular-matrix  matrici rettangolari
+beyond  sequence-search     ricerca su sequenze
+beyond  sequence-order      ordine di una sequenza
+beyond  sequence-sorting    natural merge sort, bubble sort
+beyond  sequence-merge-dedup fusione ed eliminazione dei duplicati
+beyond  stack-algorithms    palindromi, ordinamento di una pila
+beyond  string-matching     ricerca ingenua e KMP
+beyond  list-exercises      esercizi su liste
+beyond  even-odd-strings    stringhe pari e dispari
+beyond  binary-tree-exercises esercizi su alberi binari
+beyond  tree-exercises      esercizi su alberi ordinati
+beyond  array-exercises     esercizi su vettori

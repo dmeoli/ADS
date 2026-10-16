@@ -1,0 +1,10 @@
+###############################################################################
+#                            ADSConfig.cmake.in                               #
+#                                                                             #
+# The configuration that find_package(ADS) reads: it defines ADS::ADS.        #
+###############################################################################
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/ADSTargets.cmake")
+check_required_components(ADS)

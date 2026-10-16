@@ -1,0 +1,81 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File ParentTree.h ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @file
+ * The tree as a vector of parents: the nodes are 0 , ... , n - 1, and p[ i ]
+ * is the parent of i, or -1 if i is a root. It answers parent() alone, in
+ * O( 1 ) time and with the least memory, which is all that is needed when a
+ * tree is built and walked towards the root, as the trees of the visits of a
+ * graph; the order among siblings is lost, unless it is the one of their
+ * numbers. Since setParent() may hang any node anywhere, the structure is a
+ * forest of n isolated nodes at the start.
+ *
+ * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 5.4,
+ *      https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
+ */
+/*--------------------------------------------------------------------------*/
+/*----------------------------- DEFINITIONS --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#ifndef __ADS_ParentTree
+ #define __ADS_ParentTree
+                      /* self-identification: #endif constant */
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include <vector>
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- NAMESPACE ------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace ADS {
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CLASS ParentTree ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a tree (a forest) of the nodes 0 , ... , n - 1 as a vector of parents
+class ParentTree {
+
+/*--------------------------------------------------------------------------*/
+ public:
+
+ /// Tree( n ): a forest of n isolated nodes
+ explicit ParentTree( int n ) : f_p( n , -1 ) {}
+
+ /// the parent of the node i; -1 if i is a root
+ [[nodiscard]] int parent( int i ) const { return( f_p[ i ] ); }
+
+ /// makes the node i a child of the node j
+ void setParent( int i , int j ) { f_p[ i ] = j; }
+
+ /// the number of nodes
+ [[nodiscard]] int size( void ) const { return( int( f_p.size() ) ); }
+
+/*--------------------------------------------------------------------------*/
+ private:
+
+ std::vector< int > f_p;   ///< the vector of parents
+
+ };  // end( class ParentTree )
+
+/*--------------------------------------------------------------------------*/
+
+}  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+
+#endif  /* ParentTree.h included */
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File ParentTree.h --------------------------*/
+/*--------------------------------------------------------------------------*/

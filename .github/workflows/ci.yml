@@ -1,0 +1,42 @@
+###############################################################################
+#                                 ci.yml                                      #
+#                                                                             #
+# Builds and tests ADS with CMake and with the makefile, on Linux and macOS.  #
+###############################################################################
+
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest , macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: CMake
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
+      - name: install and find_package
+        run: |
+          cmake --install build --prefix "$PWD/inst"
+          test -f "$PWD/inst/include/ADS/sequence/List.h"
+      - name: makefile
+        run: make test
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: AddressSanitizer and UndefinedBehaviorSanitizer
+        env:
+          SAN: -fsanitize=address,undefined -fno-omit-frame-pointer
+        run: make test CXXFLAGS="-std=c++20 -O1 -g $SAN -Wall -Wextra"
