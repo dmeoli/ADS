@@ -35,6 +35,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/set/SetOperations.h"
@@ -45,6 +46,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -91,6 +93,21 @@ class DictionarySet {
 
  /// the dictionary
  [[nodiscard]] const D & dictionary( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items, the keys of the dictionary in its order,
+ // when the dictionary has iterators
+
+ [[nodiscard]] auto begin( void ) const
+  requires std::ranges::forward_range< const D > {
+  return( KeyIterator( std::ranges::begin( f_d ) ) );
+  }
+
+ [[nodiscard]] auto end( void ) const
+  requires std::ranges::forward_range< const D > {
+  return( KeyIterator( std::ranges::end( f_d ) ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

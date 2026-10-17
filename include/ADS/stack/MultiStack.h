@@ -38,7 +38,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -91,6 +93,22 @@ class MultiStack {
   T value;
   int below;
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of each stack, from the top to the bottom, forward
+
+ using value_type = T;
+ using const_iterator =
+  IndexIterator< Cell , T , &Cell::below , &Cell::value >;
+
+ /// the items of the stack i, the top first
+ /// \\pre 0 <= i < stacks()
+ [[nodiscard]] std::ranges::subrange< const_iterator > stack( int i ) const;
+
+ private:
 
  /// each cell in one stack or free, the sizes right, O( n )
  [[nodiscard]] bool partitioned( void ) const;

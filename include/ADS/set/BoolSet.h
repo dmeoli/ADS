@@ -36,6 +36,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <algorithm>
 #include <concepts>
@@ -94,6 +95,39 @@ class BoolSet {
  /// f( x ) on the items in increasing order, O( N ) time
  template< class F >
  void forEach( F && f ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items in increasing order, bidirectional; an
+ // item is computed from its bit
+
+ /// the places of the table, for SlotIterator
+ struct Places {
+  static std::size_t size( const auto & o ) { return( o.f_V.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_V[ i ] );
+   }
+  static auto read( const auto & , std::size_t i ) {
+   return( long( i ) );
+   }
+  };
+
+ using value_type = long;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = long;
+ using const_reference = long;
+ using const_iterator = SlotIterator< BoolSet , Places >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , Places::size( *this ) ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

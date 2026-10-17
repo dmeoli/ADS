@@ -52,9 +52,11 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
+#include <cstddef>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -130,6 +132,30 @@ class HeapPriorityQueue {
 
  /// the j-th child, 0 <= j < d, of the place i
  static int child( int i , int j ) { return( D * i + j + 1 ); }
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items with their priorities, PriorityItem, in
+ // the order of the heap (the minimum first, the rest in no useful order),
+ // random access; a change through it would break the heap
+
+ using value_type = PriorityItem;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const PriorityItem &;
+ using const_reference = const PriorityItem &;
+ using const_iterator = IndirectIterator<
+  typename std::vector< std::unique_ptr< PriorityItem > >::const_iterator >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_H.begin() ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( f_H.end() ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

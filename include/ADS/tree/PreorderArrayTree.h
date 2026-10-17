@@ -41,6 +41,7 @@
 
 #include "ADS/Contract.h"
 
+#include <ranges>
 #include <stdexcept>
 #include <vector>
 
@@ -91,7 +92,7 @@ class PreorderArrayTree {
  [[nodiscard]] bool isLeaf( int i ) const;
 
  /// the place after the subtree of i
- [[nodiscard]] int end( int i ) const;
+ [[nodiscard]] int subtreeEnd( int i ) const;
 
  /// a copy of t as the first child of i
  void insertChild( int i , const PreorderArrayTree & t );
@@ -101,6 +102,12 @@ class PreorderArrayTree {
 
  /// removes the subtree of i
  void remove( int i );
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the values of the nodes in preorder, which is the order of the array,
+ /// random access
+ [[nodiscard]] auto values( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -92,6 +92,24 @@ class HashMultiset {
  template< class F >
  void forEach( F && f ) const;
 
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( item , count ) of the distinct items,
+ // forward
+
+ using value_type = std::pair< T , std::size_t >;
+ using const_iterator =
+  typename ChainedHashTable< T , std::size_t , Chain::FRONT , H >::
+   const_iterator;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( f_count.begin() );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( f_count.end() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
 /*--------------------------------------------------------------------------*/
  private:
 

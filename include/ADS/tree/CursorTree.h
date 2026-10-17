@@ -38,7 +38,10 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
+#include <cstddef>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -111,6 +114,40 @@ class CursorTree {
  [[nodiscard]] std::vector< int > postvisit( void ) const;
 
  [[nodiscard]] std::vector< int > invisit( int i ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the places in use, for SlotIterator
+ struct Used {
+  static std::size_t size( const auto & o ) { return( o.f_N.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_N[ i ].used );
+   }
+  static int read( const auto & , std::size_t i ) { return( int( i ) ); }
+  };
+
+ /// the nodes, in the order of their places, bidirectional
+ [[nodiscard]] auto nodes( void ) const {
+  using It = SlotIterator< CursorTree , Used >;
+  return( std::ranges::subrange( It( this , 0 ) ,
+                                 It( this , f_N.size() ) ) );
+  }
+
+ /// the walk of the children of a node
+ struct Siblings {
+  static constexpr int none = NIL;
+  static int next( const CursorTree * o , int n , int ) {
+   return( o->rightSibling( n ) );
+   }
+  };
+
+ /// the children of n, from the leftmost, forward
+ /// \\pre n is a node
+ [[nodiscard]] auto children( int n ) const {
+  using It = WalkIterator< CursorTree , int , Siblings >;
+  return( std::ranges::subrange( It( this , leftmostChild( n ) , n ) ,
+                                 It() ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -132,6 +132,16 @@ bool ArrayGraph< W >::consistent( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class W >
+std::span< const int > ArrayGraph< W >::neighbors( int u ) const
+{
+ ADS_PRE( hasNode( u ) );
+ const auto k = std::size_t( f_off[ u + 1 ] - f_off[ u ] );
+ return( std::span< const int >( f_to.data() + f_off[ u ] , k ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

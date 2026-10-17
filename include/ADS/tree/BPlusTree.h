@@ -57,10 +57,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -134,6 +136,93 @@ class BPlusTree {
   Node * prev = nullptr;             ///< the previous leaf
   Node * next = nullptr;             ///< the next leaf
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) by increasing key,
+ // bidirectional along the chain of the leaves
+
+ class const_iterator {
+  public:
+  using reference = std::pair< const K & , const V & >;
+  using value_type = reference;
+  using difference_type = std::ptrdiff_t;
+  using iterator_concept = std::bidirectional_iterator_tag;
+  using iterator_category = std::input_iterator_tag;
+
+  const_iterator( void ) = default;
+  const_iterator( const BPlusTree * t , const Node * f , std::size_t i )
+   : f_t( t ) , f_f( f ) , f_i( i ) {}
+
+  reference operator*( void ) const {
+   return( reference( f_f->k[ f_i ] , f_f->v[ f_i ] ) );
+   }
+
+  const_iterator & operator++( void ) {
+   if( ++f_i < f_f->k.size() ) return( *this );
+   f_f = f_f->next;
+   f_i = 0;
+   while( f_f && f_f->k.empty() ) f_f = f_f->next;
+   return( *this );
+   }
+
+  const_iterator & operator--( void ) {
+   if( f_f && ( f_i > 0 ) ) {
+    --f_i;
+    return( *this );
+    }
+   f_f = f_f ? f_f->prev : f_t->lastLeaf();   // from the end, the last
+   while( f_f->k.empty() ) f_f = f_f->prev;
+   f_i = f_f->k.size() - 1;
+   return( *this );
+   }
+
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+
+  bool operator==( const const_iterator & o ) const {
+   return( ( f_f == o.f_f ) && ( f_i == o.f_i ) );
+   }
+
+  private:
+  const BPlusTree * f_t = nullptr;
+  const Node * f_f = nullptr;               ///< the leaf, nil at the end
+  std::size_t f_i = 0;
+  };
+
+ using value_type = std::pair< const K & , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  const Node * f = firstLeaf();
+  while( f && f->k.empty() ) f = f->next;
+  return( const_iterator( this , f , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , nullptr , 0 ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
+
+ /// the leftmost and the rightmost leaf
+ [[nodiscard]] const Node * firstLeaf( void ) const {
+  const Node * x = f_root;
+  while( x && ! x->is_leaf ) x = x->p.front();
+  return( x );
+  }
+ [[nodiscard]] const Node * lastLeaf( void ) const {
+  const Node * x = f_root;
+  while( x && ! x->is_leaf ) x = x->p.back();
+  return( x );
+  }
 
  /// the leaf where the key x is, or would be
  Node * leaf( const K & x ) const;

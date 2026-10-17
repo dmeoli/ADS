@@ -48,7 +48,9 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <optional>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -110,6 +112,54 @@ class SkipList {
   V value;
   std::vector< Node * > next;      ///< the successor on each level
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) by increasing key, along
+ // the bottom level, forward
+
+ class const_iterator {
+  public:
+  using reference = std::pair< const K & , const V & >;
+  using value_type = reference;
+  using difference_type = std::ptrdiff_t;
+  using iterator_concept = std::forward_iterator_tag;
+  using iterator_category = std::input_iterator_tag;
+
+  const_iterator( void ) = default;
+  explicit const_iterator( const Node * x ) : f_x( x ) {}
+
+  reference operator*( void ) const {
+   return( reference( f_x->key , f_x->value ) );
+   }
+  const_iterator & operator++( void ) {
+   f_x = f_x->next[ 0 ];
+   return( *this );
+   }
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  bool operator==( const const_iterator & o ) const = default;
+
+  private:
+  const Node * f_x = nullptr;
+  };
+
+ using value_type = std::pair< const K & , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_head.empty() ? nullptr : f_head[ 0 ] ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// the last node before k on each level, in update
  Node * before( const K & k , Node * update[ kMax ] ) const;

@@ -35,6 +35,14 @@ List< T >::List( std::initializer_list< T > items ) : List()
  }
 
 template< class T >
+template< std::input_iterator I , std::sentinel_for< I > S >
+List< T >::List( I first , S last ) : List()
+{
+ for( ; first != last ; ++first )
+  insert( sentinel() , *first );
+ }
+
+template< class T >
 List< T >::List( const List & other ) : List()
 {
  for( Pos p = other.head() ; ! other.finished( p ) ; p = other.next( p ) )
@@ -179,6 +187,18 @@ void List< T >::write( Pos p , const T & v )
 /*--------------------------------------------------------------------------*/
 /*---------------------------- BEYOND THE BOOK -----------------------------*/
 /*--------------------------------------------------------------------------*/
+
+template< class T >
+void List< T >::push_back( const T & v )
+{
+ insert( sentinel() , v );
+ }
+
+template< class T >
+void List< T >::push_front( const T & v )
+{
+ insert( head() , v );
+ }
 
 template< class T >
 bool List< T >::operator==( const List & o ) const

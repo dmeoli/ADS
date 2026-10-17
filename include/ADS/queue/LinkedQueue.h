@@ -36,6 +36,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <cstddef>
 #include <utility>
@@ -100,6 +101,30 @@ class LinkedQueue {
   T value;      ///< the item
   Cell * next;  ///< the next cell, toward the back
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items from the front to the back, forward
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const T &;
+ using const_reference = const T &;
+ using iterator = LinkedIterator< Cell , T , &Cell::next , &Cell::value >;
+ using const_iterator =
+  LinkedIterator< Cell , T , &Cell::next , &Cell::value >;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_front ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  Cell * f_front = nullptr;   ///< the first cell
  Cell * f_back = nullptr;    ///< the last cell

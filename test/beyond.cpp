@@ -459,7 +459,8 @@ ADS_TEST( "preorder-array-tree" )
    const int kind = int( g() % 4 );
    if( ( kind == 3 ) && ( v != 0 ) ) {    // remove the subtree of v
     std::vector< int > gone;
-    for( int j = i ; j < p.end( i ) ; ++j ) gone.push_back( p.read( j ) );
+    for( int j = i ; j < p.subtreeEnd( i ) ; ++j )
+     gone.push_back( p.read( j ) );
     p.remove( i );
     c.remove( at[ v ] );
     for( int w : gone ) at.erase( w );

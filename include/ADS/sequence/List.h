@@ -52,7 +52,10 @@
 
 #include "ADS/Contract.h"
 
+#include <cstddef>
 #include <initializer_list>
+#include <iterator>
+#include <type_traits>
 #include <utility>
 
 /*--------------------------------------------------------------------------*/
@@ -90,6 +93,10 @@ class List {
 
  /// the list of the given items, in their order
  List( std::initializer_list< T > items );
+
+ /// the list of the items of [ first , last ), in their order
+ template< std::input_iterator I , std::sentinel_for< I > S >
+ List( I first , S last );
 
  List( const List & other );
 
@@ -153,6 +160,81 @@ class List {
 
  /// the same items in the same order
  [[nodiscard]] bool operator==( const List & o ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a bidirectional iterator walks the cells, the sentinel being the end;
+ // it stays valid until its cell is removed, and a change made through it
+ // bypasses the audits of write()
+
+ /// the iterator, on items const if Const
+ template< bool Const >
+ class Iterator {
+  public:
+  using iterator_category = std::bidirectional_iterator_tag;
+  using value_type = T;
+  using difference_type = std::ptrdiff_t;
+  using reference = std::conditional_t< Const , const T & , T & >;
+  using pointer = std::conditional_t< Const , const T * , T * >;
+
+  Iterator( void ) = default;
+  explicit Iterator( Cell * c ) : f_c( c ) {}
+
+  /// the const iterator from the other one
+  template< bool C > requires ( Const && ! C )
+  Iterator( const Iterator< C > & o ) : f_c( o.cell() ) {}
+
+  reference operator*( void ) const { return( f_c->value ); }
+  pointer operator->( void ) const { return( &f_c->value ); }
+  Iterator & operator++( void ) { f_c = f_c->succ; return( *this ); }
+  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  Iterator & operator--( void ) { f_c = f_c->pred; return( *this ); }
+  Iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  bool operator==( const Iterator & o ) const = default;
+
+  /// the cell, which is the position of the book
+  [[nodiscard]] Cell * cell( void ) const { return( f_c ); }
+
+  private:
+  Cell * f_c = nullptr;
+  };
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = T &;
+ using const_reference = const T &;
+ using iterator = Iterator< false >;
+ using const_iterator = Iterator< true >;
+ using reverse_iterator = std::reverse_iterator< iterator >;
+ using const_reverse_iterator = std::reverse_iterator< const_iterator >;
+
+ [[nodiscard]] iterator begin( void ) { return( iterator( head() ) ); }
+ [[nodiscard]] iterator end( void ) { return( iterator( sentinel() ) ); }
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( head() ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( sentinel() ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+ [[nodiscard]] reverse_iterator rbegin( void ) {
+  return( reverse_iterator( end() ) );
+  }
+ [[nodiscard]] reverse_iterator rend( void ) {
+  return( reverse_iterator( begin() ) );
+  }
+ [[nodiscard]] const_reverse_iterator rbegin( void ) const {
+  return( const_reverse_iterator( end() ) );
+  }
+ [[nodiscard]] const_reverse_iterator rend( void ) const {
+  return( const_reverse_iterator( begin() ) );
+  }
+
+ /// v at the end and at the front, for the inserters of std
+ void push_back( const T & v );
+ void push_front( const T & v );
 
 /*--------------------------------------------------------------------------*/
  private:

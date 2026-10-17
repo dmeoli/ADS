@@ -86,6 +86,24 @@ class UniqueQueue {
  /// the number of items
  [[nodiscard]] std::size_t size( void ) const;
 
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items from the front to the back, bidirectional;
+ // a change through it could break the uniqueness
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const T &;
+ using const_reference = const T &;
+ using iterator = typename List< T >::const_iterator;
+ using const_iterator = typename List< T >::const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const { return( f_L.begin() ); }
+ [[nodiscard]] const_iterator end( void ) const { return( f_L.end() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
 /*--------------------------------------------------------------------------*/
  private:
 

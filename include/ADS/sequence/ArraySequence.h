@@ -63,7 +63,9 @@
 
 #include "ADS/Contract.h"
 
+#include <cstddef>
 #include <initializer_list>
+#include <iterator>
 #include <memory>
 #include <utility>
 
@@ -92,6 +94,10 @@ class ArraySequence {
 
  /// the sequence of the given items, in their order
  ArraySequence( std::initializer_list< T > items );
+
+ /// the sequence of the items of [ first , last ), in their order
+ template< std::input_iterator I , std::sentinel_for< I > S >
+ ArraySequence( I first , S last );
 
  ArraySequence( const ArraySequence & other );
 
@@ -152,6 +158,55 @@ class ArraySequence {
 
  /// the same items in the same order
  [[nodiscard]] bool operator==( const ArraySequence & o ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // the items are contiguous, so that the iterators are pointers and every
+ // algorithm of the standard library and of Boost applies; a change made
+ // through them bypasses the audits of write()
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = T &;
+ using const_reference = const T &;
+ using pointer = T *;
+ using const_pointer = const T *;
+ using iterator = T *;
+ using const_iterator = const T *;
+ using reverse_iterator = std::reverse_iterator< iterator >;
+ using const_reverse_iterator = std::reverse_iterator< const_iterator >;
+
+ [[nodiscard]] iterator begin( void ) { return( f_A.get() ); }
+ [[nodiscard]] iterator end( void ) { return( f_A.get() + f_size ); }
+ [[nodiscard]] const_iterator begin( void ) const { return( f_A.get() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( f_A.get() + f_size );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+ [[nodiscard]] reverse_iterator rbegin( void ) {
+  return( reverse_iterator( end() ) );
+  }
+ [[nodiscard]] reverse_iterator rend( void ) {
+  return( reverse_iterator( begin() ) );
+  }
+ [[nodiscard]] const_reverse_iterator rbegin( void ) const {
+  return( const_reverse_iterator( end() ) );
+  }
+ [[nodiscard]] const_reverse_iterator rend( void ) const {
+  return( const_reverse_iterator( begin() ) );
+  }
+
+ [[nodiscard]] T * data( void ) { return( f_A.get() ); }
+ [[nodiscard]] const T * data( void ) const { return( f_A.get() ); }
+
+ /// \pre 0 <= i < n
+ [[nodiscard]] T & operator[]( Pos i );
+ [[nodiscard]] const T & operator[]( Pos i ) const;
+
+ /// v at the end, for std::back_inserter
+ void push_back( const T & v );
 
 /*--------------------------------------------------------------------------*/
  private:

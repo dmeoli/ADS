@@ -41,6 +41,7 @@
 #include "ADS/sequence/List.h"
 
 #include <concepts>
+#include <cstddef>
 #include <utility>
 
 /*--------------------------------------------------------------------------*/
@@ -86,6 +87,24 @@ class ListPriorityQueue {
  /// O( n ) if sorted, O( 1 ) otherwise; the handle stays valid
  /// \pre y is an item of this queue and p is not larger than its priority
  void decrease( Handle & y , const P & p );
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( priority , item ), by priority when the
+ // list is sorted, bidirectional; a change through it would break the order
+
+ using value_type = Pair;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const Pair &;
+ using const_reference = const Pair &;
+ using iterator = typename List< Pair >::const_iterator;
+ using const_iterator = typename List< Pair >::const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const { return( f_L.begin() ); }
+ [[nodiscard]] const_iterator end( void ) const { return( f_L.end() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

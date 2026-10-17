@@ -62,6 +62,7 @@
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <iterator>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -149,6 +150,78 @@ class ChainedHashTable {
 
  using Pair = std::pair< K , V >;
  using Pos = typename List< Pair >::Pos;
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ), list by list, forward;
+ // with Chain::MOVE_TO_FRONT even a lookup moves a pair, and with the
+ // restructuring an insertion or a removal rebuilds the table, both of
+ // which invalidate it
+
+ class const_iterator {
+  using Lists = std::vector< List< Pair > >;
+
+  public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = Pair;
+  using difference_type = std::ptrdiff_t;
+  using reference = const Pair &;
+  using pointer = const Pair *;
+
+  const_iterator( void ) = default;
+
+  /// on the first pair from the list b, or at the end
+  const_iterator( const Lists * T , std::size_t b ) : f_T( T ) , f_b( b ) {
+   if( f_b < f_T->size() ) f_c = ( *f_T )[ f_b ].begin();
+   settle();
+   }
+
+  reference operator*( void ) const { return( *f_c ); }
+  pointer operator->( void ) const { return( &*f_c ); }
+
+  const_iterator & operator++( void ) {
+   ++f_c;
+   settle();
+   return( *this );
+   }
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+
+  bool operator==( const const_iterator & o ) const {
+   return( ( f_b == o.f_b ) &&
+           ( ( f_T == nullptr ) || ( f_b >= f_T->size() ) ||
+             ( f_c == o.f_c ) ) );
+   }
+
+  private:
+  void settle( void ) {                     // past the empty lists
+   while( ( f_b < f_T->size() ) && ( f_c == ( *f_T )[ f_b ].end() ) )
+    if( ++f_b < f_T->size() ) f_c = ( *f_T )[ f_b ].begin();
+   }
+
+  const Lists * f_T = nullptr;
+  std::size_t f_b = 0;
+  typename List< Pair >::const_iterator f_c;
+  };
+
+ using value_type = Pair;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const Pair &;
+ using const_reference = const Pair &;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( &f_T , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( &f_T , f_T.size() ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  [[nodiscard]] std::size_t place( const K & k ) const;
 

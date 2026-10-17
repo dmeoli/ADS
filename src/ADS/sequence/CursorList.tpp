@@ -267,6 +267,21 @@ void CursorList< T >::write( Pos p , const T & v )
 /*--------------------------------------------------------------------------*/
 
 template< class T >
+template< std::input_iterator I , std::sentinel_for< I > S >
+CursorList< T >::CursorList( I first , S last ) : CursorList()
+{
+ Pos p = head();                            // the place after the last
+ for( ; first != last ; ++first )
+  p = next( insert( p , *first ) );
+ }
+
+template< class T >
+void CursorList< T >::push_front( const T & v )
+{
+ insert( head() , v );
+ }
+
+template< class T >
 bool CursorList< T >::operator==( const CursorList & o ) const
 {
  long a = f_first , b = o.f_first;

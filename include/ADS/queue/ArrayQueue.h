@@ -36,6 +36,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <cstddef>
 #include <memory>
@@ -87,6 +88,29 @@ class ArrayQueue {
 
  /// whether v is in the queue, O( n )
  [[nodiscard]] bool contains( const T & v ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items from the front to the back, random
+ // access on the circular vector
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const T &;
+ using const_reference = const T &;
+ using iterator = CircularIterator< T >;
+ using const_iterator = CircularIterator< T >;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_A.get() , f_head , f_capacity , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( f_A.get() , f_head , f_capacity ,
+                          std::ptrdiff_t( f_size ) ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

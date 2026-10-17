@@ -74,6 +74,12 @@ class ListMFSet {
  /// the elements relabeled so far
  [[nodiscard]] long relabels( void ) const;
 
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the members of the set of x
+ /// \\pre x is in [ 0 , n )
+ [[nodiscard]] const std::vector< int > & members( int x ) const;
+
 /*--------------------------------------------------------------------------*/
  private:
 

@@ -39,7 +39,10 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
+#include <cstddef>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -109,6 +112,24 @@ class CursorBinaryTree {
 
  /// the nodes in preorder
  [[nodiscard]] std::vector< int > preorder( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the places in use, for SlotIterator
+ struct Used {
+  static std::size_t size( const auto & o ) { return( o.f_N.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_N[ i ].used );
+   }
+  static int read( const auto & , std::size_t i ) { return( int( i ) ); }
+  };
+
+ /// the nodes, in the order of their places, bidirectional
+ [[nodiscard]] auto nodes( void ) const {
+  using It = SlotIterator< CursorBinaryTree , Used >;
+  return( std::ranges::subrange( It( this , 0 ) ,
+                                 It( this , f_N.size() ) ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

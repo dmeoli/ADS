@@ -56,9 +56,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
+#include <cstddef>
+#include <iterator>
 #include <utility>
 #include <vector>
 
@@ -125,6 +128,69 @@ class FibonacciHeapPriorityQueue {
  /// \pre x is a node of this heap and p is not larger than its priority
  /// \post x has priority p
  void decrease( Handle x , const P & p );
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( priority , item ), in preorder over the
+ // circular lists of the roots and of the children (no useful order),
+ // forward; a list is done when the walk is back at its first node, the
+ // child of the parent (or the minimum, for the roots)
+
+ class const_iterator {
+  public:
+  using reference = std::pair< const P & , const T & >;
+  using value_type = reference;
+  using difference_type = std::ptrdiff_t;
+  using iterator_concept = std::forward_iterator_tag;
+  using iterator_category = std::input_iterator_tag;
+
+  const_iterator( void ) = default;
+  explicit const_iterator( const Node * min ) : f_x( min ) , f_min( min ) {}
+
+  reference operator*( void ) const {
+   return( reference( f_x->priority , f_x->value ) );
+   }
+
+  const_iterator & operator++( void ) {
+   if( f_x->child ) {
+    f_x = f_x->child;
+    return( *this );
+    }
+   while( f_x ) {
+    const Node * first = f_x->parent ? f_x->parent->child : f_min;
+    if( f_x->right != first ) {
+     f_x = f_x->right;
+     return( *this );
+     }
+    f_x = f_x->parent;                      // the list is done
+    }
+   return( *this );
+   }
+
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+
+  bool operator==( const const_iterator & o ) const {
+   return( f_x == o.f_x );
+   }
+
+  private:
+  const Node * f_x = nullptr;
+  const Node * f_min = nullptr;
+  };
+
+ using value_type = std::pair< const P & , const T & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_min ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

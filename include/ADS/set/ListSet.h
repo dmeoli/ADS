@@ -95,6 +95,23 @@ class ListSet {
  template< class F >
  void forEach( F && f ) const;
 
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items in the order of the list, bidirectional
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const T &;
+ using const_reference = const T &;
+ using const_iterator = typename List< T >::const_iterator;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const { return( f_L.begin() ); }
+ [[nodiscard]] const_iterator end( void ) const { return( f_L.end() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
 /*--------------------------------------------------------------------------*/
  private:
 

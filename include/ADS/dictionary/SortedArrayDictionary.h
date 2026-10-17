@@ -83,6 +83,25 @@ class SortedArrayDictionary {
  /// the pairs, sorted by key
  [[nodiscard]] const std::vector< std::pair< K , V > > & pairs( void ) const;
 
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs by increasing key, contiguous
+
+ using value_type = std::pair< K , V >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const std::pair< K , V > &;
+ using const_reference = const std::pair< K , V > &;
+ using const_iterator = const std::pair< K , V > *;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const { return( f_A.data() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( f_A.data() + f_A.size() );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
 /*--------------------------------------------------------------------------*/
  private:
 

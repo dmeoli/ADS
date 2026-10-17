@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the standard interface on every container: begin() and end() of the same
+  type, the member types of the standard library, and iterators of the
+  strongest category the structure allows (contiguous, random access,
+  bidirectional, forward), mutable where the items can change in place;
+  the common iterators in Iterators.h; nodes() and neighbors( u ) on the
+  graphs, children(), preorder() and inorder() on the trees of nodes,
+  members() on ListMFSet, values() on PreorderArrayTree, rowEntries() and
+  colEntries() on SparseMatrix, stack( i ) on MultiStack; constructors from
+  a pair of iterators and push_back()/push_front() on the sequences;
+  test/interop.cpp, also with Boost.Range and Boost.Sort when installed
 - the abstract data types SEQUENCE, SET, DICTIONARY, STACK and QUEUE as
   C++20 concepts (chapter 3); the LIST with pointers, the sequence on a
   doubling vector, the stack on a vector and on any sequence, the queue on
@@ -178,6 +188,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - move constructors for SkipList and SplayTree
 - a CI job that runs the tests under AddressSanitizer and UBSan
 - install and export for find_package(ADS), and the CI on GitHub Actions
+
+### Changed
+
+- PreorderArrayTree::end( i ), the place after the subtree of i, is now
+  subtreeEnd( i ), so that the name end() is left to the standard interface
+- SequenceRange is a view whose end() is an iterator, so that the range is
+  common
 
 ### Fixed
 

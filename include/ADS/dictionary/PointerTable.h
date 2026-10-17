@@ -57,6 +57,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 
 #include <bit>
@@ -122,6 +123,40 @@ class PointerTable {
  /// f( p ) on each object, in the order of the places
  template< class F >
  void forEach( F && f ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a view of the pointers to the objects, in the order of the places,
+ // bidirectional; the key of an object must not change through it, and an
+ // insertion that grows the table invalidates it
+
+ /// the places of the table, for SlotIterator
+ struct Places {
+  static std::size_t size( const auto & o ) { return( o.f_S.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_S[ i ].p != nullptr );
+   }
+  static auto read( const auto & o , std::size_t i ) {
+   return( o.f_S[ i ].p );
+   }
+  };
+
+ using value_type = T *;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = T *;
+ using const_reference = T *;
+ using const_iterator = SlotIterator< PointerTable , Places >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , Places::size( *this ) ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

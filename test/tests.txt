@@ -466,6 +466,13 @@ engineered  random-hashing       splitmix64, Zobrist, tabulazione
 engineered  spsc-queue           coda fra un produttore e un consumatore
 engineered  mpsc-inbox           casella di molti produttori
 
+# the standard interface of the containers, beyond the book
+interop  sequences            iteratori delle sequenze, std e Boost
+interop  restricted           viste di pile, code e heap
+interop  dictionaries         viste di dizionari e insiemi
+interop  trees                viste di alberi e heap
+interop  nodes-and-graphs     alberi di nodi, grafi, MFSet, matrici, arena
+
 # the contracts of the book, checked as tests
 contract_algorithm    binary-counter       contatore binario, sezione 4.2.1
 contract_algorithm    hanoi                torri di Hanoi, sezione 4.4

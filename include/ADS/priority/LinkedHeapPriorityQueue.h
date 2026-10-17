@@ -55,9 +55,11 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
+#include <cstddef>
 #include <memory>
 #include <utility>
 
@@ -111,6 +113,42 @@ class LinkedHeapPriorityQueue {
   Node( const P & p , const T & v , Node * u )
    : priority( p ) , value( v ) , parent( u ) {}
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( priority , item ), in the symmetric
+ // order of the tree (no useful order), bidirectional
+
+ /// the shape of the tree, for PathIterator
+ struct Shape {
+  static auto root( const auto & o ) { return( o.f_root.get() ); }
+  static auto left( const auto * n ) { return( n->left.get() ); }
+  static auto right( const auto * n ) { return( n->right.get() ); }
+  static auto read( const auto * n ) {
+   return( std::pair< const P & , const T & >( n->priority , n->value ) );
+   }
+  };
+
+ using value_type = std::pair< const P & , const T & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using const_iterator = PathIterator< LinkedHeapPriorityQueue , Shape >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , true ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , false ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// the node k >= 1 of the levels, by the bits of k
  Node * at( int k ) const;

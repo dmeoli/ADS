@@ -39,12 +39,14 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/sequence/List.h"
 
 #include <algorithm>
 #include <concepts>
 #include <optional>
+#include <ranges>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -112,6 +114,17 @@ class ListGraph : public GraphNodes< T > {
  /// \pre u is a node
  template< class F >
  void forEachEdge( int u , F && f ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the nodes adjacent to u, in the order of its list, bidirectional
+ /// \\pre u is a node
+ [[nodiscard]] auto neighbors( int u ) const {
+  using It = KeyIterator< typename List< std::pair< int , W > >::
+                          const_iterator >;
+  const auto & L = f_adj[ this->check( u ) ];
+  return( std::ranges::subrange( It( L.begin() ) , It( L.end() ) ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

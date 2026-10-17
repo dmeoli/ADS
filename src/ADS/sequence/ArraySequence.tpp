@@ -36,6 +36,14 @@ ArraySequence< T >::ArraySequence( std::initializer_list< T > items )
  }
 
 template< class T >
+template< std::input_iterator I , std::sentinel_for< I > S >
+ArraySequence< T >::ArraySequence( I first , S last ) : ArraySequence()
+{
+ for( ; first != last ; ++first )
+  insert( f_size , *first );
+ }
+
+template< class T >
 ArraySequence< T >::ArraySequence( const ArraySequence & other )
  : f_A( other.f_capacity ? new T[ other.f_capacity ] : nullptr ) ,
    f_size( other.f_size ) , f_capacity( other.f_capacity )
@@ -174,6 +182,26 @@ template< class T >
 typename ArraySequence< T >::Pos ArraySequence< T >::capacity( void ) const
 {
  return( f_capacity );
+ }
+
+template< class T >
+T & ArraySequence< T >::operator[]( Pos i )
+{
+ ADS_PRE( ( i >= 0 ) && ( i < f_size ) );
+ return( f_A[ i ] );
+ }
+
+template< class T >
+const T & ArraySequence< T >::operator[]( Pos i ) const
+{
+ ADS_PRE( ( i >= 0 ) && ( i < f_size ) );
+ return( f_A[ i ] );
+ }
+
+template< class T >
+void ArraySequence< T >::push_back( const T & v )
+{
+ insert( f_size , v );
  }
 
 template< class T >

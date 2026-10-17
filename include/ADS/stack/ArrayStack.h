@@ -100,6 +100,26 @@ class ArrayStack {
  /// the same items in the same order, whatever the capacities
  [[nodiscard]] bool operator==( const ArrayStack & o ) const;
 
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items, from the bottom to the top, contiguous;
+ // the operations of the stack stay the only way to change it
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const T &;
+ using const_reference = const T &;
+ using iterator = const T *;
+ using const_iterator = const T *;
+
+ [[nodiscard]] const_iterator begin( void ) const { return( f_A.get() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( f_A.get() + f_size );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
 /*--------------------------------------------------------------------------*/
  private:
 

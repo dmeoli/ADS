@@ -70,7 +70,7 @@ int PreorderArrayTree< T >::leftmostChild( int i ) const
 template< class T >
 int PreorderArrayTree< T >::rightSibling( int i ) const
 {
- const int e = end( i );
+ const int e = subtreeEnd( i );
  return( ( e < size() ) && ( f_A[ e ].parent == f_A[ i ].parent ) &&
          ( i > 0 ) ? e : NIL );
  }
@@ -82,7 +82,7 @@ bool PreorderArrayTree< T >::isLeaf( int i ) const
  }
 
 template< class T >
-int PreorderArrayTree< T >::end( int i ) const
+int PreorderArrayTree< T >::subtreeEnd( int i ) const
 {
  cell( i );
  int e = i + 1;
@@ -104,14 +104,14 @@ void PreorderArrayTree< T >::insertSibling( int i ,
                                             const PreorderArrayTree & t )
 {
  ADS_PRE( cell( i ).parent != NIL );
- splice( end( i ) , f_A[ i ].parent , t );
+ splice( subtreeEnd( i ) , f_A[ i ].parent , t );
  ADS_INVARIANT( preordered() );
  }
 
 template< class T >
 void PreorderArrayTree< T >::remove( int i )
 {
- const int e = end( i ) , k = e - i;
+ const int e = subtreeEnd( i ) , k = e - i;
  f_A.erase( f_A.begin() + i , f_A.begin() + e );
  for( int j = i ; j < size() ; ++j )
   if( f_A[ j ].parent >= e ) f_A[ j ].parent -= k;
@@ -147,6 +147,15 @@ void PreorderArrayTree< T >::splice( int at , int p ,
  C[ 0 ].parent = p;
  for( int j = 1 ; j < k ; ++j ) C[ j ].parent += at;
  f_A.insert( f_A.begin() + at , C.begin() , C.end() );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< class T >
+auto PreorderArrayTree< T >::values( void ) const
+{
+ return( f_A | std::views::transform( []( const Cell & c ) -> const T & {
+  return( c.value ); } ) );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -160,6 +160,27 @@ inline bool SparseMatrix::linked( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+inline std::ranges::subrange< SparseMatrix::const_iterator >
+SparseMatrix::rowEntries( std::size_t i ) const
+{
+ ADS_PRE( i < f_m );
+ const const_iterator first( &f_N , f_N[ i ].right , true ) ,
+                      last( &f_N , long( i ) , true );
+ return( std::ranges::subrange( first , last ) );
+ }
+
+inline std::ranges::subrange< SparseMatrix::const_iterator >
+SparseMatrix::colEntries( std::size_t j ) const
+{
+ ADS_PRE( j < f_n );
+ const long h = long( f_m + j );
+ const const_iterator first( &f_N , f_N[ h ].down , false ) ,
+                      last( &f_N , h , false );
+ return( std::ranges::subrange( first , last ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

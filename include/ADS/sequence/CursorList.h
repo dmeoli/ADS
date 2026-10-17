@@ -55,7 +55,9 @@
 
 #include <cstddef>
 #include <initializer_list>
+#include <iterator>
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -204,6 +206,76 @@ class CursorList {
 
  /// the cursor of the first cell, 0 if the list is empty
  [[nodiscard]] long first( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a forward iterator holds the space and the index of the cell of its
+ // item, never a reference to the cell, since take() in any list of the
+ // space may move the cells; the end is the index 0
+
+ /// the iterator, on items const if Const
+ template< bool Const >
+ class Iterator {
+  using Space = std::conditional_t< Const , const CursorSpace< T > ,
+                                    CursorSpace< T > >;
+
+  public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = T;
+  using difference_type = std::ptrdiff_t;
+  using reference = std::conditional_t< Const , const T & , T & >;
+  using pointer = std::conditional_t< Const , const T * , T * >;
+
+  Iterator( void ) = default;
+  Iterator( Space * S , long c ) : f_S( S ) , f_c( c ) {}
+
+  /// the const iterator from the other one
+  template< bool C > requires ( Const && ! C )
+  Iterator( const Iterator< C > & o ) : f_S( o.f_S ) , f_c( o.f_c ) {}
+
+  reference operator*( void ) const { return( ( *f_S )[ f_c ].value ); }
+  pointer operator->( void ) const { return( &**this ); }
+  Iterator & operator++( void ) {
+   f_c = ( *f_S )[ f_c ].next;
+   return( *this );
+   }
+  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  bool operator==( const Iterator & o ) const = default;
+
+  private:
+  Space * f_S = nullptr;   ///< the space of the cells
+  long f_c = 0;            ///< the cell of the item, 0 at the end
+
+  template< bool > friend class Iterator;
+  };
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = T &;
+ using const_reference = const T &;
+ using iterator = Iterator< false >;
+ using const_iterator = Iterator< true >;
+
+ [[nodiscard]] iterator begin( void ) {
+  return( iterator( f_S.get() , f_first ) );
+  }
+ [[nodiscard]] iterator end( void ) { return( iterator( f_S.get() , 0 ) ); }
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_S.get() , f_first ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( f_S.get() , 0 ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ /// the list of the items of [ first , last ), in their order
+ template< std::input_iterator I , std::sentinel_for< I > S >
+ CursorList( I first , S last );
+
+ /// v at the front, for std::front_inserter
+ void push_front( const T & v );
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -40,9 +40,12 @@
 
 #include "ADS/Contract.h"
 
+#include <compare>
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <new>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -83,6 +86,96 @@ class Arena {
 
  /// the memory of the blocks, in bytes
  [[nodiscard]] std::size_t bytes( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // the objects made, in the order of make(), random access across the
+ // blocks; their addresses do not change, so the iterators stay valid while
+ // the arena lives, and a new object only moves the end
+
+ /// the iterator, on objects const if Const
+ template< bool Const >
+ class Iterator {
+  using Blocks = T * const *;   // the blocks, never changed through it
+
+  public:
+  using iterator_category = std::random_access_iterator_tag;
+  using value_type = T;
+  using difference_type = std::ptrdiff_t;
+  using reference = std::conditional_t< Const , const T & , T & >;
+  using pointer = std::conditional_t< Const , const T * , T * >;
+
+  Iterator( void ) = default;
+  Iterator( Blocks B , std::size_t n , std::size_t i )
+   : f_B( B ) , f_n( n ) , f_i( i ) {}
+
+  template< bool K > requires ( Const && ! K )
+  Iterator( const Iterator< K > & o )
+   : f_B( o.f_B ) , f_n( o.f_n ) , f_i( o.f_i ) {}
+
+  reference operator*( void ) const { return( ( *this )[ 0 ] ); }
+  pointer operator->( void ) const { return( &**this ); }
+  reference operator[]( difference_type k ) const {
+   const std::size_t j = f_i + std::size_t( k );
+   return( f_B[ j / f_n ][ j % f_n ] );
+   }
+
+  Iterator & operator++( void ) { ++f_i; return( *this ); }
+  Iterator & operator--( void ) { --f_i; return( *this ); }
+  Iterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+  Iterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+  Iterator & operator+=( difference_type k ) {
+   f_i += std::size_t( k );
+   return( *this );
+   }
+  Iterator & operator-=( difference_type k ) {
+   f_i -= std::size_t( k );
+   return( *this );
+   }
+  friend Iterator operator+( Iterator a , difference_type k ) {
+   return( a += k );
+   }
+  friend Iterator operator+( difference_type k , Iterator a ) {
+   return( a += k );
+   }
+  friend Iterator operator-( Iterator a , difference_type k ) {
+   return( a -= k );
+   }
+  friend difference_type operator-( const Iterator & a , const Iterator & b ) {
+   return( difference_type( a.f_i ) - difference_type( b.f_i ) );
+   }
+  bool operator==( const Iterator & o ) const { return( f_i == o.f_i ); }
+  auto operator<=>( const Iterator & o ) const { return( f_i <=> o.f_i ); }
+
+  private:
+  Blocks f_B = nullptr;
+  std::size_t f_n = 1 , f_i = 0;
+
+  template< bool > friend class Iterator;
+  };
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = T &;
+ using const_reference = const T &;
+ using iterator = Iterator< false >;
+ using const_iterator = Iterator< true >;
+
+ [[nodiscard]] iterator begin( void ) {
+  return( iterator( f_blocks.data() , f_n , 0 ) );
+  }
+ [[nodiscard]] iterator end( void ) {
+  return( iterator( f_blocks.data() , f_n , f_size ) );
+  }
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_blocks.data() , f_n , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( f_blocks.data() , f_n , f_size ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

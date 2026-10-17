@@ -37,9 +37,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/graph/Graph.h"
 
+#include <cstddef>
 #include <optional>
+#include <ranges>
 #include <variant>
 #include <vector>
 
@@ -103,6 +106,25 @@ class MatrixGraph : public GraphNodes< T > {
  /// \pre u is a node
  template< class F >
  void forEachEdge( int u , F && f ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the columns of the edges in a row, for SlotIterator
+ struct Present {
+  static std::size_t size( const auto & r ) { return( r.size() ); }
+  static bool occupied( const auto & r , std::size_t i ) {
+   return( r[ i ].has_value() );
+   }
+  static int read( const auto & , std::size_t i ) { return( int( i ) ); }
+  };
+
+ /// the nodes adjacent to u in increasing order, bidirectional
+ /// \\pre u is a node
+ [[nodiscard]] auto neighbors( int u ) const {
+  using It = SlotIterator< std::vector< std::optional< W > > , Present >;
+  const auto & r = f_M[ this->check( u ) ];
+  return( std::ranges::subrange( It( &r , 0 ) , It( &r , r.size() ) ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

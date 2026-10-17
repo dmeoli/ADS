@@ -39,10 +39,13 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/tree/BinaryTree.h"
 
+#include <cstddef>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -115,6 +118,24 @@ class ArrayBinaryTree {
 
  /// the places of the nodes in preorder
  [[nodiscard]] std::vector< long > preorder( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the places in use, for SlotIterator
+ struct Used {
+  static std::size_t size( const auto & o ) { return( o.f_A.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_A[ i ].has_value() );
+   }
+  static long read( const auto & , std::size_t i ) { return( long( i ) ); }
+  };
+
+ /// the nodes, in the order of their places, bidirectional
+ [[nodiscard]] auto nodes( void ) const {
+  using It = SlotIterator< ArrayBinaryTree , Used >;
+  return( std::ranges::subrange( It( this , 0 ) ,
+                                 It( this , f_A.size() ) ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

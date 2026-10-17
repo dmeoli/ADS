@@ -43,9 +43,11 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -94,6 +96,64 @@ class ThreadedTree {
   Node * left = nullptr , * right = nullptr;
   bool lthread = true , rthread = true;   ///< the links are threads
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the keys in increasing order, bidirectional by the
+ // threads with no stack, the head node being the end
+
+ class const_iterator {
+  public:
+  using iterator_category = std::bidirectional_iterator_tag;
+  using value_type = K;
+  using difference_type = std::ptrdiff_t;
+  using reference = const K &;
+  using pointer = const K *;
+
+  const_iterator( void ) = default;
+  const_iterator( const ThreadedTree * t , const Node * x )
+   : f_t( t ) , f_x( x ) {}
+
+  reference operator*( void ) const { return( f_x->key ); }
+  pointer operator->( void ) const { return( &f_x->key ); }
+  const_iterator & operator++( void ) {
+   f_x = f_t->successor( f_x );
+   return( *this );
+   }
+  const_iterator & operator--( void ) {
+   f_x = f_t->predecessor( f_x );
+   return( *this );
+   }
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  bool operator==( const const_iterator & o ) const {
+   return( f_x == o.f_x );
+   }
+
+  private:
+  const ThreadedTree * f_t = nullptr;
+  const Node * f_x = nullptr;
+  };
+
+ using value_type = K;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const K &;
+ using const_reference = const K &;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , successor( &f_head ) ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , &f_head ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// the successor of x in symmetric order, the head after the last
  [[nodiscard]] const Node * successor( const Node * x ) const;

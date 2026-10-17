@@ -37,6 +37,8 @@
 #include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
 
+#include <cstddef>
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -75,6 +77,39 @@ class Dequeue {
 
  /// \pre the dequeue is not empty
  [[nodiscard]] const T & tail( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // the bidirectional iterators of the list, from the head to the tail
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = T &;
+ using const_reference = const T &;
+ using iterator = typename List< T >::iterator;
+ using const_iterator = typename List< T >::const_iterator;
+ using reverse_iterator = typename List< T >::reverse_iterator;
+ using const_reverse_iterator = typename List< T >::const_reverse_iterator;
+
+ [[nodiscard]] iterator begin( void ) { return( f_L.begin() ); }
+ [[nodiscard]] iterator end( void ) { return( f_L.end() ); }
+ [[nodiscard]] const_iterator begin( void ) const { return( f_L.begin() ); }
+ [[nodiscard]] const_iterator end( void ) const { return( f_L.end() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+ [[nodiscard]] reverse_iterator rbegin( void ) { return( f_L.rbegin() ); }
+ [[nodiscard]] reverse_iterator rend( void ) { return( f_L.rend() ); }
+ [[nodiscard]] const_reverse_iterator rbegin( void ) const {
+  return( f_L.rbegin() );
+  }
+ [[nodiscard]] const_reverse_iterator rend( void ) const {
+  return( f_L.rend() );
+  }
+
+ /// insertTail() and insertHead(), for the inserters of std
+ void push_back( const T & v ) { insertTail( v ); }
+ void push_front( const T & v ) { insertHead( v ); }
 
 /*--------------------------------------------------------------------------*/
  private:

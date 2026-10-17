@@ -54,6 +54,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #include <utility>
 #include <vector>
 
@@ -114,6 +115,78 @@ class BucketQueue {
   std::size_t count = 0;                 ///< the items in the layer
   std::size_t topG = 0;                  ///< no list above it has items
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items in the order of the extractions (by f
+ // increasing, then by g decreasing, each list from the last item pushed),
+ // forward; it skips the empty lists without touching the lazy bounds that
+ // top() moves
+
+ class const_iterator {
+  public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = T;
+  using difference_type = std::ptrdiff_t;
+  using reference = const T &;
+  using pointer = const T *;
+
+  const_iterator( void ) = default;
+  const_iterator( const std::vector< Layer > * L , std::size_t f )
+   : f_L( L ) , f_f( f ) { settle(); }
+
+  reference operator*( void ) const {
+   const auto & byG = ( *f_L )[ f_f ].byG;
+   const auto & v = byG[ byG.size() - 1 - f_g ];   // f_g from the top
+   return( v[ v.size() - 1 - f_k ] );
+   }
+  pointer operator->( void ) const { return( &**this ); }
+
+  const_iterator & operator++( void ) {
+   ++f_k;
+   settle();
+   return( *this );
+   }
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+
+  bool operator==( const const_iterator & o ) const {
+   return( ( f_f == o.f_f ) && ( f_g == o.f_g ) && ( f_k == o.f_k ) );
+   }
+
+  private:
+  /// on an item, or at the end ( size of the layers , 0 , 0 )
+  void settle( void ) {
+   for( ; f_f < f_L->size() ; ++f_f , f_g = 0 , f_k = 0 ) {
+    const auto & byG = ( *f_L )[ f_f ].byG;
+    for( ; f_g < byG.size() ; ++f_g , f_k = 0 )
+     if( f_k < byG[ byG.size() - 1 - f_g ].size() ) return;
+    }
+   f_g = f_k = 0;
+   }
+
+  const std::vector< Layer > * f_L = nullptr;
+  std::size_t f_f = 0 , f_g = 0 , f_k = 0;
+  };
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const T &;
+ using const_reference = const T &;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( &f_layers , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( &f_layers , f_layers.size() ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// the layer of the least f, its topG moved to its largest g
  Layer & front( void );

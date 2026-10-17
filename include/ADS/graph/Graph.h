@@ -59,11 +59,13 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/sequence/List.h"
 
 #include <concepts>
 #include <cstddef>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -135,6 +137,28 @@ class GraphNodes {
 
  /// \pre u is a node
  void setLabel( int u , const T & t );
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // the nodes and (in the derived graphs) the adjacent nodes as ranges,
+ // which visit them where they are, instead of the vectors that V() and
+ // adj() build
+
+ /// the names in use, for SlotIterator
+ struct Alive {
+  static std::size_t size( const auto & o ) { return( o.f_alive.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_alive[ i ] );
+   }
+  static int read( const auto & , std::size_t i ) { return( int( i ) ); }
+  };
+
+ /// the nodes in increasing order, bidirectional
+ [[nodiscard]] auto nodes( void ) const {
+  using It = SlotIterator< GraphNodes , Alive >;
+  return( std::ranges::subrange( It( this , 0 ) ,
+                                 It( this , f_alive.size() ) ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  protected:

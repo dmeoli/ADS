@@ -41,6 +41,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <concepts>
 #include <cstddef>
@@ -104,6 +105,43 @@ class SplayTree {
   V value;
   Node * left = nullptr , * right = nullptr;
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) by increasing key,
+ // bidirectional, along the path from the root; a lookup splays the tree
+ // and invalidates it
+
+ /// the shape of the tree, for PathIterator
+ struct Shape {
+  static auto root( const auto & o ) { return( o.f_root ); }
+  static auto left( const auto * n ) { return( n->left ); }
+  static auto right( const auto * n ) { return( n->right ); }
+  static auto read( const auto * n ) {
+   return( std::pair< const K & , const V & >( n->key , n->value ) );
+   }
+  };
+
+ using value_type = std::pair< const K & , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using const_iterator = PathIterator< SplayTree , Shape >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , true ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , false ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// the top-down splay of k in t: the new root
  static Node * splay( Node * t , const K & k );

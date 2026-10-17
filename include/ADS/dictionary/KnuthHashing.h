@@ -53,6 +53,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <cstddef>
 #include <functional>
@@ -93,6 +94,40 @@ class CoalescedHashTable {
 
  /// the places examined by the last lookup() or insert()
  [[nodiscard]] std::size_t probes( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ), in the order of the
+ // places (the cellar last), bidirectional
+
+ /// the places of the table, for SlotIterator
+ struct Places {
+  static std::size_t size( const auto & o ) { return( o.f_T.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_T[ i ].used );
+   }
+  static auto read( const auto & o , std::size_t i ) {
+   return( std::pair< const K & , const V & >( o.f_T[ i ].key ,
+                                              o.f_T[ i ].value ) );
+   }
+  };
+
+ using value_type = std::pair< const K & , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = std::pair< const K & , const V & >;
+ using const_reference = std::pair< const K & , const V & >;
+ using const_iterator = SlotIterator< CoalescedHashTable , Places >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , Places::size( *this ) ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -142,6 +177,39 @@ class BrentHashTable {
 
  /// the places examined by the last lookup()
  [[nodiscard]] std::size_t probes( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ), in the order of the
+ // places, bidirectional; an insertion may move the pairs
+
+ /// the places of the table, for SlotIterator
+ struct Places {
+  static std::size_t size( const auto & o ) { return( o.f_T.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_T[ i ].has_value() );
+   }
+  static const std::pair< K , V > & read( const auto & o , std::size_t i ) {
+   return( *o.f_T[ i ] );
+   }
+  };
+
+ using value_type = std::pair< K , V >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const std::pair< K , V > &;
+ using const_reference = const std::pair< K , V > &;
+ using const_iterator = SlotIterator< BrentHashTable , Places >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , Places::size( *this ) ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

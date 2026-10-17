@@ -39,6 +39,8 @@
 #include "ADS/ADT.h"
 #include "ADS/Contract.h"
 
+#include <ranges>
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -74,6 +76,21 @@ class SequenceStack {
 
  /// the same items in the same order, those of the sequences
  [[nodiscard]] bool operator==( const SequenceStack & o ) const = default;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items from the top to the bottom, with the
+ // iterators of the sequence, when it has them
+
+ [[nodiscard]] auto begin( void ) const
+  requires std::ranges::range< const S > {
+  return( std::ranges::cbegin( f_s ) );
+  }
+
+ [[nodiscard]] auto end( void ) const
+  requires std::ranges::range< const S > {
+  return( std::ranges::cend( f_s ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

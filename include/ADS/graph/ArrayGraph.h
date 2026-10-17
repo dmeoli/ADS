@@ -37,6 +37,8 @@
 #include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 
+#include <ranges>
+#include <span>
 #include <tuple>
 #include <variant>
 #include <vector>
@@ -92,6 +94,17 @@ class ArrayGraph {
  /// \pre u is a node
  template< class F >
  void forEachEdge( int u , F && f ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the nodes, 0 , ... , n - 1, random access
+ [[nodiscard]] auto nodes( void ) const {
+  return( std::views::iota( 0 , n() ) );
+  }
+
+ /// the nodes adjacent to u, contiguous in the array of the edges
+ /// \\pre u is a node
+ [[nodiscard]] std::span< const int > neighbors( int u ) const;
 
 /*--------------------------------------------------------------------------*/
  private:

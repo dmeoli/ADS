@@ -58,9 +58,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/tree/Tree.h"
 
+#include <cstddef>
 #include <memory>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -200,6 +203,68 @@ inline long dary_child( long i , long d , long j );
 /// the place of the parent of the node in the place i > 0
 /// \pre i > 0 , d >= 1
 inline long dary_parent( long i , long d );
+
+/*--------------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// the nodes of a binary tree as ranges, forward, by the links to the
+// parents, with no stack; *it is a node
+
+namespace detail {
+
+/// the preorder below a root
+struct BinaryPreorder {
+ static constexpr std::nullptr_t none = nullptr;
+ template< class N >
+ static N * next( const void * , N * n , N * root ) {
+  if( n->left() ) return( n->left() );
+  if( n->right() ) return( n->right() );
+  for( ; n != root ; n = n->parent() )      // up to a right sibling
+   if( ( n == n->parent()->left() ) && n->parent()->right() )
+    return( n->parent()->right() );
+  return( nullptr );
+  }
+ };
+
+/// the symmetric order below a root
+struct BinaryInorder {
+ static constexpr std::nullptr_t none = nullptr;
+ template< class N >
+ static N * leftmost( N * n ) {
+  while( n->left() ) n = n->left();
+  return( n );
+  }
+ template< class N >
+ static N * next( const void * , N * n , N * root ) {
+  if( n->right() ) return( leftmost( n->right() ) );
+  for( ; n != root ; n = n->parent() )      // up from a left child
+   if( n == n->parent()->left() ) return( n->parent() );
+  return( nullptr );
+  }
+ };
+
+}  // end( namespace detail )
+
+/// the nodes of the subtree of t in preorder, t first
+template< class T >
+auto preorder( BinaryTree< T > * t )
+{
+ using It = WalkIterator< void , BinaryTree< T > * ,
+                          detail::BinaryPreorder >;
+ return( std::ranges::subrange( It( nullptr , t , t ) , It() ) );
+ }
+
+/// the nodes of the subtree of t in symmetric order
+template< class T >
+auto inorder( BinaryTree< T > * t )
+{
+ using It = WalkIterator< void , BinaryTree< T > * , detail::BinaryInorder >;
+ return( std::ranges::subrange(
+          It( nullptr , detail::BinaryInorder::leftmost( t ) , t ) , It() ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

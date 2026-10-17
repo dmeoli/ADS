@@ -55,6 +55,7 @@
 #include "ADS/Contract.h"
 
 #include <cstddef>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <optional>
@@ -68,6 +69,81 @@
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
+
+namespace detail {
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CLASS TrieIterator ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the keys of a trie of nodes N in lexicographic order, by a visit in
+/// depth with a stack of the children still to see; the key is rebuilt
+/// along the path, a character per edge, or the label of the child if
+/// Labeled; *it gives the pair ( key , value ) by value
+template< class N , class V , bool Labeled >
+class TrieIterator {
+ public:
+ using reference = std::pair< std::string , const V & >;
+ using value_type = reference;
+ using difference_type = std::ptrdiff_t;
+ using iterator_concept = std::forward_iterator_tag;
+ using iterator_category = std::input_iterator_tag;
+
+ TrieIterator( void ) = default;
+
+ /// on the first key below root (root included), or at the end if nil
+ explicit TrieIterator( const N * root ) {
+  if( ! root ) return;
+  f_S.push_back( Frame{ root , root->next.begin() , 0 } );
+  if( ! root->value ) advance();
+  }
+
+ reference operator*( void ) const {
+  return( reference( f_key , *f_S.back().node->value ) );
+  }
+
+ TrieIterator & operator++( void ) {
+  advance();
+  return( *this );
+  }
+ TrieIterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+
+ bool operator==( const TrieIterator & o ) const {
+  return( f_S.empty() ? o.f_S.empty()
+                      : ( ! o.f_S.empty() &&
+                          ( f_S.back().node == o.f_S.back().node ) ) );
+  }
+
+ private:
+ struct Frame {
+  const N * node;
+  typename decltype( N::next )::const_iterator child;   ///< the next one
+  std::size_t length;                       ///< of the key above the node
+  };
+
+ /// to the next node with a value in preorder, or to the end
+ void advance( void ) {
+  while( ! f_S.empty() ) {
+   Frame & f = f_S.back();
+   if( f.child == f.node->next.end() ) {    // its subtree is done
+    f_key.resize( f.length );
+    f_S.pop_back();
+    continue;
+    }
+   const std::size_t len = f_key.size();
+   const auto & [ c , x ] = *f.child++;
+   if constexpr( Labeled ) f_key += x->label; else f_key += c;
+   f_S.push_back( Frame{ x.get() , x->next.begin() , len } );
+   if( x->value ) return;
+   }
+  }
+
+ std::vector< Frame > f_S;
+ std::string f_key;
+
+ };  // end( class TrieIterator )
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS Trie --------------------------------*/
@@ -109,6 +185,30 @@ class Trie {
   std::map< char , std::unique_ptr< Node > > next;
   std::optional< V > value;      ///< set if a key ends here
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) in lexicographic order,
+ // forward; the key is rebuilt along the path
+
+ using value_type = std::pair< std::string , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using const_iterator = detail::TrieIterator< Node , V , false >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( &f_root ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// the node of the prefix p, nil if none
  [[nodiscard]] const Node * find( std::string_view p ) const;
@@ -167,6 +267,30 @@ class RadixTree {
   std::map< char , std::unique_ptr< Node > > next;
   std::optional< V > value;      ///< set if a key ends here
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) in lexicographic order,
+ // forward; the key is rebuilt along the path
+
+ using value_type = std::pair< std::string , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using const_iterator = detail::TrieIterator< Node , V , true >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( &f_root ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// removes k below x; true if x is left with no value and no child
  bool remove( Node * x , std::string_view k );

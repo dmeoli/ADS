@@ -48,10 +48,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -111,6 +113,83 @@ class BTree {
   std::vector< std::unique_ptr< Node > > c;   ///< empty in a leaf
   [[nodiscard]] bool leaf( void ) const { return( c.empty() ); }
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) by increasing key,
+ // forward, with the path of ( node , index ) from the root: in a node
+ // above the last, the index is the child the path went into, and the key
+ // of that index comes once the child is done
+
+ class const_iterator {
+  public:
+  using reference = std::pair< const K & , const V & >;
+  using value_type = reference;
+  using difference_type = std::ptrdiff_t;
+  using iterator_concept = std::forward_iterator_tag;
+  using iterator_category = std::input_iterator_tag;
+
+  const_iterator( void ) = default;
+
+  /// on the first key below x, or at the end if x is nil or empty
+  explicit const_iterator( const Node * x ) {
+   if( x && ! x->k.empty() ) leftmost( x );
+   }
+
+  reference operator*( void ) const {
+   const auto & [ x , i ] = f_path.back();
+   return( reference( x->k[ i ] , x->v[ i ] ) );
+   }
+
+  const_iterator & operator++( void ) {
+   auto & [ x , i ] = f_path.back();
+   if( ! x->c.empty() ) {                   // into the child after the key
+    ++i;
+    leftmost( x->c[ i ].get() );
+    return( *this );
+    }
+   if( ++i < x->k.size() ) return( *this );
+   f_path.pop_back();                       // up to the first ancestor
+   while( ! f_path.empty() &&               // with a key left
+          ( f_path.back().second >= f_path.back().first->k.size() ) )
+    f_path.pop_back();
+   return( *this );
+   }
+
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+
+  bool operator==( const const_iterator & o ) const {
+   return( f_path.empty() ? o.f_path.empty()
+                          : ( ! o.f_path.empty() &&
+                              ( f_path.back() == o.f_path.back() ) ) );
+   }
+
+  private:
+  void leftmost( const Node * x ) {
+   for( ; ! x->c.empty() ; x = x->c[ 0 ].get() ) f_path.emplace_back( x , 0 );
+   f_path.emplace_back( x , 0 );
+   }
+
+  std::vector< std::pair< const Node * , std::size_t > > f_path;
+  };
+
+ using value_type = std::pair< const K & , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_root.get() ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
 
  /// the first place in x of a key not smaller than key
  static std::size_t place( const Node * x , const K & key );

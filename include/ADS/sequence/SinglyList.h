@@ -45,7 +45,10 @@
 
 #include "ADS/Contract.h"
 
+#include <cstddef>
 #include <initializer_list>
+#include <iterator>
+#include <type_traits>
 #include <utility>
 
 /*--------------------------------------------------------------------------*/
@@ -136,6 +139,66 @@ class SinglyList {
 
  /// the same items in the same order
  [[nodiscard]] bool operator==( const SinglyList & o ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a forward iterator holds the cell of its item, not the cell before it
+ // as a position does, so that the end is nil; it stays valid until its
+ // cell is removed, and a change made through it bypasses the audits of
+ // write()
+
+ /// the iterator, on items const if Const
+ template< bool Const >
+ class Iterator {
+  public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = T;
+  using difference_type = std::ptrdiff_t;
+  using reference = std::conditional_t< Const , const T & , T & >;
+  using pointer = std::conditional_t< Const , const T * , T * >;
+
+  Iterator( void ) = default;
+  explicit Iterator( Cell * c ) : f_c( c ) {}
+
+  /// the const iterator from the other one
+  template< bool C > requires ( Const && ! C )
+  Iterator( const Iterator< C > & o ) : f_c( o.f_c ) {}
+
+  reference operator*( void ) const { return( f_c->value ); }
+  pointer operator->( void ) const { return( &**this ); }
+  Iterator & operator++( void ) { f_c = f_c->next; return( *this ); }
+  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  bool operator==( const Iterator & o ) const = default;
+
+  private:
+  Cell * f_c = nullptr;   ///< the cell of the item, nil at the end
+
+  template< bool > friend class Iterator;
+  };
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = T &;
+ using const_reference = const T &;
+ using iterator = Iterator< false >;
+ using const_iterator = Iterator< true >;
+
+ [[nodiscard]] iterator begin( void ) { return( iterator( f_first ) ); }
+ [[nodiscard]] iterator end( void ) { return( iterator() ); }
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( f_first ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ /// the list of the items of [ first , last ), in their order
+ template< std::input_iterator I , std::sentinel_for< I > S >
+ SinglyList( I first , S last );
+
+ /// v at the front, for std::front_inserter
+ void push_front( const T & v );
 
 /*--------------------------------------------------------------------------*/
  private:

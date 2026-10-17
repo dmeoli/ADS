@@ -73,9 +73,11 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -190,6 +192,64 @@ class SearchTree {
 
  /// predecessorNode(): the node of the previous key, nil before the first
  [[nodiscard]] Link * predecessorNode( Link * t ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) by increasing key,
+ // bidirectional by the links to the parents, the sentinel leaf being the
+ // end
+
+ class const_iterator {
+  public:
+  using reference = std::pair< const K & , const V & >;
+  using value_type = reference;
+  using difference_type = std::ptrdiff_t;
+  using iterator_concept = std::bidirectional_iterator_tag;
+  using iterator_category = std::input_iterator_tag;
+
+  const_iterator( void ) = default;
+  const_iterator( const SearchTree * t , Link * x ) : f_t( t ) , f_x( x ) {}
+
+  reference operator*( void ) const {
+   return( reference( f_t->key( f_x ) , f_t->value( f_x ) ) );
+   }
+  const_iterator & operator++( void ) {
+   f_x = f_t->successorNode( f_x );
+   return( *this );
+   }
+  const_iterator & operator--( void ) {
+   f_x = f_t->isNil( f_x ) ? f_t->max() : f_t->predecessorNode( f_x );
+   return( *this );
+   }
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  bool operator==( const const_iterator & o ) const {
+   return( f_x == o.f_x );
+   }
+
+  /// the node, the sentinel at the end
+  [[nodiscard]] Link * node( void ) const { return( f_x ); }
+
+  private:
+  const SearchTree * f_t = nullptr;
+  Link * f_x = nullptr;
+  };
+
+ using value_type = std::pair< const K & , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , min() ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , f_nil.get() ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

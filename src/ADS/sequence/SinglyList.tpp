@@ -165,6 +165,21 @@ void SinglyList< T >::write( Pos p , const T & v )
 /*--------------------------------------------------------------------------*/
 
 template< class T >
+template< std::input_iterator I , std::sentinel_for< I > S >
+SinglyList< T >::SinglyList( I first , S last )
+{
+ Pos p = head();                            // the place after the last
+ for( ; first != last ; ++first )
+  p = next( insert( p , *first ) );
+ }
+
+template< class T >
+void SinglyList< T >::push_front( const T & v )
+{
+ insert( head() , v );
+ }
+
+template< class T >
 bool SinglyList< T >::operator==( const SinglyList & o ) const
 {
  const Cell * a = f_first , * b = o.f_first;

@@ -86,6 +86,15 @@ T MultiStack< T >::pop( int i )
  }
 
 template< class T >
+std::ranges::subrange< typename MultiStack< T >::const_iterator >
+MultiStack< T >::stack( int i ) const
+{
+ ADS_PRE( ( i >= 0 ) && ( i < stacks() ) );
+ return( std::ranges::subrange( const_iterator( &f_C , f_top[ i ] ) ,
+                                const_iterator( &f_C , -1 ) ) );
+ }
+
+template< class T >
 bool MultiStack< T >::partitioned( void ) const
 {
  std::vector< bool > seen( f_C.size() , false );

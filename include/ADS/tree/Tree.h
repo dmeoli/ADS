@@ -49,9 +49,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/sequence/List.h"
 
+#include <cstddef>
 #include <memory>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -191,6 +194,57 @@ std::string to_list( const Tree< T > * t );
 /// \pre s is the list of a tree
 template< class T >
 Tree< T > * tree_from_list( std::string_view s );
+
+/*--------------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// the nodes of a tree as ranges, forward, by the links to the parents and
+// the siblings, with no stack; *it is a node
+
+namespace detail {
+
+/// the walk of the children of a node
+struct TreeChildren {
+ static constexpr std::nullptr_t none = nullptr;
+ template< class N >
+ static N * next( const void * , N * n , N * ) {
+  return( n->rightSibling() );
+  }
+ };
+
+/// the preorder below a root
+struct TreePreorder {
+ static constexpr std::nullptr_t none = nullptr;
+ template< class N >
+ static N * next( const void * , N * n , N * root ) {
+  if( n->leftmostChild() ) return( n->leftmostChild() );
+  for( ; n != root ; n = n->parent() )      // up to a right sibling
+   if( n->rightSibling() ) return( n->rightSibling() );
+  return( nullptr );
+  }
+ };
+
+}  // end( namespace detail )
+
+/// the children of t, from the leftmost
+template< class T >
+auto children( Tree< T > * t )
+{
+ using It = WalkIterator< void , Tree< T > * , detail::TreeChildren >;
+ return( std::ranges::subrange( It( nullptr , t->leftmostChild() , t ) ,
+                                It() ) );
+ }
+
+/// the nodes of the subtree of t in preorder, t first
+template< class T >
+auto preorder( Tree< T > * t )
+{
+ using It = WalkIterator< void , Tree< T > * , detail::TreePreorder >;
+ return( std::ranges::subrange( It( nullptr , t , t ) , It() ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

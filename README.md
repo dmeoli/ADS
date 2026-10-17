@@ -277,6 +277,42 @@ furthermore, the axioms of each abstract data type are checked on all its
 realizations (`contract_*.*-axioms`), e.g., `top( push( S , v ) ) = v` and
 `pop( push( S , v ) ) = S` for a stack.
 
+## The standard interface
+
+Beside the operations of the book, the containers have the interface of
+the standard library: `begin()` and `end()`, the usual member types, and
+iterators of the strongest category that the structure allows. Both ends
+have the same type, as the algorithms of C++17 and of Boost require.
+Hence, a range-for, the algorithms of `<algorithm>` and of `std::ranges`,
+and those of Boost.Range and Boost.Sort run on the containers of ADS as on
+those of the standard library. Where the items can change in place (the
+sequences, the deque, the arena) the iterators are mutable. A heap, an
+ordered set or a dictionary keeps an invariant on its items, and its
+iterators are constant, since the operations of the book are then the
+only safe way to change it. Several containers share the iterators of
+[`Iterators.h`](include/ADS/Iterators.h), and the tests in
+[`test/interop.cpp`](test/interop.cpp) check the category of each iterator
+at compile time and run the algorithms of std (and of Boost, when it is
+installed) on each container against its operations.
+
+| Category | Containers |
+|---|---|
+| contiguous | `ArraySequence` (mutable), `ArrayStack`, `DaryHeap`, `SortedArrayDictionary`, the adjacent nodes of `ArrayGraph` |
+| random access | `ArrayQueue` (on the circular vector), `HeapPriorityQueue`, `Arena` (mutable), the values of `PreorderArrayTree`, the nodes of `ArrayGraph` |
+| bidirectional | `List` and `Dequeue` (mutable), `UniqueQueue`, `ListPriorityQueue`, `TreePriorityQueue`, the sets on a list, `LinkedHashSet`, `BoolSet`, the open-addressing tables, `DirectTable`, `PointerTable`, the search trees, `AVLTree`, `Treap`, `SplayTree`, `ThreadedTree`, `BPlusTree`, `LinkedHeapPriorityQueue`, the nodes and the adjacent nodes of `ListGraph` and `MatrixGraph`, the nodes of the cursor trees |
+| forward | `SinglyList` and `CursorList` (mutable), `LinkedQueue`, `SequenceStack`, the stacks of `MultiStack`, `BucketQueue`, `ChainedHashTable` and the sets on it, `HashMultiset`, `SkipList`, `Trie`, `RadixTree`, `BTree`, `FibonacciHeapPriorityQueue`, the children and the preorder of `Tree`, the preorder and the symmetric order of `BinaryTree`, the children of `CursorTree`, the rows and the columns of `SparseMatrix` |
+
+A dictionary gives the pairs `( key , value )` and a priority queue the
+pairs `( priority , item )`, in the order of the structure (i.e., the order
+of the keys in a search tree or a trie, of the places in a hash table, of
+the heap in a heap). In some containers the item is built on the fly (a
+pair of references, a key rebuilt along a trie, the number of a node). The
+iterator then models the concept of C++20, but it declares the category
+of an input iterator to the older algorithms, as the views of the standard
+library do; with these iterators one should use `std::ranges::prev` and
+the algorithms of `std::ranges`, not `std::prev` and those of
+`<algorithm>`.
+
 ## Further reading
 
 Besides the book, the headers cite the textbooks and the papers from which
@@ -335,9 +371,11 @@ target_link_libraries(<target> PRIVATE ADS::ADS)
 ```cpp
 #include "ADS/sequence/List.h"
 
-ADS::List< int > L{ 1 , 2 , 3 };
+ADS::List< int > L{ 3 , 1 , 2 };
 for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
- std::cout << L.read( p );
+ std::cout << L.read( p );               // the positions of the book
+std::ranges::reverse( L );               // the algorithms of std
+for( int x : L ) std::cout << x;
 ```
 
 ## License

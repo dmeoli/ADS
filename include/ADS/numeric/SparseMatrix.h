@@ -47,7 +47,9 @@
 
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <map>
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -56,6 +58,51 @@
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
+
+namespace detail {
+
+/// a forward iterator along an orthogonal list of the nodes of a sparse
+/// matrix [see SparseMatrix], by row or by column, the head of the list
+/// being the end; *it gives the column (or the row) and the value
+template< class Node >
+class OrthogonalIterator {
+ public:
+ using reference = std::pair< std::size_t , double >;
+ using value_type = reference;
+ using difference_type = std::ptrdiff_t;
+ using iterator_concept = std::forward_iterator_tag;
+ using iterator_category = std::input_iterator_tag;
+
+ OrthogonalIterator( void ) = default;
+ OrthogonalIterator( const std::vector< Node > * N , long q , bool byRow )
+  : f_N( N ) , f_q( q ) , f_row( byRow ) {}
+
+ /// the column (or row) of the entry and its value
+ reference operator*( void ) const {
+  const Node & x = ( *f_N )[ f_q ];
+  return( reference( f_row ? x.col : x.row , x.val ) );
+  }
+ OrthogonalIterator & operator++( void ) {
+  f_q = f_row ? ( *f_N )[ f_q ].right : ( *f_N )[ f_q ].down;
+  return( *this );
+  }
+ OrthogonalIterator operator++( int ) {
+  auto t = *this;
+  ++*this;
+  return( t );
+  }
+ bool operator==( const OrthogonalIterator & o ) const {
+  return( f_q == o.f_q );
+  }
+
+ private:
+ const std::vector< Node > * f_N = nullptr;
+ long f_q = -1;            ///< the node, the head of the list at the end
+ bool f_row = true;
+
+ };  // end( class OrthogonalIterator )
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SparseMatrix ----------------------------*/
@@ -105,6 +152,27 @@ class SparseMatrix {
   double val;
   long right , down;       ///< the next on the row and on the column
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // the nonzeros of a row or of a column as ranges, forward along the
+ // orthogonal lists, instead of the vectors that row() and col() build
+
+ using const_iterator = detail::OrthogonalIterator< Node >;
+
+ /// the nonzeros of the row i as ( column , value ), by column
+ /// \\pre i < m
+ [[nodiscard]] std::ranges::subrange< const_iterator > rowEntries(
+                                                       std::size_t i ) const;
+
+ /// the nonzeros of the column j as ( row , value ), by row
+ /// \\pre j < n
+ [[nodiscard]] std::ranges::subrange< const_iterator > colEntries(
+                                                       std::size_t j ) const;
+
+ private:
 
  /// the node before column j on the row i, and that of ( i , j ), or -1
  [[nodiscard]] std::pair< long , long > findInRow( std::size_t i ,

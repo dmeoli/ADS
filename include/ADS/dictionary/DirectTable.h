@@ -33,9 +33,11 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <cstddef>
 #include <optional>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -81,6 +83,39 @@ class DirectTable {
 
  /// the size m = b - a + 1 of the vector
  [[nodiscard]] std::size_t capacity( void ) const;
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) by increasing key,
+ // bidirectional, the key computed from the place
+
+ /// the places of the table, for SlotIterator
+ struct Places {
+  static std::size_t size( const auto & o ) { return( o.f_A.size() ); }
+  static bool occupied( const auto & o , std::size_t i ) {
+   return( o.f_A[ i ].has_value() );
+   }
+  static auto read( const auto & o , std::size_t i ) {
+   return( std::pair< long , const V & >( o.f_a + long( i ) , *o.f_A[ i ] ) );
+   }
+  };
+
+ using value_type = std::pair< long , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = std::pair< long , const V & >;
+ using const_reference = std::pair< long , const V & >;
+ using const_iterator = SlotIterator< DirectTable , Places >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , 0 ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , Places::size( *this ) ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

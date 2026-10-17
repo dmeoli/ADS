@@ -98,6 +98,27 @@ class DaryHeap {
 
  void clear( void );
 
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the items in the order of the heap (the root first,
+ // the rest in no useful order), contiguous; a change through it would
+ // break the heap
+
+ using value_type = T;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = const T &;
+ using const_reference = const T &;
+ using iterator = const T *;
+ using const_iterator = const T *;
+
+ [[nodiscard]] const_iterator begin( void ) const { return( f_A.data() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( f_A.data() + f_A.size() );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
 /*--------------------------------------------------------------------------*/
  private:
 

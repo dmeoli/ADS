@@ -35,10 +35,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/priority/PriorityQueue.h"
 #include "ADS/tree/SearchTree.h"
 
 #include <concepts>
+#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -82,6 +84,20 @@ class TreePriorityQueue {
  /// \pre y is an item still in the queue and p is not larger than its
  /// priority
  void decrease( Handle y , const P & p );
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( ( priority , number of insertion ) ,
+ // item ) in increasing order of priority, bidirectional, those of the tree
+
+ using value_type = typename RedBlackTree< Key , T >::value_type;
+ using const_iterator = typename RedBlackTree< Key , T >::const_iterator;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const { return( f_t.begin() ); }
+ [[nodiscard]] const_iterator end( void ) const { return( f_t.end() ); }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:

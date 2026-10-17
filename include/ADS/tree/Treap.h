@@ -41,6 +41,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 
 #include <algorithm>
@@ -101,6 +102,42 @@ class Treap {
   std::uint64_t priority;
   std::unique_ptr< Node > left , right;
   };
+
+ public:
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ // a constant view of the pairs ( key , value ) by increasing key,
+ // bidirectional, along the path from the root (the nodes have no parent)
+
+ /// the shape of the tree, for PathIterator
+ struct Shape {
+  static auto root( const auto & o ) { return( o.f_root.get() ); }
+  static auto left( const auto * n ) { return( n->left.get() ); }
+  static auto right( const auto * n ) { return( n->right.get() ); }
+  static auto read( const auto * n ) {
+   return( std::pair< const K & , const V & >( n->key , n->value ) );
+   }
+  };
+
+ using value_type = std::pair< const K & , const V & >;
+ using size_type = std::size_t;
+ using difference_type = std::ptrdiff_t;
+ using reference = value_type;
+ using const_reference = value_type;
+ using const_iterator = PathIterator< Treap , Shape >;
+ using iterator = const_iterator;
+
+ [[nodiscard]] const_iterator begin( void ) const {
+  return( const_iterator( this , true ) );
+  }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator( this , false ) );
+  }
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ private:
  using Ptr = std::unique_ptr< Node >;
 
  static void rotateRight( Ptr & t );
