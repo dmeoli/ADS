@@ -147,5 +147,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   n queens; the eight puzzle by breadth and by depth with any goal; the
   factorial, the bounds of the binomial and of Fibonacci, and Fibonacci
   with memory between the calls
+- engineered structures: the two-level bucket queue for integer keys, the
+  d-ary heap of plain items, the hash table of pointers with linear probing
+  and Fibonacci hashing, the arena of objects in blocks, SplitMix64,
+  Zobrist and simple tabulation hashing, the lock-free queue from one
+  producer to one consumer and the lock-free inbox of many producers, with
+  their tests on real threads
 - a CI job that runs the tests under AddressSanitizer and UBSan
 - install and export for find_package(ADS), and the CI on GitHub Actions

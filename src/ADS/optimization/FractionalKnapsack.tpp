@@ -36,8 +36,10 @@ inline std::vector< double > fractionalKnapsack(
                     return( p[ a ] * v[ b ] > p[ b ] * v[ a ] ); } );
  std::vector< double > x( n , 0 );
  for( std::size_t i : by ) {
+  if( C <= 0 )                              // full; C may round below 0
+   break;
   x[ i ] = std::min( C / v[ i ] , 1.0 );
-  C -= x[ i ] * v[ i ];
+  C = std::max( C - x[ i ] * v[ i ] , 0.0 );
   }
  ADS_POST( std::all_of( x.begin() , x.end() , []( double y ) {
   return( ( y >= 0 ) && ( y <= 1 ) ); } ) );

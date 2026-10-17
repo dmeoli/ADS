@@ -6,6 +6,8 @@
 # that tests.txt and the tests in the program are the same.                   #
 ###############################################################################
 
+find_package(Threads REQUIRED)
+
 file(STRINGS tests.txt lines REGEX "^[a-z]")
 set(programs "")
 foreach (line IN LISTS lines)
@@ -15,7 +17,7 @@ foreach (line IN LISTS lines)
     if (NOT program IN_LIST programs)
         list(APPEND programs ${program})
         add_executable(${program} ${program}.cpp)
-        target_link_libraries(${program} PRIVATE ADS::ADS)
+        target_link_libraries(${program} PRIVATE ADS::ADS Threads::Threads)
         # the tests check all the contracts, invariants included
         target_compile_definitions(${program} PRIVATE ADS_CONTRACTS=3)
         target_compile_options(${program} PRIVATE

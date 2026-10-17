@@ -24,7 +24,7 @@ BINS     = $(addprefix $(BUILD)/,$(PROGRAMS))
 all: $(BINS)
 
 $(BUILD)/%: test/%.cpp $(HEADERS) | $(BUILD)
-	$(CXX) $(CXXFLAGS) $(INC) -o $@ $<
+	$(CXX) $(CXXFLAGS) $(INC) -o $@ $< -pthread
 
 $(BUILD):
 	mkdir -p $@

@@ -30,7 +30,8 @@ and matrices, `string/` the algorithms on strings, `optimization/` the
 problems of optimization (knapsack, intervals), `geometry/` the convex
 hull, `backtrack/` the enumerations by backtrack, `complexity/` the
 problems of NP and their reductions, `intractable/` the techniques for the
-intractable problems, and `algorithm/` the rest. A header is included by
+intractable problems, `memory/` and `concurrent/` the arena and the
+queues between threads, and `algorithm/` the rest. A header is included by
 its path (e.g., `#include "ADS/graph/ListGraph.h"`) and includes what it
 needs.
 
@@ -171,6 +172,22 @@ and tested in [`test/beyond.cpp`](test/beyond.cpp):
 | general schemes of the techniques (enumeration, backtracking, greedy, divide et impera) | [`algorithm/Paradigms.h`](include/ADS/algorithm/Paradigms.h) | `beyond.paradigms` |
 | Knuth's strong failure function, Hibbard's gaps, sentinels, minimum and maximum together | [`string/StringMatching.h`](include/ADS/string/StringMatching.h), [`sort/`](include/ADS/sort), [`search/Minimum.h`](include/ADS/search/Minimum.h) | `beyond.kmp-strong`, `beyond.slide-sorts` |
 | greedy and backtracking knapsack, eight puzzle by breadth and depth | [`intractable/BranchAndBound.h`](include/ADS/intractable/BranchAndBound.h), [`intractable/FifteenPuzzle.h`](include/ADS/intractable/FifteenPuzzle.h) | `beyond.knapsack-heuristics`, `beyond.eight-puzzle` |
+
+## Engineered structures
+
+Beside the classes of the book, which follow its pseudocode, a few
+structures are written for speed, for the programs that need it (e.g., a
+heuristic search), and tested in [`test/engineered.cpp`](test/engineered.cpp):
+
+| What | Header | Test |
+|---|---|---|
+| two-level bucket queue for integer keys (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue` |
+| d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
+| hash table of pointers, linear probing, Fibonacci hashing | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table` |
+| arena of objects in blocks, stable addresses | [`memory/Arena.h`](include/ADS/memory/Arena.h) | `engineered.arena` |
+| SplitMix64, Zobrist and simple tabulation hashing | [`dictionary/RandomHashing.h`](include/ADS/dictionary/RandomHashing.h) | `engineered.random-hashing` |
+| lock-free queue from one producer to one consumer | [`concurrent/SPSCQueue.h`](include/ADS/concurrent/SPSCQueue.h) | `engineered.spsc-queue` |
+| lock-free inbox of many producers | [`concurrent/MPSCInbox.h`](include/ADS/concurrent/MPSCInbox.h) | `engineered.mpsc-inbox` |
 
 ## Contracts
 

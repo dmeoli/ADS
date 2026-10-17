@@ -423,6 +423,15 @@ beyond  queue-algorithms    positivi di una coda, coda senza doppi
 beyond  sieve               crivello di Eratostene su un insieme
 beyond  sorted-array-dictionary dizionario su vettore ordinato
 
+# the engineered structures, beyond the book
+engineered  bucket-queue         coda a bucket su due livelli
+engineered  dary-heap            heap d-ario di elementi semplici
+engineered  pointer-table        tabella di puntatori, ispezione lineare
+engineered  arena                arena a blocchi
+engineered  random-hashing       splitmix64, Zobrist, tabulazione
+engineered  spsc-queue           coda fra un produttore e un consumatore
+engineered  mpsc-inbox           casella di molti produttori
+
 # the contracts of the book, checked as tests
 contract_algorithm    binary-counter       contatore binario, sezione 4.2.1
 contract_algorithm    hanoi                torri di Hanoi, sezione 4.4
