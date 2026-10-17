@@ -25,6 +25,12 @@
  * with pointers by moving its items into three lists, smaller, equal and
  * larger than the pivot (exercise 12.1).
  *
+ * The contracts [see Contract.h]: partition() needs start <= end < n and ends
+ * with the pivot in its place, the smaller items before it and the others
+ * after it, an audit; quickSort() on a range needs end < n unless the range is
+ * empty; the sorts end with the same items sorted, an audit. The functions are
+ * defined in QuickSort.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 12.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap12.pdf
  * \see C. A. R. Hoare, Quicksort, The Computer Journal 5(1), 10-16, 1962,
@@ -50,9 +56,12 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
 #include "ADS/sort/InsertionSort.h"
+#include "ADS/sort/Sorted.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <tuple>
@@ -67,132 +76,57 @@ namespace ADS {
 
 /// perno(): the pivot A[ start ] goes to its place j, the smaller items
 /// before it, the others after it; end - start comparisons
+/// \pre start <= end < n
+/// \post A[ start .. j - 1 ] < A[ j ] <= A[ j + 1 .. end ]
 template< class T , class C = std::less<> >
 std::size_t partition( std::vector< T > & A , std::size_t start ,
-                       std::size_t end , C less = C() )
-{
- const T x = A[ start ];
- std::size_t j = start;
- for( std::size_t i = start + 1 ; i <= end ; ++i )
-  if( less( A[ i ] , x ) )
-   std::swap( A[ i ] , A[ ++j ] );
- A[ start ] = A[ j ];
- A[ j ] = x;
- return( j );
- }
+                       std::size_t end , C less = C() );
+
+/// the partition of A[ start .. end ] around a value x that need not be
+/// in it: the items not larger than x first, the larger ones after, in one
+/// pass from both ends; the number of the items not larger than x
+/// \pre start <= end < n
+/// \post A[ start .. start + r ) <= x < A[ start + r .. end ], the same
+///       items (an audit)
+template< class T , class C = std::less<> >
+std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
+                              std::size_t end , const T & x ,
+                              C less = C() );
 
 /// QuickSort() of A[ start .. end ], the book's
+/// \pre start > end or end < n
+/// \post A[ start .. end ] is sorted
 template< class T , class C = std::less<> >
 void quickSort( std::vector< T > & A , std::size_t start , std::size_t end ,
-                C less = C() )
-{
- if( start < end ) {
-  const std::size_t j = partition( A , start , end , less );
-  if( j > start )
-   quickSort( A , start , j - 1 , less );
-  quickSort( A , j + 1 , end , less );
-  }
- }
+                C less = C() );
 
+/// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
-void quickSort( std::vector< T > & A , C less = C() )
-{
- if( A.size() > 1 )
-  quickSort( A , 0 , A.size() - 1 , less );
- }
+void quickSort( std::vector< T > & A , C less = C() );
 
 /// Quicksort with the improvements of section 12.2; the largest number of
 /// parts on the stack goes to depth, if given
+/// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
 void quickSortTuned( std::vector< T > & A , std::size_t cutoff = 16 ,
-                     C less = C() , std::size_t * depth = nullptr )
-{
- if( A.size() < 2 )
-  return;
- cutoff = cutoff < 3 ? 3 : cutoff;
- std::vector< std::pair< std::size_t , std::size_t > > S;   // [ lo , hi ]
- std::size_t lo = 0 , hi = A.size() - 1;
- for( ; ; ) {
-  if( hi - lo + 1 <= cutoff ) {
-   insertionSort( A , lo , hi + 1 , less );
-   if( S.empty() )
-    return;
-   std::tie( lo , hi ) = S.back();
-   S.pop_back();
-   continue;
-   }
-  // the three samples sorted, the median, the pivot, in A[ hi - 1 ]: A[ lo ]
-  // and A[ hi - 1 ] are then the sentinels of the two scans
-  const std::size_t mid = lo + ( hi - lo ) / 2;
-  if( less( A[ mid ] , A[ lo ] ) ) std::swap( A[ mid ] , A[ lo ] );
-  if( less( A[ hi ] , A[ lo ] ) ) std::swap( A[ hi ] , A[ lo ] );
-  if( less( A[ hi ] , A[ mid ] ) ) std::swap( A[ hi ] , A[ mid ] );
-  std::swap( A[ mid ] , A[ hi - 1 ] );
-  const T x = A[ hi - 1 ];
-  std::size_t i = lo , j = hi - 1;
-  for( ; ; ) {                                // the partition of Hoare
-   while( less( A[ ++i ] , x ) ) {}
-   while( less( x , A[ --j ] ) ) {}
-   if( i >= j )
-    break;
-   std::swap( A[ i ] , A[ j ] );
-   }
-  std::swap( A[ i ] , A[ hi - 1 ] );          // the pivot in its place
-  j = i;
-  // the larger part on the stack, the smaller one now
-  std::pair< std::size_t , std::size_t > left( lo , j ? j - 1 : 0 ) ,
-                                         right( j + 1 , hi );
-  const bool hasLeft = j > lo , hasRight = j < hi;
-  if( hasLeft && hasRight ) {
-   if( left.second - left.first < right.second - right.first ) {
-    S.push_back( right );
-    std::tie( lo , hi ) = left;
-    }
-   else {
-    S.push_back( left );
-    std::tie( lo , hi ) = right;
-    }
-   }
-  else if( hasLeft )
-   std::tie( lo , hi ) = left;
-  else if( hasRight )
-   std::tie( lo , hi ) = right;
-  else if( S.empty() )
-   return;
-  else {
-   std::tie( lo , hi ) = S.back();
-   S.pop_back();
-   }
-  if( depth && ( S.size() > *depth ) )
-   *depth = S.size();
-  }
- }
+                     C less = C() , std::size_t * depth = nullptr );
 
 /// Quicksort of a list with pointers: the items go to three lists,
 /// smaller, equal and larger than the first one, the first and the last
 /// are sorted and the three are joined
+/// \post L is sorted
 template< class T , class C = std::less<> >
-void quickSort( List< T > & L , C less = C() )
-{
- if( L.isEmpty() || L.finished( L.next( L.head() ) ) )
-  return;
- const T x = L.read( L.head() );
- List< T > S , E , G;
- for( auto p = L.head() ; ! L.finished( p ) ; p = L.remove( p ) ) {
-  const T & y = L.read( p );
-  List< T > & D = less( y , x ) ? S : less( x , y ) ? G : E;
-  D.insert( D.next( D.tail() ) , y );
-  }
- quickSort( S , less );
- quickSort( G , less );
- for( auto * D : { &S , &E , &G } )
-  for( auto p = D->head() ; ! D->finished( p ) ; p = D->next( p ) )
-   L.insert( L.next( L.tail() ) , D->read( p ) );
- }
+void quickSort( List< T > & L , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sort/QuickSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

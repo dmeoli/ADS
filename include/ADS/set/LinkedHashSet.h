@@ -7,6 +7,11 @@
  * each item to its position, so insert(), remove() and contains() take
  * O( 1 ) expected time and forEach() O( n ).
  *
+ * The contracts [see Contract.h]: after insert() the item is there and
+ * after remove() it is not; the invariant is that each item of the list
+ * is indexed at its own position and the table has no other item. The
+ * operations are defined in LinkedHashSet.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 8.9,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
  *
@@ -28,6 +33,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/sequence/List.h"
 #include "ADS/set/SetOperations.h"
@@ -63,50 +69,39 @@ class LinkedHashSet {
 
  using Item = T;   ///< the type of the items
 
- LinkedHashSet( void ) : f_index( 7 , true ) {}
+ LinkedHashSet( void );
 
  /// a copy, with positions into its own list
- LinkedHashSet( const LinkedHashSet & o ) : LinkedHashSet() {
-  o.forEach( [ & ]( const T & x ) { insert( x ); } );
-  }
+ LinkedHashSet( const LinkedHashSet & o );
 
  LinkedHashSet & operator=( const LinkedHashSet & ) = delete;
 
- [[nodiscard]] std::size_t size( void ) const { return( f_index.size() ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_index.size() == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] bool contains( const T & x ) const {
-  return( f_index.contains( x ) );
-  }
+ [[nodiscard]] bool contains( const T & x ) const;
 
  /// a new item goes to the end of the order; an item already there keeps
  /// its place
- void insert( const T & x ) {
-  if( ! f_index.contains( x ) )
-   f_index.insert( x , f_order.insert( f_order.next( f_order.tail() ) ,
-                                       x ) );
-  }
+ /// \post x is in the set
+ void insert( const T & x );
 
- void remove( const T & x ) {
-  if( const auto p = f_index.lookup( x ) ) {
-   f_order.remove( *p );
-   f_index.remove( x );
-   }
-  }
+ /// \post x is not in the set
+ void remove( const T & x );
 
  /// f( x ) on the items in the order of insertion, O( n ) time
  template< class F >
- void forEach( F && f ) const {
-  for( auto p = f_order.head() ; ! f_order.finished( p ) ;
-       p = f_order.next( p ) )
-   f( f_order.read( p ) );
-  }
+ void forEach( F && f ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
  using Pos = typename List< T >::Pos;
+
+ /// each item of the order is indexed at its own position, and the table
+ /// has no other item, O( n )
+ [[nodiscard]] bool indexed( void ) const;
 
  List< T > f_order;                                        ///< the order
  ChainedHashTable< T , Pos , Chain::FRONT , H > f_index;   ///< the places
@@ -114,6 +109,12 @@ class LinkedHashSet {
  };  // end( class LinkedHashSet )
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/set/LinkedHashSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

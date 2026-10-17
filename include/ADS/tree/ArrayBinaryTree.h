@@ -12,6 +12,11 @@
  * a node and remove() empties a subtree, in time linear in the places of
  * the subtree. A node is a place, NIL if missing.
  *
+ * The contracts [see Contract.h]: read() and write() need a node,
+ * setRoot() an empty tree, and a subtree is inserted under a node where
+ * no child is; the invariant is that each node but the root has its
+ * parent. The operations are defined in ArrayBinaryTree.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 5.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
  *
@@ -33,8 +38,9 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/tree/BinaryTree.h"
+#include "ADS/Contract.h"
 #include "ADS/queue/ArrayQueue.h"
+#include "ADS/tree/BinaryTree.h"
 
 #include <optional>
 #include <stdexcept>
@@ -65,116 +71,72 @@ class ArrayBinaryTree {
  ArrayBinaryTree( void ) = default;
 
  /// a tree of one node of value v
- explicit ArrayBinaryTree( const T & v ) : f_A( 1 , v ) {}
+ explicit ArrayBinaryTree( const T & v );
 
  /// a new root of value v with copies of l and r as its subtrees
  ArrayBinaryTree( const T & v , const ArrayBinaryTree & l ,
-                  const ArrayBinaryTree & r ) : ArrayBinaryTree( v ) {
-  if( ! l.isEmpty() ) insertLeft( 0 , l );
-  if( ! r.isEmpty() ) insertRight( 0 , r );
-  }
+                  const ArrayBinaryTree & r );
 
- [[nodiscard]] bool isEmpty( void ) const { return( ! has( 0 ) ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// the root, NIL if the tree is empty
- [[nodiscard]] long root( void ) const { return( has( 0 ) ? 0 : NIL ); }
+ [[nodiscard]] long root( void ) const;
 
- [[nodiscard]] long parent( long i ) const {
-  return( i > 0 ? dary_parent( i , 2 ) : NIL );
-  }
+ /// the parent of i, NIL for the root
+ /// \pre i is a node
+ [[nodiscard]] long parent( long i ) const;
 
- [[nodiscard]] long left( long i ) const {
-  return( has( 2 * i + 1 ) ? 2 * i + 1 : NIL );
-  }
+ /// the left child of i, NIL if there is none
+ /// \pre i is a node
+ [[nodiscard]] long left( long i ) const;
 
- [[nodiscard]] long right( long i ) const {
-  return( has( 2 * i + 2 ) ? 2 * i + 2 : NIL );
-  }
+ /// the right child of i, NIL if there is none
+ /// \pre i is a node
+ [[nodiscard]] long right( long i ) const;
 
- [[nodiscard]] bool isLeaf( long i ) const {
-  return( ( left( i ) == NIL ) && ( right( i ) == NIL ) );
-  }
+ /// \pre i is a node
+ [[nodiscard]] bool isLeaf( long i ) const;
 
- [[nodiscard]] const T & read( long i ) const { return( *at( i ) ); }
+ [[nodiscard]] const T & read( long i ) const;
 
- void write( long i , const T & v ) { *at( i ) = v; }
+ void write( long i , const T & v );
 
  /// the root of value v of the empty tree
- void setRoot( const T & v ) {
-  if( ! isEmpty() )
-   throw( std::logic_error( "ADS::ArrayBinaryTree::setRoot: not empty" ) );
-  place( 0 ) = v;
-  }
+ void setRoot( const T & v );
 
  /// a copy of t as the left subtree of i, which must be missing
- void insertLeft( long i , const ArrayBinaryTree & t ) {
-  graft( i , 2 * i + 1 , t , "insertLeft" );
-  }
+ void insertLeft( long i , const ArrayBinaryTree & t );
 
  /// a copy of t as the right subtree of i, which must be missing
- void insertRight( long i , const ArrayBinaryTree & t ) {
-  graft( i , 2 * i + 2 , t , "insertRight" );
-  }
+ void insertRight( long i , const ArrayBinaryTree & t );
 
  /// empties the subtree of i
- void remove( long i ) {
-  if( ! has( i ) ) return;
-  f_A[ i ].reset();
-  remove( 2 * i + 1 );
-  remove( 2 * i + 2 );
-  }
+ void remove( long i );
 
  /// the places of the nodes in preorder
- [[nodiscard]] std::vector< long > preorder( void ) const {
-  std::vector< long > P;
-  auto rec = [ & ]( auto & self , long i ) -> void {
-   if( ! has( i ) ) return;
-   P.push_back( i );
-   self( self , 2 * i + 1 );
-   self( self , 2 * i + 2 );
-   };
-  rec( rec , 0 );
-  return( P );
-  }
+ [[nodiscard]] std::vector< long > preorder( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- [[nodiscard]] bool has( long i ) const {
-  return( ( i >= 0 ) && ( i < long( f_A.size() ) ) && f_A[ i ].has_value() );
-  }
+ [[nodiscard]] bool has( long i ) const;
 
- std::optional< T > & place( long i ) {
-  if( i >= long( f_A.size() ) ) f_A.resize( i + 1 );
-  return( f_A[ i ] );
-  }
+ std::optional< T > & place( long i );
 
- const std::optional< T > & at( long i ) const {
-  if( ! has( i ) )
-   throw( std::out_of_range( "ADS::ArrayBinaryTree: no node" ) );
-  return( f_A[ i ] );
-  }
+ const std::optional< T > & at( long i ) const;
 
- std::optional< T > & at( long i ) {
-  if( ! has( i ) )
-   throw( std::out_of_range( "ADS::ArrayBinaryTree: no node" ) );
-  return( f_A[ i ] );
-  }
+ std::optional< T > & at( long i );
+
+ /// empties the places of the subtree of i
+ void clear( long i );
+
+ /// each node but the root has its parent, O( size of the vector )
+ [[nodiscard]] bool rooted( void ) const;
 
  /// the place j of t to the place k of this tree, and so on down
- void copy( long k , const ArrayBinaryTree & t , long j ) {
-  if( ! t.has( j ) ) return;
-  place( k ) = t.f_A[ j ];
-  copy( 2 * k + 1 , t , 2 * j + 1 );
-  copy( 2 * k + 2 , t , 2 * j + 2 );
-  }
+ void copy( long k , const ArrayBinaryTree & t , long j );
 
- void graft( long i , long c , const ArrayBinaryTree & t , const char * who ) {
-  if( ! has( i ) || has( c ) )
-   throw( std::logic_error( std::string( "ADS::ArrayBinaryTree::" ) + who +
-                            ": no node or child present" ) );
-  copy( c , t , 0 );
-  }
+ void graft( long i , long c , const ArrayBinaryTree & t );
 
  std::vector< std::optional< T > > f_A;   ///< the places
 
@@ -183,6 +145,12 @@ class ArrayBinaryTree {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/tree/ArrayBinaryTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

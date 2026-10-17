@@ -4,10 +4,18 @@
 /** @file
  * The STACK of the book [see ADT.h] realized with a vector of a given
  * capacity: the n items are in the first n places, the top in the place
- * n - 1, so that every operation takes O( 1 ) time. Popping from an empty
- * stack and pushing on a full one are errors of the program, which the book
- * states as preconditions; since checking them costs O( 1 ) here, they are
- * checked, and std::logic_error is thrown.
+ * n - 1, so that every operation takes O( 1 ) time.
+ *
+ * The contracts [see Contract.h] are the preconditions of the book: top()
+ * and pop() need a stack that is not empty (size > 0), push() one that is
+ * not full (size < capacity); push() ensures one item more and v on top,
+ * pop() one item less and the old top returned, which is the constructive
+ * form of the axioms \f$ top( push( S , v ) ) = v \f$ and
+ * \f$ pop( push( S , v ) ) = S \f$ [see ADT.h]. The invariant is
+ * \f$ 0 \leq n \leq capacity \f$. A stack is copied item by item and
+ * moved in O( 1 ) time, and two stacks are equal if they hold the same
+ * items in the same order, whatever their capacities. The operations are
+ * defined in ArrayStack.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -30,9 +38,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <cstddef>
 #include <memory>
-#include <stdexcept>
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -54,34 +64,41 @@ class ArrayStack {
  using Item = T;   ///< the type of the items
 
  /// the empty stack of at most dim items
- explicit ArrayStack( std::size_t dim )
-  : f_A( new T[ dim ] ) , f_size( 0 ) , f_capacity( dim ) {}
+ explicit ArrayStack( std::size_t dim );
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ ArrayStack( const ArrayStack & other );
+
+ /// the items of other, which is left empty with no capacity
+ ArrayStack( ArrayStack && other ) noexcept;
+
+ ArrayStack & operator=( ArrayStack other ) noexcept;
+
+ void swap( ArrayStack & other ) noexcept;
+
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// the item on top
- [[nodiscard]] const T & top( void ) const {
-  if( f_size == 0 )
-   throw( std::logic_error( "ADS::ArrayStack::top: empty stack" ) );
-  return( f_A[ f_size - 1 ] );
-  }
+ /// \pre the stack is not empty
+ [[nodiscard]] const T & top( void ) const;
 
  /// removes the item on top and returns it
- T pop( void ) {
-  if( f_size == 0 )
-   throw( std::logic_error( "ADS::ArrayStack::pop: empty stack" ) );
-  return( std::move( f_A[ --f_size ] ) );
-  }
+ /// \pre the stack is not empty
+ /// \post one item less, the old top returned
+ T pop( void );
 
  /// puts v on top
- void push( const T & v ) {
-  if( f_size == f_capacity )
-   throw( std::logic_error( "ADS::ArrayStack::push: full stack" ) );
-  f_A[ f_size++ ] = v;
-  }
+ /// \pre the stack is not full
+ /// \post one item more, v on top
+ void push( const T & v );
 
  /// the number of items
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
+
+ /// the maximum number of items
+ [[nodiscard]] std::size_t capacity( void ) const;
+
+ /// the same items in the same order, whatever the capacities
+ [[nodiscard]] bool operator==( const ArrayStack & o ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -92,7 +109,15 @@ class ArrayStack {
 
  };  // end( class ArrayStack )
 
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/stack/ArrayStack.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -13,6 +13,10 @@
  * from one scan of the 2 n ends sorted, so that maxinterval() takes
  * O( n log n ) time for the sort and O( n ) for the rest.
  *
+ * The contracts [see Contract.h]: each interval has a < b and a weight not
+ * negative; the intervals chosen are disjoint and weigh the value found
+ * (checked at level 3). The operations are defined in WeightedIntervals.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 13.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
  *
@@ -35,6 +39,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <numeric>
 #include <utility>
@@ -55,47 +62,21 @@ struct WeightedInterval {
 
 /// maxinterval(): the places of the intervals of a largest independent
 /// set, in increasing order, and its weight
+/// \pre a < b and w >= 0 for each interval
+/// \post disjoint intervals of the weight found
 template< class W >
 std::pair< std::vector< std::size_t > , W > maxinterval(
-                              const std::vector< WeightedInterval< W > > & I )
-{
- const std::size_t n = I.size();
- std::vector< std::size_t > by( n );                // by increasing b
- std::iota( by.begin() , by.end() , 0 );
- std::stable_sort( by.begin() , by.end() , [ & ]( std::size_t x ,
-                   std::size_t y ) { return( I[ x ].b < I[ y ].b ); } );
- // the ends sorted, a right end before a left one equal to it
- std::vector< std::pair< long , long > > E;         // ( end , +-( i + 1 ) )
- for( std::size_t i = 0 ; i < n ; ++i ) {
-  E.emplace_back( I[ by[ i ] ].a , long( i + 1 ) );
-  E.emplace_back( I[ by[ i ] ].b , -long( i + 1 ) );
-  }
- std::sort( E.begin() , E.end() );
- std::vector< std::size_t > pred( n + 1 , 0 );
- std::size_t h = 0;
- for( auto [ x , e ] : E )
-  if( e > 0 )
-   pred[ e ] = h;
-  else
-   h = std::max( h , std::size_t( -e ) );
- std::vector< W > DP( n + 1 , W( 0 ) );
- for( std::size_t i = 1 ; i <= n ; ++i )
-  DP[ i ] = std::max( DP[ i - 1 ] , I[ by[ i - 1 ] ].w + DP[ pred[ i ] ] );
- std::vector< std::size_t > S;
- for( std::size_t i = n ; i > 0 ; )
-  if( DP[ i - 1 ] >= I[ by[ i - 1 ] ].w + DP[ pred[ i ] ] )
-   --i;
-  else {
-   S.push_back( by[ i - 1 ] );
-   i = pred[ i ];
-   }
- std::sort( S.begin() , S.end() );
- return( std::pair( S , DP[ n ] ) );
- }
+                              const std::vector< WeightedInterval< W > > & I );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/optimization/WeightedIntervals.tpp"
 
 /*--------------------------------------------------------------------------*/
 

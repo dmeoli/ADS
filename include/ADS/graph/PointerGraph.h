@@ -12,6 +12,13 @@
  * cleared at the start of each visit. The graphs of chapter 9 number their
  * nodes from 0 [see ListGraph.h]; this one has neither numbers nor a bound.
  *
+ * The contracts [see Contract.h]: the operations need nodes of this graph,
+ * not nil (whether a node belongs to the graph costs O( n ), and is checked
+ * at the level of the audits); the invariant is that the degree of each
+ * node counts the edges that leave it and those that enter it, and that
+ * the edges lead to nodes of the graph. The operations are defined in
+ * PointerGraph.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
  *
@@ -33,9 +40,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <list>
 #include <queue>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -79,96 +88,55 @@ class PointerGraph {
  [[nodiscard]] int n( void ) const { return( int( f_V.size() ) ); }
 
  /// a new isolated node of label t
- Node * insertNode( const T & t ) {
-  f_V.push_back( Node{ t , 0 , false , {} } );
-  return( &f_V.back() );
-  }
+ Node * insertNode( const T & t );
 
  /// the first node of label t, nullptr if none
- [[nodiscard]] Node * find( const T & t ) {
-  for( auto & u : f_V ) if( u.label == t ) return( &u );
-  return( nullptr );
-  }
+ [[nodiscard]] Node * find( const T & t );
 
- [[nodiscard]] bool hasEdge( const Node * u , const Node * v ) const {
-  for( const auto & e : u->out ) if( e.to == v ) return( true );
-  return( false );
-  }
+ /// \pre u and v are nodes of the graph
+ [[nodiscard]] bool hasEdge( const Node * u , const Node * v ) const;
 
  /// the edge ( u , v ) of weight w, if not there
- void insertEdge( Node * u , Node * v , const W & w = W() ) {
-  if( hasEdge( u , v ) ) return;
-  u->out.push_back( { v , w } );
-  ++u->degree;
-  ++v->degree;
-  }
+ /// \pre u and v are nodes of the graph
+ /// \post hasEdge( u , v )
+ void insertEdge( Node * u , Node * v , const W & w = W() );
 
- void deleteEdge( Node * u , Node * v ) {
-  for( auto it = u->out.begin() ; it != u->out.end() ; ++it )
-   if( it->to == v ) {
-    u->out.erase( it );
-    --u->degree;
-    --v->degree;
-    return;
-    }
-  }
+ /// \pre u and v are nodes of the graph
+ /// \post ! hasEdge( u , v )
+ void deleteEdge( Node * u , Node * v );
 
  /// deletes u if isolated; false otherwise
- bool deleteNode( Node * u ) {
-  if( u->degree > 0 ) return( false );
-  f_V.remove_if( [ & ]( const Node & x ) { return( &x == u ); } );
-  return( true );
-  }
+ /// \pre u is a node of the graph
+ bool deleteNode( Node * u );
 
  /// deletes the edges of u and then u
- void forceDeleteNode( Node * u ) {
-  for( auto & x : f_V ) deleteEdge( &x , u );
-  while( ! u->out.empty() ) deleteEdge( u , u->out.front().to );
-  deleteNode( u );
-  }
+ /// \pre u is a node of the graph
+ void forceDeleteNode( Node * u );
 
  /// the nodes adjacent to u
- [[nodiscard]] std::vector< Node * > adjacent( const Node * u ) const {
-  std::vector< Node * > A;
-  for( const auto & e : u->out ) A.push_back( e.to );
-  return( A );
-  }
+ /// \pre u is a node of the graph
+ [[nodiscard]] std::vector< Node * > adjacent( const Node * u ) const;
 
  /// the depth first visit from r, f on each node reached
+ /// \pre r is a node of the graph
  template< class F >
- void dfs( Node * r , F && f ) {
-  clear();
-  auto rec = [ & ]( auto & self , Node * u ) -> void {
-   u->seen = true;
-   f( u );
-   for( auto & e : u->out ) if( ! e.to->seen ) self( self , e.to );
-   };
-  rec( rec , r );
-  }
+ void dfs( Node * r , F && f );
 
  /// the breadth first visit from r
+ /// \pre r is a node of the graph
  template< class F >
- void bfs( Node * r , F && f ) {
-  clear();
-  std::queue< Node * > Q;
-  r->seen = true;
-  Q.push( r );
-  while( ! Q.empty() ) {
-   Node * u = Q.front();
-   Q.pop();
-   f( u );
-   for( auto & e : u->out )
-    if( ! e.to->seen ) {
-     e.to->seen = true;
-     Q.push( e.to );
-     }
-   }
-  }
+ void bfs( Node * r , F && f );
 
 /*--------------------------------------------------------------------------*/
  private:
 
- void clear( void ) { for( auto & u : f_V ) u.seen = false; }
+ void clear( void );
+
+ /// u is one of the nodes, O( n )
+ [[nodiscard]] bool owns( const Node * u ) const;
+
+ /// the degrees count the edges in and out, and the edges lead to nodes
+ [[nodiscard]] bool consistent( void ) const;
 
  std::list< Node > f_V;   ///< the nodes, at fixed addresses
 
@@ -177,6 +145,12 @@ class PointerGraph {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/graph/PointerGraph.tpp"
 
 /*--------------------------------------------------------------------------*/
 

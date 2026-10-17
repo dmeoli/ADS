@@ -125,7 +125,8 @@ ADS_TEST( "sec2.7.1.selection" )
  for( Ints B : { Ints( { 1 , 2 , 3 , 4 , 5 } ) ,
                  Ints( { 5 , 4 , 3 , 2 , 1 } ) } ) {
   long c = 0;
-  selectionSort( B , [ & ]( int a , int b ) { ++c; return( a < b ); } );
+  selectionSort( B , [ & ]( int a , int b ) {
+   c += ! checkingContract(); return( a < b ); } );
   CHECK( std::is_sorted( B.begin() , B.end() ) && c == 10 );
   }
  }
@@ -142,7 +143,8 @@ ADS_TEST( "sec2.7.2.insertion" )
   std::iota( B.begin() , B.end() , 0 );
   if( ! sorted ) std::reverse( B.begin() , B.end() );
   long c = 0;
-  insertionSort( B , [ & ]( int a , int b ) { ++c; return( a < b ); } );
+  insertionSort( B , [ & ]( int a , int b ) {
+   c += ! checkingContract(); return( a < b ); } );
   CHECK( c == ( sorted ? 99 : 99 * 100 / 2 ) );
   }
  std::vector< std::pair< int , int > > P = { { 2 , 0 } , { 1 , 1 } ,
@@ -223,7 +225,8 @@ ADS_TEST( "sec2.7.4.lower-bound" )
   do {
    Ints r = q;
    long c = 0;
-   mergeSort( r , 1 , [ & ]( int a , int b ) { ++c; return( a < b ); } );
+   mergeSort( r , 1 , [ & ]( int a , int b ) {
+   c += ! checkingContract(); return( a < b ); } );
    worst = std::max( worst , c );
    } while( std::next_permutation( q.begin() , q.end() ) );
   CHECK( worst >= long( std::ceil( std::lgamma( n + 1.0 ) / std::log( 2.0 )
@@ -244,7 +247,7 @@ ADS_TEST( "sec2.7.5.counting-sort" )
   CHECK( A == B );
   }
  Ints C = { 3 , 7 };
- CHECK_THROWS( countingSort( C , 5 ) , std::out_of_range );
+ CHECK_THROWS( countingSort( C , 5 ) , contract_violation );
  }
 
 // the recurrences of section 2.9 and their orders; the values of each
@@ -269,7 +272,7 @@ ADS_TEST( "sec2.9.recurrences" )
  CHECK( same( master( 2 , 2 , 1 , -1 ) , 1 , 1 , 0 , 1 ) );   // n / log n
  CHECK( same( linear( 1 , 1 ) , 1 , 2 , 0 , 0 ) );           // Quicksort
  CHECK( same( linear( 2 , 0 ) , 2 , 0 , 0 , 0 , true ) );    // Hanoi
- CHECK_THROWS( (void) master( 0.5 , 2 , 1 ) , std::invalid_argument );
+ CHECK_THROWS( (void) master( 0.5 , 2 , 1 ) , contract_violation );
 
  struct R { double a , b , beta , k; };
  for( const R & r : { R{ 2 , 2 , 1 , 0 } , R{ 3 , 2 , 1 , 0 } ,

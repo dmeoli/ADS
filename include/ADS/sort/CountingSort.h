@@ -10,6 +10,11 @@
  * keys are small integers. A key out of [ 0 , k ) throws
  * std::out_of_range.
  *
+ * The contracts [see Contract.h]: each key must be in [ 0 , k ), a
+ * precondition checked key by key as the keys are counted; the output sorted
+ * and made of the same keys is an audit. The functions are defined in
+ * CountingSort.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 2.7.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf
  *
@@ -31,7 +36,12 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+#include "ADS/sort/Sorted.h"
+
+#include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <stdexcept>
 #include <vector>
 
@@ -42,24 +52,20 @@
 namespace ADS {
 
 /// countingSort(): A, of integers in [ 0 , k ), in increasing order
+/// \pre each key of A is in [ 0 , k )
+/// \post A is sorted, with the same keys
 template< class T >
-void countingSort( std::vector< T > & A , std::size_t k )
-{
- std::vector< std::size_t > B( k , 0 );          // the occurrences
- for( const T & a : A ) {
-  if( ( a < 0 ) || ( std::size_t( a ) >= k ) )
-   throw( std::out_of_range( "ADS::countingSort: a key out of [0, k)" ) );
-  ++B[ a ];
-  }
- std::size_t j = 0;
- for( std::size_t i = 0 ; i < k ; ++i )
-  for( std::size_t c = B[ i ] ; c > 0 ; --c )
-   A[ j++ ] = T( i );
- }
+void countingSort( std::vector< T > & A , std::size_t k );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sort/CountingSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

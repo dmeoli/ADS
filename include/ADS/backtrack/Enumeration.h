@@ -21,6 +21,9 @@
  * subsets of k items are \f$ \binom{n}{k} = n! / ( k! ( n - k )! ) \f$ (the
  * text writes n! / ( n - k )!, the number of their orderings).
  *
+ * The contracts [see Contract.h]: n and k are not negative, and the items of
+ * subsetSum() are positive. The operations are defined in Enumeration.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 16.2 and
  *      exercises 16.2-16.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf
@@ -44,6 +47,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <cstddef>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -54,104 +60,39 @@ namespace ADS {
 
 /// the subsets of k of the items 0 , ... , n - 1, as vectors of n booleans;
 /// f( S ) returns true to stop
+/// \pre n , k >= 0
 template< class F >
-long subsets( int n , int k , F && f )
-{
- std::vector< bool > S( n , false );
- long count = 0;
- bool stop = false;
- auto rec = [ & ]( auto & self , int i , int c ) -> void {
-  if( stop ) return;
-  if( c == k ) {                                // a feasible solution
-   ++count;
-   stop = f( S );
-   return;
-   }
-  if( ( i == n ) || ( c + ( n - i ) < k ) )     // pruned
-   return;
-  S[ i ] = true;
-  self( self , i + 1 , c + 1 );
-  S[ i ] = false;
-  self( self , i + 1 , c );
-  };
- rec( rec , 0 , 0 );
- return( count );
- }
+long subsets( int n , int k , F && f );
 
 namespace detail {
 
 template< class T , class F >
-long permute( const std::vector< T > & A , bool derange , F && f )
-{
- const std::size_t n = A.size();
- std::vector< T > S;
- std::vector< bool > used( n , false );
- long count = 0;
- bool stop = false;
- auto rec = [ & ]( auto & self ) -> void {
-  if( stop ) return;
-  if( S.size() == n ) {
-   ++count;
-   stop = f( S );
-   return;
-   }
-  for( std::size_t c = 0 ; c < n && ! stop ; ++c )
-   if( ! used[ c ] && ! ( derange && ( c == S.size() ) ) ) {
-    used[ c ] = true;                         // A.remove( c )
-    S.push_back( A[ c ] );
-    self( self );
-    S.pop_back();
-    used[ c ] = false;                        // A.insert( c )
-    }
-  };
- rec( rec );
- return( count );
- }
+long permute( const std::vector< T > & A , bool derange , F && f );
 
 }  // end( namespace detail )
 
 /// the permutations of the items, f( S ) on each
 template< class T , class F >
-long permutations( const std::vector< T > & A , F && f )
-{
- return( detail::permute( A , false , f ) );
- }
+long permutations( const std::vector< T > & A , F && f );
 
 /// the derangements, no item in its own place, f( S ) on each
 template< class T , class F >
-long derangements( const std::vector< T > & A , F && f )
-{
- return( detail::permute( A , true , f ) );
- }
+long derangements( const std::vector< T > & A , F && f );
 
 /// the subsets of the positive items of sum k, as the places taken
+/// \pre the items positive
 template< class T , class F >
-long subsetSum( const std::vector< T > & A , T k , F && f )
-{
- std::vector< std::size_t > S;
- long count = 0;
- bool stop = false;
- auto rec = [ & ]( auto & self , std::size_t i , T sum ) -> void {
-  if( stop ) return;
-  if( sum == k ) {
-   ++count;
-   stop = f( S );
-   return;
-   }
-  for( std::size_t j = i ; j < A.size() && ! stop ; ++j )
-   if( sum + A[ j ] <= k ) {                 // pruned when it exceeds k
-    S.push_back( j );
-    self( self , j + 1 , sum + A[ j ] );
-    S.pop_back();
-    }
-  };
- rec( rec , 0 , T( 0 ) );
- return( count );
- }
+long subsetSum( const std::vector< T > & A , T k , F && f );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/backtrack/Enumeration.tpp"
 
 /*--------------------------------------------------------------------------*/
 

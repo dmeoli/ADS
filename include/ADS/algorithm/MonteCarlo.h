@@ -19,6 +19,9 @@
  *   it errs with probability at most \f$ e^{-2 K \epsilon^2} \f$ when the
  *   true fraction is 1/2 + epsilon or 1/2 - epsilon.
  *
+ * The contracts [see Contract.h]: K >= 0 repetitions, and freivalds() needs
+ * three n x n matrices. The functions are defined in MonteCarlo.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 17 and
  *      exercises 17.4 and 17.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap17.pdf
@@ -46,6 +49,9 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <random>
 #include <vector>
@@ -58,62 +64,32 @@ namespace ADS {
 
 /// whether p, of n variables and total degree d, is identically 0, by K
 /// random points
+/// \pre K >= 0
 template< class F , class R >
-bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng )
-{
- std::uniform_int_distribution< long > v( 1 , 2 * ( d < 1 ? 1 : d ) );
- std::vector< long > x( n );
- for( int k = 0 ; k < K ; ++k ) {
-  for( auto & xi : x ) xi = v( rng );
-  if( p( x ) != 0 )
-   return( false );                        // surely not zero
-  }
- return( true );
- }
+bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
 
 /// whether A B = C, by K runs of O( n^2 )
+/// \pre A, B and C are n x n and K >= 0
 template< class T , class R >
 bool freivalds( const std::vector< std::vector< T > > & A ,
                 const std::vector< std::vector< T > > & B ,
-                const std::vector< std::vector< T > > & C , int K , R & rng )
-{
- const std::size_t n = A.size();
- std::vector< T > x( n ) , y( n ) , z( n ) , w( n );
- auto mul = [ n ]( const auto & M , const std::vector< T > & v ,
-                   std::vector< T > & r ) {
-  for( std::size_t i = 0 ; i < n ; ++i ) {
-   r[ i ] = T( 0 );
-   for( std::size_t j = 0 ; j < n ; ++j ) r[ i ] += M[ i ][ j ] * v[ j ];
-   }
-  };
- for( int k = 0 ; k < K ; ++k ) {
-  for( auto & xi : x ) xi = ( rng() & 1 ) ? T( 1 ) : T( -1 );
-  mul( B , x , y );
-  mul( A , y , z );
-  mul( C , x , w );
-  if( z != w )
-   return( false );                        // surely A B != C
-  }
- return( true );
- }
+                const std::vector< std::vector< T > > & C , int K , R & rng );
 
 /// whether the formula f of n variables is true on more than half of the
 /// assignments, from K random ones
+/// \pre K >= 0
 template< class F , class R >
-bool halfSatisfiable( F && f , std::size_t n , int K , R & rng )
-{
- std::vector< bool > x( n );
- int yes = 0;
- for( int k = 0 ; k < K ; ++k ) {
-  for( std::size_t i = 0 ; i < n ; ++i ) x[ i ] = rng() & 1;
-  yes += f( x ) ? 1 : 0;
-  }
- return( 2 * yes > K );
- }
+bool halfSatisfiable( F && f , std::size_t n , int K , R & rng );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/algorithm/MonteCarlo.tpp"
 
 /*--------------------------------------------------------------------------*/
 

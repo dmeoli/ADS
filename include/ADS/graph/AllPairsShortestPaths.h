@@ -21,9 +21,16 @@
  * addEdge() updates d and p after the insertion of an edge ( a , b ) of
  * cost w in O( n^2 ), since a path that improves goes through it once:
  * \f$ d[ u ][ v ] = \min\{ d[ u ][ v ] , d[ u ][ a ] + w + d[ b ][ v ] \}
- * \f$; it throws std::logic_error if the edge closes a negative cycle,
- * i.e., if w + d[ b ][ a ] < 0 (exercise 13.5). A deletion has no such
- * update: the paths that used the edge may need any other one.
+ * \f$, which needs that the edge closes no negative cycle, i.e., that
+ * w + d[ b ][ a ] >= 0 (exercise 13.5). A deletion has no such update: the
+ * paths that used the edge may need any other one.
+ *
+ * The contracts [see Contract.h]: addEdge() needs two distinct nodes of
+ * the matrix and an edge that closes no negative cycle; at the level of
+ * the audits, the distances found are closed under the triangle
+ * inequality, bounded by the costs of the edges, and their predecessors
+ * realize them, unless there is a negative cycle. The functions are
+ * defined in AllPairsShortestPaths.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 13.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
@@ -50,10 +57,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/graph/ShortestPaths.h"
 
-#include <stdexcept>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -71,70 +78,27 @@ struct AllPairs {
  };
 
 /// floydWarshall(): the shortest paths between all the pairs of nodes
+/// \post the distances are closed under the triangle inequality, bounded
+///       by the edges and realized by p, unless negativeCycle (audit)
 template< Graph G >
-AllPairs< typename G::Weight > floydWarshall( const G & g )
-{
- using D = typename G::Weight;
- const D INF = infinity< D >();
- const int n = g.bound();
- AllPairs< D > R;
- R.d.assign( n , std::vector< D >( n , INF ) );
- R.p.assign( n , std::vector< int >( n , NIL ) );
- for( int u : g.V() ) {
-  R.d[ u ][ u ] = D( 0 );
-  g.forEachEdge( u , [ & ]( int v , const D & w ) {
-   R.d[ u ][ v ] = w;
-   R.p[ u ][ v ] = u;
-   } );
-  }
- for( int k = 0 ; k < n ; ++k )
-  for( int u = 0 ; u < n ; ++u ) {
-   if( R.d[ u ][ k ] == INF )
-    continue;
-   for( int v = 0 ; v < n ; ++v )
-    if( ( R.d[ k ][ v ] != INF ) &&
-        ( R.d[ u ][ k ] + R.d[ k ][ v ] < R.d[ u ][ v ] ) ) {
-     R.d[ u ][ v ] = R.d[ u ][ k ] + R.d[ k ][ v ];
-     R.p[ u ][ v ] = R.p[ k ][ v ];
-     }
-   }
- for( int u = 0 ; u < n ; ++u )
-  if( R.d[ u ][ u ] < D( 0 ) )
-   R.negativeCycle = true;
- return( R );
- }
+AllPairs< typename G::Weight > floydWarshall( const G & g );
 
 /// the insertion of the edge ( a , b ) of cost w, O( n^2 )
+/// \pre a and b are distinct places of R, and w + d[ b ][ a ] >= 0
+/// \post d[ a ][ b ] <= w, and the distances are closed under the triangle
+///       inequality (audit)
 template< class D >
-void addEdge( AllPairs< D > & R , int a , int b , const D & w )
-{
- const D INF = infinity< D >();
- const int n = int( R.d.size() );
- if( ( R.d[ b ][ a ] != INF ) && ( w + R.d[ b ][ a ] < D( 0 ) ) )
-  throw( std::logic_error( "ADS::addEdge: a negative cycle" ) );
- if( w >= R.d[ a ][ b ] )
-  return;
- const auto d = R.d;
- const auto p = R.p;
- for( int u = 0 ; u < n ; ++u ) {
-  if( ( u != a ) && ( d[ u ][ a ] == INF ) )
-   continue;
-  const D du = u == a ? D( 0 ) : d[ u ][ a ];
-  for( int v = 0 ; v < n ; ++v ) {
-   if( ( v != b ) && ( d[ b ][ v ] == INF ) )
-    continue;
-   const D dv = v == b ? D( 0 ) : d[ b ][ v ];
-   if( du + w + dv < R.d[ u ][ v ] ) {
-    R.d[ u ][ v ] = du + w + dv;
-    R.p[ u ][ v ] = v == b ? a : p[ b ][ v ];
-    }
-   }
-  }
- }
+void addEdge( AllPairs< D > & R , int a , int b , const D & w );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/graph/AllPairsShortestPaths.tpp"
 
 /*--------------------------------------------------------------------------*/
 

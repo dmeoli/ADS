@@ -12,6 +12,12 @@
  * 0 to the left and 1 to the right; O( n log n ) time. The least frequent
  * characters get the longest codes.
  *
+ * The contracts [see Contract.h]: huffman() needs at least one character and
+ * no negative frequency, and gives a prefix-free code of each character
+ * (checked at level 3); encode() needs a code for each character of the text,
+ * and decode() bits that are a concatenation of codes. The operations are
+ * defined in Huffman.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 14.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap14.pdf
  * \see D. A. Huffman, A method for the construction of minimum-redundancy
@@ -36,8 +42,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <map>
 #include <stdexcept>
@@ -52,75 +60,32 @@ namespace ADS {
 
 /// the codes of Huffman of the characters with the given frequencies, at
 /// least one; a single character gets the code "0"
+/// \pre freq not empty, no frequency negative
+/// \post a prefix-free code of each character
 template< class C , class F >
-std::map< C , std::string > huffman( const std::map< C , F > & freq )
-{
- if( freq.empty() )
-  throw( std::invalid_argument( "ADS::huffman: no character" ) );
- struct Node { int left , right; C c; };
- std::vector< Node > T;                         // the nodes of the tree
- HeapPriorityQueue< int , F > Q( int( 2 * freq.size() ) );
- for( const auto & [ c , f ] : freq ) {
-  T.push_back( { -1 , -1 , c } );
-  Q.insert( int( T.size() ) - 1 , f );
-  }
- while( Q.size() > 1 ) {
-  const F f1 = Q.minPriority();
-  const int c1 = Q.deleteMin();
-  const F f2 = Q.minPriority();
-  const int c2 = Q.deleteMin();
-  T.push_back( { c1 , c2 , C() } );              // a virtual character
-  Q.insert( int( T.size() ) - 1 , f1 + f2 );
-  }
- std::map< C , std::string > code;
- auto walk = [ & ]( auto & self , int x , const std::string & s ) -> void {
-  if( T[ x ].left < 0 ) {
-   code[ T[ x ].c ] = s.empty() ? "0" : s;
-   return;
-   }
-  self( self , T[ x ].left , s + '0' );
-  self( self , T[ x ].right , s + '1' );
-  };
- walk( walk , Q.deleteMin() , "" );
- return( code );
- }
+std::map< C , std::string > huffman( const std::map< C , F > & freq );
 
 /// the text encoded by the codes
+/// \pre each character of text has a code
 template< class C >
 std::string encode( const std::basic_string< C > & text ,
-                    const std::map< C , std::string > & code )
-{
- std::string bits;
- for( C c : text )
-  bits += code.at( c );
- return( bits );
- }
+                    const std::map< C , std::string > & code );
 
 /// the bits decoded by the codes, a prefix code
+/// \pre bits is a concatenation of codes of a prefix-free code
 template< class C >
 std::basic_string< C > decode( const std::string & bits ,
-                               const std::map< C , std::string > & code )
-{
- std::map< std::string , C > back;
- for( const auto & [ c , s ] : code )
-  back[ s ] = c;
- std::basic_string< C > text;
- std::string s;
- for( char b : bits ) {
-  s += b;
-  if( auto it = back.find( s ) ; it != back.end() ) {
-   text += it->second;
-   s.clear();
-   }
-  }
- if( ! s.empty() )
-  throw( std::invalid_argument( "ADS::decode: bits left over" ) );
- return( text );
- }
+                               const std::map< C , std::string > & code );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/string/Huffman.tpp"
 
 /*--------------------------------------------------------------------------*/
 

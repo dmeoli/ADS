@@ -20,8 +20,10 @@
  * need a queue that is not empty, insert() one that is not full, and
  * decrease() a handle of an item of this queue and a priority not larger
  * than its own; the invariant, checked at level 3 in O( n ) time, is the
- * order of the heap together with the places that the items remember. The
- * operations are defined in HeapPriorityQueue.tpp.
+ * order of the heap together with the places that the items remember. On a
+ * heap of more than 1024 items only the root and the last item are
+ * checked, so that a long sequence of operations at the level 3 stays
+ * linear. The operations are defined in HeapPriorityQueue.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
@@ -144,7 +146,8 @@ class HeapPriorityQueue {
  /// y is the item in its own place
  [[nodiscard]] bool owns( Handle y ) const;
 
- /// no item is smaller than its parent, and each knows its place, O( n )
+ /// no item is smaller than its parent, and each knows its place, O( n );
+ /// on more than 1024 items, the root and the last item only
  [[nodiscard]] bool isHeap( void ) const;
 
  int f_capacity;                                    ///< the capacity

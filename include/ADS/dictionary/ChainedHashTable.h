@@ -21,6 +21,16 @@
  * between two restructurings there are at least m / 4 operations and the
  * cost stays O( 1 ) amortized [see TableSize.h].
  *
+ * The contracts [see Contract.h]: m > 0 and a list that exists for
+ * chain(); after insert() the key is in the table and after remove() it is
+ * not; the invariant is that each key is in the list of its own place,
+ * that the lists are sorted when they must be, that size() counts the
+ * keys, and that the key of the operation is in its list at most once. On
+ * a table of more than 1024 lists the invariant is checked on the list of
+ * that key only, so that a long sequence of operations at the level 3
+ * stays linear; the checks do not change probes(). The operations are
+ * defined in ChainedHashTable.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 7.2-7.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
  * \see W. W. Peterson, Addressing for random-access storage, IBM Journal
@@ -45,15 +55,14 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sequence/List.h"
+#include "ADS/Contract.h"
 #include "ADS/dictionary/TableSize.h"
+#include "ADS/sequence/List.h"
 
 #include <concepts>
 #include <cstddef>
 #include <functional>
-#include <numeric>
 #include <optional>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -86,107 +95,54 @@ class ChainedHashTable {
  using Key = K;     ///< the type of the keys
  using Value = V;   ///< the type of the values
 
- /// the empty table of m > 0 lists, which restructures itself or not
+ /// the empty table of m lists, which restructures itself or not
+ /// \pre m > 0
  explicit ChainedHashTable( std::size_t m , bool restructure = false ,
-                            H h = H() )
-  : f_T( m ) , f_m0( m ) , f_restructure( restructure ) , f_h( h ) {
-  if( m == 0 )
-   throw( std::invalid_argument( "ADS::ChainedHashTable: m = 0" ) );
-  }
+                            H h = H() );
 
 /*--------------------------------------------------------------------------*/
 
  /// the value of the key k, or nothing
- [[nodiscard]] std::optional< V > lookup( const K & k ) const {
-  auto & L = f_T[ place( k ) ];
-  auto p = find( L , k );
-  if( L.finished( p ) || ! ( L.read( p ).first == k ) )
-   return( std::nullopt );
-  const V v = L.read( p ).second;
-  if constexpr( C == Chain::MOVE_TO_FRONT )
-   if( p != L.head() ) {
-    auto kv = L.read( p );
-    L.remove( p );
-    L.insert( L.head() , kv );
-    }
-  return( v );
-  }
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
  /// associates the value v to the key k
- void insert( const K & k , const V & v ) {
-  auto & L = f_T[ place( k ) ];
-  auto p = find( L , k );
-  if( ! L.finished( p ) && ( L.read( p ).first == k ) ) {
-   L.write( p , { k , v } );
-   return;
-   }
-  if constexpr( C == Chain::SORTED )
-   L.insert( p , { k , v } );           // before the first larger key
-  else
-   L.insert( L.head() , { k , v } );
-  ++f_size;
-  if( f_restructure && ( f_size > 2 * f_T.size() ) )
-   rebuild( resized( f_T.size() , true , f_m0 ) );
-  }
+ /// \post k is in the table
+ void insert( const K & k , const V & v );
 
  /// removes the key k, if it is there
- void remove( const K & k ) {
-  auto & L = f_T[ place( k ) ];
-  auto p = find( L , k );
-  if( L.finished( p ) || ! ( L.read( p ).first == k ) )
-   return;
-  L.remove( p );
-  --f_size;
-  if( f_restructure && ( f_T.size() > f_m0 ) &&
-      ( 2 * f_size < f_T.size() ) )
-   rebuild( resized( f_T.size() , false , f_m0 ) );
-  }
+ /// \post k is not in the table
+ void remove( const K & k );
 
- [[nodiscard]] bool contains( const K & k ) const {
-  auto & L = f_T[ place( k ) ];
-  auto p = find( L , k );
-  return( ! L.finished( p ) && ( L.read( p ).first == k ) );
-  }
+ [[nodiscard]] bool contains( const K & k ) const;
 
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// the number m of lists
- [[nodiscard]] std::size_t capacity( void ) const { return( f_T.size() ); }
+ [[nodiscard]] std::size_t capacity( void ) const;
 
  /// the load factor n / m
- [[nodiscard]] double load( void ) const {
-  return( double( f_size ) / f_T.size() );
-  }
+ [[nodiscard]] double load( void ) const;
 
  /// the foreach of the book: f( k , v ) on the pairs, list after list,
  /// O( m + n ) time
  template< class F >
- void forEach( F && f ) const {
-  for( const auto & L : f_T )
-   for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
-    f( L.read( p ).first , L.read( p ).second );
-  }
+ void forEach( F && f ) const;
 
  /// the keys of the list i, from its head
- [[nodiscard]] std::vector< K > chain( std::size_t i ) const {
-  std::vector< K > out;
-  const auto & L = f_T.at( i );
-  for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
-   out.push_back( L.read( p ).first );
-  return( out );
-  }
+ /// \pre i < capacity()
+ [[nodiscard]] std::vector< K > chain( std::size_t i ) const;
 
  /// the cells of the list examined by the last operation, plus one for
  /// the nil that ends an unsuccessful search
- [[nodiscard]] std::size_t probes( void ) const { return( f_probes ); }
+ [[nodiscard]] std::size_t probes( void ) const;
 
  /// the number of restructurings so far
- [[nodiscard]] std::size_t restructures( void ) const { return( f_rebuilds ); }
+ [[nodiscard]] std::size_t restructures( void ) const;
 
  /// the number of pairs moved by the restructurings so far
- [[nodiscard]] std::size_t moved( void ) const { return( f_moved ); }
+ [[nodiscard]] std::size_t moved( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -194,38 +150,26 @@ class ChainedHashTable {
  using Pair = std::pair< K , V >;
  using Pos = typename List< Pair >::Pos;
 
- std::size_t place( const K & k ) const { return( f_h( k ) % f_T.size() ); }
+ [[nodiscard]] std::size_t place( const K & k ) const;
 
  /// the cell of k, or where the search stopped: the end of the list, or for
  /// a sorted list the first larger key
- Pos find( const List< Pair > & L , const K & k ) const {
-  f_probes = 1;
-  auto p = L.head();
-  for( ; ! L.finished( p ) ; p = L.next( p ) , ++f_probes ) {
-   if( L.read( p ).first == k )
-    break;
-   if constexpr( C == Chain::SORTED )
-    if( k < L.read( p ).first )
-     break;
-   }
-  return( p );
-  }
+ Pos find( const List< Pair > & L , const K & k ) const;
 
- void rebuild( std::size_t m ) {
-  std::vector< List< Pair > > T( m );
-  std::swap( f_T , T );
-  for( auto & L : T )
-   for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) ) {
-    const auto & kv = L.read( p );
-    auto & M = f_T[ place( kv.first ) ];
-    if constexpr( C == Chain::SORTED )
-     M.insert( find( M , kv.first ) , kv );
-    else
-     M.insert( M.head() , kv );
-    }
-  ++f_rebuilds;
-  f_moved += f_size;
-  }
+ /// whether k is in the table, without counting the probes
+ [[nodiscard]] bool present( const K & k ) const;
+
+ /// each key in the list of its place, the lists sorted if they must be,
+ /// size() their total and k at most once, O( n + m ); on more than 1024
+ /// lists, only the list of k
+ [[nodiscard]] bool consistent( const K & k ) const;
+
+ /// the keys of the list i in it, sorted if they must be, k at most once;
+ /// their number goes to n
+ [[nodiscard]] bool listOk( std::size_t i , const K & k ,
+                            std::size_t & n ) const;
+
+ void rebuild( std::size_t m );
 
  mutable std::vector< List< Pair > > f_T;  ///< the lists
  std::size_t f_m0;                         ///< the initial size
@@ -238,7 +182,15 @@ class ChainedHashTable {
 
  };  // end( class ChainedHashTable )
 
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/dictionary/ChainedHashTable.tpp"
 
 /*--------------------------------------------------------------------------*/
 

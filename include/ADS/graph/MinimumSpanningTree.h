@@ -24,6 +24,15 @@
  * A graph that is not connected gives a minimum spanning forest by
  * kruskal(), and the tree of the component of r by prim().
  *
+ * The contracts [see Contract.h]: the graph is unoriented; the edges given
+ * to kruskal() join nodes in [ 0 , n ), with weights in [ 0 , k ) when k >
+ * 0; prim() starts from a node, with a priority queue as frontier. At the
+ * level of the audits the result is a minimum spanning forest, which
+ * isMinimumSpanningForest() checks by the property of the cycles: a
+ * spanning forest is minimum if and only if no edge out of it weighs less
+ * than an edge of the path of the forest between its ends. The functions
+ * are defined in MinimumSpanningTree.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 14.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap14.pdf
  * \see J. B. Kruskal, On the shortest spanning subtree of a graph and the
@@ -51,6 +60,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/mfset/MFSet.h"
@@ -79,104 +89,50 @@ struct WeightedEdge {
  };
 
 /// the edges of an unoriented graph, each once, from its smaller end
+/// \pre the graph is unoriented
 template< Graph G >
-std::vector< WeightedEdge< typename G::Weight > > edges( const G & g )
-{
- std::vector< WeightedEdge< typename G::Weight > > E;
- for( int u : g.V() )
-  g.forEachEdge( u , [ & ]( int v , const auto & w ) {
-   if( u < v )
-    E.push_back( { u , v , w } );
-   } );
- return( E );
- }
+std::vector< WeightedEdge< typename G::Weight > > edges( const G & g );
 
 /// kruskal(): the edges of a minimum spanning forest of the nodes
 /// [ 0 , n ); with k > 0 the weights are integers in [ 0 , k ), sorted by
 /// counting
+/// \pre n >= 0, the ends of the edges in [ 0 , n ), the weights in
+///      [ 0 , k ) if k > 0
+/// \post a minimum spanning forest (audit)
 template< class W >
 std::vector< WeightedEdge< W > > kruskal( int n ,
                                           std::vector< WeightedEdge< W > > A ,
-                                          long k = 0 )
-{
- if( k > 0 ) {                                  // Counting Sort, stable
-  std::vector< std::size_t > c( k + 1 , 0 );
-  for( const auto & e : A ) ++c[ std::size_t( e.w ) + 1 ];
-  for( long i = 0 ; i < k ; ++i ) c[ i + 1 ] += c[ i ];
-  std::vector< WeightedEdge< W > > B( A.size() );
-  for( const auto & e : A ) B[ c[ std::size_t( e.w ) ]++ ] = e;
-  A = std::move( B );
-  }
- else
-  std::stable_sort( A.begin() , A.end() , []( const auto & a ,
-                    const auto & b ) { return( a.w < b.w ); } );
- std::vector< WeightedEdge< W > > T;
- MFSet M( n );
- for( std::size_t i = 0 ; ( i < A.size() ) && ( int( T.size() ) < n - 1 ) ;
-      ++i )
-  if( M.merge( A[ i ].u , A[ i ].v ) )         // the ends were apart
-   T.push_back( A[ i ] );
- return( T );
- }
+                                          long k = 0 );
 
+/// kruskal() on the edges of an unoriented graph
 template< Graph G >
-auto kruskal( const G & g , long k = 0 )
-{
- return( kruskal( g.bound() , edges( g ) , k ) );
- }
+auto kruskal( const G & g , long k = 0 );
 
 /// prim(): the parents of the tree from r, NIL for r and the nodes out of
 /// its component; how is LIST, HEAP or FIBONACCI
+/// \pre the graph is unoriented, r is a node, how is a priority queue
+/// \post a minimum spanning tree of the component of r (audit)
 template< Graph G >
-std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP )
-{
- using W = typename G::Weight;
- const int n = g.bound();
- std::vector< int > p( n , NIL );
- std::vector< bool > in( n , false );                 // in the tree
- std::vector< W > key( n , infinity< W >() );
- using LQ = ListPriorityQueue< int , W , false >;
- using HQ = HeapPriorityQueue< int , W >;
- using FQ = FibonacciHeapPriorityQueue< int , W >;
- auto run = [ & ]( auto & Q , auto & pos ) {
-  for( int u : g.V() )
-   pos[ u ] = Q.insert( u , u == r ? W( 0 ) : infinity< W >() );
-  key[ r ] = W( 0 );
-  while( ! Q.isEmpty() ) {
-   const int u = Q.deleteMin();
-   in[ u ] = true;
-   if( key[ u ] == infinity< W >() )               // another component
-    continue;
-   g.forEachEdge( u , [ & ]( int v , const W & w ) {
-    if( ! in[ v ] && ( w < key[ v ] ) ) {
-     key[ v ] = w;
-     Q.decrease( pos[ v ] , w );
-     p[ v ] = u;
-     }
-    } );
-   }
-  };
- if( how == Frontier::LIST ) {
-  LQ Q;
-  std::vector< typename LQ::Handle > pos( n );
-  run( Q , pos );
-  }
- else if( how == Frontier::FIBONACCI ) {
-  FQ Q;
-  std::vector< typename FQ::Handle > pos( n );
-  run( Q , pos );
-  }
- else {
-  HQ Q( n );
-  std::vector< typename HQ::Handle > pos( n );
-  run( Q , pos );
-  }
- return( p );
- }
+std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP );
+
+/// whether T is a minimum spanning forest of the edges A on the nodes
+/// [ 0 , n ): its edges are in A, it has no cycle, as many edges as n
+/// minus the components of A, and no edge of A weighs less than the
+/// heaviest edge of the path of T between its ends, O( m n )
+template< class W >
+bool isMinimumSpanningForest( int n ,
+                              const std::vector< WeightedEdge< W > > & A ,
+                              const std::vector< WeightedEdge< W > > & T );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/graph/MinimumSpanningTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

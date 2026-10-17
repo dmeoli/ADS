@@ -50,12 +50,14 @@ using Ints = std::vector< int >;
 ADS_TEST( "sec1.2.min" )
 {
  long c = 0;
- auto less = [ & ]( int a , int b ) { ++c; return( a < b ); };
+ auto less = [ & ]( int a , int b ) {      // not those of the contracts
+  c += ! checkingContract();
+  return( a < b ); };
  const Ints A = { 7 , 4 , 2 , 1 , 8 , 1 , 5 };
  CHECK( min( A , less ) == 1 && c == 6 );
  CHECK( argmin( A , 0 , 6 ) == 3 && argmin( A , 4 , 6 ) == 5 );
  CHECK( min( Ints( { 9 } ) ) == 9 );
- CHECK_THROWS( (void) min( Ints() ) , std::invalid_argument );
+ CHECK_THROWS( (void) min( Ints() ) , contract_violation );
  }
 
 // the example of the book, v = 13: the calls ( i , j , m , A[ m ] ) are

@@ -8,6 +8,9 @@
  * whatever the order of the input, \f$ \Theta( n^2 ) \f$ time, O( 1 )
  * space, not stable.
  *
+ * The contracts [see Contract.h]: the vector ends with the same items sorted,
+ * an audit. The functions are defined in SelectionSort.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 2.7.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf
  *
@@ -29,8 +32,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/search/Minimum.h"
+#include "ADS/sort/Sorted.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <utility>
@@ -43,18 +49,19 @@
 namespace ADS {
 
 /// SelectionSort(): A in increasing order by less
+/// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
-void selectionSort( std::vector< T > & A , C less = C() )
-{
- for( std::size_t i = 0 ; i + 1 < A.size() ; ++i ) {
-  const std::size_t pos = argmin( A , i , A.size() - 1 , less );
-  std::swap( A[ i ] , A[ pos ] );            // extends the sorted prefix
-  }
- }
+void selectionSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sort/SelectionSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

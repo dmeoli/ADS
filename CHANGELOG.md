@@ -116,5 +116,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rectangular matrices, search, order, bubble sort, natural merge sort,
   merge and deduplication of sequences, palindromes and the sorting of a
   stack, naive and KMP string matching, and some classic exercises
+- the contracts of all the operations (Contract.h: ADS_PRE, ADS_POST,
+  ADS_INVARIANT and ADS_AUDIT, levels 0 to 3), the declarations in include/
+  and the definitions in src/, and a suite of tests of the contracts for
+  each abstract data type, with the axioms of STACK, QUEUE, SET, DICTIONARY
+  and PRIORITYQUEUE checked on every realization
+- the specification of an abstract data type in ADT.h: the triple
+  ( D , F , A ), the algebraic and the constructive semantics, the kinds of
+  the operations, the requirements of abstraction and of protection
+- the rule of five on the list (whose sentinel is now a member, so that a
+  move allocates nothing), the sequence on a vector (which also halves at a
+  quarter) and the stack on a vector, with equality and copy; the singly
+  linked list of exercise 4.6 and the linked queue of exercise 4.10 as
+  headers
+- beyond the book: the list with cursors in a shared space with a free
+  list; the range of C++ over a sequence; the search with the place of
+  insertion and the sublists; the postfix expressions and the
+  shunting-yard; the queue with no duplicates and the positive items of a
+  queue; the visit of a stack from the bottom; the sieve of Eratosthenes on
+  a set; the dictionary on a sorted vector; the pseudo-random inspection;
+  the union by size in the MFSET; the decision tree of the binary search;
+  the trees as parenthesized lists; the tree of an expression; the tree
+  with lists of children; the heap with a pointer to its last leaf; the
+  general visit of a graph, the unilateral connection and the adjacency
+  from the incidence; the order of the orders of growth; the general
+  schemes of the techniques; the strong failure function of Knuth; the
+  gaps of Hibbard; Merge Sort with no merge of parts in order; Insertion
+  Sort with a sentinel; the partition around a value; the minimum and the
+  maximum together; the greedy and the backtracking knapsack; the iterative
+  n queens; the eight puzzle by breadth and by depth with any goal; the
+  factorial, the bounds of the binomial and of Fibonacci, and Fibonacci
+  with memory between the calls
 - a CI job that runs the tests under AddressSanitizer and UBSan
 - install and export for find_package(ADS), and the CI on GitHub Actions

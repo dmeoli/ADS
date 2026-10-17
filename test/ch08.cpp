@@ -140,7 +140,7 @@ ADS_TEST( "sec8.1.boolean" )
   B.insert( x );
  CHECK( A.size() == 5 && A.min() == 1 && A.max() == 9 );
  CHECK( ! A.contains( 10 ) && ! A.contains( -1 ) );
- CHECK_THROWS( A.insert( 10 ) , std::out_of_range );
+ CHECK_THROWS( A.insert( 10 ) , contract_violation );
  const auto U = setUnion( A , B );
  const auto I = setIntersection( A , B );
  const auto D = setDifference( A , B );

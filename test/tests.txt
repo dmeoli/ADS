@@ -53,6 +53,7 @@ ch04  ex4.3              Esercizio 4.3, somma di numeri come liste
 ch04  ex4.4              Esercizio 4.4, tangentopoli (Giuseppe Flavio)
 ch04  ex4.5              Esercizio 4.5, replica dei dispari
 ch04  ex4.6              Esercizio 4.6, lista monodirezionale
+ch04  spec.CursorList    oltre il libro, lista con cursori
 ch04  ex4.7              Esercizio 4.7, due pile in un vettore
 ch04  ex4.8              Esercizio 4.8, firstN iterativa
 ch04  ex4.9              Esercizio 4.9, DEQUEUE
@@ -374,12 +375,14 @@ beyond  array-binary-tree   albero binario su vettore posizionale
 beyond  cursor-binary-tree  albero binario a cursori
 beyond  cursor-tree         albero ordinato a cursori
 beyond  preorder-array-tree albero ordinato su vettore in preordine
+beyond  child-list-tree     albero con liste di figli
 beyond  linked-heap         heap su albero binario a puntatori
 beyond  pointer-graph       grafo a puntatori
 beyond  multistack          k pile in un vettore
 beyond  deep-copy           copia profonda di alberi
 beyond  queue-contains-sequence-equal contains() e ==
-beyond  hashing             ispezione triangolare, doppio hashing
+beyond  hashing             ispezioni triangolare e pseudocasuale
+beyond  hash-examples       funzioni hash su nomi, collisioni
 beyond  rectangular-matrix  matrici rettangolari
 beyond  sequence-search     ricerca su sequenze
 beyond  sequence-order      ordine di una sequenza
@@ -392,7 +395,142 @@ beyond  even-odd-strings    stringhe pari e dispari
 beyond  binary-tree-exercises esercizi su alberi binari
 beyond  tree-exercises      esercizi su alberi ordinati
 beyond  array-exercises     esercizi su vettori
+beyond  cursor-list         lista con cursori e lista libera
+beyond  sorted-list         lista ordinata, sottoliste, catene
+beyond  decision-tree       albero di decisione della ricerca binaria
+beyond  list-forms          alberi come liste, esempi di visita
+beyond  expression-tree     albero di un'espressione
+beyond  generic-visit       visita generale di un grafo
+beyond  dijkstra-example    esempio dei cammini minimi
+beyond  unilateral-incidence connessione unilaterale, incidenza
+beyond  notations           notazioni asintotiche, ordini di crescita
+beyond  cost-model          modello di costo unitario
+beyond  merge-comparisons   confronti della fusione di liste
+beyond  kmp-strong          KMP con la funzione di fallimento forte
+beyond  knapsack-heuristics zaino greedy e backtracking
+beyond  nqueens-iterative   n regine, backtracking iterativo
+beyond  slide-sorts         Merge, Shell, Insertion, partizione, minmax
+beyond  classical-instances attivita', Kruskal, partizione
+beyond  eight-puzzle        gioco dell'otto, ampiezza e profondita'
+beyond  paradigms           schemi generali delle tecniche
+beyond  factorial-fibonacci fattoriale, binomiale, Fibonacci con memoria
+beyond  sequence-range      range-for sulle sequenze
+beyond  algebraic-spec      specifica per assiomi degli interi
+beyond  postfix             espressioni postfisse e conversione
+beyond  lifo-fifo-traces    tracce di una pila e di una coda
+beyond  stack-bottom-up     visita di una pila dal fondo
+beyond  queue-algorithms    positivi di una coda, coda senza doppi
+beyond  sieve               crivello di Eratostene su un insieme
+beyond  sorted-array-dictionary dizionario su vettore ordinato
 
 # the contracts of the book, checked as tests
-contract  list                SEQUENCE, sezioni 3.2 e 4.1
-contract  heap-priority-queue PRIORITYQUEUE, sezione 10.1
+contract_algorithm    binary-counter       contatore binario, sezione 4.2.1
+contract_algorithm    hanoi                torri di Hanoi, sezione 4.4
+contract_algorithm    master               ricorrenze lineari, capitolo 2
+contract_algorithm    monte-carlo          Monte Carlo, capitolo 17
+contract_algorithm    subsequences         sottosequenze, capitoli 1 e 13
+
+contract_backtrack    anagrams             anagrammi, capitolo 16
+contract_backtrack    enumeration          enumerazione, capitolo 16
+contract_backtrack    knight               giro del cavallo, capitolo 16
+contract_backtrack    nqueens              n regine, capitolo 16
+contract_backtrack    sudoku               sudoku, capitolo 16
+
+contract_complexity   domino-nondeterminism domino, scelta, capitolo 18
+contract_complexity   easy-cases           casi facili, Conclusione
+contract_complexity   problems             certificati, capitolo 18
+contract_complexity   reductions           riduzioni, capitolo 18
+
+contract_dictionary   chained-hash-table   liste di trabocco, sezione 7.3
+contract_dictionary   direct-table         accesso diretto, capitolo 7
+contract_dictionary   hash-functions       funzioni hash, capitolo 7
+contract_dictionary   open-hash-table      indirizzamento aperto, capitolo 7
+contract_dictionary   table-size           ristrutturazione, sezione 7.4
+contract_dictionary   dictionary-axioms    assiomi di DICTIONARY, sezione 3.2.3
+
+contract_geometry     hull                 inviluppo convesso, capitolo 12
+
+contract_graph        all-pairs            tutte le coppie, capitolo 11
+contract_graph        array-graph          grafo su vettore, capitolo 9
+contract_graph        eulerian             circuito euleriano, capitolo 9
+contract_graph        graphs               GRAPH, capitolo 9
+contract_graph        max-flow             flusso massimo, capitolo 15
+contract_graph        pointer-graph        grafo a puntatori, capitolo 9
+contract_graph        shortest-paths       cammini minimi, capitolo 11
+contract_graph        spanning-tree        copertura minima, capitolo 14
+contract_graph        visits               visite, capitolo 9
+
+contract_intractable  approximation        algoritmi approssimati, capitolo 19
+contract_intractable  branch-and-bound     branch-and-bound, capitolo 19
+contract_intractable  buckets              code a bucket, capitolo 19
+contract_intractable  fifteen-puzzle       gioco del quindici, capitolo 19
+contract_intractable  heuristics           euristiche, capitolo 19
+contract_intractable  pseudopolynomial     pseudopolinomiali, capitolo 19
+
+contract_mfset        mfset                MFSET, sezione 10.2
+
+contract_numeric      binary-integer       interi binari, sezione 2.6
+contract_numeric      combinatorics        coefficienti binomiali e Fibonacci
+contract_numeric      matrix               prodotti di matrici, sezione 12.3
+contract_numeric      matrix-chain         catena di matrici, capitolo 13
+contract_numeric      number-theory        teoria dei numeri, capitolo 17
+contract_numeric      polynomial           polinomi, capitolo 12
+contract_numeric      rsa                  RSA, capitolo 17
+
+contract_optimization change               resto, capitolo 14
+contract_optimization fractional-knapsack  zaino frazionario, capitolo 14
+contract_optimization intervals            intervalli, capitoli 13 e 14
+contract_optimization knapsack             zaino, capitolo 13
+contract_optimization sjf-weighted-intervals intervalli pesati, capitolo 13
+
+contract_priority     fibonacci-heap-priority-queue capitolo 11
+contract_priority     heap-priority-queue  su heap, sezione 10.1
+contract_priority     linked-heap-priority-queue heap a puntatori
+contract_priority     list-priority-queue  su lista, sezione 10.1
+contract_priority     tree-priority-queue  su albero, sezione 10.1
+contract_priority     priority-axioms      assiomi, sezione 10.1
+
+contract_queue        array-queue          QUEUE su vettore, sezione 4.3.3
+contract_queue        dequeue              coda doppia, capitolo 11
+contract_queue        linked-queue         QUEUE su lista, Esercizio 4.10
+contract_queue        queue-axioms         assiomi di QUEUE, sezione 4.3.1
+
+contract_search       binary-search        ricerca binaria, sezione 1.2
+contract_search       interpolation-search interpolazione, capitolo 12
+contract_search       minimum              minimo, sezione 1.2
+contract_search       selection            selezione, capitolo 12
+
+contract_sequence     array-sequence       SEQUENCE su vettore, sezione 4.2
+contract_sequence     list                 SEQUENCE, sezioni 3.2 e 4.1
+contract_sequence     copy-move            copia, spostamento, dimezzamento
+contract_sequence     sequence-algorithms  algoritmi su sequenze
+
+contract_set          bool-set             SET su vettore booleano, capitolo 8
+contract_set          hash-sets            SET su tabelle hash, capitolo 8
+contract_set          list-sets            SET su liste, capitolo 8
+contract_set          set-axioms           assiomi di SET, sezione 3.2.2
+
+contract_sort         checking-contract    costo dei contratti, capitolo 2
+contract_sort         counting-pigeonhole  Counting e Pigeonhole, capitolo 12
+contract_sort         ranges               intervalli, capitoli 2 e 12
+contract_sort         shell-gaps           Shell Sort, capitolo 12
+contract_sort         sorts                ordinamento, capitoli 2 e 12
+
+contract_stack        array-stack          STACK su vettore, sezione 4.3.2
+contract_stack        multistack           k pile in un vettore, oltre il libro
+contract_stack        sequence-stack       STACK su lista, sezione 4.3.1
+contract_stack        stack-axioms         assiomi di STACK, sezione 4.3.1
+contract_stack        expressions          espressioni, oltre il libro
+contract_stack        stack-algorithms     algoritmi su pile, oltre il libro
+
+contract_string       alignment-wordbreak  word break, capitolo 13
+contract_string       huffman              codice di Huffman, capitolo 14
+contract_string       lcs                  LCS, capitolo 13
+contract_string       matching             ricerca di stringhe, capitolo 13
+
+contract_tree         b-plus-tree          B+-albero, capitolo 6
+contract_tree         binary-tree          albero binario, capitolo 5
+contract_tree         parent-tree          vettore dei padri, capitolo 5
+contract_tree         search-tree          ABR e Red-Black, capitolo 6
+contract_tree         tree                 albero ordinato, capitolo 5
+contract_tree         tree-realizations    realizzazioni degli alberi

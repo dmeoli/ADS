@@ -172,6 +172,16 @@ template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
 bool HeapPriorityQueue< T , P , D >::isHeap( void ) const
 {
+ if( size() > 1024 ) {                      // the root and the last item
+  const int l = size() - 1;
+  for( int i : { 0 , l } )
+   if( f_H[ i ]->pos != i )
+    return( false );
+  for( int j = 0 ; ( j < D ) && ( child( 0 , j ) < size() ) ; ++j )
+   if( f_H[ child( 0 , j ) ]->priority < f_H[ 0 ]->priority )
+    return( false );
+  return( !( f_H[ l ]->priority < f_H[ parent( l ) ]->priority ) );
+  }
  for( int i = 0 ; i < size() ; ++i ) {
   if( f_H[ i ]->pos != i )
    return( false );

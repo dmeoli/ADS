@@ -10,6 +10,12 @@
  * top() on the stack i take O( 1 ) amortized time; the stacks are numbered
  * from 0. It generalizes the two stacks in one vector of exercise 4.7.
  *
+ * The contracts [see Contract.h]: k > 0, a stack i in [ 0 , k ), and a
+ * stack that is not empty for top() and pop(); the invariant is that each
+ * cell is in exactly one stack or in the free list, and that the sizes
+ * count the cells of each stack. The operations are defined in
+ * MultiStack.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 4.7,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  *
@@ -31,7 +37,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include <stdexcept>
+#include "ADS/Contract.h"
+
 #include <utility>
 #include <vector>
 
@@ -55,46 +62,27 @@ class MultiStack {
  using Item = T;   ///< the type of the items
 
  /// k empty stacks
- explicit MultiStack( int k ) : f_top( check_k( k ) , -1 ) , f_size( k , 0 ) {}
+ /// \pre k > 0
+ explicit MultiStack( int k );
 
- [[nodiscard]] int stacks( void ) const { return( int( f_top.size() ) ); }
+ [[nodiscard]] int stacks( void ) const;
 
- [[nodiscard]] bool isEmpty( int i ) const {
-  return( f_top[ check( i ) ] < 0 );
-  }
+ /// \pre 0 <= i < k
+ [[nodiscard]] bool isEmpty( int i ) const;
 
- [[nodiscard]] int size( int i ) const { return( f_size[ check( i ) ] ); }
+ /// \pre 0 <= i < k
+ [[nodiscard]] int size( int i ) const;
 
- [[nodiscard]] const T & top( int i ) const {
-  if( isEmpty( i ) )
-   throw( std::logic_error( "ADS::MultiStack::top: empty stack" ) );
-  return( f_C[ f_top[ i ] ].value );
-  }
+ /// \pre 0 <= i < k, the stack i is not empty
+ [[nodiscard]] const T & top( int i ) const;
 
- void push( int i , const T & v ) {
-  check( i );
-  int c = f_free;
-  if( c < 0 ) {
-   f_C.push_back( {} );
-   c = int( f_C.size() ) - 1;
-   }
-  else f_free = f_C[ c ].below;
-  f_C[ c ] = { v , f_top[ i ] };
-  f_top[ i ] = c;
-  ++f_size[ i ];
-  }
+ /// \pre 0 <= i < k
+ /// \post one item more in the stack i
+ void push( int i , const T & v );
 
- T pop( int i ) {
-  if( isEmpty( i ) )
-   throw( std::logic_error( "ADS::MultiStack::pop: empty stack" ) );
-  const int c = f_top[ i ];
-  T v = std::move( f_C[ c ].value );
-  f_top[ i ] = f_C[ c ].below;
-  f_C[ c ].below = f_free;
-  f_free = c;
-  --f_size[ i ];
-  return( v );
-  }
+ /// \pre 0 <= i < k, the stack i is not empty
+ /// \post one item less in the stack i
+ T pop( int i );
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -104,16 +92,8 @@ class MultiStack {
   int below;
   };
 
- static int check_k( int k ) {
-  if( k <= 0 ) throw( std::invalid_argument( "ADS::MultiStack: k <= 0" ) );
-  return( k );
-  }
-
- int check( int i ) const {
-  if( ( i < 0 ) || ( i >= stacks() ) )
-   throw( std::out_of_range( "ADS::MultiStack: no such stack" ) );
-  return( i );
-  }
+ /// each cell in one stack or free, the sizes right, O( n )
+ [[nodiscard]] bool partitioned( void ) const;
 
  std::vector< Cell > f_C;       ///< the cells of all the stacks
  std::vector< int > f_top;      ///< the top cell of each stack, -1 if none
@@ -125,6 +105,12 @@ class MultiStack {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/stack/MultiStack.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -30,6 +30,12 @@
  *   least volume of each rounded profit by dynamic programming, at least
  *   \f$ ( 1 - \epsilon ) \f$ times the optimum in \f$ O( n^3 / \epsilon ) \f$.
  *
+ * The contracts [see Contract.h]: the volumes, the profits and the sums are
+ * not negative, the distances square and symmetric, and the triangle
+ * inequality that the bound of deltaTsp() rests on is an audit, O( n^3 ); each
+ * solution returned is checked as feasible. The operations are defined in
+ * Approximation.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 19.2 and
  *      exercises 19.6, 19.8,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap19.pdf
@@ -62,6 +68,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/complexity/Problems.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 
@@ -85,80 +92,35 @@ namespace ADS {
 /// ff: the box of each object, the first one with room for it, the
 /// objects in the order given or, if decreasing, in decreasing order of
 /// volume (ffd); the boxes are 0 , 1 , ...
+/// \pre each volume is in [ 0 , k ]
+/// \post no box is filled beyond k
 inline std::vector< int > firstFit( const std::vector< long > & A , long k ,
-                                    bool decreasing = false )
-{
- std::vector< int > order( A.size() );
- std::iota( order.begin() , order.end() , 0 );
- if( decreasing )
-  std::stable_sort( order.begin() , order.end() , [ & ]( int a , int b ) {
-   return( A[ a ] > A[ b ] ); } );
- std::vector< int > box( A.size() );
- std::vector< long > free;
- for( int i : order ) {
-  std::size_t b = 0;
-  while( ( b < free.size() ) && ( free[ b ] < A[ i ] ) ) ++b;
-  if( b == free.size() ) free.push_back( k );
-  free[ b ] -= A[ i ];
-  box[ i ] = int( b );
-  }
- return( box );
- }
+                                    bool decreasing = false );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- DELTA TSP ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the cost of the circuit S of the distances D
+/// \pre D is square and S has distinct cities
 template< class T >
-T tourCost( const std::vector< std::vector< T > > & D , const Nodes & S )
-{
- T c = T( 0 );
- for( std::size_t i = 0 ; i < S.size() ; ++i )
-  c += D[ S[ i ] ][ S[ ( i + 1 ) % S.size() ] ];
- return( c );
- }
+T tourCost( const std::vector< std::vector< T > > & D , const Nodes & S );
 
 /// the circuit of the nodes of a minimum spanning tree of the complete
 /// graph of the symmetric distances D in preorder from 0, the children by
 /// increasing name: at most twice the optimum if D is triangular
+/// \pre D is square and symmetric, and triangular (an audit, O( n^3 ))
+/// \post a permutation of the cities
 template< class T >
-Nodes deltaTsp( const std::vector< std::vector< T > > & D )
-{
- const int n = int( D.size() );
- std::vector< WeightedEdge< T > > E;
- for( int u = 0 ; u < n ; ++u )
-  for( int v = u + 1 ; v < n ; ++v ) E.push_back( { u , v , D[ u ][ v ] } );
- std::vector< Nodes > adj( n );
- for( const auto & e : kruskal( n , E ) ) {
-  adj[ e.u ].push_back( e.v );
-  adj[ e.v ].push_back( e.u );
-  }
- Nodes S;
- std::vector< bool > seen( n , false );
- auto pre = [ & ]( auto & self , int u ) -> void {
-  seen[ u ] = true;
-  S.push_back( u );
-  std::sort( adj[ u ].begin() , adj[ u ].end() );
-  for( int v : adj[ u ] ) if( ! seen[ v ] ) self( self , v );
-  };
- if( n > 0 ) pre( pre , 0 );
- return( S );
- }
+Nodes deltaTsp( const std::vector< std::vector< T > > & D );
 
 /// the distances of Teorema 19.2: 1 on the edges of G, s n elsewhere;
 /// their optimum is n if G has a Hamiltonian circuit and more than s n
 /// otherwise
+/// \pre G is unoriented, i.e., square and symmetric, and s >= 1
+/// \post a symmetric matrix of the size of G
 inline std::vector< std::vector< long > > tspGap( const Adjacency & G ,
-                                                  long s )
-{
- const int n = int( G.size() );
- std::vector< std::vector< long > > D( n , std::vector< long >( n , 0 ) );
- for( int u = 0 ; u < n ; ++u )
-  for( int v = 0 ; v < n ; ++v )
-   if( u != v ) D[ u ][ v ] = G[ u ][ v ] ? 1 : s * n;
- return( D );
- }
+                                                  long s );
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- SUBSET SUM AND ZAINO --------------------------*/
@@ -168,94 +130,19 @@ inline std::vector< std::vector< long > > tspGap( const Adjacency & G ,
 /// set found from the sets of at most h elements, \f$ \epsilon =
 /// 1 / ( h + 1 ) \f$; the sets of (1) in the order of the text, by size and
 /// then lexicographically on A in decreasing order
+/// \pre k, h >= 0 and A is not negative
+/// \post a set of sum at most k, the sum returned
 inline std::pair< long , Nodes > apSubsetSum( const std::vector< long > & A ,
-                                              long k , int h )
-{
- const int n = int( A.size() );
- Nodes order( n );                       // A[ order[ 0 ] ] >= ...
- std::iota( order.begin() , order.end() , 0 );
- std::stable_sort( order.begin() , order.end() , [ & ]( int a , int b ) {
-  return( A[ a ] > A[ b ] ); } );
- long max = 0;
- Nodes maxSol;
- std::vector< bool > in( n , false );
- auto complete = [ & ]( void ) {         // the loop (2)
-  long z = 0;
-  for( int j = 0 ; j < n ; ++j ) if( in[ j ] ) z += A[ order[ j ] ];
-  if( z > k ) return;
-  std::vector< bool > S = in;
-  for( int j = 0 ; j < n ; ++j )
-   if( ! S[ j ] && ( z + A[ order[ j ] ] <= k ) ) {
-    S[ j ] = true;
-    z += A[ order[ j ] ];
-    }
-  if( z >= max ) {
-   max = z;
-   maxSol.clear();
-   for( int j = 0 ; j < n ; ++j ) if( S[ j ] ) maxSol.push_back( order[ j ] );
-   }
-  };
- auto sets = [ & ]( auto & self , int from , int left ) -> void {
-  if( left == 0 ) {
-   complete();
-   return;
-   }
-  for( int j = from ; j < n ; ++j ) {
-   in[ j ] = true;
-   self( self , j + 1 , left - 1 );
-   in[ j ] = false;
-   }
-  };
- for( int m = 0 ; m <= std::min( h , n ) ; ++m ) sets( sets , 0 , m );  // (1)
- return( std::pair( max , maxSol ) );
- }
+                                              long k , int h );
 
 /// the best profit and the objects of an \f$ \epsilon \f$-approximation of
 /// ZAINO, profits p and volumes v within C, by the rounded profits
+/// \pre p and v of the same size and not negative, 0 < eps <= 1
+/// \post objects within C, their profit returned
 inline std::pair< long , Nodes > knapsackApprox(
                                             const std::vector< long > & p ,
                                             const std::vector< long > & v ,
-                                            long C , double eps )
-{
- Nodes I;                                // the objects that fit
- long pmax = 0;
- for( std::size_t i = 0 ; i < p.size() ; ++i )
-  if( v[ i ] <= C ) {
-   I.push_back( int( i ) );
-   pmax = std::max( pmax , p[ i ] );
-   }
- if( I.empty() ) return( std::pair( 0L , Nodes() ) );
- const double K = std::max( 1.0 , eps * double( pmax ) / double( I.size() ) );
- std::vector< long > q( I.size() );
- for( std::size_t i = 0 ; i < I.size() ; ++i )
-  q[ i ] = long( double( p[ I[ i ] ] ) / K );
- const long Q = std::accumulate( q.begin() , q.end() , 0L );
- const long INF = std::numeric_limits< long >::max() / 2;
- // V[ i ][ s ]: the least volume of the first i objects of rounded
- // profit s
- std::vector< std::vector< long > > V( I.size() + 1 ,
-                                      std::vector< long >( Q + 1 , INF ) );
- V[ 0 ][ 0 ] = 0;
- for( std::size_t i = 0 ; i < I.size() ; ++i )
-  for( long s = 0 ; s <= Q ; ++s ) {
-   V[ i + 1 ][ s ] = V[ i ][ s ];
-   if( ( s >= q[ i ] ) && ( V[ i ][ s - q[ i ] ] < INF ) )
-    V[ i + 1 ][ s ] = std::min( V[ i + 1 ][ s ] ,
-                                V[ i ][ s - q[ i ] ] + v[ I[ i ] ] );
-   }
- long s = Q;
- while( V[ I.size() ][ s ] > C ) --s;
- Nodes S;
- long profit = 0;
- for( std::size_t i = I.size() ; i > 0 ; --i )
-  if( V[ i ][ s ] != V[ i - 1 ][ s ] ) {
-   S.push_back( I[ i - 1 ] );
-   profit += p[ I[ i - 1 ] ];
-   s -= q[ i - 1 ];
-   }
- std::reverse( S.begin() , S.end() );
- return( std::pair( profit , S ) );
- }
+                                            long C , double eps );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- VERTEX COVER --------------------------------*/
@@ -263,24 +150,19 @@ inline std::pair< long , Nodes > knapsackApprox(
 
 /// both ends of each edge [ u , v ], u < v, whose ends are both out of S,
 /// at most twice a minimum vertex cover; O( n^2 ) on the adjacency matrix
-inline Nodes vertexCoverApprox( const Adjacency & G )
-{
- const int n = int( G.size() );
- std::vector< bool > in( n , false );
- Nodes S;
- for( int u = 0 ; u < n ; ++u )
-  for( int v = u + 1 ; v < n ; ++v )
-   if( G[ u ][ v ] && ! in[ u ] && ! in[ v ] ) {
-    in[ u ] = in[ v ] = true;
-    S.push_back( u );
-    S.push_back( v );
-    }
- return( S );
- }
+/// \pre G is unoriented, i.e., square and symmetric
+/// \post a cover of the edges
+inline Nodes vertexCoverApprox( const Adjacency & G );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/intractable/Approximation.tpp"
 
 /*--------------------------------------------------------------------------*/
 

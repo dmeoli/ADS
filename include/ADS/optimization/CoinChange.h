@@ -9,6 +9,11 @@
  * dynamic programming, the fewest coins N[ c ] of each amount c,
  * \f$ N[ c ] = 1 + \min_{d \leq c} N[ c - d ] \f$, O( n C ).
  *
+ * The contracts [see Contract.h]: the coins are positive and the amount is not
+ * negative; the change of greedyChange() sums to the amount, and
+ * optimalChange() uses at most c coins. The operations are defined in
+ * CoinChange.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 14,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap14.pdf
  *
@@ -31,8 +36,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <vector>
 
@@ -44,38 +53,25 @@ namespace ADS {
 
 /// the coins taken by the greedy choice, the coins in any order; nothing
 /// if it cannot pay
+/// \pre c >= 0 and the coins positive
+/// \post the change sums to c
 inline std::optional< std::vector< long > > greedyChange(
-                                       std::vector< long > coins , long c )
-{
- std::sort( coins.rbegin() , coins.rend() );
- std::vector< long > out;
- for( long d : coins )
-  for( ; ( d > 0 ) && ( c >= d ) ; c -= d )
-   out.push_back( d );
- if( c != 0 )
-  return( std::nullopt );
- return( out );
- }
+                                       std::vector< long > coins , long c );
 
 /// the fewest coins that pay c, nothing if none
+/// \pre c >= 0 and the coins positive
 inline std::optional< long > optimalChange( const std::vector< long > & coins ,
-                                            long c )
-{
- const long INF = std::numeric_limits< long >::max();
- std::vector< long > N( c + 1 , INF );
- N[ 0 ] = 0;
- for( long x = 1 ; x <= c ; ++x )
-  for( long d : coins )
-   if( ( d > 0 ) && ( d <= x ) && ( N[ x - d ] != INF ) )
-    N[ x ] = std::min( N[ x ] , N[ x - d ] + 1 );
- if( N[ c ] == INF )
-  return( std::nullopt );
- return( N[ c ] );
- }
+                                            long c );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/optimization/CoinChange.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -61,7 +61,7 @@ repository; the code cites it instead.
 | | 4.3.2 | stack on a vector | [`stack/ArrayStack.h`](include/ADS/stack/ArrayStack.h) | `ch04.spec.ArrayStack` |
 | | 4.3.3 | queue on a circular vector | [`queue/ArrayQueue.h`](include/ADS/queue/ArrayQueue.h) | `ch04.spec.ArrayQueue` |
 | | 4.4 | towers of Hanoi, recursive and iterative | [`algorithm/Hanoi.h`](include/ADS/algorithm/Hanoi.h) | `ch04.sec4.4.hanoi` |
-| | 4.6 | exercises 4.1–4.11 | [`test/ch04.cpp`](test/ch04.cpp) | `ch04.ex4.*` |
+| | 4.6 | exercises 4.1–4.11; the singly linked list of 4.6 and the linked queue of 4.10 | [`test/ch04.cpp`](test/ch04.cpp), [`sequence/SinglyList.h`](include/ADS/sequence/SinglyList.h), [`queue/LinkedQueue.h`](include/ADS/queue/LinkedQueue.h) | `ch04.ex4.*` |
 | [5](https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf) | 5.1, 5.3 | ordered TREE, parent/first child/sibling | [`tree/Tree.h`](include/ADS/tree/Tree.h) | `ch05.spec.Tree` |
 | | 5.2 | previsit, postvisit, invisit, by levels | [`tree/Tree.h`](include/ADS/tree/Tree.h) | `ch05.sec5.2.visits` |
 | | 5.4 | vector of parents | [`tree/ParentTree.h`](include/ADS/tree/ParentTree.h) | `ch05.sec5.4.parents` |
@@ -158,6 +158,56 @@ and tested in [`test/beyond.cpp`](test/beyond.cpp):
 | palindromes and sorting with a stack | [`stack/StackAlgorithms.h`](include/ADS/stack/StackAlgorithms.h) | `beyond.stack-algorithms` |
 | naive and Knuth-Morris-Pratt string matching | [`string/StringMatching.h`](include/ADS/string/StringMatching.h) | `beyond.string-matching` |
 | exercises on lists, strings, trees and arrays | [`test/beyond.cpp`](test/beyond.cpp) | `beyond.*-exercises`, `beyond.even-odd-strings` |
+| list with cursors in a shared space with a free list | [`sequence/CursorList.h`](include/ADS/sequence/CursorList.h) | `beyond.cursor-list`, `ch04.spec.CursorList` |
+| range of C++ over any sequence | [`sequence/SequenceRange.h`](include/ADS/sequence/SequenceRange.h) | `beyond.sequence-range` |
+| search with the place of insertion and sublists of a sorted sequence | [`sequence/SequenceAlgorithms.h`](include/ADS/sequence/SequenceAlgorithms.h) | `beyond.sorted-list` |
+| postfix expressions, infix to postfix (shunting-yard) | [`stack/Expressions.h`](include/ADS/stack/Expressions.h) | `beyond.postfix` |
+| queue with no duplicates, positive items of a queue | [`queue/UniqueQueue.h`](include/ADS/queue/UniqueQueue.h), [`queue/QueueAlgorithms.h`](include/ADS/queue/QueueAlgorithms.h) | `beyond.queue-algorithms` |
+| dictionary on a sorted vector, pseudo-random inspection | [`dictionary/SortedArrayDictionary.h`](include/ADS/dictionary/SortedArrayDictionary.h), [`dictionary/OpenHashTable.h`](include/ADS/dictionary/OpenHashTable.h) | `beyond.sorted-array-dictionary`, `beyond.hashing` |
+| decision tree of the binary search | [`search/BinarySearch.h`](include/ADS/search/BinarySearch.h) | `beyond.decision-tree` |
+| trees as parenthesized lists, tree of an expression, tree with lists of children | [`tree/BinaryTree.h`](include/ADS/tree/BinaryTree.h), [`tree/ExpressionTree.h`](include/ADS/tree/ExpressionTree.h), [`tree/ChildListTree.h`](include/ADS/tree/ChildListTree.h) | `beyond.list-forms`, `beyond.expression-tree`, `beyond.child-list-tree` |
+| union by size in the MFSET | [`mfset/MFSet.h`](include/ADS/mfset/MFSet.h) | `contract_mfset.mfset` |
+| general visit of a graph, unilateral connection | [`graph/Visit.h`](include/ADS/graph/Visit.h) | `beyond.generic-visit`, `beyond.unilateral-incidence` |
+| general schemes of the techniques (enumeration, backtracking, greedy, divide et impera) | [`algorithm/Paradigms.h`](include/ADS/algorithm/Paradigms.h) | `beyond.paradigms` |
+| Knuth's strong failure function, Hibbard's gaps, sentinels, minimum and maximum together | [`string/StringMatching.h`](include/ADS/string/StringMatching.h), [`sort/`](include/ADS/sort), [`search/Minimum.h`](include/ADS/search/Minimum.h) | `beyond.kmp-strong`, `beyond.slide-sorts` |
+| greedy and backtracking knapsack, eight puzzle by breadth and depth | [`intractable/BranchAndBound.h`](include/ADS/intractable/BranchAndBound.h), [`intractable/FifteenPuzzle.h`](include/ADS/intractable/FifteenPuzzle.h) | `beyond.knapsack-heuristics`, `beyond.eight-puzzle` |
+
+## Contracts
+
+The specification of each operation is checked as a contract
+([`Contract.h`](include/ADS/Contract.h)): `ADS_PRE` for the preconditions
+of the book, `ADS_POST` for the postconditions, `ADS_INVARIANT` for the
+invariant of a structure, and `ADS_AUDIT` for a condition that costs more
+than the operation (e.g., that a vector is sorted before a binary search,
+or that a write left the other items as they were). The macro
+`ADS_CONTRACTS` chooses which are checked: 0 none, 1 the preconditions (the
+default), 2 also the postconditions, 3 also the invariants and the audits;
+a violated contract throws `ADS::contract_violation`, a `std::logic_error`
+that names the condition, the function and the place. The tests are built
+at the level 3, and each abstract data type also has its axioms checked on
+every realization (`contract_*.*-axioms`), e.g., `top( push( S , v ) ) = v`
+and `pop( push( S , v ) ) = S` for a stack.
+
+## Further reading
+
+The headers cite, besides the book, the textbooks and the papers where
+each structure or algorithm beyond the book comes from; the textbooks
+that cover the same ground are
+
+- T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, *Introduction to
+  Algorithms*, 3rd ed., MIT Press, 2009;
+- C. Demetrescu, I. Finocchi, G. F. Italiano, *Algoritmi e strutture
+  dati*, 2nd ed., McGraw-Hill, 2008;
+- R. Sedgewick, *Algorithms in C++, Parts 1-4*, 3rd ed., Addison-Wesley,
+  1998;
+- A. V. Aho, J. E. Hopcroft, J. D. Ullman, *Data Structures and
+  Algorithms*, Addison-Wesley, 1983;
+- D. E. Knuth, *The Art of Computer Programming*, vol. 1 (3rd ed., 1997)
+  and vol. 3 (2nd ed., 1998), Addison-Wesley;
+- M. Cadoli, M. Lenzerini, P. Naggar, A. Schaerf, *Fondamenti della
+  progettazione dei programmi: principi, tecniche e loro applicazioni in
+  C++*, CittàStudi, 1997, for the specification of the abstract data types
+  and their realization in C++.
 
 ## Build and test
 

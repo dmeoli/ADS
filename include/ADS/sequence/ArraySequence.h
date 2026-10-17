@@ -16,10 +16,32 @@
  *            2^k \leq n + 2^{\lfloor \log_2 n \rfloor + 1} - 1 \leq 3 n \; ,
  * \f]
  * whereas growing the vector by a constant d makes them cost
- * \f$ \Theta( n^2 ) \f$.
+ * \f$ \Theta( n^2 ) \f$. Symmetrically, a vector that remove() leaves
+ * with \f$ n \leq capacity / 4 \f$ is replaced by one of half its size,
+ * so that the space stays O( n ) and any sequence of insertions and
+ * removals costs O( 1 ) amortized time each: after a resize the vector is
+ * half full, and \f$ \Omega( capacity ) \f$ operations must come before
+ * the next one. The empty sequence has no vector, the first insertion
+ * makes one of one place, and moving a sequence takes its vector in
+ * O( 1 ) time, leaving the one moved from empty.
+ *
+ * The contracts [see Contract.h]: a position is an index from -1 to n;
+ * next() needs one from -1 to n - 1 and prev() one from 0 to n, since
+ * there is nothing after \f$ pos_n \f$ nor before \f$ pos_{-1} \f$;
+ * insert() needs one from 0 to n, and read(), write() and remove() one
+ * that holds an item, from 0 to n - 1. insert() and write() ensure that v
+ * is read back in its place, and that the other items are where they were
+ * (or one place on, after the insertion), the latter costing O( n ) and
+ * therefore an audit; remove() likewise. The invariant is that the n items
+ * fit in the vector, \f$ 0 \leq n \leq capacity \f$. The operations are
+ * defined in ArraySequence.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.2, 4.2.1
- *      and 4.5, https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ *      and 4.5,
+ *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ * \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
+ *      to Algorithms, 3rd ed., MIT Press, 2009, section 17.4 (dynamic
+ *      tables, the contraction at a quarter)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -39,8 +61,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <initializer_list>
 #include <memory>
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -62,98 +87,84 @@ class ArraySequence {
  using Item = T;   ///< the type of the items
  using Pos = long; ///< a position is an index, from -1 to n
 
- ArraySequence( void ) : f_A( new T[ 1 ] ) , f_size( 0 ) , f_capacity( 1 ) {}
+ /// the empty sequence, with no vector
+ ArraySequence( void );
 
  /// the sequence of the given items, in their order
- ArraySequence( std::initializer_list< T > items ) : ArraySequence() {
-  for( const auto & v : items )
-   insert( f_size , v );
-  }
+ ArraySequence( std::initializer_list< T > items );
 
- ArraySequence( const ArraySequence & other )
-  : f_A( new T[ other.f_capacity ] ) , f_size( other.f_size ) ,
-    f_capacity( other.f_capacity ) {
-  for( Pos i = 0 ; i < f_size ; ++i )
-   f_A[ i ] = other.f_A[ i ];
-  }
+ ArraySequence( const ArraySequence & other );
 
- ArraySequence( ArraySequence && other ) noexcept = default;
+ /// the items of other, which is left empty
+ ArraySequence( ArraySequence && other ) noexcept;
 
- ArraySequence & operator=( ArraySequence other ) noexcept {
-  f_A.swap( other.f_A );
-  std::swap( f_size , other.f_size );
-  std::swap( f_capacity , other.f_capacity );
-  return( *this );
-  }
+ ArraySequence & operator=( ArraySequence other ) noexcept;
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- THE SEQUENCE ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// true if p is -1 or n
- [[nodiscard]] bool finished( Pos p ) const {
-  return( ( p < 0 ) || ( p >= f_size ) );
-  }
+ [[nodiscard]] bool finished( Pos p ) const;
 
- [[nodiscard]] Pos head( void ) const { return( 0 ); }
+ [[nodiscard]] Pos head( void ) const;
 
- [[nodiscard]] Pos tail( void ) const { return( f_size - 1 ); }
+ [[nodiscard]] Pos tail( void ) const;
 
- [[nodiscard]] Pos next( Pos p ) const { return( p + 1 ); }
+ /// \pre -1 <= p < n
+ [[nodiscard]] Pos next( Pos p ) const;
 
- [[nodiscard]] Pos prev( Pos p ) const { return( p - 1 ); }
+ /// \pre 0 <= p <= n
+ [[nodiscard]] Pos prev( Pos p ) const;
 
  /// puts v at index p, the items from index p moving one place on, which
  /// takes O( n - p ) time, O( 1 ) amortized at the end
- Pos insert( Pos p , const T & v ) {
-  if( f_size == f_capacity ) {   // full: twice the size
-   std::unique_ptr< T[] > B( new T[ 2 * f_capacity ] );
-   for( Pos i = 0 ; i < f_size ; ++i )
-    B[ i ] = std::move( f_A[ i ] );
-   f_A = std::move( B );
-   f_capacity *= 2;
-   }
-  for( Pos i = f_size ; i > p ; --i )
-   f_A[ i ] = std::move( f_A[ i - 1 ] );
-  f_A[ p ] = v;
-  ++f_size;
-  return( p );
-  }
+ /// \pre 0 <= p <= n
+ /// \post one item more, v at index p, the others where they were before
+ ///       p and one place on from p (an audit)
+ Pos insert( Pos p , const T & v );
 
- /// removes the item at index p, the following ones moving one place back
- Pos remove( Pos p ) {
-  for( Pos i = p ; i < f_size - 1 ; ++i )
-   f_A[ i ] = std::move( f_A[ i + 1 ] );
-  --f_size;
-  return( p );
-  }
+ /// removes the item at index p, the following ones moving one place back;
+ /// a vector left a quarter full is halved
+ /// \pre 0 <= p < n
+ /// \post one item less, the others where they were before p and one place
+ ///       back after it (an audit)
+ Pos remove( Pos p );
 
- [[nodiscard]] const T & read( Pos p ) const { return( f_A[ p ] ); }
+ /// \pre 0 <= p < n
+ [[nodiscard]] const T & read( Pos p ) const;
 
- void write( Pos p , const T & v ) { f_A[ p ] = v; }
+ /// \pre 0 <= p < n
+ /// \post read( p ) is v, the other items unchanged (an audit)
+ void write( Pos p , const T & v );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- BEYOND THE BOOK -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
  /// the number of items
- [[nodiscard]] Pos size( void ) const { return( f_size ); }
+ [[nodiscard]] Pos size( void ) const;
 
  /// the size of the vector, which the analysis of the doubling is about
- [[nodiscard]] Pos capacity( void ) const { return( f_capacity ); }
+ [[nodiscard]] Pos capacity( void ) const;
 
  /// the same items in the same order
- [[nodiscard]] bool operator==( const ArraySequence & o ) const {
-  if( f_size != o.f_size ) return( false );
-  for( Pos i = 0 ; i < f_size ; ++i )
-   if( !( f_A[ i ] == o.f_A[ i ] ) ) return( false );
-  return( true );
-  }
+ [[nodiscard]] bool operator==( const ArraySequence & o ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// the items fit in the vector
+ [[nodiscard]] bool fits( void ) const;
+
+ /// the k items of o from index i are those of this sequence from index j
+ [[nodiscard]] bool same( const ArraySequence & o , Pos i , Pos j ,
+                          Pos k ) const;
+
+ /// replaces the vector with one of c places
+ void resize( Pos c );
 
  std::unique_ptr< T[] > f_A;   ///< the vector
  Pos f_size;                   ///< the number of items
@@ -164,6 +175,12 @@ class ArraySequence {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sequence/ArraySequence.tpp"
 
 /*--------------------------------------------------------------------------*/
 

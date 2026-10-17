@@ -8,6 +8,10 @@
  * the front of any order does not increase any time of completion;
  * O( n log n ).
  *
+ * The contracts [see Contract.h]: the times are not negative, the order is by
+ * increasing time, and the order given to totalCompletion() has places of t.
+ * The operations are defined in ShortestJobFirst.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 14.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap14.pdf
  *
@@ -30,6 +34,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <numeric>
 #include <vector>
@@ -41,30 +48,26 @@
 namespace ADS {
 
 /// the order of the programs, by increasing duration
+/// \pre no time negative
+/// \post the places by increasing time
 template< class T >
-std::vector< std::size_t > shortestJobFirst( const std::vector< T > & t )
-{
- std::vector< std::size_t > A( t.size() );
- std::iota( A.begin() , A.end() , 0 );
- std::stable_sort( A.begin() , A.end() , [ & ]( std::size_t a ,
-                   std::size_t b ) { return( t[ a ] < t[ b ] ); } );
- return( A );
- }
+std::vector< std::size_t > shortestJobFirst( const std::vector< T > & t );
 
 /// the sum of the times of completion of the programs in the order A
+/// \pre the places of A are places of t
 template< class T >
 T totalCompletion( const std::vector< T > & t ,
-                   const std::vector< std::size_t > & A )
-{
- T now = T( 0 ) , sum = T( 0 );
- for( std::size_t i : A )
-  sum += ( now += t[ i ] );
- return( sum );
- }
+                   const std::vector< std::size_t > & A );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/optimization/ShortestJobFirst.tpp"
 
 /*--------------------------------------------------------------------------*/
 

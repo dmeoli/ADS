@@ -5,8 +5,11 @@
  * The table with direct access of chapter 7: when the keys are the
  * integers in an interval [ a , b ] of size m, the function H( k ) = k - a
  * is injective, a perfect hash, and the DICTIONARY [see ADT.h] is a vector
- * of size m, every operation in O( 1 ) time; a key out of [ a , b ] throws
- * std::out_of_range.
+ * of size m, every operation in O( 1 ) time.
+ *
+ * The contracts [see Contract.h]: a <= b, and every key in [ a , b ];
+ * the invariant is that size() counts the places that are not empty. The
+ * operations are defined in DirectTable.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 7,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
@@ -29,13 +32,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include <cmath>
+#include "ADS/Contract.h"
+
 #include <cstddef>
-#include <cstdint>
-#include <limits>
 #include <optional>
-#include <stdexcept>
-#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -60,43 +60,39 @@ class DirectTable {
  using Value = V;    ///< the type of the values
 
  /// the empty table of the keys in [ a , b ]
- DirectTable( long a , long b ) : f_a( a ) {
-  if( b < a )
-   throw( std::invalid_argument( "ADS::DirectTable: b < a" ) );
-  f_A.resize( b - a + 1 );
-  }
+ /// \pre a <= b
+ DirectTable( long a , long b );
 
- [[nodiscard]] std::optional< V > lookup( long k ) const {
-  return( f_A[ H( k ) ] );
-  }
+ /// the value of k, or nothing
+ /// \pre k in [ a , b ]
+ [[nodiscard]] std::optional< V > lookup( long k ) const;
 
- void insert( long k , const V & v ) {
-  auto & c = f_A[ H( k ) ];
-  if( ! c )
-   ++f_size;
-  c = v;
-  }
+ /// associates v to k
+ /// \pre k in [ a , b ]
+ /// \post lookup( k ) is v
+ void insert( long k , const V & v );
 
- void remove( long k ) {
-  auto & c = f_A[ H( k ) ];
-  if( c )
-   --f_size;
-  c.reset();
-  }
+ /// removes k, if it is there
+ /// \pre k in [ a , b ]
+ /// \post lookup( k ) is nothing
+ void remove( long k );
 
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
  /// the size m = b - a + 1 of the vector
- [[nodiscard]] std::size_t capacity( void ) const { return( f_A.size() ); }
+ [[nodiscard]] std::size_t capacity( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- std::size_t H( long k ) const {
-  if( ( k < f_a ) || ( k - f_a >= long( f_A.size() ) ) )
-   throw( std::out_of_range( "ADS::DirectTable: key out of [a, b]" ) );
-  return( k - f_a );
-  }
+ /// H( k ) = k - a
+ [[nodiscard]] std::size_t H( long k ) const;
+
+ /// whether k is in [ a , b ]
+ [[nodiscard]] bool inRange( long k ) const;
+
+ /// size() counts the places that are not empty, O( m )
+ [[nodiscard]] bool counted( void ) const;
 
  long f_a;                              ///< the smallest key
  std::vector< std::optional< V > > f_A; ///< the vector, nil if empty
@@ -107,6 +103,12 @@ class DirectTable {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/dictionary/DirectTable.tpp"
 
 /*--------------------------------------------------------------------------*/
 

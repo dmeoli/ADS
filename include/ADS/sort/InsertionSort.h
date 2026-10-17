@@ -9,6 +9,10 @@
  * moves), O( 1 ) space, stable; with its simple inner loop it is the
  * fastest on few items, hence the base case of the hybrid sorts.
  *
+ * The contracts [see Contract.h]: lo <= hi <= n, and the range ends sorted
+ * with the same items, an audit. The functions are defined in
+ * InsertionSort.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 2.7.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf
  *
@@ -30,6 +34,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+#include "ADS/sort/Sorted.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <utility>
@@ -42,31 +50,32 @@
 namespace ADS {
 
 /// insertionSort() of A[ lo .. hi - 1 ]
+/// \pre lo <= hi <= n
+/// \post A[ lo .. hi ) is sorted, with the same items
 template< class T , class C = std::less<> >
 void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-                    C less = C() )
-{
- for( std::size_t i = lo + 1 ; i < hi ; ++i ) {
-  T temp = std::move( A[ i ] );               // the item to insert
-  std::size_t j = i;
-  while( ( j > lo ) && less( temp , A[ j - 1 ] ) ) {
-   A[ j ] = std::move( A[ j - 1 ] );          // a larger item to the right
-   --j;
-   }
-  A[ j ] = std::move( temp );
-  }
- }
+                    C less = C() );
+
+/// insertionSort() with a sentinel: the minimum first goes to A[ 0 ], with
+/// n - 1 comparisons and one swap, so that the inner loop of each insertion
+/// needs no test on the index, since it stops at A[ 0 ] at the latest
+/// \post A is sorted, with the same items
+template< class T , class C = std::less<> >
+void insertionSortSentinel( std::vector< T > & A , C less = C() );
 
 /// insertionSort(): A in increasing order by less
 template< class T , class C = std::less<> >
-void insertionSort( std::vector< T > & A , C less = C() )
-{
- insertionSort( A , 0 , A.size() , less );
- }
+void insertionSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sort/InsertionSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

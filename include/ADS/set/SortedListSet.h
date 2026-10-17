@@ -12,6 +12,12 @@
  * the insert() of section 4.1 that puts x before the item in the given
  * position, would put x before the last item.
  *
+ * The contracts [see Contract.h]: insertLast() needs an item larger than
+ * the others, after insert() the item is there and after remove() it is
+ * not, and each operation of two sets gives what its name says; the
+ * invariant is that the list increases strictly. The operations are
+ * defined in SortedListSet.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 8.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
  *
@@ -33,7 +39,9 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
+#include "ADS/set/SetOperations.h"
 
 #include <algorithm>
 #include <concepts>
@@ -65,81 +73,46 @@ class SortedListSet {
 
  SortedListSet( void ) = default;
 
- SortedListSet( std::initializer_list< T > items ) {
-  for( const auto & x : items )
-   insert( x );
-  }
+ SortedListSet( std::initializer_list< T > items );
 
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] bool contains( const T & x ) const {
-  const auto p = lower( x );
-  return( ! f_L.finished( p ) && ( f_L.read( p ) == x ) );
-  }
+ [[nodiscard]] bool contains( const T & x ) const;
 
  /// O( n ) time, to keep the order
- void insert( const T & x ) {
-  const auto p = lower( x );
-  if( f_L.finished( p ) || ! ( f_L.read( p ) == x ) ) {
-   f_L.insert( p , x );
-   ++f_size;
-   }
-  }
+ /// \post x is in the set
+ void insert( const T & x );
 
- /// appends x, larger than all the items, O( 1 ) time; throws
- /// std::logic_error if it is not
- void insertLast( const T & x ) {
-  if( f_size && ! ( f_L.read( f_L.tail() ) < x ) )
-   throw( std::logic_error(
-                    "ADS::SortedListSet::insertLast: x is not the largest" ) );
-  f_L.insert( f_L.next( f_L.tail() ) , x );
-  ++f_size;
-  }
+ /// appends x, larger than all the items, O( 1 ) time
+ /// \pre the set is empty or its largest item is smaller than x
+ void insertLast( const T & x );
 
- void remove( const T & x ) {
-  const auto p = lower( x );
-  if( ! f_L.finished( p ) && ( f_L.read( p ) == x ) ) {
-   f_L.remove( p );
-   --f_size;
-   }
-  }
+ /// \post x is not in the set
+ void remove( const T & x );
 
  /// the smallest item, O( 1 ) time
- [[nodiscard]] std::optional< T > min( void ) const {
-  if( ! f_size )
-   return( std::nullopt );
-  return( f_L.read( f_L.head() ) );
-  }
+ [[nodiscard]] std::optional< T > min( void ) const;
 
  /// the largest item, O( 1 ) time
- [[nodiscard]] std::optional< T > max( void ) const {
-  if( ! f_size )
-   return( std::nullopt );
-  return( f_L.read( f_L.tail() ) );
-  }
+ [[nodiscard]] std::optional< T > max( void ) const;
 
  /// f( x ) on the items in increasing order, O( n ) time
  template< class F >
- void forEach( F && f ) const {
-  for( auto p = f_L.head() ; ! f_L.finished( p ) ; p = f_L.next( p ) )
-   f( f_L.read( p ) );
-  }
+ void forEach( F && f ) const;
 
  /// the sorted list of the items
- [[nodiscard]] const List< T > & list( void ) const { return( f_L ); }
+ [[nodiscard]] const List< T > & list( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
  /// the position of the first item not smaller than x
- typename List< T >::Pos lower( const T & x ) const {
-  auto p = f_L.head();
-  while( ! f_L.finished( p ) && ( f_L.read( p ) < x ) )
-   p = f_L.next( p );
-  return( p );
-  }
+ typename List< T >::Pos lower( const T & x ) const;
+
+ /// the list increases strictly, and the size is its length, O( n )
+ [[nodiscard]] bool sorted( void ) const;
 
  List< T > f_L;              ///< the items, in increasing order
  std::size_t f_size = 0;     ///< the number of items
@@ -151,70 +124,35 @@ class SortedListSet {
 template< class T >
 SortedListSet< T > merge( const SortedListSet< T > & A ,
                           const SortedListSet< T > & B ,
-                          bool a , bool b , bool both )
-{
- SortedListSet< T > C;
- const auto & LA = A.list();
- const auto & LB = B.list();
- auto p = LA.head();
- auto q = LB.head();
- while( ! LA.finished( p ) && ! LB.finished( q ) ) {
-  const T & x = LA.read( p );
-  const T & y = LB.read( q );
-  if( x == y ) {
-   if( both ) C.insertLast( x );
-   p = LA.next( p );
-   q = LB.next( q );
-   }
-  else if( x < y ) {
-   if( a ) C.insertLast( x );
-   p = LA.next( p );
-   }
-  else {
-   if( b ) C.insertLast( y );
-   q = LB.next( q );
-   }
-  }
- for( ; a && ! LA.finished( p ) ; p = LA.next( p ) )
-  C.insertLast( LA.read( p ) );
- for( ; b && ! LB.finished( q ) ; q = LB.next( q ) )
-  C.insertLast( LB.read( q ) );
- return( C );
- }
+                          bool a , bool b , bool both );
 
 /// the union, O( n + m ) time (exercise 8.3)
 template< class T >
 SortedListSet< T > setUnion( const SortedListSet< T > & A ,
-                             const SortedListSet< T > & B )
-{
- return( merge( A , B , true , true , true ) );
- }
+                             const SortedListSet< T > & B );
 
 /// the intersection, O( n + m ) time (the procedure of section 8.3)
 template< class T >
 SortedListSet< T > setIntersection( const SortedListSet< T > & A ,
-                                    const SortedListSet< T > & B )
-{
- return( merge( A , B , false , false , true ) );
- }
+                                    const SortedListSet< T > & B );
 
 /// the difference, O( n + m ) time (exercise 8.4)
 template< class T >
 SortedListSet< T > setDifference( const SortedListSet< T > & A ,
-                                  const SortedListSet< T > & B )
-{
- return( merge( A , B , true , false , false ) );
- }
+                                  const SortedListSet< T > & B );
 
 /// the symmetric difference, O( n + m ) time (exercise 8.5)
 template< class T >
 SortedListSet< T > setSymmetricDifference( const SortedListSet< T > & A ,
-                                           const SortedListSet< T > & B )
-{
- return( merge( A , B , true , true , false ) );
- }
+                                           const SortedListSet< T > & B );
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/set/SortedListSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

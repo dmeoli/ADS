@@ -14,6 +14,16 @@
  *
  * The empty pattern occurs at every place 0 , ... , n.
  *
+ * strongFailure() is the failure function improved by Knuth: if the
+ * character that follows the border of P[ 0 .. q - 1 ] is P[ q ] itself, a
+ * mismatch on P[ q ] would repeat on it, and the border of that border is
+ * taken instead; kmpStrong() is kmp() with it, which never compares a
+ * character of T twice against the same character of P.
+ *
+ * The contracts [see Contract.h]: the failure function gives proper borders,
+ * and kmp() the occurrences of naiveMatching() (checked at level 3). The
+ * operations are defined in StringMatching.tpp.
+ *
  * \see D. E. Knuth, J. H. Morris, V. R. Pratt, Fast pattern matching in
  *      strings, SIAM Journal on Computing 6(2), 323-350, 1977,
  *      doi:10.1137/0206024
@@ -37,6 +47,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include <cstddef>
+#include "ADS/Contract.h"
+
 #include <string_view>
 #include <vector>
 
@@ -48,60 +60,40 @@ namespace ADS {
 
 /// the places of all the occurrences of P in T, by trying every shift
 inline std::vector< std::size_t > naiveMatching( std::string_view T ,
-                                                 std::string_view P )
-{
- std::vector< std::size_t > R;
- for( std::size_t s = 0 ; s + P.size() <= T.size() ; ++s )
-  if( T.compare( s , P.size() , P ) == 0 ) R.push_back( s );
- return( R );
- }
+                                                 std::string_view P );
 
 /// the failure function: F[ q ] is the length of the longest proper
 /// border of P[ 0 .. q - 1 ], F[ 0 ] = -1
-inline std::vector< long > failure( std::string_view P )
-{
- std::vector< long > F( P.size() + 1 );
- F[ 0 ] = -1;
- long k = -1;
- for( std::size_t q = 0 ; q < P.size() ; ++q ) {
-  while( ( k >= 0 ) && ( P[ k ] != P[ q ] ) ) k = F[ k ];
-  F[ q + 1 ] = ++k;
-  }
- return( F );
- }
+/// \post F[ q ] < q for q > 0
+inline std::vector< long > failure( std::string_view P );
 
 /// the places of all the occurrences of P in T, by Knuth-Morris-Pratt;
 /// the comparisons of characters go to *comparisons, if given
+/// \post the occurrences of naiveMatching( T , P )
 inline std::vector< std::size_t > kmp( std::string_view T ,
                                        std::string_view P ,
-                                       long * comparisons = nullptr )
-{
- std::vector< std::size_t > R;
- const auto F = failure( P );
- const long m = long( P.size() );
- long q = 0;                            // the characters of P matched
- if( m == 0 ) {
-  for( std::size_t i = 0 ; i <= T.size() ; ++i ) R.push_back( i );
-  return( R );
-  }
- for( std::size_t i = 0 ; i < T.size() ; ++i ) {
-  for( ; ; ) {
-   if( comparisons ) ++*comparisons;
-   if( P[ q ] == T[ i ] ) break;
-   q = F[ q ];
-   if( q < 0 ) break;
-   }
-  if( ++q == m ) {
-   R.push_back( i + 1 - m );
-   q = F[ m ];
-   }
-  }
- return( R );
- }
+                                       long * comparisons = nullptr );
+
+/// the strong failure function: G[ q ] = F[ q ] unless P[ F[ q ] ] =
+/// P[ q ], in which case G[ q ] = G[ F[ q ] ]; G[ m ] = F[ m ]
+/// \post G[ q ] <= F[ q ]
+inline std::vector< long > strongFailure( std::string_view P );
+
+/// kmp() with the strong failure function on a mismatch
+/// \post the occurrences of naiveMatching( T , P )
+inline std::vector< std::size_t > kmpStrong( std::string_view T ,
+                                             std::string_view P ,
+                                             long * comparisons = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/string/StringMatching.tpp"
 
 /*--------------------------------------------------------------------------*/
 

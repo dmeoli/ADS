@@ -112,7 +112,7 @@ void against_ref( M make , unsigned seed )
 struct Counting {
  long * c;
  bool operator()( const auto & a , const auto & b ) const {
-  ++*c;
+  *c += ! checkingContract();               // not those of the contracts
   return( a < b );
   }
  };
@@ -256,7 +256,7 @@ ADS_TEST( "sec10.2.2.forest" )
  CHECK( S.find( 2 ) != S.find( 3 ) && S.merge( 2 , 3 ) );
  CHECK( S.count() == 1 && ! S.merge( 0 , 1 ) );
 
- MFSet F( 7 , false , false );
+ MFSet F( 7 , MFSet::Union::NONE , false );
  for( auto [ x , y ] : std::vector< std::pair< int , int > >(
        { { 0 , 1 } , { 0 , 2 } , { 4 , 5 } , { 5 , 2 } , { 3 , 6 } ,
          { 2 , 6 } } ) )
@@ -265,7 +265,7 @@ ADS_TEST( "sec10.2.2.forest" )
  for( int x = 0 ; x < 7 ; ++x )
   p[ x ] = F.parent( x );
  CHECK( p == Ints( { 4 , 0 , 0 , 4 , 4 , 4 , 3 } ) );
- CHECK_THROWS( F.find( 7 ) , std::out_of_range );
+ CHECK_THROWS( F.find( 7 ) , contract_violation );
  }
 
 // without the rank, merge( 4 , 5 ), merge( 3 , 4 ), ..., merge( 0 , 1 )
@@ -274,7 +274,7 @@ ADS_TEST( "sec10.2.2.forest" )
 ADS_TEST( "sec10.2.3.rank" )
 {
  for( bool rank : { false , true } ) {
-  MFSet M( 6 , rank , false );
+  MFSet M( 6 , rank ? MFSet::Union::RANK : MFSet::Union::NONE , false );
   for( int x = 4 ; x >= 0 ; --x )
    M.merge( x , x + 1 );
   CHECK( height( M , M.find( 0 ) ) == ( rank ? 1 : 5 ) );
@@ -282,7 +282,7 @@ ADS_TEST( "sec10.2.3.rank" )
  std::mt19937 g( 7 );
  for( int t = 0 ; t < 20 ; ++t ) {
   const int n = 300;
-  MFSet M( n , true , false );
+  MFSet M( n , MFSet::Union::RANK , false );
   for( int k = 0 ; k < 400 ; ++k )
    M.merge( g() % n , g() % n );
   std::map< int , int > size;
@@ -299,7 +299,7 @@ ADS_TEST( "sec10.2.3.rank" )
 // counts the elements from 1 and says "trova( 8 , S )")
 ADS_TEST( "sec10.2.4.compression" )
 {
- MFSet M( 8 , false , true );
+ MFSet M( 8 , MFSet::Union::NONE , true );
  for( auto [ x , y ] : std::vector< std::pair< int , int > >(
        { { 4 , 7 } , { 3 , 4 } , { 3 , 6 } , { 2 , 5 } , { 0 , 1 } ,
          { 0 , 2 } , { 0 , 3 } } ) )
@@ -318,7 +318,7 @@ ADS_TEST( "sec10.2.4.compression" )
  // n - 1 and the others 1
  const int n = 2000;
  for( bool compress : { false , true } ) {
-  MFSet C( n , false , compress );
+  MFSet C( n , MFSet::Union::NONE , compress );
   for( int x = n - 2 ; x >= 0 ; --x )
    C.merge( x , x + 1 );
   const long before = C.steps();
@@ -523,7 +523,7 @@ ADS_TEST( "ex10.7" )
  for( bool compress : { false , true } )
   for( int t = 0 ; t < 10 ; ++t ) {
    const int n = 200;
-   MFSet M( n , true , compress );
+   MFSet M( n , MFSet::Union::RANK , compress );
    for( int k = 0 ; k < 300 ; ++k ) {
     M.merge( g() % n , g() % n );
     if( k % 3 == 0 )
@@ -545,7 +545,7 @@ ADS_TEST( "ex10.8" )
 {
  std::mt19937 g( 9 );
  const int n = 500;
- MFSet M( n , true , true );
+ MFSet M( n , MFSet::Union::RANK , true );
  Ints p( n ) , rank( n , 0 );
  for( int i = 0 ; i < n ; ++i )
   p[ i ] = i;

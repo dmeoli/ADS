@@ -10,6 +10,10 @@
  * The numbers of solutions are 1, 0, 0, 2, 10, 4, 40, 92, 352, 724 for n = 1 ,
  * ... , 10.
  *
+ * The contracts [see Contract.h]: 1 <= n <= 32, the solutions are admissible
+ * (checked at level 3), and board() needs a column of the board for each row.
+ * The operations are defined in NQueens.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 16.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf
  * \see J. Bell, B. Stevens, A survey of known results and research areas
@@ -35,6 +39,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <bit>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <stdexcept>
@@ -49,61 +56,37 @@ namespace ADS {
 
 /// the placements of n <= 32 queens, f( Q ) on each, Q[ r ] the column of
 /// the queen of row r; f returns true to stop; the number found
+/// \pre 1 <= n <= 32
+/// \post each solution admissible
 template< class F >
-long nQueens( int n , F && f )
-{
- if( ( n < 1 ) || ( n > 32 ) )
-  throw( std::invalid_argument( "ADS::nQueens: n not in [1, 32]" ) );
- std::vector< int > Q( n );
- long count = 0;
- bool stop = false;
- const std::uint64_t all = ( std::uint64_t( 1 ) << n ) - 1;
- auto rec = [ & ]( auto & self , int r , std::uint64_t cols ,
-                   std::uint64_t d1 , std::uint64_t d2 ) -> void {
-  if( stop ) return;
-  if( r == n ) {
-   ++count;
-   stop = f( Q );
-   return;
-   }
-  for( std::uint64_t free = all & ~( cols | d1 | d2 ) ; free && ! stop ;
-       free &= free - 1 ) {
-   const std::uint64_t bit = free & ( ~free + 1 );
-   Q[ r ] = std::countr_zero( bit );
-   self( self , r + 1 , cols | bit , ( ( d1 | bit ) << 1 ) & all ,
-         ( d2 | bit ) >> 1 );
-   }
-  };
- rec( rec , 0 , 0 , 0 , 0 );
- return( count );
- }
+long nQueens( int n , F && f );
+
+/// the placements of n queens by the iterative backtracking, with the
+/// stage k and the column V[ k ] of the queen of row k: V[ k ] goes to the
+/// next column not attacked, k goes on when one is found and back when the
+/// columns of row k are over; f( V ) on each, true to stop; the number
+/// found
+/// \pre n >= 1
+/// \post each solution admissible
+template< class F >
+long nQueensIterative( int n , F && f );
 
 /// admissible(): no two queens attack each other
-inline bool admissible( const std::vector< int > & Q )
-{
- for( std::size_t i = 0 ; i < Q.size() ; ++i )
-  for( std::size_t j = i + 1 ; j < Q.size() ; ++j )
-   if( ( Q[ i ] == Q[ j ] ) ||
-       ( std::abs( Q[ i ] - Q[ j ] ) == int( j - i ) ) )
-    return( false );
- return( true );
- }
+inline bool admissible( const std::vector< int > & Q );
 
 /// the board, a line per row, "Q" a queen and "." an empty square
-inline std::string board( const std::vector< int > & Q )
-{
- std::string s;
- for( int c : Q ) {
-  for( std::size_t j = 0 ; j < Q.size() ; ++j )
-   s += int( j ) == c ? 'Q' : '.';
-  s += '\n';
-  }
- return( s );
- }
+/// \pre each column in [ 0 , n )
+inline std::string board( const std::vector< int > & Q );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/backtrack/NQueens.tpp"
 
 /*--------------------------------------------------------------------------*/
 

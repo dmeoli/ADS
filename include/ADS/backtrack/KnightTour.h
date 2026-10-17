@@ -11,6 +11,10 @@
  * linear time. Both return the board with the step of each square, from 1,
  * or nothing if there is no tour from the given square.
  *
+ * The contracts [see Contract.h]: the start is on the board, and the tour
+ * found moves as a knight from it (checked at level 3). The operations are
+ * defined in KnightTour.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 16.6,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf
  * \see H. C. von Warnsdorf, Des Roesselsprunges einfachste und
@@ -35,7 +39,10 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include "ADS/Contract.h"
+
 #include <array>
+#include <cstdlib>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -48,47 +55,21 @@ namespace ADS {
 
 /// a tour of the knight from ( x , y ) on an n x n board, by backtrack,
 /// the moves in the order of the book or by the rule of Warnsdorff
+/// \pre ( x , y ) on the board
+/// \post a tour of knight moves from ( x , y )
 inline std::optional< std::vector< std::vector< int > > > knightTour(
                                     int n , int x , int y ,
-                                    bool warnsdorff = true )
-{
- static constexpr std::array< int , 8 > X = { -1 , 1 , 2 , 2 , 1 , -1 , -2 ,
-                                              -2 };
- static constexpr std::array< int , 8 > Y = { -2 , -2 , -1 , 1 , 2 , 2 , 1 ,
-                                              -1 };
- std::vector< std::vector< int > > A( n , std::vector< int >( n , 0 ) );
- auto ok = [ & ]( int a , int b ) {
-  return( a >= 0 && a < n && b >= 0 && b < n && A[ a ][ b ] == 0 ); };
- auto degree = [ & ]( int a , int b ) {
-  int d = 0;
-  for( int i = 0 ; i < 8 ; ++i ) d += ok( a + X[ i ] , b + Y[ i ] );
-  return( d );
-  };
- auto rec = [ & ]( auto & self , int k , int a , int b ) -> bool {
-  A[ a ][ b ] = k + 1;
-  if( k == n * n - 1 )
-   return( true );
-  std::vector< std::pair< int , int > > moves;      // ( degree , move )
-  for( int i = 0 ; i < 8 ; ++i )
-   if( ok( a + X[ i ] , b + Y[ i ] ) )
-    moves.emplace_back( warnsdorff ? degree( a + X[ i ] , b + Y[ i ] ) : 0 ,
-                        i );
-  std::stable_sort( moves.begin() , moves.end() , []( auto & p , auto & q ) {
-   return( p.first < q.first ); } );
-  for( auto [ d , i ] : moves )
-   if( self( self , k + 1 , a + X[ i ] , b + Y[ i ] ) )
-    return( true );
-  A[ a ][ b ] = 0;
-  return( false );
-  };
- if( ( n < 1 ) || ! rec( rec , 0 , x , y ) )
-  return( std::nullopt );
- return( A );
- }
+                                    bool warnsdorff = true );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/backtrack/KnightTour.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -12,6 +12,27 @@
  * The items move up and down by swapping the contents of the nodes, as in
  * the heap on a vector, and each operation takes \f$ O( \log n ) \f$ time.
  *
+ * With L = true the heap keeps instead a pointer to the last leaf, and
+ * finds the place of the next one by walking the tree: the new leaf is the
+ * right sibling of the last one if this is a left child; otherwise one goes
+ * up while on a right child, then, unless at the root, to the right
+ * sibling, and down along the left children to a leaf, whose left child is
+ * the new leaf (from the root this starts a new level). After deleteMin()
+ * the new last leaf is found symmetrically: the left sibling of the old one
+ * if this was a right child; otherwise up while on a left child, to the left
+ * sibling unless at the root, and down along the right children. Both walks
+ * take \f$ O( \log n ) \f$ steps, and need no counter of the nodes.
+ *
+ * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
+ * need a queue that is not empty; after deleteMin() no item has a smaller
+ * priority than the one removed; the invariant is the order of the heap,
+ * the parents, and the shape, i.e., the node k has the children 2 k and
+ * 2 k + 1 exactly when they are at most size(), and with L the pointer is
+ * the node size(). On a heap of more than
+ * 1024 nodes only the root and the last leaf are checked, so that a long
+ * sequence of operations at the level 3 stays linear. The operations are
+ * defined in LinkedHeapPriorityQueue.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  *
@@ -33,11 +54,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
 #include <memory>
-#include <stdexcept>
 #include <utility>
 
 /*--------------------------------------------------------------------------*/
@@ -51,7 +72,7 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// a priority queue on a heap with pointers
-template< class T , std::totally_ordered P = int >
+template< class T , std::totally_ordered P = int , bool L = false >
 class LinkedHeapPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
@@ -60,56 +81,24 @@ class LinkedHeapPriorityQueue {
  using Item = T;            ///< the type of the items
  using Priority = P;        ///< the type of the priorities
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_n == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] int size( void ) const { return( f_n ); }
+ [[nodiscard]] int size( void ) const;
 
- [[nodiscard]] const T & min( void ) const { return( top()->value ); }
+ /// \pre the queue is not empty
+ [[nodiscard]] const T & min( void ) const;
 
- [[nodiscard]] const P & minPriority( void ) const {
-  return( top()->priority );
-  }
+ /// \pre the queue is not empty
+ [[nodiscard]] const P & minPriority( void ) const;
 
  /// a new last leaf, moved up while smaller than its parent
- void insert( const T & x , const P & p ) {
-  ++f_n;
-  if( f_n == 1 ) {
-   f_root = std::make_unique< Node >( p , x , nullptr );
-   return;
-   }
-  Node * u = at( f_n / 2 );
-  auto & slot = f_n % 2 ? u->right : u->left;
-  slot = std::make_unique< Node >( p , x , u );
-  for( Node * v = slot.get() ; v->parent &&
-       ( v->priority < v->parent->priority ) ; v = v->parent )
-   swap_contents( v , v->parent );
-  }
+ /// \post one item more
+ void insert( const T & x , const P & p );
 
  /// the last leaf into the root, moved down while larger than a child
- T deleteMin( void ) {
-  Node * r = top();
-  T x = std::move( r->value );
-  if( f_n == 1 ) {
-   f_root.reset();
-   f_n = 0;
-   return( x );
-   }
-  Node * last = at( f_n );
-  r->value = std::move( last->value );
-  r->priority = last->priority;
-  Node * p = last->parent;
-  ( f_n % 2 ? p->right : p->left ).reset();
-  --f_n;
-  for( Node * v = r ; ; ) {
-   Node * m = v;
-   for( Node * c : { v->left.get() , v->right.get() } )
-    if( c && ( c->priority < m->priority ) ) m = c;
-   if( m == v ) break;
-   swap_contents( v , m );
-   v = m;
-   }
-  return( x );
-  }
+ /// \pre the queue is not empty
+ /// \post one item less, none of smaller priority than the one removed
+ T deleteMin( void );
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -123,28 +112,29 @@ class LinkedHeapPriorityQueue {
    : priority( p ) , value( v ) , parent( u ) {}
   };
 
- Node * top( void ) const {
-  if( ! f_root )
-   throw( std::logic_error( "ADS::LinkedHeapPriorityQueue: empty" ) );
-  return( f_root.get() );
-  }
-
  /// the node k >= 1 of the levels, by the bits of k
- Node * at( int k ) const {
-  int b = 1;
-  while( ( b << 1 ) <= k ) b <<= 1;
-  Node * u = f_root.get();
-  for( b >>= 1 ; b ; b >>= 1 )
-   u = ( k & b ) ? u->right.get() : u->left.get();
-  return( u );
-  }
+ Node * at( int k ) const;
 
- static void swap_contents( Node * a , Node * b ) {
-  std::swap( a->priority , b->priority );
-  std::swap( a->value , b->value );
-  }
+ static void swap_contents( Node * a , Node * b );
+
+ /// the subtree of u, the node k, in order and in shape; its nodes counted
+ /// in n
+ [[nodiscard]] bool shaped( const Node * u , int k , int & n ) const;
+
+ /// the invariant, O( n ); on more than 1024 nodes, the root and the last
+ /// leaf only
+ [[nodiscard]] bool isHeap( void ) const;
+
+ /// with L, the node whose child the next leaf is
+ /// \pre the heap is not empty
+ [[nodiscard]] Node * nextParent( void ) const;
+
+ /// with L, the node that is the last leaf once f_last is removed
+ /// \pre f_last is not the root
+ [[nodiscard]] Node * previousLeaf( void ) const;
 
  std::unique_ptr< Node > f_root;
+ Node * f_last = nullptr;   ///< the last leaf, the node f_n
  int f_n = 0;
 
  };  // end( class LinkedHeapPriorityQueue )
@@ -152,6 +142,12 @@ class LinkedHeapPriorityQueue {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/priority/LinkedHeapPriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

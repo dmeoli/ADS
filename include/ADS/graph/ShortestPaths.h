@@ -39,6 +39,13 @@
  * once. dagShortestPaths() scans an acyclic graph in topological order,
  * \f$ O( n + m ) \f$ whatever the signs of the costs.
  *
+ * The contracts [see Contract.h]: r is a node; with a frontier other than
+ * QUEUE no negative cycle is reachable from r, and dagShortestPaths() needs
+ * an acyclic graph, both checked at the level of the audits (the first by
+ * Bellman-Ford, O( n m )); the tree found satisfies the conditions of
+ * Bellman unless a negative cycle was found, which isShortestPathTree()
+ * checks. The functions are defined in ShortestPaths.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 11,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap11.pdf
  * \see R. Bellman, On a routing problem, Quarterly of Applied Mathematics
@@ -70,6 +77,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
@@ -123,177 +131,63 @@ struct ShortestPathTree {
 /*--------------------------------------------------------------------------*/
 
 /// camminiMinimi(): the shortest paths from r with the structure how
+/// \pre r is a node; no negative cycle reachable from r unless how is
+///      QUEUE (audit)
+/// \post the conditions of Bellman, unless a negative cycle was found
+///       (audit)
 template< Graph G >
 ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
-                                                      Frontier how )
-{
- using D = typename G::Weight;
- const D INF = infinity< D >();
- const int n = g.bound();
- ShortestPathTree< D > R;
- R.d.assign( n , INF );
- R.T.assign( n , NIL );
- std::vector< bool > b( n , false );
- std::vector< int > count( n , 0 );
-
- // the six structures, only one of which is used
- using LQ = ListPriorityQueue< int , D , false >;
- using HQ = HeapPriorityQueue< int , D >;
- using FQ = FibonacciHeapPriorityQueue< int , D >;
- std::unique_ptr< LQ > lq;
- std::unique_ptr< HQ > hq;
- std::unique_ptr< FQ > fq;
- std::vector< typename LQ::Handle > lh;
- std::vector< typename HQ::Handle > hh;
- std::vector< typename FQ::Handle > fh;
- ArrayQueue< int > Q( std::max( n , 1 ) );
- ArrayStack< int > St( std::max( n , 1 ) );
- Dequeue< int > Dq;
- switch( how ) {
-  case( Frontier::LIST ): lq = std::make_unique< LQ >(); lh.resize( n );
-                          break;
-  case( Frontier::HEAP ): hq = std::make_unique< HQ >( n ); hh.resize( n );
-                          break;
-  case( Frontier::FIBONACCI ): fq = std::make_unique< FQ >(); fh.resize( n );
-                               break;
-  default: break;
-  }
-
- auto add = [ & ]( int v , D key , bool first ) {          // (1) and (3)
-  switch( how ) {
-   case( Frontier::LIST ): lh[ v ] = lq->insert( v , key ); break;
-   case( Frontier::HEAP ): hh[ v ] = hq->insert( v , key ); break;
-   case( Frontier::FIBONACCI ): fh[ v ] = fq->insert( v , key ); break;
-   case( Frontier::QUEUE ): Q.enqueue( v ); break;
-   case( Frontier::STACK ): St.push( v ); break;
-   case( Frontier::DEQUE ):
-    if( first ) Dq.insertTail( v ); else Dq.insertHead( v );
-   }
-  };
- auto empty = [ & ]( void ) {
-  switch( how ) {
-   case( Frontier::LIST ): return( lq->isEmpty() );
-   case( Frontier::HEAP ): return( hq->isEmpty() );
-   case( Frontier::FIBONACCI ): return( fq->isEmpty() );
-   case( Frontier::QUEUE ): return( Q.isEmpty() );
-   case( Frontier::STACK ): return( St.isEmpty() );
-   default: return( Dq.isEmpty() );
-   }
-  };
- auto extract = [ & ]( void ) {                             // (2)
-  switch( how ) {
-   case( Frontier::LIST ): return( lq->deleteMin() );
-   case( Frontier::HEAP ): return( hq->deleteMin() );
-   case( Frontier::FIBONACCI ): return( fq->deleteMin() );
-   case( Frontier::QUEUE ): return( Q.dequeue() );
-   case( Frontier::STACK ): return( St.pop() );
-   default: return( Dq.removeHead() );
-   }
-  };
- auto update = [ & ]( int v , D key ) {                     // (4)
-  switch( how ) {
-   case( Frontier::LIST ): lq->decrease( lh[ v ] , key ); break;
-   case( Frontier::HEAP ): hq->decrease( hh[ v ] , key ); break;
-   case( Frontier::FIBONACCI ): fq->decrease( fh[ v ] , key ); break;
-   default: break;
-   }
-  };
-
- R.d[ r ] = D( 0 );
- b[ r ] = true;
- add( r , D( 0 ) , true );
- while( ! empty() ) {
-  const int u = extract();
-  b[ u ] = false;
-  R.order.push_back( u );
-  if( ( how == Frontier::QUEUE ) && ( ++count[ u ] > n ) ) {
-   // a node is extracted at most n times by a queue, unless there is a
-   // negative cycle; the other frontiers have no such bound
-   R.negativeCycle = true;
-   return( R );
-   }
-  g.forEachEdge( u , [ & ]( int v , const D & w ) {
-   const D nd = R.d[ u ] + w;
-   if( nd < R.d[ v ] ) {
-    const bool first = ( R.d[ v ] == INF );
-    R.d[ v ] = nd;
-    R.T[ v ] = u;
-    if( ! b[ v ] ) {
-     add( v , nd , first );
-     b[ v ] = true;
-     }
-    else
-     update( v , nd );
-    }
-   } );
-  }
- return( R );
- }
+                                                      Frontier how );
 
 /// Dijkstra: a priority queue on an unsorted list, O( n^2 )
 template< Graph G >
-auto dijkstra( const G & g , int r )
-{
- return( shortestPaths( g , r , Frontier::LIST ) );
- }
+auto dijkstra( const G & g , int r );
 
 /// Johnson: a priority queue on a binary heap, O( m log n )
 template< Graph G >
-auto johnson( const G & g , int r )
-{
- return( shortestPaths( g , r , Frontier::HEAP ) );
- }
+auto johnson( const G & g , int r );
 
 /// Fredman-Tarjan: a priority queue on a Fibonacci heap, O( m + n log n )
 template< Graph G >
-auto fredmanTarjan( const G & g , int r )
-{
- return( shortestPaths( g , r , Frontier::FIBONACCI ) );
- }
+auto fredmanTarjan( const G & g , int r );
 
 /// Bellman-Ford-Moore: a queue, O( n m ), negative cycles detected
 template< Graph G >
-auto bellmanFordMoore( const G & g , int r )
-{
- return( shortestPaths( g , r , Frontier::QUEUE ) );
- }
+auto bellmanFordMoore( const G & g , int r );
 
 /// Pape-D'Esopo: a dequeue
 template< Graph G >
-auto papeDEsopo( const G & g , int r )
-{
- return( shortestPaths( g , r , Frontier::DEQUE ) );
- }
+auto papeDEsopo( const G & g , int r );
 
 /// the shortest paths of an acyclic graph, scanning its nodes in
 /// topological order, O( n + m )
+/// \pre r is a node, and the graph is acyclic (audit)
+/// \post the conditions of Bellman (audit)
 template< Graph G >
 ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g ,
-                                                         int r )
-{
- using D = typename G::Weight;
- const D INF = infinity< D >();
- ShortestPathTree< D > R;
- R.d.assign( g.bound() , INF );
- R.T.assign( g.bound() , NIL );
- R.d[ r ] = D( 0 );
- for( int u : topsort( g ) ) {
-  if( R.d[ u ] == INF )
-   continue;
-  R.order.push_back( u );
-  g.forEachEdge( u , [ & ]( int v , const D & w ) {
-   if( R.d[ u ] + w < R.d[ v ] ) {
-    R.d[ v ] = R.d[ u ] + w;
-    R.T[ v ] = u;
-    }
-   } );
-  }
- return( R );
- }
+                                                         int r );
+
+/// whether R is a tree of shortest paths from r: d[ r ] = 0, the
+/// unreachable nodes at infinity() with no parent, d[ v ] = d[ T[ v ] ] +
+/// w( T[ v ] , v ) on the others, and d[ u ] + w( u , v ) >= d[ v ] on each
+/// edge from a reached node (the Teorema 11.1), O( n + m ) on lists
+template< Graph G >
+bool isShortestPathTree( const G & g , int r ,
+                         const ShortestPathTree< typename G::Weight > & R );
+
+/// whether a negative cycle is reachable from r, by Bellman-Ford, O( n m )
+template< Graph G >
+bool reachesNegativeCycle( const G & g , int r );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/graph/ShortestPaths.tpp"
 
 /*--------------------------------------------------------------------------*/
 

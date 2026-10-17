@@ -410,7 +410,7 @@ ADS_TEST( "ex13.5" )
    H.insertEdge( a , b , w );
    const auto F = floydWarshall( H );
    if( F.negativeCycle ) {
-    CHECK_THROWS( addEdge( R , a , b , w ) , std::logic_error );
+    CHECK_THROWS( addEdge( R , a , b , w ) , contract_violation );
     continue;
     }
    addEdge( R , a , b , w );

@@ -5,6 +5,14 @@
  * The visits of a GRAPH of section 9.5 and their applications, each in
  * Theta( n + m ) time on lists or vectors of adjacency:
  *
+ * - genericVisit(), the general scheme of which the others are cases: the
+ *   reached nodes R and the open ones Q start as { r }, the tree B as
+ *   empty; while Q is not empty a node j is chosen from Q, and if some k
+ *   adjacent to j is not in R then k joins R and Q and ( j , k ) joins B,
+ *   otherwise j leaves Q. Choosing the newest node of Q gives the visit in
+ *   depth, the oldest the visit in breadth; B is a tree spanning the nodes
+ *   reachable from r. A cursor in the adjacency of each node makes each
+ *   edge examined once;
  * - bfs(), the visit in breadth with a QUEUE, which examines the nodes by
  *   increasing distance from the root r; distance() computes the distance
  *   (the minimum number of edges, the Erdos number of the example) and the
@@ -21,7 +29,13 @@
  * - hasCycle(), true if and only if a visit finds a back edge;
  * - topsort(), the nodes by decreasing finish time, a topological order of
  *   an acyclic graph: if ( u , v ) is an edge then ft[ v ] < ft[ u ];
- *   topsortKahn() builds one by removing the nodes with no entering edge;
+ *   topsortKahn() builds one by removing the nodes with no entering edge,
+ *   and isTopologicalOrder() checks one;
+ * - unilaterallyConnected(), true if for every two nodes u and v there is
+ *   a path from u to v or one from v to u: so it is exactly when the graph
+ *   of the strongly connected components, which is acyclic, has a path
+ *   through all of them, i.e., when its topological order is unique, which
+ *   the algorithm of Kahn finds out by never having two sources at once;
  * - transpose() and scc(), the strongly connected components of an oriented
  *   graph by the algorithm of Kosaraju: a visit gives the nodes by
  *   decreasing finish time, and cc() on the transposed graph starts its
@@ -30,6 +44,13 @@
  *   first and, the edge being reversed, cannot reach C' from it.
  *
  * Nil is -1 and the infinite distance is INF.
+ *
+ * The contracts [see Contract.h]: a visit starts from a node of the graph
+ * (and dfs() from one not visited yet, with a vector of a place per name);
+ * distance() ensures, at the level of the audits, that its distances are
+ * those of a breadth first tree, topsort() and topsortKahn() that their
+ * order is topological when the graph is acyclic, transpose() that it
+ * reverses each edge. The functions are defined in Visit.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
@@ -61,12 +82,15 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/queue/ArrayQueue.h"
 
 #include <algorithm>
+#include <deque>
 #include <limits>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -79,6 +103,12 @@ namespace ADS {
 /// the infinite distance
 inline constexpr int INF = std::numeric_limits< int >::max();
 
+/// the node of Q that genericVisit() chooses
+enum class Choice {
+ NEWEST ,   ///< the last one added: the visit in depth
+ OLDEST     ///< the first one added: the visit in breadth
+ };
+
 /// no node
 inline constexpr int NIL = -1;
 
@@ -86,63 +116,33 @@ inline constexpr int NIL = -1;
 /*--------------------------------- BFS ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the general visit from r: the nodes in the order in which they join R,
+/// and the edges of the tree B in the order in which they join it
+/// \pre r is a node
+/// \post B has one edge less than R, each from a node already in R (audit)
+template< Graph G >
+std::pair< std::vector< int > , std::vector< std::pair< int , int > > >
+genericVisit( const G & g , int r , Choice c );
+
 /// bfs(): node( u ) when u is examined, edge( u , v ) when ( u , v ) is
+/// \pre r is a node
 template< Graph G , class FN , class FE >
-void bfs( const G & g , int r , FN && node , FE && edge )
-{
- std::vector< bool > visited( g.bound() , false );
- ArrayQueue< int > S( std::max( g.n() , 1 ) );
- S.enqueue( r );
- visited[ r ] = true;
- while( ! S.isEmpty() ) {
-  const int u = S.dequeue();
-  node( u );
-  g.forEachAdj( u , [ & ]( int v ) {
-   edge( u , v );
-   if( ! visited[ v ] ) {
-    visited[ v ] = true;
-    S.enqueue( v );
-    }
-   } );
-  }
- }
+void bfs( const G & g , int r , FN && node , FE && edge );
 
 /// distance(): the distances from r, INF if not reachable, and the parents
 /// in the tree of the shortest paths, NIL for r and the unreachable nodes
+/// \pre r is a node
+/// \post each edge ( u , v ) from a reached u has d[ v ] <= d[ u ] + 1, and
+///       each reached v but r has d[ v ] = d[ p[ v ] ] + 1 (audit)
 template< Graph G >
 std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
-                                                                int r )
-{
- std::vector< int > d( g.bound() , INF ) , p( g.bound() , NIL );
- ArrayQueue< int > S( std::max( g.n() , 1 ) );
- S.enqueue( r );
- d[ r ] = 0;
- while( ! S.isEmpty() ) {
-  const int u = S.dequeue();
-  g.forEachAdj( u , [ & ]( int v ) {
-   if( d[ v ] == INF ) {
-    d[ v ] = d[ u ] + 1;
-    p[ v ] = u;
-    S.enqueue( v );
-    }
-   } );
-  }
- return( std::pair( d , p ) );
- }
+                                                                int r );
 
 /// the path from r to s in the tree of the parents p, empty if there is
 /// none (the printPath() of the book)
-inline std::vector< int > path( int r , int s , const std::vector< int > & p )
-{
- if( r == s )
-  return( std::vector< int >{ s } );
- if( p[ s ] == NIL )
-  return( std::vector< int >() );
- auto out = path( r , p[ s ] , p );
- if( ! out.empty() )
-  out.push_back( s );
- return( out );
- }
+/// \pre r and s are places of p
+/// \post the path is empty or goes from r to s
+inline std::vector< int > path( int r , int s , const std::vector< int > & p );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------- DFS ------------------------------------*/
@@ -150,50 +150,21 @@ inline std::vector< int > path( int r , int s , const std::vector< int > & p )
 
 /// dfs(): pre( u ) in the previsit, edge( u , v ) on each edge, post( u ) in
 /// the postvisit
+/// \pre u is a node not visited, and visited has a place per name
 template< Graph G , class Pre , class Edge , class Post >
 void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
-          Edge && edge , Post && post )
-{
- visited[ u ] = true;
- pre( u );                                            // (1)
- g.forEachAdj( u , [ & ]( int v ) {
-  edge( u , v );
-  if( ! visited[ v ] )
-   dfs( g , v , visited , pre , edge , post );
-  } );
- post( u );                                           // (2)
- }
+          Edge && edge , Post && post );
 
 /// cc(): the component of each node, numbered from 1, the visits starting
 /// from the nodes as they leave the stack S (its last item first)
+/// \pre the items of S are nodes (audit)
 template< Graph G >
-std::vector< int > cc( const G & g , std::vector< int > S )
-{
- std::vector< int > id( g.bound() , 0 );
- int count = 0;
- auto rec = [ & ]( auto & self , int u ) -> void {
-  id[ u ] = count;
-  g.forEachAdj( u , [ & ]( int v ) { if( id[ v ] == 0 ) self( self , v ); } );
-  };
- while( ! S.empty() ) {
-  const int u = S.back();
-  S.pop_back();
-  if( id[ u ] == 0 ) {
-   ++count;
-   rec( rec , u );
-   }
-  }
- return( id );
- }
+std::vector< int > cc( const G & g , std::vector< int > S );
 
 /// cc() starting the visits from the nodes in increasing order
+/// \post each node has a component (audit)
 template< Graph G >
-std::vector< int > cc( const G & g )
-{
- auto S = g.V();
- std::reverse( S.begin() , S.end() );
- return( cc( g , S ) );
- }
+std::vector< int > cc( const G & g );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS DfsSchema ------------------------------*/
@@ -209,40 +180,23 @@ class DfsSchema {
 /*--------------------------------------------------------------------------*/
  public:
 
- explicit DfsSchema( const G & g ) : f_g( g ) , f_dt( g.bound() , 0 ) ,
-                                     f_ft( g.bound() , 0 ) {}
+ explicit DfsSchema( const G & g );
 
- /// the visit from u, which must not be discovered yet; edge( u , v , k )
- /// on each edge examined, of kind k
+ /// the visit from u; edge( u , v , k ) on each edge examined, of kind k
+ /// \pre u is a node not discovered yet
+ /// \post u is finished after it is discovered
  template< class Edge >
- void visit( int u , Edge && edge ) {
-  f_dt[ u ] = ++f_time;
-  f_g.forEachAdj( u , [ & ]( int v ) {
-   if( f_dt[ v ] == 0 ) {
-    edge( u , v , EdgeKind::TREE );
-    visit( v , edge );
-    }
-   else if( ( f_dt[ u ] > f_dt[ v ] ) && ( f_ft[ v ] == 0 ) )
-    edge( u , v , EdgeKind::BACK );
-   else if( ( f_dt[ u ] < f_dt[ v ] ) && ( f_ft[ v ] != 0 ) )
-    edge( u , v , EdgeKind::FORWARD );
-   else
-    edge( u , v , EdgeKind::CROSS );
-   } );
-  f_ft[ u ] = ++f_time;
-  }
+ void visit( int u , Edge && edge );
 
  /// the visits from all the nodes not discovered yet, in increasing order
  template< class Edge >
- void visitAll( Edge && edge ) {
-  for( int u : f_g.V() )
-   if( f_dt[ u ] == 0 )
-    visit( u , edge );
-  }
+ void visitAll( Edge && edge );
 
- [[nodiscard]] int dt( int u ) const { return( f_dt[ u ] ); }
+ /// \pre u is a node
+ [[nodiscard]] int dt( int u ) const;
 
- [[nodiscard]] int ft( int u ) const { return( f_ft[ u ] ); }
+ /// \pre u is a node
+ [[nodiscard]] int ft( int u ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -254,95 +208,56 @@ class DfsSchema {
 
  };  // end( class DfsSchema )
 
+/*--------------------------------------------------------------------------*/
+/*--------------------- CYCLES, ORDERS AND COMPONENTS ----------------------*/
+/*--------------------------------------------------------------------------*/
+
 /// hasCycle(): true if the oriented graph has a cycle, i.e., if a visit
 /// finds a back edge
 template< Graph G >
-bool hasCycle( const G & g )
-{
- std::vector< int > dt( g.bound() , 0 ) , ft( g.bound() , 0 );
- int time = 0;
- auto rec = [ & ]( auto & self , int u ) -> bool {
-  dt[ u ] = ++time;
-  bool found = false;
-  g.forEachAdj( u , [ & ]( int v ) {
-   if( found )
-    return;
-   if( dt[ v ] == 0 )
-    found = self( self , v );
-   else if( ( dt[ u ] > dt[ v ] ) && ( ft[ v ] == 0 ) )
-    found = true;
-   } );
-  ft[ u ] = ++time;
-  return( found );
-  };
- for( int u : g.V() )
-  if( ( dt[ u ] == 0 ) && rec( rec , u ) )
-   return( true );
- return( false );
- }
+bool hasCycle( const G & g );
+
+/// whether S has each node once and each edge ( u , v ) has u before v
+template< Graph G >
+bool isTopologicalOrder( const G & g , const std::vector< int > & S );
 
 /// topsort(): the nodes by decreasing finish time, which for an acyclic
 /// graph is a topological order; the first is the top of the stack of the
 /// book
+/// \post a topological order if the graph is acyclic (audit)
 template< Graph G >
-std::vector< int > topsort( const G & g )
-{
- std::vector< bool > visited( g.bound() , false );
- std::vector< int > S;
- auto none = []( auto... ) {};
- for( int u : g.V() )
-  if( ! visited[ u ] )
-   dfs( g , u , visited , none , none ,
-        [ & ]( int v ) { S.push_back( v ); } );
- std::reverse( S.begin() , S.end() );
- return( S );
- }
+std::vector< int > topsort( const G & g );
 
 /// the topological order by removing the nodes with no entering edge, in
 /// the order of V() and then of discovery; fewer than n nodes if there is
 /// a cycle
+/// \post a topological order if it has all the nodes (audit)
 template< Graph G >
-std::vector< int > topsortKahn( const G & g )
-{
- std::vector< int > in( g.bound() , 0 ) , out;
- for( int u : g.V() )
-  g.forEachAdj( u , [ & ]( int v ) { ++in[ v ]; } );
- for( int u : g.V() )
-  if( in[ u ] == 0 )
-   out.push_back( u );
- for( std::size_t i = 0 ; i < out.size() ; ++i )
-  g.forEachAdj( out[ i ] , [ & ]( int v ) {
-   if( --in[ v ] == 0 )
-    out.push_back( v );
-   } );
- return( out );
- }
+std::vector< int > topsortKahn( const G & g );
 
 /// the transposed graph, with the edges reversed
+/// \post ( v , u ) is an edge of it for each edge ( u , v ) (audit)
 template< Graph G >
-ListGraph<> transpose( const G & g )
-{
- ListGraph<> t( g.bound() , g.directed() );
- for( int u = 0 ; u < g.bound() ; ++u )
-  if( ! g.hasNode( u ) )
-   t.deleteNode( u );
- for( int u : g.V() )
-  g.forEachAdj( u , [ & ]( int v ) { t.insertEdge( v , u ); } );
- return( t );
- }
+ListGraph<> transpose( const G & g );
 
 /// scc(): the strongly connected component of each node, numbered from 1
+/// \post each node has a component
 template< Graph G >
-std::vector< int > scc( const G & g )
-{
- auto S = topsort( g );                           // first visit
- std::reverse( S.begin() , S.end() );             // its top at the back
- return( cc( transpose( g ) , S ) );              // second visit
- }
+std::vector< int > scc( const G & g );
+
+/// true if every two nodes have a path between them in one direction
+template< Graph G >
+bool unilaterallyConnected( const G & g );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/graph/Visit.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -247,7 +247,7 @@ void spec( bool directed , unsigned seed )
    nodes.insert( w );
    }
   else if( u == v )
-   CHECK_THROWS( g.insertEdge( u , v ) , std::invalid_argument );
+   CHECK_THROWS( g.insertEdge( u , v ) , contract_violation );
   else if( what < 12 ) {
    g.insertEdge( u , v , o );
    edges[ key( u , v ) ] = o;
@@ -281,7 +281,7 @@ void spec( bool directed , unsigned seed )
   std::sort( y.begin() , y.end() );
   CHECK( x == y );
   }
- CHECK_THROWS( (void) g.adj( g.bound() ) , std::out_of_range );
+ CHECK_THROWS( (void) g.adj( g.bound() ) , contract_violation );
  }
 
 ADS_TEST( "spec.ListGraph" )

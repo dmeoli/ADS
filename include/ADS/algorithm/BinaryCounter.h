@@ -16,6 +16,10 @@
  * bits and sets one costs d + 1 and changes \f$ \Phi \f$ by 1 - d, hence its
  * amortized cost is 2.
  *
+ * The contracts [see Contract.h]: the counter holds only bits, an audit, and
+ * add() changes at most k of them. The functions are defined in
+ * BinaryCounter.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.2.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  *
@@ -37,6 +41,9 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -52,24 +59,19 @@ namespace ADS {
 
 /// add(): increments the counter of A.size() bits modulo 2^k and returns the
 /// number of bits it has changed, i.e., its actual cost
-inline std::size_t add( std::vector< int > & A )
-{
- const std::size_t k = A.size();
- std::size_t i = 0;
- while( ( i < k ) && ( A[ i ] == 1 ) ) {
-  A[ i ] = 0;
-  ++i;
-  }
- if( i < k ) {
-  A[ i ] = 1;
-  return( i + 1 );
-  }
- return( k );
- }
+/// \pre the items of A are bits
+/// \post at most k bits changed
+inline std::size_t add( std::vector< int > & A );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/algorithm/BinaryCounter.tpp"
 
 /*--------------------------------------------------------------------------*/
 

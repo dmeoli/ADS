@@ -29,8 +29,14 @@
  *   \f$ m = 2^p \f$: with \f$ s = \lfloor C 2^w \rfloor \f$ and
  *   \f$ i s = r_1 2^w + r_0 \f$, H( k ) is made of the p most significant
  *   bits of \f$ r_0 \f$ [see hash_fibonacci()];
- * - the middle square, the p bits in the middle of
- *   \f$ i^2 \f$ [see hash_midsquare()].
+ * - the middle square, the p bits in the middle of \f$ i^2 \f$ [see
+ *   hash_midsquare()].
+ *
+ * The contracts [see Contract.h]: the number p of bits in its range, a key
+ * of at most 8 characters for int_bin(), and for hash_division() a size m
+ * > 0 and a base > 0 such that the rule of Horner does not overflow; each
+ * result is below the size it is meant for. The functions are defined in
+ * HashFunctions.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 7.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
@@ -38,7 +44,6 @@
  *      Searching, 2nd ed., Addison-Wesley, 1998, section 6.4
  * \see R. Morris, Scatter storage techniques, Communications of the ACM
  *      11(1), 38-44, 1968, doi:10.1145/362851.362882
-
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -58,14 +63,13 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <optional>
-#include <stdexcept>
 #include <string_view>
-#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -78,101 +82,65 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// the bit of place j of bin( k ), counted from the left; 0 past the end
-inline unsigned bin_bit( std::string_view k , std::size_t j )
-{
- if( j >= 8 * k.size() )
-  return( 0 );
- return( ( static_cast< unsigned char >( k[ j / 8 ] ) >> ( 7 - j % 8 ) ) &
-         1u );
- }
+unsigned bin_bit( std::string_view k , std::size_t j );
 
 /// int( bin( k ) ) of a key of at most 8 characters
-inline std::uint64_t int_bin( std::string_view k )
-{
- if( k.size() > 8 )
-  throw( std::invalid_argument( "ADS::int_bin: more than 64 bits" ) );
- std::uint64_t i = 0;
- for( unsigned char c : k )
-  i = ( i << 8 ) | c;
- return( i );
- }
+/// \pre k has at most 8 characters
+std::uint64_t int_bin( std::string_view k );
 
-/// the extraction: the p <= 63 bits of bin( k ) from the place s on,
-/// counted from the left, as an integer in [ 0 , 2^p )
-inline std::uint64_t hash_extraction( std::string_view k , int p ,
-                                      std::size_t s )
-{
- if( ( p <= 0 ) || ( p > 63 ) )
-  throw( std::invalid_argument( "ADS::hash_extraction: p not in [1, 63]" ) );
- std::uint64_t b = 0;
- for( int j = 0 ; j < p ; ++j )
-  b = ( b << 1 ) | bin_bit( k , s + j );
- return( b );
- }
+/// the extraction: the p bits of bin( k ) from the place s on, counted
+/// from the left, as an integer in [ 0 , 2^p )
+/// \pre 1 <= p <= 63
+/// \post the result is below 2^p
+std::uint64_t hash_extraction( std::string_view k , int p , std::size_t s );
 
-/// the XOR of the blocks of p <= 63 bits of bin( k ), the last one padded
-/// with zeros on the right
-inline std::uint64_t hash_xor( std::string_view k , int p )
-{
- if( ( p <= 0 ) || ( p > 63 ) )
-  throw( std::invalid_argument( "ADS::hash_xor: p not in [1, 63]" ) );
- std::uint64_t b = 0;
- for( std::size_t s = 0 ; s < 8 * k.size() ; s += p )
-  b ^= hash_extraction( k , p , s );
- return( b );
- }
+/// the XOR of the blocks of p bits of bin( k ), the last one padded with
+/// zeros on the right
+/// \pre 1 <= p <= 63
+/// \post the result is below 2^p
+std::uint64_t hash_xor( std::string_view k , int p );
 
 /// the division int( bin( k ) ) mod m by the rule of Horner in the given
 /// base, each character being a digit, from the leading digit seed (the
-/// h = 5 , h = 3 h + c is base 3 and seed 5);
-/// ( m - 1 ) base + base - 1 must fit in 64 bits
-inline std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
-                                    std::uint64_t base = 256 ,
-                                    std::uint64_t seed = 0 )
-{
- if( ( m == 0 ) || ( base == 0 ) ||
-     ( m > std::numeric_limits< std::uint64_t >::max() / base ) )
-  throw( std::invalid_argument( "ADS::hash_division: m too large" ) );
- std::uint64_t b = seed % m;
- for( unsigned char c : k )
-  b = ( b * base + c ) % m;
- return( b );
- }
+/// h = 5 , h = 3 h + c is base 3 and seed 5)
+/// \pre m > 0, base > 0, and ( m - 1 ) base + base - 1 fits in 64 bits
+/// \post the result is below m
+std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
+                             std::uint64_t base = 256 ,
+                             std::uint64_t seed = 0 );
 
 /// the multiplication in floating point, the book's formula: exact only
 /// while C i keeps enough digits after the point, i.e., for i well below
 /// the 2^64 of the mantissa of a long double
-inline std::uint64_t hash_multiplication( std::uint64_t i , std::uint64_t m ,
-                                          long double C =
-                                           ( std::sqrt( 5.0L ) - 1 ) / 2 )
-{
- long double ip;
- const long double f = std::modf( C * static_cast< long double >( i ) , &ip );
- return( static_cast< std::uint64_t >( m * f ) );
- }
+/// \pre 0 <= C < 1
+/// \post the result is below m, if m > 0
+std::uint64_t hash_multiplication( std::uint64_t i , std::uint64_t m ,
+                                   long double C =
+                                    ( std::sqrt( 5.0L ) - 1 ) / 2 );
 
 /// the multiplication with integers for m = 2^p, w = 64: the p most
 /// significant bits of the 64 least significant ones of i s, with
 /// s = floor( C 2^64 ); it is floor( m frac( i s / 2^64 ) ), which differs
 /// from the exact floor( m frac( C i ) ) by about m i / 2^64
-inline std::uint64_t hash_fibonacci( std::uint64_t i , int p )
-{
- if( ( p <= 0 ) || ( p > 63 ) )
-  throw( std::invalid_argument( "ADS::hash_fibonacci: p not in [1, 63]" ) );
- constexpr std::uint64_t s = 0x9E3779B97F4A7C15ull;   // floor( C 2^64 )
- return( ( i * s ) >> ( 64 - p ) );
- }
+/// \pre 1 <= p <= 63
+/// \post the result is below 2^p
+std::uint64_t hash_fibonacci( std::uint64_t i , int p );
 
-/// the middle square: the p <= 32 bits in the middle of the 64 least
-/// significant ones of i^2
-inline std::uint64_t hash_midsquare( std::uint64_t i , int p )
-{
- if( ( p <= 0 ) || ( p > 32 ) )
-  throw( std::invalid_argument( "ADS::hash_midsquare: p not in [1, 32]" ) );
- return( ( ( i * i ) >> ( 32 - p / 2 ) ) & ( ( 1ull << p ) - 1 ) );
- }
+/// the middle square: the p bits in the middle of the 64 least significant
+/// ones of i^2
+/// \pre 1 <= p <= 32
+/// \post the result is below 2^p
+std::uint64_t hash_midsquare( std::uint64_t i , int p );
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/dictionary/HashFunctions.tpp"
 
 /*--------------------------------------------------------------------------*/
 

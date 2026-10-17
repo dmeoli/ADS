@@ -6,6 +6,11 @@
  * the head of its list: find() in O( 1 ), merge() relabels the shorter
  * list, so that an element is relabeled at most \f$ \log_2 n \f$ times.
  *
+ * The contracts [see Contract.h]: the elements are in [ 0 , n ), and after
+ * merge() x and y have the same head; the invariant is that each element
+ * is once in the list of its head. The operations are defined in
+ * ListMFSet.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.2.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  * \see J. E. Hopcroft, J. D. Ullman, Set merging algorithms, SIAM Journal
@@ -29,6 +34,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -50,41 +57,28 @@ class ListMFSet {
 /*--------------------------------------------------------------------------*/
  public:
 
- explicit ListMFSet( int n ) : f_head( n ) , f_list( n ) {
-  if( n < 0 )
-   throw( std::invalid_argument( "ADS::ListMFSet: n < 0" ) );
-  for( int i = 0 ; i < n ; ++i ) {
-   f_head[ i ] = i;
-   f_list[ i ] = { i };
-   }
-  }
+ /// \pre n >= 0
+ explicit ListMFSet( int n );
 
- [[nodiscard]] int n( void ) const { return( int( f_head.size() ) ); }
+ [[nodiscard]] int n( void ) const;
 
  /// O( 1 ) time
- [[nodiscard]] int find( int x ) const { return( f_head.at( x ) ); }
+ /// \pre x in [ 0 , n )
+ [[nodiscard]] int find( int x ) const;
 
  /// the shorter list goes after the longer one, its elements relabeled
- bool merge( int x , int y ) {
-  int a = find( x ) , b = find( y );
-  if( a == b )
-   return( false );
-  if( f_list[ a ].size() < f_list[ b ].size() )
-   std::swap( a , b );
-  for( int z : f_list[ b ] ) {
-   f_head[ z ] = a;
-   f_list[ a ].push_back( z );
-   ++f_relabels;
-   }
-  f_list[ b ].clear();
-  return( true );
-  }
+ /// \pre x , y in [ 0 , n )
+ /// \post x and y have the same head
+ bool merge( int x , int y );
 
  /// the elements relabeled so far
- [[nodiscard]] long relabels( void ) const { return( f_relabels ); }
+ [[nodiscard]] long relabels( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// each element is once in the list of its head, O( n )
+ [[nodiscard]] bool listed( void ) const;
 
  std::vector< int > f_head;                 ///< the head of each list
  std::vector< std::vector< int > > f_list;  ///< the list of each head
@@ -93,6 +87,12 @@ class ListMFSet {
  };  // end( class ListMFSet )
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/mfset/ListMFSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

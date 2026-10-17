@@ -7,6 +7,12 @@
  * absent, the operations in O( n m ), which is optimal when the items can
  * only be compared for equality (exercises 8.1 and 8.2).
  *
+ * The contracts [see Contract.h]: insertNew() needs an item that is not
+ * there, after insert() the item is there and after remove() it is not,
+ * and each operation of two sets gives what its name says; the invariant
+ * is that no item is there twice. The operations are defined in
+ * ListSet.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 8.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
  *
@@ -28,7 +34,9 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
+#include "ADS/set/SetOperations.h"
 
 #include <algorithm>
 #include <concepts>
@@ -60,63 +68,40 @@ class ListSet {
 
  ListSet( void ) = default;
 
- ListSet( std::initializer_list< T > items ) {
-  for( const auto & x : items )
-   insert( x );
-  }
+ ListSet( std::initializer_list< T > items );
 
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] bool contains( const T & x ) const {
-  return( ! f_L.finished( find( x ) ) );
-  }
+ [[nodiscard]] bool contains( const T & x ) const;
 
  /// O( n ) time, for the check that x is not there
- void insert( const T & x ) {
-  if( ! contains( x ) )
-   insertNew( x );
-  }
+ /// \post x is in the set
+ void insert( const T & x );
 
  /// inserts x, which must not be there, at the head, O( 1 ) time
- void insertNew( const T & x ) {
-  f_L.insert( f_L.head() , x );
-  ++f_size;
-  }
+ /// \pre x is not in the set (an audit, O( n ))
+ void insertNew( const T & x );
 
- void remove( const T & x ) {
-  const auto p = find( x );
-  if( ! f_L.finished( p ) ) {
-   f_L.remove( p );
-   --f_size;
-   }
-  }
+ /// \post x is not in the set
+ void remove( const T & x );
 
  /// the smallest item, O( n ) time
  [[nodiscard]] std::optional< T > min( void ) const
-  requires std::totally_ordered< T > {
-  std::optional< T > m;
-  forEach( [ & ]( const T & x ) { if( ! m || ( x < *m ) ) m = x; } );
-  return( m );
-  }
+  requires std::totally_ordered< T >;
 
  /// f( x ) on the items, from the last inserted, O( n ) time
  template< class F >
- void forEach( F && f ) const {
-  for( auto p = f_L.head() ; ! f_L.finished( p ) ; p = f_L.next( p ) )
-   f( f_L.read( p ) );
-  }
+ void forEach( F && f ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- typename List< T >::Pos find( const T & x ) const {
-  auto p = f_L.head();
-  while( ! f_L.finished( p ) && ! ( f_L.read( p ) == x ) )
-   p = f_L.next( p );
-  return( p );
-  }
+ typename List< T >::Pos find( const T & x ) const;
+
+ /// no item twice, and the size is the length of the list, O( n^2 )
+ [[nodiscard]] bool distinct( void ) const;
 
  List< T > f_L;              ///< the items
  std::size_t f_size = 0;     ///< the number of items
@@ -126,55 +111,29 @@ class ListSet {
 /// the union: C starts as B and gets the items of A not in B, inserted
 /// without looking for them in C, O( n m ) time (exercise 8.2)
 template< class T >
-ListSet< T > setUnion( const ListSet< T > & A , const ListSet< T > & B )
-{
- ListSet< T > C = B;
- A.forEach( [ & ]( const T & x ) {
-  if( ! B.contains( x ) )
-   C.insertNew( x );
-  } );
- return( C );
- }
+ListSet< T > setUnion( const ListSet< T > & A , const ListSet< T > & B );
 
 /// the intersection, O( n m ) time (exercise 8.1)
 template< class T >
 ListSet< T > setIntersection( const ListSet< T > & A ,
-                              const ListSet< T > & B )
-{
- ListSet< T > C;
- A.forEach( [ & ]( const T & x ) {
-  if( B.contains( x ) )
-   C.insertNew( x );
-  } );
- return( C );
- }
+                              const ListSet< T > & B );
 
 /// the difference, O( n m ) time (the procedure of section 8.2)
 template< class T >
-ListSet< T > setDifference( const ListSet< T > & A , const ListSet< T > & B )
-{
- ListSet< T > C;
- A.forEach( [ & ]( const T & x ) {
-  if( ! B.contains( x ) )
-   C.insertNew( x );
-  } );
- return( C );
- }
+ListSet< T > setDifference( const ListSet< T > & A , const ListSet< T > & B );
 
 /// the symmetric difference, O( n m ) time (exercise 8.5)
 template< class T >
 ListSet< T > setSymmetricDifference( const ListSet< T > & A ,
-                                     const ListSet< T > & B )
-{
- ListSet< T > C = setDifference( A , B );
- B.forEach( [ & ]( const T & x ) {
-  if( ! A.contains( x ) )
-   C.insertNew( x );
-  } );
- return( C );
- }
+                                     const ListSet< T > & B );
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/set/ListSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

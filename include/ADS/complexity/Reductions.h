@@ -38,6 +38,12 @@
  *   parabola are all vertices of the hull, in the order of the a_i, so
  *   the hull costs \f$ \Omega( n \log n ) \f$.
  *
+ * The contracts [see Contract.h]: each reduction checks that its input is an
+ * instance of the problem reduced (a square or unoriented graph, a nonempty
+ * set of tiles, numbers not negative) and that its output has the shape of an
+ * instance of the target problem. The operations are defined in
+ * Reductions.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 18.5 and 18.7,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap18.pdf
  *
@@ -59,6 +65,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/complexity/Domino.h"
 #include "ADS/complexity/Problems.h"
 #include "ADS/geometry/ConvexHull.h"
@@ -77,194 +84,72 @@
 namespace ADS {
 
 /// the place of the variable or node of the tile h in the square ( i , j )
-inline int tileVar( int h , int i , int j , int n )
-{
- return( ( h * n + i ) * n + j );
- }
+/// \pre n >= 1, h >= 0, and ( i , j ) a square of the n x n board
+inline int tileVar( int h , int i , int j , int n );
 
 /// DOMINO LIMITATO to CRICCA: the graph on the m n^2 places of tileVar(),
 /// the ones of ( 0 , 0 ) but u_000 isolated, and k
+/// \pre n >= 1 and D is not empty
+/// \post an unoriented graph of m n^2 nodes, and k = n^2
 inline std::pair< Adjacency , int > dominoToClique(
-                                   const std::vector< Tile > & D , int n )
-{
- const int m = int( D.size() ) , N = m * n * n;
- Adjacency G( N , std::vector< bool >( N , false ) );
- auto alive = [ & ]( int h , int i , int j ) {
-  return( ( i != 0 ) || ( j != 0 ) || ( h == 0 ) ); };
- for( int h = 0 ; h < m ; ++h )
-  for( int i = 0 ; i < n ; ++i )
-   for( int j = 0 ; j < n ; ++j )
-    for( int g = 0 ; g < m ; ++g )
-     for( int a = 0 ; a < n ; ++a )
-      for( int b = 0 ; b < n ; ++b ) {
-       if( ! alive( h , i , j ) || ! alive( g , a , b ) ) continue;
-       if( ( a == i ) && ( b == j ) ) continue;
-       const int di = a - i , dj = b - j;
-       bool edge;
-       if( std::abs( di ) + std::abs( dj ) != 1 )
-        edge = true;                                         // (3)
-       else if( di == 1 ) edge = D[ h ].right == D[ g ].left;   // (4)
-       else if( di == -1 ) edge = D[ g ].right == D[ h ].left;
-       else if( dj == 1 ) edge = D[ h ].up == D[ g ].down;
-       else edge = D[ g ].up == D[ h ].down;
-       G[ tileVar( h , i , j , n ) ][ tileVar( g , a , b , n ) ] = edge;
-       }
- return( std::pair( G , n * n ) );
- }
+                                   const std::vector< Tile > & D , int n );
 
 /// DOMINO LIMITATO to SODDISFATTIBILITA', on the m n^2 variables of
 /// tileVar()
-inline Cnf dominoToSat( const std::vector< Tile > & D , int n )
-{
- const int m = int( D.size() );
- auto u = [ & ]( int h , int i , int j ) {
-  return( tileVar( h , i , j , n ) + 1 ); };
- Cnf F = { { u( 0 , 0 , 0 ) } };                                 // (1)
- for( int i = 0 ; i < n ; ++i )
-  for( int j = 0 ; j < n ; ++j ) {
-   Clause c;                                                     // (2)
-   for( int h = 0 ; h < m ; ++h ) c.push_back( u( h , i , j ) );
-   F.push_back( c );
-   }
- for( int i = 0 ; i < n ; ++i )                                  // (3)
-  for( int j = 0 ; j < n ; ++j )
-   for( int h = 0 ; h < m ; ++h )
-    for( int g = h + 1 ; g < m ; ++g )
-     F.push_back( { -u( h , i , j ) , -u( g , i , j ) } );
- for( int i = 0 ; i + 1 < n ; ++i )                              // (4)
-  for( int j = 0 ; j < n ; ++j )
-   for( int h = 0 ; h < m ; ++h )
-    for( int g = 0 ; g < m ; ++g )
-     if( D[ h ].right != D[ g ].left )
-      F.push_back( { -u( h , i , j ) , -u( g , i + 1 , j ) } );
- for( int i = 0 ; i < n ; ++i )                                  // (5)
-  for( int j = 0 ; j + 1 < n ; ++j )
-   for( int h = 0 ; h < m ; ++h )
-    for( int g = 0 ; g < m ; ++g )
-     if( D[ h ].up != D[ g ].down )
-      F.push_back( { -u( h , i , j ) , -u( g , i , j + 1 ) } );
- return( F );
- }
+/// \pre n >= 1 and D is not empty
+/// \post the literals are variables of [ 0 , m n^2 )
+inline Cnf dominoToSat( const std::vector< Tile > & D , int n );
 
 /// DOMINO LIMITATO to PROGRAMMAZIONE LINEARE 0/1: A x <= b on the m n^2
 /// variables of tileVar(), each equation as two inequalities
+/// \pre n >= 1 and D is not empty
+/// \post A has m n^2 columns and as many rows as b
 inline std::pair< std::vector< std::vector< long > > , std::vector< long > >
-dominoToLp01( const std::vector< Tile > & D , int n )
-{
- const int m = int( D.size() ) , N = m * n * n;
- std::vector< std::vector< long > > A;
- std::vector< long > b;
- auto row = [ & ]( const std::vector< int > & vars , long rhs , bool eq ) {
-  std::vector< long > r( N , 0 );
-  for( int v : vars ) r[ v ] += 1;
-  A.push_back( r );
-  b.push_back( rhs );
-  if( eq ) {                                      // and - r <= - rhs
-   for( auto & x : r ) x = -x;
-   A.push_back( r );
-   b.push_back( -rhs );
-   }
-  };
- row( { tileVar( 0 , 0 , 0 , n ) } , 1 , true );                  // (1)
- for( int i = 0 ; i < n ; ++i )                                  // (2)
-  for( int j = 0 ; j < n ; ++j ) {
-   std::vector< int > v;
-   for( int h = 0 ; h < m ; ++h ) v.push_back( tileVar( h , i , j , n ) );
-   row( v , 1 , true );
-   }
- for( int h = 0 ; h < m ; ++h )                                  // (3), (4)
-  for( int i = 0 ; i < n ; ++i )
-   for( int j = 0 ; j < n ; ++j ) {
-    std::vector< int > right = { tileVar( h , i , j , n ) } ,
-                       up = { tileVar( h , i , j , n ) };
-    for( int g = 0 ; g < m ; ++g ) {
-     if( i + 1 < n && D[ h ].right != D[ g ].left )
-      right.push_back( tileVar( g , i + 1 , j , n ) );
-     if( j + 1 < n && D[ h ].up != D[ g ].down )
-      up.push_back( tileVar( g , i , j + 1 , n ) );
-     }
-    if( right.size() > 1 ) row( right , 1 , false );
-    if( up.size() > 1 ) row( up , 1 , false );
-    }
- return( std::pair( A , b ) );
- }
+dominoToLp01( const std::vector< Tile > & D , int n );
 
 /// the complement graph: CRICCA of size k to INSIEME INDIPENDENTE of size k
-inline Adjacency complement( const Adjacency & G )
-{
- Adjacency C = G;
- for( std::size_t u = 0 ; u < G.size() ; ++u )
-  for( std::size_t v = 0 ; v < G.size() ; ++v )
-   C[ u ][ v ] = ( u != v ) && ! G[ u ][ v ];
- return( C );
- }
+/// \pre G is square
+/// \post the edges between distinct nodes are those that G lacks
+inline Adjacency complement( const Adjacency & G );
 
 /// CIRCUITO HAMILTONIANO to COMMESSO VIAGGIATORE: the distances, k = n
-inline std::vector< std::vector< long > > hamiltonToTsp( const Adjacency & G )
-{
- const std::size_t n = G.size();
- std::vector< std::vector< long > > Dist( n , std::vector< long >( n , 0 ) );
- for( std::size_t i = 0 ; i < n ; ++i )
-  for( std::size_t j = 0 ; j < n ; ++j )
-   if( i != j ) Dist[ i ][ j ] = G[ i ][ j ] ? 1 : 2;
- return( Dist );
- }
+/// \pre G is unoriented, i.e., square and symmetric
+/// \post a square matrix of the size of G
+inline std::vector< std::vector< long > > hamiltonToTsp( const Adjacency & G );
 
 /// half the sum, or -1 if the sum is odd (then no partition: the bound
 /// -1 has no YES in any of the three problems)
-inline long halfSum( const std::vector< long > & A )
-{
- const long s = std::accumulate( A.begin() , A.end() , 0L );
- return( s % 2 ? -1 : s / 2 );
- }
+/// \pre A is not negative
+/// \post -1 or half the sum
+inline long halfSum( const std::vector< long > & A );
 
 /// CICLO HAMILTONIANO to CAMMINO HAMILTONIANO from n to 0: the node 0 split,
 /// a new node n with the edges into 0
-inline Adjacency cycleToPath( const Adjacency & G )
-{
- const std::size_t n = G.size();
- Adjacency H( n + 1 , std::vector< bool >( n + 1 , false ) );
- for( std::size_t u = 0 ; u < n ; ++u )
-  for( std::size_t v = 0 ; v < n ; ++v )
-   if( G[ u ][ v ] ) {
-    if( u == 0 ) H[ n ][ v ] = true;              // out of 0: out of n
-    else H[ u ][ v ] = true;                      // into 0 stays into 0
-    }
- return( H );
- }
+/// \pre G is square
+/// \post a square graph of n + 1 nodes
+inline Adjacency cycleToPath( const Adjacency & G );
 
 /// CICLO HAMILTONIANO to CATENA HAMILTONIANA: the path of cycleToPath(), each
 /// node v a chain v_in - v_mid - v_out, each edge ( u , v ) an edge
 /// u_out - v_in, and pendant nodes at the start and at the end
-inline Adjacency cycleToChain( const Adjacency & G )
-{
- const Adjacency P = cycleToPath( G );
- const int N = int( P.size() ) , M = 3 * N + 2;
- Adjacency H( M , std::vector< bool >( M , false ) );
- auto link = [ & ]( int a , int b ) { H[ a ][ b ] = H[ b ][ a ] = true; };
- for( int v = 0 ; v < N ; ++v ) {
-  link( 3 * v , 3 * v + 1 );
-  link( 3 * v + 1 , 3 * v + 2 );
-  }
- for( int u = 0 ; u < N ; ++u )
-  for( int v = 0 ; v < N ; ++v )
-   if( P[ u ][ v ] ) link( 3 * u + 2 , 3 * v );
- link( 3 * N , 3 * ( N - 1 ) );        // before the start, the node N - 1
- link( 3 * N + 1 , 2 );                // after the end, the node 0
- return( H );
- }
+/// \pre G is square
+/// \post an unoriented graph of 3 ( n + 1 ) + 2 nodes
+inline Adjacency cycleToChain( const Adjacency & G );
 
 /// ORDINAMENTO to INVILUPPO CONVESSO: the points ( a , a^2 )
-inline std::vector< Point > sortToHull( const std::vector< long > & a )
-{
- std::vector< Point > P;
- for( long x : a ) P.push_back( { x , x * x } );
- return( P );
- }
+/// \pre the squares of a fit in a long
+/// \post one point per number
+inline std::vector< Point > sortToHull( const std::vector< long > & a );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/complexity/Reductions.tpp"
 
 /*--------------------------------------------------------------------------*/
 

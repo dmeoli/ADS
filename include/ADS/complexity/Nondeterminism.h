@@ -14,6 +14,9 @@
  * height of the tree, while the nondeterministic algorithm takes as much as
  * one path.
  *
+ * The contracts [see Contract.h]: choice() needs k >= 1 and returns a choice
+ * of [ 0 , k ). The operations are defined in Nondeterminism.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 18.2 and 18.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap18.pdf
  *
@@ -35,6 +38,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <cstddef>
 #include <vector>
 
@@ -50,39 +55,18 @@ class Chooser {
 /*--------------------------------------------------------------------------*/
  public:
 
- /// choice( { 0 , ... , k - 1 } ), k >= 1
- int choice( int k ) {
-  if( f_depth == f_path.size() )
-   f_path.push_back( { 0 , k } );
-  return( f_path[ f_depth++ ].first );
-  }
+ /// choice( { 0 , ... , k - 1 } )
+ /// \pre k >= 1
+ /// \post the result is in [ 0 , k )
+ int choice( int k );
 
  /// whether some sequence of choices makes alg( *this ) return true; the
  /// runs made go to *runs, if given
  template< class A >
- bool run( A && alg , long * runs = nullptr ) {
-  f_path.clear();
-  for( ; ; ) {
-   f_depth = 0;
-   if( runs ) ++*runs;
-   if( alg( *this ) )
-    return( true );                            // success
-   f_path.resize( f_depth );                   // failure: the next sequence
-   while( ! f_path.empty() && ( f_path.back().first + 1 ==
-                                f_path.back().second ) )
-    f_path.pop_back();
-   if( f_path.empty() )
-    return( false );
-   ++f_path.back().first;
-   }
-  }
+ bool run( A && alg , long * runs = nullptr );
 
  /// the choices of the last run, the successful one after a YES
- [[nodiscard]] std::vector< int > choices( void ) const {
-  std::vector< int > c;
-  for( auto & [ x , k ] : f_path ) c.push_back( x );
-  return( c );
-  }
+ [[nodiscard]] std::vector< int > choices( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -95,6 +79,12 @@ class Chooser {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/complexity/Nondeterminism.tpp"
 
 /*--------------------------------------------------------------------------*/
 

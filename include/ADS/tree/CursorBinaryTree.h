@@ -11,6 +11,12 @@
  * node take O( 1 ) amortized time; removing or copying a subtree takes time
  * linear in its size.
  *
+ * The contracts [see Contract.h]: a node is a used place, setRoot() needs
+ * an empty tree, a child is inserted where none is, and the subtree copied
+ * is a node of the other tree; the invariant is that the nodes reached from
+ * the root link back to their parent and are all the nodes. The operations
+ * are defined in CursorBinaryTree.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 5.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
  *
@@ -31,6 +37,8 @@
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+#include "ADS/Contract.h"
 
 #include <stdexcept>
 #include <string>
@@ -60,85 +68,47 @@ class CursorBinaryTree {
  CursorBinaryTree( void ) = default;
 
  /// a tree of one node of value v
- explicit CursorBinaryTree( const T & v ) { f_root = make( v , NIL ); }
+ explicit CursorBinaryTree( const T & v );
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_root == NIL ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] int root( void ) const { return( f_root ); }
+ [[nodiscard]] int root( void ) const;
 
- [[nodiscard]] int parent( int n ) const { return( node( n ).parent ); }
+ [[nodiscard]] int parent( int n ) const;
 
- [[nodiscard]] int left( int n ) const { return( node( n ).left ); }
+ [[nodiscard]] int left( int n ) const;
 
- [[nodiscard]] int right( int n ) const { return( node( n ).right ); }
+ [[nodiscard]] int right( int n ) const;
 
- [[nodiscard]] bool isLeaf( int n ) const {
-  return( ( left( n ) == NIL ) && ( right( n ) == NIL ) );
-  }
+ [[nodiscard]] bool isLeaf( int n ) const;
 
- [[nodiscard]] const T & read( int n ) const { return( node( n ).value ); }
+ [[nodiscard]] const T & read( int n ) const;
 
- void write( int n , const T & v ) { node( n ).value = v; }
+ void write( int n , const T & v );
 
  /// the number of nodes
- [[nodiscard]] int size( void ) const { return( f_size ); }
+ [[nodiscard]] int size( void ) const;
 
  /// the root of value v of the empty tree
- int setRoot( const T & v ) {
-  if( f_root != NIL )
-   throw( std::logic_error( "ADS::CursorBinaryTree::setRoot: not empty" ) );
-  return( f_root = make( v , NIL ) );
-  }
+ int setRoot( const T & v );
 
  /// a new left child of n of value v, which must be missing
- int insertLeft( int n , const T & v ) {
-  check_free( node( n ).left , "insertLeft" );
-  const int c = make( v , n );
-  return( f_N[ n ].left = c );
-  }
+ int insertLeft( int n , const T & v );
 
  /// a new right child of n of value v, which must be missing
- int insertRight( int n , const T & v ) {
-  check_free( node( n ).right , "insertRight" );
-  const int c = make( v , n );
-  return( f_N[ n ].right = c );
-  }
+ int insertRight( int n , const T & v );
 
  /// a copy of the subtree of t in s as the left subtree of n
- int insertLeft( int n , const CursorBinaryTree & t , int s ) {
-  check_free( node( n ).left , "insertLeft" );
-  const int c = copy( t , s , n );
-  return( f_N[ n ].left = c );
-  }
+ int insertLeft( int n , const CursorBinaryTree & t , int s );
 
  /// a copy of the subtree of t in s as the right subtree of n
- int insertRight( int n , const CursorBinaryTree & t , int s ) {
-  check_free( node( n ).right , "insertRight" );
-  const int c = copy( t , s , n );
-  return( f_N[ n ].right = c );
-  }
+ int insertRight( int n , const CursorBinaryTree & t , int s );
 
  /// removes the subtree of n, detached from its parent
- void remove( int n ) {
-  const int p = node( n ).parent;
-  if( p == NIL ) f_root = NIL;
-  else if( f_N[ p ].left == n ) f_N[ p ].left = NIL;
-  else f_N[ p ].right = NIL;
-  release( n );
-  }
+ void remove( int n );
 
  /// the nodes in preorder
- [[nodiscard]] std::vector< int > preorder( void ) const {
-  std::vector< int > P;
-  auto rec = [ & ]( auto & self , int n ) -> void {
-   if( n == NIL ) return;
-   P.push_back( n );
-   self( self , f_N[ n ].left );
-   self( self , f_N[ n ].right );
-   };
-  rec( rec , f_root );
-  return( P );
-  }
+ [[nodiscard]] std::vector< int > preorder( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -149,53 +119,19 @@ class CursorBinaryTree {
   bool used;
   };
 
- const Node & node( int n ) const {
-  if( ( n < 0 ) || ( n >= int( f_N.size() ) ) || ! f_N[ n ].used )
-   throw( std::out_of_range( "ADS::CursorBinaryTree: no node" ) );
-  return( f_N[ n ] );
-  }
+ const Node & node( int n ) const;
 
- Node & node( int n ) {
-  return( const_cast< Node & >( std::as_const( *this ).node( n ) ) );
-  }
+ Node & node( int n );
 
- static void check_free( int c , const char * who ) {
-  if( c != NIL )
-   throw( std::logic_error( std::string( "ADS::CursorBinaryTree::" ) + who +
-                            ": child present" ) );
-  }
+ /// the nodes reached from the root are used, link back to their parent
+ /// and are all the nodes, O( n )
+ [[nodiscard]] bool linked( void ) const;
 
- int make( const T & v , int p ) {
-  ++f_size;
-  if( f_free != NIL ) {
-   const int n = f_free;
-   f_free = f_N[ n ].left;
-   f_N[ n ] = { v , p , NIL , NIL , true };
-   return( n );
-   }
-  f_N.push_back( { v , p , NIL , NIL , true } );
-  return( int( f_N.size() ) - 1 );
-  }
+ int make( const T & v , int p );
 
- void release( int n ) {
-  if( n == NIL ) return;
-  release( f_N[ n ].left );
-  release( f_N[ n ].right );
-  f_N[ n ].used = false;
-  f_N[ n ].left = f_free;                // the free list
-  f_free = n;
-  --f_size;
-  }
+ void release( int n );
 
- int copy( const CursorBinaryTree & t , int s , int p ) {
-  if( s == NIL ) return( NIL );
-  const int n = make( t.node( s ).value , p );
-  const int l = copy( t , t.f_N[ s ].left , n );
-  const int r = copy( t , t.f_N[ s ].right , n );
-  f_N[ n ].left = l;
-  f_N[ n ].right = r;
-  return( n );
-  }
+ int copy( const CursorBinaryTree & t , int s , int p );
 
  std::vector< Node > f_N;   ///< the nodes, used or free
  int f_root = NIL;
@@ -207,6 +143,12 @@ class CursorBinaryTree {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/tree/CursorBinaryTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

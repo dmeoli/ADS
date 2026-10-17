@@ -8,6 +8,10 @@
  * and stable, unlike Counting Sort, which only counts the keys. A key out
  * of [ 0 , k ) throws std::out_of_range.
  *
+ * The contracts [see Contract.h]: each key must be in [ 0 , k ), checked key
+ * by key, and the output has as many pairs as the input, its keys sorted. The
+ * functions are defined in PigeonholeSort.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 4.11,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  *
@@ -29,8 +33,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
+#include "ADS/sort/Sorted.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -42,27 +49,22 @@
 namespace ADS {
 
 /// the pairs sorted by key, the values of a key in their first order
+/// \pre each key of A is in [ 0 , k )
+/// \post as many pairs as in A, the keys sorted and each key with its
+///       items in their order
 template< class V >
 std::vector< std::pair< int , V > > pigeonholeSort(
-                    const std::vector< std::pair< int , V > > & A , int k )
-{
- std::vector< List< V > > B( k );
- for( const auto & [ key , v ] : A ) {
-  if( ( key < 0 ) || ( key >= k ) )
-   throw( std::out_of_range( "ADS::pigeonholeSort: a key out of [0, k)" ) );
-  B[ key ].insert( B[ key ].next( B[ key ].tail() ) , v );
-  }
- std::vector< std::pair< int , V > > out;
- out.reserve( A.size() );
- for( int i = 0 ; i < k ; ++i )
-  for( auto p = B[ i ].head() ; ! B[ i ].finished( p ) ; p = B[ i ].next( p ) )
-   out.emplace_back( i , B[ i ].read( p ) );
- return( out );
- }
+                    const std::vector< std::pair< int , V > > & A , int k );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sort/PigeonholeSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

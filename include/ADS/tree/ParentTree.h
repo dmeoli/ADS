@@ -10,6 +10,9 @@
  * numbers. Since setParent() may hang any node anywhere, the structure is a
  * forest of n isolated nodes at the start.
  *
+ * The contracts [see Contract.h]: the nodes are in [ 0 , n ), and a node
+ * is not its own parent. The operations are defined in ParentTree.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 5.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
  *
@@ -31,6 +34,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -50,16 +55,18 @@ class ParentTree {
  public:
 
  /// Tree( n ): a forest of n isolated nodes
- explicit ParentTree( int n ) : f_p( n , -1 ) {}
+ /// \pre n >= 0
+ explicit ParentTree( int n );
 
  /// the parent of the node i; -1 if i is a root
- [[nodiscard]] int parent( int i ) const { return( f_p[ i ] ); }
+ [[nodiscard]] int parent( int i ) const;
 
- /// makes the node i a child of the node j
- void setParent( int i , int j ) { f_p[ i ] = j; }
+ /// makes the node i a child of the node j, or a root if j = -1
+ /// \pre i and j are nodes, or j = -1 , and i != j
+ void setParent( int i , int j );
 
  /// the number of nodes
- [[nodiscard]] int size( void ) const { return( int( f_p.size() ) ); }
+ [[nodiscard]] int size( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -71,6 +78,12 @@ class ParentTree {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/tree/ParentTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

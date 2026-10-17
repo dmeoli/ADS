@@ -7,6 +7,12 @@
  * TreePriorityQueue is a Red-Black tree of the pairs ( priority , number
  * of insertion ) (section 10.1.2): every operation in O( log n ).
  *
+ * The contracts [see Contract.h]: min() and deleteMin() need a queue that
+ * is not empty, decrease() the handle of an item still in the queue and a
+ * priority not larger than its own; the invariant is that each item of the
+ * tree has the priority recorded for its handle. The operations are
+ * defined in TreePriorityQueue.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  *
@@ -28,13 +34,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/priority/PriorityQueue.h"
 #include "ADS/tree/SearchTree.h"
 
 #include <concepts>
-#include <cstddef>
-#include <memory>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -61,42 +65,29 @@ class TreePriorityQueue {
  using Priority = P;    ///< the type of the priorities
  using Handle = long;   ///< the number of insertion of an item
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_t.isEmpty() ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] int size( void ) const { return( int( f_t.size() ) ); }
+ [[nodiscard]] int size( void ) const;
 
- [[nodiscard]] const T & min( void ) const {
-  if( f_t.isEmpty() )
-   throw( std::logic_error( "ADS::TreePriorityQueue::min: empty" ) );
-  return( RedBlackTree< Key , T >::value( f_t.min() ) );
-  }
+ /// \pre the queue is not empty
+ [[nodiscard]] const T & min( void ) const;
 
- T deleteMin( void ) {
-  const T v = min();
-  f_t.remove( RedBlackTree< Key , T >::key( f_t.min() ) );
-  return( v );
-  }
+ /// \pre the queue is not empty
+ /// \post one item less
+ T deleteMin( void );
 
- Handle insert( const T & x , const P & p ) {
-  f_t.insert( { p , long( f_p.size() ) } , x );
-  f_p.push_back( p );
-  return( long( f_p.size() ) - 1 );
-  }
+ /// \post one item more
+ Handle insert( const T & x , const P & p );
 
- void decrease( Handle y , const P & p ) {
-  if( f_p[ y ] < p )
-   throw( std::invalid_argument(
-                      "ADS::TreePriorityQueue::decrease: larger priority" ) );
-  const auto v = f_t.lookup( { f_p[ y ] , y } );
-  if( ! v )
-   throw( std::logic_error( "ADS::TreePriorityQueue::decrease: no item" ) );
-  f_t.remove( { f_p[ y ] , y } );
-  f_t.insert( { p , y } , *v );
-  f_p[ y ] = p;
-  }
+ /// \pre y is an item still in the queue and p is not larger than its
+ /// priority
+ void decrease( Handle y , const P & p );
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// each item of the tree with the priority of its handle, O( n )
+ [[nodiscard]] bool consistent( void ) const;
 
  RedBlackTree< Key , T > f_t;   ///< the items by priority
  std::vector< P > f_p;          ///< the priority of each insertion
@@ -106,6 +97,12 @@ class TreePriorityQueue {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/priority/TreePriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

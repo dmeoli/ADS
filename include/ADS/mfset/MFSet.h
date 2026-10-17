@@ -12,11 +12,17 @@
  * up to the root, merge() makes a root a child of the other. Two heuristics
  * may be switched off, to study them:
  *
- * - the rank (section 10.2.3): rank[ r ] is the height of the tree of the
- *   root r, the lower tree goes under the higher one and the rank grows by
- *   one only when they are equal; by the Teorema 10.1 a tree of root r has
- *   at least \f$ 2^{rank[ r ]} \f$ nodes, so find() and merge() take
- *   O( log n );
+ * - the union by rank (section 10.2.3): rank[ r ] is the height of the
+ *   tree of the root r, the lower tree goes under the higher one and the
+ *   rank grows by one only when they are equal; by the Teorema 10.1 a tree
+ *   of root r has at least \f$ 2^{rank[ r ]} \f$ nodes, so find() and
+ *   merge() take O( log n );
+ * - the union by size, in place of the rank: size[ r ] is the number of
+ *   nodes of the tree of the root r, and the smaller tree goes under the
+ *   larger one (on a tie, the root of y under that of x). A node goes one
+ *   level down only when its tree at least doubles, hence a tree of root r
+ *   has height at most \f$ \log_2 size[ r ] \f$, and the bound O( log n )
+ *   is the same;
  * - the compression of the paths (section 10.2.4): find() makes each node
  *   on its way a child of the root. With both, a sequence of m operations,
  *   \f$ m \geq n \f$, takes \f$ O( n + m \alpha( m , n ) ) \f$, where
@@ -30,6 +36,16 @@
  * the MFSET of the connected components of an unoriented graph, which can
  * then follow new edges (section 10.2.5).
  *
+ * The contracts [see Contract.h]: the elements are in [ 0 , n ), find()
+ * gives a root and after merge() x and y have the same root; the invariant
+ * is that the parents form a forest of count() trees, the rank growing
+ * towards the roots with the union by rank, and size[ r ] the number of
+ * nodes of the tree of each root r with the union by size. merge() of two
+ * elements already in the same component returns false and changes
+ * nothing, a relaxation of the precondition that they are in distinct
+ * components which some specifications state. The operations are defined
+ * in MFSet.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  * \see B. A. Galler, M. J. Fischer, An improved equivalence algorithm,
@@ -41,7 +57,6 @@
  * \see R. E. Tarjan, J. van Leeuwen, Worst-case analysis of set union
  *      algorithms, Journal of the ACM 31(2), 245-281, 1984,
  *      doi:10.1145/62.2160
-
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -61,6 +76,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 
 #include <stdexcept>
@@ -83,79 +99,67 @@ class MFSet {
 /*--------------------------------------------------------------------------*/
  public:
 
- /// Mfset( n ): the n components {0} , ... , {n - 1}, with the rank and
- /// the compression of the paths or not
- explicit MFSet( int n , bool rank = true , bool compress = true )
-  : f_p( n ) , f_rank( n , 0 ) , f_byrank( rank ) , f_compress( compress ) ,
-    f_count( n ) {
-  if( n < 0 )
-   throw( std::invalid_argument( "ADS::MFSet: n < 0" ) );
-  for( int i = 0 ; i < n ; ++i )
-   f_p[ i ] = i;
-  }
+ /// how merge() chooses the root that goes under the other one
+ enum class Union {
+  NONE ,   ///< the root of y under that of x
+  RANK ,   ///< the lower tree under the higher one
+  SIZE     ///< the smaller tree under the larger one
+  };
 
- [[nodiscard]] int n( void ) const { return( int( f_p.size() ) ); }
+ /// Mfset( n ): the n components {0} , ... , {n - 1}, with the given union
+ /// and with the compression of the paths or not
+ /// \pre n >= 0
+ explicit MFSet( int n , Union u = Union::RANK , bool compress = true );
+
+ [[nodiscard]] int n( void ) const;
 
  /// the number of components
- [[nodiscard]] int count( void ) const { return( f_count ); }
+ [[nodiscard]] int count( void ) const;
 
  /// the representative of the component of x, the root of its tree
- int find( int x ) {
-  check( x );
-  int r = x;
-  while( f_p[ r ] != r ) {
-   r = f_p[ r ];
-   ++f_steps;
-   }
-  if( f_compress )
-   while( f_p[ x ] != r ) {
-    const int t = f_p[ x ];
-    f_p[ x ] = r;
-    x = t;
-    }
-  return( r );
-  }
+ /// \pre x in [ 0 , n )
+ /// \post the result is a root
+ int find( int x );
 
  /// joins the components of x and y; true if they were distinct
- bool merge( int x , int y ) {
-  const int rx = find( x ) , ry = find( y );
-  if( rx == ry )
-   return( false );
-  --f_count;
-  if( ! f_byrank )
-   f_p[ ry ] = rx;
-  else if( f_rank[ rx ] > f_rank[ ry ] )
-   f_p[ ry ] = rx;
-  else if( f_rank[ ry ] > f_rank[ rx ] )
-   f_p[ rx ] = ry;
-  else {
-   f_p[ rx ] = ry;
-   ++f_rank[ ry ];
-   }
-  return( true );
-  }
+ /// \pre x , y in [ 0 , n )
+ /// \post x and y are in the same component
+ bool merge( int x , int y );
+
+ /// true if x and y are in the same component, find( x ) == find( y )
+ /// \pre x , y in [ 0 , n )
+ bool same( int x , int y );
 
  /// the parent of x, x itself if a root
- [[nodiscard]] int parent( int x ) const { return( f_p[ check( x ) ] ); }
+ /// \pre x in [ 0 , n )
+ [[nodiscard]] int parent( int x ) const;
 
  /// the rank of x
- [[nodiscard]] int rank( int x ) const { return( f_rank[ check( x ) ] ); }
+ /// \pre x in [ 0 , n )
+ [[nodiscard]] int rank( int x ) const;
+
+ /// the number of nodes of the tree of x, if x is a root and the union is
+ /// by size
+ /// \pre x in [ 0 , n )
+ [[nodiscard]] int size( int x ) const;
 
  /// the steps up the trees made by find() so far
- [[nodiscard]] long steps( void ) const { return( f_steps ); }
+ [[nodiscard]] long steps( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- int check( int x ) const {
-  if( ( x < 0 ) || ( x >= n() ) )
-   throw( std::out_of_range( "ADS::MFSet: element out of [0, n)" ) );
-  return( x );
-  }
+ /// the root of x, without compressing the path
+ [[nodiscard]] int root( int x ) const;
+
+ /// the parents form a forest of count() trees, with the rank growing
+ /// upwards if the heuristic is on, O( n )
+ [[nodiscard]] bool forest( void ) const;
 
  std::vector< int > f_p;      ///< the parents
  std::vector< int > f_rank;   ///< the ranks
- bool f_byrank;               ///< the heuristic of the rank
+ std::vector< int > f_size;   ///< the sizes of the trees, at the roots
+ Union f_union;               ///< the heuristic of the union
  bool f_compress;             ///< the compression of the paths
  int f_count;                 ///< the number of components
  long f_steps = 0;            ///< see steps()
@@ -167,17 +171,17 @@ class MFSet {
 /// the MFSET of the connected components of an unoriented graph, built by
 /// merging the ends of each edge (the cc() of section 10.2.5)
 template< Graph G >
-MFSet components( const G & g )
-{
- MFSet M( g.bound() );
- for( int u : g.V() )
-  g.forEachAdj( u , [ & ]( int v ) { M.merge( u , v ); } );
- return( M );
- }
+MFSet components( const G & g );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/mfset/MFSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

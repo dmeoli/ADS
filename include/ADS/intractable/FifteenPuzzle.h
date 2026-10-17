@@ -16,6 +16,19 @@
  * its permutation, plus that of the row of the hole when n is even,
  * matches the goal [see solvable()].
  *
+ * Beyond the text, two searches that work with any goal, e.g., the spiral
+ * one of puzzleSpiralGoal() (1 2 3 / 8 0 4 / 7 6 5 for n = 3): puzzleBFS()
+ * visits the configurations in breadth, so that the first goal reached is
+ * one of the fewest moves, with no heuristic and therefore many more nodes
+ * than A*; puzzleDFS() is the backtracking in depth that goes back when a
+ * configuration is already on the current path or the moves exceed a
+ * bound, and so finds a solution of at most that many moves, if any, not
+ * necessarily the shortest one.
+ *
+ * The contracts [see Contract.h]: a configuration is a permutation of [ 0 ,
+ * n^2 ), and a solution returned goes from it to the goal by moves. The
+ * operations are defined in FifteenPuzzle.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 19.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap19.pdf
  * \see P. E. Hart, N. J. Nilsson, B. Raphael, A formal basis for the
@@ -43,11 +56,14 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
 
 #include <cstdlib>
 #include <map>
 #include <optional>
+#include <queue>
+#include <set>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -60,102 +76,63 @@ namespace ADS {
 using Board = std::vector< int >;
 
 /// the goal on n x n squares
-inline Board puzzleGoal( int n )
-{
- Board B( n * n );
- for( int i = 0 ; i + 1 < n * n ; ++i ) B[ i ] = i + 1;
- B[ n * n - 1 ] = 0;
- return( B );
- }
+/// \pre n >= 1
+/// \post a configuration
+inline Board puzzleGoal( int n );
 
 /// the lower bound of the text: the sum over the tiles of the rows and
 /// columns between the tile and its place
-inline int manhattan( const Board & B , int n )
-{
- int d = 0;
- for( int p = 0 ; p < n * n ; ++p )
-  if( B[ p ] ) {
-   const int q = B[ p ] - 1;
-   d += std::abs( p / n - q / n ) + std::abs( p % n - q % n );
-   }
- return( d );
- }
+/// \pre B is a configuration of n x n squares
+inline int manhattan( const Board & B , int n );
 
 /// the configurations one move away
-inline std::vector< Board > puzzleMoves( const Board & B , int n )
-{
- int h = 0;
- while( B[ h ] ) ++h;
- std::vector< Board > C;
- const int r = h / n , c = h % n;
- for( auto [ dr , dc ] : { std::pair( -1 , 0 ) , std::pair( 1 , 0 ) ,
-                           std::pair( 0 , -1 ) , std::pair( 0 , 1 ) } ) {
-  const int rr = r + dr , cc = c + dc;
-  if( ( rr < 0 ) || ( rr >= n ) || ( cc < 0 ) || ( cc >= n ) ) continue;
-  Board X = B;
-  std::swap( X[ h ] , X[ rr * n + cc ] );
-  C.push_back( X );
-  }
- return( C );
- }
+/// \pre B is a configuration of n x n squares
+/// \post two to four configurations if n >= 2
+inline std::vector< Board > puzzleMoves( const Board & B , int n );
+
+/// the spiral goal on n x n squares: the tiles clockwise from the top left
+/// corner, the hole where the spiral ends
+/// \pre n >= 1
+/// \post a configuration
+inline Board puzzleSpiralGoal( int n );
+
+/// the configurations from B to goal of a shortest solution by the visit
+/// in breadth, or nothing if goal cannot be reached; the configurations
+/// examined go to *visited, if given
+/// \pre B and goal are configurations of n x n squares
+/// \post a solution returned goes from B to goal one move at a time
+inline std::optional< std::vector< Board > > puzzleBFS(
+                        const Board & B , const Board & goal , int n ,
+                        long * visited = nullptr );
+
+/// the configurations from B to goal of a solution of at most nmax moves
+/// by the backtracking in depth, or nothing if there is none
+/// \pre B and goal are configurations of n x n squares, nmax >= 0
+/// \post a solution returned goes from B to goal one move at a time
+inline std::optional< std::vector< Board > > puzzleDFS(
+                        const Board & B , const Board & goal , int n ,
+                        int nmax );
 
 /// whether the goal can be reached from B
-inline bool solvable( const Board & B , int n )
-{
- int inv = 0 , hole = 0;
- for( int p = 0 ; p < n * n ; ++p ) {
-  if( ! B[ p ] ) {
-   hole = p / n;
-   continue;
-   }
-  for( int q = p + 1 ; q < n * n ; ++q ) inv += B[ q ] && ( B[ q ] < B[ p ] );
-  }
- if( n % 2 ) return( inv % 2 == 0 );
- return( ( inv + ( n - 1 - hole ) ) % 2 == 0 );
- }
+/// \pre B is a configuration of n x n squares
+inline bool solvable( const Board & B , int n );
 
 /// the configurations from B to the goal of a shortest solution, or
 /// nothing; the number of nodes extracted goes to *visited, if given
+/// \pre B is a configuration of n x n squares
+/// \post a solution returned goes from B to the goal one move at a time
 inline std::optional< std::vector< Board > > solvePuzzle(
-                        const Board & B , int n , long * visited = nullptr )
-{
- if( visited ) *visited = 0;
- if( ! solvable( B , n ) ) return( std::nullopt );
- const Board goal = puzzleGoal( n );
- std::vector< Board > node( 1 , B );
- std::vector< int > parent( 1 , -1 ) , level( 1 , 0 );
- std::map< Board , int > best;           // the least level of each one
- best[ B ] = 0;
- FibonacciHeapPriorityQueue< int , int > Q;
- Q.insert( 0 , manhattan( B , n ) );
- while( ! Q.isEmpty() ) {
-  const int k = Q.deleteMin();
-  if( level[ k ] > best[ node[ k ] ] ) continue;     // a stale entry
-  if( visited ) ++*visited;
-  if( node[ k ] == goal ) {
-   std::vector< Board > S;
-   for( int x = k ; x >= 0 ; x = parent[ x ] )
-    S.insert( S.begin() , node[ x ] );
-   return( S );
-   }
-  for( Board & C : puzzleMoves( node[ k ] , n ) ) {
-   const int g = level[ k ] + 1;
-   auto it = best.find( C );
-   if( ( it != best.end() ) && ( it->second <= g ) ) continue;
-   best[ C ] = g;
-   const int lb = manhattan( C , n );
-   node.push_back( std::move( C ) );
-   parent.push_back( k );
-   level.push_back( g );
-   Q.insert( int( node.size() ) - 1 , g + lb );
-   }
-  }
- return( std::nullopt );
- }
+                        const Board & B , int n , long * visited = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/intractable/FifteenPuzzle.tpp"
 
 /*--------------------------------------------------------------------------*/
 

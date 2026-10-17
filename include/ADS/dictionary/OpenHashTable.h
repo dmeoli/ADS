@@ -23,7 +23,13 @@
  * + i ( i + 1 ) / 2 ) \bmod m \f$, a permutation when m is a power of two,
  * and the double hashing whose step comes from a second function g of the
  * hash, \f$ H_\delta( k ) = 1 + ( g( h( k ) ) \bmod ( m - 1 ) ) \f$ for m
- * prime and \f$ ( g( h( k ) ) \bmod m ) | 1 \f$ for m a power of two
+ * prime and \f$ ( g( h( k ) ) \bmod m ) | 1 \f$ for m a power of two, and
+ * the pseudo-random inspection \f$ H( k , i ) = ( H_0( k ) + p_i ) \bmod m
+ * \f$, where \f$ p_0 = 0 , p_1 , \ldots , p_{m-1} \f$ is a fixed random
+ * permutation of \f$ 0 , \ldots , m - 1 \f$, drawn from a seed for each
+ * size m, so that it works with every m and two keys with different
+ * \f$ H_0 \f$ do not share the rest of their inspection as in the linear
+ * one (no primary clustering)
  *
  * [see Probing], with \f$ H_0( k ) = h( k ) \bmod m \f$ and h the hash of the
  * keys. A place is nil (never used), full or deleted: the deleted places,
@@ -56,14 +62,31 @@
  * a sequence alternating them costs O( m ) per operation [see
  * TableSize.h].
  *
+ * The contracts [see Contract.h]: m > 0 and an inspection that works with m (a
+ * linear step coprime with m, a prime m for the quadratic one, a power of two
+ * for the triangular one, a prime or a power of two for the double hashing,
+ * any m for the pseudo-random one), a full place for keyAt(); after insert()
+ * the key is in the table and after remove() it is not; the invariant is that
+ * the first place of the inspection of each key that holds it is its own
+ * place, with no nil before it, and that size() and the deleted places are
+ * counted right. On a table of more than 1024 places the invariant is checked
+ * on the inspection of the key of the operation only, up to its first nil, so
+ * that a long sequence of operations at the level 3 stays linear; the checks
+ * do not change probes(). An insertion whose inspection finds no place, which
+ * a quadratic inspection allows while some place is free, is not a fault of
+ * the caller and throws std::overflow_error. The operations are defined in
+ * OpenHashTable.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 7.2-7.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
+ * \see D. E. Knuth, The Art of Computer Programming, vol. 3, 2nd ed.,
+ *      Addison-Wesley, 1998, section 6.4 (the pseudo-random and the
+ *      quadratic inspections)
  * \see D. E. Knuth, The Art of Computer Programming, vol. 3, Sorting and
  *      Searching, 2nd ed., Addison-Wesley, 1998, section 6.4
  * \see W. W. Peterson, Addressing for random-access storage, IBM Journal
  *      of Research and Development 1(2), 130-146, 1957,
  *      doi:10.1147/rd.12.0130
-
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -83,13 +106,16 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/dictionary/TableSize.h"
 
+#include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <functional>
 #include <numeric>
 #include <optional>
+#include <random>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -110,102 +136,66 @@ class Probing {
 /*--------------------------------------------------------------------------*/
  public:
 
- enum class Kind { LINEAR , QUADRATIC , DOUBLE , TRIANGULAR };
+ enum class Kind { LINEAR , QUADRATIC , DOUBLE , TRIANGULAR , RANDOM };
 
  /// the second function of the double hashing, of the hash h( k )
  using Step = std::function< std::size_t( std::size_t ) >;
 
  /// H( k , i ) = ( H0( k ) + delta i ) mod m
- static Probing linear( long delta = 1 ) {
-  return( Probing( Kind::LINEAR , delta , 0 ) );
-  }
+ static Probing linear( long delta = 1 );
 
  /// H( k , i ) = ( H0( k ) + c1 i + c2 i^2 ) mod m, m prime
- static Probing quadratic( long c1 , long c2 ) {
-  return( Probing( Kind::QUADRATIC , c1 , c2 ) );
-  }
+ static Probing quadratic( long c1 , long c2 );
 
  /// H( k , i ) = ( H0( k ) + Hdelta( k ) i ) mod m
- static Probing double_hashing( void ) {
-  return( Probing( Kind::DOUBLE , 0 , 0 ) );
-  }
+ static Probing double_hashing( void );
 
  /// H( k , i ) = ( H0( k ) + Hdelta( k ) i ) mod m, the step from g( h( k ) )
- static Probing double_hashing( Step g ) {
-  Probing p( Kind::DOUBLE , 0 , 0 );
-  p.f_g = std::move( g );
-  return( p );
-  }
+ static Probing double_hashing( Step g );
 
  /// H( k , i ) = ( H0( k ) + i ( i + 1 ) / 2 ) mod m, m a power of two
- static Probing triangular( void ) {
-  return( Probing( Kind::TRIANGULAR , 0 , 0 ) );
-  }
+ static Probing triangular( void );
 
- [[nodiscard]] Kind kind( void ) const { return( f_kind ); }
+ /// H( k , i ) = ( H0( k ) + p_i ) mod m, p a random permutation of
+ /// 0 , ... , m - 1 with p_0 = 0, drawn from the seed for each m
+ static Probing pseudo_random( unsigned long seed = 1 );
+
+ [[nodiscard]] Kind kind( void ) const;
 
  /// the place H( k , i ) in a table of size m, from h = h( k )
+ /// \pre m > 0
+ /// \post the result is below m
  [[nodiscard]] std::size_t at( std::size_t h , std::size_t i ,
-                               std::size_t m ) const {
-  const std::size_t h0 = h % m;
-  switch( f_kind ) {
-   case( Kind::LINEAR ):
-    return( ( h0 + mod( f_c1 , m ) * ( i % m ) ) % m );
-   case( Kind::QUADRATIC ): {
-    const std::size_t j = i % m;
-    return( ( h0 + mod( f_c1 , m ) * j + mod( f_c2 , m ) * ( j * j % m ) )
-            % m );
-    }
-   case( Kind::TRIANGULAR ): {
-    const std::size_t j = i % ( 2 * m );
-    return( ( h0 + j * ( j + 1 ) / 2 % m ) % m );
-    }
-   default:
-    return( ( h0 + step( f_g ? f_g( h ) : h , m ) * ( i % m ) ) % m );
-   }
-  }
+                               std::size_t m ) const;
 
  /// the step Hdelta( k ) of the double hashing, coprime with m when m is
  /// prime or a power of two
- [[nodiscard]] static std::size_t step( std::size_t h , std::size_t m ) {
-  if( m == 1 )
-   return( 1 );
-  if( is_pow2( m ) )
-   return( ( ( h / m ) % m ) | 1 );
-  return( 1 + h % ( m - 1 ) );
-  }
+ /// \pre m > 0
+ [[nodiscard]] static std::size_t step( std::size_t h , std::size_t m );
 
- /// throws std::invalid_argument if the sequence cannot work with m
- void check( std::size_t m ) const {
-  if( ( f_kind == Kind::LINEAR ) &&
-      ( std::gcd( mod( f_c1 , m ) , m ) != 1 ) )
-   throw( std::invalid_argument( "ADS::Probing: gcd( delta , m ) != 1" ) );
-  if( ( f_kind == Kind::QUADRATIC ) && ! is_prime( m ) )
-   throw( std::invalid_argument( "ADS::Probing: quadratic, m not prime" ) );
-  if( ( f_kind == Kind::TRIANGULAR ) && ! is_pow2( m ) )
-   throw( std::invalid_argument(
-                        "ADS::Probing: triangular, m not a power of 2" ) );
-  if( ( f_kind == Kind::DOUBLE ) && ( m > 1 ) && ! is_prime( m ) &&
-      ! is_pow2( m ) )
-   throw( std::invalid_argument(
-                     "ADS::Probing: double, m not prime nor a power of 2" ) );
-  }
+ /// whether the sequence can work with a table of size m
+ [[nodiscard]] bool works( std::size_t m ) const;
+
+ /// \pre works( m )
+ void check( std::size_t m ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- Probing( Kind k , long c1 , long c2 ) : f_kind( k ) , f_c1( c1 ) ,
-                                         f_c2( c2 ) {}
+ Probing( Kind k , long c1 , long c2 );
 
- static std::size_t mod( long c , std::size_t m ) {
-  const long r = c % long( m );
-  return( r < 0 ? r + m : r );
-  }
+ static std::size_t mod( long c , std::size_t m );
+
+ /// the permutation p of the pseudo-random inspection for the size m
+ const std::vector< std::size_t > & permutation( std::size_t m ) const;
 
  Kind f_kind;
  long f_c1;
  long f_c2;
  Step f_g;   ///< the second function of the double hashing, if any
+ unsigned long f_seed = 0;   ///< the seed of the pseudo-random inspection
+ mutable std::vector< std::size_t > f_p;   ///< its permutation, for f_m
+ mutable std::size_t f_m = 0;              ///< the size of f_p
 
  };  // end( class Probing )
 
@@ -226,100 +216,59 @@ class OpenHashTable {
  /// the state of a place
  enum class Slot { NIL , FULL , DELETED };
 
- /// the empty table of size m > 0 with the given inspection, which
+ /// the empty table of size m with the given inspection, which
  /// restructures itself or not
+ /// \pre m > 0 and probe.works( m )
  OpenHashTable( std::size_t m , Probing probe , bool restructure = false ,
-                H h = H() )
-  : f_T( m ) , f_probe( probe ) , f_m0( m ) ,
-    f_restructure( restructure ) , f_h( h ) {
-  if( m == 0 )
-   throw( std::invalid_argument( "ADS::OpenHashTable: m = 0" ) );
-  f_probe.check( m );
-  }
+                H h = H() );
 
 /*--------------------------------------------------------------------------*/
 
  /// the value of the key k, or nothing
- [[nodiscard]] std::optional< V > lookup( const K & k ) const {
-  const auto i = scan( k , false );
-  if( is( i , k ) )
-   return( f_T[ i ].value );
-  return( std::nullopt );
-  }
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
  /// associates the value v to the key k; throws std::overflow_error if the
  /// inspection finds no place
- void insert( const K & k , const V & v ) {
-  const auto i = scan( k , true );
-  auto & c = f_T[ i ];
-  if( c.slot == Slot::FULL && ! ( c.key == k ) )
-   throw( std::overflow_error( "ADS::OpenHashTable::insert: no place" ) );
-  if( c.slot != Slot::FULL ) {
-   if( c.slot == Slot::DELETED )
-    --f_deleted;
-   ++f_size;
-   }
-  c = { Slot::FULL , k , v };
-  if( f_restructure && ( 2 * ( f_size + f_deleted ) > f_T.size() ) )
-   rebuild( resized( f_T.size() , true , f_m0 ) );
-  }
+ /// \post k is in the table
+ void insert( const K & k , const V & v );
 
  /// removes the key k, if it is there, leaving a deleted place
- void remove( const K & k ) {
-  const auto i = scan( k , false );
-  if( ! is( i , k ) )
-   return;
-  f_T[ i ].slot = Slot::DELETED;
-  --f_size;
-  ++f_deleted;
-  if( f_restructure && ( f_T.size() > f_m0 ) &&
-      ( 8 * f_size < f_T.size() ) )
-   rebuild( resized( f_T.size() , false , f_m0 ) );
-  }
+ /// \post k is not in the table
+ void remove( const K & k );
 
- [[nodiscard]] bool contains( const K & k ) const {
-  return( is( scan( k , false ) , k ) );
-  }
+ [[nodiscard]] bool contains( const K & k ) const;
 
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// the size m of the vector
- [[nodiscard]] std::size_t capacity( void ) const { return( f_T.size() ); }
+ [[nodiscard]] std::size_t capacity( void ) const;
 
  /// the load factor n / m
- [[nodiscard]] double load( void ) const {
-  return( double( f_size ) / f_T.size() );
-  }
+ [[nodiscard]] double load( void ) const;
 
  /// the foreach of the book: f( k , v ) on the pairs, place after place,
  /// O( m ) time
  template< class F >
- void forEach( F && f ) const {
-  for( const auto & c : f_T )
-   if( c.slot == Slot::FULL )
-    f( c.key , c.value );
-  }
+ void forEach( F && f ) const;
 
  /// the state of the place i
- [[nodiscard]] Slot slot( std::size_t i ) const { return( f_T.at( i ).slot ); }
+ /// \pre i < capacity()
+ [[nodiscard]] Slot slot( std::size_t i ) const;
 
- /// the key in the place i, which is full
- [[nodiscard]] const K & keyAt( std::size_t i ) const {
-  if( f_T.at( i ).slot != Slot::FULL )
-   throw( std::logic_error( "ADS::OpenHashTable::keyAt: not full" ) );
-  return( f_T[ i ].key );
-  }
+ /// the key in the place i
+ /// \pre i < capacity() and the place is full
+ [[nodiscard]] const K & keyAt( std::size_t i ) const;
 
  /// the places examined by the last operation
- [[nodiscard]] std::size_t probes( void ) const { return( f_probes ); }
+ [[nodiscard]] std::size_t probes( void ) const;
 
  /// the number of restructurings so far
- [[nodiscard]] std::size_t restructures( void ) const { return( f_rebuilds ); }
+ [[nodiscard]] std::size_t restructures( void ) const;
 
  /// the number of pairs moved by the restructurings so far
- [[nodiscard]] std::size_t moved( void ) const { return( f_moved ); }
+ [[nodiscard]] std::size_t moved( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -330,43 +279,23 @@ class OpenHashTable {
   V value{};
   };
 
- bool is( std::size_t i , const K & k ) const {
-  return( ( f_T[ i ].slot == Slot::FULL ) && ( f_T[ i ].key == k ) );
-  }
+ [[nodiscard]] bool is( std::size_t i , const K & k ) const;
 
  /// scan( k , insert ) of the book: the place of k, or the one where the
  /// inspection stopped (nil, or the last after m inspections); for an
  /// insertion of a key that is not there, the first deleted place met
- std::size_t scan( const K & k , bool insert ) const {
-  const std::size_t m = f_T.size();
-  const std::size_t h = f_h( k );
-  long firstDeleted = -1;
-  std::size_t i = 0;
-  std::size_t j = f_probe.at( h , 0 , m );
-  while( ! is( j , k ) && ( f_T[ j ].slot != Slot::NIL ) && ( i < m ) ) {
-   if( ( f_T[ j ].slot == Slot::DELETED ) && ( firstDeleted == -1 ) )
-    firstDeleted = j;
-   j = f_probe.at( h , ++i , m );
-   }
-  f_probes = std::min( i + 1 , m );
-  if( insert && ! is( j , k ) && ( firstDeleted != -1 ) )
-   return( firstDeleted );
-  return( j );
-  }
+ std::size_t scan( const K & k , bool insert ) const;
 
- void rebuild( std::size_t m ) {
-  f_probe.check( m );
-  std::vector< Cell > T( m );
-  std::swap( f_T , T );
-  f_size = f_deleted = 0;
-  for( auto & c : T )
-   if( c.slot == Slot::FULL ) {
-    f_T[ scan( c.key , true ) ] = c;
-    ++f_size;
-    }
-  ++f_rebuilds;
-  f_moved += f_size;
-  }
+ /// the first place of the inspection of k that holds it, with no nil
+ /// before it, or capacity(); probes() does not change
+ [[nodiscard]] std::size_t where( const K & k ) const;
+
+ /// each key found by its inspection in its own place, and the full and
+ /// deleted places counted right, O( m ) inspections; on more than 1024
+ /// places, only the keys on the inspection of k, up to its first nil
+ [[nodiscard]] bool consistent( const K & k ) const;
+
+ void rebuild( std::size_t m );
 
  std::vector< Cell > f_T;          ///< the places
  Probing f_probe;                  ///< the inspection
@@ -384,6 +313,12 @@ class OpenHashTable {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/dictionary/OpenHashTable.tpp"
 
 /*--------------------------------------------------------------------------*/
 

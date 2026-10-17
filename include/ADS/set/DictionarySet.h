@@ -9,6 +9,10 @@
  * in O( log n ) and forEach() in O( n ), in order. Their operations are
  * the generic ones [see SetOperations.h].
  *
+ * The contracts [see Contract.h]: after insert() the item is there and
+ * after remove() it is not; the dictionary keeps its own invariant. The
+ * operations are defined in DictionarySet.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 8.4 and 8.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
  *
@@ -30,10 +34,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/OpenHashTable.h"
-#include "ADS/tree/SearchTree.h"
 #include "ADS/set/SetOperations.h"
+#include "ADS/tree/SearchTree.h"
 
 #include <algorithm>
 #include <concepts>
@@ -66,28 +71,26 @@ class DictionarySet {
  /// the empty set on the dictionary D( a... )
  template< class... A >
   requires std::constructible_from< D , A... >
- explicit DictionarySet( A &&... a ) : f_d( std::forward< A >( a )... ) {}
+ explicit DictionarySet( A &&... a );
 
- [[nodiscard]] std::size_t size( void ) const { return( f_d.size() ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_d.size() == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] bool contains( const Item & x ) const {
-  return( f_d.contains( x ) );
-  }
+ [[nodiscard]] bool contains( const Item & x ) const;
 
- void insert( const Item & x ) { f_d.insert( x , true ); }
+ /// \post x is in the set
+ void insert( const Item & x );
 
- void remove( const Item & x ) { f_d.remove( x ); }
+ /// \post x is not in the set
+ void remove( const Item & x );
 
  /// f( x ) on the items, in the order of the dictionary
  template< class F >
- void forEach( F && f ) const {
-  f_d.forEach( [ & ]( const Item & x , bool ) { f( x ); } );
-  }
+ void forEach( F && f ) const;
 
  /// the dictionary
- [[nodiscard]] const D & dictionary( void ) const { return( f_d ); }
+ [[nodiscard]] const D & dictionary( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -110,6 +113,12 @@ template< std::totally_ordered T >
 using TreeSet = DictionarySet< RedBlackTree< T , bool > >;
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/set/DictionarySet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -409,7 +409,7 @@ ADS_TEST( "sec6.3.bplus-figure" )
  CHECK( t.range( 7 , 11 ) == P( { { 8 , 8 } , { 9 , 9 } , { 10 , 10 } ,
                                   { 11 , 11 } } ) );
  CHECK( t.range( 16 , 20 ).empty() && ( t.range( 0 , 100 ).size() == 8 ) );
- CHECK_THROWS( ( BPlusTree< int , int >( 2 ) ) , std::invalid_argument );
+ CHECK_THROWS( ( BPlusTree< int , int >( 2 ) ) , contract_violation );
  }
 
 // section 6.3: random insertions in B+-trees of several orders against

@@ -181,8 +181,8 @@ ADS_TEST( "sec7.direct-access" )
  trains.insert( 36799 , "Roma" );
  CHECK( trains.lookup( 36799 ) == "Roma" );
  CHECK( ! trains.lookup( 2 ) );
- CHECK_THROWS( (void) trains.lookup( 0 ) , std::out_of_range );
- CHECK_THROWS( trains.insert( 36800 , "" ) , std::out_of_range );
+ CHECK_THROWS( (void) trains.lookup( 0 ) , contract_violation );
+ CHECK_THROWS( trains.insert( 36800 , "" ) , contract_violation );
 
  DirectTable< int > phones( 280000 , 289999 );
  CHECK( phones.capacity() == 10000 );
@@ -243,9 +243,9 @@ ADS_TEST( "sec7.1.functions" )
   CHECK( hash_midsquare( i * 7919 , 10 ) < 1024 );
 
  CHECK_THROWS( (void) hash_extraction( "a" , 0 , 0 ) ,
-               std::invalid_argument );
- CHECK_THROWS( (void) hash_division( "a" , 0 ) , std::invalid_argument );
- CHECK_THROWS( (void) int_bin( "123456789" ) , std::invalid_argument );
+               contract_violation );
+ CHECK_THROWS( (void) hash_division( "a" , 0 ) , contract_violation );
+ CHECK_THROWS( (void) int_bin( "123456789" ) , contract_violation );
  }
 
 // the simple uniformity by the chi-square test: the division by a prime
@@ -322,12 +322,12 @@ ADS_TEST( "sec7.2.against-map" )
                                          Probing::double_hashing() , r );
   against_map( e , 1000 , 20000 , seed++ );
   }
- CHECK_THROWS( ( Open( 8 , Probing::linear( 2 ) ) ) , std::invalid_argument );
+ CHECK_THROWS( ( Open( 8 , Probing::linear( 2 ) ) ) , contract_violation );
  CHECK_THROWS( ( Open( 8 , Probing::quadratic( 0 , 1 ) ) ) ,
-               std::invalid_argument );
+               contract_violation );
  CHECK_THROWS( ( Open( 12 , Probing::double_hashing() ) ) ,
-               std::invalid_argument );
- CHECK_THROWS( ( Front( 0 ) ) , std::invalid_argument );
+               contract_violation );
+ CHECK_THROWS( ( Front( 0 ) ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -6,9 +6,13 @@
  * places, the place 0 following the place m - 1: the queue is in size
  * consecutive places from the one of its front, head, so that its back is
  * in the place \f$ ( head + size - 1 ) \bmod m \f$ and every operation takes
- * O( 1 ) time. As for ArrayStack, the preconditions of the book (no
- * dequeue() from an empty queue, no enqueue() in a full one) are checked,
- * and std::logic_error is thrown.
+ * O( 1 ) time.
+ *
+ * The contracts [see Contract.h] are the preconditions of the book: top()
+ * and dequeue() need a queue that is not empty, enqueue() one that is not
+ * full; enqueue() ensures one item more, dequeue() one less, and the
+ * invariant is \f$ 0 \leq size \leq m \f$ with the front inside the
+ * vector. The operations are defined in ArrayQueue.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -31,9 +35,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <cstddef>
 #include <memory>
-#include <stdexcept>
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -55,48 +61,38 @@ class ArrayQueue {
  using Item = T;   ///< the type of the items
 
  /// the empty queue of at most dim items
- explicit ArrayQueue( std::size_t dim )
-  : f_A( new T[ dim ] ) , f_size( 0 ) , f_head( 0 ) , f_capacity( dim ) {}
+ explicit ArrayQueue( std::size_t dim );
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// the item at the front
- [[nodiscard]] const T & top( void ) const {
-  if( f_size == 0 )
-   throw( std::logic_error( "ADS::ArrayQueue::top: empty queue" ) );
-  return( f_A[ f_head ] );
-  }
+ /// \pre the queue is not empty
+ [[nodiscard]] const T & top( void ) const;
 
  /// removes the item at the front and returns it
- T dequeue( void ) {
-  if( f_size == 0 )
-   throw( std::logic_error( "ADS::ArrayQueue::dequeue: empty queue" ) );
-  T t = std::move( f_A[ f_head ] );
-  f_head = ( f_head + 1 ) % f_capacity;
-  --f_size;
-  return( t );
-  }
+ /// \pre the queue is not empty
+ /// \post one item less
+ T dequeue( void );
 
  /// puts v at the back
- void enqueue( const T & v ) {
-  if( f_size == f_capacity )
-   throw( std::logic_error( "ADS::ArrayQueue::enqueue: full queue" ) );
-  f_A[ ( f_head + f_size ) % f_capacity ] = v;
-  ++f_size;
-  }
+ /// \pre the queue is not full
+ /// \post one item more
+ void enqueue( const T & v );
 
  /// the number of items
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
+
+ /// the maximum number of items
+ [[nodiscard]] std::size_t capacity( void ) const;
 
  /// whether v is in the queue, O( n )
- [[nodiscard]] bool contains( const T & v ) const {
-  for( std::size_t i = 0 ; i < f_size ; ++i )
-   if( f_A[ ( f_head + i ) % f_capacity ] == v ) return( true );
-  return( false );
-  }
+ [[nodiscard]] bool contains( const T & v ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// the items fit in the vector and the front is in it
+ [[nodiscard]] bool fits( void ) const;
 
  std::unique_ptr< T[] > f_A;   ///< the circular vector
  std::size_t f_size;           ///< the number of items
@@ -108,6 +104,12 @@ class ArrayQueue {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/queue/ArrayQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

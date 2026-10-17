@@ -13,6 +13,10 @@
  * filled by increasing length h = j - i + 1 in O( n^3 ) time, with S[ i ][ j ]
  * the best k, from which stampaPar() writes the parenthesization in O( n ).
  *
+ * The contracts [see Contract.h]: the vector of the sizes c_0 , ... , c_n has
+ * n + 1 >= 1 positive items, and the parenthesization needs i <= j < n. The
+ * functions are defined in MatrixChain.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 13.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
  * \see T. C. Hu, M. T. Shing, Computation of matrix chain products, part I,
@@ -37,6 +41,9 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <string>
@@ -52,42 +59,24 @@ namespace ADS {
 /// parentesizzazione(): the least cost DP[ 0 ][ n - 1 ] and the table S of
 /// the splits, for the n matrices of sizes c[ 0 .. n ]
 inline std::pair< long , std::vector< std::vector< std::size_t > > >
-matrixChain( const std::vector< long > & c )
-{
- const std::size_t n = c.size() - 1;
- std::vector< std::vector< long > > DP( n , std::vector< long >( n , 0 ) );
- std::vector< std::vector< std::size_t > > S( n ,
-                                             std::vector< std::size_t >( n ) );
- for( std::size_t h = 2 ; h <= n ; ++h )
-  for( std::size_t i = 0 ; i + h <= n ; ++i ) {
-   const std::size_t j = i + h - 1;
-   DP[ i ][ j ] = std::numeric_limits< long >::max();
-   for( std::size_t k = i ; k < j ; ++k ) {
-    const long t = DP[ i ][ k ] + DP[ k + 1 ][ j ] +
-                   c[ i ] * c[ k + 1 ] * c[ j + 1 ];
-    if( t < DP[ i ][ j ] ) {
-     DP[ i ][ j ] = t;
-     S[ i ][ j ] = k;
-     }
-    }
-   }
- return( std::pair( n ? DP[ 0 ][ n - 1 ] : 0 , S ) );
- }
+/// \pre c is not empty and its items are positive
+matrixChain( const std::vector< long > & c );
 
 /// stampaPar(): the parenthesization of A_i ... A_j, as "((A0·A1)·A2)"
+/// \pre i <= j < n
 inline std::string parenthesization(
                          const std::vector< std::vector< std::size_t > > & S ,
-                         std::size_t i , std::size_t j )
-{
- if( i == j )
-  return( "A" + std::to_string( i ) );
- return( "(" + parenthesization( S , i , S[ i ][ j ] ) + "·" +
-         parenthesization( S , S[ i ][ j ] + 1 , j ) + ")" );
- }
+                         std::size_t i , std::size_t j );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/numeric/MatrixChain.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -9,6 +9,9 @@
  * lookups, or O( n w ) if no word is longer than w. The words are read back
  * from the table.
  *
+ * The contracts [see Contract.h]: the words found, joined, give back the
+ * string. The operations are defined in WordBreak.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 13.13,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
  *
@@ -31,6 +34,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <cstddef>
+#include "ADS/Contract.h"
+
+#include <numeric>
 #include <optional>
 #include <string>
 #include <vector>
@@ -43,38 +49,22 @@ namespace ADS {
 
 /// the words of s, if it is a sequence of words, by the lookup( word ) of
 /// a dictionary; the lookups made go to *lookups, if given
+/// \post the words joined give s
 template< class F >
 std::optional< std::vector< std::string > > wordBreak(
                          const std::string & s , F && lookup ,
                          std::size_t longest = std::string::npos ,
-                         long * lookups = nullptr )
-{
- const std::size_t n = s.size();
- std::vector< long > from( n + 1 , -1 );           // the start of the word
- from[ 0 ] = 0;
- for( std::size_t i = 1 ; i <= n ; ++i )
-  for( std::size_t j = i ; j-- > 0 ; ) {
-   if( i - j > longest )
-    break;
-   if( from[ j ] < 0 )
-    continue;
-   if( lookups ) ++*lookups;
-   if( lookup( s.substr( j , i - j ) ) ) {
-    from[ i ] = long( j );
-    break;
-    }
-   }
- if( from[ n ] < 0 )
-  return( std::nullopt );
- std::vector< std::string > words;
- for( std::size_t i = n ; i > 0 ; i = std::size_t( from[ i ] ) )
-  words.insert( words.begin() , s.substr( from[ i ] , i - from[ i ] ) );
- return( words );
- }
+                         long * lookups = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/string/WordBreak.tpp"
 
 /*--------------------------------------------------------------------------*/
 

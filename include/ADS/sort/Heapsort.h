@@ -21,6 +21,11 @@
  * maxHeapRestore() is a loop rather than the recursion of the book
  * (exercise 10.4).
  *
+ * The contracts [see Contract.h]: maxHeapRestore() and isMaxHeap() need dim <=
+ * n, maxHeapRestore() also i < dim, and heapBuild() ends with a heap and
+ * heapsort() with the same items sorted, two audits. The functions are defined
+ * in Heapsort.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  * \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the
@@ -46,6 +51,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+#include "ADS/sort/Sorted.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <utility>
@@ -61,54 +70,35 @@ namespace ADS {
 
 /// maxHeapRestore(): A[ i ] goes down in the heap A[ 0 .. dim - 1 ], with
 /// the order less, O( 1 ) extra space
+/// \pre i < dim <= n
 template< class T , class C = std::less<> >
 void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
-                     C less = C() )
-{
- for( ; ; ) {
-  std::size_t max = i;
-  const std::size_t l = 2 * i + 1 , r = 2 * i + 2;
-  if( ( l < dim ) && less( A[ max ] , A[ l ] ) ) max = l;
-  if( ( r < dim ) && less( A[ max ] , A[ r ] ) ) max = r;
-  if( max == i )
-   return;
-  std::swap( A[ i ] , A[ max ] );
-  i = max;
-  }
- }
+                     C less = C() );
 
 /// heapBuild(): A becomes a max-heap, O( n ) time
+/// \post A is a max-heap
 template< class T , class C = std::less<> >
-void heapBuild( std::vector< T > & A , C less = C() )
-{
- for( std::size_t i = A.size() / 2 ; i-- > 0 ; )
-  maxHeapRestore( A , i , A.size() , less );
- }
+void heapBuild( std::vector< T > & A , C less = C() );
 
 /// heapsort(): A in increasing order, O( n log n ) time
+/// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
-void heapsort( std::vector< T > & A , C less = C() )
-{
- heapBuild( A , less );
- for( std::size_t i = A.size() ; i-- > 1 ; ) {
-  std::swap( A[ 0 ] , A[ i ] );
-  maxHeapRestore( A , 0 , i , less );
-  }
- }
+void heapsort( std::vector< T > & A , C less = C() );
 
 /// true if A[ 0 .. dim - 1 ] is a max-heap
+/// \pre dim <= n
 template< class T , class C = std::less<> >
-bool isMaxHeap( const std::vector< T > & A , std::size_t dim , C less = C() )
-{
- for( std::size_t i = 1 ; i < dim ; ++i )
-  if( less( A[ ( i - 1 ) / 2 ] , A[ i ] ) )
-   return( false );
- return( true );
- }
+bool isMaxHeap( const std::vector< T > & A , std::size_t dim , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sort/Heapsort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -15,6 +15,10 @@
  * The search stops when v is out of [ A[ i ] , A[ j ] ], and probes A[ i ]
  * when A[ i ] = A[ j ].
  *
+ * The contracts [see Contract.h]: the vector must be sorted, an audit checked
+ * at the level 3, and a miss is checked against a linear scan. The functions
+ * are defined in InterpolationSearch.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 12.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap12.pdf
  * \see Y. Perl, A. Itai, H. Avni, Interpolation search: a log log N
@@ -39,6 +43,9 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -49,35 +56,24 @@ namespace ADS {
 
 /// ricercaInterpolata(): the place of v in the sorted A, or -1;
 /// trace( i , j , m ) on each probe
+/// \pre A is sorted
+/// \post the result is -1 if and only if v is not in A
 template< class T , class F >
 long interpolationSearch( const std::vector< T > & A , const T & v ,
-                          F && trace )
-{
- long i = 0 , j = long( A.size() ) - 1;
- while( ( i <= j ) && ! ( v < A[ i ] ) && ! ( A[ j ] < v ) ) {
-  const long m = ( A[ j ] == A[ i ] ) ? i :
-   i + long( ( double( j - i ) * double( v - A[ i ] ) ) /
-             double( A[ j ] - A[ i ] ) );
-  trace( i , j , m );
-  if( A[ m ] == v )
-   return( m );
-  if( A[ m ] < v )
-   i = m + 1;
-  else
-   j = m - 1;
-  }
- return( -1 );
- }
+                          F && trace );
 
 template< class T >
-long interpolationSearch( const std::vector< T > & A , const T & v )
-{
- return( interpolationSearch( A , v , []( long , long , long ) {} ) );
- }
+long interpolationSearch( const std::vector< T > & A , const T & v );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/search/InterpolationSearch.tpp"
 
 /*--------------------------------------------------------------------------*/
 

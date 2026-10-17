@@ -9,6 +9,11 @@
  * keyword of C++, and so the others are setIntersection(),
  * setDifference() and setSymmetricDifference()).
  *
+ * The contracts [see Contract.h]: N >= 0, an item inserted is in
+ * [ 0 , N ), and each operation of two sets gives, item by item, what its
+ * name says; the invariant is that the size counts the bits set. The
+ * operations are defined in BoolSet.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 8.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
  *
@@ -29,6 +34,8 @@
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+#include "ADS/Contract.h"
 
 #include <algorithm>
 #include <concepts>
@@ -58,66 +65,41 @@ class BoolSet {
  using Item = long;   ///< the type of the items
 
  /// Set( N ): the empty set of the integers in [ 0 , N )
- explicit BoolSet( long N ) {
-  if( N < 0 )
-   throw( std::invalid_argument( "ADS::BoolSet: N < 0" ) );
-  f_V.assign( N , false );
-  }
+ /// \pre N >= 0
+ explicit BoolSet( long N );
 
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// the size N of the vector
- [[nodiscard]] long dim( void ) const { return( long( f_V.size() ) ); }
+ [[nodiscard]] long dim( void ) const;
 
  /// false also for an x out of [ 0 , N )
- [[nodiscard]] bool contains( long x ) const {
-  return( ( x >= 0 ) && ( x < dim() ) && f_V[ x ] );
-  }
+ [[nodiscard]] bool contains( long x ) const;
 
- /// throws std::out_of_range if x is not in [ 0 , N )
- void insert( long x ) {
-  if( ( x < 0 ) || ( x >= dim() ) )
-   throw( std::out_of_range( "ADS::BoolSet::insert: x out of [0, N)" ) );
-  if( ! f_V[ x ] )
-   ++f_size;
-  f_V[ x ] = true;
-  }
+ /// \pre x in [ 0 , N )
+ /// \post x is in the set
+ void insert( long x );
 
- void remove( long x ) {
-  if( contains( x ) ) {
-   --f_size;
-   f_V[ x ] = false;
-   }
-  }
+ /// \post x is not in the set
+ void remove( long x );
 
  /// the smallest item, O( N ) time
- [[nodiscard]] std::optional< long > min( void ) const {
-  for( long i = 0 ; i < dim() ; ++i )
-   if( f_V[ i ] )
-    return( i );
-  return( std::nullopt );
-  }
+ [[nodiscard]] std::optional< long > min( void ) const;
 
  /// the largest item, O( N ) time
- [[nodiscard]] std::optional< long > max( void ) const {
-  for( long i = dim() - 1 ; i >= 0 ; --i )
-   if( f_V[ i ] )
-    return( i );
-  return( std::nullopt );
-  }
+ [[nodiscard]] std::optional< long > max( void ) const;
 
  /// f( x ) on the items in increasing order, O( N ) time
  template< class F >
- void forEach( F && f ) const {
-  for( long i = 0 ; i < dim() ; ++i )
-   if( f_V[ i ] )
-    f( i );
-  }
+ void forEach( F && f ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// the size is the number of bits set, O( N )
+ [[nodiscard]] bool counted( void ) const;
 
  std::vector< bool > f_V;    ///< the bits
  std::size_t f_size = 0;     ///< the number of items
@@ -125,44 +107,25 @@ class BoolSet {
  };  // end( class BoolSet )
 
 /// the union, a set of dimension max( A.dim() , B.dim() )
-inline BoolSet setUnion( const BoolSet & A , const BoolSet & B )
-{
- BoolSet C( std::max( A.dim() , B.dim() ) );
- for( long i = 0 ; i < A.dim() ; ++i )
-  if( A.contains( i ) ) C.insert( i );
- for( long i = 0 ; i < B.dim() ; ++i )
-  if( B.contains( i ) ) C.insert( i );
- return( C );
- }
+inline BoolSet setUnion( const BoolSet & A , const BoolSet & B );
 
 /// the intersection, a set of dimension min( A.dim() , B.dim() )
-inline BoolSet setIntersection( const BoolSet & A , const BoolSet & B )
-{
- BoolSet C( std::min( A.dim() , B.dim() ) );
- for( long i = 0 ; i < C.dim() ; ++i )
-  if( A.contains( i ) && B.contains( i ) ) C.insert( i );
- return( C );
- }
+inline BoolSet setIntersection( const BoolSet & A , const BoolSet & B );
 
 /// the difference, a set of dimension A.dim()
-inline BoolSet setDifference( const BoolSet & A , const BoolSet & B )
-{
- BoolSet C( A.dim() );
- for( long i = 0 ; i < A.dim() ; ++i )
-  if( A.contains( i ) && ! B.contains( i ) ) C.insert( i );
- return( C );
- }
+inline BoolSet setDifference( const BoolSet & A , const BoolSet & B );
 
 /// the symmetric difference, the items in exactly one of A and B
-inline BoolSet setSymmetricDifference( const BoolSet & A , const BoolSet & B )
-{
- BoolSet C( std::max( A.dim() , B.dim() ) );
- for( long i = 0 ; i < C.dim() ; ++i )
-  if( A.contains( i ) != B.contains( i ) ) C.insert( i );
- return( C );
- }
+inline BoolSet setSymmetricDifference( const BoolSet & A ,
+                                       const BoolSet & B );
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/set/BoolSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

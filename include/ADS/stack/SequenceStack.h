@@ -9,8 +9,11 @@
  *   push( v ) = insert( head() , v ) \; ,
  * \f]
  * which takes O( 1 ) time on a list with pointers, even a singly linked one
- * (Esercizio 4.6), and has no capacity; std::logic_error is thrown on an
- * empty stack.
+ * (Esercizio 4.6), and has no capacity.
+ *
+ * The contracts [see Contract.h]: top() and pop() need a stack that is not
+ * empty, and push() ensures one that is not. The operations are defined in
+ * SequenceStack.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -33,9 +36,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include <cstddef>
-#include <memory>
-#include <stdexcept>
+#include "ADS/ADT.h"
+#include "ADS/Contract.h"
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -48,7 +50,7 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// a STACK simulated with the operations of a SEQUENCE S, the top first
-template< class S >
+template< Sequence S >
 class SequenceStack {
 
 /*--------------------------------------------------------------------------*/
@@ -56,26 +58,22 @@ class SequenceStack {
 
  using Item = typename S::Item;   ///< the type of the items
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_s.isEmpty() ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// the item on top, read( head() )
- [[nodiscard]] const Item & top( void ) const {
-  if( f_s.isEmpty() )
-   throw( std::logic_error( "ADS::SequenceStack::top: empty stack" ) );
-  return( f_s.read( f_s.head() ) );
-  }
+ /// \pre the stack is not empty
+ [[nodiscard]] const Item & top( void ) const;
 
  /// removes the item on top and returns it, remove( head() )
- Item pop( void ) {
-  if( f_s.isEmpty() )
-   throw( std::logic_error( "ADS::SequenceStack::pop: empty stack" ) );
-  Item v = f_s.read( f_s.head() );
-  f_s.remove( f_s.head() );
-  return( v );
-  }
+ /// \pre the stack is not empty
+ Item pop( void );
 
  /// puts v on top, insert( head() , v )
- void push( const Item & v ) { f_s.insert( f_s.head() , v ); }
+ /// \post the stack is not empty, v on top
+ void push( const Item & v );
+
+ /// the same items in the same order, those of the sequences
+ [[nodiscard]] bool operator==( const SequenceStack & o ) const = default;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -87,6 +85,12 @@ class SequenceStack {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/stack/SequenceStack.tpp"
 
 /*--------------------------------------------------------------------------*/
 

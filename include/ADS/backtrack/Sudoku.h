@@ -9,6 +9,11 @@
  * search backtracks when a square has none. The cost is a constant for
  * n = 3, a huge one, and superpolynomial in n. 0 marks an empty square.
  *
+ * The contracts [see Contract.h]: check() needs a square of the grid and a
+ * value in [ 1 , n^2 ]; sudoku() a grid of n^2 x n^2 squares with values in [
+ * 0 , n^2 ], those given consistent, and the solution is checked too (both at
+ * level 3). The operations are defined in Sudoku.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 16.3 and
  *      exercise 16.7,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf
@@ -32,6 +37,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include <cstddef>
+#include "ADS/Contract.h"
+
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -43,44 +50,23 @@ namespace ADS {
 using Grid = std::vector< std::vector< int > >;   ///< the squares, 0 empty
 
 /// check(): c can be written in the square ( x , y )
-inline bool check( const Grid & S , std::size_t x , std::size_t y , int c )
-{
- const std::size_t N = S.size();
- std::size_t n = 1;
- while( n * n < N ) ++n;
- for( std::size_t j = 0 ; j < N ; ++j )
-  if( ( S[ x ][ j ] == c ) || ( S[ j ][ y ] == c ) )   // the row, the column
-   return( false );
- const std::size_t bx = x / n * n , by = y / n * n;
- for( std::size_t i = 0 ; i < n ; ++i )                 // the block
-  for( std::size_t j = 0 ; j < n ; ++j )
-   if( S[ bx + i ][ by + j ] == c )
-    return( false );
- return( true );
- }
+/// \pre ( x , y ) a square and c in [ 1 , n^2 ]
+inline bool check( const Grid & S , std::size_t x , std::size_t y , int c );
 
 /// sudoku(): fills the empty squares of S, true if it can
-inline bool sudoku( Grid & S , std::size_t i = 0 )
-{
- const std::size_t N = S.size();
- if( i == N * N )
-  return( true );
- const std::size_t x = i / N , y = i % N;
- if( S[ x ][ y ] != 0 )                                 // a given number
-  return( sudoku( S , i + 1 ) );
- for( int c = 1 ; c <= int( N ) ; ++c )
-  if( check( S , x , y , c ) ) {
-   S[ x ][ y ] = c;
-   if( sudoku( S , i + 1 ) )
-    return( true );
-   }
- S[ x ][ y ] = 0;
- return( false );
- }
+/// \pre a grid of n^2 x n^2 squares, the values given consistent
+/// \post if true, a solution
+inline bool sudoku( Grid & S , std::size_t i = 0 );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/backtrack/Sudoku.tpp"
 
 /*--------------------------------------------------------------------------*/
 

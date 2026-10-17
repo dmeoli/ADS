@@ -11,6 +11,9 @@
  * permutation is pruned as soon as its last part cannot be completed into
  * a word, if the dictionary also tells the prefixes of its words.
  *
+ * The contracts [see Contract.h]: each sentence found has the letters of the
+ * string (checked at level 3). The operations are defined in Anagrams.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 16.8,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf
  *
@@ -33,6 +36,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -46,46 +52,20 @@ namespace ADS {
 
 /// the anagrams of s made of words for which word( w ) is true; prefix( w )
 /// is true if w begins some word
+/// \post each sentence has the letters of s
 template< class W , class P >
 std::set< std::string > anagrams( const std::string & s , W && word ,
-                                  P && prefix )
-{
- std::map< char , int > left;
- for( char c : s ) ++left[ c ];
- std::set< std::string > out;
- std::string sentence , current;
- auto rec = [ & ]( auto & self , std::size_t placed ) -> void {
-  if( placed == s.size() ) {
-   if( current.empty() )
-    out.insert( sentence.substr( 0 , sentence.size() - 1 ) );
-   return;
-   }
-  for( auto & [ c , k ] : left ) {
-   if( k == 0 ) continue;
-   --k;
-   current += c;
-   if( prefix( current ) ) {
-    self( self , placed + 1 );                   // the word goes on
-    if( word( current ) ) {                      // or it ends here
-     const std::string w = current , before = sentence;
-     sentence += w + ' ';
-     current.clear();
-     self( self , placed + 1 );
-     current = w;
-     sentence = before;
-     }
-    }
-   current.pop_back();
-   ++k;
-   }
-  };
- rec( rec , 0 );
- return( out );
- }
+                                  P && prefix );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/backtrack/Anagrams.tpp"
 
 /*--------------------------------------------------------------------------*/
 

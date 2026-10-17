@@ -30,8 +30,11 @@
 #include "ADS/algorithm/Hanoi.h"
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/queue/Dequeue.h"
+#include "ADS/queue/LinkedQueue.h"
 #include "ADS/sequence/ArraySequence.h"
+#include "ADS/sequence/CursorList.h"
 #include "ADS/sequence/List.h"
+#include "ADS/sequence/SinglyList.h"
 #include "ADS/sort/PigeonholeSort.h"
 #include "ADS/stack/ArrayStack.h"
 #include "ADS/stack/SequenceStack.h"
@@ -52,99 +55,10 @@ using namespace ADS;
 
 namespace {
 
-/*--------------------------------------------------------------------------*/
-/// Esercizio 4.6: a SEQUENCE as a singly linked list, not circular and with
-/// no sentinel; every operation but tail() and prev() takes O( 1 ) time
-/// since \f$ pos_i \f$ is the address of the cell of \f$ a_{i-1} \f$ for
-/// i > 0 and nil for i = 0, hence the cell before an item is always at
-/// hand. \f$ pos_{-1} \f$ is a distinguished address, f_before.
-template< class T >
-class SinglyList {
- struct Cell { T value; Cell * next; };
- Cell * f_first = nullptr;
- Cell f_before_cell{ T() , nullptr };
- Cell * const f_before = & f_before_cell;
-
- public:
-
- using Item = T;
- using Pos = Cell *;
-
- SinglyList( void ) = default;
- SinglyList( std::initializer_list< T > items ) {
-  for( const auto & v : items )
-   insert( next( tail() ) , v );
-  }
- SinglyList( const SinglyList & ) = delete;
- SinglyList & operator=( const SinglyList & ) = delete;
- ~SinglyList() { while( ! isEmpty() ) remove( head() ); }
-
- [[nodiscard]] bool isEmpty( void ) const { return( ! f_first ); }
-
- // pos_n is the address of the last cell, or nil if the list is empty
- [[nodiscard]] bool finished( Pos p ) const {
-  if( p == f_before )
-   return( true );
-  return( p ? ( p->next == nullptr ) : ( f_first == nullptr ) );
-  }
-
- [[nodiscard]] Pos head( void ) const { return( nullptr ); }
-
- // O( n ): the address of the cell before the last one
- [[nodiscard]] Pos tail( void ) const {
-  if( ! f_first )
-   return( f_before );
-  Pos p = nullptr;
-  while( next( p ) && ( ! finished( next( p ) ) ) )
-   p = next( p );
-  return( p );
-  }
-
- [[nodiscard]] Pos next( Pos p ) const {
-  if( p == f_before )
-   return( nullptr );
-  return( p ? p->next : f_first );
-  }
-
- // O( n ): a scan for the cell whose next one is p
- [[nodiscard]] Pos prev( Pos p ) const {
-  if( ! p )
-   return( f_before );
-  if( p == f_first )
-   return( nullptr );
-  Pos q = f_first;
-  while( q->next != p )
-   q = q->next;
-  return( q );
-  }
-
- Pos insert( Pos p , const T & v ) {
-  if( ! p )
-   f_first = new Cell{ v , f_first };
-  else
-   p->next = new Cell{ v , p->next };
-  return( p );   // the position of the new item is the one it got
-  }
-
- Pos remove( Pos p ) {
-  Cell * t = p ? p->next : f_first;
-  ( p ? p->next : f_first ) = t->next;
-  delete t;
-  return( p );
-  }
-
- [[nodiscard]] const T & read( Pos p ) const {
-  return( p ? p->next->value : f_first->value );
-  }
-
- void write( Pos p , const T & v ) {
-  ( p ? p->next : f_first )->value = v;
-  }
- };
-
 static_assert( Sequence< List< int > > );
 static_assert( Sequence< ArraySequence< int > > );
 static_assert( Sequence< SinglyList< int > > );
+static_assert( Sequence< CursorList< int > > );
 static_assert( Stack< ArrayStack< int > > );
 static_assert( Stack< SequenceStack< List< int > > > );
 static_assert( Queue< ArrayQueue< int > > );
@@ -235,6 +149,33 @@ void sequence_spec( void )
  for( int i : { 5 , 5 , 7 } )
   append( s , i );
  CHECK( items( s ) == V( { 5 , 5 , 7 } ) );
+
+ // the specification as axioms, at every position of sequences of length
+ // 0 to 5: isEmpty() is finished( head() ), so that it is redundant;
+ // read( insert( p , a ) ) = a; remove( insert( p , a ) ) leaves the
+ // sequence as it was; read( write( p , a ) ) = a, the other items
+ // unchanged
+ S t;
+ for( int n = 0 ; n <= 5 ; ++n ) {
+  CHECK( t.isEmpty() == t.finished( t.head() ) );
+  const V before = items( t );
+  int i = 0;
+  for( auto q = t.head() ; ; q = t.next( q ) , ++i ) {
+   const auto r = t.insert( q , 100 + i );
+   CHECK( t.read( r ) == 100 + i && ! t.isEmpty() );
+   t.remove( r );
+   CHECK( items( t ) == before );
+   if( t.finished( q ) )
+    break;
+   const auto old = t.read( q );
+   t.write( q , -1 );
+   V w = before;
+   w[ i ] = -1;
+   CHECK( t.read( q ) == -1 && items( t ) == w );
+   t.write( q , old );
+   }
+  append( t , n );
+  }
  }
 
 }  // end( namespace )
@@ -251,6 +192,9 @@ ADS_TEST( "spec.ArraySequence" ) { sequence_spec< ArraySequence< int > >(); }
 
 // Esercizio 4.6, the singly linked list with no sentinel
 ADS_TEST( "ex4.6" ) { sequence_spec< SinglyList< int > >(); }
+
+// beyond the book, the SEQUENCE with cursors
+ADS_TEST( "spec.CursorList" ) { sequence_spec< CursorList< int > >(); }
 
 // section 4.2: the vector doubles, so its size is always a power of 2 and
 // less than twice the number of items
@@ -706,48 +650,7 @@ ADS_TEST( "ex4.9" )
  CHECK_THROWS( D.removeTail() , std::logic_error );
  }
 
-namespace {
-
-// Esercizio 4.10: a QUEUE as a singly linked list with a pointer to the
-// first cell and one to the last, so that enqueue() takes O( 1 ) time too
-template< class T >
-class LinkedQueue {
- struct Cell { T value; Cell * next; };
- Cell * f_testa = nullptr;
- Cell * f_fondo = nullptr;
- public:
- using Item = T;
- LinkedQueue( void ) = default;
- LinkedQueue( const LinkedQueue & ) = delete;
- LinkedQueue & operator=( const LinkedQueue & ) = delete;
- ~LinkedQueue() { while( ! isEmpty() ) dequeue(); }
- bool isEmpty( void ) const { return( ! f_testa ); }
- void enqueue( const T & v ) {
-  Cell * c = new Cell{ v , nullptr };
-  ( f_fondo ? f_fondo->next : f_testa ) = c;
-  f_fondo = c;
-  }
- T dequeue( void ) {
-  if( isEmpty() )
-   throw( std::logic_error( "LinkedQueue::dequeue: empty queue" ) );
-  Cell * c = f_testa;
-  T v = std::move( c->value );
-  f_testa = c->next;
-  if( ! f_testa )
-   f_fondo = nullptr;
-  delete c;
-  return( v );
-  }
- const T & top( void ) const {
-  if( isEmpty() )
-   throw( std::logic_error( "LinkedQueue::top: empty queue" ) );
-  return( f_testa->value );
-  }
- };
-
 static_assert( Queue< LinkedQueue< int > > );
-
-}  // end( namespace )
 
 // Esercizio 4.10: FIFO, also after being emptied
 ADS_TEST( "ex4.10" )

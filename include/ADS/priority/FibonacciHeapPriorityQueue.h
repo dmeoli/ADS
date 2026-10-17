@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*/
-/*-------------------- File FibonacciHeapPriorityQueue.h -------------------*/
+/*------------------- File FibonacciHeapPriorityQueue.h --------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
  * The PRIORITYQUEUE [see PriorityQueue.h] on a Fibonacci heap, the
@@ -19,6 +19,17 @@
  * node of degree k has at least \f$ F_{k+2} \geq \phi^k \f$ descendants,
  * \f$ \phi = ( 1 + \sqrt{5} ) / 2 \f$, and the degrees are
  * \f$ O( \log_\phi n ) \f$.
+ *
+ * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
+ * need a heap that is not empty, decrease() a handle of a node of this
+ * heap (checked in O( n ) with the invariants) and a priority not larger
+ * than its own; the invariant is the order of the heap, the circular lists
+ * linked both ways, the parents, the degrees equal to the number of
+ * children, the roots not marked, the minimum among the roots and size()
+ * counting the nodes. On a heap of more than 1024 nodes it is checked on
+ * the roots only, so that a long sequence of operations at the level 3
+ * stays linear. The operations are defined in
+ * FibonacciHeapPriorityQueue.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 11.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap11.pdf
@@ -44,10 +55,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -89,176 +100,64 @@ class FibonacciHeapPriorityQueue {
  FibonacciHeapPriorityQueue & operator=(
                               const FibonacciHeapPriorityQueue & ) = delete;
 
- ~FibonacciHeapPriorityQueue() {
-  std::vector< Node * > S;
-  if( f_min )
-   S.push_back( f_min );
-  while( ! S.empty() ) {                     // each list, then its children
-   Node * x = S.back();
-   S.pop_back();
-   Node * y = x;
-   do {
-    Node * next = y->right;
-    if( y->child )
-     S.push_back( y->child );
-    delete y;
-    y = next;
-    } while( y != x );
-   }
-  }
+ ~FibonacciHeapPriorityQueue();
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_min == nullptr ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] int size( void ) const { return( f_n ); }
+ [[nodiscard]] int size( void ) const;
 
- [[nodiscard]] const T & min( void ) const { return( top()->value ); }
+ /// \pre the heap is not empty
+ [[nodiscard]] const T & min( void ) const;
 
- [[nodiscard]] const P & minPriority( void ) const {
-  return( top()->priority );
-  }
+ /// \pre the heap is not empty
+ [[nodiscard]] const P & minPriority( void ) const;
 
  /// O( 1 ) time: a tree of one node among the roots
- Handle insert( const T & x , const P & p ) {
-  Node * z = new Node{ p , x };
-  z->left = z->right = z;
-  add_root( z );
-  ++f_n;
-  return( z );
-  }
+ /// \post one item more
+ Handle insert( const T & x , const P & p );
 
  /// O( log n ) amortized time; the handle of the item is no longer valid
- T deleteMin( void ) {
-  Node * z = top();
-  while( Node * c = z->child ) {             // the children become roots
-   remove( c , z->child );
-   c->parent = nullptr;
-   c->mark = false;
-   splice( c , f_min );
-   }
-  if( z->right == z )
-   f_min = nullptr;
-  else {
-   f_min = z->right;
-   unlink( z );
-   consolidate();
-   }
-  --f_n;
-  T v = std::move( z->value );
-  delete z;
-  return( v );
-  }
+ /// \pre the heap is not empty
+ /// \post one item less, none of smaller priority than the one removed
+ T deleteMin( void );
 
  /// O( 1 ) amortized time
- void decrease( Handle x , const P & p ) {
-  if( x->priority < p )
-   throw( std::invalid_argument(
-             "ADS::FibonacciHeapPriorityQueue::decrease: larger priority" ) );
-  x->priority = p;
-  Node * y = x->parent;
-  if( y && ( x->priority < y->priority ) ) {
-   cut( x , y );
-   for( Node * z = y ; z->parent ; ) {       // the cascading cut
-    if( ! z->mark ) {
-     z->mark = true;
-     break;
-     }
-    Node * w = z->parent;
-    cut( z , w );
-    z = w;
-    }
-   }
-  if( x->priority < f_min->priority )
-   f_min = x;
-  }
+ /// \pre x is a node of this heap and p is not larger than its priority
+ /// \post x has priority p
+ void decrease( Handle x , const P & p );
 
 /*--------------------------------------------------------------------------*/
  private:
 
- Node * top( void ) const {
-  if( ! f_min )
-   throw( std::logic_error( "ADS::FibonacciHeapPriorityQueue: empty" ) );
-  return( f_min );
-  }
-
  /// x leaves its circular list
- static void unlink( Node * x ) {
-  x->left->right = x->right;
-  x->right->left = x->left;
-  x->left = x->right = x;
-  }
+ static void unlink( Node * x );
 
  /// x, alone, goes into the circular list of y
- static void splice( Node * x , Node * y ) {
-  x->right = y->right;
-  x->left = y;
-  y->right->left = x;
-  y->right = x;
-  }
+ static void splice( Node * x , Node * y );
 
  /// x leaves the list whose entry is head, which follows it if needed
- static void remove( Node * x , Node * & head ) {
-  head = ( x->right == x ) ? nullptr : x->right;
-  unlink( x );
-  }
+ static void remove( Node * x , Node * & head );
 
- void add_root( Node * z ) {
-  if( ! f_min )
-   f_min = z;
-  else {
-   splice( z , f_min );
-   if( z->priority < f_min->priority )
-    f_min = z;
-   }
-  }
+ void add_root( Node * z );
 
  /// x, a child of y, becomes a root
- void cut( Node * x , Node * y ) {
-  if( y->child == x )
-   remove( x , y->child );
-  else
-   unlink( x );
-  --y->degree;
-  x->parent = nullptr;
-  x->mark = false;
-  splice( x , f_min );
-  }
+ void cut( Node * x , Node * y );
 
  /// links the roots of equal degree until all the degrees differ
- void consolidate( void ) {
-  std::vector< Node * > roots;
-  Node * x = f_min;
-  do {
-   roots.push_back( x );
-   x = x->right;
-   } while( x != f_min );
-  std::vector< Node * > A;
-  for( Node * w : roots ) {
-   unlink( w );
-   Node * y = w;
-   for( int d = y->degree ; ; d = y->degree ) {
-    if( int( A.size() ) <= d )
-     A.resize( d + 1 , nullptr );
-    Node * z = A[ d ];
-    if( ! z )
-     break;
-    if( z->priority < y->priority )
-     std::swap( y , z );
-    z->parent = y;                           // z under y
-    z->mark = false;
-    if( y->child )
-     splice( z , y->child );
-    else
-     y->child = z;
-    ++y->degree;
-    A[ d ] = nullptr;
-    }
-   A[ y->degree ] = y;
-   }
-  f_min = nullptr;
-  for( Node * y : A )
-   if( y )
-    add_root( y );
-  }
+ void consolidate( void );
+
+ /// whether x is a node of the heap, O( n )
+ [[nodiscard]] bool owns( const Node * x ) const;
+
+ /// the list of x linked both ways, its nodes children of parent, each
+ /// not smaller than parent, and the trees below them as well; their
+ /// nodes counted in n
+ [[nodiscard]] bool tree( const Node * x , const Node * parent ,
+                          int & n ) const;
+
+ /// the invariant of the heap, O( n ); on more than 1024 nodes, the list
+ /// of the roots and the minimum among them only
+ [[nodiscard]] bool isHeap( void ) const;
 
  Node * f_min = nullptr;   ///< the root of least priority
  int f_n = 0;              ///< the number of items
@@ -270,9 +169,15 @@ class FibonacciHeapPriorityQueue {
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/priority/FibonacciHeapPriorityQueue.tpp"
+
+/*--------------------------------------------------------------------------*/
 
 #endif  /* FibonacciHeapPriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
-/*------------------ End File FibonacciHeapPriorityQueue.h -----------------*/
+/*----------------- End File FibonacciHeapPriorityQueue.h ------------------*/
 /*--------------------------------------------------------------------------*/

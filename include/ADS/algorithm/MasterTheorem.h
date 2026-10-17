@@ -19,6 +19,18 @@
  *   if a = 1, and the upper bound \f$ O( a^n n^\beta ) \f$ if a >= 2,
  *   which is not always tight (Fibonacci is \f$ \Theta( \phi^n ) \f$).
  *
+ * Two orders of growth compare as their functions do for n large: first by
+ * the base c of the exponential, then by the power p of n, then by the
+ * powers q and r of the logarithms, which gives the hierarchy
+ * \f$ O( 1 ) \subset O( \log n ) \subset O( n ) \subset O( n \log n )
+ * \subset O( n^2 ) \subset O( n^3 ) \subset O( 2^n ) \f$; note that
+ * \f$ 2^{\log_2 n} = n \f$ is a polynomial, not an exponential, and that
+ * \f$ n^{\log n} \f$ grows faster than every polynomial and slower than
+ * every \f$ c^n \f$ with c > 1, so that it has no place in this family.
+ *
+ * The contracts [see Contract.h]: a >= 1 and b > 1 for master(), a >= 1 for
+ * linear(). The functions are defined in MasterTheorem.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 2.9,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf
  *
@@ -40,8 +52,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+
 #include <cmath>
-#include <stdexcept>
+#include <compare>
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -63,51 +78,40 @@ struct Growth {
   return( std::pow( c , n ) * std::pow( n , p ) * std::pow( std::log( n ) , q )
           * std::pow( std::log( std::log( n ) ) , r ) );
   }
+
+ /// the order of the two functions for n large: lexicographic on c, p, q
+ /// and r (upper is not compared)
+ friend std::partial_ordering operator<=>( const Growth & a ,
+                                           const Growth & b ) {
+  for( auto [ x , y ] : { std::pair( a.c , b.c ) , std::pair( a.p , b.p ) ,
+                          std::pair( a.q , b.q ) , std::pair( a.r , b.r ) } )
+   if( x != y )
+    return( x <=> y );
+  return( std::partial_ordering::equivalent );
+  }
+
+ friend bool operator==( const Growth & a , const Growth & b ) {
+  return( ( a <=> b ) == 0 );
+  }
  };
 
 /// T( n ) = a T( n / b ) + Theta( n^beta log^k n )
-inline Growth master( double a , double b , double beta , double k = 0 )
-{
- if( ( a < 1 ) || ( b <= 1 ) )
-  throw( std::invalid_argument( "ADS::master: a < 1 or b <= 1" ) );
- const double alpha = std::log( a ) / std::log( b );
- const double eps = 1e-12;
- Growth g;
- if( beta < alpha - eps )
-  g.p = alpha;
- else if( beta > alpha + eps ) {
-  g.p = beta;
-  g.q = k;
-  }
- else {
-  g.p = alpha;
-  if( k > -1 + eps )
-   g.q = k + 1;
-  else if( k > -1 - eps )
-   g.r = 1;
-  }
- return( g );
- }
+/// \pre a >= 1 and b > 1
+inline Growth master( double a , double b , double beta , double k = 0 );
 
 /// T( n ) = sum_i a_i T( n - i ) + Theta( n^beta ), a = sum_i a_i
-inline Growth linear( double a , double beta )
-{
- if( a < 1 )
-  throw( std::invalid_argument( "ADS::linear: a < 1" ) );
- Growth g;
- if( a < 2 )
-  g.p = beta + 1;
- else {
-  g.c = a;
-  g.p = beta;
-  g.upper = true;
-  }
- return( g );
- }
+/// \pre a >= 1
+inline Growth linear( double a , double beta );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/algorithm/MasterTheorem.tpp"
 
 /*--------------------------------------------------------------------------*/
 

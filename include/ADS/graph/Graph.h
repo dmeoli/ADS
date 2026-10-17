@@ -22,9 +22,23 @@
  * for an oriented graph, and 1 if the edge k touches u, for an unoriented
  * one.
  *
+ * adjFromIncidence() reads the adjacent nodes of u back from the matrix: in
+ * the row u, each column k of an edge leaving u (or touching it, if the
+ * graph is unoriented) leads to the other row with a nonzero entry.
+ *
+ * The contracts [see Contract.h]: a graph has n >= 0 nodes, the operations
+ * on a node need one of the graph, and an edge needs two distinct nodes of
+ * the graph (no loops); the invariant of the nodes is that n() counts the
+ * names in use. The realizations relax some preconditions of the
+ * specification, which asks for an edge not there in insertEdge(), for one
+ * there in deleteEdge() and for an isolated node in deleteNode(): instead,
+ * insertEdge() of an edge already there replaces its weight, deleteEdge() of
+ * one not there does nothing, and deleteNode() also deletes the edges of the
+ * node (PointerGraph [see PointerGraph.h] keeps the strict deleteNode()).
+ * The operations are defined in Graph.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 9.1-9.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
-
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -44,12 +58,12 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
 
 #include <concepts>
 #include <cstddef>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -110,56 +124,34 @@ class GraphNodes {
  /// the names of the nodes are in [ 0 , bound() )
  [[nodiscard]] int bound( void ) const { return( int( f_alive.size() ) ); }
 
- [[nodiscard]] bool hasNode( int u ) const {
-  return( ( u >= 0 ) && ( u < bound() ) && f_alive[ u ] );
-  }
+ [[nodiscard]] bool hasNode( int u ) const;
 
  /// the set of the nodes, in increasing order
- [[nodiscard]] std::vector< int > V( void ) const {
-  std::vector< int > out;
-  for( int u = 0 ; u < bound() ; ++u )
-   if( f_alive[ u ] )
-    out.push_back( u );
-  return( out );
-  }
+ [[nodiscard]] std::vector< int > V( void ) const;
 
  /// the label of the node u
- [[nodiscard]] const T & label( int u ) const {
-  return( f_label[ check( u ) ] );
-  }
+ /// \pre u is a node
+ [[nodiscard]] const T & label( int u ) const;
 
- void setLabel( int u , const T & t ) { f_label[ check( u ) ] = t; }
+ /// \pre u is a node
+ void setLabel( int u , const T & t );
 
 /*--------------------------------------------------------------------------*/
  protected:
 
- GraphNodes( int n , bool directed ) : f_directed( directed ) {
-  if( n < 0 )
-   throw( std::invalid_argument( "ADS::Graph: n < 0" ) );
-  f_alive.assign( n , true );
-  f_label.resize( n );
-  f_n = n;
-  }
+ /// \pre n >= 0
+ GraphNodes( int n , bool directed );
 
- int addNode( const T & t ) {
-  f_alive.push_back( true );
-  f_label.push_back( t );
-  ++f_n;
-  return( bound() - 1 );
-  }
+ int addNode( const T & t );
 
- int check( int u ) const {
-  if( ! hasNode( u ) )
-   throw( std::out_of_range( "ADS::Graph: no node " + std::to_string( u ) ) );
-  return( u );
-  }
+ /// u, which must be a node
+ int check( int u ) const;
 
- void edge( int u , int v ) const {
-  check( u );
-  check( v );
-  if( u == v )
-   throw( std::invalid_argument( "ADS::Graph: a loop ( u , u )" ) );
-  }
+ /// u and v must be two distinct nodes
+ void edge( int u , int v ) const;
+
+ /// n() counts the names in use, and each has a label
+ [[nodiscard]] bool nodesCounted( void ) const;
 
  bool f_directed;              ///< oriented or not
  std::vector< bool > f_alive;  ///< whether a name is a node
@@ -176,26 +168,24 @@ class GraphNodes {
 /// the matrix of incidence nodes-edges, the edges in the order of V() and
 /// of adj(), an unoriented one when met from its smaller end
 template< Graph G >
-std::vector< std::vector< int > > incidence( const G & g )
-{
- std::vector< std::pair< int , int > > E;
- for( int u : g.V() )
-  g.forEachAdj( u , [ & ]( int v ) {
-   if( g.directed() || ( u < v ) )
-    E.emplace_back( u , v );
-   } );
- std::vector< std::vector< int > > B( g.bound() ,
-                                      std::vector< int >( E.size() ) );
- for( std::size_t k = 0 ; k < E.size() ; ++k ) {
-  B[ E[ k ].first ][ k ] = g.directed() ? -1 : 1;
-  B[ E[ k ].second ][ k ] = 1;
-  }
- return( B );
- }
+std::vector< std::vector< int > > incidence( const G & g );
+
+/// the adjacent nodes of u from the matrix of incidence B of a graph,
+/// oriented or not, in the order of the columns
+/// \pre u is a row of B
+inline std::vector< int > adjFromIncidence(
+                          const std::vector< std::vector< int > > & B ,
+                          int u , bool directed );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/graph/Graph.tpp"
 
 /*--------------------------------------------------------------------------*/
 

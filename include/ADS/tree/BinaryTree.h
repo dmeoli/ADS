@@ -20,9 +20,21 @@
  * copy() makes a deep copy of a subtree and join() a new root with the
  * copies of two trees as children, in time linear in their size.
  *
+ * to_list() writes a binary tree as a parenthesized list, () for the empty
+ * tree and ( v L R ) for the root v with the subtrees L and R, e.g.,
+ * ( 8 () ( 5 ( 27 () () ) ( 16 () () ) ) ), and from_list() reads it back;
+ * the values are written with << and read with >>, and must contain no
+ * space nor parenthesis.
+ *
  * A complete d-ary tree, whose internal nodes have d children, is stored in
  * a vector, the root in the place 0 and the children of the node i in the
  * places \f$ d i + 1 , \ldots , d i + d \f$ [see dary_child()].
+ *
+ * The contracts [see Contract.h]: the tree inserted is a root other than
+ * the node itself and goes where no child is; the invariant is that each
+ * child has its parent as parent, down the subtree; the places of a d-ary
+ * tree need d >= 1, a child 1 <= j <= d and a place i > 0 to have a
+ * parent. The operations are defined in BinaryTree.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 5.5 and
  *      5.6, https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
@@ -45,10 +57,15 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/tree/Tree.h"
 
+#include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -70,64 +87,51 @@ class BinaryTree {
  using Item = T;   ///< the type of the values
 
  /// Tree( v ): a new tree, made of one node containing v
- explicit BinaryTree( const T & v ) : f_value( v ) {}
+ explicit BinaryTree( const T & v );
 
  BinaryTree( const BinaryTree & ) = delete;
  BinaryTree & operator=( const BinaryTree & ) = delete;
 
- ~BinaryTree() {
-  deleteLeft();
-  deleteRight();
-  }
+ ~BinaryTree();
 
 /*--------------------------------------------------------------------------*/
 
- [[nodiscard]] const T & read( void ) const { return( f_value ); }
+ [[nodiscard]] const T & read( void ) const;
 
- void write( const T & v ) { f_value = v; }
+ void write( const T & v );
 
  /// the parent; nil if the node is a root
- [[nodiscard]] BinaryTree * parent( void ) const { return( f_parent ); }
+ [[nodiscard]] BinaryTree * parent( void ) const;
 
  /// the left child; nil if there is none
- [[nodiscard]] BinaryTree * left( void ) const { return( f_left ); }
+ [[nodiscard]] BinaryTree * left( void ) const;
 
  /// the right child; nil if there is none
- [[nodiscard]] BinaryTree * right( void ) const { return( f_right ); }
+ [[nodiscard]] BinaryTree * right( void ) const;
 
  /// inserts the tree t as the left child, which must be missing
- void insertLeft( BinaryTree * t ) { insert( f_left , t , "insertLeft" ); }
+ /// \pre t is a root, not this node, and the left child is missing
+ /// \post t is the left child
+ void insertLeft( BinaryTree * t );
 
  /// inserts the tree t as the right child, which must be missing
- void insertRight( BinaryTree * t ) {
-  insert( f_right , t , "insertRight" );
-  }
+ /// \pre t is a root, not this node, and the right child is missing
+ /// \post t is the right child
+ void insertRight( BinaryTree * t );
 
  /// destroys the left subtree
- void deleteLeft( void ) {
-  delete f_left;
-  f_left = nullptr;
-  }
+ void deleteLeft( void );
 
  /// destroys the right subtree
- void deleteRight( void ) {
-  delete f_right;
-  f_right = nullptr;
-  }
+ void deleteRight( void );
 
 /*--------------------------------------------------------------------------*/
  private:
 
- void insert( BinaryTree * & child , BinaryTree * t , const char * who ) {
-  if( ( ! t ) || t->f_parent )
-   throw( std::logic_error( std::string( "ADS::BinaryTree::" ) + who +
-                            ": the tree to insert is not a root" ) );
-  if( child )
-   throw( std::logic_error( std::string( "ADS::BinaryTree::" ) + who +
-                            ": the child is there already" ) );
-  t->f_parent = this;
-  child = t;
-  }
+ void insert( BinaryTree * & child , BinaryTree * t );
+
+ /// each child of each node of the subtree has that node as its parent
+ [[nodiscard]] bool linked( void ) const;
 
  T f_value;                       ///< the value
  BinaryTree * f_parent = nullptr; ///< the parent
@@ -143,92 +147,69 @@ class BinaryTree {
 /// dfs(): pre( t ) before the subtrees, in( t ) between them, post( t )
 /// after them; nothing on an empty tree
 template< class T , class Pre , class In , class Post >
-void dfs( BinaryTree< T > * t , Pre && pre , In && in , Post && post )
-{
- if( t ) {
-  pre( t );                              // (1)
-  dfs( t->left() , pre , in , post );
-  in( t );                               // (2)
-  dfs( t->right() , pre , in , post );
-  post( t );                             // (3)
-  }
- }
+void dfs( BinaryTree< T > * t , Pre && pre , In && in , Post && post );
 
 /// the previsit of a binary tree
 template< class T , class F >
-void pre_visit( BinaryTree< T > * t , F && f )
-{
- auto none = []( BinaryTree< T > * ) {};
- dfs( t , f , none , none );
- }
+void pre_visit( BinaryTree< T > * t , F && f );
 
 /// the invisit (symmetric visit) of a binary tree
 template< class T , class F >
-void in_visit( BinaryTree< T > * t , F && f )
-{
- auto none = []( BinaryTree< T > * ) {};
- dfs( t , none , f , none );
- }
+void in_visit( BinaryTree< T > * t , F && f );
 
 /// the postvisit of a binary tree
 template< class T , class F >
-void post_visit( BinaryTree< T > * t , F && f )
-{
- auto none = []( BinaryTree< T > * ) {};
- dfs( t , none , none , f );
- }
+void post_visit( BinaryTree< T > * t , F && f );
 
 /// a deep copy of the subtree t, nil if t is nil; the caller owns it
 template< class T >
-BinaryTree< T > * copy( const BinaryTree< T > * t )
-{
- if( ! t ) return( nullptr );
- auto b = new BinaryTree< T >( t->read() );
- if( auto l = copy( t->left() ) ) b->insertLeft( l );
- if( auto r = copy( t->right() ) ) b->insertRight( r );
- return( b );
- }
+BinaryTree< T > * copy( const BinaryTree< T > * t );
 
 /// a new root of value v with copies of l and r, each possibly nil, as its
 /// children; the caller owns it
 template< class T >
 BinaryTree< T > * join( const T & v , const BinaryTree< T > * l ,
-                        const BinaryTree< T > * r )
-{
- auto b = new BinaryTree< T >( v );
- if( auto x = copy( l ) ) b->insertLeft( x );
- if( auto y = copy( r ) ) b->insertRight( y );
- return( b );
- }
+                        const BinaryTree< T > * r );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- REPRESENTATIONS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the parenthesized list of t, () if t is nil
+template< class T >
+std::string to_list( const BinaryTree< T > * t );
+
+/// the binary tree of the parenthesized list s, nil for (); the caller owns
+/// it
+/// \pre s is the list of a binary tree
+template< class T >
+BinaryTree< T > * from_list( std::string_view s );
+
 /// the binary tree that represents the ordered tree t (Figura 5.9): the left
 /// child of a node is its first child in t, the right one its next sibling;
 /// the caller owns the result
+/// \pre t is a node
 template< class T >
-BinaryTree< T > * to_binary( const Tree< T > * t )
-{
- auto b = new BinaryTree< T >( t->read() );
- if( auto c = t->leftmostChild() )
-  b->insertLeft( to_binary( c ) );
- if( auto s = t->rightSibling() )
-  b->insertRight( to_binary( s ) );
- return( b );
- }
+BinaryTree< T > * to_binary( const Tree< T > * t );
 
 /// the place of the j-th child, 1 <= j <= d, of the node in the place i of
 /// a complete d-ary tree stored in a vector
-inline long dary_child( long i , long d , long j ) { return( d * i + j ); }
+/// \pre i >= 0 , d >= 1 , 1 <= j <= d
+inline long dary_child( long i , long d , long j );
 
 /// the place of the parent of the node in the place i > 0
-inline long dary_parent( long i , long d ) { return( ( i - 1 ) / d ); }
+/// \pre i > 0 , d >= 1
+inline long dary_parent( long i , long d );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/tree/BinaryTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

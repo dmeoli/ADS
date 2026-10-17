@@ -101,7 +101,7 @@ ADS_TEST( "sec17.1.selection" )
  CHECK( selection( E , 100000 , &g ) == 99999 );
  Ints F = sorted;
  CHECK( medianOfMedians( F , 100000 ) == 99999 );
- CHECK_THROWS( selection< int >( E , 0 ) , std::invalid_argument );
+ CHECK_THROWS( selection< int >( E , 0 ) , contract_violation );
  }
 
 // Miller-Rabin against the trial divisions; the Carmichael numbers and the
@@ -185,7 +185,7 @@ ADS_TEST( "ex17.3" )
   const long long p = modInverse( s , phi );
   CHECK( p * s % phi == 1 && p >= 0 && p < phi );
   }
- CHECK_THROWS( modInverse( 13 , phi ) , std::invalid_argument );
+ CHECK_THROWS( modInverse( 13 , phi ) , contract_violation );
  }
 
 // the check of a product by Freivalds, O( n^2 ) per run

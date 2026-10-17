@@ -13,6 +13,11 @@
  * renumbered. It extends the vector of parents of section 5.4 [see
  * ParentTree.h] with the values and the order of the children.
  *
+ * The contracts [see Contract.h]: a node is a place of the vector, and a
+ * sibling is inserted next to a node that is not the root; the invariant
+ * is that the root comes first and each other node after its parent. The
+ * operations are defined in PreorderArrayTree.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 5.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
  *
@@ -33,6 +38,8 @@
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+#include "ADS/Contract.h"
 
 #include <stdexcept>
 #include <vector>
@@ -60,67 +67,40 @@ class PreorderArrayTree {
  PreorderArrayTree( void ) = default;
 
  /// a tree of one node of value v
- explicit PreorderArrayTree( const T & v ) : f_A( 1 , { NIL , v } ) {}
+ explicit PreorderArrayTree( const T & v );
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_A.empty() ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] int size( void ) const { return( int( f_A.size() ) ); }
+ [[nodiscard]] int size( void ) const;
 
- [[nodiscard]] int root( void ) const { return( f_A.empty() ? NIL : 0 ); }
+ [[nodiscard]] int root( void ) const;
 
- [[nodiscard]] int parent( int i ) const { return( cell( i ).parent ); }
+ [[nodiscard]] int parent( int i ) const;
 
- [[nodiscard]] const T & read( int i ) const { return( cell( i ).value ); }
+ [[nodiscard]] const T & read( int i ) const;
 
- void write( int i , const T & v ) { f_A.at( i ).value = v; }
+ void write( int i , const T & v );
 
  /// the first child, i + 1 if its parent is i
- [[nodiscard]] int leftmostChild( int i ) const {
-  cell( i );
-  return( ( i + 1 < size() ) && ( f_A[ i + 1 ].parent == i ) ? i + 1 : NIL );
-  }
+ [[nodiscard]] int leftmostChild( int i ) const;
 
  /// the next sibling, the place after the subtree of i if it has the same
  /// parent
- [[nodiscard]] int rightSibling( int i ) const {
-  const int e = end( i );
-  return( ( e < size() ) && ( f_A[ e ].parent == f_A[ i ].parent ) &&
-          ( i > 0 ) ? e : NIL );
-  }
+ [[nodiscard]] int rightSibling( int i ) const;
 
- [[nodiscard]] bool isLeaf( int i ) const {
-  return( leftmostChild( i ) == NIL );
-  }
+ [[nodiscard]] bool isLeaf( int i ) const;
 
  /// the place after the subtree of i
- [[nodiscard]] int end( int i ) const {
-  cell( i );
-  int e = i + 1;
-  while( ( e < size() ) && ( f_A[ e ].parent >= i ) ) ++e;
-  return( e );
-  }
+ [[nodiscard]] int end( int i ) const;
 
  /// a copy of t as the first child of i
- void insertChild( int i , const PreorderArrayTree & t ) {
-  cell( i );
-  splice( i + 1 , i , t );
-  }
+ void insertChild( int i , const PreorderArrayTree & t );
 
  /// a copy of t as the next sibling of i, not the root
- void insertSibling( int i , const PreorderArrayTree & t ) {
-  if( cell( i ).parent == NIL )
-   throw( std::logic_error(
-                "ADS::PreorderArrayTree::insertSibling: the root" ) );
-  splice( end( i ) , f_A[ i ].parent , t );
-  }
+ void insertSibling( int i , const PreorderArrayTree & t );
 
  /// removes the subtree of i
- void remove( int i ) {
-  const int e = end( i ) , k = e - i;
-  f_A.erase( f_A.begin() + i , f_A.begin() + e );
-  for( int j = i ; j < size() ; ++j )
-   if( f_A[ j ].parent >= e ) f_A[ j ].parent -= k;
-  }
+ void remove( int i );
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -130,24 +110,14 @@ class PreorderArrayTree {
   T value;
   };
 
- const Cell & cell( int i ) const {
-  if( ( i < 0 ) || ( i >= size() ) )
-   throw( std::out_of_range( "ADS::PreorderArrayTree: no node" ) );
-  return( f_A[ i ] );
-  }
+ const Cell & cell( int i ) const;
+
+ /// the root first, and each other node after its parent, O( n )
+ [[nodiscard]] bool preordered( void ) const;
 
  /// the cells of t to the place at, its root a child of p: the places
  /// from at on shift right by the size of t
- void splice( int at , int p , const PreorderArrayTree & t ) {
-  const int k = t.size();
-  if( k == 0 ) return;
-  for( int j = at ; j < size() ; ++j )
-   if( f_A[ j ].parent >= at ) f_A[ j ].parent += k;
-  std::vector< Cell > C( t.f_A );
-  C[ 0 ].parent = p;
-  for( int j = 1 ; j < k ; ++j ) C[ j ].parent += at;
-  f_A.insert( f_A.begin() + at , C.begin() , C.end() );
-  }
+ void splice( int at , int p , const PreorderArrayTree & t );
 
  std::vector< Cell > f_A;   ///< the nodes in preorder
 
@@ -156,6 +126,12 @@ class PreorderArrayTree {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/tree/PreorderArrayTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -13,15 +13,19 @@
  *   no more than the operation itself;
  * - ADS_INVARIANT( c ), at the end of the operations that change a
  *   structure, its invariant (e.g., the order of a heap), which usually
- *   costs O( n ) and is meant for the tests.
+ *   costs O( n ) and is meant for the tests;
+ * - ADS_AUDIT( c ), a precondition or a postcondition that costs more than
+ *   the operation (e.g., a sorted vector before a binary search), checked
+ *   with the invariants.
  *
  * The level ADS_CONTRACTS chooses which are checked: 0 none, 1 the
  * preconditions (the default), 2 also the postconditions, 3 also the
- * invariants. A violated contract throws ADS::contract_violation, a
- * std::logic_error whose message names the kind of contract, the
- * condition, the function and the place in the source. The conditions are
- * compiled at every level, so that they stay correct C++, but they are not
- * evaluated above the level chosen; hence they must have no side effects.
+ * invariants and the audits. A violated contract throws
+ * ADS::contract_violation, a std::logic_error whose message names the kind of
+ * contract, the condition, the function and the place in the source. The
+ * conditions are compiled at every level, so that they stay correct C++, but
+ * they are not evaluated above the level chosen; hence they must have no side
+ * effects.
  *
  * \see J. Berne, T. Doumler, A. Krzemienski et al., Contracts for C++,
  *      P2900R14, ISO/IEC JTC1/SC22/WG21, 2025
@@ -46,6 +50,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include <concepts>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -56,7 +62,7 @@
 namespace ADS {
 
 /// the level of the contracts checked: 0 none, 1 preconditions,
-/// 2 postconditions, 3 invariants
+/// 2 postconditions, 3 invariants and audits
 #ifndef ADS_CONTRACTS
  #define ADS_CONTRACTS 1
 #endif
@@ -96,6 +102,40 @@ namespace detail {
 
 /// an invariant, checked from level 3
 #define ADS_INVARIANT( cond ) ADS_CONTRACT_CHECK( 3 , "invariant" , cond )
+
+/// a precondition or a postcondition dearer than the operation, checked
+/// from level 3
+#define ADS_AUDIT( cond ) ADS_CONTRACT_CHECK( 3 , "audit" , cond )
+
+/*--------------------------------------------------------------------------*/
+/*----------------------- HELPERS OF THE CONDITIONS ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace detail {
+
+/// a == b if T has an equality, true otherwise: a postcondition that
+/// compares items does not restrict the types of the items
+template< class T >
+bool equal( const T & a , const T & b )
+{
+ if constexpr( std::equality_comparable< T > )
+  return( a == b );
+ else
+  return( true );
+ }
+
+/// a copy of x for the audits that compare a structure with itself before
+/// the operation (e.g., the frame of a write), made only at the level 3
+template< class X >
+std::optional< X > snapshot( const X & x )
+{
+ if constexpr( ADS_CONTRACTS >= 3 )
+  return( x );
+ else
+  return( std::nullopt );
+ }
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 

@@ -8,6 +8,13 @@
  * deleteMin() in O( 1 ), insert() and decrease() in O( n ); unsorted, the
  * other way round. The handle is the position of the cell.
  *
+ * The contracts [see Contract.h]: min() and deleteMin() need a queue that
+ * is not empty, decrease() a handle of an item of this queue (checked in
+ * O( n ) with the invariants) and a priority not larger than its own;
+ * after deleteMin() no item has a smaller priority than the one removed;
+ * the invariant is that the list is sorted when it must be and that size()
+ * counts its cells. The operations are defined in ListPriorityQueue.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  *
@@ -29,15 +36,12 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/priority/PriorityQueue.h"
 #include "ADS/sequence/List.h"
 
 #include <concepts>
-#include <cstddef>
-#include <memory>
-#include <stdexcept>
 #include <utility>
-#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -62,75 +66,56 @@ class ListPriorityQueue {
  using Priority = P;                            ///< the type of priorities
  using Handle = typename List< Pair >::Pos;     ///< the cell of an item
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_L.isEmpty() ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] int size( void ) const { return( f_size ); }
-
- /// O( 1 ) if sorted, O( n ) otherwise
- [[nodiscard]] const T & min( void ) const {
-  return( f_L.read( first() ).second );
-  }
+ [[nodiscard]] int size( void ) const;
 
  /// O( 1 ) if sorted, O( n ) otherwise
- T deleteMin( void ) {
-  const auto p = first();
-  T v = f_L.read( p ).second;
-  f_L.remove( p );
-  --f_size;
-  return( v );
-  }
+ /// \pre the queue is not empty
+ [[nodiscard]] const T & min( void ) const;
+
+ /// O( 1 ) if sorted, O( n ) otherwise
+ /// \pre the queue is not empty
+ /// \post one item less, none of smaller priority than the one removed
+ T deleteMin( void );
 
  /// O( n ) if sorted, O( 1 ) otherwise
- Handle insert( const T & x , const P & p ) {
-  ++f_size;
-  if constexpr( Sorted )
-   return( f_L.insert( after( p ) , { p , x } ) );
-  else
-   return( f_L.insert( f_L.head() , { p , x } ) );
-  }
+ /// \post one item more
+ Handle insert( const T & x , const P & p );
 
  /// O( n ) if sorted, O( 1 ) otherwise; the handle stays valid
- void decrease( Handle & y , const P & p ) {
-  if( f_L.read( y ).first < p )
-   throw( std::invalid_argument(
-                      "ADS::ListPriorityQueue::decrease: larger priority" ) );
-  if constexpr( Sorted ) {
-   const T x = f_L.read( y ).second;
-   f_L.remove( y );
-   y = f_L.insert( after( p ) , { p , x } );
-   }
-  else
-   f_L.write( y , { p , f_L.read( y ).second } );
-  }
+ /// \pre y is an item of this queue and p is not larger than its priority
+ void decrease( Handle & y , const P & p );
 
 /*--------------------------------------------------------------------------*/
  private:
 
- Handle first( void ) const {
-  if( f_L.isEmpty() )
-   throw( std::logic_error( "ADS::ListPriorityQueue: empty" ) );
-  auto m = f_L.head();
-  if constexpr( ! Sorted )
-   for( auto q = f_L.next( m ) ; ! f_L.finished( q ) ; q = f_L.next( q ) )
-    if( f_L.read( q ).first < f_L.read( m ).first )
-     m = q;
-  return( m );
-  }
+ /// the cell of smallest priority
+ [[nodiscard]] Handle first( void ) const;
 
  /// the position of the first item of priority larger than p
- Handle after( const P & p ) const {
-  auto q = f_L.head();
-  while( ! f_L.finished( q ) && ! ( p < f_L.read( q ).first ) )
-   q = f_L.next( q );
-  return( q );
-  }
+ [[nodiscard]] Handle after( const P & p ) const;
+
+ /// whether y is a cell of the list, O( n )
+ [[nodiscard]] bool owns( Handle y ) const;
+
+ /// sorted if it must be, and size() its length, O( n )
+ [[nodiscard]] bool consistent( void ) const;
 
  List< Pair > f_L;   ///< the items
  int f_size = 0;     ///< their number
 
  };  // end( class ListPriorityQueue )
 
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/priority/ListPriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

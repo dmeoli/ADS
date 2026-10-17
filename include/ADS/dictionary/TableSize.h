@@ -8,6 +8,11 @@
  * inspections of an OpenHashTable that need a prime size, or a size
  * coprime with their step, keep working.
  *
+ * The contracts [see Contract.h]: resized() starts from a size not below
+ * the initial size m0 > 0, never goes below it, and keeps a power of two a
+ * power of two.
+ * The functions are defined in TableSize.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 7.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
  *
@@ -29,14 +34,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include <concepts>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
-#include <functional>
-#include <numeric>
-#include <optional>
-#include <stdexcept>
-#include <utility>
-#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -49,36 +50,28 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// true if n is prime
-inline bool is_prime( std::size_t n )
-{
- if( n < 2 )
-  return( false );
- for( std::size_t d = 2 ; d * d <= n ; ++d )
-  if( n % d == 0 )
-   return( false );
- return( true );
- }
+bool is_prime( std::size_t n );
 
 /// the smallest prime not smaller than n
-inline std::size_t next_prime( std::size_t n )
-{
- while( ! is_prime( n ) )
-  ++n;
- return( n );
- }
+std::size_t next_prime( std::size_t n );
 
 /// true if n is a power of two
-inline bool is_pow2( std::size_t n ) { return( n && ! ( n & ( n - 1 ) ) ); }
+bool is_pow2( std::size_t n );
 
 /// the size after a doubling, or after a halving down to m0
-inline std::size_t resized( std::size_t m , bool grow , std::size_t m0 )
-{
- if( is_pow2( m ) )
-  return( grow ? 2 * m : std::max( m / 2 , m0 ) );
- return( grow ? next_prime( 2 * m ) : std::max( next_prime( m / 2 ) , m0 ) );
- }
+/// \pre 0 < m0 <= m
+/// \post not below m0, and a power of two if m is one, a prime otherwise
+std::size_t resized( std::size_t m , bool grow , std::size_t m0 );
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/dictionary/TableSize.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -65,7 +65,10 @@ std::vector< T > items( const List< T > & L )
 /// a counting comparison
 struct Counting {
  long * c;
- bool operator()( int a , int b ) const { ++*c; return( a < b ); }
+ bool operator()( int a , int b ) const {   // not those of the contracts
+  *c += ! checkingContract();
+  return( a < b );
+  }
  };
 
 /*--------------------------------------------------------------------------*/
@@ -217,7 +220,7 @@ ADS_TEST( "sec12.4.strassen" )
   }
  CHECK_THROWS( strassen( Matrix< long >( 2 , Longs( 2 ) ) ,
                          Matrix< long >( 3 , Longs( 3 ) ) ) ,
-               std::invalid_argument );
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -469,7 +472,7 @@ ADS_TEST( "ex12.9" )
    CHECK( int( lowerBound( V , 1 ) ) == h );
    long c = 0;
    CHECK( int( gallopSearch( V , 1 , [ & ]( int a , int b ) {
-           ++c; return( a < b ); } ) ) == h );
+           c += ! checkingContract(); return( a < b ); } ) ) == h );
    CHECK( c <= 2 * long( std::log2( h + 1.0 ) ) + 3 );
    }
  }

@@ -10,14 +10,27 @@
  * sentinel, which is therefore what finished() looks for. Every operation
  * takes O( 1 ) time, the list \f$ \Theta( n ) \f$ space.
  *
- * The contracts [see Contract.h]: a position is a cell of this list, and
- * read(), write() and remove() need one that holds an item, i.e., not the
- * sentinel; the invariant is that each cell is the predecessor of its
- * successor, which also makes the walk from the sentinel come back to it.
- * The operations are defined in List.tpp.
+ * The sentinel is a member of the list rather than a cell of the heap, so
+ * that moving a list relinks its first and last cells to the new sentinel in
+ * O( 1 ) time and allocates nothing: the list moved from is left empty, and
+ * still usable. Copying a list copies its cells (the rule of five, with the
+ * copy and swap idiom for the assignment).
+ *
+ * The contracts [see Contract.h]: a position is a cell of this list, which
+ * costs a scan of the list and is therefore an audit, checked by the
+ * operations that change the list (insert(), remove() and write()) but not
+ * by next(), prev() and read(), where it would make every scan quadratic;
+ * read(), write() and remove() need a position that holds an item, i.e.,
+ * not the sentinel;
+ * insert() and write() ensure that v is read back in its position. The
+ * invariant is that each cell is the predecessor of its successor, which
+ * also makes the walk from the sentinel come back to it. The operations are
+ * defined in List.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ * \see B. Stroustrup, The C++ Programming Language, 4th ed., Addison-Wesley,
+ *      2013, section 17.5 (copy and move)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -80,6 +93,7 @@ class List {
 
  List( const List & other );
 
+ /// the cells of other, which is left empty, in O( 1 ) time
  List( List && other ) noexcept;
 
  List & operator=( List other ) noexcept;
@@ -114,23 +128,31 @@ class List {
 
  /// puts v in position p, i.e., before the item in p, and returns its
  /// position
- /// \pre p is a position of this list
- /// \post the list is not empty, and the result precedes p
+ /// \pre p is a position of this list (an audit)
+ /// \post the list is not empty, the result precedes p and holds v
  Pos insert( Pos p , const T & v );
 
  /// removes the item in position p, returning the position of its
  /// successor, which is now in its place
- /// \pre p holds an item
+ /// \pre p holds an item of this list (an audit)
  /// \post the result follows the old predecessor of p
  Pos remove( Pos p );
 
  /// the item in position p
- /// \pre p holds an item
+ /// \pre p holds an item of this list
  [[nodiscard]] const T & read( Pos p ) const;
 
  /// writes v in position p
- /// \pre p holds an item
+ /// \pre p holds an item of this list (an audit)
+ /// \post read( p ) is v
  void write( Pos p , const T & v );
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- BEYOND THE BOOK -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ /// the same items in the same order
+ [[nodiscard]] bool operator==( const List & o ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -138,7 +160,17 @@ class List {
  /// each cell is the predecessor of its successor, O( n )
  [[nodiscard]] bool linked( void ) const;
 
- Cell * f_sentinel;   ///< the sentinel, i.e., the list
+ /// p is a cell of this list, the sentinel included, O( n )
+ [[nodiscard]] bool owns( Pos p ) const;
+
+ /// the address of the sentinel
+ [[nodiscard]] Cell * sentinel( void ) const;
+
+ /// takes the cells of o, which is left empty
+ /// \pre this list is empty
+ void adopt( List & o ) noexcept;
+
+ mutable Cell f_sentinel;   ///< the sentinel, i.e., the list
 
  };  // end( class List )
 

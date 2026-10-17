@@ -21,6 +21,11 @@
  *   the merge takes A[ j ] from the right part, it is smaller than all the
  *   mid - i + 1 items left in the left part (exercise 12.3).
  *
+ * The contracts [see Contract.h]: mergeParts() needs start <= mid < end < n, a
+ * buffer B as large as A and two sorted halves, the latter an audit;
+ * mergeSortRec() needs start <= end < n and cutoff >= 1; the sorts end with
+ * the same items sorted, an audit. The functions are defined in MergeSort.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 2.7.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf
  * \see D. E. Knuth, The Art of Computer Programming, vol. 3, Sorting and
@@ -44,8 +49,10 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
 #include "ADS/sort/InsertionSort.h"
+#include "ADS/sort/Sorted.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -61,114 +68,56 @@ namespace ADS {
 
 /// Merge() of the book: A[ start .. mid ] and A[ mid + 1 .. end ], sorted,
 /// merged through B; the inversions met are added to inv
+/// \pre start <= mid < end < n <= | B |, A[ start .. mid ] and
+///      A[ mid + 1 .. end ] sorted
+/// \post A[ start .. end ] sorted
 template< class T , class C = std::less<> >
 void mergeParts( std::vector< T > & A , std::vector< T > & B ,
                  std::size_t start , std::size_t mid , std::size_t end ,
-                 C less = C() , long * inv = nullptr )
-{
- std::size_t i = start , j = mid + 1 , k = start;
- while( ( i <= mid ) && ( j <= end ) )
-  if( ! less( A[ j ] , A[ i ] ) )              // A[ i ] <= A[ j ]
-   B[ k++ ] = std::move( A[ i++ ] );
-  else {
-   if( inv )
-    *inv += long( mid - i + 1 );
-   B[ k++ ] = std::move( A[ j++ ] );
-   }
- while( i <= mid )                              // the rest of the left part
-  B[ k++ ] = std::move( A[ i++ ] );
- for( std::size_t t = start ; t < k ; ++t )
-  A[ t ] = std::move( B[ t ] );
- }
+                 C less = C() , long * inv = nullptr );
 
-/// MergeSortRec() of A[ start .. end ], insertionSort() below cutoff items
+/// MergeSortRec() of A[ start .. end ], insertionSort() below cutoff items;
+/// with cutoff > 1 also no merge of two parts already in order, i.e., with
+/// A[ mid ] <= A[ mid + 1 ], which makes the sort of a sorted vector take
+/// n - 1 comparisons
+/// \pre start <= end < n <= | B | and cutoff >= 1
 template< class T , class C = std::less<> >
 void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
                    std::size_t start , std::size_t end , std::size_t cutoff ,
-                   C less = C() , long * inv = nullptr )
-{
- if( end - start + 1 <= cutoff ) {
-  insertionSort( A , start , end + 1 , less );
-  return;
-  }
- if( start < end ) {
-  const std::size_t mid = start + ( end - start ) / 2;
-  mergeSortRec( A , B , start , mid , cutoff , less , inv );
-  mergeSortRec( A , B , mid + 1 , end , cutoff , less , inv );
-  mergeParts( A , B , start , mid , end , less , inv );
-  }
- }
+                   C less = C() , long * inv = nullptr );
 
 /// MergeSort(): A in increasing order, stable; parts of at most cutoff
 /// items by insertionSort() (1 is the book)
+/// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
 void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 ,
-                C less = C() )
-{
- if( A.size() < 2 )
-  return;
- std::vector< T > B( A.size() );
- mergeSortRec( A , B , 0 , A.size() - 1 ,
-               std::max< std::size_t >( cutoff , 1 ) , less );
- }
+                C less = C() );
 
 /// the iterative Merge Sort: the runs of length w are merged in pairs, for
 /// w = 1 , 2 , 4 , ...
+/// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
-void mergeSortBottomUp( std::vector< T > & A , C less = C() )
-{
- const std::size_t n = A.size();
- std::vector< T > B( n );
- for( std::size_t w = 1 ; w < n ; w *= 2 )
-  for( std::size_t start = 0 ; start + w < n ; start += 2 * w )
-   mergeParts( A , B , start , start + w - 1 ,
-               std::min( start + 2 * w , n ) - 1 , less );
- }
+void mergeSortBottomUp( std::vector< T > & A , C less = C() );
 
 /// the number of inversions of A, which ends sorted, O( n log n )
+/// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
-long countInversions( std::vector< T > & A , C less = C() )
-{
- long inv = 0;
- if( A.size() > 1 ) {
-  std::vector< T > B( A.size() );
-  mergeSortRec( A , B , 0 , A.size() - 1 , 1 , less , &inv );
-  }
- return( inv );
- }
+long countInversions( std::vector< T > & A , C less = C() );
 
 /// Merge Sort of a list with pointers: the cells are moved, not the items
+/// \post L is sorted
 template< class T , class C = std::less<> >
-void mergeSort( List< T > & L , C less = C() )
-{
- // split: the second half moves to R
- std::size_t n = 0;
- for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
-  ++n;
- if( n < 2 )
-  return;
- List< T > R;
- auto p = L.head();
- for( std::size_t i = 0 ; i < n / 2 ; ++i )
-  p = L.next( p );
- while( ! L.finished( p ) ) {
-  R.insert( R.next( R.tail() ) , L.read( p ) );
-  p = L.remove( p );
-  }
- mergeSort( L , less );
- mergeSort( R , less );
- // merge: each item of R goes before the first larger item of L
- auto q = L.head();
- for( auto r = R.head() ; ! R.finished( r ) ; r = R.next( r ) ) {
-  while( ! L.finished( q ) && ! less( R.read( r ) , L.read( q ) ) )
-   q = L.next( q );
-  L.insert( q , R.read( r ) );
-  }
- }
+void mergeSort( List< T > & L , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sort/MergeSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

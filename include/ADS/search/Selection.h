@@ -18,6 +18,10 @@
  *
  * Both rearrange A.
  *
+ * The contracts [see Contract.h]: 1 <= k <= n, and the item returned has rank
+ * k, i.e., fewer than k items are smaller and at least k are not larger, an
+ * audit in O( n ). The functions are defined in Selection.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 17.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap17.pdf
  * \see C. A. R. Hoare, Algorithm 65: Find, Communications of the ACM 4(7),
@@ -44,13 +48,13 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sort/InsertionSort.h"
 #include "ADS/sort/QuickSort.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <random>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -62,75 +66,26 @@ namespace ADS {
 
 /// selezione(): the item of rank k, 1 <= k <= n, of A; with a generator
 /// the pivots are random, otherwise the first item of the part
+/// \pre 1 <= k <= n
+/// \post the result has rank k in A
 template< class T , class R = std::mt19937 >
-T selection( std::vector< T > & A , std::size_t k , R * rng = nullptr )
-{
- if( ( k < 1 ) || ( k > A.size() ) )
-  throw( std::invalid_argument( "ADS::selection: k not in [1, n]" ) );
- std::size_t start = 0 , end = A.size() - 1;
- for( ; ; ) {                                   // the tail recursion
-  if( start == end )
-   return( A[ start ] );
-  if( rng ) {
-   std::uniform_int_distribution< std::size_t > pick( start , end );
-   std::swap( A[ pick( *rng ) ] , A[ start ] );
-   }
-  const std::size_t j = partition( A , start , end );
-  const std::size_t q = j - start + 1;
-  if( k == q )
-   return( A[ j ] );
-  if( k < q )
-   end = j - 1;
-  else {
-   start = j + 1;
-   k -= q;
-   }
-  }
- }
+T selection( std::vector< T > & A , std::size_t k , R * rng = nullptr );
 
 /// the item of rank k, 1 <= k <= n, in linear time in the worst case
+/// \pre 1 <= k <= n
+/// \post the result has rank k in A
 template< class T >
-T medianOfMedians( std::vector< T > & A , std::size_t k )
-{
- if( ( k < 1 ) || ( k > A.size() ) )
-  throw( std::invalid_argument( "ADS::medianOfMedians: k not in [1, n]" ) );
- auto rec = [ & ]( auto & self , std::size_t lo , std::size_t hi ,
-                   std::size_t r ) -> T {     // rank r in A[ lo .. hi ]
-  for( ; ; ) {
-   const std::size_t n = hi - lo + 1;
-   if( n <= 10 ) {
-    insertionSort( A , lo , hi + 1 );
-    return( A[ lo + r - 1 ] );
-    }
-   // the medians of the groups of 5 to the front
-   std::size_t m = lo;
-   for( std::size_t g = lo ; g + 4 <= hi ; g += 5 ) {
-    insertionSort( A , g , g + 5 );
-    std::swap( A[ m++ ] , A[ g + 2 ] );
-    }
-   const T pivot = self( self , lo , m - 1 , ( m - lo + 1 ) / 2 );
-   // three ways: smaller, equal, larger
-   std::size_t lt = lo , i = lo , gt = hi;
-   while( i <= gt )
-    if( A[ i ] < pivot ) std::swap( A[ lt++ ] , A[ i++ ] );
-    else if( pivot < A[ i ] ) std::swap( A[ i ] , A[ gt-- ] );
-    else ++i;
-   if( r <= lt - lo )
-    hi = lt - 1;
-   else if( r <= i - lo )
-    return( pivot );
-   else {
-    r -= i - lo;
-    lo = i;
-    }
-   }
-  };
- return( rec( rec , 0 , A.size() - 1 , k ) );
- }
+T medianOfMedians( std::vector< T > & A , std::size_t k );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/search/Selection.tpp"
 
 /*--------------------------------------------------------------------------*/
 

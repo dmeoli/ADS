@@ -15,6 +15,11 @@
  * p_{i-1} = t_{j-1} and 0 otherwise, its length the largest entry
  * (exercise 13.2).
  *
+ * The contracts [see Contract.h]: lcs() gives a subsequence of both strings as
+ * long as the table says (checked at level 3), and longestCommonSubstring() a
+ * substring of both. The operations are defined in
+ * LongestCommonSubsequence.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 13.7,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
  * \see J. W. Hunt, M. D. McIlroy, An algorithm for differential file
@@ -40,6 +45,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <tuple>
@@ -54,101 +62,39 @@ namespace ADS {
 
 /// the table of the lengths of the LCS of the prefixes
 template< class S >
-std::vector< std::vector< int > > lcsTable( const S & P , const S & T )
-{
- const std::size_t m = P.size() , n = T.size();
- std::vector< std::vector< int > > DP( m + 1 , std::vector< int >( n + 1 ) );
- for( std::size_t i = 1 ; i <= m ; ++i )
-  for( std::size_t j = 1 ; j <= n ; ++j )
-   DP[ i ][ j ] = P[ i - 1 ] == T[ j - 1 ] ? DP[ i - 1 ][ j - 1 ] + 1 :
-                  std::max( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
- return( DP );
- }
+std::vector< std::vector< int > > lcsTable( const S & P , const S & T );
 
 /// lcs() of the book, by memoization: -1 marks the subproblems not solved
 /// yet; the number of the ones solved goes to *solved, if given
 template< class S >
-int lcsMemo( const S & P , const S & T , long * solved = nullptr )
-{
- std::vector< std::vector< int > > DP(
-                   P.size() + 1 , std::vector< int >( T.size() + 1 , -1 ) );
- auto rec = [ & ]( auto & self , std::size_t i , std::size_t j ) -> int {
-  if( ( i == 0 ) || ( j == 0 ) )
-   return( 0 );
-  if( DP[ i ][ j ] < 0 ) {
-   if( solved ) ++*solved;
-   DP[ i ][ j ] = P[ i - 1 ] == T[ j - 1 ] ?
-                  self( self , i - 1 , j - 1 ) + 1 :
-                  std::max( self( self , i - 1 , j ) ,
-                            self( self , i , j - 1 ) );
-   }
-  return( DP[ i ][ j ] );
-  };
- return( rec( rec , P.size() , T.size() ) );
- }
+int lcsMemo( const S & P , const S & T , long * solved = nullptr );
 
 /// a longest common subsequence, read back from the table
+/// \post a subsequence of P and T of the length of lcsTable()
 template< class S >
-S lcs( const S & P , const S & T )
-{
- const auto DP = lcsTable( P , T );
- S out;
- for( std::size_t i = P.size() , j = T.size() ; ( i > 0 ) && ( j > 0 ) ; )
-  if( P[ i - 1 ] == T[ j - 1 ] ) {
-   out.push_back( P[ i - 1 ] );
-   --i; --j;
-   }
-  else if( DP[ i - 1 ][ j ] >= DP[ i ][ j - 1 ] )
-   --i;
-  else
-   --j;
- std::reverse( out.begin() , out.end() );
- return( out );
- }
+S lcs( const S & P , const S & T );
 
 /// the differences from P to T: ( '-' , p ) for an item of P only,
 /// ( '+' , t ) for an item of T only, ( ' ' , x ) for a common one
 template< class S >
 std::vector< std::pair< char , typename S::value_type > > diff(
-                                                 const S & P , const S & T )
-{
- const auto DP = lcsTable( P , T );
- std::vector< std::pair< char , typename S::value_type > > out;
- std::size_t i = P.size() , j = T.size();
- while( ( i > 0 ) || ( j > 0 ) )
-  if( ( i > 0 ) && ( j > 0 ) && ( P[ i - 1 ] == T[ j - 1 ] ) ) {
-   out.emplace_back( ' ' , P[ i - 1 ] );
-   --i; --j;
-   }
-  else if( ( j > 0 ) &&
-           ( ( i == 0 ) || ( DP[ i ][ j - 1 ] >= DP[ i - 1 ][ j ] ) ) )
-   out.emplace_back( '+' , T[ --j ] );
-  else
-   out.emplace_back( '-' , P[ --i ] );
- std::reverse( out.begin() , out.end() );
- return( out );
- }
+                                                 const S & P , const S & T );
 
 /// the longest common substring: its length and where it ends in P and T
 template< class S >
 std::tuple< std::size_t , std::size_t , std::size_t >
-longestCommonSubstring( const S & P , const S & T )
-{
- std::vector< std::size_t > prev( T.size() + 1 , 0 ) , DP( T.size() + 1 , 0 );
- std::size_t best = 0 , ei = 0 , ej = 0;
- for( std::size_t i = 1 ; i <= P.size() ; ++i ) {
-  std::swap( prev , DP );
-  for( std::size_t j = 1 ; j <= T.size() ; ++j ) {
-   DP[ j ] = P[ i - 1 ] == T[ j - 1 ] ? prev[ j - 1 ] + 1 : 0;
-   if( DP[ j ] > best ) { best = DP[ j ]; ei = i; ej = j; }
-   }
-  }
- return( std::tuple( best , ei , ej ) );
- }
+/// \post P and T share the substring of length best ending at ei and ej
+longestCommonSubstring( const S & P , const S & T );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/string/LongestCommonSubsequence.tpp"
 
 /*--------------------------------------------------------------------------*/
 

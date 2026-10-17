@@ -23,7 +23,20 @@
  *   [ 2 , n - 2 ], at least 3/4 of which are witnesses for a composite n,
  *   and errs with probability at most \f$ ( 1 / 4 )^K \f$, only by saying
  *   prime; isPrime() tries the 12 primes up to 37, which are enough for
- *   every n < 3.3 10^24, and so it is exact on 64 bits.
+ *   every n < 3.3 10^24, and so it is exact on 64 bits;
+ * - sieve(), the sieve of Eratosthenes on a SET of the integers from 2 to n
+ *   [see BoolSet.h], beyond the book: the least item p left in the set is a
+ *   prime, and its multiples are removed; since the multiples of the primes
+ *   below p are already gone, the removal can start at \f$ p^2 \f$, and the
+ *   sieve stops at \f$ p > \sqrt{n} \f$, in \f$ O( n \log \log n ) \f$.
+ *
+ * The contracts [see Contract.h]: extendedEuclid() needs s , m >= 0 and gives
+ * d = p s + q m; modInverse() needs m >= 1 and gcd( s , m ) = 1, and its
+ * result r satisfies s r = 1 modulo m; the products and the powers modulo m
+ * need m >= 1; witness() needs an odd n >= 3 and a base 1 <= b < n, and
+ * millerRabin() K >= 0; sieve() gives the primes up to n, increasing, as
+ * isPrimeTrial() finds them (an audit). The functions are defined in
+ * NumberTheory.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 17.2 and
  *      exercises 17.1-17.3,
@@ -56,10 +69,14 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
+#include "ADS/set/BoolSet.h"
+
 #include <cstdint>
 #include <random>
 #include <stdexcept>
 #include <tuple>
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -69,126 +86,56 @@ namespace ADS {
 
 using U64 = std::uint64_t;
 
-inline U64 gcd( U64 s , U64 m )
-{
- while( m != 0 ) {
-  const U64 r = s % m;
-  s = m;
-  m = r;
-  }
- return( s );
- }
+inline U64 gcd( U64 s , U64 m );
 
 /// euclideEsteso(): ( d , p , q ) with s p + m q = d = gcd( s , m )
+/// \pre s >= 0 and m >= 0
+/// \post d = p s + q m
 inline std::tuple< long long , long long , long long > extendedEuclid(
-                                                   long long s , long long m )
-{
- if( m == 0 )
-  return( std::tuple( s , 1LL , 0LL ) );
- const auto [ d , p , q ] = extendedEuclid( m , s % m );
- return( std::tuple( d , q , p - ( s / m ) * q ) );
- }
+                                                   long long s , long long m );
 
 /// the p in [ 0 , m ) with p s mod m = 1; throws if gcd( s , m ) != 1
-inline long long modInverse( long long s , long long m )
-{
- const auto [ d , p , q ] = extendedEuclid( s , m );
- if( d != 1 )
-  throw( std::invalid_argument( "ADS::modInverse: gcd( s , m ) != 1" ) );
- return( ( ( p % m ) + m ) % m );
- }
+/// \pre m >= 1 and gcd( s , m ) = 1
+/// \post s r = 1 modulo m
+inline long long modInverse( long long s , long long m );
 
 /// a b mod m, exact
-inline U64 mulMod( U64 a , U64 b , U64 m )
-{
-#ifdef __SIZEOF_INT128__
- return( U64( ( unsigned __int128 )( a ) * b % m ) );
-#else
- U64 r = 0;
- for( a %= m ; b ; b >>= 1 ) {               // the doubling of Ahmes
-  if( b & 1 ) r = ( r >= m - a ) ? r - ( m - a ) : r + a;
-  a = ( a >= m - a ) ? a - ( m - a ) : a + a;
-  }
- return( r );
-#endif
- }
+/// \pre m >= 1
+inline U64 mulMod( U64 a , U64 b , U64 m );
 
 /// x^v mod m by repeated squaring
-inline U64 powMod( U64 x , U64 v , U64 m )
-{
- U64 r = 1 % m;
- for( x %= m ; v ; v >>= 1 , x = mulMod( x , x , m ) )
-  if( v & 1 )
-   r = mulMod( r , x , m );
- return( r );
- }
+/// \pre m >= 1
+inline U64 powMod( U64 x , U64 v , U64 m );
 
 /// primo(): the divisions by 2 , ... , floor( sqrt( n ) )
-inline bool isPrimeTrial( U64 n )
-{
- if( n < 2 )
-  return( false );
- for( U64 j = 2 ; j <= n / j ; ++j )
-  if( n % j == 0 )
-   return( false );
- return( true );
- }
+inline bool isPrimeTrial( U64 n );
 
 /// true if b is a witness that the odd n > 2 is composite
-inline bool witness( U64 n , U64 b )
-{
- if( gcd( n , b ) != 1 )
-  return( true );
- U64 m = n - 1;
- int v = 0;
- for( ; ( m & 1 ) == 0 ; m >>= 1 ) ++v;
- U64 x = powMod( b , m , n );
- if( ( x == 1 ) || ( x == n - 1 ) )
-  return( false );
- for( int i = 1 ; i < v ; ++i ) {
-  x = mulMod( x , x , n );
-  if( x == n - 1 )
-   return( false );
-  }
- return( true );
- }
+/// \pre n >= 3 odd and 1 <= b < n
+inline bool witness( U64 n , U64 b );
 
 /// primo() of Miller-Rabin: K random bases, wrong with probability at most
 /// ( 1 / 4 )^K, and only on a composite n
+/// \pre K >= 0
 template< class R >
-bool millerRabin( U64 n , int K , R & rng )
-{
- if( n < 4 )
-  return( n == 2 || n == 3 );
- if( n % 2 == 0 )
-  return( false );
- std::uniform_int_distribution< U64 > base( 2 , n - 2 );
- for( int j = 0 ; j < K ; ++j )
-  if( witness( n , base( rng ) ) )
-   return( false );
- return( true );
- }
+bool millerRabin( U64 n , int K , R & rng );
 
 /// the primality of n, exact for every n of 64 bits
-inline bool isPrime( U64 n )
-{
- if( n < 2 )
-  return( false );
- for( U64 p : { 2 , 3 , 5 , 7 , 11 , 13 , 17 , 19 , 23 , 29 , 31 , 37 } ) {
-  if( n == p )
-   return( true );
-  if( n % p == 0 )
-   return( false );
-  }
- for( U64 b : { 2 , 3 , 5 , 7 , 11 , 13 , 17 , 19 , 23 , 29 , 31 , 37 } )
-  if( witness( n , b ) )
-   return( false );
- return( true );
- }
+inline bool isPrime( U64 n );
+
+/// the primes up to n, increasing, by the sieve of Eratosthenes
+/// \post the primes up to n, as isPrimeTrial() finds them (an audit)
+inline std::vector< U64 > sieve( U64 n );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/numeric/NumberTheory.tpp"
 
 /*--------------------------------------------------------------------------*/
 

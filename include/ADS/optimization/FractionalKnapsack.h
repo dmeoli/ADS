@@ -11,6 +11,11 @@
  * volume it is not, and neither is any of them for the 0-1 knapsack
  * (exercise 14.1).
  *
+ * The contracts [see Contract.h]: profits and volumes of the same objects, the
+ * volumes positive, the profits and the capacity not negative; the fractions
+ * are in [ 0 , 1 ] and fill at most the capacity. The operations are defined
+ * in FractionalKnapsack.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 14.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap14.pdf
  * \see G. B. Dantzig, Discrete-variable extremum problems, Operations
@@ -35,6 +40,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include "ADS/Contract.h"
+
+#include <algorithm>
 #include <cstddef>
 #include <numeric>
 #include <vector>
@@ -46,28 +54,22 @@
 namespace ADS {
 
 /// zaino(): the fractions x of the objects, by decreasing p / v
+/// \pre |p| = |v|, v > 0, p >= 0, C >= 0
+/// \post fractions in [ 0 , 1 ] of volume at most C
 inline std::vector< double > fractionalKnapsack(
                                             const std::vector< double > & p ,
                                             const std::vector< double > & v ,
-                                            double C )
-{
- const std::size_t n = p.size();
- std::vector< std::size_t > by( n );
- std::iota( by.begin() , by.end() , 0 );
- std::stable_sort( by.begin() , by.end() ,
-                   [ & ]( std::size_t a , std::size_t b ) {
-                    return( p[ a ] * v[ b ] > p[ b ] * v[ a ] ); } );
- std::vector< double > x( n , 0 );
- for( std::size_t i : by ) {
-  x[ i ] = std::min( C / v[ i ] , 1.0 );
-  C -= x[ i ] * v[ i ];
-  }
- return( x );
- }
+                                            double C );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/optimization/FractionalKnapsack.tpp"
 
 /*--------------------------------------------------------------------------*/
 

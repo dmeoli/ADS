@@ -10,8 +10,8 @@
  * hang a whole tree under a node in O( 1 ) time, deleteChild() and
  * deleteSibling() destroy a subtree in time linear in its size. A tree owns
  * its subtrees: deleting the root of a tree destroys all of it; a tree whose
- * insertion is refused (an exception is thrown) stays the caller's. As in
- * the book, nil is nullptr.
+ * insertion is refused (its contract is violated) stays the caller's. As
+ * in the book, nil is nullptr.
  *
  * The visits examine each node once, in \f$ \Theta( n ) \f$ time: the
  * previsit examines the root and then visits the subtrees
@@ -20,6 +20,12 @@
  * visits the first i subtrees, examines the root and visits the others, and
  * the visit by levels (bfs) examines all the nodes of level l before those
  * of level l + 1, using a queue. copy() makes a deep copy of a subtree.
+ *
+ * The contracts [see Contract.h]: the tree inserted is a root (the
+ * precondition of the book, t.parent() = nil) other than the node itself,
+ * insertSibling() needs a node that is not a root, and the visits a node;
+ * the invariant is that each child of a node has that node as its parent,
+ * down the subtree. The operations are defined in Tree.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 5.1, 5.2
  *      and 5.3, https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
@@ -42,9 +48,15 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
 
+#include <memory>
+#include <sstream>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -66,80 +78,59 @@ class Tree {
  using Item = T;   ///< the type of the values
 
  /// Tree( v ): a new tree, made of one node containing v
- explicit Tree( const T & v ) : f_value( v ) {}
+ explicit Tree( const T & v );
 
  Tree( const Tree & ) = delete;
  Tree & operator=( const Tree & ) = delete;
 
  /// destroys the subtrees of the children, i.e., the whole tree
- ~Tree() {
-  while( f_child )
-   deleteChild();
-  }
+ ~Tree();
 
 /*--------------------------------------------------------------------------*/
 
  /// the value of the node
- [[nodiscard]] const T & read( void ) const { return( f_value ); }
+ [[nodiscard]] const T & read( void ) const;
 
  /// writes v in the node
- void write( const T & v ) { f_value = v; }
+ void write( const T & v );
 
  /// the parent; nil if the node is a root
- [[nodiscard]] Tree * parent( void ) const { return( f_parent ); }
+ [[nodiscard]] Tree * parent( void ) const;
 
  /// the first child; nil if the node is a leaf
- [[nodiscard]] Tree * leftmostChild( void ) const { return( f_child ); }
+ [[nodiscard]] Tree * leftmostChild( void ) const;
 
  /// the next sibling; nil if there is none
- [[nodiscard]] Tree * rightSibling( void ) const { return( f_sibling ); }
+ [[nodiscard]] Tree * rightSibling( void ) const;
 
  /// inserts the tree t as the first child of this node, which then owns it
- void insertChild( Tree * t ) {
-  check_root( t , "insertChild" );
-  t->f_parent = this;
-  t->f_sibling = f_child;
-  f_child = t;
-  }
+ /// \pre t is a root, not this node
+ /// \post t is the first child
+ void insertChild( Tree * t );
 
  /// inserts the tree t as the next sibling of this node, which must not be
  /// a root; the parent of this node then owns t
- void insertSibling( Tree * t ) {
-  check_root( t , "insertSibling" );
-  if( ! f_parent )
-   throw( std::logic_error( "ADS::Tree::insertSibling: a root has no "
-                            "siblings" ) );
-  t->f_parent = f_parent;
-  t->f_sibling = f_sibling;
-  f_sibling = t;
-  }
+ /// \pre t is a root, and this node is not
+ /// \post t is the next sibling
+ void insertSibling( Tree * t );
+
+ /// true if the node has no child (FOGLIA)
+ [[nodiscard]] bool isLeaf( void ) const;
+
+ /// true if the node has no next sibling (ULTIMOFRATELLO)
+ [[nodiscard]] bool isLastSibling( void ) const;
 
  /// destroys the subtree rooted in the first child
- void deleteChild( void ) {
-  if( Tree * c = f_child ) {
-   f_child = c->f_sibling;
-   c->f_sibling = nullptr;
-   delete c;
-   }
-  }
+ void deleteChild( void );
 
  /// destroys the subtree rooted in the next sibling
- void deleteSibling( void ) {
-  if( Tree * s = f_sibling ) {
-   f_sibling = s->f_sibling;
-   s->f_sibling = nullptr;
-   delete s;
-   }
-  }
+ void deleteSibling( void );
 
 /*--------------------------------------------------------------------------*/
  private:
 
- static void check_root( const Tree * t , const char * who ) {
-  if( ( ! t ) || t->f_parent )
-   throw( std::logic_error( std::string( "ADS::Tree::" ) + who +
-                            ": the tree to insert is not a root" ) );
-  }
+ /// each child of each node of the subtree has that node as its parent
+ [[nodiscard]] bool linked( void ) const;
 
  T f_value;                    ///< the value
  Tree * f_parent = nullptr;    ///< the parent
@@ -154,75 +145,62 @@ class Tree {
 
 /// dfs(): pre( u ) is called on each node before its subtrees are visited,
 /// post( u ) after; pre-visit() and post-visit() are dfs() with one of them
+/// \pre t is a node
 template< class T , class Pre , class Post >
-void dfs( Tree< T > * t , Pre && pre , Post && post )
-{
- pre( t );                                    // (1)
- for( auto u = t->leftmostChild() ; u ; u = u->rightSibling() )
-  dfs( u , pre , post );
- post( t );                                   // (2)
- }
+void dfs( Tree< T > * t , Pre && pre , Post && post );
 
 /// the previsit: f( u ) on the root, then on the subtrees in order
 template< class T , class F >
-void pre_visit( Tree< T > * t , F && f )
-{
- dfs( t , f , []( Tree< T > * ) {} );
- }
+void pre_visit( Tree< T > * t , F && f );
 
 /// the postvisit: f( u ) on the subtrees in order, then on the root
 template< class T , class F >
-void post_visit( Tree< T > * t , F && f )
-{
- dfs( t , []( Tree< T > * ) {} , f );
- }
+void post_visit( Tree< T > * t , F && f );
 
 /// in-visit(): the first i subtrees, the root, the other subtrees
+/// \pre t is a node and i >= 0
 template< class T , class F >
-void in_visit( Tree< T > * t , int i , F && f )
-{
- auto u = t->leftmostChild();
- for( int k = 0 ; u && ( k < i ) ; ++k , u = u->rightSibling() )
-  in_visit( u , i , f );
- f( t );
- for( ; u ; u = u->rightSibling() )
-  in_visit( u , i , f );
- }
+void in_visit( Tree< T > * t , int i , F && f );
 
 /// a deep copy of the subtree t and of its children, not of its siblings;
 /// the caller owns it
+/// \pre t is a node
+/// \post the copy is a root
 template< class T >
-Tree< T > * copy( const Tree< T > * t )
-{
- auto c = new Tree< T >( t->read() );
- Tree< T > * last = nullptr;
- for( auto u = t->leftmostChild() ; u ; u = u->rightSibling() ) {
-  Tree< T > * x = copy( u );
-  if( last ) last->insertSibling( x );
-  else c->insertChild( x );
-  last = x;
-  }
- return( c );
- }
+Tree< T > * copy( const Tree< T > * t );
 
 /// bfs(): the visit by levels, with a queue of the nodes to examine
 template< class T , class F >
-void bfs( Tree< T > * t , F && f )
-{
- List< Tree< T > * > Q;   // enqueue at the tail, dequeue from the head
- Q.insert( Q.next( Q.tail() ) , t );
- while( ! Q.isEmpty() ) {
-  Tree< T > * u = Q.read( Q.head() );
-  Q.remove( Q.head() );
-  f( u );
-  for( u = u->leftmostChild() ; u ; u = u->rightSibling() )
-   Q.insert( Q.next( Q.tail() ) , u );
-  }
- }
+void bfs( Tree< T > * t , F && f );
+
+/// the first level of largest weight, the weight of a level being the sum
+/// of the values of its nodes (the root at level 0), by a visit by levels
+/// \pre t is a node
+template< class T >
+int maxWeightLevel( Tree< T > * t );
+
+/// the parenthesized list of t, ( r T1 ... Tk ) for the root r with the
+/// subtrees T1 , ... , Tk, e.g., ( a ( b ( e ) ( f ) ) ( c ( g ) ) ); the
+/// values are written with << and must contain no space nor parenthesis
+/// \pre t is a node
+template< class T >
+std::string to_list( const Tree< T > * t );
+
+/// the tree of the parenthesized list s, its values read with >>; the
+/// caller owns it
+/// \pre s is the list of a tree
+template< class T >
+Tree< T > * tree_from_list( std::string_view s );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/tree/Tree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

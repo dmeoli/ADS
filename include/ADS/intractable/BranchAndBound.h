@@ -35,6 +35,11 @@
  * of the candidates, knapsackBB() (exercise 19.12) by the fractional
  * knapsack of chapter 14.
  *
+ * The contracts [see Contract.h]: the distances are square, symmetric for the
+ * bound of the 1-tree, the weights and the profits not negative and the
+ * volumes positive; each optimum returned is checked as feasible, with its
+ * cost. The operations are defined in BranchAndBound.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 19.3 and
  *      exercises 19.9-19.12,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap19.pdf
@@ -63,6 +68,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/complexity/Problems.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/intractable/Approximation.h"
@@ -91,77 +97,25 @@ enum class TspBound { BOOK , ONE_TREE };
 
 /// the weight of a minimum spanning tree of the nodes in V, by the
 /// symmetric distances D
+/// \pre D is square and symmetric, and V has distinct cities
 template< class T >
 T spanningTreeWeight( const std::vector< std::vector< T > > & D ,
-                      const Nodes & V )
-{
- std::vector< WeightedEdge< T > > E;
- for( std::size_t a = 0 ; a < V.size() ; ++a )
-  for( std::size_t b = a + 1 ; b < V.size() ; ++b )
-   E.push_back( { int( a ) , int( b ) , D[ V[ a ] ][ V[ b ] ] } );
- T w = T( 0 );
- for( const auto & e : kruskal( int( V.size() ) , E ) ) w += e.w;
- return( w );
- }
+                      const Nodes & V );
 
 /// the weight of a minimum 1-tree of r: a minimum spanning tree of the
 /// other nodes and the two least edges of r; each circuit is a 1-tree, so
 /// that the weight bounds the optimum from below
+/// \pre D is square and symmetric, and r is a city
 template< class T >
-T oneTree( const std::vector< std::vector< T > > & D , int r )
-{
- Nodes V;
- std::vector< T > e;
- for( int h = 0 ; h < int( D.size() ) ; ++h )
-  if( h != r ) {
-   V.push_back( h );
-   e.push_back( D[ r ][ h ] );
-   }
- std::sort( e.begin() , e.end() );
- T w = spanningTreeWeight( D , V );
- for( std::size_t k = 0 ; k < std::min< std::size_t >( 2 , e.size() ) ; ++k )
-  w += e[ k ];
- return( w );
- }
+T oneTree( const std::vector< std::vector< T > > & D , int r );
 
 /// lb( S ): a lower bound of the circuits that start with the path S,
 /// the cost of the circuit if S has all the cities
+/// \pre D is square, S has distinct cities and is not empty, D symmetric for
+///      the 1-tree
 template< class T >
 T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
-                 TspBound how = TspBound::BOOK )
-{
- const int n = int( D.size() ) , i = int( S.size() ) - 1;
- T C = T( 0 );
- for( int k = 0 ; k < i ; ++k ) C += D[ S[ k ] ][ S[ k + 1 ] ];
- if( i == n - 1 )
-  return( C + D[ S[ i ] ][ S[ 0 ] ] );
- std::vector< bool > inS( n , false );
- for( int s : S ) inS[ s ] = true;
- const T INF = std::numeric_limits< T >::max();
- T A = INF , B = INF;
- Nodes R;
- for( int h = 0 ; h < n ; ++h )
-  if( ! inS[ h ] ) {
-   R.push_back( h );
-   A = std::min( A , D[ h ][ S[ 0 ] ] );   // the return to S[ 0 ]
-   B = std::min( B , D[ S[ i ] ][ h ] );
-   }
- if( how == TspBound::ONE_TREE )
-  return( C + A + B + spanningTreeWeight( D , R ) );
- T sum = A + B;
- for( int h : R ) {                     // D[ h ]: the least p -> h -> q
-  T best = INF;
-  for( int p = 0 ; p < n ; ++p )
-   for( int q = 0 ; q < n ; ++q )
-    if( ( p != h ) && ( q != h ) && ( p != q ) )
-     best = std::min( best , D[ p ][ h ] + D[ h ][ q ] );
-  sum += best;
-  }
- if constexpr( std::integral< T > )
-  return( C + ( sum + 1 ) / 2 );
- else
-  return( C + sum / 2 );
- }
+                 TspBound how = TspBound::BOOK );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- BBTSP ------------------------------------*/
@@ -170,44 +124,13 @@ T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
 /// bbTsp(): the cost and a minimum circuit from 0, starting from the
 /// circuit start if not empty; the number of nodes of the tree of the
 /// choices generated, the root included, goes to *generated, if given
+/// \pre D is square, start empty or a permutation, D symmetric for the 1-tree
+/// \post a permutation and its cost, if n >= 2
 template< class T >
 std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
                               const Nodes & start = {} ,
                               TspBound how = TspBound::BOOK ,
-                              long * generated = nullptr )
-{
- const int n = int( D.size() );
- T minCost = start.empty() ? std::numeric_limits< T >::max()
-                           : tourCost( D , start );
- Nodes minSol = start;
- if( generated ) *generated = 1;
- if( n <= 1 )
-  return( std::pair( T( 0 ) , Nodes( n , 0 ) ) );
- Nodes S( 1 , 0 );
- std::vector< bool > inS( n , false );
- inS[ 0 ] = true;
- auto rec = [ & ]( auto & self , int i ) -> void {
-  for( int c = 1 ; c < n ; ++c ) {      // R in increasing order
-   if( inS[ c ] ) continue;
-   S.push_back( c );
-   inS[ c ] = true;
-   const T lb = tspLowerBound( D , S , how );
-   if( generated ) ++*generated;
-   if( lb < minCost ) {
-    if( i < n - 1 )
-     self( self , i + 1 );
-    else {
-     minSol = S;
-     minCost = lb;
-     }
-    }
-   S.pop_back();
-   inS[ c ] = false;
-   }
-  };
- rec( rec , 1 );
- return( std::pair( minCost , minSol ) );
- }
+                              long * generated = nullptr );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ LITTLE ------------------------------------*/
@@ -216,113 +139,11 @@ std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
 /// littleTsp(): the cost and a minimum circuit from 0, by the reduction
 /// of the matrix; the number of nodes of the tree generated goes to
 /// *generated, if given
+/// \pre D is square
+/// \post a permutation and its cost, if n >= 2
 template< class T >
 std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
-                                  long * generated = nullptr )
-{
- const int n = int( D.size() );
- const T INF = std::numeric_limits< T >::max();
- if( generated ) *generated = 1;
- if( n <= 1 )
-  return( std::pair( T( 0 ) , Nodes( n , 0 ) ) );
-
- struct Node {
-  std::vector< std::vector< T > > M;     // the reduced costs, INF if out
-  std::vector< bool > row , col;         // done
-  std::vector< int > succ , pred;        // the edges included
-  int edges = 0;
-  T lb = T( 0 );
-  };
- // the reduction: false if a row or a column has no edge left
- auto reduce = [ & ]( Node & x ) {
-  for( int i = 0 ; i < n ; ++i ) {
-   if( x.row[ i ] ) continue;
-   T m = INF;
-   for( int j = 0 ; j < n ; ++j )
-    if( ! x.col[ j ] ) m = std::min( m , x.M[ i ][ j ] );
-   if( m == INF ) return( false );
-   for( int j = 0 ; j < n ; ++j )
-    if( ! x.col[ j ] && ( x.M[ i ][ j ] != INF ) ) x.M[ i ][ j ] -= m;
-   x.lb += m;
-   }
-  for( int j = 0 ; j < n ; ++j ) {
-   if( x.col[ j ] ) continue;
-   T m = INF;
-   for( int i = 0 ; i < n ; ++i )
-    if( ! x.row[ i ] ) m = std::min( m , x.M[ i ][ j ] );
-   if( m == INF ) return( false );
-   for( int i = 0 ; i < n ; ++i )
-    if( ! x.row[ i ] && ( x.M[ i ][ j ] != INF ) ) x.M[ i ][ j ] -= m;
-   x.lb += m;
-   }
-  return( true );
-  };
-
- std::vector< Node > nodes;
- FibonacciHeapPriorityQueue< int , T > Q;
- {
-  Node r;
-  r.M = D;
-  for( int i = 0 ; i < n ; ++i ) r.M[ i ][ i ] = INF;
-  r.row.assign( n , false );
-  r.col.assign( n , false );
-  r.succ.assign( n , -1 );
-  r.pred.assign( n , -1 );
-  if( reduce( r ) ) {
-   nodes.push_back( std::move( r ) );
-   Q.insert( 0 , nodes[ 0 ].lb );
-   }
-  }
- while( ! Q.isEmpty() ) {
-  const int k = Q.deleteMin();
-  if( nodes[ k ].edges == n ) {          // a circuit, the best
-   Nodes S( 1 , 0 );
-   while( int( S.size() ) < n ) S.push_back( nodes[ k ].succ[ S.back() ] );
-   return( std::pair( tourCost( D , S ) , S ) );
-   }
-  // the entry 0 whose exclusion raises the bound the most
-  const Node & x = nodes[ k ];
-  int bi = -1 , bj = -1;
-  T best = T( -1 );
-  for( int i = 0 ; i < n ; ++i )
-   for( int j = 0 ; j < n ; ++j ) {
-    if( x.row[ i ] || x.col[ j ] || ( x.M[ i ][ j ] != T( 0 ) ) ) continue;
-    T a = INF , b = INF;
-    for( int h = 0 ; h < n ; ++h ) {
-     if( ( h != j ) && ! x.col[ h ] ) a = std::min( a , x.M[ i ][ h ] );
-     if( ( h != i ) && ! x.row[ h ] ) b = std::min( b , x.M[ h ][ j ] );
-     }
-    const T p = ( ( a == INF ) || ( b == INF ) ) ? INF : a + b;
-    if( ( bi < 0 ) || ( p > best ) ) {
-     best = p;
-     bi = i;
-     bj = j;
-     }
-    }
-  if( bi < 0 ) continue;
-  Node in = x , out = x;
-  // the child with ( bi , bj )
-  in.row[ bi ] = in.col[ bj ] = true;
-  in.succ[ bi ] = bj;
-  in.pred[ bj ] = bi;
-  ++in.edges;
-  if( in.edges < n - 1 ) {               // no circuit before the end
-   int s = bi , e = bj;
-   while( in.pred[ s ] >= 0 ) s = in.pred[ s ];
-   while( in.succ[ e ] >= 0 ) e = in.succ[ e ];
-   in.M[ e ][ s ] = INF;
-   }
-  // the child without it
-  out.M[ bi ][ bj ] = INF;
-  for( Node * c : { & in , & out } ) {
-   if( generated ) ++*generated;
-   if( ( c->edges < n ) && ! reduce( *c ) ) continue;
-   nodes.push_back( std::move( *c ) );
-   Q.insert( int( nodes.size() ) - 1 , nodes.back().lb );
-   }
-  }
- return( std::pair( INF , Nodes() ) );
- }
+                                  long * generated = nullptr );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLIQUE AND KNAPSACK ------------------------------*/
@@ -332,96 +153,52 @@ std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
 /// largest weight, the weights w not negative; a set is extended by the
 /// candidates adjacent to all of it, and pruned when its weight and that of
 /// all the candidates is not above the best
+/// \pre G is unoriented, i.e., square and symmetric, w of size n and not
+///      negative
+/// \post a clique and its weight
 inline std::pair< long , Nodes > maxWeightClique(
                                             const Adjacency & G ,
                                             const std::vector< long > & w ,
-                                            long * generated = nullptr )
-{
- const int n = int( G.size() );
- long best = 0;
- Nodes bestSet , S;
- if( generated ) *generated = 1;
- auto rec = [ & ]( auto & self , const Nodes & cand , long weight ) -> void {
-  if( weight > best ) {
-   best = weight;
-   bestSet = S;
-   }
-  long rest = 0;
-  for( int v : cand ) rest += w[ v ];
-  for( std::size_t a = 0 ; a < cand.size() ; ++a ) {
-   if( weight + rest <= best ) return;   // the bound
-   const int v = cand[ a ];
-   rest -= w[ v ];
-   Nodes next;
-   for( std::size_t b = a + 1 ; b < cand.size() ; ++b )
-    if( G[ v ][ cand[ b ] ] ) next.push_back( cand[ b ] );
-   S.push_back( v );
-   if( generated ) ++*generated;
-   self( self , next , weight + w[ v ] );
-   S.pop_back();
-   }
-  };
- Nodes all( n );
- std::iota( all.begin() , all.end() , 0 );
- rec( rec , all , 0 );
- std::sort( bestSet.begin() , bestSet.end() );
- return( std::pair( best , bestSet ) );
- }
+                                            long * generated = nullptr );
 
 /// ZAINO by branch-&-bound: the best profit and the objects, by places;
 /// the objects by decreasing profit per volume, each in and then out,
 /// pruned when the fractional knapsack of the rest does not beat the best
+/// \pre p and v of the same size, p not negative, v positive
+/// \post objects within C and their profit
 inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
                                              const std::vector< long > & v ,
                                              long C ,
-                                             long * generated = nullptr )
-{
- const int n = int( p.size() );
- Nodes o( n );
- std::iota( o.begin() , o.end() , 0 );
- std::stable_sort( o.begin() , o.end() , [ & ]( int a , int b ) {
-  return( p[ a ] * v[ b ] > p[ b ] * v[ a ] ); } );
- long best = 0;
- Nodes bestSet , S;
- if( generated ) *generated = 1;
- // the fractional knapsack of the objects o[ i .. ] within c
- auto bound = [ & ]( int i , long c ) {
-  double b = 0;
-  for( ; ( i < n ) && ( c > 0 ) ; ++i )
-   if( v[ o[ i ] ] <= c ) {
-    b += double( p[ o[ i ] ] );
-    c -= v[ o[ i ] ];
-    }
-   else {
-    b += double( p[ o[ i ] ] ) * double( c ) / double( v[ o[ i ] ] );
-    c = 0;
-    }
-  return( b );
-  };
- auto rec = [ & ]( auto & self , int i , long c , long profit ) -> void {
-  if( profit > best ) {
-   best = profit;
-   bestSet = S;
-   }
-  if( ( i == n ) || ( double( profit ) + bound( i , c ) <= double( best ) ) )
-   return;
-  if( v[ o[ i ] ] <= c ) {
-   S.push_back( o[ i ] );
-   if( generated ) ++*generated;
-   self( self , i + 1 , c - v[ o[ i ] ] , profit + p[ o[ i ] ] );
-   S.pop_back();
-   }
-  if( generated ) ++*generated;
-  self( self , i + 1 , c , profit );
-  };
- rec( rec , 0 , C , 0 );
- std::sort( bestSet.begin() , bestSet.end() );
- return( std::pair( best , bestSet ) );
- }
+                                             long * generated = nullptr );
+
+/// ZAINO by backtracking with the simple bound: the objects in their
+/// order, each in and then out, an object that does not fit skipped, and a
+/// node pruned when its profit plus the profits of all the objects still
+/// to decide does not beat the best; the nodes generated go to *generated
+/// \pre p and v of the same size, p not negative, v positive
+/// \post objects within C and their profit
+inline std::pair< long , Nodes > knapsackBacktrack(
+                                  const std::vector< long > & p ,
+                                  const std::vector< long > & v , long C ,
+                                  long * generated = nullptr );
+
+/// the greedy heuristic of ZAINO: the objects by decreasing profit per
+/// volume, each taken if it still fits; not optimal in general
+/// \pre p and v of the same size, p not negative, v positive
+/// \post objects within C and their profit
+inline std::pair< long , Nodes > knapsackGreedy(
+                                  const std::vector< long > & p ,
+                                  const std::vector< long > & v , long C );
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/intractable/BranchAndBound.tpp"
 
 /*--------------------------------------------------------------------------*/
 

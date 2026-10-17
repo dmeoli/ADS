@@ -7,6 +7,11 @@
  * already there increases by 1, and the removal decreases, removing the
  * item at 0.
  *
+ * The contracts [see Contract.h]: insert() adds one occurrence and
+ * remove() takes one away, if any; the invariant is that the size is the
+ * sum of the counters, none of which is 0. The operations are defined in
+ * HashMultiset.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 8.10,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
  *
@@ -28,6 +33,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 
 #include <algorithm>
@@ -60,50 +66,37 @@ class HashMultiset {
 
  using Item = T;   ///< the type of the items
 
- HashMultiset( void ) : f_count( 7 , true ) {}
+ HashMultiset( void );
 
  /// the number of items, each counted as many times as it occurs
- [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+ [[nodiscard]] std::size_t size( void ) const;
 
  /// the number of distinct items
- [[nodiscard]] std::size_t distinct( void ) const {
-  return( f_count.size() );
-  }
+ [[nodiscard]] std::size_t distinct( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_size == 0 ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] bool contains( const T & x ) const {
-  return( f_count.contains( x ) );
-  }
+ [[nodiscard]] bool contains( const T & x ) const;
 
  /// the occurrences of x
- [[nodiscard]] std::size_t count( const T & x ) const {
-  return( f_count.lookup( x ).value_or( 0 ) );
-  }
+ [[nodiscard]] std::size_t count( const T & x ) const;
 
- void insert( const T & x ) {
-  f_count.insert( x , count( x ) + 1 );
-  ++f_size;
-  }
+ /// \post one occurrence of x more
+ void insert( const T & x );
 
  /// removes one occurrence of x, if there is one
- void remove( const T & x ) {
-  const auto c = count( x );
-  if( c == 0 )
-   return;
-  if( c == 1 )
-   f_count.remove( x );
-  else
-   f_count.insert( x , c - 1 );
-  --f_size;
-  }
+ /// \post one occurrence of x less, or none
+ void remove( const T & x );
 
  /// f( x , c ) on the distinct items and their occurrences
  template< class F >
- void forEach( F && f ) const { f_count.forEach( f ); }
+ void forEach( F && f ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// the size is the sum of the counters, none of which is 0, O( n )
+ [[nodiscard]] bool counted( void ) const;
 
  ChainedHashTable< T , std::size_t , Chain::FRONT , H > f_count;
  std::size_t f_size = 0;
@@ -113,6 +106,12 @@ class HashMultiset {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/set/HashMultiset.tpp"
 
 /*--------------------------------------------------------------------------*/
 
