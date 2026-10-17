@@ -19,8 +19,8 @@ project(ADS
         DESCRIPTION "The algorithms and data structures of the book"
         LANGUAGES CXX)
 
-# ----- the library: headers only, the declarations in include/ and the ---- #
-# ----- definitions of the templates in src/, installed side by side ------- #
+# ----- the library: headers only, the declarations in include/ and the ----- #
+# ----- definitions of the templates in src/, installed side by side -------- #
 add_library(ADS INTERFACE)
 add_library(ADS::ADS ALIAS ADS)
 target_include_directories(ADS INTERFACE
@@ -33,6 +33,18 @@ target_compile_features(ADS INTERFACE cxx_std_20)
 include(CTest)
 if (BUILD_TESTING)
     add_subdirectory(test)
+endif ()
+
+# ----- the benchmarks, off by default -------------------------------------- #
+option(ADS_BENCHMARKS "build the benchmarks in bench/" OFF)
+if (ADS_BENCHMARKS)
+    find_package(Boost QUIET)
+    add_executable(bench-sort bench/sort.cpp)
+    target_link_libraries(bench-sort PRIVATE ADS::ADS)
+    target_compile_definitions(bench-sort PRIVATE ADS_CONTRACTS=0)
+    if (Boost_FOUND)
+        target_include_directories(bench-sort PRIVATE ${Boost_INCLUDE_DIRS})
+    endif ()
 endif ()
 
 # ----- install and export, for find_package(ADS) --------------------------- #

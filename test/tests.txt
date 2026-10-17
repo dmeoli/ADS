@@ -423,6 +423,19 @@ beyond  queue-algorithms    positivi di una coda, coda senza doppi
 beyond  sieve               crivello di Eratostene su un insieme
 beyond  sorted-array-dictionary dizionario su vettore ordinato
 
+# the sorts beyond the book
+sorting  exchange-sorts      bubble, shaker, odd-even, comb, gnome
+sorting  cycle-pancake       cycle sort e pancake sort
+sorting  tree-patience       tree sort e patience sort
+sorting  smoothsort          smoothsort di Dijkstra
+sorting  strand-sort         strand sort su liste
+sorting  sorting-networks    reti di Batcher, merge exchange e bitonica
+sorting  didactic-sorts      stooge, slow sort e bogo sort
+sorting  engineered-quicksorts introsort, pdqsort, dual-pivot, 3-way
+sorting  run-sorts           Timsort e Powersort
+sorting  radix-sorts         radix LSD, MSD, American flag, bucket
+sorting  dispatch            sort() e stableSort() che scelgono
+
 # the engineered structures, beyond the book
 engineered  bucket-queue         coda a bucket su due livelli
 engineered  dary-heap            heap d-ario di elementi semplici

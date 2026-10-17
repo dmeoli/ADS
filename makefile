@@ -7,7 +7,8 @@
 #                                                                             #
 #   make             builds the tests                                         #
 #   make test        runs them                                                #
-#   make install     copies include/ADS and src/ADS in $(PREFIX)/include/ADS #
+#   make bench       builds the benchmarks in $(BUILD)                        #
+#   make install     copies include/ADS and src/ADS into $(PREFIX)/include    #
 ###############################################################################
 
 CXX      ?= g++
@@ -45,6 +46,12 @@ test: $(BINS)
 	done; \
 	echo "$$failed failed"; test $$failed -eq 0
 
+# the benchmarks, with the contracts off and the Boost headers if found
+bench: $(BUILD)/bench-sort
+
+$(BUILD)/bench-sort: bench/sort.cpp $(HEADERS) | $(BUILD)
+	$(CXX) -std=c++20 -O3 -DNDEBUG -DADS_CONTRACTS=0 -Iinclude -Isrc -o $@ $<
+
 install:
 	mkdir -p $(DESTDIR)$(PREFIX)/include
 	cp -R include/ADS src/ADS $(DESTDIR)$(PREFIX)/include/
@@ -52,7 +59,7 @@ install:
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all test install clean
+.PHONY: all test bench install clean
 
 ###############################################################################
 #                             End of makefile                                 #

@@ -189,6 +189,32 @@ heuristic search), and tested in [`test/engineered.cpp`](test/engineered.cpp):
 | lock-free queue from one producer to one consumer | [`concurrent/SPSCQueue.h`](include/ADS/concurrent/SPSCQueue.h) | `engineered.spsc-queue` |
 | lock-free inbox of many producers | [`concurrent/MPSCInbox.h`](include/ADS/concurrent/MPSCInbox.h) | `engineered.mpsc-inbox` |
 
+## Sorting
+
+Beside the sorts of the book, ADS has the classical ones that the book
+leaves out and the engineered ones of the libraries, tested in
+[`test/sorting.cpp`](test/sorting.cpp) on every permutation of up to 7
+items and on the patterns that defeat a sort (sorted, reversed, sawtooth,
+organ pipe, few distinct keys), and measured by
+[`bench/sort.cpp`](bench/sort.cpp) against `std::sort`, `std::stable_sort`
+and Boost.Sort (`make bench`, or CMake with `-DADS_BENCHMARKS=ON`).
+`ADS::sort()` and `ADS::stableSort()` ([`sort/Sort.h`](include/ADS/sort/Sort.h))
+choose among them by the type of the items and the order: the radix sort
+for numbers, the MSD radix sort for strings, pdqsort and Powersort for the
+rest.
+
+| What | Header |
+|---|---|
+| bubble, cocktail shaker, odd-even transposition, comb and gnome sort | [`sort/ExchangeSorts.h`](include/ADS/sort/ExchangeSorts.h) |
+| cycle sort (fewest writes) and pancake sort (prefix reversals) | [`sort/CycleSort.h`](include/ADS/sort/CycleSort.h) |
+| tree sort, patience sort, smoothsort, strand sort | [`sort/TreeSort.h`](include/ADS/sort/TreeSort.h), [`sort/PatienceSort.h`](include/ADS/sort/PatienceSort.h), [`sort/Smoothsort.h`](include/ADS/sort/Smoothsort.h), [`sort/StrandSort.h`](include/ADS/sort/StrandSort.h) |
+| sorting networks of Batcher (merge exchange, bitonic) | [`sort/SortingNetworks.h`](include/ADS/sort/SortingNetworks.h) |
+| stooge sort, slow sort, bogo sort | [`sort/DidacticSorts.h`](include/ADS/sort/DidacticSorts.h) |
+| introsort, pdqsort, dual-pivot and three-way quicksort | [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) |
+| Timsort and Powersort | [`sort/RunSorts.h`](include/ADS/sort/RunSorts.h) |
+| LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings, bucket sort | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |
+| multikey quicksort of strings | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) |
+
 ## Contracts
 
 The specification of each operation is checked as a contract

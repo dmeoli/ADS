@@ -153,5 +153,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Zobrist and simple tabulation hashing, the lock-free queue from one
   producer to one consumer and the lock-free inbox of many producers, with
   their tests on real threads
+- the sorts beyond the book: bubble, cocktail shaker, odd-even
+  transposition, comb, gnome, cycle, pancake, tree, patience, strand and
+  smoothsort, the sorting networks of Batcher, stooge, slow and bogo sort;
+  introsort, pdqsort, the dual-pivot and the three-way quicksort, Timsort
+  and Powersort, the LSD and the MSD radix sorts, the American flag sort,
+  the bucket sort and the multikey quicksort; ADS::sort() and
+  ADS::stableSort(), which choose among them; the benchmark bench/sort.cpp
+  against the standard library and Boost.Sort
 - a CI job that runs the tests under AddressSanitizer and UBSan
 - install and export for find_package(ADS), and the CI on GitHub Actions
