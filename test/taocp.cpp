@@ -781,6 +781,11 @@ ADS_TEST( "big-integer" )
   CHECK( BigInteger( a.toString( 7 ) , 7 ) == a );
   CHECK( BigInteger( a.toString() ) == a );
   }
+ for( int t = 0 ; t < 40 ; ++t ) {         // Karatsuba, also unbalanced
+  const BigInteger a = random( 1 + g() % 3000 ) , b = random( 1 + g() % 900 );
+  CHECK( BigInteger::multiplyKaratsuba( a , b ) ==
+         BigInteger::multiplySchool( a , b ) );
+  }
  for( std::size_t n : { 256 , 300 , 1000 , 2000 } ) {   // the FFT product
   const BigInteger a = random( 8 * n ) , b = random( 8 * n + 13 );
   CHECK( BigInteger::multiplyFFT( a , b ) ==

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the benchmarks of the dictionaries, of the priority queues, of the
+  sequences, of the integers of any length and of the FFT, against the
+  standard library, Boost (unordered_flat_map, flat_map, Boost.Heap,
+  Multiprecision, Rational) and, when found, GMP and FFTW, with a run
+  "A/A" of the reference for the noise; bench/run.sh runs them on one core
+  and bench/tables.py writes their tables
+- the product of Karatsuba in BigInteger, between Algorithm M and the FFT
+- the move constructor of FibonacciHeapPriorityQueue
 - the standard interface on every container: begin() and end() of the same
   type, the member types of the standard library, and iterators of the
   strongest category the structure allows (contiguous, random access,
@@ -191,6 +199,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- fft() keeps the powers of the root of unity of the last size per thread,
+  laid out round by round, instead of computing n / 2 sines and cosines at
+  each call, and multiplies by the formula instead of the operator * of
+  std::complex
 - PreorderArrayTree::end( i ), the place after the subtree of i, is now
   subtreeEnd( i ), so that the name end() is left to the standard interface
 - SequenceRange is a view whose end() is an iterator, so that the range is

@@ -103,6 +103,9 @@ class FibonacciHeapPriorityQueue {
  FibonacciHeapPriorityQueue & operator=(
                               const FibonacciHeapPriorityQueue & ) = delete;
 
+ /// the items of other, which is left empty; its handles stay valid here
+ FibonacciHeapPriorityQueue( FibonacciHeapPriorityQueue && other ) noexcept;
+
  ~FibonacciHeapPriorityQueue();
 
  [[nodiscard]] bool isEmpty( void ) const;

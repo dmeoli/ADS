@@ -571,6 +571,8 @@ ADS_TEST( "trees" )
   return( out );
   };
  CHECK( priorities( LH ) == pr && priorities( FH ) == pr );
+ auto FM = std::move( FH );                 // the move leaves FH empty
+ CHECK( priorities( FM ) == pr && FH.isEmpty() && FH.begin() == FH.end() );
  std::multiset< int > tp;
  for( const auto & [ key , x ] : TP ) tp.insert( key.first );
  CHECK( tp == pr );

@@ -8,6 +8,7 @@
 #   make             builds the tests                                         #
 #   make test        runs them                                                #
 #   make bench       builds the benchmarks in $(BUILD)                        #
+#   bench/run.sh     runs them and writes the tables of the README            #
 #   make install     copies include/ADS and src/ADS into $(PREFIX)/include    #
 ###############################################################################
 
@@ -46,11 +47,27 @@ test: $(BINS)
 	done; \
 	echo "$$failed failed"; test $$failed -eq 0
 
-# the benchmarks, with the contracts off and the Boost headers if found
-bench: $(BUILD)/bench-sort
+# the benchmarks, with the contracts off and the Boost headers if found;
+# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft
+BENCHES   = sort dictionaries priority sequences bignum fft
+comma    := ,
+BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
+             -Iinclude -Isrc
+GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
+            -Wl$(comma)-rpath$(comma)$(GMP)/lib -lgmpxx -lgmp)
+FFTWFLAGS = $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
+            -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3)
 
-$(BUILD)/bench-sort: bench/sort.cpp $(HEADERS) | $(BUILD)
-	$(CXX) -std=c++20 -O3 -DNDEBUG -DADS_CONTRACTS=0 -Iinclude -Isrc -o $@ $<
+bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
+
+$(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(GMPFLAGS)
+
+$(BUILD)/bench-fft: bench/fft.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(FFTWFLAGS)
+
+$(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $<
 
 install:
 	mkdir -p $(DESTDIR)$(PREFIX)/include

@@ -222,6 +222,59 @@ inline BigInteger::Mag BigInteger::mulSchool( const Mag & a , const Mag & b )
  return( w );
  }
 
+inline void BigInteger::addShifted( Mag & r , const Mag & x ,
+                                     std::size_t off )
+{
+ if( r.size() < off + x.size() + 1 ) r.resize( off + x.size() + 1 , 0 );
+ std::uint64_t carry = 0;
+ std::size_t i = 0;
+ for( ; i < x.size() ; ++i ) {
+  const std::uint64_t s = std::uint64_t( r[ off + i ] ) + x[ i ] + carry;
+  r[ off + i ] = Limb( s );
+  carry = s >> 32;
+  }
+ for( ; carry ; ++i ) {
+  if( off + i == r.size() ) r.push_back( 0 );
+  const std::uint64_t s = std::uint64_t( r[ off + i ] ) + carry;
+  r[ off + i ] = Limb( s );
+  carry = s >> 32;
+  }
+ }
+
+inline BigInteger::Mag BigInteger::mulKaratsuba( const Mag & a ,
+                                                 const Mag & b )
+{
+ if( a.size() < b.size() ) return( mulKaratsuba( b , a ) );
+ const std::size_t na = a.size() , nb = b.size();
+ if( nb < kKaratsuba ) return( mulSchool( a , b ) );
+ if( na >= 2 * nb ) {                       // unbalanced: a in pieces of nb
+  Mag r( na + nb , 0 );
+  for( std::size_t off = 0 ; off < na ; off += nb ) {
+   Mag piece( a.begin() + long( off ) ,
+              a.begin() + long( std::min( na , off + nb ) ) );
+   trim( piece );
+   addShifted( r , mulKaratsuba( piece , b ) , off );
+   }
+  trim( r );
+  return( r );
+  }
+ const std::size_t m = na / 2;              // a = a1 b^m + a0, the same b
+ Mag a0( a.begin() , a.begin() + long( m ) ) ,
+     a1( a.begin() + long( m ) , a.end() ) ,
+     b0( b.begin() , b.begin() + long( std::min( m , nb ) ) ) ,
+     b1( b.begin() + long( std::min( m , nb ) ) , b.end() );
+ trim( a0 );
+ trim( b0 );
+ const Mag z0 = mulKaratsuba( a0 , b0 ) , z2 = mulKaratsuba( a1 , b1 );
+ Mag z1 = mulKaratsuba( addMag( a0 , a1 ) , addMag( b0 , b1 ) );
+ z1 = subMag( subMag( z1 , z0 ) , z2 );     // ( a0 + a1 ) ( b0 + b1 ) - ...
+ Mag r = z0;
+ addShifted( r , z1 , m );
+ addShifted( r , z2 , 2 * m );
+ trim( r );
+ return( r );
+ }
+
 inline BigInteger::Mag BigInteger::mulFFT( const Mag & a , const Mag & b )
 {
  if( a.empty() || b.empty() ) return( Mag() );
@@ -251,6 +304,14 @@ inline BigInteger BigInteger::multiplySchool( const BigInteger & a ,
  return( BigInteger( a.f_neg != b.f_neg , mulSchool( a.f_d , b.f_d ) ) );
  }
 
+inline BigInteger BigInteger::multiplyKaratsuba( const BigInteger & a ,
+                                                 const BigInteger & b )
+{
+ BigInteger r( a.f_neg != b.f_neg , mulKaratsuba( a.f_d , b.f_d ) );
+ ADS_AUDIT( r == multiplySchool( a , b ) );
+ return( r );
+ }
+
 inline BigInteger BigInteger::multiplyFFT( const BigInteger & a ,
                                            const BigInteger & b )
 {
@@ -261,8 +322,11 @@ inline BigInteger BigInteger::multiplyFFT( const BigInteger & a ,
 
 inline BigInteger operator*( const BigInteger & a , const BigInteger & b )
 {
- if( std::min( a.f_d.size() , b.f_d.size() ) >= BigInteger::kFFT )
+ const std::size_t k = std::min( a.f_d.size() , b.f_d.size() );
+ if( k >= BigInteger::kFFT )
   return( BigInteger::multiplyFFT( a , b ) );
+ if( k >= BigInteger::kKaratsuba )
+  return( BigInteger::multiplyKaratsuba( a , b ) );
  return( BigInteger::multiplySchool( a , b ) );
  }
 

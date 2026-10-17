@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+###############################################################################
+#                                tables.py                                    #
+#                                                                             #
+# Turns a file of results/ written by bench/run.sh into the Markdown tables   #
+# of the README: one table per benchmark, a row per structure and a column    #
+# per ( case , n ), each cell the time per operation in nanoseconds and,      #
+# in parentheses, its ratio to the first structure of the benchmark (the      #
+# one of the standard library). The noise of the machine is the largest       #
+# relative difference between that structure and its run "A/A".               #
+#                                                                             #
+#   python3 bench/tables.py results/<file>.tsv                                #
+###############################################################################
+
+import sys
+from collections import OrderedDict
+
+def main(path):
+    head, rows = [], []
+    for line in open(path):
+        line = line.rstrip('\n')
+        if line.startswith('#'):
+            head.append(line[2:].split('\t'))
+        elif line:
+            b, case, n, who, ns = line.split('\t')
+            rows.append((b, case, int(n), who, float(ns)))
+    for k, v in head:
+        print('- %s: %s' % (k, v))
+    print()
+    benches = OrderedDict()
+    for b, case, n, who, ns in rows:
+        benches.setdefault(b, []).append((case, n, who, ns))
+    for b, R in benches.items():
+        cols = list(OrderedDict.fromkeys((c, n) for c, n, _, _ in R))
+        whos = list(OrderedDict.fromkeys(w for _, _, w, _ in R))
+        cell = {(c, n, w): ns for c, n, w, ns in R}
+        ref = whos[0]
+        noise = [abs(cell[(c, n, ref + ' A/A')] - cell[(c, n, ref)]) /
+                 cell[(c, n, ref)] for c, n in cols
+                 if (c, n, ref + ' A/A') in cell and cell[(c, n, ref)] > 0]
+        print('**%s** (noise A/A at most %.0f%%)' %
+              (b, 100 * max(noise) if noise else 0))
+        print()
+        print('| | ' + ' | '.join('%s, n = %d' % (c, n) for c, n in cols)
+              + ' |')
+        print('|---|' + '---|' * len(cols))
+        for w in whos:
+            if w.endswith(' A/A'):
+                continue
+            out = []
+            for c, n in cols:
+                if (c, n, w) not in cell:
+                    out.append('')
+                    continue
+                v = cell[(c, n, w)]
+                r = cell.get((c, n, ref))
+                out.append('%.3g' % v + (' (%.2g)' % (v / r) if r and w != ref
+                                         else ''))
+            print('| %s | %s |' % (w, ' | '.join(out)))
+        print()
+
+if __name__ == '__main__':
+    main(sys.argv[1])
+
+###############################################################################
+#                             End of tables.py                                #
+###############################################################################

@@ -22,6 +22,14 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 template< class T , std::totally_ordered P >
+FibonacciHeapPriorityQueue< T , P >::FibonacciHeapPriorityQueue(
+                               FibonacciHeapPriorityQueue && other ) noexcept
+ : f_min( std::exchange( other.f_min , nullptr ) ) ,
+   f_n( std::exchange( other.f_n , 0 ) )
+{
+ }
+
+template< class T , std::totally_ordered P >
 FibonacciHeapPriorityQueue< T , P >::~FibonacciHeapPriorityQueue()
 {
  std::vector< Node * > S;

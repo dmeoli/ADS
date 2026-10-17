@@ -8,12 +8,16 @@
  *
  * - The sum and the difference are Algorithms 4.3.1A and 4.3.1S, a carry
  *   or a borrow per digit, \f$ O( n ) \f$.
- * - The product is Algorithm 4.3.1M, a row per digit, \f$ O( m n ) \f$;
- *   above a few hundred digits it becomes a convolution of digits of 16
- *   bits by the FFT [see FFT.h], \f$ O( n \log n ) \f$ (4.3.3), exact as
- *   long as the coefficients of the convolution, below
- *   \f$ n \, 2^{32} \f$, stay well within the 53 bits of a double;
- *   multiplySchool() and multiplyFFT() are kept apart for the comparison.
+ * - The product is Algorithm 4.3.1M, a row per digit, \f$ O( m n ) \f$,
+ *   for the short factors; above kKaratsuba digits it is the product of
+ *   Karatsuba (4.3.3A), three products of halves instead of four,
+ *   \f$ O( n^{\log_2 3} ) \f$, the longer factor cut in pieces as long as
+ *   the shorter one when their lengths differ by more than twice; above
+ *   kFFT digits it is a convolution of digits of 16 bits by the FFT [see
+ *   FFT.h], \f$ O( n \log n ) \f$ (4.3.3), exact as long as the
+ *   coefficients of the convolution, below \f$ n \, 2^{32} \f$, stay well
+ *   within the 53 bits of a double. multiplySchool(), multiplyKaratsuba()
+ *   and multiplyFFT() are kept apart for the comparison.
  * - The quotient and the remainder are Algorithm 4.3.1D: the divisor is
  *   shifted until its leading digit has the top bit set, which makes the
  *   trial quotient \f$ \hat q \f$, taken from the two leading digits of
@@ -131,10 +135,13 @@ class BigInteger {
  static std::pair< BigInteger , BigInteger > divMod( const BigInteger & a ,
                                                      const BigInteger & b );
 
- /// the product by Algorithm M, and by the FFT
- /// \post multiplyFFT( a , b ) == multiplySchool( a , b ) (an audit)
+ /// the product by Algorithm M, by Karatsuba and by the FFT
+ /// \post multiplyKaratsuba( a , b ) and multiplyFFT( a , b ) equal
+ ///       multiplySchool( a , b ) (an audit)
  static BigInteger multiplySchool( const BigInteger & a ,
                                    const BigInteger & b );
+ static BigInteger multiplyKaratsuba( const BigInteger & a ,
+                                      const BigInteger & b );
  static BigInteger multiplyFFT( const BigInteger & a , const BigInteger & b );
 
  /// x^n by the binary method
@@ -148,7 +155,11 @@ class BigInteger {
 
  using Mag = std::vector< Limb >;
 
- static constexpr std::size_t kFFT = 256;  ///< limbs for the FFT product
+ // the thresholds, in digits, from the benchmark bench/bignum.cpp, where
+ // Karatsuba passes Algorithm M near 96 digits and the FFT passes
+ // Karatsuba between 256 and 512; provisional, as those of ADS::sort()
+ static constexpr std::size_t kKaratsuba = 80;   ///< limbs for Karatsuba
+ static constexpr std::size_t kFFT = 384;        ///< limbs for the FFT
 
  BigInteger( bool neg , Mag d );
 
@@ -157,6 +168,10 @@ class BigInteger {
  static Mag addMag( const Mag & a , const Mag & b );
  static Mag subMag( const Mag & a , const Mag & b );   ///< a >= b
  static Mag mulSchool( const Mag & a , const Mag & b );
+ static Mag mulKaratsuba( const Mag & a , const Mag & b );
+
+ /// r += x shifted by off digits
+ static void addShifted( Mag & r , const Mag & x , std::size_t off );
  static Mag mulFFT( const Mag & a , const Mag & b );
 
  /// a /= d, the remainder

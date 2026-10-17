@@ -2,18 +2,22 @@
 /*------------------------------- File FFT.h -------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The fast Fourier transform, beyond the book (4.3.3 and 4.6.4 of Knuth):
- * the discrete transform \f$ \hat a_k = \sum_j a_j \omega^{j k} \f$,
- * \f$ \omega = e^{-2 \pi i / n} \f$, of a vector of n complex numbers, in
- * \f$ O( n \log n ) \f$ operations instead of the \f$ O( n^2 ) \f$ of
- * the definition, dft(). fft() is the iterative form of Cooley and Tukey:
- * the items in the order of the reversed bits of their index, then
- * \f$ \log_2 n \f$ rounds of butterflies, the powers of \f$ \omega \f$
- * from a table computed once, which keeps the rounding error near that of
- * one product. The transform turns a convolution into a product item by
- * item; convolve() multiplies two polynomials so, and the product of
- * integers of many digits [see BigInteger.h] is a convolution of their
- * digits followed by the carries.
+ * The fast Fourier transform, beyond the book (4.3.3 and 4.6.4 of Knuth): the
+ * discrete transform \f$ \hat a_k = \sum_j a_j \omega^{j k} \f$, \f$ \omega =
+ * e^{-2 \pi i / n} \f$, of a vector of n complex numbers, in \f$ O( n \log n )
+ * \f$ operations instead of the \f$ O( n^2 ) \f$ of the definition, dft().
+ * fft() is the iterative form of Cooley and Tukey: the items in the order of
+ * the reversed bits of their index, then \f$ \log_2 n \f$ rounds of
+ * butterflies. The powers of \f$ \omega \f$ come from a table where each one
+ * is computed alone, which keeps the rounding error near that of one product;
+ * the table is laid out round by round, so that a round reads it in a row, and
+ * the table of the last size is kept per thread, since it costs n / 2 sines
+ * and cosines. The products are written by their formula, since the operator *
+ * of std::complex also handles the infinities and the NaNs at the price of a
+ * call. The transform turns a convolution into a product item by item;
+ * convolve() multiplies two polynomials so, and the product of integers of
+ * many digits [see BigInteger.h] is a convolution of their digits followed by
+ * the carries.
  *
  * The contracts [see Contract.h]: n is a power of 2 for fft(); the inverse
  * transform of the transform gives the vector back, a postcondition up to
