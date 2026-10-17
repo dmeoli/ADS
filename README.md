@@ -1,50 +1,56 @@
-# ADS — Algoritmi e Strutture Dati [![CI](https://github.com/dmeoli/ADS/actions/workflows/ci.yml/badge.svg)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
+# ADS: Algorithms and Data Structures in C++20 [![CI](https://github.com/dmeoli/ADS/actions/workflows/ci.yml/badge.svg)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
 
 ADS is a header-only C++20 library of the algorithms and the data
-structures of the book
+structures of the (Italian) textbook
 
 > A. Montresor, *Algoritmi e Strutture Dati*, 2025,
 > <https://algoritmicamente.it> (CC BY-NC 4.0)
 
 (a revision of A. A. Bertossi and A. Montresor, *Algoritmi e Strutture di
 Dati*, 3rd edition, Città Studi, 2014), in which each exercise of the book
-is a test. Each abstract data type is a C++20 concept, and its
-realizations follow the pseudocode and the names of the book (`isEmpty()`,
-`head()`, `next()`, `read()`, `push()`, `enqueue()`, and so on), so that the
-code can be read side by side with the text. Where the book leaves a choice
-open, or its pseudocode has a defect (a few figures, too, disagree with
-the formulae they illustrate), the header documents the choice made and
-the reason for it.
+is a test. It also has the structures and the algorithms that a course on
+the subject usually adds, and a few engineered ones meant for speed. An
+abstract data type is a C++20 concept whose realizations follow the
+pseudocode and the names of the book (`isEmpty()`, `head()`, `next()`,
+`read()`, `push()`, `enqueue()`, and so on), and hence the code can be read
+side by side with the text. Where the book leaves a choice open, or
+its pseudocode has a defect (a few figures, too, disagree with the formulae
+they illustrate), the header states the choice made and the reason for
+it.
 
 ## Layout
 
-The headers are grouped by abstract data type, one header per
-realization: `include/ADS/ADT.h` has the concepts of the book, while
-`sequence/`, `stack/`, `queue/`, `tree/`, `dictionary/`, `set/`,
-`priority/`, `mfset/` and `graph/` have the realizations of each type
-together with the algorithms on it (e.g., the operations on sets, the
-visits and the shortest paths of a graph). The other folders hold the
-algorithms grouped by technique or by problem: `search/` and `sort/` the
-searches and the sorts, `numeric/` the products of integers, polynomials
-and matrices, `string/` the algorithms on strings, `optimization/` the
-problems of optimization (knapsack, intervals), `geometry/` the convex
-hull, `backtrack/` the enumerations by backtrack, `complexity/` the
-problems of NP and their reductions, `intractable/` the techniques for the
-intractable problems, `memory/` and `concurrent/` the arena and the
-queues between threads, and `algorithm/` the rest. A header is included by
-its path (e.g., `#include "ADS/graph/ListGraph.h"`) and includes what it
-needs.
+Headers are grouped by abstract data type, one header per realization,
+and `include/ADS/ADT.h` has the concepts of the book. The folders of the
+types (`sequence/`, `stack/`, `queue/`, `tree/`, `dictionary/`, `set/`,
+`priority/`, `mfset/` and `graph/`) also hold the algorithms on them, e.g.,
+the operations on sets or the visits of a graph. The other folders group
+the algorithms by technique or by problem:
+
+- `search/` and `sort/`, the searches and the sorts;
+- `numeric/`, the products of integers, polynomials and matrices;
+- `string/`, the algorithms on strings;
+- `optimization/`, the problems of optimization (knapsack, intervals);
+- `geometry/`, the convex hull;
+- `backtrack/`, the enumerations by backtrack;
+- `complexity/`, the problems of NP and their reductions;
+- `intractable/`, the techniques for the intractable problems;
+- `memory/` and `concurrent/`, the arena and the queues between threads;
+- `algorithm/`, the rest.
+
+A header is included by its path (e.g., `#include "ADS/graph/ListGraph.h"`)
+and includes what it needs.
 
 ## Where each thing comes from
 
 Each header and each test cites the section, the example or the exercise
 of the book that it implements, and the tests are listed with their source
 in [`test/tests.txt`](test/tests.txt); the solutions of the exercises are
-in the tests, one function per exercise. Each solution is checked on the
-example of the book and on its edge cases and, where an enumeration is
-possible, on random instances against it. The text of the book is not
-reproduced, since its license does not allow it in a GPL-licensed
-repository; the code cites it instead.
+in the tests, one function per exercise. Each one is checked on the
+example of the book, on its edge cases and (where an enumeration is
+possible) on random instances against the enumeration. Since the license of the book
+does not allow its text in a GPL-licensed repository, the code cites it
+instead of reproducing it.
 
 | Chapter | Section | What | Header | Tests |
 |---|---|---|---|---|
@@ -143,9 +149,11 @@ repository; the code cites it instead.
 
 ## Beyond the book
 
-A few structures and algorithms that the book does not describe, but that
-a course on the subject usually covers, are written on the same classes
-and tested in [`test/beyond.cpp`](test/beyond.cpp):
+Several structures and algorithms that the book does not describe, but
+that a course on the subject usually covers (e.g., the realizations with
+cursors, the parenthesized lists of trees, the general schemes of the
+techniques), are written on the same classes and tested in
+[`test/beyond.cpp`](test/beyond.cpp).
 
 | What | Header | Test |
 |---|---|---|
@@ -177,7 +185,9 @@ and tested in [`test/beyond.cpp`](test/beyond.cpp):
 
 Beside the classes of the book, which follow its pseudocode, a few
 structures are written for speed, for the programs that need it (e.g., a
-heuristic search), and tested in [`test/engineered.cpp`](test/engineered.cpp):
+parallel heuristic search), and tested in
+[`test/engineered.cpp`](test/engineered.cpp), the concurrent ones also on
+real threads under ThreadSanitizer.
 
 | What | Header | Test |
 |---|---|---|
@@ -192,16 +202,18 @@ heuristic search), and tested in [`test/engineered.cpp`](test/engineered.cpp):
 ## Sorting
 
 Beside the sorts of the book, ADS has the classical ones that the book
-leaves out and the engineered ones of the libraries, tested in
-[`test/sorting.cpp`](test/sorting.cpp) on every permutation of up to 7
-items and on the patterns that defeat a sort (sorted, reversed, sawtooth,
-organ pipe, few distinct keys), and measured by
+leaves out and the engineered ones of the current libraries. They are
+tested in [`test/sorting.cpp`](test/sorting.cpp) on all the permutations of
+up to 7 items and on the patterns that usually defeat a sort (sorted,
+reversed, sawtooth, organ pipe, few distinct keys), and measured by
 [`bench/sort.cpp`](bench/sort.cpp) against `std::sort`, `std::stable_sort`
 and Boost.Sort (`make bench`, or CMake with `-DADS_BENCHMARKS=ON`).
-`ADS::sort()` and `ADS::stableSort()` ([`sort/Sort.h`](include/ADS/sort/Sort.h))
-choose among them by the type of the items and the order: the radix sort
-for numbers, the MSD radix sort for strings, pdqsort and Powersort for the
-rest.
+`ADS::sort()` and `ADS::stableSort()`
+([`sort/Sort.h`](include/ADS/sort/Sort.h)) choose among them by the type of
+the items and by the order, i.e., the radix sort for numbers, the MSD
+radix sort for strings, and pdqsort and Powersort for the rest. Their
+thresholds are still provisional, since the benchmark has not yet been run
+on an otherwise idle machine.
 
 | What | Header |
 |---|---|
@@ -217,25 +229,26 @@ rest.
 
 ## Contracts
 
-The specification of each operation is checked as a contract
-([`Contract.h`](include/ADS/Contract.h)): `ADS_PRE` for the preconditions
-of the book, `ADS_POST` for the postconditions, `ADS_INVARIANT` for the
-invariant of a structure, and `ADS_AUDIT` for a condition that costs more
-than the operation (e.g., that a vector is sorted before a binary search,
-or that a write left the other items as they were). The macro
-`ADS_CONTRACTS` chooses which are checked: 0 none, 1 the preconditions (the
-default), 2 also the postconditions, 3 also the invariants and the audits;
-a violated contract throws `ADS::contract_violation`, a `std::logic_error`
-that names the condition, the function and the place. The tests are built
-at the level 3, and each abstract data type also has its axioms checked on
-every realization (`contract_*.*-axioms`), e.g., `top( push( S , v ) ) = v`
-and `pop( push( S , v ) ) = S` for a stack.
+Each operation checks its specification as a contract
+([`Contract.h`](include/ADS/Contract.h)) of one of four kinds, i.e.,
+`ADS_PRE` for the preconditions of the book, `ADS_POST` for the
+postconditions, `ADS_INVARIANT` for the invariant of a structure, and
+`ADS_AUDIT` for a condition that costs more than the operation (e.g., that
+a vector is sorted before a binary search, or that a write left the other
+items as they were). The macro `ADS_CONTRACTS` chooses which of them are
+evaluated (0 none, 1 the preconditions, which is the default, 2 also the
+postconditions, 3 also the invariants and the audits). A violated contract
+throws `ADS::contract_violation`, a `std::logic_error` naming the
+condition, the function and the place. Tests are built at the level 3;
+furthermore, the axioms of each abstract data type are checked on all its
+realizations (`contract_*.*-axioms`), e.g., `top( push( S , v ) ) = v` and
+`pop( push( S , v ) ) = S` for a stack.
 
 ## Further reading
 
-The headers cite, besides the book, the textbooks and the papers where
-each structure or algorithm beyond the book comes from; the textbooks
-that cover the same ground are
+Besides the book, the headers cite the textbooks and the papers from which
+the structures and the algorithms beyond the book come; textbooks that
+cover much of the same ground are
 
 - T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, *Introduction to
   Algorithms*, 3rd ed., MIT Press, 2009;
@@ -254,7 +267,7 @@ that cover the same ground are
 
 ## Build and test
 
-With CMake:
+With CMake,
 
 ```sh
 cmake -S . -B build
@@ -262,14 +275,15 @@ cmake --build build
 ctest --test-dir build
 ```
 
-or with the makefile, which builds and runs the same tests:
+or with the makefile, which builds and runs the same tests,
 
 ```sh
 make test
 ```
 
-`ctest -R ch04.ex4.4` runs a single exercise; each test program also runs
-one test by name (`build/test/ch04 ex4.4`) and lists them (`-l`).
+A single exercise runs with `ctest -R ch04.ex4.4`, and a test program also
+runs one test by name (`build/test/ch04 ex4.4`) and lists its tests
+(`-l`).
 
 ## Use
 
