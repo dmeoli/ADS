@@ -31,6 +31,7 @@
 #include "ADS/complexity/Reductions.h"
 
 #include <algorithm>
+#include <limits>
 #include <random>
 #include <utility>
 #include <vector>
@@ -164,7 +165,8 @@ ADS_TEST( "reductions" )
  CHECK_THROWS( hamiltonToTsp( arc ) , contract_violation );
  CHECK_THROWS( complement( { { false , true } } ) , contract_violation );
  CHECK_THROWS( cycleToChain( { { false } , {} } ) , contract_violation );
- CHECK_THROWS( sortToHull( { 4000000000L } ) , contract_violation );
+ CHECK_THROWS( sortToHull( { std::numeric_limits< long >::max() } ) ,
+               contract_violation );
  std::mt19937 g( 2 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 1 + int( g() % 3 );

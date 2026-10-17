@@ -33,6 +33,7 @@
 #include "ADS/sort/ShellSort.h"
 
 #include <algorithm>
+#include <bit>
 #include <map>
 #include <numeric>
 #include <random>

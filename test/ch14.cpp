@@ -37,6 +37,7 @@
 #include "ADS/string/Huffman.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <map>
 #include <numeric>

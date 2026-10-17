@@ -245,10 +245,28 @@ inline Adjacency cycleToChain( const Adjacency & G )
  return( result );
  }
 
+namespace detail {
+
+/// floor( sqrt( LONG_MAX ) ), by bisection: the largest x with x^2 in a
+/// long, 3037000499 where long has 64 bits and 46340 where it has 32
+constexpr long longRoot( void )
+{
+ long lo = 0 , hi = std::numeric_limits< long >::max();
+ while( lo < hi ) {
+  const long m = lo + ( hi - lo ) / 2 + 1;
+  if( m <= std::numeric_limits< long >::max() / m ) lo = m; else hi = m - 1;
+  }
+ return( lo );
+ }
+
+inline constexpr long kLongRoot = longRoot();   // computed at compile time
+
+}  // end( namespace detail )
+
 inline std::vector< Point > sortToHull( const std::vector< long > & a )
 {
  ADS_PRE( std::all_of( a.begin() , a.end() , []( long x ) {
-  return( std::labs( x ) <= 3037000499L ); } ) );
+  return( ( x >= -detail::kLongRoot ) && ( x <= detail::kLongRoot ) ); } ) );
  const auto result = [ & ]( void ) -> std::vector< Point > {
   std::vector< Point > P;
   for( long x : a ) P.push_back( { x , x * x } );

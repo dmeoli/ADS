@@ -72,6 +72,7 @@
 
 #include <array>
 #include <cstddef>
+#include <limits>
 #include <numeric>
 #include <tuple>
 #include <utility>
