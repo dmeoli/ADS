@@ -1,7 +1,9 @@
 ###############################################################################
 #                                 ci.yml                                      #
 #                                                                             #
-# Builds and tests ADS with CMake and with the makefile, on Linux and macOS.  #
+# Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
+# makefile on Linux and macOS; on Linux also with clang, under ASan and       #
+# UBSan, and the queues between threads under ThreadSanitizer.                #
 ###############################################################################
 
 name: CI
@@ -16,21 +18,43 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest , macos-latest ]
+        os: [ ubuntu-latest , macos-latest , windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: CMake
+        shell: bash
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel
-          ctest --test-dir build --output-on-failure
+          cmake --build build --config Release --parallel
+          ctest --test-dir build -C Release --output-on-failure
       - name: install and find_package
+        shell: bash
         run: |
-          cmake --install build --prefix "$PWD/inst"
+          cmake --install build --config Release --prefix "$PWD/inst"
           test -f "$PWD/inst/include/ADS/sequence/List.h"
       - name: makefile
+        if: runner.os != 'Windows'
         run: make test
+
+  clang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: clang
+        run: make test CXX=clang++ BUILD=build-clang
+
+  threads:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ThreadSanitizer on the queues between threads
+        run: |
+          sudo sysctl vm.mmap_rnd_bits=28
+          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Isrc -Itest \
+              -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
+          ./tsan spsc-queue
+          ./tsan mpsc-inbox
 
   sanitizers:
     runs-on: ubuntu-latest

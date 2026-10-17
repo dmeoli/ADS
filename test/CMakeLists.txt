@@ -21,7 +21,8 @@ foreach (line IN LISTS lines)
         # the tests check all the contracts, invariants included
         target_compile_definitions(${program} PRIVATE ADS_CONTRACTS=3)
         target_compile_options(${program} PRIVATE
-                $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>)
+                $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>
+                $<$<CXX_COMPILER_ID:MSVC>:/W3 /bigobj /permissive->)
         add_test(NAME ${program}.registry
                  COMMAND ${CMAKE_COMMAND}
                          -DPROGRAM=$<TARGET_FILE:${program}>
