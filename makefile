@@ -7,7 +7,7 @@
 #                                                                             #
 #   make             builds the tests                                         #
 #   make test        runs them                                                #
-#   make install     copies the headers in $(PREFIX)/include/ADS              #
+#   make install     copies include/ADS and src/ADS in $(PREFIX)/include/ADS #
 ###############################################################################
 
 CXX      ?= g++
@@ -15,8 +15,9 @@ CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra
 BUILD    ?= build-make
 PREFIX   ?= /usr/local
 
-INC      = -Iinclude -Itest
-HEADERS  = $(shell find include/ADS -name '*.h') test/ADSTest.h
+INC      = -Iinclude -Isrc -Itest -DADS_CONTRACTS=3
+HEADERS  = $(shell find include/ADS src/ADS -name '*.h' -o -name '*.tpp') \
+           test/ADSTest.h
 PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
 BINS     = $(addprefix $(BUILD)/,$(PROGRAMS))
 
@@ -46,7 +47,7 @@ test: $(BINS)
 
 install:
 	mkdir -p $(DESTDIR)$(PREFIX)/include
-	cp -R include/ADS $(DESTDIR)$(PREFIX)/include/
+	cp -R include/ADS src/ADS $(DESTDIR)$(PREFIX)/include/
 
 clean:
 	rm -rf $(BUILD)

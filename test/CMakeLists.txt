@@ -16,6 +16,8 @@ foreach (line IN LISTS lines)
         list(APPEND programs ${program})
         add_executable(${program} ${program}.cpp)
         target_link_libraries(${program} PRIVATE ADS::ADS)
+        # the tests check all the contracts, invariants included
+        target_compile_definitions(${program} PRIVATE ADS_CONTRACTS=3)
         target_compile_options(${program} PRIVATE
                 $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>)
         add_test(NAME ${program}.registry

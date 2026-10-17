@@ -10,6 +10,12 @@
  * sentinel, which is therefore what finished() looks for. Every operation
  * takes O( 1 ) time, the list \f$ \Theta( n ) \f$ space.
  *
+ * The contracts [see Contract.h]: a position is a cell of this list, and
+ * read(), write() and remove() need one that holds an item, i.e., not the
+ * sentinel; the invariant is that each cell is the predecessor of its
+ * successor, which also makes the walk from the sentinel come back to it.
+ * The operations are defined in List.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  *
@@ -30,6 +36,8 @@
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+#include "ADS/Contract.h"
 
 #include <initializer_list>
 #include <utility>
@@ -63,92 +71,72 @@ class List {
  using Pos = Cell *;   ///< a position is the address of a cell
 
 /*--------------------------------------------------------------------------*/
- /// the empty list: the sentinel alone, its own predecessor and successor
 
- List( void ) : f_sentinel( new Cell{ nullptr , nullptr , T() } ) {
-  f_sentinel->pred = f_sentinel;
-  f_sentinel->succ = f_sentinel;
-  }
+ /// the empty list: the sentinel alone, its own predecessor and successor
+ List( void );
 
  /// the list of the given items, in their order
- List( std::initializer_list< T > items ) : List() {
-  for( const auto & v : items )
-   insert( next( tail() ) , v );
-  }
+ List( std::initializer_list< T > items );
 
- List( const List & other ) : List() {
-  for( Pos p = other.head() ; ! other.finished( p ) ; p = other.next( p ) )
-   insert( next( tail() ) , other.read( p ) );
-  }
+ List( const List & other );
 
- List( List && other ) noexcept : List() { swap( other ); }
+ List( List && other ) noexcept;
 
- List & operator=( List other ) noexcept {
-  swap( other );
-  return( *this );
-  }
+ List & operator=( List other ) noexcept;
 
- ~List() {
-  while( ! isEmpty() )
-   remove( head() );
-  delete f_sentinel;
-  }
+ ~List();
 
- void swap( List & other ) noexcept {
-  std::swap( f_sentinel , other.f_sentinel );
-  }
+ void swap( List & other ) noexcept;
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- THE SEQUENCE ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
  /// true if the list is empty, i.e., the sentinel is its own successor
- [[nodiscard]] bool isEmpty( void ) const {
-  return( f_sentinel->succ == f_sentinel );
-  }
+ [[nodiscard]] bool isEmpty( void ) const;
 
  /// true if p is \f$ pos_{-1} \f$ or \f$ pos_n \f$, i.e., the sentinel
- [[nodiscard]] bool finished( Pos p ) const { return( p == f_sentinel ); }
+ [[nodiscard]] bool finished( Pos p ) const;
 
  /// the position of the first item
- [[nodiscard]] Pos head( void ) const { return( f_sentinel->succ ); }
+ [[nodiscard]] Pos head( void ) const;
 
  /// the position of the last item
- [[nodiscard]] Pos tail( void ) const { return( f_sentinel->pred ); }
+ [[nodiscard]] Pos tail( void ) const;
 
  /// the position of the item that follows p
- [[nodiscard]] Pos next( Pos p ) const { return( p->succ ); }
+ /// \pre p is a position of this list
+ [[nodiscard]] Pos next( Pos p ) const;
 
  /// the position of the item that precedes p
- [[nodiscard]] Pos prev( Pos p ) const { return( p->pred ); }
+ /// \pre p is a position of this list
+ [[nodiscard]] Pos prev( Pos p ) const;
 
  /// puts v in position p, i.e., before the item in p, and returns its
  /// position
- Pos insert( Pos p , const T & v ) {
-  Pos t = new Cell{ p->pred , p , v };
-  p->pred->succ = t;
-  p->pred = t;
-  return( t );
-  }
+ /// \pre p is a position of this list
+ /// \post the list is not empty, and the result precedes p
+ Pos insert( Pos p , const T & v );
 
  /// removes the item in position p, returning the position of its
  /// successor, which is now in its place
- Pos remove( Pos p ) {
-  p->pred->succ = p->succ;
-  p->succ->pred = p->pred;
-  Pos t = p->succ;
-  delete p;
-  return( t );
-  }
+ /// \pre p holds an item
+ /// \post the result follows the old predecessor of p
+ Pos remove( Pos p );
 
  /// the item in position p
- [[nodiscard]] const T & read( Pos p ) const { return( p->value ); }
+ /// \pre p holds an item
+ [[nodiscard]] const T & read( Pos p ) const;
 
  /// writes v in position p
- void write( Pos p , const T & v ) { p->value = v; }
+ /// \pre p holds an item
+ void write( Pos p , const T & v );
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// each cell is the predecessor of its successor, O( n )
+ [[nodiscard]] bool linked( void ) const;
 
  Cell * f_sentinel;   ///< the sentinel, i.e., the list
 
@@ -157,6 +145,12 @@ class List {
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/sequence/List.tpp"
 
 /*--------------------------------------------------------------------------*/
 

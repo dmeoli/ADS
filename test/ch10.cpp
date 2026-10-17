@@ -158,8 +158,8 @@ ADS_TEST( "spec.HeapPriorityQueue" )
  CHECK_THROWS( q.deleteMin() , std::logic_error );
  auto h = q.insert( 7 , 5 );
  q.insert( 8 , 6 );
- CHECK_THROWS( q.insert( 9 , 1 ) , std::overflow_error );
- CHECK_THROWS( q.decrease( h , 6 ) , std::invalid_argument );
+ CHECK_THROWS( q.insert( 9 , 1 ) , contract_violation );
+ CHECK_THROWS( q.decrease( h , 6 ) , contract_violation );
  CHECK( q.min() == 7 && q.minPriority() == 5 && q.size() == 2 );
  }
 

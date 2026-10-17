@@ -392,3 +392,7 @@ beyond  even-odd-strings    stringhe pari e dispari
 beyond  binary-tree-exercises esercizi su alberi binari
 beyond  tree-exercises      esercizi su alberi ordinati
 beyond  array-exercises     esercizi su vettori
+
+# the contracts of the book, checked as tests
+contract  list                SEQUENCE, sezioni 3.2 e 4.1
+contract  heap-priority-queue PRIORITYQUEUE, sezione 10.1

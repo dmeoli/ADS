@@ -16,6 +16,13 @@
  * its place, kept by swap(), and so the handle finds it (exercise 10.6
  * for d > 2).
  *
+ * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
+ * need a queue that is not empty, insert() one that is not full, and
+ * decrease() a handle of an item of this queue and a priority not larger
+ * than its own; the invariant, checked at level 3 in O( n ) time, is the
+ * order of the heap together with the places that the items remember. The
+ * operations are defined in HeapPriorityQueue.tpp.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  * \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the
@@ -23,7 +30,6 @@
  * \see D. B. Johnson, Priority queues with update and finding minimum
  *      spanning trees, Information Processing Letters 4(3), 53-57, 1975,
  *      doi:10.1016/0020-0190(75)90001-0
-
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -43,12 +49,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
-#include <cstddef>
 #include <memory>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -82,72 +87,41 @@ class HeapPriorityQueue {
  using Handle = PriorityItem *;   ///< what insert() gives
 
  /// PriorityQueue( n ): the empty queue of capacity n
- explicit HeapPriorityQueue( int n ) : f_capacity( n ) {
-  if( n < 0 )
-   throw( std::invalid_argument( "ADS::HeapPriorityQueue: n < 0" ) );
-  f_H.reserve( n );
-  }
+ /// \pre n >= 0
+ explicit HeapPriorityQueue( int n );
 
- [[nodiscard]] bool isEmpty( void ) const { return( f_H.empty() ); }
+ [[nodiscard]] bool isEmpty( void ) const;
 
- [[nodiscard]] int size( void ) const { return( int( f_H.size() ) ); }
+ [[nodiscard]] int size( void ) const;
 
- [[nodiscard]] int capacity( void ) const { return( f_capacity ); }
+ [[nodiscard]] int capacity( void ) const;
 
- [[nodiscard]] const T & min( void ) const {
-  if( f_H.empty() )
-   throw( std::logic_error( "ADS::HeapPriorityQueue::min: empty" ) );
-  return( f_H[ 0 ]->value );
-  }
+ /// the item of smallest priority
+ /// \pre the queue is not empty
+ [[nodiscard]] const T & min( void ) const;
 
  /// the smallest priority
- [[nodiscard]] const P & minPriority( void ) const {
-  if( f_H.empty() )
-   throw( std::logic_error( "ADS::HeapPriorityQueue::min: empty" ) );
-  return( f_H[ 0 ]->priority );
-  }
+ /// \pre the queue is not empty
+ [[nodiscard]] const P & minPriority( void ) const;
 
  /// the last leaf goes to the root and down, O( d log_d n ) time; the
  /// handle of the item removed is no longer valid
- T deleteMin( void ) {
-  if( f_H.empty() )
-   throw( std::logic_error( "ADS::HeapPriorityQueue::deleteMin: empty" ) );
-  const int dim = size() - 1;
-  swap( 0 , dim );
-  minHeapRestore( 0 , dim );
-  T v = std::move( f_H.back()->value );
-  f_H.pop_back();
-  return( v );
-  }
+ /// \pre the queue is not empty
+ /// \post one item less, and none of smaller priority than the one removed
+ T deleteMin( void );
 
  /// a new leaf goes up, O( log_d n ) time
- Handle insert( const T & x , const P & p ) {
-  if( size() >= f_capacity )
-   throw( std::overflow_error( "ADS::HeapPriorityQueue::insert: full" ) );
-  const int i = size();
-  f_H.push_back( std::make_unique< PriorityItem >(
-                                           PriorityItem{ p , x , i } ) );
-  Handle h = f_H.back().get();
-  up( i );
-  return( h );
-  }
+ /// \pre the queue is not full
+ /// \post one item more, the handle at its place
+ Handle insert( const T & x , const P & p );
 
- /// lowers the priority of y to p, which must not be larger
- void decrease( Handle y , const P & p ) {
-  if( y->priority < p )
-   throw( std::invalid_argument(
-                      "ADS::HeapPriorityQueue::decrease: larger priority" ) );
-  y->priority = p;
-  up( y->pos );
-  }
+ /// lowers the priority of y to p
+ /// \pre y is an item of this queue and p is not larger than its priority
+ /// \post y has priority p, at its place
+ void decrease( Handle y , const P & p );
 
- /// the heap: the items, by their place
- [[nodiscard]] std::vector< P > priorities( void ) const {
-  std::vector< P > out;
-  for( const auto & h : f_H )
-   out.push_back( h->priority );
-  return( out );
-  }
+ /// the heap: the priorities, by their place
+ [[nodiscard]] std::vector< P > priorities( void ) const;
 
  /// the parent of the place i > 0
  static int parent( int i ) { return( ( i - 1 ) / D ); }
@@ -159,43 +133,34 @@ class HeapPriorityQueue {
  private:
 
  /// swaps the places i and j, keeping the positions of the items
- void swap( int i , int j ) {
-  std::swap( f_H[ i ] , f_H[ j ] );
-  f_H[ i ]->pos = i;
-  f_H[ j ]->pos = j;
-  }
+ void swap( int i , int j );
 
- void up( int i ) {
-  while( ( i > 0 ) &&
-         ( f_H[ i ]->priority < f_H[ parent( i ) ]->priority ) ) {
-   swap( i , parent( i ) );
-   i = parent( i );
-   }
-  }
+ void up( int i );
 
  /// the subtrees of the children of i are heaps in [ 0 , dim ): the item in
  /// i goes down, swapped with its smallest child
- void minHeapRestore( int i , int dim ) {
-  for( ; ; ) {
-   int min = i;
-   for( int j = 0 ; j < D ; ++j ) {
-    const int c = child( i , j );
-    if( ( c < dim ) && ( f_H[ c ]->priority < f_H[ min ]->priority ) )
-     min = c;
-    }
-   if( min == i )
-    return;
-   swap( i , min );
-   i = min;
-   }
-  }
+ void minHeapRestore( int i , int dim );
+
+ /// y is the item in its own place
+ [[nodiscard]] bool owns( Handle y ) const;
+
+ /// no item is smaller than its parent, and each knows its place, O( n )
+ [[nodiscard]] bool isHeap( void ) const;
 
  int f_capacity;                                    ///< the capacity
  std::vector< std::unique_ptr< PriorityItem > > f_H; ///< the heap
 
  };  // end( class HeapPriorityQueue )
 
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/priority/HeapPriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 
