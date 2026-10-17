@@ -18,6 +18,11 @@ namespace ADS {
 
 namespace detail {
 
+/// the order is the natural one of T
+template< class T , class C >
+inline constexpr bool naturalOrder =
+ std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > >;
+
 /// heapsort of A[ lo .. hi )
 template< class T , class C >
 void heapRange( std::vector< T > & A , std::size_t lo , std::size_t hi ,
@@ -124,6 +129,117 @@ std::pair< std::size_t , bool > partitionRight( std::vector< T > & A ,
  return( std::pair( p , already ) );
  }
 
+/// partitionRight() by blocks (BlockQuicksort): the items of a block of
+/// 64 on the left that belong to the right, and those of a block on the
+/// right that belong to the left, are first collected as offsets, with an
+/// increment and no branch per comparison, and then swapped in pairs, so
+/// that the comparisons cause no mispredicted branch; for the arithmetic
+/// types with their natural order, whose comparison is a single instruction
+template< class T , class C >
+std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
+                                                      std::size_t lo ,
+                                                      std::size_t hi ,
+                                                      C & less )
+{
+ constexpr std::ptrdiff_t B = 64;
+ const T pivot = A[ lo ];
+ std::ptrdiff_t l = std::ptrdiff_t( lo ) , r = std::ptrdiff_t( hi );
+ do ++l; while( ( l < r ) && less( A[ l ] , pivot ) );
+ do --r; while( ( r > l ) && ! less( A[ r ] , pivot ) );
+ const bool already = l >= r;
+ if( ! already ) {                          // A[ l ] >= pivot > A[ r ]
+  std::swap( A[ l++ ] , A[ r-- ] );         // [ l , r ] unknown
+  unsigned char offL[ B ] , offR[ B ];
+  std::ptrdiff_t numL = 0 , numR = 0 , startL = 0 , startR = 0;
+  auto swaps = [ & ]( void ) {             // a cycle: 2 num + 1 moves
+   const std::ptrdiff_t num = std::min( numL , numR );
+   if( num > 0 ) {
+    auto L = [ & ]( std::ptrdiff_t k ) -> T & {
+     return( A[ l + offL[ startL + k ] ] ); };
+    auto R = [ & ]( std::ptrdiff_t k ) -> T & {
+     return( A[ r - offR[ startR + k ] ] ); };
+    T t = std::move( L( 0 ) );
+    L( 0 ) = std::move( R( 0 ) );
+    for( std::ptrdiff_t k = 1 ; k < num ; ++k ) {
+     R( k - 1 ) = std::move( L( k ) );
+     L( k ) = std::move( R( k ) );
+     }
+    R( num - 1 ) = std::move( t );
+    }
+   numL -= num;
+   numR -= num;
+   startL += num;
+   startR += num;
+   };
+  while( r - l + 1 > 2 * B ) {
+   if( numL == 0 ) {                        // the misplaced on the left
+    startL = 0;
+    for( std::ptrdiff_t i = 0 ; i < B ; ++i ) {
+     offL[ numL ] = static_cast< unsigned char >( i );
+     numL += ! less( A[ l + i ] , pivot );
+     }
+    }
+   if( numR == 0 ) {                        // the misplaced on the right
+    startR = 0;
+    for( std::ptrdiff_t i = 0 ; i < B ; ++i ) {
+     offR[ numR ] = static_cast< unsigned char >( i );
+     numR += less( A[ r - i ] , pivot );
+     }
+    }
+   swaps();
+   if( numL == 0 ) l += B;
+   if( numR == 0 ) r -= B;
+   }
+  const std::ptrdiff_t unknown = r - l + 1; // at most 2 B: the last blocks
+  std::ptrdiff_t ls , rs;
+  if( ( numL == 0 ) && ( numR == 0 ) ) {
+   ls = unknown / 2;
+   rs = unknown - ls;
+   }
+  else if( numL == 0 ) {
+   ls = unknown - B;
+   rs = B;
+   }
+  else {
+   ls = B;
+   rs = unknown - B;
+   }
+  if( numL == 0 ) {
+   startL = 0;
+   for( std::ptrdiff_t i = 0 ; i < ls ; ++i ) {
+    offL[ numL ] = static_cast< unsigned char >( i );
+    numL += ! less( A[ l + i ] , pivot );
+    }
+   }
+  if( numR == 0 ) {
+   startR = 0;
+   for( std::ptrdiff_t i = 0 ; i < rs ; ++i ) {
+    offR[ numR ] = static_cast< unsigned char >( i );
+    numR += less( A[ r - i ] , pivot );
+    }
+   }
+  swaps();
+  if( numL == 0 ) l += ls;
+  if( numR == 0 ) r -= rs;
+  if( numL > 0 ) {                          // the misplaced left to the
+   while( numL > 0 ) {                      // end of the block, the last
+    --numL;                                 // offset first
+    std::swap( A[ l + offL[ startL + numL ] ] , A[ r-- ] );
+    }
+   l = r + 1;
+   }
+  else
+   while( numR > 0 ) {                      // the misplaced right to the
+    --numR;                                 // start of the block
+    std::swap( A[ r - offR[ startR + numR ] ] , A[ l++ ] );
+    }
+  }
+ const std::size_t p = std::size_t( l - 1 );   // A[ l ] is the first >= pivot
+ A[ lo ] = std::move( A[ p ] );
+ A[ p ] = pivot;
+ return( std::pair( p , already ) );
+ }
+
 /// the partition of A[ lo .. hi ) around the pivot A[ lo ], the equal
 /// keys on the left; its place
 template< class T , class C >
@@ -152,7 +268,16 @@ void pdq( std::vector< T > & A , std::size_t lo , std::size_t hi ,
  for( ; ; ) {
   const std::size_t n = hi - lo;
   if( n < 24 ) {
-   insertionSort( A , lo , hi , less );
+   if( leftmost )
+    insertionSort( A , lo , hi , less );
+   else                                     // A[ lo - 1 ] is a sentinel
+    for( std::size_t i = lo + 1 ; i < hi ; ++i ) {
+     T x = std::move( A[ i ] );
+     std::size_t j = i;
+     for( ; less( x , A[ j - 1 ] ) ; --j )
+      A[ j ] = std::move( A[ j - 1 ] );
+     A[ j ] = std::move( x );
+     }
    return;
    }
   const std::size_t s = n / 2;              // the pivot to A[ lo ]
@@ -169,7 +294,12 @@ void pdq( std::vector< T > & A , std::size_t lo , std::size_t hi ,
    lo = partitionLeft( A , lo , hi , less ) + 1;   // a run of equals
    continue;
    }
-  const auto [ p , already ] = partitionRight( A , lo , hi , less );
+  std::pair< std::size_t , bool > part;
+  if constexpr( std::is_arithmetic_v< T > && naturalOrder< T , C > )
+   part = partitionRightBlocks( A , lo , hi , less );
+  else
+   part = partitionRight( A , lo , hi , less );
+  const auto [ p , already ] = part;
   const std::size_t l = p - lo , r = hi - p - 1;
   if( ( l < n / 8 ) || ( r < n / 8 ) ) {    // too unbalanced
    if( --bad == 0 ) {
@@ -179,10 +309,22 @@ void pdq( std::vector< T > & A , std::size_t lo , std::size_t hi ,
    if( l >= 24 ) {                          // break the pattern
     std::swap( A[ lo ] , A[ lo + l / 4 ] );
     std::swap( A[ p - 1 ] , A[ p - l / 4 ] );
+    if( l > 128 ) {                         // and the ninther's samples
+     std::swap( A[ lo + 1 ] , A[ lo + l / 4 + 1 ] );
+     std::swap( A[ lo + 2 ] , A[ lo + l / 4 + 2 ] );
+     std::swap( A[ p - 2 ] , A[ p - l / 4 - 1 ] );
+     std::swap( A[ p - 3 ] , A[ p - l / 4 - 2 ] );
+     }
     }
    if( r >= 24 ) {
     std::swap( A[ p + 1 ] , A[ p + 1 + r / 4 ] );
     std::swap( A[ hi - 1 ] , A[ hi - r / 4 ] );
+    if( r > 128 ) {
+     std::swap( A[ p + 2 ] , A[ p + 2 + r / 4 ] );
+     std::swap( A[ p + 3 ] , A[ p + 3 + r / 4 ] );
+     std::swap( A[ hi - 2 ] , A[ hi - 1 - r / 4 ] );
+     std::swap( A[ hi - 3 ] , A[ hi - 2 - r / 4 ] );
+     }
     }
    }
   else if( already && partialInsertion( A , lo , p , less ) &&

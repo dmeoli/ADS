@@ -19,7 +19,11 @@
  *   that puts the equals on its left and skips them, so that k distinct
  *   keys take \f$ O( n \log k ) \f$; a partition too unbalanced (one side
  *   below n / 8) swaps a few items to break the pattern, and too many of
- *   them fall back to heapsort;
+ *   them fall back to heapsort. On the arithmetic types with their natural
+ *   order the partition goes by blocks, as in the BlockQuicksort of
+ *   Edelkamp and Weiss: the items to swap are first collected, 64 at a
+ *   time, as offsets by an increment with no branch, and then moved along
+ *   a cycle, so that no comparison causes a mispredicted branch;
  * - dualPivotQuickSort() of Yaroslavskiy (the sort of the primitive types
  *   of Java 7): two pivots p <= q, the 2nd and the 4th of five equally
  *   spaced items, split the part into three, smaller than p, between and
@@ -41,6 +45,9 @@
  *      Software: Practice and Experience 27(8), 983-993, 1997
  * \see O. R. L. Peters, Pattern-defeating quicksort, arXiv:2106.05123,
  *      2021
+ * \see S. Edelkamp, A. Weiss, BlockQuicksort: avoiding branch
+ *      mispredictions in quicksort, ACM Journal of Experimental
+ *      Algorithmics 24, article 1.4, 2019, doi:10.1145/3274660
  * \see V. Yaroslavskiy, Dual-pivot quicksort, 2009
  * \see S. Wild, M. E. Nebel, Average case analysis of Java 7's dual pivot
  *      quicksort, Proceedings of ESA 2012, LNCS 7501, 825-836, 2012
@@ -73,6 +80,7 @@
 #include <bit>
 #include <cstddef>
 #include <functional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 

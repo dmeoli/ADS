@@ -18,15 +18,6 @@ namespace ADS {
 
 namespace detail {
 
-/// the order is the natural one of T
-template< class T , class C >
-inline constexpr bool naturalOrder =
- std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > >;
-
-}  // end( namespace detail )
-
-namespace detail {
-
 /// true if A is already sorted, or strictly decreasing and then reversed:
 /// one pass that stops at the first pair out of order, so that it costs
 /// next to nothing on an input in no order
