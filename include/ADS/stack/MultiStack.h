@@ -106,7 +106,11 @@ class MultiStack {
 
  /// the items of the stack i, the top first
  /// \\pre 0 <= i < stacks()
- [[nodiscard]] std::ranges::subrange< const_iterator > stack( int i ) const;
+ [[nodiscard]] std::ranges::subrange< const_iterator > stack( int i ) const {
+  ADS_PRE( ( i >= 0 ) && ( i < stacks() ) );
+  return( std::ranges::subrange( const_iterator( &f_C , f_top[ i ] ) ,
+                                 const_iterator( &f_C , -1 ) ) );
+  }
 
  private:
 
