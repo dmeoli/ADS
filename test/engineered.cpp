@@ -249,7 +249,7 @@ ADS_TEST( "spsc-queue" )
   for( int i = 0 ; i < n ; )
    if( Q.push( i ) ) ++i;
   } );
- long sum = 0;
+ long long sum = 0;
  bool ordered = true;
  for( int next = 0 ; next < n ; )
   if( auto v = Q.pop() ) {
@@ -258,7 +258,8 @@ ADS_TEST( "spsc-queue" )
    ++next;
    }
  producer.join();
- CHECK( ordered && sum == long( n ) * ( n - 1 ) / 2 && Q.size() == 0 );
+ CHECK( ordered && sum == ( long long )( n ) * ( n - 1 ) / 2 &&
+        Q.size() == 0 );
  SPSCQueue< int > F( 2 );
  CHECK( F.push( 1 ) && F.push( 2 ) && ! F.push( 3 ) && F.size() == 2 );
  }

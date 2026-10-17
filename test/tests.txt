@@ -436,6 +436,27 @@ sorting  run-sorts           Timsort e Powersort
 sorting  radix-sorts         radix LSD, MSD, American flag, bucket
 sorting  dispatch            sort() e stableSort() che scelgono
 
+# the structures and the algorithms of Knuth's TAOCP, beyond the book
+taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme
+taocp  balanced-trees        AVL, B-tree, skip list, treap, splay
+taocp  tries                 trie e Patricia
+taocp  knuth-hashing         hashing coalescente e di Brent
+taocp  bloom-filter          filtro di Bloom
+taocp  knuth-sorts           inserzioni, radix exchange, torneo, Ford-Johnson
+taocp  external-sort         replacement selection e merge polifase
+taocp  threaded-tree         albero infilato
+taocp  allocators            boundary tag e buddy system
+taocp  cell-heap             garbage collector, Deutsch-Schorr-Waite
+taocp  sparse-matrix         liste ortogonali e passo di pivot
+taocp  bitwise               trucchi sui bit, volume 4A
+taocp  generation            tuple, permutazioni, combinazioni, partizioni
+taocp  random-numbers        generatori congruenziali e test statistici
+taocp  fft                   trasformata veloce di Fourier
+taocp  big-integer           interi di lunghezza qualsiasi, Algorithm D
+taocp  rational              razionali con le riduzioni di Henrici
+taocp  dancing-links         exact cover, Algorithm X
+taocp  sat-solvers           DPLL e CDCL
+
 # the engineered structures, beyond the book
 engineered  bucket-queue         coda a bucket su due livelli
 engineered  dary-heap            heap d-ario di elementi semplici

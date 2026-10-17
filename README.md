@@ -181,6 +181,39 @@ techniques), are written on the same classes and tested in
 | Knuth's strong failure function, Hibbard's gaps, sentinels, minimum and maximum together | [`string/StringMatching.h`](include/ADS/string/StringMatching.h), [`sort/`](include/ADS/sort), [`search/Minimum.h`](include/ADS/search/Minimum.h) | `beyond.kmp-strong`, `beyond.slide-sorts` |
 | greedy and backtracking knapsack, eight puzzle by breadth and depth | [`intractable/BranchAndBound.h`](include/ADS/intractable/BranchAndBound.h), [`intractable/FifteenPuzzle.h`](include/ADS/intractable/FifteenPuzzle.h) | `beyond.knapsack-heuristics`, `beyond.eight-puzzle` |
 
+## From The Art of Computer Programming
+
+The structures and the algorithms of Knuth's *The Art of Computer
+Programming* that the book leaves out are in ADS too, from volumes 1, 2, 3,
+4A and 4B, with a few relatives from the later literature; they are tested
+in [`test/taocp.cpp`](test/taocp.cpp) against the standard library, against
+a slower method that is obviously correct (the definition of the
+transform, the enumeration of the subsets, the backtrack of chapter 16)
+and against the counts and the bounds of their analysis.
+
+| What | Header | Test |
+|---|---|---|
+| Fibonacci search and uniform binary search (6.2.1) | [`search/KnuthSearches.h`](include/ADS/search/KnuthSearches.h) | `taocp.knuth-searches` |
+| AVL tree (6.2.3) and B-tree with removal (6.2.4) | [`tree/AVLTree.h`](include/ADS/tree/AVLTree.h), [`tree/BTree.h`](include/ADS/tree/BTree.h) | `taocp.balanced-trees` |
+| skip list, treap, splay tree | [`dictionary/SkipList.h`](include/ADS/dictionary/SkipList.h), [`tree/Treap.h`](include/ADS/tree/Treap.h), [`tree/SplayTree.h`](include/ADS/tree/SplayTree.h) | `taocp.balanced-trees` |
+| trie and compact trie (Patricia) (6.3) | [`dictionary/Trie.h`](include/ADS/dictionary/Trie.h) | `taocp.tries` |
+| coalesced hashing with a cellar and Brent's double hashing (6.4) | [`dictionary/KnuthHashing.h`](include/ADS/dictionary/KnuthHashing.h) | `taocp.knuth-hashing` |
+| Bloom filter | [`set/BloomFilter.h`](include/ADS/set/BloomFilter.h) | `taocp.bloom-filter` |
+| binary and list insertion, address calculation, radix exchange, tournament sort, Ford-Johnson merge insertion (5.2, 5.3.1) | [`sort/KnuthSorts.h`](include/ADS/sort/KnuthSorts.h) | `taocp.knuth-sorts` |
+| replacement selection and polyphase merge (5.4) | [`sort/ExternalSort.h`](include/ADS/sort/ExternalSort.h) | `taocp.external-sort` |
+| threaded binary tree (2.3.1) | [`tree/ThreadedTree.h`](include/ADS/tree/ThreadedTree.h) | `taocp.threaded-tree` |
+| boundary-tag allocator with first, best and next fit, buddy system (2.5) | [`memory/Allocators.h`](include/ADS/memory/Allocators.h) | `taocp.allocators` |
+| heap of cells with the marking of Deutsch, Schorr and Waite (2.3.5) | [`memory/CellHeap.h`](include/ADS/memory/CellHeap.h) | `taocp.cell-heap` |
+| sparse matrix on orthogonal lists, pivot step (2.2.6) | [`numeric/SparseMatrix.h`](include/ADS/numeric/SparseMatrix.h) | `taocp.sparse-matrix` |
+| broadword tricks: sideways sum, ruler, Gray code, Gosper, Morton code (7.1.3) | [`combinatorial/Bitwise.h`](include/ADS/combinatorial/Bitwise.h) | `taocp.bitwise` |
+| tuples, permutations, combinations, partitions, nested parentheses, with the Gray orders (7.2.1) | [`combinatorial/Generation.h`](include/ADS/combinatorial/Generation.h) | `taocp.generation` |
+| linear congruential generators, chi-square, Kolmogorov-Smirnov, serial and spectral tests, shuffling and sampling (3.2-3.4) | [`numeric/RandomNumbers.h`](include/ADS/numeric/RandomNumbers.h) | `taocp.random-numbers` |
+| fast Fourier transform (4.3.3, 4.6.4) | [`numeric/FFT.h`](include/ADS/numeric/FFT.h) | `taocp.fft` |
+| integers of any length, with Algorithm D and the product by the FFT (4.3, 4.4) | [`numeric/BigInteger.h`](include/ADS/numeric/BigInteger.h) | `taocp.big-integer` |
+| exact rationals (4.5.1) | [`numeric/Rational.h`](include/ADS/numeric/Rational.h) | `taocp.rational` |
+| exact cover by dancing links, Algorithm X (7.2.2.1) | [`backtrack/DancingLinks.h`](include/ADS/backtrack/DancingLinks.h) | `taocp.dancing-links` |
+| SAT by DPLL and by conflict-driven clause learning (7.2.2.2) | [`backtrack/SatSolvers.h`](include/ADS/backtrack/SatSolvers.h) | `taocp.sat-solvers` |
+
 ## Engineered structures
 
 Beside the classes of the book, which follow its pseudocode, a few
@@ -258,8 +291,9 @@ cover much of the same ground are
   1998;
 - A. V. Aho, J. E. Hopcroft, J. D. Ullman, *Data Structures and
   Algorithms*, Addison-Wesley, 1983;
-- D. E. Knuth, *The Art of Computer Programming*, vol. 1 (3rd ed., 1997)
-  and vol. 3 (2nd ed., 1998), Addison-Wesley;
+- D. E. Knuth, *The Art of Computer Programming*, vol. 1 (3rd ed., 1997),
+  vol. 2 (3rd ed., 1998), vol. 3 (2nd ed., 1998), vol. 4A (2011) and
+  vol. 4B (2022), Addison-Wesley;
 - M. Cadoli, M. Lenzerini, P. Naggar, A. Schaerf, *Fondamenti della
   progettazione dei programmi: principi, tecniche e loro applicazioni in
   C++*, CittàStudi, 1997, for the specification of the abstract data types

@@ -22,7 +22,7 @@ foreach (line IN LISTS lines)
         target_compile_definitions(${program} PRIVATE ADS_CONTRACTS=3)
         target_compile_options(${program} PRIVATE
                 $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>
-                $<$<CXX_COMPILER_ID:MSVC>:/W3 /bigobj /permissive->)
+                $<$<CXX_COMPILER_ID:MSVC>:/W3 /bigobj /permissive- /utf-8>)
         add_test(NAME ${program}.registry
                  COMMAND ${CMAKE_COMMAND}
                          -DPROGRAM=$<TARGET_FILE:${program}>

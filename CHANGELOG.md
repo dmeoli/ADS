@@ -161,5 +161,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bucket sort and the multikey quicksort; ADS::sort() and
   ADS::stableSort(), which choose among them; the benchmark bench/sort.cpp
   against the standard library and Boost.Sort
+- from The Art of Computer Programming: the Fibonacci search and the
+  uniform binary search, the AVL tree, the B-tree with removal, the trie
+  and the compact trie, the coalesced hashing with a cellar and Brent's
+  double hashing, with the skip list, the treap, the splay tree and the
+  Bloom filter (vol. 3); the sorts by binary and list insertion, address
+  calculation, radix exchange, tournament and merge insertion, the
+  replacement selection and the polyphase merge (vol. 3); the threaded
+  tree, the boundary-tag and buddy allocators, the heap of cells with the
+  marking of Deutsch, Schorr and Waite, the sparse matrix on orthogonal
+  lists (vol. 1); the linear congruential generators with the statistical
+  and spectral tests, the shuffling and the sampling, the FFT, the integers
+  of any length and the rationals (vol. 2); the broadword tricks and the
+  generation of tuples, permutations, combinations and partitions (vol.
+  4A); the exact cover by dancing links, DPLL and CDCL (vol. 4B)
+- move constructors for SkipList and SplayTree
 - a CI job that runs the tests under AddressSanitizer and UBSan
 - install and export for find_package(ADS), and the CI on GitHub Actions
+
+### Fixed
+
+- the search by interpolation computes its differences in double, since
+  v - A[ i ] could overflow the keys and send the probe out of the vector
+- the bound of sortToHull() is floor( sqrt( LONG_MAX ) ), so that x^2 fits
+  in a long also where long has 32 bits (Windows)
+- the fractional knapsack no longer gives a negative fraction when the
+  residual capacity rounds below 0

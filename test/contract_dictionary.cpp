@@ -25,15 +25,20 @@
 
 #include "ADSTest.h"
 
-#include "ADS/sequence/ArraySequence.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/DirectTable.h"
 #include "ADS/dictionary/HashFunctions.h"
 #include "ADS/dictionary/OpenHashTable.h"
+#include "ADS/dictionary/SkipList.h"
 #include "ADS/dictionary/SortedArrayDictionary.h"
 #include "ADS/dictionary/TableSize.h"
-#include "ADS/tree/SearchTree.h"
+#include "ADS/sequence/ArraySequence.h"
 #include "ADS/sequence/SequenceAlgorithms.h"
+#include "ADS/tree/AVLTree.h"
+#include "ADS/tree/BTree.h"
+#include "ADS/tree/SearchTree.h"
+#include "ADS/tree/SplayTree.h"
+#include "ADS/tree/Treap.h"
 
 #include <map>
 #include <random>
@@ -267,6 +272,16 @@ ADS_TEST( "dictionary-axioms" )
  dictionary_axioms< RB >( [] { return( RB() ); } , 20 );
  using SA = SortedArrayDictionary< int , int >;
  dictionary_axioms< SA >( [] { return( SA() ); } , 21 );
+ using AV = AVLTree< int , int >;
+ dictionary_axioms< AV >( [] { return( AV() ); } , 23 );
+ using BT = BTree< int , int >;
+ dictionary_axioms< BT >( [] { return( BT( 2 ) ); } , 24 );
+ using SL = SkipList< int , int >;
+ dictionary_axioms< SL >( [] { return( SL( 5 ) ); } , 25 );
+ using TR = Treap< int , int >;
+ dictionary_axioms< TR >( [] { return( TR( 6 ) ); } , 26 );
+ using SP = SplayTree< int , int >;
+ dictionary_axioms< SP >( [] { return( SP() ); } , 27 );
  }
 
 }  // end( namespace )
