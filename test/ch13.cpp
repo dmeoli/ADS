@@ -248,7 +248,7 @@ ADS_TEST( "sec13.6.knapsack" )
   Longs p( n ) , v( n );
   for( int i = 0 ; i < n ; ++i ) {
    p[ i ] = 1 + g() % 20;
-   v[ i ] = 1 + g() % 15;
+   v[ i ] = g() % 15;                       // 0 too: free objects
    }
   const long C = long( g() % 40 );
   long best = 0;
@@ -267,6 +267,9 @@ ADS_TEST( "sec13.6.knapsack" )
   CHECK( val == best && sp == best && sv <= C );
   CHECK( zaino( p , v , C ) == best );
   }
+ CHECK( knapsack( { 5 , 1 } , { 0 , 3 } , 3 ).first == 6 &&   // a free
+        zaino( { 5 , 1 } , { 0 , 3 } , 3 ) == 6 &&                 // object
+        knapsack( { 5 } , { 0 } , 0 ).first == 5 );
  Longs p( 20 , 1 ) , v( 20 );
  for( int i = 0 ; i < 20 ; ++i ) v[ i ] = 1000 * ( i + 1 );
  long solved = 0;

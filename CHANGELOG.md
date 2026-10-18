@@ -227,6 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- knapsack() and zaino() take the objects of volume 0, which the
+  precondition admits: the column of capacity 0 follows the same maximum
 - selectionSampling() draws its uniform numbers by std::generate_canonical,
   so that a generator of 32 bits no longer gives the first n items always
 - the search by interpolation computes its differences in double, since

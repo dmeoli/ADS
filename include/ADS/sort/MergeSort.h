@@ -15,8 +15,10 @@
  * - mergeSortBottomUp() merges the runs of length 1 , 2 , 4 , ... with no
  *   recursion and no stack (exercise 12.5);
  * - mergeSort( L ) sorts a LIST with pointers in O( n log n ) by splitting
- *   it in two halves, sorting them and merging their cells, with no copy of
- *   the items (exercise 12.1);
+ *   it in two halves, sorting them and merging them (exercise 12.1), only
+ *   through the operations of the SEQUENCE: each item is copied once per
+ *   level of the recursion, since the abstract data type moves no cells
+ *   from a list to another;
  * - countInversions() counts the pairs i < j with A[ i ] > A[ j ]: when
  *   the merge takes A[ j ] from the right part, it is smaller than all the
  *   mid - i + 1 items left in the left part (exercise 12.3).

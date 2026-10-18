@@ -1186,6 +1186,145 @@ exam_asdlab asdlab-2026-lab05-componente lab 2026-11-26, Componente fortemente
 exam_asdlab asdlab-2026-lab05-toporder lab 2026-11-26, Ordinamento topologico
 exam_asdlab asdlab-2026-lab05-camminolungo lab 2026-11-26, Cammino piu' lungo
 
+exam_collezionia  collezioni-02-analisi-1-1-1   02-analisi, Trova la costante
+exam_collezionia  collezioni-02-analisi-1-1-2   02-analisi, Trova la costante
+exam_collezionia  collezioni-02-analisi-1-1-3   02-analisi, Trova la costante
+exam_collezionia collezioni-02-analisi-1-4 02-analisi, Esercizio 2.9 del libro
+exam_collezionia  collezioni-02-analisi-1-5-1   02-analisi, Ricorrenze
+exam_collezionia  collezioni-02-analisi-1-5-2   02-analisi, Ricorrenze
+exam_collezionia  collezioni-02-analisi-1-5-3   02-analisi, Ricorrenze
+exam_collezionia  collezioni-02-analisi-1-6     02-analisi, Esercizio
+exam_collezionia  collezioni-02-analisi-1-7     02-analisi, Esercizio
+exam_collezionia collezioni-02-analisi-1-8 02-analisi, Funzione misteriosa 1
+exam_collezionia collezioni-02-analisi-1-9 02-analisi, Funzione misteriosa 2
+exam_collezionia  collezioni-02-analisi-1-11    02-analisi, Scegli la funzione
+exam_collezionia  collezioni-02-analisi-1-12    02-analisi, Quando conviene?
+exam_collezionia collezioni-02-analisi-1-13 02-analisi, Limite
+exam_collezionia collezioni-02-analisi-1-19 02-analisi, Esercizio sostituzione
+exam_collezionia collezioni-02-analisi-1-20-1 02-analisi, Ricorrenze con
+exam_collezionia collezioni-02-analisi-1-20-2 02-analisi, Ricorrenze con
+exam_collezionia collezioni-02-analisi-1-20-3 02-analisi, Ricorrenze con
+exam_collezionia  collezioni-02-analisi-1-26    02-analisi, Bandiera olandese
+exam_collezionia  collezioni-02-analisi-1-27    02-analisi, Somma 17
+exam_collezionia collezioni-02-analisi-1-28-1 02-analisi, Analisi di funzioni
+exam_collezionia collezioni-02-analisi-1-28-2 02-analisi, Analisi di funzioni
+exam_collezionia  collezioni-05-alberi-1-1      05-alberi, Visite
+exam_collezionia  collezioni-05-alberi-1-2      05-alberi, Lunghezza di cammino
+exam_collezionia  collezioni-05-alberi-1-3      05-alberi, Altezza minimale
+exam_collezionia  collezioni-05-alberi-1-4      05-alberi, Allunga l'albero
+exam_collezionia collezioni-05-alberi-1-5 05-alberi, Nodi a profondita
+exam_collezionia collezioni-05-alberi-1-6 05-alberi, Nodi ad altezza
+exam_collezionia  collezioni-05-alberi-1-7      05-alberi, Larghezza
+exam_collezionia  collezioni-05-alberi-1-8      05-alberi, Albero speculare
+exam_collezionia collezioni-05-alberi-1-10-1 05-alberi, Alberi binari
+exam_collezionia collezioni-05-alberi-1-10-2 05-alberi, Alberi binari
+exam_collezionia  collezioni-05-alberi-1-11     05-alberi, Visite iterative
+exam_collezionia collezioni-06-abr-1-1 06-abr, Distribuzione di valori in un
+exam_collezionia collezioni-06-abr-1-2 06-abr, Versione ricorsiva di
+exam_collezionia  collezioni-06-abr-1-3         06-abr, Verifica ABR
+exam_collezionia  collezioni-06-abr-1-5         06-abr, Cancellazione
+exam_collezionia  collezioni-06-abr-1-6         06-abr, Concatenazione
+exam_collezionia  collezioni-06-abr-1-7         06-abr, Distanza minima
+exam_collezionia collezioni-06-abr-1-8 06-abr, Albero binario di ricerca di
+exam_collezionia  collezioni-06-abr-1-9         06-abr, Colorazione Red-Black
+exam_collezionia collezioni-06-abr-1-10 06-abr, Realizzazione di insiemi con
+exam_collezionia collezioni-07-hashing-1-1 07-hashing, Inserimento in tabella
+exam_collezionia collezioni-07-hashing-1-2 07-hashing, Ispezione lineare e
+exam_collezionia collezioni-07-hashing-1-3 07-hashing, Confronto file
+exam_collezionia  collezioni-09-grafi-1-1       09-grafi, DFS iterativa
+exam_collezionia collezioni-09-grafi-1-3 09-grafi, Larghezza albero radicato
+exam_collezionia collezioni-09-grafi-1-4 09-grafi, Albero libero, non orientato
+exam_collezionia collezioni-09-grafi-1-5 09-grafi, Quadrato di grafo orientato
+exam_collezionia  collezioni-09-grafi-1-6       09-grafi, Diametro
+exam_collezionia collezioni-09-grafi-1-7 09-grafi, Grado entrante e grado
+exam_collezionia  collezioni-09-grafi-1-8       09-grafi, Grafo trasposto
+exam_collezionia  collezioni-09-grafi-1-9       09-grafi, Pozzo universale
+exam_collezionia  collezioni-09-grafi-1-10      09-grafi, Massima distanza
+exam_collezionia  collezioni-09-grafi-1-11      09-grafi, Spazio di memoria
+exam_collezionia  collezioni-09-grafi-1-12-1    09-grafi, Triangoli
+exam_collezionia  collezioni-09-grafi-1-12-2    09-grafi, Triangoli
+exam_collezionia  collezioni-09-grafi-1-14      09-grafi, BFS in matrice
+exam_collezionia collezioni-09-grafi-1-15 09-grafi, Quanto e grande la foresta?
+exam_collezionia  collezioni-09-grafi-1-16      09-grafi, Distanza media
+exam_collezionia collezioni-09-grafi-1-17 09-grafi, Componenti fortemente
+exam_collezionia  collezioni-09-grafi-1-18      09-grafi, Facebook
+exam_collezionia  collezioni-09-grafi-1-19      09-grafi, Cicli verdi
+exam_collezionia  collezioni-09-grafi-1-20      09-grafi, Sorgenti e pozzi
+exam_collezionia  collezioni-09-grafi-1-21      09-grafi, Diametro di alberi
+exam_collezionia  collezioni-09-grafi-1-22      09-grafi, Stessa distanza
+exam_collezionia  collezioni-10-heap-1-2        10-heap, Esecuzione heapsort()
+exam_collezionia  collezioni-10-heap-1-4        10-heap, Versione iterativa
+exam_collezionia collezioni-10-heap-1-6-1 10-heap, heapBuild() basato su
+exam_collezionia collezioni-10-heap-1-6-2 10-heap, heapBuild() basato su
+exam_collezionia  collezioni-10-heap-1-7-2      10-heap, k-merging
+exam_collezionia  collezioni-10-heap-1-8-2      10-heap, Heap ternario
+exam_collezionia  collezioni-10-heap-1-8-3      10-heap, Heap ternario
+exam_collezionia  collezioni-10-heap-1-8-4      10-heap, Heap ternario
+exam_collezionia  collezioni-10-heap-1-9        10-heap, Massimo in un min-heap
+exam_collezionia collezioni-10-heap-1-10 10-heap, Verifica della proprieta di
+
+exam_collezionib collezioni-11-strutture-1-2 11-strutture, Algoritmo di
+exam_collezionib  collezioni-11-strutture-1-3  11-strutture, Affidabilita
+exam_collezionib collezioni-11-strutture-1-4 11-strutture, Numero di cammini
+exam_collezionib collezioni-11-strutture-1-5 11-strutture, Cammino con arco
+exam_collezionib  collezioni-12-divide-1-1     12-divide, Ordinamento su lista
+exam_collezionib  collezioni-12-divide-1-2     12-divide, Analisi Quicksort
+exam_collezionib  collezioni-12-divide-1-3     12-divide, Merge Sort iterativo
+exam_collezionib collezioni-12-divide-1-5 12-divide, Prodotto di numeri
+exam_collezionib  collezioni-12-divide-1-6     12-divide, Chi manca?
+exam_collezionib  collezioni-12-divide-1-7     12-divide, Punto fisso
+exam_collezionib collezioni-12-divide-1-8 12-divide, Ricerca in vettori
+exam_collezionib collezioni-12-divide-1-9 12-divide, Massima somma di
+exam_collezionib  collezioni-12-divide-1-10    12-divide, Valore maggioritario
+exam_collezionib  collezioni-12-divide-1-11    12-divide, Poligoni
+exam_collezionib  collezioni-12-divide-1-12    12-divide, Algorithms-R-us
+exam_collezionib  collezioni-12-divide-1-13    12-divide, Samarcanda
+exam_collezionib  collezioni-12-divide-1-14    12-divide, Sottovettori sottili
+exam_collezionib  collezioni-13-pd-1-1         13-pd, k-occorrenza
+exam_collezionib collezioni-13-pd-1-2 13-pd, Algoritmo di Bellman, Ford e Moore
+exam_collezionib collezioni-13-pd-1-3 13-pd, Cammini minimi su grafi aciclici
+exam_collezionib  collezioni-13-pd-1-4         13-pd, Cammini massimi in DAG
+exam_collezionib collezioni-13-pd-1-5 13-pd, Cammini di peso massimo in DAG
+exam_collezionib  collezioni-13-pd-1-6         13-pd, Cammini minimi dinamici
+exam_collezionib collezioni-13-pd-1-7 13-pd, Massima sottosequenza crescente
+exam_collezionib  collezioni-13-pd-1-8         13-pd, Harry Potter
+exam_collezionib collezioni-13-pd-1-9 13-pd, Massima somma di sottovettori in
+exam_collezionib  collezioni-13-pd-1-10        13-pd, Ma e italiano?
+exam_collezionib  collezioni-13-pd-1-11        13-pd, Mosse su scacchiera
+exam_collezionib  collezioni-13-pd-1-12        13-pd, Batterie
+exam_collezionib  collezioni-13-pd-1-13-2      13-pd, Come passare l'esame!
+exam_collezionib  collezioni-13-pd-1-13-4      13-pd, Come passare l'esame!
+exam_collezionib collezioni-13-pd-1-14 13-pd, Insieme indipendente di
+exam_collezionib  collezioni-13-pd-1-15        13-pd, Palinsesto
+exam_collezionib  collezioni-13-pd-1-17        13-pd, LCS di lunghezza k
+exam_collezionib  collezioni-13-pd-1-18        13-pd, Stringhe palindrome
+exam_collezionib  collezioni-13-pd-1-19        13-pd, Abbasso Trenitalia!
+exam_collezionib  collezioni-13-pd-1-20        13-pd, Data center
+exam_collezionib  collezioni-13-pd-1-21        13-pd, Stringhe primitive
+exam_collezionib  collezioni-13-pd-1-22        13-pd, Alberi pieni
+exam_collezionib collezioni-14-greedy-1-3 14-greedy, Algoritmo di Kruskal con
+exam_collezionib collezioni-14-greedy-1-4 14-greedy, Algoritmo alternativo per
+exam_collezionib  collezioni-14-greedy-1-5     14-greedy, Albero bianco e nero
+exam_collezionib  collezioni-14-greedy-1-6-3   14-greedy, Archi minimi
+exam_collezionib collezioni-14-greedy-1-8 14-greedy, Albero di copertura di
+exam_collezionib  collezioni-14-greedy-1-9     14-greedy, Batterie
+exam_collezionib  collezioni-14-greedy-1-10    14-greedy, Sciatori e sci
+exam_collezionib collezioni-15-locale-1-1 15-locale, Formulazioni del flusso
+exam_collezionib collezioni-15-locale-1-2 15-locale, Aggiornamento del flusso
+exam_collezionib  collezioni-15-locale-1-3     15-locale, Cammini indipendenti
+exam_collezionib  collezioni-15-locale-1-4     15-locale, Piano sanitario
+exam_collezionib  collezioni-15-locale-1-5     15-locale, Torri di controllo
+exam_collezionib  collezioni-15-locale-1-6     15-locale, McDonald's
+exam_collezionib  collezioni-15-locale-1-7     15-locale, Reti telematiche
+exam_collezionib  collezioni-15-locale-1-8     15-locale, Evacuazione
+exam_collezionib collezioni-15-locale-1-9 15-locale, Riempimento di matrice
+exam_collezionib  collezioni-15-locale-1-10    15-locale, Somma di matrici
+exam_collezionib  collezioni-varie-1-2         varie, Blocchi 0-1
+exam_collezionib  collezioni-varie-1-3         varie, Distribuzione
+exam_collezionib  collezioni-varie-1-4         varie, Secondo terzile
+exam_collezionib  collezioni-varie-1-5         varie, Un algoritmo alla moda
+exam_collezionib  collezioni-varie-1-6         varie, Cerca la somma
+exam_collezionib  collezioni-varie-1-7         varie, Bounding box
 # the contracts of the book, checked as tests
 contract_algorithm    binary-counter       contatore binario, sezione 4.2.1
 contract_algorithm    hanoi                torri di Hanoi, sezione 4.4

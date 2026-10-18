@@ -7,7 +7,8 @@
  * at most C and largest profit. DP[ i ][ c ], the best profit of the first
  * i objects in capacity c, is \f$ -\infty \f$ if c < 0, 0 if i = 0 or
  * c = 0, and \f$ \max\{ DP[ i - 1 ][ c ] , DP[ i - 1 ][ c - v_{i-1} ] +
- * p_{i-1} \} \f$ otherwise.
+ * p_{i-1} \} \f$ otherwise. The volumes here may also be 0, and then the
+ * column c = 0 follows the same maximum instead of being 0.
  *
  * knapsack() fills the table bottom up in Theta( n C ) time and reads the
  * set back; zaino() is the memoization of the book, top down, which solves

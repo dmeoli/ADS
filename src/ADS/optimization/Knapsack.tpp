@@ -40,7 +40,7 @@ inline std::pair< long , std::vector< std::size_t > > knapsack(
  std::vector< std::vector< long > > DP( n + 1 ,
                                        std::vector< long >( C + 1 , 0 ) );
  for( std::size_t i = 1 ; i <= n ; ++i )
-  for( long c = 1 ; c <= C ; ++c ) {
+  for( long c = 0 ; c <= C ; ++c ) {        // c = 0 too: volumes may be 0
    DP[ i ][ c ] = DP[ i - 1 ][ c ];
    if( v[ i - 1 ] <= c )
     DP[ i ][ c ] = std::max( DP[ i ][ c ] ,
@@ -70,7 +70,7 @@ inline long zaino( const std::vector< long > & p ,
  auto rec = [ & ]( auto & self , long i , long c ) -> long {
   if( c < 0 )
    return( NEG );
-  if( ( i == 0 ) || ( c == 0 ) )
+  if( i == 0 )                              // not c == 0: volumes may be 0
    return( 0 );
   const long key = i * ( C + 1 ) + c;
   if( auto r = DP.lookup( key ) )
