@@ -38,8 +38,10 @@ def main(path):
         noise = [abs(cell[(c, n, ref + ' A/A')] - cell[(c, n, ref)]) /
                  cell[(c, n, ref)] for c, n in cols
                  if (c, n, ref + ' A/A') in cell and cell[(c, n, ref)] > 0]
-        print('**%s** (noise A/A at most %.0f%%)' %
-              (b, 100 * max(noise) if noise else 0))
+        print('**%s** (%s)' % (b, 'noise A/A at most %.0f%%' %
+                                (100 * max(noise)) if noise else
+                                'no A/A run: the noise is that of the other '
+                                'tables'))
         print()
         print('| | ' + ' | '.join('%s, n = %d' % (c, n) for c, n in cols)
               + ' |')

@@ -5,12 +5,11 @@
  * Pigeonhole Sort (exercise 4.11) of the pairs ( key , value ) with keys
  * in [ 0 , k ): the value of each pair goes at the end of the LIST of its
  * key, then the lists are read in the order of the keys; O( n + k ) time,
- * and stable, unlike Counting Sort, which only counts the keys. A key out
- * of [ 0 , k ) throws std::out_of_range.
+ * and stable, unlike Counting Sort, which only counts the keys.
  *
- * The contracts [see Contract.h]: each key must be in [ 0 , k ), checked key
- * by key, and the output has as many pairs as the input, its keys sorted. The
- * functions are defined in PigeonholeSort.tpp.
+ * The contracts [see Contract.h]: k >= 0 and each key must be in [ 0 , k ),
+ * checked key by key, and the output has as many pairs as the input, its
+ * keys sorted. The functions are defined in PigeonholeSort.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 4.11,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -49,7 +48,7 @@
 namespace ADS {
 
 /// the pairs sorted by key, the values of a key in their first order
-/// \pre each key of A is in [ 0 , k )
+/// \pre k >= 0 and each key of A is in [ 0 , k )
 /// \post as many pairs as in A, the keys sorted and each key with its
 ///       items in their order
 template< class V >

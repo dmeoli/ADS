@@ -134,6 +134,7 @@ schedulingDP( const std::vector< long > & t , int m , long d )
 {
  ADS_PRE( ( m >= 1 ) && detail::nonnegative( t ) );
  const auto result = [ & ]( void ) -> std::optional< std::vector< int > > {
+  if( d < 0 ) return( std::nullopt );          // no load is below 0
   using Loads = std::vector< long >;
   // the loads reached after i programs, each with the loads before the
   // last one and its processor

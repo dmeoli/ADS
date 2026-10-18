@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
 #include <optional>
 #include <random>
@@ -108,6 +109,47 @@ void against_ref( M make , unsigned seed )
  CHECK( q.isEmpty() );
  }
 
+/// the degenerate cases of a priority queue of capacity at least 100: the
+/// empty queue (its contracts), one item, a decrease to the same priority
+/// and one that would raise it, all the priorities equal (each item leaves
+/// once, twice after emptying the queue), the extreme priorities of int
+template< class Q , class M >
+void degenerate( M make )
+{
+ Q q = make();
+ CHECK( q.isEmpty() && q.size() == 0 );
+ CHECK_THROWS( (void) q.min() , contract_violation );
+ CHECK_THROWS( q.deleteMin() , contract_violation );
+ auto h = q.insert( 1 , 5 );
+ CHECK( q.size() == 1 && q.min() == 1 );
+ q.decrease( h , 5 );
+ CHECK_THROWS( q.decrease( h , 6 ) , contract_violation );
+ CHECK( q.min() == 1 && q.deleteMin() == 1 && q.isEmpty() );
+ for( int round = 0 ; round < 2 ; ++round ) {
+  for( int x = 0 ; x < 100 ; ++x )
+   q.insert( x , 7 );
+  CHECK( q.size() == 100 );
+  Ints out;
+  while( ! q.isEmpty() )
+   out.push_back( q.deleteMin() );
+  std::sort( out.begin() , out.end() );
+  bool all = int( out.size() ) == 100;
+  for( int x = 0 ; all && ( x < 100 ) ; ++x )
+   all = out[ x ] == x;
+  CHECK( all );
+  }
+ const int lo = std::numeric_limits< int >::min();
+ const int hi = std::numeric_limits< int >::max();
+ q.insert( 1 , hi );
+ auto g = q.insert( 2 , hi );
+ q.insert( 3 , lo );
+ q.insert( 4 , 0 );
+ q.decrease( g , lo );
+ const int a = q.deleteMin() , b = q.deleteMin();
+ CHECK( std::min( a , b ) == 2 && std::max( a , b ) == 3 );
+ CHECK( q.deleteMin() == 4 && q.deleteMin() == 1 && q.isEmpty() );
+ }
+
 /// a comparison that counts
 struct Counting {
  long * c;
@@ -161,6 +203,26 @@ ADS_TEST( "spec.HeapPriorityQueue" )
  CHECK_THROWS( q.insert( 9 , 1 ) , contract_violation );
  CHECK_THROWS( q.decrease( h , 6 ) , contract_violation );
  CHECK( q.min() == 7 && q.minPriority() == 5 && q.size() == 2 );
+
+ // the degenerate cases; the capacities 0 and 1, a full queue emptied and
+ // filled again, a null handle and one of another queue, a negative
+ // capacity
+ degenerate< HeapPriorityQueue< int > >(
+  [] { return( HeapPriorityQueue< int >( 100 ) ); } );
+ HeapPriorityQueue< int > z( 0 );
+ CHECK( z.isEmpty() && z.capacity() == 0 );
+ CHECK_THROWS( z.insert( 1 , 1 ) , contract_violation );
+ HeapPriorityQueue< int > one( 1 );
+ for( int k = 0 ; k < 3 ; ++k ) {
+  one.insert( k , -k );
+  CHECK_THROWS( one.insert( 9 , 0 ) , contract_violation );
+  CHECK( one.minPriority() == -k && one.deleteMin() == k );
+  }
+ CHECK_THROWS( q.decrease( nullptr , 0 ) , contract_violation );
+ HeapPriorityQueue< int > other( 2 );
+ auto o = other.insert( 1 , 9 );
+ CHECK_THROWS( q.decrease( o , 0 ) , contract_violation );
+ CHECK_THROWS( HeapPriorityQueue< int >( -1 ) , contract_violation );
  }
 
 ADS_TEST( "spec.ListPriorityQueue" )
@@ -171,12 +233,38 @@ ADS_TEST( "spec.ListPriorityQueue" )
   [] { return( ListPriorityQueue< int , int , false >() ); } , 3 );
  ListPriorityQueue< int > q;
  CHECK_THROWS( (void) q.min() , std::logic_error );
+
+ // the degenerate cases, sorted and unsorted; the handle of an item
+ // removed is no longer one of the queue (checked with the audits)
+ degenerate< ListPriorityQueue< int , int , true > >(
+  [] { return( ListPriorityQueue< int , int , true >() ); } );
+ degenerate< ListPriorityQueue< int , int , false > >(
+  [] { return( ListPriorityQueue< int , int , false >() ); } );
+ auto h = q.insert( 1 , 1 );
+ auto k = q.insert( 2 , 2 );
+ CHECK( q.deleteMin() == 1 );
+ CHECK_THROWS( q.decrease( h , 0 ) , contract_violation );
+ q.decrease( k , 0 );
+ CHECK( q.deleteMin() == 2 && q.isEmpty() );
  }
 
 ADS_TEST( "spec.TreePriorityQueue" )
 {
  against_ref< TreePriorityQueue< int > >(
   [] { return( TreePriorityQueue< int >() ); } , 4 );
+
+ // the degenerate cases; the handle of an item removed, a negative one
+ // and one never given
+ degenerate< TreePriorityQueue< int > >(
+  [] { return( TreePriorityQueue< int >() ); } );
+ TreePriorityQueue< int > q;
+ auto h = q.insert( 1 , 1 );
+ q.insert( 2 , 2 );
+ CHECK( q.deleteMin() == 1 );
+ CHECK_THROWS( q.decrease( h , 0 ) , contract_violation );
+ CHECK_THROWS( q.decrease( -1 , 0 ) , contract_violation );
+ CHECK_THROWS( q.decrease( 2 , 0 ) , contract_violation );
+ CHECK( q.deleteMin() == 2 && q.isEmpty() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -184,7 +272,8 @@ ADS_TEST( "spec.TreePriorityQueue" )
 // Figure 10.1 and 10.2: the heap of C = { 5 , 10 , 8 , 11 , 13 , 12 , 9 ,
 // 18 , 3 , 6 }, built by inserting its vector in order (each item is not
 // smaller than its parent, so nothing moves); Figura 10.3, the deletion of
-// the minimum; Figura 10.4, the insertion of 4
+// the minimum; Figura 10.4, the insertion of 4; a decrease of the root and
+// one to the same priority, the heap emptied in order
 ADS_TEST( "sec10.1.3.heap" )
 {
  const Ints fig = { 3 , 5 , 9 , 6 , 8 , 13 , 12 , 11 , 18 , 10 };
@@ -215,10 +304,23 @@ ADS_TEST( "sec10.1.3.heap" )
  CHECK( h->pos == 0 && t.min() == 18 && t.minPriority() == 1 );
  CHECK( t.priorities() ==
         Ints( { 1 , 3 , 9 , 5 , 8 , 13 , 12 , 11 , 6 , 10 } ) );
+ // the root decreased stays where it is; a leaf decreased to its own
+ // priority does not move; the heap emptied gives its items in order
+ t.decrease( h , 0 );
+ CHECK( h->pos == 0 && t.priorities()[ 1 ] == 3 );
+ const auto leaf = t.insert( 20 , 20 );
+ t.decrease( leaf , 20 );
+ CHECK( leaf->pos == 10 );
+ Ints out;
+ while( ! t.isEmpty() )
+  out.push_back( t.deleteMin() );
+ CHECK( out == Ints( { 18 , 3 , 5 , 6 , 8 , 9 , 10 , 11 , 12 , 13 , 20 } ) );
  }
 
 // heapBuild() in O( n ), at most 2 n comparisons, and heapsort(), and the
-// sort() of the example with a priority queue
+// sort() of the example with a priority queue; all equal, sorted, reversed
+// and extreme items, a decreasing order, heaps of 0 and 1 items, a restore
+// at a leaf and on a prefix, the contracts
 ADS_TEST( "sec10.1.4.heapsort" )
 {
  std::mt19937 g( 5 );
@@ -240,6 +342,36 @@ ADS_TEST( "sec10.1.4.heapsort" )
    a = Q.deleteMin();
   CHECK( A == D );
   }
+ // the degenerate inputs: all equal, sorted, reversed, the extremes of
+ // int, the reversed order (a decreasing sort); a heap of 0 or 1 items,
+ // a restore at a leaf, the contracts
+ const int lo = std::numeric_limits< int >::min();
+ const int hi = std::numeric_limits< int >::max();
+ for( const Ints & A : { Ints( 50 , 4 ) , Ints( { 1 , 2 , 3 , 4 , 5 , 6 } ) ,
+                         Ints( { 6 , 5 , 4 , 3 , 2 , 1 } ) ,
+                         Ints( { hi , lo , 0 , hi , lo , -1 , 1 } ) } ) {
+  Ints C = A , D = A , E = A;
+  heapsort( C );
+  std::sort( D.begin() , D.end() );
+  CHECK( C == D );
+  heapsort( E , std::greater<>() );
+  CHECK( std::equal( E.begin() , E.end() , D.rbegin() ) );
+  heapBuild( D );
+  CHECK( isMaxHeap( D , D.size() ) && D[ 0 ] == C.back() );
+  }
+ Ints Z , O = { 3 };
+ CHECK( isMaxHeap( Z , 0 ) && isMaxHeap( O , 1 ) );
+ CHECK( isMaxHeap( Ints( { 1 , 2 } ) , 1 ) && ! isMaxHeap( Ints( { 1 , 2 } ) ,
+                                                           2 ) );
+ Ints L = { 1 , 5 , 7 };
+ maxHeapRestore( L , 2 , 3 );
+ CHECK( L == Ints( { 1 , 5 , 7 } ) );
+ maxHeapRestore( L , 0 , 2 );                      // only the prefix
+ CHECK( L == Ints( { 5 , 1 , 7 } ) );
+ CHECK_THROWS( maxHeapRestore( L , 3 , 3 ) , contract_violation );
+ CHECK_THROWS( maxHeapRestore( L , 0 , 4 ) , contract_violation );
+ CHECK_THROWS( maxHeapRestore( Z , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) isMaxHeap( L , 4 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -247,7 +379,8 @@ ADS_TEST( "sec10.1.4.heapsort" )
 // the example of the MFSET of 4 elements, and the forest of Figura 10.5 by
 // merge( 0 , 1 ), merge( 0 , 2 ), merge( 4 , 5 ), merge( 5 , 2 ),
 // merge( 3 , 6 ), merge( 2 , 6 ) without the rank (the figure counts the
-// elements from 1)
+// elements from 1); no element, one, merges of an element with itself and
+// repeated, the tie of the union by size, the contracts
 ADS_TEST( "sec10.2.2.forest" )
 {
  MFSet S( 4 );
@@ -266,11 +399,41 @@ ADS_TEST( "sec10.2.2.forest" )
   p[ x ] = F.parent( x );
  CHECK( p == Ints( { 4 , 0 , 0 , 4 , 4 , 4 , 3 } ) );
  CHECK_THROWS( F.find( 7 ) , contract_violation );
+
+ // the degenerate cases: no element, one, an element merged with itself
+ // or twice with the same one (false, nothing changes), the tie of the
+ // union by size (the root of y under that of x), the contracts of each
+ // operation, for each union
+ for( auto u : { MFSet::Union::NONE , MFSet::Union::RANK ,
+                 MFSet::Union::SIZE } ) {
+  MFSet E( 0 , u );
+  CHECK( E.n() == 0 && E.count() == 0 );
+  CHECK_THROWS( E.find( 0 ) , contract_violation );
+  MFSet O( 1 , u );
+  CHECK( O.find( 0 ) == 0 && ! O.merge( 0 , 0 ) && O.count() == 1 );
+  MFSet M( 3 , u );
+  CHECK( ! M.merge( 1 , 1 ) && M.count() == 3 && M.parent( 1 ) == 1 );
+  CHECK( M.merge( 1 , 2 ) && ! M.merge( 2 , 1 ) && M.count() == 2 );
+  CHECK( M.same( 1 , 2 ) && ! M.same( 0 , 2 ) && M.same( 0 , 0 ) );
+  if( u == MFSet::Union::SIZE )
+   CHECK( M.parent( 2 ) == 1 && M.size( 1 ) == 2 );
+  for( int x : { -1 , 3 } ) {
+   CHECK_THROWS( M.find( x ) , contract_violation );
+   CHECK_THROWS( M.merge( 0 , x ) , contract_violation );
+   CHECK_THROWS( M.merge( x , 0 ) , contract_violation );
+   CHECK_THROWS( (void) M.same( x , 0 ) , contract_violation );
+   CHECK_THROWS( (void) M.parent( x ) , contract_violation );
+   CHECK_THROWS( (void) M.rank( x ) , contract_violation );
+   CHECK_THROWS( (void) M.size( x ) , contract_violation );
+   }
+  CHECK_THROWS( MFSet( -1 , u ) , contract_violation );
+  }
  }
 
 // without the rank, merge( 4 , 5 ), merge( 3 , 4 ), ..., merge( 0 , 1 )
 // make a chain of height n - 1; with it, the height is 1; the Teorema
-// 10.1, a tree of root r has at least 2^rank[ r ] nodes
+// 10.1, a tree of root r has at least 2^rank[ r ] nodes; the same with the
+// union by size, height at most log2 size[ r ]
 ADS_TEST( "sec10.2.3.rank" )
 {
  for( bool rank : { false , true } ) {
@@ -278,6 +441,22 @@ ADS_TEST( "sec10.2.3.rank" )
   for( int x = 4 ; x >= 0 ; --x )
    M.merge( x , x + 1 );
   CHECK( height( M , M.find( 0 ) ) == ( rank ? 1 : 5 ) );
+  }
+ // the union by size: the same chain of merges has height 1, and a tree
+ // of root r has height at most log2 size[ r ], on random merges
+ MFSet B( 6 , MFSet::Union::SIZE , false );
+ for( int x = 4 ; x >= 0 ; --x )
+  B.merge( x , x + 1 );
+ CHECK( height( B , B.find( 0 ) ) == 1 && B.size( B.find( 0 ) ) == 6 );
+ std::mt19937 r( 17 );
+ for( int t = 0 ; t < 10 ; ++t ) {
+  const int n = 300;
+  MFSet M( n , MFSet::Union::SIZE , false );
+  for( int k = 0 ; k < 400 ; ++k )
+   M.merge( r() % n , r() % n );
+  for( int x = 0 ; x < n ; ++x )
+   if( M.parent( x ) == x )
+    CHECK( height( M , x ) <= std::log2( double( M.size( x ) ) ) );
   }
  std::mt19937 g( 7 );
  for( int t = 0 ; t < 20 ; ++t ) {
@@ -330,7 +509,7 @@ ADS_TEST( "sec10.2.4.compression" )
  }
 
 // the components of a graph by an MFSET, as the cc() of chapter 9, and
-// then with new edges
+// then with new edges; no node, no edge, a deleted node, a path
 ADS_TEST( "sec10.2.5.incremental" )
 {
  std::mt19937 g( 11 );
@@ -350,10 +529,25 @@ ADS_TEST( "sec10.2.5.incremental" )
   G.insertEdge( u , v );
   M.merge( u , v );
   }
+ // no node, no edge (a component per node), a deleted node (a component of
+ // its own, as documented), a path (one component)
+ CHECK( components( ListGraph<>( 0 , false ) ).count() == 0 );
+ CHECK( components( ListGraph<>( 5 , false ) ).count() == 5 );
+ ListGraph<> H( 3 , false );
+ H.insertEdge( 0 , 2 );
+ H.deleteNode( 1 );
+ auto C = components( H );
+ CHECK( C.count() == 2 && C.same( 0 , 2 ) && ! C.same( 0 , 1 ) );
+ const int n = 1000;
+ ListGraph<> P( n , false );
+ for( int u = 0 ; u + 1 < n ; ++u )
+  P.insertEdge( u , u + 1 );
+ CHECK( components( P ).count() == 1 );
  }
 
 // the MFSET on lists against the one on a forest; an element is relabeled
-// at most log2 n times
+// at most log2 n times, exactly in the merges of lists of equal length; no
+// element, one, the contracts
 ADS_TEST( "sec10.2.1.lists" )
 {
  std::mt19937 g( 13 );
@@ -367,6 +561,28 @@ ADS_TEST( "sec10.2.1.lists" )
   CHECK( ( L.find( a ) == L.find( b ) ) == ( F.find( a ) == F.find( b ) ) );
   }
  CHECK( L.relabels() <= long( n ) * 10 );
+
+ // the worst case of the bound: merging lists of equal length, round by
+ // round, relabels n / 2 elements per round, n / 2 log2 n in all; no
+ // element, one, an element merged with itself, the contracts
+ ListMFSet W( n );
+ for( int s = 1 ; s < n ; s *= 2 )
+  for( int x = 0 ; x < n ; x += 2 * s )
+   CHECK( W.merge( x , x + s ) );
+ CHECK( W.relabels() == long( n ) / 2 * 10 );
+ CHECK( int( W.members( 7 ).size() ) == n && W.find( 0 ) == W.find( n - 1 ) );
+ ListMFSet E( 0 );
+ CHECK( E.n() == 0 );
+ CHECK_THROWS( (void) E.find( 0 ) , contract_violation );
+ ListMFSet O( 1 );
+ CHECK( ! O.merge( 0 , 0 ) && O.relabels() == 0 );
+ CHECK( O.members( 0 ) == Ints( { 0 } ) );
+ for( int x : { -1 , n } ) {
+  CHECK_THROWS( (void) L.find( x ) , contract_violation );
+  CHECK_THROWS( L.merge( 0 , x ) , contract_violation );
+  CHECK_THROWS( (void) L.members( x ) , contract_violation );
+  }
+ CHECK_THROWS( ListMFSet( -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -375,7 +591,8 @@ ADS_TEST( "sec10.2.1.lists" )
 
 // the heap does not order its keys: its invisit is not sorted, and a sort
 // by comparisons needs log2( n! ) of them, which heapsort() exceeds, while
-// heapBuild() takes O( n ): the order cannot be read from a heap in O( n )
+// heapBuild() takes O( n ): the order cannot be read from a heap in O( n );
+// the bound also on 1, 2 and 3 items
 ADS_TEST( "ex10.1" )
 {
  // the invisit of the tree of Figura 10.1
@@ -399,12 +616,22 @@ ADS_TEST( "ex10.1" )
   heapsort( A , Counting{ &c } );
   CHECK( c >= std::lgamma( n + 1.0 ) / std::log( 2.0 ) );
   }
+ // the smallest: 0 comparisons on 1 item, 1 on 2, 3 on 3 (heapBuild 2,
+ // then 1), at least ceil( log2 n! ) = 0 , 1 , 3
+ for( const Ints & B : { Ints( { 0 } ) , Ints( { 1 , 0 } ) ,
+                         Ints( { 2 , 0 , 1 } ) } ) {
+  Ints A = B;
+  long c = 0;
+  heapsort( A , Counting{ &c } );
+  CHECK( std::is_sorted( A.begin() , A.end() ) );
+  CHECK( c == ( A.size() == 3 ? 3 : long( A.size() ) - 1 ) );
+  }
  }
 
 // heapsort() on O, R, D, I, N, A, M, E, N, T, O step by step: after each
 // step the prefix is a max-heap and the suffix holds the largest items in
 // order; the equal items are no difficulty, heapsort is not stable but
-// equal letters are indistinguishable
+// equal letters are indistinguishable; no letter, one, all equal, two
 ADS_TEST( "ex10.2" )
 {
  const std::string A = "ORDINAMENTO";
@@ -418,11 +645,20 @@ ADS_TEST( "ex10.2" )
   CHECK( std::is_sorted( V.begin() + i , V.end() ) );
   }
  CHECK( std::string( V.begin() , V.end() ) == "ADEIMNNOORT" );
+ // no letter, one, all equal, two in either order
+ for( const std::string s : { "" , "A" , "OOOO" , "AB" , "BA" } ) {
+  std::vector< char > W( s.begin() , s.end() );
+  heapsort( W );
+  std::string t = s;
+  std::sort( t.begin() , t.end() );
+  CHECK( std::string( W.begin() , W.end() ) == t );
+  }
  }
 
 // merging k sorted vectors of m items: one after the other costs
 // 2 m + 3 m + ... + k m = O( m k^2 ) = O( n k ) moves; a heap of the k
-// heads gives O( n log k )
+// heads gives O( n log k ); no vector, one, empty ones, lengths that
+// differ, equal and extreme items
 ADS_TEST( "ex10.3" )
 {
  std::mt19937 g( 3 );
@@ -460,9 +696,37 @@ ADS_TEST( "ex10.3" )
    Q.insert( { i , j + 1 } , V[ i ][ j + 1 ] );
   }
  CHECK( out == all );
+
+ // the degenerate inputs of the merge by a heap: no vector, one, empty
+ // vectors among the others, lengths that differ, equal items across the
+ // vectors, the extremes of int
+ auto kmerge = []( const std::vector< Ints > & W ) {
+  HeapPriorityQueue< std::pair< int , int > > H( std::max( int( W.size() ) ,
+                                                           1 ) );
+  for( int i = 0 ; i < int( W.size() ) ; ++i )
+   if( ! W[ i ].empty() )
+    H.insert( { i , 0 } , W[ i ][ 0 ] );
+  Ints o;
+  while( ! H.isEmpty() ) {
+   const auto [ i , j ] = H.deleteMin();
+   o.push_back( W[ i ][ j ] );
+   if( j + 1 < int( W[ i ].size() ) )
+    H.insert( { i , j + 1 } , W[ i ][ j + 1 ] );
+   }
+  return( o );
+  };
+ const int lo = std::numeric_limits< int >::min();
+ const int hi = std::numeric_limits< int >::max();
+ CHECK( kmerge( {} ).empty() );
+ CHECK( kmerge( { Ints() } ).empty() );
+ CHECK( kmerge( { Ints( { 1 , 2 , 3 } ) } ) == Ints( { 1 , 2 , 3 } ) );
+ CHECK( kmerge( { Ints() , Ints( { 2 , 2 } ) , Ints() , Ints( { 1 , 2 , 9 } ) ,
+                  Ints( { lo , hi } ) } ) ==
+        Ints( { lo , 1 , 2 , 2 , 2 , 9 , hi } ) );
  }
 
-// maxHeapRestore() iterative, O( 1 ) extra space, as the recursive one
+// maxHeapRestore() iterative, O( 1 ) extra space, as the recursive one,
+// also on all equal items, on prefixes, at the leaves, on 1 and 2 items
 ADS_TEST( "ex10.4" )
 {
  std::mt19937 g( 4 );
@@ -477,6 +741,23 @@ ADS_TEST( "ex10.4" )
    }
   CHECK( A == B );
   }
+ // all equal items (nothing moves), a restore at the root of a prefix
+ // (the rest untouched), at a leaf (nothing moves), on 1 and 2 items
+ for( int t = 0 ; t < 200 ; ++t ) {
+  const std::size_t n = 1 + g() % 40 , dim = 1 + g() % n , i = g() % dim;
+  Ints A( n );
+  for( auto & a : A )
+   a = t % 2 ? 3 : int( g() % 10 );
+  Ints B = A;
+  maxHeapRestore( A , i , dim );
+  restore_rec( B , i , dim );
+  CHECK( A == B );
+  }
+ Ints S = { 1 , 2 };
+ maxHeapRestore( S , 0 , 1 );
+ CHECK( S == Ints( { 1 , 2 } ) );
+ maxHeapRestore( S , 0 , 2 );
+ CHECK( S == Ints( { 2 , 1 } ) );
  }
 
 // the heap counts its places from 0: l( i ) = 2 i + 1, r( i ) = 2 i + 2,
@@ -493,7 +774,8 @@ ADS_TEST( "ex10.5" )
  }
 
 // the d-ary heap: children d i + 1 , ... , d i + d, parent ( i - 1 ) / d,
-// height log_d n
+// height log_d n; the degenerate cases, a full queue with a complete last
+// level emptied in order, the children of the root
 ADS_TEST( "ex10.6" )
 {
  against_ref< HeapPriorityQueue< int , int , 3 > >(
@@ -513,10 +795,20 @@ ADS_TEST( "ex10.6" )
  for( int i = 1364 ; i > 0 ; i = Q::parent( i ) )
   ++h;
  CHECK( h == 5 );
+ // the degenerate cases for d = 3 and d = 4, a full queue whose last level
+ // is complete, all the children of the root (places 1 to d) under it
+ degenerate< HeapPriorityQueue< int , int , 3 > >(
+  [] { return( HeapPriorityQueue< int , int , 3 >( 100 ) ); } );
+ degenerate< Q >( [] { return( Q( 100 ) ); } );
+ CHECK_THROWS( q.insert( 0 , 0 ) , contract_violation );
+ for( int x = 0 ; x < 1365 ; ++x )
+  CHECK( q.deleteMin() == x );
+ CHECK( Q::parent( 1 ) == 0 && Q::parent( 4 ) == 0 && Q::parent( 5 ) == 1 );
  }
 
 // without the compression the rank of a root is the height of its tree,
-// with it an upper bound
+// with it an upper bound; a single element, the tree of 64 elements of
+// rank 6, flattened by the compression
 ADS_TEST( "ex10.7" )
 {
  std::mt19937 g( 8 );
@@ -537,10 +829,31 @@ ADS_TEST( "ex10.7" )
       CHECK( height( M , r ) == M.rank( r ) );
      }
    }
+ // the extreme trees: a single element (rank and height 0), 64 elements
+ // merged in rounds of equal trees (rank and height log2 64 = 6, the bound
+ // of the Teorema 10.1 reached), and with the compression after a find of
+ // each element (height 1, rank still 6)
+ MFSet O( 1 , MFSet::Union::RANK , false );
+ CHECK( O.rank( 0 ) == 0 && height( O , 0 ) == 0 );
+ for( bool compress : { false , true } ) {
+  MFSet M( 64 , MFSet::Union::RANK , compress );
+  for( int s = 1 ; s < 64 ; s *= 2 )
+   for( int x = 0 ; x < 64 ; x += 2 * s )
+    M.merge( x , x + s );
+  const int r = M.find( 0 );
+  CHECK( M.rank( r ) == 6 && height( M , r ) <= 6 );
+  CHECK( compress || height( M , r ) == 6 );
+  if( compress ) {
+   for( int x = 0 ; x < 64 ; ++x )
+    M.find( x );
+   CHECK( M.rank( r ) == 6 && height( M , r ) == 1 );
+   }
+  }
  }
 
 // find() iterative in two passes, with no stack, as the recursive one of
-// the book: the same roots and the same parents
+// the book: the same roots and the same parents; a deep chain flattened by
+// one find, a root and a single element
 ADS_TEST( "ex10.8" )
 {
  std::mt19937 g( 9 );
@@ -570,12 +883,29 @@ ADS_TEST( "ex10.8" )
   }
  for( int x = 0 ; x < n ; ++x )
   CHECK( M.parent( x ) == p[ x ] );
+ // a chain of 2000 without the union heuristic: a find of its deepest
+ // element makes every element a child of the root, a second one climbs
+ // one step; a find of a root or of a single element changes nothing
+ const int m = 2000;
+ MFSet C( m , MFSet::Union::NONE , true );
+ for( int x = m - 2 ; x >= 0 ; --x )
+  C.merge( x , x + 1 );
+ CHECK( C.parent( m - 1 ) == m - 2 && C.find( 0 ) == 0 );
+ CHECK( C.find( m - 1 ) == 0 );
+ bool flat = true;
+ for( int x = 0 ; x < m ; ++x )
+  flat = flat && ( C.parent( x ) == 0 );
+ const long s = C.steps();
+ CHECK( flat && C.find( m - 1 ) == 0 && C.steps() == s + 1 );
+ MFSet O( 1 );
+ CHECK( O.find( 0 ) == 0 && O.parent( 0 ) == 0 && O.steps() == 0 );
  }
 
 // the components of a weighted unoriented graph and the edge of least
 // weight of each one: an MFSET merges the ends of each edge, and the
 // least edge of a component is the least of those whose ends are in it
-// (the solution of the book says a heap, but an MFSET is what is needed)
+// (the solution of the book says a heap, but an MFSET is what is needed);
+// no edge, edges of equal weight, a single component
 ADS_TEST( "ex10.9" )
 {
  std::mt19937 g( 10 );
@@ -613,6 +943,22 @@ ADS_TEST( "ex10.9" )
   if( ref )
    CHECK( least[ r ] == *ref );
   }
+ // no edge: a component per node, none with a least edge; edges of equal
+ // weight: the least is the one of smaller ends, in the order of the
+ // triples; one component holding all the nodes
+ MFSet Z( 4 );
+ CHECK( Z.count() == 4 && components( ListGraph< int >( 4 , false ) ).count()
+                          == 4 );
+ const std::vector< std::tuple< int , int , int > > T = {
+  { 5 , 2 , 3 } , { 5 , 0 , 3 } , { 5 , 1 , 2 } };
+ MFSet A( 4 );
+ std::optional< std::tuple< int , int , int > > lt;
+ for( const auto & e : T ) {
+  A.merge( std::get< 1 >( e ) , std::get< 2 >( e ) );
+  if( ! lt || e < *lt )
+   lt = e;
+  }
+ CHECK( A.count() == 1 && lt == std::tuple( 5 , 0 , 3 ) );
  }
 
 }  // end( namespace )

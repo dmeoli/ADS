@@ -213,6 +213,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - move constructors for SkipList and SplayTree
 - a CI job that runs the tests under AddressSanitizer and UBSan
 - install and export for find_package(ADS), and the CI on GitHub Actions
+- the general algorithms of the exams in the library: strings, dynamic
+  programming and optimization, searching and sequences, graphs and trees;
+  test/lib_*.cpp
+- the edge cases in every test (the empty input, one and two items, ties,
+  the extreme values of the types, chains of 10^5 nodes, full and empty
+  structures) and a violation of each precondition by CHECK_THROWS
 
 ### Changed
 
@@ -234,9 +240,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subtreeEnd( i ), so that the name end() is left to the standard interface
 - SequenceRange is a view whose end() is an iterator, so that the range is
   common
+- FlowNetwork, the flows, the b-matching and countInversions() count in
+  long long, which has 64 bits also where long has 32 (Windows)
+- the visits of the trees and of the graphs, their destructors and the
+  blocking flow of Dinic use an explicit stack, so that chains of 10^5
+  nodes do not overflow the stack
+- linked() of BinaryTree and Tree checks the links of the node alone
 
 ### Fixed
 
+- the cases shown by the edge cases of the tests, about 60 in all: an
+  overflow at the extreme values of the types (DirectTable, hash_division,
+  the allocators, the knapsack, refuelingStops, evalPostfix, cross(),
+  pseudoAngle(), the Bloom filters), a NaN converted to an integer
+  (interpolation and address calculation sort), the containers that took
+  one of their own items or themselves while growing (MultiStack, the
+  array and preorder trees), the lists of children that repeat a node
+  (Jacobson, LOUDS and BP trees), the reading of malformed trees and
+  expressions, the empty inputs of searchOrdered(), tsp() and the grid
+  paths, the stability of stableSort() between -0 and +0, the exponent of
+  the master theorem near an integer and linear() for 1 < a < 2, the
+  equality of the contracts with NaN
 - knapsack() and zaino() take the objects of volume 0, which the
   precondition admits: the column of capacity 0 follows the same maximum
 - selectionSampling() draws its uniform numbers by std::generate_canonical,

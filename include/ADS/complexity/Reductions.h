@@ -125,15 +125,16 @@ inline std::vector< std::vector< long > > hamiltonToTsp( const Adjacency & G );
 inline long halfSum( const std::vector< long > & A );
 
 /// CICLO HAMILTONIANO to CAMMINO HAMILTONIANO from n to 0: the node 0 split,
-/// a new node n with the edges into 0
-/// \pre G is square
+/// a new node n with the edges into 0; the loops of G dropped, as the
+/// problems of Problems.h ignore them
+/// \pre G is square and not empty (no node 0 to split otherwise)
 /// \post a square graph of n + 1 nodes
 inline Adjacency cycleToPath( const Adjacency & G );
 
 /// CICLO HAMILTONIANO to CATENA HAMILTONIANA: the path of cycleToPath(), each
 /// node v a chain v_in - v_mid - v_out, each edge ( u , v ) an edge
 /// u_out - v_in, and pendant nodes at the start and at the end
-/// \pre G is square
+/// \pre G is square and not empty
 /// \post an unoriented graph of 3 ( n + 1 ) + 2 nodes
 inline Adjacency cycleToChain( const Adjacency & G );
 

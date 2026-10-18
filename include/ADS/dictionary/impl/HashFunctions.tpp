@@ -58,7 +58,8 @@ inline std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
                                     std::uint64_t base , std::uint64_t seed )
 {
  ADS_PRE( ( m > 0 ) && ( base > 0 ) &&
-          ( m <= std::numeric_limits< std::uint64_t >::max() / base ) );
+          ( m - 1 <= ( std::numeric_limits< std::uint64_t >::max() - 255 ) /
+                     base ) );
  std::uint64_t b = seed % m;
  for( unsigned char c : k )
   b = ( b * base + c ) % m;

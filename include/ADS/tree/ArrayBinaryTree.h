@@ -107,10 +107,12 @@ class ArrayBinaryTree {
  /// the root of value v of the empty tree
  void setRoot( const T & v );
 
- /// a copy of t as the left subtree of i, which must be missing
+ /// a copy of t as the left subtree of i, which must be missing; t may be
+ /// this tree, copied as it was before the call
  void insertLeft( long i , const ArrayBinaryTree & t );
 
- /// a copy of t as the right subtree of i, which must be missing
+ /// a copy of t as the right subtree of i, which must be missing; t may
+ /// be this tree, copied as it was before the call
  void insertRight( long i , const ArrayBinaryTree & t );
 
  /// empties the subtree of i

@@ -36,7 +36,8 @@
  * \see R. W. Floyd, Algorithm 245: Treesort 3, Communications of the ACM
  *      7(12), 701, 1964, doi:10.1145/355588.365103
  * \see R. Hayward, C. McDiarmid, Average case analysis of heap building by
- *      repeated insertion, Journal of Algorithms 12(1), 126-153, 1991
+ *      repeated insertion, Journal of Algorithms 12(1), 126-153, 1991,
+ *      doi:10.1016/0196-6774(91)90027-V
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

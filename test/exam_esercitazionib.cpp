@@ -68,6 +68,9 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
+/// 64 bits everywhere: long has 32 bits on Windows
+using I64 = std::int64_t;
+
 namespace {
 
 namespace esercitazioni {
@@ -125,10 +128,10 @@ std::int64_t dist2( const Point & p , const Point & q )
 /// (pairCap) and the girls (studentCap) to t; O( |f*| ( V + E ) ), |f*| <=
 /// studentCap min( n , m ); the dances of each couple go to *dances
 /// \pre the couples join [ 0 , n ) to [ 0 , m ), capacities >= 0
-long maxDances( int n , int m ,
+I64 maxDances( int n , int m ,
                 const std::vector< std::pair< int , int > > & C ,
-                long pairCap = 3 , long studentCap = 10 ,
-                std::vector< long > * dances = nullptr )
+                I64 pairCap = 3 , I64 studentCap = 10 ,
+                std::vector< I64 > * dances = nullptr )
 {
  ADS_PRE( ( n >= 0 ) && ( m >= 0 ) && ( pairCap >= 0 ) &&
           ( studentCap >= 0 ) );
@@ -141,7 +144,7 @@ long maxDances( int n , int m ,
  std::vector< int > e;
  for( const auto & [ b , f ] : C )
   e.push_back( N.addEdge( b , n + f , pairCap ) );
- const long v = N.maxFlow( s , t );
+ const I64 v = N.maxFlow( s , t );
  if( dances ) {
   dances->clear();
   for( int x : e ) dances->push_back( N.flow( x ) );
@@ -151,7 +154,8 @@ long maxDances( int n , int m ,
 
 // against every choice of 0 ... pairCap dances per couple on 300 tiny
 // instances, with small capacities so that both bind; the dances returned
-// within the limits and of the total found; no couple
+// within the limits and of the total found; no couple, no student,
+// capacities of 0, capacities beyond int, the preconditions
 ADS_TEST( "esercitazioni-34" )
 {
  std::mt19937 g( 34 );
@@ -163,12 +167,12 @@ ADS_TEST( "esercitazioni-34" )
    S.insert( std::pair( rnd( g , 0 , n - 1 ) , rnd( g , 0 , m - 1 ) ) );
   const std::vector< std::pair< int , int > > C( S.begin() , S.end() );
   const int k = int( C.size() );
-  long best = 0;
+  I64 best = 0;
   std::vector< int > d( k , 0 );
-  const long codes = std::lround( std::pow( pc + 1 , k ) );
-  for( long code = 0 ; code < codes ; ++code ) {
-   long c = code , tot = 0;
-   std::vector< long > B( n , 0 ) , F( m , 0 );
+  const I64 codes = std::llround( std::pow( pc + 1 , k ) );
+  for( I64 code = 0 ; code < codes ; ++code ) {
+   I64 c = code , tot = 0;
+   std::vector< I64 > B( n , 0 ) , F( m , 0 );
    for( int i = 0 ; i < k ; ++i , c /= pc + 1 ) {
     d[ i ] = int( c % ( pc + 1 ) );
     B[ C[ i ].first ] += d[ i ];
@@ -179,21 +183,31 @@ ADS_TEST( "esercitazioni-34" )
        ( *std::ranges::max_element( F ) <= sc ) )
     best = std::max( best , tot );
    }
-  std::vector< long > D;
+  std::vector< I64 > D;
   CHECK( maxDances( n , m , C , pc , sc , &D ) == best );
-  std::vector< long > B( n , 0 ) , F( m , 0 );
+  std::vector< I64 > B( n , 0 ) , F( m , 0 );
   for( int i = 0 ; i < k ; ++i ) {
    CHECK( ( D[ i ] >= 0 ) && ( D[ i ] <= pc ) );
    B[ C[ i ].first ] += D[ i ];
    F[ C[ i ].second ] += D[ i ];
    }
-  CHECK( std::accumulate( D.begin() , D.end() , 0L ) == best );
+  CHECK( std::accumulate( D.begin() , D.end() , I64( 0 ) ) == best );
   CHECK( *std::ranges::max_element( B ) <= sc &&
          *std::ranges::max_element( F ) <= sc );
   }
  CHECK( maxDances( 2 , 2 , {} ) == 0 );
  CHECK( maxDances( 1 , 4 , { { 0 , 0 } , { 0 , 1 } , { 0 , 2 } , { 0 , 3 } } )
         == 10 );
+ CHECK( maxDances( 0 , 0 , {} ) == 0 && maxDances( 0 , 3 , {} ) == 0 );
+ CHECK( maxDances( 2 , 2 , { { 0 , 0 } , { 1 , 1 } } , 0 ) == 0 );
+ CHECK( maxDances( 2 , 2 , { { 0 , 0 } , { 1 , 1 } } , 3 , 0 ) == 0 );
+ const long big = 2000000000;           // FlowNetwork takes long capacities
+ CHECK( maxDances( 1 , 1 , { { 0 , 0 } } , big , big ) == big );
+ CHECK_THROWS( maxDances( -1 , 1 , {} ) , contract_violation );
+ CHECK_THROWS( maxDances( 1 , 1 , {} , -1 ) , contract_violation );
+ CHECK_THROWS( maxDances( 1 , 1 , {} , 1 , -1 ) , contract_violation );
+ CHECK_THROWS( maxDances( 1 , 1 , { { 1 , 0 } } ) , contract_violation );
+ CHECK_THROWS( maxDances( 1 , 1 , { { 0 , -1 } } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -207,7 +221,8 @@ ADS_TEST( "esercitazioni-34" )
 
 // the graph of the text (2 paths); against the smallest set of edges whose
 // removal separates t from s (Menger), over all the subsets, on 300 random
-// graphs of at most 12 edges
+// graphs of at most 12 edges; no edge, t unreachable, one edge from s to
+// t, the preconditions (s = t, a node absent)
 ADS_TEST( "esercitazioni-35" )
 {
  ListGraph<> T( 6 );                          // s , b , c , d , e , t
@@ -240,6 +255,15 @@ ADS_TEST( "esercitazioni-35" )
   CHECK( int( edgeDisjointPaths( G , 0 , n - 1 ).size() ) == cut );
   }
  CHECK_THROWS( edgeDisjointPaths( T , 2 , 2 ) , contract_violation );
+ CHECK_THROWS( edgeDisjointPaths( T , 0 , 6 ) , contract_violation );
+ CHECK_THROWS( edgeDisjointPaths( T , -1 , 5 ) , contract_violation );
+ CHECK( edgeDisjointPaths( T , 5 , 0 ).empty() );
+ ListGraph<> E2( 2 );
+ CHECK( edgeDisjointPaths( E2 , 0 , 1 ).empty() );
+ E2.insertEdge( 0 , 1 );
+ const std::vector< std::vector< int > > one( 1 , { 0 , 1 } );
+ CHECK( edgeDisjointPaths( E2 , 0 , 1 ) == one );
+ CHECK( edgeDisjointPaths( E2 , 1 , 0 ).empty() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -273,7 +297,9 @@ bool canCompose( const std::vector< std::string > & cubes ,
 // the cubes of the text: IDEA cannot be written, since only ABCDEF has D
 // and E, while IDA can; against every injective choice of the cubes and
 // against bipartiteMatching() of the library, on 400 random instances over
-// the letters A ... H; the empty word
+// the letters A ... H; the empty word (also with no cube), a letter
+// repeated on one cube counting once, a word as long as the cubes, the
+// preconditions (a word longer than the cubes, a cube without 6 faces)
 ADS_TEST( "esercitazioni-36" )
 {
  CHECK( ! canCompose( { "ABCDEF" , "GHIJKL" , "AABBCC" , "ISTUVW" } ,
@@ -308,6 +334,14 @@ ADS_TEST( "esercitazioni-36" )
   }
  CHECK( canCompose( { "ABCDEF" } , "" ) );
  CHECK_THROWS( canCompose( { "ABCDEF" } , "AB" ) , contract_violation );
+ CHECK( canCompose( {} , "" ) );
+ CHECK( ! canCompose( { "AAAAAA" , "BCDEFG" } , "AA" ) );
+ CHECK( canCompose( { "AAAAAA" , "BCDEFG" } , "GA" ) );
+ CHECK( canCompose( std::vector< std::string >( 26 , "ZZZZZZ" ) ,
+                    std::string( 26 , 'Z' ) ) );
+ CHECK_THROWS( canCompose( {} , "A" ) , contract_violation );
+ CHECK_THROWS( canCompose( { "ABCDE" } , "A" ) , contract_violation );
+ CHECK_THROWS( canCompose( { "ABCDEFG" } , "" ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -315,7 +349,7 @@ ADS_TEST( "esercitazioni-36" )
 /*--------------------------------------------------------------------------*/
 
 
-using Matrix = std::vector< std::vector< long > >;
+using Matrix = std::vector< std::vector< I64 > >;
 
 /// a path from s to t in the residual network r, by a visit in breadth;
 /// empty if there is none
@@ -352,7 +386,7 @@ Matrix residualNetwork( const Matrix & c , const Matrix & f )
  }
 
 /// d more units along the path, the flow kept skew symmetric
-void augmentFlow( Matrix & f , const std::vector< int > & path , long d )
+void augmentFlow( Matrix & f , const std::vector< int > & path , I64 d )
 {
  for( std::size_t i = 0 ; i + 1 < path.size() ; ++i ) {
   f[ path[ i ] ][ path[ i + 1 ] ] += d;
@@ -363,11 +397,11 @@ void augmentFlow( Matrix & f , const std::vector< int > & path , long d )
 /// a maximum flow from s to t, skew symmetric, by augmenting paths
 Matrix maxFlowMatrix( const Matrix & c , int s , int t )
 {
- Matrix f( c.size() , std::vector< long >( c.size() , 0 ) );
+ Matrix f( c.size() , std::vector< I64 >( c.size() , 0 ) );
  for( auto P = augmentingPath( c , s , t ) ; ! P.empty() ;
       P = augmentingPath( residualNetwork( c , f ) , s , t ) ) {
   const auto r = residualNetwork( c , f );
-  long d = std::numeric_limits< long >::max();
+  I64 d = std::numeric_limits< I64 >::max();
   for( std::size_t i = 0 ; i + 1 < P.size() ; ++i )
    d = std::min( d , r[ P[ i ] ][ P[ i + 1 ] ] );
   augmentFlow( f , P , d );
@@ -376,9 +410,9 @@ Matrix maxFlowMatrix( const Matrix & c , int s , int t )
  }
 
 /// the value of the flow f out of s
-long flowValue( const Matrix & f , int s )
+I64 flowValue( const Matrix & f , int s )
 {
- return( std::accumulate( f[ s ].begin() , f[ s ].end() , 0L ) );
+ return( std::accumulate( f[ s ].begin() , f[ s ].end() , I64( 0 ) ) );
  }
 
 /// updateFlow(): the maximum flow f, skew symmetric, of the capacities c
@@ -400,18 +434,19 @@ void updateFlow( Matrix & c , int s , int t , Matrix & f , int u , int v )
 // on 300 random networks: the flow updated after one capacity grows is a
 // flow (capacities, skew symmetry, conservation) of the value that the
 // maximum flow of the library finds from scratch, at most 1 more; an edge
-// of a minimum cut grows it by 1, an edge out of every cut does not
+// of a minimum cut grows it by 1, an edge out of every cut does not, nor
+// an edge back from t to s; the preconditions (s = t, a node absent)
 ADS_TEST( "esercitazioni-37" )
 {
  std::mt19937 g( 37 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = rnd( g , 2 , 7 ) , s = 0 , t = n - 1;
-  Matrix c( n , std::vector< long >( n , 0 ) );
+  Matrix c( n , std::vector< I64 >( n , 0 ) );
   for( int a = 0 ; a < n ; ++a )
    for( int b = 0 ; b < n ; ++b )
     if( ( a != b ) && rnd( g , 0 , 1 ) ) c[ a ][ b ] = rnd( g , 0 , 4 );
   Matrix f = maxFlowMatrix( c , s , t );
-  const long before = flowValue( f , s );
+  const I64 before = flowValue( f , s );
   int u = rnd( g , 0 , n - 1 ) , v = rnd( g , 0 , n - 2 );
   if( v >= u ) ++v;
   updateFlow( c , s , t , f , u , v );
@@ -419,11 +454,11 @@ ADS_TEST( "esercitazioni-37" )
   for( int a = 0 ; a < n ; ++a )
    for( int b = 0 ; b < n ; ++b )
     if( c[ a ][ b ] ) N.addEdge( a , b , c[ a ][ b ] );
-  const long after = N.maxFlow( s , t );
+  const I64 after = N.maxFlow( s , t );
   CHECK( flowValue( f , s ) == after && after - before <= 1 &&
          after >= before );
   for( int a = 0 ; a < n ; ++a ) {
-   long net = 0;
+   I64 net = 0;
    for( int b = 0 ; b < n ; ++b ) {
     CHECK( f[ a ][ b ] <= c[ a ][ b ] && f[ a ][ b ] == -f[ b ][ a ] );
     net += f[ a ][ b ];
@@ -437,6 +472,15 @@ ADS_TEST( "esercitazioni-37" )
  CHECK( flowValue( f , 0 ) == 1 );
  updateFlow( c , 0 , 2 , f , 1 , 2 );
  CHECK( flowValue( f , 0 ) == 2 );
+ updateFlow( c , 0 , 2 , f , 2 , 0 );
+ CHECK( flowValue( f , 0 ) == 2 && c[ 2 ][ 0 ] == 1 );
+ Matrix z{ { 0 , 0 } , { 0 , 0 } } , fz = maxFlowMatrix( z , 0 , 1 );
+ CHECK( flowValue( fz , 0 ) == 0 );
+ updateFlow( z , 0 , 1 , fz , 0 , 1 );
+ CHECK( flowValue( fz , 0 ) == 1 );
+ CHECK_THROWS( updateFlow( c , 1 , 1 , f , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( updateFlow( c , 0 , 3 , f , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( updateFlow( c , 0 , 2 , f , -1 , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -481,7 +525,8 @@ std::optional< std::vector< std::vector< int > > > schedule(
    }
   }
  for( int i = 0 ; i < T ; ++i ) N.addEdge( D + D * P.days + i , t , P.p[ i ] );
- if( N.maxFlow( s , t ) < std::accumulate( P.p.begin() , P.p.end() , 0L ) )
+ if( N.maxFlow( s , t ) < std::accumulate( P.p.begin() , P.p.end() ,
+                                           I64( 0 ) ) )
   return( std::nullopt );
  std::vector< std::vector< int > > out( T );
  for( const auto & [ e , j , i ] : E )
@@ -517,7 +562,10 @@ bool validSchedule( const Staffing & P ,
 
 // against every choice of the shifts of each employee on 200 tiny
 // problems (2 days of 3 shifts, 1 to 3 employees, small limits); each
-// schedule found valid; a week of 21 shifts that needs 5 |D| + 1 staff
+// schedule found valid; a week of 21 shifts that needs 5 |D| + 1 staff; no
+// employee (feasible only if nobody is needed), an employee off in every
+// shift, a limit of 0 a day, the preconditions (p of the wrong size or
+// negative)
 ADS_TEST( "esercitazioni-38" )
 {
  std::mt19937 g( 38 );
@@ -532,7 +580,8 @@ ADS_TEST( "esercitazioni-38" )
   for( auto & o : P.off )
    for( int i = 0 ; i < T ; ++i ) if( rnd( g , 0 , 3 ) == 0 ) o.insert( i );
   bool brute = false;
-  for( long code = 0 ; ! brute && ( code < ( 1L << ( T * D ) ) ) ; ++code ) {
+  for( I64 code = 0 ; ! brute && ( code < ( I64( 1 ) << ( T * D ) ) ) ;
+       ++code ) {
    std::vector< int > need( P.p );
    bool ok = true;
    for( int j = 0 ; ok && ( j < D ) ; ++j ) {
@@ -561,6 +610,24 @@ ADS_TEST( "esercitazioni-38" )
  CHECK( S && validSchedule( W , *S ) );
  W.p[ 20 ] = 1;
  CHECK( ! schedule( W ) );
+ Staffing Z;
+ Z.p.assign( 21 , 0 );
+ const auto SZ = schedule( Z );
+ CHECK( SZ && SZ->size() == 21 && validSchedule( Z , *SZ ) );
+ Z.p[ 3 ] = 1;
+ CHECK( ! schedule( Z ) );
+ Z.off.resize( 1 );
+ CHECK( schedule( Z ) && validSchedule( Z , *schedule( Z ) ) );
+ for( int i = 0 ; i < 21 ; ++i ) Z.off[ 0 ].insert( i );
+ CHECK( ! schedule( Z ) );
+ Z.off[ 0 ].clear();
+ Z.day = 0;
+ CHECK( ! schedule( Z ) );
+ Z.p.pop_back();
+ CHECK_THROWS( schedule( Z ) , contract_violation );
+ Z.p.assign( 21 , 0 );
+ Z.p[ 0 ] = -1;
+ CHECK_THROWS( schedule( Z ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -580,7 +647,7 @@ struct Pool {
 /// an assignment of largest revenue: the slots of each child and the
 /// teacher of each slot (-1 if the course is empty)
 struct PoolPlan {
- long revenue = 0;
+ I64 revenue = 0;
  std::vector< std::vector< int > > slots;
  std::vector< int > teacher;
  };
@@ -631,7 +698,9 @@ PoolPlan swimming( const Pool & P )
 
 // against every choice of the slots of each child on 200 tiny pools (2 days
 // of 2 hours, courses of at most 2, up to 3 children); each plan checked on
-// every rule; no teacher at all gives 0
+// every rule; no teacher at all gives 0, so do no child, courses of 0 and
+// a child of most 0; the preconditions (prefs of the wrong size, a slot
+// out of range)
 ADS_TEST( "esercitazioni-39" )
 {
  std::mt19937 g( 39 );
@@ -651,11 +720,11 @@ ADS_TEST( "esercitazioni-39" )
    if( rnd( g , 0 , 1 ) ) q.insert( x );
   std::vector< bool > taught( S , false );
   for( const auto & q : P.teachers ) for( int x : q ) taught[ x ] = true;
-  long best = 0;
+  I64 best = 0;
   for( int code = 0 ; code < ( 1 << ( S * b ) ) ; ++code ) {
    std::vector< int > size( S , 0 );
    bool ok = true;
-   long tot = 0;
+   I64 tot = 0;
    for( int i = 0 ; ok && ( i < b ) ; ++i ) {
     const int mask = ( code >> ( S * i ) ) & 15;
     ok = std::popcount( unsigned( mask ) ) <= P.most[ i ] &&
@@ -673,7 +742,7 @@ ADS_TEST( "esercitazioni-39" )
   const auto plan = swimming( P );
   CHECK( plan.revenue == best );
   std::vector< int > size( S , 0 );
-  long tot = 0;
+  I64 tot = 0;
   for( int i = 0 ; i < b ; ++i ) {
    CHECK( int( plan.slots[ i ].size() ) <= P.most[ i ] );
    std::vector< int > perDay( P.days , 0 );
@@ -692,6 +761,24 @@ ADS_TEST( "esercitazioni-39" )
  none.most = { 5 };
  none.prefs = { { 0 , 1 , 2 } };
  CHECK( swimming( none ).revenue == 0 );
+ Pool empty;
+ empty.teachers = { { 0 , 1 } };
+ CHECK( swimming( empty ).revenue == 0 );
+ Pool one = none;
+ one.teachers = { { 0 , 1 , 2 } };
+ CHECK( swimming( one ).revenue == 20 );          // perDay 2 on day 0
+ one.course = 0;
+ CHECK( swimming( one ).revenue == 0 );
+ one.course = 6;
+ one.most = { 0 };
+ CHECK( swimming( one ).revenue == 0 );
+ one.prefs.clear();
+ CHECK_THROWS( swimming( one ) , contract_violation );
+ one.prefs = { { 70 } };
+ CHECK_THROWS( swimming( one ) , contract_violation );
+ one.prefs = { { 0 } };
+ one.teachers = { { -1 } };
+ CHECK_THROWS( swimming( one ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -706,7 +793,7 @@ ADS_TEST( "esercitazioni-39" )
 /// \pre L >= 0, d >= 0
 std::optional< std::vector< int > > towers( const std::vector< Point > & A ,
                                             const std::vector< Point > & Q ,
-                                            long L , std::int64_t d )
+                                            I64 L , std::int64_t d )
 {
  ADS_PRE( ( L >= 0 ) && ( d >= 0 ) );
  const int n = int( A.size() ) , m = int( Q.size() ) , s = n + m , t = s + 1;
@@ -726,7 +813,8 @@ std::optional< std::vector< int > > towers( const std::vector< Point > & A ,
  }
 
 // against every assignment of the planes to the towers on 300 tiny
-// instances; each assignment found checked on load and distance; no plane
+// instances; each assignment found checked on load and distance; no plane,
+// no tower, a distance of 0, a load of 0, the preconditions
 ADS_TEST( "esercitazioni-40" )
 {
  std::mt19937 g( 40 );
@@ -738,11 +826,11 @@ ADS_TEST( "esercitazioni-40" )
   for( auto & p : A ) p = Point{ rnd( g , 0 , 8 ) , rnd( g , 0 , 8 ) };
   for( auto & q : Q ) q = Point{ rnd( g , 0 , 8 ) , rnd( g , 0 , 8 ) };
   bool brute = false;
-  for( long code = 0 ; ! brute && ( code < std::lround( std::pow( m , n ) ) ) ;
+  for( I64 code = 0 ; ! brute && ( code < std::llround( std::pow( m , n ) ) ) ;
        ++code ) {
    std::vector< int > load( m , 0 );
    bool ok = true;
-   long c = code;
+   I64 c = code;
    for( int i = 0 ; ok && ( i < n ) ; ++i , c /= m ) {
     const int j = int( c % m );
     ok = ( dist2( A[ i ] , Q[ j ] ) <= std::int64_t( d ) * d ) &&
@@ -763,6 +851,15 @@ ADS_TEST( "esercitazioni-40" )
    }
   }
  CHECK( towers( {} , { Point{ 0 , 0 } } , 1 , 1 ) );
+ CHECK( towers( {} , {} , 0 , 0 ) && ! towers( { Point{ 0 , 0 } } , {} , 1 ,
+                                                5 ) );
+ CHECK( towers( { Point{ 2 , 3 } } , { Point{ 2 , 3 } } , 1 , 0 ) );
+ CHECK( ! towers( { Point{ 2 , 3 } } , { Point{ 2 , 4 } } , 1 , 0 ) );
+ CHECK( towers( { Point{ 0 , 0 } } , { Point{ 3 , 4 } } , 1 , 5 ) &&
+        ! towers( { Point{ 0 , 0 } } , { Point{ 3 , 4 } } , 1 , 4 ) );
+ CHECK( ! towers( { Point{ 0 , 0 } } , { Point{ 0 , 0 } } , 0 , 1 ) );
+ CHECK_THROWS( towers( {} , {} , -1 , 0 ) , contract_violation );
+ CHECK_THROWS( towers( {} , {} , 0 , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -793,7 +890,9 @@ bool canPartition( int n , const std::vector< std::pair< int , int > > & R )
 
 // against twoColoring() of the library and the 2^n colorings on 500 random
 // graphs, each coloring found checked; the wrestlers against every split
-// into two non-empty groups; a triangle, an even cycle, no edge
+// into two non-empty groups; a triangle, an even cycle, no edge, two
+// rivals, a long odd cycle, the preconditions (one wrestler, a rival of
+// himself or out of range)
 ADS_TEST( "esercitazioni-41-2" )
 {
  std::mt19937 g( 41 );
@@ -823,8 +922,15 @@ ADS_TEST( "esercitazioni-41-2" )
  CHECK( ! canPartition( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ) );
  CHECK( canPartition( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
                            { 3 , 0 } } ) );
- CHECK( canPartition( 2 , {} ) );
+ CHECK( canPartition( 2 , {} ) && canPartition( 2 , { { 0 , 1 } } ) );
+ std::vector< std::pair< int , int > > odd , even;
+ for( int i = 0 ; i < 1001 ; ++i ) odd.emplace_back( i , ( i + 1 ) % 1001 );
+ for( int i = 0 ; i < 1000 ; ++i ) even.emplace_back( i , ( i + 1 ) % 1000 );
+ CHECK( ! canPartition( 1001 , odd ) && canPartition( 1000 , even ) );
  CHECK_THROWS( canPartition( 1 , {} ) , contract_violation );
+ CHECK_THROWS( canPartition( 3 , { { 1 , 1 } } ) , contract_violation );
+ CHECK_THROWS( canPartition( 3 , { { 0 , 3 } } ) , contract_violation );
+ CHECK_THROWS( canPartition( 3 , { { -1 , 0 } } ) , contract_violation );
  CHECK_THROWS( twoColoring( ListGraph<>( 2 , true ) ) , contract_violation );
  }
 
@@ -868,7 +974,8 @@ int components( const G & g )
  }
 
 // against the components counted by union-find on 500 random graphs; one
-// node; no edge (n - 1)
+// node; no edge (n - 1); a complete graph (0); a deleted node, which is
+// not a component; the preconditions (no node, oriented)
 ADS_TEST( "esercitazioni-42-1" )
 {
  std::mt19937 g( 421 );
@@ -878,7 +985,16 @@ ADS_TEST( "esercitazioni-42-1" )
   }
  CHECK( numberToConnect( ListGraph<>( 1 , false ) ) == 0 );
  CHECK( numberToConnect( ListGraph<>( 9 , false ) ) == 8 );
+ CHECK( numberToConnect( randomGraph( g , 7 , 1.0 , false ) ) == 0 );
+ ListGraph<> D( 4 , false );
+ D.insertEdge( 0 , 1 );
+ D.insertEdge( 1 , 2 );
+ D.deleteNode( 1 );
+ CHECK( numberToConnect( D ) == components( D ) - 1 &&
+        numberToConnect( D ) == 2 );
  CHECK_THROWS( numberToConnect( ListGraph<>( 0 , false ) ) ,
+               contract_violation );
+ CHECK_THROWS( numberToConnect( ListGraph<>( 3 , true ) ) ,
                contract_violation );
  }
 
@@ -901,7 +1017,8 @@ int connectGraph( G & g )
  }
 
 // on 500 random graphs: connected afterwards, with as many new edges as
-// components less one; a connected graph gets no edge
+// components less one; a connected graph gets no edge, one node neither,
+// no edge n - 1 of them, a deleted node none; the preconditions
 ADS_TEST( "esercitazioni-42-2" )
 {
  std::mt19937 g( 422 );
@@ -918,6 +1035,16 @@ ADS_TEST( "esercitazioni-42-2" )
   }
  ListGraph<> K = randomGraph( g , 5 , 1.0 , false );
  CHECK( connectGraph( K ) == 0 );
+ ListGraph<> one( 1 , false ) , bare( 6 , false ) , D( 4 , false );
+ CHECK( connectGraph( one ) == 0 );
+ CHECK( connectGraph( bare ) == 5 && components( bare ) == 1 );
+ D.insertEdge( 0 , 1 );
+ D.deleteNode( 2 );
+ CHECK( connectGraph( D ) == 1 && components( D ) == 1 &&
+        ! D.hasNode( 2 ) );
+ ListGraph<> none( 0 , false ) , arcs( 2 , true );
+ CHECK_THROWS( connectGraph( none ) , contract_violation );
+ CHECK_THROWS( connectGraph( arcs ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -931,7 +1058,8 @@ ADS_TEST( "esercitazioni-42-2" )
 // O( n + m )
 
 // against the least distance() of the library from each node of V1, on 500
-// random oriented and unoriented graphs; V1 meeting V2; V1 empty (INF)
+// random oriented and unoriented graphs; V1 meeting V2; V1 empty (INF), V2
+// empty (INF), one node in both (0), the precondition on the sizes
 ADS_TEST( "esercitazioni-43" )
 {
  std::mt19937 g( 43 );
@@ -963,6 +1091,15 @@ ADS_TEST( "esercitazioni-43" )
                      { true , false , false } ) == INF );
  CHECK( setDistance( P , { false , false , false } ,
                      { true , true , true } ) == INF );
+ CHECK( setDistance( P , { true , true , true } ,
+                     { false , false , false } ) == INF );
+ CHECK( setDistance( ListGraph<>( 1 ) , { true } , { true } ) == 0 );
+ CHECK( setDistance( P , { false , true , false } ,
+                     { false , true , false } ) == 0 );
+ CHECK_THROWS( setDistance( P , { true } , { false , false , true } ) ,
+               contract_violation );
+ CHECK_THROWS( setDistance( P , { true , false , false } , { true } ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1009,7 +1146,9 @@ int grid( const std::vector< std::vector< int > > & M )
  }
 
 // the grid of the text (2); against the least Manhattan distance between a
-// 1 and a 3 on 500 random grids; a 1 x ... grid with 1 next to 3
+// 1 and a 3 on 500 random grids; a 1 x ... grid with 1 next to 3; the 1
+// and the 3 at opposite corners of a large grid; the preconditions (no 3,
+// no 1, not square, a color out of { 1 , 2 , 3 })
 ADS_TEST( "esercitazioni-45" )
 {
  CHECK( grid( { { 1 , 2 , 2 , 3 } , { 2 , 1 , 2 , 3 } , { 2 , 2 , 2 , 3 } ,
@@ -1036,6 +1175,15 @@ ADS_TEST( "esercitazioni-45" )
   }
  CHECK( grid( { { 1 , 3 } , { 2 , 2 } } ) == 1 );
  CHECK_THROWS( grid( { { 1 , 2 } , { 2 , 2 } } ) , contract_violation );
+ std::vector< std::vector< int > > B( 300 , std::vector< int >( 300 , 2 ) );
+ B[ 0 ][ 0 ] = 1;
+ B[ 299 ][ 299 ] = 3;
+ CHECK( grid( B ) == 598 );
+ CHECK_THROWS( grid( { { 3 , 2 } , { 2 , 2 } } ) , contract_violation );
+ CHECK_THROWS( grid( { { 1 , 3 } } ) , contract_violation );
+ CHECK_THROWS( grid( { { 1 , 3 } , { 2 , 4 } } ) , contract_violation );
+ CHECK_THROWS( grid( { { 1 , 3 } , { 0 , 2 } } ) , contract_violation );
+ CHECK_THROWS( grid( {} ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1061,7 +1209,9 @@ bool shangai( int n , const std::vector< int > & X ,
  }
 
 // against the game played: take any stick with nothing on it, until none is
-// left or none can be taken, on 500 random games; a cycle of two sticks
+// left or none can be taken, on 500 random games; a cycle of two sticks,
+// no stick, no pair, a pair repeated, a long chain and the same chain
+// closed; the preconditions (sizes, a stick on itself or out of range)
 ADS_TEST( "esercitazioni-46" )
 {
  std::mt19937 g( 46 );
@@ -1090,6 +1240,18 @@ ADS_TEST( "esercitazioni-46" )
                                                       return( b ); } ) );
   }
  CHECK( ! shangai( 2 , { 0 , 1 } , { 1 , 0 } ) && shangai( 0 , {} , {} ) );
+ CHECK( shangai( 5 , {} , {} ) && shangai( 2 , { 0 , 0 } , { 1 , 1 } ) );
+ std::vector< int > X( 999 ) , Y( 999 );
+ std::iota( X.begin() , X.end() , 0 );
+ std::iota( Y.begin() , Y.end() , 1 );
+ CHECK( shangai( 1000 , X , Y ) );
+ X.push_back( 999 );
+ Y.push_back( 0 );
+ CHECK( ! shangai( 1000 , X , Y ) );
+ CHECK_THROWS( shangai( 2 , { 0 } , {} ) , contract_violation );
+ CHECK_THROWS( shangai( 2 , { 1 } , { 1 } ) , contract_violation );
+ CHECK_THROWS( shangai( 2 , { 0 } , { 2 } ) , contract_violation );
+ CHECK_THROWS( shangai( -1 , {} , {} ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1104,7 +1266,8 @@ ADS_TEST( "esercitazioni-46" )
 // row and column; Theta( n ), while lists need Theta( n + m )
 
 // against the degrees of every node on 1000 random matrices, half of them
-// with a sink planted; one node (a sink); no node
+// with a sink planted; one node (a sink); no node; two nodes either way,
+// two nodes pointing at each other, no edge, the matrix not square
 ADS_TEST( "esercitazioni-48" )
 {
  std::mt19937 g( 48 );
@@ -1129,6 +1292,11 @@ ADS_TEST( "esercitazioni-48" )
  using Adj = std::vector< std::vector< int > >;
  CHECK( universalSink( Adj( { { 0 } } ) ) == 0 &&
         universalSink( Adj() ) == -1 );
+ CHECK( universalSink( Adj( { { 0 , 1 } , { 0 , 0 } } ) ) == 1 &&
+        universalSink( Adj( { { 0 , 0 } , { 1 , 0 } } ) ) == 0 );
+ CHECK( universalSink( Adj( { { 0 , 1 } , { 1 , 0 } } ) ) == -1 );
+ CHECK( universalSink( Adj( 3 , std::vector< int >( 3 , 0 ) ) ) == -1 );
+ CHECK_THROWS( universalSink( Adj( { { 0 , 1 } } ) ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1151,7 +1319,8 @@ bool isRoma( const G & g , int v )
  }
 
 // against a visit in breadth from each node, which must reach v, on 500
-// random oriented graphs; one node; a path towards its last node
+// random oriented graphs; one node; a path towards its last node; a cycle
+// (every node), two nodes with no edge, v not a node
 ADS_TEST( "esercitazioni-49-1" )
 {
  std::mt19937 g( 491 );
@@ -1168,6 +1337,11 @@ ADS_TEST( "esercitazioni-49-1" )
  for( int i = 0 ; i < 3 ; ++i ) P.insertEdge( i , i + 1 );
  CHECK( isRoma( P , 3 ) && ! isRoma( P , 2 ) );
  CHECK( isRoma( ListGraph<>( 1 ) , 0 ) );
+ P.insertEdge( 3 , 0 );
+ for( int v = 0 ; v < 4 ; ++v ) CHECK( isRoma( P , v ) );
+ CHECK( ! isRoma( ListGraph<>( 2 ) , 0 ) );
+ CHECK_THROWS( isRoma( P , 4 ) , contract_violation );
+ CHECK_THROWS( isRoma( P , -1 ) , contract_violation );
  }
 
 /// hasRoma(): whether some node is reached from all the others: the root of
@@ -1190,7 +1364,8 @@ bool hasRoma( const G & g )
  }
 
 // against isRoma() of every node and against one sink component in the
-// condensation by scc() of the library, on 500 random graphs
+// condensation by scc() of the library, on 500 random graphs; one node,
+// two nodes apart, a cycle, a star towards its center, two sinks
 ADS_TEST( "esercitazioni-49-2" )
 {
  std::mt19937 g( 492 );
@@ -1209,6 +1384,13 @@ ADS_TEST( "esercitazioni-49-2" )
                     == 1 ) );
   }
  CHECK( hasRoma( ListGraph<>( 1 ) ) && ! hasRoma( ListGraph<>( 2 ) ) );
+ ListGraph<> cyc( 5 ) , star( 6 ) , two( 4 );
+ for( int i = 0 ; i < 5 ; ++i ) cyc.insertEdge( i , ( i + 1 ) % 5 );
+ for( int i = 1 ; i < 6 ; ++i ) star.insertEdge( i , 0 );
+ two.insertEdge( 0 , 1 );
+ two.insertEdge( 0 , 2 );
+ two.insertEdge( 3 , 2 );
+ CHECK( hasRoma( cyc ) && hasRoma( star ) && ! hasRoma( two ) );
  CHECK_THROWS( hasRoma( ListGraph<>( 0 ) ) , contract_violation );
  }
 
@@ -1232,7 +1414,8 @@ int sameDistance( const G & g , int s1 , int s2 )
  }
 
 // against the distances of Floyd and Warshall on 500 random oriented
-// graphs; s1 = s2 counts the nodes reached
+// graphs; s1 = s2 counts the nodes reached; one node, no edge (0), the
+// preconditions
 ADS_TEST( "esercitazioni-50" )
 {
  std::mt19937 g( 50 );
@@ -1257,6 +1440,14 @@ ADS_TEST( "esercitazioni-50" )
   CHECK( sameDistance( G , s1 , s2 ) == c );
   CHECK( sameDistance( G , s1 , s1 ) == reached );
   }
+ CHECK( sameDistance( ListGraph<>( 1 ) , 0 , 0 ) == 1 );
+ CHECK( sameDistance( ListGraph<>( 4 ) , 0 , 3 ) == 0 );
+ ListGraph<> V( 3 );
+ V.insertEdge( 0 , 2 );
+ V.insertEdge( 1 , 2 );
+ CHECK( sameDistance( V , 0 , 1 ) == 1 );
+ CHECK_THROWS( sameDistance( V , 0 , 3 ) , contract_violation );
+ CHECK_THROWS( sameDistance( V , -1 , 0 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1278,7 +1469,10 @@ int minStops( const std::vector< int > & dist , int L , int R )
  }
 
 // against a visit in breadth over the stations (fewest stops) on 1000
-// random trips; L <= R needs no stop; no station
+// random trips; L <= R needs no stop; no station; a trip of length 0,
+// gaps of exactly R, a station at 0 and at L, the extremes of int (where
+// D + R overflowed), the preconditions (a gap beyond R, D unsorted or out
+// of [ 0 , L ], L or R negative)
 ADS_TEST( "esercitazioni-51" )
 {
  std::mt19937 g( 51 );
@@ -1305,6 +1499,19 @@ ADS_TEST( "esercitazioni-51" )
  CHECK( minStops( { 1 , 2 } , 3 , 5 ) == 0 && minStops( {} , 4 , 4 ) == 0 );
  CHECK( minStops( { 0 , 5 , 10 } , 15 , 5 ) == 2 );
  CHECK_THROWS( minStops( {} , 5 , 4 ) , contract_violation );
+ CHECK( minStops( {} , 0 , 0 ) == 0 && minStops( {} , 0 , 3 ) == 0 );
+ CHECK( minStops( { 3 , 6 , 9 } , 12 , 3 ) == 3 );
+ CHECK( minStops( { 0 , 4 , 8 } , 8 , 4 ) == 1 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( minStops( { 5 } , M , M - 3 ) == 1 );
+ CHECK( minStops( { M - 1 } , M , M - 1 ) == 1 );
+ CHECK( minStops( {} , M , M ) == 0 );
+ CHECK_THROWS( minStops( { 3 , 9 } , 12 , 4 ) , contract_violation );
+ CHECK_THROWS( minStops( { 6 , 3 } , 12 , 6 ) , contract_violation );
+ CHECK_THROWS( minStops( { -1 } , 3 , 4 ) , contract_violation );
+ CHECK_THROWS( minStops( { 13 } , 12 , 20 ) , contract_violation );
+ CHECK_THROWS( minStops( {} , -1 , 4 ) , contract_violation );
+ CHECK_THROWS( minStops( {} , 3 , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1327,15 +1534,17 @@ int minSprinklers( const std::vector< int > & D ,
  if( L == 0 )
   return( 0 );
  const int n = int( D.size() );
- std::vector< std::pair< long , long > > I( n );
+ std::vector< std::pair< I64 , I64 > > I( n );
  for( int i = 0 ; i < n ; ++i )
-  I[ i ] = std::pair( long( D[ i ] ) - R[ i ] , long( D[ i ] ) + R[ i ] );
- const auto cover = minimumIntervalCover( I , 0L , long( L ) );
+  I[ i ] = std::pair( I64( D[ i ] ) - R[ i ] , I64( D[ i ] ) + R[ i ] );
+ const auto cover = minimumIntervalCover( I , I64( 0 ) , I64( L ) );
  return( cover ? int( cover->size() ) : -1 );
  }
 
 // against every subset of at most 12 sprinklers, the union of its
-// intervals swept to see if it covers [ 0 , L ]; L = 0; no sprinkler
+// intervals swept to see if it covers [ 0 , L ]; L = 0; no sprinkler; a
+// radius of 0, one sprinkler covering exactly [ 0 , L ], the extremes of
+// int; the preconditions
 ADS_TEST( "esercitazioni-52" )
 {
  std::mt19937 g( 52 );
@@ -1363,6 +1572,16 @@ ADS_TEST( "esercitazioni-52" )
  CHECK( minSprinklers( {} , {} , 1 ) == -1 );
  CHECK( minSprinklers( { 2 , 6 } , { 2 , 2 } , 8 ) == 2 );
  CHECK( minSprinklers( { 2 , 7 } , { 2 , 2 } , 8 ) == -1 );
+ CHECK( minSprinklers( { 0 , 1 } , { 0 , 0 } , 1 ) == -1 );
+ CHECK( minSprinklers( { 0 } , { 0 } , 0 ) == 0 );
+ CHECK( minSprinklers( { 5 } , { 5 } , 10 ) == 1 &&
+        minSprinklers( { 5 } , { 5 } , 11 ) == -1 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( minSprinklers( { M } , { M } , M ) == 1 );
+ CHECK( minSprinklers( { -M , M } , { M , M } , M ) == 1 );
+ CHECK_THROWS( minSprinklers( { 1 } , {} , 3 ) , contract_violation );
+ CHECK_THROWS( minSprinklers( { 1 } , { -1 } , 3 ) , contract_violation );
+ CHECK_THROWS( minSprinklers( {} , {} , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1373,14 +1592,14 @@ ADS_TEST( "esercitazioni-52" )
 /// maxGain(): the proposed greedy for unit jobs with deadlines D and gains
 /// G, by decreasing gain, each run at the next time t if t <= D[ i ]; its
 /// gain (not optimal)
-long maxGainGreedy( const std::vector< int > & D ,
+I64 maxGainGreedy( const std::vector< int > & D ,
                     const std::vector< int > & G )
 {
  std::vector< int > order( D.size() );
  std::iota( order.begin() , order.end() , 0 );
  std::ranges::stable_sort( order , [ & ]( int a , int b ) {
   return( G[ a ] > G[ b ] ); } );
- long gain = 0;
+ I64 gain = 0;
  int t = 1;
  for( int i : order )
   if( t <= D[ i ] ) {
@@ -1393,7 +1612,7 @@ long maxGainGreedy( const std::vector< int > & D ,
 /// the optimal gain: by decreasing gain, each job in the latest free time
 /// not after its deadline, if any; O( n^2 )
 /// \pre D >= 1 and G >= 1
-long maxGainLatest( const std::vector< int > & D ,
+I64 maxGainLatest( const std::vector< int > & D ,
                     const std::vector< int > & G )
 {
  ADS_PRE( D.size() == G.size() );
@@ -1402,7 +1621,7 @@ long maxGainLatest( const std::vector< int > & D ,
  std::ranges::stable_sort( order , [ & ]( int a , int b ) {
   return( G[ a ] > G[ b ] ); } );
  std::vector< bool > busy( D.size() + 1 , false );
- long gain = 0;
+ I64 gain = 0;
  for( int i : order ) {
   ADS_PRE( ( D[ i ] >= 1 ) && ( G[ i ] >= 1 ) );
   for( int t = std::min( D[ i ] , int( D.size() ) ) ; t >= 1 ; --t )
@@ -1417,7 +1636,9 @@ long maxGainLatest( const std::vector< int > & D ,
 
 // the counterexample of the text (greedy 2, optimum 3); against the best
 // subset (one is feasible iff its i-th earliest deadline is >= i) on 500
-// random instances, the greedy never above it and below it on some
+// random instances, the greedy never above it and below it on some; no
+// job, deadlines beyond n (all run), all deadlines 1 (the best one), the
+// preconditions
 ADS_TEST( "esercitazioni-53" )
 {
  CHECK( maxGainGreedy( { 2 , 1 } , { 2 , 1 } ) == 2 );
@@ -1427,10 +1648,10 @@ ADS_TEST( "esercitazioni-53" )
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = rnd( g , 1 , 10 );
   const auto D = rndVector( g , n , 1 , 5 ) , G = rndVector( g , n , 1 , 9 );
-  long best = 0;
+  I64 best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    std::vector< int > d;
-   long s = 0;
+   I64 s = 0;
    for( int i = 0 ; i < n ; ++i )
     if( ( mask >> i ) & 1 ) { d.push_back( D[ i ] ); s += G[ i ]; }
    std::ranges::sort( d );
@@ -1442,6 +1663,14 @@ ADS_TEST( "esercitazioni-53" )
   worse += maxGainGreedy( D , G ) < best;
   }
  CHECK( worse > 0 );
+ CHECK( maxGainLatest( {} , {} ) == 0 && maxGainGreedy( {} , {} ) == 0 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( maxGainLatest( { M , M , M } , { M , M , M } ) == I64( 3 ) * M );
+ CHECK( maxGainLatest( { 1 , 1 , 1 } , { 4 , 9 , 2 } ) == 9 &&
+        maxGainGreedy( { 1 , 1 , 1 } , { 4 , 9 , 2 } ) == 9 );
+ CHECK_THROWS( maxGainLatest( { 1 } , {} ) , contract_violation );
+ CHECK_THROWS( maxGainLatest( { 0 } , { 1 } ) , contract_violation );
+ CHECK_THROWS( maxGainLatest( { 1 } , { 0 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1451,11 +1680,11 @@ ADS_TEST( "esercitazioni-53" )
 
 /// the proposed greedy for skiers H and skis L: the closest pair still free
 /// first, the first one among equals; its cost (not optimal)
-long skiGreedy( const std::vector< int > & H , const std::vector< int > & L )
+I64 skiGreedy( const std::vector< int > & H , const std::vector< int > & L )
 {
  const int n = int( H.size() );
  std::vector< bool > h( n , false ) , l( n , false );
- long cost = 0;
+ I64 cost = 0;
  for( int k = 0 ; k < n ; ++k ) {
   int bi = -1 , bj = -1;
   for( int i = 0 ; i < n ; ++i )
@@ -1476,14 +1705,15 @@ long skiGreedy( const std::vector< int > & H , const std::vector< int > & L )
 /// skiers and the skis: lineAssignment() of the library, both sorted and
 /// matched in order, by an exchange argument; O( n log n )
 /// \pre H and L of the same size
-long skiMatching( const std::vector< int > & H , const std::vector< int > & L )
+I64 skiMatching( const std::vector< int > & H , const std::vector< int > & L )
 {
- return( lineAssignment< int , long >( H , L ) );
+ return( lineAssignment< int , I64 >( H , L ) );
  }
 
 // the counterexample of the text (greedy 10, optimum 8); against every
 // matching for n <= 7 on 400 random instances, the greedy never better;
-// no skier
+// no skier, one skier, all heights equal, the extremes of int, sizes
+// differing
 ADS_TEST( "esercitazioni-54" )
 {
  CHECK( skiGreedy( { 5 , 10 } , { 9 , 14 } ) == 10 );
@@ -1495,15 +1725,23 @@ ADS_TEST( "esercitazioni-54" )
              L = rndVector( g , n , 150 , 200 );
   std::vector< int > P( n );
   std::iota( P.begin() , P.end() , 0 );
-  long best = std::numeric_limits< long >::max();
+  I64 best = std::numeric_limits< I64 >::max();
   do {
-   long c = 0;
+   I64 c = 0;
    for( int i = 0 ; i < n ; ++i ) c += std::abs( H[ i ] - L[ P[ i ] ] );
    best = std::min( best , c );
    } while( std::ranges::next_permutation( P ).found );
   CHECK( skiMatching( H , L ) == best && skiGreedy( H , L ) >= best );
   }
  CHECK( skiMatching( {} , {} ) == 0 );
+ CHECK( skiMatching( { 170 } , { 160 } ) == 10 &&
+        skiGreedy( { 170 } , { 160 } ) == 10 );
+ CHECK( skiMatching( std::vector< int >( 9 , 180 ) ,
+                     std::vector< int >( 9 , 180 ) ) == 0 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( skiMatching( { -M - 1 , M } , { M , -M - 1 } ) == 0 );
+ CHECK( skiMatching( { -M - 1 } , { M } ) == I64( 2 ) * M + 1 );
+ CHECK_THROWS( skiMatching( { 1 } , {} ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1525,7 +1763,8 @@ int maxSegments( std::vector< int > V , int L )
  }
 
 // against the largest subset within L on 600 random instances; L = 0, one
-// request too long, all equal
+// request too long, all equal, no request, L exactly the total, the
+// extremes of int, the preconditions (a request of 0, L negative)
 ADS_TEST( "esercitazioni-55" )
 {
  std::mt19937 g( 55 );
@@ -1542,6 +1781,14 @@ ADS_TEST( "esercitazioni-55" )
   }
  CHECK( maxSegments( { 3 } , 0 ) == 0 && maxSegments( { 9 } , 8 ) == 0 );
  CHECK( maxSegments( { 4 , 4 , 4 , 4 } , 13 ) == 3 );
+ CHECK( maxSegments( {} , 5 ) == 0 && maxSegments( {} , 0 ) == 0 );
+ CHECK( maxSegments( { 4 , 4 , 4 , 4 } , 16 ) == 4 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( maxSegments( { M , M , 1 } , M ) == 1 &&
+        maxSegments( { M - 1 , 1 } , M ) == 2 );
+ CHECK_THROWS( maxSegments( { 0 , 1 } , 3 ) , contract_violation );
+ CHECK_THROWS( maxSegments( { -2 } , 3 ) , contract_violation );
+ CHECK_THROWS( maxSegments( { 1 } , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1552,41 +1799,49 @@ ADS_TEST( "esercitazioni-55" )
 /// whether two items in distinct places of A sum to v: A sorted, then
 /// pairWithSum() of the library, two indices from the ends, the left one up
 /// if the sum is too small and the right one down otherwise; O( n log n )
-bool pairSum( std::vector< int > A , long v )
+bool pairSum( std::vector< int > A , I64 v )
 {
  std::ranges::sort( A );
  return( pairWithSum( A , v ).has_value() );
  }
 
 /// whether two items in distinct places of A sum to v, all the pairs
-bool pairSumBrute( const std::vector< int > & A , long v )
+bool pairSumBrute( const std::vector< int > & A , I64 v )
 {
  for( std::size_t i = 0 ; i < A.size() ; ++i )
   for( std::size_t j = i + 1 ; j < A.size() ; ++j )
-   if( long( A[ i ] ) + A[ j ] == v ) return( true );
+   if( I64( A[ i ] ) + A[ j ] == v ) return( true );
  return( false );
  }
 
 // against all the pairs on 2000 random vectors and sums; the empty vector,
-// one item (never), two equal items, the extremes of int
+// one item (never), two equal items, the extremes of int, all items equal,
+// a sum beyond any pair
 ADS_TEST( "esercitazioni-57-1" )
 {
  std::mt19937 g( 571 );
  for( int r = 0 ; r < 2000 ; ++r ) {
   const auto A = rndVector( g , rnd( g , 0 , 20 ) , -30 , 30 );
-  const long v = rnd( g , -60 , 60 );
+  const I64 v = rnd( g , -60 , 60 );
   CHECK( pairSum( A , v ) == pairSumBrute( A , v ) );
   }
  CHECK( ! pairSum( {} , 0 ) && ! pairSum( { 4 } , 8 ) );
  CHECK( pairSum( { 4 , 4 } , 8 ) );
  const int M = std::numeric_limits< int >::max();
- CHECK( pairSum( { M , M } , 2L * M ) && pairSum( { -M - 1 , M } , -1 ) );
+ CHECK( pairSum( { M , M } , I64( 2 ) * M ) &&
+        pairSum( { -M - 1 , M } , -1 ) );
+ CHECK( pairSum( { -M - 1 , -M - 1 } , -I64( 2 ) * M - 2 ) &&
+        ! pairSum( { M } , I64( 2 ) * M ) );
+ CHECK( pairSum( std::vector< int >( 50 , 3 ) , 6 ) &&
+        ! pairSum( std::vector< int >( 50 , 3 ) , 3 ) );
+ CHECK( ! pairSum( { 1 , 2 , 3 } , 6 ) && ! pairSum( { M , M } , 0 ) );
  }
 
 /// whether two items in distinct places of A sum to 17, by pairSum()
 bool pairSum17( const std::vector< int > & A ) { return( pairSum( A , 17 ) ); }
 
-// against all the pairs on 2000 random vectors
+// against all the pairs on 2000 random vectors; the empty vector, 17 with
+// 0, a negative item, 17 alone
 ADS_TEST( "esercitazioni-57-2" )
 {
  std::mt19937 g( 572 );
@@ -1595,6 +1850,8 @@ ADS_TEST( "esercitazioni-57-2" )
   CHECK( pairSum17( A ) == pairSumBrute( A , 17 ) );
   }
  CHECK( pairSum17( { 8 , 9 } ) && ! pairSum17( { 17 } ) );
+ CHECK( ! pairSum17( {} ) && pairSum17( { 17 , 0 } ) &&
+        pairSum17( { -3 , 20 } ) && ! pairSum17( { 8 , 8 , 10 } ) );
  }
 
 /// whether two items in distinct places of the positive A sum to 17: flags
@@ -1612,7 +1869,8 @@ bool pairSum17Positive( const std::vector< int > & A )
  }
 
 // against all the pairs on 2000 random positive vectors; values >= 17
-// only; the empty vector
+// only; the empty vector; the pairs ( 1 , 16 ) and ( 8 , 9 ) at the ends
+// of the flags, one value repeated, the largest int; a negative item
 ADS_TEST( "esercitazioni-57-3" )
 {
  std::mt19937 g( 573 );
@@ -1622,6 +1880,10 @@ ADS_TEST( "esercitazioni-57-3" )
   }
  CHECK( ! pairSum17Positive( {} ) && ! pairSum17Positive( { 17 , 34 } ) );
  CHECK_THROWS( pairSum17Positive( { 0 , 17 } ) , contract_violation );
+ CHECK( pairSum17Positive( { 16 , 1 } ) && pairSum17Positive( { 9 , 8 } ) );
+ CHECK( ! pairSum17Positive( { 8 , 8 , 8 } ) &&
+        ! pairSum17Positive( { std::numeric_limits< int >::max() , 1 } ) );
+ CHECK_THROWS( pairSum17Positive( { 18 , -1 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1633,27 +1895,28 @@ ADS_TEST( "esercitazioni-57-3" )
 /// selection() of the library in linear expected time, then the sum of the
 /// distances; O( n )
 /// \pre s not empty
-long vito( std::vector< int > s )
+I64 vito( std::vector< int > s )
 {
  ADS_PRE( ! s.empty() );
  const int x = selection( s , ( s.size() + 1 ) / 2 );
- long sum = 0;
+ I64 sum = 0;
  for( int v : s ) sum += std::abs( v - x );
  return( sum );
  }
 
 // against every x between the least and the largest number on 500 random
 // streets, with repetitions; one relative; the limits 0 < r < 500 and
-// 0 < s_i < 30000 at their largest
+// 0 < s_i < 30000 at their largest; all equal (0), an even number of
+// relatives (any x between the two medians), no relative rejected
 ADS_TEST( "esercitazioni-59" )
 {
  std::mt19937 g( 59 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const auto s = rndVector( g , rnd( g , 1 , 30 ) , 1 , r % 2 ? 20 : 300 );
-  long best = std::numeric_limits< long >::max();
+  I64 best = std::numeric_limits< I64 >::max();
   for( int x = *std::ranges::min_element( s ) ;
        x <= *std::ranges::max_element( s ) ; ++x ) {
-   long t = 0;
+   I64 t = 0;
    for( int v : s ) t += std::abs( v - x );
    best = std::min( best , t );
    }
@@ -1662,7 +1925,10 @@ ADS_TEST( "esercitazioni-59" )
  CHECK( vito( { 7 } ) == 0 && vito( { 2 , 4 } ) == 2 );
  std::vector< int > big( 499 );
  for( int i = 0 ; i < 499 ; ++i ) big[ i ] = i % 2 ? 29999 : 1;
- CHECK( vito( big ) == 249L * 29998 );
+ CHECK( vito( big ) == I64( 249 ) * 29998 );
+ CHECK( vito( std::vector< int >( 499 , 29999 ) ) == 0 );
+ CHECK( vito( { 1 , 3 , 10 , 20 } ) == 26 );
+ CHECK_THROWS( vito( {} ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1675,15 +1941,15 @@ ADS_TEST( "esercitazioni-59" )
 /// if dist[ i ] <= R, else cost[ i ] plus the least DP[ j ] with dist[ i ] -
 /// dist[ j ] <= R; O( n^2 )
 /// \pre dist strictly increasing and positive, cost >= 0, cost[ n ] = 0
-long minCostStops( const std::vector< int > & dist ,
+I64 minCostStops( const std::vector< int > & dist ,
                    const std::vector< int > & cost , int R )
 {
  const int n = int( dist.size() ) - 1;
  ADS_PRE( ( n >= 0 ) && ( cost.size() == dist.size() ) && ( cost[ n ] == 0 ) &&
           std::ranges::adjacent_find( dist , std::greater_equal<>() ) ==
           dist.end() && ( dist[ 0 ] > 0 ) );
- const long inf = std::numeric_limits< long >::max();
- std::vector< long > DP( n + 1 , inf );
+ const I64 inf = std::numeric_limits< I64 >::max();
+ std::vector< I64 > DP( n + 1 , inf );
  for( int i = 0 ; i <= n ; ++i )
   if( dist[ i ] <= R )
    DP[ i ] = cost[ i ];
@@ -1694,11 +1960,14 @@ long minCostStops( const std::vector< int > & dist ,
  }
 
 // against every subset of the stations whose gaps are within R on 500
-// random trips, some of them impossible; the exit within R costs 0
+// random trips, some of them impossible; the exit within R costs 0; the
+// first station beyond R, a gap of exactly R, the largest int; the
+// preconditions (no exit, sizes, cost of the exit, dist not increasing or
+// not positive)
 ADS_TEST( "esercitazioni-60" )
 {
  std::mt19937 g( 60 );
- const long inf = std::numeric_limits< long >::max();
+ const I64 inf = std::numeric_limits< I64 >::max();
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = rnd( g , 0 , 11 ) , R = rnd( g , 2 , 8 );
   std::vector< int > dist , cost;
@@ -1706,9 +1975,9 @@ ADS_TEST( "esercitazioni-60" )
    dist.push_back( x += rnd( g , 1 , R + 1 ) );
    cost.push_back( i < n ? rnd( g , 0 , 9 ) : 0 );
    }
-  long best = inf;
+  I64 best = inf;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
-   long c = 0;
+   I64 c = 0;
    int at = 0;
    bool ok = true;
    for( int i = 0 ; ok && ( i <= n ) ; ++i )
@@ -1724,6 +1993,19 @@ ADS_TEST( "esercitazioni-60" )
  CHECK( minCostStops( { 5 } , { 0 } , 5 ) == 0 );
  CHECK( minCostStops( { 3 , 9 } , { 4 , 0 } , 5 ) == inf );
  CHECK( minCostStops( { 3 , 7 } , { 4 , 0 } , 5 ) == 4 );
+ CHECK( minCostStops( { 6 , 8 } , { 1 , 0 } , 5 ) == inf );
+ CHECK( minCostStops( { 5 , 10 } , { 7 , 0 } , 5 ) == 7 );
+ CHECK( minCostStops( { 2 , 4 , 6 } , { 9 , 1 , 0 } , 4 ) == 1 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( minCostStops( { M } , { 0 } , M ) == 0 &&
+        minCostStops( { 1 , M } , { M , 0 } , M - 1 ) == M );
+ CHECK_THROWS( minCostStops( {} , {} , 5 ) , contract_violation );
+ CHECK_THROWS( minCostStops( { 3 } , {} , 5 ) , contract_violation );
+ CHECK_THROWS( minCostStops( { 3 } , { 1 } , 5 ) , contract_violation );
+ CHECK_THROWS( minCostStops( { 3 , 3 } , { 1 , 0 } , 5 ) ,
+               contract_violation );
+ CHECK_THROWS( minCostStops( { 0 , 3 } , { 1 , 0 } , 5 ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1779,7 +2061,9 @@ std::uint64_t diceUnordered( std::vector< int > F , int X )
 
 // the examples of the text (two d4 give 7 in 1 way, d4, d4, d6 give 8 in 5);
 // against all the outcomes, counted and as distinct sorted tuples, on 300
-// random sets of dice; X = 0 and X beyond the largest sum
+// random sets of dice; X = 0 and X beyond the largest sum, X equal to the
+// least and to the largest sum (1 way), dice of one face; the
+// preconditions (no die, a die of 0 faces, X negative)
 ADS_TEST( "esercitazioni-61" )
 {
  CHECK( diceUnordered( { 4 , 4 } , 7 ) == 1 );
@@ -1810,6 +2094,22 @@ ADS_TEST( "esercitazioni-61" )
   }
  CHECK( diceUnordered( { 6 } , 0 ) == 0 && diceOrdered( {} , 0 ) == 1 );
  CHECK( diceUnordered( { 6 , 6 } , 13 ) == 0 );
+ CHECK( diceOrdered( { 6 , 6 } , 13 ) == 0 && diceOrdered( { 6 } , 0 ) == 0 &&
+        diceOrdered( {} , 3 ) == 0 );
+ CHECK( diceOrdered( { 4 , 6 , 8 } , 3 ) == 1 &&
+        diceUnordered( { 4 , 6 , 8 } , 3 ) == 1 );
+ CHECK( diceOrdered( { 4 , 6 , 8 } , 18 ) == 1 &&
+        diceUnordered( { 4 , 6 , 8 } , 18 ) == 1 );
+ CHECK( diceOrdered( std::vector< int >( 30 , 1 ) , 30 ) == 1 &&
+        diceUnordered( std::vector< int >( 30 , 1 ) , 30 ) == 1 &&
+        diceUnordered( std::vector< int >( 30 , 1 ) , 29 ) == 0 );
+ CHECK( diceUnordered( { 1 , 6 } , 7 ) == 1 &&
+        diceOrdered( { 1 , 6 } , 7 ) == 1 );
+ CHECK_THROWS( diceUnordered( {} , 0 ) , contract_violation );
+ CHECK_THROWS( diceUnordered( { 6 , 0 } , 3 ) , contract_violation );
+ CHECK_THROWS( diceUnordered( { 6 } , -1 ) , contract_violation );
+ CHECK_THROWS( diceOrdered( { 0 } , 3 ) , contract_violation );
+ CHECK_THROWS( diceOrdered( { 6 } , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1823,18 +2123,18 @@ ADS_TEST( "esercitazioni-61" )
 /// people[ i - 1 ] + DP[ j ] ) over the compatible j < i, scanned from j = 1
 /// while compatible; Theta( n^2 )
 /// \pre miles strictly increasing, people >= 0
-long serveDJT( const std::vector< int > & miles ,
+I64 serveDJT( const std::vector< int > & miles ,
                const std::vector< int > & people , int D )
 {
  const int n = int( miles.size() );
  ADS_PRE( ( int( people.size() ) == n ) &&
           std::ranges::adjacent_find( miles , std::greater_equal<>() ) ==
           miles.end() );
- std::vector< long > DP( n + 1 , 0 );
+ std::vector< I64 > DP( n + 1 , 0 );
  for( int i = 1 ; i <= n ; ++i ) {
-  long best = people[ i - 1 ];
+  I64 best = people[ i - 1 ];
   for( int j = 1 ;
-       ( j < i ) && ( long( miles[ i - 1 ] ) - miles[ j - 1 ] >= D ) ;
+       ( j < i ) && ( I64( miles[ i - 1 ] ) - miles[ j - 1 ] >= D ) ;
        ++j )
    best = std::max( best , people[ i - 1 ] + DP[ j ] );
   DP[ i ] = std::max( best , DP[ i - 1 ] );
@@ -1844,7 +2144,9 @@ long serveDJT( const std::vector< int > & miles ,
 
 // against every subset of at most 14 cities and against maxinterval() of
 // the library on the intervals [ miles[ i ] - D , miles[ i ] ), on 500
-// random routes; no city; D = 0 takes them all
+// random routes; no city; D = 0 takes them all; D beyond the route (the
+// largest city alone), cities of 0 people, the extremes of int; the
+// preconditions (sizes, miles not increasing)
 ADS_TEST( "esercitazioni-62" )
 {
  std::mt19937 g( 62 );
@@ -1852,9 +2154,9 @@ ADS_TEST( "esercitazioni-62" )
   const int n = rnd( g , 0 , 14 ) , D = rnd( g , 1 , 12 );
   std::vector< int > miles( n ) , people = rndVector( g , n , 0 , 50 );
   for( int i = 0 , x = 0 ; i < n ; ++i ) miles[ i ] = x += rnd( g , 1 , 6 );
-  long best = 0;
+  I64 best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
-   long s = 0;
+   I64 s = 0;
    int last = -1;
    bool ok = true;
    for( int i = 0 ; ok && ( i < n ) ; ++i )
@@ -1865,15 +2167,23 @@ ADS_TEST( "esercitazioni-62" )
      }
    if( ok ) best = std::max( best , s );
    }
-  std::vector< WeightedInterval< long > > I;
+  std::vector< WeightedInterval< I64 > > I;
   for( int i = 0 ; i < n ; ++i )
-   I.push_back( WeightedInterval< long >{ miles[ i ] - D , miles[ i ] ,
+   I.push_back( WeightedInterval< I64 >{ miles[ i ] - D , miles[ i ] ,
                                           people[ i ] } );
   CHECK( serveDJT( miles , people , D ) == best );
   CHECK( maxinterval( I ).second == best );
   }
  CHECK( serveDJT( {} , {} , 5 ) == 0 );
  CHECK( serveDJT( { 1 , 2 , 3 } , { 1 , 2 , 3 } , 0 ) == 6 );
+ CHECK( serveDJT( { 1 , 2 , 3 } , { 4 , 9 , 2 } , 100 ) == 9 );
+ CHECK( serveDJT( { 1 , 2 , 3 } , { 0 , 0 , 0 } , 1 ) == 0 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( serveDJT( { -M - 1 , M } , { M , M } , M ) == I64( 2 ) * M );
+ CHECK( serveDJT( { -M - 1 , 1 , M } , { 1 , 5 , 1 } , M ) == 6 );
+ CHECK_THROWS( serveDJT( { 1 } , {} , 1 ) , contract_violation );
+ CHECK_THROWS( serveDJT( { 2 , 2 } , { 1 , 1 } , 1 ) , contract_violation );
+ CHECK_THROWS( serveDJT( { 3 , 2 } , { 1 , 1 } , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1884,12 +2194,12 @@ ADS_TEST( "esercitazioni-62" )
 /// partition2(): the least cost of a 2-partition of V, the largest sum of
 /// its two parts, by one scan of the prefix sums; O( n )
 /// \pre n >= 2
-long partition2( const std::vector< int > & V )
+I64 partition2( const std::vector< int > & V )
 {
  const int n = int( V.size() );
  ADS_PRE( n >= 2 );
- const long tot = std::accumulate( V.begin() , V.end() , 0L );
- long prefix = 0 , best = std::numeric_limits< long >::max();
+ const I64 tot = std::accumulate( V.begin() , V.end() , I64( 0 ) );
+ I64 prefix = 0 , best = std::numeric_limits< I64 >::max();
  for( int i = 0 ; i < n - 1 ; ++i ) {
   prefix += V[ i ];
   best = std::min( best , std::max( prefix , tot - prefix ) );
@@ -1899,26 +2209,26 @@ long partition2( const std::vector< int > & V )
 
 /// the cost of the k-partition of V with the cuts c (the starts of the
 /// parts after the first), by recomputing the sums
-long partitionCost( const std::vector< int > & V ,
+I64 partitionCost( const std::vector< int > & V ,
                     const std::vector< int > & c )
 {
- long worst = std::numeric_limits< long >::min();
+ I64 worst = std::numeric_limits< I64 >::min();
  for( std::size_t t = 0 ; t <= c.size() ; ++t ) {
   const int a = t ? c[ t - 1 ] : 0 ,
             b = t < c.size() ? c[ t ] : int( V.size() );
   worst = std::max( worst , std::accumulate( V.begin() + a ,
-                                             V.begin() + b , 0L ) );
+                                             V.begin() + b , I64( 0 ) ) );
   }
  return( worst );
  }
 
 /// the least cost over all the k-partitions of V, every set of cuts
-long partitionBrute( const std::vector< int > & V , int k )
+I64 partitionBrute( const std::vector< int > & V , int k )
 {
  const int n = int( V.size() );
  std::vector< bool > pick( n - 1 , false );
  std::fill( pick.end() - ( k - 1 ) , pick.end() , true );
- long best = std::numeric_limits< long >::max();
+ I64 best = std::numeric_limits< I64 >::max();
  do {
   std::vector< int > c;
   for( int i = 0 ; i < n - 1 ; ++i ) if( pick[ i ] ) c.push_back( i + 1 );
@@ -1928,7 +2238,8 @@ long partitionBrute( const std::vector< int > & V , int k )
  }
 
 // the vector of the text (12, the cut after place 2); against every cut on
-// 500 random vectors with negative values; two items
+// 500 random vectors with negative values; two items, all equal, the
+// extremes of int (sums beyond int); one item rejected
 ADS_TEST( "esercitazioni-63-1" )
 {
  const std::vector< int > V{ 2 , 3 , 7 , -7 , 15 , 2 };
@@ -1939,19 +2250,25 @@ ADS_TEST( "esercitazioni-63-1" )
   CHECK( partition2( W ) == partitionBrute( W , 2 ) );
   }
  CHECK( partition2( { -5 , 3 } ) == 3 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( partition2( std::vector< int >( 10 , 4 ) ) == 20 );
+ CHECK( partition2( { M , M , M , M } ) == I64( 2 ) * M );
+ CHECK( partition2( { -M - 1 , -M - 1 , -M - 1 } ) == -I64( 1 ) * M - 1 );
  CHECK_THROWS( partition2( { 1 } ) , contract_violation );
+ CHECK_THROWS( partition2( {} ) , contract_violation );
  }
 
 /// partition3(): the least cost of a 3-partition of V, over every pair of
 /// cuts with the prefix sums; O( n^2 )
 /// \pre n >= 3
-long partition3( const std::vector< int > & V )
+I64 partition3( const std::vector< int > & V )
 {
  const int n = int( V.size() );
  ADS_PRE( n >= 3 );
- std::vector< long > tot( n );
- std::partial_sum( V.begin() , V.end() , tot.begin() , std::plus< long >() );
- long best = std::numeric_limits< long >::max();
+ std::vector< I64 > tot( n );            // partial_sum would add in int
+ for( int i = 0 ; i < n ; ++i )
+  tot[ i ] = ( i ? tot[ i - 1 ] : I64( 0 ) ) + V[ i ];
+ I64 best = std::numeric_limits< I64 >::max();
  for( int i = 0 ; i < n - 2 ; ++i )
   for( int j = i + 1 ; j <= n - 2 ; ++j )
    best = std::min( best , std::max( { tot[ i ] , tot[ j ] - tot[ i ] ,
@@ -1960,7 +2277,8 @@ long partition3( const std::vector< int > & V )
  }
 
 // the vector of the text (10); against every pair of cuts on 500 random
-// vectors; three items
+// vectors; three items, all equal, the extremes of int; fewer than three
+// items rejected
 ADS_TEST( "esercitazioni-63-2" )
 {
  CHECK( partition3( { 2 , 3 , 7 , -7 , 15 , 2 } ) == 10 );
@@ -1970,6 +2288,10 @@ ADS_TEST( "esercitazioni-63-2" )
   CHECK( partition3( W ) == partitionBrute( W , 3 ) );
   }
  CHECK( partition3( { 1 , 2 , 3 } ) == 3 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( partition3( std::vector< int >( 9 , 5 ) ) == 15 );
+ CHECK( partition3( { M , M , M , M , M , M } ) == I64( 2 ) * M );
+ CHECK_THROWS( partition3( { 1 , 2 } ) , contract_violation );
  }
 
 /// partition(): the least cost of a k-partition of V into contiguous
@@ -1978,15 +2300,16 @@ ADS_TEST( "esercitazioni-63-2" )
 /// i + 1 items in t parts; O( k n^2 ) time, linearPartition() of the
 /// library
 /// \pre 1 <= k <= n
-long partition( const std::vector< int > & V , int k )
+I64 partition( const std::vector< int > & V , int k )
 {
  ADS_PRE( ( 1 <= k ) && ( k <= int( V.size() ) ) );
- return( linearPartition( std::vector< long >( V.begin() , V.end() ) ,
+ return( linearPartition( std::vector< I64 >( V.begin() , V.end() ) ,
                           std::size_t( k ) ).first );
  }
 
 // the vector of the text (10 for k = 3); against every set of k - 1 cuts on
-// 500 random vectors; k = 1 (the sum) and k = n (the largest item)
+// 500 random vectors; k = 1 (the sum) and k = n (the largest item); one
+// item, the extremes of int; k = 0, k > n and the empty vector rejected
 ADS_TEST( "esercitazioni-63-3" )
 {
  const std::vector< int > V{ 2 , 3 , 7 , -7 , 15 , 2 };
@@ -1996,10 +2319,18 @@ ADS_TEST( "esercitazioni-63-3" )
   const auto W = rndVector( g , rnd( g , 1 , 13 ) , -20 , 20 );
   const int k = rnd( g , 1 , int( W.size() ) );
   CHECK( partition( W , k ) == partitionBrute( W , k ) );
-  CHECK( partition( W , 1 ) == std::accumulate( W.begin() , W.end() , 0L ) );
+  CHECK( partition( W , 1 ) ==
+         std::accumulate( W.begin() , W.end() , I64( 0 ) ) );
   CHECK( partition( W , int( W.size() ) ) == *std::ranges::max_element( W ) );
   }
  CHECK_THROWS( partition( V , 7 ) , contract_violation );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( partition( { -4 } , 1 ) == -4 );
+ CHECK( partition( std::vector< int >( 8 , M ) , 2 ) == I64( 4 ) * M );
+ CHECK( partition( std::vector< int >( 8 , -M - 1 ) , 3 ) ==
+        I64( 2 ) * ( -M - 1 ) );
+ CHECK_THROWS( partition( V , 0 ) , contract_violation );
+ CHECK_THROWS( partition( {} , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2016,7 +2347,9 @@ ADS_TEST( "esercitazioni-63-3" )
 // the example of the text ("dog" in "did you go", 2); against every set of
 // m places of T on 500 random short strings; the empty pattern (1), a
 // pattern longer than the text (0), "a"^m in "a"^n (C( n , m ), from the
-// triangle of the library)
+// triangle of the library); both empty (1), an empty text (0), the
+// pattern equal to the text (1), a character missing from the text (0),
+// "a"^50 in "a"^120 modulo 2^64 against the triangle in 64 bits
 ADS_TEST( "esercitazioni-64" )
 {
  CHECK( subsequenceOccurrences( "dog" , "did you go" ) == 2 );
@@ -2040,6 +2373,16 @@ ADS_TEST( "esercitazioni-64" )
  CHECK( subsequenceOccurrences( std::string( 25 , 'a' ) ,
                                 std::string( 60 , 'a' ) ) ==
         tartaglia( 60 )[ 60 ][ 25 ] );
+ CHECK( subsequenceOccurrences( "" , "" ) == 1 &&
+        subsequenceOccurrences( "a" , "" ) == 0 );
+ CHECK( subsequenceOccurrences( "abcab" , "abcab" ) == 1 &&
+        subsequenceOccurrences( "abz" , "aabbcc" ) == 0 );
+ std::vector< std::uint64_t > C( 51 , 0 );        // C( n , m ) mod 2^64
+ C[ 0 ] = 1;
+ for( int n = 1 ; n <= 120 ; ++n )
+  for( int m = std::min( n , 50 ) ; m >= 1 ; --m ) C[ m ] += C[ m - 1 ];
+ CHECK( subsequenceOccurrences( std::string( 50 , 'a' ) ,
+                                std::string( 120 , 'a' ) ) == C[ 50 ] );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2052,33 +2395,35 @@ ADS_TEST( "esercitazioni-64" )
 /// f[ i ] - s[ i ], by maxinterval() of the library; Theta( n log n ); the
 /// places of the segments and the length
 /// \pre s[ i ] < f[ i ]
-std::pair< std::vector< std::size_t > , long > maxCover(
-                                             const std::vector< long > & s ,
-                                             const std::vector< long > & f )
+std::pair< std::vector< std::size_t > , I64 > maxCover(
+                                             const std::vector< I64 > & s ,
+                                             const std::vector< I64 > & f )
 {
  ADS_PRE( s.size() == f.size() );
- std::vector< WeightedInterval< long > > I;
+ std::vector< WeightedInterval< I64 > > I;
  for( std::size_t i = 0 ; i < s.size() ; ++i )
-  I.push_back( WeightedInterval< long >{ s[ i ] , f[ i ] , f[ i ] - s[ i ] } );
+  I.push_back( WeightedInterval< I64 >{ s[ i ] , f[ i ] , f[ i ] - s[ i ] } );
  return( maxinterval( I ) );
  }
 
 // against every subset of at most 14 segments on 500 random instances, the
-// segments returned disjoint and of the length found; no segment
+// segments returned disjoint and of the length found; no segment; two
+// touching segments (both), the same segment twice (once), one inside
+// another (the longer); sizes differing rejected
 ADS_TEST( "esercitazioni-65" )
 {
  std::mt19937 g( 65 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = rnd( g , 0 , 14 );
-  std::vector< long > s( n ) , f( n );
+  std::vector< I64 > s( n ) , f( n );
   for( int i = 0 ; i < n ; ++i ) {
    s[ i ] = rnd( g , 0 , 30 );
    f[ i ] = s[ i ] + rnd( g , 1 , 10 );
    }
-  long best = 0;
+  I64 best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    bool ok = true;
-   long len = 0;
+   I64 len = 0;
    for( int i = 0 ; i < n ; ++i ) {
     if( ! ( ( mask >> i ) & 1 ) ) continue;
     len += f[ i ] - s[ i ];
@@ -2090,7 +2435,7 @@ ADS_TEST( "esercitazioni-65" )
    }
   const auto [ P , len ] = maxCover( s , f );
   CHECK( len == best );
-  long sum = 0;
+  I64 sum = 0;
   for( std::size_t a = 0 ; a < P.size() ; ++a ) {
    sum += f[ P[ a ] ] - s[ P[ a ] ];
    for( std::size_t b = a + 1 ; b < P.size() ; ++b )
@@ -2099,6 +2444,11 @@ ADS_TEST( "esercitazioni-65" )
   CHECK( sum == best );
   }
  CHECK( maxCover( {} , {} ).second == 0 );
+ CHECK( maxCover( { 0 , 5 } , { 5 , 10 } ).second == 10 );
+ CHECK( maxCover( { 2 , 2 } , { 9 , 9 } ).second == 7 &&
+        maxCover( { 2 , 2 } , { 9 , 9 } ).first.size() == 1 );
+ CHECK( maxCover( { 0 , 3 } , { 10 , 4 } ).second == 10 );
+ CHECK_THROWS( maxCover( { 0 } , {} ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2113,11 +2463,11 @@ ADS_TEST( "esercitazioni-65" )
 /// best[ i - r - 1 ] ); O( n k ) with the prefix sums (the text gives no
 /// official solution)
 /// \pre k >= 1
-long kSubsequence( const std::vector< int > & V , int k )
+I64 kSubsequence( const std::vector< int > & V , int k )
 {
  ADS_PRE( k >= 1 );
  const int n = int( V.size() );
- std::vector< long > pre( n + 1 , 0 ) , best( n + 1 , 0 );
+ std::vector< I64 > pre( n + 1 , 0 ) , best( n + 1 , 0 );
  for( int i = 0 ; i < n ; ++i ) pre[ i + 1 ] = pre[ i ] + V[ i ];
  for( int i = 1 ; i <= n ; ++i ) {
   best[ i ] = best[ i - 1 ];
@@ -2130,7 +2480,9 @@ long kSubsequence( const std::vector< int > & V , int k )
 
 // the examples of the text (18, 44, 50); against every subset of places
 // without k + 1 consecutive ones on 500 random vectors with negative
-// values; the empty vector; k >= n takes all the positive items
+// values; the empty vector; k >= n takes all the positive items, none if
+// all are negative; k = 1 on the largest int, k = 2 on equal items; k = 0
+// rejected
 ADS_TEST( "esercitazioni-66" )
 {
  CHECK( kSubsequence( { 9 , 1 , 9 } , 2 ) == 18 );
@@ -2140,14 +2492,14 @@ ADS_TEST( "esercitazioni-66" )
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = rnd( g , 0 , 14 ) , k = rnd( g , 1 , 4 );
   const auto V = rndVector( g , n , r % 2 ? -5 : 0 , 10 );
-  long best = 0;
+  I64 best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    const unsigned run = ( 1u << ( k + 1 ) ) - 1;
    bool ok = true;
    for( int i = 0 ; i + k < n ; ++i )
     ok = ok && ( ( unsigned( mask ) >> i & run ) != run );
    if( ! ok ) continue;
-   long s = 0;
+   I64 s = 0;
    for( int i = 0 ; i < n ; ++i ) if( ( mask >> i ) & 1 ) s += V[ i ];
    best = std::max( best , s );
    }
@@ -2155,6 +2507,11 @@ ADS_TEST( "esercitazioni-66" )
   }
  CHECK( kSubsequence( {} , 1 ) == 0 );
  CHECK( kSubsequence( { 3 , -1 , 4 } , 5 ) == 7 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( kSubsequence( { -3 , -1 , -4 } , 2 ) == 0 );
+ CHECK( kSubsequence( std::vector< int >( 5 , M ) , 1 ) == I64( 3 ) * M );
+ CHECK( kSubsequence( std::vector< int >( 6 , 1 ) , 2 ) == 4 );
+ CHECK_THROWS( kSubsequence( { 1 } , 0 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2187,7 +2544,8 @@ int minpal( const std::string & s )
 
 // the examples of the text (casacca 2, anta 1); against n - | LCS( s ,
 // reverse( s ) ) | by lcs() of the library on 500 random strings; the empty
-// string, a palindrome (0), all distinct (n - 1)
+// string, a palindrome (0), all distinct (n - 1), one character, two
+// distinct, all equal, the whole alphabet
 ADS_TEST( "esercitazioni-67" )
 {
  CHECK( minpal( "casacca" ) == 2 && minpal( "anta" ) == 1 );
@@ -2199,6 +2557,12 @@ ADS_TEST( "esercitazioni-67" )
   CHECK( minpal( s ) == int( s.size() ) - int( lcs( s , rs ).size() ) );
   }
  CHECK( minpal( "" ) == 0 && minpal( "osso" ) == 0 && minpal( "abcde" ) == 4 );
+ CHECK( minpal( "x" ) == 0 && minpal( "xy" ) == 1 &&
+        minpal( std::string( 300 , 'z' ) ) == 0 );
+ std::string az;
+ for( char c = 'a' ; c <= 'z' ; ++c ) az += c;
+ CHECK( minpal( az ) == 25 && minpal( az + std::string( az.rbegin() ,
+                                                         az.rend() ) ) == 0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2219,7 +2583,8 @@ int maxSquare( const std::vector< std::vector< int > > & A )
  }
 
 // the matrix of the text (4); against every corner and side on 400 random
-// matrices; all zeros, all ones, one cell, the empty matrix
+// matrices; all zeros, all ones, one cell, the empty matrix, a
+// checkerboard (1), a large matrix of ones; a matrix not square rejected
 ADS_TEST( "esercitazioni-68" )
 {
  CHECK( maxSquare( { { 1 , 0 , 1 , 0 , 1 , 0 , 0 } ,
@@ -2250,6 +2615,14 @@ ADS_TEST( "esercitazioni-68" )
  CHECK( maxSquare( M( 5 , std::vector< int >( 5 , 1 ) ) )
         == 5 );
  CHECK( maxSquare( { { 1 } } ) == 1 && maxSquare( {} ) == 0 );
+ CHECK( maxSquare( { { 0 } } ) == 0 );
+ M C( 6 , std::vector< int >( 6 ) );
+ for( int i = 0 ; i < 6 ; ++i ) for( int j = 0 ; j < 6 ; ++j )
+  C[ i ][ j ] = ( i + j ) % 2;
+ CHECK( maxSquare( C ) == 1 );
+ CHECK( maxSquare( M( 300 , std::vector< int >( 300 , 1 ) ) ) == 300 );
+ CHECK_THROWS( maxSquare( { { 1 , 1 } } ) , contract_violation );
+ CHECK_THROWS( maxSquare( { { 1 , 1 } , { 1 } } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2261,16 +2634,16 @@ ADS_TEST( "esercitazioni-68" )
 /// one, moving up, up-left or up-right: the best of each cell is its profit
 /// plus the best of its three cells below; Theta( n^2 )
 /// \pre P square, n >= 1
-long searchPath( const std::vector< std::vector< int > > & P )
+I64 searchPath( const std::vector< std::vector< int > > & P )
 {
  const int n = int( P.size() );
  ADS_PRE( n >= 1 );
  for( const auto & row : P ) ADS_PRE( int( row.size() ) == n );
- std::vector< long > best( P[ n - 1 ].begin() , P[ n - 1 ].end() );
+ std::vector< I64 > best( P[ n - 1 ].begin() , P[ n - 1 ].end() );
  for( int i = n - 2 ; i >= 0 ; --i ) {
-  std::vector< long > next( n );
+  std::vector< I64 > next( n );
   for( int j = 0 ; j < n ; ++j ) {
-   long b = best[ j ];
+   I64 b = best[ j ];
    if( j > 0 ) b = std::max( b , best[ j - 1 ] );
    if( j < n - 1 ) b = std::max( b , best[ j + 1 ] );
    next[ j ] = P[ i ][ j ] + b;
@@ -2281,11 +2654,11 @@ long searchPath( const std::vector< std::vector< int > > & P )
  }
 
 /// the best path from the cell ( i , j ) up to the row 0, every one tried
-long searchBrute( const std::vector< std::vector< int > > & P , int i , int j )
+I64 searchBrute( const std::vector< std::vector< int > > & P , int i , int j )
 {
  const int n = int( P.size() );
  if( ( j < 0 ) || ( j >= n ) )
-  return( std::numeric_limits< long >::min() / 2 );
+  return( std::numeric_limits< I64 >::min() / 2 );
  if( i == 0 ) return( P[ 0 ][ j ] );
  return( P[ i ][ j ] + std::max( { searchBrute( P , i - 1 , j - 1 ) ,
                                    searchBrute( P , i - 1 , j ) ,
@@ -2293,7 +2666,8 @@ long searchBrute( const std::vector< std::vector< int > > & P , int i , int j )
  }
 
 // the board of the text (33); against every path on 300 random boards with
-// negative profits; one cell
+// negative profits; one cell, the extremes of int (sums beyond int), a
+// zig-zag forced by the profits; the empty or not square board rejected
 ADS_TEST( "esercitazioni-69" )
 {
  CHECK( searchPath( { { 6 , 7 , 4 , 7 , 8 } , { 7 , 6 , 1 , 1 , 4 } ,
@@ -2304,12 +2678,23 @@ ADS_TEST( "esercitazioni-69" )
   const int n = rnd( g , 1 , 7 );
   std::vector< std::vector< int > > P( n );
   for( auto & row : P ) row = rndVector( g , n , -9 , 9 );
-  long best = std::numeric_limits< long >::min();
+  I64 best = std::numeric_limits< I64 >::min();
   for( int j = 0 ; j < n ; ++j )
    best = std::max( best , searchBrute( P , n - 1 , j ) );
   CHECK( searchPath( P ) == best );
   }
  CHECK( searchPath( { { -4 } } ) == -4 );
+ const int M = std::numeric_limits< int >::max();
+ using B = std::vector< std::vector< int > >;
+ CHECK( searchPath( B( 3 , std::vector< int >( 3 , M ) ) ) == I64( 3 ) * M );
+ CHECK( searchPath( B( 3 , std::vector< int >( 3 , -M - 1 ) ) ) ==
+        I64( 3 ) * ( -M - 1 ) );
+ CHECK( searchPath( { { 9 , 0 , 0 } , { 0 , 9 , 0 } , { 0 , 0 , 9 } } ) ==
+        27 );
+ CHECK( searchPath( { { 9 , 0 , 0 } , { 0 , 0 , 0 } , { 0 , 0 , 9 } } ) ==
+        18 );
+ CHECK_THROWS( searchPath( {} ) , contract_violation );
+ CHECK_THROWS( searchPath( { { 1 , 2 } } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2334,7 +2719,9 @@ std::uint64_t decodeBrute( const std::vector< int > & T , std::size_t i )
  }
 
 // the example of the text (13135, 4); against every split on 1000 random
-// strings rich in 0, 1, 2; 0 alone; 10, 27; all ones (Fibonacci)
+// strings rich in 0, 1, 2; 0 alone; 10, 27; all ones (Fibonacci); the
+// empty string (one reading), 26 against 27, two zeros, a 0 after 10; a
+// digit out of 0 ... 9 rejected
 ADS_TEST( "esercitazioni-70" )
 {
  CHECK( countDecodings( { 1 , 3 , 1 , 3 , 5 } ) == 4 );
@@ -2348,6 +2735,12 @@ ADS_TEST( "esercitazioni-70" )
  CHECK( countDecodings( { 0 } ) == 0 && countDecodings( { 1 , 0 } ) == 1 );
  CHECK( countDecodings( { 2 , 7 } ) == 1 && countDecodings( { 3 , 0 } ) == 0 );
  CHECK( countDecodings( std::vector< int >( 80 , 1 ) ) == fibonacci( 80 ) );
+ CHECK( countDecodings( {} ) == 1 );
+ CHECK( countDecodings( { 2 , 6 } ) == 2 && countDecodings( { 0 , 0 } ) == 0 );
+ CHECK( countDecodings( { 1 , 0 , 0 } ) == 0 &&
+        countDecodings( { 1 , 0 , 1 } ) == 1 );
+ CHECK_THROWS( countDecodings( { 1 , 10 } ) , contract_violation );
+ CHECK_THROWS( countDecodings( { -1 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2360,13 +2753,13 @@ ADS_TEST( "esercitazioni-70" )
 /// DP[ w ] = max( DP[ w - V[ i ] ] + V[ i ] ) over the items that fit;
 /// O( n W ) time, O( W ) space
 /// \pre V > 0, W >= 0
-std::pair< long , std::vector< int > > bestSum( const std::vector< int > & V ,
+std::pair< I64 , std::vector< int > > bestSum( const std::vector< int > & V ,
                                                 int W )
 {
  ADS_PRE( ( W >= 0 ) &&
           std::ranges::all_of( V , []( int v ) { return( v > 0 ); } ) );
  const int n = int( V.size() );
- std::vector< long > DP( W + 1 , 0 );
+ std::vector< I64 > DP( W + 1 , 0 );
  std::vector< int > last( W + 1 , -1 );            // the item of the choice
  for( int w = 1 ; w <= W ; ++w ) {
   DP[ w ] = DP[ w - 1 ];
@@ -2390,13 +2783,16 @@ std::pair< long , std::vector< int > > bestSum( const std::vector< int > & V ,
 // the example of the text (W = 17 gives 15, e.g., with x = [ 0 , 2 , 0 ,
 // 1 , 0 , 0 ]);
 // against the sums reachable by a boolean table on 500 random instances,
-// the multipliers returned giving X; W = 0; no item fits
+// the multipliers returned giving X; W = 0; no item fits; no item at all,
+// an item of 1 (X = W), an item equal to W; the preconditions (an item of
+// 0 or negative, W negative)
 ADS_TEST( "esercitazioni-71" )
 {
  const std::vector< int > V{ 18 , 3 , 21 , 9 , 12 , 24 };
  const auto [ X , x ] = bestSum( V , 17 );
  CHECK( X == 15 );
- CHECK( std::inner_product( V.begin() , V.end() , x.begin() , 0L ) == 15 );
+ CHECK( std::inner_product( V.begin() , V.end() , x.begin() , I64( 0 ) ) ==
+        15 );
  std::mt19937 g( 71 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::set< int > S;
@@ -2411,10 +2807,19 @@ ADS_TEST( "esercitazioni-71" )
   while( ! reach[ best ] ) --best;
   const auto [ Y , y ] = bestSum( U , W );
   CHECK( Y == best );
-  CHECK( std::inner_product( U.begin() , U.end() , y.begin() , 0L ) == Y );
+  CHECK( std::inner_product( U.begin() , U.end() , y.begin() , I64( 0 ) ) ==
+         Y );
   CHECK( std::ranges::all_of( y , []( int c ) { return( c >= 0 ); } ) );
   }
  CHECK( bestSum( V , 0 ).first == 0 && bestSum( V , 2 ).first == 0 );
+ CHECK( bestSum( {} , 10 ).first == 0 && bestSum( {} , 10 ).second.empty() );
+ const auto [ X1 , x1 ] = bestSum( { 7 , 1 } , 100 );
+ CHECK( X1 == 100 && I64( 7 ) * x1[ 0 ] + x1[ 1 ] == 100 );
+ CHECK( bestSum( { 13 } , 13 ).first == 13 &&
+        bestSum( { 13 } , 13 ).second == std::vector< int >( 1 , 1 ) );
+ CHECK_THROWS( bestSum( { 0 } , 5 ) , contract_violation );
+ CHECK_THROWS( bestSum( { 3 , -2 } , 5 ) , contract_violation );
+ CHECK_THROWS( bestSum( { 3 } , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2437,7 +2842,8 @@ std::uint64_t sortedPerm( int n , int k )
  }
 
 // the example of the text (n = 4, k = 3, 15); against tartaglia() of the
-// library and against all the k^n vectors for small n and k; k = 0, 1
+// library and against all the k^n vectors for small n and k; k = 0, 1,
+// n = 1 (k vectors), the largest pair checked; n = 0 and k < 0 rejected
 ADS_TEST( "esercitazioni-72" )
 {
  CHECK( sortedPerm( 4 , 3 ) == 15 );
@@ -2459,6 +2865,10 @@ ADS_TEST( "esercitazioni-72" )
    CHECK( sortedPerm( n , k ) == brute );
    }
  CHECK( sortedPerm( 3 , 0 ) == 0 && sortedPerm( 7 , 1 ) == 1 );
+ CHECK( sortedPerm( 1 , 0 ) == 0 && sortedPerm( 1 , 1000 ) == 1000 );
+ CHECK( sortedPerm( 30 , 30 ) == C[ 59 ][ 30 ] );
+ CHECK_THROWS( sortedPerm( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( sortedPerm( 3 , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2481,7 +2891,8 @@ bool isSubsequence( const std::string & s , const std::string & S )
 
 // the examples of the text (AB, BC: 3; DAB, DCB: 4); against n + m - | LCS |
 // by lcsTable() of the library, and against the shortest of all the strings
-// over { a , b } holding both, on 300 random pairs; an empty string
+// over { a , b } holding both, on 300 random pairs; an empty string, equal
+// strings (n), no common character (n + m), one string inside the other
 ADS_TEST( "esercitazioni-74" )
 {
  CHECK( scsLength( "AB" , "BC" ) == 3 && scsLength( "DAB" , "DCB" ) == 4 );
@@ -2502,6 +2913,8 @@ ADS_TEST( "esercitazioni-74" )
   CHECK( int( scsLength( P , T ) ) == brute );
   }
  CHECK( scsLength( "" , "abc" ) == 3 && scsLength( "" , "" ) == 0 );
+ CHECK( scsLength( "abc" , "" ) == 3 && scsLength( "abc" , "abc" ) == 3 );
+ CHECK( scsLength( "abc" , "xyz" ) == 6 && scsLength( "bd" , "abcde" ) == 5 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2532,7 +2945,9 @@ int longestBalancedBlock( const std::vector< int > & S )
  }
 
 // the example of the text (6); against every start and k on 1000 random
-// vectors; all zeros, all ones (0), 01 (2), the empty vector
+// vectors; all zeros, all ones (0), 01 (2), the empty vector, ones before
+// zeros (0), unequal runs (the shorter), one long block and a long
+// alternation; a value other than 0 and 1 rejected
 ADS_TEST( "esercitazioni-76" )
 {
  CHECK( longestBalancedBlock( { 0 , 0 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 0 , 0 ,
@@ -2556,6 +2971,16 @@ ADS_TEST( "esercitazioni-76" )
  CHECK( longestBalancedBlock( { 1 } ) == 0 );
  CHECK( longestBalancedBlock( { 0 , 1 } ) == 2 );
  CHECK( longestBalancedBlock( {} ) == 0 );
+ CHECK( longestBalancedBlock( { 1 , 1 , 0 , 0 } ) == 0 );
+ CHECK( longestBalancedBlock( { 0 , 0 , 0 , 1 } ) == 2 &&
+        longestBalancedBlock( { 0 , 1 , 1 , 1 } ) == 2 );
+ std::vector< int > block( 100000 , 1 ) , alt( 100000 );
+ std::fill( block.begin() , block.begin() + 50000 , 0 );
+ for( int i = 0 ; i < 100000 ; ++i ) alt[ i ] = i % 2;
+ CHECK( longestBalancedBlock( block ) == 100000 &&
+        longestBalancedBlock( alt ) == 2 );
+ CHECK_THROWS( longestBalancedBlock( { 0 , 2 } ) , contract_violation );
+ CHECK_THROWS( longestBalancedBlock( { -1 } ) , contract_violation );
  }
 
 }  // end( namespace esercitazioni )

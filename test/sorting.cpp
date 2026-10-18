@@ -65,8 +65,9 @@ using Ints = std::vector< int >;
 /*------------------------------- HELPERS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the inputs of the battery: every permutation of up to 7 items, and
-/// vectors of the given sizes in the classical patterns
+/// the inputs of the battery: every permutation of up to 7 items (the
+/// empty vector, one item, two), and vectors of the given sizes in the
+/// classical patterns, all equal and with the extremes of int
 std::vector< Ints > inputs( std::size_t maxN )
 {
  std::vector< Ints > I;
@@ -79,7 +80,10 @@ std::vector< Ints > inputs( std::size_t maxN )
  for( std::size_t n : { 8u , 31u , 100u , 257u , 1000u , 4096u } ) {
   if( n > maxN )
    break;
-  Ints r( n ) , s( n ) , v( n ) , w( n ) , o( n ) , f( n ) , e( n , 5 );
+  Ints r( n ) , s( n ) , v( n ) , w( n ) , o( n ) , f( n ) , e( n , 5 ) ,
+       x( n );
+  const Ints ext = { std::numeric_limits< int >::min() , -1 , 0 , 1 ,
+                     std::numeric_limits< int >::max() };
   for( std::size_t i = 0 ; i < n ; ++i ) {
    r[ i ] = int( g() % ( 2 * n ) );          // random
    s[ i ] = int( i );                        // sorted
@@ -87,9 +91,10 @@ std::vector< Ints > inputs( std::size_t maxN )
    w[ i ] = int( i % 17 );                   // sawtooth
    o[ i ] = int( std::min( i , n - 1 - i ) );   // organ pipe
    f[ i ] = int( g() % 4 );                  // few distinct keys
+   x[ i ] = ( i % 2 ) ? ext[ g() % 5 ] : int( g() );   // the extremes
    }
-  for( auto * x : { &r , &s , &v , &w , &o , &f , &e } )
-   I.push_back( *x );
+  for( auto * y : { &r , &s , &v , &w , &o , &f , &e , &x } )
+   I.push_back( *y );
   }
  return( I );
  }
@@ -123,7 +128,8 @@ void battery( S sort , std::size_t maxN , bool stable )
 /*--------------------------------------------------------------------------*/
 
 // the sorts by exchanges, all stable but the comb sort, and the rounds of
-// the odd-even transposition at most n
+// the odd-even transposition at most n, one on a sorted, empty or single
+// vector
 ADS_TEST( "exchange-sorts" )
 {
  battery( []( auto & A , auto less ) { bubbleSort( A , less ); } , 1000 ,
@@ -141,10 +147,22 @@ ADS_TEST( "exchange-sorts" )
  std::size_t r = 0;
  oddEvenSort( A , std::less<>() , &r );
  CHECK( r <= 51 );
+ oddEvenSort( A , std::less<>() , &r );          // sorted: one round
+ CHECK( r == 1 );
+ Ints E , O = { 4 };
+ oddEvenSort( E , std::less<>() , &r );
+ CHECK( r == 1 && E.empty() );
+ oddEvenSort( O , std::less<>() , &r );
+ CHECK( r == 1 && O == Ints( { 4 } ) );
+ Ints D = { 1 , 0 };                             // n = 2: one swap
+ oddEvenSort( D , std::less<>() , &r );
+ CHECK( r == 2 && D == Ints( { 0 , 1 } ) );
  }
 
 // the cycle sort with at most n writes, n - ( fixed points ) on distinct
-// keys, and the pancake sort with at most 2 n - 3 flips
+// keys and the items out of place with duplicates, and the pancake sort
+// with at most 2 n - 3 flips; no write and no flip on an empty, single,
+// all equal vector
 ADS_TEST( "cycle-pancake" )
 {
  battery( []( auto & A , auto less ) { cycleSort( A , less ); } , 1000 ,
@@ -157,11 +175,23 @@ ADS_TEST( "cycle-pancake" )
  CHECK( cycleSort( S ) == 0 && pancakeSort( S ) == 0 );
  Ints P = { 2 , 0 , 3 , 1 };
  CHECK( pancakeSort( P ) <= 5 && P == Ints( { 0 , 1 , 2 , 3 } ) );
+ Ints E , O = { 7 } , Q( 9 , 3 );                // nothing to write or flip
+ CHECK( cycleSort( E ) == 0 && pancakeSort( E ) == 0 );
+ CHECK( cycleSort( O ) == 0 && pancakeSort( O ) == 0 );
+ CHECK( cycleSort( Q ) == 0 && pancakeSort( Q ) == 0 );
+ Ints T = { 0 , 1 , 1 , 2 , 2 };                 // sorted, with equals
+ CHECK( cycleSort( T ) == 0 && pancakeSort( T ) == 0 );
+ Ints U = { 1 , 1 , 0 };                         // 2 items out of place
+ CHECK( cycleSort( U ) == 2 && U == Ints( { 0 , 1 , 1 } ) );
+ Ints V = { 1 , 0 };                             // 2 n - 3 = 1 flip
+ CHECK( pancakeSort( V ) == 1 && V == Ints( { 0 , 1 } ) );
  }
 
 // the tree sort on a Red-Black tree and on an unbalanced tree, the repeated
-// items kept; the patience sort with as many piles as a longest increasing
-// subsequence
+// items kept, empty, all equal, and the unbalanced tree as a chain of 20000
+// nodes on a reversed input; the patience sort with as many piles as a
+// longest strictly increasing subsequence: 0 on an empty vector, 1 on equal
+// or decreasing items, n on sorted ones
 ADS_TEST( "tree-patience" )
 {
  battery( []( auto & A , auto ) {
@@ -186,6 +216,23 @@ ADS_TEST( "tree-patience" )
  std::iota( D.rbegin() , D.rend() , 0 );
  patienceSort( D , std::less<>() , &piles );
  CHECK( piles == 1 );
+ Ints E , Q( 50 , 2 );                           // equals on one pile: the
+ patienceSort( E , std::less<>() , &piles );     // increase is strict
+ CHECK( piles == 0 && E.empty() );
+ patienceSort( Q , std::less<>() , &piles );
+ CHECK( piles == 1 && Q == Ints( 50 , 2 ) );
+ std::iota( D.begin() , D.end() , 0 );           // sorted: n piles
+ patienceSort( D , std::less<>() , &piles );
+ CHECK( piles == 100 );
+ treeSort( E );
+ treeSort( Q , false );
+ CHECK( E.empty() && Q == Ints( 50 , 2 ) );
+ Ints C( 20000 );                                // a chain of 20000 nodes,
+ for( int i = 0 ; i < 20000 ; ++i )              // with duplicates
+  C[ i ] = i / 2;
+ Ints R( C.rbegin() , C.rend() );
+ treeSort( R , false );
+ CHECK( R == C );
  }
 
 // smoothsort, and its O( n ) comparisons on a sorted vector against the
@@ -208,8 +255,9 @@ ADS_TEST( "smoothsort" )
  CHECK( sorted < 4 * 4096 && c > 5 * sorted );
  }
 
-// the strand sort of a list, stable, one strand on a sorted list and n on
-// a decreasing one
+// the strand sort of a list, stable on pairs compared by their keys, one
+// strand on a sorted list or on equal items, n on a decreasing one, none
+// on an empty list
 ADS_TEST( "strand-sort" )
 {
  for( const auto & x : inputs( 1000 ) ) {
@@ -228,11 +276,35 @@ ADS_TEST( "strand-sort" )
  CHECK( k == 1 );
  strandSort( D , std::less<>() , &k );
  CHECK( k == 3 );
+ List< int > E , O = { 4 } , Q = { 2 , 2 , 2 };  // equals: one strand
+ strandSort( E , std::less<>() , &k );
+ CHECK( k == 0 && E.isEmpty() );
+ strandSort( O , std::less<>() , &k );
+ CHECK( k == 1 && O.read( O.head() ) == 4 );
+ strandSort( Q , std::less<>() , &k );
+ CHECK( k == 1 );
+ using P = std::pair< int , int >;               // stable on equal keys
+ std::mt19937 g( 14 );
+ List< P > L;
+ std::vector< P > V;
+ for( int i = 0 ; i < 300 ; ++i ) {
+  V.emplace_back( int( g() % 5 ) , i );
+  L.insert( L.next( L.tail() ) , V.back() );
+  }
+ auto byKey = []( const P & a , const P & b ) { return( a.first < b.first ); };
+ strandSort( L , byKey );
+ std::stable_sort( V.begin() , V.end() , byKey );
+ std::vector< P > W;
+ for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
+  W.push_back( L.read( p ) );
+ CHECK( W == V );
  }
 
 // the sorting networks: by the 0-1 principle, every vector of 0 and 1 of
 // n items sorted, for n up to 12 (merge exchange) and n = 16 (bitonic);
-// random vectors of other sizes; the comparators within n
+// random vectors of other sizes; the comparators within n; no comparator
+// for n = 0 and 1, one for n = 2, and the bitonic sorter refused for n not
+// a power of 2
 ADS_TEST( "sorting-networks" )
 {
  for( std::size_t n = 0 ; n <= 12 ; ++n ) {
@@ -265,9 +337,23 @@ ADS_TEST( "sorting-networks" )
  Ints Z = { 1 , 0 };
  CHECK_THROWS( applyNetwork( Z , { Comparator( 0 , 2 ) } ) ,
                contract_violation );
+ CHECK( mergeExchangeNetwork( 0 ).empty() &&
+        mergeExchangeNetwork( 1 ).empty() );
+ CHECK( bitonicNetwork( 0 ).empty() && bitonicNetwork( 1 ).empty() &&
+        bitonicNetwork( 2 ).size() == 1 &&
+        mergeExchangeNetwork( 2 ).size() == 1 );
+ CHECK_THROWS( bitonicNetwork( 3 ) , contract_violation );
+ Ints E;
+ applyNetwork( E , mergeExchangeNetwork( 0 ) );
+ CHECK( E.empty() );
+ CHECK_THROWS( applyNetwork( E , { Comparator( 0 , 1 ) } ) ,
+               contract_violation );
+ applyNetwork( Z , mergeExchangeNetwork( 2 ) );
+ CHECK( Z == Ints( { 0 , 1 } ) );
  }
 
-// the slow sorts on small vectors, the bogo sort only up to 10 items
+// the slow sorts on small vectors, the bogo sort only up to 10 items, with
+// no shuffle on a sorted, empty or all equal vector
 ADS_TEST( "didactic-sorts" )
 {
  battery( []( auto & A , auto less ) { stoogeSort( A , less ); } , 100 ,
@@ -280,12 +366,20 @@ ADS_TEST( "didactic-sorts" )
  CHECK( bogoSort( A , g ) >= 0 && A == Ints( { 0 , 1 , 2 , 3 , 4 } ) );
  Ints L( 11 );
  CHECK_THROWS( bogoSort( L , g ) , contract_violation );
+ Ints E , T( 10 ) , Q( 10 , 4 );                 // sorted: no shuffle, also
+ std::iota( T.begin() , T.end() , 0 );           // at the bound n = 10
+ CHECK( bogoSort( E , g ) == 0 && bogoSort( T , g ) == 0 &&
+        bogoSort( Q , g ) == 0 );
+ Ints D = { 1 , 0 };
+ CHECK( bogoSort( D , g ) >= 1 && D == Ints( { 0 , 1 } ) );
  }
 
 // the engineered quicksorts on the battery, and on inputs against the
 // classical quicksort: a killer of the median of three would make them
 // quadratic, but the depth bound of introsort and pdqsort keeps them
-// O( n log n ); pdqsort takes O( n ) comparisons on a sorted vector
+// O( n log n ), also against the adversary of McIlroy that makes every
+// pivot a smallest item; pdqsort takes O( n ) comparisons on a sorted
+// vector
 ADS_TEST( "engineered-quicksorts" )
 {
  battery( []( auto & A , auto less ) { introSort( A , less ); } , 4096 ,
@@ -316,11 +410,33 @@ ADS_TEST( "engineered-quicksorts" )
   sort( A , count );
   CHECK( std::is_sorted( A.begin() , A.end() ) && c < 40 * 100000 );
   }
+ const int n = 20000;                 // the adversary of McIlroy: the keys
+ for( int k = 0 ; k < 2 ; ++k ) {     // fixed only when compared, so that
+  std::vector< int > val( n , n );    // each pivot is a smallest item
+  int solid = 0 , cand = -1;
+  long cmp = 0;
+  auto adv = [ & ]( int x , int y ) {
+   if( ! checkingContract() ) {
+    ++cmp;
+    if( ( val[ x ] == n ) && ( val[ y ] == n ) )
+     val[ x == cand ? x : y ] = solid++;
+    if( val[ x ] == n ) cand = x;
+    else if( val[ y ] == n ) cand = y;
+    }
+   return( val[ x ] < val[ y ] ); };
+  Ints A( n );
+  std::iota( A.begin() , A.end() , 0 );
+  if( k == 0 ) introSort( A , adv ); else pdqSort( A , adv );
+  CHECK( std::is_sorted( A.begin() , A.end() , [ & ]( int x , int y ) {
+          return( val[ x ] < val[ y ] ); } ) );
+  CHECK( cmp < 6L * n * 15 );         // n log n, not n^2 / 4
+  }
  }
 
 // Timsort and Powersort on the battery, stable; the runs found on vectors
 // made of r sorted runs, and O( n ) comparisons on a sorted vector and on
-// two runs one after the other
+// two runs one after the other; no run on an empty vector, one on a
+// strictly decreasing vector (reversed) and on all equal items
 ADS_TEST( "run-sorts" )
 {
  battery( []( auto & A , auto less ) { timSort( A , less ); } , 4096 ,
@@ -354,25 +470,50 @@ ADS_TEST( "run-sorts" )
  c = 0;
  timSort( U , count );
  CHECK( std::is_sorted( U.begin() , U.end() ) && c < 100000 + 200 );
+ Ints E , D( 100000 ) , Q( 100000 , 3 );
+ std::iota( D.rbegin() , D.rend() , 0 );        // strictly decreasing
+ for( auto sort : { timSort< int , decltype( count ) > ,
+                    powerSort< int , decltype( count ) > } ) {
+  sort( E , count , &runs );
+  CHECK( runs == 0 && E.empty() );
+  Ints A = D , B = Q;
+  c = 0;
+  sort( A , count , &runs );                     // one run, reversed
+  CHECK( runs == 1 && std::is_sorted( A.begin() , A.end() ) &&
+         c < 100000 );
+  c = 0;
+  sort( B , count , &runs );                     // equals: one run
+  CHECK( runs == 1 && B == Q && c < 100000 );
+  }
  }
 
-// the radix sorts: integers of every width and sign, doubles with
-// negatives, the stable sort by a key, the MSD sort of strings against
-// std::sort, the bucket sort of numbers in [ 0 , 1 )
+// the radix sorts: integers of every width and sign, of 0, 1, 2 items,
+// around the insertion threshold of the American flag sort, with the
+// extremes of the type and all equal to them; doubles with negatives,
+// -0 before +0, the infinities and the denormals in their places, the NaN
+// at the ends by their sign; the stable sort by a key, with the largest
+// key; the MSD sort of strings against std::sort, with prefixes, '\0'
+// inside, equal long strings; the bucket sort of numbers in [ 0 , 1 ), the
+// largest double below 1 included, NaN and negatives refused
 template< class T >
 void radix_of( unsigned seed )
 {
  std::mt19937_64 g( seed );
- for( std::size_t n : { 0u , 1u , 7u , 100u , 5000u } ) {
+ constexpr T lo = std::numeric_limits< T >::min() ,
+             hi = std::numeric_limits< T >::max();
+ for( std::size_t n : { 0u , 1u , 2u , 7u , 33u , 100u , 5000u } ) {
   std::vector< T > A( n );
   for( auto & x : A ) x = T( g() );
-  if( n > 50 ) { A[ 3 ] = std::numeric_limits< T >::min();
-                 A[ 4 ] = std::numeric_limits< T >::max(); A[ 5 ] = T( 0 ); }
-  auto B = A , C = A;
-  radixSort( A );
-  americanFlagSort( C );
-  std::sort( B.begin() , B.end() );
-  CHECK( A == B && C == B );
+  if( n > 5 ) { A[ 3 ] = lo; A[ 4 ] = hi; A[ 5 ] = T( 0 ); }
+  if( n == 2 ) { A[ 0 ] = hi; A[ 1 ] = lo; }
+  for( const auto & X : { A , std::vector< T >( n , lo ) ,
+                          std::vector< T >( n , hi ) } ) {
+   auto B = X , C = X , D = X;                 // also all equal
+   radixSort( B );
+   americanFlagSort( C );
+   std::sort( D.begin() , D.end() );
+   CHECK( B == D && C == D );
+   }
   }
  }
 
@@ -397,6 +538,22 @@ ADS_TEST( "radix-sorts" )
  std::vector< float > F = { 3.5f , -2.0f , 0.0f , -0.5f , 7.0f };
  radixSort( F );
  CHECK( F == std::vector< float >( { -2.0f , -0.5f , 0.0f , 3.5f , 7.0f } ) );
+ const double inf = std::numeric_limits< double >::infinity() ,
+              nan = std::numeric_limits< double >::quiet_NaN() ,
+              den = std::numeric_limits< double >::denorm_min();
+ const std::vector< double > G = { 1.0 , nan , -0.0 , inf , -inf , 0.0 ,
+                                   -den , den , std::copysign( nan , -1.0 ) ,
+                                   -1.0 };
+ const std::vector< double > order = { -inf , -1.0 , -den , -0.0 , 0.0 ,
+                                       den , 1.0 , inf };
+ for( int k = 0 ; k < 2 ; ++k ) {
+  auto H = G;
+  if( k == 0 ) radixSort( H ); else americanFlagSort( H );
+  CHECK( std::isnan( H[ 0 ] ) && std::signbit( H[ 0 ] ) &&
+         std::isnan( H[ 9 ] ) && ! std::signbit( H[ 9 ] ) );
+  CHECK( std::equal( order.begin() , order.end() , H.begin() + 1 ) &&
+         std::signbit( H[ 4 ] ) && ! std::signbit( H[ 5 ] ) );
+  }
  using P = std::pair< unsigned , int >;
  std::vector< P > R;
  for( int i = 0 ; i < 3000 ; ++i ) R.emplace_back( unsigned( g() % 50 ) , i );
@@ -405,6 +562,14 @@ ADS_TEST( "radix-sorts" )
  std::stable_sort( Q.begin() , Q.end() , []( const P & a , const P & b ) {
   return( a.first < b.first ); } );
  CHECK( R == Q );
+ std::vector< P > none;
+ radixSortBy( none , []( const P & p ) { return( p.first ); } );
+ CHECK( none.empty() );
+ constexpr auto top = std::numeric_limits< std::uint64_t >::max();
+ std::vector< std::uint64_t > K = { top , 0 , top - 1 , 1 , top };
+ radixSortBy( K , []( std::uint64_t x ) { return( x ); } );
+ CHECK( K == std::vector< std::uint64_t >( { 0 , 1 , top - 1 , top ,
+                                             top } ) );
  std::vector< std::string > W;
  for( int i = 0 ; i < 3000 ; ++i ) {
   std::string s;
@@ -418,6 +583,27 @@ ADS_TEST( "radix-sorts" )
  multikeyQuickSort( M );
  std::sort( V.begin() , V.end() );
  CHECK( W == V && M == V );
+ std::vector< std::string > X;
+ const std::string big( 300 , 'q' );
+ for( std::size_t l = 0 ; l <= 300 ; l += 7 )   // the prefixes of a string
+  X.push_back( big.substr( 0 , l ) );
+ for( int i = 0 ; i < 40 ; ++i )                 // equal long strings
+  X.push_back( std::string( 2000 , 'z' ) );
+ for( const char * s : { "a\0b" , "a\0\0" , "\0\0" } )   // '\0' inside
+  X.push_back( std::string( s , 3 ) );
+ X.push_back( std::string( "a\0" , 2 ) );
+ X.push_back( std::string( 1 , '\0' ) );
+ X.push_back( "a" );
+ X.push_back( "" );
+ std::shuffle( X.begin() , X.end() , g );
+ for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) , X.size() } ) {
+  std::vector< std::string > Y( X.begin() , X.begin() + n ) , Y2 = Y ,
+                             Y3 = Y;
+  msdRadixSort( Y );
+  multikeyQuickSort( Y2 );
+  std::sort( Y3.begin() , Y3.end() );
+  CHECK( Y == Y3 && Y2 == Y3 );
+  }
  std::vector< double > U( 4000 );
  std::uniform_real_distribution< double > z( 0 , 1 );
  for( auto & x : U ) x = z( g );
@@ -427,10 +613,31 @@ ADS_TEST( "radix-sorts" )
  CHECK( U == Z );
  std::vector< double > bad = { 0.5 , 1.0 };
  CHECK_THROWS( bucketSort( bad ) , contract_violation );
+ const double below = std::nextafter( 1.0 , 0.0 );
+ for( std::size_t n : { 1u , 2u , 3u , 1000u , 4097u } ) {
+  std::vector< double > V( n , below );          // the last bucket
+  V[ 0 ] = 0.0;
+  if( n > 2 ) V[ 1 ] = -0.0;
+  bucketSort( V );
+  CHECK( std::is_sorted( V.begin() , V.end() ) && V[ 0 ] == 0.0 &&
+         ( n == 1 || V.back() == below ) );
+  }
+ std::vector< float > Fb( 5 , std::nextafter( 1.0f , 0.0f ) ) , Ne;
+ bucketSort( Fb );
+ bucketSort( Ne );
+ CHECK( Fb == std::vector< float >( 5 , std::nextafter( 1.0f , 0.0f ) ) &&
+        Ne.empty() );
+ for( double x : { -1e-300 , nan , inf , -0.5 } ) {
+  std::vector< double > V = { 0.25 , x };
+  CHECK_THROWS( bucketSort( V ) , contract_violation );
+  }
  }
 
 // the sort that chooses: numbers short and long, strings, records with an
-// order of their own, stable or not, all against the standard library
+// order of their own, stable or not, all against the standard library;
+// around the thresholds kRadix and kStrings, the extremes of long long,
+// the inputs already sorted or decreasing (strictly or not), and -0 and
+// +0 kept in their order by the stable sort
 ADS_TEST( "dispatch" )
 {
  battery( []( auto & A , auto less ) { sort( A , less ); } , 4096 , false );
@@ -456,6 +663,50 @@ ADS_TEST( "dispatch" )
  Ints R = { 3 , 1 , 2 };
  sort( R , std::greater<>() );                   // not the natural order
  CHECK( R == Ints( { 3 , 2 , 1 } ) );
+ for( std::size_t n : { kRadix - 1 , kRadix , kRadix + 1 } ) {
+  using L = long long;                           // around the threshold
+  std::vector< L > A( n );
+  for( auto & x : A ) x = L( g() ) - L( g() );
+  A[ 0 ] = std::numeric_limits< L >::max();
+  A[ 1 ] = std::numeric_limits< L >::min();
+  auto B = A , C = A;
+  sort( A );
+  stableSort( C );
+  std::sort( B.begin() , B.end() );
+  CHECK( A == B && C == B );
+  Ints S( n ) , D( n ) , Q( n );                 // the presorted ones
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   S[ i ] = int( i / 3 );
+   D[ i ] = int( n - i );
+   Q[ i ] = int( ( n - i ) / 3 );                // decreasing, not strictly
+   }
+  for( const auto & X : { S , D , Q } ) {
+   Ints Y = X , Z = X , W = X;
+   sort( Y );
+   stableSort( Z );
+   std::sort( W.begin() , W.end() );
+   CHECK( Y == W && Z == W );
+   }
+  }
+ for( std::size_t n : { kStrings - 1 , kStrings } ) {
+  std::vector< std::string > S( n );
+  for( auto & s : S ) s = std::string( g() % 3 , char( 'a' + g() % 2 ) );
+  auto T = S , U = S;
+  sort( S );
+  stableSort( U );
+  std::sort( T.begin() , T.end() );
+  CHECK( S == T && U == T );
+  }
+ std::vector< double > Z( 1000 );                // -0 and +0 are equal:
+ for( std::size_t i = 1 ; i < Z.size() ; ++i )   // stableSort keeps their
+  Z[ i ] = ( i % 3 ) ? 0.0 : -0.0;               // order, also by radix
+ Z[ 0 ] = 1.0;
+ auto Zs = Z;
+ stableSort( Z );
+ std::stable_sort( Zs.begin() , Zs.end() );
+ CHECK( Z.back() == 1.0 );
+ for( std::size_t i = 0 ; i < Z.size() ; ++i )
+  CHECK( std::signbit( Z[ i ] ) == std::signbit( Zs[ i ] ) );
  }
 
 }  // end( namespace )

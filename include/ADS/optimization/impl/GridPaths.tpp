@@ -56,12 +56,14 @@ GridSquare largestSquare( const std::vector< std::vector< T > > & A )
 template< class C , class T >
 C countLatticePaths( const std::vector< std::vector< T > > & B )
 {
- if( B.empty() || B[ 0 ].empty() )
+ if( B.empty() )
   return( C( 0 ) );
  const std::size_t m = B.size() , n = B[ 0 ].size();
- ADS_PRE( std::all_of( B.begin() , B.end() ,
-                       [ n ]( const std::vector< T > & r ) {
+ ADS_PRE( std::all_of( B.begin() , B.end() ,       // before the empty
+                       [ n ]( const std::vector< T > & r ) {   // first row
                         return( r.size() == n ); } ) );
+ if( n == 0 )
+  return( C( 0 ) );
  std::vector< C > N( n , C( 0 ) );              // N[ j ]: row i, col j
  N[ 0 ] = C( 1 );
  for( std::size_t i = 0 ; i < m ; ++i )

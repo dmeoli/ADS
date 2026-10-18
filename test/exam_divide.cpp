@@ -105,8 +105,9 @@ size_t doublegap( const Ints & V )
 
 /// the largest product of a run of consecutive items of X, the empty run
 /// giving 1; the scan of the largest sum of a run, with the product ending
-/// at the current item or 1 in place of the sum; O( n )
-/// \pre the items are >= 0
+/// at the current item or 1 in place of the sum; O( n ). A 0 restarts the
+/// run by itself, since a product grown to +inf times 0 would give NaN.
+/// \pre the items are >= 0 (not NaN, +inf allowed)
 /// \post r >= 1
 double maxprod( const std::vector< double > & X )
 {
@@ -114,7 +115,7 @@ double maxprod( const std::vector< double > & X )
                        []( double x ) { return( x >= 0 ); } ) );
  double best = 1 , here = 1;
  for( double x : X ) {
-  here = std::max( here * x , 1.0 );
+  here = ( x == 0 ) ? 1.0 : std::max( here * x , 1.0 );
   best = std::max( here , best );
   }
  ADS_POST( best >= 1 );
@@ -1066,7 +1067,8 @@ ADS_TEST( "divide-1-b" )
 /*-------------------------- 2013-07-22, Maxprod ---------------------------*/
 
 // the largest product against all the runs, and against maxSubarraySum()
-// of the library on the logarithms when the items are positive
+// of the library on the logarithms when the items are positive; a 0 after
+// a product grown to +inf (once NaN), underflow, negative and NaN items
 ADS_TEST( "divide-2" )
 {
  std::mt19937 g( 1 );
@@ -1098,7 +1100,13 @@ ADS_TEST( "divide-2" )
  CHECK( maxprod( { 2 , 0.25 , 3 , 0 , 5 } ) == 5 );
  CHECK( maxprod( { 4 , 0.5 , 4 } ) == 8 );
  CHECK( maxprod( { 1e300 , 1e300 } ) == HUGE_VAL );
+ CHECK( maxprod( { 1e300 , 1e300 , 0 , 2 } ) == HUGE_VAL );
+ CHECK( maxprod( { HUGE_VAL , 0 } ) == HUGE_VAL );
+ CHECK( maxprod( { 0 , HUGE_VAL , 1e-300 } ) == HUGE_VAL );
+ CHECK( maxprod( { 1e-300 , 1e-300 } ) == 1 );
  CHECK_THROWS( maxprod( { 1 , -1 } ) , contract_violation );
+ CHECK_THROWS( maxprod( { -0.5 } ) , contract_violation );
+ CHECK_THROWS( maxprod( { 2 , std::nan( "" ) } ) , contract_violation );
  }
 
 /*------------------------ 2014-04-24, Pythagorean -------------------------*/
@@ -1203,6 +1211,8 @@ ADS_TEST( "divide-5" )
  CHECK( thickness( { 0 , INT_MAX , INT_MIN , -1 } , INT_MAX ) == 2 );
  CHECK( thicknessQuadratic( { INT_MIN , INT_MAX } , INT_MAX ) == 1 );
  CHECK_THROWS( thickness( { 1 } , 0 ) , contract_violation );
+ CHECK_THROWS( thickness( {} , -1 ) , contract_violation );
+ CHECK_THROWS( thicknessQuadratic( { 1 } , 0 ) , contract_violation );
  }
 
 /*------------------------- 2015-09-01, Find peak --------------------------*/
@@ -1270,6 +1280,9 @@ ADS_TEST( "divide-7" )
  CHECK( mostFrequent( M ) == 3 );
  CHECK_THROWS( countA( { 1 , 1 } ) , contract_violation );
  CHECK_THROWS( countA( { 1 } ) , contract_violation );
+ CHECK_THROWS( countA( { 2 , 1 } ) , contract_violation );
+ CHECK_THROWS( countA( { 1 , 2 , 1 , 2 } ) , contract_violation );
+ CHECK_THROWS( countA( { 1 , 2 , 3 } ) , contract_violation );
  }
 
 /*------------------------ 2016-11-03, Punto fisso -------------------------*/
@@ -1326,7 +1339,11 @@ ADS_TEST( "divide-9" )
  CHECK( maxCrime( { 1 , 2 , 3 , 4 } , 1 ) == 1 );
  CHECK( maxCrime( { 1 , INT_MAX } , INT_MAX ) == 2 );
  CHECK( maxCrime( { 1 , INT_MAX } , INT_MAX - 1 ) == 1 );
+ CHECK( maxCrime( { -5 , -4 , -4 , 0 } , 2 ) == 3 );
+ CHECK( maxCrime( { INT_MIN , INT_MAX } , INT_MAX ) == 1 );
  CHECK_THROWS( maxCrime( { 1 } , 0 ) , contract_violation );
+ CHECK_THROWS( maxCrime( {} , -1 ) , contract_violation );
+ CHECK_THROWS( maxCrime( { 3 , 1 } , 5 ) , contract_violation );
  }
 
 /*------------------------ 2018-01-31, Valore unico ------------------------*/
@@ -1532,6 +1549,7 @@ ADS_TEST( "divide-15" )
  CHECK( hasMajority( Ints( 1000 , INT_MAX ) ) );
  CHECK( hasMajority( { INT_MIN , INT_MIN , INT_MAX } ) );
  CHECK_THROWS( hasMajority( {} ) , contract_violation );
+ CHECK_THROWS( hasMajority( { 2 , 1 , 2 } ) , contract_violation );
  }
 
 /*-------------------------- 2021-02-08, Closest ---------------------------*/
@@ -1566,7 +1584,10 @@ ADS_TEST( "divide-17" )
  CHECK( closest( { INT_MIN , INT_MAX } , INT_MIN ) == INT_MIN );
  CHECK( closest( { INT_MIN , INT_MAX } , INT_MAX ) == INT_MAX );
  CHECK( closest( { INT_MIN , 0 , INT_MAX } , 1 ) == 0 );
+ CHECK( closest( { 1 , 3 } , 2 ) == 1 || closest( { 1 , 3 } , 2 ) == 3 );
+ CHECK( closest( { -7 , -2 } , INT_MAX ) == -2 );
  CHECK_THROWS( closest( {} , 0 ) , contract_violation );
+ CHECK_THROWS( closest( { 3 , 1 } , 0 ) , contract_violation );
  }
 
 /*-------------------------- 2021-02-19, Fast sum --------------------------*/
@@ -1587,6 +1608,10 @@ ADS_TEST( "divide-18" )
  CHECK( fastSum( { 1 , 2 , 3 } ) == 6 );
  CHECK_THROWS( fastSum( { 1 , 3 } ) , contract_violation );
  CHECK_THROWS( fastSum( { 1 , 1 , 3 } ) , contract_violation );
+ CHECK_THROWS( fastSum( {} ) , contract_violation );
+ CHECK_THROWS( fastSum( { 2 , 2 , 3 } ) , contract_violation );
+ CHECK_THROWS( fastSum( { 1 , 2 , 2 } ) , contract_violation );
+ CHECK_THROWS( fastSum( { 1 , 3 , 2 , 3 } ) , contract_violation );
  }
 
 /*------------------------ 2021-08-31, ContainsZero ------------------------*/
@@ -1622,6 +1647,8 @@ ADS_TEST( "divide-19" )
  CHECK( containsZero( { INT_MIN , 1 , INT_MAX } ) );
  CHECK( containsZeroSort( { INT_MIN , 1 , INT_MAX } ) );
  CHECK( ! containsZero( { INT_MIN , INT_MIN , INT_MAX , INT_MAX } ) );
+ CHECK( containsZeroSort( { 3 , -3 } ) );
+ CHECK_THROWS( containsZero( { 3 , -3 } ) , contract_violation );
  }
 
 /*---------------------- 2021-08-31, Radice quadrata -----------------------*/
@@ -1673,7 +1700,16 @@ ADS_TEST( "divide-21" )
                                            int64_t( 0 ) ) );
    }
   }
- CHECK( missing( { 1 , 3 } ) == 2 );
+ for( size_t n = 2 ; n < 40 ; ++n )
+  for( size_t k = 1 ; k < n ; ++k ) {
+   Ints A;
+   for( size_t i = 0 ; i <= n ; ++i )
+    if( i != k )
+     A.push_back( 100 - 3 * int( i ) );
+   CHECK( missing( A ) == 100 - 3 * int64_t( k ) );
+   }
+ CHECK( missing( { 1 , 3 } ) == 2 && missing( { 3 , 1 } ) == 2 );
+ CHECK( missing( { INT_MAX , INT_MIN + 1 } ) == 0 );
  CHECK( missing( { INT_MIN + 1 , INT_MAX } ) == 0 );
  const int d = INT_MAX / 2;
  CHECK( missing( { INT_MIN , INT_MIN + d , INT_MIN + d + d + d } ) ==
@@ -1705,6 +1741,9 @@ ADS_TEST( "divide-22" )
  CHECK( hIndex( { 1 } ) == 1 );
  CHECK( hIndex( Ints( 9 , 9 ) ) == 9 );
  CHECK( hIndex( Ints( 1000 , INT_MAX ) ) == 1000 );
+ CHECK( hIndex( { 3 , -1 , -5 } ) == 1 && hIndex( { -1 , INT_MIN } ) == 0 );
+ CHECK( hIndex( { 5 , 4 , 3 , 2 , 1 } ) == 3 );
+ CHECK_THROWS( hIndex( { 1 , 2 } ) , contract_violation );
  }
 
 /*----------------------- 2023-02-09, Minimo locale ------------------------*/
@@ -1735,6 +1774,7 @@ ADS_TEST( "divide-23" )
  CHECK( findLocalMinimum( V ) == 700 );
  CHECK_THROWS( findLocalMinimum( { 1 , 2 , 3 } ) , contract_violation );
  CHECK_THROWS( findLocalMinimum( { 2 , 1 } ) , contract_violation );
+ CHECK_THROWS( findLocalMinimum( { 3 , 1 , 1 , 2 } ) , contract_violation );
  }
 
 /*----------------------- 2024-01-09, k-Ripetizioni ------------------------*/
@@ -1768,7 +1808,12 @@ ADS_TEST( "divide-24" )
  CHECK( krepeating( "x" , 1 ) == 1 && krepeating( "x" , 2 ) == 0 );
  CHECK( krepeating( "aaaa" , 4 ) == 4 && krepeating( "aaaa" , 5 ) == 0 );
  CHECK( krepeating( std::string( 2000 , 'z' ) , 2000 ) == 2000 );
+ const std::string Z = "abcdefghijklmnopqrstuvwxyz";
+ CHECK( krepeating( Z , 1 ) == 26 && krepeating( Z , 2 ) == 0 );
+ CHECK( krepeating( Z + Z , 2 ) == 52 );
+ CHECK( krepeating( "ab" , INT_MAX ) == 0 );
  CHECK_THROWS( krepeating( "a" , 0 ) , contract_violation );
+ CHECK_THROWS( krepeating( "" , -1 ) , contract_violation );
  }
 
 /*----------------------- 2024-06-14, Smaller Count ------------------------*/
@@ -1831,6 +1876,8 @@ ADS_TEST( "divide-27" )
  CHECK( findNegative( []( int64_t k ) { return( k == 1 ? 1 : -1 ); } ) == 2 );
  CHECK_THROWS( findNegative( []( int64_t k ) { return( -k ); } ) ,
                contract_violation );
+ CHECK_THROWS( findNegative( []( int64_t k ) { return( 1 - k ); } ) ,
+               contract_violation );
  }
 
 /*------------------------ 2025-01-14, AlternaSort -------------------------*/
@@ -1866,6 +1913,9 @@ ADS_TEST( "divide-28" )
  check( S );
  std::reverse( S.begin() , S.end() );
  check( S );
+ Ints D{ 1 , 1 } , F{ 1 , 1 };
+ CHECK_THROWS( alternaSort( D ) , contract_violation );
+ CHECK_THROWS( alternaSortSorted( F ) , contract_violation );
  }
 
 /*-------------------- 2025-06-13, Stringhe pareggiate ---------------------*/
@@ -1937,6 +1987,11 @@ ADS_TEST( "divide-30" )
   CHECK( maxTwoDivide( S ) == S.size() );
   }
  CHECK( maxTwo( "abcabcabc" ) == 2 && maxTwoDivide( "abcabcabc" ) == 2 );
+ const std::string Z = "abcdefghijklmnopqrstuvwxyz";
+ CHECK( maxTwo( Z ) == 2 && maxTwoDivide( Z ) == 2 );
+ CHECK( maxTwo( "abbbbc" ) == 5 && maxTwoDivide( "abbbbc" ) == 5 );
+ CHECK( maxTwo( "aaab" + std::string( 7 , 'c' ) ) == 8 );
+ CHECK( maxTwoDivide( "aaab" + std::string( 7 , 'c' ) ) == 8 );
  }
 
 }  // end( namespace )

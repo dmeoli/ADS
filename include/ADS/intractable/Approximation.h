@@ -137,7 +137,7 @@ inline std::pair< long , Nodes > apSubsetSum( const std::vector< long > & A ,
 
 /// the best profit and the objects of an \f$ \epsilon \f$-approximation of
 /// ZAINO, profits p and volumes v within C, by the rounded profits
-/// \pre p and v of the same size and not negative, 0 < eps <= 1
+/// \pre p and v of the same size and not negative, 0 < eps <= 1, C >= 0
 /// \post objects within C, their profit returned
 inline std::pair< long , Nodes > knapsackApprox(
                                             const std::vector< long > & p ,

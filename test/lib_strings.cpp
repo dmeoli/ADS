@@ -111,7 +111,8 @@ std::uint64_t fibonacci( int n )
 
 // Manacher against every substring on 2000 random strings of up to 14
 // letters over 2 or 3 symbols, the leftmost of the longest; the examples,
-// the empty string, one symbol repeated, a sequence of integers
+// the empty string, one and two letters, one symbol repeated, the whole
+// alphabet, a palindrome at the end, a sequence of integers
 ADS_TEST( "palindromic-substring" )
 {
  CHECK( longestPalindromicSubstring( "casacca" ) == "casac" );
@@ -124,6 +125,13 @@ ADS_TEST( "palindromic-substring" )
                                                          std::size_t( 0 ) ) );
  CHECK( longestPalindromicSubstring( std::string( 5000 , 'z' ) ).size() ==
         5000 );
+ std::string abc( 26 , 'a' );               // the whole alphabet: one
+ for( int i = 0 ; i < 26 ; ++i ) abc[ i ] = char( 'a' + i );   // letter
+ CHECK( longestPalindrome( abc ) == std::pair( std::size_t( 0 ) ,
+                                               std::size_t( 1 ) ) &&
+        longestPalindromicSubstring( "x" ) == "x" &&
+        longestPalindromicSubstring( "xy" ) == "x" &&
+        longestPalindromicSubstring( "abcdcbz" ) == "bcdcb" );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 2000 ; ++t ) {
   const std::string s = word( g , g() % 15 , 2 + int( g() % 2 ) );

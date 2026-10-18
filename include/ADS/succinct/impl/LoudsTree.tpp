@@ -31,12 +31,17 @@ inline LoudsTree::LoudsTree(
  B.push_back( true );
  std::vector< std::size_t > Q;              // the visit by levels
  Q.reserve( n );
- if( n > 0 ) Q.push_back( 0 );
+ std::vector< bool > in( n , false );       // the nodes reached
+ if( n > 0 ) {
+  Q.push_back( 0 );
+  in[ 0 ] = true;
+  }
  for( std::size_t h = 0 ; h < Q.size() ; ++h ) {
   for( const std::size_t u : c[ Q[ h ] ] ) {
-   ADS_PRE( ( u > 0 ) && ( u < n ) && ( Q.size() < n ) );
+   ADS_PRE( ( u > 0 ) && ( u < n ) && ! in[ u ] );
    B.push_back( false );
    Q.push_back( u );
+   in[ u ] = true;
    }
   B.push_back( true );
   }

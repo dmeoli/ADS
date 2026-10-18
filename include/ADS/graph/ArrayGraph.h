@@ -68,7 +68,9 @@ class ArrayGraph {
  ArrayGraph( int n , const std::vector< std::tuple< int , int , W > > & E ,
              bool directed = true );
 
- /// the copy of any graph whose nodes are 0 , ... , n - 1
+ /// the copy of any graph, with the nodes 0 , ... , g.bound() - 1: the
+ /// names that are not nodes of g, deleted ones, become isolated nodes, so
+ /// that each node keeps its name
  template< Graph G >
  explicit ArrayGraph( const G & g );
 
@@ -103,7 +105,7 @@ class ArrayGraph {
   }
 
  /// the nodes adjacent to u, contiguous in the array of the edges
- /// \\pre u is a node
+ /// \pre u is a node
  [[nodiscard]] std::span< const int > neighbors( int u ) const;
 
 /*--------------------------------------------------------------------------*/

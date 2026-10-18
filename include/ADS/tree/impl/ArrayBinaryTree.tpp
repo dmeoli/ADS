@@ -189,7 +189,12 @@ void ArrayBinaryTree< T >::graft( long i , long c ,
                                   const ArrayBinaryTree & t )
 {
  ADS_PRE( has( i ) && ! has( c ) );
- copy( c , t , 0 );
+ if( &t == this ) {                     // t would grow under the copy
+  const ArrayBinaryTree s( t );
+  copy( c , s , 0 );
+  }
+ else
+  copy( c , t , 0 );
  ADS_INVARIANT( rooted() );
  }
 

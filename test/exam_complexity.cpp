@@ -106,9 +106,9 @@ Int down( Int n , double x )
 Int isqrt( Int n )
 {
  ADS_PRE( n >= 0 );
- Int r = Int( std::sqrt( double( n ) ) );
- while( r * r > n ) --r;
- while( ( r + 1 ) * ( r + 1 ) <= n ) ++r;
+ Int r = Int( std::sqrt( double( n ) ) );  // the products by division:
+ while( ( r > 0 ) && ( r > n / r ) ) --r;   // no overflow up to INT64_MAX
+ while( r + 1 <= n / ( r + 1 ) ) ++r;
  return( r );
  }
 
@@ -810,13 +810,24 @@ ADS_TEST( "complexity-1" )
  }
 
 // 2, 2011-05-02, Complessita: T( n ) = 3 T( n / 4 ) + T( n / 5 ) + n,
-// T( n ) = 1 for n <= 1: Theta( n ), T( n ) <= 20 max( 1 , n )
+// T( n ) = 1 for n <= 1: Theta( n ), T( n ) <= 20 max( 1 , n ); the first
+// values by hand, and the contracts of the evaluation (n < 0, an empty or
+// reversed sample)
 ADS_TEST( "complexity-2" )
 {
  Memo T( []( Memo & T , Int n ) {
   return( n <= 1 ? 1.0 : 3 * T( n / 4 ) + T( n / 5 ) + double( n ) ); } );
  for( Int n = 0 ; n <= 4 ; ++n )
   CHECK( T( n ) <= 20.0 * double( std::max< Int >( 1 , n ) ) );
+ CHECK( ( T( 0 ) == 1 ) && ( T( 1 ) == 1 ) );
+ CHECK( ( T( 2 ) == 6 ) && ( T( 3 ) == 7 ) );   // 3 T( 0 ) + T( 0 ) + n
+ CHECK( T( 4 ) == 3 * 1 + 1 + 4 );
+ CHECK( T( 5 ) == 3 * 1 + 1 + 5 );
+ CHECK_THROWS( (void) T( -1 ) , contract_violation );
+ CHECK_THROWS( (void) sample( 5 , 4 ) , contract_violation );
+ CHECK_THROWS( (void) sample( -1 , 4 ) , contract_violation );
+ CHECK( sample( 7 , 7 ) == Ints{ 7 } );           // a single n
+ CHECK( sample( 0 , 3 ) == ( Ints{ 0 , 1 , 2 , 3 } ) );
  CHECK( upper( T , one , 20 , 1 ) );
  CHECK( lower( T , one , 1 , 1 ) );
  }
@@ -1014,9 +1025,20 @@ ADS_TEST( "complexity-10-3" )
  }
 
 // 11, 2013-05-03, Complessita: crazy( n ) costs T( n ) = T( n / 2 ) + T( n
-// / 3 ) + n / 2: Theta( n ), n / 2 <= T( n ) <= 3 n
+// / 3 ) + n / 2: Theta( n ), n / 2 <= T( n ) <= 3 n; the base cases n = 0,
+// 1 cost one step, n = 2, 3 one iteration and two base calls, and n < 0 is
+// a contract violation
 ADS_TEST( "complexity-11" )
 {
+ const std::array< std::pair< Int , Int > , 4 > small{ {
+  { 0 , 1 } , { 1 , 1 } , { 2 , 3 } , { 3 , 3 } } };
+ for( const auto & [ n , s ] : small ) {
+  Int steps = 0;
+  crazyHalfThird( n , steps );
+  CHECK( steps == s );
+  }
+ Int none = 0;
+ CHECK_THROWS( crazyHalfThird( -1 , none ) , contract_violation );
  Memo T( []( Memo & T , Int n ) {
   return( n <= 1 ? 1.0 : double( n / 2 ) + T( n / 2 ) + T( n / 3 ) ); } );
  std::mt19937_64 g( 1 );
@@ -1032,9 +1054,30 @@ ADS_TEST( "complexity-11" )
 
 // 12, 2013-06-17, Complessita: fun( V , 1 , n ) costs T( n ) = T( n - 1 ) +
 // T( floor( sqrt( n ) ) ) + n, T( 1 ) = 1: Theta( n^2 ), T( n ) <= 2 n^2
-// (the procedure is run on its corrected second call, see fun())
+// (the procedure is run on its corrected second call, see fun()); floor(
+// sqrt( n ) ) exact at 0, 1, around the squares and at the largest square
+// of int64, and the contracts of fun() (i > j, j out of V) and of isqrt()
 ADS_TEST( "complexity-12" )
 {
+ CHECK( ( isqrt( 0 ) == 0 ) && ( isqrt( 1 ) == 1 ) && ( isqrt( 2 ) == 1 ) );
+ for( Int r = 2 ; r <= 2000 ; ++r ) {
+  CHECK( isqrt( r * r ) == r );
+  CHECK( isqrt( r * r - 1 ) == r - 1 );
+  }
+ const Int big = 3037000499;                // floor( sqrt( 2^63 - 1 ) )
+ CHECK( isqrt( big * big ) == big );
+ CHECK( isqrt( big * big - 1 ) == big - 1 );
+ CHECK( isqrt( INT64_MAX ) == big );
+ CHECK_THROWS( (void) isqrt( -1 ) , contract_violation );
+ {
+  const Ints W{ 4 , 5 };
+  Int steps = 0;
+  CHECK( fun( W , 1 , 1 , steps ) == 1 );   // one value: the base case
+  CHECK( steps == 1 );
+  CHECK_THROWS( fun( W , 1 , 0 , steps ) , contract_violation );
+  CHECK_THROWS( fun( W , 0 , 2 , steps ) , contract_violation );
+  CHECK_THROWS( fun( W , -1 , 0 , steps ) , contract_violation );
+  }
  const Int N = 100000;
  std::vector< double > T( std::size_t( N + 1 ) , 1 );
  for( Int n = 2 ; n <= N ; ++n )
@@ -1072,9 +1115,23 @@ ADS_TEST( "complexity-13" )
 
 // 14a, 2013-09-02, Complessita: n people, a secret each, one message per
 // person per round: Theta( n ) messages, 2 n - 2 by the chain; n = 2 needs
-// 1 round and 2 messages
+// 1 round and 2 messages; one person needs nothing, 64 people fill the
+// whole mask, and 0 or 65 people (or fewer than 1 or more than 4 for the
+// search) are contract violations
 ADS_TEST( "complexity-14-a" )
 {
+ CHECK( everybody( secrets( 1 ) ) );
+ CHECK( ! everybody( secrets( 2 ) ) && ! everybody( secrets( 64 ) ) );
+ CHECK( fewestRounds( 1 ) == 0 );
+ CHECK_THROWS( (void) secrets( 0 ) , contract_violation );
+ CHECK_THROWS( (void) secrets( 65 ) , contract_violation );
+ CHECK_THROWS( (void) fewestMessages( 0 ) , contract_violation );
+ CHECK_THROWS( (void) fewestMessages( 5 ) , contract_violation );
+ CHECK_THROWS( (void) fewestRounds( 5 ) , contract_violation );
+ {
+  Known none;
+  CHECK_THROWS( chainGossip( none ) , contract_violation );
+  }
  CHECK( fewestMessages( 2 ) == 2 );
  CHECK( fewestRounds( 2 ) == 1 );
  CHECK( fewestMessages( 1 ) == 0 );
@@ -1089,9 +1146,20 @@ ADS_TEST( "complexity-14-a" )
 
 // 14b, 2013-09-02, Complessita: the same people: Theta( log n ) rounds,
 // log_2 n by the exchange on the hypercube, since the holders of a secret
-// at most double in a round
+// at most double in a round; one person needs 0 rounds and 0 messages, and
+// a number of people that is not a power of 2 is a contract violation
 ADS_TEST( "complexity-14-b" )
 {
+ for( const int n : { 3 , 5 , 6 , 63 } ) {
+  Known K = secrets( n );
+  Int messages = 0;
+  CHECK_THROWS( cubeGossip( K , messages ) , contract_violation );
+  }
+ {
+  Known K;                                  // nobody: 0 is not a power of 2
+  Int messages = 0;
+  CHECK_THROWS( cubeGossip( K , messages ) , contract_violation );
+  }
  for( int n = 1 ; n <= 4 ; ++n )
   CHECK( fewestRounds( n ) == int( std::bit_width( unsigned( n - 1 ) ) ) );
  for( int k = 0 ; k <= 6 ; ++k ) {
@@ -1148,7 +1216,8 @@ ADS_TEST( "complexity-15" )
 
 // 16, 2014-04-24, Complessita: mistery( A , i , j ) costs at most T( n ) =
 // 2 T( n / 2 ) + 2^n: O( 2^n ) by the third case, with 2 2^{n/2} <= 2^n / 2
-// for n >= 4
+// for n >= 4; the empty range and one value cost 0 and 1 steps, and more
+// than 40 values or a range out of A are contract violations
 ADS_TEST( "complexity-16" )
 {
  Memo W( []( Memo & W , Int n ) {
@@ -1180,6 +1249,11 @@ ADS_TEST( "complexity-16" )
  Int steps = 0;
  CHECK( mistery( A , 3 , 2 , rnd , steps ) == 0 );   // empty
  CHECK( steps == 0 );
+ CHECK( mistery( A , 7 , 7 , rnd , steps ) == 2 * A[ 7 ] );   // one value
+ CHECK( steps == 1 );
+ const Ints L( 50 , 1 );                     // n = 41: 2^41 reads refused
+ CHECK_THROWS( mistery( L , 0 , 40 , worstRnd , steps ) , contract_violation );
+ CHECK_THROWS( mistery( A , 0 , 20 , rnd , steps ) , contract_violation );
  }
 
 // 17, 2014-06-16, 24, 2015-07-14, and 32, 2017-02-07, Complessita: T( n ) =
@@ -1471,7 +1545,8 @@ ADS_TEST( "complexity-28" )
 // O( sqrt( n ) ). The solution evaluates T( 12 ) = 6 + sqrt( 2 ) + 2 sqrt(
 // 3 ), but T( 12 ) = T( 0 ) + T( 1 ) + 2 T( 2 ) + sqrt( 12 ) = 10 + 2 sqrt(
 // 2 ) + 2 sqrt( 3 ). The exact order is Theta( n^p ), p = 0.6596... of
-// Akra and Bazzi
+// Akra and Bazzi; one term of Akra and Bazzi is the master theorem (p
+// negative when sum a_i < 1), and its contracts
 ADS_TEST( "complexity-29" )
 {
  Memo T( []( Memo & T , Int n ) {
@@ -1492,6 +1567,21 @@ ADS_TEST( "complexity-29" )
  const double p = akraBazziExponent( { { 1 , 1.0 / 15 } , { 1 , 0.1 } ,
                                        { 2 , 1.0 / 6 } } );
  CHECK( ( 0.6595 < p ) && ( p < 0.6597 ) );
+ // one term is the master theorem; the terms are contracts (none, a_i <=
+ // 0, b_i outside ( 0 , 1 ))
+ CHECK( std::abs( akraBazziExponent( { { 2 , 0.5 } } ) - 1 ) < 1e-9 );
+ CHECK( akraBazzi( { { 2 , 0.5 } } , 1 ) == master( 2 , 2 , 1 ) );
+ CHECK( akraBazzi( { { 1 , 0.5 } } , 0 , -1 ) == master( 1 , 2 , 0 , -1 ) );
+ CHECK( std::abs( akraBazziExponent( { { 1 , 0.5 } } ) ) < 1e-9 );
+ CHECK( std::abs( akraBazziExponent( { { 0.5 , 0.5 } } ) + 1 ) < 1e-9 );
+ using Terms = std::vector< std::pair< double , double > >;
+ for( const Terms & bad : { Terms{} , Terms{ { 0 , 0.5 } } ,
+                            Terms{ { -1 , 0.5 } } , Terms{ { 1 , 0 } } ,
+                            Terms{ { 1 , 1 } } , Terms{ { 1 , 0.5 } ,
+                                                        { 1 , 1.5 } } } ) {
+  CHECK_THROWS( (void) akraBazziExponent( bad ) , contract_violation );
+  CHECK_THROWS( (void) akraBazzi( bad , 1 ) , contract_violation );
+  }
  CHECK( bounded( T , [ p ]( double n ) { return( std::pow( n , p ) ); } ) );
  }
 
@@ -1516,7 +1606,8 @@ ADS_TEST( "complexity-30" )
 // 31, 2017-01-24, Complessita: crazy( n ) costs T( n ) = 2 T( n / 4 ) + T(
 // n / 2 ) + n^2: Theta( n^2 ), the induction with c >= 8 / 5. The solution
 // checks only the base T( 1 ), but n = 2, 3 reach T( 0 ), and T( 2 ) = 7 >
-// ( 8 / 5 ) 4; the witness is c = 7 / 4
+// ( 8 / 5 ) 4; the witness is c = 7 / 4; crazy( 2 ) by hand, and n < 0 is
+// a contract violation
 ADS_TEST( "complexity-31" )
 {
  Memo T( []( Memo & T , Int n ) {
@@ -1538,6 +1629,10 @@ ADS_TEST( "complexity-31" )
   }
  CHECK( upper( C , two , 7.0 / 4 , 1 ) );
  CHECK( lower( C , two , 0.5 , 1 ) );
+ Int steps = 0;                             // n = 2: 3 iterations, 3 bases
+ crazyQuarters( 2 , steps );
+ CHECK( steps == 6 );
+ CHECK_THROWS( crazyQuarters( -1 , steps ) , contract_violation );
  }
 
 // 33, 2017-06-08, Complessita: T( n ) = T( n / 2 ) + T( n / 4 ) + n on the
@@ -1754,10 +1849,30 @@ ADS_TEST( "complexity-46" )
 
 // 47, 2020-07-24, Complessita: T( n ) = a T( n / 2 ) + n^{a - 1}: Theta(
 // log n ) for a = 1, Theta( n log n ) for a = 2, Theta( n^{a - 1} ) for
-// a >= 3
+// a >= 3; the extreme parameters of the master theorem: a = 1 with f
+// constant (binary search, log n), with f = 1 / log n (log log n) and with
+// f = 1 / log^2 n (constant); a < 1 or b <= 1 are contract violations
 ADS_TEST( "complexity-47" )
 {
  CHECK( same( master( 1 , 2 , 0 ) , 1 , 0 , 1 ) );
+ CHECK( same( master( 1 , 2 , 0 , -1 ) , 1 , 0 , 0 , 1 ) );
+ CHECK( same( master( 1 , 2 , 0 , -2 ) , 1 , 0 ) );
+ CHECK( same( master( 1 , 2 , -1 ) , 1 , 0 ) );   // f falling: Theta( 1 )
+ {                                           // T( 2^h ) = 1 + sum 1 / i
+  double T = 1 , H = 0;
+  for( int h = 1 ; h <= 1000000 ; ++h ) {
+   T += 1.0 / h;
+   H += 1.0 / ( double( h ) * h );
+   }
+  CHECK( std::abs( T - 1 - std::log( 1e6 ) - 0.5772156649 ) < 1e-5 );
+  CHECK( H < 2 );                                       // bounded
+  }
+ for( const double b : { 1.0 , 0.5 , 0.0 } )
+  CHECK_THROWS( (void) master( 2 , b , 1 ) , contract_violation );
+ CHECK_THROWS( (void) master( 0.5 , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( (void) master( 0 , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( (void) extendedMaster( 0.5 , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( (void) extendedMaster( 2 , 1 , 1 ) , contract_violation );
  CHECK( same( master( 2 , 2 , 1 ) , 1 , 1 , 1 ) );
  CHECK( same( master( 3 , 2 , 2 ) , 1 , 2 ) );
  for( int a = 1 ; a <= 10 ; ++a ) {
@@ -1988,7 +2103,8 @@ ADS_TEST( "complexity-58" )
  }
 
 // 59, 2023-01-17, Complessita: R( A , i , j ) costs T( n ) = 2 T( 3 n / 4 )
-// + 1: Theta( n^{log_{4/3} 2} ), about n^{2.41}
+// + 1: Theta( n^{log_{4/3} 2} ), about n^{2.41}; the first recursive n
+// = 4 by hand, and the contracts of the fragment
 ADS_TEST( "complexity-59" )
 {
  Memo C( []( Memo & C , Int n ) {
@@ -2008,13 +2124,29 @@ ADS_TEST( "complexity-59" )
  CHECK( settles( 2 , 4.0 / 3 , []( double ) { return( 1.0 ); } , G ) );
  CHECK( bounded( C , [ & ]( double n ) { return( G.at( n ) ); } ,
                  10000000 ) );
+ // n = 4: d = 1, the calls on 3 and 3 values; a range out of A refused
+ Int calls = 0;
+ CHECK( threeQuarters( A , 0 , 3 , calls ) ==
+        ( A[ 0 ] + A[ 1 ] + A[ 2 ] ) - ( A[ 1 ] + A[ 2 ] + A[ 3 ] ) );
+ CHECK( calls == 3 );
+ CHECK_THROWS( threeQuarters( A , 5 , 4 , calls ) , contract_violation );
+ CHECK_THROWS( threeQuarters( A , 0 , 600 , calls ) , contract_violation );
  }
 
 // 60, 2023-02-09, Complessita: R( A , start , end ) costs T( n ) = 2 T( n /
 // 2 ) + 1, Theta( n ), on distinct values and T( n ) = 2 T( n / 2 ) + n,
-// Theta( n log n ), on equal values
+// Theta( n log n ), on equal values; a palindrome of 3 values by hand, and
+// the contracts of the fragment
 ADS_TEST( "complexity-60" )
 {
+ {
+  const Ints P{ 1 , 2 , 1 };                // the scan meets in the middle
+  Int steps = 0;
+  CHECK( equalEnds( P , 0 , 2 , steps ) == 6 + 3 + 1 );
+  CHECK( steps == 1 + 2 + 3 + 1 );
+  CHECK_THROWS( equalEnds( P , 2 , 1 , steps ) , contract_violation );
+  CHECK_THROWS( equalEnds( P , 0 , 3 , steps ) , contract_violation );
+  }
  for( int h = 0 ; h <= 18 ; ++h ) {
   const Int n = Int( 1 ) << h;
   Ints D( static_cast< std::size_t >( n ) ) , E( std::size_t( n ) , 1 );
@@ -2043,7 +2175,8 @@ ADS_TEST( "complexity-60" )
  }
 
 // 61, 2023-06-20, Complessita: R( A , x1 , y1 , x2 , y2 ) costs T( n ) = 2
-// T( n / 2 ) + n: Theta( n log n )
+// T( n / 2 ) + n: Theta( n log n ), from the single cell; a square out of
+// A is a contract violation
 ADS_TEST( "complexity-61" )
 {
  Memo C( []( Memo & C , Int n ) {
@@ -2054,6 +2187,11 @@ ADS_TEST( "complexity-61" )
   Int steps = 0;
   border( A , 0 , 0 , n - 1 , n - 1 , steps );
   CHECK( double( steps ) == C( n ) );
+  if( h == 1 ) {
+   Int none = 0;
+   CHECK_THROWS( border( A , 0 , 0 , 2 , 2 , none ) , contract_violation );
+   CHECK_THROWS( border( A , 1 , 1 , 0 , 0 , none ) , contract_violation );
+   }
   }
  const Growth G = master( 2 , 2 , 1 );
  CHECK( same( G , 1 , 1 , 1 ) );
@@ -2072,7 +2210,8 @@ ADS_TEST( "complexity-62" )
  }
 
 // 63, 2023-08-23, Complessita: R( A , x1 , y1 , x2 , y2 ) costs T( n ) = 2
-// T( n / 2 ) + n^2: Theta( n^2 ), exactly 2 n^2 - n
+// T( n / 2 ) + n^2: Theta( n^2 ), exactly 2 n^2 - n, from the single cell;
+// a square out of A is a contract violation
 ADS_TEST( "complexity-63" )
 {
  for( int h = 0 ; h <= 11 ; ++h ) {
@@ -2081,6 +2220,11 @@ ADS_TEST( "complexity-63" )
   Int steps = 0;
   CHECK( square( A , 0 , 0 , n - 1 , n - 1 , steps ) == 2 * n * n - n );
   CHECK( steps == 2 * n * n - n );
+  if( h == 1 ) {
+   Int none = 0;
+   CHECK_THROWS( square( A , 0 , 0 , 2 , 2 , none ) , contract_violation );
+   CHECK_THROWS( square( A , -1 , 0 , 1 , 1 , none ) , contract_violation );
+   }
   }
  const Growth G = master( 2 , 2 , 2 );
  CHECK( same( G , 1 , 2 ) );
@@ -2088,9 +2232,22 @@ ADS_TEST( "complexity-63" )
  }
 
 // 64, 2024-01-09, Complessita: frec( A , si , sj , ei , ej ) costs T( n ) =
-// 4 T( n / 2 ) + O( n ), the four quadrants having side n / 2: Theta( n^2 )
+// 4 T( n / 2 ) + O( n ), the four quadrants having side n / 2: Theta( n^2
+// ); the single cell and the square of side 2 by hand, and a square out of
+// A is a contract violation
 ADS_TEST( "complexity-64" )
 {
+ {
+  const Matrix A( 2 , Ints( 2 , 1 ) );
+  Int steps = 0;
+  CHECK( staircase( A , 1 , 1 , 1 , 1 , steps ) == 0 );
+  CHECK( steps == 1 );
+  steps = 0;                                // 1 call, 1 step left, 4 cells
+  CHECK( staircase( A , 0 , 0 , 1 , 1 , steps ) == 1 );
+  CHECK( steps == 6 );
+  CHECK_THROWS( staircase( A , 0 , 0 , 2 , 2 , steps ) , contract_violation );
+  CHECK_THROWS( staircase( A , 1 , 0 , 0 , 1 , steps ) , contract_violation );
+  }
  Memo lo( []( Memo & L , Int n ) {
   return( n <= 1 ? 1.0 : 4 * L( n / 2 ) + double( n ) ); } );
  Memo hi( []( Memo & H , Int n ) {
@@ -2117,9 +2274,21 @@ ADS_TEST( "complexity-64" )
 
 // 65, 2024-02-01, Complessita: fr( A1 , A2 , ... ) costs T( n ) = 4 T( n /
 // 2 ) + n log n, the merge sorts dominating the shuffles: Theta( n^2 ) by
-// the extended master theorem, first case
+// the extended master theorem, first case; two subarrays of different
+// length, or of a length that is not a power of 2, are contract violations
 ADS_TEST( "complexity-65" )
 {
+ {
+  Ints X( 8 , 0 ) , Y( 8 , 0 );
+  std::mt19937 h( 1 );
+  Int none = 0;
+  CHECK_THROWS( shuffleSort( X , Y , 0 , 3 , 0 , 1 , h , none ) ,
+                contract_violation );
+  CHECK_THROWS( shuffleSort( X , Y , 0 , 2 , 0 , 2 , h , none ) ,
+                contract_violation );
+  CHECK( shuffleSort( X , Y , 5 , 5 , 2 , 2 , h , none ) == -1 );   // ties
+  CHECK( none == 1 );
+  }
  Memo C( []( Memo & C , Int n ) {
   return( n <= 1 ? 1.0 : 4 * C( n / 2 ) + 2.0 * double( n ) +
                          2.0 * double( n ) * lg( double( n ) ) ); } );
@@ -2142,7 +2311,8 @@ ADS_TEST( "complexity-65" )
  }
 
 // 66, 2024-06-14, Complessita: super( n ) costs T( n ) = T( n / 2 ) + T( n /
-// 4 ) + n / 5: Theta( n ), c = 1, m = 1
+// 4 ) + n / 5: Theta( n ), c = 1, m = 1; n = 4 with no iteration, and n <
+// 0 is a contract violation
 ADS_TEST( "complexity-66" )
 {
  Memo T( []( Memo & T , Int n ) {
@@ -2156,6 +2326,11 @@ ADS_TEST( "complexity-66" )
   }
  CHECK( upper( T , one , 1 , 1 ) );
  CHECK( lower( T , one , 0.2 , 1 ) );
+ // n = 4: no iteration (floor( 4 / 5 ) = 0), the two base calls
+ Int steps = 0;
+ superRec( 4 , steps );
+ CHECK( steps == 2 );
+ CHECK_THROWS( superRec( -1 , steps ) , contract_violation );
  }
 
 // 67, 2024-07-02, Complessita: T( n ) = 7 T( n / 4 ) + n sqrt( n ), T( n ) =
@@ -2286,7 +2461,8 @@ ADS_TEST( "complexity-73" )
  }
 
 // 74, 2026-01-12, Complessita: mystery( A , start , end ) costs T( n ) = 2
-// T( n / 2 ) + Theta( log n ): Theta( n ) by the extended master theorem
+// T( n / 2 ) + Theta( log n ): Theta( n ) by the extended master theorem;
+// n = 2 by hand, and the contracts of the fragment
 ADS_TEST( "complexity-74" )
 {
  Memo C( []( Memo & C , Int n ) {
@@ -2297,8 +2473,17 @@ ADS_TEST( "complexity-74" )
   const Int n = 1 + ( t < 100 ? t : Int( g() % 100000 ) );
   const Ints A( std::size_t( n ) , 1 );
   Int steps = 0;
-  CHECK( halving( A , 0 , n - 1 , steps ) == steps );   // ones: the steps
+  const Int sum = halving( A , 0 , n - 1 , steps );
+  CHECK( sum == steps );                    // ones: the steps
   CHECK( double( steps ) == C( n ) );
+  }
+ {                                          // n = 2: one iteration, 2 bases
+  const Ints A{ 3 , 4 };
+  Int steps = 0;
+  CHECK( halving( A , 0 , 1 , steps ) == 4 + 3 + 4 );
+  CHECK( steps == 3 );
+  CHECK_THROWS( halving( A , 1 , 0 , steps ) , contract_violation );
+  CHECK_THROWS( halving( A , 0 , 2 , steps ) , contract_violation );
   }
  const auto G = extendedMaster( 2 , 2 , 0 , 1 );
  CHECK( G && same( *G , 1 , 1 ) );
@@ -2309,7 +2494,9 @@ ADS_TEST( "complexity-74" )
 // 75, 2026-02-02, Complessita: mystery( A , start , end ) costs T( n ) = 2
 // T( n - 10 ) + 1, T( n ) = 1 for n < 10: exponential, the solution writes
 // Theta( 2^n ), and the calls are exactly 2^{floor( n / 10 ) + 1} - 1,
-// Theta( 2^{n / 10} ): O( 2^n ) but not Omega( 2^n )
+// Theta( 2^{n / 10} ): O( 2^n ) but not Omega( 2^n ); the empty range and
+// the ranges of 9 and 10 values, the extremes of linear() (see there) and
+// the contracts of the fragment
 ADS_TEST( "complexity-75" )
 {
  const Ints A( 250 , 1 );
@@ -2320,6 +2507,27 @@ ADS_TEST( "complexity-75" )
   CHECK( calls == ( Int( 1 ) << ( q + 1 ) ) - 1 );
   }
  CHECK( same( linear( 2 , 0 ) , 2 , 0 , 0 , 0 , true ) );
+ // the extremes of linear(): a = 1 polynomial, a just above 1 already
+ // exponential (T( n ) = 1.5 T( n - 1 ) + 1 is Theta( 1.5^n ), once given
+ // as Theta( n )), a < 1 a contract violation
+ CHECK( same( linear( 1 , 0 ) , 1 , 1 ) );
+ CHECK( same( linear( 1.5 , 0 ) , 1.5 , 0 , 0 , 0 , true ) );
+ CHECK( same( linear( 1.01 , 2 ) , 1.01 , 2 , 0 , 0 , true ) );
+ {
+  double T = 1;
+  for( int n = 1 ; n <= 1000 ; ++n )
+   T = 1.5 * T + 1;
+  CHECK( std::abs( T / std::pow( 1.5 , 1000 ) - 3 ) < 1e-9 );
+  }
+ CHECK( linear( 1 , 0 ) < linear( 1.5 , 0 ) );
+ CHECK_THROWS( (void) linear( 0.99 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) linear( 0 , 1 ) , contract_violation );
+ {
+  Int calls = 0;
+  CHECK_THROWS( tens( A , 3 , 1 , calls ) , contract_violation );
+  CHECK_THROWS( tens( A , 0 , 250 , calls ) , contract_violation );
+  CHECK_THROWS( tens( A , -1 , 5 , calls ) , contract_violation );
+  }
  }
 
 // 76, 2026-06-22, Complessita: T( n ) = 2 T( n / 4 ) + 3 T( n / 9 ) + 7 T( n
@@ -2354,7 +2562,8 @@ ADS_TEST( "complexity-77" )
 
 // 78, 2026-08-28, Complessita: mystery( A , n ): Theta( n ) in the best
 // case, A non-decreasing, and Theta( n^2 ) in the worst one, A decreasing,
-// with n ( n - 1 ) / 2 iterations
+// with n ( n - 1 ) / 2 iterations; n = 0 and 1, all values equal (the
+// ties stop each run), the extreme values of int64
 ADS_TEST( "complexity-78" )
 {
  std::mt19937 g( 1 );
@@ -2376,7 +2585,14 @@ ADS_TEST( "complexity-78" )
   CHECK( runs( A ) == 0 );
   std::iota( A.rbegin() , A.rend() , Int( 0 ) );
   CHECK( runs( A ) == n * ( n - 1 ) / 2 );
+  std::fill( A.begin() , A.end() , Int( 7 ) );   // ties stop the runs
+  CHECK( runs( A ) == 0 );
   }
+ // the extreme values of the type, and a run broken by an equal value
+ CHECK( runs( { INT64_MAX , INT64_MIN , INT64_MIN } ) == 2 );
+ CHECK( runs( { INT64_MIN , INT64_MAX } ) == 0 );
+ CHECK( runs( { 5 , 1 , 5 , 1 } ) == 2 );
+ CHECK( runs( { 3 , 2 , 1 , 3 , 0 } ) == 2 + 1 + 0 + 1 );
  }
 
 }  // end( namespace )

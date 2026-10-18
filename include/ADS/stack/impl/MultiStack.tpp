@@ -56,13 +56,14 @@ void MultiStack< T >::push( int i , const T & v )
 {
  ADS_PRE( ( i >= 0 ) && ( i < stacks() ) );
  int c = f_free;
- if( c < 0 ) {
-  f_C.push_back( {} );
+ if( c < 0 ) {                          // v copied before f_C moves, as
+  f_C.push_back( { v , f_top[ i ] } );  // it may be one of its items
   c = int( f_C.size() ) - 1;
   }
- else
+ else {
   f_free = f_C[ c ].below;
- f_C[ c ] = { v , f_top[ i ] };
+  f_C[ c ] = { v , f_top[ i ] };
+  }
  f_top[ i ] = c;
  ++f_size[ i ];
  ADS_POST( f_top[ i ] == c );

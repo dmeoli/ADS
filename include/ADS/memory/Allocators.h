@@ -55,6 +55,7 @@
 #include "ADS/Contract.h"
 
 #include <cstddef>
+#include <limits>
 #include <map>
 #include <set>
 #include <vector>
@@ -128,7 +129,8 @@ class BuddyAllocator {
  public:
 
  /// a memory of 2^m words, all free
- /// \pre 0 <= m <= 40
+ /// \pre 0 <= m <= 40, and 2^m fits in a long (m <= 30 where long has
+ /// 32 bits)
  explicit BuddyAllocator( int m );
 
  /// a block of at least n words, a power of 2, or -1

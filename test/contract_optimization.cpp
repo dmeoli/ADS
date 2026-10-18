@@ -26,8 +26,15 @@
 
 #include "ADS/optimization/CoinChange.h"
 #include "ADS/optimization/FractionalKnapsack.h"
+#include "ADS/optimization/GridPaths.h"
+#include "ADS/optimization/HouseProblems.h"
+#include "ADS/optimization/IntervalCover.h"
 #include "ADS/optimization/Intervals.h"
 #include "ADS/optimization/Knapsack.h"
+#include "ADS/optimization/KnapsackVariants.h"
+#include "ADS/optimization/LinearPartition.h"
+#include "ADS/optimization/OptimalSearchTree.h"
+#include "ADS/optimization/SequenceProblems.h"
 #include "ADS/optimization/ShortestJobFirst.h"
 #include "ADS/optimization/WeightedIntervals.h"
 
@@ -186,6 +193,169 @@ ADS_TEST( "sjf-weighted-intervals" )
    }
   maxinterval( I );
   }
+ }
+
+// the inputs not allowed of the other headers, just inside and just
+// outside each bound: ragged grids (also with an empty first row, a
+// regression), houses with k = 1 and 0 colours, a cover of an empty or
+// reversed range, a rod with no price, volumes and coins 0, a weight or an
+// amount -1, k = 0 and k = n + 1 parts, a key probability negative, a
+// divisible subset with 0 and with a repeated item, jobs of time and
+// weight 0, a place out of the jobs; the empty inputs and the budgets 0
+ADS_TEST( "other-optimization" )
+{
+ using G = std::vector< Longs >;
+ CHECK_THROWS( (void) largestSquare( G{ { 1 , 1 } , { 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) countLatticePaths( G{ { 1 , 1 } , { 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) countLatticePaths( G{ {} , { 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) largestSquare( G{ {} , { 1 } } ) , contract_violation );
+ CHECK( largestSquare( G{} ).side == 0 && largestSquare( G{ {} } ).side == 0 &&
+        largestSquare( G{ { 0 , 0 } } ).side == 0 &&
+        largestSquare( G{ { 5 } } ).side == 1 &&
+        largestSquare( G( 3 , Longs( 3 , 1 ) ) ).side == 3 );
+ CHECK( countLatticePaths( G{} ) == 0 && countLatticePaths( G{ {} } ) == 0 &&
+        countLatticePaths( G{ { 1 } } ) == 1 &&
+        countLatticePaths( G{ { 0 } } ) == 0 &&
+        countLatticePaths( G( 2 , Longs( 2 , 1 ) ) ) == 2 &&
+        countLatticePaths( G{ { 1 , 1 } , { 1 , 0 } } ) == 0 );
+
+ CHECK( paintHouses( G{} ).first == 0 &&
+        paintHouses( G{ { 4 } } ).first == 4 );
+ CHECK_THROWS( (void) paintHouses( G{ { 4 } , { 5 } } ) , contract_violation );
+ CHECK_THROWS( (void) paintHouses( G{ {} } ) , contract_violation );
+ CHECK_THROWS( (void) paintHouses( G{ { 1 , 2 } , { 3 } } ) ,
+               contract_violation );
+ CHECK( paintHouses( G{ { 1 , 9 } , { 1 , 9 } } ).first == 10 );
+ CHECK( maxNonAdjacentSum( Longs{} ) == 0 &&
+        maxNonAdjacentSum( Longs{ -3 , -1 } ) == 0 &&
+        nonAdjacentSelection( Longs{ 4 } ).first == 4 );
+
+ const Intervals I05 = { { 0 , 5 } } , I50 = { { 5 , 0 } };
+ CHECK_THROWS( (void) minimumIntervalCover( I05 , 3L , 3L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) minimumIntervalCover( I05 , 4L , 3L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) minimumIntervalCover( I50 , 0L , 3L ) ,
+               contract_violation );
+ CHECK( ! minimumIntervalCover( Intervals{} , 0L , 1L ) );
+ CHECK( minimumIntervalCover( Intervals{ { 0 , 2 } , { 2 , 4 } } , 0L , 4L )
+        ->size() == 2 );                       // touching at 2
+ CHECK( ! minimumIntervalCover( Intervals{ { 0 , 1 } , { 2 , 4 } } , 0L ,
+                                4L ) );
+ CHECK( minimumIntervalCover( Intervals{ { 1 , 1 } , { -9 , 9 } } , 0L , 1L )
+        ->size() == 1 );
+
+ CHECK( rodCutting( Longs{} , 0 ).first == 0 );
+ CHECK_THROWS( (void) rodCutting( Longs{} , 1 ) , contract_violation );
+ CHECK( rodCutting( Longs{ 3 } , 4 ).first == 12 );
+ CHECK_THROWS( (void) unboundedKnapsack( Longs{ 1 } , Longs{} , 3L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) unboundedKnapsack( Longs{ 1 } , Longs{ 1 } , -1L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) unboundedKnapsack( Longs{ 1 } , Longs{ 0 } , 3L ) ,
+               contract_violation );
+ CHECK( unboundedKnapsack( Longs{ 5 } , Longs{ 2 } , 0L ).first == 0 &&
+        unboundedKnapsack( Longs{ 5 } , Longs{ 2 } , 5L ).first == 10 &&
+        unboundedKnapsack( Longs{} , Longs{} , 5L ).first == 0 );
+ CHECK_THROWS( (void) minValueExactWeight( Longs{ 1 } , Longs{} , 1L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) minValueExactWeight( Longs{ 1 } , Longs{ 1 } , -1L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) minValueExactWeight( Longs{ 0 } , Longs{ 1 } , 1L ) ,
+               contract_violation );
+ CHECK( minValueExactWeight( Longs{ 2 } , Longs{ 3 } , 0L ) == 0L &&
+        ! minValueExactWeight( Longs{ 2 } , Longs{ 3 } , 3L ) &&
+        minValueExactWeight( Longs{ 2 } , Longs{ 3 } , 4L ) == 6L );
+ CHECK_THROWS( (void) coinChangeWays( Longs{ 1 } , -1L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) coinChangeWays( Longs{ 0 } , 1L ) , contract_violation );
+ CHECK( coinChangeWays( Longs{} , 0L ) == 1 &&
+        coinChangeWays( Longs{} , 3L ) == 0 &&
+        coinChangeWays( Longs{ 1 , 2 } , 4L ) == 3 );
+ CHECK_THROWS( (void) subsetSumCount( Longs{ 1 } , -1L ) ,
+               contract_violation );
+ CHECK_THROWS( (void) subsetSumCount( Longs{ -1 } , 0L ) ,
+               contract_violation );
+ CHECK( subsetSumCount( Longs{} , 0L ) == 1 &&
+        subsetSumCount( Longs{ 0 } , 0L ) == 2 &&
+        subsetSumCount( Longs{ 2 , 2 } , 2L ) == 2 );
+ CHECK_THROWS( (void) minimumSquares( -1 ) , contract_violation );
+ CHECK( minimumSquares( 0 ) == 0 && minimumSquares( 1 ) == 1 &&
+        minimumSquares( 12 ) == 3 && minimumSquares( 13 ) == 2 &&
+        minimumSquares( 7 ) == 4 );
+
+ const Longs A = { 4 , 1 , 3 };
+ CHECK_THROWS( (void) linearPartition( A , 0 ) , contract_violation );
+ CHECK_THROWS( (void) linearPartition( A , 4 ) , contract_violation );
+ CHECK_THROWS( (void) linearPartition( Longs{} , 1 ) , contract_violation );
+ CHECK( linearPartition( A , 1 ).first == 8 &&
+        linearPartition( A , 3 ).first == 4 );
+ CHECK_THROWS( (void) painterPartition( A , 0 ) , contract_violation );
+ CHECK_THROWS( (void) painterPartition( Longs{ 1 , -1 } , 2 ) ,
+               contract_violation );
+ CHECK( painterPartition( A , 1 ) == 8 && painterPartition( A , 9 ) == 4 &&
+        painterPartition( Longs{} , 2 ) == 0 );
+
+ using D = std::vector< double >;
+ CHECK_THROWS( (void) optimalSearchTree( D{ 1 } , D{ 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) optimalSearchTree( D{ -1 } , D{ 0 , 0 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) optimalSearchTree( D{ 1 } , D{ 0 , -1 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) optimalSearchTree( D{ 1 , -2 } ) , contract_violation );
+ CHECK( optimalSearchTree( D{} ).root == -1 &&
+        optimalSearchTree( D{ 3 } ).root == 0 );
+
+ CHECK_THROWS( (void) largestDivisibleSubset( Longs{ 0 , 2 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) largestDivisibleSubset( Longs{ -2 , 4 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) largestDivisibleSubset( Longs{ 2 , 2 } ) ,
+               contract_violation );
+ CHECK( largestDivisibleSubset( Longs{} ).empty() &&
+        largestDivisibleSubset( Longs{ 1 } ) == Longs( { 1 } ) &&
+        largestDivisibleSubset( Longs{ 3 , 1 , 9 } ).size() == 3 );
+ CHECK( trappingRainWater( Longs{} ) == 0 &&
+        trappingRainWater( Longs{ 2 , 0 , 2 } ) == 2 );
+
+ CHECK_THROWS( (void) smithOrder( Longs{ 1 } , Longs{} ) ,
+               contract_violation );
+ CHECK_THROWS( (void) smithOrder( Longs{ -1 } , Longs{ 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) smithOrder( Longs{ 1 } , Longs{ -1 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) smithOrder( Longs{ 0 } , Longs{ 0 } ) ,
+               contract_violation );
+ CHECK( smithOrder( Longs{ 0 , 2 } , Longs{ 1 , 0 } ).size() == 2 );
+ CHECK_THROWS( (void) weightedCompletion( Longs{ 1 } , Longs{} ,
+                                          { 0 } ) , contract_violation );
+ CHECK_THROWS( (void) weightedCompletion( Longs{ 1 } , Longs{ 1 } ,
+                                          { 1 } ) , contract_violation );
+ CHECK( weightedCompletion( Longs{ 2 } , Longs{ 3 } , { 0 } ) == 6 &&
+        totalCompletion( Longs{ 2 } , {} ) == 0 &&
+        shortestJobFirst( Longs{} ).empty() );
+ CHECK_THROWS( (void) totalCompletion( Longs{ 2 } , { 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) fractionalKnapsack( { -1 } , { 1 } , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( (void) fractionalKnapsack( { 1 } , { 1 , 2 } , 1 ) ,
+               contract_violation );
+ CHECK( fractionalKnapsack( { 1 } , { 1 } , 0 )[ 0 ] == 0 &&
+        fractionalKnapsack( {} , {} , 5 ).empty() );
+ CHECK_THROWS( (void) knapsack( { -1 } , { 1 } , 1 ) , contract_violation );
+ CHECK_THROWS( (void) zaino( { 1 } , { 1 , 1 } , 1 ) , contract_violation );
+ CHECK( knapsack( {} , {} , 0 ).first == 0 &&
+        zaino( { 5 } , { 1 } , 0 ) == 0 &&
+        knapsack( { 5 } , { 1 } , 1 ).first == 5 );
+ CHECK( greedyChange( { 1 , 5 } , 0 )->empty() &&
+        optimalChange( { 1 , 5 } , 0 ) == 0L &&
+        ! greedyChange( {} , 3 ) && ! optimalChange( {} , 3 ) &&
+        ! optimalChange( { 2 } , 3 ) );
+ CHECK_THROWS( (void) optimalChange( { 1 } , -1 ) , contract_violation );
  }
 
 }  // end( namespace )

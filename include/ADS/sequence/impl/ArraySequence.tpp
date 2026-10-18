@@ -141,8 +141,8 @@ typename ArraySequence< T >::Pos ArraySequence< T >::remove( Pos p )
  for( Pos i = p ; i < f_size - 1 ; ++i )
   f_A[ i ] = std::move( f_A[ i + 1 ] );
  --f_size;
- if( f_size <= f_capacity / 4 )   // a quarter full: half the size
-  resize( f_capacity / 2 );
+ if( f_size <= f_capacity / 4 )   // a quarter full: half the size, and
+  resize( f_size ? f_capacity / 2 : 0 );   // no vector when empty
  ADS_POST( f_size == n - 1 );
  ADS_AUDIT( same( *old , 0 , 0 , p ) &&
             same( *old , p + 1 , p , n - p - 1 ) );

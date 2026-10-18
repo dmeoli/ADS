@@ -19,13 +19,18 @@ namespace ADS {
 inline bool legalTiling( const std::vector< Tile > & D , int n ,
                          const Tiling & T )
 {
- if( ( int( T.size() ) != n ) || ( n < 1 ) || ( T[ 0 ][ 0 ] != 0 ) )
+ if( ( int( T.size() ) != n ) || ( n < 1 ) )
+  return( false );
+ for( const auto & row : T ) {          // all rows and tiles, before reading
+  if( int( row.size() ) != n ) return( false );
+  for( int t : row )
+   if( ( t < 0 ) || ( t >= int( D.size() ) ) ) return( false );
+  }
+ if( T[ 0 ][ 0 ] != 0 )
   return( false );
  for( int i = 0 ; i < n ; ++i ) {
-  if( int( T[ i ].size() ) != n ) return( false );
   for( int j = 0 ; j < n ; ++j ) {
    const int t = T[ i ][ j ];
-   if( ( t < 0 ) || ( t >= int( D.size() ) ) ) return( false );
    if( ( i + 1 < n ) && ( D[ t ].right != D[ T[ i + 1 ][ j ] ].left ) )
     return( false );
    if( ( j + 1 < n ) && ( D[ t ].up != D[ T[ i ][ j + 1 ] ].down ) )

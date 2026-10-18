@@ -275,10 +275,9 @@ and the date of its exam.
 ## Engineered structures
 
 Beside the classes of the book, which follow its pseudocode, a few
-structures are written for speed, for the programs that need it (e.g., a
-parallel heuristic search), and tested in
-[`test/engineered.cpp`](test/engineered.cpp), the concurrent ones also on
-real threads under ThreadSanitizer.
+structures are written for speed, for the programs that need it, and
+tested in [`test/engineered.cpp`](test/engineered.cpp), the concurrent ones
+also on real threads under ThreadSanitizer.
 
 | What | Header | Test |
 |---|---|---|

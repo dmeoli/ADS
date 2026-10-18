@@ -22,17 +22,20 @@ inline BPTree::BPTree( const std::vector< std::vector< std::size_t > > & c )
  BitVector B;
  B.reserve( 2 * n );
  std::size_t seen = 0;
+ std::vector< bool > in( n , false );       // the nodes reached
  std::vector< std::pair< std::size_t , std::size_t > > S;   // node , child
  if( n > 0 ) {
   S.emplace_back( 0 , 0 );
   B.push_back( true );
   seen = 1;
+  in[ 0 ] = true;
   }
  while( ! S.empty() ) {                     // the visit in depth
   auto & [ u , k ] = S.back();
   if( k < c[ u ].size() ) {
    const std::size_t w = c[ u ][ k++ ];
-   ADS_PRE( ( w > 0 ) && ( w < n ) && ( seen < n ) );
+   ADS_PRE( ( w > 0 ) && ( w < n ) && ! in[ w ] );
+   in[ w ] = true;
    ++seen;
    B.push_back( true );
    S.emplace_back( w , 0 );
@@ -106,7 +109,7 @@ inline std::size_t BPTree::depth( std::size_t v ) const
 
 inline bool BPTree::isAncestor( std::size_t u , std::size_t v ) const
 {
- ADS_PRE( v < size() );
+ ADS_PRE( ( u < size() ) && ( v < size() ) );
  return( ( u <= v ) && ( v < u + subtreeSize( u ) ) );
  }
 

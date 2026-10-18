@@ -75,7 +75,8 @@ namespace ADS {
 template< Sequence S >
 long search( const S & s , const typename S::Item & v );
 
-/// the place of v in the sorted s, or -( the comparisons made )
+/// the place of v in the sorted s, or -( the comparisons made ), -1 on
+/// the empty s, so that a miss is always negative
 /// \pre s is sorted (an audit)
 template< Sequence S >
 long searchOrdered( const S & s , const typename S::Item & v );

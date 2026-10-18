@@ -187,7 +187,8 @@ knapsackApprox( const std::vector< long > & p , const std::vector< long > & v ,
                 long C , double eps )
 {
  ADS_PRE( ( p.size() == v.size() ) && ( eps > 0 ) && ( eps <= 1 ) );
- ADS_PRE( detail::nonnegative( p ) && detail::nonnegative( v ) );
+ ADS_PRE( detail::nonnegative( p ) && detail::nonnegative( v ) &&
+          ( C >= 0 ) );
  const auto result = [ & ]( void ) -> std::pair< long , Nodes > {
   Nodes I;                                // the objects that fit
   long pmax = 0;

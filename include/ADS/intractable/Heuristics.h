@@ -221,7 +221,8 @@ inline int cutSize( const Adjacency & G , const std::vector< int > & side );
 /*----------------------------- STRINGS ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the longest suffix of a that is a proper prefix of b
+/// the length of the longest suffix of a that is a prefix of b, at most
+/// min( |a| , |b| ): the whole of b if a ends with it, 0 if either is empty
 inline int overlap( const std::string & a , const std::string & b );
 
 /// a common superstring of P, by the greedy on the overlaps: the oriented

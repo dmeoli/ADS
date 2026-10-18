@@ -20,6 +20,7 @@ template< class V >
 std::vector< std::pair< int , V > > pigeonholeSort(
                     const std::vector< std::pair< int , V > > & A , int k )
 {
+ ADS_PRE( k >= 0 );
  std::vector< List< V > > B( k );
  for( const auto & [ key , v ] : A ) {
   ADS_PRE( ( key >= 0 ) && ( key < k ) );

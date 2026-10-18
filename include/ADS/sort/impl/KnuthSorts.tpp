@@ -71,8 +71,10 @@ void addressCalculationSort( std::vector< T > & A , std::size_t M )
   const double lo = double( *mn ) , w = double( *mx ) - lo;
   std::vector< std::vector< T > > lists( M );
   for( const T & x : A ) {                  // the list of the range of x
-   std::size_t i = w > 0 ? std::size_t( ( double( x ) - lo ) / w *
-                                        double( M ) ) : 0;
+   // an infinite range (an infinity, or a span beyond a double) would
+   // make the place NaN: then all the items go to one list
+   std::size_t i = ( w > 0 ) && std::isfinite( w ) ?
+                   std::size_t( ( double( x ) - lo ) / w * double( M ) ) : 0;
    if( i >= M ) i = M - 1;
    auto & l = lists[ i ];
    l.push_back( x );                        // inserted in place, stable

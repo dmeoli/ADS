@@ -60,7 +60,10 @@
  * \f$ \alpha \approx 1 / 4 \f$, a couple of removals halve it back to
  * \f$ \alpha \approx 1 / 2 \f$, a single insertion doubles it again, and
  * a sequence alternating them costs O( m ) per operation [see
- * TableSize.h].
+ * TableSize.h]. A new size that the inspection does not work with, a
+ * prime that divides the step of a linear one, is replaced by the next
+ * prime that it works with. Since only a removal halves m, a table emptied
+ * may stay above its initial size.
  *
  * The contracts [see Contract.h]: m > 0 and an inspection that works with m (a
  * linear step coprime with m, a prime m for the quadratic one, a power of two

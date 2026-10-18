@@ -24,11 +24,16 @@ long interpolationSearch( const std::vector< T > & A , const T & v ,
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() ) );
  long i = 0 , j = long( A.size() ) - 1;
  while( ( i <= j ) && ! ( v < A[ i ] ) && ! ( A[ j ] < v ) ) {
-  // the differences in double, since v - A[ i ] may overflow T, and m
-  // clamped to [ i , j ] against the rounding
-  const long m = ( A[ j ] == A[ i ] ) ? i : std::clamp( i + long(
-   ( double( j - i ) * ( double( v ) - double( A[ i ] ) ) ) /
-   ( double( A[ j ] ) - double( A[ i ] ) ) ) , i , j );
+  // the differences in double, since v - A[ i ] may overflow T, and the
+  // offset clamped to [ 0 , j - i ] against the rounding and the infinite
+  // keys; 0 / 0 or inf / inf, from distinct keys equal as doubles or from
+  // infinite keys, gives NaN, and then m is the middle
+  const double q = ( A[ j ] == A[ i ] ) ? 0 : ( double( j - i ) *
+   ( double( v ) - double( A[ i ] ) ) ) / ( double( A[ j ] ) -
+                                           double( A[ i ] ) );
+  const long m = ( q == q ) ? i + long( std::clamp( q , 0.0 ,
+                                                    double( j - i ) ) )
+                            : i + ( j - i ) / 2;
   trace( i , j , m );
   if( A[ m ] == v )
    return( m );

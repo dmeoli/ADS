@@ -261,7 +261,8 @@ ADS_TEST( "binarytree-postorder" )
 
 // the lowest common ancestor against the first ancestor of v among those
 // of u, on every pair of nodes of random trees, on BinaryTree and on the
-// nodes of a plain struct; two nodes of different trees refused
+// nodes of a plain struct; two nodes of different trees refused; a chain
+// of 100000 nodes, one node alone
 ADS_TEST( "lowest-common-ancestor" )
 {
  Owner e( from_list< int >( "( 1 ( 2 ( 4 () () ) ( 5 ( 6 () () ) () ) ) ( 3 "
@@ -301,6 +302,17 @@ ADS_TEST( "lowest-common-ancestor" )
     }
   CHECK( lowestCommonAncestor( M.front() , s ) == s );
   }
+ // a chain of 100000 nodes: the climb is not recursive; one node alone
+ const int n = 100000;
+ std::vector< BT * > C( n );
+ for( int i = 0 ; i < n ; ++i ) C[ i ] = new BT( i );
+ for( int i = n - 1 ; i > 0 ; --i ) C[ i - 1 ]->insertLeft( C[ i ] );
+ CHECK( lowestCommonAncestor( C[ n - 1 ] , C[ 0 ] ) == C[ 0 ] &&
+        lowestCommonAncestor( C[ n / 2 ] , C[ n - 1 ] ) == C[ n / 2 ] );
+ for( int i = n - 1 ; i > 0 ; --i )        // freed from the bottom
+  delete C[ i - 1 ]->detachLeft();
+ delete C[ 0 ];
+ CHECK( lowestCommonAncestor( o.get() , o.get() ) == o.get() );
  }
 
 // equalTrees() against the parenthesized lists, on trees of the same and of

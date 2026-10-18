@@ -46,6 +46,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <optional>
@@ -383,14 +384,14 @@ inline bool isMagic( const Grid & A )
 {
  ADS_PRE( detail::square( A ) );
  const int n = int( A.size() );
- long d1 = 0 , d2 = 0;
+ long long d1 = 0 , d2 = 0;                    // 64 bits: sums of int
  for( int i = 0 ; i < n ; ++i ) {
   d1 += A[ i ][ i ];
   d2 += A[ i ][ n - 1 - i ];
   }
  if( d1 != d2 ) return( false );
  for( int i = 0 ; i < n ; ++i ) {
-  long r = 0 , c = 0;
+  long long r = 0 , c = 0;
   for( int j = 0 ; j < n ; ++j ) {
    r += A[ i ][ j ];
    c += A[ j ][ i ];
@@ -442,7 +443,8 @@ void printMagic( int n , F && f )
 /// for i even and x_i > x_{i+1} for i odd, the empty one included, f( S )
 /// on each; skip A[ iA ], or take it when its difference from the last
 /// item has the sign opposite to dir, which flips at each item taken;
-/// O( n 2^n )
+/// O( n 2^n ). The difference is taken in long long, since that of two int
+/// may overflow
 template< class F >
 void printZigZag( const std::vector< int > & A , F && f )
 {
@@ -454,7 +456,7 @@ void printZigZag( const std::vector< int > & A , F && f )
    return;
    }
   self( self , iA + 1 , dir );
-  if( S.empty() || ( long( A[ iA ] - S.back() ) * dir < 0 ) ) {
+  if( S.empty() || ( ( (long long)( A[ iA ] ) - S.back() ) * dir < 0 ) ) {
    S.push_back( A[ iA ] );
    self( self , iA + 1 , -dir );
    S.pop_back();
@@ -625,7 +627,7 @@ void printDistantSets( std::vector< int > A , int k , F && f )
    return;
    }
   self( self , i + 1 );
-  if( S.empty() || ( long( A[ i ] ) - S.back() > k ) ) {
+  if( S.empty() || ( (long long)( A[ i ] ) - S.back() > k ) ) {
    S.push_back( A[ i ] );
    self( self , i + 1 );
    S.pop_back();
@@ -669,8 +671,8 @@ void printZerable( int n , F && f )
 /// printPaths( G , s , k ): the closed paths from s back to s with no
 /// repeated node and length in [ k - tol , k + tol ], f( P ) on each; a
 /// depth first visit with the missing length, an arc kept only while it
-/// stays >= -tol (positive lengths), s closing the path only after one arc
-/// at least; O( n n! )
+/// stays >= -tol (positive lengths), s closing the path only after another
+/// node, so that a loop on s is not a closed path; O( n n! )
 /// \pre W is square with lengths >= 0 (0 for no arc), s is a node,
 ///      tol >= 0
 template< class F >
@@ -980,7 +982,8 @@ std::vector< std::vector< int > > rootLeafPaths( const Tree & T )
 
 // printElegant() and printElegantFast() on the example n = 5 (10
 // permutations), against std::next_permutation filtered, the counts 1, 2,
-// 3, 8, 10, 36, 41, 132, n = 0 for the first one
+// 3, 8, 10, 36, 41, 132, n = 0 for the first one, n = 1 for both; n < 0
+// and, for the second one, n = 0 refused
 ADS_TEST( "backtrack-28" )
 {
  auto run = []( int n , bool fast ) {
@@ -1013,7 +1016,10 @@ ADS_TEST( "backtrack-28" )
   CHECK( long( want.size() ) == count[ n - 1 ] );
   }
  CHECK( run( 0 , false ) == std::vector< std::vector< int > >( 1 ) );
+ CHECK( run( 1 , false ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
+ CHECK( run( 1 , true ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
  CHECK_THROWS( run( 0 , true ) , contract_violation );
+ CHECK_THROWS( run( -1 , false ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1022,7 +1028,7 @@ ADS_TEST( "backtrack-28" )
 
 // minCardinality() on the example n = 6, against the 2^n subsets with
 // minimum = size, F_n = fibonacci( n - 1 ) of them (1, 1, 2, 3, 5, ...),
-// n = 0 and n = 1
+// n = 0 (none, the empty set excluded), 1, 2, 3; n < 0 refused
 ADS_TEST( "backtrack-29" )
 {
  auto run = []( int n ) {
@@ -1047,6 +1053,10 @@ ADS_TEST( "backtrack-29" )
   }
  CHECK( run( 0 ).empty() );
  CHECK( run( 1 ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
+ CHECK( run( 2 ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
+ CHECK( run( 3 ) == std::vector< std::vector< int > >( { { 1 } ,
+                                                         { 2 , 3 } } ) );
+ CHECK_THROWS( run( -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1056,7 +1066,8 @@ ADS_TEST( "backtrack-29" )
 // printMixing() on the examples (ADBCEF is an interleaving of ABC and DEF,
 // ABCCBA is not one of ABC and ABC), against the \binom{n_1 + n_2}{n_1}
 // choices of the places of S1, each output checked by the dynamic
-// programming of interleaving; empty strings
+// programming of interleaving; empty strings (either and both), equal
+// strings, the order of the outputs (S1 first)
 ADS_TEST( "backtrack-30" )
 {
  auto run = []( const std::string & S1 , const std::string & S2 ) {
@@ -1104,6 +1115,12 @@ ADS_TEST( "backtrack-30" )
   }
  CHECK( run( "" , "" ) == std::vector< std::string >( 1 , "" ) );
  CHECK( run( "xy" , "" ) == std::vector< std::string >( 1 , "xy" ) );
+ CHECK( run( "" , "xy" ) == std::vector< std::string >( 1 , "xy" ) );
+ // equal strings: the choices are all given, also when their outputs
+ // coincide
+ CHECK( run( "a" , "a" ) == std::vector< std::string >( 2 , "aa" ) );
+ CHECK( run( "ab" , "c" ) ==
+        std::vector< std::string >( { "abc" , "acb" , "cab" } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1113,7 +1130,9 @@ ADS_TEST( "backtrack-30" )
 // searchPath() with a small target in place of 5000: its existence against
 // a dynamic programming over ( node , previous node , steps left ), each
 // walk returned from src to dest of the target weight with no immediate
-// reversal; src = dest with target 0, a single edge back and forth
+// reversal; src = dest with target 0, a single edge back and forth, target
+// 0 away from dest, no edge, a triangle walked around, a weight above the
+// target; nodes out of the graph, target < 0, W not symmetric refused
 ADS_TEST( "backtrack-31" )
 {
  auto check = []( const backtrack::Weights & W , int src , int dest ,
@@ -1164,7 +1183,25 @@ ADS_TEST( "backtrack-31" )
  CHECK( backtrack::searchPath( E , 0 , 1 , 2 ) ==
         std::vector< int >( { 0 , 1 } ) );
  CHECK( ! backtrack::searchPath( E , 0 , 0 , 4 ) );
+ // target 0 away from dest, no edge, a triangle walked around (a cycle
+ // is a walk without reversal), a weight above the target
+ CHECK( ! backtrack::searchPath( E , 0 , 1 , 0 ) );
+ const backtrack::Weights none( 2 , std::vector< int >( 2 , 0 ) );
+ CHECK( ! backtrack::searchPath( none , 0 , 1 , 3 ) );
+ const backtrack::Weights T3 = { { 0 , 1 , 1 } , { 1 , 0 , 1 } ,
+                                 { 1 , 1 , 0 } };
+ CHECK( backtrack::searchPath( T3 , 0 , 0 , 3 ) );
+ CHECK( backtrack::searchPath( T3 , 0 , 0 , 6 ) );
+ CHECK( ! backtrack::searchPath( T3 , 0 , 0 , 2 ) );
+ CHECK( ! backtrack::searchPath( E , 0 , 1 , 1 ) );
  CHECK_THROWS( backtrack::searchPath( E , 0 , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( backtrack::searchPath( E , -1 , 0 , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( backtrack::searchPath( E , 0 , 1 , -1 ) ,
+               contract_violation );
+ const backtrack::Weights arc = { { 0 , 2 } , { 0 , 0 } };
+ CHECK_THROWS( backtrack::searchPath( arc , 0 , 1 , 2 ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1173,7 +1210,8 @@ ADS_TEST( "backtrack-31" )
 
 // subPalindrome() on the example "casca" (12 subsequences), against the
 // 2^n masks tested with std::equal, the count of the interval dynamic
-// programming plus the empty one, the empty string
+// programming plus the empty one, the empty string, one character, all
+// equal, all distinct
 ADS_TEST( "backtrack-32" )
 {
  auto run = []( const std::string & S ) {
@@ -1213,6 +1251,12 @@ ADS_TEST( "backtrack-32" )
   CHECK( long( got.size() ) == 1 + ( n ? P[ 0 ][ n - 1 ] : 0 ) );
   }
  CHECK( run( "" ) == std::vector< std::string >( 1 , "" ) );
+ // one character, all equal (every one of the 2^n subsequences), all
+ // distinct (only the empty one and the single characters)
+ CHECK( sorted( run( "z" ) ) ==
+        sorted( std::vector< std::string >( { "" , "z" } ) ) );
+ CHECK( run( "aaaa" ).size() == 16 );
+ CHECK( run( "abcdef" ).size() == 1 + 6 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1222,7 +1266,8 @@ ADS_TEST( "backtrack-32" )
 // printCycles() on the example (complete digraph on A, B, C), against the
 // sequences of distinct nodes from start closed by an arc on random
 // digraphs, the counts 1, 4, 15, 64, 325 of the complete digraphs, a
-// digraph without cycles
+// digraph without cycles, a loop, two nodes, a cycle avoiding start; start
+// out of the graph and a matrix not square refused
 ADS_TEST( "backtrack-33" )
 {
  auto run = []( const Adjacency & G , int s ) {
@@ -1257,7 +1302,19 @@ ADS_TEST( "backtrack-33" )
  Adjacency dag = edges( 3 , {} );
  dag[ 0 ][ 1 ] = dag[ 1 ][ 2 ] = dag[ 0 ][ 2 ] = true;
  CHECK( run( dag , 0 ).empty() && run( complete( 1 ) , 0 ).empty() );
+ // a loop is not a cycle here (dropped with the graph), two arcs make the
+ // only 2-cycle, a cycle that avoids start is not given
+ const Adjacency loop( 1 , std::vector< bool >( 1 , true ) );
+ CHECK( run( loop , 0 ).empty() );
+ CHECK( run( complete( 2 ) , 1 ) ==
+        std::vector< std::vector< int > >( 1 , { 1 , 0 , 1 } ) );
+ Adjacency away = edges( 3 , { { 1 , 2 } } );
+ away[ 0 ][ 1 ] = true;
+ CHECK( run( away , 0 ).empty() && ( run( away , 1 ).size() == 1 ) );
  CHECK_THROWS( run( complete( 2 ) , 2 ) , contract_violation );
+ CHECK_THROWS( run( complete( 2 ) , -1 ) , contract_violation );
+ CHECK_THROWS( run( Adjacency( 2 , std::vector< bool >( 1 , true ) ) , 0 ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1266,7 +1323,7 @@ ADS_TEST( "backtrack-33" )
 
 // lessThanHalf() on the example n = 7, and for n <= 150 each sequence
 // halving from n, no two equal, as many as the recurrence
-// T( n ) = 1 + \sum_{i <= n / 2} T( i ); n = 1
+// T( n ) = 1 + \sum_{i <= n / 2} T( i ); n = 1, 2, 3; n <= 0 refused
 ADS_TEST( "backtrack-34" )
 {
  auto run = []( int n ) {
@@ -1292,7 +1349,12 @@ ADS_TEST( "backtrack-34" )
   CHECK( std::adjacent_find( got.begin() , got.end() ) == got.end() );
   }
  CHECK( run( 1 ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
+ CHECK( run( 2 ) == std::vector< std::vector< int > >( { { 2 } ,
+                                                         { 2 , 1 } } ) );
+ CHECK( run( 3 ) == std::vector< std::vector< int > >( { { 3 } ,
+                                                         { 3 , 1 } } ) );
  CHECK_THROWS( run( 0 ) , contract_violation );
+ CHECK_THROWS( run( -4 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1301,7 +1363,10 @@ ADS_TEST( "backtrack-34" )
 
 // printMagic() for n = 1 (one), n = 2 (none) and n = 3: the 8 squares of
 // the example under rotations and reflections, the same as the 9!
-// permutations tested by an independent check
+// permutations tested by an independent check; isMagic() on the empty
+// square, one cell, equal and negative values, sums beyond int, rows and
+// columns equal with a diagonal not and the other way round, a matrix not
+// square; n = 0 refused
 ADS_TEST( "backtrack-35" )
 {
  using backtrack::Grid;
@@ -1348,6 +1413,19 @@ ADS_TEST( "backtrack-35" )
  CHECK( backtrack::isMagic( { { 2 , 7 , 6 } , { 9 , 5 , 1 } ,
                              { 4 , 3 , 8 } } ) );
  CHECK( ! backtrack::isMagic( { { 1 , 2 } , { 3 , 4 } } ) );
+ // isMagic() only compares the sums: the empty square and one cell are
+ // magic, so is a square of equal or negative values; the rows and the
+ // columns equal but a diagonal not, the diagonals equal but a row not
+ CHECK( backtrack::isMagic( {} ) && backtrack::isMagic( { { -7 } } ) );
+ CHECK( backtrack::isMagic( Grid( 4 , std::vector< int >( 4 , -3 ) ) ) );
+ CHECK( ! backtrack::isMagic( { { 1 , 2 , 3 } , { 2 , 3 , 1 } ,
+                                { 3 , 1 , 2 } } ) );   // diagonal 1 + 3 + 2
+ CHECK( ! backtrack::isMagic( { { 1 , 0 } , { 1 , 0 } } ) );
+ CHECK( ! backtrack::isMagic( { { 2 , 0 } , { 0 , 2 } } ) );
+ const int big = std::numeric_limits< int >::max();   // sums beyond int
+ CHECK( backtrack::isMagic( Grid( 3 , std::vector< int >( 3 , big ) ) ) );
+ CHECK_THROWS( backtrack::isMagic( { { 1 , 2 } , { 3 } } ) ,
+               contract_violation );
  CHECK_THROWS( run( 0 ) , contract_violation );
  }
 
@@ -1359,7 +1437,8 @@ ADS_TEST( "backtrack-35" )
 // K_{3,3} (6 nodes, one), against the ( n - 1 )! permutations fixing node 0
 // on random graphs, the complete graphs and the cycles, a tree and a node
 // of degree 1; the text answers yes on a single edge (n = 2), the library
-// asks n >= 3
+// asks n >= 3; no node, the path of 3, two triangles apart or sharing a
+// node; an oriented graph refused
 ADS_TEST( "backtrack-36" )
 {
  const Adjacency K23 = edges( 5 , { { 0 , 2 } , { 0 , 3 } , { 0 , 4 } ,
@@ -1392,6 +1471,19 @@ ADS_TEST( "backtrack-36" )
                                             { 2 , 3 } } ) ) );
  CHECK( ! hamiltonianCircuit( complete( 1 ) ) &&
         ! hamiltonianCircuit( complete( 2 ) ) );
+ // no node, the path of 3, two triangles apart, two triangles sharing a
+ // node (a cut node), an oriented graph refused
+ CHECK( ! hamiltonianCircuit( edges( 0 , {} ) ) );
+ CHECK( ! hamiltonianCircuit( edges( 3 , { { 0 , 1 } , { 1 , 2 } } ) ) );
+ CHECK( ! hamiltonianCircuit( edges( 6 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
+                                            { 3 , 4 } , { 4 , 5 } ,
+                                            { 5 , 3 } } ) ) );
+ CHECK( ! hamiltonianCircuit( edges( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
+                                            { 2 , 3 } , { 3 , 4 } ,
+                                            { 4 , 2 } } ) ) );
+ Adjacency arc = complete( 3 );
+ arc[ 0 ][ 1 ] = false;
+ CHECK_THROWS( hamiltonianCircuit( arc ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1399,7 +1491,8 @@ ADS_TEST( "backtrack-36" )
 /*--------------------------------------------------------------------------*/
 
 // printZigZag() on the example (20 subsequences), against the 2^n index
-// sets tested by the definition, as multisets; the empty vector, all equal
+// sets tested by the definition, as multisets; the empty vector, all equal,
+// one item, a fall first, the extremes of int
 ADS_TEST( "backtrack-37" )
 {
  auto run = []( const std::vector< int > & A ) {
@@ -1432,6 +1525,21 @@ ADS_TEST( "backtrack-37" )
   }
  CHECK( run( {} ) == std::vector< std::vector< int > >( 1 ) );
  CHECK( run( { 2 , 2 , 2 } ).size() == 4 );
+ // one item, a fall first (not a zigzag of two), the extremes of int whose
+ // difference overflows an int, a rise and a fall at the extremes
+ CHECK( sorted( run( { 7 } ) ) ==
+        sorted( std::vector< std::vector< int > >( { {} , { 7 } } ) ) );
+ CHECK( run( { 5 , 1 } ).size() == 3 );
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ CHECK( sorted( run( { lo , hi } ) ) ==
+        sorted( std::vector< std::vector< int > >( { {} , { lo } , { hi } ,
+                                                      { lo , hi } } ) ) );
+ CHECK( run( { hi , lo } ).size() == 3 );
+ const auto ext = run( { lo , hi , lo } );
+ CHECK( std::find( ext.begin() , ext.end() ,
+                   std::vector< int >( { lo , hi , lo } ) ) != ext.end() );
+ CHECK( ext.size() == 1 + 3 + 1 + 1 );          // {}, 3 singles, lo hi
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1440,7 +1548,8 @@ ADS_TEST( "backtrack-37" )
 
 // allPaths() on the example A( B( D , E ) , C( - , F ) ), against the paths
 // collected by an explicit stack with parent pointers on random trees, as
-// many as the leaves; a chain, one node, the empty tree
+// many as the leaves; a chain, one node, the empty tree, a chain of 2000
+// nodes, a full tree of depth 3 (its 8 paths in order)
 ADS_TEST( "backtrack-38" )
 {
  auto run = []( const Tree & T ) {
@@ -1469,6 +1578,27 @@ ADS_TEST( "backtrack-38" )
  CHECK( run( chain ) == std::vector< std::vector< int > >( 1 ,
                                                           { 1 , 2 , 3 } ) );
  CHECK( run( Tree() ).empty() );
+ // one node, a chain of 2000 nodes on the right, a full tree of depth 3
+ Tree one;
+ one.root = one.add( -5 );
+ CHECK( run( one ) == std::vector< std::vector< int > >( 1 , { -5 } ) );
+ Tree deep;
+ for( int i = 0 ; i < 2000 ; ++i )
+  deep.root = deep.add( 2000 - i , -1 , deep.root );
+ const auto d = run( deep );
+ CHECK( ( d.size() == 1 ) && ( d[ 0 ].size() == 2000 ) &&
+        ( d[ 0 ][ 1999 ] == 2000 ) );
+ Tree full;
+ auto build = [ & ]( auto & self , int h , int v ) -> int {
+  return( h == 0 ? full.add( v ) : full.add( v , self( self , h - 1 , 2 * v ) ,
+                                             self( self , h - 1 ,
+                                                   2 * v + 1 ) ) ); };
+ full.root = build( build , 3 , 1 );
+ const auto fp = run( full );
+ CHECK( fp.size() == 8 );
+ for( int i = 0 ; i < 8 ; ++i )
+  CHECK( fp[ i ] == std::vector< int >( { 1 , 2 + i / 4 , 4 + i / 2 ,
+                                          8 + i } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1523,7 +1653,9 @@ ADS_TEST( "backtrack-39" )
 /*--------------------------------------------------------------------------*/
 
 // printTuples() on the example (13 tuples), against the index sets of 2 to
-// k items strictly monotone, as multisets; k = 1, all equal, one item
+// k items strictly monotone, as multisets; k = 1, all equal, one item, two
+// items, k = n decreasing, a tie, the extremes of int; k out of [ 1 , n ]
+// refused
 ADS_TEST( "backtrack-40" )
 {
  auto run = []( const std::vector< int > & A , int k ) {
@@ -1555,7 +1687,23 @@ ADS_TEST( "backtrack-40" )
  CHECK( run( { 3 , 1 , 2 } , 1 ).empty() );
  CHECK( run( { 4 , 4 , 4 } , 3 ).empty() );
  CHECK( run( { 8 } , 1 ).empty() );
+ // two items rising and falling, k = n on a decreasing vector (all its
+ // subsets of 2 items or more), a tie between two others, the extremes
+ CHECK( run( { 1 , 2 } , 2 ) == std::vector< std::vector< int > >( 1 ,
+                                                            { 1 , 2 } ) );
+ CHECK( run( { 2 , 1 } , 2 ) == std::vector< std::vector< int > >( 1 ,
+                                                            { 2 , 1 } ) );
+ CHECK( run( { 4 , 3 , 2 , 1 } , 4 ).size() == 16 - 1 - 4 );
+ CHECK( sorted( run( { 1 , 5 , 5 } , 3 ) ) ==
+        sorted( std::vector< std::vector< int > >( { { 1 , 5 } ,
+                                                      { 1 , 5 } } ) ) );
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ CHECK( run( { lo , hi } , 2 ) == std::vector< std::vector< int > >( 1 ,
+                                                            { lo , hi } ) );
  CHECK_THROWS( run( { 1 , 2 } , 3 ) , contract_violation );
+ CHECK_THROWS( run( { 1 , 2 } , 0 ) , contract_violation );
+ CHECK_THROWS( run( {} , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1565,7 +1713,9 @@ ADS_TEST( "backtrack-40" )
 // printAllPaths() on the example (its path among the outputs), against a
 // dynamic programming over the sets of visited cells counting the
 // Hamiltonian paths from the start to the end, each path checked, on random
-// grids with obstacles; start next to end, no free cell, no path
+// grids with obstacles; start next to end, no free cell, no path, a
+// corridor, a free cell cut off; no start, two starts or two ends, a value
+// out of -1 .. 2, a matrix not square refused
 ADS_TEST( "backtrack-41" )
 {
  using backtrack::Cell;
@@ -1635,6 +1785,16 @@ ADS_TEST( "backtrack-41" )
  CHECK( run( { { 1 , 2 } , { -1 , -1 } } ).size() == 1 );
  CHECK( run( { { 1 , -1 } , { -1 , 2 } } ).empty() );
  CHECK( run( { { 1 , 0 } , { 0 , 2 } } ).empty() );
+ // a corridor (one path), a free cell cut off (no path), two starts, two
+ // ends, a value out of -1 .. 2, a matrix not square
+ CHECK( run( { { 1 , 0 , 0 } , { -1 , -1 , 0 } , { 2 , 0 , 0 } } ).size() ==
+        1 );
+ CHECK( run( { { 1 , 2 , -1 } , { -1 , -1 , -1 } , { -1 , -1 , 0 } } )
+        .empty() );
+ CHECK_THROWS( run( { { 1 , 1 } , { 0 , 2 } } ) , contract_violation );
+ CHECK_THROWS( run( { { 1 , 2 } , { 0 , 2 } } ) , contract_violation );
+ CHECK_THROWS( run( { { 1 , 3 } , { 0 , 2 } } ) , contract_violation );
+ CHECK_THROWS( run( { { 1 , 2 } } ) , contract_violation );
  CHECK_THROWS( run( { { 0 , 0 } , { 0 , 2 } } ) , contract_violation );
  }
 
@@ -1644,7 +1804,9 @@ ADS_TEST( "backtrack-41" )
 
 // printDistantSets() on the example (10 sets), against the subsets of the
 // distinct values with all the pairs checked, the count of a dynamic
-// programming on the sorted values; the empty vector, all equal
+// programming on the sorted values; the empty vector, all equal, a gap of
+// exactly k and of k + 1, k above every gap, the extremes of int; k <= 0
+// refused
 ADS_TEST( "backtrack-42" )
 {
  auto run = []( const std::vector< int > & A , int k ) {
@@ -1685,7 +1847,19 @@ ADS_TEST( "backtrack-42" )
  CHECK( run( {} , 1 ) == std::vector< std::vector< int > >( 1 ) );
  CHECK( sorted( run( { 3 , 3 , 3 } , 1 ) ) ==
         std::vector< std::vector< int > >( { {} , { 3 } } ) );
+ // two values exactly k apart (not more), k + 1 apart, a k above every
+ // gap (only the single values), the extremes of int (a gap beyond int)
+ CHECK( run( { 0 , 2 } , 2 ).size() == 3 && run( { 0 , 3 } , 2 ).size() == 4 );
+ CHECK( run( { 5 , 1 , 9 , -3 } , 1000 ).size() == 1 + 4 );
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ CHECK( run( { hi , lo } , hi ).size() == 4 );
+ CHECK( sorted( run( { hi , lo , 0 } , hi ) ) ==
+        sorted( std::vector< std::vector< int > >( { {} , { lo } , { 0 } ,
+                                                      { hi } , { lo , 0 } ,
+                                                      { lo , hi } } ) ) );
  CHECK_THROWS( run( { 1 } , 0 ) , contract_violation );
+ CHECK_THROWS( run( { 1 } , -2 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1694,7 +1868,8 @@ ADS_TEST( "backtrack-42" )
 
 // printZerable() on the example n = 4, against the 2^n strings with fewer
 // 1 than 0, the counts of the solution for n = 1 ... 10 and the sums of
-// binomials up to n = 20
+// binomials up to n = 20; n = 1, 2, 3 in the order of the solution; n <= 0
+// refused
 ADS_TEST( "backtrack-43" )
 {
  auto run = []( int n ) {
@@ -1717,7 +1892,12 @@ ADS_TEST( "backtrack-43" )
    CHECK( sorted( got ) == sorted( all ) );
    }
   }
+ // n = 1 and 2 (no 1 at all: one 1 would tie), n = 3 (one 1 at most)
+ CHECK( run( 1 ) == std::vector< std::string >( 1 , "0" ) );
+ CHECK( run( 2 ) == std::vector< std::string >( 1 , "00" ) );
+ CHECK( run( 3 ) == words( "000 001 010 100" ) );
  CHECK_THROWS( run( 0 ) , contract_violation );
+ CHECK_THROWS( run( -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1727,7 +1907,9 @@ ADS_TEST( "backtrack-43" )
 // printPaths( G , s , k ) on the graph of the figure with k = 15000, the
 // three paths of the statement among the outputs, against the sequences
 // of distinct nodes closed through s, filtered by length, on random
-// digraphs with a small tolerance; a loop-free 2-cycle, no arcs
+// digraphs with a small tolerance; a loop-free 2-cycle, no arcs, the
+// bounds k -/+ tol included and one beyond excluded, a loop on s, k = 0,
+// another start; s out of the graph, tol < 0, W not square refused
 ADS_TEST( "backtrack-44" )
 {
  auto run = []( const backtrack::Weights & W , int s , int k , int tol ) {
@@ -1775,7 +1957,21 @@ ADS_TEST( "backtrack-44" )
                                                             { 0 , 1 , 0 } ) );
  CHECK( run( two , 0 , 9 , 1 ).empty() );
  CHECK( run( backtrack::Weights( 1 , { 0 } ) , 0 , 0 , 5 ).empty() );
+ // the bounds k - tol and k + tol included, one beyond excluded; a loop
+ // on s is not a closed path (s would repeat at once); k = 0 with a
+ // tolerance
+ CHECK( run( two , 0 , 5 , 2 ).size() == 1 && run( two , 0 , 9 , 2 ).size()
+        == 1 );
+ CHECK( run( two , 0 , 4 , 2 ).empty() && run( two , 0 , 10 , 2 ).empty() );
+ CHECK( run( backtrack::Weights( 1 , { 6 } ) , 0 , 6 , 0 ).empty() );
+ CHECK( run( two , 0 , 0 , 7 ).size() == 1 );
+ CHECK( run( two , 1 , 7 , 0 ) == std::vector< std::vector< int > >( 1 ,
+                                                            { 1 , 0 , 1 } ) );
  CHECK_THROWS( run( two , 2 , 7 , 0 ) , contract_violation );
+ CHECK_THROWS( run( two , -1 , 7 , 0 ) , contract_violation );
+ CHECK_THROWS( run( two , 0 , 7 , -1 ) , contract_violation );
+ CHECK_THROWS( run( backtrack::Weights( 2 , { 0 } ) , 0 , 7 , 0 ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1784,7 +1980,8 @@ ADS_TEST( "backtrack-44" )
 
 // setlists() against the m-arrangements of the songs (all the m-tuples
 // with distinct indices) filtered by three in a row, on random types; all
-// types distinct (n! / ( n - m )!), m = 0, all of one type
+// types distinct (n! / ( n - m )!), m = 0, all of one type, no song, m = n
+// with two or three of a type; m out of [ 0 , n ] refused
 ADS_TEST( "backtrack-45" )
 {
  auto run = []( const std::string & type , int m ) {
@@ -1820,7 +2017,13 @@ ADS_TEST( "backtrack-45" )
   }
  CHECK( run( "BBB" , 0 ) == std::vector< std::vector< int > >( 1 ) );
  CHECK( run( "BBBB" , 3 ).empty() && ( run( "BBBB" , 2 ).size() == 12 ) );
+ // no song, m = n with two of a type (never three), three of a type in
+ // five songs (the three never consecutive)
+ CHECK( run( "" , 0 ) == std::vector< std::vector< int > >( 1 ) );
+ CHECK( run( "BBD" , 3 ).size() == 6 );
+ CHECK( run( "BBBDD" , 5 ).size() == ( 10 - 3 ) * 6 * 2 );   // no BBB
  CHECK_THROWS( run( "BD" , 3 ) , contract_violation );
+ CHECK_THROWS( run( "BD" , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1830,7 +2033,8 @@ ADS_TEST( "backtrack-45" )
 // noPalindrome() and noPalindromeFast() on the example a, b, c with n = 5
 // (6 strings), against the k^n strings with every substring of length >= 2
 // checked by std::equal, k ( k - 1 ) ( k - 2 )^{n - 2} of them; abbab and
-// acbc rejected, n = 0 and n = 1
+// acbc rejected, n = 0 and n = 1, the empty alphabet, two letters (none
+// beyond length 2); repeated letters and n < 0 refused
 ADS_TEST( "backtrack-46" )
 {
  auto run = []( const std::string & alphabet , int n , bool fast ) {
@@ -1871,7 +2075,15 @@ ADS_TEST( "backtrack-46" )
    }
  CHECK( run( "abc" , 0 , true ) == std::vector< std::string >( 1 , "" ) );
  CHECK( run( "abc" , 1 , false ).size() == 3 );
+ // no letter: only the empty string; two letters stop at length 2
+ CHECK( run( "" , 0 , false ) == std::vector< std::string >( 1 , "" ) );
+ CHECK( run( "" , 1 , true ).empty() && run( "" , 3 , false ).empty() );
+ CHECK( run( "ab" , 2 , false ) == words( "ab ba" ) );
+ CHECK( run( "ab" , 3 , true ).empty() && run( "ab" , 3 , false ).empty() );
  CHECK_THROWS( run( "aab" , 2 , true ) , contract_violation );
+ CHECK_THROWS( run( "aab" , 2 , false ) , contract_violation );
+ CHECK_THROWS( run( "ab" , -1 , false ) , contract_violation );
+ CHECK_THROWS( run( "ab" , -1 , true ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1880,7 +2092,8 @@ ADS_TEST( "backtrack-46" )
 
 // derangements() of the library on the example n = 3, against
 // std::next_permutation without fixed points, the counts D_n of the
-// recurrence D_n = ( n - 1 ) ( D_{n-1} + D_{n-2} ), n = 0
+// recurrence D_n = ( n - 1 ) ( D_{n-1} + D_{n-2} ), n = 0, 1, 2; equal
+// items (places deranged, not values), other values, a stop at the first
 ADS_TEST( "backtrack-47" )
 {
  auto run = []( int n ) {
@@ -1917,6 +2130,22 @@ ADS_TEST( "backtrack-47" )
   CHECK( long( got.size() ) == D );
   }
  CHECK( run( 0 ) == std::vector< std::vector< int > >( 1 ) );
+ CHECK( run( 1 ).empty() );
+ CHECK( run( 2 ) == std::vector< std::vector< int > >( 1 , { 1 , 0 } ) );
+ // other items: the places are deranged, not the values, so that two
+ // equal items still give D_2 = 1 derangement; a stop at the first one
+ auto places = []( const std::vector< int > & A , bool first ) {
+  std::vector< std::vector< int > > out;
+  const long c = derangements( A , [ & ]( const std::vector< int > & P ) {
+   out.push_back( P );
+   return( first ); } );
+  return( std::pair( c , out ) ); };
+ CHECK( places( { 7 , 7 } , false ).second ==
+        std::vector< std::vector< int > >( 1 , { 7 , 7 } ) );
+ CHECK( sorted( places( { 5 , 9 , 2 } , false ).second ) ==
+        sorted( std::vector< std::vector< int > >( { { 9 , 2 , 5 } ,
+                                                      { 2 , 5 , 9 } } ) ) );
+ CHECK( places( { 0 , 1 , 2 , 3 } , true ).second.size() == 1 );
  }
 
 }  // end( namespace )

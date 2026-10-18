@@ -51,8 +51,10 @@
  * none. The contracts [see Contract.h]: D not empty where a segment must
  * exist, \f$ 1 \leq L \leq U \f$, \f$ L \leq n \f$, q > 0; the sum of a
  * segment is that of its items, and maxSumSegment() agrees with
- * maxSubarraySum() when its sum is not negative, audits. The functions are
- * defined in MaximumSegments.tpp.
+ * maxSubarraySum() when its sum is not negative, audits. The sums of the
+ * segments and of the prefixes of D must fit in T, which is not checked
+ * (an item of T alone may be its largest or its smallest value). The
+ * functions are defined in MaximumSegments.tpp.
  *
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
  *      Press, 2023, chapter 2

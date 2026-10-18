@@ -113,7 +113,8 @@ namespace ADS {
                                                 int r );
 
 /// the number of hashes, floor or ceiling of ( m / n ) ln 2, of the least
-/// false positives
+/// false positives; past the largest int (m / n above about 3 10^9) the
+/// floor is cut to the largest int less one
 /// \pre m >= 1 and n >= 1
 [[nodiscard]] inline int bloomBestHashes( double m , double n );
 

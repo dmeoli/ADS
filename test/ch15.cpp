@@ -164,7 +164,8 @@ ADS_TEST( "sec15.local-search" )
  }
 
 // the neighbourhood of 1 , 7 , 3 , 4, an item moved: 9 sequences, two of
-// which lower the inversions
+// which lower the inversions; countInversions() on empty, sorted, equal
+// and reversed sequences and against the pairs counted
 ADS_TEST( "sec15.1.neighbourhood" )
 {
  const Ints A = { 1 , 7 , 3 , 4 };
@@ -183,10 +184,29 @@ ADS_TEST( "sec15.1.neighbourhood" )
  for( const auto & B : I ) if( inv( B ) < inv( A ) ) better.insert( B );
  const std::set< Ints > two = { { 1 , 3 , 7 , 4 } , { 1 , 3 , 4 , 7 } };
  CHECK( inv( A ) == 2 && better == two );
+ // the edges of countInversions(): none in the empty, in one item, in a
+ // sorted sequence and among equal items; n ( n - 1 ) / 2 in a reversed
+ // one; the equal items not counted; against the pairs counted
+ CHECK( inv( {} ) == 0 && inv( { 5 } ) == 0 && inv( { 1 , 2 , 3 } ) == 0 );
+ CHECK( inv( Ints( 50 , 7 ) ) == 0 );
+ Ints R( 1000 );
+ std::iota( R.rbegin() , R.rend() , 0 );
+ CHECK( inv( R ) == 1000L * 999 / 2 );
+ CHECK( inv( { 2 , 1 , 2 , 1 } ) == 3 );
+ std::mt19937 g( 15 );
+ for( int t = 0 ; t < 100 ; ++t ) {
+  Ints X( g() % 30 );
+  for( auto & x : X ) x = int( g() % 5 );
+  long ref = 0;
+  for( std::size_t i = 0 ; i < X.size() ; ++i )
+   for( std::size_t j = i + 1 ; j < X.size() ; ++j ) ref += X[ i ] > X[ j ];
+  CHECK( inv( X ) == ref );
+  }
  }
 
 // Figura 15.4: 15 , 14 , ... , 1 with the gaps 13 , 4 , 1; every sequence
-// of gaps against std::sort
+// of gaps against std::sort; the gaps of n = 0 , 1 and 10^6, equal,
+// sorted and reversed items, gaps without 1, and the precondition
 ADS_TEST( "sec15.1.shell-sort" )
 {
  Ints A( 15 );
@@ -213,10 +233,51 @@ ADS_TEST( "sec15.1.shell-sort" )
    CHECK( C == R && gaps.front() == 1 );
    }
   }
+ // the edges: all equal, sorted, reversed, by another order; the gaps of
+ // n = 0 , 1 are { 1 } and the gaps of a large n increase below it; gaps
+ // larger than n; without the gap 1 the sequence is only h-sorted; gaps
+ // empty, with 0 or not increasing
+ for( const auto & gaps : { knuthGaps( 0 ) , shellGaps( 1 ) , prattGaps( 0 ) ,
+                            ciuraGaps( 1 ) , hibbardGaps( 0 ) } )
+  CHECK( gaps == std::vector< std::size_t >( { 1 } ) );
+ for( const auto & gaps : { knuthGaps( 1000000 ) , shellGaps( 1000000 ) ,
+                            prattGaps( 1000000 ) , ciuraGaps( 1000000 ) ,
+                            hibbardGaps( 1000000 ) } ) {
+  CHECK( gaps.front() == 1 && gaps.back() <= 1000000 );
+  CHECK( std::adjacent_find( gaps.begin() , gaps.end() ,
+                             std::greater_equal<>() ) == gaps.end() );
+  }
+ for( int kind = 0 ; kind < 3 ; ++kind ) {
+  Ints B( 777 );
+  if( kind == 0 ) std::fill( B.begin() , B.end() , 4 );
+  if( kind == 1 ) std::iota( B.begin() , B.end() , -300 );
+  if( kind == 2 ) std::iota( B.rbegin() , B.rend() , -300 );
+  Ints R = B;
+  std::sort( R.begin() , R.end() );
+  Ints C = B;
+  shellSort( C );
+  CHECK( C == R );
+  shellSort( C , std::greater<>() );
+  CHECK( std::is_sorted( C.rbegin() , C.rend() ) );
+  }
+ Ints D = { 3 , 1 , 2 };
+ shellSort( D , std::vector< std::size_t >( { 1 , 10 , 100 } ) );
+ CHECK( D == Ints( { 1 , 2 , 3 } ) );
+ Ints E = { 5 , 4 , 3 , 2 , 1 , 0 };
+ shellSort( E , std::vector< std::size_t >( { 2 } ) );
+ CHECK( E == Ints( { 1 , 0 , 3 , 2 , 5 , 4 } ) );
+ CHECK_THROWS( shellSort( E , std::vector< std::size_t >() ) ,
+               contract_violation );
+ CHECK_THROWS( shellSort( E , std::vector< std::size_t >( { 0 , 1 } ) ) ,
+               contract_violation );
+ CHECK_THROWS( shellSort( E , std::vector< std::size_t >( { 1 , 4 , 4 } ) ) ,
+               contract_violation );
  }
 
 // Figura 15.5: |f| = 7, the cut S = { 1 } of capacity 7, by every way of
-// augmenting; against the minimum cuts enumerated on random networks
+// augmenting; against the minimum cuts enumerated on random networks; no
+// edge, t unreachable, parallel, null, looping and antiparallel edges, a
+// second maxFlow(), huge capacities, a deep chain, and the preconditions
 ADS_TEST( "sec15.2.max-flow" )
 {
  // the nodes from 1, s = 1, t = 4
@@ -237,6 +298,54 @@ ADS_TEST( "sec15.2.max-flow" )
   for( Augment how : ways )
    CHECK( maxflow( n , R , 0 , n - 1 , how ) == ref );
   }
+ // the edges, by every way: no edge, and t unreachable, give 0 and the cut
+ // { s }; parallel edges add up, an edge of capacity 0 and a self-loop
+ // carry nothing, the antiparallel ones are kept apart; a second maxFlow()
+ // starts from the flow there is and finds nothing more; capacities near
+ // the largest long; a chain of 2 10^4 nodes, the deepest augmenting
+ // path, whose levels overflowed the stack of the recursive blocking flow
+ // of Dinic (each addEdge() checks the network at ADS_CONTRACTS=3, so a
+ // longer chain costs quadratic time here)
+ const long big = std::numeric_limits< long >::max() / 4;
+ for( Augment how : ways ) {
+  FlowNetwork E( 3 );
+  CHECK( E.maxFlow( 0 , 2 , how ) == 0 );
+  CHECK( E.minCut( 0 ) == std::vector< bool >( { true , false , false } ) );
+  FlowNetwork N( 4 );
+  const int a = N.addEdge( 0 , 1 , 3 ) , b = N.addEdge( 0 , 1 , 4 );
+  N.addEdge( 1 , 1 , 100 );
+  N.addEdge( 1 , 0 , 50 );
+  N.addEdge( 1 , 2 , 0 );
+  const int c = N.addEdge( 1 , 3 , 100 );
+  N.addEdge( 2 , 3 , 9 );
+  CHECK( N.maxFlow( 0 , 3 , how ) == 7 && N.maxFlow( 0 , 3 , how ) == 0 );
+  CHECK( N.flow( a ) == 3 && N.flow( b ) == 4 && N.flow( c ) == 7 );
+  CHECK( N.flow( c - 6 ) == 0 && N.flow( c - 4 ) == 0 );   // loop, back
+  CHECK( N.capacity( c ) == 100 && N.flow( c + 1 ) == -7 );
+  CHECK( N.maxFlow( 3 , 2 , how ) == 0 );                  // unreachable
+  CHECK( N.minCut( 0 ) == std::vector< bool >( { true , false , false ,
+                                                 false } ) );
+  FlowNetwork B( 3 );
+  B.addEdge( 0 , 1 , big );
+  B.addEdge( 0 , 1 , big );
+  B.addEdge( 1 , 2 , 3 * big );
+  CHECK( B.maxFlow( 0 , 2 , how ) == 2 * big );
+  const int L = 20000;
+  FlowNetwork C( L );
+  for( int v = 1 ; v < L ; ++v ) C.addEdge( v - 1 , v , 1 + v % 5 );
+  CHECK( C.maxFlow( 0 , L - 1 , how ) == 1 );
+  CHECK( C.maxFlow( L - 1 , 0 , how ) == 1 );       // cancels the unit
+  }
+ FlowNetwork N( 2 );
+ CHECK_THROWS( FlowNetwork( -1 ) , contract_violation );
+ CHECK_THROWS( N.addEdge( 0 , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( N.addEdge( -1 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( N.addEdge( 0 , 1 , -1 ) , contract_violation );
+ CHECK_THROWS( N.maxFlow( 1 , 1 ) , contract_violation );
+ CHECK_THROWS( N.maxFlow( 0 , 2 ) , contract_violation );
+ CHECK_THROWS( N.flow( 0 ) , contract_violation );
+ CHECK_THROWS( N.capacity( -1 ) , contract_violation );
+ CHECK_THROWS( N.minCut( 2 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -284,7 +393,9 @@ ADS_TEST( "ex15.2" )
  }
 
 // the Eulerian cycle: each edge once, closed; none if a node has more
-// edges out than in or the edges are in two components
+// edges out than in or the edges are in two components; no node, isolated
+// nodes, a long cycle, isEulerianCycle() on wrong cycles, and the
+// precondition
 ADS_TEST( "ex15.3" )
 {
  ListGraph<> g( 5 , true );
@@ -305,6 +416,35 @@ ADS_TEST( "ex15.3" )
  h.insertEdge( 2 , 3 ); h.insertEdge( 3 , 2 );
  CHECK( ! eulerianCycle( h ) );
  CHECK( eulerianCycle( ListGraph<>( 3 ) )->empty() );
+ // the edges: no node; a cycle of two edges with an isolated node beside
+ // it; two cycles through one node; the oriented cycle of 10^4 nodes; an
+ // unoriented graph; isEulerianCycle() refuses an open path, a repeated
+ // edge and a missing one
+ CHECK( eulerianCycle( ListGraph<>( 0 , true ) )->empty() );
+ ListGraph<> loop( 3 , true );
+ loop.insertEdge( 1 , 2 );
+ loop.insertEdge( 2 , 1 );
+ const auto lc = eulerianCycle( loop );
+ CHECK( lc && lc->size() == 3 && isEulerianCycle( loop , *lc ) );
+ loop.insertEdge( 1 , 0 );
+ loop.insertEdge( 0 , 1 );
+ const auto l2 = eulerianCycle( loop );
+ CHECK( l2 && l2->size() == 5 && isEulerianCycle( loop , *l2 ) );
+ const int L = 10000;
+ ListGraph<> ring( L , true );
+ for( int v = 0 ; v < L ; ++v ) ring.insertEdge( v , ( v + 1 ) % L );
+ const auto rc = eulerianCycle( ring );
+ CHECK( rc && int( rc->size() ) == L + 1 && isEulerianCycle( ring , *rc ) );
+ ListGraph<> tri( 3 , true );
+ tri.insertEdge( 0 , 1 ); tri.insertEdge( 1 , 2 ); tri.insertEdge( 2 , 0 );
+ CHECK( isEulerianCycle( tri , { 0 , 1 , 2 , 0 } ) );
+ CHECK( ! isEulerianCycle( tri , { 0 , 1 , 2 } ) );
+ CHECK( ! isEulerianCycle( tri , { 0 , 1 , 2 , 0 , 1 } ) );
+ CHECK( ! isEulerianCycle( tri , { 0 , 1 , 0 , 0 } ) );
+ CHECK( ! isEulerianCycle( tri , {} ) && ! isEulerianCycle( h , {} ) );
+ CHECK( isEulerianCycle( ListGraph<>( 2 , true ) , {} ) );
+ CHECK_THROWS( eulerianCycle( ListGraph<>( 2 , false ) ) ,
+               contract_violation );
  }
 
 // the matrix with given sums of rows and columns exists if and only if the
@@ -358,7 +498,8 @@ ADS_TEST( "ex15.4" )
 // M1[ i ][ j ] in [ 0 , M[ i ][ j ] ], the edge ( s , row i ) the row of
 // M1 in [ row_i - l2 , l1 ], the edge ( column j , t ) its column in
 // [ col_j - l2 , l1 ], the edge ( t , s ) the total in [ T - t2 , t1 ];
-// against the enumeration of the M1 of small matrices
+// against the enumeration of the M1 of small matrices; the edges of
+// feasibleCirculation() and its preconditions
 ADS_TEST( "ex15.5" )
 {
  std::mt19937 g( 5 );
@@ -423,6 +564,25 @@ ADS_TEST( "ex15.5" )
   yes += brute;
   }
  CHECK( yes > 20 && yes < 180 );
+ // the edges of feasibleCirculation(): no node and no edge circulate; a
+ // low bound above the high one does not; a self-loop circulates any flow
+ // in its bounds; a cycle forced by its low bounds, with the flows given;
+ // a low bound with no way back does not; ends out of range
+ std::vector< long long > f;
+ CHECK( feasibleCirculation( 0 , {} , &f ) && f.empty() );
+ CHECK( ! feasibleCirculation( 2 , { { 0 , 1 , 3 , 2 } ,
+                                     { 1 , 0 , 0 , 9 } } ) );
+ CHECK( feasibleCirculation( 1 , { { 0 , 0 , 4 , 6 } } , &f ) &&
+        f.size() == 1 && f[ 0 ] >= 4 && f[ 0 ] <= 6 );
+ CHECK( feasibleCirculation( 3 , { { 0 , 1 , 2 , 5 } , { 1 , 2 , 0 , 9 } ,
+                                   { 2 , 0 , 4 , 4 } } , &f ) &&
+        f == std::vector< long long >( { 4 , 4 , 4 } ) );
+ CHECK( ! feasibleCirculation( 3 , { { 0 , 1 , 2 , 5 } , { 1 , 2 , 0 , 9 } ,
+                                     { 2 , 0 , 0 , 1 } } ) );
+ CHECK( ! feasibleCirculation( 2 , { { 0 , 1 , 1 , 1 } } ) );
+ CHECK_THROWS( feasibleCirculation( -1 , {} ) , contract_violation );
+ CHECK_THROWS( feasibleCirculation( 2 , { { 0 , 2 , 0 , 1 } } ) ,
+               contract_violation );
  }
 
 // the variants: many sources and sinks (a super source and a super sink),
@@ -539,7 +699,8 @@ ADS_TEST( "ex15.8" )
  }
 
 // the bipartite matching as a flow with unit capacities, by Dinic in
-// O( m sqrt( n ) ): the example of Figura 15.6 has a matching of 3
+// O( m sqrt( n ) ): the example of Figura 15.6 has a matching of 3; no
+// edge between the sides, the complete graph, all on one node
 ADS_TEST( "ex15.9" )
 {
  // U = { 1 , 2 , 3 }, V = { 4 , 5 , 6 , 7 }, s = 0 , t = 8
@@ -550,6 +711,18 @@ ADS_TEST( "ex15.9" )
  for( int v = 4 ; v <= 7 ; ++v ) A.emplace_back( v , 8 , 1 );
  for( auto [ u , v ] : B ) A.emplace_back( u , v , 1 );
  for( Augment how : ways ) CHECK( maxflow( 9 , A , 0 , 8 , how ) == 3 );
+ // the edges: no edge between the sides, 0; the complete K_{3,4}, 3; all
+ // of U on one node of V, 1
+ std::vector< Arc > Z( A.begin() , A.begin() + 7 ) , K = Z , S = Z;
+ for( int u = 1 ; u <= 3 ; ++u ) {
+  for( int v = 4 ; v <= 7 ; ++v ) K.emplace_back( u , v , 1 );
+  S.emplace_back( u , 5 , 1 );
+  }
+ for( Augment how : ways ) {
+  CHECK( maxflow( 9 , Z , 0 , 8 , how ) == 0 );
+  CHECK( maxflow( 9 , K , 0 , 8 , how ) == 3 );
+  CHECK( maxflow( 9 , S , 0 , 8 , how ) == 1 );
+  }
  // a large one: Dinic needs few phases
  std::mt19937 g( 9 );
  const int n = 2000;
@@ -560,7 +733,7 @@ ADS_TEST( "ex15.9" )
   N.addEdge( i , n + i , 1 );                        // a perfect matching
   for( int k = 0 ; k < 3 ; ++k ) N.addEdge( i , n + int( g() % n ) , 1 );
   }
- long paths = 0;
+ long long paths = 0;
  CHECK( N.maxFlow( 2 * n , 2 * n + 1 , Augment::DINIC , &paths ) == n );
  }
 

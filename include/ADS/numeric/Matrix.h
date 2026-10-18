@@ -77,7 +77,8 @@ template< class T >
 Matrix< T > multiplyNaive( const Matrix< T > & A , const Matrix< T > & B ,
                            long * mults = nullptr );
 
-/// the product of A, p x q, and B, q x r, Theta( p q r )
+/// the product of A, p x q, and B, q x r, Theta( p q r ); with q = 0 the
+/// vector B has no row to give r, and the product is p x 0
 /// \pre A is p x q and B is q x r
 template< class T >
 Matrix< T > multiply( const Matrix< T > & A , const Matrix< T > & B );

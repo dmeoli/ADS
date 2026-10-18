@@ -17,7 +17,8 @@
  *   \f$ with p a prime larger than the keys, \f$ 1 \le a < p \f$ and \f$ 0
  *   \le b < p \f$, universal for every m; with \f$ p = 2^{61} - 1 \f$ the
  *   product mod p is made of four products of 32 bits and a few shifts,
- *   with no integer of 128 bits [see mulMod61()];
+ *   with no integer of 128 bits [see mulMod61() and mulMod() in
+ *   NumberTheory.h];
  * - DotProductHash, \f$ h_a( k ) = \sum_i a_i k_i \bmod m \f$ with m prime,
  *   the key cut into its r digits \f$ k_i \f$ in base m and \f$ a \f$ a
  *   vector of r digits: universal, since for two keys that differ in a
@@ -95,6 +96,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/numeric/NumberTheory.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -111,24 +113,6 @@
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
-
-/// the Mersenne prime 2^61 - 1
-inline constexpr std::uint64_t kMersenne61 = ( std::uint64_t( 1 ) << 61 ) - 1;
-
-/// a b mod 2^61 - 1, by four products of 32 bits and the folding
-/// 2^61 = 1 mod 2^61 - 1
-/// \pre a < 2^61 - 1 and b < 2^61 - 1
-/// \post the result is below 2^61 - 1
-[[nodiscard]] constexpr std::uint64_t mulMod61( std::uint64_t a ,
-                                                std::uint64_t b );
-
-/// a b mod p for any p < 2^63: by the product for p <= 2^32, by mulMod61()
-/// for p = 2^61 - 1, and by doubling and adding otherwise
-/// \pre 1 <= p < 2^63, a < p and b < p
-/// \post the result is below p
-[[nodiscard]] constexpr std::uint64_t mulMod( std::uint64_t a ,
-                                              std::uint64_t b ,
-                                              std::uint64_t p );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS CarterWegmanHash --------------------------*/

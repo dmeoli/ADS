@@ -54,8 +54,9 @@
 namespace ADS {
 
 /// a tour of the knight from ( x , y ) on an n x n board, by backtrack,
-/// the moves in the order of the book or by the rule of Warnsdorff
-/// \pre ( x , y ) on the board
+/// the moves in the order of the book or by the rule of Warnsdorff; none
+/// for n < 1, where there is no board
+/// \pre ( x , y ) on the board if n >= 1
 /// \post a tour of knight moves from ( x , y )
 inline std::optional< std::vector< std::vector< int > > > knightTour(
                                     int n , int x , int y ,

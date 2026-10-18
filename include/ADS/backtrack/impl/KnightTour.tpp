@@ -26,6 +26,8 @@ inline std::optional< std::vector< std::vector< int > > > knightTour(
                                               -2 };
  static constexpr std::array< int , 8 > Y = { -2 , -2 , -1 , 1 , 2 , 2 , 1 ,
                                               -1 };
+ if( n < 1 )                                   // no board, no tour
+  return( std::nullopt );
  std::vector< std::vector< int > > A( n , std::vector< int >( n , 0 ) );
  auto ok = [ & ]( int a , int b ) {
   return( a >= 0 && a < n && b >= 0 && b < n && A[ a ][ b ] == 0 ); };

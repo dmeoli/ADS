@@ -27,6 +27,11 @@ out=results/$(hostname -s)-$(date +%Y%m%d-%H%M).tsv
  echo "# runs	$RUNS"
 } > "$out"
 run() { taskset -c "$CORE" "$BUILD/bench-$1" -r "$RUNS" "${@:2}" >> "$out"; }
+# the sorts print a header and a table per type: "sort <type>" is the
+# benchmark of each type, the pattern its case
+taskset -c "$CORE" "$BUILD/bench-sort" -r "$RUNS" 100000 1000000 |
+ awk -F'\t' -v OFS='\t' 'NR > 1 { print "sort " $1 , $2 , $3 , $4 , $5 }' \
+ >> "$out"
 run dictionaries 100000 1000000
 run priority 100000 1000000
 run sequences 100000 10000000

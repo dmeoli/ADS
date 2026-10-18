@@ -73,7 +73,9 @@ inline double evaluate( const BinaryTree< std::string > * t ,
  ADS_PRE( t != nullptr );
  const std::string & v = t->read();
  if( ! detail::isBinaryOperator( v ) ) {     // a leaf
-  if( ( ( v[ 0 ] >= '0' ) && ( v[ 0 ] <= '9' ) ) || ( v[ 0 ] == '.' ) )
+  const std::size_t s = ( ( v[ 0 ] == '-' ) || ( v[ 0 ] == '+' ) ) &&
+                        ( v.size() > 1 ) ? 1 : 0;   // a sign, then a number
+  if( ( ( v[ s ] >= '0' ) && ( v[ s ] <= '9' ) ) || ( v[ s ] == '.' ) )
    return( std::stod( v ) );
   const auto it = env.find( v );
   ADS_PRE( it != env.end() );               // a value for the variable

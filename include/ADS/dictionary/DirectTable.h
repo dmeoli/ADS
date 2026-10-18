@@ -7,9 +7,10 @@
  * is injective, a perfect hash, and the DICTIONARY [see ADT.h] is a vector
  * of size m, every operation in O( 1 ) time.
  *
- * The contracts [see Contract.h]: a <= b, and every key in [ a , b ];
- * the invariant is that size() counts the places that are not empty. The
- * operations are defined in DirectTable.tpp.
+ * The contracts [see Contract.h]: a <= b with b - a + 1 places that fit in
+ * a std::size_t, and every key in [ a , b ], checked without overflow for
+ * any long; the invariant is that size() counts the places that are not
+ * empty. The operations are defined in DirectTable.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 7,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
@@ -36,6 +37,7 @@
 #include "ADS/Iterators.h"
 
 #include <cstddef>
+#include <limits>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -62,7 +64,8 @@ class DirectTable {
  using Value = V;    ///< the type of the values
 
  /// the empty table of the keys in [ a , b ]
- /// \pre a <= b
+ /// \pre a <= b, and b - a + 1 places fit in a std::size_t (not the whole
+ ///      range of long)
  DirectTable( long a , long b );
 
  /// the value of k, or nothing

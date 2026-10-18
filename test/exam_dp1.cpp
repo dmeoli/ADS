@@ -341,7 +341,7 @@ inline Count countRG( int n , int m )
 /// whether the distinct items of A split into pairs of the same sum: after
 /// sorting, the largest must go with the least, so the pairs are
 /// A[ i ] , A[ n - 1 - i ]; O( n log n ) time
-/// \pre |A| even
+/// \pre |A| even, the sum of two items fits in Int
 inline bool checkPairs( std::vector< Int > A )
 {
  ADS_PRE( A.size() % 2 == 0 );
@@ -359,7 +359,7 @@ inline bool checkPairs( std::vector< Int > A )
 /// the same by hashing: the sum of each pair is S = sum( A ) / ( n / 2 ),
 /// which must be an integer, and S - a must be in A for every a; O( n )
 /// expected time
-/// \pre |A| even and the items distinct
+/// \pre |A| even and the items distinct, their partial sums fit in Int
 inline bool checkPairsHash( const std::vector< Int > & A )
 {
  ADS_PRE( A.size() % 2 == 0 );
@@ -1122,6 +1122,15 @@ ADS_TEST( "dp-2-2" )
                contract_violation );
  CHECK_THROWS( dp::minParenthesization( { 1 , 1 } , "-" ) ,
                contract_violation );
+ CHECK_THROWS( dp::minParenthesization( {} , "" ) , contract_violation );
+ CHECK_THROWS( dp::minParenthesization( { 1 , 2 } , "" ) ,
+               contract_violation );
+ CHECK_THROWS( dp::minParenthesization( { 1 } , "+" ) , contract_violation );
+ CHECK_THROWS( dp::minParenthesization( { 2 , -1 } , "*" ) ,
+               contract_violation );
+ const Int big = Int( 1 ) << 40;
+ CHECK( dp::minParenthesization( { big , big } , "+" ).first == 2 * big );
+ CHECK( dp::minParenthesization( { 1 , 1 , 1 } , "+*" ).first == 2 );
  }
 
 // 2011-05-27, Parentesizzazione: the printed expression of the example,
@@ -1152,6 +1161,16 @@ ADS_TEST( "dp-2-3" )
   CHECK( ( p == e.size() ) && ( C2 == C ) && ( O2 == O ) );
   CHECK( v == minParenthesizationBrute( C , O , 0 , n - 1 ) );
   }
+ const std::vector< Int > C = { 7 };
+ const auto [ v , S ] = dp::minParenthesization( C , "" );
+ CHECK( dp::printParenthesization( C , "" , S , 0 , 0 ) == "7" );
+ CHECK_THROWS( dp::printParenthesization( C , "" , S , 0 , 1 ) ,
+               contract_violation );
+ const std::vector< Int > D = { 1 , 2 };
+ const auto [ w , T ] = dp::minParenthesization( D , "+" );
+ CHECK( dp::printParenthesization( D , "+" , T , 0 , 1 ) == "(1 + 2)" );
+ CHECK_THROWS( dp::printParenthesization( D , "+" , T , 1 , 0 ) ,
+               contract_violation );
  }
 
 namespace {
@@ -1256,7 +1275,11 @@ ADS_TEST( "dp-4" )
   std::vector< long > coins( A.begin() , A.end() );
   CHECK( s == optimalChange( coins , t ).has_value() );
   }
+ CHECK( dp::multisetSum( { 1 } , 0 ) && dp::multisetSum( { 3 , 3 } , 9 ) );
+ CHECK( ! dp::multisetSum( { 5 } , 4 ) );
  CHECK_THROWS( dp::multisetSum( { 0 } , 3 ) , contract_violation );
+ CHECK_THROWS( dp::multisetSum( { -2 , 3 } , 1 ) , contract_violation );
+ CHECK_THROWS( dp::multisetSum( { 1 } , -1 ) , contract_violation );
  }
 
 namespace {
@@ -1354,7 +1377,13 @@ ADS_TEST( "dp-6" )
   CHECK( T.cost == optimalBstBrute( p , 0 , int( p.size() ) , 0 ) );
   CHECK( bstCost( T , p , T.root , 0 ) == T.cost );
   }
+ const auto zero = dp::optimalBst( { 0 , 0 , 0 , 0 } );
+ CHECK( ( zero.cost == 0 ) && ( bstCost( zero , { 0 , 0 , 0 , 0 } ,
+                                         zero.root , 0 ) == 0 ) );
+ const auto first = dp::optimalBst( { 100 , 1 , 1 } );
+ CHECK( first.root == 0 );
  CHECK_THROWS( dp::optimalBst( { -1 } ) , contract_violation );
+ CHECK_THROWS( dp::optimalBst( { 3 , -1 , 3 } ) , contract_violation );
  }
 
 // 2012-01-11 and 2012-05-31, Mediana4: random sorted arrays of 1 to 40
@@ -1381,6 +1410,17 @@ ADS_TEST( "dp-7" )
   }
  CHECK_THROWS( dp::medianPair( { 2 , 1 } , { 1 , 2 } ) , contract_violation );
  CHECK_THROWS( dp::medianPair( {} , {} ) , contract_violation );
+ CHECK_THROWS( dp::medianPair( { 1 } , { 1 , 2 } ) , contract_violation );
+ CHECK_THROWS( dp::medianPair( { 1 , 2 } , { 2 , 1 } ) ,
+               contract_violation );
+ const Int lo = std::numeric_limits< Int >::min() ,
+           hi = std::numeric_limits< Int >::max();
+ CHECK( dp::medianPair( { lo , hi } , { lo , hi } ) == std::pair( lo , hi ) );
+ CHECK( dp::medianPair( { lo , lo , lo } , { hi , hi , hi } ) ==
+        std::pair( lo , hi ) );
+ CHECK( dp::medianPair( std::vector< Int >( 9 , 4 ) ,
+                        std::vector< Int >( 9 , 4 ) ) ==
+        std::pair( Int( 4 ) , Int( 4 ) ) );
  }
 
 // 2012-02-01, Best cut: random prices against all the partitions of the
@@ -1412,7 +1452,14 @@ ADS_TEST( "dp-8" )
    }
   CHECK( ( v == gain ) && ( total == L ) );
   }
+ CHECK( dp::bestCut( { 0 , 0 } , 2 ).first == 0 );
+ CHECK( dp::bestCut( { 1 , 100 } , 2 ).second ==
+        std::vector< std::size_t >( 1 , 2 ) );
+ CHECK( dp::bestCut( { 100 , 1 } , 2 ).second ==
+        std::vector< std::size_t >( 2 , 1 ) );
  CHECK_THROWS( dp::bestCut( { 1 } , 2 ) , contract_violation );
+ CHECK_THROWS( dp::bestCut( {} , 1 ) , contract_violation );
+ CHECK_THROWS( dp::bestCut( { 1 , -1 } , 1 ) , contract_violation );
  }
 
 // 2012-02-01, Prima elementare: the strings of n R and m G against
@@ -1434,7 +1481,11 @@ ADS_TEST( "dp-9-1" )
    while( std::next_permutation( s.begin() , s.end() ) );
    CHECK( out == all );
    }
+ CHECK( dp::printRG( 0 , 3 ) == std::vector< std::string >( 1 , "GGG" ) );
+ CHECK( dp::printRG( 1 , 1 ) == ( std::vector< std::string >{ "RG" ,
+                                                             "GR" } ) );
  CHECK_THROWS( dp::printRG( -1 , 2 ) , contract_violation );
+ CHECK_THROWS( dp::printRG( 2 , -1 ) , contract_violation );
  }
 
 // 2012-02-01, Prima elementare: the count of the strings against the
@@ -1447,6 +1498,10 @@ ADS_TEST( "dp-9-2" )
    CHECK( dp::countRG( n , m ) == C[ n + m ][ n ] );
  CHECK( dp::countRG( 3 , 2 ) == 10 );
  CHECK_THROWS( dp::countRG( 34 , 34 ) , contract_violation );
+ CHECK_THROWS( dp::countRG( 68 , 0 ) , contract_violation );
+ CHECK_THROWS( dp::countRG( 0 , 68 ) , contract_violation );
+ CHECK_THROWS( dp::countRG( -1 , 0 ) , contract_violation );
+ CHECK_THROWS( dp::countRG( 0 , -1 ) , contract_violation );
  }
 
 namespace {
@@ -1515,6 +1570,12 @@ ADS_TEST( "dp-10" )
   }
  CHECK_THROWS( dp::checkPairs( { 1 , 2 , 3 } ) , contract_violation );
  CHECK_THROWS( dp::checkPairsHash( { 1 , 1 } ) , contract_violation );
+ CHECK_THROWS( dp::checkPairsHash( { 1 } ) , contract_violation );
+ const Int lo = std::numeric_limits< Int >::min() ,
+           hi = std::numeric_limits< Int >::max();
+ CHECK( dp::checkPairs( { lo , hi , lo + 1 , hi - 1 } ) );
+ CHECK( dp::checkPairsHash( { lo , hi , lo + 1 , hi - 1 } ) );
+ CHECK( ! dp::checkPairs( { lo , hi , 0 , 1 } ) );
  }
 
 namespace {
@@ -1553,7 +1614,11 @@ ADS_TEST( "dp-11-1" )
   const Int W = rnd( g , 0 , 80 );
   CHECK( dp::maxSum( A , W ).first == maxSumBrute( A , W ) );
   }
+ CHECK( dp::maxSum( { 5 , 5 } , 4 ).first == 0 );
+ CHECK( dp::maxSum( { 7 } , 7 ).first == 7 );
  CHECK_THROWS( dp::maxSum( { 0 } , 3 ) , contract_violation );
+ CHECK_THROWS( dp::maxSum( { 2 , -1 } , 3 ) , contract_violation );
+ CHECK_THROWS( dp::maxSum( { 1 } , -1 ) , contract_violation );
  }
 
 // 2012-05-03, Ottimizza la somma: the multiplicities of the example and of
@@ -1614,7 +1679,11 @@ ADS_TEST( "dp-13" )
   const Int T = rnd( g , 0 , 40 );
   CHECK( dp::changeWays( B , T ) == changeWaysBrute( B , 0 , T ) );
   }
+ CHECK( dp::changeWays( {} , 5 ) == 0 );
+ CHECK( dp::changeWays( { 1 } , 1000 ) == 1 );
+ CHECK( dp::changeWays( { 7 } , 7 ) == 1 && dp::changeWays( { 7 } , 6 ) == 0 );
  CHECK_THROWS( dp::changeWays( { 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( dp::changeWays( { 0 } , 3 ) , contract_violation );
  }
 
 // 2012-06-18, Scacchiera: random boards of up to 5 rows against all the
@@ -1650,7 +1719,12 @@ ADS_TEST( "dp-14" )
    }
   CHECK( dp::boardTokens( A ) == best );
   }
+ CHECK( dp::boardTokens( { { 5 , 1 , 5 } , { 1 , 9 , 1 } } ) == 19 );
+ std::vector< std::array< Int , 3 > > tall( 1000 , { 1 , 1 , 1 } );
+ CHECK( dp::boardTokens( tall ) == 1500 );
  CHECK_THROWS( dp::boardTokens( { { 0 , 1 , 1 } } ) , contract_violation );
+ CHECK_THROWS( dp::boardTokens( { { 1 , 1 , 1 } , { 1 , 1 , -1 } } ) ,
+               contract_violation );
  }
 
 namespace {
@@ -1695,6 +1769,9 @@ ADS_TEST( "dp-15" )
    c = static_cast< char >( '0' + rnd( g , 0 , 1 ) );
   CHECK( countSegmentations( X , P ) == segmentationsBrute( X , P , 0 ) );
   }
+ CHECK( countSegmentations( "0" , { "0" , "0" } ) == 2 );
+ CHECK( countSegmentations( "01" , { "011" } ) == 0 );
+ CHECK( countSegmentations( "011" , { "011" } ) == 1 );
  CHECK_THROWS( countSegmentations( "0" , { "" } ) , contract_violation );
  }
 
@@ -1736,7 +1813,11 @@ ADS_TEST( "dp-16" )
     c = rnd( g , 0 , 4 ) > 0;
   CHECK( dp::countPaths( B ) == countPathsBrute( B , 0 , 0 ) );
   }
+ CHECK( dp::countPaths( { { 0 , 1 } , { 1 , 1 } } ) == 0 );
+ CHECK( dp::countPaths( { { 1 , 1 , 1 , 0 , 1 } } ) == 0 );
+ CHECK( dp::countPaths( { { 1 } , { 1 } , { 1 } } ) == 1 );
  CHECK_THROWS( dp::countPaths( {} ) , contract_violation );
+ CHECK_THROWS( dp::countPaths( { {} } ) , contract_violation );
  }
 
 // 2013-01-28, Intero positivo insieme: subsetSumDP() of the library
@@ -1765,6 +1846,12 @@ ADS_TEST( "dp-17" )
    }
   CHECK( subsetSumDP( A , T ) == b );
   }
+ CHECK( subsetSumDP( { 0 , 0 } , 0 ) && ! subsetSumDP( { 0 } , 1 ) );
+ CHECK( subsetSumDP( { 7 } , 7 ) && ! subsetSumDP( { 7 } , 14 ) );
+ CHECK( subsetSumDP( { 3 , 34 , 4 , 12 , 5 , 2 } , 60 ) );
+ CHECK( ! subsetSumDP( { 3 , 34 , 4 , 12 , 5 , 2 } , 61 ) );
+ CHECK_THROWS( subsetSumDP( { 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( subsetSumDP( { 2 , -1 } , 1 ) , contract_violation );
  }
 
 // 2013-05-03, Barche sul fiume: random prices of up to 10 ports against
@@ -1805,6 +1892,15 @@ ADS_TEST( "dp-18" )
   CHECK( ( ports.empty() == ( n == 1 ) ) && ( again == cost ) );
   CHECK( ports.empty() || ( ports.front() == 0 ) );
   }
+ const dp::Table Z( 4 , std::vector< Int >( 4 , 0 ) );
+ CHECK( dp::boats( Z ).first == 0 );
+ const dp::Table W = { { 0 , 9 } , { 0 , 0 } };
+ CHECK( dp::boats( W ) ==
+        std::pair( Int( 9 ) , std::vector< std::size_t >( 1 , 0 ) ) );
+ CHECK_THROWS( dp::boats( {} ) , contract_violation );
+ CHECK_THROWS( dp::boats( { { 0 } , { 0 , 0 } } ) , contract_violation );
+ CHECK_THROWS( dp::boats( { { 0 , -1 } , { 0 , 0 } } ) ,
+               contract_violation );
  }
 
 // 2013-05-31, Max resto: the examples, where the least coins first fails,
@@ -1833,6 +1929,11 @@ ADS_TEST( "dp-19" )
    }
   CHECK( dp::maxCoins( V , T ) == best );
   }
+ CHECK( dp::maxCoins( {} , 0 ) == 0 );
+ CHECK( dp::maxCoins( std::vector< Int >( 12 , 1 ) , 12 ) == 12 );
+ CHECK( ! dp::maxCoins( std::vector< Int >( 12 , 1 ) , 13 ) );
+ CHECK_THROWS( dp::maxCoins( { 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( dp::maxCoins( { 0 } , 1 ) , contract_violation );
  }
 
 namespace {
@@ -1888,6 +1989,13 @@ ADS_TEST( "dp-20-2" )
    s += D[ i ];
   CHECK( s == fundraisingBrute( D ) );
   }
+ for( std::size_t i : dp::donors( std::vector< Int >( 9 , 0 ) ) )
+  CHECK( i < 9 );
+ const auto H = dp::donors( std::vector< Int >( 1001 , 1 ) );
+ CHECK( H.size() == 501 );
+ for( std::size_t k = 1 ; k < H.size() ; ++k )
+  CHECK( H[ k ] >= H[ k - 1 ] + 2 );
+ CHECK_THROWS( dp::donors( { 1 , -1 } ) , contract_violation );
  }
 
 namespace {
@@ -1920,7 +2028,11 @@ ADS_TEST( "dp-21" )
   const auto V = rndVector( g , 2 * rnd( g , 0 , 7 ) , 0 , 30 );
   CHECK( dp::coinGame( V ) == coinGameBrute( V , 0 , V.size() ) );
   }
+ CHECK( dp::coinGame( { 0 , 0 } ) == 0 );
+ CHECK( dp::coinGame( { 1 , 100 , 2 , 3 } ) == 103 );
  CHECK_THROWS( dp::coinGame( { 1 , 2 , 3 } ) , contract_violation );
+ CHECK_THROWS( dp::coinGame( { 1 } ) , contract_violation );
+ CHECK_THROWS( dp::coinGame( { 1 , -2 } ) , contract_violation );
  }
 
 namespace {
@@ -1971,7 +2083,16 @@ ADS_TEST( "dp-22" )
   CHECK( dp::dice( F , X , false ) == b );
   CHECK( dp::dice( F , X , true ) == b );
   }
+ for( bool fast : { false , true } ) {
+  CHECK( dp::dice( { 6 , 6 } , 12 , fast ) == 1 );
+  CHECK( dp::dice( { 6 , 6 } , 2 , fast ) == 1 );
+  CHECK( dp::dice( { 6 , 6 } , 1 , fast ) == 0 );
+  CHECK( dp::dice( { 1 } , 1 , fast ) == 1 );
+  }
  CHECK_THROWS( dp::dice( { 0 } , 1 , true ) , contract_violation );
+ CHECK_THROWS( dp::dice( { 0 } , 1 , false ) , contract_violation );
+ CHECK_THROWS( dp::dice( { 6 } , -1 , true ) , contract_violation );
+ CHECK_THROWS( dp::dice( { 6 , -6 } , 3 , false ) , contract_violation );
  }
 
 namespace {
@@ -2025,7 +2146,11 @@ ADS_TEST( "dp-23" )
   const std::size_t L = rnd( g , 1 , 4 );
   CHECK( dp::shelvesHeight( y , L ) == shelvesBrute( y , L ) );
   }
+ CHECK( dp::shelvesHeight( { 3 , 1 , 2 } , 1 ) == 6 );
+ CHECK( dp::shelvesHeight( { 3 , 1 , 2 } , 3 ) == 3 );
+ CHECK( dp::shelvesHeight( { 3 , 1 , 2 } , 1000 ) == 3 );
  CHECK_THROWS( dp::shelvesHeight( { 1 } , 0 ) , contract_violation );
+ CHECK_THROWS( dp::shelvesHeight( {} , 0 ) , contract_violation );
  }
 
 // 2014-02-03, Max gain: random boards of 4 rows and up to 9 columns
@@ -2064,6 +2189,13 @@ ADS_TEST( "dp-24" )
  for( auto & row : small )
   row.assign( 3 , 1 );
  CHECK_THROWS( dp::rooks( small ) , contract_violation );
+ std::array< std::vector< Int > , 4 > ragged;
+ for( auto & row : ragged )
+  row.assign( 5 , 1 );
+ ragged[ 3 ].pop_back();
+ CHECK_THROWS( dp::rooks( ragged ) , contract_violation );
+ ragged[ 3 ].push_back( 0 );
+ CHECK_THROWS( dp::rooks( ragged ) , contract_violation );
  }
 
 namespace {
@@ -2156,6 +2288,9 @@ ADS_TEST( "dp-26-1" )
  CHECK( std::abs( other - 52 ) < 1e-9 );
  CHECK( other < greedy );
  CHECK( dp::tapeOrder( L , P ) == std::vector< std::size_t >( { 1 , 0 } ) );
+ CHECK( dp::tapeCost( {} , {} , {} ) == 0 );
+ CHECK_THROWS( dp::tapeCost( L , P , { 0 } ) , contract_violation );
+ CHECK_THROWS( dp::tapeCost( L , { 1 } , { 0 , 1 } ) , contract_violation );
  }
 
 // 2014-06-16, Input file file: the counterexample to the order by
@@ -2192,7 +2327,13 @@ ADS_TEST( "dp-26-3" )
   while( std::next_permutation( order.begin() , order.end() ) );
   CHECK( dp::tapeCost( L , P , dp::tapeOrder( L , P ) ) == best );
   }
+ CHECK( dp::tapeOrder( { 5 } , { 1 } ) == std::vector< std::size_t >( 1 ,
+                                                                    0 ) );
+ const auto Z = dp::tapeOrder( { 0 , 0 , 0 } , { 1 , 2 , 3 } );
+ CHECK( dp::tapeCost( { 0 , 0 , 0 } , { 1 , 2 , 3 } , Z ) == 0 );
  CHECK_THROWS( dp::tapeOrder( { 1 } , { 0 } ) , contract_violation );
+ CHECK_THROWS( dp::tapeOrder( { 1 , 2 } , { 1 } ) , contract_violation );
+ CHECK_THROWS( dp::tapeOrder( { -1 } , { 1 } ) , contract_violation );
  }
 
 namespace {
@@ -2237,7 +2378,16 @@ ADS_TEST( "dp-27" )
   d[ 0 ] = 0;
   CHECK( dp::mintime( t , d , A ) == mintimeBrute( t , d , A ) );
   }
+ CHECK( dp::mintime( { 4 , 4 } , { 0 , 0 } , 0 ) == 0 );
+ CHECK( dp::mintime( { 4 , 4 } , { 0 , 6 } , 6 ) == 24 );
+ CHECK( ! dp::mintime( { 4 , 4 } , { 0 , 1 } , 0 ) );
  CHECK_THROWS( dp::mintime( {} , {} , 3 ) , contract_violation );
+ CHECK_THROWS( dp::mintime( { 1 , 1 } , { 0 } , 3 ) , contract_violation );
+ CHECK_THROWS( dp::mintime( { 1 } , { 0 } , -1 ) , contract_violation );
+ CHECK_THROWS( dp::mintime( { 1 , 1 } , { 0 , -1 } , 3 ) ,
+               contract_violation );
+ CHECK_THROWS( dp::mintime( { -1 , 1 } , { 0 , 1 } , 3 ) ,
+               contract_violation );
  }
 
 // 2014-07-21, Longest palindrome: the example, length 7, and random
@@ -2315,6 +2465,11 @@ ADS_TEST( "dp-30" )
  CHECK( dp::minAlignment( "" , "" ) == 0 );
  CHECK( dp::minAlignment( "abc" , "" ) == 3 );
  CHECK( dp::minAlignment( "aaaa" , "aaaa" ) == 0 );
+ CHECK( dp::minAlignment( "" , "abc" ) == 3 );
+ CHECK( dp::minAlignment( "abc" , "xyz" ) == 6 );
+ CHECK( dp::minAlignment( "abc" , "cba" ) == 4 );
+ CHECK( dp::minAlignment( std::string( 300 , 'a' ) ,
+                          std::string( 100 , 'a' ) ) == 200 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const std::string P = rndString( g , rnd( g , 0 , 9 ) , 3 );
@@ -2374,7 +2529,10 @@ ADS_TEST( "dp-31" )
                       double( dp::countStairs( 63 ) );
  CHECK( std::abs( ratio - x ) < 1e-9 );
  CHECK( std::abs( x - 1.92756 ) < 1e-5 );
+ CHECK( ( dp::countStairs( 1 ) == 1 ) && ( dp::countStairs( 4 ) == 8 ) );
+ CHECK( dp::countStairs( 64 ) > dp::countStairs( 63 ) );
  CHECK_THROWS( dp::countStairs( 65 ) , contract_violation );
+ CHECK_THROWS( dp::countStairs( -1 ) , contract_violation );
  }
 
 // 2015-02-02, Piggy bank: the example, 200, and random coins against the
@@ -2401,7 +2559,12 @@ ADS_TEST( "dp-32" )
   const auto got = dp::piggyBank( p , v , T );
   CHECK( got ? ( *got == best[ T ] ) : ( best[ T ] == dp::INF ) );
   }
+ CHECK( dp::piggyBank( { 2 , 2 } , { 9 , 4 } , 4 ) == 8 );
+ CHECK( dp::piggyBank( { 5 } , { 0 } , 10 ) == 0 );
  CHECK_THROWS( dp::piggyBank( { 0 } , { 1 } , 1 ) , contract_violation );
+ CHECK_THROWS( dp::piggyBank( { 1 } , { -1 } , 1 ) , contract_violation );
+ CHECK_THROWS( dp::piggyBank( { 1 } , { 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( dp::piggyBank( { 1 , 2 } , { 1 } , 1 ) , contract_violation );
  }
 
 // 2015-06-08, Resto limitato: optimalChange() of the library at most k on
@@ -2420,6 +2583,12 @@ ADS_TEST( "dp-33" )
  CHECK( ! limited( { 1 , 5 , 10 , 17 , 4 } , 18 , 1 ) );
  CHECK( limited( { 3 } , 0 , 0 ) );
  CHECK( ! limited( { 3 } , 3 , 0 ) );
+ CHECK( limited( { 3 } , 3 , 1 ) && ! limited( { 3 } , 4 , 100 ) );
+ CHECK( limited( { 1 } , 50 , 50 ) && ! limited( { 1 } , 50 , 49 ) );
+ CHECK_THROWS( optimalChange( std::vector< long >{ 1 } , -1 ) ,
+               contract_violation );
+ CHECK_THROWS( optimalChange( std::vector< long >{ 0 } , 1 ) ,
+               contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::vector< long > v( rnd( g , 1 , 5 ) );
@@ -2465,7 +2634,11 @@ ADS_TEST( "dp-34" )
     }
   CHECK( dp::soccer( b ) == ok );
   }
+ CHECK( dp::soccer( { 0 , 0 } ) && dp::soccer( { 0 , 0 , 0 , 0 } ) );
+ CHECK( ! dp::soccer( { 0 , 0 , 0 , 2 } ) );
  CHECK_THROWS( dp::soccer( { 1 , 2 , 3 } ) , contract_violation );
+ CHECK_THROWS( dp::soccer( { 1 } ) , contract_violation );
+ CHECK_THROWS( dp::soccer( { 1 , -1 } ) , contract_violation );
  }
 
 // 2015-09-01, Repeat sort: the example of 20 items and 4 values, and random
@@ -2482,6 +2655,18 @@ ADS_TEST( "dp-36" )
  std::vector< Int > E;
  dp::repeatSort( E );
  CHECK( E.empty() );
+ for( std::vector< Int > F : { std::vector< Int >{ 9 } ,
+                               std::vector< Int >( 50 , -3 ) ,
+                               std::vector< Int >{ 1 , 2 , 3 } ,
+                               std::vector< Int >{ 3 , 2 , 1 , 3 , 2 , 1 } ,
+                               std::vector< Int >{
+                                std::numeric_limits< Int >::max() ,
+                                std::numeric_limits< Int >::min() } } ) {
+  auto G = F;
+  std::sort( G.begin() , G.end() );
+  dp::repeatSort( F );
+  CHECK( F == G );
+  }
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const auto values = rndVector( g , rnd( g , 1 , 6 ) ,

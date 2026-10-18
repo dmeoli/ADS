@@ -39,17 +39,29 @@ inline bool isHullOf( const std::vector< Point > & H ,
  return( true );
  }
 
+/// all the coordinates of P in [ -10^9 , 10^9 ]
+inline bool smallCoordinates( const std::vector< Point > & P )
+{
+ const long M = 1000000000L;
+ return( std::all_of( P.begin() , P.end() , [ & ]( const Point & p ) {
+  return( ( p.x >= -M ) && ( p.x <= M ) && ( p.y >= -M ) && ( p.y <= M ) );
+  } ) );
+ }
+
 }  // end( namespace detail )
 
-inline long cross( const Point & a , const Point & b , const Point & c )
+inline long long cross( const Point & a , const Point & b ,
+                         const Point & c )
 {
- return( ( b.x - a.x ) * ( c.y - a.y ) - ( b.y - a.y ) * ( c.x - a.x ) );
+ using L = long long;                      // long has 32 bits on Windows
+ return( ( L( b.x ) - a.x ) * ( L( c.y ) - a.y ) -
+         ( L( b.y ) - a.y ) * ( L( c.x ) - a.x ) );
  }
 
 inline bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
                       const Point & q )
 {
- const long a = cross( p1 , p2 , p ) , b = cross( p1 , p2 , q );
+ const long long a = cross( p1 , p2 , p ) , b = cross( p1 , p2 , q );
  return( ( a >= 0 && b >= 0 ) || ( a <= 0 && b <= 0 ) );
  }
 
@@ -57,17 +69,20 @@ inline double pseudoAngle( long dx , long dy )
 {
  if( ( dx == 0 ) && ( dy == 0 ) )
   return( 0 );
- const double t = double( dy ) / double( std::labs( dx ) + std::labs( dy ) );
+ // in double: | LONG_MIN | and the sum of the two overflow a long
+ const double t = double( dy ) / ( std::fabs( double( dx ) ) +
+                                   std::fabs( double( dy ) ) );
  if( dx < 0 )
   return( 2 - t );
- if( dy < 0 )
-  return( 4 + t );
+ if( dy < 0 )                             // 4 + t may round up to 4
+  return( std::min( 4 + t , std::nextafter( 4.0 , 0.0 ) ) );
  ADS_POST( ( t >= 0 ) && ( t <= 1 ) );
  return( t );
  }
 
 inline std::vector< Point > convexHullBrute( std::vector< Point > P )
 {
+ ADS_PRE( detail::smallCoordinates( P ) );
  [[maybe_unused]] const std::vector< Point > P0 = P;
  std::sort( P.begin() , P.end() , []( const Point & a , const Point & b ) {
   return( a.x < b.x || ( a.x == b.x && a.y < b.y ) ); } );
@@ -81,12 +96,13 @@ inline std::vector< Point > convexHullBrute( std::vector< Point > P )
    if( i == j ) continue;
    bool edge = true;                       // all the others to the left
    for( std::size_t k = 0 ; k < n && edge ; ++k ) {
-    const long c = cross( P[ i ] , P[ j ] , P[ k ] );
+    const long long c = cross( P[ i ] , P[ j ] , P[ k ] );
     if( c < 0 ) edge = false;
     // a point on the segment, strictly inside, is not a vertex
+    using L = long long;
     if( ( c == 0 ) && ( k != i ) && ( k != j ) &&
-        ( ( P[ k ].x - P[ i ].x ) * ( P[ k ].x - P[ j ].x ) +
-          ( P[ k ].y - P[ i ].y ) * ( P[ k ].y - P[ j ].y ) > 0 ) )
+        ( ( L( P[ k ].x ) - P[ i ].x ) * ( L( P[ k ].x ) - P[ j ].x ) +
+          ( L( P[ k ].y ) - P[ i ].y ) * ( L( P[ k ].y ) - P[ j ].y ) > 0 ) )
      edge = false;
     }
    if( edge ) vertex[ i ] = vertex[ j ] = true;
@@ -108,6 +124,7 @@ inline std::vector< Point > convexHullBrute( std::vector< Point > P )
 
 inline std::vector< Point > graham( std::vector< Point > P )
 {
+ ADS_PRE( detail::smallCoordinates( P ) );
  [[maybe_unused]] const std::vector< Point > P0 = P;
  std::sort( P.begin() , P.end() , []( const Point & a , const Point & b ) {
   return( a.x < b.x || ( a.x == b.x && a.y < b.y ) ); } );
@@ -120,10 +137,12 @@ inline std::vector< Point > graham( std::vector< Point > P )
  std::swap( P[ 0 ] , P[ min ] );
  const Point o = P[ 0 ];
  auto dist = [ & ]( const Point & a ) {
-  return( ( a.x - o.x ) * ( a.x - o.x ) + ( a.y - o.y ) * ( a.y - o.y ) ); };
+  const long long dx = ( long long )( a.x ) - o.x ,
+                  dy = ( long long )( a.y ) - o.y;
+  return( dx * dx + dy * dy ); };
  std::sort( P.begin() + 1 , P.end() , [ & ]( const Point & a ,
                                             const Point & b ) {
-  const long c = cross( o , a , b );
+  const long long c = cross( o , a , b );
   return( c > 0 || ( c == 0 && dist( a ) < dist( b ) ) ); } );
  // of the collinear ones with o only the farthest
  std::vector< Point > Q = { o };

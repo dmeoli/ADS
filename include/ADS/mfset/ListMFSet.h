@@ -77,7 +77,7 @@ class ListMFSet {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the members of the set of x
- /// \\pre x is in [ 0 , n )
+ /// \pre x is in [ 0 , n )
  [[nodiscard]] const std::vector< int > & members( int x ) const;
 
 /*--------------------------------------------------------------------------*/

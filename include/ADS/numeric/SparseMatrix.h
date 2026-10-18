@@ -163,12 +163,12 @@ class SparseMatrix {
  using const_iterator = detail::OrthogonalIterator< Node >;
 
  /// the nonzeros of the row i as ( column , value ), by column
- /// \\pre i < m
+ /// \pre i < m
  [[nodiscard]] std::ranges::subrange< const_iterator > rowEntries(
                                                        std::size_t i ) const;
 
  /// the nonzeros of the column j as ( row , value ), by row
- /// \\pre j < n
+ /// \pre j < n
  [[nodiscard]] std::ranges::subrange< const_iterator > colEntries(
                                                        std::size_t j ) const;
 

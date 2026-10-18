@@ -12,8 +12,9 @@
  *
  * knapsack() fills the table bottom up in Theta( n C ) time and reads the
  * set back; zaino() is the memoization of the book, top down, which solves
- * only the subproblems it reaches, in a hash table rather than in a table
- * of n C places, whose initialization alone would cost Theta( n C ).
+ * only the subproblems it reaches, in a hash table per object, of key c,
+ * rather than in a table of n C places, whose initialization alone would
+ * cost Theta( n C ); so any capacity up to the largest long is allowed.
  * Either is pseudopolynomial: C takes log C bits of the input.
  *
  * The contracts [see Contract.h]: profits and volumes of the same objects,
@@ -46,6 +47,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <deque>
 #include <limits>
 #include <utility>
 #include <vector>

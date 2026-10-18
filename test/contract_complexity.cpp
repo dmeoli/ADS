@@ -118,6 +118,49 @@ ADS_TEST( "problems" )
  CHECK_THROWS( threeDimensionalMatching( { { 0 , 1 , 2 } } , 2 ) ,
                contract_violation );
  CHECK_THROWS( bribes( { 1 , 2 } , { true } ) , contract_violation );
+ // the preconditions not yet violated, and each bound just inside: the
+ // empty graph, k = 0, the nodes -1 , 0 , n - 1 , n, n = 0 variables
+ const Adjacency E , one = { { false } };
+ const std::vector< Longs > Dr = { { 0 , 1 } , { 1 } } , D1 = { { 0 } };
+ CHECK_THROWS( tsp( Dr , 5L ) , contract_violation );
+ CHECK_THROWS( tspCertificate( Dr , 5L , { 0 , 1 } ) , contract_violation );
+ CHECK( tsp( D1 , 0L ) && tspCertificate( D1 , 0L , { 0 } ) );
+ CHECK_THROWS( hamiltonianCycle( ragged ) , contract_violation );
+ CHECK_THROWS( hamiltonianChain( arc ) , contract_violation );
+ CHECK_THROWS( hamiltonianPath( ragged , -1 ) , contract_violation );
+ CHECK_THROWS( hamiltonianPath( arc , -2 ) , contract_violation );
+ CHECK_THROWS( hamiltonianPath( arc , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( hamiltonianPath( arc , 0 , -2 ) , contract_violation );
+ CHECK( hamiltonianPath( arc , -1 , -1 ) && hamiltonianPath( arc , 0 , 1 ) &&
+        ! hamiltonianPath( arc , 1 , -1 ) );
+ CHECK_THROWS( longestPath( ragged , 0 , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( longestPath( arc , -1 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( longestPath( arc , 2 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( longestPath( arc , 0 , -1 , 1 ) , contract_violation );
+ CHECK( longestPath( arc , 0 , 1 , 1 ) && ! longestPath( arc , 0 , 1 , 2 ) );
+ CHECK_THROWS( longestPathDag( ragged , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( longestPathDag( arc , -1 , 1 ) , contract_violation );
+ CHECK_THROWS( longestPathDag( arc , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( longestPathDag( arc , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( longestPathDag( arc , 0 , -1 ) , contract_violation );
+ CHECK( longestPathDag( arc , 1 , 1 ) == 0 );
+ CHECK_THROWS( boundedSpanningTree( arc , 2 ) , contract_violation );
+ CHECK_THROWS( satisfiable( Cnf() , -1 ) , contract_violation );
+ CHECK( satisfiable( Cnf() , 0 ) && ! satisfiable( Cnf( { {} } ) , 0 ) );
+ CHECK_THROWS( lp01( {} , {} , -1 ) , contract_violation );
+ CHECK( coloring( one , 1 ) && ! coloring( one , 0 ) && coloring( E , 0 ) );
+ CHECK( clique( E , 0 ) && ! clique( one , 2 ) && vertexCover( one , 0 ) &&
+        independentSet( one , 1 ) );
+ CHECK( subsetSumExists( {} , 0 ) && ! subsetSumExists( {} , 1 ) &&
+        partition( {} ) && ! partition( { 1 } ) );
+ CHECK_THROWS( knapsackDecision( { 1 } , { -1 } , 3 , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( multiprocessorScheduling( { -1 } , 1 , 5 ) ,
+               contract_violation );
+ CHECK( multiprocessorScheduling( {} , 1 , 0 ) );
+ CHECK_THROWS( exactCover3( { { -1 , 0 , 1 } } , 3 ) , contract_violation );
+ CHECK_THROWS( threeDimensionalMatching( { { 0 , -1 , 0 } } , 2 ) ,
+               contract_violation );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 1 + int( g() % 7 ) , k = int( g() % ( n + 1 ) );
@@ -167,6 +210,26 @@ ADS_TEST( "reductions" )
  CHECK_THROWS( cycleToChain( { { false } , {} } ) , contract_violation );
  CHECK_THROWS( sortToHull( { std::numeric_limits< long >::max() } ) ,
                contract_violation );
+ // each bound just inside and just outside
+ CHECK_THROWS( tileVar( -1 , 0 , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( tileVar( 0 , 0 , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( tileVar( 0 , -1 , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( tileVar( 0 , 0 , 2 , 2 ) , contract_violation );
+ CHECK_THROWS( tileVar( 0 , 0 , -1 , 2 ) , contract_violation );
+ CHECK( tileVar( 0 , 1 , 1 , 2 ) >= 0 && tileVar( 0 , 0 , 0 , 1 ) >= 0 );
+ CHECK_THROWS( dominoToClique( {} , 1 ) , contract_violation );
+ CHECK_THROWS( dominoToSat( D , 0 ) , contract_violation );
+ CHECK_THROWS( dominoToLp01( {} , 1 ) , contract_violation );
+ ( void ) dominoToClique( D , 1 );
+ CHECK_THROWS( cycleToPath( Adjacency() ) , contract_violation );
+ CHECK_THROWS( cycleToPath( { { false , true } } ) , contract_violation );
+ CHECK_THROWS( cycleToChain( Adjacency() ) , contract_violation );
+ ( void ) cycleToPath( { { false } } );
+ ( void ) cycleToChain( { { false } } );
+ CHECK( complement( Adjacency() ).empty() && halfSum( {} ) == 0 );
+ CHECK( hamiltonToTsp( Adjacency() ).empty() );
+ CHECK_THROWS( sortToHull( { std::numeric_limits< long >::min() } ) ,
+               contract_violation );
  std::mt19937 g( 2 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 1 + int( g() % 3 );
@@ -199,6 +262,27 @@ ADS_TEST( "easy-cases" )
                contract_violation );
  CHECK_THROWS( intervalGraph( { { 3 , 1 } } ) , contract_violation );
  CHECK_THROWS( intervalClique( { { 3 , 1 } } ) , contract_violation );
+ // each bound just inside and just outside
+ CHECK_THROWS( twoSat( Cnf() , -1 ) , contract_violation );
+ CHECK_THROWS( twoSat( { {} } , 1 ) , contract_violation );   // an empty one
+ CHECK_THROWS( twoSat( { { 0 } } , 1 ) , contract_violation );
+ CHECK( twoSat( Cnf() , 0 ) && twoSat( { { 1 } } , 1 ) &&
+        twoSat( { { -1 , -1 } } , 1 ) && ! twoSat( { { 1 } , { -1 } } , 1 ) );
+ CHECK( literalNode( 1 ) != literalNode( -1 ) );
+ CHECK_THROWS( twoColoring( { { false , true } } ) , contract_violation );
+ CHECK( twoColoring( Adjacency() ) &&
+        ! twoColoring( { { true } } ) == ! coloring( { { true } } , 2 ) );
+ CHECK_THROWS( bipartiteMatching( -1 , 1 , {} ) , contract_violation );
+ CHECK_THROWS( bipartiteMatching( 1 , -1 , {} ) , contract_violation );
+ CHECK_THROWS( bipartiteMatching( 1 , 1 , { { -1 , 0 } } ) ,
+               contract_violation );
+ CHECK_THROWS( bipartiteMatching( 1 , 1 , { { 1 , 0 } } ) ,
+               contract_violation );
+ CHECK( bipartiteMatching( 0 , 0 , {} ).empty() &&
+        bipartiteMatching( 1 , 1 , { { 0 , 0 } , { 0 , 0 } } ).size() == 1 );
+ CHECK( intervalGraph( {} ).empty() && intervalClique( {} ) == 0 &&
+        intervalClique( { { 2 , 2 } , { 2 , 2 } } ) == 0 &&   // empty
+        intervalClique( { { 2 , 3 } , { 2 , 3 } } ) == 2 );
  std::mt19937 g( 3 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = 1 + int( g() % 6 );
@@ -228,6 +312,8 @@ ADS_TEST( "domino-nondeterminism" )
 {
  Chooser c;
  CHECK_THROWS( c.choice( 0 ) , contract_violation );
+ CHECK_THROWS( c.choice( -1 ) , contract_violation );
+ CHECK( c.choice( 1 ) == 0 );                 // k = 1: one way only
  std::mt19937 g( 4 );
  for( int t = 0 ; t < 100 ; ++t ) {
   std::vector< Tile > D( 1 + g() % 3 );

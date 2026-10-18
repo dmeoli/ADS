@@ -205,13 +205,13 @@ inline long halfSum( const std::vector< long > & A )
 
 inline Adjacency cycleToPath( const Adjacency & G )
 {
- ADS_PRE( detail::square( G ) );
+ ADS_PRE( detail::square( G ) && ! G.empty() );
  const auto result = [ & ]( void ) -> Adjacency {
   const std::size_t n = G.size();
   Adjacency H( n + 1 , std::vector< bool >( n + 1 , false ) );
   for( std::size_t u = 0 ; u < n ; ++u )
    for( std::size_t v = 0 ; v < n ; ++v )
-    if( G[ u ][ v ] ) {
+    if( G[ u ][ v ] && ( u != v ) ) {              // loops ignored
      if( u == 0 ) H[ n ][ v ] = true;              // out of 0: out of n
      else H[ u ][ v ] = true;                      // into 0 stays into 0
      }
@@ -223,7 +223,7 @@ inline Adjacency cycleToPath( const Adjacency & G )
 
 inline Adjacency cycleToChain( const Adjacency & G )
 {
- ADS_PRE( detail::square( G ) );
+ ADS_PRE( detail::square( G ) && ! G.empty() );
  const auto result = [ & ]( void ) -> Adjacency {
   const Adjacency P = cycleToPath( G );
   const int N = int( P.size() ) , M = 3 * N + 2;

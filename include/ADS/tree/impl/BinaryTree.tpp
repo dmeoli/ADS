@@ -25,8 +25,17 @@ BinaryTree< T >::BinaryTree( const T & v )
 template< class T >
 BinaryTree< T >::~BinaryTree()
 {
- deleteLeft();
- deleteRight();
+ std::vector< BinaryTree * > S;   // iterative, as the height may be n
+ for( BinaryTree * c : { f_left , f_right } )
+  if( c ) S.push_back( c );
+ while( ! S.empty() ) {
+  BinaryTree * u = S.back();
+  S.pop_back();
+  for( BinaryTree * c : { u->f_left , u->f_right } )
+   if( c ) S.push_back( c );
+  u->f_left = u->f_right = nullptr;   // its children are on S
+  delete u;
+  }
  }
 
 template< class T >
@@ -121,6 +130,7 @@ template< class T >
 void BinaryTree< T >::insert( BinaryTree * & child , BinaryTree * t )
 {
  ADS_PRE( ( t != nullptr ) && ( t->f_parent == nullptr ) && ( t != this ) );
+ ADS_AUDIT( top() != t );
  t->f_parent = this;
  child = t;
  ADS_INVARIANT( linked() );
@@ -135,15 +145,37 @@ bool BinaryTree< T >::linked( void ) const
  return( true );
  }
 
+template< class T >
+auto BinaryTree< T >::top( void ) const -> const BinaryTree *
+{
+ const BinaryTree * u = this;
+ while( u->f_parent )
+  u = u->f_parent;
+ return( u );
+ }
+
 template< class T , class Pre , class In , class Post >
 void dfs( BinaryTree< T > * t , Pre && pre , In && in , Post && post )
 {
- if( t ) {
-  pre( t );                              // (1)
-  dfs( t->left() , pre , in , post );
-  in( t );                               // (2)
-  dfs( t->right() , pre , in , post );
-  post( t );                             // (3)
+ // iterative, as the height may be n: each node on the stack with the
+ // number of the steps done, the children read when they are entered
+ std::vector< std::pair< BinaryTree< T > * , int > > S;
+ if( t ) S.emplace_back( t , 0 );
+ while( ! S.empty() ) {
+  BinaryTree< T > * u = S.back().first;
+  const int k = S.back().second++;
+  if( k == 0 ) {
+   pre( u );                             // (1)
+   if( u->left() ) S.emplace_back( u->left() , 0 );
+   }
+  else if( k == 1 ) {
+   in( u );                              // (2)
+   if( u->right() ) S.emplace_back( u->right() , 0 );
+   }
+  else {
+   S.pop_back();
+   post( u );                            // (3)
+   }
   }
  }
 
@@ -202,14 +234,15 @@ BinaryTree< T > * to_binary( const Tree< T > * t )
 
 namespace detail {
 
-/// the value written in the atom a
+/// the value written in the atom a, all of it
 template< class T >
 T fromAtom( const std::string & a )
 {
  std::istringstream in( a );
  T v{};
  in >> v;
- ADS_PRE( ! in.fail() );
+ ADS_PRE( ! in.fail() &&                     // e.g., not 8x for an int
+          ( in.peek() == std::char_traits< char >::eof() ) );
  return( v );
  }
 
@@ -255,14 +288,16 @@ BinaryTree< T > * from_list( std::string_view s )
 {
  const auto L = detail::listTokens( s );
  std::size_t i = 0;
- auto * t = detail::readBinary< T >( L , i );
+ std::unique_ptr< BinaryTree< T > > t(       // freed if a contract throws
+  detail::readBinary< T >( L , i ) );
  ADS_PRE( i == L.size() );
- return( t );
+ return( t.release() );
  }
 
 inline long dary_child( long i , long d , long j )
 {
- ADS_PRE( ( i >= 0 ) && ( d >= 1 ) && ( j >= 1 ) && ( j <= d ) );
+ ADS_PRE( ( i >= 0 ) && ( d >= 1 ) && ( j >= 1 ) && ( j <= d ) &&
+          ( i <= ( std::numeric_limits< long >::max() - j ) / d ) );
  return( d * i + j );
  }
 

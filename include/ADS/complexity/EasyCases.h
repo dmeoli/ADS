@@ -86,7 +86,8 @@ inline int literalNode( int l );
 inline std::optional< std::vector< bool > > twoSat( const Cnf & F , int n );
 
 /// the side, 0 or 1, of each node of G, the ends of each edge apart, or
-/// nothing if G has an odd cycle
+/// nothing if G has an odd cycle; the diagonal of G is ignored, as by
+/// coloring() [see Problems.h]
 /// \pre G is unoriented, i.e., square and symmetric
 /// \post a coloring returned is proper with two colors
 inline std::optional< std::vector< int > > twoColoring( const Adjacency & G );
@@ -99,7 +100,8 @@ inline std::vector< std::pair< int , int > > bipartiteMatching(
                         int p , int q ,
                         const std::vector< std::pair< int , int > > & E );
 
-/// the graph of the intervals [ a , b ), an edge if two intersect
+/// the graph of the intervals [ a , b ), an edge if two share a point: an
+/// empty interval [ a , a ) meets none, as in intervalClique()
 /// \pre each interval [ a , b ) has a <= b
 /// \post an unoriented graph, one node per interval
 inline Adjacency intervalGraph(

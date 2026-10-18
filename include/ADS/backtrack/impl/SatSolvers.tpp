@@ -94,13 +94,18 @@ inline std::optional< std::vector< bool > > dpll( const Cnf & F , int n )
  }
 
 inline Cdcl::Cdcl( const Cnf & F , int n )
- : f_F( F ) , f_n( n ) , f_watch( 2 * std::size_t( n ) ) ,
-   f_assign( n , -1 ) , f_level( n , 0 ) , f_reason( n , -1 ) ,
-   f_phase( n , false ) , f_seen( n , false ) , f_act( n , 0 )
+ : f_F( F ) , f_n( n )
 {
- ADS_PRE( n >= 0 );
+ ADS_PRE( n >= 0 );                         // before sizing by n
  for( const auto & c : F )
   for( int l : c ) ADS_PRE( ( l != 0 ) && ( std::abs( l ) <= n ) );
+ f_watch.resize( 2 * std::size_t( n ) );
+ f_assign.assign( n , -1 );
+ f_level.assign( n , 0 );
+ f_reason.assign( n , -1 );
+ f_phase.assign( n , false );
+ f_seen.assign( n , false );
+ f_act.assign( n , 0 );
  for( int v = 0 ; v < n ; ++v ) f_heap.emplace( 0 , v );
  for( const auto & c : F ) {
   std::vector< int > k;

@@ -67,8 +67,8 @@ struct MatchingSearch {
 
 inline std::vector< std::pair< int , int > > bipartiteBMatching(
                       const std::vector< std::vector< int > > & A , int nr ,
-                      const std::vector< long > & capL ,
-                      const std::vector< long > & capR )
+                      const std::vector< long long > & capL ,
+                      const std::vector< long long > & capR )
 {
  const int nl = int( A.size() );
  ADS_PRE( ( nr >= 0 ) && ( int( capL.size() ) == nl ) &&
@@ -94,8 +94,8 @@ inline std::vector< std::pair< int , int > > bipartiteBMatching(
   if( N.flow( e ) == 1 )
    M.emplace_back( u , v );
  ADS_AUDIT( [ & ]( void ) {
-  std::vector< long > dl( nl , 0 );
-  std::vector< long > dr( nr , 0 );
+  std::vector< long long > dl( nl , 0 );
+  std::vector< long long > dr( nr , 0 );
   for( const auto & uv : M )
    if( ( ++dl[ uv.first ] > capL[ uv.first ] ) ||
        ( ++dr[ uv.second ] > capR[ uv.second ] ) )

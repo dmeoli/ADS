@@ -214,7 +214,8 @@ std::vector< int > byPositions( const S & s )
 
 // the sequences: built from a pair of iterators and by the inserters, then
 // sorted, reversed, searched and accumulated by std, std::ranges and Boost,
-// each time against the positions of the book and against std::vector
+// each time against the positions of the book and against std::vector;
+// the empty sequences and those of one item, visited both ways
 ADS_TEST( "sequences" )
 {
  std::mt19937 g( 22 );
@@ -294,11 +295,32 @@ ADS_TEST( "sequences" )
  CHECK( std::count( V.begin() , V.end() , *W.begin() ) >= 1 );
  auto firstTwo = V | std::views::take( 2 );
  CHECK( std::ranges::distance( firstTwo ) == 2 );
+
+ ArraySequence< int > A0;                  // the empty sequences
+ std::sort( A0.begin() , A0.end() );
+ CHECK( std::ranges::empty( A0 ) && A0.rbegin() == A0.rend() );
+ List< int > L0;
+ std::ranges::reverse( L0 );
+ CHECK( L0.begin() == L0.end() && L0.rbegin() == L0.rend() );
+ CHECK( std::ranges::find( L0 , 0 ) == L0.end() );
+ CursorList< int > C0;
+ Dequeue< int > Q0;
+ CHECK( std::ranges::empty( C0 ) && std::ranges::empty( Q0 ) );
+ CHECK( std::ranges::empty( range( E ) ) );
+ List< int > L1;                           // one item, both ways
+ L1.insert( L1.head() , 9 );
+ std::ranges::reverse( L1 );
+ CHECK( std::ranges::equal( L1 , std::vector< int >( { 9 } ) ) );
+ CHECK( *L1.rbegin() == 9 && std::next( L1.rbegin() ) == L1.rend() );
+ SinglyList< int > W1( R.begin() , R.begin() + 1 );
+ CHECK( std::ranges::distance( W1 ) == 1 && *W1.begin() == R[ 0 ] );
  }
 
 // the restricted containers as constant views: each one visited in its
 // order (bottom to top, front to back, the order of the heap) against what
-// its own operations give, and the algorithms of std on the views
+// its own operations give, and the algorithms of std on the views; the
+// empty views, a stack index out of range, the bucket queue after pops
+// that leave its lazy bounds behind, a circular queue full and wrapped
 ADS_TEST( "restricted" )
 {
  std::mt19937 g( 23 );
@@ -363,12 +385,49 @@ ADS_TEST( "restricted" )
  CHECK( std::ranges::equal( seen , std::views::iota( 0 , int( R.size() ) ) ) );
  BucketQueue< int > E;
  CHECK( E.begin() == E.end() );
+ for( int k = 0 ; k < 30 ; ++k ) B.pop();   // stale lazy bounds
+ std::vector< int > rest( B.begin() , B.end() );
+ popped.clear();
+ for( auto C = B ; ! C.isEmpty() ; C.pop() ) popped.push_back( C.top() );
+ CHECK( rest == popped && rest.size() == R.size() - 30 );
+ while( ! B.isEmpty() ) B.pop();
+ CHECK( B.begin() == B.end() );
+
+ ArrayStack< int > S0( 1 );                 // the empty views
+ SequenceStack< List< int > > T0;
+ LinkedQueue< int > L0;
+ UniqueQueue< int > U0;
+ DaryHeap< int > H0;
+ HeapPriorityQueue< int , int > P0( 4 );
+ ListPriorityQueue< int , int > O0;
+ CHECK( std::ranges::empty( S0 ) && std::ranges::empty( T0 ) );
+ CHECK( std::ranges::empty( L0 ) && std::ranges::empty( U0 ) );
+ CHECK( std::ranges::empty( H0 ) && P0.begin() == P0.end() &&
+        O0.begin() == O0.end() );
+ MultiStack< int > M0( 2 );
+ CHECK( std::ranges::empty( M0.stack( 1 ) ) );
+ CHECK_THROWS( (void) M0.stack( 2 ) , contract_violation );
+ CHECK_THROWS( (void) M0.stack( -1 ) , contract_violation );
+ ArrayQueue< int > F( 4 );                  // full, wrapped, then empty
+ for( int k = 0 ; k < 4 ; ++k ) F.enqueue( k );
+ (void) F.dequeue();
+ (void) F.dequeue();
+ F.enqueue( 4 );
+ F.enqueue( 5 );
+ CHECK( std::ranges::equal( F , std::views::iota( 2 , 6 ) ) );
+ CHECK( F.end() - F.begin() == 4 && F.begin()[ 3 ] == 5 );
+ while( ! F.isEmpty() ) (void) F.dequeue();
+ CHECK( F.begin() == F.end() );
+ for( int k = 0 ; k < 5 ; ++k ) U0.enqueue( 3 );   // all equal
+ CHECK( std::ranges::equal( U0 , std::vector< int >( { 3 } ) ) );
  }
 
 // the dictionaries and the sets as constant views: each one gives the
 // pairs or the items that std::map or std::set has, in its own order (the
 // order of the keys where it keeps one), and the algorithms of std run on
-// them
+// them; the empty views, an open table of tombstones only, the keys at the
+// bounds of a direct table, a trie of the empty word alone, a set of bits
+// with its first and last member, then full, then emptied
 ADS_TEST( "dictionaries" )
 {
  std::mt19937 g( 24 );
@@ -470,6 +529,40 @@ ADS_TEST( "dictionaries" )
  std::map< int , std::size_t > hc;
  for( const auto & [ x , c ] : HM ) hc[ x ] = c;
  CHECK( hc == counts );
+
+ ChainedHashTable< int , int > C0( 7 );     // the empty views
+ OpenHashTable< int , int > O0( 11 , Probing::linear() );
+ SkipList< int , int > S0;
+ SortedArrayDictionary< int , int > A0;
+ RadixTree< int > X0;
+ BoolSet Z0( 0 );
+ HashMultiset< int > M0;
+ CHECK( C0.begin() == C0.end() && O0.begin() == O0.end() );
+ CHECK( S0.begin() == S0.end() && A0.begin() == A0.end() );
+ CHECK( X0.begin() == X0.end() && Z0.begin() == Z0.end() );
+ CHECK( M0.begin() == M0.end() );
+ for( const auto & [ k , v ] : R ) O.remove( k );   // all tombstones
+ CHECK( O.begin() == O.end() && std::ranges::distance( O ) == 0 );
+ DirectTable< int > D1( 3 , 3 );            // one key, both bounds
+ D1.insert( 3 , 8 );
+ CHECK( std::ranges::distance( D1 ) == 1 && ( *D1.begin() ).second == 8 );
+ D.insert( -50 , 1 );                       // the first and last keys
+ D.insert( 149 , 2 );
+ CHECK_THROWS( D.insert( 150 , 0 ) , contract_violation );
+ CHECK_THROWS( D.insert( -51 , 0 ) , contract_violation );
+ CHECK( ( *D.begin() ).first == -50 &&                 // std::prev would
+        ( *std::ranges::prev( D.end() ) ).first == 149 );   // be forward
+ Trie< int > T1;                            // only the empty word
+ T1.insert( "" , 5 );
+ CHECK( std::ranges::distance( T1 ) == 1 && ( *T1.begin() ).first == "" );
+ BoolSet Z1( 64 );                          // the extremes, then all
+ Z1.insert( 0 );
+ Z1.insert( 63 );
+ CHECK( std::ranges::equal( Z1 , std::vector< long >( { 0 , 63 } ) ) );
+ for( long x = 0 ; x < 64 ; ++x ) Z1.insert( x );
+ CHECK( std::ranges::equal( Z1 , std::views::iota( 0L , 64L ) ) );
+ for( long x = 0 ; x < 64 ; ++x ) Z1.remove( x );
+ CHECK( Z1.begin() == Z1.end() );
  }
 
 /// the pairs of a dictionary T as a vector, in the order of its view
@@ -483,7 +576,9 @@ std::vector< std::pair< int , int > > pairs( const T & D )
 
 // the trees: each one gives the pairs of std::map in increasing order of
 // the keys, forward and (where bidirectional) backward, also after
-// removals that rebalance it; the heaps give their items, each once
+// removals that rebalance it; the heaps give their items, each once; the
+// empty trees, one key both ways, all keys removed, and the unbalanced
+// search tree as a chain of 2000 keys inserted in order
 ADS_TEST( "trees" )
 {
  std::mt19937 g( 25 );
@@ -543,6 +638,34 @@ ADS_TEST( "trees" )
  RedBlackTree< int , int > E;
  BTree< int , int > EB;
  CHECK( E.begin() == E.end() && EB.begin() == EB.end() );
+ AVLTree< int , int > EA;                   // the other empty trees
+ Treap< int , int > ET;
+ SplayTree< int , int > ES;
+ BPlusTree< int , int > EP( 4 );
+ ThreadedTree< int > EH;
+ BinarySearchTree< int , int > EZ;
+ CHECK( EA.begin() == EA.end() && ET.begin() == ET.end() );
+ CHECK( ES.begin() == ES.end() && EP.begin() == EP.end() );
+ CHECK( EH.begin() == EH.end() && EZ.begin() == EZ.end() );
+ const std::vector< std::pair< int , int > > one = { { 4 , 40 } };
+ E.insert( 4 , 40 );                        // one key, both ways
+ EA.insert( 4 , 40 );
+ EP.insert( 4 , 40 );
+ CHECK( pairs( E ) == one && backward( E ) == one );
+ CHECK( backward( EA ) == one && backward( EP ) == one );
+ EA.remove( 4 );
+ CHECK( EA.begin() == EA.end() );
+ for( const auto & [ k , v ] : R ) {        // all removed
+  RB.remove( k );
+  BT.remove( k );
+  }
+ CHECK( RB.begin() == RB.end() && BT.begin() == BT.end() );
+ std::vector< std::pair< int , int > > chain;   // a sorted chain
+ for( int k = 0 ; k < 2000 ; ++k ) {
+  EZ.insert( k , k );
+  chain.emplace_back( k , k );
+  }
+ CHECK( pairs( EZ ) == chain );
 
  TreeSet< int > S;                          // a set on the tree
  for( const auto & [ k , v ] : R ) S.insert( k );
@@ -578,11 +701,23 @@ ADS_TEST( "trees" )
  CHECK( tp == pr );
  CHECK( std::ranges::is_sorted( TP | std::views::transform(
          []( const auto & e ) { return( e.first.first ); } ) ) );
+ LinkedHeapPriorityQueue< int , int > L0;   // the empty heaps, and one
+ TreePriorityQueue< int , int > T0;
+ CHECK( L0.begin() == L0.end() && T0.begin() == T0.end() );
+ L0.insert( 1 , 5 );
+ FH.insert( 1 , 5 );
+ CHECK( priorities( L0 ) == std::multiset< int >( { 5 } ) &&
+        priorities( FH ) == std::multiset< int >( { 5 } ) );
+ L0.deleteMin();
+ FH.deleteMin();
+ CHECK( L0.begin() == L0.end() && FH.begin() == FH.end() );
  }
 
 // the trees of nodes, the graphs, the sets of an MFSet, the sparse matrix
 // and the arena: each range against the visit or the vector of the book
-// that it replaces
+// that it replaces; the degenerate cases: a tree of one node, graphs with
+// no edges, a sparse matrix of zeros and its indices out of range, an
+// arena empty and then with its last block exactly full
 ADS_TEST( "nodes-and-graphs" )
 {
  std::mt19937 g( 26 );
@@ -690,6 +825,31 @@ ADS_TEST( "nodes-and-graphs" )
  CHECK( &R.begin()[ 17 ] == made[ 17 ] && R.end() - R.begin() == 30 );
  std::ranges::reverse( R );                 // random access, mutable
  CHECK( *made[ 0 ] == 29 && *made[ 29 ] == 0 );
+
+ Tree< int > one( 7 );                      // the degenerate cases
+ CHECK( std::ranges::distance( preorder( &one ) ) == 1 &&
+        std::ranges::empty( children( &one ) ) );
+ BinaryTree< int > b1( 7 );
+ CHECK( std::ranges::distance( inorder( &b1 ) ) == 1 );
+ CursorTree< int > c1( 7 );
+ CHECK( std::ranges::empty( c1.children( c1.root() ) ) &&
+        std::ranges::distance( c1.nodes() ) == 1 );
+ ListGraph<> G0( 3 , true );                // no edges
+ for( int u : G0.V() ) CHECK( std::ranges::empty( G0.neighbors( u ) ) );
+ ArrayGraph<> A0( 3 , std::vector< std::tuple< int , int ,
+                                              std::monostate > >() );
+ for( int u : A0.V() ) CHECK( std::ranges::empty( A0.neighbors( u ) ) );
+ CHECK( std::ranges::distance( A0.nodes() ) == 3 );
+ SparseMatrix S0( 2 , 3 );                  // all zero
+ CHECK( std::ranges::empty( S0.rowEntries( 1 ) ) &&
+        std::ranges::empty( S0.colEntries( 2 ) ) );
+ CHECK_THROWS( (void) S0.rowEntries( 2 ) , contract_violation );
+ CHECK_THROWS( (void) S0.colEntries( 3 ) , contract_violation );
+ Arena< int > R0( 4 );                      // empty, then exactly full
+ CHECK( R0.begin() == R0.end() );
+ for( int k = 0 ; k < 8 ; ++k ) R0.make( k );
+ CHECK( std::ranges::equal( R0 , std::views::iota( 0 , 8 ) ) );
+ CHECK( *std::prev( R0.end() ) == 7 && R0.end() - R0.begin() == 8 );
  }
 
 }  // end( namespace )

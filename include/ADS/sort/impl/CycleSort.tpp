@@ -58,8 +58,8 @@ std::size_t pancakeSort( std::vector< T > & A , C less )
  std::size_t flips = 0;
  for( std::size_t k = A.size() ; k > 1 ; --k ) {   // A[ 0 .. k ) unsorted
   std::size_t m = 0;
-  for( std::size_t i = 1 ; i < k ; ++i )
-   if( less( A[ m ] , A[ i ] ) ) m = i;
+  for( std::size_t i = 1 ; i < k ; ++i )    // the last maximum: no flip
+   if( ! less( A[ i ] , A[ m ] ) ) m = i;  // for equals already in place
   if( m == k - 1 )
    continue;                                // already at the end
   if( m > 0 ) {

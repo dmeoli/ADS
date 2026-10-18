@@ -380,7 +380,9 @@ ADS_TEST( "collezioni-11-strutture-1-2" )
  }
 
 // collezione 11-strutture, 1.3: the most reliable path against the
-// product of every simple path, on small random graphs
+// product of every simple path, on small random graphs; s = t, t not
+// reached, reliabilities 0 and 1; s, t or a reliability out of [ 0 , 1 ]
+// refused
 ADS_TEST( "collezioni-11-strutture-1-3" )
 {
  DGraph e( 3 );
@@ -392,6 +394,21 @@ ADS_TEST( "collezioni-11-strutture-1-3" )
  CHECK( collezioni::mostReliable( e , 2 , 0 ).first.empty() );
  CHECK( collezioni::mostReliable( e , 1 , 1 ) == std::pair( Ints{ 1 } ,
                                                              1.0 ) );
+ // an edge of reliability 0 is no path, one of reliability 1 costs
+ // nothing; s, t or a reliability out of [ 0 , 1 ] refused
+ DGraph z( 3 );
+ z.insertEdge( 0 , 1 , 0.0 );
+ z.insertEdge( 1 , 2 , 1.0 );
+ CHECK( collezioni::mostReliable( z , 0 , 2 ) == std::pair( Ints() , 0.0 ) );
+ CHECK( collezioni::mostReliable( z , 1 , 2 ) == std::pair( Ints{ 1 , 2 } ,
+                                                             1.0 ) );
+ CHECK_THROWS( collezioni::mostReliable( z , 0 , 3 ) , contract_violation );
+ CHECK_THROWS( collezioni::mostReliable( z , -1 , 0 ) , contract_violation );
+ DGraph bad( 2 );
+ bad.insertEdge( 0 , 1 , 1.5 );
+ CHECK_THROWS( collezioni::mostReliable( bad , 0 , 1 ) , contract_violation );
+ bad.insertEdge( 0 , 1 , -0.1 );
+ CHECK_THROWS( collezioni::mostReliable( bad , 0 , 1 ) , contract_violation );
  std::mt19937 g( 113 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = draw( g , 2 , 6 );
@@ -422,7 +439,9 @@ ADS_TEST( "collezioni-11-strutture-1-3" )
 
 // collezione 11-strutture, 1.4: the number of shortest paths against the
 // enumeration of the simple paths, the lengths in [ 1 , 3 ] so that ties
-// are frequent; on a grid of k x k unit edges they are C( 2k - 2 , k - 1 )
+// are frequent; on a grid of k x k unit edges they are C( 2k - 2 , k - 1 );
+// s = t, t not reached, a tie of two paths and its breaking; a length not
+// positive, a node out refused
 ADS_TEST( "collezioni-11-strutture-1-4" )
 {
  const int k = 6;
@@ -435,6 +454,19 @@ ADS_TEST( "collezioni-11-strutture-1-4" )
  CHECK( collezioni::pathCount( grid , 0 , k * k - 1 ) == 252 );
  CHECK( collezioni::pathCount( grid , k * k - 1 , 0 ) == 0 );
  CHECK( collezioni::pathCount( grid , 7 , 7 ) == 1 );
+ // two paths of equal length through different edges, a shorter one with
+ // more edges winning; lengths not positive, nodes out refused
+ WGraph tie( 4 );
+ tie.insertEdge( 0 , 1 , 2 );
+ tie.insertEdge( 0 , 2 , 1 );
+ tie.insertEdge( 2 , 1 , 1 );
+ tie.insertEdge( 1 , 3 , 1 );
+ CHECK( collezioni::pathCount( tie , 0 , 3 ) == 2 );
+ tie.insertEdge( 0 , 1 , 3 );                  // now only through 2
+ CHECK( collezioni::pathCount( tie , 0 , 3 ) == 1 );
+ CHECK_THROWS( collezioni::pathCount( tie , 0 , 4 ) , contract_violation );
+ tie.insertEdge( 1 , 3 , 0 );
+ CHECK_THROWS( collezioni::pathCount( tie , 0 , 3 ) , contract_violation );
  std::mt19937 g( 114 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const WGraph G = randomGraph( g , draw( g , 1 , 7 ) , 40 , 1 , 3 );
@@ -452,7 +484,8 @@ ADS_TEST( "collezioni-11-strutture-1-4" )
 
 // collezione 11-strutture, 1.5: the path found is a path of the graph from
 // r to s through an edge of the least weight among the edges ( u , v )
-// with u reachable from r and s from v
+// with u reachable from r and s from v; s not reached, r = s on a cycle
+// and with no edge; nodes out refused
 ADS_TEST( "collezioni-11-strutture-1-5" )
 {
  WGraph e( 4 );
@@ -463,6 +496,13 @@ ADS_TEST( "collezioni-11-strutture-1-5" )
  CHECK( collezioni::shortestEdgePath( e , 0 , 3 ) ==
         Ints( { 0 , 1 , 3 , 0 , 1 , 3 } ) );
  CHECK( collezioni::shortestEdgePath( e , 2 , 0 ).empty() );
+ // r = s on a cycle (the path closes it through the shortest edge), r = s
+ // with no edge (empty), nodes out refused
+ CHECK( collezioni::shortestEdgePath( e , 0 , 0 ) ==
+        Ints( { 0 , 1 , 3 , 0 } ) );
+ CHECK( collezioni::shortestEdgePath( WGraph( 2 ) , 1 , 1 ).empty() );
+ CHECK_THROWS( collezioni::shortestEdgePath( e , 0 , 4 ) ,
+               contract_violation );
  std::mt19937 g( 115 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const WGraph G = randomGraph( g , draw( g , 1 , 8 ) , 25 , 1 , 20 );
@@ -584,7 +624,7 @@ int unimodalMin( const Ints & A )
 /// a subvector A[ start .. end ] and its sum
 struct Sub {
  int start , end;
- long sum;
+ long long sum;             ///< in 64 bits: a sum of many int
  };
 
 /// maxSumCubic(): the non-empty subvector of largest sum, by summing each
@@ -596,7 +636,7 @@ Sub maxSumCubic( const Ints & A )
  Sub best{ 0 , 0 , A[ 0 ] };
  for( int i = 0 ; i < int( A.size() ) ; ++i )
   for( int j = i ; j < int( A.size() ) ; ++j ) {
-   long s = 0;
+   long long s = 0;
    for( int k = i ; k <= j ; ++k ) s += A[ k ];
    if( s > best.sum ) best = Sub{ i , j , s };
    }
@@ -611,7 +651,7 @@ Sub maxSumQuadratic( const Ints & A )
  ADS_PRE( ! A.empty() );
  Sub best{ 0 , 0 , A[ 0 ] };
  for( int i = 0 ; i < int( A.size() ) ; ++i ) {
-  long s = 0;
+  long long s = 0;
   for( int j = i ; j < int( A.size() ) ; ++j ) {
    s += A[ j ];
    if( s > best.sum ) best = Sub{ i , j , s };
@@ -629,7 +669,7 @@ Sub maxSumRec( const Ints & A , int start , int end )
  const int mid = ( start + end ) / 2;
  const Sub l = maxSumRec( A , start , mid ) , r = maxSumRec( A , mid + 1 ,
                                                             end );
- long s = 0 , bl = std::numeric_limits< long >::min() , br = bl;
+ long long s = 0 , bl = std::numeric_limits< long long >::min() , br = bl;
  int i0 = mid , j0 = mid + 1;
  for( int i = mid ; i >= start ; --i ) {
   s += A[ i ];
@@ -723,7 +763,7 @@ int findIncrease( const Ints & A )
 /// part of the prices
 struct Gain {
  int min , max;
- long gain;
+ long long gain;            ///< in 64 bits: a difference of two int
  };
 
 /// the gain of P[ start .. end ]: that of either half, or the maximum of
@@ -732,18 +772,19 @@ Gain bestGainRec( const Ints & P , int start , int end )
 {
  if( start == end )
   return( Gain{ P[ start ] , P[ start ] ,
-                std::numeric_limits< long >::min() } );
+                std::numeric_limits< long long >::min() } );
  const int mid = ( start + end ) / 2;
  const Gain l = bestGainRec( P , start , mid ) ,
             r = bestGainRec( P , mid + 1 , end );
  return( Gain{ std::min( l.min , r.min ) , std::max( l.max , r.max ) ,
-               std::max( { l.gain , r.gain , long( r.max ) - l.min } ) } );
+               std::max( { l.gain , r.gain ,
+                           (long long)( r.max ) - l.min } ) } );
  }
 
 /// bestGain(): the largest P[ y ] - P[ x ] with x < y, possibly negative,
 /// by divide et impera; T( n ) = 2 T( n / 2 ) + Theta( 1 ) = Theta( n )
 /// \pre at least two prices
-long bestGain( const Ints & P )
+long long bestGain( const Ints & P )
 {
  ADS_PRE( P.size() >= 2 );
  return( bestGainRec( P , 0 , int( P.size() ) - 1 ).gain );
@@ -755,8 +796,8 @@ long bestGain( const Ints & P )
 /// or one across the middle, found by two indices on the minima and the
 /// maxima of the suffixes of the left half and of the prefixes of the
 /// right one, kept in mn and mx shared by all the calls
-int thinRec( const Ints & V , long C , int start , int end , Ints & mn ,
-             Ints & mx )
+int thinRec( const Ints & V , long long C , int start , int end ,
+             Ints & mn , Ints & mx )
 {
  if( start == end ) return( 1 );
  const int mid = ( start + end ) / 2;
@@ -775,7 +816,7 @@ int thinRec( const Ints & V , long C , int start , int end , Ints & mn ,
  int right = mid;                          // the last place on the right
  for( int left = start ; left <= mid ; ++left ) {
   while( ( right < end ) &&
-         ( long( std::max( mx[ left ] , mx[ right + 1 ] ) ) -
+         ( (long long)( std::max( mx[ left ] , mx[ right + 1 ] ) ) -
            std::min( mn[ left ] , mn[ right + 1 ] ) <= C ) )
    ++right;
   if( right > mid ) best = std::max( best , right - left + 1 );
@@ -787,7 +828,7 @@ int thinRec( const Ints & V , long C , int start , int end , Ints & mn ,
 /// minimum is at most C; T( n ) = 2 T( n / 2 ) + Theta( n ) =
 /// Theta( n log n )
 /// \pre V is not empty, C >= 0
-int thinSubarray( const Ints & V , long C )
+int thinSubarray( const Ints & V , long long C )
 {
  ADS_PRE( ! V.empty() && ( C >= 0 ) );
  Ints mn( V.size() ) , mx( V.size() );
@@ -939,7 +980,8 @@ ADS_TEST( "collezioni-12-divide-1-6" )
  }
 
 // collezione 12-divide, 1.7: the binary search against a linear scan on
-// sorted distinct integers, negative ones included
+// sorted distinct integers, negative ones included; empty, one item, only
+// negative values, the point at the last place, the extremes of int
 ADS_TEST( "collezioni-12-divide-1-7" )
 {
  CHECK( ! collezioni::fixedPoint( Ints() ) );
@@ -956,10 +998,17 @@ ADS_TEST( "collezioni-12-divide-1-7" )
   yes += any;
   }
  CHECK( ( yes > 100 ) && ( yes < 1900 ) );
+ // only negative values, the fixed point at the last place, the extremes
+ const int M = std::numeric_limits< int >::max();
+ CHECK( ! collezioni::fixedPoint( Ints{ -5 , -3 , -1 } ) );
+ CHECK( collezioni::fixedPoint( Ints{ -9 , -4 , 2 , 3 } ) );
+ CHECK( ! collezioni::fixedPoint( Ints{ -M - 1 , M } ) );
+ CHECK( collezioni::fixedPoint( Ints{ -M - 1 , 1 , M } ) );
  }
 
 // collezione 12-divide, 1.8: the minimum of random unimodal vectors, the
-// smaller values put at random before or after the minimum
+// smaller values put at random before or after the minimum; one item, two
+// both ways, monotone vectors, the extremes of int; empty refused
 ADS_TEST( "collezioni-12-divide-1-8" )
 {
  CHECK( collezioni::unimodalMin( Ints{ 5 } ) == 5 );
@@ -976,11 +1025,19 @@ ADS_TEST( "collezioni-12-divide-1-8" )
   A.insert( A.end() , R.begin() , R.end() );
   CHECK( collezioni::unimodalMin( A ) == S[ 0 ] );
   }
+ // two items both ways, the extremes of int, and the empty vector refused
+ const int M = std::numeric_limits< int >::max();
+ CHECK( collezioni::unimodalMin( Ints{ 2 , 1 } ) == 1 &&
+        collezioni::unimodalMin( Ints{ 1 , 2 } ) == 1 );
+ CHECK( collezioni::unimodalMin( Ints{ M , -M - 1 , M - 1 } ) == -M - 1 );
+ CHECK_THROWS( collezioni::unimodalMin( Ints() ) , contract_violation );
  }
 
 // collezione 12-divide, 1.9: the three versions agree on the sum, their
 // places give it, and it is the sum of Kadane in ADS (the largest item if
-// all are negative, since ADS allows the empty subvector)
+// all are negative, since ADS allows the empty subvector); one item, all
+// negative, the extremes of int (sums beyond int); the empty vector
+// refused
 ADS_TEST( "collezioni-12-divide-1-9" )
 {
  const Ints E = { -2 , 1 , -3 , 4 , -1 , 2 , 1 , -5 , 4 };
@@ -997,14 +1054,27 @@ ADS_TEST( "collezioni-12-divide-1-9" )
    CHECK( ( 0 <= x.start ) && ( x.start <= x.end ) &&
           ( x.end < int( A.size() ) ) &&
           ( std::accumulate( A.begin() + x.start , A.begin() + x.end + 1 ,
-                             0L ) == x.sum ) );
+                             0LL ) == x.sum ) );
   const int top = *std::max_element( A.begin() , A.end() );
   CHECK( c.sum == ( top < 0 ? top : maxSubarraySum( A ) ) );
+  }
+ // one item, all negative (the largest one alone), the extremes of int
+ // whose sums leave int, and an empty vector refused
+ const int M = std::numeric_limits< int >::max();
+ for( const auto & f : { collezioni::maxSumCubic ,
+                         collezioni::maxSumQuadratic , collezioni::maxSum } ) {
+  CHECK( f( Ints{ -4 } ).sum == -4 );
+  const collezioni::Sub n = f( Ints{ -5 , -2 , -9 } );
+  CHECK( ( n.start == 1 ) && ( n.end == 1 ) && ( n.sum == -2 ) );
+  CHECK( f( Ints{ M , M , -1 , M } ).sum == 3LL * M - 1 );
+  CHECK( f( Ints{ -M - 1 , -M - 1 } ).sum == -M - 1 );
+  CHECK_THROWS( f( Ints() ) , contract_violation );
   }
  }
 
 // collezione 12-divide, 1.10: both tests of majority against the counts
-// of an unordered_map
+// of an unordered_map; one item, exactly half and half plus one, the
+// extremes of int; the empty vector refused
 ADS_TEST( "collezioni-12-divide-1-10" )
 {
  CHECK( collezioni::majoritySort( Ints{ 4 } ) &&
@@ -1012,6 +1082,17 @@ ADS_TEST( "collezioni-12-divide-1-10" )
  CHECK( ! collezioni::majoritySort( Ints{ 1 , 2 } ) &&
         ! collezioni::majoritySelect( Ints{ 1 , 2 } ) );
  CHECK( collezioni::majoritySelect( Ints{ 2 , 1 , 2 } ) );
+ // exactly half is no majority, half plus one is; the extremes of int;
+ // the empty vector refused
+ CHECK( ! collezioni::majoritySort( Ints{ 3 , 3 , 1 , 2 } ) &&
+        ! collezioni::majoritySelect( Ints{ 3 , 3 , 1 , 2 } ) );
+ CHECK( collezioni::majoritySort( Ints{ 3 , 1 , 3 , 3 , 2 } ) &&
+        collezioni::majoritySelect( Ints{ 3 , 1 , 3 , 3 , 2 } ) );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( collezioni::majoritySort( Ints{ -M - 1 , M , -M - 1 } ) &&
+        collezioni::majoritySelect( Ints{ M , M , -M - 1 } ) );
+ CHECK_THROWS( collezioni::majoritySort( Ints() ) , contract_violation );
+ CHECK_THROWS( collezioni::majoritySelect( Ints() ) , contract_violation );
  std::mt19937 g( 1210 );
  int yes = 0;
  for( int t = 0 ; t < 1000 ; ++t ) {
@@ -1028,7 +1109,9 @@ ADS_TEST( "collezioni-12-divide-1-10" )
  }
 
 // collezione 12-divide, 1.11: the highest vertex of random convex polygons,
-// points of an ellipse at random angles, against a linear scan
+// points of an ellipse at random angles, against a linear scan; a
+// triangle with the highest vertex last or second; fewer than three
+// vertices refused
 ADS_TEST( "collezioni-12-divide-1-11" )
 {
  std::mt19937 g( 1211 );
@@ -1053,13 +1136,31 @@ ADS_TEST( "collezioni-12-divide-1-11" )
                                                        { 1 , 1 } ,
                                                        { -1 , 2 } };
  CHECK( collezioni::highest( T ) == 2 );
+ // the highest second, and fewer than three vertices refused
+ const std::vector< std::pair< double , double > > S = { { 0 , 0 } ,
+                                                       { 1 , 3 } ,
+                                                       { -1 , 1 } };
+ CHECK( collezioni::highest( S ) == 1 );
+ CHECK_THROWS( collezioni::highest( { { 0 , 0 } , { 1 , 1 } } ) ,
+               contract_violation );
  }
 
 // collezione 12-divide, 1.12: the place found has A[ i ] < A[ i + 1 ], on
-// random vectors with A[ 0 ] < A[ n - 1 ]
+// random vectors with A[ 0 ] < A[ n - 1 ]; two items, the only increase
+// at the end, the extremes of int; one item, equal or falling ends refused
 ADS_TEST( "collezioni-12-divide-1-12" )
 {
  CHECK( collezioni::findIncrease( Ints{ 1 , 2 } ) == 0 );
+ // the only increase at the end, the extremes of int; one item, equal
+ // ends and falling ends refused
+ const int M = std::numeric_limits< int >::max();
+ CHECK( collezioni::findIncrease( Ints{ 5 , 4 , 3 , 2 , 9 } ) == 3 );
+ CHECK( collezioni::findIncrease( Ints{ -M - 1 , M } ) == 0 );
+ CHECK_THROWS( collezioni::findIncrease( Ints{ 1 } ) , contract_violation );
+ CHECK_THROWS( collezioni::findIncrease( Ints{ 2 , 5 , 2 } ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::findIncrease( Ints{ 3 , 1 } ) ,
+               contract_violation );
  std::mt19937 g( 1212 );
  for( int t = 0 ; t < 2000 ; ++t ) {
   Ints A = drawInts( g , draw( g , 2 , 40 ) , 0 , t % 2 ? 5 : 100 );
@@ -1074,7 +1175,8 @@ ADS_TEST( "collezioni-12-divide-1-12" )
  }
 
 // collezione 12-divide, 1.13: the best gain against all the pairs x < y,
-// negative when the prices only fall
+// negative when the prices only fall; the extremes of int both ways (gains
+// beyond int), the minimum after the maximum; one price refused
 ADS_TEST( "collezioni-12-divide-1-13" )
 {
  CHECK( collezioni::bestGain( Ints{ 5 , 3 } ) == -2 );
@@ -1083,18 +1185,23 @@ ADS_TEST( "collezioni-12-divide-1-13" )
  std::mt19937 g( 1213 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const Ints P = drawInts( g , draw( g , 2 , 40 ) , 0 , 100 );
-  long best = std::numeric_limits< long >::min();
+  long long best = std::numeric_limits< long long >::min();
   for( std::size_t x = 0 ; x < P.size() ; ++x )
    for( std::size_t y = x + 1 ; y < P.size() ; ++y )
-    best = std::max( best , long( P[ y ] ) - P[ x ] );
+    best = std::max( best , (long long)( P[ y ] ) - P[ x ] );
   CHECK( collezioni::bestGain( P ) == best );
   }
  const int M = std::numeric_limits< int >::max();
- CHECK( collezioni::bestGain( Ints{ -M , M } ) == 2L * M );
+ CHECK( collezioni::bestGain( Ints{ -M , M } ) == 2LL * M );
+ CHECK( collezioni::bestGain( Ints{ M , -M - 1 } ) == -2LL * M - 1 );
+ CHECK( collezioni::bestGain( Ints{ 9 , 1 , 5 , 0 , 3 } ) == 4 );
+ CHECK_THROWS( collezioni::bestGain( Ints{ 1 } ) , contract_violation );
  }
 
 // collezione 12-divide, 1.14: the longest thin subvector against all the
-// subvectors with their running minimum and maximum
+// subvectors with their running minimum and maximum; one item, all equal,
+// the extremes of int with C = 0, the whole range of int and one less, a
+// run across the middle; C < 0 and the empty vector refused
 ADS_TEST( "collezioni-12-divide-1-14" )
 {
  CHECK( collezioni::thinSubarray( Ints{ 4 } , 0 ) == 1 );
@@ -1102,6 +1209,16 @@ ADS_TEST( "collezioni-12-divide-1-14" )
  CHECK( collezioni::thinSubarray( Ints{ 1 , 5 , 2 , 3 , 9 } , 2 ) == 2 );
  const int M = std::numeric_limits< int >::max();
  CHECK( collezioni::thinSubarray( Ints{ -M , M , M } , 0 ) == 2 );
+ // C covering the whole range of int (the whole vector), one less (the
+ // extremes apart), the best run across the middle; C < 0 and the empty
+ // vector refused
+ CHECK( collezioni::thinSubarray( Ints{ -M - 1 , 0 , M } , 2LL * M + 1 ) ==
+        3 );
+ CHECK( collezioni::thinSubarray( Ints{ -M - 1 , 0 , M } , 2LL * M ) == 2 );
+ CHECK( collezioni::thinSubarray( Ints{ 9 , 1 , 2 , 1 , 2 , 9 } , 1 ) == 4 );
+ CHECK_THROWS( collezioni::thinSubarray( Ints{ 1 } , -1 ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::thinSubarray( Ints() , 0 ) , contract_violation );
  std::mt19937 g( 1214 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const Ints V = drawInts( g , draw( g , 1 , 40 ) , 0 , 20 );
@@ -1285,7 +1402,7 @@ Sub maxSumLinear( const Ints & A )
 {
  ADS_PRE( ! A.empty() );
  Sub best{ 0 , 0 , A[ 0 ] };
- long here = A[ 0 ];
+ long long here = A[ 0 ];
  int start = 0;
  for( int i = 1 ; i < int( A.size() ) ; ++i ) {
   if( A[ i ] > here + A[ i ] ) {
@@ -1389,7 +1506,8 @@ double lazyFractional( const Ints & score , const Ints & time , int V )
  Ints by( score.size() );
  std::iota( by.begin() , by.end() , 0 );
  std::sort( by.begin() , by.end() , [ & ]( int a , int b ) {
-  return( long( time[ a ] ) * score[ b ] < long( time[ b ] ) * score[ a ] );
+  return( (long long)( time[ a ] ) * score[ b ] <
+          (long long)( time[ b ] ) * score[ a ] );
   } );
  double need = V , t = 0;
  for( int i : by ) {
@@ -1649,7 +1767,8 @@ Longs widen( const std::vector< int > & d )
 
 // collezione 13-pd, 1.1: the operations rebuild P from the part of T they
 // read, their errors are the entry of the table, and that part is at edit
-// distance DP[ m ][ j + 1 ] from P
+// distance DP[ m ][ j + 1 ] from P; P = T, P longer than T; j out of T
+// and a table of the wrong size refused
 ADS_TEST( "collezioni-13-pd-1-1" )
 {
  const std::string P = "ab" , T = "xaxb";
@@ -1657,6 +1776,21 @@ ADS_TEST( "collezioni-13-pd-1-1" )
                                            3 );
  CHECK( ( ops.size() == 2 ) && ( ops[ 0 ].kind == 'S' ) &&
         ( ops[ 0 ].c == 'a' ) && ( ops[ 1 ].kind == 'M' ) );   // in "xb"
+ // P equal to T (all copies), P longer than the part read (insertions),
+ // j out of T and a table of the wrong size refused
+ const std::string abc = "abc" , c1 = "c" , a1 = "a";
+ const auto same = collezioni::printApprox( abc , abc ,
+                                            matchingTable( abc , abc ) , 2 );
+ CHECK( ( same.size() == 3 ) && std::all_of( same.begin() , same.end() ,
+         []( const auto & o ) { return( o.kind == 'M' ); } ) );
+ const auto ins = collezioni::printApprox( abc , c1 ,
+                                           matchingTable( abc , c1 ) , 0 );
+ CHECK( ( ins.size() == 3 ) && ( ins[ 0 ].kind == 'I' ) &&
+        ( ins[ 1 ].kind == 'I' ) && ( ins[ 2 ].kind == 'M' ) );
+ CHECK_THROWS( collezioni::printApprox( P , T , matchingTable( P , T ) , 4 ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::printApprox( P , T , matchingTable( a1 , T ) ,
+                                        1 ) , contract_violation );
  std::mt19937 g( 131 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string P = drawString( g , draw( g , 1 , 6 ) , 3 ) ,
@@ -1683,7 +1817,8 @@ ADS_TEST( "collezioni-13-pd-1-1" )
 
 // collezione 13-pd, 1.2: the rounds with a copy against Bellman-Ford-Moore
 // of ADS, with weights of both signs and no negative cycle from r; the
-// parents form a tree of shortest paths
+// parents form a tree of shortest paths; one node, a node not reached; r
+// out of the graph refused
 ADS_TEST( "collezioni-13-pd-1-2" )
 {
  std::mt19937 g( 132 );
@@ -1704,10 +1839,16 @@ ADS_TEST( "collezioni-13-pd-1-2" )
  CHECK( tried > 300 );
  const auto [ T , d ] = collezioni::shortestPathDP( WGraph( 1 ) , 0 );
  CHECK( ( T == Ints{ NIL } ) && ( d == Longs{ 0 } ) );
+ // a node not reached (LINF, no parent), r out of the graph refused
+ const auto [ T2 , d2 ] = collezioni::shortestPathDP( WGraph( 2 ) , 1 );
+ CHECK( ( d2 == Longs( { LINF , 0 } ) ) && ( T2[ 0 ] == NIL ) );
+ CHECK_THROWS( collezioni::shortestPathDP( WGraph( 2 ) , 2 ) ,
+               contract_violation );
  }
 
 // collezione 13-pd, 1.3: the numeric order as topological order, against
-// dagShortestPaths() of ADS, with negative weights
+// dagShortestPaths() of ADS, with negative weights; the nodes before r not
+// reached; an edge to a smaller name and r out of the graph refused
 ADS_TEST( "collezioni-13-pd-1-3" )
 {
  std::mt19937 g( 133 );
@@ -1720,10 +1861,21 @@ ADS_TEST( "collezioni-13-pd-1-3" )
    if( ( v != r ) && ( d[ v ] < LINF ) )
     CHECK( d[ v ] == d[ T[ v ] ] + *G.weight( T[ v ] , v ) );
   }
+ // the nodes before r are not reached; an edge to a smaller name and r
+ // out of the graph refused
+ WGraph D( 3 );
+ D.insertEdge( 0 , 1 , 4 );
+ D.insertEdge( 1 , 2 , -6 );
+ CHECK( collezioni::shortestPathDAG( D , 1 ).second ==
+        Longs( { LINF , 0 , -6 } ) );
+ CHECK_THROWS( collezioni::shortestPathDAG( D , 3 ) , contract_violation );
+ D.insertEdge( 2 , 0 , 1 );
+ CHECK_THROWS( collezioni::shortestPathDAG( D , 0 ) , contract_violation );
  }
 
 // collezione 13-pd, 1.4: the most edges of a path from s to each node,
-// against longestPathDag() of ADS and the enumeration of the paths
+// against longestPathDag() of ADS and the enumeration of the paths; one
+// node, a shortcut, a sink as s; s out of the graph refused
 ADS_TEST( "collezioni-13-pd-1-4" )
 {
  std::mt19937 g( 134 );
@@ -1739,10 +1891,22 @@ ADS_TEST( "collezioni-13-pd-1-4" )
    CHECK( longestPathDag( A , s , v ) ==
           ( d[ v ] == collezioni::NOPATH ? -1 : d[ v ] ) );
   }
+ // one node, a shortcut beside a longer path, s out of the graph refused
+ CHECK( collezioni::longestPaths( WGraph( 1 ) , 0 , true ) == Ints( { 0 } ) );
+ WGraph S( 3 );
+ S.insertEdge( 0 , 2 , 1 );
+ S.insertEdge( 0 , 1 , 1 );
+ S.insertEdge( 1 , 2 , 1 );
+ CHECK( collezioni::longestPaths( S , 0 , true ) == Ints( { 0 , 1 , 2 } ) );
+ CHECK( collezioni::longestPaths( S , 2 , true ) ==
+        Ints( { collezioni::NOPATH , collezioni::NOPATH , 0 } ) );
+ CHECK_THROWS( collezioni::longestPaths( S , 3 , true ) ,
+               contract_violation );
  }
 
 // collezione 13-pd, 1.5: the heaviest path, against dagShortestPaths() of
-// ADS on the weights negated and the enumeration of the paths
+// ADS on the weights negated and the enumeration of the paths; a heavy
+// shortcut, negative weights only
 ADS_TEST( "collezioni-13-pd-1-5" )
 {
  std::mt19937 g( 135 );
@@ -1759,12 +1923,24 @@ ADS_TEST( "collezioni-13-pd-1-5" )
    CHECK( ( d[ v ] == collezioni::NOPATH ) ? ( R.d[ v ] == infinity< int >() )
                                            : ( R.d[ v ] == -d[ v ] ) );
   }
+ // the heaviest path with fewer edges, negative weights only (the path of
+ // one edge wins)
+ WGraph H( 3 );
+ H.insertEdge( 0 , 2 , 9 );
+ H.insertEdge( 0 , 1 , 2 );
+ H.insertEdge( 1 , 2 , 3 );
+ CHECK( collezioni::longestPaths( H , 0 , false )[ 2 ] == 9 );
+ H.insertEdge( 0 , 2 , -9 );
+ H.insertEdge( 0 , 1 , -2 );
+ H.insertEdge( 1 , 2 , -3 );
+ CHECK( collezioni::longestPaths( H , 0 , false )[ 2 ] == -5 );
  }
 
 // collezione 13-pd, 1.6: after the insertion of a new edge the distances
 // are those of Floyd-Warshall on the new graph, as with addEdge() of ADS;
 // an edge that closes a negative cycle throws, and Floyd-Warshall finds
-// the cycle
+// the cycle; one that closes a cycle of weight 0 does not; u = v and a
+// node out refused
 ADS_TEST( "collezioni-13-pd-1-6" )
 {
  const auto table = []( const WGraph & G ) {
@@ -1797,6 +1973,15 @@ ADS_TEST( "collezioni-13-pd-1-6" )
   for( int x = 0 ; x < G.n() ; ++x ) CHECK( widen( R.d[ x ] ) == D[ x ] );
   }
  CHECK( thrown > 10 );
+ // an edge that makes a cycle of weight 0 (no throw), u = v and a node
+ // out refused
+ std::vector< Longs > D = { { 0 , 3 } , { LINF , 0 } };
+ collezioni::insertEdgeAPSP( D , 1 , 0 , -3 );
+ CHECK( D == std::vector< Longs >( { { 0 , 3 } , { -3 , 0 } } ) );
+ CHECK_THROWS( collezioni::insertEdgeAPSP( D , 0 , 0 , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::insertEdgeAPSP( D , 0 , 2 , 1 ) ,
+               contract_violation );
  }
 
 // collezione 13-pd, 1.7: lis() of ADS on the example of the text, whose
@@ -1889,7 +2074,7 @@ ADS_TEST( "collezioni-13-pd-1-9" )
   CHECK( s.sum == collezioni::maxSumQuadratic( A ).sum );
   CHECK( ( s.start <= s.end ) &&
          ( std::accumulate( A.begin() + s.start , A.begin() + s.end + 1 ,
-                            0L ) == s.sum ) );
+                            0LL ) == s.sum ) );
   }
  }
 
@@ -1931,7 +2116,8 @@ ADS_TEST( "collezioni-13-pd-1-10" )
  }
 
 // collezione 13-pd, 1.11: the example of the text, 33, and the
-// enumeration of all the paths on small boards
+// enumeration of all the paths on small boards; one cell, all negative, a
+// diagonal of profits; the empty board refused
 ADS_TEST( "collezioni-13-pd-1-11" )
 {
  const std::vector< Ints > P = { { 6 , 7 , 4 , 7 , 8 } ,
@@ -1941,6 +2127,12 @@ ADS_TEST( "collezioni-13-pd-1-11" )
                                  { 7 , 3 , 5 , 6 , 1 } };
  CHECK( collezioni::searchPath( P ) == 33 );
  CHECK( collezioni::searchPath( { { 4 } } ) == 4 );
+ // all negative (the least loss), a column of large profits zigzagged to,
+ // and the empty board refused
+ CHECK( collezioni::searchPath( { { -1 , -5 } , { -2 , -9 } } ) == -3 );
+ CHECK( collezioni::searchPath( { { 0 , 0 , 9 } , { 0 , 9 , 0 } ,
+                                  { 9 , 0 , 0 } } ) == 27 );
+ CHECK_THROWS( collezioni::searchPath( {} ) , contract_violation );
  std::mt19937 g( 1311 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = draw( g , 1 , 6 );
@@ -1960,12 +2152,23 @@ ADS_TEST( "collezioni-13-pd-1-11" )
  }
 
 // collezione 13-pd, 1.12: the cost of the stops against all the sets of
-// stations whose gaps are at most R
+// stations whose gaps are at most R; the exit in reach, out of reach, a gap
+// of exactly R, a gap too long in the middle, the cheaper station; no
+// station and sizes that differ refused
 ADS_TEST( "collezioni-13-pd-1-12" )
 {
  CHECK( collezioni::minCostStops( { 5 } , { 0 } , 5 ) == 0 );
  CHECK( collezioni::minCostStops( { 6 } , { 0 } , 5 ) == LINF );
  CHECK( collezioni::minCostStops( { 3 , 6 } , { 4 , 0 } , 5 ) == 4 );
+ // a gap of exactly R, a gap larger than R in the middle, the cheaper of
+ // two stations in reach; no station and sizes that differ refused
+ CHECK( collezioni::minCostStops( { 5 , 10 } , { 2 , 0 } , 5 ) == 2 );
+ CHECK( collezioni::minCostStops( { 2 , 9 , 11 } , { 1 , 1 , 0 } , 5 ) ==
+        LINF );
+ CHECK( collezioni::minCostStops( { 3 , 4 , 8 } , { 1 , 7 , 0 } , 5 ) == 1 );
+ CHECK_THROWS( collezioni::minCostStops( {} , {} , 5 ) , contract_violation );
+ CHECK_THROWS( collezioni::minCostStops( { 1 , 2 } , { 0 } , 5 ) ,
+               contract_violation );
  std::mt19937 g( 1312 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int n = draw( g , 0 , 10 );
@@ -1997,13 +2200,26 @@ ADS_TEST( "collezioni-13-pd-1-12" )
 // problems, the set found reaches V in that time, and the time is the
 // total minus the best knapsack() of ADS of the problems left out, of
 // capacity the points that can be given up (on the instances with no
-// score 0: knapsack() never takes an object of volume 0)
+// score 0: knapsack() never takes an object of volume 0); V = 0, a score
+// 0, a time 0, V out of reach; V < 0 and sizes that differ refused
 ADS_TEST( "collezioni-13-pd-1-13-2" )
 {
  CHECK( collezioni::lazyStudent( { 5 , 4 , 3 } , { 10 , 3 , 3 } , 6 ) ==
         std::pair( Ints{ 2 , 1 } , 6L ) );
  CHECK( collezioni::lazyStudent( { 1 } , { 1 } , 2 ).second == LINF );
  CHECK( collezioni::lazyStudent( {} , {} , 0 ).second == 0 );
+ // V = 0 (no problem, no time), a problem of score 0 never needed, a
+ // problem of time 0 always worth taking; V < 0 and sizes that differ
+ // refused
+ CHECK( collezioni::lazyStudent( { 3 } , { 5 } , 0 ) ==
+        std::pair( Ints() , 0L ) );
+ CHECK( collezioni::lazyStudent( { 0 , 4 } , { 1 , 2 } , 4 ) ==
+        std::pair( Ints{ 1 } , 2L ) );
+ CHECK( collezioni::lazyStudent( { 5 , 5 } , { 0 , 9 } , 5 ).second == 0 );
+ CHECK_THROWS( collezioni::lazyStudent( { 1 } , { 1 } , -1 ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::lazyStudent( { 1 } , {} , 1 ) ,
+               contract_violation );
  std::mt19937 g( 1313 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = draw( g , 0 , 12 );
@@ -2061,12 +2277,23 @@ ADS_TEST( "collezioni-13-pd-1-13-4" )
  }
 
 // collezione 13-pd, 1.14: the binary searches against a linear scan, with
-// many equal ends
+// many equal ends; no interval, all ends equal, touching intervals; sizes
+// that differ and f not sorted refused
 ADS_TEST( "collezioni-13-pd-1-14" )
 {
  CHECK( collezioni::computePredecessor( {} , {} ) == Ints{ 0 } );
  CHECK( collezioni::computePredecessor( { 0 , 1 , 3 } , { 2 , 3 , 4 } ) ==
         Ints( { 0 , 0 , 0 , 2 } ) );
+ // all the ends equal (the last one before each), touching intervals,
+ // sizes that differ and f not sorted refused
+ CHECK( collezioni::computePredecessor( { 5 , 5 , 5 } , { 5 , 5 , 5 } ) ==
+        Ints( { 0 , 0 , 1 , 2 } ) );
+ CHECK( collezioni::computePredecessor( { 0 , 1 , 2 } , { 1 , 2 , 3 } ) ==
+        Ints( { 0 , 0 , 1 , 2 } ) );
+ CHECK_THROWS( collezioni::computePredecessor( { 0 } , {} ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::computePredecessor( { 0 , 0 } , { 3 , 1 } ) ,
+               contract_violation );
  std::mt19937 g( 1315 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const int n = draw( g , 0 , 20 );
@@ -2085,13 +2312,25 @@ ADS_TEST( "collezioni-13-pd-1-14" )
 
 // collezione 13-pd, 1.15: the schedule against all the sets of songs and
 // against knapsack() of ADS on the ratings in hundredths (on the
-// instances with no duration 0, which knapsack() never takes)
+// instances with no duration 0, which knapsack() never takes); a song too
+// long, N = 0, a song exactly N long, no song; N < 0 and sizes that
+// differ refused
 ADS_TEST( "collezioni-13-pd-1-15" )
 {
  const auto [ S0 , r0 ] = collezioni::schedule( { 0.5 , 0.4 , 0.3 } ,
                                                 { 3 , 2 , 2 } , 4 );
  CHECK( ( S0 == Ints( { 2 , 1 } ) ) && ( std::abs( r0 - 0.7 ) < 1e-12 ) );
  CHECK( collezioni::schedule( { 0.9 } , { 5 } , 4 ).second == 0 );
+ // N = 0 (only songs of duration 0), a song exactly N long, no song; N < 0
+ // and sizes that differ refused
+ CHECK( collezioni::schedule( { 0.2 , 0.7 } , { 0 , 1 } , 0 ) ==
+        std::pair( Ints{ 0 } , 0.2 ) );
+ CHECK( collezioni::schedule( { 0.9 } , { 5 } , 5 ).second == 0.9 );
+ CHECK( collezioni::schedule( {} , {} , 9 ) == std::pair( Ints() , 0.0 ) );
+ CHECK_THROWS( collezioni::schedule( { 0.1 } , { 1 } , -1 ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::schedule( { 0.1 } , {} , 1 ) ,
+               contract_violation );
  std::mt19937 g( 1316 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = draw( g , 0 , 12 ) , N = draw( g , 0 , 30 );
@@ -2117,13 +2356,20 @@ ADS_TEST( "collezioni-13-pd-1-15" )
  }
 
 // collezione 13-pd, 1.17: the two rows against lcsTable() of ADS and the
-// enumeration of the subsequences of the shorter string
+// enumeration of the subsequences of the shorter string; empty strings, k
+// <= 0, equal strings, no common letter
 ADS_TEST( "collezioni-13-pd-1-17" )
 {
  CHECK( collezioni::lcsAtLeast( "" , "abc" , 0 ) );
  CHECK( ! collezioni::lcsAtLeast( "" , "abc" , 1 ) );
  CHECK( collezioni::lcsAtLeast( "abcbdab" , "bdcaba" , 4 ) &&
         ! collezioni::lcsAtLeast( "abcbdab" , "bdcaba" , 5 ) );
+ // k <= 0 always holds, equal strings reach their length, no common letter
+ CHECK( collezioni::lcsAtLeast( "" , "" , 0 ) &&
+        collezioni::lcsAtLeast( "ab" , "cd" , -3 ) );
+ CHECK( collezioni::lcsAtLeast( "abc" , "abc" , 3 ) &&
+        ! collezioni::lcsAtLeast( "abc" , "abc" , 4 ) );
+ CHECK( ! collezioni::lcsAtLeast( "aaa" , "bbb" , 1 ) );
  std::mt19937 g( 1317 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string X = drawString( g , draw( g , 0 , 8 ) , 3 ) ,
@@ -2147,12 +2393,17 @@ ADS_TEST( "collezioni-13-pd-1-17" )
 
 // collezione 13-pd, 1.18: the examples of the text, casacca 2 and anta 1,
 // and n minus the LCS of s and its reverse by lcs() of ADS, which is n
-// minus the longest palindromic subsequence, enumerated
+// minus the longest palindromic subsequence, enumerated; empty, one
+// character, a palindrome, two, all distinct, 300 equal characters
 ADS_TEST( "collezioni-13-pd-1-18" )
 {
  CHECK( collezioni::minpal( "casacca" ) == 2 );
  CHECK( collezioni::minpal( "anta" ) == 1 );
  CHECK( collezioni::minpal( "x" ) == 0 && collezioni::minpal( "" ) == 0 );
+ CHECK( collezioni::minpal( "abcba" ) == 0 &&
+        collezioni::minpal( "ab" ) == 1 );
+ CHECK( collezioni::minpal( "abcdef" ) == 5 );   // all distinct: n - 1
+ CHECK( collezioni::minpal( std::string( 300 , 'z' ) ) == 0 );
  std::mt19937 g( 1318 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string s = drawString( g , draw( g , 1 , 11 ) , 3 );
@@ -2172,13 +2423,27 @@ ADS_TEST( "collezioni-13-pd-1-18" )
  }
 
 // collezione 13-pd, 1.19: the least cost against all the sets of days of
-// purchase, and the passes printed cost what the result says
+// purchase, and the passes printed cost what the result says; one trip, a
+// free pass, days 29 and 30 apart; no trip, sizes that differ, days not
+// sorted refused
 ADS_TEST( "collezioni-13-pd-1-19" )
 {
  const auto [ c0 , b0 ] = collezioni::railway( { 1 , 10 , 29 , 31 } ,
                                                { 20 , 20 , 20 , 5 } , 50 );
  CHECK( ( c0 == 55 ) && ( b0 == Ints{ 0 } ) );
  CHECK( collezioni::railway( { 3 } , { 7 } , 7 ).first == 7 );
+ // a free pass covers all (one pass, bought on the first day), the days 29
+ // apart (one pass covers both) and 30 apart (it does not); no trip, f and
+ // d of different sizes, d not sorted refused
+ CHECK( collezioni::railway( { 0 , 40 , 80 } , { 5 , 5 , 5 } , 0 ) ==
+        std::pair( 0L , Ints( { 0 , 1 , 2 } ) ) );
+ CHECK( collezioni::railway( { 0 , 29 } , { 9 , 9 } , 10 ).first == 10 );
+ CHECK( collezioni::railway( { 0 , 30 } , { 9 , 9 } , 10 ).first == 18 );
+ CHECK_THROWS( collezioni::railway( {} , {} , 5 ) , contract_violation );
+ CHECK_THROWS( collezioni::railway( { 1 } , { 1 , 2 } , 5 ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::railway( { 5 , 1 } , { 1 , 1 } , 5 ) ,
+               contract_violation );
  std::mt19937 g( 1319 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int n = draw( g , 1 , 11 );
@@ -2208,13 +2473,19 @@ ADS_TEST( "collezioni-13-pd-1-19" )
  }
 
 // collezione 13-pd, 1.20: the example of the text, 19 by a reboot on the
-// day 1, and all the sets of days of reboot
+// day 1, and all the sets of days of reboot; one day, no day, no data,
+// capacity always enough; sizes that differ refused
 ADS_TEST( "collezioni-13-pd-1-20" )
 {
  CHECK( collezioni::datacenter( { 10 , 1 , 7 , 7 } , { 8 , 4 , 2 , 1 } ) ==
         19 );
  CHECK( collezioni::datacenter( { 5 } , { 3 } ) == 3 );
  CHECK( collezioni::datacenter( {} , {} ) == 0 );
+ // no data at all, a capacity above the data every day (no reboot), and
+ // sizes that differ refused
+ CHECK( collezioni::datacenter( { 0 , 0 , 0 } , { 9 , 8 , 7 } ) == 0 );
+ CHECK( collezioni::datacenter( { 1 , 1 , 1 } , { 9 , 8 , 7 } ) == 3 );
+ CHECK_THROWS( collezioni::datacenter( { 1 } , {} ) , contract_violation );
  std::mt19937 g( 1320 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const int n = draw( g , 1 , 12 );
@@ -2234,7 +2505,8 @@ ADS_TEST( "collezioni-13-pd-1-20" )
  }
 
 // collezione 13-pd, 1.21: the examples of the text, 3 and 0 ways, and a
-// recursive enumeration of the decompositions
+// recursive enumeration of the decompositions; the empty X, no string in
+// S, X in S, a string repeated in S; an empty string in S refused
 ADS_TEST( "collezioni-13-pd-1-21" )
 {
  const std::vector< std::string > S = { "01" , "10" , "011" , "101" };
@@ -2243,6 +2515,14 @@ ADS_TEST( "collezioni-13-pd-1-21" )
  CHECK( collezioni::countWays( "" , S ) == 1 );
  CHECK( collezioni::countWays( std::string( 60 , '0' ) , { "0" , "00" } ) ==
         fibonacci( 60 ) );
+ // no string in S, a string equal to X, a string repeated in S (counted
+ // twice), an empty string in S refused
+ CHECK( collezioni::countWays( "01" , {} ) == 0 &&
+        collezioni::countWays( "" , {} ) == 1 );
+ CHECK( collezioni::countWays( "011" , S ) == 1 );
+ CHECK( collezioni::countWays( "01" , { "01" , "01" } ) == 2 );
+ CHECK_THROWS( collezioni::countWays( "01" , { "0" , "" } ) ,
+               contract_violation );
  std::mt19937 g( 1321 );
  for( int t = 0 ; t < 500 ; ++t ) {
   std::vector< std::string > P;
@@ -2271,6 +2551,8 @@ ADS_TEST( "collezioni-13-pd-1-22" )
  CHECK( collezioni::fullTrees( 1 ) == 1 && collezioni::fullTrees( 2 ) == 0 );
  CHECK( collezioni::fullTrees( 7 ) == 5 );
  CHECK( collezioni::fullTrees( 69 ) == 812944042149730764ULL );
+ CHECK_THROWS( collezioni::fullTrees( 0 ) , contract_violation );
+ CHECK_THROWS( collezioni::fullTrees( 70 ) , contract_violation );
  const auto C = tartaglia( 60 );
  for( int k = 0 ; k <= 30 ; ++k ) {
   CHECK( collezioni::fullTrees( 2 * k + 1 ) == C[ 2 * k ][ k ] / ( k + 1 ) );
@@ -2457,7 +2739,8 @@ std::vector< collezioni::Edge > randomConnected( std::mt19937 & g , int n ,
 /*--------------------------------------------------------------------------*/
 
 // collezione 14-greedy, 1.3: kruskal() of ADS with the weights in [ 1 , n ]
-// sorted by counting, against the one sorted by comparisons and Prim
+// sorted by counting, against the one sorted by comparisons and Prim; no
+// node, one node, all weights equal, a graph not connected
 ADS_TEST( "collezioni-14-greedy-1-3" )
 {
  CHECK( kruskal( 0 , std::vector< collezioni::Edge >() , 1 ).empty() );
@@ -2471,10 +2754,19 @@ ADS_TEST( "collezioni-14-greedy-1-3" )
   CHECK( collezioni::weightOf( T ) ==
          collezioni::weightOf( kruskal( n , E ) ) );
   }
+ // one node, all the weights equal, a graph not connected (a forest)
+ CHECK( kruskal( 1 , std::vector< collezioni::Edge >() , 2 ).empty() );
+ const std::vector< collezioni::Edge > K4 = { { 0 , 1 , 1 } , { 0 , 2 , 1 } ,
+  { 0 , 3 , 1 } , { 1 , 2 , 1 } , { 1 , 3 , 1 } , { 2 , 3 , 1 } };
+ CHECK( collezioni::weightOf( kruskal( 4 , K4 , 2 ) ) == 3 );
+ const std::vector< collezioni::Edge > two = { { 0 , 1 , 2 } , { 2 , 3 , 1 } };
+ const auto F = kruskal( 4 , two , 3 );
+ CHECK( ( F.size() == 2 ) && isMinimumSpanningForest( 4 , two , F ) );
  }
 
 // collezione 14-greedy, 1.4: the counterexample of the text, 21 against
-// 12, and on random graphs the scheme never beats Kruskal
+// 12, and on random graphs the scheme never beats Kruskal; all the nodes
+// on one side, a side not connected (no tree)
 ADS_TEST( "collezioni-14-greedy-1-4" )
 {
  const std::vector< collezioni::Edge > C = { { 0 , 1 , 1 } , { 1 , 2 , 10 } ,
@@ -2482,6 +2774,11 @@ ADS_TEST( "collezioni-14-greedy-1-4" )
  const std::vector< bool > AD = { true , false , false , true };
  CHECK( collezioni::proposedMST( 4 , C , AD ) == 21 );
  CHECK( collezioni::weightOf( kruskal( 4 , C ) ) == 12 );
+ // all the nodes on one side (no edge across), a side not connected
+ CHECK( collezioni::proposedMST( 4 , C , std::vector< bool >( 4 , true ) )
+        == LINF );
+ CHECK( collezioni::proposedMST( 4 , C , { true , false , true , false } )
+        == LINF );
  std::mt19937 g( 144 );
  int worse = 0;
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -2499,12 +2796,21 @@ ADS_TEST( "collezioni-14-greedy-1-4" )
  }
 
 // collezione 14-greedy, 1.5: the fewest black edges against all the
-// spanning trees of small graphs
+// spanning trees of small graphs; one node, only black edges, only white
+// ones, a black bridge
 ADS_TEST( "collezioni-14-greedy-1-5" )
 {
  CHECK( collezioni::minBlack( 3 , { { 0 , 1 } } , { { 1 , 2 } , { 0 , 2 } } )
         == 1 );
  CHECK( collezioni::minBlack( 1 , {} , {} ) == 0 );
+ // only black edges (n - 1 of them), only white ones, a black bridge that
+ // cannot be avoided beside a white cycle
+ CHECK( collezioni::minBlack( 4 , {} , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
+                                         { 3 , 0 } } ) == 3 );
+ CHECK( collezioni::minBlack( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , {} )
+        == 0 );
+ CHECK( collezioni::minBlack( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
+                              { { 2 , 3 } } ) == 1 );
  std::mt19937 g( 145 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = draw( g , 1 , 6 );
@@ -2572,12 +2878,21 @@ ADS_TEST( "collezioni-14-greedy-1-8" )
  }
 
 // collezione 14-greedy, 1.9: the greedy against the fewest stops of a
-// visit in breadth of the stations reachable from each other
+// visit in breadth of the stations reachable from each other; no station,
+// gaps equal to the range, stations not needed, R = 1; a gap beyond the
+// range refused
 ADS_TEST( "collezioni-14-greedy-1-9" )
 {
  CHECK( collezioni::minStops( {} , 5 , 5 ) == 0 );
  CHECK( collezioni::minStops( { 4 } , 8 , 5 ) == 1 );
  CHECK( collezioni::minStops( { 5 , 10 } , 15 , 5 ) == 2 );   // = deadline
+ // stations not needed (L within R), a station every kilometre with R = 1,
+ // and a gap beyond the range refused
+ CHECK( collezioni::minStops( { 1 , 2 , 3 } , 4 , 10 ) == 0 );
+ CHECK( collezioni::minStops( { 1 , 2 , 3 } , 4 , 1 ) == 3 );
+ CHECK_THROWS( collezioni::minStops( { 2 , 9 } , 10 , 5 ) ,
+               contract_violation );
+ CHECK_THROWS( collezioni::minStops( {} , 6 , 5 ) , contract_violation );
  std::mt19937 g( 149 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const long R = draw( g , 1 , 10 );
@@ -2600,12 +2915,18 @@ ADS_TEST( "collezioni-14-greedy-1-9" )
  }
 
 // collezione 14-greedy, 1.10: the counterexample of the text, greedy 10
-// and optimum 8, and the sorted matching against all the assignments
+// and optimum 8, and the sorted matching against all the assignments;
+// none, one pair, equal multisets; sizes that differ refused
 ADS_TEST( "collezioni-14-greedy-1-10" )
 {
  CHECK( collezioni::skisGreedy( { 5 , 10 } , { 9 , 14 } ) == 10 );
  CHECK( collezioni::skis( { 5 , 10 } , { 9 , 14 } ) == 8 );
  CHECK( collezioni::skis( {} , {} ) == 0 );
+ // equal heights and lengths in any order (0), one pair, sizes that
+ // differ refused
+ CHECK( collezioni::skis( { 3 , 1 , 2 } , { 2 , 3 , 1 } ) == 0 );
+ CHECK( collezioni::skis( { 170 } , { 150 } ) == 20 );
+ CHECK_THROWS( collezioni::skis( { 1 } , {} ) , contract_violation );
  std::mt19937 g( 1410 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const int n = draw( g , 1 , 7 );
@@ -2691,8 +3012,9 @@ long unorientedFlow( int n , const Arcs & E , int s , int t )
 long increaseCapacity( FlowNetwork & F , int s , int t , int u , int v )
 {
  F.addEdge( u , v , 1 );
- long paths = 0;
- const long d = F.maxFlow( s , t , Augment::FORD_FULKERSON , &paths );
+ long long paths = 0;
+ const long long d = F.maxFlow( s , t , Augment::FORD_FULKERSON ,
+                              &paths );
  ADS_POST( ( paths <= 1 ) && ( d == paths ) );
  return( d );
  }
@@ -2925,7 +3247,7 @@ std::optional< std::pair< Matrix , Matrix > > splitMatrix(
    E.push_back( BoundedEdge{ i , m + j , 0 , M[ i ][ j ] } );
  for( const auto & e : E )
   if( e.low > e.high ) return( std::nullopt );
- std::vector< long > f;
+ std::vector< long long > f;
  if( ! feasibleCirculation( m + n + 2 , E , &f ) ) return( std::nullopt );
  Matrix A( m , Longs( n ) ) , B = A;
  for( int i = 0 ; i < m ; ++i )
@@ -3003,7 +3325,8 @@ std::vector< std::vector< bool > > randomBools( std::mt19937 & g , int n ,
 // collezione 15-locale, 1.1: the three reductions against the minimum
 // cuts by brute force: of the sources from the sinks, of the network with
 // the nodes split, and of the unoriented one, whose cut counts the edges
-// across in either direction
+// across in either direction; no edge, a node of capacity 0, an
+// unoriented edge given from the sink
 ADS_TEST( "collezioni-15-locale-1-1" )
 {
  std::mt19937 g( 151 );
@@ -3030,10 +3353,17 @@ ADS_TEST( "collezioni-15-locale-1-1" )
  // a node of capacity 1 in the middle of two paths lets one unit through
  const Arcs P = { { 0 , 1 , 5 } , { 1 , 2 , 5 } , { 0 , 2 , 0 } };
  CHECK( collezioni::nodeCapacityFlow( 3 , P , { 0 , 1 , 0 } , 0 , 2 ) == 1 );
+ // no edge (0), a node of capacity 0 cuts all, an unoriented edge used
+ // from either end
+ CHECK( collezioni::multiFlow( 3 , {} , { 0 } , { 1 , 2 } ) == 0 );
+ CHECK( collezioni::nodeCapacityFlow( 3 , { { 0 , 1 , 5 } , { 1 , 2 , 5 } } ,
+                                      { 0 , 0 , 0 } , 0 , 2 ) == 0 );
+ CHECK( collezioni::unorientedFlow( 2 , { { 1 , 0 , 4 } } , 0 , 1 ) == 4 );
  }
 
 // collezione 15-locale, 1.2: after each increase of a capacity by one, a
-// single augmenting path gives the maximum flow of the network rebuilt
+// single augmenting path gives the maximum flow of the network rebuilt;
+// an edge off every path (no gain), the bottleneck (one)
 ADS_TEST( "collezioni-15-locale-1-2" )
 {
  std::mt19937 g( 152 );
@@ -3055,6 +3385,14 @@ ADS_TEST( "collezioni-15-locale-1-2" )
    }
   }
  CHECK( grew > 50 );
+ // an edge off every path gains nothing, the bottleneck gains one
+ FlowNetwork F( 4 );
+ F.addEdge( 0 , 1 , 1 );
+ F.addEdge( 1 , 3 , 5 );
+ F.addEdge( 2 , 0 , 1 );
+ CHECK( F.maxFlow( 0 , 3 ) == 1 );
+ CHECK( collezioni::increaseCapacity( F , 0 , 3 , 2 , 0 ) == 0 );
+ CHECK( collezioni::increaseCapacity( F , 0 , 3 , 0 , 1 ) == 1 );
  }
 
 // collezione 15-locale, 1.3: the network of the text has 2 paths with no
@@ -3071,6 +3409,7 @@ ADS_TEST( "collezioni-15-locale-1-3" )
                          std::pair( b , c ) , std::pair( e , d ) } )
   G.insertEdge( u , v );
  CHECK( edgeDisjointPaths( G , s , t ).size() == 2 );
+ CHECK( edgeDisjointPaths( ListGraph<>( 2 ) , 0 , 1 ).empty() );   // no edge
  std::mt19937 g( 153 );
  for( int k = 0 ; k < 200 ; ++k ) {
   const int n = draw( g , 2 , 8 );
@@ -3086,7 +3425,9 @@ ADS_TEST( "collezioni-15-locale-1-3" )
  }
 
 // collezione 15-locale, 1.4: the assignment found respects reachability
-// and the capacities ceil( n / k ), and exists iff a backtrack finds one
+// and the capacities ceil( n / k ), and exists iff a backtrack finds one;
+// no patient, one hospital, a patient who reaches none, more hospitals
+// than patients; k = 0 refused
 ADS_TEST( "collezioni-15-locale-1-4" )
 {
  CHECK( collezioni::hospitals( {} , 1 ) == Ints() );
@@ -3094,6 +3435,12 @@ ADS_TEST( "collezioni-15-locale-1-4" )
         Ints( { 0 , 0 } ) );
  CHECK( ! collezioni::hospitals( { { true , false } , { true , false } } ,
                                  2 ) );   // ceil( 2 / 2 ) = 1 each
+ // a patient who reaches no hospital, more hospitals than patients, and
+ // k = 0 refused
+ CHECK( ! collezioni::hospitals( { { true } , { false } } , 1 ) );
+ CHECK( collezioni::hospitals( { { false , false , true } } , 3 ) ==
+        Ints( { 2 } ) );
+ CHECK_THROWS( collezioni::hospitals( {} , 0 ) , contract_violation );
  std::mt19937 g( 154 );
  int yes = 0;
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -3112,13 +3459,19 @@ ADS_TEST( "collezioni-15-locale-1-4" )
 
 // collezione 15-locale, 1.5: the planes and the towers at random integer
 // points, the assignment within distance d and at most L planes a tower,
-// against a backtrack
+// against a backtrack; a plane at distance exactly d, no plane, L = 0,
+// d = 0
 ADS_TEST( "collezioni-15-locale-1-5" )
 {
  CHECK( collezioni::towers( { { 0 , 0 } , { 3 , 4 } } , { { 0 , 0 } } , 5 ,
                             2 ) == Ints( { 0 , 0 } ) );   // 5 is within 5
  CHECK( ! collezioni::towers( { { 0 , 0 } , { 3 , 4 } } , { { 0 , 0 } } , 5 ,
                               1 ) );
+ // no plane, L = 0, d = 0 (only a tower on the plane itself)
+ CHECK( collezioni::towers( {} , { { 1 , 1 } } , 3 , 1 ) == Ints() );
+ CHECK( ! collezioni::towers( { { 0 , 0 } } , { { 0 , 0 } } , 5 , 0 ) );
+ CHECK( collezioni::towers( { { 2 , 2 } } , { { 0 , 0 } , { 2 , 2 } } , 0 ,
+                            1 ) == Ints( { 1 } ) );
  std::mt19937 g( 155 );
  int yes = 0;
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -3146,7 +3499,8 @@ ADS_TEST( "collezioni-15-locale-1-5" )
 // collezione 15-locale, 1.6: the schedule found meets the needs, the
 // limits and the unavailabilities, and exists iff a backtrack over the
 // shifts finds one; on two days with at most W = 3 shifts a week, then a
-// whole week of 21 shifts with W = 5
+// whole week of 21 shifts with W = 5, too few employees, no need, no
+// employee; shifts not in whole days refused
 ADS_TEST( "collezioni-15-locale-1-6" )
 {
  const auto valid = []( const Ints & p ,
@@ -3216,15 +3570,29 @@ ADS_TEST( "collezioni-15-locale-1-6" )
  CHECK( ! collezioni::mcdonalds( week , std::vector< std::vector< bool > >(
                                          8 , std::vector< bool >( 21 ) ) ,
                                  5 ) );   // 8 x 5 < 42
+ // no need (an empty schedule), no employee for a need, shifts not in
+ // whole days refused
+ const auto Z = collezioni::mcdonalds( Ints( 3 , 0 ) ,
+                                       { std::vector< bool >( 3 ) } , 2 );
+ CHECK( Z && ( ( *Z )[ 0 ] == std::vector< bool >( 3 , false ) ) );
+ CHECK( ! collezioni::mcdonalds( { 1 , 0 , 0 } , {} , 2 ) );
+ CHECK_THROWS( collezioni::mcdonalds( { 1 , 0 } ,
+                                      { std::vector< bool >( 2 ) } , 2 ) ,
+               contract_violation );
  }
 
 // collezione 15-locale, 1.7: the films fit iff the minimum cut between
-// the server and the super sink, by brute force, is n b
+// the server and the super sink, by brute force, is n b; no film, a
+// capacity exactly n b, a client not reached
 ADS_TEST( "collezioni-15-locale-1-7" )
 {
  CHECK( collezioni::films( 3 , { { 0 , 1 , 4 } , { 0 , 2 , 4 } } , 0 ,
                            { 1 , 2 } , 4 ) );
  CHECK( ! collezioni::films( 2 , { { 0 , 1 , 7 } } , 0 , { 1 , 1 } , 4 ) );
+ // no film (always), a capacity exactly n b, a client not reached
+ CHECK( collezioni::films( 2 , {} , 0 , {} , 4 ) );
+ CHECK( collezioni::films( 2 , { { 0 , 1 , 8 } } , 0 , { 1 , 1 } , 4 ) );
+ CHECK( ! collezioni::films( 3 , { { 0 , 1 , 9 } } , 0 , { 2 } , 1 ) );
  std::mt19937 g( 157 );
  int yes = 0;
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -3243,7 +3611,8 @@ ADS_TEST( "collezioni-15-locale-1-7" )
  }
 
 // collezione 15-locale, 1.8: the evacuation is possible iff a backtrack
-// finds a path from each village to a safe place, no edge used twice
+// finds a path from each village to a safe place, no edge used twice; no
+// village, all villages, two villages sharing the only road
 ADS_TEST( "collezioni-15-locale-1-8" )
 {
  std::mt19937 g( 158 );
@@ -3276,10 +3645,20 @@ ADS_TEST( "collezioni-15-locale-1-8" )
   yes += e;
   }
  CHECK( ( yes > 30 ) && ( yes < 270 ) );
+ // no village, all villages (no safe place), two villages sharing the
+ // only road out
+ ListGraph<> H( 3 );
+ H.insertEdge( 0 , 1 );
+ H.insertEdge( 1 , 2 );
+ CHECK( collezioni::evacuation( H , { false , false , false } ) );
+ CHECK( ! collezioni::evacuation( H , { true , true , true } ) );
+ CHECK( collezioni::evacuation( H , { true , true , false } ) == false );
+ CHECK( collezioni::evacuation( H , { false , true , false } ) );
  }
 
 // collezione 15-locale, 1.9: both matrices have the sums asked for and no
-// negative entry, and there is none iff the sums of r and c differ
+// negative entry, and there is none iff the sums of r and c differ; no
+// row, all sums 0, one row taking all; sizes that differ refused
 ADS_TEST( "collezioni-15-locale-1-9" )
 {
  const auto ok = []( const Matrix & M , const Longs & r , const Longs & c ) {
@@ -3298,6 +3677,16 @@ ADS_TEST( "collezioni-15-locale-1-9" )
         Matrix( { { 2 , 1 } , { 0 , 1 } } ) );
  CHECK( collezioni::fillMatrix( {} , {} ) == Matrix() );
  CHECK( ! collezioni::fillMatrix( { 1 } , { 2 } ) );
+ // all sums 0 (the zero matrix), one row taking all, by both ways; sizes
+ // that differ refused
+ CHECK( collezioni::fillMatrix( { 0 , 0 } , { 0 , 0 } ) ==
+        Matrix( 2 , Longs( 2 , 0 ) ) );
+ CHECK( collezioni::fillMatrixFlow( { 0 , 0 } , { 0 , 0 } ) ==
+        Matrix( 2 , Longs( 2 , 0 ) ) );
+ CHECK( collezioni::fillMatrix( { 0 , 5 } , { 2 , 3 } ) ==
+        Matrix( { { 0 , 0 } , { 2 , 3 } } ) );
+ CHECK_THROWS( collezioni::fillMatrix( { 1 } , { 1 , 0 } ) ,
+               contract_violation );
  std::mt19937 g( 159 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int n = draw( g , 1 , 7 );
@@ -3319,7 +3708,8 @@ ADS_TEST( "collezioni-15-locale-1-9" )
 
 // collezione 15-locale, 1.10: the two matrices found meet the limits and
 // add up to M, and there are none iff no M1 of small matrices, tried one
-// by one, meets them
+// by one, meets them; the empty and the zero matrix, all limits 0, the
+// totals binding
 ADS_TEST( "collezioni-15-locale-1-10" )
 {
  const auto fits = []( const Matrix & A , long l , long T ) {
@@ -3339,6 +3729,13 @@ ADS_TEST( "collezioni-15-locale-1-10" )
   };
  CHECK( collezioni::splitMatrix( { { 2 } } , 1 , 1 , 1 , 1 ) );
  CHECK( ! collezioni::splitMatrix( { { 3 } } , 1 , 1 , 9 , 9 ) );
+ // the empty matrix and the zero one (always), all limits 0 with a
+ // positive entry (never), the total the only binding limit
+ CHECK( collezioni::splitMatrix( {} , 0 , 0 , 0 , 0 ) );
+ CHECK( collezioni::splitMatrix( { { 0 , 0 } } , 0 , 0 , 0 , 0 ) );
+ CHECK( ! collezioni::splitMatrix( { { 1 } } , 0 , 0 , 0 , 0 ) );
+ CHECK( ! collezioni::splitMatrix( { { 1 , 1 } } , 9 , 9 , 1 , 0 ) );
+ CHECK( collezioni::splitMatrix( { { 1 , 1 } } , 9 , 9 , 1 , 1 ) );
  std::mt19937 g( 1510 );
  int yes = 0;
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -3601,13 +3998,20 @@ class BoxSet {
 
 /*--------------------------------------------------------------------------*/
 
-// collezione varie, 1.2: the scan against all the starts and the k
+// collezione varie, 1.2: the scan against all the starts and the k; empty,
+// one zero, all ones, a block at the end; an item not 0 or 1 refused
 ADS_TEST( "collezioni-varie-1-2" )
 {
  CHECK( collezioni::longestBalancedBlock( Ints{ 1 , 1 , 0 } ) == 0 );
  CHECK( collezioni::longestBalancedBlock( Ints{ 0 } ) == 0 );
  CHECK( collezioni::longestBalancedBlock( Ints{ 0 , 0 , 0 , 1 , 1 , 0 , 1 } )
         == 4 );
+ // empty, all ones, a block at the very end, an item not 0 or 1 refused
+ CHECK( collezioni::longestBalancedBlock( Ints() ) == 0 );
+ CHECK( collezioni::longestBalancedBlock( Ints( 5 , 1 ) ) == 0 );
+ CHECK( collezioni::longestBalancedBlock( Ints{ 1 , 0 , 0 , 1 , 1 } ) == 4 );
+ CHECK_THROWS( collezioni::longestBalancedBlock( Ints{ 0 , 2 } ) ,
+               contract_violation );
  std::mt19937 g( 162 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const Ints S = drawInts( g , draw( g , 1 , 25 ) , 0 , 1 );
@@ -3625,7 +4029,9 @@ ADS_TEST( "collezioni-varie-1-2" )
  }
 
 // collezione varie, 1.3: the counts in each range against count_if, and
-// B against the places of the array sorted by countingSort() of ADS
+// B against the places of the array sorted by countingSort() of ADS; no
+// item, k = 1; items out of [ 1 , k ] and ranges out of order or of
+// [ 1 , k ] refused
 ADS_TEST( "collezioni-varie-1-3" )
 {
  std::mt19937 g( 163 );
@@ -3644,13 +4050,30 @@ ADS_TEST( "collezioni-varie-1-3" )
            std::count_if( A.begin() , A.end() , [ & ]( int x ) {
             return( ( a <= x ) && ( x <= b ) ); } ) );
   }
+ // no item (all counts 0), k = 1, and the contracts: an item out of
+ // [ 1 , k ], a > b, b > k, a = 0
+ const Longs Z = collezioni::preprocess( {} , 3 );
+ CHECK( Z == Longs( 4 , 0 ) && collezioni::rangeCount( Z , 1 , 3 ) == 0 );
+ const Longs O = collezioni::preprocess( { 1 , 1 } , 1 );
+ CHECK( collezioni::rangeCount( O , 1 , 1 ) == 2 );
+ CHECK_THROWS( collezioni::preprocess( { 0 } , 3 ) , contract_violation );
+ CHECK_THROWS( collezioni::preprocess( { 4 } , 3 ) , contract_violation );
+ CHECK_THROWS( collezioni::rangeCount( Z , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( collezioni::rangeCount( Z , 1 , 4 ) , contract_violation );
+ CHECK_THROWS( collezioni::rangeCount( Z , 0 , 1 ) , contract_violation );
  }
 
 // collezione varie, 1.4: the middle third against the places m to 2 m - 1
-// of the sorted array
+// of the sorted array; three items, the extremes of int; sizes that are
+// not a positive multiple of 3 refused
 ADS_TEST( "collezioni-varie-1-4" )
 {
  CHECK( collezioni::middleThird( Ints{ 3 , 1 , 2 } ) == Ints{ 2 } );
+ // the extremes of int, sizes not a positive multiple of 3 refused
+ const int M = std::numeric_limits< int >::max();
+ CHECK( collezioni::middleThird( Ints{ M , -M - 1 , 0 } ) == Ints{ 0 } );
+ CHECK_THROWS( collezioni::middleThird( Ints() ) , contract_violation );
+ CHECK_THROWS( collezioni::middleThird( Ints{ 1 , 2 } ) , contract_violation );
  std::mt19937 g( 164 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int m = draw( g , 1 , 20 );
@@ -3664,7 +4087,8 @@ ADS_TEST( "collezioni-varie-1-4" )
  }
 
 // collezione varie, 1.5: the example of the text, 28, and a map of the
-// frequencies, the largest value among the most frequent
+// frequencies, the largest value among the most frequent; one item, all
+// distinct, all equal, a tie, the extremes of int; empty refused
 ADS_TEST( "collezioni-varie-1-5" )
 {
  CHECK( collezioni::mode( { 1 , 2 , 7 , 12 , 3 , 6 , 7 , 18 , 28 , 11 , 28 ,
@@ -3672,6 +4096,13 @@ ADS_TEST( "collezioni-varie-1-5" )
                             28 } ) == 28 );
  CHECK( collezioni::mode( { -4 } ) == -4 );
  CHECK( collezioni::mode( { 2 , 1 , 3 } ) == 3 );
+ // all equal, a tie of two runs (the larger value), the extremes of int,
+ // the empty vector refused
+ CHECK( collezioni::mode( Ints( 9 , 6 ) ) == 6 );
+ CHECK( collezioni::mode( { 5 , 9 , 5 , 9 , 1 } ) == 9 );
+ const int M = std::numeric_limits< int >::max();
+ CHECK( collezioni::mode( { M , -M - 1 , -M - 1 } ) == -M - 1 );
+ CHECK_THROWS( collezioni::mode( {} ) , contract_violation );
  std::mt19937 g( 165 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const Ints A = drawInts( g , draw( g , 1 , 30 ) , -5 , 5 );
@@ -3684,12 +4115,18 @@ ADS_TEST( "collezioni-varie-1-5" )
  }
 
 // collezione varie, 1.6: the two indices against all the pairs, on
-// integer values so that the sums are exact
+// integer values so that the sums are exact; empty, one item, x twice an
+// item, the pair at the ends, negative and fractional values, infinity
 ADS_TEST( "collezioni-varie-1-6" )
 {
  CHECK( ! collezioni::searchSum( {} , 0 ) );
  CHECK( ! collezioni::searchSum( { 2 } , 4 ) );   // distinct places
  CHECK( collezioni::searchSum( { 2 , 2 } , 4 ) );
+ // the pair at the two ends, negative and fractional values, infinity
+ CHECK( collezioni::searchSum( { 9 , 5 , 6 , 1 } , 10 ) );
+ CHECK( collezioni::searchSum( { -2.5 , 0.5 , 7 } , -2 ) );
+ CHECK( ! collezioni::searchSum( { 1 , 2 } ,
+                                 std::numeric_limits< double >::infinity() ) );
  std::mt19937 g( 166 );
  int yes = 0;
  for( int t = 0 ; t < 1000 ; ++t ) {
@@ -3707,11 +4144,20 @@ ADS_TEST( "collezioni-varie-1-6" )
  }
 
 // collezione varie, 1.7: random insertions and queries against a scan of
-// a vector of the points
+// a vector of the points; no point, one point inserted twice, a range of
+// one x, a range with no point, a range with x0 > x1
 ADS_TEST( "collezioni-varie-1-7" )
 {
  collezioni::BoxSet B;
  CHECK( ! B.bbox() && ! B.bbox( -9 , 9 ) && ! B.isPresent( 0 , 0 ) );
+ {                                         // one point, inserted twice
+  collezioni::BoxSet O;
+  O.insert( 3 , -4 );
+  O.insert( 3 , -4 );
+  CHECK( O.bbox() == collezioni::Box( { 3 , 3 , -4 , -4 } ) );
+  CHECK( O.bbox( 3 , 3 ) == O.bbox() && ! O.bbox( 4 , 9 ) &&
+         ! O.bbox( 5 , 1 ) );            // an empty range
+  }
  std::mt19937 g( 167 );
  std::vector< std::pair< int , int > > P;
  for( int t = 0 ; t < 3000 ; ++t ) {

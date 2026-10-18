@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <random>
 #include <set>
@@ -254,7 +255,9 @@ ADS_TEST( "sec10.2.3.constructions" )
  }
 
 // the LCP array of Kasai et al. against the comparison of each adjacent
-// pair, and the lcp of any two suffixes against lce()
+// pair, the lcp of any two suffixes against lce() (0 at the end of the
+// text, n - i for a suffix with itself), rank() as the inverse of SA, and
+// the bounds of lce(), rank() and operator[]
 ADS_TEST( "sec10.2.2.kasai" )
 {
  for( const auto & T : texts() ) {
@@ -262,12 +265,24 @@ ADS_TEST( "sec10.2.2.kasai" )
   CHECK( lcpArray( T , SA ) == naiveLcpArray( T , SA ) );
   if( T.size() > 120 ) continue;
   const SuffixArray A( T );
+  for( std::size_t r = 0 ; r < T.size() ; ++r )
+   CHECK( A[ r ] == SA[ r ] && A.rank( SA[ r ] ) == r );
   for( std::size_t i = 0 ; i <= T.size() ; ++i )
    for( std::size_t j = 0 ; j <= T.size() ; ++j )
     CHECK( A.lce( i , j ) == naiveLcp( T , i , j ) );
   }
+ const SuffixArray A( "aaaa" ) , One( "z" );
+ CHECK( A.lce( 0 , 0 ) == 4 && A.lce( 0 , 1 ) == 3 && A.lce( 4 , 4 ) == 0 );
+ CHECK( One.size() == 1 && One[ 0 ] == 0 && One.lcp().empty() &&
+        One.lce( 0 , 0 ) == 1 && One.lce( 0 , 1 ) == 0 );
+ CHECK( lcpArray( "" , Places() ).empty() );
  CHECK_THROWS( lcpArray( "ab" , Places( { 0 , 1 , 2 } ) ) ,
                contract_violation );
+ CHECK_THROWS( A.lce( 5 , 0 ) , contract_violation );
+ CHECK_THROWS( A.lce( 0 , 5 ) , contract_violation );
+ CHECK_THROWS( A.rank( 4 ) , contract_violation );
+ CHECK_THROWS( A[ 4 ] , contract_violation );
+ CHECK_THROWS( SuffixArray( "" )[ 0 ] , contract_violation );
  }
 
 // the two binary searches against std::search and against the keys with
@@ -312,7 +327,9 @@ ADS_TEST( "sec10.2.1.search" )
 
 // the sparse table, the +-1 structure and Bender and Farach-Colton against
 // the leftmost minimum by a scan on every range of small arrays with many
-// ties, and on random ranges of large ones; the Cartesian tree of Figure
+// ties, and on random ranges of large ones; all equal items (the leftmost
+// wins), the extremes of int, one item, the bounds of the queries and of
+// operator[], and an empty array; the Cartesian tree of Figure
 // 10.13, and the query RMQ( 6 , 8 ) of Figure 10.14 on the lcp array of
 // Figure 10.12, whose minima 1 are at 6 and 7 (from 1)
 ADS_TEST( "sec10.4.1.range-minimum" )
@@ -358,6 +375,35 @@ ADS_TEST( "sec10.4.1.range-minimum" )
  const RangeMinimum< int , std::greater< int > > Mx( G );
  CHECK( Mx.query( 1 , 4 ) == 1 );
  CHECK( RangeMinimum< int >().size() == 0 );
+ for( std::size_t n : { 1 , 2 , 7 , 300 } ) {
+  const std::vector< int > Q( n , 7 );          // all equal: the leftmost
+  const SparseTable< int > S( Q );
+  const RangeMinimum< int > M( Q );
+  const PlusMinusOneRangeMinimum P( [ n ] {
+   std::vector< long > D( n );                  // a zigzag with ties
+   for( std::size_t i = 0 ; i < n ; ++i ) D[ i ] = long( i % 2 );
+   return( D ); }() );
+  for( std::size_t i = 0 ; i < n ; i += 1 + n / 10 )
+   for( std::size_t j = i ; j < n ; j += 1 + n / 10 ) {
+    CHECK( S.query( i , j ) == i && M.query( i , j ) == i );
+    CHECK( P.query( i , j ) == i + i % 2 - ( i == j && i % 2 ? 1 : 0 ) );
+    }
+  }
+ const std::vector< int > X = { std::numeric_limits< int >::max() ,
+                                std::numeric_limits< int >::min() ,
+                                0 , std::numeric_limits< int >::min() };
+ const RangeMinimum< int > MX( X );
+ CHECK( MX.query( 0 , 3 ) == 1 && MX.query( 2 , 3 ) == 3 &&
+        MX.query( 0 , 0 ) == 0 && SparseTable< int >( X ).query( 0 , 3 ) ==
+        1 );
+ CHECK_THROWS( MX.query( 2 , 1 ) , contract_violation );
+ CHECK_THROWS( MX.query( 0 , 4 ) , contract_violation );
+ CHECK_THROWS( MX[ 4 ] , contract_violation );
+ CHECK_THROWS( SparseTable< int >( X ).query( 3 , 4 ) , contract_violation );
+ CHECK_THROWS( SparseTable< int >( X )[ 4 ] , contract_violation );
+ CHECK_THROWS( PlusMinusOneRangeMinimum( std::vector< long >( { 0 , 1 } ) )
+               .query( 0 , 2 ) , contract_violation );
+ CHECK_THROWS( RangeMinimum< int >().query( 0 , 0 ) , contract_violation );
  CHECK_THROWS( SparseTable< int >( std::vector< int >( { 1 , 2 } ) ).query(
                1 , 0 ) , contract_violation );
  CHECK_THROWS( PlusMinusOneRangeMinimum( std::vector< long >( { 0 , 2 } ) ) ,
@@ -401,12 +447,30 @@ ADS_TEST( "sec10.3.constructions" )
 
 // the search by the suffix tree against std::search, the lowest common
 // ancestors of the leaves against the lcp of the suffixes (Property 10.9),
-// and of any two nodes against the walk up to the root
+// and of any two nodes against the walk up to the root; the empty pattern
+// (the root, n places), the pattern equal to the text and longer than it,
+// the empty text, and the bounds of node(), leaf(), symbol(), lca(), lce()
 ADS_TEST( "sec10.3.1.search-lca" )
 {
  const SuffixTree B( "banana" );
  CHECK( sorted( B.locate( "na" ) ) == Places( { 2 , 4 } ) );
  CHECK( B.locus( "anas" ) == SuffixTree::npos && B.count( "anas" ) == 0 );
+ CHECK( B.locus( "" ) == B.root() && B.count( "" ) == 6 );
+ CHECK( sorted( B.locate( "" ) ) == Places( { 0 , 1 , 2 , 3 , 4 , 5 } ) );
+ CHECK( B.count( "banana" ) == 1 && B.locate( "banana" ) == Places( { 0 } ) );
+ CHECK( B.count( "bananas" ) == 0 && B.locate( "bananab" ).empty() );
+ CHECK( B.lca( B.root() , B.leaf( 0 ) ) == B.root() );
+ CHECK( B.lca( B.leaf( 3 ) , B.leaf( 3 ) ) == B.leaf( 3 ) );
+ CHECK( B.lce( 6 , 6 ) == 0 && B.lce( 2 , 2 ) == 4 );
+ const SuffixTree E( "" );
+ CHECK( E.textSize() == 0 && E.count( "" ) == 0 && E.count( "a" ) == 0 &&
+        E.locate( "" ).empty() && E.lce( 0 , 0 ) == 0 );
+ CHECK_THROWS( B.node( B.size() ) , contract_violation );
+ CHECK_THROWS( B.leaf( 7 ) , contract_violation );
+ CHECK_THROWS( B.symbol( 7 ) , contract_violation );
+ CHECK_THROWS( B.lca( 0 , B.size() ) , contract_violation );
+ CHECK_THROWS( B.lce( 7 , 0 ) , contract_violation );
+ CHECK_THROWS( B.lce( 0 , 7 ) , contract_violation );
  std::mt19937 g( 1 );
  for( const auto & T : texts() ) {
   if( T.size() > 400 ) continue;
@@ -439,7 +503,8 @@ ADS_TEST( "sec10.3.1.search-lca" )
 
 // the parsing of mississippi of section 10.4.2, and on all the texts the
 // parsing that copies from the leftmost of the longest earlier matches,
-// found by brute force, and the decoding
+// found by brute force, and the decoding; the empty text, one symbol, a
+// phrase that copies nothing, and the two preconditions of the decoding
 ADS_TEST( "sec10.4.2.lz77" )
 {
  auto ph = []( std::size_t d , std::size_t l , char c ) {
@@ -479,13 +544,21 @@ ADS_TEST( "sec10.4.2.lz77" )
   CHECK( lz77ByTree( T ) == R );
   CHECK( decodeCopyPhrases( R ) == T );
   }
+ CHECK( lz77ByTree( "" ).empty() && decodeCopyPhrases( {} ).empty() );
+ CHECK( lz77ByTree( "x" ) ==
+        std::vector< CopyPhrase >( { ph( 0 , 0 , 'x' ) } ) );
+ CHECK( decodeCopyPhrases( { ph( 0 , 0 , 'a' ) , ph( 1 , 0 , 'b' ) } ) ==
+        "ab" );                                 // a copy of nothing
  CHECK_THROWS( decodeCopyPhrases( { ph( 1 , 1 , 'a' ) } ) ,
+               contract_violation );
+ CHECK_THROWS( decodeCopyPhrases( { ph( 0 , 0 , 'a' ) , ph( 0 , 1 , 'b' ) } ) ,
                contract_violation );
  }
 
 // the longest repeated substring, the repeats of length L at least C
 // times, the distinct substrings and the proximity search against brute
-// force
+// force; the proximity of a pattern with itself, at distance 0 and of an
+// absent pattern, the repeats longer than the text and of the empty string
 ADS_TEST( "sec10.4.3.text-mining" )
 {
  std::mt19937 g( 1 );
@@ -530,13 +603,19 @@ ADS_TEST( "sec10.4.3.text-mining" )
    CHECK( proximity( A , P , Q , k ) == near );
    }
   }
+ const SuffixArray A( "abab" );               // P = Q, k = 0, too long
+ CHECK( proximity( A , "ab" , "ab" , 0 ) && ! proximity( A , "a" , "b" , 0 ) );
+ CHECK( proximity( A , "a" , "b" , 1 ) && ! proximity( A , "abc" , "a" , 9 ) );
+ CHECK( ! repeatedSubstring( A , 5 , 1 ) && repeatedSubstring( A , 4 , 1 ) );
+ CHECK( ! repeatedSubstring( A , 0 , 6 ) && repeatedSubstring( A , 0 , 5 ) );
  CHECK_THROWS( repeatedSubstring( SuffixArray( "ab" ) , 1 , 0 ) ,
                contract_violation );
  }
 
 // the longest substring common to k of m strings: for two strings as long
 // as the dynamic programming of LongestCommonSubsequence.h, for more as
-// long as the longest substring of the first one in k of them
+// long as the longest substring of the first one in k of them; an empty
+// string, two equal ones, two disjoint ones, and k = 0, k > m, m = 0
 ADS_TEST( "sec10.4.common-substring" )
 {
  std::mt19937 g( 1 );
@@ -564,7 +643,15 @@ ADS_TEST( "sec10.4.common-substring" )
  CHECK( longestCommonSubstring( { "xabcy" , "zabcw" , "abq" } , 3 ) == "ab" );
  CHECK( longestCommonSubstring( { "xabcy" , "zabcw" , "abq" } , 2 ) ==
         "abc" );
+ CHECK( longestCommonSubstring( { "" , "abc" } , 2 ).empty() );
+ CHECK( longestCommonSubstring( { "" , "abc" } , 1 ) == "abc" );
+ CHECK( longestCommonSubstring( { "abc" , "abc" } , 2 ) == "abc" );
+ CHECK( longestCommonSubstring( { "aaa" , "bbb" } , 2 ).empty() );
  CHECK_THROWS( longestCommonSubstring( { "a" } , 2 ) , contract_violation );
+ CHECK_THROWS( longestCommonSubstring( { "a" , "b" } , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( longestCommonSubstring( std::vector< std::string >() , 1 ) ,
+               contract_violation );
  }
 
 // the maximal repeats against brute force: the substrings that occur
@@ -598,12 +685,17 @@ ADS_TEST( "sec10.4.maximal-repeats" )
 
 // the k mismatches of Algorithm 10.4 against the count of the
 // substitutions at every place; Figure 10.11 has P at 1 (from 1) with 2
-// mismatches
+// mismatches; P longer than T, equal to T, k = | P |, P and T empty
 ADS_TEST( "sec10.4.1.k-mismatches" )
 {
  const Places F = kMismatches( "CCGTACGATCAGTA" , "CCGAACT" , 2 );
  CHECK( std::find( F.begin() , F.end() , 0 ) != F.end() );
  CHECK( kMismatches( "CCGTACGATCAGTA" , "CCGAACT" , 1 ).empty() );
+ CHECK( kMismatches( "ab" , "abc" , 5 ).empty() );     // P longer than T
+ CHECK( kMismatches( "abc" , "abc" , 0 ) == Places( { 0 } ) );
+ CHECK( kMismatches( "abc" , "xyz" , 3 ) == Places( { 0 } ) );
+ CHECK( kMismatches( "abc" , "" , 0 ) == Places( { 0 , 1 , 2 , 3 } ) );
+ CHECK( kMismatches( "" , "" , 0 ) == Places( { 0 } ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const int sigma = 1 + int( g() % 4 );

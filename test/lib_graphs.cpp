@@ -153,8 +153,8 @@ ListGraph<> gridGraph( const Matrix & M , const Moves & moves )
 
 /// the most pairs of a b-matching, over all the subsets of the edges
 int bMatchingBrute( const std::vector< std::pair< int , int > > & E , int nl ,
-                    int nr , const std::vector< long > & cl ,
-                    const std::vector< long > & cr )
+                    int nr , const std::vector< long long > & cl ,
+                    const std::vector< long long > & cr )
 {
  int best = 0;
  for( unsigned m = 0 ; m < ( 1u << E.size() ) ; ++m ) {
@@ -607,7 +607,7 @@ ADS_TEST( "refueling-stops" )
 // random forests and graphs against one component of cc() and n - 1
 // edges; the diameter against Floyd-Warshall with unit weights and the
 // largest distance(); the trees by two visits against diameter(); the
-// binary trees against their graphs
+// binary trees against their graphs; a path of 100000 nodes
 ADS_TEST( "trees-and-diameters" )
 {
  std::mt19937 g( 9 );
@@ -684,6 +684,11 @@ ADS_TEST( "trees-and-diameters" )
  CHECK_THROWS( diameter( ListGraph<>( 2 , false ) ) , contract_violation );
  CHECK_THROWS( treeDiameter( ListGraph<>( 2 , false ) ) ,
                contract_violation );
+ // a path of 100000 nodes: the visits are not recursive
+ const int n = 100000;
+ ListGraph<> path( n , false );
+ for( int u = 0 ; u + 1 < n ; ++u ) path.insertEdge( u , u + 1 );
+ CHECK( isTree( path ) && treeDiameter( path ) == n - 1 );
  }
 
 // the minimum vertex cover of random forests against all the subsets of
@@ -877,10 +882,10 @@ ADS_TEST( "bipartite-b-matching" )
      A[ u ].push_back( v );
      E.emplace_back( u , v );
      }
-  std::vector< long > cl( nl ) , cr( nr );
-  for( long & c : cl )
+  std::vector< long long > cl( nl ) , cr( nr );
+  for( long long & c : cl )
    c = t % 3 ? rnd( g , 0 , 3 ) : 1;
-  for( long & c : cr )
+  for( long long & c : cr )
    c = t % 3 ? rnd( g , 0 , 3 ) : 1;
   const auto M = bipartiteBMatching( A , nr , cl , cr );
   CHECK( int( M.size() ) == bMatchingBrute( E , nl , nr , cl , cr ) );

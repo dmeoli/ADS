@@ -119,7 +119,7 @@ class MatrixGraph : public GraphNodes< T > {
   };
 
  /// the nodes adjacent to u in increasing order, bidirectional
- /// \\pre u is a node
+ /// \pre u is a node
  [[nodiscard]] auto neighbors( int u ) const {
   using It = SlotIterator< std::vector< std::optional< W > > , Present >;
   const auto & r = f_M[ this->check( u ) ];

@@ -78,6 +78,7 @@ class MultiStack {
  /// \pre 0 <= i < k, the stack i is not empty
  [[nodiscard]] const T & top( int i ) const;
 
+ /// v on the stack i; v may be an item of the stacks, e.g., top( j )
  /// \pre 0 <= i < k
  /// \post one item more in the stack i
  void push( int i , const T & v );
@@ -105,7 +106,7 @@ class MultiStack {
   IndexIterator< Cell , T , &Cell::below , &Cell::value >;
 
  /// the items of the stack i, the top first
- /// \\pre 0 <= i < stacks()
+ /// \pre 0 <= i < stacks()
  [[nodiscard]] std::ranges::subrange< const_iterator > stack( int i ) const {
   ADS_PRE( ( i >= 0 ) && ( i < stacks() ) );
   return( std::ranges::subrange( const_iterator( &f_C , f_top[ i ] ) ,

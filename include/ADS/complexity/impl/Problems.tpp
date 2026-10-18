@@ -78,7 +78,7 @@ inline bool independent( const Adjacency & G , const Nodes & S )
 {
  for( int u : S )
   for( int v : S )
-   if( G[ u ][ v ] ) return( false );
+   if( ( u != v ) && G[ u ][ v ] ) return( false );     // loops ignored
  return( places( S , G.size() ) );
  }
 
@@ -437,6 +437,7 @@ bool tspCertificate( const std::vector< std::vector< T > > & D , T k ,
  ADS_PRE( detail::square( D ) );
  const std::size_t n = P.size();
  if( n != D.size() ) return( false );
+ if( n == 0 ) return( T( 0 ) <= k );               // the empty tour
  std::vector< bool > seen( n , false );
  for( int c : P ) {
   if( ( c < 0 ) || ( c >= int( n ) ) || seen[ c ] ) return( false );
@@ -453,7 +454,8 @@ std::optional< Nodes > tsp( const std::vector< std::vector< T > > & D , T k )
  ADS_PRE( detail::square( D ) );
  const auto result = [ & ]( void ) -> std::optional< Nodes > {
   const int n = int( D.size() );
-  if( n == 0 ) return( Nodes() );
+  if( n == 0 )                                      // the empty tour
+   return( T( 0 ) <= k ? std::optional< Nodes >( Nodes() ) : std::nullopt );
   Nodes S = { 0 };
   std::vector< bool > used( n , false );
   used[ 0 ] = true;
@@ -814,6 +816,7 @@ multiprocessorScheduling( const std::vector< long > & t , int m , long d )
 {
  ADS_PRE( ( m >= 1 ) && detail::nonnegative( t ) );
  const auto result = [ & ]( void ) -> std::optional< std::vector< int > > {
+  if( d < 0 ) return( std::nullopt );          // no load is below 0
   std::vector< int > a( t.size() , -1 );
   std::vector< long > load( m , 0 );
   auto rec = [ & ]( auto & self , std::size_t i ) -> bool {

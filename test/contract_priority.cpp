@@ -25,15 +25,20 @@
 
 #include "ADSTest.h"
 
+#include "ADS/priority/BucketQueue.h"
+#include "ADS/priority/DaryHeap.h"
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
 #include "ADS/priority/ListPriorityQueue.h"
+#include "ADS/priority/LoserTree.h"
 #include "ADS/priority/TreePriorityQueue.h"
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <list>
+#include <optional>
 #include <random>
 #include <set>
 #include <vector>
@@ -54,8 +59,9 @@ namespace {
 
 // PRIORITYQUEUE on HeapPriorityQueue: the preconditions of min(),
 // deleteMin(), insert() and decrease() violated, a handle of another
-// queue refused, and random operations against std::multiset, each
-// checking the order of the heap
+// queue refused, a decrease() to the same priority and to the least int
+// allowed, the capacities 0 and 1, and random operations against
+// std::multiset, each checking the order of the heap
 ADS_TEST( "heap-priority-queue" )
 {
  CHECK_THROWS( HeapPriorityQueue< int >( -1 ) , contract_violation );
@@ -72,6 +78,18 @@ ADS_TEST( "heap-priority-queue" )
  CHECK_THROWS( Q.decrease( foreign , 0 ) , contract_violation );
  Q.decrease( h , 1 );
  CHECK( Q.min() == 1 && Q.minPriority() == 1 );
+ Q.decrease( h , 1 );                         // the same priority: inside
+ Q.decrease( h , std::numeric_limits< int >::min() );
+ CHECK( Q.min() == 1 && Q.size() == 3 );
+ HeapPriorityQueue< int > Z( 0 );             // capacity 0: never insert
+ CHECK_THROWS( Z.insert( 1 , 1 ) , contract_violation );
+ CHECK_THROWS( Z.deleteMin() , contract_violation );
+ HeapPriorityQueue< int > C( 1 );             // capacity 1: full, emptied
+ C.insert( 5 , 5 );
+ CHECK_THROWS( C.insert( 6 , 6 ) , contract_violation );
+ CHECK( C.deleteMin() == 5 && C.isEmpty() );
+ C.insert( 6 , 6 );
+ CHECK( C.min() == 6 );
  std::mt19937 g( 2 );
  for( int d = 0 ; d < 3 ; ++d ) {
   HeapPriorityQueue< int , int , 4 > H( 500 );
@@ -150,7 +168,8 @@ void against_multiset( Make make , unsigned seed , int ops )
 
 // PRIORITYQUEUE on the sorted and the unsorted list: the preconditions of
 // min(), deleteMin() and decrease() violated, a cell of another queue
-// refused, and random operations against std::multiset
+// refused, a decrease() to the same priority allowed, and random
+// operations against std::multiset
 ADS_TEST( "list-priority-queue" )
 {
  ListPriorityQueue< int , int , true > Q , O;
@@ -165,6 +184,11 @@ ADS_TEST( "list-priority-queue" )
  CHECK( Q.min() == 1 && Q.deleteMin() == 1 && Q.min() == 2 );
  ListPriorityQueue< int , int , false > U;
  CHECK_THROWS( U.deleteMin() , contract_violation );
+ CHECK_THROWS( (void) U.min() , contract_violation );
+ auto u = U.insert( 4 , 4 );
+ U.decrease( u , 4 );                         // the same priority: inside
+ CHECK_THROWS( U.decrease( u , 5 ) , contract_violation );
+ CHECK( U.deleteMin() == 4 && U.isEmpty() );
  against_multiset< ListPriorityQueue< int , int , true > >(
   [] { return( ListPriorityQueue< int , int , true >() ); } , 3 , 1000 );
  against_multiset< ListPriorityQueue< int , int , false > >(
@@ -172,7 +196,8 @@ ADS_TEST( "list-priority-queue" )
  }
 
 // PRIORITYQUEUE on a Red-Black tree: the preconditions violated, a handle
-// already removed refused, and random operations against std::multiset
+// already removed refused, the handles -1 and n just outside, a decrease()
+// to the same priority, and random operations against std::multiset
 ADS_TEST( "tree-priority-queue" )
 {
  TreePriorityQueue< int > Q;
@@ -181,6 +206,9 @@ ADS_TEST( "tree-priority-queue" )
  const auto h = Q.insert( 1 , 5 ) , k = Q.insert( 2 , 3 );
  CHECK_THROWS( Q.decrease( h , 9 ) , contract_violation );
  CHECK_THROWS( Q.decrease( 7 , 0 ) , contract_violation );
+ CHECK_THROWS( Q.decrease( -1 , 0 ) , contract_violation );
+ CHECK_THROWS( Q.decrease( 2 , 0 ) , contract_violation );   // just out
+ Q.decrease( k , 3 );                         // the same priority
  CHECK( Q.deleteMin() == 2 );
  CHECK_THROWS( Q.decrease( k , 0 ) , contract_violation );
  Q.decrease( h , 1 );
@@ -190,7 +218,8 @@ ADS_TEST( "tree-priority-queue" )
  }
 
 // PRIORITYQUEUE on a Fibonacci heap: the preconditions violated, a node of
-// another heap refused, and random operations against std::multiset, each
+// another heap and nil refused, and random operations against
+// std::multiset, each
 // checking the trees at the level 3
 ADS_TEST( "fibonacci-heap-priority-queue" )
 {
@@ -204,6 +233,7 @@ ADS_TEST( "fibonacci-heap-priority-queue" )
  CHECK_THROWS( Q.decrease( h , 9 ) , contract_violation );
  auto foreign = O.insert( 9 , 9 );
  CHECK_THROWS( Q.decrease( foreign , 0 ) , contract_violation );
+ CHECK_THROWS( Q.decrease( nullptr , 0 ) , contract_violation );
  CHECK( Q.deleteMin() == 2 );                 // the trees are consolidated
  Q.decrease( h , 1 );
  CHECK( Q.min() == 1 && Q.minPriority() == 1 && Q.size() == 2 );
@@ -296,6 +326,75 @@ ADS_TEST( "priority-axioms" )
  priority_axioms< FH >( [] { return( FH() ); } , 6 );
  priority_axioms< LH >( [] { return( LH() ); } , 7 );
  priority_axioms< LL >( [] { return( LL() ); } , 8 );
+ }
+
+// the bucket queue: f , g >= 0 (0 just inside, -1 just outside), the
+// readings and the removals of an empty queue, ties of f broken by the
+// largest g, a queue emptied and filled again; the D-ary heap of 2 and 3
+// children: top() and pop() on an empty heap, one item, equal items; the
+// loser tree: no player refused, one player, every player exhausted, a
+// comparator that is not an order caught by the invariant; kWayMerge()
+// refusing an unsorted run, no run, empty runs
+ADS_TEST( "bucket-dary-loser" )
+{
+ BucketQueue< int > B;
+ CHECK_THROWS( B.push( 1 , -1 , 0 ) , contract_violation );
+ CHECK_THROWS( B.push( 1 , 0 , -1 ) , contract_violation );
+ CHECK_THROWS( (void) B.top() , contract_violation );
+ CHECK_THROWS( (void) B.topF() , contract_violation );
+ CHECK_THROWS( (void) B.topG() , contract_violation );
+ CHECK_THROWS( B.pop() , contract_violation );
+ CHECK_THROWS( B.popEntry() , contract_violation );
+ B.push( 1 , 0 , 0 );
+ B.push( 2 , 0 , 5 );
+ B.push( 3 , 4 , 9 );
+ CHECK( B.top() == 2 && B.topF() == 0 && B.topG() == 5 );
+ CHECK( B.pop() == 2 && B.pop() == 1 );
+ const auto e = B.popEntry();
+ CHECK( e.f == 4 && e.g == 9 && B.isEmpty() );
+ CHECK_THROWS( B.pop() , contract_violation );
+ B.push( 7 , 2 , 2 );                         // filled again, below
+ CHECK( B.top() == 7 && B.size() == 1 );
+ B.clear();
+ CHECK_THROWS( (void) B.top() , contract_violation );
+
+ DaryHeap< int , std::less< int > , 2 > H2;
+ DaryHeap< int , std::greater< int > , 3 > H3;
+ CHECK_THROWS( (void) H2.top() , contract_violation );
+ CHECK_THROWS( H3.pop() , contract_violation );
+ H2.push( 5 );
+ CHECK( H2.top() == 5 && H2.pop() == 5 && H2.isEmpty() );
+ CHECK_THROWS( H2.pop() , contract_violation );
+ for( int x : { 4 , 4 , 4 , std::numeric_limits< int >::min() ,
+                std::numeric_limits< int >::max() } ) {
+  H2.push( x );
+  H3.push( x );
+  }
+ CHECK( H2.pop() == std::numeric_limits< int >::min() &&
+        H3.pop() == std::numeric_limits< int >::max() );
+ CHECK( H2.pop() == 4 && H3.pop() == 4 && H2.size() == 3 );
+
+ using O = std::vector< std::optional< int > >;
+ CHECK_THROWS( LoserTree< int >( O{} ) , contract_violation );
+ LoserTree< int > L1( O{ 3 } );               // one player
+ CHECK( L1.top() == 3 && L1.winner() == 0 );
+ L1.replace( std::nullopt );
+ CHECK( L1.isEmpty() );
+ CHECK_THROWS( (void) L1.top() , contract_violation );
+ CHECK_THROWS( (void) L1.winner() , contract_violation );
+ CHECK_THROWS( L1.replace( 1 ) , contract_violation );
+ LoserTree< int > L0( O{ std::nullopt , std::nullopt } );
+ CHECK( L0.isEmpty() );
+ const auto always = []( int , int ) { return( true ); };
+ CHECK_THROWS( ( LoserTree< int , decltype( always ) >( O{ 1 , 2 } ,
+                                                        always ) ) ,
+               contract_violation );
+ using R = std::vector< std::vector< int > >;
+ CHECK( kWayMerge( R{} ).empty() && kWayMerge( R{ {} , {} } ).empty() );
+ CHECK( kWayMerge( R{ { 2 , 2 } , {} , { 1 } } ) ==
+        std::vector< int >( { 1 , 2 , 2 } ) );
+ CHECK_THROWS( (void) kWayMerge( R{ { 1 } , { 3 , 2 } } ) ,
+               contract_violation );
  }
 
 }  // end( namespace )

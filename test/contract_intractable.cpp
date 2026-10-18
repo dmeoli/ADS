@@ -244,8 +244,9 @@ ADS_TEST( "heuristics" )
   }
  }
 
-// the structure with buckets: its preconditions, and its invariant on
-// random operations
+// the structure with buckets: its preconditions, each bound just inside
+// and just outside (n = 0, the node -1 and n, k at -1 and 2, h at n + 1),
+// and its invariant on random operations
 ADS_TEST( "buckets" )
 {
  CHECK_THROWS( Buckets( -1 ) , contract_violation );
@@ -274,6 +275,167 @@ ADS_TEST( "buckets" )
     }
    }
   }
+ // the bounds of each query, just inside and just outside
+ Buckets E( 0 );
+ CHECK_THROWS( ( void ) E.contains( 0 ) , contract_violation );
+ CHECK( E.dim( 0 , 0 ) == 0 && E.bucket( 1 , 0 ).empty() );
+ CHECK_THROWS( ( void ) E.choose( 1 ) , contract_violation );
+ Buckets F( 2 );
+ CHECK_THROWS( ( void ) F.contains( -1 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.contains( 2 ) , contract_violation );
+ CHECK_THROWS( F.insert( -1 ) , contract_violation );
+ CHECK_THROWS( F.insert( 2 ) , contract_violation );
+ CHECK_THROWS( F.remove( 0 ) , contract_violation );       // not there
+ CHECK_THROWS( F.inc( 0 , 0 ) , contract_violation );      // not there
+ F.insert( 0 );
+ F.insert( 1 );
+ CHECK_THROWS( F.inc( -1 , 0 ) , contract_violation );
+ CHECK_THROWS( F.inc( 0 , 2 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.count( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.count( 0 , -1 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.bucket( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.bucket( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.bucket( 0 , -1 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.dim( -1 , 0 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.min( 2 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.max( -1 ) , contract_violation );
+ CHECK_THROWS( ( void ) F.choose( 2 ) , contract_violation );
+ CHECK( F.bucket( 0 , 2 ).empty() && F.dim( 1 , 2 ) == 0 &&
+        F.count( 1 , 1 ) == 0 );
+ F.inc( 1 , 1 );
+ F.inc( 1 , 1 );                              // count n: just inside
+ CHECK_THROWS( F.inc( 1 , 1 ) , contract_violation );
+ F.remove( 1 );
+ CHECK( ! F.contains( 1 ) && F.contains( 0 ) );
+ }
+
+// the preconditions of the other functions, each bound just inside and
+// just outside: the volumes at 0 , k , k + 1 and -1, a tour with a place
+// out of the matrix, the empty instances, the spanning tree of no node and
+// of a place out, the lower bound of a tour with a node out or a skew
+// matrix and the 1-tree, the knapsacks with a volume 0 or a capacity -1,
+// the puzzles of a side 0 or a board not a permutation, a bound nmax of -1
+// and 0, the 2-opt move at its ends, k = 0 and k = n of the neighbours, the
+// schedules of no processor
+ADS_TEST( "other-intractable" )
+{
+ CHECK( firstFit( { 0 , 5 , 5 } , 5 ).size() == 3 &&
+        firstFit( {} , 0 ).empty() );
+ CHECK_THROWS( firstFit( { -1 } , 5 ) , contract_violation );
+ CHECK_THROWS( firstFit( { 6 } , 5 , true ) , contract_violation );
+ const Matrix D1 = { { 0 } } , D2 = { { 0 , 3 } , { 3 , 0 } };
+ CHECK( tourCost( D2 , { 0 , 1 } ) == 6 && tourCost( D1 , { 0 } ) == 0 );
+ CHECK_THROWS( tourCost( D2 , { 0 , 2 } ) , contract_violation );
+ CHECK_THROWS( tourCost( D2 , { -1 , 0 } ) , contract_violation );
+ CHECK( deltaTsp( D1 ).size() == 1 && deltaTsp( D2 ).size() == 2 );
+ CHECK( apSubsetSum( {} , 0 , 0 ).first == 0 &&
+        apSubsetSum( { 4 , 5 } , 9 , 0 ).first <= 9 );
+ CHECK_THROWS( apSubsetSum( { 1 } , -1 , 1 ) , contract_violation );
+ CHECK_THROWS( apSubsetSum( { -1 } , 1 , 1 ) , contract_violation );
+ CHECK_THROWS( knapsackApprox( { 1 } , { 1 } , 1 , 1.01 ) ,
+               contract_violation );
+ CHECK_THROWS( knapsackApprox( { -1 } , { 1 } , 1 , 0.5 ) ,
+               contract_violation );
+ CHECK_THROWS( knapsackApprox( { 1 } , { 1 } , -1 , 0.5 ) ,
+               contract_violation );
+ CHECK( knapsackApprox( { 3 } , { 2 } , 2 , 1.0 ).first == 3 &&
+        knapsackApprox( {} , {} , 0 , 0.5 ).first == 0 );
+ CHECK( vertexCoverApprox( Adjacency() ).empty() );
+
+ CHECK( spanningTreeWeight( D2 , { 0 , 1 } ) == 3 &&
+        spanningTreeWeight( D2 , { 1 } ) == 0 );
+ CHECK_THROWS( spanningTreeWeight( D2 , { 2 } ) , contract_violation );
+ CHECK_THROWS( spanningTreeWeight( skew , { 0 , 1 } ) , contract_violation );
+ CHECK( oneTree( D2 , 1 ) >= 0 );
+ CHECK_THROWS( oneTree( D2 , -1 ) , contract_violation );
+ CHECK_THROWS( tspLowerBound( D2 , { 2 } ) , contract_violation );
+ CHECK_THROWS( tspLowerBound( Matrix{ { 0 , 1 } } , { 0 } ) ,
+               contract_violation );
+ CHECK_THROWS( tspLowerBound( skew , { 0 } , TspBound::ONE_TREE ) ,
+               contract_violation );
+ CHECK( tspLowerBound( skew , { 0 } ) >= 0 );     // BOOK: any square
+ CHECK( bbTsp( D1 ).first == 0 && bbTsp( D2 , { 1 , 0 } ).first == 6 &&
+        littleTsp( D2 ).first == 6 );
+ CHECK_THROWS( bbTsp( Matrix{ { 0 , 1 } } ) , contract_violation );
+ CHECK_THROWS( bbTsp( D2 , { 0 } ) , contract_violation );
+ CHECK_THROWS( maxWeightClique( Adjacency( 1 , std::vector< bool >( 1 ) ) ,
+                                { -1 } ) , contract_violation );
+ CHECK( maxWeightClique( Adjacency() , {} ).first == 0 );
+ for( auto knap : { +[]( const Longs & p , const Longs & v , long C ) {
+                     return( knapsackBacktrack( p , v , C ).first ); } ,
+                    +[]( const Longs & p , const Longs & v , long C ) {
+                     return( knapsackGreedy( p , v , C ).first ); } ,
+                    +[]( const Longs & p , const Longs & v , long C ) {
+                     return( knapsackBB( p , v , C ).first ); } } ) {
+  CHECK_THROWS( knap( { 1 } , { 1 , 1 } , 1 ) , contract_violation );
+  CHECK_THROWS( knap( { 1 } , { 1 } , -1 ) , contract_violation );
+  CHECK_THROWS( knap( { -1 } , { 1 } , 1 ) , contract_violation );
+  CHECK_THROWS( knap( { 1 } , { 0 } , 1 ) , contract_violation );
+  CHECK( knap( {} , {} , 0 ) == 0 && knap( { 5 } , { 2 } , 1 ) == 0 &&
+         knap( { 5 } , { 2 } , 2 ) == 5 );
+  }
+
+ CHECK( puzzleGoal( 1 ) == Board( { 0 } ) &&
+        puzzleSpiralGoal( 1 ) == Board( { 0 } ) &&
+        puzzleSpiralGoal( 3 ) == Board( { 1 , 2 , 3 , 8 , 0 , 4 , 7 , 6 ,
+                                          5 } ) );
+ CHECK_THROWS( puzzleSpiralGoal( 0 ) , contract_violation );
+ CHECK_THROWS( puzzleGoal( -1 ) , contract_violation );
+ const Board G2 = puzzleGoal( 2 );
+ CHECK_THROWS( manhattan( G2 , 0 ) , contract_violation );
+ CHECK_THROWS( manhattan( { 0 , 1 , 2 , 4 } , 2 ) , contract_violation );
+ CHECK_THROWS( manhattan( { -1 , 1 , 2 , 3 } , 2 ) , contract_violation );
+ CHECK( manhattan( G2 , 2 ) == 0 && solvable( G2 , 2 ) &&
+        solvePuzzle( G2 , 2 )->size() == 1 &&
+        puzzleMoves( Board( { 0 } ) , 1 ).empty() );
+ CHECK_THROWS( puzzleBFS( G2 , { 0 , 1 , 2 } , 2 ) , contract_violation );
+ CHECK_THROWS( puzzleBFS( { 0 } , G2 , 2 ) , contract_violation );
+ CHECK_THROWS( puzzleDFS( G2 , G2 , 2 , -1 ) , contract_violation );
+ CHECK_THROWS( puzzleDFS( G2 , { 0 , 0 , 1 , 2 } , 2 , 3 ) ,
+               contract_violation );
+ CHECK( puzzleBFS( G2 , G2 , 2 )->size() == 1 &&
+        puzzleDFS( G2 , G2 , 2 , 0 )->size() == 1 );
+ const Board M1 = puzzleMoves( G2 , 2 ).front();
+ CHECK( ! puzzleDFS( M1 , G2 , 2 , 0 ) && puzzleDFS( M1 , G2 , 2 , 1 ) );
+
+ const Nodes pi = { 0 , 1 , 2 , 3 };
+ CHECK( twoOptMove( pi , 0 , 3 ).size() == 4 &&
+        twoOptMove( pi , 2 , 3 ).size() == 4 );
+ CHECK_THROWS( twoOptMove( pi , -1 , 2 ) , contract_violation );
+ CHECK_THROWS( twoOptMove( pi , 1 , 4 ) , contract_violation );
+ CHECK_THROWS( twoOptMove( pi , 2 , 1 ) , contract_violation );
+ CHECK( kOptNeighbours( 3 , 0 ) >= 0 && kOptNeighbours( 3 , 3 ) >= 0 );
+ CHECK_THROWS( kOptNeighbours( 3 , -1 ) , contract_violation );
+ CHECK_THROWS( kOptNeighbours( 3 , 4 ) , contract_violation );
+ CHECK_THROWS( greedyTsp( skew ) , contract_violation );
+ CHECK_THROWS( twoOpt( skew , { 0 , 1 } ) , contract_violation );
+ CHECK_THROWS( partitionLocalSearch( { 1 } , { 0 , 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( minMaxGreedy( Adjacency( 2 , std::vector< bool >( 2 ) ) , -1 ,
+                             1 ) , contract_violation );
+ CHECK_THROWS( minMaxGreedy( Adjacency( 2 , std::vector< bool >( 2 ) ) , 0 ,
+                             2 ) , contract_violation );
+ CHECK_THROWS( minMaxGreedy( Adjacency( 2 , std::vector< bool >( 2 ) ) , 1 ,
+                             1 ) , contract_violation );
+ CHECK( minMaxGreedy( Adjacency( 2 , std::vector< bool >( 2 ) ) , 0 , 1 )
+        .size() == 2 );
+ CHECK_THROWS( cutSize( Adjacency{ { false , false } } , { 0 } ) ,
+               contract_violation );
+ CHECK( cutSize( Adjacency() , {} ) == 0 && dsatur( Adjacency() ).empty() );
+ CHECK( starAlignment( { "abc" } ).second.size() <= 1 );
+
+ CHECK_THROWS( schedulingDP( { 1 } , -1 , 3 ) , contract_violation );
+ CHECK_THROWS( schedulingDP( { -1 } , 1 , 3 ) , contract_violation );
+ CHECK( schedulingDP( {} , 1 , 0 ) && ! schedulingDP( { 2 } , 1 , 1 ) &&
+        schedulingDP( { 2 } , 1 , 2 ) );
+ CHECK_THROWS( realTimeScheduling( { -1.0 } , { 1.0 } , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( realTimeScheduling( { 1.0 } , { 1.0 } , 0 ) ,
+               contract_violation );
+ CHECK( subsetSumDP( {} , 0 ) && ! subsetSumDP( {} , 1 ) &&
+        partitionDP( {} ) && bottino( {} ) );
+ CHECK( mcNaughton( {} , 1 ).first == 0 &&
+        mcNaughton( { 0.0 } , 1 ).first == 0 );
  }
 
 }  // end( namespace )

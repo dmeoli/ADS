@@ -361,7 +361,7 @@ std::optional< std::vector< std::size_t > > refuelingStops(
   if( best == D.size() )
    return( std::nullopt );
   S.push_back( best );
-  reach = D[ best ] + R;
+  reach = D[ best ] > L - R ? L : D[ best ] + R;      // no overflow, R < L
   }
  ADS_AUDIT( [ & ]( void ) {
   T at = T( 0 );

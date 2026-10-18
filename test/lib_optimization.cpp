@@ -352,7 +352,8 @@ std::optional< I64 > tradingBrute( const Longs & P , std::size_t k )
  }
 
 // at most and exactly k transactions against all the choices of days; the
-// example of the exercise (12), falling prices, too few days
+// example of the exercise (12), falling prices, too few days, k = 0, one
+// day, all prices equal, k far above the days
 ADS_TEST( "stock-trading" )
 {
  CHECK( maxProfitExactly( Longs( { 1 , 3 , 6 , 7 , 4 , 10 } ) , 2 ) == 12 );
@@ -373,6 +374,14 @@ ADS_TEST( "stock-trading" )
  CHECK( ! maxProfitExactly( Longs( { 1 , 2 , 3 } ) , 2 ) );
  CHECK( maxProfitExactly( Longs() , 0 ) == 0 );
  CHECK( maxProfit( Longs() , 3 ) == 0 );
+ // k = 0, one day, all prices equal, k far above the days
+ CHECK( maxProfit( Longs( { 1 , 9 } ) , 0 ) == 0 &&
+        maxProfitExactly( Longs( { 1 , 9 } ) , 0 ) == 0 );
+ CHECK( maxProfit( Longs( { 4 } ) , 1 ) == 0 &&
+        ! maxProfitExactly( Longs( { 4 } ) , 1 ) );
+ CHECK( maxProfit( Longs( 6 , 3 ) , 2 ) == 0 &&
+        maxProfitExactly( Longs( 6 , 3 ) , 3 ) == 0 );
+ CHECK( maxProfit( Longs( { 1 , 5 , 2 , 8 } ) , 100 ) == 10 );
  }
 
 // the largest sum of items no two adjacent against all the masks, also

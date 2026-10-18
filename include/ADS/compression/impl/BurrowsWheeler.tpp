@@ -18,32 +18,14 @@ namespace ADS {
 
 namespace detail {
 
-/// the suffix array of s$, $ smaller than every symbol, by prefix
-/// doubling: SA[ 0 ] = n, the suffix $
+/// the suffix array of s$, $ smaller than every symbol: SA[ 0 ] = n, the
+/// suffix $, followed by the suffix array of s by SA-IS [see
+/// SuffixArray.h], since a suffix that is a prefix of another is the
+/// smaller in both orders
 inline std::vector< std::size_t > sentinelSuffixArray( std::string_view s )
 {
- const std::size_t n1 = s.size() + 1;
- std::vector< std::size_t > sa( n1 ) , rank( n1 ) , tmp( n1 );
- for( std::size_t i = 0 ; i < s.size() ; ++i )
-  rank[ i ] = std::size_t( static_cast< unsigned char >( s[ i ] ) ) + 1;
- rank[ s.size() ] = 0;
- std::iota( sa.begin() , sa.end() , std::size_t( 0 ) );
- if( n1 == 1 ) return( sa );
- for( std::size_t k = 1 ; ; k *= 2 ) {
-  // the key of a suffix: the ranks of its two halves of length k, the
-  // second 0 past the end (only the $ can reach it, and it is unique)
-  auto key = [ & ]( std::size_t i ) {
-   return( std::pair( rank[ i ] , i + k < n1 ? rank[ i + k ] + 1 : 0 ) );
-   };
-  std::sort( sa.begin() , sa.end() , [ & ]( std::size_t a , std::size_t b ) {
-   return( key( a ) < key( b ) ); } );
-  tmp[ sa[ 0 ] ] = 0;
-  for( std::size_t i = 1 ; i < n1 ; ++i )
-   tmp[ sa[ i ] ] = tmp[ sa[ i - 1 ] ] +
-                    ( key( sa[ i - 1 ] ) < key( sa[ i ] ) ? 1 : 0 );
-  rank.swap( tmp );
-  if( rank[ sa[ n1 - 1 ] ] == n1 - 1 ) break;   // all ranks distinct
-  }
+ std::vector< std::size_t > sa = suffixArraySais( s );
+ sa.insert( sa.begin() , s.size() );
  return( sa );
  }
 

@@ -62,7 +62,8 @@ class ParentTree {
  [[nodiscard]] int parent( int i ) const;
 
  /// makes the node i a child of the node j, or a root if j = -1
- /// \pre i and j are nodes, or j = -1 , and i != j
+ /// \pre i and j are nodes, or j = -1 , and i != j; j is not in the
+ ///      subtree of i (which would make a cycle)
  void setParent( int i , int j );
 
  /// the number of nodes
@@ -70,6 +71,9 @@ class ParentTree {
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ /// true if the node j is in the subtree of i, O( depth of j )
+ [[nodiscard]] bool below( int j , int i ) const;
 
  std::vector< int > f_p;   ///< the vector of parents
 

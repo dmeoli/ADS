@@ -18,6 +18,15 @@ namespace ADS {
 
 namespace detail {
 
+/// a frame of the recursion of a visit in depth, kept on an explicit stack
+/// so that a path of 10^5 nodes does not overflow the stack of the calls:
+/// the node, its adjacent nodes and the place of the next one
+struct DfsFrame {
+ int u;
+ std::vector< int > A;
+ std::size_t i = 0;
+ };
+
 /// d and p are the distances and the parents of a breadth first visit from
 /// r: d[ r ] = 0, d[ v ] = d[ p[ v ] ] + 1 on the reached nodes but r, and
 /// no edge from a reached node goes further than one level
@@ -119,13 +128,15 @@ inline std::vector< int > path( int r , int s , const std::vector< int > & p )
 {
  ADS_PRE( ( r >= 0 ) && ( r < int( p.size() ) ) && ( s >= 0 ) &&
           ( s < int( p.size() ) ) );
- if( r == s )
-  return( std::vector< int >{ s } );
- if( p[ s ] == NIL )
-  return( std::vector< int >() );
- auto out = path( r , p[ s ] , p );
- if( ! out.empty() )
-  out.push_back( s );
+ std::vector< int > out = { s };                    // from s up to r
+ for( int x = s ; x != r ; ) {
+  x = p[ x ];
+  if( ( x == NIL ) || ( out.size() >= p.size() ) )   // none, or a cycle
+   return( std::vector< int >() );
+  ADS_PRE( ( x >= 0 ) && ( x < int( p.size() ) ) );
+  out.push_back( x );
+  }
+ std::reverse( out.begin() , out.end() );
  ADS_POST( out.empty() || ( ( out.front() == r ) && ( out.back() == s ) ) );
  return( out );
  }
@@ -140,14 +151,26 @@ void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
 {
  ADS_PRE( g.hasNode( u ) && ( int( visited.size() ) >= g.bound() ) &&
           ! visited[ u ] );
- visited[ u ] = true;
- pre( u );                                            // (1)
- g.forEachAdj( u , [ & ]( int v ) {
-  edge( u , v );
-  if( ! visited[ v ] )
-   dfs( g , v , visited , pre , edge , post );
-  } );
- post( u );                                           // (2)
+ std::vector< detail::DfsFrame > S;                  // the recursion
+ auto discover = [ & ]( int v ) {
+  visited[ v ] = true;
+  pre( v );                                           // (1)
+  S.push_back( detail::DfsFrame{ v , g.adj( v ) } );
+  };
+ discover( u );
+ while( ! S.empty() ) {
+  auto & f = S.back();
+  if( f.i == f.A.size() ) {                           // the return
+   const int x = f.u;
+   S.pop_back();
+   post( x );                                         // (2)
+   continue;
+   }
+  const int x = f.u , v = f.A[ f.i++ ];
+  edge( x , v );
+  if( ! visited[ v ] )                                // the call
+   discover( v );
+  }
  }
 
 template< Graph G >
@@ -156,16 +179,23 @@ std::vector< int > cc( const G & g , std::vector< int > S )
  ADS_AUDIT( detail::allNodes( g , S ) );
  std::vector< int > id( g.bound() , 0 );
  int count = 0;
- auto rec = [ & ]( auto & self , int u ) -> void {
-  id[ u ] = count;
-  g.forEachAdj( u , [ & ]( int v ) { if( id[ v ] == 0 ) self( self , v ); } );
-  };
+ std::vector< int > T;                    // the nodes of the visit to do
  while( ! S.empty() ) {
   const int u = S.back();
   S.pop_back();
-  if( id[ u ] == 0 ) {
-   ++count;
-   rec( rec , u );
+  if( id[ u ] != 0 )
+   continue;
+  id[ u ] = ++count;
+  T.push_back( u );
+  while( ! T.empty() ) {
+   const int x = T.back();
+   T.pop_back();
+   g.forEachAdj( x , [ & ]( int v ) {
+    if( id[ v ] == 0 ) {
+     id[ v ] = count;
+     T.push_back( v );
+     }
+    } );
    }
   }
  return( id );
@@ -195,20 +225,31 @@ template< class Edge >
 void DfsSchema< G >::visit( int u , Edge && edge )
 {
  ADS_PRE( f_g.hasNode( u ) && ( f_dt[ u ] == 0 ) );
- f_dt[ u ] = ++f_time;
- f_g.forEachAdj( u , [ & ]( int v ) {
-  if( f_dt[ v ] == 0 ) {
-   edge( u , v , EdgeKind::TREE );
-   visit( v , edge );
+ std::vector< detail::DfsFrame > S;                  // the recursion
+ auto discover = [ & ]( int v ) {
+  f_dt[ v ] = ++f_time;
+  S.push_back( detail::DfsFrame{ v , f_g.adj( v ) } );
+  };
+ discover( u );
+ while( ! S.empty() ) {
+  auto & f = S.back();
+  if( f.i == f.A.size() ) {                           // the return
+   f_ft[ f.u ] = ++f_time;
+   S.pop_back();
+   continue;
    }
-  else if( ( f_dt[ u ] > f_dt[ v ] ) && ( f_ft[ v ] == 0 ) )
-   edge( u , v , EdgeKind::BACK );
-  else if( ( f_dt[ u ] < f_dt[ v ] ) && ( f_ft[ v ] != 0 ) )
-   edge( u , v , EdgeKind::FORWARD );
+  const int x = f.u , v = f.A[ f.i++ ];
+  if( f_dt[ v ] == 0 ) {
+   edge( x , v , EdgeKind::TREE );
+   discover( v );                                     // the call
+   }
+  else if( ( f_dt[ x ] > f_dt[ v ] ) && ( f_ft[ v ] == 0 ) )
+   edge( x , v , EdgeKind::BACK );
+  else if( ( f_dt[ x ] < f_dt[ v ] ) && ( f_ft[ v ] != 0 ) )
+   edge( x , v , EdgeKind::FORWARD );
   else
-   edge( u , v , EdgeKind::CROSS );
-  } );
- f_ft[ u ] = ++f_time;
+   edge( x , v , EdgeKind::CROSS );
+  }
  ADS_POST( f_dt[ u ] < f_ft[ u ] );
  }
 
@@ -244,23 +285,29 @@ bool hasCycle( const G & g )
 {
  std::vector< int > dt( g.bound() , 0 ) , ft( g.bound() , 0 );
  int time = 0;
- auto rec = [ & ]( auto & self , int u ) -> bool {
-  dt[ u ] = ++time;
-  bool found = false;
-  g.forEachAdj( u , [ & ]( int v ) {
-   if( found )
-    return;
-   if( dt[ v ] == 0 )
-    found = self( self , v );
-   else if( ( dt[ u ] > dt[ v ] ) && ( ft[ v ] == 0 ) )
-    found = true;
-   } );
-  ft[ u ] = ++time;
-  return( found );
+ std::vector< detail::DfsFrame > S;                  // the recursion
+ auto discover = [ & ]( int v ) {
+  dt[ v ] = ++time;
+  S.push_back( detail::DfsFrame{ v , g.adj( v ) } );
   };
- for( int u : g.V() )
-  if( ( dt[ u ] == 0 ) && rec( rec , u ) )
-   return( true );
+ for( int r : g.V() ) {
+  if( dt[ r ] != 0 )
+   continue;
+  discover( r );
+  while( ! S.empty() ) {
+   auto & f = S.back();
+   if( f.i == f.A.size() ) {                          // the return
+    ft[ f.u ] = ++time;
+    S.pop_back();
+    continue;
+    }
+   const int u = f.u , v = f.A[ f.i++ ];
+   if( dt[ v ] == 0 )
+    discover( v );                                    // the call
+   else if( ( dt[ u ] > dt[ v ] ) && ( ft[ v ] == 0 ) )
+    return( true );                                   // a back edge
+   }
+  }
  return( false );
  }
 

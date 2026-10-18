@@ -74,6 +74,7 @@
 #include "ADS/sort/Sorted.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -99,7 +100,8 @@ void listInsertionSort( std::vector< T > & A , C less = C() ,
                         std::size_t * moves = nullptr );
 
 /// the address calculation sort of numbers into M lists, M = n / 4 + 1 if
-/// M is 0
+/// M is 0; with an infinite range (an infinity, or a span beyond a double)
+/// all the items go to one list, an insertion sort
 /// \post A is sorted, with the same items (an audit)
 template< class T >
 void addressCalculationSort( std::vector< T > & A , std::size_t M = 0 );

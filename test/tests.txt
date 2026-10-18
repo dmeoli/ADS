@@ -1402,12 +1402,15 @@ contract_algorithm    hanoi                torri di Hanoi, sezione 4.4
 contract_algorithm    master               ricorrenze lineari, capitolo 2
 contract_algorithm    monte-carlo          Monte Carlo, capitolo 17
 contract_algorithm    subsequences         sottosequenze, capitoli 1 e 13
+contract_algorithm    segments             segmenti massimi, assegnamento
 
 contract_backtrack    anagrams             anagrammi, capitolo 16
 contract_backtrack    enumeration          enumerazione, capitolo 16
 contract_backtrack    knight               giro del cavallo, capitolo 16
 contract_backtrack    nqueens              n regine, capitolo 16
 contract_backtrack    sudoku               sudoku, capitolo 16
+contract_backtrack    exact-cover          copertura esatta, dancing links
+contract_backtrack    sat                  DPLL e CDCL, contratti
 
 contract_complexity   domino-nondeterminism domino, scelta, capitolo 18
 contract_complexity   easy-cases           casi facili, Conclusione
@@ -1420,8 +1423,10 @@ contract_dictionary   hash-functions       funzioni hash, capitolo 7
 contract_dictionary   open-hash-table      indirizzamento aperto, capitolo 7
 contract_dictionary   table-size           ristrutturazione, sezione 7.4
 contract_dictionary   dictionary-axioms    assiomi di DICTIONARY, sezione 3.2.3
+contract_dictionary   other-dictionaries   cuckoo, Patricia, hash perfetti
 
 contract_geometry     hull                 inviluppo convesso, capitolo 12
+contract_geometry     closest-pair         coppia più vicina, contratti
 
 contract_graph        all-pairs            tutte le coppie, capitolo 11
 contract_graph        array-graph          grafo su vettore, capitolo 9
@@ -1432,6 +1437,7 @@ contract_graph        pointer-graph        grafo a puntatori, capitolo 9
 contract_graph        shortest-paths       cammini minimi, capitolo 11
 contract_graph        spanning-tree        copertura minima, capitolo 14
 contract_graph        visits               visite, capitolo 9
+contract_graph        other-graphs         griglie, flussi, abbinamenti
 
 contract_intractable  approximation        algoritmi approssimati, capitolo 19
 contract_intractable  branch-and-bound     branch-and-bound, capitolo 19
@@ -1439,6 +1445,7 @@ contract_intractable  buckets              code a bucket, capitolo 19
 contract_intractable  fifteen-puzzle       gioco del quindici, capitolo 19
 contract_intractable  heuristics           euristiche, capitolo 19
 contract_intractable  pseudopolynomial     pseudopolinomiali, capitolo 19
+contract_intractable  other-intractable    approssimazione, euristiche
 
 contract_mfset        mfset                MFSET, sezione 10.2
 
@@ -1449,12 +1456,14 @@ contract_numeric      matrix-chain         catena di matrici, capitolo 13
 contract_numeric      number-theory        teoria dei numeri, capitolo 17
 contract_numeric      polynomial           polinomi, capitolo 12
 contract_numeric      rsa                  RSA, capitolo 17
+contract_numeric      other-numeric        interi grandi, FFT, generatori
 
 contract_optimization change               resto, capitolo 14
 contract_optimization fractional-knapsack  zaino frazionario, capitolo 14
 contract_optimization intervals            intervalli, capitoli 13 e 14
 contract_optimization knapsack             zaino, capitolo 13
 contract_optimization sjf-weighted-intervals intervalli pesati, capitolo 13
+contract_optimization other-optimization   griglie, zaini, partizioni
 
 contract_priority     fibonacci-heap-priority-queue capitolo 11
 contract_priority     heap-priority-queue  su heap, sezione 10.1
@@ -1462,32 +1471,38 @@ contract_priority     linked-heap-priority-queue heap a puntatori
 contract_priority     list-priority-queue  su lista, sezione 10.1
 contract_priority     tree-priority-queue  su albero, sezione 10.1
 contract_priority     priority-axioms      assiomi, sezione 10.1
+contract_priority     bucket-dary-loser    bucket, heap D-ari, perdenti
 
 contract_queue        array-queue          QUEUE su vettore, sezione 4.3.3
 contract_queue        dequeue              coda doppia, capitolo 11
 contract_queue        linked-queue         QUEUE su lista, Esercizio 4.10
 contract_queue        queue-axioms         assiomi di QUEUE, sezione 4.3.1
+contract_queue        unique-queue         coda senza duplicati
 
 contract_search       binary-search        ricerca binaria, sezione 1.2
 contract_search       interpolation-search interpolazione, capitolo 12
 contract_search       minimum              minimo, sezione 1.2
 contract_search       selection            selezione, capitolo 12
+contract_search       local-and-sorted     ottimi locali, ricerche monotone
 
 contract_sequence     array-sequence       SEQUENCE su vettore, sezione 4.2
 contract_sequence     list                 SEQUENCE, sezioni 3.2 e 4.1
 contract_sequence     copy-move            copia, spostamento, dimezzamento
 contract_sequence     sequence-algorithms  algoritmi su sequenze
+contract_sequence     other-sequences      lista semplice, cursori
 
 contract_set          bool-set             SET su vettore booleano, capitolo 8
 contract_set          hash-sets            SET su tabelle hash, capitolo 8
 contract_set          list-sets            SET su liste, capitolo 8
 contract_set          set-axioms           assiomi di SET, sezione 3.2.2
+contract_set          bloom-and-intersections Bloom, intersezioni ordinate
 
 contract_sort         checking-contract    costo dei contratti, capitolo 2
 contract_sort         counting-pigeonhole  Counting e Pigeonhole, capitolo 12
 contract_sort         ranges               intervalli, capitoli 2 e 12
 contract_sort         shell-gaps           Shell Sort, capitolo 12
 contract_sort         sorts                ordinamento, capitoli 2 e 12
+contract_sort         other-sorts          altri ordinamenti, casi degeneri
 
 contract_stack        array-stack          STACK su vettore, sezione 4.3.2
 contract_stack        multistack           k pile in un vettore, oltre il libro
@@ -1500,6 +1515,7 @@ contract_string       alignment-wordbreak  word break, capitolo 13
 contract_string       huffman              codice di Huffman, capitolo 14
 contract_string       lcs                  LCS, capitolo 13
 contract_string       matching             ricerca di stringhe, capitolo 13
+contract_string       other-strings        prefissi, suffissi, parentesi
 
 contract_tree         b-plus-tree          B+-albero, capitolo 6
 contract_tree         binary-tree          albero binario, capitolo 5
@@ -1507,3 +1523,4 @@ contract_tree         parent-tree          vettore dei padri, capitolo 5
 contract_tree         search-tree          ABR e Red-Black, capitolo 6
 contract_tree         tree                 albero ordinato, capitolo 5
 contract_tree         tree-realizations    realizzazioni degli alberi
+contract_tree         other-trees          B-albero, espressioni, cursori

@@ -64,7 +64,7 @@ exhale_args = {
 
 html_theme = 'sphinx_rtd_theme'
 html_title = 'ADS: Algorithms and Data Structures'
-html_theme_options = {'navigation_depth': 3, 'collapse_navigation': False}
+html_theme_options = {'navigation_depth': 3, 'collapse_navigation': True}
 html_context = {
     'display_github': True,
     'github_user': 'dmeoli',

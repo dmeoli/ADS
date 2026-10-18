@@ -94,10 +94,12 @@ class PreorderArrayTree {
  /// the place after the subtree of i
  [[nodiscard]] int subtreeEnd( int i ) const;
 
- /// a copy of t as the first child of i
+ /// a copy of t as the first child of i; t may be this tree, copied as
+ /// it was before the call
  void insertChild( int i , const PreorderArrayTree & t );
 
- /// a copy of t as the next sibling of i, not the root
+ /// a copy of t as the next sibling of i, not the root; t may be this
+ /// tree, copied as it was before the call
  void insertSibling( int i , const PreorderArrayTree & t );
 
  /// removes the subtree of i

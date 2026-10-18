@@ -101,8 +101,9 @@ enum class CapacityDecrease {
 /// \post at most k simple paths from s to t along the edges of the graph,
 ///       no edge used twice (audit)
 template< Graph G >
-std::vector< std::vector< int > > edgeDisjointPaths( const G & g , int s ,
-                       int t , long k = std::numeric_limits< long >::max() );
+std::vector< std::vector< int > > edgeDisjointPaths(
+                  const G & g , int s , int t ,
+                  long long k = std::numeric_limits< long long >::max() );
 
 /// decreaseCapacity(): c( u , v ) decreases by 1, and the maximum flow f
 /// from s to t within c becomes a maximum flow within the new c

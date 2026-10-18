@@ -176,7 +176,8 @@ Lists randomGraph( std::mt19937 & g , std::size_t n , std::size_t deg ,
 
 // BitVector against std::vector< bool >: push_back(), append() and get() of
 // fields of random lengths across the words, put(), set(), count(), the
-// iterators and the strings of '0' and '1'
+// iterators and the strings of '0' and '1'; fields of 0 and of 64 bits,
+// at the end and across two words, and the bounds of every access
 ADS_TEST( "bit-vector" )
 {
  std::mt19937 g( 1 );
@@ -220,13 +221,35 @@ ADS_TEST( "bit-vector" )
  CHECK( BitVector( 130 , true ).count() == 130 );
  CHECK( BitVector().empty() && BitVector( "" ).size() == 0 );
  CHECK( BitVector( "0101" ) == BitVector( "0101" ) );
+ BitVector A;                               // fields of 0 and 64 bits
+ A.append( 0 , 0 );
+ CHECK( A.empty() && A.get( 0 , 0 ) == 0 );
+ A.append( ~Word( 0 ) , 64 );
+ A.append( 1 , 1 );
+ A.append( 0x8000000000000001ULL , 64 );    // across two words
+ CHECK( A.size() == 129 && A.count() == 67 );
+ CHECK( A.get( 0 , 64 ) == ~Word( 0 ) && A.get( 65 , 64 ) ==
+        0x8000000000000001ULL && A.get( 64 , 64 ) == 0x0000000000000003ULL );
+ A.put( 1 , 0 , 64 );
+ CHECK( A.get( 0 , 1 ) == 1 && A.get( 1 , 64 ) == 0 && A.count() == 3 );
+ A.put( 129 , 0 , 0 );                      // nothing at the end
+ CHECK( A.size() == 129 && A.get( 129 , 0 ) == 0 );
  CHECK_THROWS( BitVector( "012" ) , contract_violation );
  CHECK_THROWS( B.get( B.size() - 3 , 4 ) , contract_violation );
  CHECK_THROWS( B.append( 4 , 2 ) , contract_violation );
+ CHECK_THROWS( B.append( 0 , 65 ) , contract_violation );
+ CHECK_THROWS( B.append( 0 , -1 ) , contract_violation );
+ CHECK_THROWS( A.get( 0 , 65 ) , contract_violation );
+ CHECK_THROWS( A.put( 0 , 4 , 2 ) , contract_violation );
+ CHECK_THROWS( A.put( 100 , 0 , 30 ) , contract_violation );
+ CHECK_THROWS( ( void )A[ 129 ] , contract_violation );
+ CHECK_THROWS( A.set( 129 , true ) , contract_violation );
+ CHECK_THROWS( ( void )BitVector()[ 0 ] , contract_violation );
  }
 
 // selectInWord() against a scan of the bits, on random words of every
-// density, on the single bits and on the word of all 1s
+// density, on the single bits and on the word of all 1s, the two extreme
+// bits; k past the 1s, negative, and the word 0
 ADS_TEST( "select-in-word" )
 {
  std::mt19937 g( 1 );
@@ -246,11 +269,15 @@ ADS_TEST( "select-in-word" )
   CHECK( selectInWord( Word( 1 ) << i , 0 ) == i );
   CHECK( selectInWord( ~Word( 0 ) , i ) == i );
   }
+ CHECK( selectInWord( ( Word( 1 ) << 63 ) | 1 , 1 ) == 63 );
  CHECK_THROWS( ( void )selectInWord( 6 , 2 ) , contract_violation );
+ CHECK_THROWS( ( void )selectInWord( 6 , -1 ) , contract_violation );
+ CHECK_THROWS( ( void )selectInWord( 0 , 0 ) , contract_violation );
  }
 
 // BitWriter and BitReader: fields of random lengths in both orders, and
-// unary codes longer than a word, read back as written
+// unary codes longer than a word, read back as written; fields of 0 and
+// of 64 bits, a unary code without its 1, and the reads past the end
 ADS_TEST( "bit-stream" )
 {
  std::mt19937 g( 1 );
@@ -286,11 +313,30 @@ ADS_TEST( "bit-stream" )
  e.seek( 8 );
  CHECK( e.readUnary() == 2 );
  CHECK_THROWS( ( void )e.readBit() , contract_violation );
+ CHECK_THROWS( ( void )e.readUnary() , contract_violation );
+ CHECK( e.read( 0 ) == 0 && e.readBinary( 0 ) == 0 );   // none at the end
+ CHECK_THROWS( ( void )e.read( 1 ) , contract_violation );
+ CHECK_THROWS( e.seek( m.bits().size() + 1 ) , contract_violation );
+ CHECK_THROWS( BitReader( m.bits() , m.bits().size() + 1 ) ,
+               contract_violation );
+ BitWriter u;                               // a unary code of 3 words
+ u.writeUnary( 200 );
+ u.write( ~Word( 0 ) , 64 );
+ u.writeBinary( ~Word( 0 ) , 64 );
+ BitReader ru( u.bits() );
+ CHECK( ru.readUnary() == 200 && ru.read( 64 ) == ~Word( 0 ) &&
+        ru.readBinary( 64 ) == ~Word( 0 ) && ru.atEnd() );
+ const BitVector Z( 10 , false );           // zeros up to the end
+ BitReader rz( Z );
+ CHECK_THROWS( ( void )rz.readUnary() , contract_violation );
+ CHECK_THROWS( u.write( 4 , 2 ) , contract_violation );
+ CHECK_THROWS( u.writeBinary( 0 , 65 ) , contract_violation );
  }
 
 // unary, gamma and delta: the codewords of figures 11.1 and 11.2, their
 // lengths against Facts 11.1, 11.3 and 11.4 for 1 to 5000 and for random
-// integers up to 2^64 - 1, and a mixed stream decoded back
+// integers up to 2^64 - 1, and a mixed stream decoded back; the codewords
+// of 2^64 - 1, a gamma and a delta whose length is past 64 bits, and 0
 ADS_TEST( "elias-codes" )
 {
  auto code = []( auto enc , std::uint64_t x ) {
@@ -330,12 +376,32 @@ ADS_TEST( "elias-codes" )
   if( x <= 300 ) CHECK( decodeUnary( r ) == x );
   }
  CHECK( r.atEnd() );
+ CHECK( code( encodeGamma , ~std::uint64_t( 0 ) ).size() == 127 &&
+        deltaLength( ~std::uint64_t( 0 ) ) == 1 + 2 * 6 + 64 );
+ CHECK( binaryLength( 1 ) == 1 && binaryLength( ~std::uint64_t( 0 ) ) == 64 );
+ BitWriter c;                               // a gamma of 64 zeros: past
+ c.write( 0 , 64 );                         // 2^64 - 1
+ c.writeBit( true );
+ c.write( 0 , 64 );
+ BitReader rc( c.bits() );
+ CHECK_THROWS( ( void )decodeGamma( rc ) , contract_violation );
+ BitWriter d;                               // a delta of length 65
+ encodeGamma( d , 65 );
+ d.write( 0 , 64 );
+ d.write( 0 , 1 );
+ BitReader rd( d.bits() );
+ CHECK_THROWS( ( void )decodeDelta( rd ) , contract_violation );
  CHECK_THROWS( code( encodeGamma , 0 ) , contract_violation );
+ CHECK_THROWS( code( encodeDelta , 0 ) , contract_violation );
+ CHECK_THROWS( code( encodeUnary , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )binaryLength( 0 ) , contract_violation );
  }
 
 // Rice and Golomb: the codeword of figure 11.3, the length of Fact 11.5,
 // round trips for k up to 12 and every modulus up to 70, Golomb of 2^k
-// equal to Rice of k bit by bit, and the truncated binary remainders
+// equal to Rice of k bit by bit, and the truncated binary remainders; the
+// largest modulus 2^63 and k = 63 on 1, 2^63, 2^63 + 1 and 2^64 - 1, the
+// lengths of 1, and x = 0, k outside [ 0 , 63 ], b = 0 and b > 2^63
 ADS_TEST( "rice-golomb" )
 {
  BitWriter f;
@@ -375,12 +441,37 @@ ADS_TEST( "rice-golomb" )
  encodeRice( e , ~std::uint64_t( 0 ) , 60 );
  BitReader re( e.bits() );
  CHECK( decodeRice( re , 60 ) == ~std::uint64_t( 0 ) );
+ BitWriter h;                               // the largest modulus, 2^63
+ const std::uint64_t b63 = std::uint64_t( 1 ) << 63;
+ for( const std::uint64_t x : { std::uint64_t( 1 ) , b63 , b63 + 1 ,
+                                ~std::uint64_t( 0 ) } ) {
+  const std::size_t before = h.size();
+  encodeGolomb( h , x , b63 );
+  CHECK( h.size() - before == golombLength( x , b63 ) );
+  encodeRice( h , x , 63 );
+  }
+ BitReader rh( h.bits() );
+ for( const std::uint64_t x : { std::uint64_t( 1 ) , b63 , b63 + 1 ,
+                                ~std::uint64_t( 0 ) } )
+  CHECK( decodeGolomb( rh , b63 ) == x && decodeRice( rh , 63 ) == x );
+ CHECK( rh.atEnd() );
+ CHECK( riceLength( 1 , 0 ) == 1 && golombLength( 1 , 1 ) == 1 &&
+        golombLength( 1000 , 1 ) == 1000 );
  CHECK_THROWS( encodeRice( e , 1 , 64 ) , contract_violation );
+ CHECK_THROWS( encodeRice( e , 1 , -1 ) , contract_violation );
+ CHECK_THROWS( encodeRice( e , 0 , 3 ) , contract_violation );
+ CHECK_THROWS( ( void )decodeRice( re , 64 ) , contract_violation );
+ CHECK_THROWS( encodeGolomb( e , 0 , 3 ) , contract_violation );
+ CHECK_THROWS( encodeGolomb( e , 1 , 0 ) , contract_violation );
+ CHECK_THROWS( encodeGolomb( e , 1 , b63 + 1 ) , contract_violation );
+ CHECK_THROWS( ( void )decodeGolomb( re , 0 ) , contract_violation );
  }
 
 // PForDelta: the example of figure 11.4, with b = 3 and the exceptions 10,
 // 16 and 22, the width of 90% of the values, and round trips on values
-// around a base with rare large exceptions, the bits n b + 64 e
+// around a base with rare large exceptions, the bits n b + 64 e; the
+// widths 1 and 63, values below the base and 2^64 - 1 as exceptions, the
+// empty block, and b outside [ 1 , 63 ] and f outside ( 0 , 1 ]
 ADS_TEST( "pfordelta" )
 {
  const std::vector< std::uint64_t > S{ 1 , 2 , 10 , 16 , 2 , 6 , 4 , 5 ,
@@ -410,13 +501,30 @@ ADS_TEST( "pfordelta" )
                          64 * q.exceptions.size() );
   }
  CHECK( decodePForDelta( encodePForDelta( {} , 5 ) ).empty() );
+ const std::vector< std::uint64_t > T{ 0 , 5 , ~std::uint64_t( 0 ) , 7 , 6 };
+ const PForDeltaBlock a = encodePForDelta( T , 1 , 6 );   // 1 bit, base 6
+ CHECK( a.exceptions == std::vector< std::uint64_t >( { 0 , 5 ,
+                                       ~std::uint64_t( 0 ) , 7 } ) );
+ CHECK( decodePForDelta( a ) == T );        // all but one exceptions
+ const PForDeltaBlock w = encodePForDelta( T , 63 , 0 );   // 63 bits
+ CHECK( w.exceptions == std::vector< std::uint64_t >(
+                                       { ~std::uint64_t( 0 ) } ) );
+ CHECK( decodePForDelta( w ) == T );
+ CHECK( pforDeltaWidth( T , 0 , 1.0 ) == 63 );   // 2^64 - 1 never fits
+ CHECK( pforDeltaWidth( {} , 0 ) == 1 );
+ CHECK( pforDeltaWidth( T , ~std::uint64_t( 0 ) , 0.2 ) == 1 );
  CHECK_THROWS( ( void )encodePForDelta( S , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )encodePForDelta( S , 64 ) , contract_violation );
+ CHECK_THROWS( ( void )pforDeltaWidth( S , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )pforDeltaWidth( S , 0 , 1.5 ) , contract_violation );
  }
 
 // the variable-byte code and the ( s , c )-dense codes: the bytes of
 // figure 11.5, Fact 11.7, the words of figure 11.6 for s = c = 4 and for
 // s = 6, c = 2 with words of 3 bits, s c^(k-1) integers in k words, round
-// trips, and the optimal s against the lengths of the codes written
+// trips, and the optimal s against the lengths of the codes written; the
+// dense code of 2^64 - 1, the optimal s of no frequencies and of 1 bit, a
+// stream cut before its stopper, a digit past s + c, and s, c, bits at 0
 ADS_TEST( "vbyte-dense" )
 {
  std::vector< std::uint8_t > v;
@@ -497,13 +605,33 @@ ADS_TEST( "vbyte-dense" )
  for( std::uint32_t t = 1 ; t < 256 ; t += 5 ) CHECK( cost( s ) <= cost( t ) );
  CHECK( ( s > 128 ) && ( cost( s ) < cost( 128 ) ) );
  std::vector< std::uint32_t > o;
+ encodeDense( o , ~std::uint64_t( 0 ) , 128 , 128 );   // the largest
+ std::size_t at = 0;
+ CHECK( decodeDense( o , at , 128 , 128 ) == ~std::uint64_t( 0 ) &&
+        at == o.size() && int( o.size() ) <= vbyteLength( ~std::uint64_t(
+                                                         0 ) ) );
+ CHECK( denseOptimalS( {} , 4 ) == 1 && denseOptimalS( { 5 } , 1 ) == 1 );
+ const std::vector< std::uint8_t > cut{ 0x81 };   // no stopper
+ std::size_t pc = 0;
+ CHECK_THROWS( ( void )decodeVByte( cut , pc ) , contract_violation );
+ const std::vector< std::uint32_t > bad{ 8 } , none;
+ std::size_t pd = 0;
+ CHECK_THROWS( ( void )decodeDense( bad , pd , 4 , 4 ) , contract_violation );
+ pd = 0;
+ CHECK_THROWS( ( void )decodeDense( none , pd , 4 , 4 ) ,
+               contract_violation );
  CHECK_THROWS( encodeDense( o , 1 , 0 , 4 ) , contract_violation );
+ CHECK_THROWS( encodeDense( o , 1 , 4 , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )denseOptimalS( F , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )denseOptimalS( F , 17 ) , contract_violation );
  }
 
 // the interpolative code: the example of figure 11.8 in 19 bits, the items
 // coded in the order 9, 3, 5, 7, 18, 11, 15 (the figure gives 4 for 15,
 // whose bounds are 12 and 17, which give 3), no bit for runs, and round
-// trips on random sets, sparse and clustered
+// trips on random sets, sparse and clustered; the universe of all 64-bit
+// integers with its two ends, the empty set, one item with low = hi (no
+// bit), and items repeated or outside [ low , hi ]
 ADS_TEST( "interpolative" )
 {
  const std::vector< std::uint64_t > S{ 1 , 2 , 3 , 5 , 7 , 9 , 11 , 15 , 18 ,
@@ -537,12 +665,38 @@ ADS_TEST( "interpolative" )
   CHECK( decodeInterpolative( d , X.size() , 0 , u - 1 ) == X );
   CHECK( d.atEnd() );
   }
+ const std::uint64_t top = ~std::uint64_t( 0 );  // the whole universe
+ const std::vector< std::uint64_t > U{ 0 , 1 , top / 2 , top - 1 , top };
+ BitWriter wu;
+ encodeInterpolative( wu , U , 0 , top );
+ BitReader ru( wu.bits() );
+ CHECK( decodeInterpolative( ru , U.size() , 0 , top ) == U && ru.atEnd() );
+ BitWriter wo;                                   // empty, one, low = hi
+ encodeInterpolative( wo , {} , 0 , 9 );
+ encodeInterpolative( wo , { 7 } , 7 , 7 );
+ CHECK( wo.size() == 0 );
+ encodeInterpolative( wo , { 4 } , 0 , 9 );
+ CHECK( wo.size() == 4 );
+ BitReader ro( wo.bits() );
+ CHECK( decodeInterpolative( ro , 0 , 0 , 9 ).empty() &&
+        decodeInterpolative( ro , 1 , 7 , 7 ) ==
+        std::vector< std::uint64_t >( { 7 } ) &&
+        decodeInterpolative( ro , 1 , 0 , 9 ) ==
+        std::vector< std::uint64_t >( { 4 } ) );
  CHECK_THROWS( encodeInterpolative( w , { 3 , 3 } , 0 , 9 ) ,
                contract_violation );
+ CHECK_THROWS( encodeInterpolative( w , { 3 , 4 } , 4 , 9 ) ,
+               contract_violation );
+ CHECK_THROWS( encodeInterpolative( w , { 3 , 10 } , 0 , 9 ) ,
+               contract_violation );
+ CHECK_THROWS( encodeBounded( w , 10 , 0 , 9 ) , contract_violation );
+ CHECK_THROWS( ( void )decodeBounded( r , 5 , 4 ) , contract_violation );
  }
 
 // the mapping of the integers of any sign and the d-gaps: -2 to 5 as in
-// Table 15.7, the gaps of node 15 of Table 15.4 and their prefix sums
+// Table 15.7, the gaps of node 15 of Table 15.4 and their prefix sums;
+// the extremes +-( 2^62 - 1 ) and 2^64 - 1, repeated items (gap 0) up to
+// 2^64 - 1, the empty sequence, and the values past the bounds, unsorted
 ADS_TEST( "signed-gaps" )
 {
  CHECK( signedToNatural( -2 ) == 5 && signedToNatural( 3 ) == 6 );
@@ -554,12 +708,27 @@ ADS_TEST( "signed-gaps" )
  const std::vector< std::uint64_t > G{ 13 , 2 , 1 , 1 , 1 , 1 , 4 , 1 ,
                                        179 , 112 , 719 };
  CHECK( dGaps( S ) == G && prefixSums( G ) == S );
- CHECK( dGaps( {} ).empty() );
+ CHECK( dGaps( {} ).empty() && prefixSums( {} ).empty() );
+ const std::int64_t M = ( std::int64_t( 1 ) << 62 ) - 1;   // the extremes
+ CHECK( signedToNatural( M ) == ( std::uint64_t( 1 ) << 63 ) - 2 &&
+        signedToNatural( -M ) == ( std::uint64_t( 1 ) << 63 ) - 1 );
+ CHECK( naturalToSigned( signedToNatural( M ) ) == M &&
+        naturalToSigned( signedToNatural( -M ) ) == -M );
+ CHECK( naturalToSigned( ~std::uint64_t( 0 ) ) ==
+        -std::int64_t( ~std::uint64_t( 0 ) / 2 ) );
+ const std::vector< std::uint64_t > D{ 0 , 0 , 5 , 5 , ~std::uint64_t( 0 ) };
+ CHECK( dGaps( D ) == std::vector< std::uint64_t >( { 0 , 0 , 5 , 0 ,
+                                        ~std::uint64_t( 0 ) - 5 } ) &&
+        prefixSums( dGaps( D ) ) == D );         // repeated items, gap 0
+ CHECK_THROWS( ( void )signedToNatural( M + 1 ) , contract_violation );
+ CHECK_THROWS( ( void )signedToNatural( -M - 1 ) , contract_violation );
+ CHECK_THROWS( ( void )dGaps( { 2 , 1 } ) , contract_violation );
  }
 
 // rank and select against a scan: Example 15.1, then vectors of many sizes
 // and densities, around the words and the superblocks, every rank and
-// every select of both bits
+// every select of both bits; the empty vector, all zeros, and the bounds
+// of rank (i <= n) and select (1 <= k <= the bits of that value)
 ADS_TEST( "rank-select" )
 {
  const RankSelect E( BitVector( "00101001010" ) );   // Example 15.1
@@ -588,13 +757,23 @@ ADS_TEST( "rank-select" )
    }
  CHECK_THROWS( ( void )E.select1( 5 ) , contract_violation );
  CHECK_THROWS( ( void )E.select0( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )E.select1( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )E.select0( 8 ) , contract_violation );
  CHECK_THROWS( ( void )E.rank1( 12 ) , contract_violation );
+ CHECK_THROWS( ( void )E.rank0( 12 ) , contract_violation );
+ const RankSelect Z( BitVector( 100 , false ) ) , N;
+ CHECK( Z.rank1( 100 ) == 0 && Z.select0( 100 ) == 99 && N.rank1( 0 ) == 0 );
+ CHECK_THROWS( ( void )Z.select1( 1 ) , contract_violation );
+ CHECK_THROWS( ( void )N.select0( 1 ) , contract_violation );
  }
 
 // Elias-Fano: the code of figure 11.9 (L, H, access( 4 ) = 24 and
 // nextGEQ( 25 ) = 26), the bound of Theorem 11.1, the rank and select of
 // Example 15.3, and random sequences with repeated items against
-// std::lower_bound, from the empty one to items near 2^63
+// std::lower_bound, from the empty one to items near 2^63; one item in the
+// universe 2^64 - 1 (64 low bits), all equal items, the universe { 0 },
+// the empty sequence in a universe, the bounds of access(), an unsorted
+// sequence, an item not below u, and 2^64 - 1 without its universe
 ADS_TEST( "elias-fano" )
 {
  const std::vector< std::uint64_t > S{ 1 , 4 , 7 , 18 , 24 , 26 , 30 , 31 };
@@ -641,12 +820,31 @@ ADS_TEST( "elias-fano" )
  CHECK( Z.empty() && Z.nextGEQ( 5 ) == 0 );
  const EliasFano W( { 0 , ~std::uint64_t( 0 ) - 1 } );
  CHECK( W[ 1 ] == ~std::uint64_t( 0 ) - 1 && W.nextGEQ( 1 ) == 1 );
+ const std::uint64_t top = ~std::uint64_t( 0 );
+ const EliasFano O( { 5 } , top );               // 64 low bits per item
+ CHECK( O.lowWidth() == 64 && O[ 0 ] == 5 && O.nextGEQ( 5 ) == 0 &&
+        O.nextGEQ( 6 ) == 1 && O.nextGEQ( top ) == 1 && ! O.contains( 4 ) );
+ const EliasFano R( { 7 , 7 , 7 } );             // all equal, u = 8
+ CHECK( R.decode() == std::vector< std::uint64_t >( { 7 , 7 , 7 } ) &&
+        R.nextGEQ( 7 ) == 0 && R.nextGEQ( 0 ) == 0 && R.nextGEQ( 8 ) == 3 );
+ const EliasFano U( { 0 , 0 } , 1 );             // the universe { 0 }
+ CHECK( U[ 1 ] == 0 && U.nextGEQ( 0 ) == 0 && U.nextGEQ( 1 ) == 2 );
+ const EliasFano V( {} , 100 );
+ CHECK( V.empty() && V.universe() == 100 && V.nextGEQ( 0 ) == 0 &&
+        ! V.contains( 0 ) && V.begin() == V.end() );
+ CHECK_THROWS( ( void )O.access( 1 ) , contract_violation );
+ CHECK_THROWS( ( void )V[ 0 ] , contract_violation );
  CHECK_THROWS( EliasFano( { 3 , 1 } ) , contract_violation );
  CHECK_THROWS( EliasFano( { 1 , 5 } , 5 ) , contract_violation );
+ CHECK_THROWS( EliasFano( { 1 , top } ) , contract_violation );
+ CHECK_THROWS( EliasFano( { 0 } , 0 ) , contract_violation );
  }
 
 // Jacobson's binary tree: the queries of Example 15.4 on the code of
-// figure 15.7, and random binary trees against their children
+// figure 15.7, and random binary trees against their children; the empty
+// tree, one node, a right chain of 10^5 nodes, the bounds of the queries,
+// and children lists with a self-loop, a cycle or a node twice (with as
+// many nodes reached as there are, hence the marks of the nodes reached)
 ADS_TEST( "jacobson-tree" )
 {
  const JacobsonTree E( BitVector( "11110110100100000" ) );
@@ -686,13 +884,35 @@ ADS_TEST( "jacobson-tree" )
    }
   }
  CHECK( JacobsonTree().size() == 0 && JacobsonTree().root() == nil );
+ const JacobsonTree O( BitVector( "100" ) );    // one node
+ CHECK( O.size() == 1 && O.isLeaf( 0 ) && O.left( 0 ) == nil &&
+        O.right( 0 ) == nil && O.parent( 0 ) == nil );
+ std::vector< std::pair< std::size_t , std::size_t > > chain( 100000 ,
+                                                              { nil , nil } );
+ for( std::size_t u = 0 ; u + 1 < chain.size() ; ++u )
+  chain[ u ].second = u + 1;                     // a right chain, deep
+ const JacobsonTree C( chain );
+ CHECK( C.right( 99998 ) == 99999 && C.parent( 99999 ) == 99998 &&
+        C.left( 500 ) == nil && C.isLeaf( 99999 ) );
+ CHECK_THROWS( O.left( 1 ) , contract_violation );
+ CHECK_THROWS( O.right( 1 ) , contract_violation );
+ CHECK_THROWS( O.parent( 1 ) , contract_violation );
+ using Kids = std::vector< std::pair< std::size_t , std::size_t > >;
+ CHECK_THROWS( JacobsonTree( Kids{ { 0 , nil } } ) , contract_violation );
+ CHECK_THROWS( JacobsonTree( Kids{ { 1 , nil } , { nil , 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( JacobsonTree( Kids{ { 1 , 1 } , { nil , nil } ,
+                                   { nil , nil } } ) ,
+               contract_violation );            // 1 twice, 2 never
  CHECK_THROWS( JacobsonTree( BitVector( "10100" ) ).left( 3 ) ,
                contract_violation );
  CHECK_THROWS( JacobsonTree( BitVector( "10010" ) ) , contract_violation );
  }
 
 // LOUDS: the code and the queries of figure 15.8 and Example 15.5, and
-// random trees against their children
+// random trees against their children; the empty tree, one node, a star
+// and a chain of 10^5 nodes, the bounds of the queries, and children lists
+// with a self-loop, a cycle, a node twice or a node unreached
 ADS_TEST( "louds-tree" )
 {
  const std::vector< std::size_t > deg{ 3 , 2 , 0 , 3 , 0 , 1 , 0 , 2 , 0 , 0 ,
@@ -729,12 +949,36 @@ ADS_TEST( "louds-tree" )
    }
   }
  CHECK( LoudsTree().size() == 0 && LoudsTree().root() == nil );
+ const LoudsTree O( Lists( 1 ) );               // one node
+ CHECK( O.size() == 1 && O.isLeaf( 0 ) && O.parent( 0 ) == nil &&
+        O.leftmostChild( 0 ) == nil && O.rightSibling( 0 ) == nil );
+ Lists star( 100000 ) , chain( 100000 );        // wide and deep
+ for( std::size_t u = 1 ; u < star.size() ; ++u ) star[ 0 ].push_back( u );
+ for( std::size_t u = 0 ; u + 1 < chain.size() ; ++u )
+  chain[ u ].push_back( u + 1 );
+ const LoudsTree S( star ) , C( chain );
+ CHECK( S.degree( 0 ) == 99999 && S.child( 0 , 99998 ) == 99999 &&
+        S.parent( 99999 ) == 0 && S.rightSibling( 99999 ) == nil );
+ CHECK( C.degree( 99998 ) == 1 && C.parent( 99999 ) == 99998 &&
+        C.isLeaf( 99999 ) );
+ CHECK_THROWS( O.degree( 1 ) , contract_violation );
+ CHECK_THROWS( O.parent( 1 ) , contract_violation );
+ CHECK_THROWS( O.leftmostChild( 1 ) , contract_violation );
+ CHECK_THROWS( O.rightSibling( 1 ) , contract_violation );
+ CHECK_THROWS( O.child( 0 , 0 ) , contract_violation );
+ CHECK_THROWS( LoudsTree( Lists{ { 0 } } ) , contract_violation );
+ CHECK_THROWS( LoudsTree( Lists{ { 1 } , { 1 } } ) , contract_violation );
+ CHECK_THROWS( LoudsTree( Lists{ { 1 , 1 } , {} , {} } ) ,
+               contract_violation );            // 1 twice, 2 never
+ CHECK_THROWS( LoudsTree( Lists{ { 1 } , {} , {} } ) , contract_violation );
  CHECK_THROWS( LoudsTree( BitVector( "00111" ) ) , contract_violation );
  }
 
 // the parentheses: findClose(), findOpen() and enclose() against a stack on
 // random sequences of many sizes, on a deep nesting and on a flat one,
-// across many blocks of the range min-max tree
+// across many blocks of the range min-max tree; the empty sequence, the
+// outermost pair (no enclosing one), unbalanced sequences of one symbol,
+// and every query on the wrong symbol or past the end
 ADS_TEST( "balanced-parentheses" )
 {
  std::mt19937 g( 1 );
@@ -783,13 +1027,25 @@ ADS_TEST( "balanced-parentheses" )
  check( flat );
  CHECK_THROWS( BalancedParentheses( BitVector( "1001" ) ) ,
                contract_violation );
- const BalancedParentheses B( BitVector( "1100" ) );
+ CHECK_THROWS( BalancedParentheses( BitVector( "1" ) ) , contract_violation );
+ CHECK_THROWS( BalancedParentheses( BitVector( "0" ) ) , contract_violation );
+ const BalancedParentheses B( BitVector( "1100" ) ) , E( BitVector( "" ) );
+ CHECK( E.size() == 0 && B.enclose( 0 ) == BalancedParentheses::nil &&
+        B.enclose( 1 ) == 0 && B.excess( 3 ) == 0 );
  CHECK_THROWS( ( void )B.findClose( 2 ) , contract_violation );
+ CHECK_THROWS( ( void )B.findClose( 4 ) , contract_violation );
+ CHECK_THROWS( ( void )B.findOpen( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )B.findOpen( 4 ) , contract_violation );
+ CHECK_THROWS( ( void )B.enclose( 3 ) , contract_violation );
+ CHECK_THROWS( ( void )B.excess( 4 ) , contract_violation );
+ CHECK_THROWS( ( void )E.excess( 0 ) , contract_violation );
  }
 
 // the tree by parentheses against the children of random trees, numbered
 // in preorder: parent, children, siblings, degree, subtree size, depth,
-// ancestors; and against LOUDS on the same tree
+// ancestors; and against LOUDS on the same tree; the empty tree, one node,
+// a chain of 10^5 nodes, the bounds of the queries, children lists with a
+// self-loop, a cycle, a node twice or a node unreached, and two trees
 ADS_TEST( "bp-tree" )
 {
  std::mt19937 g( 1 );
@@ -829,11 +1085,36 @@ ADS_TEST( "bp-tree" )
   if( n > 0 ) CHECK( B.subtreeSize( 0 ) == n && B.parent( 0 ) == nil );
   }
  CHECK( BPTree( BitVector( "110100" ) ).degree( 0 ) == 2 );
+ const BPTree E( Lists{} ) , O( Lists( 1 ) );   // empty, one node
+ CHECK( E.size() == 0 && E.root() == nil && BPTree( BitVector( "" ) ).size()
+        == 0 );
+ CHECK( O.size() == 1 && O.isLeaf( 0 ) && O.parent( 0 ) == nil &&
+        O.depth( 0 ) == 0 && O.subtreeSize( 0 ) == 1 &&
+        O.rightSibling( 0 ) == nil && O.isAncestor( 0 , 0 ) );
+ Lists chain( 100000 );                          // deep: no recursion
+ for( std::size_t u = 0 ; u + 1 < chain.size() ; ++u )
+  chain[ u ].push_back( u + 1 );
+ const BPTree C( chain );
+ CHECK( C.depth( 99999 ) == 99999 && C.subtreeSize( 1 ) == 99999 &&
+        C.parent( 99999 ) == 99998 && C.isAncestor( 0 , 99999 ) &&
+        ! C.isAncestor( 99999 , 0 ) );
+ CHECK_THROWS( O.parent( 1 ) , contract_violation );
+ CHECK_THROWS( O.leftmostChild( 1 ) , contract_violation );
+ CHECK_THROWS( O.subtreeSize( 1 ) , contract_violation );
+ CHECK_THROWS( O.isAncestor( 0 , 1 ) , contract_violation );
+ CHECK_THROWS( O.isAncestor( 1 , 0 ) , contract_violation );
+ CHECK_THROWS( BPTree( Lists{ { 0 } } ) , contract_violation );
+ CHECK_THROWS( BPTree( Lists{ { 1 } , { 1 } } ) , contract_violation );
+ CHECK_THROWS( BPTree( Lists{ { 1 , 1 } , {} , {} } ) ,
+               contract_violation );            // 1 twice, 2 never
+ CHECK_THROWS( BPTree( Lists{ { 1 } , {} , {} } ) , contract_violation );
  CHECK_THROWS( BPTree( BitVector( "1010" ) ) , contract_violation );
  }
 
 // the graph by Elias-Fano against its adjacency lists: outdegrees, the i-th
-// successors, the lists and every edge of small graphs
+// successors, the lists and every edge of small graphs; the empty graph, a
+// single self-loop, nodes without edges, the bounds of the queries, a
+// target past the nodes and a list out of order
 ADS_TEST( "elias-fano-graph" )
 {
  std::mt19937 g( 1 );
@@ -853,6 +1134,16 @@ ADS_TEST( "elias-fano-graph" )
    }
   CHECK( G.order() == n && G.edges() == m );
   }
+ const EliasFanoGraph L( Lists{ { 0 } } ) , E( Lists{} );   // a self-loop
+ CHECK( L.order() == 1 && L.edges() == 1 && L.hasEdge( 0 , 0 ) &&
+        L.successor( 0 , 0 ) == 0 && E.order() == 0 && E.edges() == 0 );
+ const EliasFanoGraph N( Lists( 5 ) );           // no edge
+ CHECK( N.edges() == 0 && N.outdegree( 4 ) == 0 && ! N.hasEdge( 4 , 4 ) &&
+        N.successors( 2 ).empty() );
+ CHECK_THROWS( L.outdegree( 1 ) , contract_violation );
+ CHECK_THROWS( L.successor( 0 , 1 ) , contract_violation );
+ CHECK_THROWS( L.hasEdge( 0 , 1 ) , contract_violation );
+ CHECK_THROWS( L.hasEdge( 1 , 0 ) , contract_violation );
  CHECK_THROWS( EliasFanoGraph( Lists{ { 1 } } ) , contract_violation );
  CHECK_THROWS( EliasFanoGraph( Lists{ { 1 , 0 } , {} } ) ,
                contract_violation );
@@ -860,7 +1151,9 @@ ADS_TEST( "elias-fano-graph" )
 
 // the k^2-tree: T and L of figure 15.9, then random graphs of sides that are
 // and are not powers of k, for k = 2, 3, 4, against the adjacency matrix:
-// successors, predecessors and every edge
+// successors, predecessors and every edge; a self-loop given twice, no
+// edge, k larger than the side, the complete graph, the bounds of the
+// queries and of the edges, and k = 1
 ADS_TEST( "k2-tree" )
 {
  const K2Tree E( 4 , { { 0 , 0 } , { 0 , 1 } , { 1 , 1 } , { 2 , 2 } ,
@@ -895,7 +1188,26 @@ ADS_TEST( "k2-tree" )
    CHECK( K.reverseNeighbors( u ) == in );
    }
   }
+ const K2Tree O( 1 , { { 0 , 0 } , { 0 , 0 } } );   // a self-loop, twice
+ CHECK( O.edges() == 1 && O.hasEdge( 0 , 0 ) &&
+        O.neighbors( 0 ) == std::vector< std::size_t >( { 0 } ) );
+ const K2Tree N( 5 , {} ) , W( 3 , { { 2 , 0 } } , 16 );   // k > n
+ CHECK( N.edges() == 0 && N.neighbors( 4 ).empty() && ! N.hasEdge( 4 , 4 ) &&
+        N.reverseNeighbors( 0 ).empty() );
+ CHECK( W.hasEdge( 2 , 0 ) && ! W.hasEdge( 0 , 2 ) &&
+        W.reverseNeighbors( 0 ) == std::vector< std::size_t >( { 2 } ) );
+ const K2Tree F( 70 , [] {                       // the complete graph
+  std::vector< K2Tree::Edge > c;
+  for( std::size_t u = 0 ; u < 70 ; ++u )
+   for( std::size_t v = 0 ; v < 70 ; ++v ) c.emplace_back( u , v );
+  return( c ); }() );
+ CHECK( F.edges() == 4900 && F.neighbors( 69 ).size() == 70 &&
+        F.reverseNeighbors( 0 ).size() == 70 && F.hasEdge( 69 , 0 ) );
+ CHECK_THROWS( O.neighbors( 1 ) , contract_violation );
+ CHECK_THROWS( O.reverseNeighbors( 1 ) , contract_violation );
+ CHECK_THROWS( O.hasEdge( 0 , 1 ) , contract_violation );
  CHECK_THROWS( K2Tree( 3 , { { 0 , 3 } } ) , contract_violation );
+ CHECK_THROWS( K2Tree( 3 , { { 3 , 0 } } ) , contract_violation );
  CHECK_THROWS( K2Tree( 3 , {} , 1 ) , contract_violation );
  }
 
@@ -903,7 +1215,9 @@ ADS_TEST( "k2-tree" )
 // 16 and 18 of Tables 15.5 and 15.6, the intervals and the residuals of
 // node 15 of Table 15.7 (whose last gap, 1034 - 315 - 1 = 718, the table
 // prints as 178), the references chosen on those lists, and random graphs,
-// local and not, decoded back
+// local and not, decoded back; the empty graph, self-loops with a window
+// and a chain of 1, a node pointing to all, the bounds of the queries, and
+// a target past the nodes, w = 0, r = 0, lmin < 2
 ADS_TEST( "bv-graph" )
 {
  const BVGraph::List S15{ 13 , 15 , 16 , 17 , 18 , 19 , 23 , 24 , 203 ,
@@ -952,8 +1266,22 @@ ADS_TEST( "bv-graph" )
    CHECK( double( G.codeBits() ) < 0.75 * double( m ) *
                                    std::log2( double( n ) ) );
   }
+ const BVGraph E( std::vector< BVGraph::List >{} );   // empty, self-loops
+ CHECK( E.order() == 0 && E.edges() == 0 );
+ std::vector< BVGraph::List > Y( 50 );
+ for( std::size_t x = 0 ; x < 50 ; ++x ) Y[ x ] = { x };
+ Y[ 49 ] = BVGraph::List( 50 );
+ std::iota( Y[ 49 ].begin() , Y[ 49 ].end() , std::size_t( 0 ) );
+ const BVGraph G( Y , 1 , 1 , 2 );
+ for( std::size_t x = 0 ; x < 50 ; ++x ) CHECK( G.successors( x ) == Y[ x ] );
+ CHECK( G.edges() == 99 && G.outdegree( 49 ) == 50 );
+ CHECK_THROWS( G.successors( 50 ) , contract_violation );
+ CHECK_THROWS( G.outdegree( 50 ) , contract_violation );
+ CHECK_THROWS( G.reference( 50 ) , contract_violation );
  CHECK_THROWS( BVGraph( { { 2 } , {} } ) , contract_violation );
  CHECK_THROWS( BVGraph( { {} } , 0 ) , contract_violation );
+ CHECK_THROWS( BVGraph( { {} } , 1 , 0 ) , contract_violation );
+ CHECK_THROWS( BVGraph( { {} } , 1 , 1 , 1 ) , contract_violation );
  }
 
 }  // end( namespace )

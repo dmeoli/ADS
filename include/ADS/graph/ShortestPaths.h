@@ -37,7 +37,10 @@
  * cycles every frontier gives the shortest paths; with negative costs the
  * priority queues are still correct but may extract a node more than
  * once. dagShortestPaths() scans an acyclic graph in topological order,
- * \f$ O( n + m ) \f$ whatever the signs of the costs.
+ * \f$ O( n + m ) \f$ whatever the signs of the costs. The distances are
+ * sums in D, not checked for overflow: the cost of every path from r must
+ * stay strictly between -infinity< D >() and infinity< D >(), and a node
+ * at distance infinity< D >() counts as unreachable.
  *
  * The contracts [see Contract.h]: r is a node; with a frontier other than
  * QUEUE no negative cycle is reachable from r, and dagShortestPaths() needs

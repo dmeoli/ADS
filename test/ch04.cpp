@@ -39,7 +39,13 @@
 #include "ADS/stack/ArrayStack.h"
 #include "ADS/stack/SequenceStack.h"
 
+#include <algorithm>
+#include <bit>
+#include <deque>
+#include <random>
+#include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -94,7 +100,11 @@ void append( S & s , const typename S::Item & v )
  s.insert( s.next( s.tail() ) , v );
  }
 
-/// the specification of SEQUENCE [section 3.2.1] checked on a realization
+/// the specification of SEQUENCE [section 3.2.1] checked on a realization;
+/// the edges: the empty sequence and the sequence of one item, every
+/// position of short sequences, the positions past the ends, the
+/// preconditions, the copies, and a long run of random insertions and
+/// removals against std::vector, down to empty and up again
 template< Sequence S >
 void sequence_spec( void )
 {
@@ -176,6 +186,58 @@ void sequence_spec( void )
    }
   append( t , n );
   }
+
+ // the preconditions: read(), write() and remove() of a position with no
+ // item, pos_n of the empty sequence and of one of length 1 and 6
+ S e;
+ CHECK_THROWS( (void) e.read( e.head() ) , contract_violation );
+ CHECK_THROWS( e.write( e.head() , 1 ) , contract_violation );
+ CHECK_THROWS( (void) e.remove( e.head() ) , contract_violation );
+ append( e , 4 );
+ CHECK_THROWS( (void) e.read( e.next( e.tail() ) ) , contract_violation );
+ CHECK_THROWS( (void) e.remove( e.next( e.tail() ) ) , contract_violation );
+ CHECK( e.read( e.head() ) == 4 && e.head() == e.tail() );   // one item
+ CHECK( s.finished( s.prev( s.head() ) ) );
+ CHECK_THROWS( (void) t.read( t.next( t.tail() ) ) , contract_violation );
+ CHECK_THROWS( t.write( t.next( t.tail() ) , 1 ) , contract_violation );
+
+ // a copy is equal and independent, also of the empty sequence
+ S c = t;
+ CHECK( c == t && items( c ) == items( t ) );
+ c.write( c.head() , -5 );
+ CHECK( ! ( c == t ) && t.read( t.head() ) == 0 );
+ const S z0 , z1 = z0;
+ CHECK( z1 == z0 && z1.isEmpty() );
+
+ // against std::vector, random insertions and removals at the head, in
+ // the middle and at the end, growing to 300 items and back to empty
+ std::mt19937 g( 11 );
+ V o;
+ S r;
+ for( int step = 0 ; step < 1200 ; ++step ) {
+  const bool grow = ( step < 600 ) ? ( g() % 4 != 0 ) : ( g() % 4 == 0 );
+  if( grow || o.empty() ) {
+   const std::size_t i = g() % ( o.size() + 1 );
+   auto p = r.head();
+   for( std::size_t j = 0 ; j < i ; ++j ) p = r.next( p );
+   CHECK( r.read( r.insert( p , step ) ) == step );
+   o.insert( o.begin() + i , step );
+   }
+  else {
+   const std::size_t i = g() % o.size();
+   auto p = r.head();
+   for( std::size_t j = 0 ; j < i ; ++j ) p = r.next( p );
+   p = r.remove( p );
+   o.erase( o.begin() + i );
+   CHECK( ( i == o.size() ) ? r.finished( p ) : ( r.read( p ) == o[ i ] ) );
+   }
+  if( step % 50 == 0 )
+   CHECK( items( r ) == o );
+  }
+ while( ! r.isEmpty() ) { r.remove( r.head() ); o.erase( o.begin() ); }
+ CHECK( items( r ).empty() && o.empty() );
+ append( r , 1 );
+ CHECK( items( r ) == V( { 1 } ) );
  }
 
 }  // end( namespace )
@@ -197,20 +259,50 @@ ADS_TEST( "ex4.6" ) { sequence_spec< SinglyList< int > >(); }
 ADS_TEST( "spec.CursorList" ) { sequence_spec< CursorList< int > >(); }
 
 // section 4.2: the vector doubles, so its size is always a power of 2 and
-// less than twice the number of items
+// less than twice the number of items; the edges: the empty sequence has
+// no vector, the first insertion makes one of one place, the removals
+// halve it when it is a quarter full (between n and 4 n places, none when
+// empty again), a sequence moved from is left with no vector, and the
+// insertions and removals at the boundary of a resize, back and forth
 ADS_TEST( "sec4.2.doubling" )
 {
  ArraySequence< int > s;
+ CHECK( s.capacity() == 0 );
  for( int i = 1 ; i <= 1000 ; ++i ) {
   append( s , i );
   CHECK( s.size() == i );
   CHECK( ( s.capacity() & ( s.capacity() - 1 ) ) == 0 );
   CHECK( s.capacity() < 2 * i );
   }
+ CHECK( s.capacity() == 1024 );
+ for( int i = 999 ; i >= 0 ; --i ) {
+  s.remove( s.tail() );
+  CHECK( s.size() == i );
+  CHECK( ( s.capacity() & ( s.capacity() - 1 ) ) == 0 );
+  CHECK( s.capacity() >= i && ( i == 0 || s.capacity() <= 4 * i ) );
+  }
+ CHECK( s.capacity() == 0 && s.isEmpty() );
+ append( s , 7 );
+ CHECK( s.capacity() == 1 );
+ for( int i = 0 ; i < 8 ; ++i ) append( s , i );      // 9 items, 16 places
+ CHECK( s.capacity() == 16 );
+ for( int t = 0 ; t < 10 ; ++t ) {                   // across 4 and 5 items
+  while( s.size() > 4 ) s.remove( s.head() );
+  CHECK( s.capacity() == 8 );
+  append( s , t );
+  CHECK( s.capacity() == 8 );
+  }
+ ArraySequence< int > m = std::move( s );
+ CHECK( s.capacity() == 0 && s.isEmpty() && m.size() == 5 );
+ append( s , 1 );
+ CHECK( s.size() == 1 && s.capacity() == 1 );
  }
 
 // section 4.2.1: n increments of a counter of k bits change fewer than 2n
-// bits, and the counter goes back to 0 after 2^k of them
+// bits, and the counter goes back to 0 after 2^k of them; the edges: the
+// value i mod 2^k after i increments, the wrap from all ones (k bits
+// changed), k = 1, k = 0 (nothing to change), the exact total cost
+// sum_i floor( n / 2^i ), and an item that is not a bit (the audit)
 ADS_TEST( "sec4.2.1.counter" )
 {
  std::vector< int > A( 10 , 0 );
@@ -223,13 +315,39 @@ ADS_TEST( "sec4.2.1.counter" )
  CHECK( A == std::vector< int >( 10 , 0 ) );   // 2^10 increments
  add( A );
  CHECK( A[ 0 ] == 1 );
+ auto value = []( const std::vector< int > & B ) {
+  unsigned v = 0;
+  for( std::size_t i = B.size() ; i-- > 0 ; ) v = 2 * v + unsigned( B[ i ] );
+  return( v ); };
+ std::vector< int > C( 5 , 0 );
+ std::size_t total = 0;
+ for( unsigned i = 1 ; i <= 100 ; ++i ) {
+  const std::size_t c = add( C );
+  total += c;
+  CHECK( value( C ) == i % 32 );
+  CHECK( c == ( i % 32 == 0 ? 5 : std::size_t( std::countr_zero( i ) ) + 1 ) );
+  }
+ std::size_t want = 0;                          // the bits that changed
+ for( unsigned b = 0 ; b < 5 ; ++b ) want += 100 >> b;
+ CHECK( total == want );
+ std::vector< int > F( 6 , 1 );                 // all ones: the wrap
+ CHECK( add( F ) == 6 && F == std::vector< int >( 6 , 0 ) );
+ std::vector< int > O = { 0 };                  // k = 1
+ CHECK( add( O ) == 1 && O[ 0 ] == 1 && add( O ) == 1 && O[ 0 ] == 0 );
+ std::vector< int > Z;                          // k = 0
+ CHECK( add( Z ) == 0 && Z.empty() );
+ std::vector< int > N = { 0 , 2 };
+ CHECK_THROWS( (void) add( N ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- STACK AND QUEUE -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// section 4.3.2: LIFO, and the preconditions
+// section 4.3.2: LIFO, and the preconditions; the edges: capacity 0 (full
+// and empty at once) and 1, filled and emptied several times, the copies
+// equal whatever the capacity, a stack moved from left empty with no
+// capacity
 ADS_TEST( "spec.ArrayStack" )
 {
  ArrayStack< int > S( 3 );
@@ -245,10 +363,37 @@ ADS_TEST( "spec.ArrayStack" )
  CHECK( S.pop() == 5 );
  CHECK( S.pop() == 1 );
  CHECK( S.isEmpty() );
+ ArrayStack< int > Z( 0 );
+ CHECK( Z.isEmpty() && Z.capacity() == 0 );
+ CHECK_THROWS( Z.push( 1 ) , contract_violation );
+ CHECK_THROWS( Z.pop() , contract_violation );
+ ArrayStack< int > U( 1 );
+ for( int t = 0 ; t < 3 ; ++t ) {
+  U.push( t );
+  CHECK( U.top() == t && U.size() == 1 );
+  CHECK_THROWS( U.push( 9 ) , contract_violation );
+  CHECK( U.pop() == t && U.isEmpty() );
+  }
+ for( int t = 0 ; t < 3 ; ++t ) {               // filled and emptied
+  for( int i = 0 ; i < 3 ; ++i ) S.push( 10 * t + i );
+  CHECK( S.size() == 3 );
+  for( int i = 2 ; i >= 0 ; --i ) CHECK( S.pop() == 10 * t + i );
+  }
+ ArrayStack< int > L( 10 );
+ S.push( 1 ); S.push( 2 );
+ L.push( 1 ); L.push( 2 );
+ CHECK( S == L && ! ( S == U ) && Z == ArrayStack< int >( 5 ) );
+ ArrayStack< int > C = S;
+ C.pop();
+ CHECK( S.size() == 2 && S.top() == 2 && C.top() == 1 );
+ ArrayStack< int > M = std::move( S );
+ CHECK( S.isEmpty() && S.capacity() == 0 && M.top() == 2 );
+ CHECK_THROWS( S.push( 1 ) , contract_violation );
  }
 
-// section 4.3.1: the stack simulated with a sequence, on the LIST and on the
-// singly linked list of Esercizio 4.6, with no capacity
+// section 4.3.1: the stack simulated with a sequence, on the LIST, on the
+// singly linked list of Esercizio 4.6, on the vector and on the cursors,
+// with no capacity
 template< class S >
 void stack_on_sequence( void )
 {
@@ -262,15 +407,33 @@ void stack_on_sequence( void )
   CHECK( P.pop() == i );
  CHECK( P.isEmpty() );
  CHECK_THROWS( P.top() , std::logic_error );
+ P.push( 4 );                                   // one item, after emptying
+ CHECK( P.top() == 4 && ! P.isEmpty() );
+ CHECK( P.pop() == 4 && P.isEmpty() );
+ CHECK_THROWS( P.pop() , std::logic_error );
+ for( int t = 0 ; t < 100 ; ++t ) {             // push and pop interleaved
+  P.push( t );
+  P.push( -t );
+  CHECK( P.pop() == -t );
+  }
+ for( int t = 99 ; t >= 0 ; --t ) CHECK( P.pop() == t );
+ CHECK( P.isEmpty() );
  }
 
+// the edges: the empty stack, one item, the stack used again after being
+// emptied, pushes and pops interleaved
 ADS_TEST( "sec4.3.1.stack-on-list" )
 {
  stack_on_sequence< List< int > >();
  stack_on_sequence< SinglyList< int > >();
+ stack_on_sequence< ArraySequence< int > >();
+ stack_on_sequence< CursorList< int > >();
  }
 
-// section 4.3.3: FIFO, the queue going round the circular vector
+// section 4.3.3: FIFO, the queue going round the circular vector; the
+// edges: capacity 0 and 1 (the front wraps at every operation), contains()
+// on the empty queue, on items that straddle the end of the vector, on an
+// item dequeued and on one absent, and the preconditions
 ADS_TEST( "spec.ArrayQueue" )
 {
  ArrayQueue< int > Q( 3 );
@@ -289,6 +452,23 @@ ADS_TEST( "spec.ArrayQueue" )
  while( ! Q.isEmpty() )
   CHECK( Q.dequeue() == next_out++ );
  CHECK( next_out == next_in );
+ CHECK( ! Q.contains( 0 ) && Q.capacity() == 3 );
+ Q.enqueue( 1 ); Q.enqueue( 2 ); Q.dequeue(); Q.dequeue();
+ Q.enqueue( 3 ); Q.enqueue( 4 ); Q.enqueue( 5 );   // 4 and 5 wrap round
+ CHECK( Q.contains( 3 ) && Q.contains( 4 ) && Q.contains( 5 ) );
+ CHECK( ! Q.contains( 1 ) && ! Q.contains( 2 ) && ! Q.contains( 6 ) );
+ CHECK( Q.dequeue() == 3 && ! Q.contains( 3 ) && Q.top() == 4 );
+ ArrayQueue< int > Z( 0 );
+ CHECK( Z.isEmpty() && ! Z.contains( 0 ) );
+ CHECK_THROWS( Z.enqueue( 1 ) , contract_violation );
+ CHECK_THROWS( Z.dequeue() , contract_violation );
+ ArrayQueue< int > U( 1 );
+ for( int t = 0 ; t < 5 ; ++t ) {
+  U.enqueue( t );
+  CHECK( U.top() == t && U.size() == 1 && U.contains( t ) );
+  CHECK_THROWS( U.enqueue( 9 ) , contract_violation );
+  CHECK( U.dequeue() == t && U.isEmpty() );
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -296,38 +476,61 @@ ADS_TEST( "spec.ArrayQueue" )
 /*--------------------------------------------------------------------------*/
 
 // beginning of chapter 4: donGiovanni() removes the duchesses from the
-// catalogue and copies the Spanish women in L, in the same order
+// catalogue and copies the Spanish women in L, in the same order; the
+// edges: the empty catalogue, all duchesses (all removed), consecutive
+// duchesses (the position returned by remove() is a duchess again), a
+// duchess first and last, nobody Spanish, a Spanish duchess
 ADS_TEST( "sec4.donGiovanni" )
 {
  struct Conquest {
   std::string name , nation , rank;
   bool operator==( const Conquest & ) const = default;
   };
- List< Conquest > catalogo{ { "Elvira" , "spagnola" , "duchessa" } ,
-                            { "Zerlina" , "italiana" , "contadina" } ,
-                            { "Anna" , "spagnola" , "cittadina" } ,
-                            { "Sophie" , "francese" , "duchessa" } };
- List< Conquest > L;
- auto q = catalogo.head();
- while( ! catalogo.finished( q ) ) {
-  const auto v = catalogo.read( q );
-  if( v.nation == "spagnola" )
-   L.insert( L.next( L.tail() ) , v );
-  if( v.rank == "duchessa" )
-   q = catalogo.remove( q );
-  else
-   q = catalogo.next( q );
-  }
+ using Names = std::vector< std::string >;
+ auto donGiovanni = [ & ]( List< Conquest > catalogo ) {
+  List< Conquest > L;
+  auto q = catalogo.head();
+  while( ! catalogo.finished( q ) ) {
+   const auto v = catalogo.read( q );
+   if( v.nation == "spagnola" )
+    L.insert( L.next( L.tail() ) , v );
+   if( v.rank == "duchessa" )
+    q = catalogo.remove( q );
+   else
+    q = catalogo.next( q );
+   }
+  Names in_L , left;
+  for( const auto & c : items( L ) ) in_L.push_back( c.name );
+  for( const auto & c : items( catalogo ) ) left.push_back( c.name );
+  return( std::pair( in_L , left ) );
+  };
 
- std::vector< std::string > in_L , left;
- for( const auto & c : items( L ) ) in_L.push_back( c.name );
- for( const auto & c : items( catalogo ) ) left.push_back( c.name );
- CHECK( in_L == std::vector< std::string >( { "Elvira" , "Anna" } ) );
- CHECK( left == std::vector< std::string >( { "Zerlina" , "Anna" } ) );
+ const Conquest E{ "Elvira" , "spagnola" , "duchessa" } ,
+                Z{ "Zerlina" , "italiana" , "contadina" } ,
+                A{ "Anna" , "spagnola" , "cittadina" } ,
+                S{ "Sophie" , "francese" , "duchessa" } ,
+                M{ "Mia" , "tedesca" , "duchessa" };
+ auto [ in_L , left ] = donGiovanni( { E , Z , A , S } );
+ CHECK( in_L == Names( { "Elvira" , "Anna" } ) );
+ CHECK( left == Names( { "Zerlina" , "Anna" } ) );
+ std::tie( in_L , left ) = donGiovanni( {} );
+ CHECK( in_L.empty() && left.empty() );
+ std::tie( in_L , left ) = donGiovanni( { E , S , M } );      // all
+ CHECK( in_L == Names( { "Elvira" } ) && left.empty() );
+ std::tie( in_L , left ) = donGiovanni( { Z , S , M , E , A } );
+ CHECK( in_L == Names( { "Elvira" , "Anna" } ) &&
+        left == Names( { "Zerlina" , "Anna" } ) );
+ std::tie( in_L , left ) = donGiovanni( { S , Z , M } );      // first, last
+ CHECK( in_L.empty() && left == Names( { "Zerlina" } ) );
+ std::tie( in_L , left ) = donGiovanni( { Z } );
+ CHECK( in_L.empty() && left == Names( { "Zerlina" } ) );
  }
 
 // section 4.4, Figura 4.8: the moves for n = 3, and 2^n - 1 moves for each
-// n, by the recursive procedure and by the two iterative ones
+// n, by the recursive procedure and by the two iterative ones; the edges:
+// n = 1 (one move), every assignment of the three pegs, n = 20 (2^20 - 1
+// moves, the stack of the iterative procedures deep 20), and the
+// preconditions n >= 1 and three distinct pegs
 ADS_TEST( "sec4.4.hanoi" )
 {
  using Moves = std::vector< std::pair< int , int > >;
@@ -360,6 +563,47 @@ ADS_TEST( "sec4.4.hanoi" )
    }
   CHECK( int( peg[ 3 ].size() ) == n );
   }
+ Moves one;
+ hanoi_recursive( 1 , 2 , 1 , 3 , [ & ]( int a , int b ) {
+  one.emplace_back( a , b ); } );
+ CHECK( one == Moves( { { 2 , 1 } } ) );
+ int pegs[] = { 1 , 2 , 3 };
+ do {                                       // every source, dest, middle
+  const int s = pegs[ 0 ] , d = pegs[ 1 ] , m = pegs[ 2 ];
+  for( int n : { 1 , 2 , 5 } ) {
+   Moves r , i1 , i2;
+   hanoi_recursive( n , s , d , m , [ & ]( int a , int b ) {
+    r.emplace_back( a , b ); } );
+   hanoi_iterative( n , s , d , m , [ & ]( int a , int b ) {
+    i1.emplace_back( a , b ); } );
+   hanoi_iterative_labels( n , s , d , m , [ & ]( int a , int b ) {
+    i2.emplace_back( a , b ); } );
+   CHECK( i1 == r && i2 == r && r.size() == ( std::size_t( 1 ) << n ) - 1 );
+   std::vector< std::vector< int > > peg( 4 );
+   for( int k = n ; k >= 1 ; --k ) peg[ s ].push_back( k );
+   for( auto [ a , b ] : r ) {
+    CHECK( ! peg[ a ].empty() &&
+           ( peg[ b ].empty() || peg[ b ].back() > peg[ a ].back() ) );
+    peg[ b ].push_back( peg[ a ].back() );
+    peg[ a ].pop_back();
+    }
+   CHECK( int( peg[ d ].size() ) == n );
+   }
+  } while( std::next_permutation( pegs , pegs + 3 ) );
+ long c1 = 0 , c2 = 0 , c3 = 0;
+ hanoi_recursive( 20 , 1 , 3 , 2 , [ & ]( int , int ) { ++c1; } );
+ hanoi_iterative( 20 , 1 , 3 , 2 , [ & ]( int , int ) { ++c2; } );
+ hanoi_iterative_labels( 20 , 1 , 3 , 2 , [ & ]( int , int ) { ++c3; } );
+ CHECK( c1 == ( 1L << 20 ) - 1 && c2 == c1 && c3 == c1 );
+ auto none = []( int , int ) {};
+ CHECK_THROWS( hanoi_recursive( 0 , 1 , 3 , 2 , none ) , contract_violation );
+ CHECK_THROWS( hanoi_iterative( 0 , 1 , 3 , 2 , none ) , contract_violation );
+ CHECK_THROWS( hanoi_iterative_labels( -1 , 1 , 3 , 2 , none ) ,
+               contract_violation );
+ CHECK_THROWS( hanoi_recursive( 2 , 1 , 1 , 2 , none ) , contract_violation );
+ CHECK_THROWS( hanoi_iterative( 2 , 1 , 3 , 3 , none ) , contract_violation );
+ CHECK_THROWS( hanoi_iterative_labels( 2 , 2 , 3 , 2 , none ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -380,10 +624,11 @@ void firstN( int n , List< int > & L , List< int > & M )
 
 }  // end( namespace )
 
-// Esercizio 4.1: L = 1, ..., n and M = n, ..., 1
+// Esercizio 4.1: L = 1, ..., n and M = n, ..., 1; the edges: n = 0 and a
+// negative n (nothing), n = 1, and n = 5000 (the depth of the recursion)
 ADS_TEST( "ex4.1" )
 {
- for( int n : { 1 , 2 , 7 } ) {
+ for( int n : { 1 , 2 , 7 , 5000 } ) {
   List< int > L , M;
   firstN( n , L , M );
   std::vector< int > up , down;
@@ -396,6 +641,8 @@ ADS_TEST( "ex4.1" )
   }
  List< int > L , M;
  firstN( 0 , L , M );   // nothing for n = 0
+ CHECK( L.isEmpty() && M.isEmpty() );
+ firstN( -3 , L , M );
  CHECK( L.isEmpty() && M.isEmpty() );
  }
 
@@ -418,7 +665,9 @@ List< int > epurazione( const List< int > & L )
 
 }  // end( namespace )
 
-// Esercizio 4.2: the items that appear exactly twice go
+// Esercizio 4.2: the items that appear exactly twice go; the edges: empty,
+// one item, a pair (nothing left), three and four copies (kept), two
+// pairs apart, negative items and 0, against counting on a vector
 ADS_TEST( "ex4.2" )
 {
  using V = std::vector< int >;
@@ -427,12 +676,29 @@ ADS_TEST( "ex4.2" )
  CHECK( items( epurazione( {} ) ).empty() );
  CHECK( items( epurazione( { 4 , 4 } ) ).empty() );
  CHECK( items( epurazione( { 4 } ) ) == V( { 4 } ) );
+ CHECK( items( epurazione( { 4 , 4 , 4 } ) ) == V( { 4 , 4 , 4 } ) );
+ CHECK( items( epurazione( { 4 , 4 , 4 , 4 } ) ) == V( 4 , 4 ) );
+ CHECK( items( epurazione( { 1 , 2 , 0 , 2 , 1 } ) ) == V( { 0 } ) );
+ CHECK( items( epurazione( { -1 , 0 , -1 , 0 } ) ).empty() );
+ std::mt19937 g( 12 );
+ for( int t = 0 ; t < 100 ; ++t ) {
+  V v( g() % 12 );
+  for( auto & x : v ) x = int( g() % 5 ) - 2;
+  V want;
+  for( int x : v )
+   if( std::count( v.begin() , v.end() , x ) != 2 ) want.push_back( x );
+  List< int > L;
+  for( int x : v ) append( L , x );
+  CHECK( items( epurazione( L ) ) == want );
+  }
  }
 
 namespace {
 
 // Esercizio 4.3: the sum of two numbers given as lists of digits, the most
-// significant first; the digits are added from the tails with a carry
+// significant first; the digits are added from the tails with a carry, so
+// that the sum has the digits of the longer list, its leading zeros kept,
+// plus one for a last carry, and two empty lists give 0
 List< int > sum( const List< int > & A , const List< int > & B )
 {
  List< int > C;
@@ -453,7 +719,11 @@ List< int > sum( const List< int > & A , const List< int > & B )
 
 }  // end( namespace )
 
-// Esercizio 4.3: 190 + 17 = 207, and the cases with carries and zeros
+// Esercizio 4.3: 190 + 17 = 207, and the cases with carries and zeros; the
+// edges: both lists empty (the number 0), one empty, the shorter list
+// first or second, a carry through every digit and out of the longer
+// list, leading zeros (kept, as many digits as the longer list), against
+// the arithmetic of long long on numbers of up to 17 digits
 ADS_TEST( "ex4.3" )
 {
  using V = std::vector< int >;
@@ -461,14 +731,43 @@ ADS_TEST( "ex4.3" )
  CHECK( items( sum( { 9 , 9 , 9 } , { 1 } ) ) == V( { 1 , 0 , 0 , 0 } ) );
  CHECK( items( sum( { 0 } , { 0 } ) ) == V( { 0 } ) );
  CHECK( items( sum( {} , { 4 , 2 } ) ) == V( { 4 , 2 } ) );
+ CHECK( items( sum( {} , {} ) ) == V( { 0 } ) );
+ CHECK( items( sum( { 4 , 2 } , {} ) ) == V( { 4 , 2 } ) );
+ CHECK( items( sum( { 1 } , { 9 , 9 , 9 } ) ) == V( { 1 , 0 , 0 , 0 } ) );
+ CHECK( items( sum( { 9 , 9 } , { 9 , 9 } ) ) == V( { 1 , 9 , 8 } ) );
+ CHECK( items( sum( { 0 , 0 , 5 } , { 5 } ) ) == V( { 0 , 1 , 0 } ) );
+ std::mt19937_64 g( 13 );
+ auto digits = []( long long x ) {
+  List< int > L;
+  do { L.insert( L.head() , int( x % 10 ) ); x /= 10; } while( x );
+  return( L );
+  };
+ auto value = []( const V & v ) {
+  long long x = 0;
+  for( int d : v ) x = 10 * x + d;
+  return( x ); };
+ auto random = [ & ]( void ) {             // up to 17 digits, often fewer
+  return( (long long)( ( g() % 100000000000000000ULL ) >> ( g() % 57 ) ) );
+  };
+ for( int t = 0 ; t < 300 ; ++t ) {
+  const long long a = random() , b = random();
+  const V s = items( sum( digits( a ) , digits( b ) ) );
+  CHECK( value( s ) == a + b && ( s.size() == 1 || s[ 0 ] != 0 ) );
+  CHECK( std::all_of( s.begin() , s.end() , []( int d ) {
+   return( d >= 0 && d <= 9 ); } ) );
+  }
  }
 
 namespace {
 
 // Soluzione Esercizio 4.4: tangentopoli(), the order of the victims when
-// every k-th person of the circle is killed (the problem of Josephus)
+// every k-th person of the circle is killed (the problem of Josephus); k
+// may exceed the people left, the count going round the circle, and k < 1
+// is not a count, std::invalid_argument
 std::vector< std::string > tangentopoli( List< std::string > L , int k )
 {
+ if( k < 1 )
+  throw( std::invalid_argument( "tangentopoli: k < 1" ) );
  std::vector< std::string > order;
  auto p = L.head();
  while( ! L.isEmpty() ) {
@@ -487,7 +786,9 @@ std::vector< std::string > tangentopoli( List< std::string > L , int k )
 
 }  // end( namespace )
 
-// Esercizio 4.4: Caio, Sempronio, Tizio, Tullio and k = 3
+// Esercizio 4.4: Caio, Sempronio, Tizio, Tullio and k = 3; the edges: the
+// empty circle, one person, k = 1 (the order of the circle), k = n, k much
+// larger than n, n = 2, and k < 1, against a simulation on a vector
 ADS_TEST( "ex4.4" )
 {
  using V = std::vector< std::string >;
@@ -501,6 +802,28 @@ ADS_TEST( "ex4.4" )
  for( int i = 1 ; i <= 41 ; ++i )
   append( L , std::to_string( i ) );
  CHECK( tangentopoli( L , 3 ).back() == "31" );
+ CHECK( tangentopoli( {} , 3 ).empty() );
+ CHECK( tangentopoli( { "A" } , 7 ) == V( { "A" } ) );
+ CHECK( tangentopoli( { "A" , "B" } , 2 ) == V( { "B" , "A" } ) );
+ CHECK( tangentopoli( { "A" , "B" , "C" } , 3 ) == V( { "C" , "A" , "B" } ) );
+ CHECK_THROWS( tangentopoli( { "A" } , 0 ) , std::invalid_argument );
+ CHECK_THROWS( tangentopoli( {} , -1 ) , std::invalid_argument );
+ for( int n = 1 ; n <= 9 ; ++n )
+  for( int k : { 1 , 2 , 3 , n , n + 1 , 2 * n + 3 , 100 } ) {
+   List< std::string > C;
+   std::vector< std::string > v , want;
+   for( int i = 0 ; i < n ; ++i ) {
+    append( C , std::to_string( i ) );
+    v.push_back( std::to_string( i ) );
+    }
+   for( std::size_t i = 0 ; ! v.empty() ; ) {
+    i = ( i + std::size_t( k ) - 1 ) % v.size();
+    want.push_back( v[ i ] );
+    v.erase( v.begin() + long( i ) );
+    if( ! v.empty() ) i %= v.size();
+    }
+   CHECK( tangentopoli( C , k ) == want );
+   }
  }
 
 namespace {
@@ -524,7 +847,10 @@ void replicate( List< int > & L , List< int >::Pos p , int evens )
 
 }  // end( namespace )
 
-// Esercizio 4.5: L = 4, 6, 7, 3, 2, 5 becomes 7, 7, 7, 3, 3, 3, 5, 5, 5, 5
+// Esercizio 4.5: L = 4, 6, 7, 3, 2, 5 becomes 7, 7, 7, 3, 3, 3, 5, 5, 5, 5;
+// the edges: empty, one even and one odd item, an even item last (no
+// copy after it), 0 and negative items (-3 odd, -2 even), against the
+// definition on random lists
 ADS_TEST( "ex4.5" )
 {
  using V = std::vector< int >;
@@ -537,6 +863,28 @@ ADS_TEST( "ex4.5" )
  List< int > O{ 1 , 3 };   // no even item: the odd ones stay as they are
  replicate( O , O.head() , 0 );
  CHECK( items( O ) == V( { 1 , 3 } ) );
+ for( const auto & [ in , out ] : { std::pair( V() , V() ) ,
+        std::pair( V{ 2 } , V() ) , std::pair( V{ 1 } , V{ 1 } ) ,
+        std::pair( V{ 1 , 2 } , V{ 1 } ) ,
+        std::pair( V{ 0 , -3 , -2 , 5 } , V{ -3 , -3 , 5 , 5 , 5 } ) } ) {
+  List< int > R;
+  for( int x : in ) append( R , x );
+  replicate( R , R.head() , 0 );
+  CHECK( items( R ) == out );
+  }
+ std::mt19937 g( 14 );
+ for( int t = 0 ; t < 100 ; ++t ) {
+  V in( g() % 10 ) , want;
+  for( auto & x : in ) x = int( g() % 9 ) - 4;
+  int evens = 0;
+  for( int x : in )
+   if( x % 2 == 0 ) ++evens;
+   else want.insert( want.end() , std::size_t( evens + 1 ) , x );
+  List< int > R;
+  for( int x : in ) append( R , x );
+  replicate( R , R.head() , 0 );
+  CHECK( items( R ) == want );
+  }
  }
 
 namespace {
@@ -584,7 +932,10 @@ class TwoStacks {
 
 }  // end( namespace )
 
-// Esercizio 4.7: two stacks share the vector until it is full
+// Esercizio 4.7: two stacks share the vector until it is full; the edges:
+// a vector of 0 places (no push) and of 1 (whichever stack comes first),
+// one stack taking the whole vector, top() and pop() of an empty stack
+// while the other one is full, and the stacks against two std::vector
 ADS_TEST( "ex4.7" )
 {
  TwoStacks T( 5 );
@@ -602,6 +953,46 @@ ADS_TEST( "ex4.7" )
  CHECK( T.pop( b ) == 10 );
  CHECK( T.isEmpty( b ) );
  CHECK_THROWS( T.pop( b ) , std::logic_error );
+ TwoStacks Z( 0 );
+ Z.create(); Z.create();
+ CHECK( Z.isEmpty( 0 ) && Z.isEmpty( 1 ) );
+ CHECK_THROWS( Z.push( 0 , 1 ) , std::logic_error );
+ CHECK_THROWS( Z.push( 1 , 1 ) , std::logic_error );
+ CHECK_THROWS( Z.top( 1 ) , std::logic_error );
+ TwoStacks U( 1 );
+ U.create(); U.create();
+ U.push( 1 , 8 );
+ CHECK_THROWS( U.push( 0 , 9 ) , std::logic_error );
+ CHECK( U.top( 1 ) == 8 && U.isEmpty( 0 ) );
+ CHECK_THROWS( U.top( 0 ) , std::logic_error );
+ CHECK( U.pop( 1 ) == 8 );
+ U.push( 0 , 9 );
+ CHECK( U.top( 0 ) == 9 && U.isEmpty( 1 ) );
+ for( int s : { 0 , 1 } ) {                     // one stack takes it all
+  TwoStacks W( 4 );
+  W.create(); W.create();
+  for( int i = 0 ; i < 4 ; ++i ) W.push( s , i );
+  CHECK_THROWS( W.push( 1 - s , 0 ) , std::logic_error );
+  CHECK_THROWS( W.pop( 1 - s ) , std::logic_error );
+  for( int i = 3 ; i >= 0 ; --i ) CHECK( W.pop( s ) == i );
+  CHECK( W.isEmpty( s ) );
+  }
+ std::mt19937 g( 15 );                         // against two std::vector
+ TwoStacks R( 7 );
+ R.create(); R.create();
+ std::vector< int > o[ 2 ];
+ for( int t = 0 ; t < 2000 ; ++t ) {
+  const int s = int( g() % 2 );
+  if( g() % 2 ) {
+   if( o[ 0 ].size() + o[ 1 ].size() == 7 )
+    CHECK_THROWS( R.push( s , t ) , std::logic_error );
+   else { R.push( s , t ); o[ s ].push_back( t ); }
+   }
+  else
+   if( o[ s ].empty() )
+    CHECK_THROWS( R.pop( s ) , std::logic_error );
+   else { CHECK( R.pop( s ) == o[ s ].back() ); o[ s ].pop_back(); }
+  }
  }
 
 namespace {
@@ -624,10 +1015,11 @@ void firstN_iterative( int n , List< int > & L , List< int > & M )
 
 }  // end( namespace )
 
-// Esercizio 4.8: the same lists as firstN()
+// Esercizio 4.8: the same lists as firstN(); the edges: a negative n and
+// n = 0 (nothing, a stack of one place), n = 1, and n = 5000
 ADS_TEST( "ex4.8" )
 {
- for( int n : { 0 , 1 , 5 , 50 } ) {
+ for( int n : { -2 , 0 , 1 , 5 , 50 , 5000 } ) {
   List< int > L1 , M1 , L2 , M2;
   firstN( n , L1 , M1 );
   firstN_iterative( n , L2 , M2 );
@@ -636,7 +1028,10 @@ ADS_TEST( "ex4.8" )
   }
  }
 
-// Esercizio 4.9: both ends, and a stack and a queue made of a dequeue
+// Esercizio 4.9: both ends, and a stack and a queue made of a dequeue; the
+// edges: the empty dequeue (the four preconditions), one item (head and
+// tail the same, removed from either end), emptied and used again, and
+// random operations at both ends against std::deque
 ADS_TEST( "ex4.9" )
 {
  Dequeue< int > D;
@@ -648,25 +1043,77 @@ ADS_TEST( "ex4.9" )
  CHECK( D.removeHead() == 2 );
  CHECK( D.isEmpty() );
  CHECK_THROWS( D.removeTail() , std::logic_error );
+ CHECK_THROWS( (void) D.head() , contract_violation );
+ CHECK_THROWS( (void) D.tail() , contract_violation );
+ D.insertHead( 5 );
+ CHECK( D.head() == 5 && D.tail() == 5 && D.removeTail() == 5 );
+ D.insertTail( 6 );
+ CHECK( D.head() == 6 && D.tail() == 6 && D.removeHead() == 6 );
+ CHECK( D.isEmpty() );
+ std::mt19937 g( 16 );
+ std::deque< int > o;
+ for( int t = 0 ; t < 3000 ; ++t ) {
+  switch( g() % 4 ) {
+   case 0: D.insertHead( t ); o.push_front( t ); break;
+   case 1: D.insertTail( t ); o.push_back( t ); break;
+   case 2:
+    if( o.empty() ) CHECK_THROWS( D.removeHead() , contract_violation );
+    else { CHECK( D.removeHead() == o.front() ); o.pop_front(); }
+    break;
+   default:
+    if( o.empty() ) CHECK_THROWS( D.removeTail() , contract_violation );
+    else { CHECK( D.removeTail() == o.back() ); o.pop_back(); }
+   }
+  CHECK( D.isEmpty() == o.empty() );
+  if( ! o.empty() ) CHECK( D.head() == o.front() && D.tail() == o.back() );
+  }
  }
 
 static_assert( Queue< LinkedQueue< int > > );
 
-// Esercizio 4.10: FIFO, also after being emptied
+// Esercizio 4.10: FIFO, also after being emptied; the edges: top() and
+// dequeue() of the empty queue, one item (the front and the back the same
+// cell) enqueued and dequeued in turn, enqueue() after a dequeue() that
+// empties the queue (the back reset), the copies equal and independent, a
+// queue moved from left empty, and the size
 ADS_TEST( "ex4.10" )
 {
  LinkedQueue< int > Q;
  CHECK_THROWS( Q.dequeue() , std::logic_error );
+ CHECK_THROWS( (void) Q.top() , std::logic_error );
  for( int i = 0 ; i < 100 ; ++i )
   Q.enqueue( i );
+ CHECK( Q.size() == 100 );
  for( int i = 0 ; i < 100 ; ++i )
   CHECK( Q.dequeue() == i );
- CHECK( Q.isEmpty() );
+ CHECK( Q.isEmpty() && Q.size() == 0 );
  Q.enqueue( 7 );
  CHECK( Q.top() == 7 );
+ for( int t = 0 ; t < 5 ; ++t ) {               // one item at a time
+  CHECK( Q.dequeue() == ( t ? t - 1 : 7 ) && Q.isEmpty() );
+  Q.enqueue( t );
+  CHECK( Q.top() == t && Q.size() == 1 );
+  }
+ Q.enqueue( 10 );
+ Q.enqueue( 11 );                               // 4 , 10 , 11
+ LinkedQueue< int > C = Q;
+ CHECK( C == Q && C.size() == 3 );
+ CHECK( C.dequeue() == 4 && ! ( C == Q ) && Q.top() == 4 );
+ C.enqueue( 12 );
+ CHECK( Q.size() == 3 && C.size() == 3 );
+ const LinkedQueue< int > E , F = E;
+ CHECK( E == F && F.isEmpty() && ! ( E == Q ) );
+ LinkedQueue< int > M = std::move( Q );
+ CHECK( Q.isEmpty() && M.size() == 3 && M.top() == 4 );
+ Q.enqueue( 1 );                                // usable after the move
+ CHECK( Q.top() == 1 && Q.dequeue() == 1 && Q.isEmpty() );
  }
 
-// Esercizio 4.11: sorted by key, the values of a key in their first order
+// Esercizio 4.11: sorted by key, the values of a key in their first order;
+// the edges: empty (also with k = 0), one pair, k = 1 (all the same key,
+// the order kept), the keys 0 and k - 1, sorted and reverse sorted keys,
+// against std::stable_sort, and the preconditions (a key k, a negative
+// key, a negative k)
 ADS_TEST( "ex4.11" )
 {
  using P = std::vector< std::pair< int , std::string > >;
@@ -676,6 +1123,34 @@ ADS_TEST( "ex4.11" )
         P( { { 0 , "a" } , { 0 , "e" } , { 1 , "b" } , { 2 , "c" } ,
              { 2 , "d" } } ) );
  CHECK( pigeonholeSort( P() , 4 ).empty() );
+ CHECK( pigeonholeSort( P() , 0 ).empty() );
+ CHECK( pigeonholeSort( P( { { 0 , "x" } } ) , 1 ) == P( { { 0 , "x" } } ) );
+ const P same = { { 0 , "c" } , { 0 , "a" } , { 0 , "b" } };
+ CHECK( pigeonholeSort( same , 1 ) == same );
+ const P ends = { { 9 , "z" } , { 0 , "a" } , { 9 , "y" } , { 0 , "b" } };
+ CHECK( pigeonholeSort( ends , 10 ) ==
+        P( { { 0 , "a" } , { 0 , "b" } , { 9 , "z" } , { 9 , "y" } } ) );
+ std::mt19937 g( 17 );
+ auto byKey = []( const auto & x , const auto & y ) {
+  return( x.first < y.first ); };
+ for( int k : { 1 , 2 , 7 , 50 } )
+  for( int order = 0 ; order < 3 ; ++order ) {   // random, sorted, reverse
+   P R( g() % 40 );
+   for( std::size_t i = 0 ; i < R.size() ; ++i )
+    R[ i ] = { int( g() % k ) , std::to_string( i ) };
+   if( order ) std::stable_sort( R.begin() , R.end() , byKey );
+   if( order == 2 ) std::reverse( R.begin() , R.end() );
+   P S = R;
+   std::stable_sort( S.begin() , S.end() , byKey );
+   CHECK( pigeonholeSort( R , k ) == S );
+   }
+ CHECK_THROWS( (void) pigeonholeSort( P( { { 3 , "a" } } ) , 3 ) ,
+               contract_violation );
+ CHECK_THROWS( (void) pigeonholeSort( P( { { -1 , "a" } } ) , 3 ) ,
+               contract_violation );
+ CHECK_THROWS( (void) pigeonholeSort( P( { { 0 , "a" } } ) , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( (void) pigeonholeSort( P() , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/

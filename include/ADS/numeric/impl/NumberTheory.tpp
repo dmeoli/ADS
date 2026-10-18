@@ -50,19 +50,45 @@ inline long long modInverse( long long s , long long m )
  return( r );
  }
 
-inline U64 mulMod( U64 a , U64 b , U64 m )
+constexpr U64 mulMod61( U64 a , U64 b )
+{
+ ADS_PRE( ( a < kMersenne61 ) && ( b < kMersenne61 ) );
+ const U64 a1 = a >> 32 , a0 = a & 0xFFFFFFFFULL ,
+           b1 = b >> 32 , b0 = b & 0xFFFFFFFFULL;
+ const U64 mid = a1 * b0 + a0 * b1;             // below 2^62
+ const U64 lo = a0 * b0;
+ U64 s = ( ( a1 * b1 ) << 3 )                   // 2^64 = 8
+         + ( mid >> 29 )                        // 2^61 = 1
+         + ( ( mid & ( ( U64( 1 ) << 29 ) - 1 ) ) << 32 )
+         + ( lo & kMersenne61 ) + ( lo >> 61 );
+ s = ( s & kMersenne61 ) + ( s >> 61 );
+ if( s >= kMersenne61 ) s -= kMersenne61;
+ ADS_POST( s < kMersenne61 );
+ return( s );
+ }
+
+constexpr U64 mulMod( U64 a , U64 b , U64 m )
 {
  ADS_PRE( m >= 1 );
-#ifdef __SIZEOF_INT128__
- return( U64( ( unsigned __int128 )( a ) * b % m ) );
-#else
+ if( a >= m ) a %= m;
+ if( b >= m ) b %= m;
  U64 r = 0;
- for( a %= m ; b ; b >>= 1 ) {               // the doubling of Ahmes
-  if( b & 1 ) r = ( r >= m - a ) ? r - ( m - a ) : r + a;
-  a = ( a >= m - a ) ? a - ( m - a ) : a + a;
-  }
- return( r );
+ if( m <= ( U64( 1 ) << 32 ) )               // a b below 2^64
+  r = a * b % m;
+ else if( m == kMersenne61 )
+  r = mulMod61( a , b );
+ else {
+#ifdef __SIZEOF_INT128__
+  r = U64( ( unsigned __int128 )( a ) * b % m );
+#else
+  for( ; b ; b >>= 1 ) {                     // the doubling of Ahmes
+   if( b & 1 ) r = ( r >= m - a ) ? r - ( m - a ) : r + a;
+   a = ( a >= m - a ) ? a - ( m - a ) : a + a;
+   }
 #endif
+  }
+ ADS_POST( r < m );
+ return( r );
  }
 
 inline U64 powMod( U64 x , U64 v , U64 m )

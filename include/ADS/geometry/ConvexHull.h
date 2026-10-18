@@ -53,6 +53,7 @@
 #include "ADS/Contract.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <vector>
@@ -70,8 +71,9 @@ struct Point {
  };
 
 /// the cross product ( b - a ) x ( c - a ): positive if c is to the left of
-/// the line from a to b, 0 if on it
-inline long cross( const Point & a , const Point & b , const Point & c );
+/// the line from a to b, 0 if on it; in long long, as long may have 32 bits
+inline long long cross( const Point & a , const Point & b ,
+                        const Point & c );
 
 /// stessaparte(): p and q on the same side of the line through p1 and p2,
 /// or on it
@@ -81,16 +83,22 @@ inline bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
 /// an increasing function of the angle of ( dx , dy ) in [ 0 , 4 ), with no
 /// arctangent: dy / ( |dx| + |dy| ) in the first quadrant, then 2 minus it,
 /// then 2 minus it, then 4 plus it
-/// \post a value in [ 0 , 4 )
+/// \post a value in [ 0 , 4 ), also for the extreme values of long (a
+///       direction just below the positive x axis may round to the largest
+///       double below 4, tying with the ones next to it)
 inline double pseudoAngle( long dx , long dy );
 
 /// the hull by checking every segment, O( n^3 ); the vertices in counter
 /// clockwise order from the lowest one
+/// \pre | x | and | y | at most 10^9, so that the cross products fit a long
+///      long
 /// \post the hull of P
 inline std::vector< Point > convexHullBrute( std::vector< Point > P );
 
 /// graham(): the vertices of the hull in counter clockwise order from the
 /// lowest point, the rightmost of the lowest ones
+/// \pre | x | and | y | at most 10^9, so that the cross products fit a long
+///      long
 /// \post the hull of P
 inline std::vector< Point > graham( std::vector< Point > P );
 

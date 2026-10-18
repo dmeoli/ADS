@@ -24,9 +24,11 @@
  *   which it removes.
  *
  * The contracts [see Contract.h]: each operator of a postfix expression
- * finds two operands on the stack, one item is left at the end, and no
- * division is by 0; an infix expression has balanced parentheses and only
- * the tokens above, and a fully parenthesized one has an operator for each
+ * finds two operands on the stack, one item is left at the end, no
+ * division is by 0 and no operation overflows a long (an operand beyond a
+ * long throws the std::out_of_range of std::stol); an infix expression has
+ * balanced parentheses and only the tokens above, and a fully
+ * parenthesized one has an operator for each
  * pair of parentheses. The functions are defined in Expressions.tpp.
  *
  * \see J. Lukasiewicz, Elementy logiki matematycznej, Warszawa, 1929
@@ -57,6 +59,7 @@
 #include "ADS/stack/ArrayStack.h"
 
 #include <cstddef>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -68,7 +71,8 @@
 namespace ADS {
 
 /// the value of the postfix expression e
-/// \pre e is a well formed postfix expression with no division by 0
+/// \pre e is a well formed postfix expression with no division by 0 and
+///      no operation whose result is out of a long
 long evalPostfix( std::string_view e );
 
 /// the postfix form of the fully parenthesized infix expression e, its

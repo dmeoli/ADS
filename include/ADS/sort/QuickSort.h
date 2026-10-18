@@ -12,7 +12,9 @@
  * \f]
  * on average over the permutations, but \f$ n ( n - 1 ) / 2 \f$ when the
  * pivot is always the smallest item, e.g., on a sorted vector, and also
- * when all the items are equal (exercise 12.4). Not stable.
+ * when all the items are equal (exercise 12.4), and then the recursion of
+ * quickSort() and of quickSort( L ) is n - 1 calls deep, which the stack of
+ * the program must hold. Not stable.
  *
  * quickSortTuned() combines the improvements of the section: the pivot is
  * the median of A[ start ], A[ ( start + end ) / 2 ] and A[ end ]; the

@@ -52,6 +52,7 @@ inline void BoundaryTagAllocator::unlink( long p )
 inline long BoundaryTagAllocator::allocate( long n )
 {
  ADS_PRE( n >= 1 );
+ if( n > N ) return( -1 );                  // no n + 2 past a long
  const long need = n + 2;                   // the two tags
  const long s0 = need < 4 ? 4 : need;       // room for the links when free
  long best = -1;
@@ -158,15 +159,17 @@ inline bool BoundaryTagAllocator::tiled( void ) const
 
 inline BuddyAllocator::BuddyAllocator( int m ) : f_m( m ) , f_free( m + 1 )
 {
- ADS_PRE( ( m >= 0 ) && ( m <= 40 ) );
+ ADS_PRE( ( m >= 0 ) && ( m <= 40 ) &&
+          ( m < std::numeric_limits< long >::digits ) );
  f_free[ m ].insert( 0 );
  }
 
 inline long BuddyAllocator::allocate( long n )
 {
  ADS_PRE( n >= 1 );
+ if( n > ( 1LL << f_m ) ) return( -1 );     // no 2^k past a long
  int k = 0;                                 // the least 2^k >= n
- while( ( 1L << k ) < n ) ++k;
+ while( ( 1LL << k ) < n ) ++k;
  int j = k;                                 // R1: the least free block
  while( ( j <= f_m ) && f_free[ j ].empty() ) ++j;   // of 2^j >= 2^k
  if( j > f_m )

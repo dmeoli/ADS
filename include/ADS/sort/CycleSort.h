@@ -66,7 +66,8 @@ namespace ADS {
 template< class T , class C = std::less<> >
 std::size_t cycleSort( std::vector< T > & A , C less = C() );
 
-/// the pancake sort; the number of flips
+/// the pancake sort; the number of flips, none on a sorted vector, also
+/// with equal items (the last of the maxima goes to the end)
 /// \post A is sorted, with the same items (an audit), and the flips are at
 ///       most max( 0 , 2 n - 3 )
 template< class T , class C = std::less<> >

@@ -40,6 +40,10 @@ long grayTuples( const std::vector< int > & m , F && visit )
  ADS_PRE( std::all_of( m.begin() , m.end() , []( int x ) {
   return( x >= 2 ); } ) );
  const int n = int( m.size() );
+ if( n == 0 ) {                             // the empty tuple alone
+  visit( Tuple() );
+  return( 1 );
+  }
  Tuple a( n , 0 ) , o( n , 1 );             // the digits and directions,
  std::vector< int > f( n + 1 );             // the focus pointers
  for( int j = 0 ; j <= n ; ++j ) f[ j ] = j;

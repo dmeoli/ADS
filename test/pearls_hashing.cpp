@@ -40,6 +40,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <random>
 #include <set>
@@ -121,7 +122,9 @@ void againstBrute( const S & T , const std::vector< std::string > & D ,
 // classes by the enumeration of all their functions: two distinct keys
 // collide under exactly m^( r - 1 ) = |H| / m dot products (Theorem 8.4),
 // under at most |H| / m functions of H_{p,m} and under at most 2 |H| / m
-// multiplications and shifts (Theorem 8.5); StringHash on the character 0
+// multiplications and shifts (Theorem 8.5); StringHash on the character 0;
+// the extremes: p = 1, the factors 0 and p - 1, m = 1, a universe past
+// 2^64, the multiply-shift on 64 bits, and every precondition
 ADS_TEST( "universal-classes" )
 {
  const std::uint64_t P = kMersenne61 , q = 4611686018427388039ULL;
@@ -179,12 +182,58 @@ ADS_TEST( "universal-classes" )
  const StringHash s( 3 );
  const std::string z( 1 , '\0' ) , az = std::string( "a" ) + z;
  CHECK( s( "" ) != s( z ) && s( "a" ) != s( az ) && s( "ab" ) == s( "ab" ) );
+ CHECK( s( "" ) == 0 && s( std::string( 1000 , '\xff' ) ) < P );
+
+ CHECK( mulMod( 0 , 0 , 1 ) == 0 && mulMod61( 0 , P - 1 ) == 0 &&
+        mulMod( P - 1 , 1 , P ) == P - 1 && mulMod( q - 1 , 0 , q ) == 0 );
+ CHECK( mulMod( q - 1 , q - 1 , q ) == 1 );     // ( -1 )^2
+ CHECK( mulMod( 5 , 1 , 5 ) == 0 && mulMod( 6 , 7 , 5 ) == 2 );
+ CHECK( mulMod( P + 2 , P + 3 , P ) == 6 );      // reduced first
+ CHECK_THROWS( mulMod( 0 , 0 , 0 ) , contract_violation );
+ CHECK( mulMod( 3 , 5 , std::uint64_t( 1 ) << 63 ) == 15 );
+ CHECK_THROWS( mulMod61( 1 , P ) , contract_violation );
+ const CarterWegmanHash c1( 13 , 1 , 12 , 1 );  // m = 1: a single list
+ CHECK( c1( 0 ) == 0 && c1( 12 ) == 0 );
+ const CarterWegmanHash cw( P , P - 1 , P - 1 , ~std::uint64_t( 0 ) );
+ CHECK( cw( 0 ) == P - 1 && cw( 1 ) == P - 2 && cw( P - 1 ) == 0 );
+ CHECK_THROWS( c1( 13 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 13 , 0 , 0 , 4 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 13 , 13 , 0 , 4 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 13 , 1 , 13 , 4 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 13 , 1 , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 1 , 0 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 0 ) , contract_violation );
+ const DotProductHash W( std::uint64_t( 1 ) << 32 , 3 );   // past 2^64
+ CHECK( W.universe() == 0 && W( ~std::uint64_t( 0 ) ) < ( 1ULL << 32 ) );
+ CHECK( DotProductHash( 2 , 64 ).universe() == 0 &&
+        DotProductHash( 2 , 63 ).universe() == ( 1ULL << 63 ) );
+ CHECK_THROWS( DotProductHash( 1 , 1 ) , contract_violation );
+ CHECK_THROWS( DotProductHash( 5 , 0 ) , contract_violation );
+ CHECK_THROWS( DotProductHash( ( 1ULL << 32 ) + 1 , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( DotProductHash( 5 , std::vector< std::uint64_t >() ) ,
+               contract_violation );
+ CHECK_THROWS( DotProductHash( 5 , std::vector< std::uint64_t >( { 5 } ) ) ,
+               contract_violation );
+ const auto F = MultiplyShiftHash::ofMultiplier( 64 , 63 ,
+                                                 ~std::uint64_t( 0 ) );
+ CHECK( F( 0 ) == 0 && F( 1 ) == ( 1ULL << 63 ) - 1 &&
+        F( ~std::uint64_t( 0 ) ) == 0 );       // -1 * -1 = 1, shifted out
+ CHECK( MultiplyShiftHash( 2 , 1 )( 3 ) <= 1 );
+ CHECK_THROWS( MultiplyShiftHash( 8 , 8 ) , contract_violation );
+ CHECK_THROWS( MultiplyShiftHash( 8 , 0 ) , contract_violation );
+ CHECK_THROWS( MultiplyShiftHash( 65 , 3 ) , contract_violation );
+ CHECK_THROWS( MultiplyShiftHash::ofMultiplier( 8 , 3 , 257 ) ,
+               contract_violation );
+ CHECK_THROWS( MultiplyShiftHash::ofMultiplier( 8 , 3 , 1 )( 256 ) ,
+               contract_violation );
  }
 
 // chaining with a function of H_{p,m} on the multiples of m, all in one
 // list for h( k ) = k mod m: the list of a key holds on average at most
 // 1 + alpha keys (Theorem 8.2) and the longest at most about
-// 3 ln n / ln ln n (Theorem 8.3)
+// 3 ln n / ln ln n (Theorem 8.3); a table of one list, a key inserted
+// again, an absent key removed, and the bounds of m and of chain()
 ADS_TEST( "universal-chaining" )
 {
  const std::uint64_t m = 1024 , n = 1024;
@@ -210,11 +259,23 @@ ADS_TEST( "universal-chaining" )
  std::set< std::uint64_t > lists;                // the division
  for( std::uint64_t i = 0 ; i < n ; ++i ) lists.insert( i * m % m );
  CHECK( lists.size() == 1 );
+ const CarterWegmanHash h1( 1 );                 // m = 1: one list of all
+ ChainedHashTable< std::uint64_t , int , Chain::FRONT , CarterWegmanHash >
+  O( 1 , false , h1 );
+ for( std::uint64_t i = 0 ; i < 50 ; ++i ) O.insert( i , int( i ) );
+ O.insert( 7 , -7 );                             // a key again: replaced
+ O.remove( 1000 );                               // absent: nothing
+ CHECK( O.size() == 50 && O.chain( 0 ).size() == 50 &&
+        O.lookup( 7 ) == -7 && ! O.lookup( 50 ) );
+ CHECK_THROWS( O.chain( O.capacity() ) , contract_violation );
+ CHECK_THROWS( ( ChainedHashTable< int , int >( 0 ) ) , contract_violation );
  }
 
 // the d-left hashing against std::map on random operations for d = 1, 2
 // and 4; with n = m keys the longest list drops from about ln n / ln ln n
-// to about ln ln n / ln 2, the power of two choices
+// to about ln ln n / ln 2, the power of two choices; more tables than
+// places (one list each), the empty table, a key inserted again, an absent
+// key removed, and m = 0 or d = 0
 ADS_TEST( "d-left" )
 {
  for( int d : { 1 , 2 , 4 } ) {
@@ -249,7 +310,15 @@ ADS_TEST( "d-left" )
   CHECK( T.size() == n );
   }
  CHECK( L[ 1 ] >= 6 && L[ 2 ] <= 5 && L[ 4 ] <= L[ 2 ] && L[ 2 ] < L[ 1 ] );
+ DLeftHashTable< int , int > S( 1 , 4 );        // d > m: a list per table
+ CHECK( S.size() == 0 && ! S.lookup( 0 ) && S.begin() == S.end() );
+ S.remove( 3 );                                  // absent: nothing
+ for( int k = 0 ; k < 20 ; ++k ) S.insert( k , k );
+ S.insert( 5 , -5 );                             // a key again: replaced
+ CHECK( S.size() == 20 && S.lookup( 5 ) == -5 && S.tables() == 4 &&
+        S.maxLoad() >= 5 );
  CHECK_THROWS( ( DLeftHashTable< int , int >( 8 , 0 ) ) , contract_violation );
+ CHECK_THROWS( ( DLeftHashTable< int , int >( 0 , 2 ) ) , contract_violation );
  }
 
 // Figure 8.6, h( k ) = ( ( 2 k + 42 ) mod 101 ) mod 11 on its nine keys:
@@ -388,7 +457,9 @@ ADS_TEST( "opmphf" )
  }
 
 // the cuckoo hashing against std::map on random operations, with and
-// without a stash, the load never past maxLoad, the pairs by the iterators
+// without a stash, the load never past maxLoad, the pairs by the iterators;
+// the smallest table (m = 2) grown from empty, a key inserted again, an
+// absent key removed, and the bounds of m and maxLoad
 ADS_TEST( "cuckoo" )
 {
  for( std::size_t s : { 0u , 4u } ) {
@@ -417,7 +488,18 @@ ADS_TEST( "cuckoo" )
   for( const auto & [ k , v ] : R ) T.remove( k );
   CHECK( T.size() == 0 && T.capacity() == 4 );
   }
+ CuckooHashTable< int , int > S( 2 , 0.49 );
+ CHECK( S.size() == 0 && ! S.lookup( 0 ) && S.begin() == S.end() );
+ S.remove( 0 );                                  // absent: nothing
+ for( int k = 0 ; k < 100 ; ++k ) S.insert( k , k );
+ S.insert( 42 , -42 );                           // a key again: replaced
+ CHECK( S.size() == 100 && S.lookup( 42 ) == -42 && ! S.lookup( 100 ) );
+ CHECK( double( S.size() ) <= 0.49 * double( S.capacity() ) );
  CHECK_THROWS( ( CuckooHashTable< int , int >( 16 , 0.5 ) ) ,
+               contract_violation );
+ CHECK_THROWS( ( CuckooHashTable< int , int >( 16 , 0 ) ) ,
+               contract_violation );
+ CHECK_THROWS( ( CuckooHashTable< int , int >( 1 , 0.4 ) ) ,
                contract_violation );
  }
 
@@ -455,7 +537,9 @@ ADS_TEST( "cuckoo-analysis" )
 // the analysis of section 8.7: 22 hashes for 32 bits per key, with false
 // positives below 1e-6; the factor 1 / ln 2 = 1.44 over the lower bound;
 // the compressed filters of Table 8.3; the formula against the false
-// positives of BloomFilter
+// positives of BloomFilter; one bit (m = 1) and m / n past an int (the
+// best number of hashes cut to an int), no keys, an empty filter, and
+// every precondition
 ADS_TEST( "bloom-analysis" )
 {
  CHECK( bloomBestHashes( 32000 , 1000 ) == 22 );
@@ -488,14 +572,39 @@ ADS_TEST( "bloom-analysis" )
  const double rate = fp / 200000.0 , exact = bloomFalsePositive( 80000 ,
                                                                10000 , 6 );
  CHECK( std::abs( rate - exact ) < 0.2 * exact );
+ CHECK( bloomBestHashes( 1 , 1000 ) == 1 && bloomBestHashes( 1 , 1 ) == 1 );
+ const int big = bloomBestHashes( 1e12 , 1 );   // the floor past an int
+ CHECK( big >= std::numeric_limits< int >::max() - 1 );
+ CHECK( bloomLowerBound( 0 , 0.5 ) == 0 && bloomBits( 0 , 0.5 ) == 0 );
+ const BloomFilter< int > Z( 64 , 3 );           // empty: all negative
+ for( int i = 0 ; i < 100 ; ++i ) CHECK( ! Z.maybe( i ) );
+ BloomFilter< int > One( 1 , 1 );                // one bit: all positive
+ CHECK( ! One.maybe( 5 ) );
+ One.insert( 0 );
+ for( int i = 0 ; i < 100 ; ++i ) CHECK( One.maybe( i ) );
  CHECK_THROWS( bloomLowerBound( 10 , 1 ) , contract_violation );
+ CHECK_THROWS( bloomLowerBound( 10 , 0 ) , contract_violation );
+ CHECK_THROWS( bloomLowerBound( -1 , 0.5 ) , contract_violation );
+ CHECK_THROWS( bloomBits( 10 , 0 ) , contract_violation );
+ CHECK_THROWS( bloomFalsePositive( 0 , 1 , 1 ) , contract_violation );
+ CHECK_THROWS( bloomFalsePositive( 10 , -1 , 1 ) , contract_violation );
+ CHECK_THROWS( bloomFalsePositive( 10 , 1 , 0 ) , contract_violation );
+ CHECK_THROWS( bloomBestHashes( 10 , 0 ) , contract_violation );
+ CHECK_THROWS( bloomBestHashes( 0 , 10 ) , contract_violation );
+ CHECK_THROWS( compressedBloom( 0 , 1 ) , contract_violation );
+ CHECK_THROWS( compressedBloom( 8 , 0 ) , contract_violation );
+ CHECK_THROWS( ( BloomFilter< int >( 0 , 1 ) ) , contract_violation );
+ CHECK_THROWS( ( BloomFilter< int >( 8 , 0 ) ) , contract_violation );
+ CHECK_THROWS( BloomFilter< int >::forItems( 0 , 0.1 ) , contract_violation );
+ CHECK_THROWS( BloomFilter< int >::forItems( 10 , 1 ) , contract_violation );
  }
 
 // the spectral filter on a multiset: an estimate never below the
 // multiplicity, above it about as often as a false positive, also after
 // removals; the counting filter of counters of 8 bits, whose counters
 // stick at 255; the partitioned filter, r distinct bits per key and the
-// false positives of the formula
+// false positives of the formula; parts of one bit (m = r), an empty
+// spectral filter, zero copies, and the bounds of m, r and remove()
 ADS_TEST( "spectral-bloom" )
 {
  std::mt19937 g( 11 );
@@ -547,12 +656,29 @@ ADS_TEST( "spectral-bloom" )
  const double rate = fp / 200000.0 ,
               q = std::pow( 1 - std::exp( -7.0 * 10000 / 70000 ) , 7 );
  CHECK( std::abs( rate - q ) < 0.25 * q );
+ PartitionedBloomFilter< int > Q( 4 , 4 );      // m = r: parts of one bit
+ CHECK( ! Q.maybe( 9 ) );
+ Q.insert( 9 );
+ CHECK( Q.ones() == 4 && Q.maybe( 0 ) && Q.maybe( 12345 ) );
+ const SpectralBloomFilter< int > E( 10 , 2 );  // empty: all zero
+ CHECK( E.count( 1 ) == 0 && ! E.maybe( 1 ) && E.stuck() == 0 );
+ SpectralBloomFilter< int > S0( 10 , 2 );
+ S0.insert( 3 , 0 );                             // zero copies: nothing
+ S0.remove( 4 , 0 );
+ CHECK( S0.count( 3 ) == 0 );
+ CHECK_THROWS( S0.remove( 3 , 1 ) , contract_violation );
+ CHECK_THROWS( ( SpectralBloomFilter< int >( 0 , 1 ) ) , contract_violation );
+ CHECK_THROWS( ( SpectralBloomFilter< int >( 10 , 0 ) ) ,
+               contract_violation );
  CHECK_THROWS( ( PartitionedBloomFilter< int >( 3 , 4 ) ) ,
+               contract_violation );
+ CHECK_THROWS( ( PartitionedBloomFilter< int >( 3 , 0 ) ) ,
                contract_violation );
  }
 
 // the intersection of section 8.7.4: exact, and with about
-// |A cap B| + 0.6185^( mA / |A| ) |B| keys sent back
+// |A cap B| + 0.6185^( mA / |A| ) |B| keys sent back; B empty, B = A and
+// two disjoint sets with a filter of one bit, A empty or mA = 0
 ADS_TEST( "bloom-intersection" )
 {
  std::vector< int > A , B;
@@ -568,8 +694,16 @@ ADS_TEST( "bloom-intersection" )
                                         bloomBestHashes( 32000 , 4000 ) );
  CHECK( extra <= 2 * eps * double( B.size() ) + 10 );
  CHECK( std::pow( 0.6185 , 8 ) > eps * 0.8 );
+ const auto [ Q0 , I1 ] = bloomIntersection( A , std::vector< int >() , 64 );
+ CHECK( Q0.empty() && I1.empty() );              // B empty
+ const auto [ QA , IA ] = bloomIntersection( A , A , 1 );   // A = B, 1 bit
+ CHECK( QA == A && IA == A );
+ const std::vector< int > O = { 1 } , N = { 2 };            // disjoint
+ const auto [ QN , IN ] = bloomIntersection( O , N , 1 );
+ CHECK( QN == N && IN.empty() );                 // one bit: all positive
  CHECK_THROWS( bloomIntersection( std::vector< int >() , B , 8 ) ,
                contract_violation );
+ CHECK_THROWS( bloomIntersection( A , B , 0 ) , contract_violation );
  }
 
 // the array of string pointers of Figure 9.1: the range of "te" and the
@@ -617,8 +751,9 @@ ADS_TEST( "prefix-search" )
 
 // Figure 9.3: twelve integers in [ 1 , 36 ], bins of width 3, B4 and B8
 // empty; the positions against std::lower_bound; on uniform and on skewed
-// integers, a bin holds at most ceil( Delta ) items (Theorem 9.4); a single
-// item and repeated items
+// integers, a bin holds at most ceil( Delta ) items (Theorem 9.4); no
+// item, a single item, repeated items, the items 0 and 2^64 - 1, and the
+// bounds of bin()
 ADS_TEST( "binned-search" )
 {
  const BinnedSearch F( { 1 , 2 , 3 , 8 , 9 , 17 , 19 , 20 , 28 , 30 , 32 ,
@@ -665,13 +800,22 @@ ADS_TEST( "binned-search" )
  CHECK( O.position( 5 ) == 0 && O.position( 6 ) == 1 && O.contains( 5 ) );
  CHECK( R.position( 4 ) == 0 && R.position( 5 ) == 3 &&
         R.position( 10 ) == 4 );
+ const std::uint64_t top = ~std::uint64_t( 0 );  // the extremes of the type
+ const BinnedSearch X( { 0 , 1 , top - 1 , top } );
+ CHECK( X.position( 0 ) == 0 && X.position( 2 ) == 2 &&
+        X.position( top ) == 3 && X.contains( top ) && ! X.contains( 2 ) );
+ const BinnedSearch A( { top , top } );
+ CHECK( A.position( top ) == 0 && A.position( 0 ) == 0 && A.contains( top ) );
+ CHECK_THROWS( F.bin( F.bins() ) , contract_violation );
  CHECK_THROWS( BinnedSearch( { 3 , 1 } ) , contract_violation );
  }
 
 // the front coding of the dictionary of section 9.1.2 and its pairs; the
 // byte-aligned code of the lengths; the bucketing of Figure 9.2, two
 // strings per bucket, and the searches of the buckets against the brute
-// force on random dictionaries, with the extremes
+// force on random dictionaries, with the extremes; a code of a length cut
+// short, the dictionary of the empty string alone, and the bounds of
+// access(), decodeCost(), anchor(), anchorString() and rankInBucket()
 ADS_TEST( "front-coding" )
 {
  const std::vector< std::string > D = { "alcatraz" , "alcool" , "alcyone" ,
@@ -718,13 +862,32 @@ ADS_TEST( "front-coding" )
  const auto T = FrontCodedDictionary::bucketed( W , 3 );
  CHECK( std::equal( T.begin() , T.end() , W.begin() , W.end() ) &&
         T.prefixRange( "a" ) == Range( 1 , 4 ) );
+ std::size_t at = 0;                             // a code cut short
+ CHECK_THROWS( decodeLength( "" , at ) , contract_violation );
+ CHECK_THROWS( decodeLength( std::string( 1 , '\x40' ) , at ) ,
+               contract_violation );
+ at = 1;
+ CHECK_THROWS( decodeLength( std::string( 1 , '\x00' ) , at ) ,
+               contract_violation );
+ const auto S = FrontCodedDictionary::bucketed( { "" } , 1 );
+ CHECK( S.size() == 1 && S.access( 0 ).empty() &&
+        S.prefixRange( "" ) == Range( 0 , 1 ) &&
+        S.prefixRange( "a" ) == Range( 1 , 1 ) );
+ CHECK_THROWS( B.access( D.size() ) , contract_violation );
+ CHECK_THROWS( B.decodeCost( D.size() ) , contract_violation );
+ CHECK_THROWS( B.anchorString( B.anchors() ) , contract_violation );
+ CHECK_THROWS( B.anchor( B.anchors() ) , contract_violation );
+ CHECK_THROWS( B.rankInBucket( B.anchors() + 1 , "a" , false ) ,
+               contract_violation );
+ CHECK_THROWS( E.access( 0 ) , contract_violation );
  CHECK_THROWS( FrontCodedDictionary::bucketed( D , 0 ) , contract_violation );
  }
 
 // the locality-preserving front coding: at most ( 1 + 2 / ( c - 2 ) )
 // FC( D ) characters and at most ( c + 1 ) | s_i | characters read to
 // decode s_i (Theorem 9.5), where the plain coding may read the whole
-// dictionary; its searches against the brute force
+// dictionary; its searches against the brute force; c <= 2 (no bound on
+// the space, the strings still right), the empty dictionary, and c <= 0
 ADS_TEST( "lpfc" )
 {
  std::mt19937 g( 15 );
@@ -764,7 +927,16 @@ ADS_TEST( "lpfc" )
   againstBrute( FrontCodedDictionary::localityPreserving( R , 3 ) , R , 3 ,
                 4 );
   }
+ for( double c : { 0.5 , 1.0 , 2.0 } ) {        // c <= 2: no bound, but right
+  const auto L = FrontCodedDictionary::localityPreserving( Z , c );
+  CHECK( std::equal( L.begin() , L.end() , Z.begin() , Z.end() ) );
+  CHECK( L.access( Z.size() - 1 ) == Z.back() );
+  }
+ const auto E = FrontCodedDictionary::localityPreserving( {} , 3 );
+ CHECK( E.size() == 0 && E.anchors() == 0 && E.prefixEnd( "" ) == 0 );
  CHECK_THROWS( FrontCodedDictionary::localityPreserving( U , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( FrontCodedDictionary::localityPreserving( U , -1 ) ,
                contract_violation );
  }
 
@@ -773,7 +945,8 @@ ADS_TEST( "lpfc" )
 // string) and branching characters; the blind search of bcbabcba reads
 // bcbcbbba and puts the pattern after the three strings of a; on random
 // dictionaries, with strings prefixes of others, every pattern against the
-// brute force; at most 2 n nodes
+// brute force; at most 2 n nodes; the empty trie, the empty string alone,
+// one string, a chain of prefixes, and the bounds of blindLeaf(), string()
 ADS_TEST( "patricia" )
 {
  const std::vector< std::string > D = { "abaaba" , "abaabb" , "abac" ,
@@ -805,12 +978,21 @@ ADS_TEST( "patricia" )
         O.lexicographicPosition( "a" ) == 1 );
  CHECK( A.prefixRange( "ab" ) == Range( 0 , 1 ) &&
         A.lexicographicPosition( "abd" ) == 1 );
+ CHECK( ! E.contains( "" ) && O.contains( "" ) && ! O.contains( "a" ) );
+ CHECK( A.blindLeaf( "zzz" ) == 0 && A.string( 0 ) == "abc" );
+ const PatriciaTrie C( { "a" , "aa" , "aaa" , "aaaa" } );   // a chain
+ CHECK( C.prefixRange( "aa" ) == Range( 1 , 4 ) && C.contains( "aaaa" ) &&
+        C.lexicographicPosition( "aaaaa" ) == 4 && C.nodes() <= 9 );
+ CHECK_THROWS( E.blindLeaf( "a" ) , contract_violation );
+ CHECK_THROWS( A.string( 1 ) , contract_violation );
  CHECK_THROWS( PatriciaTrie( { "b" , "a" } ) , contract_violation );
  CHECK_THROWS( PatriciaTrie( { "a" , "a" } ) , contract_violation );
  }
 
 // the two-level dictionary, a Patricia trie on the anchors of the bucketed
-// and of the locality-preserving coding, against the brute force
+// and of the locality-preserving coding, against the brute force; the
+// empty dictionary, every string an anchor and a single bucket, with the
+// empty string, and the bounds of access()
 ADS_TEST( "two-level" )
 {
  std::mt19937 g( 17 );
@@ -830,6 +1012,14 @@ ADS_TEST( "two-level" )
   }
  const TwoLevelDictionary E( FrontCodedDictionary::bucketed( {} , 2 ) );
  CHECK( E.size() == 0 && E.prefixEnd( "a" ) == 0 );
+ CHECK( E.prefixRange( "" ) == Range( 0 , 0 ) );
+ const std::vector< std::string > W = { "" , "a" , "ab" , "b" };
+ const TwoLevelDictionary O( FrontCodedDictionary::bucketed( W , 1 ) ) ,
+                          M( FrontCodedDictionary::bucketed( W , 99 ) );
+ againstBrute( O , W , 2 , 3 );                  // all anchors, one bucket
+ againstBrute( M , W , 2 , 3 );
+ CHECK_THROWS( O.access( 4 ) , contract_violation );
+ CHECK_THROWS( E.access( 0 ) , contract_violation );
  }
 
 }  // end( namespace )

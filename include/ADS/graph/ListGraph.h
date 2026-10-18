@@ -118,7 +118,7 @@ class ListGraph : public GraphNodes< T > {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the nodes adjacent to u, in the order of its list, bidirectional
- /// \\pre u is a node
+ /// \pre u is a node
  [[nodiscard]] auto neighbors( int u ) const {
   using It = KeyIterator< typename List< std::pair< int , W > >::
                           const_iterator >;

@@ -144,7 +144,9 @@ template< class R >
 std::vector< std::size_t > selectionSampling( std::size_t n , std::size_t N ,
                                               R & g );
 
-/// n items from the sequence S, as if it were a stream of unknown length
+/// n items from the sequence S, as if it were a stream of unknown length;
+/// all of S, in its order, when S has at most n items (a stream shorter
+/// than the sample)
 template< class T , class R >
 std::vector< T > reservoirSampling( const std::vector< T > & S ,
                                     std::size_t n , R & g );

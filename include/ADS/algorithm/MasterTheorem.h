@@ -17,7 +17,10 @@
  *   \f$ T( n ) = \sum_{i=1}^h a_i T( n - i ) + \Theta( n^\beta ) \f$ with
  *   \f$ a = \sum_i a_i \f$ by the Teorema 2.5: \f$ \Theta( n^{\beta+1} ) \f$
  *   if a = 1, and the upper bound \f$ O( a^n n^\beta ) \f$ if a >= 2,
- *   which is not always tight (Fibonacci is \f$ \Theta( \phi^n ) \f$).
+ *   which is not always tight (Fibonacci is \f$ \Theta( \phi^n ) \f$);
+ *   the theorem has integer a_i, and for real a_i with 1 < a < 2 (e.g.,
+ *   T( n ) = 1.5 T( n - 1 ) + 1, \f$ \Theta( 1.5^n ) \f$) the recurrence
+ *   is exponential as well, and linear() gives the same upper bound.
  *
  * Two orders of growth compare as their functions do for n large: first by
  * the base c of the exponential, then by the power p of n, then by the
@@ -95,7 +98,9 @@ struct Growth {
   }
  };
 
-/// T( n ) = a T( n / b ) + Theta( n^beta log^k n )
+/// T( n ) = a T( n / b ) + Theta( n^beta log^k n ); log_b a within 1e-12
+/// of an integer is taken as that integer (log_10 1000 is 3, not
+/// 2.9999999999999996), and with beta = log_b a the power is beta
 /// \pre a >= 1 and b > 1
 inline Growth master( double a , double b , double beta , double k = 0 );
 

@@ -66,16 +66,21 @@ struct Tile {
 
 using Tiling = std::vector< std::vector< int > >;   ///< T[ i ][ j ], a tile
 
-/// the certificate: T is a legal covering of the n x n square by D
+/// the certificate: T is a legal covering of the n x n square by D, with
+/// d = D[ 0 ] in ( 0 , 0 ); false if n < 1, if T is not n x n or if a tile
+/// of T is not one of D
 inline bool legalTiling( const std::vector< Tile > & D , int n ,
                          const Tiling & T );
 
-/// a legal covering of the n x n square, by backtrack, or nothing
+/// a legal covering of the n x n square, by backtrack, or nothing (also if
+/// n < 1 or D is empty)
 /// \post a covering returned passes legalTiling()
 inline std::optional< Tiling > squareTiling( const std::vector< Tile > & D ,
                                              int n );
 
-/// the linear tiling of a strip of n tiles from d = D[ 0 ], O( m^2 )
+/// the linear tiling of a strip of n tiles from d = D[ 0 ], O( m^2 ); false
+/// if n < 1 or D is empty, true for any n if a cycle of tiles that fit is
+/// reachable from d
 inline bool linearTiling( const std::vector< Tile > & D , long n );
 
 /*--------------------------------------------------------------------------*/

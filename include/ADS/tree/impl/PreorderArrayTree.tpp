@@ -141,9 +141,9 @@ void PreorderArrayTree< T >::splice( int at , int p ,
 {
  const int k = t.size();
  if( k == 0 ) return;
+ std::vector< Cell > C( t.f_A );        // before the shift: t may be *this
  for( int j = at ; j < size() ; ++j )
   if( f_A[ j ].parent >= at ) f_A[ j ].parent += k;
- std::vector< Cell > C( t.f_A );
  C[ 0 ].parent = p;
  for( int j = 1 ; j < k ; ++j ) C[ j ].parent += at;
  f_A.insert( f_A.begin() + at , C.begin() , C.end() );

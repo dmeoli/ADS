@@ -163,7 +163,9 @@ std::size_t searchCount( const std::string & T , const std::string & P )
 // the entropies: the source of the notes with P[ a ] = 99 / 100 has
 // H0 = 0.0808 (0.08056 in the notes, from rounded logarithms); H0( s ) is
 // log2 sigma on a text of equal frequencies, 0 on one symbol; Hk( s ) does
-// not increase with k
+// not increase with k; a frequency 0 among others, frequencies near the
+// largest double, k at and past the length, and a frequency negative,
+// all 0 or none
 ADS_TEST( "entropy" )
 {
  const double h = entropy( std::map< char , int >{ { 'a' , 99 } ,
@@ -175,6 +177,17 @@ ADS_TEST( "entropy" )
  CHECK( std::abs( entropy( std::string( "abcdabcd" ) , 1 ) ) < 1e-12 );
  CHECK_THROWS( entropy( std::map< char , int >{ { 'a' , 0 } } ) ,
                contract_violation );
+ CHECK_THROWS( entropy( std::map< char , int >{ { 'a' , 2 } ,
+                                               { 'b' , -1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( entropy( std::map< char , int >() ) , contract_violation );
+ CHECK( entropy( std::map< char , int >{ { 'a' , 3 } , { 'b' , 0 } } ) == 0 );
+ CHECK( std::abs( entropy( std::map< int , double >{ { 1 , 1e300 } ,
+                                                     { 2 , 1e300 } } ) -
+                  1 ) < 1e-12 );         // no overflow of the total
+ CHECK( entropy( std::string( "ab" ) , 1 ) == 0 &&       // k >= n: 0
+        entropy( std::string( "ab" ) , 2 ) == 0 &&
+        entropy( std::string( "abcab" ) , 9 ) == 0 );
  for( const auto & s : texts() ) {
   double prev = entropy( s );
   for( std::size_t k = 1 ; k <= 4 ; ++k ) {
@@ -186,7 +199,9 @@ ADS_TEST( "entropy" )
  }
 
 // the canonical codes of figures 12.5 and 12.9: the arrays fc, the codes,
-// and the decoding of 01 in d by the two steps of figures 12.6 and 12.7
+// and the decoding of 01 in d by the two steps of figures 12.6 and 12.7;
+// one symbol, a code of 63 bits, and the bounds of firstCode(), code(),
+// encode() and of the lengths (0, 64, Kraft above 1, none)
 ADS_TEST( "canonical-huffman-notes" )
 {
  const CanonicalHuffman< char > A( std::map< char , int >{
@@ -221,6 +236,24 @@ ADS_TEST( "canonical-huffman-notes" )
   { 'a' , 1 } , { 'b' , 1 } , { 'c' , 1 } } ) , contract_violation );
  CHECK_THROWS( CanonicalHuffman< char >( std::map< char , int >() ) ,
                contract_violation );
+ const CanonicalHuffman< char > O( std::map< char , int >{ { 'z' , 1 } } );
+ CHECK( O.code( 'z' ) == "0" && O.maxLength() == 1 );     // one symbol
+ const std::vector< char > zz( 20 , 'z' );
+ CHECK( O.decode( O.encode( zz ) , zz.size() ) == zz );
+ const CanonicalHuffman< char > D( std::map< char , int >{ { 'a' , 63 } ,
+                                                           { 'b' , 1 } } );
+ CHECK( D.code( 'b' ) == "1" && D.code( 'a' ) == std::string( 63 , '0' ) );
+ const std::vector< char > ab = { 'a' , 'b' , 'a' };      // the longest
+ CHECK( D.decode( D.encode( ab ) , 3 ) == ab );
+ CHECK_THROWS( A.firstCode( 0 ) , contract_violation );
+ CHECK_THROWS( A.firstCode( 5 ) , contract_violation );
+ CHECK_THROWS( A.code( 'z' ) , contract_violation );
+ CHECK_THROWS( A.encode( std::vector< char >( { 'z' } ) ) ,
+               contract_violation );
+ CHECK_THROWS( CanonicalHuffman< char >( std::map< char , int >{
+  { 'a' , 0 } } ) , contract_violation );
+ CHECK_THROWS( CanonicalHuffman< char >( std::map< char , int >{
+  { 'a' , 64 } } ) , contract_violation );
  }
 
 // the canonical code of each text: the lengths of Huffman.h, a total as
@@ -266,7 +299,9 @@ ADS_TEST( "canonical-huffman" )
 // Fibonacci of section 12.1.2 give a code of Huffman as long as the
 // alphabet; with the bound L, no length above L, the inequality of Kraft,
 // the round trip, and an average no shorter than that of Huffman (equal
-// when L does not cut)
+// when L does not cut); exactly 2^L symbols (all of length L) with skewed
+// frequencies up to 2^49, one symbol, L = 1 and L = 63, and L below
+// log2 of the symbols, L outside [ 1 , 63 ], no symbol, a frequency 0
 ADS_TEST( "limited-lengths" )
 {
  std::map< int , std::uint64_t > F;
@@ -303,7 +338,26 @@ ADS_TEST( "limited-lengths" )
   for( auto & v : x ) v = int( g() % 30 );
   CHECK( H.decode( H.encode( x ) , x.size() ) == x );
   }
+ const auto L5 = limitedLengths( F , 5 );       // 30 symbols, 2^5 = 32
+ CHECK( std::all_of( L5.begin() , L5.end() , []( const auto & e ) {
+  return( e.second <= 5 ); } ) );
+ std::map< int , std::uint64_t > T;              // 2^L symbols exactly
+ for( int i = 0 ; i < 8 ; ++i ) T[ i ] = std::uint64_t( 1 ) << ( 7 * i );
+ const auto L3 = limitedLengths( T , 3 );
+ CHECK( std::all_of( L3.begin() , L3.end() , []( const auto & e ) {
+  return( e.second == 3 ); } ) );
+ CHECK( limitedLengths( std::map< char , int >{ { 'a' , 7 } } , 1 ) ==
+        ( std::map< char , int >{ { 'a' , 1 } } ) );      // one symbol
+ CHECK( limitedLengths( std::map< char , int >{ { 'a' , 1 } , { 'b' , 9 } } ,
+                        1 ) ==
+        ( std::map< char , int >{ { 'a' , 1 } , { 'b' , 1 } } ) );
+ CHECK( limitedLengths( F , 63 ) == huffmanLengths( F ) );
  CHECK_THROWS( limitedLengths( F , 4 ) , contract_violation );
+ CHECK_THROWS( limitedLengths( T , 2 ) , contract_violation );
+ CHECK_THROWS( limitedLengths( F , 0 ) , contract_violation );
+ CHECK_THROWS( limitedLengths( F , 64 ) , contract_violation );
+ CHECK_THROWS( limitedLengths( std::map< int , int >() , 3 ) ,
+               contract_violation );
  CHECK_THROWS( limitedLengths( std::map< int , int >{ { 1 , 0 } } , 3 ) ,
                contract_violation );
  }
@@ -311,7 +365,9 @@ ADS_TEST( "limited-lengths" )
 // the exact arithmetic code of section 12.2: abac with P[ a ] = 1 / 2,
 // P[ b ] = P[ c ] = 1 / 4 is [ 19 / 64 , 20 / 64 ) and 0100111, which
 // decodes back; on random texts the code has at most 2 + n H0 bits, and
-// the empty text is the interval [ 0 , 1 )
+// the empty text is the interval [ 0 , 1 ); a symbol of probability 1, a
+// probability 0, probabilities not adding up to 1, a symbol without one,
+// and a code with a symbol other than 0 and 1
 ADS_TEST( "arithmetic-exact" )
 {
  const std::map< char , Rational > P = { { 'a' , Rational( 1 , 2 ) } ,
@@ -342,14 +398,30 @@ ADS_TEST( "arithmetic-exact" )
   CHECK( double( code.size() ) <=
          2 + double( x.size() ) * entropy( x ) + 1e-9 );
   }
+ const std::map< char , Rational > One = { { 'a' , Rational( 1 ) } };
+ const std::string aaa( 9 , 'a' );               // a certain symbol
+ CHECK( arithmeticInterval( chars( aaa ) , One ).second == Rational( 1 ) );
+ const auto ya = arithmeticDecodeExact( arithmeticCodeExact( chars( aaa ) ,
+                                                             One ) , 9 , One );
+ CHECK( std::string( ya.begin() , ya.end() ) == aaa );
  CHECK_THROWS( arithmeticInterval( chars( s ) ,
                std::map< char , Rational >{ { 'a' , Rational( 1 , 2 ) } } ) ,
+               contract_violation );
+ CHECK_THROWS( arithmeticInterval( chars( s ) ,
+               std::map< char , Rational >{ { 'a' , Rational( 1 ) } ,
+                                            { 'b' , Rational( 0 ) } } ) ,
+               contract_violation );
+ CHECK_THROWS( arithmeticInterval( chars( std::string( "ad" ) ) , P ) ,
+               contract_violation );
+ CHECK_THROWS( arithmeticDecodeExact( std::string( "012" ) , 1 , P ) ,
                contract_violation );
  }
 
 // the integer coder of section 12.2.6 with M = 16 on abac emits 010011 as
 // in the notes, then the two bits of the end, and decodes back; it rejects
-// a total above M / 4
+// a total above M / 4; the smallest coder (w = 2) on a certain symbol, the
+// largest total 2^30 of w = 32 with a symbol of count 1, an empty or
+// reversed range, w outside [ 2 , 32 ], a symbol without count, a count 0
 ADS_TEST( "range-coder-notes" )
 {
  const std::map< char , std::uint64_t > counts = { { 'a' , 2 } ,
@@ -371,7 +443,34 @@ ADS_TEST( "range-coder-notes" )
  CHECK( std::string( back.begin() , back.end() ) == s );
  RangeEncoder F( 4 );
  CHECK_THROWS( F.encode( 0 , 1 , 5 ) , contract_violation );
+ CHECK_THROWS( F.encode( 1 , 1 , 4 ) , contract_violation );
+ CHECK_THROWS( F.encode( 0 , 5 , 4 ) , contract_violation );
  CHECK_THROWS( RangeEncoder( 33 ) , contract_violation );
+ CHECK_THROWS( RangeEncoder( 1 ) , contract_violation );
+ const RangeDecoder G( std::span< const std::uint8_t >( code ) , 4 );
+ CHECK_THROWS( G.target( 0 ) , contract_violation );
+ CHECK_THROWS( G.target( 5 ) , contract_violation );
+ const std::map< char , std::uint64_t > w2 = { { 'a' , 1 } };   // M = 4
+ const auto c2 = arithmeticEncode( chars( std::string( 7 , 'a' ) ) , w2 , 2 );
+ CHECK( arithmeticDecode( std::span< const std::uint8_t >( c2 ) , 7 , w2 ,
+                          2 ) == std::vector< char >( 7 , 'a' ) );
+ const std::map< char , std::uint64_t > big = { { 'a' , 1 } ,  // 2^30
+  { 'b' , ( std::uint64_t( 1 ) << 30 ) - 1 } };
+ const std::string sb = "abbbab";
+ const auto cb = arithmeticEncode( chars( sb ) , big );
+ const auto bb = arithmeticDecode( std::span< const std::uint8_t >( cb ) ,
+                                   sb.size() , big );
+ CHECK( std::string( bb.begin() , bb.end() ) == sb );
+ CHECK_THROWS( arithmeticEncode( chars( s ) , counts , 3 ) ,
+               contract_violation );            // total 4 above 2
+ CHECK_THROWS( arithmeticEncode( chars( std::string( "ad" ) ) , counts , 4 ) ,
+               contract_violation );
+ CHECK_THROWS( arithmeticEncode( chars( s ) ,
+               std::map< char , std::uint64_t >{ { 'a' , 2 } , { 'b' , 1 } ,
+                                                 { 'c' , 0 } } , 4 ) ,
+               contract_violation );
+ CHECK_THROWS( arithmeticEncode( chars( s ) , big ,
+               31 ) , contract_violation );     // 2^30 above 2^29
  }
 
 // the static integer arithmetic code: the round trip on every text with the
@@ -399,7 +498,9 @@ ADS_TEST( "arithmetic-static" )
 // the adaptive arithmetic code: the round trip on every text; the
 // estimate ( l_s + 1 ) / ( l + 256 ) costs at most about 256 log2 n bits
 // more than n H0; a skewed text goes well below one bit per symbol, which
-// no prefix code can do
+// no prefix code can do; an alphabet of one symbol (a few bytes for 500),
+// the largest alphabet 2^20 with its last symbol, no symbol, a symbol
+// past sigma, and sigma 0 or above 2^20
 ADS_TEST( "arithmetic-adaptive" )
 {
  for( const auto & s : texts() ) {
@@ -420,8 +521,28 @@ ADS_TEST( "arithmetic-adaptive" )
  const auto cx = adaptiveArithmeticEncode( std::span< const std::uint32_t >(
                                            x ) , 1000 );
  CHECK( adaptiveArithmeticDecode( cx , x.size() , 1000 ) == x );
+ using Syms = std::vector< std::uint32_t >;
+ const Syms z( 500 , 0 );                        // one symbol
+ const auto cz = adaptiveArithmeticEncode( std::span< const std::uint32_t >(
+                                           z ) , 1 );
+ CHECK( adaptiveArithmeticDecode( cz , z.size() , 1 ) == z && cz.size() <= 8 );
+ const std::uint32_t S = std::uint32_t( 1 ) << 20;   // the largest alphabet
+ const Syms e = { 0 , S - 1 , S - 1 , 12345 , 0 };
+ const auto ce = adaptiveArithmeticEncode( std::span< const std::uint32_t >(
+                                           e ) , S );
+ CHECK( adaptiveArithmeticDecode( ce , e.size() , S ) == e );
+ const Syms none;
+ CHECK( adaptiveArithmeticDecode( adaptiveArithmeticEncode(
+         std::span< const std::uint32_t >( none ) , 7 ) , 0 , 7 ).empty() );
  CHECK_THROWS( adaptiveArithmeticEncode( std::span< const std::uint32_t >(
                x ) , 999 ) , contract_violation );
+ CHECK_THROWS( adaptiveArithmeticEncode( std::span< const std::uint32_t >(
+               none ) , 0 ) , contract_violation );
+ CHECK_THROWS( adaptiveArithmeticEncode( std::span< const std::uint32_t >(
+               none ) , S + 1 ) , contract_violation );
+ CHECK_THROWS( adaptiveArithmeticDecode( cz , 1 , 0 ) , contract_violation );
+ CHECK_THROWS( adaptiveArithmeticDecode( cz , 1 , S + 1 ) ,
+               contract_violation );
  }
 
 // the models of table 12.1 after abracadabra with K = 2 (a b c d r e as
@@ -458,8 +579,16 @@ ADS_TEST( "ppm-notes" )
                                                          { 3 , 6 , 6 } ,
                                                          { 7 , 12 , 12 } ,
                                                          { 0 , 1 , 1 } } ) );
+ PPMModel U( 3 , 1 );                            // one symbol
+ CHECK( U.steps( 0 ) == std::vector< PPMModel::Step >( { { 0 , 1 , 1 } } ) );
+ U.update( 0 );
+ CHECK( U.steps( 0 ).front().low == 0 );
  CHECK_THROWS( M.steps( 6 ) , contract_violation );
+ CHECK_THROWS( M.update( 6 ) , contract_violation );
  CHECK_THROWS( PPMModel( -1 ) , contract_violation );
+ CHECK_THROWS( PPMModel( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( PPMModel( 2 , ( std::uint32_t( 1 ) << 16 ) + 1 ) ,
+               contract_violation );
  }
 
 // PPM of order 0 to 5: the round trip on every text; on a text of a
@@ -493,7 +622,9 @@ ADS_TEST( "ppm" )
 // the parses of section 13.1 of aabbabab: LZ77 gives <0,0,a> <1,1,b>
 // <1,1,a> <2,3,EOF>, the last copy overlapping itself, and LZSS <0,a>
 // <1,1> <0,b> <1,1> <3,2> <2,2>; a window of 1 finds only the copies of the
-// previous symbol
+// previous symbol; the empty text, one symbol, copies shorter than
+// minLength, a run copied from a window of 1, a copy from before the text,
+// and the bounds of w, minLength and maxChain
 ADS_TEST( "lz77-notes" )
 {
  const std::string s = "aabbabab";
@@ -512,8 +643,24 @@ ADS_TEST( "lz77-notes" )
  CHECK( lz77Parse( std::string( 10 , 'x' ) ) ==
         std::vector< LZ77Phrase >( { { 0 , 0 , 'x' } ,
                                      { 1 , 9 , std::nullopt } } ) );
+ CHECK( lz77Parse( "" ).empty() && lzssParse( "" ).empty() &&
+        lzssParseHashed( "" , 8 ).empty() && lz77Decode( {} ).empty() &&
+        lzssDecode( {} ).empty() );
+ CHECK( lz77Parse( "q" ) == std::vector< LZ77Phrase >( { { 0 , 0 , 'q' } } ) );
+ CHECK( lzssParse( "ab" , 1 , 100 ) ==          // minLength past the text
+        std::vector< LZSSPhrase >( { { 0 , 1 , 'a' } , { 0 , 1 , 'b' } } ) );
+ const std::string z( 100 , 'z' );               // a window of 1, a run
+ CHECK( lzssParse( z , 1 ) == std::vector< LZSSPhrase >( { { 0 , 1 , 'z' } ,
+                                                    { 1 , 99 , '\0' } } ) );
+ CHECK( lzssDecode( lzssParseHashed( z , 1 , 3 , 1 ) ) == z );
  CHECK_THROWS( lz77Decode( { { 2 , 1 , 'a' } } ) , contract_violation );
+ CHECK_THROWS( lzssDecode( { { 1 , 1 , '\0' } } ) , contract_violation );
  CHECK_THROWS( lz77Parse( s , 0 ) , contract_violation );
+ CHECK_THROWS( lzssParse( s , 0 ) , contract_violation );
+ CHECK_THROWS( lzssParse( s , 4 , 0 ) , contract_violation );
+ CHECK_THROWS( lzssParseHashed( s , 0 ) , contract_violation );
+ CHECK_THROWS( lzssParseHashed( s , 4 , 2 ) , contract_violation );
+ CHECK_THROWS( lzssParseHashed( s , 4 , 3 , 0 ) , contract_violation );
  }
 
 // LZ77 and LZSS with windows of 1 to unbounded: the round trip, the copies
@@ -555,7 +702,8 @@ ADS_TEST( "lz77" )
 
 // the parse of LZ78 of table 13.1 and its dictionary; a text that ends
 // inside a phrase; a dictionary that restarts every 3 phrases; the round
-// trip on every text
+// trip on every text; the empty text, a dictionary of one phrase (every
+// phrase a symbol), a phrase not or no longer there, and maxPhrases 0
 ADS_TEST( "lz78" )
 {
  const std::string s = "aabbababbbaababaa";
@@ -578,12 +726,21 @@ ADS_TEST( "lz78" )
                          std::size_t( 50 ) ,
                          std::numeric_limits< std::size_t >::max() } )
    CHECK( lz78Decode( lz78Parse( t , m ) , m ) == t );
+ CHECK( lz78Parse( "" ).empty() && lz78Decode( {} ).empty() );
+ CHECK( lz78Parse( "aaaa" , 1 ) == std::vector< LZ78Phrase >( {
+  { 0 , 'a' } , { 0 , 'a' } , { 0 , 'a' } , { 0 , 'a' } } ) );   // m = 1
  CHECK_THROWS( lz78Decode( { { 1 , 'a' } } ) , contract_violation );
+ CHECK_THROWS( lz78Decode( { { 0 , 'a' } , { 1 , 'b' } } , 1 ) ,
+               contract_violation );            // phrase 1 forgotten
+ CHECK_THROWS( lz78Parse( s , 0 ) , contract_violation );
+ CHECK_THROWS( lz78Decode( P , 0 ) , contract_violation );
  }
 
 // the code of LZW of table 13.2, 97 97 98 98 257 260, whose 260 is the
 // phrase not yet built when the decoder reads it (table 13.3); the round
-// trip on every text, the bytes above 127 included
+// trip on every text, the bytes above 127 included; the empty text, the
+// byte 255, the late phrase of the byte 0, and an identifier past the one
+// being built or a first one that is not a byte
 ADS_TEST( "lzw" )
 {
  const std::string s = "aabbababa";
@@ -595,7 +752,13 @@ ADS_TEST( "lzw" )
  for( const auto & t : texts() ) CHECK( lzwDecode( lzwEncode( t ) ) == t );
  std::string rep( 10000 , 'q' );
  CHECK( lzwEncode( rep ).size() < 150 );
+ CHECK( lzwEncode( "" ).empty() && lzwDecode( {} ).empty() );
+ CHECK( lzwEncode( std::string( 1 , '\xff' ) ) ==
+        std::vector< std::uint32_t >( { 255 } ) );
+ CHECK( lzwDecode( { 0 , 256 } ) == std::string( 3 , '\0' ) );
  CHECK_THROWS( lzwDecode( { 97 , 300 } ) , contract_violation );
+ CHECK_THROWS( lzwDecode( { 97 , 258 } ) , contract_violation );
+ CHECK_THROWS( lzwDecode( { 256 } ) , contract_violation );
  }
 
 // the transform of figures 14.1 and 14.7: abracadabra gives ardrcaaaabb
@@ -605,7 +768,10 @@ ADS_TEST( "lzw" )
 // and that of that L on the list imps the string of the notes; the runs of
 // section 14.2.2; the run 00000 is 10 in the code of Wheeler, and the RLE0
 // of that string follows from its move-to-front (the notes misprint the
-// 1 and the 2 of it, grown by 1, as 4)
+// 1 and the 2 of it, grown by 1, as 4); the empty transform, the shortest
+// one, the empty inputs of every step, the largest place 255, a primary
+// row out of range, a string that is no transform, places past the list,
+// a list with a repeated symbol, a run of 0 and an RLE0 integer past 256
 ADS_TEST( "bwt-notes" )
 {
  const BWT b = bwt( "abracadabra" );
@@ -635,9 +801,24 @@ ADS_TEST( "bwt-notes" )
  CHECK( zeroRunEncode( y ) == std::vector< std::uint32_t >( {
   0 , 3 , 1 , 4 , 1 , 0 , 4 , 1 , 4 , 0 , 4 , 1 , 2 , 1 , 4 , 1 , 0 , 2 ,
   1 , 0 } ) );
+ CHECK( inverseBwt( BWT{ "" , 0 } ).empty() && lfMapping( BWT{ "" , 0 } ) ==
+        std::vector< std::size_t >( { 0 } ) );
+ CHECK( inverseBwt( BWT{ "ba" , 1 } ) == "ab" );
+ CHECK( moveToFront( "" , "ab" ).empty() && inverseMoveToFront( {} , "" )
+        .empty() && runLengthEncode( "" ).empty() &&
+        zeroRunEncode( {} ).empty() && zeroRunDecode( {} ).empty() );
+ CHECK( zeroRunDecode( { 256 } ) == std::vector< std::uint8_t >( { 255 } ) );
  CHECK_THROWS( inverseBwt( BWT{ "ab" , 0 } ) , contract_violation );
+ CHECK_THROWS( inverseBwt( BWT{ "ab" , 3 } ) , contract_violation );
+ CHECK_THROWS( inverseBwt( BWT{ "" , 1 } ) , contract_violation );
+ CHECK_THROWS( inverseBwt( BWT{ "ab" , 1 } ) , contract_violation );   // no s
  CHECK_THROWS( moveToFront( "abc" , "ab" ) , contract_violation );
  CHECK_THROWS( moveToFront( "a" , "aa" ) , contract_violation );
+ CHECK_THROWS( inverseMoveToFront( { 0 , 2 } , "ab" ) , contract_violation );
+ CHECK_THROWS( inverseMoveToFront( { 0 } , "aa" ) , contract_violation );
+ CHECK_THROWS( runLengthDecode( { { 2 , 'a' } , { 0 , 'b' } } ) ,
+               contract_violation );
+ CHECK_THROWS( zeroRunDecode( { 257 } ) , contract_violation );
  }
 
 // the transform against the sorted rotations of s$ on random texts of
@@ -693,7 +874,8 @@ ADS_TEST( "mtf-rle" )
 
 // the bzip of every text with blocks of 1, 7, 100 and 900000 symbols: the
 // round trip; a repetitive text takes much less than n H0 bits, the
-// entropy of order 0 that a code of Huffman of its symbols would reach
+// entropy of order 0 that a code of Huffman of its symbols would reach; the
+// empty text, a long run of the byte 0 in several blocks, and blocks of 0
 ADS_TEST( "bzip" )
 {
  for( const auto & s : texts() )
@@ -707,13 +889,19 @@ ADS_TEST( "bzip" )
  const auto code = bzipCompress( rep );
  CHECK( double( 8 * code.size() ) <
         0.1 * double( rep.size() ) * entropy( rep ) );
+ CHECK( bzipDecompress( bzipCompress( "" ) ).empty() );
+ const std::string zero( 5000 , '\0' );          // a run of the byte 0
+ CHECK( bzipDecompress( bzipCompress( zero , 1000 ) ) == zero );
  CHECK_THROWS( bzipCompress( "abc" , 0 ) , contract_violation );
  }
 
 // the FM-index of figure 14.7: ab prefixes the rows 2 and 3, found by the
 // backward search through the rows [ 6 , 8 ) of b and the ranks
 // Rank( a , 5 ) = 1 and Rank( a , 7 ) = 3 of the notes (here of the
-// prefixes L[ 0 , 6 ) and L[ 0 , 8 )); it occurs at 0 and 7
+// prefixes L[ 0 , 6 ) and L[ 0 , 8 )); it occurs at 0 and 7; the ranks at
+// 0 and at n + 1, an absent symbol, the empty extract at the end, a text
+// of one symbol and a run with overlapping occurrences, the empty pattern,
+// the bounds of extract() and rank(), and mu = 0
 ADS_TEST( "fm-index-notes" )
 {
  const FMIndex I( "abracadabra" , 4 , 3 );
@@ -731,8 +919,21 @@ ADS_TEST( "fm-index-notes" )
                                                          10 } ) );
  CHECK( I.extract( 0 , 11 ) == "abracadabra" );
  CHECK( I.extract( 4 , 7 ) == "cad" && I.extract( 5 , 5 ).empty() );
+ CHECK( I.rank( 'a' , 0 ) == 0 && I.rank( 'a' , 12 ) == 5 &&
+        I.rank( 'z' , 12 ) == 0 && I.extract( 11 , 11 ).empty() );
+ const FMIndex O( "x" , 1 , 1 ) , Z( std::string( 50 , 'z' ) , 8 , 7 );
+ CHECK( O.count( "x" ) == 1 && O.count( "xx" ) == 0 &&
+        O.locate( "x" ) == std::vector< std::size_t >( { 0 } ) );
+ CHECK( Z.count( std::string( 50 , 'z' ) ) == 1 &&
+        Z.count( std::string( 49 , 'z' ) ) == 2 && Z.count( "z" ) == 50 &&
+        Z.locate( std::string( 48 , 'z' ) ) ==
+        std::vector< std::size_t >( { 0 , 1 , 2 } ) );
  CHECK_THROWS( I.count( "" ) , contract_violation );
+ CHECK_THROWS( I.locate( "" ) , contract_violation );
  CHECK_THROWS( I.extract( 3 , 12 ) , contract_violation );
+ CHECK_THROWS( I.extract( 4 , 3 ) , contract_violation );
+ CHECK_THROWS( I.rank( 'a' , 13 ) , contract_violation );
+ CHECK_THROWS( FMIndex( "abc" , 4 , 0 ) , contract_violation );
  }
 
 // the FM-index of every text with b and mu from 1 to 64: the ranks against

@@ -84,7 +84,7 @@ T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
   T best = INF;
   for( int p = 0 ; p < n ; ++p )
    for( int q = 0 ; q < n ; ++q )
-    if( ( p != h ) && ( q != h ) && ( p != q ) )
+    if( ( p != h ) && ( q != h ) && ( ( p != q ) || ( n == 2 ) ) )
      best = std::min( best , D[ p ][ h ] + D[ h ][ q ] );
   sum += best;
   }
@@ -317,7 +317,7 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
                                              const std::vector< long > & v ,
                                              long C , long * generated )
 {
- ADS_PRE( p.size() == v.size() );
+ ADS_PRE( ( p.size() == v.size() ) && ( C >= 0 ) );
  ADS_PRE( detail::nonnegative( p ) &&
           std::all_of( v.begin() , v.end() , []( long x ) {
   return( x > 0 ); } ) );
@@ -375,7 +375,7 @@ inline std::pair< long , Nodes > knapsackBacktrack(
                                   const std::vector< long > & v , long C ,
                                   long * generated )
 {
- ADS_PRE( p.size() == v.size() );
+ ADS_PRE( ( p.size() == v.size() ) && ( C >= 0 ) );
  ADS_PRE( detail::nonnegative( p ) &&
           std::all_of( v.begin() , v.end() , []( long x ) {
   return( x > 0 ); } ) );
@@ -415,7 +415,7 @@ inline std::pair< long , Nodes > knapsackGreedy(
                                   const std::vector< long > & p ,
                                   const std::vector< long > & v , long C )
 {
- ADS_PRE( p.size() == v.size() );
+ ADS_PRE( ( p.size() == v.size() ) && ( C >= 0 ) );
  ADS_PRE( detail::nonnegative( p ) &&
           std::all_of( v.begin() , v.end() , []( long x ) {
   return( x > 0 ); } ) );

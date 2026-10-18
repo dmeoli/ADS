@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -206,7 +207,9 @@ Tr build( const Ints & k )
 
 // section 6.1, Figura 6.1: the keys inserted in previsit give back the
 // tree, the invisit is increasing, min(), max(), successorNode() and
-// predecessorNode() walk it, an inserted key updates its value
+// predecessorNode() walk it, an inserted key updates its value. The empty
+// tree and a node alone, the extreme keys of int, nil after the sentinel,
+// the iterators from both ends, and nil violating the contracts
 ADS_TEST( "sec6.1.search-tree" )
 {
  BST t = build< BST >( fig61 );
@@ -226,11 +229,44 @@ ADS_TEST( "sec6.1.search-tree" )
  CHECK( ( t.lookup( 21 ) == -1 ) && ( t.size() == 12 ) );
  BST e;
  CHECK( e.isEmpty() && e.isNil( e.min() ) && ! e.lookup( 1 ) );
+ CHECK( e.isNil( e.max() ) && e.isNil( e.root() ) && ( e.size() == 0 ) );
+ CHECK( e.isNil( e.lookupNode( 1 ) ) && ! e.contains( 1 ) );
+ CHECK( e.begin() == e.end() );
+ CHECK( e.isNil( e.successorNode( e.root() ) ) &&
+        e.isNil( e.predecessorNode( e.root() ) ) );   // nil to nil
+ int visits = 0;
+ e.forEach( [ & ]( int , int ) { ++visits; } );
+ CHECK( visits == 0 );
+
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ BST one;
+ one.insert( hi , 1 );
+ CHECK( ( one.min() == one.root() ) && ( one.max() == one.root() ) );
+ CHECK( one.isNil( one.successorNode( one.root() ) ) &&
+        one.isNil( one.predecessorNode( one.root() ) ) );
+ CHECK( ( *one.begin() ).first == hi && ( *--one.end() ).first == hi );
+ one.insert( lo , 2 );
+ one.insert( 0 , 3 );
+ CHECK( keys( one ) == Ints( { lo , 0 , hi } ) && shape( one ).ok );
+ CHECK( ( one.lookup( lo ) == 2 ) && ! one.lookup( lo + 1 ) &&
+        ! one.lookup( hi - 1 ) );
+ Ints back;
+ for( auto it = one.end() ; it != one.begin() ; )
+  back.push_back( ( *--it ).first );
+ CHECK( back == Ints( { hi , 0 , lo } ) );
+ CHECK_THROWS( (void) t.successorNode( nullptr ) , contract_violation );
+ CHECK_THROWS( (void) t.predecessorNode( nullptr ) , contract_violation );
+ CHECK_THROWS( (void) BST::key( nullptr ) , contract_violation );
+ CHECK_THROWS( (void) BST::value( nullptr ) , contract_violation );
  }
 
 // section 6.1, Figura 6.2: the removal of 33, with two children, moves its
 // successor 37 in its place (cases (3) and (1)); the removal of 8, with one
-// child, hangs 13 to 7 (case (2)); both give the last tree of the figure
+// child, hangs 13 to 7 (case (2)); both give the last tree of the figure.
+// The removal from the empty tree, of the only key, twice of the same key,
+// of a root with one child on either side, of a node whose successor is its
+// right child, of the minimum and of the maximum
 ADS_TEST( "sec6.1.remove" )
 {
  const BST t = build< BST >( fig61 );
@@ -253,6 +289,27 @@ ADS_TEST( "sec6.1.remove" )
   }
  CHECK( c.isEmpty() && c.isNil( c.root() ) );
  CHECK( preorder( t ) == fig61 );          // the copies were deep
+
+ c.remove( 1 );                            // empty: nothing
+ CHECK( c.isEmpty() && shape( c ).ok );
+ c.insert( 5 , 5 );
+ c.remove( 5 );                            // the only key
+ c.remove( 5 );                            // twice
+ CHECK( c.isEmpty() && c.isNil( c.root() ) && c.isNil( c.min() ) );
+ for( const Ints & k : { Ints{ 5 , 3 } , Ints{ 5 , 7 } } ) {
+  BST r = build< BST >( k );               // a root with one child
+  r.remove( 5 );
+  CHECK( ( preorder( r ) == Ints( { k[ 1 ] } ) ) && shape( r ).ok );
+  CHECK( r.isNil( r.root()->parent ) );
+  }
+ BST s = build< BST >( { 5 , 3 , 8 , 9 } );  // the successor of 5 is 8,
+ s.remove( 5 );                              // its right child
+ CHECK( ( preorder( s ) == Ints( { 8 , 3 , 9 } ) ) && shape( s ).ok );
+ BST m = t;
+ m.remove( 1 );                            // the minimum, with a child
+ m.remove( 42 );                           // the maximum, a leaf
+ CHECK( ( keys( m ).front() == 5 ) && ( keys( m ).back() == 40 ) &&
+        shape( m ).ok && ( m.size() == 10 ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -261,7 +318,10 @@ ADS_TEST( "sec6.1.remove" )
 
 // section 6.2, Figura 6.5: the insertion of 1, 2, 3 ends in the case (5b),
 // that of 3, 1, 2 goes through (4a) and (5a); both give 2 black over 1 and
-// 3 red. Then the case (3) recolors and the root stays black
+// 3 red. Then the case (3) recolors and the root stays black. Increasing
+// and decreasing insertions keep the height logarithmic, removals in
+// increasing and decreasing order down to the empty tree keep the
+// constraints, and a node alone is a black root
 ADS_TEST( "spec.RedBlackTree" )
 {
  for( const Ints & k : { Ints{ 1 , 2 , 3 } , Ints{ 3 , 1 , 2 } ,
@@ -284,6 +344,28 @@ ADS_TEST( "spec.RedBlackTree" )
  for( int i = 1 ; i <= 1023 ; i += 2 )
   t.remove( i );
  CHECK( shape( t ).ok && ( t.size() == 511 ) );
+ for( int i = 2 ; i <= 1022 ; i += 2 ) {   // increasing, to the empty tree
+  t.remove( i );
+  if( i % 64 == 0 ) CHECK( shape( t ).ok );
+  }
+ CHECK( t.isEmpty() && shape( t ).ok && t.isNil( t.root() ) );
+
+ RBT d;
+ for( int i = 1023 ; i >= 1 ; --i )        // decreasing
+  d.insert( i , i );
+ const Shape sd = shape( d );
+ CHECK( sd.ok && sd.thm61 && ( sd.max_leaf <= 2 * std::log2( 1024.0 ) ) );
+ for( int i = 1023 ; i >= 1 ; --i ) {      // decreasing, to the empty tree
+  d.remove( i );
+  if( i % 64 == 0 ) CHECK( shape( d ).ok );
+  }
+ CHECK( d.isEmpty() && shape( d ).ok );
+ d.insert( 7 , 7 );
+ CHECK( ( d.root()->color == Color::BLACK ) && shape( d ).ok );
+ d.insert( 7 , 8 );                        // the key is there
+ CHECK( ( d.size() == 1 ) && ( d.lookup( 7 ) == 8 ) );
+ d.remove( 7 );
+ CHECK( d.isEmpty() && shape( d ).ok );
  }
 
 // section 6.2, Figura 6.3: the tree of 10 internal nodes and 11 leaves,
@@ -307,11 +389,12 @@ ADS_TEST( "sec6.2.figure" )
 
 // section 6.2, Teoremi 6.1, 6.2 and 6.3 on random Red-Black trees: each
 // subtree has at least 2^b( u ) - 1 internal nodes, the deepest leaf is at
-// most twice as deep as the highest one, and h <= 2 log2( n + 1 )
+// most twice as deep as the highest one, and h <= 2 log2( n + 1 ), also
+// for the empty tree (one leaf, at level 0)
 ADS_TEST( "sec6.2.theorems" )
 {
  std::mt19937 rng( 62 );
- for( int n : { 1 , 2 , 3 , 10 , 100 , 1000 , 5000 } ) {
+ for( int n : { 0 , 1 , 2 , 3 , 10 , 100 , 1000 , 5000 } ) {
   RBT t;
   std::uniform_int_distribution< int > key( 0 , 4 * n );
   while( int( t.size() ) < n )
@@ -324,12 +407,14 @@ ADS_TEST( "sec6.2.theorems" )
  }
 
 // sections 6.1 and 6.2: random insertions, removals and lookups against
-// std::map, the shape checked along the way; copies are deep, moves empty
+// std::map, the shape checked along the way; copies are deep, moves empty,
+// a tree assigned to itself stays the same. With few keys the tree is often
+// empty or a node alone; the keys around the extremes of int
 template< class Tr >
-void against_map( unsigned seed )
+void against_map( unsigned seed , int lo = 0 , int hi = 499 )
 {
  std::mt19937 rng( seed );
- std::uniform_int_distribution< int > key( 0 , 499 ) , op( 0 , 9 );
+ std::uniform_int_distribution< int > key( lo , hi ) , op( 0 , 9 );
  Tr t;
  std::map< int , int > m;
  for( int i = 0 ; i < 20000 ; ++i ) {
@@ -353,6 +438,11 @@ void against_map( unsigned seed )
    CHECK( c.isEmpty() && ( d.size() == t.size() ) );
    c.insert( 1 , 1 );                      // a moved-from tree works
    CHECK( c.size() == 1 && shape( c ).ok );
+   Tr & self = d;
+   d = self;                               // self-assignment
+   CHECK( ( preorder( d ) == preorder( t ) ) && shape( d ).ok );
+   d = Tr();                               // an empty one
+   CHECK( d.isEmpty() && shape( d ).ok );
    }
   }
  Ints mk;
@@ -370,6 +460,11 @@ ADS_TEST( "sec6.2.against-map" )
 {
  against_map< BST >( 61 );
  against_map< RBT >( 62 );
+ against_map< BST >( 63 , 0 , 2 );
+ against_map< RBT >( 64 , 0 , 2 );
+ const int M = std::numeric_limits< int >::max();
+ against_map< BST >( 65 , -M - 1 , -M + 400 );
+ against_map< RBT >( 66 , M - 400 , M );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -378,11 +473,18 @@ ADS_TEST( "sec6.2.against-map" )
 
 // section 6.3, Figura 6.8: the insertion of 10, 12, 13, then 15, 8, 11 and
 // 9 in a B+-tree of order 3, and at last of 6, which gives Figura 6.7; the
-// search of 12 goes from b3 to b1 to f2
+// search of 12 goes from b3 to b1 to f2. The empty tree (a leaf with no
+// key), a key inserted again (its value changes, the shape does not), the
+// ranges empty, reversed, of one key, below and above
+// all the keys, the extreme keys of int, and the orders below 3
 ADS_TEST( "sec6.3.bplus-figure" )
 {
  using Lv = std::vector< std::vector< Ints > >;
  BPlusTree< int , int > t( 3 );
+ CHECK( ( t.size() == 0 ) && ! t.lookup( 10 ) && t.range( 0 , 100 ).empty() );
+ CHECK( ( t.levels() == Lv( { { {} } } ) ) && ( t.begin() == t.end() ) );
+ CHECK( t.order() == 3 );
+ t.check();
  for( int x : { 10 , 12 , 13 } )
   t.insert( x , x );
  CHECK( t.levels() == Lv( { { { 10 , 12 , 13 } } } ) );                // (a)
@@ -409,38 +511,79 @@ ADS_TEST( "sec6.3.bplus-figure" )
  CHECK( t.range( 7 , 11 ) == P( { { 8 , 8 } , { 9 , 9 } , { 10 , 10 } ,
                                   { 11 , 11 } } ) );
  CHECK( t.range( 16 , 20 ).empty() && ( t.range( 0 , 100 ).size() == 8 ) );
+ CHECK( t.range( 11 , 7 ).empty() && t.range( 0 , 5 ).empty() );
+ CHECK( ( t.range( 12 , 12 ) == P( { { 12 , 12 } } ) ) &&
+        t.range( 7 , 7 ).empty() );
+ CHECK( ( t.range( 6 , 6 ) == P( { { 6 , 6 } } ) ) &&
+        ( t.range( 15 , 15 ) == P( { { 15 , 15 } } ) ) );
+ const auto before = t.levels();
+ for( int x : { 6 , 9 , 10 , 15 } )        // the first and the last too
+  t.insert( x , -x );
+ CHECK( ( t.levels() == before ) && ( t.size() == 8 ) );
+ CHECK( ( t.lookup( 9 ) == -9 ) && ( t.lookup( 15 ) == -15 ) );
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ t.insert( hi , 1 );
+ t.insert( lo , 2 );
+ t.check();
+ CHECK( ( t.range( lo , hi ).size() == 10 ) && ( t.lookup( lo ) == 2 ) );
+ CHECK( ( t.range( lo , lo ) == P( { { lo , 2 } } ) ) &&
+        ( t.range( hi , hi ) == P( { { hi , 1 } } ) ) );
+ int n = 0 , last = lo;
+ bool sorted = true;
+ for( auto [ k , v ] : t ) {
+  sorted = sorted && ( ( n == 0 ) || ( last < k ) );
+  last = k;
+  ++n;
+  }
+ CHECK( sorted && ( n == 10 ) && ( last == hi ) );
  CHECK_THROWS( ( BPlusTree< int , int >( 2 ) ) , contract_violation );
+ CHECK_THROWS( ( BPlusTree< int , int >( 0 ) ) , contract_violation );
+ CHECK_THROWS( ( BPlusTree< int , int >( -3 ) ) , contract_violation );
  }
 
-// section 6.3: random insertions in B+-trees of several orders against
-// std::map; the shape holds, and the height is at most
-// 2 + log_q( L / 2 ), q = ceil( m / 2 ), L the number of leaves
+// section 6.3: random, increasing and decreasing insertions in B+-trees of
+// several orders against std::map; the shape holds, and the height is at
+// most 2 + log_q( L / 2 ), q = ceil( m / 2 ), L the number of leaves; with
+// few keys or a large order the root stays a leaf
 ADS_TEST( "sec6.3.bplus-random" )
 {
  std::mt19937 rng( 63 );
- for( int m : { 3 , 4 , 5 , 8 , 64 } ) {
+ for( int s = 0 ; s < 3 ; ++s )
+  for( int m : { 3 , 4 , 5 , 8 , 64 } ) {
+   BPlusTree< int , int > t( m );
+   std::map< int , int > ref;
+   std::uniform_int_distribution< int > key( 0 , 9999 );
+   for( int i = 0 ; i < 5000 ; ++i ) {      // random, increasing, decreasing
+    const int k = s == 0 ? key( rng ) : s == 1 ? 2 * i : 9999 - 2 * i;
+    t.insert( k , i );
+    ref[ k ] = i;
+    }
+   t.check();
+   CHECK( t.size() == ref.size() );
+   for( int k = 0 ; k < 10000 ; k += 7 ) {
+    CHECK( t.lookup( k ) == find( ref , k ) );
+    }
+   const auto r = t.range( 2500 , 7499 );
+   CHECK( std::equal( r.begin() , r.end() , ref.lower_bound( 2500 ) ,
+                      ref.upper_bound( 7499 ) ,
+                      []( auto & a , auto & b ) {
+                       return( ( a.first == b.first ) &&
+                               ( a.second == b.second ) ); } ) );
+   const auto lv = t.levels();
+   const double q = ( m + 1 ) / 2;
+   CHECK( lv.size() <=
+          2 + std::log( lv.back().size() / 2.0 ) / std::log( q ) );
+   }
+ for( int m : { 3 , 1000 } ) {             // the root stays a leaf
   BPlusTree< int , int > t( m );
-  std::map< int , int > ref;
-  std::uniform_int_distribution< int > key( 0 , 9999 );
-  for( int i = 0 ; i < 5000 ; ++i ) {
-   const int k = key( rng );
-   t.insert( k , i );
-   ref[ k ] = i;
-   }
+  for( int k = 0 ; k < std::min( m , 500 ) ; ++k )
+   t.insert( k , k );
   t.check();
-  CHECK( t.size() == ref.size() );
-  for( int k = 0 ; k < 10000 ; k += 7 ) {
-   CHECK( t.lookup( k ) == find( ref , k ) );
-   }
-  const auto r = t.range( 2500 , 7499 );
-  CHECK( std::equal( r.begin() , r.end() , ref.lower_bound( 2500 ) ,
-                     ref.upper_bound( 7499 ) ,
-                     []( auto & a , auto & b ) {
-                      return( ( a.first == b.first ) &&
-                              ( a.second == b.second ) ); } ) );
-  const auto lv = t.levels();
-  const double q = ( m + 1 ) / 2;
-  CHECK( lv.size() <= 2 + std::log( lv.back().size() / 2.0 ) / std::log( q ) );
+  CHECK( ( t.levels().size() == 1 ) &&
+         ( int( t.size() ) == std::min( m , 500 ) ) );
+  t.insert( 2 , 0 );                       // in a full leaf, again
+  CHECK( t.levels().size() == 1 );
   }
  }
 
@@ -449,7 +592,8 @@ ADS_TEST( "sec6.3.bplus-random" )
 /*--------------------------------------------------------------------------*/
 
 // Esercizio 6.1: building a search tree sorts, as the invisit reads the keys
-// in order: so it costs Omega( n log n ) comparisons, as sorting does
+// in order: so it costs Omega( n log n ) comparisons, as sorting does; with
+// no key, one key, all equal keys (one is left) and repetitions
 ADS_TEST( "ex6.1" )
 {
  std::mt19937 rng( 601 );
@@ -460,6 +604,14 @@ ADS_TEST( "ex6.1" )
  Ints s = k;
  std::sort( s.begin() , s.end() );
  CHECK( keys( t ) == s );
+ CHECK( keys( build< RBT >( {} ) ).empty() );
+ CHECK( keys( build< RBT >( { 4 } ) ) == Ints( { 4 } ) );
+ CHECK( keys( build< RBT >( Ints( 50 , 3 ) ) ) == Ints( { 3 } ) );
+ Ints r( 500 );
+ for( int & x : r )
+  x = int( rng() % 40 );
+ std::set< int > u( r.begin() , r.end() );
+ CHECK( keys( build< RBT >( r ) ) == Ints( u.begin() , u.end() ) );
  }
 
 namespace {
@@ -492,7 +644,8 @@ Ints previsit( BinaryTree< int > * t )
 }  // end( namespace )
 
 // Esercizio 6.2: the recursive insertion builds the same tree as the
-// iterative insertNode()
+// iterative insertNode(), also from no key, from one key, and from
+// increasing and decreasing keys (a chain)
 ADS_TEST( "ex6.2" )
 {
  std::mt19937 rng( 602 );
@@ -504,6 +657,16 @@ ADS_TEST( "ex6.2" )
  for( int x : k )
   t.reset( insertRec( t.release() , x ) );
  CHECK( previsit( t.get() ) == preorder( build< BST >( k ) ) );
+ Ints up( 300 ) , down( 300 );
+ std::iota( up.begin() , up.end() , 0 );
+ std::iota( down.rbegin() , down.rend() , 0 );
+ for( const Ints & q : { Ints{} , Ints{ 8 } , up , down } ) {
+  t.reset();
+  for( int x : q )
+   t.reset( insertRec( t.release() , x ) );
+  CHECK( previsit( t.get() ) == preorder( build< BST >( q ) ) );
+  CHECK( previsit( t.get() ) == q );       // a chain: the order given
+  }
  }
 
 namespace {
@@ -524,7 +687,10 @@ bool isABR( BinaryTree< int > * t , const int * lo = nullptr ,
 }  // end( namespace )
 
 // Esercizio 6.3: the tree of Figura 6.1 is a search tree; 10 with 5 on the
-// left and 12 right of 5 is not, though each parent and child agree
+// left and 12 right of 5 is not, though each parent and child agree. The
+// empty tree and a node alone are; a key equal to its parent is not, on
+// either side, nor one equal to a farther ancestor; the extreme keys of int
+// are within their intervals
 ADS_TEST( "ex6.3" )
 {
  std::unique_ptr< BinaryTree< int > > t;
@@ -537,6 +703,23 @@ ADS_TEST( "ex6.3" )
  w->left()->right()->write( 7 );
  CHECK( isABR( w.get() ) );
  CHECK( isABR( nullptr ) );
+ BinaryTree< int > one( 0 );
+ CHECK( isABR( &one ) );
+ w->left()->right()->write( 10 );          // equal to the root
+ CHECK( ! isABR( w.get() ) );
+ for( auto s : { B( 5 , B( 5 ) ) , B( 5 , {} , B( 5 ) ) } ) {
+  std::unique_ptr< BinaryTree< int > > e( make( s ) );
+  CHECK( ! isABR( e.get() ) );
+  }
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ std::unique_ptr< BinaryTree< int > > x( make( B( 0 , B( lo ) , B( hi ) ) ) );
+ CHECK( isABR( x.get() ) );
+ std::unique_ptr< BinaryTree< int > > y( make( B( lo , {} , B( hi ,
+                                                  B( lo + 1 ) ) ) ) );
+ CHECK( isABR( y.get() ) );
+ y->right()->left()->write( lo );
+ CHECK( ! isABR( y.get() ) );
  }
 
 namespace {
@@ -556,7 +739,8 @@ void printNodes( BinaryTree< int > * t , int A , int B , Ints & out ,
 }  // end( namespace )
 
 // Esercizio 6.4: the keys of [ A , B ] in order, visiting few nodes more
-// than they are
+// than they are; the intervals reversed, below and above all the keys, of
+// one key present or absent, of all the keys, and a node alone
 ADS_TEST( "ex6.4" )
 {
  std::unique_ptr< BinaryTree< int > > t;
@@ -585,28 +769,53 @@ ADS_TEST( "ex6.4" )
  std::iota( ref.begin() , ref.end() , 1000 );
  CHECK( out == ref );
  CHECK( seen < 3 * 100 );   // O( h + k ), h about 2.99 log n on average
+ auto range = [ & ]( int A , int B ) {
+  out.clear();
+  seen = 0;
+  printNodes( t.get() , A , B , out , seen );
+  return( out );
+  };
+ CHECK( range( 1099 , 1000 ).empty() && range( -5 , 0 ).empty() );
+ CHECK( range( 3001 , 4000 ).empty() );
+ CHECK( ( range( 7 , 7 ) == Ints( { 7 } ) ) &&
+        ( range( 1 , 1 ) == Ints( { 1 } ) ) );
+ CHECK( range( 3000 , 3000 ) == Ints( { 3000 } ) );
+ Ints all( 3000 );
+ std::iota( all.begin() , all.end() , 1 );
+ CHECK( range( 0 , 3001 ) == all );
+ BinaryTree< int > one( 5 );
+ out.clear();
+ printNodes( &one , 5 , 5 , out , seen );
+ CHECK( out == Ints( { 5 } ) );
+ out.clear();
+ printNodes( &one , 6 , 9 , out , seen );
+ CHECK( out.empty() );
  }
 
 // Esercizio 6.5: the iterative invisit with min() and successorNode(),
 // with no stack, in Theta( n ) time; and backwards with max() and
-// predecessorNode()
+// predecessorNode(); on random keys, on no key, one key, and the chains of
+// increasing and decreasing keys
 ADS_TEST( "ex6.5" )
 {
  std::mt19937 rng( 605 );
- Ints k( 1000 );
- std::iota( k.begin() , k.end() , 0 );
- std::shuffle( k.begin() , k.end() , rng );
- const BST t = build< BST >( k );
- Ints in , back;
- for( auto u = t.min() ; ! t.isNil( u ) ; u = t.successorNode( u ) )
-  in.push_back( BST::key( u ) );
- for( auto u = t.max() ; ! t.isNil( u ) ; u = t.predecessorNode( u ) )
-  back.push_back( BST::key( u ) );
- Ints s = k;
- std::sort( s.begin() , s.end() );
- CHECK( in == s );
- std::reverse( back.begin() , back.end() );
- CHECK( back == s );
+ for( int c = 0 ; c < 5 ; ++c ) {
+  Ints k( c == 1 ? 0 : c == 2 ? 1 : 1000 );
+  std::iota( k.begin() , k.end() , 0 );
+  if( c == 0 ) std::shuffle( k.begin() , k.end() , rng );
+  if( c == 4 ) std::reverse( k.begin() , k.end() );
+  const BST t = build< BST >( k );
+  Ints in , back;
+  for( auto u = t.min() ; ! t.isNil( u ) ; u = t.successorNode( u ) )
+   in.push_back( BST::key( u ) );
+  for( auto u = t.max() ; ! t.isNil( u ) ; u = t.predecessorNode( u ) )
+   back.push_back( BST::key( u ) );
+  Ints s = k;
+  std::sort( s.begin() , s.end() );
+  CHECK( in == s );
+  std::reverse( back.begin() , back.end() );
+  CHECK( back == s );
+  }
  }
 
 namespace {
@@ -726,7 +935,8 @@ template< class Tr >
 void sets( unsigned seed )
 {
  std::mt19937 rng( seed );
- for( auto [ na , nb ] : { std::pair{ 0 , 50 } , std::pair{ 50 , 0 } ,
+ for( auto [ na , nb ] : { std::pair{ 0 , 0 } , std::pair{ 0 , 50 } ,
+                           std::pair{ 50 , 0 } , std::pair{ 1 , 1 } ,
                            std::pair{ 300 , 20 } , std::pair{ 500 , 500 } } ) {
   std::uniform_int_distribution< int > key( 0 , 999 );
   std::set< int > a , b;
@@ -747,12 +957,28 @@ void sets( unsigned seed )
   CHECK( keys( U ) == u && keys( D ) == d && keys( I ) == i );
   CHECK( shape( U ).ok && shape( D ).ok && shape( I ).ok );
   CHECK( keys( A ) == Ints( a.begin() , a.end() ) );   // A unchanged
+  // A with itself, with a subset of its own, with a disjoint set
+  const Ints ka = keys( A );
+  CHECK( ( keys( set_union( A , A ) ) == ka ) &&
+         set_difference( A , A ).isEmpty() &&
+         ( keys( set_intersection( A , A ) ) == ka ) );
+  Tr H , F;
+  for( std::size_t j = 0 ; j < ka.size() ; j += 2 ) H.insert( ka[ j ] , 0 );
+  for( int x : ka ) F.insert( x + 1000 , 0 );
+  CHECK( ( keys( set_union( A , H ) ) == ka ) &&
+         ( keys( set_intersection( A , H ) ) == keys( H ) ) &&
+         ( set_difference( A , H ).size() == ka.size() / 2 ) );
+  CHECK( set_intersection( A , F ).isEmpty() &&
+         ( keys( set_difference( A , F ) ) == ka ) &&
+         ( set_union( A , F ).size() == 2 * ka.size() ) );
   }
  }
 
 }  // end( namespace )
 
-// Esercizio 6.7: the three operations on sets as search trees
+// Esercizio 6.7: the three operations on sets as search trees, with empty
+// sets, single keys, a set with itself, with a subset and with a disjoint
+// set
 ADS_TEST( "ex6.7" )
 {
  sets< BST >( 607 );
@@ -800,7 +1026,8 @@ bool colorable( BinaryTree< int > * t )
 // Esercizio 6.9: the trees (a), (c) and (d) of Figura 6.9 can be colored;
 // (b) cannot, as its root has a leaf at level 2 below 3 and one at level 5
 // below 10, more than twice as deep (Teorema 6.2). The shapes that the
-// Red-Black insertions build can all be colored, a path of 3 cannot
+// Red-Black insertions build can all be colored, a path of 3 cannot; the
+// empty tree, a node alone and a path of 2 can
 ADS_TEST( "ex6.9" )
 {
  std::unique_ptr< BinaryTree< int > > a( make(
@@ -825,6 +1052,12 @@ ADS_TEST( "ex6.9" )
  std::unique_ptr< BinaryTree< int > > path( make(
   B( 1 , {} , B( 2 , {} , B( 3 ) ) ) ) );
  CHECK( ! colorable( path.get() ) );
+ CHECK( colorable( nullptr ) );
+ BinaryTree< int > one( 1 );
+ CHECK( colorable( &one ) );
+ path->right()->deleteRight();
+ CHECK( colorable( path.get() ) );         // black over red
+ CHECK( colorings( path.get() ).black == std::set< int >( { 2 } ) );
  std::mt19937 rng( 609 );
  std::uniform_int_distribution< int > key( 0 , 999 );
  for( int n = 1 ; n <= 200 ; n += 13 ) {
@@ -890,10 +1123,11 @@ BinaryTree< int > * perfect_shape( int h )
 // perfect black tree of height b, and at most 2^( 2 b ) - 1, the perfect
 // tree of height 2 b with the levels black and red in turn; the perfect tree
 // of height 2 b + 1 cannot have black height b, whatever the colors (the
-// sets of Esercizio 6.9, where d = b + 1 counts the leaves too)
+// sets of Esercizio 6.9, where d = b + 1 counts the leaves too); b = 0 is
+// the empty tree, and a node alone cannot have black height 0
 ADS_TEST( "ex6.10" )
 {
- for( int b = 1 ; b <= 6 ; ++b ) {
+ for( int b = 0 ; b <= 6 ; ++b ) {
   std::unique_ptr< CT > lo( perfect( b , []( int ) { return( Color::BLACK );
                                                      } ) );
   std::unique_ptr< CT > hi( perfect( 2 * b , []( int l ) {

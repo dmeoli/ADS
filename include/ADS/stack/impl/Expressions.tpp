@@ -58,6 +58,22 @@ inline int precedence( const std::string & t )
  return( ( t == "*" ) || ( t == "/" ) ? 2 : ( t == "(" ? 0 : 1 ) );
  }
 
+/// s op t fits a long, op one of + - * /, a division by 0 aside
+inline bool fitsLong( long s , char op , long t )
+{
+ constexpr long M = std::numeric_limits< long >::max() ,
+                m = std::numeric_limits< long >::min();
+ switch( op ) {
+  case( '+' ): return( t >= 0 ? s <= M - t : s >= m - t );
+  case( '-' ): return( t >= 0 ? s >= m + t : s <= M + t );
+  case( '*' ):
+   if( ( s == 0 ) || ( t == 0 ) ) return( true );
+   if( s > 0 ) return( t > 0 ? s <= M / t : t >= m / s );
+   return( t > 0 ? s >= m / t : s >= M / t );
+  default: return( ( s != m ) || ( t != -1 ) );
+  }
+ }
+
 /// the tokens joined by one space
 inline std::string join( const std::vector< std::string > & T )
 {
@@ -81,6 +97,7 @@ inline long evalPostfix( std::string_view e )
    }
   ADS_PRE( S.size() >= 2 );                // two operands for t
   const long top = S.pop() , suc = S.pop();   // suc t top
+  ADS_PRE( detail::fitsLong( suc , t[ 0 ] , top ) );
   switch( t[ 0 ] ) {
    case( '+' ): S.push( suc + top ); break;
    case( '-' ): S.push( suc - top ); break;

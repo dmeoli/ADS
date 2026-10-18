@@ -166,7 +166,9 @@ inline bool isRed( const TreeNode * t )
 /// minGap(): a pair of places i < j of A minimizing | A[ i ] - A[ j ] |;
 /// the items with their places are sorted by value by heapsort(), and a
 /// smallest gap is between two consecutive ones; O( n log n ) time,
-/// O( n ) space
+/// O( n ) space. The gaps are computed as unsigned long, which holds the
+/// difference of any two long in order (LONG_MAX - LONG_MIN overflows a
+/// long)
 /// \pre n >= 2
 inline std::pair< std::size_t , std::size_t > minGap(
                                                 const std::vector< long > & A )
@@ -178,10 +180,13 @@ inline std::pair< std::size_t , std::size_t > minGap(
  heapsort( B , []( const auto & x , const auto & y ) {
   return( x.first < y.first );
   } );
+ auto gap = [ & ]( std::size_t i ) {
+  return( static_cast< unsigned long >( B[ i ].first ) -
+          static_cast< unsigned long >( B[ i - 1 ].first ) );
+  };
  std::size_t best = 1;
  for( std::size_t i = 2 ; i < B.size() ; ++i )
-  if( B[ i ].first - B[ i - 1 ].first <
-      B[ best ].first - B[ best - 1 ].first )
+  if( gap( i ) < gap( best ) )
    best = i;
  const std::size_t i = B[ best - 1 ].second , j = B[ best ].second;
  return( std::pair( std::min( i , j ) , std::max( i , j ) ) );
@@ -1318,8 +1323,8 @@ Growth theta( double p , double q = 0 )
 /*---------------- 2011-04-11 A1, minimum and maximum gaps -----------------*/
 
 // minGap() and maxGap() against all the pairs, on random vectors of
-// positive values, with many repeated ones, of two items, of equal items
-// and of the largest values
+// positive values, with many repeated ones, of two items, of equal items,
+// of the largest values and of gaps across the whole range of long
 ADS_TEST( "compiti-2011-04-11-A1-minGap" )
 {
  std::mt19937 g( 1 );
@@ -1343,7 +1348,20 @@ ADS_TEST( "compiti-2011-04-11-A1-minGap" )
  const long M = std::numeric_limits< long >::max();
  CHECK( minGap( { M , 1 , M - 1 } ) == std::pair( std::size_t( 0 ) ,
                                                  std::size_t( 2 ) ) );
+ // the gaps of the whole range of long, which overflow a long: the two
+ // extremes alone, and with -1 in between (the gap -1 - LONG_MIN is the
+ // smaller one by 1)
+ const long m = std::numeric_limits< long >::min();
+ CHECK( minGap( { M , m } ) == std::pair( std::size_t( 0 ) ,
+                                         std::size_t( 1 ) ) );
+ CHECK( minGap( { M , m , -1 } ) == std::pair( std::size_t( 1 ) ,
+                                              std::size_t( 2 ) ) );
+ CHECK( minGap( { m , 0 , m + 1 , M } ) == std::pair( std::size_t( 0 ) ,
+                                                     std::size_t( 2 ) ) );
+ CHECK( minGap( { 3 , -3 } ) == std::pair( std::size_t( 0 ) ,
+                                          std::size_t( 1 ) ) );
  CHECK_THROWS( minGap( { 1 } ) , contract_violation );
+ CHECK_THROWS( minGap( {} ) , contract_violation );
  }
 
 ADS_TEST( "compiti-2011-04-11-A1-maxGap" )
@@ -1370,7 +1388,15 @@ ADS_TEST( "compiti-2011-04-11-A1-maxGap" )
  const long M = std::numeric_limits< long >::max();
  CHECK( maxGap( { 2 , M , 1 , M } ) == std::pair( std::size_t( 1 ) ,
                                                  std::size_t( 2 ) ) );
+ const long m = std::numeric_limits< long >::min();
+ CHECK( maxGap( { 0 , M , -5 , m , 7 } ) == std::pair( std::size_t( 1 ) ,
+                                                      std::size_t( 3 ) ) );
+ CHECK( maxGap( { 4 , 4 , 9 } ) == std::pair( std::size_t( 0 ) ,
+                                             std::size_t( 2 ) ) );
+ CHECK( maxGap( { 9 , 4 , 4 } ) == std::pair( std::size_t( 0 ) ,
+                                             std::size_t( 1 ) ) );
  CHECK_THROWS( maxGap( { 1 } ) , contract_violation );
+ CHECK_THROWS( maxGap( {} ) , contract_violation );
  }
 
 /*--------------- 2011-04-11 A2, minimum height search tree ----------------*/
@@ -1416,7 +1442,9 @@ ADS_TEST( "compiti-2011-04-11-A2" )
 
 // the example of 06/06/11, median 8, the answer 6 , 9 or 9 , 10; nearest()
 // against the sorted distances of the items but the median, kMedian()
-// against those of all the items, on random vectors of distinct items
+// against those of all the items, on random vectors of distinct items;
+// ties on the two sides of the median, k = n - 1 and k = n, one item, and
+// k = 0 or k too large
 ADS_TEST( "compiti-2011-06-06-B2" )
 {
  std::mt19937 g( 4 );
@@ -1467,6 +1495,18 @@ ADS_TEST( "compiti-2011-06-06-B2" )
   CHECK( ( E.size() == k ) || ( E.size() == k + 1 ) );
   }
  CHECK( kMedian( { 5 } , 1 , g ) == std::vector< long >( { 5 } ) );
+ // a tie at the same distance on the two sides goes by the order in V;
+ // k = n - 1 takes all but the median, k = n for kMedian() all
+ CHECK( nearest( { 3 , 2 , 1 } , 1 , g ) == std::vector< long >( { 3 } ) );
+ CHECK( nearest( { 1 , 2 , 3 } , 1 , g ) == std::vector< long >( { 1 } ) );
+ CHECK( nearest( { 9 , -4 , 0 , 7 } , 3 , g ) ==
+        std::vector< long >( { -4 , 7 , 9 } ) );   // closer ones, then at d
+ CHECK( kMedian( { 9 , -4 , 0 , 7 } , 4 , g ) ==
+        std::vector< long >( { 9 , -4 , 0 , 7 } ) );
+ CHECK( kMedian( { 2 , 1 } , 1 , g ) == std::vector< long >( { 1 } ) );
+ CHECK_THROWS( nearest( { 1 , 2 } , 0 , g ) , contract_violation );
+ CHECK_THROWS( kMedian( { 1 , 2 } , 0 , g ) , contract_violation );
+ CHECK_THROWS( kMedian( {} , 1 , g ) , contract_violation );
  CHECK_THROWS( nearest( { 5 } , 1 , g ) , contract_violation );
  CHECK_THROWS( nearest( { 1 , 2 , 2 } , 1 , g ) , contract_violation );
  CHECK_THROWS( kMedian( { 1 , 2 } , 3 , g ) , contract_violation );
@@ -1475,7 +1515,8 @@ ADS_TEST( "compiti-2011-06-06-B2" )
 /*----------------------- 2011-09-07 A4, inversions ------------------------*/
 
 // countInversions() of the library against the double loop, on random
-// vectors, empty, of one item, of equal items, sorted and reversed
+// vectors, empty, of one item, of equal items, sorted and reversed, of two
+// items, with ties, of the extremes of long
 ADS_TEST( "compiti-2011-09-07-A4" )
 {
  std::mt19937 g( 5 );
@@ -1496,6 +1537,13 @@ ADS_TEST( "compiti-2011-09-07-A4" )
  std::iota( R.rbegin() , R.rend() , 0L );
  CHECK( countInversions( R ) == 1000L * 999 / 2 );
  CHECK( countInversions( R ) == 0 );
+ const long M = std::numeric_limits< long >::max();
+ std::vector< long > T2 = { 2 , 1 } , S2 = { 1 , 2 } ,
+                     X = { M , 0 , -M - 1 , M , -M - 1 } , Ti = { 2 , 2 , 1 };
+ CHECK( countInversions( T2 ) == 1 && countInversions( S2 ) == 0 );
+ CHECK( countInversions( X ) == 3 + 2 + 0 + 1 );   // equal: no
+ CHECK( countInversions( Ti ) == 2 );
+ CHECK( X == std::vector< long >( { -M - 1 , -M - 1 , 0 , M , M } ) );
  }
 
 /*----------------------- 2012-02-01 A1, MergeSortK ------------------------*/
@@ -1503,7 +1551,8 @@ ADS_TEST( "compiti-2011-09-07-A4" )
 // T( n ) = k T( n / k ) + k n on n = k^j is n + j k n, between k n log_k n
 // and ( 1 + 1 / k ) k n log_k n; master( k , k , 1 ) is Theta( n log n );
 // MergeSortK sorts and makes at most ( k - 1 ) n ceil( log_k n )
-// comparisons
+// comparisons; empty, one item, k = n and k > n (a merge of n runs of
+// one item), the extreme values, k < 2
 ADS_TEST( "compiti-2012-02-01-A1" )
 {
  for( std::size_t k = 2 ; k <= 8 ; ++k ) {
@@ -1531,6 +1580,21 @@ ADS_TEST( "compiti-2012-02-01-A1" )
  std::vector< long > E;
  CHECK( mergeSortK( E , 2 ) == 0 );
  CHECK_THROWS( mergeSortK( E , 1 ) , contract_violation );
+ CHECK_THROWS( mergeSortK( E , 0 ) , contract_violation );
+ // one item, k = n (one merge of n runs of one item), k > n, sorted and
+ // reversed input, the extreme values
+ std::vector< long > O( 1 , 5 );
+ CHECK( ( mergeSortK( O , 3 ) == 0 ) && ( O[ 0 ] == 5 ) );
+ for( const std::size_t k : { std::size_t( 6 ) , std::size_t( 100 ) } ) {
+  std::vector< long > R = { 6 , 5 , 4 , 3 , 2 , 1 };
+  CHECK( mergeSortK( R , k ) == 5 + 4 + 3 + 2 + 1 );
+  CHECK( R == std::vector< long >( { 1 , 2 , 3 , 4 , 5 , 6 } ) );
+  }
+ const long M = std::numeric_limits< long >::max() ,
+            m = std::numeric_limits< long >::min();
+ std::vector< long > X = { M , m , 0 , M , m };
+ mergeSortK( X , 2 );
+ CHECK( X == std::vector< long >( { m , m , 0 , M , M } ) );
  }
 
 /*---------------------- 2012-05-03 A2, the node Roma ----------------------*/
@@ -1565,7 +1629,8 @@ ADS_TEST( "compiti-2012-05-03-A2-i" )
  }
 
 // hasRoma() against isRoma() on every node, on random directed graphs;
-// the empty graph has none
+// the empty graph has none; the Roma first or last, a chain of 2000
+// nodes, strongly connected parts joined one way or not at all
 ADS_TEST( "compiti-2012-05-03-A2-ii" )
 {
  std::mt19937 g( 8 );
@@ -1588,13 +1653,29 @@ ADS_TEST( "compiti-2012-05-03-A2-ii" )
  CHECK( ! hasRoma( makeGraph( 2 , {} , true ) ) );
  CHECK( hasRoma( makeGraph( 3 , { { 0 , 1 } , { 2 , 1 } } , true ) ) );
  CHECK( ! hasRoma( makeGraph( 3 , { { 1 , 0 } , { 1 , 2 } } , true ) ) );
+ // a Roma that is the first node, the last one, and a chain of 2000
+ // nodes ending in it; two strongly connected parts joined one way
+ CHECK( hasRoma( makeGraph( 3 , { { 1 , 0 } , { 2 , 0 } } , true ) ) );
+ CHECK( hasRoma( makeGraph( 3 , { { 0 , 2 } , { 1 , 2 } } , true ) ) );
+ std::vector< std::pair< int , int > > chain;
+ for( int v = 0 ; v + 1 < 2000 ; ++v )
+  chain.emplace_back( v , v + 1 );
+ const auto Ch = makeGraph( 2000 , chain , true );
+ CHECK( hasRoma( Ch ) && isRoma( transpose( Ch ) , 1999 ) &&
+        ! isRoma( transpose( Ch ) , 1998 ) );
+ CHECK( hasRoma( makeGraph( 4 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } ,
+                                  { 3 , 2 } , { 0 , 2 } } , true ) ) );
+ CHECK( ! hasRoma( makeGraph( 4 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } ,
+                                    { 3 , 2 } } , true ) ) );
  }
 
 /*--------------- 2012-06-18 A2, merge sort by square roots ----------------*/
 
 // T( n ) = sqrt( n ) T( sqrt( n ) ) + n^{3/2} on n = 2^{2^j}, T( n ) = 1
 // below 4, stays within [ 1 , 2 ] n^{3/2}; the sort agrees with std::sort
-// and its comparisons grow as n^{3/2}, well beyond n log2 n
+// and its comparisons grow as n^{3/2}, well beyond n log2 n; empty, one
+// item, equal items, every permutation up to 7 items, and the comparisons
+// of the insertion sort of 2 and 3 items
 ADS_TEST( "compiti-2012-06-18-A2" )
 {
  double T = 1 , n = 2;
@@ -1624,6 +1705,22 @@ ADS_TEST( "compiti-2012-06-18-A2" )
  CHECK( sqrtMergeSort( O ) == 0 );
  sqrtMergeSort( Q );
  CHECK( Q == std::vector< long >( 100 , 3 ) );
+ // every permutation up to 7 items, across the passage from the insertion
+ // sort (n < 4) to the blocks; the insertion sort of 2 and 3 items
+ for( std::size_t n = 2 ; n <= 7 ; ++n ) {
+  std::vector< long > P( n );
+  std::iota( P.begin() , P.end() , -2L );
+  const auto S = P;
+  do {
+   auto A = P;
+   sqrtMergeSort( A );
+   CHECK( A == S );
+   }
+  while( std::next_permutation( P.begin() , P.end() ) );
+  }
+ std::vector< long > R2 = { 2 , 1 } , R3 = { 3 , 2 , 1 } , S3 = { 1 , 2 , 3 };
+ CHECK( ( sqrtMergeSort( R2 ) == 1 ) && ( sqrtMergeSort( R3 ) == 3 ) );
+ CHECK( sqrtMergeSort( S3 ) == 2 );
  }
 
 /*----------------------- 2012-09-10 A1, SortinoSort -----------------------*/
@@ -1654,6 +1751,8 @@ ADS_TEST( "compiti-2012-09-10-A1-i" )
   }
  }
 
+// SortinoSort against std::sort on random vectors with repeated items, on
+// the empty one, a reversed one, and every permutation of up to 9 items
 ADS_TEST( "compiti-2012-09-10-A1-ii" )
 {
  std::mt19937 g( 10 );
@@ -1669,6 +1768,19 @@ ADS_TEST( "compiti-2012-09-10-A1-ii" )
  std::iota( R.rbegin() , R.rend() , 0L );
  sortinoSort( R );
  CHECK( std::is_sorted( R.begin() , R.end() ) );
+ // every permutation of up to 9 items, across the insertion sort (up to 6)
+ // and the three recursive calls (7 and more), and one item
+ for( std::size_t n = 1 ; n <= 9 ; ++n ) {
+  std::vector< long > P( n );
+  std::iota( P.begin() , P.end() , 0L );
+  const auto S = P;
+  do {
+   auto A = P;
+   CHECK( sortinoSort( A ) == ( n <= 6 ? 1 : 4 ) );   // thirds of <= 6
+   CHECK( A == S );
+   }
+  while( std::next_permutation( P.begin() , P.end() ) );
+  }
  }
 
 /*--------- 2013-01-07 A1 and A2, disjoint vectors and sum of two ----------*/
@@ -1696,7 +1808,8 @@ ADS_TEST( "compiti-2013-01-07-A1" )
  }
 
 // twoSum() against the double loop, on random sorted vectors with
-// repeated items; empty, one item, x twice an item present once or twice
+// repeated items; empty, one item, x twice an item present once or twice,
+// the pair at the ends, negative sums, the extremes of long
 ADS_TEST( "compiti-2013-01-07-A2" )
 {
  std::mt19937 g( 12 );
@@ -1713,13 +1826,19 @@ ADS_TEST( "compiti-2013-01-07-A2" )
  CHECK( ! twoSum( {} , 0 ) && ! twoSum( { 3 } , 6 ) );
  CHECK( twoSum( { 3 , 3 } , 6 ) && ! twoSum( { 2 , 3 , 5 } , 6 ) );
  CHECK( twoSum( std::vector< long >( 10 , 7 ) , 14 ) );
+ // the pair at the two ends, negative sums, the extremes of long whose sum
+ // fits (-LONG_MAX + LONG_MAX = 0)
+ const long M = std::numeric_limits< long >::max();
+ CHECK( twoSum( { 1 , 5 , 6 , 9 } , 10 ) && twoSum( { -7 , -2 , 4 } , -9 ) );
+ CHECK( twoSum( { -M , 0 , M } , 0 ) && twoSum( { -M , 0 , M } , M ) );
+ CHECK( ! twoSum( { -M , M } , 1 ) );
  CHECK_THROWS( twoSum( { 2 , 1 } , 3 ) , contract_violation );
  }
 
 /*------------------------ 2013-06-17 A2, four rows ------------------------*/
 
 // fourRows() against the four blocks of the sorted vector, on random
-// vectors of distinct items, empty and of four items
+// vectors of distinct items, empty, of four items, of the extremes of long
 ADS_TEST( "compiti-2013-06-17-A2" )
 {
  std::mt19937 g( 13 );
@@ -1738,6 +1857,16 @@ ADS_TEST( "compiti-2013-06-17-A2" )
  const auto B = fourRows( { 4 , 3 , 2 , 1 } , g );
  for( long r = 0 ; r < 4 ; ++r )
   CHECK( B[ r ] == std::vector< long >( 1 , r + 1 ) );
+ for( const auto & r : fourRows( {} , g ) )
+  CHECK( r.empty() );
+ const long M = std::numeric_limits< long >::max();
+ auto X = fourRows( { M , -M , 0 , -1 , 1 , M - 1 , -M + 1 , 2 } , g );
+ for( auto & r : X )
+  std::sort( r.begin() , r.end() );
+ CHECK( ( X[ 0 ] == std::vector< long >( { -M , -M + 1 } ) ) &&
+        ( X[ 1 ] == std::vector< long >( { -1 , 0 } ) ) &&
+        ( X[ 2 ] == std::vector< long >( { 1 , 2 } ) ) &&
+        ( X[ 3 ] == std::vector< long >( { M - 1 , M } ) ) );
  CHECK_THROWS( fourRows( { 1 , 2 , 3 } , g ) , contract_violation );
  CHECK_THROWS( fourRows( { 1 , 2 , 3 , 3 } , g ) , contract_violation );
  }
@@ -1822,7 +1951,8 @@ ADS_TEST( "compiti-2019-08-22-A2" )
 /*---------------------- 2014-10-31 A2, almost sorted ----------------------*/
 
 // almostSort() against std::sort on vectors whose first n - floor(
-// n^{4/5} ) items are sorted, up to n = 10^6; the precondition is checked
+// n^{4/5} ) items are sorted, up to n = 10^6; n = 0 .. 3, a tail all
+// smaller than the head; the precondition is checked
 ADS_TEST( "compiti-2014-10-31-A2" )
 {
  std::mt19937 g( 16 );
@@ -1842,6 +1972,19 @@ ADS_TEST( "compiti-2014-10-31-A2" )
  CHECK( E.empty() && ( O == std::vector< long >( 1 , 2 ) ) );
  almostSort( R );                                       // 6 - 4 = 2 sorted
  CHECK( std::is_sorted( R.begin() , R.end() ) );
+ // n = 2 and 3: one item sorted and the rest not (floor( 2^0.8 ) = 1,
+ // floor( 3^0.8 ) = 2); the tail all smaller than the sorted head
+ CHECK( ( unsortedTail( 2 ) == 1 ) && ( unsortedTail( 3 ) == 2 ) );
+ std::vector< long > T2 = { 2 , 1 } , T3 = { 5 , 9 , -1 } ,
+                     H = { 10 , 11 , 12 , 13 , 3 , 2 , 1 , 0 , -1 , -2 };
+ almostSort( T2 );
+ almostSort( T3 );
+ CHECK( ( T2 == std::vector< long >( { 1 , 2 } ) ) &&
+        ( T3 == std::vector< long >( { -1 , 5 , 9 } ) ) );
+ CHECK( unsortedTail( 10 ) == 6 );
+ almostSort( H );
+ CHECK( H == std::vector< long >( { -2 , -1 , 0 , 1 , 2 , 3 , 10 , 11 , 12 ,
+                                    13 } ) );
  std::vector< long > B = { 9 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 };
  CHECK_THROWS( almostSort( B ) , contract_violation );
  }
@@ -1850,7 +1993,8 @@ ADS_TEST( "compiti-2014-10-31-A2" )
 
 // the example, 2 intervals; minIntervals() against towers() with d = 1 / 2
 // and against all the sets of intervals starting at the values, on random
-// multiples of 1 / 4; empty, one value, equal values, values 1 apart
+// multiples of 1 / 4; empty, one value, equal values, values 1 apart,
+// negative values, unsorted input, a gap just above 1
 ADS_TEST( "compiti-2014-12-19-B1" )
 {
  CHECK( minIntervals( { 2.5 , 3.8 , 1.5 , 3.1 , 1.8 } ) == 2 );
@@ -1879,12 +2023,17 @@ ADS_TEST( "compiti-2014-12-19-B1" )
  CHECK( minIntervals( std::vector< double >( 20 , 3 ) ) == 1 );
  CHECK( minIntervals( { 0 , 1 } ) == 1 && minIntervals( { 0 , 1.25 } ) == 2 );
  CHECK( minIntervals( { 0 , 1 , 2 , 3 , 4 } ) == 3 );
+ // negative values, unsorted input, a gap just above 1
+ CHECK( minIntervals( { -0.5 , -3 , -2 , 0.5 } ) == 2 );
+ CHECK( minIntervals( { 4 , 0 , 2 } ) == 3 );
+ CHECK( minIntervals( { 0 , std::nextafter( 1.0 , 2.0 ) } ) == 2 );
  }
 
 /*--------------------- 2015-06-08 A2, connected order ---------------------*/
 
 // after deleting each prefix of the order the other nodes stay connected,
-// on random connected undirected graphs; one node, a path, a star
+// on random connected undirected graphs; no node, one node, two nodes, a
+// path, a star, a complete graph
 ADS_TEST( "compiti-2015-06-08-A2" )
 {
  std::mt19937 g( 18 );
@@ -1919,6 +2068,14 @@ ADS_TEST( "compiti-2015-06-08-A2" )
  const auto St = connectedOrder( makeGraph( 4 , { { 0 , 1 } , { 0 , 2 } ,
                                                   { 0 , 3 } } , false ) );
  CHECK( St.back() == 0 );
+ CHECK( connectedOrder( makeGraph( 0 , {} , false ) ).empty() );
+ CHECK( connectedOrder( makeGraph( 2 , { { 0 , 1 } } , false ) ) ==
+        std::vector< int >( { 1 , 0 } ) );
+ const auto Cl = connectedOrder( makeGraph( 4 , { { 0 , 1 } , { 0 , 2 } ,
+                                                  { 0 , 3 } , { 1 , 2 } ,
+                                                  { 1 , 3 } , { 2 , 3 } } ,
+                                            false ) );
+ CHECK( Cl.size() == 4 );                   // complete: any order works
  CHECK_THROWS( connectedOrder( makeGraph( 2 , { { 0 , 1 } } , true ) ) ,
                contract_violation );
  }
@@ -1926,7 +2083,9 @@ ADS_TEST( "compiti-2015-06-08-A2" )
 /*----------------- 2015-07-14 B3.2, univocal set of edges -----------------*/
 
 // maxMatching() against all the subsets of the edges, on random graphs
-// of up to 14 edges; no edge, one edge, a triangle, a path of three
+// of up to 14 edges; no node, no edge, one edge, a triangle, paths of
+// three where the middle edge wins or loses; a loop, a weight not
+// positive, an end out of the nodes
 ADS_TEST( "compiti-2015-07-14-B3.2" )
 {
  std::mt19937 g( 19 );
@@ -1969,13 +2128,24 @@ ADS_TEST( "compiti-2015-07-14-B3.2" )
                            { 0 , 2 , 4 } } ).first == 4 );
  CHECK( maxMatching( 4 , { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
                            { 2 , 3 , 2 } } ).first == 4 );
+ CHECK( maxMatching( 0 , {} ).first == 0 );
+ CHECK( maxMatching( 1 , {} ).second.empty() );
+ // a heavy middle edge beats the two ends, and the other way round
+ CHECK( maxMatching( 4 , { { 0 , 1 , 2 } , { 1 , 2 , 5 } ,
+                           { 2 , 3 , 2 } } ).first == 5 );
+ CHECK( maxMatching( 4 , { { 0 , 1 , 3 } , { 1 , 2 , 5 } ,
+                           { 2 , 3 , 3 } } ).first == 6 );
  CHECK_THROWS( maxMatching( 2 , { { 0 , 0 , 1 } } ) , contract_violation );
+ CHECK_THROWS( maxMatching( 2 , { { 0 , 1 , 0 } } ) , contract_violation );
+ CHECK_THROWS( maxMatching( 2 , { { 0 , 1 , -4 } } ) , contract_violation );
+ CHECK_THROWS( maxMatching( 2 , { { 0 , 2 , 1 } } ) , contract_violation );
  }
 
 /*------ 2015-11-05 A2 and A4, difference in a subtree and two values ------*/
 
 // the example of the figure, 12 - 2 = 10; computeDiff() against the keys
-// of each subtree, on random trees; one node, the largest keys
+// of each subtree, on random trees; one node, the largest keys, equal
+// keys, a chain of 10^4 nodes, the extremes in leaves on both sides
 ADS_TEST( "compiti-2015-11-05-A2b" )
 {
  Pool P;
@@ -2000,6 +2170,18 @@ ADS_TEST( "compiti-2015-11-05-A2b" )
  const long M = std::numeric_limits< long >::max() / 2;
  CHECK( computeDiff( makeNode( P , 7 ) ) == 0 );
  CHECK( computeDiff( makeNode( P , M , makeNode( P , -M ) ) ) == 2 * M );
+ // equal keys, a chain of 10^4 nodes (the visit of the text is recursive,
+ // its depth the height), the extremes in a leaf on each side
+ CHECK( computeDiff( makeNode( P , 3 , makeNode( P , 3 ) ,
+                               makeNode( P , 3 ) ) ) == 0 );
+ TreeNode * chain = nullptr;
+ for( long k = 0 ; k < 10000 ; ++k )
+  chain = makeNode( P , k % 2 ? k : -k , chain );
+ CHECK( computeDiff( chain ) == 9999 + 9998 );
+ CHECK( computeDiff( makeNode( P , 0 , makeNode( P , 5 , makeNode( P , -M ) ) ,
+                               makeNode( P , 1 , nullptr ,
+                                         makeNode( P , M - 1 ) ) ) ) ==
+        2 * M - 1 );
  CHECK_THROWS( computeDiff( nullptr ) , contract_violation );
  }
 
@@ -2024,7 +2206,8 @@ ADS_TEST( "compiti-2015-11-05-A4b" )
 /*----------------- 2016-01-26 B3, shuffle of two strings ------------------*/
 
 // the examples of the text; isInterleaving() against the recursion on both
-// choices, on random strings of a small alphabet; empty strings
+// choices, on random strings of a small alphabet; empty strings, equal
+// strings, z too short, all one letter
 ADS_TEST( "compiti-2016-01-26-B3" )
 {
  for( const char * z : { "ABCD" , "ACBD" , "ACDB" , "CABD" , "CADB" ,
@@ -2074,13 +2257,21 @@ ADS_TEST( "compiti-2016-01-26-B3" )
  CHECK( isInterleaving( "" , "" , "" ) && isInterleaving( "ab" , "" , "ab" ) );
  CHECK( ! isInterleaving( "" , "" , "a" ) &&
         ! isInterleaving( "ab" , "" , "ba" ) );
+ // equal strings (both choices at each step), z too short, all one letter
+ CHECK( isInterleaving( "ab" , "ab" , "aabb" ) &&
+        isInterleaving( "ab" , "ab" , "abab" ) );
+ CHECK( ! isInterleaving( "ab" , "ab" , "abb" ) &&
+        ! isInterleaving( "ab" , "ab" , "bbaa" ) );
+ CHECK( isInterleaving( "aaa" , "aa" , "aaaaa" ) &&
+        ! isInterleaving( "aaa" , "aa" , "aaaa" ) );
  }
 
 /*----------------- 2016-07-06 A2, sorted rows and columns -----------------*/
 
 // the example: the matrix of the text sorted row by row; random matrices
 // keep their items with rows and columns nondecreasing; one row, one
-// column, empty
+// column, empty, rows of no item, negative and extreme values, rows of
+// different lengths
 ADS_TEST( "compiti-2016-07-06-A2" )
 {
  std::vector< std::vector< long > > M = { { 5 , 10 , 4 , 14 } ,
@@ -2119,6 +2310,16 @@ ADS_TEST( "compiti-2016-07-06-A2" )
  sortMatrix( C );
  const std::vector< std::vector< long > > C3 = { { 1 } , { 2 } , { 3 } };
  CHECK( E.empty() && ( C == C3 ) );
+ std::vector< std::vector< long > > Z = { {} , {} } , W = { { 2 , 1 } } ,
+                                    X = { { 0 , -1 } , { std::numeric_limits<
+                                          long >::min() , 5 } };
+ sortMatrix( Z );
+ sortMatrix( W );
+ sortMatrix( X );
+ CHECK( Z == std::vector< std::vector< long > >( 2 ) );   // empty rows
+ CHECK( W == std::vector< std::vector< long > >( { { 1 , 2 } } ) );
+ CHECK( X == std::vector< std::vector< long > >( {
+  { std::numeric_limits< long >::min() , -1 } , { 0 , 5 } } ) );
  std::vector< std::vector< long > > J = { { 1 , 2 } , { 3 } };
  CHECK_THROWS( sortMatrix( J ) , contract_violation );
  }
@@ -2127,7 +2328,8 @@ ADS_TEST( "compiti-2016-07-06-A2" )
 
 // the example, abc in aabdcc 4 times; subsequenceOccurrences() against
 // all the m-subsets of the places, on random strings; the empty pattern once,
-// C( n , m ) for one letter, up to C( 60 , 30 )
+// C( n , m ) for one letter, up to C( 60 , 30 ); P longer than T, P = T,
+// the empty T, the letters of P in the wrong order
 ADS_TEST( "compiti-2016-08-29-B4" )
 {
  CHECK( subsequenceOccurrences( "abc" , "aabdcc" ) == 4 );
@@ -2152,6 +2354,10 @@ ADS_TEST( "compiti-2016-08-29-B4" )
  CHECK( subsequenceOccurrences( "" , "" ) == 1 );
  CHECK( subsequenceOccurrences( "" , "x" ) == 1 );
  CHECK( subsequenceOccurrences( "ab" , "a" ) == 0 );
+ CHECK( subsequenceOccurrences( "abc" , "abc" ) == 1 );    // P = T
+ CHECK( subsequenceOccurrences( "x" , "" ) == 0 );
+ CHECK( subsequenceOccurrences( "ba" , "aabb" ) == 0 );    // order matters
+ CHECK( subsequenceOccurrences( "z" , "azbzcz" ) == 3 );
  const auto C = tartaglia( 60 );
  for( int n = 0 ; n <= 60 ; n += 6 )
   for( int m = 0 ; m <= n ; m += 3 )
@@ -2164,7 +2370,8 @@ ADS_TEST( "compiti-2016-08-29-B4" )
 // B4.1-B4.3: the two counterexamples, 2.8 against 2.1 for the order by
 // length and 10.4 against 7.0 for that by probability; the order by
 // l / f against all the permutations; with equal probabilities it is the
-// shortest job first, and the cost is f times totalCompletion()
+// shortest job first, and the cost is f times totalCompletion(); no file,
+// one file, all probabilities 0, ties of l / f, the contracts
 ADS_TEST( "compiti-2017-01-10-B4.1" )
 {
  const std::vector< double > l1 = { 1 , 2 } , f1 = { 0.1 , 0.9 } ,
@@ -2208,15 +2415,31 @@ ADS_TEST( "compiti-2017-01-10-B4.1" )
   CHECK( std::abs( tapeCost( l , e , tapeOrder( l , e ) ) -
                    totalCompletion( l , shortestJobFirst( l ) ) ) < 1e-9 );
   }
+ // no file, one file, all probabilities 0 (every order costs 0), ties of
+ // l / f (every order of the tied ones costs the same)
+ CHECK( tapeOrder( {} , {} ).empty() && tapeCost( {} , {} , {} ) == 0 );
+ CHECK( tapeOrder( { 3 } , { 1 } ) == std::vector< std::size_t >( 1 , 0 ) );
+ CHECK( tapeCost( { 3 } , { 1 } , { 0 } ) == 3 );
+ const std::vector< double > lz = { 4 , 1 , 2 } , fz( 3 , 0.0 );
+ CHECK( tapeCost( lz , fz , tapeOrder( lz , fz ) ) == 0 );
+ const std::vector< double > lt = { 2 , 1 , 4 } , ft = { 0.4 , 0.2 , 0.4 };
+ CHECK( std::abs( tapeCost( lt , ft , { 0 , 1 , 2 } ) -
+                  tapeCost( lt , ft , { 1 , 0 , 2 } ) ) < 1e-12 );
+ CHECK( std::abs( tapeCost( lt , ft , tapeOrder( lt , ft ) ) -
+                  tapeCost( lt , ft , { 0 , 1 , 2 } ) ) < 1e-12 );
  CHECK_THROWS( tapeOrder( { 0 } , { 1 } ) , contract_violation );
  CHECK_THROWS( tapeOrder( { 1 } , { -1 } ) , contract_violation );
+ CHECK_THROWS( tapeOrder( { 1 , 2 } , { 1 } ) , contract_violation );
+ CHECK_THROWS( tapeCost( { 1 , 2 } , { 1 , 0 } , { 0 } ) ,
+               contract_violation );
  }
 
 /*--------- 2017-06-08 A2 and B4, topological orders and decodings ---------*/
 
 // topologicalOrders() against the count of the topological permutations,
 // on random directed graphs of up to 7 nodes; empty, one node, a path,
-// two nodes apart, a cycle
+// two nodes apart, a cycle, a cycle in a part apart, a path with a
+// shortcut, an undirected graph
 ADS_TEST( "compiti-2017-06-08-A2" )
 {
  std::mt19937 g( 25 );
@@ -2253,11 +2476,21 @@ ADS_TEST( "compiti-2017-06-08-A2" )
  CHECK( topologicalOrders( makeGraph( 2 , {} , true ) ) == 2 );
  CHECK( topologicalOrders( makeGraph( 2 , { { 0 , 1 } , { 1 , 0 } } ,
                                       true ) ) == 0 );
+ // a cycle away from a unique chain, a path with a shortcut (still
+ // unique), and an undirected graph refused
+ CHECK( topologicalOrders( makeGraph( 5 , { { 0 , 1 } , { 2 , 3 } ,
+                                            { 3 , 4 } , { 4 , 2 } } ,
+                                      true ) ) == 0 );
+ CHECK( topologicalOrders( makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } ,
+                                            { 0 , 2 } } , true ) ) == 1 );
+ CHECK_THROWS( topologicalOrders( makeGraph( 2 , { { 0 , 1 } } , false ) ) ,
+               contract_violation );
  }
 
 // the examples, 011 and 301 not decodable and 13135 in 4 ways;
 // countDecodings() against the recursion on pieces of 1 and 2 digits, on
-// random strings of digits; empty, 10, 26, 27, and n ones in F_n ways
+// random strings of digits; empty, 10, 26, 27, and n ones in F_n ways; a
+// lone 0, 00, 100, 20, 30, a trailing 0, a digit out of 0 .. 9
 ADS_TEST( "compiti-2017-06-08-B4" )
 {
  CHECK( countDecodings( { 0 , 1 , 1 } ) == 0 &&
@@ -2286,14 +2519,22 @@ ADS_TEST( "compiti-2017-06-08-B4" )
  CHECK( countDecodings( { 2 , 6 } ) == 2 && countDecodings( { 2 , 7 } ) == 1 );
  for( int n = 1 ; n <= 90 ; ++n )
   CHECK( countDecodings( std::vector< int >( n , 1 ) ) == fibonacci( n ) );
+ // a lone 0, 00, 100 (the 0 cannot close two pieces), 20, 30, one digit,
+ // a trailing 0
+ CHECK( countDecodings( { 0 } ) == 0 && countDecodings( { 0 , 0 } ) == 0 );
+ CHECK( countDecodings( { 1 , 0 , 0 } ) == 0 );
+ CHECK( countDecodings( { 2 , 0 } ) == 1 && countDecodings( { 3 , 0 } ) == 0 );
+ CHECK( countDecodings( { 9 } ) == 1 && countDecodings( { 1 , 1 , 0 } ) == 1 );
  CHECK_THROWS( countDecodings( { 10 } ) , contract_violation );
+ CHECK_THROWS( countDecodings( { -1 } ) , contract_violation );
  }
 
 /*--------------------- 2018-01-31 A2, keys in a range ---------------------*/
 
 // the example, 3 keys in [ 11 , 18 ]; occurrences() against the count of
 // the keys in order, on random search trees and ranges, visiting at most
-// the keys in the range and two paths
+// the keys in the range and two paths; the empty tree, a range of one key
+// at either end, an empty range, repeated keys, lo > hi
 ADS_TEST( "compiti-2018-01-31-A2" )
 {
  Pool P;
@@ -2323,13 +2564,23 @@ ADS_TEST( "compiti-2018-01-31-A2" )
  CHECK( occurrences( T , 15 , 15 ) == 1 && occurrences( T , 24 , 99 ) == 0 );
  const long M = std::numeric_limits< long >::max();
  CHECK( occurrences( T , -M , M ) == 7 );
+ // the range at the smallest and at the largest key, empty between two
+ // keys, and repeated keys (inserted on the right of their equals)
+ CHECK( occurrences( T , 3 , 3 ) == 1 && occurrences( T , 23 , 23 ) == 1 );
+ CHECK( occurrences( T , 16 , 17 ) == 0 && occurrences( T , -M , 2 ) == 0 );
+ TreeNode * D = nullptr;
+ for( long k : { 5 , 5 , 3 , 5 , 8 , 5 , 3 } )
+  bstInsert( P , D , k );
+ CHECK( occurrences( D , 5 , 5 ) == 4 && occurrences( D , 3 , 5 ) == 6 );
+ CHECK( occurrences( D , 4 , 4 ) == 0 && occurrences( D , 3 , 3 ) == 2 );
  CHECK_THROWS( occurrences( T , 2 , 1 ) , contract_violation );
  }
 
 /*-------------------- 2019-02-07 A2, first occurrence ---------------------*/
 
 // the examples, 3 for v = 2 and 7 for v = 4; first() against a scan on
-// random sorted vectors; equal items, one item
+// random sorted vectors; equal items, one item, the first and the last
+// run, the extremes of long; v absent, empty, A not sorted
 ADS_TEST( "compiti-2019-02-07-A2" )
 {
  const std::vector< long > A = { 1 , 1 , 2 , 2 , 2 , 3 , 4 , 5 , 6 , 6 };
@@ -2344,7 +2595,13 @@ ADS_TEST( "compiti-2019-02-07-A2" )
   }
  CHECK( first( std::vector< long >( 1000 , 8 ) , 8 ) == 1 );
  CHECK( first( { 4 } , 4 ) == 1 );
+ CHECK( first( A , 1 ) == 1 && first( A , 6 ) == 9 );   // first, last run
+ const long M = std::numeric_limits< long >::max();
+ CHECK( first( { -M - 1 , -M - 1 , M } , M ) == 3 );
+ CHECK( first( { -M - 1 , -M - 1 , M } , -M - 1 ) == 1 );
  CHECK_THROWS( first( A , 7 ) , contract_violation );
+ CHECK_THROWS( first( {} , 0 ) , contract_violation );
+ CHECK_THROWS( first( { 2 , 1 } , 1 ) , contract_violation );
  }
 
 /*------------------- 2019-08-22 A1, merge by insertion --------------------*/
@@ -2353,7 +2610,8 @@ ADS_TEST( "compiti-2019-02-07-A2" )
 // C( n ) = 2 C( n / 2 ) + n - 1 = n log2 n - n + 1, on reversed input
 // C( n ) = 2 C( n / 2 ) + n^2 / 4 + n - 2, for n a power of 2; their
 // doubling ratios tend to 2 and 4; master() gives Theta( n log n ) and
-// Theta( n^2 ); the sort agrees with std::sort
+// Theta( n^2 ); the sort agrees with std::sort; one item, equal items (as
+// sorted ones), two items reversed
 ADS_TEST( "compiti-2019-08-22-A1" )
 {
  CHECK( master( 2 , 2 , 1 ) == theta( 1 , 1 ) );
@@ -2386,6 +2644,15 @@ ADS_TEST( "compiti-2019-08-22-A1" )
   std::sort( B.begin() , B.end() );
   CHECK( A == B );
   }
+ // one item: no comparison; equal items cost as sorted ones (the merge is
+ // stable, an equal item never moves); 2 items reversed
+ std::vector< long > O( 1 , 4 ) , Q( 64 , 4 ) , R2 = { 2 , 1 };
+ long c1 = 0 , ce = 0 , c2 = 0;
+ insertionMergeSort( O , 0 , 0 , c1 );
+ insertionMergeSort( Q , 0 , 63 , ce );
+ insertionMergeSort( R2 , 0 , 1 , c2 );
+ CHECK( ( c1 == 0 ) && ( ce == 64 * 6 - 64 + 1 ) && ( c2 == 1 ) );
+ CHECK( R2 == std::vector< long >( { 1 , 2 } ) );
  }
 
 /*-------------- 2020-01-14 A1, insertion sorts in four parts --------------*/
@@ -2438,7 +2705,8 @@ ADS_TEST( "compiti-2020-02-04-A1" )
 /*----------------- 2021-02-08 A3, doubling and decrement ------------------*/
 
 // the example, 3 to 7 in 4 steps; the search on [ 1 , 2 m ] against the
-// rule backwards for every n , m <= 200; m <= n takes n - m steps
+// rule backwards for every n , m <= 200; m <= n takes n - m steps; n = m,
+// m = 1, m = n + 1, m = 2 n, 2^20 - 1, and n or m below 1
 ADS_TEST( "compiti-2021-02-08-A3" )
 {
  CHECK( minOpsBfs( 3 , 7 ) == 4 && minOps( 3 , 7 ) == 4 );
@@ -2448,7 +2716,19 @@ ADS_TEST( "compiti-2021-02-08-A3" )
  CHECK( minOps( 1 , 1L << 30 ) == 30 );
  CHECK( minOps( 5 , 1 ) == 4 );
  CHECK( minOps( 1 , 1000007 ) == long( minOpsBfs( 1 , 1000007 ) ) );
+ // n = m, m = 1, m = n + 1 (down to 6, double, decrement), m = 2 n, a
+ // power of 2 minus 1
+ CHECK( minOps( 1 , 1 ) == 0 && minOps( 77 , 77 ) == 0 );
+ CHECK( minOps( 1000000 , 1 ) == 999999 );
+ CHECK( minOps( 10 , 11 ) == 4 + 1 + 1 && minOpsBfs( 10 , 11 ) == 6 );
+ CHECK( minOps( 10 , 20 ) == 1 && minOps( 1 , 2 ) == 1 );
+ CHECK( minOps( 1 , ( 1L << 20 ) - 1 ) == 21 );
+ CHECK( minOps( 1 , ( 1L << 20 ) - 1 ) ==
+        long( minOpsBfs( 1 , ( 1L << 20 ) - 1 ) ) );
  CHECK_THROWS( minOps( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( minOps( 3 , 0 ) , contract_violation );
+ CHECK_THROWS( minOpsBfs( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( minOpsBfs( 3 , -1 ) , contract_violation );
  }
 
 /*------------------ 2021-07-27 A1, A2, A3, B1, B2 and B3 ------------------*/
@@ -2472,7 +2752,8 @@ ADS_TEST( "compiti-2021-07-27-A1" )
 
 // the example is 2-sorted and not 1-sorted; sortK() against std::sort on
 // vectors shuffled within blocks of k + 1 items and by random exchanges at
-// distance at most k; k = 0, k >= n, empty, one item
+// distance at most k; k = 0, k = n - 1, k >= n, empty, one item, repeated
+// and equal items, the extremes of long
 ADS_TEST( "compiti-2021-07-27-A2" )
 {
  const std::vector< long > A = { 1 , 4 , 5 , 2 , 3 , 7 , 8 , 6 , 10 , 9 };
@@ -2513,6 +2794,20 @@ ADS_TEST( "compiti-2021-07-27-A2" )
  sortK( R , 5 );
  CHECK( E.empty() && ( O[ 0 ] == 4 ) );
  CHECK( R == std::vector< long >( { 1 , 2 , 3 } ) );
+ // repeated items (k-sorted by the stable order), all equal, k = n - 1,
+ // the extremes of long
+ const long M = std::numeric_limits< long >::max();
+ std::vector< long > D = { 2 , 1 , 2 , 1 , 3 , 3 } , Q( 9 , 5 ) ,
+                     X = { M , -M - 1 , 0 } , K = { 4 , 3 , 2 , 1 };
+ CHECK( kSorted( D , 2 ) && ! kSorted( D , 1 ) );
+ sortK( D , 2 );
+ sortK( Q , 0 );
+ sortK( X , 2 );
+ sortK( K , 3 );
+ CHECK( D == std::vector< long >( { 1 , 1 , 2 , 2 , 3 , 3 } ) );
+ CHECK( Q == std::vector< long >( 9 , 5 ) );
+ CHECK( X == std::vector< long >( { -M - 1 , 0 , M } ) );
+ CHECK( K == std::vector< long >( { 1 , 2 , 3 , 4 } ) );
  std::vector< long > W = { 3 , 2 , 1 };
  CHECK_THROWS( sortK( W , 1 ) , contract_violation );
  }
@@ -2716,7 +3011,8 @@ ADS_TEST( "compiti-2022-08-24-A1" )
 
 // the example, k = 19 true; the text says that no pair sums to 15, but
 // 7 + 8 = 15, and 14 is a sum of no pair; containsSum() against all the
-// pairs of nodes, on random search trees; empty, one node, x + x = k
+// pairs of nodes, on random search trees; empty, one node, x + x = k on
+// one node and on two, negative keys and sums, zero, root and leaf
 ADS_TEST( "compiti-2022-08-24-A3" )
 {
  Pool P;
@@ -2742,6 +3038,19 @@ ADS_TEST( "compiti-2022-08-24-A3" )
   }
  CHECK( ! containsSum( nullptr , 0 ) );
  CHECK( ! containsSum( makeNode( P , 5 ) , 10 ) );
+ // x + x = k with x on two nodes, negative keys and sums, zero, the pair
+ // root and deepest leaf
+ TreeNode * D = nullptr;
+ for( long k : { 5 , 2 , 5 } )
+  bstInsert( P , D , k );
+ CHECK( containsSum( D , 10 ) && containsSum( D , 7 ) );
+ CHECK( ! containsSum( D , 4 ) && ! containsSum( D , 5 ) );
+ TreeNode * N = nullptr;
+ for( long k : { -3 , -8 , 0 , 6 , 0 } )
+  bstInsert( P , N , k );
+ CHECK( containsSum( N , -11 ) && containsSum( N , 0 ) );
+ CHECK( containsSum( N , 3 ) && ! containsSum( N , -16 ) );
+ CHECK( containsSum( T , 10 + 18 ) && containsSum( T , 1 + 8 ) );
  }
 
 /*------------------- 2026-06-22 B3, painting the houses -------------------*/

@@ -40,9 +40,11 @@
 #include "ADS/mfset/MFSet.h"
 
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <limits>
 #include <optional>
 #include <random>
 #include <set>
@@ -409,6 +411,31 @@ ADS_TEST( "graph-1" )
   }
  CHECK( graph::countShortestPaths( h , 0 )[ 3 * 40 ] ==
         ( std::uint64_t( 1 ) << 40 ) );
+ // the counts modulo 2^64: 63 diamonds give 2^63, 64 give 2^64 = 0
+ ListGraph<> w( 1 + 3 * 64 , true );
+ for( int i = 0 ; i < 64 ; ++i ) {
+  w.insertEdge( 3 * i , 3 * i + 1 );
+  w.insertEdge( 3 * i , 3 * i + 2 );
+  w.insertEdge( 3 * i + 1 , 3 * i + 3 );
+  w.insertEdge( 3 * i + 2 , 3 * i + 3 );
+  }
+ const auto cw = graph::countShortestPaths( w , 0 );
+ CHECK( cw[ 3 * 63 ] == ( std::uint64_t( 1 ) << 63 ) );
+ CHECK( cw[ 3 * 64 ] == 0 );
+ // an edge back to s changes nothing; the unreachable nodes and the edges
+ // entering s alone count 0 (the graphs have no loops)
+ auto l = make( 3 , { { 0 , 1 } , { 1 , 0 } } , true );
+ CHECK( graph::countShortestPaths( l , 0 ) ==
+        std::vector< std::uint64_t >( { 1 , 1 , 0 } ) );
+ CHECK( graph::countShortestPaths( make( 2 , { { 1 , 0 } } , true ) , 0 ) ==
+        std::vector< std::uint64_t >( { 1 , 0 } ) );
+ // a deleted node: its place counts 0
+ l.insertEdge( 1 , 2 );
+ l.deleteNode( 1 );
+ CHECK( graph::countShortestPaths( l , 0 )[ 2 ] == 0 );
+ // the contracts: s is a node
+ CHECK_THROWS( graph::countShortestPaths( l , 1 ) , contract_violation );
+ CHECK_THROWS( graph::countShortestPaths( l , 3 ) , contract_violation );
  }
 
 /*------------------------- 2. 2011-06-06, Mindist -------------------------*/
@@ -451,6 +478,23 @@ ADS_TEST( "graph-2" )
  CHECK( setDistance( p , b , a ) == INF );
  b[ 0 ] = true;
  CHECK( setDistance( p , a , b ) == 0 );
+ // V2 empty; both empty; a graph of one node in both sets, and of no node
+ const std::vector< bool > none( 1000 , false );
+ CHECK( setDistance( p , a , none ) == INF );
+ CHECK( setDistance( p , none , none ) == INF );
+ CHECK( setDistance( ListGraph<>( 1 ) , { true } , { true } ) == 0 );
+ CHECK( setDistance( ListGraph<>( 0 ) , {} , {} ) == INF );
+ // an unoriented path both ways; all the nodes in V1 and in V2
+ auto q = make( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
+ CHECK( setDistance( q , { false , false , true } ,
+                     { true , false , false } ) == 2 );
+ CHECK( setDistance( q , { true , true , true } , { true , true , true } ) ==
+        0 );
+ // the contracts: the sets of a place per name
+ CHECK_THROWS( setDistance( q , { true } , { true , false , false } ) ,
+               contract_violation );
+ CHECK_THROWS( setDistance( q , { true , false , false } , {} ) ,
+               contract_violation );
  }
 
 /*-------------------------- 3. 2012-05-03, Roma ---------------------------*/
@@ -499,6 +543,20 @@ ADS_TEST( "graph-3-1" )
  CHECK( ! graph::isRoma( ListGraph<>( 2 ) , 0 ) );
  const auto s = make( 4 , { { 1 , 0 } , { 2 , 0 } , { 3 , 0 } } , true );
  CHECK( graph::isRoma( s , 0 ) && ! graph::isRoma( s , 1 ) );
+ // an edge out of v does not help; a deleted node is not asked to reach
+ // v; a chain of 10^5 nodes towards v, deeper than a recursion could go
+ CHECK( ! graph::isRoma( make( 2 , { { 0 , 1 } } , true ) , 0 ) );
+ auto h = make( 3 , { { 2 , 0 } , { 1 , 2 } } , true );
+ h.deleteNode( 1 );
+ CHECK( graph::isRoma( h , 0 ) && ! graph::isRoma( h , 2 ) );
+ ListGraph<> p( 100000 , true );
+ for( int u = 1 ; u < 100000 ; ++u )
+  p.insertEdge( u , u - 1 );
+ CHECK( graph::isRoma( p , 0 ) && ! graph::isRoma( p , 1 ) );
+ // the contracts: v is a node
+ CHECK_THROWS( graph::isRoma( h , 1 ) , contract_violation );
+ CHECK_THROWS( graph::isRoma( h , 3 ) , contract_violation );
+ CHECK_THROWS( graph::isRoma( h , -1 ) , contract_violation );
  }
 
 ADS_TEST( "graph-3-2" )
@@ -531,6 +589,19 @@ ADS_TEST( "graph-3-2" )
  CHECK( ! graph::roma( ListGraph<>( 2 ) ) );
  CHECK( graph::roma( make( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
                            true ) ) );
+ // two sinks; a deleted node, the others all reaching 0; a long chain
+ CHECK( ! graph::roma( make( 3 , { { 0 , 1 } , { 0 , 2 } } , true ) ) );
+ auto h = make( 3 , { { 2 , 0 } , { 1 , 2 } } , true );
+ h.deleteNode( 1 );
+ CHECK( graph::roma( h ) );
+ ListGraph<> p( 100000 , true );
+ for( int u = 1 ; u < 100000 ; ++u )
+  p.insertEdge( u , u - 1 );
+ CHECK( graph::roma( p ) );
+ p.deleteEdge( 50000 , 49999 );
+ CHECK( ! graph::roma( p ) );
+ // the contracts: g has a node
+ CHECK_THROWS( graph::roma( ListGraph<>( 0 ) ) , contract_violation );
  }
 
 /*------------------------ 4. 2012-06-18, Qcammini -------------------------*/
@@ -583,6 +654,18 @@ ADS_TEST( "graph-4" )
  h.insertEdge( 1 , 2 , 100000000 );
  CHECK( graph::qPaths( h , 1 )[ 0 ][ 2 ] == 200000000 );
  CHECK( graph::qPaths( h , 2 )[ 0 ][ 0 ] == 400000000 );
+ // two components: through q only the nodes of its own
+ ListGraph< int > k( 4 , false );
+ k.insertEdge( 0 , 1 , 2 );
+ k.insertEdge( 2 , 3 , 5 );
+ const auto K = graph::qPaths( k , 0 );
+ CHECK( ( K[ 1 ][ 1 ] == 4 ) && ( K[ 0 ][ 1 ] == 2 ) && ( K[ 0 ][ 0 ] == 0 ) );
+ CHECK( ( K[ 2 ][ 3 ] == inf ) && ( K[ 0 ][ 2 ] == inf ) &&
+        ( K[ 2 ][ 0 ] == inf ) );
+ // the contracts: q a node, g unoriented
+ CHECK_THROWS( graph::qPaths( k , 4 ) , contract_violation );
+ CHECK_THROWS( graph::qPaths( ListGraph< int >( 2 , true ) , 0 ) ,
+               contract_violation );
  }
 
 /*------------------------ 5. 2013-01-28, Monotono -------------------------*/
@@ -656,6 +739,36 @@ ADS_TEST( "graph-5-2" )
  CHECK( ! graph::monotone( c , { 1 , 1 , 1 } , 0 , 2 ) );
  CHECK( graph::monotone( c , { -1 , 0 , 1 } , 0 , 2 ) ==
         Ints( { 0 , 1 , 2 } ) );
+ // a weight NaN compares false and stops the path; the infinities do not;
+ // a path that goes down is not taken backwards
+ const double nan = std::numeric_limits< double >::quiet_NaN();
+ const double inf = std::numeric_limits< double >::infinity();
+ CHECK( ! graph::monotone( c , { -1 , nan , 1 } , 0 , 2 ) );
+ CHECK( graph::monotone( c , { -inf , 0 , inf } , 0 , 2 ) ==
+        Ints( { 0 , 1 , 2 } ) );
+ CHECK( ! graph::monotone( c , { -1 , 0 , 1 } , 2 , 0 ) );
+ // an oriented graph: the edges count one way only
+ const auto o = make( 2 , { { 1 , 0 } } , true );
+ CHECK( ! graph::monotone( o , { 0 , 1 } , 0 , 1 ) );
+ CHECK( graph::monotone( o , { 1 , 2 } , 1 , 0 ) == std::nullopt );
+ CHECK( graph::monotone( o , { 2 , 1 } , 1 , 0 ) == Ints( { 1 , 0 } ) );
+ // a chain of 5000 rising weights, the whole of it
+ ListGraph<> p( 5000 , false );
+ std::vector< double > w( 5000 );
+ for( int u = 0 ; u < 5000 ; ++u ) {
+  w[ u ] = u;
+  if( u > 0 )
+   p.insertEdge( u - 1 , u );
+  }
+ const auto P = graph::monotone( p , w , 0 , 4999 );
+ CHECK( P && ( int( P->size() ) == 5000 ) && ( P->back() == 4999 ) );
+ // the contracts: s and d nodes, w of a place per name
+ CHECK_THROWS( graph::monotone( c , { 1 , 1 , 1 } , 3 , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( graph::monotone( c , { 1 , 1 , 1 } , 0 , -1 ) ,
+               contract_violation );
+ CHECK_THROWS( graph::monotone( c , { 1 , 1 } , 0 , 2 ) ,
+               contract_violation );
  }
 
 /*---------------------- 6. 2013-05-03, Grid distance ----------------------*/
@@ -725,6 +838,35 @@ ADS_TEST( "graph-6" )
   for( int j = 1 ; j <= 40 ; ++j )
    L[ i ][ j ] = 0;
  CHECK( graph::gridDistance( L , 40 ) == 78 );
+ // a snake of 5 x 5: the walls of rows 2 and 4 leave a way at the right
+ // and one at the left, 16 moves against 8 of the open grid
+ Matrix S( 7 , Ints( 7 , 1 ) );
+ for( int i = 1 ; i <= 5 ; ++i )
+  for( int j = 1 ; j <= 5 ; ++j )
+   S[ i ][ j ] = 0;
+ for( int j = 1 ; j <= 4 ; ++j )
+  S[ 2 ][ j ] = S[ 4 ][ j + 1 ] = 1;
+ CHECK( graph::gridDistance( S , 5 ) == 16 );
+ S[ 2 ][ 5 ] = 1;
+ CHECK( graph::gridDistance( S , 5 ) == INF );
+ // the contracts: n > 1, ( n + 2 ) x ( n + 2 ), the border walled, the
+ // ends free
+ Matrix one( 3 , Ints( 3 , 1 ) );
+ one[ 1 ][ 1 ] = 0;
+ CHECK_THROWS( graph::gridDistance( one , 1 ) , contract_violation );
+ CHECK_THROWS( graph::gridDistance( G , 3 ) , contract_violation );
+ Matrix B = L;
+ B[ 0 ][ 7 ] = 0;
+ CHECK_THROWS( graph::gridDistance( B , 40 ) , contract_violation );
+ B = L;
+ B[ 41 ].pop_back();
+ CHECK_THROWS( graph::gridDistance( B , 40 ) , contract_violation );
+ B = L;
+ B[ 1 ][ 1 ] = 1;
+ CHECK_THROWS( graph::gridDistance( B , 40 ) , contract_violation );
+ B = L;
+ B[ 40 ][ 40 ] = 1;
+ CHECK_THROWS( graph::gridDistance( B , 40 ) , contract_violation );
  }
 
 /*----------------------- 7. 2013-05-31, Connected k -----------------------*/
@@ -776,6 +918,24 @@ ADS_TEST( "graph-7" )
    CHECK( graph::connectedK( g , s , k ) == ( size <= k ) );
   }
  CHECK( graph::connectedK( ListGraph<>( 1 , false ) , 0 , 1 ) );
+ // k equal to the size of the component, and one less; the other
+ // components do not count
+ CHECK( graph::connectedK( star , 3 , 4 ) && ! graph::connectedK( star , 0 ,
+                                                                 3 ) );
+ const auto two = make( 5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } } , false );
+ CHECK( graph::connectedK( two , 1 , 2 ) && ! graph::connectedK( two , 0 ,
+                                                                1 ) );
+ CHECK( graph::connectedK( two , 4 , 3 ) && ! graph::connectedK( two , 2 ,
+                                                                2 ) );
+ // a path of 5000 nodes, the recursion as deep
+ ListGraph<> p( 5000 , false );
+ for( int u = 1 ; u < 5000 ; ++u )
+  p.insertEdge( u - 1 , u );
+ CHECK( graph::connectedK( p , 0 , 5000 ) && ! graph::connectedK( p , 0 ,
+                                                                 4999 ) );
+ // the contracts: s a node, k > 0
+ CHECK_THROWS( graph::connectedK( star , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( graph::connectedK( star , 4 , 1 ) , contract_violation );
  }
 
 /*-------------------------- 8. 2013-09-02, Count --------------------------*/
@@ -823,6 +983,18 @@ ADS_TEST( "graph-8" )
  CHECK( graph::countWithin( p , 0 , 10 ) == 11 );
  CHECK( graph::countWithin( p , 50 , 10 ) == 21 );
  CHECK( graph::countWithin( p , 0 , 1000 ) == 100 );
+ // d = 1, the neighbours; the nodes of another component never count;
+ // an oriented edge counts one way
+ CHECK( graph::countWithin( p , 0 , 1 ) == 2 );
+ CHECK( graph::countWithin( p , 50 , 1 ) == 3 );
+ const auto two = make( 4 , { { 0 , 1 } , { 2 , 3 } } , false );
+ CHECK( graph::countWithin( two , 0 , 9 ) == 2 );
+ const auto o = make( 2 , { { 1 , 0 } } , true );
+ CHECK( ( graph::countWithin( o , 0 , 1 ) == 1 ) &&
+        ( graph::countWithin( o , 1 , 1 ) == 2 ) );
+ // the contracts: r a node, d > 0
+ CHECK_THROWS( graph::countWithin( p , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( graph::countWithin( p , 100 , 1 ) , contract_violation );
  }
 
 /*------------------- 9. 2014-01-07, Mostri nelle stanze -------------------*/
@@ -901,6 +1073,19 @@ ADS_TEST( "graph-9-1" )
  CHECK( graph::noMonsters( c , { false , false , false } , 1 , 1 ) == 0 );
  CHECK( graph::noMonsters( c , { false , true , false } , 1 , 1 ) == INF );
  CHECK( graph::noMonsters( c , { false , true , false } , 0 , 2 ) == INF );
+ // a monster at an end; no monster, the plain distance; d unreachable
+ CHECK( graph::noMonsters( c , { true , false , false } , 0 , 2 ) == INF );
+ CHECK( graph::noMonsters( c , { false , false , true } , 0 , 2 ) == INF );
+ CHECK( graph::noMonsters( c , { false , false , false } , 0 , 2 ) == 2 );
+ CHECK( graph::noMonsters( ListGraph<>( 2 , false ) , { false , false } , 0 ,
+                           1 ) == INF );
+ // the contracts: s and d nodes, M of a place per name
+ CHECK_THROWS( graph::noMonsters( c , { false , false , false } , 3 , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( graph::noMonsters( c , { false , false , false } , 0 , 3 ) ,
+               contract_violation );
+ CHECK_THROWS( graph::noMonsters( c , { false , false } , 0 , 1 ) ,
+               contract_violation );
  }
 
 ADS_TEST( "graph-9-2" )
@@ -936,6 +1121,19 @@ ADS_TEST( "graph-9-2" )
  CHECK( graph::fewestMonsters( c , M , 1 , 1 ) == 1 );
  CHECK( graph::fewestMonsters( ListGraph<>( 2 , false ) , { true , true } ,
                                0 , 1 ) == INF );
+ // s = d with no monster; a monster at both ends; monsters everywhere on
+ // the only path
+ CHECK( graph::fewestMonsters( c , M , 0 , 0 ) == 0 );
+ const auto p = make( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
+ CHECK( graph::fewestMonsters( p , { true , false , true } , 0 , 2 ) == 2 );
+ CHECK( graph::fewestMonsters( p , { true , true , true } , 2 , 0 ) == 3 );
+ // the contracts: s and d nodes, M of a place per name
+ CHECK_THROWS( graph::fewestMonsters( p , { true , true , true } , 3 , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( graph::fewestMonsters( p , { true , true , true } , 0 , 3 ) ,
+               contract_violation );
+ CHECK_THROWS( graph::fewestMonsters( p , { true } , 0 , 0 ) ,
+               contract_violation );
  }
 
 /*------------------------ 10. 2014-02-03, Connesso ------------------------*/
@@ -1000,6 +1198,24 @@ ADS_TEST( "graph-10" )
  CHECK( graph::removableNode( ListGraph<>( 1 , false ) ) == 0 );
  const auto star = make( 4 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } } , false );
  CHECK( graph::removableNode( star ) == 1 );
+ // two nodes; a path, whose ends only can go; a cycle, any node; the
+ // first node deleted, the first live one is tried first
+ CHECK( graph::removableNode( make( 2 , { { 0 , 1 } } , false ) ) == 0 );
+ CHECK( graph::removableNode( make( 3 , { { 1 , 0 } , { 0 , 2 } } ,
+                                    false ) ) == 1 );
+ CHECK( graph::removableNode( make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
+                                          { 3 , 0 } } , false ) ) == 0 );
+ auto h = make( 4 , { { 1 , 2 } , { 2 , 3 } , { 0 , 2 } } , false );
+ h.deleteNode( 0 );
+ CHECK( graph::removableNode( h ) == 1 );
+ CHECK( graph::connectedWithout( h , 2 ) == false );
+ CHECK( graph::connectedWithout( ListGraph<>( 1 , false ) , 0 ) );
+ // the contracts: x a node; g unoriented, with a node
+ CHECK_THROWS( graph::connectedWithout( h , 0 ) , contract_violation );
+ CHECK_THROWS( graph::removableNode( ListGraph<>( 0 , false ) ) ,
+               contract_violation );
+ CHECK_THROWS( graph::removableNode( make( 2 , { { 0 , 1 } } , true ) ) ,
+               contract_violation );
  }
 
 /*--------------------- 11. 2014-04-24, Ciclo con arco ---------------------*/
@@ -1014,7 +1230,8 @@ namespace graph {
 template< Graph G >
 bool edgeOnCycle( const G & g , int x , int y )
 {
- ADS_PRE( ! g.directed() && g.hasNode( x ) && g.hasNode( y ) );
+ ADS_PRE( ! g.directed() && g.hasNode( x ) && g.hasNode( y ) &&
+          g.hasEdge( x , y ) );
  std::vector< bool > visited( g.bound() , false );
  auto rec = [ & ]( auto & self , int u ) -> void {
   visited[ u ] = true;
@@ -1055,6 +1272,21 @@ ADS_TEST( "graph-11" )
                       false );
  CHECK( graph::edgeOnCycle( c , 0 , 1 ) && graph::edgeOnCycle( c , 2 , 0 ) );
  CHECK( ! graph::edgeOnCycle( c , 2 , 3 ) );
+ // one edge alone; the edges of a cycle of 5000 nodes, the recursion as
+ // deep, and of the path left without one of them
+ CHECK( ! graph::edgeOnCycle( make( 2 , { { 0 , 1 } } , false ) , 1 , 0 ) );
+ ListGraph<> big( 5000 , false );
+ for( int u = 0 ; u < 5000 ; ++u )
+  big.insertEdge( u , ( u + 1 ) % 5000 );
+ CHECK( graph::edgeOnCycle( big , 0 , 4999 ) &&
+        graph::edgeOnCycle( big , 2500 , 2501 ) );
+ big.deleteEdge( 0 , 4999 );
+ CHECK( ! graph::edgeOnCycle( big , 2500 , 2501 ) );
+ // the contracts: g unoriented, [ x , y ] an edge
+ CHECK_THROWS( graph::edgeOnCycle( c , 0 , 3 ) , contract_violation );
+ CHECK_THROWS( graph::edgeOnCycle( c , 0 , 4 ) , contract_violation );
+ CHECK_THROWS( graph::edgeOnCycle( make( 2 , { { 0 , 1 } } , true ) , 0 ,
+                                   1 ) , contract_violation );
  }
 
 /*---------------------- 12. 2014-07-21, Is principal ----------------------*/
@@ -1116,6 +1348,21 @@ ADS_TEST( "graph-12-1" )
  for( int s = 0 ; s < 3 ; ++s )
   CHECK( graph::isPrincipal( c , s ) && canWinBrute( c , s ) );
  CHECK( graph::isPrincipal( ListGraph<>( 1 ) , 0 ) );
+ // two teams, the winner only; no edge; a long chain from 0, and a
+ // deleted node
+ const auto two = make( 2 , { { 1 , 0 } } , true );
+ CHECK( graph::isPrincipal( two , 1 ) && ! graph::isPrincipal( two , 0 ) );
+ CHECK( ! graph::isPrincipal( ListGraph<>( 2 ) , 0 ) );
+ ListGraph<> p( 100000 , true );
+ for( int u = 1 ; u < 100000 ; ++u )
+  p.insertEdge( u - 1 , u );
+ CHECK( graph::isPrincipal( p , 0 ) && ! graph::isPrincipal( p , 1 ) );
+ auto h = make( 3 , { { 0 , 2 } , { 1 , 0 } } , true );
+ h.deleteNode( 1 );
+ CHECK( graph::isPrincipal( h , 0 ) );
+ // the contracts: v a node
+ CHECK_THROWS( graph::isPrincipal( h , 1 ) , contract_violation );
+ CHECK_THROWS( graph::isPrincipal( h , 3 ) , contract_violation );
  }
 
 ADS_TEST( "graph-12-2" )
@@ -1138,6 +1385,19 @@ ADS_TEST( "graph-12-2" )
  CHECK( graph::principal( ListGraph<>( 1 ) ) );
  CHECK( ! graph::principal( ListGraph<>( 2 ) ) );
  CHECK( graph::principal( make( 3 , { { 2 , 1 } , { 1 , 0 } } , true ) ) );
+ // two sources; a deleted node; a chain of 10^5 nodes, cut in the middle
+ CHECK( ! graph::principal( make( 3 , { { 0 , 2 } , { 1 , 2 } } , true ) ) );
+ auto h = make( 3 , { { 0 , 2 } , { 1 , 0 } } , true );
+ h.deleteNode( 1 );
+ CHECK( graph::principal( h ) );
+ ListGraph<> p( 100000 , true );
+ for( int u = 1 ; u < 100000 ; ++u )
+  p.insertEdge( u , u - 1 );
+ CHECK( graph::principal( p ) );
+ p.deleteEdge( 50000 , 49999 );
+ CHECK( ! graph::principal( p ) );
+ // the contracts: g has a node
+ CHECK_THROWS( graph::principal( ListGraph<>( 0 ) ) , contract_violation );
  }
 
 /*---------------------- 13. 2015-01-12, 4cycles dfs -----------------------*/
@@ -1199,6 +1459,22 @@ ADS_TEST( "graph-13" )
                                          { 3 , 0 } } , true ) ) );
  CHECK( ! graph::hasFourCycle( make( 3 , { { 0 , 1 } , { 1 , 2 } ,
                                            { 2 , 0 } } , true ) ) );
+ // one node; two cycles of two edges through a node, a closed walk of
+ // four distinct edges that is no cycle; a cycle of 5; the two triangles
+ // of a node, a walk of six edges
+ CHECK( ! graph::hasFourCycle( ListGraph<>( 1 ) ) );
+ CHECK( graph::hasFourCycle( make( 3 , { { 0 , 1 } , { 1 , 0 } , { 0 , 2 } ,
+                                         { 2 , 0 } } , true ) ) );
+ CHECK( ! graph::hasFourCycle( make( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
+                                           { 3 , 4 } , { 4 , 0 } } ,
+                                     true ) ) );
+ CHECK( ! graph::hasFourCycle( make( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
+                                           { 0 , 3 } , { 3 , 4 } ,
+                                           { 4 , 0 } } , true ) ) );
+ // a deleted node breaks the cycle of four
+ auto h = make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 0 } } , true );
+ h.deleteNode( 3 );
+ CHECK( ! graph::hasFourCycle( h ) );
  }
 
 /*------------------------- 14. 2015-02-02, Count --------------------------*/
@@ -1250,6 +1526,19 @@ ADS_TEST( "graph-14" )
  CHECK( graph::countPrincipal( c ) == 50 );
  CHECK( graph::countPrincipal( make( 3 , { { 0 , 2 } , { 1 , 2 } } ,
                                      true ) ) == 0 );
+ // nodes with no edge; a chain, its source only; a cycle of two that
+ // reaches a tail; a deleted node
+ CHECK( graph::countPrincipal( ListGraph<>( 3 ) ) == 0 );
+ CHECK( graph::countPrincipal( make( 3 , { { 2 , 1 } , { 1 , 0 } } ,
+                                     true ) ) == 1 );
+ CHECK( graph::countPrincipal( make( 4 , { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } ,
+                                           { 2 , 3 } } , true ) ) == 2 );
+ auto h = make( 3 , { { 0 , 2 } , { 2 , 0 } , { 1 , 0 } } , true );
+ h.deleteNode( 1 );
+ CHECK( graph::countPrincipal( h ) == 2 );
+ // the contracts: g has a node
+ CHECK_THROWS( graph::countPrincipal( ListGraph<>( 0 ) ) ,
+               contract_violation );
  }
 
 /*--------------------- 15. 2015-07-14, Cammini minimi ---------------------*/
@@ -1320,6 +1609,25 @@ ADS_TEST( "graph-15" )
  f.insertEdge( 0 , 2 , 1 );
  f.insertEdge( 2 , 1 , 1 );
  CHECK( graph::secretPlace( f , 0 , 1 , 2 ) == inf );
+ // the meeting at Alice; edges of weight 0; no edge at all
+ ListGraph< int > a( 3 , true );
+ a.insertEdge( 1 , 0 , 4 );
+ CHECK( graph::secretPlace( a , 0 , 1 , 2 ) == 4 );
+ a.insertEdge( 0 , 1 , 0 );
+ CHECK( graph::secretPlace( a , 0 , 1 , 2 ) == 0 );
+ CHECK( graph::secretPlace( ListGraph< int >( 3 , true ) , 0 , 1 , 2 ) ==
+        inf );
+ // a third node, reached by both, cheaper than the edge between them
+ ListGraph< int > z( 4 , true );
+ z.insertEdge( 0 , 1 , 10 );
+ z.insertEdge( 0 , 3 , 2 );
+ z.insertEdge( 1 , 3 , 3 );
+ CHECK( graph::secretPlace( z , 0 , 1 , 2 ) == 5 );
+ // the contracts: a, b and c distinct nodes
+ CHECK_THROWS( graph::secretPlace( z , 0 , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( graph::secretPlace( z , 0 , 1 , 1 ) , contract_violation );
+ CHECK_THROWS( graph::secretPlace( z , 2 , 1 , 2 ) , contract_violation );
+ CHECK_THROWS( graph::secretPlace( z , 0 , 1 , 4 ) , contract_violation );
  }
 
 /*---------------- 16. 2015-11-05, Check all, Check exists -----------------*/
@@ -1376,6 +1684,17 @@ ADS_TEST( "graph-16-1" )
  CHECK( ! graph::checkAll( make( 3 , { { 0 , 1 } } , true ) , 0 , 1 , 2 ) );
  CHECK( graph::checkAll( make( 3 , { { 0 , 2 } , { 2 , 1 } } , true ) ,
                          0 , 1 , 2 ) );
+ // two ways, one through u; a way back from t to s does not count
+ const auto d = make( 4 , { { 0 , 2 } , { 2 , 1 } , { 0 , 3 } , { 3 , 1 } } ,
+                      true );
+ CHECK( ! graph::checkAll( d , 0 , 1 , 2 ) );
+ CHECK( graph::checkAll( make( 3 , { { 1 , 0 } , { 0 , 2 } , { 2 , 1 } } ,
+                               true ) , 0 , 1 , 2 ) );
+ // the contracts: s, t and u distinct nodes
+ CHECK_THROWS( graph::checkAll( d , 0 , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( graph::checkAll( d , 0 , 1 , 1 ) , contract_violation );
+ CHECK_THROWS( graph::checkAll( d , 2 , 1 , 2 ) , contract_violation );
+ CHECK_THROWS( graph::checkAll( d , 0 , 4 , 2 ) , contract_violation );
  }
 
 ADS_TEST( "graph-16-2" )
@@ -1399,6 +1718,18 @@ ADS_TEST( "graph-16-2" )
                             0 , 1 , 2 ) );
  CHECK( ! graph::checkExists( make( 3 , { { 0 , 2 } , { 1 , 2 } } , true ) ,
                               0 , 1 , 2 ) );
+ // no edge; an unoriented path; u reached only after t
+ CHECK( ! graph::checkExists( ListGraph<>( 3 ) , 0 , 1 , 2 ) );
+ CHECK( graph::checkExists( make( 3 , { { 0 , 2 } , { 2 , 1 } } , false ) ,
+                            1 , 0 , 2 ) );
+ CHECK( ! graph::checkExists( make( 3 , { { 0 , 1 } , { 1 , 2 } } , true ) ,
+                              0 , 1 , 2 ) );
+ // the contracts: s, t and u distinct nodes
+ const auto d = ListGraph<>( 3 );
+ CHECK_THROWS( graph::checkExists( d , 0 , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( graph::checkExists( d , 0 , 1 , 0 ) , contract_violation );
+ CHECK_THROWS( graph::checkExists( d , 0 , 1 , 1 ) , contract_violation );
+ CHECK_THROWS( graph::checkExists( d , 3 , 1 , 2 ) , contract_violation );
  }
 
 /*---------------------- 18. 2016-07-06, Compute prob ----------------------*/
@@ -1468,6 +1799,25 @@ ADS_TEST( "graph-18" )
  CHECK( std::abs( graph::expectedPrizes( chain , p ) - 4 ) < 1e-12 );
  CHECK( graph::expectedPrizes( chain , { 0 , 0 , 0 , 0 } ) == 0 );
  CHECK( graph::expectedPrizes( chain , { 1 , 1 , 1 , 1 } ) == 4 );
+ // no prize; the chain from its end, the prizes before it never found by
+ // it
+ CHECK( graph::expectedPrizes( ListGraph<>( 0 ) , {} ) == 0 );
+ CHECK( std::abs( graph::expectedPrizes( chain , { 1 , 0 , 0 , 0 } ) - 1 ) <
+        1e-12 );
+ CHECK( std::abs( graph::expectedPrizes( chain , { 0.5 , 0 , 0 , 0.5 } ) -
+                  2.25 ) < 1e-12 );
+ // the contracts: g acyclic (audit), p of a place per name in [ 0 , 1 ]
+ CHECK_THROWS( graph::expectedPrizes( chain , { 0 , 0 , 0 } ) ,
+               contract_violation );
+ CHECK_THROWS( graph::expectedPrizes( chain , { 0 , 0 , -0.1 , 0 } ) ,
+               contract_violation );
+ CHECK_THROWS( graph::expectedPrizes( chain , { 0 , 1.5 , 0 , 0 } ) ,
+               contract_violation );
+ CHECK_THROWS( graph::expectedPrizes( chain , { 0 , std::nan( "" ) , 0 ,
+                                                0 } ) , contract_violation );
+ auto cyc = chain;
+ cyc.insertEdge( 0 , 3 );
+ CHECK_THROWS( graph::expectedPrizes( cyc , p ) , contract_violation );
  }
 
 /*----------------------- 19. 2016-08-29, Check path -----------------------*/
@@ -1566,6 +1916,23 @@ ADS_TEST( "graph-19" )
   CHECK( graph::checkPath( g , lab , A ) == ref );
   CHECK( graph::checkPathMemo( g , lab , A ) == ref );
   }
+ // no node; A longer than the longest path; one node of the label; the
+ // same label all along a chain of 3000 nodes
+ for( auto check : { graph::checkPath< ListGraph<> > ,
+                     graph::checkPathMemo< ListGraph<> > } ) {
+  CHECK( ! check( ListGraph<>( 0 ) , "" , "A" ) );
+  CHECK( ! check( f , l , "ALODEFAX" ) );
+  CHECK( check( ListGraph<>( 1 ) , "Q" , "Q" ) );
+  ListGraph<> p( 3000 , true );
+  for( int u = 1 ; u < 3000 ; ++u )
+   p.insertEdge( u - 1 , u );
+  CHECK( check( p , std::string( 3000 , 'a' ) , std::string( 3000 , 'a' ) ) );
+  CHECK( ! check( p , std::string( 3000 , 'a' ) ,
+                  std::string( 3001 , 'a' ) ) );
+  // the contracts: A not empty, l of a place per name
+  CHECK_THROWS( check( f , l , "" ) , contract_violation );
+  CHECK_THROWS( check( f , "FLDO" , "F" ) , contract_violation );
+  }
  }
 
 /*--------------------- 20. 2017-01-24, Good bad guys ----------------------*/
@@ -1606,6 +1973,25 @@ ADS_TEST( "graph-20" )
  CHECK( ! twoColoring( adjacency( c5 ) ) );
  CHECK( twoColoring( adjacency( c6 ) ).has_value() );
  CHECK( twoColoring( adjacency( ListGraph<>( 3 , false ) ) ).has_value() );
+ // no wrestler; one; a rival of himself, the diagonal that twoColoring()
+ // ignores by its documentation; two components, one of them odd
+ CHECK( twoColoring( Adjacency() ).has_value() );
+ CHECK( twoColoring( Adjacency( 1 , std::vector< bool >( 1 , false ) ) )
+         .has_value() );
+ CHECK( twoColoring( Adjacency( 1 , std::vector< bool >( 1 , true ) ) )
+         .has_value() );
+ auto two = adjacency( c6 );
+ for( auto & row : two )
+  row.resize( 9 , false );
+ two.resize( 9 , std::vector< bool >( 9 , false ) );
+ two[ 6 ][ 7 ] = two[ 7 ][ 6 ] = two[ 7 ][ 8 ] = two[ 8 ][ 7 ] = true;
+ CHECK( twoColoring( two ).has_value() );
+ two[ 6 ][ 8 ] = two[ 8 ][ 6 ] = true;
+ CHECK( ! twoColoring( two ) );
+ // the contracts: the rivalry symmetric
+ Adjacency a( 2 , std::vector< bool >( 2 , false ) );
+ a[ 0 ][ 1 ] = true;
+ CHECK_THROWS( twoColoring( a ) , contract_violation );
  }
 
 /*---------------- 21. 2017-09-04, Longest descending path -----------------*/
@@ -1677,6 +2063,23 @@ ADS_TEST( "graph-21" )
  CHECK( graph::longestDescending( p , { 1 , 1 , 1 , 1 } ) == 0 );
  CHECK( graph::longestDescending( p , { 4 , 3 , 2 , 1 } ) == 12 );
  CHECK( graph::longestDescending( p , { 1 , 3 , 2 , 4 } ) == 5 );
+ // lengths of 0; points with no edge; the extreme altitudes of int
+ ListGraph< int > q( 3 , false );
+ q.insertEdge( 0 , 1 , 0 );
+ q.insertEdge( 1 , 2 , 0 );
+ CHECK( graph::longestDescending( q , { 3 , 2 , 1 } ) == 0 );
+ CHECK( graph::longestDescending( ListGraph< int >( 3 , false ) ,
+                                  { 3 , 2 , 1 } ) == 0 );
+ CHECK( graph::longestDescending( p , { INT_MAX , 0 , -1 , INT_MIN } ) ==
+        12 );
+ // a deleted node cuts the slope
+ p.deleteNode( 2 );
+ CHECK( graph::longestDescending( p , { 4 , 3 , 2 , 1 } ) == 3 );
+ // the contracts: g has a node, z of a place per name
+ CHECK_THROWS( graph::longestDescending( ListGraph< int >( 0 , false ) ,
+                                         {} ) , contract_violation );
+ CHECK_THROWS( graph::longestDescending( q , { 1 , 2 } ) ,
+               contract_violation );
  }
 
 /*-------------------- 22. 2018-01-08, Grafo trasposto ---------------------*/
@@ -1719,6 +2122,21 @@ ADS_TEST( "graph-22" )
  BoolMatrix one = { { true } };
  graph::transposeInPlace( one );
  CHECK( one == BoolMatrix( { { true } } ) );
+ // no node; a symmetric matrix stays; a single edge turns
+ BoolMatrix none;
+ graph::transposeInPlace( none );
+ CHECK( none.empty() );
+ BoolMatrix s = { { false , true } , { true , false } };
+ graph::transposeInPlace( s );
+ CHECK( s == BoolMatrix( { { false , true } , { true , false } } ) );
+ BoolMatrix e = { { false , true } , { false , false } };
+ graph::transposeInPlace( e );
+ CHECK( e == BoolMatrix( { { false , false } , { true , false } } ) );
+ // the contracts: M square
+ BoolMatrix w = { { false , true } };
+ CHECK_THROWS( graph::transposeInPlace( w ) , contract_violation );
+ BoolMatrix j = { { false , true } , { true } };
+ CHECK_THROWS( graph::transposeInPlace( j ) , contract_violation );
  }
 
 /*--------------- 23. 2018-06-28, Can italy win (printOrder) ---------------*/
@@ -1776,6 +2194,16 @@ ADS_TEST( "graph-23-2" )
   }
  CHECK( played > 100 );
  CHECK( graph::matchOrder( ListGraph<>( 1 ) , 0 ).empty() );
+ // two teams; a chain of wins, the last match the first won by s
+ const auto two = make( 2 , { { 1 , 0 } } , true );
+ CHECK( graph::matchOrder( two , 1 ) ==
+        ( std::vector< std::pair< int , int > >{ { 1 , 0 } } ) );
+ const auto ch = make( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , true );
+ CHECK( graph::matchOrder( ch , 0 ) ==
+        ( std::vector< std::pair< int , int > >{ { 1 , 2 } , { 0 , 1 } } ) );
+ // the contracts: s a node reaching every node
+ CHECK_THROWS( graph::matchOrder( two , 0 ) , contract_violation );
+ CHECK_THROWS( graph::matchOrder( two , 2 ) , contract_violation );
  }
 
 /*--------- 24. 2018-07-25, Erdos; 37. 2023-07-11, Island Hopping ----------*/
@@ -1851,6 +2279,16 @@ ADS_TEST( "graph-24" )
  big[ 49 ][ 49 ] = 3;
  CHECK( graph::cellDistance( big , 1 , 3 ) == 98 );
  CHECK( graph::cellDistance( { { 1 , 3 } , { 2 , 2 } } , 1 , 3 ) == 1 );
+ // no cell; one cell; no cell of value a or of value b; a diagonal
+ CHECK( graph::cellDistance( {} , 1 , 3 ) == INF );
+ CHECK( graph::cellDistance( { { 1 } } , 1 , 3 ) == INF );
+ CHECK( graph::cellDistance( { { 2 , 3 } , { 3 , 2 } } , 1 , 3 ) == INF );
+ CHECK( graph::cellDistance( { { 1 , 2 } , { 2 , 1 } } , 1 , 3 ) == INF );
+ CHECK( graph::cellDistance( { { 1 , 2 } , { 2 , 3 } } , 1 , 3 ) == 2 );
+ // the contracts: M square, a != b
+ CHECK_THROWS( graph::cellDistance( { { 1 , 3 } } , 1 , 3 ) ,
+               contract_violation );
+ CHECK_THROWS( graph::cellDistance( { { 1 } } , 1 , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -42,6 +42,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <random>
@@ -115,7 +116,8 @@ std::vector< long > randomSet( std::mt19937 & g , std::size_t n , long U )
 
 // the example of the notes, D[ 3 , 7 ] of sum 8, by the four algorithms;
 // an array of negative numbers gives its largest item, where
-// maxSubarraySum() gives the empty segment
+// maxSubarraySum() gives the empty segment; the extremes of long, with
+// the sums of the segments in range, all zeros, and the empty array
 ADS_TEST( "ch2.max-sum-example" )
 {
  const std::vector< long > D = { 4 , -6 , 3 , 1 , 3 , -2 , 3 , -4 , 1 , -9 ,
@@ -130,7 +132,32 @@ ADS_TEST( "ch2.max-sum-example" )
  CHECK( S.sum == -2 && S.first == 1 && S.length == 1 );
  CHECK( maxSumSegmentPrefix( N ).sum == -2 && maxSubarraySum( N ) == 0 );
  CHECK( maxSumSegment( std::vector< long >{ 3 } ).sum == 3 );
+ constexpr long top = std::numeric_limits< long >::max() ,
+                bot = std::numeric_limits< long >::min();
+ const std::vector< long > X = { top , bot , top };   // no overflow
+ const std::vector< long > Y = { bot / 2 , bot / 2 + 1 };
+ for( const auto & S : { maxSumSegmentCubic( X ) ,
+                         maxSumSegmentQuadratic( X ) , maxSumSegment( X ) ,
+                         maxSumSegmentPrefix( X ) } )
+  CHECK( S.sum == top && S.length == 1 );
+ for( const auto & S : { maxSumSegmentCubic( Y ) ,
+                         maxSumSegmentQuadratic( Y ) , maxSumSegment( Y ) ,
+                         maxSumSegmentPrefix( Y ) } )
+  CHECK( S.sum == bot / 2 + 1 && S.first == 1 && S.length == 1 );
+ CHECK( maxSubarraySum( X ) == top && maxSubarraySum( Y ) == 0 );
+ const std::vector< long > Z( 7 , 0 );           // all equal: sum 0
+ for( const auto & S : { maxSumSegmentCubic( Z ) ,
+                         maxSumSegmentQuadratic( Z ) , maxSumSegment( Z ) ,
+                         maxSumSegmentPrefix( Z ) } )
+  CHECK( S.sum == 0 && S.length >= 1 && S.first + S.length <= 7 );
+ CHECK( maxSubarraySum( std::vector< long >() ) == 0 );
  CHECK_THROWS( maxSumSegment( std::vector< long >() ) ,
+               contract_violation );
+ CHECK_THROWS( maxSumSegmentCubic( std::vector< long >() ) ,
+               contract_violation );
+ CHECK_THROWS( maxSumSegmentQuadratic( std::vector< long >() ) ,
+               contract_violation );
+ CHECK_THROWS( maxSumSegmentPrefix( std::vector< long >() ) ,
                contract_violation );
  }
 
@@ -150,7 +177,8 @@ ADS_TEST( "ch2.max-sum-random" )
   }
  }
 
-// the sum with the length in [ L , U ] against all the segments
+// the sum with the length in [ L , U ] against all the segments; U past n,
+// one item, and L > U, L > n, L = 0, the empty array
 ADS_TEST( "ch2.length-constrained" )
 {
  std::mt19937 g( 1 );
@@ -175,12 +203,19 @@ ADS_TEST( "ch2.length-constrained" )
  CHECK( maxSumSegmentLength( D , 1 , 11 ).sum == 8 );
  CHECK( maxSumSegmentLength( D , 1 , 1 ).sum == 6 );
  CHECK( maxSumSegmentLength( D , 11 , 11 ).sum == 0 );
+ CHECK( maxSumSegmentLength( D , 2 , 100 ).sum == 8 );   // U past n
+ const auto O = maxSumSegmentLength( std::vector< long >{ -7 } , 1 , 1 );
+ CHECK( O.sum == -7 && O.first == 0 && O.length == 1 );
  CHECK_THROWS( maxSumSegmentLength( D , 3 , 2 ) , contract_violation );
  CHECK_THROWS( maxSumSegmentLength( D , 12 , 12 ) , contract_violation );
+ CHECK_THROWS( maxSumSegmentLength( D , 0 , 3 ) , contract_violation );
+ CHECK_THROWS( maxSumSegmentLength( std::vector< long >() , 1 , 1 ) ,
+               contract_violation );
  }
 
 // the longest segment of sum at least t, and of average at least p / q,
-// against all the segments
+// against all the segments; no segment, the whole array, the empty one,
+// and q <= 0
 ADS_TEST( "ch2.longest-at-least" )
 {
  std::mt19937 g( 1 );
@@ -204,11 +239,21 @@ ADS_TEST( "ch2.longest-at-least" )
      bestAvg = std::max( bestAvg , e - b );
   CHECK( longestSegmentAverageAtLeast( D , p , q ).length == bestAvg );
   }
+ const std::vector< long > N = { -3 , -1 , -2 } , E;
+ CHECK( longestSegmentAtLeast( N , 0L ).length == 0 &&     // none
+        longestSegmentAtLeast( N , -6L ).length == 3 &&    // all
+        longestSegmentAtLeast( E , -1L ).length == 0 &&
+        longestSegmentAverageAtLeast( N , -1L , 1L ).length == 1 );
+ CHECK_THROWS( longestSegmentAverageAtLeast( N , 1L , 0L ) ,
+               contract_violation );
+ CHECK_THROWS( longestSegmentAverageAtLeast( N , 1L , -2L ) ,
+               contract_violation );
  }
 
 // the segment of largest density with length at least L against all the
 // segments, compared as fractions; the measures of GC-richness of a DNA
-// sequence
+// sequence; L = n, one negative item, the empty sequence, and L = 0 or
+// L > n
 ADS_TEST( "ch2.density" )
 {
  std::mt19937 g( 1 );
@@ -244,6 +289,14 @@ ADS_TEST( "ch2.density" )
  CHECK( maxDensitySegment( X , 1 ).sum == 1 );  // a single C or G
  CHECK( gcIndicator( "acgtN" ) == std::vector< int >( { 0 , 1 , 1 , 0 ,
                                                         0 } ) );
+ CHECK( gcIndicator( "" ).empty() );
+ const std::vector< long > F = { 5 , -9 , 5 };   // L = n: the whole array
+ const auto W = maxDensitySegment( F , 3 );
+ CHECK( W.first == 0 && W.length == 3 && W.sum == 1 );
+ const auto O = maxDensitySegment( std::vector< long >{ -4 } , 1 );
+ CHECK( O.sum == -4 && O.length == 1 );
+ CHECK_THROWS( maxDensitySegment( F , 0 ) , contract_violation );
+ CHECK_THROWS( maxDensitySegment( F , 4 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -330,7 +383,9 @@ ADS_TEST( "ch3.sampler-costs" )
 
 // the sampling from a stream of unknown length: each item with
 // probability n / N (the 99.9% quantile with 9 degrees is 27.9), the
-// sample in the order of the stream, like the reservoir
+// sample in the order of the stream, like the reservoir; the empty stream,
+// n = 0 and n = N, all equal items, and n > N (the whole stream for the
+// reservoir, a violation for the heap)
 ADS_TEST( "ch3.heap-sampling" )
 {
  std::mt19937 g( 1 );
@@ -347,7 +402,16 @@ ADS_TEST( "ch3.heap-sampling" )
  CHECK( chiSquare( R , std::vector< double >( 10 , 0.1 ) ) < 27.9 );
  CHECK( heapSampling( stream , 10 , g ) == stream );
  CHECK( heapSampling( stream , 0 , g ).empty() );
+ CHECK( heapSampling( std::vector< int >() , 0 , g ).empty() &&
+        reservoirSampling( std::vector< int >() , 0 , g ).empty() );
+ CHECK( reservoirSampling( stream , 10 , g ) == stream &&
+        reservoirSampling( stream , 0 , g ).empty() &&
+        reservoirSampling( stream , 25 , g ) == stream );   // a short stream
+ CHECK( heapSampling( std::vector< int >( 5 , 4 ) , 3 , g ) ==
+        std::vector< int >( 3 , 4 ) );           // all equal items
  CHECK_THROWS( heapSampling( stream , 11 , g ) , contract_violation );
+ CHECK_THROWS( heapSampling( std::vector< int >() , 1 , g ) ,
+               contract_violation );
  }
 
 // the sampled items read from the disk in the order of their positions:
@@ -554,7 +618,9 @@ ADS_TEST( "ch5.two-level-memory" )
  }
 
 // the merge of k sorted runs through the tree of losers against
-// std::stable_sort, ceil( log2 k ) comparisons per item, stable
+// std::stable_sort, ceil( log2 k ) comparisons per item, stable; one
+// player, ties won by the lower index, all players exhausted from the
+// start, no run, and every query on an exhausted tree
 ADS_TEST( "ch5.loser-tree" )
 {
  std::mt19937 g( 1 );
@@ -590,6 +656,21 @@ ADS_TEST( "ch5.loser-tree" )
  L.replace( std::nullopt );
  CHECK( L.isEmpty() );
  CHECK_THROWS( L.top() , contract_violation );
+ CHECK_THROWS( L.winner() , contract_violation );
+ CHECK_THROWS( L.replace( 1 ) , contract_violation );
+ LoserTree< int > One( { 4 } );                  // one player
+ CHECK( One.players() == 1 && One.winner() == 0 && One.top() == 4 );
+ One.replace( std::nullopt );
+ CHECK( One.isEmpty() );
+ LoserTree< int > T( { 3 , 3 , 3 } );            // ties: the lower index
+ CHECK( T.winner() == 0 );
+ T.replace( 3 );
+ CHECK( T.winner() == 0 );
+ T.replace( 4 );
+ CHECK( T.winner() == 1 );
+ CHECK( LoserTree< int >( { std::nullopt , std::nullopt } ).isEmpty() );
+ CHECK( kWayMerge( std::vector< std::vector< int > >() ,
+                   std::less<>() ).empty() );
  CHECK_THROWS( LoserTree< int >( {} ) , contract_violation );
  }
 
@@ -739,7 +820,10 @@ ADS_TEST( "ch5.distribution-sort" )
 /*--------------------------------------------------------------------------*/
 
 // the examples of the notes: Figure 6.3, the query abaco mathematics of
-// Figure 6.2, the lists of Figure 6.5
+// Figure 6.2, the lists of Figure 6.5; empty lists on either side, equal
+// lists, disjoint lists in both orders, a common item first or last, the
+// widths 63 with the values 0 and 2^63 - 1, and the preconditions (L,
+// w, a, repeated or unsorted values)
 ADS_TEST( "ch6.intersection-example" )
 {
  using Inter = std::vector< long > ( * )( const std::vector< long > & ,
@@ -762,7 +846,23 @@ ADS_TEST( "ch6.intersection-example" )
   CHECK( f( math , abaco , std::less<>() ) ==
          std::vector< long >( { 10 , 23 } ) );
   CHECK( f( A , std::vector< long >() , std::less<>() ).empty() );
+  CHECK( f( std::vector< long >() , A , std::less<>() ).empty() );
+  CHECK( f( std::vector< long >() , std::vector< long >() ,
+            std::less<>() ).empty() );
+  CHECK( f( A , A , std::less<>() ) == A );      // equal lists
+  CHECK( f( abaco , B , std::less<>() ) == std::vector< long >( { 10 } ) );
+  CHECK( f( { 1 , 2 , 3 } , { 4 , 5 , 6 } , std::less<>() ).empty() );
+  CHECK( f( { 4 , 5 , 6 } , { 1 , 2 , 3 } , std::less<>() ).empty() );
+  CHECK( f( { 1 , 100 } , { 1 } , std::less<>() ) ==   // the first
+         std::vector< long >( { 1 } ) );
+  CHECK( f( { 1 , 100 } , { 100 } , std::less<>() ) ==   // the last
+         std::vector< long >( { 100 } ) );
   }
+ CHECK( intersectTwoLevel( A , A , 100 ) == A &&
+        intersectTwoLevel( A , std::vector< long >() , 1 ).empty() );
+ CHECK_THROWS( intersectTwoLevel( A , B , 0 ) , contract_violation );
+ CHECK_THROWS( intersectMerge( A , std::vector< long >( { 1 , 1 } ) ) ,
+               contract_violation );
  for( std::size_t L : { 1 , 2 , 3 , 32 } )
   CHECK( intersectTwoLevel( A , B , L ) ==
          std::vector< long >( { 12 , 16 , 20 } ) );
@@ -781,6 +881,22 @@ ADS_TEST( "ch6.intersection-example" )
  CHECK_THROWS( PermutedBuckets( { 1 } , 4 , 2 , 4 , 1 ) ,
                contract_violation );
  CHECK_THROWS( PA.intersect( PermutedBuckets( { 2 } , 4 , 2 , 7 , 1 ) ) ,
+               contract_violation );
+ const PermutedBuckets PE( {} , 4 , 2 , 5 , 1 ) ,          // the extremes
+                       PW( { 0 , ( std::uint64_t( 1 ) << 63 ) - 1 } , 63 ,
+                           1 , 3 , 7 ) ,
+                       PV( { ( std::uint64_t( 1 ) << 63 ) - 1 } , 63 , 1 ,
+                           3 , 7 );
+ CHECK( PE.intersect( PB ).empty() && PB.intersect( PE ).empty() );
+ CHECK( PW.intersect( PV ) == std::vector< std::uint64_t >(
+                                    { ( std::uint64_t( 1 ) << 63 ) - 1 } ) );
+ CHECK_THROWS( PermutedBuckets( { 1 } , 0 , 2 , 5 , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( PermutedBuckets( { 1 } , 64 , 2 , 5 , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( PermutedBuckets( { 1 } , 4 , 0 , 5 , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( PermutedBuckets( { 1 , 1 } , 4 , 2 , 5 , 1 ) ,
                contract_violation );
  }
 

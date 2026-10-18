@@ -43,7 +43,10 @@
  *   component C to C' then ft( C ) > ft( C' ), so the second visit meets C
  *   first and, the edge being reversed, cannot reach C' from it.
  *
- * Nil is -1 and the infinite distance is INF.
+ * Nil is -1 and the infinite distance is INF. The visits in depth and
+ * path() keep their recursion on an explicit stack, in the order of the
+ * recursive ones, so that a path of 10^5 nodes does not overflow the
+ * stack of the calls.
  *
  * The contracts [see Contract.h]: a visit starts from a node of the graph
  * (and dfs() from one not visited yet, with a vector of a place per name);
@@ -213,7 +216,8 @@ class DfsSchema {
 /*--------------------------------------------------------------------------*/
 
 /// hasCycle(): true if the oriented graph has a cycle, i.e., if a visit
-/// finds a back edge
+/// finds a back edge; on an unoriented graph each edge, met again from its
+/// other end, is a back edge, so it is true if and only if there is an edge
 template< Graph G >
 bool hasCycle( const G & g );
 

@@ -110,7 +110,8 @@ template< class T >
 T oneTree( const std::vector< std::vector< T > > & D , int r );
 
 /// lb( S ): a lower bound of the circuits that start with the path S,
-/// the cost of the circuit if S has all the cities
+/// the cost of the circuit if S has all the cities or if n = 2, where the
+/// circuit through both cities is the only one
 /// \pre D is square, S has distinct cities and is not empty, D symmetric for
 ///      the 1-tree
 template< class T >
@@ -164,7 +165,7 @@ inline std::pair< long , Nodes > maxWeightClique(
 /// ZAINO by branch-&-bound: the best profit and the objects, by places;
 /// the objects by decreasing profit per volume, each in and then out,
 /// pruned when the fractional knapsack of the rest does not beat the best
-/// \pre p and v of the same size, p not negative, v positive
+/// \pre p and v of the same size, p not negative, v positive, C >= 0
 /// \post objects within C and their profit
 inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
                                              const std::vector< long > & v ,
@@ -175,7 +176,7 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
 /// order, each in and then out, an object that does not fit skipped, and a
 /// node pruned when its profit plus the profits of all the objects still
 /// to decide does not beat the best; the nodes generated go to *generated
-/// \pre p and v of the same size, p not negative, v positive
+/// \pre p and v of the same size, p not negative, v positive, C >= 0
 /// \post objects within C and their profit
 inline std::pair< long , Nodes > knapsackBacktrack(
                                   const std::vector< long > & p ,
@@ -184,7 +185,7 @@ inline std::pair< long , Nodes > knapsackBacktrack(
 
 /// the greedy heuristic of ZAINO: the objects by decreasing profit per
 /// volume, each taken if it still fits; not optimal in general
-/// \pre p and v of the same size, p not negative, v positive
+/// \pre p and v of the same size, p not negative, v positive, C >= 0
 /// \post objects within C and their profit
 inline std::pair< long , Nodes > knapsackGreedy(
                                   const std::vector< long > & p ,

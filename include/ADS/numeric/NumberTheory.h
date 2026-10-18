@@ -12,8 +12,16 @@
  *   solution of exercise 17.2 in the text has the two swapped);
  * - modInverse(), the p with \f$ p s \bmod m = 1 \f$ when
  *   \f$ \gcd( s , m ) = 1 \f$ (exercise 17.3);
+ * - mulMod(), \f$ a b \bmod m \f$ exact for every modulus of 64 bits, the
+ *   modular product of all of ADS: the product of 64 bits for
+ *   \f$ m \le 2^{32} \f$; mulMod61() for the Mersenne prime
+ *   \f$ p = 2^{61} - 1 \f$ of the universal hashing [see
+ *   UniversalHashing.h], four products of 32 bits folded by
+ *   \f$ 2^{61} \equiv 1 \pmod{p} \f$, faster than a division of 128 bits;
+ *   the product of 128 bits where the compiler has one, and the doubling
+ *   of Ahmes, O( log b ) additions, where it has not (MSVC);
  * - powMod(), \f$ x^v \bmod m \f$ by repeated squaring, O( log v )
- *   multiplications (exercise 17.1), each mulMod() exact on 128 bits;
+ *   multiplications (exercise 17.1);
  * - isPrimeTrial(), the divisions up to \f$ \sqrt{n} \f$,
  *   \f$ O( 2^{d/2} ) \f$ for n of d bits;
  * - witness(), b is a witness that n is composite if
@@ -33,10 +41,10 @@
  * The contracts [see Contract.h]: extendedEuclid() needs s , m >= 0 and gives
  * d = p s + q m; modInverse() needs m >= 1 and gcd( s , m ) = 1, and its
  * result r satisfies s r = 1 modulo m; the products and the powers modulo m
- * need m >= 1; witness() needs an odd n >= 3 and a base 1 <= b < n, and
- * millerRabin() K >= 0; sieve() gives the primes up to n, increasing, as
- * isPrimeTrial() finds them (an audit). The functions are defined in
- * NumberTheory.tpp.
+ * need m >= 1, and mulMod61() factors below \f$ 2^{61} - 1 \f$; witness()
+ * needs an odd n >= 3 and a base 1 <= b < n, and millerRabin() K >= 0;
+ * sieve() gives the primes up to n, increasing, as isPrimeTrial() finds
+ * them (an audit). The functions are defined in NumberTheory.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 17.2 and
  *      exercises 17.1-17.3,
@@ -99,9 +107,21 @@ inline std::tuple< long long , long long , long long > extendedEuclid(
 /// \post s r = 1 modulo m
 inline long long modInverse( long long s , long long m );
 
-/// a b mod m, exact
+/// the Mersenne prime 2^61 - 1
+inline constexpr U64 kMersenne61 = ( U64( 1 ) << 61 ) - 1;
+
+/// a b mod 2^61 - 1, by four products of 32 bits and the folding
+/// 2^61 = 1 mod 2^61 - 1
+/// \pre a < 2^61 - 1 and b < 2^61 - 1
+/// \post the result is below 2^61 - 1
+[[nodiscard]] constexpr U64 mulMod61( U64 a , U64 b );
+
+/// a b mod m, exact for any a, b and m: by the product of 64 bits for
+/// m <= 2^32, by mulMod61() for m = 2^61 - 1, by the product of 128 bits
+/// or else by doubling and adding
 /// \pre m >= 1
-inline U64 mulMod( U64 a , U64 b , U64 m );
+/// \post the result is below m
+[[nodiscard]] constexpr U64 mulMod( U64 a , U64 b , U64 m );
 
 /// x^v mod m by repeated squaring
 /// \pre m >= 1

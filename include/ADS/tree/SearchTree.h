@@ -169,8 +169,13 @@ class SearchTree {
  /// true if u is the sentinel leaf (or the parent of the root)
  [[nodiscard]] bool isNil( const Link * u ) const;
 
+ /// the key of the node u
+ /// \pre u is a node, not the sentinel leaf, which has no key (only nil
+ ///      is checked, as a static function cannot know the sentinel)
  [[nodiscard]] static const K & key( const Link * u );
 
+ /// the value of the node u
+ /// \pre u is a node, not the sentinel leaf
  [[nodiscard]] static const V & value( const Link * u );
 
  /// the node of the key x, nil if absent
@@ -183,6 +188,8 @@ class SearchTree {
  [[nodiscard]] Link * max( void ) const;
 
  /// successorNode(): the node of the next key, nil after the largest one
+ /// and from nil
+ /// \pre t is not a null pointer
  [[nodiscard]] Link * successorNode( Link * t ) const;
 
  /// the foreach of the book: f( k , v ) on the pairs in increasing order of
@@ -191,6 +198,8 @@ class SearchTree {
  void forEach( F && f ) const;
 
  /// predecessorNode(): the node of the previous key, nil before the first
+ /// one and from nil
+ /// \pre t is not a null pointer
  [[nodiscard]] Link * predecessorNode( Link * t ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/

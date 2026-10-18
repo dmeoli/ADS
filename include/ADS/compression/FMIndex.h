@@ -26,17 +26,17 @@
  * The rank of a symbol in L, the number of its occurrences in a prefix, is
  * the count stored every b places for each symbol of the text plus a scan
  * of fewer than b symbols, O( b ) time and \f$ \sigma ( n / b ) \f$ counts
- * of 32 bits; the marks of the rows are a vector of bits with the rank of
- * each word of 64 bits, so a row is tested and its sample found in O( 1 )
- * time. This is the simplest rank, which any structure of rank and select
+ * of 32 bits; the marks of the rows are a vector of bits with the rank
+ * directory of RankSelect [see RankSelect.h], so a row is tested and its
+ * sample found in O( 1 ) time. The counts of L are the simplest rank on a
+ * sequence, which any structure of rank and select
  * on sequences can replace: the wavelet tree of Grossi, Gupta and Vitter
  * gives the rank in \f$ O( \log \sigma ) \f$ time on \f$ n H_0 + o( n \log
  * \sigma ) \f$ bits, and the compressed representations of Ferragina,
  * Manzini, Makinen and Navarro reach \f$ n H_k + o( n \log \sigma ) \f$
  * bits, the space of the compressed text (Lemma 14.3 and Theorem 14.7).
- * The transform is built from a suffix array by prefix doubling,
- * \f$ O( n \log^2 n ) \f$ time [see BurrowsWheeler.h], which a linear
- * construction can replace. Against the suffix array, which counts by
+ * The transform is built from the suffix array of SA-IS, O( n ) time [see
+ * BurrowsWheeler.h]. Against the suffix array, which counts by
  * binary search in \f$ O( p \log n ) \f$ time and \f$ n \log n \f$ bits
  * plus the text, the FM-index counts in O( p b ) time here, O( p ) with a
  * rank in O( 1 ), at the price of random accesses to L at each step; the
@@ -88,10 +88,10 @@
 
 #include "ADS/Contract.h"
 #include "ADS/compression/BurrowsWheeler.h"
+#include "ADS/succinct/RankSelect.h"
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -160,9 +160,7 @@ class FMIndex {
  [[nodiscard]] std::size_t place( std::size_t r ) const;
 
  /// whether row r is marked
- [[nodiscard]] bool marked( std::size_t r ) const {
-  return( ( ( f_mark[ r / 64 ] >> ( r % 64 ) ) & 1u ) != 0 );
-  }
+ [[nodiscard]] bool marked( std::size_t r ) const { return( f_mark[ r ] ); }
 
  std::size_t f_n , f_b , f_mu;
  std::string f_L;                       ///< L, a 0 byte for the $
@@ -171,8 +169,7 @@ class FMIndex {
  std::array< int , 256 > f_id;          ///< the index of a symbol, or -1
  std::size_t f_sigma = 0;               ///< the distinct symbols
  std::vector< std::uint32_t > f_occ;    ///< the counts every b rows
- std::vector< std::uint64_t > f_mark;   ///< the marked rows
- std::vector< std::uint32_t > f_markRank;   ///< the marks before a word
+ RankSelect f_mark;                     ///< the marked rows, with rank
  std::vector< std::size_t > f_place;    ///< the places of the marked rows
  std::vector< std::size_t > f_row;      ///< the row of the suffix k mu
 

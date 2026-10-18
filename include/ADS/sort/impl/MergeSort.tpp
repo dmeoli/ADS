@@ -19,7 +19,7 @@ namespace ADS {
 template< class T , class C >
 void mergeParts( std::vector< T > & A , std::vector< T > & B ,
                  std::size_t start , std::size_t mid , std::size_t end ,
-                 C less , long * inv )
+                 C less , long long * inv )
 {
  ADS_PRE( ( start <= mid ) && ( mid < end ) && ( end < A.size() ) &&
           ( B.size() >= A.size() ) );
@@ -33,7 +33,7 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
    B[ k++ ] = std::move( A[ i++ ] );
   else {
    if( inv )
-    *inv += long( mid - i + 1 );
+    *inv += static_cast< long long >( mid - i + 1 );
    B[ k++ ] = std::move( A[ j++ ] );
    }
  while( i <= mid )                              // the rest of the left part
@@ -48,7 +48,7 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
 template< class T , class C >
 void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
                    std::size_t start , std::size_t end , std::size_t cutoff ,
-                   C less , long * inv )
+                   C less , long long * inv )
 {
  ADS_PRE( ( start <= end ) && ( end < A.size() ) &&
           ( B.size() >= A.size() ) && ( cutoff >= 1 ) );
@@ -93,10 +93,10 @@ void mergeSortBottomUp( std::vector< T > & A , C less )
  }
 
 template< class T , class C >
-long countInversions( std::vector< T > & A , C less )
+long long countInversions( std::vector< T > & A , C less )
 {
  const auto before = detail::auditCopy( A );
- long inv = 0;
+ long long inv = 0;
  if( A.size() > 1 ) {
   std::vector< T > B( A.size() );
   mergeSortRec( A , B , 0 , A.size() - 1 , 1 , less , &inv );

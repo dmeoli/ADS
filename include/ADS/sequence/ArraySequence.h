@@ -21,9 +21,10 @@
  * so that the space stays O( n ) and any sequence of insertions and
  * removals costs O( 1 ) amortized time each: after a resize the vector is
  * half full, and \f$ \Omega( capacity ) \f$ operations must come before
- * the next one. The empty sequence has no vector, the first insertion
- * makes one of one place, and moving a sequence takes its vector in
- * O( 1 ) time, leaving the one moved from empty.
+ * the next one. The empty sequence has no vector, also when remove()
+ * empties it, the first insertion makes one of one place, and moving a
+ * sequence takes its vector in O( 1 ) time, leaving the one moved from
+ * empty.
  *
  * The contracts [see Contract.h]: a position is an index from -1 to n;
  * next() needs one from -1 to n - 1 and prev() one from 0 to n, since

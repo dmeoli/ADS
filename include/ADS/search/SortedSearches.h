@@ -51,7 +51,8 @@
  *      Esercizi Divide-et-impera, Raccolte da compiti scritti
  * \see G. N. Frederickson, D. B. Johnson, The complexity of selection and
  *      ranking in X + Y and matrices with sorted columns, Journal of
- *      Computer and System Sciences 24(2), 197-208, 1982
+ *      Computer and System Sciences 24(2), 197-208, 1982,
+ *      doi:10.1016/0022-0000(82)90048-4
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

@@ -5,10 +5,12 @@
  * The problems in NP of chapter 18, each with its polynomial certificate,
  * which checks a proposed solution, and an enumeration by backtrack, which
  * decides the problem in exponential time and returns a solution if there
- * is one. The graphs are adjacency matrices, symmetric when unoriented;
- * the formulas in conjunctive normal form are clauses of literals, +( v +
- * 1 ) for the variable v and -( v + 1 ) for its negation; a system of 0/1
- * linear programming is A x <= b.
+ * is one. The graphs are adjacency matrices, symmetric when unoriented,
+ * whose diagonal (a loop of a node) every problem ignores: a node with a
+ * loop may be in an independent set, need not be in a cover and takes a
+ * color like any other; the formulas in conjunctive normal form are
+ * clauses of literals, +( v + 1 ) for the variable v and -( v + 1 ) for
+ * its negation; a system of 0/1 linear programming is A x <= b.
  *
  * - clique() (CRICCA, enCricca()), independentSet(), vertexCover(),
  *   coloring() (exercise 18.6), bisection();
@@ -122,7 +124,8 @@ inline std::optional< std::vector< int > > coloring( const Adjacency & G ,
 /// \post a half returned has n / 2 nodes and cuts at most k edges
 inline std::optional< Nodes > bisection( const Adjacency & G , int k );
 
-/// certificatoTsp(): the tour P, a permutation, is at most k long
+/// certificatoTsp(): the tour P, a permutation, is at most k long; the
+/// empty tour of no city is 0 long
 /// \pre D is square
 template< class T >
 bool tspCertificate( const std::vector< std::vector< T > > & D , T k ,
@@ -232,7 +235,8 @@ inline std::optional< Nodes > knapsackDecision( const std::vector< long > & p ,
                                                 long C , long k );
 
 /// the processor of each program, so that m processors run them all within
-/// time d, or nothing
+/// time d, or nothing (also if d < 0, even with no programs, since an idle
+/// processor is loaded 0)
 /// \pre m >= 1 and t is not negative
 /// \post each processor returned is loaded at most d
 inline std::optional< std::vector< int > > multiprocessorScheduling(

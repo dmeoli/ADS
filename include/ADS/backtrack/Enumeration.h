@@ -71,15 +71,20 @@ long permute( const std::vector< T > & A , bool derange , F && f );
 
 }  // end( namespace detail )
 
-/// the permutations of the items, f( S ) on each
+/// the permutations of the items, f( S ) on each, f returns true to stop;
+/// the items are told apart by their places, so equal items give each
+/// permutation of the values more than once, n! in all
 template< class T , class F >
 long permutations( const std::vector< T > & A , F && f );
 
-/// the derangements, no item in its own place, f( S ) on each
+/// the derangements, no item in its own place, f( S ) on each, f returns
+/// true to stop; the places are deranged, not the values, as above
 template< class T , class F >
 long derangements( const std::vector< T > & A , F && f );
 
-/// the subsets of the positive items of sum k, as the places taken
+/// the subsets of the positive items of sum k, as the places taken, f
+/// returns true to stop; k = 0 gives the empty subset only, equal items
+/// in different places give different subsets
 /// \pre the items positive
 template< class T , class F >
 long subsetSum( const std::vector< T > & A , T k , F && f );

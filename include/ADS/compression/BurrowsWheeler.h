@@ -11,12 +11,10 @@
  * text whose symbols depend on their contexts, as those of a language do,
  * L is made of runs of few distinct symbols. The rows of M' are the
  * suffixes of s$ in order, so L[ i ] = s[ SA[ i ] - 1 ] (Theorem 14.6); the
- * suffix array SA is built here by prefix doubling (Manber and Myers),
- * \f$ \lceil \log_2 ( n + 1 ) \rceil \f$ rounds of sorting the suffixes by
- * the ranks of their halves, \f$ O( n \log^2 n ) \f$ time with a comparison
- * sort, a simple sort that any faster construction of the suffix array can
- * replace (the linear Skew of Karkkainen and Sanders, or SA-IS of Nong,
- * Zhang and Chan). The inverse transform inverseBwt() uses the LF-mapping:
+ * suffix array SA is that of the library [see SuffixArray.h], built by the
+ * induced sorting SA-IS of Nong, Zhang and Chan in O( n ) time, with the
+ * suffix $ put first. The inverse transform inverseBwt() uses the
+ * LF-mapping:
  * the k-th occurrence of c in L and the k-th in the first column F are the
  * same symbol of s
  * (Property 14.2), hence \f$ LF[ i ] = C[ L[ i ] ] + rank_{L[ i ]}( L , i )
@@ -58,9 +56,6 @@
  * \see M. Burrows, D. J. Wheeler, A block-sorting lossless data compression
  *      algorithm, Technical Report 124, Digital Systems Research Center,
  *      1994
- * \see U. Manber, G. Myers, Suffix arrays: a new method for on-line string
- *      searches, SIAM Journal on Computing 22(5), 935-948, 1993,
- *      doi:10.1137/0222058
  * \see J. L. Bentley, D. D. Sleator, R. E. Tarjan, V. K. Wei, A locally
  *      adaptive data compression scheme, Communications of the ACM 29(4),
  *      320-330, 1986, doi:10.1145/5684.5688
@@ -69,9 +64,6 @@
  * \see P. Ferragina, R. Giancarlo, G. Manzini, M. Sciortino, Boosting
  *      textual compression in optimal linear time, Journal of the ACM
  *      52(4), 688-713, 2005, doi:10.1145/1082036.1082043
- * \see J. Karkkainen, P. Sanders, S. Burkhardt, Linear work suffix array
- *      construction, Journal of the ACM 53(6), 918-936, 2006,
- *      doi:10.1145/1217856.1217858
  * \see G. Nong, S. Zhang, W. H. Chan, Two efficient algorithms for linear
  *      time suffix array construction, IEEE Transactions on Computers
  *      60(10), 1471-1484, 2011, doi:10.1109/TC.2010.188
@@ -97,6 +89,7 @@
 #include "ADS/Contract.h"
 #include "ADS/compression/CanonicalHuffman.h"
 #include "ADS/compression/PackedBits.h"
+#include "ADS/string/SuffixArray.h"
 
 #include <algorithm>
 #include <bit>

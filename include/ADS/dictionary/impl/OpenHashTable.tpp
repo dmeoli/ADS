@@ -345,6 +345,8 @@ bool OpenHashTable< K , V , H >::consistent( const K & k ) const
 template< class K , class V , class H >
 void OpenHashTable< K , V , H >::rebuild( std::size_t m )
 {
+ while( ! f_probe.works( m ) )    // a linear step that m divides
+  m = next_prime( m + 1 );
  f_probe.check( m );
  std::vector< Cell > T( m );
  std::swap( f_T , T );

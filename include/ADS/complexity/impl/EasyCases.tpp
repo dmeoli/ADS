@@ -99,7 +99,7 @@ inline std::optional< std::vector< int > > twoColoring( const Adjacency & G )
    while( ! Q.isEmpty() ) {
     const int u = Q.dequeue();
     for( int v = 0 ; v < n ; ++v ) {
-     if( ! G[ u ][ v ] ) continue;
+     if( ! G[ u ][ v ] || ( u == v ) ) continue;   // no self-loop
      if( col[ v ] == col[ u ] ) return( std::nullopt );
      if( col[ v ] < 0 ) {
       col[ v ] = 1 - col[ u ];
@@ -148,7 +148,8 @@ intervalGraph( const std::vector< std::pair< long , long > > & I )
   Adjacency G( n , std::vector< bool >( n , false ) );
   for( std::size_t u = 0 ; u < n ; ++u )
    for( std::size_t v = u + 1 ; v < n ; ++v )
-    if( ( I[ u ].first < I[ v ].second ) && ( I[ v ].first < I[ u ].second ) )
+    if( std::max( I[ u ].first , I[ v ].first ) <    // a common point:
+        std::min( I[ u ].second , I[ v ].second ) )  // none if one empty
      G[ u ][ v ] = G[ v ][ u ] = true;
   return( G );
   }();

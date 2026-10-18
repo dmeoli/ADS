@@ -73,12 +73,14 @@
 #include "ADS/tree/Tree.h"
 
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -124,12 +126,14 @@ class BinaryTree {
  [[nodiscard]] BinaryTree * right( void ) const;
 
  /// inserts the tree t as the left child, which must be missing
- /// \pre t is a root, not this node, and the left child is missing
+ /// \pre t is a root, not this node nor the root of its tree (which would
+ ///      make a cycle), and the left child is missing
  /// \post t is the left child
  void insertLeft( BinaryTree * t );
 
  /// inserts the tree t as the right child, which must be missing
- /// \pre t is a root, not this node, and the right child is missing
+ /// \pre t is a root, not this node nor the root of its tree (which would
+ ///      make a cycle), and the right child is missing
  /// \post t is the right child
  void insertRight( BinaryTree * t );
 
@@ -160,6 +164,9 @@ class BinaryTree {
  /// change of the tree touches), O( 1 ) per child
  [[nodiscard]] bool linked( void ) const;
 
+ /// the root of the tree of this node, O( depth )
+ [[nodiscard]] const BinaryTree * top( void ) const;
+
  T f_value;                       ///< the value
  BinaryTree * f_parent = nullptr; ///< the parent
  BinaryTree * f_left = nullptr;   ///< the left child
@@ -172,7 +179,8 @@ class BinaryTree {
 /*--------------------------------------------------------------------------*/
 
 /// dfs(): pre( t ) before the subtrees, in( t ) between them, post( t )
-/// after them; nothing on an empty tree
+/// after them; nothing on an empty tree. It runs with a stack of its own,
+/// not by recursion, so that the height of the tree may be n
 template< class T , class Pre , class In , class Post >
 void dfs( BinaryTree< T > * t , Pre && pre , In && in , Post && post );
 
@@ -208,7 +216,8 @@ std::string to_list( const BinaryTree< T > * t );
 
 /// the binary tree of the parenthesized list s, nil for (); the caller owns
 /// it
-/// \pre s is the list of a binary tree
+/// \pre s is the list of a binary tree, and >> reads each atom whole
+///      (e.g., 8x is not an int)
 template< class T >
 BinaryTree< T > * from_list( std::string_view s );
 
@@ -221,7 +230,7 @@ BinaryTree< T > * to_binary( const Tree< T > * t );
 
 /// the place of the j-th child, 1 <= j <= d, of the node in the place i of
 /// a complete d-ary tree stored in a vector
-/// \pre i >= 0 , d >= 1 , 1 <= j <= d
+/// \pre i >= 0 , d >= 1 , 1 <= j <= d , and d i + j fits in a long
 inline long dary_child( long i , long d , long j );
 
 /// the place of the parent of the node in the place i > 0

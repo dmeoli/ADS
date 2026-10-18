@@ -16,45 +16,6 @@
 
 namespace ADS {
 
-constexpr std::uint64_t mulMod61( std::uint64_t a , std::uint64_t b )
-{
- ADS_PRE( ( a < kMersenne61 ) && ( b < kMersenne61 ) );
- const std::uint64_t a1 = a >> 32 , a0 = a & 0xFFFFFFFFULL ,
-                     b1 = b >> 32 , b0 = b & 0xFFFFFFFFULL;
- const std::uint64_t mid = a1 * b0 + a0 * b1;   // below 2^62
- const std::uint64_t lo = a0 * b0;
- std::uint64_t s = ( ( a1 * b1 ) << 3 )         // 2^64 = 8
-                   + ( mid >> 29 )              // 2^61 = 1
-                   + ( ( mid & ( ( std::uint64_t( 1 ) << 29 ) - 1 ) ) << 32 )
-                   + ( lo & kMersenne61 ) + ( lo >> 61 );
- s = ( s & kMersenne61 ) + ( s >> 61 );
- if( s >= kMersenne61 ) s -= kMersenne61;
- ADS_POST( s < kMersenne61 );
- return( s );
- }
-
-constexpr std::uint64_t mulMod( std::uint64_t a , std::uint64_t b ,
-                                std::uint64_t p )
-{
- ADS_PRE( ( p >= 1 ) && ( p < ( std::uint64_t( 1 ) << 63 ) ) &&
-          ( a < p ) && ( b < p ) );
- if( p <= ( std::uint64_t( 1 ) << 32 ) )
-  return( a * b % p );
- if( p == kMersenne61 )
-  return( mulMod61( a , b ) );
- std::uint64_t r = 0;
- for( ; b ; b >>= 1 ) {                     // r and a stay below p < 2^63
-  if( b & 1 ) {
-   r += a;
-   if( r >= p ) r -= p;
-   }
-  a += a;
-  if( a >= p ) a -= p;
-  }
- ADS_POST( r < p );
- return( r );
- }
-
 /*--------------------------------------------------------------------------*/
 
 inline CarterWegmanHash::CarterWegmanHash( std::uint64_t m ,

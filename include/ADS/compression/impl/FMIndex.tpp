@@ -43,18 +43,15 @@ inline FMIndex::FMIndex( std::string_view s , std::size_t b , std::size_t mu )
   if( ( i < rows ) && ( i != f_dollar ) )
    ++run[ std::size_t( f_id[ static_cast< unsigned char >( f_L[ i ] ) ] ) ];
   }
- f_mark.assign( rows / 64 + 1 , 0 );      // the samples
+ BitVector mark( rows );                   // the samples
  f_row.assign( f_n / f_mu + 1 , 0 );
  for( std::size_t i = 0 ; i < rows ; ++i )
   if( sa[ i ] % f_mu == 0 ) {
-   f_mark[ i / 64 ] |= std::uint64_t( 1 ) << ( i % 64 );
+   mark.set( i );
    f_place.push_back( sa[ i ] );
    f_row[ sa[ i ] / f_mu ] = i;
    }
- f_markRank.assign( f_mark.size() , 0 );
- for( std::size_t w = 1 ; w < f_mark.size() ; ++w )
-  f_markRank[ w ] = f_markRank[ w - 1 ] +
-                    std::uint32_t( std::popcount( f_mark[ w - 1 ] ) );
+ f_mark = RankSelect( std::move( mark ) );
  }
 
 inline BWT FMIndex::transform( void ) const
@@ -107,11 +104,7 @@ inline std::size_t FMIndex::place( std::size_t r ) const
 {
  std::size_t t = 0;
  for( ; ! marked( r ) ; ++t ) r = lf( r );  // at most mu - 1 steps
- const std::uint64_t below = ( std::uint64_t( 1 ) << ( r % 64 ) ) - 1;
- const std::size_t k = f_markRank[ r / 64 ] +
-                       std::size_t( std::popcount( f_mark[ r / 64 ] &
-                                                   below ) );
- return( f_place[ k ] + t );
+ return( f_place[ f_mark.rank1( r ) ] + t );
  }
 
 inline std::vector< std::size_t > FMIndex::locate( std::string_view P ) const

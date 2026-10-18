@@ -51,7 +51,8 @@
 namespace ADS {
 
 /// the anagrams of s made of words for which word( w ) is true; prefix( w )
-/// is true if w begins some word
+/// is true if w begins some word; the words of a sentence are separated by
+/// one blank, and the empty s has the one anagram ""
 /// \post each sentence has the letters of s
 template< class W , class P >
 std::set< std::string > anagrams( const std::string & s , W && word ,

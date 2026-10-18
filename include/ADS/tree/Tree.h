@@ -86,7 +86,8 @@ class Tree {
  Tree( const Tree & ) = delete;
  Tree & operator=( const Tree & ) = delete;
 
- /// destroys the subtrees of the children, i.e., the whole tree
+ /// destroys the subtrees of the children, i.e., the whole tree, with a
+ /// stack of its own rather than by recursion
  ~Tree();
 
 /*--------------------------------------------------------------------------*/
@@ -107,13 +108,15 @@ class Tree {
  [[nodiscard]] Tree * rightSibling( void ) const;
 
  /// inserts the tree t as the first child of this node, which then owns it
- /// \pre t is a root, not this node
+ /// \pre t is a root, not this node nor the root of its tree (which would
+ ///      make a cycle)
  /// \post t is the first child
  void insertChild( Tree * t );
 
  /// inserts the tree t as the next sibling of this node, which must not be
  /// a root; the parent of this node then owns t
- /// \pre t is a root, and this node is not
+ /// \pre t is a root, and this node is not; t is not the root of the tree
+ ///      of this node (which would make a cycle)
  /// \post t is the next sibling
  void insertSibling( Tree * t );
 
@@ -136,6 +139,9 @@ class Tree {
  /// change of the tree touches), O( 1 ) per child
  [[nodiscard]] bool linked( void ) const;
 
+ /// the root of the tree of this node, O( depth )
+ [[nodiscard]] const Tree * top( void ) const;
+
  T f_value;                    ///< the value
  Tree * f_parent = nullptr;    ///< the parent
  Tree * f_child = nullptr;     ///< the first child
@@ -148,7 +154,9 @@ class Tree {
 /*--------------------------------------------------------------------------*/
 
 /// dfs(): pre( u ) is called on each node before its subtrees are visited,
-/// post( u ) after; pre-visit() and post-visit() are dfs() with one of them
+/// post( u ) after; pre-visit() and post-visit() are dfs() with one of them.
+/// It and in_visit() run with a stack of their own, not by recursion, so
+/// that the height of the tree may be n
 /// \pre t is a node
 template< class T , class Pre , class Post >
 void dfs( Tree< T > * t , Pre && pre , Post && post );
@@ -192,7 +200,8 @@ std::string to_list( const Tree< T > * t );
 
 /// the tree of the parenthesized list s, its values read with >>; the
 /// caller owns it
-/// \pre s is the list of a tree
+/// \pre s is the list of a tree, and >> reads each atom whole (e.g., 8x
+///      is not an int)
 template< class T >
 Tree< T > * tree_from_list( std::string_view s );
 

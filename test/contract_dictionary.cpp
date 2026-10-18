@@ -26,12 +26,18 @@
 #include "ADSTest.h"
 
 #include "ADS/dictionary/ChainedHashTable.h"
+#include "ADS/dictionary/CuckooHashing.h"
 #include "ADS/dictionary/DirectTable.h"
 #include "ADS/dictionary/HashFunctions.h"
+#include "ADS/dictionary/KnuthHashing.h"
 #include "ADS/dictionary/OpenHashTable.h"
+#include "ADS/dictionary/PatriciaTrie.h"
+#include "ADS/dictionary/PerfectHashing.h"
+#include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/SkipList.h"
 #include "ADS/dictionary/SortedArrayDictionary.h"
 #include "ADS/dictionary/TableSize.h"
+#include "ADS/dictionary/UniversalHashing.h"
 #include "ADS/sequence/ArraySequence.h"
 #include "ADS/sequence/SequenceAlgorithms.h"
 #include "ADS/tree/AVLTree.h"
@@ -40,9 +46,11 @@
 #include "ADS/tree/SplayTree.h"
 #include "ADS/tree/Treap.h"
 
+#include <cstdint>
 #include <map>
 #include <random>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -282,6 +290,128 @@ ADS_TEST( "dictionary-axioms" )
  dictionary_axioms< TR >( [] { return( TR( 6 ) ); } , 26 );
  using SP = SplayTree< int , int >;
  dictionary_axioms< SP >( [] { return( SP() ); } , 27 );
+ }
+
+// the other dictionaries and hash functions, each bound just inside and
+// just outside: the cuckoo table with m = 1 , 2 and the load at 0 and
+// 0.5, the coalesced table full, Brent's table of m = 1 , 2 , 4 and full,
+// the Patricia trie empty, the perfect hash of a key at 2^61 - 1 and of
+// repeated keys, r and c of the minimal one, the Zobrist table at n and m,
+// the moduli of the universal hashing at their bounds, the multiply-shift
+// hash with l = h, h = 65 and an even multiplier, the d-left table with
+// m , d = 0
+ADS_TEST( "other-dictionaries" )
+{
+ using CK = CuckooHashTable< int , int >;
+ CHECK_THROWS( CK( 1 ) , contract_violation );
+ CHECK_THROWS( CK( 8 , 0.0 ) , contract_violation );
+ CHECK_THROWS( CK( 8 , 0.5 ) , contract_violation );
+ CK C( 2 , 0.49 );                            // the least table: it grows
+ for( int k = 0 ; k < 50 ; ++k ) C.insert( k , -k );
+ CHECK( C.size() == 50 && C.lookup( 49 ) == -49 && ! C.lookup( 50 ) );
+ C.remove( 7 );
+ C.remove( 7 );
+ CHECK( C.size() == 49 && ! C.contains( 7 ) );
+
+ using CO = CoalescedHashTable< int , int >;
+ CHECK_THROWS( CO( 0 ) , contract_violation );
+ CO K( 1 , 1 );                               // one place and one cellar
+ K.insert( 1 , 1 );
+ K.insert( 2 , 2 );
+ K.insert( 1 , 9 );                           // the key again: no room
+ CHECK( K.size() == 2 && K.lookup( 1 ) == 9 && K.lookup( 2 ) == 2 );
+ CHECK_THROWS( K.insert( 3 , 3 ) , contract_violation );   // full
+ using BR = BrentHashTable< int , int >;
+ CHECK_THROWS( BR( 1 ) , contract_violation );
+ CHECK_THROWS( BR( 4 ) , contract_violation );            // not prime
+ BR B( 2 );
+ B.insert( 5 , 5 );
+ B.insert( 6 , 6 );
+ CHECK( B.size() == 2 && B.lookup( 6 ) == 6 && ! B.lookup( 7 ) );
+ CHECK_THROWS( B.insert( 7 , 7 ) , contract_violation );
+
+ const PatriciaTrie P0( std::vector< std::string >{} ) ,
+                    P1( std::vector< std::string >{ "" , "a" , "ab" } );
+ CHECK_THROWS( (void) P0.blindLeaf( "a" ) , contract_violation );
+ CHECK_THROWS( (void) P0.string( 0 ) , contract_violation );
+ CHECK_THROWS( (void) P1.string( 3 ) , contract_violation );
+ CHECK( P1.string( 2 ) == "ab" && P1.contains( "" ) && ! P1.contains( "b" ) &&
+        P0.prefixEnd( "" ) == 0 && P1.prefixEnd( "a" ) == 3 &&
+        P1.blindLeaf( "zz" ) < 3 );
+
+ CHECK_THROWS( PerfectHashTable( { kMersenne61 } ) , contract_violation );
+ CHECK_THROWS( PerfectHashTable( { 4 , 4 } ) , contract_violation );
+ const PerfectHashTable PH( { 0 , kMersenne61 - 1 } ) , PE( {} );
+ CHECK( PH.contains( 0 ) && PH.contains( kMersenne61 - 1 ) &&
+        ! PH.contains( 1 ) && PE.size() == 0 && ! PE.contains( 0 ) );
+ using OM = OrderedMinimalPerfectHash< int >;
+ CHECK_THROWS( OM( { 1 , 2 } , 2 , 2.0 ) , contract_violation );
+ CHECK_THROWS( OM( { 1 , 2 } , 3 , 1.23 ) , contract_violation );
+ CHECK_THROWS( OM( { 1 , 2 } , 4 ) , contract_violation );
+ CHECK_THROWS( OM( { 1 , 1 } ) , contract_violation );
+ const OM O2( { 7 , 3 , 9 } , 2 , 2.01 ) , O3( { 7 , 3 , 9 } , 3 , 1.24 ) ,
+          O0( std::vector< int >{} );
+ CHECK( O2( 7 ) == 0 && O2( 9 ) == 2 && O3( 3 ) == 1 && O0.size() == 0 );
+ CHECK_THROWS( (void) O0( 1 ) , contract_violation );
+
+ CHECK_THROWS( (void) fibonacciPlace( 5 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) fibonacciPlace( 5 , 65 ) , contract_violation );
+ CHECK( fibonacciPlace( 5 , 1 ) < 2 && fibonacciPlace( ~0ull , 64 ) >= 0 );
+ CHECK_THROWS( ZobristTable( 0 , 1 ) , contract_violation );
+ CHECK_THROWS( ZobristTable( 1 , 0 ) , contract_violation );
+ const ZobristTable Z( 2 , 3 );
+ (void) Z( 1 , 2 );
+ CHECK_THROWS( (void) Z( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) Z( 0 , 3 ) , contract_violation );
+ CHECK( Z.hash( std::vector< int >{ 0 , 2 } ) == ( Z( 0 , 0 ) ^ Z( 1 , 2 ) ) );
+ CHECK_THROWS( (void) Z.hash( std::vector< int >{ 0 } ) , contract_violation );
+
+ CHECK_THROWS( (void) mulMod61( kMersenne61 , 1 ) , contract_violation );
+ CHECK( mulMod61( kMersenne61 - 1 , kMersenne61 - 1 ) == 1 );
+ const std::uint64_t top = ( std::uint64_t( 1 ) << 63 ) - 1;
+ CHECK( mulMod( top - 1 , top - 1 , top ) == 1 && mulMod( 0 , 0 , 1 ) == 0 );
+ CHECK( mulMod( 1 , 1 , top + 1 ) == 1 && mulMod( 5 , 1 , 5 ) == 0 );
+ CHECK_THROWS( (void) mulMod( 1 , 1 , 0 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 0 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 1 , 1 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( top + 1 , 1 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 7 , 0 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 7 , 7 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 7 , 1 , 7 , 1 ) , contract_violation );
+ CHECK_THROWS( CarterWegmanHash( 7 , 1 , 0 , 0 ) , contract_violation );
+ const CarterWegmanHash CW( 7 , 6 , 6 , 1 );
+ CHECK( CW( 6 ) == 0 );
+ CHECK_THROWS( (void) CW( 7 ) , contract_violation );
+ CHECK_THROWS( DotProductHash( 1 , 2 ) , contract_violation );
+ CHECK_THROWS( DotProductHash( ( std::uint64_t( 1 ) << 32 ) + 1 , 2 ) ,
+               contract_violation );
+ CHECK_THROWS( DotProductHash( 5 , 0 ) , contract_violation );
+ CHECK_THROWS( DotProductHash( 5 , std::vector< std::uint64_t >{} ) ,
+               contract_violation );
+ CHECK_THROWS( DotProductHash( 5 , std::vector< std::uint64_t >{ 5 } ) ,
+               contract_violation );
+ const DotProductHash DP( 5 , std::vector< std::uint64_t >{ 4 , 1 } ) ,
+                      DB( std::uint64_t( 1 ) << 32 , 3 );
+ CHECK( DP.universe() == 25 && DP( 24 ) < 5 && DB.universe() == 0 &&
+        DB( ~0ull ) < ( std::uint64_t( 1 ) << 32 ) );
+ CHECK_THROWS( (void) DP( 25 ) , contract_violation );
+ CHECK_THROWS( MultiplyShiftHash( 8 , 8 ) , contract_violation );
+ CHECK_THROWS( MultiplyShiftHash( 8 , 0 ) , contract_violation );
+ CHECK_THROWS( MultiplyShiftHash( 65 , 1 ) , contract_violation );
+ const MultiplyShiftHash M64( 64 , 63 ) ,
+                         M8 = MultiplyShiftHash::ofMultiplier( 8 , 3 , 255 );
+ CHECK( M64( ~0ull ) < ( std::uint64_t( 1 ) << 63 ) && M8( 255 ) < 8 );
+ CHECK_THROWS( (void) M8( 256 ) , contract_violation );
+ CHECK_THROWS( MultiplyShiftHash::ofMultiplier( 8 , 3 , 2 ) ,
+               contract_violation );
+ CHECK_THROWS( MultiplyShiftHash::ofMultiplier( 8 , 3 , 257 ) ,
+               contract_violation );
+ using DL = DLeftHashTable< int , int >;
+ CHECK_THROWS( DL( 0 , 2 ) , contract_violation );
+ CHECK_THROWS( DL( 4 , 0 ) , contract_violation );
+ DL L( 1 , 3 );                               // m < d: one bucket each
+ L.insert( 1 , 1 );
+ CHECK( L.lookup( 1 ) == 1 && ! L.lookup( 2 ) );
  }
 
 }  // end( namespace )

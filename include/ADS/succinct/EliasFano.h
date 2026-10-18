@@ -110,7 +110,8 @@ class EliasFano {
  EliasFano( void ) = default;
 
  /// the sequence x in the universe [ 0 , x.back() + 1 )
- /// \pre x is non-decreasing (an audit)
+ /// \pre x is non-decreasing (an audit) and x.back() < 2^64 - 1, so that
+ ///      the universe fits in 64 bits
  explicit EliasFano( const std::vector< std::uint64_t > & x );
 
  /// the sequence x in the universe [ 0 , u )

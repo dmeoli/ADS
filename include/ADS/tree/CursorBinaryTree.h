@@ -101,10 +101,12 @@ class CursorBinaryTree {
  /// a new right child of n of value v, which must be missing
  int insertRight( int n , const T & v );
 
- /// a copy of the subtree of t in s as the left subtree of n
+ /// a copy of the subtree of t in s as the left subtree of n; t may be
+ /// this tree, copied as it was before the call
  int insertLeft( int n , const CursorBinaryTree & t , int s );
 
- /// a copy of the subtree of t in s as the right subtree of n
+ /// a copy of the subtree of t in s as the right subtree of n; t may be
+ /// this tree, copied as it was before the call
  int insertRight( int n , const CursorBinaryTree & t , int s );
 
  /// removes the subtree of n, detached from its parent

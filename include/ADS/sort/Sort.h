@@ -12,7 +12,10 @@
  *   reverses it), to radixSort() [see RadixSort.h], which makes no
  *   comparison and takes
  *   O( w n ) for keys of w bytes, skipping the bytes that all the keys
- *   share; radixSort() is stable, so stableSort() uses it too.
+ *   share; radixSort() is stable, so stableSort() uses it too, with -0
+ *   and +0 as one key, since std::less finds them equal (radixSort()
+ *   puts -0 first). A NaN breaks the natural order, so that a vector
+ *   with a NaN has no defined order.
  * - With the natural order on strings, both use msdRadixSort() [see
  *   RadixSort.h], which reads one character at a time instead of comparing
  *   whole strings and, on the benchmark, beats the in-place

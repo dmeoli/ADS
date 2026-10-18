@@ -28,7 +28,8 @@ inline double bloomFalsePositive( double m , double n , int r )
 inline int bloomBestHashes( double m , double n )
 {
  ADS_PRE( ( m >= 1 ) && ( n >= 1 ) );
- const double x = m / n * std::log( 2.0 );
+ const double x = std::min( m / n * std::log( 2.0 ) ,     // an int floor
+                    double( std::numeric_limits< int >::max() - 1 ) );
  const int lo = std::max( 1 , int( std::floor( x ) ) ) , hi = lo + 1;
  return( bloomFalsePositive( m , n , hi ) < bloomFalsePositive( m , n , lo )
          ? hi : lo );

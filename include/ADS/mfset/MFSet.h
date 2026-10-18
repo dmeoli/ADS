@@ -169,7 +169,9 @@ class MFSet {
 /*--------------------------------------------------------------------------*/
 
 /// the MFSET of the connected components of an unoriented graph, built by
-/// merging the ends of each edge (the cc() of section 10.2.5)
+/// merging the ends of each edge (the cc() of section 10.2.5); its
+/// elements are the names [ 0 , g.bound() ), so that a name that is not a
+/// node of g, a deleted one, is a component of its own, counted by count()
 template< Graph G >
 MFSet components( const G & g );
 

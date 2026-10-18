@@ -284,7 +284,9 @@ int minRemoveBrute( const Ints & A , int k )
  }
 
 // the two examples, both versions against the subsets on random distinct
-// items, the empty and the single item, the extremes of int
+// items, the empty and the single item, the extremes of int, a span equal
+// to k, every gap wider than k, sorted and reverse sorted A, the
+// preconditions of both versions
 ADS_TEST( "dp-73" )
 {
  CHECK( dp::minRemove( { -3 , 3 , 4 , 7 , 9 , 12 , 15 } , 6 ) == 3 );
@@ -305,8 +307,18 @@ ADS_TEST( "dp-73" )
  CHECK( dp::minRemoveDP( { INT_MIN , INT_MAX } , INT_MAX ) == 1 );
  CHECK( dp::minRemove( { INT_MIN , -1 , INT_MAX } , INT_MAX ) == 1 );
  CHECK( dp::minRemove( { 0 , INT_MAX } , INT_MAX ) == 0 );
+ CHECK( dp::minRemove( { 0 , 5 } , 5 ) == 0 &&
+        dp::minRemoveDP( { 0 , 5 } , 5 ) == 0 );
+ CHECK( dp::minRemove( { 0 , 5 } , 4 ) == 1 &&
+        dp::minRemoveDP( { 0 , 5 } , 4 ) == 1 );
+ CHECK( dp::minRemove( { 30 , 1 , 20 , 10 } , 5 ) == 3 &&
+        dp::minRemoveDP( { 30 , 1 , 20 , 10 } , 5 ) == 3 );
+ CHECK( dp::minRemove( { 1 , 2 , 3 , 4 , 10 } , 3 ) == 1 &&
+        dp::minRemoveDP( { 10 , 4 , 3 , 2 , 1 } , 3 ) == 1 );
  CHECK_THROWS( dp::minRemove( { 1 , 1 } , 1 ) , contract_violation );
  CHECK_THROWS( dp::minRemove( { 1 } , 0 ) , contract_violation );
+ CHECK_THROWS( dp::minRemoveDP( { 3 , 1 , 3 } , 1 ) , contract_violation );
+ CHECK_THROWS( dp::minRemoveDP( { 1 } , -1 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -365,7 +377,8 @@ int smallSumBrute( const Ints & W , int C )
  }
 
 // the example, the subsets and the feasibility of subsetSumDP() on random
-// weights, a sum of zero, all weights equal, a large capacity
+// weights, a sum of zero, all weights equal, a large capacity, every
+// weight above C, the whole set needed, a negative weight
 ADS_TEST( "dp-74" )
 {
  CHECK( dp::smallSum( { 5 , 1 , 7 , 2 , 3 , 9 , 8 } , 17 ) == 2 );
@@ -383,7 +396,12 @@ ADS_TEST( "dp-74" )
  CHECK( dp::smallSum( Ints( 5 , 3 ) , 9 ) == 3 );
  CHECK( dp::smallSum( Ints( 5 , 3 ) , 10 ) == INF );
  CHECK( dp::smallSum( { 999999 , 1 , 1000000 } , 1000000 ) == 1 );
+ CHECK( dp::smallSum( { 5 , 6 } , 0 ) == 0 );
+ CHECK( dp::smallSum( { 10 , 20 } , 5 ) == INF );
+ CHECK( dp::smallSum( { 1 , 2 , 4 , 8 } , 15 ) == 4 );
+ CHECK( dp::smallSum( { 1 , 2 , 4 , 8 } , 16 ) == INF );
  CHECK_THROWS( dp::smallSum( { 0 } , 1 ) , contract_violation );
+ CHECK_THROWS( dp::smallSum( { 2 , -1 } , 1 ) , contract_violation );
  CHECK_THROWS( dp::smallSum( { 1 } , -1 ) , contract_violation );
  }
 
@@ -424,7 +442,8 @@ int removeSum( const Ints & A , int C )
 namespace {
 
 // the example, the duality with smallSum() and the subsets on random
-// distinct items, the single item, all the items kept
+// distinct items, the single item, all the items kept, C above the total,
+// the preconditions
 ADS_TEST( "dp-76" )
 {
  CHECK( dp::removeSum( { 5 , 1 , 7 , 2 , 3 , 9 , 8 } , 17 ) == 5 );
@@ -442,7 +461,11 @@ ADS_TEST( "dp-76" )
         dp::removeSum( { 7 } , 6 ) == NEGI );
  CHECK( dp::removeSum( { 1 , 2 , 3 , 4 } , 10 ) == 0 );
  CHECK( dp::removeSum( { 1 , 2 , 3 , 4 } , 4 ) == 3 );
+ CHECK( dp::removeSum( { 1 , 2 , 3 , 4 } , 11 ) == NEGI );
+ CHECK( dp::removeSum( { 9 , 8 } , 1 ) == NEGI );
  CHECK_THROWS( dp::removeSum( { 2 , 2 } , 2 ) , contract_violation );
+ CHECK_THROWS( dp::removeSum( { 0 , 2 } , 2 ) , contract_violation );
+ CHECK_THROWS( dp::removeSum( { 3 } , -1 ) , contract_violation );
  CHECK_THROWS( dp::removeSum( { 2 } , 0 ) , contract_violation );
  }
 
@@ -535,7 +558,8 @@ I64 maxSumKBrute( const Ints & V , int k )
 
 // the gaps of the examples, both recurrences against the subsequences on
 // random items, the text's range of j failing, the empty vector, a k as
-// long as V, all the items negative
+// long as V, all the items negative, a single item, k beyond n, the
+// precondition of both versions
 ADS_TEST( "dp-77" )
 {
  const Ints V = { 1 , 2 , 3 , 4 , 5 , 6 };
@@ -576,7 +600,18 @@ ADS_TEST( "dp-77" )
  CHECK( dp::maxSumKLinear( { -4 , -2 , -7 } , 1 ) == -2 );
  CHECK( dp::maxSumK( { -4 , -2 , -7 } , 0 ) == -13 );
  CHECK( dp::maxSumK( Ints( 1000 , INT_MAX ) , 2 ) == I64( 1000 ) * INT_MAX );
+ CHECK( dp::maxSumK( { 5 } , 0 ) == 5 && dp::maxSumKLinear( { 5 } , 0 ) == 5 );
+ CHECK( dp::maxSumK( { -5 } , 0 ) == -5 &&
+        dp::maxSumKLinear( { -5 } , 0 ) == -5 );
+ CHECK( dp::maxSumK( { -5 } , 1 ) == 0 &&
+        dp::maxSumKLinear( { -5 } , 1 ) == 0 );
+ CHECK( dp::maxSumK( { 3 , -9 , 4 } , 10 ) == 7 &&
+        dp::maxSumKLinear( { 3 , -9 , 4 } , 10 ) == 7 );
+ CHECK( dp::maxSumK( Ints( 1000 , INT_MIN ) , 0 ) == I64( 1000 ) * INT_MIN );
+ CHECK( dp::maxSumKLinear( Ints( 1000 , INT_MIN ) , 1 ) ==
+        I64( 500 ) * INT_MIN );
  CHECK_THROWS( dp::maxSumK( V , -1 ) , contract_violation );
+ CHECK_THROWS( dp::maxSumKLinear( V , -1 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -634,7 +669,8 @@ I64 countSumEvenBrute( int n )
  return( c );
  }
 
-// the example, the compositions up to 20, the smallest and the largest n
+// the example, the compositions up to 20, the smallest and the largest n,
+// the preconditions of both versions (odd, zero, negative, beyond 126)
 ADS_TEST( "dp-78" )
 {
  CHECK( dp::countSumEven( 6 ) == 4 && dp::countSumEvenFast( 6 ) == 4 );
@@ -648,6 +684,13 @@ ADS_TEST( "dp-78" )
  CHECK( dp::countSumEven( 126 ) == ( I64( 1 ) << 62 ) );
  CHECK_THROWS( dp::countSumEven( 5 ) , contract_violation );
  CHECK_THROWS( dp::countSumEven( 0 ) , contract_violation );
+ CHECK_THROWS( dp::countSumEven( -2 ) , contract_violation );
+ CHECK_THROWS( dp::countSumEven( 128 ) , contract_violation );
+ CHECK( dp::countSumEvenFast( 2 ) == 1 &&
+        dp::countSumEvenFast( 126 ) == ( I64( 1 ) << 62 ) );
+ CHECK_THROWS( dp::countSumEvenFast( 3 ) , contract_violation );
+ CHECK_THROWS( dp::countSumEvenFast( 0 ) , contract_violation );
+ CHECK_THROWS( dp::countSumEvenFast( 128 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -760,7 +803,8 @@ int lrsBrute( const std::string & T )
  }
 
 // the examples, the pairs of index sets on random strings, the empty and
-// the single item, all items equal
+// the single item, two items equal or distinct, all items equal, the whole
+// alphabet once and twice
 ADS_TEST( "dp-80" )
 {
  CHECK( dp::lrs( "AABBCC" ) == 3 && dp::lrs( "ABCABC" ) == 3 );
@@ -775,6 +819,10 @@ ADS_TEST( "dp-80" )
  CHECK( dp::lrs( "" ) == 0 && dp::lrs( "A" ) == 0 );
  CHECK( dp::lrs( std::string( 500 , 'A' ) ) == 499 );
  CHECK( dp::lrs( "ABCDEFGH" ) == 0 );
+ CHECK( dp::lrs( "AA" ) == 1 && dp::lrs( "AB" ) == 0 );
+ std::string w;
+ for( char c = 'A' ; c <= 'Z' ; ++c ) w += c;
+ CHECK( dp::lrs( w ) == 0 && dp::lrs( w + w ) == 26 );
  }
 
 }  // end( namespace )
@@ -824,7 +872,8 @@ I64 discordvilleBrute( const Ints & D , const Ints & N )
  }
 
 // the example, the subsets on random villages, one house, nobody refusing,
-// everybody refusing everybody before
+// everybody refusing everybody before, all donations zero, the
+// preconditions (no house, sizes differing, D or N negative, N[ i ] > i)
 ADS_TEST( "dp-81" )
 {
  CHECK( dp::discordville( { 3 , 4 , 5 , 7 , 1 } , { 0 , 1 , 1 , 3 , 1 } ) ==
@@ -842,7 +891,13 @@ ADS_TEST( "dp-81" )
  CHECK( dp::discordville( { 1 , 5 , 3 } , { 0 , 1 , 2 } ) == 5 );
  CHECK( dp::discordville( Ints( 1000 , INT_MAX ) , Ints( 1000 , 0 ) ) ==
         I64( 1000 ) * INT_MAX );
+ CHECK( dp::discordville( { 0 , 0 , 0 } , { 0 , 1 , 2 } ) == 0 );
  CHECK_THROWS( dp::discordville( { 1 , 1 } , { 1 , 0 } ) ,
+               contract_violation );
+ CHECK_THROWS( dp::discordville( {} , {} ) , contract_violation );
+ CHECK_THROWS( dp::discordville( { 1 , 2 } , { 0 } ) , contract_violation );
+ CHECK_THROWS( dp::discordville( { -1 } , { 0 } ) , contract_violation );
+ CHECK_THROWS( dp::discordville( { 1 , 2 } , { 0 , -1 } ) ,
                contract_violation );
  }
 
@@ -885,6 +940,7 @@ I64 mathWaysBrute( I64 i , I64 n )
  }
 
 // the example, the plain recursion for every n <= 50 and every k, k = n
+// (also at the largest n), the preconditions
 ADS_TEST( "dp-82" )
 {
  CHECK( dp::mathWays( 10 , 3 ) == 5 );
@@ -893,6 +949,8 @@ ADS_TEST( "dp-82" )
    CHECK( dp::mathWays( n , k ) == mathWaysBrute( k , n ) );
  CHECK( dp::mathWays( 3 , 3 ) == 1 && dp::mathWays( 1000 , 999 ) == 1 );
  CHECK( dp::mathWays( 10000 , 3 ) == 81838953590412168 );
+ CHECK( dp::mathWays( 10000 , 10000 ) == 1 &&
+        dp::mathWays( 10000 , 9999 ) == 1 );
  CHECK_THROWS( dp::mathWays( 10001 , 3 ) , contract_violation );
  CHECK_THROWS( dp::mathWays( 10 , 2 ) , contract_violation );
  CHECK_THROWS( dp::mathWays( 5 , 6 ) , contract_violation );
@@ -961,7 +1019,7 @@ I64 countSequencesBrute( int left , I64 low , int m )
  }
 
 // the example, the enumeration for small n and m, length 1, lengths too
-// long for m, a large m
+// long for m, a large m, m = 1, the preconditions of both versions
 ADS_TEST( "dp-83" )
 {
  CHECK( dp::countSequences( 4 , 10 ) == 4 );
@@ -977,7 +1035,12 @@ ADS_TEST( "dp-83" )
         dp::countSequences( 5 , 16 ) == 1 );
  CHECK( dp::countSequences( 10 , 512 ) == 1 );
  CHECK( dp::countSequences( 3 , 300 ) == dp::countSequencesEnding( 3 , 300 ) );
+ CHECK( dp::countSequences( 1 , 1 ) == 1 && dp::countSequences( 2 , 1 ) == 0 );
+ CHECK( dp::countSequencesEnding( 2 , 1 ) == 0 );
  CHECK_THROWS( dp::countSequences( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( dp::countSequences( 3 , 0 ) , contract_violation );
+ CHECK_THROWS( dp::countSequencesEnding( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( dp::countSequencesEnding( 3 , 0 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -1030,7 +1093,8 @@ I64 countIncreasingBrute( const Ints & A , int k )
  }
 
 // the example, the k-subsets on random distinct items, k = 1, k > n, a
-// sorted A, which gives the binomial coefficients
+// sorted A, which gives the binomial coefficients, k = n, a reverse sorted
+// A, equal items (never increasing) against the subsets
 ADS_TEST( "dp-84" )
 {
  CHECK( dp::countIncreasing( { -3 , 7 , 5 , 6 , 9 } , 3 ) == 5 );
@@ -1046,6 +1110,15 @@ ADS_TEST( "dp-84" )
  Ints S( 60 );
  for( int i = 0 ; i < 60 ; ++i ) S[ i ] = i;
  CHECK( dp::countIncreasing( S , 30 ) == binom( 60 , 30 ) );
+ CHECK( dp::countIncreasing( S , 60 ) == 1 );
+ CHECK( dp::countIncreasing( Ints( S.rbegin() , S.rend() ) , 2 ) == 0 );
+ CHECK( dp::countIncreasing( Ints( 7 , 4 ) , 1 ) == 7 &&
+        dp::countIncreasing( Ints( 7 , 4 ) , 2 ) == 0 );
+ for( int t = 0 ; t < 200 ; ++t ) {
+  const Ints A = randInts( g , randInt( g , 0 , 11 ) , 1 , 3 );
+  const int k = randInt( g , 1 , 4 );
+  CHECK( dp::countIncreasing( A , k ) == countIncreasingBrute( A , k ) );
+  }
  CHECK_THROWS( dp::countIncreasing( S , 0 ) , contract_violation );
  }
 
@@ -1054,8 +1127,9 @@ ADS_TEST( "dp-84" )
 /*--------------------------------------------------------------------------*/
 
 // the largest set of non-crossing connections between equal items is the
-// LCS of X and Y, so lcsTable() of the library answers: the example and
-// the subsequences of X on random vectors
+// LCS of X and Y, so lcsTable() of the library answers: the example, the
+// subsequences of X on random vectors (also of different lengths), one
+// side empty, all equal, nothing in common, Y the reverse of X
 
 int maxConnectionsBrute( const Ints & X , const Ints & Y )
 {
@@ -1082,6 +1156,14 @@ ADS_TEST( "dp-85" )
  CHECK( lcsTable( Ints() , Ints() )[ 0 ][ 0 ] == 0 );
  CHECK( lcsTable( Ints( 300 , 2 ) , Ints( 300 , 2 ) )[ 300 ][ 300 ] == 300 );
  CHECK( lcsTable( Ints( 300 , 2 ) , Ints( 300 , 3 ) )[ 300 ][ 300 ] == 0 );
+ CHECK( lcsTable( Ints() , Ints{ 1 , 2 } )[ 0 ][ 2 ] == 0 );
+ CHECK( lcsTable( Ints{ 1 , 2 } , Ints() )[ 2 ][ 0 ] == 0 );
+ CHECK( lcsTable( Ints{ 1 , 2 , 3 } , Ints{ 3 , 2 , 1 } )[ 3 ][ 3 ] == 1 );
+ for( int t = 0 ; t < 200 ; ++t ) {
+  const int n = randInt( g , 0 , 10 ) , m = randInt( g , 0 , 10 );
+  const Ints A = randInts( g , n , 1 , 3 ) , B = randInts( g , m , 1 , 3 );
+  CHECK( lcsTable( A , B )[ n ][ m ] == maxConnectionsBrute( A , B ) );
+  }
  }
 
 }  // end( namespace )
@@ -1136,7 +1218,8 @@ I64 productKBrute( const Ints & A , int m )
  }
 
 // the example, the subsets on random items, all ones, the empty A, a
-// single item larger than m
+// single item larger than m, m = 1, every subset fitting, the
+// preconditions
 ADS_TEST( "dp-86" )
 {
  CHECK( dp::productK( { 1 , 3 , 2 , 4 } , 10 ) == 12 );
@@ -1150,7 +1233,13 @@ ADS_TEST( "dp-86" )
  CHECK( dp::productK( Ints( 20 , 1 ) , 1 ) == ( I64( 1 ) << 20 ) );
  CHECK( dp::productK( { 2 , 3 } , 6 ) == 4 );
  CHECK( dp::productK( { 1000000 , 1000000 } , 1000000 ) == 3 );
+ CHECK( dp::productK( { 2 , 3 , 5 } , 1 ) == 1 );
+ CHECK( dp::productK( { 2 , 2 , 2 } , 8 ) == 8 &&
+        dp::productK( { 2 , 2 , 2 } , 7 ) == 7 );
+ CHECK( dp::productK( { INT_MAX } , 1 ) == 1 );
  CHECK_THROWS( dp::productK( { 0 } , 5 ) , contract_violation );
+ CHECK_THROWS( dp::productK( { 2 , -3 } , 5 ) , contract_violation );
+ CHECK_THROWS( dp::productK( { 2 } , 0 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -1197,7 +1286,8 @@ I64 mcsBrute( const Ints & T , const Ints & U )
  }
 
 // the example, the subsequences of T on random vectors, empty vectors,
-// only negative items, the largest items
+// only negative items, the largest items, only zeros, both empty, T equal
+// to U
 ADS_TEST( "dp-87" )
 {
  CHECK( dp::mcs( { 1 , -2 , 2 , 4 } , { 1 , 4 , 2 } ) == 5 );
@@ -1209,6 +1299,9 @@ ADS_TEST( "dp-87" )
   }
  CHECK( dp::mcs( {} , { 1 } ) == 0 && dp::mcs( { 1 } , {} ) == 0 );
  CHECK( dp::mcs( { -1 , -2 } , { -1 , -2 } ) == 0 );
+ CHECK( dp::mcs( {} , {} ) == 0 && dp::mcs( { 0 , 0 } , { 0 } ) == 0 );
+ CHECK( dp::mcs( { 3 , -1 , 3 } , { 3 , -1 , 3 } ) == 6 );
+ CHECK( dp::mcs( { 1 , 2 , 3 } , { 3 , 2 , 1 } ) == 3 );
  CHECK( dp::mcs( Ints( 100 , INT_MAX ) , Ints( 100 , INT_MAX ) ) ==
         I64( 100 ) * INT_MAX );
  }
@@ -1243,7 +1336,8 @@ bool isMixingBrute( const std::string & S1 , const std::string & S2 ,
 
 // the two counterexamples of the text, which defeat the test on the LCS
 // and the greedy scan; random interleavings, perturbed or not, against the
-// exhaustive recursion; the empty strings
+// exhaustive recursion; the empty strings, one character each, lengths
+// not adding up
 ADS_TEST( "dp-88" )
 {
  auto lcsTest = []( const std::string & A , const std::string & B ,
@@ -1284,6 +1378,13 @@ ADS_TEST( "dp-88" )
  CHECK( isInterleaving( "" , "" , "" ) && ! isInterleaving( "" , "" , "A" ) );
  CHECK( isInterleaving( "AB" , "" , "AB" ) &&
         ! isInterleaving( "AB" , "" , "BA" ) );
+ CHECK( isInterleaving( "" , "AB" , "AB" ) );
+ CHECK( isInterleaving( "A" , "B" , "BA" ) &&
+        isInterleaving( "A" , "B" , "AB" ) &&
+        ! isInterleaving( "A" , "B" , "AA" ) );
+ CHECK( ! isInterleaving( "AB" , "C" , "ABCD" ) &&
+        ! isInterleaving( "AB" , "C" , "AB" ) &&
+        ! isInterleaving( "ABC" , "" , "" ) );
  CHECK( isInterleaving( std::string( 400 , 'A' ) , std::string( 400 , 'A' ) ,
                         std::string( 800 , 'A' ) ) );
  }
@@ -1329,7 +1430,7 @@ bool madeUp( const Kids & K , int v , int level )
  }
 
 // the values of the text, the closed form 4^k Catalan( k ) for n = 4 k + 1
-// and 0 otherwise, all the tree shapes up to 11 nodes
+// and 0 otherwise, all the tree shapes up to 11 nodes, the bounds of n
 ADS_TEST( "dp-89" )
 {
  CHECK( dp::countMadeup( 1 ) == 1 && dp::countMadeup( 5 ) == 4 );
@@ -1349,7 +1450,10 @@ ADS_TEST( "dp-89" )
    if( madeUp( parseShape( w ) , 0 , 0 ) ) ++c;
   CHECK( dp::countMadeup( n ) == c );
   }
+ CHECK( dp::countMadeup( 41 ) == seq[ 10 ] );
  CHECK_THROWS( dp::countMadeup( 0 ) , contract_violation );
+ CHECK_THROWS( dp::countMadeup( 42 ) , contract_violation );
+ CHECK_THROWS( dp::countMadeup( -3 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -1407,7 +1511,8 @@ int minInversionsBrute( const std::string & S )
  }
 
 // the examples, the split points and all the flip masks on random strings,
-// the empty string, all zeros, all ones, a long alternating string
+// the empty string, one and two bits, all zeros, all ones, a long
+// alternating string, a single 1 before many 0, a foreign character
 ADS_TEST( "dp-90" )
 {
  CHECK( dp::minInversions( "000010000" ) == 1 );
@@ -1428,7 +1533,14 @@ ADS_TEST( "dp-90" )
  for( int i = 0 ; i < 1000 ; ++i ) alt += i % 2 ? '0' : '1';
  CHECK( dp::minInversions( alt ) == minInversionsSplit( alt ) );
  CHECK( dp::minInversions( alt ) == 500 );
+ CHECK( dp::minInversions( "0" ) == 0 && dp::minInversions( "1" ) == 0 );
+ CHECK( dp::minInversions( "10" ) == 1 && dp::minInversions( "01" ) == 0 );
+ CHECK( dp::minInversions( std::string( 1000 , '1' ) ) == 0 );
+ CHECK( dp::minInversions( "1" + std::string( 999 , '0' ) ) == 1 );
+ CHECK( dp::minInversions( std::string( 500 , '1' ) +
+                           std::string( 500 , '0' ) ) == 500 );
  CHECK_THROWS( dp::minInversions( "012" ) , contract_violation );
+ CHECK_THROWS( dp::minInversions( "0 1" ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -1490,7 +1602,9 @@ I64 countSquaresBrute( const Grid & A )
  return( c );
  }
 
-// the example, every square on random matrices, all zeros, all ones
+// the example, every square on random matrices, all zeros, all ones, a
+// checkerboard (only the 1 x 1 squares), the preconditions (empty, not
+// square, ragged, not 0/1)
 ADS_TEST( "dp-91" )
 {
  CHECK( dp::countSquares( { { 0 , 1 , 1 , 1 } , { 1 , 1 , 1 , 1 } ,
@@ -1509,7 +1623,16 @@ ADS_TEST( "dp-91" )
  I64 all = 0;                                 // sum of s^2 for s <= 300
  for( I64 s = 1 ; s <= 300 ; ++s ) all += s * s;
  CHECK( dp::countSquares( Grid( 300 , Ints( 300 , 1 ) ) ) == all );
+ Grid C( 9 , Ints( 9 , 0 ) );
+ for( int i = 0 ; i < 9 ; ++i )
+  for( int j = 0 ; j < 9 ; ++j ) C[ i ][ j ] = ( i + j ) % 2;
+ CHECK( dp::countSquares( C ) == 40 );
  CHECK_THROWS( dp::countSquares( { { 2 } } ) , contract_violation );
+ CHECK_THROWS( dp::countSquares( { { -1 } } ) , contract_violation );
+ CHECK_THROWS( dp::countSquares( Grid() ) , contract_violation );
+ CHECK_THROWS( dp::countSquares( { { 1 , 1 } } ) , contract_violation );
+ CHECK_THROWS( dp::countSquares( { { 1 , 1 } , { 1 } } ) ,
+               contract_violation );
  }
 
 }  // end( namespace )
@@ -1550,7 +1673,8 @@ bool full( const Kids & K )
  }
 
 // the example, Catalan( ( n - 1 ) / 2 ) for odd n and 0 for even n, all
-// the tree shapes up to 11 nodes, the largest n
+// the tree shapes up to 11 nodes, the smallest and the largest n, the
+// bounds of n
 ADS_TEST( "dp-92" )
 {
  CHECK( dp::countAB( 5 ) == 2 );
@@ -1562,7 +1686,10 @@ ADS_TEST( "dp-92" )
   CHECK( dp::countAB( n ) == c );
   }
  CHECK( dp::countAB( 71 ) == 3116285494907301262 );       // Catalan( 35 )
+ CHECK( dp::countAB( 0 ) == 0 && dp::countAB( 1 ) == 1 &&
+        dp::countAB( 70 ) == 0 );
  CHECK_THROWS( dp::countAB( 72 ) , contract_violation );
+ CHECK_THROWS( dp::countAB( -1 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -1619,7 +1746,8 @@ int lcncsBrute( const std::string & T , const std::string & U )
  }
 
 // the example and the definition, the non-adjacent subsequences on random
-// strings, the empty strings, all items equal
+// strings, the empty strings, all items equal, nothing in common, U the
+// reverse of T
 ADS_TEST( "dp-93" )
 {
  CHECK( dp::lcncs( "ABCD" , "BCDC" ) == 2 );
@@ -1633,6 +1761,9 @@ ADS_TEST( "dp-93" )
   CHECK( dp::lcncs( T , U ) == lcncsBrute( T , U ) );
   }
  CHECK( dp::lcncs( "" , "A" ) == 0 && dp::lcncs( "A" , "A" ) == 1 );
+ CHECK( dp::lcncs( "" , "" ) == 0 && dp::lcncs( "A" , "" ) == 0 );
+ CHECK( dp::lcncs( "ABC" , "DEF" ) == 0 && dp::lcncs( "AB" , "BA" ) == 1 );
+ CHECK( dp::lcncs( "ABAB" , "ABAB" ) == 2 );
  CHECK( dp::lcncs( std::string( 999 , 'A' ) , std::string( 999 , 'A' ) ) ==
         500 );
  }
@@ -1681,7 +1812,7 @@ I64 maxL1Brute( const Ints & V1 , const Ints & V2 )
  }
 
 // the example, the pairs of index sets on random vectors, an empty vector,
-// equal vectors, the extremes of int
+// both empty, equal vectors, different lengths, the extremes of int
 ADS_TEST( "dp-95" )
 {
  CHECK( dp::maxL1( { 1 , 2 , 3 } , { 1 , 5 , 2 } ) == 5 );
@@ -1691,7 +1822,10 @@ ADS_TEST( "dp-95" )
   const Ints B = randInts( g , randInt( g , 0 , 7 ) , -10 , 10 );
   CHECK( dp::maxL1( A , B ) == maxL1Brute( A , B ) );
   }
- CHECK( dp::maxL1( {} , { 3 } ) == 0 );
+ CHECK( dp::maxL1( {} , { 3 } ) == 0 && dp::maxL1( { 3 } , {} ) == 0 );
+ CHECK( dp::maxL1( {} , {} ) == 0 );
+ CHECK( dp::maxL1( { 0 } , { -5 , 7 } ) == 7 );
+ CHECK( dp::maxL1( { INT_MIN } , { INT_MAX } ) == I64( INT_MAX ) - INT_MIN );
  CHECK( dp::maxL1( { 4 } , { 4 } ) == 0 );
  CHECK( dp::maxL1( { 4 , 4 } , { 4 , 4 } ) == 0 );
  CHECK( dp::maxL1( Ints( 3 , INT_MIN ) , Ints( 3 , INT_MAX ) ) ==
@@ -1745,8 +1879,8 @@ int longestLineBrute( const std::vector< std::vector< bool > > & A )
  return( best );
  }
 
-// the example, the cubic scan on random matrices, the empty matrix, all
-// false, all true
+// the example, the cubic scan on random matrices, the empty matrix, one
+// cell, all false, all true, a single full column, the precondition
 ADS_TEST( "dp-96" )
 {
  const std::vector< std::string > rows = { "TTFTTTT" , "TTFTTTT" , "FFTFFFF" ,
@@ -1771,6 +1905,13 @@ ADS_TEST( "dp-96" )
  CHECK( dp::longestLine( B( 40 , std::vector< bool >( 40 , false ) ) ) == 0 );
  CHECK( dp::longestLine( B( 400 , std::vector< bool >( 400 , true ) ) ) ==
         400 );
+ CHECK( dp::longestLine( B( 1 , std::vector< bool >( 1 , true ) ) ) == 1 &&
+        dp::longestLine( B( 1 , std::vector< bool >( 1 , false ) ) ) == 0 );
+ B col( 6 , std::vector< bool >( 6 , false ) );
+ for( auto & r : col ) r[ 5 ] = true;
+ CHECK( dp::longestLine( col ) == 6 );
+ CHECK_THROWS( dp::longestLine( B( 2 , std::vector< bool >( 3 , true ) ) ) ,
+               contract_violation );
  }
 
 }  // end( namespace )
@@ -1839,7 +1980,8 @@ int minMovesBfs( const std::string & S )
 
 // the examples, the greedy from the start failing on "aaaaaa", the DP and
 // the greedy from the end against a BFS on random strings and on strings
-// built by random moves, the empty string
+// built by random moves, the empty string, one and two characters, all
+// characters distinct (no doubling)
 ADS_TEST( "dp-97" )
 {
  CHECK( dp::minMoves( "tatami" ) == 5 && dp::minMoves( "babababa" ) == 4 );
@@ -1866,6 +2008,13 @@ ADS_TEST( "dp-97" )
   }
  CHECK( dp::minMoves( "" ) == 0 && dp::minMoves( "x" ) == 1 );
  CHECK( dp::minMoves( std::string( 1024 , 'a' ) ) == 11 );
+ CHECK( dp::minMovesGreedy( "" ) == 0 && dp::minMovesGreedy( "x" ) == 1 );
+ CHECK( dp::minMoves( "aa" ) == 2 && dp::minMoves( "ab" ) == 2 );
+ CHECK( dp::minMoves( "abab" ) == 3 && dp::minMovesGreedy( "abab" ) == 3 );
+ CHECK( dp::minMoves( "abcdefgh" ) == 8 &&
+        dp::minMovesGreedy( "abcdefgh" ) == 8 );
+ CHECK( dp::minMovesGreedy( std::string( 1023 , 'a' ) ) ==
+        minMovesBfs( std::string( 1023 , 'a' ) ) );
  }
 
 }  // end( namespace )
@@ -1896,7 +2045,7 @@ I64 countPars( int n )
 namespace {
 
 // the examples, the count of nestedParentheses() of the library up to 12,
-// the closed formula up to 30, the largest n
+// the closed formula up to 30, the largest n, the bounds of n
 ADS_TEST( "dp-98" )
 {
  std::set< std::string > W;
@@ -1917,6 +2066,7 @@ ADS_TEST( "dp-98" )
   CHECK( dp::countPars( n ) == catalan( n ) );
  CHECK( dp::countPars( 35 ) == 3116285494907301262 );
  CHECK_THROWS( dp::countPars( -1 ) , contract_violation );
+ CHECK_THROWS( dp::countPars( 36 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -1985,7 +2135,8 @@ int minStepsBfs( const Grid & A )
  return( d[ n - 1 ][ n - 1 ] );
  }
 
-// the example, a BFS on random matrices, one cell, all ones, all n
+// the example, a BFS on random matrices, one cell, all ones, all n, the
+// preconditions (empty, not square, entries out of 1 .. n)
 ADS_TEST( "dp-99" )
 {
  CHECK( dp::minSteps( { { 3 , 1 , 3 , 1 } , { 1 , 1 , 1 , 1 } ,
@@ -1999,8 +2150,12 @@ ADS_TEST( "dp-99" )
  CHECK( dp::minSteps( { { 1 } } ) == 0 );
  CHECK( dp::minSteps( Grid( 60 , Ints( 60 , 1 ) ) ) == 118 );
  CHECK( dp::minSteps( Grid( 60 , Ints( 60 , 60 ) ) ) == 2 );
+ CHECK( dp::minSteps( { { 2 , 1 } , { 1 , 1 } } ) == 2 );
  CHECK_THROWS( dp::minSteps( { { 1 , 3 } , { 1 , 1 } } ) ,
                contract_violation );
+ CHECK_THROWS( dp::minSteps( { { 0 } } ) , contract_violation );
+ CHECK_THROWS( dp::minSteps( Grid() ) , contract_violation );
+ CHECK_THROWS( dp::minSteps( { { 1 , 1 } } ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -2041,7 +2196,8 @@ I64 countWordsBrute( int T )
  }
 
 // the examples, the enumeration up to 22, 2^( T - 1 ) up to 26, the
-// identity DP[ t ] = 2 DP[ t - 1 ] - DP[ t - 27 ] beyond, the largest T
+// identity DP[ t ] = 2 DP[ t - 1 ] - DP[ t - 27 ] beyond, the largest T,
+// the bounds of T
 ADS_TEST( "dp-100" )
 {
  CHECK( dp::countWords( 1 ) == 1 && dp::countWords( 2 ) == 2 &&
@@ -2056,6 +2212,7 @@ ADS_TEST( "dp-100" )
   CHECK( dp::countWords( T ) ==
          2 * dp::countWords( T - 1 ) - dp::countWords( T - 27 ) );
  CHECK_THROWS( dp::countWords( 63 ) , contract_violation );
+ CHECK_THROWS( dp::countWords( -1 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -2110,7 +2267,8 @@ Longs allValues( const Ints & V , const std::string & op , int i , int j )
  }
 
 // the example, all the parenthesizations of random expressions, one value,
-// only sums, only products
+// only sums, only products, the largest product of two int, the
+// preconditions (no value, operators miscounted, a value not positive)
 ADS_TEST( "dp-101" )
 {
  CHECK( dp::maxResults( { 5 , 8 , 3 } , "+*" ) == 39 );
@@ -2128,7 +2286,13 @@ ADS_TEST( "dp-101" )
  CHECK( dp::maxResults( { 1 , 2 , 3 , 4 } , "+++" ) == 10 );
  CHECK( dp::maxResults( { 1 , 2 , 3 , 4 } , "***" ) == 24 );
  CHECK( dp::maxResults( { 1 , 1 , 1 , 1 } , "+*+" ) == 4 );
+ CHECK( dp::maxResults( { INT_MAX , INT_MAX } , "*" ) ==
+        I64( INT_MAX ) * INT_MAX );
  CHECK_THROWS( dp::maxResults( { 1 , 2 } , "-" ) , contract_violation );
+ CHECK_THROWS( dp::maxResults( {} , "" ) , contract_violation );
+ CHECK_THROWS( dp::maxResults( { 1 , 2 } , "" ) , contract_violation );
+ CHECK_THROWS( dp::maxResults( { 1 } , "+" ) , contract_violation );
+ CHECK_THROWS( dp::maxResults( { 1 , 0 } , "+" ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -2177,7 +2341,7 @@ I64 maxPointsBrute( const Ints & P )
  }
 
 // the examples, the admissible sets of levels on random points, one level,
-// two levels, all levels negative
+// two levels, all levels negative, the extremes of int
 ADS_TEST( "dp-102" )
 {
  CHECK( dp::maxPoints( { 10 , 20 , -5 , 30 , -10 , 25 } ) == 85 );
@@ -2190,6 +2354,8 @@ ADS_TEST( "dp-102" )
  CHECK( dp::maxPoints( { -3 } ) == -3 && dp::maxPoints( { -3 , -4 } ) == -7 );
  CHECK( dp::maxPoints( { -1 , -1 , -1 , -1 , -1 } ) == -3 );
  CHECK( dp::maxPoints( Ints( 1000 , INT_MAX ) ) == I64( 1000 ) * INT_MAX );
+ CHECK( dp::maxPoints( Ints( 1000 , INT_MIN ) ) == I64( 501 ) * INT_MIN );
+ CHECK( dp::maxPoints( { 3 , 4 } ) == 7 && dp::maxPoints( { 7 } ) == 7 );
  CHECK_THROWS( dp::maxPoints( {} ) , contract_violation );
  }
 
@@ -2249,7 +2415,7 @@ I64 countWaysBrute( int n )
  }
 
 // the examples, all the 3^n sequences up to 11, the closed formula sum of
-// C( n , 2 k ) C( 2 k , k ), the largest n
+// C( n , 2 k ) C( 2 k , k ), the largest n, the bounds of n
 ADS_TEST( "dp-103" )
 {
  const Longs seq = { 1 , 3 , 7 , 19 , 51 , 141 , 393 , 1107 , 3139 , 8953 };
@@ -2264,6 +2430,8 @@ ADS_TEST( "dp-103" )
   CHECK( dp::countWays( n ) == c );
   }
  CHECK_THROWS( dp::countWays( 0 ) , contract_violation );
+ CHECK_THROWS( dp::countWays( 40 ) , contract_violation );
+ CHECK_THROWS( dp::countWays( -1 ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -2307,7 +2475,8 @@ I64 maxGainBrute( const Ints & P , int k )
  }
 
 // the example, the increasing sequences of 2 k days on random prices, no
-// operation, too many operations, falling prices
+// operation, too many operations, falling prices, exactly 2 k days, all
+// prices equal
 ADS_TEST( "dp-104" )
 {
  CHECK( dp::maxGain( { 1 , 3 , 6 , 7 , 4 , 10 } , 2 ) == 12 );
@@ -2320,6 +2489,9 @@ ADS_TEST( "dp-104" )
  CHECK( dp::maxGain( {} , 0 ) == 0 && dp::maxGain( { 5 } , 1 ) == NEG );
  CHECK( dp::maxGain( { 5 , 4 , 3 , 2 } , 2 ) == -2 );
  CHECK( dp::maxGain( { 1 , 2 , 3 } , 2 ) == NEG );
+ CHECK( dp::maxGain( { 4 , 9 , 2 } , 0 ) == 0 );
+ CHECK( dp::maxGain( { 3 , 1 } , 1 ) == -2 && dp::maxGain( {} , 1 ) == NEG );
+ CHECK( dp::maxGain( { 5 , 5 , 5 , 5 } , 2 ) == 0 );
  CHECK( dp::maxGain( { 0 , INT_MAX , 0 , INT_MAX } , 2 ) ==
         2 * I64( INT_MAX ) );
  CHECK_THROWS( dp::maxGain( { 1 } , -1 ) , contract_violation );
@@ -2383,7 +2555,8 @@ I64 hatevilleBrute( const Grid & cost , int k )
  }
 
 // both versions against all the colorings of random streets, the empty
-// street, one house, two colors alternating, equal costs
+// street, one house, two colors alternating, equal costs, negative costs,
+// the preconditions (one color, a row of the wrong size)
 ADS_TEST( "dp-105" )
 {
  std::mt19937 g( 1 );
@@ -2401,7 +2574,18 @@ ADS_TEST( "dp-105" )
  const Grid E( 500 , Ints( 3 , INT_MAX ) );
  CHECK( dp::hateville( E , 3 ) == 500 * I64( INT_MAX ) &&
         dp::hatevilleFast( E , 3 ) == 500 * I64( INT_MAX ) );
+ for( int t = 0 ; t < 200 ; ++t ) {
+  const int n = randInt( g , 1 , 6 ) , k = randInt( g , 2 , 3 );
+  const Grid C = randGrid( g , n , k , -20 , 20 );
+  CHECK( dp::hateville( C , k ) == hatevilleBrute( C , k ) );
+  }
+ CHECK( dp::hateville( { { -5 , -5 } , { -5 , -5 } } , 2 ) == -10 );
  CHECK_THROWS( dp::hateville( { { 1 } } , 1 ) , contract_violation );
+ CHECK_THROWS( dp::hateville( {} , 0 ) , contract_violation );
+ CHECK_THROWS( dp::hateville( { { 1 , 2 } , { 1 } } , 2 ) ,
+               contract_violation );
+ CHECK_THROWS( dp::hatevilleFast( { { 1 , 2 , 3 } } , 2 ) ,
+               contract_violation );
  }
 
 }  // end( namespace )
@@ -2463,7 +2647,8 @@ I64 howMuchWaterLevels( const Ints & h )
 namespace {
 
 // the example, the three scans on random columns, fewer than three
-// columns, all equal, the highest columns
+// columns, all equal, the highest columns, monotone heights, a single
+// valley, the precondition of the three scans
 ADS_TEST( "dp-106" )
 {
  const Ints E = { 0 , 1 , 0 , 2 , 4 , 0 , 1 , 2 , 1 , 3 };
@@ -2481,7 +2666,22 @@ ADS_TEST( "dp-106" )
         2 * I64( INT_MAX ) );
  CHECK( dp::howMuchWaterColumns( { INT_MAX , 0 , 0 , INT_MAX } ) ==
         2 * I64( INT_MAX ) );
+ CHECK( dp::howMuchWater( { 5 } ) == 0 &&
+        dp::howMuchWaterColumns( { 5 } ) == 0 &&
+        dp::howMuchWaterLevels( { 5 } ) == 0 );
+ CHECK( dp::howMuchWaterColumns( {} ) == 0 &&
+        dp::howMuchWaterLevels( {} ) == 0 );
+ CHECK( dp::howMuchWater( { 1 , 2 , 3 , 4 , 5 } ) == 0 &&
+        dp::howMuchWater( { 5 , 4 , 3 , 2 , 1 } ) == 0 );
+ CHECK( dp::howMuchWater( { 5 , 4 , 3 , 4 , 6 } ) == 4 &&
+        dp::howMuchWaterLevels( { 5 , 4 , 3 , 4 , 6 } ) == 4 );
+ CHECK( dp::howMuchWater( Ints( 50 , 0 ) ) == 0 &&
+        dp::howMuchWaterLevels( Ints( 50 , 0 ) ) == 0 );
  CHECK_THROWS( dp::howMuchWater( { -1 } ) , contract_violation );
+ CHECK_THROWS( dp::howMuchWaterColumns( { 1 , -1 , 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( dp::howMuchWaterLevels( { 1 , -1 , 1 } ) ,
+               contract_violation );
  }
 
 }  // end( namespace )
@@ -2523,7 +2723,8 @@ int divisibleBrute( const Ints & A )
  }
 
 // the example, the subsets on random items, the empty set, one item,
-// the powers of 2, the primes
+// the powers of 2, the primes, 1 with any item, the largest int, the
+// preconditions (repeated, zero, negative)
 ADS_TEST( "dp-107" )
 {
  CHECK( dp::largestDivisibleSubsetSize( { 1 , 2 , 3 , 4 , 6 } ) == 3 );
@@ -2538,7 +2739,13 @@ ADS_TEST( "dp-107" )
  for( int i = 0 ; i < 31 ; ++i ) P2.push_back( 1 << i );
  CHECK( dp::largestDivisibleSubsetSize( P2 ) == 31 );
  CHECK( dp::largestDivisibleSubsetSize( { 2 , 3 , 5 , 7 , 11 , 13 } ) == 1 );
+ CHECK( dp::largestDivisibleSubsetSize( { 7 , 1 , 5 } ) == 2 );
+ CHECK( dp::largestDivisibleSubsetSize( { INT_MAX , 1 } ) == 2 );
  CHECK_THROWS( dp::largestDivisibleSubsetSize( { 2 , 2 } ) ,
+               contract_violation );
+ CHECK_THROWS( dp::largestDivisibleSubsetSize( { 0 , 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( dp::largestDivisibleSubsetSize( { -2 , 4 } ) ,
                contract_violation );
  }
 
@@ -2600,7 +2807,8 @@ int maxBalancedCubic( const Ints & A )
  }
 
 // the example, the cubic count on random arrays with negative items, the
-// empty array, all even, a long alternating array
+// empty array, all even, all odd (also negative), one pair, a long
+// alternating array, the extremes of int
 ADS_TEST( "dp-108" )
 {
  CHECK( dp::maxBalanced( { 2 , 4 , 1 , 6 , 8 , 3 , 5 } ) == 6 );
@@ -2612,6 +2820,11 @@ ADS_TEST( "dp-108" )
   }
  CHECK( dp::maxBalanced( {} ) == 0 && dp::maxBalanced( { 3 } ) == 0 );
  CHECK( dp::maxBalanced( Ints( 100 , 4 ) ) == 0 );
+ CHECK( dp::maxBalanced( Ints( 100 , -3 ) ) == 0 &&
+        dp::maxBalancedQuadratic( Ints( 100 , -3 ) ) == 0 );
+ CHECK( dp::maxBalanced( { -3 , -2 } ) == 2 &&
+        dp::maxBalancedQuadratic( { -3 , -2 } ) == 2 );
+ CHECK( dp::maxBalancedQuadratic( {} ) == 0 );
  Ints alt( 100000 );
  for( int i = 0 ; i < 100000 ; ++i ) alt[ i ] = i;
  CHECK( dp::maxBalanced( alt ) == 100000 );

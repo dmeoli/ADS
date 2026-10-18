@@ -65,7 +65,8 @@ namespace ADS {
 /// \pre e is a well formed postfix expression
 BinaryTree< std::string > * expressionTree( std::string_view e );
 
-/// the value of the expression t, with the variables valued by env
+/// the value of the expression t, with the variables valued by env; a
+/// leaf is a number, possibly signed (e.g., -3, +2.5, .5), or a variable
 /// \pre t is not nil, env values each variable, no division by 0
 double evaluate( const BinaryTree< std::string > * t ,
                  const std::map< std::string , double > & env = {} );

@@ -99,8 +99,8 @@ namespace ADS {
 /// \post the pairs are edges, within the capacities of their ends (audit)
 inline std::vector< std::pair< int , int > > bipartiteBMatching(
                       const std::vector< std::vector< int > > & A , int nr ,
-                      const std::vector< long > & capL ,
-                      const std::vector< long > & capR );
+                      const std::vector< long long > & capL ,
+                      const std::vector< long long > & capR );
 
 /// maxWeightMatching(): the largest total weight of a matching of the
 /// graph of n nodes and of the edges E = ( u , v , w ), and the places in

@@ -76,7 +76,7 @@ namespace ADS {
 template< class T , class C = std::less<> >
 void mergeParts( std::vector< T > & A , std::vector< T > & B ,
                  std::size_t start , std::size_t mid , std::size_t end ,
-                 C less = C() , long * inv = nullptr );
+                 C less = C() , long long * inv = nullptr );
 
 /// MergeSortRec() of A[ start .. end ], insertionSort() below cutoff items;
 /// with cutoff > 1 also no merge of two parts already in order, i.e., with
@@ -86,7 +86,7 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
 template< class T , class C = std::less<> >
 void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
                    std::size_t start , std::size_t end , std::size_t cutoff ,
-                   C less = C() , long * inv = nullptr );
+                   C less = C() , long long * inv = nullptr );
 
 /// MergeSort(): A in increasing order, stable; parts of at most cutoff
 /// items by insertionSort() (1 is the book)
@@ -104,7 +104,7 @@ void mergeSortBottomUp( std::vector< T > & A , C less = C() );
 /// the number of inversions of A, which ends sorted, O( n log n )
 /// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
-long countInversions( std::vector< T > & A , C less = C() );
+long long countInversions( std::vector< T > & A , C less = C() );
 
 /// Merge Sort of a list with pointers: the cells are moved, not the items
 /// \post L is sorted

@@ -28,9 +28,11 @@
 #include "ADS/sequence/ArraySequence.h"
 #include "ADS/sequence/CursorList.h"
 #include "ADS/sequence/List.h"
+#include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SinglyList.h"
 #include "ADS/sequence/SequenceAlgorithms.h"
 
+#include <algorithm>
 #include <iterator>
 #include <list>
 #include <memory>
@@ -194,7 +196,9 @@ ADS_TEST( "copy-move" )
 
 // the algorithms on sequences: the sorted input of searchOrdered() and of
 // mergeSorted() audited, and the sorts, the merge and the removal of the
-// duplicates checked by their own audits on random sequences
+// duplicates checked by their own audits on random sequences; lowerBound()
+// audited, the empty sequences, the sublists of one item, from pos_n and
+// with q before p (refused), one item and all items equal
 ADS_TEST( "sequence-algorithms" )
 {
  List< int > u = { 3 , 1 , 2 } , s = { 1 , 2 , 3 };
@@ -221,6 +225,128 @@ ADS_TEST( "sequence-algorithms" )
   CHECK( order( b ) == Order::EMPTY || order( b ) == Order::CONSTANT ||
          order( b ) == Order::INCREASING );
   }
+ // lowerBound() audited too; the empty sequences, a sublist of one item,
+ // from pos_n, and one whose q precedes p, which runs off the end
+ CHECK_THROWS( (void) lowerBound( u , 2 ) , contract_violation );
+ const List< int > e;
+ CHECK( search( e , 1 ) < 0 && searchOrdered( e , 1 ) < 0 &&
+        ! lowerBound( e , 1 ).second && order( e ) == Order::EMPTY );
+ CHECK( mergeSorted( e , s ) == s && mergeSorted( s , e ) == s &&
+        mergeSorted( e , e ).isEmpty() );
+ const auto h = s.head() , t = s.tail();
+ CHECK( sublist( s , h , h ) == List< int >( { 1 } ) );
+ CHECK( sublist( s , h , t ) == s );
+ CHECK( sublist( s , s.next( t ) , h ).isEmpty() );   // from pos_n
+ CHECK_THROWS( (void) sublist( s , t , h ) , contract_violation );
+ List< int > one = { 4 } , same = { 2 , 2 , 2 };
+ naturalMergeSort( one );
+ bubbleSort( same );
+ removeDuplicates( same );
+ CHECK( one == List< int >( { 4 } ) && same == List< int >( { 2 } ) );
+ }
+
+// the other realizations and the rearrangements: SinglyList and
+// CursorList at pos_-1 and pos_n, the space of the cursors (dim >= 1, a
+// cell in [ 1 , capacity ], a cell given back twice caught by the
+// invariant), the indices of ArraySequence; the Dutch flag with a colour
+// -1 and 3, the empty vector, one colour only; wiggleSort() and
+// sortKSorted() on empty, one item, equal items, k = 0 and k >= n, a
+// vector not k-sorted refused; minimumSwapSort() refusing repeated items
+ADS_TEST( "other-sequences" )
+{
+ SinglyList< int > L;
+ const auto before = L.prev( L.head() );        // pos_-1
+ CHECK( L.finished( before ) && L.finished( L.head() ) );
+ CHECK_THROWS( L.insert( before , 0 ) , contract_violation );
+ CHECK_THROWS( (void) L.next( L.head() ) , contract_violation );  // pos_n
+ CHECK_THROWS( (void) L.read( L.head() ) , contract_violation );
+ CHECK_THROWS( L.remove( L.head() ) , contract_violation );
+ CHECK_THROWS( L.write( L.head() , 1 ) , contract_violation );
+ L.insert( L.head() , 1 );
+ const auto end = L.next( L.head() );
+ CHECK( L.read( L.head() ) == 1 && L.finished( end ) );
+ CHECK_THROWS( (void) L.read( end ) , contract_violation );
+ CHECK( L.next( before ) == L.head() );         // from pos_-1 to pos_0
+ L.insert( end , 2 );                           // at pos_n: the back
+ CHECK( L.read( L.tail() ) == 2 && L.remove( L.head() ) == L.head() );
+
+ CHECK_THROWS( CursorSpace< int >( 0 ) , contract_violation );
+ CHECK_THROWS( CursorSpace< int >( -1 ) , contract_violation );
+ CHECK_THROWS( CursorList< int >( nullptr ) , contract_violation );
+ auto S = std::make_shared< CursorSpace< int > >( 1 );   // dim = 1
+ CHECK( S->capacity() == 1 );
+ CHECK_THROWS( (void) ( *S )[ 0 ] , contract_violation );
+ CHECK_THROWS( (void) ( *S )[ 2 ] , contract_violation );
+ CHECK_THROWS( S->give( 1 ) , contract_violation );      // none in use
+ CHECK_THROWS( S->give( 0 ) , contract_violation );
+ const long a = S->take();
+ (void) ( *S )[ a ];
+ const long b = S->take();                      // the space grows
+ S->give( a );
+ CHECK_THROWS( S->give( a ) , contract_violation );       // twice
+ (void) b;
+ CursorList< int > C;
+ CHECK_THROWS( C.insert( -1 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) C.next( C.head() ) , contract_violation );
+ CHECK_THROWS( (void) C.read( C.head() ) , contract_violation );
+ CHECK_THROWS( C.remove( C.head() ) , contract_violation );
+ CHECK_THROWS( C.write( C.head() , 0 ) , contract_violation );
+ C.insert( C.head() , 3 );
+ CHECK( C.read( C.head() ) == 3 && C.next( -1 ) == C.head() &&
+        C.prev( C.head() ) == -1 );
+
+ ArraySequence< int > A = { 5 , 6 };
+ CHECK( A[ 0 ] == 5 && A[ 1 ] == 6 );
+ CHECK_THROWS( (void) A[ -1 ] , contract_violation );
+ CHECK_THROWS( (void) A[ 2 ] , contract_violation );
+ const ArraySequence< int > & cA = A;
+ CHECK_THROWS( (void) cA[ 2 ] , contract_violation );
+ CHECK( A.next( 1 ) == 2 && A.prev( 2 ) == 1 && A.prev( 0 ) == -1 );
+ CHECK_THROWS( (void) A.prev( 3 ) , contract_violation );
+ CHECK_THROWS( (void) A.next( -2 ) , contract_violation );
+ List< int > N;
+ CHECK_THROWS( (void) N.prev( nullptr ) , contract_violation );
+ CHECK_THROWS( (void) N.read( nullptr ) , contract_violation );
+ CHECK_THROWS( N.write( nullptr , 0 ) , contract_violation );
+ CHECK_THROWS( N.remove( nullptr ) , contract_violation );
+
+ // the rearrangements
+ std::vector< int > F = { 2 , 0 , 1 , 2 , 0 };
+ const auto id = []( int x ) { return( x ); };
+ CHECK( dutchNationalFlag( F , id ) == std::pair( std::size_t( 2 ) ,
+                                                  std::size_t( 3 ) ) );
+ std::vector< int > F3 = { 0 , 3 } , Fm = { -1 } , F0 , F1( 4 , 1 );
+ CHECK_THROWS( dutchNationalFlag( F3 , id ) , contract_violation );
+ CHECK_THROWS( dutchNationalFlag( Fm , id ) , contract_violation );
+ CHECK( dutchNationalFlag( F0 , id ) == std::pair( std::size_t( 0 ) ,
+                                                   std::size_t( 0 ) ) );
+ CHECK( dutchNationalFlag( F1 , id ) == std::pair( std::size_t( 0 ) ,
+                                                   std::size_t( 4 ) ) );
+ for( std::vector< int > W : { std::vector< int >() , std::vector< int >{ 1 } ,
+                               std::vector< int >( 5 , 3 ) ,
+                               std::vector< int >{ 1 , 2 , 3 , 4 , 5 } ,
+                               std::vector< int >{ 5 , 4 , 3 , 2 , 1 } } ) {
+  auto X = W;
+  wiggleSort( X );                              // its audit checks it
+  auto Y = W;
+  std::sort( Y.begin() , Y.end() );
+  auto Z = Y;
+  sortKSorted( Z , 0 );                         // sorted: 0-sorted
+  CHECK( Z == Y );
+  auto K = W;
+  sortKSorted( K , W.size() );                  // k >= n: anything
+  CHECK( K == Y );
+  }
+ std::vector< int > far = { 3 , 1 , 2 };
+ CHECK_THROWS( sortKSorted( far , 1 ) , contract_violation );
+ sortKSorted( far , 2 );
+ CHECK( far == std::vector< int >( { 1 , 2 , 3 } ) );
+ CHECK_THROWS( (void) minimumSwapSort( std::vector< int >{ 1 , 1 } ) ,
+               contract_violation );
+ CHECK( minimumSwapSort( std::vector< int >() ).first == 0 &&
+        minimumSwapSort( std::vector< int >{ 7 } ).first == 0 );
+ CHECK( minimumSwapSort( std::vector< int >{ 2 , 1 } ) ==
+        std::pair( std::size_t( 1 ) , 3 ) );
  }
 
 }  // end( namespace )

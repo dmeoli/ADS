@@ -66,8 +66,13 @@ void stableSort( std::vector< T > & A , C less )
  if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
   if( A.size() < kRadix )
    powerSort( A , less );
-  else if( ! detail::presorted( A , less ) )
-   radixSort( A );
+  else if( ! detail::presorted( A , less ) ) {
+   if constexpr( std::is_floating_point_v< T > )   // -0 and +0 are equal
+    radixSortBy( A , []( T x ) {
+     return( radixKey( x == T( 0 ) ? T( 0 ) : x ) ); } );
+   else
+    radixSort( A );
+   }
   }
  else if constexpr( detail::naturalOrder< T , C > &&
                     std::is_same_v< T , std::string > ) {

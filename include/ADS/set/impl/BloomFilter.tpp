@@ -19,7 +19,8 @@ namespace ADS {
 
 template< class T , class H >
 BloomFilter< T , H >::BloomFilter( std::size_t m , int k , H h )
- : f_B( ( m + 63 ) / 64 , 0 ) , f_m( m ) , f_k( k ) , f_h( h )
+ : f_B( m / 64 + ( m % 64 != 0 ) , 0 ) ,   // m + 63 wraps near SIZE_MAX
+   f_m( m ) , f_k( k ) , f_h( h )
 {
  ADS_PRE( ( m >= 1 ) && ( k >= 1 ) );
  }

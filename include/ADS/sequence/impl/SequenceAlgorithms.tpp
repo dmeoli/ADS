@@ -106,7 +106,7 @@ long searchOrdered( const S & s , const typename S::Item & v )
   if( s.read( p ) == v ) return( i - 1 );
   if( v < s.read( p ) ) break;
   }
- return( -i );
+ return( i > 0 ? -i : -1 );              // never 0 , the place of a hit
  }
 
 template< Sequence S >

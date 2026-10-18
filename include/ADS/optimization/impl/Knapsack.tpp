@@ -66,20 +66,23 @@ inline long zaino( const std::vector< long > & p ,
 {
  ADS_PRE( detail::knapsackInput( p , v , C ) );
  const long NEG = std::numeric_limits< long >::min() / 2;
- ChainedHashTable< long , long > DP( 64 , true );   // key i ( C + 1 ) + c
+ // a table per object, of key c: the single key i ( C + 1 ) + c of one
+ // table would overflow for large capacities
+ std::deque< ChainedHashTable< long , long > > DP;
+ for( std::size_t i = 0 ; i <= p.size() ; ++i )
+  DP.emplace_back( 8 , true );
  auto rec = [ & ]( auto & self , long i , long c ) -> long {
   if( c < 0 )
    return( NEG );
   if( i == 0 )                              // not c == 0: volumes may be 0
    return( 0 );
-  const long key = i * ( C + 1 ) + c;
-  if( auto r = DP.lookup( key ) )
+  if( auto r = DP[ i ].lookup( c ) )
    return( *r );
   if( solved ) ++*solved;
   const long r = std::max( self( self , i - 1 , c ) ,
                            self( self , i - 1 , c - v[ i - 1 ] ) +
                            p[ i - 1 ] );
-  DP.insert( key , r );
+  DP[ i ].insert( c , r );
   return( r );
   };
  return( rec( rec , long( p.size() ) , C ) );

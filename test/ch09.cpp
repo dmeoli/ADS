@@ -116,6 +116,16 @@ ListGraph<> random_graph( int n , double p , bool directed , unsigned seed )
  return( G );
  }
 
+/// the path 0 - 1 - ... - n - 1, a degenerate graph for the depth of the
+/// visits (10^5 nodes overflowed the stack of a recursive dfs)
+ListGraph<> chain( int n , bool directed )
+{
+ ListGraph<> G( n , directed );
+ for( int u = 0 ; u + 1 < n ; ++u )
+  G.insertEdge( u , u + 1 );
+ return( G );
+ }
+
 /// a random acyclic graph: the edges go from a smaller to a larger place of
 /// a random permutation
 ListGraph<> random_dag( int n , double p , unsigned seed )
@@ -217,7 +227,9 @@ Trace dfs_trace( const G & g , int r )
 /*--------------------------------------------------------------------------*/
 
 // a realization against a set of edges, on random insertions and deletions
-// of nodes and edges, with labels and weights
+// of nodes and edges, with labels and weights; the graph with no node, the
+// edge inserted twice or deleted when absent, the deleted names, the
+// contracts
 template< class G >
 void spec( bool directed , unsigned seed )
 {
@@ -282,6 +294,36 @@ void spec( bool directed , unsigned seed )
   CHECK( x == y );
   }
  CHECK_THROWS( (void) g.adj( g.bound() ) , contract_violation );
+
+ // the degenerate cases: no node, an edge inserted twice (its weight
+ // replaced, counted once), an absent one deleted (nothing), the queries
+ // on names that are not nodes, the names of the deleted nodes not reused
+ // and isolated in the copy, the contracts of each operation
+ G e( 0 , directed );
+ CHECK( e.n() == 0 && e.m() == 0 && e.bound() == 0 && e.V().empty() );
+ CHECK( e.insertNode() == 0 && e.insertNode() == 1 && e.n() == 2 );
+ e.insertEdge( 0 , 1 , 1 );
+ e.insertEdge( 0 , 1 , 2 );
+ CHECK( e.m() == 1 && e.weight( 0 , 1 ) == 2.0 );
+ CHECK( e.hasEdge( 1 , 0 ) == ! directed );
+ if( ! directed )
+  CHECK( e.weight( 1 , 0 ) == 2.0 );
+ e.deleteEdge( 1 , 0 );
+ CHECK( e.m() == ( directed ? 1 : 0 ) );
+ CHECK( ! e.hasEdge( 0 , 5 ) && ! e.hasEdge( -1 , 0 ) && ! e.weight( 0 , 5 ) );
+ e.deleteNode( 0 );
+ CHECK( e.n() == 1 && e.m() == 0 && e.bound() == 2 && ! e.hasNode( 0 ) );
+ CHECK( e.insertNode() == 2 && e.V() == Ints( { 1 , 2 } ) );
+ const ArrayGraph< double > h( e );
+ CHECK( h.n() == 3 && h.m() == 0 && h.adj( 0 ).empty() );
+ CHECK_THROWS( e.deleteNode( 0 ) , contract_violation );
+ CHECK_THROWS( (void) e.label( 0 ) , contract_violation );
+ CHECK_THROWS( e.setLabel( 0 , "x" ) , contract_violation );
+ CHECK_THROWS( e.insertEdge( 0 , 1 ) , contract_violation );
+ CHECK_THROWS( e.insertEdge( 1 , 7 ) , contract_violation );
+ CHECK_THROWS( e.deleteEdge( 1 , 1 ) , contract_violation );
+ CHECK_THROWS( (void) e.adj( 0 ) , contract_violation );
+ CHECK_THROWS( G( -1 , directed ) , contract_violation );
  }
 
 ADS_TEST( "spec.ListGraph" )
@@ -327,7 +369,8 @@ ADS_TEST( "sec9.1.definitions" )
 // circuit of length at least 4 has a chord), the graph of the meetings is
 // not, and Ann is the only woman whose removal makes it chordal; chordal
 // by the maximum cardinality search of Tarjan and Yannakakis (SIAM J.
-// Comput. 13(3), 566-579, 1984)
+// Comput. 13(3), 566-579, 1984); the empty graph, one node, a circuit of 4
+// with and without chords
 bool chordal( const MatrixGraph<> & g )
 {
  const Ints V = g.V();
@@ -381,11 +424,23 @@ ADS_TEST( "sec9.1.mcpollock" )
   h.deleteNode( I( c ) );
   CHECK( chordal( h ) == ( c == 'A' ) );
   }
+ // the degenerate graphs: no node, one, a triangle and a complete graph
+ // are chordal, a circuit of 4 is not until a chord is added
+ CHECK( chordal( MatrixGraph<>( 0 , false ) ) );
+ CHECK( chordal( MatrixGraph<>( 1 , false ) ) );
+ auto k = make< MatrixGraph<> >( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
+                                       { 3 , 0 } } , false );
+ CHECK( ! chordal( k ) );
+ k.insertEdge( 0 , 2 );
+ CHECK( chordal( k ) );
+ k.insertEdge( 1 , 3 );
+ CHECK( chordal( k ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
-// the matrices of Figure 9.6 and 9.7 and the vectors of Figura 9.8
+// the matrices of Figure 9.6 and 9.7 and the vectors of Figura 9.8; the
+// lists read back from the incidences, the graphs with no edge or no node
 ADS_TEST( "sec9.3.matrices" )
 {
  const auto U = make< MatrixGraph<> >( 4 , fig92 , false );
@@ -415,11 +470,36 @@ ADS_TEST( "sec9.3.matrices" )
  CHECK( A.adj( 2 ) == Ints( { 0 , 1 , 3 } ) );
  CHECK( A.adj( 3 ) == Ints( { 1 , 2 } ) );
  CHECK( A.m() == 5 );
+
+ // the rows of incidence give the lists back; a graph with no edge has a
+ // matrix with no column, one with no node an empty matrix and an empty
+ // array of vectors
+ for( bool d : { true , false } ) {
+  const auto g = make( 4 , d ? fig91 : fig92 , d );
+  const auto B = incidence( g );
+  for( int u = 0 ; u < 4 ; ++u ) {
+   auto a = adjFromIncidence( B , u , d ) , b = g.adj( u );
+   std::sort( a.begin() , a.end() );
+   std::sort( b.begin() , b.end() );
+   CHECK( a == b );
+   }
+  CHECK_THROWS( (void) adjFromIncidence( B , 4 , d ) , contract_violation );
+  CHECK_THROWS( (void) adjFromIncidence( B , -1 , d ) , contract_violation );
+  const auto Z = incidence( ListGraph<>( 3 , d ) );
+  CHECK( Z.size() == 3 && Z[ 0 ].empty() );
+  CHECK( adjFromIncidence( Z , 2 , d ).empty() );
+  CHECK( incidence( ListGraph<>( 0 , d ) ).empty() );
+  }
+ const ArrayGraph<> N( 0 , {} );
+ CHECK( N.n() == 0 && N.m() == 0 && N.V().empty() );
+ CHECK_THROWS( (void) N.adj( 0 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
 
-// the orders of the example bfs, and the Erdos numbers with their paths
+// the orders of the example bfs, and the Erdos numbers with their paths;
+// an isolated root, a root that is not an ancestor, parents with a cycle,
+// a path of 10^5 nodes, the contracts
 ADS_TEST( "sec9.5.1.bfs" )
 {
  auto g = make( 9 , fig99 , false );
@@ -446,18 +526,79 @@ ADS_TEST( "sec9.5.1.bfs" )
     }
    }
   }
+
+ // the degenerate cases: a visit from an isolated node sees only it; a
+ // root r that is not an ancestor of s gives no path; parents with a
+ // cycle give none instead of looping; a path of 10^5 nodes (the
+ // recursive path() overflowed the stack); the contracts
+ Trace one;
+ bfs( g , 9 , [ & ]( int u ) { one.push_back( std::to_string( u ) ); } ,
+      [ & ]( int u , int v ) { one.push_back( E( u , v ) ); } );
+ CHECK( one == Trace( { "9" } ) );
+ const auto [ d9 , p9 ] = distance( g , 9 );
+ CHECK( d9[ 9 ] == 0 && d9[ 0 ] == INF && p9 == Ints( 10 , NIL ) );
+ CHECK( path( 3 , 8 , p ).empty() && path( 1 , 8 , p ) == Ints( { 1 , 8 } ) );
+ CHECK( path( 0 , 2 , Ints( { NIL , 2 , 1 } ) ).empty() );
+ const int n = 100000;
+ const auto c = chain( n , true );
+ const auto [ dc , pc ] = distance( c , 0 );
+ CHECK( dc[ n - 1 ] == n - 1 &&
+        path( 0 , n - 1 , pc ).size() == std::size_t( n ) );
+ CHECK( path( 1 , 0 , pc ).empty() );
+ CHECK( distance( c , n - 1 ).first[ 0 ] == INF );
+ g.deleteNode( 4 );
+ auto none = []( auto... ) {};
+ CHECK_THROWS( bfs( g , 4 , none , none ) , contract_violation );
+ CHECK_THROWS( bfs( g , 10 , none , none ) , contract_violation );
+ CHECK_THROWS( (void) distance( g , -1 ) , contract_violation );
+ CHECK_THROWS( (void) path( 0 , 10 , p ) , contract_violation );
+ CHECK_THROWS( (void) path( -1 , 0 , p ) , contract_violation );
+ CHECK_THROWS( (void) path( 0 , 1 , Ints( { NIL , 7 } ) ) ,
+               contract_violation );
  }
 
-// the order of the example dfs
+// the order of the example dfs; a single node, the previsits and the
+// postvisits on a path of 10^5 nodes (the recursive dfs overflowed the
+// stack), its examinations of each unoriented edge from both ends, the
+// contracts
 ADS_TEST( "sec9.5.4.dfs" )
 {
  CHECK( dfs_trace( make( 9 , fig99 , false ) , 0 ) == dfs99 );
+ CHECK( dfs_trace( ListGraph<>( 1 ) , 0 ) == Trace( { "0" } ) );
+ for( bool d : { true , false } ) {
+  const int n = 100000;
+  const auto c = chain( n , d );
+  std::vector< bool > visited( n , false );
+  Ints pre , post;
+  long edges = 0;
+  dfs( c , 0 , visited , [ & ]( int u ) { pre.push_back( u ); } ,
+       [ & ]( int , int ) { ++edges; } ,
+       [ & ]( int u ) { post.push_back( u ); } );
+  CHECK( int( pre.size() ) == n && int( post.size() ) == n );
+  CHECK( pre.front() == 0 && pre.back() == n - 1 );
+  CHECK( post.front() == n - 1 && post.back() == 0 );
+  CHECK( std::is_sorted( pre.begin() , pre.end() ) );
+  CHECK( edges == ( d ? 1L : 2L ) * ( n - 1 ) );
+  }
+ const auto g = make( 3 , { { 0 , 1 } } , true );
+ std::vector< bool > visited( 3 , false );
+ auto none = []( auto... ) {};
+ dfs( g , 0 , visited , none , none , none );
+ CHECK( visited == std::vector< bool >( { true , true , false } ) );
+ CHECK_THROWS( dfs( g , 1 , visited , none , none , none ) ,
+               contract_violation );
+ std::vector< bool > shorter( 2 , false );
+ CHECK_THROWS( dfs( g , 2 , shorter , none , none , none ) ,
+               contract_violation );
+ CHECK_THROWS( dfs( g , 3 , visited , none , none , none ) ,
+               contract_violation );
  }
 
 // the components of a graph like the one of Figura 9.3 (its edges are not
 // in the text: these give the order of visit 0, 1, 4, 5, 2, 6, 7, 3 of the
 // example), and the dependence of cc() on the order of the stack in an
-// oriented graph
+// oriented graph; no node, no edge, a deleted node, an empty stack and one
+// with repetitions, a path of 10^5 nodes
 ADS_TEST( "sec9.5.5.cc" )
 {
  const auto g = make( 8 , { { 0 , 1 } , { 1 , 4 } , { 1 , 5 } , { 4 , 5 } ,
@@ -484,11 +625,28 @@ ADS_TEST( "sec9.5.5.cc" )
     if( u != v )
      CHECK( ( id[ u ] == id[ v ] ) == bool( R[ u ][ v ] ) );
   }
+
+ // the degenerate graphs: no node, no edge (a component per node), a
+ // deleted node (component 0), an empty stack (no visit) and one with
+ // repetitions, a path of 10^5 nodes (one component, no overflow)
+ CHECK( cc( ListGraph<>( 0 , false ) ).empty() );
+ CHECK( cc( ListGraph<>( 4 , false ) ) == Ints( { 1 , 2 , 3 , 4 } ) );
+ auto h = g;
+ h.deleteNode( 1 );
+ CHECK( cc( h ) == Ints( { 1 , 0 , 2 , 3 , 4 , 4 , 2 , 2 } ) );
+ CHECK( cc( g , {} ) == Ints( 8 , 0 ) );
+ CHECK( cc( g , { 3 , 2 , 3 , 0 , 0 } ) ==
+        Ints( { 1 , 1 , 3 , 2 , 1 , 1 , 3 , 3 } ) );
+ const int n = 100000;
+ const auto c = cc( chain( n , false ) );
+ CHECK( std::all_of( c.begin() , c.end() ,
+                     []( int x ) { return( x == 1 ); } ) );
  }
 
 // the kinds of the edges of Figura 9.10; in an unoriented graph the first
 // examination of each edge is in T or back; the intervals [ dt , ft ] are
-// nested or disjoint
+// nested or disjoint; a single node, a circuit of 2, a path of 10^5 nodes,
+// the contracts
 ADS_TEST( "sec9.5.6.schema" )
 {
  const auto G = make( 4 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 1 , 2 } ,
@@ -524,15 +682,57 @@ ADS_TEST( "sec9.5.6.schema" )
     CHECK( disjoint || nested );
     }
   }
+
+ // the degenerate cases: a single node; a circuit of 2, whose second edge
+ // is back, as is the return of an unoriented edge; a path of 10^5 nodes
+ // (no overflow), with dt( u ) = u + 1 and ft( u ) = 2 n - u; the
+ // contracts
+ const ListGraph<> o( 1 );
+ DfsSchema O( o );
+ O.visitAll( []( int , int , EdgeKind ) {} );
+ CHECK( O.dt( 0 ) == 1 && O.ft( 0 ) == 2 );
+ for( bool d : { true , false } ) {
+  const auto c2 = d ? make( 2 , { { 0 , 1 } , { 1 , 0 } } , true )
+                    : make( 2 , { { 0 , 1 } } , false );
+  DfsSchema C( c2 );
+  std::vector< EdgeKind > k;
+  C.visit( 0 , [ & ]( int , int , EdgeKind e ) { k.push_back( e ); } );
+  CHECK( k == std::vector< EdgeKind >( { TREE , BACK } ) );
+  CHECK_THROWS( C.visit( 1 , []( int , int , EdgeKind ) {} ) ,
+                contract_violation );
+  CHECK_THROWS( (void) C.dt( 2 ) , contract_violation );
+  CHECK_THROWS( (void) C.ft( -1 ) , contract_violation );
+  }
+ const int n = 100000;
+ const auto c = chain( n , true );
+ DfsSchema P( c );
+ long tree = 0;
+ P.visitAll( [ & ]( int , int , EdgeKind e ) { tree += e == TREE; } );
+ CHECK( tree == n - 1 && P.dt( 0 ) == 1 && P.ft( 0 ) == 2 * n );
+ CHECK( P.dt( n - 1 ) == n && P.ft( n - 1 ) == n + 1 );
  }
 
-// a graph has a cycle if and only if a node reaches itself
+// a graph has a cycle if and only if a node reaches itself; no node, a
+// circuit of 2, an unoriented edge (a cycle, as documented), the cycle in
+// the last component, a path of 10^5 nodes without and with its closing
+// edge
 ADS_TEST( "sec9.5.7.cycle" )
 {
  CHECK( hasCycle( make( 4 , fig91 , true ) ) );
  CHECK( ! hasCycle( make( 3 , { { 0 , 1 } , { 1 , 2 } , { 0 , 2 } } ,
                           true ) ) );
- CHECK( ! hasCycle( ListGraph<>( 5 ) ) );
+ CHECK( ! hasCycle( ListGraph<>( 5 ) ) && ! hasCycle( ListGraph<>( 0 ) ) );
+ CHECK( hasCycle( make( 2 , { { 0 , 1 } , { 1 , 0 } } , true ) ) );
+ CHECK( hasCycle( make( 2 , { { 0 , 1 } } , false ) ) );    // documented
+ CHECK( ! hasCycle( ListGraph<>( 3 , false ) ) );
+ // the cycle in the last component, and a path of 10^5 nodes without and
+ // with the edge that closes it (the recursive visit overflowed)
+ CHECK( hasCycle( make( 5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } ,
+                              { 4 , 2 } } , true ) ) );
+ auto c = chain( 100000 , true );
+ CHECK( ! hasCycle( c ) );
+ c.insertEdge( 99999 , 0 );
+ CHECK( hasCycle( c ) );
  for( unsigned s = 0 ; s < 40 ; ++s ) {
   const auto h = random_graph( 20 , 0.04 , true , s );
   const auto R = closure( h );
@@ -545,7 +745,9 @@ ADS_TEST( "sec9.5.7.cycle" )
  }
 
 // the example of tsort: the order of the book is topological, and so are
-// the ones of topsort() and of topsortKahn(); with a cycle Kahn stops short
+// the ones of topsort() and of topsortKahn(); with a cycle Kahn stops short;
+// no node, no edge, a circuit through all the nodes, a path of 10^5 nodes,
+// the orders that are not topological
 ADS_TEST( "sec9.5.8.topsort" )
 {
  ListGraph<> g( 12 , true );
@@ -564,10 +766,36 @@ ADS_TEST( "sec9.5.8.topsort" )
   CHECK( topological( h , topsortKahn( h ) ) );
   }
  CHECK( topsortKahn( make( 4 , fig91 , true ) ).size() == 1 );
+
+ // the degenerate graphs: no node, no edge (every order is topological),
+ // a circuit through all the nodes (Kahn finds no source), a path of 10^5
+ // nodes, whose only order is 0 , ... , n - 1; the orders that are not
+ // topological: a node twice, a node missing, a name that is not a node
+ CHECK( topsort( ListGraph<>( 0 ) ).empty() );
+ CHECK( topsortKahn( ListGraph<>( 0 ) ).empty() );
+ CHECK( topsort( ListGraph<>( 3 ) ).size() == 3 );
+ CHECK( topsortKahn( ListGraph<>( 3 ) ) == Ints( { 0 , 1 , 2 } ) );
+ const auto c3 = make( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , true );
+ CHECK( topsortKahn( c3 ).empty() && topsort( c3 ).size() == 3 );
+ CHECK( ! isTopologicalOrder( c3 , topsort( c3 ) ) );
+ const int n = 100000;
+ const auto c = chain( n , true );
+ Ints iota( n );
+ for( int i = 0 ; i < n ; ++i )
+  iota[ i ] = i;
+ CHECK( topsort( c ) == iota && topsortKahn( c ) == iota );
+ CHECK( isTopologicalOrder( g , { 3 , 5 , 7 , 11 , 8 , 10 , 2 , 9 } ) );
+ CHECK( ! isTopologicalOrder( g , { 3 , 5 , 7 , 11 , 8 , 10 , 2 , 2 } ) );
+ CHECK( ! isTopologicalOrder( g , { 3 , 5 , 7 , 11 , 8 , 10 , 2 } ) );
+ CHECK( ! isTopologicalOrder( g , { 3 , 5 , 7 , 11 , 8 , 10 , 2 , 0 } ) );
+ CHECK( isTopologicalOrder( g , { 5 , 7 , 11 , 2 , 3 , 8 , 9 , 10 } ) );
+ CHECK( ! isTopologicalOrder( g , { 3 , 5 , 7 , 11 , 2 , 9 , 8 , 10 } ) );
  }
 
 // the strongly connected components against the closure: u and v are in
-// the same component if and only if each reaches the other
+// the same component if and only if each reaches the other; no node, no
+// edge, a deleted node, a circuit of 2, a path of 10^5 nodes open and
+// closed
 ADS_TEST( "sec9.5.9.scc" )
 {
  for( unsigned s = 0 ; s < 30 ; ++s ) {
@@ -579,6 +807,30 @@ ADS_TEST( "sec9.5.9.scc" )
     if( u != v )
      CHECK( ( id[ u ] == id[ v ] ) == ( R[ u ][ v ] && R[ v ][ u ] ) );
   }
+
+ // the degenerate graphs: no node, no edge (a component per node), a
+ // deleted node (component 0), a circuit of 2; a path of 10^5 nodes (a
+ // component per node, numbered along the path) and the same path closed
+ // into a circuit (one component)
+ CHECK( scc( ListGraph<>( 0 ) ).empty() );
+ auto e = scc( ListGraph<>( 4 ) );
+ std::sort( e.begin() , e.end() );
+ CHECK( e == Ints( { 1 , 2 , 3 , 4 } ) );
+ auto h = make( 3 , { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } } , true );
+ CHECK( scc( h ) == Ints( { 1 , 1 , 2 } ) );
+ h.deleteNode( 0 );
+ CHECK( scc( h ) == Ints( { 0 , 1 , 2 } ) );
+ const int n = 100000;
+ auto c = chain( n , true );
+ const auto id = scc( c );
+ bool along = true;
+ for( int u = 0 ; u < n ; ++u )
+  along = along && ( id[ u ] == u + 1 );
+ CHECK( along );
+ c.insertEdge( n - 1 , 0 );
+ const auto one = scc( c );
+ CHECK( std::all_of( one.begin() , one.end() ,
+                     []( int x ) { return( x == 1 ); } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -586,7 +838,8 @@ ADS_TEST( "sec9.5.9.scc" )
 /*--------------------------------------------------------------------------*/
 
 // with d bits per pointer and integer, the matrix takes n^2 bits and the
-// lists d n + 2 d m, less when m < ( n^2 - d n ) / ( 2 d )
+// lists d n + 2 d m, less when m < ( n^2 - d n ) / ( 2 d ); the ends m = 0
+// and m = n ( n - 1 ), and n <= d
 ADS_TEST( "ex9.1" )
 {
  for( long n : { 10 , 100 , 1000 } )
@@ -595,6 +848,13 @@ ADS_TEST( "ex9.1" )
     const bool lists = d * n + 2 * d * m < n * n;
     CHECK( lists == ( 2 * d * m < n * n - d * n ) );
     }
+ // the ends: with no edge the lists are smaller exactly when n > d, with
+ // all the n ( n - 1 ) edges never (for d >= 1); with n <= d never
+ for( long n : { 1 , 32 , 33 , 64 , 65 , 1000 } )
+  for( long d : { 32 , 64 } ) {
+   CHECK( ( d * n < n * n ) == ( n > d ) );
+   CHECK( ! ( d * n + 2 * d * n * ( n - 1 ) < n * n ) );
+   }
  }
 
 // the iterative dfs, with a stack of nodes and of places in their lists,
@@ -634,6 +894,16 @@ ADS_TEST( "ex9.2" )
   const auto h = random_graph( 40 , 0.08 , s % 2 , s );
   CHECK( dfs_iterative( h , 0 ) == dfs_trace( h , 0 ) );
   }
+ // a single node, a root with no edge, a deleted node, a path of 10^5
+ // nodes from either end
+ CHECK( dfs_iterative( ListGraph<>( 1 ) , 0 ) == Trace( { "0" } ) );
+ CHECK( dfs_iterative( ListGraph<>( 3 ) , 2 ) == Trace( { "2" } ) );
+ auto f = make( 9 , fig99 , false );
+ f.deleteNode( 1 );
+ CHECK( dfs_iterative( f , 0 ) == dfs_trace( f , 0 ) );
+ const auto c = chain( 100000 , false );
+ CHECK( dfs_iterative( c , 0 ) == dfs_trace( c , 0 ) );
+ CHECK( dfs_iterative( c , 99999 ) == dfs_trace( c , 99999 ) );
  }
 
 // bipartire() of the solution, on every component; the book's test
@@ -709,10 +979,23 @@ ADS_TEST( "ex9.4" )
                                  { 4 , 2 } } , false ) ) );
  CHECK( bipartite( make( 9 , fig99 , false ) ) == false );   // 0-1-3
  CHECK( bipartite( ListGraph<>( 3 , false ) ) );
+ // no node, one edge, a deleted node breaking the odd circuit, circuits of
+ // 1000 and 1001 nodes
+ CHECK( bipartite( ListGraph<>( 0 , false ) ) );
+ CHECK( bipartite( make( 2 , { { 0 , 1 } } , false ) ) );
+ auto t = make( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , false );
+ t.deleteNode( 1 );
+ CHECK( bipartite( t ) );
+ for( int n : { 1000 , 1001 } ) {
+  auto c = chain( n , false );
+  c.insertEdge( n - 1 , 0 );
+  CHECK( bipartite( c ) == ( n % 2 == 0 ) );
+  }
  }
 
 // the width of a rooted tree, the largest number of nodes on a level, by a
-// bfs that counts the nodes at each distance from the root
+// bfs that counts the nodes at each distance from the root; a single node,
+// a chain, a star, a root inside the tree
 ADS_TEST( "ex9.5" )
 {
  auto width = []( const ListGraph<> & t , int r ) {
@@ -734,6 +1017,13 @@ ADS_TEST( "ex9.5" )
  CHECK( width( ListGraph<>( 1 ) , 0 ) == 1 );
  const auto chain = make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } } , true );
  CHECK( width( chain , 0 ) == 1 );
+ // a star, all the nodes but the root on one level; a root in the middle
+ // of the tree sees only its subtree
+ ListGraph<> star( 1001 , true );
+ for( int u = 1 ; u <= 1000 ; ++u )
+  star.insertEdge( 0 , u );
+ CHECK( width( star , 0 ) == 1000 && width( star , 7 ) == 1 );
+ CHECK( width( t , 1 ) == 2 && width( t , 9 ) == 1 );
  }
 
 // a free tree: connected, and with n - 1 edges
@@ -757,6 +1047,15 @@ ADS_TEST( "ex9.6" )
  CHECK( ! free_tree( make( 5 , { { 0 , 1 } , { 1 , 2 } , { 3 , 4 } } ,
                            false ) ) );                          // a forest
  CHECK( free_tree( ListGraph<>( 1 , false ) ) );
+ // no node (not a tree), two nodes with and without their edge, a path
+ // of 10^5 nodes, a tree with a deleted leaf
+ CHECK( ! free_tree( ListGraph<>( 0 , false ) ) );
+ CHECK( free_tree( make( 2 , { { 0 , 1 } } , false ) ) );
+ CHECK( ! free_tree( ListGraph<>( 2 , false ) ) );
+ CHECK( free_tree( chain( 100000 , false ) ) );
+ auto t = make( 4 , { { 0 , 1 } , { 1 , 2 } , { 1 , 3 } } , false );
+ t.deleteNode( 2 );
+ CHECK( free_tree( t ) );
  // against the definition: exactly one simple chain between two nodes,
  // i.e., connected and without circuits (a bfs finds no non-tree edge)
  for( unsigned s = 0 ; s < 100 ; ++s ) {
@@ -771,7 +1070,8 @@ ADS_TEST( "ex9.6" )
 // the scheduling: each program starts when the last of its predecessors
 // ends, start[ j ] = max( start[ i ] + t[ i ] : ( i , j ) in E ), scanning
 // the nodes in topological order; the solution of the book adds to
-// start[ j ] its own length, which is not this
+// start[ j ] its own length, which is not this; no edge, one program,
+// lengths 0, a chain
 template< Graph G >
 Ints scheduling( const G & g , const Ints & length )
 {
@@ -804,12 +1104,21 @@ ADS_TEST( "ex9.7" )
      } );
   CHECK( scheduling( h , len ) == ref );
   }
+ // no edge (all start at 0), a single program, programs of length 0, a
+ // chain (the prefix sums of the lengths)
+ CHECK( scheduling( ListGraph<>( 3 ) , { 4 , 5 , 6 } ) == Ints( 3 , 0 ) );
+ CHECK( scheduling( ListGraph<>( 1 ) , { 7 } ) == Ints( { 0 } ) );
+ CHECK( scheduling( g , Ints( 5 , 0 ) ) == Ints( 5 , 0 ) );
+ const auto c = chain( 5 , true );
+ CHECK( scheduling( c , { 1 , 2 , 3 , 4 , 5 } ) ==
+        Ints( { 0 , 1 , 3 , 6 , 10 } ) );
  }
 
 // the largest set of intervals that meet, by sorting the 2 n ends: + 1 at
 // a left end, - 1 at a right one, the prefix sums count the intervals over
 // each point; with closed intervals a left end goes before a right one
-// equal to it, so that touching intervals meet
+// equal to it, so that touching intervals meet; no interval, a point,
+// equal, touching, disjoint ones, negative ends
 std::pair< int , Ints > overlap(
                            const std::vector< std::pair< int , int > > & I )
 {
@@ -857,10 +1166,22 @@ ADS_TEST( "ex9.8" )
   const auto [ cc , ss ] = overlap( I );
   CHECK( cc == best && int( ss.size() ) == best );
   }
+ // no interval, one, one of a single point, n equal ones, two touching
+ // (closed, so they meet), two disjoint, negative ends
+ CHECK( overlap( {} ) == std::pair( 0 , Ints() ) );
+ CHECK( overlap( { { 2 , 5 } } ) == std::pair( 1 , Ints( { 0 } ) ) );
+ CHECK( overlap( { { 4 , 4 } } ) == std::pair( 1 , Ints( { 0 } ) ) );
+ CHECK( overlap( { { 1 , 3 } , { 1 , 3 } , { 1 , 3 } } ) ==
+        std::pair( 3 , Ints( { 0 , 1 , 2 } ) ) );
+ CHECK( overlap( { { 1 , 2 } , { 2 , 3 } } ).first == 2 );
+ CHECK( overlap( { { 1 , 2 } , { 3 , 4 } } ).first == 1 );
+ CHECK( overlap( { { -5 , -1 } , { -3 , 0 } } ) ==
+        std::pair( 2 , Ints( { 0 , 1 } ) ) );
  }
 
 // the number of nodes at the largest distance from r; in the solution of
-// the book S.enqueue( v ) must be inside the if, or the visit never ends
+// the book S.enqueue( v ) must be inside the if, or the visit never ends;
+// a single node, a chain from either end, a star
 template< Graph G >
 int farthest( const G & g , int r )
 {
@@ -884,12 +1205,21 @@ ADS_TEST( "ex9.9" )
  CHECK( farthest( make( 4 , fig91 , true ) , 0 ) == 1 );      // 3
  CHECK( farthest( make( 4 , fig91 , true ) , 3 ) == 2 );      // 1 and 2
  CHECK( farthest( ListGraph<>( 3 ) , 0 ) == 0 );
+ // a single node, the end of a chain (nothing reached), its start (one
+ // node, at distance n - 1, also for 10^5 nodes), a star
+ CHECK( farthest( ListGraph<>( 1 ) , 0 ) == 0 );
+ const auto c = chain( 100000 , true );
+ CHECK( farthest( c , 99999 ) == 0 && farthest( c , 0 ) == 1 );
+ ListGraph<> star( 6 , false );
+ for( int u = 1 ; u < 6 ; ++u )
+  star.insertEdge( 0 , u );
+ CHECK( farthest( star , 0 ) == 5 && farthest( star , 3 ) == 4 );
  }
 
 // the square of a graph on its adjacency matrix: ( u , w ) when there is a
 // node v with ( u , v ) and ( v , w ), Theta( n^3 ) time; a pair ( u , u ),
 // a loop, is left out (the text writes the condition with u in place of
-// v)
+// v); no node, no edge, one edge, a circuit of 2, a path of 3 nodes
 MatrixGraph<> square( const MatrixGraph<> & g )
 {
  MatrixGraph<> s( g.bound() , true );
@@ -929,10 +1259,21 @@ ADS_TEST( "ex9.10" )
    CHECK( q.adj( u ) == Ints( two.begin() , two.end() ) );
    }
   }
+ // no node, no edge, one edge (no path of 2), a circuit of 2 (only loops,
+ // left out), a path of 3 nodes
+ CHECK( square( MatrixGraph<>( 0 , true ) ).n() == 0 );
+ CHECK( square( MatrixGraph<>( 3 , true ) ).m() == 0 );
+ CHECK( square( make< MatrixGraph<> >( 2 , { { 0 , 1 } } , true ) ).m() == 0 );
+ CHECK( square( make< MatrixGraph<> >( 2 , { { 0 , 1 } , { 1 , 0 } } ,
+                                       true ) ).m() == 0 );
+ const auto p = square( make< MatrixGraph<> >( 3 , { { 0 , 1 } , { 1 , 2 } } ,
+                                               true ) );
+ CHECK( p.m() == 1 && p.hasEdge( 0 , 2 ) );
  }
 
 // the diameter by a bfs from each node, O( n ( n + m ) ) time; nothing if
-// some node does not reach another
+// some node does not reach another; no node, one, one edge, two isolated
+// nodes, a path
 template< Graph G >
 std::optional< int > diameter( const G & g )
 {
@@ -963,6 +1304,14 @@ ADS_TEST( "ex9.11" )
     if( x == INF ) inf = true; else ref = std::max( ref , x );
   CHECK( diameter( h ) == ( inf ? std::nullopt : std::optional( ref ) ) );
   }
+ // no node and one node (0), one edge (1 unoriented, nothing oriented),
+ // two isolated nodes, a path of 50 nodes
+ CHECK( diameter( ListGraph<>( 0 ) ) == 0 );
+ CHECK( diameter( ListGraph<>( 1 ) ) == 0 );
+ CHECK( diameter( make( 2 , { { 0 , 1 } } , false ) ) == 1 );
+ CHECK( ! diameter( make( 2 , { { 0 , 1 } } , true ) ) );
+ CHECK( ! diameter( ListGraph<>( 2 , false ) ) );
+ CHECK( diameter( chain( 50 , false ) ) == 49 );
  }
 
 }  // end( namespace )

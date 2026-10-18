@@ -595,7 +595,8 @@ ADS_TEST( "sequence-queries" )
 
 // closestPair() against closestPairBrute() and the double loop on random
 // sets of small coordinates (repeated points), large ones and collinear
-// ones; two points; one point and coordinates out of range
+// ones; two points, all points equal; no point, one point and coordinates
+// out of range
 ADS_TEST( "closest-pair" )
 {
  std::mt19937 g( 7 );
@@ -625,8 +626,13 @@ ADS_TEST( "closest-pair" )
         == std::pair( std::pair( std::size_t( 0 ) , std::size_t( 2 ) ) ,
                       std::int64_t( 0 ) ) );
  CHECK_THROWS( closestPair( { Point{ 0 , 0 } } ) , contract_violation );
+ CHECK_THROWS( closestPair( {} ) , contract_violation );
  CHECK_THROWS( closestPair( { Point{ 0 , 0 } , Point{ 1000000001 , 0 } } ) ,
                contract_violation );
+ const std::vector< Point > same( 200 , Point{ -7 , 7 } );   // all equal
+ CHECK( closestPair( same ).second == 0 &&
+        closestPairBrute( same ).first ==
+        std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  }
 
 }  // end( namespace )

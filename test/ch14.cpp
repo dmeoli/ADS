@@ -125,7 +125,8 @@ std::vector< Edge > random_edges( int n , int extra , int maxw ,
 
 // the change of 72 cents with coins of 50, 10, 5, 1: five coins, optimal
 // for every amount; with coins of 11, 5, 1 the greedy choice pays 15 with
-// five coins, the optimum is three
+// five coins, the optimum is three; the edges c = 0, no coin, coins
+// repeated or larger than c, and the preconditions
 ADS_TEST( "sec14.change" )
 {
  CHECK( *greedyChange( { 50 , 10 , 5 , 1 } , 72 ) ==
@@ -136,11 +137,34 @@ ADS_TEST( "sec14.change" )
  CHECK( greedyChange( { 11 , 5 , 1 } , 15 )->size() == 5 );
  CHECK( *optimalChange( { 11 , 5 , 1 } , 15 ) == 3 );
  CHECK( ! greedyChange( { 5 , 3 } , 7 ) && ! optimalChange( { 5 , 3 } , 7 ) );
+ // the edges: c = 0 is paid by no coin, even with no coin at all; with no
+ // coin nothing else is paid; the coins in any order and repeated; a coin
+ // larger than c is skipped; the coin 1 alone pays c with c coins
+ CHECK( greedyChange( { 50 , 10 } , 0 )->empty() &&
+        *optimalChange( { 50 , 10 } , 0 ) == 0 );
+ CHECK( greedyChange( {} , 0 )->empty() && *optimalChange( {} , 0 ) == 0 );
+ CHECK( ! greedyChange( {} , 3 ) && ! optimalChange( {} , 3 ) );
+ CHECK( *greedyChange( { 1 , 10 , 5 , 10 } , 27 ) ==
+        Longs( { 10 , 10 , 5 , 1 , 1 } ) );
+ CHECK( *optimalChange( { 1 , 10 , 5 , 10 } , 27 ) == 5 );
+ CHECK( *greedyChange( { 100 , 3 } , 9 ) == Longs( { 3 , 3 , 3 } ) );
+ CHECK( ! greedyChange( { 100 } , 99 ) && ! optimalChange( { 100 } , 99 ) );
+ CHECK( greedyChange( { 1 } , 1000 )->size() == 1000 &&
+        *optimalChange( { 1 } , 1000 ) == 1000 );
+ // the greedy choice may fail where the optimum pays: 6 with 4 , 3
+ CHECK( ! greedyChange( { 4 , 3 } , 6 ) && *optimalChange( { 4 , 3 } , 6 ) ==
+        2 );
+ CHECK_THROWS( greedyChange( { 5 , 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( greedyChange( { 5 , 0 } , 3 ) , contract_violation );
+ CHECK_THROWS( optimalChange( { 5 , 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( optimalChange( { -5 , 1 } , 3 ) , contract_violation );
  }
 
 // the real knapsack: by profit, 3 against the optimum 4; by volume, 2
 // against 3; by specific profit, the optimum, against the bound of the
-// linear relaxation found by trying every last object in part
+// linear relaxation found by trying every last object in part; the edges
+// of no object, of capacity 0 or above the total, of ties, and the
+// preconditions
 ADS_TEST( "sec14.1.real-knapsack" )
 {
  auto profit = []( const std::vector< double > & p ,
@@ -187,10 +211,31 @@ ADS_TEST( "sec14.1.real-knapsack" )
    }
   CHECK( std::abs( profit( p , x ) - best ) < 1e-6 );
   }
+ // the edges: no object; capacity 0 takes nothing; a capacity above the
+ // total volume takes everything; an exact fit takes the last one whole;
+ // equal specific profits fill the first object first; an object of
+ // profit 0 is taken last
+ CHECK( fractionalKnapsack( {} , {} , 5 ).empty() );
+ CHECK( fractionalKnapsack( { 3 , 2 } , { 1 , 1 } , 0 ) ==
+        std::vector< double >( { 0 , 0 } ) );
+ CHECK( fractionalKnapsack( { 3 , 2 , 1 } , { 1 , 2 , 3 } , 1e9 ) ==
+        std::vector< double >( { 1 , 1 , 1 } ) );
+ CHECK( fractionalKnapsack( { 4 , 3 } , { 2 , 3 } , 5 ) ==
+        std::vector< double >( { 1 , 1 } ) );
+ CHECK( fractionalKnapsack( { 2 , 4 , 6 } , { 1 , 2 , 3 } , 2 ) ==
+        std::vector< double >( { 1 , 0.5 , 0 } ) );
+ CHECK( fractionalKnapsack( { 0 , 1 } , { 1 , 1 } , 1.5 ) ==
+        std::vector< double >( { 0.5 , 1 } ) );
+ CHECK_THROWS( fractionalKnapsack( { 1 } , { 1 , 2 } , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( fractionalKnapsack( { 1 } , { 0 } , 1 ) , contract_violation );
+ CHECK_THROWS( fractionalKnapsack( { -1 } , { 1 } , 1 ) , contract_violation );
+ CHECK_THROWS( fractionalKnapsack( { 1 } , { 1 } , -1 ) , contract_violation );
  }
 
 // the greedy independent set has as many intervals as the weighted one
-// with all the weights 1
+// with all the weights 1; the edges of no interval, equal, touching and
+// nested ones, the extremes of long, and the precondition
 ADS_TEST( "sec14.2.intervals" )
 {
  std::mt19937 g( 2 );
@@ -210,12 +255,33 @@ ADS_TEST( "sec14.2.intervals" )
     CHECK( I[ S[ x ] ].second <= I[ S[ y ] ].first ||
            I[ S[ y ] ].second <= I[ S[ x ] ].first );
   }
+ // the edges: no interval; one; all equal, one of them, the first; the
+ // intervals [ a , b ) that touch are disjoint; nested ones, the inner;
+ // the extremes of long
+ using I2 = std::vector< std::pair< long , long > >;
+ using Places = std::vector< std::size_t >;
+ CHECK( independentSet( I2() ).empty() );
+ CHECK( independentSet( I2( { { 3 , 4 } } ) ) == Places( { 0 } ) );
+ CHECK( independentSet( I2( 5 , { 1 , 9 } ) ) == Places( { 0 } ) );
+ CHECK( independentSet( I2( { { 2 , 3 } , { 0 , 1 } , { 1 , 2 } } ) ) ==
+        Places( { 0 , 1 , 2 } ) );
+ CHECK( independentSet( I2( { { 0 , 10 } , { 4 , 5 } } ) ) ==
+        Places( { 1 } ) );
+ const long lo = std::numeric_limits< long >::min() ,
+            hi = std::numeric_limits< long >::max();
+ CHECK( independentSet( I2( { { lo , 0 } , { 0 , hi } , { lo , hi } } ) ) ==
+        Places( { 0 , 1 } ) );
+ CHECK_THROWS( independentSet( I2( { { 1 , 2 } , { 3 , 3 } } ) ) ,
+               contract_violation );
+ CHECK_THROWS( independentSet( I2( { { 4 , 3 } } ) ) , contract_violation );
  }
 
 // Figura 14.2: Kruskal keeps [ 2 , 4 ], [ 3 , 4 ], [ 5 , 7 ], [ 1 , 3 ],
 // [ 4 , 5 ], [ 3 , 6 ], and leaves [ 1 , 2 ], [ 2 , 3 ], [ 4 , 7 ]: weight
 // 43; Figura 14.3: Prim from 1 gives the same tree; against all the sets
-// of n - 1 edges on random graphs
+// of n - 1 edges on random graphs; the edges of 0 and 1 node, self-loops,
+// parallel edges, forests, negative and equal weights, and the
+// preconditions
 ADS_TEST( "sec14.3.mst" )
 {
  const std::vector< Edge > T = kruskal( 8 , fig141 );
@@ -242,6 +308,42 @@ ADS_TEST( "sec14.3.mst" )
    CHECK( w == best );
    }
   }
+ // the edges: no node and one node give no edge; the self-loops are never
+ // taken and of two parallel edges the lighter is; a disconnected graph
+ // gives a forest of n minus the components edges, and prim() leaves NIL
+ // out of the component of r; negative and equal weights
+ using Es = std::vector< Edge >;
+ CHECK( kruskal( 0 , Es() ).empty() && kruskal( 1 , Es() ).empty() );
+ CHECK( kruskal( 1 , Es( { { 0 , 0 , -5 } } ) ).empty() );
+ CHECK( kruskal( 2 , Es( { { 0 , 0 , -9 } , { 0 , 1 , 7 } , { 1 , 0 , 3 } ,
+                           { 1 , 1 , -9 } } ) ) == Es( { { 1 , 0 , 3 } } ) );
+ const Es forest = { { 0 , 1 , 4 } , { 1 , 2 , -3 } , { 0 , 2 , 1 } ,
+                     { 3 , 4 , 2 } , { 3 , 4 , 2 } };
+ const auto F = kruskal( 6 , forest );                // 5 isolated
+ CHECK( F.size() == 3 && weight( F ) == 0 &&
+        isMinimumSpanningForest( 6 , forest , F ) );
+ CHECK( ! isMinimumSpanningForest( 6 , forest , Es( { { 0 , 1 , 4 } ,
+                                   { 1 , 2 , -3 } , { 3 , 4 , 2 } } ) ) );
+ const Es equal = { { 0 , 1 , 5 } , { 1 , 2 , 5 } , { 2 , 0 , 5 } ,
+                    { 2 , 3 , 5 } };
+ CHECK( kruskal( 4 , equal ) == Es( { { 0 , 1 , 5 } , { 1 , 2 , 5 } ,
+                                      { 2 , 3 , 5 } } ) );
+ const auto gf = graph( 6 , forest );
+ for( Frontier f : fronts ) {
+  CHECK( prim( graph( 1 , Es() ) , 0 , f ) == Ints( { NIL } ) );
+  CHECK( prim( gf , 0 , f ) == Ints( { NIL , 2 , 0 , NIL , NIL , NIL } ) );
+  CHECK( prim( gf , 4 , f ) == Ints( { NIL , NIL , NIL , 4 , NIL , NIL } ) );
+  CHECK( prim( gf , 5 , f ) == Ints( 6 , NIL ) );
+  }
+ CHECK_THROWS( kruskal( -1 , Es() ) , contract_violation );
+ CHECK_THROWS( kruskal( 2 , Es( { { 0 , 2 , 1 } } ) ) , contract_violation );
+ CHECK_THROWS( kruskal( 2 , Es( { { -1 , 0 , 1 } } ) ) , contract_violation );
+ ListGraph< long > d( 2 , true );
+ d.insertEdge( 0 , 1 , 1 );
+ CHECK_THROWS( prim( d , 0 ) , contract_violation );
+ CHECK_THROWS( kruskal( d ) , contract_violation );
+ CHECK_THROWS( prim( gf , 6 ) , contract_violation );
+ CHECK_THROWS( prim( gf , 0 , Frontier::QUEUE ) , contract_violation );
  }
 
 // the Teorema 14.1: for a random cut, the lightest edge across it is in a
@@ -267,7 +369,9 @@ ADS_TEST( "sec14.3.3.cut" )
  }
 
 // the example of Huffman: frequencies 45, 13, 12, 16, 9, 5 give codes of
-// lengths 1, 3, 3, 3, 4, 4, and 2.24 n bits; a prefix code that decodes
+// lengths 1, 3, 3, 3, 4, 4, and 2.24 n bits; a prefix code that decodes;
+// the edges of one and two characters, equal, zero and Fibonacci
+// frequencies, the empty text, and the preconditions
 ADS_TEST( "sec14.4.huffman" )
 {
  const std::map< char , int > f = { { 'a' , 45 } , { 'b' , 13 } ,
@@ -296,6 +400,47 @@ ADS_TEST( "sec14.4.huffman" )
   }
  const std::map< char , int > one = { { 'z' , 3 } };
  CHECK( huffman( one ).at( 'z' ) == "0" );
+ // the edges: one character of frequency 0 and its text; two characters
+ // get one bit each; 2^k equal frequencies give codes of k bits; the
+ // frequencies of Fibonacci give the deepest tree, a chain with codes of
+ // 1 , 2 , ... , n - 1 , n - 1 bits; frequencies 0 still get a code; the
+ // empty text encodes and decodes to nothing
+ const std::map< char , int > zero = { { 'q' , 0 } };
+ CHECK( huffman( zero ).at( 'q' ) == "0" );
+ CHECK( decode( encode( std::string( "qqq" ) , huffman( zero ) ) ,
+                huffman( zero ) ) == "qqq" );
+ const auto two = huffman( std::map< char , int >( { { 'a' , 1 } ,
+                                                     { 'b' , 100 } } ) );
+ CHECK( two.at( 'a' ).size() == 1 && two.at( 'b' ).size() == 1 &&
+        two.at( 'a' ) != two.at( 'b' ) );
+ std::map< char , int > flat;
+ for( char c = 'a' ; c < 'a' + 16 ; ++c ) flat[ c ] = 7;
+ for( const auto & [ c , s ] : huffman( flat ) ) CHECK( s.size() == 4 );
+ std::map< int , long > fib;
+ long f0 = 1 , f1 = 1;
+ for( int i = 0 ; i < 40 ; ++i ) {
+  fib[ i ] = f0;
+  f1 = f0 + f1;
+  f0 = f1 - f0;
+  }
+ const auto deep = huffman( fib );
+ std::vector< std::size_t > lengths;
+ for( const auto & [ c , s ] : deep ) lengths.push_back( s.size() );
+ std::sort( lengths.begin() , lengths.end() );
+ for( std::size_t i = 0 ; i + 1 < lengths.size() ; ++i )
+  CHECK( lengths[ i ] == i + 1 );
+ CHECK( lengths.back() == 39 );
+ const auto withzero = huffman( std::map< char , int >( { { 'a' , 0 } ,
+                                { 'b' , 0 } , { 'c' , 5 } } ) );
+ CHECK( withzero.size() == 3 && withzero.at( 'c' ).size() == 1 );
+ CHECK( encode( std::string() , code ).empty() &&
+        decode( std::string() , code ).empty() );
+ CHECK_THROWS( huffman( std::map< char , int >() ) , contract_violation );
+ CHECK_THROWS( huffman( std::map< char , int >( { { 'a' , -1 } } ) ) ,
+               contract_violation );
+ CHECK_THROWS( encode( std::string( "ax" ) , code ) , contract_violation );
+ CHECK_THROWS( decode( code.at( 'e' ).substr( 0 , 3 ) , code ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -303,7 +448,8 @@ ADS_TEST( "sec14.4.huffman" )
 /*--------------------------------------------------------------------------*/
 
 // the 0-1 knapsack is not greedy: capacity 6, volumes 3 , 3 , 4, profits
-// 3 , 3 , 5: by specific profit 5, the optimum 6
+// 3 , 3 , 5: by specific profit 5, the optimum 6; no object, capacity 0
+// with volumes 0, and the preconditions
 ADS_TEST( "ex14.1" )
 {
  const Longs p = { 3 , 3 , 5 } , v = { 3 , 3 , 4 };
@@ -313,9 +459,19 @@ ADS_TEST( "ex14.1" )
  long c = 6 , greedy = 0;
  for( auto i : by ) if( v[ i ] <= c ) { c -= v[ i ]; greedy += p[ i ]; }
  CHECK( greedy == 5 && knapsack( p , v , 6 ).first == 6 );
+ // the edges: no object; capacity 0 still takes the objects of volume 0;
+ // every object fitting takes all of them
+ CHECK( knapsack( {} , {} , 9 ).first == 0 );
+ const auto z = knapsack( { 4 , 7 , 2 } , { 0 , 1 , 0 } , 0 );
+ CHECK( z.first == 6 && z.second == std::vector< std::size_t >( { 0 , 2 } ) );
+ CHECK( knapsack( p , v , 100 ).first == 11 );
+ CHECK_THROWS( knapsack( { 1 } , { 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( knapsack( { 1 } , { -1 } , 1 ) , contract_violation );
+ CHECK_THROWS( knapsack( { 1 , 2 } , { 1 } , 1 ) , contract_violation );
  }
 
-// Kruskal with integer weights in [ 0 , n ): Counting Sort, O( m + n )
+// Kruskal with integer weights in [ 0 , n ): Counting Sort, O( m + n );
+// k = 1, ties kept in order, and the weights out of [ 0 , k )
 ADS_TEST( "ex14.2" )
 {
  std::mt19937 g( 6 );
@@ -324,6 +480,20 @@ ADS_TEST( "ex14.2" )
   const auto E = random_edges( n , int( g() % 100 ) , n , g );
   CHECK( weight( kruskal( n , E , n ) ) == weight( kruskal( n , E ) ) );
   }
+ // the edges: k = 1, all the weights 0; the weight k - 1; the order of
+ // equal weights kept as by the stable sort; a weight k, or negative, out
+ // of the range
+ const std::vector< Edge > E = { { 0 , 1 , 0 } , { 1 , 2 , 0 } ,
+                                 { 0 , 2 , 0 } };
+ CHECK( kruskal( 3 , E , 1 ) == kruskal( 3 , E ) && kruskal( 3 , E , 1 ) ==
+        std::vector< Edge >( { { 0 , 1 , 0 } , { 1 , 2 , 0 } } ) );
+ const std::vector< Edge > H = { { 0 , 1 , 4 } , { 1 , 2 , 2 } ,
+                                 { 0 , 2 , 2 } , { 2 , 3 , 4 } };
+ CHECK( kruskal( 4 , H , 5 ) == kruskal( 4 , H ) );
+ CHECK( kruskal( 0 , std::vector< Edge >() , 3 ).empty() );
+ CHECK_THROWS( kruskal( 4 , H , 4 ) , contract_violation );
+ CHECK_THROWS( kruskal( 2 , std::vector< Edge >( { { 0 , 1 , -1 } } ) , 3 ) ,
+               contract_violation );
  }
 
 // the spanning tree with the fewest red edges: weight 1 to the red ones, 0
@@ -352,7 +522,7 @@ ADS_TEST( "ex14.3" )
  }
 
 // Prim with a Fibonacci heap, O( m + n log n ): the same trees on a dense
-// graph
+// graph, and on a chain of 2000 nodes from an end and from the middle
 ADS_TEST( "ex14.4" )
 {
  std::mt19937 g( 8 );
@@ -369,9 +539,24 @@ ADS_TEST( "ex14.4" )
  long w = 0;
  for( int v = 1 ; v < n ; ++v ) w += *h.weight( a[ v ] , v );
  CHECK( w == weight( kruskal( n , E ) ) );
+ // the edges: a chain of 2000 nodes, the deepest tree, from an end and
+ // from the middle; two nodes and one edge
+ const int L = 2000;
+ std::vector< Edge > P;
+ for( int v = 1 ; v < L ; ++v ) P.push_back( { v - 1 , v , long( v % 7 ) } );
+ const auto chain = graph( L , P );
+ for( Frontier f : fronts ) {
+  const auto q = prim( chain , 0 , f ) , m = prim( chain , L / 2 , f );
+  for( int v = 1 ; v < L ; ++v ) CHECK( q[ v ] == v - 1 );
+  CHECK( m[ L / 2 ] == NIL && m[ 0 ] == 1 && m[ L - 1 ] == L - 2 );
+  CHECK( prim( graph( 2 , { { 0 , 1 , 3 } } ) , 1 , f ) ==
+         Ints( { 1 , NIL } ) );
+  }
+ CHECK( kruskal( L , P ).size() == std::size_t( L - 1 ) );
  }
 
-// Shortest Job First against all the orders
+// Shortest Job First against all the orders; no program, one, ties, times
+// 0, and the preconditions
 ADS_TEST( "ex14.5" )
 {
  std::mt19937 g( 9 );
@@ -385,10 +570,27 @@ ADS_TEST( "ex14.5" )
   while( std::next_permutation( A.begin() , A.end() ) );
   CHECK( totalCompletion( d , shortestJobFirst( d ) ) == best );
   }
+ // the edges: no program; one; equal times keep their order; times 0 go
+ // first and cost nothing; an order of some of the programs only; a time
+ // negative, a place out of range
+ using Places = std::vector< std::size_t >;
+ CHECK( shortestJobFirst( Longs() ).empty() &&
+        totalCompletion( Longs() , Places() ) == 0 );
+ CHECK( shortestJobFirst( Longs( { 9 } ) ) == Places( { 0 } ) &&
+        totalCompletion( Longs( { 9 } ) , Places( { 0 } ) ) == 9 );
+ CHECK( shortestJobFirst( Longs( { 3 , 1 , 3 , 1 } ) ) ==
+        Places( { 1 , 3 , 0 , 2 } ) );
+ const Longs z = { 5 , 0 , 2 , 0 };
+ CHECK( shortestJobFirst( z ) == Places( { 1 , 3 , 2 , 0 } ) &&
+        totalCompletion( z , shortestJobFirst( z ) ) == 9 );
+ CHECK( totalCompletion( z , Places( { 2 } ) ) == 2 );
+ CHECK_THROWS( shortestJobFirst( Longs( { 1 , -1 } ) ) , contract_violation );
+ CHECK_THROWS( totalCompletion( z , Places( { 4 } ) ) , contract_violation );
  }
 
 // the coloring of intervals: as many colors as the largest overlap, and
-// meeting intervals of different colors
+// meeting intervals of different colors; no interval, touching, equal and
+// nested ones, and the precondition
 ADS_TEST( "ex14.6" )
 {
  std::mt19937 g( 10 );
@@ -413,10 +615,25 @@ ADS_TEST( "ex14.6" )
     if( I[ i ].first < I[ j ].second && I[ j ].first < I[ i ].second )
      CHECK( c[ i ] != c[ j ] );
   }
+ // the edges: no interval; a chain of intervals that touch takes one
+ // color; n equal intervals take n; nested ones; an empty interval
+ using I2 = std::vector< std::pair< long , long > >;
+ CHECK( intervalColoring( I2() ).empty() );
+ CHECK( intervalColoring( I2( { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } } ) ) ==
+        Ints( { 0 , 0 , 0 } ) );
+ auto same = intervalColoring( I2( 6 , { -4 , 4 } ) );
+ std::sort( same.begin() , same.end() );
+ CHECK( same == Ints( { 0 , 1 , 2 , 3 , 4 , 5 } ) );
+ const auto nest = intervalColoring( I2( { { 0 , 9 } , { 1 , 8 } ,
+                                          { 2 , 3 } , { 4 , 5 } } ) );
+ CHECK( nest[ 0 ] != nest[ 1 ] && nest[ 2 ] == nest[ 3 ] &&
+        *std::max_element( nest.begin() , nest.end() ) == 2 );
+ CHECK_THROWS( intervalColoring( I2( { { 2 , 2 } } ) ) , contract_violation );
  }
 
 // the towers along a road: each house within d of a tower, as few towers
-// as there are houses pairwise farther than 2 d apart in the greedy scan
+// as there are houses pairwise farther than 2 d apart in the greedy scan;
+// no house, houses in one place, d = 0, 2 d apart, and the precondition
 ADS_TEST( "ex14.7" )
 {
  std::mt19937 g( 11 );
@@ -438,11 +655,21 @@ ADS_TEST( "ex14.7" )
   for( double x : s ) if( x > last + 2 * d ) { ++apart; last = x; }
   CHECK( int( T.size() ) == apart );
   }
+ // the edges: no house, no tower; all the houses in one place; d = 0, a
+ // tower on each distinct house; houses exactly 2 d apart share a tower;
+ // d negative
+ CHECK( towers( {} , 3 ).empty() );
+ CHECK( towers( { 5 , 5 , 5 } , 0 ) == std::vector< double >( { 5 } ) );
+ CHECK( towers( { 4 , 1 , 4 , 9 } , 0 ) ==
+        std::vector< double >( { 1 , 4 , 9 } ) );
+ CHECK( towers( { 0 , 10 } , 5 ) == std::vector< double >( { 5 } ) );
+ CHECK( towers( { 0 , 10.5 } , 5 ).size() == 2 );
+ CHECK_THROWS( towers( { 1 } , -1 ) , contract_violation );
  }
 
 // skiers and skis: the greedy pair of least difference first is not
 // optimal (heights 2 , 6, skis 5 , 9: 6 with 5, then 2 with 9, total 8,
-// against 6 by sorting both, which is optimal)
+// against 6 by sorting both, which is optimal); no skier, one, all equal
 ADS_TEST( "ex14.8" )
 {
  auto greedy = []( Longs p , Longs s ) {
@@ -471,6 +698,10 @@ ADS_TEST( "ex14.8" )
   };
  CHECK( greedy( { 2 , 6 } , { 5 , 9 } ) == 8 );
  CHECK( sorted( { 2 , 6 } , { 5 , 9 } ) == 6 );
+ // the edges: no skier; one; equal heights and skis cost nothing
+ CHECK( greedy( {} , {} ) == 0 && sorted( {} , {} ) == 0 );
+ CHECK( greedy( { 7 } , { 3 } ) == 4 && sorted( { 7 } , { 3 } ) == 4 );
+ CHECK( sorted( { 4 , 4 , 4 } , { 4 , 4 , 4 } ) == 0 );
  std::mt19937 g( 12 );
  for( int t = 0 ; t < 50 ; ++t ) {               // sorting is optimal
   Longs p( 1 + g() % 6 ) , s( p.size() );

@@ -99,10 +99,12 @@ class CursorTree {
  /// a new next sibling of n, not the root, of value v
  int insertSibling( int n , const T & v );
 
- /// a copy of the subtree of t in s as the first child of n
+ /// a copy of the subtree of t in s as the first child of n; t may be
+ /// this tree, copied as it was before the call
  int insertChildTree( int n , const CursorTree & t , int s );
 
- /// a copy of the subtree of t in s as the next sibling of n
+ /// a copy of the subtree of t in s as the next sibling of n; t may be
+ /// this tree, copied as it was before the call
  int insertSiblingTree( int n , const CursorTree & t , int s );
 
  /// removes the subtree of n, detached from its parent
@@ -142,7 +144,7 @@ class CursorTree {
   };
 
  /// the children of n, from the leftmost, forward
- /// \\pre n is a node
+ /// \pre n is a node
  [[nodiscard]] auto children( int n ) const {
   using It = WalkIterator< CursorTree , int , Siblings >;
   return( std::ranges::subrange( It( this , leftmostChild( n ) , n ) ,

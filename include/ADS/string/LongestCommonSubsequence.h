@@ -80,10 +80,11 @@ template< class S >
 std::vector< std::pair< char , typename S::value_type > > diff(
                                                  const S & P , const S & T );
 
-/// the longest common substring: its length and where it ends in P and T
+/// the longest common substring: its length and where it ends in P and T,
+/// the first one found by rows of P; ( 0 , 0 , 0 ) if they share nothing
+/// \post P and T share the substring of length best ending at ei and ej
 template< class S >
 std::tuple< std::size_t , std::size_t , std::size_t >
-/// \post P and T share the substring of length best ending at ei and ej
 longestCommonSubstring( const S & P , const S & T );
 
 /*--------------------------------------------------------------------------*/

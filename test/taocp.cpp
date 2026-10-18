@@ -53,6 +53,7 @@
 #include <array>
 #include <cmath>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <random>
@@ -76,7 +77,9 @@ namespace {
 
 // the Fibonacci search and the uniform binary search against
 // std::binary_search on every sorted vector of 0 to 60 distinct even items,
-// for every item and every gap; at most about 1.44 log2 n + 2 comparisons
+// for every item and every gap; at most about 1.44 log2 n + 2 comparisons;
+// the extremes of int, all equal items (a place of v), and an unsorted
+// vector
 ADS_TEST( "knuth-searches" )
 {
  for( int n = 0 ; n <= 60 ; ++n ) {
@@ -92,6 +95,25 @@ ADS_TEST( "knuth-searches" )
    CHECK( double( cf ) <= bound && double( cu ) <= bound );
    }
   }
+ constexpr int lo = std::numeric_limits< int >::min() ,
+               hi = std::numeric_limits< int >::max();
+ const std::vector< int > X = { lo , lo + 1 , 0 , hi - 1 , hi };
+ for( int i = 0 ; i < 5 ; ++i )                  // the extremes of int
+  CHECK( fibonacciSearch( X , X[ i ] ) == i &&
+         uniformBinarySearch( X , X[ i ] ) == i );
+ CHECK( fibonacciSearch( X , 1 ) == -1 &&
+        uniformBinarySearch( X , -1 ) == -1 );
+ for( int n = 1 ; n <= 20 ; ++n ) {              // all equal: some place
+  const std::vector< int > E( n , 7 );
+  const long f = fibonacciSearch( E , 7 ) , u = uniformBinarySearch( E , 7 );
+  CHECK( f >= 0 && f < n && u >= 0 && u < n );
+  CHECK( fibonacciSearch( E , 6 ) == -1 &&
+         uniformBinarySearch( E , 8 ) == -1 );
+  }
+ CHECK_THROWS( fibonacciSearch( std::vector< int >( { 2 , 1 } ) , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( uniformBinarySearch( std::vector< int >( { 2 , 1 } ) , 1 ) ,
+               contract_violation );
  }
 
 // a dictionary against std::map on random insertions and removals of keys
@@ -123,11 +145,62 @@ void againstMap( D & T , unsigned seed , int U = 500 , int ops = 6000 )
  CHECK( a == b );
  }
 
+// a dictionary on the degenerate cases: empty, an absent key removed, one
+// key inserted twice (the second value kept), the extremes of int, and
+// everything removed in decreasing order
+template< class D >
+void degenerate( D & T )
+{
+ CHECK( T.size() == 0 && ! T.lookup( 0 ) );
+ T.remove( 0 );
+ int seen = 0;
+ T.forEach( [ & ]( int , int ) { ++seen; } );
+ CHECK( seen == 0 );
+ T.insert( 5 , 1 );
+ T.insert( 5 , 2 );
+ CHECK( T.size() == 1 && T.lookup( 5 ) == 2 );
+ T.remove( 6 );
+ T.remove( 5 );
+ CHECK( T.size() == 0 && ! T.lookup( 5 ) );
+ constexpr int lo = std::numeric_limits< int >::min() ,
+               hi = std::numeric_limits< int >::max();
+ T.insert( hi , 1 );
+ T.insert( lo , 2 );
+ CHECK( T.lookup( hi ) == 1 && T.lookup( lo ) == 2 && ! T.lookup( 0 ) );
+ T.remove( hi );
+ T.remove( lo );
+ for( int i = 0 ; i < 300 ; ++i ) T.insert( 299 - i , i );   // decreasing
+ for( int i = 299 ; i >= 0 ; --i ) T.remove( i );
+ CHECK( T.size() == 0 && ! T.lookup( 7 ) );
+ }
+
 // the balanced trees: AVL within its height bound, the B-tree for three
 // minimum degrees, its leaves at one depth (the invariant), the skip list,
-// the treap and the splay tree, which also brings each key to the root
+// the treap and the splay tree, which also brings each key to the root;
+// every one on the degenerate cases, the heights of the empty trees and of
+// one key, and the root of an empty splay tree
 ADS_TEST( "balanced-trees" )
 {
+ {
+  AVLTree< int , int > a;
+  degenerate( a );
+  BTree< int , int > b( 2 );
+  degenerate( b );
+  CHECK( b.height() == -1 );
+  b.insert( 1 , 1 );
+  CHECK( b.height() == 0 );
+  SkipList< int , int > l( 9 );
+  degenerate( l );
+  Treap< int , int > t( 9 );
+  degenerate( t );
+  CHECK( t.height() == -1 );
+  SplayTree< int , int > y;
+  degenerate( y );
+  CHECK( ! y.root() );
+  AVLTree< int , int > d;                        // decreasing insertions
+  for( int i = 4095 ; i > 0 ; --i ) d.insert( i , i );
+  CHECK( d.height() <= int( 1.4405 * std::log2( 4095 + 2.0 ) ) );
+  }
  AVLTree< int , int > A;
  againstMap( A , 1 );
  AVLTree< int , int > S;                         // sorted insertions
@@ -192,6 +265,9 @@ void stringDictionary( D & T , unsigned seed )
   }
  }
 
+// the tries on random words (above), the compact trie of seven long keys,
+// and both tries empty, with the empty key, with keys prefixes of one
+// another (a chain), a key inserted again, and removals inside the chain
 ADS_TEST( "tries" )
 {
  Trie< int > T;
@@ -206,11 +282,40 @@ ADS_TEST( "tries" )
  CHECK( W.nodes() == 14 && W.keysWithPrefix( "rub" ).size() == 4 );
  W.remove( "rubens" );
  CHECK( ! W.contains( "rubens" ) && W.contains( "ruber" ) );
+ for( int kind = 0 ; kind < 2 ; ++kind ) {      // the empty key, prefixes
+  Trie< int > A;
+  RadixTree< int > B;
+  auto run = [ & ]( auto & D ) {
+   CHECK( D.size() == 0 && ! D.lookup( "" ) &&
+          D.keysWithPrefix( "" ).empty() );
+   D.remove( "x" );
+   D.insert( "" , 1 );
+   D.insert( "a" , 2 );
+   D.insert( "aaaa" , 3 );
+   D.insert( "aa" , 4 );
+   D.insert( "aa" , 5 );                       // again: replaced
+   CHECK( D.size() == 4 && D.lookup( "" ) == 1 && D.lookup( "aa" ) == 5 &&
+          ! D.lookup( "aaa" ) && ! D.lookup( "aaaaa" ) );
+   CHECK( D.keysWithPrefix( "aa" ) ==
+          std::vector< std::string >( { "aa" , "aaaa" } ) );
+   CHECK( D.keysWithPrefix( "" ).size() == 4 &&
+          D.keysWithPrefix( "aaaaa" ).empty() );
+   D.remove( "aa" );                           // inside the chain
+   D.remove( "" );
+   CHECK( D.size() == 2 && D.lookup( "aaaa" ) == 3 && ! D.lookup( "" ) );
+   D.remove( "aaaa" );
+   D.remove( "a" );
+   CHECK( D.size() == 0 && D.keysWithPrefix( "" ).empty() );
+   };
+  if( kind ) run( B ); else run( A );
+  }
  }
 
 // the coalesced hashing with and without a cellar, and the double hashing
 // with the insertion of Brent, whose successful searches take fewer than
-// 2.5 probes on average even with the table 95 % full
+// 2.5 probes on average even with the table 95 % full; the empty tables,
+// a key inserted again into a full table (replaced), tables of one and of
+// two places, and the sizes that are not allowed
 ADS_TEST( "knuth-hashing" )
 {
  std::mt19937 g( 8 );
@@ -235,9 +340,26 @@ ADS_TEST( "knuth-hashing" )
  CHECK( probes / double( keys.size() ) < 2.5 );
  CHECK_THROWS( ( BrentHashTable< int , int >( 1000 ) ) , contract_violation );
  CoalescedHashTable< int , int > F( 2 );
+ CHECK( ! F.lookup( 1 ) && F.size() == 0 );     // empty
  F.insert( 1 , 1 );
  F.insert( 2 , 2 );
+ F.insert( 2 , 20 );                             // full, a key again
+ CHECK( F.size() == 2 && F.lookup( 2 ) == 20 && ! F.lookup( 3 ) );
  CHECK_THROWS( F.insert( 3 , 3 ) , contract_violation );   // full
+ CoalescedHashTable< int , int > O( 1 );         // one place
+ O.insert( -7 , 1 );
+ CHECK( O.lookup( -7 ) == 1 && ! O.lookup( 7 ) );
+ CHECK_THROWS( O.insert( 7 , 1 ) , contract_violation );
+ BrentHashTable< int , int > T( 2 );             // the smallest prime
+ CHECK( ! T.lookup( 0 ) );
+ T.insert( 0 , 0 );
+ T.insert( 1 , 1 );
+ T.insert( 1 , 10 );
+ CHECK( T.lookup( 0 ) == 0 && T.lookup( 1 ) == 10 && ! T.lookup( 2 ) );
+ CHECK_THROWS( T.insert( 2 , 2 ) , contract_violation );   // full
+ CHECK_THROWS( ( BrentHashTable< int , int >( 1 ) ) , contract_violation );
+ CHECK_THROWS( ( CoalescedHashTable< int , int >( 0 ) ) ,
+               contract_violation );
  }
 
 // the filter of Bloom: no false negative, and false positives near
@@ -259,7 +381,8 @@ ADS_TEST( "bloom-filter" )
 // of up to 7 items and on random vectors with repeated keys, the stable
 // ones also on pairs; merge insertion within the bound of Ford and Johnson
 // on every permutation of up to 8 items, and binary insertion within
-// sum ceil( log2 k )
+// sum ceil( log2 k ); the extremes of int, all equal and decreasing keys,
+// the address calculation with the infinities and 1 or 1000 lists
 ADS_TEST( "knuth-sorts" )
 {
  using Ints = std::vector< int >;
@@ -274,6 +397,25 @@ ADS_TEST( "knuth-sorts" )
   Ints r( n );
   for( auto & x : r ) x = int( g() % ( n / 3 + 1 ) ) - int( n / 6 );
   I.push_back( r );
+  }
+ constexpr int lo = std::numeric_limits< int >::min() ,
+               hi = std::numeric_limits< int >::max();
+ I.push_back( Ints( { hi , lo , 0 , -1 , hi , lo , 1 } ) );   // extremes
+ I.push_back( Ints( 100 , lo ) );                // all equal
+ Ints desc( 300 );                               // decreasing
+ std::iota( desc.rbegin() , desc.rend() , -150 );
+ I.push_back( desc );
+ const double inf = std::numeric_limits< double >::infinity();
+ std::vector< double > W = { 3.5 , -inf , 1e308 , -1e308 , inf , 0.0 ,
+                             -0.5 };
+ auto Ws = W;
+ std::sort( Ws.begin() , Ws.end() );
+ addressCalculationSort( W );                    // a span past a double
+ CHECK( W == Ws );
+ for( std::size_t M : { std::size_t( 1 ) , std::size_t( 1000 ) } ) {
+  Ints A = desc;
+  addressCalculationSort( A , M );               // one list, many lists
+  CHECK( std::is_sorted( A.begin() , A.end() ) );
   }
  for( const auto & x : I ) {
   Ints B = x;
@@ -340,7 +482,9 @@ ADS_TEST( "knuth-sorts" )
 
 // the external sort: runs of about 2 M by replacement selection on random
 // input and a single run on a sorted one, the polyphase merge on 3 to 6
-// tapes, fewer phases with more tapes
+// tapes, fewer phases with more tapes; a decreasing input (runs of M), M
+// = 1, all equal keys, no input, no run and one run, a memory larger than
+// the input, and the preconditions (2 tapes, M = 0, a run not sorted)
 ADS_TEST( "external-sort" )
 {
  std::mt19937 g( 10 );
@@ -363,11 +507,31 @@ ADS_TEST( "external-sort" )
   }
  CHECK( externalSort( A , 50 , 4 ) == B );
  CHECK( externalSort( std::vector< int >() , 5 , 3 ).empty() );
+ std::vector< int > D( 500 );                    // decreasing: runs of M
+ std::iota( D.rbegin() , D.rend() , 0 );
+ const auto rd = replacementSelection( D , 10 );
+ CHECK( rd.size() == 50 && rd.front().size() == 10 );
+ const auto r1 = replacementSelection( A , 1 );   // M = 1: the ascents
+ for( const auto & r : r1 ) CHECK( std::is_sorted( r.begin() , r.end() ) );
+ CHECK( polyphaseMerge( r1 , 3 ) == B );
+ CHECK( replacementSelection( std::vector< int >( 77 , 4 ) , 3 ).size() ==
+        1 );                                     // all equal: one run
+ CHECK( replacementSelection( std::vector< int >() , 3 ).empty() );
+ CHECK( polyphaseMerge( std::vector< std::vector< int > >() , 3 ).empty() );
+ CHECK( polyphaseMerge( std::vector< std::vector< int > >( { { 1 , 2 } } ) ,
+                        3 ) == std::vector< int >( { 1 , 2 } ) );
+ CHECK( externalSort( D , 1 , 3 ) == std::vector< int >( D.rbegin() ,
+                                                         D.rend() ) );
+ CHECK( externalSort( A , 100000 , 3 ) == B );   // all in memory
  CHECK_THROWS( polyphaseMerge( runs , 2 ) , contract_violation );
+ CHECK_THROWS( replacementSelection( A , 0 ) , contract_violation );
+ CHECK_THROWS( polyphaseMerge( std::vector< std::vector< int > >(
+               { { 2 , 1 } } ) , 3 ) , contract_violation );
  }
 
 // the threaded tree: the keys by the threads, forward and backward, as
-// std::set has them
+// std::set has them; the empty tree, one key inserted twice, and a chain
+// of 10^4 decreasing keys (freed and walked without recursion)
 ADS_TEST( "threaded-tree" )
 {
  ThreadedTree< int > T;
@@ -385,13 +549,30 @@ ADS_TEST( "threaded-tree" )
         T.size() == R.size() );
  CHECK( T.reversed() == std::vector< int >( R.rbegin() , R.rend() ) );
  ThreadedTree< int > E;
- CHECK( E.reversed().empty() && ! E.contains( 1 ) );
+ CHECK( E.reversed().empty() && ! E.contains( 1 ) && E.size() == 0 );
+ int seen = 0;
+ E.forEach( [ & ]( int ) { ++seen; } );
+ CHECK( seen == 0 );
+ ThreadedTree< int > O;                          // one key, given twice
+ O.insert( 3 );
+ O.insert( 3 );
+ CHECK( O.size() == 1 && O.reversed() == std::vector< int >( { 3 } ) );
+ ThreadedTree< int > C;                          // a deep chain
+ for( int i = 10000 ; i > 0 ; --i ) C.insert( i );
+ std::vector< int > c;
+ C.forEach( [ & ]( int k ) { c.push_back( k ); } );
+ CHECK( c.size() == 10000 && c.front() == 1 && c.back() == 10000 &&
+        std::is_sorted( c.begin() , c.end() ) );
+ CHECK( C.reversed().front() == 10000 );
  }
 
 // the allocators on random requests and releases, their invariants checked
 // at each operation: the boundary tags with the three fits, the memory all
 // free and in one block at the end; the buddy system, its blocks powers of
-// 2 at least as large as the requests
+// 2 at least as large as the requests; the smallest memories (4 words, 1
+// word), requests larger than the memory up to the largest long (refused
+// before n + 2 or 2^k could overflow a long), a block freed twice,
+// a request of 0, and the sizes not allowed
 ADS_TEST( "allocators" )
 {
  using F = BoundaryTagAllocator::Fit;
@@ -435,12 +616,35 @@ ADS_TEST( "allocators" )
  for( const auto & u : used ) B.free( u.first );
  CHECK( B.freeWords() == 4096 && B.allocate( 4096 ) == 0 &&
         B.allocate( 1 ) == -1 );
+ constexpr long huge = std::numeric_limits< long >::max();
+ BuddyAllocator O( 0 );                          // one word
+ CHECK( O.allocate( 2 ) == -1 && O.allocate( huge ) == -1 &&
+        O.allocate( 1 ) == 0 && O.blockSize( 0 ) == 1 &&
+        O.allocate( 1 ) == -1 );
+ O.free( 0 );
+ CHECK( O.freeWords() == 1 );
+ CHECK( B.allocate( huge ) == -1 );             // no 2^k past a long
+ BoundaryTagAllocator T( 4 );                    // the smallest memory
+ CHECK( T.allocate( huge ) == -1 && T.allocate( 5 ) == -1 );
+ const long a = T.allocate( 1 );
+ CHECK( a >= 0 && T.allocate( 1 ) == -1 );
+ T.free( a );
+ CHECK( T.freeWords() == 4 && T.freeBlocks() == 1 );
+ CHECK_THROWS( T.allocate( 0 ) , contract_violation );
+ CHECK_THROWS( T.free( a ) , contract_violation );      // twice
+ CHECK_THROWS( O.allocate( 0 ) , contract_violation );
+ CHECK_THROWS( O.free( 0 ) , contract_violation );
+ CHECK_THROWS( BoundaryTagAllocator( 3 ) , contract_violation );
+ CHECK_THROWS( BuddyAllocator( 41 ) , contract_violation );
+ CHECK_THROWS( BuddyAllocator( -1 ) , contract_violation );
  }
 
 // the garbage collector on random structures with cycles and sharing: the
 // marking by pointer reversal frees the same cells as the one with a stack
 // and leaves the reachable cells as they were (the audit); cons() collects
-// by itself when the memory runs out
+// by itself when the memory runs out; one cell pointing to itself, a
+// collection with nothing to free, a list of 10^5 cells marked without
+// recursion, a free cell read, a negative atom, and no cell
 ADS_TEST( "cell-heap" )
 {
  for( bool reversal : { true , false } ) {
@@ -473,10 +677,33 @@ ADS_TEST( "cell-heap" )
  const auto x = S.cons( keep , CellHeap::nil ) , y = S.cons( x , keep );
  S.addRoot( y );
  CHECK_THROWS( S.cons( CellHeap::nil , CellHeap::nil ) , contract_violation );
+ for( bool reversal : { true , false } ) {
+  CellHeap O( 1 );                               // one cell, a self-loop
+  const auto c = O.cons( CellHeap::nil , CellHeap::nil );
+  O.setCar( c , c );
+  O.setCdr( c , c );
+  O.addRoot( c );
+  CHECK( O.collect( reversal ) == 0 && O.car( c ) == c && O.cdr( c ) == c );
+  O.removeRoot( c );
+  CHECK( O.collect( reversal ) == 1 && O.freeCells() == 1 );
+  CHECK( O.collect( reversal ) == 0 );           // nothing to collect
+  CHECK_THROWS( O.car( c ) , contract_violation );       // a free cell
+  CellHeap L( 100000 );                          // a deep list: no stack
+  auto head = CellHeap::nil;                     // overflow in the marks
+  for( long i = 0 ; i < 100000 ; ++i )
+   head = L.cons( CellHeap::atom( i ) , head );
+  L.addRoot( head );
+  CHECK( L.collect( reversal ) == 0 && L.freeCells() == 0 &&
+         L.car( head ) == CellHeap::atom( 99999 ) );
+  }
+ CHECK_THROWS( CellHeap::atom( -1 ) , contract_violation );
+ CHECK_THROWS( CellHeap( 0 ) , contract_violation );
  }
 
 // the pivot step on orthogonal lists against the dense one, and the
-// inverse of a matrix by a pivot step on each diagonal place
+// inverse of a matrix by a pivot step on each diagonal place; zeros set
+// and removed, empty rows and columns, a 1 x 1 matrix, and the bounds of
+// every access and of a pivot (also on a zero)
 ADS_TEST( "sparse-matrix" )
 {
  std::mt19937 g( 15 );
@@ -521,10 +748,26 @@ ADS_TEST( "sparse-matrix" )
  Z.set( 1 , 0 , 1 );
  Z.set( 1 , 2 , 0 );
  CHECK( Z.nonzeros() == 1 && Z.row( 1 ).size() == 1 && Z.col( 2 ).empty() );
+ CHECK( Z.get( 2 , 3 ) == 0 && Z.row( 0 ).empty() && Z.col( 3 ).empty() );
+ Z.set( 0 , 0 , 0 );                             // a zero not stored
+ Z.set( 1 , 0 , 0 );                             // the only one removed
+ CHECK( Z.nonzeros() == 0 );
+ SparseMatrix O( 1 , 1 );                        // 1 x 1: the reciprocal
+ O.set( 0 , 0 , -4 );
+ O.pivot( 0 , 0 );
+ CHECK( O.get( 0 , 0 ) == -0.25 && O.nonzeros() == 1 );
  CHECK_THROWS( Z.pivot( 0 , 0 ) , contract_violation );
+ CHECK_THROWS( Z.pivot( 3 , 0 ) , contract_violation );
+ CHECK_THROWS( Z.set( 3 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( Z.set( 0 , 4 , 1 ) , contract_violation );
+ CHECK_THROWS( Z.get( 3 , 0 ) , contract_violation );
+ CHECK_THROWS( Z.row( 3 ) , contract_violation );
+ CHECK_THROWS( Z.col( 4 ) , contract_violation );
  }
 
-// the broadword tricks against the loops over the bits on random words
+// the broadword tricks against the loops over the bits on random words;
+// the words 0 and all 1s, the extreme bits, the bytes of 0, and the words
+// with no next one of their weight
 ADS_TEST( "bitwise" )
 {
  std::mt19937_64 g( 16 );
@@ -563,12 +806,32 @@ ADS_TEST( "bitwise" )
   ++k;
   }
  CHECK( k == 120 );
+ const Word all = ~Word( 0 );                    // the words 0 and all 1s
+ CHECK( sidewaysSum( 0 ) == 0 && sidewaysSum( all ) == 64 &&
+        reverseBits( 0 ) == 0 && reverseBits( all ) == all );
+ CHECK( gray( 0 ) == 0 && grayInverse( 0 ) == 0 &&
+        grayInverse( gray( all ) ) == all && rightmostOne( 0 ) == 0 );
+ CHECK( ruler( all ) == 0 && lambda( all ) == 63 && lambda( 1 ) == 0 &&
+        ruler( Word( 1 ) << 63 ) == 63 && rightmostOne( all ) == 1 );
+ CHECK( hasZeroByte( 0 ) && ! hasZeroByte( all ) &&
+        hasZeroByte( all >> 8 ) && ! hasZeroByte( 0x0101010101010101ULL ) );
+ CHECK( interleave( ~std::uint32_t( 0 ) , ~std::uint32_t( 0 ) ) == all &&
+        interleave( 0 , 0 ) == 0 );
+ CHECK( nextSameWeight( Word( 1 ) << 62 ) == ( Word( 1 ) << 63 ) &&
+        nextSameWeight( 1 ) == 2 );
  CHECK_THROWS( (void) ruler( 0 ) , contract_violation );
+ CHECK_THROWS( (void) lambda( 0 ) , contract_violation );
+ CHECK_THROWS( (void) nextSameWeight( 0 ) , contract_violation );
+ CHECK_THROWS( (void) nextSameWeight( Word( 1 ) << 63 ) ,
+               contract_violation );                   // no next word
+ CHECK_THROWS( (void) nextSameWeight( all ) , contract_violation );
  }
 
 // the generators: their counts (the products, the multinomial, n!, the
 // binomial, p( n ), the Bell and the Catalan numbers), all distinct, in
-// their order, and the Gray property of the Gray orders
+// their order, and the Gray property of the Gray orders; a visit that
+// stops at once for each generator, no digit, radices of 1, all equal
+// items or none, and the sizes not allowed
 ADS_TEST( "generation" )
 {
  auto collect = []( auto gen ) {
@@ -651,6 +914,38 @@ ADS_TEST( "generation" )
   }
  CHECK( combinationsLex( 5 , 2 , []( const Tuple & ) { return( true ); } ) ==
         1 );                                // a visit that stops
+ auto stop = []( const auto & ) { return( true ); };
+ CHECK( mixedRadix( m , stop ) == 1 && grayTuples( m , stop ) == 1 &&
+        plainChanges( 4 , stop ) == 1 && heapPermutations( 4 , stop ) == 1 &&
+        revolvingDoor( 5 , 2 , stop ) == 1 &&
+        integerPartitions( 5 , stop ) == 1 && setPartitions( 5 , stop ) == 1 &&
+        nestedParentheses( 3 , stop ) == 1 &&
+        permutationsLex( Tuple( { 3 , 1 } ) , stop ) == 1 );
+ const auto E = collect( []( auto v ) {         // no digit: one tuple
+  return( mixedRadix( std::vector< int >() , v ) ); } );
+ CHECK( E.size() == 1 && E[ 0 ].empty() );
+ const auto O = collect( []( auto v ) {         // radices 1: one tuple
+  return( mixedRadix( std::vector< int >( { 1 , 1 , 1 } ) , v ) ); } );
+ CHECK( O == std::vector< Tuple >( { Tuple( 3 , 0 ) } ) );
+ const auto GE = collect( []( auto v ) {
+  return( grayTuples( std::vector< int >() , v ) ); } );
+ CHECK( GE.size() == 1 && GE[ 0 ].empty() );
+ const auto PE = collect( []( auto v ) {         // all equal, or none
+  return( permutationsLex( Tuple( 5 , 2 ) , v ) ); } );
+ CHECK( PE.size() == 1 && collect( []( auto v ) {
+  return( permutationsLex( Tuple() , v ) ); } ).size() == 1 );
+ CHECK_THROWS( mixedRadix( std::vector< int >( { 2 , 0 } ) , stop ) ,
+               contract_violation );
+ CHECK_THROWS( grayTuples( std::vector< int >( { 2 , 1 } ) , stop ) ,
+               contract_violation );
+ CHECK_THROWS( combinationsLex( 3 , 4 , stop ) , contract_violation );
+ CHECK_THROWS( combinationsLex( 3 , -1 , stop ) , contract_violation );
+ CHECK_THROWS( revolvingDoor( 3 , 4 , stop ) , contract_violation );
+ CHECK_THROWS( plainChanges( -1 , stop ) , contract_violation );
+ CHECK_THROWS( heapPermutations( -1 , stop ) , contract_violation );
+ CHECK_THROWS( integerPartitions( -1 , stop ) , contract_violation );
+ CHECK_THROWS( setPartitions( -1 , stop ) , contract_violation );
+ CHECK_THROWS( nestedParentheses( -1 , stop ) , contract_violation );
  }
 
 // the random numbers of volume 2: the period of Hull and Dobell, minstd at
@@ -715,12 +1010,40 @@ ADS_TEST( "random-numbers" )
   for( auto i : selectionSampling( 3 , 10 , g32 ) ) ++S32[ i ];
  CHECK( chiSquare( S32 , std::vector< double >( 10 , 0.1 ) ) < 27.88 );
  CHECK( selectionSampling( 10 , 10 , ref ).size() == 10 );
+ CHECK( selectionSampling( 0 , 0 , ref ).empty() &&
+        selectionSampling( 0 , 10 , ref ).empty() );
+ const std::uint64_t top = ~std::uint64_t( 0 );  // the largest modulus
+ LinearCongruential X( top - 1 , top - 1 , top , top - 1 );
+ CHECK( X() == 0 && X() == top - 1 && X() == 0 );   // ( -1 ) ( -1 ) - 1
+ CHECK( LinearCongruential( 0 , 0 , 1 , 0 ).period( 10 ) == 1 );   // m = 1
+ CHECK( LinearCongruential( 1 , 0 , 0 , 5 ).period( 10 ) == 1 );   // fixed
+ CHECK( LinearCongruential( 1 , 1 , 0 , 0 ).period( 1000 ) == 0 );  // long
+ std::vector< double > A1 = { 0.5 };
+ const auto [ k1 , k2 ] = kolmogorovSmirnov( A1 );
+ CHECK( std::abs( k1 - 0.5 ) < 1e-12 && std::abs( k2 - 0.5 ) < 1e-12 );
+ CHECK( chiSquare( std::vector< long >( { 5 , 5 } ) ,
+                   std::vector< double >( { 0.5 , 0.5 } ) ) == 0 );
  CHECK_THROWS( (void) selectionSampling( 11 , 10 , ref ) ,
                contract_violation );
+ CHECK_THROWS( LinearCongruential( 64 , 0 , 64 , 0 ) , contract_violation );
+ CHECK_THROWS( LinearCongruential( 5 , 0 , 64 , 64 ) , contract_violation );
+ CHECK_THROWS( chiSquare( std::vector< long >( { 1 } ) ,
+                          std::vector< double >( { 0.5 , 0.5 } ) ) ,
+               contract_violation );
+ CHECK_THROWS( chiSquare( std::vector< long >( { 1 , 1 } ) ,
+                          std::vector< double >( { 1 , 0 } ) ) ,
+               contract_violation );
+ CHECK_THROWS( kolmogorovSmirnov( std::vector< double >() ) ,
+               contract_violation );
+ CHECK_THROWS( serialTest( U , 1 ) , contract_violation );
+ CHECK_THROWS( spectralTest2( 0 , 64 ) , contract_violation );
+ CHECK_THROWS( spectralTest2( 3 , 1 ) , contract_violation );
  }
 
 // the FFT against the transform by its definition, the inverse of the
-// transform, and the product of polynomials against the naive one
+// transform, and the product of polynomials against the naive one; no
+// point, an empty polynomial, two constants, the zero polynomial, the
+// impulse, and sizes that are not powers of 2
 ADS_TEST( "fft" )
 {
  std::mt19937 g( 17 );
@@ -748,15 +1071,34 @@ ADS_TEST( "fft" )
    if( ( k >= i ) && ( k - i < q.size() ) ) s += p[ i ] * q[ k - i ];
   CHECK( std::abs( c[ k ] - s ) < 1e-3 );
   }
+ std::vector< Complex > none;                    // no point: nothing
+ fft( none , false );
+ CHECK( none.empty() && dft( none , true ).empty() );
+ CHECK( convolve( p , std::vector< double >() ).empty() &&
+        convolve( std::vector< double >() , q ).empty() );
+ const auto one = convolve( { 3 } , { -2 } );    // constants
+ CHECK( one.size() == 1 && std::abs( one[ 0 ] + 6 ) < 1e-12 );
+ const auto z = convolve( std::vector< double >( 5 , 0 ) , q );
+ CHECK( z.size() == 204 && std::all_of( z.begin() , z.end() ,
+        []( double v ) { return( std::abs( v ) < 1e-9 ); } ) );
+ std::vector< Complex > imp( 16 );               // the impulse: all ones
+ imp[ 0 ] = 1;
+ fft( imp , false );
+ for( const auto & v : imp ) CHECK( std::abs( v - Complex( 1 ) ) < 1e-12 );
  std::vector< Complex > bad( 3 );
  CHECK_THROWS( fft( bad , false ) , contract_violation );
+ std::vector< Complex > bad6( 6 );
+ CHECK_THROWS( fft( bad6 , true ) , contract_violation );
  }
 
 // the integers of any length: against long long where it fits, the
 // identities of the division on random operands of many sizes (the audit
 // checks a = q b + r), the FFT product against Algorithm M, the
 // conversions of base back and forth, 2^200 and 100! as written, and the
-// trial quotient corrected by the add back of D6 on a case built for it
+// trial quotient corrected by the add back of D6 on a case built for it;
+// the extremes of long long, zero and its sign, the four signs of the
+// division, the powers and gcds of 0, the bases 2 and 36, and the strings,
+// bases and divisors not allowed
 ADS_TEST( "big-integer" )
 {
  std::mt19937_64 g( 18 );
@@ -828,7 +1170,43 @@ ADS_TEST( "big-integer" )
  CHECK_THROWS( (void) ( BigInteger( 1 ) / BigInteger( 0 ) ) ,
                contract_violation );
  CHECK_THROWS( BigInteger( "12z" ) , contract_violation );
-
+ constexpr long long lmin = std::numeric_limits< long long >::min() ,
+                     lmax = std::numeric_limits< long long >::max();
+ const BigInteger Lmin( lmin ) , Lmax( lmax );   // the extremes of long long
+ CHECK( Lmin.toString() == "-9223372036854775808" &&
+        Lmax.toString() == "9223372036854775807" );
+ CHECK( Lmin + Lmax == BigInteger( -1 ) && -Lmin == Lmax + 1 &&
+        Lmin.abs().toString( 16 ) == "8000000000000000" );
+ CHECK( Lmin * Lmin == BigInteger::pow( 2 , 126 ) &&
+        Lmin / BigInteger( -1 ) == Lmax + 1 );
+ const BigInteger zero;                          // zero and the signs
+ CHECK( zero.sign() == 0 && zero.toString() == "0" &&
+        zero.toString( 2 ) == "0" && ( -zero ).sign() == 0 );
+ CHECK( zero * Lmin == zero && ( zero * Lmin ).sign() == 0 &&
+        Lmin - Lmin == zero && ( Lmin - Lmin ).sign() == 0 &&
+        zero / Lmax == zero && zero % Lmax == zero );
+ for( long long a : { 7LL , -7LL } )             // truncated division
+  for( long long b : { 2LL , -2LL , 7LL , -7LL , 8LL , -8LL } ) {
+   const auto [ q , r ] = BigInteger::divMod( a , b );
+   CHECK( q == BigInteger( a / b ) && r == BigInteger( a % b ) );
+   }
+ CHECK( BigInteger::pow( 12345 , 0 ) == 1 && BigInteger::pow( 0 , 0 ) == 1 &&
+        BigInteger::pow( 0 , 5 ) == 0 && BigInteger::pow( -2 , 63 ) == Lmin );
+ CHECK( BigInteger::gcd( 0 , 0 ) == 0 && BigInteger::gcd( 0 , -9 ) == 9 &&
+        BigInteger::gcd( Lmin , Lmin ) == Lmax + 1 );
+ CHECK( BigInteger( "zz" , 36 ) == BigInteger( 1295 ) &&
+        BigInteger( 1295 ).toString( 36 ) == "zz" &&
+        BigInteger( "-101" , 2 ) == BigInteger( -5 ) &&
+        BigInteger( "000123" ) == BigInteger( 123 ) );
+ CHECK_THROWS( BigInteger( "" ) , contract_violation );
+ CHECK_THROWS( BigInteger( "-" ) , contract_violation );
+ CHECK_THROWS( BigInteger( "2" , 2 ) , contract_violation );
+ CHECK_THROWS( BigInteger( "1" , 1 ) , contract_violation );
+ CHECK_THROWS( BigInteger( "1" , 37 ) , contract_violation );
+ CHECK_THROWS( BigInteger( 5 ).toString( 1 ) , contract_violation );
+ CHECK_THROWS( BigInteger::divMod( 5 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) ( BigInteger( 1 ) % BigInteger( 0 ) ) ,
+               contract_violation );
  }
 
 // the rationals: the harmonic number H_30 as written, the sums and the
@@ -853,13 +1231,23 @@ ADS_TEST( "rational" )
   CHECK( ( a + b ) - b == a && ( a - b ) + b == a );
   if( b.num().sign() != 0 ) CHECK( ( a / b ) * b == a );
   }
+ constexpr long long lmin = std::numeric_limits< long long >::min();
+ const Rational M( lmin , -1 );                  // -lmin past a long long
+ CHECK( M.toString() == "9223372036854775808" && M.den() == BigInteger( 1 ) );
+ CHECK( Rational( lmin , lmin ) == Rational( 1 ) &&
+        Rational( 0 , -7 ).toString() == "0" &&
+        Rational( 0 , -7 ) == Rational( 0 , 3 ) );
+ CHECK( Rational( -1 , 2 ) < Rational() && Rational() < Rational( 1 , 2 ) );
  CHECK_THROWS( Rational( 1 , 0 ) , contract_violation );
  CHECK_THROWS( Rational( 1 ) / Rational() , contract_violation );
+ CHECK_THROWS( Rational( 0 , 0 ) , contract_violation );
  }
 
 // the exact cover: the n queens as the backtrack of chapter 16 counts
 // them, the Sudoku as sudoku() solves it, and random small instances
-// against the enumeration of the subsets of options
+// against the enumeration of the subsets of options; no option, no item
+// (the empty cover), two equal options, a visit that stops, secondary
+// items, and the options and sizes not allowed
 ADS_TEST( "dancing-links" )
 {
  for( int n = 1 ; n <= 8 ; ++n ) {
@@ -925,7 +1313,25 @@ ADS_TEST( "dancing-links" )
   CHECK( X.solve( []( const std::vector< int > & ) { return( false ); } ) ==
          brute );
   }
+ auto all = []( const std::vector< int > & ) { return( false ); };
+ ExactCover N( 3 );                              // no option: no cover
+ CHECK( N.solve( all ) == 0 );
+ ExactCover Zero( 0 );                           // no item: the empty cover
+ CHECK( Zero.solve( all ) == 1 );
+ ExactCover U( 1 );                              // one item, two options
+ U.addOption( { 0 } );
+ U.addOption( { 0 } );
+ CHECK( U.solve( all ) == 2 &&
+        U.solve( []( const std::vector< int > & ) { return( true ); } ) ==
+        1 );                                     // a visit that stops
+ ExactCover S2( 1 , 2 );                         // secondary items, in
+ S2.addOption( { 0 , 1 } );                      // some options
+ S2.addOption( { 0 , 1 , 2 } );
+ CHECK( S2.solve( all ) == 2 );
  ExactCover Z( 2 );
+ CHECK_THROWS( Z.addOption( {} ) , contract_violation );
+ CHECK_THROWS( Z.addOption( { -1 } ) , contract_violation );
+ CHECK_THROWS( ExactCover( -1 ) , contract_violation );
  CHECK_THROWS( Z.addOption( { 0 , 0 } ) , contract_violation );
  CHECK_THROWS( Z.addOption( { 2 } ) , contract_violation );
  ExactCover W( 1 , 1 );
@@ -934,7 +1340,8 @@ ADS_TEST( "dancing-links" )
 
 // the SAT solvers: random 3-SAT at the threshold against the backtrack of
 // Problems.h, the pigeonholes unsatisfiable, the queens satisfiable, and
-// the corner cases (no clause, an empty clause, units in conflict)
+// the corner cases (no clause, an empty clause, units in conflict, no
+// variable, a literal repeated in a clause, the literals 0 and past n)
 ADS_TEST( "sat-solvers" )
 {
  std::mt19937 g( 21 );
@@ -994,7 +1401,14 @@ ADS_TEST( "sat-solvers" )
  CHECK( Cdcl( Cnf( { { 1 } , { -1 } } ) , 1 ).solve() == Cdcl::Result::UNSAT );
  CHECK( ! dpll( Cnf( { { 1 } , { -1 } } ) , 1 ) );
  CHECK( Cdcl( Cnf( { { 1 , -1 } } ) , 1 ).solve() == Cdcl::Result::SAT );
+ CHECK( Cdcl( Cnf() , 0 ).solve() == Cdcl::Result::SAT &&
+        dpll( Cnf() , 0 ).has_value() );         // no variable
+ CHECK( ! dpll( Cnf( { Clause() } ) , 1 ) );
+ Cdcl R( Cnf( { { 1 , 1 , -2 } , { 2 } } ) , 2 );   // a repeated literal
+ CHECK( R.solve() == Cdcl::Result::SAT &&
+        satCertificate( Cnf( { { 1 , 1 , -2 } , { 2 } } ) , R.model() ) );
  CHECK_THROWS( Cdcl( Cnf( { { 3 } } ) , 2 ) , contract_violation );
+ CHECK_THROWS( Cdcl( Cnf( { { 0 } } ) , 2 ) , contract_violation );
  }
 
 }  // end( namespace )

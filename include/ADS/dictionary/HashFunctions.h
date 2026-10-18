@@ -102,8 +102,9 @@ std::uint64_t hash_xor( std::string_view k , int p );
 
 /// the division int( bin( k ) ) mod m by the rule of Horner in the given
 /// base, each character being a digit, from the leading digit seed (the
-/// h = 5 , h = 3 h + c is base 3 and seed 5)
-/// \pre m > 0, base > 0, and ( m - 1 ) base + base - 1 fits in 64 bits
+/// h = 5 , h = 3 h + c is base 3 and seed 5); a character is any byte, up
+/// to 255 also in a base below 256
+/// \pre m > 0, base > 0, and ( m - 1 ) base + 255 fits in 64 bits
 /// \post the result is below m
 std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
                              std::uint64_t base = 256 ,

@@ -37,10 +37,10 @@ std::map< std::pair< int , int > , int > edgeCounts( const G & g )
 /// P are simple paths from s to t along the edges of g, at most k, none
 /// using an edge more times than the graph has it
 template< Graph G >
-bool disjointPaths( const G & g , int s , int t , long k ,
+bool disjointPaths( const G & g , int s , int t , long long k ,
                     const std::vector< std::vector< int > > & P )
 {
- if( long( P.size() ) > k )
+ if( static_cast< long long >( P.size() ) > k )
   return( false );
  auto M = edgeCounts( g );
  for( const auto & p : P ) {
@@ -149,22 +149,22 @@ void augmentOnce( const std::vector< std::vector< T > > & c ,
 /*--------------------------------------------------------------------------*/
 
 template< Graph G >
-std::vector< std::vector< int > > edgeDisjointPaths( const G & g , int s ,
-                                                     int t , long k )
+std::vector< std::vector< int > > edgeDisjointPaths(
+                  const G & g , int s , int t , long long k )
 {
  ADS_PRE( g.hasNode( s ) && g.hasNode( t ) && ( s != t ) && ( k >= 0 ) );
  const int n = g.bound();
  FlowNetwork N( n + 1 );                         // n, the new source
  struct Arc { int u , v , e; };
  std::vector< Arc > A;
- long out = 0;
+ long long out = 0;
  for( int u : g.V() )
   g.forEachAdj( u , [ & ]( int v ) {
    A.push_back( Arc{ u , v , N.addEdge( u , v , 1 ) } );
    out += u == s ? 1 : 0;
    } );
  N.addEdge( n , s , std::min( k , out ) );
- const long F = N.maxFlow( n , t );
+ const long long F = N.maxFlow( n , t );
  std::vector< std::vector< int > > next( n );   // the edges of flow 1
  if( g.directed() ) {
   for( const auto & a : A )
@@ -172,7 +172,7 @@ std::vector< std::vector< int > > edgeDisjointPaths( const G & g , int s ,
     next[ a.u ].push_back( a.v );
   }
  else {                                          // opposite flows cancel
-  std::map< std::pair< int , int > , long > net;
+  std::map< std::pair< int , int > , long long > net;
   for( const auto & a : A )
    if( N.flow( a.e ) == 1 ) {
     if( a.u < a.v )
@@ -181,7 +181,7 @@ std::vector< std::vector< int > > edgeDisjointPaths( const G & g , int s ,
      --net[ std::pair( a.v , a.u ) ];
     }
   for( const auto & [ e , x ] : net )
-   for( long i = 0 ; i < std::max( x , -x ) ; ++i ) {
+   for( long long i = 0 ; i < std::max( x , -x ) ; ++i ) {
     if( x > 0 )
      next[ e.first ].push_back( e.second );
     else
@@ -190,7 +190,7 @@ std::vector< std::vector< int > > edgeDisjointPaths( const G & g , int s ,
   }
  std::vector< std::vector< int > > P;
  std::vector< int > at( n , -1 );                // the place in the walk
- for( long i = 0 ; i < F ; ++i ) {
+ for( long long i = 0 ; i < F ; ++i ) {
   std::vector< int > p = { s };
   at[ s ] = 0;
   while( p.back() != t ) {

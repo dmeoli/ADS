@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <climits>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -60,6 +61,9 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 /*--------------------------------------------------------------------------*/
 
 using namespace ADS;
+
+/// 64 bits everywhere: long has 32 bits on Windows
+using I64 = std::int64_t;
 
 namespace {
 
@@ -155,6 +159,22 @@ std::vector< int > inorder( BT * t )
  return( out );
  }
 
+/// a chain of n > 0 nodes, the i-th of value v( i ) from the root, each
+/// the left child of the one before if left, else the right one
+template< class T , class V >
+BinaryTree< T > * chainTree( int n , V && v , bool left = true )
+{
+ auto * root = new BinaryTree< T >( v( 0 ) );
+ auto * u = root;
+ for( int i = 1 ; i < n ; ++i ) {
+  auto * c = new BinaryTree< T >( v( i ) );
+  if( left ) u->insertLeft( c );
+  else u->insertRight( c );
+  u = c;
+  }
+ return( root );
+ }
+
 /// a random graph of n nodes, each edge present with probability p
 ListGraph<> randomGraph( std::mt19937 & g , int n , double p ,
                          bool directed )
@@ -203,7 +223,9 @@ void monotoneBrute( const BT * t , std::vector< int > & path , int & best )
  }
 
 // every path from the root of 500 random trees, the empty tree, one node,
-// a chain of equal values (0) and a strictly increasing chain (n - 1)
+// a chain of equal values (0) and a strictly increasing chain (n - 1), a
+// tie with the parent breaking the path, a decreasing chain, deep chains
+// on either side
 ADS_TEST( "esercitazioni-1" )
 {
  std::mt19937 g( 1 );
@@ -221,6 +243,16 @@ ADS_TEST( "esercitazioni-1" )
  Owner eq( mk( 1 , mk( 1 , mk( 1 ) ) ) ) ,
        up( mk( 1 , nullptr , mk( 2 , mk( 3 , nullptr , mk( 4 ) ) ) ) );
  CHECK( monotone( eq.get() ) == 0 && monotone( up.get() ) == 3 );
+ Owner tie( mk( 1 , mk( 1 , mk( 5 ) ) , mk( 2 ) ) );
+ CHECK( monotone( tie.get() ) == 1 );
+ Owner deepL( chainTree< int >( 3000 , []( int i ) { return( i ); } ) ) ,
+       deepR( chainTree< int >( 3000 , []( int i ) { return( i ); } ,
+                                false ) ) ,
+       down( chainTree< int >( 3000 , []( int i ) { return( -i ); } ) );
+ CHECK( monotone( deepL.get() ) == 2999 && monotone( deepR.get() ) == 2999 );
+ CHECK( monotone( down.get() ) == 0 );
+ Owner ext( mk( INT_MIN , nullptr , mk( INT_MAX ) ) );
+ CHECK( monotone( ext.get() ) == 1 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -279,7 +311,9 @@ std::vector< int > inorderSized( SBT * t )
  }
 
 // the shape of the text filled with its array (by levels), 500 random
-// shapes whose symmetric visit must give A back, a chain, one node
+// shapes whose symmetric visit must give A back, a chain, one node, a deep
+// right chain, the preconditions (nil tree, sizes differing, A not
+// strictly increasing)
 ADS_TEST( "esercitazioni-2" )
 {
  const auto z = Sized();
@@ -314,6 +348,19 @@ ADS_TEST( "esercitazioni-2" )
  CHECK( C->read().value == 3 && C->left()->left()->read().value == 1 );
  CHECK( one->read().value == 7 );
  CHECK_THROWS( binaryInsert( C.get() , { 1 , 1 , 2 } ) , contract_violation );
+ CHECK_THROWS( binaryInsert( C.get() , { 3 , 2 , 1 } ) , contract_violation );
+ CHECK_THROWS( binaryInsert( C.get() , { 1 , 2 } ) , contract_violation );
+ CHECK_THROWS( binaryInsert( C.get() , { 1 , 2 , 3 , 4 } ) ,
+               contract_violation );
+ CHECK_THROWS( binaryInsert( nullptr , {} ) , contract_violation );
+ std::unique_ptr< SBT > deep( chainTree< Sized >( 3000 , [ & ]( int ) {
+                                                   return( z ); } , false ) );
+ setSizes( deep.get() );
+ std::vector< int > D( 3000 );            // up to INT_MAX, iota would wrap
+ for( int i = 0 ; i < 3000 ; ++i ) D[ i ] = INT_MAX - 2999 + i;
+ binaryInsert( deep.get() , D );
+ CHECK( inorderSized( deep.get() ) == D );
+ CHECK( deep->read().value == INT_MAX - 2999 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -346,7 +393,8 @@ int leaves( const BT * t )
  }
 
 // against the quadratic count of the leaves of each subtree on 500 random
-// trees, the empty tree, one node, a chain (1 at each node)
+// trees, the empty tree, one node, a chain (1 at each node, also deep), a
+// complete tree (0), a leaf against a complete subtree of 8 leaves (7)
 ADS_TEST( "esercitazioni-3" )
 {
  std::mt19937 g( 3 );
@@ -361,6 +409,12 @@ ADS_TEST( "esercitazioni-3" )
  Owner one( mk( 0 ) ) , chain( mk( 0 , mk( 0 , mk( 0 ) ) ) );
  CHECK( unbalance( nullptr ) == 0 && unbalance( one.get() ) == 0 );
  CHECK( unbalance( chain.get() ) == 1 );
+ Owner deep( chainTree< int >( 3000 , []( int ) { return( 0 ); } ) );
+ CHECK( unbalance( deep.get() ) == 1 );
+ std::function< BT * ( int ) > full = [ & ]( int h ) -> BT * {
+  return( h ? mk( 0 , full( h - 1 ) , full( h - 1 ) ) : mk( 0 ) ); };
+ Owner complete( full( 4 ) ) , lop( mk( 0 , mk( 0 ) , full( 3 ) ) );
+ CHECK( unbalance( complete.get() ) == 0 && unbalance( lop.get() ) == 7 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -392,7 +446,8 @@ int width( Tree< int > * t )
  }
 
 // against the largest class of the depths, found by the previsit of the
-// library, on 500 random ordered trees, one node and a star
+// library, on 500 random ordered trees, one node and a star, a deep path
+// (1), a widest level that is not the last one, the nil tree
 ADS_TEST( "esercitazioni-4" )
 {
  std::mt19937 g( 4 );
@@ -416,6 +471,16 @@ ADS_TEST( "esercitazioni-4" )
  std::unique_ptr< Tree< int > > star( new Tree< int >( 0 ) );
  for( int i = 1 ; i <= 9 ; ++i ) star->insertChild( new Tree< int >( i ) );
  CHECK( width( star.get() ) == 9 );
+ star->leftmostChild()->insertChild( new Tree< int >( 10 ) );
+ CHECK( width( star.get() ) == 9 );
+ std::unique_ptr< Tree< int > > path( new Tree< int >( 0 ) );
+ Tree< int > * u = path.get();
+ for( int i = 1 ; i < 3000 ; ++i ) {
+  auto * c = new Tree< int >( i );
+  u->insertChild( c );
+  u = c;
+  }
+ CHECK( width( path.get() ) == 1 );
  CHECK_THROWS( width( nullptr ) , contract_violation );
  }
 
@@ -436,7 +501,8 @@ int sameLevelRec( const BT * t , int l )
 /// level 0, by a previsit that carries the level; Theta( n )
 int sameLevel( const BT * t ) { return( sameLevelRec( t , 0 ) ); }
 
-// against a visit by levels on 500 random trees, the empty tree, one node
+// against a visit by levels on 500 random trees, the empty tree, one node,
+// a deep chain of the levels (all count), negative values (none count)
 ADS_TEST( "esercitazioni-5" )
 {
  std::mt19937 g( 5 );
@@ -452,6 +518,9 @@ ADS_TEST( "esercitazioni-5" )
                                                        mk( 1 ) ) );
  CHECK( sameLevel( nullptr ) == 0 && sameLevel( zero.get() ) == 1 );
  CHECK( sameLevel( one.get() ) == 0 && sameLevel( all.get() ) == 4 );
+ Owner lv( chainTree< int >( 3000 , []( int i ) { return( i ); } , false ) ) ,
+       neg( chainTree< int >( 3000 , []( int i ) { return( -i - 1 ); } ) );
+ CHECK( sameLevel( lv.get() ) == 3000 && sameLevel( neg.get() ) == 0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -496,7 +565,9 @@ bool sameShape( const BT * a , const BT * b )
 
 // against the comparison of the right subtree with the mirror copy of the
 // left one, on 500 random trees, half of them built symmetric and some of
-// those perturbed by one leaf; one node is symmetric
+// those perturbed by one leaf; one node is symmetric, two leaves are,
+// whatever their values, one child alone is not on either side, two deep
+// chains mirrored are and two parallel ones are not
 ADS_TEST( "esercitazioni-6" )
 {
  std::mt19937 g( 6 );
@@ -521,6 +592,14 @@ ADS_TEST( "esercitazioni-6" )
   }
  Owner one( mk( 1 ) ) , two( mk( 1 , mk( 2 ) ) );
  CHECK( isSymmetric( one.get() ) && ! isSymmetric( two.get() ) );
+ Owner pair( mk( 1 , mk( 2 ) , mk( 3 ) ) ) , rt( mk( 1 , nullptr , mk( 2 ) ) );
+ CHECK( isSymmetric( pair.get() ) && ! isSymmetric( rt.get() ) );
+ auto zero = []( int ) { return( 0 ); };
+ Owner mir( mk( 0 , chainTree< int >( 1500 , zero ) ,
+                chainTree< int >( 1500 , zero , false ) ) ) ,
+       par( mk( 0 , chainTree< int >( 1500 , zero ) ,
+                chainTree< int >( 1500 , zero ) ) );
+ CHECK( isSymmetric( mir.get() ) && ! isSymmetric( par.get() ) );
  CHECK_THROWS( isSymmetric( nullptr ) , contract_violation );
  }
 
@@ -545,7 +624,8 @@ int aboveBelow( const BT * t ) { return( countTreeRec( t , 0 ).second ); }
 
 // against the depth and the size of each node computed separately, on 500
 // random trees, the empty tree, one node (0 ancestors, 0 descendants), a
-// chain of three nodes (the middle one)
+// chain of three nodes (the middle one), of four (none), a deep odd chain
+// (its middle node), a complete tree (none)
 ADS_TEST( "esercitazioni-7" )
 {
  std::mt19937 g( 7 );
@@ -559,6 +639,13 @@ ADS_TEST( "esercitazioni-7" )
  Owner one( mk( 0 ) ) , chain( mk( 0 , mk( 0 , mk( 0 ) ) ) );
  CHECK( aboveBelow( nullptr ) == 0 && aboveBelow( one.get() ) == 1 );
  CHECK( aboveBelow( chain.get() ) == 1 );
+ auto zero = []( int ) { return( 0 ); };
+ Owner four( chainTree< int >( 4 , zero ) ) ,
+       deep( chainTree< int >( 2999 , zero , false ) ) ,
+       complete( mk( 0 , mk( 0 , mk( 0 ) , mk( 0 ) ) ,
+                     mk( 0 , mk( 0 ) , mk( 0 ) ) ) );
+ CHECK( aboveBelow( four.get() ) == 0 && aboveBelow( deep.get() ) == 1 );
+ CHECK( aboveBelow( complete.get() ) == 0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -590,7 +677,9 @@ std::array< std::vector< T > , 3 > visits( BinaryTree< T > * t )
 // the tree of the text from its previsit and symmetric visit by
 // fromPreorderInorder() of the library, checked on its shape and on the
 // postvisit of the text; 500 random trees rebuilt from their visits; the
-// empty tree; inconsistent visits rejected
+// empty tree, one node, deep left and right chains (the previsit equal to
+// the symmetric visit reversed or not); inconsistent visits and visits of
+// different lengths rejected
 ADS_TEST( "esercitazioni-8" )
 {
  const std::string pre = "AEBFGCDIH" , post = "BGCFEHIDA" , in = "BEGFCADHI";
@@ -614,6 +703,21 @@ ADS_TEST( "esercitazioni-8" )
  CHECK_THROWS( fromPreorderInorder( std::vector< int >( { 1 , 2 } ) ,
                                     std::vector< int >( { 1 , 3 } ) ) ,
                contract_violation );
+ CHECK_THROWS( fromPreorderInorder( std::vector< int >( { 1 , 2 } ) ,
+                                    std::vector< int >( { 1 } ) ) ,
+               contract_violation );
+ Owner one( fromPreorderInorder( std::vector< int >( { 9 } ) ,
+                                 std::vector< int >( { 9 } ) ) );
+ CHECK( one && one->read() == 9 && ! one->left() && ! one->right() );
+ std::vector< int > up( 3000 );
+ std::iota( up.begin() , up.end() , 0 );
+ const std::vector< int > down( up.rbegin() , up.rend() );
+ Owner L( fromPreorderInorder( up , down ) ) , R( fromPreorderInorder( up ,
+                                                                       up ) );
+ CHECK( heightOf( static_cast< const BT * >( L.get() ) ) == 2999 &&
+        ! L->right() );
+ CHECK( heightOf( static_cast< const BT * >( R.get() ) ) == 2999 &&
+        ! R->left() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -660,9 +764,15 @@ std::vector< double > family( int a , int N )
 
 // the three cases of the text by the master theorem of the library for
 // a = 1 ... 10, and the ratio of the recurrence to the claimed order
-// bounded on the powers of 2 up to 2^20, for a = 1 ... 4
+// bounded on the powers of 2 up to 2^20, for a = 1 ... 4; the bases T( 1 )
+// = 1 and T( 2 ) = a + 2^( a - 1 )
 ADS_TEST( "esercitazioni-11" )
 {
+ for( int a = 1 ; a <= 10 ; ++a ) {
+  const auto B = family( a , 2 );
+  CHECK( B[ 0 ] == 1 && B[ 1 ] == 1 &&
+         B[ 2 ] == a + std::ldexp( 1.0 , a - 1 ) );
+  }
  CHECK( master( 1 , 2 , 0 ) == ( Growth{ 1 , 0 , 1 , 0 , false } ) );
  CHECK( master( 2 , 2 , 1 ) == ( Growth{ 1 , 1 , 1 , 0 , false } ) );
  for( int a = 3 ; a <= 10 ; ++a )
@@ -725,11 +835,14 @@ ADS_TEST( "esercitazioni-12-2" )
  CHECK( mergeTree( 3 , 2 ) == 3 * 9 * 2 + 9 );
  }
 
-// k n log_k n + n for k = 2 ... 16
+// k n log_k n + n for k = 2 ... 16, the leaf T( 1 ) = 1 (h = 0) and one
+// level T( k ) = k + k^2
 ADS_TEST( "esercitazioni-12-3" )
 {
- for( std::uint64_t k = 2 ; k <= 16 ; ++k )
+ for( std::uint64_t k = 2 ; k <= 16 ; ++k ) {
   CHECK( mergeTreeClosed( k ) );
+  CHECK( mergeTree( k , 0 ) == 1 && mergeTree( k , 1 ) == k + k * k );
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -743,7 +856,7 @@ ADS_TEST( "esercitazioni-12-3" )
 /// \pre start is non-decreasing with k + 1 places, and the parts are sorted
 template< class T , class C = std::less<> >
 void mergeK( std::vector< T > & A , const std::vector< int > & start , int k ,
-             long * steps = nullptr , C less = C() )
+             I64 * steps = nullptr , C less = C() )
 {
  ADS_PRE( ( k > 0 ) && ( int( start.size() ) == k + 1 ) &&
           std::ranges::is_sorted( start ) );
@@ -773,13 +886,13 @@ void mergeK( std::vector< T > & A , const std::vector< int > & start , int k ,
 /// \pre k >= 2 and 0 <= i <= j <= A.size()
 template< class T , class C = std::less<> >
 void mergeSortK( std::vector< T > & A , int i , int j , int k ,
-                 long * steps = nullptr , C less = C() )
+                 I64 * steps = nullptr , C less = C() )
 {
  ADS_PRE( ( k >= 2 ) && ( 0 <= i ) && ( i <= j ) && ( j <= int( A.size() ) ) );
  const int n = j - i;
  if( n <= 1 ) return;
  std::vector< int > start( k + 1 );
- for( int t = 0 ; t <= k ; ++t ) start[ t ] = i + int( long( t ) * n / k );
+ for( int t = 0 ; t <= k ; ++t ) start[ t ] = i + int( I64( t ) * n / k );
  for( int t = 0 ; t < k ; ++t )
   mergeSortK( A , start[ t ] , start[ t + 1 ] , k , steps , less );
  mergeK( A , start , k , steps , less );
@@ -787,7 +900,9 @@ void mergeSortK( std::vector< T > & A , int i , int j , int k ,
 
 // mergeSortK against std::stable_sort for k = 2 ... 7 on random vectors
 // with repetitions, keyed pairs to see the stability; mergeK against the
-// sort of the concatenation of k random sorted runs, some empty
+// sort of the concatenation of k random sorted runs, some empty; the empty
+// range, k above n (empty parts), a subrange (the rest untouched), all
+// equal, reverse sorted, one part, all parts empty, the preconditions
 ADS_TEST( "esercitazioni-13-1" )
 {
  std::mt19937 g( 13 );
@@ -819,6 +934,32 @@ ADS_TEST( "esercitazioni-13-1" )
  CHECK( one == std::vector< int >( 1 , 4 ) );
  CHECK_THROWS( mergeK( unsorted , { 0 , 2 } , 1 ) , contract_violation );
  CHECK_THROWS( mergeSortK( one , 0 , 1 , 1 ) , contract_violation );
+ std::vector< int > none;
+ mergeSortK( none , 0 , 0 , 2 );
+ CHECK( none.empty() );
+ std::vector< int > few( { 3 , 1 , 2 } ) , part( { 9 , 5 , 4 , 3 , 0 } );
+ mergeSortK( few , 0 , 3 , 7 );
+ CHECK( few == std::vector< int >( { 1 , 2 , 3 } ) );
+ mergeSortK( part , 1 , 4 , 2 );
+ CHECK( part == std::vector< int >( { 9 , 3 , 4 , 5 , 0 } ) );
+ mergeSortK( part , 2 , 2 , 3 );
+ CHECK( part == std::vector< int >( { 9 , 3 , 4 , 5 , 0 } ) );
+ std::vector< int > eq( 50 , 7 ) , rev( 100 );
+ std::iota( rev.rbegin() , rev.rend() , -50 );
+ mergeSortK( eq , 0 , 50 , 3 );
+ mergeSortK( rev , 0 , 100 , 4 );
+ CHECK( eq == std::vector< int >( 50 , 7 ) && std::ranges::is_sorted( rev ) &&
+        rev.front() == -50 );
+ std::vector< int > run( { 1 , 2 , 3 } ) , empty3;
+ mergeK( run , { 0 , 3 } , 1 );
+ mergeK( empty3 , { 0 , 0 , 0 , 0 } , 3 );
+ CHECK( run == std::vector< int >( { 1 , 2 , 3 } ) && empty3.empty() );
+ CHECK_THROWS( mergeK( run , { 0 , 3 } , 0 ) , contract_violation );
+ CHECK_THROWS( mergeK( run , { 0 , 1 , 3 } , 1 ) , contract_violation );
+ CHECK_THROWS( mergeK( run , { 0 , 2 , 1 } , 2 ) , contract_violation );
+ CHECK_THROWS( mergeSortK( run , -1 , 2 , 2 ) , contract_violation );
+ CHECK_THROWS( mergeSortK( run , 2 , 1 , 2 ) , contract_violation );
+ CHECK_THROWS( mergeSortK( run , 0 , 4 , 2 ) , contract_violation );
  }
 
 // T( n ) = k T( n / k ) + Theta( n k ): on n = k^h mergeK examines exactly
@@ -832,9 +973,9 @@ ADS_TEST( "esercitazioni-13-2" )
   int n = 1;
   for( int h = 0 ; n <= 50000 ; ++h , n *= k ) {
    auto A = rndVector( g , n , 0 , 1000 );
-   long steps = 0;
+   I64 steps = 0;
    mergeSortK( A , 0 , n , k , &steps );
-   CHECK( steps == long( n ) * k * h && std::ranges::is_sorted( A ) );
+   CHECK( steps == I64( n ) * k * h && std::ranges::is_sorted( A ) );
    }
   }
  }
@@ -995,7 +1136,7 @@ void insertionSort( std::vector< int > & A , int i , int j )
 /// calls are added to *calls
 /// \pre 0 <= i and j < A.size()
 void sortinoSort( std::vector< int > & A , int i , int j ,
-                  long * calls = nullptr )
+                  I64 * calls = nullptr )
 {
  ADS_PRE( ( 0 <= i ) && ( j < int( A.size() ) ) );
  if( calls ) ++*calls;
@@ -1011,7 +1152,9 @@ void sortinoSort( std::vector< int > & A , int i , int j ,
 
 // against std::sort on random vectors with repetitions; the exponent of
 // the calls between 2.5 and 2.9 from n = 100 to 1000, that of the master
-// theorem about 2.71, worse than insertion sort
+// theorem about 2.71, worse than insertion sort; the empty range, the
+// sizes 6 and 7 about the base case, reverse sorted, a subrange (the rest
+// untouched), the preconditions
 ADS_TEST( "esercitazioni-20-1" )
 {
  std::mt19937 g( 20 );
@@ -1022,7 +1165,7 @@ ADS_TEST( "esercitazioni-20-1" )
   std::ranges::sort( B );
   CHECK( A == B );
   }
- long c1 = 0 , c2 = 0;
+ I64 c1 = 0 , c2 = 0;
  auto A = rndVector( g , 100 , 0 , 1000 ) , B = rndVector( g , 1000 , 0 , 9 );
  sortinoSort( A , 0 , 99 , &c1 );
  sortinoSort( B , 0 , 999 , &c2 );
@@ -1030,6 +1173,22 @@ ADS_TEST( "esercitazioni-20-1" )
  const double e = std::log10( double( c2 ) / double( c1 ) ) ,
               p = master( 3 , 1.5 , 0 ).p;
  CHECK( ( e > 2.5 ) && ( e < 2.9 ) && ( p > 2.70 ) && ( p < 2.72 ) );
+ std::vector< int > none;
+ I64 c0 = 0;
+ sortinoSort( none , 0 , -1 , &c0 );
+ CHECK( none.empty() && c0 == 1 );
+ for( int n : { 6 , 7 } ) {
+  std::vector< int > R( n );
+  std::iota( R.rbegin() , R.rend() , 0 );
+  I64 c = 0;
+  sortinoSort( R , 0 , n - 1 , &c );
+  CHECK( std::ranges::is_sorted( R ) && c == ( n == 6 ? 1 : 4 ) );
+  }
+ std::vector< int > S( { 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 0 } );
+ sortinoSort( S , 2 , 8 );
+ CHECK( S == std::vector< int >( { 9 , 8 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 0 } ) );
+ CHECK_THROWS( sortinoSort( S , -1 , 3 ) , contract_violation );
+ CHECK_THROWS( sortinoSort( S , 0 , 10 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1044,10 +1203,10 @@ ADS_TEST( "esercitazioni-21" )
 {
  const int N = 100000;
  for( int m = 1 ; m <= 5 ; ++m ) {
-  std::vector< long > T( N + 1 , 1 );
+  std::vector< I64 > T( N + 1 , 1 );
   for( int n = m + 1 ; n <= N ; ++n ) T[ n ] = T[ m ] + T[ n - m ] + 1;
   for( int n = 1 ; n <= N ; ++n )
-   CHECK( ( m * T[ n ] >= n ) && ( T[ n ] <= 2L * n ) );
+   CHECK( ( m * T[ n ] >= n ) && ( T[ n ] <= I64( 2 ) * n ) );
   }
  }
 
@@ -1091,7 +1250,9 @@ std::vector< std::vector< int > > kPaths( const G & g , int k , int s )
 
 // against all the sequences of k + 1 distinct nodes from s whose
 // consecutive pairs are edges, on 300 random graphs (oriented and not);
-// (n - 1)! / (n - k - 1)! paths in a complete graph; k = 0 gives ( s )
+// (n - 1)! / (n - k - 1)! paths in a complete graph; k = 0 gives ( s ),
+// also on one node; an isolated s, an arc followed only forward, k beyond
+// n - 1, the preconditions
 ADS_TEST( "esercitazioni-22" )
 {
  std::mt19937 g( 22 );
@@ -1101,10 +1262,10 @@ ADS_TEST( "esercitazioni-22" )
   const auto G = randomGraph( g , n , 0.5 , r % 2 );
   std::set< std::vector< int > > brute;
   std::vector< int > seq( k + 1 , 0 );
-  for( long code = 0 , all = std::lround( std::pow( n , k ) ) ; code < all ;
+  for( I64 code = 0 , all = std::llround( std::pow( n , k ) ) ; code < all ;
        ++code ) {
    seq[ 0 ] = s;
-   long c = code;
+   I64 c = code;
    for( int i = 1 ; i <= k ; ++i , c /= n ) seq[ i ] = int( c % n );
    bool ok = std::set< int >( seq.begin() , seq.end() ).size() ==
              std::size_t( k + 1 );
@@ -1121,6 +1282,17 @@ ADS_TEST( "esercitazioni-22" )
  CHECK( kPaths( K , 0 , 2 ) ==
         std::vector< std::vector< int > >( 1 , std::vector< int >( 1 , 2 ) ) );
  CHECK( kPaths( K , 6 , 0 ).empty() );
+ CHECK( kPaths( K , 5 , 0 ).size() == 120 );
+ ListGraph<> one( 1 , false ) , arc( 2 , true );
+ CHECK( kPaths( one , 0 , 0 ).size() == 1 && kPaths( one , 1 , 0 ).empty() );
+ CHECK( kPaths( arc , 1 , 0 ).empty() && kPaths( arc , 1 , 1 ).empty() );
+ arc.insertEdge( 0 , 1 );
+ CHECK( kPaths( arc , 1 , 0 ) == std::vector< std::vector< int > >(
+                                 1 , std::vector< int >( { 0 , 1 } ) ) );
+ CHECK( kPaths( arc , 1 , 1 ).empty() && kPaths( arc , 2 , 0 ).empty() );
+ CHECK_THROWS( kPaths( K , -1 , 0 ) , contract_violation );
+ CHECK_THROWS( kPaths( K , 1 , 6 ) , contract_violation );
+ CHECK_THROWS( kPaths( K , 1 , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1145,13 +1317,15 @@ std::uint64_t dominoCount( int n )
  }
 
 // n = 4 has 5 tilings; Count( n ) is F_n of the library (F_0 = F_1 = 1),
-// up to the largest n whose count fits 64 bits
+// up to the largest n whose count fits 64 bits; the bounds of n
 ADS_TEST( "esercitazioni-25-1" )
 {
  CHECK( dominoCount( 4 ) == 5 && dominoCount( 0 ) == 1 &&
         dominoCount( 1 ) == 1 );
  for( int n = 0 ; n <= 92 ; ++n ) CHECK( dominoCount( n ) == fibonacci( n ) );
  CHECK_THROWS( dominoCount( 93 ) , contract_violation );
+ CHECK_THROWS( dominoCount( -1 ) , contract_violation );
+ CHECK( dominoCount( 92 ) == 12200160415121876738ULL );
  }
 
 using Tiling = std::array< std::vector< int > , 2 >;
@@ -1185,7 +1359,8 @@ std::vector< Tiling > printDomino( int n )
  }
 
 // for n = 0 ... 16, Count( n ) distinct tilings, each number on exactly two
-// adjacent cells; the five tilings of n = 4
+// adjacent cells; the five tilings of n = 4, the empty one of n = 0, the
+// vertical tile of n = 1, the precondition
 ADS_TEST( "esercitazioni-25-2" )
 {
  for( int n = 0 ; n <= 16 ; ++n ) {
@@ -1202,6 +1377,10 @@ ADS_TEST( "esercitazioni-25-2" )
    }
   }
  CHECK( printDomino( 4 ).size() == 5 );
+ const auto P0 = printDomino( 0 ) , P1 = printDomino( 1 );
+ CHECK( P0.size() == 1 && P0[ 0 ][ 0 ].empty() && P0[ 0 ][ 1 ].empty() );
+ CHECK( P1.size() == 1 && P1[ 0 ][ 0 ][ 0 ] == P1[ 0 ][ 1 ][ 0 ] );
+ CHECK_THROWS( printDomino( -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1242,7 +1421,9 @@ std::vector< std::vector< bool > > knapsackAll( const std::vector< int > & w ,
  }
 
 // against the filter of all the 2^n subsets on 400 random instances; one
-// item that does not fit (only the empty set), all the items of weight 0
+// item that does not fit (only the empty set), all the items of weight 0,
+// a capacity of 0 with positive weights, every subset fitting, an item of
+// weight exactly C, the preconditions
 ADS_TEST( "esercitazioni-26" )
 {
  std::mt19937 g( 26 );
@@ -1263,7 +1444,13 @@ ADS_TEST( "esercitazioni-26" )
   }
  CHECK( knapsackAll( { 5 } , 4 ).size() == 1 );
  CHECK( knapsackAll( { 0 , 0 , 0 } , 0 ).size() == 8 );
+ CHECK( knapsackAll( { 1 , 2 , 3 } , 0 ).size() == 1 );
+ CHECK( knapsackAll( { 1 , 2 , 3 } , 6 ).size() == 8 );
+ CHECK( knapsackAll( { 4 } , 4 ).size() == 2 );
+ CHECK( knapsackAll( { INT_MAX , 1 } , INT_MAX ).size() == 3 );
  CHECK_THROWS( knapsackAll( {} , 3 ) , contract_violation );
+ CHECK_THROWS( knapsackAll( { 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( knapsackAll( { 1 , -1 } , 3 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1275,7 +1462,8 @@ ADS_TEST( "esercitazioni-26" )
 // middle item at the root of each subtree, T( n ) = T( floor( ( n - 1 ) /
 // 2 ) ) + T( ceil( ( n - 1 ) / 2 ) ) + 1 = Theta( n ): for n = 0 ... 300,
 // symmetric visit A, height ceil( log2( n + 1 ) ) - 1, on random strictly
-// increasing vectors
+// increasing vectors; one item, 2^16 items up to the largest int (height
+// 16), the extremes of int, items repeated or decreasing rejected
 ADS_TEST( "esercitazioni-27" )
 {
  std::mt19937 g( 27 );
@@ -1291,6 +1479,15 @@ ADS_TEST( "esercitazioni-27" )
  CHECK( one->read() == 4 && ! one->left() && ! one->right() );
  CHECK_THROWS( minimumHeightSearchTree( std::vector< int >( { 1 , 1 } ) ) ,
                contract_violation );
+ CHECK_THROWS( minimumHeightSearchTree( std::vector< int >( { 2 , 1 } ) ) ,
+               contract_violation );
+ std::vector< int > big( 1 << 16 );       // up to INT_MAX, iota would wrap
+ for( int i = 0 ; i < ( 1 << 16 ) ; ++i ) big[ i ] = INT_MAX - 65535 + i;
+ Owner B( minimumHeightSearchTree( big ) );
+ CHECK( inorder( B.get() ) == big && heightOf( B.get() ) == 16 );
+ Owner E( minimumHeightSearchTree( std::vector< int >( { INT_MIN ,
+                                                         INT_MAX } ) ) );
+ CHECK( inorder( E.get() ) == std::vector< int >( { INT_MIN , INT_MAX } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1332,7 +1529,9 @@ std::pair< std::pair< int , int > , std::int64_t > closestPair(
  }
 
 // against the quadratic minimum on 500 random point sets, small coordinates
-// (repeated points, distance 0) and large ones, collinear points; two points
+// (repeated points, distance 0) and large ones, collinear points; two
+// points, all the points equal, a vertical line, the opposite corners of
+// the box, the preconditions (one point, a coordinate beyond 10^9)
 ADS_TEST( "esercitazioni-28" )
 {
  std::mt19937 g( 28 );
@@ -1350,7 +1549,20 @@ ADS_TEST( "esercitazioni-28" )
   CHECK( d == best && pq.first != pq.second );
   }
  CHECK( closestPair( { Point{ 0 , 0 } , Point{ 3 , 4 } } ).second == 25 );
+ CHECK( closestPair( std::vector< Point >( 50 , Point{ 7 , -7 } ) ).second ==
+        0 );
+ std::vector< Point > V;
+ for( int i = 0 ; i < 100 ; ++i ) V.push_back( Point{ 5 , 3 * i * i } );
+ CHECK( closestPair( V ).second == 9 );
+ const std::int64_t M = 1000000000;
+ CHECK( closestPair( { Point{ -M , -M } , Point{ M , M } } ).second ==
+        8 * M * M );
+ CHECK_THROWS( closestPair( {} ) , contract_violation );
  CHECK_THROWS( closestPair( { Point{ 0 , 0 } } ) , contract_violation );
+ CHECK_THROWS( closestPair( { Point{ 0 , 0 } , Point{ M + 1 , 0 } } ) ,
+               contract_violation );
+ CHECK_THROWS( closestPair( { Point{ 0 , -M - 1 } , Point{ 0 , 0 } } ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1377,7 +1589,8 @@ bool fixedPoint( const std::vector< int > & A )
  }
 
 // against a linear scan on 1000 random strictly increasing vectors; the
-// empty vector; one item
+// empty vector; one item; the fixed point first or last, negative items
+// only, the extremes of int, items repeated or decreasing rejected
 ADS_TEST( "esercitazioni-29-1" )
 {
  std::mt19937 g( 291 );
@@ -1390,6 +1603,13 @@ ADS_TEST( "esercitazioni-29-1" )
   CHECK( fixedPoint( A ) == lin );
   }
  CHECK( ! fixedPoint( {} ) && fixedPoint( { 0 } ) && ! fixedPoint( { 1 } ) );
+ CHECK( fixedPoint( { 0 , 5 , 9 , 20 } ) &&
+        fixedPoint( { -9 , -3 , 0 , 3 } ) );
+ CHECK( ! fixedPoint( { -9 , -3 , -1 } ) && ! fixedPoint( { 1 , 2 , 3 } ) );
+ CHECK( ! fixedPoint( { INT_MIN , INT_MAX } ) &&
+        fixedPoint( { INT_MIN , 1 , INT_MAX } ) );
+ CHECK_THROWS( fixedPoint( { 0 , 0 } ) , contract_violation );
+ CHECK_THROWS( fixedPoint( { 2 , 1 } ) , contract_violation );
  }
 
 /// missing(): the value of 0 ... n missing from the n sorted distinct
@@ -1412,7 +1632,8 @@ int missing( const std::vector< int > & A )
  }
 
 // against n( n + 1 ) / 2 minus the sum, for each n <= 60 and each missing
-// value
+// value (the first, the last, n = 0); the preconditions (a value outside
+// [ 0 , n ], repeated, decreasing)
 ADS_TEST( "esercitazioni-29-2" )
 {
  for( int n = 0 ; n <= 60 ; ++n )
@@ -1424,6 +1645,10 @@ ADS_TEST( "esercitazioni-29-2" )
    CHECK( missing( A ) == x );
    }
  CHECK_THROWS( missing( { 0 , 5 } ) , contract_violation );
+ CHECK( missing( {} ) == 0 && missing( { 0 } ) == 1 && missing( { 1 } ) == 0 );
+ CHECK_THROWS( missing( { -1 , 0 } ) , contract_violation );
+ CHECK_THROWS( missing( { 1 , 1 } ) , contract_violation );
+ CHECK_THROWS( missing( { 1 , 0 } ) , contract_violation );
  }
 
 /// unimodalMinimum(): the minimum of A, strictly decreasing and then
@@ -1443,7 +1668,8 @@ int unimodalMinimum( const std::vector< int > & A )
  }
 
 // against std::min_element on 1000 random unimodal vectors, among them
-// the monotone ones; one item
+// the monotone ones; one item, two items, the extremes of int, the empty
+// vector rejected
 ADS_TEST( "esercitazioni-29-3" )
 {
  std::mt19937 g( 293 );
@@ -1463,6 +1689,10 @@ ADS_TEST( "esercitazioni-29-3" )
  CHECK( unimodalMinimum( { 3 } ) == 3 );
  CHECK( unimodalMinimum( { 1 , 2 , 3 } ) == 1 );
  CHECK( unimodalMinimum( { 3 , 2 , 1 } ) == 1 );
+ CHECK( unimodalMinimum( { 1 , 2 } ) == 1 &&
+        unimodalMinimum( { 2 , 1 } ) == 1 );
+ CHECK( unimodalMinimum( { INT_MAX , INT_MIN , INT_MAX - 1 } ) == INT_MIN );
+ CHECK_THROWS( unimodalMinimum( {} ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1486,7 +1716,9 @@ std::pair< int , int > doubleMedian( const std::vector< int > & X ,
  }
 
 // against the places n - 1 and n of the merge of X and Y, on 2000 random
-// pairs with and without repeated values; n = 2
+// pairs with and without repeated values; n = 2, Y all before X, all the
+// values equal, the extremes of int, the preconditions (n < 2, sizes
+// differing, X or Y not sorted)
 ADS_TEST( "esercitazioni-30" )
 {
  std::mt19937 g( 30 );
@@ -1500,7 +1732,15 @@ ADS_TEST( "esercitazioni-30" )
   CHECK( doubleMedian( X , Y ) == std::pair( Z[ n - 1 ] , Z[ n ] ) );
   }
  CHECK( doubleMedian( { 1 , 2 } , { 3 , 4 } ) == std::pair( 2 , 3 ) );
+ CHECK( doubleMedian( { 5 , 6 , 7 } , { 1 , 2 , 3 } ) == std::pair( 3 , 5 ) );
+ CHECK( doubleMedian( { 4 , 4 } , { 4 , 4 } ) == std::pair( 4 , 4 ) );
+ CHECK( doubleMedian( { INT_MIN , INT_MAX } , { INT_MIN , INT_MAX } ) ==
+        std::pair( INT_MIN , INT_MAX ) );
  CHECK_THROWS( doubleMedian( { 1 } , { 2 } ) , contract_violation );
+ CHECK_THROWS( doubleMedian( { 1 , 2 } , { 2 , 3 , 4 } ) ,
+               contract_violation );
+ CHECK_THROWS( doubleMedian( { 2 , 1 } , { 3 , 4 } ) , contract_violation );
+ CHECK_THROWS( doubleMedian( { 1 , 2 } , { 4 , 3 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1530,7 +1770,8 @@ int gap( const std::vector< int > & L )
  }
 
 // the gap checked on 2000 random lists with L[ 0 ] < L[ n - 1 ], many of
-// them with one gap only; two items
+// them with one gap only; two items, the only gap at the end, the
+// extremes of int, the preconditions (one item, L[ 0 ] >= L[ n - 1 ])
 ADS_TEST( "esercitazioni-31-2" )
 {
  std::mt19937 g( 31 );
@@ -1548,6 +1789,10 @@ ADS_TEST( "esercitazioni-31-2" )
   }
  CHECK( gap( { 1 , 2 } ) == 1 );
  CHECK_THROWS( gap( { 2 , 2 } ) , contract_violation );
+ CHECK( gap( { 5 , 5 , 5 , 5 , 6 } ) == 4 && gap( { 0 , 9 , 9 , 9 } ) == 1 );
+ CHECK( gap( { INT_MIN , INT_MAX } ) == 1 );
+ CHECK_THROWS( gap( { 1 } ) , contract_violation );
+ CHECK_THROWS( gap( { 3 , 1 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1556,15 +1801,15 @@ ADS_TEST( "esercitazioni-31-2" )
 
 
 /// the minimum, the maximum and the best gain of P[ s ... e ]
-std::array< long , 3 > bestGainRec( const std::vector< int > & P , int s ,
+std::array< I64 , 3 > bestGainRec( const std::vector< int > & P , int s ,
                                     int e )
 {
  if( s == e )
-  return( std::array< long , 3 >{ P[ s ] , P[ s ] ,
-                                  std::numeric_limits< long >::min() } );
+  return( std::array< I64 , 3 >{ P[ s ] , P[ s ] ,
+                                  std::numeric_limits< I64 >::min() } );
  const int m = ( s + e ) / 2;
  const auto L = bestGainRec( P , s , m ) , R = bestGainRec( P , m + 1 , e );
- return( std::array< long , 3 >{ std::min( L[ 0 ] , R[ 0 ] ) ,
+ return( std::array< I64 , 3 >{ std::min( L[ 0 ] , R[ 0 ] ) ,
                                  std::max( L[ 1 ] , R[ 1 ] ) ,
                                  std::max( { L[ 2 ] , R[ 2 ] ,
                                              R[ 1 ] - L[ 0 ] } ) } );
@@ -1575,27 +1820,32 @@ std::array< long , 3 > bestGainRec( const std::vector< int > & P , int s ,
 /// best pair across buys at the left minimum and sells at the right
 /// maximum; T( n ) = 2 T( n / 2 ) + Theta( 1 ) = Theta( n )
 /// \pre n >= 2
-long bestGain( const std::vector< int > & P )
+I64 bestGain( const std::vector< int > & P )
 {
  ADS_PRE( P.size() >= 2 );
  return( bestGainRec( P , 0 , int( P.size() ) - 1 )[ 2 ] );
  }
 
 // against all the pairs on 1000 random vectors, decreasing ones (negative
-// gain), all equal (0); two items
+// gain), all equal (0); two items, the extremes of int either way, the
+// best pair at the two ends
 ADS_TEST( "esercitazioni-33" )
 {
  std::mt19937 g( 33 );
  for( int r = 0 ; r < 1000 ; ++r ) {
   auto P = rndVector( g , rnd( g , 2 , 40 ) , -1000 , 1000 );
   if( r % 10 == 0 ) std::ranges::sort( P , std::greater<>() );
-  long best = std::numeric_limits< long >::min();
+  I64 best = std::numeric_limits< I64 >::min();
   for( int x = 0 ; x < int( P.size() ) ; ++x )
    for( int y = x + 1 ; y < int( P.size() ) ; ++y )
-    best = std::max( best , long( P[ y ] ) - P[ x ] );
+    best = std::max( best , I64( P[ y ] ) - P[ x ] );
   CHECK( bestGain( P ) == best );
   }
  CHECK( bestGain( { 5 , 5 , 5 } ) == 0 && bestGain( { 3 , 1 } ) == -2 );
+ CHECK( bestGain( { INT_MIN , INT_MAX } ) == I64( INT_MAX ) - INT_MIN );
+ CHECK( bestGain( { INT_MAX , INT_MIN } ) == I64( INT_MIN ) - INT_MAX );
+ CHECK( bestGain( { 1 , 9 , 0 , 8 , 7 , 10 } ) == 10 );
+ CHECK_THROWS( bestGain( {} ) , contract_violation );
  CHECK_THROWS( bestGain( { 1 } ) , contract_violation );
  }
 

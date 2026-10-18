@@ -206,7 +206,11 @@ ADS_TEST( "dp-37" )
  CHECK( dp::kOccurrence( Ints( 10 , 3 ) , 10 ) == 30 );
  CHECK( dp::kOccurrence( Ints( 10 , 3 ) , 1 ) == 15 );   // every other one
  CHECK( dp::kOccurrence( Ints( 2000 , 1 ) , 2000 ) == 2000 );
+ CHECK( dp::kOccurrence( { -1 , -2 , -3 } , 3 ) == 0 );
+ CHECK( dp::kOccurrence( { 4 , -1 , 4 } , 1 ) == 8 );
  CHECK_THROWS( dp::kOccurrence( { 1 , 2 } , 3 ) , contract_violation );
+ CHECK_THROWS( dp::kOccurrence( { 1 , 2 } , -1 ) , contract_violation );
+ CHECK_THROWS( dp::kOccurrence( {} , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -266,6 +270,10 @@ ADS_TEST( "dp-38" )
  CHECK( stringBreakingCost( { 1 , 2 , 3 } , 4 ) == 8 );
  CHECK_THROWS( stringBreakingCost( { 3 , 3 } , 7 ) , contract_violation );
  CHECK_THROWS( stringBreakingCost( { 7 } , 7 ) , contract_violation );
+ CHECK_THROWS( stringBreakingCost( { 0 } , 7 ) , contract_violation );
+ CHECK_THROWS( stringBreakingCost( { 5 , 3 } , 7 ) , contract_violation );
+ CHECK( stringBreakingCost( {} , 1 ) == 0 );
+ CHECK( stringBreakingCost( { 1 } , 2 ) == 2 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -393,6 +401,10 @@ ADS_TEST( "dp-39-b" )
   }
  CHECK( dp::printSquares( 0 ) == Lines( 1 ) );
  CHECK( dp::printSquares( 1 ) == Lines( { { 1 } } ) );
+ CHECK( dp::printSquares( 2 ) == Lines( { { 1 , 1 } } ) );
+ CHECK( dp::printSquares( 4 ) == Lines( { { 1 , 1 , 1 , 1 } , { 2 } } ) ||
+        dp::printSquares( 4 ) == Lines( { { 2 } , { 1 , 1 , 1 , 1 } } ) );
+ CHECK_THROWS( dp::printSquares( -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -474,7 +486,12 @@ ADS_TEST( "dp-40" )
  CHECK( dp::orderedPermutation( 7 , 1 ) == 1 );
  CHECK( dp::orderedPermutation( 34 , 34 ) == T[ 67 ][ 34 ] );
  CHECK( dp::orderedSum( 34 , 34 ) == T[ 67 ][ 34 ] );
+ CHECK( dp::orderedSum( 0 , 0 ) == 1 && dp::orderedSum( 3 , 0 ) == 0 );
+ CHECK( dp::orderedSum( 1 , 9 ) == 9 && dp::orderedPermutation( 1 , 9 ) == 9 );
  CHECK_THROWS( dp::orderedPermutation( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( dp::orderedPermutation( 2 , -1 ) , contract_violation );
+ CHECK_THROWS( dp::orderedSum( -1 , 3 ) , contract_violation );
+ CHECK_THROWS( dp::orderedSum( 2 , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -556,7 +573,8 @@ Tree from_parents( const std::vector< int > & p )
 }  // end( namespace dp )
 
 // against all the subsets of the nodes of random trees, and against the
-// decision vertexCover() of the library on k = the answer and k - 1
+// decision vertexCover() of the library on k = the answer and k - 1; the
+// empty tree, a star, a path of 10^5 nodes and the contract violations
 ADS_TEST( "dp-41" )
 {
  std::mt19937 g( 1 );
@@ -594,6 +612,18 @@ ADS_TEST( "dp-41" )
  std::vector< int > S( 5 , -1 ) , L( 5 , -1 );
  CHECK( dp::computeS( T , 0 , S , L ) == 3 );
  CHECK( dp::spies( T ) == 2 );
+ // a path of 10^5 nodes, too deep for a recursion on the stack
+ std::vector< int > deep( 100000 );
+ for( int i = 0 ; i < 100000 ; ++i ) deep[ i ] = i - 1;
+ CHECK( dp::spies( dp::from_parents( deep ) ) == 50000 );
+ dp::Tree bad = dp::from_parents( { -1 , 0 } );
+ bad.sibling.pop_back();
+ CHECK_THROWS( dp::spies( bad ) , contract_violation );
+ dp::Tree out = dp::from_parents( { -1 , 0 } );
+ out.root = 2;
+ CHECK_THROWS( dp::spies( out ) , contract_violation );
+ out.root = -2;
+ CHECK_THROWS( dp::spies( out ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -668,8 +698,17 @@ ADS_TEST( "dp-42" )
  CHECK( dp::serveTheDonald( far , ones , 1 ) == 1000 );
  CHECK( dp::serveTheDonald( far , ones , 1000 ) == 1 );
  CHECK( dp::serveTheDonald( far , ones , 10 ) == 100 );
+ CHECK( dp::serveTheDonald( { 0 , 5 } , { 3 , 4 } , 5 ) == 7 );   // exactly D
+ CHECK( dp::serveTheDonald( { 0 , 4 } , { 3 , 4 } , 5 ) == 4 );
+ CHECK( dp::serveTheDonald( { -10 , 0 , 10 } , { 0 , 0 , 0 } , 1 ) == 0 );
  CHECK_THROWS( dp::serveTheDonald( { 1 , 1 } , { 1 , 1 } , 1 ) ,
                contract_violation );
+ CHECK_THROWS( dp::serveTheDonald( { 2 , 1 } , { 1 , 1 } , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( dp::serveTheDonald( { 1 } , { 1 } , 0 ) , contract_violation );
+ CHECK_THROWS( dp::serveTheDonald( { 1 } , { -1 } , 1 ) ,
+               contract_violation );
+ CHECK_THROWS( dp::serveTheDonald( { 1 } , {} , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -708,6 +747,10 @@ ADS_TEST( "dp-43" )
  CHECK( subsequenceOccurrences( "" , "abc" ) == 1 );
  CHECK( subsequenceOccurrences( "abcd" , "abc" ) == 0 );
  CHECK( subsequenceOccurrences( "a" , "a" ) == 1 );
+ CHECK( subsequenceOccurrences( "a" , "" ) == 0 );
+ CHECK( subsequenceOccurrences( "z" , "abc" ) == 0 );
+ CHECK( subsequenceOccurrences( "abc" , "abc" ) == 1 );
+ CHECK( subsequenceOccurrences( "cba" , "abc" ) == 0 );
  CHECK( subsequenceOccurrences( "aaa" , std::string( 50 , 'a' ) ) ==
         C[ 50 ][ 3 ] );
  CHECK( subsequenceOccurrences( std::string( 30 , 'a' ) ,
@@ -762,6 +805,9 @@ ADS_TEST( "dp-44" )
  CHECK( scsLength( "" , "" ) == 0 );
  CHECK( scsLength( "abc" , "" ) == 3 );
  CHECK( scsLength( "abc" , "abc" ) == 3 );
+ CHECK( scsLength( "" , "abc" ) == 3 );
+ CHECK( scsLength( "ac" , "abc" ) == 3 && scsLength( "abc" , "ac" ) == 3 );
+ CHECK( scsLength( "abc" , "cba" ) == 5 );
  CHECK( scsLength( std::string( 500 , 'a' ) , std::string( 500 , 'b' ) ) ==
         1000 );
  }
@@ -914,7 +960,12 @@ ADS_TEST( "dp-46" )
  const BigInteger c36 = factorial( 72 ) /
                         ( factorial( 37 ) * factorial( 36 ) );
  CHECK( std::to_string( dp::countTree( 36 , 35 ) ) == c36.toString() );
+ CHECK( dp::countTree( 0 , 1000 ) == 1 && dp::countTree( 36 , 0 ) == 0 );
+ CHECK( dp::countTree( 15 , 3 ) == 1 );                    // full, height 3
+ CHECK( dp::countTree( 16 , 3 ) == 0 );
  CHECK_THROWS( dp::countTree( 37 , 36 ) , contract_violation );
+ CHECK_THROWS( dp::countTree( -1 , 0 ) , contract_violation );
+ CHECK_THROWS( dp::countTree( 3 , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1057,7 +1108,13 @@ ADS_TEST( "dp-48" )
   b = c;
   }
  CHECK( countDecodings( std::vector< int >( 90 , 1 ) ) == b );
+ CHECK( countDecodings( digits( "26" ) ) == 2 );
+ CHECK( countDecodings( digits( "10" ) ) == 1 );
+ CHECK( countDecodings( digits( "00" ) ) == 0 );
+ CHECK( countDecodings( digits( "30" ) ) == 0 );
+ CHECK( countDecodings( digits( "100" ) ) == 0 );
  CHECK_THROWS( countDecodings( { 1 , 10 } ) , contract_violation );
+ CHECK_THROWS( countDecodings( { -1 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1123,7 +1180,14 @@ ADS_TEST( "dp-50" )
  Ints d( 1000 ) , r( 1000 , 1 );
  for( int i = 0 ; i < 1000 ; ++i ) d[ i ] = 2 * i + 1;
  CHECK( dp::sprinkles( d , r , 2000 ) == 1000 );
+ CHECK( dp::sprinkles( { 0 } , { 0 } , 1 ) == -1 );            // a point
+ CHECK( dp::sprinkles( { 0 , 5 } , { 5 , 5 } , 10 ) == 1 );
+ CHECK( dp::sprinkles( { 0 , 6 } , { 3 , 4 } , 10 ) == 2 );
+ CHECK( dp::sprinkles( { 0 , 8 } , { 3 , 3 } , 10 ) == -1 );      // a gap
+ CHECK( dp::sprinkles( { -100 } , { 200 } , 5 ) == 1 );
  CHECK_THROWS( dp::sprinkles( { 1 } , { -1 } , 5 ) , contract_violation );
+ CHECK_THROWS( dp::sprinkles( { 1 } , { 1 } , 0 ) , contract_violation );
+ CHECK_THROWS( dp::sprinkles( { 1 } , {} , 5 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1202,7 +1266,13 @@ ADS_TEST( "dp-51" )
   }
  CHECK( dp::snakesAndLadders( { 0 } ) == 0 );
  CHECK( dp::snakesAndLadders( board( 10000 ) ) == 1667 );
+ CHECK( dp::snakesAndLadders( { 0 , 1 } ) == 1 );
+ auto S = board( 36 );
+ S[ 35 ] = 0;                                     // a snake on the last cell
+ CHECK( dp::snakesAndLadders( S ) == -1 );
  CHECK_THROWS( dp::snakesAndLadders( { 0 , 2 } ) , contract_violation );
+ CHECK_THROWS( dp::snakesAndLadders( {} ) , contract_violation );
+ CHECK_THROWS( dp::snakesAndLadders( { 0 , -1 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1250,6 +1320,10 @@ ADS_TEST( "dp-52" )
  CHECK( ! dp::doubleLength( big ) );
  big.push_back( 1000 );
  CHECK( dp::doubleLength( big ) );
+ const long long lo = std::numeric_limits< long long >::min() ,
+                 hi = std::numeric_limits< long long >::max();
+ CHECK( dp::doubleLength( { lo , hi } ) );
+ CHECK( ! dp::doubleLength( { lo , hi , hi } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1318,7 +1392,13 @@ ADS_TEST( "dp-53" )
  CHECK( dp::kwConstraint( X , 6 , 0 ) == 0 );
  CHECK( dp::kwConstraint( X , 6 , 1000 ) == 84 );
  CHECK( dp::kwConstraint( X , 1 , 1000 ) == 23 );
+ CHECK( dp::kwConstraint( { 5 } , 1 , 4 ) == 0 );
+ CHECK( dp::kwConstraint( { 5 } , 1 , 5 ) == 5 );
+ CHECK( dp::kwConstraint( Ints( 10 , 3 ) , 4 , 100 ) == 12 );
  CHECK_THROWS( dp::kwConstraint( X , 7 , 10 ) , contract_violation );
+ CHECK_THROWS( dp::kwConstraint( X , -1 , 10 ) , contract_violation );
+ CHECK_THROWS( dp::kwConstraint( X , 1 , -1 ) , contract_violation );
+ CHECK_THROWS( dp::kwConstraint( { 0 } , 1 , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1478,7 +1558,11 @@ ADS_TEST( "dp-55" )
  Ints up( 1000 );
  std::iota( up.begin() , up.end() , 1 );
  CHECK( dp::profit( up ) == scan( up ) && scan( up ) == 999LL * 1000 / 2 );
+ Ints down( up.rbegin() , up.rend() );
+ CHECK( dp::profit( down ) == 0 );
+ CHECK( dp::profit( { 1 , 2 } ) == 1 && dp::profit( { 2 , 1 } ) == 0 );
  CHECK_THROWS( dp::profit( { 1 , 0 } ) , contract_violation );
+ CHECK_THROWS( dp::profit( { -3 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1582,7 +1666,11 @@ ADS_TEST( "dp-56" )
  const std::string many( 60 , '1' );                          // 2^59 cuts
  CHECK( dp::countSum( many , 60 ) == 1 );
  CHECK( dp::countSum( std::string( 30 , '9' ) , 270 ) > 0 );
+ CHECK( dp::countSum( "12" , 12 ) == 1 && dp::countSum( "12" , 3 ) == 1 );
+ CHECK( dp::countSum( "12" , 21 ) == 0 );
  CHECK_THROWS( dp::countSum( "105" , 6 ) , contract_violation );
+ CHECK_THROWS( dp::countSum( "15" , -1 ) , contract_violation );
+ CHECK_THROWS( dp::countSum( "1a" , 2 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1594,7 +1682,8 @@ namespace dp {
 /// the longest subsequence of V in which each item is more than twice the
 /// one before: the scheme of the longest increasing subsequence, DP[ i ] =
 /// 1 + max{ DP[ j ] : j < i , V_i > 2 V_j } (1 if none), the answer the
-/// largest DP[ i ]; Theta( n^2 ) time and O( n ) space
+/// largest DP[ i ]; Theta( n^2 ) time and O( n ) space. The test
+/// V_i > 2 V_j is written V_i - V_j > V_j, which does not overflow
 /// \pre V > 0
 int moreThanDouble( const Ints & V )
 {
@@ -1604,13 +1693,14 @@ int moreThanDouble( const Ints & V )
  std::vector< int > DP( n , 1 );
  for( std::size_t i = 0 ; i < n ; ++i )
   for( std::size_t j = 0 ; j < i ; ++j )
-   if( V[ i ] > 2 * V[ j ] ) DP[ i ] = std::max( DP[ i ] , DP[ j ] + 1 );
+   if( V[ i ] - V[ j ] > V[ j ] ) DP[ i ] = std::max( DP[ i ] , DP[ j ] + 1 );
  return( n ? *std::max_element( DP.begin() , DP.end() ) : 0 );
  }
 
 }  // end( namespace dp )
 
-// the examples of the text, 6 and 3; against all the subsequences
+// the examples of the text, 6 and 3; against all the subsequences; the
+// exact double, and items near the largest value, where 2 V overflows
 ADS_TEST( "dp-57" )
 {
  CHECK( dp::moreThanDouble( { 1 , 3 , 7 , 15 , 31 , 63 } ) == 6 );
@@ -1635,7 +1725,14 @@ ADS_TEST( "dp-57" )
  Ints p;
  for( long long x = 1 ; x < ( 1LL << 61 ) ; x = 2 * x + 1 ) p.push_back( x );
  CHECK( dp::moreThanDouble( p ) == int( p.size() ) );
+ const long long hi = std::numeric_limits< long long >::max();
+ CHECK( dp::moreThanDouble( { ( hi >> 1 ) + 1 , hi } ) == 1 );  // 2 V > max
+ CHECK( dp::moreThanDouble( { hi >> 1 , hi } ) == 2 );
+ CHECK( dp::moreThanDouble( { hi , hi } ) == 1 );
+ CHECK( dp::moreThanDouble( { 2 , 4 } ) == 1 && dp::moreThanDouble( { 2 , 5 } )
+        == 2 );
  CHECK_THROWS( dp::moreThanDouble( { 0 } ) , contract_violation );
+ CHECK_THROWS( dp::moreThanDouble( { 3 , -1 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1758,7 +1855,12 @@ ADS_TEST( "dp-58" )
         601 );
  CHECK( dp::cross( dp::Matrix( 300 , std::vector< int >( 300 , 1 ) ) ) ==
         597 );
+ CHECK( dp::cross( { { 1 , 1 } , { 1 , 1 } } ) == 1 );
+ CHECK( dp::crossCubic( { { 1 , 1 } , { 1 , 1 } } ) == 1 );
+ CHECK( dp::crossCubic( {} ) == 0 && dp::crossCubic( { { 0 } } ) == 0 );
  CHECK_THROWS( dp::cross( { { 1 , 1 } } ) , contract_violation );
+ CHECK_THROWS( dp::cross( { { 2 } } ) , contract_violation );
+ CHECK_THROWS( dp::cross( { { 1 , 0 } , { 0 } } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1868,8 +1970,12 @@ ADS_TEST( "dp-59" )
  CHECK( dp::election( path , s ) == 1 );                      // the middle
  s[ 1000 ] = I;
  CHECK( dp::election( path , s ) == 0 );
+ ListGraph<> none( 3 , false );                // no edges: no message moves
+ CHECK( dp::election( none , { PE , I , I } ) == 2 );
+ CHECK( dp::election( none , { PE , PP , PE } ) == 0 );
  CHECK_THROWS( dp::election( ListGraph<>( 2 , true ) , { I , I } ) ,
                contract_violation );
+ CHECK_THROWS( dp::election( none , { I , I } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1958,7 +2064,17 @@ ADS_TEST( "dp-60" )
  CHECK( dp::countPaths( T0 , 580 ) == tartaglia( 58 )[ 58 ][ 29 ] );
  CHECK( dp::countPaths( T0 , 579 ) == 0 );
  CHECK( dp::countPaths( T0 , 1000000 ) == tartaglia( 58 )[ 58 ][ 29 ] );
+ CHECK( dp::countPaths( { { 0 , 10 } , { 10 , 0 } } , 9 ) == 0 );
+ CHECK( dp::countPaths( { { 0 , 10 } , { 10 , 0 } } , 10 ) == 2 );
+ CHECK( dp::countPaths( { { 0 } } , std::numeric_limits< long long >::max() )
+        == 1 );
  CHECK_THROWS( dp::countPaths( T , 5 ) , contract_violation );
+ CHECK_THROWS( dp::countPaths( {} , 5 ) , contract_violation );
+ CHECK_THROWS( dp::countPaths( { { 0 , 1 } } , 5 ) , contract_violation );
+ CHECK_THROWS( dp::countPaths( { { 0 , 11 } , { 1 , 1 } } , 5 ) ,
+               contract_violation );
+ CHECK_THROWS( dp::countPaths( { { 0 , -1 } , { 1 , 1 } } , 5 ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2059,7 +2175,11 @@ ADS_TEST( "dp-61" )
  CHECK( dp::kPalindrome( std::string( 2000 , 'q' ) , 0 ) );
  CHECK( dp::kPalindrome( "abcdef" , 5 ) && ! dp::kPalindrome( "abcdef" , 4 ) );
  CHECK( dp::kPalindromeCubic( "abcdef" , 1000 ) );
+ CHECK( dp::kPalindromeCubic( "ab" , 1 ) );
+ CHECK( ! dp::kPalindromeCubic( "ab" , 0 ) );
+ CHECK( dp::kPalindrome( "ab" , 1000 ) );
  CHECK_THROWS( dp::kPalindrome( "ab" , -1 ) , contract_violation );
+ CHECK_THROWS( dp::kPalindromeCubic( "ab" , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2108,7 +2228,11 @@ ADS_TEST( "dp-62" )
  Ints up( 2000 );
  std::iota( up.begin() , up.end() , 1 );
  CHECK( dp::maxIncreasing( up ) == 2000LL * 2001 / 2 );
+ Ints down( up.rbegin() , up.rend() );
+ CHECK( dp::maxIncreasing( down ) == 2000 );
+ CHECK( dp::maxIncreasing( { 3 , 1 , 2 } ) == 3 );
  CHECK_THROWS( dp::maxIncreasing( { 1 , -1 } ) , contract_violation );
+ CHECK_THROWS( dp::maxIncreasing( { 0 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2196,7 +2320,7 @@ int minSkipass( const std::vector< std::pair< long , long > > & I )
 }  // end( namespace dp )
 
 // the example of the text, two passes; against the largest number of
-// intervals over a time, at each start
+// intervals over a time, at each start; touching and extreme endpoints
 ADS_TEST( "dp-64" )
 {
  CHECK( dp::minSkipass( { { 0 , 60 } , { 60 , 120 } , { 0 , 120 } } ) == 2 );
@@ -2222,7 +2346,13 @@ ADS_TEST( "dp-64" )
  std::vector< std::pair< long , long > > chain;
  for( long i = 0 ; i < 1000 ; ++i ) chain.emplace_back( i , i + 1 );
  CHECK( dp::minSkipass( chain ) == 1 );
+ const long lo = std::numeric_limits< long >::min() ,
+            hi = std::numeric_limits< long >::max();
+ CHECK( dp::minSkipass( { { lo , hi } , { 0 , 1 } , { lo , 0 } } ) == 2 );
+ CHECK( dp::minSkipass( { { 0 , 2 } , { 1 , 3 } , { 2 , 4 } } ) == 2 );
  CHECK_THROWS( dp::minSkipass( { { 4 , 4 } } ) , contract_violation );
+ CHECK_THROWS( dp::minSkipass( { { 0 , 1 } , { 5 , 4 } } ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2272,6 +2402,10 @@ ADS_TEST( "dp-65" )
  CHECK( dp::maxSumEven( { 100 } ) == 0 );
  CHECK( dp::maxSumEven( Ints( 101 , 5 ) ) == 500 );
  CHECK( dp::maxSumEven( Ints( 100 , -5 ) ) == 0 );
+ CHECK( dp::maxSumEven( { 3 , -1 } ) == 2 );
+ CHECK( dp::maxSumEven( { -3 , 1 } ) == 0 );
+ CHECK( dp::maxSumEven( { 5 , -100 , 5 } ) == 0 );          // no odd runs
+ CHECK( dp::maxSumEven( { -1 , 10 , 10 , -1 } ) == 20 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2356,7 +2490,13 @@ ADS_TEST( "dp-66" )
  CHECK( dp::countJumps( { { 1 , 1 } , { 1 , 1 } } ) == 2 );
  CHECK( dp::countJumps( dp::Matrix( 5 , std::vector< int >( 5 , 1 ) ) ) ==
         8512 );         // self-avoiding walks across a 5 x 5 grid (A007764)
+ CHECK( dp::countJumps( { { 1 , 9 } , { 9 , 9 } } ) == 0 );    // jumps out
+ CHECK( dp::countJumps( { { 2 , 1 , 1 } , { 1 , 1 , 1 } , { 1 , 1 , 1 } } )
+        > 0 );
  CHECK_THROWS( dp::countJumps( { { 0 } } ) , contract_violation );
+ CHECK_THROWS( dp::countJumps( { { 1 , 1 } } ) , contract_violation );
+ CHECK_THROWS( dp::countJumps( { { 1 , 1 } , { 1 , -1 } } ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2412,7 +2552,11 @@ ADS_TEST( "dp-67" )
  CHECK( dp::ksequence( { 8 } , 0 ) == 8 );
  CHECK( dp::ksequence( Ints( 2000 , 8 ) , 0 ) == 16000 );
  CHECK( dp::ksequence( { 1 , 100 , 2 } , 0 ) == 100 );
+ CHECK( dp::ksequence( { 1 , 100 , 2 } ,
+                       std::numeric_limits< long long >::max() ) == 103 );
+ CHECK( dp::ksequence( { 5 , 3 , 5 } , 1 ) == 10 );
  CHECK_THROWS( dp::ksequence( { 1 } , -1 ) , contract_violation );
+ CHECK_THROWS( dp::ksequence( { 1 , 0 } , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2463,6 +2607,12 @@ ADS_TEST( "dp-68" )
  big.push_back( 0 );
  CHECK( dp::closeDuplicates( big , 100000 ) );
  CHECK( ! dp::closeDuplicates( big , 99999 ) );
+ const std::size_t inf = std::numeric_limits< std::size_t >::max();
+ CHECK( dp::closeDuplicates( big , inf ) );
+ CHECK( ! dp::closeDuplicates( { 1 , 2 , 3 } , inf ) );
+ const long long lo = std::numeric_limits< long long >::min();
+ CHECK( dp::closeDuplicates( { lo , 0 , lo } , 2 ) );
+ CHECK( ! dp::closeDuplicates( { lo , 0 , lo } , 1 ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2505,7 +2655,10 @@ ADS_TEST( "dp-69" )
  CHECK( dp::countMenu( { 5 } , 5 ) == 1 );
  CHECK( dp::countMenu( Ints( 60 , 1 ) , 30 ) == C[ 60 ][ 30 ] );
  CHECK( dp::countMenu( Ints( 60 , 2 ) , 31 ) == 0 );
+ CHECK( dp::countMenu( { 5 , 5 } , 5 ) == 2 );       // equal costs, two dishes
+ CHECK( dp::countMenu( { 5 } , 0 ) == 1 && dp::countMenu( { 5 } , 4 ) == 0 );
  CHECK_THROWS( dp::countMenu( { 0 } , 5 ) , contract_violation );
+ CHECK_THROWS( dp::countMenu( { 1 } , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2556,7 +2709,10 @@ ADS_TEST( "dp-70" )
  std::vector< int > p( 100000 );
  std::iota( p.begin() , p.end() , 1 );
  CHECK( dp::longestSingle( p ) == 100000 );
+ CHECK( dp::longestSingle( { 1 , 2 , 1 } ) == 2 );
+ CHECK( dp::longestSingle( { 2 , 1 , 2 , 1 } ) == 2 );
  CHECK_THROWS( dp::longestSingle( { 2 } ) , contract_violation );
+ CHECK_THROWS( dp::longestSingle( { 0 , 1 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2591,6 +2747,9 @@ ADS_TEST( "dp-71" )
  CHECK( lcsub( "" , "abc" ) == 0 );
  CHECK( lcsub( "abc" , "xyz" ) == 0 );
  CHECK( lcsub( "a" , "a" ) == 1 );
+ CHECK( lcsub( "" , "" ) == 0 && lcsub( "abc" , "" ) == 0 );
+ CHECK( lcsub( "abc" , "abc" ) == 3 && lcsub( "b" , "abc" ) == 1 );
+ CHECK( lcsub( "abc" , "zabcz" ) == 3 && lcsub( "abc" , "cba" ) == 1 );
  CHECK( lcsub( std::string( 1000 , 'a' ) , std::string( 700 , 'a' ) ) ==
         700 );
  }

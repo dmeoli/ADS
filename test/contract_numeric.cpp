@@ -29,16 +29,24 @@
 
 #include "ADSTest.h"
 
+#include "ADS/numeric/BigInteger.h"
 #include "ADS/numeric/BinaryInteger.h"
+#include "ADS/numeric/Catalan.h"
 #include "ADS/numeric/Combinatorics.h"
+#include "ADS/numeric/FFT.h"
 #include "ADS/numeric/Matrix.h"
 #include "ADS/numeric/MatrixChain.h"
 #include "ADS/numeric/NumberTheory.h"
 #include "ADS/numeric/Polynomial.h"
 #include "ADS/numeric/RSA.h"
+#include "ADS/numeric/RandomNumbers.h"
+#include "ADS/numeric/RandomSampling.h"
+#include "ADS/numeric/Rational.h"
+#include "ADS/numeric/SparseMatrix.h"
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -222,6 +230,144 @@ ADS_TEST( "rsa" )
  CHECK( randomPrime( 2 , g ) == 3 );
  CHECK_THROWS( (void) randomPrime( 1 , g ) , contract_violation );
  CHECK_THROWS( (void) randomPrime( 64 , g ) , contract_violation );
+ CHECK( randomPrime( 63 , g ) >= ( U64( 1 ) << 62 ) );
+ }
+
+// the bounds of the other headers just inside and just outside: the
+// combinatorics at their largest n, Catalan up to the last one in 64
+// bits, the radix of BigInteger at 2 , 36 , 1 , 37, a string with a sign
+// only or a digit beyond the radix, the division and the fraction by 0,
+// the FFT of 0 , 1 , 3 points, the generators and the statistical tests on
+// their degenerate inputs, n = N and n = N + 1 samples, the sparse matrix
+// at row m and column n, a pivot on a 0, the recursive product of two
+// empty or unequal polynomials
+ADS_TEST( "other-numeric" )
+{
+ // binomial() recurs in 2^n calls: n = 67 with k near 0 and n only
+ CHECK( binomial( 67 , 1 ) == 67 && binomial( 67 , 66 ) == 67 &&
+        binomial( 0 , 0 ) == 1 && binomial( 67 , 67 ) == 1 );
+ CHECK( tartaglia( 67 )[ 67 ][ 33 ] == 14226520737620288370ULL );
+ CHECK_THROWS( (void) binomial( 68 , 1 ) , contract_violation );
+ CHECK( tartaglia( 67 ).size() == 68 && tartaglia( 0 ).size() == 1 );
+ CHECK_THROWS( (void) tartaglia( 68 ) , contract_violation );
+ const FibonacciCache F;
+ CHECK( fibonacci( 92 ) == fibonacciTable( 92 ) &&
+        F.value( 92 ) == fibonacci( 92 ) && F.value( 0 ) == fibonacci( 0 ) );
+ CHECK_THROWS( (void) fibonacci( 93 ) , contract_violation );
+ CHECK_THROWS( (void) fibonacciTable( 93 ) , contract_violation );
+ CHECK_THROWS( (void) F.value( 93 ) , contract_violation );
+ CHECK_THROWS( (void) F.value( -1 ) , contract_violation );
+ CHECK( factorial( 20 ) == 2432902008176640000ULL &&
+        factorialRec( 20 ) == factorial( 20 ) && factorial( 0 ) == 1 );
+ CHECK_THROWS( (void) factorial( 21 ) , contract_violation );
+ CHECK_THROWS( (void) factorialRec( -1 ) , contract_violation );
+ CHECK( binomialByFactorials( 20 , 10 ) == 184756 &&
+        binomialByFactorials( 0 , 0 ) == 1 );
+ CHECK_THROWS( (void) binomialByFactorials( 21 , 1 ) , contract_violation );
+ CHECK_THROWS( (void) binomialByFactorials( 5 , 6 ) , contract_violation );
+ CHECK_THROWS( (void) binomialByFactorials( 5 , -1 ) , contract_violation );
+ CHECK( catalan( 0 ) == 1 && catalan( 1 ) == 1 && catalan( 5 ) == 42 &&
+        catalan( 36 ) == 11959798385860453492ULL );
+ CHECK_THROWS( (void) catalan( -1 ) , contract_violation );
+
+ CHECK( BigInteger( "zz" , 36 ).toString() == "1295" &&
+        BigInteger( "-101" , 2 ).toString( 36 ) == "-5" &&
+        BigInteger( "+0" ).sign() == 0 && BigInteger( "-0" ).sign() == 0 );
+ CHECK_THROWS( BigInteger( "1" , 1 ) , contract_violation );
+ CHECK_THROWS( BigInteger( "1" , 37 ) , contract_violation );
+ CHECK_THROWS( BigInteger( "" ) , contract_violation );
+ CHECK_THROWS( BigInteger( "-" ) , contract_violation );
+ CHECK_THROWS( BigInteger( "12" , 2 ) , contract_violation );
+ CHECK_THROWS( BigInteger( "1 2" ) , contract_violation );
+ CHECK_THROWS( (void) BigInteger( 5 ).toString( 1 ) , contract_violation );
+ CHECK_THROWS( (void) BigInteger( 5 ).toString( 37 ) , contract_violation );
+ CHECK_THROWS( (void) BigInteger::divMod( 5 , 0 ) , contract_violation );
+ const BigInteger m( std::numeric_limits< long long >::min() );
+ CHECK( m.toString() == "-9223372036854775808" &&
+        ( -m ).toString() == "9223372036854775808" );
+ const auto [ qt , rm ] = BigInteger::divMod( -7 , 2 );
+ CHECK( qt * 2 + rm == BigInteger( -7 ) );
+ CHECK_THROWS( Rational( 1 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) ( Rational( 1 , 2 ) / Rational( 0 ) ) ,
+               contract_violation );
+ CHECK( Rational( 0 , -5 ) == Rational( 0 ) &&
+        Rational( 2 , -4 ) == Rational( -1 , 2 ) );
+
+ std::vector< Complex > a0 , a1 = { 2.0 } , a3( 3 ) , a4( 4 , 1.0 );
+ fft( a0 , false );
+ fft( a1 , false );
+ fft( a4 , false );
+ CHECK( a0.empty() && a1[ 0 ] == 2.0 && std::abs( a4[ 0 ] - 4.0 ) < 1e-12 );
+ CHECK_THROWS( fft( a3 , false ) , contract_violation );
+ CHECK( convolve( {} , { 1.0 } ).empty() || convolve( {} , { 1.0 } ).size()
+        <= 1 );
+
+ CHECK_THROWS( LinearCongruential( 5 , 1 , 5 , 0 ) , contract_violation );
+ CHECK_THROWS( LinearCongruential( 2 , 5 , 5 , 0 ) , contract_violation );
+ CHECK_THROWS( LinearCongruential( 2 , 1 , 5 , 5 ) , contract_violation );
+ (void) LinearCongruential( 4 , 4 , 5 , 4 );          // m - 1 everywhere
+ (void) LinearCongruential( 9 , 9 , 0 , 9 );          // m = 0: 2^64
+ CHECK_THROWS( (void) chiSquare( { 1 } , {} ) , contract_violation );
+ CHECK_THROWS( (void) chiSquare( { 1 , 1 } , { 1.0 , 0.0 } ) ,
+               contract_violation );
+ CHECK( chiSquare( { 3 } , { 1.0 } ) == 0 );
+ CHECK_THROWS( (void) kolmogorovSmirnov( {} ) , contract_violation );
+ (void) kolmogorovSmirnov( { 0.5 } );
+ CHECK_THROWS( (void) serialTest( { 0.1 , 0.2 } , 1 ) , contract_violation );
+ CHECK_THROWS( (void) serialTest( { 0.1 } , 2 ) , contract_violation );
+ (void) serialTest( { 0.1 , 0.7 } , 2 );
+ CHECK_THROWS( (void) spectralTest2( 1 , 1 ) , contract_violation );
+ CHECK_THROWS( (void) spectralTest2( 0 , 7 ) , contract_violation );
+ CHECK_THROWS( (void) spectralTest2( 7 , 7 ) , contract_violation );
+ (void) spectralTest2( 1 , 2 );
+ std::mt19937 g( 9 );
+ CHECK( selectionSampling( 3 , 3 , g ).size() == 3 &&
+        selectionSampling( 0 , 0 , g ).empty() &&
+        sampleBySwaps( 4 , 4 , g ).size() == 4 &&
+        sampleByDictionary( 0 , 5 , g ).empty() &&
+        sampleBySorting( 5 , 5 , g ).size() == 5 &&
+        sampleBySkips( 5 , 5 , g ).size() == 5 &&
+        heapSampling( std::vector< int >{ 1 , 2 } , 2 , g ).size() == 2 );
+ CHECK_THROWS( (void) selectionSampling( 4 , 3 , g ) , contract_violation );
+ CHECK_THROWS( (void) sampleBySwaps( 1 , 0 , g ) , contract_violation );
+ CHECK_THROWS( (void) sampleByDictionary( 6 , 5 , g ) , contract_violation );
+ CHECK_THROWS( (void) sampleBySorting( 6 , 5 , g ) , contract_violation );
+ CHECK_THROWS( (void) sampleBySkips( 6 , 5 , g ) , contract_violation );
+ CHECK_THROWS( (void) heapSampling( std::vector< int >{ 1 } , 2 , g ) ,
+               contract_violation );
+
+ SparseMatrix M( 2 , 3 ) , Z( 0 , 0 );
+ M.set( 1 , 2 , 5.0 );
+ M.set( 0 , 0 , 1.0 );
+ CHECK( M.get( 1 , 2 ) == 5.0 && M.row( 1 ).size() == 1 &&
+        M.col( 2 ).size() == 1 && M.nonzeros() == 2 );
+ M.set( 1 , 2 , 0.0 );                        // a 0 removes the entry
+ CHECK( M.nonzeros() == 1 && M.get( 1 , 2 ) == 0 );
+ CHECK_THROWS( (void) M.get( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) M.get( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( M.set( 2 , 0 , 1.0 ) , contract_violation );
+ CHECK_THROWS( M.set( 0 , 3 , 1.0 ) , contract_violation );
+ CHECK_THROWS( (void) M.row( 2 ) , contract_violation );
+ CHECK_THROWS( (void) M.col( 3 ) , contract_violation );
+ CHECK_THROWS( (void) M.rowEntries( 2 ) , contract_violation );
+ CHECK_THROWS( (void) M.colEntries( 3 ) , contract_violation );
+ CHECK_THROWS( M.pivot( 1 , 1 ) , contract_violation );     // a 0
+ CHECK_THROWS( M.pivot( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( M.pivot( 0 , 3 ) , contract_violation );
+ M.pivot( 0 , 0 );
+ CHECK( M.get( 0 , 0 ) == 1.0 );
+ CHECK_THROWS( (void) Z.get( 0 , 0 ) , contract_violation );
+
+ long mults = 0;
+ CHECK_THROWS( (void) detail::multiplyRec( Longs{} , Longs{} , true ,
+                                           &mults ) , contract_violation );
+ CHECK_THROWS( (void) detail::multiplyRec( Longs{ 1 } , Longs{ 1 , 2 } ,
+                                           false , &mults ) ,
+               contract_violation );
+ CHECK( detail::multiplyRec( Longs{ 3 } , Longs{ 4 } , true , &mults ) ==
+        Longs( { 12 } ) );
+ CHECK( multiplyKaratsuba( Longs{} , Longs{ 1 } ).empty() ||
+        multiplyKaratsuba( Longs{} , Longs{ 1 } ) == Longs( { 0 } ) );
  }
 
 }  // end( namespace )

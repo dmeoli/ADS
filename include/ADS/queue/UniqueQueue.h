@@ -57,7 +57,9 @@ enum class Duplicate {
  FORGET_OLD     ///< the old copy is removed, the item goes to the back
  };
 
-/// a QUEUE with no duplicates
+/// a QUEUE with no duplicates; the equality of T must be an equivalence,
+/// so an item unequal to itself (e.g., a NaN) cannot be enqueued: the
+/// postcondition of enqueue() refuses it
 template< std::equality_comparable T , Duplicate D = Duplicate::IGNORE_NEW >
 class UniqueQueue {
 

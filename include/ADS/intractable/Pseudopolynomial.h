@@ -98,7 +98,8 @@ inline std::optional< Nodes > partitionDP( const std::vector< long > & A );
 
 /// SCHEDULING MULTIPROCESSORE by dynamic programming on the vectors of
 /// the loads of the m processors, each at most d: the processor of each
-/// program, or nothing; O( n ( d + 1 )^m ) time (exercise 19.2)
+/// program, or nothing (also if d < 0, even with no programs, since an
+/// idle processor is loaded 0); O( n ( d + 1 )^m ) time (exercise 19.2)
 /// \pre m >= 1 and t is not negative
 /// \post each processor returned is loaded at most d
 inline std::optional< std::vector< int > > schedulingDP(

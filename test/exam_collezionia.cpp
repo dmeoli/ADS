@@ -233,7 +233,8 @@ std::pair< I64 , I64 > constantAtTwo( F && f , G && g )
  }
 
 // f = n^2 + n + 1 and g = 2 n^3: c = 7 / 16, reached at n = 2, f <= c g
-// exactly up to 10^5 and the ratio decreasing
+// exactly up to 10^5 and the ratio decreasing; the fraction reduced, a
+// zero f, and g( 2 ) = 0 refused
 ADS_TEST( "collezioni-02-analisi-1-1-1" )
 {
  auto f = []( I64 n ) { return( n * n + n + 1 ); };
@@ -245,6 +246,15 @@ ADS_TEST( "collezioni-02-analisi-1-1-1" )
   CHECK( b * f( n ) <= a * g( n ) );
  for( I64 n = 2 ; n <= 1000 ; ++n )
   CHECK( f( n + 1 ) * g( n ) < f( n ) * g( n + 1 ) );
+ // the fraction in lowest terms when f( 2 ) and g( 2 ) share a factor, a
+ // zero f, and g( 2 ) = 0 refused
+ CHECK( constantAtTwo( []( I64 n ) { return( 3 * n ); } ,
+                       []( I64 n ) { return( 3 * n * n ); } ) ==
+        std::pair( I64( 1 ) , I64( 2 ) ) );
+ CHECK( constantAtTwo( []( I64 ) { return( I64( 0 ) ); } , g ) ==
+        std::pair( I64( 0 ) , I64( 1 ) ) );
+ CHECK_THROWS( constantAtTwo( f , []( I64 n ) { return( n - 2 ); } ) ,
+               contract_violation );
  }
 
 // f = n sqrt( n ) + n^2 and g = n^2: f / g = 1 + 1 / sqrt( n ) decreases,
@@ -294,9 +304,11 @@ bool hasDuplicate( std::vector< int > A )
  return( false );
  }
 
-// against std::set on random vectors of few values, the edge cases, and the
-// lower bound: in a vector of distinct values, each place, changed to
-// another value, can make a repetition, so every place must be read
+// against std::set on random vectors of few values, the edge cases (empty,
+// one item, two equal, all equal, the repetition at the ends, the extremes
+// of int), and the lower bound: in a vector of distinct values, each place,
+// changed to another value, can make a repetition, so every place must be
+// read
 ADS_TEST( "collezioni-02-analisi-1-4" )
 {
  std::mt19937 g( 4 );
@@ -319,6 +331,12 @@ ADS_TEST( "collezioni-02-analisi-1-4" )
   }
  CHECK( hasDuplicate( { std::numeric_limits< int >::max() , 0 ,
                         std::numeric_limits< int >::max() } ) );
+ // the repetition at the two ends, and the two extremes of int distinct
+ CHECK( hasDuplicate( { 4 , 1 , 2 , 3 , 4 } ) );
+ CHECK( ! hasDuplicate( { std::numeric_limits< int >::min() ,
+                          std::numeric_limits< int >::max() } ) );
+ CHECK( hasDuplicate( { std::numeric_limits< int >::min() , 5 ,
+                        std::numeric_limits< int >::min() } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -404,7 +422,8 @@ double eighthsQuarters( I64 n , F && f ,
 
 // T( n ) = 2 T( n / 8 ) + 2 T( n / 4 ) + n: n <= T( n ) <= 4 n, the
 // constant of the substitution, on every n up to 10^5 and on random n up to
-// 10^15, and the ratio to n flat
+// 10^15, and the ratio to n flat; the base cases, n = 4 and 8 by hand, n <
+// 0 refused
 ADS_TEST( "collezioni-02-analisi-1-6" )
 {
  std::unordered_map< I64 , double > memo;
@@ -422,6 +441,10 @@ ADS_TEST( "collezioni-02-analisi-1-6" )
  CHECK( order( T , []( double n ) { return( n ); } ,
                { 1e4 , 1e6 , 1e8 , 1e10 , 1e12 } , 2 , 0.1 ) );
  CHECK( T( 0 ) == 1 && T( 1 ) == 1 && T( 2 ) == 6 );
+ // the first n with a nonzero n / 4 and n / 8, and n < 0 refused
+ CHECK( T( 4 ) == 2 * 1 + 2 * 1 + 4 && T( 8 ) == 2 * 1 + 2 * 6 + 8 );
+ CHECK_THROWS( eighthsQuarters( -1 , []( double x ) { return( x ); } ,
+                                memo ) , contract_violation );
  }
 
 // T( n ) = 2 T( n / 8 ) + 2 T( n / 4 ) + n log n: n log n <= T( n ) <= 4 n
@@ -507,7 +530,8 @@ double mystery2( const std::vector< double > & A , int n , I64 & loops )
  }
 
 // the iterations of the loop are n + ( n - 2 ) + ... down to the first
-// size <= 44, about n^2 / 4: one recursive call, the 3 multiplies a value
+// size <= 44, about n^2 / 4: one recursive call, the 3 multiplies a value;
+// n = 0, 44, 45, 46, 48, and n out of [ 0 , |A| ] refused
 ADS_TEST( "collezioni-02-analisi-1-9" )
 {
  const std::vector< double > Z( 20000 , 0.0 ) , O( 100 , 1.0 );
@@ -528,6 +552,13 @@ ADS_TEST( "collezioni-02-analisi-1-9" )
  CHECK( near( mystery2( O , 44 , loops ) , 1 ) && loops == 44 );
  CHECK( near( mystery2( O , 46 , loops ) , 4 ) );    // 3 * 1 + 1
  CHECK( near( mystery2( O , 48 , loops ) , 13 ) );   // 3 * 4 + 1
+ // n = 0 (no loop, the mean 0), an odd n above 44 (45 then 43), and n out
+ // of [ 0 , |A| ] refused
+ loops = 0;
+ CHECK( mystery2( O , 0 , loops ) == 0 && loops == 0 );
+ CHECK( near( mystery2( O , 45 , loops ) , 4 ) && loops == 45 + 43 );
+ CHECK_THROWS( mystery2( O , 101 , loops ) , contract_violation );
+ CHECK_THROWS( mystery2( O , -1 , loops ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -621,7 +652,8 @@ double thirds( I64 n , std::unordered_map< I64 , double > & memo )
  }
 
 // p = 1.394954..., the bounds n <= T( n ) <= 3 n^2 of the solution, and
-// T( n ) / n^p within a constant factor from 10^3 to 10^12
+// T( n ) / n^p within a constant factor from 10^3 to 10^12; T( 0 .. 3 ) by
+// hand, n < 0 refused
 ADS_TEST( "collezioni-02-analisi-1-13" )
 {
  const double p = akraBazziThirds();
@@ -633,6 +665,10 @@ ADS_TEST( "collezioni-02-analisi-1-13" )
   CHECK( ( T( n ) >= n ) && ( T( n ) <= 3.0 * n * n ) );
  CHECK( order( T , [ & ]( double n ) { return( std::pow( n , p ) ); } ,
                { 1e3 , 1e5 , 1e7 , 1e9 , 1e11 , 1e12 } , 3 , 0.15 ) );
+ // the base cases and the first values by hand, n < 0 refused
+ CHECK( T( 0 ) == 1 && T( 1 ) == 1 && T( 2 ) == 2 * 1 + 1 + 1 );
+ CHECK( T( 3 ) == 2 * 1 + T( 2 ) + 1 );
+ CHECK_THROWS( thirds( -3 , memo ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -662,7 +698,8 @@ U64 sqrtRecurrence( U64 n )
  }
 
 // T( 2^{2^j} ) = j + 1, and T( n ) - log log n in [ 0 , 2 ] for random n
-// up to 2^64; S( k ) = S( k / 2 ) + 1 is the case 2 of the Master theorem
+// up to 2^64; S( k ) = S( k / 2 ) + 1 is the case 2 of the Master theorem;
+// isqrt() at 0, 1, around the squares and at the largest square of 64 bits
 ADS_TEST( "collezioni-02-analisi-1-19" )
 {
  for( int j = 0 ; j <= 5 ; ++j )
@@ -679,6 +716,10 @@ ADS_TEST( "collezioni-02-analisi-1-19" )
  const U64 top = std::numeric_limits< U64 >::max();
  CHECK( sqrtRecurrence( top ) == 7 );
  CHECK( isqrt( top ) == 4294967295u );
+ CHECK( isqrt( 0 ) == 0 && isqrt( 1 ) == 1 && isqrt( 3 ) == 1 );
+ for( U64 r = 2 ; r <= 100000 ; r += 997 )
+  CHECK( isqrt( r * r ) == r && isqrt( r * r - 1 ) == r - 1 );
+ CHECK( isqrt( U64( 4294967295u ) * 4294967295u ) == 4294967295u );
  CHECK( compareGrowth( master( 1 , 2 , 0 ) , Growth{ 1 , 0 , 1 , 0 } ) ==
         0 );
  }
@@ -901,7 +942,8 @@ U64 follia( U64 n , I64 & calls , I64 & loops )
  }
 
 // pippo(): one call more each time n doubles above 99, at most about 50
-// calls below 100, so log n + O( 1 ); the value of pippo( 100 ) by hand
+// calls below 100, so log n + O( 1 ); the values of pippo( 99 ), pippo(
+// 100 ) and pippo( 101 ) by hand, the base cases, n out of range refused
 ADS_TEST( "collezioni-02-analisi-1-28-1" )
 {
  I64 calls = 0;
@@ -924,6 +966,14 @@ ADS_TEST( "collezioni-02-analisi-1-28-1" )
  calls = 0;
  pippo( I64( 1 ) << 31 , calls );
  CHECK( calls <= 31 + 51 );
+ // the threshold 99 / 100 by hand: 99 goes down by 2 to 1 (49 calls of
+ // the second branch), 101 halves to 50; n out of [ 0 , 2^31 ] refused
+ calls = 0;
+ CHECK( pippo( 99 , calls ) == 1 + 49 * 5 && calls == 50 );
+ calls = 0;
+ CHECK( pippo( 101 , calls ) == pippo( 50 , calls ) + 101 * 50 );
+ CHECK_THROWS( pippo( -1 , calls ) , contract_violation );
+ CHECK_THROWS( pippo( ( I64( 1 ) << 31 ) + 1 , calls ) , contract_violation );
  }
 
 // follia(): for n = 2^k >= 16 exactly n / 4 - 1 calls, each above 10 with a
@@ -955,7 +1005,8 @@ ADS_TEST( "collezioni-02-analisi-1-28-2" )
 
 // the tree of the example, its postvisit, and random trees of distinct
 // labels rebuilt from their previsit and invisit by fromPreorderInorder()
-// of the library
+// of the library; the empty tree, one node, a left and a right chain;
+// visits of different labels or lengths refused
 ADS_TEST( "collezioni-05-alberi-1-1" )
 {
  const std::vector< char > pre = { 'A' , 'E' , 'B' , 'F' , 'G' , 'C' , 'D' ,
@@ -982,6 +1033,18 @@ ADS_TEST( "collezioni-05-alberi-1-1" )
   }
  CHECK( fromPreorderInorder( Ints() , Ints() ) == nullptr );
  CHECK_THROWS( fromPreorderInorder( Ints( { 1 , 2 } ) , Ints( { 1 , 3 } ) ) ,
+               contract_violation );
+ // one node, a left chain (in order reversed), a right chain (the same
+ // order), visits of different lengths refused
+ BTPtr one( fromPreorderInorder( Ints( { 5 } ) , Ints( { 5 } ) ) );
+ CHECK( to_list( one.get() ) == "( 5 () () )" );
+ BTPtr lc( fromPreorderInorder( Ints( { 1 , 2 , 3 } ) ,
+                               Ints( { 3 , 2 , 1 } ) ) );
+ CHECK( to_list( lc.get() ) == "( 1 ( 2 ( 3 () () ) () ) () )" );
+ BTPtr rc( fromPreorderInorder( Ints( { 1 , 2 , 3 } ) ,
+                               Ints( { 1 , 2 , 3 } ) ) );
+ CHECK( to_list( rc.get() ) == "( 1 () ( 2 () ( 3 () () ) ) )" );
+ CHECK_THROWS( fromPreorderInorder( Ints( { 1 , 2 } ) , Ints( { 1 } ) ) ,
                contract_violation );
  }
 
@@ -1046,7 +1109,8 @@ int minHeight( const BT * t )
 // the figure of the text is not in the catalogue: a tree whose nearest leaf
 // is two edges from the root, though one child has a single child; then
 // every node of random trees against a visit by levels down to the first
-// leaf
+// leaf; the empty tree, one node, a chain of 100, a near leaf beside the
+// chain
 ADS_TEST( "collezioni-05-alberi-1-3" )
 {
  BTPtr t( from_list< int >( "( 1 ( 2 () ( 4 ( 6 () () ) () ) ) ( 3 ( 5 () () "
@@ -1073,6 +1137,19 @@ ADS_TEST( "collezioni-05-alberi-1-3" )
  CHECK( minHeight( nullptr ) == INFI );
  BTPtr one( new BT( 0 ) );
  CHECK( minHeight( one.get() ) == 0 );
+ // a left chain of 100 nodes (its only leaf at the bottom), and a root
+ // with a leaf on one side and a long chain on the other
+ BT * p = new BT( 0 );
+ BTPtr chain( p );
+ for( int i = 1 ; i < 100 ; ++i ) {
+  p->insertLeft( new BT( i ) );
+  p = p->left();
+  }
+ CHECK( minHeight( chain.get() ) == 99 );
+ BTPtr side( new BT( 0 ) );
+ side->insertRight( new BT( 1 ) );
+ side->insertLeft( chain.release() );
+ CHECK( minHeight( side.get() ) == 1 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1314,7 +1391,8 @@ BinaryTree< T > * specular( const BinaryTree< T > * t )
  }
 
 // the invisit of the mirror is the reversed invisit, its previsit visits
-// the root, then the right, then the left subtree, twice gives the tree
+// the root, then the right, then the left subtree, twice gives the tree;
+// the empty tree, one node, a perfect tree, the original left untouched
 ADS_TEST( "collezioni-05-alberi-1-8" )
 {
  std::mt19937 g( 58 );
@@ -1339,6 +1417,14 @@ ADS_TEST( "collezioni-05-alberi-1-8" )
  BTPtr m( specular( t.get() ) );
  CHECK( to_list( m.get() ) == "( 1 () ( 2 ( 3 () () ) () ) )" );
  CHECK( specular< int >( nullptr ) == nullptr );
+ // one node (itself), a symmetric tree (the same), the original untouched
+ BTPtr one( new BT( 4 ) ) , sym( perfectTree( 3 ) );
+ BTPtr m1( specular( one.get() ) ) , ms( specular( sym.get() ) );
+ CHECK( to_list( m1.get() ) == "( 4 () () )" );
+ Ints lv = visit( sym.get() , 1 );
+ std::reverse( lv.begin() , lv.end() );
+ CHECK( visit( ms.get() , 1 ) == lv );
+ CHECK( to_list( t.get() ) == "( 1 ( 2 () ( 3 () () ) ) () )" );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1388,14 +1474,16 @@ ADS_TEST( "collezioni-05-alberi-1-10-1" )
  }
 
 // the recurrence against the Catalan numbers binom( 2 n , n ) / ( n + 1 ) up
-// to 30, and the largest n of the precondition
+// to 30, n = 0, and the largest n of the precondition; -1 and 36 refused
 ADS_TEST( "collezioni-05-alberi-1-10-2" )
 {
  const auto C = tartaglia( 60 );
  for( int n = 0 ; n <= 30 ; ++n )
   CHECK( binaryTreeShapes( n ) == C[ 2 * n ][ n ] / U64( n + 1 ) );
  CHECK( binaryTreeShapes( 35 ) == 3116285494907301262u );
+ CHECK( binaryTreeShapes( 0 ) == 1 );           // the empty tree
  CHECK_THROWS( binaryTreeShapes( -1 ) , contract_violation );
+ CHECK_THROWS( binaryTreeShapes( 36 ) , contract_violation );   // > 2^64
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1462,7 +1550,7 @@ std::vector< T > inorderIterative( BinaryTree< T > * t )
  }
 
 // the three iterative visits against the recursive ones of the library, on
-// random trees, a single node and a long path
+// random trees, a single node, a long left and right path; nil refused
 ADS_TEST( "collezioni-05-alberi-1-11" )
 {
  std::mt19937 g( 511 );
@@ -1484,7 +1572,23 @@ ADS_TEST( "collezioni-05-alberi-1-11" )
  CHECK( preorderIterative( path.get() ) == down );
  CHECK( inorderIterative( path.get() ) == up );
  CHECK( postorderIterative( path.get() ) == up );
+ // a right chain (in order the previsit), one node
+ BT * q = new BT( 0 );
+ BTPtr right( q );
+ for( int i = 1 ; i < 5000 ; ++i ) {
+  q->insertRight( new BT( i ) );
+  q = q->right();
+  }
+ CHECK( preorderIterative( right.get() ) == down );
+ CHECK( inorderIterative( right.get() ) == down );
+ CHECK( postorderIterative( right.get() ) == up );
+ BTPtr one( new BT( 9 ) );
+ CHECK( preorderIterative( one.get() ) == Ints( 1 , 9 ) &&
+        inorderIterative( one.get() ) == Ints( 1 , 9 ) &&
+        postorderIterative( one.get() ) == Ints( 1 , 9 ) );
  CHECK_THROWS( preorderIterative< int >( nullptr ) , contract_violation );
+ CHECK_THROWS( inorderIterative< int >( nullptr ) , contract_violation );
+ CHECK_THROWS( postorderIterative< int >( nullptr ) , contract_violation );
  }
 
 }  // end( namespace collezioni )
@@ -1536,7 +1640,9 @@ void labelSearchTree( BT * t , const std::vector< int > & K )
  }
 
 // the shape of the text labelled as in its solution; random shapes become
-// search trees, and on small ones no other order of the keys does
+// search trees, and on small ones no other order of the keys does; the
+// empty tree, the extremes of int; too few, repeated or decreasing keys
+// refused
 ADS_TEST( "collezioni-06-abr-1-1" )
 {
  BTPtr t( from_list< int >( "( 0 ( 0 ( 0 ( 0 () () ) ( 0 () () ) ) ( 0 ( 0 ()"
@@ -1570,6 +1676,14 @@ ADS_TEST( "collezioni-06-abr-1-1" )
   CHECK( good == 1 );
   }
  CHECK_THROWS( labelSearchTree( t.get() , { 1 , 2 } ) , contract_violation );
+ // the empty tree with no key, keys repeated or decreasing refused
+ labelSearchTree( nullptr , {} );
+ BTPtr two( from_list< int >( "( 0 ( 0 () () ) () )" ) );
+ CHECK_THROWS( labelSearchTree( two.get() , { 3 , 3 } ) , contract_violation );
+ CHECK_THROWS( labelSearchTree( two.get() , { 4 , 3 } ) , contract_violation );
+ labelSearchTree( two.get() , { std::numeric_limits< int >::min() ,
+                                std::numeric_limits< int >::max() } );
+ CHECK( two->read() == std::numeric_limits< int >::max() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1604,7 +1718,8 @@ KV * insertNodeRec( KV * t , int x , int v )
 
 // random insertions, with repeated keys, give the shape of the
 // BinarySearchTree of the library and the values of std::map, each child
-// knowing its parent
+// knowing its parent; the empty tree, a repeated root, a right chain of
+// 2000 keys
 ADS_TEST( "collezioni-06-abr-1-2" )
 {
  std::mt19937 g( 62 );
@@ -1638,6 +1753,18 @@ ADS_TEST( "collezioni-06-abr-1-2" )
   for( auto [ k , v ] : m ) { mk.push_back( k ); mv.push_back( v ); }
   CHECK( ( inK == mk ) && ( inV == mv ) );
   }
+ // the first key makes the root, a repeated root only changes its value,
+ // increasing keys make a right chain of 2000 (the recursion as deep)
+ std::unique_ptr< KV > t( insertNodeRec( nullptr , 5 , 1 ) );
+ CHECK( insertNodeRec( t.get() , 5 , 2 ) == t.get() );
+ CHECK( ( t->read() == std::pair( 5 , 2 ) ) && ! t->left() && ! t->right() );
+ std::unique_ptr< KV > c( insertNodeRec( nullptr , 0 , 0 ) );
+ for( int k = 1 ; k < 2000 ; ++k )
+  insertNodeRec( c.get() , k , k );
+ int depth = 0;
+ for( KV * u = c.get() ; u->right() ; u = u->right() )
+  ++depth;
+ CHECK( depth == 1999 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1758,7 +1885,8 @@ BT * concatenate( BT * T1 , BT * T2 )
  }
 
 // random search trees split at a random key: the invisit of the result is
-// the two invisits one after the other
+// the two invisits one after the other; one node each, the maximum at the
+// root; keys not separated, T2 with a parent, a nil tree refused
 ADS_TEST( "collezioni-06-abr-1-6" )
 {
  std::mt19937 g( 66 );
@@ -1784,6 +1912,15 @@ ADS_TEST( "collezioni-06-abr-1-6" )
  CHECK_THROWS( concatenate( x.get() , nullptr ) , contract_violation );
  BT * z = new BT( 9 );
  CHECK( concatenate( x.get() , z ) == x.get() && x->right() == z );
+ // equal maximum and minimum, T2 already hung somewhere, T1 nil refused;
+ // T1 whose maximum is its root with a left subtree
+ BTPtr p( new BT( 20 ) ) , q( new BT( 20 ) );
+ CHECK_THROWS( concatenate( p.get() , q.get() ) , contract_violation );
+ CHECK_THROWS( concatenate( x.get() , z ) , contract_violation );
+ CHECK_THROWS( concatenate( nullptr , q.get() ) , contract_violation );
+ BTPtr r( from_list< int >( "( 10 ( 5 () () ) () )" ) );
+ concatenate( r.get() , q.release() );
+ CHECK( to_list( r.get() ) == "( 10 ( 5 () () ) ( 20 () () ) )" );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1792,23 +1929,34 @@ ADS_TEST( "collezioni-06-abr-1-6" )
 
 /// minDistance(): two keys at the least distance, the closest pair being
 /// two consecutive keys of the invisit, walked by min() and
-/// successorNode(); Theta( n ) time, O( 1 ) space
+/// successorNode(); Theta( n ) time, O( 1 ) space. For integer keys the
+/// distances are computed in the unsigned type of the same width, which
+/// holds the difference of two keys in order (INT_MAX - INT_MIN overflows
+/// an int)
 /// \pre the tree has at least two keys
 template< class Tr >
 std::pair< typename Tr::Key , typename Tr::Key > minDistance( const Tr & T )
 {
+ using K = typename Tr::Key;
  ADS_PRE( T.size() >= 2 );
+ auto gap = []( const K & a , const K & b ) {     // b - a, a <= b
+  if constexpr( std::is_integral_v< K > )
+   return( std::make_unsigned_t< K >( b ) - std::make_unsigned_t< K >( a ) );
+  else
+   return( b - a );
+  };
  auto u = T.min();
  auto v = T.successorNode( u );
  auto best = std::pair( Tr::key( u ) , Tr::key( v ) );
  for( ; ! T.isNil( v ) ; u = v , v = T.successorNode( v ) )
-  if( Tr::key( v ) - Tr::key( u ) < best.second - best.first )
+  if( gap( Tr::key( u ) , Tr::key( v ) ) < gap( best.first , best.second ) )
    best = std::pair( Tr::key( u ) , Tr::key( v ) );
  return( best );
  }
 
 // the least distance against all the pairs, on random BinarySearchTrees of
-// the library; two keys; the largest keys
+// the library; two keys; the largest keys; the extremes of int (distances
+// beyond int); a tie; fewer than two keys refused
 ADS_TEST( "collezioni-06-abr-1-7" )
 {
  std::mt19937 g( 67 );
@@ -1834,6 +1982,19 @@ ADS_TEST( "collezioni-06-abr-1-7" )
  CHECK( minDistance( two ) == std::pair( -1000000000 , 1000000000 ) );
  two.remove( 1000000000 );
  CHECK_THROWS( minDistance( two ) , contract_violation );
+ // the extremes of int, whose distances overflow an int: 0 - INT_MIN is
+ // 2^31, larger than INT_MAX - 0; a tie (the first pair); no key
+ BinarySearchTree< int , int > ext;
+ for( int k : { 0 , std::numeric_limits< int >::max() ,
+                std::numeric_limits< int >::min() } )
+  ext.insert( k , 0 );
+ CHECK( minDistance( ext ) == std::pair( 0 , INFI ) );
+ BinarySearchTree< int , int > tie;
+ for( int k : { 5 , 1 , 9 , 3 } )
+  tie.insert( k , 0 );
+ CHECK( minDistance( tie ) == std::pair( 1 , 3 ) );
+ CHECK_THROWS( minDistance( BinarySearchTree< int , int >() ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1851,7 +2012,8 @@ int height( const BinaryTree< T > * t )
 // minimumHeightSearchTree() of the library, the middle key at the root and
 // the two halves below: the least height ceil( log2( n + 1 ) ) - 1 for n up
 // to 1000, the invisit equal to A, and the previsit giving back the same
-// shape when inserted in the BinarySearchTree of the library
+// shape when inserted in the BinarySearchTree of the library; no key;
+// keys not sorted or repeated refused
 ADS_TEST( "collezioni-06-abr-1-8" )
 {
  for( int n = 1 ; n <= 1000 ; ++n ) {
@@ -1870,6 +2032,8 @@ ADS_TEST( "collezioni-06-abr-1-8" )
   }
  CHECK( minimumHeightSearchTree( Ints() ) == nullptr );
  CHECK_THROWS( minimumHeightSearchTree( Ints( { 1 , 3 , 2 } ) ) ,
+               contract_violation );
+ CHECK_THROWS( minimumHeightSearchTree( Ints( { 1 , 1 } ) ) ,
                contract_violation );
  }
 
@@ -1978,7 +2142,8 @@ const Shape * named( const Shape * t , char c )
 
 // the four trees of the text: (a), (c) and (d) colorable, with the
 // colorings of the solution valid, (b) not; random shapes against all
-// their 2^n colorings
+// their 2^n colorings; one node, chains of 2 and 3, a perfect tree; nil
+// refused
 ADS_TEST( "collezioni-06-abr-1-9" )
 {
  std::unique_ptr< Shape >
@@ -2029,6 +2194,19 @@ ADS_TEST( "collezioni-06-abr-1-9" )
   some += e;
   }
  CHECK( ( some > 100 ) && ( some < 1500 ) );
+ // one node (black), a chain of 2 (a red child), a chain of 3 (no
+ // coloring: the black heights of the two sides of the root differ), a
+ // perfect tree (all black)
+ std::unique_ptr< Shape > s1( from_list< char >( "( A () () )" ) ) ,
+  s2( from_list< char >( "( A ( B () () ) () )" ) ) ,
+  s3( from_list< char >( "( A ( B ( C () () ) () ) () )" ) ) ,
+  s7( from_list< char >( "( A ( B ( D () () ) ( E () () ) ) ( C ( F () () )"
+                         " ( G () () ) ) )" ) );
+ CHECK( redBlackColoring( s1.get() , &red ) && red.empty() );
+ CHECK( redBlackColoring( s2.get() , &red ) &&
+        ( red == Reds( { named( s2.get() , 'B' ) } ) ) );
+ CHECK( ! redBlackColoring( s3.get() ) );
+ CHECK( redBlackColoring( s7.get() ) && isRedBlack( s7.get() , {} ) );
  CHECK_THROWS( redBlackColoring( nullptr ) , contract_violation );
  }
 
@@ -2156,7 +2334,8 @@ simulateQuadratic( const std::vector< int > & K , int m , int c1 , int c2 )
 // the OpenHashTable of the library with H( k , i ) = ( k mod 11 + 3 i + i^2
 // ) mod 11 gives the table of the solution, refuses 7, whose inspection
 // 7, 0, 6, 3, 2, 3, 6, 0, 7, 5, 5 misses the place 8, and finds the keys in
-// 12 inspections, 1.2 on average; random insertions against a simulation
+// 12 inspections, 1.2 on average; random insertions against a simulation;
+// a table of one place, no key; m = 0 and a negative key refused
 ADS_TEST( "collezioni-07-hashing-1-1" )
 {
  const Ints K = { 33 , 10 , 24 , 14 , 16 , 13 , 23 , 31 , 18 , 11 };
@@ -2202,6 +2381,14 @@ ADS_TEST( "collezioni-07-hashing-1-1" )
    CHECK( ( Ts[ i ] == -1 ) ? ( U.slot( i ) == decltype( U )::Slot::NIL )
                             : ( U.keyAt( i ) == Ts[ i ] ) );
   }
+ // a table of one place (the second key finds none), no key, and the
+ // contracts of the simulation: m = 0, a negative key
+ const auto [ S1 , P1 ] = simulateQuadratic( { 4 , 9 } , 1 , 3 , 1 );
+ CHECK( S1 == Ints( 1 , 4 ) && P1 == Ints( { 1 , 0 } ) );
+ const auto [ S0 , P0 ] = simulateQuadratic( {} , 3 , 3 , 1 );
+ CHECK( S0 == Ints( 3 , -1 ) && P0.empty() );
+ CHECK_THROWS( simulateQuadratic( { 1 } , 0 , 3 , 1 ) , contract_violation );
+ CHECK_THROWS( simulateQuadratic( { -1 } , 5 , 3 , 1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2275,7 +2462,10 @@ struct ScanTable {
 
 // random insertions, removals and lookups against std::set, and the places
 // against the OpenHashTable of the library with the same inspection, the
-// linear one with delta 1 and 3, the quadratic one with delta 1 and 2
+// linear one with delta 1 and 3, the quadratic one with delta 1 and 2; a
+// full table, a key inserted twice, a removal of an absent key, a search
+// past a deleted place and an insertion into it, one place; m = 0, delta
+// = 0 and delta not coprime with m refused
 ADS_TEST( "collezioni-07-hashing-1-2" )
 {
  std::mt19937 g( 72 );
@@ -2320,6 +2510,19 @@ ADS_TEST( "collezioni-07-hashing-1-2" )
  F.remove( 10 );
  CHECK( F.scan( 7 , true ) == 2 && F.insert( 7 ) );   // the deleted place
  CHECK_THROWS( ScanTable( 16 , 2 , false ) , contract_violation );
+ // a key inserted twice stays once, a removal of an absent key changes
+ // nothing, a key found after a deleted place, one place only; m = 0 and
+ // delta = 0 refused
+ ScanTable D( 7 , 1 , false );
+ CHECK( D.insert( 3 ) && D.insert( 10 ) && D.insert( 3 ) );
+ D.remove( 4 );
+ D.remove( 3 );
+ CHECK( ! D.lookup( 3 ) && D.lookup( 10 ) );   // past the deleted 3
+ CHECK( D.insert( 17 ) && D.key[ 3 ] == 17 );  // into the deleted place
+ ScanTable One( 1 , 1 , false );
+ CHECK( One.insert( 8 ) && ! One.insert( 9 ) && One.lookup( 8 ) );
+ CHECK_THROWS( ScanTable( 0 , 1 , false ) , contract_violation );
+ CHECK_THROWS( ScanTable( 7 , 0 , true ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2361,7 +2564,8 @@ std::vector< std::vector< int > > equalFiles(
 
 // random short files against the classes of a comparison of all the
 // pairs, with a good digest, one by the length only and one constant, so
-// that the comparisons byte by byte must split the collisions
+// that the comparisons byte by byte must split the collisions; no file, one
+// file, all equal, empty files, two groups in one bucket
 ADS_TEST( "collezioni-07-hashing-1-3" )
 {
  std::mt19937 g( 73 );
@@ -2391,6 +2595,12 @@ ADS_TEST( "collezioni-07-hashing-1-3" )
         std::vector< std::vector< int > >( { { 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 ,
                                                8 , 9 } } ) );
  CHECK( equalFiles( { "ab" , "ba" , "a" , "" } , bad ).empty() );
+ // one file, empty files (equal), two groups of the same length and digest
+ CHECK( equalFiles( { "x" } , good ).empty() );
+ CHECK( equalFiles( { "" , "a" , "" } , good ) ==
+        std::vector< std::vector< int > >( 1 , { 0 , 2 } ) );
+ CHECK( equalFiles( { "ab" , "ba" , "ab" , "ba" } , bad ) ==
+        std::vector< std::vector< int > >( { { 0 , 2 } , { 1 , 3 } } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2473,7 +2683,8 @@ ListGraph<> randomFreeTree( std::mt19937 & g , int n )
 
 // the graph of the figure from A, with sorted lists, gives the sequence of
 // the solution; on random graphs, oriented or not, the iterative visit
-// gives the nodes and the edges of the dfs() of the library in its order
+// gives the nodes and the edges of the dfs() of the library in its order;
+// one node; a root out of the graph, marks of the wrong size refused
 ADS_TEST( "collezioni-09-grafi-1-1" )
 {
  enum { A , B , C , D , E , F , G , H , I };
@@ -2505,6 +2716,15 @@ ADS_TEST( "collezioni-09-grafi-1-1" )
        []( int ) {} );
   CHECK( dfsIterative( G , root , v2 ) == e && v1 == v2 );
   }
+ // one node, a root already visited marks nothing new, and the contracts:
+ // a root out of the graph, a vector of marks of the wrong size
+ std::vector< bool > one( 1 , false );
+ CHECK( dfsIterative( ListGraph<>( 1 , false ) , 0 , one ) ==
+        std::vector< Event >( 1 , Event( 0 , -1 ) ) );
+ std::vector< bool > v9( 9 , false );
+ CHECK_THROWS( dfsIterative( fig , 9 , v9 ) , contract_violation );
+ std::vector< bool > v3( 3 , false );
+ CHECK_THROWS( dfsIterative( fig , 0 , v3 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2832,7 +3052,9 @@ int maxdist( const G & g , int s )
  }
 
 // random oriented graphs against the largest finite distance of distance()
-// of the library and the nodes at it; s alone counts itself
+// of the library and the nodes at it; s alone counts itself, an oriented
+// cycle, a star from its center and from a leaf; s out of the graph
+// refused
 ADS_TEST( "collezioni-09-grafi-1-10" )
 {
  std::mt19937 g( 910 );
@@ -2848,6 +3070,15 @@ ADS_TEST( "collezioni-09-grafi-1-10" )
   CHECK( maxdist( G , s ) == count );
   }
  CHECK( maxdist( ListGraph<>( 3 , true ) , 1 ) == 1 );
+ // an oriented cycle (one node at n - 1), a star out of s (all leaves),
+ // a node out of the graph refused
+ const ListGraph<> cyc = makeGraph( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
+                                          { 3 , 4 } , { 4 , 0 } } , true );
+ const ListGraph<> star = makeGraph( 5 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } ,
+                                           { 0 , 4 } } , true );
+ CHECK( maxdist( cyc , 2 ) == 1 && maxdist( star , 0 ) == 4 );
+ CHECK( maxdist( star , 3 ) == 1 );
+ CHECK_THROWS( maxdist( star , 5 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2866,7 +3097,8 @@ I64 listsBeatMatrix( I64 n )
  }
 
 // m <= 15124 for n = 1000, and the largest m against the comparison of the
-// two sizes made edge count by edge count
+// two sizes made edge count by edge count; n = 0, 32 and 33 (the first n
+// with room); n < 0 refused
 ADS_TEST( "collezioni-09-grafi-1-11" )
 {
  CHECK( listsBeatMatrix( 1000 ) == 15124 );
@@ -2879,6 +3111,8 @@ ADS_TEST( "collezioni-09-grafi-1-11" )
   CHECK( listsBeatMatrix( n ) == e );
   }
  CHECK( listsBeatMatrix( 32 ) == -1 && listsBeatMatrix( 33 ) == 0 );
+ CHECK( listsBeatMatrix( 0 ) == -1 );            // nothing beats 0 bits
+ CHECK_THROWS( listsBeatMatrix( -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2914,7 +3148,8 @@ I64 trianglesMatrix( const Adj & A )
 // O( m n ) for the merge of the sorted lists of the ends of each edge
 
 // the triangles of the complete graph K_n, counted on the matrix, are
-// binom( n , 3 ) = n ( n - 1 ) ( n - 2 ) / 6
+// binom( n , 3 ) = n ( n - 1 ) ( n - 2 ) / 6; n = 2 and 3; n out of
+// [ 0 , 67 ] refused
 ADS_TEST( "collezioni-09-grafi-1-12-1" )
 {
  for( int n = 0 ; n <= 40 ; ++n ) {
@@ -2924,7 +3159,9 @@ ADS_TEST( "collezioni-09-grafi-1-12-1" )
   CHECK( trianglesMatrix( K ) == I64( n ) * ( n - 1 ) * ( n - 2 ) / 6 );
   }
  CHECK( trianglesComplete( 67 ) == I64( 67 ) * 66 * 65 / 6 );
+ CHECK( trianglesComplete( 2 ) == 0 && trianglesComplete( 3 ) == 1 );
  CHECK_THROWS( trianglesComplete( -1 ) , contract_violation );
+ CHECK_THROWS( trianglesComplete( 68 ) , contract_violation );
  }
 
 // the matrix and the lists against hasEdge() on all the triples, on random
@@ -3001,6 +3238,15 @@ ADS_TEST( "collezioni-09-grafi-1-14" )
    CHECK( d[ v ] == ( e[ v ] == INF ? -1 : e[ v ] ) );
   }
  CHECK_THROWS( bfsMatrix( Adj() , 0 ) , contract_violation );
+ // one node, a node with no arc out (only itself), r out of the rows
+ const Adj two = { { 0 , 0 } , { 1 , 0 } };
+ CHECK( bfsMatrix( Adj( 1 , std::vector< int >( 1 , 0 ) ) , 0 ) ==
+        std::pair( std::vector< int >( 1 , 0 ) ,
+                   std::vector< int >( 1 , 0 ) ) );
+ CHECK( bfsMatrix( two , 0 ).second == std::vector< int >( { 0 , -1 } ) );
+ CHECK( bfsMatrix( two , 1 ).first == std::vector< int >( { 1 , 0 } ) );
+ CHECK_THROWS( bfsMatrix( two , 2 ) , contract_violation );
+ CHECK_THROWS( bfsMatrix( two , -1 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3035,7 +3281,9 @@ int treeCount( const G & g )
  }
 
 // random forests with some edges more against the components of cc() of
-// the library, each a tree if its edges are one less than its nodes
+// the library, each a tree if its edges are one less than its nodes; no
+// node, isolated nodes, a cycle, a cycle beside a path; an oriented graph
+// refused
 ADS_TEST( "collezioni-09-grafi-1-15" )
 {
  std::mt19937 g( 915 );
@@ -3058,6 +3306,14 @@ ADS_TEST( "collezioni-09-grafi-1-15" )
   }
  CHECK( treeCount( ListGraph<>( 0 , false ) ) == 0 );
  CHECK( treeCount( ListGraph<>( 7 , false ) ) == 7 );   // isolated nodes
+ // a cycle (no tree), a cycle beside a path (one tree), an oriented graph
+ // refused
+ const ListGraph<> cyc = makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
+                                    false );
+ CHECK( treeCount( cyc ) == 0 );
+ CHECK( treeCount( makeGraph( 6 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
+                                    { 3 , 4 } , { 4 , 5 } } , false ) ) == 1 );
+ CHECK_THROWS( treeCount( ListGraph<>( 2 , true ) ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3081,7 +3337,9 @@ double averageDistance( const G & g , int s )
  }
 
 // the path A - B - C: 1 from B, 1.5 from A and C; random connected graphs
-// against the rows of floydWarshall() of the library
+// against the rows of floydWarshall() of the library; two nodes, a star
+// from its center and from a leaf; one node, a graph not connected, s out
+// of the graph refused
 ADS_TEST( "collezioni-09-grafi-1-16" )
 {
  const ListGraph<> P = makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
@@ -3106,6 +3364,17 @@ ADS_TEST( "collezioni-09-grafi-1-16" )
   }
  CHECK_THROWS( averageDistance( ListGraph<>( 1 , false ) , 0 ) ,
                contract_violation );
+ // two nodes (1), a star from its center (1) and from a leaf, and the
+ // contracts: a graph not connected, s out of the graph
+ CHECK( near( averageDistance( makeGraph( 2 , { { 0 , 1 } } , false ) , 1 ) ,
+              1 ) );
+ const ListGraph<> star = makeGraph( 5 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } ,
+                                           { 0 , 4 } } , false );
+ CHECK( near( averageDistance( star , 0 ) , 1 ) &&
+        near( averageDistance( star , 4 ) , ( 1 + 2 * 3 ) / 4.0 ) );
+ CHECK_THROWS( averageDistance( ListGraph<>( 2 , false ) , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( averageDistance( star , 5 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3207,7 +3476,7 @@ int facebook3( const G & g )
  }
 
 // random graphs against the nodes at distance 1 or 2 of distance() of the
-// library, node by node
+// library, node by node; no node, one, a star, a path, a triangle
 ADS_TEST( "collezioni-09-grafi-1-18" )
 {
  std::mt19937 g( 918 );
@@ -3225,6 +3494,14 @@ ADS_TEST( "collezioni-09-grafi-1-18" )
  ListGraph<> star( 20 , false );
  for( int i = 1 ; i < 20 ; ++i ) star.insertEdge( 0 , i );
  CHECK( facebook3( star ) == 19 && facebook3( ListGraph<>( 1 ) ) == 0 );
+ // no node, a path (the middle sees four), a triangle (no node counted
+ // twice)
+ CHECK( facebook3( ListGraph<>( 0 , false ) ) == 0 );
+ ListGraph<> path( 7 , false );
+ for( int i = 1 ; i < 7 ; ++i ) path.insertEdge( i - 1 , i );
+ CHECK( facebook3( path ) == 4 );
+ CHECK( facebook3( makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
+                              false ) ) == 2 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3256,7 +3533,9 @@ bool hasGreenCycle( const G & g , const std::vector< bool > & green )
  }
 
 // random oriented graphs and colors against hasCycle() of the library on
-// the subgraph of the green nodes
+// the subgraph of the green nodes; no node green, all green, a 2-cycle
+// with one end not green, a green ring of 500 broken by one node; colors
+// of the wrong size refused
 ADS_TEST( "collezioni-09-grafi-1-19" )
 {
  std::mt19937 g( 919 );
@@ -3278,6 +3557,18 @@ ADS_TEST( "collezioni-09-grafi-1-19" )
          hasCycle( G ) );
   }
  CHECK( cycles > 100 && cycles < 900 );
+ // a 2-cycle green, with one end not green, a long green cycle; colors of
+ // the wrong size refused
+ const ListGraph<> two = makeGraph( 2 , { { 0 , 1 } , { 1 , 0 } } , true );
+ CHECK( hasGreenCycle( two , { true , true } ) &&
+        ! hasGreenCycle( two , { true , false } ) );
+ ListGraph<> ring( 500 , true );
+ for( int i = 0 ; i < 500 ; ++i ) ring.insertEdge( i , ( i + 1 ) % 500 );
+ std::vector< bool > all( 500 , true );
+ CHECK( hasGreenCycle( ring , all ) );
+ all[ 250 ] = false;
+ CHECK( ! hasGreenCycle( ring , all ) );
+ CHECK_THROWS( hasGreenCycle( two , { true } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3301,7 +3592,8 @@ sourcesSinks( const G & g )
  return( std::pair( sources , sinks ) );
  }
 
-// random oriented graphs against the degrees of the list of their edges
+// random oriented graphs against the degrees of the list of their edges;
+// a node alone (both), a 2-cycle (neither), a path (one of each)
 ADS_TEST( "collezioni-09-grafi-1-20" )
 {
  std::mt19937 g( 920 );
@@ -3318,6 +3610,14 @@ ADS_TEST( "collezioni-09-grafi-1-20" )
    }
   CHECK( sourcesSinks( G ) == std::pair( so , si ) );
   }
+ // a node alone is both, a 2-cycle has neither, a path has one of each
+ using Ns = std::vector< int >;
+ CHECK( sourcesSinks( ListGraph<>( 1 , true ) ) ==
+        std::pair( Ns( { 0 } ) , Ns( { 0 } ) ) );
+ CHECK( sourcesSinks( makeGraph( 2 , { { 0 , 1 } , { 1 , 0 } } , true ) ) ==
+        std::pair( Ns() , Ns() ) );
+ CHECK( sourcesSinks( makeGraph( 3 , { { 2 , 1 } , { 1 , 0 } } , true ) ) ==
+        std::pair( Ns( { 2 } ) , Ns( { 0 } ) ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3373,7 +3673,8 @@ int sameDistance( const G & g , int s1 , int s2 )
  }
 
 // random oriented graphs against floydWarshall() of the library with unit
-// weights
+// weights; s1 = s2, a path from its ends, nodes reached by neither; nodes
+// out of the graph refused
 ADS_TEST( "collezioni-09-grafi-1-22" )
 {
  std::mt19937 g( 922 );
@@ -3390,6 +3691,16 @@ ADS_TEST( "collezioni-09-grafi-1-22" )
   for( int u = 0 ; u < n ; ++u ) reach += R.d[ s1 ][ u ] != INF;
   CHECK( sameDistance( G , s1 , s1 ) == reach );
   }
+ // a node unreachable from both is not counted, an undirected path from
+ // its two ends (only the middle when the length is even), nodes out of
+ // the graph refused
+ ListGraph<> path( 5 , false );
+ for( int i = 1 ; i < 5 ; ++i ) path.insertEdge( i - 1 , i );
+ CHECK( sameDistance( path , 0 , 4 ) == 1 &&
+        sameDistance( path , 0 , 3 ) == 0 );
+ CHECK( sameDistance( ListGraph<>( 3 , true ) , 0 , 1 ) == 0 );
+ CHECK_THROWS( sameDistance( path , 0 , 5 ) , contract_violation );
+ CHECK_THROWS( sameDistance( path , -1 , 0 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3421,7 +3732,7 @@ std::vector< std::string > heapsortTrace( std::string A )
 // the 25 arrays of the solution for ORDINAMENTO (the last restore, on one
 // item, changes nothing and is not shown), the end equal to heapsort() and
 // std::sort on random words; equal keys are allowed but heapsort() is not
-// stable
+// stable; the empty word, one letter, two
 ADS_TEST( "collezioni-10-heap-1-2" )
 {
  const std::vector< std::string > e = {
@@ -3450,6 +3761,11 @@ ADS_TEST( "collezioni-10-heap-1-2" )
  heapsort( P , []( const auto & x , const auto & y ) {
   return( x.first < y.first ); } );
  CHECK( P[ 0 ].second == 'b' );               // not stable
+ // the empty word (only itself), one letter (no restore, no swap), two
+ CHECK( heapsortTrace( "" ) == std::vector< std::string >( 1 , "" ) );
+ CHECK( heapsortTrace( "Q" ) == std::vector< std::string >( 1 , "Q" ) );
+ CHECK( heapsortTrace( "AB" ) ==
+        std::vector< std::string >( { "AB" , "BA" , "AB" , "AB" } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3473,7 +3789,8 @@ void maxHeapRestoreRec( std::vector< int > & A , std::size_t i ,
 
 // the iterative maxHeapRestore() of the library against the recursive one,
 // after lowering one item of a random heap, on the whole vector and on a
-// prefix
+// prefix; one item, equal items, the root down a whole path, a leaf, a
+// prefix of one; i out of the heap refused
 ADS_TEST( "collezioni-10-heap-1-4" )
 {
  std::mt19937 g( 104 );
@@ -3495,6 +3812,21 @@ ADS_TEST( "collezioni-10-heap-1-4" )
  maxHeapRestore( one , 0 , 1 );
  CHECK( one == Ints( { 5 } ) );
  CHECK_THROWS( maxHeapRestore( one , 1 , 1 ) , contract_violation );
+ // equal items (nothing moves), the root down a whole path, a leaf (no
+ // child), a dim smaller than the vector (the rest untouched)
+ Ints eq( 15 , 4 ) , path = { 0 , 9 , 8 , 7 , 6 , 5 , 4 } ,
+      cut = { 1 , 9 , 9 };
+ maxHeapRestore( eq , 0 , 15 );
+ CHECK( eq == Ints( 15 , 4 ) );
+ Ints rp = path;
+ maxHeapRestore( path , 0 , 7 );
+ maxHeapRestoreRec( rp , 0 , 7 );
+ CHECK( path == rp && isMaxHeap( path , 7 ) );
+ Ints leaf = { 1 , 5 , 6 };
+ maxHeapRestore( leaf , 2 , 3 );
+ CHECK( leaf == Ints( { 1 , 5 , 6 } ) );
+ maxHeapRestore( cut , 0 , 1 );
+ CHECK( cut == Ints( { 1 , 9 , 9 } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3504,7 +3836,8 @@ ADS_TEST( "collezioni-10-heap-1-4" )
 // the heap built by insertions, each item at the end of the heap and moved
 // up while larger than its parent [see heapBuildByInsertion() of the
 // library], is the heap of the HeapPriorityQueue of the library, with the
-// priorities negated as it keeps the minimum on top
+// priorities negated as it keeps the minimum on top; no item, one,
+// increasing and decreasing items
 ADS_TEST( "collezioni-10-heap-1-6-1" )
 {
  std::mt19937 g( 1061 );
@@ -3525,6 +3858,17 @@ ADS_TEST( "collezioni-10-heap-1-6-1" )
  Ints E;
  heapBuildByInsertion( E );
  CHECK( E.empty() );
+ // one item, increasing items (each one up to the root), decreasing ones
+ // (none moves)
+ Ints O = { 3 } , up( 7 ) , down( 7 );
+ std::iota( up.begin() , up.end() , 1 );
+ std::iota( down.rbegin() , down.rend() , 1 );
+ const Ints dn = down;
+ heapBuildByInsertion( O );
+ heapBuildByInsertion( up );
+ heapBuildByInsertion( down );
+ CHECK( O == Ints( { 3 } ) && down == dn );
+ CHECK( up == Ints( { 7 , 4 , 6 , 1 , 3 , 2 , 5 } ) && isMaxHeap( up , 7 ) );
  }
 
 // [ 4 , 7 , 9 , 10 ]: heapBuild() of the library gives [ 10 , 7 , 9 , 4 ],
@@ -3564,7 +3908,9 @@ std::vector< int > kMerge( const std::vector< std::vector< int > > & A )
  return( kWayMerge( A ) );
  }
 
-// random sorted vectors against std::sort of their concatenation
+// random sorted vectors against std::sort of their concatenation; equal
+// items, empty vectors among others, no vector, only empty ones, a single
+// one, the extremes of int; a vector not sorted refused
 ADS_TEST( "collezioni-10-heap-1-7-2" )
 {
  std::mt19937 g( 107 );
@@ -3582,6 +3928,12 @@ ADS_TEST( "collezioni-10-heap-1-7-2" )
   }
  CHECK( kMerge( { { 1 , 1 } , { 1 , 1 } } ) == Ints( 4 , 1 ) );
  CHECK( kMerge( { { 3 } , {} , { 1 , 2 } } ) == Ints( { 1 , 2 , 3 } ) );
+ CHECK( kMerge( {} ).empty() && kMerge( { {} , {} } ).empty() );
+ CHECK( kMerge( { { 1 , 5 } } ) == Ints( { 1 , 5 } ) );
+ CHECK( kMerge( { { std::numeric_limits< int >::max() } ,
+                  { std::numeric_limits< int >::min() } } ) ==
+        Ints( { std::numeric_limits< int >::min() ,
+                std::numeric_limits< int >::max() } ) );
  CHECK_THROWS( kMerge( { { 2 , 1 } , { 0 } } ) , contract_violation );
  }
 
@@ -3721,7 +4073,8 @@ int maxOfMinHeap( const std::vector< int > & A )
 
 // random min-heaps, built by heapBuild() of the library with the order
 // reversed: the leaves hold the largest item, never smaller than an
-// internal one
+// internal one; one item, two, equal items, a sorted vector; the empty
+// heap refused
 ADS_TEST( "collezioni-10-heap-1-9" )
 {
  std::mt19937 g( 109 );
@@ -3734,6 +4087,8 @@ ADS_TEST( "collezioni-10-heap-1-9" )
    CHECK( A[ i ] <= m );
   }
  CHECK( maxOfMinHeap( { 7 } ) == 7 );
+ CHECK( maxOfMinHeap( { 1 , 9 } ) == 9 && maxOfMinHeap( { 4 , 4 , 4 } ) == 4 );
+ CHECK( maxOfMinHeap( { 1 , 2 , 3 , 4 , 5 , 6 , 7 } ) == 7 );
  CHECK_THROWS( maxOfMinHeap( {} ) , contract_violation );
  }
 

@@ -775,8 +775,11 @@ Grid got( const Grid & A , int rounds = 40 , unsigned seed = 1 )
 /*-------------------- 2026-09-24, Somma di due numeri ---------------------*/
 
 /// N + M, in 64 bits
+/// \pre N + M fits in 64 bits (a signed overflow is undefined)
 inline int64_t somma( int64_t N , int64_t M )
 {
+ ADS_PRE( ( M >= 0 ) ? ( N <= std::numeric_limits< int64_t >::max() - M )
+                     : ( N >= std::numeric_limits< int64_t >::min() - M ) );
  return( N + M );
  }
 
@@ -838,7 +841,9 @@ std::optional< std::pair< int , int > > intervalli(
 /*----------------------- 2026-10-22, Funzioni ceil ------------------------*/
 
 /// for each v of V the smallest item of the sorted A larger than v, -1 if
-/// none: upperBound() of the library, O( |V| log |A| )
+/// none: upperBound() of the library, O( |V| log |A| ). The -1 of the
+/// statement, whose items are not negative, is also an answer when A has
+/// a -1, which cannot then be told apart from none
 /// \pre A is sorted
 std::vector< int > ceilLab( const std::vector< int > & V ,
                             const std::vector< int > & A )
@@ -960,11 +965,14 @@ inline RedBlackTree< int , int > redBlack( const std::vector< int > & K )
 /*----------------- 2026-11-19, Individuazione di un ciclo -----------------*/
 
 /// whether a directed graph has a cycle: hasCycle() of the library, a
-/// back edge of a depth-first visit; O( n + m )
+/// back edge of a depth-first visit; O( n + m ). The loops are refused,
+/// since arrayGraph() would leave them out and miss their cycle
 /// \pre the arcs join nodes and none is a loop
 inline bool ciclo( int n , const Arcs & A )
 {
- ADS_PRE( validArcs( n , A ) );
+ ADS_PRE( validArcs( n , A ) &&
+          std::none_of( A.begin() , A.end() , []( const Arc & a ) {
+           return( a.first == a.second ); } ) );
  return( hasCycle( arrayGraph( n , A ) ) );
  }
 
@@ -972,7 +980,8 @@ inline bool ciclo( int n , const Arcs & A )
 
 /// the number of shortest paths, in arcs, from s to t: countShortestPaths()
 /// of the library, a breadth first visit in which each node passes its
-/// count to the nodes one arc farther; O( n + m ), modulo 2^64
+/// count to the nodes one arc farther; O( n + m ), modulo 2^64; parallel
+/// arcs make distinct paths, a loop none
 /// \pre s and t are nodes, the arcs join nodes
 uint64_t numCammini( int n , const Arcs & A , int s , int t )
 {
@@ -999,7 +1008,9 @@ int componente( int n , const Arcs & A )
 /*------------------- 2026-11-26, Ordinamento topologico -------------------*/
 
 /// a topological order of a directed acyclic graph: topsort() of the
-/// library; O( n + m )
+/// library; O( n + m ). On a graph with a cycle, which has no topological
+/// order, it is still a permutation of the nodes (by decreasing finish
+/// time)
 /// \pre the arcs join nodes
 inline std::vector< int > topOrder( int n , const Arcs & A )
 {
@@ -1121,7 +1132,9 @@ uint64_t batmanBrute( int n , const Arcs & A , int s , int d )
 
 // the example of the statement, the walks of random small graphs against
 // the brute force, and a long layered acyclic graph against the count of
-// its paths layer by layer
+// its paths layer by layer; one node, no walk, one component, parallel
+// arcs, a loop, s = d in a cycle, two routes into a component; no node, s
+// or d out of the graph, an arc out of it refused
 ADS_TEST( "asdlab-batman" )
 {
  const Arcs ex = { { 0 , 10 } , { 1 , 7 } , { 2 , 0 } , { 2 , 3 } ,
@@ -1166,6 +1179,16 @@ ADS_TEST( "asdlab-batman" )
  for( uint64_t x : c )
   total += x;
  CHECK( batman( W * H + 2 , L , W * H , W * H + 1 ) == total );
+ // a loop (no enemy), s = d inside a cycle (only the empty set), two
+ // routes into one component (two sets), the contracts
+ CHECK( batman( 2 , { { 0 , 0 } , { 0 , 1 } } , 0 , 1 ) == 1 );
+ CHECK( batman( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , 1 , 1 ) == 1 );
+ CHECK( batman( 4 , { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 3 } ,
+                      { 3 , 2 } } , 0 , 3 ) == 2 );
+ CHECK_THROWS( batman( 0 , {} , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( batman( 2 , {} , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( batman( 2 , {} , -1 , 0 ) , contract_violation );
+ CHECK_THROWS( batman( 2 , { { 0 , 2 } } , 0 , 1 ) , contract_violation );
  }
 
 /*----------------------- 2014, Natale a Flatlandia ------------------------*/
@@ -1199,7 +1222,9 @@ std::vector< int > flatlandBrute( const std::string & s )
 
 // the examples of the statement and the three smallest rows of the data,
 // every row of up to 11 triangles and random rows of 13 and 15 against the
-// exhaustive search, and the mirror symmetry on rows of 199 triangles
+// exhaustive search, and the mirror symmetry on rows of 199 triangles; a
+// single triangle of either kind, the alternations; the empty row, a row
+// of even length, a character other than s and d refused
 ADS_TEST( "asdlab-flatland" )
 {
  CHECK( flatland( "sssddss" ) == std::vector< int >( { 0 , 2 , 6 } ) );
@@ -1237,6 +1262,14 @@ ADS_TEST( "asdlab-flatland" )
   CHECK( ( S == R ) && ! S.empty() );
   }
  CHECK_THROWS( flatland( "ss" ) , contract_violation );
+ // a single 'd', the alternations, and the contracts: the empty row (even)
+ // and a character other than s and d
+ CHECK( flatland( "d" ) == std::vector< int >( { 0 } ) );
+ CHECK( flatland( "sdsdsdsds" ) == flatlandBrute( "sdsdsdsds" ) );
+ CHECK( flatland( "dsdsdsdsd" ) == flatlandBrute( "dsdsdsdsd" ) );
+ CHECK_THROWS( flatland( "" ) , contract_violation );
+ CHECK_THROWS( flatland( "sxs" ) , contract_violation );
+ CHECK_THROWS( flatland( "S" ) , contract_violation );
  }
 
 /*--------------------------- 2016, Pokemon Park ---------------------------*/
@@ -1323,7 +1356,9 @@ int pokemonBrute( int m , const std::vector< unsigned > & C )
 
 // the examples of the statement, the largest K of random small graphs
 // against the backtracking and their species against all their cycles,
-// and cactus graphs whose K is the gcd of the lengths of their cycles
+// and cactus graphs whose K is the gcd of the lengths of their cycles; no
+// edge, a tree, two parallel edges, a triangle with a pendant edge; no
+// node, a loop, an edge out of the nodes refused
 ADS_TEST( "asdlab-pokemon" )
 {
  const Arcs ex = { { 0 , 1 } , { 0 , 3 } , { 0 , 4 } , { 0 , 8 } ,
@@ -1398,6 +1433,18 @@ ADS_TEST( "asdlab-pokemon" )
    }
   CHECK( pokemon( n , E ).K == int( G ) );
   }
+ // no edge, a tree (all bridges, one species), two parallel edges (a
+ // cycle of 2), a triangle with a pendant edge, and the contracts
+ CHECK( ( pokemon( 1 , {} ).K == 1 ) && pokemon( 1 , {} ).species.empty() );
+ CHECK( pokemon( 4 , { { 0 , 1 } , { 1 , 2 } , { 1 , 3 } } ).species ==
+        std::vector< int >( 3 , 0 ) );
+ const auto two = pokemon( 2 , { { 0 , 1 } , { 0 , 1 } } );
+ CHECK( ( two.K == 2 ) && ( two.species == std::vector< int >( { 0 , 1 } ) ) );
+ CHECK( pokemon( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 2 , 3 } } ).K ==
+        3 );
+ CHECK_THROWS( pokemon( 0 , {} ) , contract_violation );
+ CHECK_THROWS( pokemon( 2 , { { 1 , 1 } } ) , contract_violation );
+ CHECK_THROWS( pokemon( 2 , { { 0 , 2 } } ) , contract_violation );
  }
 
 /*--------------------- 2016, La vendetta del Re Lich ----------------------*/
@@ -1454,7 +1501,9 @@ std::vector< int > lichBrute( int n , const std::vector< WEdge > & E ,
  }
 
 // the examples of the statement, random trees against the brute force, the
-// closed formula of the unweighted path, and a long weighted path
+// closed formula of the unweighted path, and a long weighted path; one
+// node, no query, a star, the largest L; no node, L < 0, edges that are
+// not a tree refused
 ADS_TEST( "asdlab-lich" )
 {
  const std::vector< WEdge > ex1 = { { 0 , 5 , 3 } , { 1 , 10 , 7 } ,
@@ -1498,6 +1547,22 @@ ADS_TEST( "asdlab-lich" )
   E.push_back( { u - 1 , u , 1000 } );
  CHECK( lich( 3000 , E , { 0 , 7000 , 1000000 , 2999000 } ) ==
         std::vector< int >( { 2 , 16 , 2002 , 3000 } ) );
+ // one node, no query, a star (the leaves, of d 6, joined only through
+ // the center, of d 3), the largest L of 64 bits, and the contracts: no
+ // node, a negative L, edges that are not a tree
+ CHECK( lich( 1 , {} , { 0 , 5 } ) == std::vector< int >( { 1 , 1 } ) );
+ CHECK( lich( 3 , { { 0 , 1 , 2 } , { 1 , 2 , 2 } } , {} ).empty() );
+ const std::vector< WEdge > star = { { 0 , 1 , 3 } , { 0 , 2 , 3 } ,
+                                     { 0 , 3 , 3 } };
+ CHECK( lich( 4 , star , { 0 , 2 , 3 } ) ==
+        std::vector< int >( { 1 , 1 , 4 } ) );
+ CHECK( lich( 4 , star , { std::numeric_limits< int64_t >::max() } ) ==
+        std::vector< int >( 1 , 4 ) );
+ CHECK_THROWS( lich( 0 , {} , { 0 } ) , contract_violation );
+ CHECK_THROWS( lich( 1 , {} , { -1 } ) , contract_violation );
+ CHECK_THROWS( lich( 3 , { { 0 , 1 , 1 } } , { 0 } ) , contract_violation );
+ CHECK_THROWS( lich( 4 , { { 0 , 1 , 1 } , { 1 , 0 , 1 } , { 2 , 3 , 1 } } ,
+                     { 0 } ) , contract_violation );
  }
 
 /*---------------------- 2017, 007: Pioggia di laser -----------------------*/
@@ -1555,7 +1620,10 @@ bool laserPath( int n , const std::vector< Laser > & E ,
  }
 
 // the examples of the statement, random small graphs against the graph
-// expanded in time, and the edge cases
+// expanded in time, and the edge cases: one node, no edge, windows too
+// short, a long wait, the bounds of a window, an off period equal to the
+// crossing, a laser always off, parallel edges; no node, an end out of the
+// nodes, w = 0, off + on = 0, f < 0, off < w for the departure refused
 ADS_TEST( "asdlab-laser" )
 {
  const std::vector< Laser > ex1 = { { 0 , 1 , 8 , 7 , 2 , 2 } ,
@@ -1606,6 +1674,31 @@ ADS_TEST( "asdlab-laser" )
         1000100 );
  CHECK( laser( 2 , { { 0 , 1 , 2 , 0 , 2 , 3 } } ).first == 2 );
  CHECK( laserDeparture( { 0 , 1 , 2 , 0 , 3 , 3 } , 2 ) == 6 );
+ // laserDeparture() at the bounds of a window: its start, the last time
+ // that still fits, the first that does not, an off period equal to the
+ // crossing (only the start of each window), before the first off
+ const Laser e = { 0 , 1 , 2 , 5 , 4 , 6 };   // off in [ 5 + 10 k , 9 + )
+ CHECK( laserDeparture( e , 5 ) == 5 && laserDeparture( e , 7 ) == 7 );
+ CHECK( laserDeparture( e , 8 ) == 15 && laserDeparture( e , 0 ) == 5 );
+ const Laser tight = { 0 , 1 , 3 , 0 , 3 , 1 };
+ CHECK( laserDeparture( tight , 0 ) == 0 && laserDeparture( tight , 1 ) == 4 );
+ // one node with arcs, a laser always off (on = 0), parallel edges (the
+ // better one), and the contracts
+ CHECK( laser( 1 , { { 0 , 0 , 1 , 0 , 1 , 0 } } ).first == 0 );
+ CHECK( laser( 2 , { { 0 , 1 , 3 , 0 , 3 , 0 } } ).first == 3 );
+ CHECK( laser( 2 , { { 0 , 1 , 9 , 0 , 9 , 1 } ,
+                     { 0 , 1 , 2 , 0 , 2 , 50 } } ).first == 2 );
+ CHECK_THROWS( laser( 0 , {} ) , contract_violation );
+ CHECK_THROWS( laser( 2 , { { 0 , 2 , 1 , 0 , 1 , 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( laser( 2 , { { 0 , 1 , 0 , 0 , 1 , 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( laser( 2 , { { 0 , 1 , 1 , 0 , 0 , 0 } } ) ,
+               contract_violation );
+ CHECK_THROWS( laser( 2 , { { 0 , 1 , 1 , -1 , 1 , 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( laserDeparture( { 0 , 1 , 5 , 0 , 4 , 1 } , 0 ) ,
+               contract_violation );
  }
 
 /*------------------------- 2017, Assalto a Nassau -------------------------*/
@@ -1638,7 +1731,9 @@ T nassauBrute( int V , int F , int M , Make && make )
  }
 
 // the example of the statement and its print, the exact recurrence in
-// rationals and in doubles on small fleets, and the edge cases
+// rationals and in doubles on small fleets, and the edge cases: no ship
+// of a kind, no shot, all sunk, more shots than needed, one ship of each
+// with one and two shots, the largest fleets; negative counts refused
 ADS_TEST( "asdlab-nassau" )
 {
  std::ostringstream os;
@@ -1672,6 +1767,15 @@ ADS_TEST( "asdlab-nassau" )
   CHECK( ( x <= prev * ( 1 + 1e-12 ) ) && ( x > 0 ) );
   prev = x;
   }
+ // one ship of each by hand: one shot (the ship of 2 survives a hit), two
+ // shots (every order sinks one of them); shots beyond those needed to
+ // sink all, and the contracts
+ CHECK( std::abs( nassau( 1 , 1 , 1 ) - 0.5 ) < 1e-12 );
+ CHECK( std::abs( nassau( 1 , 1 , 2 ) ) < 1e-12 );
+ CHECK( nassau( 3 , 4 , 1000 ) == 0 && nassau( 0 , 0 , 0 ) == 0 );
+ CHECK_THROWS( nassau( -1 , 1 , 1 ) , contract_violation );
+ CHECK_THROWS( nassau( 1 , -1 , 1 ) , contract_violation );
+ CHECK_THROWS( nassau( 1 , 1 , -1 ) , contract_violation );
  }
 
 /*------------------------ 2017, Alpinocalypse Now -------------------------*/
@@ -1747,7 +1851,9 @@ size_t alpiniBrute( int n , const Arcs & E )
  }
 
 // the example of the statement, random small multigraphs against the
-// optimum and the official baseline, and the known graphs
+// optimum and the official baseline, and the known graphs; one node alone
+// or with a loop, two disjoint triangles with no random round; no node,
+// an edge out of the nodes, a negative number of rounds refused
 ADS_TEST( "asdlab-alpini" )
 {
  const Arcs ex = { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 2 , 3 } };
@@ -1786,6 +1892,17 @@ ADS_TEST( "asdlab-alpini" )
   CHECK( acyclicWithout( 99 , E , R ) && ( R.size() <= 97 ) );
   CHECK( R.size() <= alpiniGreedyDegree( 99 , E ) );
   }
+ // one node, alone or with its loop, two disjoint triangles, no random
+ // round, and the contracts
+ CHECK( alpini( 1 , {} ).empty() );
+ CHECK( alpini( 1 , { { 0 , 0 } } ) == std::vector< int >( { 0 } ) );
+ const Arcs tt = { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 3 , 4 } ,
+                   { 4 , 5 } , { 5 , 3 } };
+ const auto R2 = alpini( 6 , tt , 0 );
+ CHECK( ( R2.size() == 2 ) && acyclicWithout( 6 , tt , R2 ) );
+ CHECK_THROWS( alpini( 0 , {} ) , contract_violation );
+ CHECK_THROWS( alpini( 2 , { { 0 , 2 } } ) , contract_violation );
+ CHECK_THROWS( alpini( 2 , {} , -1 ) , contract_violation );
  }
 
 /*------------------ 2018, Game of (Approximated) Thrones ------------------*/
@@ -1913,7 +2030,10 @@ std::pair< Grid , int > gotInstance( std::mt19937 & g , int N , int M ,
  }
 
 // the example of the statement, random grids with a known optimum against
-// the baseline and the optimum, and the edge cases
+// the baseline and the optimum, and the edge cases: no castle, one cell,
+// a row and a column, castles 1 side by side, a castle too large for the
+// grid or filling it; an empty or ragged grid, a negative value, fewer
+// than 2 rounds refused
 ADS_TEST( "asdlab-got" )
 {
  const Grid ex = { { 0 , 0 , 0 , 6 , 0 } , { 0 , 2 , 0 , 0 , 0 } ,
@@ -1943,11 +2063,26 @@ ADS_TEST( "asdlab-got" )
  const auto [ A , opt ] = gotInstance( g , 200 , 200 , 20 );  // the largest
  const int s = gotScore( A , got( A , 3 ) );
  CHECK( ( s >= gotBaseline( A ) ) && ( s * 100 >= opt * 80 ) );
+ // a column, a castle larger than the grid, two castles 1 side by side
+ // (one only), a castle filling the grid, and the contracts
+ CHECK( gotScore( { { 2 } , { 0 } } , got( { { 2 } , { 0 } } ) ) == 1 );
+ CHECK( gotScore( { { 5 , 0 } , { 0 , 0 } } ,
+                  got( { { 5 , 0 } , { 0 , 0 } } ) ) == 0 );
+ CHECK( gotScore( { { 1 , 1 , 1 } } , got( { { 1 , 1 , 1 } } ) ) == 2 );
+ CHECK( gotScore( { { 4 , 0 } , { 0 , 0 } } ,
+                  got( { { 4 , 0 } , { 0 , 0 } } ) ) == 1 );
+ CHECK_THROWS( got( {} ) , contract_violation );
+ CHECK_THROWS( got( { {} } ) , contract_violation );
+ CHECK_THROWS( got( { { 1 , 0 } , { 0 } } ) , contract_violation );
+ CHECK_THROWS( got( { { -1 } } ) , contract_violation );
+ CHECK_THROWS( got( { { 1 } } , 1 ) , contract_violation );
  }
 
 /*-------------------- 2026-09-24, Somma di due numeri ---------------------*/
 
-// the example of the statement and random sums against the built-in one
+// the example of the statement and random sums against the built-in one;
+// zero, opposite values, the sums at the extremes of 64 bits that fit, and
+// those that overflow refused
 ADS_TEST( "asdlab-2026-lab01-somma" )
 {
  CHECK( somma( 2 , 3 ) == 5 );
@@ -1960,12 +2095,21 @@ ADS_TEST( "asdlab-2026-lab01-somma" )
  CHECK( somma( std::numeric_limits< int >::max() ,
                std::numeric_limits< int >::max() ) == 4294967294LL );
  CHECK( somma( 0 , 0 ) == 0 && somma( -7 , 7 ) == 0 );
+ // the extremes of 64 bits: sums that just fit, and those that overflow
+ const int64_t M = std::numeric_limits< int64_t >::max() ,
+               m = std::numeric_limits< int64_t >::min();
+ CHECK( somma( M , m ) == -1 && somma( M , 0 ) == M && somma( m , 0 ) == m );
+ CHECK( somma( M - 5 , 5 ) == M && somma( m + 5 , -5 ) == m );
+ CHECK_THROWS( somma( M , 1 ) , contract_violation );
+ CHECK_THROWS( somma( m , -1 ) , contract_violation );
+ CHECK_THROWS( somma( M / 2 + 1 , M / 2 + 1 ) , contract_violation );
  }
 
 /*--------------- 2026-09-24, Sottosequenza di somma massima ---------------*/
 
 // the example of the statement and random vectors against the sums of all
-// the runs
+// the runs; empty, all negative, all equal, large sums, one item, the best
+// run at either end, a negative item worth crossing or not, INT64_MIN
 ADS_TEST( "asdlab-2026-lab01-sottoseq" )
 {
  CHECK( sottoseq( { 3 , -2 , 4 , 1 , 5 } ) == 11 );
@@ -1986,12 +2130,21 @@ ADS_TEST( "asdlab-2026-lab01-sottoseq" )
  CHECK( sottoseq( { 7 , 7 , 7 } ) == 21 );
  CHECK( sottoseq( std::vector< int64_t >( 100000 , 1000000000 ) ) ==
         100000LL * 1000000000LL );
+ // one item, positive or not; the best run at either end; a negative
+ // item worth crossing and one that is not; the smallest of 64 bits
+ CHECK( sottoseq( { 9 } ) == 9 && sottoseq( { -9 } ) == 0 );
+ CHECK( sottoseq( { 5 , -10 , 1 , 1 } ) == 5 );
+ CHECK( sottoseq( { 1 , 1 , -10 , 5 } ) == 5 );
+ CHECK( sottoseq( { 4 , -3 , 4 } ) == 5 && sottoseq( { 4 , -5 , 4 } ) == 4 );
+ CHECK( sottoseq( { std::numeric_limits< int64_t >::min() , 3 } ) == 3 );
  }
 
 /*--------------- 2026-09-24, Sottomatrice di somma massima ----------------*/
 
 // the example of the statement and random matrices against the sums of
-// all the rectangles by prefix sums
+// all the rectangles by prefix sums; all negative, one cell, all equal, no
+// row, rows of no column, one row, one column, the best in a corner; a
+// ragged matrix refused
 ADS_TEST( "asdlab-2026-lab01-sottomat" )
 {
  CHECK( sottomat( { { 2 , -9 , 2 , 3 } , { 1 , 4 , 5 , 1 } ,
@@ -2022,11 +2175,22 @@ ADS_TEST( "asdlab-2026-lab01-sottomat" )
  CHECK( sottomat( { { 5 } } ) == 5 );
  CHECK( sottomat( std::vector< std::vector< int64_t > >(
          100 , std::vector< int64_t >( 100 , 3 ) ) ) == 30000 );
+ // no row, rows of no column, one row and one column (the 1D problem),
+ // the best rectangle in a corner, a ragged matrix refused
+ using M64 = std::vector< std::vector< int64_t > >;
+ CHECK( sottomat( M64() ) == 0 && sottomat( M64( 3 ) ) == 0 );
+ CHECK( sottomat( M64( { { 4 , -3 , 4 } } ) ) == 5 );
+ CHECK( sottomat( M64( { { 4 } , { -5 } , { 4 } } ) ) == 4 );
+ CHECK( sottomat( M64( { { -1 , -1 , -1 } , { -1 , 2 , 3 } ,
+                         { -1 , 3 , 4 } } ) ) == 12 );
+ CHECK_THROWS( sottomat( M64( { { 1 , 2 } , { 3 } } ) ) , contract_violation );
  }
 
 /*-------------------------- 2026-10-22, Sorting ---------------------------*/
 
-// random vectors against std::sort, and the edge cases
+// random vectors against std::sort, and the edge cases: empty, one item,
+// equal items, a large vector, two items, reversed and sorted input, the
+// extremes of int
 ADS_TEST( "asdlab-2026-lab02-sort" )
 {
  std::mt19937 g( 1 );
@@ -2051,6 +2215,21 @@ ADS_TEST( "asdlab-2026-lab02-sort" )
  sortLab( big );
  std::sort( sb.begin() , sb.end() );
  CHECK( big == sb );
+ // two items, reversed, already sorted, the extremes of int
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ std::vector< int > two = { 2 , 1 } , rev( 1000 ) , ext = { hi , 0 , lo , hi ,
+                                                            lo };
+ std::iota( rev.rbegin() , rev.rend() , -500 );
+ auto srt = rev;
+ std::sort( srt.begin() , srt.end() );
+ sortLab( two );
+ sortLab( rev );
+ sortLab( ext );
+ CHECK( two == std::vector< int >( { 1 , 2 } ) && rev == srt );
+ sortLab( rev );
+ CHECK( rev == srt );
+ CHECK( ext == std::vector< int >( { lo , lo , 0 , hi , hi } ) );
  }
 
 /*------------------------- 2026-10-22, Intervalli -------------------------*/
@@ -2085,7 +2264,9 @@ std::optional< std::pair< int , int > > intervalliBrute( const Intervals & I )
  return( best );
  }
 
-// the brute force on random small intervals, and the edge cases
+// the brute force on random small intervals, and the edge cases: one
+// interval, touching ones, points, far apart, nested, negative ends, a tie
+// (the first gap), any order; no interval and a reversed one refused
 ADS_TEST( "asdlab-2026-lab02-intervalli" )
 {
  using P = std::vector< std::pair< int , int > >;
@@ -2107,11 +2288,23 @@ ADS_TEST( "asdlab-2026-lab02-intervalli" )
  CHECK( intervalli( P( { { 0 , 1 } , { 1000000000 , 1000000000 } } ) ) ==
         std::pair( 1 , 1000000000 ) );
  CHECK_THROWS( intervalli( P() ) , contract_violation );
+ // nested intervals, negative ends, a tie between two gaps (the first),
+ // intervals given in any order, and one reversed refused
+ CHECK( ! intervalli( P( { { 0 , 10 } , { 2 , 3 } , { 4 , 9 } } ) ) );
+ CHECK( intervalli( P( { { -9 , -7 } , { -3 , -1 } } ) ) ==
+        std::pair( -7 , -3 ) );
+ CHECK( intervalli( P( { { 0 , 1 } , { 3 , 4 } , { 6 , 7 } } ) ) ==
+        std::pair( 1 , 3 ) );
+ CHECK( intervalli( P( { { 6 , 7 } , { 0 , 1 } , { 3 , 4 } } ) ) ==
+        std::pair( 1 , 3 ) );
+ CHECK_THROWS( intervalli( P( { { 3 , 1 } } ) ) , contract_violation );
  }
 
 /*----------------------- 2026-10-22, Funzioni ceil ------------------------*/
 
-// random queries against a linear scan, and the edge cases
+// random queries against a linear scan, and the edge cases: no item, no
+// query, equal items, v below all or equal to the largest, the -1 of an
+// item; A not sorted refused
 ADS_TEST( "asdlab-2026-lab02-ceil" )
 {
  CHECK( ceilLab( { 1 , 5 , 9 } , { 2 , 2 , 5 , 6 } ) ==
@@ -2143,6 +2336,12 @@ ADS_TEST( "asdlab-2026-lab02-ceil" )
  CHECK( ceilLab( {} , { 1 } ).empty() );
  CHECK( ceilLab( { 4 , 3 } , std::vector< int >( 9 , 4 ) ) ==
         std::vector< int >( { -1 , 4 } ) );
+ // v below all, equal to the largest, between two equal runs; the -1 of
+ // an item and of none look the same (see ceilLab()); A not sorted refused
+ CHECK( ceilLab( { -100 , 9 , 5 } , { 1 , 5 , 5 , 7 , 9 } ) ==
+        std::vector< int >( { 1 , -1 , 7 } ) );
+ CHECK( ceilLab( { -2 , -1 } , { -1 } ) == std::vector< int >( { -1 , -1 } ) );
+ CHECK_THROWS( ceilLab( { 1 } , { 2 , 1 } ) , contract_violation );
  }
 
 /*--------------------- 2026-10-22, Ordinamento pesato ---------------------*/
@@ -2194,7 +2393,9 @@ std::pair< int , int64_t > sortpesatoBrute( const std::vector< int > & A )
  }
 
 // every permutation of up to 6 items and random ones of 7 against the
-// search, and the edge cases
+// search, and the edge cases: empty, one item, sorted, two, the reversal,
+// a cycle cheaper through the item 1, a rotation of 10^5; items that are
+// not a permutation of 1 .. n refused
 ADS_TEST( "asdlab-2026-lab02-sortpesato" )
 {
  for( int n = 1 ; n <= 6 ; ++n ) {
@@ -2225,6 +2426,14 @@ ADS_TEST( "asdlab-2026-lab02-sortpesato" )
  CHECK( sortpesato( big ) == std::pair( 99999 , int64_t( 5000050000LL ) +
                                         99998 ) );
  CHECK_THROWS( sortpesato( { 1 , 1 } ) , contract_violation );
+ // one item, sorted already, the reversal (n / 2 swaps of two), and items
+ // that are not 1 .. n refused
+ CHECK( sortpesato( { 1 } ) == std::pair( 0 , int64_t( 0 ) ) );
+ CHECK( sortpesato( { 1 , 2 , 3 , 4 } ) == std::pair( 0 , int64_t( 0 ) ) );
+ CHECK( sortpesato( { 4 , 3 , 2 , 1 } ) ==
+        std::pair( 2 , int64_t( 4 + 1 + 3 + 2 ) ) );
+ CHECK_THROWS( sortpesato( { 0 , 1 } ) , contract_violation );
+ CHECK_THROWS( sortpesato( { 2 , 3 } ) , contract_violation );
  }
 
 /*-------------------- 2026-10-29, Visita di un albero ---------------------*/
@@ -2259,7 +2468,9 @@ Visits visitaAlberoBrute( const std::vector< int > & P , int r )
  return( V );
  }
 
-// random trees, binary ones among them, against the visits by stacks
+// random trees, binary ones among them, against the visits by stacks; one
+// node, a path of 2000, a root other than 0, a star; no node, a root with
+// a parent, a parent out of the nodes refused
 ADS_TEST( "asdlab-2026-lab03-visita-albero" )
 {
  // a root 0 with children 1 and 2, the node 1 with the children 3 and 4
@@ -2292,12 +2503,23 @@ ADS_TEST( "asdlab-2026-lab03-visita-albero" )
  const auto C = visitaAlbero( chain , 0 );
  CHECK( ( C.pre.front() == 0 ) && ( C.post.front() == 1999 ) &&
         ( C.in.front() == 1999 ) );
+ // a root that is not node 0, a star (the root after its first child in
+ // order), and the contracts: no root, a root with a parent, a parent out
+ // of the nodes
+ const auto S = visitaAlbero( { 2 , 2 , -1 , 2 } , 2 );
+ CHECK( ( S.pre == std::vector< int >( { 2 , 0 , 1 , 3 } ) ) &&
+        ( S.in == std::vector< int >( { 0 , 2 , 1 , 3 } ) ) &&
+        ( S.post == std::vector< int >( { 0 , 1 , 3 , 2 } ) ) );
+ CHECK_THROWS( visitaAlbero( {} , 0 ) , contract_violation );
+ CHECK_THROWS( visitaAlbero( { -1 , 0 } , 1 ) , contract_violation );
+ CHECK_THROWS( visitaAlbero( { -1 , 5 } , 0 ) , contract_violation );
  }
 
 /*----------------- 2026-10-29, Visita di grafo orientato ------------------*/
 
 // the examples of the graphs of the statement, random graphs against the
-// closure, and the edge cases
+// closure, and the edge cases: one node, a path of 10^5 from either end,
+// loops and parallel arcs; s or an arc out of the nodes refused
 ADS_TEST( "asdlab-2026-lab03-visita-grafo" )
 {
  const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 4 , 3 } , { 4 , 5 } ,
@@ -2321,6 +2543,11 @@ ADS_TEST( "asdlab-2026-lab03-visita-grafo" )
   P.emplace_back( u , u + 1 );
  CHECK( visitaGrafo( 100000 , P , 0 ) == 100000 );
  CHECK( visitaGrafo( 100000 , P , 99999 ) == 1 );
+ // loops and parallel arcs (each node once), and the contracts
+ CHECK( visitaGrafo( 2 , { { 0 , 0 } , { 0 , 1 } , { 0 , 1 } } , 0 ) == 2 );
+ CHECK_THROWS( visitaGrafo( 2 , {} , 2 ) , contract_violation );
+ CHECK_THROWS( visitaGrafo( 2 , {} , -1 ) , contract_violation );
+ CHECK_THROWS( visitaGrafo( 2 , { { 0 , 3 } } , 0 ) , contract_violation );
  }
 
 /*-------------- 2026-10-29, Diametro su grafo non orientato ---------------*/
@@ -2348,7 +2575,8 @@ int diametroBrute( int n , const Arcs & E )
  }
 
 // the graph of the statement, random graphs against Floyd-Warshall, and
-// the edge cases
+// the edge cases: one node, no edge, a path of 1500, two components, a
+// cycle, parallel edges; no node, an edge out of the nodes refused
 ADS_TEST( "asdlab-2026-lab03-diametro" )
 {
  const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 4 , 3 } , { 4 , 5 } ,
@@ -2365,6 +2593,15 @@ ADS_TEST( "asdlab-2026-lab03-diametro" )
  for( int u = 0 ; u + 1 < 1500 ; ++u )
   P.emplace_back( u , u + 1 );
  CHECK( diametro( 1500 , P ) == 1499 );
+ // two components (the largest of their diameters), a cycle, parallel
+ // edges, and the contracts
+ CHECK( diametro( 7 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } , { 4 , 5 } } ) ==
+        3 );
+ CHECK( diametro( 6 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 4 } ,
+                        { 4 , 5 } , { 5 , 0 } } ) == 3 );
+ CHECK( diametro( 2 , { { 0 , 1 } , { 1 , 0 } , { 0 , 1 } } ) == 1 );
+ CHECK_THROWS( diametro( 0 , {} ) , contract_violation );
+ CHECK_THROWS( diametro( 2 , { { 0 , 2 } } ) , contract_violation );
  }
 
 /*---------------------- 2026-11-19, Alberi Red-Black ----------------------*/
@@ -2478,7 +2715,9 @@ std::pair< std::vector< std::pair< int , bool > > , bool > redBlackCheck(
  }
 
 // random, sorted and reversed insertions: the constraints of the tree of
-// the library, and its shape and colours against the insertion of CLRS
+// the library, and its shape and colours against the insertion of CLRS;
+// no key, one, two, three, 3000 in order, repeated keys, the extremes of
+// int
 ADS_TEST( "asdlab-2026-lab04-red-black" )
 {
  std::mt19937 g( 1 );
@@ -2504,6 +2743,20 @@ ADS_TEST( "asdlab-2026-lab04-red-black" )
  std::iota( big.begin() , big.end() , 1 );
  const auto [ b , bok ] = redBlackCheck( redBlack( big ) );
  CHECK( bok && ( b == redBlackOther( big ) ) );
+ // two and three keys in order (a red child, then a rotation), a key
+ // inserted again (one node, its value replaced), the extremes of int
+ const auto [ t2 , ok2 ] = redBlackCheck( redBlack( { 1 , 2 } ) );
+ CHECK( ok2 && ( t2 == std::vector< std::pair< int , bool > >( {
+         { 1 , false } , { 2 , true } } ) ) );
+ const auto [ t3 , ok3 ] = redBlackCheck( redBlack( { 1 , 2 , 3 } ) );
+ CHECK( ok3 && ( t3 == std::vector< std::pair< int , bool > >( {
+         { 2 , false } , { 1 , true } , { 3 , true } } ) ) );
+ const auto [ d , dok ] = redBlackCheck( redBlack( { 5 , 3 , 5 , 3 , 5 } ) );
+ CHECK( dok && ( d.size() == 2 ) );
+ const int lo = std::numeric_limits< int >::min() ,
+           hi = std::numeric_limits< int >::max();
+ const auto [ x , xok ] = redBlackCheck( redBlack( { hi , lo , 0 } ) );
+ CHECK( xok && ( x == redBlackOther( { hi , lo , 0 } ) ) );
  }
 
 /*----------------- 2026-11-19, Individuazione di un ciclo -----------------*/
@@ -2532,7 +2785,10 @@ std::pair< bool , std::vector< int > > kahn( int n , const Arcs & A )
  }
 
 // connected graphs with at most one cycle (a tree and maybe one more arc)
-// and random graphs against Kahn's removal, and the edge cases
+// and random graphs against Kahn's removal, and the edge cases: one node,
+// two arcs back and forth, a cycle of 2000 and the path left without an
+// arc of it, parallel arcs, a cycle apart, no arc; a loop and an arc out
+// of the nodes refused
 ADS_TEST( "asdlab-2026-lab04-ciclo" )
 {
  const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 4 , 3 } , { 4 , 5 } ,
@@ -2571,6 +2827,13 @@ ADS_TEST( "asdlab-2026-lab04-ciclo" )
  CHECK( ciclo( 2000 , R ) );
  R.pop_back();
  CHECK( ! ciclo( 2000 , R ) );
+ // parallel arcs (no cycle), a cycle in a part apart, no arc, a loop and
+ // an arc out of the nodes refused
+ CHECK( ! ciclo( 2 , { { 0 , 1 } , { 0 , 1 } } ) );
+ CHECK( ciclo( 5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } , { 4 , 2 } } ) );
+ CHECK( ! ciclo( 4 , {} ) );
+ CHECK_THROWS( ciclo( 1 , { { 0 , 0 } } ) , contract_violation );
+ CHECK_THROWS( ciclo( 2 , { { 0 , 2 } } ) , contract_violation );
  }
 
 /*------------------ 2026-11-19, Numero di cammini minimi ------------------*/
@@ -2601,7 +2864,9 @@ uint64_t numCamminiBrute( int n , const Arcs & A , int s , int t )
  }
 
 // random graphs against the simple paths, a lattice with a binomial
-// number of paths, and the edge cases
+// number of paths, and the edge cases: t not reached, one node, s = t on
+// a cycle, parallel arcs, a loop, a longer path; s, t or an arc out of
+// the nodes refused
 ADS_TEST( "asdlab-2026-lab04-numcammini" )
 {
  const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 3 } ,
@@ -2630,12 +2895,25 @@ ADS_TEST( "asdlab-2026-lab04-numcammini" )
  for( int i = 1 ; i <= k - 1 ; ++i )
   binom = binom * uint64_t( k - 1 + i ) / uint64_t( i );
  CHECK( numCammini( k * k , L , 0 , k * k - 1 ) == binom );
+ // s = t on a cycle (the empty path only), parallel arcs (two paths), a
+ // loop (none), a longer path ignored, and the contracts
+ CHECK( numCammini( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , 1 , 1 ) ==
+        1 );
+ CHECK( numCammini( 2 , { { 0 , 1 } , { 0 , 1 } } , 0 , 1 ) == 2 );
+ CHECK( numCammini( 2 , { { 0 , 0 } , { 0 , 1 } } , 0 , 1 ) == 1 );
+ CHECK( numCammini( 3 , { { 0 , 2 } , { 0 , 1 } , { 1 , 2 } } , 0 , 2 ) ==
+        1 );
+ CHECK_THROWS( numCammini( 2 , {} , 0 , 2 ) , contract_violation );
+ CHECK_THROWS( numCammini( 2 , {} , -1 , 0 ) , contract_violation );
+ CHECK_THROWS( numCammini( 2 , { { 2 , 0 } } , 0 , 1 ) ,
+               contract_violation );
  }
 
 /*--------------- 2026-11-26, Componente fortemente connessa ---------------*/
 
 // random graphs against the mutual reachability of the closure, and the
-// edge cases
+// edge cases: one node, no arc, a cycle of 3000, two components joined one
+// way, a loop; no node, an arc out of the nodes refused
 ADS_TEST( "asdlab-2026-lab05-componente" )
 {
  const Arcs g2 = { { 0 , 2 } , { 0 , 4 } , { 1 , 4 } , { 3 , 2 } ,
@@ -2660,12 +2938,21 @@ ADS_TEST( "asdlab-2026-lab05-componente" )
  for( int u = 0 ; u < 3000 ; ++u )
   R.emplace_back( u , ( u + 1 ) % 3000 );
  CHECK( componente( 3000 , R ) == 3000 );
+ // two components of 2 and 3 joined one way, a loop alone, and the
+ // contracts
+ CHECK( componente( 5 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } , { 3 , 4 } ,
+                          { 4 , 2 } , { 1 , 2 } } ) == 3 );
+ CHECK( componente( 2 , { { 0 , 0 } } ) == 1 );
+ CHECK_THROWS( componente( 0 , {} ) , contract_violation );
+ CHECK_THROWS( componente( 2 , { { 0 , 5 } } ) , contract_violation );
  }
 
 /*------------------- 2026-11-26, Ordinamento topologico -------------------*/
 
 // random acyclic graphs: the order has every node once and every arc
-// forward, and the edge cases
+// forward, and the edge cases: one node, a reversed path, no arc,
+// parallel arcs, a cycle (still a permutation); an arc out of the nodes
+// refused
 ADS_TEST( "asdlab-2026-lab05-toporder" )
 {
  std::mt19937 g( 1 );
@@ -2686,6 +2973,18 @@ ADS_TEST( "asdlab-2026-lab05-toporder" )
  CHECK( topOrder( 1 , {} ) == std::vector< int >( { 0 } ) );
  CHECK( topOrder( 3 , { { 2 , 1 } , { 1 , 0 } } ) ==
         std::vector< int >( { 2 , 1 , 0 } ) );
+ // no arc (any permutation), parallel arcs, a graph with a cycle (still a
+ // permutation, see topOrder()), an arc out of the nodes refused
+ auto perm = []( std::vector< int > S , int n ) {
+  std::sort( S.begin() , S.end() );
+  std::vector< int > I( n );
+  std::iota( I.begin() , I.end() , 0 );
+  return( S == I ); };
+ CHECK( perm( topOrder( 5 , {} ) , 5 ) );
+ CHECK( topOrder( 2 , { { 1 , 0 } , { 1 , 0 } } ) ==
+        std::vector< int >( { 1 , 0 } ) );
+ CHECK( perm( topOrder( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ) , 3 ) );
+ CHECK_THROWS( topOrder( 2 , { { 0 , 2 } } ) , contract_violation );
  }
 
 /*--------------------- 2026-11-26, Cammino piu' lungo ---------------------*/
@@ -2699,7 +2998,9 @@ int longestFrom( int u , const std::vector< std::vector< int > > & adj )
  return( best );
  }
 
-// random acyclic graphs against all the paths, and the edge cases
+// random acyclic graphs against all the paths, and the edge cases: no
+// node, one, no arc, a path of 3000, parallel arcs, a shortcut; a cycle
+// and an arc out of the nodes refused
 ADS_TEST( "asdlab-2026-lab05-camminolungo" )
 {
  CHECK( camminoLungo( 5 , { { 0 , 1 } , { 1 , 2 } , { 0 , 3 } , { 3 , 4 } ,
@@ -2723,6 +3024,13 @@ ADS_TEST( "asdlab-2026-lab05-camminolungo" )
  CHECK( camminoLungo( 3000 , P ) == 2999 );
  CHECK_THROWS( camminoLungo( 2 , { { 0 , 1 } , { 1 , 0 } } ) ,
                contract_violation );
+ // no node, parallel arcs (one arc), a shortcut beside a longer path, an
+ // arc out of the nodes refused
+ CHECK( camminoLungo( 0 , {} ) == 0 );
+ CHECK( camminoLungo( 2 , { { 0 , 1 } , { 0 , 1 } } ) == 1 );
+ CHECK( camminoLungo( 4 , { { 0 , 3 } , { 0 , 1 } , { 1 , 2 } ,
+                            { 2 , 3 } } ) == 3 );
+ CHECK_THROWS( camminoLungo( 2 , { { 0 , 2 } } ) , contract_violation );
  }
 
 }  // end( namespace )

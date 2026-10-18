@@ -102,22 +102,22 @@ class FlowNetwork {
 
  /// the edge ( u , v ) of capacity c, and its number
  /// \pre u and v are nodes, c >= 0
- int addEdge( int u , int v , long c );
+ int addEdge( int u , int v , long long c );
 
  /// the flow on the edge number e
  /// \pre e is the number of an edge
- [[nodiscard]] long flow( int e ) const;
+ [[nodiscard]] long long flow( int e ) const;
 
  /// the capacity of the edge number e
  /// \pre e is the number of an edge
- [[nodiscard]] long capacity( int e ) const;
+ [[nodiscard]] long long capacity( int e ) const;
 
  /// the maximum flow from s to t, starting from the flow there is; the
  /// augmenting paths found go to *paths, if given
  /// \pre s and t are distinct nodes
  /// \post no augmenting path from s to t (audit)
- long maxFlow( int s , int t , Augment how = Augment::DINIC ,
-               long * paths = nullptr );
+ long long maxFlow( int s , int t , Augment how = Augment::DINIC ,
+                    long long * paths = nullptr );
 
  /// the side S of a minimum cut, the nodes reached from s in the residual
  /// network, after maxFlow()
@@ -127,25 +127,25 @@ class FlowNetwork {
 /*--------------------------------------------------------------------------*/
  private:
 
- struct Edge { int to; long cap , flow; };
+ struct Edge { int to; long long cap , flow; };
 
- static constexpr long INF = std::numeric_limits< long >::max();
+ static constexpr long long INF = std::numeric_limits< long long >::max();
 
- long residual( int e ) const;
+ long long residual( int e ) const;
 
- void push( int e , long d );
+ void push( int e , long long d );
 
  /// one augmenting path by a breadth first visit
- long bfsAugment( int s , int t );
+ long long bfsAugment( int s , int t );
 
  /// one augmenting path by a depth first visit, iterative
- long dfsAugment( int s , int t );
+ long long dfsAugment( int s , int t );
 
  /// the levels of the breadth first visit from s; true if t is reached
  bool levels( int s , int t );
 
  /// a path of the levels from u to t, of at most d units
- long blocking( int u , int t , long d );
+ long long blocking( int u , int t , long long d );
 
  /// each edge and its twin carry opposite flows within their capacities
  [[nodiscard]] bool skewSymmetric( void ) const;
@@ -158,14 +158,14 @@ class FlowNetwork {
  };  // end( class FlowNetwork )
 
 /// an edge ( u , v ) with lower and upper bounds on its flow
-struct BoundedEdge { int u , v; long low , high; };
+struct BoundedEdge { int u , v; long long low , high; };
 
 /// whether the edges admit a circulation, a flow conserved at every node
 /// with low <= f( e ) <= high; then the flows in *flows, if given
 /// \pre n >= 0, the ends of the edges in [ 0 , n )
 /// \post the flows given are within the bounds and conserved (audit)
 inline bool feasibleCirculation( int n , const std::vector< BoundedEdge > & E ,
-                                 std::vector< long > * flows = nullptr );
+                                 std::vector< long long > * flows = nullptr );
 
 /*--------------------------------------------------------------------------*/
 

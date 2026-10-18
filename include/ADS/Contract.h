@@ -114,12 +114,14 @@ namespace detail {
 namespace detail {
 
 /// a == b if T has an equality, true otherwise: a postcondition that
-/// compares items does not restrict the types of the items
+/// compares items does not restrict the types of the items; two items
+/// unequal to themselves (e.g., two NaN) are equal here, so that a NaN can
+/// be stored
 template< class T >
 bool equal( const T & a , const T & b )
 {
  if constexpr( std::equality_comparable< T > )
-  return( a == b );
+  return( ( a == b ) || ( !( a == a ) && !( b == b ) ) );
  else
   return( true );
  }

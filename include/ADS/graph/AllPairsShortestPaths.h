@@ -16,7 +16,9 @@
  * Theta( n^3 ) time and Theta( n^2 ) space, with costs of any sign; there
  * is a negative cycle through u if and only if d[ u ][ u ] < 0, and then
  * negativeCycle is true. The row u of p is the tree of the shortest paths
- * from u, as a vector of parents.
+ * from u, as a vector of parents. The matrices have bound() rows, and those
+ * of a deleted node, its column and its place on the diagonal too, stay at
+ * \f$ +\infty \f$ and NIL.
  *
  * addEdge() updates d and p after the insertion of an edge ( a , b ) of
  * cost w in O( n^2 ), since a path that improves goes through it once:
