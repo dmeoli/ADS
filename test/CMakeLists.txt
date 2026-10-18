@@ -23,6 +23,10 @@ foreach (line IN LISTS lines)
         target_compile_options(${program} PRIVATE
                 $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>
                 $<$<CXX_COMPILER_ID:MSVC>:/W3 /bigobj /permissive- /utf-8>)
+        # the stack of Linux, 8 MB, for the recursive solutions of the
+        # exercises on chains of 10^4 nodes (1 MB by default on Windows)
+        target_link_options(${program} PRIVATE
+                $<$<CXX_COMPILER_ID:MSVC>:/STACK:8388608>)
         add_test(NAME ${program}.registry
                  COMMAND ${CMAKE_COMMAND}
                          -DPROGRAM=$<TARGET_FILE:${program}>
