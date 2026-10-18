@@ -86,7 +86,7 @@ inline std::string board( const std::vector< int > & Q );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/backtrack/NQueens.tpp"
+#include "ADS/backtrack/impl/NQueens.tpp"
 
 /*--------------------------------------------------------------------------*/
 

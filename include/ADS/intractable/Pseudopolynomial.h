@@ -149,7 +149,7 @@ inline std::optional< std::vector< int > > bottino(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/intractable/Pseudopolynomial.tpp"
+#include "ADS/intractable/impl/Pseudopolynomial.tpp"
 
 /*--------------------------------------------------------------------------*/
 

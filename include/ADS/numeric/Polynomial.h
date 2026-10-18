@@ -113,7 +113,7 @@ std::vector< T > multiplyKaratsuba( const std::vector< T > & p ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/numeric/Polynomial.tpp"
+#include "ADS/numeric/impl/Polynomial.tpp"
 
 /*--------------------------------------------------------------------------*/
 

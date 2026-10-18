@@ -1,16 +1,18 @@
 #############################################################################
 #                                 Doxyfile                                  #
 #                                                                           #
-# The documentation of ADS: the headers of include/ and the definitions of  #
-# src/, with the README as the main page and the formulae by MathJax. The   #
-# workflow .github/workflows/docs.yml builds it and publishes it on the     #
-# pages of the repository; locally, doxygen writes it to build-docs/html.   #
+# The API reference of ADS: the headers of include/ with the definitions    #
+# of impl/, the README as the main page, the formulae by MathJax and the    #
+# theme doxygen-awesome-css (in build-docs/awesome), which the workflow     #
+# docs.yml clones before it builds this and the MkDocs site; the            #
+# reference goes to build-docs/api and is published under /api/ of the      #
+# pages of the repository.                                                  #
 #############################################################################
 
 PROJECT_NAME           = ADS
 PROJECT_BRIEF          = "Algorithms and Data Structures"
 OUTPUT_DIRECTORY       = build-docs
-INPUT                  = README.md include src
+INPUT                  = README.md include
 FILE_PATTERNS          = *.h *.tpp *.md
 EXTENSION_MAPPING      = tpp=C++
 RECURSIVE              = YES
@@ -20,13 +22,19 @@ EXTRACT_PRIVATE        = NO
 EXTRACT_STATIC         = YES
 HIDE_UNDOC_MEMBERS     = NO
 SOURCE_BROWSER         = YES
-STRIP_FROM_PATH        = include src
-STRIP_FROM_INC_PATH    = include src
+STRIP_FROM_PATH        = include
+STRIP_FROM_INC_PATH    = include
 FULL_PATH_NAMES        = YES
 JAVADOC_AUTOBRIEF      = YES
 BUILTIN_STL_SUPPORT    = YES
 EXCLUDE_SYMBOLS        = detail::* ADS::detail::*
 GENERATE_HTML          = YES
+HTML_OUTPUT            = api
+HTML_EXTRA_STYLESHEET  = build-docs/awesome/doxygen-awesome.css \
+                         build-docs/awesome/doxygen-awesome-sidebar-only.css
+HTML_COLORSTYLE        = LIGHT
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
 GENERATE_LATEX         = NO
 GENERATE_TREEVIEW      = YES
 USE_MATHJAX            = YES

@@ -179,7 +179,7 @@ struct CopyPhrase {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/string/SuffixApplications.tpp"
+#include "ADS/string/impl/SuffixApplications.tpp"
 
 /*--------------------------------------------------------------------------*/
 

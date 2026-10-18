@@ -175,7 +175,7 @@ inline bool feasibleCirculation( int n , const std::vector< BoundedEdge > & E ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/graph/MaxFlow.tpp"
+#include "ADS/graph/impl/MaxFlow.tpp"
 
 /*--------------------------------------------------------------------------*/
 

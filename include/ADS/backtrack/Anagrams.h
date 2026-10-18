@@ -65,7 +65,7 @@ std::set< std::string > anagrams( const std::string & s , W && word ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/backtrack/Anagrams.tpp"
+#include "ADS/backtrack/impl/Anagrams.tpp"
 
 /*--------------------------------------------------------------------------*/
 

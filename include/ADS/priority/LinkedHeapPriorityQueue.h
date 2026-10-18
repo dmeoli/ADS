@@ -185,7 +185,7 @@ class LinkedHeapPriorityQueue {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/priority/LinkedHeapPriorityQueue.tpp"
+#include "ADS/priority/impl/LinkedHeapPriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -87,7 +87,7 @@ inline std::vector< double > towers( std::vector< double > k , double d );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/optimization/Intervals.tpp"
+#include "ADS/optimization/impl/Intervals.tpp"
 
 /*--------------------------------------------------------------------------*/
 

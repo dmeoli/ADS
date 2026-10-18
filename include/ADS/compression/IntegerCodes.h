@@ -305,7 +305,7 @@ inline void encodeInterpolative( BitWriter & w ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/compression/IntegerCodes.tpp"
+#include "ADS/compression/impl/IntegerCodes.tpp"
 
 /*--------------------------------------------------------------------------*/
 

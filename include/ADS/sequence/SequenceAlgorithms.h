@@ -139,7 +139,7 @@ void removeDuplicates( S & s );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sequence/SequenceAlgorithms.tpp"
+#include "ADS/sequence/impl/SequenceAlgorithms.tpp"
 
 /*--------------------------------------------------------------------------*/
 

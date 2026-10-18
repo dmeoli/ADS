@@ -52,7 +52,7 @@ jobs:
       - name: ThreadSanitizer on the queues between threads
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
-          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Isrc -Itest \
+          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan spsc-queue
           ./tsan mpsc-inbox
@@ -69,7 +69,7 @@ jobs:
                CXXFLAGS="-std=c++20 -O0 -g --coverage -Wall -Wextra"
           lcov --capture --directory build-cov --output-file lcov.info \
                --ignore-errors mismatch,inconsistent,unused
-          lcov --extract lcov.info "$PWD/include/*" "$PWD/src/*" \
+          lcov --extract lcov.info "$PWD/include/*" \
                --output-file lcov.info --ignore-errors unused
       - uses: coverallsapp/github-action@v2
         with:

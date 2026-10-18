@@ -87,7 +87,7 @@ std::pair< S , S > globalAlignment( const S & P , const S & T ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/string/Alignment.tpp"
+#include "ADS/string/impl/Alignment.tpp"
 
 /*--------------------------------------------------------------------------*/
 

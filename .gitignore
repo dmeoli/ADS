@@ -5,6 +5,7 @@ cmake-build-*/
 build-docs/
 build-cov/
 build-bench/
+site/
 
 # IDEs
 .idea/

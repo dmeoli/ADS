@@ -241,7 +241,7 @@ class FibonacciHeapPriorityQueue {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/priority/FibonacciHeapPriorityQueue.tpp"
+#include "ADS/priority/impl/FibonacciHeapPriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

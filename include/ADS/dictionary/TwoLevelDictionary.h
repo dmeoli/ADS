@@ -141,7 +141,7 @@ class TwoLevelDictionary {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/TwoLevelDictionary.tpp"
+#include "ADS/dictionary/impl/TwoLevelDictionary.tpp"
 
 /*--------------------------------------------------------------------------*/
 

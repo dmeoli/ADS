@@ -92,7 +92,7 @@ long subsetSum( const std::vector< T > & A , T k , F && f );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/backtrack/Enumeration.tpp"
+#include "ADS/backtrack/impl/Enumeration.tpp"
 
 /*--------------------------------------------------------------------------*/
 

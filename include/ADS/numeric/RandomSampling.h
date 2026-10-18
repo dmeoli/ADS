@@ -156,7 +156,7 @@ std::vector< T > heapSampling( const std::vector< T > & S , std::size_t n ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/numeric/RandomSampling.tpp"
+#include "ADS/numeric/impl/RandomSampling.tpp"
 
 /*--------------------------------------------------------------------------*/
 

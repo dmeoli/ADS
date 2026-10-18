@@ -105,7 +105,7 @@ int editDistance( const S & P , const S & T );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/string/ApproximateMatching.tpp"
+#include "ADS/string/impl/ApproximateMatching.tpp"
 
 /*--------------------------------------------------------------------------*/
 

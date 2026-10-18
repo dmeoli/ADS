@@ -259,7 +259,7 @@ inline std::vector< int > dsatur( const Adjacency & G );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/intractable/Heuristics.tpp"
+#include "ADS/intractable/impl/Heuristics.tpp"
 
 /*--------------------------------------------------------------------------*/
 

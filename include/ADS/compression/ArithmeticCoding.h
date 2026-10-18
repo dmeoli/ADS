@@ -273,7 +273,7 @@ template< class C >
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/compression/ArithmeticCoding.tpp"
+#include "ADS/compression/impl/ArithmeticCoding.tpp"
 
 /*--------------------------------------------------------------------------*/
 

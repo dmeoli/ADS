@@ -132,7 +132,7 @@ inline std::optional< std::vector< Board > > solvePuzzle(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/intractable/FifteenPuzzle.tpp"
+#include "ADS/intractable/impl/FifteenPuzzle.tpp"
 
 /*--------------------------------------------------------------------------*/
 

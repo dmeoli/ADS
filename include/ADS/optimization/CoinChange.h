@@ -71,7 +71,7 @@ inline std::optional< long > optimalChange( const std::vector< long > & coins ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/optimization/CoinChange.tpp"
+#include "ADS/optimization/impl/CoinChange.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -123,7 +123,7 @@ class SortedArrayDictionary {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/SortedArrayDictionary.tpp"
+#include "ADS/dictionary/impl/SortedArrayDictionary.tpp"
 
 /*--------------------------------------------------------------------------*/
 

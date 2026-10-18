@@ -354,7 +354,7 @@ class OpenHashTable {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/OpenHashTable.tpp"
+#include "ADS/dictionary/impl/OpenHashTable.tpp"
 
 /*--------------------------------------------------------------------------*/
 

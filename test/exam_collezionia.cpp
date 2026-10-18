@@ -990,10 +990,11 @@ BinaryTree< T > * fromPreIn( const std::vector< T > & pre ,
   ADS_PRE( ( it != at.end() ) && ( it->second >= i ) &&
            ( it->second < i + n ) );
   const std::size_t k = it->second - i;       // the left subtree
-  auto t = new BinaryTree< T >( pre[ p ] );
+  std::unique_ptr< BinaryTree< T > > t(     // freed, with what hangs from
+   new BinaryTree< T >( pre[ p ] ) );       // it, if a contract fails below
   if( auto l = rec( p + 1 , i , k ) ) t->insertLeft( l );
   if( auto r = rec( p + 1 + k , i + k + 1 , n - 1 - k ) ) t->insertRight( r );
-  return( t );
+  return( t.release() );
   };
  return( rec( 0 , 0 , pre.size() ) );
  }

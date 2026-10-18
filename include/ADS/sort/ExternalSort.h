@@ -100,7 +100,7 @@ std::vector< T > externalSort( const std::vector< T > & input ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/ExternalSort.tpp"
+#include "ADS/sort/impl/ExternalSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -198,7 +198,7 @@ inline std::pair< long , Nodes > knapsackGreedy(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/intractable/BranchAndBound.tpp"
+#include "ADS/intractable/impl/BranchAndBound.tpp"
 
 /*--------------------------------------------------------------------------*/
 

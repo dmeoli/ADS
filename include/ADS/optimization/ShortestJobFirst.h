@@ -67,7 +67,7 @@ T totalCompletion( const std::vector< T > & t ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/optimization/ShortestJobFirst.tpp"
+#include "ADS/optimization/impl/ShortestJobFirst.tpp"
 
 /*--------------------------------------------------------------------------*/
 

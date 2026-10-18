@@ -98,7 +98,7 @@ bool isMaxHeap( const std::vector< T > & A , std::size_t dim , C less = C() );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/Heapsort.tpp"
+#include "ADS/sort/impl/Heapsort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

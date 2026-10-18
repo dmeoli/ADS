@@ -98,7 +98,7 @@ void addEdge( AllPairs< D > & R , int a , int b , const D & w );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/graph/AllPairsShortestPaths.tpp"
+#include "ADS/graph/impl/AllPairsShortestPaths.tpp"
 
 /*--------------------------------------------------------------------------*/
 

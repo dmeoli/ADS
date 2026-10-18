@@ -92,7 +92,7 @@ void applyNetwork( std::vector< T > & A , const std::vector< Comparator > & N ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/SortingNetworks.tpp"
+#include "ADS/sort/impl/SortingNetworks.tpp"
 
 /*--------------------------------------------------------------------------*/
 

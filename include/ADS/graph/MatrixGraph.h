@@ -149,7 +149,7 @@ class MatrixGraph : public GraphNodes< T > {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/graph/MatrixGraph.tpp"
+#include "ADS/graph/impl/MatrixGraph.tpp"
 
 /*--------------------------------------------------------------------------*/
 

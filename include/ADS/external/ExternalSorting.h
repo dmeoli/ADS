@@ -200,7 +200,7 @@ void permuteDirect( const DiskFile< T > & in ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/external/ExternalSorting.tpp"
+#include "ADS/external/impl/ExternalSorting.tpp"
 
 /*--------------------------------------------------------------------------*/
 

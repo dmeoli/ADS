@@ -76,7 +76,7 @@ std::pair< std::vector< std::size_t > , W > maxinterval(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/optimization/WeightedIntervals.tpp"
+#include "ADS/optimization/impl/WeightedIntervals.tpp"
 
 /*--------------------------------------------------------------------------*/
 

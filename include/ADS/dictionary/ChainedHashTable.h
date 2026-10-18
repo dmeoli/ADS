@@ -263,7 +263,7 @@ class ChainedHashTable {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/ChainedHashTable.tpp"
+#include "ADS/dictionary/impl/ChainedHashTable.tpp"
 
 /*--------------------------------------------------------------------------*/
 

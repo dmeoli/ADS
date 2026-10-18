@@ -65,7 +65,7 @@ inline void multikeyQuickSort( std::vector< std::string > & A );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/MultikeyQuickSort.tpp"
+#include "ADS/sort/impl/MultikeyQuickSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

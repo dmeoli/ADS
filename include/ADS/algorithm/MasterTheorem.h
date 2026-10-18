@@ -111,7 +111,7 @@ inline Growth linear( double a , double beta );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/algorithm/MasterTheorem.tpp"
+#include "ADS/algorithm/impl/MasterTheorem.tpp"
 
 /*--------------------------------------------------------------------------*/
 

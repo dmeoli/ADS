@@ -201,7 +201,7 @@ void externalListRank( const DiskFile< std::size_t > & succ ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/external/ListRanking.tpp"
+#include "ADS/external/impl/ListRanking.tpp"
 
 /*--------------------------------------------------------------------------*/
 

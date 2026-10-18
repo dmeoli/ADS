@@ -102,7 +102,7 @@ inline std::vector< Point > graham( std::vector< Point > P );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/geometry/ConvexHull.tpp"
+#include "ADS/geometry/impl/ConvexHull.tpp"
 
 /*--------------------------------------------------------------------------*/
 

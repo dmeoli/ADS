@@ -110,7 +110,7 @@ inline std::uint64_t binomialByFactorials( int n , int k );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/numeric/Combinatorics.tpp"
+#include "ADS/numeric/impl/Combinatorics.tpp"
 
 /*--------------------------------------------------------------------------*/
 

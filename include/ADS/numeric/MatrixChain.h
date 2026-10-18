@@ -76,7 +76,7 @@ inline std::string parenthesization(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/numeric/MatrixChain.tpp"
+#include "ADS/numeric/impl/MatrixChain.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -189,7 +189,7 @@ class HeapPriorityQueue {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/priority/HeapPriorityQueue.tpp"
+#include "ADS/priority/impl/HeapPriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

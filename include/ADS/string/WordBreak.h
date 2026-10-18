@@ -64,7 +64,7 @@ std::optional< std::vector< std::string > > wordBreak(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/string/WordBreak.tpp"
+#include "ADS/string/impl/WordBreak.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -362,7 +362,7 @@ class DLeftHashTable {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/UniversalHashing.tpp"
+#include "ADS/dictionary/impl/UniversalHashing.tpp"
 
 /*--------------------------------------------------------------------------*/
 

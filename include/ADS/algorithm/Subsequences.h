@@ -81,7 +81,7 @@ T maxSubarraySum( const std::vector< T > & A );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/algorithm/Subsequences.tpp"
+#include "ADS/algorithm/impl/Subsequences.tpp"
 
 /*--------------------------------------------------------------------------*/
 

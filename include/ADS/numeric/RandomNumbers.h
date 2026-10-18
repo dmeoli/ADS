@@ -157,7 +157,7 @@ std::vector< T > reservoirSampling( const std::vector< T > & S ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/numeric/RandomNumbers.tpp"
+#include "ADS/numeric/impl/RandomNumbers.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -94,7 +94,7 @@ longestCommonSubstring( const S & P , const S & T );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/string/LongestCommonSubsequence.tpp"
+#include "ADS/string/impl/LongestCommonSubsequence.tpp"
 
 /*--------------------------------------------------------------------------*/
 

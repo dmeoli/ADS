@@ -69,7 +69,7 @@ inline std::vector< double > fractionalKnapsack(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/optimization/FractionalKnapsack.tpp"
+#include "ADS/optimization/impl/FractionalKnapsack.tpp"
 
 /*--------------------------------------------------------------------------*/
 

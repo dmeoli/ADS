@@ -169,7 +169,7 @@ SortedListSet< T > setSymmetricDifference( const SortedListSet< T > & A ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/set/SortedListSet.tpp"
+#include "ADS/set/impl/SortedListSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

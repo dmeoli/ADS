@@ -169,7 +169,7 @@ Segment< T > maxDensitySegment( const std::vector< T > & D ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/algorithm/MaximumSegments.tpp"
+#include "ADS/algorithm/impl/MaximumSegments.tpp"
 
 /*--------------------------------------------------------------------------*/
 

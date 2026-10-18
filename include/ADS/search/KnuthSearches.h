@@ -89,7 +89,7 @@ long uniformBinarySearch( const std::vector< T > & A , const T & v ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/search/KnuthSearches.tpp"
+#include "ADS/search/impl/KnuthSearches.tpp"
 
 /*--------------------------------------------------------------------------*/
 

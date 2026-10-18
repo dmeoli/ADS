@@ -159,7 +159,7 @@ inline BoolSet setSymmetricDifference( const BoolSet & A ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/set/BoolSet.tpp"
+#include "ADS/set/impl/BoolSet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -89,7 +89,7 @@ bool halfSatisfiable( F && f , std::size_t n , int K , R & rng );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/algorithm/MonteCarlo.tpp"
+#include "ADS/algorithm/impl/MonteCarlo.tpp"
 
 /*--------------------------------------------------------------------------*/
 

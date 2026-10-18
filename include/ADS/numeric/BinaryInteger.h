@@ -109,7 +109,7 @@ inline std::uint64_t ahmes( std::uint64_t a , std::uint64_t b ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/numeric/BinaryInteger.tpp"
+#include "ADS/numeric/impl/BinaryInteger.tpp"
 
 /*--------------------------------------------------------------------------*/
 

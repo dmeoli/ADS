@@ -118,7 +118,7 @@ std::vector< T > maximal( const std::vector< T > & X , B && better );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/algorithm/Paradigms.tpp"
+#include "ADS/algorithm/impl/Paradigms.tpp"
 
 /*--------------------------------------------------------------------------*/
 

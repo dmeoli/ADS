@@ -138,7 +138,7 @@ class PreorderArrayTree {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/tree/PreorderArrayTree.tpp"
+#include "ADS/tree/impl/PreorderArrayTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

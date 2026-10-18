@@ -73,7 +73,7 @@ long interpolationSearch( const std::vector< T > & A , const T & v );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/search/InterpolationSearch.tpp"
+#include "ADS/search/impl/InterpolationSearch.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -86,7 +86,7 @@ inline bool linearTiling( const std::vector< Tile > & D , long n );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/complexity/Domino.tpp"
+#include "ADS/complexity/impl/Domino.tpp"
 
 /*--------------------------------------------------------------------------*/
 

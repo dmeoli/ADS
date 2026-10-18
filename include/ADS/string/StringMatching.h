@@ -93,7 +93,7 @@ inline std::vector< std::size_t > kmpStrong( std::string_view T ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/string/StringMatching.tpp"
+#include "ADS/string/impl/StringMatching.tpp"
 
 /*--------------------------------------------------------------------------*/
 

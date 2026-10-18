@@ -162,7 +162,7 @@ inline Nodes vertexCoverApprox( const Adjacency & G );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/intractable/Approximation.tpp"
+#include "ADS/intractable/impl/Approximation.tpp"
 
 /*--------------------------------------------------------------------------*/
 

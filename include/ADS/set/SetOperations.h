@@ -100,7 +100,7 @@ bool isSetOperation( const C & c , const A & a , const B & b , char op );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/set/SetOperations.tpp"
+#include "ADS/set/impl/SetOperations.tpp"
 
 /*--------------------------------------------------------------------------*/
 

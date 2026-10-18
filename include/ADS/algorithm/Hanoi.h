@@ -86,7 +86,7 @@ void hanoi_iterative_labels( int n , int source , int dest , int middle ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/algorithm/Hanoi.tpp"
+#include "ADS/algorithm/impl/Hanoi.tpp"
 
 /*--------------------------------------------------------------------------*/
 

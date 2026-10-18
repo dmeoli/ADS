@@ -140,7 +140,7 @@ std::vector< T > kWayMerge( const std::vector< std::vector< T > > & R ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/priority/LoserTree.tpp"
+#include "ADS/priority/impl/LoserTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

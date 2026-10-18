@@ -118,7 +118,7 @@ void threeWayQuickSort( std::vector< T > & A , C less = C() );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/EngineeredQuickSorts.tpp"
+#include "ADS/sort/impl/EngineeredQuickSorts.tpp"
 
 /*--------------------------------------------------------------------------*/
 

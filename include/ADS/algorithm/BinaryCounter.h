@@ -71,7 +71,7 @@ inline std::size_t add( std::vector< int > & A );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/algorithm/BinaryCounter.tpp"
+#include "ADS/algorithm/impl/BinaryCounter.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -19,20 +19,23 @@ project(ADS
         DESCRIPTION "The algorithms and data structures of the book"
         LANGUAGES CXX)
 
-# ----- the library: headers only, the declarations in include/ and the ----- #
-# ----- definitions of the templates in src/, installed side by side -------- #
+# ----- the library: headers only, the declarations in include/ADS/<area>/ - #
+# ----- and the definitions of the templates in include/ADS/<area>/impl/ ---- #
 add_library(ADS INTERFACE)
 add_library(ADS::ADS ALIAS ADS)
 target_include_directories(ADS INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
         $<INSTALL_INTERFACE:include>)
 target_compile_features(ADS INTERFACE cxx_std_20)
 
 # ----- the tests: the exercises of the book -------------------------------- #
-include(CTest)
-if (BUILD_TESTING)
-    add_subdirectory(test)
+option(ADS_BUILD_TESTS "build the tests (by default only as the main project)"
+       ${PROJECT_IS_TOP_LEVEL})
+if (ADS_BUILD_TESTS)
+    include(CTest)
+    if (BUILD_TESTING)
+        add_subdirectory(test)
+    endif ()
 endif ()
 
 # ----- the benchmarks, off by default -------------------------------------- #
@@ -70,7 +73,7 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 install(TARGETS ADS EXPORT ADSTargets)
-install(DIRECTORY include/ADS src/ADS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/ADS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT ADSTargets
         NAMESPACE ADS::
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ADS)

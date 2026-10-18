@@ -216,6 +216,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the definitions of the templates move from src/ADS/<area>/X.tpp to
+  include/ADS/<area>/impl/X.tpp, as in Boost: include/ is the whole library
+  and the only directory to put on the include path
+- the option ADS_BUILD_TESTS, by default on only when ADS is the main
+  project, so that add_subdirectory() and FetchContent build the interface
+  target alone
+- the documentation is a site of MkDocs Material, its pages written from
+  the README by docs/pages.py, with the API reference of Doxygen in the
+  theme doxygen-awesome-css under /api/
 - fft() keeps the powers of the root of unity of the last size per thread,
   laid out round by round, instead of computing n / 2 sines and cosines at
   each call, and multiplies by the formula instead of the operator * of

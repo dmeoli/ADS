@@ -164,7 +164,7 @@ class TabulationHash {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/RandomHashing.tpp"
+#include "ADS/dictionary/impl/RandomHashing.tpp"
 
 /*--------------------------------------------------------------------------*/
 

@@ -162,7 +162,7 @@ std::ranges::enable_borrowed_range< ADS::SequenceRange< S > > = true;
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sequence/SequenceRange.tpp"
+#include "ADS/sequence/impl/SequenceRange.tpp"
 
 /*--------------------------------------------------------------------------*/
 

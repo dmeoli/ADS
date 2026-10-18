@@ -69,7 +69,7 @@ inline std::optional< std::vector< std::vector< int > > > knightTour(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/backtrack/KnightTour.tpp"
+#include "ADS/backtrack/impl/KnightTour.tpp"
 
 /*--------------------------------------------------------------------------*/
 

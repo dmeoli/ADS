@@ -124,7 +124,7 @@ std::size_t gallopSearch( const std::vector< T > & A , const T & v ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/search/BinarySearch.tpp"
+#include "ADS/search/impl/BinarySearch.tpp"
 
 /*--------------------------------------------------------------------------*/
 

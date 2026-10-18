@@ -1,0 +1,80 @@
+site_name: ADS
+site_description: Algorithms and Data Structures, a header-only C++20 library
+site_url: https://dmeoli.github.io/ADS/
+repo_url: https://github.com/dmeoli/ADS
+repo_name: dmeoli/ADS
+docs_dir: build-docs/pages
+
+theme:
+  name: material
+  features:
+  - navigation.tabs
+  - navigation.sections
+  - navigation.expand
+  - navigation.top
+  - search.suggest
+  - search.highlight
+  - content.code.copy
+  palette:
+  - scheme: default
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+  - scheme: slate
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
+
+plugins:
+- search
+
+nav:
+- Home: index.md
+- Getting Started:
+  - Installation: getting-started/installation.md
+  - Quick Start: getting-started/quick-start.md
+- User Guide:
+  - Layout: user-guide/layout.md
+  - The Book: user-guide/book.md
+  - Beyond the Book: user-guide/beyond.md
+  - The Art of Computer Programming: user-guide/taocp.md
+  - Algorithm Engineering: user-guide/ferragina.md
+  - Exercises and Exams: user-guide/exams.md
+  - Engineered Structures: user-guide/engineered.md
+  - Sorting: user-guide/sorting.md
+  - Design by Contract: user-guide/contracts.md
+  - Standard Interface: user-guide/standard-interface.md
+  - Further Reading: user-guide/further-reading.md
+- API Reference: https://dmeoli.github.io/ADS/api/
+- Release Notes: release_notes.md
+
+markdown_extensions:
+- admonition
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.highlight:
+    anchor_linenums: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.arithmatex:
+    generic: true
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- attr_list
+- md_in_html
+- tables
+- toc:
+    permalink: true
+
+extra_javascript:
+- https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+
+extra:
+  social:
+  - icon: fontawesome/brands/github
+    link: https://github.com/dmeoli/ADS

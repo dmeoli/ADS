@@ -128,7 +128,7 @@ long nestedParentheses( int n , F && visit );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/combinatorial/Generation.tpp"
+#include "ADS/combinatorial/impl/Generation.tpp"
 
 /*--------------------------------------------------------------------------*/
 

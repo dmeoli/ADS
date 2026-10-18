@@ -77,7 +77,7 @@ bool isEulerianCycle( const G & g , const std::vector< int > & c );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/graph/EulerianCycle.tpp"
+#include "ADS/graph/impl/EulerianCycle.tpp"
 
 /*--------------------------------------------------------------------------*/
 

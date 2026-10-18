@@ -75,7 +75,7 @@ void insertionSort( std::vector< T > & A , C less = C() );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/InsertionSort.tpp"
+#include "ADS/sort/impl/InsertionSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

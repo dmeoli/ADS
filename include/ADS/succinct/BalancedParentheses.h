@@ -182,7 +182,7 @@ class BalancedParentheses {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/succinct/BalancedParentheses.tpp"
+#include "ADS/succinct/impl/BalancedParentheses.tpp"
 
 /*--------------------------------------------------------------------------*/
 

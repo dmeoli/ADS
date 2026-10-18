@@ -79,7 +79,7 @@ inline long zaino( const std::vector< long > & p ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/optimization/Knapsack.tpp"
+#include "ADS/optimization/impl/Knapsack.tpp"
 
 /*--------------------------------------------------------------------------*/
 

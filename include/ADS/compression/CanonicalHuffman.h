@@ -200,7 +200,7 @@ class CanonicalHuffman {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/compression/CanonicalHuffman.tpp"
+#include "ADS/compression/impl/CanonicalHuffman.tpp"
 
 /*--------------------------------------------------------------------------*/
 

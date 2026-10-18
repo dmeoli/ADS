@@ -65,7 +65,7 @@ void countingSort( std::vector< T > & A , std::size_t k );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/CountingSort.tpp"
+#include "ADS/sort/impl/CountingSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

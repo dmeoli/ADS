@@ -71,7 +71,7 @@ std::size_t resized( std::size_t m , bool grow , std::size_t m0 );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/TableSize.tpp"
+#include "ADS/dictionary/impl/TableSize.tpp"
 
 /*--------------------------------------------------------------------------*/
 

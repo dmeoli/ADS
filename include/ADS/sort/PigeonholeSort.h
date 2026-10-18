@@ -64,7 +64,7 @@ std::vector< std::pair< int , V > > pigeonholeSort(
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/PigeonholeSort.tpp"
+#include "ADS/sort/impl/PigeonholeSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

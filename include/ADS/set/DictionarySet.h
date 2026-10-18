@@ -135,7 +135,7 @@ using TreeSet = DictionarySet< RedBlackTree< T , bool > >;
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/set/DictionarySet.tpp"
+#include "ADS/set/impl/DictionarySet.tpp"
 
 /*--------------------------------------------------------------------------*/
 

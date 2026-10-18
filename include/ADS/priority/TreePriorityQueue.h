@@ -118,7 +118,7 @@ class TreePriorityQueue {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/priority/TreePriorityQueue.tpp"
+#include "ADS/priority/impl/TreePriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

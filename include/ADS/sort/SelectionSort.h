@@ -61,7 +61,7 @@ void selectionSort( std::vector< T > & A , C less = C() );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/sort/SelectionSort.tpp"
+#include "ADS/sort/impl/SelectionSort.tpp"
 
 /*--------------------------------------------------------------------------*/
 

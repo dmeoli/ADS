@@ -119,7 +119,7 @@ inline int intervalClique( const std::vector< std::pair< long , long > > & I );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/complexity/EasyCases.tpp"
+#include "ADS/complexity/impl/EasyCases.tpp"
 
 /*--------------------------------------------------------------------------*/
 

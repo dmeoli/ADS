@@ -187,7 +187,7 @@ bool reachesNegativeCycle( const G & g , int r );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/graph/ShortestPaths.tpp"
+#include "ADS/graph/impl/ShortestPaths.tpp"
 
 /*--------------------------------------------------------------------------*/
 

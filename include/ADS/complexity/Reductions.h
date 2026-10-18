@@ -150,7 +150,7 @@ inline std::vector< Point > sortToHull( const std::vector< long > & a );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/complexity/Reductions.tpp"
+#include "ADS/complexity/impl/Reductions.tpp"
 
 /*--------------------------------------------------------------------------*/
 

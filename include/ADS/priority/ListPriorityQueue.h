@@ -134,7 +134,7 @@ class ListPriorityQueue {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/priority/ListPriorityQueue.tpp"
+#include "ADS/priority/impl/ListPriorityQueue.tpp"
 
 /*--------------------------------------------------------------------------*/
 

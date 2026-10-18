@@ -140,7 +140,7 @@ std::uint64_t hash_midsquare( std::uint64_t i , int p );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/HashFunctions.tpp"
+#include "ADS/dictionary/impl/HashFunctions.tpp"
 
 /*--------------------------------------------------------------------------*/
 

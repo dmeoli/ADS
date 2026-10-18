@@ -86,7 +86,7 @@ std::string infixForm( const BinaryTree< std::string > * t );
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/tree/ExpressionTree.tpp"
+#include "ADS/tree/impl/ExpressionTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 

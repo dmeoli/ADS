@@ -294,7 +294,7 @@ class OrderedMinimalPerfectHash {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/PerfectHashing.tpp"
+#include "ADS/dictionary/impl/PerfectHashing.tpp"
 
 /*--------------------------------------------------------------------------*/
 

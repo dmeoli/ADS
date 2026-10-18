@@ -238,7 +238,7 @@ class CuckooHashTable {
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/dictionary/CuckooHashing.tpp"
+#include "ADS/dictionary/impl/CuckooHashing.tpp"
 
 /*--------------------------------------------------------------------------*/
 

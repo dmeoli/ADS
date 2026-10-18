@@ -132,7 +132,7 @@ bool isMinimumSpanningForest( int n ,
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/graph/MinimumSpanningTree.tpp"
+#include "ADS/graph/impl/MinimumSpanningTree.tpp"
 
 /*--------------------------------------------------------------------------*/
 
