@@ -1,4 +1,4 @@
-# ADS: Algorithms and Data Structures
+# Algorithms and Data Structures
 
 [![CI](https://github.com/dmeoli/ADS/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/dmeoli/ADS/badge.svg?branch=main)](https://coveralls.io/github/dmeoli/ADS?branch=main)
