@@ -61,6 +61,14 @@ K BucketQueue< T , K >::topF( void )
  }
 
 template< class T , std::integral K >
+typename BucketQueue< T , K >::Entry BucketQueue< T , K >::popEntry( void )
+{
+ Layer & l = front();
+ const K f = K( f_minF ) , g = K( l.topG );
+ return( Entry{ pop() , f , g } );          // front() is now O( 1 )
+ }
+
+template< class T , std::integral K >
 K BucketQueue< T , K >::topG( void )
 {
  return( K( front().topG ) );

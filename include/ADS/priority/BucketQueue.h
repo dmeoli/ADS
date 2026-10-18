@@ -98,6 +98,17 @@ class BucketQueue {
  /// \pre the queue is not empty
  T pop( void );
 
+ /// an item with its keys
+ struct Entry {
+  T item;
+  K f , g;
+  };
+
+ /// removes top() and returns it with its keys f and g, finding the top
+ /// once instead of three times through topF(), topG() and pop()
+ /// \pre the queue is not empty
+ Entry popEntry( void );
+
  [[nodiscard]] bool isEmpty( void ) const;
 
  /// the number of items, the stale ones included

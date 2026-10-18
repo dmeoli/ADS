@@ -61,6 +61,7 @@ ADS_TEST( "bucket-queue" )
  BucketQueue< int > Q;
  CHECK_THROWS( (void) Q.top() , contract_violation );
  CHECK_THROWS( Q.pop() , contract_violation );
+ CHECK_THROWS( Q.popEntry() , contract_violation );
  CHECK_THROWS( Q.push( 0 , -1 , 0 ) , contract_violation );
  std::mt19937 g( 1 );
  std::set< std::tuple< int , int , int , int > > R;   // f , -g , -t , x
@@ -72,8 +73,14 @@ ADS_TEST( "bucket-queue" )
    }
   else {
    const auto [ f , mg , mt , x ] = *R.begin();
-   CHECK( Q.topF() == f && Q.topG() == -mg && Q.top() == x );
-   CHECK( Q.pop() == x );
+   if( t % 2 ) {                            // by top(), and by popEntry()
+    CHECK( Q.topF() == f && Q.topG() == -mg && Q.top() == x );
+    CHECK( Q.pop() == x );
+    }
+   else {
+    const auto e = Q.popEntry();
+    CHECK( e.item == x && e.f == f && e.g == -mg );
+    }
    R.erase( R.begin() );
    }
  CHECK( Q.size() == R.size() );

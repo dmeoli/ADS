@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and bench/tables.py writes their tables
 - the product of Karatsuba in BigInteger, between Algorithm M and the FFT
 - the move constructor of FibonacciHeapPriorityQueue
+- BucketQueue::popEntry(), the top item with its keys f and g
 - the standard interface on every container: begin() and end() of the same
   type, the member types of the standard library, and iterators of the
   strongest category the structure allows (contiguous, random access,
