@@ -1,4 +1,4 @@
-# ADS: Algorithms and Data Structures in C++20 [![CI](https://github.com/dmeoli/ADS/actions/workflows/ci.yml/badge.svg)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
+# ADS: Algorithms and Data Structures [![CI](https://github.com/dmeoli/ADS/actions/workflows/ci.yml/badge.svg)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
 
 ADS is a header-only C++20 library of the algorithms and the data
 structures of the (Italian) textbook
