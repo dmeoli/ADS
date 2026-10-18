@@ -473,6 +473,719 @@ interop  dictionaries         viste di dizionari e insiemi
 interop  trees                viste di alberi e heap
 interop  nodes-and-graphs     alberi di nodi, grafi, MFSet, matrici, arena
 
+# Ferragina, Pearls of Algorithm Engineering, beyond the book
+pearls_compression  entropy                  entropie empiriche H0 e Hk
+pearls_compression  canonical-huffman-notes  Huffman canonico, figure 12.5-12.9
+pearls_compression  canonical-huffman        Huffman canonico, H0 <= L < H0 + 1
+pearls_compression  limited-lengths          lunghezze limitate per scalatura
+pearls_compression  arithmetic-exact         codice aritmetico esatto, abac
+pearls_compression  range-coder-notes        coder intero con M = 16, 12.2.6
+pearls_compression  arithmetic-static        codice aritmetico intero, n H0 + 2
+pearls_compression  arithmetic-adaptive      codice aritmetico adattivo
+pearls_compression  ppm-notes                PPMC di abracadabra, tabella 12.1
+pearls_compression  ppm                      PPM di ordine 0-5, round trip
+pearls_compression  lz77-notes               LZ77 e LZSS di aabbabab
+pearls_compression  lz77                     LZ77, LZSS e catene di gzip
+pearls_compression  lz78                     LZ78, tabella 13.1
+pearls_compression  lzw                      LZW, tabelle 13.2 e 13.3
+pearls_compression  bwt-notes                BWT, MTF, RLE, figure 14.1-14.2
+pearls_compression  bwt                      BWT contro le rotazioni ordinate
+pearls_compression  mtf-rle                  move-to-front, RLE e RLE0
+pearls_compression  bzip                     BWT + MTF + RLE0 + Huffman
+pearls_compression  fm-index-notes           FM-index, figura 14.7
+pearls_compression  fm-index                 count, locate, extract, ricerca
+
+pearls_hashing  universal-classes   sezione 8.3, Teoremi 8.4-8.5, universali
+pearls_hashing  universal-chaining  sezione 8.3, Teoremi 8.2-8.3, liste
+pearls_hashing  d-left              sezione 8.3, d-left, due scelte
+pearls_hashing  fks-example         sezione 8.5, Figura 8.6, perfetta
+pearls_hashing  fks-table           sezione 8.5, tabella perfetta, due livelli
+pearls_hashing  opmphf-example      sezione 8.4, Tabella 8.1, etichettatura
+pearls_hashing  opmphf              sezione 8.4, hash perfetto minimo
+pearls_hashing  cuckoo              sezione 8.6, cuckoo hashing con stash
+pearls_hashing  cuckoo-analysis     sezione 8.6, Corollario 8.3, rehash
+pearls_hashing  bloom-analysis      sezione 8.7, Tabella 8.3, falsi positivi
+pearls_hashing  spectral-bloom      sezione 8.7.3, filtri spettrali
+pearls_hashing  bloom-intersection  sezione 8.7.4, intersezione
+pearls_hashing  prefix-search       sezione 9.1, Figura 9.1, per prefisso
+pearls_hashing  binned-search       sezione 9.2, Figura 9.3, interpolazione
+pearls_hashing  front-coding        sezione 9.1.2, Figura 9.2, front coding
+pearls_hashing  lpfc                sezione 9.3, Teorema 9.5, LPFC
+pearls_hashing  patricia            sezione 9.5, Figure 9.7-9.8, blind search
+pearls_hashing  two-level           sezione 9.6, dizionario a due livelli
+
+pearls_io  ch2.max-sum-example       capitolo 2, esempio, quattro algoritmi
+pearls_io  ch2.max-sum-random        capitolo 2, scansioni contro enumerazione
+pearls_io  ch2.length-constrained    sezione 2.5, lunghezza in [L, U]
+pearls_io  ch2.longest-at-least      sezione 2.5, più lungo con somma >= t
+pearls_io  ch2.density               sezione 2.5, densità massima, GC
+pearls_io  ch3.samplers-uniform      capitolo 3, campionamenti uniformi
+pearls_io  ch3.sampler-costs         capitolo 3, costo dei campionamenti
+pearls_io  ch3.heap-sampling         sezione 3.3, heap e reservoir
+pearls_io  ch3.sample-ios            capitolo 3, I/O del campione
+pearls_io  ch4.list-ranking-example  capitolo 4, figure 4.1 e 4.2
+pearls_io  ch4.ranking-random        capitolo 4, pointer jumping e ricorsione
+pearls_io  ch4.independent-sets      sezione 4.3, insiemi indipendenti
+pearls_io  ch4.parallel-step         sezione 4.2, passo parallelo su disco
+pearls_io  ch4.external-ranking      capitolo 4, list ranking su disco
+pearls_io  ch5.two-level-memory      capitolo 5, modello a due livelli
+pearls_io  ch5.loser-tree            sezione 5.1.3, albero dei perdenti
+pearls_io  ch5.merge-sorts           sezione 5.1, mergesort binario e a k vie
+pearls_io  ch5.lower-bounds          sezione 5.2, limiti inferiori
+pearls_io  ch5.permute               sezione 5.2, permutazioni su disco
+pearls_io  ch5.distribution-sort     sezione 5.3.4, quicksort a k vie
+pearls_io  ch6.intersection-example  capitolo 6, figure 6.2, 6.3 e 6.5
+pearls_io  ch6.intersection-random   capitolo 6, intersezioni e confronti
+pearls_io  ch6.permuted-buckets      capitolo 6, permutazione casuale e bucket
+pearls_io  ch6.intersection-ios      capitolo 6, intersezioni su disco
+
+pearls_succinct bit-vector vettore di bit, campi a cavallo delle parole
+pearls_succinct  select-in-word        select broadword in una parola
+pearls_succinct  bit-stream            BitWriter e BitReader, campi e unario
+pearls_succinct  elias-codes           unario, gamma e delta, figure 11.1-11.2
+pearls_succinct  rice-golomb           Rice e Golomb, figura 11.3
+pearls_succinct  pfordelta             PForDelta, figura 11.4
+pearls_succinct vbyte-dense variable-byte e (s,c)-dense, figure 11.5-11.6
+pearls_succinct  interpolative         codice interpolativo, figura 11.8
+pearls_succinct  signed-gaps           interi con segno e d-gap, tabella 15.4
+pearls_succinct  rank-select           rank e select, esempio 15.1
+pearls_succinct  elias-fano            Elias-Fano, figura 11.9 ed esempio 15.3
+pearls_succinct  jacobson-tree         albero binario di Jacobson, esempio 15.4
+pearls_succinct  louds-tree            LOUDS, figura 15.8 ed esempio 15.5
+pearls_succinct  balanced-parentheses  parentesi bilanciate, range min-max tree
+pearls_succinct  bp-tree               albero per parentesi bilanciate
+pearls_succinct  elias-fano-graph      grafo con liste in Elias-Fano
+pearls_succinct  k2-tree               k^2-tree, figura 15.9
+pearls_succinct bv-graph liste di Boldi e Vigna, tabelle 15.5-15.7
+
+pearls_suffix  sec10.2.notes-examples    figure 10.1, 10.2, 10.9, 10.12
+pearls_suffix  sec10.2.3.constructions   sezione 10.2.3, sei costruzioni
+pearls_suffix  sec10.2.2.kasai           sezione 10.2.2, LCP di Kasai e lce
+pearls_suffix  sec10.2.1.search          sezione 10.2.1, ricerca e Manber-Myers
+pearls_suffix  sec10.4.1.range-minimum   sezione 10.4.1, RMQ
+pearls_suffix  sec10.3.constructions     sezione 10.3, McCreight, da SA e LCP
+pearls_suffix  sec10.3.1.search-lca      sezione 10.3.1, ricerca e lca
+pearls_suffix  sec10.4.2.lz77            sezione 10.4.2, LZ77
+pearls_suffix  sec10.4.3.text-mining     sezione 10.4.3, text mining
+pearls_suffix  sec10.4.common-substring  sezione 10.4, comune a k stringhe
+pearls_suffix  sec10.4.maximal-repeats   sezione 10.4, ripetizioni massimali
+pearls_suffix  sec10.4.1.k-mismatches    algoritmo 10.4, k mismatch
+
+# the collections, the exams (by their date), the exercise sessions and
+# the laboratory projects of the course of the book, beyond the book
+exam_backtracka  backtrack-1   2014-06-05, Colora
+exam_backtracka  backtrack-2   2015-12-17, Count domino
+exam_backtracka  backtrack-3   2017-09-04, (()) (e 2021-01-18)
+exam_backtracka  backtrack-4   2018-06-04, Print sums
+exam_backtracka  backtrack-5   2018-06-28, Print all (e 2022-07-13)
+exam_backtracka  backtrack-6   2018-07-25, Visit
+exam_backtracka  backtrack-7   2018-08-21, n-colorazione con gap
+exam_backtracka  backtrack-8   2019-01-21, All sums rec
+exam_backtracka  backtrack-9   2019-02-07, Print all
+exam_backtracka  backtrack-10  2019-06-06, Print flags
+exam_backtracka  backtrack-11  2019-06-17, Safe line
+exam_backtracka  backtrack-12  2019-07-18, k-alternato
+exam_backtracka  backtrack-13  2020-01-14, Longest path
+exam_backtracka  backtrack-14  2020-06-12, Gen rec
+exam_backtracka  backtrack-15  2020-07-03, Print positive
+exam_backtracka  backtrack-16  2020-07-24, Print hamilton
+exam_backtracka  backtrack-17  2020-09-04, Print increasing
+exam_backtracka  backtrack-19  2021-02-08, Somma di primi
+exam_backtracka  backtrack-20  2021-06-16, Stampa percorsi
+exam_backtracka  backtrack-21  2021-07-26, PrintBits
+exam_backtracka  backtrack-22  2021-08-31, Sequenza k-limitata
+exam_backtracka  backtrack-23  2021-08-31, PrintBitsK
+exam_backtracka  backtrack-24  2022-01-17, Ottali
+exam_backtracka  backtrack-25  2022-02-07, Bit consecutivi
+exam_backtracka  backtrack-26  2022-06-21, Math ways
+
+exam_backtrackb  backtrack-28  2022-08-24, Permutazioni eleganti
+exam_backtrackb  backtrack-29  2023-01-17, Min-Cardinalità
+exam_backtrackb  backtrack-30  2023-06-20, Misciotto 1
+exam_backtrackb  backtrack-31  2023-07-11, 10.000 passi
+exam_backtrackb  backtrack-32  2023-08-23, Sub-palindrome
+exam_backtrackb  backtrack-33  2024-01-09, Tutti i cicli!
+exam_backtrackb  backtrack-34  2024-02-01, Metà o meno
+exam_backtrackb  backtrack-35  2024-06-14, Magic square
+exam_backtrackb  backtrack-36  2024-07-02, Hamilton
+exam_backtrackb  backtrack-37  2024-08-26, Zigzaghiamo!
+exam_backtrackb  backtrack-38  2025-01-14, Radice-foglia
+exam_backtrackb  backtrack-39  2025-02-03, Numeri irripetibili
+exam_backtrackb  backtrack-40  2025-06-13, Tuple ben ordinate
+exam_backtrackb  backtrack-41  2025-07-14, All paths
+exam_backtrackb  backtrack-42  2025-08-25, Sottoinsiemi k-distanti
+exam_backtrackb  backtrack-43  2026-01-12, Numeri zerabili
+exam_backtrackb  backtrack-44  2026-02-02, New York Dreaming
+exam_backtrackb  backtrack-45  2026-06-22, Shakira
+exam_backtrackb  backtrack-46  2026-07-20, Antipalindromo
+exam_backtrackb  backtrack-47  2026-08-28, Dismutazioni
+
+exam_complexity  complexity-1     2011-04-11, Complessita
+exam_complexity  complexity-2     2011-05-02, Complessita
+exam_complexity  complexity-3     2011-06-06, Complessita
+exam_complexity  complexity-4     2011-07-18, Complessita
+exam_complexity  complexity-5     2011-09-07, Complessita
+exam_complexity  complexity-6     2012-01-11, Complessita
+exam_complexity  complexity-7     2012-05-03, Complessita
+exam_complexity  complexity-8     2012-07-09, Complessita
+exam_complexity  complexity-9     2013-01-07, Complessita
+exam_complexity  complexity-10-1  2013-01-28, Complessita
+exam_complexity  complexity-10-2  2013-01-28, Complessita
+exam_complexity  complexity-10-3  2013-01-28, Complessita
+exam_complexity  complexity-11    2013-05-03, Complessita
+exam_complexity  complexity-12    2013-06-17, Complessita
+exam_complexity  complexity-13    2013-07-22, Complessita
+exam_complexity  complexity-14-a  2013-09-02, Complessita, messaggi
+exam_complexity  complexity-14-b  2013-09-02, Complessita, turni
+exam_complexity  complexity-15    2014-02-03, Complessita
+exam_complexity  complexity-16    2014-04-24, Complessita
+exam_complexity  complexity-17    2014-06-16, Complessita (24, 32)
+exam_complexity  complexity-18    2014-07-21, Complessita
+exam_complexity  complexity-19    2014-09-01, Complessita
+exam_complexity  complexity-20-1  2014-10-31, Complessita
+exam_complexity  complexity-20-2  2014-10-31, Complessita
+exam_complexity  complexity-20-3  2014-10-31, Complessita
+exam_complexity  complexity-20-4  2014-10-31, Complessita
+exam_complexity  complexity-20-5  2014-10-31, Complessita
+exam_complexity  complexity-21    2015-01-12, Complessita
+exam_complexity  complexity-22    2015-02-02, Complessita
+exam_complexity  complexity-23    2015-06-08, Complessita
+exam_complexity  complexity-25-1  2015-11-05, Complessita
+exam_complexity  complexity-25-2  2015-11-05, Complessita
+exam_complexity  complexity-26-1  2016-01-26, Complessita
+exam_complexity  complexity-26-2  2016-01-26, Complessita
+exam_complexity  complexity-27    2016-06-06, Complessita
+exam_complexity  complexity-28    2016-07-06, Complessita
+exam_complexity  complexity-29    2016-08-29, Complessita
+exam_complexity  complexity-30    2016-11-03, Complessita
+exam_complexity  complexity-31    2017-01-24, Complessita
+exam_complexity  complexity-33    2017-06-08, Complessita
+exam_complexity  complexity-34    2017-06-29, Complessita
+exam_complexity  complexity-35    2017-09-04, Complessita
+exam_complexity  complexity-36    2018-01-08, Complessita
+exam_complexity  complexity-37    2018-01-31, Complessita
+exam_complexity  complexity-38    2018-06-28, Complessita
+exam_complexity  complexity-39    2018-07-25, Complessita
+exam_complexity  complexity-40    2018-08-21, Complessita
+exam_complexity  complexity-41    2019-01-21, Complessita
+exam_complexity  complexity-42    2019-02-07, Complessita
+exam_complexity  complexity-43    2019-06-17, Complessita
+exam_complexity  complexity-44    2019-07-18, Complessita
+exam_complexity  complexity-45    2020-06-12, Complessita
+exam_complexity  complexity-46    2020-07-03, Complessita
+exam_complexity  complexity-47    2020-07-24, Complessita
+exam_complexity  complexity-48    2020-09-04, Complessita
+exam_complexity  complexity-49    2021-01-18, Complessita
+exam_complexity  complexity-50    2021-02-08, Complessita
+exam_complexity  complexity-51    2021-02-19, Complessita
+exam_complexity  complexity-52-1  2021-06-16, Complessita
+exam_complexity  complexity-52-2  2021-06-16, Complessita
+exam_complexity  complexity-52-3  2021-06-16, Complessita
+exam_complexity  complexity-52-4  2021-06-16, Complessita
+exam_complexity  complexity-52-5  2021-06-16, Complessita
+exam_complexity  complexity-52-6  2021-06-16, Complessita
+exam_complexity  complexity-52-7  2021-06-16, Complessita
+exam_complexity  complexity-52-8  2021-06-16, Complessita
+exam_complexity  complexity-53    2021-07-26, Complessita
+exam_complexity  complexity-54    2021-08-31, Complessita
+exam_complexity  complexity-55    2022-01-17, Complessita
+exam_complexity  complexity-56    2022-02-07, Complessita
+exam_complexity  complexity-57    2022-06-21, Complessita
+exam_complexity  complexity-58    2022-07-13, Complessita
+exam_complexity  complexity-59    2023-01-17, Complessita
+exam_complexity  complexity-60    2023-02-09, Complessita
+exam_complexity  complexity-61    2023-06-20, Complessita
+exam_complexity  complexity-62    2023-07-11, Complessita
+exam_complexity  complexity-63    2023-08-23, Complessita
+exam_complexity  complexity-64    2024-01-09, Complessita
+exam_complexity  complexity-65    2024-02-01, Complessita
+exam_complexity  complexity-66    2024-06-14, Complessita
+exam_complexity  complexity-67    2024-07-02, Complessita
+exam_complexity  complexity-68    2024-08-26, Complessita
+exam_complexity  complexity-69    2025-01-14, Complessita
+exam_complexity  complexity-70    2025-02-03, Complessita
+exam_complexity  complexity-71    2025-06-13, Complessita
+exam_complexity  complexity-72    2025-07-14, Complessita
+exam_complexity  complexity-73    2025-08-25, Complessita
+exam_complexity  complexity-74    2026-01-12, Complessita
+exam_complexity  complexity-75    2026-02-02, Complessita
+exam_complexity  complexity-76    2026-06-22, Complessita
+exam_complexity  complexity-77    2026-07-20, Complessita
+exam_complexity  complexity-78    2026-08-28, Complessita
+
+exam_divide  divide-1-b  2011-05-27, Doublegap
+exam_divide  divide-2    2013-07-22, Maxprod
+exam_divide  divide-3    2014-04-24, Pythagorean
+exam_divide  divide-4    2014-06-05, Equal
+exam_divide  divide-5    2014-10-31, Thickness
+exam_divide  divide-6-b  2015-09-01, Find peak
+exam_divide  divide-7    2015-11-05, Compute sum
+exam_divide  divide-8    2016-11-03, Punto fisso
+exam_divide  divide-9    2018-01-08, Max crime
+exam_divide  divide-10   2018-01-31, Valore unico (e 2021-01-18, 2024-02-01)
+exam_divide  divide-11   2018-08-21, Vettori traslati
+exam_divide  divide-12   2019-01-21, Successore
+exam_divide  divide-13   2020-01-14, Intruder
+exam_divide  divide-14   2020-06-12, Mistery array
+exam_divide  divide-15   2020-07-03, Maggioranza
+exam_divide  divide-17   2021-02-08, Closest
+exam_divide  divide-18   2021-02-19, Fast sum
+exam_divide  divide-19   2021-08-31, ContainsZero
+exam_divide  divide-20   2021-08-31, Radice quadrata
+exam_divide  divide-21   2022-01-17, Serie aritmetica bucata
+exam_divide  divide-22   2022-07-13, H-index
+exam_divide  divide-23   2023-02-09, Minimo locale
+exam_divide  divide-24   2024-01-09, k-Ripetizioni
+exam_divide  divide-26   2024-06-14, Smaller Count
+exam_divide  divide-27   2024-08-26, Where's negative?
+exam_divide  divide-28   2025-01-14, AlternaSort
+exam_divide  divide-29   2025-06-13, Stringhe pareggiate
+exam_divide  divide-30   2026-02-02, Due caratteri
+
+exam_dp1  dp-1     2011-05-02, Sottostringa palindroma piu' lunga
+exam_dp1  dp-2-2   2011-05-27, Parentesizzazione
+exam_dp1  dp-2-3   2011-05-27, Parentesizzazione
+exam_dp1  dp-3-1   2011-06-06, Scatole
+exam_dp1  dp-3-2   2011-06-06, Scatole
+exam_dp1  dp-4     2011-07-18, Multiset sum
+exam_dp1  dp-5     2011-09-07, Anagrams
+exam_dp1  dp-6     2012-01-11, Chiavi frequenti
+exam_dp1  dp-7     2012-01-11 e 2012-05-31, Mediana4
+exam_dp1  dp-8     2012-02-01, Best cut
+exam_dp1  dp-9-1   2012-02-01, Prima elementare
+exam_dp1  dp-9-2   2012-02-01, Prima elementare
+exam_dp1  dp-10    2012-05-03, Il gioco delle coppie
+exam_dp1  dp-11-1  2012-05-03, Ottimizza la somma
+exam_dp1  dp-11-2  2012-05-03, Ottimizza la somma
+exam_dp1  dp-13    2012-05-31, Resto
+exam_dp1  dp-14    2012-06-18, Scacchiera
+exam_dp1  dp-15    2012-07-09, Stringhe primitive
+exam_dp1  dp-16    2013-01-07, Conta percorsi
+exam_dp1  dp-17    2013-01-28, Intero positivo insieme
+exam_dp1  dp-18    2013-05-03, Barche sul fiume
+exam_dp1  dp-19    2013-05-31, Max resto
+exam_dp1  dp-20-1  2013-06-17, Fundraising
+exam_dp1  dp-20-2  2013-06-17, Fundraising
+exam_dp1  dp-21    2013-07-22, Gioco di monete
+exam_dp1  dp-22    2013-09-02, Dice rec
+exam_dp1  dp-23    2014-01-07, Altezza
+exam_dp1  dp-24    2014-02-03, Max gain
+exam_dp1  dp-25-1  2014-06-05, Partition k
+exam_dp1  dp-25-2  2014-06-05, Partition k
+exam_dp1  dp-25-3  2014-06-05, Partition k
+exam_dp1  dp-26-1  2014-06-16, Input file file
+exam_dp1  dp-26-2  2014-06-16, Input file file
+exam_dp1  dp-26-3  2014-06-16, Input file file
+exam_dp1  dp-27    2014-06-16, Mintime
+exam_dp1  dp-28    2014-07-21, Longest palindrome
+exam_dp1  dp-29    2014-12-19, Max ordinata distinta
+exam_dp1  dp-30    2014-12-19, Min allineamento
+exam_dp1  dp-31    2015-01-12, Count stairs
+exam_dp1  dp-32    2015-02-02, Piggy bank
+exam_dp1  dp-33    2015-06-08, Resto limitato
+exam_dp1  dp-34    2015-07-14, Soccer
+exam_dp1  dp-36    2015-09-01, Repeat sort
+
+exam_dp2  dp-37    2015-12-17, K occurrence
+exam_dp2  dp-38    2016-01-07, Cut string
+exam_dp2  dp-39-a  2016-01-26, Somma di quadrati (minimo)
+exam_dp2  dp-39-b  2016-01-26, Somma di quadrati (stampa)
+exam_dp2  dp-40    2016-06-06, Sequenze ordinate
+exam_dp2  dp-41    2016-06-06, Silicon Valley 2
+exam_dp2  dp-42    2016-07-06, Serve the Donald
+exam_dp2  dp-43    2016-08-29, Count
+exam_dp2  dp-44    2017-01-10, Supersequenza
+exam_dp2  dp-45    2017-01-24, Count palyndrome
+exam_dp2  dp-46    2017-02-07, K limitato (e 2017-06-08, Count tree)
+exam_dp2  dp-47    2017-02-07, Longest balanced
+exam_dp2  dp-48    2017-06-08, Count
+exam_dp2  dp-50    2017-06-29, Https uva
+exam_dp2  dp-51    2017-06-29, Snakes and ladders
+exam_dp2  dp-52    2017-09-04, Double length
+exam_dp2  dp-53    2018-06-04, Kw constraint
+exam_dp2  dp-54    2018-06-28, Min palindrome
+exam_dp2  dp-55    2018-07-25, Profit
+exam_dp2  dp-56    2018-07-25, Value
+exam_dp2  dp-57    2018-08-21, Piu' che doppio
+exam_dp2  dp-58    2019-02-07, Cross
+exam_dp2  dp-59    2019-02-07, Election
+exam_dp2  dp-60    2019-06-06, Count paths
+exam_dp2  dp-61    2019-06-17, K palindrome
+exam_dp2  dp-62    2019-07-18, Max Increasing
+exam_dp2  dp-63    2019-08-22, Balanced
+exam_dp2  dp-64    2019-08-22, Skipass
+exam_dp2  dp-65    2020-01-14, Max sum even
+exam_dp2  dp-66    2020-02-04, Count paths
+exam_dp2  dp-67    2020-07-03, Ksequence
+exam_dp2  dp-68    2020-07-24, Close duplicates
+exam_dp2  dp-69    2020-09-04, Count menu
+exam_dp2  dp-70    2020-09-04, Longest single
+exam_dp2  dp-71    2020-09-04, Sottostringa comune
+exam_dp2  dp-72    2021-01-18, Stessa visita
+
+exam_dp3  dp-73   2021-01-18, Stiamo compatti
+exam_dp3  dp-74   2021-02-08, Zaino leggero
+exam_dp3  dp-76   2021-06-16, Rimozioni
+exam_dp3  dp-77   2021-07-26, Sottosequenze k-contigue
+exam_dp3  dp-78   2021-08-31, Somma Palindroma
+exam_dp3  dp-79   2022-01-17, Ben bilanciato
+exam_dp3  dp-80   2022-01-17, Longest repeating sequence
+exam_dp3  dp-81   2022-02-07, Discordville
+exam_dp3  dp-82   2022-02-07, Math ways
+exam_dp3  dp-83   2022-06-21, Double sequence
+exam_dp3  dp-84   2022-07-13, Sequenze crescenti
+exam_dp3  dp-85   2022-08-24, Connessioni
+exam_dp3  dp-86   2023-02-09, k-prodotto
+exam_dp3  dp-87   2023-02-09, Sottosequenza massima
+exam_dp3  dp-88   2023-06-20, Misciotto 2
+exam_dp3  dp-89   2023-07-11, Made-up
+exam_dp3  dp-90   2023-08-23, Stringhe eleganti
+exam_dp3  dp-91   2024-01-09, Quanti quadrati!
+exam_dp3  dp-92   2024-02-01, Alberibelli
+exam_dp3  dp-93   2024-02-01, LCNCS
+exam_dp3  dp-95   2024-07-02, Norma L1
+exam_dp3  dp-96   2024-08-26, Connect-x
+exam_dp3  dp-97   2024-08-26, Formazione stringhe
+exam_dp3  dp-98   2025-01-14, Quante parentesi
+exam_dp3  dp-99   2025-02-03, Mosse matriciali
+exam_dp3  dp-100  2025-06-13, Dollar word
+exam_dp3  dp-101  2025-07-14, Massima espressivita'
+exam_dp3  dp-102  2025-07-14, Livelli bonus
+exam_dp3  dp-103  2025-08-25, Going nowhere
+exam_dp3  dp-104  2026-01-12, Borsa
+exam_dp3  dp-105  2026-02-02, Hateville PNRR
+exam_dp3  dp-106  2026-07-20, Acqua alta
+exam_dp3  dp-107  2026-08-28, Sottoinsieme divisibile
+exam_dp3  dp-108  2026-08-28, Pari-bilanciato
+
+exam_flow  flow-1   2011-07-18, Swimming pool
+exam_flow  flow-2   2012-05-31, Matricola
+exam_flow  flow-3   2013-06-17, Cammini disgiunti e Fratelli Eris
+exam_flow  flow-4   2013-07-22, Ballo di fine anno
+exam_flow  flow-5   2014-07-21, Backup wireless
+exam_flow  flow-6   2014-12-19, Non contenti del
+exam_flow  flow-7   2015-02-02, Cubi alfabetici
+exam_flow  flow-8   2015-09-01, SIESTA
+exam_flow  flow-9   2015-12-17, Capacita ridotta
+exam_flow  flow-11  2016-08-29, Consiglio dei CdL
+exam_flow  flow-13  2017-01-24, Segherie
+exam_flow  flow-14  2017-06-29, Esperimento CERN
+exam_flow  flow-15  2018-08-21, Hateville Clubs
+exam_flow  flow-16  2019-06-17, Cantieri
+exam_flow  flow-17  2019-07-18, Rete elettrica trentina
+exam_flow  flow-18  2019-08-22, Torri
+exam_flow  flow-19  2020-07-24, Didattica pandemica
+exam_flow  flow-20  2022-06-21, Piano strategico
+exam_flow  flow-21  2022-08-24, Esami
+exam_flow  flow-22  2023-02-09, Facoltiadi
+exam_flow  flow-23  2023-06-20, Conferenza
+exam_flow  flow-24  2023-07-11, SWERC
+exam_flow  flow-25  2023-08-23, Rete idrica
+exam_flow  flow-26  2024-01-09, Commissioni di laurea
+exam_flow  flow-27  2024-07-02, Vie di fuga
+exam_flow  flow-28  2025-06-13, Braccia rubate alla ricerca
+exam_flow  flow-29  2025-08-25, Mensa
+exam_flow  flow-30  2026-01-12, Junior vs senior
+exam_flow  flow-31  2026-02-02, Personale ospedaliero
+exam_flow  flow-32  2026-06-22, Corsi di laurea
+exam_flow  flow-33  2026-07-20, Banco alimentare
+exam_flow  flow-34  2026-08-28, Numeri inquadrabili
+
+exam_grapha  graph-1     2011-05-02, Conteggio dei cammini minimi
+exam_grapha  graph-2     2011-06-06, Mindist
+exam_grapha  graph-3-1   2012-05-03, Roma (verifica nodo)
+exam_grapha  graph-3-2   2012-05-03, Roma (esistenza)
+exam_grapha  graph-4     2012-06-18, Qcammini
+exam_grapha  graph-5-2   2013-01-28, Monotono (ricerca cammino)
+exam_grapha  graph-6     2013-05-03, Grid distance
+exam_grapha  graph-7     2013-05-31, Connected k
+exam_grapha  graph-8     2013-09-02, Count
+exam_grapha  graph-9-1   2014-01-07, Mostri nelle stanze (cammino senza mostri)
+exam_grapha graph-9-2 2014-01-07, Mostri nelle stanze (minimo numero di mostri)
+exam_grapha  graph-10    2014-02-03, Connesso
+exam_grapha  graph-11    2014-04-24, Ciclo con arco
+exam_grapha graph-12-1 2014-07-21, Is principal (verifica)
+exam_grapha  graph-12-2  2014-07-21, Is principal (esistenza)
+exam_grapha  graph-13    2015-01-12, 4cycles dfs
+exam_grapha  graph-14    2015-02-02, Count
+exam_grapha  graph-15    2015-07-14, Cammini minimi
+exam_grapha  graph-16-1  2015-11-05, Check all
+exam_grapha  graph-16-2  2015-11-05, Check exists
+exam_grapha  graph-18    2016-07-06, Compute prob
+exam_grapha  graph-19    2016-08-29, Check path
+exam_grapha  graph-20    2017-01-24, Good bad guys
+exam_grapha  graph-21    2017-09-04, Longest descending path
+exam_grapha  graph-22    2018-01-08, Grafo trasposto
+exam_grapha  graph-23-2  2018-06-28, Can italy win (printOrder, bonus)
+exam_grapha  graph-24    2018-07-25, Erdos; compito 2023-07-11, Island Hopping
+
+exam_graphb  graph-25  2018-07-25, Shangai
+exam_graphb  graph-26  2018-08-21, Minecraft
+exam_graphb  graph-27  2019-06-17, Coast len
+exam_graphb  graph-28  2019-07-18, Nurikabe
+exam_graphb  graph-29  2019-08-22, Min sessions
+exam_graphb  graph-30  2020-02-04, Has path
+exam_graphb  graph-31  2020-09-04, Meeting point
+exam_graphb  graph-32  2022-02-07, Gazprom
+exam_graphb  graph-33  2022-06-21, Mele marce
+exam_graphb  graph-34  2022-07-13, Lago ricorsivo
+exam_graphb  graph-35  2022-08-24, DAG massimale
+exam_graphb  graph-36  2023-01-17, Albero di altezza minima
+exam_graphb  graph-38  2023-08-23, Diretto o no?
+exam_graphb  graph-39  2024-01-09, Tree Repair Shop
+exam_graphb  graph-40  2024-02-01, Tree Repair Shop 2
+exam_graphb  graph-41  2024-06-14, Big Fire
+exam_graphb  graph-42  2024-07-02, Circuiti matriciali
+exam_graphb  graph-43  2025-01-14, Flood fill
+exam_graphb  graph-44  2025-06-13, 1D Board
+exam_graphb  graph-45  2025-07-14, Most distant
+exam_graphb  graph-46  2025-08-25, Tassografia
+exam_graphb  graph-47  2026-01-12, Massimo raggiungibile
+exam_graphb  graph-48  2026-06-22, Nodi aciclici
+exam_graphb  graph-49  2026-08-28, Cavallo su scacchiera
+
+exam_greedy  greedy-2    2012-02-01, Check pairs
+exam_greedy  greedy-3    2012-05-31, Zigzag
+exam_greedy  greedy-4    2013-05-31 e 2014-09-01, Max segments
+exam_greedy  greedy-6    2015-06-08, Is subsequence
+exam_greedy  greedy-7-b  2015-07-14, Univoco
+exam_greedy  greedy-8    2016-01-07, Cover
+exam_greedy  greedy-9    2017-01-10 e 2023-01-17, Nastro
+exam_greedy  greedy-10   2018-06-04, Negate
+exam_greedy  greedy-11   2019-01-21, Is doable
+exam_greedy  greedy-12   2020-01-14, Min steps
+exam_greedy  greedy-13   2020-07-03, Palindromo massimo
+exam_greedy  greedy-14   2021-02-08, Trova l'ordine
+exam_greedy  greedy-15   2022-07-13, Prodotto minimo
+exam_greedy  greedy-17   2024-06-14, Multi core
+exam_greedy  greedy-18   2025-02-03, Giardinaggio
+exam_greedy  varie-1     2011-07-18, Close to zero
+exam_greedy  varie-2     2012-01-11, Nuts and bolts
+exam_greedy  varie-3     2012-09-10, Close points
+exam_greedy  varie-4     2012-09-10, Max square
+exam_greedy  varie-5     2014-01-07, Mistery
+exam_greedy  varie-6     2014-06-05, Segmentcover
+exam_greedy  varie-7     2014-09-01, Min moves
+exam_greedy  varie-8     2017-01-10, Zeri e uni
+exam_greedy  varie-9     2019-01-21, Partition
+exam_greedy  varie-10    2019-02-07, Senza consecutivi
+exam_greedy  varie-11    2019-07-18, Somma di quattro
+exam_greedy  varie-12    2020-02-04, Bordi quadrati
+exam_greedy  varie-13    2020-02-04, Maxsum
+exam_greedy  varie-14    2020-06-12, Paths
+exam_greedy  varie-15    2020-06-12, Scacchiera
+exam_greedy  varie-16    2020-07-24, Matrice
+exam_greedy  varie-17    2021-06-16, Trova la coppia
+exam_greedy  varie-18    2021-07-26, Punto d'incontro
+exam_greedy  varie-19    2025-01-14, Serie aritmetiche
+exam_greedy  varie-20    2025-02-03, Circular MaxSum
+exam_greedy  varie-21    2026-07-20, Massima distanza
+
+exam_treea  tree-1     2011-05-02, Valutazione di espressioni
+exam_treea  tree-2     2011-05-27, Maxdepth
+exam_treea  tree-3     2011-09-07, Unbalance
+exam_treea  tree-4     2012-06-18, Same level
+exam_treea  tree-6     2012-09-10, Longest sequence
+exam_treea  tree-7     2013-01-28, Is full
+exam_treea  tree-8     2013-05-03, Ancestor
+exam_treea  tree-9     2013-05-31, Un arco pesante
+exam_treea  tree-10    compiti 2014-02-03 e 2023-02-09, Turni e Broadcast
+exam_treea  tree-11    2014-04-24, Check balance ric
+exam_treea  tree-12    2014-06-16, Count trees
+exam_treea  tree-13    2014-09-01, Sottoalbero
+exam_treea  tree-14.1  2014-10-31, Insert edge (weaklyConnected)
+exam_treea  tree-14.2  2014-10-31, Insert edge (singularlyConnected)
+exam_treea  tree-15    2015-01-12, Balance
+exam_treea  tree-16    2015-11-05, Compute average
+exam_treea  tree-17    2016-01-07, Dfs search
+exam_treea  tree-18    2016-06-06, Silicon Valley 1
+exam_treea  tree-19    2016-11-03, Longest decreasing
+exam_treea  tree-20    2016-11-03, Min count
+exam_treea  tree-21    2017-02-07, Count tree
+exam_treea  tree-22    2018-01-08, Nicetree
+exam_treea  tree-23    2018-01-31, Search forest
+exam_treea  tree-24.a  2018-06-28, K minimal
+exam_treea  tree-24.b  2018-06-28, K minimal (bonus: thinnest)
+exam_treea  tree-25    2018-06-28, Min coloring
+exam_treea  tree-26    2019-01-21, Is christmassy
+exam_treea  tree-27    2019-06-06, Check priority
+exam_treea  tree-28    2019-06-17, Max path
+
+exam_treeb  tree-29  2020-02-04, Sum angular
+exam_treeb  tree-30  2020-06-12, Mh rec
+exam_treeb  tree-31  2020-07-03, Binary insert
+exam_treeb  tree-32  2020-07-24, Specchio
+exam_treeb  tree-33  2021-01-18, Profondita minima
+exam_treeb  tree-34  2021-02-19, Da foglia a foglia
+exam_treeb  tree-35  2021-06-16, Albero completo
+exam_treeb  tree-36  2021-07-26, Alberi ben bilanciati
+exam_treeb  tree-37  2022-01-17, Alberi made up
+exam_treeb  tree-38  2022-02-07, Alberi pasciuti
+exam_treeb  tree-39  2022-06-21, Lato destro
+exam_treeb  tree-40  2023-01-17, Albero binario massimale
+exam_treeb  tree-42  2023-06-20, Tree fire
+exam_treeb  tree-43  2023-06-20, Somma su albero
+exam_treeb  tree-44  2023-07-11, Perfect inside
+exam_treeb  tree-45  2023-08-23, Prossimita
+exam_treeb  tree-46  2024-07-02, Piu o meno
+exam_treeb  tree-47  2024-08-26, Alberi isobati
+exam_treeb  tree-48  2025-02-03, Somma ramificata
+exam_treeb  tree-49  2025-07-14, Albero bello
+exam_treeb  tree-50  2025-08-25, Scendere nell'albero
+exam_treeb  tree-51  2026-01-12, Alberobello
+exam_treeb  tree-52  2026-02-02, Albero sommato
+exam_treeb  tree-53  2026-06-22, Nodi valore-bilanciati
+exam_treeb  tree-54  2026-07-20, Parenti serpenti
+exam_treeb  tree-55  2026-08-28, Sottoalbero ABR massimo
+
+exam_compiti compiti-2011-04-11-A1-minGap 2011-04-11, Differenze minime e
+exam_compiti compiti-2011-04-11-A1-maxGap 2011-04-11, Differenze minime e
+exam_compiti  compiti-2011-04-11-A2         2011-04-11, ABR minimo
+exam_compiti compiti-2011-06-06-B2 2011-06-06, Nearest (e 2012-07-09 B2)
+exam_compiti  compiti-2011-09-07-A4         2011-09-07, Count inversion
+exam_compiti  compiti-2012-02-01-A1         2012-02-01, Quattro parti
+exam_compiti  compiti-2012-05-03-A2-i       2012-05-03, Roma (parte i)
+exam_compiti  compiti-2012-05-03-A2-ii      2012-05-03, Roma (parte ii)
+exam_compiti  compiti-2012-06-18-A2         2012-06-18, Merge sort
+exam_compiti compiti-2012-09-10-A1-i 2012-09-10, Sortino sort (complessita')
+exam_compiti compiti-2012-09-10-A1-ii 2012-09-10, Sortino sort (correttezza)
+exam_compiti  compiti-2013-01-07-A1         2013-01-07, Merge
+exam_compiti  compiti-2013-01-07-A2         2013-01-07, Search sum
+exam_compiti  compiti-2013-06-17-A2         2013-06-17, Splitfour
+exam_compiti  compiti-2013-09-02-A2         2013-09-02, Verify rbrec
+exam_compiti  compiti-2019-08-22-A2         2019-08-22, Is red black
+exam_compiti  compiti-2014-10-31-A2         2014-10-31, Almost sort
+exam_compiti  compiti-2014-12-19-B1         2014-12-19, Min intervals
+exam_compiti  compiti-2015-06-08-A2         2015-06-08, Connected order
+exam_compiti  compiti-2015-07-14-B3.2       2015-07-14, Univoco (backtrack)
+exam_compiti  compiti-2015-11-05-A2b        2015-11-05, Compute diff
+exam_compiti  compiti-2015-11-05-A4b        2015-11-05, Compute frequency
+exam_compiti  compiti-2016-01-26-B3         2016-01-26, Is shuffle
+exam_compiti  compiti-2016-07-06-A2         2016-07-06, Matrix sort
+exam_compiti  compiti-2016-08-29-B4         2016-08-29, Count
+exam_compiti compiti-2017-01-10-B4.1 2017-01-10, Nastro - ordinamento per
+exam_compiti  compiti-2017-06-08-A2         2017-06-08, Has cycle
+exam_compiti  compiti-2017-06-08-B4         2017-06-08, Count
+exam_compiti  compiti-2018-01-31-A2         2018-01-31, Occurrences
+exam_compiti  compiti-2019-02-07-A2         2019-02-07, Prima occorrenza
+exam_compiti  compiti-2019-08-22-A1         2019-08-22, Merge sort
+exam_compiti  compiti-2020-01-14-A1         2020-01-14, Complessita
+exam_compiti  compiti-2020-02-04-A1         2020-02-04, Build heap
+exam_compiti  compiti-2021-02-08-A3         2021-02-08, Conversione numeri
+exam_compiti  compiti-2021-07-27-A1         2021-07-27, Complessita
+exam_compiti  compiti-2021-07-27-A2         2021-07-27, Quasi ordinati
+exam_compiti  compiti-2021-07-27-A3         2021-07-27, Alberi ben bilanciati
+exam_compiti  compiti-2021-07-27-B1         2021-07-27, Punto d'incontro
+exam_compiti  compiti-2021-07-27-B2         2021-07-27, PrintBits
+exam_compiti compiti-2021-07-27-B3 2021-07-27, Sottosequenze k-contigue
+exam_compiti  compiti-2022-08-24-A1         2022-08-24, Complessita
+exam_compiti  compiti-2022-08-24-A3         2022-08-24, Somma su albero
+exam_compiti  compiti-2026-06-22-B3         2026-06-22, Hateville PNRR
+
+exam_esercitazionia esercitazioni-1 Alberi, Cammino radice-discendente
+exam_esercitazionia  esercitazioni-2     2020-07-03, Inserisci l'albero
+exam_esercitazionia  esercitazioni-3     Alberi, Grado di sbilanciamento
+exam_esercitazionia  esercitazioni-4     Alberi, Larghezza albero
+exam_esercitazionia  esercitazioni-5     Alberi, Albero livello-valore
+exam_esercitazionia  esercitazioni-6     2020-07-24, Alberi simmetrici
+exam_esercitazionia  esercitazioni-7     Alberi, Sopra e sotto
+exam_esercitazionia  esercitazioni-8     Alberi, Indovina l'albero
+exam_esercitazionia  esercitazioni-10    Crazy
+exam_esercitazionia  esercitazioni-11    2020-07-24, Famiglia
+exam_esercitazionia  esercitazioni-12-1  Albero di ricorsione su MergeSortK
+exam_esercitazionia  esercitazioni-12-2  Albero di ricorsione su MergeSortK
+exam_esercitazionia  esercitazioni-12-3  Albero di ricorsione su MergeSortK
+exam_esercitazionia  esercitazioni-13-1  Analisi, MergeSortK
+exam_esercitazionia  esercitazioni-13-2  Analisi, MergeSortK
+exam_esercitazionia  esercitazioni-15    Ricorrenza 4T(sqrt n) + log^2 n
+exam_esercitazionia  esercitazioni-16    Ricorrenza 2T(n/8)+2T(n/4)+n
+exam_esercitazionia  esercitazioni-17    Ricorrenza T(n-1)+log n
+exam_esercitazionia esercitazioni-18 Ricorrenza 2T(n/2)+4T(n/4)+15T(n/8)+n^2
+exam_esercitazionia esercitazioni-19 Analisi, Algoritmo di selezione
+exam_esercitazionia  esercitazioni-20-1  2010-09-12, SortinoSort
+exam_esercitazionia  esercitazioni-21    Analisi, Problema, T(m)+T(n-m)
+exam_esercitazionia  esercitazioni-22    2018-07-25, k-cammini
+exam_esercitazionia  esercitazioni-25-1  Tessere del domino
+exam_esercitazionia  esercitazioni-25-2  Tessere del domino
+exam_esercitazionia  esercitazioni-26    Zaino
+exam_esercitazionia esercitazioni-27 Per fare un albero (binario di ricerca)
+exam_esercitazionia  esercitazioni-28    Vicini-vicini, difficile
+exam_esercitazionia  esercitazioni-29-1  Esercizi Divide-et-impera, Punto fisso
+exam_esercitazionia  esercitazioni-29-2  Esercizi Divide-et-impera, Chi manca?
+exam_esercitazionia esercitazioni-29-3 Esercizi Divide-et-impera, Vettori
+exam_esercitazionia  esercitazioni-30    Doppio mediano
+exam_esercitazionia  esercitazioni-31-2  Gap
+exam_esercitazionia  esercitazioni-33    Samarcanda
+
+exam_esercitazionib  esercitazioni-34    Ballo di fine anno
+exam_esercitazionib  esercitazioni-35    Cammini indipendenti
+exam_esercitazionib  esercitazioni-36    Cubi
+exam_esercitazionib  esercitazioni-37    Aggiornamento del flusso massimo
+exam_esercitazionib  esercitazioni-38    McDonald
+exam_esercitazionib  esercitazioni-39    Piscina
+exam_esercitazionib  esercitazioni-40    Torri di controllo
+exam_esercitazionib esercitazioni-41-2 Grafi, Grafi bipartiti
+exam_esercitazionib  esercitazioni-42-1  Grafi, Connetti il grafo
+exam_esercitazionib  esercitazioni-42-2  Grafi, Connetti il grafo
+exam_esercitazionib  esercitazioni-43    Grafi, Distanza fra partizioni
+exam_esercitazionib  esercitazioni-45    Griglia quadrata
+exam_esercitazionib  esercitazioni-46    Shangai
+exam_esercitazionib  esercitazioni-48    Grafi, Pozzo universale
+exam_esercitazionib esercitazioni-49-1 2012-05-03, Grafi, Tutte le strade
+exam_esercitazionib esercitazioni-49-2 2012-05-03, Grafi, Tutte le strade
+exam_esercitazionib  esercitazioni-50    Grafi, Stessa distanza
+exam_esercitazionib  esercitazioni-51    Batterie (numero di fermate)
+exam_esercitazionib  esercitazioni-52    2017-06-29, High Line
+exam_esercitazionib  esercitazioni-53    Scheduling
+exam_esercitazionib  esercitazioni-54    Sciatori
+exam_esercitazionib  esercitazioni-55    2013-05-31, Sfilatino alla Nutella
+exam_esercitazionib esercitazioni-57-1 Esercizi di programmazione, Cerca la
+exam_esercitazionib esercitazioni-57-2 Esercizi di programmazione, Cerca la
+exam_esercitazionib esercitazioni-57-3 Esercizi di programmazione, Cerca la
+exam_esercitazionib  esercitazioni-59    Vito's Family
+exam_esercitazionib  esercitazioni-60    Batterie (costo di sostituzione)
+exam_esercitazionib  esercitazioni-61    2013-09-02, D20
+exam_esercitazionib  esercitazioni-62    2016-07-16, Donald Trump
+exam_esercitazionib esercitazioni-63-1 2014-06-05, Costo partizione di un
+exam_esercitazionib esercitazioni-63-2 2014-06-05, Costo partizione di un
+exam_esercitazionib esercitazioni-63-3 2014-06-05, Costo partizione di un
+exam_esercitazionib  esercitazioni-64    I Promessi Sposi
+exam_esercitazionib  esercitazioni-65    2014-06-05, Massima copertura
+exam_esercitazionib  esercitazioni-66    k-sottosequenza massimale
+exam_esercitazionib  esercitazioni-67    Palindroma
+exam_esercitazionib  esercitazioni-68    2012-09-10, Quadrato binario
+exam_esercitazionib  esercitazioni-69    Mosse su scacchiera
+exam_esercitazionib  esercitazioni-70    Codice segreto
+exam_esercitazionib  esercitazioni-71    Ottimizza la somma
+exam_esercitazionib  esercitazioni-72    Vettori ordinati
+exam_esercitazionib  esercitazioni-74    Supersequenza comune minimale
+exam_esercitazionib  esercitazioni-76    Sequenza specchiata
+
+exam_asdlab asdlab-batman progetto 2014/15, Batman si annoia
+exam_asdlab asdlab-flatland progetto 2014/15, Natale a Flatlandia
+exam_asdlab  asdlab-pokemon                   progetto 2016/17, Pokemon Park
+exam_asdlab asdlab-lich progetto 2016/17, La vendetta del Re Lich
+exam_asdlab asdlab-laser progetto 2017/18, 007: Pioggia di laser
+exam_asdlab asdlab-nassau progetto 2017/18, Assalto a Nassau
+exam_asdlab asdlab-alpini progetto 2017/18, Alpinocalypse Now
+exam_asdlab asdlab-got progetto 2018/19, Game of (Approximated) Thrones
+exam_asdlab asdlab-2026-lab01-somma lab 2026-09-24, Somma di due numeri
+exam_asdlab asdlab-2026-lab01-sottoseq lab 2026-09-24, Sottosequenza di somma
+exam_asdlab asdlab-2026-lab01-sottomat lab 2026-09-24, Sottomatrice di somma
+exam_asdlab  asdlab-2026-lab02-sort           lab 2026-10-22, Sorting
+exam_asdlab  asdlab-2026-lab02-intervalli     lab 2026-10-22, Intervalli
+exam_asdlab  asdlab-2026-lab02-ceil           lab 2026-10-22, Funzioni ceil
+exam_asdlab asdlab-2026-lab02-sortpesato lab 2026-10-22, Ordinamento pesato
+exam_asdlab asdlab-2026-lab03-visita-albero lab 2026-10-29, Visita di un albero
+exam_asdlab asdlab-2026-lab03-visita-grafo lab 2026-10-29, Visita di grafo
+exam_asdlab asdlab-2026-lab03-diametro lab 2026-10-29, Diametro su grafo non
+exam_asdlab  asdlab-2026-lab04-red-black      lab 2026-11-19, Alberi Red-Black
+exam_asdlab asdlab-2026-lab04-ciclo lab 2026-11-19, Individuazione di un ciclo
+exam_asdlab asdlab-2026-lab04-numcammini lab 2026-11-19, Numero di cammini
+exam_asdlab asdlab-2026-lab05-componente lab 2026-11-26, Componente fortemente
+exam_asdlab asdlab-2026-lab05-toporder lab 2026-11-26, Ordinamento topologico
+exam_asdlab asdlab-2026-lab05-camminolungo lab 2026-11-26, Cammino piu' lungo
+
 # the contracts of the book, checked as tests
 contract_algorithm    binary-counter       contatore binario, sezione 4.2.1
 contract_algorithm    hanoi                torri di Hanoi, sezione 4.4

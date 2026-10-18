@@ -222,6 +222,48 @@ and against the counts and the bounds of their analysis.
 | exact cover by dancing links, Algorithm X (7.2.2.1) | [`backtrack/DancingLinks.h`](include/ADS/backtrack/DancingLinks.h) | `taocp.dancing-links` |
 | SAT by DPLL and by conflict-driven clause learning (7.2.2.2) | [`backtrack/SatSolvers.h`](include/ADS/backtrack/SatSolvers.h) | `taocp.sat-solvers` |
 
+## From Ferragina's algorithm engineering
+
+The algorithms of P. Ferragina's *Pearls of Algorithm Engineering*, from
+the maximum sub-array sum to the compressed data structures, are in ADS as
+well. Each header compares the algorithms of its chapter with the variants
+of the later literature (e.g., SA-IS beside the skew algorithm, or the
+sampled select of the practical libraries beside Clark's scheme). The tests
+in `test/pearls_*.cpp` check them against brute force, against the standard
+library and against the examples of the notes, with their numbers. A class
+simulates the two-level memory of chapters 3 to 6 and counts the reads and
+the writes of blocks; hence, the tests can also check the bounds on the
+I/Os that those chapters prove.
+
+| What | Headers | Tests |
+|---|---|---|
+| maximum sub-array sum, with lengths in a range and maximum density (2) | [`algorithm/MaximumSegments.h`](include/ADS/algorithm/MaximumSegments.h) | `pearls_io.ch2.*` |
+| random sampling, on disk and on streams, Vitter's skips (3) | [`numeric/RandomSampling.h`](include/ADS/numeric/RandomSampling.h) | `pearls_io.ch3.*` |
+| list ranking by pointer jumping and independent sets, in memory and on disk (4) | [`external/ListRanking.h`](include/ADS/external/ListRanking.h) | `pearls_io.ch4.*` |
+| two-level memory, binary and multiway mergesort, distribution sort, loser tree, I/O lower bounds (5) | [`external/`](include/ADS/external), [`priority/LoserTree.h`](include/ADS/priority/LoserTree.h) | `pearls_io.ch5.*` |
+| sorted set intersection: merge, binary search, mutual partition, doubling, two-level (6) | [`set/SortedIntersection.h`](include/ADS/set/SortedIntersection.h) | `pearls_io.ch6.*` |
+| universal hashing, d-left, FKS, minimal ordered perfect hashing, cuckoo hashing, Bloom variants (8) | [`dictionary/`](include/ADS/dictionary), [`set/BloomVariants.h`](include/ADS/set/BloomVariants.h) | `pearls_hashing.*` |
+| prefix search, front coding, Patricia trie, two-level dictionary (9) | [`string/PrefixSearch.h`](include/ADS/string/PrefixSearch.h), [`string/FrontCoding.h`](include/ADS/string/FrontCoding.h), [`dictionary/PatriciaTrie.h`](include/ADS/dictionary/PatriciaTrie.h) | `pearls_hashing.*` |
+| suffix arrays (six constructions), LCP, range minimum queries, suffix trees and their applications (10) | [`string/SuffixArray.h`](include/ADS/string/SuffixArray.h), [`string/SuffixTree.h`](include/ADS/string/SuffixTree.h), [`search/RangeMinimum.h`](include/ADS/search/RangeMinimum.h) | `pearls_suffix.*` |
+| integer codes: gamma, delta, Rice, Golomb, PForDelta, variable-byte, (s,c)-dense, interpolative, Elias-Fano (11) | [`compression/IntegerCodes.h`](include/ADS/compression/IntegerCodes.h), [`succinct/EliasFano.h`](include/ADS/succinct/EliasFano.h) | `pearls_succinct.*` |
+| canonical Huffman, arithmetic coding, PPM (12), LZ77, LZSS, LZ78, LZW (13), Burrows-Wheeler, bzip, FM-index (14) | [`compression/`](include/ADS/compression) | `pearls_compression.*` |
+| bit vectors with rank and select, succinct trees (Jacobson, LOUDS, balanced parentheses) and graphs (k2-tree, Boldi-Vigna) (15) | [`succinct/`](include/ADS/succinct) | `pearls_succinct.*` |
+
+## The exercises and the exams of the course
+
+Beyond the exercises of the book, the tests cover the material of the
+course on which the book is based: the chapter collections, the thematic
+collections, more than 80 exams from 2011 to 2026 with their official
+solutions, the exercise sessions and the laboratory projects. Each problem
+is implemented after its official solution and checked on the examples of
+its statement. It is also checked against an independent oracle (brute
+force, a simpler algorithm, the standard library) on random instances,
+which usually exposes the slips of the official solutions; there, the test
+implements the correct version and shows the counterexample. The tests are
+in `test/exam_*.cpp`, one program per theme (e.g., backtracking, dynamic
+programming, flows) or per source, and the name of a test gives the problem
+and the date of its exam.
+
 ## Engineered structures
 
 Beside the classes of the book, which follow its pseudocode, a few

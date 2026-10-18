@@ -69,6 +69,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <random>
 #include <utility>
 #include <vector>
 

@@ -709,6 +709,11 @@ ADS_TEST( "random-numbers" )
   }
  CHECK( chiSquare( S , std::vector< double >( 10 , 0.1 ) ) < 27.88 );
  CHECK( chiSquare( R , std::vector< double >( 10 , 0.1 ) ) < 27.88 );
+ std::mt19937 g32( 4 );                     // a generator of 32 bits too
+ std::vector< long > S32( 10 , 0 );
+ for( int t = 0 ; t < 10000 ; ++t )
+  for( auto i : selectionSampling( 3 , 10 , g32 ) ) ++S32[ i ];
+ CHECK( chiSquare( S32 , std::vector< double >( 10 , 0.1 ) ) < 27.88 );
  CHECK( selectionSampling( 10 , 10 , ref ).size() == 10 );
  CHECK_THROWS( (void) selectionSampling( 11 , 10 , ref ) ,
                contract_violation );

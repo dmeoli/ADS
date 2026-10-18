@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- from Ferragina's Pearls of Algorithm Engineering: the variants of the
+  maximum sub-array sum, the random sampling on disk and on streams, the
+  list ranking, the two-level memory with the external mergesorts and the
+  distribution sort, the loser tree, the sorted set intersections (chapters
+  2-6); universal, perfect, minimal ordered perfect and cuckoo hashing, the
+  Bloom variants, prefix search, front coding, the Patricia trie and the
+  two-level dictionary (8-9); suffix arrays, LCP, range minimum queries and
+  suffix trees with their applications (10); the integer codes, the bit
+  vectors with rank and select, Elias-Fano, the succinct trees and graphs
+  (11, 15); canonical Huffman, arithmetic coding, PPM, the Lempel-Ziv
+  compressors, the Burrows-Wheeler transform and the FM-index (12-14);
+  test/pearls_*.cpp
+- the tests from the course of the book: the chapter and thematic
+  collections, the exams from 2011 to 2026 with their official solutions,
+  the exercise sessions and the laboratory projects, each against an
+  independent oracle; test/exam_*.cpp
 - the benchmarks of the dictionaries, of the priority queues, of the
   sequences, of the integers of any length and of the FFT, against the
   standard library, Boost (unordered_flat_map, flat_map, Boost.Heap,
@@ -211,6 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- selectionSampling() draws its uniform numbers by std::generate_canonical,
+  so that a generator of 32 bits no longer gives the first n items always
 - the search by interpolation computes its differences in double, since
   v - A[ i ] could overflow the keys and send the probe out of the vector
 - the bound of sortToHull() is floor( sqrt( LONG_MAX ) ), so that x^2 fits

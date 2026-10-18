@@ -144,7 +144,8 @@ std::vector< std::size_t > selectionSampling( std::size_t n , std::size_t N ,
  ADS_PRE( n <= N );
  std::vector< std::size_t > out;
  for( std::size_t t = 0 ; out.size() < n ; ++t ) {   // t seen, m chosen
-  const double U = double( g() >> 11 ) * 0x1.0p-53;
+  const double U =                          // in [ 0 , 1 ), whatever the
+   std::generate_canonical< double , 53 >( g );   // width of g
   if( double( N - t ) * U < double( n - out.size() ) )
    out.push_back( t );
   }
