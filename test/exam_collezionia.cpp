@@ -34,6 +34,7 @@
 #include "ADSTest.h"
 
 #include "ADS/Contract.h"
+#include "ADS/algorithm/AkraBazzi.h"
 #include "ADS/algorithm/MasterTheorem.h"
 #include "ADS/combinatorial/Generation.h"
 #include "ADS/dictionary/OpenHashTable.h"
@@ -41,16 +42,21 @@
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/MatrixGraph.h"
 #include "ADS/graph/MinimumSpanningTree.h"
+#include "ADS/graph/Properties.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/numeric/Combinatorics.h"
 #include "ADS/priority/DaryHeap.h"
 #include "ADS/priority/HeapPriorityQueue.h"
+#include "ADS/priority/LoserTree.h"
 #include "ADS/sequence/List.h"
+#include "ADS/sequence/Rearrangements.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/Heapsort.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/stack/SequenceStack.h"
 #include "ADS/tree/BinaryTree.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
+#include "ADS/tree/HeapByInsertion.h"
 #include "ADS/tree/SearchTree.h"
 #include "ADS/tree/Tree.h"
 
@@ -591,18 +597,11 @@ ADS_TEST( "collezioni-02-analisi-1-12" )
 /*--------------------------------------------------------------------------*/
 
 /// the exponent p of Akra and Bazzi for T( n ) = 2 T( n / 3 ) + T( 2 n /
-/// 3 ) + 1, the root of 2 ( 1 / 3 )^p + ( 2 / 3 )^p = 1, by bisection
+/// 3 ) + 1, the root of 2 ( 1 / 3 )^p + ( 2 / 3 )^p = 1, by the bisection
+/// of akraBazziExponent() of the library
 double akraBazziThirds( void )
 {
- double lo = 1 , hi = 2;
- for( int i = 0 ; i < 100 ; ++i ) {
-  const double p = ( lo + hi ) / 2;
-  if( 2 * std::pow( 1.0 / 3 , p ) + std::pow( 2.0 / 3 , p ) > 1 )
-   lo = p;
-  else
-   hi = p;
-  }
- return( ( lo + hi ) / 2 );
+ return( akraBazziExponent( { { 2 , 1.0 / 3 } , { 1 , 2.0 / 3 } } ) );
  }
 
 /// T( n ) = 2 T( n / 3 ) + T( 2 n / 3 ) + 1, T( n ) = 1 for n <= 1, with
@@ -768,27 +767,15 @@ ADS_TEST( "collezioni-02-analisi-1-20-3" )
 enum class Flag { VERDE , BIANCO , ROSSO };
 
 /// ordinaBandiera(): the greens, then the whites, then the reds, by
-/// examining and swapping only; B[ 0 .. i - 1 ] green, B[ i .. j - 1 ]
-/// white, B[ j .. k ] not examined, B[ k + 1 .. n - 1 ] red; Theta( n )
-/// time, O( 1 ) space; the number of swaps is returned
-// candidate for the library
+/// examining and swapping only: dutchNationalFlag() of the library, with
+/// B[ 0 .. i - 1 ] green, B[ i .. j - 1 ] white, B[ j .. k ] not examined,
+/// B[ k + 1 .. n - 1 ] red; Theta( n ) time, O( 1 ) space; the number of
+/// swaps is returned
 int ordinaBandiera( std::vector< Flag > & B )
 {
- int swaps = 0;
- long i = 0 , j = 0 , k = long( B.size() ) - 1;
- while( j <= k ) {
-  if( B[ j ] == Flag::VERDE ) {
-   std::swap( B[ i++ ] , B[ j++ ] );
-   ++swaps;
-   }
-  else if( B[ j ] == Flag::BIANCO )
-   ++j;
-  else {
-   std::swap( B[ j ] , B[ k-- ] );
-   ++swaps;
-   }
-  }
- return( swaps );
+ std::size_t swaps = 0;
+ dutchNationalFlag( B , []( Flag f ) { return( int( f ) ); } , & swaps );
+ return( int( swaps ) );
  }
 
 // every vector of up to 8 colors, and random long ones: the colors in
@@ -966,41 +953,9 @@ ADS_TEST( "collezioni-02-analisi-1-28-2" )
 /*------------------------- 05-alberi, 1.1, Visite -------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the binary tree of the previsit pre and of the invisit in, of distinct
-/// labels: the first of pre is the root, its place in in splits the
-/// others into the left and the right subtree; O( n ) time with the
-/// places of the labels in a table
-/// \pre pre and in are the visits of the same tree of distinct labels
-template< class T >
-BinaryTree< T > * fromPreIn( const std::vector< T > & pre ,
-                             const std::vector< T > & in )
-{
- ADS_PRE( pre.size() == in.size() );
- std::map< T , std::size_t > at;
- for( std::size_t i = 0 ; i < in.size() ; ++i )
-  at[ in[ i ] ] = i;
- ADS_PRE( at.size() == in.size() );
- std::function< BinaryTree< T > * ( std::size_t , std::size_t ,
-                                    std::size_t ) > rec =
-  [ & ]( std::size_t p , std::size_t i , std::size_t n )
-  -> BinaryTree< T > * {
-  if( n == 0 )
-   return( nullptr );
-  const auto it = at.find( pre[ p ] );
-  ADS_PRE( ( it != at.end() ) && ( it->second >= i ) &&
-           ( it->second < i + n ) );
-  const std::size_t k = it->second - i;       // the left subtree
-  std::unique_ptr< BinaryTree< T > > t(     // freed, with what hangs from
-   new BinaryTree< T >( pre[ p ] ) );       // it, if a contract fails below
-  if( auto l = rec( p + 1 , i , k ) ) t->insertLeft( l );
-  if( auto r = rec( p + 1 + k , i + k + 1 , n - 1 - k ) ) t->insertRight( r );
-  return( t.release() );
-  };
- return( rec( 0 , 0 , pre.size() ) );
- }
-
 // the tree of the example, its postvisit, and random trees of distinct
-// labels rebuilt from their previsit and invisit
+// labels rebuilt from their previsit and invisit by fromPreorderInorder()
+// of the library
 ADS_TEST( "collezioni-05-alberi-1-1" )
 {
  const std::vector< char > pre = { 'A' , 'E' , 'B' , 'F' , 'G' , 'C' , 'D' ,
@@ -1009,7 +964,7 @@ ADS_TEST( "collezioni-05-alberi-1-1" )
                                   'H' , 'I' } ,
                            post = { 'B' , 'G' , 'C' , 'F' , 'E' , 'H' , 'I' ,
                                     'D' , 'A' };
- std::unique_ptr< BinaryTree< char > > t( fromPreIn( pre , in ) );
+ std::unique_ptr< BinaryTree< char > > t( fromPreorderInorder( pre , in ) );
  CHECK( to_list( t.get() ) == "( A ( E ( B () () ) ( F ( G () () ) ( C () () "
                               ") ) ) ( D () ( I ( H () () ) () ) ) )" );
  CHECK( visit( t.get() , 2 ) == post );
@@ -1021,11 +976,12 @@ ADS_TEST( "collezioni-05-alberi-1-1" )
   std::shuffle( L.begin() , L.end() , g );
   std::size_t next = 0;
   BTPtr u( randomTree( g , n , [ & ]() { return( L[ next++ ] ); } ) );
-  BTPtr v( fromPreIn( visit( u.get() , 0 ) , visit( u.get() , 1 ) ) );
+  BTPtr v( fromPreorderInorder( visit( u.get() , 0 ) ,
+                                visit( u.get() , 1 ) ) );
   CHECK( to_list( u.get() ) == to_list( v.get() ) );
   }
- CHECK( fromPreIn( Ints() , Ints() ) == nullptr );
- CHECK_THROWS( fromPreIn( Ints( { 1 , 2 } ) , Ints( { 1 , 3 } ) ) ,
+ CHECK( fromPreorderInorder( Ints() , Ints() ) == nullptr );
+ CHECK_THROWS( fromPreorderInorder( Ints( { 1 , 2 } ) , Ints( { 1 , 3 } ) ) ,
                contract_violation );
  }
 
@@ -1333,18 +1289,27 @@ ADS_TEST( "collezioni-05-alberi-1-7" )
 /*-------------------- 05-alberi, 1.8, Albero speculare --------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// mirrorInPlace(): t mirrored in place as in the text, the two subtrees of
+/// each node detached and inserted back swapped; Theta( n ) time
+template< class T >
+void mirrorInPlace( BinaryTree< T > * t )
+{
+ if( ! t )
+  return;
+ BinaryTree< T > * l = t->detachLeft() , * r = t->detachRight();
+ mirrorInPlace( l );
+ mirrorInPlace( r );
+ if( r ) t->insertLeft( r );
+ if( l ) t->insertRight( l );
+ }
+
 /// specular(): the mirror of t, with left and right swapped at each node,
-/// Theta( n ) time; BinaryTree cannot detach a subtree without destroying
-/// it, so the mirror is built as a new tree instead of in place as in the
-/// text; the caller owns it
+/// made in place on a copy of t; Theta( n ) time; the caller owns it
 template< class T >
 BinaryTree< T > * specular( const BinaryTree< T > * t )
 {
- if( ! t )
-  return( nullptr );
- auto m = new BinaryTree< T >( t->read() );
- if( auto l = specular( t->right() ) ) m->insertLeft( l );
- if( auto r = specular( t->left() ) ) m->insertRight( r );
+ BinaryTree< T > * m = copy( t );
+ mirrorInPlace( m );
  return( m );
  }
 
@@ -1558,10 +1523,6 @@ BT * fromSearchTree( const Tr & t , typename Tr::Link * u )
  return( b );
  }
 
-/// verifyBST() of 1.3, used by the tests from here on
-bool verifyBST( const BT * t , const int * lower = nullptr ,
-                const int * upper = nullptr );
-
 /// the keys K, distinct and sorted, written on the nodes of t in invisit,
 /// the only labelling that makes t a search tree; Theta( n ) time
 /// \pre K is strictly increasing and has as many keys as t has nodes
@@ -1585,7 +1546,7 @@ ADS_TEST( "collezioni-06-abr-1-1" )
  CHECK( to_list( t.get() ) == "( 23 ( 17 ( 12 ( 7 () () ) ( 15 () () ) ) ( 2"
                               "1 ( 18 () () ) () ) ) ( 33 ( 32 () () ) ( 37 "
                               "() () ) ) )" );
- CHECK( verifyBST( t.get() ) );
+ CHECK( isSearchTree( t.get() ) );
  std::mt19937 g( 61 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = randInt( g , 0 , 40 );
@@ -1594,7 +1555,7 @@ ADS_TEST( "collezioni-06-abr-1-1" )
   while( int( S.size() ) < n ) S.insert( randInt( g , -1000 , 1000 ) );
   const Ints K( S.begin() , S.end() );
   labelSearchTree( u.get() , K );
-  CHECK( verifyBST( u.get() ) && ( visit( u.get() , 1 ) == K ) );
+  CHECK( isSearchTree( u.get() ) && ( visit( u.get() , 1 ) == K ) );
   }
  for( int n = 1 ; n <= 6 ; ++n ) {            // the labelling is unique
   BTPtr u( randomTree( g , n ) );
@@ -1604,7 +1565,7 @@ ADS_TEST( "collezioni-06-abr-1-1" )
   do {
    std::size_t i = 0;
    in_visit( u.get() , [ & ]( BT * v ) { v->write( K[ i++ ] ); } );
-   good += verifyBST( u.get() );
+   good += isSearchTree( u.get() );
    } while( std::next_permutation( K.begin() , K.end() ) );
   CHECK( good == 1 );
   }
@@ -1683,23 +1644,10 @@ ADS_TEST( "collezioni-06-abr-1-2" )
 /*----------------------- 06-abr, 1.3, Verifica ABR ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// verifyBST(): each key in the open interval ( lower , upper ) that its
-/// ancestors leave to it, nullptr for an infinite end; comparing a node
-/// with its children only is not enough; Theta( n ) time, O( h ) space
-// candidate for the library
-bool verifyBST( const BT * t , const int * lower , const int * upper )
-{
- if( ! t )
-  return( true );
- const int & k = t->read();
- if( ( lower && ( k <= *lower ) ) || ( upper && ( k >= *upper ) ) )
-  return( false );
- return( verifyBST( t->left() , lower , &k ) &&
-         verifyBST( t->right() , &k , upper ) );
- }
-
-// random trees against the invisit strictly increasing, the search trees of
-// the library, and a violation at a grandchild only
+// isSearchTree() of the library, each key in the open interval that its
+// ancestors leave to it: random trees against the invisit strictly
+// increasing, the search trees of the library, and a violation at a
+// grandchild only
 ADS_TEST( "collezioni-06-abr-1-3" )
 {
  std::mt19937 g( 63 );
@@ -1709,7 +1657,7 @@ ADS_TEST( "collezioni-06-abr-1-3" )
   const Ints in = visit( t.get() , 1 );
   const bool e = std::adjacent_find( in.begin() , in.end() ,
                                      std::greater_equal<>() ) == in.end();
-  CHECK( verifyBST( t.get() ) == e );
+  CHECK( isSearchTree( t.get() ) == e );
   yes += e;
   }
  CHECK( yes > 100 );
@@ -1717,16 +1665,17 @@ ADS_TEST( "collezioni-06-abr-1-3" )
   BinarySearchTree< int , int > s;
   for( int i = 0 ; i < 60 ; ++i ) s.insert( randInt( g , 0 , 99 ) , 0 );
   BTPtr t( fromSearchTree( s , s.root() ) );
-  CHECK( verifyBST( t.get() ) );
+  CHECK( isSearchTree( t.get() ) );
   }
  BTPtr w( from_list< int >( "( 10 ( 5 () ( 12 () () ) ) ( 15 () () ) )" ) );
- CHECK( ! verifyBST( w.get() ) );             // each parent agrees
+ CHECK( ! isSearchTree( w.get() ) );             // each parent agrees
  w->left()->right()->write( 7 );
- CHECK( verifyBST( w.get() ) );
+ CHECK( isSearchTree( w.get() ) );
  BTPtr d( from_list< int >( "( 5 ( 5 () () ) () )" ) );
- CHECK( ! verifyBST( d.get() ) && verifyBST( nullptr ) );
+ CHECK( ! isSearchTree( d.get() ) &&
+        isSearchTree( static_cast< BT * >( nullptr ) ) );
  BTPtr x( from_list< int >( "( -2147483648 () ( 2147483647 () () ) )" ) );
- CHECK( verifyBST( x.get() ) );
+ CHECK( isSearchTree( x.get() ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1796,7 +1745,7 @@ ADS_TEST( "collezioni-06-abr-1-5" )
 BT * concatenate( BT * T1 , BT * T2 )
 {
  ADS_PRE( T1 && T2 && ! T2->parent() );
- ADS_AUDIT( verifyBST( T1 ) && verifyBST( T2 ) );
+ ADS_AUDIT( isSearchTree( T1 ) && isSearchTree( T2 ) );
  BT * t = T1;
  while( t->right() )
   t = t->right();
@@ -1827,7 +1776,7 @@ ADS_TEST( "collezioni-06-abr-1-6" )
   for( int k : B ) b.insert( k , 0 );
   BTPtr t( concatenate( fromSearchTree( a , a.root() ) ,
                         fromSearchTree( b , b.root() ) ) );
-  CHECK( verifyBST( t.get() ) && ( visit( t.get() , 1 ) == K ) );
+  CHECK( isSearchTree( t.get() ) && ( visit( t.get() , 1 ) == K ) );
   CHECK( countNodes( t.get() ) == n );
   }
  BTPtr x( new BT( 5 ) ) , y( new BT( 3 ) );
@@ -1891,29 +1840,6 @@ ADS_TEST( "collezioni-06-abr-1-7" )
 /*-------- 06-abr, 1.8, Albero binario di ricerca di altezza minima --------*/
 /*--------------------------------------------------------------------------*/
 
-/// buildRec(): the search tree of A[ l .. r ], A[ ( l + r ) / 2 ] at the
-/// root and the two halves below, of height ceil( log2( n + 1 ) ) - 1,
-/// the least; Theta( n ) time, Theta( log n ) stack; the caller owns it
-/// \pre A is strictly increasing (audit)
-// candidate for the library
-BT * buildMinHeight( const std::vector< int > & A , long l , long r )
-{
- if( l > r )
-  return( nullptr );
- const long mid = l + ( r - l ) / 2;
- BT * t = new BT( A[ mid ] );
- if( BT * a = buildMinHeight( A , l , mid - 1 ) ) t->insertLeft( a );
- if( BT * b = buildMinHeight( A , mid + 1 , r ) ) t->insertRight( b );
- return( t );
- }
-
-BT * buildMinHeight( const std::vector< int > & A )
-{
- ADS_AUDIT( std::adjacent_find( A.begin() , A.end() ,
-                                std::greater_equal<>() ) == A.end() );
- return( buildMinHeight( A , 0 , long( A.size() ) - 1 ) );
- }
-
 /// the height of a binary tree, -1 if empty
 template< class T >
 int height( const BinaryTree< T > * t )
@@ -1922,27 +1848,29 @@ int height( const BinaryTree< T > * t )
            : -1 );
  }
 
-// the least height ceil( log2( n + 1 ) ) - 1 for n up to 1000, the invisit
-// equal to A, and the previsit giving back the same shape when inserted in
-// the BinarySearchTree of the library
+// minimumHeightSearchTree() of the library, the middle key at the root and
+// the two halves below: the least height ceil( log2( n + 1 ) ) - 1 for n up
+// to 1000, the invisit equal to A, and the previsit giving back the same
+// shape when inserted in the BinarySearchTree of the library
 ADS_TEST( "collezioni-06-abr-1-8" )
 {
  for( int n = 1 ; n <= 1000 ; ++n ) {
   Ints A( n );
   for( int i = 0 ; i < n ; ++i ) A[ i ] = 3 * i - n;
-  BTPtr t( buildMinHeight( A ) );
+  BTPtr t( minimumHeightSearchTree( A ) );
   int h = 0;
   while( ( 2 << h ) - 1 < n ) ++h;             // 2^{h + 1} - 1 >= n
   CHECK( height( t.get() ) == h );
   CHECK( h == int( std::ceil( std::log2( n + 1.0 ) ) ) - 1 );
-  CHECK( verifyBST( t.get() ) && ( visit( t.get() , 1 ) == A ) );
+  CHECK( isSearchTree( t.get() ) && ( visit( t.get() , 1 ) == A ) );
   BinarySearchTree< int , int > s;
   const Ints pre = visit( t.get() , 0 );
   for( int k : pre ) s.insert( k , 0 );
   CHECK( searchPre( s ) == pre );
   }
- CHECK( buildMinHeight( Ints() ) == nullptr );
- CHECK_THROWS( buildMinHeight( Ints( { 1 , 3 , 2 } ) ) , contract_violation );
+ CHECK( minimumHeightSearchTree( Ints() ) == nullptr );
+ CHECK_THROWS( minimumHeightSearchTree( Ints( { 1 , 3 , 2 } ) ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2636,37 +2564,9 @@ ADS_TEST( "collezioni-09-grafi-1-3" )
 /*-------------- 09-grafi, 1.4, Albero libero, non orientato ---------------*/
 /*--------------------------------------------------------------------------*/
 
-/// hasCycleRec(): whether the visit from u, entered from p, meets a node
-/// already visited by an edge other than the one to p
-template< Graph G >
-bool hasCycleRec( const G & g , int u , int p , std::vector< bool > & visited )
-{
- visited[ u ] = true;
- for( int v : g.adj( u ) )
-  if( v != p ) {
-   if( visited[ v ] || hasCycleRec( g , v , u , visited ) )
-    return( true );
-   }
- return( false );
- }
-
-/// isTree(): an unoriented graph is a free tree if the visit from a node
-/// finds no cycle and reaches all the nodes; Theta( n + m ) time
-/// \pre the graph is unoriented, with a node
-// candidate for the library
-template< Graph G >
-bool isTree( const G & g )
-{
- ADS_PRE( ! g.directed() && ( g.n() >= 1 ) );
- std::vector< bool > visited( g.bound() , false );
- const int r = g.V().front();
- if( hasCycleRec( g , r , -1 , visited ) )
-  return( false );
- for( int u : g.V() )
-  if( ! visited[ u ] )
-   return( false );
- return( true );
- }
+// isTree(), whether an unoriented graph is a free tree, is isTree() of the
+// library: n - 1 edges and a visit from a node reaching all the nodes;
+// Theta( n + m ) time
 
 // random sparse graphs and trees with an edge more or less against one
 // component of cc() of the library and m = n - 1
@@ -2757,25 +2657,9 @@ ADS_TEST( "collezioni-09-grafi-1-5" )
 /*------------------------ 09-grafi, 1.6, Diametro -------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// diameter(): the largest distance between two nodes of a connected
-/// unoriented graph, by a visit by levels, distance() of the library, from
-/// each node; O( n ( n + m ) ) time, O( n ) space
-/// \pre the graph is connected, with a node (audit)
-// candidate for the library
-template< Graph G >
-int diameter( const G & g )
-{
- ADS_PRE( g.n() >= 1 );
- int d = 0;
- for( int u : g.V() ) {
-  const auto [ dist , parent ] = distance( g , u );
-  for( int v : g.V() ) {
-   ADS_PRE( dist[ v ] != INF );
-   d = std::max( d , dist[ v ] );
-   }
-  }
- return( d );
- }
+// diameter(), the largest distance between two nodes of a connected
+// unoriented graph, is diameter() of the library: a visit by levels from
+// each node; O( n ( n + m ) ) time, O( n ) space
 
 // random connected graphs against floydWarshall() of the library with unit
 // weights; a path, a complete graph, one node
@@ -2882,27 +2766,10 @@ ADS_TEST( "collezioni-09-grafi-1-8" )
 /*-------------------- 09-grafi, 1.9, Pozzo universale ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// universalSink(): the only candidate is left by eliminating a node per
-/// step (an edge c -> j excludes c, its absence excludes j), then its row
-/// must be all 0 and its column all 1 out of the diagonal; Theta( n ) time
-/// \pre A is a square matrix of 0 and 1, n >= 1
-// candidate for the library
-bool universalSink( const Adj & A )
-{
- const std::size_t n = A.size();
- ADS_PRE( n >= 1 );
- std::size_t c = 0;
- for( std::size_t j = 1 ; j < n ; ++j )
-  if( A[ c ][ j ] )
-   c = j;
- for( std::size_t j = 0 ; j < n ; ++j ) {
-  if( A[ c ][ j ] )
-   return( false );
-  if( ( j != c ) && ! A[ j ][ c ] )
-   return( false );
-  }
- return( true );
- }
+// universalSink() of the library: the only candidate is left by
+// eliminating a node per step (an edge c -> j excludes c, its absence
+// excludes j), then its row must be all 0 and its column all 1 out of the
+// diagonal; Theta( n ) time, NIL if there is no sink
 
 // random matrices, some with a sink planted, against the degrees of all
 // the nodes; one node is a sink
@@ -2927,12 +2794,12 @@ ADS_TEST( "collezioni-09-grafi-1-9" )
    for( int j = 0 ; j < n ; ++j ) { out += M[ c ][ j ]; in += M[ j ][ c ]; }
    e = e || ( ( out == 0 ) && ( in == n - 1 ) );
    }
-  CHECK( universalSink( M ) == e );
+  CHECK( ( universalSink( M ) != NIL ) == e );
   sinks += e;
   }
  CHECK( sinks > 1000 && sinks < 2900 );
- CHECK( universalSink( Adj( 1 , std::vector< int >( 1 , 0 ) ) ) );
- CHECK_THROWS( universalSink( Adj() ) , contract_violation );
+ CHECK( universalSink( Adj( 1 , std::vector< int >( 1 , 0 ) ) ) == 0 );
+ CHECK( universalSink( Adj() ) == NIL );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3041,33 +2908,10 @@ I64 trianglesMatrix( const Adj & A )
  return( t );
  }
 
-/// the triangles of an unoriented graph by its lists, sorted: for each
-/// edge the common neighbours of its ends, by a merge, each triangle met
-/// on its three edges; O( sum of ( deg u + deg v ) ) = O( m n ) time
-/// \pre the graph is unoriented
-// candidate for the library
-template< Graph G >
-I64 trianglesLists( const G & g )
-{
- ADS_PRE( ! g.directed() );
- std::vector< std::vector< int > > adj( g.bound() );
- for( int u : g.V() ) {
-  adj[ u ] = g.adj( u );
-  std::sort( adj[ u ].begin() , adj[ u ].end() );
-  }
- I64 t = 0;
- for( int u : g.V() )
-  for( int v : adj[ u ] )
-   if( u < v ) {
-    std::size_t i = 0 , j = 0;
-    while( ( i < adj[ u ].size() ) && ( j < adj[ v ].size() ) ) {
-     if( adj[ u ][ i ] < adj[ v ][ j ] ) ++i;
-     else if( adj[ u ][ i ] > adj[ v ][ j ] ) ++j;
-     else { ++t; ++i; ++j; }
-     }
-    }
- return( t / 3 );
- }
+// the triangles of an unoriented graph by its lists: countTriangles() of
+// the library, each edge oriented from the end of smaller degree, each
+// triangle counted once at its first node; O( m sqrt( m ) ) time, against
+// O( m n ) for the merge of the sorted lists of the ends of each edge
 
 // the triangles of the complete graph K_n, counted on the matrix, are
 // binom( n , 3 ) = n ( n - 1 ) ( n - 2 ) / 6
@@ -3098,12 +2942,12 @@ ADS_TEST( "collezioni-09-grafi-1-12-2" )
      e += ( a != b ) && ( b != c ) && ( a != c ) && G.hasEdge( a , b ) &&
           G.hasEdge( b , c ) && G.hasEdge( a , c );
   CHECK( trianglesMatrix( matrixOf( G ) ) == e / 6 );
-  CHECK( trianglesLists( G ) == e / 6 );
+  CHECK( countTriangles( G ) == e / 6 );
   }
  ListGraph<> K( 30 , false );
  for( int i = 0 ; i < 30 ; ++i )
   for( int j = i + 1 ; j < 30 ; ++j ) K.insertEdge( j , i );
- CHECK( trianglesLists( K ) == I64( binomial( 30 , 3 ) ) );
+ CHECK( countTriangles( K ) == I64( binomial( 30 , 3 ) ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3480,19 +3324,10 @@ ADS_TEST( "collezioni-09-grafi-1-20" )
 /*------------------- 09-grafi, 1.21, Diametro di alberi -------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// diameter() of a binary tree: its height and its diameter, the longest
-/// path within a subtree or through the root, ( hl + 1 ) + ( hr + 1 );
-/// < -1 , 0 > for the empty tree; Theta( n ) time, Theta( h ) space
-// candidate for the library
-std::pair< int , int > treeDiameter( const BT * t )
-{
- if( ! t )
-  return( std::pair( -1 , 0 ) );
- const auto [ hl , dl ] = treeDiameter( t->left() );
- const auto [ hr , dr ] = treeDiameter( t->right() );
- return( std::pair( std::max( hl , hr ) + 1 ,
-                    std::max( { dl , dr , hl + hr + 2 } ) ) );
- }
+// the diameter of a binary tree with its height is treeDiameter() of the
+// library: the longest path within a subtree or through the root,
+// ( hl + 1 ) + ( hr + 1 ); < -1 , 0 > for the empty tree; Theta( n ) time,
+// Theta( h ) space
 
 // random binary trees against the largest distance of distance() of the
 // library from each node of the tree as an unoriented graph; height and
@@ -3513,7 +3348,7 @@ ADS_TEST( "collezioni-09-grafi-1-21" )
   const auto [ h , d ] = treeDiameter( t.get() );
   CHECK( d == e && h == height( t.get() ) );
   }
- CHECK( treeDiameter( nullptr ) == std::pair( -1 , 0 ) );
+ CHECK( treeDiameter< int >( nullptr ) == std::pair( -1 , 0 ) );
  BTPtr one( new BT( 0 ) ) , p( perfectTree( 5 ) );
  CHECK( treeDiameter( one.get() ) == std::pair( 0 , 0 ) );
  CHECK( treeDiameter( p.get() ) == std::pair( 5 , 10 ) );
@@ -3666,29 +3501,17 @@ ADS_TEST( "collezioni-10-heap-1-4" )
 /*------------ 10-heap, 1.6, heapBuild() basato su inserimenti -------------*/
 /*--------------------------------------------------------------------------*/
 
-/// heapBuild() by n insertions: each item at the end of the heap, moved up
-/// while larger than its parent; O( n log n ) time
-// candidate for the library
-std::vector< int > heapBuildByInsertion( const std::vector< int > & A )
-{
- std::vector< int > H;
- for( int x : A ) {
-  H.push_back( x );
-  for( std::size_t i = H.size() - 1 ; ( i > 0 ) &&
-       ( H[ ( i - 1 ) / 2 ] < H[ i ] ) ; i = ( i - 1 ) / 2 )
-   std::swap( H[ i ] , H[ ( i - 1 ) / 2 ] );
-  }
- return( H );
- }
-
-// the heap built by insertions is the heap of the HeapPriorityQueue of the
-// library, with the priorities negated as it keeps the minimum on top
+// the heap built by insertions, each item at the end of the heap and moved
+// up while larger than its parent [see heapBuildByInsertion() of the
+// library], is the heap of the HeapPriorityQueue of the library, with the
+// priorities negated as it keeps the minimum on top
 ADS_TEST( "collezioni-10-heap-1-6-1" )
 {
  std::mt19937 g( 1061 );
  for( int r = 0 ; r < 1000 ; ++r ) {
   const Ints A = randInts( g , randInt( g , 0 , 50 ) , -20 , 20 );
-  const Ints H = heapBuildByInsertion( A );
+  Ints H = A;
+  heapBuildByInsertion( H );
   HeapPriorityQueue< int , int > Q( std::max( int( A.size() ) , 1 ) );
   for( int x : A ) Q.insert( x , -x );
   Ints q = Q.priorities();
@@ -3699,7 +3522,9 @@ ADS_TEST( "collezioni-10-heap-1-6-1" )
   std::sort( t.begin() , t.end() );
   CHECK( s == t );
   }
- CHECK( heapBuildByInsertion( {} ).empty() );
+ Ints E;
+ heapBuildByInsertion( E );
+ CHECK( E.empty() );
  }
 
 // [ 4 , 7 , 9 , 10 ]: heapBuild() of the library gives [ 10 , 7 , 9 , 4 ],
@@ -3707,15 +3532,17 @@ ADS_TEST( "collezioni-10-heap-1-6-1" )
 // sometimes differ
 ADS_TEST( "collezioni-10-heap-1-6-2" )
 {
- Ints A = { 4 , 7 , 9 , 10 };
- CHECK( heapBuildByInsertion( A ) == Ints( { 10 , 9 , 7 , 4 } ) );
+ Ints A = { 4 , 7 , 9 , 10 } , I = A;
+ heapBuildByInsertion( I );
+ CHECK( I == Ints( { 10 , 9 , 7 , 4 } ) );
  heapBuild( A );
  CHECK( A == Ints( { 10 , 7 , 9 , 4 } ) );
  std::mt19937 g( 1062 );
  int differ = 0;
  for( int r = 0 ; r < 500 ; ++r ) {
   Ints B = randInts( g , randInt( g , 0 , 20 ) , 0 , 99 );
-  const Ints H = heapBuildByInsertion( B );
+  Ints H = B;
+  heapBuildByInsertion( H );
   heapBuild( B );
   CHECK( isMaxHeap( B , B.size() ) && isMaxHeap( H , H.size() ) );
   differ += ( B != H );
@@ -3727,27 +3554,14 @@ ADS_TEST( "collezioni-10-heap-1-6-2" )
 /*------------------------ 10-heap, 1.7, k-merging -------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// merge(): the k sorted vectors in one, by a HeapPriorityQueue of the
-/// library holding the next item of each vector, its priority the item;
-/// Theta( n log k ) time for n items, Theta( k ) extra space
+/// merge(): the k sorted vectors in one: kWayMerge() of the library, a tree
+/// of losers holding the next item of each vector, where the text uses a
+/// heap of k items; Theta( n log k ) time for n items, Theta( k ) extra
+/// space
 /// \pre each vector is sorted
-// candidate for the library
 std::vector< int > kMerge( const std::vector< std::vector< int > > & A )
 {
- const int k = int( A.size() );
- HeapPriorityQueue< int , int > H( std::max( k , 1 ) );
- std::vector< std::size_t > p( k , 0 );
- for( int i = 0 ; i < k ; ++i ) {
-  ADS_PRE( std::is_sorted( A[ i ].begin() , A[ i ].end() ) );
-  if( ! A[ i ].empty() ) H.insert( i , A[ i ][ 0 ] );
-  }
- std::vector< int > out;
- while( ! H.isEmpty() ) {
-  out.push_back( H.minPriority() );
-  const int i = H.deleteMin();
-  if( ++p[ i ] < A[ i ].size() ) H.insert( i , A[ i ][ p[ i ] ] );
-  }
- return( out );
+ return( kWayMerge( A ) );
  }
 
 // random sorted vectors against std::sort of their concatenation

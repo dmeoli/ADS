@@ -17,8 +17,18 @@
  * [see to_binary()]: the previsits of T and of B are the same, and the
  * postvisit of T is the invisit of B.
  *
+ * detachLeft() and detachRight() cut a subtree off its parent without
+ * destroying it, in O( 1 ) time: the subtree becomes a root owned by the
+ * caller, ready to be inserted elsewhere, which moves subtrees around (a
+ * mirror, a rotation) with no copy.
+ *
  * copy() makes a deep copy of a subtree and join() a new root with the
  * copies of two trees as children, in time linear in their size.
+ *
+ * The ranges preorder(), inorder() and postorder() walk the nodes of a
+ * subtree by the links to the parents, with no stack and no recursion, in
+ * O( n ) time overall and O( 1 ) extra space: each node is left at most
+ * once from each of its three visits.
  *
  * to_list() writes a binary tree as a parenthesized list, () for the empty
  * tree and ( v L R ) for the root v with the subtrees L and R, e.g.,
@@ -31,8 +41,9 @@
  * places \f$ d i + 1 , \ldots , d i + d \f$ [see dary_child()].
  *
  * The contracts [see Contract.h]: the tree inserted is a root other than
- * the node itself and goes where no child is; the invariant is that each
- * child has its parent as parent, down the subtree; the places of a d-ary
+ * the node itself and goes where no child is; the subtree detached is a
+ * root and its place is empty; the invariant is that each child has its
+ * parent as parent, down the subtree; the places of a d-ary
  * tree need d >= 1, a child 1 <= j <= d and a place i > 0 to have a
  * parent. The operations are defined in BinaryTree.tpp.
  *
@@ -128,12 +139,25 @@ class BinaryTree {
  /// destroys the right subtree
  void deleteRight( void );
 
+ /// detaches the left subtree without destroying it: it becomes a root,
+ /// owned by the caller; nil if there is none
+ /// \post the left child is missing and the result is nil or a root
+ [[nodiscard]] BinaryTree * detachLeft( void );
+
+ /// detaches the right subtree without destroying it: it becomes a root,
+ /// owned by the caller; nil if there is none
+ /// \post the right child is missing and the result is nil or a root
+ [[nodiscard]] BinaryTree * detachRight( void );
+
 /*--------------------------------------------------------------------------*/
  private:
 
  void insert( BinaryTree * & child , BinaryTree * t );
 
- /// each child of each node of the subtree has that node as its parent
+ BinaryTree * detach( BinaryTree * & child );
+
+ /// each child of this node has it as its parent (the links that a
+ /// change of the tree touches), O( 1 ) per child
  [[nodiscard]] bool linked( void ) const;
 
  T f_value;                       ///< the value
@@ -246,6 +270,25 @@ struct BinaryInorder {
   }
  };
 
+/// the postorder below a root
+struct BinaryPostorder {
+ static constexpr std::nullptr_t none = nullptr;
+ template< class N >
+ static N * firstLeaf( N * n ) {
+  while( n->left() || n->right() )
+   n = n->left() ? n->left() : n->right();
+  return( n );
+  }
+ template< class N >
+ static N * next( const void * , N * n , N * root ) {
+  if( n == root ) return( nullptr );
+  N * p = n->parent();
+  if( ( n == p->left() ) && p->right() )   // down the right sibling
+   return( firstLeaf( p->right() ) );
+  return( p );
+  }
+ };
+
 }  // end( namespace detail )
 
 /// the nodes of the subtree of t in preorder, t first
@@ -264,6 +307,17 @@ auto inorder( BinaryTree< T > * t )
  using It = WalkIterator< void , BinaryTree< T > * , detail::BinaryInorder >;
  return( std::ranges::subrange(
           It( nullptr , detail::BinaryInorder::leftmost( t ) , t ) , It() ) );
+ }
+
+/// the nodes of the subtree of t in postorder, t last
+template< class T >
+auto postorder( BinaryTree< T > * t )
+{
+ using It = WalkIterator< void , BinaryTree< T > * ,
+                          detail::BinaryPostorder >;
+ return( std::ranges::subrange(
+          It( nullptr , detail::BinaryPostorder::firstLeaf( t ) , t ) ,
+          It() ) );
  }
 
 /*--------------------------------------------------------------------------*/

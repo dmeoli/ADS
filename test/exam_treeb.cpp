@@ -35,8 +35,10 @@
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/mfset/MFSet.h"
+#include "ADS/search/LocalOptima.h"
 #include "ADS/sort/Heapsort.h"
 #include "ADS/tree/BinaryTree.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/ExpressionTree.h"
 #include "ADS/tree/Tree.h"
 
@@ -775,42 +777,16 @@ BT * maxTree( const std::vector< int > & A )
  return( mtRec( A , 0 , int( A.size() ) - 1 ) );
  }
 
-/// the tree of the children L and R below i
-BT * linked( const std::vector< int > & A , const std::vector< int > & L ,
-             const std::vector< int > & R , int i )
-{
- if( i == NIL )
-  return( nullptr );
- auto * t = new BT( A[ i ] );
- if( auto * l = linked( A , L , R , L[ i ] ) ) t->insertLeft( l );
- if( auto * r = linked( A , L , R , R[ i ] ) ) t->insertRight( r );
- return( t );
- }
-
-/// maxTreeLinear(): the maximal binary tree of A (a Cartesian tree) with a
+/// maxTreeLinear(): the maximal binary tree of A, the Cartesian tree with
+/// the maximum at the root, by cartesianBinaryTree() of the library with a
 /// stack of the right spine: each item pops the smaller ones, the last of
 /// which becomes its left child, and becomes the right child of the new
-/// top; the bottom of the stack is the root, Theta( n ) time; the caller
-/// owns the result
+/// top; Theta( n ) time; the caller owns the result
 /// \pre the items of A are distinct
-// candidate for the library
 BT * maxTreeLinear( const std::vector< int > & A )
 {
  ADS_PRE( std::set< int >( A.begin() , A.end() ).size() == A.size() );
- const int n = int( A.size() );
- std::vector< int > L( n , NIL ) , R( n , NIL ) , S;
- for( int i = 0 ; i < n ; ++i ) {
-  int last = NIL;
-  while( ! S.empty() && ( A[ S.back() ] < A[ i ] ) ) {
-   last = S.back();
-   S.pop_back();
-   }
-  L[ i ] = last;
-  if( ! S.empty() )
-   R[ S.back() ] = i;
-  S.push_back( i );
-  }
- return( linked( A , L , R , S.empty() ? NIL : S.front() ) );
+ return( cartesianBinaryTree( A , std::greater< int >() ) );
  }
 
 }  // end( namespace tree )
@@ -1360,22 +1336,18 @@ ADS_TEST( "tree-49" )
 namespace tree {
 
 /// localMinimum(): a node of the perfect tree T smaller than its parent
-/// and its children; from the root down to a smaller child, so that the
-/// node reached is smaller than its parent, until a node smaller than its
-/// children or a leaf, O( log n ) time
+/// and its children: localMinimum() of the library, from the root down to
+/// the first smaller child, so that the node reached is smaller than its
+/// parent, until a node smaller than its children or a leaf, O( log n )
+/// time
 /// \pre T is a perfect tree with distinct values
 /// \post a local minimum
 BT * localMinimum( BT * T )
 {
  ADS_PRE( T != nullptr );
- if( ! T->left() && ! T->right() )
-  return( T );
- ADS_PRE( T->left() && T->right() );
- if( ( T->read() < T->left()->read() ) && ( T->read() < T->right()->read() ) )
-  return( T );
- if( T->left()->read() < T->read() )
-  return( localMinimum( T->left() ) );
- return( localMinimum( T->right() ) );
+ ADS_AUDIT( std::ranges::all_of( nodesOf( T ) , []( const BT * u ) {
+  return( ! u->left() == ! u->right() ); } ) );
+ return( ADS::localMinimum( T ) );
  }
 
 }  // end( namespace tree )

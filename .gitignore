@@ -10,3 +10,5 @@ site/
 # IDEs
 .idea/
 .vscode/
+docs/generated/
+docs/api/

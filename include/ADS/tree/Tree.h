@@ -132,7 +132,8 @@ class Tree {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// each child of each node of the subtree has that node as its parent
+ /// each child of this node has it as its parent (the links that a
+ /// change of the tree touches), O( 1 ) per child
  [[nodiscard]] bool linked( void ) const;
 
  T f_value;                    ///< the value

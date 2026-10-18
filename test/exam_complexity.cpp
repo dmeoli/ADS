@@ -32,6 +32,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/algorithm/AkraBazzi.h"
 #include "ADS/algorithm/MasterTheorem.h"
 
 #include <algorithm>
@@ -241,36 +242,6 @@ std::optional< Growth > extendedMaster( double a , double b , double beta ,
  if( ( std::abs( beta - alpha ) < 1e-12 ) && ( k != 0 ) )
   return( std::nullopt );
  return( master( a , b , beta , k ) );
- }
-
-/// the exponent p of Akra and Bazzi of T( n ) = sum_i a_i T( b_i n ) + g(
-/// n ), the root of sum_i a_i b_i^p = 1, by bisection: T( n ) is Theta(
-/// n^p ) when g( n ) = O( n^{p - eps} ), Theta( n^p log n ) when g( n ) =
-/// Theta( n^p ), Theta( g( n ) ) when g( n ) = Omega( n^{p + eps} ) and
-/// regular; O( 60 ) evaluations of the sum
-/// \pre a_i > 0, 0 < b_i < 1, sum_i a_i >= 1
-// candidate for the library
-double akraBazzi( const std::vector< std::pair< double , double > > & ab )
-{
- double s = 0;
- for( const auto & [ a , b ] : ab ) {
-  ADS_PRE( ( a > 0 ) && ( 0 < b ) && ( b < 1 ) );
-  s += a;
-  }
- ADS_PRE( s >= 1 );
- auto f = [ & ]( double p ) {
-  double v = 0;
-  for( const auto & [ a , b ] : ab )
-   v += a * std::pow( b , p );
-  return( v );
-  };
- double lo = 0 , hi = 64;
- for( int i = 0 ; i < 200 ; ++i ) {
-  const double mid = ( lo + hi ) / 2;
-  ( f( mid ) > 1 ? lo : hi ) = mid;
-  }
- ADS_POST( std::abs( f( lo ) - 1 ) < 1e-9 );
- return( lo );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1518,8 +1489,8 @@ ADS_TEST( "complexity-29" )
                1000000000000 ) );
  // not O( sqrt( n ) ): the ratio grows by more than 10 from 10^3 to 10^12
  CHECK( T( 1000000000000 ) / 1e6 > 10 * T( 1000 ) / std::sqrt( 1000.0 ) );
- const double p = akraBazzi( { { 1 , 1.0 / 15 } , { 1 , 0.1 } ,
-                               { 2 , 1.0 / 6 } } );
+ const double p = akraBazziExponent( { { 1 , 1.0 / 15 } , { 1 , 0.1 } ,
+                                       { 2 , 1.0 / 6 } } );
  CHECK( ( 0.6595 < p ) && ( p < 0.6597 ) );
  CHECK( bounded( T , [ p ]( double n ) { return( std::pow( n , p ) ); } ) );
  }
@@ -1666,7 +1637,7 @@ ADS_TEST( "complexity-38" )
    return( T( n ) <= T3( n ) ); } ) );
   }
  CHECK( 7.0 / 9 + 1.0 / 4 > 1 );
- CHECK( akraBazzi( { { 7 , 1.0 / 3 } , { 1 , 0.5 } } ) > 2 );
+ CHECK( akraBazziExponent( { { 7 , 1.0 / 3 } , { 1 , 0.5 } } ) > 2 );
  Memo T2 = make( 2 );
  CHECK( ratios( T2 , g , 100000000000 , 1000000000000 ).first >
         3 * ratios( T2 , g , 1000 , 10000 ).second );

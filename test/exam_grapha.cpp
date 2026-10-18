@@ -32,7 +32,9 @@
 #include "ADS/complexity/EasyCases.h"
 #include "ADS/graph/AllPairsShortestPaths.h"
 #include "ADS/graph/Graph.h"
+#include "ADS/graph/Grid.h"
 #include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Paths.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/mfset/MFSet.h"
@@ -367,36 +369,10 @@ namespace graph {
 
 /// countShortestPaths(): the number of distinct shortest paths, in edges,
 /// from s to each node, 0 if it is unreachable and 1 for s (the empty
-/// path); a breadth first visit in which a node discovered from u inherits
-/// the count of u, and adds it again on every other edge ( u , v ) with
-/// d[ v ] = d[ u ] + 1, right since all the nodes at distance d - 1 leave
-/// the queue before those at distance d; Theta( n + m ) time, Theta( n )
-/// space
-/// \pre s is a node
-template< Graph G >
-std::vector< std::uint64_t > countShortestPaths( const G & g , int s )
-{
- ADS_PRE( g.hasNode( s ) );
- Ints d( g.bound() , INF );
- std::vector< std::uint64_t > count( g.bound() , 0 );
- std::deque< int > Q = { s };
- d[ s ] = 0;
- count[ s ] = 1;
- while( ! Q.empty() ) {
-  const int u = Q.front();
-  Q.pop_front();
-  g.forEachAdj( u , [ & ]( int v ) {
-   if( d[ v ] == INF ) {
-    d[ v ] = d[ u ] + 1;
-    count[ v ] = count[ u ];
-    Q.push_back( v );
-    }
-   else if( d[ v ] == d[ u ] + 1 )
-    count[ v ] += count[ u ];
-   } );
-  }
- return( count );
- }
+/// path): countShortestPaths() of the library, a breadth first visit in
+/// which a node inherits the counts of the nodes one level before it with
+/// an edge to it; Theta( n + m ) time, Theta( n ) space
+using ADS::countShortestPaths;
 
 }  // end( namespace graph )
 
@@ -437,45 +413,10 @@ ADS_TEST( "graph-1" )
 
 /*------------------------- 2. 2011-06-06, Mindist -------------------------*/
 
-namespace graph {
-
-/// mindist(): the distance in edges from the set V1 to the set V2, given by
-/// their characteristic vectors, 0 if they meet and INF if no node of V2 is
-/// reachable from V1; a breadth first visit started from all the nodes of
-/// V1 at once, at distance 0, which stops at the first node of V2 that it
-/// discovers, O( n + m )
-/// \pre in1 and in2 have a place per name
-template< Graph G >
-int mindist( const G & g , const std::vector< bool > & in1 ,
-             const std::vector< bool > & in2 )
-{
- ADS_PRE( ( int( in1.size() ) == g.bound() ) &&
-          ( int( in2.size() ) == g.bound() ) );
- Ints d( g.bound() , INF );
- std::deque< int > Q;
- for( int u : g.V() )
-  if( in1[ u ] ) {
-   if( in2[ u ] )
-    return( 0 );
-   d[ u ] = 0;
-   Q.push_back( u );
-   }
- while( ! Q.empty() ) {
-  const int u = Q.front();
-  Q.pop_front();
-  for( int v : g.adj( u ) )
-   if( d[ v ] == INF ) {
-    d[ v ] = d[ u ] + 1;
-    if( in2[ v ] )
-     return( d[ v ] );
-    Q.push_back( v );
-    }
-  }
- return( INF );
- }
-
-}  // end( namespace graph )
-
+// mindist(), the distance in edges from the set V1 to the set V2, 0 if they
+// meet and INF if no node of V2 is reachable from V1: setDistance() of the
+// library, a breadth first visit started from all the nodes of V1 at once,
+// stopped at the first node of V2 that it discovers, O( n + m )
 ADS_TEST( "graph-2" )
 {
  // one breadth first visit from each node of V1
@@ -496,7 +437,7 @@ ADS_TEST( "graph-2" )
      if( in2[ v ] )
       ref = std::min( ref , d[ v ] );
     }
-  CHECK( graph::mindist( g , in1 , in2 ) == ref );
+  CHECK( setDistance( g , in1 , in2 ) == ref );
   }
  // V1 empty, a long path both ways, a common node
  ListGraph<> p( 1000 , true );
@@ -504,12 +445,12 @@ ADS_TEST( "graph-2" )
   p.insertEdge( u , u + 1 );
  std::vector< bool > a( 1000 , false ) , b( 1000 , false );
  b[ 999 ] = true;
- CHECK( graph::mindist( p , a , b ) == INF );
+ CHECK( setDistance( p , a , b ) == INF );
  a[ 0 ] = true;
- CHECK( graph::mindist( p , a , b ) == 999 );
- CHECK( graph::mindist( p , b , a ) == INF );
+ CHECK( setDistance( p , a , b ) == 999 );
+ CHECK( setDistance( p , b , a ) == INF );
  b[ 0 ] = true;
- CHECK( graph::mindist( p , a , b ) == 0 );
+ CHECK( setDistance( p , a , b ) == 0 );
  }
 
 /*-------------------------- 3. 2012-05-03, Roma ---------------------------*/
@@ -734,31 +675,18 @@ inline bool walled( const Matrix & G )
 
 /// gridDistance(): the least number of moves from ( 1 , 1 ) to ( n , n ) in
 /// the ( n + 2 ) x ( n + 2 ) grid G, 0 free and 1 obstacle, INF if there is
-/// no way; a breadth first visit of the implicit graph of the free cells
-/// that stops when it takes ( n , n ) out of the queue, Theta( n^2 )
+/// no way: gridDistance() of the library, a breadth first visit of the
+/// implicit graph of the free cells that stops when it takes ( n , n ) out
+/// of the queue, Theta( n^2 )
 /// \pre n > 1, G is ( n + 2 ) x ( n + 2 ) with obstacles on the border and
 ///      ( 1 , 1 ), ( n , n ) free
 inline int gridDistance( const Matrix & G , int n )
 {
  ADS_PRE( ( n > 1 ) && ( int( G.size() ) == n + 2 ) && square( G ) &&
           walled( G ) && ( G[ 1 ][ 1 ] == 0 ) && ( G[ n ][ n ] == 0 ) );
- Matrix D( n + 2 , Ints( n + 2 , INF ) );
- std::deque< std::pair< int , int > > Q = { { 1 , 1 } };
- D[ 1 ][ 1 ] = 0;
- while( ! Q.empty() ) {
-  const auto [ i , j ] = Q.front();
-  Q.pop_front();
-  if( ( i == n ) && ( j == n ) )
-   return( D[ i ][ j ] );
-  for( int k = 0 ; k < 4 ; ++k ) {
-   const int a = i + DR[ k ] , b = j + DC[ k ];
-   if( ( G[ a ][ b ] == 0 ) && ( D[ a ][ b ] == INF ) ) {
-    D[ a ][ b ] = D[ i ][ j ] + 1;
-    Q.push_back( { a , b } );
-    }
-   }
-  }
- return( INF );
+ return( ADS::gridDistance( n + 2 , n + 2 , GridCell( 1 , 1 ) ,
+                            GridCell( n , n ) , [ & ]( GridCell x ) {
+                             return( G[ x.first ][ x.second ] == 0 ); } ) );
  }
 
 }  // end( namespace graph )
@@ -1687,31 +1615,17 @@ namespace graph {
 /// longestDescendingPath(): the largest total length of a path along which
 /// the altitudes z strictly decrease, in an unoriented graph whose weights
 /// are the lengths of the edges; D[ u ] = 0 if no neighbour v has z[ v ] <
-/// z[ u ], else the largest d( u , v ) + D[ v ] over them, by a memoized
-/// depth first visit of the acyclic graph of the downhill edges,
-/// O( n + m )
+/// z[ u ], else the largest d( u , v ) + D[ v ] over them: dagLongestPaths()
+/// of the library on the acyclic graph of the downhill edges, a memoized
+/// depth first visit, O( n + m )
 /// \pre g has a node, z has a place per name, the lengths are not negative
 template< Graph G >
 auto longestDescending( const G & g , const Ints & z )
 {
- using W = typename G::Weight;
  ADS_PRE( ( g.n() > 0 ) && ( int( z.size() ) == g.bound() ) );
- std::vector< std::optional< W > > D( g.bound() );
- auto rec = [ & ]( auto & self , int u ) -> W {
-  if( ! D[ u ] ) {
-   W best = W( 0 );
-   g.forEachEdge( u , [ & ]( int v , const W & w ) {
-    if( z[ v ] < z[ u ] )
-     best = std::max( best , W( self( self , v ) + w ) );
-    } );
-   D[ u ] = best;
-   }
-  return( *D[ u ] );
-  };
- W best = W( 0 );
- for( int u : g.V() )
-  best = std::max( best , rec( rec , u ) );
- return( best );
+ const auto D = dagLongestPaths( g , [ & ]( int u , int v ) {
+  return( z[ v ] < z[ u ] ); } );
+ return( *std::max_element( D.begin() , D.end() ) );
  }
 
 }  // end( namespace graph )

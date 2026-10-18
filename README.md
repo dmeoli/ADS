@@ -6,7 +6,7 @@
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-20-blue)](https://en.cppreference.com/w/cpp/20)
 [![Header-only](https://img.shields.io/badge/header--only-yes-brightgreen)](https://github.com/dmeoli/ADS#use)
 [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 
 ADS is a header-only C++20 library of the algorithms and the data
 structures of the (Italian) textbook
@@ -65,8 +65,8 @@ in [`test/tests.txt`](test/tests.txt); the solutions of the exercises are
 in the tests, one function per exercise. Each one is checked on the
 example of the book, on its edge cases and (where an enumeration is
 possible) on random instances against the enumeration. Since the license
-of the book does not allow its text in a GPL-licensed repository, the code
-cites it instead of reproducing it.
+of the book does not allow its text in a repository under the LGPL, the
+code cites it instead of reproducing it.
 
 | Chapter | Section | What | Header | Tests |
 |---|---|---|---|---|
@@ -419,11 +419,11 @@ runs one test by name (`build/test/ch04 ex4.4`) and lists its tests
 (`-l`).
 
 The documentation is at [dmeoli.github.io/ADS](https://dmeoli.github.io/ADS/):
-a site of MkDocs Material whose pages come from this README, and the API
-reference that Doxygen generates from the headers. Locally, `python3
-docs/pages.py && mkdocs build` writes the site to `site/`, and `doxygen` the
-reference to `build-docs/api` (after cloning doxygen-awesome-css into
-`build-docs/awesome`).
+a site of Sphinx with the theme of Read the Docs, whose pages come from this
+README and whose API reference Exhale and Breathe build from the comments of
+the headers, extracted by Doxygen. Locally, after `pip install -r
+docs/requirements.txt`, `python3 docs/pages.py && sphinx-build -b html docs
+build-docs/html` writes it to `build-docs/html`.
 
 ## Use
 
@@ -450,5 +450,6 @@ for( int x : L ) std::cout << x;
 
 ## License
 
-GNU GPL v3, see [LICENSE](LICENSE). The book is by Alberto Montresor,
-under CC BY-NC 4.0.
+This software is released under the [GNU Lesser General Public License
+version 3.0](https://opensource.org/licenses/lgpl-3.0.html) (see the file
+[LICENSE](LICENSE)). The book is by Alberto Montresor, under CC BY-NC 4.0.

@@ -90,6 +90,34 @@ void BinaryTree< T >::deleteRight( void )
  }
 
 template< class T >
+auto BinaryTree< T >::detachLeft( void ) -> BinaryTree *
+{
+ BinaryTree * t = detach( f_left );
+ ADS_POST( ( f_left == nullptr ) && ( ( t == nullptr ) ||
+                                      ( t->f_parent == nullptr ) ) );
+ return( t );
+ }
+
+template< class T >
+auto BinaryTree< T >::detachRight( void ) -> BinaryTree *
+{
+ BinaryTree * t = detach( f_right );
+ ADS_POST( ( f_right == nullptr ) && ( ( t == nullptr ) ||
+                                       ( t->f_parent == nullptr ) ) );
+ return( t );
+ }
+
+template< class T >
+auto BinaryTree< T >::detach( BinaryTree * & child ) -> BinaryTree *
+{
+ BinaryTree * t = child;
+ child = nullptr;
+ if( t ) t->f_parent = nullptr;
+ ADS_INVARIANT( linked() );
+ return( t );
+ }
+
+template< class T >
 void BinaryTree< T >::insert( BinaryTree * & child , BinaryTree * t )
 {
  ADS_PRE( ( t != nullptr ) && ( t->f_parent == nullptr ) && ( t != this ) );
@@ -101,9 +129,9 @@ void BinaryTree< T >::insert( BinaryTree * & child , BinaryTree * t )
 template< class T >
 bool BinaryTree< T >::linked( void ) const
 {
- for( const BinaryTree * c : { f_left , f_right } )
-  if( c && ( ( c->f_parent != this ) || ! c->linked() ) )
-   return( false );
+ for( const BinaryTree * c : { f_left , f_right } )   // the links that
+  if( c && ( c->f_parent != this ) )                  // insert() and
+   return( false );                                   // detach() change
  return( true );
  }
 

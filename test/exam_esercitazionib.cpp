@@ -23,14 +23,24 @@
 #include "ADSTest.h"
 
 #include "ADS/Contract.h"
+#include "ADS/algorithm/SequenceQueries.h"
 #include "ADS/complexity/EasyCases.h"
+#include "ADS/graph/FlowApplications.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/MaxFlow.h"
+#include "ADS/graph/Paths.h"
+#include "ADS/graph/Properties.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/numeric/Combinatorics.h"
+#include "ADS/optimization/GridPaths.h"
+#include "ADS/optimization/IntervalCover.h"
+#include "ADS/optimization/LinearPartition.h"
 #include "ADS/optimization/WeightedIntervals.h"
 #include "ADS/search/Selection.h"
+#include "ADS/search/SortedSearches.h"
 #include "ADS/string/LongestCommonSubsequence.h"
+#include "ADS/string/Segmentations.h"
+#include "ADS/string/SubsequenceProblems.h"
 
 #include <algorithm>
 #include <array>
@@ -191,18 +201,9 @@ ADS_TEST( "esercitazioni-34" )
 /*--------------------------------------------------------------------------*/
 
 
-/// the largest number of edge-disjoint paths from s to t, the maximum flow
-/// with unit capacities, decomposed into as many paths; O( n ( n + m ) )
-/// \pre s and t distinct nodes of the oriented graph
-template< Graph G >
-long edgeDisjointPaths( const G & g , int s , int t )
-{
- ADS_PRE( g.hasNode( s ) && g.hasNode( t ) && ( s != t ) );
- FlowNetwork N( g.bound() );
- for( int u : g.V() )
-  g.forEachAdj( u , [ & ]( int v ) { N.addEdge( u , v , 1 ); } );
- return( N.maxFlow( s , t ) );
- }
+// the largest number of edge-disjoint paths from s to t: edgeDisjointPaths()
+// of the library, the maximum flow with unit capacities, decomposed into as
+// many paths; O( n ( n + m ) )
 
 // the graph of the text (2 paths); against the smallest set of edges whose
 // removal separates t from s (Menger), over all the subsets, on 300 random
@@ -215,7 +216,7 @@ ADS_TEST( "esercitazioni-35" )
                          std::pair( 2 , 4 ) , std::pair( 3 , 4 ) ,
                          std::pair( 3 , 5 ) , std::pair( 4 , 5 ) } )
   T.insertEdge( u , v );
- CHECK( edgeDisjointPaths( T , 0 , 5 ) == 2 );
+ CHECK( edgeDisjointPaths( T , 0 , 5 ).size() == 2 );
  std::mt19937 g( 35 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = rnd( g , 2 , 6 );
@@ -236,7 +237,7 @@ ADS_TEST( "esercitazioni-35" )
    if( distance( H , 0 ).first[ n - 1 ] == INF )
     cut = std::popcount( unsigned( mask ) );
   }
-  CHECK( edgeDisjointPaths( G , 0 , n - 1 ) == cut );
+  CHECK( int( edgeDisjointPaths( G , 0 , n - 1 ).size() ) == cut );
   }
  CHECK_THROWS( edgeDisjointPaths( T , 2 , 2 ) , contract_violation );
  }
@@ -769,38 +770,10 @@ ADS_TEST( "esercitazioni-40" )
 /*--------------------------------------------------------------------------*/
 
 
-/// twoColorRec(): colors u with c and its component alternately; false
-/// if two adjacent nodes get the same color
-template< Graph G >
-bool twoColorRec( const G & g , int u , std::vector< int > & colors , int c )
-{
- colors[ u ] = c;
- for( int v : g.adj( u ) ) {
-  if( colors[ v ] == -1 ) {
-   if( ! twoColorRec( g , v , colors , 1 - c ) ) return( false );
-   }
-  else if( colors[ v ] == c )
-   return( false );
-  }
- return( true );
- }
-
-// candidate for the library
-/// twoColor(): a coloring 0 / 1 of the unoriented graph with the ends of
-/// each edge apart, or nothing if there is none (an odd cycle), by a
-/// visit in depth from each node not colored yet; O( n + m )
-/// \pre g unoriented
-/// \post a coloring returned is proper
-template< Graph G >
-std::optional< std::vector< int > > twoColor( const G & g )
-{
- ADS_PRE( ! g.directed() );
- std::vector< int > colors( g.bound() , -1 );
- for( int u : g.V() )
-  if( ( colors[ u ] == -1 ) && ! twoColorRec( g , u , colors , 0 ) )
-   return( std::nullopt );
- return( colors );
- }
+// twoColor(), a coloring 0 / 1 of the unoriented graph with the ends of
+// each edge apart, or nothing if there is none (an odd cycle), is
+// twoColoring() of the library on a graph, by a visit from each node not
+// colored yet; O( n + m )
 
 /// canPartition(): whether the n >= 2 wrestlers split into two non-empty
 /// groups with no rivalry inside a group: the graph of the rivalries is
@@ -815,7 +788,7 @@ bool canPartition( int n , const std::vector< std::pair< int , int > > & R )
            ( a != b ) );
   G.insertEdge( a , b );
   }
- return( twoColor( G ).has_value() );
+ return( twoColoring( G ).has_value() );
  }
 
 // against twoColoring() of the library and the 2^n colorings on 500 random
@@ -841,7 +814,7 @@ ADS_TEST( "esercitazioni-41-2" )
     ok = ok && ( ( ( mask >> a ) & 1 ) != ( ( mask >> b ) & 1 ) );
    brute = brute || ok;
    }
-  const auto C = twoColor( G );
+  const auto C = twoColoring( G );
   CHECK( C.has_value() == brute && twoColoring( M ).has_value() == brute );
   if( C )
    for( const auto & [ a , b ] : R ) CHECK( ( *C )[ a ] != ( *C )[ b ] );
@@ -852,7 +825,7 @@ ADS_TEST( "esercitazioni-41-2" )
                            { 3 , 0 } } ) );
  CHECK( canPartition( 2 , {} ) );
  CHECK_THROWS( canPartition( 1 , {} ) , contract_violation );
- CHECK_THROWS( twoColor( ListGraph<>( 2 , true ) ) , contract_violation );
+ CHECK_THROWS( twoColoring( ListGraph<>( 2 , true ) ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -952,36 +925,10 @@ ADS_TEST( "esercitazioni-42-2" )
 /*--------------------------------------------------------------------------*/
 
 
-/// mindist(): the fewest edges from a node of V1 to one of V2, 0 if they
-/// meet, INF if V2 is not reachable, by a visit in breadth from all of V1
-/// at once, stopped at the first node of V2; O( n + m )
-/// \pre V1 and V2 have one flag per name of a node
-template< Graph G >
-int mindist( const G & g , const std::vector< bool > & V1 ,
-             const std::vector< bool > & V2 )
-{
- ADS_PRE( ( int( V1.size() ) == g.bound() ) &&
-          ( int( V2.size() ) == g.bound() ) );
- std::vector< int > d( g.bound() , INF );
- std::queue< int > Q;
- for( int u : g.V() )
-  if( V1[ u ] ) {
-   if( V2[ u ] ) return( 0 );
-   d[ u ] = 0;
-   Q.push( u );
-   }
- while( ! Q.empty() ) {
-  const int u = Q.front();
-  Q.pop();
-  for( int v : g.adj( u ) )
-   if( d[ v ] == INF ) {
-    d[ v ] = d[ u ] + 1;
-    if( V2[ v ] ) return( d[ v ] );
-    Q.push( v );
-    }
-  }
- return( INF );
- }
+// mindist(), the fewest edges from a node of V1 to one of V2, 0 if they
+// meet, INF if V2 is not reachable, is setDistance() of the library: a
+// visit in breadth from all of V1 at once, stopped at the first node of V2;
+// O( n + m )
 
 // against the least distance() of the library from each node of V1, on 500
 // random oriented and unoriented graphs; V1 meeting V2; V1 empty (INF)
@@ -1005,17 +952,17 @@ ADS_TEST( "esercitazioni-43" )
     for( int v = 0 ; v < n ; ++v )
      if( V2[ v ] ) best = std::min( best , d[ v ] );
     }
-  CHECK( mindist( G , V1 , V2 ) == best );
+  CHECK( setDistance( G , V1 , V2 ) == best );
   }
  ListGraph<> P( 3 );
  P.insertEdge( 0 , 1 );
  P.insertEdge( 1 , 2 );
- CHECK( mindist( P , { true , false , false } ,
-                 { false , false , true } ) == 2 );
- CHECK( mindist( P , { false , false , true } ,
-                 { true , false , false } ) == INF );
- CHECK( mindist( P , { false , false , false } ,
-                 { true , true , true } ) == INF );
+ CHECK( setDistance( P , { true , false , false } ,
+                     { false , false , true } ) == 2 );
+ CHECK( setDistance( P , { false , false , true } ,
+                     { true , false , false } ) == INF );
+ CHECK( setDistance( P , { false , false , false } ,
+                     { true , true , true } ) == INF );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1150,24 +1097,11 @@ ADS_TEST( "esercitazioni-46" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
-/// universalSink(): the node with no edge out and an edge from every other
-/// node, -1 if none, from the adjacency matrix: each test A[ i ][ j ] rules
-/// out i (an edge out) or j (a missing edge in), so one scan leaves one
-/// candidate, then checked on its row and column; Theta( n ), while lists
-/// need Theta( n + m )
-/// \pre A square, 0 / 1, no loop
-int universalSink( const std::vector< std::vector< int > > & A )
-{
- const int n = int( A.size() );
- for( const auto & row : A ) ADS_PRE( int( row.size() ) == n );
- if( n == 0 ) return( -1 );
- int c = 0;
- for( int j = 1 ; j < n ; ++j ) if( A[ c ][ j ] ) c = j;
- for( int k = 0 ; k < n ; ++k )
-  if( ( k != c ) && ( A[ c ][ k ] || ! A[ k ][ c ] ) ) return( -1 );
- return( c );
- }
+// universalSink(), the node with no edge out and an edge from every other
+// node, -1 (NIL) if none, is universalSink() of the library on the
+// adjacency matrix: each test A[ i ][ j ] rules out i (an edge out) or j (a
+// missing edge in), so one scan leaves one candidate, then checked on its
+// row and column; Theta( n ), while lists need Theta( n + m )
 
 // against the degrees of every node on 1000 random matrices, half of them
 // with a sink planted; one node (a sink); no node
@@ -1192,7 +1126,9 @@ ADS_TEST( "esercitazioni-48" )
    }
   CHECK( universalSink( A ) == brute );
   }
- CHECK( universalSink( { { 0 } } ) == 0 && universalSink( {} ) == -1 );
+ using Adj = std::vector< std::vector< int > >;
+ CHECK( universalSink( Adj( { { 0 } } ) ) == 0 &&
+        universalSink( Adj() ) == -1 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1328,28 +1264,17 @@ ADS_TEST( "esercitazioni-50" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
 /// minStops(): the fewest battery swaps from km 0 to km L, a battery
-/// lasting R km and the stations at dist[], greedily: when the next
-/// station is out of reach, stop at the last one in reach; O( n )
+/// lasting R km and the stations at dist[]: refuelingStops() of the
+/// library, greedily: when the next station is out of reach, stop at the
+/// last one in reach; O( n )
 /// \pre dist strictly increasing in [ 0 , L ), every gap from 0 to L of at
 ///      most R
 int minStops( const std::vector< int > & dist , int L , int R )
 {
- const int n = int( dist.size() );
- for( int i = 0 ; i <= n ; ++i )
-  ADS_PRE( ( i < n ? dist[ i ] : L ) - ( i > 0 ? dist[ i - 1 ] : 0 ) <= R );
- ADS_PRE( std::ranges::adjacent_find( dist , std::greater_equal<>() ) ==
-          dist.end() );
- ADS_PRE( ( n == 0 ) || ( ( dist[ 0 ] >= 0 ) && ( dist[ n - 1 ] < L ) ) );
- int deadline = R , stops = 0;
- for( int i = 1 ; i < n ; ++i )
-  if( dist[ i ] > deadline ) {
-   ++stops;
-   deadline = dist[ i - 1 ] + R;
-   }
- if( L > deadline ) ++stops;
- return( stops );
+ const auto S = refuelingStops( dist , L , R );
+ ADS_PRE( S.has_value() );
+ return( int( S->size() ) );
  }
 
 // against a visit in breadth over the stations (fewest stops) on 1000
@@ -1387,11 +1312,11 @@ ADS_TEST( "esercitazioni-51" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
 /// minSprinklers(): the fewest sprinklers whose intervals [ D[ i ] - R[ i ] ,
-/// D[ i ] + R[ i ] ] cover [ 0 , L ], -1 if impossible: by increasing left
-/// end, among the intervals that start within the covered part take the
-/// one that reaches farthest; O( n log n )
+/// D[ i ] + R[ i ] ] cover [ 0 , L ], -1 if impossible, 0 for L = 0: by
+/// increasing left end, among the intervals that start within the covered
+/// part take the one that reaches farthest; O( n log n ),
+/// minimumIntervalCover() of the library
 /// \pre D and R of the same size, R >= 0, L >= 0
 int minSprinklers( const std::vector< int > & D ,
                    const std::vector< int > & R ,
@@ -1399,22 +1324,14 @@ int minSprinklers( const std::vector< int > & D ,
 {
  ADS_PRE( ( D.size() == R.size() ) && ( L >= 0 ) &&
           std::ranges::all_of( R , []( int x ) { return( x >= 0 ); } ) );
+ if( L == 0 )
+  return( 0 );
  const int n = int( D.size() );
  std::vector< std::pair< long , long > > I( n );
  for( int i = 0 ; i < n ; ++i )
   I[ i ] = std::pair( long( D[ i ] ) - R[ i ] , long( D[ i ] ) + R[ i ] );
- std::ranges::sort( I );
- long covered = 0;
- int count = 0 , i = 0;
- while( covered < L ) {
-  long farthest = covered;
-  for( ; ( i < n ) && ( I[ i ].first <= covered ) ; ++i )
-   farthest = std::max( farthest , I[ i ].second );
-  if( farthest == covered ) return( -1 );
-  covered = farthest;
-  ++count;
-  }
- return( count );
+ const auto cover = minimumIntervalCover( I , 0L , long( L ) );
+ return( cover ? int( cover->size() ) : -1 );
  }
 
 // against every subset of at most 12 sprinklers, the union of its
@@ -1555,20 +1472,13 @@ long skiGreedy( const std::vector< int > & H , const std::vector< int > & L )
  return( cost );
  }
 
-// candidate for the library
 /// the least sum of | H[ i ] - L[ m( i ) ] | over the matchings m of the
-/// skiers and the skis: both sorted and matched in order, by an exchange
-/// argument; O( n log n )
+/// skiers and the skis: lineAssignment() of the library, both sorted and
+/// matched in order, by an exchange argument; O( n log n )
 /// \pre H and L of the same size
-long skiMatching( std::vector< int > H , std::vector< int > L )
+long skiMatching( const std::vector< int > & H , const std::vector< int > & L )
 {
- ADS_PRE( H.size() == L.size() );
- std::ranges::sort( H );
- std::ranges::sort( L );
- long cost = 0;
- for( std::size_t i = 0 ; i < H.size() ; ++i )
-  cost += std::abs( H[ i ] - L[ i ] );
- return( cost );
+ return( lineAssignment< int , long >( H , L ) );
  }
 
 // the counterexample of the text (greedy 10, optimum 8); against every
@@ -1639,21 +1549,13 @@ ADS_TEST( "esercitazioni-55" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
-/// whether two items in distinct places of A sum to v: A sorted, then two
-/// indices from the ends, the left one up if the sum is too small and the
-/// right one down otherwise; O( n log n )
+/// whether two items in distinct places of A sum to v: A sorted, then
+/// pairWithSum() of the library, two indices from the ends, the left one up
+/// if the sum is too small and the right one down otherwise; O( n log n )
 bool pairSum( std::vector< int > A , long v )
 {
  std::ranges::sort( A );
- int i = 0 , j = int( A.size() ) - 1;
- while( i < j ) {
-  const long s = long( A[ i ] ) + A[ j ];
-  if( s == v ) return( true );
-  if( s < v ) ++i;
-  else --j;
-  }
- return( false );
+ return( pairWithSum( A , v ).has_value() );
  }
 
 /// whether two items in distinct places of A sum to v, all the pairs
@@ -2070,29 +1972,17 @@ ADS_TEST( "esercitazioni-63-2" )
  CHECK( partition3( { 1 , 2 , 3 } ) == 3 );
  }
 
-// candidate for the library
 /// partition(): the least cost of a k-partition of V into contiguous
 /// non-empty parts, the cost being the largest sum of a part: DP[ t ][ i ] =
 /// min_{ j < i } max( DP[ t - 1 ][ j ] , tot[ i ] - tot[ j ] ) for the first
-/// i + 1 items in t parts; O( k n^2 ) time
+/// i + 1 items in t parts; O( k n^2 ) time, linearPartition() of the
+/// library
 /// \pre 1 <= k <= n
 long partition( const std::vector< int > & V , int k )
 {
- const int n = int( V.size() );
- ADS_PRE( ( 1 <= k ) && ( k <= n ) );
- const long inf = std::numeric_limits< long >::max();
- std::vector< long > tot( n );
- std::partial_sum( V.begin() , V.end() , tot.begin() , std::plus< long >() );
- std::vector< std::vector< long > > DP( k + 1 ,
-                                       std::vector< long >( n , inf ) );
- for( int i = 0 ; i < n ; ++i ) DP[ 1 ][ i ] = tot[ i ];
- for( int t = 2 ; t <= k ; ++t )
-  for( int i = t - 1 ; i < n ; ++i )
-   for( int j = t - 2 ; j < i ; ++j )
-    DP[ t ][ i ] = std::min( DP[ t ][ i ] ,
-                             std::max( DP[ t - 1 ][ j ] ,
-                                       tot[ i ] - tot[ j ] ) );
- return( DP[ k ][ n - 1 ] );
+ ADS_PRE( ( 1 <= k ) && ( k <= int( V.size() ) ) );
+ return( linearPartition( std::vector< long >( V.begin() , V.end() ) ,
+                          std::size_t( k ) ).first );
  }
 
 // the vector of the text (10 for k = 3); against every set of k - 1 cuts on
@@ -2117,23 +2007,11 @@ ADS_TEST( "esercitazioni-63-3" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
-/// countSubsequences(): the sequences of places of T that spell P:
-/// DP[ i ][ j ] = DP[ i - 1 ][ j ] + ( T[ i - 1 ] = P[ j - 1 ] ?
-/// DP[ i - 1 ][ j - 1 ] : 0 ),
-/// one row kept and updated from the right; Theta( m n ) time, Theta( m )
-/// space; modulo 2^64 when the count is larger
-std::uint64_t countSubsequences( const std::string & T ,
-                                 const std::string & P )
-{
- const std::size_t m = P.size();
- std::vector< std::uint64_t > DP( m + 1 , 0 );
- DP[ 0 ] = 1;
- for( char c : T )
-  for( std::size_t j = m ; j >= 1 ; --j )
-   if( c == P[ j - 1 ] ) DP[ j ] += DP[ j - 1 ];
- return( DP[ m ] );
- }
+// the sequences of places of T that spell P: DP[ i ][ j ] = DP[ i - 1 ][ j ]
+// + ( T[ i - 1 ] = P[ j - 1 ] ? DP[ i - 1 ][ j - 1 ] : 0 ), one row kept
+// and updated from the right, modulo 2^64 when the count is larger:
+// subsequenceOccurrences( P , T ) of the library [see
+// SubsequenceProblems.h]
 
 // the example of the text ("dog" in "did you go", 2); against every set of
 // m places of T on 500 random short strings; the empty pattern (1), a
@@ -2141,7 +2019,7 @@ std::uint64_t countSubsequences( const std::string & T ,
 // triangle of the library)
 ADS_TEST( "esercitazioni-64" )
 {
- CHECK( countSubsequences( "did you go" , "dog" ) == 2 );
+ CHECK( subsequenceOccurrences( "dog" , "did you go" ) == 2 );
  std::mt19937 g( 64 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::string T( rnd( g , 0 , 12 ) , 'a' ) , P( rnd( g , 0 , 4 ) , 'a' );
@@ -2155,12 +2033,13 @@ ADS_TEST( "esercitazioni-64" )
    for( int i = 0 ; i < n ; ++i ) if( ( mask >> i ) & 1 ) s += T[ i ];
    brute += s == P;
    }
-  CHECK( countSubsequences( T , P ) == brute );
+  CHECK( subsequenceOccurrences( P , T ) == brute );
   }
- CHECK( countSubsequences( "abc" , "" ) == 1 );
- CHECK( countSubsequences( "ab" , "abc" ) == 0 );
- CHECK( countSubsequences( std::string( 60 , 'a' ) , std::string( 25 , 'a' ) )
-        == tartaglia( 60 )[ 60 ][ 25 ] );
+ CHECK( subsequenceOccurrences( "" , "abc" ) == 1 );
+ CHECK( subsequenceOccurrences( "abc" , "ab" ) == 0 );
+ CHECK( subsequenceOccurrences( std::string( 25 , 'a' ) ,
+                                std::string( 60 , 'a' ) ) ==
+        tartaglia( 60 )[ 60 ][ 25 ] );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2327,28 +2206,16 @@ ADS_TEST( "esercitazioni-67" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
 /// maxSquare(): the side of the largest square of ones in the 0 / 1 matrix
 /// A: DP[ i ][ j ], the side of the largest one with its lower right corner
 /// in ( i , j ), is 1 + the least of its three neighbours above and to the
-/// left; Theta( n^2 )
+/// left; Theta( n^2 ), largestSquare() of the library
 /// \pre A square
 int maxSquare( const std::vector< std::vector< int > > & A )
 {
  const int n = int( A.size() );
  for( const auto & row : A ) ADS_PRE( int( row.size() ) == n );
- std::vector< std::vector< int > > DP( n , std::vector< int >( n , 0 ) );
- int best = 0;
- for( int i = 0 ; i < n ; ++i )
-  for( int j = 0 ; j < n ; ++j ) {
-   if( A[ i ][ j ] == 0 ) DP[ i ][ j ] = 0;
-   else if( ( i == 0 ) || ( j == 0 ) ) DP[ i ][ j ] = 1;
-   else DP[ i ][ j ] = 1 + std::min( { DP[ i - 1 ][ j ] ,
-                                       DP[ i - 1 ][ j - 1 ] ,
-                                       DP[ i ][ j - 1 ] } );
-   best = std::max( best , DP[ i ][ j ] );
-   }
- return( best );
+ return( int( largestSquare( A ).side ) );
  }
 
 // the matrix of the text (4); against every corner and side on 400 random
@@ -2450,28 +2317,10 @@ ADS_TEST( "esercitazioni-69" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
-/// countDecodings(): the readings of the digits T with A = 1 ... Z = 26,
-/// from the right: C[ i ] = 0 if T[ i ] = 0, else C[ i + 1 ] plus C[ i + 2 ]
-/// if T[ i ] T[ i + 1 ] is in 10 ... 26; Theta( n )
-/// \pre T digits, not empty
-std::uint64_t countDecodings( const std::vector< int > & T )
-{
- const int n = int( T.size() );
- ADS_PRE( ( n >= 1 ) &&
-          std::ranges::all_of( T , []( int d ) {
-                                return( ( d >= 0 ) && ( d <= 9 ) ); } ) );
- std::vector< std::uint64_t > C( n + 1 , 0 );
- C[ n ] = 1;
- for( int i = n - 1 ; i >= 0 ; --i )
-  if( T[ i ] != 0 ) {
-   C[ i ] = C[ i + 1 ];
-   if( ( i < n - 1 ) &&
-       ( ( T[ i ] == 1 ) || ( ( T[ i ] == 2 ) && ( T[ i + 1 ] <= 6 ) ) ) )
-    C[ i ] += C[ i + 2 ];
-   }
- return( C[ 0 ] );
- }
+// the readings of the digits T with A = 1 ... Z = 26, from the right:
+// C[ i ] = 0 if T[ i ] = 0, else C[ i + 1 ] plus C[ i + 2 ] if T[ i ]
+// T[ i + 1 ] is in 10 ... 26, countDecodings() of the library [see
+// Segmentations.h]
 
 /// the readings of T[ i ... ], every split tried
 std::uint64_t decodeBrute( const std::vector< int > & T , std::size_t i )
@@ -2617,23 +2466,10 @@ ADS_TEST( "esercitazioni-72" )
 /*--------------------------------------------------------------------------*/
 
 
-// candidate for the library
-/// scs(): the length of the shortest common supersequence of P and T:
-/// DP[ i ][ 0 ] = i, DP[ 0 ][ j ] = j, DP[ i - 1 ][ j - 1 ] + 1 if the last
-/// characters are equal, else 1 + min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
-/// Theta( n m ), and n + m - | LCS |
-int scs( const std::string & P , const std::string & T )
-{
- const int n = int( P.size() ) , m = int( T.size() );
- std::vector< std::vector< int > > DP( n + 1 , std::vector< int >( m + 1 ) );
- for( int i = 0 ; i <= n ; ++i )
-  for( int j = 0 ; j <= m ; ++j )
-   if( i == 0 ) DP[ i ][ j ] = j;
-   else if( j == 0 ) DP[ i ][ j ] = i;
-   else if( P[ i - 1 ] == T[ j - 1 ] ) DP[ i ][ j ] = DP[ i - 1 ][ j - 1 ] + 1;
-   else DP[ i ][ j ] = 1 + std::min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
- return( DP[ n ][ m ] );
- }
+// the length of the shortest common supersequence of P and T: DP[ i ][ 0 ]
+// = i, DP[ 0 ][ j ] = j, DP[ i - 1 ][ j - 1 ] + 1 if the last characters
+// are equal, else 1 + min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ), and
+// n + m - | LCS |: scsLength() of the library [see SubsequenceProblems.h]
 
 /// whether s is a subsequence of S
 bool isSubsequence( const std::string & s , const std::string & S )
@@ -2648,14 +2484,14 @@ bool isSubsequence( const std::string & s , const std::string & S )
 // over { a , b } holding both, on 300 random pairs; an empty string
 ADS_TEST( "esercitazioni-74" )
 {
- CHECK( scs( "AB" , "BC" ) == 3 && scs( "DAB" , "DCB" ) == 4 );
+ CHECK( scsLength( "AB" , "BC" ) == 3 && scsLength( "DAB" , "DCB" ) == 4 );
  std::mt19937 g( 74 );
  for( int r = 0 ; r < 300 ; ++r ) {
   std::string P( rnd( g , 0 , 4 ) , 'a' ) , T( rnd( g , 0 , 4 ) , 'a' );
   for( auto & c : P ) c = char( 'a' + rnd( g , 0 , 1 ) );
   for( auto & c : T ) c = char( 'a' + rnd( g , 0 , 1 ) );
   const int n = int( P.size() ) , m = int( T.size() );
-  CHECK( scs( P , T ) == n + m - lcsTable( P , T )[ n ][ m ] );
+  CHECK( int( scsLength( P , T ) ) == n + m - lcsTable( P , T )[ n ][ m ] );
   int brute = -1;
   for( int len = 0 ; brute < 0 ; ++len )
    for( int mask = 0 ; ( brute < 0 ) && ( mask < ( 1 << len ) ) ; ++mask ) {
@@ -2663,9 +2499,9 @@ ADS_TEST( "esercitazioni-74" )
     for( int i = 0 ; i < len ; ++i ) if( ( mask >> i ) & 1 ) S[ i ] = 'b';
     if( isSubsequence( P , S ) && isSubsequence( T , S ) ) brute = len;
     }
-  CHECK( scs( P , T ) == brute );
+  CHECK( int( scsLength( P , T ) ) == brute );
   }
- CHECK( scs( "" , "abc" ) == 3 && scs( "" , "" ) == 0 );
+ CHECK( scsLength( "" , "abc" ) == 3 && scsLength( "" , "" ) == 0 );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -473,6 +473,77 @@ interop  dictionaries         viste di dizionari e insiemi
 interop  trees                viste di alberi e heap
 interop  nodes-and-graphs     alberi di nodi, grafi, MFSet, matrici, arena
 
+# the classic problems of the exams, promoted to the library
+lib_strings palindromic-substring sottostringa palindroma piu' lunga, Manacher
+lib_strings  palindromic-subsequence  sottosequenza palindroma piu' lunga
+lib_strings palindromic-partition meno palindromi in cui tagliare una stringa
+lib_strings  interleaving             intreccio (shuffle) di due stringhe
+lib_strings  supersequence            supersequenza comune minima
+lib_strings subsequence-occurrences occorrenze di una stringa come
+lib_strings  lcs3                     LCS di tre stringhe
+lib_strings  segmentations            segmentazioni in parole di un elenco
+lib_strings  decodings                decodifiche A = 1, ..., Z = 26
+lib_strings  balanced-subsequence     sottosequenza bilanciata di parentesi
+lib_strings  balanced-substring       sottostringa bilanciata di parentesi
+lib_strings  anagrams                 classi di anagrammi
+lib_strings string-breaking taglio di una stringa, accelerazione di Knuth
+
+lib_optimization rod-cutting taglio dell'asta, pezzi letti all'indietro
+lib_optimization unbounded-knapsack zaino con ripetizioni e monete di peso
+lib_optimization coin-change-ways modi del resto e sottoinsiemi di somma data
+lib_optimization minimum-squares minimo numero di quadrati, Lagrange e Legendre
+lib_optimization linear-partition partizione lineare e partizione dei pittori
+lib_optimization stock-trading compravendite di un titolo, al più o
+lib_optimization  house-problems       somma senza adiacenti e case colorate
+lib_optimization  optimal-search-tree  albero binario di ricerca ottimo, Knuth
+lib_optimization  coins-in-a-line      gioco delle monete in fila
+lib_optimization grid-paths quadrato di uni e cammini monotoni con ostacoli
+lib_optimization  trapping-rain-water  acqua trattenuta dalle colonne
+lib_optimization sequence-problems sottoinsieme divisibile, sottosequenze
+lib_optimization  interval-cover       copertura di un segmento con intervalli
+lib_optimization  smith-rule           regola di Smith, completamento pesato
+lib_optimization akra-bazzi esponente di Akra e Bazzi e ordine di crescita
+lib_optimization  catalan              numeri di Catalan
+
+lib_search  local-optima        picco e minimo locale di vettore e albero
+lib_search  exponential-search  ricerca esponenziale e su sequenza illimitata
+lib_search  integer-sqrt        radice quadrata intera e quadrati perfetti
+lib_search  sorted-searches     minimo ruotato, valore vicino, coppia, k-esimo
+lib_search  rearrangements      bandiera olandese, wiggle, k-ordinato, scambi
+lib_search  sequence-queries    minori a destra, finestra, buco, assegnamento
+lib_search  closest-pair        coppia di punti piu' vicini
+
+lib_graphs  grid-distances            distanze su griglia da piu' sorgenti
+lib_graphs  flood-fill                riempimento di una regione di una matrice
+lib_graphs  knight-distance           mosse minime del cavallo
+lib_graphs  count-shortest-paths      numero di cammini minimi
+lib_graphs  multi-source-distance     distanza da un insieme e fra due insiemi
+lib_graphs  longest-path-layering     strati per cammini piu' lunghi in un DAG
+lib_graphs  dag-longest-paths         cammini piu' lunghi pesati in un DAG
+lib_graphs  simple-cycles             cicli semplici per un nodo, Johnson
+lib_graphs  refueling-stops           fermate minime per il rifornimento
+lib_graphs trees-and-diameters albero libero e diametri di grafi e alberi
+lib_graphs tree-vertex-cover copertura minima di vertici di una foresta
+lib_graphs  count-triangles           conteggio dei triangoli
+lib_graphs  two-coloring              2-colorazione di un grafo
+lib_graphs  universal-sink            pozzo universale da matrice
+lib_graphs  unique-topological-order  unicita' dell'ordine topologico
+lib_graphs  bipartite-b-matching      b-abbinamento bipartito per flusso
+lib_graphs  max-weight-matching       abbinamento di peso massimo esatto
+lib_graphs  edge-disjoint-paths       cammini disgiunti sugli archi, Menger
+lib_graphs  decrease-capacity         flusso massimo dopo una capacita' ridotta
+
+lib_trees  binarytree-detach           detachLeft/detachRight, specchio in loco
+lib_trees  binarytree-postorder        preorder/inorder/postorder senza pila
+lib_trees  lowest-common-ancestor      antenato comune piu' basso coi padri
+lib_trees  equal-trees                 uguaglianza di alberi e di forme
+lib_trees  is-search-tree              verifica di un albero binario di ricerca
+lib_trees  is-red-black-tree           verifica di una colorazione Red-Black
+lib_trees  search-tree-range           chiavi di un ABR in un intervallo
+lib_trees  minimum-height-search-tree  ABR di altezza minima da un vettore
+lib_trees  from-preorder-inorder       albero dalla previsita e dall'invisita
+lib_trees  cartesian-binary-tree       albero cartesiano in tempo lineare
+lib_trees  heap-by-insertion           heap costruito per inserimenti
 # Ferragina, Pearls of Algorithm Engineering, beyond the book
 pearls_compression  entropy                  entropie empiriche H0 e Hk
 pearls_compression  canonical-huffman-notes  Huffman canonico, figure 12.5-12.9

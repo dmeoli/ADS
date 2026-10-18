@@ -29,19 +29,27 @@
 
 #include "ADS/algorithm/MasterTheorem.h"
 #include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Matching.h"
+#include "ADS/graph/Properties.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/numeric/Combinatorics.h"
+#include "ADS/optimization/HouseProblems.h"
 #include "ADS/optimization/Intervals.h"
 #include "ADS/optimization/ShortestJobFirst.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/search/BinarySearch.h"
 #include "ADS/search/Selection.h"
+#include "ADS/search/SortedSearches.h"
+#include "ADS/sequence/Rearrangements.h"
 #include "ADS/set/LinkedHashSet.h"
 #include "ADS/sort/Heapsort.h"
 #include "ADS/sort/InsertionSort.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/sort/Sort.h"
+#include "ADS/string/Segmentations.h"
+#include "ADS/string/SubsequenceProblems.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/SearchTree.h"
 
 #include <algorithm>
@@ -199,33 +207,19 @@ inline std::pair< std::size_t , std::size_t > maxGap(
 
 /*--------------- 2011-04-11 A2, minimum height search tree ----------------*/
 
-// candidate for the library
-/// buildMinHeightBSTRec(): the tree of A[ left .. right ], its middle item
-/// at the root and the two halves built recursively
-inline TreeNode * buildMinHeightBSTRec( Pool & P ,
-                                        const std::vector< long > & A ,
-                                        long left , long right )
-{
- if( left > right )
-  return( nullptr );
- const long mid = left + ( right - left ) / 2;
- return( makeNode( P , A[ mid ] , buildMinHeightBSTRec( P , A , left ,
-                                                         mid - 1 ) ,
-                   buildMinHeightBSTRec( P , A , mid + 1 , right ) ) );
- }
-
-// candidate for the library
 /// buildMinHeightBST(): the binary search tree of the keys of A, with
-/// parents, of the least height, ceil( log2( n + 1 ) ) - 1; Theta( n )
-/// time, O( log n ) stack
+/// parents, of the least height, ceil( log2( n + 1 ) ) - 1, the middle
+/// item at the root and the two halves built recursively by
+/// minimumHeightSearchTree() of the library; Theta( n ) time, O( log n )
+/// stack
 /// \pre n > 0 and A strictly increasing
 /// \post the height is the least one for n nodes
 inline TreeNode * buildMinHeightBST( Pool & P , const std::vector< long > & A )
 {
  ADS_PRE( ! A.empty() );
- ADS_AUDIT( std::adjacent_find( A.begin() , A.end() ,
-                                std::greater_equal<>() ) == A.end() );
- TreeNode * T = buildMinHeightBSTRec( P , A , 0 , long( A.size() ) - 1 );
+ TreeNode * T = minimumHeightSearchTree( A , [ & ]( long k , TreeNode * l ,
+                                                    TreeNode * r ) {
+  return( makeNode( P , k , l , r ) ); } );
  ADS_POST( ( std::size_t( 1 ) << ( height( T ) + 1 ) ) - 1 >= A.size() );
  ADS_POST( ( std::size_t( 1 ) << height( T ) ) - 1 < A.size() );
  return( T );
@@ -478,28 +472,14 @@ inline bool disjoint( std::vector< long > A , std::vector< long > B )
  return( true );
  }
 
-// candidate for the library
-/// two items of S at distinct places sum to x: two indices from the ends,
-/// the right one moving left when the sum is larger than x and the left
-/// one right when it is smaller; O( n ). The text moves the left index
-/// with i = i - 1
+/// two items of S at distinct places sum to x: pairWithSum() of the
+/// library, two indices from the ends, the right one moving left when the
+/// sum is larger than x and the left one right when it is smaller; O( n ).
+/// The text moves the left index with i = i - 1
 /// \pre S sorted
 inline bool twoSum( const std::vector< long > & S , long x )
 {
- ADS_AUDIT( std::is_sorted( S.begin() , S.end() ) );
- if( S.empty() )
-  return( false );
- std::size_t i = 0 , j = S.size() - 1;
- while( i < j ) {
-  const long s = S[ i ] + S[ j ];
-  if( s == x )
-   return( true );
-  if( s > x )
-   --j;
-  else
-   ++i;
-  }
- return( false );
+ return( pairWithSum( S , x ).has_value() );
  }
 
 /*------------------------ 2013-06-17 A2, four rows ------------------------*/
@@ -536,30 +516,12 @@ inline std::array< std::vector< long > , 4 > fourRows(
 
 /*---------- 2013-09-02 A2 and 2019-08-22 A2, red-black colorings ----------*/
 
-/// verifyRBRec(): the black nodes from the root to the leaves below t,
-/// counted from h, and whether the subtree of t respects the rules
-inline std::pair< int , bool > verifyRBRec( const TreeNode * t , int h )
-{
- if( ! t )
-  return( std::pair( h , true ) );
- if( isRed( t ) && ( isRed( t->left ) || isRed( t->right ) ) )
-  return( std::pair( 0 , false ) );
- const int nh = h + ( isRed( t ) ? 0 : 1 );
- const auto [ hl , bl ] = verifyRBRec( t->left , nh );
- const auto [ hr , br ] = verifyRBRec( t->right , nh );
- if( ( ! bl ) || ( ! br ) || ( hl != hr ) )
-  return( std::pair( 0 , false ) );
- return( std::pair( hl , true ) );
- }
-
-// candidate for the library
 /// verifyRB(): the coloring of T is red-black: the root black, no red
-/// node with a red child, the same black height on all the paths; O( n )
+/// node with a red child, the same black height on all the paths, by the
+/// postvisit of isRedBlackTree() of the library; O( n )
 inline bool verifyRB( const TreeNode * T )
 {
- if( isRed( T ) )
-  return( false );
- return( verifyRBRec( T , 0 ).second );
+ return( isRedBlackTree( T , isRed ) );
  }
 
 /// blackHeight(): the black height of t, the leaf included, -1 if the
@@ -659,51 +621,22 @@ std::vector< int > connectedOrder( const G & g )
 /// an edge ( u , v ) of weight w
 using WeightedEdge = std::tuple< int , int , long >;
 
-/// the backtracking on the edges from i: E[ i ] skipped, and taken if its
-/// ends are free
-inline void maxMatchingRec( const std::vector< WeightedEdge > & E ,
-                            std::size_t i , std::vector< bool > & used ,
-                            std::vector< std::size_t > & S , long w ,
-                            std::vector< std::size_t > & best , long & bw )
-{
- if( i == E.size() ) {
-  if( w > bw ) {
-   bw = w;
-   best = S;
-   }
-  return;
-  }
- maxMatchingRec( E , i + 1 , used , S , w , best , bw );
- const auto [ u , v , c ] = E[ i ];
- if( ( ! used[ u ] ) && ( ! used[ v ] ) ) {
-  used[ u ] = used[ v ] = true;
-  S.push_back( i );
-  maxMatchingRec( E , i + 1 , used , S , w + c , best , bw );
-  S.pop_back();
-  used[ u ] = used[ v ] = false;
-  }
- }
-
-// candidate for the library
 /// univoco(): a set of edges of the graph of n nodes, no two with a
-/// common end, of the largest weight, and the weight, by backtracking on
-/// the edges in a fixed order, each one skipped or taken; O( 2^m ). The
-/// text branches on the edges of a node u and recurses on the other end,
-/// which misses the sets whose edges do not form a path from u
+/// common end, of the largest weight, and the weight: maxWeightMatching()
+/// of the library, a backtracking that leaves the first free node alone or
+/// matches it to each free neighbour, cutting the branches that cannot
+/// beat the best set found. The text branches on the edges of a node u and
+/// recurses on the other end, which misses the sets whose edges do not
+/// form a path from u
 /// \pre the ends of each edge are distinct nodes in [ 0 , n ), weights
 ///      positive
 /// \post no two edges with a common end
 inline std::pair< long , std::vector< std::size_t > > maxMatching(
                                 int n , const std::vector< WeightedEdge > & E )
 {
- for( const auto & [ u , v , w ] : E )
-  ADS_PRE( ( u != v ) && ( u >= 0 ) && ( v >= 0 ) && ( u < n ) &&
-           ( v < n ) && ( w > 0 ) );
- std::vector< bool > used( n , false );
- std::vector< std::size_t > S , best;
- long bw = 0;
- maxMatchingRec( E , 0 , used , S , 0 , best , bw );
- return( std::pair( bw , best ) );
+ for( const auto & e : E )
+  ADS_PRE( std::get< 2 >( e ) > 0 );
+ return( maxWeightMatching( n , E ) );
  }
 
 /*------ 2015-11-05 A2 and A4, difference in a subtree and two values ------*/
@@ -761,28 +694,9 @@ inline std::size_t mostFrequentAB( const std::vector< long > & A )
 
 /*----------------- 2016-01-26 B3, shuffle of two strings ------------------*/
 
-// candidate for the library
-/// isShuffle(): Z interleaves X and Y keeping the order of each: DP[ i ][
-/// j ] is true if Z[ 0 .. i + j ) is a shuffle of X[ 0 .. i ) and Y[ 0 ..
-/// j ); Theta( n m ) time and space
-inline bool isShuffle( const std::string & X , const std::string & Y ,
-                       const std::string & Z )
-{
- const std::size_t n = X.size() , m = Y.size();
- if( Z.size() != n + m )
-  return( false );
- std::vector< std::vector< bool > > DP( n + 1 ,
-                                        std::vector< bool >( m + 1 , false ) );
- DP[ 0 ][ 0 ] = true;
- for( std::size_t i = 0 ; i <= n ; ++i )
-  for( std::size_t j = 0 ; j <= m ; ++j ) {
-   if( ( i > 0 ) && ( X[ i - 1 ] == Z[ i + j - 1 ] ) && DP[ i - 1 ][ j ] )
-    DP[ i ][ j ] = true;
-   if( ( j > 0 ) && ( Y[ j - 1 ] == Z[ i + j - 1 ] ) && DP[ i ][ j - 1 ] )
-    DP[ i ][ j ] = true;
-   }
- return( DP[ n ][ m ] );
- }
+// isShuffle(): Z interleaves X and Y keeping the order of each: DP[ i ][
+// j ] is true if Z[ 0 .. i + j ) is a shuffle of X[ 0 .. i ) and Y[ 0 ..
+// j ), isInterleaving() of the library [see SubsequenceProblems.h]
 
 /*----------------- 2016-07-06 A2, sorted rows and columns -----------------*/
 
@@ -806,33 +720,10 @@ inline void sortMatrix( std::vector< std::vector< long > > & M )
 
 /*-------------- 2016-08-29 B4, occurrences of a subsequence ---------------*/
 
-/// countRec(): DP[ p ][ t ], the occurrences of P[ 0 .. p ) as a
-/// subsequence of T[ 0 .. t ), memoized, -1 if not yet computed
-inline std::int64_t countRec( const std::string & P , const std::string & T ,
-                              std::size_t p , std::size_t t ,
-                              std::vector< std::vector< std::int64_t > > & DP )
-{
- if( p > t )
-  return( 0 );
- if( p == 0 )
-  return( 1 );
- if( DP[ p ][ t ] < 0 )
-  DP[ p ][ t ] = countRec( P , T , p , t - 1 , DP ) +
-                 ( ( P[ p - 1 ] == T[ t - 1 ] ) ?
-                   countRec( P , T , p - 1 , t - 1 , DP ) : 0 );
- return( DP[ p ][ t ] );
- }
-
-// candidate for the library
-/// count(): the occurrences of P as a subsequence of T, the tuples of
-/// places j_1 < ... < j_m with T[ j_k ] = P[ k ]; O( m n ) time and space
-inline std::int64_t countSubsequences( const std::string & P ,
-                                       const std::string & T )
-{
- std::vector< std::vector< std::int64_t > > DP(
-          P.size() + 1 , std::vector< std::int64_t >( T.size() + 1 , -1 ) );
- return( countRec( P , T , P.size() , T.size() , DP ) );
- }
+// count(): the occurrences of P as a subsequence of T, the tuples of
+// places j_1 < ... < j_m with T[ j_k ] = P[ k ], by the recursion on
+// DP[ p ][ t ] of the text: subsequenceOccurrences() of the library [see
+// SubsequenceProblems.h]
 
 /*--------------------- 2017-01-10 B4, files on a tape ---------------------*/
 
@@ -863,11 +754,10 @@ std::vector< std::size_t > orderBy( std::size_t n , C less )
  return( pi );
  }
 
-// candidate for the library
 /// the order of the files that minimizes tapeCost(): by increasing
 /// l_i / f_i (the rule of Smith), compared as l_a f_b < l_b f_a; an
 /// exchange of two adjacent files a , b changes the cost by f_a l_b -
-/// f_b l_a; O( n log n )
+/// f_b l_a; O( n log n ), smithOrder() of the library
 /// \pre lengths positive, probabilities not negative
 inline std::vector< std::size_t > tapeOrder( const std::vector< double > & l ,
                                              const std::vector< double > & f )
@@ -875,87 +765,47 @@ inline std::vector< std::size_t > tapeOrder( const std::vector< double > & l ,
  ADS_PRE( l.size() == f.size() );
  for( std::size_t i = 0 ; i < l.size() ; ++i )
   ADS_PRE( ( l[ i ] > 0 ) && ( f[ i ] >= 0 ) );
- return( orderBy( l.size() , [ & ]( std::size_t a , std::size_t b ) {
-  return( l[ a ] * f[ b ] < l[ b ] * f[ a ] );
-  } ) );
+ return( smithOrder( l , f ) );
  }
 
 /*--------- 2017-06-08 A2 and B4, topological orders and decodings ---------*/
 
-// candidate for the library
 /// the number of topological orders of g, 0, 1, or 2 for more than one:
-/// 0 if hasCycle(), otherwise the algorithm of Kahn, the order being
-/// unique as long as the queue of the nodes with no entering edge never
-/// holds two of them; O( n + m ). The text enqueues u where it means v
+/// 0 if hasCycle(), otherwise uniqueTopologicalOrder() of the library, the
+/// algorithm of Kahn, the order being unique as long as the queue of the
+/// nodes with no entering edge never holds two of them; O( n + m ). The
+/// text enqueues u where it means v
 inline int topologicalOrders( const ListGraph<> & g )
 {
  ADS_PRE( g.directed() );
  if( hasCycle( g ) )
   return( 0 );
- std::vector< int > in( g.bound() , 0 );
- for( int u : g.V() )
-  g.forEachAdj( u , [ & ]( int v ) { ++in[ v ]; } );
- std::queue< int > Q;
- for( int u : g.V() )
-  if( in[ u ] == 0 )
-   Q.push( u );
- while( Q.size() == 1 ) {
-  const int u = Q.front();
-  Q.pop();
-  g.forEachAdj( u , [ & ]( int v ) {
-   if( --in[ v ] == 0 )
-    Q.push( v );
-   } );
-  }
- return( Q.size() > 1 ? 2 : 1 );
+ return( uniqueTopologicalOrder( g ) ? 1 : 2 );
  }
 
-// candidate for the library
-/// the interpretations of the digits T as letters A = 1, ..., Z = 26:
-/// DP[ i ], those of T[ i .. n ), is 0 if T[ i ] = 0, otherwise DP[ i + 1 ]
-/// plus DP[ i + 2 ] if T[ i ] T[ i + 1 ] is in 10 .. 26; DP[ n ] = 1;
-/// Theta( n ). The text sets DP[ i ] = 0 for T[ i ] = 0 and then
-/// overwrites it, lacking an else
-/// \pre the items of T in 0 .. 9
-inline std::uint64_t decodings( const std::vector< int > & T )
-{
- const std::size_t n = T.size();
- for( int d : T )
-  ADS_PRE( ( d >= 0 ) && ( d <= 9 ) );
- std::vector< std::uint64_t > DP( n + 2 , 0 );
- DP[ n ] = 1;
- for( std::size_t i = n ; i-- > 0 ; )
-  if( T[ i ] != 0 ) {
-   DP[ i ] = DP[ i + 1 ];
-   if( ( i + 1 < n ) &&
-       ( ( T[ i ] == 1 ) || ( ( T[ i ] == 2 ) && ( T[ i + 1 ] <= 6 ) ) ) )
-    DP[ i ] += DP[ i + 2 ];
-   }
- return( DP[ 0 ] );
- }
+// the interpretations of the digits T as letters A = 1, ..., Z = 26:
+// DP[ i ], those of T[ i .. n ), is 0 if T[ i ] = 0, otherwise DP[ i + 1 ]
+// plus DP[ i + 2 ] if T[ i ] T[ i + 1 ] is in 10 .. 26; DP[ n ] = 1, as
+// countDecodings() of the library [see Segmentations.h]. The text sets
+// DP[ i ] = 0 for T[ i ] = 0 and then overwrites it, lacking an else
 
 /*--------------------- 2018-01-31 A2, keys in a range ---------------------*/
 
-// candidate for the library
 /// occurrences(): the keys of the binary search tree T in [ lo , hi ],
-/// the visit pruned where the key leaves the range on one side; O( n ),
-/// O( h + k ) for k keys in the range; the nodes visited are added to
-/// *visits, if given
+/// the visit pruned where the key leaves the range on one side, by
+/// searchTreeRange() of the library; O( n ), O( h + k ) for k keys in the
+/// range; the nodes visited are added to *visits, if given
 /// \pre lo <= hi
 inline long occurrences( const TreeNode * T , long lo , long hi ,
                          long * visits = nullptr )
 {
- ADS_PRE( lo <= hi );
- if( ! T )
-  return( 0 );
+ long k = 0;
+ const std::size_t seen = searchTreeRange( T , lo , hi ,
+                                           [ & ]( const TreeNode * ) {
+  ++k; } );
  if( visits )
-  ++*visits;
- if( T->key < lo )
-  return( occurrences( T->right , lo , hi , visits ) );
- if( T->key > hi )
-  return( occurrences( T->left , lo , hi , visits ) );
- return( 1 + occurrences( T->left , lo , hi , visits ) +
-         occurrences( T->right , lo , hi , visits ) );
+  *visits += long( seen );
+ return( k );
  }
 
 /*-------------------- 2019-02-07 A2, first occurrence ---------------------*/
@@ -1080,24 +930,15 @@ inline bool kSorted( const std::vector< long > & A , std::size_t k )
  return( true );
  }
 
-// candidate for the library
 /// sortK(): A sorted when each item is at most k places away from its
-/// place: a heap of the next k + 1 items gives the item of each place;
-/// O( n log k ) time, O( k ) space
+/// place: sortKSorted() of the library, a heap of the next k + 1 items
+/// gives the item of each place; O( n log k ) time, O( k ) space
 /// \pre A k-sorted
 /// \post A sorted
 inline void sortK( std::vector< long > & A , std::size_t k )
 {
  ADS_AUDIT( kSorted( A , k ) );
- const std::size_t n = A.size() , w = std::min( k + 1 , n );
- HeapPriorityQueue< long , long > Q{ int( w ) };
- for( std::size_t i = 0 ; i < w ; ++i )
-  Q.insert( A[ i ] , A[ i ] );
- for( std::size_t i = 0 ; i < n ; ++i ) {
-  A[ i ] = Q.deleteMin();
-  if( i + k + 1 < n )
-   Q.insert( A[ i + k + 1 ] , A[ i + k + 1 ] );
-  }
+ sortKSorted( A , k );
  ADS_POST( std::is_sorted( A.begin() , A.end() ) );
  }
 
@@ -1248,60 +1089,23 @@ inline bool containsSum( const TreeNode * T , long k )
 /// hateville(): the cheapest coloring of n houses in a row with k colors,
 /// cost[ h ][ c ] for the house h of color c, adjacent houses of different
 /// colors: DP[ h ][ c ] = cost[ h ][ c ] + min_{p != c} DP[ h - 1 ][ p ];
-/// O( n k^2 )
+/// O( n k^2 ) as written, O( n k ) by paintHouses() of the library
 /// \pre k >= 2, every row of cost of k items
 inline long hateville( const std::vector< std::vector< long > > & cost )
 {
  if( cost.empty() )
   return( 0 );
- const std::size_t k = cost.front().size();
- ADS_PRE( k >= 2 );
- std::vector< long > DP = cost.front();
- for( std::size_t h = 1 ; h < cost.size() ; ++h ) {
-  ADS_PRE( cost[ h ].size() == k );
-  std::vector< long > N( k );
-  for( std::size_t c = 0 ; c < k ; ++c ) {
-   long b = std::numeric_limits< long >::max();
-   for( std::size_t p = 0 ; p < k ; ++p )
-    if( p != c )
-     b = std::min( b , DP[ p ] );
-   N[ c ] = cost[ h ][ c ] + b;
-   }
-  DP = N;
-  }
- return( *std::min_element( DP.begin() , DP.end() ) );
+ ADS_PRE( cost.front().size() >= 2 );
+ return( paintHouses( cost ).first );
  }
 
 /// hatevilleFast(): hateville() keeping of the previous row only its
-/// minimum, its color and the second minimum; O( n k ) time, O( 1 ) space
+/// minimum, its color and the second minimum; O( n k ) time, as
+/// paintHouses() of the library does
 /// \pre k >= 2, every row of cost of k items
 inline long hatevilleFast( const std::vector< std::vector< long > > & cost )
 {
- if( cost.empty() )
-  return( 0 );
- const std::size_t k = cost.front().size();
- ADS_PRE( k >= 2 );
- long m1 = 0 , m2 = 0;
- std::size_t c1 = k;
- for( const auto & row : cost ) {
-  ADS_PRE( row.size() == k );
-  long n1 = std::numeric_limits< long >::max() , n2 = n1;
-  std::size_t d1 = k;
-  for( std::size_t c = 0 ; c < k ; ++c ) {
-   const long v = row[ c ] + ( c == c1 ? m2 : m1 );
-   if( v < n1 ) {
-    n2 = n1;
-    n1 = v;
-    d1 = c;
-    }
-   else if( v < n2 )
-    n2 = v;
-   }
-  m1 = n1;
-  m2 = n2;
-  c1 = d1;
-  }
- return( m1 );
+ return( hateville( cost ) );
  }
 
 }  // end( namespace exams )
@@ -2219,17 +2023,17 @@ ADS_TEST( "compiti-2015-11-05-A4b" )
 
 /*----------------- 2016-01-26 B3, shuffle of two strings ------------------*/
 
-// the examples of the text; isShuffle() against the recursion on both
+// the examples of the text; isInterleaving() against the recursion on both
 // choices, on random strings of a small alphabet; empty strings
 ADS_TEST( "compiti-2016-01-26-B3" )
 {
  for( const char * z : { "ABCD" , "ACBD" , "ACDB" , "CABD" , "CADB" ,
                          "CDAB" } )
-  CHECK( isShuffle( "AB" , "CD" , z ) );
- CHECK( ! isShuffle( "AB" , "CD" , "BACD" ) );
- CHECK( isShuffle( "123" , "345" , "123435" ) );
- CHECK( ! isShuffle( "123" , "345" , "143235" ) );
- CHECK( ! isShuffle( "123" , "345" , "123455" ) );
+  CHECK( isInterleaving( "AB" , "CD" , z ) );
+ CHECK( ! isInterleaving( "AB" , "CD" , "BACD" ) );
+ CHECK( isInterleaving( "123" , "345" , "123435" ) );
+ CHECK( ! isInterleaving( "123" , "345" , "143235" ) );
+ CHECK( ! isInterleaving( "123" , "345" , "123455" ) );
  std::function< bool( const std::string & , const std::string & ,
                       const std::string & ) > rec =
   [ & ]( const std::string & x , const std::string & y ,
@@ -2263,12 +2067,13 @@ ADS_TEST( "compiti-2016-01-26-B3" )
    }
   else
    z = word( x.size() + y.size() + ( g() % 5 == 0 ) );
-  CHECK( isShuffle( x , y , z ) == rec( x , y , z ) );
+  CHECK( isInterleaving( x , y , z ) == rec( x , y , z ) );
   if( t % 2 )
-   CHECK( isShuffle( x , y , z ) );
+   CHECK( isInterleaving( x , y , z ) );
   }
- CHECK( isShuffle( "" , "" , "" ) && isShuffle( "ab" , "" , "ab" ) );
- CHECK( ! isShuffle( "" , "" , "a" ) && ! isShuffle( "ab" , "" , "ba" ) );
+ CHECK( isInterleaving( "" , "" , "" ) && isInterleaving( "ab" , "" , "ab" ) );
+ CHECK( ! isInterleaving( "" , "" , "a" ) &&
+        ! isInterleaving( "ab" , "" , "ba" ) );
  }
 
 /*----------------- 2016-07-06 A2, sorted rows and columns -----------------*/
@@ -2320,12 +2125,12 @@ ADS_TEST( "compiti-2016-07-06-A2" )
 
 /*-------------- 2016-08-29 B4, occurrences of a subsequence ---------------*/
 
-// the example, abc in aabdcc 4 times; countSubsequences() against all the
-// m-subsets of the places, on random strings; the empty pattern once,
+// the example, abc in aabdcc 4 times; subsequenceOccurrences() against
+// all the m-subsets of the places, on random strings; the empty pattern once,
 // C( n , m ) for one letter, up to C( 60 , 30 )
 ADS_TEST( "compiti-2016-08-29-B4" )
 {
- CHECK( countSubsequences( "abc" , "aabdcc" ) == 4 );
+ CHECK( subsequenceOccurrences( "abc" , "aabdcc" ) == 4 );
  std::mt19937 g( 23 );
  for( int t = 0 ; t < 400 ; ++t ) {
   std::string P , T;
@@ -2333,7 +2138,7 @@ ADS_TEST( "compiti-2016-08-29-B4" )
    P += char( 'a' + g() % 2 );
   for( std::size_t i = 0 , n = g() % 13 ; i < n ; ++i )
    T += char( 'a' + g() % 3 );
-  std::int64_t c = 0;
+  std::uint64_t c = 0;
   for( unsigned s = 0 ; s < ( 1u << T.size() ) ; ++s )
    if( std::size_t( std::popcount( s ) ) == P.size() ) {
     std::string q;
@@ -2342,16 +2147,16 @@ ADS_TEST( "compiti-2016-08-29-B4" )
       q += T[ i ];
     c += ( q == P );
     }
-  CHECK( countSubsequences( P , T ) == c );
+  CHECK( subsequenceOccurrences( P , T ) == c );
   }
- CHECK( countSubsequences( "" , "" ) == 1 );
- CHECK( countSubsequences( "" , "x" ) == 1 );
- CHECK( countSubsequences( "ab" , "a" ) == 0 );
+ CHECK( subsequenceOccurrences( "" , "" ) == 1 );
+ CHECK( subsequenceOccurrences( "" , "x" ) == 1 );
+ CHECK( subsequenceOccurrences( "ab" , "a" ) == 0 );
  const auto C = tartaglia( 60 );
  for( int n = 0 ; n <= 60 ; n += 6 )
   for( int m = 0 ; m <= n ; m += 3 )
-   CHECK( countSubsequences( std::string( m , 'a' ) , std::string( n , 'a' ) )
-          == std::int64_t( C[ n ][ m ] ) );
+   CHECK( subsequenceOccurrences( std::string( m , 'a' ) ,
+                                  std::string( n , 'a' ) ) == C[ n ][ m ] );
  }
 
 /*--------------------- 2017-01-10 B4, files on a tape ---------------------*/
@@ -2451,12 +2256,13 @@ ADS_TEST( "compiti-2017-06-08-A2" )
  }
 
 // the examples, 011 and 301 not decodable and 13135 in 4 ways;
-// decodings() against the recursion on pieces of 1 and 2 digits, on
+// countDecodings() against the recursion on pieces of 1 and 2 digits, on
 // random strings of digits; empty, 10, 26, 27, and n ones in F_n ways
 ADS_TEST( "compiti-2017-06-08-B4" )
 {
- CHECK( decodings( { 0 , 1 , 1 } ) == 0 && decodings( { 3 , 0 , 1 } ) == 0 );
- CHECK( decodings( { 1 , 3 , 1 , 3 , 5 } ) == 4 );
+ CHECK( countDecodings( { 0 , 1 , 1 } ) == 0 &&
+        countDecodings( { 3 , 0 , 1 } ) == 0 );
+ CHECK( countDecodings( { 1 , 3 , 1 , 3 , 5 } ) == 4 );
  std::function< std::uint64_t( const std::vector< int > & , std::size_t ) >
   rec = [ & ]( const std::vector< int > & T , std::size_t i ) {
    if( i == T.size() )
@@ -2474,13 +2280,13 @@ ADS_TEST( "compiti-2017-06-08-B4" )
   std::vector< int > T( g() % 15 );
   for( auto & d : T )
    d = ( t % 2 ) ? int( g() % 3 ) : int( g() % 10 );
-  CHECK( decodings( T ) == rec( T , 0 ) );
+  CHECK( countDecodings( T ) == rec( T , 0 ) );
   }
- CHECK( decodings( {} ) == 1 && decodings( { 1 , 0 } ) == 1 );
- CHECK( decodings( { 2 , 6 } ) == 2 && decodings( { 2 , 7 } ) == 1 );
+ CHECK( countDecodings( {} ) == 1 && countDecodings( { 1 , 0 } ) == 1 );
+ CHECK( countDecodings( { 2 , 6 } ) == 2 && countDecodings( { 2 , 7 } ) == 1 );
  for( int n = 1 ; n <= 90 ; ++n )
-  CHECK( decodings( std::vector< int >( n , 1 ) ) == fibonacci( n ) );
- CHECK_THROWS( decodings( { 10 } ) , contract_violation );
+  CHECK( countDecodings( std::vector< int >( n , 1 ) ) == fibonacci( n ) );
+ CHECK_THROWS( countDecodings( { 10 } ) , contract_violation );
  }
 
 /*--------------------- 2018-01-31 A2, keys in a range ---------------------*/

@@ -29,7 +29,11 @@
 #include "ADS/Contract.h"
 #include "ADS/combinatorial/Generation.h"
 #include "ADS/intractable/Pseudopolynomial.h"
+#include "ADS/optimization/HouseProblems.h"
+#include "ADS/optimization/SequenceProblems.h"
+#include "ADS/optimization/StockTrading.h"
 #include "ADS/string/LongestCommonSubsequence.h"
+#include "ADS/string/SubsequenceProblems.h"
 
 #include <algorithm>
 #include <array>
@@ -1215,35 +1219,13 @@ ADS_TEST( "dp-87" )
 /*--------------------- dp-88, 2023-06-20, Misciotto 2 ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
-
-/// Misciotto 2: whether T interleaves S1 and S2 keeping the order of each.
-/// DP[ i ][ j ] tells whether T[ 0 .. i + j - 1 ] interleaves S1[ 0 .. i -
-/// 1 ] and S2[ 0 .. j - 1 ]: DP[ 0 ][ 0 ] true, then ( DP[ i - 1 ][ j ] and
-/// S1[ i - 1 ] = T[ i + j - 1 ] ) or ( DP[ i ][ j - 1 ] and S2[ j - 1 ] = T[
-/// i + j - 1 ] ); O( n1 n2 ) time and space. The text points to the exam of
-/// January 2016 for this recurrence
-// candidate for the library
-bool isMixing( const std::string & S1 , const std::string & S2 ,
-               const std::string & T )
-{
- const std::size_t n1 = S1.size() , n2 = S2.size();
- if( n1 + n2 != T.size() )
-  return( false );
- std::vector< std::vector< char > > DP( n1 + 1 ,
-                                        std::vector< char >( n2 + 1 , 0 ) );
- DP[ 0 ][ 0 ] = 1;
- for( std::size_t i = 0 ; i <= n1 ; ++i )
-  for( std::size_t j = 0 ; j <= n2 ; ++j )
-   if( i + j > 0 )
-    DP[ i ][ j ] = ( ( i > 0 ) && DP[ i - 1 ][ j ] &&
-                     ( S1[ i - 1 ] == T[ i + j - 1 ] ) ) ||
-                   ( ( j > 0 ) && DP[ i ][ j - 1 ] &&
-                     ( S2[ j - 1 ] == T[ i + j - 1 ] ) );
- return( DP[ n1 ][ n2 ] );
- }
-
-}  // end( namespace dp )
+// Misciotto 2: whether T interleaves S1 and S2 keeping the order of each.
+// DP[ i ][ j ] tells whether T[ 0 .. i + j - 1 ] interleaves S1[ 0 .. i -
+// 1 ] and S2[ 0 .. j - 1 ]: DP[ 0 ][ 0 ] true, then ( DP[ i - 1 ][ j ] and
+// S1[ i - 1 ] = T[ i + j - 1 ] ) or ( DP[ i ][ j - 1 ] and S2[ j - 1 ] = T[
+// i + j - 1 ] ), isInterleaving() of the library [see
+// SubsequenceProblems.h]. The text points to the exam of January 2016 for
+// this recurrence
 
 namespace {
 
@@ -1279,9 +1261,9 @@ ADS_TEST( "dp-88" )
    else return( false );
   return( true );
   };
- CHECK( ! dp::isMixing( "ABC" , "ABC" , "ABCDEF" ) &&
+ CHECK( ! isInterleaving( "ABC" , "ABC" , "ABCDEF" ) &&
         lcsTest( "ABC" , "ABC" , "ABCDEF" ) );
- CHECK( dp::isMixing( "AC" , "AB" , "ABAC" ) &&
+ CHECK( isInterleaving( "AC" , "AB" , "ABAC" ) &&
         ! greedy( "AC" , "AB" , "ABAC" ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 600 ; ++t ) {
@@ -1297,13 +1279,13 @@ ADS_TEST( "dp-88" )
   if( ( g() % 2 ) && ! T.empty() )
    T[ g() % T.size() ] = char( 'A' + g() % 2 );
   const bool r = isMixingBrute( A , B , T );
-  CHECK( dp::isMixing( A , B , T ) == r );
+  CHECK( isInterleaving( A , B , T ) == r );
   }
- CHECK( dp::isMixing( "" , "" , "" ) && ! dp::isMixing( "" , "" , "A" ) );
- CHECK( dp::isMixing( "AB" , "" , "AB" ) &&
-        ! dp::isMixing( "AB" , "" , "BA" ) );
- CHECK( dp::isMixing( std::string( 400 , 'A' ) , std::string( 400 , 'A' ) ,
-                      std::string( 800 , 'A' ) ) );
+ CHECK( isInterleaving( "" , "" , "" ) && ! isInterleaving( "" , "" , "A" ) );
+ CHECK( isInterleaving( "AB" , "" , "AB" ) &&
+        ! isInterleaving( "AB" , "" , "BA" ) );
+ CHECK( isInterleaving( std::string( 400 , 'A' ) , std::string( 400 , 'A' ) ,
+                        std::string( 800 , 'A' ) ) );
  }
 
 }  // end( namespace )
@@ -2296,26 +2278,15 @@ namespace dp {
 /// b2 < ... < sk, NEG if n < 2 k. DP[ i ][ l ], the best of the first i
 /// days with l operations, is 0 if l = 0, NEG if i < 2 l, else the max of
 /// DP[ i - 1 ][ l ] and DP[ j - 1 ][ l - 1 ] + prices[ i ] - prices[ j ]
-/// for j < i (buy on day j, sell on day i); O( k n^2 ) time
+/// for j < i (buy on day j, sell on day i); O( k n^2 ) time, O( k n ) by
+/// maxProfitExactly() of the library
 /// \pre k >= 0
-// candidate for the library
 I64 maxGain( const Ints & prices , int k )
 {
  ADS_PRE( k >= 0 );
- const int n = int( prices.size() );
- std::vector< Longs > DP( n + 1 , Longs( k + 1 , NEG ) );
- for( int i = 0 ; i <= n ; ++i )
-  DP[ i ][ 0 ] = 0;
- for( int l = 1 ; l <= k ; ++l )
-  for( int i = 2 * l ; i <= n ; ++i ) {
-   I64 best = DP[ i - 1 ][ l ];
-   for( int j = 1 ; j <= i - 1 ; ++j )
-    if( DP[ j - 1 ][ l - 1 ] != NEG )
-     best = std::max( best , DP[ j - 1 ][ l - 1 ] + prices[ i - 1 ] -
-                             prices[ j - 1 ] );
-   DP[ i ][ l ] = best;
-   }
- return( DP[ n ][ k ] );
+ const auto r = maxProfitExactly( Longs( prices.begin() , prices.end() ) ,
+                                  std::size_t( k ) );
+ return( r ? *r : NEG );
  }
 
 }  // end( namespace dp )
@@ -2365,57 +2336,26 @@ namespace dp {
 /// Hateville PNRR: the cheapest painting of n houses in a row with k
 /// colors, cost[ h ][ c ] for house h and color c, adjacent houses of
 /// different colors. DP[ 0 ][ c ] = cost[ 0 ][ c ], DP[ h ][ c ] = cost[ h
-/// ][ c ] + min over p != c of DP[ h - 1 ][ p ]; O( n k^2 ) time
+/// ][ c ] + min over p != c of DP[ h - 1 ][ p ]; O( n k^2 ) time as
+/// written, O( n k ) by paintHouses() of the library
 /// \pre k >= 2 and every row of cost has k entries
-// candidate for the library
 I64 hateville( const Grid & cost , int k )
 {
  ADS_PRE( k >= 2 );
  for( const auto & r : cost ) ADS_PRE( int( r.size() ) == k );
- const int n = int( cost.size() );
- if( n == 0 )
-  return( 0 );
- std::vector< Longs > DP( n , Longs( k , 0 ) );
- for( int c = 0 ; c < k ; ++c )
-  DP[ 0 ][ c ] = cost[ 0 ][ c ];
- for( int h = 1 ; h < n ; ++h )
-  for( int c = 0 ; c < k ; ++c ) {
-   I64 best = std::numeric_limits< I64 >::max();
-   for( int p = 0 ; p < k ; ++p )
-    if( p != c ) best = std::min( best , DP[ h - 1 ][ p ] );
-   DP[ h ][ c ] = cost[ h ][ c ] + best;
-   }
- return( *std::min_element( DP[ n - 1 ].begin() , DP[ n - 1 ].end() ) );
+ std::vector< Longs > C;
+ for( const auto & r : cost )
+  C.emplace_back( r.begin() , r.end() );
+ return( paintHouses( C ).first );
  }
 
 /// the same keeping only the least value of the previous house, its color
 /// and the second least, used for the color of the least; O( n k ) time,
-/// O( 1 ) extra space
+/// as paintHouses() of the library does
 /// \pre k >= 2 and every row of cost has k entries
 I64 hatevilleFast( const Grid & cost , int k )
 {
- ADS_PRE( k >= 2 );
- for( const auto & r : cost ) ADS_PRE( int( r.size() ) == k );
- I64 min1 = 0 , min2 = 0;
- int arg = -1;
- for( const auto & r : cost ) {
-  I64 n1 = std::numeric_limits< I64 >::max() , n2 = n1;
-  int na = -1;
-  for( int c = 0 ; c < k ; ++c ) {
-   const I64 v = r[ c ] + ( c == arg ? min2 : min1 );
-   if( v < n1 ) {
-    n2 = n1;
-    n1 = v;
-    na = c;
-    }
-   else if( v < n2 )
-    n2 = v;
-   }
-  min1 = n1;
-  min2 = n2;
-  arg = na;
-  }
- return( min1 );
+ return( hateville( cost , k ) );
  }
 
 }  // end( namespace dp )
@@ -2475,24 +2415,13 @@ namespace dp {
 /// Acqua alta: the units of rain water trapped by the columns of heights h,
 /// no walls outside. DPleft[ i ] and DPright[ i ] are the highest column up
 /// to i from the left and from the right; the water above i is min(
-/// DPleft[ i ] , DPright[ i ] ) - h[ i ]; Theta( n ) time and space
+/// DPleft[ i ] , DPright[ i ] ) - h[ i ]; Theta( n ) time and space,
+/// O( 1 ) space by the two indices of trappingRainWater() of the library
 /// \pre the heights are not negative
-// candidate for the library
 I64 howMuchWater( const Ints & h )
 {
- const int n = int( h.size() );
  for( int x : h ) ADS_PRE( x >= 0 );
- if( n < 3 )
-  return( 0 );
- Ints L( n ) , R( n );
- L[ 0 ] = h[ 0 ];
- for( int i = 1 ; i < n ; ++i ) L[ i ] = std::max( L[ i - 1 ] , h[ i ] );
- R[ n - 1 ] = h[ n - 1 ];
- for( int i = n - 2 ; i >= 0 ; --i ) R[ i ] = std::max( R[ i + 1 ] , h[ i ] );
- I64 w = 0;
- for( int i = 1 ; i < n - 1 ; ++i )
-  w += std::min( L[ i ] , R[ i ] ) - h[ i ];
- return( w );
+ return( trappingRainWater( Longs( h.begin() , h.end() ) ) );
  }
 
 /// the column scan of the text: above i, min of the highest columns on
@@ -2567,24 +2496,12 @@ namespace dp {
 /// positive, whose every pair has one item dividing the other. On nums
 /// sorted, DP[ i ] = 1 + max of DP[ j ] for j < i with nums[ j ] dividing
 /// nums[ i ] (0 if none), correct by the transitivity of divisibility;
-/// Theta( n^2 ) time after the sort
+/// Theta( n^2 ) time after the sort; largestDivisibleSubset() of the
+/// library
 /// \pre the items are positive and distinct
-// candidate for the library
 int largestDivisibleSubsetSize( std::vector< int > nums )
 {
- for( int x : nums ) ADS_PRE( x > 0 );
- std::sort( nums.begin() , nums.end() );
- ADS_PRE( std::adjacent_find( nums.begin() , nums.end() ) == nums.end() );
- const int n = int( nums.size() );
- Ints DP( n , 1 );
- int best = 0;
- for( int i = 0 ; i < n ; ++i ) {
-  for( int j = 0 ; j < i ; ++j )
-   if( nums[ i ] % nums[ j ] == 0 )
-    DP[ i ] = std::max( DP[ i ] , DP[ j ] + 1 );
-  best = std::max( best , DP[ i ] );
-  }
- return( best );
+ return( int( largestDivisibleSubset( nums ).size() ) );
  }
 
 }  // end( namespace dp )

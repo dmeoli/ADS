@@ -37,6 +37,8 @@
 #include "ADS/backtrack/Enumeration.h"
 #include "ADS/combinatorial/Generation.h"
 #include "ADS/complexity/Problems.h"
+#include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Paths.h"
 #include "ADS/numeric/Combinatorics.h"
 
 #include <algorithm>
@@ -325,36 +327,23 @@ void subPalindrome( const std::string & S , F && f )
 /*--------------------------------------------------------------------------*/
 
 /// printCycles(): the simple oriented cycles through start, f( C ) on the
-/// nodes of each from start back to start; a depth first visit with a
-/// stack, a node marked while on it, a cycle closed by every arc back to
-/// start; \f$ \lfloor e ( n - 1 )! - 1 \rfloor \f$ cycles on a complete
-/// graph, \f$ \Theta( n! ) \f$
+/// nodes of each from start back to start: simpleCycles() of the library
+/// on the graph of the matrix, a depth first visit with a stack, a node
+/// blocked while no path from it to start avoids the stack, a cycle closed
+/// by every arc back to start; \f$ \lfloor e ( n - 1 )! \rfloor - 1 \f$
+/// cycles on a complete graph, O( ( n + m ) ( c + 1 ) ) for c cycles
 /// \pre G is square, start is a node
-// candidate for the library
 template< class F >
 void printCycles( const Adjacency & G , int start , F && f )
 {
  const int n = int( G.size() );
- ADS_PRE( detail::square( G ) && ( start >= 0 ) && ( start < n ) );
- std::vector< int > stack;
- std::vector< bool > visited( std::size_t( n ) , false );
- auto rec = [ & ]( auto & self , int curr ) -> void {
-  stack.push_back( curr );
-  visited[ curr ] = true;
-  for( int next = 0 ; next < n ; ++next )
-   if( G[ curr ][ next ] ) {
-    if( next == start ) {
-     std::vector< int > C( stack );
-     C.push_back( start );
-     f( C );
-     }
-    else
-     if( ! visited[ next ] ) self( self , next );
-    }
-  visited[ curr ] = false;
-  stack.pop_back();
-  };
- rec( rec , start );
+ ADS_PRE( detail::square( G ) );
+ ListGraph<> g( n , true );
+ for( int u = 0 ; u < n ; ++u )
+  for( int v = 0 ; v < n ; ++v )
+   if( ( u != v ) && G[ u ][ v ] )
+    g.insertEdge( u , v );
+ simpleCycles( g , start , f );
  }
 
 /*--------------------------------------------------------------------------*/

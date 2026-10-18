@@ -29,13 +29,16 @@
 #include "ADSTest.h"
 
 #include "ADS/Contract.h"
+#include "ADS/algorithm/SequenceQueries.h"
 #include "ADS/algorithm/Subsequences.h"
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/Paths.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/mfset/MFSet.h"
 #include "ADS/numeric/NumberTheory.h"
 #include "ADS/numeric/Rational.h"
 #include "ADS/search/BinarySearch.h"
+#include "ADS/sequence/Rearrangements.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/tree/SearchTree.h"
 #include "ADS/tree/Tree.h"
@@ -821,26 +824,15 @@ inline void sortLab( std::vector< int > & A )
 
 /// the longest period between the first start and the last end covered by
 /// no closed interval [ a , b ], as ( start , end ), the first one on ties,
-/// nothing if there is none: the intervals by start (mergeSort()), and a
-/// gap whenever a start is past the farthest end so far; O( n log n )
+/// nothing if there is none: largestGap() of the library, the intervals by
+/// start, and a gap whenever a start is past the farthest end so far;
+/// O( n log n )
 /// \pre I is not empty, a <= b for each interval
-// candidate for the library
 std::optional< std::pair< int , int > > intervalli(
-                                     std::vector< std::pair< int , int > > I )
+                              const std::vector< std::pair< int , int > > & I )
 {
- ADS_PRE( ! I.empty() && std::all_of( I.begin() , I.end() ,
-                                       []( const auto & p ) {
-  return( p.first <= p.second ); } ) );
- mergeSort( I );
- std::optional< std::pair< int , int > > best;
- int end = I[ 0 ].second;
- for( const auto & [ a , b ] : I ) {
-  if( ( a > end ) && ( ! best || ( int64_t( a ) - end >
-                                   int64_t( best->second ) - best->first ) ) )
-   best = std::pair( end , a );
-  end = std::max( end , b );
-  }
- return( best );
+ ADS_PRE( ! I.empty() );
+ return( largestGap( I ) );
  }
 
 /*----------------------- 2026-10-22, Funzioni ceil ------------------------*/
@@ -866,9 +858,9 @@ std::vector< int > ceilLab( const std::vector< int > & V ,
 /// the two items: the fewest swaps, n minus the number of cycles, and the
 /// least cost, each cycle of k > 1 items of sum s and least item m costing
 /// min( s + ( k - 2 ) m , s + m + ( k + 1 ) ), the second borrowing the
-/// item 1; O( n ). The two answers may come from different sequences.
+/// item 1: minimumSwapSort() of the library; O( n log n ). The two answers
+/// may come from different sequences.
 /// \pre A is a permutation of 1 , ... , n
-// candidate for the library
 std::pair< int , int64_t > sortpesato( const std::vector< int > & A )
 {
  const int n = int( A.size() );
@@ -876,25 +868,8 @@ std::pair< int , int64_t > sortpesato( const std::vector< int > & A )
  std::sort( S.begin() , S.end() );
  for( int i = 0 ; i < n ; ++i )
   ADS_PRE( S[ i ] == i + 1 );
- std::vector< char > seen( n , 0 );
- int swaps = 0;
- int64_t cost = 0;
- for( int i = 0 ; i < n ; ++i ) {
-  if( seen[ i ] )
-   continue;
-  int64_t k = 0 , s = 0 , m = n + 1;
-  for( int j = i ; ! seen[ j ] ; j = A[ j ] - 1 ) {
-   seen[ j ] = 1;
-   ++k;
-   s += A[ j ];
-   m = std::min< int64_t >( m , A[ j ] );
-   }
-  if( k > 1 ) {
-   swaps += int( k - 1 );
-   cost += std::min( s + ( k - 2 ) * m , s + m + ( k + 1 ) );
-   }
-  }
- return( std::pair( swaps , cost ) );
+ const auto [ swaps , cost ] = minimumSwapSort< int , int64_t >( A );
+ return( std::pair( int( swaps ) , cost ) );
  }
 
 /*-------------------- 2026-10-29, Visita di un albero ---------------------*/
@@ -995,31 +970,15 @@ inline bool ciclo( int n , const Arcs & A )
 
 /*------------------ 2026-11-19, Numero di cammini minimi ------------------*/
 
-/// the number of shortest paths, in arcs, from s to t: distance() of the
-/// library, then each node by increasing distance passes its count to the
-/// nodes one arc farther; O( n + m ), modulo 2^64
+/// the number of shortest paths, in arcs, from s to t: countShortestPaths()
+/// of the library, a breadth first visit in which each node passes its
+/// count to the nodes one arc farther; O( n + m ), modulo 2^64
 /// \pre s and t are nodes, the arcs join nodes
-// candidate for the library
 uint64_t numCammini( int n , const Arcs & A , int s , int t )
 {
  ADS_PRE( ( s >= 0 ) && ( s < n ) && ( t >= 0 ) && ( t < n ) &&
           validArcs( n , A ) );
- const auto g = arrayGraph( n , A );
- const auto d = distance( g , s ).first;
- std::vector< int > order;
- for( int u = 0 ; u < n ; ++u )
-  if( d[ u ] != INF )
-   order.push_back( u );
- std::stable_sort( order.begin() , order.end() ,
-                   [ & ]( int a , int b ) { return( d[ a ] < d[ b ] ); } );
- std::vector< uint64_t > c( n , 0 );
- c[ s ] = 1;
- for( int u : order )
-  g.forEachAdj( u , [ & ]( int v ) {
-   if( d[ v ] == d[ u ] + 1 )
-    c[ v ] += c[ u ];
-   } );
- return( c[ t ] );
+ return( countShortestPaths( arrayGraph( n , A ) , s )[ t ] );
  }
 
 /*--------------- 2026-11-26, Componente fortemente connessa ---------------*/
@@ -1050,24 +1009,15 @@ inline std::vector< int > topOrder( int n , const Arcs & A )
 
 /*--------------------- 2026-11-26, Cammino piu' lungo ---------------------*/
 
-/// the most arcs of a path of a directed acyclic graph: the nodes in the
-/// order of topsort() of the library, each arc u -> v giving L[ v ] at
-/// least L[ u ] + 1; O( n + m )
+/// the most arcs of a path of a directed acyclic graph: the largest layer
+/// of longestPathLayering() of the library, each arc u -> v giving L[ v ]
+/// at least L[ u ] + 1 in topological order; O( n + m )
 /// \pre the arcs join nodes and make no cycle
-// candidate for the library
 int camminoLungo( int n , const Arcs & A )
 {
  ADS_PRE( validArcs( n , A ) );
- const auto g = arrayGraph( n , A );
- ADS_PRE( ! hasCycle( g ) );
- std::vector< int > L( n , 0 );
- int best = 0;
- for( int u : topsort( g ) ) {
-  best = std::max( best , L[ u ] );
-  g.forEachAdj( u , [ & ]( int v ) { L[ v ] = std::max( L[ v ] ,
-                                                        L[ u ] + 1 ); } );
-  }
- return( best );
+ const auto L = longestPathLayering( arrayGraph( n , A ) );
+ return( L.empty() ? 0 : *std::max_element( L.begin() , L.end() ) );
  }
 
 }  // end( namespace asdlab )

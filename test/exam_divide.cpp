@@ -29,10 +29,16 @@
 #include "ADSTest.h"
 
 #include "ADS/Contract.h"
+#include "ADS/algorithm/SequenceQueries.h"
 #include "ADS/algorithm/Subsequences.h"
 #include "ADS/search/BinarySearch.h"
+#include "ADS/search/LocalOptima.h"
+#include "ADS/search/MonotoneSearch.h"
+#include "ADS/search/SortedSearches.h"
+#include "ADS/sequence/Rearrangements.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/tree/BinaryTree.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 
 #include <algorithm>
 #include <bit>
@@ -142,24 +148,6 @@ bool pythagorean( const Ints & A )
  return( false );
  }
 
-/*--------------------------- 2014-06-05, Equal ----------------------------*/
-
-/// whether the binary trees t and s have the same keys in the same shape:
-/// both empty, or the same root key and equal subtrees; O( n ) time and
-/// O( h ) space
-// candidate for the library
-template< class T >
-bool equal( const BinaryTree< T > * t , const BinaryTree< T > * s )
-{
- if( ( ! s ) && ( ! t ) )
-  return( true );
- if( ( ! s ) || ( ! t ) )
-  return( false );
- if( !( s->read() == t->read() ) )
-  return( false );
- return( equal( t->left() , s->left() ) && equal( t->right() , s->right() ) );
- }
-
 /*------------------------- 2014-10-31, Thickness --------------------------*/
 
 /// the longest run of V of thickness ( max - min ) at most C, fixing the
@@ -237,31 +225,17 @@ size_t thickness( const Ints & V , int C , bool asPrinted = false )
 
 /*------------------------- 2015-09-01, Find peak --------------------------*/
 
-/// a peak of A[ i .. j ], an item larger than its neighbours in A: the
-/// middle item if it is one, else the side of its larger neighbour, which
+/// a peak of A, an item larger than its neighbours: findPeak() of the
+/// library, a binary search on the side of the larger neighbour, which
 /// holds a peak; O( log n )
-size_t findPeakRec( const Ints & A , size_t i , size_t j )
-{
- const size_t n = A.size() , m = ( i + j ) / 2;
- if( ( ( m == 0 ) || ( A[ m - 1 ] < A[ m ] ) ) &&
-     ( ( m == n - 1 ) || ( A[ m ] > A[ m + 1 ] ) ) )
-  return( m );
- if( j - i == 1 )
-  return( j );
- if( A[ m - 1 ] > A[ m ] )
-  return( findPeakRec( A , i , m - 1 ) );
- return( findPeakRec( A , m + 1 , j ) );
- }
-
 /// \pre n >= 1 , the items are distinct
 /// \post A[ r ] is larger than its neighbours
-// candidate for the library
 size_t findPeak( const Ints & A )
 {
  const size_t n = A.size();
  ADS_PRE( n >= 1 );
  ADS_AUDIT( std::set< int >( A.begin() , A.end() ).size() == n );
- const size_t r = findPeakRec( A , 0 , n - 1 );
+ const size_t r = ADS::findPeak( A );
  ADS_POST( ( ( r == 0 ) || ( A[ r - 1 ] < A[ r ] ) ) &&
            ( ( r == n - 1 ) || ( A[ r ] > A[ r + 1 ] ) ) );
  return( r );
@@ -394,26 +368,15 @@ int single( const Ints & A )
 
 /*---------------------- 2018-08-21, Vettori traslati ----------------------*/
 
-/// the place of the minimum of A[ i .. j ]: in the right part if A[ m ] >
-/// A[ j ], else in the left one with m; O( log n )
-size_t findMin( const Ints & A , size_t i , size_t j )
-{
- if( i == j )
-  return( i );
- const size_t m = ( i + j ) / 2;
- if( A[ m ] > A[ j ] )
-  return( findMin( A , m + 1 , j ) );
- return( findMin( A , i , m ) );
- }
-
 /// the shift k < n of a sorted vector of distinct items rotated right by
-/// k places, the place of its minimum
+/// k places, the place of its minimum: rotatedMinimum() of the library, in
+/// the right part of A[ i .. j ] if A[ m ] > A[ j ], else in the left one
+/// with m; O( log n )
 /// \pre n >= 1 , distinct items
-// candidate for the library
 size_t shift( const Ints & A )
 {
  ADS_PRE( ! A.empty() );
- return( findMin( A , 0 , A.size() - 1 ) );
+ return( rotatedMinimum( A ) );
  }
 
 /*------------------------- 2019-01-21, Successore -------------------------*/
@@ -475,30 +438,16 @@ class MisteryArray {
 
  };  // end( class MisteryArray )
 
-/// the first place in [ i , j ] of an item >= 0 or of BOTTOM, which counts
-/// as +infinity; O( log n )
-size_t cnRec( const MisteryArray & A , size_t i , size_t j )
-{
- if( i == j )
-  return( i );
- const size_t m = ( i + j ) / 2;
- const auto a = A[ m ];
- if( a && ( *a < 0 ) )
-  return( cnRec( A , m + 1 , j ) );
- return( cnRec( A , i , m ) );
- }
-
-/// the number of negative items of A: a size 1 , 2 , 4 , ... until BOTTOM,
-/// fewer than 2 n, and a binary search of the first item >= 0; O( log n )
+/// the number of negative items of A, the first place of an item >= 0 or of
+/// BOTTOM, which counts as +infinity: unboundedSearch() of the library,
+/// the places 0 , 1 , 3 , 7 , ... until one of them, and a binary search;
+/// O( log n )
 /// \pre A is not empty
-// candidate for the library
 size_t countNegatives( const MisteryArray & A )
 {
  ADS_PRE( A[ 0 ].has_value() );
- size_t size = 1;
- while( A[ size - 1 ] )
-  size *= 2;
- return( cnRec( A , 0 , size - 1 ) );
+ return( unboundedSearch( [ & ]( size_t i ) { return( A[ i ] ); } ,
+                          []( int a ) { return( a >= 0 ); } ) );
  }
 
 /*------------------------ 2020-07-03, Maggioranza -------------------------*/
@@ -556,34 +505,32 @@ int findSingle( const Ints & A )
 
 /*-------------------------- 2021-02-08, Closest ---------------------------*/
 
-/// an item of the sorted A[ i .. j ] closest to x: left with m if x -
-/// A[ m ] <= A[ m + 1 ] - x, since then A[ m ] is as close as any item
-/// right of it, else right; O( log n ). The text goes left only if
-/// | A[ m ] - x | < | A[ m + 1 ] - x |, which goes right on A[ m ] =
-/// A[ m + 1 ] > x and misses a closer item on the left, as 0 in [ 0 , 3 , 3 ]
-/// for x = 1 (asPrinted keeps that test).
-int closestRec( const Ints & A , size_t i , size_t j , int x ,
-                bool asPrinted )
+/// an item of the sorted A[ i .. j ] closest to x by the test of the text:
+/// left with m only if | A[ m ] - x | < | A[ m + 1 ] - x |, which goes
+/// right on A[ m ] = A[ m + 1 ] > x and misses a closer item on the left,
+/// as 0 in [ 0 , 3 , 3 ] for x = 1; O( log n )
+int closestAsPrinted( const Ints & A , size_t i , size_t j , int x )
 {
  if( i == j )
   return( A[ i ] );
  const size_t m = ( i + j ) / 2;
- const bool left = asPrinted ?
-  ( std::abs( int64_t( A[ m ] ) - x ) <
-    std::abs( int64_t( A[ m + 1 ] ) - x ) ) :
-  ( 2 * int64_t( x ) <= int64_t( A[ m ] ) + A[ m + 1 ] );
- if( left )
-  return( closestRec( A , i , m , x , asPrinted ) );
- return( closestRec( A , m + 1 , j , x , asPrinted ) );
+ if( std::abs( int64_t( A[ m ] ) - x ) <
+     std::abs( int64_t( A[ m + 1 ] ) - x ) )
+  return( closestAsPrinted( A , i , m , x ) );
+ return( closestAsPrinted( A , m + 1 , j , x ) );
  }
 
+/// an item of the sorted A closest to x: closestValue() of the library,
+/// the first item not smaller than x and the one before it; O( log n ).
+/// asPrinted takes the test of the text instead.
 /// \pre n >= 1 , A is sorted
-// candidate for the library
 int closest( const Ints & A , int x , bool asPrinted = false )
 {
  ADS_PRE( ! A.empty() );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() ) );
- return( closestRec( A , 0 , A.size() - 1 , x , asPrinted ) );
+ if( asPrinted )
+  return( closestAsPrinted( A , 0 , A.size() - 1 , x ) );
+ return( A[ closestValue( A , x ) ] );
  }
 
 /*-------------------------- 2021-02-19, Fast sum --------------------------*/
@@ -647,30 +594,14 @@ bool containsZero( const Ints & A )
 
 /*---------------------- 2021-08-31, Radice quadrata -----------------------*/
 
-/// the least m in [ i , j ] with m^2 >= n, or a root of n met before;
-/// m^2 against n by m against n / m, with no overflow, and the middle as
-/// i + ( j - i ) / 2; O( log n )
-std::uint64_t isSquareRec( std::uint64_t n , std::uint64_t i ,
-                           std::uint64_t j )
-{
- if( i == j )
-  return( i );
- const std::uint64_t m = i + ( j - i ) / 2;
- if( ( m <= n / m ) && ( m * m == n ) )
-  return( m );
- if( m > n / m )
-  return( isSquareRec( n , i , m ) );
- return( isSquareRec( n , m + 1 , j ) );
- }
-
-/// whether n = k^2 for an integer k; O( log n ) with the uniform cost
+/// whether n = k^2 for an integer k: isPerfectSquare() of the library, a
+/// binary search of the root testing m^2 against n by m against n / m,
+/// with no overflow; O( log n ) with the uniform cost
 /// \pre n >= 1
-// candidate for the library
 bool isSquare( std::uint64_t n )
 {
  ADS_PRE( n >= 1 );
- const std::uint64_t v = isSquareRec( n , 1 , n );
- return( ( v <= n / v ) && ( v * v == n ) );
+ return( isPerfectSquare( n ) );
  }
 
 /*------------------ 2022-01-17, Serie aritmetica bucata -------------------*/
@@ -723,30 +654,17 @@ size_t hIndex( const Ints & A )
 
 /*----------------------- 2023-02-09, Minimo locale ------------------------*/
 
-/// a local minimum of A[ i .. j ], A[ i ] > A[ i + 1 ] , A[ j - 1 ] <
-/// A[ j ], length >= 3: the middle item if it is one, else the half that
-/// keeps the invariant; O( log n )
-size_t flmRec( const Ints & A , size_t i , size_t j )
-{
- if( j == i + 2 )
-  return( i + 1 );
- const size_t m = ( i + j ) / 2;
- if( ( A[ m - 1 ] > A[ m ] ) && ( A[ m ] < A[ m + 1 ] ) )
-  return( m );
- if( A[ m - 1 ] < A[ m ] )
-  return( flmRec( A , i , m ) );
- return( flmRec( A , m , j ) );
- }
-
+/// a local minimum of A, an inner item smaller than its neighbours:
+/// localMinimum() of the library, which with A[ 0 ] > A[ 1 ] and
+/// A[ n - 2 ] < A[ n - 1 ] cannot stop at an end; O( log n )
 /// \pre n >= 3 , distinct items , A[ 0 ] > A[ 1 ] , A[ n - 2 ] < A[ n - 1 ]
 /// \post 0 < r < n - 1 , A[ r - 1 ] > A[ r ] < A[ r + 1 ]
-// candidate for the library
 size_t findLocalMinimum( const Ints & A )
 {
  const size_t n = A.size();
  ADS_PRE( ( n >= 3 ) && ( A[ 0 ] > A[ 1 ] ) && ( A[ n - 2 ] < A[ n - 1 ] ) );
  ADS_AUDIT( std::set< int >( A.begin() , A.end() ).size() == n );
- const size_t r = flmRec( A , 0 , n - 1 );
+ const size_t r = localMinimum( A );
  ADS_POST( ( 0 < r ) && ( r < n - 1 ) && ( A[ r - 1 ] > A[ r ] ) &&
            ( A[ r ] < A[ r + 1 ] ) );
  return( r );
@@ -809,93 +727,28 @@ int oneSingle( const Ints & A )
 
 /*----------------------- 2024-06-14, Smaller Count ------------------------*/
 
-/// the merge of A[ start .. mid ] and A[ mid + 1 .. end ]: each item of the
-/// left part, when it goes, gains the items of the right part gone before
-/// it, the smaller ones on its right
-void mergeCount( Ints & A , Ints & B ,
-                 std::unordered_map< int , size_t > & smaller ,
-                 size_t start , size_t end , size_t mid )
-{
- size_t count = 0 , i = start , j = mid + 1 , k = start;
- while( ( i <= mid ) && ( j <= end ) ) {
-  if( A[ i ] <= A[ j ] ) {
-   B[ k ] = A[ i ];
-   smaller[ A[ i ] ] += count;
-   ++i;
-   }
-  else {
-   ++count;
-   B[ k ] = A[ j ];
-   ++j;
-   }
-  ++k;
-  }
- j = end;
- for( size_t h = mid + 1 ; h-- > i ; ) {
-  A[ j ] = A[ h ];
-  smaller[ A[ h ] ] += count;
-  --j;
-  }
- for( j = start ; j < k ; ++j )
-  A[ j ] = B[ j ];
- }
-
-void mergeSortCount( Ints & A , Ints & B ,
-                     std::unordered_map< int , size_t > & smaller ,
-                     size_t start , size_t end )
-{
- if( start < end ) {
-  const size_t mid = ( start + end ) / 2;
-  mergeSortCount( A , B , smaller , start , mid );
-  mergeSortCount( A , B , smaller , mid + 1 , end );
-  mergeCount( A , B , smaller , start , end , mid );
-  }
- }
-
-/// count[ i ], the number of j > i with A[ j ] < A[ i ]: Merge Sort of a
-/// copy counting, for each item, the smaller ones that pass it, in a table
-/// by value; O( n log n ) time, O( n ) space
+/// count[ i ], the number of j > i with A[ j ] < A[ i ]: smallerToTheRight()
+/// of the library, Merge Sort of the places counting, for each item of a
+/// left half, the items of the right half that pass it; O( n log n ) time,
+/// O( n ) space
 /// \pre the items are distinct
-// candidate for the library
 std::vector< size_t > smallerCount( const Ints & A )
 {
- const size_t n = A.size();
- ADS_AUDIT( std::set< int >( A.begin() , A.end() ).size() == n );
- std::unordered_map< int , size_t > smaller;
- Ints C( A ) , B( n );
- if( n > 0 )
-  mergeSortCount( C , B , smaller , 0 , n - 1 );
- std::vector< size_t > count( n );
- for( size_t i = 0 ; i < n ; ++i )
-  count[ i ] = smaller[ A[ i ] ];
- return( count );
+ ADS_AUDIT( std::set< int >( A.begin() , A.end() ).size() == A.size() );
+ return( smallerToTheRight( A ) );
  }
 
 /*--------------------- 2024-08-26, Where's negative? ----------------------*/
 
-/// the least n >= 1 with f( n ) < 0 of a decreasing f with f( 1 ) > 0: the
-/// end 1 , 2 , 4 , ... until f( end ) < 0, and a binary search on
-/// ( end / 2 , end ], f( start ) >= 0 > f( end ); O( log n ) calls
-int64_t fnRec( const std::function< int64_t( int64_t ) > & f ,
-               int64_t start , int64_t end )
-{
- if( end == start + 1 )
-  return( end );
- const int64_t mid = ( start + end ) / 2;
- if( f( mid ) < 0 )
-  return( fnRec( f , start , mid ) );
- return( fnRec( f , mid , end ) );
- }
-
+/// the least n >= 1 with f( n ) < 0 of a decreasing f with f( 1 ) > 0:
+/// exponentialSearch() of the library, the places 1 , 2 , 4 , ... until
+/// f < 0, and a binary search between the last two; O( log n ) calls
 /// \pre f( 1 ) > 0 , f decreasing with a negative value
-// candidate for the library
 int64_t findNegative( const std::function< int64_t( int64_t ) > & f )
 {
  ADS_PRE( f( 1 ) > 0 );
- int64_t end = 1;
- while( f( end ) >= 0 )
-  end *= 2;
- return( fnRec( f , end / 2 , end ) );
+ return( exponentialSearch( [ & ]( int64_t k ) { return( f( k ) < 0 ); } ,
+                            int64_t( 1 ) ) );
  }
 
 /*------------------------ 2025-01-14, AlternaSort -------------------------*/
@@ -923,18 +776,15 @@ void alternaSortSorted( Ints & A )
  ADS_POST( alternating( A ) );
  }
 
-/// A alternating by local swaps: after A[ 0 .. i ] alternates, a swap of
-/// A[ i ] and A[ i + 1 ] fixes their order and keeps the one before by
-/// transitivity; O( n )
+/// A alternating by local swaps: wiggleSort() of the library, after
+/// A[ 0 .. i ] alternates a swap of A[ i ] and A[ i + 1 ] fixes their order
+/// and keeps the one before by transitivity; O( n )
 /// \pre the items are distinct
 /// \post A alternates
-// candidate for the library
 void alternaSort( Ints & A )
 {
  ADS_AUDIT( std::set< int >( A.begin() , A.end() ).size() == A.size() );
- for( size_t i = 0 ; i + 1 < A.size() ; ++i )
-  if( ( i % 2 == 0 ) ? ( A[ i ] > A[ i + 1 ] ) : ( A[ i ] < A[ i + 1 ] ) )
-   std::swap( A[ i ] , A[ i + 1 ] );
+ wiggleSort( A );
  ADS_POST( alternating( A ) );
  }
 
@@ -1063,23 +913,12 @@ size_t maxTwoDivide( const std::string & S )
  return( maxTwoRec( S , 0 , std::ptrdiff_t( S.size() ) - 1 ) );
  }
 
-/// the longest run of S with at most two characters: a sliding window with
-/// the counts of its characters, start moving while it has three; O( n )
-// candidate for the library
+/// the longest run of S with at most two characters: longestKDistinctRun()
+/// of the library with k = 2, a sliding window with the counts of its
+/// characters, start moving while it has three; O( n )
 size_t maxTwo( const std::string & S )
 {
- size_t start = 0 , maxSoFar = 0;
- std::map< char , size_t > count;
- for( size_t end = 0 ; end < S.size() ; ++end ) {
-  ++count[ S[ end ] ];
-  while( count.size() > 2 ) {
-   if( --count[ S[ start ] ] == 0 )
-    count.erase( S[ start ] );
-   ++start;
-   }
-  maxSoFar = std::max( maxSoFar , end - start + 1 );
-  }
- return( maxSoFar );
+ return( longestKDistinctRun( S , 2 ).second );
  }
 
 /// the wrong solution of the text: it empties the set at a third character,
@@ -1299,8 +1138,9 @@ ADS_TEST( "divide-3" )
 
 /*--------------------------- 2014-06-05, Equal ----------------------------*/
 
-// the equality of BSTs against their parenthesized lists by to_list() of
-// the library, on random insertions of the same and of different keys
+// equalTrees() of the library, the same root key and equal subtrees: the
+// equality of BSTs against their parenthesized lists by to_list() of the
+// library, on random insertions of the same and of different keys
 ADS_TEST( "divide-4" )
 {
  std::mt19937 g( 1 );
@@ -1311,21 +1151,22 @@ ADS_TEST( "divide-4" )
   else if( ! H.empty() && ( g() % 2 ) )
    H[ g() % H.size() ] = 100;
   BinaryTree< int > * a = bst( K ) , * b = bst( H );
-  CHECK( equal( a , b ) == ( to_list( a ) == to_list( b ) ) );
-  CHECK( equal( a , a ) && equal( b , b ) );
+  CHECK( equalTrees( a , b ) == ( to_list( a ) == to_list( b ) ) );
+  CHECK( equalTrees( a , a ) && equalTrees( b , b ) );
   delete a;
   delete b;
   }
  BinaryTree< int > * a = bst( { 2 , 1 , 3 } ) , * b = bst( { 2 , 3 , 1 } );
  BinaryTree< int > * c = bst( { 1 , 2 , 3 } ) , * d = bst( { 2 , 1 , 4 } );
- BinaryTree< int > * e = bst( { 2 } );
- CHECK( equal( a , b ) && ! equal( a , c ) && ! equal( a , d ) );
- CHECK( ! equal( a , e ) && ! equal( e , a ) );
- CHECK( equal< int >( nullptr , nullptr ) );
- CHECK( ! equal< int >( e , nullptr ) && ! equal< int >( nullptr , e ) );
+ BinaryTree< int > * e = bst( { 2 } ) , * const nil = nullptr;
+ CHECK( equalTrees( a , b ) && ! equalTrees( a , c ) &&
+        ! equalTrees( a , d ) );
+ CHECK( ! equalTrees( a , e ) && ! equalTrees( e , a ) );
+ CHECK( equalTrees( nil , nil ) );
+ CHECK( ! equalTrees( e , nil ) && ! equalTrees( nil , e ) );
  BinaryTree< int > * x = bst( { INT_MAX , INT_MIN } );
  BinaryTree< int > * y = bst( { INT_MAX , INT_MIN } );
- CHECK( equal( x , y ) );
+ CHECK( equalTrees( x , y ) );
  for( auto * t : { a , b , c , d , e , x , y } )
   delete t;
  }

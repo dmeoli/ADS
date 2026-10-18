@@ -35,9 +35,11 @@
 #include "ADS/combinatorial/Generation.h"
 #include "ADS/complexity/Problems.h"
 #include "ADS/graph/AllPairsShortestPaths.h"
+#include "ADS/graph/FlowApplications.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/MaxFlow.h"
 #include "ADS/graph/MinimumSpanningTree.h"
+#include "ADS/graph/Paths.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/numeric/Combinatorics.h"
@@ -45,6 +47,7 @@
 #include "ADS/optimization/Knapsack.h"
 #include "ADS/optimization/WeightedIntervals.h"
 #include "ADS/search/Selection.h"
+#include "ADS/search/SortedSearches.h"
 #include "ADS/sequence/List.h"
 #include "ADS/sort/CountingSort.h"
 #include "ADS/sort/Heapsort.h"
@@ -2351,22 +2354,15 @@ long minBlack( int n , const std::vector< std::pair< int , int > > & white ,
 // collezione 14-greedy, 1.9: Batterie
 
 /// minStops(): the fewest stops to go from 0 to L with a range R, the
-/// stations at D: when the next station is beyond the range, stop at the
-/// last one before it; O( n ) time, O( 1 ) space
+/// stations at D: refuelingStops() of the library, which, when the next
+/// station is beyond the range, stops at the last one before it; O( n )
 /// \pre D strictly increasing, each gap (from 0, between the stations, to
 ///      L) at most R
 int minStops( const Longs & D , long L , long R )
 {
- const int n = int( D.size() );
- long deadline = R;
- int stops = 0;
- for( int i = 1 ; i < n ; ++i )
-  if( D[ i ] > deadline ) {
-   ++stops;
-   deadline = D[ i - 1 ] + R;
-   }
- if( L > deadline ) ++stops;
- return( stops );
+ const auto S = refuelingStops( D , L , R );
+ ADS_PRE( S.has_value() );
+ return( int( S->size() ) );
  }
 
 // collezione 14-greedy, 1.10: Sciatori e sci
@@ -2703,17 +2699,10 @@ long increaseCapacity( FlowNetwork & F , int s , int t , int u , int v )
 
 // collezione 15-locale, 1.3: Cammini indipendenti
 
-/// edgeDisjointPaths(): the most paths from s to t with no edge in common,
-/// the maximum flow of capacity 1 on each edge (by integrality and the
-/// decomposition of a flow in paths); O( n ( n + m ) )
-/// \pre s != t nodes of the graph
-long edgeDisjointPaths( const ListGraph<> & G , int s , int t )
-{
- FlowNetwork F( G.bound() );
- for( int u : G.V() )
-  for( int v : G.adj( u ) ) F.addEdge( u , v , 1 );
- return( F.maxFlow( s , t ) );
- }
+// the most paths from s to t with no edge in common are those of
+// edgeDisjointPaths() of the library, the maximum flow of capacity 1 on
+// each edge (by integrality and the decomposition of a flow in paths);
+// O( n ( n + m ) )
 
 // collezione 15-locale, 1.4 and 1.5: Piano sanitario, Torri di controllo
 
@@ -3081,7 +3070,7 @@ ADS_TEST( "collezioni-15-locale-1-3" )
                          std::pair( d , t ) , std::pair( e , t ) ,
                          std::pair( b , c ) , std::pair( e , d ) } )
   G.insertEdge( u , v );
- CHECK( collezioni::edgeDisjointPaths( G , s , t ) == 2 );
+ CHECK( edgeDisjointPaths( G , s , t ).size() == 2 );
  std::mt19937 g( 153 );
  for( int k = 0 ; k < 200 ; ++k ) {
   const int n = draw( g , 2 , 8 );
@@ -3091,7 +3080,7 @@ ADS_TEST( "collezioni-15-locale-1-3" )
    H.insertEdge( u , v );
    E.emplace_back( u , v , w );
    }
-  CHECK( collezioni::edgeDisjointPaths( H , 0 , n - 1 ) ==
+  CHECK( long( edgeDisjointPaths( H , 0 , n - 1 ).size() ) ==
          minCutBrute( n , E , 0 , n - 1 ) );
   }
  }
@@ -3490,20 +3479,13 @@ int mode( Ints A )
 // collezione varie, 1.6: Cerca la somma
 
 /// searchSum(): whether two items in distinct places sum to x: heapsort,
-/// then two indices from the ends, the left one up when the sum is small,
-/// the right one down when it is large; O( n log n ) time, O( 1 ) space
-// candidate for the library
+/// then pairWithSum() of the library, two indices from the ends, the left
+/// one up when the sum is small, the right one down when it is large;
+/// O( n log n ) time, O( 1 ) space
 bool searchSum( std::vector< double > A , double x )
 {
  heapsort( A );
- std::size_t i = 0 , j = A.size();
- while( ( j > 0 ) && ( i < j - 1 ) ) {
-  const double s = A[ i ] + A[ j - 1 ];
-  if( s == x ) return( true );
-  if( s < x ) ++i;
-  else --j;
-  }
- return( false );
+ return( pairWithSum( A , x ).has_value() );
  }
 
 // collezione varie, 1.7: Bounding box

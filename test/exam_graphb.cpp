@@ -32,7 +32,9 @@
 #include "ADS/complexity/EasyCases.h"
 #include "ADS/graph/AllPairsShortestPaths.h"
 #include "ADS/graph/Graph.h"
+#include "ADS/graph/Grid.h"
 #include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Paths.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/mfset/MFSet.h"
@@ -666,24 +668,16 @@ namespace graph {
 
 /// minSessions(): the least number of sessions for the exams of the
 /// acyclic graph of the prerequisites, the number of nodes of a longest
-/// path; scanning the nodes in topological order, dist[ v ] = max( dist[ v ]
-/// , dist[ u ] + 1 ) on each edge ( u , v ), and the answer is the largest
-/// dist plus 1, O( n + m )
-/// \pre g is acyclic (audit) with a node
+/// path: the layers of longestPathLayering() of the library, dist[ v ] =
+/// max( dist[ v ] , dist[ u ] + 1 ) on each edge ( u , v ) in topological
+/// order, and the answer is the largest layer plus 1, O( n + m )
+/// \pre g is acyclic with a node
 template< Graph G >
 int minSessions( const G & g )
 {
  ADS_PRE( g.n() > 0 );
- ADS_AUDIT( ! hasCycle( g ) );
- Ints dist( g.bound() , 0 );
- int best = 0;
- for( int u : topsort( g ) ) {
-  best = std::max( best , dist[ u ] );
-  g.forEachAdj( u , [ & ]( int v ) {
-   dist[ v ] = std::max( dist[ v ] , dist[ u ] + 1 );
-   } );
-  }
- return( best + 1 );
+ const Ints L = longestPathLayering( g );
+ return( *std::max_element( L.begin() , L.end() ) + 1 );
  }
 
 }  // end( namespace graph )
@@ -1493,32 +1487,11 @@ ADS_TEST( "graph-42" )
 namespace graph {
 
 /// floodfill(): paints with color the cell ( x , y ) of M and all the cells
-/// 4-connected to it of its old color; a breadth first visit that paints a
-/// cell when it enters the queue, so that it needs no visited matrix, and
-/// does nothing if the color does not change, O( n^2 )
-/// \pre M is square, ( x , y ) is a cell
-// candidate for the library
-inline void floodFill( Matrix & M , int x , int y , int color )
-{
- const int n = int( M.size() );
- ADS_PRE( square( M ) && inside( n , x , y ) );
- const int old = M[ x ][ y ];
- if( color == old )
-  return;
- std::deque< std::pair< int , int > > Q = { { x , y } };
- M[ x ][ y ] = color;
- while( ! Q.empty() ) {
-  const auto [ r , c ] = Q.front();
-  Q.pop_front();
-  for( int k = 0 ; k < 4 ; ++k ) {
-   const int a = r + DR[ k ] , b = c + DC[ k ];
-   if( inside( n , a , b ) && ( M[ a ][ b ] == old ) ) {
-    M[ a ][ b ] = color;
-    Q.push_back( { a , b } );
-    }
-   }
-  }
- }
+/// 4-connected to it of its old color: floodFill() of the library, a
+/// breadth first visit that paints a cell when it enters the queue, so that
+/// it needs no visited matrix, and does nothing if the color does not
+/// change, O( n^2 )
+using ADS::floodFill;
 
 }  // end( namespace graph )
 
@@ -1919,31 +1892,14 @@ namespace graph {
 
 /// minKnightMoves(): the least number of moves of a knight from
 /// ( sr , sc ) to ( er , ec ) on an n x n board, -1 if it cannot get
-/// there; a breadth first visit of the graph of the knight moves that
-/// stops when it takes the destination out of the queue, Theta( n^2 )
+/// there: knightDistance() of the library, a breadth first visit of the
+/// graph of the knight moves that stops when it takes the destination out
+/// of the queue, Theta( n^2 )
 /// \pre n > 0, both squares on the board
 inline int minKnightMoves( int n , int sr , int sc , int er , int ec )
 {
- ADS_PRE( ( n > 0 ) && inside( n , sr , sc ) && inside( n , er , ec ) );
- static constexpr int R[ 8 ] = { -2 , -2 , -1 , -1 , 1 , 1 , 2 , 2 };
- static constexpr int C[ 8 ] = { -1 , 1 , -2 , 2 , -2 , 2 , -1 , 1 };
- Matrix d( n , Ints( n , -1 ) );
- std::deque< std::pair< int , int > > Q = { { sr , sc } };
- d[ sr ][ sc ] = 0;
- while( ! Q.empty() ) {
-  const auto [ r , c ] = Q.front();
-  Q.pop_front();
-  if( ( r == er ) && ( c == ec ) )
-   return( d[ r ][ c ] );
-  for( int k = 0 ; k < 8 ; ++k ) {
-   const int a = r + R[ k ] , b = c + C[ k ];
-   if( inside( n , a , b ) && ( d[ a ][ b ] < 0 ) ) {
-    d[ a ][ b ] = d[ r ][ c ] + 1;
-    Q.push_back( { a , b } );
-    }
-   }
-  }
- return( -1 );
+ const int d = knightDistance( n , GridCell( sr , sc ) , GridCell( er , ec ) );
+ return( d == INF ? -1 : d );
  }
 
 }  // end( namespace graph )

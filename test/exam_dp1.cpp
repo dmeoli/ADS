@@ -31,8 +31,19 @@
 #include "ADS/intractable/Pseudopolynomial.h"
 #include "ADS/numeric/Combinatorics.h"
 #include "ADS/optimization/CoinChange.h"
+#include "ADS/optimization/CoinGame.h"
+#include "ADS/optimization/GridPaths.h"
+#include "ADS/optimization/HouseProblems.h"
+#include "ADS/optimization/KnapsackVariants.h"
+#include "ADS/optimization/LinearPartition.h"
+#include "ADS/optimization/OptimalSearchTree.h"
+#include "ADS/optimization/SequenceProblems.h"
+#include "ADS/optimization/ShortestJobFirst.h"
 #include "ADS/stack/StackAlgorithms.h"
+#include "ADS/string/Anagrams.h"
 #include "ADS/string/LongestCommonSubsequence.h"
+#include "ADS/string/Palindromes.h"
+#include "ADS/string/Segmentations.h"
 
 #include <algorithm>
 #include <array>
@@ -75,33 +86,9 @@ constexpr Int INF = std::numeric_limits< Int >::max() / 4;
 
 /*--- 1, 35, 2011-05-02, 2015-09-01, Sottostringa palindroma piu' lunga ----*/
 
-/// a longest palindromic substring of s: P[ i ][ j ] tells whether
-/// s[ i .. j ] is a palindrome, true on one character, s[ i ] == s[ i + 1 ]
-/// on two, s[ i ] == s[ j ] and P[ i + 1 ][ j - 1 ] otherwise, filled by
-/// increasing length keeping the longest; Theta( n^2 ) time and space
-/// \pre s is not empty
-/// \post a palindrome occurring in s
-inline std::string longestPalindromicSubstring( const std::string & s )
-{
- ADS_PRE( ! s.empty() );
- const std::size_t n = s.size();
- std::vector< std::vector< char > > P( n , std::vector< char >( n , 0 ) );
- std::size_t bestStart = 0 , bestLength = 1;
- for( std::size_t i = 0 ; i < n ; ++i )
-  P[ i ][ i ] = 1;
- for( std::size_t h = 2 ; h <= n ; ++h )
-  for( std::size_t i = 0 ; i + h <= n ; ++i ) {
-   const std::size_t j = i + h - 1;
-   P[ i ][ j ] = ( s[ i ] == s[ j ] ) && ( ( h == 2 ) || P[ i + 1 ][ j - 1 ] );
-   if( P[ i ][ j ] && ( h > bestLength ) ) {
-    bestStart = i;
-    bestLength = h;
-    }
-   }
- const std::string r = s.substr( bestStart , bestLength );
- ADS_POST( isPalindrome( r ) );
- return( r );
- }
+// the table P[ i ][ j ] of the text, whether s[ i .. j ] is a palindrome,
+// filled by increasing length, gives the same palindrome as
+// longestPalindromicSubstring() of the library [see Palindromes.h]
 
 /*-------------------- 2, 2011-05-27, Parentesizzazione --------------------*/
 
@@ -177,30 +164,11 @@ inline bool fitsIn( const Box & a , const Box & b )
 /// space. The text sets N[ j ] = max( N[ j - 1 ] , N[ prev[ j ] ] ) with
 /// prev[ j ] the largest i that fits: it misses the + 1, and the largest
 /// such i is not the best one
+/// (here longestChainSubsequence() of the library)
 /// \post increasing places, each box in the next
 inline std::vector< std::size_t > boxChain( const std::vector< Box > & S )
 {
- const std::size_t n = S.size();
- std::vector< std::size_t > L( n , 1 ) , pred( n , n );
- std::size_t best = 0;
- for( std::size_t j = 0 ; j < n ; ++j ) {
-  for( std::size_t i = 0 ; i < j ; ++i )
-   if( fitsIn( S[ i ] , S[ j ] ) && ( L[ i ] + 1 > L[ j ] ) ) {
-    L[ j ] = L[ i ] + 1;
-    pred[ j ] = i;
-    }
-  if( L[ j ] > L[ best ] )
-   best = j;
-  }
- std::vector< std::size_t > chain;
- for( std::size_t j = best ; ( n > 0 ) && ( j != n ) ; j = pred[ j ] )
-  chain.push_back( j );
- std::reverse( chain.begin() , chain.end() );
- ADS_POST( std::adjacent_find( chain.begin() , chain.end() ,
-            [ & S ]( std::size_t a , std::size_t b ) {
-             return( ( a >= b ) || ! fitsIn( S[ a ] , S[ b ] ) );
-             } ) == chain.end() );
- return( chain );
+ return( longestChainSubsequence( S , fitsIn ) );
  }
 
 /*---------------------- 4, 2011-07-18, Multiset sum -----------------------*/
@@ -239,103 +207,26 @@ inline bool multisetSum( const std::vector< Int > & A , Int t )
 
 /*------------------------ 5, 2011-09-07, Anagrams -------------------------*/
 
-/// the groups of anagrams among the strings S: the key of a string is its
-/// characters sorted, and a hash table maps each key to its group;
-/// O( n k log k ) expected time for n strings of length at most k, O( n k )
-/// space
-/// \post the groups partition S
-// candidate for the library
-inline std::vector< std::vector< std::string > > anagrams(
-                                         const std::vector< std::string > & S )
-{
- std::unordered_map< std::string , std::vector< std::string > > H;
- std::vector< std::string > keys;               // in order of appearance
- for( const auto & s : S ) {
-  std::string key = s;
-  std::sort( key.begin() , key.end() );
-  auto & group = H[ key ];
-  if( group.empty() )
-   keys.push_back( key );
-  group.push_back( s );
-  }
- std::vector< std::vector< std::string > > groups;
- for( const auto & key : keys )
-  groups.push_back( H[ key ] );
- ADS_POST( std::accumulate( groups.begin() , groups.end() , std::size_t( 0 ) ,
-            []( std::size_t a , const std::vector< std::string > & g ) {
-             return( a + g.size() ); } ) == S.size() );
- return( groups );
- }
+// the groups of anagrams, by the characters of each string sorted as its
+// key in a hash table: anagramGroups() of the library [see Anagrams.h]
 
 /*-------------------- 6, 2012-01-11, Chiavi frequenti ---------------------*/
 
 /// an optimal binary search tree on the keys 0 .. n - 1: its cost, its
 /// root and the children of each key (-1 for none)
-struct OptimalBst {
- Int cost;
- int root;
- std::vector< int > left , right;
- };
-
-/// buildOptimalBst(): the subtree of the keys i .. j - 1 from the roots R
-inline int buildOptimalBst( const std::vector< std::vector< int > > & R ,
-                            int i , int j , OptimalBst & T )
-{
- if( i >= j )
-  return( -1 );
- const int r = R[ i ][ j ];
- T.left[ r ] = buildOptimalBst( R , i , r , T );
- T.right[ r ] = buildOptimalBst( R , r + 1 , j , T );
- return( r );
- }
+using OptimalBst = OptimalSearchTree< Int >;
 
 /// the binary search tree of least sum p[ i ] ( l[ i ] + 1 ), l[ i ] the
 /// depth of key i: with W( i , j ) the sum of p[ i .. j - 1 ], C[ i ][ i ] = 0
 /// and C[ i ][ j ] = W( i , j ) + min over i <= r < j of C[ i ][ r ] +
 /// C[ r + 1 ][ j ], the best r kept as root; O( n^3 ) time (O( n^2 ) with
-/// the monotone roots of Knuth), O( n^2 ) space. The text leaves it out
+/// the monotone roots of Knuth, as optimalSearchTree() of the library
+/// does), O( n^2 ) space. The text leaves it out
 /// \pre p not negative
 /// \post a tree whose in-order is 0 .. n - 1
-// candidate for the library
 inline OptimalBst optimalBst( const std::vector< Int > & p )
 {
- ADS_PRE( std::all_of( p.begin() , p.end() ,
-                       []( Int x ) { return( x >= 0 ); } ) );
- const int n = static_cast< int >( p.size() );
- std::vector< Int > W( n + 1 , 0 );
- for( int i = 0 ; i < n ; ++i )
-  W[ i + 1 ] = W[ i ] + p[ i ];
- Table C( n + 1 , std::vector< Int >( n + 1 , 0 ) );
- std::vector< std::vector< int > > R( n + 1 , std::vector< int >( n + 1 ,
-                                                                  -1 ) );
- for( int h = 1 ; h <= n ; ++h )
-  for( int i = 0 ; i + h <= n ; ++i ) {
-   const int j = i + h;
-   C[ i ][ j ] = INF;
-   for( int r = i ; r < j ; ++r )
-    if( C[ i ][ r ] + C[ r + 1 ][ j ] < C[ i ][ j ] ) {
-     C[ i ][ j ] = C[ i ][ r ] + C[ r + 1 ][ j ];
-     R[ i ][ j ] = r;
-     }
-   C[ i ][ j ] += W[ j ] - W[ i ];
-   }
- OptimalBst T{ C[ 0 ][ n ] , -1 , std::vector< int >( n , -1 ) ,
-               std::vector< int >( n , -1 ) };
- T.root = buildOptimalBst( R , 0 , n , T );
- ADS_AUDIT( [ & ] {
-             std::vector< int > order;
-             std::function< void( int ) > visit = [ & ]( int u ) {
-              if( u < 0 ) return;
-              visit( T.left[ u ] );
-              order.push_back( u );
-              visit( T.right[ u ] );
-              };
-             visit( T.root );
-             std::vector< int > all( n );
-             std::iota( all.begin() , all.end() , 0 );
-             return( order == all );
-             }() );
- return( T );
+ return( optimalSearchTree( p ) );
  }
 
 /*---------------- 7, 12, 2012-01-11, 2012-05-31, Mediana4 -----------------*/
@@ -381,52 +272,20 @@ inline std::pair< Int , Int > medianPair( const std::vector< Int > & X ,
 
 /*------------------------ 8, 2012-02-01, Best cut -------------------------*/
 
-/// bestCut(): the largest gain M[ l ] of a board of length l and its first
-/// piece cut[ l ], memoized (-1 unknown)
-inline Int bestCutRec( const std::vector< Int > & G , std::size_t l ,
-                       std::vector< Int > & M ,
-                       std::vector< std::size_t > & cut )
-{
- if( l == 0 )
-  return( 0 );
- if( M[ l ] < 0 ) {
-  for( std::size_t t = 1 ; t <= l ; ++t ) {
-   const Int v = G[ t - 1 ] + bestCutRec( G , l - t , M , cut );
-   if( v > M[ l ] ) {
-    M[ l ] = v;
-    cut[ l ] = t;
-    }
-   }
-  }
- return( M[ l ] );
- }
-
 /// the largest gain of a board of length L sold in pieces, G[ t - 1 ] the
 /// price of a piece of length t, and the lengths of the pieces:
-/// M( l ) = max over 1 <= t <= l of G[ t ] + M( l - t ), M( 0 ) = 0, by
-/// memoization keeping the first piece, then printCut follows the pieces;
-/// O( L^2 ) time, O( L ) space
+/// M( l ) = max over 1 <= t <= l of G[ t ] + M( l - t ), M( 0 ) = 0,
+/// keeping the first piece, then printCut follows the pieces; O( L^2 )
+/// time, O( L ) space; rodCutting() of the library
 /// \pre L <= |G| and G not negative
 /// \post the pieces sum to L and their prices to the gain
-// candidate for the library
 inline std::pair< Int , std::vector< std::size_t > > bestCut(
                                 const std::vector< Int > & G , std::size_t L )
 {
  ADS_PRE( L <= G.size() );
  ADS_PRE( std::all_of( G.begin() , G.end() ,
                        []( Int x ) { return( x >= 0 ); } ) );
- std::vector< Int > M( L + 1 , -1 );
- std::vector< std::size_t > cut( L + 1 , 0 );
- const Int gain = bestCutRec( G , L , M , cut );
- std::vector< std::size_t > pieces;
- for( std::size_t l = L ; l > 0 ; l -= cut[ l ] )
-  pieces.push_back( cut[ l ] );
- ADS_POST( std::accumulate( pieces.begin() , pieces.end() ,
-                            std::size_t( 0 ) ) == L );
- ADS_POST( std::accumulate( pieces.begin() , pieces.end() , Int( 0 ) ,
-                            [ & G ]( Int a , std::size_t t ) {
-                             return( a + G[ t - 1 ] ); } ) == gain );
- return( std::pair( gain , pieces ) );
+ return( rodCutting( G , L ) );
  }
 
 /*-------------------- 9, 2012-02-01, Prima elementare ---------------------*/
@@ -574,41 +433,14 @@ inline std::pair< Int , std::vector< Int > > maxSum(
 
 /*------------------------- 13, 2012-05-31, Resto --------------------------*/
 
-/// resto(): the number of multisets of B[ 0 .. i - 1 ] of sum t, memoized
-inline Count changeWaysRec( const std::vector< Int > & B , std::size_t i ,
-                            Int t , std::vector< std::vector< Count > > & C ,
-                            std::vector< std::vector< char > > & known )
-{
- if( t == 0 )
-  return( 1 );
- if( ( t < 0 ) || ( i == 0 ) )
-  return( 0 );
- const auto u = static_cast< std::size_t >( t );
- if( ! known[ i ][ u ] ) {
-  C[ i ][ u ] = changeWaysRec( B , i - 1 , t , C , known ) +
-                changeWaysRec( B , i , t - B[ i - 1 ] , C , known );
-  known[ i ][ u ] = 1;
-  }
- return( C[ i ][ u ] );
- }
-
 /// the number of ways of paying T with banknotes B in unlimited supply, the
 /// order not counting: C[ i ][ t ] = C[ i - 1 ][ t ] + C[ i ][ t - B[ i ] ],
-/// 1 for t = 0, 0 for t < 0 or i = 0, by memoization; O( n T ) time and
-/// space
+/// 1 for t = 0, 0 for t < 0 or i = 0; O( n T ) time, coinChangeWays() of
+/// the library
 /// \pre T >= 0 and B positive
-// candidate for the library
 inline Count changeWays( const std::vector< Int > & B , Int T )
 {
- ADS_PRE( T >= 0 );
- ADS_PRE( std::all_of( B.begin() , B.end() ,
-                       []( Int b ) { return( b > 0 ); } ) );
- const auto m = static_cast< std::size_t >( T ) + 1;
- std::vector< std::vector< Count > > C( B.size() + 1 ,
-                                        std::vector< Count >( m , 0 ) );
- std::vector< std::vector< char > > known( B.size() + 1 ,
-                                           std::vector< char >( m , 0 ) );
- return( changeWaysRec( B , B.size() , T , C , known ) );
+ return( coinChangeWays< Count >( B , T ) );
  }
 
 /*----------------------- 14, 2012-06-18, Scacchiera -----------------------*/
@@ -646,63 +478,23 @@ inline Int boardTokens( const std::vector< std::array< Int , 3 > > & A )
 
 /*------------------- 15, 2012-07-09, Stringhe primitive -------------------*/
 
-/// count(): the number of ways of writing X[ i .. n - 1 ] as primitive
-/// strings, memoized
-inline Count segmentationsRec( const std::string & X ,
-                               const std::vector< std::string > & S ,
-                               std::size_t i , std::vector< Count > & D ,
-                               std::vector< char > & known )
-{
- if( i == X.size() )
-  return( 1 );
- if( ! known[ i ] ) {
-  D[ i ] = 0;
-  for( const auto & s : S )                     // check( X , s , i )
-   if( X.compare( i , s.size() , s ) == 0 )
-    D[ i ] += segmentationsRec( X , S , i + s.size() , D , known );
-  known[ i ] = 1;
-  }
- return( D[ i ] );
- }
-
-/// the number of ways of writing X as a sequence of the primitive strings
-/// S: D[ n ] = 1, D[ i ] = sum of D[ i + |s| ] over the s of S that occur
-/// in X at i, by memoization; O( n sum |s| ) time
-/// \pre no primitive string empty
-// candidate for the library
-inline Count segmentations( const std::string & X ,
-                            const std::vector< std::string > & S )
-{
- ADS_PRE( std::none_of( S.begin() , S.end() ,
-                        []( const std::string & s ) {
-                         return( s.empty() ); } ) );
- std::vector< Count > D( X.size() + 1 , 0 );
- std::vector< char > known( X.size() + 1 , 0 );
- return( segmentationsRec( X , S , 0 , D , known ) );
- }
+// the ways of writing X as a sequence of the primitive strings S: D[ n ] =
+// 1, D[ i ] = sum of D[ i + |s| ] over the s of S that occur in X at i,
+// memoized by count() of the text: countSegmentations() of the library
+// [see Segmentations.h]
 
 /*--------------------- 16, 2013-01-07, Conta percorsi ---------------------*/
 
 /// the number of paths from the top left to the bottom right corner of a
 /// m x n board, right or down through the free cells (B 1): count[ i ][ j ]
 /// = ( count[ i + 1 ][ j ] + count[ i ][ j + 1 ] ) B[ i ][ j ], 0 out of the
-/// board, filled backwards; O( m n ) time and space
+/// board, filled backwards; O( m n ) time, countLatticePaths() of the
+/// library
 /// \pre m , n >= 1 and B a rectangle of 0 and 1
-// candidate for the library
 inline Count countPaths( const std::vector< std::vector< int > > & B )
 {
  ADS_PRE( ( ! B.empty() ) && ( ! B[ 0 ].empty() ) );
- const std::size_t m = B.size() , n = B[ 0 ].size();
- std::vector< std::vector< Count > > c( m + 1 ,
-                                        std::vector< Count >( n + 1 , 0 ) );
- for( std::size_t i = m ; i-- > 0 ; ) {
-  ADS_PRE( B[ i ].size() == n );
-  for( std::size_t j = n ; j-- > 0 ; )
-   if( B[ i ][ j ] )
-    c[ i ][ j ] = ( ( i == m - 1 ) && ( j == n - 1 ) )
-                   ? 1 : c[ i + 1 ][ j ] + c[ i ][ j + 1 ];
-  }
- return( c[ 0 ][ 0 ] );
+ return( countLatticePaths< Count >( B ) );
  }
 
 /*-------------------- 18, 2013-05-03, Barche sul fiume --------------------*/
@@ -774,95 +566,46 @@ inline std::optional< Int > maxCoins( const std::vector< Int > & V , Int T )
 
 /*---------------------- 20, 2013-06-17, Fundraising -----------------------*/
 
-/// the table of fundraising(): D[ i ] the best of the first i houses
-inline std::vector< Int > fundraisingTable( const std::vector< Int > & D )
-{
- const std::size_t n = D.size();
- std::vector< Int > T( n + 1 , 0 );
- for( std::size_t i = 1 ; i <= n ; ++i )
-  T[ i ] = ( i == 1 ) ? D[ 0 ]
-                      : std::max( T[ i - 1 ] , T[ i - 2 ] + D[ i - 1 ] );
- return( T );
- }
-
 /// the largest sum of the donations D of houses no two of which are
 /// neighbours: DP[ 1 ] = D[ 1 ], DP[ 2 ] = max( D[ 1 ] , D[ 2 ] ),
-/// DP[ i ] = max( DP[ i - 1 ] , DP[ i - 2 ] + D[ i ] ); Theta( n ) time.
-/// The text writes D for DP in the last formula
+/// DP[ i ] = max( DP[ i - 1 ] , DP[ i - 2 ] + D[ i ] ); Theta( n ) time,
+/// maxNonAdjacentSum() of the library. The text writes D for DP in the
+/// last formula
 /// \pre D not negative
-// candidate for the library
 inline Int fundraising( const std::vector< Int > & D )
 {
  ADS_PRE( std::all_of( D.begin() , D.end() ,
                        []( Int d ) { return( d >= 0 ); } ) );
- return( fundraisingTable( D ).back() );
+ return( maxNonAdjacentSum( D ) );
  }
 
 /// the houses of an optimal fundraising(), walking the table back from n:
-/// house i gives when DP[ i ] = DP[ i - 2 ] + D[ i ]; Theta( n ) time
+/// house i gives when DP[ i ] > DP[ i - 1 ]; Theta( n ) time,
+/// nonAdjacentSelection() of the library
 /// \pre D not negative
 /// \post increasing places, no two consecutive, of sum fundraising( D )
-// candidate for the library
 inline std::vector< std::size_t > donors( const std::vector< Int > & D )
 {
  ADS_PRE( std::all_of( D.begin() , D.end() ,
                        []( Int d ) { return( d >= 0 ); } ) );
- const auto T = fundraisingTable( D );
- std::vector< std::size_t > out;
- std::size_t i = D.size();
- while( i > 2 )
-  if( T[ i ] == T[ i - 2 ] + D[ i - 1 ] ) {
-   out.push_back( i - 1 );
-   i -= 2;
-   }
-  else
-   --i;
- if( i == 2 )
-  out.push_back( ( D[ 1 ] > D[ 0 ] ) ? 1 : 0 );
- else if( i == 1 )
-  out.push_back( 0 );
- std::reverse( out.begin() , out.end() );
- ADS_POST( std::adjacent_find( out.begin() , out.end() ,
-            []( std::size_t a , std::size_t b ) { return( b <= a + 1 ); } )
-           == out.end() );
- return( out );
+ return( nonAdjacentSelection( D ).second );
  }
 
 /*-------------------- 21, 2013-07-22, Gioco di monete ---------------------*/
-
-/// play(): the most the first player gets from V[ i .. j - 1 ], memoized
-/// (-1 unknown)
-inline Int coinGameRec( const std::vector< Int > & V , std::size_t i ,
-                        std::size_t j , Table & M )
-{
- if( i >= j )
-  return( 0 );
- Int & m = M[ i ][ j ];
- if( m < 0 ) {
-  const Int both = coinGameRec( V , i + 1 , j - 1 , M );
-  m = std::max( V[ i ] + std::min( coinGameRec( V , i + 2 , j , M ) , both ) ,
-                V[ j - 1 ] + std::min( both ,
-                                       coinGameRec( V , i , j - 2 , M ) ) );
-  }
- return( m );
- }
 
 /// the most the first player can be sure of in the game where two players
 /// take in turn the first or the last coin of V: on the intervals of even
 /// length, M[ i ][ j ] = max( V[ i ] + min( M[ i + 2 ][ j ] ,
 /// M[ i + 1 ][ j - 1 ] ) , V[ j ] + min( M[ i + 1 ][ j - 1 ] ,
-/// M[ i ][ j - 2 ] ) ), the opponent leaving the worse of the two, by
-/// memoization; O( n^2 ) time and space
+/// M[ i ][ j - 2 ] ) ), the opponent leaving the worse of the two;
+/// O( n^2 ) time, coinsInALine() of the library
 /// \pre |V| even and V not negative
-// candidate for the library
 inline Int coinGame( const std::vector< Int > & V )
 {
  ADS_PRE( V.size() % 2 == 0 );
  ADS_PRE( std::all_of( V.begin() , V.end() ,
                        []( Int v ) { return( v >= 0 ); } ) );
- const std::size_t n = V.size();
- Table M( n + 1 , std::vector< Int >( n + 1 , -1 ) );
- return( coinGameRec( V , 0 , n , M ) );
+ return( coinsInALine( V ) );
  }
 
 /*------------------------ 22, 2013-09-02, Dice rec ------------------------*/
@@ -1019,43 +762,15 @@ inline Int partition3( const std::vector< Int > & V )
  return( minSoFar );
  }
 
-/// partitionRec(): the least cost DP[ i ][ t ] of V[ 0 .. i - 1 ] in t
-/// parts, memoized (INF unknown)
-inline Int partitionRec( const std::vector< Int > & tot , std::size_t i ,
-                         std::size_t t , Table & DP )
-{
- if( t > i )
-  return( INF );
- if( t == 1 )
-  return( tot[ i ] );
- Int & d = DP[ i ][ t ];
- if( d == INF ) {
-  d = INF - 1;
-  for( std::size_t j = 1 ; j < i ; ++j ) {
-   const Int left = partitionRec( tot , j , t - 1 , DP );
-   if( left < INF - 1 )
-    d = std::min( d , std::max( left , tot[ i ] - tot[ j ] ) );
-   }
-  }
- return( d );
- }
-
 /// the least cost of a split of V, possibly negative, in k nonempty
 /// contiguous parts, the cost the largest sum of a part: with the prefix
 /// sums tot, DP[ i ][ 1 ] = tot[ i ], DP[ i ][ t ] = min over j < i of
-/// max( DP[ j ][ t - 1 ] , tot[ i ] - tot[ j ] ), by memoization;
-/// O( k n^2 ) time, O( k n ) space
+/// max( DP[ j ][ t - 1 ] , tot[ i ] - tot[ j ] ); O( k n^2 ) time,
+/// O( k n ) space, linearPartition() of the library
 /// \pre 1 <= k <= |V|
-// candidate for the library
 inline Int partitionK( const std::vector< Int > & V , std::size_t k )
 {
- ADS_PRE( ( k >= 1 ) && ( k <= V.size() ) );
- const std::size_t n = V.size();
- std::vector< Int > tot( n + 1 , 0 );
- for( std::size_t i = 0 ; i < n ; ++i )
-  tot[ i + 1 ] = tot[ i ] + V[ i ];
- Table DP( n + 1 , std::vector< Int >( k + 1 , INF ) );
- return( partitionRec( tot , n , k , DP ) );
+ return( linearPartition( V , k ).first );
  }
 
 /*-------------------- 26, 2014-06-16, Input file file ---------------------*/
@@ -1079,21 +794,16 @@ inline double tapeCost( const std::vector< double > & L ,
 
 /// an optimal order of the files on the tape, by increasing L[ f ] / P[ f ]
 /// (compared as L[ a ] P[ b ] < L[ b ] P[ a ]): swapping two neighbours out
-/// of this order never lowers the cost; O( n log n ) time
+/// of this order never lowers the cost; O( n log n ) time, Smith's rule,
+/// smithOrder() of the library
 /// \pre L not negative and P positive
-// candidate for the library
 inline std::vector< std::size_t > tapeOrder( const std::vector< double > & L ,
                                              const std::vector< double > & P )
 {
  ADS_PRE( L.size() == P.size() );
  ADS_PRE( std::all_of( P.begin() , P.end() ,
                        []( double p ) { return( p > 0 ); } ) );
- std::vector< std::size_t > order( L.size() );
- std::iota( order.begin() , order.end() , std::size_t( 0 ) );
- std::stable_sort( order.begin() , order.end() ,
-                   [ & ]( std::size_t a , std::size_t b ) {
-                    return( L[ a ] * P[ b ] < L[ b ] * P[ a ] ); } );
- return( order );
+ return( smithOrder( L , P ) );
  }
 
 /*------------------------ 27, 2014-06-16, Mintime -------------------------*/
@@ -1137,57 +847,10 @@ inline std::optional< Int > mintime( const std::vector< Int > & t ,
 
 /*------------------- 28, 2014-07-21, Longest palindrome -------------------*/
 
-/// longRec(): the length DP[ i ][ j ] of the longest palindromic
-/// subsequence of s[ i .. j - 1 ], memoized (-1 unknown)
-inline int longRec( const std::string & s , std::size_t i , std::size_t j ,
-                    std::vector< std::vector< int > > & DP )
-{
- if( i >= j )
-  return( 0 );
- if( j == i + 1 )
-  return( 1 );
- int & d = DP[ i ][ j ];
- if( d < 0 )
-  d = ( s[ i ] == s[ j - 1 ] )
-       ? longRec( s , i + 1 , j - 1 , DP ) + 2
-       : std::max( longRec( s , i + 1 , j , DP ) ,
-                   longRec( s , i , j - 1 , DP ) );
- return( d );
- }
-
-/// a longest palindromic subsequence of s: DP[ i ][ j ] = 0 for j < i, 1
-/// for j = i, DP[ i + 1 ][ j - 1 ] + 2 if s[ i ] = s[ j ], else the larger
-/// of DP[ i + 1 ][ j ] and DP[ i ][ j - 1 ], by memoization; printRec reads
-/// it back from both ends; O( n^2 ) time and space
-/// \post a palindrome, subsequence of s
-inline std::string longestPalindromicSubsequence( const std::string & s )
-{
- const std::size_t n = s.size();
- std::vector< std::vector< int > > DP( n + 1 ,
-                                       std::vector< int >( n + 1 , -1 ) );
- longRec( s , 0 , n , DP );
- std::string left , middle;                     // printRec
- std::size_t i = 0 , j = n;
- while( i < j ) {
-  if( j == i + 1 ) {
-   middle = s[ i ];
-   break;
-   }
-  if( s[ i ] == s[ j - 1 ] ) {
-   left.push_back( s[ i ] );
-   ++i;
-   --j;
-   }
-  else if( longRec( s , i + 1 , j , DP ) >= longRec( s , i , j - 1 , DP ) )
-   ++i;
-  else
-   --j;
-  }
- std::string r = left + middle + std::string( left.rbegin() , left.rend() );
- ADS_POST( static_cast< int >( r.size() ) == longRec( s , 0 , n , DP ) );
- ADS_POST( std::equal( r.begin() , r.end() , r.rbegin() ) );
- return( r );
- }
+// DP[ i ][ j ] = 0 for j < i, 1 for j = i, DP[ i + 1 ][ j - 1 ] + 2 if
+// s[ i ] = s[ j ], else the larger of DP[ i + 1 ][ j ] and DP[ i ][ j - 1 ],
+// printRec reading it back from both ends: the recursion of
+// longestPalindromicSubsequence() of the library [see Palindromes.h]
 
 /*-------------------- 30, 2014-12-19, Min allineamento --------------------*/
 
@@ -1233,45 +896,18 @@ inline Count countStairs( int n )
 
 /*----------------------- 32, 2015-02-02, Piggy bank -----------------------*/
 
-/// pbRec(): the least value DP[ t ][ i ] of coins of the first i types
-/// weighing t, INF if none, memoized (-1 unknown)
-inline Int piggyBankRec( const std::vector< Int > & p ,
-                         const std::vector< Int > & v , Int t ,
-                         std::size_t i , Table & DP )
-{
- if( t == 0 )
-  return( 0 );
- if( ( t < 0 ) || ( i == 0 ) )
-  return( INF );
- Int & d = DP[ static_cast< std::size_t >( t ) ][ i ];
- if( d < 0 ) {
-  const Int take = piggyBankRec( p , v , t - p[ i - 1 ] , i , DP );
-  d = std::min( ( take < INF ) ? take + v[ i - 1 ] : INF ,
-                piggyBankRec( p , v , t , i - 1 , DP ) );
-  }
- return( d );
- }
-
 /// the least value of coins of weight exactly T, coin type i weighing p[ i ]
 /// and worth v[ i ], in unlimited supply, nothing if none: DP[ t ][ i ] =
 /// min( DP[ t - p[ i ] ][ i ] + v[ i ] , DP[ t ][ i - 1 ] ), 0 for t = 0,
-/// INF for t < 0 or i = 0 < t, by memoization; O( n T ) time and space
+/// INF for t < 0 or i = 0 < t; O( n T ) time, minValueExactWeight() of the
+/// library
 /// \pre T >= 0, p positive and v not negative
-// candidate for the library
 inline std::optional< Int > piggyBank( const std::vector< Int > & p ,
                                        const std::vector< Int > & v , Int T )
 {
- ADS_PRE( ( T >= 0 ) && ( p.size() == v.size() ) );
- ADS_PRE( std::all_of( p.begin() , p.end() ,
-                       []( Int x ) { return( x > 0 ); } ) );
  ADS_PRE( std::all_of( v.begin() , v.end() ,
                        []( Int x ) { return( x >= 0 ); } ) );
- Table DP( static_cast< std::size_t >( T ) + 1 ,
-           std::vector< Int >( p.size() + 1 , -1 ) );
- const Int r = piggyBankRec( p , v , T , p.size() , DP );
- if( r >= INF )
-  return( std::nullopt );
- return( r );
+ return( minValueExactWeight( p , v , T ) );
  }
 
 /*------------------------- 34, 2015-07-14, Soccer -------------------------*/
@@ -1399,13 +1035,13 @@ bool palindrome( const std::string & s )
 // letters against the longest of all the substrings
 ADS_TEST( "dp-1" )
 {
- CHECK( dp::longestPalindromicSubstring( "casacca" ) == "casac" );
- CHECK( dp::longestPalindromicSubstring( "ovattavo con l'ovatta" ) ==
+ CHECK( longestPalindromicSubstring( "casacca" ) == "casac" );
+ CHECK( longestPalindromicSubstring( "ovattavo con l'ovatta" ) ==
         "ovattavo" );
- CHECK( dp::longestPalindromicSubstring( "x" ) == "x" );
- CHECK( dp::longestPalindromicSubstring( "aaaa" ) == "aaaa" );
- CHECK( dp::longestPalindromicSubstring( "abcd" ) == "a" );
- CHECK( dp::longestPalindromicSubstring( std::string( 2000 , 'z' ) ).size()
+ CHECK( longestPalindromicSubstring( "x" ) == "x" );
+ CHECK( longestPalindromicSubstring( "aaaa" ) == "aaaa" );
+ CHECK( longestPalindromicSubstring( "abcd" ) == "a" );
+ CHECK( longestPalindromicSubstring( std::string( 2000 , 'z' ) ).size()
         == 2000 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
@@ -1415,11 +1051,11 @@ ADS_TEST( "dp-1" )
    for( std::size_t j = i ; j < s.size() ; ++j )
     if( palindrome( s.substr( i , j - i + 1 ) ) )
      best = std::max( best , j - i + 1 );
-  const auto p = dp::longestPalindromicSubstring( s );
+  const auto p = longestPalindromicSubstring( s );
   CHECK( ( p.size() == best ) && palindrome( p ) &&
          ( s.find( p ) != std::string::npos ) );
   }
- CHECK_THROWS( dp::longestPalindromicSubstring( "" ) , contract_violation );
+ CHECK( longestPalindromicSubstring( "" ).empty() );
  }
 
 namespace {
@@ -1641,13 +1277,13 @@ std::vector< std::vector< std::string > > canonical(
 // against the quadratic grouping by std::is_permutation
 ADS_TEST( "dp-5" )
 {
- const auto G = dp::anagrams( { "rosa" , "pippo" , "poppi" , "raso" ,
+ const auto G = anagramGroups( { "rosa" , "pippo" , "poppi" , "raso" ,
                                 "orsa" , "giappone" } );
  CHECK( canonical( G ) == canonical( { { "rosa" , "raso" , "orsa" } ,
                                        { "pippo" , "poppi" } ,
                                        { "giappone" } } ) );
- CHECK( dp::anagrams( {} ).empty() );
- CHECK( canonical( dp::anagrams( { "ab" , "ab" , "ba" } ) ) ==
+ CHECK( anagramGroups( {} ).empty() );
+ CHECK( canonical( anagramGroups( { "ab" , "ab" , "ba" } ) ) ==
         canonical( { { "ab" , "ab" , "ba" } } ) );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 300 ; ++r ) {
@@ -1667,7 +1303,7 @@ ADS_TEST( "dp-5" )
       B.back().push_back( S[ j ] );
       }
     }
-  CHECK( canonical( dp::anagrams( S ) ) == canonical( B ) );
+  CHECK( canonical( anagramGroups( S ) ) == canonical( B ) );
   }
  }
 
@@ -2040,11 +1676,11 @@ Count segmentationsBrute( const std::string & X ,
 ADS_TEST( "dp-15" )
 {
  const std::vector< std::string > S = { "01" , "10" , "011" , "101" };
- CHECK( dp::segmentations( "0111010101" , S ) == 3 );
- CHECK( dp::segmentations( "0110001" , S ) == 0 );
- CHECK( dp::segmentations( "" , S ) == 1 );
- CHECK( dp::segmentations( "01" , {} ) == 0 );
- CHECK( dp::segmentations( std::string( 90 , 'a' ) , { "a" , "aa" } ) ==
+ CHECK( countSegmentations( "0111010101" , S ) == 3 );
+ CHECK( countSegmentations( "0110001" , S ) == 0 );
+ CHECK( countSegmentations( "" , S ) == 1 );
+ CHECK( countSegmentations( "01" , {} ) == 0 );
+ CHECK( countSegmentations( std::string( 90 , 'a' ) , { "a" , "aa" } ) ==
         4660046610375530309ULL );               // Fibonacci( 91 )
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 400 ; ++r ) {
@@ -2057,9 +1693,9 @@ ADS_TEST( "dp-15" )
   std::string X( rnd( g , 0 , 18 ) , '0' );
   for( auto & c : X )
    c = static_cast< char >( '0' + rnd( g , 0 , 1 ) );
-  CHECK( dp::segmentations( X , P ) == segmentationsBrute( X , P , 0 ) );
+  CHECK( countSegmentations( X , P ) == segmentationsBrute( X , P , 0 ) );
   }
- CHECK_THROWS( dp::segmentations( "0" , { "" } ) , contract_violation );
+ CHECK_THROWS( countSegmentations( "0" , { "" } ) , contract_violation );
  }
 
 namespace {
@@ -2608,19 +2244,19 @@ ADS_TEST( "dp-27" )
 // strings against the LCS of the string and its reverse from the library
 ADS_TEST( "dp-28" )
 {
- const auto p = dp::longestPalindromicSubsequence( "BBABCBCAB" );
+ const auto p = longestPalindromicSubsequence( "BBABCBCAB" );
  CHECK( ( p.size() == 7 ) && palindrome( p ) &&
         isSubsequence( p , "BBABCBCAB" ) );
- CHECK( dp::longestPalindromicSubsequence( "" ).empty() );
- CHECK( dp::longestPalindromicSubsequence( "q" ) == "q" );
- CHECK( dp::longestPalindromicSubsequence( "abc" ).size() == 1 );
- CHECK( dp::longestPalindromicSubsequence( std::string( 500 , 'k' ) )
+ CHECK( longestPalindromicSubsequence( "" ).empty() );
+ CHECK( longestPalindromicSubsequence( "q" ) == "q" );
+ CHECK( longestPalindromicSubsequence( "abc" ).size() == 1 );
+ CHECK( longestPalindromicSubsequence( std::string( 500 , 'k' ) )
         .size() == 500 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const std::string s = rndString( g , rnd( g , 0 , 30 ) , 4 );
   const std::string rev( s.rbegin() , s.rend() );
-  const auto q = dp::longestPalindromicSubsequence( s );
+  const auto q = longestPalindromicSubsequence( s );
   CHECK( int( q.size() ) == lcsTable( s , rev )[ s.size() ][ s.size() ] );
   CHECK( palindrome( q ) && isSubsequence( q , s ) );
   }

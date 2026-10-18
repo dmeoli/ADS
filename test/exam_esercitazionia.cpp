@@ -25,10 +25,13 @@
 
 #include "ADS/Contract.h"
 #include "ADS/algorithm/MasterTheorem.h"
+#include "ADS/geometry/ClosestPair.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/numeric/Combinatorics.h"
+#include "ADS/search/SortedSearches.h"
 #include "ADS/tree/BinaryTree.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/Tree.h"
 
 #include <algorithm>
@@ -563,39 +566,6 @@ ADS_TEST( "esercitazioni-7" )
 /*--------------------------------------------------------------------------*/
 
 
-/// the subtree of the previsit pre[ p ... ] and of the symmetric visit
-/// in[ a ... b - 1 ], the place of each value of in given by at
-template< class T >
-BinaryTree< T > * fromPreInRec( const std::vector< T > & pre ,
-                                const std::map< T , int > & at , int & p ,
-                                int a , int b )
-{
- if( a == b ) return( nullptr );
- const T & v = pre[ p++ ];
- const int r = at.at( v );
- auto * L = fromPreInRec( pre , at , p , a , r );
- auto * R = fromPreInRec( pre , at , p , r + 1 , b );
- return( mk( v , L , R ) );
- }
-
-// candidate for the library
-/// the binary tree of distinct values whose previsit is pre and whose
-/// symmetric visit is in: the first item of pre is the root, which splits
-/// in into the two subtrees; Theta( n log n ) with the map of the places;
-/// nil if empty; the caller owns the result
-/// \pre pre and in are permutations of the same distinct values
-template< class T >
-BinaryTree< T > * fromPreIn( const std::vector< T > & pre ,
-                             const std::vector< T > & in )
-{
- std::map< T , int > at;
- for( int i = 0 ; i < int( in.size() ) ; ++i ) at[ in[ i ] ] = i;
- ADS_PRE( ( pre.size() == in.size() ) && ( at.size() == in.size() ) &&
-          std::ranges::is_permutation( pre , in ) );
- int p = 0;
- return( fromPreInRec( pre , at , p , 0 , int( in.size() ) ) );
- }
-
 /// the tree as v( left , right ), - for a missing child, v for a leaf
 std::string show( const BinaryTree< char > * t )
 {
@@ -617,13 +587,14 @@ std::array< std::vector< T > , 3 > visits( BinaryTree< T > * t )
  return( V );
  }
 
-// the tree of the text from its previsit and symmetric visit, checked on
-// its shape and on the postvisit of the text; 500 random trees rebuilt
-// from their visits; the empty tree; inconsistent visits rejected
+// the tree of the text from its previsit and symmetric visit by
+// fromPreorderInorder() of the library, checked on its shape and on the
+// postvisit of the text; 500 random trees rebuilt from their visits; the
+// empty tree; inconsistent visits rejected
 ADS_TEST( "esercitazioni-8" )
 {
  const std::string pre = "AEBFGCDIH" , post = "BGCFEHIDA" , in = "BEGFCADHI";
- std::unique_ptr< BinaryTree< char > > T( fromPreIn(
+ std::unique_ptr< BinaryTree< char > > T( fromPreorderInorder(
   std::vector< char >( pre.begin() , pre.end() ) ,
   std::vector< char >( in.begin() , in.end() ) ) );
  CHECK( show( T.get() ) == "A(E(B, F(G, C)), D(-, I(H, -)))" );
@@ -635,12 +606,13 @@ ADS_TEST( "esercitazioni-8" )
   Owner U( randomTree< int >( g , rnd( g , 0 , 40 ) ,
                               [ & ] { return( next++ * 7 % 101 ); } ) );
   const auto V = visits( U.get() );
-  Owner W( fromPreIn( V[ 0 ] , V[ 1 ] ) );
+  Owner W( fromPreorderInorder( V[ 0 ] , V[ 1 ] ) );
   CHECK( visits( W.get() ) == V && sameShape( W.get() , U.get() ) );
   }
- CHECK( fromPreIn( std::vector< int >() , std::vector< int >() ) == nullptr );
- CHECK_THROWS( fromPreIn( std::vector< int >( { 1 , 2 } ) ,
-                          std::vector< int >( { 1 , 3 } ) ) ,
+ CHECK( fromPreorderInorder( std::vector< int >() , std::vector< int >() ) ==
+        nullptr );
+ CHECK_THROWS( fromPreorderInorder( std::vector< int >( { 1 , 2 } ) ,
+                                    std::vector< int >( { 1 , 3 } ) ) ,
                contract_violation );
  }
 
@@ -1299,47 +1271,26 @@ ADS_TEST( "esercitazioni-26" )
 /*--------------------------------------------------------------------------*/
 
 
-/// the search tree of A[ i ... j - 1 ] rooted at its middle item
-BT * minHeightRec( const std::vector< int > & A , int i , int j )
-{
- if( i >= j ) return( nullptr );
- const int m = ( i + j - 1 ) / 2;
- return( mk( A[ m ] , minHeightRec( A , i , m ) ,
-             minHeightRec( A , m + 1 , j ) ) );
- }
-
-// candidate for the library
-/// buildMinHeightBST(): the search tree of minimum height of the strictly
-/// increasing A, the middle item at the root of each subtree; T( n ) =
-/// T( floor( ( n - 1 ) / 2 ) ) + T( ceil( ( n - 1 ) / 2 ) ) + 1 = Theta( n );
-/// nil if empty; the caller owns the result
-/// \pre A strictly increasing
-/// \post height ceil( log2( n + 1 ) ) - 1
-BT * buildMinHeightBST( const std::vector< int > & A )
-{
- ADS_PRE( std::ranges::adjacent_find( A , std::greater_equal<>() ) ==
-          A.end() );
- BT * t = minHeightRec( A , 0 , int( A.size() ) );
- ADS_POST( heightOf( t ) == int( std::bit_width( A.size() ) ) - 1 );
- return( t );
- }
-
-// (also exercise 75.2) for n = 0 ... 300: symmetric visit A, height
-// ceil( log2( n + 1 ) ) - 1, on random strictly increasing vectors
+// (also exercise 75.2) minimumHeightSearchTree() of the library, the
+// middle item at the root of each subtree, T( n ) = T( floor( ( n - 1 ) /
+// 2 ) ) + T( ceil( ( n - 1 ) / 2 ) ) + 1 = Theta( n ): for n = 0 ... 300,
+// symmetric visit A, height ceil( log2( n + 1 ) ) - 1, on random strictly
+// increasing vectors
 ADS_TEST( "esercitazioni-27" )
 {
  std::mt19937 g( 27 );
  for( int n = 0 ; n <= 300 ; ++n ) {
   std::vector< int > A( n );
   for( int i = 0 , v = -50 ; i < n ; ++i ) A[ i ] = v += rnd( g , 1 , 9 );
-  Owner T( buildMinHeightBST( A ) );
+  Owner T( minimumHeightSearchTree( A ) );
   CHECK( inorder( T.get() ) == A );
   CHECK( heightOf( T.get() ) ==
          int( std::ceil( std::log2( n + 1.0 ) - 1e-12 ) ) - 1 );
   }
- Owner one( buildMinHeightBST( { 4 } ) );
+ Owner one( minimumHeightSearchTree( std::vector< int >( { 4 } ) ) );
  CHECK( one->read() == 4 && ! one->left() && ! one->right() );
- CHECK_THROWS( buildMinHeightBST( { 1 , 1 } ) , contract_violation );
+ CHECK_THROWS( minimumHeightSearchTree( std::vector< int >( { 1 , 1 } ) ) ,
+               contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1358,64 +1309,26 @@ std::int64_t dist2( const Point & p , const Point & q )
  return( ( p.x - q.x ) * ( p.x - q.x ) + ( p.y - q.y ) * ( p.y - q.y ) );
  }
 
-/// the closest pair among P[ I[ lo ... hi - 1 ] ], sorted by x; leaves the
-/// range sorted by y
-void closestRec( const std::vector< Point > & P , std::vector< int > & I ,
-                 int lo , int hi , std::int64_t & best ,
-                 std::pair< int , int > & pair )
-{
- const auto byY = [ & ]( int a , int b ) { return( P[ a ].y < P[ b ].y ); };
- if( hi - lo <= 3 ) {
-  for( int i = lo ; i < hi ; ++i )
-   for( int j = i + 1 ; j < hi ; ++j )
-    if( const auto d = dist2( P[ I[ i ] ] , P[ I[ j ] ] ) ; d < best ) {
-     best = d;
-     pair = std::pair( I[ i ] , I[ j ] );
-     }
-  std::sort( I.begin() + lo , I.begin() + hi , byY );
-  return;
-  }
- const int mid = ( lo + hi ) / 2;
- const std::int64_t xm = P[ I[ mid ] ].x;
- closestRec( P , I , lo , mid , best , pair );
- closestRec( P , I , mid , hi , best , pair );
- std::inplace_merge( I.begin() + lo , I.begin() + mid , I.begin() + hi , byY );
- std::vector< int > strip;                   // within sqrt( best ) of xm
- for( int i = lo ; i < hi ; ++i )
-  if( ( P[ I[ i ] ].x - xm ) * ( P[ I[ i ] ].x - xm ) < best )
-   strip.push_back( I[ i ] );
- for( std::size_t i = 0 ; i < strip.size() ; ++i )
-  for( std::size_t j = i + 1 ; ( j < strip.size() ) &&
-       ( ( P[ strip[ j ] ].y - P[ strip[ i ] ].y ) *
-         ( P[ strip[ j ] ].y - P[ strip[ i ] ].y ) < best ) ; ++j )
-   if( const auto d = dist2( P[ strip[ i ] ] , P[ strip[ j ] ] ) ; d < best ) {
-    best = d;
-    pair = std::pair( strip[ i ] , strip[ j ] );
-    }
- }
-
-// candidate for the library
-/// the closest pair of points, by divide et impera: split at the median
-/// x, solve the halves, then compare each point of the strip of width
-/// delta about the split with its next ones by y, at most 7 of them;
-/// O( n log n ); the places of the pair and the square of its distance
+/// the closest pair of points: closestPair() of the library, by divide et
+/// impera, split at the median x, solve the halves, then compare each
+/// point of the strip of width delta about the split with its next ones by
+/// y, at most 7 of them; O( n log n ); the places of the pair and the
+/// square of its distance
 /// \pre n >= 2 and |x|, |y| <= 10^9
 std::pair< std::pair< int , int > , std::int64_t > closestPair(
                                               const std::vector< Point > & P )
 {
  ADS_PRE( P.size() >= 2 );
- for( const auto & p : P )
+ std::vector< ADS::Point > Q;
+ for( const auto & p : P ) {
   ADS_PRE( ( std::abs( p.x ) <= 1000000000 ) &&
            ( std::abs( p.y ) <= 1000000000 ) );
- std::vector< int > I( P.size() );
- std::iota( I.begin() , I.end() , 0 );
- std::ranges::sort( I , [ & ]( int a , int b ) {
-  return( P[ a ].x < P[ b ].x ); } );
- std::int64_t best = std::numeric_limits< std::int64_t >::max();
- std::pair< int , int > pair( -1 , -1 );
- closestRec( P , I , 0 , int( I.size() ) , best , pair );
+  Q.push_back( ADS::Point{ long( p.x ) , long( p.y ) } );
+  }
+ const auto [ pair , best ] = ADS::closestPair( Q );
  ADS_POST( dist2( P[ pair.first ] , P[ pair.second ] ) == best );
- return( std::pair( pair , best ) );
+ return( std::pair( std::pair( int( pair.first ) , int( pair.second ) ) ,
+                    best ) );
  }
 
 // against the quadratic minimum on 500 random point sets, small coordinates
@@ -1557,43 +1470,19 @@ ADS_TEST( "esercitazioni-29-3" )
 /*--------------------------------------------------------------------------*/
 
 
-/// the two middle values of X[ xs ... xe ] and Y[ ys ... ye ], four in all
-std::pair< int , int > medianOfFour( const std::vector< int > & X ,
-                                     const std::vector< int > & Y , int xs ,
-                                     int xe , int ys , int ye )
-{
- std::array< int , 4 > v{ X[ xs ] , X[ xe ] , Y[ ys ] , Y[ ye ] };
- std::ranges::sort( v );
- return( std::pair( v[ 1 ] , v[ 2 ] ) );
- }
-
-/// the two medians of X[ xs ... xe ] and Y[ ys ... ye ], of equal lengths
-std::pair< int , int > doubleMedianRec( const std::vector< int > & X ,
-                                        const std::vector< int > & Y ,
-                                        int xs , int xe , int ys , int ye )
-{
- if( xe - xs == 1 ) return( medianOfFour( X , Y , xs , xe , ys , ye ) );
- const int xm = ( xs + xe ) / 2 , ym = ( ys + ye + 1 ) / 2;
- if( X[ xm ] < Y[ ym ] )
-  return( doubleMedianRec( X , Y , xm , xe , ys , ym ) );
- if( Y[ ym ] < X[ xm ] )
-  return( doubleMedianRec( X , Y , xs , xm , ym , ye ) );
- return( std::pair( X[ xm ] , Y[ ym ] ) );
- }
-
-// candidate for the library
 /// doubleMedian(): the two medians, of ranks n and n + 1, of the 2 n values
-/// of the sorted X and Y together: the lower half of the one with the
-/// smaller middle and the upper half of the other are discarded, the same
-/// number from each; O( log n )
+/// of the sorted X and Y together: the items of ranks n - 1 and n from 0
+/// by kthOfTwoSorted() of the library, a binary search of the number of
+/// items of X among the smallest ones; O( log n )
 /// \pre X and Y sorted, of the same size n >= 2
 std::pair< int , int > doubleMedian( const std::vector< int > & X ,
                                      const std::vector< int > & Y )
 {
- const int n = int( X.size() );
- ADS_PRE( ( n >= 2 ) && ( int( Y.size() ) == n ) &&
+ const std::size_t n = X.size();
+ ADS_PRE( ( n >= 2 ) && ( Y.size() == n ) &&
           std::ranges::is_sorted( X ) && std::ranges::is_sorted( Y ) );
- return( doubleMedianRec( X , Y , 0 , n - 1 , 0 , n - 1 ) );
+ return( std::pair( kthOfTwoSorted( X , Y , n - 1 ) ,
+                    kthOfTwoSorted( X , Y , n ) ) );
  }
 
 // against the places n - 1 and n of the merge of X and Y, on 2000 random

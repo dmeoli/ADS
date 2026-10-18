@@ -2,20 +2,20 @@
 ###############################################################################
 #                                 pages.py                                    #
 #                                                                             #
-# Writes the pages of the site of the documentation into build-docs/pages,    #
+# Writes the pages of the site of the documentation into docs/generated,      #
 # from the README, which stays the one source of the text: each section of    #
 # the README becomes a page of the user guide, the links to the files of the  #
 # repository point to GitHub, and the CHANGELOG becomes the release notes.    #
-# The workflow .github/workflows/docs.yml runs it before mkdocs.              #
+# The workflow .github/workflows/docs.yml runs it before Sphinx.              #
 #                                                                             #
-#   python3 docs/pages.py && mkdocs build                                     #
+#   python3 docs/pages.py && sphinx-build -b html docs build-docs/html        #
 ###############################################################################
 
 import os
 import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, 'build-docs', 'pages')
+OUT = os.path.join(ROOT, 'docs', 'generated')
 BLOB = 'https://github.com/dmeoli/ADS/blob/main/'
 TREE = 'https://github.com/dmeoli/ADS/tree/main/'
 

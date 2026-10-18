@@ -28,6 +28,9 @@
 #include "ADSTest.h"
 
 #include "ADS/complexity/EasyCases.h"
+#include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/FlowApplications.h"
+#include "ADS/graph/Matching.h"
 #include "ADS/graph/MaxFlow.h"
 
 #include <algorithm>
@@ -44,6 +47,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -357,24 +361,22 @@ namespace flow {
 
 /// Cammini disgiunti: whether k paths from u to v with no common edge
 /// exist in the digraph of n nodes and edges E. By Menger, the maximum
-/// flow from u to v with unit capacities; a source joined to u with
-/// capacity k stops it after k augmenting paths, O( k ( n + m ) ) by Ford
-/// and Fulkerson. Fratelli Eris (2016-01-26) is the case k = 2 on a map,
-/// each street an edge in each direction.
+/// flow from u to v with unit capacities: edgeDisjointPaths() of the
+/// library, a source joined to u with capacity k stopping it at k paths,
+/// O( k ( n + m ) ) by augmenting paths. Fratelli Eris (2016-01-26) is the
+/// case k = 2 on a map, each street an edge in each direction.
 /// \pre u and v distinct nodes, k >= 0, the edges join nodes
-// candidate for the library
 bool disjointPaths( int n , const Pairs & E , int u , int v , long k )
 {
- ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) && ( u != v ) &&
-          ( k >= 0 ) );
  ADS_PRE( std::all_of( E.begin() , E.end() , [ & ]( const auto & e ) {
   return( ( e.first >= 0 ) && ( e.first < n ) && ( e.second >= 0 ) &&
           ( e.second < n ) ); } ) );
- FlowNetwork N( n + 1 );
- N.addEdge( n , u , k );
- for( auto [ a , b ] : E )
-  N.addEdge( a , b , 1 );
- return( N.maxFlow( n , v , Augment::FORD_FULKERSON ) >= k );
+ std::vector< std::tuple< int , int , std::monostate > > T;
+ for( auto [ a , b ] : E )                     // a loop is on no path
+  if( a != b )
+   T.emplace_back( a , b , std::monostate() );
+ return( long( edgeDisjointPaths( ArrayGraph<>( n , T ) , u , v ,
+                                  k ).size() ) >= k );
  }
 
 }  // end( namespace flow )
@@ -903,65 +905,23 @@ bool residualPath( const Matrix & c , Matrix & f , int s , int p ,
  return( true );
  }
 
-/// reduceDFS of the text: one unit less of flow along a path from x to y of
-/// edges with positive flow; the marks of seen keep it from turning around
-/// a cycle of flow, on which the text recurs forever
-bool reduceDFS( Matrix & f , int x , int y , std::vector< bool > & seen )
-{
- if( x == y )
-  return( true );
- seen[ x ] = true;
- for( int w = 0 ; w < int( f.size() ) ; ++w )
-  if( ( f[ x ][ w ] > 0 ) && ! seen[ w ] && reduceDFS( f , w , y , seen ) ) {
-   --f[ x ][ w ];
-   ++f[ w ][ x ];
-   return( true );
-   }
- return( false );
- }
-
 /// Capacita ridotta: c[ u ][ v ] decreases by one and the maximum flow f
-/// from s to p becomes a maximum flow of the new c, without starting over.
-/// If ( u , v ) is saturated one unit less goes on it, and on a path of
-/// flow from s to u and one from v to p; the flow, one less, is then
-/// maximum or one augmenting path from s to p makes it so, since the
-/// maximum flow decreases by one at most: three visits, O( n^2 ) on the
-/// matrices. The text misses the case of a unit of ( u , v ) on a cycle of
-/// flow, where no path of flow from s to u may exist: a path of flow from
-/// v to u closes the cycle, which is cancelled, and the value stays. The
-/// result is 0 if ( u , v ) was not saturated, 1 if a cycle was cancelled,
-/// 2 if the paths were.
+/// from s to p becomes a maximum flow of the new c, without starting over:
+/// decreaseCapacity() of the library. If ( u , v ) is saturated one unit
+/// less goes on it, and on a path of flow from s to u and one from v to p;
+/// the flow, one less, is then maximum or one augmenting path from s to p
+/// makes it so, since the maximum flow decreases by one at most: three
+/// visits, O( n^2 ) on the matrices. The text misses the case of a unit of
+/// ( u , v ) on a cycle of flow, where no path of flow from s to u may
+/// exist: a path of flow from v to u closes the cycle, which is cancelled,
+/// and the value stays. The result is 0 if ( u , v ) was not saturated, 1
+/// if a cycle was cancelled, 2 if the paths were.
 /// \pre c square with c >= 0, s and p distinct nodes, c[ u ][ v ] > 0, f a
 ///      maximum flow within c (audit)
 /// \post f a maximum flow within the new c (audit)
-// candidate for the library
 int reduceFlow( Matrix & c , int s , int p , Matrix & f , int u , int v )
 {
- const int n = int( c.size() );
- ADS_PRE( ( s >= 0 ) && ( s < n ) && ( p >= 0 ) && ( p < n ) && ( s != p ) &&
-          ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) &&
-          ( f.size() == c.size() ) && ( c[ u ][ v ] > 0 ) );
- ADS_AUDIT( flowOk( c , f , s , p ) && ! residualPath( c , f , s , p ,
-                                                       false ) );
- const int result = [ & ]( void ) -> int {
-  --c[ u ][ v ];
-  if( f[ u ][ v ] <= c[ u ][ v ] )
-   return( 0 );
-  --f[ u ][ v ];
-  ++f[ v ][ u ];
-  std::vector< bool > seen( n , false );
-  if( reduceDFS( f , v , u , seen ) )
-   return( 1 );
-  seen.assign( n , false );
-  reduceDFS( f , s , u , seen );
-  seen.assign( n , false );
-  reduceDFS( f , v , p , seen );
-  residualPath( c , f , s , p , true );
-  return( 2 );
-  }();
- ADS_AUDIT( flowOk( c , f , s , p ) && ! residualPath( c , f , s , p ,
-                                                       false ) );
- return( result );
+ return( int( decreaseCapacity( c , f , s , p , u , v ) ) );
  }
 
 }  // end( namespace flow )
@@ -2610,26 +2570,15 @@ namespace flow {
 /// Braccia rubate alla ricerca: no offices, person l cleans at most m of
 /// them, only among A[ l ]; whether each office gets one person. A maximum
 /// flow s -> person ( m ) -> office ( 1 , in A_l ) -> t ( 1 ), the
-/// b-matching of the people with capacity m: it does if the flow is no,
+/// b-matching of the people with capacity m, bipartiteBMatching() of the
+/// library: it does if the matching has no pairs,
 /// O( n_O ( n_L n_O + n_L + n_O ) ).
 /// \pre the offices in [ 0 , no ), m >= 0
-// candidate for the library
 bool cleaning( int no , const std::vector< Ints > & A , long m )
 {
- const int nl = int( A.size() );
- ADS_PRE( ( no >= 0 ) && ( m >= 0 ) );
- FlowNetwork N( nl + no + 2 );
- const int s = nl + no , t = s + 1;
- for( int l = 0 ; l < nl ; ++l ) {
-  N.addEdge( s , l , m );
-  for( int o : A[ l ] ) {
-   ADS_PRE( ( o >= 0 ) && ( o < no ) );
-   N.addEdge( l , nl + o , 1 );
-   }
-  }
- for( int o = 0 ; o < no ; ++o )
-  N.addEdge( nl + o , t , 1 );
- return( N.maxFlow( s , t ) == no );
+ ADS_PRE( no >= 0 );
+ return( int( bipartiteBMatching( A , no , Longs( A.size() , m ) ,
+                                  Longs( no , 1 ) ).size() ) == no );
  }
 
 }  // end( namespace flow )

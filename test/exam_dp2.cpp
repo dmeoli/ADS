@@ -29,12 +29,22 @@
 #include "ADS/combinatorial/Generation.h"
 #include "ADS/complexity/Problems.h"
 #include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Properties.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/numeric/BigInteger.h"
+#include "ADS/numeric/Catalan.h"
 #include "ADS/numeric/Combinatorics.h"
+#include "ADS/optimization/IntervalCover.h"
 #include "ADS/optimization/Intervals.h"
+#include "ADS/optimization/KnapsackVariants.h"
+#include "ADS/optimization/SequenceProblems.h"
 #include "ADS/optimization/WeightedIntervals.h"
 #include "ADS/string/LongestCommonSubsequence.h"
+#include "ADS/string/Palindromes.h"
+#include "ADS/string/Parentheses.h"
+#include "ADS/string/Segmentations.h"
+#include "ADS/string/StringBreaking.h"
+#include "ADS/string/SubsequenceProblems.h"
 
 #include <algorithm>
 #include <bit>
@@ -203,44 +213,11 @@ ADS_TEST( "dp-37" )
 /*---------------------- 38, 2016-01-07, Cut string ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
-
-/// cutStringRec(): DP[ i ][ j ] on the cuts W, -1 if not solved yet
-long long cutStringRec( const Ints & W , Table & DP , int i , int j )
-{
- if( j == i + 1 ) return( 0 );
- if( DP[ i ][ j ] < 0 ) {
-  DP[ i ][ j ] = std::numeric_limits< long long >::max();
-  for( int k = i + 1 ; k < j ; ++k )
-   DP[ i ][ j ] = std::min( DP[ i ][ j ] , cutStringRec( W , DP , i , k ) +
-                            cutStringRec( W , DP , k , j ) +
-                            ( W[ j ] - W[ i ] ) );
-  }
- return( DP[ i ][ j ] );
- }
-
-/// the least cost of cutting a string of length L at the places V, where a
-/// cut costs the length of the piece cut. With the sentinels W_0 = 0 and
-/// W_{n+1} = L, DP[ i ][ j ] is the least cost of the cuts strictly between
-/// W_i and W_j: 0 if j = i + 1, else min_{i<k<j} DP[ i ][ k ] + DP[ k ][ j ]
-/// plus W_j - W_i; by memoization, O( n^3 ) time and O( n^2 ) space, the
-/// scheme of matrixChain() with another cost.
-/// \pre 0 < V_1 < ... < V_n < L
-// candidate for the library
-long long cutString( const Ints & V , long long L )
-{
- const int n = int( V.size() );
- ADS_PRE( std::adjacent_find( V.begin() , V.end() ,
-                              std::greater_equal<>() ) == V.end() );
- ADS_PRE( n == 0 || ( ( V.front() > 0 ) && ( V.back() < L ) ) );
- Ints W( n + 2 );
- W[ n + 1 ] = L;
- std::copy( V.begin() , V.end() , W.begin() + 1 );
- Table DP( n + 2 , Ints( n + 2 , -1 ) );
- return( cutStringRec( W , DP , 0 , n + 1 ) );
- }
-
-}  // end( namespace dp )
+// the least cost of cutting a string of length L at the places V, where a
+// cut costs the length of the piece cut: with the sentinels W_0 = 0 and
+// W_{n+1} = L, DP[ i ][ j ] = min_{i<k<j} DP[ i ][ k ] + DP[ k ][ j ] plus
+// W_j - W_i, the scheme of matrixChain() with another cost, which
+// stringBreakingCost() of the library solves [see StringBreaking.h]
 
 /// the cost of the cuts of a string of length L in the order given
 long long cut_cost( const Ints & order , long long L )
@@ -266,7 +243,7 @@ ADS_TEST( "dp-38" )
  long long best = std::numeric_limits< long long >::max();
  do best = std::min( best , cut_cost( V , 19 ) );
  while( std::next_permutation( V.begin() , V.end() ) );
- CHECK( dp::cutString( { 3 , 8 , 10 } , 19 ) == best && best <= 36 );
+ CHECK( stringBreakingCost( { 3 , 8 , 10 } , 19 ) == best && best <= 36 );
 
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -279,16 +256,16 @@ ADS_TEST( "dp-38" )
   long long b = std::numeric_limits< long long >::max();
   do b = std::min( b , cut_cost( P , L ) );
   while( std::next_permutation( P.begin() , P.end() ) );
-  CHECK( dp::cutString( Ints( s.begin() , s.end() ) , L ) == b );
+  CHECK( stringBreakingCost( Ints( s.begin() , s.end() ) , L ) == b );
   }
- CHECK( dp::cutString( {} , 7 ) == 0 );
- CHECK( dp::cutString( { 4 } , 7 ) == 7 );
+ CHECK( stringBreakingCost( {} , 7 ) == 0 );
+ CHECK( stringBreakingCost( { 4 } , 7 ) == 7 );
  Ints all( 99 );                                  // every place, halving
  std::iota( all.begin() , all.end() , 1 );
- CHECK( dp::cutString( all , 100 ) > 0 );
- CHECK( dp::cutString( { 1 , 2 , 3 } , 4 ) == 8 );
- CHECK_THROWS( dp::cutString( { 3 , 3 } , 7 ) , contract_violation );
- CHECK_THROWS( dp::cutString( { 7 } , 7 ) , contract_violation );
+ CHECK( stringBreakingCost( all , 100 ) > 0 );
+ CHECK( stringBreakingCost( { 1 , 2 , 3 } , 4 ) == 8 );
+ CHECK_THROWS( stringBreakingCost( { 3 , 3 } , 7 ) , contract_violation );
+ CHECK_THROWS( stringBreakingCost( { 7 } , 7 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -301,19 +278,12 @@ namespace dp {
 /// largest square first fails (18 = 9 + 9, but 16 + 1 + 1); DP[ 0 ] = 0 and
 /// DP[ i ] = min_{1 <= t <= sqrt( i )} DP[ i - t^2 ] + 1, bottom up,
 /// Theta( n sqrt( n ) ) time and O( n ) space; by Lagrange it is at most 4.
+/// minimumSquares() of the library answers in O( sqrt( n ) ) by the
+/// theorems of Lagrange and Legendre
 /// \pre n >= 0
-// candidate for the library
 int squareSum( int n )
 {
- ADS_PRE( n >= 0 );
- std::vector< int > DP( n + 1 , 0 );
- for( int i = 1 ; i <= n ; ++i ) {
-  DP[ i ] = std::numeric_limits< int >::max();
-  for( int t = 1 ; t * t <= i ; ++t )
-   DP[ i ] = std::min( DP[ i ] , DP[ i - t * t ] + 1 );
-  }
- ADS_POST( DP[ n ] <= 4 );
- return( DP[ n ] );
+ return( minimumSquares( n ) );
  }
 
 /// psRec(): the decompositions of n by bases <= limit after those in S
@@ -552,18 +522,22 @@ int computeS( const Tree & T , int u , std::vector< int > & S ,
 
 /// the fewest nodes (spies) of a tree such that each edge has an end
 /// among them, the vertex cover of a tree: S[ u ] = 1 + sum_f L[ f ] with u
-/// taken, L[ u ] = min( S[ u ] , sum_f S[ f ] ) with u free, 0 for nil; by
-/// memoization, O( n ) time and space. The answer is L[ root ]: the text
-/// returns S[ root ], which forces the root into the cover
+/// taken, L[ u ] = min( S[ u ] , sum_f S[ f ] ) with u free, 0 for nil, by
+/// memoization, or treeVertexCover() of the library, the parent of each
+/// leaf taken, on the tree as an unoriented graph; O( n ) time and space.
+/// The answer is L[ root ]: the text returns S[ root ], which forces the
+/// root into the cover
 /// \pre child and sibling have the same size, root a node or -1
-// candidate for the library
 int spies( const Tree & T )
 {
  const int n = int( T.child.size() );
  ADS_PRE( int( T.sibling.size() ) == n );
  ADS_PRE( ( T.root >= -1 ) && ( T.root < n ) );
- std::vector< int > S( n , -1 ) , L( n , -1 );
- return( computeL( T , T.root , S , L ) );
+ ListGraph<> G( n , false );
+ for( int u = 0 ; u < n ; ++u )
+  for( int f = T.child[ u ] ; f >= 0 ; f = T.sibling[ f ] )
+   G.insertEdge( u , f );
+ return( int( treeVertexCover( G ).size() ) );
  }
 
 /// the tree of the parents p, p[ 0 ] = -1 the root and p[ i ] < i
@@ -683,7 +657,7 @@ ADS_TEST( "dp-42" )
    }
   std::vector< WeightedInterval< long long > > I;
   for( std::size_t i = 0 ; i < n ; ++i )
-   I.push_back( { m[ i ] - D , m[ i ] , e[ i ] } );
+   I.push_back( { long( m[ i ] - D ) , long( m[ i ] ) , e[ i ] } );
   CHECK( dp::serveTheDonald( m , e , D ) == best );
   CHECK( maxinterval( I ).second == best );
   }
@@ -702,43 +676,17 @@ ADS_TEST( "dp-42" )
 /*------------------------ 43, 2016-08-29, Count ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
-
-/// countRec(): DP[ p ][ t ], UNSOLVED if not solved yet
-std::uint64_t countRec( const std::string & P , const std::string & T ,
-                        std::size_t p , std::size_t t , UTable & DP )
-{
- if( p > t ) return( 0 );
- if( p == 0 ) return( 1 );
- if( DP[ p ][ t ] == UNSOLVED ) {
-  DP[ p ][ t ] = countRec( P , T , p , t - 1 , DP );
-  if( P[ p - 1 ] == T[ t - 1 ] )
-   DP[ p ][ t ] += countRec( P , T , p - 1 , t - 1 , DP );
-  }
- return( DP[ p ][ t ] );
- }
-
-/// the occurrences of P as a subsequence of T, i.e., the places i_1 < ...
-/// < i_m with T[ i_j ] = P[ j ]. DP[ p ][ t ] counts those of P[ 1 .. p ] in
-/// T[ 1 .. t ]: 0 if p > t, 1 if p = 0, DP[ p ][ t - 1 ] if P_p != T_t, and
-/// DP[ p - 1 ][ t - 1 ] + DP[ p ][ t - 1 ] otherwise; by memoization,
-/// O( m n ) time and space
-/// \pre the count is less than 2^64
-// candidate for the library
-std::uint64_t count( const std::string & P , const std::string & T )
-{
- UTable DP( P.size() + 1 ,
-            std::vector< std::uint64_t >( T.size() + 1 , UNSOLVED ) );
- return( countRec( P , T , P.size() , T.size() , DP ) );
- }
-
-}  // end( namespace dp )
+// the occurrences of P as a subsequence of T, i.e., the places i_1 < ...
+// < i_m with T[ i_j ] = P[ j ]: DP[ p ][ t ], those of P[ 1 .. p ] in
+// T[ 1 .. t ], is 0 if p > t, 1 if p = 0, DP[ p ][ t - 1 ] if P_p != T_t,
+// and DP[ p - 1 ][ t - 1 ] + DP[ p ][ t - 1 ] otherwise, the recursion of
+// subsequenceOccurrences() of the library [see SubsequenceProblems.h]
 
 // the example abc in aabdcc, 4 times; against the enumeration of the
 // C( n , m ) choices of places
 ADS_TEST( "dp-43" )
 {
- CHECK( dp::count( "abc" , "aabdcc" ) == 4 );
+ CHECK( subsequenceOccurrences( "abc" , "aabdcc" ) == 4 );
  std::function< std::uint64_t( const std::string & , const std::string & ,
                                std::size_t , std::size_t ) > brute =
   [ & ]( const std::string & P , const std::string & T , std::size_t p ,
@@ -753,45 +701,28 @@ ADS_TEST( "dp-43" )
  for( int t = 0 ; t < 500 ; ++t ) {
   const auto T = random_string( g() % 13 , 2 + g() % 2 , g );
   const auto P = random_string( g() % 5 , 2 + g() % 2 , g );
-  CHECK( dp::count( P , T ) == brute( P , T , 0 , 0 ) );
+  CHECK( subsequenceOccurrences( P , T ) == brute( P , T , 0 , 0 ) );
   }
  const auto C = tartaglia( 60 );
- CHECK( dp::count( "" , "" ) == 1 );
- CHECK( dp::count( "" , "abc" ) == 1 );
- CHECK( dp::count( "abcd" , "abc" ) == 0 );
- CHECK( dp::count( "a" , "a" ) == 1 );
- CHECK( dp::count( "aaa" , std::string( 50 , 'a' ) ) == C[ 50 ][ 3 ] );
- CHECK( dp::count( std::string( 30 , 'a' ) , std::string( 60 , 'a' ) ) ==
-        C[ 60 ][ 30 ] );
+ CHECK( subsequenceOccurrences( "" , "" ) == 1 );
+ CHECK( subsequenceOccurrences( "" , "abc" ) == 1 );
+ CHECK( subsequenceOccurrences( "abcd" , "abc" ) == 0 );
+ CHECK( subsequenceOccurrences( "a" , "a" ) == 1 );
+ CHECK( subsequenceOccurrences( "aaa" , std::string( 50 , 'a' ) ) ==
+        C[ 50 ][ 3 ] );
+ CHECK( subsequenceOccurrences( std::string( 30 , 'a' ) ,
+                                std::string( 60 , 'a' ) ) == C[ 60 ][ 30 ] );
  }
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- 44, 2017-01-10, Supersequenza -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
-
-/// the length of a shortest common supersequence of P and T: DP[ i ][ 0 ]
-/// = i, DP[ 0 ][ j ] = j, DP[ i ][ j ] = DP[ i - 1 ][ j - 1 ] + 1 if P_i =
-/// T_j, else min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ) + 1; bottom up,
-/// Theta( n m ) time and space; it equals n + m - | LCS( P , T ) |
-/// \post n + m - | lcs( P , T ) | (an audit)
-// candidate for the library
-int scs( const std::string & P , const std::string & T )
-{
- const std::size_t n = P.size() , m = T.size();
- std::vector< std::vector< int > > DP( n + 1 , std::vector< int >( m + 1 ) );
- for( std::size_t i = 0 ; i <= n ; ++i ) DP[ i ][ 0 ] = int( i );
- for( std::size_t j = 0 ; j <= m ; ++j ) DP[ 0 ][ j ] = int( j );
- for( std::size_t i = 1 ; i <= n ; ++i )
-  for( std::size_t j = 1 ; j <= m ; ++j )
-   DP[ i ][ j ] = P[ i - 1 ] == T[ j - 1 ] ? DP[ i - 1 ][ j - 1 ] + 1 :
-                  std::min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ) + 1;
- ADS_AUDIT( DP[ n ][ m ] == int( n + m - lcs( P , T ).size() ) );
- return( DP[ n ][ m ] );
- }
-
-}  // end( namespace dp )
+// the length of a shortest common supersequence of P and T: DP[ i ][ 0 ]
+// = i, DP[ 0 ][ j ] = j, DP[ i ][ j ] = DP[ i - 1 ][ j - 1 ] + 1 if P_i =
+// T_j, else min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ) + 1, which equals
+// n + m - | LCS( P , T ) |: scsLength() of the library [see
+// SubsequenceProblems.h]
 
 /// is a a subsequence of b?
 bool is_subsequence( const std::string & a , const std::string & b )
@@ -807,15 +738,14 @@ bool is_subsequence( const std::string & a , const std::string & b )
 // alphabet that has both as subsequences
 ADS_TEST( "dp-44" )
 {
- CHECK( dp::scs( "AB" , "BC" ) == 3 );
- CHECK( dp::scs( "DAB" , "DCB" ) == 4 );
+ CHECK( scsLength( "AB" , "BC" ) == 3 );
+ CHECK( scsLength( "DAB" , "DCB" ) == 4 );
  CHECK( is_subsequence( "DAB" , "DACB" ) && is_subsequence( "DCB" , "DACB" ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const auto P = random_string( g() % 15 , 3 , g ) ,
              T = random_string( g() % 15 , 3 , g );
-  CHECK( dp::scs( P , T ) == int( P.size() + T.size() -
-                                  lcs( P , T ).size() ) );
+  CHECK( scsLength( P , T ) == P.size() + T.size() - lcs( P , T ).size() );
   }
  for( int t = 0 ; t < 100 ; ++t ) {
   const auto P = random_string( g() % 4 , 2 , g ) ,
@@ -827,12 +757,12 @@ ADS_TEST( "dp-44" )
     for( int i = 0 ; i < len ; ++i ) s += char( 'a' + ( w >> i & 1 ) );
     if( is_subsequence( P , s ) && is_subsequence( T , s ) ) best = len;
     }
-  CHECK( dp::scs( P , T ) == best );
+  CHECK( int( scsLength( P , T ) ) == best );
   }
- CHECK( dp::scs( "" , "" ) == 0 );
- CHECK( dp::scs( "abc" , "" ) == 3 );
- CHECK( dp::scs( "abc" , "abc" ) == 3 );
- CHECK( dp::scs( std::string( 500 , 'a' ) , std::string( 500 , 'b' ) ) ==
+ CHECK( scsLength( "" , "" ) == 0 );
+ CHECK( scsLength( "abc" , "" ) == 3 );
+ CHECK( scsLength( "abc" , "abc" ) == 3 );
+ CHECK( scsLength( std::string( 500 , 'a' ) , std::string( 500 , 'b' ) ) ==
         1000 );
  }
 
@@ -870,35 +800,14 @@ int countPalyndromeCubic( const std::string & S )
  return( cpRec( S , 0 , n - 1 , DP ) );
  }
 
-/// palyndrome(): is S[ i .. j ] a palindrome? P memoizes, -1 not solved
-int palyndrome( const std::string & S , int i , int j ,
-                std::vector< std::vector< int > > & P )
-{
- if( i >= j ) return( 1 );
- if( P[ i ][ j ] < 0 )
-  P[ i ][ j ] = ( palyndrome( S , i + 1 , j - 1 , P ) == 1 ) &&
-                ( S[ i ] == S[ j ] ) ? 1 : 0;
- return( P[ i ][ j ] );
- }
-
-/// the same, second version: P[ i ][ j ] tells whether S[ i .. j ] is a
-/// palindrome (by memoization), DP[ 0 ] = 0 and DP[ j ] = min DP[ i - 1 ] + 1
-/// over the palindromes S[ i .. j ]; Theta( n^2 ) time and space. The
+/// the same, second version: DP[ 0 ] = 0 and DP[ j ] = min DP[ i - 1 ] + 1
+/// over the palindromes S[ i .. j ], Theta( n^2 ) time, which
+/// palindromicPartition() of the library computes [see Palindromes.h]. The
 /// intermediate version of the text, with palyndrome() in O( n ), takes
 /// the max in place of the min
-// candidate for the library
 int countPalyndrome( const std::string & S )
 {
- const int n = int( S.size() );
- std::vector< std::vector< int > > P( n , std::vector< int >( n , -1 ) );
- std::vector< int > DP( n + 1 , 0 );
- for( int j = 1 ; j <= n ; ++j ) {
-  DP[ j ] = std::numeric_limits< int >::max();
-  for( int i = 1 ; i <= j ; ++i )
-   if( palyndrome( S , i - 1 , j - 1 , P ) )
-    DP[ j ] = std::min( DP[ j ] , DP[ i - 1 ] + 1 );
-  }
- return( DP[ n ] );
+ return( int( palindromicPartition( S ).size() ) );
  }
 
 }  // end( namespace dp )
@@ -1014,21 +923,9 @@ ADS_TEST( "dp-46" )
 
 namespace dp {
 
-/// the length of a longest subsequence of S that is a balanced string of
-/// round parentheses: a scan matches each ')' with the nearest '(' still
-/// open, which never hurts; Theta( n ) time and O( 1 ) space
-// candidate for the library
-int longestBalanced( const std::string & S )
-{
- int count = 0 , open = 0;
- for( char c : S )
-  if( c == '(' ) ++open;
-  else if( ( c == ')' ) && ( open > 0 ) ) {
-   count += 2;
-   --open;
-   }
- return( count );
- }
+// the length of a longest subsequence of S that is a balanced string of
+// round parentheses: a scan matches each ')' with the nearest '(' still
+// open, longestBalancedSubsequence() of the library [see Parentheses.h]
 
 /// the same, by the interval recursion of the text: DP[ i ][ j ] = 0 if i
 /// >= j, DP[ i + 1 ][ j ] if S_i != '(', DP[ i ][ j - 1 ] if S_j != ')',
@@ -1061,9 +958,9 @@ int longestBalancedDP( const std::string & S )
 ADS_TEST( "dp-47" )
 {
  const std::string E = "che)esercizio)(interess)()ante((())questo()qui";
- CHECK( dp::longestBalanced( E ) == 10 );
+ CHECK( longestBalancedSubsequence( E ) == 10 );
  CHECK( dp::longestBalancedDP( E ) == 10 );
- CHECK( dp::longestBalanced( "()()" ) == 4 );
+ CHECK( longestBalancedSubsequence( "()()" ) == 4 );
  CHECK( dp::longestBalancedDP( "()()" ) == 4 );
  std::function< int( const std::string & , int , int ) > nosplit =
   [ & ]( const std::string & S , int i , int j ) -> int {
@@ -1095,47 +992,26 @@ ADS_TEST( "dp-47" )
     if( m >> i & 1 ) s += p[ i ];
    if( balanced( s ) ) best = std::max( best , int( s.size() ) );
    }
-  CHECK( dp::longestBalanced( S ) == best );
+  CHECK( int( longestBalancedSubsequence( S ) ) == best );
   CHECK( dp::longestBalancedDP( S ) == best );
   }
- CHECK( dp::longestBalanced( "" ) == 0 );
- CHECK( dp::longestBalanced( ")(" ) == 0 );
- CHECK( dp::longestBalanced( std::string( 1000 , '(' ) ) == 0 );
- CHECK( dp::longestBalanced( std::string( 500 , '(' ) +
-                             std::string( 500 , ')' ) ) == 1000 );
+ CHECK( longestBalancedSubsequence( "" ) == 0 );
+ CHECK( longestBalancedSubsequence( ")(" ) == 0 );
+ CHECK( longestBalancedSubsequence( std::string( 1000 , '(' ) ) == 0 );
+ CHECK( longestBalancedSubsequence( std::string( 500 , '(' ) +
+                                    std::string( 500 , ')' ) ) == 1000 );
  }
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ 48, 2017-06-08, Count ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
-
-/// the ways of decoding the digits T, where A ... Z are 1 ... 26: DP[ i ]
-/// counts those of T[ i .. n ], DP[ n + 1 ] = 1, DP[ i ] = 0 if T_i = 0,
-/// DP[ i + 1 ] + DP[ i + 2 ] if T_i = 1, or T_i = 2 and T_{i+1} <= 6, and
-/// DP[ i + 1 ] otherwise; Theta( n ) time. The code of the text lacks the
-/// else after the case T_i = 0, which the next test overwrites; 1 for no
-/// digits (the empty decoding)
-/// \pre each digit in [ 0 , 9 ], the count less than 2^64
-// candidate for the library
-std::uint64_t countDecodings( const std::vector< int > & T )
-{
- const std::size_t n = T.size();
- ADS_PRE( std::all_of( T.begin() , T.end() ,
-                       []( int d ) { return( ( d >= 0 ) && ( d <= 9 ) ); } ) );
- std::vector< std::uint64_t > DP( n + 2 , 0 );
- DP[ n ] = 1;
- for( std::size_t i = n ; i-- > 0 ; )
-  if( T[ i ] == 0 ) DP[ i ] = 0;
-  else if( ( i + 1 < n ) && ( ( T[ i ] == 1 ) ||
-                              ( ( T[ i ] == 2 ) && ( T[ i + 1 ] <= 6 ) ) ) )
-   DP[ i ] = DP[ i + 1 ] + DP[ i + 2 ];
-  else DP[ i ] = DP[ i + 1 ];
- return( DP[ 0 ] );
- }
-
-}  // end( namespace dp )
+// the ways of decoding the digits T, where A ... Z are 1 ... 26: DP[ i ]
+// counts those of T[ i .. n ], DP[ n + 1 ] = 1, DP[ i ] = 0 if T_i = 0,
+// DP[ i + 1 ] + DP[ i + 2 ] if T_i = 1, or T_i = 2 and T_{i+1} <= 6, and
+// DP[ i + 1 ] otherwise: countDecodings() of the library [see
+// Segmentations.h]. The code of the text lacks the else after the case
+// T_i = 0, which the next test overwrites
 
 /// the digits of a string
 std::vector< int > digits( const std::string & s )
@@ -1149,9 +1025,9 @@ std::vector< int > digits( const std::string & s )
 // recursion on the pieces 1 ... 9 and 10 ... 26
 ADS_TEST( "dp-48" )
 {
- CHECK( dp::countDecodings( digits( "13135" ) ) == 4 );
- CHECK( dp::countDecodings( digits( "011" ) ) == 0 );
- CHECK( dp::countDecodings( digits( "301" ) ) == 0 );
+ CHECK( countDecodings( digits( "13135" ) ) == 4 );
+ CHECK( countDecodings( digits( "011" ) ) == 0 );
+ CHECK( countDecodings( digits( "301" ) ) == 0 );
  std::function< std::uint64_t( const std::vector< int > & ,
                                std::size_t ) > brute =
   [ & ]( const std::vector< int > & T , std::size_t i ) -> std::uint64_t {
@@ -1167,21 +1043,21 @@ ADS_TEST( "dp-48" )
  for( int t = 0 ; t < 500 ; ++t ) {
   std::vector< int > T( g() % 16 );
   for( auto & d : T ) d = g() % 4 ? int( g() % 3 ) : int( g() % 10 );
-  CHECK( dp::countDecodings( T ) == brute( T , 0 ) );
+  CHECK( countDecodings( T ) == brute( T , 0 ) );
   }
- CHECK( dp::countDecodings( {} ) == 1 );
- CHECK( dp::countDecodings( { 0 } ) == 0 );
- CHECK( dp::countDecodings( { 7 } ) == 1 );
- CHECK( dp::countDecodings( digits( "2020" ) ) == 1 );
- CHECK( dp::countDecodings( digits( "27" ) ) == 1 );
+ CHECK( countDecodings( {} ) == 1 );
+ CHECK( countDecodings( { 0 } ) == 0 );
+ CHECK( countDecodings( { 7 } ) == 1 );
+ CHECK( countDecodings( digits( "2020" ) ) == 1 );
+ CHECK( countDecodings( digits( "27" ) ) == 1 );
  std::uint64_t a = 1 , b = 1;                     // F_91 for 90 ones
  for( int i = 3 ; i <= 91 ; ++i ) {
   const std::uint64_t c = a + b;
   a = b;
   b = c;
   }
- CHECK( dp::countDecodings( std::vector< int >( 90 , 1 ) ) == b );
- CHECK_THROWS( dp::countDecodings( { 1 , 10 } ) , contract_violation );
+ CHECK( countDecodings( std::vector< int >( 90 , 1 ) ) == b );
+ CHECK_THROWS( countDecodings( { 1 , 10 } ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1197,9 +1073,8 @@ namespace dp {
 /// last <= L, so that when the water reaches L exactly and a sprinkler is
 /// left it makes one more step, finds nothing and returns -1 (L = 10,
 /// [ 0 , 10 ] and [ 20 , 30 ]); it also starts from the place 0 of
-/// arrays from 1
+/// arrays from 1; minimumIntervalCover() of the library
 /// \pre L > 0, R >= 0, same sizes
-// candidate for the library
 int sprinkles( const Ints & D , const Ints & R , long long L )
 {
  const std::size_t n = D.size();
@@ -1209,19 +1084,8 @@ int sprinkles( const Ints & D , const Ints & R , long long L )
  std::vector< std::pair< long long , long long > > I( n );
  for( std::size_t i = 0 ; i < n ; ++i )
   I[ i ] = { D[ i ] - R[ i ] , D[ i ] + R[ i ] };
- std::sort( I.begin() , I.end() );
- long long last = 0;
- int count = 0;
- std::size_t i = 0;
- while( last < L ) {
-  long long reach = last;
-  for( ; ( i < n ) && ( I[ i ].first <= last ) ; ++i )
-   reach = std::max( reach , I[ i ].second );
-  if( reach == last ) return( -1 );
-  last = reach;
-  ++count;
-  }
- return( count );
+ const auto cover = minimumIntervalCover( I , 0LL , L );
+ return( cover ? int( cover->size() ) : -1 );
  }
 
 }  // end( namespace dp )
@@ -2206,21 +2070,14 @@ namespace dp {
 
 /// the largest sum of a strictly increasing subsequence of A: DP[ i ] =
 /// A_i + max{ DP[ j ] : j < i , A_j < A_i } (A_i if none), the answer the
-/// largest DP[ i ]; Theta( n^2 ) time and O( n ) space
+/// largest DP[ i ]; Theta( n^2 ) time and O( n ) space, O( n log n ) by
+/// maxSumIncreasingSubsequence() of the library
 /// \pre A > 0
-// candidate for the library
 long long maxIncreasing( const Ints & A )
 {
- const std::size_t n = A.size();
  ADS_PRE( std::all_of( A.begin() , A.end() ,
                        []( long long a ) { return( a > 0 ); } ) );
- Ints DP( n );
- for( std::size_t i = 0 ; i < n ; ++i ) {
-  DP[ i ] = A[ i ];
-  for( std::size_t j = 0 ; j < i ; ++j )
-   if( A[ j ] < A[ i ] ) DP[ i ] = std::max( DP[ i ] , DP[ j ] + A[ i ] );
-  }
- return( n ? *std::max_element( DP.begin() , DP.end() ) : 0 );
+ return( maxSumIncreasingSubsequence( A ) );
  }
 
 }  // end( namespace dp )
@@ -2614,34 +2471,17 @@ ADS_TEST( "dp-68" )
 
 namespace dp {
 
-/// countMenuRec(): DP[ i ][ r ], UNSOLVED if not solved yet
-std::uint64_t countMenuRec( const Ints & A , int i , long long r ,
-                            UTable & DP )
-{
- if( r == 0 ) return( 1 );
- if( i == 0 ) return( 0 );
- auto & d = DP[ i ][ r ];
- if( d == UNSOLVED ) {
-  d = countMenuRec( A , i - 1 , r , DP );
-  if( A[ i - 1 ] <= r ) d += countMenuRec( A , i - 1 , r - A[ i - 1 ] , DP );
-  }
- return( d );
- }
-
 /// the subsets of the dishes A (equal costs being distinct dishes) that
 /// cost k in all: DP[ i ][ r ] counts those of the first i dishes for r, 1
 /// if r = 0, 0 if r > 0 = i, else DP[ i - 1 ][ r ] plus DP[ i - 1 ][ r -
-/// A_i ] if A_i <= r; by memoization, O( n k ) time, pseudopolynomial
+/// A_i ] if A_i <= r; O( n k ) time, pseudopolynomial, subsetSumCount() of
+/// the library
 /// \pre A > 0, k >= 0, the count less than 2^64
-// candidate for the library
 std::uint64_t countMenu( const Ints & A , long long k )
 {
- ADS_PRE( k >= 0 );
  ADS_PRE( std::all_of( A.begin() , A.end() ,
                        []( long long a ) { return( a > 0 ); } ) );
- const int n = int( A.size() );
- UTable DP( n + 1 , std::vector< std::uint64_t >( k + 1 , UNSOLVED ) );
- return( countMenuRec( A , n , k , DP ) );
+ return( subsetSumCount( A , k ) );
  }
 
 }  // end( namespace dp )
@@ -2677,27 +2517,16 @@ namespace dp {
 /// the longest contiguous subarray of A without repeated values, A_i in
 /// [ 1 , n ]: a window [ start , end ] with a vector of booleans for its
 /// values; a repeated value moves start past its first occurrence, so that
-/// each value enters and leaves once, Theta( n ) time
+/// each value enters and leaves once, Theta( n ) time;
+/// longestDistinctSegment() of the library, for any values by a hash table
 /// \pre 1 <= A_i <= n
-// candidate for the library
 int longestSingle( const std::vector< int > & A )
 {
  const int n = int( A.size() );
  ADS_PRE( std::all_of( A.begin() , A.end() ,
                        [ n ]( int a ) {
                         return( ( a >= 1 ) && ( a <= n ) ); } ) );
- std::vector< bool > S( n + 1 , false );
- int maxSoFar = 0 , start = 0;
- for( int end = 0 ; end < n ; ++end )
-  if( S[ A[ end ] ] ) {
-   while( A[ start ] != A[ end ] ) S[ A[ start++ ] ] = false;
-   ++start;
-   }
-  else {
-   S[ A[ end ] ] = true;
-   maxSoFar = std::max( maxSoFar , end - start + 1 );
-   }
- return( maxSoFar );
+ return( int( longestDistinctSegment( A ).second ) );
  }
 
 }  // end( namespace dp )
@@ -2776,19 +2605,13 @@ namespace dp {
 /// 1 , 2 , ... , n: each shape has one such labelling, so they are the
 /// shapes, the Catalan number: DP[ 0 ] = DP[ 1 ] = 1, DP[ i ] = sum_{k=0}^{
 /// i-1} DP[ k ] DP[ i - 1 - k ]; Theta( n^2 ) operations, on numbers of
-/// Theta( n ) bits (T a BigInteger for large n). The code of the text
-/// writes DP[ n - k - 1 ] for DP[ i - k - 1 ]
+/// Theta( n ) bits (T a BigInteger for large n), catalan() of the library.
+/// The code of the text writes DP[ n - k - 1 ] for DP[ i - k - 1 ]
 /// \pre n >= 0, C( n ) representable in T
-// candidate for the library
 template< class T = std::uint64_t >
 T sameVisit( int n )
 {
- ADS_PRE( n >= 0 );
- std::vector< T > DP( std::max( n + 1 , 2 ) , T( 0 ) );
- DP[ 0 ] = DP[ 1 ] = T( 1 );
- for( int i = 2 ; i <= n ; ++i )
-  for( int k = 0 ; k < i ; ++k ) DP[ i ] += DP[ k ] * DP[ i - 1 - k ];
- return( DP[ n ] );
+ return( ADS::catalan< T >( n ) );
  }
 
 }  // end( namespace dp )

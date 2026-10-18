@@ -108,7 +108,7 @@ template< class T >
 bool Tree< T >::linked( void ) const
 {
  for( const Tree * u = f_child ; u ; u = u->f_sibling )
-  if( ( u->f_parent != this ) || ! u->linked() )
+  if( u->f_parent != this )
    return( false );
  return( true );
  }

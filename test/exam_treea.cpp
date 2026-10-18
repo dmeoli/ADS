@@ -37,6 +37,7 @@
 #include "ADS/mfset/MFSet.h"
 #include "ADS/sort/Heapsort.h"
 #include "ADS/tree/BinaryTree.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/ExpressionTree.h"
 #include "ADS/tree/Tree.h"
 
@@ -355,48 +356,18 @@ ADS_TEST( "tree-7" )
 
 /*----------------- tree-8, compito 2013-05-03, Ancestor -------------------*/
 
-namespace tree {
-
-/// ancestor(): the lowest common ancestor of u and v, each node an
-/// ancestor of itself; the paths from u and from v up to the root are
-/// pushed on two stacks, which are popped together while their tops are the
-/// same node, O( h ) time and space
-/// \pre u and v are nodes of the same tree
-/// \post an ancestor of both
-// candidate for the library
-template< class T >
-BinaryTree< T > * ancestor( BinaryTree< T > * u , BinaryTree< T > * v )
-{
- ADS_PRE( u && v );
- std::vector< BinaryTree< T > * > Su , Sv;
- for( auto * x = u ; x ; x = x->parent() )
-  Su.push_back( x );
- for( auto * x = v ; x ; x = x->parent() )
-  Sv.push_back( x );
- ADS_PRE( Su.back() == Sv.back() );         // the same root
- BinaryTree< T > * a = nullptr;
- while( ! Su.empty() && ! Sv.empty() && ( Su.back() == Sv.back() ) ) {
-  a = Su.back();
-  Su.pop_back();
-  Sv.pop_back();
-  }
- ADS_POST( isAncestor( a , u ) && isAncestor( a , v ) );
- return( a );
- }
-
-}  // end( namespace tree )
-
+// lowestCommonAncestor() of the library, by the links to the parents,
 // against the first ancestor of v among those of u, on every pair of nodes
 ADS_TEST( "tree-8" )
 {
  PT e = cat( "1( 2( 4, 5( 6, - ) ), 3 )" );
  BT * n4 = findValue( e.get() , 4 ) , * n6 = findValue( e.get() , 6 );
- CHECK( tree::ancestor( n4 , n6 ) == e->left() );
- CHECK( tree::ancestor( n6 , e->right() ) == e.get() );
- CHECK( tree::ancestor( e->left() , n6 ) == e->left() );
- CHECK( tree::ancestor( n6 , n6 ) == n6 );
+ CHECK( lowestCommonAncestor( n4 , n6 ) == e->left() );
+ CHECK( lowestCommonAncestor( n6 , e->right() ) == e.get() );
+ CHECK( lowestCommonAncestor( e->left() , n6 ) == e->left() );
+ CHECK( lowestCommonAncestor( n6 , n6 ) == n6 );
  PT o = cat( "1" );
- CHECK_THROWS( tree::ancestor( n4 , o.get() ) , contract_violation );
+ CHECK_THROWS( lowestCommonAncestor( n4 , o.get() ) , contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 300 ; ++r ) {
   PT t = randomInts( g , 1 + r % 12 , 0 , 0 );
@@ -409,7 +380,7 @@ ADS_TEST( "tree-8" )
     BT * a = v;
     while( ! A.count( a ) )
      a = a->parent();
-    CHECK( tree::ancestor( u , v ) == a );
+    CHECK( lowestCommonAncestor( u , v ) == a );
     }
   }
  }
