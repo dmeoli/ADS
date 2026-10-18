@@ -1,0 +1,47 @@
+#############################################################################
+#                                 Doxyfile                                  #
+#                                                                           #
+# The documentation of ADS: the headers of include/ and the definitions of  #
+# src/, with the README as the main page and the formulae by MathJax. The   #
+# workflow .github/workflows/docs.yml builds it and publishes it on the     #
+# pages of the repository; locally, doxygen writes it to build-docs/html.   #
+#############################################################################
+
+PROJECT_NAME           = ADS
+PROJECT_BRIEF          = "Algorithms and Data Structures"
+OUTPUT_DIRECTORY       = build-docs
+INPUT                  = README.md include src
+FILE_PATTERNS          = *.h *.tpp *.md
+EXTENSION_MAPPING      = tpp=C++
+RECURSIVE              = YES
+USE_MDFILE_AS_MAINPAGE = README.md
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+HIDE_UNDOC_MEMBERS     = NO
+SOURCE_BROWSER         = YES
+STRIP_FROM_PATH        = include src
+STRIP_FROM_INC_PATH    = include src
+FULL_PATH_NAMES        = YES
+JAVADOC_AUTOBRIEF      = YES
+BUILTIN_STL_SUPPORT    = YES
+EXCLUDE_SYMBOLS        = detail::* ADS::detail::*
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+USE_MATHJAX            = YES
+MATHJAX_VERSION        = MathJax_3
+HAVE_DOT               = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+DOT_IMAGE_FORMAT       = svg
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_LOGFILE           = build-docs/warnings.txt
+
+#############################################################################
+#                              End of Doxyfile                              #
+#############################################################################
