@@ -241,7 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SequenceRange is a view whose end() is an iterator, so that the range is
   common
 - FlowNetwork, the flows, the b-matching and countInversions() count in
-  long long, and the ends of a WeightedInterval are long long, which has 64 bits also where long has 32 (Windows)
+  long long, which has 64 bits also where long has 32 (Windows), and so
+  do the ends of a WeightedInterval
 - the visits of the trees and of the graphs, their destructors and the
   blocking flow of Dinic use an explicit stack, so that chains of 10^5
   nodes do not overflow the stack
