@@ -56,7 +56,7 @@ namespace ADS {
 /// an interval [ a , b ) of weight w
 template< class W >
 struct WeightedInterval {
- long a , b;
+ long long a , b;
  W w;
  };
 
