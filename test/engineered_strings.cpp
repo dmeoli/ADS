@@ -237,6 +237,9 @@ ADS_TEST( "suffix-sorting" )
  check( "banana" );
  check( "mississippi" );
  check( std::string( 1000 , 'x' ) );
+ check( "zyyxxxw" );                      // never rises: all of type L
+ check( "abbcd" );                        // never falls: no LMS place
+ check( "aabbzzyx" );                     // rises, then falls
  check( std::string( "\0\xff\0\xff\xff\0" , 6 ) );
  std::mt19937_64 g( 11 );
  for( unsigned sigma : { 1u , 2u , 4u , 26u , 256u } )
