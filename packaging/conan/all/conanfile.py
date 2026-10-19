@@ -35,8 +35,9 @@ class AdsConan(ConanFile):
         pass
 
     def package(self):
-        copy(self, "LICENSE", self.source_folder,
-             os.path.join(self.package_folder, "licenses"))
+        for f in ("LICENSE", "COPYING"):
+            copy(self, f, self.source_folder,
+                 os.path.join(self.package_folder, "licenses"))
         copy(self, "*", os.path.join(self.source_folder, "include"),
              os.path.join(self.package_folder, "include"))
 

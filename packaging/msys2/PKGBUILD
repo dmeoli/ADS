@@ -29,6 +29,6 @@ build() {
 
 package() {
   DESTDIR="${pkgdir}" cmake --install "build-${MSYSTEM}"
-  install -Dm644 "ADS-${pkgver}/LICENSE" \
-    "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+  install -Dm644 "ADS-${pkgver}/LICENSE" "ADS-${pkgver}/COPYING" \
+    -t "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}"
 }
