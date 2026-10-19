@@ -60,6 +60,12 @@ struct HuffWriter {
   bits += e >> 16;
   }
 
+ /// appends the len bits of v
+ void put( std::uint64_t v , unsigned len ) {
+  acc |= v << bits;
+  bits += len;
+  }
+
  /// writes the whole bytes, 8 at a time, with 8 bytes of room after p
  void flush( void ) {
   storeLE< std::uint64_t >( p , acc );
@@ -162,40 +168,43 @@ inline std::vector< std::uint8_t > huffmanCompress(
  std::array< std::uint32_t , 256 > E;       // the code and its length
  for( int c = 0 ; c < 256 ; ++c )
   E[ c ] = code[ c ] | ( std::uint32_t( len[ c ] ) << 16 );
- // the four streams at once, each in a buffer of its own, 4 codes of 11
- // bits at most between two writes of its bytes
+ // the four streams one after the other, each straight after the one
+ // before in the output, 4 codes of 11 bits at most joined and written at
+ // once
  const std::size_t n = in.size() , q = ( n + 3 ) / 4;
- std::array< std::size_t , 5 > at;
- for( std::size_t k = 0 ; k < 5 ; ++k ) at[ k ] = std::min( n , k * q );
- const std::size_t room = ( q * kHuffMax ) / 8 + 24;   // a stream, at most
- const auto buf = std::make_unique_for_overwrite< std::uint8_t[] >( 4 * room );
- std::array< HuffWriter , 4 > W;
- for( std::size_t k = 0 ; k < 4 ; ++k ) W[ k ].p = buf.get() + k * room;
- const std::size_t last = at[ 4 ] - at[ 3 ];   // the shortest stream
- std::size_t i = 0;
- for( ; i + 4 <= last ; i += 4 )
-  for( std::size_t k = 0 ; k < 4 ; ++k ) {
-   const std::uint8_t * x = in.data() + at[ k ] + i;
-   W[ k ].put( E[ x[ 0 ] ] );
-   W[ k ].put( E[ x[ 1 ] ] );
-   W[ k ].put( E[ x[ 2 ] ] );
-   W[ k ].put( E[ x[ 3 ] ] );
-   W[ k ].flush();
-   }
+ out.resize( kHuffHead + 4 * ( ( q * kHuffMax ) / 8 + 16 ) );
+ HuffWriter W;
+ W.p = out.data() + kHuffHead;
  for( std::size_t k = 0 ; k < 4 ; ++k ) {
-  for( std::size_t j = at[ k ] + i ; j < at[ k + 1 ] ; ++j ) {
-   W[ k ].put( E[ in[ j ] ] );
-   W[ k ].flush();
+  const std::uint8_t * start = W.p;
+  const std::size_t a = std::min( n , k * q ) , b = std::min( n , a + q );
+  std::size_t j = a;
+  for( ; j + 4 <= b ; j += 4 ) {
+   const std::uint8_t * x = in.data() + j;
+   const std::uint32_t e0 = E[ x[ 0 ] ] , e1 = E[ x[ 1 ] ] ,
+                       e2 = E[ x[ 2 ] ] , e3 = E[ x[ 3 ] ];
+   const unsigned l0 = e0 >> 16 , l01 = l0 + ( e1 >> 16 ) ,
+                  l012 = l01 + ( e2 >> 16 );
+   const std::uint64_t v = std::uint64_t( e0 & 0xFFFF ) |
+                           ( std::uint64_t( e1 & 0xFFFF ) << l0 ) |
+                           ( std::uint64_t( e2 & 0xFFFF ) << l01 ) |
+                           ( std::uint64_t( e3 & 0xFFFF ) << l012 );
+   W.put( v , l012 + ( e3 >> 16 ) );
+   W.flush();
    }
-  W[ k ].bits += 7;                         // the last byte, if partial
-  W[ k ].flush();
-  const std::uint8_t * b0 = buf.get() + k * room;
-  const std::size_t size = std::size_t( W[ k ].p - b0 );
+  for( ; j < b ; ++j ) {
+   W.put( E[ in[ j ] ] );
+   W.flush();
+   }
+  W.bits += 7;                              // the last byte, if partial
+  W.flush();
+  W.acc = 0;
+  W.bits = 0;
   if( k < 3 )
    storeLE< std::uint32_t >( out.data() + 137 + 4 * k ,
-                             std::uint32_t( size ) );
-  out.insert( out.end() , b0 , b0 + size );
+                             std::uint32_t( W.p - start ) );
   }
+ out.resize( std::size_t( W.p - out.data() ) );
  out.resize( out.size() + 8 , 0 );          // room for the loads
  ADS_AUDIT( std::ranges::equal( huffmanDecompress( out ) , in ) );
  return( out );
@@ -228,14 +237,25 @@ inline std::vector< std::uint8_t > huffmanDecompress(
        ( len[ s ] > 0 ) && ( h < ( std::uint32_t( 1 ) << ( L - len[ s ] ) ) ) ;
        ++h )
    T[ code[ s ] | ( h << len[ s ] ) ] = std::uint16_t( ( s << 8 ) | len[ s ] );
- std::array< std::uint32_t , 1 << kHuffMax > T2;
+ // up to 3 symbols a lookup: the symbols in the low 24 bits of an entry,
+ // their number in the next 8 and their bits in the next 8
+ std::array< std::uint64_t , 1 << kHuffMax > T2;
  for( std::uint32_t v = 0 ; v < ( 1u << L ) ; ++v ) {
-  const std::uint32_t l1 = T[ v ] & 0xFF , e2 = T[ v >> l1 ] ,
-                      l2 = e2 & 0xFF;
-  T2[ v ] = ( l2 > 0 ) && ( l1 + l2 <= std::uint32_t( L ) )
-            ? ( T[ v ] >> 8 ) | ( e2 & 0xFF00 ) | ( 2u << 16 ) |
-              ( ( l1 + l2 ) << 24 )
-            : ( T[ v ] >> 8 ) | ( 1u << 16 ) | ( l1 << 24 );
+  std::uint64_t syms = 0;
+  std::uint32_t bits = 0 , cnt = 0;
+  for( ; cnt < 3 ; ++cnt ) {
+   const std::uint16_t e = T[ ( v >> bits ) & ( ( 1u << L ) - 1 ) ];
+   const std::uint32_t l = e & 0xFF;
+   if( ( l == 0 ) || ( bits + l > std::uint32_t( L ) ) ) break;
+   syms |= std::uint64_t( e >> 8 ) << ( 8 * cnt );
+   bits += l;
+   }
+  if( cnt == 0 ) {                          // a code of no symbol: none
+   cnt = 1;
+   bits = T[ v ] & 0xFF;
+   }
+  T2[ v ] = syms | ( std::uint64_t( cnt ) << 24 ) |
+            ( std::uint64_t( bits ) << 32 );
   }
  // the four streams
  std::array< const std::uint8_t * , 4 > p;
@@ -245,7 +265,7 @@ inline std::vector< std::uint8_t > huffmanDecompress(
   ADS_PRE( std::size_t( p[ k - 1 ] - in.data() ) + sz + 8 <= in.size() );
   p[ k ] = p[ k - 1 ] + sz;
   }
- std::vector< std::uint8_t > out( n + 8 );  // room for the pairs
+ std::vector< std::uint8_t > out( n + 8 );  // room for the triples
  const std::size_t q = ( n + 3 ) / 4;
  std::array< std::uint8_t * , 4 > o , end;
  for( std::size_t k = 0 ; k < 4 ; ++k ) {
@@ -258,19 +278,23 @@ inline std::vector< std::uint8_t > huffmanDecompress(
  for( std::size_t k = 0 ; k < 4 ; ++k )
   w[ k ] = loadLE< std::uint64_t >( p[ k ] );
  // all four at once, 4 lookups of each between two loads of its word, as
- // long as the 8 symbols that they may give stay in the stream (the second
- // byte of a lookup that gives one is overwritten by the next)
- auto room = [ & ]( void ) {
-  return( ( end[ 0 ] - o[ 0 ] >= 8 ) && ( end[ 1 ] - o[ 1 ] >= 8 ) &&
-          ( end[ 2 ] - o[ 2 ] >= 8 ) && ( end[ 3 ] - o[ 3 ] >= 8 ) );
+ // long as the 12 symbols that they may give, and the 4 bytes that each
+ // lookup stores, stay in the stream (the bytes past its symbols are
+ // overwritten by the next lookup)
+ // the rounds that surely fit, counted again when they are over
+ auto rounds = [ & ]( void ) {
+  std::ptrdiff_t m = end[ 0 ] - o[ 0 ];
+  for( std::size_t k = 1 ; k < 4 ; ++k ) m = std::min( m , end[ k ] - o[ k ] );
+  return( m >= 3 ? std::size_t( ( m - 3 ) / 12 ) : std::size_t( 0 ) );
   };
- while( room() ) {
+ for( std::size_t R = rounds() ; R > 0 ; R = rounds() )
+  for( ; R > 0 ; --R ) {
   for( std::size_t j = 0 ; j < 4 ; ++j )
    for( std::size_t k = 0 ; k < 4 ; ++k ) {
-    const std::uint32_t e = T2[ ( w[ k ] >> used[ k ] ) & mask ];
-    storeLE< std::uint16_t >( o[ k ] , std::uint16_t( e ) );
-    o[ k ] += ( e >> 16 ) & 0xFF;
-    used[ k ] += e >> 24;
+    const std::uint64_t e = T2[ ( w[ k ] >> used[ k ] ) & mask ];
+    storeLE< std::uint32_t >( o[ k ] , std::uint32_t( e ) );
+    o[ k ] += ( e >> 24 ) & 0xFF;
+    used[ k ] += unsigned( e >> 32 );
     }
   for( std::size_t k = 0 ; k < 4 ; ++k ) {
    p[ k ] += used[ k ] >> 3;
