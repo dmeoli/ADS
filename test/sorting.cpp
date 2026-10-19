@@ -66,6 +66,16 @@ using Ints = std::vector< int >;
 /*------------------------------- HELPERS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the stable reference: std::stable_sort with a comparator of its own,
+/// since with std::less a library may sort the floating point by radix,
+/// -0 before +0, which is not stable on them
+template< class T >
+void stdStable( std::vector< T > & V )
+{
+ std::stable_sort( V.begin() , V.end() ,
+                   []( const T & a , const T & b ) { return( a < b ); } );
+ }
+
 /// the inputs of the battery: every permutation of up to 7 items (the
 /// empty vector, one item, two), and vectors of the given sizes in the
 /// classical patterns, all equal and with the extremes of int
@@ -704,7 +714,7 @@ ADS_TEST( "dispatch" )
  Z[ 0 ] = 1.0;
  auto Zs = Z;
  stableSort( Z );
- std::stable_sort( Zs.begin() , Zs.end() );
+ stdStable( Zs );
  CHECK( Z.back() == 1.0 );
  for( std::size_t i = 0 ; i < Z.size() ; ++i )
   CHECK( std::signbit( Z[ i ] ) == std::signbit( Zs[ i ] ) );
@@ -805,7 +815,7 @@ ADS_TEST( "merge-paths" )
  std::mt19937 g( 21 );
  using D = std::vector< double >;
  auto stableAs = []( const D & A , D B ) {      // the signs too
-  std::stable_sort( B.begin() , B.end() );
+  stdStable( B );
   for( std::size_t i = 0 ; i < A.size() ; ++i )
    if( ( A[ i ] != B[ i ] ) ||
        ( std::signbit( A[ i ] ) != std::signbit( B[ i ] ) ) )
@@ -819,7 +829,7 @@ ADS_TEST( "merge-paths" )
   for( std::size_t r = 0 ; L.size() < n ; ++r ) {
    D run( std::min< std::size_t >( n - L.size() , 1 + n / 5 ) );
    for( auto & x : run ) x = v[ g() % 4 ];
-   std::stable_sort( run.begin() , run.end() );
+   stdStable( run );
    if( r % 2 )                                   // strictly decreasing
     std::reverse( run.begin() , run.end() );     // only if no equals
    L.insert( L.end() , run.begin() , run.end() );
@@ -979,7 +989,7 @@ ADS_TEST( "dispatch-edges" )
   auto V2 = V , V3 = V , Vs = V;
   auto A2 = A , A3 = A , As = A;
   auto S2 = S , S3 = S , Ss = S;
-  sort( V2 ); stableSort( V3 ); std::stable_sort( Vs.begin() , Vs.end() );
+  sort( V2 ); stableSort( V3 ); stdStable( Vs );
   sort( A2 ); stableSort( A3 ); std::sort( As.begin() , As.end() );
   sort( S2 ); stableSort( S3 ); std::sort( Ss.begin() , Ss.end() );
   CHECK( V2 == Vs && V3 == Vs && A2 == As && A3 == As && S2 == Ss &&
@@ -993,7 +1003,7 @@ ADS_TEST( "dispatch-edges" )
  for( std::size_t i = 500 ; i < 520 ; ++i ) Z[ i ] = ( i % 2 ) ? -0.0 : 0.0;
  auto Zs = Z;
  stableSort( Z );
- std::stable_sort( Zs.begin() , Zs.end() );
+ stdStable( Zs );
  CHECK( Z == Zs );
  for( std::size_t i = 0 ; i < Z.size() ; ++i )
   CHECK( std::signbit( Z[ i ] ) == std::signbit( Zs[ i ] ) );
@@ -1033,7 +1043,7 @@ ADS_TEST( "dispatch-edges" )
  for( std::size_t i = 302 ; i < Y.size() ; ++i ) Y[ i ] = -double( i );
  auto Ys = Y;
  stableSort( Y );
- std::stable_sort( Ys.begin() , Ys.end() );
+ stdStable( Ys );
  CHECK( Y == Ys );
  for( std::size_t i = 0 ; i < Y.size() ; ++i )
   CHECK( std::signbit( Y[ i ] ) == std::signbit( Ys[ i ] ) );
@@ -1048,7 +1058,7 @@ ADS_TEST( "dispatch-edges" )
   auto V2 = V , V3 = V;
   sort( V );
   stableSort( V2 );
-  std::stable_sort( V3.begin() , V3.end() );
+  stdStable( V3 );
   CHECK( V == V3 && V2 == V3 );
   for( std::size_t i = 0 ; i < V2.size() ; ++i )
    CHECK( std::signbit( V2[ i ] ) == std::signbit( V3[ i ] ) );
