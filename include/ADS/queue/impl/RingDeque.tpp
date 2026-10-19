@@ -96,7 +96,7 @@ T * RingDeque< T >::relocate( T * A , std::size_t m , std::size_t h ,
  }
 
 template< class T >
-ADS_RING_INLINE void RingDeque< T >::grow( void )
+inline void RingDeque< T >::grow( void )
 {
  const std::size_t m = capacity() , n = size();
  f_A = relocate( f_A , m , m ? f_head & f_mask : 0 , n );
@@ -107,7 +107,7 @@ ADS_RING_INLINE void RingDeque< T >::grow( void )
  }
 
 template< class T >
-ADS_RING_INLINE T & RingDeque< T >::growBack( T && v )
+inline T & RingDeque< T >::growBack( T && v )
 {
  grow();
  T * p = ::new( static_cast< void * >( f_A + f_tail ) ) T( std::move( v ) );
@@ -116,7 +116,7 @@ ADS_RING_INLINE T & RingDeque< T >::growBack( T && v )
  }
 
 template< class T >
-ADS_RING_INLINE T & RingDeque< T >::growFront( T && v )
+inline T & RingDeque< T >::growFront( T && v )
 {
  grow();
  f_tail += f_mask + 1;                      // the front at the last place,
