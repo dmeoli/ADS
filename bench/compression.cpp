@@ -26,6 +26,9 @@
  *   index), in the column of the time, so that the ratios of
  *   bench/summary.py read the same way (above 1 when ADS is smaller).
  *
+ * The rANS of Giesen (ryg_rans) is driven as in its example, with two
+ * states and bytes of renormalization.
+ *
  * The text is the file named by the variable ADS_BENCH_TEXT, repeated up to
  * n bytes (the book1 of the Calgary corpus in the results), and else words
  * drawn from a Zipf law. Each cell is the median of r runs, in nanoseconds
@@ -90,6 +93,11 @@
 #if __has_include( <libsais.h> )
  #include <libsais.h>
  #define ADS_HAS_SAIS 1
+#endif
+
+#if __has_include( <rans_byte.h> )
+ #include <rans_byte.h>
+ #define ADS_HAS_RYG 1
 #endif
 
 #if __has_include( <lz4.h> )
@@ -278,6 +286,73 @@ void entropyCoders( std::size_t n , int r , unsigned seed )
            return( ADS::arithmeticDecode< std::uint8_t >( c , n ,
                                                           freq ) ); } , r );
    }
+#if defined( ADS_HAS_RYG ) && defined( ADS_HAS_CODERS )
+  // the rANS of Giesen with bytes of renormalization and two states, on
+  // the frequencies scaled as those of ADS, as in its example
+  coder( what , in , "ryg_rans" , []( const Bytes & s ) {
+          std::array< std::uint64_t , 256 > h{};
+          for( const auto c : s ) ++h[ c ];
+          const auto f = ADS::scaleFrequencies( h , 12 );
+          RansEncSymbol E[ 256 ];
+          std::uint32_t cum = 0;
+          for( int c = 0 ; c < 256 ; ++c ) {
+           if( f[ c ] ) RansEncSymbolInit( &E[ c ] , cum , f[ c ] , 12 );
+           cum += f[ c ];
+           }
+          Bytes buf( s.size() + 64 );
+          std::uint8_t * p = buf.data() + buf.size();
+          RansState r0 , r1;
+          RansEncInit( &r0 );
+          RansEncInit( &r1 );
+          const std::size_t n = s.size();
+          if( n & 1 ) RansEncPutSymbol( &r0 , &p , &E[ s[ n - 1 ] ] );
+          for( std::size_t i = n & ~std::size_t( 1 ) ; i > 0 ; i -= 2 ) {
+           RansEncPutSymbol( &r1 , &p , &E[ s[ i - 1 ] ] );
+           RansEncPutSymbol( &r0 , &p , &E[ s[ i - 2 ] ] );
+           }
+          RansEncFlush( &r1 , &p );
+          RansEncFlush( &r0 , &p );
+          Bytes out( 512 );                 // the frequencies, then the code
+          for( int c = 0 ; c < 256 ; ++c ) {
+           out[ 2 * c ] = std::uint8_t( f[ c ] );
+           out[ 2 * c + 1 ] = std::uint8_t( f[ c ] >> 8 );
+           }
+          out.insert( out.end() , p , buf.data() + buf.size() );
+          return( out ); } ,
+         []( const Bytes & c , std::size_t n ) {
+          RansDecSymbol D[ 256 ];
+          std::uint8_t cum2sym[ 1 << 12 ];
+          std::uint32_t cum = 0;
+          for( int s = 0 ; s < 256 ; ++s ) {
+           const std::uint32_t f = c[ 2 * s ] | ( c[ 2 * s + 1 ] << 8 );
+           RansDecSymbolInit( &D[ s ] , cum , f );
+           for( std::uint32_t j = 0 ; j < f ; ++j )
+            cum2sym[ cum + j ] = std::uint8_t( s );
+           cum += f;
+           }
+          std::uint8_t * p = const_cast< std::uint8_t * >( c.data() ) + 512;
+          RansState r0 , r1;
+          RansDecInit( &r0 , &p );
+          RansDecInit( &r1 , &p );
+          Bytes out( n );
+          std::size_t i = 0;
+          for( ; i + 2 <= n ; i += 2 ) {
+           const std::uint8_t s0 = cum2sym[ RansDecGet( &r0 , 12 ) ] ,
+                              s1 = cum2sym[ RansDecGet( &r1 , 12 ) ];
+           out[ i ] = s0;
+           out[ i + 1 ] = s1;
+           RansDecAdvanceSymbolStep( &r0 , &D[ s0 ] , 12 );
+           RansDecAdvanceSymbolStep( &r1 , &D[ s1 ] , 12 );
+           RansDecRenorm( &r0 , &p );
+           RansDecRenorm( &r1 , &p );
+           }
+          if( i < n ) {
+           const std::uint8_t s0 = cum2sym[ RansDecGet( &r0 , 12 ) ];
+           out[ i ] = s0;
+           RansDecAdvanceSymbol( &r0 , &p , &D[ s0 ] , 12 );
+           }
+          return( out ); } , r );
+#endif
 #ifdef ADS_HAS_FSE
   coder( what , in , "huff0" , []( const Bytes & s ) {
           return( blocks( s , []( void * d , std::size_t cap ,
