@@ -387,6 +387,100 @@ DenseMatrix< T > multiply( const DenseMatrix< T > & A ,
  return( C );
  }
 
+namespace detail {
+
+/// C <- A + s B, r x c, by rows with the leading dimensions
+template< class T >
+void strassenAdd( std::size_t r , std::size_t c , const T * A ,
+                  std::size_t lda , const T * B , std::size_t ldb , T * C ,
+                  std::size_t ldc , T s )
+{
+ for( std::size_t i = 0 ; i < r ; ++i ) {
+  const T * a = A + i * lda , * b = B + i * ldb;
+  T * x = C + i * ldc;
+  if( s == T( 1 ) )
+   for( std::size_t j = 0 ; j < c ; ++j ) x[ j ] = a[ j ] + b[ j ];
+  else
+   for( std::size_t j = 0 ; j < c ; ++j ) x[ j ] = a[ j ] - b[ j ];
+  }
+ }
+
+/// C <- A B, m x k by k x n, by the variant of Winograd down to the cutoff
+template< class T >
+void strassenRec( std::size_t m , std::size_t n , std::size_t k ,
+                  const T * A , std::size_t lda , const T * B ,
+                  std::size_t ldb , T * C , std::size_t ldc ,
+                  std::size_t cutoff )
+{
+ if( ( m < cutoff ) || ( n < cutoff ) || ( k < cutoff ) ) {
+  gemm( m , n , k , T( 1 ) , A , lda , B , ldb , T( 0 ) , C , ldc );
+  return;
+  }
+ const std::size_t m2 = m & ~std::size_t( 1 ) , n2 = n & ~std::size_t( 1 ) ,
+                   k2 = k & ~std::size_t( 1 );
+ const std::size_t hm = m2 / 2 , hn = n2 / 2 , hk = k2 / 2;
+ const T * A11 = A , * A12 = A + hk , * A21 = A + hm * lda ,
+         * A22 = A21 + hk;
+ const T * B11 = B , * B12 = B + hn , * B21 = B + hk * ldb ,
+         * B22 = B21 + hn;
+ T * C11 = C , * C12 = C + hn , * C21 = C + hm * ldc , * C22 = C21 + hn;
+ std::vector< T , DefaultInitAllocator< T > > X( hm * hk ) , Y( hk * hn ) ,
+                                              U( hm * hn );
+ T * x = X.data() , * y = Y.data() , * u = U.data();
+ const T one( 1 ) , minus( -1 );
+ auto mul = [ & ]( const T * a , std::size_t la , const T * b ,
+                   std::size_t lb , T * c , std::size_t lc ) {
+  strassenRec( hm , hn , hk , a , la , b , lb , c , lc , cutoff ); };
+ strassenAdd( hm , hk , A11 , lda , A21 , lda , x , hk , minus );   // S3
+ strassenAdd( hk , hn , B22 , ldb , B12 , ldb , y , hn , minus );   // T3
+ mul( x , hk , y , hn , C21 , ldc );                                // P7
+ strassenAdd( hm , hk , A21 , lda , A22 , lda , x , hk , one );     // S1
+ strassenAdd( hk , hn , B12 , ldb , B11 , ldb , y , hn , minus );   // T1
+ mul( x , hk , y , hn , C22 , ldc );                                // P5
+ strassenAdd( hm , hk , x , hk , A11 , lda , x , hk , minus );      // S2
+ strassenAdd( hk , hn , B22 , ldb , y , hn , y , hn , minus );      // T2
+ mul( x , hk , y , hn , C12 , ldc );                                // P6
+ strassenAdd( hm , hk , A12 , lda , x , hk , x , hk , minus );      // S4
+ mul( x , hk , B22 , ldb , C11 , ldc );                             // P3
+ mul( A11 , lda , B11 , ldb , u , hn );                             // P1
+ strassenAdd( hm , hn , C12 , ldc , u , hn , C12 , ldc , one );     // U2
+ strassenAdd( hm , hn , C21 , ldc , C12 , ldc , C21 , ldc , one );  // U3
+ strassenAdd( hm , hn , C12 , ldc , C22 , ldc , C12 , ldc , one );  // U4
+ strassenAdd( hm , hn , C22 , ldc , C21 , ldc , C22 , ldc , one );  // U7
+ strassenAdd( hm , hn , C12 , ldc , C11 , ldc , C12 , ldc , one );  // U5
+ strassenAdd( hk , hn , y , hn , B21 , ldb , y , hn , minus );      // T4
+ mul( A22 , lda , y , hn , C11 , ldc );                             // P4
+ strassenAdd( hm , hn , C21 , ldc , C11 , ldc , C21 , ldc , minus );   // U6
+ mul( A12 , lda , B21 , ldb , C11 , ldc );                          // P2
+ strassenAdd( hm , hn , C11 , ldc , u , hn , C11 , ldc , one );     // U1
+ // the odd row, column and inner term, by gemm()
+ if( k2 < k )                               // C[ 0 , m2 ) x [ 0 , n2 )
+  gemm( m2 , n2 , std::size_t( 1 ) , one , A + k2 , lda , B + k2 * ldb ,
+        ldb , one , C , ldc );
+ if( n2 < n )                               // the last column
+  gemm( m2 , std::size_t( 1 ) , k , one , A , lda , B + n2 , ldb , T( 0 ) ,
+        C + n2 , ldc );
+ if( m2 < m )                               // the last row
+  gemm( std::size_t( 1 ) , n , k , one , A + m2 * lda , lda , B , ldb ,
+        T( 0 ) , C + m2 * ldc , ldc );
+ }
+
+}  // end( namespace detail )
+
+template< class T >
+DenseMatrix< T > multiplyStrassen( const DenseMatrix< T > & A ,
+                                   const DenseMatrix< T > & B ,
+                                   std::size_t cutoff )
+{
+ ADS_PRE( ( A.cols() == B.rows() ) && ( cutoff >= 2 ) );
+ auto C = DenseMatrix< T >::uninitialized( A.rows() , B.cols() );
+ if( ( C.rows() > 0 ) && ( C.cols() > 0 ) )
+  detail::strassenRec( A.rows() , B.cols() , A.cols() , A.data() ,
+                       A.cols() , B.data() , B.cols() , C.data() ,
+                       C.cols() , cutoff );
+ return( C );
+ }
+
 template< class T >
 DenseMatrix< T > transpose( const DenseMatrix< T > & A )
 {

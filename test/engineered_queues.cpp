@@ -21,6 +21,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/concurrent/MPSCQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/queue/LinkedQueue.h"
@@ -35,6 +36,8 @@
 #include <random>
 #include <ranges>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <thread>
 #include <vector>
 
@@ -290,6 +293,72 @@ ADS_TEST( "spsc-queue-items" )
    }
  producer.join();
  CHECK( ordered && S.size() == 0 && S.capacity() == 64 );
+ }
+
+// MPSCQueue: 4 producers on threads, the items of each in order, by
+// tryPop() and by popInto(); blocks of 2 and 3 places, so that the items
+// cross many blocks and the blocks given back are used again; an empty
+// queue, a queue with no producer, items that own memory left in the
+// queue and destroyed with it, items that only move
+ADS_TEST( "mpsc-queue" )
+{
+ {
+  MPSCQueue< int > E;
+  int x;
+  CHECK( E.empty() && ! E.tryPop( x ) && E.popInto( &x , 1 ) == 0 );
+  auto p = E.producer();
+  CHECK( E.empty() && ! E.tryPop( x ) );
+  p.push( 7 );
+  CHECK( ! E.empty() && E.tryPop( x ) && x == 7 && E.empty() );
+  MPSCQueue< int >::Producer none;
+  CHECK_THROWS( none.push( 1 ) , contract_violation );
+  }
+ auto run = [ & ]< std::size_t B >( std::integral_constant< std::size_t ,
+                                                            B > , bool bulk ) {
+  MPSCQueue< std::pair< int , int > , B > Q;
+  const int P = 4 , n = 50000;
+  std::vector< std::thread > T;
+  for( int p = 0 ; p < P ; ++p )
+   T.emplace_back( [ & , p ] {
+    auto h = Q.producer();
+    for( int i = 0 ; i < n ; ++i ) h.push( std::pair( p , i ) );
+    } );
+  std::vector< int > next( P , 0 );
+  bool ordered = true;
+  std::vector< std::pair< int , int > > buf( 64 );
+  for( int got = 0 ; got < P * n ; ) {
+   std::size_t k = bulk ? Q.popInto( buf.data() , buf.size() )
+                        : Q.tryPop( buf[ 0 ] );
+   for( std::size_t i = 0 ; i < k ; ++i ) {
+    ordered = ordered && ( buf[ i ].second == next[ buf[ i ].first ]++ );
+    ++got;
+    }
+   }
+  for( auto & t : T ) t.join();
+  std::pair< int , int > z;
+  return( ordered && ! Q.tryPop( z ) && Q.empty() );
+  };
+ CHECK( run( std::integral_constant< std::size_t , 2 >() , false ) );
+ CHECK( run( std::integral_constant< std::size_t , 3 >() , true ) );
+ CHECK( run( std::integral_constant< std::size_t , 512 >() , true ) );
+ Counted::alive = 0;
+ {
+  MPSCQueue< Counted , 4 > Q;
+  auto a = Q.producer() , b = Q.producer();
+  for( int i = 0 ; i < 10 ; ++i ) {
+   a.emplace( std::to_string( i ) + std::string( 20 , 'a' ) );
+   b.push( Counted( std::to_string( i ) ) );
+   }
+  Counted c;
+  CHECK( Q.tryPop( c ) && Counted::alive == 20 );   // 19 and c
+  }                                         // 19 left, destroyed
+ CHECK( Counted::alive == 0 );
+ MPSCQueue< std::unique_ptr< int > , 2 > U;
+ auto u = U.producer();
+ for( int i = 0 ; i < 5 ; ++i ) u.push( std::make_unique< int >( i ) );
+ std::unique_ptr< int > v;
+ for( int i = 0 ; i < 5 ; ++i ) CHECK( U.tryPop( v ) && *v == i );
+ CHECK( ! U.tryPop( v ) );
  }
 
 }  // end( namespace )

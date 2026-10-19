@@ -21,17 +21,22 @@
  *   pseudoAngle(), a quantity of the same order as the angle that needs no
  *   arctangent (exercise 16.1).
  *
- * - convexHull(), beyond the book, the engineered hull: the points
- *   strictly inside the octagon of the extreme points in the eight
- *   directions of the axes and of the diagonals (the minimum and the
- *   maximum of x, y, x + y and x - y) are dropped by one pass, since they
- *   are no vertex (the heuristic of Akl and Toussaint), which leaves a few
- *   percent of uniform points in a square or a disk; the others, each made
- *   a key of 64 bits ( x , y ), are sorted by the radix sort of ADS [see
- *   Sort.h], and the lower and the upper chain of the monotone chain of
- *   Andrew pop the points that make a turn not to the left, O( n ) after
- *   the sort. The vertices come in the order and from the point of
- *   graham().
+ * - convexHull(), beyond the book, the engineered hull: the extreme
+ *   points in the eight directions of the axes and of the diagonals (the
+ *   minimum and the maximum of x, y, x + y and x - y) are vertices of the
+ *   hull, in counter clockwise order, and a point strictly inside their
+ *   octagon (on the left of each of its edges, 8 cross products at most)
+ *   is no vertex: one pass drops it (the heuristic of Akl and Toussaint).
+ *   The k points left, each made a key of 64 bits
+ *   \f$ ( x + 2^{31} ) 2^{32} + ( y + 2^{31} ) \f$, whose order is the one
+ *   by x and then y, are sorted by the radix sort of ADS [see Sort.h] in
+ *   O( k ) (at most 8 passes of bytes), and the lower and the upper chain
+ *   of the monotone chain of Andrew pop the points that make a turn not
+ *   to the left, each point pushed and popped at most once, O( k ): in
+ *   all \f$ O( n + k ) \f$, \f$ k \le n \f$; for points uniform in a
+ *   square or in a disk the octagon leaves a vanishing fraction of them,
+ *   and the expected time is O( n ) (Devroye and Toussaint). The vertices
+ *   come in the order and from the point of graham().
  *
  * The contracts [see Contract.h]: the pseudo-angle is in [ 0 , 4 ), and the
  * hulls are convex, counter clockwise, made of input points and contain all
@@ -43,12 +48,15 @@
  * \see R. L. Graham, An efficient algorithm for determining the convex
  *      hull of a finite planar set, Information Processing Letters 1(4),
  *      132-133, 1972, doi:10.1016/0020-0190(72)90045-2
- * \see A. M. Andrew, Another efficient algorithm for convex hulls in two
- *      dimensions, Information Processing Letters 9(5), 216-219, 1979,
- *      doi:10.1016/0020-0190(79)90072-3
  * \see S. G. Akl, G. T. Toussaint, A fast convex hull algorithm,
  *      Information Processing Letters 7(5), 219-222, 1978,
  *      doi:10.1016/0020-0190(78)90003-0
+ * \see A. M. Andrew, Another efficient algorithm for convex hulls in two
+ *      dimensions, Information Processing Letters 9(5), 216-219, 1979,
+ *      doi:10.1016/0020-0190(79)90072-3
+ * \see L. Devroye, G. T. Toussaint, A note on linear expected time
+ *      algorithms for finding convex hulls, Computing 26(4), 361-366,
+ *      1981, doi:10.1007/BF02237955
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

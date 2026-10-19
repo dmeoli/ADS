@@ -70,36 +70,44 @@ void RingDeque< T >::reserve( std::size_t n )
  }
 
 template< class T >
-void RingDeque< T >::grow( void )
+T * RingDeque< T >::relocate( T * A , std::size_t m , std::size_t h ,
+                              std::size_t n )
 {
- const std::size_t m = capacity() , M = m ? 2 * m : 8 , n = size();
+ const std::size_t M = m ? 2 * m : 8;
  T * B = std::allocator< T >().allocate( M );
  if( n ) {
-  // the two pieces [ head , m ) and [ 0 , tail ) to the front of B
-  const std::size_t h = f_head & f_mask , first = std::min( n , m - h );
+  // the two pieces [ h , m ) and [ 0 , h + n - m ) to the front of B
+  const std::size_t first = std::min( n , m - h );
   if constexpr( std::is_trivially_copyable_v< T > ) {
-   std::memcpy( static_cast< void * >( B ) , f_A + h , first * sizeof( T ) );
-   std::memcpy( static_cast< void * >( B + first ) , f_A ,
+   std::memcpy( static_cast< void * >( B ) , A + h , first * sizeof( T ) );
+   std::memcpy( static_cast< void * >( B + first ) , A ,
                 ( n - first ) * sizeof( T ) );
    }
   else
    for( std::size_t i = 0 ; i < n ; ++i ) {
-    T & x = f_A[ ( f_head + i ) & f_mask ];
+    T & x = A[ ( h + i ) & ( m - 1 ) ];
     ::new( static_cast< void * >( B + i ) ) T( std::move_if_noexcept( x ) );
     x.~T();
     }
   }
- if( f_A )
-  std::allocator< T >().deallocate( f_A , m );
- f_A = B;
- f_mask = M - 1;
+ if( A )
+  std::allocator< T >().deallocate( A , m );
+ return( B );
+ }
+
+template< class T >
+ADS_RING_INLINE void RingDeque< T >::grow( void )
+{
+ const std::size_t m = capacity() , n = size();
+ f_A = relocate( f_A , m , m ? f_head & f_mask : 0 , n );
+ f_mask = ( m ? 2 * m : 8 ) - 1;
  f_head = 0;
  f_tail = n;
  ADS_INVARIANT( fits() );
  }
 
 template< class T >
-T & RingDeque< T >::growBack( T && v )
+ADS_RING_INLINE T & RingDeque< T >::growBack( T && v )
 {
  grow();
  T * p = ::new( static_cast< void * >( f_A + f_tail ) ) T( std::move( v ) );
@@ -108,7 +116,7 @@ T & RingDeque< T >::growBack( T && v )
  }
 
 template< class T >
-T & RingDeque< T >::growFront( T && v )
+ADS_RING_INLINE T & RingDeque< T >::growFront( T && v )
 {
  grow();
  f_tail += f_mask + 1;                      // the front at the last place,

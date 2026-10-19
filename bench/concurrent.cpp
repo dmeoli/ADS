@@ -16,8 +16,11 @@
  *   case pingpong: n round trips of an integer through two queues (ns per
  *   round trip);
  * - "mpsc", case throughput: one producer sends n integers, one consumer
- *   takes them (ns per item); the inbox takes all the messages at once,
- *   the others pop by batches of up to 256 where they can.
+ *   takes them (ns per item): MPSCInbox and MPSCQueue of ADS against
+ *   boost::lockfree::queue and moodycamel::ConcurrentQueue, with and
+ *   without its tokens of producer and consumer; the inbox takes all the
+ *   messages at once, the others pop by batches of up to 256 where they
+ *   can.
  *
  * Each cell is the median of r runs; the contracts are off
  * (ADS_CONTRACTS=0).
@@ -41,6 +44,9 @@
 #include "Bench.h"
 
 #include "ADS/concurrent/MPSCInbox.h"
+#ifndef ADS_BENCH_OLD
+ #include "ADS/concurrent/MPSCQueue.h"
+#endif
 #include "ADS/concurrent/SPSCQueue.h"
 
 #if __has_include( <boost/lockfree/spsc_queue.hpp> )
@@ -240,6 +246,44 @@ int main( int argc , char ** argv )
             got += k;
             }
            return( s ); } ) );
+#endif
+#ifdef ADS_HAS_MOODYCAMEL
+  {
+   using CQ = moodycamel::ConcurrentQueue< Item >;
+   print( "mpsc" , "throughput" , n , "moodycamel::ConcurrentQueue tokens" ,
+          transfer( n , r , [ & ](){
+            return( std::make_unique< CQ >( cap ) ); } ,
+           []( CQ & q , std::size_t m ) {
+            moodycamel::ProducerToken t( q );
+            for( std::size_t i = 0 ; i < m ; ++i ) q.enqueue( t , Item( i ) );
+            } , []( CQ & q , std::size_t m ) {
+            moodycamel::ConsumerToken t( q );
+            Item s = 0 , B[ 256 ];
+            for( std::size_t got = 0 ; got < m ; ) {
+             const std::size_t k = q.try_dequeue_bulk( t , B , 256 );
+             for( std::size_t i = 0 ; i < k ; ++i ) s += B[ i ];
+             got += k;
+             }
+            return( s ); } ) );
+   }
+#endif
+#ifndef ADS_BENCH_OLD
+  {
+   using AQ = ADS::MPSCQueue< Item >;
+   print( "mpsc" , "throughput" , n , "ADS::MPSCQueue" , transfer( n , r ,
+           [](){ return( std::make_unique< AQ >() ); } ,
+           []( AQ & q , std::size_t m ) {
+            auto p = q.producer();
+            for( std::size_t i = 0 ; i < m ; ++i ) p.push( Item( i ) ); } ,
+           []( AQ & q , std::size_t m ) {
+            Item s = 0 , B[ 256 ];
+            for( std::size_t got = 0 ; got < m ; ) {
+             const std::size_t k = q.popInto( B , 256 );
+             for( std::size_t i = 0 ; i < k ; ++i ) s += B[ i ];
+             got += k;
+             }
+            return( s ); } ) );
+   }
 #endif
   print( "mpsc" , "throughput" , n , "ADS::MPSCInbox" , transfer( n , r ,
           [](){ return( std::make_unique< ADS::MPSCInbox< Item > >() ); } ,

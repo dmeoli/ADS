@@ -522,6 +522,7 @@ engineered_queues  ring-deque              coda doppia su vettore circolare
 engineered_queues  ring-deque-items        elementi con memoria propria
 engineered_queues  book-queues-engineered  code del libro senza divisioni
 engineered_queues  spsc-queue-items        coda fra due thread, elementi propri
+engineered_queues  mpsc-queue              coda di molti produttori a corsie
 
 # the standard interface of the containers, beyond the book
 interop  sequences            iteratori delle sequenze, std e Boost
