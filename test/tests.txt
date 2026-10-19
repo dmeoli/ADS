@@ -452,6 +452,9 @@ taocp  bitwise               trucchi sui bit, volume 4A
 taocp  generation            tuple, permutazioni, combinazioni, partizioni
 taocp  random-numbers        generatori congruenziali e test statistici
 taocp  fft                   trasformata veloce di Fourier
+taocp  fft-sizes             FFT da 1 a 1024 punti, contro dft
+taocp  fft-blocks            FFT attorno ai blocchi, contro radix 2
+taocp  convolve-real         convoluzione per FFT reali
 taocp  big-integer           interi di lunghezza qualsiasi, Algorithm D
 taocp  big-integer-product   prodotti alle soglie, quadrati, NTT esatta
 taocp  big-integer-division  divisione ricorsiva contro Algorithm D

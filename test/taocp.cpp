@@ -55,6 +55,7 @@
 #include <iterator>
 #include <limits>
 #include <map>
+#include <numbers>
 #include <numeric>
 #include <random>
 #include <set>
@@ -1089,6 +1090,140 @@ ADS_TEST( "fft" )
  CHECK_THROWS( fft( bad , false ) , contract_violation );
  std::vector< Complex > bad6( 6 );
  CHECK_THROWS( fft( bad6 , true ) , contract_violation );
+ }
+
+// the transform of radix 2 by its rounds, with the powers of omega by
+// std::polar, as fft() was before radix 4: the reference for large n
+void radix2FFT( std::vector< Complex > & a , bool inverse )
+{
+ const std::size_t n = a.size();
+ for( std::size_t i = 1 , j = 0 ; i < n ; ++i ) {
+  std::size_t bit = n >> 1;
+  for( ; j & bit ; bit >>= 1 ) j ^= bit;
+  j ^= bit;
+  if( i < j ) std::swap( a[ i ] , a[ j ] );
+  }
+ const double sgn = inverse ? 1 : -1;
+ for( std::size_t len = 2 ; len <= n ; len *= 2 )
+  for( std::size_t i = 0 ; i < n ; i += len )
+   for( std::size_t k = 0 ; k < len / 2 ; ++k ) {
+    const Complex w = std::polar( 1.0 , sgn * 2 * std::numbers::pi *
+                                        double( k ) / double( len ) );
+    const Complex u = a[ i + k ] , v = a[ i + k + len / 2 ] * w;
+    a[ i + k ] = u + v;
+    a[ i + k + len / 2 ] = u - v;
+    }
+ if( inverse )
+  for( auto & x : a ) x /= double( n );
+ }
+
+// the largest distance between the items of a and b
+double maxDistance( const std::vector< Complex > & a ,
+                    const std::vector< Complex > & b )
+{
+ double d = 0;
+ for( std::size_t k = 0 ; k < a.size() ; ++k )
+  d = std::max( d , std::abs( a[ k ] - b[ k ] ) );
+ return( d );
+ }
+
+// fft() at the sizes where its rounds change: 1 , 2 , 4 , 8 (the first
+// rounds, by 4 or by 8 if log_2 n is odd), then up to 1024, against dft()
+// in both directions; the impulse, a constant, a real vector (whose
+// transform is symmetric), Parseval, and the inverse of the transform
+ADS_TEST( "fft-sizes" )
+{
+ std::mt19937 g( 23 );
+ std::uniform_real_distribution< double > U( -1 , 1 );
+ for( std::size_t n = 1 ; n <= 1024 ; n *= 2 ) {
+  std::vector< Complex > a( n );
+  for( auto & x : a ) x = Complex( U( g ) , U( g ) );
+  const double tol = 1e-13 * double( n );
+  for( bool inv : { false , true } ) {
+   auto f = a;
+   fft( f , inv );
+   CHECK( maxDistance( f , dft( a , inv ) ) < tol );
+   fft( f , ! inv );
+   CHECK( maxDistance( f , a ) < 1e-14 * ( 4 + std::log2( n ) ) );
+   }
+  double ea = 0 , ef = 0;                   // Parseval
+  auto f = a;
+  fft( f , false );
+  for( std::size_t k = 0 ; k < n ; ++k ) {
+   ea += std::norm( a[ k ] );
+   ef += std::norm( f[ k ] );
+   }
+  CHECK( std::abs( ef - double( n ) * ea ) < 1e-12 * ef );
+  std::vector< Complex > imp( n ) , c( n , Complex( 2 , -3 ) ) , r( n );
+  imp[ 0 ] = Complex( 1 , 0 );
+  fft( imp , false );                       // the impulse: all ones
+  CHECK( maxDistance( imp , std::vector< Complex >( n , 1.0 ) ) < 1e-15 );
+  fft( c , false );                         // a constant: n c at 0
+  CHECK( std::abs( c[ 0 ] - double( n ) * Complex( 2 , -3 ) ) < tol );
+  for( std::size_t k = 1 ; k < n ; ++k ) CHECK( std::abs( c[ k ] ) < tol );
+  for( auto & x : r ) x = U( g );           // real: conj( f_{n-k} )
+  const auto d = dft( r , false );
+  fft( r , false );
+  CHECK( maxDistance( r , d ) < tol );
+  for( std::size_t k = 1 ; k < n ; ++k )
+   CHECK( std::abs( r[ k ] - std::conj( r[ n - k ] ) ) < tol );
+  }
+ }
+
+// fft() at the length of the blocks transformed one at a time and around
+// it, where the rounds go depth first, for both parities of log_2 n,
+// against the transform of radix 2 by its rounds
+ADS_TEST( "fft-blocks" )
+{
+ std::mt19937 g( 29 );
+ std::uniform_real_distribution< double > U( -1 , 1 );
+ for( std::size_t n = detail::fftBlock / 4 ; n <= 16 * detail::fftBlock ;
+      n *= 2 ) {
+  std::vector< Complex > a( n );
+  for( auto & x : a ) x = Complex( U( g ) , U( g ) );
+  for( bool inv : { false , true } ) {
+   auto f = a , r = a;
+   fft( f , inv );
+   radix2FFT( r , inv );
+   CHECK( maxDistance( f , r ) < ( inv ? 1e-14 : 1e-13 * std::sqrt( n ) ) );
+   fft( f , ! inv );
+   CHECK( maxDistance( f , a ) < 1e-13 );
+   }
+  }
+ }
+
+// convolve() through the transforms of real vectors of half the length:
+// against the product by its definition for the lengths 0 , 1 , 2 ,
+// unequal ones, and the length of the result a power of 2 , one more, one
+// less; the coefficients exact integers below 2^53, as BigInteger rounds
+ADS_TEST( "convolve-real" )
+{
+ std::mt19937 g( 31 );
+ const std::vector< std::pair< std::size_t , std::size_t > > L = {
+  { 0 , 0 } , { 0 , 3 } , { 1 , 1 } , { 1 , 2 } , { 2 , 1 } , { 2 , 2 } ,
+  { 1 , 7 } , { 3 , 6 } , { 7 , 2 } , { 9 , 9 } , { 16 , 17 } ,
+  { 17 , 17 } , { 1 , 1024 } , { 1025 , 1 } , { 513 , 512 } ,
+  { 300 , 4 } };
+ for( const auto & [ np , nq ] : L ) {
+  std::vector< double > p( np ) , q( nq );
+  for( auto & x : p ) x = double( g() % 65536 );
+  for( auto & x : q ) x = double( g() % 65536 );
+  const auto c = convolve( p , q );
+  if( np == 0 || nq == 0 ) { CHECK( c.empty() ); continue; }
+  CHECK( c.size() == np + nq - 1 );
+  for( std::size_t k = 0 ; k < c.size() ; ++k ) {
+   double s = 0;                            // exact: below 2^53
+   for( std::size_t i = 0 ; i < np ; ++i )
+    if( ( k >= i ) && ( k - i < nq ) ) s += p[ i ] * q[ k - i ];
+   CHECK( std::abs( c[ k ] - s ) < 0.01 );
+   }
+  }
+ std::vector< double > p( 1 << 14 , 65535 ) , q( 1 << 14 , 65535 );
+ const auto c = convolve( p , q );          // the largest digits
+ for( std::size_t k = 0 ; k < c.size() ; k += 97 ) {
+  const double t = double( std::min( k + 1 , c.size() - k ) );
+  CHECK( std::abs( c[ k ] - t * 65535.0 * 65535.0 ) < 0.25 );
+  }
  }
 
 // the integers of any length: against long long where it fits, the

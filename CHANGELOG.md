@@ -240,10 +240,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the documentation is a site of Sphinx with the theme of Read the Docs,
   its pages written from the README by docs/pages.py, with the API
   reference built by Exhale and Breathe from the XML of Doxygen
-- fft() keeps the powers of the root of unity of the last size per thread,
-  laid out round by round, instead of computing n / 2 sines and cosines at
-  each call, and multiplies by the formula instead of the operator * of
-  std::complex
+- fft() works in radix 4 on separate arrays of the real and imaginary
+  parts, which the compiler vectorizes, reverses the bits in the sweep of
+  its first rounds and goes depth first above blocks of 2048 items; the
+  powers of the root of unity are computed once per thread for every size
+  and both directions, each with its angle taken to [0, pi/4]; convolve()
+  transforms each real vector by a complex transform of half its length,
+  and the product back by another, 3 half transforms instead of 3 whole
+  ones
 - PreorderArrayTree::end( i ), the place after the subtree of i, is now
   subtreeEnd( i ), so that the name end() is left to the standard interface
 - SequenceRange is a view whose end() is an iterator, so that the range is
