@@ -10,7 +10,9 @@
  * order, n lookups of absent keys, and a visit of all the pairs by the
  * iterators of the standard interface. The sorted vectors (the flat map
  * and SortedArrayDictionary) are built from the sorted keys and enter only
- * the lookups and the visit.
+ * the lookups and the visit. The engineered hash table of ADS, the one to
+ * compare with boost::unordered_flat_map, is FlatHashTable; OpenHashTable
+ * is the table of the book, here with linear probing at load 1 / 2.
  *
  * Each cell is the median of r runs, in nanoseconds per operation; the
  * lookups and the visit run on one structure built once, and the contracts
@@ -34,6 +36,7 @@
 #include "Bench.h"
 
 #include "ADS/dictionary/ChainedHashTable.h"
+#include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/dictionary/PointerTable.h"
 #include "ADS/dictionary/RandomHashing.h"
@@ -161,6 +164,9 @@ int main( int argc , char ** argv )
        return( ADS::OpenHashTable< Key , Key >( prime( 2 * n ) ,
                                                 ADS::Probing::linear() ) ); } ,
        adsIns , adsFind , adsSum );
+  run( "ADS::FlatHashTable" , K , H , Q , r ,
+       [](){ return( ADS::FlatHashTable< Key , Key >() ); } , adsIns ,
+       adsFind , adsSum );
   {                                         // objects owned by an arena
    ADS::Arena< Item > arena;
    run( "ADS::PointerTable" , K , H , Q , r ,

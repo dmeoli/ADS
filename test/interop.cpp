@@ -28,6 +28,7 @@
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/DirectTable.h"
 #include "ADS/dictionary/KnuthHashing.h"
+#include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/dictionary/PointerTable.h"
 #include "ADS/dictionary/SkipList.h"
@@ -153,6 +154,8 @@ static_assert( ! std::output_iterator< ArrayQueue< int >::iterator , int > );
 static_assert( std::ranges::forward_range< ChainedHashTable< int , int > > );
 static_assert(
  std::ranges::bidirectional_range< OpenHashTable< int , int > > );
+static_assert(
+ std::ranges::bidirectional_range< FlatHashTable< int , int > > );
 static_assert(
  std::ranges::bidirectional_range< BrentHashTable< int , int > > );
 static_assert( std::ranges::bidirectional_range<
@@ -434,6 +437,7 @@ ADS_TEST( "dictionaries" )
  std::map< int , int > ref;
  ChainedHashTable< int , int > C( 37 );
  OpenHashTable< int , int > O( 211 , Probing::linear() );
+ FlatHashTable< int , int > F;
  BrentHashTable< int , int > B( 211 );
  CoalescedHashTable< int , int > K( 180 , 31 );
  DirectTable< int > D( -50 , 149 );
@@ -445,6 +449,7 @@ ADS_TEST( "dictionaries" )
   ref[ k ] = v;
   C.insert( k , v );
   O.insert( k , v );
+  F.insert( k , v );
   B.insert( k , v );
   K.insert( k , v );
   D.insert( k , v );
@@ -459,7 +464,8 @@ ADS_TEST( "dictionaries" )
   };
  const std::vector< std::pair< int , int > > R( ref.begin() , ref.end() );
  CHECK( sorted( C ) == R && sorted( O ) == R && sorted( B ) == R );
- CHECK( sorted( K ) == R && sorted( D ) == R );
+ CHECK( sorted( K ) == R && sorted( D ) == R && sorted( F ) == R );
+ CHECK( std::ranges::distance( F ) == long( R.size() ) );
  CHECK( std::ranges::equal( S , R , []( const auto & a , const auto & b ) {
   return( ( a.first == b.first ) && ( a.second == b.second ) ); } ) );
  CHECK( std::ranges::equal( A , R ) );       // contiguous, in order
@@ -532,6 +538,7 @@ ADS_TEST( "dictionaries" )
 
  ChainedHashTable< int , int > C0( 7 );     // the empty views
  OpenHashTable< int , int > O0( 11 , Probing::linear() );
+ FlatHashTable< int , int > F0;
  SkipList< int , int > S0;
  SortedArrayDictionary< int , int > A0;
  RadixTree< int > X0;
@@ -540,9 +547,11 @@ ADS_TEST( "dictionaries" )
  CHECK( C0.begin() == C0.end() && O0.begin() == O0.end() );
  CHECK( S0.begin() == S0.end() && A0.begin() == A0.end() );
  CHECK( X0.begin() == X0.end() && Z0.begin() == Z0.end() );
- CHECK( M0.begin() == M0.end() );
+ CHECK( M0.begin() == M0.end() && F0.begin() == F0.end() );
  for( const auto & [ k , v ] : R ) O.remove( k );   // all tombstones
  CHECK( O.begin() == O.end() && std::ranges::distance( O ) == 0 );
+ for( const auto & [ k , v ] : R ) F.remove( k );
+ CHECK( F.begin() == F.end() && std::ranges::distance( F ) == 0 );
  DirectTable< int > D1( 3 , 3 );            // one key, both bounds
  D1.insert( 3 , 8 );
  CHECK( std::ranges::distance( D1 ) == 1 && ( *D1.begin() ).second == 8 );

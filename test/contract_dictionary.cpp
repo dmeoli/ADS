@@ -30,6 +30,7 @@
 #include "ADS/dictionary/DirectTable.h"
 #include "ADS/dictionary/HashFunctions.h"
 #include "ADS/dictionary/KnuthHashing.h"
+#include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/dictionary/PatriciaTrie.h"
 #include "ADS/dictionary/PerfectHashing.h"
@@ -272,6 +273,9 @@ ADS_TEST( "dictionary-axioms" )
   return( O( 32 , Probing::triangular() ) ); } , 17 );
  dictionary_axioms< O >( [] {
   return( O( 12 , Probing::pseudo_random() , true ) ); } , 22 );
+ using F = FlatHashTable< int , int >;
+ dictionary_axioms< F >( [] { return( F() ); } , 41 );
+ dictionary_axioms< F >( [] { return( F( 1 ) ); } , 42 );
  dictionary_axioms< DirectTable< int > >( [] {
   return( DirectTable< int >( 0 , 11 ) ); } , 18 );
  using BST = BinarySearchTree< int , int >;

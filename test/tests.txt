@@ -470,6 +470,7 @@ taocp  sat-solvers           DPLL e CDCL
 # the engineered structures, beyond the book
 engineered  bucket-queue         coda a bucket su due livelli
 engineered  dary-heap            heap d-ario di elementi semplici
+engineered  flat-hash-table      tabella con byte di controllo a gruppi
 engineered  pointer-table        tabella di puntatori, ispezione lineare
 engineered  arena                arena a blocchi
 engineered  random-hashing       splitmix64, Zobrist, tabulazione
