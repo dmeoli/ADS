@@ -385,7 +385,6 @@ inline bool isPrime( U64 n )
   return( true );
  // the fewest bases with no strong pseudoprime below the bound
  static constexpr U64 B1[] = { 9345883071009581737ULL } ,
-  B2[] = { 336781006125ULL , 9639812373923155ULL } ,
   B3[] = { 4230279247111683200ULL , 14694767155120705706ULL ,
            16641139526367750375ULL } ,
   B4[] = { 2 , 141889084524735ULL , 1199124725622454117ULL ,
@@ -403,8 +402,17 @@ inline bool isPrime( U64 n )
  // two bases first, as fast as one, which most composites fail; then the
  // others at once
  if( n < 341531ULL ) return( strongProbablePrimes< 1 >( M , B1 , d , s ) );
- if( n < 1050535501ULL )
-  return( strongProbablePrimes< 2 >( M , B2 , d , s ) );
+ if( n < ( U64( 1 ) << 32 ) ) {
+  // the base 2 and a second one chosen by a hash of n among 32, each a
+  // witness for every strong pseudoprime to the base 2 below 2^32 of its
+  // bucket (the 2314 of them), so that no composite passes both
+  static constexpr unsigned char H[ 32 ] = {
+   34 , 33 , 17 , 15 , 13 , 45 , 59 , 163 , 15 , 41 , 7 , 33 , 21 , 53 , 7 ,
+   59 , 83 , 15 , 11 , 35 , 15 , 106 , 15 , 39 , 110 , 51 , 38 , 30 , 30 ,
+   38 , 7 , 17 };
+  const U64 b[ 2 ] = { 2 , H[ ( std::uint32_t( n ) * 0x9E3779B1u ) >> 27 ] };
+  return( strongProbablePrimes< 2 >( M , b , d , s ) );
+  }
  if( n < 350269456337ULL )
   return( strongProbablePrimes< 3 >( M , B3 , d , s ) );
  if( ! strongProbablePrimes< 2 >( M , n < 55245642489451ULL ? B4 :

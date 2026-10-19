@@ -70,6 +70,10 @@ test: $(BINS)
 # rapidfuzz-cpp to edit
 BENCHES   = sort dictionaries priority sequences bignum fft hashing search \
             suffix edit $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft
+BENCHES   = sort dictionaries priority sequences bignum fft numeric queues \
+            concurrent geometry matrix sparse
+comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
@@ -94,6 +98,23 @@ HASHFLAGS = $(if $(HASHING),$(addprefix -isystem $(HASHING)/,$(HASHINC))) \
             $(if $(ABSL),-DADS_HAS_ABSL -isystem $(ABSL)/include \
             $(shell PKG_CONFIG_PATH=$(ABSL)/lib/pkgconfig pkg-config \
              --libs absl_flat_hash_map absl_hash 2>/dev/null)) -pthread
+# the libraries of the other benchmarks, each from its prefix or source
+# directory if given: OPENBLAS=<prefix> for matrix, EIGEN=<include dir>
+# for matrix and sparse, CGAL=<include dir> (with GMP) for geometry,
+# HURCHALLA="<its include dirs>" and PCG=<include dir> for numeric,
+# RIGTORP=, MOODYCAMEL= and FOLLY=<include dirs> for concurrent
+OPENBLASFLAGS = $(if $(OPENBLAS),-DADS_HAS_OPENBLAS \
+                -I$(OPENBLAS)/include -L$(OPENBLAS)/lib \
+                -Wl$(comma)-rpath$(comma)$(OPENBLAS)/lib -lopenblas)
+EIGENFLAGS = $(if $(EIGEN),-I$(EIGEN))
+NUMERICFLAGS = $(if $(HURCHALLA),-DADS_HAS_HURCHALLA \
+               $(addprefix -I,$(HURCHALLA))) \
+               $(if $(PCG),-DADS_HAS_PCG -I$(PCG))
+CONCURRENTFLAGS = $(if $(RIGTORP),-DADS_HAS_RIGTORP -I$(RIGTORP)) \
+                  $(if $(MOODYCAMEL),-DADS_HAS_MOODYCAMEL -I$(MOODYCAMEL)) \
+                  $(if $(FOLLY),-DADS_HAS_FOLLY -I$(FOLLY))
+CGALFLAGS = $(if $(CGAL),-DADS_HAS_CGAL -I$(CGAL) $(if $(GMP),\
+            -I$(GMP)/include -L$(GMP)/lib) -lgmp)
 
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
@@ -119,6 +140,22 @@ $(BUILD)/bench-suffix: bench/suffix.cpp bench/Bench.h bench/Texts.h \
 
 $(BUILD)/bench-edit: bench/edit.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(EDITFLAGS)
+$(BUILD)/bench-numeric: bench/numeric.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(NUMERICFLAGS) $(GMPFLAGS)
+
+$(BUILD)/bench-concurrent: bench/concurrent.cpp bench/Bench.h $(HEADERS) \
+                           | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(CONCURRENTFLAGS) -pthread
+
+$(BUILD)/bench-geometry: bench/geometry.cpp bench/Bench.h $(HEADERS) \
+                         | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(CGALFLAGS)
+
+$(BUILD)/bench-matrix: bench/matrix.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS) $(OPENBLASFLAGS)
+
+$(BUILD)/bench-sparse: bench/sparse.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

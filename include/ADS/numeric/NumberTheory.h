@@ -47,7 +47,11 @@
  *   p iff \f$ n p^{-1} \bmod 2^{64} \le \lfloor ( 2^{64} - 1 ) / p
  *   \rfloor \f$), then the test of Miller and Rabin in Montgomery form on
  *   the fewest bases known to have no strong pseudoprime below n, from 1
- *   base below 341531 to the 7 of Sinclair for every n of 64 bits;
+ *   base below 341531 to the 7 of Sinclair for every n of 64 bits, and
+ *   below \f$ 2^{32} \f$ the base 2 with a second base read in a table of
+ *   32 by a hash of n, chosen to be a witness for each of the 2314 strong
+ *   pseudoprimes to the base 2 below \f$ 2^{32} \f$ in its bucket (the
+ *   hashing of Forisek and Jancina); the bases are tested in lockstep;
  * - sieve(), the sieve of Eratosthenes on a SET of the integers from 2 to n
  *   [see BoolSet.h], beyond the book: the least item p left in the set is a
  *   prime, and its multiples are removed; since the multiples of the primes
@@ -82,6 +86,10 @@
  *      doi:10.1016/0021-9991(67)90047-2
  * \see T. Granlund, P. L. Montgomery, Division by invariant integers using
  *      multiplication, PLDI 1994, 61-72, doi:10.1145/178243.178249
+ * \see M. Forisek, J. Jancina, Fast primality testing for integers that fit
+ *      into a machine word, Proceedings of the 15th Conference on
+ *      Information Technologies - Applications and Theory (ITAT), 2015,
+ *      CEUR-WS 1422, 20-26
  * \see G. Jaeschke, On strong pseudoprimes to several bases, Mathematics
  *      of Computation 61(204), 915-926, 1993, doi:10.2307/2153262, and the
  *      bases of J. Sinclair and others at https://miller-rabin.appspot.com

@@ -512,6 +512,8 @@ engineered_numeric  generators        xoshiro256++ e wyrand
 engineered_numeric  bounded-integers  interi limitati di Lemire
 engineered_numeric  shuffle-fast      mescolamento a gruppi di indici
 engineered_numeric  reservoir-l       campionamento con l'Algoritmo L
+engineered_numeric  dense-gemm        prodotto di matrici dense a blocchi
+engineered_numeric  csr-matrix        matrici sparse per righe compresse
 engineered_numeric  convex-hull       inviluppo con ottagono e catena monotona
 engineered_numeric  closest-pair-sweep coppia piu' vicina con la scansione
 
