@@ -128,6 +128,7 @@
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <limits>

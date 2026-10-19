@@ -689,6 +689,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   at a time, instead of a scan of the words, and its directory with no
   test per word; the third level of counts is kept also when only the
   last block reaches it; BitVector from a span of words
+- encodeGamma() writes U( L + 1 ) B( x ) as one field when it fits in a
+  word, binaryLength() is the width of the processor, BitReader finds the
+  1 of the unary code by the trailing zeros of the processor and turns a
+  field around by the swap of its bytes
 
 ### Fixed
 
