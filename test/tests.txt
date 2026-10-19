@@ -1599,3 +1599,7 @@ contract_tree         search-tree          ABR e Red-Black, capitolo 6
 contract_tree         tree                 albero ordinato, capitolo 5
 contract_tree         tree-realizations    realizzazioni degli alberi
 contract_tree         other-trees          B-albero, espressioni, cursori
+
+# the paths of rank and select that practical sizes do not take
+succinct_top  rank-select-top   rank e select col livello alto e gruppi radi
+succinct_top  succinct-top      Elias-Fano e parentesi col livello alto

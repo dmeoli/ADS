@@ -9,10 +9,14 @@
  * or written with two shifts at most. Besides the random access to a bit,
  * in O( 1 ) time, BitVector appends a bit or a field of len bits, push_back()
  * and append(), in O( 1 ) amortized time, and reads a field of len bits,
- * get(), in O( 1 ) time; the space is \f$ n + O( 64 ) \f$ bits for n bits,
- * the vector of words doubling as std::vector does. The bits past the size
- * in the last word are 0 (the invariant), and hence count() and the rank
- * of a word [see RankSelect.h] need no mask at the end. Unlike
+ * get(), in O( 1 ) time; the space is \f$ n + O( 512 ) \f$ bits for n
+ * bits, the vector of words doubling as std::vector does. The words are
+ * whole lines of the cache of 64 bytes, with one word at least past the
+ * last bit, and they start on a line (on a huge page from 2 MB on, which
+ * spares the misses of the TLB of a random access); the bits past the size
+ * are 0 (the invariant). Hence count() and the rank of a word [see
+ * RankSelect.h] need no mask at the end, a field is read with no test of
+ * the end, and a directory may read the words of a line of its own. Unlike
  * std::vector< bool >, whose layout is left to the implementation,
  * BitVector exposes its words, which is what a rank directory or a code
  * reading a word at a time needs.
@@ -65,7 +69,10 @@
 
 #include "ADS/Contract.h"
 #include "ADS/combinatorial/Bitwise.h"
+#include "ADS/memory/HugePageAllocator.h"
 
+#include <algorithm>
+#include <bit>
 #include <compare>
 #include <cstddef>
 #include <cstdint>
@@ -74,11 +81,54 @@
 #include <string_view>
 #include <vector>
 
+#ifdef __BMI2__
+ #include <immintrin.h>
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
+
+namespace detail {
+
+/// the allocator of the words of a BitVector and of the directories built
+/// on them: a block of 2 MB or more on huge pages [see
+/// HugePageAllocator.h], a smaller one aligned to a line of the cache
+template< class T >
+class LineAllocator {
+ public:
+ using value_type = T;
+ static constexpr std::size_t LINE = 64;   ///< the bytes of a line
+
+ LineAllocator( void ) = default;
+ template< class U >
+ LineAllocator( const LineAllocator< U > & ) noexcept {}
+
+ [[nodiscard]] T * allocate( std::size_t n ) {
+  if( n * sizeof( T ) >= HugePageAllocator< T >::PAGE )
+   return( HugePageAllocator< T >().allocate( n ) );
+  return( static_cast< T * >( ::operator new( n * sizeof( T ) ,
+                                              std::align_val_t( LINE ) ) ) );
+  }
+
+ void deallocate( T * p , std::size_t n ) noexcept {
+  if( n * sizeof( T ) >= HugePageAllocator< T >::PAGE )
+   HugePageAllocator< T >().deallocate( p , n );
+  else ::operator delete( p , std::align_val_t( LINE ) );
+  }
+
+ template< class U >
+ bool operator==( const LineAllocator< U > & ) const noexcept {
+  return( true );
+  }
+ };
+
+}  // end( namespace detail )
+
+/// the words of a BitVector
+using Words = std::vector< Word , detail::LineAllocator< Word > >;
 
 /// the place of the k-th 1 of x, counting from 0 and from the least
 /// significant bit
@@ -210,8 +260,9 @@ class BitVector {
  /// the number of 1 bits, in O( n / 64 ) time
  [[nodiscard]] std::size_t count( void ) const;
 
- /// the words, the bits past the size being 0
- [[nodiscard]] const std::vector< Word > & words( void ) const;
+ /// the words, the bits past the size being 0; they are at least
+ /// size() / 64 + 2, a multiple of 8, and start on a line of the cache
+ [[nodiscard]] const Words & words( void ) const;
 
  /// the bits as a string of '0' and '1', the bit 0 first
  [[nodiscard]] std::string toString( void ) const;
@@ -247,10 +298,15 @@ class BitVector {
 /*--------------------------------------------------------------------------*/
  private:
 
+ /// the words for n bits: n / 64 + 2, rounded up to a line of 8
+ [[nodiscard]] static std::size_t wordsFor( std::size_t n ) {
+  return( ( n / 64 + 9 ) & ~std::size_t( 7 ) );
+  }
+
  /// the bits past the size are 0
  [[nodiscard]] bool clean( void ) const;
 
- std::vector< Word > f_w;   ///< the words, the bit 0 in the first one
+ Words f_w = Words( 8 , 0 );   ///< the words, the bit 0 in the first one
  std::size_t f_n = 0;       ///< the number of bits
 
  };  // end( class BitVector )
