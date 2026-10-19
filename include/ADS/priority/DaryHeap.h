@@ -13,7 +13,10 @@
  * levels, at the price of D - 1 more comparisons per level on the way down.
  * There are no handles and no decrease-key: an item whose key improves is
  * pushed again and the stale copy skipped (lazy deletion), which is what
- * makes the items plain and the heap fast. HeapPriorityQueue [see
+ * makes the items plain and the heap fast. The vector of a large heap is
+ * on huge pages [see HugePageAllocator.h], so that the walk from the root
+ * to a leaf does not miss the TLB at each level and the vector, when it
+ * grows, is faulted in 2 MB at a time. HeapPriorityQueue [see
  * HeapPriorityQueue.h] is the realization with handles of the book.
  *
  * The contracts [see Contract.h]: D >= 2, top() and pop() need a heap that
@@ -48,6 +51,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/HugePageAllocator.h"
 
 #include <cstddef>
 #include <functional>
@@ -133,7 +137,8 @@ class DaryHeap {
  /// no item better than its parent, O( n )
  [[nodiscard]] bool ordered( void ) const;
 
- std::vector< T > f_A;   ///< the heap, the root in f_A[ 0 ]
+ /// the heap, the root in f_A[ 0 ]
+ std::vector< T , HugePageAllocator< T > > f_A;
  Better f_better;        ///< the order
 
  };  // end( class DaryHeap )

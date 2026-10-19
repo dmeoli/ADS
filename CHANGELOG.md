@@ -344,6 +344,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SinglyList keeps its cells in an ObjectPool, the cell of remove()
   serving the next insert(); a list of items with a trivial destructor
   dies a block at a time
+- DaryHeap keeps its vector on HugePageAllocator, so that a large heap
+  is faulted in a huge page at a time and its sifts miss the TLB less
 
 ### Fixed
 
