@@ -303,6 +303,10 @@ PAIRS = [
      ['Boost csr pairing_heap']),
     ('prim', 'ADS StaticGraph FibonacciHeapPriorityQueue', 'Boost',
      ['Boost csr fibonacci_heap']),
+    ('perfect hashing', 'ADS::RecSplit l=8 b=100', 'RecSplit',
+     ['RecSplit l=8 b=100']),
+    ('perfect hashing', 'ADS::RecSplit l=8 b=100', 'BBHash',
+     ['BBHash g=2']),
 ]
 
 def read(path):

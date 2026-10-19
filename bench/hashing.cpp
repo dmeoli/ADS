@@ -26,8 +26,8 @@
  *   against the blocked filter of Bloom of fastfilter_cpp and the xor and
  *   binary fuse filters of xor_singleheader;
  * - "perfect hashing": the build of a minimal perfect hash function of n
- *   random keys of 64 bits and n queries, by those of ADS against PTHash,
- *   PHOBIC, BBHash and RecSplit.
+ *   random keys of 64 bits and n queries, by those of ADS (by pilots and
+ *   by recursive splitting) against PTHash, PHOBIC, BBHash and RecSplit.
  *
  * Each cell is the median of r runs, in nanoseconds per operation (per key
  * for the builds); the queries run on one structure built once, and the
@@ -63,6 +63,7 @@
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/dictionary/PerfectHashing.h"
+#include "ADS/dictionary/RecSplit.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
@@ -617,6 +618,10 @@ void perfectHashing( const std::vector< Key > & K ,
            []( const auto & f ) { return( 32 * f.vertices() ); } );
  perfect( "ADS::MinimalPerfectHash" , K , H , r , []( const auto & S ) {
           return( ADS::MinimalPerfectHash< Key >( S , 5 , 0.99 ) ); } ,
+          []( const auto & f , Key k ) { return( f( k ) ); } ,
+          []( const auto & f ) { return( f.bits() ); } );
+ perfect( "ADS::RecSplit l=8 b=100" , K , H , r , []( const auto & S ) {
+          return( ADS::RecSplit< Key , 8 >( S , 100 ) ); } ,
           []( const auto & f , Key k ) { return( f( k ) ); } ,
           []( const auto & f ) { return( f.bits() ); } );
 #ifdef ADS_HAS_PTHASH
