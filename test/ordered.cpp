@@ -21,6 +21,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/dictionary/AdaptiveRadixTree.h"
 #include "ADS/mfset/MFSet.h"
 #include "ADS/mfset/RemUnionFind.h"
 #include "ADS/search/NthElement.h"
@@ -619,6 +620,99 @@ ADS_TEST( "bool-set-words" )
    CHECK( ( U.dim() == std::max( N , M ) ) &&
           ( I.dim() == std::min( N , M ) ) && ( D.dim() == N ) );
    }
+ }
+
+// the adaptive radix tree against std::map on random insertions, removals
+// and searches: keys on 2 letters (long shared paths, keys that are
+// prefixes of others), keys of 0 to 40 bytes on all the 256 values (null
+// bytes, the four layouts of the nodes growing and shrinking), prefixes
+// longer than the 8 bytes kept in a node, the empty key, the visits in
+// order by the iterators, forEach() and forPrefix(), copies and moves, and
+// all the keys removed
+ADS_TEST( "adaptive-radix-tree" )
+{
+ std::mt19937 g( 38 );
+ auto key = [ & ]( int sigma , int maxlen , const std::string & base ) {
+  std::string k = base;
+  for( int i = int( g() % std::uint32_t( maxlen + 1 ) ) ; i > 0 ; --i )
+   k += char( sigma == 256 ? int( g() % 256 ) : 'a' + int( g() % 2 ) );
+  return( k );
+  };
+ auto pairs = []( const auto & t ) {
+  std::vector< std::pair< std::string , int > > P;
+  for( const auto & [ k , v ] : t ) P.emplace_back( std::string( k ) , v );
+  return( P );
+  };
+ for( int round = 0 ; round < 4 ; ++round ) {
+  const int sigma = round % 2 ? 256 : 2;
+  const std::string base = round >= 2 ? std::string( 20 , 'x' ) : "";
+  AdaptiveRadixTree< int > t;
+  std::map< std::string , int > ref;
+  for( int op = 0 ; op < 6000 ; ++op ) {
+   const std::string k = key( sigma , sigma == 2 ? 12 : 3 , base );
+   const int o = int( g() % 10 );
+   if( o < 5 ) {
+    CHECK( t.insert( k , op ) == ( ref.find( k ) == ref.end() ) );
+    ref[ k ] = op;
+    }
+   else if( o < 8 )
+    CHECK( t.remove( k ) == ( ref.erase( k ) == 1 ) );
+   else {
+    const auto v = t.lookup( k );
+    const auto it = ref.find( k );
+    CHECK( v.has_value() == ( it != ref.end() ) );
+    if( v ) CHECK( *v == it->second );
+    }
+   CHECK( t.size() == ref.size() );
+   }
+  std::vector< std::pair< std::string , int > > R( ref.begin() ,
+                                                   ref.end() );
+  CHECK( pairs( t ) == R );
+  std::vector< std::pair< std::string , int > > F;
+  t.forEach( [ & ]( std::string_view k , int v ) {
+   F.emplace_back( std::string( k ) , v ); } );
+  CHECK( F == R );
+  for( int q = 0 ; q < 200 ; ++q ) {        // the prefixes
+   const std::string p = key( sigma , sigma == 2 ? 6 : 2 , base );
+   std::vector< std::string > E;
+   for( auto it = ref.lower_bound( p ) ; ( it != ref.end() ) &&
+        ( it->first.compare( 0 , p.size() , p ) == 0 ) ; ++it )
+    E.push_back( it->first );
+   CHECK( t.keysWithPrefix( p ) == E );
+   }
+  CHECK( t.keysWithPrefix( "" ).size() == ref.size() );
+  auto c = t;                               // a copy is independent
+  CHECK( pairs( c ) == R );
+  if( ! ref.empty() ) {
+   c.remove( ref.begin()->first );
+   CHECK( t.contains( ref.begin()->first ) );
+   }
+  auto m = std::move( c );
+  CHECK( c.empty() );
+  for( const auto & [ k , v ] : ref )       // all out
+   CHECK( t.remove( k ) );
+  CHECK( t.empty() && ( t.begin() == t.end() ) );
+  }
+ AdaptiveRadixTree< int > t;
+ CHECK( ! t.lookup( "" ) && ! t.remove( "a" ) && ( t.begin() == t.end() ) );
+ CHECK( t.insert( "" , 1 ) && t.insert( std::string( "a\0b" , 3 ) , 2 ) );
+ CHECK( t.insert( "a" , 3 ) && ! t.insert( "" , 4 ) );
+ CHECK( ( *t.lookup( "" ) == 4 ) && ! t.contains( std::string( "a\0" , 2 ) ) );
+ CHECK( ( *t.begin() ).first == "" );
+ *t.find( "a" ) = 5;
+ CHECK( *t.lookup( "a" ) == 5 );
+ for( int b = 0 ; b < 256 ; ++b )           // a node of 256 children
+  t.insert( std::string( 1 , char( b ) ) + "tail" , b );
+ for( int b = 0 ; b < 256 ; b += 2 )
+  CHECK( t.remove( std::string( 1 , char( b ) ) + "tail" ) );
+ for( int b = 1 ; b < 256 ; b += 2 )
+  CHECK( *t.lookup( std::string( 1 , char( b ) ) + "tail" ) == b );
+ for( int b = 1 ; b < 256 ; b += 2 ) {      // down to 4 children, and 1
+  CHECK( t.remove( std::string( 1 , char( b ) ) + "tail" ) );
+  for( int c = b + 2 ; c < 256 ; c += 2 )
+   CHECK( *t.lookup( std::string( 1 , char( c ) ) + "tail" ) == c );
+  }
+ CHECK( ( t.size() == 3 ) && ( *t.lookup( "a" ) == 5 ) );
  }
 
 }  // end( namespace )
