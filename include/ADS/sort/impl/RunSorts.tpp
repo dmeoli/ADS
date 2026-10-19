@@ -26,34 +26,44 @@ class RunMerger {
 
  RunMerger( std::vector< T > & A , C & less ) : f_A( A ) , f_less( less ) {}
 
- /// the end of the run from lo, extended to minrun items, made ascending
+ /// the end of the run from lo, extended to minrun items, made ascending;
+ /// extended() tells whether it had to be extended
  std::size_t nextRun( std::size_t lo , std::size_t minrun ) {
   const std::size_t n = f_A.size();
+  T * const a = f_A.data();
   std::size_t hi = lo + 1;
   if( hi < n ) {
-   if( f_less( f_A[ hi ] , f_A[ lo ] ) ) {  // strictly decreasing
-    while( ( hi + 1 < n ) && f_less( f_A[ hi + 1 ] , f_A[ hi ] ) ) ++hi;
-    std::reverse( f_A.begin() + lo , f_A.begin() + hi + 1 );
+   if( f_less( a[ hi ] , a[ lo ] ) ) {      // strictly decreasing
+    while( ( hi + 1 < n ) && f_less( a[ hi + 1 ] , a[ hi ] ) ) ++hi;
+    std::reverse( a + lo , a + hi + 1 );
     }
    else                                     // non-decreasing
-    while( ( hi + 1 < n ) && ! f_less( f_A[ hi + 1 ] , f_A[ hi ] ) ) ++hi;
+    while( ( hi + 1 < n ) && ! f_less( a[ hi + 1 ] , a[ hi ] ) ) ++hi;
    ++hi;
    }
   const std::size_t end = std::min( n , lo + std::max( minrun ,
                                                        hi - lo ) );
+  f_extended = end > hi;
   for( std::size_t i = hi ; i < end ; ++i ) {   // binary insertion
-   std::size_t a = lo , b = i;                  // after the equals
-   while( a < b ) {
-    const std::size_t m = a + ( b - a ) / 2;
-    if( f_less( f_A[ i ] , f_A[ m ] ) ) b = m; else a = m + 1;
+   std::size_t l = lo , r = i;                  // after the equals
+   while( l < r ) {
+    const std::size_t m = l + ( r - l ) / 2;
+    if( f_less( a[ i ] , a[ m ] ) ) r = m; else l = m + 1;
     }
-   std::rotate( f_A.begin() + a , f_A.begin() + i , f_A.begin() + i + 1 );
+   std::rotate( a + l , a + i , a + i + 1 );
    }
   return( end );
   }
 
- /// merges the adjacent runs A[ s1 .. e1 ) and A[ e1 .. e2 )
- void merge( std::size_t s1 , std::size_t e1 , std::size_t e2 ) {
+ /// true if the last run of nextRun() was extended: the input is in
+ /// disorder there
+ bool extended( void ) const { return( f_extended ); }
+
+ /// merges the adjacent runs A[ s1 .. e1 ) and A[ e1 .. e2 ); disorder
+ /// tells that both come from runs extended by nextRun(), i.e., that the
+ /// order of their items is hard to predict
+ void merge( std::size_t s1 , std::size_t e1 , std::size_t e2 ,
+             bool disorder = false ) {
   // the left items before A[ e1 ] , the right ones after A[ e1 - 1 ]
   s1 = gallopRight( f_A[ e1 ] , s1 , e1 );
   if( s1 == e1 )
@@ -63,33 +73,63 @@ class RunMerger {
    return;
   f_B.assign( std::make_move_iterator( f_A.begin() + s1 ) ,
               std::make_move_iterator( f_A.begin() + e1 ) );
+  T * const a = f_A.data();
+  T * const b = f_B.data();
   std::size_t i = 0 , j = e1 , k = s1;
   const std::size_t n1 = f_B.size();
-  while( ( i < n1 ) && ( j < e2 ) ) {
-   std::size_t winsL = 0 , winsR = 0;
-   while( ( i < n1 ) && ( j < e2 ) && ( winsL < 7 ) && ( winsR < 7 ) )
-    if( f_less( f_A[ j ] , f_B[ i ] ) ) {   // the right one, strictly
-     f_A[ k++ ] = std::move( f_A[ j++ ] );
+  if constexpr( std::is_arithmetic_v< T > )
+   if( disorder ) {                         // no branch on the order
+    while( ( i < n1 ) && ( j < e2 ) ) {
+     const bool right = f_less( a[ j ] , b[ i ] );
+     a[ k++ ] = right ? a[ j ] : b[ i ];
+     j += right;
+     i += ! right;
+     }
+    while( i < n1 ) a[ k++ ] = b[ i++ ];
+    return;
+    }
+  for( bool done = false ; ! done ; ) {
+   std::size_t winsL = 0 , winsR = 0;       // one by one, while no run
+   do                                       // wins f_gallop times in a row
+    if( f_less( a[ j ] , b[ i ] ) ) {       // the right one, strictly
+     a[ k++ ] = std::move( a[ j++ ] );
+     done = j == e2;
      ++winsR;
      winsL = 0;
      }
     else {
-     f_A[ k++ ] = std::move( f_B[ i++ ] );
+     a[ k++ ] = std::move( b[ i++ ] );
+     done = i == n1;
      ++winsL;
      winsR = 0;
      }
-   if( ( i == n1 ) || ( j == e2 ) )
-    break;
-   if( winsL >= 7 ) {                       // the left items <= A[ j ]
-    const std::size_t t = gallopRightIn( f_B , f_A[ j ] , i , n1 );
-    while( i < t ) f_A[ k++ ] = std::move( f_B[ i++ ] );
-    }
-   else {                                   // the right items < B[ i ]
-    const std::size_t t = gallopLeft( f_B[ i ] , j , e2 );
-    while( j < t ) f_A[ k++ ] = std::move( f_A[ j++ ] );
+   while( ! done && ( ( winsL | winsR ) < f_gallop ) );
+   while( ! done ) {                        // by galloping, while it pays
+    const std::size_t tL = gallopRightIn( f_B , a[ j ] , i , n1 );
+    winsL = tL - i;                         // the left items <= A[ j ]
+    while( i < tL ) a[ k++ ] = std::move( b[ i++ ] );
+    if( ( done = i == n1 ) )
+     break;
+    a[ k++ ] = std::move( a[ j++ ] );
+    if( ( done = j == e2 ) )
+     break;
+    const std::size_t tR = gallopLeft( b[ i ] , j , e2 );
+    winsR = tR - j;                         // the right items < B[ i ]
+    while( j < tR ) a[ k++ ] = std::move( a[ j++ ] );
+    if( ( done = j == e2 ) )
+     break;
+    a[ k++ ] = std::move( b[ i++ ] );
+    if( ( done = i == n1 ) )
+     break;
+    if( ( winsL < 7 ) && ( winsR < 7 ) ) {
+     f_gallop += 2;                         // it does not pay: one by one
+     break;
+     }
+    if( f_gallop > 1 )
+     --f_gallop;                            // it pays: sooner next time
     }
    }
-  while( i < n1 ) f_A[ k++ ] = std::move( f_B[ i++ ] );
+  while( i < n1 ) a[ k++ ] = std::move( b[ i++ ] );
   }
 
  private:
@@ -139,6 +179,8 @@ class RunMerger {
  std::vector< T > & f_A;   ///< the vector
  C & f_less;               ///< the order
  std::vector< T > f_B;     ///< the buffer of a left run
+ std::size_t f_gallop = 7; ///< the wins in a row that start galloping
+ bool f_extended = false;  ///< the last run was extended
 
  };  // end( class RunMerger )
 
@@ -182,18 +224,19 @@ void timSort( std::vector< T > & A , C less , std::size_t * runs )
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size() , m = detail::minrun( n );
  detail::RunMerger< T , C > M( A , less );
- struct Run { std::size_t start , len; };
+ struct Run { std::size_t start , len; bool disorder; };
  std::vector< Run > S;
  std::size_t count = 0;
  auto mergeAt = [ & ]( std::size_t i ) {    // S[ i ] and S[ i + 1 ]
+  S[ i ].disorder = S[ i ].disorder && S[ i + 1 ].disorder;
   M.merge( S[ i ].start , S[ i + 1 ].start ,
-           S[ i + 1 ].start + S[ i + 1 ].len );
+           S[ i + 1 ].start + S[ i + 1 ].len , S[ i ].disorder );
   S[ i ].len += S[ i + 1 ].len;
   S.erase( S.begin() + i + 1 );
   };
  for( std::size_t lo = 0 ; lo < n ; ++count ) {
   const std::size_t hi = M.nextRun( lo , m );
-  S.push_back( { lo , hi - lo } );
+  S.push_back( { lo , hi - lo , M.extended() } );
   lo = hi;
   while( S.size() > 1 ) {                   // the invariants of the stack
    std::size_t i = S.size() - 2;
@@ -220,30 +263,33 @@ void powerSort( std::vector< T > & A , C less , std::size_t * runs )
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
  detail::RunMerger< T , C > M( A , less );
- struct Run { std::size_t start , end; int power; };
+ struct Run { std::size_t start , end; int power; bool disorder; };
  std::vector< Run > S;                      // the powers increase upwards
  std::size_t count = 0;
  if( n > 0 ) {
   std::size_t s = 0 , e = M.nextRun( 0 , 24 );   // the current run
+  bool d = M.extended();                    // and its disorder
   count = 1;
-  while( e < n ) {
-   const std::size_t e2 = M.nextRun( e , 24 );
-   ++count;
-   const int p = detail::nodePower( s , e , e2 , n );
-   while( ! S.empty() && ( S.back().power > p ) ) {
-    M.merge( S.back().start , s , e );      // the top merged with s .. e
-    s = S.back().start;
-    S.pop_back();
-    }
-   S.push_back( { s , e , p } );
-   s = e;
-   e = e2;
-   }
-  while( ! S.empty() ) {
-   M.merge( S.back().start , s , e );
+  auto mergeTop = [ & ]( void ) {          // the top merged with s .. e
+   d = d && S.back().disorder;
+   M.merge( S.back().start , s , e , d );
    s = S.back().start;
    S.pop_back();
+   };
+  while( e < n ) {
+   const std::size_t e2 = M.nextRun( e , 24 );
+   const bool d2 = M.extended();
+   ++count;
+   const int p = detail::nodePower( s , e , e2 , n );
+   while( ! S.empty() && ( S.back().power > p ) )
+    mergeTop();
+   S.push_back( { s , e , p , d } );
+   s = e;
+   e = e2;
+   d = d2;
    }
+  while( ! S.empty() )
+   mergeTop();
   }
  if( runs ) *runs = count;
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
