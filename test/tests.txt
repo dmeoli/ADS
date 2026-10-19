@@ -1603,3 +1603,6 @@ contract_tree         other-trees          B-albero, espressioni, cursori
 # the paths of rank and select that practical sizes do not take
 succinct_top  rank-select-top   rank e select col livello alto e gruppi radi
 succinct_top  succinct-top      Elias-Fano e parentesi col livello alto
+
+# the engineered succinct structures and codes, beyond the book
+engineered_succinct  wavelet-matrix   wavelet matrix, rank, select, quantili

@@ -427,6 +427,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   other; HugePageAllocator, which aligns the blocks of 2 MB or more to the
   huge pages and, on Linux, advises them for the transparent huge pages,
   the default allocator of ObjectPool
+- WaveletMatrix, the wavelet matrix of Claude, Navarro and Ordonez: a
+  sequence of integers of w bits as w vectors of bits with rank and
+  select, with access, rank and select of any symbol, the k-th smallest
+  item of a range and the items of a range below a value, in O( w ) time;
+  test/engineered_succinct.cpp
 
 ### Changed
 
