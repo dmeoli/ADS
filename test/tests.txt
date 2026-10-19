@@ -53,6 +53,7 @@ ch04  ex4.3              Esercizio 4.3, somma di numeri come liste
 ch04  ex4.4              Esercizio 4.4, tangentopoli (Giuseppe Flavio)
 ch04  ex4.5              Esercizio 4.5, replica dei dispari
 ch04  ex4.6              Esercizio 4.6, lista monodirezionale
+ch04  ex4.6.pool         Esercizio 4.6, lista monodirezionale sul pool
 ch04  spec.CursorList    oltre il libro, lista con cursori
 ch04  ex4.7              Esercizio 4.7, due pile in un vettore
 ch04  ex4.8              Esercizio 4.8, firstN iterativa

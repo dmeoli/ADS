@@ -255,6 +255,57 @@ ADS_TEST( "spec.ArraySequence" ) { sequence_spec< ArraySequence< int > >(); }
 // Esercizio 4.6, the singly linked list with no sentinel
 ADS_TEST( "ex4.6" ) { sequence_spec< SinglyList< int > >(); }
 
+// the singly linked list on its pool: random insertions and removals at
+// random positions against std::deque, the cells removed taken again by
+// the insertions; the edges: the empty list, one item in and out, copies,
+// moves and swaps between lists of different pools whose cells stay valid
+// and are freed by the list that holds them, a list moved from and used
+// again, and items with a destructor (std::string, beyond the short-string
+// buffer) left in the list when it dies
+ADS_TEST( "ex4.6.pool" )
+{
+ std::mt19937 g( 46 );
+ SinglyList< std::string > L;
+ std::deque< std::string > R;
+ CHECK( L.isEmpty() && L.begin() == L.end() );
+ L.insert( L.head() , std::string( 30 , 'x' ) );
+ L.remove( L.head() );
+ CHECK( L.isEmpty() );
+ for( int op = 0 ; op < 20000 ; ++op ) {
+  const std::size_t k = R.empty() ? 0 : g() % ( R.size() + 1 );
+  auto p = L.head();
+  for( std::size_t i = 0 ; i < k ; ++i ) p = L.next( p );
+  if( R.empty() || ( g() % 5 < 3 ) ) {
+   const std::string v( 20 + g() % 20 , char( 'a' + op % 26 ) );
+   L.insert( p , v );
+   R.insert( R.begin() + std::ptrdiff_t( k ) , v );
+   }
+  else if( k < R.size() ) {
+   L.remove( p );
+   R.erase( R.begin() + std::ptrdiff_t( k ) );
+   }
+  if( op % 4000 == 0 )
+   CHECK( std::equal( L.begin() , L.end() , R.begin() , R.end() ) );
+  }
+ CHECK( std::equal( L.begin() , L.end() , R.begin() , R.end() ) );
+ SinglyList< std::string > C( L );             // a copy, a pool of its own
+ SinglyList< std::string > M( std::move( L ) );  // the cells move along
+ CHECK( L.isEmpty() && C == M );
+ L.insert( L.head() , "again" );                // the list moved from
+ CHECK( L.read( L.head() ) == "again" );
+ L.swap( C );
+ CHECK( L == M && C.read( C.head() ) == "again" );
+ C = M;
+ M.remove( M.head() );
+ CHECK( C == L && !( M == L ) );
+ SinglyList< int > I;
+ for( int i = 0 ; i < 100000 ; ++i ) I.push_front( i );
+ int expect = 99999;
+ bool ok = true;
+ for( int x : I ) ok = ok && ( x == expect-- );
+ CHECK( ok && expect == -1 );
+ }
+
 // beyond the book, the SEQUENCE with cursors
 ADS_TEST( "spec.CursorList" ) { sequence_spec< CursorList< int > >(); }
 

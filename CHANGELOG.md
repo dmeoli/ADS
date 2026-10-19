@@ -341,6 +341,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the consolidation, which walks the roots where they are with the trees
   by degree in an array on the stack instead of two vectors per call; a
   heap of items with a trivial destructor dies a block at a time
+- SinglyList keeps its cells in an ObjectPool, the cell of remove()
+  serving the next insert(); a list of items with a trivial destructor
+  dies a block at a time
 
 ### Fixed
 

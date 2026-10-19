@@ -18,7 +18,13 @@
  * position that holds an item, i.e., one that is not finished();
  * insert() and write() ensure that v is read back in its position. A list
  * is copied cell by cell and moved in O( 1 ) time, the one moved from left
- * empty. The operations are defined in SinglyList.tpp.
+ * empty. Beyond the book, the cells come from an ObjectPool [see
+ * ObjectPool.h] of the list, which takes back the cell of remove() for the
+ * next insert(), so that a cell costs no call to the allocator, the cells
+ * made one after another are next to each other in memory, and a list of
+ * items with a trivial destructor dies in one step per block; the price is
+ * that the list keeps the memory of its largest size until it dies. The
+ * operations are defined in SinglyList.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, Esercizio 4.6,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -44,6 +50,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/ObjectPool.h"
 
 #include <cstddef>
 #include <initializer_list>
@@ -207,6 +214,7 @@ class SinglyList {
  [[nodiscard]] Cell * cell( Pos p ) const;
 
  Cell * f_first = nullptr;               ///< the first cell
+ ObjectPool< Cell > f_pool;              ///< the cells
  mutable Cell f_before{ T() , nullptr }; ///< its address is pos_-1
 
  };  // end( class SinglyList )

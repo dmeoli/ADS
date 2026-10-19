@@ -42,7 +42,8 @@ SinglyList< T >::SinglyList( const SinglyList & other )
 
 template< class T >
 SinglyList< T >::SinglyList( SinglyList && other ) noexcept
- : f_first( std::exchange( other.f_first , nullptr ) )
+ : f_first( std::exchange( other.f_first , nullptr ) ) ,
+   f_pool( std::move( other.f_pool ) )
 {
  }
 
@@ -56,14 +57,16 @@ SinglyList< T > & SinglyList< T >::operator=( SinglyList other ) noexcept
 template< class T >
 SinglyList< T >::~SinglyList()
 {
- while( ! isEmpty() )
-  remove( head() );
+ if constexpr( ! std::is_trivially_destructible_v< T > )
+  while( ! isEmpty() )
+   remove( head() );
  }
 
 template< class T >
 void SinglyList< T >::swap( SinglyList & other ) noexcept
 {
  std::swap( f_first , other.f_first );
+ f_pool.swap( other.f_pool );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -128,9 +131,9 @@ typename SinglyList< T >::Pos SinglyList< T >::insert( Pos p , const T & v )
 {
  ADS_PRE( p != &f_before );
  if( ! p )
-  f_first = new Cell{ v , f_first };
+  f_first = f_pool.make( v , f_first );
  else
-  p->next = new Cell{ v , p->next };
+  p->next = f_pool.make( v , p->next );
  ADS_POST( detail::equal( read( p ) , v ) );
  return( p );
  }
@@ -141,7 +144,7 @@ typename SinglyList< T >::Pos SinglyList< T >::remove( Pos p )
  ADS_PRE( ! finished( p ) );
  Cell * t = cell( p );
  ( p ? p->next : f_first ) = t->next;
- delete t;
+ f_pool.free( t );
  return( p );
  }
 
