@@ -71,6 +71,20 @@ PAIRS = [
     ('perfect hashing', 'ADS::MinimalPerfectHash', 'BBHash', ['BBHash g=2']),
     ('perfect hashing', 'ADS::MinimalPerfectHash', 'RecSplit',
      ['RecSplit l=8 b=100']),
+    ('search', 'ADS::StringSearcher', 'std',
+     ['std::string_view::find', 'std::search', 'std::boyer_moore_searcher',
+      'std::boyer_moore_horspool_searcher']),
+    ('search', 'ADS::StringSearcher', 'Boost',
+     ['boost::boyer_moore', 'boost::boyer_moore_horspool',
+      'boost::knuth_morris_pratt']),
+    ('search', 'ADS::StringSearcher', 'libc', ['memmem']),
+    ('suffix array', 'ADS::suffixArray', 'libsais', ['libsais']),
+    ('suffix array', 'ADS::suffixArray', 'libdivsufsort', ['divsufsort']),
+    ('lcp', 'ADS::lcpArrayPhi', 'libsais', ['libsais plcp+lcp']),
+    ('edit distance', 'ADS::levenshtein', 'edlib', ['edlib']),
+    ('edit distance', 'ADS::levenshtein', 'rapidfuzz', ['rapidfuzz']),
+    ('lcs', 'ADS::lcsLength', 'rapidfuzz', ['rapidfuzz']),
+    ('approximate search', 'ADS::approximateMatches', 'edlib', ['edlib']),
 ]
 
 def read(path):
