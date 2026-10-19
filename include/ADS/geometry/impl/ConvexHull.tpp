@@ -168,11 +168,12 @@ inline std::vector< Point > convexHull( const std::vector< Point > & P )
  using L = long long;
  using U = std::uint64_t;
  const std::size_t n = P.size();
+ if( n == 0 )
+  return( std::vector< Point >() );
  // the extreme points in the directions of -y , x - y , x , x + y , y ,
  // y - x , -x , -x - y: the octagon, counter clockwise
  Point E[ 8 ];
- if( n )
-  for( auto & e : E ) e = P[ 0 ];
+ for( auto & e : E ) e = P[ 0 ];
  for( const Point & p : P ) {
   if( p.y < E[ 0 ].y ) E[ 0 ] = p;
   if( L( p.x ) - p.y > L( E[ 1 ].x ) - E[ 1 ].y ) E[ 1 ] = p;
