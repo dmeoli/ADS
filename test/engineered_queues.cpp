@@ -296,8 +296,8 @@ ADS_TEST( "spsc-queue-items" )
  }
 
 // MPSCQueue: 4 producers on threads, the items of each in order, by
-// tryPop() and by popInto(); blocks of 2 and 3 places, so that the items
-// cross many blocks and the blocks given back are used again; an empty
+// tryPop() and by popInto(); first vectors of 2 and 4 places, so that the
+// lanes grow many times over; an empty
 // queue, a queue with no producer, items that own memory left in the
 // queue and destroyed with it, items that only move
 ADS_TEST( "mpsc-queue" )
@@ -339,7 +339,7 @@ ADS_TEST( "mpsc-queue" )
   return( ordered && ! Q.tryPop( z ) && Q.empty() );
   };
  CHECK( run( std::integral_constant< std::size_t , 2 >() , false ) );
- CHECK( run( std::integral_constant< std::size_t , 3 >() , true ) );
+ CHECK( run( std::integral_constant< std::size_t , 4 >() , true ) );
  CHECK( run( std::integral_constant< std::size_t , 512 >() , true ) );
  Counted::alive = 0;
  {

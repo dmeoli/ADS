@@ -20,16 +20,14 @@ template< class T , std::size_t B >
 MPSCQueue< T , B >::~MPSCQueue()
 {
  for( Lane * l = f_lanes.load( std::memory_order_acquire ) ; l ; ) {
-  // the items from the consumer's place to the producer's
-  for( Block * b = l->head ; b ; ) {
-   const std::size_t from = b == l->head ? l->headAt : 0 ,
-                     to = b->written.load( std::memory_order_acquire );
-   for( std::size_t i = from ; i < to ; ++i ) b->at( i )->~T();
-   Block * n = b->next.load( std::memory_order_acquire );
-   delete b;
-   b = n;
+  for( Ring * r = l->out ; r ; ) {          // the items left, the vectors
+   const std::size_t t = r->tail.load( std::memory_order_acquire );
+   for( std::size_t h = r->head.load() ; h != t ; ++h )
+    r->place[ h & r->mask ].~T();
+   Ring * n = r->next.load( std::memory_order_acquire );
+   delete r;
+   r = n;
    }
-  delete l->spare.load( std::memory_order_acquire );
   Lane * n = l->nextLane;
   delete l;
   l = n;
@@ -52,25 +50,20 @@ template< class ... Args >
 void MPSCQueue< T , B >::Producer::emplace( Args && ... args )
 {
  ADS_PRE( f_lane != nullptr );
- Lane * l = f_lane;
- std::size_t i = l->tailAt;
- Block * b = l->tail;
- if( i == B ) [[unlikely]] {                // full: the next block, the
-  Block * n = l->spare.exchange( nullptr , std::memory_order_acquire );
-  if( n ) {                                 // one given back if any
-   n->written.store( 0 , std::memory_order_relaxed );
-   n->next.store( nullptr , std::memory_order_relaxed );
+ Ring * r = f_lane->in;
+ std::size_t t = r->tail.load( std::memory_order_relaxed );
+ if( t - r->headSeen > r->mask ) [[unlikely]] {   // full, as far as seen
+  r->headSeen = r->head.load( std::memory_order_acquire );
+  if( t - r->headSeen > r->mask ) {         // full: a vector twice as
+   Ring * n = new Ring( 2 * ( r->mask + 1 ) );   // large, linked after
+   r->next.store( n , std::memory_order_release );   // the last item
+   f_lane->in = r = n;
+   t = 0;
    }
-  else
-   n = new Block;
-  b->next.store( n , std::memory_order_release );
-  l->tail = b = n;
-  i = 0;
   }
- ::new( static_cast< void * >( b->at( i ) ) )
+ ::new( static_cast< void * >( r->place + ( t & r->mask ) ) )
   T( std::forward< Args >( args )... );
- b->written.store( i + 1 , std::memory_order_release );
- l->tailAt = i + 1;
+ r->tail.store( t + 1 , std::memory_order_release );
  }
 
 template< class T , std::size_t B >
@@ -78,26 +71,31 @@ std::size_t MPSCQueue< T , B >::drain( Lane * l , T * out , std::size_t n )
 {
  std::size_t k = 0;
  while( k < n ) {
-  Block * b = l->head;
-  if( l->headAt == l->seen ) {              // all those seen taken: look
-   l->seen = b->written.load( std::memory_order_acquire );   // again
-   if( l->headAt == l->seen ) {
-    if( l->headAt < B )
-     break;                                 // none in the lane
-    Block * nb = b->next.load( std::memory_order_acquire );
-    if( ! nb )
-     break;                                 // the next block not linked
-    l->head = nb;                           // the block done, given back
-    l->headAt = l->seen = 0;
-    delete l->spare.exchange( b , std::memory_order_acq_rel );
+  Ring * r = l->out;
+  std::size_t h = r->head.load( std::memory_order_relaxed );
+  if( h == r->tailSeen ) {                  // all those seen taken
+   r->tailSeen = r->tail.load( std::memory_order_acquire );
+   if( h == r->tailSeen ) {
+    // empty: if the producer went on in a larger vector, the tail it
+    // left here came before the link, and this one is done
+    Ring * nr = r->next.load( std::memory_order_acquire );
+    if( ! nr )
+     break;
+    r->tailSeen = r->tail.load( std::memory_order_acquire );
+    if( h != r->tailSeen )
+     continue;
+    l->out = nr;
+    delete r;
     continue;
     }
    }
-  for( ; ( l->headAt < l->seen ) && ( k < n ) ; ++l->headAt , ++k ) {
-   T * p = b->at( l->headAt );
-   out[ k ] = std::move( *p );
-   p->~T();
+  const std::size_t e = std::min( r->tailSeen , h + ( n - k ) );
+  for( ; h < e ; ++h , ++k ) {
+   T & x = r->place[ h & r->mask ];
+   out[ k ] = std::move( x );
+   x.~T();
    }
+  r->head.store( h , std::memory_order_release );
   }
  return( k );
  }
@@ -130,15 +128,11 @@ template< class T , std::size_t B >
 bool MPSCQueue< T , B >::empty( void )
 {
  for( Lane * l = f_lanes.load( std::memory_order_acquire ) ; l ;
-      l = l->nextLane ) {
-  if( l->headAt < l->head->written.load( std::memory_order_acquire ) )
-   return( false );
-  if( ( l->headAt == B ) &&
-      l->head->next.load( std::memory_order_acquire ) &&
-      ( l->head->next.load( std::memory_order_acquire )->written.load(
-         std::memory_order_acquire ) > 0 ) )
-   return( false );
-  }
+      l = l->nextLane )
+  for( Ring * r = l->out ; r ; r = r->next.load( std::memory_order_acquire ) )
+   if( r->head.load( std::memory_order_relaxed ) !=
+       r->tail.load( std::memory_order_acquire ) )
+    return( false );
  return( true );
  }
 
