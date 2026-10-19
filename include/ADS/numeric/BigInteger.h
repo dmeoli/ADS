@@ -5,12 +5,12 @@
  * The integers of any length of Knuth (4.3.1), beyond the book: a sign and
  * the magnitude as a vector of digits (limbs) in base \f$ b = 2^{64} \f$,
  * the least significant first, with no leading zero. The long operations
- * work on spans of digits with the scratch space allocated once per call.
- * The product of two digits in two and the sums with carry are one
- * instruction where the compiler offers them (unsigned __int128 in GCC and
- * Clang, _umul128() and _addcarry_u64() in MSVC on x64), else the four
- * products of the halves of 32 bits; ADS_BIGINT_PORTABLE forces the
- * latter.
+ * work on spans of digits with the scratch space allocated once per call,
+ * and the digits are not zeroed before they are written. The product of
+ * two digits in two and the sums with carry are one instruction where the
+ * compiler offers them (unsigned __int128 in GCC and Clang, _umul128() and
+ * _addcarry_u64() in MSVC on x64), else the four products of the halves
+ * of 32 bits; ADS_BIGINT_PORTABLE forces the latter.
  *
  * - The sum and the difference are Algorithms 4.3.1A and 4.3.1S, a carry
  *   or a borrow per digit, \f$ O( n ) \f$.
@@ -28,9 +28,8 @@
  *   \f$ n \, 2^{64} \f$ for n pieces, stays below the product of the
  *   primes, \f$ 2^{90} \f$, up to transforms of \f$ 2^{26} \f$ pieces,
  *   i.e., products of \f$ 2^{25} \f$ digits, past which Karatsuba splits
- *   the factors. multiplySchool(),
- *   multiplyKaratsuba() and multiplyFFT() are kept apart for the
- *   comparison.
+ *   the factors. multiplySchool(), multiplyKaratsuba() and multiplyFFT()
+ *   are kept apart for the comparison.
  * - The quotient and the remainder are Algorithm 4.3.1D for the short
  *   quotients: the divisor is shifted until its leading digit has the top
  *   bit set, which makes the trial quotient \f$ \hat q \f$, taken from the
@@ -41,22 +40,25 @@
  *   here and in the short division, is two products by a reciprocal of
  *   the divisor computed once (Moeller and Granlund); the reciprocal is a
  *   division of 128 bits by 64, in the portable form by halves of 32 bits
- *   (Warren, section 9.4). From kDivide digits
- *   of quotient the division is recursive (Burnikel and Ziegler; Brent and
- *   Zimmermann, Algorithm 1.8): the upper half of the quotient from the
- *   upper half of the divisor, corrected at most twice, then the lower
- *   half, \f$ O( M( n ) \log n ) \f$ for products in \f$ M( n ) \f$, a
+ *   (Warren, section 9.4). The remainder alone by a digit below
+ *   \f$ 2^{60} \f$ from kModFold digits folds 4 digits per step into a
+ *   remainder of two digits, by the residues of \f$ b^k \f$, with one
+ *   division at the end. From kDivide digits of quotient the division is
+ *   recursive (Burnikel and Ziegler; Brent and Zimmermann, Algorithm 1.8):
+ *   the upper half of the quotient from the upper half of the divisor,
+ *   corrected at most twice, then the lower half,
+ *   \f$ O( M( n ) \log n ) \f$ for products in \f$ M( n ) \f$, a
  *   quotient longer than the divisor taken by blocks as long as the
  *   divisor. divModSchool() is Algorithm D alone. The quotient is
  *   truncated toward zero, as for the integers of C++.
  * - The conversion to and from the bases 2 to 36 (4.4) works with the
  *   largest power P of the base in one digit, \f$ 10^{19} \f$ for the base
- *   10. In the bases that are powers
- *   of 2 it is a slice of bits per figure, \f$ O( n ) \f$. In the others it
- *   is divide and conquer (Brent and Zimmermann, section 1.7), with the
- *   powers \f$ P^{2^i} \f$ computed once per call: the output splits the
- *   number by the power nearest the square root, the lower part padded
- *   with zeros, and the input joins two halves with one product per level,
+ *   10. In the bases that are powers of 2 it is a slice of bits per
+ *   figure, \f$ O( n ) \f$. In the others it is divide and conquer
+ *   (Brent and Zimmermann, section 1.7), with the powers \f$ P^{2^i} \f$
+ *   computed once per call: the output splits the number by the power
+ *   nearest the square root, the lower part padded with zeros, and the
+ *   input joins two halves with one product per level,
  *   \f$ O( M( n ) \log n ) \f$; below kConvert digits they divide or
  *   multiply by P once per many figures, as toStringSchool() and
  *   fromStringSchool() do at every length.
@@ -64,9 +66,10 @@
  *   products by x. gcd() is the algorithm of Lehmer (4.5.2L): the leading
  *   62 bits of the two numbers run the algorithm of Euclid in single
  *   precision while the two bounds of each quotient agree and the
- *   cofactors stay below \f$ 2^{30} \f$, and then one pass of two linear
- *   combinations replaces many long divisions, down to one digit, where
- *   the binary algorithm ends; gcdEuclid() is the algorithm of Euclid.
+ *   cofactors stay below \f$ 2^{30} \f$, and then one pass of the two
+ *   linear combinations replaces many long divisions, down to one digit,
+ *   where the binary algorithm ends; gcdEuclid() is the algorithm of
+ *   Euclid.
  *
  * The contracts [see Contract.h]: the divisor is not 0, the base is in
  * [ 2 , 36 ] and the string a number in it; the invariant is the normal
@@ -132,10 +135,12 @@
   #define ADS_BIGINT_WIDE 128
  #elif defined( _MSC_VER ) && defined( _M_X64 )
   #define ADS_BIGINT_WIDE 64
-  #include <intrin.h>
  #else
   #define ADS_BIGINT_WIDE 0
  #endif
+#endif
+#if ADS_BIGINT_WIDE == 64
+ #include <intrin.h>
 #endif
 
 /*--------------------------------------------------------------------------*/

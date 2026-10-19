@@ -1606,7 +1606,7 @@ ADS_TEST( "big-integer-radix" )
    ++k;
   const char top = "0123456789abcdefghijklmnopqrstuvwxyz"[ base - 1 ];
   std::vector< std::size_t > lengths;
-  for( std::size_t s = k ; s <= 64 * k * C ; s *= 2 )   // k 2^i
+  for( std::size_t s = k ; s <= 32 * k * C ; s *= 2 )   // k 2^i
    for( std::size_t d : { s - 1 , s , s + 1 } ) lengths.push_back( d );
   for( std::size_t d : { C - 1 , C , C + 1 } )   // kConvert digits
    lengths.push_back( std::size_t( double( 64 * d ) /

@@ -106,11 +106,12 @@ inline std::uint64_t subBorrow( std::uint64_t a , std::uint64_t b ,
 
 /// floor( ( u1 2^64 + u0 ) / d ) for d with the top bit set and u1 < d;
 /// in the portable form the division of two digits of 32 bits by one
-/// twice (Hacker's Delight, figure 9-3)
+/// twice (Hacker's Delight, figure 9-3), also for clang-cl, whose division
+/// of unsigned __int128 needs a library that MSVC lacks
 inline std::uint64_t divWide( std::uint64_t u1 , std::uint64_t u0 ,
                               std::uint64_t d )
 {
-#if ADS_BIGINT_WIDE == 128
+#if ( ADS_BIGINT_WIDE == 128 ) && ! defined( _MSC_VER )
  return( std::uint64_t( ( ( UInt128( u1 ) << 64 ) | u0 ) / d ) );
 #elif ADS_BIGINT_WIDE == 64
  unsigned long long r;
