@@ -22,14 +22,15 @@ void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 {
  ADS_PRE( ( lo <= hi ) && ( hi <= A.size() ) );
  const auto before = detail::auditCopy( A , lo , hi );
+ T * const a = A.data();                     // not reloaded at each move
  for( std::size_t i = lo + 1 ; i < hi ; ++i ) {
-  T temp = std::move( A[ i ] );               // the item to insert
+  T temp = std::move( a[ i ] );               // the item to insert
   std::size_t j = i;
-  while( ( j > lo ) && less( temp , A[ j - 1 ] ) ) {
-   A[ j ] = std::move( A[ j - 1 ] );          // a larger item to the right
+  while( ( j > lo ) && less( temp , a[ j - 1 ] ) ) {
+   a[ j ] = std::move( a[ j - 1 ] );          // a larger item to the right
    --j;
    }
-  A[ j ] = std::move( temp );
+  a[ j ] = std::move( temp );
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , less , lo , hi ) );
  }

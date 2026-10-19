@@ -87,18 +87,19 @@ template< class T , class C >
 bool partialInsertion( std::vector< T > & A , std::size_t lo ,
                        std::size_t hi , C & less )
 {
+ T * const first = A.data() + lo , * const last = A.data() + hi;
  std::size_t moves = 0;
- for( std::size_t i = lo + 1 ; i < hi ; ++i ) {
-  if( ! less( A[ i ] , A[ i - 1 ] ) )
+ for( T * i = first + 1 ; i < last ; ++i ) {
+  if( ! less( *i , *( i - 1 ) ) )
    continue;
-  T x = std::move( A[ i ] );
-  std::size_t j = i;
+  T x = std::move( *i );
+  T * j = i;
   do {
-   A[ j ] = std::move( A[ j - 1 ] );
+   *j = std::move( *( j - 1 ) );
    --j;
-   } while( ( j > lo ) && less( x , A[ j - 1 ] ) );
-  A[ j ] = std::move( x );
-  moves += i - j;
+   } while( ( j > first ) && less( x , *( j - 1 ) ) );
+  *j = std::move( x );
+  moves += std::size_t( i - j );
   if( moves > 8 )
    return( false );
   }
@@ -112,21 +113,22 @@ std::pair< std::size_t , bool > partitionRight( std::vector< T > & A ,
                                                 std::size_t lo ,
                                                 std::size_t hi , C & less )
 {
- T pivot = std::move( A[ lo ] );
- std::size_t i = lo , j = hi;
- do ++i; while( ( i < j ) && less( A[ i ] , pivot ) );
- do --j; while( ( j > i ) && ! less( A[ j ] , pivot ) );
+ T * const a = A.data();                   // pointers, not indices: no
+ T pivot = std::move( a[ lo ] );            // scaling in the scans
+ T * i = a + lo , * j = a + hi;
+ do ++i; while( ( i < j ) && less( *i , pivot ) );
+ do --j; while( ( j > i ) && ! less( *j , pivot ) );
  const bool already = i >= j;
- while( i < j ) {                           // A[ i ] >= pivot > A[ j ]
-  std::swap( A[ i ] , A[ j ] );
-  do ++i; while( less( A[ i ] , pivot ) );
-  do --j; while( ! less( A[ j ] , pivot ) );
+ while( i < j ) {                           // *i >= pivot > *j
+  std::swap( *i , *j );
+  do ++i; while( less( *i , pivot ) );
+  do --j; while( ! less( *j , pivot ) );
   }
- const std::size_t p = i - 1;
- if( p != lo )
-  A[ lo ] = std::move( A[ p ] );
- A[ p ] = std::move( pivot );
- return( std::pair( p , already ) );
+ T * const p = i - 1;
+ if( p != a + lo )
+  a[ lo ] = std::move( *p );
+ *p = std::move( pivot );
+ return( std::pair( std::size_t( p - a ) , already ) );
  }
 
 /// partitionRight() by blocks (BlockQuicksort): the items of a block of
@@ -141,23 +143,24 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
                                                       std::size_t hi ,
                                                       C & less )
 {
+ T * const a = A.data();
  constexpr std::ptrdiff_t B = 64;
- const T pivot = A[ lo ];
+ const T pivot = a[ lo ];
  std::ptrdiff_t l = std::ptrdiff_t( lo ) , r = std::ptrdiff_t( hi );
- do ++l; while( ( l < r ) && less( A[ l ] , pivot ) );
- do --r; while( ( r > l ) && ! less( A[ r ] , pivot ) );
+ do ++l; while( ( l < r ) && less( a[ l ] , pivot ) );
+ do --r; while( ( r > l ) && ! less( a[ r ] , pivot ) );
  const bool already = l >= r;
- if( ! already ) {                          // A[ l ] >= pivot > A[ r ]
-  std::swap( A[ l++ ] , A[ r-- ] );         // [ l , r ] unknown
+ if( ! already ) {                          // a[ l ] >= pivot > a[ r ]
+  std::swap( a[ l++ ] , a[ r-- ] );         // [ l , r ] unknown
   unsigned char offL[ B ] , offR[ B ];
   std::ptrdiff_t numL = 0 , numR = 0 , startL = 0 , startR = 0;
   auto swaps = [ & ]( void ) {             // a cycle: 2 num + 1 moves
    const std::ptrdiff_t num = std::min( numL , numR );
    if( num > 0 ) {
     auto L = [ & ]( std::ptrdiff_t k ) -> T & {
-     return( A[ l + offL[ startL + k ] ] ); };
+     return( a[ l + offL[ startL + k ] ] ); };
     auto R = [ & ]( std::ptrdiff_t k ) -> T & {
-     return( A[ r - offR[ startR + k ] ] ); };
+     return( a[ r - offR[ startR + k ] ] ); };
     T t = std::move( L( 0 ) );
     L( 0 ) = std::move( R( 0 ) );
     for( std::ptrdiff_t k = 1 ; k < num ; ++k ) {
@@ -176,14 +179,14 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
     startL = 0;
     for( std::ptrdiff_t i = 0 ; i < B ; ++i ) {
      offL[ numL ] = static_cast< unsigned char >( i );
-     numL += ! less( A[ l + i ] , pivot );
+     numL += ! less( a[ l + i ] , pivot );
      }
     }
    if( numR == 0 ) {                        // the misplaced on the right
     startR = 0;
     for( std::ptrdiff_t i = 0 ; i < B ; ++i ) {
      offR[ numR ] = static_cast< unsigned char >( i );
-     numR += less( A[ r - i ] , pivot );
+     numR += less( a[ r - i ] , pivot );
      }
     }
    swaps();
@@ -208,14 +211,14 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
    startL = 0;
    for( std::ptrdiff_t i = 0 ; i < ls ; ++i ) {
     offL[ numL ] = static_cast< unsigned char >( i );
-    numL += ! less( A[ l + i ] , pivot );
+    numL += ! less( a[ l + i ] , pivot );
     }
    }
   if( numR == 0 ) {
    startR = 0;
    for( std::ptrdiff_t i = 0 ; i < rs ; ++i ) {
     offR[ numR ] = static_cast< unsigned char >( i );
-    numR += less( A[ r - i ] , pivot );
+    numR += less( a[ r - i ] , pivot );
     }
    }
   swaps();
@@ -224,19 +227,19 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
   if( numL > 0 ) {                          // the misplaced left to the
    while( numL > 0 ) {                      // end of the block, the last
     --numL;                                 // offset first
-    std::swap( A[ l + offL[ startL + numL ] ] , A[ r-- ] );
+    std::swap( a[ l + offL[ startL + numL ] ] , a[ r-- ] );
     }
    l = r + 1;
    }
   else
    while( numR > 0 ) {                      // the misplaced right to the
     --numR;                                 // start of the block
-    std::swap( A[ r - offR[ startR + numR ] ] , A[ l++ ] );
+    std::swap( a[ r - offR[ startR + numR ] ] , a[ l++ ] );
     }
   }
- const std::size_t p = std::size_t( l - 1 );   // A[ l ] is the first >= pivot
- A[ lo ] = std::move( A[ p ] );
- A[ p ] = pivot;
+ const std::size_t p = std::size_t( l - 1 );   // a[ l ] is the first >= pivot
+ a[ lo ] = std::move( a[ p ] );
+ a[ p ] = pivot;
  return( std::pair( p , already ) );
  }
 
@@ -246,51 +249,53 @@ template< class T , class C >
 std::size_t partitionLeft( std::vector< T > & A , std::size_t lo ,
                            std::size_t hi , C & less )
 {
- T pivot = std::move( A[ lo ] );
- std::size_t i = lo , j = hi;
- do --j; while( ( j > i ) && less( pivot , A[ j ] ) );
- do ++i; while( ( i < j ) && ! less( pivot , A[ i ] ) );
- while( i < j ) {                           // A[ i ] > pivot >= A[ j ]
-  std::swap( A[ i ] , A[ j ] );
-  do --j; while( less( pivot , A[ j ] ) );
-  do ++i; while( ! less( pivot , A[ i ] ) );
+ T * const a = A.data();
+ T pivot = std::move( a[ lo ] );
+ T * i = a + lo , * j = a + hi;
+ do --j; while( ( j > i ) && less( pivot , *j ) );
+ do ++i; while( ( i < j ) && ! less( pivot , *i ) );
+ while( i < j ) {                           // *i > pivot >= *j
+  std::swap( *i , *j );
+  do --j; while( less( pivot , *j ) );
+  do ++i; while( ! less( pivot , *i ) );
   }
- if( j != lo )
-  A[ lo ] = std::move( A[ j ] );
- A[ j ] = std::move( pivot );
- return( j );
+ if( j != a + lo )
+  a[ lo ] = std::move( *j );
+ *j = std::move( pivot );
+ return( std::size_t( j - a ) );
  }
 
 template< class T , class C >
 void pdq( std::vector< T > & A , std::size_t lo , std::size_t hi ,
           int bad , bool leftmost , C & less )
 {
+ T * const a = A.data();
  for( ; ; ) {
   const std::size_t n = hi - lo;
   if( n < 24 ) {
    if( leftmost )
     insertionSort( A , lo , hi , less );
    else                                     // A[ lo - 1 ] is a sentinel
-    for( std::size_t i = lo + 1 ; i < hi ; ++i ) {
-     T x = std::move( A[ i ] );
-     std::size_t j = i;
-     for( ; less( x , A[ j - 1 ] ) ; --j )
-      A[ j ] = std::move( A[ j - 1 ] );
-     A[ j ] = std::move( x );
+    for( T * i = a + lo + 1 ; i < a + hi ; ++i ) {
+     T x = std::move( *i );
+     T * j = i;
+     for( ; less( x , *( j - 1 ) ) ; --j )
+      *j = std::move( *( j - 1 ) );
+     *j = std::move( x );
      }
    return;
    }
-  const std::size_t s = n / 2;              // the pivot to A[ lo ]
+  const std::size_t s = n / 2;              // the pivot to a[ lo ]
   if( n > 128 ) {                           // the ninther of Tukey
    sort3( A , lo , lo + s , hi - 1 , less );
    sort3( A , lo + 1 , lo + s - 1 , hi - 2 , less );
    sort3( A , lo + 2 , lo + s + 1 , hi - 3 , less );
    sort3( A , lo + s - 1 , lo + s , lo + s + 1 , less );
-   std::swap( A[ lo ] , A[ lo + s ] );
+   std::swap( a[ lo ] , a[ lo + s ] );
    }
   else
    sort3( A , lo + s , lo , hi - 1 , less );
-  if( ! leftmost && ! less( A[ lo - 1 ] , A[ lo ] ) ) {
+  if( ! leftmost && ! less( a[ lo - 1 ] , a[ lo ] ) ) {
    lo = partitionLeft( A , lo , hi , less ) + 1;   // a run of equals
    continue;
    }
@@ -307,23 +312,23 @@ void pdq( std::vector< T > & A , std::size_t lo , std::size_t hi ,
     return;
     }
    if( l >= 24 ) {                          // break the pattern
-    std::swap( A[ lo ] , A[ lo + l / 4 ] );
-    std::swap( A[ p - 1 ] , A[ p - l / 4 ] );
+    std::swap( a[ lo ] , a[ lo + l / 4 ] );
+    std::swap( a[ p - 1 ] , a[ p - l / 4 ] );
     if( l > 128 ) {                         // and the ninther's samples
-     std::swap( A[ lo + 1 ] , A[ lo + l / 4 + 1 ] );
-     std::swap( A[ lo + 2 ] , A[ lo + l / 4 + 2 ] );
-     std::swap( A[ p - 2 ] , A[ p - l / 4 - 1 ] );
-     std::swap( A[ p - 3 ] , A[ p - l / 4 - 2 ] );
+     std::swap( a[ lo + 1 ] , a[ lo + l / 4 + 1 ] );
+     std::swap( a[ lo + 2 ] , a[ lo + l / 4 + 2 ] );
+     std::swap( a[ p - 2 ] , a[ p - l / 4 - 1 ] );
+     std::swap( a[ p - 3 ] , a[ p - l / 4 - 2 ] );
      }
     }
    if( r >= 24 ) {
-    std::swap( A[ p + 1 ] , A[ p + 1 + r / 4 ] );
-    std::swap( A[ hi - 1 ] , A[ hi - r / 4 ] );
+    std::swap( a[ p + 1 ] , a[ p + 1 + r / 4 ] );
+    std::swap( a[ hi - 1 ] , a[ hi - r / 4 ] );
     if( r > 128 ) {
-     std::swap( A[ p + 2 ] , A[ p + 2 + r / 4 ] );
-     std::swap( A[ p + 3 ] , A[ p + 3 + r / 4 ] );
-     std::swap( A[ hi - 2 ] , A[ hi - 1 - r / 4 ] );
-     std::swap( A[ hi - 3 ] , A[ hi - 2 - r / 4 ] );
+     std::swap( a[ p + 2 ] , a[ p + 2 + r / 4 ] );
+     std::swap( a[ p + 3 ] , a[ p + 3 + r / 4 ] );
+     std::swap( a[ hi - 2 ] , a[ hi - 1 - r / 4 ] );
+     std::swap( a[ hi - 3 ] , a[ hi - 2 - r / 4 ] );
      }
     }
    }

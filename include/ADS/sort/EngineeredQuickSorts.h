@@ -45,6 +45,9 @@
  *      Software: Practice and Experience 27(8), 983-993, 1997
  * \see O. R. L. Peters, Pattern-defeating quicksort, arXiv:2106.05123,
  *      2021
+ * \see S. Edelkamp, A. Weiss, BlockQuicksort: how branch mispredictions
+ *      don't affect quicksort, Proceedings of ESA 2016, LIPIcs 57, article
+ *      38, 2016
  * \see S. Edelkamp, A. Weiss, BlockQuicksort: avoiding branch
  *      mispredictions in quicksort, ACM Journal of Experimental
  *      Algorithmics 24, article 1.4, 2019, doi:10.1145/3274660
