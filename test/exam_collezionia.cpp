@@ -2662,7 +2662,9 @@ template< class W = std::monostate >
 ListGraph< W > randomGraph( std::mt19937 & g , int n , double p ,
                             bool directed , W w = W() )
 {
- std::bernoulli_distribution coin( p );
+ // p as 2.0 / n is more than 1 for n = 1, which bernoulli_distribution
+ // does not take (an assertion of libstdc++ with _GLIBCXX_ASSERTIONS)
+ std::bernoulli_distribution coin( std::min( p , 1.0 ) );
  ListGraph< W > G( n , directed );
  for( int u = 0 ; u < n ; ++u )
   for( int v = directed ? 0 : u + 1 ; v < n ; ++v )

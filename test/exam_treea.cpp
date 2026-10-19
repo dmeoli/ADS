@@ -939,7 +939,9 @@ namespace {
 MatrixGraph<> randomDigraph( std::mt19937 & g , int n , double q )
 {
  MatrixGraph<> G( n , true );
- std::bernoulli_distribution B( q );
+ // q as 1.5 / n is more than 1 for n = 1, which bernoulli_distribution
+ // does not take (an assertion of libstdc++ with _GLIBCXX_ASSERTIONS)
+ std::bernoulli_distribution B( std::min( q , 1.0 ) );
  for( int u = 0 ; u < n ; ++u )
   for( int v = 0 ; v < n ; ++v )
    if( ( u != v ) && B( g ) )
