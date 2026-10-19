@@ -3,7 +3,9 @@
 #                                                                             #
 # Builds and tests the recipes of packaging/ that need a system other than    #
 # Linux, or a distribution other than Ubuntu: the Homebrew formula on macOS,  #
-# the vcpkg port and the MSYS2 package on Windows, the AUR package on Arch.   #
+# the vcpkg port and the MSYS2 package on Windows, the AUR package on Arch;   #
+# and those of the build systems: the module of Bazel with its entry of the   #
+# Bazel Central Registry, the port of Meson WrapDB.                           #
 # Each job makes the tarball of the commit and points the recipe at it, so    #
 # that the recipes are tested before the release whose tarball they name.     #
 ###############################################################################
@@ -13,6 +15,7 @@ name: Packaging
 on:
   pull_request:
     paths: [ 'packaging/**' , 'CMakeLists.txt' , 'cmake/**' ,
+             'MODULE.bazel' , 'BUILD.bazel' ,
              '.github/workflows/packaging.yml' ]
   workflow_dispatch:
 
@@ -121,3 +124,65 @@ jobs:
           cmake -S "$GITHUB_WORKSPACE/packaging/test" -B build-use
           cmake --build build-use
           ctest --test-dir build-use --output-on-failure
+
+  bazel:
+    strategy:
+      fail-fast: false
+      matrix:
+        bazel: [ 7.x , 8.x , 9.x ]
+    runs-on: ubuntu-latest
+    env:
+      USE_BAZEL_VERSION: ${{ matrix.bazel }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: the test module against the checkout
+        working-directory: packaging/test
+        run: bazel test //... --test_output=errors
+      - name: the entry of the registry, on the tarball of this commit
+        run: |
+          git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
+            gzip -n > "$RUNNER_TEMP/ADS-0.1.0.tar.gz"
+          tgz="$RUNNER_TEMP/ADS-0.1.0.tar.gz"
+          sri="sha256-$(openssl dgst -sha256 -binary "$tgz" | base64)"
+          reg="$RUNNER_TEMP/registry"
+          mkdir -p "$reg" "$RUNNER_TEMP/use"
+          cp -R packaging/bcr/modules "$reg/"
+          echo '{}' > "$reg/bazel_registry.json"
+          sed -i -e "s|\"url\": .*|\"url\": \"file://$tgz\",|" \
+                 -e "s|\"integrity\": .*|\"integrity\": \"$sri\",|" \
+                 "$reg/modules/ads/0.1.0/source.json"
+          cp packaging/test/main.cpp packaging/test/BUILD.bazel \
+             "$RUNNER_TEMP/use/"
+          sed -e '/local_path_override/,/^)/d' \
+              -e 's|(name = "ads")|(name = "ads", version = "0.1.0")|' \
+              packaging/test/MODULE.bazel > "$RUNNER_TEMP/use/MODULE.bazel"
+          cd "$RUNNER_TEMP/use"
+          bazel test //... --test_output=errors \
+                --registry="file://$reg" --registry=https://bcr.bazel.build
+
+  wrapdb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: a project using the wrap, on the tarball of this commit
+        run: |
+          pip install meson ninja
+          use="$RUNNER_TEMP/use"
+          mkdir -p "$use/subprojects/packagecache"
+          git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
+            gzip -n > "$use/subprojects/packagecache/ADS-0.1.0.tar.gz"
+          sha=$(sha256sum < "$use/subprojects/packagecache/ADS-0.1.0.tar.gz" |
+                cut -d' ' -f1)
+          cp -R packaging/wrapdb/subprojects "$use/"
+          sed -i "s|^source_hash = .*|source_hash = $sha|" \
+              "$use/subprojects/ads.wrap"
+          cp packaging/test/main.cpp "$use/"
+          cat > "$use/meson.build" << 'END'
+          project('use', 'cpp', default_options: ['cpp_std=c++20'])
+          ads = dependency('ads')
+          test('use-wrap', executable('use-wrap', 'main.cpp',
+                                      dependencies: ads))
+          END
+          cd "$use"
+          meson setup build
+          meson test -C build --print-errorlogs

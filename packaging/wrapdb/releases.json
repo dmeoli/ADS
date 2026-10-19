@@ -1,0 +1,10 @@
+{
+  "ads": {
+    "dependency_names": [
+      "ads"
+    ],
+    "versions": [
+      "0.1.0-1"
+    ]
+  }
+}

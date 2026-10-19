@@ -1,0 +1,18 @@
+{
+    "homepage": "https://github.com/dmeoli/ADS",
+    "maintainers": [
+        {
+            "email": "donato.meoli.95@gmail.com",
+            "github": "dmeoli",
+            "github_user_id": 21286237,
+            "name": "Donato Meoli"
+        }
+    ],
+    "repository": [
+        "github:dmeoli/ADS"
+    ],
+    "versions": [
+        "0.1.0"
+    ],
+    "yanked_versions": {}
+}

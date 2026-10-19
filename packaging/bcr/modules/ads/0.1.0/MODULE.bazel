@@ -1,0 +1,22 @@
+###############################################################################
+#                               MODULE.bazel                                  #
+#                                                                             #
+# ADS as a module of Bazel, the one of the Bazel Central Registry: the        #
+# target @ads//:ads has the headers [see BUILD.bazel]. The version is that of #
+# CMakeLists.txt, set with it before the tag of a release, since the registry #
+# keeps this file as the tarball has it [see packaging/README.md].            #
+###############################################################################
+
+module(
+    name = "ads",
+    version = "0.1.0",
+    bazel_compatibility = [">=7.2.1"],
+    compatibility_level = 0,
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.16")
+
+###############################################################################
+#                            End of MODULE.bazel                              #
+###############################################################################

@@ -1,0 +1,44 @@
+matrix:
+  unix_platform:
+    - ubuntu2404
+    - macos
+    - macos_arm64
+  windows_platform:
+    - windows
+  bazel: [7.x, 8.x, rolling]
+tasks:
+  verify_targets:
+    name: Verify build targets
+    platform: ${{ unix_platform }}
+    bazel: ${{ bazel }}
+    build_targets:
+      - '@ads//:ads'
+  verify_targets_windows:
+    name: Verify build targets
+    platform: ${{ windows_platform }}
+    bazel: ${{ bazel }}
+    build_targets:
+      - '@ads//:ads'
+bcr_test_module:
+  module_path: packaging/test
+  matrix:
+    unix_platform:
+      - ubuntu2404
+      - macos
+      - macos_arm64
+    windows_platform:
+      - windows
+    bazel: [7.x, 8.x, rolling]
+  tasks:
+    run_test_module:
+      name: Run test module
+      platform: ${{ unix_platform }}
+      bazel: ${{ bazel }}
+      test_targets:
+        - '//...'
+    run_test_module_windows:
+      name: Run test module
+      platform: ${{ windows_platform }}
+      bazel: ${{ bazel }}
+      test_targets:
+        - '//...'

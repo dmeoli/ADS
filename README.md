@@ -557,7 +557,11 @@ CPMAddPackage("gh:dmeoli/ADS@0.1.0")
 target_link_libraries(<target> PRIVATE ADS::ADS)
 ```
 
-and as a subproject ADS builds neither its tests nor its benchmarks.
+and as a subproject ADS builds neither its tests nor its benchmarks. With
+Bazel, `bazel_dep(name = "ads", version = "0.1.0")` in `MODULE.bazel` and
+`deps = ["@ads"]`, from the Bazel Central Registry; with Meson, `meson wrap
+install ads` and `dependency('ads')`, from WrapDB; in both, the targets
+compile in C++20.
 
 ```cpp
 #include "ADS/sequence/List.h"

@@ -24,6 +24,8 @@ under `share/pkgconfig`.
 | AUR            | `aur/PKGBUILD`, `aur/.SRCINFO`| `ads`               |
 | MSYS2          | `msys2/PKGBUILD`              | `mingw-w64-*-ads`   |
 | xmake-repo     | `xmake/packages/a/ads/`       | `ads`               |
+| Bazel (BCR)    | `bcr/modules/ads/`            | `ads`               |
+| Meson WrapDB   | `wrapdb/`                     | `ads`               |
 
 The name on conda-forge is `cpp-ads`, following the convention of the C++
 libraries there, since `ads` is already taken by a Python client of the NASA
@@ -40,7 +42,10 @@ The recipes refer to the tarball of the release with a placeholder checksum,
 which is filled once the tarball exists, as follows.
 
 1. The section `[Unreleased]` of `CHANGELOG.md` becomes `## [X.Y.Z] -
-   <date>`, and the commit is tagged `vX.Y.Z` and pushed; the workflow
+   <date>`, the `VERSION` of `CMakeLists.txt` and the `version` of
+   `MODULE.bazel` become `X.Y.Z` (the Bazel Central Registry keeps the
+   `MODULE.bazel` of the tarball, and `bump.sh` refuses one of another
+   version), and the commit is tagged `vX.Y.Z` and pushed; the workflow
    `release.yml` publishes the release, with the notes taken from that
    section, and attaches `ADS-X.Y.Z.tar.gz` and `ADS-X.Y.Z.tar.gz.sha256`.
 2. `packaging/bump.sh vX.Y.Z` downloads the tarball and writes its version
@@ -49,7 +54,9 @@ which is filled once the tarball exists, as follows.
    Spack, xmake) get a new entry, the others move to the new version with
    their release number back to 1, `debian/changelog` gets a new entry, and
    the snippets of FetchContent and CPM.cmake in the README of the
-   repository take the new version. The result is committed on `main`.
+   repository take the new version; the Bazel Central Registry gets the
+   directory `bcr/modules/ads/X.Y.Z` with the `MODULE.bazel` of the
+   tarball, and the wrap of WrapDB a new release `X.Y.Z-1`. The result is committed on `main`.
 3. Each channel below is then updated from the committed recipes; only the
    first release needs a submission to each channel, since several of them
    (conda-forge, Homebrew, Spack, Nix, vcpkg) have bots or reviewers that
@@ -229,6 +236,73 @@ builds it and runs its `on_test`, which compiles a snippet against
 `ADS/sequence/List.h` in C++20. The pull request goes against `dev`, and the
 maintainers merge it usually within days; a later version is a new line
 `add_versions(...)`, which `bump.sh` writes.
+
+## Bazel Central Registry
+
+The repository is a module of Bazel by itself: `MODULE.bazel` and
+`BUILD.bazel` at the root define `@ads//:ads`, the headers with `include` on
+the path of the includes, and `packaging/test` is a module that uses it
+through `local_path_override`, with `main.cpp` as a `cc_test`. Since Bazel
+does not pass the copts of a library to the targets that use it, these
+compile in C++20 by their own copts, as the test does, or with
+`--cxxopt=-std=c++20`. With bazelisk, in `packaging/test`,
+
+    USE_BAZEL_VERSION=8.x bazelisk test //...
+
+and the same with `7.x` and `9.x`, build and run the test against the
+checkout. The entry of the registry is in `bcr/modules/ads`, with the layout
+of `bazelbuild/bazel-central-registry`: `metadata.json` (the maintainer, the
+repository and the versions) and, per version, `MODULE.bazel` (the one of
+the tarball), `source.json` (the URL of the tarball, its SRI hash and the
+prefix to strip, written by `bump.sh`) and `presubmit.yml` (`@ads//:ads` and
+the test module on Ubuntu 24.04, macOS and Windows with Bazel 7, 8 and the
+latest). The submission goes through a fork of the registry:
+
+    git clone https://github.com/<user>/bazel-central-registry
+    cd bazel-central-registry
+    cp -R <ADS>/packaging/bcr/modules/ads modules/
+    bazel run -- //tools:bcr_validation --check=ads@X.Y.Z
+    bazel run //tools:setup_presubmit_repos -- --module ads@X.Y.Z
+
+the last one preparing the builds of `presubmit.yml`, which then run on the
+local machine as it prints; then a pull request titled `ads@X.Y.Z`. The
+presubmit of the registry runs on its CI, and the merge needs the approval of
+a maintainer of the registry or of the module (the one listed in
+`metadata.json`); a later version is a pull request with the new directory
+that `bump.sh` writes, since the versions already in the registry never
+change.
+
+## Meson WrapDB
+
+WrapDB takes a project that does not build with Meson through a port kept
+in its own repository, `mesonbuild/wrapdb`, as an overlay on the tarball,
+and refuses a port for a tarball that has its own `meson.build` at the
+root; hence ADS has no `meson.build` of its own, and `packaging/wrapdb`
+holds the files of the port with the layout of that repository: the wrap
+`subprojects/ads.wrap` (the tarball, its sha256, the overlay and the
+dependency `ads` it provides), the overlay
+`subprojects/packagefiles/ads/meson.build` (the dependency `ads` with the
+headers and the threads, the installation of the headers and of `ads.pc`,
+and `packaging/test/main.cpp` as its test) and the entry of `releases.json`,
+whose versions are `X.Y.Z-N`, N the revision of the port. In a clone of a
+fork of WrapDB,
+
+    cp <ADS>/packaging/wrapdb/subprojects/ads.wrap subprojects/
+    cp -R <ADS>/packaging/wrapdb/subprojects/packagefiles/ads \
+          subprojects/packagefiles/
+    # the entry "ads" of <ADS>/packaging/wrapdb/releases.json goes into
+    # releases.json, in the order of the names
+    ./tools/format.py
+    git add -A && git commit -m "ads: add X.Y.Z"
+    ./tools/sanity_checks.py
+    meson setup builddir -Dwraps=ads && meson test -C builddir
+
+with a pull request to `mesonbuild/wrapdb` after them, whose CI repeats the
+checks and the build on Linux, macOS and Windows before a maintainer merges
+it. After the merge, a project takes ADS with `meson
+wrap install ads` and `dependency('ads')`, in C++20. A later version is a
+pull request with the new wrap and the new entry of `releases.json`, which
+`bump.sh` writes, and a fix of the port alone takes a new revision, `X.Y.Z-2`.
 
 ## CMake without a package manager
 
