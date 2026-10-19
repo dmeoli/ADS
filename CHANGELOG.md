@@ -303,7 +303,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - FlatHashTable hashes by DefaultHash< K >, FastHash for the integers and
   the strings, std::hash for any other key: the lookups of strings take
-  from 1.25 to 1.75 times less than with std::hash
+  from 1.17 to 1.52 times less than with std::hash, the words as long
 - BloomFilter, PartitionedBloomFilter and SpectralBloomFilter reach the
   places h1 + i h2 mod m one from the other by an addition, with no
   remainder past the first two, and PartitionedBloomFilter hashes an item
