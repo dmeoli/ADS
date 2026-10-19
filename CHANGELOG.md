@@ -257,9 +257,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- the test for emptiness of every structure is empty(), as in the
-  standard library and in Boost, in place of the isEmpty() of the book
-
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
   same on every architecture
