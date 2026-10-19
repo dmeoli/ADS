@@ -202,6 +202,7 @@ PAIRS = [
      ['sdsl::wm_int', 'sdsl::wt_int']),
     ('entropy', 'ADS::huffmanCompress', 'huff0', ['huff0']),
     ('entropy', 'ADS::ransCompress', 'FSE', ['FSE']),
+    ('entropy', 'ADS::tansCompress', 'FSE', ['FSE']),
     ('integers', 'ADS::streamVByteEncode', 'Stream VByte', ['streamvbyte']),
     ('integers', 'ADS::encodeGamma', 'sdsl', ['sdsl::elias_gamma']),
     ('integers', 'ADS::encodeDelta', 'sdsl', ['sdsl::elias_delta']),
@@ -227,6 +228,7 @@ PAIRS = [
     ('space', 'ADS::WaveletMatrix', 'sdsl', ['sdsl::wm_int', 'sdsl::wt_int']),
     ('space', 'ADS::huffmanCompress', 'huff0', ['huff0']),
     ('space', 'ADS::ransCompress', 'FSE', ['FSE']),
+    ('space', 'ADS::tansCompress', 'FSE', ['FSE']),
     ('space', 'ADS::streamVByteEncode', 'Stream VByte', ['streamvbyte']),
     ('space', 'ADS::FMIndex', 'sdsl', ['sdsl::csa_wt<wt_huff>']),
 ]

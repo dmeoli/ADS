@@ -11,8 +11,8 @@
  * - entropy: the encoding and the decoding of n bytes of a text and of a
  *   skewed source (bytes of probability about 2^-k), by the code of
  *   Huffman (the canonical one of the notes, a bit at a time, and the
- *   engineered one), rANS and the arithmetic code of the notes; huff0 and
- *   FSE code blocks of 128 KB, as Zstandard does;
+ *   engineered one), rANS, tANS and the arithmetic code of the notes;
+ *   huff0 and FSE code blocks of 128 KB, as Zstandard does;
  * - integers: the encoding and the decoding of n integers of 32 bits of a
  *   geometric distribution (the gaps of a posting list) by the
  *   variable-byte code and by the codes gamma and delta of Elias;
@@ -62,6 +62,10 @@
  #include "ADS/compression/Rans.h"
  #include "ADS/compression/StreamVByte.h"
  #define ADS_HAS_CODERS 1
+#endif
+#if __has_include( "ADS/compression/Tans.h" )
+ #include "ADS/compression/Tans.h"
+ #define ADS_HAS_TANS 1
 #endif
 
 #if __has_include( <fse/fse.h> )
@@ -251,6 +255,12 @@ void entropyCoders( std::size_t n , int r , unsigned seed )
           return( ADS::ransCompress( s ) ); } ,
          []( const Bytes & c , std::size_t ) {
           return( ADS::ransDecompress( c ) ); } , r );
+#endif
+#ifdef ADS_HAS_TANS
+  coder( what , in , "ADS::tansCompress" , []( const Bytes & s ) {
+          return( ADS::tansCompress( s ) ); } ,
+         []( const Bytes & c , std::size_t ) {
+          return( ADS::tansDecompress( c ) ); } , r );
 #endif
   if( n <= 1000000 ) {                      // the coders of the notes
    std::map< std::uint8_t , std::uint64_t > freq;
