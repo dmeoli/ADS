@@ -8,8 +8,11 @@
  * nodes of a linked structure cost no call to the allocator, the slot just
  * freed is still in the cache when it is used again, and the objects made
  * one after another are next to each other in memory. The slots come in
- * blocks taken from the allocator A, each twice the last one up to n
- * slots, and go back to it only with the pool: a structure that shrinks
+ * blocks taken from the allocator A, the first of one slot and each next
+ * one twice the last up to n slots, so that a small structure takes no
+ * more than it holds; a block begins with a header that links it to the
+ * one before, so that the pool is six words and allocates nothing but its
+ * blocks, which go back to A only with the pool: a structure that shrinks
  * keeps the memory of its largest size. The default allocator gives the
  * blocks of 2 MB or more on huge pages [see HugePageAllocator.h], which
  * the nodes of a large linked structure, reached in no useful order, need
@@ -51,7 +54,6 @@
 #include <new>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -112,18 +114,28 @@ class ObjectPool {
   alignas( T ) unsigned char object[ sizeof( T ) ];
   };
 
+ /// the header of a block, in its first H slots
+ struct Block {
+  Block * prev;    ///< the block before, nil for the first one
+  std::size_t k;   ///< the slots of the block, the header's included
+  };
+
+ static constexpr std::size_t H =
+  ( sizeof( Block ) + sizeof( Slot ) - 1 ) / sizeof( Slot );
+
  using SlotAlloc =
   typename std::allocator_traits< A >::template rebind_alloc< Slot >;
+
+ /// frees the blocks
+ void release( void ) noexcept;
 
  Slot * f_free = nullptr;   ///< the free slots, the last one freed first
  Slot * f_next = nullptr;   ///< the first slot never used of the last block
  Slot * f_end = nullptr;    ///< the end of the last block
+ Block * f_last = nullptr;  ///< the last block, which leads to the others
  std::size_t f_n;           ///< the slots of the largest block
  std::size_t f_size = 0;    ///< the objects alive
-
- /// the blocks and their numbers of slots
- std::vector< std::pair< Slot * , std::size_t > > f_blocks;
- SlotAlloc f_alloc;         ///< the allocator of the blocks
+ [[no_unique_address]] SlotAlloc f_alloc;   ///< the allocator of the blocks
 
  };  // end( class ObjectPool )
 

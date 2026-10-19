@@ -854,16 +854,17 @@ ADS_TEST( "pool" )
  CHECK_THROWS( ObjectPool< int >( 0 ) , contract_violation );
  {
   const std::size_t z = std::max( sizeof( Counted ) , sizeof( void * ) );
+  const std::size_t h = ( 2 * sizeof( void * ) + z - 1 ) / z;   // header
   const auto at = []( const Counted * x ) {     // the address of a slot
    return( reinterpret_cast< std::uintptr_t >( x ) ); };
   ObjectPool< Counted > A( 64 );
   std::vector< Counted * > P;
   for( int i = 0 ; i < 100 ; ++i ) P.push_back( A.make( i ) );
   for( int i = 0 ; i < 100 ; ++i ) CHECK( P[ i ]->v == i );
-  for( int i = 1 ; i < 16 ; ++i )
+  for( int i = 64 ; i < 100 ; ++i )          // blocks of 1, 2, ..., 64
    CHECK( at( P[ i ] ) == at( P[ i - 1 ] ) + z );
   CHECK( A.size() == 100 && Counted::alive == 100 );
-  CHECK( A.bytes() == ( 16 + 32 + 64 ) * z );
+  CHECK( A.bytes() == ( 127 + 7 * h ) * z );
   A.free( P[ 7 ] );
   A.free( P[ 3 ] );
   CHECK( A.size() == 98 && Counted::alive == 98 );
@@ -880,7 +881,7 @@ ADS_TEST( "pool" )
   ObjectPool< Counted > C( 1 );                 // a block per slot
   Counted * c = C.make( 9 );
   C.swap( B );
-  CHECK( B.size() == 1 && C.size() == 2 && B.bytes() == z );
+  CHECK( B.size() == 1 && C.size() == 2 && B.bytes() == ( 1 + h ) * z );
   B.free( c );
   CHECK( Counted::alive == 2 );
   A = std::move( C );

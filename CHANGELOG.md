@@ -353,6 +353,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dies a block at a time
 - DaryHeap keeps its vector on HugePageAllocator, so that a large heap
   is faulted in a huge page at a time and its sifts miss the TLB less
+- ObjectPool begins with a block of one slot and doubles from there, each
+  block with a header that links it to the one before instead of a vector
+  of the blocks, so that a pool is six words, allocates nothing but its
+  blocks, and a structure of few items takes no more than it holds
 
 ### Fixed
 

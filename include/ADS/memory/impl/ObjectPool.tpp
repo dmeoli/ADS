@@ -28,9 +28,9 @@ ObjectPool< T , A >::ObjectPool( ObjectPool && other ) noexcept
  : f_free( std::exchange( other.f_free , nullptr ) ) ,
    f_next( std::exchange( other.f_next , nullptr ) ) ,
    f_end( std::exchange( other.f_end , nullptr ) ) ,
+   f_last( std::exchange( other.f_last , nullptr ) ) ,
    f_n( other.f_n ) ,
    f_size( std::exchange( other.f_size , 0 ) ) ,
-   f_blocks( std::exchange( other.f_blocks , {} ) ) ,
    f_alloc( other.f_alloc )
 {
  }
@@ -47,8 +47,17 @@ ObjectPool< T , A >::operator=( ObjectPool && other ) noexcept
 template< class T , class A >
 ObjectPool< T , A >::~ObjectPool()
 {
- for( auto [ b , k ] : f_blocks )
-  std::allocator_traits< SlotAlloc >::deallocate( f_alloc , b , k );
+ release();
+ }
+
+template< class T , class A >
+void ObjectPool< T , A >::release( void ) noexcept
+{
+ while( Block * b = f_last ) {
+  f_last = b->prev;
+  std::allocator_traits< SlotAlloc >::deallocate( f_alloc ,
+   reinterpret_cast< Slot * >( b ) , b->k );
+  }
  }
 
 template< class T , class A >
@@ -57,9 +66,9 @@ void ObjectPool< T , A >::swap( ObjectPool & other ) noexcept
  std::swap( f_free , other.f_free );
  std::swap( f_next , other.f_next );
  std::swap( f_end , other.f_end );
+ std::swap( f_last , other.f_last );
  std::swap( f_n , other.f_n );
  std::swap( f_size , other.f_size );
- f_blocks.swap( other.f_blocks );
  std::swap( f_alloc , other.f_alloc );
  }
 
@@ -72,14 +81,14 @@ inline T * ObjectPool< T , A >::make( Args &&... args )
   s = std::exchange( f_free , f_free->next );
  else {
   if( f_next == f_end ) {                   // twice the last block
-   const std::size_t k = f_blocks.empty() ? std::size_t( 16 ) <= f_n ?
-                         std::size_t( 16 ) : f_n :
-                         f_blocks.back().second * 2 <= f_n ?
-                         f_blocks.back().second * 2 : f_n;
-   f_blocks.reserve( f_blocks.size() + 1 );
-   f_next = std::allocator_traits< SlotAlloc >::allocate( f_alloc , k );
-   f_end = f_next + k;
-   f_blocks.emplace_back( f_next , k );
+   const std::size_t s = ! f_last ? 1 :
+                         2 * ( f_last->k - H ) <= f_n ?
+                         2 * ( f_last->k - H ) : f_n;
+   Slot * b = std::allocator_traits< SlotAlloc >::allocate( f_alloc ,
+                                                            s + H );
+   f_last = ::new( static_cast< void * >( b ) ) Block{ f_last , s + H };
+   f_next = b + H;
+   f_end = b + H + s;
    }
   s = f_next++;
   }
@@ -122,8 +131,8 @@ template< class T , class A >
 std::size_t ObjectPool< T , A >::bytes( void ) const
 {
  std::size_t b = 0;
- for( const auto & [ s , k ] : f_blocks )
-  b += k * sizeof( Slot );
+ for( const Block * h = f_last ; h ; h = h->prev )
+  b += h->k * sizeof( Slot );
  return( b );
  }
 
