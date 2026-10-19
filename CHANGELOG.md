@@ -204,6 +204,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   free, so that a visit of the pairs is a scan of a vector; its tests in
   test/hashing.cpp, and in bench/hashing.cpp against the same layout of
   ankerl::unordered_dense and the other maps
+- ConcurrentCuckooTable, in concurrent/, the cuckoo table with buckets of
+  4 places and tags of 8 bits shared by threads, after Li et al.: 2048
+  spin locks on stripes of buckets taken in increasing order, lookups
+  under the locks of the two buckets of the key, a key of the two buckets
+  moved to its other bucket under a lock taken by a try, else a search in
+  breadth for a path of at most 5 moves holding no lock and the moves
+  made from its end, each under the locks of its two buckets and checked
+  again, and the doubling of the table under all the locks in use; find,
+  insert, insertOrAssign, update, erase, reserve, clear, forEach under all
+  the locks, size from counters per stripe, and consistent(), the check
+  of the invariant; its tests in test/engineered.cpp, on one thread
+  against std::unordered_map and on 2 to 8 threads, under ThreadSanitizer
+  too, and the part "concurrent maps" of bench/hashing.cpp, on 1 and 2
+  threads (THREADS) against libcuckoo, boost::concurrent_flat_map and
+  std::unordered_map under a std::shared_mutex
 
 - StringSearcher, the engineered exact search of string/StringSearch.h:
   a pattern prepared once, two or four probes of its rarest bytes compared

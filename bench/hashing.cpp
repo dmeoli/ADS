@@ -2,7 +2,7 @@
 /*--------------------------- File hashing.cpp -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The benchmark of the hashing, in four parts, each with its competitors
+ * The benchmark of the hashing, in five parts, each with its competitors
  * when their headers are found (and Abseil when ADS_HAS_ABSL is defined,
  * since it is linked):
  *
@@ -31,7 +31,17 @@
  *   binary fuse filters of xor_singleheader;
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, by those of ADS (by pilots and
- *   by recursive splitting) against PTHash, PHOBIC, BBHash and RecSplit.
+ *   by recursive splitting) against PTHash, PHOBIC, BBHash and RecSplit;
+ * - "concurrent maps": on p threads, each doing its share of the n
+ *   operations, the n insertions into an empty map, n lookups of present
+ *   and of absent keys, n operations of which 1 in 10 inserts a new key
+ *   and the others look up present ones, and the n removals, on keys of
+ *   64 bits, by the concurrent cuckoo table of ADS against the cuckoo
+ *   table of libcuckoo, boost::concurrent_flat_map and a
+ *   std::unordered_map under a std::shared_mutex; the case names p, and
+ *   a run is timed from the start given to the p threads, already made,
+ *   to the end of the last one, i.e., the time is the wall time divided
+ *   by n.
  *
  * Each cell is the median of r runs, in nanoseconds per operation (per key
  * for the builds); the queries run on one structure built once, and the
@@ -41,7 +51,9 @@
  *   hashing [ -r runs ] [ -s seed ] n1 n2 ...
  *
  * The environment variable PARTS, e.g. PARTS=filters,perfect, runs only
- * the parts named in it, by the first word of their names.
+ * the parts named in it, by the first word of their names, and THREADS,
+ * e.g. THREADS=1,2 (the default), gives the numbers of threads of the
+ * concurrent maps.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -59,6 +71,7 @@
 
 #include "Bench.h"
 
+#include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/dictionary/BucketCuckooTable.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/CuckooHashing.h"
@@ -95,6 +108,10 @@
 #if __has_include( <tsl/robin_map.h> )
  #include <tsl/robin_map.h>
  #define ADS_HAS_TSL 1
+#endif
+#if __has_include( <boost/unordered/concurrent_flat_map.hpp> )
+ #include <boost/unordered/concurrent_flat_map.hpp>
+ #define ADS_HAS_BOOST_CONCURRENT 1
 #endif
 #if __has_include( <libcuckoo/cuckoohash_map.hh> )
  #include <libcuckoo/cuckoohash_map.hh>
@@ -143,14 +160,19 @@
  #define ADS_HAS_RECSPLIT 1
 #endif
 
+#include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <unordered_map>
 
 using namespace ADS::bench;
@@ -842,6 +864,186 @@ void perfectHashing( const std::vector< Key > & K ,
  }
 
 
+/*--------------------------------------------------------------------------*/
+/*---------------------------- CONCURRENT MAPS -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the median of r runs of p threads on the map that prepare() gives, the
+/// thread t doing job( m , t , p ) and returning a sum, timed from the
+/// start given to all of them, after they are made, to the end of the
+/// last one, in nanoseconds per one of the ops operations of a run
+template< class P , class J >
+double threaded( P && prepare , J && job , int r , int p , std::size_t ops )
+{
+ using Clock = std::chrono::steady_clock;
+ std::vector< double > T;
+ for( int i = 0 ; i < r ; ++i ) {
+  auto m = prepare();
+  std::atomic< int > ready{ 0 };
+  std::atomic< bool > go{ false };
+  const auto np = static_cast< std::size_t >( p );
+  std::vector< Clock::time_point > end( np );
+  std::vector< Key > sum( np );
+  std::vector< std::thread > W;
+  for( int t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    ready.fetch_add( 1 );
+    while( ! go.load( std::memory_order_acquire ) )
+     std::this_thread::yield();
+    sum[ std::size_t( t ) ] = job( *m , t , p );
+    end[ std::size_t( t ) ] = Clock::now();
+    } );
+  while( ready.load() < p )
+   std::this_thread::yield();
+  const auto a = Clock::now();
+  go.store( true , std::memory_order_release );
+  for( auto & w : W )
+   w.join();
+  const auto b = *std::max_element( end.begin() , end.end() );
+  for( Key s : sum )
+   sink = sink + s;
+  T.push_back( std::chrono::duration< double , std::nano >( b - a ).count()
+               / double( std::max< std::size_t >( ops , 1 ) ) );
+  }
+ std::nth_element( T.begin() , T.begin() + T.size() / 2 , T.end() );
+ return( T[ T.size() / 2 ] );
+ }
+
+/// the share [ lo , hi ) of the thread t of p of n items
+inline std::pair< std::size_t , std::size_t > share( std::size_t n , int t ,
+                                                     int p )
+{
+ return( std::pair< std::size_t , std::size_t >(
+          n * std::size_t( t ) / std::size_t( p ) ,
+          n * std::size_t( t + 1 ) / std::size_t( p ) ) );
+ }
+
+/// the five cases on p threads on the map that make() builds (in a
+/// pointer), on the keys K, H (K in random order) and Q (absent), by
+/// ins( m , k , v ), find( m , k ) (the value, or 0) and erase( m , k ):
+/// the n insertions into an empty map, n lookups of present and of absent
+/// keys, n operations of which 1 in 10 inserts a new key and the others
+/// look up present ones, and the n removals; each thread does its share
+template< class M , class I , class F , class E >
+void concurrent( const std::string & who , const std::vector< Key > & K ,
+                 const std::vector< Key > & H , const std::vector< Key > & Q ,
+                 int r , int p , M && make , I && ins , F && find ,
+                 E && erase )
+{
+ const std::size_t n = K.size();
+ const std::string tp = " p=" + std::to_string( p );
+ auto full = [ & ]( void ) {
+  auto m = make();
+  for( std::size_t i = 0 ; i < n ; ++i ) ins( *m , K[ i ] , i + 1 );
+  return( m ); };
+ auto finds = [ & ]( const std::vector< Key > & S ) {
+  return( [ & , P = &S ]( auto & m , int t , int q ) {
+   const auto [ lo , hi ] = share( n , t , q );
+   Key s = 0;
+   for( std::size_t i = lo ; i < hi ; ++i ) s += find( m , ( *P )[ i ] );
+   return( s ); } ); };
+ print( "concurrent maps" , "insert" + tp , n , who , threaded(
+         make , [ & ]( auto & m , int t , int q ) {
+          const auto [ lo , hi ] = share( n , t , q );
+          for( std::size_t i = lo ; i < hi ; ++i ) ins( m , K[ i ] , i + 1 );
+          return( Key( 0 ) ); } , r , p , n ) );
+ {
+  auto m = full();
+  auto once = [ & ]( void ) { return( m.get() ); };
+  print( "concurrent maps" , "lookup hit" + tp , n , who ,
+         threaded( once , finds( H ) , r , p , n ) );
+  print( "concurrent maps" , "lookup miss" + tp , n , who ,
+         threaded( once , finds( Q ) , r , p , n ) );
+ }
+ print( "concurrent maps" , "90% find 10% insert" + tp , n , who , threaded(
+         full , [ & ]( auto & m , int t , int q ) {
+          const auto [ lo , hi ] = share( n , t , q );
+          Key s = 0;
+          for( std::size_t i = lo ; i < hi ; ++i )
+           if( i % 10 == 0 ) ins( m , Q[ i ] , i + 1 );
+           else s += find( m , H[ i ] );
+          return( s ); } , r , p , n ) );
+ print( "concurrent maps" , "erase" + tp , n , who , threaded(
+         full , [ & ]( auto & m , int t , int q ) {
+          const auto [ lo , hi ] = share( n , t , q );
+          for( std::size_t i = lo ; i < hi ; ++i ) erase( m , H[ i ] );
+          return( Key( 0 ) ); } , r , p , n ) );
+ }
+
+/// std::unordered_map under a lock shared by the readers
+struct LockedMap {
+ std::unordered_map< Key , Key > m;
+ mutable std::shared_mutex x;
+ };
+
+/// the battery of the concurrent maps on p threads, each map with the
+/// default hash of its library
+void concurrentMaps( const std::vector< Key > & K ,
+                     const std::vector< Key > & H ,
+                     const std::vector< Key > & Q , int r , int p )
+{
+ using CCT = ADS::ConcurrentCuckooTable< Key , Key >;
+ for( const char * who : { "ADS::ConcurrentCuckooTable" ,
+                           "ADS::ConcurrentCuckooTable A/A" } )
+  concurrent( who , K , H , Q , r , p ,
+              [](){ return( std::make_unique< CCT >() ); } ,
+              []( CCT & m , Key k , Key v ) { m.insert( k , v ); } ,
+              []( CCT & m , Key k ) {
+               const auto o = m.find( k );
+               return( o ? *o : Key( 0 ) ); } ,
+              []( CCT & m , Key k ) { m.erase( k ); } );
+#ifdef ADS_HAS_LIBCUCKOO
+ using LC = libcuckoo::cuckoohash_map< Key , Key >;
+ concurrent( "libcuckoo::cuckoohash_map" , K , H , Q , r , p ,
+             [](){ return( std::make_unique< LC >() ); } ,
+             []( LC & m , Key k , Key v ) { m.insert( k , v ); } ,
+             []( LC & m , Key k ) {
+              Key v = 0;
+              m.find( k , v );
+              return( v ); } ,
+             []( LC & m , Key k ) { m.erase( k ); } );
+#endif
+#ifdef ADS_HAS_BOOST_CONCURRENT
+ using BC = boost::concurrent_flat_map< Key , Key >;
+ concurrent( "boost::concurrent_flat_map" , K , H , Q , r , p ,
+             [](){ return( std::make_unique< BC >() ); } ,
+             []( BC & m , Key k , Key v ) { m.emplace( k , v ); } ,
+             []( BC & m , Key k ) {
+              Key v = 0;
+              m.cvisit( k , [ & ]( const auto & x ) { v = x.second; } );
+              return( v ); } ,
+             []( BC & m , Key k ) { m.erase( k ); } );
+#endif
+ concurrent( "std::unordered_map std::shared_mutex" , K , H , Q , r , p ,
+             [](){ return( std::make_unique< LockedMap >() ); } ,
+             []( LockedMap & m , Key k , Key v ) {
+              std::unique_lock l( m.x );
+              m.m.emplace( k , v ); } ,
+             []( LockedMap & m , Key k ) {
+              std::shared_lock l( m.x );
+              const auto it = m.m.find( k );
+              return( it == m.m.end() ? Key( 0 ) : it->second ); } ,
+             []( LockedMap & m , Key k ) {
+              std::unique_lock l( m.x );
+              m.m.erase( k ); } );
+ }
+
+/// the numbers of threads of the concurrent maps, from the environment
+/// variable THREADS, e.g., THREADS=1,2 (the default)
+std::vector< int > threadCounts( void )
+{
+ const char * e = std::getenv( "THREADS" );
+ std::vector< int > P;
+ for( const char * s = e ? e : "1,2" ; *s ; ) {
+  char * end = nullptr;
+  const long p = std::strtol( s , &end , 10 );
+  if( end == s ) break;
+  if( p > 0 ) P.push_back( int( p ) );
+  s = ( *end == ',' ) ? end + 1 : end;
+  }
+ return( P );
+ }
+
 /// true if the part is to run
 bool part( const char * name )
 {
@@ -873,6 +1075,8 @@ int main( int argc , char ** argv )
   }
   if( part( "filters" ) ) allFilters( K , H , Q , r );
   if( part( "perfect" ) ) perfectHashing( K , H , r );
+  if( part( "concurrent" ) )
+   for( int p : threadCounts() ) concurrentMaps( K , H , Q , r , p );
   }
  return( 0 );
  }

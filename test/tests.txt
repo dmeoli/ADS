@@ -491,6 +491,8 @@ engineered  huge-page-allocator  allocatore su pagine enormi
 engineered  random-hashing       splitmix64, Zobrist, tabulazione
 engineered  spsc-queue           coda fra un produttore e un consumatore
 engineered  mpsc-inbox           casella di molti produttori
+engineered  concurrent-cuckoo    cuckoo concorrente, su un thread
+engineered  concurrent-cuckoo-threads cuckoo concorrente, su più thread
 
 # the engineered hashing, beyond the book
 hashing  fast-hash             funzioni hash per prodotti ripiegati

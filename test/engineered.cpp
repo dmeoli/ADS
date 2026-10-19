@@ -5,10 +5,10 @@
  * Tests of the engineered structures, beyond the book: the bucket queue and
  * the d-ary heap of plain items, the hash table with control bytes, the
  * hash table of pointers, the arena, the pool, the allocator on huge
- * pages, the hashing with random tables, and the queues between threads.
- * Each one is checked against a reference of the standard library on
- * random operations, at the level 3 of the contracts, and the queues
- * between threads on real threads.
+ * pages, the hashing with random tables, the queues between threads and
+ * the concurrent cuckoo table. Each one is checked against a reference of
+ * the standard library on random operations, at the level 3 of the
+ * contracts, and the structures between threads on real threads.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -22,6 +22,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/SPSCQueue.h"
 #include "ADS/ADT.h"
@@ -36,6 +37,7 @@
 #include "ADS/priority/DaryHeap.h"
 
 #include <algorithm>
+#include <atomic>
 #include <climits>
 #include <cstdint>
 #include <functional>
@@ -1117,6 +1119,265 @@ ADS_TEST( "mpsc-inbox" )
  MPSCInbox< int > L;                            // freed if never taken
  L.push( 1 );
  L.push( 2 );
+ }
+
+/// a hash equal for every key: at most 8 keys fit in their two buckets
+struct SameHash {
+ using is_avalanching = void;
+ std::size_t operator()( std::uint64_t ) const {
+  return( std::size_t( 0x9E3779B97F4A7C15ULL ) );
+  }
+ };
+
+/// a hash with the same tag for every key and the key in the top bits
+struct SameTag {
+ using is_avalanching = void;
+ std::size_t operator()( std::uint64_t k ) const {
+  return( std::size_t( k << 56 ) );
+  }
+ };
+
+// the concurrent cuckoo table on one thread, against std::unordered_map:
+// random operations from an empty table, which grows many times; the empty
+// table and one key, a duplicate that keeps its value, insertOrAssign,
+// update, reserve and clear; keys whose hashes are all equal, which fit up
+// to 8 and then throw, leaving the table as it was; keys with the same
+// tag; a hash that is not avalanching; strings
+ADS_TEST( "concurrent-cuckoo" )
+{
+ {
+  ConcurrentCuckooTable< std::uint64_t , std::uint64_t > T;
+  CHECK( T.empty() && T.size() == 0 && T.capacity() == 8 );
+  CHECK( ! T.find( 1 ) && ! T.contains( 1 ) && ! T.erase( 1 ) );
+  CHECK( ! T.update( 1 , []( std::uint64_t & v ) { ++v; } ) );
+  CHECK( T.insert( 1 , 10 ) && ! T.insert( 1 , 11 ) && T.find( 1 ) == 10u );
+  CHECK( ! T.insertOrAssign( 1 , 12 ) && T.find( 1 ) == 12u );
+  CHECK( T.update( 1 , []( std::uint64_t & v ) { ++v; } ) );
+  CHECK( T.find( 1 ) == 13u && T.size() == 1 && T.consistent() );
+  CHECK( T.erase( 1 ) && ! T.contains( 1 ) && T.empty() );
+  CHECK( T.insertOrAssign( 2 , 20 ) && T.size() == 1 );
+  T.reserve( 1000 );
+  CHECK( T.capacity() >= 1000 && T.find( 2 ) == 20u && T.consistent() );
+  const std::size_t cap = T.capacity();
+  T.reserve( 10 );                              // no shrinking
+  CHECK( T.capacity() == cap );
+  T.clear();
+  CHECK( T.empty() && T.capacity() == cap && ! T.contains( 2 ) &&
+         T.consistent() );
+  }
+ {
+  ConcurrentCuckooTable< std::uint64_t , std::uint64_t > T;
+  std::unordered_map< std::uint64_t , std::uint64_t > R;
+  std::mt19937_64 g( 41 );
+  for( int s = 0 ; s < 200000 ; ++s ) {
+   const std::uint64_t k = g() % 60000 , v = g();
+   switch( g() % 6 ) {
+    case( 0 ): case( 1 ):
+     CHECK( T.insert( k , v ) == R.insert( { k , v } ).second );
+     break;
+    case( 2 ):
+     CHECK( T.insertOrAssign( k , v ) == R.insert_or_assign( k , v ).second );
+     break;
+    case( 3 ):
+     CHECK( T.erase( k ) == ( R.erase( k ) == 1 ) );
+     break;
+    case( 4 ): {
+     const bool in = R.count( k );
+     if( in ) R[ k ] ^= v;
+     CHECK( T.update( k , [ v ]( std::uint64_t & x ) { x ^= v; } ) == in );
+     break;
+     }
+    default: {
+     const auto it = R.find( k );
+     const auto o = T.find( k );
+     CHECK( o.has_value() == ( it != R.end() ) );
+     if( o )
+      CHECK( *o == it->second );
+     }
+    }
+   CHECK( T.size() == R.size() );
+   if( s % 20000 == 0 )
+    CHECK( T.consistent() );
+   }
+  CHECK( T.consistent() && T.rehashes() > 8 );
+  std::size_t n = 0;
+  T.forEach( [ & ]( const std::uint64_t & k , std::uint64_t & v ) {
+   n += ( R.at( k ) == v );
+   ++v; } );
+  CHECK( n == R.size() );
+  const auto & C = T;
+  n = 0;
+  C.forEach( [ & ]( const std::uint64_t & k , const std::uint64_t & v ) {
+   n += ( R.at( k ) + 1 == v ); } );
+  CHECK( n == R.size() );
+  }
+ {                                              // all hashes equal
+  ConcurrentCuckooTable< std::uint64_t , int , SameHash > T;
+  for( std::uint64_t k = 0 ; k < 8 ; ++k )
+   CHECK( T.insert( k , int( k ) ) );
+  CHECK( T.size() == 8 && T.consistent() );
+  CHECK_THROWS( T.insert( 8 , 8 ) , std::length_error );
+  CHECK( T.size() == 8 && T.consistent() && ! T.contains( 8 ) );
+  for( std::uint64_t k = 0 ; k < 8 ; ++k )
+   CHECK( T.find( k ) == int( k ) );
+  CHECK( T.erase( 3 ) && T.insert( 8 , 8 ) && T.consistent() );
+  }
+ {                                              // all tags equal
+  ConcurrentCuckooTable< std::uint64_t , int , SameTag > T;
+  for( std::uint64_t k = 0 ; k < 256 ; ++k )
+   CHECK( T.insert( k , int( k ) ) );
+  CHECK( T.size() == 256 && T.consistent() );
+  for( std::uint64_t k = 0 ; k < 256 ; ++k )
+   CHECK( T.find( k ) == int( k ) );
+  }
+ {                                              // a plain hash, mixed
+  ConcurrentCuckooTable< std::uint64_t , int ,
+                         std::hash< std::uint64_t > > T( 100 );
+  const std::size_t cap = T.capacity();
+  for( std::uint64_t k = 0 ; k < 100 ; ++k )
+   CHECK( T.insert( k << 32 , int( k ) ) );
+  CHECK( T.capacity() == cap && T.rehashes() == 0 && T.consistent() );
+  }
+ {                                              // strings
+  ConcurrentCuckooTable< std::string , int > T;
+  std::unordered_map< std::string , int > R;
+  std::mt19937 g( 43 );
+  for( int s = 0 ; s < 40000 ; ++s ) {
+   const std::string k( 1 + g() % 24 , char( 'a' + g() % 4 ) );
+   const std::string key = k + std::to_string( g() % 3000 );
+   if( g() % 3 )
+    CHECK( T.insertOrAssign( key , s ) ==
+           R.insert_or_assign( key , s ).second );
+   else
+    CHECK( T.erase( key ) == ( R.erase( key ) == 1 ) );
+   CHECK( T.size() == R.size() );
+   }
+  CHECK( T.consistent() );
+  for( const auto & [ k , v ] : R )
+   CHECK( T.find( k ) == v );
+  }
+ }
+
+// the concurrent cuckoo table on real threads: 2, 4 and 8 threads insert
+// disjoint keys into a table of capacity 0, which doubles under them, while
+// a reader looks keys up and another reserves room, takes the size and
+// visits the table;
+// then 4 threads insert, assign, update, remove and find their own keys,
+// each keeping the set it expects, and read the keys of the others, whose
+// values must be ones written for that key; at the end the table holds the
+// union of the expected sets, each key in one of its buckets
+ADS_TEST( "concurrent-cuckoo-threads" )
+{
+ auto key = []( std::uint64_t i ) { return( i * 0x9E3779B97F4A7C15ULL ); };
+ for( int p : { 2 , 4 , 8 } ) {
+  const std::uint64_t n = 40000;
+  ConcurrentCuckooTable< std::uint64_t , std::uint64_t > T;
+  std::atomic< bool > done{ false };
+  std::atomic< int > bad{ 0 };
+  std::vector< std::thread > W;
+  for( int t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    for( std::uint64_t i = std::uint64_t( t ) ; i < n ;
+         i += std::uint64_t( p ) )
+     if( ! T.insert( key( i ) , i ) )
+      ++bad;
+    } );
+  std::thread reader( [ & ] {
+   std::mt19937_64 g( 45 );
+   while( ! done.load() ) {
+    const std::uint64_t i = g() % n;
+    const auto o = T.find( key( i ) );
+    if( o && *o != i )
+     ++bad;
+    }
+   } );
+  std::thread visitor( [ & ] {
+   T.reserve( n / 4 );                    // a doubling of its own
+   while( ! done.load() ) {
+    if( T.size() > n )
+     ++bad;
+    std::uint64_t m = 0;
+    T.forEach( [ & ]( const std::uint64_t & k , std::uint64_t & v ) {
+     m += ( key( v ) != k ); } );
+    if( m )
+     ++bad;
+    std::this_thread::yield();
+    }
+   } );
+  for( auto & w : W )
+   w.join();
+  done = true;
+  reader.join();
+  visitor.join();
+  CHECK( bad == 0 && T.size() == n && T.consistent() );
+  CHECK( T.rehashes() >= 3 );                 // 2 doublings past 4096
+  for( std::uint64_t i = 0 ; i < n ; ++i )
+   CHECK( T.find( key( i ) ) == i );
+  }
+ {
+  const std::uint64_t p = 4 , K = 4096;
+  ConcurrentCuckooTable< std::uint64_t , std::uint64_t > T( 64 );
+  std::vector< std::unordered_map< std::uint64_t , std::uint64_t > > E( p );
+  std::atomic< int > bad{ 0 };
+  // the value of the key i written at the step s: i in its top bits
+  auto value = []( std::uint64_t i , std::uint64_t s ) {
+   return( ( i << 32 ) | s ); };
+  std::vector< std::thread > W;
+  for( std::uint64_t t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    std::mt19937_64 g( 47 + t );
+    auto & e = E[ t ];
+    for( std::uint64_t s = 0 ; s < 60000 ; ++s ) {
+     const std::uint64_t r = g() % 8;
+     if( r == 7 ) {                       // a key of any thread
+      const std::uint64_t i = g() % K;
+      const auto o = T.find( key( i ) );
+      if( o && ( ( *o >> 32 ) != i ) )
+       ++bad;
+      continue;
+      }
+     const std::uint64_t i = ( g() % ( K / p ) ) * p + t;   // its own
+     const std::uint64_t v = value( i , s );
+     bool ok = true;
+     switch( r ) {
+      case( 0 ): case( 1 ):
+       ok = T.insert( key( i ) , v ) == e.insert( { i , v } ).second;
+       break;
+      case( 2 ):
+       ok = T.insertOrAssign( key( i ) , v ) ==
+            e.insert_or_assign( i , v ).second;
+       break;
+      case( 3 ): case( 4 ):
+       ok = T.erase( key( i ) ) == ( e.erase( i ) == 1 );
+       break;
+      case( 5 ): {
+       const bool in = e.count( i );
+       if( in ) e[ i ] = v;
+       ok = T.update( key( i ) ,
+                      [ v ]( std::uint64_t & x ) { x = v; } ) == in;
+       break;
+       }
+      default: {
+       const auto it = e.find( i );
+       const auto o = T.find( key( i ) );
+       ok = ( it == e.end() ) ? ! o : ( o == it->second );
+       }
+      }
+     if( ! ok )
+      ++bad;
+     }
+    } );
+  for( auto & w : W )
+   w.join();
+  CHECK( bad == 0 && T.consistent() );
+  std::size_t n = 0;
+  for( const auto & e : E ) {
+   n += e.size();
+   for( const auto & [ i , v ] : e )
+    CHECK( T.find( key( i ) ) == v );
+   }
+  CHECK( T.size() == n );
+  }
  }
 
 }  // end( namespace )
