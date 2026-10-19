@@ -463,7 +463,8 @@ ADS_TEST( "sec7.2.deleted" )
  }
 
 // every table against std::map, with and without restructuring; the
-// edges: a single key, every key in the same place, the restructured
+// edges: a single key, every key in the same place, a linear step of -1
+// (the scan wraps around the start of the vector), the restructured
 // tables of one place, a linear step that is a multiple of the primes 17
 // and 37 that the doublings of 7 reach (the restructuring skips the sizes
 // the inspection does not work with, and stays on the primes), and the
@@ -481,7 +482,8 @@ ADS_TEST( "sec7.2.against-map" )
   against_map( c , 1000 , 20000 , seed++ );
   const std::size_t m = r ? 7 : 4099;
   for( auto p : { Probing::linear() , Probing::linear( 3 ) ,
-                  Probing::quadratic( 1 , 1 ) , Probing::double_hashing() } )
+                  Probing::linear( -1 ) , Probing::quadratic( 1 , 1 ) ,
+                  Probing::double_hashing() } )
    {
    OpenHashTable< long , long , Mix > d( m , p , r );
    against_map( d , 1000 , 20000 , seed++ );

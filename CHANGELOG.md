@@ -230,6 +230,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Moeller and Granlund); Rational skips the divisions by a gcd of 1;
   divModSchool(), toStringSchool(), fromStringSchool() and gcdEuclid() keep
   the quadratic algorithms for the audits and the tests
+- OpenHashTable::scan() adds the constant stride of the linear inspection
+  and of the double hashing instead of computing H( k , i ) by four
+  divisions per probe; the places are the same
 - the licence is the GNU Lesser General Public License version 3.0
 - the definitions of the templates move from src/ADS/<area>/X.tpp to
   include/ADS/<area>/impl/X.tpp, as in Boost: include/ is the whole library

@@ -105,6 +105,16 @@ inline std::size_t Probing::step( std::size_t h , std::size_t m )
  return( 1 + h % ( m - 1 ) );
  }
 
+inline std::size_t Probing::stride( std::size_t h , std::size_t m ) const
+{
+ ADS_PRE( m > 0 );
+ switch( f_kind ) {
+  case( Kind::LINEAR ): return( mod( f_c1 , m ) );
+  case( Kind::DOUBLE ): return( step( f_g ? f_g( h ) : h , m ) % m );
+  default: return( 0 );
+  }
+ }
+
 inline bool Probing::works( std::size_t m ) const
 {
  if( m == 0 )
@@ -155,6 +165,8 @@ OpenHashTable< K , V , H >::OpenHashTable( std::size_t m , Probing probe ,
    f_h( h )
 {
  ADS_PRE( ( m > 0 ) && f_probe.works( m ) );
+ if( f_probe.kind() == Probing::Kind::LINEAR )
+  f_linear = f_probe.stride( 0 , m );
  }
 
 template< class K , class V , class H >
@@ -289,11 +301,22 @@ std::size_t OpenHashTable< K , V , H >::scan( const K & k , bool insert ) const
  const std::size_t h = f_h( k );
  long firstDeleted = -1;
  std::size_t i = 0;
- std::size_t j = f_probe.at( h , 0 , m );
+ std::size_t j = h % m;                    // H( k , 0 ) = H0( k )
+ ADS_AUDIT( j == f_probe.at( h , 0 , m ) );
+ const std::size_t s = f_probe.kind() == Probing::Kind::LINEAR ? f_linear :
+                       f_probe.stride( h , m );   // 0 if not constant
  while( ! is( j , k ) && ( f_T[ j ].slot != Slot::NIL ) && ( i < m ) ) {
   if( ( f_T[ j ].slot == Slot::DELETED ) && ( firstDeleted == -1 ) )
    firstDeleted = j;
-  j = f_probe.at( h , ++i , m );
+  ++i;
+  if( s ) {                                 // H( k , i - 1 ) + s mod m
+   j += s;
+   if( j >= m )
+    j -= m;
+   }
+  else
+   j = f_probe.at( h , i , m );
+  ADS_AUDIT( j == f_probe.at( h , i , m ) );
   }
  f_probes = std::min( i + 1 , m );
  if( insert && ! is( j , k ) && ( firstDeleted != -1 ) )
@@ -348,6 +371,8 @@ void OpenHashTable< K , V , H >::rebuild( std::size_t m )
  while( ! f_probe.works( m ) )    // a linear step that m divides
   m = next_prime( m + 1 );
  f_probe.check( m );
+ if( f_probe.kind() == Probing::Kind::LINEAR )
+  f_linear = f_probe.stride( 0 , m );
  std::vector< Cell > T( m );
  std::swap( f_T , T );
  f_size = f_deleted = 0;

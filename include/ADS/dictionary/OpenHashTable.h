@@ -177,6 +177,12 @@ class Probing {
  /// \pre m > 0
  [[nodiscard]] static std::size_t step( std::size_t h , std::size_t m );
 
+ /// the constant difference H( k , i + 1 ) - H( k , i ) mod m of the
+ /// linear inspection and of the double hashing, so that a scan adds it
+ /// instead of computing H( k , i ); 0 for the other inspections
+ /// \pre m > 0
+ [[nodiscard]] std::size_t stride( std::size_t h , std::size_t m ) const;
+
  /// whether the sequence can work with a table of size m
  [[nodiscard]] bool works( std::size_t m ) const;
 
@@ -339,6 +345,7 @@ class OpenHashTable {
  std::vector< Cell > f_T;          ///< the places
  Probing f_probe;                  ///< the inspection
  std::size_t f_m0;                 ///< the initial size
+ std::size_t f_linear = 0;         ///< the stride of a linear inspection
  bool f_restructure;               ///< whether it restructures
  H f_h;                            ///< the hash of the keys
  std::size_t f_size = 0;           ///< the full places
