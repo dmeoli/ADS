@@ -41,7 +41,8 @@ T ArrayQueue< T >::dequeue( void )
  ADS_PRE( f_size > 0 );
  [[maybe_unused]] const std::size_t n = f_size;
  T t = std::move( f_A[ f_head ] );
- f_head = ( f_head + 1 ) % f_capacity;
+ if( ++f_head == f_capacity )             // the place after, with no
+  f_head = 0;                               // division
  --f_size;
  ADS_POST( f_size == n - 1 );
  ADS_INVARIANT( fits() );
@@ -53,7 +54,10 @@ void ArrayQueue< T >::enqueue( const T & v )
 {
  ADS_PRE( f_size < f_capacity );
  [[maybe_unused]] const std::size_t n = f_size;
- f_A[ ( f_head + f_size ) % f_capacity ] = v;
+ std::size_t t = f_head + f_size;           // the place of the back
+ if( t >= f_capacity )
+  t -= f_capacity;
+ f_A[ t ] = v;
  ++f_size;
  ADS_POST( f_size == n + 1 );
  ADS_INVARIANT( fits() );
@@ -74,8 +78,10 @@ std::size_t ArrayQueue< T >::capacity( void ) const
 template< class T >
 bool ArrayQueue< T >::contains( const T & v ) const
 {
- for( std::size_t i = 0 ; i < f_size ; ++i )
-  if( f_A[ ( f_head + i ) % f_capacity ] == v ) return( true );
+ for( std::size_t i = 0 , p = f_head ; i < f_size ; ++i ) {
+  if( f_A[ p ] == v ) return( true );
+  if( ++p == f_capacity ) p = 0;
+  }
  return( false );
  }
 

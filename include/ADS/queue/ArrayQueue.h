@@ -6,7 +6,8 @@
  * places, the place 0 following the place m - 1: the queue is in size
  * consecutive places from the one of its front, head, so that its back is
  * in the place \f$ ( head + size - 1 ) \bmod m \f$ and every operation takes
- * O( 1 ) time.
+ * O( 1 ) time; the modulo is a comparison and a subtraction, since the sum
+ * is below 2 m, instead of a division.
  *
  * The contracts [see Contract.h] are the preconditions of the book: top()
  * and dequeue() need a queue that is not empty, enqueue() one that is not

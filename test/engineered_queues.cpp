@@ -1,0 +1,264 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------- File engineered_queues.cpp ------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @file
+ * Tests of the engineered queues, beyond the book: the double ended queue
+ * on a circular vector that grows, against std::deque on random operations
+ * at both ends, with items that own memory and items that are already in
+ * the deque, and the queues between threads, at the level 3 of the
+ * contracts.
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
+ */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADSTest.h"
+
+#include "ADS/queue/ArrayQueue.h"
+#include "ADS/queue/LinkedQueue.h"
+#include "ADS/queue/RingDeque.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <deque>
+#include <iterator>
+#include <memory>
+#include <numeric>
+#include <random>
+#include <ranges>
+#include <string>
+#include <vector>
+
+static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- USING ------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+using namespace ADS;
+
+namespace {
+
+/// an item that counts the live ones, to find leaks and double frees
+struct Counted {
+ static inline long alive = 0;
+ std::string s;
+ explicit Counted( std::string v = "" ) : s( std::move( v ) ) { ++alive; }
+ Counted( const Counted & o ) : s( o.s ) { ++alive; }
+ Counted( Counted && o ) noexcept : s( std::move( o.s ) ) { ++alive; }
+ Counted & operator=( const Counted & ) = default;
+ Counted & operator=( Counted && ) = default;
+ ~Counted() { --alive; }
+ bool operator==( const Counted & o ) const { return( s == o.s ); }
+ };
+
+/// the same items, in the same order
+template< class A , class B >
+bool same( const A & a , const B & b )
+{
+ return( std::ranges::equal( a , b ) && ( a.size() == b.size() ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- TESTS -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// RingDeque against std::deque: random operations at both ends across many
+// doublings and wraps, the reads by rank, the iterators forward and
+// backward, std::sort on them, copies, moves and swaps, the empty deque and
+// its contracts
+ADS_TEST( "ring-deque" )
+{
+ static_assert( std::random_access_iterator< RingDeque< int >::iterator > &&
+                std::random_access_iterator<
+                 RingDeque< int >::const_iterator > &&
+                std::ranges::random_access_range< const RingDeque< int > > );
+ RingDeque< int > E;
+ CHECK( E.empty() && E.size() == 0 && E.capacity() == 0 &&
+        E.begin() == E.end() );
+ CHECK_THROWS( (void) E.front() , contract_violation );
+ CHECK_THROWS( (void) E.back() , contract_violation );
+ CHECK_THROWS( E.pop_front() , contract_violation );
+ CHECK_THROWS( E.pop_back() , contract_violation );
+ CHECK_THROWS( (void) E[ 0 ] , contract_violation );
+ RingDeque< int > F;                        // the first insertion at the
+ F.push_front( 1 );                         // front, with no vector yet
+ CHECK( F.size() == 1 && F.front() == 1 && F.back() == 1 &&
+        F.capacity() == 8 );
+ std::mt19937_64 g( 1 );
+ for( int round = 0 ; round < 4 ; ++round ) {
+  RingDeque< std::uint64_t > R;
+  std::deque< std::uint64_t > D;
+  for( int t = 0 ; t < 200000 ; ++t ) {
+   const unsigned c = unsigned( g() % ( round == 3 ? 4 : 7 ) );
+   const std::uint64_t v = g();
+   if( c == 0 || c == 4 ) { R.push_back( v ); D.push_back( v ); }
+   else if( c == 1 || c == 5 ) { R.push_front( v ); D.push_front( v ); }
+   else if( D.empty() ) CHECK( R.empty() );
+   else if( c == 2 || c == 6 ) {
+    CHECK( R.back() == D.back() );
+    R.pop_back();
+    D.pop_back();
+    }
+   else {
+    CHECK( R.front() == D.front() );
+    R.pop_front();
+    D.pop_front();
+    }
+   CHECK( R.size() == D.size() && R.capacity() >= R.size() );
+   if( t % 9973 == 0 ) {
+    CHECK( same( R , D ) );
+    CHECK( std::ranges::equal( R | std::views::reverse ,
+                               D | std::views::reverse ) );
+    for( std::size_t i = 0 ; i < D.size() ; i += 101 )
+     CHECK( R[ i ] == D[ i ] && R.begin()[ std::ptrdiff_t( i ) ] == D[ i ] );
+    }
+   }
+  CHECK( same( R , D ) );
+  std::sort( R.begin() , R.end() );         // through the wrap
+  std::sort( D.begin() , D.end() );
+  CHECK( same( R , D ) );
+  RingDeque< std::uint64_t > C = R , M = std::move( C );
+  CHECK( C.empty() && C.capacity() == 0 && M == R );
+  C.push_back( 5 );                         // a moved-from deque works
+  CHECK( C.size() == 1 && C.front() == 5 );
+  M.swap( C );
+  CHECK( C == R && M.size() == 1 );
+  R.clear();
+  CHECK( R.empty() && R.begin() == R.end() && R.capacity() >= 8 );
+  }
+ // a FIFO in a steady state never grows: the places freed at the front
+ // serve the back
+ RingDeque< int > Q;
+ for( int i = 0 ; i < 100 ; ++i ) Q.push_back( i );
+ const std::size_t cap = Q.capacity();
+ for( int i = 100 ; i < 100000 ; ++i ) {
+  CHECK( Q.front() == i - 100 );
+  Q.pop_front();
+  Q.push_back( i );
+  }
+ CHECK( Q.capacity() == cap && Q.size() == 100 );
+ Q.reserve( 1000 );
+ CHECK( Q.capacity() == 1024 && Q.size() == 100 && Q.front() == 99900 &&
+        Q.back() == 99999 );
+ RingDeque< int > L = { 1 , 2 , 3 };
+ CHECK( L.size() == 3 && L[ 0 ] == 1 && L[ 2 ] == 3 &&
+        L.end() - L.begin() == 3 );
+ *L.begin() = 7;
+ CHECK( L.front() == 7 );
+ }
+
+// RingDeque with items that own memory: no leak and no double destruction
+// through growths, wraps, copies, clears and destruction; an item of the
+// deque inserted into it when it must grow
+ADS_TEST( "ring-deque-items" )
+{
+ Counted::alive = 0;
+ {
+  RingDeque< Counted > R;
+  std::deque< std::string > D;
+  std::mt19937_64 g( 2 );
+  for( int t = 0 ; t < 50000 ; ++t ) {
+   const unsigned c = unsigned( g() % 5 );
+   const std::string v = std::to_string( g() % 1000000 ) +
+                         std::string( 20 , 'x' );   // on the heap
+   if( c < 2 ) { R.emplace_back( v ); D.push_back( v ); }
+   else if( c == 2 ) { R.push_front( Counted( v ) ); D.push_front( v ); }
+   else if( ! D.empty() && c == 3 ) {
+    CHECK( R.back().s == D.back() );
+    R.pop_back();
+    D.pop_back();
+    }
+   else if( ! D.empty() ) {
+    CHECK( R.front().s == D.front() );
+    R.pop_front();
+    D.pop_front();
+    }
+   CHECK( long( R.size() ) == Counted::alive );
+   }
+  RingDeque< Counted > C = R;
+  CHECK( C == R && Counted::alive == 2 * long( R.size() ) );
+  C.clear();
+  CHECK( Counted::alive == long( R.size() ) );
+  // the front of a full deque inserted again, at both ends
+  RingDeque< Counted > S;
+  S.push_back( Counted( "a" ) );
+  while( S.size() < S.capacity() ) S.push_back( Counted( "b" ) );
+  S.push_back( S.front() );
+  CHECK( S.back().s == "a" && S.front().s == "a" );
+  while( S.size() < S.capacity() ) S.push_back( Counted( "c" ) );
+  S.push_front( S.back() );
+  CHECK( S.front().s == "c" && S[ 1 ].s == "a" );
+  RingDeque< std::unique_ptr< int > > U;    // items that only move
+  for( int i = 0 ; i < 100 ; ++i )
+   U.push_front( std::make_unique< int >( i ) );
+  CHECK( *U.front() == 99 && *U.back() == 0 );
+  }
+ CHECK( Counted::alive == 0 );
+ }
+
+// the book's queues after their changes: ArrayQueue around its vector of
+// m places, m = 1 and m = 3, against std::deque; LinkedQueue with its pool,
+// copies and moves
+ADS_TEST( "book-queues-engineered" )
+{
+ for( std::size_t m : { 1 , 3 , 64 } ) {
+  ArrayQueue< int > A( m );
+  std::deque< int > D;
+  std::mt19937_64 g( m );
+  for( int t = 0 ; t < 20000 ; ++t ) {
+   if( ( g() % 2 ) && ( D.size() < m ) ) {
+    const int v = int( g() % 100 );
+    A.enqueue( v );
+    D.push_back( v );
+    }
+   else if( ! D.empty() ) {
+    CHECK( A.top() == D.front() && A.dequeue() == D.front() );
+    D.pop_front();
+    }
+   CHECK( A.size() == D.size() && std::ranges::equal( A , D ) );
+   if( ! D.empty() ) CHECK( A.contains( D.back() ) );
+   CHECK( ! A.contains( 1000 ) );
+   }
+  if( A.size() == m ) CHECK_THROWS( A.enqueue( 1 ) , contract_violation );
+  }
+ LinkedQueue< int > L;
+ std::deque< int > D;
+ std::mt19937_64 g( 5 );
+ for( int t = 0 ; t < 100000 ; ++t ) {
+  if( g() % 3 ) {
+   L.enqueue( t );
+   D.push_back( t );
+   }
+  else if( ! D.empty() ) {
+   CHECK( L.dequeue() == D.front() );
+   D.pop_front();
+   }
+  }
+ CHECK( std::ranges::equal( L , D ) && L.size() == D.size() );
+ LinkedQueue< int > C = L , M = std::move( C );
+ CHECK( M == L && C.size() == 0 && C.begin() == C.end() );
+ C.enqueue( 1 );                            // a moved-from queue works
+ CHECK( C.top() == 1 && C.size() == 1 );
+ }
+
+}  // end( namespace )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- MAIN ------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+int main( int argc , char ** argv )
+{
+ return( ADS::test::main( argc , argv ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- End File engineered_queues.cpp --------------------*/
+/*--------------------------------------------------------------------------*/

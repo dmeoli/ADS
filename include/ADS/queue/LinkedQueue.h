@@ -6,7 +6,10 @@
  * first cell, the front, and one to the last cell, the back (Esercizio 4.10
  * of the book): enqueue() appends a cell after the back and dequeue()
  * removes the front, both in O( 1 ) time, and the queue has no bound on its
- * size, unlike the circular vector of ArrayQueue.
+ * size, unlike the circular vector of ArrayQueue. The cells come from an
+ * ObjectPool [see ObjectPool.h], the one of a dequeue() serving the next
+ * enqueue(), so that a queue in a steady state calls no allocator and its
+ * cells stay in the cache.
  *
  * The contracts [see Contract.h]: top() and dequeue() need a queue that is
  * not empty; enqueue() ensures that the queue is not empty, and that top()
@@ -37,6 +40,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/memory/ObjectPool.h"
 
 #include <cstddef>
 #include <utility>
@@ -129,6 +133,7 @@ class LinkedQueue {
  Cell * f_front = nullptr;   ///< the first cell
  Cell * f_back = nullptr;    ///< the last cell
  std::size_t f_size = 0;     ///< the number of items
+ ObjectPool< Cell > f_pool;  ///< the cells
 
  };  // end( class LinkedQueue )
 

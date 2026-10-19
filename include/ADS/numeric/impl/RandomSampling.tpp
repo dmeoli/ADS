@@ -253,6 +253,44 @@ std::vector< T > heapSampling( const std::vector< T > & S , std::size_t n ,
 
 /*--------------------------------------------------------------------------*/
 
+template< std::input_iterator I , std::sentinel_for< I > S , class R >
+std::vector< std::iter_value_t< I > > reservoirSampleL( I first , S last ,
+                                                        std::size_t n ,
+                                                        R & g )
+{
+ std::vector< std::iter_value_t< I > > res;
+ if( n == 0 )
+  return( res );
+ res.reserve( n );
+ for( ; ( first != last ) && ( res.size() < n ) ; ++first )
+  res.push_back( *first );                  // the first n fill it
+ if( first == last )
+  return( res );
+ const double ninv = 1 / double( n );
+ double W = std::exp( std::log( detail::uniformOpen( g ) ) * ninv );
+ for( ; ; ) {
+  // the items skipped before the next one in the reservoir, geometric
+  const double skip = std::floor( std::log( detail::uniformOpen( g ) ) /
+                                  std::log1p( - W ) );
+  if constexpr( std::sized_sentinel_for< S , I > ) {
+   if( !( skip < double( last - first ) ) )
+    break;
+   first += std::iter_difference_t< I >( skip );
+   }
+  else {
+   double k = 0;
+   for( ; ( k < skip ) && ( first != last ) ; k += 1 )
+    ++first;
+   if( first == last )
+    break;
+   }
+  res[ detail::uniformBelow( g , n ) ] = *first;
+  ++first;
+  W *= std::exp( std::log( detail::uniformOpen( g ) ) * ninv );
+  }
+ return( res );
+ }
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

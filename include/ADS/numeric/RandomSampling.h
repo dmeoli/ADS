@@ -43,11 +43,23 @@
  *   RandomNumbers.h is Algorithm 3.6 (Algorithm R of Knuth), O( N ) time
  *   and exactly n items of space, optimal in this model.
  *
+ * - reservoirSampleL() is Algorithm L of Li, beyond the notes, the reservoir
+ *   for a stream of unknown length that draws the number of items to skip
+ *   instead of a number per item: the n-th largest of the random keys of
+ *   the items seen is distributed as a product W of n-th roots of
+ *   uniforms, the next item to enter the reservoir is a geometric number
+ *   of items later, \f$ \lfloor \log U / \log( 1 - W ) \rfloor \f$, and
+ *   it replaces a random item of the reservoir; it draws
+ *   \f$ O( n ( 1 + \log( N / n ) ) ) \f$ random numbers in all and, on a
+ *   random access range, takes as much time, the skipped items never
+ *   touched.
+ *
  * Compared with the literature: Vitter's Algorithm D is the method of
  * choice when N is known, Algorithm Z of the same author does the same for
- * the reservoir, drawing the number of items to skip, and the random keys
- * of heapSampling() are the start of the weighted sampling of Efraimidis
- * and Spirakis, where the key of an item of weight w is \f$ U^{1 / w} \f$.
+ * the reservoir as Algorithm L, with a rejection that is more complex and
+ * no faster, and the random keys of heapSampling() are the start of the
+ * weighted sampling of Efraimidis and Spirakis, where the key of an item
+ * of weight w is \f$ U^{1 / w} \f$.
  *
  * The contracts [see Contract.h]: n <= N; the positions are distinct,
  * below N and sorted, an audit. The functions are defined in
@@ -62,6 +74,9 @@
  *      1987, doi:10.1145/23002.23003
  * \see J. S. Vitter, Random sampling with a reservoir, ACM Transactions on
  *      Mathematical Software 11(1), 37-57, 1985, doi:10.1145/3147.3165
+ * \see K.-H. Li, Reservoir-sampling algorithms of time complexity
+ *      O( n ( 1 + log( N / n ) ) ), ACM Transactions on Mathematical
+ *      Software 20(4), 481-493, 1994, doi:10.1145/198429.198435
  * \see P. S. Efraimidis, P. G. Spirakis, Weighted random sampling with a
  *      reservoir, Information Processing Letters 97(5), 181-185, 2006,
  *      doi:10.1016/j.ipl.2005.11.003
@@ -147,6 +162,14 @@ std::vector< std::size_t > sampleBySkips( std::size_t n , std::size_t N ,
 template< class T , class R >
 std::vector< T > heapSampling( const std::vector< T > & S , std::size_t n ,
                                R & g );
+
+/// n items of [ first , last ), a stream of unknown length, by the skips of
+/// Algorithm L, in no particular order; all of them, in their order, when
+/// the stream has at most n items
+template< std::input_iterator I , std::sentinel_for< I > S , class R >
+std::vector< std::iter_value_t< I > > reservoirSampleL( I first , S last ,
+                                                        std::size_t n ,
+                                                        R & g );
 
 /*--------------------------------------------------------------------------*/
 
