@@ -77,6 +77,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -225,6 +226,11 @@ class BitVector {
  /// the bits written in s, the bit 0 first
  /// \pre s has only the characters '0' and '1'
  explicit BitVector( std::string_view s );
+
+ /// the n bits of the words w, the bit i in the bit i mod 64 of the word
+ /// i / 64 as in words()
+ /// \pre w holds ( n + 63 ) / 64 words at least
+ BitVector( std::span< const Word > w , std::size_t n );
 
  [[nodiscard]] std::size_t size( void ) const;
 

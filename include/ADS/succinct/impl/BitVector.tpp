@@ -67,6 +67,16 @@ inline BitVector::BitVector( std::string_view s )
   }
  }
 
+inline BitVector::BitVector( std::span< const Word > w , std::size_t n )
+ : f_w( wordsFor( n ) , 0 ) , f_n( n )
+{
+ ADS_PRE( w.size() >= ( n + 63 ) / 64 );
+ std::copy( w.begin() , w.begin() + std::ptrdiff_t( ( n + 63 ) / 64 ) ,
+            f_w.begin() );
+ if( n % 64 ) f_w[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
+ ADS_INVARIANT( clean() );
+ }
+
 inline std::size_t BitVector::size( void ) const
 {
  return( f_n );

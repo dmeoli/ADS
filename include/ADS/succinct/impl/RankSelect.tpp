@@ -27,22 +27,23 @@ inline RankSelect::RankSelect( BitVector b , Selects s )
  f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
  const auto & W = f_b.words();
  const std::size_t nb = f_b.size() / kBlock + 1;   // and one more
- f_big = ( f_b.size() >> kTop ) > 0;
+ f_big = ( ( nb * kBlock ) >> kTop ) > 0;   // the last block counts too
  f_dir.assign( nb + 1 , 0 );
  f_top.assign( ( f_b.size() >> kTop ) + 2 , 0 );
  std::uint64_t c = 0;
+ constexpr std::size_t kTopBlocks = ( std::size_t( 1 ) << kTop ) / kBlock;
  for( std::size_t t = 0 ; t <= nb ; ++t ) {
-  const std::size_t top = ( t * kBlock ) >> kTop;
-  if( ( ( t * kBlock ) & ( ( std::uint64_t( 1 ) << kTop ) - 1 ) ) == 0 )
-   f_top[ top ] = c;
-  const std::uint64_t base = c;
-  std::uint64_t e = ( c - f_top[ top ] ) << ( 3 * kRel );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) {
-   if( q > 0 ) e |= ( c - base ) << ( kRel * ( q - 1 ) );
-   const std::size_t i = ( t * kBlock ) / 64 + q;
-   if( i < W.size() ) c += std::uint64_t( std::popcount( W[ i ] ) );
-   }
-  f_dir[ t ] = e;
+  if( t % kTopBlocks == 0 ) f_top[ t / kTopBlocks ] = c;
+  // the words of the block, none past the words (a multiple of 4)
+  const bool in = 4 * t < W.size();
+  const Word w0 = in ? W[ 4 * t ] : 0 , w1 = in ? W[ 4 * t + 1 ] : 0 ,
+             w2 = in ? W[ 4 * t + 2 ] : 0 , w3 = in ? W[ 4 * t + 3 ] : 0;
+  const std::uint64_t c1 = std::uint64_t( std::popcount( w0 ) ) ,
+                      c2 = c1 + std::uint64_t( std::popcount( w1 ) ) ,
+                      c3 = c2 + std::uint64_t( std::popcount( w2 ) );
+  f_dir[ t ] = ( ( c - f_top[ t / kTopBlocks ] ) << ( 3 * kRel ) ) | c1 |
+               ( c2 << kRel ) | ( c3 << ( 2 * kRel ) );
+  c += c3 + std::uint64_t( std::popcount( w3 ) );
   }
  f_ones = std::size_t( c );
  if( f_has[ 1 ] ) inventory( true );
@@ -121,26 +122,35 @@ inline void RankSelect::inventory( bool b )
  const std::size_t groups = ( ( total - 1 ) >> I.l ) + 1;
  I.pos.assign( groups + 1 , 0 );
  I.off.assign( groups << I.s , 0 );
- // the places of the bits b of rank 0, 2^g, 2 2^g, ...: a word at a time,
- // and the place in a word by select
+ // the places of the bits b of rank 0, 2^g, 2 2^g, ...: the block of
+ // each by the directory, a block at a time, its word by the counts of the
+ // words of the block, and the place in the word by select
  const auto & W = f_b.words();
  const std::size_t G = std::size_t( 1 ) << I.g;
- std::size_t next = 0 , c = 0;
- for( std::size_t w = 0 ; ( w < ( n + 63 ) / 64 ) && ( next < total ) ;
-      ++w ) {
-  Word x = b ? W[ w ] : ~W[ w ];
-  if( ( w == n / 64 ) && ( n % 64 ) ) x &= detail::lowMask( int( n % 64 ) );
-  const std::size_t pc = std::size_t( std::popcount( x ) );
-  for( ; next < c + pc ; next += G ) {
-   const std::size_t p = 64 * w +
-                         std::size_t( selectInWord( x , int( next - c ) ) );
-   const std::size_t j = next >> I.l;
-   const std::size_t m = ( next >> I.g ) & ( ( std::size_t( 1 ) << I.s ) -
-                                             1 );
-   if( m == 0 ) I.pos[ j ] = p;
-   else I.off[ ( j << I.s ) + m ] = std::uint16_t( p - I.pos[ j ] );
+ std::size_t t = 0;
+ for( std::size_t next = 0 ; next < total ; next += G ) {
+  while( before( t + 1 , b ) <= next ) ++t;
+  std::size_t r = next - before( t , b );   // the bits b before it
+  const std::uint64_t e = f_dir[ t ];
+  std::size_t q = 0 , in = 0;
+  for( std::size_t h = 1 ; h < 4 ; ++h ) {
+   const std::size_t c1 = std::size_t( ( e >> ( kRel * ( h - 1 ) ) ) &
+                                       kRelMask );
+   const std::size_t c = b ? c1 : h * kQuarter - c1;
+   if( c <= r ) {
+    q = h;
+    in = c;
+    }
    }
-  c += pc;
+  r -= in;
+  const std::size_t w = 4 * t + q;
+  const std::size_t p = 64 * w +
+                        std::size_t( selectInWord( b ? W[ w ] : ~W[ w ] ,
+                                                   int( r ) ) );
+  const std::size_t j = next >> I.l;
+  const std::size_t m = ( next >> I.g ) & ( ( std::size_t( 1 ) << I.s ) - 1 );
+  if( m == 0 ) I.pos[ j ] = p;
+  else I.off[ ( j << I.s ) + m ] = std::uint16_t( p - I.pos[ j ] );
   }
  I.pos[ groups ] = n;
  for( std::size_t j = 0 ; j < groups ; ++j )   // the sparse groups
