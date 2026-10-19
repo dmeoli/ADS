@@ -197,7 +197,15 @@ int main( int argc , char ** argv )
   spsc( "ADS::SPSCQueue" , n , r , [ & ](){
         return( std::make_unique< Ads >( cap ) ); } ,
         []( Ads & q , Item x ) { return( q.push( x ) ); } ,
-        []( Ads & q , Item & x ) { return( q.tryPop( x ) ); } );
+        []( Ads & q , Item & x ) {
+#ifdef ADS_BENCH_OLD
+         auto v = q.pop();                  // no tryPop() before
+         if( v ) x = *v;
+         return( v.has_value() );
+#else
+         return( q.tryPop( x ) );
+#endif
+         } );
 
   // ----- mpsc, one producer
   auto sendAll = []( auto & q , std::size_t m ) {
