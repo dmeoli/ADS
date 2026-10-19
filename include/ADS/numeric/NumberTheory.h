@@ -82,6 +82,18 @@
  *   of 32 bits below \f$ 2^{32} \f$ (\f$ R = 2^{32} \f$, its constants by
  *   divisions of 32 bits), the lazy one below \f$ 2^{62} \f$, and
  *   Montgomery64 above;
+ * - factorize(), beyond the book, the prime factors of a word: the
+ *   divisions by the primes below 256, then, on a composite cofactor m
+ *   (isPrime() decides), the rho of Pollard with the cycle detection of
+ *   Brent, in the Montgomery arithmetic of m: the sequence \f$ x_{i+1} =
+ *   x_i^2 + c \bmod m \f$ falls into a cycle modulo the least prime p of m
+ *   after \f$ O( \sqrt{p} ) = O( m^{1/4} ) \f$ steps in expectation (the
+ *   birthday paradox, the map taken as random), which
+ *   \f$ \gcd( | x_i - x_j | , m ) \f$ finds; the differences are
+ *   multiplied together, 128 at a time, before each gcd, and the last
+ *   batch is gone through again one by one if the gcd is m; with another
+ *   c if the factor is m itself. O( n^{1/4} ) products expected for n of
+ *   64 bits;
  * - sieve(), the sieve of Eratosthenes on a SET of the integers from 2 to n
  *   [see BoolSet.h], beyond the book: the least item p left in the set is a
  *   prime, and its multiples are removed; since the multiples of the primes
@@ -94,7 +106,8 @@
  * need m >= 1, and mulMod61() factors below \f$ 2^{61} - 1 \f$; witness()
  * needs an odd n >= 3 and a base 1 <= b < n, and millerRabin() K >= 0;
  * sieve() gives the primes up to n, increasing, as isPrimeTrial() finds
- * them (an audit). The functions are defined in NumberTheory.tpp.
+ * them (an audit); factorize() needs n >= 1 and gives primes whose product
+ * is n (an audit). The functions are defined in NumberTheory.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 17.2 and
  *      exercises 17.1-17.3,
@@ -125,6 +138,10 @@
  *      1326, 20-30, 2015, https://ceur-ws.org/Vol-1326/020-Forisek.pdf
  * \see J. Sinclair and others, the deterministic sets of bases for the
  *      test of Miller and Rabin, https://miller-rabin.appspot.com
+ * \see J. M. Pollard, A Monte Carlo method for factorization, BIT 15(3),
+ *      331-334, 1975, doi:10.1007/BF01933667
+ * \see R. P. Brent, An improved Monte Carlo factorization algorithm, BIT
+ *      Numerical Mathematics 20(2), 176-184, 1980, doi:10.1007/BF01933190
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -147,6 +164,7 @@
 #include "ADS/Contract.h"
 #include "ADS/set/BoolSet.h"
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cstdint>
@@ -264,6 +282,12 @@ inline bool isPrime( U64 n );
 /// the primes up to n, increasing, by the sieve of Eratosthenes
 /// \post the primes up to n, as isPrimeTrial() finds them (an audit)
 inline std::vector< U64 > sieve( U64 n );
+
+/// the prime factors of n, with their multiplicity, increasing, by the
+/// divisions by the primes below 256 and the rho of Pollard and Brent
+/// \pre n >= 1
+/// \post their product is n and each one is prime (an audit)
+inline std::vector< U64 > factorize( U64 n );
 
 /*--------------------------------------------------------------------------*/
 

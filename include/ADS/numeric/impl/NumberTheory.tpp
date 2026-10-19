@@ -539,6 +539,88 @@ inline bool isPrime( U64 n )
  return( test( Montgomery64( n ) ) );
  }
 
+namespace detail {
+
+/// a factor of the odd composite m, by the rho of Pollard and Brent with
+/// the constant c in the arithmetic M of m; possibly m itself
+template< class M_ >
+U64 rhoBrent( const M_ & M , U64 c )
+{
+ const U64 m = M.modulus() , cb = canonical( M , M.to( c ) );
+ auto f = [ & ]( U64 v ) {                  // v^2 + c, in [ 0 , m )
+  U64 t = canonical( M , M.mul( v , v ) ) + cb;
+  return( t >= m ? t - m : t ); };
+ auto dist = []( U64 a , U64 b ) { return( a > b ? a - b : b - a ); };
+ constexpr U64 batch = 128;
+ U64 y = canonical( M , M.to( 2 ) ) , x = y , ys = y ,
+     q = canonical( M , M.one() ) , g = 1;
+ for( U64 r = 1 ; g == 1 ; r *= 2 ) {
+  x = y;
+  for( U64 i = 0 ; i < r ; ++i ) y = f( y );
+  for( U64 k = 0 ; ( k < r ) && ( g == 1 ) ; k += batch ) {
+   ys = y;                                  // the batch from here
+   for( U64 i = 0 ; ( i < batch ) && ( i < r - k ) ; ++i ) {
+    y = f( y );
+    q = canonical( M , M.mul( q , dist( x , y ) ) );
+    }
+   g = binaryGcd( q , m );
+   }
+  }
+ if( g == m )                               // the batch one by one
+  do {
+   ys = f( ys );
+   g = binaryGcd( dist( x , ys ) , m );
+   } while( g == 1 );
+ return( g );
+ }
+
+/// a factor of the odd composite m, neither 1 nor m
+inline U64 factorOf( U64 m )
+{
+ for( U64 c = 1 ; ; ++c ) {
+  U64 g;
+  if( m < ( U64( 1 ) << 32 ) ) g = rhoBrent( Montgomery32( m ) , c );
+  else if( m < ( U64( 1 ) << 62 ) ) g = rhoBrent( MontgomeryLazy( m ) , c );
+  else g = rhoBrent( Montgomery64( m ) , c );
+  if( ( g != 1 ) && ( g != m ) )
+   return( g );
+  }
+ }
+
+}  // end( namespace detail )
+
+inline std::vector< U64 > factorize( U64 n )
+{
+ ADS_PRE( n >= 1 );
+ [[maybe_unused]] const U64 n0 = n;
+ std::vector< U64 > F;
+ for( ; ( n & 1 ) == 0 ; n >>= 1 ) F.push_back( 2 );
+ for( U64 p = 3 ; ( p < 256 ) && ( p * p <= n ) ; p += 2 )
+  for( ; n % p == 0 ; n /= p ) F.push_back( p );
+ std::vector< U64 > todo;                   // the cofactors to split
+ if( n > 1 ) todo.push_back( n );
+ while( ! todo.empty() ) {
+  const U64 m = todo.back();
+  todo.pop_back();
+  if( ( m < 256 * 256 ) || isPrime( m ) )   // no factor below 256 left
+   F.push_back( m );
+  else {
+   const U64 d = detail::factorOf( m );
+   todo.push_back( d );
+   todo.push_back( m / d );
+   }
+  }
+ std::sort( F.begin() , F.end() );
+ ADS_AUDIT( [ & ]( void ) {
+  U64 prod = 1;
+  for( const U64 p : F )
+   if( ! isPrime( p ) ) return( false );
+   else prod *= p;
+  return( prod == n0 );
+  }() );
+ return( F );
+ }
+
 inline std::vector< U64 > sieve( U64 n )
 {
  std::vector< U64 > primes;
