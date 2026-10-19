@@ -331,7 +331,7 @@ void bfs( Tree< T > * t , F && f )
  ADS_PRE( t != nullptr );
  List< Tree< T > * > Q;   // enqueue at the tail, dequeue from the head
  Q.insert( Q.next( Q.tail() ) , t );
- while( ! Q.isEmpty() ) {
+ while( ! Q.empty() ) {
   Tree< T > * u = Q.read( Q.head() );
   Q.remove( Q.head() );
   f( u );

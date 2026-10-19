@@ -153,7 +153,7 @@ std::size_t DiskFile< T >::size( void ) const
  }
 
 template< class T >
-bool DiskFile< T >::isEmpty( void ) const
+bool DiskFile< T >::empty( void ) const
 {
  return( f_items.empty() );
  }

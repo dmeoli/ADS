@@ -289,7 +289,7 @@ ADS_TEST( "strand-sort" )
  CHECK( k == 3 );
  List< int > E , O = { 4 } , Q = { 2 , 2 , 2 };  // equals: one strand
  strandSort( E , std::less<>() , &k );
- CHECK( k == 0 && E.isEmpty() );
+ CHECK( k == 0 && E.empty() );
  strandSort( O , std::less<>() , &k );
  CHECK( k == 1 && O.read( O.head() ) == 4 );
  strandSort( Q , std::less<>() , &k );

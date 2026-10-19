@@ -228,7 +228,7 @@ std::size_t BTree< K , V >::size( void ) const
  }
 
 template< std::totally_ordered K , class V >
-bool BTree< K , V >::isEmpty( void ) const
+bool BTree< K , V >::empty( void ) const
 {
  return( f_size == 0 );
  }

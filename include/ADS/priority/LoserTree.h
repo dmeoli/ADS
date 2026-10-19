@@ -94,19 +94,19 @@ class LoserTree {
  [[nodiscard]] std::size_t players( void ) const;
 
  /// all the players exhausted
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the player with the smallest key
- /// \pre ! isEmpty()
+ /// \pre ! empty()
  [[nodiscard]] std::size_t winner( void ) const;
 
  /// its key
- /// \pre ! isEmpty()
+ /// \pre ! empty()
  [[nodiscard]] const T & top( void ) const;
 
  /// the winner takes the key, or is exhausted if it is empty, and the
  /// matches on its path are replayed
- /// \pre ! isEmpty()
+ /// \pre ! empty()
  void replace( std::optional< T > key );
 
 /*--------------------------------------------------------------------------*/

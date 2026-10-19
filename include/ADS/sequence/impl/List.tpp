@@ -67,7 +67,7 @@ template< class T , bool Pooled >
 List< T , Pooled >::~List()
 {
  if constexpr( ! ( Pooled && std::is_trivially_destructible_v< T > ) )
-  while( ! isEmpty() )
+  while( ! empty() )
    remove( head() );
  }
 
@@ -84,7 +84,7 @@ void List< T , Pooled >::swap( List & other ) noexcept
 template< class T , bool Pooled >
 void List< T , Pooled >::adopt( List & o ) noexcept
 {
- if( o.isEmpty() )
+ if( o.empty() )
   return;
  f_sentinel.succ = o.f_sentinel.succ;
  f_sentinel.pred = o.f_sentinel.pred;
@@ -105,7 +105,7 @@ typename List< T , Pooled >::Cell * List< T , Pooled >::sentinel( void ) const
 /*--------------------------------------------------------------------------*/
 
 template< class T , bool Pooled >
-bool List< T , Pooled >::isEmpty( void ) const
+bool List< T , Pooled >::empty( void ) const
 {
  return( f_sentinel.succ == &f_sentinel );
  }
@@ -151,7 +151,7 @@ List< T , Pooled >::insert( Pos p , const T & v )
  Pos t = f_pool.make( p->pred , p , v );
  p->pred->succ = t;
  p->pred = t;
- ADS_POST( ! isEmpty() && ( t->succ == p ) && ( p->pred == t ) &&
+ ADS_POST( ! empty() && ( t->succ == p ) && ( p->pred == t ) &&
            detail::equal( t->value , v ) );
  ADS_INVARIANT( linked() );
  return( t );

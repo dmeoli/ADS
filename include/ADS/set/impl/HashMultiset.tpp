@@ -35,7 +35,7 @@ std::size_t HashMultiset< T , H >::distinct( void ) const
  }
 
 template< class T , class H >
-bool HashMultiset< T , H >::isEmpty( void ) const
+bool HashMultiset< T , H >::empty( void ) const
 {
  return( f_size == 0 );
  }

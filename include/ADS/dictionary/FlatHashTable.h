@@ -250,7 +250,7 @@ class FlatHashTable {
 
  [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the number of places, 15 times 0 or a power of 2 at least 2
  [[nodiscard]] std::size_t capacity( void ) const;

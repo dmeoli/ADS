@@ -24,7 +24,7 @@ ChildListTree< T >::ChildListTree( const T & v )
  }
 
 template< class T >
-bool ChildListTree< T >::isEmpty( void ) const
+bool ChildListTree< T >::empty( void ) const
 {
  return( f_root == NIL );
  }
@@ -45,7 +45,7 @@ template< class T >
 int ChildListTree< T >::leftmostChild( int n ) const
 {
  const auto & C = node( n ).children;
- return( C.isEmpty() ? NIL : C.read( C.head() ) );
+ return( C.empty() ? NIL : C.read( C.head() ) );
  }
 
 template< class T >
@@ -62,7 +62,7 @@ int ChildListTree< T >::rightSibling( int n ) const
 template< class T >
 bool ChildListTree< T >::isLeaf( int n ) const
 {
- return( node( n ).children.isEmpty() );
+ return( node( n ).children.empty() );
  }
 
 template< class T >
@@ -193,7 +193,7 @@ template< class T >
 void ChildListTree< T >::release( int n )
 {
  auto & C = f_N[ n ].children;
- while( ! C.isEmpty() ) {
+ while( ! C.empty() ) {
   const int c = C.read( C.head() );
   C.remove( C.head() );
   release( c );

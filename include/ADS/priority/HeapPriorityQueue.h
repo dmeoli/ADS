@@ -94,7 +94,7 @@ class HeapPriorityQueue {
  /// \pre n >= 0
  explicit HeapPriorityQueue( int n );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int size( void ) const;
 

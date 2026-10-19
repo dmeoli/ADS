@@ -75,7 +75,7 @@ ArraySequence< T >::operator=( ArraySequence other ) noexcept
 /*--------------------------------------------------------------------------*/
 
 template< class T >
-bool ArraySequence< T >::isEmpty( void ) const
+bool ArraySequence< T >::empty( void ) const
 {
  return( f_size == 0 );
  }

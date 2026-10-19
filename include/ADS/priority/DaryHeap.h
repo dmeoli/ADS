@@ -93,7 +93,7 @@ class DaryHeap {
  /// \pre the heap is not empty
  T pop( void );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] std::size_t size( void ) const;
 

@@ -80,7 +80,7 @@ class ArrayBinaryTree {
  ArrayBinaryTree( const T & v , const ArrayBinaryTree & l ,
                   const ArrayBinaryTree & r );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the root, NIL if the tree is empty
  [[nodiscard]] long root( void ) const;

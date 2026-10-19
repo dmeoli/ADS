@@ -88,7 +88,7 @@ template< class S , class C >
 bool sequenceSorted( const S & L , C less )
 {
  return( contract( [ & ]( void ) {
-  if( L.isEmpty() )
+  if( L.empty() )
    return( true );
   for( auto p = L.head() , q = L.next( p ) ; ! L.finished( q ) ;
        p = q , q = L.next( q ) )

@@ -355,7 +355,7 @@ std::vector< typename S::Item > stampaDifferenze( const S & L )
 template< Sequence S >
 void oddBeforeEven( S & L )
 {
- if( L.isEmpty() )
+ if( L.empty() )
   return;
  const auto last = L.tail();
  auto p = L.head();
@@ -438,7 +438,7 @@ ADS_TEST( "ex3.7" )
  CHECK( items( E ) == V( { 2 , 4 , 6 } ) );
  List< int > Z;
  oddBeforeEven( Z );
- CHECK( Z.isEmpty() );
+ CHECK( Z.empty() );
  for( const V & v : { V{ 1 } , V{ 2 } , V{ 1 , 3 , 5 } , V{ 2 , 1 } ,
                       V{ 1 , 2 } , V{ 4 , 3 , 2 , 1 } , V{ 0 , -1 , -2 , -3 } ,
                       V{ 2 , 2 , 1 , 1 , 2 } } ) {
@@ -466,8 +466,8 @@ ADS_TEST( "ex3.8" )
  CHECK( items( A ) == V( { 1 } ) );
  List< int > E;
  ArraySequence< int > F;
- CHECK( rango( E , E.head() ) == 0 && E.isEmpty() );
- CHECK( rango( F , F.head() ) == 0 && F.isEmpty() );
+ CHECK( rango( E , E.head() ) == 0 && E.empty() );
+ CHECK( rango( F , F.head() ) == 0 && F.empty() );
  List< int > N{ -4 , 7 , -3 , 0 };
  CHECK( rango( N , N.head() ) == 0 );
  CHECK( items( N ) == V( { 0 , 4 , -3 , 0 } ) );

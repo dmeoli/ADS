@@ -53,7 +53,7 @@ FibonacciHeapPriorityQueue< T , P >::~FibonacciHeapPriorityQueue()
  }
 
 template< class T , std::totally_ordered P >
-bool FibonacciHeapPriorityQueue< T , P >::isEmpty( void ) const
+bool FibonacciHeapPriorityQueue< T , P >::empty( void ) const
 {
  return( f_min == nullptr );
  }
@@ -67,14 +67,14 @@ int FibonacciHeapPriorityQueue< T , P >::size( void ) const
 template< class T , std::totally_ordered P >
 const T & FibonacciHeapPriorityQueue< T , P >::min( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_min->value );
  }
 
 template< class T , std::totally_ordered P >
 const P & FibonacciHeapPriorityQueue< T , P >::minPriority( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_min->priority );
  }
 
@@ -85,7 +85,7 @@ FibonacciHeapPriorityQueue< T , P >::insert( const T & x , const P & p )
  Node * z = f_pool.make( p , x );
  add_root( z );
  ++f_n;
- ADS_POST( ! isEmpty() && !( p < f_min->priority ) );
+ ADS_POST( ! empty() && !( p < f_min->priority ) );
  ADS_INVARIANT( isHeap() );
  return( z );
  }
@@ -93,7 +93,7 @@ FibonacciHeapPriorityQueue< T , P >::insert( const T & x , const P & p )
 template< class T , std::totally_ordered P >
 T FibonacciHeapPriorityQueue< T , P >::deleteMin( void )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  Node * z = f_min;
  const P q = z->priority;
  if( Node * c = z->child ) {                // the children join the roots,
@@ -114,7 +114,7 @@ T FibonacciHeapPriorityQueue< T , P >::deleteMin( void )
  --f_n;
  T v = std::move( z->value );
  f_pool.free( z );
- ADS_POST( isEmpty() || !( f_min->priority < q ) );
+ ADS_POST( empty() || !( f_min->priority < q ) );
  ADS_INVARIANT( isHeap() );
  return( v );
  }

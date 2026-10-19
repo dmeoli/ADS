@@ -18,22 +18,22 @@
 namespace ADS {
 
 template< Sequence S >
-bool SequenceStack< S >::isEmpty( void ) const
+bool SequenceStack< S >::empty( void ) const
 {
- return( f_s.isEmpty() );
+ return( f_s.empty() );
  }
 
 template< Sequence S >
 const typename SequenceStack< S >::Item & SequenceStack< S >::top( void ) const
 {
- ADS_PRE( ! f_s.isEmpty() );
+ ADS_PRE( ! f_s.empty() );
  return( f_s.read( f_s.head() ) );
  }
 
 template< Sequence S >
 typename SequenceStack< S >::Item SequenceStack< S >::pop( void )
 {
- ADS_PRE( ! f_s.isEmpty() );
+ ADS_PRE( ! f_s.empty() );
  Item v = f_s.read( f_s.head() );
  f_s.remove( f_s.head() );
  return( v );
@@ -43,7 +43,7 @@ template< Sequence S >
 void SequenceStack< S >::push( const Item & v )
 {
  f_s.insert( f_s.head() , v );
- ADS_POST( ! f_s.isEmpty() && detail::equal( top() , v ) );
+ ADS_POST( ! f_s.empty() && detail::equal( top() , v ) );
  }
 
 /*--------------------------------------------------------------------------*/

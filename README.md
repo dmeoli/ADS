@@ -19,9 +19,10 @@ Dati*, 3rd edition, Città Studi, 2014), in which each exercise of the book
 is a test. It also has the structures and the algorithms that a course on
 the subject usually adds, and a few engineered ones meant for speed. An
 abstract data type is a C++20 concept whose realizations follow the
-pseudocode and the names of the book (`isEmpty()`, `head()`, `next()`,
-`read()`, `push()`, `enqueue()`, and so on), and hence the code can be read
-side by side with the text. Where the book leaves a choice open, or
+pseudocode and the names of the book (`head()`, `next()`, `read()`,
+`push()`, `enqueue()`, and so on; the test for emptiness is `empty()`, as in
+the standard library), and hence the code can be read side by side with the
+text. Where the book leaves a choice open, or
 its pseudocode has a defect (a few figures, too, disagree with the formulae
 they illustrate), the header states the choice made and the reason for
 it.

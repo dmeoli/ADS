@@ -72,12 +72,12 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
   };
  auto empty = [ & ]( void ) {
   switch( how ) {
-   case( Frontier::LIST ): return( lq->isEmpty() );
-   case( Frontier::HEAP ): return( hq->isEmpty() );
-   case( Frontier::FIBONACCI ): return( fq->isEmpty() );
-   case( Frontier::QUEUE ): return( Q.isEmpty() );
-   case( Frontier::STACK ): return( St.isEmpty() );
-   default: return( Dq.isEmpty() );
+   case( Frontier::LIST ): return( lq->empty() );
+   case( Frontier::HEAP ): return( hq->empty() );
+   case( Frontier::FIBONACCI ): return( fq->empty() );
+   case( Frontier::QUEUE ): return( Q.empty() );
+   case( Frontier::STACK ): return( St.empty() );
+   default: return( Dq.empty() );
    }
   };
  auto extract = [ & ]( void ) {                             // (2)

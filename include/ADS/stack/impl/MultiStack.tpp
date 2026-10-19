@@ -31,7 +31,7 @@ int MultiStack< T >::stacks( void ) const
  }
 
 template< class T >
-bool MultiStack< T >::isEmpty( int i ) const
+bool MultiStack< T >::empty( int i ) const
 {
  ADS_PRE( ( i >= 0 ) && ( i < stacks() ) );
  return( f_top[ i ] < 0 );

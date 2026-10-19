@@ -228,7 +228,7 @@ ADS_TEST( "sec6.1.search-tree" )
  t.insert( 21 , -1 );                      // the key is there
  CHECK( ( t.lookup( 21 ) == -1 ) && ( t.size() == 12 ) );
  BST e;
- CHECK( e.isEmpty() && e.isNil( e.min() ) && ! e.lookup( 1 ) );
+ CHECK( e.empty() && e.isNil( e.min() ) && ! e.lookup( 1 ) );
  CHECK( e.isNil( e.max() ) && e.isNil( e.root() ) && ( e.size() == 0 ) );
  CHECK( e.isNil( e.lookupNode( 1 ) ) && ! e.contains( 1 ) );
  CHECK( e.begin() == e.end() );
@@ -287,15 +287,15 @@ ADS_TEST( "sec6.1.remove" )
   c.remove( BST::key( c.root() ) );
   CHECK( shape( c ).ok );
   }
- CHECK( c.isEmpty() && c.isNil( c.root() ) );
+ CHECK( c.empty() && c.isNil( c.root() ) );
  CHECK( preorder( t ) == fig61 );          // the copies were deep
 
  c.remove( 1 );                            // empty: nothing
- CHECK( c.isEmpty() && shape( c ).ok );
+ CHECK( c.empty() && shape( c ).ok );
  c.insert( 5 , 5 );
  c.remove( 5 );                            // the only key
  c.remove( 5 );                            // twice
- CHECK( c.isEmpty() && c.isNil( c.root() ) && c.isNil( c.min() ) );
+ CHECK( c.empty() && c.isNil( c.root() ) && c.isNil( c.min() ) );
  for( const Ints & k : { Ints{ 5 , 3 } , Ints{ 5 , 7 } } ) {
   BST r = build< BST >( k );               // a root with one child
   r.remove( 5 );
@@ -348,7 +348,7 @@ ADS_TEST( "spec.RedBlackTree" )
   t.remove( i );
   if( i % 64 == 0 ) CHECK( shape( t ).ok );
   }
- CHECK( t.isEmpty() && shape( t ).ok && t.isNil( t.root() ) );
+ CHECK( t.empty() && shape( t ).ok && t.isNil( t.root() ) );
 
  RBT d;
  for( int i = 1023 ; i >= 1 ; --i )        // decreasing
@@ -359,13 +359,13 @@ ADS_TEST( "spec.RedBlackTree" )
   d.remove( i );
   if( i % 64 == 0 ) CHECK( shape( d ).ok );
   }
- CHECK( d.isEmpty() && shape( d ).ok );
+ CHECK( d.empty() && shape( d ).ok );
  d.insert( 7 , 7 );
  CHECK( ( d.root()->color == Color::BLACK ) && shape( d ).ok );
  d.insert( 7 , 8 );                        // the key is there
  CHECK( ( d.size() == 1 ) && ( d.lookup( 7 ) == 8 ) );
  d.remove( 7 );
- CHECK( d.isEmpty() && shape( d ).ok );
+ CHECK( d.empty() && shape( d ).ok );
  }
 
 // section 6.2, Figura 6.3: the tree of 10 internal nodes and 11 leaves,
@@ -435,14 +435,14 @@ void against_map( unsigned seed , int lo = 0 , int hi = 499 )
    Tr c = t;
    CHECK( preorder( c ) == preorder( t ) && shape( c ).ok );
    Tr d = std::move( c );
-   CHECK( c.isEmpty() && ( d.size() == t.size() ) );
+   CHECK( c.empty() && ( d.size() == t.size() ) );
    c.insert( 1 , 1 );                      // a moved-from tree works
    CHECK( c.size() == 1 && shape( c ).ok );
    Tr & self = d;
    d = self;                               // self-assignment
    CHECK( ( preorder( d ) == preorder( t ) ) && shape( d ).ok );
    d = Tr();                               // an empty one
-   CHECK( d.isEmpty() && shape( d ).ok );
+   CHECK( d.empty() && shape( d ).ok );
    }
   }
  Ints mk;
@@ -453,7 +453,7 @@ void against_map( unsigned seed , int lo = 0 , int hi = 499 )
   t.remove( m.begin()->first );
   m.erase( m.begin() );
   }
- CHECK( t.isEmpty() && shape( t ).ok );
+ CHECK( t.empty() && shape( t ).ok );
  }
 
 ADS_TEST( "sec6.2.against-map" )
@@ -960,7 +960,7 @@ void sets( unsigned seed )
   // A with itself, with a subset of its own, with a disjoint set
   const Ints ka = keys( A );
   CHECK( ( keys( set_union( A , A ) ) == ka ) &&
-         set_difference( A , A ).isEmpty() &&
+         set_difference( A , A ).empty() &&
          ( keys( set_intersection( A , A ) ) == ka ) );
   Tr H , F;
   for( std::size_t j = 0 ; j < ka.size() ; j += 2 ) H.insert( ka[ j ] , 0 );
@@ -968,7 +968,7 @@ void sets( unsigned seed )
   CHECK( ( keys( set_union( A , H ) ) == ka ) &&
          ( keys( set_intersection( A , H ) ) == keys( H ) ) &&
          ( set_difference( A , H ).size() == ka.size() / 2 ) );
-  CHECK( set_intersection( A , F ).isEmpty() &&
+  CHECK( set_intersection( A , F ).empty() &&
          ( keys( set_difference( A , F ) ) == ka ) &&
          ( set_union( A , F ).size() == 2 * ka.size() ) );
   }

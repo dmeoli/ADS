@@ -120,7 +120,7 @@ std::vector< int > prim( const G & g , int r , Frontier how )
   for( int u : g.V() )
    pos[ u ] = Q.insert( u , u == r ? W( 0 ) : infinity< W >() );
   key[ r ] = W( 0 );
-  while( ! Q.isEmpty() ) {
+  while( ! Q.empty() ) {
    const int u = Q.deleteMin();
    in[ u ] = true;
    if( key[ u ] == infinity< W >() )               // another component

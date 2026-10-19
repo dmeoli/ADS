@@ -24,7 +24,7 @@ template< Stack S >
 std::vector< typename S::Item > stackItems( S & s )
 {
  std::vector< typename S::Item > v;
- while( ! s.isEmpty() ) v.push_back( s.pop() );
+ while( ! s.empty() ) v.push_back( s.pop() );
  for( auto it = v.rbegin() ; it != v.rend() ; ++it ) s.push( *it );
  return( v );
  }
@@ -33,7 +33,7 @@ std::vector< typename S::Item > stackItems( S & s )
 template< Stack S >
 long stackSize( S & s )
 {
- if( s.isEmpty() ) return( 0 );
+ if( s.empty() ) return( 0 );
  auto x = s.pop();
  const long n = 1 + stackSize( s );
  s.push( x );
@@ -44,9 +44,9 @@ long stackSize( S & s )
 template< Stack S >
 void risePass( S & s )
 {
- if( s.isEmpty() ) return;
+ if( s.empty() ) return;
  auto a = s.pop();
- if( s.isEmpty() ) {
+ if( s.empty() ) {
   s.push( a );
   return;
   }
@@ -89,11 +89,11 @@ template< Stack S >
 void removeGreater( S & s , const typename S::Item & k )
 {
  SequenceStack< List< typename S::Item > > aux;
- while( ! s.isEmpty() ) {
+ while( ! s.empty() ) {
   auto x = s.pop();
   if( !( k < x ) ) aux.push( x );
   }
- while( ! aux.isEmpty() ) s.push( aux.pop() );
+ while( ! aux.empty() ) s.push( aux.pop() );
  ADS_AUDIT( [ & ] {
   for( const auto & x : detail::stackItems( s ) )
    if( k < x ) return( false );
@@ -105,7 +105,7 @@ namespace detail {
 template< Stack S , class F >
 void bottomUp( S & s , F & f )
 {
- if( s.isEmpty() )
+ if( s.empty() )
   return;
  auto x = s.pop();
  bottomUp( s , f );

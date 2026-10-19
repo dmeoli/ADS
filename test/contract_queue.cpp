@@ -76,7 +76,7 @@ ADS_TEST( "array-queue" )
  for( int i = 0 ; i < 5 ; ++i ) {
   O.enqueue( i );
   CHECK_THROWS( O.enqueue( i ) , contract_violation );
-  CHECK( O.top() == i && O.dequeue() == i && O.isEmpty() );
+  CHECK( O.top() == i && O.dequeue() == i && O.empty() );
   CHECK_THROWS( O.dequeue() , contract_violation );
   }
  // a failed operation leaves the queue as it was; the front wraps around
@@ -123,15 +123,15 @@ ADS_TEST( "linked-queue" )
    }
  CHECK( Q.size() == R.size() );
  LinkedQueue< int > C = Q;
- if( ! C.isEmpty() ) C.dequeue();
+ if( ! C.empty() ) C.dequeue();
  C.enqueue( -1 );
  CHECK( Q.size() == R.size() && !( C == Q ) );
  LinkedQueue< int > M( std::move( C ) );
- CHECK( C.isEmpty() && ! M.isEmpty() );
+ CHECK( C.empty() && ! M.empty() );
  // emptied again after use: the preconditions hold again
  LinkedQueue< int > E;
  E.enqueue( 1 );
- CHECK( E.dequeue() == 1 && E.isEmpty() );
+ CHECK( E.dequeue() == 1 && E.empty() );
  CHECK_THROWS( (void) E.top() , contract_violation );
  CHECK_THROWS( E.dequeue() , contract_violation );
  // a NaN at the back of an empty queue: the postcondition of enqueue()
@@ -181,18 +181,18 @@ ADS_TEST( "unique-queue" )
  CHECK_THROWS( copyPositive( q , q ) , contract_violation );
  extractPositive( q , out );
  copyPositive( q , out );
- CHECK( q.isEmpty() && out.isEmpty() );
+ CHECK( q.empty() && out.empty() );
  for( int v : { 0 , -1 , std::numeric_limits< int >::min() } ) q.enqueue( v );
  copyPositive( q , out );
- CHECK( q.size() == 3 && out.isEmpty() );
+ CHECK( q.size() == 3 && out.empty() );
  q.enqueue( std::numeric_limits< int >::max() );
  extractPositive( q , out );
- CHECK( q.isEmpty() && out.size() == 1 &&
+ CHECK( q.empty() && out.size() == 1 &&
         out.top() == std::numeric_limits< int >::max() );
  }
 
 // the axioms of QUEUE [see ADT.h] on ArrayQueue and LinkedQueue, for queues
-// Q built by random operations: isEmpty( create ) = true,
+// Q built by random operations: empty( create ) = true,
 // top( enqueue( create , v ) ) = v, and for Q not empty
 // top( enqueue( Q , v ) ) = top( Q ) and dequeue( enqueue( Q , v ) ) =
 // enqueue( dequeue( Q ) , v ), the two sides built from the same
@@ -202,7 +202,7 @@ void queue_axioms( F create , unsigned seed )
 {
  std::mt19937 g( seed );
  Q E = create();
- CHECK( E.isEmpty() );
+ CHECK( E.empty() );
  E.enqueue( 5 );
  CHECK( E.top() == 5 );
  std::vector< int > ops;                        // -1 is a dequeue()
@@ -215,16 +215,16 @@ void queue_axioms( F create , unsigned seed )
    return( q );
    };
   Q a = build() , b = build();
-  if( ! a.isEmpty() ) {
+  if( ! a.empty() ) {
    const int front = a.top();
    a.enqueue( v );
    CHECK( a.top() == front );
    a.dequeue();
    b.dequeue();
    b.enqueue( v );
-   while( ! a.isEmpty() && ! b.isEmpty() )
+   while( ! a.empty() && ! b.empty() )
     CHECK( a.dequeue() == b.dequeue() );
-   CHECK( a.isEmpty() && b.isEmpty() );
+   CHECK( a.empty() && b.empty() );
    }
   int size = 0;
   for( int o : ops ) size += o < 0 ? -1 : 1;
@@ -253,7 +253,7 @@ ADS_TEST( "dequeue" )
  CHECK( D.head() == 4 && D.tail() == 4 && D.removeHead() == 4 );
  CHECK_THROWS( D.removeTail() , contract_violation );
  D.insertHead( 5 );
- CHECK( D.removeTail() == 5 && D.isEmpty() );
+ CHECK( D.removeTail() == 5 && D.empty() );
  CHECK_THROWS( (void) D.head() , contract_violation );
  std::mt19937 g( 7 );
  std::deque< int > R;
@@ -276,7 +276,7 @@ ADS_TEST( "dequeue" )
    R.pop_back();
    }
   }
- CHECK( D.isEmpty() == R.empty() );
+ CHECK( D.empty() == R.empty() );
  }
 
 }  // end( namespace )

@@ -61,9 +61,9 @@ namespace {
 ADS_TEST( "list" )
 {
  List< int > L;
- CHECK( L.isEmpty() && L.finished( L.head() ) && L.finished( L.tail() ) );
+ CHECK( L.empty() && L.finished( L.head() ) && L.finished( L.tail() ) );
  const auto p = L.insert( L.next( L.tail() ) , 1 );   // insert at pos_n
- CHECK( ! L.isEmpty() && L.head() == p && L.tail() == p && L.read( p ) == 1 );
+ CHECK( ! L.empty() && L.head() == p && L.tail() == p && L.read( p ) == 1 );
  const auto q = L.insert( p , 0 );                    // the predecessor of p
  CHECK( L.next( q ) == p && L.prev( p ) == q && L.head() == q );
  const auto r = L.remove( q );                        // the successor of q
@@ -105,7 +105,7 @@ ADS_TEST( "list" )
 ADS_TEST( "array-sequence" )
 {
  ArraySequence< int > S;
- CHECK( S.isEmpty() && S.finished( S.head() ) && S.finished( S.tail() ) );
+ CHECK( S.empty() && S.finished( S.head() ) && S.finished( S.tail() ) );
  CHECK( S.insert( S.next( S.tail() ) , 1 ) == 0 );     // insert at pos_n
  CHECK( S.insert( 0 , 0 ) == 0 && S.read( 1 ) == 1 && S.size() == 2 );
  CHECK( S.remove( 0 ) == 0 && S.read( 0 ) == 1 );
@@ -119,7 +119,7 @@ ADS_TEST( "array-sequence" )
  CHECK_THROWS( (void) S.prev( -1 ) , contract_violation );  // before pos_-1
  CHECK( S.next( -1 ) == 0 && S.prev( 1 ) == 0 );
  ArraySequence< int > T( std::move( S ) );
- CHECK( S.isEmpty() && T.size() == 1 && T.read( 0 ) == 1 );
+ CHECK( S.empty() && T.size() == 1 && T.read( 0 ) == 1 );
  S.insert( 0 , 5 );                                    // still usable
  CHECK( S.read( 0 ) == 5 );
  std::mt19937 g( 3 );
@@ -157,13 +157,13 @@ void copy_move( void )
  b = r;                                         // self-assignment
  CHECK( a == b );
  S c( std::move( b ) );
- CHECK( c == a && b.isEmpty() && b.finished( b.head() ) );
+ CHECK( c == a && b.empty() && b.finished( b.head() ) );
  b.insert( b.head() , 7 );                      // still usable
  CHECK( b.read( b.head() ) == 7 );
  std::swap( b , c );
  CHECK( b == a && c.read( c.head() ) == 7 );
  b = std::move( c );
- CHECK( b.read( b.head() ) == 7 && ! b.isEmpty() );
+ CHECK( b.read( b.head() ) == 7 && ! b.empty() );
  }
 
 ADS_TEST( "copy-move" )
@@ -181,7 +181,7 @@ ADS_TEST( "copy-move" )
  CHECK( A.capacity() == 64 );
  while( A.size() > 3 ) A.remove( A.size() - 1 );
  CHECK( A.capacity() <= 4 * A.size() && A.capacity() >= A.size() );
- while( ! A.isEmpty() ) A.remove( 0 );
+ while( ! A.empty() ) A.remove( 0 );
  CHECK( A.capacity() <= 1 );
  ArraySequence< int > F = { 1 , 2 };            // full: insert() of its own
  F.insert( 0 , F.read( 1 ) );                   // item reallocates the vector
@@ -232,11 +232,11 @@ ADS_TEST( "sequence-algorithms" )
  CHECK( search( e , 1 ) < 0 && searchOrdered( e , 1 ) < 0 &&
         ! lowerBound( e , 1 ).second && order( e ) == Order::EMPTY );
  CHECK( mergeSorted( e , s ) == s && mergeSorted( s , e ) == s &&
-        mergeSorted( e , e ).isEmpty() );
+        mergeSorted( e , e ).empty() );
  const auto h = s.head() , t = s.tail();
  CHECK( sublist( s , h , h ) == List< int >( { 1 } ) );
  CHECK( sublist( s , h , t ) == s );
- CHECK( sublist( s , s.next( t ) , h ).isEmpty() );   // from pos_n
+ CHECK( sublist( s , s.next( t ) , h ).empty() );     // from pos_n
  CHECK_THROWS( (void) sublist( s , t , h ) , contract_violation );
  List< int > one = { 4 } , same = { 2 , 2 , 2 };
  naturalMergeSort( one );

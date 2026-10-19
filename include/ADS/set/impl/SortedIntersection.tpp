@@ -181,7 +181,7 @@ template< class T >
 void twoLevelHeaders( const DiskFile< T > & A , std::size_t L ,
                       DiskFile< T > & H )
 {
- ADS_PRE( ( L >= 1 ) && ( &H.memory() == &A.memory() ) && H.isEmpty() );
+ ADS_PRE( ( L >= 1 ) && ( &H.memory() == &A.memory() ) && H.empty() );
  DiskReader< T > rd( A );
  DiskWriter< T > w( H );
  for( std::size_t k = 0 ; rd.hasNext() ; ++k ) {
@@ -198,7 +198,7 @@ void intersectMergeExternal( const DiskFile< T > & A ,
  TwoLevelMemory & mem = A.memory();
  ADS_PRE( mem.memorySize() >= 3 * mem.blockSize() );
  ADS_PRE( ( &B.memory() == &mem ) && ( &out.memory() == &mem ) &&
-          out.isEmpty() );
+          out.empty() );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( detail::strictlyIncreasing( A.contents() , less ) &&
           detail::strictlyIncreasing( B.contents() , less ) ); } ) );
@@ -222,7 +222,7 @@ void intersectTwoLevelExternal( const DiskFile< T > & A ,
  TwoLevelMemory & mem = A.memory();
  ADS_PRE( ( L >= 1 ) && ( mem.memorySize() >= 4 * mem.blockSize() ) );
  ADS_PRE( ( &H.memory() == &mem ) && ( &B.memory() == &mem ) &&
-          ( &out.memory() == &mem ) && out.isEmpty() );
+          ( &out.memory() == &mem ) && out.empty() );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( detail::strictlyIncreasing( A.contents() , less ) &&
           detail::strictlyIncreasing( B.contents() , less ) ); } ) );

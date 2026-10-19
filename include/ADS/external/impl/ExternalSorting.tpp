@@ -96,7 +96,7 @@ std::vector< DiskFile< T > > snowPlowRuns( const DiskFile< T > & in ,
   DiskFile< T > cur( mem );
   std::unique_ptr< DiskWriter< T > > w;
   std::size_t r = 0;
-  while( ! heap.isEmpty() ) {
+  while( ! heap.empty() ) {
    Item x = heap.pop();
    if( ! w || ( x.run != r ) ) {            // a new run starts
     if( w ) {
@@ -143,7 +143,7 @@ void mergeGroup( std::vector< DiskFile< T > > & runs , std::size_t lo ,
   }
  LoserTree< T , C > L( std::move( first ) , less );
  DiskWriter< T > w( dest );
- while( ! L.isEmpty() ) {
+ while( ! L.empty() ) {
   const std::size_t j = L.winner();
   w.push( L.top() );
   L.replace( rd[ j ]->hasNext() ?
@@ -293,7 +293,7 @@ void binaryMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
 {
  TwoLevelMemory & mem = in.memory();
  ADS_PRE( mem.memorySize() >= 3 * mem.blockSize() );
- ADS_PRE( ( &out.memory() == &mem ) && out.isEmpty() );
+ ADS_PRE( ( &out.memory() == &mem ) && out.empty() );
  auto before = detail::auditCopy( in.contents() );
  detail::mergePasses( detail::loadSortRuns( in , less ) , 2 , out , less );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
@@ -308,7 +308,7 @@ void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
  TwoLevelMemory & mem = in.memory();
  const std::size_t k = mem.memorySize() / mem.blockSize() - 1;
  ADS_PRE( k >= 2 );
- ADS_PRE( ( &out.memory() == &mem ) && out.isEmpty() );
+ ADS_PRE( ( &out.memory() == &mem ) && out.empty() );
  auto before = detail::auditCopy( in.contents() );
  detail::mergePasses( snowPlow ? detail::snowPlowRuns( in , less ) :
                                  detail::loadSortRuns( in , less ) ,
@@ -325,7 +325,7 @@ void distributionSort( const DiskFile< T > & in , DiskFile< T > & out ,
  TwoLevelMemory & mem = in.memory();
  const std::size_t B = mem.blockSize() , M = mem.memorySize();
  ADS_PRE( M >= 5 * B + 2 );
- ADS_PRE( ( &out.memory() == &mem ) && out.isEmpty() );
+ ADS_PRE( ( &out.memory() == &mem ) && out.empty() );
  auto before = detail::auditCopy( in.contents() );
  {
   DiskWriter< T > w( out );
@@ -371,7 +371,7 @@ void permuteBySorting( const DiskFile< T > & in ,
 {
  TwoLevelMemory & mem = in.memory();
  ADS_PRE( ( &out.memory() == &mem ) && ( &pi.memory() == &mem ) &&
-          out.isEmpty() );
+          out.empty() );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( detail::isPermutation( pi.contents() , in.size() ) ); } ) );
  struct Triple {
@@ -420,7 +420,7 @@ void permuteDirect( const DiskFile< T > & in ,
 {
  TwoLevelMemory & mem = in.memory();
  ADS_PRE( ( &out.memory() == &mem ) && ( &pi.memory() == &mem ) &&
-          out.isEmpty() );
+          out.empty() );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( detail::isPermutation( pi.contents() , in.size() ) ); } ) );
  {

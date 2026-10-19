@@ -62,7 +62,7 @@ inline T DaryHeap< T , Better , D >::pop( void )
  }
 
 template< class T , class Better , unsigned D >
-bool DaryHeap< T , Better , D >::isEmpty( void ) const
+bool DaryHeap< T , Better , D >::empty( void ) const
 {
  return( f_A.empty() );
  }

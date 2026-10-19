@@ -425,7 +425,7 @@ ADS_TEST( "sec7.2.deleted" )
  CHECK( u.size() == 5 && ! u.contains( 5 ) );   // nothing changed
  for( long k = 0 ; k < 5 ; ++k )
   u.remove( k );
- CHECK( u.isEmpty() && ! u.lookup( 5 ) && u.probes() == 5 );
+ CHECK( u.empty() && ! u.lookup( 5 ) && u.probes() == 5 );
  u.insert( 5 , 5 );
  CHECK( u.lookup( 5 ) == 5 );
 
@@ -446,7 +446,7 @@ ADS_TEST( "sec7.2.deleted" )
  Open e( 7 , Probing::linear() );
  CHECK( ! e.lookup( 3 ) && e.probes() == 1 && ! e.contains( 3 ) );
  e.remove( 3 );
- CHECK( e.isEmpty() && e.begin() == e.end() );
+ CHECK( e.empty() && e.begin() == e.end() );
 
  // one place: full after one key, a failed insertion leaves the table as
  // it was, a deleted place is reused
@@ -529,7 +529,7 @@ ADS_TEST( "sec7.2.against-map" )
   CHECK( s.lookup( k ) == k );
  for( long k = 0 ; k < 100 ; ++k )
   s.remove( k );
- CHECK( s.isEmpty() && s.capacity() == 7 );
+ CHECK( s.empty() && s.capacity() == 7 );
  against_map( s , 1000 , 20000 , seed++ );
 
  CHECK_THROWS( ( Open( 0 , Probing::linear() ) ) , contract_violation );
@@ -619,7 +619,7 @@ ADS_TEST( "sec7.4.restructure" )
   t.remove( k );
   CHECK( t.capacity() == 7 || t.load() >= 0.125 );
   }
- CHECK( t.isEmpty() && t.capacity() == 7 );
+ CHECK( t.empty() && t.capacity() == 7 );
 
  ChainedHashTable< long , long , Chain::FRONT , Mix > c( 7 , true );
  for( long k = 0 ; k < n ; ++k ) {
@@ -669,7 +669,7 @@ ADS_TEST( "sec7.4.restructure" )
   l.remove( x );
   CHECK( o.capacity() >= 1 && l.capacity() >= 1 );
   }
- CHECK( o.isEmpty() && o.capacity() == 4 && l.isEmpty() &&
+ CHECK( o.empty() && o.capacity() == 4 && l.empty() &&
         l.capacity() == 1 );
  }
 

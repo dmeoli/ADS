@@ -27,7 +27,7 @@ inline std::size_t BoolSet::size( void ) const
  return( f_size );
  }
 
-inline bool BoolSet::isEmpty( void ) const
+inline bool BoolSet::empty( void ) const
 {
  return( f_size == 0 );
  }

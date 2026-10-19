@@ -74,7 +74,7 @@ class HashMultiset {
  /// the number of distinct items
  [[nodiscard]] std::size_t distinct( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] bool contains( const T & x ) const;
 

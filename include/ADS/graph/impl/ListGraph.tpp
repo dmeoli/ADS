@@ -32,7 +32,7 @@ int ListGraph< W , T >::insertNode( const T & t )
 {
  f_adj.emplace_back();
  const int u = B::addNode( t );
- ADS_POST( f_adj[ u ].isEmpty() );
+ ADS_POST( f_adj[ u ].empty() );
  return( u );
  }
 
@@ -169,7 +169,7 @@ bool ListGraph< W , T >::consistent( void ) const
  for( int u = 0 ; u < B::bound() ; ++u ) {
   const auto & L = f_adj[ u ];
   if( ! B::f_alive[ u ] ) {
-   if( ! L.isEmpty() ) return( false );
+   if( ! L.empty() ) return( false );
    continue;
    }
   for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) ) {

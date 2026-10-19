@@ -70,7 +70,7 @@ class MultiStack {
  [[nodiscard]] int stacks( void ) const;
 
  /// \pre 0 <= i < k
- [[nodiscard]] bool isEmpty( int i ) const;
+ [[nodiscard]] bool empty( int i ) const;
 
  /// \pre 0 <= i < k
  [[nodiscard]] int size( int i ) const;

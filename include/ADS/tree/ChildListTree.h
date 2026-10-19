@@ -72,7 +72,7 @@ class ChildListTree {
  /// a tree of one node of value v
  explicit ChildListTree( const T & v );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int root( void ) const;
 

@@ -87,7 +87,7 @@ ADS_TEST( "heap-priority-queue" )
  HeapPriorityQueue< int > C( 1 );             // capacity 1: full, emptied
  C.insert( 5 , 5 );
  CHECK_THROWS( C.insert( 6 , 6 ) , contract_violation );
- CHECK( C.deleteMin() == 5 && C.isEmpty() );
+ CHECK( C.deleteMin() == 5 && C.empty() );
  C.insert( 6 , 6 );
  CHECK( C.min() == 6 );
  std::mt19937 g( 2 );
@@ -188,7 +188,7 @@ ADS_TEST( "list-priority-queue" )
  auto u = U.insert( 4 , 4 );
  U.decrease( u , 4 );                         // the same priority: inside
  CHECK_THROWS( U.decrease( u , 5 ) , contract_violation );
- CHECK( U.deleteMin() == 4 && U.isEmpty() );
+ CHECK( U.deleteMin() == 4 && U.empty() );
  against_multiset< ListPriorityQueue< int , int , true > >(
   [] { return( ListPriorityQueue< int , int , true >() ); } , 3 , 1000 );
  against_multiset< ListPriorityQueue< int , int , false > >(
@@ -269,7 +269,7 @@ void linked_heap( unsigned seed )
   CHECK( H.deleteMin() == *M.begin() );
   M.erase( M.begin() );
   }
- CHECK( H.isEmpty() );
+ CHECK( H.empty() );
  H.insert( 1 , 1 );
  CHECK( H.min() == 1 );
  }
@@ -293,7 +293,7 @@ void priority_axioms( F create , unsigned seed )
  Q E = create();
  E.insert( 7 , 7 );
  CHECK( E.min() == 7 );
- CHECK( E.deleteMin() == 7 && E.isEmpty() );
+ CHECK( E.deleteMin() == 7 && E.empty() );
  Q A = create();
  int m = 1 << 30;
  for( int t = 0 ; t < 200 ; ++t ) {
@@ -303,7 +303,7 @@ void priority_axioms( F create , unsigned seed )
   CHECK( A.min() == m );
   if( g() % 3 == 0 ) {
    CHECK( A.deleteMin() == m );
-   m = A.isEmpty() ? 1 << 30 : A.min();
+   m = A.empty() ? 1 << 30 : A.min();
    }
   }
  }
@@ -351,7 +351,7 @@ ADS_TEST( "bucket-dary-loser" )
  CHECK( B.top() == 2 && B.topF() == 0 && B.topG() == 5 );
  CHECK( B.pop() == 2 && B.pop() == 1 );
  const auto e = B.popEntry();
- CHECK( e.f == 4 && e.g == 9 && B.isEmpty() );
+ CHECK( e.f == 4 && e.g == 9 && B.empty() );
  CHECK_THROWS( B.pop() , contract_violation );
  B.push( 7 , 2 , 2 );                         // filled again, below
  CHECK( B.top() == 7 && B.size() == 1 );
@@ -363,7 +363,7 @@ ADS_TEST( "bucket-dary-loser" )
  CHECK_THROWS( (void) H2.top() , contract_violation );
  CHECK_THROWS( H3.pop() , contract_violation );
  H2.push( 5 );
- CHECK( H2.top() == 5 && H2.pop() == 5 && H2.isEmpty() );
+ CHECK( H2.top() == 5 && H2.pop() == 5 && H2.empty() );
  CHECK_THROWS( H2.pop() , contract_violation );
  for( int x : { 4 , 4 , 4 , std::numeric_limits< int >::min() ,
                 std::numeric_limits< int >::max() } ) {
@@ -379,12 +379,12 @@ ADS_TEST( "bucket-dary-loser" )
  LoserTree< int > L1( O{ 3 } );               // one player
  CHECK( L1.top() == 3 && L1.winner() == 0 );
  L1.replace( std::nullopt );
- CHECK( L1.isEmpty() );
+ CHECK( L1.empty() );
  CHECK_THROWS( (void) L1.top() , contract_violation );
  CHECK_THROWS( (void) L1.winner() , contract_violation );
  CHECK_THROWS( L1.replace( 1 ) , contract_violation );
  LoserTree< int > L0( O{ std::nullopt , std::nullopt } );
- CHECK( L0.isEmpty() );
+ CHECK( L0.empty() );
  const auto always = []( int , int ) { return( true ); };
  CHECK_THROWS( ( LoserTree< int , decltype( always ) >( O{ 1 , 2 } ,
                                                         always ) ) ,

@@ -54,7 +54,7 @@ concept PriorityQueue = requires( Q q , const Q cq ,
                                   const typename Q::Item & x ,
                                   const typename Q::Priority & p ,
                                   typename Q::Handle y ) {
- { cq.isEmpty() } -> std::same_as< bool >;
+ { cq.empty() } -> std::same_as< bool >;
  { cq.min() } -> std::convertible_to< typename Q::Item >;
  { q.deleteMin() } -> std::convertible_to< typename Q::Item >;
  { q.insert( x , p ) } -> std::same_as< typename Q::Handle >;

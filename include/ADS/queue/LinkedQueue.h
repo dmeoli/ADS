@@ -73,7 +73,7 @@ class LinkedQueue {
 
  void swap( LinkedQueue & other ) noexcept;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// puts v at the back
  /// \post the queue is not empty, and v is at the front if it was empty

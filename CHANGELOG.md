@@ -240,6 +240,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the test for emptiness of every structure is empty(), as in the
+  standard library and in Boost, in place of the isEmpty() of the book
+
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);

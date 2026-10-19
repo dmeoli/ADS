@@ -64,7 +64,7 @@ class ArrayQueue {
  /// the empty queue of at most dim items
  explicit ArrayQueue( std::size_t dim );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the item at the front
  /// \pre the queue is not empty

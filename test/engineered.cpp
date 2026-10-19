@@ -99,16 +99,16 @@ ADS_TEST( "bucket-queue" )
    }
  CHECK( Q.size() == R.size() );
  Q.clear();
- CHECK( Q.isEmpty() );
+ CHECK( Q.empty() );
  Q.push( 7 , 3 , 1 );
- CHECK( Q.pop() == 7 && Q.isEmpty() );
+ CHECK( Q.pop() == 7 && Q.empty() );
  CHECK_THROWS( Q.push( 0 , 0 , -1 ) , contract_violation );
  CHECK_THROWS( (void) Q.topF() , contract_violation );
  CHECK_THROWS( (void) Q.topG() , contract_violation );
  BucketQueue< int > Z;                          // all ties: LIFO
  for( int x = 0 ; x < 5 ; ++x ) Z.push( x , 0 , 0 );
  for( int x = 5 ; x-- > 0 ; ) CHECK( Z.pop() == x );
- CHECK( Z.isEmpty() && Z.begin() == Z.end() );
+ CHECK( Z.empty() && Z.begin() == Z.end() );
  CHECK_THROWS( Z.pop() , contract_violation );  // emptied after use
  Z.push( 1 , 3 , 4 );
  CHECK( Z.pop() == 1 );                         // the layer 3 is freed
@@ -122,7 +122,7 @@ ADS_TEST( "bucket-queue" )
  U.push( 1 , 5u , 0u );
  U.push( 2 , 0u , 0u );
  U.push( 3 , 0u , 7u );
- CHECK( U.pop() == 3 && U.pop() == 2 && U.pop() == 1 && U.isEmpty() );
+ CHECK( U.pop() == 3 && U.pop() == 2 && U.pop() == 1 && U.empty() );
  }
 
 // the d-ary heap of plain items for D = 2 , 3 , 4 , 8 against
@@ -191,7 +191,7 @@ void dary_edges( void )
     CHECK( H.top() == R.top() && H.pop() == R.top() );
     R.pop();
     }
-   CHECK( H.isEmpty() );
+   CHECK( H.empty() );
    }
  }
 
@@ -226,24 +226,24 @@ ADS_TEST( "dary-heap" )
    A.push( x );
    for( const auto & s : R )
     CHECK( A.pop() == s );
-   CHECK( A.isEmpty() );
+   CHECK( A.empty() );
    }
  DaryHeap< int > I;                             // the least first
  for( int x : { 5 , 3 , 9 , 1 } ) I.push( x );
  CHECK( I.pop() == 1 && I.pop() == 3 && I.size() == 2 );
  I.clear();
- CHECK( I.isEmpty() && I.begin() == I.end() );
+ CHECK( I.empty() && I.begin() == I.end() );
  CHECK_THROWS( (void) I.top() , contract_violation );
  CHECK_THROWS( I.pop() , contract_violation );
  DaryHeap< std::string > O;                     // the root is the last
  O.push( "only" );
- CHECK( O.top() == "only" && O.pop() == "only" && O.isEmpty() );
+ CHECK( O.top() == "only" && O.pop() == "only" && O.empty() );
  DaryHeap< int , std::greater< int > , 3 > X;   // the largest first
  for( int x : { INT_MIN , 0 , INT_MAX , 0 , INT_MAX , INT_MIN } )
   X.push( x );
  for( int x : { INT_MAX , INT_MAX , 0 , 0 , INT_MIN , INT_MIN } )
   CHECK( X.pop() == x );
- CHECK( X.isEmpty() );
+ CHECK( X.empty() );
  for( int dir = 0 ; dir < 3 ; ++dir ) {         // up, down, all equal
   DaryHeap< int , std::less< int > , 2 > H;
   H.reserve( 0 );
@@ -251,7 +251,7 @@ ADS_TEST( "dary-heap" )
    H.push( dir == 0 ? k : dir == 1 ? 99 - k : 42 );
   for( int k = 0 ; k < 100 ; ++k )
    CHECK( H.pop() == ( dir == 2 ? 42 : k ) );
-  CHECK( H.isEmpty() );
+  CHECK( H.empty() );
   }
  }
 
@@ -550,7 +550,7 @@ ADS_TEST( "flat-hash-table" )
    return( x * c ); } , 5 );
   }
  FlatHashTable< std::uint64_t , int > E;       // empty, no places
- CHECK( E.isEmpty() && E.capacity() == 0 && E.load() == 0.0 );
+ CHECK( E.empty() && E.capacity() == 0 && E.load() == 0.0 );
  CHECK( ! E.lookup( 0 ) && E.find( 7 ) == nullptr && ! E.contains( 7 ) );
  CHECK( ! E.remove( 7 ) && E.begin() == E.end() && E.size() == 0 );
  E.clear();
@@ -579,7 +579,7 @@ ADS_TEST( "flat-hash-table" )
  CHECK( ! S.contains( 200 ) );
  const std::size_t mS = S.capacity();
  for( std::uint64_t k = 0 ; k < 200 ; ++k ) CHECK( S.remove( k ) );
- CHECK( S.isEmpty() && S.deleted() > 0 && S.capacity() == mS );
+ CHECK( S.empty() && S.deleted() > 0 && S.capacity() == mS );
  for( std::uint64_t k = 200 ; k < 300 ; ++k ) CHECK( ! S.contains( k ) );
  for( std::uint64_t k = 0 ; k < 150 ; ++k ) S.insert( k , 1 );   // reused
  CHECK( S.size() == 150 && S.capacity() == mS );
@@ -591,7 +591,7 @@ ADS_TEST( "flat-hash-table" )
    for( std::uint64_t k = 0 ; k < 20 ; ++k ) D.remove( 100 * round + k );
    CHECK( ! D.contains( 100 * round ) && D.capacity() <= 60 );
    }
-  CHECK( D.isEmpty() );
+  CHECK( D.empty() );
   }
  {                                             // one fingerprint, 2 groups
   FlatHashTable< std::uint64_t , int , Raw > P( 1 );
@@ -619,7 +619,7 @@ ADS_TEST( "flat-hash-table" )
   for( const auto & [ k , v ] : P ) in.push_back( k );
   CHECK( in.size() == 16 );
   for( std::uint64_t k : in ) CHECK( P.remove( k ) );
-  CHECK( P.isEmpty() && P.deleted() == 15 && P.capacity() == 30 );
+  CHECK( P.empty() && P.deleted() == 15 && P.capacity() == 30 );
   for( std::uint64_t j = 0 ; j < 12 ; ++j )   // group 1, 12 + 15 = 27
    P.insert( raw( 1 , 1 , j , 9 ) , 0 );
   CHECK( P.deleted() == 15 && P.capacity() == 30 );
@@ -666,7 +666,7 @@ ADS_TEST( "flat-hash-table" )
   for( auto e = I.end() ; e != I.begin() ; ) { --e; ++n; }
   CHECK( n == I.size() );
   for( auto e = I.begin() ; e != I.end() ; ) e = I.erase( e );
-  CHECK( I.isEmpty() && I.begin() == I.end() );
+  CHECK( I.empty() && I.begin() == I.end() );
   I.insert( 7 , 7 );                           // reused
   CHECK( I.size() == 1 && I.lookup( 7 ) == 7 );
   }
@@ -715,7 +715,7 @@ ADS_TEST( "flat-hash-table" )
   CHECK( W.capacity() == 120 );
   W.insert( raw( 7 , 3 , 0 , 1 ) , 0 );        // the last group alone
   CHECK( walk( W ) == std::vector< std::uint64_t >{ raw( 7 , 3 , 0 , 1 ) } );
-  CHECK( W.erase( W.begin() ) == W.end() && W.isEmpty() );
+  CHECK( W.erase( W.begin() ) == W.end() && W.empty() );
   W.insert( raw( 0 , 3 , 0 , 1 ) , 0 );        // the first group alone
   CHECK( walk( W ).size() == 1 );
   CHECK( ( *--W.end() ).first == raw( 0 , 3 , 0 , 1 ) );
@@ -738,7 +738,7 @@ ADS_TEST( "flat-hash-table" )
   CHECK( ++last == W.end() && walk( W ).size() == 28 );
   for( auto e = W.end() ; e != W.begin() ; )  // erase backwards
    e = W.erase( --e );
-  CHECK( W.isEmpty() && W.begin() == W.end() && W.capacity() == 120 );
+  CHECK( W.empty() && W.begin() == W.end() && W.capacity() == 120 );
   }
  {                                             // one group, overflowing
   FlatHashTable< std::uint64_t , int , Same > S;
@@ -778,18 +778,18 @@ ADS_TEST( "flat-hash-table" )
   CHECK( B.deleted() == A.deleted() && B.capacity() == A.capacity() );
   for( const auto & [ k , v ] : R ) CHECK( B.find( k )->s == v );
   C = std::move( B );
-  CHECK( B.isEmpty() && B.capacity() == 0 && C.size() == A.size() );
+  CHECK( B.empty() && B.capacity() == 0 && C.size() == A.size() );
   B.insert( "again" , Alive( "x" ) );           // a moved-from table works
   CHECK( B.lookup( "again" )->s == "x" );
   const auto & same = C;                      // self-assignment
   C = same;
   A.clear();
-  CHECK( A.isEmpty() && Alive::count == long( C.size() ) + 1 );
+  CHECK( A.empty() && Alive::count == long( C.size() ) + 1 );
   CHECK( A.deleted() == 0 && ! A.contains( R.begin()->first ) );
   A.insert( "after clear" , Alive( "y" ) );
   CHECK( A.size() == 1 && A.lookup( "after clear" )->s == "y" );
   FlatHashTable< std::string , Alive > M( std::move( C ) );
-  CHECK( C.isEmpty() && M.size() == R.size() );
+  CHECK( C.empty() && M.size() == R.size() );
   }
  CHECK( Alive::count == 0 );                   // nothing leaked
  }
@@ -1064,7 +1064,7 @@ ADS_TEST( "spsc-queue" )
 ADS_TEST( "mpsc-inbox" )
 {
  MPSCInbox< std::pair< int , int > > I;
- CHECK( I.isEmpty() && I.take().empty() );
+ CHECK( I.empty() && I.take().empty() );
  const int p = 4 , n = 20000;
  std::vector< std::thread > T;
  for( int k = 0 ; k < p ; ++k )
@@ -1080,14 +1080,14 @@ ADS_TEST( "mpsc-inbox" )
    ++got;
    }
  for( auto & t : T ) t.join();
- CHECK( ordered && I.isEmpty() );
+ CHECK( ordered && I.empty() );
  for( int k = 0 ; k < p ; ++k ) CHECK( next[ k ] == n );
  MPSCInbox< int > S;
  S.push( 7 );
- CHECK( ! S.isEmpty() && S.take() == std::vector< int >( { 7 } ) );
+ CHECK( ! S.empty() && S.take() == std::vector< int >( { 7 } ) );
  for( int x : { 1 , 2 , 3 } ) S.push( x );
  CHECK( S.take() == std::vector< int >( { 1 , 2 , 3 } ) );
- CHECK( S.isEmpty() && S.take().empty() );
+ CHECK( S.empty() && S.take().empty() );
  MPSCInbox< int > L;                            // freed if never taken
  L.push( 1 );
  L.push( 2 );

@@ -49,7 +49,7 @@ void SortedArrayDictionary< K , V >::remove( const K & k )
  }
 
 template< std::totally_ordered K , class V >
-bool SortedArrayDictionary< K , V >::isEmpty( void ) const
+bool SortedArrayDictionary< K , V >::empty( void ) const
 {
  return( f_A.empty() );
  }

@@ -24,7 +24,7 @@ CursorBinaryTree< T >::CursorBinaryTree( const T & v )
  }
 
 template< class T >
-bool CursorBinaryTree< T >::isEmpty( void ) const
+bool CursorBinaryTree< T >::empty( void ) const
 {
  return( f_root == NIL );
  }

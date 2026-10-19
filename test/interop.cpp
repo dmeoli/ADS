@@ -382,7 +382,7 @@ ADS_TEST( "restricted" )
  for( std::size_t i = 0 ; i < R.size() ; ++i )
   B.push( int( i ) , R[ i ] % 7 , R[ i ] % 3 );
  std::vector< int > seen( B.begin() , B.end() ) , popped;
- for( auto C = B ; ! C.isEmpty() ; C.pop() ) popped.push_back( C.top() );
+ for( auto C = B ; ! C.empty() ; C.pop() ) popped.push_back( C.top() );
  CHECK( seen == popped );                   // the order of the extractions
  std::ranges::sort( seen );
  CHECK( std::ranges::equal( seen , std::views::iota( 0 , int( R.size() ) ) ) );
@@ -391,9 +391,9 @@ ADS_TEST( "restricted" )
  for( int k = 0 ; k < 30 ; ++k ) B.pop();   // stale lazy bounds
  std::vector< int > rest( B.begin() , B.end() );
  popped.clear();
- for( auto C = B ; ! C.isEmpty() ; C.pop() ) popped.push_back( C.top() );
+ for( auto C = B ; ! C.empty() ; C.pop() ) popped.push_back( C.top() );
  CHECK( rest == popped && rest.size() == R.size() - 30 );
- while( ! B.isEmpty() ) B.pop();
+ while( ! B.empty() ) B.pop();
  CHECK( B.begin() == B.end() );
 
  ArrayStack< int > S0( 1 );                 // the empty views
@@ -419,7 +419,7 @@ ADS_TEST( "restricted" )
  F.enqueue( 5 );
  CHECK( std::ranges::equal( F , std::views::iota( 2 , 6 ) ) );
  CHECK( F.end() - F.begin() == 4 && F.begin()[ 3 ] == 5 );
- while( ! F.isEmpty() ) (void) F.dequeue();
+ while( ! F.empty() ) (void) F.dequeue();
  CHECK( F.begin() == F.end() );
  for( int k = 0 ; k < 5 ; ++k ) U0.enqueue( 3 );   // all equal
  CHECK( std::ranges::equal( U0 , std::vector< int >( { 3 } ) ) );
@@ -704,7 +704,7 @@ ADS_TEST( "trees" )
   };
  CHECK( priorities( LH ) == pr && priorities( FH ) == pr );
  auto FM = std::move( FH );                 // the move leaves FH empty
- CHECK( priorities( FM ) == pr && FH.isEmpty() && FH.begin() == FH.end() );
+ CHECK( priorities( FM ) == pr && FH.empty() && FH.begin() == FH.end() );
  std::multiset< int > tp;
  for( const auto & [ key , x ] : TP ) tp.insert( key.first );
  CHECK( tp == pr );

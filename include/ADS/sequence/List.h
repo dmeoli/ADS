@@ -126,7 +126,7 @@ class List {
 /*--------------------------------------------------------------------------*/
 
  /// true if the list is empty, i.e., the sentinel is its own successor
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// true if p is \f$ pos_{-1} \f$ or \f$ pos_n \f$, i.e., the sentinel
  [[nodiscard]] bool finished( Pos p ) const;

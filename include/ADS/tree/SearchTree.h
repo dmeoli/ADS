@@ -152,7 +152,7 @@ class SearchTree {
 
  [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// removes all the nodes
  void clear( void );

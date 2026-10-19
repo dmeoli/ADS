@@ -137,7 +137,7 @@ void against_std( M make , unsigned seed )
 ADS_TEST( "sec8.1.boolean" )
 {
  BoolSet A( 10 ) , B( 6 );
- CHECK( A.isEmpty() && ! A.min() );
+ CHECK( A.empty() && ! A.min() );
  for( long x : { 1 , 3 , 5 , 7 , 9 } )
   A.insert( x );
  A.insert( 3 );
@@ -163,15 +163,15 @@ ADS_TEST( "sec8.1.boolean" )
  // the edges
  using LL = std::numeric_limits< long >;
  BoolSet Z( 0 ) , O( 1 );
- CHECK( Z.isEmpty() && Z.dim() == 0 && ! Z.min() && ! Z.max() &&
+ CHECK( Z.empty() && Z.dim() == 0 && ! Z.min() && ! Z.max() &&
         ! Z.contains( 0 ) && items( Z ).empty() );
  CHECK_THROWS( Z.insert( 0 ) , contract_violation );
  Z.remove( 0 );
- CHECK( setUnion( Z , Z ).dim() == 0 && setUnion( Z , Z ).isEmpty() );
+ CHECK( setUnion( Z , Z ).dim() == 0 && setUnion( Z , Z ).empty() );
  CHECK( setUnion( Z , A ).dim() == 10 && items( setUnion( Z , A ) ) ==
         items( A ) );
  CHECK( setIntersection( A , Z ).dim() == 0 &&
-        setIntersection( A , Z ).isEmpty() );
+        setIntersection( A , Z ).empty() );
  CHECK( items( setDifference( A , Z ) ) == items( A ) &&
         setDifference( Z , A ).dim() == 0 );
  CHECK( items( setSymmetricDifference( Z , A ) ) == items( A ) );
@@ -213,12 +213,12 @@ ADS_TEST( "sec8.2.unsorted-list" )
  // the edges
  using LL = std::numeric_limits< long >;
  ListSet< long > E , S = { 6 };
- CHECK( E.isEmpty() && ! E.min() && ! E.contains( 0 ) );
+ CHECK( E.empty() && ! E.min() && ! E.contains( 0 ) );
  E.remove( 0 );
  CHECK( E.size() == 0 && order( E ).empty() );
  CHECK( S.min() == 6 && S.size() == 1 );
  S.remove( 6 );
- CHECK( S.isEmpty() && ! S.min() );
+ CHECK( S.empty() && ! S.min() );
  CHECK_THROWS( A.insertNew( 3 ) , contract_violation );
  CHECK( A.size() == 3 );
  A.remove( 9 );                                  // the head
@@ -254,12 +254,12 @@ ADS_TEST( "sec8.3.sorted-list" )
  // the edges
  using LL = std::numeric_limits< long >;
  SortedListSet< long > E;
- CHECK( E.isEmpty() && ! E.min() && ! E.max() && ! E.contains( 0 ) );
+ CHECK( E.empty() && ! E.min() && ! E.max() && ! E.contains( 0 ) );
  E.remove( 0 );
  E.insertLast( LL::min() );
  CHECK( E.min() == LL::min() && E.max() == LL::min() && E.size() == 1 );
  E.remove( LL::min() );
- CHECK( E.isEmpty() && ! E.min() && ! E.max() );
+ CHECK( E.empty() && ! E.min() && ! E.max() );
  CHECK_THROWS( A.insertLast( 5 ) , contract_violation );
  A.insert( 1 );
  A.insert( 100 );
@@ -299,15 +299,15 @@ ADS_TEST( "sec8.4.hash" )
   A.insert( x );
  CHECK( items( setUnion( A , E ) ) == items( A ) &&
         items( setUnion( E , A ) ) == items( A ) );
- CHECK( setIntersection( A , E ).isEmpty() &&
-        setIntersection( E , A ).isEmpty() );
+ CHECK( setIntersection( A , E ).empty() &&
+        setIntersection( E , A ).empty() );
  CHECK( items( setDifference( A , E ) ) == items( A ) &&
-        setDifference( E , A ).isEmpty() && setDifference( A , A ).isEmpty() );
+        setDifference( E , A ).empty() && setDifference( A , A ).empty() );
  CHECK( items( setSymmetricDifference( E , A ) ) == items( A ) &&
-        setSymmetricDifference( A , A ).isEmpty() );
+        setSymmetricDifference( A , A ).empty() );
  CHECK( items( setUnion( A , A ) ) == items( A ) &&
         items( setIntersection( A , A ) ) == items( A ) );
- CHECK( setUnion( E , E ).isEmpty() );
+ CHECK( setUnion( E , E ).empty() );
  OpenHashSet< long > F( 2 , Probing::linear() );
  F.insert( 0 );
  F.insert( 1 );
@@ -334,11 +334,11 @@ ADS_TEST( "sec8.5.tree" )
  // the edges
  using LL = std::numeric_limits< long >;
  TreeSet< long > E , S;
- CHECK( E.isEmpty() && order( E ).empty() && ! E.contains( 0 ) );
+ CHECK( E.empty() && order( E ).empty() && ! E.contains( 0 ) );
  E.remove( 0 );
  E.insert( 50 );
  E.remove( 50 );
- CHECK( E.isEmpty() && order( E ).empty() );
+ CHECK( E.empty() && order( E ).empty() );
  A.remove( 50 );
  A.remove( 51 );
  CHECK( order( A ) == Ints( { 10 , 20 , 30 , 80 } ) );
@@ -369,13 +369,13 @@ ADS_TEST( "ex8.1" )
 {
  ListSet< long > A = { 1 , 2 , 3 , 4 } , B = { 6 , 4 , 2 } , E;
  CHECK( items( setIntersection( A , B ) ) == Ints( { 2 , 4 } ) );
- CHECK( setIntersection( A , E ).isEmpty() );
- CHECK( setIntersection( E , B ).isEmpty() );
+ CHECK( setIntersection( A , E ).empty() );
+ CHECK( setIntersection( E , B ).empty() );
  CHECK( items( setIntersection( A , A ) ) == items( A ) );
  ListSet< long > D = { 7 , 8 } , H = { 4 , 9 } , S = { 2 };
- CHECK( setIntersection( E , E ).isEmpty() );
- CHECK( setIntersection( A , D ).isEmpty() &&
-        setIntersection( D , A ).isEmpty() );
+ CHECK( setIntersection( E , E ).empty() );
+ CHECK( setIntersection( A , D ).empty() &&
+        setIntersection( D , A ).empty() );
  CHECK( order( setIntersection( A , H ) ) == Ints( { 4 } ) );
  CHECK( order( setIntersection( S , B ) ) == Ints( { 2 } ) &&
         order( setIntersection( B , S ) ) == Ints( { 2 } ) );
@@ -393,7 +393,7 @@ ADS_TEST( "ex8.2" )
  CHECK( items( setUnion( E , B ) ) == items( B ) );
  CHECK( items( setUnion( A , E ) ) == items( A ) );
  ListSet< long > D = { 7 , 8 } , S = { 4 };
- CHECK( setUnion( E , E ).isEmpty() );
+ CHECK( setUnion( E , E ).empty() );
  CHECK( order( setUnion( D , B ) ) == Ints( { 7 , 8 , 4 , 3 } ) );
  CHECK( order( setUnion( B , B ) ) == order( B ) );
  CHECK( order( setUnion( S , B ) ) == order( B ) );
@@ -413,7 +413,7 @@ ADS_TEST( "ex8.3" )
  using LL = std::numeric_limits< long >;
  SortedListSet< long > L = { -5 , -4 } , M = { 2 , 4 , 6 } ,
                        X = { LL::min() , LL::max() };
- CHECK( setUnion( E , E ).isEmpty() );
+ CHECK( setUnion( E , E ).empty() );
  CHECK( order( setUnion( A , A ) ) == order( A ) );
  CHECK( order( setUnion( L , A ) ) == Ints( { -5 , -4 , 1 , 3 , 5 , 7 } ) &&
         order( setUnion( A , L ) ) == order( setUnion( L , A ) ) );
@@ -433,13 +433,13 @@ ADS_TEST( "ex8.4" )
  CHECK( order( setDifference( A , B ) ) == Ints( { 1 , 5 , 11 } ) );
  CHECK( order( setDifference( B , A ) ) == Ints( { 0 , 8 } ) );
  CHECK( order( setDifference( A , E ) ) == order( A ) );
- CHECK( setDifference( E , A ).isEmpty() );
- CHECK( setDifference( A , A ).isEmpty() );
+ CHECK( setDifference( E , A ).empty() );
+ CHECK( setDifference( A , A ).empty() );
  SortedListSet< long > D = { 2 , 4 } , S = { -1 , 1 , 3 , 5 , 7 , 11 , 12 } ,
                        G = { 100 } , F = { 1 , 11 };
- CHECK( setDifference( E , E ).isEmpty() );
+ CHECK( setDifference( E , E ).empty() );
  CHECK( order( setDifference( A , D ) ) == order( A ) );
- CHECK( setDifference( A , S ).isEmpty() );
+ CHECK( setDifference( A , S ).empty() );
  CHECK( order( setDifference( S , A ) ) == Ints( { -1 , 12 } ) );
  CHECK( order( setDifference( A , G ) ) == order( A ) );
  CHECK( order( setDifference( A , F ) ) == Ints( { 3 , 5 , 7 } ) );
@@ -463,24 +463,24 @@ ADS_TEST( "ex8.5" )
  CHECK( order( setSymmetricDifference( SA , SB ) ) == s );
  CHECK( items( setDifference( setUnion( SA , SB ) ,
                               setIntersection( SA , SB ) ) ) == s );
- CHECK( setSymmetricDifference( SA , SA ).isEmpty() );
+ CHECK( setSymmetricDifference( SA , SA ).empty() );
  // the edges
  BoolSet Z( 0 ) , O( 1 );
  ListSet< long > LE;
  SortedListSet< long > SE;
  CHECK( items( setSymmetricDifference( A , Z ) ) == a &&
-        setSymmetricDifference( Z , Z ).isEmpty() &&
-        setSymmetricDifference( A , A ).isEmpty() );
+        setSymmetricDifference( Z , Z ).empty() &&
+        setSymmetricDifference( A , A ).empty() );
  O.insert( 0 );
  CHECK( items( setSymmetricDifference( O , B ) ) ==
         Ints( { 0 , 2 , 4 , 8 , 9 } ) );
  CHECK( items( setSymmetricDifference( LE , LB ) ) == b &&
         items( setSymmetricDifference( LA , LE ) ) == a &&
-        setSymmetricDifference( LA , LA ).isEmpty() &&
-        setSymmetricDifference( LE , LE ).isEmpty() );
+        setSymmetricDifference( LA , LA ).empty() &&
+        setSymmetricDifference( LE , LE ).empty() );
  CHECK( order( setSymmetricDifference( SE , SB ) ) == b &&
         order( setSymmetricDifference( SA , SE ) ) == a &&
-        setSymmetricDifference( SE , SE ).isEmpty() );
+        setSymmetricDifference( SE , SE ).empty() );
  SortedListSet< long > SD = { 0 , 5 , 10 };
  ListSet< long > LD = { 0 , 5 , 10 };
  CHECK( order( setSymmetricDifference( SA , SD ) ) ==
@@ -520,17 +520,17 @@ ADS_TEST( "ex8.6" )
         setIntersection( D , C ).dictionary().capacity() == 17 );
  CHECK( items( setIntersection( D , C ) ) == Ints( { 3 , 4 , 5 } ) );
  const auto IE = setIntersection( A , E );
- CHECK( IE.isEmpty() && IE.dictionary().capacity() == 3 );
+ CHECK( IE.empty() && IE.dictionary().capacity() == 3 );
  CHECK( setUnion( E , A ).size() == 100 && setDifference( A , E ).size() ==
-        100 && setDifference( E , A ).isEmpty() );
+        100 && setDifference( E , A ).empty() );
  ChainedHashSet< long > F( 7 );
  for( long x : { 1000 , 2000 } )
   F.insert( x );
- CHECK( setIntersection( A , F ).isEmpty() &&
+ CHECK( setIntersection( A , F ).empty() &&
         setDifference( A , F ).size() == 100 &&
         setUnion( A , F ).size() == 102 );
  CHECK( items( setIntersection( A , C ) ) == items( C ) &&
-        setDifference( C , A ).isEmpty() );
+        setDifference( C , A ).empty() );
  }
 
 // the union with Red-Black trees: a copy of A, plus the items of B, in
@@ -553,7 +553,7 @@ ADS_TEST( "ex8.7" )
  TreeSet< long > E , L;
  for( long x = -10 ; x < 0 ; ++x )
   L.insert( x );
- CHECK( setUnion( E , E ).isEmpty() );
+ CHECK( setUnion( E , E ).empty() );
  CHECK( order( setUnion( E , A ) ) == order( A ) &&
         order( setUnion( A , E ) ) == order( A ) );
  CHECK( order( setUnion( A , A ) ) == order( A ) );
@@ -593,11 +593,11 @@ ADS_TEST( "ex8.8" )
  CHECK( items( codomain( t ) ) == Ints( { 55 , 56 , 57 } ) );
  CHECK( items( codomain( c ) ) == Ints( { 55 , 56 , 57 } ) );
  CHECK( items( codomain( o ) ) == Ints( { 55 , 56 , 57 } ) );
- CHECK( codomain( RedBlackTree< std::string , long >() ).isEmpty() );
+ CHECK( codomain( RedBlackTree< std::string , long >() ).empty() );
  // the edges
- CHECK( codomain( ChainedHashTable< std::string , long >( 7 ) ).isEmpty() );
+ CHECK( codomain( ChainedHashTable< std::string , long >( 7 ) ).empty() );
  CHECK( codomain( OpenHashTable< std::string , long >(
-         7 , Probing::linear() ) ).isEmpty() );
+         7 , Probing::linear() ) ).empty() );
  RedBlackTree< long , long > one , same , all;
  one.insert( 1 , -1 );
  for( long k = 0 ; k < 100 ; ++k ) {
@@ -658,11 +658,11 @@ ADS_TEST( "ex8.9" )
  // the edges
  LinkedHashSet< long > e;
  const LinkedHashSet< long > ec = e;
- CHECK( e.isEmpty() && order( e ).empty() && ec.isEmpty() );
+ CHECK( e.empty() && order( e ).empty() && ec.empty() );
  e.remove( 1 );
  e.insert( 1 );
  e.remove( 1 );
- CHECK( e.isEmpty() && order( e ).empty() && ! e.contains( 1 ) );
+ CHECK( e.empty() && order( e ).empty() && ! e.contains( 1 ) );
  e.insert( 1 );
  CHECK( order( e ) == Ints( { 1 } ) );
  for( long x : { 2 , 3 , 4 } )
@@ -706,7 +706,7 @@ ADS_TEST( "ex8.10" )
  int calls = 0;
  e.forEach( [ & ]( const std::string & , std::size_t ) { ++calls; } );
  e.remove( "a" );
- CHECK( e.isEmpty() && e.size() == 0 && e.distinct() == 0 && calls == 0 &&
+ CHECK( e.empty() && e.size() == 0 && e.distinct() == 0 && calls == 0 &&
         e.count( "a" ) == 0 && ! e.contains( "" ) );
  const long n = 10000;
  for( long i = 0 ; i < n ; ++i )
@@ -715,7 +715,7 @@ ADS_TEST( "ex8.10" )
         e.count( "" ) == std::size_t( n ) );
  for( long i = 0 ; i < n ; ++i )
   e.remove( "" );
- CHECK( e.isEmpty() && e.distinct() == 0 && ! e.contains( "" ) );
+ CHECK( e.empty() && e.distinct() == 0 && ! e.contains( "" ) );
  e.remove( "" );
  CHECK( e.size() == 0 );
  }

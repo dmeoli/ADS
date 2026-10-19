@@ -75,7 +75,7 @@ class SortedArrayDictionary {
  /// \post k is not there
  void remove( const K & k );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the number of keys
  [[nodiscard]] std::size_t size( void ) const;

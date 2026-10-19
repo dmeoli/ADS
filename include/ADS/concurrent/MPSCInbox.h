@@ -78,7 +78,7 @@ class MPSCInbox {
  [[nodiscard]] std::vector< T > take( void );
 
  /// true if no message was waiting at some moment of the call
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:

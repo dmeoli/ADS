@@ -21,7 +21,7 @@
  * both on every realization. The operations are of four kinds:
  * constructors, which make a value of the type (create(), insert(),
  * push()); modifiers, which change it; observers, which return a property
- * of it (isEmpty(), top(), read()); iterators, which visit its items (the
+ * of it (empty(), top(), read()); iterators, which visit its items (the
  * positions of a SEQUENCE, the forEach() of the sets).
  *
  * A realization meets the requirement of abstraction, i.e., a program that
@@ -31,7 +31,7 @@
  * replace another one under the same concept.
  *
  * The names are those of the book, so that the pseudocode reads the same in
- * the code: a SEQUENCE has isEmpty(), finished(), head(), tail(), next(),
+ * the code: a SEQUENCE has empty(), finished(), head(), tail(), next(),
  * prev(), insert(), remove(), read() and write(), a position of the type
  * Pos. As in the book,
  * - the positions \f$ pos_{-1} \f$ and \f$ pos_n \f$ come before the first
@@ -91,7 +91,7 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// SEQUENCE (section 3.2.1): a dynamic linear sequence of items; as
-/// axioms, \f$ isEmpty( s ) = finished( head( s ) ) \f$ (isEmpty() is
+/// axioms, \f$ empty( s ) = finished( head( s ) ) \f$ (empty() is
 /// redundant), \f$ read( insert( p , v ) ) = v \f$,
 /// \f$ remove( insert( p , v ) ) = s \f$, and
 /// \f$ read( write( p , v ) ) = v \f$ with the other items unchanged
@@ -100,7 +100,7 @@ concept Sequence = requires( S s , const S cs , typename S::Pos p ,
                              const typename S::Item & v ) {
  typename S::Item;
  typename S::Pos;
- { cs.isEmpty() } -> std::same_as< bool >;
+ { cs.empty() } -> std::same_as< bool >;
  { cs.finished( p ) } -> std::same_as< bool >;
  { cs.head() } -> std::same_as< typename S::Pos >;
  { cs.tail() } -> std::same_as< typename S::Pos >;
@@ -149,8 +149,8 @@ concept Dictionary = requires( D d , const D cd , const typename D::Key & k ,
  };
 
 /// STACK (section 4.3.1): items are added and removed at the top (LIFO).
-/// As axioms, \f$ isEmpty( create ) = true \f$,
-/// \f$ isEmpty( push( S , v ) ) = false \f$,
+/// As axioms, \f$ empty( create ) = true \f$,
+/// \f$ empty( push( S , v ) ) = false \f$,
 /// \f$ top( push( S , v ) ) = v \f$, \f$ pop( push( S , v ) ) = S \f$,
 /// while \f$ top( create ) \f$ and \f$ pop( create ) \f$ are undefined,
 /// i.e., top() and pop() are partial, with the precondition that the stack
@@ -159,7 +159,7 @@ concept Dictionary = requires( D d , const D cd , const typename D::Key & k ,
 template< class S >
 concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
  typename S::Item;
- { cs.isEmpty() } -> std::same_as< bool >;
+ { cs.empty() } -> std::same_as< bool >;
  s.push( v );
  { s.pop() } -> std::convertible_to< typename S::Item >;
  { cs.top() } -> std::convertible_to< typename S::Item >;
@@ -167,7 +167,7 @@ concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
 
 /// QUEUE (section 4.3.1): items are added at the back and removed from the
 /// front (FIFO); top() reads the front. As axioms,
-/// \f$ isEmpty( create ) = true \f$,
+/// \f$ empty( create ) = true \f$,
 /// \f$ top( enqueue( create , v ) ) = v \f$, and for Q not empty
 /// \f$ top( enqueue( Q , v ) ) = top( Q ) \f$ and
 /// \f$ dequeue( enqueue( Q , v ) ) = enqueue( dequeue( Q ) , v ) \f$, while
@@ -175,7 +175,7 @@ concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
 template< class Q >
 concept Queue = requires( Q q , const Q cq , const typename Q::Item & v ) {
  typename Q::Item;
- { cq.isEmpty() } -> std::same_as< bool >;
+ { cq.empty() } -> std::same_as< bool >;
  q.enqueue( v );
  { q.dequeue() } -> std::convertible_to< typename Q::Item >;
  { cq.top() } -> std::convertible_to< typename Q::Item >;

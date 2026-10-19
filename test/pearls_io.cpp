@@ -654,21 +654,21 @@ ADS_TEST( "ch5.loser-tree" )
  L.replace( std::nullopt );
  L.replace( std::nullopt );
  L.replace( std::nullopt );
- CHECK( L.isEmpty() );
+ CHECK( L.empty() );
  CHECK_THROWS( L.top() , contract_violation );
  CHECK_THROWS( L.winner() , contract_violation );
  CHECK_THROWS( L.replace( 1 ) , contract_violation );
  LoserTree< int > One( { 4 } );                  // one player
  CHECK( One.players() == 1 && One.winner() == 0 && One.top() == 4 );
  One.replace( std::nullopt );
- CHECK( One.isEmpty() );
+ CHECK( One.empty() );
  LoserTree< int > T( { 3 , 3 , 3 } );            // ties: the lower index
  CHECK( T.winner() == 0 );
  T.replace( 3 );
  CHECK( T.winner() == 0 );
  T.replace( 4 );
  CHECK( T.winner() == 1 );
- CHECK( LoserTree< int >( { std::nullopt , std::nullopt } ).isEmpty() );
+ CHECK( LoserTree< int >( { std::nullopt , std::nullopt } ).empty() );
  CHECK( kWayMerge( std::vector< std::vector< int > >() ,
                    std::less<>() ).empty() );
  CHECK_THROWS( LoserTree< int >( {} ) , contract_violation );

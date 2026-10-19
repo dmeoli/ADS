@@ -112,13 +112,13 @@ void sequence_spec( void )
 
  // the empty sequence: head() and tail() are pos_n and pos_-1
  S s;
- CHECK( s.isEmpty() );
+ CHECK( s.empty() );
  CHECK( s.finished( s.head() ) );
  CHECK( s.finished( s.tail() ) );
 
  // insert( pos_n , v ) appends, insert( pos_0 , v ) prepends
  append( s , 2 );
- CHECK( ! s.isEmpty() );
+ CHECK( ! s.empty() );
  append( s , 3 );
  s.insert( s.head() , 1 );
  CHECK( items( s ) == V( { 1 , 2 , 3 } ) );
@@ -152,7 +152,7 @@ void sequence_spec( void )
  p = s.head();
  while( ! s.finished( p ) )
   p = s.remove( p );
- CHECK( s.isEmpty() );
+ CHECK( s.empty() );
  CHECK( items( s ).empty() );
 
  // the sequence works again after being emptied, also with duplicates
@@ -161,18 +161,18 @@ void sequence_spec( void )
  CHECK( items( s ) == V( { 5 , 5 , 7 } ) );
 
  // the specification as axioms, at every position of sequences of length
- // 0 to 5: isEmpty() is finished( head() ), so that it is redundant;
+ // 0 to 5: empty() is finished( head() ), so that it is redundant;
  // read( insert( p , a ) ) = a; remove( insert( p , a ) ) leaves the
  // sequence as it was; read( write( p , a ) ) = a, the other items
  // unchanged
  S t;
  for( int n = 0 ; n <= 5 ; ++n ) {
-  CHECK( t.isEmpty() == t.finished( t.head() ) );
+  CHECK( t.empty() == t.finished( t.head() ) );
   const V before = items( t );
   int i = 0;
   for( auto q = t.head() ; ; q = t.next( q ) , ++i ) {
    const auto r = t.insert( q , 100 + i );
-   CHECK( t.read( r ) == 100 + i && ! t.isEmpty() );
+   CHECK( t.read( r ) == 100 + i && ! t.empty() );
    t.remove( r );
    CHECK( items( t ) == before );
    if( t.finished( q ) )
@@ -207,7 +207,7 @@ void sequence_spec( void )
  c.write( c.head() , -5 );
  CHECK( ! ( c == t ) && t.read( t.head() ) == 0 );
  const S z0 , z1 = z0;
- CHECK( z1 == z0 && z1.isEmpty() );
+ CHECK( z1 == z0 && z1.empty() );
 
  // against std::vector, random insertions and removals at the head, in
  // the middle and at the end, growing to 300 items and back to empty
@@ -234,7 +234,7 @@ void sequence_spec( void )
   if( step % 50 == 0 )
    CHECK( items( r ) == o );
   }
- while( ! r.isEmpty() ) { r.remove( r.head() ); o.erase( o.begin() ); }
+ while( ! r.empty() ) { r.remove( r.head() ); o.erase( o.begin() ); }
  CHECK( items( r ).empty() && o.empty() );
  append( r , 1 );
  CHECK( items( r ) == V( { 1 } ) );
@@ -266,9 +266,9 @@ ADS_TEST( "sec4.1.pool" )
  std::mt19937 g( 41 );
  List< std::string > L;
  std::deque< std::string > R;
- CHECK( L.isEmpty() && L.begin() == L.end() );
+ CHECK( L.empty() && L.begin() == L.end() );
  L.remove( L.insert( L.head() , std::string( 30 , 'x' ) ) );
- CHECK( L.isEmpty() && L.finished( L.head() ) );
+ CHECK( L.empty() && L.finished( L.head() ) );
  for( int op = 0 ; op < 20000 ; ++op ) {
   const std::size_t k = R.empty() ? 0 : g() % ( R.size() + 1 );
   auto p = L.head();
@@ -292,7 +292,7 @@ ADS_TEST( "sec4.1.pool" )
  CHECK( std::equal( L.begin() , L.end() , R.begin() , R.end() ) );
  List< std::string > C( L );                   // a copy, a pool of its own
  List< std::string > M( std::move( L ) );      // the cells move along
- CHECK( L.isEmpty() && C == M );
+ CHECK( L.empty() && C == M );
  L.push_back( "again" );                       // the list moved from
  CHECK( L.read( L.head() ) == "again" && L.head() == L.tail() );
  L.swap( C );
@@ -328,10 +328,10 @@ ADS_TEST( "ex4.6.pool" )
  std::mt19937 g( 46 );
  SinglyList< std::string > L;
  std::deque< std::string > R;
- CHECK( L.isEmpty() && L.begin() == L.end() );
+ CHECK( L.empty() && L.begin() == L.end() );
  L.insert( L.head() , std::string( 30 , 'x' ) );
  L.remove( L.head() );
- CHECK( L.isEmpty() );
+ CHECK( L.empty() );
  for( int op = 0 ; op < 20000 ; ++op ) {
   const std::size_t k = R.empty() ? 0 : g() % ( R.size() + 1 );
   auto p = L.head();
@@ -351,7 +351,7 @@ ADS_TEST( "ex4.6.pool" )
  CHECK( std::equal( L.begin() , L.end() , R.begin() , R.end() ) );
  SinglyList< std::string > C( L );             // a copy, a pool of its own
  SinglyList< std::string > M( std::move( L ) );  // the cells move along
- CHECK( L.isEmpty() && C == M );
+ CHECK( L.empty() && C == M );
  L.insert( L.head() , "again" );                // the list moved from
  CHECK( L.read( L.head() ) == "again" );
  L.swap( C );
@@ -393,7 +393,7 @@ ADS_TEST( "sec4.2.doubling" )
   CHECK( ( s.capacity() & ( s.capacity() - 1 ) ) == 0 );
   CHECK( s.capacity() >= i && ( i == 0 || s.capacity() <= 4 * i ) );
   }
- CHECK( s.capacity() == 0 && s.isEmpty() );
+ CHECK( s.capacity() == 0 && s.empty() );
  append( s , 7 );
  CHECK( s.capacity() == 1 );
  for( int i = 0 ; i < 8 ; ++i ) append( s , i );      // 9 items, 16 places
@@ -405,7 +405,7 @@ ADS_TEST( "sec4.2.doubling" )
   CHECK( s.capacity() == 8 );
   }
  ArraySequence< int > m = std::move( s );
- CHECK( s.capacity() == 0 && s.isEmpty() && m.size() == 5 );
+ CHECK( s.capacity() == 0 && s.empty() && m.size() == 5 );
  append( s , 1 );
  CHECK( s.size() == 1 && s.capacity() == 1 );
  }
@@ -463,7 +463,7 @@ ADS_TEST( "sec4.2.1.counter" )
 ADS_TEST( "spec.ArrayStack" )
 {
  ArrayStack< int > S( 3 );
- CHECK( S.isEmpty() );
+ CHECK( S.empty() );
  CHECK_THROWS( S.pop() , std::logic_error );
  CHECK_THROWS( S.top() , std::logic_error );
  S.push( 1 ); S.push( 2 ); S.push( 3 );
@@ -474,9 +474,9 @@ ADS_TEST( "spec.ArrayStack" )
  S.push( 5 );
  CHECK( S.pop() == 5 );
  CHECK( S.pop() == 1 );
- CHECK( S.isEmpty() );
+ CHECK( S.empty() );
  ArrayStack< int > Z( 0 );
- CHECK( Z.isEmpty() && Z.capacity() == 0 );
+ CHECK( Z.empty() && Z.capacity() == 0 );
  CHECK_THROWS( Z.push( 1 ) , contract_violation );
  CHECK_THROWS( Z.pop() , contract_violation );
  ArrayStack< int > U( 1 );
@@ -484,7 +484,7 @@ ADS_TEST( "spec.ArrayStack" )
   U.push( t );
   CHECK( U.top() == t && U.size() == 1 );
   CHECK_THROWS( U.push( 9 ) , contract_violation );
-  CHECK( U.pop() == t && U.isEmpty() );
+  CHECK( U.pop() == t && U.empty() );
   }
  for( int t = 0 ; t < 3 ; ++t ) {               // filled and emptied
   for( int i = 0 ; i < 3 ; ++i ) S.push( 10 * t + i );
@@ -499,7 +499,7 @@ ADS_TEST( "spec.ArrayStack" )
  C.pop();
  CHECK( S.size() == 2 && S.top() == 2 && C.top() == 1 );
  ArrayStack< int > M = std::move( S );
- CHECK( S.isEmpty() && S.capacity() == 0 && M.top() == 2 );
+ CHECK( S.empty() && S.capacity() == 0 && M.top() == 2 );
  CHECK_THROWS( S.push( 1 ) , contract_violation );
  }
 
@@ -510,18 +510,18 @@ template< class S >
 void stack_on_sequence( void )
 {
  SequenceStack< S > P;
- CHECK( P.isEmpty() );
+ CHECK( P.empty() );
  CHECK_THROWS( P.pop() , std::logic_error );
  for( int i = 0 ; i < 1000 ; ++i )
   P.push( i );
  CHECK( P.top() == 999 );
  for( int i = 999 ; i >= 0 ; --i )
   CHECK( P.pop() == i );
- CHECK( P.isEmpty() );
+ CHECK( P.empty() );
  CHECK_THROWS( P.top() , std::logic_error );
  P.push( 4 );                                   // one item, after emptying
- CHECK( P.top() == 4 && ! P.isEmpty() );
- CHECK( P.pop() == 4 && P.isEmpty() );
+ CHECK( P.top() == 4 && ! P.empty() );
+ CHECK( P.pop() == 4 && P.empty() );
  CHECK_THROWS( P.pop() , std::logic_error );
  for( int t = 0 ; t < 100 ; ++t ) {             // push and pop interleaved
   P.push( t );
@@ -529,7 +529,7 @@ void stack_on_sequence( void )
   CHECK( P.pop() == -t );
   }
  for( int t = 99 ; t >= 0 ; --t ) CHECK( P.pop() == t );
- CHECK( P.isEmpty() );
+ CHECK( P.empty() );
  }
 
 // the edges: the empty stack, one item, the stack used again after being
@@ -549,7 +549,7 @@ ADS_TEST( "sec4.3.1.stack-on-list" )
 ADS_TEST( "spec.ArrayQueue" )
 {
  ArrayQueue< int > Q( 3 );
- CHECK( Q.isEmpty() );
+ CHECK( Q.empty() );
  CHECK_THROWS( Q.dequeue() , std::logic_error );
  CHECK_THROWS( Q.top() , std::logic_error );
  int next_in = 0 , next_out = 0;
@@ -561,7 +561,7 @@ ADS_TEST( "spec.ArrayQueue" )
   CHECK( Q.dequeue() == next_out++ );
   CHECK( Q.dequeue() == next_out++ );
   }
- while( ! Q.isEmpty() )
+ while( ! Q.empty() )
   CHECK( Q.dequeue() == next_out++ );
  CHECK( next_out == next_in );
  CHECK( ! Q.contains( 0 ) && Q.capacity() == 3 );
@@ -571,7 +571,7 @@ ADS_TEST( "spec.ArrayQueue" )
  CHECK( ! Q.contains( 1 ) && ! Q.contains( 2 ) && ! Q.contains( 6 ) );
  CHECK( Q.dequeue() == 3 && ! Q.contains( 3 ) && Q.top() == 4 );
  ArrayQueue< int > Z( 0 );
- CHECK( Z.isEmpty() && ! Z.contains( 0 ) );
+ CHECK( Z.empty() && ! Z.contains( 0 ) );
  CHECK_THROWS( Z.enqueue( 1 ) , contract_violation );
  CHECK_THROWS( Z.dequeue() , contract_violation );
  ArrayQueue< int > U( 1 );
@@ -579,7 +579,7 @@ ADS_TEST( "spec.ArrayQueue" )
   U.enqueue( t );
   CHECK( U.top() == t && U.size() == 1 && U.contains( t ) );
   CHECK_THROWS( U.enqueue( 9 ) , contract_violation );
-  CHECK( U.dequeue() == t && U.isEmpty() );
+  CHECK( U.dequeue() == t && U.empty() );
   }
  }
 
@@ -753,9 +753,9 @@ ADS_TEST( "ex4.1" )
   }
  List< int > L , M;
  firstN( 0 , L , M );   // nothing for n = 0
- CHECK( L.isEmpty() && M.isEmpty() );
+ CHECK( L.empty() && M.empty() );
  firstN( -3 , L , M );
- CHECK( L.isEmpty() && M.isEmpty() );
+ CHECK( L.empty() && M.empty() );
  }
 
 namespace {
@@ -824,7 +824,7 @@ List< int > sum( const List< int > & A , const List< int > & B )
   C.insert( C.head() , d % 10 );
   carry = d / 10;
   }
- if( C.isEmpty() )
+ if( C.empty() )
   C.insert( C.head() , 0 );
  return( C );
  }
@@ -882,7 +882,7 @@ std::vector< std::string > tangentopoli( List< std::string > L , int k )
   throw( std::invalid_argument( "tangentopoli: k < 1" ) );
  std::vector< std::string > order;
  auto p = L.head();
- while( ! L.isEmpty() ) {
+ while( ! L.empty() ) {
   for( int i = 1 ; i <= k - 1 ; ++i ) {
    p = L.next( p );
    if( L.finished( p ) )
@@ -971,7 +971,7 @@ ADS_TEST( "ex4.5" )
  CHECK( items( L ) == V( { 7 , 7 , 7 , 3 , 3 , 3 , 5 , 5 , 5 , 5 } ) );
  List< int > E{ 2 , 4 };   // only even items: nothing is left
  replicate( E , E.head() , 0 );
- CHECK( E.isEmpty() );
+ CHECK( E.empty() );
  List< int > O{ 1 , 3 };   // no even item: the odd ones stay as they are
  replicate( O , O.head() , 0 );
  CHECK( items( O ) == V( { 1 , 3 } ) );
@@ -1019,7 +1019,7 @@ class TwoStacks {
   return( f_created++ );
   }
 
- bool isEmpty( int s ) const { return( f_top[ s ] == 0 ); }
+ bool empty( int s ) const { return( f_top[ s ] == 0 ); }
 
  void push( int s , int v ) {
   if( f_top[ 0 ] + f_top[ 1 ] == f_A.size() )
@@ -1030,7 +1030,7 @@ class TwoStacks {
   }
 
  int top( int s ) const {
-  if( isEmpty( s ) )
+  if( empty( s ) )
    throw( std::logic_error( "TwoStacks::top: empty stack" ) );
   return( s == 0 ? f_A[ f_top[ 0 ] - 1 ] : f_A[ f_A.size() - f_top[ 1 ] ] );
   }
@@ -1063,11 +1063,11 @@ ADS_TEST( "ex4.7" )
  CHECK( T.pop( a ) == 3 );
  CHECK( T.top( b ) == 10 );
  CHECK( T.pop( b ) == 10 );
- CHECK( T.isEmpty( b ) );
+ CHECK( T.empty( b ) );
  CHECK_THROWS( T.pop( b ) , std::logic_error );
  TwoStacks Z( 0 );
  Z.create(); Z.create();
- CHECK( Z.isEmpty( 0 ) && Z.isEmpty( 1 ) );
+ CHECK( Z.empty( 0 ) && Z.empty( 1 ) );
  CHECK_THROWS( Z.push( 0 , 1 ) , std::logic_error );
  CHECK_THROWS( Z.push( 1 , 1 ) , std::logic_error );
  CHECK_THROWS( Z.top( 1 ) , std::logic_error );
@@ -1075,11 +1075,11 @@ ADS_TEST( "ex4.7" )
  U.create(); U.create();
  U.push( 1 , 8 );
  CHECK_THROWS( U.push( 0 , 9 ) , std::logic_error );
- CHECK( U.top( 1 ) == 8 && U.isEmpty( 0 ) );
+ CHECK( U.top( 1 ) == 8 && U.empty( 0 ) );
  CHECK_THROWS( U.top( 0 ) , std::logic_error );
  CHECK( U.pop( 1 ) == 8 );
  U.push( 0 , 9 );
- CHECK( U.top( 0 ) == 9 && U.isEmpty( 1 ) );
+ CHECK( U.top( 0 ) == 9 && U.empty( 1 ) );
  for( int s : { 0 , 1 } ) {                     // one stack takes it all
   TwoStacks W( 4 );
   W.create(); W.create();
@@ -1087,7 +1087,7 @@ ADS_TEST( "ex4.7" )
   CHECK_THROWS( W.push( 1 - s , 0 ) , std::logic_error );
   CHECK_THROWS( W.pop( 1 - s ) , std::logic_error );
   for( int i = 3 ; i >= 0 ; --i ) CHECK( W.pop( s ) == i );
-  CHECK( W.isEmpty( s ) );
+  CHECK( W.empty( s ) );
   }
  std::mt19937 g( 15 );                         // against two std::vector
  TwoStacks R( 7 );
@@ -1121,7 +1121,7 @@ void firstN_iterative( int n , List< int > & L , List< int > & M )
   S.push( n );
   n = n - 1;
   }
- while( ! S.isEmpty() )   // END: the calls return in turn
+ while( ! S.empty() )     // END: the calls return in turn
   S.pop();
  }
 
@@ -1153,7 +1153,7 @@ ADS_TEST( "ex4.9" )
  CHECK( D.removeTail() == 3 );
  CHECK( D.removeHead() == 1 );
  CHECK( D.removeHead() == 2 );
- CHECK( D.isEmpty() );
+ CHECK( D.empty() );
  CHECK_THROWS( D.removeTail() , std::logic_error );
  CHECK_THROWS( (void) D.head() , contract_violation );
  CHECK_THROWS( (void) D.tail() , contract_violation );
@@ -1161,7 +1161,7 @@ ADS_TEST( "ex4.9" )
  CHECK( D.head() == 5 && D.tail() == 5 && D.removeTail() == 5 );
  D.insertTail( 6 );
  CHECK( D.head() == 6 && D.tail() == 6 && D.removeHead() == 6 );
- CHECK( D.isEmpty() );
+ CHECK( D.empty() );
  std::mt19937 g( 16 );
  std::deque< int > o;
  for( int t = 0 ; t < 3000 ; ++t ) {
@@ -1176,7 +1176,7 @@ ADS_TEST( "ex4.9" )
     if( o.empty() ) CHECK_THROWS( D.removeTail() , contract_violation );
     else { CHECK( D.removeTail() == o.back() ); o.pop_back(); }
    }
-  CHECK( D.isEmpty() == o.empty() );
+  CHECK( D.empty() == o.empty() );
   if( ! o.empty() ) CHECK( D.head() == o.front() && D.tail() == o.back() );
   }
  }
@@ -1198,11 +1198,11 @@ ADS_TEST( "ex4.10" )
  CHECK( Q.size() == 100 );
  for( int i = 0 ; i < 100 ; ++i )
   CHECK( Q.dequeue() == i );
- CHECK( Q.isEmpty() && Q.size() == 0 );
+ CHECK( Q.empty() && Q.size() == 0 );
  Q.enqueue( 7 );
  CHECK( Q.top() == 7 );
  for( int t = 0 ; t < 5 ; ++t ) {               // one item at a time
-  CHECK( Q.dequeue() == ( t ? t - 1 : 7 ) && Q.isEmpty() );
+  CHECK( Q.dequeue() == ( t ? t - 1 : 7 ) && Q.empty() );
   Q.enqueue( t );
   CHECK( Q.top() == t && Q.size() == 1 );
   }
@@ -1214,11 +1214,11 @@ ADS_TEST( "ex4.10" )
  C.enqueue( 12 );
  CHECK( Q.size() == 3 && C.size() == 3 );
  const LinkedQueue< int > E , F = E;
- CHECK( E == F && F.isEmpty() && ! ( E == Q ) );
+ CHECK( E == F && F.empty() && ! ( E == Q ) );
  LinkedQueue< int > M = std::move( Q );
- CHECK( Q.isEmpty() && M.size() == 3 && M.top() == 4 );
+ CHECK( Q.empty() && M.size() == 3 && M.top() == 4 );
  Q.enqueue( 1 );                                // usable after the move
- CHECK( Q.top() == 1 && Q.dequeue() == 1 && Q.isEmpty() );
+ CHECK( Q.top() == 1 && Q.dequeue() == 1 && Q.empty() );
  }
 
 // Esercizio 4.11: sorted by key, the values of a key in their first order;

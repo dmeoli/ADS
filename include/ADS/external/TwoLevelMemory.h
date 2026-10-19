@@ -210,7 +210,7 @@ class DiskFile {
 
  [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the blocks of the file, ceil( size() / B )
  [[nodiscard]] std::size_t blocks( void ) const;

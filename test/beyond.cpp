@@ -385,7 +385,7 @@ ADS_TEST( "array-binary-tree" )
  CHECK( u.preorder() == std::vector< long >( { 0 , 1 , 3 , 2 } ) );
  CHECK( u.read( 0 ) == 0 && u.read( 3 ) == 4 && u.read( 2 ) == 3 );
  ArrayBinaryTree< int > e;
- CHECK( e.isEmpty() && e.root() == e.NIL && e.preorder().empty() );
+ CHECK( e.empty() && e.root() == e.NIL && e.preorder().empty() );
  e.setRoot( 7 );
  CHECK( e.read( e.root() ) == 7 );
  CHECK( e.isLeaf( 0 ) && e.parent( 0 ) == e.NIL );
@@ -403,7 +403,7 @@ ADS_TEST( "array-binary-tree" )
  CHECK( e.preorder() == std::vector< long >( { 0 , 1 , 2 , 5 } ) );
  CHECK( e.read( 1 ) == 7 && e.read( 5 ) == 7 && e.isLeaf( 1 ) );
  e.remove( 0 );                                  // the root: all gone
- CHECK( e.isEmpty() && e.root() == e.NIL && e.preorder().empty() );
+ CHECK( e.empty() && e.root() == e.NIL && e.preorder().empty() );
  ArrayBinaryTree< int > c( 0 );                  // a chain to the left
  long i = 0;
  for( int d = 1 ; d <= 12 ; ++d ) {
@@ -448,7 +448,7 @@ ADS_TEST( "cursor-binary-tree" )
  for( int n : t.preorder() ) v.push_back( t.read( n ) );
  CHECK( v == Ints( { 1 , 5 , 1 , 5 , 3 , 3 } ) && t.size() == 6 );
  t.remove( t.root() );                            // the root: all gone
- CHECK( t.isEmpty() && t.size() == 0 && t.root() == t.NIL &&
+ CHECK( t.empty() && t.size() == 0 && t.root() == t.NIL &&
         t.preorder().empty() );
  CHECK_THROWS( (void) t.read( y ) , contract_violation );   // freed
  const int z = t.setRoot( 8 );
@@ -500,7 +500,7 @@ ADS_TEST( "cursor-tree" )
  CHECK( values( t.previsit() ) == Ints( { 0 , 2 , 0 , 2 } ) &&
         t.size() == 4 );
  t.remove( t.root() );                          // the root: all gone
- CHECK( t.isEmpty() && t.size() == 0 && t.previsit().empty() &&
+ CHECK( t.empty() && t.size() == 0 && t.previsit().empty() &&
         t.postvisit().empty() && t.invisit( 1 ).empty() );
  CursorTree< int > d( 0 );                      // a deep chain
  int w = d.root();
@@ -571,7 +571,7 @@ ADS_TEST( "preorder-array-tree" )
   return( v );
   };
  PT e;
- CHECK( e.isEmpty() && e.size() == 0 && e.root() == e.NIL );
+ CHECK( e.empty() && e.size() == 0 && e.root() == e.NIL );
  PT t( 0 );
  t.insertChild( 0 , e );                        // the empty tree: nothing
  CHECK( t.size() == 1 && t.isLeaf( 0 ) && t.rightSibling( 0 ) == t.NIL &&
@@ -593,7 +593,7 @@ ADS_TEST( "preorder-array-tree" )
  CHECK( a == Ints( { 0 , 0 , 1 , 2 , 1 , 2 } ) &&
         parents( t ) == Ints( { -1 , 0 , 1 , 2 , 0 , 4 } ) );
  t.remove( 0 );                                 // the root: all gone
- CHECK( t.isEmpty() && t.root() == t.NIL );
+ CHECK( t.empty() && t.root() == t.NIL );
  }
 
 // the tree with lists of children against the tree with cursors, on
@@ -663,13 +663,13 @@ ADS_TEST( "child-list-tree" )
  CHECK_THROWS( (void) t.read( 5 ) , contract_violation );
  CHECK_THROWS( (void) t.read( -1 ) , contract_violation );
  CHECK( t.isLeaf( t.root() ) && t.isLastSibling( t.root() ) &&
-        t.children( t.root() ).isEmpty() && t.size() == 1 );
+        t.children( t.root() ).empty() && t.size() == 1 );
  const int a = t.insertChild( t.root() , 1 );
  CHECK( t.invisit( 0 ) == t.previsit() && t.invisit( 7 ) == t.postvisit() );
  t.remove( a );
  CHECK_THROWS( (void) t.read( a ) , contract_violation );   // freed
  t.remove( t.root() );                          // the root: all gone
- CHECK( t.isEmpty() && t.size() == 0 && t.previsit().empty() &&
+ CHECK( t.empty() && t.size() == 0 && t.previsit().empty() &&
         t.postvisit().empty() && t.invisit( 1 ).empty() );
  ChildListTree< int > d( 0 );                   // a deep chain
  int w = d.root();
@@ -690,7 +690,7 @@ ADS_TEST( "linked-heap" )
  LinkedHeapPriorityQueue< int > Q;
  for( int x : { 5 , 3 , 9 , 2 , 10 } ) Q.insert( x , x );
  Ints out;
- while( ! Q.isEmpty() ) out.push_back( Q.deleteMin() );
+ while( ! Q.empty() ) out.push_back( Q.deleteMin() );
  CHECK( out == Ints( { 2 , 3 , 5 , 9 , 10 } ) );
  CHECK_THROWS( Q.min() , std::logic_error );
  std::mt19937 g( 2 );
@@ -713,18 +713,18 @@ ADS_TEST( "linked-heap" )
   constexpr int MIN = std::numeric_limits< int >::min() ,
                 MAX = std::numeric_limits< int >::max();
   LinkedHeapPriorityQueue< char , int , L > E;
-  CHECK( E.isEmpty() && E.size() == 0 );
+  CHECK( E.empty() && E.size() == 0 );
   CHECK_THROWS( (void) E.min() , contract_violation );
   CHECK_THROWS( (void) E.minPriority() , contract_violation );
   CHECK_THROWS( E.deleteMin() , contract_violation );
   for( int r = 0 ; r < 3 ; ++r ) {              // one item, in and out
    E.insert( 'x' , r );
    CHECK( E.size() == 1 && E.min() == 'x' && E.minPriority() == r );
-   CHECK( E.deleteMin() == 'x' && E.isEmpty() );
+   CHECK( E.deleteMin() == 'x' && E.empty() );
    }
   for( int p : { MAX , 0 , MIN , -1 , MAX , MIN } ) E.insert( 'e' , p );
   Ints P;
-  while( ! E.isEmpty() ) {
+  while( ! E.empty() ) {
    P.push_back( E.minPriority() );
    E.deleteMin();
    }
@@ -739,7 +739,7 @@ ADS_TEST( "linked-heap" )
     S.insert( x , x );
     }
    for( int i = 0 ; i < 1100 ; ++i ) CHECK( S.deleteMin() == i );
-   CHECK( S.isEmpty() );
+   CHECK( S.empty() );
    }
   std::mt19937 h( 21 );                        // against std::multiset
   LinkedHeapPriorityQueue< int , int , L > H;
@@ -856,9 +856,9 @@ ADS_TEST( "multistack" )
  CHECK_THROWS( MultiStack< int >( -3 ) , contract_violation );
  CHECK_THROWS( M.push( -1 , 0 ) , contract_violation );
  CHECK_THROWS( (void) M.size( k ) , contract_violation );
- CHECK_THROWS( (void) M.isEmpty( -1 ) , contract_violation );
+ CHECK_THROWS( (void) M.empty( -1 ) , contract_violation );
  MultiStack< std::string > S( 1 );              // a single stack
- CHECK( S.stacks() == 1 && S.isEmpty( 0 ) && S.size( 0 ) == 0 );
+ CHECK( S.stacks() == 1 && S.empty( 0 ) && S.size( 0 ) == 0 );
  CHECK_THROWS( (void) S.top( 0 ) , contract_violation );
  CHECK_THROWS( S.pop( 0 ) , contract_violation );
  S.push( 0 , std::string( 40 , 'x' ) );
@@ -866,9 +866,9 @@ ADS_TEST( "multistack" )
   S.push( 0 , S.top( 0 ) );                     // vector grows
  CHECK( S.size( 0 ) == 100 && S.top( 0 ) == std::string( 40 , 'x' ) );
  for( int i = 0 ; i < 100 ; ++i ) CHECK( S.pop( 0 ).size() == 40 );
- CHECK( S.isEmpty( 0 ) );
+ CHECK( S.empty( 0 ) );
  S.push( 0 , "a" );                             // the cells reused
- CHECK( S.size( 0 ) == 1 && S.pop( 0 ) == "a" && S.isEmpty( 0 ) );
+ CHECK( S.size( 0 ) == 1 && S.pop( 0 ) == "a" && S.empty( 0 ) );
  }
 
 // the deep copies of binary and ordered trees, and join(); the edge
@@ -940,12 +940,12 @@ ADS_TEST( "queue-contains-sequence-equal" )
  CHECK( !( a == b ) );
  CHECK( Q.size() == 3 && Q.contains( 3 ) );      // full, wrapped
  CHECK_THROWS( Q.enqueue( 5 ) , contract_violation );
- while( ! Q.isEmpty() ) Q.dequeue();
+ while( ! Q.empty() ) Q.dequeue();
  CHECK( ! Q.contains( 2 ) && ! Q.contains( 4 ) );   // empty
  CHECK_THROWS( Q.dequeue() , contract_violation );
  CHECK_THROWS( (void) Q.top() , contract_violation );
  ArrayQueue< int > Z( 0 );                      // no room at all
- CHECK( Z.isEmpty() && Z.capacity() == 0 && ! Z.contains( 0 ) );
+ CHECK( Z.empty() && Z.capacity() == 0 && ! Z.contains( 0 ) );
  CHECK_THROWS( Z.enqueue( 1 ) , contract_violation );
  ArrayQueue< int > O( 1 );                      // one place, wrapping
  for( int i = 0 ; i < 5 ; ++i ) {               // at every step
@@ -1322,7 +1322,7 @@ ADS_TEST( "stack-algorithms" )
    }
   sortStack( S );
   Ints out;
-  while( ! S.isEmpty() ) out.push_back( S.pop() );
+  while( ! S.empty() ) out.push_back( S.pop() );
   std::sort( v.begin() , v.end() );
   CHECK( out == v );                      // the least on top
   }
@@ -1330,14 +1330,14 @@ ADS_TEST( "stack-algorithms" )
  for( int x : { 5 , 1 , 7 , 3 , 9 , 2 } ) S.push( x );
  removeGreater( S , 4 );
  Ints out;
- while( ! S.isEmpty() ) out.push_back( S.pop() );
+ while( ! S.empty() ) out.push_back( S.pop() );
  CHECK( out == Ints( { 2 , 3 , 1 } ) );
  CHECK( isPalindrome( "x" ) && isPalindrome( "xx" ) &&
         ! isPalindrome( "xy" ) && ! isPalindrome( "aab" ) &&
         isPalindrome( std::string( 101 , 'z' ) ) );
  auto drain = []( SequenceStack< List< int > > & P ) {
   Ints o;
-  while( ! P.isEmpty() ) o.push_back( P.pop() );
+  while( ! P.empty() ) o.push_back( P.pop() );
   return( o );
   };
  auto stack = []( const Ints & v ) {
@@ -1358,12 +1358,12 @@ ADS_TEST( "stack-algorithms" )
   }
  auto P = stack( { 5 , 1 , 7 } );               // k below all: none left
  removeGreater( P , 0 );
- CHECK( P.isEmpty() );
+ CHECK( P.empty() );
  P = stack( { 5 , 1 , 7 } );                    // k above all: all kept
  removeGreater( P , 7 );                        // (an item equal to k too)
  CHECK( drain( P ) == Ints( { 7 , 1 , 5 } ) );
  removeGreater( P , 3 );                        // the empty stack
- CHECK( P.isEmpty() );
+ CHECK( P.empty() );
  P = stack( { m , M } );
  removeGreater( P , m );
  CHECK( drain( P ) == Ints( { m } ) );
@@ -1661,7 +1661,7 @@ ADS_TEST( "cursor-list" )
  using SL = CursorList< std::string >;
  auto T = std::make_shared< CursorSpace< std::string > >( 1 );
  SL a( T );                                     // one cell, then doubling
- CHECK( a.isEmpty() && a.tail() == -1 && T->used() == 0 );
+ CHECK( a.empty() && a.tail() == -1 && T->used() == 0 );
  CHECK_THROWS( (void) a.read( a.head() ) , contract_violation );
  CHECK_THROWS( a.remove( a.head() ) , contract_violation );
  CHECK_THROWS( a.insert( -1 , "x" ) , contract_violation );
@@ -1682,8 +1682,8 @@ ADS_TEST( "cursor-list" )
  CHECK( items( a ) == std::vector< std::string >( { big , big } ) &&
         T->used() == 2 );
  SL c( std::move( a ) );                        // a left empty
- CHECK( a.isEmpty() && items( c ).size() == 2 && T->used() == 2 );
- while( ! c.isEmpty() ) c.remove( c.head() );
+ CHECK( a.empty() && items( c ).size() == 2 && T->used() == 2 );
+ while( ! c.empty() ) c.remove( c.head() );
  CHECK( T->used() == 0 && c.tail() == -1 );
  }
 
@@ -1706,7 +1706,7 @@ ADS_TEST( "sorted-list" )
  const auto a = L.next( L.head() ) , b = L.next( L.next( a ) );
  CHECK( items( sublist( L , a , b ) ) ==
         std::vector< std::string >( { "antonio" , "carlo" , "dario" } ) );
- CHECK( sublist( L , L.next( L.tail() ) , L.tail() ).isEmpty() );
+ CHECK( sublist( L , L.next( L.tail() ) , L.tail() ).empty() );
  CHECK( items( sublist( L , a , a ) ) == std::vector< std::string >(
         { "antonio" } ) );
  List< int > N = { 82 , 16 , 14 , 15 , 84 , 25 , 77 , 13 , 75 , 4 };
@@ -1715,7 +1715,7 @@ ADS_TEST( "sorted-list" )
  CHECK( passes == 3 && order( N ) == Order::INCREASING );
  const List< int > E;
  const auto [ pe , fe ] = lowerBound( E , 5 );
- CHECK( E.finished( pe ) && ! fe && sublist( E , pe , pe ).isEmpty() );
+ CHECK( E.finished( pe ) && ! fe && sublist( E , pe , pe ).empty() );
  List< int > D = { 2 , 4 , 4 , 4 , 9 };
  const auto [ p0 , f0 ] = lowerBound( D , 1 );  // below all: the head
  CHECK( p0 == D.head() && ! f0 );
@@ -3017,7 +3017,7 @@ std::string lifo( S P , const std::string & trace )
  std::string out;
  for( char c : trace )
   if( c == '*' ) out += P.pop(); else P.push( c );
- CHECK( P.isEmpty() );
+ CHECK( P.empty() );
  return( out );
  }
 
@@ -3027,7 +3027,7 @@ std::string fifo( Q q , const std::string & trace )
  std::string out;
  for( char c : trace )
   if( c == '*' ) out += q.dequeue(); else q.enqueue( c );
- CHECK( q.isEmpty() );
+ CHECK( q.empty() );
  return( out );
  }
 
@@ -3063,7 +3063,7 @@ ADS_TEST( "stack-bottom-up" )
  CHECK( v == Ints( { 4 , 8 , 15 , 16 } ) && P.top() == 16 );
  SequenceStack< List< int > > E;
  forEachBottomUp( E , [ & ]( int ) { CHECK( false ); } );
- CHECK( E.isEmpty() );
+ CHECK( E.empty() );
  ArrayStack< int > O( 1 );                      // one item, a full vector
  O.push( 9 );
  v.clear();
@@ -3092,9 +3092,9 @@ ADS_TEST( "queue-algorithms" )
  copyPositive( q , p );
  CHECK( q.size() == 6 && q.top() == 3 );
  extractPositive( q , r );
- CHECK( q.isEmpty() && p == r );
+ CHECK( q.empty() && p == r );
  Ints v;
- while( ! r.isEmpty() ) v.push_back( r.dequeue() );
+ while( ! r.empty() ) v.push_back( r.dequeue() );
  CHECK( v == Ints( { 3 , 7 , 2 } ) );
  CHECK_THROWS( copyPositive( p , p ) , contract_violation );
  UniqueQueue< int , Duplicate::IGNORE_NEW > I;
@@ -3104,33 +3104,33 @@ ADS_TEST( "queue-algorithms" )
   O.enqueue( x );
   }
  Ints a , b;
- while( ! I.isEmpty() ) a.push_back( I.dequeue() );
- while( ! O.isEmpty() ) b.push_back( O.dequeue() );
+ while( ! I.empty() ) a.push_back( I.dequeue() );
+ while( ! O.empty() ) b.push_back( O.dequeue() );
  CHECK( a == Ints( { 1 , 2 , 3 } ) && b == Ints( { 1 , 3 , 2 } ) );
  CHECK_THROWS( I.dequeue() , contract_violation );
  auto drain = []( auto & Q ) {
   Ints w;
-  while( ! Q.isEmpty() ) w.push_back( Q.dequeue() );
+  while( ! Q.empty() ) w.push_back( Q.dequeue() );
   return( w );
   };
  LinkedQueue< int > e , out;
  copyPositive( e , out );                       // the empty queue
  extractPositive( e , out );
- CHECK( e.isEmpty() && out.isEmpty() );
+ CHECK( e.empty() && out.empty() );
  for( int x : { 0 , -1 , std::numeric_limits< int >::min() } )
   q.enqueue( x );                               // nothing positive
  copyPositive( q , out );
- CHECK( out.isEmpty() && q.size() == 3 );
+ CHECK( out.empty() && q.size() == 3 );
  extractPositive( q , out );
- CHECK( out.isEmpty() && q.isEmpty() );
+ CHECK( out.empty() && q.empty() );
  out.enqueue( 9 );                              // out not empty: the back
  for( int x : { 1 , std::numeric_limits< int >::max() } ) q.enqueue( x );
  extractPositive( q , out );
  CHECK( drain( out ) == Ints( { 9 , 1 , std::numeric_limits< int >::max() } )
-        && q.isEmpty() );
+        && q.empty() );
  CHECK_THROWS( extractPositive( q , q ) , contract_violation );
  I.enqueue( 5 );
- CHECK( I.dequeue() == 5 && I.isEmpty() );
+ CHECK( I.dequeue() == 5 && I.empty() );
  I.enqueue( 5 );                                // again, after it left
  I.enqueue( 5 );
  CHECK( I.size() == 1 && I.top() == 5 && I.contains( 5 ) &&

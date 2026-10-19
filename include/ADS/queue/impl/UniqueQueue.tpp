@@ -17,9 +17,9 @@
 namespace ADS {
 
 template< std::equality_comparable T , Duplicate D >
-bool UniqueQueue< T , D >::isEmpty( void ) const
+bool UniqueQueue< T , D >::empty( void ) const
 {
- return( f_L.isEmpty() );
+ return( f_L.empty() );
  }
 
 template< std::equality_comparable T , Duplicate D >
@@ -44,7 +44,7 @@ void UniqueQueue< T , D >::enqueue( const T & v )
 template< std::equality_comparable T , Duplicate D >
 T UniqueQueue< T , D >::dequeue( void )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  T v = f_L.read( f_L.head() );
  f_L.remove( f_L.head() );
  --f_size;
@@ -54,7 +54,7 @@ T UniqueQueue< T , D >::dequeue( void )
 template< std::equality_comparable T , Duplicate D >
 const T & UniqueQueue< T , D >::top( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_L.read( f_L.head() ) );
  }
 

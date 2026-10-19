@@ -30,7 +30,7 @@ std::size_t ListSet< T >::size( void ) const
  }
 
 template< std::equality_comparable T >
-bool ListSet< T >::isEmpty( void ) const
+bool ListSet< T >::empty( void ) const
 {
  return( f_size == 0 );
  }

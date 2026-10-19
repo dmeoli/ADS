@@ -1500,7 +1500,7 @@ std::vector< T > preorderIterative( BinaryTree< T > * t )
  std::vector< T > out;
  SequenceStack< List< BinaryTree< T > * > > S;
  S.push( t );
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   BinaryTree< T > * u = S.pop();
   out.push_back( u->read() );
   if( u->right() ) S.push( u->right() );
@@ -1521,7 +1521,7 @@ std::vector< T > flaggedIterative( BinaryTree< T > * t , bool in )
  std::vector< T > out;
  SequenceStack< List< P > > S;
  S.push( P( t , false ) );
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   const auto [ u , now ] = S.pop();
   if( now ) {
    out.push_back( u->read() );
@@ -2293,7 +2293,7 @@ ADS_TEST( "collezioni-06-abr-1-10" )
          D.size() == d.size() );
   }
  const RB E;
- CHECK( setOperation( E , E , SetOp::UNION ).isEmpty() );
+ CHECK( setOperation( E , E , SetOp::UNION ).empty() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2627,7 +2627,7 @@ std::vector< Event > dfsIterative( const G & g , int r ,
  out.push_back( Event( r , -1 ) );
  adj[ r ] = g.adj( r );
  S.push( r );
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   const int u = S.top();
   if( next[ u ] < adj[ u ].size() ) {
    const int v = adj[ u ][ next[ u ]++ ];

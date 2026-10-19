@@ -36,7 +36,7 @@ std::size_t LinkedHashSet< T , H >::size( void ) const
  }
 
 template< class T , class H >
-bool LinkedHashSet< T , H >::isEmpty( void ) const
+bool LinkedHashSet< T , H >::empty( void ) const
 {
  return( f_index.size() == 0 );
  }

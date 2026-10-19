@@ -18,9 +18,9 @@
 namespace ADS {
 
 template< class T , std::totally_ordered P >
-bool TreePriorityQueue< T , P >::isEmpty( void ) const
+bool TreePriorityQueue< T , P >::empty( void ) const
 {
- return( f_t.isEmpty() );
+ return( f_t.empty() );
  }
 
 template< class T , std::totally_ordered P >
@@ -32,14 +32,14 @@ int TreePriorityQueue< T , P >::size( void ) const
 template< class T , std::totally_ordered P >
 const T & TreePriorityQueue< T , P >::min( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( RedBlackTree< Key , T >::value( f_t.min() ) );
  }
 
 template< class T , std::totally_ordered P >
 T TreePriorityQueue< T , P >::deleteMin( void )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  const int n = size();
  const T v = min();
  f_t.remove( RedBlackTree< Key , T >::key( f_t.min() ) );

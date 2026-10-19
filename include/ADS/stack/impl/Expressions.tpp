@@ -120,14 +120,14 @@ inline std::string toPostfixParenthesized( std::string_view e )
   if( t == "(" )
    continue;
   else if( t == ")" ) {
-   ADS_PRE( ! S.isEmpty() );               // an operator for each pair
+   ADS_PRE( ! S.empty() );                 // an operator for each pair
    out.push_back( S.pop() );
    }
   else if( detail::isOperator( t ) )
    S.push( t );
   else
    out.push_back( t );
- ADS_PRE( S.isEmpty() );
+ ADS_PRE( S.empty() );
  return( detail::join( out ) );
  }
 
@@ -140,20 +140,20 @@ inline std::string toPostfix( std::string_view e )
   if( t == "(" )
    S.push( t );
   else if( t == ")" ) {
-   while( ! S.isEmpty() && ( S.top() != "(" ) )
+   while( ! S.empty() && ( S.top() != "(" ) )
     out.push_back( S.pop() );
-   ADS_PRE( ! S.isEmpty() );               // the open parenthesis
+   ADS_PRE( ! S.empty() );                 // the open parenthesis
    S.pop();
    }
   else if( detail::isOperator( t ) ) {
-   while( ! S.isEmpty() && ( S.top() != "(" ) &&
+   while( ! S.empty() && ( S.top() != "(" ) &&
           ( detail::precedence( t ) <= detail::precedence( S.top() ) ) )
     out.push_back( S.pop() );
    S.push( t );
    }
   else
    out.push_back( t );
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   ADS_PRE( S.top() != "(" );               // no open parenthesis left
   out.push_back( S.pop() );
   }

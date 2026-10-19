@@ -75,7 +75,7 @@ class ArrayStack {
 
  void swap( ArrayStack & other ) noexcept;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the item on top
  /// \pre the stack is not empty

@@ -100,7 +100,7 @@ std::size_t SearchTree< K , V , RB >::size( void ) const
  }
 
 template< std::totally_ordered K , class V , bool RB >
-bool SearchTree< K , V , RB >::isEmpty( void ) const
+bool SearchTree< K , V , RB >::empty( void ) const
 {
  return( f_size == 0 );
  }

@@ -659,7 +659,7 @@ int width( Tree< T > * t )
  struct Item { Tree< T > * u; int level; };
  List< Item > Q;
  Q.insert( Q.next( Q.tail() ) , Item{ t , 0 } );
- while( ! Q.isEmpty() ) {
+ while( ! Q.empty() ) {
   const Item it = Q.read( Q.head() );
   Q.remove( Q.head() );
   if( int( count.size() ) <= it.level )
@@ -1066,7 +1066,7 @@ Ints pre_iterative( BinaryTree< int > * t , int n )
  Ints out;
  ArrayStack< BinaryTree< int > * > S( n + 1 );
  if( t ) S.push( t );
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   auto u = S.pop();
   out.push_back( u->read() );
   if( u->right() ) S.push( u->right() );
@@ -1080,7 +1080,7 @@ Ints in_iterative( BinaryTree< int > * t , int n )
  Ints out;
  ArrayStack< BinaryTree< int > * > S( n + 1 );
  auto u = t;
- while( u || ! S.isEmpty() ) {
+ while( u || ! S.empty() ) {
   while( u ) {
    S.push( u );
    u = u->left();
@@ -1097,7 +1097,7 @@ Ints post_iterative( BinaryTree< int > * t , int n )
  Ints out;
  ArrayStack< std::pair< BinaryTree< int > * , bool > > S( 2 * n + 1 );
  if( t ) S.push( { t , false } );
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   auto [ u , expanded ] = S.pop();
   if( expanded )
    out.push_back( u->read() );

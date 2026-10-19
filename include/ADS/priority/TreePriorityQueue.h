@@ -67,7 +67,7 @@ class TreePriorityQueue {
  using Priority = P;    ///< the type of the priorities
  using Handle = long;   ///< the number of insertion of an item
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int size( void ) const;
 

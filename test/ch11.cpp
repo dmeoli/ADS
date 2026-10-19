@@ -193,14 +193,14 @@ ADS_TEST( "sec11.5.fibonacci" )
 
  // one item, in and out, and the heap empty again and reusable
  FibonacciHeapPriorityQueue< int > one;
- CHECK( one.isEmpty() && one.size() == 0 );
+ CHECK( one.empty() && one.size() == 0 );
  auto h1 = one.insert( 7 , 3 );
  CHECK( one.min() == 7 && one.minPriority() == 3 && one.size() == 1 );
  one.decrease( h1 , 3 );                         // to the same priority
  one.decrease( h1 , -4 );                         // the min itself
- CHECK( one.minPriority() == -4 && one.deleteMin() == 7 && one.isEmpty() );
+ CHECK( one.minPriority() == -4 && one.deleteMin() == 7 && one.empty() );
  one.insert( 8 , 1 );
- CHECK( one.deleteMin() == 8 && one.isEmpty() );
+ CHECK( one.deleteMin() == 8 && one.empty() );
 
  // a decrease to a larger priority and a null handle break the contract
  auto h2 = one.insert( 1 , 5 );
@@ -233,7 +233,7 @@ ADS_TEST( "sec11.5.fibonacci" )
    out.insert( i );
    }
  CHECK( out.size() == 100 && eq.size() == 1 );
- CHECK( eq.minPriority() == MAXI && eq.deleteMin() == 100 && eq.isEmpty() );
+ CHECK( eq.minPriority() == MAXI && eq.deleteMin() == 100 && eq.empty() );
  }
 
 namespace {
@@ -280,7 +280,7 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
  const auto r = bh[ b.min() ];                 // one root, of degree 10
  CHECK( nodes == 1024 && r->right == r && r->degree == 10 );
  std::set< int > seen;
- while( ! b.isEmpty() ) {
+ while( ! b.empty() ) {
   CHECK( b.minPriority() == 7 );
   CHECK( seen.insert( b.deleteMin() ).second );
   }
@@ -295,9 +295,9 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
   for( int o = 0 ; o < 60000 ; ++o ) {
    if( o == 30000 ) {                       // a move: the handles stay valid
     FibonacciHeapPriorityQueue< int > t( std::move( q ) );
-    CHECK( q.isEmpty() && q.size() == 0 && t.size() == int( M.size() ) );
+    CHECK( q.empty() && q.size() == 0 && t.size() == int( M.size() ) );
     q.insert( -1 , 0 );
-    CHECK( q.deleteMin() == -1 && q.isEmpty() );
+    CHECK( q.deleteMin() == -1 && q.empty() );
     std::destroy_at( &q );
     std::construct_at( &q , std::move( t ) );
     }
@@ -341,7 +341,7 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
    CHECK( prio[ x ] == M.begin()->first );
    M.erase( M.find( std::pair( prio[ x ] , x ) ) );
    }
-  CHECK( q.isEmpty() );
+  CHECK( q.empty() );
   }
 
  {
@@ -900,7 +900,7 @@ ADS_TEST( "ex11.7" )
   std::vector< HeapPriorityQueue< int >::Handle > h( n , nullptr );
   std::vector< bool > done( n , false );
   d[ 0 ] = 0; cnt[ 0 ] = 1; h[ 0 ] = S.insert( 0 , 0 );
-  while( ! S.isEmpty() ) {
+  while( ! S.empty() ) {
    const int u = S.deleteMin();
    done[ u ] = true;
    g.forEachEdge( u , [ & ]( int v , int w ) {
@@ -958,7 +958,7 @@ ADS_TEST( "ex11.8" )
   ArrayQueue< int > Q( n );
   std::vector< bool > in( n , false );
   Q.enqueue( 0 ); in[ 0 ] = true;
-  while( ! Q.isEmpty() ) {
+  while( ! Q.empty() ) {
    const int u = Q.dequeue();
    in[ u ] = false;
    g.forEachEdge( u , [ & ]( int v , int w ) {

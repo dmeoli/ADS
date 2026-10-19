@@ -111,7 +111,7 @@ class ArraySequence {
 /*-------------------------- THE SEQUENCE ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// true if p is -1 or n
  [[nodiscard]] bool finished( Pos p ) const;

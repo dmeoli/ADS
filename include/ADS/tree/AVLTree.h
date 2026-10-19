@@ -88,7 +88,7 @@ class AVLTree {
 
  [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the height of the tree, -1 if it is empty
  [[nodiscard]] int height( void ) const;

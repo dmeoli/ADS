@@ -60,7 +60,7 @@ class SequenceStack {
 
  using Item = typename S::Item;   ///< the type of the items
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the item on top, read( head() )
  /// \pre the stack is not empty

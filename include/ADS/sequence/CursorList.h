@@ -161,7 +161,7 @@ class CursorList {
 /*-------------------------- THE SEQUENCE ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// true on \f$ pos_{-1} \f$ = -1 and on \f$ pos_n \f$
  [[nodiscard]] bool finished( Pos p ) const;

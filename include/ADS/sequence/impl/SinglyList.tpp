@@ -58,7 +58,7 @@ template< class T >
 SinglyList< T >::~SinglyList()
 {
  if constexpr( ! std::is_trivially_destructible_v< T > )
-  while( ! isEmpty() )
+  while( ! empty() )
    remove( head() );
  }
 
@@ -74,7 +74,7 @@ void SinglyList< T >::swap( SinglyList & other ) noexcept
 /*--------------------------------------------------------------------------*/
 
 template< class T >
-bool SinglyList< T >::isEmpty( void ) const
+bool SinglyList< T >::empty( void ) const
 {
  return( f_first == nullptr );
  }

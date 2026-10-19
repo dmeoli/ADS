@@ -23,7 +23,7 @@ CursorTree< T >::CursorTree( const T & v )
  }
 
 template< class T >
-bool CursorTree< T >::isEmpty( void ) const
+bool CursorTree< T >::empty( void ) const
 {
  return( f_root == NIL );
  }

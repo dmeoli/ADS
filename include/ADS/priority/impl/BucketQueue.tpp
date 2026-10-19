@@ -90,7 +90,7 @@ T BucketQueue< T , K >::pop( void )
  }
 
 template< class T , std::integral K >
-bool BucketQueue< T , K >::isEmpty( void ) const
+bool BucketQueue< T , K >::empty( void ) const
 {
  return( f_size == 0 );
  }

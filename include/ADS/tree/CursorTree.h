@@ -72,7 +72,7 @@ class CursorTree {
  /// a tree of one node of value v
  explicit CursorTree( const T & v );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int root( void ) const;
 

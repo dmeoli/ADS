@@ -118,7 +118,7 @@ class ChainedHashTable {
 
  [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the number m of lists
  [[nodiscard]] std::size_t capacity( void ) const;

@@ -73,7 +73,7 @@ class CursorBinaryTree {
  /// a tree of one node of value v
  explicit CursorBinaryTree( const T & v );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int root( void ) const;
 

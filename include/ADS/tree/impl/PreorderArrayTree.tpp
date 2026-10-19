@@ -24,7 +24,7 @@ PreorderArrayTree< T >::PreorderArrayTree( const T & v )
  }
 
 template< class T >
-bool PreorderArrayTree< T >::isEmpty( void ) const
+bool PreorderArrayTree< T >::empty( void ) const
 {
  return( f_A.empty() );
  }
@@ -95,7 +95,7 @@ void PreorderArrayTree< T >::insertChild( int i , const PreorderArrayTree & t )
 {
  cell( i );
  splice( i + 1 , i , t );
- ADS_POST( t.isEmpty() || ( leftmostChild( i ) == i + 1 ) );
+ ADS_POST( t.empty() || ( leftmostChild( i ) == i + 1 ) );
  ADS_INVARIANT( preordered() );
  }
 

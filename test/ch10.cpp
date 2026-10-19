@@ -96,7 +96,7 @@ void against_ref( M make , unsigned seed )
    CHECK( in.count( x ) && in.at( x ).second == best );
    in.erase( x );
    }
-  CHECK( q.isEmpty() == in.empty() );
+  CHECK( q.empty() == in.empty() );
   }
  while( ! in.empty() ) {
   const int x = q.deleteMin();
@@ -106,7 +106,7 @@ void against_ref( M make , unsigned seed )
    CHECK( best <= hp.second );
   in.erase( x );
   }
- CHECK( q.isEmpty() );
+ CHECK( q.empty() );
  }
 
 /// the degenerate cases of a priority queue of capacity at least 100: the
@@ -117,20 +117,20 @@ template< class Q , class M >
 void degenerate( M make )
 {
  Q q = make();
- CHECK( q.isEmpty() && q.size() == 0 );
+ CHECK( q.empty() && q.size() == 0 );
  CHECK_THROWS( (void) q.min() , contract_violation );
  CHECK_THROWS( q.deleteMin() , contract_violation );
  auto h = q.insert( 1 , 5 );
  CHECK( q.size() == 1 && q.min() == 1 );
  q.decrease( h , 5 );
  CHECK_THROWS( q.decrease( h , 6 ) , contract_violation );
- CHECK( q.min() == 1 && q.deleteMin() == 1 && q.isEmpty() );
+ CHECK( q.min() == 1 && q.deleteMin() == 1 && q.empty() );
  for( int round = 0 ; round < 2 ; ++round ) {
   for( int x = 0 ; x < 100 ; ++x )
    q.insert( x , 7 );
   CHECK( q.size() == 100 );
   Ints out;
-  while( ! q.isEmpty() )
+  while( ! q.empty() )
    out.push_back( q.deleteMin() );
   std::sort( out.begin() , out.end() );
   bool all = int( out.size() ) == 100;
@@ -147,7 +147,7 @@ void degenerate( M make )
  q.decrease( g , lo );
  const int a = q.deleteMin() , b = q.deleteMin();
  CHECK( std::min( a , b ) == 2 && std::max( a , b ) == 3 );
- CHECK( q.deleteMin() == 4 && q.deleteMin() == 1 && q.isEmpty() );
+ CHECK( q.deleteMin() == 4 && q.deleteMin() == 1 && q.empty() );
  }
 
 /// a comparison that counts
@@ -210,7 +210,7 @@ ADS_TEST( "spec.HeapPriorityQueue" )
  degenerate< HeapPriorityQueue< int > >(
   [] { return( HeapPriorityQueue< int >( 100 ) ); } );
  HeapPriorityQueue< int > z( 0 );
- CHECK( z.isEmpty() && z.capacity() == 0 );
+ CHECK( z.empty() && z.capacity() == 0 );
  CHECK_THROWS( z.insert( 1 , 1 ) , contract_violation );
  HeapPriorityQueue< int > one( 1 );
  for( int k = 0 ; k < 3 ; ++k ) {
@@ -245,7 +245,7 @@ ADS_TEST( "spec.ListPriorityQueue" )
  CHECK( q.deleteMin() == 1 );
  CHECK_THROWS( q.decrease( h , 0 ) , contract_violation );
  q.decrease( k , 0 );
- CHECK( q.deleteMin() == 2 && q.isEmpty() );
+ CHECK( q.deleteMin() == 2 && q.empty() );
  }
 
 ADS_TEST( "spec.TreePriorityQueue" )
@@ -264,7 +264,7 @@ ADS_TEST( "spec.TreePriorityQueue" )
  CHECK_THROWS( q.decrease( h , 0 ) , contract_violation );
  CHECK_THROWS( q.decrease( -1 , 0 ) , contract_violation );
  CHECK_THROWS( q.decrease( 2 , 0 ) , contract_violation );
- CHECK( q.deleteMin() == 2 && q.isEmpty() );
+ CHECK( q.deleteMin() == 2 && q.empty() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -312,7 +312,7 @@ ADS_TEST( "sec10.1.3.heap" )
  t.decrease( leaf , 20 );
  CHECK( leaf->pos == 10 );
  Ints out;
- while( ! t.isEmpty() )
+ while( ! t.empty() )
   out.push_back( t.deleteMin() );
  CHECK( out == Ints( { 18 , 3 , 5 , 6 , 8 , 9 , 10 , 11 , 12 , 13 , 20 } ) );
  }
@@ -689,7 +689,7 @@ ADS_TEST( "ex10.3" )
  for( int i = 0 ; i < k ; ++i )
   Q.insert( { i , 0 } , V[ i ][ 0 ] );
  Ints out;
- while( ! Q.isEmpty() ) {
+ while( ! Q.empty() ) {
   const auto [ i , j ] = Q.deleteMin();
   out.push_back( V[ i ][ j ] );
   if( j + 1 < m )
@@ -707,7 +707,7 @@ ADS_TEST( "ex10.3" )
    if( ! W[ i ].empty() )
     H.insert( { i , 0 } , W[ i ][ 0 ] );
   Ints o;
-  while( ! H.isEmpty() ) {
+  while( ! H.empty() ) {
    const auto [ i , j ] = H.deleteMin();
    o.push_back( W[ i ][ j ] );
    if( j + 1 < int( W[ i ].size() ) )

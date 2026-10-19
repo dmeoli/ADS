@@ -918,7 +918,7 @@ bool bipartite( const G & g )
   ArrayQueue< int > S( g.n() );
   S.enqueue( r );
   color[ r ] = 0;
-  while( ! S.isEmpty() ) {
+  while( ! S.empty() ) {
    const int u = S.dequeue();
    bool ok = true;
    g.forEachAdj( u , [ & ]( int v ) {

@@ -23,7 +23,7 @@ ArrayQueue< T >::ArrayQueue( std::size_t dim )
  }
 
 template< class T >
-bool ArrayQueue< T >::isEmpty( void ) const
+bool ArrayQueue< T >::empty( void ) const
 {
  return( f_size == 0 );
  }

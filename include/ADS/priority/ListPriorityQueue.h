@@ -67,7 +67,7 @@ class ListPriorityQueue {
  using Priority = P;                            ///< the type of priorities
  using Handle = typename List< Pair >::Pos;     ///< the cell of an item
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int size( void ) const;
 

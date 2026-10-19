@@ -29,12 +29,12 @@ ArrayBinaryTree< T >::ArrayBinaryTree( const T & v ,
                                        const ArrayBinaryTree & r )
  : ArrayBinaryTree( v )
 {
- if( ! l.isEmpty() ) insertLeft( 0 , l );
- if( ! r.isEmpty() ) insertRight( 0 , r );
+ if( ! l.empty() ) insertLeft( 0 , l );
+ if( ! r.empty() ) insertRight( 0 , r );
  }
 
 template< class T >
-bool ArrayBinaryTree< T >::isEmpty( void ) const
+bool ArrayBinaryTree< T >::empty( void ) const
 {
  return( ! has( 0 ) );
  }
@@ -88,7 +88,7 @@ void ArrayBinaryTree< T >::write( long i , const T & v )
 template< class T >
 void ArrayBinaryTree< T >::setRoot( const T & v )
 {
- ADS_PRE( isEmpty() );
+ ADS_PRE( empty() );
  place( 0 ) = v;
  ADS_POST( root() == 0 );
  ADS_INVARIANT( rooted() );
@@ -98,14 +98,14 @@ template< class T >
 void ArrayBinaryTree< T >::insertLeft( long i , const ArrayBinaryTree & t )
 {
  graft( i , 2 * i + 1 , t );
- ADS_POST( t.isEmpty() || ( left( i ) == 2 * i + 1 ) );
+ ADS_POST( t.empty() || ( left( i ) == 2 * i + 1 ) );
  }
 
 template< class T >
 void ArrayBinaryTree< T >::insertRight( long i , const ArrayBinaryTree & t )
 {
  graft( i , 2 * i + 2 , t );
- ADS_POST( t.isEmpty() || ( right( i ) == 2 * i + 2 ) );
+ ADS_POST( t.empty() || ( right( i ) == 2 * i + 2 ) );
  }
 
 template< class T >

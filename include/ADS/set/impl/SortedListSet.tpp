@@ -30,7 +30,7 @@ std::size_t SortedListSet< T >::size( void ) const
  }
 
 template< std::totally_ordered T >
-bool SortedListSet< T >::isEmpty( void ) const
+bool SortedListSet< T >::empty( void ) const
 {
  return( f_size == 0 );
  }

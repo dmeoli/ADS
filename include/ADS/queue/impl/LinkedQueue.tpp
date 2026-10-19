@@ -41,7 +41,7 @@ LinkedQueue< T > & LinkedQueue< T >::operator=( LinkedQueue other ) noexcept
 template< class T >
 LinkedQueue< T >::~LinkedQueue()
 {
- while( ! isEmpty() )
+ while( ! empty() )
   dequeue();
  }
 
@@ -54,7 +54,7 @@ void LinkedQueue< T >::swap( LinkedQueue & other ) noexcept
  }
 
 template< class T >
-bool LinkedQueue< T >::isEmpty( void ) const
+bool LinkedQueue< T >::empty( void ) const
 {
  return( f_front == nullptr );
  }
@@ -62,18 +62,18 @@ bool LinkedQueue< T >::isEmpty( void ) const
 template< class T >
 void LinkedQueue< T >::enqueue( const T & v )
 {
- [[maybe_unused]] const bool was_empty = isEmpty();
+ [[maybe_unused]] const bool was_empty = empty();
  Cell * c = new Cell{ v , nullptr };
  ( f_back ? f_back->next : f_front ) = c;
  f_back = c;
  ++f_size;
- ADS_POST( ! isEmpty() && ( ! was_empty || detail::equal( top() , v ) ) );
+ ADS_POST( ! empty() && ( ! was_empty || detail::equal( top() , v ) ) );
  }
 
 template< class T >
 T LinkedQueue< T >::dequeue( void )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  Cell * c = f_front;
  T v = std::move( c->value );
  f_front = c->next;
@@ -87,7 +87,7 @@ T LinkedQueue< T >::dequeue( void )
 template< class T >
 const T & LinkedQueue< T >::top( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_front->value );
  }
 

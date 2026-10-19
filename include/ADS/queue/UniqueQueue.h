@@ -68,7 +68,7 @@ class UniqueQueue {
 
  using Item = T;   ///< the type of the items
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// puts v at the back, unless the policy keeps an old copy of it
  /// \post v is in the queue, at the back with FORGET_OLD

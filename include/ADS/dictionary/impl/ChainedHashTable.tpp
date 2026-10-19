@@ -105,7 +105,7 @@ std::size_t ChainedHashTable< K , V , C , H >::size( void ) const
 
 template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
-bool ChainedHashTable< K , V , C , H >::isEmpty( void ) const
+bool ChainedHashTable< K , V , C , H >::empty( void ) const
 {
  return( f_size == 0 );
  }

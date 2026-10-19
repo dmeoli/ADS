@@ -31,7 +31,7 @@ std::size_t DictionarySet< D >::size( void ) const
  }
 
 template< class D >
-bool DictionarySet< D >::isEmpty( void ) const
+bool DictionarySet< D >::empty( void ) const
 {
  return( f_d.size() == 0 );
  }

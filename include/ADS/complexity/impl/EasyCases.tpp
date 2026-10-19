@@ -96,7 +96,7 @@ inline std::optional< std::vector< int > > twoColoring( const Adjacency & G )
    if( col[ r ] >= 0 ) continue;
    col[ r ] = 0;
    Q.enqueue( r );
-   while( ! Q.isEmpty() ) {
+   while( ! Q.empty() ) {
     const int u = Q.dequeue();
     for( int v = 0 ; v < n ; ++v ) {
      if( ! G[ u ][ v ] || ( u == v ) ) continue;   // no self-loop

@@ -38,7 +38,7 @@ void patienceSort( std::vector< T > & A , C less , std::size_t * piles )
  DaryHeap< Top , decltype( better ) > H( better );
  for( std::size_t k = 0 ; k < P.size() ; ++k )
   H.push( Top{ k } );
- for( std::size_t i = 0 ; ! H.isEmpty() ; ++i ) {   // the k-way merge
+ for( std::size_t i = 0 ; ! H.empty() ; ++i ) {     // the k-way merge
   const Top t = H.pop();
   A[ i ] = std::move( P[ t.pile ].back() );
   P[ t.pile ].pop_back();

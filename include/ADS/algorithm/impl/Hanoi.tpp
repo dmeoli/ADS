@@ -44,7 +44,7 @@ void hanoi_iterative( int n , int source , int dest , int middle , F && f )
    std::swap( dest , middle );
    }
   f( source , dest );
-  if( S.isEmpty() )
+  if( S.empty() )
    end_of_the_world = true;
   else {
    std::tie( n , source , dest , middle ) = S.pop();
@@ -86,7 +86,7 @@ void hanoi_iterative_labels( int n , int source , int dest , int middle ,
     pos = START;
     }
    else   // END
-    if( S.isEmpty() )
+    if( S.empty() )
      pos = STOP;
     else
      std::tie( n , source , dest , middle , pos ) = S.pop();

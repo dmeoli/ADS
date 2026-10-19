@@ -57,7 +57,7 @@ std::size_t AVLTree< K , V >::size( void ) const
  }
 
 template< std::totally_ordered K , class V >
-bool AVLTree< K , V >::isEmpty( void ) const
+bool AVLTree< K , V >::empty( void ) const
 {
  return( f_size == 0 );
  }

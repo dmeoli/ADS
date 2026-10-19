@@ -83,7 +83,7 @@ class LinkedHeapPriorityQueue {
  using Item = T;            ///< the type of the items
  using Priority = P;        ///< the type of the priorities
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int size( void ) const;
 

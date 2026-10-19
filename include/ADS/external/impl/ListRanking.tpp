@@ -238,7 +238,7 @@ void parallelStep( const DiskFile< T > & A ,
  using Pair = std::pair< std::size_t , std::size_t >;
  TwoLevelMemory & mem = A.memory();
  ADS_PRE( ( &ops.memory() == &mem ) && ( &out.memory() == &mem ) &&
-          out.isEmpty() );
+          out.empty() );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   std::vector< bool > seen( A.size() , false );
   for( const Pair & p : ops.contents() ) {
@@ -301,7 +301,7 @@ inline void externalPointerJumping( const DiskFile< std::size_t > & succ ,
   };
  TwoLevelMemory & mem = succ.memory();
  ADS_PRE( mem.memorySize() >= 3 * mem.blockSize() );
- ADS_PRE( ( &rank.memory() == &mem ) && rank.isEmpty() );
+ ADS_PRE( ( &rank.memory() == &mem ) && rank.empty() );
  ADS_AUDIT( isList( succ.contents() ) );
  DiskFile< Node > N( mem );
  std::size_t tail = 0;
@@ -325,7 +325,7 @@ inline void externalPointerJumping( const DiskFile< std::size_t > & succ ,
     if( x.succ != tail ) w.push( Pair( i , x.succ ) );
     }
    }
-  if( ops.isEmpty() ) break;
+  if( ops.empty() ) break;
   DiskFile< Node > N2( mem );
   parallelStep( N , ops , []( const Node & x , const Node & y ) {
    return( Node{ y.succ , x.rank + y.rank } ); } , N2 );
@@ -498,7 +498,7 @@ void externalListRank( const DiskFile< std::size_t > & succ ,
  TwoLevelMemory & mem = succ.memory();
  const std::size_t B = mem.blockSize() , M = mem.memorySize();
  ADS_PRE( ( M >= 3 * B ) && ( M >= B + 4 ) );
- ADS_PRE( ( &rank.memory() == &mem ) && rank.isEmpty() );
+ ADS_PRE( ( &rank.memory() == &mem ) && rank.empty() );
  ADS_AUDIT( isList( succ.contents() ) );
  DiskFile< ListRecord > L( mem );
  {

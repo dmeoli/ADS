@@ -53,7 +53,7 @@ std::vector< T > MPSCInbox< T >::take( void )
  }
 
 template< class T >
-bool MPSCInbox< T >::isEmpty( void ) const
+bool MPSCInbox< T >::empty( void ) const
 {
  return( f_top.load( std::memory_order_acquire ) == nullptr );
  }

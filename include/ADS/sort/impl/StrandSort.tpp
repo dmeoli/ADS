@@ -21,7 +21,7 @@ void strandSort( List< T > & L , C less , std::size_t * strands )
 {
  List< T > R;                               // the result, sorted
  std::size_t k = 0;
- while( ! L.isEmpty() ) {
+ while( ! L.empty() ) {
   List< T > S;                              // pull a strand out of L
   S.insert( S.next( S.tail() ) , L.read( L.head() ) );
   L.remove( L.head() );

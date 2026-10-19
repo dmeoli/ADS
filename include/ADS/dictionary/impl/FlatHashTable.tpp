@@ -228,7 +228,7 @@ std::size_t FlatHashTable< K , V , H , Eq >::size( void ) const
  }
 
 template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::isEmpty( void ) const
+bool FlatHashTable< K , V , H , Eq >::empty( void ) const
 {
  return( f_size == 0 );
  }

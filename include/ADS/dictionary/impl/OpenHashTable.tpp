@@ -225,7 +225,7 @@ std::size_t OpenHashTable< K , V , H >::size( void ) const
  }
 
 template< class K , class V , class H >
-bool OpenHashTable< K , V , H >::isEmpty( void ) const
+bool OpenHashTable< K , V , H >::empty( void ) const
 {
  return( f_size == 0 );
  }

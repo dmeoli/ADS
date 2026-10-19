@@ -77,7 +77,7 @@ class DictionarySet {
 
  [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] bool contains( const Item & x ) const;
 

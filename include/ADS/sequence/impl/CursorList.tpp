@@ -154,7 +154,7 @@ template< class T >
 CursorList< T >::~CursorList()
 {
  if( f_S )
-  while( ! isEmpty() )
+  while( ! empty() )
    remove( head() );
  }
 
@@ -170,7 +170,7 @@ void CursorList< T >::swap( CursorList & other ) noexcept
 /*--------------------------------------------------------------------------*/
 
 template< class T >
-bool CursorList< T >::isEmpty( void ) const
+bool CursorList< T >::empty( void ) const
 {
  return( f_first == 0 );
  }

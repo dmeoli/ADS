@@ -141,7 +141,7 @@ S sublist( const S & s , typename S::Pos p , typename S::Pos q )
 template< Sequence S >
 Order order( const S & s )
 {
- if( s.isEmpty() ) return( Order::EMPTY );
+ if( s.empty() ) return( Order::EMPTY );
  bool up = false , down = false , equal = false;
  for( auto p = s.head() , q = s.next( p ) ; ! s.finished( q ) ;
       p = q , q = s.next( q ) ) {
@@ -164,7 +164,7 @@ template< Sequence S >
 void bubbleSort( S & s )
 {
  [[maybe_unused]] const long n = ADS_CONTRACTS >= 3 ? detail::length( s ) : 0;
- for( bool swapped = true ; swapped && ! s.isEmpty() ; ) {
+ for( bool swapped = true ; swapped && ! s.empty() ; ) {
   swapped = false;
   for( auto p = s.head() , q = s.next( p ) ; ! s.finished( q ) ;
        p = q , q = s.next( q ) )

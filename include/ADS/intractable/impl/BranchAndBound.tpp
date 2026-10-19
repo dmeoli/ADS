@@ -209,7 +209,7 @@ std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
     Q.insert( 0 , nodes[ 0 ].lb );
     }
    }
-  while( ! Q.isEmpty() ) {
+  while( ! Q.empty() ) {
    const int k = Q.deleteMin();
    if( nodes[ k ].edges == n ) {          // a circuit, the best
     Nodes S( 1 , 0 );

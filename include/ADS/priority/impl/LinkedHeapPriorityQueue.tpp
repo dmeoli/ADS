@@ -18,7 +18,7 @@
 namespace ADS {
 
 template< class T , std::totally_ordered P , bool L >
-bool LinkedHeapPriorityQueue< T , P , L >::isEmpty( void ) const
+bool LinkedHeapPriorityQueue< T , P , L >::empty( void ) const
 {
  return( f_n == 0 );
  }
@@ -32,14 +32,14 @@ int LinkedHeapPriorityQueue< T , P , L >::size( void ) const
 template< class T , std::totally_ordered P , bool L >
 const T & LinkedHeapPriorityQueue< T , P , L >::min( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_root->value );
  }
 
 template< class T , std::totally_ordered P , bool L >
 const P & LinkedHeapPriorityQueue< T , P , L >::minPriority( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_root->priority );
  }
 
@@ -67,7 +67,7 @@ void LinkedHeapPriorityQueue< T , P , L >::insert( const T & x , const P & p )
 template< class T , std::totally_ordered P , bool L >
 T LinkedHeapPriorityQueue< T , P , L >::deleteMin( void )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  Node * r = f_root.get();
  const P q = r->priority;
  T x = std::move( r->value );

@@ -70,7 +70,7 @@ class PreorderArrayTree {
  /// a tree of one node of value v
  explicit PreorderArrayTree( const T & v );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int size( void ) const;
 

@@ -109,7 +109,7 @@ class BucketQueue {
  /// \pre the queue is not empty
  Entry popEntry( void );
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the number of items, the stale ones included
  [[nodiscard]] std::size_t size( void ) const;

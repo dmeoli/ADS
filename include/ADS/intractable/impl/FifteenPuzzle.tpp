@@ -124,7 +124,7 @@ inline std::optional< std::vector< Board > > solvePuzzle( const Board & B ,
   best[ B ] = 0;
   FibonacciHeapPriorityQueue< int , int > Q;
   Q.insert( 0 , manhattan( B , n ) );
-  while( ! Q.isEmpty() ) {
+  while( ! Q.empty() ) {
    const int k = Q.deleteMin();
    if( level[ k ] > best[ node[ k ] ] ) continue;     // a stale entry
    if( visited ) ++*visited;

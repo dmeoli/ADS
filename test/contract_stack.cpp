@@ -74,7 +74,7 @@ void stack_against_vector( S & P , std::size_t cap , unsigned seed )
    CHECK( P.top() == R.back() && P.pop() == R.back() );
    R.pop_back();
    }
- CHECK( P.isEmpty() == R.empty() );
+ CHECK( P.empty() == R.empty() );
  }
 
 ADS_TEST( "array-stack" )
@@ -86,7 +86,7 @@ ADS_TEST( "array-stack" )
  P.push( 2 );
  CHECK( P.size() == 2 && P.capacity() == 2 );
  CHECK_THROWS( P.push( 3 ) , contract_violation );
- CHECK( P.pop() == 2 && P.pop() == 1 && P.isEmpty() );
+ CHECK( P.pop() == 2 && P.pop() == 1 && P.empty() );
  ArrayStack< int > Z( 0 );
  CHECK_THROWS( Z.push( 0 ) , contract_violation );
  CHECK_THROWS( (void) Z.top() , contract_violation );
@@ -114,8 +114,8 @@ ADS_TEST( "sequence-stack" )
  CHECK_THROWS( (void) P.top() , contract_violation );
  CHECK_THROWS( P.pop() , contract_violation );
  P.push( 1 );
- CHECK( P.top() == 1 && ! P.isEmpty() );
- CHECK( P.pop() == 1 && P.isEmpty() );          // emptied again
+ CHECK( P.top() == 1 && ! P.empty() );
+ CHECK( P.pop() == 1 && P.empty() );            // emptied again
  CHECK_THROWS( P.pop() , contract_violation );
  SequenceStack< List< double > > N;            // a NaN (a regression)
  N.push( std::nan( "" ) );
@@ -131,7 +131,7 @@ ADS_TEST( "sequence-stack" )
  }
 
 // the axioms of STACK [see ADT.h] on random stacks S and items v:
-// isEmpty( create ) = true, isEmpty( push( S , v ) ) = false,
+// empty( create ) = true, empty( push( S , v ) ) = false,
 // top( push( S , v ) ) = v, pop( push( S , v ) ) = S, the last one through
 // the copy of S and the equality of two stacks; top( create ) and
 // pop( create ) are undefined, i.e., violate the precondition
@@ -139,7 +139,7 @@ template< class S >
 void stack_axioms( S create , unsigned seed )
 {
  std::mt19937 g( seed );
- CHECK( create.isEmpty() );
+ CHECK( create.empty() );
  CHECK_THROWS( (void) create.top() , contract_violation );
  CHECK_THROWS( create.pop() , contract_violation );
  S P = create;
@@ -147,11 +147,11 @@ void stack_axioms( S create , unsigned seed )
   const int v = int( g() % 1000 );
   S Q = P;                                      // copies are independent
   Q.push( v );
-  CHECK( ! Q.isEmpty() && Q.top() == v );
+  CHECK( ! Q.empty() && Q.top() == v );
   CHECK( Q.pop() == v && Q == P );
   S M( std::move( Q ) );                        // moving leaves Q usable
-  CHECK( M == P && Q.isEmpty() );
-  if( P.isEmpty() || g() % 3 )
+  CHECK( M == P && Q.empty() );
+  if( P.empty() || g() % 3 )
    P.push( v );
   else
    P.pop();
@@ -181,7 +181,7 @@ ADS_TEST( "multistack" )
 {
  CHECK_THROWS( MultiStack< int >( 0 ) , contract_violation );
  MultiStack< int > M( 3 );
- CHECK_THROWS( (void) M.isEmpty( 3 ) , contract_violation );
+ CHECK_THROWS( (void) M.empty( 3 ) , contract_violation );
  CHECK_THROWS( (void) M.size( -1 ) , contract_violation );
  CHECK_THROWS( M.push( 3 , 0 ) , contract_violation );
  CHECK_THROWS( (void) M.top( 0 ) , contract_violation );
@@ -189,9 +189,9 @@ ADS_TEST( "multistack" )
  CHECK_THROWS( MultiStack< int >( -1 ) , contract_violation );
  CHECK( MultiStack< int >( 1 ).stacks() == 1 );   // k = 1 just inside
  // each i just inside ( 0 , k - 1 ) and just outside ( -1 , k )
- CHECK( M.isEmpty( 0 ) && M.isEmpty( 2 ) && M.size( 0 ) == 0 &&
+ CHECK( M.empty( 0 ) && M.empty( 2 ) && M.size( 0 ) == 0 &&
         M.size( 2 ) == 0 && M.stack( 0 ).empty() && M.stack( 2 ).empty() );
- CHECK_THROWS( (void) M.isEmpty( -1 ) , contract_violation );
+ CHECK_THROWS( (void) M.empty( -1 ) , contract_violation );
  CHECK_THROWS( (void) M.size( 3 ) , contract_violation );
  CHECK_THROWS( M.push( -1 , 0 ) , contract_violation );
  CHECK_THROWS( (void) M.top( -1 ) , contract_violation );
@@ -201,7 +201,7 @@ ADS_TEST( "multistack" )
  CHECK_THROWS( (void) M.stack( -1 ) , contract_violation );
  CHECK_THROWS( (void) M.stack( 3 ) , contract_violation );
  M.push( 2 , 7 );                               // the last stack
- CHECK( M.top( 2 ) == 7 && M.pop( 2 ) == 7 && M.isEmpty( 2 ) );
+ CHECK( M.top( 2 ) == 7 && M.pop( 2 ) == 7 && M.empty( 2 ) );
  CHECK_THROWS( M.pop( 2 ) , contract_violation );   // emptied again
  M.push( 0 , 1 );                               // a freed cell reused
  CHECK( M.top( 0 ) == 1 && M.pop( 0 ) == 1 );
@@ -239,12 +239,12 @@ ADS_TEST( "stack-algorithms" )
   sortStack( A );
   removeGreater( B , 4 );
   int prev = -1;
-  while( ! A.isEmpty() ) {
+  while( ! A.empty() ) {
    const int x = A.pop();
    CHECK( x >= prev );
    prev = x;
    }
-  while( ! B.isEmpty() ) CHECK( B.pop() <= 4 );
+  while( ! B.empty() ) CHECK( B.pop() <= 4 );
   }
  CHECK( isPalindrome( "abba" ) && ! isPalindrome( "ab" ) );
  // empty and one-character strings, odd length; empty stacks, one item,
@@ -257,7 +257,7 @@ ADS_TEST( "stack-algorithms" )
  removeGreater( F , 0 );
  int visits = 0;
  forEachBottomUp( E , [ & ]( int ) { ++visits; } );
- CHECK( E.isEmpty() && F.isEmpty() && visits == 0 );
+ CHECK( E.empty() && F.empty() && visits == 0 );
  for( const std::vector< int > & items :
       { std::vector< int >{ 5 } , std::vector< int >( 6 , 3 ) ,
         std::vector< int >{ 1 , 2 , 3 , 4 } ,
@@ -282,7 +282,7 @@ ADS_TEST( "stack-algorithms" )
   CHECK( seen == items );                        // bottom up, unchanged
   for( std::size_t i = items.size() ; i-- > 0 ; )
    CHECK( T.pop() == items[ i ] );
-  while( ! U.isEmpty() ) CHECK( U.pop() == lo );
+  while( ! U.empty() ) CHECK( U.pop() == lo );
   }
  }
 

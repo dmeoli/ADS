@@ -43,7 +43,7 @@ inline BinaryTree< std::string > * expressionTree( std::string_view e )
   }
  using B = BinaryTree< std::string >;
  ArrayStack< B * > S( T.size() + 1 );
- auto clear = [ & ]( void ) { while( ! S.isEmpty() ) delete S.pop(); };
+ auto clear = [ & ]( void ) { while( ! S.empty() ) delete S.pop(); };
  for( const auto & t : T ) {
   auto * u = new B( t );
   if( detail::isBinaryOperator( t ) ) {

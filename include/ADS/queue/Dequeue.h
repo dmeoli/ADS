@@ -58,7 +58,7 @@ class Dequeue {
 
  using Item = T;   ///< the type of the items
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// \post the dequeue is not empty
  void insertHead( const T & v );

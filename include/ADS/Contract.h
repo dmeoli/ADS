@@ -8,7 +8,7 @@
  * they can be replaced by them when the compilers support them:
  *
  * - ADS_PRE( c ), at the start of an operation, what the caller must
- *   ensure (e.g., ! isEmpty() before deleteMin());
+ *   ensure (e.g., ! empty() before deleteMin());
  * - ADS_POST( c ), at the end, what the operation ensures, when it costs
  *   no more than the operation itself;
  * - ADS_INVARIANT( c ), at the end of the operations that change a

@@ -251,7 +251,7 @@ class OpenHashTable {
 
  [[nodiscard]] std::size_t size( void ) const;
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// the size m of the vector
  [[nodiscard]] std::size_t capacity( void ) const;

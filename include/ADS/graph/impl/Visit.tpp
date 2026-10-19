@@ -88,7 +88,7 @@ void bfs( const G & g , int r , FN && node , FE && edge )
  ArrayQueue< int > S( std::max( g.n() , 1 ) );
  S.enqueue( r );
  visited[ r ] = true;
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   const int u = S.dequeue();
   node( u );
   g.forEachAdj( u , [ & ]( int v ) {
@@ -110,7 +110,7 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
  ArrayQueue< int > S( std::max( g.n() , 1 ) );
  S.enqueue( r );
  d[ r ] = 0;
- while( ! S.isEmpty() ) {
+ while( ! S.empty() ) {
   const int u = S.dequeue();
   g.forEachAdj( u , [ & ]( int v ) {
    if( d[ v ] == INF ) {

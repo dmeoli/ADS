@@ -133,7 +133,7 @@ void quickSortTuned( std::vector< T > & A , std::size_t cutoff ,
 template< class T , class C >
 void quickSort( List< T > & L , C less )
 {
- if( L.isEmpty() || L.finished( L.next( L.head() ) ) )
+ if( L.empty() || L.finished( L.next( L.head() ) ) )
   return;
  const T x = L.read( L.head() );
  List< T > S , E , G;

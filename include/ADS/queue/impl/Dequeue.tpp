@@ -17,29 +17,29 @@
 namespace ADS {
 
 template< class T >
-bool Dequeue< T >::isEmpty( void ) const
+bool Dequeue< T >::empty( void ) const
 {
- return( f_L.isEmpty() );
+ return( f_L.empty() );
  }
 
 template< class T >
 void Dequeue< T >::insertHead( const T & v )
 {
  f_L.insert( f_L.head() , v );
- ADS_POST( ! f_L.isEmpty() );
+ ADS_POST( ! f_L.empty() );
  }
 
 template< class T >
 void Dequeue< T >::insertTail( const T & v )
 {
  f_L.insert( f_L.next( f_L.tail() ) , v );
- ADS_POST( ! f_L.isEmpty() );
+ ADS_POST( ! f_L.empty() );
  }
 
 template< class T >
 T Dequeue< T >::removeHead( void )
 {
- ADS_PRE( ! f_L.isEmpty() );
+ ADS_PRE( ! f_L.empty() );
  T v = f_L.read( f_L.head() );
  f_L.remove( f_L.head() );
  return( v );
@@ -48,7 +48,7 @@ T Dequeue< T >::removeHead( void )
 template< class T >
 T Dequeue< T >::removeTail( void )
 {
- ADS_PRE( ! f_L.isEmpty() );
+ ADS_PRE( ! f_L.empty() );
  T v = f_L.read( f_L.tail() );
  f_L.remove( f_L.tail() );
  return( v );
@@ -57,14 +57,14 @@ T Dequeue< T >::removeTail( void )
 template< class T >
 const T & Dequeue< T >::head( void ) const
 {
- ADS_PRE( ! f_L.isEmpty() );
+ ADS_PRE( ! f_L.empty() );
  return( f_L.read( f_L.head() ) );
  }
 
 template< class T >
 const T & Dequeue< T >::tail( void ) const
 {
- ADS_PRE( ! f_L.isEmpty() );
+ ADS_PRE( ! f_L.empty() );
  return( f_L.read( f_L.tail() ) );
  }
 

@@ -18,9 +18,9 @@
 namespace ADS {
 
 template< class T , std::totally_ordered P , bool Sorted >
-bool ListPriorityQueue< T , P , Sorted >::isEmpty( void ) const
+bool ListPriorityQueue< T , P , Sorted >::empty( void ) const
 {
- return( f_L.isEmpty() );
+ return( f_L.empty() );
  }
 
 template< class T , std::totally_ordered P , bool Sorted >
@@ -32,20 +32,20 @@ int ListPriorityQueue< T , P , Sorted >::size( void ) const
 template< class T , std::totally_ordered P , bool Sorted >
 const T & ListPriorityQueue< T , P , Sorted >::min( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_L.read( first() ).second );
  }
 
 template< class T , std::totally_ordered P , bool Sorted >
 T ListPriorityQueue< T , P , Sorted >::deleteMin( void )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  const auto p = first();
  const P q = f_L.read( p ).first;
  T v = f_L.read( p ).second;
  f_L.remove( p );
  --f_size;
- ADS_POST( isEmpty() || !( f_L.read( first() ).first < q ) );
+ ADS_POST( empty() || !( f_L.read( first() ).first < q ) );
  ADS_INVARIANT( consistent() );
  return( v );
  }

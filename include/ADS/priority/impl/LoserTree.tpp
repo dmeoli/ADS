@@ -69,7 +69,7 @@ std::size_t LoserTree< T , C >::players( void ) const
  }
 
 template< class T , class C >
-bool LoserTree< T , C >::isEmpty( void ) const
+bool LoserTree< T , C >::empty( void ) const
 {
  return( ! f_key[ f_node[ 0 ] ] );
  }
@@ -77,21 +77,21 @@ bool LoserTree< T , C >::isEmpty( void ) const
 template< class T , class C >
 std::size_t LoserTree< T , C >::winner( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_node[ 0 ] );
  }
 
 template< class T , class C >
 const T & LoserTree< T , C >::top( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( *f_key[ f_node[ 0 ] ] );
  }
 
 template< class T , class C >
 void LoserTree< T , C >::replace( std::optional< T > key )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  const std::size_t k = f_key.size();
  std::size_t w = f_node[ 0 ];
  f_key[ w ] = std::move( key );
@@ -122,7 +122,7 @@ std::vector< T > kWayMerge( const std::vector< std::vector< T > > & R ,
   }
  out.reserve( n );
  LoserTree< T , C > L( std::move( first ) , less );
- while( ! L.isEmpty() ) {
+ while( ! L.empty() ) {
   const std::size_t w = L.winner();
   out.push_back( L.top() );
   L.replace( next[ w ] < R[ w ].size() ?

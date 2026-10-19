@@ -20,12 +20,12 @@ template< Queue Q >
 void extractPositive( Q & q , Q & out )
 {
  ADS_PRE( &q != &out );
- while( ! q.isEmpty() ) {
+ while( ! q.empty() ) {
   auto x = q.dequeue();
   if( x > 0 )
    out.enqueue( x );
   }
- ADS_POST( q.isEmpty() );
+ ADS_POST( q.empty() );
  }
 
 template< Queue Q >
@@ -34,7 +34,7 @@ void copyPositive( Q & q , Q & out )
  ADS_PRE( &q != &out );
  LinkedQueue< typename Q::Item > aux;
  std::vector< typename Q::Item > before;    // for the audit
- while( ! q.isEmpty() ) {
+ while( ! q.empty() ) {
   auto x = q.dequeue();
   if constexpr( ADS_CONTRACTS >= 3 )
    before.push_back( x );
@@ -42,7 +42,7 @@ void copyPositive( Q & q , Q & out )
    out.enqueue( x );
   aux.enqueue( x );
   }
- while( ! aux.isEmpty() )
+ while( ! aux.empty() )
   q.enqueue( aux.dequeue() );
  ADS_AUDIT( [ & ]( void ) {                  // q holds before, in order
   for( const auto & x : before ) {

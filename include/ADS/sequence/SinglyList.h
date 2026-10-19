@@ -104,7 +104,7 @@ class SinglyList {
 /*-------------------------- THE SEQUENCE ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- [[nodiscard]] bool isEmpty( void ) const;
+ [[nodiscard]] bool empty( void ) const;
 
  /// true on \f$ pos_{-1} \f$ and on \f$ pos_n \f$, the address of the
  /// last cell (nil if the list is empty)

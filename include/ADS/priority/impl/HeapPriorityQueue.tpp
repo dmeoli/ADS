@@ -31,7 +31,7 @@ HeapPriorityQueue< T , P , D >::HeapPriorityQueue( int n ) : f_capacity( n )
 
 template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
-bool HeapPriorityQueue< T , P , D >::isEmpty( void ) const
+bool HeapPriorityQueue< T , P , D >::empty( void ) const
 {
  return( f_H.empty() );
  }
@@ -54,7 +54,7 @@ template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
 const T & HeapPriorityQueue< T , P , D >::min( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_H[ 0 ]->value );
  }
 
@@ -62,7 +62,7 @@ template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
 const P & HeapPriorityQueue< T , P , D >::minPriority( void ) const
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  return( f_H[ 0 ]->priority );
  }
 
@@ -70,14 +70,14 @@ template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
 T HeapPriorityQueue< T , P , D >::deleteMin( void )
 {
- ADS_PRE( ! isEmpty() );
+ ADS_PRE( ! empty() );
  const int dim = size() - 1;
  const P p = f_H[ 0 ]->priority;
  swap( 0 , dim );
  minHeapRestore( 0 , dim );
  T v = std::move( f_H.back()->value );
  f_H.pop_back();
- ADS_POST( ( size() == dim ) && ( isEmpty() || !( minPriority() < p ) ) );
+ ADS_POST( ( size() == dim ) && ( empty() || !( minPriority() < p ) ) );
  ADS_INVARIANT( isHeap() );
  return( v );
  }

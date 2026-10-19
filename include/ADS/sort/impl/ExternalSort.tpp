@@ -34,7 +34,7 @@ std::vector< std::vector< T > > replacementSelection(
  for( ; ( next < input.size() ) && ( H.size() < M ) ; ++next )
   H.push( Item{ 0 , input[ next ] } );
  std::vector< std::vector< T > > runs;
- while( ! H.isEmpty() ) {
+ while( ! H.empty() ) {
   Item x = H.pop();
   if( x.run == runs.size() )
    runs.emplace_back();

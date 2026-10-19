@@ -55,7 +55,7 @@ void ArrayStack< T >::swap( ArrayStack & other ) noexcept
  }
 
 template< class T >
-bool ArrayStack< T >::isEmpty( void ) const
+bool ArrayStack< T >::empty( void ) const
 {
  return( f_size == 0 );
  }
