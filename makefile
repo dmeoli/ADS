@@ -48,8 +48,12 @@ test: $(BINS)
 	echo "$$failed failed"; test $$failed -eq 0
 
 # the benchmarks, with the contracts off and the Boost headers if found;
-# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft
-BENCHES   = sort dictionaries priority sequences bignum fft
+# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft;
+# HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
+# (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
+# fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
+# Abseil
+BENCHES   = sort dictionaries priority sequences bignum fft hashing
 comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
@@ -58,6 +62,17 @@ GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
 FFTWFLAGS = $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
             -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3)
 
+HASHINC   = unordered_dense/include robin-map/include libcuckoo \
+            xxHash wyhash rapidhash fastfilter_cpp/src \
+            xor_singleheader/include pthash/include pthash/external/bits \
+            pthash/external/bits/include \
+            pthash/external/bits/external/essentials/include \
+            pthash/external/mm_file/include BBHash sux
+HASHFLAGS = $(if $(HASHING),$(addprefix -isystem $(HASHING)/,$(HASHINC))) \
+            $(if $(ABSL),-DADS_HAS_ABSL -isystem $(ABSL)/include \
+            $(shell PKG_CONFIG_PATH=$(ABSL)/lib/pkgconfig pkg-config \
+             --libs absl_flat_hash_map absl_hash 2>/dev/null)) -pthread
+
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
 $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
@@ -65,6 +80,9 @@ $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-fft: bench/fft.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(FFTWFLAGS)
+
+$(BUILD)/bench-hashing: bench/hashing.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(HASHFLAGS)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

@@ -47,7 +47,7 @@ if (ADS_BENCHMARKS)
     find_library(GMP_LIB gmp)
     find_path(FFTW_INCLUDE fftw3.h)
     find_library(FFTW_LIB fftw3)
-    foreach (b sort dictionaries priority sequences bignum fft)
+    foreach (b sort dictionaries priority sequences bignum fft hashing)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -66,6 +66,28 @@ if (ADS_BENCHMARKS)
         target_include_directories(bench-fft PRIVATE ${FFTW_INCLUDE})
         target_link_libraries(bench-fft PRIVATE ${FFTW_LIB})
     endif ()
+    # the competitors of bench-hashing: the header-only libraries from the
+    # directory of their sources ADS_HASHING, Abseil if found
+    set(ADS_HASHING "" CACHE PATH "the sources of the hashing libraries")
+    if (ADS_HASHING)
+        foreach (d unordered_dense/include robin-map/include libcuckoo xxHash
+                   wyhash rapidhash fastfilter_cpp/src
+                   xor_singleheader/include pthash/include
+                   pthash/external/bits pthash/external/bits/include
+                   pthash/external/bits/external/essentials/include
+                   pthash/external/mm_file/include BBHash sux)
+            target_include_directories(bench-hashing SYSTEM
+                                       PRIVATE ${ADS_HASHING}/${d})
+        endforeach ()
+    endif ()
+    find_package(absl QUIET)
+    if (absl_FOUND)
+        target_compile_definitions(bench-hashing PRIVATE ADS_HAS_ABSL)
+        target_link_libraries(bench-hashing PRIVATE absl::flat_hash_map
+                                                    absl::hash)
+    endif ()
+    find_package(Threads REQUIRED)
+    target_link_libraries(bench-hashing PRIVATE Threads::Threads)
 endif ()
 
 # ----- install and export, for find_package(ADS) and pkg-config ---------- #
