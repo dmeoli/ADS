@@ -5,7 +5,9 @@
  * Tests of the paths of the rank and select directory that a vector of
  * practical size never takes: the top level of the counts, which starts at
  * \f$ 2^{40} \f$ bits and here at \f$ 2^{10} \f$ (ADS_RANKSELECT_TOP), and
- * the sparse groups of select, which span \f$ 2^{16} \f$ bits or more; rank
+ * the sparse groups of select, which span \f$ 2^{16} \f$ bits or more, and
+ * the top level of the compact directory, at \f$ 2^{32} \f$ bits and here
+ * at \f$ 2^{13} \f$ (ADS_COMPACT_TOP); rank
  * and select against a scan, and Elias-Fano and the balanced parentheses on
  * top of them, at the level 3 of the contracts.
  *
@@ -20,10 +22,12 @@
 /*--------------------------------------------------------------------------*/
 
 #define ADS_RANKSELECT_TOP 10
+#define ADS_COMPACT_TOP 13
 
 #include "ADSTest.h"
 
 #include "ADS/succinct/BalancedParentheses.h"
+#include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/RankSelect.h"
 
@@ -43,11 +47,12 @@ using namespace ADS;
 namespace {
 
 /// every rank and every select of both bits of R against a scan
+template< class D = RankSelect >
 void checkAll( const std::vector< bool > & R )
 {
  BitVector b;
  for( const bool x : R ) b.push_back( x );
- const RankSelect S( b );
+ const D S( b );
  std::size_t ones = 0 , zeros = 0;
  for( std::size_t i = 0 ; i <= R.size() ; ++i ) {
   CHECK( S.rank1( i ) == ones && S.rank0( i ) == zeros );
@@ -80,6 +85,11 @@ ADS_TEST( "rank-select-top" )
    for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = B( g );
    checkAll( R );
    }
+ for( const std::size_t n : { 8191 , 8192 , 8193 , 40000 } ) {   // compact
+  std::vector< bool > R( n );
+  for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = g() % 3 == 0;
+  checkAll< CompactRankSelect >( R );
+  }
  std::vector< bool > C;
  for( int run = 0 ; run < 6 ; ++run ) {
   for( int i = 0 ; i < 20000 ; ++i ) C.push_back( g() % 2 );

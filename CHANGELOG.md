@@ -448,6 +448,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the benchmarks of the succinct structures and of the compressors,
   bench/succinct.cpp and bench/compression.cpp, against sdsl-lite, sux,
   pasta, succinct, huff0 and FSE, Stream VByte, libsais and LZ4 when found
+- CompactRankSelect, rank and select in about 3.5% of the bits: an entry
+  of 128 bits per 4096 (the rank of the superblock and those of its 8
+  blocks of a line each), the line of the block summed by the nibbles
+  with AVX2, and the superblock of every 4096-th bit of each value for
+  select; test/engineered_succinct.cpp and test/succinct_top.cpp
 
 ### Changed
 

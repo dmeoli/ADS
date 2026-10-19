@@ -51,6 +51,10 @@
 #include "ADS/succinct/BalancedParentheses.h"
 #include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/RankSelect.h"
+#if __has_include( "ADS/succinct/CompactRankSelect.h" )
+ #include "ADS/succinct/CompactRankSelect.h"
+ #define ADS_HAS_COMPACT 1
+#endif
 #if __has_include( "ADS/succinct/WaveletMatrix.h" )
  #include "ADS/succinct/WaveletMatrix.h"
  #define ADS_HAS_WM 1
@@ -211,6 +215,18 @@ void bitvectors( std::size_t n , int r , unsigned seed )
      return( s.select0( k ) ); } ,
     [ nb ]( const ADS::RankSelect & s ) {
      return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+#ifdef ADS_HAS_COMPACT
+  bitvector( dname , b , "ADS::CompactRankSelect" , []( const Bits & b ) {
+    return( std::make_unique< ADS::CompactRankSelect >( adsBits( b ) ) ); } ,
+   []( const ADS::CompactRankSelect & s , std::uint64_t i ) {
+    return( s.rank1( i ) ); } ,
+   []( const ADS::CompactRankSelect & s , std::uint64_t k ) {
+    return( s.select1( k ) ); } ,
+   []( const ADS::CompactRankSelect & s , std::uint64_t k ) {
+    return( s.select0( k ) ); } ,
+   [ nb ]( const ADS::CompactRankSelect & s ) {
+    return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+#endif
 #ifdef ADS_HAS_SDSL
   struct SdslV {
    sdsl::bit_vector v;
@@ -296,42 +312,38 @@ void bitvectors( std::size_t n , int r , unsigned seed )
     return( ( nb + double( s.rs->bitCount() ) ) / nb ); } , r );
 #endif
 #ifdef ADS_HAS_PASTA
-  struct Pasta {
-   pasta::BitVector v;
-   std::unique_ptr< pasta::FlatRankSelect<> > rs;
+  // the bits of a directory of pasta: those of its rank (the base class,
+  // which the select of the derived class leaves out) and of its select
+  using FlatBase = pasta::FlatRank< pasta::OptimizedFor::DONT_CARE ,
+                                    pasta::BitVector >;
+  using WideBase = pasta::WideRank< pasta::OptimizedFor::DONT_CARE >;
+  auto pasta = [ & ]< class RS , class Base >( const char * who , RS * ,
+                                               Base * ) {
+   struct P {
+    pasta::BitVector v;
+    std::unique_ptr< RS > rs;
+    };
+   bitvector( dname , b , who , []( const Bits & b ) {
+     auto s = std::make_unique< P >();
+     s->v = pasta::BitVector( b.n , false );
+     std::copy( b.words.begin() , b.words.end() , s->v.data().begin() );
+     s->rs = std::make_unique< RS >( s->v );
+     return( s ); } ,
+    []( const P & s , std::uint64_t i ) { return( s.rs->rank1( i ) ); } ,
+    []( const P & s , std::uint64_t k ) { return( s.rs->select1( k ) ); } ,
+    []( const P & s , std::uint64_t k ) { return( s.rs->select0( k ) ); } ,
+    [ nb ]( const P & s ) {
+     return( 8 * double( s.v.space_usage() + s.rs->space_usage() +
+                         s.rs->Base::space_usage() ) / nb ); } , r );
    };
-  bitvector( dname , b ,
-   "pasta::FlatRankSelect" , []( const Bits & b ) {
-    auto s = std::make_unique< Pasta >();
-    s->v = pasta::BitVector( b.n , false );
-    std::copy( b.words.begin() , b.words.end() , s->v.data().begin() );
-    s->rs = std::make_unique< pasta::FlatRankSelect<> >( s->v );
-    return( s ); } ,
-   []( const Pasta & s , std::uint64_t i ) { return( s.rs->rank1( i ) ); } ,
-   []( const Pasta & s , std::uint64_t k ) { return( s.rs->select1( k ) ); } ,
-   []( const Pasta & s , std::uint64_t k ) { return( s.rs->select0( k ) ); } ,
-   [ nb ]( const Pasta & s ) {
-    return( ( 8 * double( s.v.space_usage() + s.rs->space_usage() ) ) /
-            nb ); } , r );
-  struct PastaW {
-   pasta::BitVector v;
-   std::unique_ptr< pasta::WideRankSelect<> > rs;
-   };
-  bitvector( dname , b ,
-   "pasta::WideRankSelect" , []( const Bits & b ) {
-    auto s = std::make_unique< PastaW >();
-    s->v = pasta::BitVector( b.n , false );
-    std::copy( b.words.begin() , b.words.end() , s->v.data().begin() );
-    s->rs = std::make_unique< pasta::WideRankSelect<> >( s->v );
-    return( s ); } ,
-   []( const PastaW & s , std::uint64_t i ) { return( s.rs->rank1( i ) ); } ,
-   []( const PastaW & s , std::uint64_t k ) {
-    return( s.rs->select1( k ) ); } ,
-   []( const PastaW & s , std::uint64_t k ) {
-    return( s.rs->select0( k ) ); } ,
-   [ nb ]( const PastaW & s ) {
-    return( ( 8 * double( s.v.space_usage() + s.rs->space_usage() ) ) /
-            nb ); } , r );
+  pasta( "pasta::FlatRankSelect" , ( pasta::FlatRankSelect<> * )nullptr ,
+         ( FlatBase * )nullptr );
+  pasta( "pasta::FlatRankSelect intrinsics" ,
+         ( pasta::FlatRankSelect< pasta::OptimizedFor::DONT_CARE ,
+                                  pasta::FindL2FlatWith::INTRINSICS > * )
+          nullptr , ( FlatBase * )nullptr );
+  pasta( "pasta::WideRankSelect" , ( pasta::WideRankSelect<> * )nullptr ,
+         ( WideBase * )nullptr );
 #endif
 #ifdef ADS_HAS_SUCCINCT
   bitvector( dname , b ,

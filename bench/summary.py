@@ -17,7 +17,9 @@ import statistics
 import sys
 
 # ( benchmark , structure of ADS , library , its structures ): the time of
-# the library in a cell is that of its fastest structure there
+# the library in a cell is that of its fastest structure there; the compact
+# directories (about 3% of the bits) are compared with those of the same
+# space
 PAIRS = [
     ('sort', 'ADS::sort', 'std', ['std::sort']),
     ('sort', 'ADS::sort', 'Boost', ['boost::pdqsort', 'boost::spreadsort']),
@@ -181,9 +183,14 @@ PAIRS = [
     ('bitvector', 'ADS::RankSelect', 'sux',
      ['sux::Rank9Sel+SimpleSelect', 'sux::Rank9Sel']),
     ('bitvector', 'ADS::RankSelect', 'pasta',
-     ['pasta::FlatRankSelect', 'pasta::WideRankSelect']),
+     ['pasta::FlatRankSelect', 'pasta::FlatRankSelect intrinsics',
+      'pasta::WideRankSelect']),
     ('bitvector', 'ADS::RankSelect', 'succinct',
      ['succinct::rs_bit_vector']),
+    ('bitvector', 'ADS::CompactRankSelect', 'sdsl',
+     ['sdsl::rank_support_v5']),
+    ('bitvector', 'ADS::CompactRankSelect', 'pasta',
+     ['pasta::FlatRankSelect', 'pasta::FlatRankSelect intrinsics']),
     ('eliasfano', 'ADS::EliasFano', 'sdsl', ['sdsl::sd_vector']),
     ('eliasfano', 'ADS::EliasFano', 'sux', ['sux::EliasFano']),
     ('eliasfano', 'ADS::EliasFano', 'succinct', ['succinct::elias_fano']),
@@ -206,8 +213,12 @@ PAIRS = [
     ('space', 'ADS::RankSelect', 'sdsl', ['sdsl::rank_support_v+mcl']),
     ('space', 'ADS::RankSelect', 'sux', ['sux::Rank9Sel+SimpleSelect']),
     ('space', 'ADS::RankSelect', 'pasta',
-     ['pasta::FlatRankSelect', 'pasta::WideRankSelect']),
+     ['pasta::FlatRankSelect', 'pasta::FlatRankSelect intrinsics',
+      'pasta::WideRankSelect']),
     ('space', 'ADS::RankSelect', 'succinct', ['succinct::rs_bit_vector']),
+    ('space', 'ADS::CompactRankSelect', 'sdsl', ['sdsl::rank_support_v5']),
+    ('space', 'ADS::CompactRankSelect', 'pasta',
+     ['pasta::FlatRankSelect', 'pasta::FlatRankSelect intrinsics']),
     ('space', 'ADS::EliasFano', 'sdsl', ['sdsl::sd_vector']),
     ('space', 'ADS::EliasFano', 'sux', ['sux::EliasFano']),
     ('space', 'ADS::EliasFano', 'succinct', ['succinct::elias_fano']),

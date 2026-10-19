@@ -3,7 +3,8 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of the engineered succinct structures and codes, beyond the book:
- * the wavelet matrix, against a scan of the sequence, and the coders of
+ * the compact rank and select and the wavelet matrix, against a scan, and
+ * the coders of
  * Huffman and rANS, by their round trip and their size against the
  * entropy, and Stream VByte, by its round trip and its size, at the level 3
  * of the contracts.
@@ -24,6 +25,7 @@
 #include "ADS/compression/HuffmanCoder.h"
 #include "ADS/compression/Rans.h"
 #include "ADS/compression/StreamVByte.h"
+#include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 
 #include <algorithm>
@@ -44,6 +46,43 @@ using namespace ADS;
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+// the compact rank and select against a scan: every rank and every select
+// of both bits on vectors of many sizes, around the blocks of 512 and the
+// superblocks of 4096 bits, and densities; long runs of one bit; the empty
+// vector and the bounds
+ADS_TEST( "compact-rank-select" )
+{
+ std::mt19937_64 g( 2 );
+ auto check = [ & ]( const std::vector< bool > & R ) {
+  BitVector b;
+  for( const bool x : R ) b.push_back( x );
+  const CompactRankSelect S( b );
+  std::size_t ones = 0 , zeros = 0;
+  for( std::size_t i = 0 ; i <= R.size() ; ++i ) {
+   CHECK( S.rank1( i ) == ones && S.rank0( i ) == zeros );
+   if( i == R.size() ) break;
+   if( R[ i ] ) CHECK( S.select1( ++ones ) == i );
+   else CHECK( S.select0( ++zeros ) == i );
+   }
+  CHECK( S.ones() == ones && S.zeros() == zeros && S.size() == R.size() );
+  CHECK( S.directoryBits() <= R.size() / 25 + 1024 );
+  CHECK_THROWS( ( void )S.select1( ones + 1 ) , contract_violation );
+  CHECK_THROWS( ( void )S.select0( zeros + 1 ) , contract_violation );
+  CHECK_THROWS( ( void )S.rank1( R.size() + 1 ) , contract_violation );
+  };
+ for( const std::size_t n : { 0 , 1 , 511 , 512 , 513 , 4095 , 4096 , 4097 ,
+                              70000 } )
+  for( const double p : { 0.0 , 0.001 , 0.1 , 0.5 , 0.99 , 1.0 } ) {
+   std::vector< bool > R( n );
+   std::bernoulli_distribution B( p );
+   for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = B( g );
+   check( R );
+   }
+ std::vector< bool > runs;
+ for( int k = 0 ; k < 8 ; ++k ) runs.insert( runs.end() , 30000 , k % 2 );
+ check( runs );
+ }
 
 // the wavelet matrix against a scan: access, rank and select of every item
 // and of symbols absent or beyond the width, quantile and countLess on
