@@ -29,11 +29,12 @@
  * - P of kSkip bytes or more is searched first by the shifts of its
  *   q-grams (of Wu and Manber, and of the Hash3 of Lecroq): q is the least
  *   length with \f$ d^q \ge 16 m \f$ for the d distinct bytes of P, at
- *   most 8, the q-grams are hashed into 4096 shifts, the distance from the
- *   last place of each q-gram in P to the end of P, and the q-gram at the
- *   end of the window of T moves it by its shift, up to m - q + 1 places,
- *   reading one load of 8 bytes per window; when 64 windows have moved by
- *   less than m / 4 each on average (a text of few distinct q-grams), the
+ *   most 8, the q-grams are hashed into 4096 shifts of a byte, the
+ *   distance from the last place of each q-gram in P to the end of P (at
+ *   most 255), and the q-gram at the end of the window of T moves it by its
+ *   shift, one load of 8 bytes per window, the text 1024 bytes ahead
+ *   prefetched; when 64 windows have moved by less than m / 4 each on
+ *   average (a text of few distinct q-grams), the
  *   filter of the probes takes over;
  * - every search keeps the comparisons that fail: when their cost, m per
  *   failure, exceeds 16 times the length of the text scanned, the search
@@ -220,7 +221,7 @@ class StringSearcher {
  int f_probes = 0;                            ///< 0 , 2 or 4
  std::size_t f_q = 0;      ///< the length of the q-grams, 0 if no skip
  std::uint64_t f_qmask = 0;              ///< the q bytes of a load of 8
- std::vector< std::uint16_t > f_shift;   ///< the shift of each hash
+ std::vector< std::uint8_t > f_shift;    ///< the shift of each hash
  std::size_t f_shift0 = 1;               ///< after a window that ends in
                                          ///< the last q-gram of P
 

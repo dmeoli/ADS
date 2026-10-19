@@ -192,9 +192,10 @@ ADS_TEST( "string-search" )
 // the engineered SA-IS on 32 and 64 bits against suffixArraySais() of the
 // textbook (and the audit of the suffix array in both): the empty text, one
 // and two bytes, one repeated byte, the bytes 0 and 255, random texts over
-// 1, 2, 4, 26 and 256 bytes, the Fibonacci word, a periodic text whose
-// reduced strings recurse several times, a text with all its LMS-substrings
-// distinct; integer texts over large alphabets; the LCP array of the
+// 1, 2, 4, 26 and 256 bytes, of 60000 bytes over 64, 128 and 256 bytes
+// (whose few repeated names are sorted by doubling), the Fibonacci word, a
+// periodic text whose reduced strings recurse several times, a text with
+// all its LMS-substrings distinct; integer texts over large alphabets; the LCP array of the
 // permuted LCP against lcpArray() of Kasai et al., on the same texts
 ADS_TEST( "suffix-sorting" )
 {
@@ -226,6 +227,8 @@ ADS_TEST( "suffix-sorting" )
   for( int r = 0 ; r < 100 ; ++r )
    check( randomString( g , g() % 2000 , sigma , sigma == 256 ? 0 : 'a' ) );
  check( fibonacciWord( 10000 ) );
+ for( unsigned sigma : { 64u , 128u , 256u } )   // few names repeat: the
+  check( randomString( g , 60000 , sigma , 0 ) );  // doubling of the groups
  std::string P;
  for( int i = 0 ; i < 3000 ; ++i ) P += "abaabab";
  check( P );

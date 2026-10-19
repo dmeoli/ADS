@@ -185,16 +185,109 @@ bool saisEqual( const C * T , S a , S b , S l )
   return( std::equal( T + a , T + a + l , T + b ) );
  }
 
-/// SA-IS on T[ 0 .. n - 1 ], symbols in [ 0 , K ), into SA[ 0 .. n - 1 ]
+/// the suffix array of R, m names in [ 0 , K ) of which few repeat, into
+/// SA[ 0 .. m - 1 ], by the doubling of Larsson and Sadakane on the groups
+/// of equal names alone: the suffixes are first sorted by their name (a
+/// counting sort by the counts of the names), so that a name that occurs
+/// once is already in place, and a group of equal ranks is sorted by the
+/// rank of the suffix h places ahead, h = 1, 2, 4, ..., its rank the last
+/// place of its group; false, with SA undefined, if more than limit
+/// suffixes are still tied after a round, or after 16 rounds, which
+/// leaves the work to the recursion
+template< class S >
+bool saisDoubling( const S * R , S * SA , S m ,
+                   const std::vector< S > & count , S limit )
+{
+ const std::size_t K = count.size();
+ S tied = 0;                          // in the groups of a repeated name
+ for( std::size_t c = 0 ; c < K ; ++c )
+  if( count[ c ] > 1 ) tied += count[ c ];
+ if( tied > limit ) return( false );
+ std::vector< S > V( std::size_t( m ) , 0 ) , start( K , 0 );
+ for( std::size_t c = 0 , sum = 0 ; c < K ; ++c ) {
+  start[ c ] = S( sum );
+  sum += std::size_t( count[ c ] );
+  }
+ // the counting sort, the group of each name prefetched, then its place
+ constexpr S D = S( saisAhead );
+ for( S k = 0 ; k < m ; ++k ) {
+  if( k + 2 * D < m ) saisPrefetch( start.data() + R[ k + 2 * D ] );
+  if( k + D < m ) saisPrefetchW( SA + start[ std::size_t( R[ k + D ] ) ] );
+  SA[ start[ std::size_t( R[ k ] ) ]++ ] = k;
+  }
+ // the rank of a suffix, the last place of its group: start[ c ] is now
+ // one past it
+ for( S k = 0 ; k < m ; ++k ) {
+  if( k + D < m ) saisPrefetch( start.data() + R[ k + D ] );
+  V[ std::size_t( k ) ] = start[ std::size_t( R[ k ] ) ] - 1;
+  }
+ // the groups of more than one suffix, as ( first place , size )
+ std::vector< std::pair< S , S > > G , H;
+ for( std::size_t c = 0 ; c < K ; ++c )
+  if( count[ c ] > 1 ) G.emplace_back( start[ c ] - count[ c ] , count[ c ] );
+ std::vector< std::pair< S , S > > key;    // ( rank ahead , suffix )
+ for( S h = 1 ; ! G.empty() ; h *= 2 ) {
+  tied = 0;
+  for( const auto & [ f , g ] : G ) tied += g;
+  if( ( tied > limit ) || ( h > ( S( 1 ) << 16 ) ) ) return( false );
+  // the keys of all the groups first, then the new ranks
+  key.clear();
+  for( const auto & [ f , g ] : G )
+   for( S i = f ; i < f + g ; ++i ) {
+    const S k = SA[ i ];
+    if( k + h < m ) saisPrefetch( V.data() + ( k + h ) );
+    key.emplace_back( k + h < m ? V[ std::size_t( k + h ) ] : S( -1 ) , k );
+    }
+  H.clear();
+  std::size_t at = 0;
+  for( const auto & [ f , g ] : G ) {
+   auto * a = key.data() + at;
+   std::sort( a , a + g );
+   for( S i = 0 ; i < g ; ) {
+    S j = i + 1;
+    while( ( j < g ) && ( a[ j ].first == a[ i ].first ) ) ++j;
+    if( j - i > 1 ) H.emplace_back( f + i , j - i );
+    i = j;
+    }
+   at += std::size_t( g );
+   }
+  at = 0;
+  for( const auto & [ f , g ] : G ) {
+   const auto * a = key.data() + at;
+   for( S i = 0 ; i < g ; ) {
+    S j = i + 1;
+    while( ( j < g ) && ( a[ j ].first == a[ i ].first ) ) ++j;
+    for( S q = i ; q < j ; ++q ) {
+     SA[ f + q ] = a[ q ].second;
+     V[ std::size_t( a[ q ].second ) ] = f + j - 1;
+     }
+    i = j;
+    }
+   at += std::size_t( g );
+   }
+  G.swap( H );
+  }
+ return( true );
+ }
+
+/// SA-IS on T[ 0 .. n - 1 ], symbols in [ 0 , K ), into SA[ 0 .. n - 1 ];
+/// the number of each symbol from *counts if given (the names of the
+/// level above, counted in their sorted order), else counted here
 template< class C , class S >
-void sais( const C * T , S * SA , S n , S K )
+void sais( const C * T , S * SA , S n , S K ,
+           std::vector< S > * counts = nullptr )
 {
  if( n <= 1 ) {
   if( n == 1 ) SA[ 0 ] = 0;
   return;
   }
- std::vector< S > size( std::size_t( K ) , 0 ) , B( std::size_t( K ) , 0 );
- for( S i = 0 ; i < n ; ++i ) ++size[ std::size_t( T[ i ] ) ];
+ std::vector< S > size , B( std::size_t( K ) , 0 );
+ if( counts ) size = std::move( *counts );
+ else {
+  size.assign( std::size_t( K ) , 0 );
+  for( S i = 0 ; i < n ; ++i ) ++size[ std::size_t( T[ i ] ) ];
+  }
+ constexpr S D = S( saisAhead );
 
  // the LMS places at the ends of their buckets, and in a bit vector; on
  // the small alphabets with no branch on the types, a place that is not
@@ -214,8 +307,10 @@ void sais( const C * T , S * SA , S n , S K )
    bucket -= l;
    *( l ? SA + bucket : &x ) = i + 1;
    }
-  else if( l )
-   SA[ --B[ std::size_t( b ) ] ] = i + 1;
+  else {
+   if( i >= D ) saisPrefetch( B.data() + T[ i - D ] );
+   if( l ) SA[ --B[ std::size_t( b ) ] ] = i + 1;
+   }
   lms[ std::size_t( i + 1 ) >> 6 ] |= std::uint64_t( l ) << ( ( i + 1 ) &
                                                              63 );
   m += l;
@@ -231,6 +326,12 @@ void sais( const C * T , S * SA , S n , S K )
     }
   };
 
+ // no LMS place: a text that never rises, all its suffixes of type L
+ if( m == 0 ) {
+  saisInduce< false >( T , SA , n , size.data() , B.data() , K );
+  return;
+  }
+
  // the LMS-substrings sorted by one induction, then compacted
  saisInduce< true >( T , SA , n , size.data() , B.data() , K );
  for( S i = 0 , k = 0 ; i < n ; ++i )
@@ -243,7 +344,7 @@ void sais( const C * T , S * SA , S n , S K )
   SA[ m + i / 2 ] = p - i + 1;       // the last one includes the end
   p = i; } );
  S names = 0;
- constexpr S D = S( saisAhead );
+ std::vector< S > runs;              // the LMS-substrings of each name
  for( S i = 0 , prev = -1 , plen = 0 ; i < m ; ++i ) {
   if( i + D < m ) {
    const S q = SA[ i + D ];
@@ -252,15 +353,19 @@ void sais( const C * T , S * SA , S n , S K )
    }
   const S p = SA[ i ] , len = SA[ m + p / 2 ];
   if( ( prev < 0 ) || ( len != plen ) || ( p + len > n ) ||
-      ( prev + plen > n ) || ! saisEqual( T , p , prev , len ) )
+      ( prev + plen > n ) || ! saisEqual( T , p , prev , len ) ) {
    ++names;
+   runs.push_back( 0 );
+   }
+  ++runs.back();
   prev = p;
   plen = len;
   SA[ m + p / 2 ] = names;
   }
 
- // the LMS-suffixes sorted: by recursion on the string of the names at
- // the back of SA, unless the names are all distinct
+ // the LMS-suffixes sorted by the string of the names at the back of SA,
+ // unless the names are all distinct: by the doubling on the groups of
+ // equal names, if few, or else by recursion
  if( names < m ) {
   for( S i = n - 1 , j = n - 1 ; i >= m ; --i ) {
    const S v = SA[ i ];
@@ -268,7 +373,9 @@ void sais( const C * T , S * SA , S n , S K )
    j -= S( v != 0 );
    }
   S * R = SA + ( n - m );
-  sais( static_cast< const S * >( R ) , SA , m , names );
+  if( ! saisDoubling( static_cast< const S * >( R ) , SA , m , runs ,
+                      m / 4 ) )
+   sais( static_cast< const S * >( R ) , SA , m , names , &runs );
   S j = m;                            // the LMS places, in order
   forLms( [ & ]( S i ) { R[ --j ] = i; } );
   for( S i = 0 ; i < m ; ++i ) {
