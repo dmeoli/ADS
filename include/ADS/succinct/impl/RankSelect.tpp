@@ -20,8 +20,11 @@ inline RankSelect::RankSelect( void ) : RankSelect( BitVector() )
 {
  }
 
-inline RankSelect::RankSelect( BitVector b ) : f_b( std::move( b ) )
+inline RankSelect::RankSelect( BitVector b , Selects s )
+ : f_b( std::move( b ) )
 {
+ f_has[ 1 ] = ( s == Selects::ONES ) || ( s == Selects::BOTH );
+ f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
  const auto & W = f_b.words();
  const std::size_t nb = f_b.size() / kBlock + 1;   // and one more
  f_big = ( f_b.size() >> kTop ) > 0;
@@ -42,8 +45,8 @@ inline RankSelect::RankSelect( BitVector b ) : f_b( std::move( b ) )
   f_dir[ t ] = e;
   }
  f_ones = std::size_t( c );
- inventory( true );
- inventory( false );
+ if( f_has[ 1 ] ) inventory( true );
+ if( f_has[ 0 ] ) inventory( false );
  ADS_AUDIT( consistent() );
  }
 
@@ -207,7 +210,7 @@ inline std::size_t RankSelect::selectSparse( std::size_t k , bool b ,
 
 inline std::size_t RankSelect::select1( std::size_t k ) const
 {
- ADS_PRE( ( k >= 1 ) && ( k <= f_ones ) );
+ ADS_PRE( ( k >= 1 ) && ( k <= f_ones ) && f_has[ 1 ] );
  const std::size_t p = select( k , true );
  ADS_POST( f_b[ p ] && ( rank1( p ) == k - 1 ) );
  return( p );
@@ -215,7 +218,7 @@ inline std::size_t RankSelect::select1( std::size_t k ) const
 
 inline std::size_t RankSelect::select0( std::size_t k ) const
 {
- ADS_PRE( ( k >= 1 ) && ( k <= zeros() ) );
+ ADS_PRE( ( k >= 1 ) && ( k <= zeros() ) && f_has[ 0 ] );
  const std::size_t p = select( k , false );
  ADS_POST( ! f_b[ p ] && ( rank0( p ) == k - 1 ) );
  return( p );

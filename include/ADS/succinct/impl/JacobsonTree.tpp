@@ -16,7 +16,8 @@
 
 namespace ADS {
 
-inline JacobsonTree::JacobsonTree( void ) : f_b( BitVector( 1 , false ) )
+inline JacobsonTree::JacobsonTree( void )
+ : f_b( BitVector( 1 , false ) , RankSelect::Selects::ONES )
 {
  }
 
@@ -44,10 +45,11 @@ inline JacobsonTree::JacobsonTree(
     }
    }
  ADS_PRE( Q.size() == n );                  // each node reached once
- f_b = RankSelect( std::move( B ) );
+ f_b = RankSelect( std::move( B ) , RankSelect::Selects::ONES );
  }
 
-inline JacobsonTree::JacobsonTree( BitVector b ) : f_b( std::move( b ) )
+inline JacobsonTree::JacobsonTree( BitVector b )
+ : f_b( std::move( b ) , RankSelect::Selects::ONES )
 {
  ADS_AUDIT( valid() );
  }

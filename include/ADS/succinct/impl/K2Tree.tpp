@@ -61,7 +61,7 @@ inline K2Tree::K2Tree( std::size_t n , const std::vector< Edge > & e ,
   E.swap( F );
   level.swap( next );
   }
- f_t = RankSelect( std::move( T ) );
+ f_t = RankSelect( std::move( T ) , RankSelect::Selects::NONE );
  ADS_POST( f_l.count() == f_m );
  }
 

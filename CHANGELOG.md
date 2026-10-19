@@ -634,7 +634,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the next insert(); a list of items with a trivial destructor dies a
   block at a time; List< T , false > takes its cells one by one from new
   and delete, as the chains of ChainedHashTable do, which are short
-
 - RankSelect with one word of 64 bits of directory per 256 bits (the
   rank of the block in 40 bits and those of its words 1, 2 and 3 in 8
   bits each), so that rank1() is one load of the directory, one of the
@@ -649,6 +648,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on), with a word past the last bit, so that get() reads a field with no
   test; selectInWord() by PDEP where BMI2 is found; the tests of the third
   level and of the sparse groups, test/succinct_top.cpp
+- RankSelect builds the inventories of select only for the values asked
+  for, RankSelect::Selects: JacobsonTree keeps those of the 1s, K2Tree
+  none
 
 ### Fixed
 
