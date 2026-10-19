@@ -286,7 +286,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pass found them, with no second search; sort() gives to pdqSort() the
   doubles with few distinct wide keys
 - radixSort() finds in one first sweep the bytes in which the keys
-  differ, and counts and passes over those alone
+  differ, and counts and passes over those alone; when they differ in one
+  byte, a counting sort writes the numbers back from one of each value,
+  with no buffer and no pass that moves them
 - msdRadixSort() skips the prefix that a group of strings shares, keeps
   the character of each string aside and moves the strings once per pass,
   back and forth between the vector and its buffer; a string that keeps

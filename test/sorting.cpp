@@ -895,7 +895,9 @@ ADS_TEST( "merge-paths" )
 // tie of -0 and +0 that splits a decreasing run; few wide keys (16
 // distinct doubles, 17, two values far apart) against few narrow ones;
 // the radix sort on keys that differ in one byte only, the top, a middle
-// or the sign, all equal, two values; the MSD sort of strings around the
+// or the sign, all equal, two values, and its counting sort of one byte on
+// all 256 values, signed, on -0 and +0, and not used on a key that does
+// not tell the item; the MSD sort of strings around the
 // insertion cutoff of 16, groups of equal strings, prefixes of each other,
 // the shortest first, empty strings and long shared prefixes, cut by the
 // last string at their last place or in their middle, and the bytes 0 and
@@ -1081,6 +1083,34 @@ ADS_TEST( "dispatch-edges" )
  std::vector< std::uint8_t > Small = { 3 , 3 , 3 };
  radixSort( Small );
  CHECK( Small == std::vector< std::uint8_t >( { 3 , 3 , 3 } ) );
+ {                                             // the counting sort of
+  std::vector< std::uint8_t > B( 3000 );        // one byte: all 256
+  std::vector< std::int8_t > S( 3000 );         // values, signed, -0
+  std::vector< double > Z( 3000 );              // and +0, and a key that
+  std::vector< std::pair< std::uint32_t , std::size_t > > P( 3000 );
+  for( std::size_t i = 0 ; i < B.size() ; ++i ) {   // does not tell the
+   B[ i ] = std::uint8_t( i < 256 ? i : g() );  // item, which stays
+   S[ i ] = std::int8_t( B[ i ] );              // stable
+   Z[ i ] = g() % 2 ? -0.0 : 0.0;
+   P[ i ] = { std::uint32_t( g() % 256 ) << 16 , i };
+   }
+  auto B2 = B;
+  auto S2 = S;
+  auto P2 = P;
+  radixSort( B );
+  radixSort( S );
+  radixSort( Z );
+  radixSortBy( P , []( const std::pair< std::uint32_t , std::size_t > & x ) {
+   return( x.first ); } );
+  std::sort( B2.begin() , B2.end() );
+  std::sort( S2.begin() , S2.end() );
+  std::stable_sort( P2.begin() , P2.end() , []( const auto & x ,
+                                                const auto & y ) {
+   return( x.first < y.first ); } );
+  CHECK( B == B2 && S == S2 && P == P2 );
+  CHECK( std::is_partitioned( Z.begin() , Z.end() , []( double x ) {
+   return( std::signbit( x ) ); } ) && Z.front() == 0.0 );
+  }
  const std::string pre( 1000 , 'p' );
  std::string cut = pre;                        // the prefix cut in the
  cut[ 500 ] = 'q';                              // middle, by the last

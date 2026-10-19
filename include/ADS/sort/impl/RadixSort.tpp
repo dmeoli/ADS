@@ -38,8 +38,10 @@ namespace detail {
 
 /// the LSD sort of A by the unsigned key( x ), through B: a first sweep
 /// finds the bytes in which some keys differ, and only those are counted
-/// and make a pass
-template< class T , class K >
+/// and make a pass; if Exact, i.e., the key tells the item, and the keys
+/// differ in one byte alone, a counting sort writes the items back from
+/// one of each value, with no buffer and no pass that moves them
+template< bool Exact , class T , class K >
 void lsd( std::vector< T > & A , K & key )
 {
  using U = std::decay_t< decltype( key( A[ 0 ] ) ) >;
@@ -60,6 +62,21 @@ void lsd( std::vector< T > & A , K & key )
    D[ m++ ] = d;
  if( m == 0 )
   return;                                   // all the keys are equal
+ if constexpr( Exact )
+  if( m == 1 ) {
+   const int s = int( 8 * D[ 0 ] );
+   std::array< std::size_t , 256 > h{};
+   std::array< T , 256 > R{};               // an item of each byte
+   for( const auto & x : A ) {
+    const std::size_t c = std::size_t( ( key( x ) >> s ) & 0xFF );
+    ++h[ c ];
+    R[ c ] = x;
+    }
+   T * p = A.data();
+   for( std::size_t c = 0 ; c < 256 ; ++c )
+    p = std::fill_n( p , h[ c ] , R[ c ] );
+   return;
+   }
  std::array< std::array< std::size_t , 256 > , W > H{};
  if( m == W )                               // all the histograms at once
   for( const auto & x : A ) {
@@ -208,7 +225,7 @@ void radixSort( std::vector< T > & A )
 {
  const auto before = detail::auditCopy( A );
  auto key = []( T x ) { return( radixKey( x ) ); };
- detail::lsd( A , key );
+ detail::lsd< true >( A , key );
  ADS_AUDIT( detail::sortedPermutation( A , before , []( T a , T b ) {
   return( radixKey( a ) < radixKey( b ) ); } ) );
  }
@@ -218,7 +235,7 @@ void radixSortBy( std::vector< T > & A , K key )
 {
  using U = std::decay_t< decltype( key( A[ 0 ] ) ) >;
  static_assert( std::is_unsigned_v< U > , "the key must be unsigned" );
- detail::lsd( A , key );
+ detail::lsd< false >( A , key );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   for( std::size_t i = 1 ; i < A.size() ; ++i )
    if( key( A[ i ] ) < key( A[ i - 1 ] ) ) return( false );

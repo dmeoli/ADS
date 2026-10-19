@@ -16,7 +16,9 @@
  *   order of IEEE 754, -0 before +0, the NaN at the ends). A first sweep
  *   finds the bytes in which some keys differ, and only those are counted
  *   (all the histograms in a second sweep) and make a pass, so that small
- *   keys in wide types cost only the bytes they use;
+ *   keys in wide types cost only the bytes they use; when they differ in
+ *   one byte alone, the key tells the number, and a counting sort writes
+ *   the numbers back from one of each value, with no buffer;
  * - radixSortBy() is the same on any items, by an unsigned key that a
  *   function gives, stable, e.g., the records by one field;
  * - americanFlagSort() is the radix sort from the most significant byte
