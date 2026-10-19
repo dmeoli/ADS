@@ -51,7 +51,9 @@ about:
   repository: https://github.com/dmeoli/ADS
   documentation: https://dmeoli.github.io/ADS/
   license: LGPL-3.0-only
-  license_file: LICENSE
+  license_file:
+    - LICENSE
+    - COPYING
   summary: Header-only C++20 algorithms and data structures
   description: |
     ADS is a header-only C++20 library of the algorithms and the data

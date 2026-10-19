@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- COPYING, the text of the GNU GPL v3 that the LGPL v3 of LICENSE
+  supplements, as the LGPL asks, installed by the recipes next to LICENSE
+
 - the recipes of the packages, in packaging/ with the steps of each channel
   in packaging/README.md: the vcpkg port, the conda-forge recipe
   (cpp-ads), the Homebrew formula, the Debian package libads-dev with
