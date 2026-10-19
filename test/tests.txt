@@ -1606,3 +1606,6 @@ succinct_top  succinct-top      Elias-Fano e parentesi col livello alto
 
 # the engineered succinct structures and codes, beyond the book
 engineered_succinct  wavelet-matrix   wavelet matrix, rank, select, quantili
+engineered_succinct  huffman-coder    Huffman a tabella, quattro flussi
+engineered_succinct  rans-coder       rANS di ordine 0, quattro stati
+engineered_succinct  stream-vbyte     Stream VByte, controllo a parte
