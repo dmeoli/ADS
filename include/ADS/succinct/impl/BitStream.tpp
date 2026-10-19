@@ -18,10 +18,25 @@ namespace ADS {
 
 namespace detail {
 
-/// the len bits of v in the reverse order
+/// the len bits of v in the reverse order: the bits of each byte turned
+/// around in 3 rounds of masks, then the bytes by a swap of the processor
+/// (the 5 rounds and the swap of the halves of reverseBits() [see
+/// Bitwise.h] in a constant expression)
 constexpr Word reverseField( Word v , int len )
 {
- return( len == 0 ? 0 : reverseBits( v ) >> ( 64 - len ) );
+ if( len == 0 ) return( 0 );
+#if defined( __GNUC__ ) || defined( __clang__ )
+ if( ! std::is_constant_evaluated() ) {
+  v = ( ( v >> 1 ) & 0x5555555555555555ULL ) |
+      ( ( v & 0x5555555555555555ULL ) << 1 );
+  v = ( ( v >> 2 ) & 0x3333333333333333ULL ) |
+      ( ( v & 0x3333333333333333ULL ) << 2 );
+  v = ( ( v >> 4 ) & 0x0F0F0F0F0F0F0F0FULL ) |
+      ( ( v & 0x0F0F0F0F0F0F0F0FULL ) << 4 );
+  return( __builtin_bswap64( v ) >> ( 64 - len ) );
+  }
+#endif
+ return( reverseBits( v ) >> ( 64 - len ) );
  }
 
 }  // end( namespace detail )
@@ -117,7 +132,7 @@ inline std::uint64_t BitReader::readUnary( void )
   const int len = left < 64 ? int( left ) : 64;
   const Word w = f_b->get( f_p , len );
   if( w ) {                                 // the 1 is in this word
-   const int z = ruler( w );
+   const int z = std::countr_zero( w );
    f_p += std::size_t( z ) + 1;
    return( q + std::uint64_t( z ) );
    }

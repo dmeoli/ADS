@@ -57,7 +57,7 @@ inline void interpolative( BitReader & rd , std::vector< std::uint64_t > & x ,
 constexpr int binaryLength( std::uint64_t x )
 {
  ADS_PRE( x >= 1 );
- return( lambda( x ) + 1 );
+ return( int( std::bit_width( x ) ) );     // lambda( x ) + 1
  }
 
 constexpr std::uint64_t signedToNatural( std::int64_t x )
@@ -116,8 +116,14 @@ inline void encodeGamma( BitWriter & w , std::uint64_t x )
  ADS_PRE( x >= 1 );
  [[maybe_unused]] const std::size_t n = w.size();
  const int L = binaryLength( x ) - 1;       // the bits after the leading 1
- w.writeUnary( std::uint64_t( L ) );        // the 1 is that of B( x )
- w.writeBinary( x & detail::lowMask( L ) , L );
+ if( L <= 31 )                              // U( L + 1 ) B( x ) in one field
+  w.write( ( Word( 1 ) << L ) |
+           ( detail::reverseField( x & detail::lowMask( L ) , L ) <<
+             ( L + 1 ) ) , 2 * L + 1 );
+ else {
+  w.writeUnary( std::uint64_t( L ) );       // the 1 is that of B( x )
+  w.writeBinary( x & detail::lowMask( L ) , L );
+  }
  ADS_POST( w.size() - n == std::size_t( gammaLength( x ) ) );
  }
 

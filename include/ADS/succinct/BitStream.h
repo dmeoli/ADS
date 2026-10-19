@@ -57,8 +57,10 @@
 #include "ADS/combinatorial/Bitwise.h"
 #include "ADS/succinct/BitVector.h"
 
+#include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 
 /*--------------------------------------------------------------------------*/
