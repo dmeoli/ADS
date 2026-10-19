@@ -3,8 +3,9 @@
 #                                                                             #
 # Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
-# UBSan, and the queues between threads under ThreadSanitizer; it measures    #
-# the coverage of the tests and sends it to Coveralls.                        #
+# UBSan, the queues between threads under ThreadSanitizer, and FlatHashTable  #
+# on its broadword fallback; it measures the coverage of the tests and sends  #
+# it to Coveralls.                                                            #
 ###############################################################################
 
 name: CI
@@ -56,6 +57,17 @@ jobs:
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan spsc-queue
           ./tsan mpsc-inbox
+
+  broadword:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: FlatHashTable on SWAR instead of SSE2, under ASan and UBSan
+        run: |
+          g++ -std=c++20 -O1 -g -fsanitize=address,undefined \
+              -Iinclude -Itest -DADS_CONTRACTS=3 -DADS_FLAT_SIMD=0 \
+              -o swar test/engineered.cpp -pthread
+          ./swar flat-hash-table
 
   coverage:
     runs-on: ubuntu-latest

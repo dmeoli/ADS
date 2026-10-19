@@ -220,12 +220,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the extreme values of the types, chains of 10^5 nodes, full and empty
   structures) and a violation of each precondition by CHECK_THROWS
 - FlatHashTable, the engineered hash table of ADS: open addressing with
-  one control byte per place (empty, or 7 bits of the hash), the places in
-  groups of 8 whose bytes are matched at once by SWAR on a word of 64 bits,
-  a byte of overflow per group that ends the searches for absent keys and
-  replaces the deleted marks, Fibonacci hashing on a power of 2 places, at
-  most 7 / 8 of them full; the table that bench/dictionaries.cpp compares
-  with boost::unordered_flat_map
+  one control byte per place (empty, or 8 bits of the hash), the places in
+  groups of 15 whose 16 bytes, a byte of overflow among them, are matched
+  at once by SSE2 on x86-64, by NEON on ARM64 and by SWAR elsewhere (or
+  wherever ADS_FLAT_SIMD=0), the byte of overflow ending the searches for
+  absent keys and replacing the deleted marks, the hash mixed by a product
+  of 128 bits, a power of 2 groups, at most 7 / 8 of the places full, the
+  first line of the pairs of a matching group prefetched; the table that
+  bench/dictionaries.cpp compares with boost::unordered_flat_map
 
 ### Changed
 

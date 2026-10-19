@@ -286,7 +286,7 @@ section 7.2 of the book.
 |---|---|---|
 | two-level bucket queue for integer keys (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue` |
 | d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
-| hash table with control bytes in groups of 8 read by SWAR, Fibonacci hashing, at most 7/8 full (Swiss tables; Boost's `unordered_flat_map`) | [`dictionary/FlatHashTable.h`](include/ADS/dictionary/FlatHashTable.h) | `engineered.flat-hash-table` |
+| hash table with control bytes in groups of 15 matched by SSE2, NEON or SWAR, the hash mixed on 128 bits, at most 7/8 full (Swiss tables; Boost's `unordered_flat_map`) | [`dictionary/FlatHashTable.h`](include/ADS/dictionary/FlatHashTable.h) | `engineered.flat-hash-table` |
 | hash table of pointers, linear probing, Fibonacci hashing | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table` |
 | arena of objects in blocks, stable addresses | [`memory/Arena.h`](include/ADS/memory/Arena.h) | `engineered.arena` |
 | SplitMix64, Zobrist and simple tabulation hashing | [`dictionary/RandomHashing.h`](include/ADS/dictionary/RandomHashing.h) | `engineered.random-hashing` |

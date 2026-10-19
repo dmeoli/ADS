@@ -370,17 +370,24 @@ ADS_TEST( "open-hash-readers" )
  }
 
 
-// the hash of FlatHashTable that undoes its product by floor( 2^64 / phi ),
-// so that the key is the mixed hash and a test chooses the first group
-// (the top bits) and the fingerprint (the low 7 bits XOR the bits 32 to
-// 38) of each key; on 32 bits the identity
-struct Unmix {
+// the hash of FlatHashTable that declares itself avalanching, so that the
+// table takes the key as its mixed hash and a test chooses the first group
+// (the top bits), the fingerprint (the low 8 bits) and the bit of overflow
+// (the bits 8 to 10) of each key; on 32 bits the table mixes it anyway
+struct Raw {
+ using is_avalanching = void;
  std::size_t operator()( std::uint64_t x ) const {
-  std::uint64_t c = 0x9e3779b97f4a7c15ULL , r = c;   // r = 1 / c mod 2^64
-  for( int i = 0 ; i < 6 ; ++i ) r *= 2 - c * r;
-  return( std::size_t( x * r ) );
+  return( std::size_t( x ) );
   }
  };
+
+/// the key of Raw in the group g of a table of 2^lg groups, its low bits
+/// low and j in the bits 11 and up
+std::uint64_t raw( std::uint64_t g , int lg , std::uint64_t j ,
+                   std::uint64_t low )
+{
+ return( ( g << ( 64 - lg ) ) | ( j << 11 ) | low );
+ }
 
 /// a hash that puts every key in one group with one fingerprint
 struct Same {
@@ -400,6 +407,25 @@ struct Alive {
  ~Alive() { --count; }
  };
 long Alive::count = 0;
+
+/// a value whose copies throw once a budget runs out, and whose moves may
+/// throw, so that a rebuild copies the pairs
+struct Fussy {
+ static long count , budget;
+ std::string s;
+ explicit Fussy( std::string t ) : s( std::move( t ) ) { ++count; }
+ Fussy( const Fussy & o ) : s( o.s ) {
+  if( budget-- == 0 ) throw std::runtime_error( "copy" );
+  ++count;
+  }
+ Fussy( Fussy && o ) noexcept( false ) : s( o.s ) {
+  if( budget-- == 0 ) throw std::runtime_error( "move" );
+  ++count;
+  }
+ Fussy & operator=( const Fussy & ) = default;
+ ~Fussy() { --count; }
+ };
+long Fussy::count = 0 , Fussy::budget = -1;
 
 /// t against r on random insertions, removals and lookups of keys in
 /// [ 0 , range ), where the range keeps many deleted places
@@ -440,17 +466,36 @@ void against( T & t , R & r , std::uint64_t range , int ops , G && key ,
 
 static_assert( Dictionary< FlatHashTable< int , int > > );
 
+// the product of 128 bits by 32 bits as by the machine, at the extremes
+static_assert( detail::mulxPortable( 0 , 0x9e3779b97f4a7c15ULL ) == 0 );
+static_assert( detail::mulxPortable( 1ULL << 63 , 2 ) == 1 );
+static_assert( detail::mulxPortable( ~0ULL , ~0ULL ) == ~0ULL );
+static_assert( detail::mulxPortable( 1ULL << 32 , 1ULL << 32 ) == 1 );
+
 // the table with control bytes against std::unordered_map, on integers
-// with the identity hash, on keys that are their own mixed hash, all with
-// one fingerprint in different groups, and on strings; the edges: the
-// empty table with no places, a table for 1 pair, the growth exactly past
-// 7 / 8 of the places, the removals down to empty and the reuse, many
-// deleted places and then lookups of absent keys (which end), every key
-// in one group with one fingerprint, a group that wraps around the end,
-// the iterators across removals and erase( it ) while iterating, the
-// copies and the moves, and no value leaked
+// with the identity hash, random and clustered (multiples of the places,
+// of the groups and of 2^32), on keys that are their own mixed hash, all
+// with one fingerprint, and on strings; the edges: the product of the
+// mixing on the machine and by 32 bits, the empty table with no places, a
+// table for 1 pair, the growth exactly past 7 / 8 of the places, the
+// removals down to empty and the reuse, many deleted places and then
+// lookups of absent keys (which end), every key in one group with one
+// fingerprint, the 15 places of a group with one fingerprint and the 16th
+// key past them, the fingerprint 0 taken as 1, the bit of overflow set,
+// the place emptied under it counted and reused, the bits cleared by a
+// rebuild of the same size, a group that wraps around the end, the
+// iterators across removals and erase( it ) while iterating, a value of
+// the table inserted with a new key that grows it, a copy that throws in
+// the rebuild and in the copy of the table, the copies and the moves, and
+// no value leaked; run also with ADS_FLAT_SIMD=0, the broadword fallback
 ADS_TEST( "flat-hash-table" )
 {
+ for( std::uint64_t a : { 0ULL , 1ULL , 0xFFFFFFFFULL , 1ULL << 32 ,
+                          1ULL << 63 , ~0ULL , 0x9e3779b97f4a7c15ULL ,
+                          0x123456789abcdef0ULL } )
+  for( std::uint64_t b : { 0ULL , 1ULL , 0xFFFFFFFFULL , 1ULL << 63 ,
+                           ~0ULL , 0x9e3779b97f4a7c15ULL } )
+   CHECK( detail::mulx( a , b ) == detail::mulxPortable( a , b ) );
  {                                             // random, with tombstones
   FlatHashTable< std::uint64_t , std::uint64_t > T;
   std::unordered_map< std::uint64_t , std::uint64_t > R;
@@ -459,24 +504,33 @@ ADS_TEST( "flat-hash-table" )
   against( T , R , 1 << 20 , 20000 , []( std::uint64_t x ) {
    return( x ); } , 2 );
   }
+ for( std::uint64_t c : { std::uint64_t( 30720 ) , std::uint64_t( 2048 ) ,
+                          std::uint64_t( 1 ) << 32 } ) {   // clustered
+  FlatHashTable< std::uint64_t , std::uint64_t > T;
+  std::unordered_map< std::uint64_t , std::uint64_t > R;
+  against( T , R , 40000 , 60000 , [ c ]( std::uint64_t x ) {
+   return( x * c ); } , 5 );
+  }
  FlatHashTable< std::uint64_t , int > E;       // empty, no places
  CHECK( E.isEmpty() && E.capacity() == 0 && E.load() == 0.0 );
  CHECK( ! E.lookup( 0 ) && E.find( 7 ) == nullptr && ! E.contains( 7 ) );
  CHECK( ! E.remove( 7 ) && E.begin() == E.end() && E.size() == 0 );
  E.clear();
  E.reserve( 0 );
- CHECK( E.capacity() == 0 );
+ CHECK( E.capacity() == 0 && E.deleted() == 0 );
  FlatHashTable< std::uint64_t , int > One( 1 );   // room for 1 pair
- CHECK( One.capacity() == 8 && One.insert( 5 , 50 ) && One.size() == 1 );
+ CHECK( One.capacity() == 30 && One.insert( 5 , 50 ) && One.size() == 1 );
  CHECK( ! One.insert( 5 , 51 ) && One.lookup( 5 ) == 51 );
  *One.find( 5 ) = 52;
- CHECK( One.lookup( 5 ) == 52 && One.capacity() == 8 );
- for( std::size_t m : { 8 , 16 , 64 } ) {      // 7 / 8 of m, then one more
+ CHECK( One.lookup( 5 ) == 52 && One.capacity() == 30 );
+ for( std::size_t m : { 30 , 60 , 240 } ) {    // 7 / 8 of m, then one more
   FlatHashTable< std::uint64_t , int > G;
   for( std::uint64_t k = 0 ; k < m - m / 8 ; ++k ) G.insert( k , 0 );
   CHECK( G.capacity() == m && G.size() == m - m / 8 );
   G.insert( m , 0 );
-  CHECK( G.capacity() == 2 * m );
+  CHECK( G.capacity() == 2 * m && G.size() == m - m / 8 + 1 );
+  for( std::uint64_t k = 0 ; k <= m ; ++k )
+   CHECK( G.contains( k ) == ( k < m - m / 8 || k == m ) );
   using Int = FlatHashTable< int , int >;
   CHECK( Int( m - m / 8 ).capacity() == m );
   CHECK( Int( m - m / 8 + 1 ).capacity() == 2 * m );
@@ -495,31 +549,67 @@ ADS_TEST( "flat-hash-table" )
  {                                             // deleted places churned
   FlatHashTable< std::uint64_t , int , Same > D;
   for( int round = 0 ; round < 50 ; ++round ) {
-   for( std::uint64_t k = 0 ; k < 13 ; ++k ) D.insert( 100 * round + k , 0 );
-   for( std::uint64_t k = 0 ; k < 13 ; ++k ) D.remove( 100 * round + k );
-   CHECK( ! D.contains( 100 * round ) && D.capacity() <= 32 );
+   for( std::uint64_t k = 0 ; k < 20 ; ++k ) D.insert( 100 * round + k , 0 );
+   for( std::uint64_t k = 0 ; k < 20 ; ++k ) D.remove( 100 * round + k );
+   CHECK( ! D.contains( 100 * round ) && D.capacity() <= 60 );
    }
   CHECK( D.isEmpty() );
   }
+ {                                             // one fingerprint, 2 groups
+  FlatHashTable< std::uint64_t , int , Raw > P( 1 );
+  CHECK( P.capacity() == 30 );
+  for( std::uint64_t j = 0 ; j < 15 ; ++j )   // group 0 full, all tag 5
+   CHECK( P.insert( raw( 0 , 1 , j , 5 ) , int( j ) ) );
+  CHECK( P.deleted() == 0 );
+  for( std::uint64_t j = 0 ; j < 15 ; ++j )
+   CHECK( P.lookup( raw( 0 , 1 , j , 5 ) ) == int( j ) );
+  CHECK( ! P.contains( raw( 0 , 1 , 15 , 5 ) ) );
+  CHECK( P.insert( raw( 0 , 1 , 15 , 5 ) , 15 ) );   // past group 0
+  CHECK( P.lookup( raw( 0 , 1 , 15 , 5 ) ) == 15 );
+  CHECK( ! P.contains( raw( 0 , 1 , 16 , 5 ) ) );   // the same bit
+  CHECK( ! P.contains( raw( 0 , 1 , 16 , 5 | 0x700 ) ) );   // another
+  CHECK( P.remove( raw( 0 , 1 , 3 , 5 ) ) && P.deleted() == 1 );   // under
+  CHECK( P.lookup( raw( 0 , 1 , 15 , 5 ) ) == 15 );   // still past it
+  CHECK( P.insert( raw( 0 , 1 , 20 , 0 ) , 20 ) );   // the hole, tag 1
+  CHECK( P.deleted() == 0 && P.lookup( raw( 0 , 1 , 20 , 0 ) ) == 20 );
+  CHECK( P.insert( raw( 0 , 1 , 21 , 1 ) , 21 ) );   // also tag 1
+  CHECK( P.lookup( raw( 0 , 1 , 21 , 1 ) ) == 21 );
+  CHECK( ! P.contains( raw( 0 , 1 , 22 , 0 ) ) );
+  CHECK( ! P.contains( raw( 0 , 1 , 20 , 1 ) ) );
+  CHECK( P.remove( raw( 0 , 1 , 21 , 1 ) ) && P.deleted() == 0 );
+  std::vector< std::uint64_t > in;            // all of them out
+  for( const auto & [ k , v ] : P ) in.push_back( k );
+  CHECK( in.size() == 16 );
+  for( std::uint64_t k : in ) CHECK( P.remove( k ) );
+  CHECK( P.isEmpty() && P.deleted() == 15 && P.capacity() == 30 );
+  for( std::uint64_t j = 0 ; j < 12 ; ++j )   // group 1, 12 + 15 = 27
+   P.insert( raw( 1 , 1 , j , 9 ) , 0 );
+  CHECK( P.deleted() == 15 && P.capacity() == 30 );
+  P.insert( raw( 1 , 1 , 12 , 9 ) , 0 );      // rebuilt, the same size
+  CHECK( P.deleted() == 0 && P.capacity() == 30 && P.size() == 13 );
+  CHECK( P.remove( raw( 1 , 1 , 0 , 9 ) ) && P.deleted() == 0 );   // none
+  for( std::uint64_t j = 1 ; j < 13 ; ++j )
+   CHECK( P.contains( raw( 1 , 1 , j , 9 ) ) );
+  }
  if constexpr( sizeof( std::size_t ) == 8 ) {
-  FlatHashTable< std::uint64_t , std::uint64_t , Unmix > F;   // one tag
+  FlatHashTable< std::uint64_t , std::uint64_t , Raw > F;   // one tag
   std::unordered_map< std::uint64_t , std::uint64_t > R;
   against( F , R , 5000 , 30000 , []( std::uint64_t x ) {
    return( ( x << 40 ) | 5 ); } , 3 );
-  FlatHashTable< std::uint64_t , int , Unmix > W( 100 );   // 16 groups
-  CHECK( W.capacity() == 128 );
-  for( std::uint64_t j = 0 ; j < 30 ; ++j )   // all in the last group
-   W.insert( ( std::uint64_t( 15 ) << 60 ) | ( j << 8 ) , int( j ) );
-  CHECK( W.size() == 30 && W.capacity() == 128 );
-  for( std::uint64_t j = 0 ; j < 30 ; ++j )
-   CHECK( W.lookup( ( std::uint64_t( 15 ) << 60 ) | ( j << 8 ) ) ==
-          int( j ) );
-  CHECK( ( *W.begin() ).first >> 60 == 15 );   // place 0, wrapped
-  for( std::uint64_t j = 0 ; j < 30 ; j += 2 )
-   W.remove( ( std::uint64_t( 15 ) << 60 ) | ( j << 8 ) );
-  for( std::uint64_t j = 0 ; j < 30 ; ++j )
-   CHECK( W.contains( ( std::uint64_t( 15 ) << 60 ) | ( j << 8 ) ) ==
-          ( j % 2 == 1 ) );
+  FlatHashTable< std::uint64_t , int , Raw > W( 100 );   // 8 groups
+  CHECK( W.capacity() == 120 );
+  for( std::uint64_t j = 0 ; j < 45 ; ++j )   // from the last group: 7 , 0
+   W.insert( raw( 7 , 3 , j , j + 1 ) , int( j ) );   // and 2
+  CHECK( W.size() == 45 && W.capacity() == 120 && W.deleted() == 0 );
+  for( std::uint64_t j = 0 ; j < 45 ; ++j )
+   CHECK( W.lookup( raw( 7 , 3 , j , j + 1 ) ) == int( j ) );
+  CHECK( ( *W.begin() ).first >> 61 == 7 );   // place 0, wrapped
+  CHECK( ( *W.begin() ).first == raw( 7 , 3 , 15 , 16 ) );
+  for( std::uint64_t j = 0 ; j < 45 ; j += 2 )
+   W.remove( raw( 7 , 3 , j , j + 1 ) );
+  CHECK( W.deleted() == 8 + 7 );               // in the groups 7 and 0
+  for( std::uint64_t j = 0 ; j < 45 ; ++j )
+   CHECK( W.contains( raw( 7 , 3 , j , j + 1 ) ) == ( j % 2 == 1 ) );
   }
  {                                             // iterators and erase( it )
   FlatHashTable< std::uint64_t , int > I;
@@ -534,11 +624,43 @@ ADS_TEST( "flat-hash-table" )
    if( ( *e ).first % 2 ) e = I.erase( e ); else ++e;
   for( std::uint64_t k = 0 ; k < 100 ; ++k )
    CHECK( I.contains( k ) == ( ( k == k0 || k % 3 == 0 ) && k % 2 == 0 ) );
+  std::size_t n = 0;                           // backwards, the same pairs
+  for( auto e = I.end() ; e != I.begin() ; ) { --e; ++n; }
+  CHECK( n == I.size() );
   for( auto e = I.begin() ; e != I.end() ; ) e = I.erase( e );
   CHECK( I.isEmpty() && I.begin() == I.end() );
   I.insert( 7 , 7 );                           // reused
   CHECK( I.size() == 1 && I.lookup( 7 ) == 7 );
   }
+ {                                             // a value of the table
+  FlatHashTable< std::uint64_t , std::string > V;
+  for( std::uint64_t k = 0 ; k < 27 ; ++k )
+   V.insert( k , "a value long enough for the heap " + std::to_string( k ) );
+  CHECK( V.capacity() == 30 );
+  V.insert( 100 , *V.find( 3 ) );              // grows: copied first
+  CHECK( V.capacity() == 60 && *V.find( 100 ) == *V.find( 3 ) );
+  }
+ {                                             // copies that throw
+  using FT = FlatHashTable< std::uint64_t , Fussy >;
+  FT T;
+  for( std::uint64_t k = 0 ; k < 27 ; ++k )
+   T.insert( k , Fussy( "value " + std::to_string( k ) ) );
+  CHECK( T.capacity() == 30 && Fussy::count == 27 );
+  for( long b : { 0L , 5L } ) {                // the new pair, an old one
+   Fussy::budget = b;
+   CHECK_THROWS( T.insert( 99 , Fussy( "new" ) ) , std::runtime_error );
+   Fussy::budget = -1;
+   CHECK( T.size() == 27 && T.capacity() == 30 && ! T.contains( 99 ) );
+   CHECK( Fussy::count == 27 );
+   for( std::uint64_t k = 0 ; k < 27 ; ++k )
+    CHECK( T.find( k )->s == "value " + std::to_string( k ) );
+   }
+  Fussy::budget = 7;                           // the copy of the table
+  CHECK_THROWS( FT( T ) , std::runtime_error );
+  Fussy::budget = -1;
+  CHECK( Fussy::count == 27 );
+  }
+ CHECK( Fussy::count == 0 );
  {                                             // strings, copies, moves
   FlatHashTable< std::string , Alive > A;
   std::unordered_map< std::string , std::string > R;
@@ -555,6 +677,7 @@ ADS_TEST( "flat-hash-table" )
   CHECK( A.size() == R.size() && Alive::count == long( A.size() ) );
   FlatHashTable< std::string , Alive > B( A ) , C;   // copy
   CHECK( B.size() == A.size() && Alive::count == 2 * long( A.size() ) );
+  CHECK( B.deleted() == A.deleted() && B.capacity() == A.capacity() );
   for( const auto & [ k , v ] : R ) CHECK( B.find( k )->s == v );
   C = std::move( B );
   CHECK( B.isEmpty() && B.capacity() == 0 && C.size() == A.size() );
@@ -564,6 +687,9 @@ ADS_TEST( "flat-hash-table" )
   C = same;
   A.clear();
   CHECK( A.isEmpty() && Alive::count == long( C.size() ) + 1 );
+  CHECK( A.deleted() == 0 && ! A.contains( R.begin()->first ) );
+  A.insert( "after clear" , Alive( "y" ) );
+  CHECK( A.size() == 1 && A.lookup( "after clear" )->s == "y" );
   FlatHashTable< std::string , Alive > M( std::move( C ) );
   CHECK( C.isEmpty() && M.size() == R.size() );
   }
