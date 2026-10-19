@@ -3,10 +3,11 @@
 #                                                                             #
 # Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
-# UBSan, BigInteger with its portable products, FastHash on AVX2, the queues  #
-# between threads under ThreadSanitizer, FlatHashTable on its broadword       #
-# fallback and fft() on the lanes of AVX and on arrays of doubles; it         #
-# measures the coverage of the tests and sends it to Coveralls.               #
+# UBSan, BigInteger with its portable products and on the backend of GMP,     #
+# FastHash on AVX2, the queues between threads under ThreadSanitizer,         #
+# FlatHashTable on its broadword fallback and fft() on the lanes of AVX and   #
+# on arrays of doubles; it measures the coverage of the tests and sends it    #
+# to Coveralls.                                                               #
 ###############################################################################
 
 name: CI
@@ -69,6 +70,28 @@ jobs:
           g++ -std=c++20 -O2 -march=x86-64-v3 -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o vectors test/hashing.cpp -pthread
           ./vectors fast-hash
+
+  gmp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GMP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgmp-dev
+      - name: the tests with BigInteger on GMP, by the makefile
+        run: make test ADS_WITH_GMP=1 BUILD=build-gmp
+      - name: the same by CMake, installed and found by find_package
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DADS_WITH_GMP=ON \
+                -DCMAKE_INSTALL_PREFIX="$PWD/inst"
+          cmake --build build --parallel 4
+          ctest --test-dir build --output-on-failure
+          cmake --install build
+          cmake -S packaging/test -B build-use \
+                -DCMAKE_PREFIX_PATH="$PWD/inst"
+          cmake --build build-use
+          ctest --test-dir build-use --output-on-failure
 
   threads:
     runs-on: ubuntu-latest

@@ -41,6 +41,8 @@ PAIRS = [
     ('bignum', 'ADS::BigInteger', 'GMP', ['GMP mpz_class']),
     ('bignum', 'ADS::Rational', 'Boost', ['boost::rational<cpp_int>']),
     ('bignum', 'ADS::Rational', 'GMP', ['GMP mpq_class']),
+    ('bignum', 'ADS::BigInteger GMP', 'GMP', ['GMP mpz_class']),
+    ('bignum', 'ADS::Rational GMP', 'GMP', ['GMP mpq_class']),
     ('fft', 'ADS::fft', 'FFTW', ['FFTW estimate', 'FFTW measure']),
     ('hash functions', 'ADS::FastHash', 'std', ['std::hash']),
     ('hash functions', 'ADS::FastHash', 'Boost', ['boost::hash']),

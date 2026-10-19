@@ -1932,6 +1932,135 @@ ADS_TEST( "big-integer-gcd" )
   }
  }
 
+// the edges of the ranges that go to GMP under ADS_WITH_GMP [see
+// BigInteger.h], and the same cases on BigInteger alone without it: the
+// products balanced, with the longer factor just below and at twice the
+// shorter and much longer, the squares, by the NTT, which never goes to
+// GMP; the quotients built as q v + r, with the divisors at the edges and
+// the quotients of 1 and 2 digits, around kGmpShort, half as long as the
+// divisor, as long and twice as long, the remainders 0, 1, v - 1 and
+// random, the divisors random, all ones and with the top bit clear; the
+// exact quotients around kGmpExactTop; the conversions around kConvert and
+// kGmpToStringTop, 10^k - 1 and 10^k among them, with leading zeros and
+// signs, in the bases 3, 10 and 36; the gcd of one, two and more digits,
+// with a common factor (the audits check each result against Algorithm M,
+// Algorithm D, the conversions by P and Euclid)
+ADS_TEST( "big-integer-gmp" )
+{
+#ifdef ADS_WITH_GMP
+ CHECK( ADS_BIGINT_GMP == 1 );
+#endif
+ using B = BigInteger;
+ std::mt19937_64 g( 27 );
+ auto around = []( std::initializer_list< std::size_t > t ) {
+  std::vector< std::size_t > v;
+  for( std::size_t x : t )
+   for( std::size_t d = x > 1 ? x - 1 : 1 ; d <= x + 1 ; ++d )
+    v.push_back( d );
+  return( v );
+  };
+ const std::uint64_t clear = std::uint64_t( 1 ) << 62;   // top bit 0
+ // a number of n digits as digits() makes it, but by halves joined by a
+ // product, since the audit of the conversion from hexadecimal takes
+ // quadratic time
+ std::function< B( std::size_t , bool , std::uint64_t ) > wide =
+  [ & ]( std::size_t n , bool ones , std::uint64_t top ) {
+  if( n <= 512 ) return( digits( n , g , ones , top ) );
+  const std::size_t h = n / 2;
+  return( wide( n - h , ones , top ) * B::pow( 2 , 64 * h ) +
+          wide( h , ones , 0 ) );
+  };
+ for( std::size_t n : around( { B::kGmpMul , B::kKaratsuba , B::kFFT ,
+                                B::kGmpMulLongTop , B::kGmpMulTop ,
+                                B::kGmpSqrTop } ) )
+  for( int kind = 0 ; kind < 3 ; ++kind ) {
+   const bool ones = kind == 1;
+   const std::uint64_t top = kind == 2 ? clear : 0;
+   const B a = digits( n , g , ones , top ) , b = digits( n , g , ones ) ,
+           c = digits( 2 * n - 1 , g , ones ) , d = digits( 2 * n , g ) ,
+           e = digits( 5 * n + 3 , g , ones , top ) ,
+           p = B::pow( 2 , 64 * n - 1 );
+   const B aa = B::multiplyFFT( a , a );
+   CHECK( a * b == B::multiplyFFT( a , b ) && a * a == aa &&
+          -a * a == -aa && ( -a ) * ( -a ) == aa && p * p == p * B( p ) );
+   CHECK( c * b == B::multiplyFFT( b , c ) &&
+          b * d == B::multiplyFFT( d , b ) &&
+          e * a == B::multiplyFFT( e , a ) && a * p == B::multiplyFFT( p ,
+                                                                       a ) );
+   }
+ // the signs and all the remainders on the short divisors only, since
+ // the audits of the long ones take Algorithm D
+ const std::size_t S = B::kGmpShort , Q = B::kGmpQuotTop;
+ for( std::size_t n : around( { 2 , B::kGmpQuot , B::kGmpDivTop , Q } ) ) {
+  const bool small = n < 100;
+  std::vector< std::size_t > ms = { 1 , 2 , S - 1 , S , S + 1 };
+  if( n < Q - 1 ) {
+   for( std::size_t m : { n / 2 , n / 2 + 1 , n - 1 , n , n + 1 , n + 2 ,
+                          2 * n } )
+    if( m > 0 ) ms.push_back( m );
+   }
+  const B vs[] = { wide( n , false , 0 ) ,
+                   small ? wide( n , true , 0 ) : B( 0 ) ,
+                   wide( n , false , clear ) } ,
+          r0 = n > 1 ? wide( n - 1 , false , 0 ) : B( 0 );
+  for( std::size_t m : ms )
+   for( int kind = 0 ; kind < 3 ; ++kind ) {
+    if( ! small && ( kind == 1 ) ) continue;
+    const B & v = vs[ kind ];
+    const B q = wide( m , false , 0 ) , qv = B::multiplyFFT( q , v );
+    const B rs[] = { r0 , 0 , 1 , v - 1 };
+    for( const B & r : rs ) {
+     const B u = qv + r;
+     const auto [ q1 , r1 ] = B::divMod( u , v );
+     CHECK( q1 == q && r1 == r && u / v == q );
+     if( ! small ) break;
+     CHECK( u % v == r && ( -u ) / v == -q &&
+            B::divMod( u , -v ).second == r );
+     }
+    }
+  }
+ for( std::size_t n : around( { B::kGmpExactTop } ) ) {
+  const B v = wide( n , false , 0 );
+  for( std::size_t m : { 1 , 3 , 100 } ) {
+   const B q = digits( m , g ) , qv = B::multiplyFFT( q , v );
+   CHECK( B::divExact( qv , v ) == q && B::divExact( -qv , v ) == -q &&
+          B::divExact( qv , q ) == v && qv / v == q );
+   }
+  }
+ const B ten = 10;                          // the conversions
+ for( std::size_t n : around( { B::kConvert } ) )
+  for( int base : { 3 , 10 , 36 } ) {
+   const B x = digits( n , g ) , y = -digits( n , g , true );
+   for( const B & z : { x , y } ) {
+    const std::string t = z.toString( base );
+    CHECK( t == z.toStringSchool( base ) && B( t , base ) == z &&
+           B( "+000" + t.substr( z.sign() < 0 ) , base ) == z.abs() );
+    }
+   }
+ for( std::size_t k : { std::size_t( 1 ) , std::size_t( 19 ) ,
+                        std::size_t( 20 ) , std::size_t( 463 ) ,
+                        std::size_t( 464 ) } ) {
+  const B p = B::pow( ten , k );            // 10^k - 1 and 10^k
+  CHECK( ( p - 1 ).toString() == std::string( k , '9' ) &&
+         p.toString() == "1" + std::string( k , '0' ) &&
+         B( std::string( k , '9' ) ) == p - 1 &&
+         B( "-1" + std::string( k , '0' ) ) == -p );
+  }
+ CHECK( B( "0" ) == 0 && B( "-0" ) == 0 && B( "+000" ) == 0 &&
+        B( "-0" ).sign() == 0 && B( "0000000000000000000000000001" ) == 1 );
+ for( std::size_t n : { B::kGmpToStringTop - 1 , B::kGmpToStringTop } ) {
+  const B x = wide( n , false , 0 );        // the last of GMP, then ADS
+  CHECK( B( x.toString() ) == x );
+  }
+ for( std::size_t n : { 1 , 2 , 3 , 9 , 64 } ) {   // the gcd
+  const B a = digits( n , g ) , b = digits( n + 1 , g ) ,
+          c = digits( n , g , n == 9 ) , d = B::gcd( a * c , b * c );
+  CHECK( d % c == 0 && B::gcd( a , b ) == B::gcdEuclid( a , b ) &&
+         B::gcd( a , 0 ) == a && B::gcd( 0 , -b ) == b &&
+         B::gcd( a , a ) == a && B::gcd( -a , b * a ) == a );
+  }
+ }
+
 // the rationals: the harmonic number H_30 as written, the sums and the
 // products in lowest terms (the audit), and the order; the sums by each
 // way of reducing, and H_400 in two orders

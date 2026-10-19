@@ -7,6 +7,8 @@
 #                                                                             #
 #   make             builds the tests                                         #
 #   make test        runs them                                                #
+#   make test ADS_WITH_GMP=1 [GMP=<prefix>]                                   #
+#                    the same with BigInteger on the backend of GMP           #
 #   make bench       builds the benchmarks in $(BUILD)                        #
 #   bench/run.sh     runs them and writes the tables of the README            #
 #   make install     copies include/ADS into $(PREFIX)/include                #
@@ -18,6 +20,16 @@ BUILD    ?= build-make
 PREFIX   ?= /usr/local
 
 INC      = -Iinclude -Itest -DADS_CONTRACTS=3
+
+# ADS_WITH_GMP=1: BigInteger on GMP where it is faster [see BigInteger.h],
+# with GMP=<prefix> if GMP is not where the compiler looks
+comma    := ,
+GMPLINK   = $(if $(GMP),-I$(GMP)/include -L$(GMP)/lib \
+            -Wl$(comma)-rpath$(comma)$(GMP)/lib) -lgmp
+ifeq ($(ADS_WITH_GMP),1)
+INC      += -DADS_WITH_GMP
+LIBS     += $(GMPLINK)
+endif
 HEADERS  = $(shell find include/ADS -name '*.h' -o -name '*.tpp') \
            test/ADSTest.h
 PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
@@ -26,7 +38,7 @@ BINS     = $(addprefix $(BUILD)/,$(PROGRAMS))
 all: $(BINS)
 
 $(BUILD)/%: test/%.cpp $(HEADERS) | $(BUILD)
-	$(CXX) $(CXXFLAGS) $(INC) -o $@ $< -pthread
+	$(CXX) $(CXXFLAGS) $(INC) -o $@ $< -pthread $(LIBS)
 
 $(BUILD):
 	mkdir -p $@
@@ -48,7 +60,8 @@ test: $(BINS)
 	echo "$$failed failed"; test $$failed -eq 0
 
 # the benchmarks, with the contracts off and the Boost headers if found;
-# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft;
+# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft, and
+# GMP=<prefix> or ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP;
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
 # fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
@@ -56,8 +69,7 @@ test: $(BINS)
 # libdivsufsort to suffix, EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
 # rapidfuzz-cpp to edit
 BENCHES   = sort dictionaries priority sequences bignum fft hashing search \
-            suffix edit
-comma    := ,
+            suffix edit $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
@@ -87,6 +99,10 @@ bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
 $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(GMPFLAGS)
+
+$(BUILD)/bench-bignum-gmp: bench/bignum.cpp bench/Bench.h $(HEADERS) \
+                          | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -DADS_WITH_GMP -o $@ $< $(GMPLINK)
 
 $(BUILD)/bench-fft: bench/fft.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(FFTWFLAGS)

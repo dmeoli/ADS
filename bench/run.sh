@@ -12,6 +12,7 @@
 #                           [HASHING=<dir>] [ABSL=<prefix>]                   #
 #                           [LIBSAIS=<prefix>] [DIVSUFSORT=<prefix>]          #
 #                           [EDLIB=<prefix>] [RAPIDFUZZ=<prefix>]             #
+#                           (with GMP also bignum-gmp, BigInteger on GMP)     #
 ###############################################################################
 
 set -e
@@ -39,6 +40,7 @@ run dictionaries 100000 1000000
 run priority 100000 1000000
 run sequences 100000 10000000
 run bignum 16 256 4096 32768
+[ -x "$BUILD/bench-bignum-gmp" ] && run bignum-gmp 16 256 4096 32768
 run fft 1024 65536 1048576
 run hashing 100000 1000000
 run search 100000 1000000 10000000

@@ -28,6 +28,19 @@ target_include_directories(ADS INTERFACE
         $<INSTALL_INTERFACE:include>)
 target_compile_features(ADS INTERFACE cxx_std_20)
 
+# ----- BigInteger on GMP where it is faster, off by default ---------------- #
+option(ADS_WITH_GMP "BigInteger on the backend of GMP [see BigInteger.h]" OFF)
+if (ADS_WITH_GMP)
+    include(cmake/ADSGMP.cmake)
+    if (NOT ADS_GMP_FOUND)
+        message(FATAL_ERROR "ADS_WITH_GMP is ON, but GMP was not found: "
+                "install it (libgmp-dev, gmp-devel, gmp) or set "
+                "GMP_INCLUDE_DIR and GMP_LIBRARY")
+    endif ()
+    target_compile_definitions(ADS INTERFACE ADS_WITH_GMP)
+    target_link_libraries(ADS INTERFACE ADS::GMP)
+endif ()
+
 # ----- the tests: the exercises of the book -------------------------------- #
 option(ADS_BUILD_TESTS "build the tests (by default only as the main project)"
        ${PROJECT_IS_TOP_LEVEL})
@@ -144,6 +157,7 @@ write_basic_package_version_file(
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
+        cmake/ADSGMP.cmake
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
 # the include directory of ads.pc, as ${prefix}/include when it is relative
@@ -151,6 +165,11 @@ if (IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
     set(ADS_PC_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
 else ()
     set(ADS_PC_INCLUDEDIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+endif ()
+# with GMP, its define and the library, by gmp.pc
+if (ADS_WITH_GMP)
+    set(ADS_PC_REQUIRES "gmp")
+    set(ADS_PC_CFLAGS " -DADS_WITH_GMP")
 endif ()
 configure_file(cmake/ads.pc.in ${CMAKE_CURRENT_BINARY_DIR}/ads.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc

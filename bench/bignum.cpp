@@ -9,7 +9,10 @@
  * numbers of n digits of 32 bits (ADS by Algorithm M, by Karatsuba and by
  * the FFT), the
  * quotient of 2n digits by n, the conversion of n digits to decimal, and
- * the harmonic number \f$ H_n \f$ summed as a rational.
+ * the harmonic number \f$ H_n \f$ summed as a rational. Built with
+ * ADS_WITH_GMP, it times BigInteger and Rational alone, on the backend of
+ * GMP [see BigInteger.h], as "ADS::BigInteger GMP" and "ADS::Rational GMP",
+ * the others coming from the build without it.
  *
  * Each cell is the median of r runs, in nanoseconds per operation (one
  * product, one quotient, one conversion, one sum of n fractions); the
@@ -43,6 +46,14 @@
 
 #ifdef ADS_HAS_GMP
  #include <gmpxx.h>
+#endif
+
+#ifdef ADS_WITH_GMP                         // the backend alone
+ #undef ADS_HAS_BOOST
+ #undef ADS_HAS_GMP
+ #define ADS_WHO " GMP"
+#else
+ #define ADS_WHO ""
 #endif
 
 #include <string>
@@ -104,12 +115,13 @@ int main( int argc , char ** argv )
   auto adsMake = []( const std::string & s ) {
    return( BigInteger( s , 16 ) ); };
   auto adsDec = []( const BigInteger & x ) { return( x.toString() ); };
-  run< BigInteger >( "ADS::BigInteger" , n , a , b , c , r , adsMake , adsDec ,
-                     []( const auto & x , const auto & y ) {
+  run< BigInteger >( "ADS::BigInteger" ADS_WHO , n , a , b , c , r ,
+                     adsMake , adsDec , []( const auto & x , const auto & y ) {
                       return( x * y ); } );
-  run< BigInteger >( "ADS::BigInteger A/A" , n , a , b , c , r , adsMake ,
-                     adsDec , []( const auto & x , const auto & y ) {
+  run< BigInteger >( "ADS::BigInteger" ADS_WHO " A/A" , n , a , b , c , r ,
+                     adsMake , adsDec , []( const auto & x , const auto & y ) {
                       return( x * y ); } );
+#ifndef ADS_WITH_GMP
   run< BigInteger >( "ADS::BigInteger school" , n , a , b , c , r , adsMake ,
                      adsDec , []( const auto & x , const auto & y ) {
                       return( BigInteger::multiplySchool( x , y ) ); } );
@@ -119,6 +131,7 @@ int main( int argc , char ** argv )
   run< BigInteger >( "ADS::BigInteger FFT" , n , a , b , c , r , adsMake ,
                      adsDec , []( const auto & x , const auto & y ) {
                       return( BigInteger::multiplyFFT( x , y ) ); } );
+#endif
 #ifdef ADS_HAS_BOOST
   using boost::multiprecision::cpp_int;
   run< cpp_int >( "boost::multiprecision::cpp_int" , n , a , b , c , r ,
@@ -138,7 +151,7 @@ int main( int argc , char ** argv )
 #endif
   const std::size_t h = 64 * n;             // the terms of H_n
   if( h > 300000 ) continue;
-  harmonic< ADS::Rational >( "ADS::Rational" , h , r ,
+  harmonic< ADS::Rational >( "ADS::Rational" ADS_WHO , h , r ,
                              []( long p , long q ) {
                               return( ADS::Rational( p , q ) ); } );
 #ifdef ADS_HAS_BOOST
