@@ -74,6 +74,14 @@ test: $(BINS)
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft;
+# OPT=<prefix> adds to succinct and compression the libraries installed
+# there: the headers of sdsl-lite, sux, pasta (with tlx) and succinct with
+# libsuccinct, those of FiniteStateEntropy in fse/ with libfse, and
+# streamvbyte, lz4 and libsais
+BENCHES   = sort dictionaries priority sequences bignum fft succinct \
+            compression
+comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
@@ -124,6 +132,8 @@ MEMFLAGS  = $(if $(MIMALLOC),-DADS_HAS_MIMALLOC \
             $(MIMALLOC)/lib/mimalloc-2.1/libmimalloc.a) \
             $(if $(JEMALLOC),-DADS_HAS_JEMALLOC -I$(JEMALLOC)/include \
             $(JEMALLOC)/lib/libjemalloc.a -ldl) -pthread
+OPTFLAGS  = $(if $(OPT),-I$(OPT)/include -L$(OPT)/lib)
+OPTLIBS   = $(foreach l,$(1),$(if $(wildcard $(OPT)/lib/lib$(l).a),-l$(l)))
 
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
@@ -172,6 +182,13 @@ $(BUILD)/bench-priority: bench/priority.cpp bench/Bench.h $(HEADERS) | \
 
 $(BUILD)/bench-memory: bench/memory.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(MEMFLAGS)
+$(BUILD)/bench-succinct: bench/succinct.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(OPTFLAGS) $(call OPTLIBS,succinct)
+
+$(BUILD)/bench-compression: bench/compression.cpp bench/Bench.h $(HEADERS) \
+                            | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(OPTFLAGS) \
+	       $(call OPTLIBS,fse streamvbyte lz4 sais)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

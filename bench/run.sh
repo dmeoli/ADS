@@ -16,6 +16,12 @@
 #                           (with GMP also bignum-gmp, BigInteger on GMP)     #
 #                           [PRIORITY=<dir>] [MIMALLOC=<prefix>]              #
 #                           [JEMALLOC=<prefix>]                               #
+# tables of the README. The core comes from CORE (default 0), the runs per    #
+# cell from RUNS (default 11), the build directory from BUILD, the text of    #
+# the compressors from ADS_BENCH_TEXT (a file, repeated up to each size).     #
+#                                                                             #
+#   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
+#                                              [OPT=<prefix>]                 #
 ###############################################################################
 
 set -e
@@ -32,6 +38,7 @@ out=results/$(hostname -s)-$(date +%Y%m%d-%H%M).tsv
  echo "# date	$(date -Iseconds)"
  echo "# core	$CORE"
  echo "# runs	$RUNS"
+ echo "# text	${ADS_BENCH_TEXT:-words of a Zipf law}"
 } > "$out"
 run() { taskset -c "$CORE" "$BUILD/bench-$1" -r "$RUNS" "${@:2}" >> "$out"; }
 # the sorts print a header and a table per type: "sort <type>" is the
@@ -58,6 +65,8 @@ run sparse 100000 1000000
 # the queues between threads on the core and the next one allowed
 taskset -c "$CORE,${CORE2:-$((CORE + 1))}" "$BUILD/bench-concurrent" \
  -r "$RUNS" 1000000 10000000 >> "$out"
+run succinct 100000 1000000 10000000 100000000
+run compression 100000 1000000 10000000
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################

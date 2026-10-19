@@ -445,6 +445,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Lemire, Kurz and Rupp: the lengths of 4 integers in a control byte apart
   from their bytes, moved by one shuffle of SSSE3 (and SSE4.1 in the
   encoder) from a table of 256 masks
+- the benchmarks of the succinct structures and of the compressors,
+  bench/succinct.cpp and bench/compression.cpp, against sdsl-lite, sux,
+  pasta, succinct, huff0 and FSE, Stream VByte, libsais and LZ4 when found
 
 ### Changed
 
