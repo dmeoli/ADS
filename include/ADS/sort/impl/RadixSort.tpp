@@ -36,34 +36,57 @@ auto radixKey( T x )
 
 namespace detail {
 
-/// the LSD sort of A by the unsigned key( x ) of w bytes, through B
+/// the LSD sort of A by the unsigned key( x ), through B: a first sweep
+/// finds the bytes in which some keys differ, and only those are counted
+/// and make a pass
 template< class T , class K >
-void lsd( std::vector< T > & A , K & key , std::size_t w )
+void lsd( std::vector< T > & A , K & key )
 {
+ using U = std::decay_t< decltype( key( A[ 0 ] ) ) >;
+ constexpr std::size_t W = sizeof( U );
  const std::size_t n = A.size();
  if( n < 2 )
   return;
- std::vector< std::array< std::size_t , 256 > > H( w );
- for( auto & h : H ) h.fill( 0 );
- for( const auto & x : A ) {                // all the histograms at once
-  auto k = std::uint64_t( key( x ) );      // wide, so that >> 8 is defined
-  for( std::size_t d = 0 ; d < w ; ++d , k >>= 8 )
-   ++H[ d ][ std::size_t( k & 0xFF ) ];
+ U any = 0 , all = U( ~U( 0 ) );            // the bits set in some key
+ for( const auto & x : A ) {                // and those set in all
+  const U k = key( x );
+  any |= k;
+  all &= k;
   }
+ std::array< std::size_t , W > D;          // the bytes that differ
+ std::size_t m = 0;
+ for( std::size_t d = 0 ; d < W ; ++d )
+  if( ( ( any ^ all ) >> ( 8 * d ) ) & 0xFF )
+   D[ m++ ] = d;
+ if( m == 0 )
+  return;                                   // all the keys are equal
+ std::array< std::array< std::size_t , 256 > , W > H{};
+ if( m == W )                               // all the histograms at once
+  for( const auto & x : A ) {
+   const U k = key( x );
+   for( std::size_t d = 0 ; d < W ; ++d )
+    ++H[ d ][ std::size_t( ( k >> ( 8 * d ) ) & 0xFF ) ];
+   }
+ else
+  for( const auto & x : A ) {
+   const U k = key( x );
+   for( std::size_t t = 0 ; t < m ; ++t )
+    ++H[ t ][ std::size_t( ( k >> ( 8 * D[ t ] ) ) & 0xFF ) ];
+   }
  std::vector< T > B( n );
- for( std::size_t d = 0 ; d < w ; ++d ) {
-  auto & h = H[ d ];
-  if( std::find( h.begin() , h.end() , n ) != h.end() )
-   continue;                                // one bucket: nothing to do
+ for( std::size_t t = 0 ; t < m ; ++t ) {
+  const std::size_t d = D[ t ];
+  std::size_t * const h = H[ t ].data();
   std::size_t sum = 0;                      // the starts of the buckets
-  for( auto & c : h ) {
-   const std::size_t t = c;
-   c = sum;
+  for( std::size_t c = 0 ; c < 256 ; ++c ) {
+   const std::size_t t = h[ c ];
+   h[ c ] = sum;
    sum += t;
    }
+  T * const b = B.data();
+  const int s = int( 8 * d );
   for( auto & x : A )
-   B[ h[ std::size_t( ( key( x ) >> ( 8 * d ) ) & 0xFF ) ]++ ] =
-    std::move( x );
+   b[ h[ std::size_t( ( key( x ) >> s ) & 0xFF ) ]++ ] = std::move( x );
   A.swap( B );
   }
  }
@@ -103,34 +126,76 @@ void flag( std::vector< T > & A , std::size_t lo , std::size_t hi , int d )
  }
 
 /// the character d of s, 0 at its end, then the characters plus 1
-inline int charAt( const std::string & s , std::size_t d )
+inline std::uint16_t charAt( const std::string & s , std::size_t d )
 {
- return( d < s.size() ? int( static_cast< unsigned char >( s[ d ] ) ) + 1
-                      : 0 );
+ return( std::uint16_t( d < s.size() ? static_cast< unsigned char >( s[ d ] )
+                                       + 1 : 0 ) );
  }
 
-/// the MSD sort of A[ lo .. hi ) by the characters from d on, through B
-inline void msd( std::vector< std::string > & A ,
-                 std::vector< std::string > & B , std::size_t lo ,
-                 std::size_t hi , std::size_t d )
+/// the MSD sort of the strings of S[ lo .. hi ) by their characters from d
+/// on, through T, with the character d of each kept in K, so that it is
+/// read once per pass; the strings of the part share their first d
+/// characters. The strings go back and forth between S and T, one move per
+/// pass, and end in the vector sorted, S if home and T otherwise
+inline void msd( std::vector< std::string > & S ,
+                 std::vector< std::string > & T ,
+                 std::vector< std::uint16_t > & K , std::size_t lo ,
+                 std::size_t hi , std::size_t d , bool home )
 {
+ std::string * const s = S.data() , * const t = T.data();
  if( hi - lo <= 16 ) {                      // the rest of the strings
   for( std::size_t i = lo + 1 ; i < hi ; ++i )
    for( std::size_t j = i ; ( j > lo ) &&
-        ( A[ j ].compare( d , std::string::npos , A[ j - 1 ] , d ,
+        ( s[ j ].compare( d , std::string::npos , s[ j - 1 ] , d ,
                           std::string::npos ) < 0 ) ; --j )
-    std::swap( A[ j ] , A[ j - 1 ] );
+    std::swap( s[ j ] , s[ j - 1 ] );
+  if( ! home )
+   std::move( s + lo , s + hi , t + lo );
   return;
   }
+ // the prefix that all the strings share from d, skipped with one
+ // comparison per character: equal keys and long shared prefixes make no
+ // pass of their own
+ const char * f = s[ lo ].data() + d;
+ const std::size_t n0 = s[ lo ].size();
+ std::size_t l = n0 - d;
+ bool same = true;                          // all as long as s[ lo ]
+ std::size_t i = lo + 1;
+ for( ; ( i < hi ) && ( l > 0 ) ; ++i ) {
+  const char * x = s[ i ].data() + d;
+  const std::size_t m = std::min( l , s[ i ].size() - d );
+  l = std::size_t( std::mismatch( x , x + m , f ).first - x );
+  same = same && ( s[ i ].size() == n0 );
+  }
+ if( ( i == hi ) && same && ( d + l == n0 ) ) {   // all equal
+  if( ! home )
+   std::move( s + lo , s + hi , t + lo );
+  return;
+  }
+ d += l;
+ std::uint16_t * const k = K.data();
  std::array< std::size_t , 258 > c{};
- for( std::size_t i = lo ; i < hi ; ++i ) ++c[ charAt( A[ i ] , d ) + 1 ];
+ for( i = lo ; i < hi ; ++i ) {
+  k[ i ] = charAt( s[ i ] , d );
+  ++c[ k[ i ] + 1 ];
+  }
+ if( c[ 1 ] == hi - lo ) {                  // all equal, all ended
+  if( ! home )
+   std::move( s + lo , s + hi , t + lo );
+  return;
+  }
  for( std::size_t r = 0 ; r + 1 < c.size() ; ++r ) c[ r + 1 ] += c[ r ];
- for( std::size_t i = lo ; i < hi ; ++i )
-  B[ lo + c[ charAt( A[ i ] , d ) ]++ ] = std::move( A[ i ] );
- for( std::size_t i = lo ; i < hi ; ++i ) A[ i ] = std::move( B[ i ] );
- for( std::size_t r = 1 ; r < 257 ; ++r )  // the ends ( r = 0 ) are done
-  if( c[ r ] - c[ r - 1 ] > 1 )
-   msd( A , B , lo + c[ r - 1 ] , lo + c[ r ] , d + 1 );
+ for( i = lo ; i < hi ; ++i )
+  t[ lo + c[ k[ i ] ]++ ] = std::move( s[ i ] );
+ for( std::size_t r = 0 ; r < 257 ; ++r ) {   // bucket r: [ b , e )
+  const std::size_t b = lo + ( r == 0 ? 0 : c[ r - 1 ] ) , e = lo + c[ r ];
+  if( ( r == 0 ) || ( e - b < 2 ) ) {       // sorted: back home
+   if( home )
+    std::move( t + b , t + e , s + b );
+   }
+  else
+   msd( T , S , K , b , e , d + 1 , ! home );
+  }
  }
 
 }  // end( namespace detail )
@@ -140,7 +205,7 @@ void radixSort( std::vector< T > & A )
 {
  const auto before = detail::auditCopy( A );
  auto key = []( T x ) { return( radixKey( x ) ); };
- detail::lsd( A , key , sizeof( T ) );
+ detail::lsd( A , key );
  ADS_AUDIT( detail::sortedPermutation( A , before , []( T a , T b ) {
   return( radixKey( a ) < radixKey( b ) ); } ) );
  }
@@ -150,7 +215,7 @@ void radixSortBy( std::vector< T > & A , K key )
 {
  using U = std::decay_t< decltype( key( A[ 0 ] ) ) >;
  static_assert( std::is_unsigned_v< U > , "the key must be unsigned" );
- detail::lsd( A , key , sizeof( U ) );
+ detail::lsd( A , key );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   for( std::size_t i = 1 ; i < A.size() ; ++i )
    if( key( A[ i ] ) < key( A[ i - 1 ] ) ) return( false );
@@ -171,9 +236,12 @@ void americanFlagSort( std::vector< T > & A )
 inline void msdRadixSort( std::vector< std::string > & A )
 {
  const auto before = detail::auditCopy( A );
- std::vector< std::string > B( A.size() );
- if( A.size() > 1 )
-  detail::msd( A , B , 0 , A.size() , 0 );
+ const std::size_t n = A.size();
+ if( n > 1 ) {
+  std::vector< std::string > B( n );
+  std::vector< std::uint16_t > K( n );
+  detail::msd( A , B , K , 0 , n , 0 , true );
+  }
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
  }
 

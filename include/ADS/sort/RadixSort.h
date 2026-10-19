@@ -13,10 +13,10 @@
  *   made unsigned so that their order is the order of the numbers: the sign
  *   bit flipped for a signed integer, and for a floating point number all
  *   the bits flipped if it is negative and the sign bit otherwise (the
- *   order of IEEE 754, -0 before +0, the NaN at the ends). A pass whose
- *   histogram has a single bucket, i.e., whose byte is the same in all the
- *   keys, is skipped, so that small keys in wide types cost only the bytes
- *   they use; all the histograms are counted in one first sweep;
+ *   order of IEEE 754, -0 before +0, the NaN at the ends). A first sweep
+ *   finds the bytes in which some keys differ, and only those are counted
+ *   (all the histograms in a second sweep) and make a pass, so that small
+ *   keys in wide types cost only the bytes they use;
  * - radixSortBy() is the same on any items, by an unsigned key that a
  *   function gives, stable, e.g., the records by one field;
  * - americanFlagSort() is the radix sort from the most significant byte
@@ -26,10 +26,16 @@
  *   byte, the small ones by insertion; O( n ) extra space for no buffer of
  *   the items, not stable;
  * - msdRadixSort() sorts strings by their characters from the first one,
- *   the end of a string before every character, with a buffer and the
- *   small groups by insertion, so that it reads only the distinguishing
- *   prefixes of the strings: O( D + n log 256 ) for D the total length of
- *   those prefixes;
+ *   the end of a string before every character, with a buffer, between
+ *   which and the vector the strings go back and forth, one move per pass,
+ *   the character of each string read once per pass and kept aside, and
+ *   the small groups sorted by insertion, so that it reads only the
+ *   distinguishing prefixes of the strings: O( D + n log 256 ) for D the
+ *   total length of those prefixes; the prefix that all the strings of a
+ *   group share is first skipped by comparing them with one of them, so
+ *   that a group of equal strings, or of strings with a long common
+ *   prefix, costs one comparison per character instead of one pass per
+ *   character;
  * - bucketSort() sorts numbers in [ 0 , 1 ) into n buckets by their value,
  *   each sorted by insertion: O( n ) expected time on numbers drawn
  *   uniformly, \f$ O( n^2 ) \f$ in the worst case.
