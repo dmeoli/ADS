@@ -476,6 +476,8 @@ engineered  flat-hash-table      tabella con byte di controllo a gruppi
 engineered  pointer-table        tabella di puntatori, ispezione lineare
 engineered  open-hash-readers    letture concorrenti di OpenHashTable
 engineered  arena                arena a blocchi
+engineered  pool                 pool con lista dei liberi
+engineered  huge-page-allocator  allocatore su pagine enormi
 engineered  random-hashing       splitmix64, Zobrist, tabulazione
 engineered  spsc-queue           coda fra un produttore e un consumatore
 engineered  mpsc-inbox           casella di molti produttori

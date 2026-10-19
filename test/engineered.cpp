@@ -4,10 +4,11 @@
 /** @file
  * Tests of the engineered structures, beyond the book: the bucket queue and
  * the d-ary heap of plain items, the hash table with control bytes, the
- * hash table of pointers, the arena, the hashing with random tables, and
- * the queues between threads. Each one is checked against a reference of
- * the standard library on random operations, at the level 3 of the
- * contracts, and the queues between threads on real threads.
+ * hash table of pointers, the arena, the pool, the allocator on huge
+ * pages, the hashing with random tables, and the queues between threads.
+ * Each one is checked against a reference of the standard library on
+ * random operations, at the level 3 of the contracts, and the queues
+ * between threads on real threads.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -29,6 +30,8 @@
 #include "ADS/dictionary/PointerTable.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/memory/Arena.h"
+#include "ADS/memory/HugePageAllocator.h"
+#include "ADS/memory/ObjectPool.h"
 #include "ADS/priority/BucketQueue.h"
 #include "ADS/priority/DaryHeap.h"
 
@@ -36,6 +39,7 @@
 #include <climits>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <queue>
 #include <random>
 #include <set>
@@ -759,6 +763,118 @@ ADS_TEST( "arena" )
   CHECK( T.begin()[ 2 ].v == 2 );
   }
  CHECK( Counted::alive == 0 );
+ }
+
+// the pool: the slot freed last is the next one made, the blocks double up
+// to their limit and the objects keep their addresses across them, a long
+// random sequence of make() and free() against the set of the objects
+// alive; the edge cases: no object, blocks of one slot, a constructor that
+// throws (its slot stays free), an aggregate built from its fields, the
+// pools moved and swapped with their objects, and free() of nil
+ADS_TEST( "pool" )
+{
+ CHECK_THROWS( ObjectPool< int >( 0 ) , contract_violation );
+ {
+  const std::size_t z = std::max( sizeof( Counted ) , sizeof( void * ) );
+  const auto at = []( const Counted * x ) {     // the address of a slot
+   return( reinterpret_cast< std::uintptr_t >( x ) ); };
+  ObjectPool< Counted > A( 64 );
+  std::vector< Counted * > P;
+  for( int i = 0 ; i < 100 ; ++i ) P.push_back( A.make( i ) );
+  for( int i = 0 ; i < 100 ; ++i ) CHECK( P[ i ]->v == i );
+  for( int i = 1 ; i < 16 ; ++i )
+   CHECK( at( P[ i ] ) == at( P[ i - 1 ] ) + z );
+  CHECK( A.size() == 100 && Counted::alive == 100 );
+  CHECK( A.bytes() == ( 16 + 32 + 64 ) * z );
+  A.free( P[ 7 ] );
+  A.free( P[ 3 ] );
+  CHECK( A.size() == 98 && Counted::alive == 98 );
+  CHECK( A.make( 1000 ) == P[ 3 ] && A.make( 1001 ) == P[ 7 ] );
+  CHECK( P[ 3 ]->v == 1000 && P[ 7 ]->v == 1001 && P[ 8 ]->v == 8 );
+  CHECK_THROWS( A.make( -1 ) , std::invalid_argument );
+  CHECK( A.size() == 100 );                     // the slot of the throw first
+  CHECK( at( A.make( 5 ) ) == at( P[ 99 ] ) + z );
+  CHECK( at( A.make( 6 ) ) == at( P[ 99 ] ) + 2 * z );
+  for( Counted * x : P ) A.free( x );
+  CHECK( A.size() == 2 && Counted::alive == 2 );
+  ObjectPool< Counted > B( std::move( A ) );    // the objects stay
+  CHECK( A.size() == 0 && A.bytes() == 0 && B.size() == 2 );
+  ObjectPool< Counted > C( 1 );                 // a block per slot
+  Counted * c = C.make( 9 );
+  C.swap( B );
+  CHECK( B.size() == 1 && C.size() == 2 && B.bytes() == z );
+  B.free( c );
+  CHECK( Counted::alive == 2 );
+  A = std::move( C );
+  CHECK( A.size() == 2 && C.size() == 0 );
+  CHECK( A.make( 3 )->v == 3 && Counted::alive == 3 );
+  CHECK_THROWS( A.free( nullptr ) , contract_violation );
+  ObjectPool< Counted > E;                      // nothing made
+  CHECK( E.size() == 0 && E.bytes() == 0 );
+  for( Counted * x = A.make( 4 ) ; x ; x = nullptr ) A.free( x );
+  }
+ CHECK( Counted::alive == 3 );                  // the pool destroys none
+ Counted::alive = 0;
+
+ struct Cell { long v; Cell * next; };          // an aggregate
+ ObjectPool< Cell > L;
+ Cell * h = nullptr;
+ for( long i = 0 ; i < 5 ; ++i ) h = L.make( i , h );
+ long t = 0;
+ for( Cell * c = h ; c ; c = c->next ) t = 10 * t + c->v;
+ CHECK( t == 43210 && L.size() == 5 );
+
+ std::mt19937 g( 5 );
+ ObjectPool< std::string > S( 100 );
+ std::vector< std::string * > in;
+ std::multiset< std::string > M;
+ for( int op = 0 ; op < 20000 ; ++op )
+  if( in.empty() || ( g() % 5 < 3 ) ) {
+   const std::string x( 20 + g() % 10 , char( 'a' + g() % 26 ) );
+   in.push_back( S.make( x ) );
+   M.insert( x );
+   }
+  else {
+   const std::size_t i = g() % in.size();
+   M.erase( M.find( *in[ i ] ) );
+   S.free( in[ i ] );
+   in[ i ] = in.back();
+   in.pop_back();
+   }
+ CHECK( S.size() == in.size() && S.size() == M.size() );
+ std::multiset< std::string > N;
+ for( auto * x : in ) N.insert( *x );
+ CHECK( N == M );
+ for( auto * x : in ) S.free( x );
+ CHECK( S.size() == 0 );
+ }
+
+// the allocator on huge pages: a small request from std::allocator, a
+// large one aligned to a huge page and wholly writable, the sizes just
+// below and at one huge page, a vector that grows across the threshold
+// with its items kept, the allocators equal across types, and a request
+// too large for the address space
+ADS_TEST( "huge-page-allocator" )
+{
+ using H = HugePageAllocator< long >;
+ constexpr std::size_t P = H::PAGE / sizeof( long );
+ H a;
+ for( std::size_t n : { std::size_t( 1 ) , P - 1 , P , P + 1 , 3 * P } ) {
+  long * p = a.allocate( n );
+  if( n >= P )
+   CHECK( reinterpret_cast< std::uintptr_t >( p ) % H::PAGE == 0 );
+  for( std::size_t i = 0 ; i < n ; ++i ) p[ i ] = long( i );
+  CHECK( p[ n - 1 ] == long( n - 1 ) && p[ 0 ] == 0 );
+  a.deallocate( p , n );
+  }
+ std::vector< long , H > V;
+ for( long i = 0 ; i < long( 2 * P ) ; ++i ) V.push_back( i );
+ bool kept = true;
+ for( long i = 0 ; i < long( V.size() ) ; ++i ) kept = kept && V[ i ] == i;
+ CHECK( kept && V.size() == 2 * P );
+ CHECK( H() == HugePageAllocator< char >() );
+ CHECK_THROWS( (void) a.allocate( std::numeric_limits< std::size_t >::max()
+                                  / 4 ) , std::bad_array_new_length );
  }
 
 // the hashing with random tables: the first word of SplitMix64 from 0,

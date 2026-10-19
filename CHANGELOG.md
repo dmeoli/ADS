@@ -231,6 +231,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of 128 bits, a power of 2 groups, at most 7 / 8 of the places full, the
   first line of the pairs of a matching group prefetched; the table that
   bench/dictionaries.cpp compares with boost::unordered_flat_map
+- ObjectPool, a pool of objects in blocks that double, the slot freed
+  last made again first (the list AVAIL of Knuth), so that the nodes of a
+  linked structure cost no call to the allocator each and lie next to each
+  other; HugePageAllocator, which aligns the blocks of 2 MB or more to the
+  huge pages and, on Linux, advises them for the transparent huge pages,
+  the default allocator of ObjectPool
 
 ### Changed
 
