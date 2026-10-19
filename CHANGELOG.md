@@ -418,10 +418,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mulMod() takes the remainder of its product of 128 bits by one division
   of 128 by 64 bits instead of a call to the division of 128 by 128
 - isPrime() divides by the primes up to 211 by one product each, all at
-  once, and runs the test of Miller and Rabin in Montgomery form on the
-  fewest bases known to be exact below n (1 base below 341531, 7 for every
-  word), the bases in lockstep and the powers with no branch on the
-  exponent
+  once, and runs the test of Miller and Rabin in Montgomery form (of 32
+  bits below 2^32, with lazy reduction below 2^62) on the fewest bases
+  known to be exact below n (1 base below 341531, below 2^32 the base 2
+  and a second one read by a hash of n in a table of 32, made for the 2314
+  strong pseudoprimes to the base 2 there, 7 bases for every word), the
+  bases in lockstep and the powers with no branch on the exponent; powMod()
+  reduces lazily below 2^62
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);

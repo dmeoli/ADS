@@ -22,7 +22,9 @@
  *   of Ahmes, O( log b ) additions, where it has not (MSVC);
  * - powMod(), \f$ x^v \bmod m \f$ by repeated squaring, O( log v )
  *   multiplications (exercise 17.1), each one of Montgomery when m is odd
- *   (see below), with no division but the one that sets up the modulus;
+ *   (see below), with no division but those that set up the modulus, and
+ *   below \f$ 2^{62} \f$ with the forms kept in [ 0 , 2 m ), which spares
+ *   the comparison that ends each product (the lazy reduction);
  * - binaryGcd(), beyond the book, the binary gcd of Stein (Algorithm 4.5.2B
  *   of Knuth) with the trailing zeros counted by one instruction: the
  *   common power of 2 set apart, then \f$ \gcd( a , b ) =
@@ -51,7 +53,10 @@
  *   below \f$ 2^{32} \f$ the base 2 with a second base read in a table of
  *   32 by a hash of n, chosen to be a witness for each of the 2314 strong
  *   pseudoprimes to the base 2 below \f$ 2^{32} \f$ in its bucket (the
- *   hashing of Forisek and Jancina); the bases are tested in lockstep;
+ *   hashing of Forisek and Jancina); the bases are tested in lockstep, in
+ *   the arithmetic of Montgomery of 32 bits below \f$ 2^{32} \f$, whose
+ *   constants cost divisions of 32 bits, and with the lazy reduction below
+ *   \f$ 2^{62} \f$;
  * - sieve(), the sieve of Eratosthenes on a SET of the integers from 2 to n
  *   [see BoolSet.h], beyond the book: the least item p left in the set is a
  *   prime, and its multiples are removed; since the multiples of the primes
