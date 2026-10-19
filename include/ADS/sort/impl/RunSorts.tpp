@@ -88,22 +88,22 @@ class RunMerger {
     while( i < n1 ) a[ k++ ] = b[ i++ ];
     return;
     }
-  for( bool done = false ; ! done ; ) {
+  std::size_t gallop = f_gallop;            // a local: the moves of the
+  for( bool done = false ; ! done ; ) {     // items may alias a member
    std::size_t winsL = 0 , winsR = 0;       // one by one, while no run
-   do                                       // wins f_gallop times in a row
+   for( ; ; )                               // wins gallop times in a row
     if( f_less( a[ j ] , b[ i ] ) ) {       // the right one, strictly
      a[ k++ ] = std::move( a[ j++ ] );
-     done = j == e2;
-     ++winsR;
      winsL = 0;
+     if( ( done = j == e2 ) || ( ++winsR >= gallop ) )
+      break;
      }
     else {
      a[ k++ ] = std::move( b[ i++ ] );
-     done = i == n1;
-     ++winsL;
      winsR = 0;
+     if( ( done = i == n1 ) || ( ++winsL >= gallop ) )
+      break;
      }
-   while( ! done && ( ( winsL | winsR ) < f_gallop ) );
    while( ! done ) {                        // by galloping, while it pays
     const std::size_t tL = gallopRightIn( f_B , a[ j ] , i , n1 );
     winsL = tL - i;                         // the left items <= A[ j ]
@@ -122,13 +122,14 @@ class RunMerger {
     if( ( done = i == n1 ) )
      break;
     if( ( winsL < 7 ) && ( winsR < 7 ) ) {
-     f_gallop += 2;                         // it does not pay: one by one
+     gallop += 2;                           // it does not pay: one by one
      break;
      }
-    if( f_gallop > 1 )
-     --f_gallop;                            // it pays: sooner next time
+    if( gallop > 1 )
+     --gallop;                              // it pays: sooner next time
     }
    }
+  f_gallop = gallop;
   while( i < n1 ) a[ k++ ] = std::move( b[ i++ ] );
   }
 

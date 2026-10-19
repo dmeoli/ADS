@@ -767,7 +767,8 @@ ADS_TEST( "pdq-edges" )
 // patterns that matter: one descending run with equal keys, organ pipe,
 // sawtooth, runs of length 1 and 2, all equal, two values, and two runs
 // that interleave in blocks of 6, 7 and 8, around the start of the
-// galloping; all against std::stable_sort
+// galloping, and in blocks of 64 and then of 1, so that the galloping pays
+// down to a threshold of 1 and then fails; all against std::stable_sort
 ADS_TEST( "merge-paths" )
 {
  std::mt19937 g( 21 );
@@ -805,7 +806,7 @@ ADS_TEST( "merge-paths" )
   return( a.first < b.first ); };
  for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 100u , 511u ,
                         512u , 513u , 5000u } )
-  for( int p = 0 ; p < 10 ; ++p ) {
+  for( int p = 0 ; p < 11 ; ++p ) {
    std::vector< R > Q( n );
    const std::size_t h = n / 2 , L = 6 + std::size_t( p % 3 );
    for( std::size_t i = 0 ; i < n ; ++i ) {
@@ -818,6 +819,12 @@ ADS_TEST( "merge-paths" )
      case( 4 ): k = int( g() % 3 ); break;          // runs of 1 and 2
      case( 5 ): k = 7; break;
      case( 6 ): k = int( g() % 2 ); break;
+     case( 10 ): {                                  // 64 , then 1
+      const std::size_t j = i < h ? i : i - h , o = i < h ? 0 : 1;
+      k = j < h / 2 ? int( ( j / 64 ) * 128 + 64 * o + j % 64 )
+                    : int( ( 1 << 20 ) + 2 * j + o );
+      }
+      break;
      default: {                                     // blocks of L
       const std::size_t j = i < h ? i : i - h;
       k = int( ( j / L ) * 2 * L + ( i < h ? 0 : L ) + j % L );

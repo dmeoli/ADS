@@ -292,7 +292,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   back and forth between the vector and its buffer
 - pdqSort() and the insertion sort scan by pointers, and the merges of
   timSort() and powerSort() gallop adaptively, with no branch on the order
-  for numbers in disorder
+  for numbers in disorder; the merge one by one keeps its threshold of
+  galloping in a local and leaves its loop on the end of the run that
+  moved, with no flag tested at each step
 - DaryHeap::push() compares the item with the parent of the new place
   before storing it, and pop() keeps the last item aside, so that no item
   is stored and read back at once; push(), pop() and their sifts are
