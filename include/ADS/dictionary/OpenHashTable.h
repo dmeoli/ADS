@@ -114,6 +114,7 @@
 #include "ADS/dictionary/TableSize.h"
 
 #include <algorithm>
+#include <atomic>
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -350,7 +351,19 @@ class OpenHashTable {
  H f_h;                            ///< the hash of the keys
  std::size_t f_size = 0;           ///< the full places
  std::size_t f_deleted = 0;        ///< the deleted places
- mutable std::size_t f_probes = 0; ///< see probes()
+ /// the places of the last inspection, which the const lookups write too:
+ /// atomic, so that lookups from several threads at once do not race
+ struct Probes {
+  std::atomic< std::size_t > n{ 0 };
+  Probes( void ) = default;
+  Probes( const Probes & o ) : n( o.n.load( std::memory_order_relaxed ) ) {}
+  Probes & operator=( const Probes & o ) {
+   n.store( o.n.load( std::memory_order_relaxed ) ,
+            std::memory_order_relaxed );
+   return( *this );
+   }
+  };
+ mutable Probes f_probes;          ///< see probes()
  std::size_t f_rebuilds = 0;       ///< see restructures()
  std::size_t f_moved = 0;          ///< see moved()
 

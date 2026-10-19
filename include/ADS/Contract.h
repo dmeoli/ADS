@@ -19,10 +19,11 @@
  *   with the invariants.
  *
  * The level ADS_CONTRACTS chooses which are checked: 0 none, 1 the
- * preconditions (the default), 2 also the postconditions, 3 also the
- * invariants and the audits. A violated contract throws
- * ADS::contract_violation, a std::logic_error whose message names the kind of
- * contract, the condition, the function and the place in the source. The
+ * preconditions (the default, 0 when NDEBUG is defined, as for assert), 2
+ * also the postconditions, 3 also the invariants and the audits. A violated
+ * contract throws ADS::contract_violation, a std::logic_error whose message
+ * names the kind of contract, the condition, the function and the place in
+ * the source. The
  * conditions are compiled at every level, so that they stay correct C++, but
  * they are not evaluated above the level chosen; hence they must have no side
  * effects.
@@ -62,9 +63,13 @@
 namespace ADS {
 
 /// the level of the contracts checked: 0 none, 1 preconditions,
-/// 2 postconditions, 3 invariants and audits
+/// 2 postconditions, 3 invariants and audits; 1 by default, 0 with NDEBUG
 #ifndef ADS_CONTRACTS
- #define ADS_CONTRACTS 1
+ #ifdef NDEBUG
+  #define ADS_CONTRACTS 0
+ #else
+  #define ADS_CONTRACTS 1
+ #endif
 #endif
 
 /// a contract violated: a bug of the caller (a precondition) or of ADS

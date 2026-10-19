@@ -285,6 +285,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- a PointerTable moved from is an empty table: find() gave an access out
+  of its places; the move operations, clear() and reserve() are new
+- the lookups of a const OpenHashTable from several threads at once no
+  longer race on probes(), which is atomic
+- ADS_CONTRACTS is 0 by default when NDEBUG is defined, as for assert, so
+  that a release build checks no precondition unless it asks to
 - the product of BigInteger by the FFT in doubles rounded wrong from about
   2^17 digits of 32 bits; it is now an exact number theoretic transform
   modulo three primes

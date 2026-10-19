@@ -25,6 +25,7 @@
 #include "ADS/concurrent/SPSCQueue.h"
 #include "ADS/ADT.h"
 #include "ADS/dictionary/FlatHashTable.h"
+#include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/dictionary/PointerTable.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/memory/Arena.h"
@@ -306,7 +307,68 @@ ADS_TEST( "pointer-table" )
   CHECK( C.find( s , h ) && C.find( s , h )->state == s );
  CHECK( C.find( std::uint64_t( 50 ) , h ) == nullptr );
  CHECK( C.size() == 50 && C.capacity() == 1024 );
+ // moved from: empty, found nothing, refilled; clear() keeps the places,
+ // reserve() leaves no growth up to its n, and no shrink below it
+ PointerTable< Node > P( std::move( C ) );
+ CHECK( P.size() == 50 && P.find( std::uint64_t( 7 ) , h )->state == 7 );
+ CHECK( C.size() == 0 && C.find( std::uint64_t( 7 ) , h ) == nullptr );
+ CHECK( C.begin() == C.end() );
+ C.prefetch( h );
+ const auto r = C.find_or_insert( std::uint64_t( 7 ) , h , [ & ]( void ) {
+  return( N.make( Node{ 7 , 2 } ) ); } );
+ CHECK( r.second && C.size() == 1 && C.capacity() == 16 );
+ PointerTable< Node > A;
+ A = std::move( P );
+ CHECK( A.size() == 50 && P.size() == 0 &&
+        P.find( std::uint64_t( 1 ) , h ) == nullptr );
+ PointerTable< Node > & self = A;
+ A = std::move( self );
+ CHECK( A.size() == 50 && A.find( std::uint64_t( 49 ) , h ) );
+ A.clear();
+ CHECK( A.size() == 0 && A.capacity() == 1024 &&
+        A.find( std::uint64_t( 3 ) , h ) == nullptr );
+ PointerTable< Node > R;
+ R.reserve( 700 );
+ CHECK( R.capacity() == 1024 );                // 700 <= 0.7 * 1024
+ for( std::uint64_t s = 0 ; s < 700 ; ++s )
+  R.find_or_insert( s , splitmix64( s ) , [ & ]( void ) {
+   return( N.make( Node{ s , 3 } ) ); } );
+ CHECK( R.capacity() == 1024 && R.size() == 700 );
+ R.reserve( 10 );
+ CHECK( R.capacity() == 1024 );
+ R.reserve( 717 );                             // 717 > 0.7 * 1024: 2048
+ CHECK( R.capacity() == 2048 && R.size() == 700 );
+ for( std::uint64_t s = 0 ; s < 700 ; ++s )
+  CHECK( R.find( s , splitmix64( s ) )->state == s );
+ P.reserve( 0 );
+ CHECK( P.capacity() == 16 && P.size() == 0 );
  }
+// the lookups of a const OpenHashTable from 4 threads at once, each against
+// the keys inserted: the lookups write probes(), which must not race (a
+// test for ThreadSanitizer), and the answers are those of one thread
+ADS_TEST( "open-hash-readers" )
+{
+ OpenHashTable< long , long > T( 1024 , Probing::linear() );
+ for( long k = 0 ; k < 500 ; ++k )
+  T.insert( 2 * k , k );
+ const auto & C = T;
+ std::vector< int > wrong( 4 , 0 );
+ std::vector< std::thread > W;
+ for( int t = 0 ; t < 4 ; ++t )
+  W.emplace_back( [ & , t ]( void ) {
+   for( int r = 0 ; r < 50 ; ++r )
+    for( long k = 0 ; k < 1000 ; ++k ) {
+     const auto v = C.lookup( k );
+     if( ( C.contains( k ) != ( k % 2 == 0 ) ) ||
+         ( v.has_value() != ( k % 2 == 0 ) ) || ( v && ( *v != k / 2 ) ) )
+      ++wrong[ t ];
+     }
+   } );
+ for( auto & w : W ) w.join();
+ CHECK( wrong == std::vector< int >( 4 , 0 ) );
+ CHECK( C.probes() >= 1 );
+ }
+
 
 // the hash of FlatHashTable that undoes its product by floor( 2^64 / phi ),
 // so that the key is the mixed hash and a test chooses the first group

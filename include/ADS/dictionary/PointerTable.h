@@ -97,6 +97,19 @@ class PointerTable {
  explicit PointerTable( std::size_t capacity = 16 , Eq eq = Eq() ,
                         const A & alloc = A() );
 
+ PointerTable( const PointerTable & ) = default;
+ PointerTable & operator=( const PointerTable & ) = default;
+
+ /// the table of o, which is left empty, with no places until an insertion
+ PointerTable( PointerTable && o ) noexcept;
+ PointerTable & operator=( PointerTable && o ) noexcept;
+
+ /// no object, the places kept; the objects are not touched
+ void clear( void );
+
+ /// room for n objects with no growth
+ void reserve( std::size_t n );
+
  /// the object of the key, whose hash is hash, and false; if there is
  /// none, the object that make() returns, now in the table, and true
  /// \post the result is not nil
@@ -173,6 +186,9 @@ class PointerTable {
  /// the first place of a hash
  [[nodiscard]] std::size_t place( std::uint64_t hash ) const;
 
+ /// m empty places, a power of 2
+ void reset( std::size_t m );
+
  /// twice the places
  void grow( void );
 
@@ -182,8 +198,8 @@ class PointerTable {
  [[nodiscard]] bool reached( const K & key , std::uint64_t hash ) const;
 
  std::vector< Slot , SA > f_S;   ///< the places
- std::size_t f_mask;             ///< places - 1
- int f_bits;                     ///< log2 of the places
+ std::size_t f_mask = 0;         ///< places - 1
+ int f_bits = 0;                 ///< log2 of the places
  std::size_t f_size = 0;         ///< the number of objects
  Eq f_eq;                        ///< the equality of a key and an object
 

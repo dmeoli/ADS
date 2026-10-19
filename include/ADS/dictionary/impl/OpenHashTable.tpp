@@ -269,7 +269,7 @@ const K & OpenHashTable< K , V , H >::keyAt( std::size_t i ) const
 template< class K , class V , class H >
 std::size_t OpenHashTable< K , V , H >::probes( void ) const
 {
- return( f_probes );
+ return( f_probes.n.load( std::memory_order_relaxed ) );
  }
 
 template< class K , class V , class H >
@@ -318,7 +318,7 @@ std::size_t OpenHashTable< K , V , H >::scan( const K & k , bool insert ) const
    j = f_probe.at( h , i , m );
   ADS_AUDIT( j == f_probe.at( h , i , m ) );
   }
- f_probes = std::min( i + 1 , m );
+ f_probes.n.store( std::min( i + 1 , m ) , std::memory_order_relaxed );
  if( insert && ! is( j , k ) && ( firstDeleted != -1 ) )
   return( firstDeleted );
  return( j );

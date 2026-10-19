@@ -332,7 +332,8 @@ postconditions, `ADS_INVARIANT` for the invariant of a structure, and
 a vector is sorted before a binary search, or that a write left the other
 items as they were). The macro `ADS_CONTRACTS` chooses which of them are
 evaluated (0 none, 1 the preconditions, which is the default, 2 also the
-postconditions, 3 also the invariants and the audits). A violated contract
+postconditions, 3 also the invariants and the audits); with `NDEBUG`
+defined, as in a release build, the default is 0, as for `assert`. A violated contract
 throws `ADS::contract_violation`, a `std::logic_error` naming the
 condition, the function and the place. Tests are built at the level 3;
 furthermore, the axioms of each abstract data type are checked on all its

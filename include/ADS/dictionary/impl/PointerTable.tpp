@@ -28,10 +28,76 @@ PointerTable< T , Eq , A >::PointerTable( std::size_t capacity , Eq eq ,
  }
 
 template< class T , class Eq , class A >
+PointerTable< T , Eq , A >::PointerTable( PointerTable && o ) noexcept
+ : f_S( std::move( o.f_S ) ) , f_mask( o.f_mask ) , f_bits( o.f_bits ) ,
+   f_size( o.f_size ) , f_eq( std::move( o.f_eq ) )
+{
+ o.f_S.clear();
+ o.f_mask = 0;
+ o.f_bits = 0;
+ o.f_size = 0;
+ }
+
+template< class T , class Eq , class A >
+PointerTable< T , Eq , A > & PointerTable< T , Eq , A >::operator=(
+                                             PointerTable && o ) noexcept
+{
+ if( this != &o ) {
+  f_S = std::move( o.f_S );
+  f_mask = o.f_mask;
+  f_bits = o.f_bits;
+  f_size = o.f_size;
+  f_eq = std::move( o.f_eq );
+  o.f_S.clear();
+  o.f_mask = 0;
+  o.f_bits = 0;
+  o.f_size = 0;
+  }
+ return( *this );
+ }
+
+template< class T , class Eq , class A >
+void PointerTable< T , Eq , A >::clear( void )
+{
+ std::fill( f_S.begin() , f_S.end() , Slot() );
+ f_size = 0;
+ }
+
+template< class T , class Eq , class A >
+void PointerTable< T , Eq , A >::reserve( std::size_t n )
+{
+ std::size_t m = f_S.empty() ? 16 : f_S.size();
+ while( n * 10 > m * 7 )
+  m *= 2;
+ if( m == f_S.size() )
+  return;
+ std::vector< Slot , SA > old( std::move( f_S ) );
+ reset( m );
+ for( const Slot & s : old )                // the objects are not touched
+  if( s.p ) {
+   std::size_t i = place( s.hash );
+   while( f_S[ i ].p )
+    i = ( i + 1 ) & f_mask;
+   f_S[ i ] = s;
+   }
+ ADS_POST( n * 10 <= f_S.size() * 7 );
+ }
+
+template< class T , class Eq , class A >
+void PointerTable< T , Eq , A >::reset( std::size_t m )
+{
+ f_S.assign( m , Slot() );
+ f_mask = m - 1;
+ f_bits = std::countr_zero( m );
+ }
+
+template< class T , class Eq , class A >
 template< class K , class Make >
 std::pair< T * , bool > PointerTable< T , Eq , A >::find_or_insert(
                          const K & key , std::uint64_t hash , Make && make )
 {
+ if( f_S.empty() )                          // moved from
+  reset( 16 );
  std::size_t i = place( hash );
  for( ; f_S[ i ].p ; i = ( i + 1 ) & f_mask )
   if( ( f_S[ i ].hash == hash ) && f_eq( f_S[ i ].p , key ) )
@@ -50,6 +116,8 @@ template< class K >
 T * PointerTable< T , Eq , A >::find( const K & key ,
                                       std::uint64_t hash ) const
 {
+ if( f_size == 0 )                          // also moved from
+  return( nullptr );
  for( std::size_t i = place( hash ) ; f_S[ i ].p ; i = ( i + 1 ) & f_mask )
   if( ( f_S[ i ].hash == hash ) && f_eq( f_S[ i ].p , key ) )
    return( f_S[ i ].p );
@@ -60,7 +128,8 @@ template< class T , class Eq , class A >
 void PointerTable< T , Eq , A >::prefetch( std::uint64_t hash ) const
 {
 #if defined( __GNUC__ ) || defined( __clang__ )
- __builtin_prefetch( &f_S[ place( hash ) ] , 0 , 1 );
+ if( ! f_S.empty() )
+  __builtin_prefetch( &f_S[ place( hash ) ] , 0 , 1 );
 #else
  (void) hash;
 #endif
@@ -121,6 +190,8 @@ template< class K >
 bool PointerTable< T , Eq , A >::reached( const K & key ,
                                           std::uint64_t hash ) const
 {
+ if( f_S.empty() )
+  return( false );
  for( std::size_t i = place( hash ) ; f_S[ i ].p ; i = ( i + 1 ) & f_mask )
   if( ( f_S[ i ].hash == hash ) && f_eq( f_S[ i ].p , key ) )
    return( true );
