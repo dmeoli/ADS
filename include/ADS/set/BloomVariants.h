@@ -222,8 +222,8 @@ class PartitionedBloomFilter {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the bit of x in the part i
- [[nodiscard]] std::size_t bit( const T & x , int i ) const;
+ /// the places of x in the parts, h_1 + i h_2 mod the bits of a part
+ [[nodiscard]] detail::BloomProbe probe( const T & x ) const;
 
  std::vector< bool > f_B;
  std::size_t f_w;                  ///< the bits of a part

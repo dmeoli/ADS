@@ -17,6 +17,31 @@
 
 namespace ADS {
 
+namespace detail {
+
+/// the places h_1 + i h_2 mod m , i = 0 , 1 , ... of the two hashes a and
+/// b, each from the one before by an addition and a subtraction, with no
+/// remainder past the first two
+class BloomProbe {
+ public:
+ BloomProbe( std::uint64_t a , std::uint64_t b , std::uint64_t m )
+  : f_j( a % m ) , f_d( b % m ) , f_m( m ) {}
+
+ /// the place i, then the step to the place i + 1
+ std::size_t next( void ) {
+  const std::uint64_t j = f_j;
+  f_j += f_d;
+  if( f_j >= f_m )
+   f_j -= f_m;
+  return( std::size_t( j ) );
+  }
+
+ private:
+ std::uint64_t f_j , f_d , f_m;
+ };
+
+}  // end( namespace detail )
+
 template< class T , class H >
 BloomFilter< T , H >::BloomFilter( std::size_t m , int k , H h )
  : f_B( m / 64 + ( m % 64 != 0 ) , 0 ) ,   // m + 63 wraps near SIZE_MAX
@@ -43,8 +68,9 @@ void BloomFilter< T , H >::insert( const T & x )
 {
  const std::uint64_t a = splitmix64( std::uint64_t( f_h( x ) ) ) ,
                      b = splitmix64( a ) | 1;
+ detail::BloomProbe P( a , b , f_m );
  for( int i = 0 ; i < f_k ; ++i ) {
-  const std::size_t j = std::size_t( ( a + std::uint64_t( i ) * b ) % f_m );
+  const std::size_t j = P.next();
   f_B[ j / 64 ] |= std::uint64_t( 1 ) << ( j % 64 );
   }
  ++f_n;
@@ -56,8 +82,9 @@ bool BloomFilter< T , H >::maybe( const T & x ) const
 {
  const std::uint64_t a = splitmix64( std::uint64_t( f_h( x ) ) ) ,
                      b = splitmix64( a ) | 1;
+ detail::BloomProbe P( a , b , f_m );
  for( int i = 0 ; i < f_k ; ++i ) {
-  const std::size_t j = std::size_t( ( a + std::uint64_t( i ) * b ) % f_m );
+  const std::size_t j = P.next();
   if( !( f_B[ j / 64 ] >> ( j % 64 ) & 1 ) )
    return( false );
   }
