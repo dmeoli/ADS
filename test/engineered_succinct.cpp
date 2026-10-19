@@ -21,6 +21,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/compression/DirectAccessCodes.h"
 #include "ADS/compression/Entropy.h"
 #include "ADS/compression/HuffmanCoder.h"
 #include "ADS/compression/Rans.h"
@@ -291,6 +292,51 @@ ADS_TEST( "tans-coder" )
  auto d = tansCompress( coderInputs().back() );
  d[ 8 + 512 ] ^= 0x40;                     // a wrong length of the stream
  CHECK_THROWS( ( void )tansDecompress( d ) , contract_violation );
+ }
+
+// the directly addressable codes: every item of sequences of geometric,
+// uniform and skewed integers, of all zeros, of one item, of the largest
+// integers; the widths cover the bits of the largest item, and the bits
+// stay within those of a plain array of fixed width (and its ranks) and
+// below those of a split in bytes on a skewed sequence
+ADS_TEST( "direct-access-codes" )
+{
+ std::mt19937_64 g( 13 );
+ auto check = [ & ]( const std::vector< std::uint64_t > & x ) {
+  const DirectAccessCodes D( x );
+  CHECK( D.size() == x.size() && D.empty() == x.empty() );
+  CHECK( std::equal( x.begin() , x.end() , D.begin() , D.end() ) );
+  std::uint64_t m = 0;
+  for( const auto v : x ) m |= v;
+  int sum = 0;
+  for( const int b : D.widths() ) {
+   CHECK( b >= 1 );
+   sum += b;
+   }
+  if( ! x.empty() ) CHECK( sum == std::max( 1 , int( std::bit_width( m ) ) ) );
+  CHECK( D.sizeInBits() <= std::size_t( 1.05 * double( x.size() ) *
+                                        std::max( 1 , sum ) ) + 2048 );
+  CHECK_THROWS( ( void )D.access( x.size() ) , contract_violation );
+  return( D.sizeInBits() );
+  };
+ std::geometric_distribution< std::uint64_t > G( 0.01 );
+ for( const std::size_t n : { 1 , 2 , 100 , 5000 } ) {
+  std::vector< std::uint64_t > a( n ) , b( n ) , c( n );
+  for( auto & v : a ) v = G( g );
+  for( auto & v : b ) v = g() >> ( g() % 64 );
+  for( auto & v : c ) v = g() % 4;
+  check( a );
+  check( b );
+  check( c );
+  }
+ check( std::vector< std::uint64_t >( 300 , 0 ) );
+ check( std::vector< std::uint64_t >( 300 , ~0ULL ) );
+ check( std::vector< std::uint64_t >{ 1ULL << 63 , 0 , 5 } );
+ check( {} );
+ std::vector< std::uint64_t > z( 20000 );      // 3 bits but a few of 40
+ for( std::size_t i = 0 ; i < z.size() ; ++i )
+  z[ i ] = i % 1000 == 0 ? ( 1ULL << 40 ) + i : i % 8;
+ CHECK( check( z ) < 20000 * 5 );
  }
 
 // Stream VByte: the round trip and the size of every count of integers
