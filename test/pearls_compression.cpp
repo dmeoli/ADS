@@ -940,7 +940,7 @@ ADS_TEST( "fm-index-notes" )
 // a count of L, the counts against the naive search, std::search and KMP
 // (overlapping occurrences), the places against the naive search, and the
 // extracts against substr, on substrings of the text and on random
-// patterns
+// patterns; the symbol 0 against the $, and the bits of the index
 ADS_TEST( "fm-index" )
 {
  std::mt19937 g( 1 );
@@ -981,6 +981,26 @@ ADS_TEST( "fm-index" )
     }
    CHECK( I.extract( 0 , s.size() ) == s );
    }
+  }
+ // the symbol 0, which L shares with the $, in blocks scanned 8 bytes at
+ // a time: every rank of every symbol, and the bits of the index
+ std::string z;
+ for( int i = 0 ; i < 300 ; ++i )
+  z += char( g() % 3 == 0 ? 0 : 'a' + g() % 3 );
+ for( const std::size_t b : { 8 , 13 , 64 } ) {
+  const FMIndex I( z , b , 4 );
+  const BWT t = I.transform();
+  for( const char c : { '\0' , 'a' , 'b' , 'c' , 'z' } ) {
+   std::size_t r = 0;
+   for( std::size_t k = 0 ; k <= z.size() + 1 ; ++k ) {
+    CHECK( I.rank( c , k ) == r );
+    if( ( k < z.size() + 1 ) && ( k != t.primary ) &&
+        ( t.last[ k < t.primary ? k : k - 1 ] == c ) ) ++r;
+    }
+   }
+  CHECK( I.count( std::string( 1 , '\0' ) ) ==
+         std::size_t( std::count( z.begin() , z.end() , '\0' ) ) );
+  CHECK( I.sizeInBits() >= 8 * ( z.size() + 1 ) + 32 * 4 * ( z.size() / b ) );
   }
  const FMIndex E( "" );
  CHECK( E.count( "a" ) == 0 && E.locate( "a" ).empty() &&
