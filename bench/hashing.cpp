@@ -21,9 +21,11 @@
  *   ankerl::unordered_dense::map, tsl::robin_map and the cuckoo table of
  *   libcuckoo; each table with the default hash of its library, and those
  *   of ADS with FastHash;
- * - "filters": the build of a filter of n random keys of 64 bits and n
- *   queries of present and of absent keys, by the filters of Bloom of ADS
- *   against the blocked filter of Bloom of fastfilter_cpp and the xor and
+ * - "filters": the build of a filter of n random keys of 64 bits (by n
+ *   insertions for the dynamic ones), n queries of present and of absent
+ *   keys and, for the cuckoo filters, the n removals, by the filters of
+ *   ADS against the blocked filter of Bloom, the cuckoo filter and the
+ *   standard Ribbon filter (of RocksDB) of fastfilter_cpp and the xor and
  *   binary fuse filters of xor_singleheader;
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, by those of ADS (by pilots and
@@ -69,6 +71,8 @@
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/BloomFilter.h"
 #include "ADS/set/BloomVariants.h"
+#include "ADS/set/CuckooFilter.h"
+#include "ADS/set/RibbonFilter.h"
 
 #if __has_include( <boost/unordered/unordered_flat_map.hpp> )
  #include <boost/container_hash/hash.hpp>
@@ -106,9 +110,17 @@
  #include <rapidhash.h>
  #define ADS_HAS_RAPIDHASH 1
 #endif
-#if __has_include( <bloom/simd-block.h> )
+#if __has_include( <bloom/simd-block.h> ) && defined( __AVX2__ )
  #include <bloom/simd-block.h>
  #define ADS_HAS_FASTFILTER 1
+#endif
+#if __has_include( <cuckoo/cuckoofilter.h> )
+ #include <cuckoo/cuckoofilter.h>
+ #define ADS_HAS_CUCKOOFILTER 1
+#endif
+#if __has_include( <ribbon/ribbon_impl.h> )
+ #include <ribbon/ribbon_impl.h>
+ #define ADS_HAS_RIBBON 1
 #endif
 #if __has_include( <binaryfusefilter.h> )
  #include <binaryfusefilter.h>
@@ -128,9 +140,12 @@
  #define ADS_HAS_RECSPLIT 1
 #endif
 
+#include <cmath>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -470,6 +485,86 @@ void filters( const std::string & who , const std::vector< Key > & K ,
           sink = sink + s; } , r , n ) );
  }
 
+/// the filter that make() builds, filled by ins( f , k ) as the build of
+/// filters(), then the removals of the keys in the order H by
+/// rem( f , k )
+template< class M , class I , class F , class R , class Z >
+void dynamic( const std::string & who , const std::vector< Key > & K ,
+              const std::vector< Key > & H , const std::vector< Key > & Q ,
+              int r , M && make , I && ins , F && has , R && rem ,
+              Z && bits )
+{
+ auto fill = [ & ]( const std::vector< Key > & S ) {
+  auto f = make( S.size() );
+  for( Key k : S ) ins( f , k );
+  return( f ); };
+ filters( who , K , H , Q , r , fill , has , bits );
+ print( "filters" , "remove" , K.size() , who , median(
+         [ & ](){ return( fill( K ) ); } , [ & ]( auto & f ) {
+          std::size_t s = 0;
+          for( Key k : H ) s += rem( f , k );
+          sink = sink + s; } , r , K.size() ) );
+ }
+
+#ifdef ADS_HAS_RIBBON
+/// the settings of the standard Ribbon filter of RocksDB, with
+/// coefficients of 64 bits and results of C bits
+template< std::uint32_t C >
+struct RibbonSettings {
+ static constexpr bool kIsFilter = true;
+ static constexpr bool kHomogeneous = false;
+ static constexpr bool kFirstCoeffAlwaysOne = true;
+ static constexpr bool kUseSmash = false;
+ static constexpr bool kAllowZeroStarts = false;
+ static constexpr std::uint32_t kFixedNumColumns = C;
+ using CoeffRow = std::uint64_t;
+ using Hash = std::uint64_t;
+ using Key = std::uint64_t;
+ using Seed = std::uint32_t;
+ using Index = std::size_t;
+ using ResultRow = std::uint32_t;
+
+ static Hash HashFn( const Hash & k , Seed seed ) {
+  return( ADS::hashWord( k , seed ) );
+  }
+ };
+
+/// the standard Ribbon filter of RocksDB with the rows of RibbonFilter
+template< std::uint32_t C >
+class StandardRibbon {
+ IMPORT_RIBBON_IMPL_TYPES( RibbonSettings< C > );
+
+ /// the rows of RibbonFilter for n keys
+ static std::size_t rows( std::size_t n ) {
+  const double eps = std::max( 0.01 , 0.0083 * std::log2( double( n ) ) -
+                                      0.025 );
+  return( InterleavedSoln::RoundUpNumSlots( std::size_t( std::ceil(
+           double( n ) * ( 1 + eps ) ) ) ) );
+  }
+
+ std::size_t f_m;
+ std::size_t f_bytes;
+ std::unique_ptr< char[] > f_data;
+ InterleavedSoln f_soln;
+ Hasher f_hasher;
+
+ public:
+ explicit StandardRibbon( const std::vector< Key > & S )
+  : f_m( rows( S.size() ) ) , f_bytes( ( f_m * C + 7 ) / 8 ) ,
+    f_data( new char[ f_bytes ] ) , f_soln( f_data.get() , f_bytes ) {
+  Banding b( f_m );
+  if( ! b.ResetAndFindSeedToSolve( f_m , S.begin() , S.end() ) )
+   throw std::runtime_error( "StandardRibbon: no seed" );
+  f_hasher.SetOrdinalSeed( b.GetOrdinalSeed() );
+  f_soln.BackSubstFrom( b );
+  }
+
+ bool contain( Key k ) const { return( f_soln.FilterQuery( k , f_hasher ) ); }
+
+ std::size_t bits( void ) const { return( 8 * f_bytes ); }
+ };
+#endif
+
 /// the identity on the keys, which are random already
 struct Identity {
  std::size_t operator()( Key k ) const { return( std::size_t( k ) ); }
@@ -570,6 +665,56 @@ void allFilters( const std::vector< Key > & K , const std::vector< Key > & H ,
            []( const auto & f ) {
             return( 8 * xor8_size_in_bytes( &f->f ) ); } );
  }
+#endif
+ filters( "ADS::RibbonFilter 8" , K , H , Q , r , []( const auto & S ) {
+          return( ADS::RibbonFilter< Key , std::uint8_t >( S ) ); } ,
+          []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+          []( const auto & f ) { return( f.bits() ); } );
+ filters( "ADS::RibbonFilter 16" , K , H , Q , r , []( const auto & S ) {
+          return( ADS::RibbonFilter< Key , std::uint16_t >( S ) ); } ,
+          []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+          []( const auto & f ) { return( f.bits() ); } );
+#ifdef ADS_HAS_RIBBON
+ filters( "fastfilter::StandardRibbon 8" , K , H , Q , r ,
+          []( const auto & S ) {
+           return( std::make_unique< StandardRibbon< 8 > >( S ) ); } ,
+          []( const auto & f , Key k ) { return( f->contain( k ) ); } ,
+          []( const auto & f ) { return( f->bits() ); } );
+ filters( "fastfilter::StandardRibbon 16" , K , H , Q , r ,
+          []( const auto & S ) {
+           return( std::make_unique< StandardRibbon< 16 > >( S ) ); } ,
+          []( const auto & f , Key k ) { return( f->contain( k ) ); } ,
+          []( const auto & f ) { return( f->bits() ); } );
+#endif
+ dynamic( "ADS::CuckooFilter 8" , K , H , Q , r , []( std::size_t m ) {
+          return( ADS::CuckooFilter< Key , std::uint8_t >( m ) ); } ,
+          []( auto & f , Key k ) { f.insert( k ); } ,
+          []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+          []( auto & f , Key k ) { return( f.remove( k ) ); } ,
+          []( const auto & f ) { return( f.bits() ); } );
+ dynamic( "ADS::CuckooFilter 16" , K , H , Q , r , []( std::size_t m ) {
+          return( ADS::CuckooFilter< Key , std::uint16_t >( m ) ); } ,
+          []( auto & f , Key k ) { f.insert( k ); } ,
+          []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+          []( auto & f , Key k ) { return( f.remove( k ) ); } ,
+          []( const auto & f ) { return( f.bits() ); } );
+#ifdef ADS_HAS_CUCKOOFILTER
+ dynamic( "fastfilter::CuckooFilter 8" , K , H , Q , r ,
+          []( std::size_t m ) {
+           return( std::make_unique< cuckoofilter::CuckooFilter< Key , 8 > >(
+                    m ) ); } ,
+          []( auto & f , Key k ) { f->Add( k ); } ,
+          []( const auto & f , Key k ) { return( f->Contain( k ) == 0 ); } ,
+          []( auto & f , Key k ) { return( f->Delete( k ) == 0 ); } ,
+          []( const auto & f ) { return( 8 * f->SizeInBytes() ); } );
+ dynamic( "fastfilter::CuckooFilter 16" , K , H , Q , r ,
+          []( std::size_t m ) {
+           return( std::make_unique< cuckoofilter::CuckooFilter< Key , 16 > >(
+                    m ) ); } ,
+          []( auto & f , Key k ) { f->Add( k ); } ,
+          []( const auto & f , Key k ) { return( f->Contain( k ) == 0 ); } ,
+          []( auto & f , Key k ) { return( f->Delete( k ) == 0 ); } ,
+          []( const auto & f ) { return( 8 * f->SizeInBytes() ); } );
 #endif
  }
 
