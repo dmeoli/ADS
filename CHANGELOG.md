@@ -432,6 +432,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   select, with access, rank and select of any symbol, the k-th smallest
   item of a range and the items of a range below a value, in O( w ) time;
   test/engineered_succinct.cpp
+- huffmanCompress() and huffmanDecompress(), the code of Huffman of bytes
+  as the fast coders write it: optimal lengths of at most 11 bits by
+  package-merge (limitedHuffmanLengths()), the codewords from the low bit
+  of a word in four streams written and read together, a table of 2^11
+  entries that gives one or two symbols a lookup
+- ransCompress() and ransDecompress(), rANS of order 0 of Duda with four
+  states in turn on one stream of 16 bits words, the frequencies scaled to
+  2^12 (scaleFrequencies()), the division of the encoder by a reciprocal
+  and the renormalization with no branch
+- streamVByteEncode() and streamVByteDecode(), the Stream VByte of
+  Lemire, Kurz and Rupp: the lengths of 4 integers in a control byte apart
+  from their bytes, moved by one shuffle of SSSE3 (and SSE4.1 in the
+  encoder) from a table of 256 masks
 
 ### Changed
 

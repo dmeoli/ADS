@@ -3,8 +3,10 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of the engineered succinct structures and codes, beyond the book:
- * the wavelet matrix, against a scan of the sequence, at the level 3 of the
- * contracts.
+ * the wavelet matrix, against a scan of the sequence, and the coders of
+ * Huffman and rANS, by their round trip and their size against the
+ * entropy, and Stream VByte, by its round trip and its size, at the level 3
+ * of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -18,11 +20,17 @@
 
 #include "ADSTest.h"
 
+#include "ADS/compression/Entropy.h"
+#include "ADS/compression/HuffmanCoder.h"
+#include "ADS/compression/Rans.h"
+#include "ADS/compression/StreamVByte.h"
 #include "ADS/succinct/WaveletMatrix.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <random>
+#include <string>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -107,6 +115,152 @@ ADS_TEST( "wavelet-matrix" )
  CHECK_THROWS( WaveletMatrix( std::vector< std::uint64_t >{ 8 } , 3 ) ,
                contract_violation );
  CHECK_THROWS( WaveletMatrix( std::vector< std::uint64_t >{ 1 } , 65 ) ,
+               contract_violation );
+ }
+
+/// the strings of the round trips of the coders: empty, one byte, one
+/// distinct byte, two, all 256, a skewed source whose codes of Huffman
+/// reach the limit of 11 bits, uniform bytes, a text, and sizes around the
+/// four streams and the groups of 4
+std::vector< std::vector< std::uint8_t > > coderInputs( void )
+{
+ std::mt19937_64 g( 7 );
+ std::vector< std::vector< std::uint8_t > > S = { {} , { 42 } ,
+  std::vector< std::uint8_t >( 1000 , 9 ) , { 0 , 255 } };
+ std::vector< std::uint8_t > all( 256 );
+ for( int i = 0 ; i < 256 ; ++i ) all[ std::size_t( i ) ] = std::uint8_t( i );
+ S.push_back( all );
+ for( const std::size_t n : { 2 , 3 , 5 , 7 , 15 , 16 , 17 , 100003 } ) {
+  std::vector< std::uint8_t > u( n ) , z( n );
+  for( auto & c : u ) c = std::uint8_t( g() );
+  // Fibonacci-like frequencies: byte k with probability about 2^-k
+  for( auto & c : z ) c = std::uint8_t( std::min( 40 , std::countr_zero(
+                                          g() | ( 1ULL << 40 ) ) ) );
+  S.push_back( u );
+  S.push_back( z );
+  }
+ const std::string t = "it was the best of times, it was the worst of "
+                       "times, it was the age of wisdom, it was the age of "
+                       "foolishness";
+ std::vector< std::uint8_t > text;
+ for( int r = 0 ; r < 2000 ; ++r )
+  text.insert( text.end() , t.begin() , t.end() );
+ S.push_back( text );
+ return( S );
+ }
+
+// the code of Huffman of bytes: the round trip, the lengths within 11 bits
+// and their Kraft sum, the size within the entropy and one bit per byte
+// (and the header), package-merge against the code of Huffman when it fits
+// and on a skewed source that it cuts, and the malformed inputs
+ADS_TEST( "huffman-coder" )
+{
+ for( const auto & s : coderInputs() ) {
+  const auto c = huffmanCompress( s );
+  CHECK( huffmanDecompress( c ) == s );
+  if( s.size() > 1000 ) {
+   const double h = entropy( std::string_view(
+                     reinterpret_cast< const char * >( s.data() ) ,
+                     s.size() ) );
+   CHECK( 8.0 * double( c.size() ) <= double( s.size() ) * ( h + 1 ) +
+                                       8 * 200 );
+   }
+  }
+ std::array< std::uint64_t , 256 > f{};
+ for( int k = 0 ; k < 40 ; ++k ) f[ std::size_t( k ) ] = 1ULL << ( 40 - k );
+ const auto len = limitedHuffmanLengths( f , 11 );
+ std::uint64_t kraft = 0;
+ for( int k = 0 ; k < 256 ; ++k ) {
+  CHECK( ( len[ std::size_t( k ) ] > 0 ) == ( k < 40 ) );
+  CHECK( len[ std::size_t( k ) ] <= 11 );
+  if( len[ std::size_t( k ) ] > 0 )
+   kraft += 1ULL << ( 11 - len[ std::size_t( k ) ] );
+  }
+ CHECK( kraft == 2048 );                    // complete
+ const auto free = limitedHuffmanLengths( f , 40 );   // Huffman: 1, 2, ...
+ CHECK( free[ 0 ] == 1 && free[ 1 ] == 2 && free[ 38 ] == 39 &&
+        free[ 39 ] == 39 );
+ std::array< std::uint64_t , 256 > one{};
+ one[ 5 ] = 3;
+ CHECK( limitedHuffmanLengths( one , 11 )[ 5 ] == 1 );
+ CHECK_THROWS( ( void )huffmanDecompress( std::vector< std::uint8_t >( 5 ) ) ,
+               contract_violation );
+ auto c = huffmanCompress( coderInputs().back() );
+ c[ 9 ] = 0x11;                            // two codes of 1 bit too many
+ CHECK_THROWS( ( void )huffmanDecompress( c ) , contract_violation );
+ }
+
+// rANS of order 0: the round trip, the size within a percent of the
+// entropy (and the header) on the large strings, the scaled frequencies
+// (sum, positive ones kept positive, a single byte), and the malformed
+// inputs
+ADS_TEST( "rans-coder" )
+{
+ for( const auto & s : coderInputs() ) {
+  const auto c = ransCompress( s );
+  CHECK( ransDecompress( c ) == s );
+  if( s.size() > 10000 ) {
+   const double h = entropy( std::string_view(
+                     reinterpret_cast< const char * >( s.data() ) ,
+                     s.size() ) );
+   CHECK( 8.0 * double( c.size() ) <= double( s.size() ) * h * 1.01 +
+                                       8 * 600 );
+   }
+  }
+ std::array< std::uint64_t , 256 > f{};
+ f[ 0 ] = 1000000;
+ for( int k = 1 ; k < 256 ; ++k ) f[ std::size_t( k ) ] = 1;
+ const auto g = scaleFrequencies( f , 12 );
+ std::uint64_t sum = 0;
+ for( const auto x : g ) {
+  CHECK( x >= 1 );
+  sum += x;
+  }
+ CHECK( sum == 4096 && g[ 0 ] == 4096 - 255 );
+ std::array< std::uint64_t , 256 > one{};
+ one[ 200 ] = 1;
+ CHECK( scaleFrequencies( one , 12 )[ 200 ] == 4096 );
+ CHECK_THROWS( ( void )scaleFrequencies( {} , 12 ) , contract_violation );
+ CHECK_THROWS( ( void )ransDecompress( std::vector< std::uint8_t >( 20 ) ) ,
+               contract_violation );
+ auto c = ransCompress( coderInputs().back() );
+ c[ 8 ] ^= 1;                              // the frequencies sum wrong
+ CHECK_THROWS( ( void )ransDecompress( c ) , contract_violation );
+ }
+
+// Stream VByte: the round trip and the size of every count of integers
+// from 0 to 41 (the groups of 4 and the integers one at a time at the end)
+// on the bounds of the lengths 1 to 4, and of 10^5 random ones of random
+// lengths, against the variable-byte code; and the malformed inputs
+ADS_TEST( "stream-vbyte" )
+{
+ std::mt19937_64 g( 11 );
+ const std::uint32_t edge[] = { 0 , 1 , 255 , 256 , 65535 , 65536 ,
+                                16777215 , 16777216 , 4294967295u };
+ auto bytes = []( std::uint32_t v ) {
+  return( std::size_t( 1 + ( v > 0xFF ) + ( v > 0xFFFF ) + ( v > 0xFFFFFF ) ) );
+  };
+ auto check = [ & ]( const std::vector< std::uint32_t > & x ) {
+  const auto c = streamVByteEncode( x );
+  std::size_t size = ( x.size() + 3 ) / 4;
+  for( const auto v : x ) size += bytes( v );
+  CHECK( c.size() == size );
+  CHECK( streamVByteDecode( c , x.size() ) == x );
+  };
+ for( std::size_t n = 0 ; n < 42 ; ++n ) {
+  std::vector< std::uint32_t > x( n );
+  for( auto & v : x ) v = edge[ g() % 9 ];
+  check( x );
+  }
+ std::vector< std::uint32_t > x( 100000 );
+ for( auto & v : x ) v = std::uint32_t( g() ) >> ( 8 * ( g() % 4 ) );
+ check( x );
+ const auto c = streamVByteEncode( x );
+ CHECK_THROWS( ( void )streamVByteDecode( std::span( c ).first( c.size() -
+                                                                1 ) ,
+                                          x.size() ) ,
+               contract_violation );
+ CHECK_THROWS( ( void )streamVByteDecode( c , x.size() - 1 ) ,
                contract_violation );
  }
 
