@@ -567,6 +567,15 @@ heaps  linked-heap-pool      heap con puntatori, nodi in un pool
 heaps  pairing-heap          pairing heap a due passate e ausiliario
 hashing  dense-hash-map        mappa hash a vettore denso e indice
 
+# the engineered ordered structures, beyond the book
+ordered  btree-map            B+-albero in memoria, nodi di 512 byte
+ordered  static-search        S+-albero di Slotin, ricerca senza salti
+ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
+ordered  word-range-minimum   minimo di un intervallo, pile in una parola
+ordered  vector-intersection  intersezione a blocchi di 8 e a galoppo
+ordered  union-find           algoritmo di Rem con lo splicing
+ordered  bool-set-words       vettore booleano a parole di 64 bit
+
 # the standard interface of the containers, beyond the book
 interop  sequences            iteratori delle sequenze, std e Boost
 interop  restricted           viste di pile, code e heap
