@@ -496,6 +496,8 @@ engineered  mpsc-inbox           casella di molti produttori
 hashing  fast-hash             funzioni hash per prodotti ripiegati
 hashing  blocked-bloom         filtro di Bloom a blocchi
 hashing  binary-fuse           filtro binary fuse
+hashing  cuckoo-filter         filtro cuckoo, inserimenti e rimozioni
+hashing  ribbon-filter         filtro Ribbon, eliminazione a bande
 hashing  minimal-perfect-hash  hash perfetto minimo a piloti
 hashing  recsplit              hash perfetto minimo per divisione ricorsiva
 hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
