@@ -33,9 +33,13 @@
 #include <bit>
 #include <cmath>
 #include <functional>
+#include <iterator>
+#include <limits>
 #include <map>
+#include <memory>
 #include <random>
 #include <set>
+#include <stdexcept>
 #include <tuple>
 #include <vector>
 
@@ -230,6 +234,138 @@ ADS_TEST( "sec11.5.fibonacci" )
    }
  CHECK( out.size() == 100 && eq.size() == 1 );
  CHECK( eq.minPriority() == MAXI && eq.deleteMin() == 100 && eq.isEmpty() );
+ }
+
+namespace {
+
+/// an item that counts the live ones and whose copy throws on demand
+struct Counted {
+ static inline int live = 0;
+ static inline bool fail = false;
+ int v;
+ explicit Counted( int x = 0 ) : v( x ) { ++live; }
+ Counted( const Counted & o ) : v( o.v ) {
+  if( fail )
+   throw std::runtime_error( "copy" );
+  ++live;
+  }
+ Counted( Counted && o ) noexcept : v( o.v ) { ++live; }
+ Counted & operator=( const Counted & ) = default;
+ ~Counted() { --live; }
+ };
+
+}  // end( namespace )
+
+// the Fibonacci heap on its pool: 2^k items of one priority consolidated
+// into a single binomial tree, then down to empty; long random sequences of
+// insert(), decrease() (to the minimum and to an equal priority) and of the
+// deletion of an arbitrary handle (decrease() to the least int, then
+// deleteMin()) against std::multiset, across many blocks of the pool; a
+// move in the middle, whose handles stay valid and whose source is reusable;
+// items with a destructor, left in the heap or freed, all destroyed; a copy
+// that throws in insert(), which leaves the heap as it was
+ADS_TEST( "sec11.5.fibonacci-pool" )
+{
+ constexpr int MINI = std::numeric_limits< int >::min();
+ FibonacciHeapPriorityQueue< int > b;
+ std::vector< FibonacciHeapPriorityQueue< int >::Handle > bh;
+ for( int i = 0 ; i <= 1024 ; ++i )
+  bh.push_back( b.insert( i , 7 ) );
+ CHECK( b.deleteMin() == 0 && b.size() == 1024 );
+ int nodes = 0;
+ for( auto [ p , x ] : b ) {
+  CHECK( p == 7 && x > 0 );
+  ++nodes;
+  }
+ const auto r = bh[ b.min() ];                 // one root, of degree 10
+ CHECK( nodes == 1024 && r->right == r && r->degree == 10 );
+ std::set< int > seen;
+ while( ! b.isEmpty() ) {
+  CHECK( b.minPriority() == 7 );
+  CHECK( seen.insert( b.deleteMin() ).second );
+  }
+ CHECK( seen.size() == 1024 && b.size() == 0 );
+
+ for( unsigned s = 1 ; s <= 3 ; ++s ) {
+  std::mt19937 g( s );
+  FibonacciHeapPriorityQueue< int > q;
+  std::multiset< std::pair< int , int > > M;           // ( priority , item )
+  std::vector< FibonacciHeapPriorityQueue< int >::Handle > h;
+  std::vector< int > prio;
+  for( int o = 0 ; o < 60000 ; ++o ) {
+   if( o == 30000 ) {                       // a move: the handles stay valid
+    FibonacciHeapPriorityQueue< int > t( std::move( q ) );
+    CHECK( q.isEmpty() && q.size() == 0 && t.size() == int( M.size() ) );
+    q.insert( -1 , 0 );
+    CHECK( q.deleteMin() == -1 && q.isEmpty() );
+    std::destroy_at( &q );
+    std::construct_at( &q , std::move( t ) );
+    }
+   const unsigned what = g() % 16;
+   if( M.empty() || ( what < 7 ) ) {
+    const int p = int( g() % 5000 );
+    h.push_back( q.insert( int( h.size() ) , p ) );
+    prio.push_back( p );
+    M.emplace( p , int( h.size() ) - 1 );
+    }
+   else if( what < 11 ) {
+    CHECK( q.minPriority() == M.begin()->first );
+    const int x = q.deleteMin();
+    CHECK( prio[ x ] == M.begin()->first );
+    M.erase( M.find( std::pair( prio[ x ] , x ) ) );
+    }
+   else {                                   // an item still in the heap
+    auto it = M.begin();
+    std::advance( it , g() % std::min< std::size_t >( M.size() , 64 ) );
+    if( what & 1 )
+     it = std::prev( M.end() );
+    const int x = it->second;
+    M.erase( it );
+    if( what == 11 ) {                      // deleted
+     q.decrease( h[ x ] , MINI );
+     CHECK( q.minPriority() == MINI && q.deleteMin() == x );
+     continue;
+     }
+    const int p = what == 12 ? prio[ x ] :            // equal, the minimum
+                  what == 14 ? M.empty() ? prio[ x ] :
+                               std::min( prio[ x ] , M.begin()->first ) :
+                  prio[ x ] - int( g() % 100 );
+    q.decrease( h[ x ] , p );
+    prio[ x ] = p;
+    M.emplace( p , x );
+    }
+   CHECK( q.size() == int( M.size() ) );
+   }
+  while( ! M.empty() ) {
+   const int x = q.deleteMin();
+   CHECK( prio[ x ] == M.begin()->first );
+   M.erase( M.find( std::pair( prio[ x ] , x ) ) );
+   }
+  CHECK( q.isEmpty() );
+  }
+
+ {
+  FibonacciHeapPriorityQueue< Counted > c;
+  std::vector< FibonacciHeapPriorityQueue< Counted >::Handle > h;
+  for( int i = 0 ; i < 3000 ; ++i )
+   h.push_back( c.insert( Counted( i ) , ( i * 7919 ) % 3001 ) );
+  CHECK( Counted::live == 3000 );
+  int last = -1;
+  for( int i = 0 ; i < 1000 ; ++i ) {       // the priorities are distinct
+   const int p = c.minPriority();
+   CHECK( p > last && ( c.deleteMin().v * 7919 ) % 3001 == p );
+   last = p;
+   }
+  CHECK( Counted::live == c.size() );
+  Counted::fail = true;
+  CHECK_THROWS( c.insert( Counted( -1 ) , -5 ) , std::runtime_error );
+  Counted::fail = false;
+  CHECK( Counted::live == c.size() && c.minPriority() >= 0 );
+  c.decrease( h[ 2999 ] , -1 );               // priority 2168, still in
+  CHECK( c.min().v == 2999 && c.deleteMin().v == 2999 );
+  CHECK( Counted::live == c.size() );
+  }
+ CHECK( Counted::live == 0 );
  }
 
 // Figura 11.1: G2 has the optimal tree T2 of distances 0 , 0 , 1 , -2,

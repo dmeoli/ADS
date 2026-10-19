@@ -20,6 +20,14 @@
  * \f$ \phi = ( 1 + \sqrt{5} ) / 2 \f$, and the degrees are
  * \f$ O( \log_\phi n ) \f$.
  *
+ * Beyond the book, the nodes come from an ObjectPool [see ObjectPool.h] of
+ * the heap, which takes back the node of deleteMin() for the next
+ * insert(), so that a node costs no call to the allocator and the nodes in
+ * use stay close in memory; the children of the minimum join the roots
+ * in O( 1 ), and the consolidation walks the roots where they are, with
+ * the trees by degree in an array on the stack (a degree is at most
+ * \f$ \log_\phi n < 64 \f$).
+ *
  * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
  * need a heap that is not empty, decrease() a handle of a node of this
  * heap (checked in O( n ) with the invariants) and a priority not larger
@@ -57,11 +65,13 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/memory/ObjectPool.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
 #include <cstddef>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -212,8 +222,9 @@ class FibonacciHeapPriorityQueue {
  /// x, a child of y, becomes a root
  void cut( Node * x , Node * y );
 
- /// links the roots of equal degree until all the degrees differ
- void consolidate( void );
+ /// links the roots of equal degree, from w around its circular list,
+ /// until all the degrees differ, and puts the minimum in f_min
+ void consolidate( Node * w );
 
  /// whether x is a node of the heap, O( n )
  [[nodiscard]] bool owns( const Node * x ) const;
@@ -228,8 +239,9 @@ class FibonacciHeapPriorityQueue {
  /// of the roots and the minimum among them only
  [[nodiscard]] bool isHeap( void ) const;
 
- Node * f_min = nullptr;   ///< the root of least priority
- int f_n = 0;              ///< the number of items
+ Node * f_min = nullptr;      ///< the root of least priority
+ int f_n = 0;                 ///< the number of items
+ ObjectPool< Node > f_pool;   ///< the nodes
 
  };  // end( class FibonacciHeapPriorityQueue )
 

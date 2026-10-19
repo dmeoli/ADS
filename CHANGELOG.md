@@ -335,6 +335,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before storing it, and pop() keeps the last item aside, so that no item
   is stored and read back at once; push(), pop() and their sifts are
   inline, so that the compiler expands them in the loop of the caller
+- FibonacciHeapPriorityQueue keeps its nodes in an ObjectPool, the node
+  of deleteMin() serving the next insert(); deleteMin() joins the children
+  of the minimum to the roots in O( 1 ), their parents and marks cleared by
+  the consolidation, which walks the roots where they are with the trees
+  by degree in an array on the stack instead of two vectors per call; a
+  heap of items with a trivial destructor dies a block at a time
 
 ### Fixed
 

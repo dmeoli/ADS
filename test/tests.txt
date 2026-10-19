@@ -189,6 +189,7 @@ ch11  sec11.1.bellman    sezione 11.1, Figura 11.1, Teorema di Bellman
 ch11  sec11.2.prototype  sezione 11.2, il prototipo con sei strutture
 ch11  sec11.3.dijkstra   sezioni 11.3-11.5, Dijkstra, Johnson, Fredman-Tarjan
 ch11  sec11.5.fibonacci  sezione 11.5, heap di Fibonacci
+ch11  sec11.5.fibonacci-pool sezione 11.5, heap di Fibonacci sul pool
 ch11  sec11.6.bellman-ford-moore sezione 11.6, Figura 11.3
 ch11  sec11.7.stack      sezione 11.7, Figura 11.4, utilizzo di una pila
 ch11  sec11.8.pape       sezione 11.8, Pape-D'Esopo
