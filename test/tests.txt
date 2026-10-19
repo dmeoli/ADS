@@ -488,6 +488,13 @@ engineered  random-hashing       splitmix64, Zobrist, tabulazione
 engineered  spsc-queue           coda fra un produttore e un consumatore
 engineered  mpsc-inbox           casella di molti produttori
 
+# the engineered hashing, beyond the book
+hashing  fast-hash             funzioni hash per prodotti ripiegati
+hashing  blocked-bloom         filtro di Bloom a blocchi
+hashing  binary-fuse           filtro binary fuse
+hashing  minimal-perfect-hash  hash perfetto minimo a piloti
+hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
+
 # the standard interface of the containers, beyond the book
 interop  sequences            iteratori delle sequenze, std e Boost
 interop  restricted           viste di pile, code e heap
