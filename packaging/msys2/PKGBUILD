@@ -1,0 +1,34 @@
+# Maintainer: Donato Meoli <donato.meoli.95@gmail.com>
+
+_realname=ads
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Header-only C++20 algorithms and data structures (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+url="https://github.com/dmeoli/ADS"
+msys2_repository_url="https://github.com/dmeoli/ADS"
+msys2_documentation_url="https://dmeoli.github.io/ADS/"
+license=('spdx:LGPL-3.0-only')
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ninja")
+source=("${url}/releases/download/v${pkgver}/ADS-${pkgver}.tar.gz")
+sha256sums=('0000000000000000000000000000000000000000000000000000000000000000')
+
+build() {
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+    cmake -S "ADS-${pkgver}" -B "build-${MSYSTEM}" -G Ninja \
+      -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DADS_BUILD_TESTS=OFF
+  cmake --build "build-${MSYSTEM}"
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install "build-${MSYSTEM}"
+  install -Dm644 "ADS-${pkgver}/LICENSE" \
+    "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+}

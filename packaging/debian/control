@@ -1,0 +1,27 @@
+Source: ads
+Section: libdevel
+Priority: optional
+Maintainer: Donato Meoli <donato.meoli.95@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+               cmake (>= 3.21),
+Standards-Version: 4.7.3
+Homepage: https://github.com/dmeoli/ADS
+Vcs-Browser: https://github.com/dmeoli/ADS
+Vcs-Git: https://github.com/dmeoli/ADS.git
+
+Package: libads-dev
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends},
+Suggests: pkgconf,
+          cmake,
+Description: algorithms and data structures as a header-only C++20 library
+ ADS is a header-only C++20 library of the algorithms and the data
+ structures of the Italian textbook by A. Montresor, Algoritmi e Strutture
+ Dati, with further structures from The Art of Computer Programming and
+ from algorithm engineering: sequences, dictionaries, priority queues,
+ trees, graphs, sorting, strings, succinct and compressed structures,
+ numerics and optimization, each with its contracts.
+ .
+ This package installs the headers, the CMake package ADS (target
+ ADS::ADS) and the pkg-config file ads.pc.

@@ -526,6 +526,31 @@ find_package(ADS REQUIRED)
 target_link_libraries(<target> PRIVATE ADS::ADS)
 ```
 
+or, with pkg-config, `pkg-config --cflags ads`. The packages of vcpkg
+(`ads`), conda-forge (`cpp-ads`), Homebrew, Debian and Ubuntu
+(`libads-dev`), Conan, Spack, Nix, the AUR, MSYS2 and xmake install the same
+files, from the recipes of [packaging](packaging/README.md). Without
+installing anything, a CMake project can also take ADS at configure time,
+with FetchContent (CMake 3.24 or later),
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(ADS
+    URL https://github.com/dmeoli/ADS/releases/download/v0.1.0/ADS-0.1.0.tar.gz
+    FIND_PACKAGE_ARGS 0.1)               # an installed ADS, if there is one
+FetchContent_MakeAvailable(ADS)
+target_link_libraries(<target> PRIVATE ADS::ADS)
+```
+
+or with [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake),
+
+```cmake
+CPMAddPackage("gh:dmeoli/ADS@0.1.0")
+target_link_libraries(<target> PRIVATE ADS::ADS)
+```
+
+and as a subproject ADS builds neither its tests nor its benchmarks.
+
 ```cpp
 #include "ADS/sequence/List.h"
 

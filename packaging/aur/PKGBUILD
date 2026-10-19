@@ -1,0 +1,29 @@
+# Maintainer: Donato Meoli <donato.meoli.95@gmail.com>
+
+pkgname=ads
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Header-only C++20 algorithms and data structures"
+arch=('any')
+url="https://github.com/dmeoli/ADS"
+license=('LGPL-3.0-only')
+makedepends=('cmake')
+source=("ADS-$pkgver.tar.gz::$url/releases/download/v$pkgver/ADS-$pkgver.tar.gz")
+sha256sums=('0000000000000000000000000000000000000000000000000000000000000000')
+
+build() {
+  cmake -S "ADS-$pkgver" -B build -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=None -DADS_BUILD_TESTS=OFF
+  cmake --build build
+}
+
+check() {
+  cmake -S "ADS-$pkgver" -B build-check -DCMAKE_BUILD_TYPE=None \
+    -DADS_BUILD_TESTS=ON
+  cmake --build build-check
+  ctest --test-dir build-check --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

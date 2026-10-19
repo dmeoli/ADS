@@ -1,0 +1,4 @@
+ads is header-only and provides the CMake target ADS::ADS:
+
+  find_package(ADS CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE ADS::ADS)
