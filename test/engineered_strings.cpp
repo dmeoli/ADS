@@ -7,8 +7,10 @@
  * search on random texts and on the adversarial ones; the suffix array by
  * the engineered SA-IS and the LCP array by the permuted LCP, against the
  * constructions of the textbook; the bit-parallel edit distance, LCS and
- * approximate search against the dynamic programming of the textbook; all
- * at the level 3 of the contracts.
+ * approximate search against the dynamic programming of the textbook; the
+ * classic exact matchers, the automaton of Aho and Corasick, the Lyndon
+ * factorization, the suffix automaton and the eertree against naive
+ * searches and enumerations; all at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -22,17 +24,22 @@
 
 #include "ADSTest.h"
 
+#include "ADS/string/AhoCorasick.h"
 #include "ADS/string/ApproximateMatching.h"
 #include "ADS/string/EditDistance.h"
 #include "ADS/string/LongestCommonSubsequence.h"
+#include "ADS/string/Lyndon.h"
+#include "ADS/string/Palindromes.h"
 #include "ADS/string/StringMatching.h"
 #include "ADS/string/StringSearch.h"
 #include "ADS/string/SuffixArray.h"
+#include "ADS/string/SuffixAutomaton.h"
 #include "ADS/string/SuffixSorting.h"
 
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <set>
 #include <random>
 #include <string>
 #include <string_view>
@@ -342,6 +349,211 @@ ADS_TEST( "edit-distance" )
  const auto E = approximateMatches( "abc" , "" , 0 );
  CHECK( E.size() == 3 && E[ 0 ].first == 1 && E[ 2 ].second == 0 );
  CHECK( approximateMatches( "" , "abc" , 5 ).empty() );
+ }
+
+// the matchers of the textbooks against naiveMatching() (and their
+// audits): Boyer-Moore, Horspool, Shift-Or, the Z-function and Two-Way, on
+// the empty pattern and text, a pattern longer than the text, patterns of
+// 1 to 64 bytes over 1, 2, 4 and 26 letters taken from the text or not,
+// a^n with a^m and a^{m-1} b, the Fibonacci word; the Z-function against
+// its definition; Shift-Or refuses a pattern of 65 bytes
+ADS_TEST( "classic-matching" )
+{
+ auto check = [ & ]( std::string_view T , std::string_view P ) {
+  const auto N = naiveMatching( T , P );
+  long c = 0;
+  CHECK( boyerMoore( T , P , &c ) == N );
+  CHECK( horspool( T , P , &c ) == N );
+  if( P.size() <= 64 ) CHECK( shiftOr( T , P ) == N );
+  CHECK( zMatching( T , P ) == N );
+  CHECK( twoWay( T , P ) == N );
+  };
+ check( "" , "" );
+ check( "abc" , "" );
+ check( "ab" , "abc" );
+ check( "abracadabra" , "abra" );
+ check( std::string( 300 , 'a' ) , std::string( 7 , 'a' ) );
+ check( std::string( 300 , 'a' ) , std::string( 6 , 'a' ) + "b" );
+ check( std::string( 300 , 'a' ) , "b" + std::string( 6 , 'a' ) );
+ check( fibonacciWord( 2000 ) , fibonacciWord( 2000 ).substr( 100 , 34 ) );
+ std::mt19937_64 g( 13 );
+ for( unsigned sigma : { 1u , 2u , 4u , 26u } )
+  for( int r = 0 ; r < 200 ; ++r ) {
+   const std::string T = randomString( g , g() % 500 , sigma );
+   const std::size_t m = 1 + g() % 64;
+   std::string P = randomString( g , m , sigma );
+   if( ( T.size() >= m ) && ( g() % 2 ) )
+    P = T.substr( g() % ( T.size() - m + 1 ) , m );
+   check( T , P );
+   const auto Z = zFunction( T );
+   for( std::size_t i = 0 ; i < T.size() ; ++i ) {
+    std::size_t k = 0;
+    while( ( i + k < T.size() ) && ( T[ k ] == T[ i + k ] ) ) ++k;
+    CHECK( Z[ i ] == k );
+    }
+   }
+ CHECK( zFunction( "" ).empty() );
+ CHECK_THROWS( (void) shiftOr( "abc" , std::string( 65 , 'a' ) ) ,
+               contract_violation );
+ }
+
+// the automaton of Aho and Corasick against naiveMatching() on each pattern
+// (and its audit): no pattern, one pattern, equal patterns, patterns that
+// are prefixes, suffixes and substrings of one another, of 1 to 30 bytes
+// over 2 and 4 letters, random texts; the order of the occurrences (by end,
+// the longer first); a pattern added after a search, which builds again;
+// the empty pattern refused
+ADS_TEST( "aho-corasick" )
+{
+ AhoCorasick E;
+ CHECK( E.findAll( "abc" ).empty() && E.size() == 0 && E.states() == 1 );
+ AhoCorasick A( { "he" , "she" , "his" , "hers" , "he" } );
+ const auto R = A.findAll( "ushers" );
+ const std::vector< std::pair< std::size_t , std::size_t > > X = {
+  { 1 , 1 } , { 2 , 0 } , { 2 , 4 } , { 2 , 3 } };
+ CHECK( R == X && A.count( "ushers" ) == 4 );
+ CHECK( A.add( "us" ) == 5 );
+ A.build();
+ CHECK( A.count( "ushers" ) == 5 );
+ CHECK_THROWS( A.add( "" ) , contract_violation );
+ std::mt19937_64 g( 17 );
+ for( unsigned sigma : { 2u , 4u } )
+  for( int r = 0 ; r < 100 ; ++r ) {
+   std::vector< std::string > P;
+   const std::string T = randomString( g , g() % 800 , sigma );
+   for( std::size_t k = 1 + g() % 12 ; k-- > 0 ; )
+    P.push_back( ( T.size() > 30 ) && ( g() % 2 ) ?
+                 T.substr( g() % ( T.size() - 30 ) , 1 + g() % 30 ) :
+                 randomString( g , 1 + g() % 8 , sigma ) );
+   const AhoCorasick B( P );
+   const auto S = B.findAll( T );                     // an audit
+   std::size_t total = 0;
+   for( const auto & p : P ) total += naiveMatching( T , p ).size();
+   CHECK( S.size() == total && B.count( T ) == total );
+   for( std::size_t k = 1 ; k < S.size() ; ++k ) {
+    const std::size_t e0 = S[ k - 1 ].first + P[ S[ k - 1 ].second ].size() ,
+                      e1 = S[ k ].first + P[ S[ k ].second ].size();
+    CHECK( ( e0 < e1 ) || ( ( e0 == e1 ) && ( S[ k - 1 ].first <=
+                                                S[ k ].first ) ) );
+    }
+   }
+ }
+
+// the Lyndon factorization of Duval against its definition (the audit) and
+// against the factorization by brute force (the longest Lyndon prefix
+// first); the least rotation against all the rotations: the empty string,
+// one byte, one repeated byte, a Lyndon word, a decreasing string, random
+// strings over 1, 2 and 3 letters
+ADS_TEST( "lyndon" )
+{
+ CHECK( lyndonFactorization( "" ).empty() && leastRotation( "" ) == 0 );
+ CHECK( lyndonFactorization( "a" ) == std::vector< std::size_t >{ 0 } );
+ CHECK( lyndonFactorization( "aaa" ) ==
+        ( std::vector< std::size_t >{ 0 , 1 , 2 } ) );
+ CHECK( lyndonFactorization( "aab" ) == std::vector< std::size_t >{ 0 } );
+ CHECK( lyndonFactorization( "cba" ) ==
+        ( std::vector< std::size_t >{ 0 , 1 , 2 } ) );
+ CHECK( isLyndon( "aabab" ) && ! isLyndon( "abab" ) && ! isLyndon( "" ) );
+ std::mt19937_64 g( 19 );
+ for( unsigned sigma : { 1u , 2u , 3u } )
+  for( int r = 0 ; r < 300 ; ++r ) {
+   const std::string S = randomString( g , g() % 60 , sigma );
+   std::vector< std::size_t > F;      // the longest Lyndon prefix first
+   for( std::size_t i = 0 ; i < S.size() ; ) {
+    F.push_back( i );
+    std::size_t l = 1;
+    for( std::size_t k = S.size() - i ; k > 0 ; --k )
+     if( isLyndon( std::string_view( S ).substr( i , k ) ) ) {
+      l = k;
+      break;
+      }
+    i += l;
+    }
+   CHECK( lyndonFactorization( S ) == F );
+   const std::size_t q = leastRotation( S );         // an audit
+   CHECK( q < std::max< std::size_t >( S.size() , 1 ) );
+   for( std::size_t i = 0 ; i < q ; ++i )            // the first least
+    CHECK( S.substr( i ) + S.substr( 0 , i ) >
+           S.substr( q ) + S.substr( 0 , q ) );
+   }
+ }
+
+// the suffix automaton against the substrings enumerated: the empty
+// string, one byte, a^n (n + 1 states), random strings over 1, 2, 4 and 26
+// letters: at most 2 n - 1 states, contains() and occurrences() on every
+// substring and on strings that do not occur, the number of the distinct
+// substrings, the longest common substring with another string; built in
+// one go and a byte at a time
+ADS_TEST( "suffix-automaton" )
+{
+ const SuffixAutomaton E;
+ CHECK( E.states() == 1 && E.distinctSubstrings() == 0 &&
+        E.contains( "" ) && ! E.contains( "a" ) &&
+        E.occurrences( "" ) == 1 );
+ const SuffixAutomaton A( std::string( 50 , 'a' ) );
+ CHECK( A.states() == 51 && A.distinctSubstrings() == 50 &&
+        A.occurrences( "aaa" ) == 48 );
+ std::mt19937_64 g( 23 );
+ for( unsigned sigma : { 1u , 2u , 4u , 26u } )
+  for( int r = 0 ; r < 40 ; ++r ) {
+   const std::string S = randomString( g , g() % 120 , sigma );
+   SuffixAutomaton B;
+   for( char c : S ) B.extend( static_cast< unsigned char >( c ) );
+   const SuffixAutomaton M( S );
+   CHECK( M.states() == B.states() && M.size() == S.size() );
+   CHECK( M.states() <= ( S.size() < 2 ? S.size() + 1 : 2 * S.size() - 1 ) );
+   std::set< std::string > sub;
+   for( std::size_t i = 0 ; i < S.size() ; ++i )
+    for( std::size_t l = 1 ; i + l <= S.size() ; ++l )
+     sub.insert( S.substr( i , l ) );
+   CHECK( M.distinctSubstrings() == sub.size() );
+   for( const auto & u : sub )
+    CHECK( M.contains( u ) && M.occurrences( u ) ==
+           naiveMatching( S , u ).size() );
+   for( int k = 0 ; k < 20 ; ++k ) {
+    const std::string u = randomString( g , 1 + g() % 6 , sigma + 1 );
+    CHECK( M.contains( u ) == sub.count( u ) );
+    CHECK( M.occurrences( u ) == naiveMatching( S , u ).size() );
+    }
+   const std::string T = randomString( g , g() % 100 , sigma );
+   std::size_t best = 0;
+   for( std::size_t j = 0 ; j < T.size() ; ++j )
+    for( std::size_t l = 1 ; j + l <= T.size() ; ++l )
+     if( sub.count( T.substr( j , l ) ) ) best = std::max( best , l );
+   const auto [ len , end ] = M.longestCommonSubstring( T );
+   CHECK( len == best );
+   if( len > 0 ) CHECK( sub.count( T.substr( end - len , len ) ) );
+   }
+ }
+
+// the eertree and the palindromic factorization in O( n log n ) against
+// palindromicPartition() of the textbook (and the audit): the empty string,
+// one byte, a^n (n distinct palindromes, one piece), a string with no
+// palindrome longer than 1, random strings over 1, 2, 3 and 26 letters;
+// the number of distinct palindromes against their enumeration
+ADS_TEST( "eertree" )
+{
+ CHECK( palindromicFactorization( "" ).empty() );
+ CHECK( palindromicFactorization( "a" ).size() == 1 );
+ CHECK( palindromicFactorization( std::string( 40 , 'a' ) ).size() == 1 );
+ CHECK( palindromicFactorization( "abcd" ).size() == 4 );
+ Eertree A( std::string( 40 , 'a' ) );
+ CHECK( A.distinct() == 40 && A.suffixLength() == 40 && A.size() == 40 );
+ CHECK( ! A.add( 'a' ) == false );
+ std::mt19937_64 g( 29 );
+ for( unsigned sigma : { 1u , 2u , 3u , 26u } )
+  for( int r = 0 ; r < 150 ; ++r ) {
+   const std::string S = randomString( g , g() % 200 , sigma );
+   const auto P = palindromicFactorization( S );     // an audit
+   CHECK( P.size() == palindromicPartition( S ).size() );
+   std::set< std::string > pal;
+   for( std::size_t i = 0 ; i < S.size() ; ++i )
+    for( std::size_t l = 1 ; i + l <= S.size() ; ++l ) {
+     const std::string u = S.substr( i , l );
+     if( std::equal( u.begin() , u.end() , u.rbegin() ) ) pal.insert( u );
+     }
+   CHECK( Eertree( S ).distinct() == pal.size() );
+   }
  }
 
 }  // end( namespace )

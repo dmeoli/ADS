@@ -74,6 +74,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AVX2 once the band grows too wide; the bit-parallel LCS of Allison and
   Dix in the form of Crochemore et al.; the search of Myers with the
   cut-off of Ukkonen; test engineered_strings.edit-distance
+- boyerMoore(), horspool(), shiftOr(), zFunction(), zMatching() and
+  twoWay() in string/StringMatching.h, the classic exact matchers, which
+  count their comparisons where asked; AhoCorasick, the automaton of Aho
+  and Corasick for many patterns at once (string/AhoCorasick.h); the
+  Lyndon factorization of Duval and the least rotation
+  (string/Lyndon.h); the suffix automaton of Blumer et al.
+  (string/SuffixAutomaton.h); the eertree of Rubinchik and Shur and the
+  palindromic factorization in O( n log n ) by its series
+  (string/Palindromes.h); tests engineered_strings.classic-matching,
+  aho-corasick, lyndon, suffix-automaton and eertree
 - the benchmarks of the exact search, of the suffix and LCP arrays and of
   the edit distance, LCS and approximate search (bench/search.cpp,
   bench/suffix.cpp, bench/edit.cpp, on the texts of bench/Texts.h)

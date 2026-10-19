@@ -210,6 +210,105 @@ inline std::vector< std::string > palindromicPartition( const std::string & s )
  }
 
 /*--------------------------------------------------------------------------*/
+/*------------------------------- Eertree ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline Eertree::Eertree( void )
+ : f_len{ -1 , 0 } , f_link{ 0 , 0 } , f_diff{ 0 , 0 } , f_series{ 0 , 0 } ,
+   f_next( 2 ) {}
+
+inline Eertree::Eertree( std::string_view s ) : Eertree()
+{
+ for( unsigned char c : s ) (void) add( c );
+ }
+
+inline std::uint32_t Eertree::extensible( std::uint32_t v ,
+                                          unsigned char c ) const
+{
+ const long i = long( f_s.size() ) - 1;    // the place of c
+ for( ; ; v = f_link[ v ] ) {
+  const long j = i - 1 - f_len[ v ];       // the byte before v
+  if( ( j >= 0 ) && ( static_cast< unsigned char >( f_s[ std::size_t( j ) ] )
+                      == c ) )
+   return( v );
+  }
+ }
+
+inline bool Eertree::add( unsigned char c )
+{
+ f_s.push_back( char( c ) );
+ const std::uint32_t v = extensible( f_last , c );
+ for( const auto & [ b , w ] : f_next[ v ] )
+  if( b == c ) {
+   f_last = w;
+   return( false );
+   }
+ const std::uint32_t u = std::uint32_t( f_len.size() );
+ f_len.push_back( f_len[ v ] + 2 );
+ std::uint32_t l = 1;                     // the empty palindrome
+ if( f_len[ u ] > 1 )
+  for( const auto & [ b , w ] : f_next[ extensible( f_link[ v ] , c ) ] )
+   if( b == c ) l = w;
+ f_link.push_back( l );
+ f_diff.push_back( f_len[ u ] - f_len[ l ] );
+ f_series.push_back( f_diff[ u ] == f_diff[ l ] ? f_series[ l ] : l );
+ f_next.emplace_back();
+ f_next[ v ].emplace_back( c , u );
+ f_last = u;
+ return( true );
+ }
+
+inline std::vector< std::string > palindromicFactorization(
+                                                        std::string_view s )
+{
+ const std::size_t n = s.size();
+ constexpr std::size_t inf = ~std::size_t( 0 ) / 2;
+ Eertree E;
+ // ans[ i ]: the fewest palindromes of s[ 0 .. i ), and the length of the
+ // last; best[ v ]: the least ans before a palindrome of the series of v
+ // that ends here, with its length
+ std::vector< std::size_t > ans( n + 1 , inf ) , piece( n + 1 , 0 );
+ std::vector< std::pair< std::size_t , std::size_t > > best;
+ ans[ 0 ] = 0;
+ for( std::size_t i = 1 ; i <= n ; ++i ) {
+  (void) E.add( static_cast< unsigned char >( s[ i - 1 ] ) );
+  best.resize( E.f_len.size() );
+  for( std::uint32_t v = E.f_last ; E.f_len[ v ] > 0 ;
+       v = E.f_series[ v ] ) {
+   // the shortest palindrome of the series of v, and the rest of it as
+   // found diff( v ) bytes before, the lengths diff( v ) longer now
+   const std::size_t L = std::size_t( E.f_len[ E.f_series[ v ] ] +
+                                      E.f_diff[ v ] );
+   best[ v ] = std::pair( ans[ i - L ] , L );
+   if( E.f_diff[ v ] == E.f_diff[ E.f_link[ v ] ] ) {
+    const auto & b = best[ E.f_link[ v ] ];
+    if( b.first < best[ v ].first )
+     best[ v ] = std::pair( b.first ,
+                            b.second + std::size_t( E.f_diff[ v ] ) );
+    }
+   if( best[ v ].first + 1 < ans[ i ] ) {
+    ans[ i ] = best[ v ].first + 1;
+    piece[ i ] = best[ v ].second;
+    }
+   }
+  }
+ std::vector< std::string > R;
+ for( std::size_t i = n ; i > 0 ; i -= piece[ i ] )
+  R.emplace_back( s.substr( i - piece[ i ] , piece[ i ] ) );
+ std::reverse( R.begin() , R.end() );
+ ADS_AUDIT( [ & ]( void ) {
+  std::string joined;
+  for( const auto & p : R ) {
+   if( ! std::equal( p.begin() , p.end() , p.rbegin() ) ) return( false );
+   joined += p;
+   }
+  return( ( joined == s ) && ( R.size() == palindromicPartition(
+                                            std::string( s ) ).size() ) );
+  }() );
+ return( R );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
