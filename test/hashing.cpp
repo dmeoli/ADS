@@ -4,10 +4,11 @@
 /** @file
  * Tests of the engineered hashing, beyond the book: the hash functions of
  * FastHash.h, the blocked filter of Bloom, the binary fuse filter, the
- * minimal perfect hash functions by pilots and by recursive splitting and
- * the cuckoo table with buckets of 4 places. Each one is checked against a
- * reference of the standard library or against its own analysis, on random
- * and adversarial inputs, at the level 3 of the contracts.
+ * cuckoo filter, the Ribbon filter, the minimal perfect hash functions by
+ * pilots and by recursive splitting and the cuckoo table with buckets of 4
+ * places. Each one is checked against a reference of the standard library
+ * or against its own analysis, on random and adversarial inputs, at the
+ * level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -28,6 +29,8 @@
 #include "ADS/dictionary/RecSplit.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
+#include "ADS/set/CuckooFilter.h"
+#include "ADS/set/RibbonFilter.h"
 
 #include <algorithm>
 #include <bit>
@@ -312,6 +315,182 @@ ADS_TEST( "binary-fuse" )
    CHECK( F.maybe( k ) );
   const auto S = randomStrings( 30000 , 14 );
   BinaryFuseFilter< std::string > T( S );
+  for( const auto & s : S )
+   CHECK( T.maybe( s ) );
+  }
+ }
+
+// the cuckoo filter of 8 and 16 bits: 0, 1, 2, 3, 10, 100, 1000 and 10^5
+// random keys inserted, every one maybe there, all removed and the filter
+// empty; at 10^6 keys the false positives on 10^6 absent keys near
+// 8 alpha / 255 and 8 alpha / 65535 at the load alpha; filled until an
+// insertion fails, at a load above 0.9, with every key in still there,
+// the failed insertion changing nothing and a removal making room; a key
+// inserted 8 times and removed 8 times; consecutive keys by std::hash,
+// keys equal in their low 32 bits, strings; the removal of a key absent
+// from an empty filter, and a filter for no key (one bucket)
+ADS_TEST( "cuckoo-filter" )
+{
+ for( std::size_t n : { 0 , 1 , 2 , 3 , 10 , 100 , 1000 , 100000 } ) {
+  const auto K = randomKeys( n , unsigned( n + 21 ) );
+  CuckooFilter< std::uint64_t > F( n );
+  CuckooFilter< std::uint64_t , std::uint16_t > G( n );
+  CHECK( F.empty() && F.capacity() >= n && F.capacity() * 94 >= n * 100 );
+  CHECK( F.bits() == 8 * F.capacity() && G.bits() == 16 * G.capacity() );
+  for( std::uint64_t k : K )
+   CHECK( F.insert( k ) && G.insert( k ) );
+  CHECK( F.size() == n && G.size() == n && F.empty() == ( n == 0 ) );
+  for( std::uint64_t k : K )
+   CHECK( F.maybe( k ) && G.maybe( k ) );
+  for( std::uint64_t k : K )
+   CHECK( F.remove( k ) && G.remove( k ) );
+  CHECK( F.empty() && G.empty() && F.load() == 0 );
+  if( n > 0 )
+   CHECK( ! F.maybe( K[ 0 ] ) && ! G.maybe( K[ 0 ] ) );
+  }
+ {
+  const auto K = randomKeys( 2000000 , 31 );
+  CuckooFilter< std::uint64_t > F( 1000000 );
+  CuckooFilter< std::uint64_t , std::uint16_t > G( 1000000 );
+  for( std::size_t i = 0 ; i < 1000000 ; ++i )
+   CHECK( F.insert( K[ i ] ) && G.insert( K[ i ] ) );
+  std::size_t f = 0 , g = 0;
+  for( std::size_t i = 1000000 ; i < K.size() ; ++i ) {
+   f += F.maybe( K[ i ] );
+   g += G.maybe( K[ i ] );
+   }
+  const double a = F.load() , ef = 1e6 * 8 * a / 255 ,
+               eg = 1e6 * 8 * a / 65535;
+  CHECK( a > 0.47 && a <= 0.94 );
+  CHECK( double( f ) > 0.85 * ef && double( f ) < 1.15 * ef );
+  CHECK( double( g ) < 2 * eg + 10 );
+  for( std::size_t i = 0 ; i < 1000000 ; ++i )
+   CHECK( F.maybe( K[ i ] ) && G.maybe( K[ i ] ) );
+  }
+ for( int b : { 8 , 16 } ) {                   // filled until full
+  const auto K = randomKeys( 1 << 18 , unsigned( 41 + b ) );
+  auto fill = [ & ]( auto & F ) {
+   std::size_t i = 0;
+   while( i < K.size() && F.insert( K[ i ] ) )
+    ++i;
+   CHECK( i < K.size() && F.size() == i && F.load() > 0.9 );
+   for( std::size_t j = 0 ; j < i ; ++j )
+    CHECK( F.maybe( K[ j ] ) );
+   CHECK( ! F.insert( K[ i + 1 ] ) && F.size() == i );
+   CHECK( F.remove( K[ 0 ] ) && F.insert( K[ i ] ) && F.maybe( K[ i ] ) );
+   for( std::size_t j = 1 ; j <= i ; ++j )
+    CHECK( F.maybe( K[ j ] ) );
+   F.clear();
+   CHECK( F.empty() && ! F.maybe( K[ 1 ] ) && F.insert( K[ 1 ] ) );
+   };
+  if( b == 8 ) {
+   CuckooFilter< std::uint64_t > F( 200000 );
+   fill( F );
+   }
+  else {
+   CuckooFilter< std::uint64_t , std::uint16_t > F( 200000 );
+   fill( F );
+   }
+  }
+ {                                             // repeated, adversarial
+  CuckooFilter< std::uint64_t > F( 1000 );
+  for( int i = 0 ; i < 8 ; ++i )
+   CHECK( F.insert( 77 ) );
+  CHECK( F.size() == 8 && F.maybe( 77 ) );
+  for( int i = 0 ; i < 8 ; ++i )
+   CHECK( F.remove( 77 ) );
+  CHECK( F.empty() && ! F.maybe( 77 ) && ! F.remove( 77 ) );
+  CuckooFilter< std::uint64_t , std::uint8_t ,
+                std::hash< std::uint64_t > > C( 100000 );
+  CuckooFilter< std::uint64_t , std::uint16_t > L( 100000 );
+  for( std::uint64_t k = 0 ; k < 100000 ; ++k )
+   CHECK( C.insert( k ) && L.insert( k << 32 ) );
+  std::size_t f = 0;
+  for( std::uint64_t k = 0 ; k < 100000 ; ++k ) {
+   CHECK( C.maybe( k ) && L.maybe( k << 32 ) );
+   f += C.maybe( k + 100000 );
+   }
+  CHECK( double( f ) < 1.15 * 1e5 * 8 * C.load() / 255 );
+  const auto S = randomStrings( 30000 , 43 );
+  CuckooFilter< std::string > T( S.size() );
+  for( const auto & s : S )
+   CHECK( T.insert( s ) );
+  for( const auto & s : S )
+   CHECK( T.maybe( s ) );
+  }
+ CuckooFilter< int > Z( 0 );                   // one bucket
+ CHECK( Z.capacity() == 4 && ! Z.maybe( 3 ) && ! Z.remove( 3 ) );
+ for( int i = 0 ; i < 4 ; ++i )
+  CHECK( Z.insert( i ) );
+ CHECK( Z.insert( 4 ) && Z.size() == 5 && ! Z.insert( 5 ) );  // the victim
+ for( int i = 0 ; i < 5 ; ++i )
+  CHECK( Z.maybe( i ) );
+ CHECK( Z.remove( 4 ) && Z.insert( 5 ) && Z.maybe( 5 ) );
+ }
+
+// the Ribbon filter of 8 and 16 bits: every key maybe there for 0, 1, 2,
+// 3, 10, 63, 64, 65, 100, 1000 and 10^5 random keys, 10^5 consecutive
+// keys, keys equal in their low 32 bits and strings; the false positives
+// near 2^-8 and 2^-16 on 10^6 absent keys; about 9.1 and 18.3 bits per key
+// at 10^6 keys; repeated keys counted with their repetitions; no key of an
+// empty filter
+ADS_TEST( "ribbon-filter" )
+{
+ for( std::size_t n : { 0 , 1 , 2 , 3 , 10 , 63 , 64 , 65 , 100 , 1000 ,
+                        100000 } ) {
+  const auto K = randomKeys( n , unsigned( n + 51 ) );
+  RibbonFilter< std::uint64_t > F( K );
+  RibbonFilter< std::uint64_t , std::uint16_t > G( K , 9 );
+  CHECK( F.size() == n && G.size() == n && F.empty() == ( n == 0 ) );
+  CHECK( F.trials() < 10 && G.trials() < 10 );
+  CHECK( F.rows() % 64 == 0 && F.rows() >= n );
+  for( std::uint64_t k : K )
+   CHECK( F.maybe( k ) && G.maybe( k ) );
+  if( n == 0 )
+   CHECK( ! F.maybe( 0 ) && ! G.maybe( 1 ) && F.bits() == 0 );
+  }
+ {
+  const auto K = randomKeys( 2000000 , 61 );
+  const std::vector< std::uint64_t > In( K.begin() , K.begin() + 1000000 );
+  RibbonFilter< std::uint64_t > F( In );
+  RibbonFilter< std::uint64_t , std::uint16_t > G( In );
+  CHECK( F.trials() < 10 && G.trials() < 10 );
+  std::size_t f = 0 , g = 0;
+  for( std::size_t i = 1000000 ; i < K.size() ; ++i ) {
+   f += F.maybe( K[ i ] );
+   g += G.maybe( K[ i ] );
+   }
+  CHECK( f > 3200 && f < 4600 );               // 10^6 / 256 = 3906
+  CHECK( g < 40 );                             // 10^6 / 65536 = 15
+  CHECK( double( F.bits() ) / 1e6 < 9.2 && double( G.bits() ) / 1e6 < 18.4 );
+  for( std::uint64_t k : In )
+   CHECK( F.maybe( k ) && G.maybe( k ) );
+  }
+ {                                             // consecutive, low bits
+  std::vector< std::uint64_t > K( 100000 ) , L( 100000 );
+  for( std::size_t i = 0 ; i < K.size() ; ++i ) {
+   K[ i ] = i;
+   L[ i ] = std::uint64_t( i ) << 32;
+   }
+  RibbonFilter< std::uint64_t > F( K );
+  RibbonFilter< std::uint64_t , std::uint16_t > G( L );
+  std::size_t f = 0;
+  for( std::size_t i = 0 ; i < K.size() ; ++i )
+   CHECK( F.maybe( K[ i ] ) && G.maybe( L[ i ] ) );
+  for( std::uint64_t k = 100000 ; k < 1100000 ; ++k )
+   f += F.maybe( k );
+  CHECK( f > 3200 && f < 4600 );
+  }
+ {                                             // repeated, strings
+  auto K = randomKeys( 5000 , 63 );
+  K.insert( K.end() , K.begin() , K.begin() + 2500 );
+  K.push_back( K[ 0 ] );
+  RibbonFilter< std::uint64_t > F( K );
+  CHECK( F.size() == 7501 && F.trials() < 10 );
+  for( std::uint64_t k : K )
+   CHECK( F.maybe( k ) );
+  const auto S = randomStrings( 30000 , 64 );
+  RibbonFilter< std::string > T( S );
   for( const auto & s : S )
    CHECK( T.maybe( s ) );
   }

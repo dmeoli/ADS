@@ -182,6 +182,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the minimal perfect hash functions against PTHash, PHOBIC, BBHash and
   RecSplit; the libraries from their sources given to the makefile by
   HASHING and ABSL (ADS_HASHING and find_package( absl ) with CMake)
+- CuckooFilter, the cuckoo filter of Fan et al. with insertions and
+  removals, fingerprints of 8 or 16 bits in buckets of 4 places packed in
+  one word and compared at once, partial-key cuckoo hashing, 500
+  evictions and a victim kept aside, an insertion into a full filter
+  failing with nothing changed (loads of 0.95 to 0.97 reached, false
+  positives 3.0 % and 0.012 % when full); RibbonFilter, the standard
+  Ribbon filter of Dillinger and Walzer with results of 8 or 16 bits,
+  built by Gauss elimination on the fly over coefficients of 64 bits and
+  back substitution into a solution stored by columns in blocks of 64
+  rows, a query being one parity per bit of its result (8.9 to 9.3 bits
+  per key for 10^5 to 10^7 keys at 8 bits, false positives 2^-8); their
+  tests in test/hashing.cpp, and in bench/hashing.cpp against the cuckoo
+  filter and the standard Ribbon filter of RocksDB shipped with
+  fastfilter_cpp, with the removals of the cuckoo filters timed too
 
 - StringSearcher, the engineered exact search of string/StringSearch.h:
   a pattern prepared once, two or four probes of its rarest bytes compared
