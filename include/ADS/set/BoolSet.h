@@ -13,7 +13,10 @@
  * and the scans of min(), max() and forEach() go a word at a time: the
  * same loops on the N booleans, 64 of them in one operation of the
  * processor, which leaves the bounds unchanged and divides the time by up
- * to 64; the size of a result is the count of its bits.
+ * to 64; the size of a result is the count of its bits, with AVX2 by the
+ * method of Muła, Kurz and Lemire (a shuffle of bytes looks up the bits of
+ * each half byte, and a sum of absolute differences adds the bytes), 4
+ * words at a time.
  *
  * The contracts [see Contract.h]: N >= 0, an item inserted is in
  * [ 0 , N ), and each operation of two sets gives, item by item, what its
@@ -51,15 +54,45 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <memory>
+#include <new>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
+
+#if defined( __AVX2__ )
+ #include <immintrin.h>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
+
+namespace detail {
+
+/// an allocator whose construction with no value leaves the item as it is
+/// (a default-initialization), so that a vector grows with no fill
+template< class T >
+struct UninitAllocator : std::allocator< T > {
+ template< class U > struct rebind { using other = UninitAllocator< U >; };
+ UninitAllocator( void ) = default;
+ template< class U >
+ UninitAllocator( const UninitAllocator< U > & ) noexcept {}
+ template< class U >
+ void construct( U * p ) noexcept( std::is_nothrow_default_constructible_v<
+                                    U > ) {
+  ::new( static_cast< void * >( p ) ) U;
+  }
+ template< class U , class... Args >
+ void construct( U * p , Args &&... args ) {
+  ::new( static_cast< void * >( p ) ) U( std::forward< Args >( args )... );
+  }
+ };
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS BoolSet ------------------------------*/
@@ -156,7 +189,12 @@ class BoolSet {
  friend BoolSet setSymmetricDifference( const BoolSet & A ,
                                         const BoolSet & B );
 
- std::vector< std::uint64_t > f_W;   ///< the bits, 64 per word
+ /// a set of dimension N whose words are not filled
+ struct Raw {};
+ BoolSet( long N , Raw );
+
+ /// the bits, 64 per word
+ std::vector< std::uint64_t , detail::UninitAllocator< std::uint64_t > > f_W;
  std::size_t f_N = 0;                ///< the dimension
  std::size_t f_size = 0;             ///< the number of items
 

@@ -858,7 +858,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the vector of RRR, tANS, the DACs and the linear parse of LZ77 among the
   engineered structures
 - BoolSet keeps its vector as words of 64 bits, and its operations of two
-  sets, min(), max() and forEach() go a word at a time
+  sets, min(), max() and forEach() go a word at a time, the operations of
+  two sets counting the bits of the result in the same pass, 4 words at a
+  time with AVX2
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);

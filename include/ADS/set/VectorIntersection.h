@@ -22,11 +22,17 @@
  *   is not larger, three additions in place of the jumps of the merge,
  *   which mispredict on lists that interleave at random.
  * - On lists of very different lengths, each item of the shorter one is
- *   looked for in the longer one from the place of the previous one by
- *   galloping (the places 1, 2, 4, ... ahead) and then by a binary search
- *   with no branch [see branchlessLowerBound() in StaticSearch.h], \f$ O(
- *   m \log( n / m ) ) \f$ comparisons [see intersectDoubling() in
- *   SortedIntersection.h].
+ *   looked for in the longer one from the place of the previous one. On
+ *   the integers of 32 bits with AVX2 the longer list is cut into blocks of
+ *   16 items: the block of an item is found on the last items of the
+ *   blocks, in strides of 8 blocks and then one block at a time (or, on
+ *   lists that differ by 1000 times or more, by galloping on the blocks,
+ *   the places 1, 2, 4, ... ahead, and a binary search), and the item is
+ *   compared with the 16 of its block by two comparisons of vectors, with
+ *   no search inside the block; elsewhere the item is found by galloping
+ *   and then by a binary search with no branch [see branchlessLowerBound()
+ *   in StaticSearch.h], \f$ O( m \log( n / m ) ) \f$ comparisons [see
+ *   intersectDoubling() in SortedIntersection.h].
  *
  * Compared with the literature: the blocks compared all against all are
  * the method of Schlegel, Willhalm and Lehner on SSE (with the instruction

@@ -12,7 +12,7 @@
  *   and the and of two Roaring bitmaps (built before the clock); the
  *   longer list has n random distinct integers of 32 bits out of 4 n, the
  *   shorter one n / r out of the same range, for r = 1, 10, 100 and 1000,
- *   and the time is per item of the two lists.
+ *   and the time is per item of the shorter list.
  * - mfset: RemUnionFind and MFSet against boost::disjoint_sets (union by rank
  *   and compression of the paths): 2 n merges of random pairs of n
  *   elements, then n queries of random pairs, and the n - 1 merges of a
@@ -21,8 +21,9 @@
  *   Roaring, on two sets of half of the integers in [ 0 , n ) at random:
  *   the union, the intersection, the difference and the symmetric
  *   difference of the two (their results built in the clock), n random
- *   membership tests and the visit of the items; the time is per integer
- *   of the universe for the operations and per test for the tests.
+ *   membership tests and the visit of the items; the time is per word of
+ *   64 integers of the universe for the operations, per test for the
+ *   tests and per integer for the visit.
  *
  * Each cell is the median of r runs, in nanoseconds; the contracts are off
  * (ADS_CONTRACTS=0). ONLY=a|b|... runs only the structures whose name has
@@ -124,7 +125,7 @@ void intersection( std::size_t n , int r , unsigned seed )
                       4 * std::uint64_t( n ) , g );
   V out( B.size() + 8 );
   const std::string what = "1:" + std::to_string( ratio );
-  const std::size_t items = A.size() + B.size();
+  const std::size_t items = B.size();
   auto cell = [ & ]( const std::string & who , auto && f ) {
    if( ! wanted( who ) )
     return;
@@ -274,7 +275,8 @@ void boolset( std::size_t n , int r , unsigned seed )
    return;
   for( int k = 0 ; k < 4 ; ++k )
    print( "boolset" , ops[ k ] , n , who , median( [](){ return( 0 ); } ,
-           [ & ]( int ) { sink = sink + op( a , b , k ); } , r , n ) );
+           [ & ]( int ) { sink = sink + op( a , b , k ); } , r ,
+           ( n + 63 ) / 64 ) );
   print( "boolset" , "contains" , n , who , median( [](){ return( 0 ); } ,
           [ & ]( int ) {
            std::size_t c = 0;

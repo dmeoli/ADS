@@ -147,6 +147,42 @@ std::size_t blockCommon( const T * a , std::size_t n , const T * b ,
  return( mergeCommon( a , n , b , m , out , i , j , k ) );
  }
 
+/// the items of s[ 0 .. m ) also in l[ 0 .. n ), of 32 bits, the longer
+/// list l read through a window of 64 items: the window moves by strides
+/// of 1024 and then of 64 items while its last item is smaller than the
+/// item looked for, the line 8 strides ahead prefetched, and the item is
+/// compared with the 64 of the window at once, 8 comparisons of vectors
+/// and no search inside the window (a binary search on the windows would
+/// mispredict half of its steps)
+template< class T >
+std::size_t blockGallop( const T * s , std::size_t m , const T * l ,
+                         std::size_t n , T * out )
+{
+ constexpr std::size_t W = 64;
+ std::size_t k = 0 , p = 0 , q = 0;
+ for( ; ( q < m ) && ( p + W <= n ) ; ++q ) {
+  const T x = s[ q ];
+  while( ( p + 16 * W <= n ) && ( l[ p + 16 * W - 1 ] < x ) )
+   p += 16 * W;
+  while( ( p + W <= n ) && ( l[ p + W - 1 ] < x ) ) {
+   __builtin_prefetch( l + p + 8 * W );     // the strides ahead
+   p += W;
+   }
+  if( p + W > n )
+   break;
+  const __m256i v = _mm256_set1_epi32( std::int32_t( x ) );
+  const __m256i * w = reinterpret_cast< const __m256i * >( l + p );
+  __m256i e = _mm256_cmpeq_epi32( v , _mm256_loadu_si256( w ) );
+  for( int c = 1 ; c < 8 ; ++c )
+   e = _mm256_or_si256( e , _mm256_cmpeq_epi32( v ,
+                                                _mm256_loadu_si256( w + c ) ) );
+  out[ k ] = x;
+  k += _mm256_testz_si256( e , e ) ? 0 : 1;
+  }
+ // the items left against the tail of l, past the last whole window
+ return( k + gallopCommon( s + q , m - q , l + p , n - p , out + k ) );
+ }
+
 #endif
 
 }  // end( namespace detail )
@@ -164,8 +200,16 @@ std::size_t intersect( const T * a , std::size_t n , const T * b ,
   std::swap( a , b );
   std::swap( n , m );
   }
- if( m * 32 < n )
+ if( m * 32 < n ) {
+#if defined( __AVX2__ )
+  if constexpr( std::is_integral_v< T > && ( sizeof( T ) == 4 ) )
+   k = detail::blockGallop( b , m , a , n , out );
+  else
+   k = detail::gallopCommon( b , m , a , n , out );
+#else
   k = detail::gallopCommon( b , m , a , n , out );
+#endif
+  }
  else {
 #if defined( __AVX2__ )
   if constexpr( std::is_integral_v< T > && ( sizeof( T ) == 4 ) )
