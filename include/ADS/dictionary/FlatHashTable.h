@@ -51,14 +51,23 @@
  * overflow and the places counted go away), which costs O( 1 ) amortized
  * per insertion; the new pair is built in the new places before the old
  * pairs move, so that a key or a value that lives in the table is still
- * there to copy. So some place is always empty, and each inspection ends,
- * since it visits each group at most once.
+ * there to copy. The rebuild only fills the new places, each group in the
+ * order of its places, so that it keeps the count of the full places of
+ * each group in a byte apart and never reads the control bytes it has just
+ * written (a load of a group right after the store of one of its bytes
+ * waits for the store). So some place is always empty, and each inspection
+ * ends, since it visits each group at most once. The search of an
+ * insertion is the one of find(), whose first group gives the place of a
+ * new key when it has an empty one, the common case; the groups after the
+ * first, and the rebuild, are out of line.
  *
  * The iterators visit the pairs in the order of the places, as constant
- * pairs of references ( key , value ); find() gives a value to change in
+ * pairs of references ( key , value ), a group at a time by the mask of
+ * its full places [see const_iterator]; find() gives a value to change in
  * place. A removal moves no other pair and keeps the iterators valid but
  * the one on the removed pair (erase( it ) returns the next one), an
- * insertion of a new key that rebuilds the table invalidates all of them,
+ * insertion of a new key that rebuilds the table invalidates all of them
+ * (one that does not rebuild it keeps them, the new pair visited or not),
  * and an insertion of a key already there replaces its value in place.
  *
  * The contracts [see Contract.h]: after insert() the key is in the table
@@ -162,6 +171,15 @@
  #define ADS_FLAT_INLINE inline
 #endif
 
+/// a function never inlined, the rare path out of a loop
+#if defined( __GNUC__ ) || defined( __clang__ )
+ #define ADS_FLAT_NOINLINE __attribute__(( noinline ))
+#elif defined( _MSC_VER )
+ #define ADS_FLAT_NOINLINE __declspec( noinline )
+#else
+ #define ADS_FLAT_NOINLINE
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -262,35 +280,19 @@ class FlatHashTable {
  // places, bidirectional; a removal invalidates only the iterators on the
  // removed pair, an insertion that rebuilds the table all of them
 
- /// the places of the table, for SlotIterator: the control bytes, 16 per
- /// group, the byte of overflow never occupied
- struct Places {
-  static std::size_t size( const auto & o ) {
-   return( o.f_cap / SLOTS * GROUP );
-   }
-  static bool occupied( const auto & o , std::size_t i ) {
-   return( ( ( i % GROUP ) != OVER ) && ( o.ctrl( i ) != EMPTY ) );
-   }
-  static auto read( const auto & o , std::size_t i ) {
-   const auto & kv = o.slot( i )->kv;
-   return( std::pair< const K & , const V & >( kv.first , kv.second ) );
-   }
-  };
-
  using value_type = std::pair< const K & , const V & >;
  using size_type = std::size_t;
  using difference_type = std::ptrdiff_t;
  using reference = std::pair< const K & , const V & >;
  using const_reference = std::pair< const K & , const V & >;
- using const_iterator = SlotIterator< FlatHashTable , Places >;
+
+ /// the iterator on the full places [see below]
+ class const_iterator;
+
  using iterator = const_iterator;
 
- [[nodiscard]] const_iterator begin( void ) const {
-  return( const_iterator( this , 0 ) );
-  }
- [[nodiscard]] const_iterator end( void ) const {
-  return( const_iterator( this , Places::size( *this ) ) );
-  }
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
@@ -321,6 +323,9 @@ class FlatHashTable {
  static constexpr int STRIDE = 0;
 #endif
 
+ /// the mask of the place 0 alone
+ static constexpr Mask FIRST = Mask( 1 ) << ( ( 1 << STRIDE ) - 1 );
+
  /// a place, whose pair lives only while its control byte is full
  union Slot {
   Slot( void ) {}
@@ -333,21 +338,26 @@ class FlatHashTable {
  static constexpr std::size_t ALIGN = alignof( Slot ) > 64 ? alignof( Slot )
                                                            : 64;
 
- /// n slots, no pair built, aligned to ALIGN
- [[nodiscard]] static Slot * allocate( std::size_t n );
+ /// the G + 1 groups of a table of G groups, aligned to ALIGN, all empty
+ /// with their overflow 0 but the last, the sentinel [see const_iterator]
+ [[nodiscard]] static Group * control( std::size_t G );
 
- /// frees the slots of allocate()
+ /// the 15 G slots of G groups, aligned to ALIGN, no pair built
+ [[nodiscard]] static Slot * allocate( std::size_t G );
+
+ /// frees the groups of control() and the slots of allocate()
  struct Free {
-  void operator()( Slot * p ) const noexcept;
+  void operator()( Group * c ) const noexcept;
+  void operator()( Slot * s ) const noexcept;
   };
 
  /// the hash taken as it is, if it declares is_avalanching on 64 bits
  static constexpr bool AVALANCHING = ( sizeof( std::size_t ) >= 8 ) &&
   requires { typename H::is_avalanching; };
 
- /// the 2 groups of a place-less table, all empty, their overflow 0,
- /// never written
- inline static Group s_none[ 2 ] = {};
+ /// the 2 groups of a place-less table, all empty, their overflow 0, and
+ /// its sentinel; never written
+ inline static Group s_none[ 3 ] = { {} , {} , { { 1 } } };
 
  /// the mixed hash of k [see the file]
  [[nodiscard]] std::uint64_t mix( const K & k ) const;
@@ -394,6 +404,15 @@ class FlatHashTable {
  /// the place of k, whose mixed hash is x, nil if k is not there
  [[nodiscard]] Slot * locate( std::uint64_t x , const K & k ) const;
 
+ /// the place of k among the places m of the group g, those whose
+ /// fingerprint matches, nil if k is not there
+ [[nodiscard]] Slot * scan( std::size_t g , Mask m , const K & k ) const;
+
+ /// locate( x , k ) past the first group g of x, whose overflow has the
+ /// bit of x
+ ADS_FLAT_NOINLINE Slot * further( std::uint64_t x , std::size_t g ,
+                                   const K & k ) const;
+
  /// the first empty place of the inspection of x, the bit of x set in the
  /// overflow of the full groups before it
  std::size_t claim( std::uint64_t x );
@@ -405,7 +424,7 @@ class FlatHashTable {
  /// the table rebuilt for one more pair, the pair ( k , v ) of mixed hash
  /// x built in the new places before the old pairs move; its place
  template< class KK , class VV >
- std::size_t grow( std::uint64_t x , KK && k , VV && v );
+ ADS_FLAT_NOINLINE std::size_t grow( std::uint64_t x , KK && k , VV && v );
 
  /// empties the place i, whose pair is destroyed
  void drop( std::size_t i );
@@ -445,6 +464,68 @@ class FlatHashTable {
  std::size_t f_deleted = 0;        ///< see deleted()
  H f_h;                            ///< the hash of the keys
  Eq f_eq;                          ///< the equality of the keys
+
+/*--------------------------------------------------------------------------*/
+ public:
+
+ /// the iterator on the full places, by its group, the slot of the first
+ /// place of the group and the mask of the full places of the group from
+ /// its own on, the lowest bit its place: a step clears that bit and
+ /// keeps the places still full in the control bytes, so that the next
+ /// place depends on the previous one by two operations on the mask and
+ /// a place emptied meanwhile is skipped; past the group it skips the
+ /// empty groups whole, up to a sentinel group after the last, whose byte 0
+ /// is full and whose first place is the end, so that a step tests no
+ /// bound
+ class const_iterator {
+  public:
+  using value_type = std::pair< const K & , const V & >;
+  using reference = value_type;
+  using difference_type = std::ptrdiff_t;
+  using iterator_concept = std::bidirectional_iterator_tag;
+  using iterator_category = std::input_iterator_tag;
+
+  const_iterator( void ) = default;
+
+  reference operator*( void ) const {
+   const auto & kv = f_b[ lowest( f_m ) ].kv;
+   return( reference( kv.first , kv.second ) );
+   }
+
+  const_iterator & operator++( void ) {
+   f_m &= f_m - 1;
+   if( f_m )
+    f_m &= fulls( *f_g );
+   if( ! f_m ) [[unlikely]]
+    forward();
+   return( *this );
+   }
+
+  const_iterator & operator--( void );
+
+  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+
+  bool operator==( const const_iterator & o ) const {
+   return( f_b + lowest( f_m ) == o.f_b + lowest( o.f_m ) );
+   }
+
+  private:
+  friend class FlatHashTable;
+
+  /// on the place of the lowest bit of m in the group g, whose first
+  /// slot is b
+  const_iterator( const Group * g , const Slot * b , Mask m )
+   : f_g( g ) , f_b( b ) , f_m( m ) {}
+
+  /// to the first full place of the groups after f_g, maybe the sentinel
+  void forward( void );
+
+  const Group * f_g = nullptr;      ///< the group of the place
+  const Slot * f_b = nullptr;       ///< the slot of the place 0 of f_g
+  Mask f_m = FIRST;                 ///< the full places from this one on
+
+ };  // end( class const_iterator )
 
  };  // end( class FlatHashTable )
 

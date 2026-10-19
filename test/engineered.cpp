@@ -486,6 +486,19 @@ void against( T & t , R & r , std::uint64_t range , int ops , G && key ,
 
 static_assert( Dictionary< FlatHashTable< int , int > > );
 
+/// the keys of t by its iterators forward, checked against the walk
+/// backward from the end, the same keys in the reverse order
+template< class T >
+std::vector< std::uint64_t > walk( const T & t )
+{
+ std::vector< std::uint64_t > f , b;
+ for( const auto & [ k , v ] : t ) f.push_back( k );
+ for( auto e = t.end() ; e != t.begin() ; ) b.push_back( ( *--e ).first );
+ std::reverse( b.begin() , b.end() );
+ CHECK( f == b && f.size() == t.size() );
+ return( f );
+ }
+
 // the product of 128 bits by 32 bits as by the machine, at the extremes
 static_assert( detail::mulxPortable( 0 , 0x9e3779b97f4a7c15ULL ) == 0 );
 static_assert( detail::mulxPortable( 1ULL << 63 , 2 ) == 1 );
@@ -507,7 +520,12 @@ static_assert( detail::mulxPortable( 1ULL << 32 , 1ULL << 32 ) == 1 );
 // iterators across removals and erase( it ) while iterating, a value of
 // the table inserted with a new key that grows it, a copy that throws in
 // the rebuild and in the copy of the table, the copies and the moves, and
-// no value leaked; run also with ADS_FLAT_SIMD=0, the broadword fallback
+// no value leaked; the walk of the groups by the iterators, forward and
+// backward: no places, after reserve(), after clear() and after a move, the
+// first and the last group alone, two full groups, places removed under
+// an iterator and skipped, the empty groups between them, erase() from the
+// end back to the beginning, every rebuild of one overflowing group, and a
+// self-move; run also with ADS_FLAT_SIMD=0, the broadword fallback
 ADS_TEST( "flat-hash-table" )
 {
  for( std::uint64_t a : { 0ULL , 1ULL , 0xFFFFFFFFULL , 1ULL << 32 ,
@@ -681,6 +699,66 @@ ADS_TEST( "flat-hash-table" )
   CHECK( Fussy::count == 27 );
   }
  CHECK( Fussy::count == 0 );
+ {                                             // the walk of the groups
+  FlatHashTable< std::uint64_t , int > N;     // no places, then no pairs
+  CHECK( walk( N ).empty() && N.begin() == N.end() );
+  N.reserve( 100 );
+  CHECK( walk( N ).empty() && N.cbegin() == N.cend() );
+  N.insert( 1 , 1 );
+  N.clear();
+  CHECK( walk( N ).empty() && N.capacity() > 0 );
+  FlatHashTable< std::uint64_t , int > M( std::move( N ) );   // moved
+  CHECK( walk( N ).empty() && walk( M ).empty() );
+  }
+ if constexpr( sizeof( std::size_t ) == 8 ) {
+  FlatHashTable< std::uint64_t , int , Raw > W( 100 );   // 8 groups
+  CHECK( W.capacity() == 120 );
+  W.insert( raw( 7 , 3 , 0 , 1 ) , 0 );        // the last group alone
+  CHECK( walk( W ) == std::vector< std::uint64_t >{ raw( 7 , 3 , 0 , 1 ) } );
+  CHECK( W.erase( W.begin() ) == W.end() && W.isEmpty() );
+  W.insert( raw( 0 , 3 , 0 , 1 ) , 0 );        // the first group alone
+  CHECK( walk( W ).size() == 1 );
+  CHECK( ( *--W.end() ).first == raw( 0 , 3 , 0 , 1 ) );
+  W.remove( raw( 0 , 3 , 0 , 1 ) );
+  for( std::uint64_t j = 0 ; j < 15 ; ++j )   // groups 2 and 7 full
+   for( std::uint64_t g : { 2 , 7 } )
+    W.insert( raw( g , 3 , j , j + 1 ) , int( j ) );
+  CHECK( W.capacity() == 120 && walk( W ).size() == 30 );
+  auto it = W.begin();                         // place 0 of group 2
+  CHECK( ( *it ).first == raw( 2 , 3 , 0 , 1 ) );
+  W.remove( raw( 2 , 3 , 1 , 2 ) );            // the next place, skipped
+  W.remove( raw( 2 , 3 , 14 , 15 ) );          // the last of the group
+  CHECK( ( *++it ).first == raw( 2 , 3 , 2 , 3 ) );
+  for( int s = 0 ; s < 11 ; ++s ) ++it;
+  CHECK( ( *it ).first == raw( 2 , 3 , 13 , 14 ) );
+  CHECK( ( *++it ).first == raw( 7 , 3 , 0 , 1 ) );   // groups 3 to 6
+  CHECK( ( *--it ).first == raw( 2 , 3 , 13 , 14 ) );
+  auto last = W.end();                         // the last place full
+  CHECK( ( *--last ).first == raw( 7 , 3 , 14 , 15 ) );
+  CHECK( ++last == W.end() && walk( W ).size() == 28 );
+  for( auto e = W.end() ; e != W.begin() ; )  // erase backwards
+   e = W.erase( --e );
+  CHECK( W.isEmpty() && W.begin() == W.end() && W.capacity() == 120 );
+  }
+ {                                             // one group, overflowing
+  FlatHashTable< std::uint64_t , int , Same > S;
+  std::set< std::uint64_t > in;
+  for( std::uint64_t k = 0 ; k < 100 ; ++k ) {
+   S.insert( k , 0 );
+   in.insert( k );
+   const auto w = walk( S );                   // across every rebuild
+   CHECK( std::set< std::uint64_t >( w.begin() , w.end() ) == in );
+   }
+  for( std::uint64_t k = 0 ; k < 100 ; k += 3 ) {
+   S.remove( k );
+   in.erase( k );
+   }
+  const auto w = walk( S );
+  CHECK( std::set< std::uint64_t >( w.begin() , w.end() ) == in );
+  auto & same = S;                             // self-move
+  S = std::move( same );
+  CHECK( S.size() == in.size() && walk( S ).size() == in.size() );
+  }
  {                                             // strings, copies, moves
   FlatHashTable< std::string , Alive > A;
   std::unordered_map< std::string , std::string > R;

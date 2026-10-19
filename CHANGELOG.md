@@ -258,6 +258,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenHashTable::scan() adds the constant stride of the linear inspection
   and of the double hashing instead of computing H( k , i ) by four
   divisions per probe; the places are the same
+- FlatHashTable iterates a group at a time, by the mask of its full places
+  and a sentinel group after the last, instead of place by place; its
+  rebuild places the pairs by a count of the full places of each new group
+  and never reads the control bytes it has just written; an insertion
+  takes the place of a new key in the first group of its search when it
+  has one; the search past the first group and the rebuild are out of
+  line; the groups carry the sentinel
 - the licence is the GNU Lesser General Public License version 3.0
 - the definitions of the templates move from src/ADS/<area>/X.tpp to
   include/ADS/<area>/impl/X.tpp, as in Boost: include/ is the whole library
