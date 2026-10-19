@@ -37,6 +37,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hash function by pilots of PTHash; BucketCuckooTable, the cuckoo table
   with buckets of 4 places, tags of 8 bits and the search in breadth of
   Li et al.
+- the benchmark of the hashing, bench/hashing.cpp: the hash functions
+  against std::hash, boost::hash, absl::Hash, XXH3, wyhash, rapidhash and
+  the hash of unordered_dense; the hash maps against std, Boost (the map,
+  the node map and the flat map), absl::flat_hash_map, unordered_dense,
+  tsl::robin_map and libcuckoo; the filters against the blocked filter of
+  fastfilter_cpp and the xor and binary fuse filters of xor_singleheader;
+  the minimal perfect hash functions against PTHash, PHOBIC, BBHash and
+  RecSplit; the libraries from their sources given to the makefile by
+  HASHING and ABSL (ADS_HASHING and find_package( absl ) with CMake)
+
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the

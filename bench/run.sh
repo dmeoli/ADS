@@ -9,6 +9,7 @@
 # cell from RUNS (default 11), the build directory from BUILD.                #
 #                                                                             #
 #   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
+#                           [HASHING=<dir>] [ABSL=<prefix>]                   #
 ###############################################################################
 
 set -e
@@ -37,6 +38,7 @@ run priority 100000 1000000
 run sequences 100000 10000000
 run bignum 16 256 4096 32768
 run fft 1024 65536 1048576
+run hashing 100000 1000000
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################
