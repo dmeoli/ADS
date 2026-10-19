@@ -1,0 +1,12 @@
+pkgbase = ads
+	pkgdesc = Header-only C++20 algorithms and data structures
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/dmeoli/ADS
+	arch = any
+	license = LGPL-3.0-only
+	makedepends = cmake
+	source = ADS-0.1.0.tar.gz::https://github.com/dmeoli/ADS/releases/download/v0.1.0/ADS-0.1.0.tar.gz
+	sha256sums = 0000000000000000000000000000000000000000000000000000000000000000
+
+pkgname = ads

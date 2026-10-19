@@ -1,0 +1,17 @@
+{
+  "name": "ads",
+  "version": "0.1.0",
+  "description": "Header-only C++20 algorithms and data structures",
+  "homepage": "https://github.com/dmeoli/ADS",
+  "license": "LGPL-3.0-only",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ]
+}

@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the recipes of the packages, in packaging/ with the steps of each channel
+  in packaging/README.md: the vcpkg port, the conda-forge recipe
+  (cpp-ads), the Homebrew formula, the Debian package libads-dev with
+  deb.sh for a Launchpad PPA, the Conan 2 recipe, the Spack package, the
+  Nix derivation and flake.nix, the PKGBUILDs of the AUR and of MSYS2, the
+  xmake package; packaging/bump.sh writes the version and the checksums
+  of a release into all of them
+- the source tarball ADS-X.Y.Z.tar.gz and its sha256, attached by
+  release.yml to the release of each tag
+- the workflow packaging.yml, which builds and tests the Homebrew formula on
+  macOS, the vcpkg port and the MSYS2 package on Windows and the AUR
+  package on Arch Linux
+- ads.pc, for pkg-config
+- the snippets of FetchContent and CPM.cmake in the README
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the
@@ -243,6 +257,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the test for emptiness of every structure is empty(), as in the
   standard library and in Boost, in place of the isEmpty() of the book
 
+- the CMake package ADS installed under share/cmake/ADS instead of
+  lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
+  same on every architecture
+
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);
@@ -367,6 +385,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the random graphs of the exams of trees and of the collections of
+  exercises with an edge probability of 2.0 / n or 1.5 / n, more than 1
+  for n = 1, which std::bernoulli_distribution rejects under the
+  assertions of libstdc++ (on by default in makepkg, and in GCC 15 at -O0)
 - a PointerTable moved from is an empty table: find() gave an access out
   of its places; the move operations, clear() and reserve() are new
 - the lookups of a const OpenHashTable from several threads at once no

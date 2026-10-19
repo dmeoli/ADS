@@ -2,7 +2,9 @@
 #                                release.yml                                  #
 #                                                                             #
 # At each tag vX.Y.Z, publishes the GitHub release of that version with its   #
-# section of the CHANGELOG as the notes.                                      #
+# section of the CHANGELOG as the notes, and attaches the source tarball      #
+# ADS-X.Y.Z.tar.gz with its sha256, the source of the recipes of packaging/   #
+# [see packaging/README.md].                                                  #
 ###############################################################################
 
 name: Release
@@ -19,6 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: the source tarball and its sha256
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          git archive --format=tar --prefix="ADS-$v/" HEAD |
+            gzip -n -9 > "ADS-$v.tar.gz"
+          sha256sum "ADS-$v.tar.gz" > "ADS-$v.tar.gz.sha256"
+          cat "ADS-$v.tar.gz.sha256"
       - name: the notes from the CHANGELOG, and the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -31,4 +40,5 @@ jobs:
             on { print }' CHANGELOG.md > notes.md
           test -s notes.md
           gh release create "$GITHUB_REF_NAME" --title "ADS $v" \
-             --notes-file notes.md
+             --notes-file notes.md \
+             "ADS-$v.tar.gz" "ADS-$v.tar.gz.sha256"

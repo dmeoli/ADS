@@ -1,0 +1,118 @@
+###############################################################################
+#                               packaging.yml                                 #
+#                                                                             #
+# Builds and tests the recipes of packaging/ that need a system other than    #
+# Linux, or a distribution other than Ubuntu: the Homebrew formula on macOS,  #
+# the vcpkg port and the MSYS2 package on Windows, the AUR package on Arch.   #
+# Each job makes the tarball of the commit and points the recipe at it, so    #
+# that the recipes are tested before the release whose tarball they name.     #
+###############################################################################
+
+name: Packaging
+
+on:
+  pull_request:
+    paths: [ 'packaging/**' , 'CMakeLists.txt' , 'cmake/**' ,
+             '.github/workflows/packaging.yml' ]
+  workflow_dispatch:
+
+jobs:
+  homebrew:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: the formula, built from the tarball of this commit
+        env:
+          HOMEBREW_NO_INSTALL_FROM_API: 1
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: |
+          git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
+            gzip -n > "$RUNNER_TEMP/ADS-0.1.0.tar.gz"
+          tgz="$RUNNER_TEMP/ADS-0.1.0.tar.gz"
+          sha=$(shasum -a 256 "$tgz" | cut -d' ' -f1)
+          brew tap-new --no-git local/ads
+          tap=$(brew --repository local/ads)
+          sed -e "s|^  url .*|  url \"file://$tgz\"|" \
+              -e "s|^  sha256 .*|  sha256 \"$sha\"|" \
+              packaging/homebrew/Formula/ads.rb > "$tap/Formula/ads.rb"
+          brew style local/ads/ads
+          brew install --build-from-source local/ads/ads
+          brew test local/ads/ads
+
+  vcpkg:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: the overlay port, with the tarball in the downloads of vcpkg
+        shell: bash
+        run: |
+          dl="$RUNNER_TEMP/vcpkg-downloads"
+          mkdir -p "$dl"
+          git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
+            gzip -n > "$dl/ADS-0.1.0.tar.gz"
+          sha=$(sha512sum "$dl/ADS-0.1.0.tar.gz" | cut -d' ' -f1)
+          sed -i "s|SHA512 .*|SHA512 $sha|" \
+              packaging/vcpkg/ports/ads/portfile.cmake
+          "$VCPKG_INSTALLATION_ROOT/vcpkg.exe" install ads \
+              --overlay-ports=packaging/vcpkg/ports --downloads-root="$dl" \
+              --x-install-root="$RUNNER_TEMP/vcpkg-installed"
+          cmake -S packaging/test -B build-use \
+              -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/vcpkg-installed/x64-windows"
+          cmake --build build-use --config Release
+          ctest --test-dir build-use -C Release --output-on-failure
+
+  msys2:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: >-
+            git base-devel pacman-contrib mingw-w64-ucrt-x86_64-cc
+            mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+      - name: the PKGBUILD, with makepkg-mingw
+        run: |
+          mkdir pkg
+          git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
+            gzip -n > pkg/ADS-0.1.0.tar.gz
+          cp packaging/msys2/PKGBUILD pkg/
+          cd pkg
+          # shellcheck disable=SC2016
+          sed -i 's|^source=.*|source=("ADS-${pkgver}.tar.gz")|' PKGBUILD
+          updpkgsums
+          makepkg-mingw --noconfirm --syncdeps --install
+          cmake -S ../packaging/test -B build-use -G Ninja
+          cmake --build build-use
+          ctest --test-dir build-use --output-on-failure
+
+  aur:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+      - name: the PKGBUILD, with makepkg and namcap
+        run: |
+          pacman -Syu --noconfirm git cmake namcap pacman-contrib
+          git config --global --add safe.directory "$PWD"
+          useradd -m builder
+          mkdir /tmp/pkg
+          git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
+            gzip -n > /tmp/pkg/ADS-0.1.0.tar.gz
+          cp packaging/aur/PKGBUILD /tmp/pkg/
+          # $pkgver is for makepkg, not for this shell
+          # shellcheck disable=SC2016
+          sed -i 's|^source=.*|source=("ADS-$pkgver.tar.gz")|' \
+              /tmp/pkg/PKGBUILD
+          chown -R builder /tmp/pkg
+          cd /tmp/pkg
+          su builder -c 'updpkgsums && makepkg --noconfirm'
+          namcap PKGBUILD ads-*.pkg.tar.zst
+          pacman -U --noconfirm ads-*.pkg.tar.zst
+          cmake -S "$GITHUB_WORKSPACE/packaging/test" -B build-use
+          cmake --build build-use
+          ctest --test-dir build-use --output-on-failure

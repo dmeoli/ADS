@@ -1,0 +1,4 @@
+Version: 5
+
+Source: https://github.com/dmeoli/ADS/releases
+Matching-Pattern: .*/download/v@ANY_VERSION@/ADS-@ANY_VERSION@@ARCHIVE_EXT@

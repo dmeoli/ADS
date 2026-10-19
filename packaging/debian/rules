@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+# the tests of the book are built and run unless nocheck is asked
+ifneq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+ADS_TESTS = OFF
+else
+ADS_TESTS = ON
+endif
+
+%:
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DADS_BUILD_TESTS=$(ADS_TESTS) \
+	                     -DBUILD_TESTING=$(ADS_TESTS)

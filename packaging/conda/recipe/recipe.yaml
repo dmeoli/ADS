@@ -1,0 +1,65 @@
+context:
+  name: cpp-ads
+  version: "0.1.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/dmeoli/ADS/releases/download/v${{ version }}/ADS-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - cmake -S . -B build -G Ninja ${CMAKE_ARGS} -DADS_BUILD_TESTS=OFF
+        -DCMAKE_INSTALL_PREFIX=${PREFIX}
+    - cmake --install build
+
+requirements:
+  build:
+    - cmake
+    - ninja
+
+tests:
+  - package_contents:
+      include:
+        - ADS/sequence/List.h
+        - ADS/Contract.h
+      files:
+        - share/cmake/ADS/ADSConfig.cmake
+        - share/pkgconfig/ads.pc
+  - files:
+      source:
+        - packaging/test/
+    requirements:
+      run:
+        - cxx-compiler
+        - cmake
+        - ninja
+        - pkg-config
+    script:
+      - cmake -S packaging/test -B build-use -G Ninja
+          -DCMAKE_PREFIX_PATH=${PREFIX}
+      - cmake --build build-use
+      - ctest --test-dir build-use --output-on-failure
+
+about:
+  homepage: https://github.com/dmeoli/ADS
+  repository: https://github.com/dmeoli/ADS
+  documentation: https://dmeoli.github.io/ADS/
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  summary: Header-only C++20 algorithms and data structures
+  description: |
+    ADS is a header-only C++20 library of the algorithms and the data
+    structures of A. Montresor, Algoritmi e Strutture Dati, with further
+    structures from The Art of Computer Programming and from algorithm
+    engineering. It installs the headers, the CMake package ADS (target
+    ADS::ADS) and the pkg-config file ads.pc.
+
+extra:
+  recipe-maintainers:
+    - dmeoli
