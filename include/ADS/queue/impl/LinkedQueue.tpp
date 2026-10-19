@@ -27,7 +27,8 @@ template< class T >
 LinkedQueue< T >::LinkedQueue( LinkedQueue && other ) noexcept
  : f_front( std::exchange( other.f_front , nullptr ) ) ,
    f_back( std::exchange( other.f_back , nullptr ) ) ,
-   f_size( std::exchange( other.f_size , 0 ) )
+   f_size( std::exchange( other.f_size , 0 ) ) ,
+   f_pool( std::move( other.f_pool ) )
 {
  }
 
@@ -51,6 +52,7 @@ void LinkedQueue< T >::swap( LinkedQueue & other ) noexcept
  std::swap( f_front , other.f_front );
  std::swap( f_back , other.f_back );
  std::swap( f_size , other.f_size );
+ f_pool.swap( other.f_pool );
  }
 
 template< class T >
@@ -63,7 +65,7 @@ template< class T >
 void LinkedQueue< T >::enqueue( const T & v )
 {
  [[maybe_unused]] const bool was_empty = empty();
- Cell * c = new Cell{ v , nullptr };
+ Cell * c = f_pool.make( Cell{ v , nullptr } );
  ( f_back ? f_back->next : f_front ) = c;
  f_back = c;
  ++f_size;
@@ -79,7 +81,7 @@ T LinkedQueue< T >::dequeue( void )
  f_front = c->next;
  if( ! f_front )
   f_back = nullptr;
- delete c;
+ f_pool.free( c );
  --f_size;
  return( v );
  }

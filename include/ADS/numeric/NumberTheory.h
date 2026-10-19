@@ -21,7 +21,19 @@
  *   the product of 128 bits where the compiler has one, and the doubling
  *   of Ahmes, O( log b ) additions, where it has not (MSVC);
  * - powMod(), \f$ x^v \bmod m \f$ by repeated squaring, O( log v )
- *   multiplications (exercise 17.1);
+ *   multiplications (exercise 17.1), each one of Montgomery when m is odd
+ *   (see below), with no division but the one that sets up the modulus;
+ * - binaryGcd(), beyond the book, the binary gcd of Stein (Algorithm 4.5.2B
+ *   of Knuth) with the trailing zeros counted by one instruction: the
+ *   common power of 2 set apart, then \f$ \gcd( a , b ) =
+ *   \gcd( \min( a , b ) , | a - b | ) \f$ with the zeros of the difference
+ *   shifted out, O( log a + log b ) subtractions and no division;
+ * - Montgomery64, beyond the book, the arithmetic modulo an odd n of 64
+ *   bits in the form \f$ \bar{x} = x R \bmod n \f$, \f$ R = 2^{64} \f$:
+ *   the product \f$ \bar{a} \bar{b} R^{-1} \bmod n \f$ is the high half
+ *   of \f$ \bar{a} \bar{b} \f$ minus that of \f$ q n \f$, q the low half
+ *   times \f$ n^{-1} \bmod R \f$, i.e., two products of 128 bits and one
+ *   of 64 instead of a division of 128 bits, exact for every odd n;
  * - isPrimeTrial(), the divisions up to \f$ \sqrt{n} \f$,
  *   \f$ O( 2^{d/2} ) \f$ for n of d bits;
  * - witness(), b is a witness that n is composite if
@@ -30,8 +42,12 @@
  *   for some 0 <= i < v; millerRabin() tries K random bases in
  *   [ 2 , n - 2 ], at least 3/4 of which are witnesses for a composite n,
  *   and errs with probability at most \f$ ( 1 / 4 )^K \f$, only by saying
- *   prime; isPrime() tries the 12 primes up to 37, which are enough for
- *   every n < 3.3 10^24, and so it is exact on 64 bits;
+ *   prime; isPrime(), beyond the book, is exact on 64 bits: the divisions
+ *   by the primes up to 53 by one product each (n is a multiple of the odd
+ *   p iff \f$ n p^{-1} \bmod 2^{64} \le \lfloor ( 2^{64} - 1 ) / p
+ *   \rfloor \f$), then the test of Miller and Rabin in Montgomery form on
+ *   the fewest bases known to have no strong pseudoprime below n, from 1
+ *   base below 341531 to the 7 of Sinclair for every n of 64 bits;
  * - sieve(), the sieve of Eratosthenes on a SET of the integers from 2 to n
  *   [see BoolSet.h], beyond the book: the least item p left in the set is a
  *   prime, and its multiples are removed; since the multiples of the primes
@@ -58,6 +74,17 @@
  * \see J. Sorenson, J. Webster, Strong pseudoprimes to twelve prime bases,
  *      Mathematics of Computation 86(304), 985-1003, 2017,
  *      doi:10.1090/mcom/3134
+ * \see P. L. Montgomery, Modular multiplication without trial division,
+ *      Mathematics of Computation 44(170), 519-521, 1985,
+ *      doi:10.1090/S0025-5718-1985-0777282-X
+ * \see J. Stein, Computational problems associated with Racah algebra,
+ *      Journal of Computational Physics 1(3), 397-405, 1967,
+ *      doi:10.1016/0021-9991(67)90047-2
+ * \see T. Granlund, P. L. Montgomery, Division by invariant integers using
+ *      multiplication, PLDI 1994, 61-72, doi:10.1145/178243.178249
+ * \see G. Jaeschke, On strong pseudoprimes to several bases, Mathematics
+ *      of Computation 61(204), 915-926, 1993, doi:10.2307/2153262, and the
+ *      bases of J. Sinclair and others at https://miller-rabin.appspot.com
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -80,10 +107,14 @@
 #include "ADS/Contract.h"
 #include "ADS/set/BoolSet.h"
 
+#include <array>
+#include <bit>
 #include <cstdint>
 #include <random>
 #include <stdexcept>
 #include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -95,6 +126,10 @@ namespace ADS {
 using U64 = std::uint64_t;
 
 inline U64 gcd( U64 s , U64 m );
+
+/// the gcd of a and b by the binary algorithm, with no division;
+/// gcd( a , 0 ) = a
+[[nodiscard]] constexpr U64 binaryGcd( U64 a , U64 b );
 
 /// euclideEsteso(): ( d , p , q ) with s p + m q = d = gcd( s , m )
 /// \pre s >= 0 and m >= 0
@@ -123,7 +158,50 @@ inline constexpr U64 kMersenne61 = ( U64( 1 ) << 61 ) - 1;
 /// \post the result is below m
 [[nodiscard]] constexpr U64 mulMod( U64 a , U64 b , U64 m );
 
-/// x^v mod m by repeated squaring
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CLASS Montgomery64 ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/// the arithmetic modulo an odd n of 64 bits in Montgomery form, x R mod n
+/// with R = 2^64; the numbers in the form are below n
+class Montgomery64 {
+ public:
+ /// the arithmetic modulo n, with one division of 128 bits for R^2 mod n
+ /// \pre n is odd
+ explicit constexpr Montgomery64( U64 n );
+
+ [[nodiscard]] constexpr U64 modulus( void ) const { return( f_n ); }
+
+ /// x R mod n
+ [[nodiscard]] constexpr U64 to( U64 x ) const;
+
+ /// x R^-1 mod n, the number whose form is x
+ /// \pre x < n
+ [[nodiscard]] constexpr U64 from( U64 x ) const { return( reduce( 0 , x ) ); }
+
+ /// R mod n, the form of 1
+ [[nodiscard]] constexpr U64 one( void ) const { return( f_one ); }
+
+ /// a b R^-1 mod n, the form of the product of the numbers of the forms
+ /// a and b
+ /// \pre a < n and b < n
+ [[nodiscard]] constexpr U64 mul( U64 a , U64 b ) const;
+
+ /// the form of x^v, x a form
+ /// \pre x < n
+ [[nodiscard]] constexpr U64 pow( U64 x , U64 v ) const;
+
+ private:
+ /// ( hi 2^64 + lo ) R^-1 mod n
+ /// \pre hi < n
+ [[nodiscard]] constexpr U64 reduce( U64 hi , U64 lo ) const;
+
+ U64 f_n;       ///< the modulus
+ U64 f_inv;     ///< n^-1 mod 2^64
+ U64 f_one;     ///< R mod n
+ U64 f_r2;      ///< R^2 mod n
+ };  // end( class Montgomery64 )
+
+/// x^v mod m by repeated squaring, the products of Montgomery when m is odd
 /// \pre m >= 1
 inline U64 powMod( U64 x , U64 v , U64 m );
 

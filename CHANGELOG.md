@@ -105,6 +105,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against std::search() with its three searchers, std::string::find(),
   memmem(), the searchers of Boost.Algorithm and, when found, libsais,
   libdivsufsort, edlib and rapidfuzz-cpp
+- RingDeque, the double ended queue on a circular vector of 2^k places
+  that doubles when full, the places reduced by a mask, the front and the
+  back two counters that the operations at the two ends change apart;
+  bench/queues.cpp, the queues, the deques and the stacks of ADS against
+  std::deque, std::vector, boost::circular_buffer and
+  boost::container::devector; test/engineered_queues.cpp
+- binaryGcd(), the binary gcd of Stein with the trailing zeros counted by
+  one instruction and the swap by conditional moves; Montgomery64, the
+  arithmetic modulo an odd word in Montgomery form; NumberTheory.h
+- RandomGenerators.h: xoshiro256++ (Xoshiro256, with jump()) and wyrand
+  (WyRand), uniformBelow() of Lemire, uniformReal(), and shuffleFast(),
+  the shuffle of Fisher and Yates with 2 or 6 indices drawn from one word
+  (Brackett-Rozinsky and Lemire)
+- reservoirSampleL(), the reservoir sampling of Li's Algorithm L, which
+  draws the items to skip; RandomSampling.h
+- bench/numeric.cpp, the gcd, the modular powers, the primality, the
+  generators, the bounded integers, the shuffle and the sampling against
+  std, Boost (Integer, Multiprecision, Random), GMP, hurchalla's Montgomery
+  arithmetic and the generators of PCG; test/engineered_numeric.cpp
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the
@@ -366,6 +385,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   places h1 + i h2 mod m one from the other by an addition, with no
   remainder past the first two, and PartitionedBloomFilter hashes an item
   once instead of once per part
+- ArrayQueue reduces its places by a comparison instead of a division,
+  and LinkedQueue takes its cells from an ObjectPool
+- powMod() multiplies in Montgomery form when the modulus is odd, and
+  mulMod() takes the remainder of its product of 128 bits by one division
+  of 128 by 64 bits instead of a call to the division of 128 by 128
+- isPrime() divides by the primes up to 211 by one product each, all at
+  once, and runs the test of Miller and Rabin in Montgomery form on the
+  fewest bases known to be exact below n (1 base below 341531, 7 for every
+  word), the bases in lockstep and the powers with no branch on the
+  exponent
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);
