@@ -85,11 +85,11 @@ void saisInduceL( const C * T , S * SA , S n , const S * size , S * B ,
  for( S i = 0 ; i < n ; ++i ) {
   if( i + D < n ) {                   // the text, then bucket and place
    const S a = SA[ i + D ];
-   if( a > 0 ) saisPrefetch( T + ( a - 1 ) );
+   saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );     // no branch
    if constexpr( ! small ) {
     const S e = SA[ i + D / 2 ] , f = SA[ i + D / 4 ];
-    if( e > 0 ) saisPrefetch( B + T[ e - 1 ] );
-    if( f > 0 ) saisPrefetchW( SA + B[ T[ f - 1 ] ] );
+    saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
+    saisPrefetchW( SA + B[ T[ f > 0 ? f - 1 : 0 ] ] );
     }
    }
   j = SA[ i ];
@@ -130,11 +130,11 @@ void saisInduceS( const C * T , S * SA , S n , const S * size , S * B ,
  for( S i = n - 1 ; i >= 0 ; --i ) {
   if( i >= D ) {
    const S a = SA[ i - D ];
-   if( a > 0 ) saisPrefetch( T + ( a - 1 ) );
+   saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );     // no branch
    if constexpr( ! small ) {
     const S e = SA[ i - D / 2 ] , f = SA[ i - D / 4 ];
-    if( e > 0 ) saisPrefetch( B + T[ e - 1 ] );
-    if( f > 0 ) saisPrefetchW( SA + ( B[ T[ f - 1 ] ] - 1 ) );
+    saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
+    saisPrefetchW( SA + ( B[ T[ f > 0 ? f - 1 : 0 ] ] - 1 ) );
     }
    }
   const S j = SA[ i ];
@@ -442,10 +442,12 @@ void plcp( std::string_view T , const I * SA , I * P )
  // Phi in P, n for the first suffix of SA
  constexpr std::size_t D = saisAhead;
  P[ SA[ 0 ] ] = I( n );
- for( std::size_t r = 1 ; r < n ; ++r ) {
-  if( r + D < n ) saisPrefetchW( P + SA[ r + D ] );
-  P[ SA[ r ] ] = SA[ r - 1 ];
+ std::size_t r = 1;
+ for( ; r + D + 4 <= n ; r += 4 ) {             // 4 at a time, no checks
+  for( std::size_t q = 0 ; q < 4 ; ++q ) saisPrefetchW( P + SA[ r + D + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q ) P[ SA[ r + q ] ] = SA[ r + q - 1 ];
   }
+ for( ; r < n ; ++r ) P[ SA[ r ] ] = SA[ r - 1 ];
  // the text at Phi prefetched ahead, the place of the comparison but for
  // h; the first suffix of SA has Phi = n, and h is then already 0, since
  // the suffix before it in the text shares at most one symbol with its
@@ -544,10 +546,14 @@ std::vector< I > lcpArrayPhi( std::string_view T ,
  detail::plcp( T , SA.data() , P.get() );
  std::vector< I > LCP( n < 2 ? 0 : n - 1 );
  constexpr std::size_t D = detail::saisAhead;
- for( std::size_t r = 0 ; r + 1 < n ; ++r ) {
-  if( r + D + 1 < n ) detail::saisPrefetch( P.get() + SA[ r + D + 1 ] );
-  LCP[ r ] = P[ SA[ r + 1 ] ];
+ const I * const Q = P.get();
+ std::size_t r = 0;
+ for( ; r + D + 5 <= n ; r += 4 ) {             // 4 at a time, no checks
+  for( std::size_t q = 0 ; q < 4 ; ++q )
+   detail::saisPrefetch( Q + SA[ r + D + 1 + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q ) LCP[ r + q ] = Q[ SA[ r + 1 + q ] ];
   }
+ for( ; r + 1 < n ; ++r ) LCP[ r ] = Q[ SA[ r + 1 ] ];
  ADS_AUDIT( detail::isLcpArrayOf( T , SA , LCP ) );
  return( LCP );
  }
