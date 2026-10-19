@@ -1209,8 +1209,230 @@ ADS_TEST( "big-integer" )
                contract_violation );
  }
 
+// the numbers of the tests of the fast algorithms, built from their digits
+// in base 2^32: random, all 0xFFFFFFFF, or with a given top digit
+namespace {
+
+/// a number of n digits of 32 bits: random, all 0xFFFFFFFF if ones, the
+/// top digit top if not 0
+BigInteger digits( std::size_t n , std::mt19937_64 & g , bool ones = false ,
+                   std::uint32_t top = 0 )
+{
+ BigInteger x , B = BigInteger( 1LL << 32 );
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  std::uint32_t d = ones ? 0xFFFFFFFFu : std::uint32_t( g() );
+  if( ( i == 0 ) && ( top != 0 ) ) d = top;
+  if( ( i == 0 ) && ( d == 0 ) ) d = 1;
+  x = x * B + BigInteger( ( long long )( d ) );
+  }
+ return( x );
+ }
+
+/// a number of n digits of 32 bits drawn from the edges of their range,
+/// where the trial quotients are too large and the corrections run
+BigInteger edges( std::size_t n , std::mt19937_64 & g )
+{
+ const long long e[] = { 0 , 1 , 0x7FFFFFFF , 0x80000000LL , 0xFFFFFFFELL ,
+                         0xFFFFFFFFLL };
+ BigInteger x = 1 , B = BigInteger( 1LL << 32 );
+ for( std::size_t i = 1 ; i < n ; ++i ) x = x * B + BigInteger( e[ g() % 6 ] );
+ return( x );
+ }
+
+}  // end( namespace )
+
+// the products by their methods just below, at and above kKaratsuba and
+// kFFT, balanced and not, against Algorithm M (and the audits), the
+// squares, which take their own paths, the digits all 0xFFFFFFFF, where
+// the carries are longest, a square of 2^17 such digits, where the old
+// convolution in doubles rounded wrong, and the zero factor
+ADS_TEST( "big-integer-product" )
+{
+ std::mt19937_64 g( 20 );
+ const std::size_t K = BigInteger::kKaratsuba , F = BigInteger::kFFT;
+ for( std::size_t n : { K - 1 , K , K + 1 , 2 * K - 1 , 2 * K , 2 * K + 1 ,
+                        F - 1 , F , F + 1 } )
+  for( bool ones : { false , true } ) {
+   const BigInteger a = digits( n , g , ones ) , b = digits( n , g , ones ) ,
+                    c = digits( 3 * n + 1 , g , ones ) , s = -a;
+   const BigInteger ab = BigInteger::multiplySchool( a , b );
+   CHECK( a * b == ab && BigInteger::multiplyKaratsuba( a , b ) == ab &&
+          BigInteger::multiplyFFT( a , b ) == ab );
+   CHECK( a * c == BigInteger::multiplySchool( a , c ) &&
+          c * s == BigInteger::multiplyKaratsuba( c , s ) &&
+          BigInteger::multiplyFFT( s , c ) == -( a * c ) );
+   const BigInteger aa = BigInteger::multiplySchool( a , a );
+   CHECK( a * a == aa && s * s == aa &&
+          BigInteger::multiplyKaratsuba( a , a ) == aa &&
+          BigInteger::multiplyFFT( s , s ) == aa );
+   CHECK( a * BigInteger() == BigInteger() &&
+          BigInteger::multiplyFFT( BigInteger() , a ) == BigInteger() );
+   }
+ for( int t = 0 ; t < 20 ; ++t ) {          // random lengths across both
+  const BigInteger a = digits( 1 + g() % ( 2 * F ) , g ) ,
+                   b = digits( 1 + g() % ( 2 * F ) , g );
+  CHECK( a * b == BigInteger::multiplySchool( a , b ) );
+  }
+ const std::size_t n = std::size_t( 1 ) << 17;
+ const BigInteger p = BigInteger::pow( 2 , 32 * n ) , x = p - 1;
+ CHECK( x.limbs() == n && x * x + x + x + 1 == p * p );
+ }
+
+// the division by its methods: the recursive one against Algorithm D (and
+// the audit) with divisors and quotients just below, at and above kDivide
+// and its multiples, the quotients longer than the divisor taken by
+// blocks, the divisors with the top digit 1 and 0xFFFFFFFF, the digits at
+// the edges of their range, where D6 adds back and the recursion corrects
+// its halves, the exact multiples and those plus b - 1, the powers of the
+// base, zero and the four signs
+ADS_TEST( "big-integer-division" )
+{
+ std::mt19937_64 g( 21 );
+ const std::size_t D = BigInteger::kDivide;
+ for( std::size_t n : { std::size_t( 2 ) , std::size_t( 3 ) , D - 1 , D ,
+                        D + 1 , 2 * D - 1 , 2 * D , 2 * D + 1 , 3 * D + 5 } )
+  for( std::size_t m : { std::size_t( 1 ) , D - 1 , D , D + 1 , 2 * D ,
+                         n - 1 , n , n + 1 , 2 * n + 1 , 3 * n + 7 } ) {
+   if( m == 0 ) continue;
+   for( std::uint32_t top : { 0u , 1u , 0xFFFFFFFFu } ) {
+    const BigInteger b = digits( n , g , false , top ) ,
+                     a = digits( n + m - 1 , g ) , q0 = digits( m , g );
+    const auto [ q , r ] = BigInteger::divMod( a , b );
+    CHECK( std::pair( q , r ) == BigInteger::divModSchool( a , b ) );
+    CHECK( q * b + r == a && r.sign() >= 0 && r < b );
+    const BigInteger e = q0 * b;            // exact, and the largest rest
+    CHECK( BigInteger::divMod( e , b ) == std::pair( q0 , BigInteger() ) );
+    CHECK( BigInteger::divMod( e + b - 1 , b ) == std::pair( q0 , b - 1 ) );
+    CHECK( BigInteger::divMod( -e , b ) == std::pair( -q0 , BigInteger() ) );
+    CHECK( BigInteger::divMod( -a , -b ) == std::pair( q , -r ) &&
+           BigInteger::divMod( a , -b ) == std::pair( -q , r ) );
+    }
+   }
+ for( std::size_t n : { D - 1 , D + 1 , 2 * D + 3 } )   // quotients all
+  for( std::size_t m : { D , 2 * D + 1 , 3 * n } ) {    // 0xFFFFFFFF
+   const BigInteger b = digits( n , g , true , 0x80000000u ) ,
+                    c = digits( n , g , true ) , q = digits( m , g , true );
+   CHECK( BigInteger::divMod( q * b + b - 1 , b ) == std::pair( q , b - 1 ) &&
+          BigInteger::divMod( q * c + c - 1 , c ) == std::pair( q , c - 1 ) );
+   }
+ for( int t = 0 ; t < 200 ; ++t ) {         // the edges, at every length
+  const BigInteger b = edges( 2 + g() % ( 3 * D ) , g ) ,
+                   a = edges( b.limbs() + g() % ( 4 * D ) , g );
+  CHECK( BigInteger::divMod( a , b ) == BigInteger::divModSchool( a , b ) );
+  }
+ for( std::size_t k : { D , 2 * D + 1 , 5 * D } ) {   // powers of the base
+  const BigInteger B = BigInteger::pow( 2 , 32 * k ) ,
+                   C = BigInteger::pow( 2 , 32 * ( k / 2 + 1 ) );
+  CHECK( BigInteger::divMod( B * B , B ) == std::pair( B , BigInteger() ) );
+  CHECK( BigInteger::divMod( B * B - 1 , B - 1 ) ==
+         BigInteger::divModSchool( B * B - 1 , B - 1 ) );
+  CHECK( BigInteger::divMod( B * B , C ) ==
+         std::pair( B * ( B / C ) , BigInteger() ) );
+  CHECK( ( B * B - 1 ) / ( B - 1 ) == B + 1 &&
+         ( B * B - 1 ) % ( B + 1 ) == BigInteger() );
+  }
+ const BigInteger b = digits( 3 * D , g );
+ CHECK( BigInteger::divMod( 0 , b ) == std::pair( BigInteger() ,
+                                                  BigInteger() ) );
+ CHECK( BigInteger::divMod( b , b ) == std::pair( BigInteger( 1 ) ,
+                                                  BigInteger() ) &&
+        BigInteger::divMod( b - 1 , b ) == std::pair( BigInteger() , b - 1 ) );
+ CHECK_THROWS( BigInteger::divModSchool( b , 0 ) , contract_violation );
+ }
+
+// the conversions: 10^k - 1 and 10^k, and their kin in the bases 2 and 36,
+// for k around the lengths where the divide and conquer splits and around
+// kConvert digits, as written and back, negative too; random numbers
+// across kConvert in many bases against toStringSchool() and
+// fromStringSchool() (and the audits), the strings with leading zeros,
+// and zero
+ADS_TEST( "big-integer-radix" )
+{
+ std::mt19937_64 g( 22 );
+ const std::size_t C = BigInteger::kConvert;
+ for( int base : { 2 , 10 , 36 } ) {
+  std::size_t k = 1;                        // the figures in one digit
+  for( long long p = base ; p * base <= 0xFFFFFFFFLL ; p *= base ) ++k;
+  const char top = "0123456789abcdefghijklmnopqrstuvwxyz"[ base - 1 ];
+  std::vector< std::size_t > lengths;
+  for( std::size_t s = k ; s <= 64 * k * C ; s *= 2 )   // k 2^i
+   for( std::size_t d : { s - 1 , s , s + 1 } ) lengths.push_back( d );
+  for( std::size_t d : { C - 1 , C , C + 1 } )   // kConvert digits
+   lengths.push_back( std::size_t( double( 32 * d ) /
+                                   std::log2( double( base ) ) ) );
+  for( std::size_t d : lengths ) {
+   const BigInteger P = BigInteger::pow( base , d ) , Q = P - 1;
+   const std::string sp = "1" + std::string( d , '0' ) ,
+                     sq = std::string( d , top );
+   CHECK( P.toString( base ) == sp && Q.toString( base ) == sq );
+   CHECK( ( -Q ).toString( base ) == "-" + sq );
+   CHECK( BigInteger( sp , base ) == P && BigInteger( sq , base ) == Q &&
+          BigInteger( "-" + sq , base ) == -Q );
+   }
+  }
+ for( int t = 0 ; t < 40 ; ++t ) {          // random, 8 and 32 first
+  const int base = t < 8 ? 1 << ( 3 + 2 * ( t % 2 ) ) : 2 + int( g() % 35 );
+  const BigInteger x = ( t % 2 ? -1 : 1 ) * digits( C - 2 + g() % ( 9 * C ) ,
+                                                    g );
+  const std::string s = x.toString( base );
+  CHECK( s == x.toStringSchool( base ) );
+  CHECK( BigInteger( s , base ) == x &&
+         BigInteger::fromStringSchool( s , base ) == x );
+  }
+ const BigInteger y = digits( 4 * C , g );   // the leading zeros
+ for( int base : { 2 , 10 , 16 , 36 } ) {
+  const std::string s = y.toString( base );
+  CHECK( BigInteger( std::string( 1000 , '0' ) + s , base ) == y &&
+         BigInteger( "-000" + s , base ) == -y &&
+         BigInteger( "+0" + s , base ) == y );
+  CHECK( BigInteger( std::string( 1000 , '0' ) , base ).sign() == 0 &&
+         BigInteger( "-" + std::string( 1000 , '0' ) , base ).sign() == 0 &&
+         BigInteger( 0 ).toString( base ) == "0" &&
+         BigInteger( 0 ).toStringSchool( base ) == "0" );
+  }
+ CHECK_THROWS( (void) BigInteger( 5 ).toStringSchool( 1 ) ,
+               contract_violation );
+ CHECK_THROWS( BigInteger::fromStringSchool( "12" , 2 ) ,
+               contract_violation );
+ }
+
+// the greatest common divisor of Lehmer against Euclid (and the audit):
+// a zero argument, equal and opposite arguments, the coprime neighbours
+// of Fibonacci, where every quotient is 1, gcd( F_m , F_n ) = F_gcd(m,n),
+// the multiples of a common factor, the lengths so different that a long
+// division runs, and the last steps on one and two digits
+ADS_TEST( "big-integer-gcd" )
+{
+ std::mt19937_64 g( 23 );
+ const BigInteger x = digits( 50 , g );
+ CHECK( BigInteger::gcd( 0 , x ) == x && BigInteger::gcd( -x , 0 ) == x &&
+        BigInteger::gcd( 0 , 0 ) == 0 && BigInteger::gcd( x , x ) == x &&
+        BigInteger::gcd( x , -x ) == x );
+ std::vector< BigInteger > F = { 0 , 1 };
+ while( F.size() <= 6000 )
+  F.push_back( F[ F.size() - 1 ] + F[ F.size() - 2 ] );
+ for( std::size_t k : { 10 , 100 , 1000 , 3000 , 5999 } )
+  CHECK( BigInteger::gcd( F[ k ] , F[ k + 1 ] ) == 1 &&
+         BigInteger::gcd( F[ k + 1 ] , -F[ k ] ) == 1 );
+ CHECK( BigInteger::gcd( F[ 6000 ] , F[ 4500 ] ) == F[ 1500 ] &&
+        BigInteger::gcd( F[ 2310 ] , F[ 5005 ] ) == F[ 385 ] );
+ for( int t = 0 ; t < 30 ; ++t ) {
+  const BigInteger c = digits( 1 + g() % 40 , g ) ,
+                   a = c * digits( 1 + g() % 200 , g ) ,
+                   b = c * digits( 1 + g() % 200 , g ) ,
+                   d = BigInteger::gcd( a , b );
+  CHECK( d == BigInteger::gcdEuclid( a , b ) && d % c == 0 );
+  }
+ for( std::size_t n : { 1 , 2 , 3 } ) {     // a long and a short one
+  const BigInteger a = digits( 300 , g ) , b = digits( n , g );
+  CHECK( BigInteger::gcd( a , b ) == BigInteger::gcdEuclid( a , b ) &&
+         BigInteger::gcd( a * b , b ) == b );
+  }
+ }
+
 // the rationals: the harmonic number H_30 as written, the sums and the
-// products in lowest terms (the audit), and the order
+// products in lowest terms (the audit), and the order; the sums by each
+// way of reducing, and H_400 in two orders
 ADS_TEST( "rational" )
 {
  Rational H;
@@ -1238,6 +1460,31 @@ ADS_TEST( "rational" )
         Rational( 0 , -7 ).toString() == "0" &&
         Rational( 0 , -7 ) == Rational( 0 , 3 ) );
  CHECK( Rational( -1 , 2 ) < Rational() && Rational() < Rational( 1 , 2 ) );
+ // the reductions: d1 = 1, d1 > 1 with d2 = 1 and with d2 > 1, a zero sum;
+ // H_400 summed in a row and by halves, with numbers of many digits
+ CHECK( Rational( 1 , 4 ) + Rational( 1 , 4 ) == Rational( 1 , 2 ) &&
+        Rational( 1 , 6 ) + Rational( 1 , 10 ) == Rational( 4 , 15 ) &&
+        Rational( 1 , 6 ) + Rational( 1 , 9 ) == Rational( 5 , 18 ) &&
+        Rational( 1 , 6 ) - Rational( 1 , 6 ) == Rational() );
+ Rational S;
+ std::vector< Rational > h;
+ for( int i = 1 ; i <= 400 ; ++i ) {
+  S = S + Rational( 1 , i );
+  h.push_back( Rational( 1 , i ) );
+  }
+ while( h.size() > 1 ) {
+  std::vector< Rational > n;
+  for( std::size_t i = 0 ; i + 1 < h.size() ; i += 2 )
+   n.push_back( h[ i ] + h[ i + 1 ] );
+  if( h.size() % 2 ) n.push_back( h.back() );
+  h = std::move( n );
+  }
+ CHECK( S == h[ 0 ] && S.den().limbs() > 5 );
+ const BigInteger u = BigInteger::pow( 3 , 700 ) * 1001 ,
+                  v = BigInteger::pow( 7 , 400 ) * 1001;
+ const Rational x( u , v ) , y( v + 1 , u - 1 );
+ CHECK( x.den() == BigInteger::pow( 7 , 400 ) && x * ( Rational( 1 ) / x ) ==
+        Rational( 1 ) && ( x / y ) * y == x && ( x + y ) - y == x );
  CHECK_THROWS( Rational( 1 , 0 ) , contract_violation );
  CHECK_THROWS( Rational( 1 ) / Rational() , contract_violation );
  CHECK_THROWS( Rational( 0 , 0 ) , contract_violation );

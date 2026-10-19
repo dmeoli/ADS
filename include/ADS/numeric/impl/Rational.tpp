@@ -16,6 +16,17 @@
 
 namespace ADS {
 
+namespace detail {
+
+/// x == 1, with no number built for the comparison
+inline bool isOne( const BigInteger & x )
+{
+ static const BigInteger one( 1 );
+ return( ( x.limbs() == 1 ) && ( x == one ) );
+ }
+
+}  // end( namespace detail )
+
 inline Rational::Rational( BigInteger num , BigInteger den )
 {
  ADS_PRE( den.sign() != 0 );
@@ -24,8 +35,8 @@ inline Rational::Rational( BigInteger num , BigInteger den )
   den = -den;
   }
  const BigInteger g = BigInteger::gcd( num , den );
- f_num = num / g;
- f_den = den / g;
+ f_num = detail::isOne( g ) ? std::move( num ) : num / g;
+ f_den = detail::isOne( g ) ? std::move( den ) : den / g;
  ADS_AUDIT( lowest() );
  }
 
@@ -38,26 +49,28 @@ inline Rational::Rational( BigInteger num , BigInteger den , Reduced )
 inline bool Rational::lowest( void ) const
 {
  return( ( f_den.sign() > 0 ) &&
-         ( BigInteger::gcd( f_num , f_den ) == BigInteger( 1 ) ) );
+         detail::isOne( BigInteger::gcd( f_num , f_den ) ) );
  }
 
 inline std::string Rational::toString( void ) const
 {
- if( f_den == BigInteger( 1 ) ) return( f_num.toString() );
+ if( detail::isOne( f_den ) ) return( f_num.toString() );
  return( f_num.toString() + "/" + f_den.toString() );
  }
 
 inline Rational operator+( const Rational & a , const Rational & b )
 {
  const BigInteger d1 = BigInteger::gcd( a.f_den , b.f_den );
- if( d1 == BigInteger( 1 ) )
+ if( detail::isOne( d1 ) )
   return( Rational( a.f_num * b.f_den + b.f_num * a.f_den ,
                     a.f_den * b.f_den , Rational::Reduced() ) );
- const BigInteger t = a.f_num * ( b.f_den / d1 ) + b.f_num * ( a.f_den / d1 );
- const BigInteger d2 = BigInteger::gcd( t , d1 );
+ const BigInteger ad = a.f_den / d1 ,       // each quotient once
+                  t = a.f_num * ( b.f_den / d1 ) + b.f_num * ad;
  if( t.sign() == 0 ) return( Rational() );
- return( Rational( t / d2 , ( a.f_den / d1 ) * ( b.f_den / d2 ) ,
-                   Rational::Reduced() ) );
+ const BigInteger d2 = BigInteger::gcd( t , d1 );
+ if( detail::isOne( d2 ) )
+  return( Rational( t , ad * b.f_den , Rational::Reduced() ) );
+ return( Rational( t / d2 , ad * ( b.f_den / d2 ) , Rational::Reduced() ) );
  }
 
 inline Rational Rational::operator-( void ) const
@@ -75,8 +88,11 @@ inline Rational operator*( const Rational & a , const Rational & b )
  if( ( a.f_num.sign() == 0 ) || ( b.f_num.sign() == 0 ) ) return( Rational() );
  const BigInteger d1 = BigInteger::gcd( a.f_num , b.f_den ) ,
                   d2 = BigInteger::gcd( a.f_den , b.f_num );
- return( Rational( ( a.f_num / d1 ) * ( b.f_num / d2 ) ,
-                   ( a.f_den / d2 ) * ( b.f_den / d1 ) ,
+ const bool o1 = detail::isOne( d1 ) , o2 = detail::isOne( d2 );
+ return( Rational( ( o1 ? a.f_num : a.f_num / d1 ) *
+                   ( o2 ? b.f_num : b.f_num / d2 ) ,
+                   ( o2 ? a.f_den : a.f_den / d2 ) *
+                   ( o1 ? b.f_den : b.f_den / d1 ) ,
                    Rational::Reduced() ) );
  }
 
@@ -92,6 +108,8 @@ inline Rational operator/( const Rational & a , const Rational & b )
 inline std::strong_ordering operator<=>( const Rational & a ,
                                          const Rational & b )
 {
+ if( a.f_num.sign() != b.f_num.sign() )
+  return( a.f_num.sign() <=> b.f_num.sign() );
  return( a.f_num * b.f_den <=> b.f_num * a.f_den );   // denominators > 0
  }
 

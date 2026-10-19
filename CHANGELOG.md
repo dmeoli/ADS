@@ -222,6 +222,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- BigInteger without its quadratic steps: the recursive division of
+  Burnikel and Ziegler above Algorithm D, the conversions of base by
+  divide and conquer (and by slices of bits in the bases 2^k), the gcd of
+  Lehmer, the left-to-right binary power with squares, Karatsuba on one
+  scratch buffer, the divisions by one digit through a reciprocal
+  (Moeller and Granlund); Rational skips the divisions by a gcd of 1;
+  divModSchool(), toStringSchool(), fromStringSchool() and gcdEuclid() keep
+  the quadratic algorithms for the audits and the tests
 - the licence is the GNU Lesser General Public License version 3.0
 - the definitions of the templates move from src/ADS/<area>/X.tpp to
   include/ADS/<area>/impl/X.tpp, as in Boost: include/ is the whole library
@@ -250,6 +258,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the product of BigInteger by the FFT in doubles rounded wrong from about
+  2^17 digits of 32 bits; it is now an exact number theoretic transform
+  modulo three primes
 - the cases shown by the edge cases of the tests, about 60 in all: an
   overflow at the extreme values of the types (DirectTable, hash_division,
   the allocators, the knapsack, refuelingStops, evalPostfix, cross(),

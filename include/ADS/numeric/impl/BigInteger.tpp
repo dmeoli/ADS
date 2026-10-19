@@ -16,52 +16,6 @@
 
 namespace ADS {
 
-inline BigInteger::BigInteger( long long v ) : f_neg( v < 0 )
-{
- auto m = v < 0 ? std::uint64_t( 0 ) - std::uint64_t( v ) : std::uint64_t( v );
- for( ; m ; m >>= 32 ) f_d.push_back( Limb( m ) );
- }
-
-inline BigInteger::BigInteger( bool neg , Mag d ) : f_d( std::move( d ) )
-{
- trim( f_d );
- f_neg = neg && ! f_d.empty();
- }
-
-inline void BigInteger::trim( Mag & d )
-{
- while( ! d.empty() && ( d.back() == 0 ) ) d.pop_back();
- }
-
-inline bool BigInteger::normal( void ) const
-{
- return( ( f_d.empty() || ( f_d.back() != 0 ) ) &&
-         ! ( f_neg && f_d.empty() ) );
- }
-
-inline BigInteger::Limb BigInteger::divSmall( Mag & a , Limb d )
-{
- std::uint64_t r = 0;
- for( std::size_t i = a.size() ; i-- > 0 ; ) {
-  const std::uint64_t cur = ( r << 32 ) | a[ i ];
-  a[ i ] = Limb( cur / d );
-  r = cur % d;
-  }
- trim( a );
- return( Limb( r ) );
- }
-
-inline void BigInteger::mulAddSmall( Mag & a , Limb m , Limb c )
-{
- std::uint64_t carry = c;
- for( auto & x : a ) {
-  const std::uint64_t cur = std::uint64_t( x ) * m + carry;
-  x = Limb( cur );
-  carry = cur >> 32;
-  }
- if( carry ) a.push_back( Limb( carry ) );
- }
-
 namespace detail {
 
 /// the value of the digit c in the bases up to 36, -1 if none
@@ -85,7 +39,436 @@ inline std::pair< std::uint32_t , int > bigBase( int base )
  return( std::pair( std::uint32_t( p ) , k ) );
  }
 
+/// the figures of the bases up to 36
+inline constexpr const char * kFigures =
+                                       "0123456789abcdefghijklmnopqrstuvwxyz";
+
+/// the k figures of r in the base, the last one at end[ -1 ]; the base 10
+/// divides by a constant, a product
+inline void putFigures( char * end , std::uint32_t r , int k , int base )
+{
+ if( base == 10 )
+  for( int t = 0 ; t < k ; ++t , r /= 10 )
+   *--end = char( '0' + r % 10 );
+ else
+  for( int t = 0 ; t < k ; ++t , r /= std::uint32_t( base ) )
+   *--end = kFigures[ r % std::uint32_t( base ) ];
+ }
+
+/// the reciprocal of d with the top bit set, floor( ( b^2 - 1 ) / d ) - b
+inline std::uint32_t reciprocal( std::uint32_t d )
+{
+ return( std::uint32_t( ( ( std::uint64_t( ~d ) << 32 ) | 0xFFFFFFFFULL ) /
+                        d ) );
+ }
+
+/// the quotient of u1 b + u0 by d with the top bit set, u1 < d, by the
+/// reciprocal v of d (Moeller and Granlund, Algorithm 4), the remainder in
+/// r; the sum is modulo b^2
+inline std::uint32_t div2by1( std::uint32_t u1 , std::uint32_t u0 ,
+                              std::uint32_t d , std::uint32_t v ,
+                              std::uint32_t & r )
+{
+ const std::uint64_t p = std::uint64_t( v ) * u1 +
+                         ( ( std::uint64_t( u1 ) << 32 ) | u0 );
+ std::uint32_t q = std::uint32_t( p >> 32 ) + 1;
+ r = std::uint32_t( u0 - q * d );
+ if( r > std::uint32_t( p ) ) {
+  --q;
+  r += d;
+  }
+ if( r >= d ) {                             // rarely
+  ++q;
+  r -= d;
+  }
+ return( q );
+ }
+
+/// the arithmetic of Montgomery modulo a prime P < 2^31, R = 2^32, and the
+/// number theoretic transform modulo P of up to 2^26 terms, the roots of
+/// unity from G, a quadratic nonresidue
+template< std::uint32_t P , std::uint32_t G >
+struct NTT {
+
+ /// -1 / P modulo 2^32, by Newton from the 3 bits right in P
+ static constexpr std::uint32_t inv( void ) {
+  std::uint32_t x = P;
+  for( int i = 0 ; i < 4 ; ++i ) x *= 2 - P * x;
+  return( 0u - x );
+  }
+
+ static constexpr std::uint32_t kInv = inv();
+ static constexpr std::uint32_t kR = std::uint32_t(   ///< R mod P
+                                       ( std::uint64_t( 1 ) << 32 ) % P );
+ static constexpr std::uint32_t kR2 = std::uint32_t(  ///< R^2 mod P
+                                       std::uint64_t( kR ) * kR % P );
+
+ /// a b / R mod P, for a < 2^32 and b < P
+ static std::uint32_t mul( std::uint32_t a , std::uint32_t b ) {
+  const std::uint64_t t = std::uint64_t( a ) * b;
+  const std::uint32_t m = std::uint32_t( t ) * kInv;
+  const std::uint32_t u = std::uint32_t( ( t + std::uint64_t( m ) * P ) >>
+                                         32 );
+  return( u >= P ? u - P : u );
+  }
+
+ static std::uint32_t add( std::uint32_t a , std::uint32_t b ) {
+  const std::uint32_t s = a + b;
+  return( s >= P ? s - P : s );
+  }
+
+ static std::uint32_t sub( std::uint32_t a , std::uint32_t b ) {
+  return( a >= b ? a - b : a + P - b );
+  }
+
+ /// x^e, both x and the result in the form of Montgomery
+ static std::uint32_t power( std::uint32_t x , std::uint64_t e ) {
+  std::uint32_t y = kR;
+  for( ; e ; e >>= 1 ) {
+   if( e & 1 ) y = mul( y , x );
+   x = mul( x , x );
+   }
+  return( y );
+  }
+
+ /// the powers of the roots of unity (inverse if inv), in the form of
+ /// Montgomery, the round of length len at len / 2 , ... , len - 1, for
+ /// the transforms up to n terms; exact, kept per thread and grown
+ static const std::uint32_t * roots( std::size_t n , bool inverse ) {
+  thread_local std::vector< std::uint32_t > T[ 2 ];
+  auto & t = T[ inverse ];
+  if( t.size() < n ) {
+   t.assign( n , 0 );
+   for( std::size_t len = 2 ; len <= n ; len *= 2 ) {
+    std::uint32_t w = power( mul( G , kR2 ) , ( P - 1 ) / len );
+    if( inverse ) w = power( w , P - 2 );
+    std::uint32_t x = kR;
+    for( std::size_t k = 0 ; k < len / 2 ; ++k ) {
+     t[ len / 2 + k ] = x;
+     x = mul( x , w );
+     }
+    }
+   }
+  return( t.data() );
+  }
+
+ /// the transform of a, n a power of 2, from the natural order to that of
+ /// the reversed bits (Gentleman and Sande)
+ static void forward( std::uint32_t * a , std::size_t n ) {
+  const std::uint32_t * T = roots( n , false );
+  for( std::size_t len = n ; len >= 2 ; len /= 2 ) {
+   const std::size_t h = len / 2;
+   const std::uint32_t * w = T + h;
+   for( std::size_t i = 0 ; i < n ; i += len ) {
+    std::uint32_t * x = a + i , * y = x + h;
+    for( std::size_t k = 0 ; k < h ; ++k ) {
+     const std::uint32_t u = x[ k ] , v = y[ k ];
+     x[ k ] = add( u , v );
+     y[ k ] = mul( sub( u , v ) , w[ k ] );
+     }
+    }
+   }
+  }
+
+ /// the inverse transform times n, from the order of the reversed bits to
+ /// the natural one (Cooley and Tukey)
+ static void backward( std::uint32_t * a , std::size_t n ) {
+  const std::uint32_t * T = roots( n , true );
+  for( std::size_t len = 2 ; len <= n ; len *= 2 ) {
+   const std::size_t h = len / 2;
+   const std::uint32_t * w = T + h;
+   for( std::size_t i = 0 ; i < n ; i += len ) {
+    std::uint32_t * x = a + i , * y = x + h;
+    for( std::size_t k = 0 ; k < h ; ++k ) {
+     const std::uint32_t u = x[ k ] , v = mul( y[ k ] , w[ k ] );
+     x[ k ] = add( u , v );
+     y[ k ] = sub( u , v );
+     }
+    }
+   }
+  }
+
+ /// fa = the cyclic convolution modulo P of a and b, n terms, with fb as
+ /// scratch; a square if fb is null
+ static void convolve( std::uint32_t * fa , std::uint32_t * fb ,
+                       const std::uint32_t * a , std::size_t na ,
+                       const std::uint32_t * b , std::size_t nb ,
+                       std::size_t n ) {
+  for( std::size_t i = 0 ; i < na ; ++i ) fa[ i ] = mul( a[ i ] , kR );
+  std::fill( fa + na , fa + n , 0 );
+  forward( fa , n );
+  // the factor 1 / n, and R^2 against the two products of Montgomery
+  const std::uint32_t c = mul( mul( P - ( P - 1 ) / std::uint32_t( n ) ,
+                                    kR2 ) , kR2 );
+  if( ! fb )
+   for( std::size_t i = 0 ; i < n ; ++i )
+    fa[ i ] = mul( mul( fa[ i ] , fa[ i ] ) , c );
+  else {
+   for( std::size_t i = 0 ; i < nb ; ++i ) fb[ i ] = mul( b[ i ] , kR );
+   std::fill( fb + nb , fb + n , 0 );
+   forward( fb , n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    fa[ i ] = mul( mul( fa[ i ] , fb[ i ] ) , c );
+   }
+  backward( fa , n );
+  }
+
+ };  // end( struct NTT )
+
 }  // end( namespace detail )
+
+inline BigInteger::BigInteger( long long v ) : f_neg( v < 0 )
+{
+ auto m = v < 0 ? std::uint64_t( 0 ) - std::uint64_t( v ) : std::uint64_t( v );
+ if( m >> 32 ) f_d = { Limb( m ) , Limb( m >> 32 ) };
+ else if( m ) f_d = { Limb( m ) };
+ }
+
+inline BigInteger::BigInteger( bool neg , Mag d ) : f_d( std::move( d ) )
+{
+ trim( f_d );
+ f_neg = neg && ! f_d.empty();
+ }
+
+inline void BigInteger::trim( Mag & d )
+{
+ while( ! d.empty() && ( d.back() == 0 ) ) d.pop_back();
+ }
+
+inline bool BigInteger::normal( void ) const
+{
+ return( ( f_d.empty() || ( f_d.back() != 0 ) ) &&
+         ! ( f_neg && f_d.empty() ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE OPERATIONS ON SPANS ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline int BigInteger::cmpN( const Limb * a , const Limb * b , std::size_t n )
+{
+ for( std::size_t i = n ; i-- > 0 ; )
+  if( a[ i ] != b[ i ] ) return( a[ i ] < b[ i ] ? -1 : 1 );
+ return( 0 );
+ }
+
+inline BigInteger::Limb BigInteger::addN( Limb * r , const Limb * a ,
+                                          std::size_t na , const Limb * b ,
+                                          std::size_t nb )
+{
+ std::uint64_t c = 0;
+ std::size_t i = 0;
+ for( ; i < nb ; ++i ) {
+  c += std::uint64_t( a[ i ] ) + b[ i ];
+  r[ i ] = Limb( c );
+  c >>= 32;
+  }
+ for( ; i < na ; ++i ) {
+  c += a[ i ];
+  r[ i ] = Limb( c );
+  c >>= 32;
+  }
+ return( Limb( c ) );
+ }
+
+inline BigInteger::Limb BigInteger::subN( Limb * r , const Limb * a ,
+                                          std::size_t na , const Limb * b ,
+                                          std::size_t nb )
+{
+ std::uint64_t c = 0;                       // the borrow, 0 or 1
+ std::size_t i = 0;
+ for( ; i < nb ; ++i ) {
+  const std::uint64_t d = std::uint64_t( a[ i ] ) - b[ i ] - c;
+  r[ i ] = Limb( d );
+  c = d >> 63;
+  }
+ for( ; i < na ; ++i ) {
+  const std::uint64_t d = std::uint64_t( a[ i ] ) - c;
+  r[ i ] = Limb( d );
+  c = d >> 63;
+  }
+ return( Limb( c ) );
+ }
+
+inline BigInteger::Limb BigInteger::addTo( Limb * r , std::size_t nr ,
+                                           const Limb * x , std::size_t nx )
+{
+ std::uint64_t c = 0;
+ std::size_t i = 0;
+ for( ; i < nx ; ++i ) {
+  c += std::uint64_t( r[ i ] ) + x[ i ];
+  r[ i ] = Limb( c );
+  c >>= 32;
+  }
+ for( ; c && ( i < nr ) ; ++i ) c = ( ++r[ i ] == 0 );
+ return( Limb( c ) );
+ }
+
+inline BigInteger::Limb BigInteger::subFrom( Limb * r , std::size_t nr ,
+                                             const Limb * x , std::size_t nx )
+{
+ std::uint64_t c = 0;
+ std::size_t i = 0;
+ for( ; i < nx ; ++i ) {
+  const std::uint64_t d = std::uint64_t( r[ i ] ) - x[ i ] - c;
+  r[ i ] = Limb( d );
+  c = d >> 63;
+  }
+ for( ; c && ( i < nr ) ; ++i ) c = ( r[ i ]-- == 0 );
+ return( Limb( c ) );
+ }
+
+inline BigInteger::Limb BigInteger::mul1( Limb * r , const Limb * a ,
+                                          std::size_t n , Limb m )
+{
+ std::uint64_t c = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  c += std::uint64_t( a[ i ] ) * m;
+  r[ i ] = Limb( c );
+  c >>= 32;
+  }
+ return( Limb( c ) );
+ }
+
+inline BigInteger::Limb BigInteger::addMul1( Limb * r , const Limb * a ,
+                                             std::size_t n , Limb m )
+{
+ std::uint64_t c = 0;                       // a m + r + c < 2^64
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  c += std::uint64_t( a[ i ] ) * m + r[ i ];
+  r[ i ] = Limb( c );
+  c >>= 32;
+  }
+ return( Limb( c ) );
+ }
+
+inline BigInteger::Limb BigInteger::subMul1( Limb * r , const Limb * a ,
+                                             std::size_t n , Limb m )
+{
+ std::uint64_t c = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  c += std::uint64_t( a[ i ] ) * m;
+  const Limb lo = Limb( c ) , x = r[ i ];
+  r[ i ] = x - lo;
+  c = ( c >> 32 ) + ( x < lo );
+  }
+ return( Limb( c ) );
+ }
+
+inline bool BigInteger::absDiff( Limb * r , const Limb * a , std::size_t na ,
+                                 const Limb * b , std::size_t nb )
+{
+ std::size_t i = na;
+ while( ( i > nb ) && ( a[ i - 1 ] == 0 ) ) --i;
+ if( ( i > nb ) || ( cmpN( a , b , nb ) >= 0 ) ) {
+  subN( r , a , na , b , nb );
+  return( false );
+  }
+ subN( r , b , nb , a , nb );               // a has zeros above nb
+ std::fill( r + nb , r + na , 0 );
+ return( true );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- THE CONVERSIONS -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline BigInteger::Limb BigInteger::divSmall( Mag & a , Limb d )
+{
+ const int s = std::countl_zero( d );       // d shifted, and a with it
+ const Limb dn = d << s , v = detail::reciprocal( dn );
+ const std::size_t n = a.size();
+ Limb r = 0;
+ if( n == 0 ) return( 0 );
+ if( s == 0 )
+  for( std::size_t i = n ; i-- > 0 ; )
+   a[ i ] = detail::div2by1( r , a[ i ] , dn , v , r );
+ else {
+  r = a[ n - 1 ] >> ( 32 - s );
+  for( std::size_t i = n ; i-- > 0 ; ) {
+   const Limb u = ( a[ i ] << s ) | ( i ? a[ i - 1 ] >> ( 32 - s ) : 0 );
+   a[ i ] = detail::div2by1( r , u , dn , v , r );
+   }
+  }
+ trim( a );
+ return( r >> s );
+ }
+
+inline BigInteger::Limb BigInteger::modSmall( const Limb * a , std::size_t n ,
+                                              Limb d )
+{
+ const int s = std::countl_zero( d );
+ const Limb dn = d << s , v = detail::reciprocal( dn );
+ Limb r = 0;
+ if( n == 0 ) return( 0 );
+ if( s == 0 )
+  for( std::size_t i = n ; i-- > 0 ; )
+   detail::div2by1( r , a[ i ] , dn , v , r );
+ else {
+  r = a[ n - 1 ] >> ( 32 - s );
+  for( std::size_t i = n ; i-- > 0 ; )
+   detail::div2by1( r , ( a[ i ] << s ) |
+                        ( i ? a[ i - 1 ] >> ( 32 - s ) : 0 ) , dn , v , r );
+  }
+ return( r >> s );
+ }
+
+inline void BigInteger::mulAddSmall( Mag & a , Limb m , Limb c )
+{
+ std::uint64_t carry = c;
+ for( auto & x : a ) {
+  carry += std::uint64_t( x ) * m;
+  x = Limb( carry );
+  carry >>= 32;
+  }
+ if( carry ) a.push_back( Limb( carry ) );
+ }
+
+inline BigInteger BigInteger::fromStringSchool( const std::string & s ,
+                                                int base )
+{
+ ADS_PRE( ( base >= 2 ) && ( base <= 36 ) );
+ std::size_t i = 0;
+ bool neg = false;
+ if( ( i < s.size() ) && ( ( s[ i ] == '-' ) || ( s[ i ] == '+' ) ) )
+  neg = s[ i++ ] == '-';
+ ADS_PRE( i < s.size() );                   // at least one digit
+ const int k = detail::bigBase( base ).second;
+ Mag d;
+ while( i < s.size() ) {                    // k digits at a time
+  Limb chunk = 0 , scale = 1;
+  for( int t = 0 ; ( t < k ) && ( i < s.size() ) ; ++t , ++i ) {
+   const int v = detail::digitValue( s[ i ] );
+   ADS_PRE( ( v >= 0 ) && ( v < base ) );
+   chunk = chunk * Limb( base ) + Limb( v );
+   scale *= Limb( base );
+   }
+  mulAddSmall( d , scale , chunk );
+  }
+ return( BigInteger( neg , std::move( d ) ) );
+ }
+
+inline BigInteger::Mag BigInteger::fromChunks( const Limb * c , std::size_t n ,
+                                               const std::vector< Mag > & pw ,
+                                               Limb P )
+{
+ Mag x;
+ if( n < kConvert ) {                       // Horner, a product by P each
+  x.reserve( n );
+  for( std::size_t j = n ; j-- > 0 ; ) mulAddSmall( x , P , c[ j ] );
+  return( x );
+  }
+ const std::size_t h = std::bit_floor( n - 1 );   // n / 2 <= h < n
+ const Mag & p = pw[ std::size_t( std::countr_zero( h ) ) ];
+ const Mag hi = fromChunks( c + h , n - h , pw , P ) ,
+           lo = fromChunks( c , h , pw , P );
+ if( hi.empty() ) return( lo );
+ x.resize( hi.size() + p.size() );          // hi P^h + lo, lo < P^h
+ mulP( x.data() , hi.data() , hi.size() , p.data() , p.size() );
+ addTo( x.data() , x.size() , lo.data() , lo.size() );
+ trim( x );
+ return( x );
+ }
 
 inline BigInteger::BigInteger( const std::string & s , int base )
 {
@@ -95,40 +478,133 @@ inline BigInteger::BigInteger( const std::string & s , int base )
  if( ( i < s.size() ) && ( ( s[ i ] == '-' ) || ( s[ i ] == '+' ) ) )
   neg = s[ i++ ] == '-';
  ADS_PRE( i < s.size() );                   // at least one digit
- const auto [ P , k ] = detail::bigBase( base );
- while( i < s.size() ) {                    // k digits at a time
-  Limb chunk = 0 , scale = 1;
-  for( int t = 0 ; ( t < k ) && ( i < s.size() ) ; ++t , ++i ) {
-   const int v = detail::digitValue( s[ i ] );
-   ADS_PRE( ( v >= 0 ) && ( v < base ) );
-   chunk = chunk * Limb( base ) + Limb( v );
-   scale *= Limb( base );
+ for( std::size_t j = i ; j < s.size() ; ++j )
+  ADS_PRE( ( detail::digitValue( s[ j ] ) >= 0 ) &&
+           ( detail::digitValue( s[ j ] ) < base ) );
+ while( ( i + 1 < s.size() ) && ( s[ i ] == '0' ) ) ++i;
+ const std::size_t L = s.size() - i;        // the figures
+ if( ( base & ( base - 1 ) ) == 0 ) {       // b bits per figure
+  const std::size_t b = std::size_t( std::countr_zero( unsigned( base ) ) );
+  f_d.assign( ( L * b + 31 ) / 32 , 0 );
+  std::size_t bit = 0;
+  for( std::size_t j = s.size() ; j-- > i ; bit += b ) {
+   const Limb v = Limb( detail::digitValue( s[ j ] ) );
+   const std::size_t w = bit / 32 , o = bit % 32;
+   f_d[ w ] |= v << o;
+   if( o + b > 32 ) f_d[ w + 1 ] |= v >> ( 32 - o );
    }
-  mulAddSmall( f_d , scale , chunk );
+  }
+ else {                                     // chunks of k figures
+  const auto [ P , k ] = detail::bigBase( base );
+  const std::size_t K = std::size_t( k ) , C = ( L + K - 1 ) / K;
+  std::vector< Limb > c( C );               // the least significant first
+  for( std::size_t j = 0 ; j < C ; ++j ) {
+   const std::size_t hi = s.size() - j * K , lo = hi - std::min( K , hi - i );
+   Limb x = 0;
+   for( std::size_t t = lo ; t < hi ; ++t )
+    x = x * Limb( base ) + Limb( detail::digitValue( s[ t ] ) );
+   c[ j ] = x;
+   }
+  std::vector< Mag > pw( 1 , Mag{ P } );    // P^{2^i}, 2^i < C
+  if( C >= kConvert )
+   while( ( std::size_t( 1 ) << pw.size() ) < C )
+    pw.push_back( mulMag( pw.back() , pw.back() ) );
+  f_d = fromChunks( c.data() , C , pw , P );
   }
  trim( f_d );
  f_neg = neg && ! f_d.empty();
  ADS_INVARIANT( normal() );
+ ADS_AUDIT( *this == fromStringSchool( s , base ) );
+ }
+
+inline void BigInteger::figures( Mag a , std::size_t pad , int base ,
+                                 std::string & out )
+{
+ const auto [ P , k ] = detail::bigBase( base );
+ std::vector< Limb > c;                     // the least significant first
+ c.reserve( a.size() + a.size() / 4 + 1 );
+ while( ! a.empty() ) c.push_back( divSmall( a , P ) );
+ std::size_t top = 0;                       // the figures of the top chunk
+ if( ! c.empty() )
+  for( Limb y = c.back() ; y ; y /= Limb( base ) ) ++top;
+ const std::size_t len = c.empty() ? 0 : ( c.size() - 1 ) * std::size_t( k ) +
+                                         top;
+ if( pad > len ) out.append( pad - len , '0' );
+ const std::size_t o = out.size();
+ out.resize( o + len );
+ char * end = out.data() + o + len;
+ for( std::size_t j = 0 ; j + 1 < c.size() ; ++j , end -= k )
+  detail::putFigures( end , c[ j ] , k , base );
+ if( ! c.empty() ) detail::putFigures( end , c.back() , int( top ) , base );
+ }
+
+inline void BigInteger::toFigures( const Mag & x , std::size_t pad , int base ,
+                                   const std::vector< Mag > & pw , int k ,
+                                   std::string & out )
+{
+ if( x.size() < kConvert ) {
+  figures( x , pad , base , out );
+  return;
+  }
+ std::size_t i = 0;                         // the power nearest sqrt( x )
+ while( ( i + 1 < pw.size() ) &&
+        ( pw[ i + 1 ].size() <= ( x.size() + 1 ) / 2 ) )
+  ++i;
+ const auto [ q , r ] = divModMag( x , pw[ i ] );
+ const std::size_t low = std::size_t( k ) << i;   // the figures of r
+ toFigures( q , pad > low ? pad - low : 0 , base , pw , k , out );
+ toFigures( r , low , base , pw , k , out );
  }
 
 inline std::string BigInteger::toString( int base ) const
 {
  ADS_PRE( ( base >= 2 ) && ( base <= 36 ) );
  if( f_d.empty() ) return( "0" );
- const auto [ P , k ] = detail::bigBase( base );
- Mag a = f_d;
- std::string out;                           // reversed
- while( ! a.empty() ) {
-  Limb r = divSmall( a , P );               // k digits of the output
-  for( int t = 0 ; ( t < k ) && ( ! a.empty() || r ) ; ++t ) {
-   out.push_back( "0123456789abcdefghijklmnopqrstuvwxyz"[ r % Limb( base ) ] );
-   r /= Limb( base );
+ std::string out;
+ if( f_neg ) out.push_back( '-' );
+ const std::size_t n = f_d.size();
+ if( ( base & ( base - 1 ) ) == 0 ) {       // b bits per figure
+  const std::size_t b = std::size_t( std::countr_zero( unsigned( base ) ) ) ,
+                    bits = 32 * n - std::size_t( std::countl_zero(
+                                                              f_d.back() ) ) ,
+                    D = ( bits + b - 1 ) / b , o = out.size();
+  out.resize( o + D );
+  for( std::size_t j = 0 ; j < D ; ++j ) {   // the figure j from the right
+   const std::size_t w = j * b / 32 , sh = j * b % 32;
+   std::uint64_t x = f_d[ w ] >> sh;
+   if( ( sh + b > 32 ) && ( w + 1 < n ) )
+    x |= std::uint64_t( f_d[ w + 1 ] ) << ( 32 - sh );
+   out[ o + D - 1 - j ] = detail::kFigures[ x & std::uint64_t( base - 1 ) ];
    }
   }
- if( f_neg ) out.push_back( '-' );
- std::reverse( out.begin() , out.end() );
+ else if( n < kConvert ) figures( f_d , 0 , base , out );
+ else {
+  const auto [ P , k ] = detail::bigBase( base );
+  std::vector< Mag > pw( 1 , Mag{ P } );    // up to half the digits
+  while( 2 * pw.back().size() - 1 <= ( n + 1 ) / 2 ) {
+   Mag p = mulMag( pw.back() , pw.back() );
+   if( p.size() > ( n + 1 ) / 2 ) break;
+   pw.push_back( std::move( p ) );
+   }
+  toFigures( f_d , 0 , base , pw , k , out );
+  }
+ ADS_AUDIT( out == toStringSchool( base ) );
  return( out );
  }
+
+inline std::string BigInteger::toStringSchool( int base ) const
+{
+ ADS_PRE( ( base >= 2 ) && ( base <= 36 ) );
+ if( f_d.empty() ) return( "0" );
+ std::string out;
+ if( f_neg ) out.push_back( '-' );
+ figures( f_d , 0 , base , out );
+ return( out );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SUM AND THE ORDER --------------------------*/
+/*--------------------------------------------------------------------------*/
 
 inline int BigInteger::sign( void ) const
 {
@@ -153,9 +629,7 @@ inline BigInteger BigInteger::operator-( void ) const
 inline int BigInteger::compareMag( const Mag & a , const Mag & b )
 {
  if( a.size() != b.size() ) return( a.size() < b.size() ? -1 : 1 );
- for( std::size_t i = a.size() ; i-- > 0 ; )
-  if( a[ i ] != b[ i ] ) return( a[ i ] < b[ i ] ? -1 : 1 );
- return( 0 );
+ return( cmpN( a.data() , b.data() , a.size() ) );
  }
 
 inline BigInteger::Mag BigInteger::addMag( const Mag & a , const Mag & b )
@@ -163,151 +637,266 @@ inline BigInteger::Mag BigInteger::addMag( const Mag & a , const Mag & b )
  const Mag & x = a.size() >= b.size() ? a : b;   // Algorithm A
  const Mag & y = a.size() >= b.size() ? b : a;
  Mag r( x.size() + 1 );
- std::uint64_t carry = 0;
- for( std::size_t i = 0 ; i < x.size() ; ++i ) {
-  const std::uint64_t s = std::uint64_t( x[ i ] ) +
-                          ( i < y.size() ? y[ i ] : 0 ) + carry;
-  r[ i ] = Limb( s );
-  carry = s >> 32;
-  }
- r[ x.size() ] = Limb( carry );
- trim( r );
+ r[ x.size() ] = addN( r.data() , x.data() , x.size() , y.data() ,
+                       y.size() );
+ if( r.back() == 0 ) r.pop_back();
  return( r );
  }
 
 inline BigInteger::Mag BigInteger::subMag( const Mag & a , const Mag & b )
 {
  Mag r( a.size() );                         // Algorithm S
- std::int64_t borrow = 0;
- for( std::size_t i = 0 ; i < a.size() ; ++i ) {
-  std::int64_t s = std::int64_t( a[ i ] ) -
-                   std::int64_t( i < b.size() ? b[ i ] : 0 ) - borrow;
-  borrow = s < 0;
-  if( s < 0 ) s += std::int64_t( 1 ) << 32;
-  r[ i ] = Limb( s );
-  }
+ subN( r.data() , a.data() , a.size() , b.data() , b.size() );
  trim( r );
  return( r );
+ }
+
+inline BigInteger BigInteger::addSigned( const BigInteger & a ,
+                                         const BigInteger & b , bool bneg )
+{
+ if( a.f_neg == bneg ) return( BigInteger( a.f_neg , addMag( a.f_d ,
+                                                             b.f_d ) ) );
+ const int c = compareMag( a.f_d , b.f_d );
+ if( c == 0 ) return( BigInteger() );
+ return( c > 0 ? BigInteger( a.f_neg , subMag( a.f_d , b.f_d ) )
+               : BigInteger( bneg , subMag( b.f_d , a.f_d ) ) );
  }
 
 inline BigInteger operator+( const BigInteger & a , const BigInteger & b )
 {
- if( a.f_neg == b.f_neg )
-  return( BigInteger( a.f_neg , BigInteger::addMag( a.f_d , b.f_d ) ) );
- const int c = BigInteger::compareMag( a.f_d , b.f_d );
- if( c == 0 ) return( BigInteger() );
- return( c > 0 ? BigInteger( a.f_neg , BigInteger::subMag( a.f_d , b.f_d ) )
-               : BigInteger( b.f_neg , BigInteger::subMag( b.f_d , a.f_d ) ) );
+ return( BigInteger::addSigned( a , b , b.f_neg ) );
  }
 
 inline BigInteger operator-( const BigInteger & a , const BigInteger & b )
 {
- return( a + ( -b ) );
+ return( BigInteger::addSigned( a , b , ! b.f_neg ) );
  }
 
-inline BigInteger::Mag BigInteger::mulSchool( const Mag & a , const Mag & b )
+inline std::strong_ordering operator<=>( const BigInteger & a ,
+                                         const BigInteger & b )
+{
+ if( a.sign() != b.sign() ) return( a.sign() <=> b.sign() );
+ const int c = BigInteger::compareMag( a.f_d , b.f_d );
+ return( a.f_neg ? 0 <=> c : c <=> 0 );
+ }
+
+inline BigInteger & BigInteger::operator+=( const BigInteger & b )
+{
+ if( f_neg != b.f_neg ) return( *this = *this + b );
+ if( f_d.size() < b.f_d.size() ) f_d.resize( b.f_d.size() , 0 );
+ const Limb c = addTo( f_d.data() , f_d.size() , b.f_d.data() ,
+                       b.f_d.size() );
+ if( c ) f_d.push_back( c );
+ return( *this );
+ }
+
+inline BigInteger & BigInteger::operator-=( const BigInteger & b )
+{
+ if( f_neg == b.f_neg ) return( *this = *this - b );
+ if( f_d.size() < b.f_d.size() ) f_d.resize( b.f_d.size() , 0 );
+ const Limb c = addTo( f_d.data() , f_d.size() , b.f_d.data() ,
+                       b.f_d.size() );
+ if( c ) f_d.push_back( c );
+ return( *this );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ THE PRODUCT -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline void BigInteger::mulSchool( Limb * r , const Limb * a , std::size_t na ,
+                                   const Limb * b , std::size_t nb )
+{
+ if( na < nb ) {                            // the rows on the longer one
+  std::swap( a , b );
+  std::swap( na , nb );
+  }
+ if( nb == 0 ) {
+  std::fill( r , r + na , 0 );
+  return;
+  }
+ r[ na ] = mul1( r , a , na , b[ 0 ] );     // Algorithm M
+ for( std::size_t j = 1 ; j < nb ; ++j )
+  r[ na + j ] = addMul1( r + j , a , na , b[ j ] );
+ }
+
+inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
+{
+ if( n == 0 ) return;
+ r[ 0 ] = 0;                                // the products a_i a_j, i < j
+ r[ 2 * n - 1 ] = 0;
+ r[ n ] = mul1( r + 1 , a + 1 , n - 1 , a[ 0 ] );
+ for( std::size_t i = 1 ; i + 1 < n ; ++i )
+  r[ n + i ] = addMul1( r + 2 * i + 1 , a + i + 1 , n - i - 1 , a[ i ] );
+ Limb s = 0;                                // twice them, and the squares
+ std::uint64_t c = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  const Limb lo = r[ 2 * i ] , hi = r[ 2 * i + 1 ];
+  const Limb l2 = ( lo << 1 ) | s , h2 = ( hi << 1 ) | ( lo >> 31 );
+  s = hi >> 31;
+  const std::uint64_t p = std::uint64_t( a[ i ] ) * a[ i ];
+  c += std::uint64_t( l2 ) + Limb( p );
+  r[ 2 * i ] = Limb( c );
+  c = ( c >> 32 ) + h2 + ( p >> 32 );
+  r[ 2 * i + 1 ] = Limb( c );
+  c >>= 32;
+  }
+ }
+
+inline std::size_t BigInteger::karatsubaScratch( std::size_t n )
+{
+ std::size_t s = 0;
+ for( ; n >= kKaratsuba ; n -= n / 2 ) s += 6 * ( n - n / 2 ) + 1;
+ return( s );
+ }
+
+inline void BigInteger::karatsuba( Limb * r , const Limb * a , const Limb * b ,
+                                   std::size_t n , Limb * w ,
+                                   std::size_t fft )
+{
+ const bool sq = a == b;
+ if( n < kKaratsuba ) {
+  if( sq ) sqrSchool( r , a , n );
+  else mulSchool( r , a , n , b , n );
+  return;
+  }
+ if( ( n >= fft ) && ( 2 * n <= kNTTMax ) ) {
+  mulNTT( r , a , n , b , n );
+  return;
+  }
+ const std::size_t h = n / 2 , l = n - h;   // a = a1 b^l + a0, the same b
+ karatsuba( r , a , b , l , w , fft );      // z0 = a0 b0
+ karatsuba( r + 2 * l , a + l , b + l , h , w , fft );   // z2 = a1 b1
+ Limb * da = w , * db = w + l , * t = w + 2 * l , * mid = w + 4 * l;
+ bool neg = absDiff( da , a , l , a + l , h );   // t = |a0 - a1| |b0 - b1|
+ if( sq ) neg = false;
+ else neg = neg != absDiff( db , b , l , b + l , h );
+ karatsuba( t , da , sq ? da : db , l , w + 6 * l + 1 , fft );
+ // a0 b1 + a1 b0 = z0 + z2 - ( a0 - a1 ) ( b0 - b1 )
+ mid[ 2 * l ] = addN( mid , r , 2 * l , r + 2 * l , 2 * h );
+ if( neg ) mid[ 2 * l ] += addTo( mid , 2 * l , t , 2 * l );
+ else mid[ 2 * l ] -= subFrom( mid , 2 * l , t , 2 * l );
+ addTo( r + l , 2 * n - l , mid , 2 * l + 1 );
+ }
+
+inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
+                                const Limb * b , std::size_t nb )
+{
+ using N1 = detail::NTT< 2013265921u , 31 >;   // 15 2^27 + 1
+ using N2 = detail::NTT< 1811939329u , 13 >;   // 27 2^26 + 1
+ using N3 = detail::NTT< 469762049u , 3 >;     // 7 2^26 + 1
+ constexpr std::uint64_t p1 = 2013265921u , p2 = 1811939329u ,
+                         p3 = 469762049u;
+ if( ( na == 0 ) || ( nb == 0 ) ) {
+  std::fill( r , r + na + nb , 0 );
+  return;
+  }
+ const std::size_t m = na + nb - 1 , n = std::bit_ceil( m );
+ ADS_PRE( n <= kNTTMax );
+ const bool sq = ( a == b ) && ( na == nb );
+ std::vector< std::uint32_t > r1( n ) , r2( n ) , r3( n ) , w( sq ? 0 : n );
+ std::uint32_t * fb = sq ? nullptr : w.data();
+ N1::convolve( r1.data() , fb , a , na , b , nb , n );
+ N2::convolve( r2.data() , fb , a , na , b , nb , n );
+ N3::convolve( r3.data() , fb , a , na , b , nb , n );
+ // Garner: x = y1 + p1 y2 + p1 p2 y3 < p1 p2 p3, with the inverses in the
+ // form of Montgomery
+ const std::uint32_t i12 = N2::power( N2::mul( std::uint32_t( p1 - p2 ) ,
+                                               N2::kR2 ) ,
+                                      p2 - 2 ) ,
+                     p1m3 = N3::mul( std::uint32_t( p1 % p3 ) , N3::kR2 ) ,
+                     i123 = N3::power( N3::mul( std::uint32_t( p1 * p2 %
+                                                               p3 ) ,
+                                                N3::kR2 ) ,
+                                       p3 - 2 );
+ const std::uint64_t p12 = p1 * p2 , p12lo = p12 & 0xFFFFFFFFULL ,
+                     p12hi = p12 >> 32;
+ std::uint64_t c0 = 0 , c1 = 0 , c2 = 0;    // the carry, three digits
+ for( std::size_t i = 0 ; i < na + nb ; ++i ) {
+  std::uint64_t x0 = 0 , x1 = 0 , x2 = 0;
+  if( i < m ) {
+   const std::uint32_t y1 = r1[ i ] ,
+                       y2 = N2::mul( N2::sub( r2[ i ] , y1 >= p2 ?
+                                              std::uint32_t( y1 - p2 ) : y1 ) ,
+                                     i12 ) ,
+                       y3 = N3::mul( N3::sub( r3[ i ] ,
+                                     N3::add( N3::mul( y1 , N3::kR ) ,
+                                              N3::mul( y2 , p1m3 ) ) ) ,
+                                     i123 );
+   const std::uint64_t lo = y1 + p1 * y2 , tl = p12lo * y3 ,
+                       th = p12hi * y3 ,
+                       s0 = ( lo & 0xFFFFFFFFULL ) + ( tl & 0xFFFFFFFFULL ) ,
+                       s1 = ( lo >> 32 ) + ( tl >> 32 ) +
+                            ( th & 0xFFFFFFFFULL ) + ( s0 >> 32 );
+   x0 = s0 & 0xFFFFFFFFULL;
+   x1 = s1 & 0xFFFFFFFFULL;
+   x2 = ( th >> 32 ) + ( s1 >> 32 );
+   }
+  const std::uint64_t v0 = x0 + c0 , v1 = x1 + c1 + ( v0 >> 32 ) ,
+                      v2 = x2 + c2 + ( v1 >> 32 );
+  r[ i ] = Limb( v0 );
+  c0 = v1 & 0xFFFFFFFFULL;
+  c1 = v2 & 0xFFFFFFFFULL;
+  c2 = v2 >> 32;
+  }
+ }
+
+inline void BigInteger::mulP( Limb * r , const Limb * a , std::size_t na ,
+                              const Limb * b , std::size_t nb ,
+                              std::size_t fft )
+{
+ if( na < nb ) {
+  std::swap( a , b );
+  std::swap( na , nb );
+  }
+ if( nb < kKaratsuba ) {
+  if( ( a == b ) && ( na == nb ) ) sqrSchool( r , a , na );
+  else mulSchool( r , a , na , b , nb );
+  return;
+  }
+ if( ( nb >= fft ) && ( na + nb <= kNTTMax ) ) {
+  mulNTT( r , a , na , b , nb );
+  return;
+  }
+ std::vector< Limb > w( karatsubaScratch( nb ) );
+ if( na == nb ) {
+  karatsuba( r , a , b , nb , w.data() , fft );
+  return;
+  }
+ std::vector< Limb > t( 2 * nb );           // a in pieces of nb digits
+ std::fill( r , r + na + nb , 0 );
+ for( std::size_t off = 0 ; off < na ; off += nb ) {
+  const std::size_t len = std::min( nb , na - off );
+  if( len == nb ) karatsuba( t.data() , a + off , b , nb , w.data() , fft );
+  else mulP( t.data() , b , nb , a + off , len , fft );
+  addTo( r + off , na + nb - off , t.data() , len + nb );
+  }
+ }
+
+inline BigInteger::Mag BigInteger::mulMag( const Mag & a , const Mag & b ,
+                                           std::size_t fft )
 {
  if( a.empty() || b.empty() ) return( Mag() );
- Mag w( a.size() + b.size() , 0 );          // Algorithm M
- for( std::size_t j = 0 ; j < b.size() ; ++j ) {
-  std::uint64_t k = 0;
-  for( std::size_t i = 0 ; i < a.size() ; ++i ) {
-   const std::uint64_t t = std::uint64_t( a[ i ] ) * b[ j ] + w[ i + j ] + k;
-   w[ i + j ] = Limb( t );
-   k = t >> 32;
-   }
-  w[ j + a.size() ] = Limb( k );
-  }
- trim( w );
- return( w );
- }
-
-inline void BigInteger::addShifted( Mag & r , const Mag & x ,
-                                     std::size_t off )
-{
- if( r.size() < off + x.size() + 1 ) r.resize( off + x.size() + 1 , 0 );
- std::uint64_t carry = 0;
- std::size_t i = 0;
- for( ; i < x.size() ; ++i ) {
-  const std::uint64_t s = std::uint64_t( r[ off + i ] ) + x[ i ] + carry;
-  r[ off + i ] = Limb( s );
-  carry = s >> 32;
-  }
- for( ; carry ; ++i ) {
-  if( off + i == r.size() ) r.push_back( 0 );
-  const std::uint64_t s = std::uint64_t( r[ off + i ] ) + carry;
-  r[ off + i ] = Limb( s );
-  carry = s >> 32;
-  }
- }
-
-inline BigInteger::Mag BigInteger::mulKaratsuba( const Mag & a ,
-                                                 const Mag & b )
-{
- if( a.size() < b.size() ) return( mulKaratsuba( b , a ) );
- const std::size_t na = a.size() , nb = b.size();
- if( nb < kKaratsuba ) return( mulSchool( a , b ) );
- if( na >= 2 * nb ) {                       // unbalanced: a in pieces of nb
-  Mag r( na + nb , 0 );
-  for( std::size_t off = 0 ; off < na ; off += nb ) {
-   Mag piece( a.begin() + long( off ) ,
-              a.begin() + long( std::min( na , off + nb ) ) );
-   trim( piece );
-   addShifted( r , mulKaratsuba( piece , b ) , off );
-   }
-  trim( r );
-  return( r );
-  }
- const std::size_t m = na / 2;              // a = a1 b^m + a0, the same b
- Mag a0( a.begin() , a.begin() + long( m ) ) ,
-     a1( a.begin() + long( m ) , a.end() ) ,
-     b0( b.begin() , b.begin() + long( std::min( m , nb ) ) ) ,
-     b1( b.begin() + long( std::min( m , nb ) ) , b.end() );
- trim( a0 );
- trim( b0 );
- const Mag z0 = mulKaratsuba( a0 , b0 ) , z2 = mulKaratsuba( a1 , b1 );
- Mag z1 = mulKaratsuba( addMag( a0 , a1 ) , addMag( b0 , b1 ) );
- z1 = subMag( subMag( z1 , z0 ) , z2 );     // ( a0 + a1 ) ( b0 + b1 ) - ...
- Mag r = z0;
- addShifted( r , z1 , m );
- addShifted( r , z2 , 2 * m );
+ Mag r( a.size() + b.size() );
+ mulP( r.data() , a.data() , a.size() , b.data() , b.size() , fft );
  trim( r );
  return( r );
- }
-
-inline BigInteger::Mag BigInteger::mulFFT( const Mag & a , const Mag & b )
-{
- if( a.empty() || b.empty() ) return( Mag() );
- auto halves = []( const Mag & x ) {        // digits of 16 bits
-  std::vector< double > h( 2 * x.size() );
-  for( std::size_t i = 0 ; i < x.size() ; ++i ) {
-   h[ 2 * i ] = double( x[ i ] & 0xFFFF );
-   h[ 2 * i + 1 ] = double( x[ i ] >> 16 );
-   }
-  return( h );
-  };
- const auto c = convolve( halves( a ) , halves( b ) );
- Mag w( a.size() + b.size() , 0 );
- std::uint64_t carry = 0;
- for( std::size_t i = 0 ; i < 2 * w.size() ; ++i ) {   // the carries
-  if( i < c.size() ) carry += std::uint64_t( std::llround( c[ i ] ) );
-  w[ i / 2 ] |= Limb( carry & 0xFFFF ) << ( 16 * ( i % 2 ) );
-  carry >>= 16;
-  }
- trim( w );
- return( w );
  }
 
 inline BigInteger BigInteger::multiplySchool( const BigInteger & a ,
                                               const BigInteger & b )
 {
- return( BigInteger( a.f_neg != b.f_neg , mulSchool( a.f_d , b.f_d ) ) );
+ Mag r( a.f_d.size() + b.f_d.size() );
+ mulSchool( r.data() , a.f_d.data() , a.f_d.size() , b.f_d.data() ,
+            b.f_d.size() );
+ return( BigInteger( a.f_neg != b.f_neg , std::move( r ) ) );
  }
 
 inline BigInteger BigInteger::multiplyKaratsuba( const BigInteger & a ,
                                                  const BigInteger & b )
 {
- BigInteger r( a.f_neg != b.f_neg , mulKaratsuba( a.f_d , b.f_d ) );
+ BigInteger r( a.f_neg != b.f_neg , mulMag( a.f_d , b.f_d ,
+                                            std::size_t( -1 ) ) );
  ADS_AUDIT( r == multiplySchool( a , b ) );
  return( r );
  }
@@ -315,82 +904,156 @@ inline BigInteger BigInteger::multiplyKaratsuba( const BigInteger & a ,
 inline BigInteger BigInteger::multiplyFFT( const BigInteger & a ,
                                            const BigInteger & b )
 {
- BigInteger r( a.f_neg != b.f_neg , mulFFT( a.f_d , b.f_d ) );
+ Mag d( a.f_d.size() + b.f_d.size() );
+ if( d.size() <= kNTTMax )
+  mulNTT( d.data() , a.f_d.data() , a.f_d.size() , b.f_d.data() ,
+          b.f_d.size() );
+ else
+  mulP( d.data() , a.f_d.data() , a.f_d.size() , b.f_d.data() ,
+        b.f_d.size() , 0 );
+ BigInteger r( a.f_neg != b.f_neg , std::move( d ) );
  ADS_AUDIT( r == multiplySchool( a , b ) );
  return( r );
  }
 
 inline BigInteger operator*( const BigInteger & a , const BigInteger & b )
 {
- const std::size_t k = std::min( a.f_d.size() , b.f_d.size() );
- if( k >= BigInteger::kFFT )
-  return( BigInteger::multiplyFFT( a , b ) );
- if( k >= BigInteger::kKaratsuba )
-  return( BigInteger::multiplyKaratsuba( a , b ) );
- return( BigInteger::multiplySchool( a , b ) );
+ return( BigInteger( a.f_neg != b.f_neg , BigInteger::mulMag( a.f_d ,
+                                                              b.f_d ) ) );
+ }
+
+inline BigInteger & BigInteger::operator*=( const BigInteger & b )
+{
+ return( *this = *this * b );
+ }
+
+inline BigInteger BigInteger::pow( const BigInteger & x , unsigned long n )
+{
+ if( n == 0 ) return( 1 );
+ BigInteger y = x;                          // x^( the leading bits of n )
+ for( int i = int( std::bit_width( n ) ) - 1 ; i-- > 0 ; ) {
+  y *= y;
+  if( ( n >> i ) & 1 ) y *= x;
+  }
+ return( y );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ THE QUOTIENT ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline BigInteger::Limb BigInteger::divBase( Limb * a , std::size_t m ,
+                                             const Limb * b , std::size_t n ,
+                                             Limb * q )
+{
+ Limb top = 0;
+ if( cmpN( a + m , b , n ) >= 0 ) {
+  subFrom( a + m , n , b , n );
+  top = 1;
+  }
+ const Limb d1 = b[ n - 1 ] , d0 = b[ n - 2 ] , v = detail::reciprocal( d1 );
+ for( std::size_t j = m ; j-- > 0 ; ) {     // D2-D7
+  const Limb u2 = a[ j + n ] , u1 = a[ j + n - 1 ] , u0 = a[ j + n - 2 ];
+  Limb qhat , rhat;                         // D3: at most 2 too large
+  bool big = false;                         // rhat >= b
+  if( u2 >= d1 ) {                          // u2 = d1: qhat = b - 1
+   const std::uint64_t rr = std::uint64_t( u1 ) + d1;
+   qhat = 0xFFFFFFFFu;
+   rhat = Limb( rr );
+   big = ( rr >> 32 ) != 0;
+   }
+  else qhat = detail::div2by1( u2 , u1 , d1 , v , rhat );
+  while( ! big && ( std::uint64_t( qhat ) * d0 >
+                    ( ( std::uint64_t( rhat ) << 32 ) | u0 ) ) ) {
+   --qhat;
+   const std::uint64_t rr = std::uint64_t( rhat ) + d1;
+   rhat = Limb( rr );
+   big = ( rr >> 32 ) != 0;
+   }
+  const Limb borrow = subMul1( a + j , b , n , qhat );   // D4
+  if( u2 < borrow ) {                       // D6: add back, rarely
+   --qhat;
+   addN( a + j , a + j , n , b , n );
+   }
+  a[ j + n ] = 0;
+  q[ j ] = qhat;
+  }
+ return( top );
+ }
+
+inline BigInteger::Limb BigInteger::divRec( Limb * a , std::size_t m ,
+                                            const Limb * b , std::size_t n ,
+                                            Limb * q , Limb * t )
+{
+ if( m < kDivide ) return( divBase( a , m , b , n , q ) );
+ const Limb one = 1;
+ const std::size_t k = m / 2;
+ // the upper half Q1 of a / b^{2k} by b / b^k, then A' = R1 b^{2k} +
+ // ( a mod b^{2k} ) - Q1 B0 b^k in a[ 0 , n + k ), its borrow in hi
+ int qh = int( divRec( a + 2 * k , m - k , b + k , n - k , q + k , t ) );
+ mulP( t , q + k , m - k , b , k );
+ std::int64_t hi = -std::int64_t( subFrom( a + k , n , t , m ) );
+ if( qh ) hi -= subFrom( a + m , n + k - m , b , k );
+ while( hi < 0 ) {                          // at most twice
+  qh -= int( subFrom( q + k , m - k , &one , 1 ) );
+  hi += addTo( a + k , n , b , n );
+  }
+ // the lower half Q0 of A' / b^k, then A'' = R0 b^k + ( A' mod b^k ) -
+ // Q0 B0 in a[ 0 , n )
+ int ql = int( divRec( a + k , k , b + k , n - k , q , t ) );
+ mulP( t , q , k , b , k );
+ hi = -std::int64_t( subFrom( a , n , t , 2 * k ) );
+ if( ql ) hi -= subFrom( a + k , n - k , b , k );
+ while( hi < 0 ) {
+  ql -= int( subFrom( q , k , &one , 1 ) );
+  hi += addTo( a , n , b , n );
+  }
+ if( ql ) qh += int( addTo( q + k , m - k , &one , 1 ) );
+ return( Limb( qh ) );
  }
 
 inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
-                                                const Mag & u , const Mag & v )
+                                const Mag & u , const Mag & v , bool school )
 {
  if( compareMag( u , v ) < 0 ) return( std::pair( Mag() , u ) );
  if( v.size() == 1 ) {                      // the short division
   Mag q = u;
   const Limb r = divSmall( q , v[ 0 ] );
-  return( std::pair( q , r ? Mag{ r } : Mag() ) );
+  return( std::pair( std::move( q ) , r ? Mag{ r } : Mag() ) );
   }
- const std::size_t n = v.size() , m = u.size() - n;
+ const std::size_t n = v.size() , m = u.size() + 1 - n;
  const int s = std::countl_zero( v.back() );   // D1: normalize
- Mag vn( n ) , un( u.size() + 1 );
- for( std::size_t i = n ; i-- > 1 ; )
-  vn[ i ] = ( v[ i ] << s ) | ( s ? Limb( std::uint64_t( v[ i - 1 ] ) >>
-                                          ( 32 - s ) ) : 0 );
- vn[ 0 ] = v[ 0 ] << s;
- un[ u.size() ] = s ? Limb( std::uint64_t( u.back() ) >> ( 32 - s ) ) : 0;
- for( std::size_t i = u.size() ; i-- > 1 ; )
-  un[ i ] = ( u[ i ] << s ) | ( s ? Limb( std::uint64_t( u[ i - 1 ] ) >>
-                                          ( 32 - s ) ) : 0 );
- un[ 0 ] = u[ 0 ] << s;
- const std::uint64_t b = std::uint64_t( 1 ) << 32;
- Mag q( m + 1 );
- for( std::size_t j = m + 1 ; j-- > 0 ; ) {   // D2-D7
-  const std::uint64_t num = ( std::uint64_t( un[ j + n ] ) << 32 ) |
-                            un[ j + n - 1 ];
-  std::uint64_t qhat = num / vn[ n - 1 ] , rhat = num % vn[ n - 1 ];
-  while( ( qhat >= b ) ||                   // D3: at most 2 too large
-         ( qhat * vn[ n - 2 ] > ( rhat << 32 ) + un[ j + n - 2 ] ) ) {
-   --qhat;
-   rhat += vn[ n - 1 ];
-   if( rhat >= b ) break;
+ auto shift = [ s ]( Limb * r , const Limb * x , std::size_t nx ) {
+  if( s == 0 ) {                            // the digit shifted out
+   std::copy( x , x + nx , r );
+   return( Limb( 0 ) );
    }
-  std::int64_t k = 0 , t;                   // D4: multiply and subtract
-  for( std::size_t i = 0 ; i < n ; ++i ) {
-   const std::uint64_t p = qhat * vn[ i ];
-   t = std::int64_t( un[ i + j ] ) - k - std::int64_t( p & 0xFFFFFFFFULL );
-   un[ i + j ] = Limb( t );
-   k = std::int64_t( p >> 32 ) - ( t >> 32 );
-   }
-  t = std::int64_t( un[ j + n ] ) - k;
-  un[ j + n ] = Limb( t );
-  q[ j ] = Limb( qhat );
-  if( t < 0 ) {                             // D6: add back, rarely
-   --q[ j ];
-   std::uint64_t c = 0;
-   for( std::size_t i = 0 ; i < n ; ++i ) {
-    const std::uint64_t z = std::uint64_t( un[ i + j ] ) + vn[ i ] + c;
-    un[ i + j ] = Limb( z );
-    c = z >> 32;
-    }
-   un[ j + n ] = Limb( std::uint64_t( un[ j + n ] ) + c );
-   }
+  const Limb out = x[ nx - 1 ] >> ( 32 - s );
+  for( std::size_t i = nx ; i-- > 1 ; )
+   r[ i ] = ( x[ i ] << s ) | ( x[ i - 1 ] >> ( 32 - s ) );
+  r[ 0 ] = x[ 0 ] << s;
+  return( out );
+  };
+ Mag vn( n ) , un( u.size() + 1 ) , q( m );
+ shift( vn.data() , v.data() , n );
+ un[ u.size() ] = shift( un.data() , u.data() , u.size() );
+ if( school || ( m < kDivide ) )
+  divBase( un.data() , m , vn.data() , n , q.data() );
+ else {                                     // by blocks of n digits
+  Mag t( n );
+  std::size_t j = m;
+  for( ; j > n ; j -= n )
+   divRec( un.data() + j - n , n , vn.data() , n , q.data() + j - n ,
+           t.data() );
+  divRec( un.data() , j , vn.data() , n , q.data() , t.data() );
   }
- Mag r( n );                                // D8: unnormalize
- for( std::size_t i = 0 ; i < n ; ++i )
-  r[ i ] = ( un[ i ] >> s ) | ( s ? Limb( std::uint64_t( un[ i + 1 ] ) <<
-                                          ( 32 - s ) ) : 0 );
+ un.resize( n );                            // D8: unnormalize
+ if( s )
+  for( std::size_t i = 0 ; i < n ; ++i )
+   un[ i ] = ( un[ i ] >> s ) | ( i + 1 < n ? un[ i + 1 ] << ( 32 - s ) : 0 );
  trim( q );
- trim( r );
- return( std::pair( q , r ) );
+ trim( un );
+ return( std::pair( std::move( q ) , std::move( un ) ) );
  }
 
 inline std::pair< BigInteger , BigInteger > BigInteger::divMod(
@@ -406,7 +1069,17 @@ inline std::pair< BigInteger , BigInteger > BigInteger::divMod(
             ( compareMag( out.second.f_d , b.f_d ) < 0 ) &&
             ( ( out.second.sign() == 0 ) ||
               ( out.second.sign() == a.sign() ) ) );
+ ADS_AUDIT( out == divModSchool( a , b ) );
  return( out );
+ }
+
+inline std::pair< BigInteger , BigInteger > BigInteger::divModSchool(
+                                const BigInteger & a , const BigInteger & b )
+{
+ ADS_PRE( b.sign() != 0 );
+ auto [ q , r ] = divModMag( a.f_d , b.f_d , true );
+ return( std::pair( BigInteger( a.f_neg != b.f_neg , std::move( q ) ) ,
+                    BigInteger( a.f_neg , std::move( r ) ) ) );
  }
 
 inline BigInteger operator/( const BigInteger & a , const BigInteger & b )
@@ -419,40 +1092,110 @@ inline BigInteger operator%( const BigInteger & a , const BigInteger & b )
  return( BigInteger::divMod( a , b ).second );
  }
 
-inline std::strong_ordering operator<=>( const BigInteger & a ,
-                                         const BigInteger & b )
+/*--------------------------------------------------------------------------*/
+/*----------------------- THE GREATEST COMMON DIVISOR ----------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline std::uint64_t BigInteger::gcdWord( std::uint64_t a , std::uint64_t b )
 {
- if( a.sign() != b.sign() ) return( a.sign() <=> b.sign() );
- const int c = BigInteger::compareMag( a.f_d , b.f_d );
- return( a.f_neg ? 0 <=> c : c <=> 0 );
+ if( a == 0 ) return( b );
+ if( b == 0 ) return( a );
+ const int s = std::countr_zero( a | b );   // the binary gcd, 4.5.2B
+ a >>= std::countr_zero( a );
+ do {
+  b >>= std::countr_zero( b );
+  if( a > b ) std::swap( a , b );
+  b -= a;
+  } while( b );
+ return( a << s );
  }
 
-inline BigInteger & BigInteger::operator+=( const BigInteger & b )
+inline BigInteger::Mag BigInteger::linComb( const Mag & u , const Mag & v ,
+                                            std::int64_t a , std::int64_t b )
 {
- return( *this = *this + b );
- }
-
-inline BigInteger & BigInteger::operator-=( const BigInteger & b )
-{
- return( *this = *this - b );
- }
-
-inline BigInteger & BigInteger::operator*=( const BigInteger & b )
-{
- return( *this = *this * b );
- }
-
-inline BigInteger BigInteger::pow( BigInteger x , unsigned long n )
-{
- BigInteger y = 1;                          // y x^n is invariant
- for( ; n ; n >>= 1 ) {
-  if( n & 1 ) y *= x;
-  if( n > 1 ) x *= x;
+ Mag r( u.size() );
+ std::int64_t c = 0;                        // |c| < 2^31
+ for( std::size_t i = 0 ; i < u.size() ; ++i ) {
+  c += a * std::int64_t( u[ i ] ) +
+       b * std::int64_t( i < v.size() ? v[ i ] : 0 );
+  r[ i ] = Limb( std::uint64_t( c ) );
+  c >>= 32;                                 // arithmetic, as C++20 says
   }
- return( y );
+ trim( r );
+ return( r );
  }
 
-inline BigInteger BigInteger::gcd( BigInteger a , BigInteger b )
+inline BigInteger::Mag BigInteger::gcdMag( Mag u , Mag v )
+{
+ if( compareMag( u , v ) < 0 ) std::swap( u , v );
+ constexpr std::int64_t kCap = std::int64_t( 1 ) << 30;
+ while( v.size() > 2 ) {                    // L1: the leading 62 bits
+  const std::size_t sh = 32 * u.size() -
+                         std::size_t( std::countl_zero( u.back() ) ) - 62;
+  auto top = [ sh ]( const Mag & x ) {
+   auto at = [ & ]( std::size_t i ) {
+    return( std::uint64_t( i < x.size() ? x[ i ] : 0 ) ); };
+   const std::size_t w = sh / 32 , o = sh % 32;
+   const std::uint64_t lo = at( w ) | ( at( w + 1 ) << 32 );
+   return( std::int64_t( o ? ( lo >> o ) | ( at( w + 2 ) << ( 64 - o ) )
+                           : lo ) );
+   };
+  std::int64_t uh = top( u ) , vh = top( v ) , A = 1 , B = 0 , C = 0 , D = 1;
+  for( ; ; ) {                              // L2, L3: Euclid on 62 bits
+   if( ( vh + C == 0 ) || ( vh + D == 0 ) ) break;
+   const std::int64_t q = ( uh + A ) / ( vh + C );
+   if( ( q != ( uh + B ) / ( vh + D ) ) || ( q >= kCap ) ) break;
+   const std::int64_t T = A - q * C , S = B - q * D;
+   if( ( T <= -kCap ) || ( T >= kCap ) || ( S <= -kCap ) || ( S >= kCap ) )
+    break;
+   A = C;
+   C = T;
+   B = D;
+   D = S;
+   const std::int64_t W = uh - q * vh;
+   uh = vh;
+   vh = W;
+   }
+  if( B == 0 ) {                            // L4: one long division
+   Mag r = divModMag( u , v ).second;
+   u = std::move( v );
+   v = std::move( r );
+   }
+  else {                                    // L4: the cofactors
+   Mag t = linComb( u , v , A , B ) , w = linComb( u , v , C , D );
+   u = std::move( t );
+   v = std::move( w );
+   }
+  }
+ if( v.empty() ) return( u );
+ auto word = []( const Mag & x ) {
+  return( x.empty() ? std::uint64_t( 0 ) : x.size() == 1 ? x[ 0 ] :
+          x[ 0 ] | ( std::uint64_t( x[ 1 ] ) << 32 ) ); };
+ std::uint64_t a = 0;
+ if( u.size() <= 2 ) a = word( u );
+ else if( v.size() == 1 ) a = modSmall( u.data() , u.size() , v[ 0 ] );
+ else a = word( divModMag( u , v ).second );
+ std::uint64_t g = gcdWord( a , word( v ) );
+ Mag r;
+ for( ; g ; g >>= 32 ) r.push_back( Limb( g ) );
+ return( r );
+ }
+
+inline BigInteger BigInteger::gcd( const BigInteger & a ,
+                                   const BigInteger & b )
+{
+ const Mag & x = a.f_d.size() >= b.f_d.size() ? a.f_d : b.f_d;
+ const Mag & y = a.f_d.size() >= b.f_d.size() ? b.f_d : a.f_d;
+ BigInteger g;
+ if( y.size() == 1 )                        // no copy of the longer one
+  g.f_d = { Limb( gcdWord( modSmall( x.data() , x.size() , y[ 0 ] ) ,
+                           y[ 0 ] ) ) };
+ else g.f_d = gcdMag( x , y );
+ ADS_AUDIT( g == gcdEuclid( a , b ) );
+ return( g );
+ }
+
+inline BigInteger BigInteger::gcdEuclid( BigInteger a , BigInteger b )
 {
  a = a.abs();
  b = b.abs();

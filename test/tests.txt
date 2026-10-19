@@ -453,6 +453,10 @@ taocp  generation            tuple, permutazioni, combinazioni, partizioni
 taocp  random-numbers        generatori congruenziali e test statistici
 taocp  fft                   trasformata veloce di Fourier
 taocp  big-integer           interi di lunghezza qualsiasi, Algorithm D
+taocp  big-integer-product   prodotti alle soglie, quadrati, NTT esatta
+taocp  big-integer-division  divisione ricorsiva contro Algorithm D
+taocp  big-integer-radix     conversioni divide et impera, 10^k e 10^k - 1
+taocp  big-integer-gcd       gcd di Lehmer, Fibonacci, argomenti nulli
 taocp  rational              razionali con le riduzioni di Henrici
 taocp  dancing-links         exact cover, Algorithm X
 taocp  sat-solvers           DPLL e CDCL

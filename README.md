@@ -225,7 +225,7 @@ and against the counts and the bounds of their analysis.
 | tuples, permutations, combinations, partitions, nested parentheses, with the Gray orders (7.2.1) | [`combinatorial/Generation.h`](include/ADS/combinatorial/Generation.h) | `taocp.generation` |
 | linear congruential generators, chi-square, Kolmogorov-Smirnov, serial and spectral tests, shuffling and sampling (3.2-3.4) | [`numeric/RandomNumbers.h`](include/ADS/numeric/RandomNumbers.h) | `taocp.random-numbers` |
 | fast Fourier transform (4.3.3, 4.6.4) | [`numeric/FFT.h`](include/ADS/numeric/FFT.h) | `taocp.fft` |
-| integers of any length, with Algorithm D and the product by the FFT (4.3, 4.4) | [`numeric/BigInteger.h`](include/ADS/numeric/BigInteger.h) | `taocp.big-integer` |
+| integers of any length: Karatsuba and the NTT, Algorithm D and the recursive division, the conversions by halves, the gcd of Lehmer (4.3, 4.4, 4.5.2) | [`numeric/BigInteger.h`](include/ADS/numeric/BigInteger.h) | `taocp.big-integer*` |
 | exact rationals (4.5.1) | [`numeric/Rational.h`](include/ADS/numeric/Rational.h) | `taocp.rational` |
 | exact cover by dancing links, Algorithm X (7.2.2.1) | [`backtrack/DancingLinks.h`](include/ADS/backtrack/DancingLinks.h) | `taocp.dancing-links` |
 | SAT by DPLL and by conflict-driven clause learning (7.2.2.2) | [`backtrack/SatSolvers.h`](include/ADS/backtrack/SatSolvers.h) | `taocp.sat-solvers` |

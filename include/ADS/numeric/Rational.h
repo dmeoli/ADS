@@ -14,7 +14,9 @@
  * terms; for the product, \f$ d_1 = \gcd( u , v' ) \f$ and
  * \f$ d_2 = \gcd( u' , v ) \f$ cancel crosswise. Since \f$ d_1 = 1 \f$
  * with probability about \f$ 6 / \pi^2 \f$, the second gcd is most often
- * skipped.
+ * skipped; a division by a gcd of 1 is skipped too, each quotient is
+ * computed once, and the gcds are those of Lehmer [see BigInteger.h], one
+ * short division when a denominator has one digit.
  *
  * The contracts [see Contract.h]: the denominator and a divisor are not 0;
  * the invariant is u' > 0 and \f$ \gcd( u , u' ) = 1 \f$, an audit.
