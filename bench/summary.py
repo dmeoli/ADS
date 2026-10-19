@@ -75,8 +75,7 @@ def main(p1, p2):
                               100 * d[-1]))
     print()
     cell = {k: (c1[k] + c2[k]) / 2 for k in both}
-    print('| benchmark | ADS | against | cells | median | range |')
-    print('|---|---|---|---:|---:|---:|')
+    rows = {}                   # benchmark -> structure -> its rows
     for bench, ads, lib, whos in PAIRS:
         groups = sorted({k[0] for k in cell
                          if k[0] == bench or k[0].startswith(bench + ' ')})
@@ -90,9 +89,25 @@ def main(p1, p2):
                 if t:
                     R.append(min(t) / v)
             if R:
-                print('| %s | `%s` | %s | %d | %s | %s to %s |' %
-                      (b, ads, lib, len(R), ratio(statistics.median(R)),
-                       ratio(min(R)), ratio(max(R))))
+                rows.setdefault(b, {}).setdefault(ads, []).append(
+                    '<td>%s</td><td align="right">%d</td><td align="right">'
+                    '%s</td><td align="right">%s to %s</td>' %
+                    (lib, len(R), ratio(statistics.median(R)),
+                     ratio(min(R)), ratio(max(R))))
+    # an HTML table, which GitHub renders, so that a benchmark and a
+    # structure span their rows
+    print('<table>')
+    print('<tr><th>benchmark</th><th>ADS</th><th>against</th>'
+          '<th>cells</th><th>median</th><th>range</th></tr>')
+    for b, S in rows.items():
+        first = '<td rowspan="%d">%s</td>' % (sum(map(len, S.values())), b)
+        for ads, R in S.items():
+            for k, r in enumerate(R):
+                print('<tr>' + first +
+                      ('<td rowspan="%d"><code>%s</code></td>' %
+                       (len(R), ads) if k == 0 else '') + r + '</tr>')
+                first = ''
+    print('</table>')
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2])

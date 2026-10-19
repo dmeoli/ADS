@@ -48,42 +48,43 @@ over the 1544 cells of the two runs; the largest differences, up to 50%,
 are in cells of a few hundred nanoseconds, where they are the resolution
 of the clock. Hence, a ratio between 0.95 and 1.05 is usually a tie.
 
-| benchmark | ADS | against | cells | median | range |
-|---|---|---|---:|---:|---:|
-| sort double | `ADS::sort` | std | 12 | 8.83 | 1.95 to 32 |
-| sort int64 | `ADS::sort` | std | 12 | 14 | 1.95 to 39 |
-| sort record | `ADS::sort` | std | 12 | 2.33 | 1.10 to 6.60 |
-| sort string | `ADS::sort` | std | 12 | 3.36 | 1.67 to 5.15 |
-| sort uint32 | `ADS::sort` | std | 12 | 15 | 3.90 to 36 |
-| sort double | `ADS::sort` | Boost | 12 | 2.20 | 0.93 to 14 |
-| sort int64 | `ADS::sort` | Boost | 12 | 3.52 | 0.84 to 17 |
-| sort record | `ADS::sort` | Boost | 12 | 1.00 | 0.98 to 1.02 |
-| sort string | `ADS::sort` | Boost | 12 | 1.45 | 0.90 to 2.20 |
-| sort uint32 | `ADS::sort` | Boost | 12 | 3.93 | 0.75 to 16 |
-| sort double | `ADS::stableSort` | std | 12 | 4.35 | 1.67 to 25 |
-| sort int64 | `ADS::stableSort` | std | 12 | 13 | 2.33 to 32 |
-| sort record | `ADS::stableSort` | std | 12 | 5.53 | 0.75 to 32 |
-| sort string | `ADS::stableSort` | std | 12 | 2.37 | 1.68 to 6.10 |
-| sort uint32 | `ADS::stableSort` | std | 12 | 13 | 1.34 to 41 |
-| sort double | `ADS::stableSort` | Boost | 12 | 1.20 | 0.88 to 3.01 |
-| sort int64 | `ADS::stableSort` | Boost | 12 | 1.40 | 0.71 to 26 |
-| sort record | `ADS::stableSort` | Boost | 12 | 0.98 | 0.57 to 1.16 |
-| sort string | `ADS::stableSort` | Boost | 12 | 2.76 | 1.34 to 5.62 |
-| sort uint32 | `ADS::stableSort` | Boost | 12 | 1.03 | 0.63 to 36 |
-| dictionaries | `ADS::FlatHashTable` | std | 8 | 5.47 | 4.32 to 16 |
-| dictionaries | `ADS::FlatHashTable` | Boost | 8 | 0.93 | 0.75 to 1.16 |
-| dictionaries | `ADS::RedBlackTree` | std | 8 | 1.45 | 1.00 to 2.38 |
-| priority | `ADS::DaryHeap d=4` | std | 6 | 1.62 | 1.38 to 2.17 |
-| priority | `ADS::DaryHeap d=4` | Boost | 6 | 1.04 | 0.87 to 1.68 |
-| priority | `ADS::FibonacciHeapPriorityQueue` | Boost | 6 | 0.61 | 0.54 to 0.86 |
-| sequences | `ADS::ArraySequence` | std | 6 | 1.05 | 1.00 to 1.12 |
-| sequences | `ADS::List` | std | 6 | 1.02 | 0.99 to 1.10 |
-| sequences | `ADS::SinglyList` | std | 6 | 0.98 | 0.86 to 1.03 |
-| bignum | `ADS::BigInteger` | Boost | 12 | 4.04 | 1.00 to 91 |
-| bignum | `ADS::BigInteger` | GMP | 12 | 0.33 | 0.20 to 1.25 |
-| bignum | `ADS::Rational` | Boost | 3 | 4.74 | 1.93 to 6.03 |
-| bignum | `ADS::Rational` | GMP | 3 | 0.42 | 0.40 to 0.46 |
-| fft | `ADS::fft` | FFTW | 3 | 0.50 | 0.34 to 0.78 |
+<table>
+<tr><th>benchmark</th><th>ADS</th><th>against</th><th>cells</th><th>median</th><th>range</th></tr>
+<tr><td rowspan="4">sort double</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">8.83</td><td align="right">1.95 to 32</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">2.20</td><td align="right">0.93 to 14</td></tr>
+<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">4.35</td><td align="right">1.67 to 25</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">1.20</td><td align="right">0.88 to 3.01</td></tr>
+<tr><td rowspan="4">sort int64</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">14</td><td align="right">1.95 to 39</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">3.52</td><td align="right">0.84 to 17</td></tr>
+<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">13</td><td align="right">2.33 to 32</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">1.40</td><td align="right">0.71 to 26</td></tr>
+<tr><td rowspan="4">sort record</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">2.33</td><td align="right">1.10 to 6.60</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">1.00</td><td align="right">0.98 to 1.02</td></tr>
+<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">5.53</td><td align="right">0.75 to 32</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">0.98</td><td align="right">0.57 to 1.16</td></tr>
+<tr><td rowspan="4">sort string</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">3.36</td><td align="right">1.67 to 5.15</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">1.45</td><td align="right">0.90 to 2.20</td></tr>
+<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">2.37</td><td align="right">1.68 to 6.10</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">2.76</td><td align="right">1.34 to 5.62</td></tr>
+<tr><td rowspan="4">sort uint32</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">15</td><td align="right">3.90 to 36</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">3.93</td><td align="right">0.75 to 16</td></tr>
+<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">13</td><td align="right">1.34 to 41</td></tr>
+<tr><td>Boost</td><td align="right">12</td><td align="right">1.03</td><td align="right">0.63 to 36</td></tr>
+<tr><td rowspan="3">dictionaries</td><td rowspan="2"><code>ADS::FlatHashTable</code></td><td>std</td><td align="right">8</td><td align="right">5.47</td><td align="right">4.32 to 16</td></tr>
+<tr><td>Boost</td><td align="right">8</td><td align="right">0.93</td><td align="right">0.75 to 1.16</td></tr>
+<tr><td rowspan="1"><code>ADS::RedBlackTree</code></td><td>std</td><td align="right">8</td><td align="right">1.45</td><td align="right">1.00 to 2.38</td></tr>
+<tr><td rowspan="3">priority</td><td rowspan="2"><code>ADS::DaryHeap d=4</code></td><td>std</td><td align="right">6</td><td align="right">1.62</td><td align="right">1.38 to 2.17</td></tr>
+<tr><td>Boost</td><td align="right">6</td><td align="right">1.04</td><td align="right">0.87 to 1.68</td></tr>
+<tr><td rowspan="1"><code>ADS::FibonacciHeapPriorityQueue</code></td><td>Boost</td><td align="right">6</td><td align="right">0.61</td><td align="right">0.54 to 0.86</td></tr>
+<tr><td rowspan="3">sequences</td><td rowspan="1"><code>ADS::ArraySequence</code></td><td>std</td><td align="right">6</td><td align="right">1.05</td><td align="right">1.00 to 1.12</td></tr>
+<tr><td rowspan="1"><code>ADS::List</code></td><td>std</td><td align="right">6</td><td align="right">1.02</td><td align="right">0.99 to 1.10</td></tr>
+<tr><td rowspan="1"><code>ADS::SinglyList</code></td><td>std</td><td align="right">6</td><td align="right">0.98</td><td align="right">0.86 to 1.03</td></tr>
+<tr><td rowspan="4">bignum</td><td rowspan="2"><code>ADS::BigInteger</code></td><td>Boost</td><td align="right">12</td><td align="right">4.04</td><td align="right">1.00 to 91</td></tr>
+<tr><td>GMP</td><td align="right">12</td><td align="right">0.33</td><td align="right">0.20 to 1.25</td></tr>
+<tr><td rowspan="2"><code>ADS::Rational</code></td><td>Boost</td><td align="right">3</td><td align="right">4.74</td><td align="right">1.93 to 6.03</td></tr>
+<tr><td>GMP</td><td align="right">3</td><td align="right">0.42</td><td align="right">0.40 to 0.46</td></tr>
+<tr><td rowspan="1">fft</td><td rowspan="1"><code>ADS::fft</code></td><td>FFTW</td><td align="right">3</td><td align="right">0.50</td><td align="right">0.34 to 0.78</td></tr>
+</table>
 
 `ADS::sort()` and `ADS::stableSort()` are faster than the standard library
 in almost all the cells, by 2 to 15 times in the median (the radix sorts
