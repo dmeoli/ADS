@@ -17,7 +17,9 @@
 
 namespace ADS {
 
-constexpr Xoshiro256::Xoshiro256( std::uint64_t seed ) : f_s{}
+template< bool StarStar >
+constexpr Xoshiro256T< StarStar >::Xoshiro256T( std::uint64_t seed )
+ : f_s{}
 {
  for( auto & w : f_s ) {                    // the words of SplitMix64
   w = splitmix64( seed );
@@ -27,9 +29,11 @@ constexpr Xoshiro256::Xoshiro256( std::uint64_t seed ) : f_s{}
   f_s[ 0 ] = 1;                             // the only state to avoid
  }
 
-constexpr std::uint64_t Xoshiro256::operator()( void )
+template< bool StarStar >
+constexpr std::uint64_t Xoshiro256T< StarStar >::operator()( void )
 {
- const std::uint64_t r = std::rotl( f_s[ 0 ] + f_s[ 3 ] , 23 ) + f_s[ 0 ] ,
+ const std::uint64_t r = StarStar ? std::rotl( f_s[ 1 ] * 5 , 7 ) * 9
+                         : std::rotl( f_s[ 0 ] + f_s[ 3 ] , 23 ) + f_s[ 0 ] ,
                      t = f_s[ 1 ] << 17;
  f_s[ 2 ] ^= f_s[ 0 ];
  f_s[ 3 ] ^= f_s[ 1 ];
@@ -40,7 +44,8 @@ constexpr std::uint64_t Xoshiro256::operator()( void )
  return( r );
  }
 
-constexpr void Xoshiro256::jump( void )
+template< bool StarStar >
+constexpr void Xoshiro256T< StarStar >::jump( void )
 {
  constexpr std::uint64_t J[] = { 0x180ec6d33cfd0abaULL ,
                                  0xd5a61266f0c9392cULL ,
@@ -77,6 +82,64 @@ std::uint64_t uniformBelow( G && g , std::uint64_t s )
   }
  ADS_POST( hi < s );
  return( hi );
+ }
+
+inline AliasTable::AliasTable( const std::vector< double > & w )
+ : f_T( w.size() )
+{
+ ADS_PRE( ! w.empty() && ( w.size() <= std::size_t( UINT32_MAX ) ) );
+ const std::size_t n = w.size();
+ double sum = 0;
+ for( const double x : w ) {
+  ADS_PRE( std::isfinite( x ) && ( x >= 0 ) );
+  sum += x;
+  }
+ ADS_PRE( sum > 0 );
+ std::vector< double > p( n );
+ std::vector< std::uint32_t > small , large;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  p[ i ] = w[ i ] * double( n ) / sum;
+  ( p[ i ] < 1 ? small : large ).push_back( std::uint32_t( i ) );
+  }
+ auto keep = []( double q ) {               // floor( q 2^64 ), q in [ 0 , 1 ]
+  return( q >= 1 ? ~std::uint64_t( 0 )
+                 : std::uint64_t( q * 0x1.0p64 ) ); };
+ while( ! small.empty() && ! large.empty() ) {
+  const std::uint32_t s = small.back() , l = large.back();
+  small.pop_back();
+  f_T[ s ] = Entry{ keep( p[ s ] ) , l };   // s keeps p_s, the rest is l's
+  p[ l ] = ( p[ l ] + p[ s ] ) - 1;
+  if( p[ l ] < 1 ) {
+   large.pop_back();
+   small.push_back( l );
+   }
+  }
+ for( const std::uint32_t i : large )       // 1 up to the rounding
+  f_T[ i ] = Entry{ ~std::uint64_t( 0 ) , i };
+ for( const std::uint32_t i : small )
+  f_T[ i ] = Entry{ ~std::uint64_t( 0 ) , i };
+ }
+
+template< FullWordGenerator G >
+std::size_t AliasTable::operator()( G && g ) const
+{
+ std::uint64_t h;
+ const std::uint64_t l = detail::mul128( g() , f_T.size() , h );
+ const Entry & e = f_T[ h ];
+ return( l < e.keep ? h : e.alias );
+ }
+
+inline double AliasTable::probability( std::size_t i ) const
+{
+ ADS_PRE( i < f_T.size() );
+ const double n = double( f_T.size() );
+ double q = 0;
+ for( std::size_t j = 0 ; j < f_T.size() ; ++j ) {
+  const double k = double( f_T[ j ].keep ) * 0x1.0p-64;
+  if( j == i ) q += k;
+  if( f_T[ j ].alias == i ) q += 1 - k;
+  }
+ return( q / n );
  }
 
 template< FullWordGenerator G >

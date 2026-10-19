@@ -28,6 +28,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 1.4 and 2.6,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf
+ * \see A. Karatsuba, Yu. Ofman, Multiplication of multidigit numbers on
+ *      automata, Soviet Physics Doklady 7, 595-596, 1963
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

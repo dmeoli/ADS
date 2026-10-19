@@ -22,6 +22,12 @@
  * \see R. L. Rivest, A. Shamir, L. Adleman, A method for obtaining digital
  *      signatures and public-key cryptosystems, Communications of the ACM
  *      21(2), 120-126, 1978, doi:10.1145/359340.359342
+ * \see G. L. Miller, Riemann's hypothesis and tests for primality, Journal
+ *      of Computer and System Sciences 13(3), 300-317, 1976,
+ *      doi:10.1016/S0022-0000(76)80043-8
+ * \see M. O. Rabin, Probabilistic algorithm for testing primality, Journal
+ *      of Number Theory 12(1), 128-138, 1980,
+ *      doi:10.1016/0022-314X(80)90084-0
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
