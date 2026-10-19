@@ -173,9 +173,10 @@ std::size_t blockGallop( const T * s , std::size_t m , const T * l ,
   const __m256i v = _mm256_set1_epi32( std::int32_t( x ) );
   const __m256i * w = reinterpret_cast< const __m256i * >( l + p );
   __m256i e = _mm256_cmpeq_epi32( v , _mm256_loadu_si256( w ) );
-  for( int c = 1 ; c < 8 ; ++c )
-   e = _mm256_or_si256( e , _mm256_cmpeq_epi32( v ,
-                                                _mm256_loadu_si256( w + c ) ) );
+  for( int c = 1 ; c < 8 ; ++c ) {
+   const __m256i y = _mm256_loadu_si256( w + c );
+   e = _mm256_or_si256( e , _mm256_cmpeq_epi32( v , y ) );
+   }
   out[ k ] = x;
   k += _mm256_testz_si256( e , e ) ? 0 : 1;
   }
