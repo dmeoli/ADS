@@ -15,8 +15,10 @@
  * \f$ d_2 = \gcd( u' , v ) \f$ cancel crosswise. Since \f$ d_1 = 1 \f$
  * with probability about \f$ 6 / \pi^2 \f$, the second gcd is most often
  * skipped; a division by a gcd of 1 is skipped too, each quotient is
- * computed once, and the gcds are those of Lehmer [see BigInteger.h], one
- * short division when a denominator has one digit.
+ * computed once, by the exact division of Hensel when the gcd has one
+ * digit [see BigInteger::divExact()], the sum of the two products is made
+ * in place, and the gcds are those of Lehmer [see BigInteger.h], one
+ * folded remainder when a denominator has one digit.
  *
  * The contracts [see Contract.h]: the denominator and a divisor are not 0;
  * the invariant is u' > 0 and \f$ \gcd( u , u' ) = 1 \f$, an audit.
@@ -48,6 +50,7 @@
 
 #include <compare>
 #include <string>
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

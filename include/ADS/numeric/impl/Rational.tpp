@@ -35,8 +35,10 @@ inline Rational::Rational( BigInteger num , BigInteger den )
   den = -den;
   }
  const BigInteger g = BigInteger::gcd( num , den );
- f_num = detail::isOne( g ) ? std::move( num ) : num / g;
- f_den = detail::isOne( g ) ? std::move( den ) : den / g;
+ f_num = detail::isOne( g ) ? std::move( num )
+                            : BigInteger::divExact( std::move( num ) , g );
+ f_den = detail::isOne( g ) ? std::move( den )
+                            : BigInteger::divExact( std::move( den ) , g );
  ADS_AUDIT( lowest() );
  }
 
@@ -61,16 +63,23 @@ inline std::string Rational::toString( void ) const
 inline Rational operator+( const Rational & a , const Rational & b )
 {
  const BigInteger d1 = BigInteger::gcd( a.f_den , b.f_den );
- if( detail::isOne( d1 ) )
-  return( Rational( a.f_num * b.f_den + b.f_num * a.f_den ,
-                    a.f_den * b.f_den , Rational::Reduced() ) );
- const BigInteger ad = a.f_den / d1 ,       // each quotient once
-                  t = a.f_num * ( b.f_den / d1 ) + b.f_num * ad;
+ if( detail::isOne( d1 ) ) {
+  BigInteger t = a.f_num * b.f_den;         // in place
+  BigInteger::addMul( t , b.f_num , a.f_den );
+  return( Rational( std::move( t ) , a.f_den * b.f_den ,
+                    Rational::Reduced() ) );
+  }
+ BigInteger ad = BigInteger::divExact( a.f_den , d1 );   // once
+ BigInteger t = a.f_num * BigInteger::divExact( b.f_den , d1 );
+ BigInteger::addMul( t , b.f_num , ad );
  if( t.sign() == 0 ) return( Rational() );
  const BigInteger d2 = BigInteger::gcd( t , d1 );
  if( detail::isOne( d2 ) )
-  return( Rational( t , ad * b.f_den , Rational::Reduced() ) );
- return( Rational( t / d2 , ad * ( b.f_den / d2 ) , Rational::Reduced() ) );
+  return( Rational( std::move( t ) , std::move( ad *= b.f_den ) ,
+                    Rational::Reduced() ) );
+ return( Rational( BigInteger::divExact( std::move( t ) , d2 ) ,
+                   std::move( ad *= BigInteger::divExact( b.f_den , d2 ) ) ,
+                   Rational::Reduced() ) );
  }
 
 inline Rational Rational::operator-( void ) const
@@ -89,10 +98,11 @@ inline Rational operator*( const Rational & a , const Rational & b )
  const BigInteger d1 = BigInteger::gcd( a.f_num , b.f_den ) ,
                   d2 = BigInteger::gcd( a.f_den , b.f_num );
  const bool o1 = detail::isOne( d1 ) , o2 = detail::isOne( d2 );
- return( Rational( ( o1 ? a.f_num : a.f_num / d1 ) *
-                   ( o2 ? b.f_num : b.f_num / d2 ) ,
-                   ( o2 ? a.f_den : a.f_den / d2 ) *
-                   ( o1 ? b.f_den : b.f_den / d1 ) ,
+ auto div = []( const BigInteger & x , bool one , const BigInteger & d ) {
+  return( one ? x : BigInteger::divExact( x , d ) );
+  };
+ return( Rational( div( a.f_num , o1 , d1 ) * div( b.f_num , o2 , d2 ) ,
+                   div( a.f_den , o2 , d2 ) * div( b.f_den , o1 , d1 ) ,
                    Rational::Reduced() ) );
  }
 
