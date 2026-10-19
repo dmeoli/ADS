@@ -98,9 +98,9 @@ std::vector< std::size_t > SpectralBloomFilter< T , C , H >::places(
  const std::uint64_t a = splitmix64( std::uint64_t( f_h( x ) ) ) ,
                      b = splitmix64( a ) | 1;
  std::vector< std::size_t > P( std::size_t( f_r ) , 0 );
+ detail::BloomProbe Q( a , b , f_C.size() );
  for( int i = 0 ; i < f_r ; ++i )
-  P[ std::size_t( i ) ] = std::size_t( ( a + std::uint64_t( i ) * b ) %
-                                       f_C.size() );
+  P[ std::size_t( i ) ] = Q.next();
  return( P );
  }
 
@@ -170,28 +170,29 @@ PartitionedBloomFilter< T , H >::PartitionedBloomFilter( std::size_t m ,
  }
 
 template< class T , class H >
-std::size_t PartitionedBloomFilter< T , H >::bit( const T & x ,
-                                                  int i ) const
+detail::BloomProbe PartitionedBloomFilter< T , H >::probe( const T & x )
+ const
 {
  const std::uint64_t a = splitmix64( std::uint64_t( f_h( x ) ) ) ,
                      b = splitmix64( a ) | 1;
- return( std::size_t( i ) * f_w +
-         std::size_t( ( a + std::uint64_t( i ) * b ) % f_w ) );
+ return( detail::BloomProbe( a , b , f_w ) );
  }
 
 template< class T , class H >
 void PartitionedBloomFilter< T , H >::insert( const T & x )
 {
+ detail::BloomProbe P = probe( x );
  for( int i = 0 ; i < f_r ; ++i )
-  f_B[ bit( x , i ) ] = true;
+  f_B[ std::size_t( i ) * f_w + P.next() ] = true;
  ADS_POST( maybe( x ) );
  }
 
 template< class T , class H >
 bool PartitionedBloomFilter< T , H >::maybe( const T & x ) const
 {
+ detail::BloomProbe P = probe( x );
  for( int i = 0 ; i < f_r ; ++i )
-  if( ! f_B[ bit( x , i ) ] )
+  if( ! f_B[ std::size_t( i ) * f_w + P.next() ] )
    return( false );
  return( true );
  }

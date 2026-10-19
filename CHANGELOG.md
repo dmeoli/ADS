@@ -280,6 +280,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   has one digit, BigInteger::divExact(), and the sum of the products in
   place, BigInteger::addMul()
 
+- BloomFilter, PartitionedBloomFilter and SpectralBloomFilter reach the
+  places h1 + i h2 mod m one from the other by an addition, with no
+  remainder past the first two, and PartitionedBloomFilter hashes an item
+  once instead of once per part
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);
