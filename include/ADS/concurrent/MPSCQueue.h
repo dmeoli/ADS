@@ -4,30 +4,28 @@
 /** @file
  * A queue that many producer threads fill and one consumer thread empties,
  * lock-free and unbounded, beyond the book: each producer has a lane of its
- * own, an unbounded queue of blocks of B places between it and the
- * consumer (the queue of Lamport [see SPSCQueue.h] on a list of blocks),
- * so that the producers never compete with each other, and an item costs
- * no allocation: a producer writes the item into the next place of its
- * last block and publishes, by one store with the release order, how many
- * places of the block are written; when the block is full it links a new
- * one, taken from the block that the consumer gave back last if there is
- * one. The consumer reads the lanes in turn, each from its first block,
- * with its own copy of the count of the places written, read again only
- * when it has taken them all, and gives a block back when it has taken
- * its B items and the producer has linked the next one.
+ * own, so that the producers never compete with each other, and a lane is
+ * the queue of Lamport between its producer and the consumer [see
+ * SPSCQueue.h] on a circular vector of places, each thread with a copy of
+ * the index of the other, read again only when the vector looks full or
+ * empty, the indices and the copies on lines of cache of their own. When
+ * the vector is full the producer links a new one of twice the places and
+ * goes on there, and the consumer, which finds the old one empty and its
+ * successor linked, frees it and follows: a lane in a steady state runs
+ * on one vector that stays in the caches, an item costs O( 1 ) time and
+ * no allocation, and the vectors of a lane, \f$ C , 2 C , 4 C , \dots \f$
+ * places from \f$ C = B \f$, hold at most twice the most items the lane
+ * ever held at once, plus B.
  *
  * A producer is a handle that producer() returns, to be used by one thread
  * at a time; the items of a producer come out in the order in which it
  * pushed them, and the consumer takes the lanes in turn, draining the one
- * it is on before the next. An item costs O( 1 ) time, a block of B items
- * one allocation at most, and the memory is that of the items in the
- * queue plus at most 2 blocks per lane, \f$ ( B + 2 ) \f$ places a lane in
- * the steady state. The lanes live as long as the queue, also when their
- * producer is gone, its items still to be taken.
+ * it is on before the next. The lanes live as long as the queue, also when
+ * their producer is gone, its items still to be taken.
  *
- * The contracts [see Contract.h]: B >= 2; only one thread at a time calls
- * the consumer's operations, and only one at a time pushes through a
- * producer. The operations are defined in MPSCQueue.tpp.
+ * The contracts [see Contract.h]: B >= 2 is a power of 2; only one thread
+ * at a time calls the consumer's operations, and only one at a time pushes
+ * through a producer. The operations are defined in MPSCQueue.tpp.
  *
  * \see L. Lamport, Specifying concurrent program modules, ACM Transactions
  *      on Programming Languages and Systems 5(2), 190-222, 1983,
@@ -63,6 +61,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <memory>
 #include <new>
 #include <utility>
 
@@ -77,35 +76,35 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// an unbounded queue from many producers to one consumer, a lane each
-template< class T , std::size_t B = 512 >
+template< class T , std::size_t B = 1024 >
 class MPSCQueue {
- static_assert( B >= 2 , "a block has two places at least" );
+ static_assert( ( B >= 2 ) && ( ( B & ( B - 1 ) ) == 0 ) ,
+                "the first vector of a lane has 2^k places" );
 
  static constexpr std::size_t line = 64;   ///< a line of cache
 
- /// a block of B places, the count of those written and the next block,
- /// which the producer writes, on a line of their own
- struct Block {
-  alignas( line ) std::atomic< std::size_t > written{ 0 };
-  std::atomic< Block * > next{ nullptr };
-  alignas( line ) alignas( T ) unsigned char place[ B * sizeof( T ) ];
-
-  T * at( std::size_t i ) {
-   return( std::launder( reinterpret_cast< T * >( place ) ) + i );
-   }
+ /// a circular vector of a lane, with the indices of the queue of
+ /// Lamport and the link to the next vector, each on lines of its own
+ struct Ring {
+  T * place;                                ///< mask + 1 places
+  std::size_t mask;
+  alignas( 2 * line ) std::atomic< std::size_t > tail{ 0 };   ///< producer
+  alignas( line ) std::size_t headSeen = 0; ///< the head it saw
+  alignas( line ) std::atomic< std::size_t > head{ 0 };   ///< consumer
+  alignas( line ) std::size_t tailSeen = 0; ///< the tail it saw
+  alignas( line ) std::atomic< Ring * > next{ nullptr };   ///< when full
+  explicit Ring( std::size_t c )
+   : place( std::allocator< T >().allocate( c ) ) , mask( c - 1 ) {}
+  ~Ring() { std::allocator< T >().deallocate( place , mask + 1 ); }
   };
 
- /// the lane of a producer: what the producer writes, what the consumer
- /// writes, and the block given back, each on lines of its own
+ /// the lane of a producer: the vector it writes and the one the consumer
+ /// reads, on lines of their own
  struct Lane {
-  alignas( line ) Block * tail;             ///< the producer's block
-  std::size_t tailAt = 0;                   ///< its next place
-  alignas( line ) Block * head;             ///< the consumer's block
-  std::size_t headAt = 0;                   ///< its next place
-  std::size_t seen = 0;                     ///< its count, as last read
-  alignas( line ) std::atomic< Block * > spare{ nullptr };   ///< given back
+  alignas( line ) Ring * in;                ///< the producer's vector
+  alignas( line ) Ring * out;               ///< the consumer's vector
   Lane * nextLane = nullptr;                ///< in the list of the lanes
-  Lane( void ) : tail( new Block ) , head( tail ) {}
+  Lane( void ) : in( new Ring( B ) ) , out( in ) {}
   };
 
 /*--------------------------------------------------------------------------*/

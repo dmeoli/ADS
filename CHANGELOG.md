@@ -106,8 +106,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   memmem(), the searchers of Boost.Algorithm and, when found, libsais,
   libdivsufsort, edlib and rapidfuzz-cpp
 - MPSCQueue, the unbounded queue from many producers to one consumer with
-  a lane of blocks per producer, which never compete, no allocation per
-  item and the blocks given back by the consumer used again
+  a lane per producer, which never compete: the queue of Lamport on a
+  circular vector that the producer replaces by one twice as large when
+  full, so that a lane in a steady state allocates nothing
 - multiplyStrassen(), the variant of Winograd of the product of Strassen
   on the views of the quadrants of DenseMatrix, down to gemm() below a
   cutoff, the odd dimensions peeled
