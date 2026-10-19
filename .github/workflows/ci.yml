@@ -3,7 +3,7 @@
 #                                                                             #
 # Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
-# UBSan, BigInteger with its portable products, the queues between threads  #
+# UBSan, BigInteger with its portable products, the queues between threads    #
 # under ThreadSanitizer, and FlatHashTable on its broadword fallback; it      #
 # measures the coverage of the tests and sends it to Coveralls.               #
 ###############################################################################
