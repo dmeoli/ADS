@@ -635,6 +635,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   block at a time; List< T , false > takes its cells one by one from new
   and delete, as the chains of ChainedHashTable do, which are short
 
+- RankSelect with one word of 64 bits of directory per 256 bits (the
+  rank of the block in 40 bits and those of its words 1, 2 and 3 in 8
+  bits each), so that rank1() is one load of the directory, one of the
+  bits and one sideways sum with no branch, in 25% of the bits instead of
+  37.5%; select1() and select0() by the inventory of Vigna's simple
+  select, the place of the first bit of each group of 2^l spanning about
+  8192 bits and of every 2^(l-5)-th in 16 bits, then a count word by
+  word, instead of the binary search between samples of every 4096-th
+  bit; the groups that span 2^16 bits or more search the directory; a
+  third level of counts above 2^40 bits; BitVector keeps its words in
+  whole lines of the cache, aligned to a line (to a huge page from 2 MB
+  on), with a word past the last bit, so that get() reads a field with no
+  test; selectInWord() by PDEP where BMI2 is found; the tests of the third
+  level and of the sparse groups, test/succinct_top.cpp
+
 ### Fixed
 
 - the random graphs of the exams of trees and of the collections of

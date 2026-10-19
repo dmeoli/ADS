@@ -9,33 +9,45 @@
  * (Elias-Fano, the trees by levels and by parentheses, the graphs).
  *
  * rank is the two-level directory of Jacobson, with the sizes that suit the
- * words of today: the absolute rank of each superblock of Z = 512 bits in
- * 64 bits, the rank of each word of z = 64 bits relative to its superblock
- * in 16 bits, and the 1s of the word up to i by the sideways sum of the
- * masked word [see Bitwise.h], which takes the place of the table of the
- * ranks of all the small blocks of the notes (a table of
- * \f$ 2^z z \log z \f$ bits is affordable only with z = log m / 2, while the
- * sum of 64 bits costs a few instructions); 3 memory accesses and O( 1 )
- * time, with \f$ 64 / 512 + 16 / 64 = 37.5 \% \f$ of m bits more. The
- * notes set \f$ Z = \log^2 m \f$ and \f$ z = \log m / 2 \f$ so that the
- * directory takes o( m ) bits (Theorem 15.1); with constant blocks it takes
- * a constant fraction, the trade of the practical designs (Vigna's rank9,
- * the 25% of the rank of Gonzalez, Grabowski, Makinen and Navarro).
+ * words and the caches of today: for each block of Z = 256 bits, one word
+ * of 64 bits holds the absolute rank of the block in its 40 high bits and
+ * the ranks of its words 1, 2 and 3 relative to the block in 8 bits each,
+ * and the 1s of the word up to i are the sideways sum of the masked word,
+ * which takes the place of the table of the ranks of all the small blocks
+ * of the notes (a table of \f$ 2^z z \log z \f$ bits is affordable only
+ * with z = log m / 2, while the sum of 64 bits is one instruction); one
+ * access to the directory and one to the bits, no branch, O( 1 ) time, with
+ * \f$ 64 / 256 = 25 \% \f$ of m bits more. The notes set
+ * \f$ Z = \log^2 m \f$ and \f$ z = \log m / 2 \f$ so that the directory
+ * takes o( m ) bits (Theorem 15.1); with constant blocks it takes a
+ * constant fraction, the trade of the practical designs: Vigna's rank9
+ * and the rank_support_v of sdsl take the same 25% with two words per 512
+ * bits, the poppy of Zhou, Andersen and Kaminsky and the flat rank of
+ * Kurpicz 3% with a sum of up to 8 words per query. Above \f$ 2^{40} \f$
+ * bits a third level of 64 bits counts every \f$ 2^{40} \f$ bits.
  *
- * select is the sampled design: the superblock of every 4096-th 1 (and
- * 0) is kept, a query does a binary search on the absolute ranks of the
- * superblocks between two samples, then a scan of the 8 relative ranks of
- * its superblock, and ends in the word by the broadword selectInWord() [see
- * BitVector.h]; it takes O( 1 ) time where the 1s are spread evenly and
- * \f$ O( \log ( m / 512 ) ) \f$ in the worst case, with less than 1% of
- * m bits more. The notes give the scheme of Clark, which splits the blocks
- * of \f$ \log^2 m \f$ 1s into sparse ones, whose places are written
- * down, and dense ones, split again with \f$ ( \log \log m )^2 \f$ 1s
- * and ended by a table: O( 1 ) time in the worst case and o( m ) bits
- * (Theorem 15.2), at the price of three levels whose constants are large
- * for the sizes of practice; the sampling with a search is what the
- * practical libraries use (Navarro and Providel, sdsl of Gog and Petri), and
- * the worst case is kept small by the bounded search between samples.
+ * select is the inventory of Vigna's simple select, for the 1s and for
+ * the 0s: the 1s are cut in groups of \f$ 2^\ell \f$, with \f$ 2^\ell
+ * \f$ chosen so that a group spans about 8192 bits; for each group the
+ * place of its first 1 is kept in 64 bits, and the places of its 1s of rank
+ * multiple of \f$ 2^{\ell - 5} \f$ in 16 bits from it, a line of the
+ * cache. \f$ select_1( k ) \f$ reads the place of the 1 of rank k rounded
+ * down to \f$ 2^{\ell - 5} \f$ and counts the rest of the 1s word by
+ * word, by the sideways sums, and ends in the word by the broadword
+ * selectInWord() [see BitVector.h]: three accesses to memory and a few
+ * words, O( 1 ) time where the 1s are spread evenly, with about
+ * \f$ 576 / 8192 = 7 \% \f$ of m bits more for each value. A group that
+ * spans \f$ 2^{16} \f$ bits or more, whose offsets do not fit, is sparse,
+ * and its 1s are found by a binary search on the directory of rank between
+ * its ends, \f$ O( \log ( m / 256 ) ) \f$ in the worst case. The notes
+ * give the scheme of Clark, which splits the blocks of \f$ \log^2 m \f$
+ * 1s into sparse ones, whose places are written down, and dense ones, split
+ * again with \f$ ( \log \log m )^2 \f$ 1s and ended by a table: O( 1 )
+ * time in the worst case and o( m ) bits (Theorem 15.2), at the price of
+ * three levels whose constants are large for the sizes of practice; the
+ * inventories with constant groups are what the practical libraries use
+ * (Vigna's sux, the select_support_mcl of sdsl of Gog and Petri, the
+ * darray of Okanohara and Sadakane).
  *
  * The places count from 0: \f$ rank_1( i ) \f$ here is \f$ Rank_1( i ) \f$
  * of the notes on the places \f$ 1 , \ldots , i \f$, and \f$ select_1( k )
@@ -60,6 +72,13 @@
  * \see S. Vigna, Broadword implementation of rank/select queries, Proc.
  *      WEA 2008, LNCS 5038, 154-168, 2008,
  *      doi:10.1007/978-3-540-68552-4_12
+ * \see D. Zhou, D. G. Andersen, M. Kaminsky, Space-efficient, high-
+ *      performance rank and select structures on uncompressed bit
+ *      sequences, Proc. SEA 2013, LNCS 7933, 151-163, 2013,
+ *      doi:10.1007/978-3-642-38527-8_15
+ * \see F. Kurpicz, Engineering compact data structures for rank and select
+ *      queries on bit vectors, Proc. SPIRE 2022, LNCS 13617, 257-272,
+ *      2022, doi:10.1007/978-3-031-20643-6_19
  * \see G. Navarro, E. Providel, Fast, small, simple rank/select on bitmaps,
  *      Proc. SEA 2012, LNCS 7276, 295-306, 2012,
  *      doi:10.1007/978-3-642-30850-5_26
@@ -87,6 +106,7 @@
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -170,26 +190,62 @@ class RankSelect {
 /*--------------------------------------------------------------------------*/
  private:
 
- static constexpr std::size_t kWords = 8;    ///< words in a superblock
- static constexpr std::size_t kSample = 4096;   ///< 1s between samples
+ /// the bits of a block of the directory, and of a quarter (a word)
+ static constexpr std::size_t kBlock = 256;
+ static constexpr int kRel = 8;
+ static constexpr std::size_t kQuarter = kBlock / 4;
+ static constexpr std::uint64_t kRelMask = ( std::uint64_t( 1 ) << kRel ) - 1;
+ /// the log of the bits counted by an absolute count of the top level,
+ /// which the 64 - 3 kRel bits of a block can count
+#ifndef ADS_RANKSELECT_TOP
+ static constexpr int kTop = 64 - 3 * kRel;
+#else
+ static constexpr int kTop = ADS_RANKSELECT_TOP;   // a test of the top level
+#endif
+ /// the bits of the vector spanned by a group of select, on average,
+ /// and the most of its places that its 16 bits offsets can tell apart
+ static constexpr std::size_t kGroup = 8192;
+ static constexpr std::size_t kSparse = std::size_t( 1 ) << 16;
 
- /// the ones before the word w
- [[nodiscard]] std::size_t onesBefore( std::size_t w ) const;
+ /// the inventory of select for the bits of one value: the bits b are in
+ /// groups of 2^l, a group starts at the place pos[ j ] (whose top bit
+ /// marks a sparse group, which spans kSparse places or more), and the
+ /// bits b at each multiple of 2^g in it are at 16 bits offsets from that
+ /// place, 2^s = 2^( l - g ) <= 32 of them a group; the last place is the
+ /// size of the vector
+ struct Inventory {
+  int l = 0 , g = 0 , s = 0;
+  std::vector< std::uint64_t > pos;
+  std::vector< std::uint16_t , detail::LineAllocator< std::uint16_t > > off;
+  };
 
- /// the samples of the superblocks of every kSample-th bit b
- void sample( bool b );
+ /// the bits b before the block t
+ [[nodiscard]] std::size_t before( std::size_t t , bool b ) const;
+
+ /// the inventory of the bits b
+ void inventory( bool b );
 
  /// the place of the k-th bit b
  [[nodiscard]] std::size_t select( std::size_t k , bool b ) const;
+
+ /// the place of the k-th bit b, in the sparse group from the place p to
+ /// the place q, by a search of the directory
+ [[nodiscard]] std::size_t selectSparse( std::size_t k , bool b ,
+                                         std::size_t p ,
+                                         std::size_t q ) const;
 
  /// the directory agrees with a scan of the bits
  [[nodiscard]] bool consistent( void ) const;
 
  BitVector f_b;
- std::vector< std::uint64_t > f_super;   ///< the 1s before a superblock
- std::vector< std::uint16_t > f_rel;     ///< the 1s before a word in it
- std::vector< std::uint32_t > f_s1;      ///< superblock of the samples of 1
- std::vector< std::uint32_t > f_s0;      ///< superblock of the samples of 0
+ /// for each block and one more, the 1s before it since its top block in
+ /// the high bits, and those before its words 1, 2 and 3 since the block
+ /// in kRel bits each, the word 1 in the lowest
+ std::vector< std::uint64_t , detail::LineAllocator< std::uint64_t > >
+                                                                     f_dir;
+ std::vector< std::uint64_t > f_top;    ///< the 1s before each 2^kTop bits
+ bool f_big = false;                    ///< more than 2^kTop bits
+ Inventory f_inv[ 2 ];                  ///< of the 0s and of the 1s
  std::size_t f_ones = 0;
 
  };  // end( class RankSelect )
