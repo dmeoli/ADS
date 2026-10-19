@@ -205,10 +205,12 @@ class RingDeque {
  [[nodiscard]] T & operator[]( std::size_t i );
  [[nodiscard]] const T & operator[]( std::size_t i ) const;
 
- void push_back( const T & v ) { emplace_back( v ); }
- void push_back( T && v ) { emplace_back( std::move( v ) ); }
- void push_front( const T & v ) { emplace_front( v ); }
- void push_front( T && v ) { emplace_front( std::move( v ) ); }
+ ADS_RING_INLINE void push_back( const T & v ) { emplace_back( v ); }
+ ADS_RING_INLINE void push_back( T && v ) { emplace_back( std::move( v ) ); }
+ ADS_RING_INLINE void push_front( const T & v ) { emplace_front( v ); }
+ ADS_RING_INLINE void push_front( T && v ) {
+  emplace_front( std::move( v ) );
+  }
 
  /// the item built from args at the back
  /// \post one item more, the new one at the back
@@ -270,12 +272,13 @@ class RingDeque {
                                         std::size_t h , std::size_t n );
 
  /// the vector of twice the places, the items moved to its front in order
- ADS_RING_INLINE void grow( void );
+ void grow( void );
 
  /// v, which may have been an item, at the back or at the front of a deque
- /// that grows first
- ADS_RING_INLINE T & growBack( T && v );
- ADS_RING_INLINE T & growFront( T && v );
+ /// that grows first: the slow path, which only calls relocate(), kept
+ /// out of the insertions by the hint of a cold branch
+ T & growBack( T && v );
+ T & growFront( T && v );
 
  /// the capacity 0 or a power of 2 at least size()
  [[nodiscard]] bool fits( void ) const;
