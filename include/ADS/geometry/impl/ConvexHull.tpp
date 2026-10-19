@@ -162,6 +162,77 @@ inline std::vector< Point > graham( std::vector< Point > P )
  return( S );
  }
 
+inline std::vector< Point > convexHull( const std::vector< Point > & P )
+{
+ ADS_PRE( detail::smallCoordinates( P ) );
+ using L = long long;
+ using U = std::uint64_t;
+ const std::size_t n = P.size();
+ // the extreme points in the directions of -y , x - y , x , x + y , y ,
+ // y - x , -x , -x - y: the octagon, counter clockwise
+ Point E[ 8 ];
+ if( n )
+  for( auto & e : E ) e = P[ 0 ];
+ for( const Point & p : P ) {
+  if( p.y < E[ 0 ].y ) E[ 0 ] = p;
+  if( L( p.x ) - p.y > L( E[ 1 ].x ) - E[ 1 ].y ) E[ 1 ] = p;
+  if( p.x > E[ 2 ].x ) E[ 2 ] = p;
+  if( L( p.x ) + p.y > L( E[ 3 ].x ) + E[ 3 ].y ) E[ 3 ] = p;
+  if( p.y > E[ 4 ].y ) E[ 4 ] = p;
+  if( L( p.y ) - p.x > L( E[ 5 ].y ) - E[ 5 ].x ) E[ 5 ] = p;
+  if( p.x < E[ 6 ].x ) E[ 6 ] = p;
+  if( L( p.x ) + p.y < L( E[ 7 ].x ) + E[ 7 ].y ) E[ 7 ] = p;
+  }
+ Point O[ 8 ];                              // the distinct vertices
+ int m = 0;
+ for( const Point & e : E )
+  if( ( m == 0 ) || !( e == O[ m - 1 ] ) ) O[ m++ ] = e;
+ while( ( m > 1 ) && ( O[ m - 1 ] == O[ 0 ] ) ) --m;
+ // the keys ( x , y ) of the points not strictly inside the octagon
+ auto key = []( const Point & p ) {
+  return( ( U( L( p.x ) + ( L( 1 ) << 31 ) ) << 32 ) |
+          U( L( p.y ) + ( L( 1 ) << 31 ) ) ); };
+ std::vector< U > K;
+ K.reserve( m >= 3 ? n / 8 + 16 : n );
+ for( const Point & p : P ) {
+  bool inside = m >= 3;
+  for( int i = 0 ; inside && ( i < m ) ; ++i )
+   inside = cross( O[ i ] , O[ i + 1 == m ? 0 : i + 1 ] , p ) > 0;
+  if( ! inside )
+   K.push_back( key( p ) );
+  }
+ sort( K );
+ K.erase( std::unique( K.begin() , K.end() ) , K.end() );
+ auto point = []( U k ) {
+  return( Point{ long( L( k >> 32 ) - ( L( 1 ) << 31 ) ) ,
+                 long( L( k & 0xFFFFFFFFULL ) - ( L( 1 ) << 31 ) ) } ); };
+ std::vector< Point > H;
+ if( K.size() < 3 ) {
+  for( U k : K ) H.push_back( point( k ) );   // by x, as graham()
+  return( H );
+  }
+ H.resize( 2 * K.size() );
+ std::size_t k = 0;
+ for( std::size_t i = 0 ; i < K.size() ; ++i ) {   // the lower chain
+  const Point p = point( K[ i ] );
+  while( ( k >= 2 ) && ( cross( H[ k - 2 ] , H[ k - 1 ] , p ) <= 0 ) ) --k;
+  H[ k++ ] = p;
+  }
+ for( std::size_t i = K.size() - 1 , t = k + 1 ; i-- > 0 ; ) {   // upper
+  const Point p = point( K[ i ] );
+  while( ( k >= t ) && ( cross( H[ k - 2 ] , H[ k - 1 ] , p ) <= 0 ) ) --k;
+  H[ k++ ] = p;
+  }
+ H.resize( k - 1 );                         // the first point came back
+ // from the lowest point, the rightmost of the lowest ones, as graham()
+ const auto low = std::min_element( H.begin() , H.end() ,
+                                    []( const Point & a , const Point & b ) {
+  return( a.y < b.y || ( a.y == b.y && a.x > b.x ) ); } );
+ std::rotate( H.begin() , low , H.end() );
+ ADS_AUDIT( detail::isHullOf( H , P ) );
+ return( H );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

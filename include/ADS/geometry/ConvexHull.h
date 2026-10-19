@@ -21,15 +21,34 @@
  *   pseudoAngle(), a quantity of the same order as the angle that needs no
  *   arctangent (exercise 16.1).
  *
- * The contracts [see Contract.h]: the pseudo-angle is in [ 0 , 4 ), and both
- * hulls are convex, counter clockwise, made of input points and contain all of
- * them (checked at level 3). The operations are defined in ConvexHull.tpp.
+ * - convexHull(), beyond the book, the engineered hull: the points
+ *   strictly inside the octagon of the extreme points in the eight
+ *   directions of the axes and of the diagonals (the minimum and the
+ *   maximum of x, y, x + y and x - y) are dropped by one pass, since they
+ *   are no vertex (the heuristic of Akl and Toussaint), which leaves a few
+ *   percent of uniform points in a square or a disk; the others, each made
+ *   a key of 64 bits ( x , y ), are sorted by the radix sort of ADS [see
+ *   Sort.h], and the lower and the upper chain of the monotone chain of
+ *   Andrew pop the points that make a turn not to the left, O( n ) after
+ *   the sort. The vertices come in the order and from the point of
+ *   graham().
+ *
+ * The contracts [see Contract.h]: the pseudo-angle is in [ 0 , 4 ), and the
+ * hulls are convex, counter clockwise, made of input points and contain all
+ * of them (checked at level 3). The operations are defined in
+ * ConvexHull.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 16.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf
  * \see R. L. Graham, An efficient algorithm for determining the convex
  *      hull of a finite planar set, Information Processing Letters 1(4),
  *      132-133, 1972, doi:10.1016/0020-0190(72)90045-2
+ * \see A. M. Andrew, Another efficient algorithm for convex hulls in two
+ *      dimensions, Information Processing Letters 9(5), 216-219, 1979,
+ *      doi:10.1016/0020-0190(79)90072-3
+ * \see S. G. Akl, G. T. Toussaint, A fast convex hull algorithm,
+ *      Information Processing Letters 7(5), 219-222, 1978,
+ *      doi:10.1016/0020-0190(78)90003-0
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -51,10 +70,12 @@
 
 #include <algorithm>
 #include "ADS/Contract.h"
+#include "ADS/sort/Sort.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 
@@ -101,6 +122,12 @@ inline std::vector< Point > convexHullBrute( std::vector< Point > P );
 ///      long
 /// \post the hull of P
 inline std::vector< Point > graham( std::vector< Point > P );
+
+/// the hull by the octagon of Akl and Toussaint, the radix sort and the
+/// monotone chain of Andrew; the vertices as graham() gives them
+/// \pre | x | and | y | at most 10^9
+/// \post the hull of P
+inline std::vector< Point > convexHull( const std::vector< Point > & P );
 
 /*--------------------------------------------------------------------------*/
 
