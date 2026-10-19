@@ -463,6 +463,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (their dynamic program on the counts of the lengths), a level per chunk
   with the continuation bits on CompactRankSelect, and access in time
   proportional to the length of the item
+- lz77ParseLinear(), the parse of LZ77 with no window of Karkkainen, Kempa
+  and Puglisi in O( n ) time, by the previous and the next smaller values
+  of the suffix array, instead of the O( n w ) search of the window
 
 ### Changed
 

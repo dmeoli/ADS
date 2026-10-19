@@ -21,7 +21,8 @@
  *   the building, with the sdsl index on a wavelet tree shaped by Huffman,
  *   both sampling one suffix in 32;
  * - lz: the parse of LZSS by the chains of gzip against the compression
- *   and the decompression of LZ4, a point of reference rather than a match;
+ *   and the decompression of LZ4, a point of reference rather than a match,
+ *   and the parse of LZ77 with no window in linear time;
  * - space: the bits per byte (per integer, per byte of the text for the
  *   index), in the column of the time, so that the ratios of
  *   bench/summary.py read the same way (above 1 when ADS is smaller).
@@ -59,6 +60,10 @@
 #include "ADS/compression/FMIndex.h"
 #include "ADS/compression/IntegerCodes.h"
 #include "ADS/compression/LempelZiv.h"
+#if __has_include( "ADS/compression/LZ77Linear.h" )
+ #include "ADS/compression/LZ77Linear.h"
+ #define ADS_HAS_LZLIN 1
+#endif
 
 #if __has_include( "ADS/compression/HuffmanCoder.h" )
  #include "ADS/compression/HuffmanCoder.h"
@@ -583,6 +588,11 @@ void lempelZiv( std::size_t n , int r , unsigned seed )
            sink = sink + ADS::lzssParseHashed( s , 65536 , 4 , 16 ).size(); } ,
           r , n ) );
  const auto Z = ADS::lzssParseHashed( s , 65536 , 4 , 16 );
+#ifdef ADS_HAS_LZLIN
+ print( "lz" , "parse unbounded" , n , "ADS::lz77ParseLinear" , median(
+         [](){ return( 0 ); } , [ & ]( int ) {
+          sink = sink + ADS::lz77ParseLinear( s ).size(); } , r , n ) );
+#endif
  print( "lz" , "decode" , n , "ADS::lzssDecode" , median(
          [](){ return( 0 ); } , [ & ]( int ) {
           sink = sink + ADS::lzssDecode( Z ).size(); } , r , n ) );
