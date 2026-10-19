@@ -23,14 +23,21 @@
  *
  * and since the excess moves by \f$ \pm 1 \f$, the first place with an
  * excess at most t has exactly t. The range min-max tree keeps, for each
- * block of 512 bits and then for each node of a complete binary tree over
- * the blocks, the total excess of its range and its minimum prefix excess;
- * a search scans the block of i (a byte at a time, with the excess and the
- * minimum of each of the 256 bytes in a table), climbs the tree to the
- * first range on its side whose minimum reaches t and goes down to its
- * block, in \f$ O( \log ( n / 512 ) + 512 / 8 ) \f$ time, with
- * \f$ 2 \cdot 128 / 512 \f$ bits per parenthesis for the tree besides the
- * rank directory [see RankSelect.h]. The excess of any place is
+ * leaf of 512 bits, for each group of 16 leaves and for each node of a
+ * complete binary tree over the groups, the total excess of its range and
+ * its minimum prefix excess;
+ * every search runs on the excess relative to its start, so that it needs
+ * no rank: it scans the leaf of 512 bits of i (a byte at a time, with the
+ * excess, the minimum and the place of each target of each of the 256
+ * bytes in tables), then the leaves of its group of 16 by their excess
+ * and minimum in 16 bits, then climbs the tree, whose leaves are the
+ * groups, to the first range on its side whose minimum reaches the target
+ * and goes down to its group, its leaf and its byte, in
+ * \f$ O( \log ( n / 8192 ) + 16 + 512 / 8 ) \f$ time; most searches of a
+ * tree end in the leaf of i, at the cost of a miss of the cache. The tree
+ * takes \f$ 32 / 512 \f$ bits per parenthesis for the leaves and at most
+ * \f$ 4 \cdot 128 / 8192 \f$ for the groups, besides the rank directory
+ * [see RankSelect.h]. The excess of any place is
  * \f$ E( i ) = 2 rank_1( i + 1 ) - ( i + 1 ) \f$, in O( 1 ) time.
  *
  * Jacobson gives findClose() in O( log n ) time with the pioneers, and Munro
@@ -80,6 +87,7 @@
 #include "ADS/succinct/BitVector.h"
 #include "ADS/succinct/RankSelect.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -142,35 +150,46 @@ class BalancedParentheses {
 /*--------------------------------------------------------------------------*/
  private:
 
- static constexpr std::size_t kBlock = 512;   ///< bits in a leaf
+ static constexpr std::size_t kLeaf = 512;    ///< bits in a leaf
+ static constexpr std::size_t kGroup = 16;    ///< leaves in a group
 
- /// E( i ), with E( -1 ) = 0, for i = p - 1
- [[nodiscard]] std::int64_t excessBefore( std::size_t p ) const;
-
- /// the first j in [ a , b ) with E( j ) <= t, nil if none
+ /// from e = E( a - 1 ) - r, the first j in [ a , b ) with
+ /// E( j ) - r <= d, nil if none; e becomes E( b - 1 ) - r
  [[nodiscard]] std::size_t scanForward( std::size_t a , std::size_t b ,
-                                        std::int64_t t ) const;
+                                        std::int64_t & e ,
+                                        std::int64_t d ) const;
 
- /// the last k in [ a , b ) with E( k ) <= t, plus 1; 0 if none
+ /// from e = E( b ) - r, the last k in [ a - 1 , b ) with E( k ) - r <= d,
+ /// plus 1, nil if none; e becomes E( a - 1 ) - r
  [[nodiscard]] std::size_t scanBackward( std::size_t a , std::size_t b ,
-                                         std::int64_t t ) const;
+                                         std::int64_t & e ,
+                                         std::int64_t d ) const;
 
- /// the first j > i with E( j ) <= t, nil if none
+ /// the first j > i with E( j ) - E( i ) = d < 0, nil if none
  [[nodiscard]] std::size_t forwardSearch( std::size_t i ,
-                                          std::int64_t t ) const;
+                                          std::int64_t d ) const;
 
- /// the last k < i with E( k ) <= t, plus 1, counting E( -1 ) = 0; nil
- /// if none
+ /// the last k < i with E( k ) - E( i ) = d <= 0, plus 1, counting
+ /// E( -1 ) = 0; nil if none
  [[nodiscard]] std::size_t backwardSearch( std::size_t i ,
-                                           std::int64_t t ) const;
+                                           std::int64_t d ) const;
+
+ /// the bits of the leaf l
+ [[nodiscard]] std::size_t leafEnd( std::size_t l ) const {
+  return( std::min( size() , ( l + 1 ) * kLeaf ) );
+  }
 
  /// the excess never negative and 0 at the end
  [[nodiscard]] bool balanced( void ) const;
 
  RankSelect f_b;
- std::size_t f_leaves = 1;              ///< leaves of the tree, a power of 2
- std::vector< std::int64_t > f_exc;     ///< the excess of a node's range
- std::vector< std::int64_t > f_min;     ///< its minimum prefix excess
+ std::size_t f_nleaf = 0;                ///< the leaves
+ std::size_t f_groups = 1;               ///< leaves of the tree, a power of 2
+ /// the excess of a leaf and the least excess of its places and of the
+ /// place before it, relative to that place
+ std::vector< std::int16_t > f_lexc , f_lmin;
+ /// the same for a node of the tree of the groups
+ std::vector< std::int64_t > f_exc , f_min;
 
  };  // end( class BalancedParentheses )
 

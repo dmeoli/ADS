@@ -653,6 +653,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   none
 - EliasFano::nextGEQ() compares the low bits of the items of the bucket of
   x with those of x, instead of an access(), and its select, per item
+- BalancedParentheses searches on the excess relative to its start, so
+  that a search that ends in the leaf of i needs no rank: the leaves of 512
+  bits are scanned 8 bits at a time at any place, by tables of the excess,
+  of the least prefix and suffix and of the place of each target of a
+  byte, then the leaves of its group of 16 by their excess and least
+  excess in 16 bits, then the tree of the groups; about 0.1 bits per
+  parenthesis instead of 0.5, and the directory with the select of the 1s
+  alone
 
 ### Fixed
 
