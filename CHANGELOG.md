@@ -295,6 +295,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for numbers in disorder; the merge one by one keeps its threshold of
   galloping in a local and leaves its loop on the end of the run that
   moved, with no flag tested at each step
+- the partitions of pdqSort() bound their first scans only where the
+  samples of the pivot do not stop them, and the partition by blocks
+  fills its offsets 8 at a time and swaps through two pointers, each
+  place found once
 - DaryHeap::push() compares the item with the parent of the new place
   before storing it, and pop() keeps the last item aside, so that no item
   is stored and read back at once; push(), pop() and their sifts are

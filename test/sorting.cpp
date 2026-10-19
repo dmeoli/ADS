@@ -712,8 +712,12 @@ ADS_TEST( "dispatch" )
 
 // the edges of the mechanisms of the fast sorts: the cutoffs of pdqSort()
 // (insertion below 24, ninther above 128, blocks of 64) on organ pipe,
-// sawtooth, two values and all equal, with doubles (the partition by
-// blocks) and records; the killer of the median of 3 of Musser
+// sawtooth, two values, all equal, sorted, and all equal but for one
+// item at an end, the scans of the partitions bounded only by the samples
+// of the pivot, with doubles (the partition by blocks) and records; few
+// distinct keys at random sizes, whose runs of equals go to the partition
+// with the equal keys on the left, in int64 and strings too; the killer of
+// the median of 3 of Musser
 ADS_TEST( "pdq-edges" )
 {
  using R = std::pair< int , std::size_t >;
@@ -722,7 +726,7 @@ ADS_TEST( "pdq-edges" )
  std::mt19937 g( 31 );
  for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 127u , 128u ,
                         129u , 191u , 192u , 193u , 257u } )
-  for( int p = 0 ; p < 6 ; ++p ) {
+  for( int p = 0 ; p < 9 ; ++p ) {
    std::vector< double > D( n );
    for( std::size_t i = 0 ; i < n ; ++i )
     switch( p ) {
@@ -731,6 +735,9 @@ ADS_TEST( "pdq-edges" )
      case( 2 ): D[ i ] = ( g() % 2 ) ? 1e300 : -1e300; break;
      case( 3 ): D[ i ] = 0.5; break;
      case( 4 ): D[ i ] = double( n - i ); break;
+     case( 6 ): D[ i ] = double( i ); break;
+     case( 7 ): D[ i ] = i + 1 == n ? 1.0 : 5.0; break;   // one smaller
+     case( 8 ): D[ i ] = i == 0 ? 9.0 : 5.0; break;       // one larger
      default: D[ i ] = double( g() % 1000 ) - 500;
      }
    std::vector< R > Q( n );
@@ -747,6 +754,30 @@ ADS_TEST( "pdq-edges" )
    CHECK( std::is_sorted( Q.begin() , Q.end() , byKey ) &&
           detail::samePermutation( Q , Q2 , std::less<>() ) );
    }
+ for( int t = 0 ; t < 300 ; ++t ) {              // few distinct keys
+  const std::size_t n = 24 + g() % 3000;
+  const unsigned k = std::array< unsigned , 4 >{ 1 , 2 , 3 , 16 }[ t % 4 ];
+  std::vector< std::int64_t > I( n );
+  std::vector< std::string > S( n );
+  std::vector< R > Q( n );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   I[ i ] = std::int64_t( g() % k ) - 1;
+   S[ i ] = std::string( 20 , char( 'a' + I[ i ] + 1 ) );
+   Q[ i ] = { int( I[ i ] ) , i };
+   }
+  auto IE = I;
+  auto SE = S;
+  auto Q2 = Q;
+  pdqSort( I );
+  pdqSort( S );
+  pdqSort( Q , byKey );
+  std::sort( IE.begin() , IE.end() );
+  std::sort( SE.begin() , SE.end() );
+  std::stable_sort( Q2.begin() , Q2.end() , byKey );
+  CHECK( I == IE && S == SE );
+  CHECK( std::is_sorted( Q.begin() , Q.end() , byKey ) &&
+         detail::samePermutation( Q , Q2 , std::less<>() ) );
+  }
  for( std::size_t n : { 64u , 1000u , 4096u } ) {   // the median-of-3
   std::vector< double > K( n );                     // killer
   const std::size_t k = n / 2;

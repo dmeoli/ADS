@@ -115,9 +115,12 @@ std::pair< std::size_t , bool > partitionRight( std::vector< T > & A ,
 {
  T * const a = A.data();                   // pointers, not indices: no
  T pivot = std::move( a[ lo ] );            // scaling in the scans
- T * i = a + lo , * j = a + hi;
- do ++i; while( ( i < j ) && less( *i , pivot ) );
- do --j; while( ( j > i ) && ! less( *j , pivot ) );
+ T * i = a + lo , * j = a + hi;            // the pivot is a median: an
+ do ++i; while( less( *i , pivot ) );       // item >= it stops i, and one
+ if( i - 1 == a + lo )                      // < it passed by i stops j
+  do --j; while( ( j > i ) && ! less( *j , pivot ) );
+ else
+  do --j; while( ! less( *j , pivot ) );
  const bool already = i >= j;
  while( i < j ) {                           // *i >= pivot > *j
   std::swap( *i , *j );
@@ -146,9 +149,13 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
  T * const a = A.data();
  constexpr std::ptrdiff_t B = 64;
  const T pivot = a[ lo ];
- std::ptrdiff_t l = std::ptrdiff_t( lo ) , r = std::ptrdiff_t( hi );
- do ++l; while( ( l < r ) && less( a[ l ] , pivot ) );
- do --r; while( ( r > l ) && ! less( a[ r ] , pivot ) );
+ T * pl = a + lo , * pr = a + hi;          // as in partitionRight()
+ do ++pl; while( less( *pl , pivot ) );
+ if( pl - 1 == a + lo )
+  do --pr; while( ( pr > pl ) && ! less( *pr , pivot ) );
+ else
+  do --pr; while( ! less( *pr , pivot ) );
+ std::ptrdiff_t l = pl - a , r = pr - a;
  const bool already = l >= r;
  if( ! already ) {                          // a[ l ] >= pivot > a[ r ]
   std::swap( a[ l++ ] , a[ r-- ] );         // [ l , r ] unknown
@@ -156,18 +163,20 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
   std::ptrdiff_t numL = 0 , numR = 0 , startL = 0 , startR = 0;
   auto swaps = [ & ]( void ) {             // a cycle: 2 num + 1 moves
    const std::ptrdiff_t num = std::min( numL , numR );
-   if( num > 0 ) {
-    auto L = [ & ]( std::ptrdiff_t k ) -> T & {
-     return( a[ l + offL[ startL + k ] ] ); };
-    auto R = [ & ]( std::ptrdiff_t k ) -> T & {
-     return( a[ r - offR[ startR + k ] ] ); };
-    T t = std::move( L( 0 ) );
-    L( 0 ) = std::move( R( 0 ) );
+   if( num > 0 ) {                          // through two pointers, each
+    T * const bL = a + l , * const bR = a + r;   // place found once
+    const unsigned char * const oL = offL + startL , * const oR =
+     offR + startR;
+    T * pL = bL + oL[ 0 ] , * pR = bR - oR[ 0 ];
+    T t = std::move( *pL );
+    *pL = std::move( *pR );
     for( std::ptrdiff_t k = 1 ; k < num ; ++k ) {
-     R( k - 1 ) = std::move( L( k ) );
-     L( k ) = std::move( R( k ) );
+     pL = bL + oL[ k ];
+     *pR = std::move( *pL );
+     pR = bR - oR[ k ];
+     *pL = std::move( *pR );
      }
-    R( num - 1 ) = std::move( t );
+    *pR = std::move( t );
     }
    numL -= num;
    numR -= num;
@@ -175,19 +184,23 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
    startR += num;
    };
   while( r - l + 1 > 2 * B ) {
-   if( numL == 0 ) {                        // the misplaced on the left
-    startL = 0;
-    for( std::ptrdiff_t i = 0 ; i < B ; ++i ) {
-     offL[ numL ] = static_cast< unsigned char >( i );
-     numL += ! less( a[ l + i ] , pivot );
-     }
+   if( numL == 0 ) {                        // the misplaced on the left,
+    startL = 0;                             // 8 at a time, which the
+    const T * const x = a + l;              // compiler unrolls: no test
+    for( std::ptrdiff_t i = 0 ; i < B ; i += 8 )   // per item
+     for( std::ptrdiff_t u = i ; u < i + 8 ; ++u ) {
+      offL[ numL ] = static_cast< unsigned char >( u );
+      numL += ! less( x[ u ] , pivot );
+      }
     }
    if( numR == 0 ) {                        // the misplaced on the right
     startR = 0;
-    for( std::ptrdiff_t i = 0 ; i < B ; ++i ) {
-     offR[ numR ] = static_cast< unsigned char >( i );
-     numR += less( a[ r - i ] , pivot );
-     }
+    const T * const y = a + r;
+    for( std::ptrdiff_t i = 0 ; i < B ; i += 8 )
+     for( std::ptrdiff_t u = i ; u < i + 8 ; ++u ) {
+      offR[ numR ] = static_cast< unsigned char >( u );
+      numR += less( y[ -u ] , pivot );
+      }
     }
    swaps();
    if( numL == 0 ) l += B;
@@ -251,9 +264,12 @@ std::size_t partitionLeft( std::vector< T > & A , std::size_t lo ,
 {
  T * const a = A.data();
  T pivot = std::move( a[ lo ] );
- T * i = a + lo , * j = a + hi;
- do --j; while( ( j > i ) && less( pivot , *j ) );
- do ++i; while( ( i < j ) && ! less( pivot , *i ) );
+ T * i = a + lo , * j = a + hi;            // the pivot is a median: an
+ do --j; while( less( pivot , *j ) );       // item <= it stops j, and one
+ if( j + 1 == a + hi )                      // > it passed by j stops i
+  do ++i; while( ( i < j ) && ! less( pivot , *i ) );
+ else
+  do ++i; while( ! less( pivot , *i ) );
  while( i < j ) {                           // *i > pivot >= *j
   std::swap( *i , *j );
   do --j; while( less( pivot , *j ) );
