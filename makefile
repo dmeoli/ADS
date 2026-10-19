@@ -79,11 +79,16 @@ test: $(BINS)
 # of Highway; TLX=<dir> adds tlx::multiway_merge to external from the
 # sources of tlx in <dir>; COMBI=<dir> adds to combinatorial and backtrack
 # the competitors whose sources are in <dir> (combinations, libpopcnt,
-# libmorton, and the programs of Knuth built in knuth)
+# libmorton, and the programs of Knuth built in knuth); ABSL=<prefix> and
+# TLX=<dir> add Abseil and tlx to ordered, MINISELECT=<dir>, SDSL=<dir>
+# and PGM=<dir> (their sources) miniselect, sdsl-lite and the PGM-index to
+# arrays, LEMIRE=<prefix> and ROARING=<prefix> the SIMD intersections of
+# Lemire et al. and CRoaring to sets, ABSL=<prefix>, HTRIE=<dir> (its
+# source) and LIBART=<prefix> Abseil, tsl::htrie_map and libart to tries
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
-            backtrack \
+            backtrack ordered arrays sets tries \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
@@ -147,6 +152,21 @@ SORTFLAGS = $(if $(SORTING),$(addprefix -isystem $(SORTING)/,$(SORTINC))) \
 COMBIFLAGS = $(if $(COMBI),-isystem $(COMBI)/combinations \
              -isystem $(COMBI)/libpopcnt -isystem $(COMBI)/libmorton/include)
 BACKFLAGS  = $(if $(COMBI),-DADS_KNUTH=\"$(COMBI)/knuth\")
+
+ABSLFLAGS = $(if $(ABSL),-I$(ABSL)/include -L$(ABSL)/lib \
+            -Wl$(comma)-rpath$(comma)$(ABSL)/lib -labsl_throw_delegate \
+            -labsl_raw_logging_internal -labsl_log_severity -labsl_base \
+            -labsl_spinlock_wait)
+ARRSFLAGS = $(if $(MINISELECT),-I$(MINISELECT)/include) \
+            $(if $(SDSL),-I$(SDSL)/include) $(if $(PGM),-I$(PGM)/include)
+SETSFLAGS = $(if $(LEMIRE),-I$(LEMIRE)/include -L$(LEMIRE)/lib \
+            -Wl$(comma)-rpath$(comma)$(LEMIRE)/lib \
+            -lSIMDCompressionAndIntersection) \
+            $(if $(ROARING),-I$(ROARING)/include -L$(ROARING)/lib \
+            -Wl$(comma)-rpath$(comma)$(ROARING)/lib -lroaring)
+TRIEFLAGS = $(ABSLFLAGS) $(if $(HTRIE),-I$(HTRIE)/include) \
+            $(if $(LIBART),-I$(LIBART)/include -L$(LIBART)/lib \
+            -Wl$(comma)-rpath$(comma)$(LIBART)/lib -lart)
 
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
@@ -217,6 +237,18 @@ $(BUILD)/bench-combinatorial: bench/combinatorial.cpp bench/Bench.h \
 $(BUILD)/bench-backtrack: bench/backtrack.cpp bench/Bench.h $(HEADERS) \
                          | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BACKFLAGS)
+
+$(BUILD)/bench-ordered: bench/ordered.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(ABSLFLAGS) $(if $(TLX),-I$(TLX))
+
+$(BUILD)/bench-arrays: bench/arrays.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(ARRSFLAGS)
+
+$(BUILD)/bench-sets: bench/sets.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(SETSFLAGS)
+
+$(BUILD)/bench-tries: bench/tries.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(TRIEFLAGS)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

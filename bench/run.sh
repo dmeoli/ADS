@@ -18,7 +18,9 @@
 #                           [PRIORITY=<dir>] [MIMALLOC=<prefix>]              #
 #                           [JEMALLOC=<prefix>] [OPT=<prefix>]                #
 #                           [SORTING=<dir>] [HWY=<prefix>] [TLX=<dir>]        #
-#                           [COMBI=<dir>]                                     #
+#                           [COMBI=<dir>] [MINISELECT=<dir>] [SDSL=<dir>]     #
+#                           [PGM=<dir>] [LEMIRE=<prefix>] [ROARING=<prefix>]  #
+#                           [HTRIE=<dir>] [LIBART=<prefix>]                   #
 ###############################################################################
 
 set -e
@@ -70,6 +72,10 @@ run external book 1000000 10000000
 run external sampling 1000 100000 1000000
 run combinatorial 100000 1000000
 run backtrack
+run ordered 100000 1000000
+run arrays 100000 1000000 10000000
+run sets 100000 1000000
+run tries 100000 1000000
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################

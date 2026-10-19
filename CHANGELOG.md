@@ -402,6 +402,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generators, the bounded integers, the shuffle and the sampling against
   std, Boost (Integer, Multiprecision, Random), GMP, hurchalla's Montgomery
   arithmetic and the generators of PCG; test/engineered_numeric.cpp
+- the engineered ordered structures, beyond the book: BTreeMap, a B+-tree
+  in main memory with nodes of 512 bytes, the keys counted by comparisons
+  of vectors, the nodes prefetched and taken from pools on huge pages, and
+  iterators that prefetch the leaves ahead through their parents;
+  SPlusTree, the static B+-tree of Slotin over a sorted array, and
+  branchlessLowerBound(); nthElement(), the selection of Floyd and Rivest
+  with the partition of Lomuto with no branch, the one of Hoare on ranges
+  in order and the median of the medians past a budget of rounds;
+  WordRangeMinimum, the range minima by stacks in a word and a sparse
+  table on blocks of 64; intersect(), the intersection of sorted lists by
+  blocks of 8 with AVX2 and by galloping; RemUnionFind, the algorithm of Rem
+  with splicing; test/ordered.cpp
+- the benchmarks of the ordered dictionaries, of the searches in arrays
+  (lower bound, selection, range minima) and of the sets (intersection,
+  union of disjoint sets, boolean vectors), against the standard library,
+  Boost and, when found, Abseil, tlx, miniselect, sdsl-lite, the SIMD
+  intersections of Lemire et al. and CRoaring; bench/ordered.cpp,
+  bench/arrays.cpp, bench/sets.cpp
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the
@@ -839,6 +857,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   writes their bounds in LaTeX; the README lists the compact directory,
   the vector of RRR, tANS, the DACs and the linear parse of LZ77 among the
   engineered structures
+- BoolSet keeps its vector as words of 64 bits, and its operations of two
+  sets, min(), max() and forEach() go a word at a time
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);

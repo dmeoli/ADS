@@ -9,6 +9,12 @@
  * keyword of C++, and so the others are setIntersection(),
  * setDifference() and setSymmetricDifference()).
  *
+ * The vector is kept as words of 64 bits, and the operations of two sets
+ * and the scans of min(), max() and forEach() go a word at a time: the
+ * same loops on the N booleans, 64 of them in one operation of the
+ * processor, which leaves the bounds unchanged and divides the time by up
+ * to 64; the size of a result is the count of its bits.
+ *
  * The contracts [see Contract.h]: N >= 0, an item inserted is in
  * [ 0 , N ), and each operation of two sets gives, item by item, what its
  * name says; the invariant is that the size counts the bits set. The
@@ -39,8 +45,10 @@
 #include "ADS/Iterators.h"
 
 #include <algorithm>
+#include <bit>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <stdexcept>
@@ -103,9 +111,9 @@ class BoolSet {
 
  /// the places of the table, for SlotIterator
  struct Places {
-  static std::size_t size( const auto & o ) { return( o.f_V.size() ); }
+  static std::size_t size( const auto & o ) { return( o.f_N ); }
   static bool occupied( const auto & o , std::size_t i ) {
-   return( o.f_V[ i ] );
+   return( ( o.f_W[ i / 64 ] >> ( i % 64 ) ) & 1 );
    }
   static auto read( const auto & , std::size_t i ) {
    return( long( i ) );
@@ -135,8 +143,22 @@ class BoolSet {
  /// the size is the number of bits set, O( N )
  [[nodiscard]] bool counted( void ) const;
 
- std::vector< bool > f_V;    ///< the bits
- std::size_t f_size = 0;     ///< the number of items
+ /// the bits of C from those of A and B by op( a , b ) on the words, a
+ /// missing word being 0, the bits past the dimension of C cleared and
+ /// counted
+ template< class Op >
+ static void combine( BoolSet & C , const BoolSet & A , const BoolSet & B ,
+                      Op op );
+
+ friend BoolSet setUnion( const BoolSet & A , const BoolSet & B );
+ friend BoolSet setIntersection( const BoolSet & A , const BoolSet & B );
+ friend BoolSet setDifference( const BoolSet & A , const BoolSet & B );
+ friend BoolSet setSymmetricDifference( const BoolSet & A ,
+                                        const BoolSet & B );
+
+ std::vector< std::uint64_t > f_W;   ///< the bits, 64 per word
+ std::size_t f_N = 0;                ///< the dimension
+ std::size_t f_size = 0;             ///< the number of items
 
  };  // end( class BoolSet )
 

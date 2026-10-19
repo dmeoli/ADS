@@ -71,7 +71,8 @@ if (ADS_BENCHMARKS)
     find_package(Threads REQUIRED)
     foreach (b sort dictionaries priority sequences memory bignum fft hashing
                search suffix edit numeric queues concurrent geometry matrix
-               sparse external graphs combinatorial backtrack)
+               sparse external graphs combinatorial backtrack ordered arrays
+               sets tries)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
