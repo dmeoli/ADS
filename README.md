@@ -358,11 +358,15 @@ and the date of its exam.
 
 Beside the classes of the book, which follow its pseudocode, a few
 structures are written for speed, for the programs that need it, and
-tested in [`test/engineered.cpp`](test/engineered.cpp), the concurrent ones
-also on real threads under ThreadSanitizer. `FlatHashTable` is the hash
+tested in [`test/engineered.cpp`](test/engineered.cpp) and, the hashing,
+in [`test/hashing.cpp`](test/hashing.cpp), the concurrent ones also on
+real threads under ThreadSanitizer. `FlatHashTable` is the hash
 table that [`bench/dictionaries.cpp`](bench/dictionaries.cpp) compares with
 `boost::unordered_flat_map`, while `OpenHashTable` stays the table of
-section 7.2 of the book.
+section 7.2 of the book; [`bench/hashing.cpp`](bench/hashing.cpp) compares
+the hashing with Abseil, unordered_dense, robin-map, libcuckoo, XXH3,
+wyhash, rapidhash, fastfilter_cpp, xor_singleheader, PTHash, BBHash and
+RecSplit.
 
 | What | Header | Test |
 |---|---|---|
@@ -374,6 +378,11 @@ section 7.2 of the book.
 | pool of objects in doubling blocks, the slot freed last made first | [`memory/ObjectPool.h`](include/ADS/memory/ObjectPool.h) | `engineered.pool` |
 | allocator of the large blocks on transparent huge pages | [`memory/HugePageAllocator.h`](include/ADS/memory/HugePageAllocator.h) | `engineered.huge-page-allocator` |
 | SplitMix64, Zobrist and simple tabulation hashing | [`dictionary/RandomHashing.h`](include/ADS/dictionary/RandomHashing.h) | `engineered.random-hashing` |
+| hashes of words and strings by folded products of 128 bits, stripes in AVX2 or AVX-512 past 256 bytes (wyhash, XXH3) | [`dictionary/FastHash.h`](include/ADS/dictionary/FastHash.h) | `hashing.fast-hash` |
+| filter of Bloom in blocks of 256 bits, one bit in each of 8 words (Putze et al.; Parquet) | [`set/BlockedBloomFilter.h`](include/ADS/set/BlockedBloomFilter.h) | `hashing.blocked-bloom` |
+| binary fuse filter, fingerprints of 8 or 16 bits (Graf and Lemire) | [`set/BinaryFuseFilter.h`](include/ADS/set/BinaryFuseFilter.h) | `hashing.binary-fuse` |
+| minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |
+| cuckoo table with buckets of 4 places, tags of 8 bits, search in breadth (Li et al.; libcuckoo) | [`dictionary/BucketCuckooTable.h`](include/ADS/dictionary/BucketCuckooTable.h) | `hashing.bucket-cuckoo` |
 | lock-free queue from one producer to one consumer | [`concurrent/SPSCQueue.h`](include/ADS/concurrent/SPSCQueue.h) | `engineered.spsc-queue` |
 | lock-free inbox of many producers | [`concurrent/MPSCInbox.h`](include/ADS/concurrent/MPSCInbox.h) | `engineered.mpsc-inbox` |
 

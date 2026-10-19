@@ -26,6 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   package on Arch Linux
 - ads.pc, for pkg-config
 - the snippets of FetchContent and CPM.cmake in the README
+
+- the engineered hashing, tested in test/hashing.cpp: FastHash, the hashes
+  of the words and of the strings by folded products of 128 bits, by
+  stripes of 64 bytes in vectors of AVX2 or AVX-512 past 256 bytes with
+  the same values as on any machine, and DefaultHash; BlockedBloomFilter,
+  the filter of Bloom in blocks of 256 bits with one bit in each of 8
+  words; BinaryFuseFilter, the binary fuse filter of Graf and Lemire with
+  fingerprints of 8 or 16 bits; MinimalPerfectHash, the minimal perfect
+  hash function by pilots of PTHash; BucketCuckooTable, the cuckoo table
+  with buckets of 4 places, tags of 8 bits and the search in breadth of
+  Li et al.
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the
@@ -280,6 +291,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   has one digit, BigInteger::divExact(), and the sum of the products in
   place, BigInteger::addMul()
 
+- FlatHashTable hashes by DefaultHash< K >, FastHash for the integers and
+  the strings, std::hash for any other key: the lookups of strings take
+  from 1.25 to 1.75 times less than with std::hash
 - BloomFilter, PartitionedBloomFilter and SpectralBloomFilter reach the
   places h1 + i h2 mod m one from the other by an addition, with no
   remainder past the first two, and PartitionedBloomFilter hashes an item

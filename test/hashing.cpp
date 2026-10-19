@@ -1,0 +1,471 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File hashing.cpp ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @file
+ * Tests of the engineered hashing, beyond the book: the hash functions of
+ * FastHash.h, the blocked filter of Bloom, the binary fuse filter, the
+ * minimal perfect hash function by pilots and the cuckoo table with
+ * buckets of 4 places. Each one is checked against a reference of the
+ * standard library or against its own analysis, on random and adversarial
+ * inputs, at the level 3 of the contracts.
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
+ */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADSTest.h"
+
+#include "ADS/dictionary/BucketCuckooTable.h"
+#include "ADS/dictionary/FastHash.h"
+#include "ADS/dictionary/FlatHashTable.h"
+#include "ADS/dictionary/MinimalPerfectHash.h"
+#include "ADS/set/BinaryFuseFilter.h"
+#include "ADS/set/BlockedBloomFilter.h"
+
+#include <algorithm>
+#include <bit>
+#include <cstdint>
+#include <random>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- USING ------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+using namespace ADS;
+
+namespace {
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- HELPERS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// n distinct random words from the seed
+std::vector< std::uint64_t > randomKeys( std::size_t n , unsigned seed )
+{
+ std::mt19937_64 g( seed );
+ std::unordered_set< std::uint64_t > seen;
+ std::vector< std::uint64_t > K;
+ while( K.size() < n ) {
+  const std::uint64_t k = g();
+  if( seen.insert( k ).second )
+   K.push_back( k );
+  }
+ return( K );
+ }
+
+/// n distinct strings of 1 to 40 letters from the seed
+std::vector< std::string > randomStrings( std::size_t n , unsigned seed )
+{
+ std::mt19937_64 g( seed );
+ std::unordered_set< std::string > seen;
+ std::vector< std::string > S;
+ while( S.size() < n ) {
+  std::string s( 1 + g() % 40 , ' ' );
+  for( auto & c : s )
+   c = char( 'a' + g() % 26 );
+  if( seen.insert( s ).second )
+   S.push_back( std::move( s ) );
+  }
+ return( S );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- TESTS -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// the product on 128 bits against its portable form; the known hashes of
+// strings of every path (0 to 3, 4 to 8, 9 to 16, 17 to 32, 33 to 64, 65
+// to 256, the stripes past 256 with and without whole blocks of 1 KB),
+// which a machine with or without AVX2 and AVX-512 must give alike; the
+// seed changes every hash; the prefixes of a string of 5000 bytes, the
+// strings of 1 to 3 equal bytes and of zeros of every length up to 300,
+// and 10^6 consecutive words, all with distinct hashes; a flip of any bit
+// of a key of each path flips about half of the bits of its hash; the
+// hash of the integers, of the floating point numbers (+0 as -0) and of
+// the strings by FastHash, a nil pointer of a non empty string
+ADS_TEST( "fast-hash" )
+{
+ for( std::uint64_t a : { 0ULL , 1ULL , 0xFFFFFFFFULL , 1ULL << 63 , ~0ULL ,
+                          0x9E3779B97F4A7C15ULL } )
+  for( std::uint64_t b : { 0ULL , 3ULL , 0xFFFFFFFFULL , ~0ULL ,
+                           0x123456789ABCDEF0ULL } ) {
+   const Product128 q = product128( a , b );
+   CHECK( q.lo == a * b && foldedProduct( a , b ) == ( q.lo ^ q.hi ) );
+#if defined( __SIZEOF_INT128__ )
+   const unsigned __int128 p = static_cast< unsigned __int128 >( a ) * b;
+   CHECK( q.hi == std::uint64_t( p >> 64 ) );
+#endif
+   }
+ static_assert( product128( ~0ULL , ~0ULL ).hi == ~0ULL - 1 );
+ static_assert( product128( 1ULL << 63 , 4 ).hi == 2 );
+ std::vector< unsigned char > buf( 5000 );
+ {
+  std::uint64_t x = 1;
+  for( auto & c : buf ) {
+   x = x * 6364136223846793005ULL + 1442695040888963407ULL;
+   c = static_cast< unsigned char >( x >> 56 );
+   }
+  }
+ // the known answers, from a build with no vector instructions
+ const std::size_t lens[] = { 0 , 1 , 3 , 4 , 8 , 9 , 16 , 17 , 32 , 33 ,
+                              64 , 65 , 96 , 97 , 256 , 257 , 1024 , 1025 ,
+                              4096 , 4999 };
+ const std::uint64_t known[] = {
+  0xBC13060E2D1AAC79ULL , 0x5D16303249F2E44CULL , 0x944CD8618E651A8FULL ,
+  0x96969D554F526124ULL , 0x112A8DA1E4CBC450ULL , 0xE9379B9163EE3F38ULL ,
+  0xCE5EC7274574FD66ULL , 0x1E9C7E2CEF42118EULL , 0xA58DBB58B77161EFULL ,
+  0x57C6910028675731ULL , 0x9BF13D56F64BA0F7ULL , 0x67B962D0635E1889ULL ,
+  0xFE3EDA134B696614ULL , 0x1D8784A207CF8E9EULL , 0x0B9DC74F0DEF81A9ULL ,
+  0x97D5950D50E76F48ULL , 0xF762805411CD9B93ULL , 0x576FF01834410863ULL ,
+  0xAD70599F8618F739ULL , 0xF347ADC6514B2133ULL };
+ for( std::size_t i = 0 ; i < std::size( lens ) ; ++i ) {
+  CHECK( hashBytes( buf.data() , lens[ i ] ) == known[ i ] );
+  CHECK( hashBytes( buf.data() , lens[ i ] , 1 ) != known[ i ] );
+  }
+ {
+  std::unordered_set< std::uint64_t > H;
+  for( std::size_t n = 0 ; n <= buf.size() ; ++n )
+   CHECK( H.insert( hashBytes( buf.data() , n ) ).second );
+  const std::vector< unsigned char > zeros( 300 , 0 );
+  for( std::size_t n = 1 ; n <= 300 ; ++n )
+   CHECK( H.insert( hashBytes( zeros.data() , n ) ).second );
+  for( int c = 1 ; c < 256 ; ++c )
+   for( std::size_t n = 1 ; n <= 3 ; ++n ) {
+    const std::vector< unsigned char > s( n , static_cast< unsigned char >(
+                                                c ) );
+    if( ! std::equal( s.begin() , s.end() , buf.begin() ) )   // a prefix
+     CHECK( H.insert( hashBytes( s.data() , n ) ).second );
+    }
+  std::unordered_set< std::uint64_t > W;
+  for( std::uint64_t k = 0 ; k < 1000000 ; ++k )
+   CHECK( W.insert( hashWord( k ) ).second );
+  }
+ {                                             // the avalanche
+  std::mt19937_64 g( 7 );
+  for( std::size_t n : { 1 , 3 , 4 , 7 , 8 , 12 , 16 , 24 , 32 , 48 , 64 ,
+                         80 , 128 , 200 , 256 , 300 , 1100 } ) {
+   double flips = 0 , trials = 0;
+   for( int t = 0 ; t < 40 ; ++t ) {
+    std::vector< unsigned char > s( n );
+    for( auto & c : s )
+     c = static_cast< unsigned char >( g() );
+    const std::uint64_t h = hashBytes( s.data() , n );
+    for( std::size_t b = 0 ; b < 8 * n ; b += ( n > 64 ? 7 : 1 ) ) {
+     s[ b / 8 ] ^= static_cast< unsigned char >( 1 << ( b % 8 ) );
+     flips += std::popcount( h ^ hashBytes( s.data() , n ) );
+     trials += 64;
+     s[ b / 8 ] ^= static_cast< unsigned char >( 1 << ( b % 8 ) );
+     }
+    }
+   CHECK( flips / trials > 0.45 && flips / trials < 0.55 );
+   }
+  double flips = 0;
+  for( int t = 0 ; t < 1000 ; ++t ) {
+   const std::uint64_t x = g();
+   for( int b = 0 ; b < 64 ; ++b )
+    flips += std::popcount( hashWord( x ) ^
+                            hashWord( x ^ ( std::uint64_t( 1 ) << b ) ) );
+   }
+  CHECK( flips / ( 1000 * 64 * 64 ) > 0.45 &&
+         flips / ( 1000 * 64 * 64 ) < 0.55 );
+  }
+ CHECK( FastHash< double >()( 0.0 ) == FastHash< double >()( -0.0 ) );
+ CHECK( FastHash< float >()( 1.5f ) != FastHash< float >()( -1.5f ) );
+ CHECK( FastHash< int >()( -1 ) == hashWord( std::uint64_t( -1 ) ) );
+ const char * c = "hashing";
+ CHECK( FastHash< std::string >()( std::string( c ) ) ==
+        FastHash< std::string_view >()( c ) );
+ CHECK( FastHash< const char * >()( c ) == hashBytes( c , 7 ) );
+ CHECK( FastHash< std::string >{ 5 }( "x" ) != FastHash< std::string >()(
+                                                 "x" ) );
+ CHECK( hashBytes( nullptr , 0 ) == hashBytes( c , 0 ) );
+ CHECK_THROWS( (void) hashBytes( nullptr , 1 ) , contract_violation );
+ }
+
+// the blocked filter: no false negative on 10^5 random words, on 10^5
+// consecutive words by the identity of std::hash (mixed by the filter) and
+// on strings; the false positives on 10^5 absent words near the estimate
+// of falsePositiveRate(), about 1.26 % at 10 bits per item; the union of two
+// filters, clear(), a filter of no item (one block, nothing maybe there),
+// a filter of one block filled by 2000 items (false positives near 1),
+// and the bits per item that are not positive
+ADS_TEST( "blocked-bloom" )
+{
+ const auto K = randomKeys( 200000 , 3 );
+ const std::vector< std::uint64_t > In( K.begin() , K.begin() + 100000 ) ,
+                                    Out( K.begin() + 100000 , K.end() );
+ BlockedBloomFilter< std::uint64_t > F( In.size() , 10 );
+ CHECK( F.empty() && F.falsePositiveRate() == 0 && ! F.maybe( In[ 0 ] ) );
+ for( std::uint64_t k : In )
+  F.insert( k );
+ CHECK( F.size() == In.size() && ! F.empty() );
+ CHECK( F.bits() == 256 * F.blocks() && F.bits() >= 10 * In.size() );
+ for( std::uint64_t k : In )
+  CHECK( F.maybe( k ) );
+ std::size_t fp = 0;
+ for( std::uint64_t k : Out )
+  fp += F.maybe( k );
+ const double rate = double( fp ) / double( Out.size() ) ,
+              est = F.falsePositiveRate();
+ CHECK( est > 0.011 && est < 0.014 );
+ CHECK( rate > 0.8 * est && rate < 1.25 * est );
+ {                                             // consecutive, std::hash
+  BlockedBloomFilter< std::uint64_t , std::hash< std::uint64_t > > G(
+   100000 );
+  for( std::uint64_t k = 0 ; k < 100000 ; ++k )
+   G.insert( k );
+  std::size_t f = 0;
+  for( std::uint64_t k = 0 ; k < 100000 ; ++k )
+   CHECK( G.maybe( k ) );
+  for( std::uint64_t k = 100000 ; k < 200000 ; ++k )
+   f += G.maybe( k );
+  CHECK( double( f ) / 100000 < 1.25 * G.falsePositiveRate() );
+  }
+ {                                             // strings, the union
+  const auto S = randomStrings( 20000 , 4 );
+  BlockedBloomFilter< std::string > A( S.size() ) , B( S.size() );
+  for( std::size_t i = 0 ; i < S.size() ; ++i )
+   ( i % 2 ? A : B ).insert( S[ i ] );
+  A.unite( B );
+  CHECK( A.size() == S.size() );
+  for( const auto & s : S )
+   CHECK( A.maybe( s ) );
+  A.clear();
+  CHECK( A.empty() && ! A.maybe( S[ 0 ] ) );
+  BlockedBloomFilter< std::string > C( 1 );
+  CHECK_THROWS( A.unite( C ) , contract_violation );
+  }
+ BlockedBloomFilter< int > Z( 0 );             // one block
+ CHECK( Z.blocks() == 1 && ! Z.maybe( 3 ) );
+ for( int i = 0 ; i < 2000 ; ++i )
+  Z.insert( i );
+ CHECK( Z.falsePositiveRate() > 0.99 && Z.maybe( -5 ) );
+ CHECK_THROWS( BlockedBloomFilter< int >( 10 , 0 ) , contract_violation );
+ CHECK_THROWS( BlockedBloomFilter< int >( 10 , -1 ) , contract_violation );
+ }
+
+// the binary fuse filter of 8 and 16 bits: every key maybe there for 0, 1,
+// 2, 3, 10, 100, 1000 and 10^5 random keys, 10^5 consecutive keys and
+// strings; the false positives near 2^-8 and 2^-16 on 10^6 absent keys;
+// about 9.1 and 18.1 bits per key at 10^6 keys; repeated keys counted once;
+// no key of an empty filter
+ADS_TEST( "binary-fuse" )
+{
+ for( std::size_t n : { 0 , 1 , 2 , 3 , 10 , 100 , 1000 , 100000 } ) {
+  const auto K = randomKeys( n , unsigned( n + 1 ) );
+  BinaryFuseFilter< std::uint64_t > F( K );
+  BinaryFuseFilter< std::uint64_t , std::uint16_t > G( K , 9 );
+  CHECK( F.size() == n && G.size() == n && F.empty() == ( n == 0 ) );
+  CHECK( F.trials() >= 1 && F.trials() < 10 );
+  for( std::uint64_t k : K )
+   CHECK( F.maybe( k ) && G.maybe( k ) );
+  if( n == 0 )
+   CHECK( ! F.maybe( 0 ) && ! G.maybe( 1 ) && F.bits() == 0 );
+  }
+ {
+  const auto K = randomKeys( 2000000 , 11 );
+  const std::vector< std::uint64_t > In( K.begin() , K.begin() + 1000000 );
+  BinaryFuseFilter< std::uint64_t > F( In );
+  BinaryFuseFilter< std::uint64_t , std::uint16_t > G( In );
+  std::size_t f = 0 , g = 0;
+  for( std::size_t i = 1000000 ; i < K.size() ; ++i ) {
+   f += F.maybe( K[ i ] );
+   g += G.maybe( K[ i ] );
+   }
+  CHECK( f > 3200 && f < 4600 );               // 10^6 / 256 = 3906
+  CHECK( g < 40 );                             // 10^6 / 65536 = 15
+  CHECK( double( F.bits() ) / 1e6 < 9.2 && double( G.bits() ) / 1e6 < 18.4 );
+  }
+ {                                             // consecutive
+  std::vector< std::uint64_t > K( 100000 );
+  for( std::size_t i = 0 ; i < K.size() ; ++i )
+   K[ i ] = i;
+  BinaryFuseFilter< std::uint64_t > F( K );
+  std::size_t f = 0;
+  for( std::uint64_t k : K )
+   CHECK( F.maybe( k ) );
+  for( std::uint64_t k = 100000 ; k < 1100000 ; ++k )
+   f += F.maybe( k );
+  CHECK( f > 3200 && f < 4600 );
+  }
+ {                                             // repeated, strings
+  auto K = randomKeys( 5000 , 13 );
+  K.insert( K.end() , K.begin() , K.begin() + 2500 );
+  K.push_back( K[ 0 ] );
+  BinaryFuseFilter< std::uint64_t > F( K );
+  CHECK( F.size() == 5000 && F.trials() >= 2 );
+  for( std::uint64_t k : K )
+   CHECK( F.maybe( k ) );
+  const auto S = randomStrings( 30000 , 14 );
+  BinaryFuseFilter< std::string > T( S );
+  for( const auto & s : S )
+   CHECK( T.maybe( s ) );
+  }
+ }
+
+// the minimal perfect hash function: a bijection onto { 0 , ... , n - 1 }
+// for 1, 2, 3, 10, 1000 and 10^5 random keys, 10^5 consecutive keys and
+// strings, with the parameters ( lambda , alpha ) ( 1 , 0.5 ), ( 1 , 1 ),
+// ( 5 , 0.5 ), ( 5 , 0.99 ), ( 5 , 1 ) and ( 10 , 0.9 ); about 3 bits per
+// key; a key out of the set below n; repeated keys, the parameters out of
+// range and an empty function violate the contracts
+ADS_TEST( "minimal-perfect-hash" )
+{
+ auto bijective = []( const auto & f , const auto & K ) {
+  std::vector< char > seen( K.size() , 0 );
+  for( const auto & k : K ) {
+   const std::size_t v = f( k );
+   if( v >= K.size() || seen[ v ] )
+    return( false );
+   seen[ v ] = 1;
+   }
+  return( true ); };
+ for( std::size_t n : { 1 , 2 , 3 , 10 , 1000 , 100000 } ) {
+  const auto K = randomKeys( n , unsigned( 2 * n + 1 ) );
+  for( auto [ lambda , alpha ] : { std::pair( 1.0 , 0.5 ) ,
+                                    std::pair( 1.0 , 1.0 ) ,
+                                    std::pair( 5.0 , 0.5 ) ,
+                                    std::pair( 5.0 , 0.99 ) ,
+                                    std::pair( 5.0 , 1.0 ) ,
+                                    std::pair( 10.0 , 0.9 ) } ) {
+    const MinimalPerfectHash< std::uint64_t > f( K , lambda , alpha );
+    CHECK( f.size() == n && ! f.empty() && f.trials() >= 1 );
+    CHECK( bijective( f , K ) );
+    CHECK( f( 0xDEADBEEF ) < n );
+    }
+  }
+ {
+  const auto K = randomKeys( 1000000 , 21 );
+  const MinimalPerfectHash< std::uint64_t > f( K );
+  CHECK( bijective( f , K ) && double( f.bits() ) / 1e6 < 3.5 );
+  }
+ std::vector< std::uint64_t > C( 100000 );
+ for( std::size_t i = 0 ; i < C.size() ; ++i )
+  C[ i ] = i;
+ CHECK( bijective( MinimalPerfectHash< std::uint64_t >( C ) , C ) );
+ const auto S = randomStrings( 50000 , 22 );
+ CHECK( bijective( MinimalPerfectHash< std::string >( S ) , S ) );
+ const MinimalPerfectHash< int > E( std::vector< int >{} );
+ CHECK( E.empty() && E.size() == 0 );
+ CHECK_THROWS( (void) E( 3 ) , contract_violation );
+ CHECK_THROWS( MinimalPerfectHash< int >( std::vector< int >{ 1 , 2 , 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( MinimalPerfectHash< int >( std::vector< int >{ 1 } , 0.5 ) ,
+               contract_violation );
+ CHECK_THROWS( MinimalPerfectHash< int >( std::vector< int >{ 1 } , 5 ,
+                                          0.4 ) , contract_violation );
+ CHECK_THROWS( MinimalPerfectHash< int >( std::vector< int >{ 1 } , 5 ,
+                                          1.1 ) , contract_violation );
+ }
+
+// the cuckoo table with buckets of 4 places against std::unordered_map on
+// random insertions, updates, lookups and removals of words and of
+// strings, through the growths of the table; 10^5 keys in a table made for
+// them reach a load above 0.9 with no growth, the moves of the search in
+// breadth; the iterators visit each pair once; an empty table, the
+// removal of an absent key and a value changed by find()
+ADS_TEST( "bucket-cuckoo" )
+{
+ {
+  BucketCuckooTable< std::uint64_t , std::uint64_t > T;
+  std::unordered_map< std::uint64_t , std::uint64_t > R;
+  std::mt19937_64 g( 31 );
+  for( int s = 0 ; s < 200000 ; ++s ) {
+   const std::uint64_t k = g() % 50000 , v = g();
+   switch( g() % 4 ) {
+    case( 0 ): case( 1 ):
+     CHECK( T.insert( k , v ) == R.insert_or_assign( k , v ).second );
+     break;
+    case( 2 ):
+     CHECK( T.remove( k ) == ( R.erase( k ) == 1 ) );
+     break;
+    default: {
+     const auto it = R.find( k );
+     const std::uint64_t * p = T.find( k );
+     CHECK( ( p == nullptr ) == ( it == R.end() ) );
+     if( p )
+      CHECK( *p == it->second );
+     }
+    }
+   CHECK( T.size() == R.size() );
+   }
+  std::size_t n = 0;
+  for( const auto & [ k , v ] : T ) {
+   CHECK( R.at( k ) == v );
+   ++n;
+   }
+  CHECK( n == R.size() );
+  }
+ {                                             // strings
+  BucketCuckooTable< std::string , int > T;
+  std::unordered_map< std::string , int > R;
+  const auto S = randomStrings( 5000 , 32 );
+  std::mt19937 g( 33 );
+  for( int s = 0 ; s < 40000 ; ++s ) {
+   const std::string & k = S[ g() % S.size() ];
+   if( g() % 3 )
+    CHECK( T.insert( k , s ) == R.insert_or_assign( k , s ).second );
+   else
+    CHECK( T.remove( k ) == ( R.erase( k ) == 1 ) );
+   CHECK( T.size() == R.size() );
+   }
+  for( const auto & [ k , v ] : R )
+   CHECK( T.lookup( k ) == v );
+  }
+ {                                             // a high load, no growth
+  const auto K = randomKeys( 100000 , 34 );
+  BucketCuckooTable< std::uint64_t , std::uint64_t > T( 0 );
+  BucketCuckooTable< std::uint64_t , std::uint64_t > U( 117000 );
+  const std::size_t cap = U.capacity();
+  for( std::uint64_t k : K ) {
+   CHECK( U.insert( k , k ) );
+   T.insert( k , k );
+   }
+  CHECK( U.capacity() == cap && U.load() > 0.75 && U.rehashes() == 0 );
+  CHECK( T.rehashes() > 10 && T.size() == K.size() );
+  for( std::uint64_t k : K )
+   CHECK( U.contains( k ) && *T.find( k ) == k );
+  BucketCuckooTable< std::uint64_t , std::uint64_t > F( 0 );
+  for( std::size_t i = 0 ; i < 8 ; ++i )      // 2 buckets, full
+   CHECK( F.insert( K[ i ] , i ) );
+  CHECK( F.capacity() == 8 && F.rehashes() == 0 && F.load() == 1.0 );
+  CHECK( F.insert( K[ 8 ] , 8 ) && F.rehashes() >= 1 );
+  for( std::size_t i = 0 ; i < 9 ; ++i )
+   CHECK( F.lookup( K[ i ] ) == i );
+  CHECK( U.moves() > 0 );
+  }
+ BucketCuckooTable< int , int > E;
+ CHECK( E.empty() && E.begin() == E.end() && ! E.remove( 1 ) );
+ CHECK( ! E.lookup( 1 ) && ! E.contains( 1 ) && E.find( 1 ) == nullptr );
+ E.insert( 1 , 10 );
+ *E.find( 1 ) = 11;
+ CHECK( E.lookup( 1 ) == 11 && ! E.insert( 1 , 12 ) && E.lookup( 1 ) == 12 );
+ }
+
+}  // end( namespace )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- MAIN ------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+int main( int argc , char ** argv )
+{
+ return( ADS::test::main( argc , argv ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File hashing.cpp ---------------------------*/
+/*--------------------------------------------------------------------------*/

@@ -28,7 +28,9 @@
  * XORed, so that every bit of the result depends on every bit of h( k )
  * and even the identity hash of the integers of std::hash spreads over the
  * table; a hash that declares the member type is_avalanching (the
- * convention of Boost) is taken as it is, on 64 bits. The top bits of the
+ * convention of Boost) is taken as it is, on 64 bits, as the default one,
+ * DefaultHash< K > [see FastHash.h], is for the integers and the strings,
+ * whose hash by FastHash costs one product per 16 bytes. The top bits of the
  * mixed hash give the first group of the key, its low 8 bits the
  * fingerprint (1 in place of 0) and its bits 8 to 10 the bit of the key in
  * the bytes of overflow. The number of groups is a power of 2 and the
@@ -114,6 +116,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/dictionary/FastHash.h"
 
 #include <array>
 #include <bit>
@@ -202,7 +205,7 @@ namespace detail {
 /*--------------------------------------------------------------------------*/
 
 /// a hash table with open addressing and control bytes in groups of 15
-template< class K , class V , class H = std::hash< K > ,
+template< class K , class V , class H = DefaultHash< K > ,
           class Eq = std::equal_to< K > >
 class FlatHashTable {
 
