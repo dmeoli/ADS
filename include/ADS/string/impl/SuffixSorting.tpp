@@ -31,9 +31,9 @@ namespace detail {
 /// they point to a quarter
 inline constexpr std::ptrdiff_t saisAhead = 64;
 
-/// the alphabets of at most saisSmall symbols keep the bucket of the last
-/// symbol in a register; on the larger ones the buckets and the places
-/// they point to are prefetched
+/// the alphabets of more than saisSmall symbols have their buckets and
+/// the places these point to prefetched too, and their LMS places are
+/// set with a branch, which touches a bucket only for an LMS place
 inline constexpr std::ptrdiff_t saisSmall = 1024;
 
 /// prefetches the line of p for a read
@@ -71,8 +71,9 @@ void saisBuckets( const S * size , S * B , S K , bool tails )
 /// the scan from left to right: the L-suffixes, each stored complemented
 /// if the suffix before it is of type S, and every entry scanned
 /// complemented; in the first induction the entries moved are cleared
-/// instead. On the small alphabets no branch depends on the entries: an
-/// entry with nothing to move writes to a dummy place
+/// instead. Two entries a step, the text before the entries D ahead
+/// prefetched, and on the large alphabets also their buckets (D / 2
+/// ahead) and the places these point to (D / 4 ahead)
 template< bool small , bool first , class C , class S >
 void saisInduceL( const C * T , S * SA , S n , const S * size , S * B ,
                   S K )
@@ -81,83 +82,70 @@ void saisInduceL( const C * T , S * SA , S n , const S * size , S * B ,
  saisBuckets( size , B , K , false );
  S j = n - 1;
  SA[ B[ T[ j ] ]++ ] = ( j > 0 ) && ( T[ j - 1 ] < T[ j ] ) ? ~j : j;
- S dummy = 0;
- for( S i = 0 ; i < n ; ++i ) {
-  if( i + D < n ) {                   // the text, then bucket and place
-   const S a = SA[ i + D ];
-   saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );     // no branch
-   if constexpr( ! small ) {
-    const S e = SA[ i + D / 2 ] , f = SA[ i + D / 4 ];
-    saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
-    saisPrefetchW( SA + B[ T[ f > 0 ? f - 1 : 0 ] ] );
-    }
+ // an entry: the suffix before it moved to the head of its bucket
+ auto move = [ & ]( S i ) {
+  S q = SA[ i ];
+  SA[ i ] = first && ( q > 0 ) ? 0 : ~q;
+  if( q > 0 ) {
+   --q;
+   const S c0 = S( T[ q ] );
+   SA[ B[ c0 ]++ ] = ( q > 0 ) && ( S( T[ q - 1 ] ) < c0 ) ? ~q : q;
    }
-  j = SA[ i ];
-  if constexpr( small ) {
-   const S v = S( j > 0 );
-   SA[ i ] = first && v ? 0 : ~j;
-   const S p = v ? j - 1 : 0;
-   const S c0 = S( T[ p ] );
-   const bool mark = ( p > 0 ) && ( S( T[ p - ( p > 0 ) ] ) < c0 );
-   S * dst = v ? SA + B[ c0 ] : &dummy;
-   *dst = mark ? ~p : p;
-   B[ c0 ] += v;
+  };
+ S i = 0;
+ for( ; i + D + 1 < n ; i += 2 ) {     // two at a time, no checks
+  const S a = SA[ i + D ] , b = SA[ i + D + 1 ];
+  saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );
+  saisPrefetch( T + ( b > 0 ? b - 1 : 0 ) );
+  if constexpr( ! small ) {
+   const S e = SA[ i + D / 2 ] , f = SA[ i + D / 4 ];
+   saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
+   saisPrefetchW( SA + B[ T[ f > 0 ? f - 1 : 0 ] ] );
    }
-  else {
-   SA[ i ] = first && ( j > 0 ) ? 0 : ~j;
-   if( j > 0 ) {
-    --j;
-    const S c0 = S( T[ j ] );
-    SA[ B[ c0 ]++ ] = ( j > 0 ) && ( S( T[ j - 1 ] ) < c0 ) ? ~j : j;
-    }
-   }
+  move( i );
+  move( i + 1 );
   }
+ for( ; i < n ; ++i ) move( i );
  }
 
 /// the scan from right to left: the S-suffixes, each stored complemented
 /// if the suffix before it is of type L (or it is the suffix 0), and the
 /// complemented entries restored; in the first induction the entries
 /// moved are cleared instead, and the complemented ones, the LMS-suffixes
-/// (and the suffix 0), stay complemented. On the small alphabets no
-/// branch depends on the entries
+/// (and the suffix 0), stay complemented. Two entries a step, prefetched
+/// as in saisInduceL()
 template< bool small , bool first , class C , class S >
 void saisInduceS( const C * T , S * SA , S n , const S * size , S * B ,
                   S K )
 {
  constexpr S D = S( saisAhead );
  saisBuckets( size , B , K , true );
- S dummy = 0;
- for( S i = n - 1 ; i >= 0 ; --i ) {
-  if( i >= D ) {
-   const S a = SA[ i - D ];
-   saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );     // no branch
-   if constexpr( ! small ) {
-    const S e = SA[ i - D / 2 ] , f = SA[ i - D / 4 ];
-    saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
-    saisPrefetchW( SA + ( B[ T[ f > 0 ? f - 1 : 0 ] ] - 1 ) );
-    }
-   }
-  const S j = SA[ i ];
-  if constexpr( small ) {
-   const S v = S( j > 0 );
-   const S p = v ? j - 1 : 0;
-   const S c0 = S( T[ p ] );
-   const bool mark = ( p == 0 ) || ( S( T[ p - ( p > 0 ) ] ) > c0 );
-   B[ c0 ] -= v;
-   S * dst = v ? SA + B[ c0 ] : &dummy;
-   *dst = mark ? ~p : p;
-   if constexpr( first ) SA[ i ] = v ? 0 : j;
-   else SA[ i ] = v ? j : ~j;
-   }
-  else if( j > 0 ) {
-   const S p = j - 1;
+ // an entry: the suffix before it moved to the tail of its bucket
+ auto move = [ & ]( S i ) {
+  const S q = SA[ i ];
+  if( q > 0 ) {
+   const S p = q - 1;
    const S c0 = S( T[ p ] );
    SA[ --B[ c0 ] ] = ( p == 0 ) || ( S( T[ p - 1 ] ) > c0 ) ? ~p : p;
    if constexpr( first ) SA[ i ] = 0;
    }
   else if constexpr( ! first )
-   SA[ i ] = ~j;
+   SA[ i ] = ~q;
+  };
+ S i = n - 1;
+ for( ; i >= D + 1 ; i -= 2 ) {        // two at a time, no checks
+  const S a = SA[ i - D ] , b = SA[ i - D - 1 ];
+  saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );
+  saisPrefetch( T + ( b > 0 ? b - 1 : 0 ) );
+  if constexpr( ! small ) {
+   const S e = SA[ i - D / 2 ] , f = SA[ i - D / 4 ];
+   saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
+   saisPrefetchW( SA + ( B[ T[ f > 0 ? f - 1 : 0 ] ] - 1 ) );
+   }
+  move( i );
+  move( i - 1 );
   }
+ for( ; i >= 0 ; --i ) move( i );
  }
 
 /// the two scans of the induction
@@ -326,9 +314,14 @@ void sais( const C * T , S * SA , S n , S K ,
     }
   };
 
- // no LMS place: a text that never rises, all its suffixes of type L
+ // no LMS place: the suffixes of type S, if any, are a prefix of T; with
+ // none (s, the type of the suffix 0, is L) T never rises, each suffix is
+ // larger than the next one and SA is n - 1 , ... , 0
  if( m == 0 ) {
-  saisInduce< false >( T , SA , n , size.data() , B.data() , K );
+  if( s == 0 )
+   for( S r = 0 ; r < n ; ++r ) SA[ r ] = n - 1 - r;
+  else
+   saisInduce< false >( T , SA , n , size.data() , B.data() , K );
   return;
   }
 

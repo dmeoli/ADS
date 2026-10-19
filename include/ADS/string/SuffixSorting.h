@@ -32,8 +32,9 @@
  *   of its names followed by the doubling of Larsson and Sadakane on the
  *   groups of equal names alone (each by the rank of the suffix h places
  *   ahead, h = 1, 2, 4, ...), which costs little more than one pass;
- * - a text with no LMS-suffix (one that never rises) is sorted by the
- *   final induction alone;
+ * - a text whose suffixes are all of type L never rises, so that each of
+ *   its suffixes is larger than the next one and SA is \f$ n - 1 , \ldots ,
+ *   0 \f$;
  * - the scans prefetch the symbol before the suffix a fixed distance ahead,
  *   so that the random reads of the text overlap.
  *
