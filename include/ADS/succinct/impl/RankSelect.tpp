@@ -46,8 +46,8 @@ inline RankSelect::RankSelect( BitVector b , Selects s )
   c += c3 + std::uint64_t( std::popcount( w3 ) );
   }
  f_ones = std::size_t( c );
- if( f_has[ 1 ] ) inventory( true );
- if( f_has[ 0 ] ) inventory( false );
+ for( const bool v : { true , false } )
+  if( f_has[ v ] ) inventory( v );
  ADS_AUDIT( consistent() );
  }
 
@@ -137,10 +137,8 @@ inline void RankSelect::inventory( bool b )
    const std::size_t c1 = std::size_t( ( e >> ( kRel * ( h - 1 ) ) ) &
                                        kRelMask );
    const std::size_t c = b ? c1 : h * kQuarter - c1;
-   if( c <= r ) {
-    q = h;
-    in = c;
-    }
+   q = c <= r ? h : q;
+   in = c <= r ? c : in;
    }
   r -= in;
   const std::size_t w = 4 * t + q;

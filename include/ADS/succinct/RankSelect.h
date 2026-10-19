@@ -28,7 +28,7 @@
  *
  * select is the inventory of Vigna's simple select, for the 1s and for
  * the 0s: the 1s are cut in groups of \f$ 2^\ell \f$, with \f$ 2^\ell
- * \f$ chosen so that a group spans about 8192 bits; for each group the
+ * \f$ chosen so that a group spans about 4096 bits; for each group the
  * place of its first 1 is kept in 64 bits, and the places of its 1s of rank
  * multiple of \f$ 2^{\ell - 5} \f$ in 16 bits from it, a line of the
  * cache. \f$ select_1( k ) \f$ reads the place of the 1 of rank k rounded
@@ -36,7 +36,7 @@
  * word, by the sideways sums, and ends in the word by the broadword
  * selectInWord() [see BitVector.h]: three accesses to memory and a few
  * words, O( 1 ) time where the 1s are spread evenly, with about
- * \f$ 576 / 8192 = 7 \% \f$ of m bits more for each value. A group that
+ * \f$ 576 / 4096 = 14 \% \f$ of m bits more for each value. A group that
  * spans \f$ 2^{16} \f$ bits or more, whose offsets do not fit, is sparse,
  * and its 1s are found by a binary search on the directory of rank between
  * its ends, \f$ O( \log ( m / 256 ) ) \f$ in the worst case. The notes
@@ -208,7 +208,7 @@ class RankSelect {
 #endif
  /// the bits of the vector spanned by a group of select, on average,
  /// and the most of its places that its 16 bits offsets can tell apart
- static constexpr std::size_t kGroup = 8192;
+ static constexpr std::size_t kGroup = 4096;
  static constexpr std::size_t kSparse = std::size_t( 1 ) << 16;
 
  /// the inventory of select for the bits of one value: the bits b are in

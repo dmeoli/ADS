@@ -753,7 +753,7 @@ ADS_TEST( "rank-select" )
     CHECK( S.select1( k + 1 ) == P1[ k ] );
    for( std::size_t k = 0 ; k < P0.size() ; ++k )
     CHECK( S.select0( k + 1 ) == P0[ k ] );
-   CHECK( S.directoryBits() <= n / 4 + n / 5 + 4096 );
+   CHECK( S.directoryBits() <= n / 4 + 3 * n / 8 + 4096 );
    }
  CHECK_THROWS( ( void )E.select1( 5 ) , contract_violation );
  CHECK_THROWS( ( void )E.select0( 0 ) , contract_violation );
