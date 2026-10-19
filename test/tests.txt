@@ -1609,5 +1609,6 @@ engineered_succinct  compact-rank-select  rank e select compatti, 3.5% di bit
 engineered_succinct  wavelet-matrix   wavelet matrix, rank, select, quantili
 engineered_succinct  huffman-coder    Huffman a tabella, quattro flussi
 engineered_succinct  rans-coder       rANS di ordine 0, quattro stati
+engineered_succinct  direct-access-codes  DACs, larghezze ottime per programma dinamico
 engineered_succinct  stream-vbyte     Stream VByte, controllo a parte
 engineered_succinct  tans-coder       tANS di ordine 0, quattro stati

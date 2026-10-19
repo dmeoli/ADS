@@ -458,6 +458,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with its own stream of bits read backward and four states, decoded
   together; the states by tables, a symbol by a lookup, a shift and an
   addition
+- DirectAccessCodes, the directly addressable codes of Brisaboa, Ladra and
+  Navarro: the integers cut in chunks of the widths that minimize the bits
+  (their dynamic program on the counts of the lengths), a level per chunk
+  with the continuation bits on CompactRankSelect, and access in time
+  proportional to the length of the item
 
 ### Changed
 

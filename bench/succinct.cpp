@@ -20,6 +20,9 @@
  *   10^7;
  * - wavelet: access, rank and select on n random symbols of 8 and 16
  *   bits, 10^5 queries a cell, and the building;
+ * - dac: access to n integers of variable length (geometric of mean 100,
+ *   one in 64 a thousand times larger) by the directly addressable codes,
+ *   against the dac_vector of sdsl-lite, and the building;
  * - space: the bits of each structure per bit (per item for Elias-Fano and
  *   the wavelet matrix), in the column of the time, so that the ratios of
  *   bench/summary.py read the same way (above 1 when ADS is smaller).
@@ -55,6 +58,10 @@
  #include "ADS/succinct/CompactRankSelect.h"
  #define ADS_HAS_COMPACT 1
 #endif
+#if __has_include( "ADS/compression/DirectAccessCodes.h" )
+ #include "ADS/compression/DirectAccessCodes.h"
+ #define ADS_HAS_DAC 1
+#endif
 #if __has_include( "ADS/succinct/WaveletMatrix.h" )
  #include "ADS/succinct/WaveletMatrix.h"
  #define ADS_HAS_WM 1
@@ -65,6 +72,7 @@
  #include <sdsl/bp_support.hpp>
  #include <sdsl/rank_support.hpp>
  #include <sdsl/select_support.hpp>
+ #include <sdsl/dac_vector.hpp>
  #include <sdsl/wavelet_trees.hpp>
  #define ADS_HAS_SDSL 1
 #endif
@@ -690,6 +698,60 @@ void wavelets( std::size_t n , int r , unsigned seed )
   }
  }
 
+/*--------------------------------------------------------------------------*/
+/*---------------------------------- DACS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the cells of a sequence of integers of variable length: access( i ),
+/// the building and the bits per item
+template< class B , class A , class Z >
+void dac( const std::vector< std::uint64_t > & X ,
+          const std::vector< std::uint64_t > & I , const std::string & who ,
+          B build , A access , Z bits , int r )
+{
+ const std::size_t n = X.size();
+ print( "dac" , "build" , n , who , median( [](){ return( 0 ); } ,
+         [ & ]( int ) {
+          sink = sink + std::uint64_t( build( X ) != nullptr ); } ,
+         r , n ) );
+ const auto s = build( X );
+ print( "dac" , "access" , n , who , queries( I , r ,
+         [ & ]( std::uint64_t i ) { return( access( *s , i ) ); } ) );
+ print( "space" , "dac" , n , who , bits( *s ) );
+ }
+
+void dacs( std::size_t n , int r , unsigned seed )
+{
+ // geometric integers of mean 100 with a heavy tail: the gaps of a list
+ std::mt19937_64 g( seed );
+ std::geometric_distribution< std::uint64_t > G( 0.01 );
+ std::vector< std::uint64_t > X( n ) , I;
+ for( auto & x : X ) x = G( g ) * ( g() % 64 == 0 ? 1000 : 1 );
+ for( std::size_t q = 0 ; q < kQueries ; ++q ) I.push_back( g() % n );
+ const double nn = double( n );
+#ifdef ADS_HAS_DAC
+ using D = ADS::DirectAccessCodes;
+ for( const char * who : { "ADS::DirectAccessCodes" ,
+                           "ADS::DirectAccessCodes A/A" } )
+  dac( X , I , who , []( const std::vector< std::uint64_t > & X ) {
+        return( std::make_unique< D >( X ) ); } ,
+       []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+       [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } ,
+       r );
+#endif
+#ifdef ADS_HAS_SDSL
+ auto sdslDac = [ & ]< class T >( const char * who , T * ) {
+  dac( X , I , who , []( const std::vector< std::uint64_t > & X ) {
+        return( std::make_unique< T >( X ) ); } ,
+       []( const T & s , std::uint64_t i ) { return( s[ i ] ); } ,
+       [ nn ]( const T & s ) {
+        return( 8 * double( sdsl::size_in_bytes( s ) ) / nn ); } , r );
+  };
+ sdslDac( "sdsl::dac_vector<4>" , ( sdsl::dac_vector< 4 > * )nullptr );
+ sdslDac( "sdsl::dac_vector<8>" , ( sdsl::dac_vector< 8 > * )nullptr );
+#endif
+ }
+
 }  // end( namespace )
 
 int main( int argc , char ** argv )
@@ -701,6 +763,8 @@ int main( int argc , char ** argv )
   if( n <= 10000000 ) parenthesess( n , o.runs , o.seed );
  for( std::size_t n : o.sizes )
   if( n <= 10000000 ) wavelets( n , o.runs , o.seed );
+ for( std::size_t n : o.sizes )
+  if( n <= 10000000 ) dacs( n , o.runs , o.seed );
  for( std::size_t n : o.sizes ) bitvectors( n , o.runs , o.seed );
  return( 0 );
  }
