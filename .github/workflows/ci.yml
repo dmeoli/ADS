@@ -3,9 +3,9 @@
 #                                                                             #
 # Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
-# UBSan, the queues between threads under ThreadSanitizer, and FlatHashTable  #
-# on its broadword fallback; it measures the coverage of the tests and sends  #
-# it to Coveralls.                                                            #
+# UBSan, BigInteger with its portable products, the queues between threads  #
+# under ThreadSanitizer, and FlatHashTable on its broadword fallback; it      #
+# measures the coverage of the tests and sends it to Coveralls.               #
 ###############################################################################
 
 name: CI
@@ -45,6 +45,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: clang
         run: make test CXX=clang++ BUILD=build-clang
+
+  portable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: BigInteger with the products by halves of 32 bits
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Iinclude -Itest \
+              -DADS_CONTRACTS=3 -DADS_BIGINT_PORTABLE -o portable \
+              test/taocp.cpp -pthread
+          for t in $(./portable -l | grep -E '^(big-integer|rational)'); do
+            ./portable $t
+          done
 
   threads:
     runs-on: ubuntu-latest

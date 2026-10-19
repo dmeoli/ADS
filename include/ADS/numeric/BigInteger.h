@@ -3,9 +3,14 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The integers of any length of Knuth (4.3.1), beyond the book: a sign and
- * the magnitude as a vector of digits in base \f$ b = 2^{32} \f$, the
- * least significant first, with no leading zero. The long operations work
- * on spans of digits with the scratch space allocated once per call.
+ * the magnitude as a vector of digits (limbs) in base \f$ b = 2^{64} \f$,
+ * the least significant first, with no leading zero. The long operations
+ * work on spans of digits with the scratch space allocated once per call.
+ * The product of two digits in two and the sums with carry are one
+ * instruction where the compiler offers them (unsigned __int128 in GCC and
+ * Clang, _umul128() and _addcarry_u64() in MSVC on x64), else the four
+ * products of the halves of 32 bits; ADS_BIGINT_PORTABLE forces the
+ * latter.
  *
  * - The sum and the difference are Algorithms 4.3.1A and 4.3.1S, a carry
  *   or a borrow per digit, \f$ O( n ) \f$.
@@ -15,13 +20,15 @@
  *   subtractive form, three products of halves instead of four on one
  *   scratch buffer, \f$ O( n^{\log_2 3} ) \f$, the longer factor cut in
  *   pieces as long as the shorter one when their lengths differ; from kFFT
- *   digits it is a convolution of the digits by the number theoretic
- *   transform (4.3.3, 4.6.4) modulo three primes \f$ p < 2^{31} \f$ with
- *   \f$ 2^{26} \mid p - 1 \f$, in the arithmetic of Montgomery, and the
- *   Chinese remainder theorem (4.3.2), \f$ O( n \log n ) \f$: exact, since
- *   a coefficient, below \f$ n \, 2^{64} \f$, stays below the product of
- *   the primes, \f$ 2^{90} \f$, up to transforms of \f$ 2^{26} \f$ digits,
- *   past which Karatsuba splits the factors. multiplySchool(),
+ *   digits it is a convolution of the digits, cut in two pieces of 32 bits
+ *   each, by the number theoretic transform (4.3.3, 4.6.4) modulo three
+ *   primes \f$ p < 2^{31} \f$ with \f$ 2^{26} \mid p - 1 \f$, in the
+ *   arithmetic of Montgomery, and the Chinese remainder theorem (4.3.2),
+ *   \f$ O( n \log n ) \f$: exact, since a coefficient, below
+ *   \f$ n \, 2^{64} \f$ for n pieces, stays below the product of the
+ *   primes, \f$ 2^{90} \f$, up to transforms of \f$ 2^{26} \f$ pieces,
+ *   i.e., products of \f$ 2^{25} \f$ digits, past which Karatsuba splits
+ *   the factors. multiplySchool(),
  *   multiplyKaratsuba() and multiplyFFT() are kept apart for the
  *   comparison.
  * - The quotient and the remainder are Algorithm 4.3.1D for the short
@@ -32,7 +39,9 @@
  *   correction after the multiplication and subtraction ("add back")
  *   happen with probability about 2 / b. A division of two digits by one,
  *   here and in the short division, is two products by a reciprocal of
- *   the divisor computed once (Moeller and Granlund). From kDivide digits
+ *   the divisor computed once (Moeller and Granlund); the reciprocal is a
+ *   division of 128 bits by 64, in the portable form by halves of 32 bits
+ *   (Warren, section 9.4). From kDivide digits
  *   of quotient the division is recursive (Burnikel and Ziegler; Brent and
  *   Zimmermann, Algorithm 1.8): the upper half of the quotient from the
  *   upper half of the divisor, corrected at most twice, then the lower
@@ -41,7 +50,8 @@
  *   divisor. divModSchool() is Algorithm D alone. The quotient is
  *   truncated toward zero, as for the integers of C++.
  * - The conversion to and from the bases 2 to 36 (4.4) works with the
- *   largest power P of the base in one digit. In the bases that are powers
+ *   largest power P of the base in one digit, \f$ 10^{19} \f$ for the base
+ *   10. In the bases that are powers
  *   of 2 it is a slice of bits per figure, \f$ O( n ) \f$. In the others it
  *   is divide and conquer (Brent and Zimmermann, section 1.7), with the
  *   powers \f$ P^{2^i} \f$ computed once per call: the output splits the
@@ -55,8 +65,8 @@
  *   62 bits of the two numbers run the algorithm of Euclid in single
  *   precision while the two bounds of each quotient agree and the
  *   cofactors stay below \f$ 2^{30} \f$, and then one pass of two linear
- *   combinations replaces many long divisions; gcdEuclid() is the
- *   algorithm of Euclid.
+ *   combinations replaces many long divisions, down to one digit, where
+ *   the binary algorithm ends; gcdEuclid() is the algorithm of Euclid.
  *
  * The contracts [see Contract.h]: the divisor is not 0, the base is in
  * [ 2 , 36 ] and the string a number in it; the invariant is the normal
@@ -81,7 +91,7 @@
  *      Mathematics of Computation 44(170), 519-521, 1985,
  *      doi:10.1090/S0025-5718-1985-0777282-X
  * \see H. S. Warren, Hacker's Delight, 2nd ed., Addison-Wesley, 2012,
- *      section 9.2
+ *      sections 9.2 and 9.4
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -108,9 +118,25 @@
 #include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+// the width of the product of two digits done by the compiler: 128 with
+// unsigned __int128, 64 with the intrinsics of MSVC on x64, 0 for none
+#ifndef ADS_BIGINT_WIDE
+ #if defined( ADS_BIGINT_PORTABLE )
+  #define ADS_BIGINT_WIDE 0
+ #elif defined( __SIZEOF_INT128__ )
+  #define ADS_BIGINT_WIDE 128
+ #elif defined( _MSC_VER ) && defined( _M_X64 )
+  #define ADS_BIGINT_WIDE 64
+  #include <intrin.h>
+ #else
+  #define ADS_BIGINT_WIDE 0
+ #endif
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -118,24 +144,47 @@
 
 namespace ADS {
 
+namespace detail {
+
+/// std::allocator, but the elements made with no value are left without
+/// one: the digits are written before they are read, and the memset of
+/// std::vector would cost a pass over them
+template< class T >
+struct NoInit : std::allocator< T > {
+ template< class U > struct rebind { using other = NoInit< U >; };
+
+ NoInit( void ) = default;
+ template< class U > NoInit( const NoInit< U > & ) noexcept {}
+
+ template< class U > void construct( U * p ) noexcept {
+  ::new( static_cast< void * >( p ) ) U;
+  }
+ template< class U , class... A > void construct( U * p , A &&... a ) {
+  ::new( static_cast< void * >( p ) ) U( std::forward< A >( a )... );
+  }
+ };
+
+}  // end( namespace detail )
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS BigInteger -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// an integer of any length, sign and magnitude in base 2^32
+/// an integer of any length, sign and magnitude in base 2^64
 class BigInteger {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- using Limb = std::uint32_t;
+ using Limb = std::uint64_t;
 
  // the thresholds, in digits, from the instruction counts of the
  // benchmark bench/bignum.cpp; provisional, as those of ADS::sort()
  static constexpr std::size_t kKaratsuba = 16;   ///< limbs for Karatsuba
- static constexpr std::size_t kFFT = 1536;       ///< limbs for the NTT
+ static constexpr std::size_t kFFT = 2048;       ///< limbs for the NTT
  static constexpr std::size_t kDivide = 32;      ///< quotient limbs, recursion
- static constexpr std::size_t kConvert = 32;     ///< limbs, divide and conquer
+ static constexpr std::size_t kConvert = 64;     ///< limbs, divide and conquer
+ static constexpr std::size_t kModFold = 16;     ///< limbs, folded remainder
 
  BigInteger( long long v = 0 );
 
@@ -158,7 +207,7 @@ class BigInteger {
 
  [[nodiscard]] BigInteger abs( void ) const;
 
- /// the number of digits in base 2^32
+ /// the number of digits (limbs) in base 2^64
  [[nodiscard]] std::size_t limbs( void ) const;
 
  BigInteger operator-( void ) const;
@@ -214,10 +263,10 @@ class BigInteger {
 /*--------------------------------------------------------------------------*/
  private:
 
- using Mag = std::vector< Limb >;
+ using Mag = std::vector< Limb , detail::NoInit< Limb > >;
 
- /// the longest transform of the NTT, 2^26 digits
- static constexpr std::size_t kNTTMax = std::size_t( 1 ) << 26;
+ /// the longest product of the NTT, 2^25 digits, 2^26 pieces of 32 bits
+ static constexpr std::size_t kNTTMax = std::size_t( 1 ) << 25;
 
  BigInteger( bool neg , Mag d );
 
@@ -287,7 +336,7 @@ class BigInteger {
  static void mulAddSmall( Mag & a , Limb m , Limb c );
 
  /// the quotient of a, n + m digits, by b, n >= 2 digits with the top bit
- /// set, a < 2 b 2^{32 m}: its m low digits in q and the top one, 0 or 1,
+ /// set, a < 2 b 2^{64 m}: its m low digits in q and the top one, 0 or 1,
  /// returned, the remainder in a[ 0 , n ); by Algorithm D, and recursively
  /// for m <= n with the scratch t of n digits
  static Limb divBase( Limb * a , std::size_t m , const Limb * b ,
@@ -300,7 +349,8 @@ class BigInteger {
  static std::pair< Mag , Mag > divModMag( const Mag & u , const Mag & v ,
                                           bool school = false );
 
- /// a u + b v, nonnegative, |a| , |b| < 2^30 of opposite signs
+ /// a u + b v, nonnegative and at most u, |a| , |b| < 2^30 of opposite
+ /// signs
  static Mag linComb( const Mag & u , const Mag & v , std::int64_t a ,
                      std::int64_t b );
 

@@ -231,6 +231,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- BigInteger on digits of 64 bits instead of 32: the product of two
+  digits and the sums with carry by unsigned __int128, by the intrinsics
+  of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);
+  the NTT cuts each digit in two pieces of 32 bits, the conversions to
+  base 10 take 19 figures per digit; limbs() counts digits of 64 bits; the
+  remainder by one digit below 2^60 folds 4 digits per step; the digits
+  are no longer zeroed before they are written; the thresholds tuned again
 - BigInteger without its quadratic steps: the recursive division of
   Burnikel and Ziegler above Algorithm D, the conversions of base by
   divide and conquer (and by slices of bits in the bases 2^k), the gcd of
