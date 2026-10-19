@@ -693,6 +693,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   word, binaryLength() is the width of the processor, BitReader finds the
   1 of the unary code by the trailing zeros of the processor and turns a
   field around by the swap of its bytes
+- the groups of select of RankSelect span about 4096 bits instead of
+  8192: a sample every 2 words on average instead of 4, and the 1s of a
+  vector of 1% of them each in its offset, for 14% of the bits for each
+  value instead of 7%
 
 ### Fixed
 
