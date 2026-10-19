@@ -702,6 +702,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   8192: a sample every 2 words on average instead of 4, and the 1s of a
   vector of 1% of them each in its offset, for 14% of the bits for each
   value instead of 7%
+- BalancedParentheses builds its leaves a byte at a time by its tables of
+  the excess, instead of a bit at a time
 
 ### Fixed
 

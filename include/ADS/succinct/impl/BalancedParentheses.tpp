@@ -75,8 +75,15 @@ inline BalancedParentheses::BalancedParentheses( BitVector b )
  f_exc.assign( 2 * f_groups , 0 );
  f_min.assign( 2 * f_groups , 0 );
  for( std::size_t l = 0 ; l < f_nleaf ; ++l ) {   // the leaves, by a scan
-  std::int64_t e = 0 , mn = 0;
-  for( std::size_t i = l * kLeaf ; i < leafEnd( l ) ; ++i ) {
+  std::int64_t e = 0 , mn = 0;             // a byte at a time, by tables
+  const auto & T = detail::byteExcess();
+  std::size_t i = l * kLeaf;
+  for( ; i + 8 <= leafEnd( l ) ; i += 8 ) {
+   const auto v = f_b.bits().get( i , 8 );
+   mn = std::min( mn , e + T.min[ v ] );
+   e += T.exc[ v ];
+   }
+  for( ; i < leafEnd( l ) ; ++i ) {
    e += f_b[ i ] ? 1 : -1;
    mn = std::min( mn , e );
    }
