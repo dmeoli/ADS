@@ -1,0 +1,8 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+includedir=@ADS_PC_INCLUDEDIR@
+
+Name: ADS
+Description: Algorithms and data structures, header-only C++20
+URL: https://github.com/dmeoli/ADS
+Version: @PROJECT_VERSION@
+Cflags: -I${includedir}

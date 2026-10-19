@@ -68,19 +68,26 @@ if (ADS_BENCHMARKS)
     endif ()
 endif ()
 
-# ----- install and export, for find_package(ADS) --------------------------- #
+# ----- install and export, for find_package(ADS) and pkg-config ---------- #
+# ----- the CMake and pkg-config files go under share, not lib, since ----- #
+# ----- a library of headers is the same on every architecture ------------ #
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+
+set(ADS_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake/ADS
+    CACHE STRING "where to install the files of find_package(ADS)")
+set(ADS_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_DATADIR}/pkgconfig
+    CACHE STRING "where to install ads.pc")
 
 install(TARGETS ADS EXPORT ADSTargets)
 install(DIRECTORY include/ADS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT ADSTargets
         NAMESPACE ADS::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ADS)
+        DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
 configure_package_config_file(cmake/ADSConfig.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ADS)
+        INSTALL_DESTINATION ${ADS_INSTALL_CMAKEDIR})
 write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
         COMPATIBILITY SameMajorVersion
@@ -88,7 +95,17 @@ write_basic_package_version_file(
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ADS)
+        DESTINATION ${ADS_INSTALL_CMAKEDIR})
+
+# the include directory of ads.pc, as ${prefix}/include when it is relative
+if (IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
+    set(ADS_PC_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
+else ()
+    set(ADS_PC_INCLUDEDIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+endif ()
+configure_file(cmake/ads.pc.in ${CMAKE_CURRENT_BINARY_DIR}/ads.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc
+        DESTINATION ${ADS_INSTALL_PKGCONFIGDIR})
 
 ###############################################################################
 #                          End of CMakeLists.txt                              #
