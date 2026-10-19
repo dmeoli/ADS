@@ -24,7 +24,16 @@
  *   two of them are equal if their lengths are and memcmp() finds their
  *   symbols equal (equal symbols and an equal end give equal types);
  * - the reduced string of the names lies at the back of SA and its suffix
- *   array, at the front, is built by the same function, recursively;
+ *   array, at the front, is built by the same function, recursively, the
+ *   numbers of its symbols counted while naming, in the sorted order;
+ *   but when at most a quarter of the LMS-suffixes share their name with
+ *   another (as on random texts over large alphabets, where most names
+ *   occur once), the reduced string is sorted instead by a counting sort
+ *   of its names followed by the doubling of Larsson and Sadakane on the
+ *   groups of equal names alone (each by the rank of the suffix h places
+ *   ahead, h = 1, 2, 4, ...), which costs little more than one pass;
+ * - a text with no LMS-suffix (one that never rises) is sorted by the
+ *   final induction alone;
  * - the scans prefetch the symbol before the suffix a fixed distance ahead,
  *   so that the random reads of the text overlap.
  *
@@ -49,6 +58,9 @@
  * \see Y. Mori, sais: an implementation of the induced sorting algorithm,
  *      2010, https://sites.google.com/site/yuta256/sais
  * \see I. Grebnov, libsais, 2021-2026, https://github.com/IlyaGrebnov/libsais
+ * \see N. J. Larsson, K. Sadakane, Faster suffix sorting, Theoretical
+ *      Computer Science 387(3), 258-272, 2007,
+ *      doi:10.1016/j.tcs.2007.07.017
  * \see J. Karkkainen, G. Manzini, S. J. Puglisi, Permuted longest-common-
  *      prefix array, Proceedings of the 20th Symposium on Combinatorial
  *      Pattern Matching (CPM), LNCS 5577, 181-192, 2009,

@@ -51,6 +51,16 @@ struct SearchRanks {
 
 inline constexpr SearchRanks searchRanks{};
 
+/// prefetches the line of p for a read
+inline void searchPrefetch( const void * p )
+{
+#if defined( __GNUC__ ) || defined( __clang__ )
+ __builtin_prefetch( p , 0 , 3 );
+#else
+ (void) p;
+#endif
+ }
+
 /// the vector comparisons of W bytes: equal( p , b ) has bit i set if the
 /// byte p[ i ] is b
 template< int W >
@@ -179,20 +189,20 @@ inline StringSearcher::StringSearcher( std::string_view P ) : f_P( P )
   }
 
  // the shifts of the q-grams, q the least with distinct^q >= 16 m, at
- // most 8
+ // most 8, each at most 255
  if( m < kSkip ) return;
  f_q = 2;
  for( double c = double( distinct ) * distinct ;
       ( c < 16.0 * double( m ) ) && ( f_q < 8 ) ; c *= distinct ) ++f_q;
  f_qmask = f_q == 8 ? ~std::uint64_t( 0 ) :
                       ( std::uint64_t( 1 ) << ( 8 * f_q ) ) - 1;
- const std::size_t none = std::min< std::size_t >( m - f_q + 1 , 65535 );
- f_shift.assign( 4096 , std::uint16_t( none ) );
+ const std::size_t none = std::min< std::size_t >( m - f_q + 1 , 255 );
+ f_shift.assign( 4096 , std::uint8_t( none ) );
  std::string Q = f_P + std::string( 8 , '\0' );   // room for the loads
  const auto * q = reinterpret_cast< const unsigned char * >( Q.data() );
  for( std::size_t i = 0 ; i + f_q < m ; ++i )
-  f_shift[ gram( q + i ) ] = std::uint16_t( std::min< std::size_t >(
-                                                 m - f_q - i , 65535 ) );
+  f_shift[ gram( q + i ) ] = std::uint8_t( std::min< std::size_t >(
+                                                 m - f_q - i , 255 ) );
  const std::size_t h = gram( q + m - f_q );
  f_shift0 = f_shift[ h ];
  f_shift[ h ] = 0;
@@ -212,7 +222,7 @@ std::size_t StringSearcher::skip( const unsigned char * T , std::size_t n ,
                                   std::size_t from , F && report ) const
 {
  const std::size_t m = f_P.size() , last = n - m , end = m - f_q;
- const std::uint16_t * shift = f_shift.data();
+ const std::uint8_t * shift = f_shift.data();
  std::size_t s = from , work = 0;
  // the windows whose q-gram at the end can be loaded as 8 bytes, while 64
  // steps shift by m / 4 on average at least; the filter does the rest
@@ -223,6 +233,8 @@ std::size_t StringSearcher::skip( const unsigned char * T , std::size_t n ,
    steps = 0;
    mark = s;
    }
+  if( s + end + 1024 < n )            // the text a few windows ahead
+   detail::searchPrefetch( T + s + end + 1024 );
   const std::size_t d = shift[ gram( T + s + end ) ];
   if( d ) {
    s += d;

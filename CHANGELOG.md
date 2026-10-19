@@ -60,7 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or 64 bits without an array of the types, the LMS-substrings named by
   their lengths and memcmp(), the scans of the induction without branches
   on the small alphabets and with the text, the buckets and the places
-  written prefetched; the LCP array by the permuted LCP of Karkkainen,
+  written prefetched, the reduced string sorted by the doubling of
+  Larsson and Sadakane on the groups of equal names when few names
+  repeat; the LCP array by the permuted LCP of Karkkainen,
   Manzini and Puglisi, the text read 8 bytes at a time; test
   engineered_strings.suffix-sorting
 - levenshtein(), lcsLength() and approximateMatches() of
