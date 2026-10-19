@@ -15,20 +15,26 @@
  *   bytes, 4 bits each;
  * - the codewords are written from the least significant bit of a word of
  *   64 bits (the bits of a codeword turned around, so that the code stays
- *   prefix-free in the order of reading), whole bytes at a time;
- * - the decoder peeks at 11 bits and finds the symbol and its length in
- *   the table, in a few instructions and no branch; four symbols of 11 bits
- *   at most fit in the bits of a word after a refill, so that a load serves
- *   four symbols;
+ *   prefix-free in the order of reading), 4 of them joined by shifts and
+ *   written at once, whole bytes at a time;
+ * - the decoder peeks at L <= 11 bits and finds in a table of
+ *   \f$ 2^L \f$ entries the symbols whose codes fit whole in them, up to
+ *   3, with their number and their bits, in a few instructions and no
+ *   branch (one lookup decodes \f$ \min( 3 , \lfloor 11 / \bar\ell
+ *   \rfloor ) \f$ symbols or so for an average length \f$ \bar\ell
+ *   \f$, about 2.4 on English text); 4 lookups of 11 bits at most fit in
+ *   the bits of a word after a refill, so that a load serves 4 lookups;
  * - the string is cut in four streams, decoded together, so that the four
  *   chains of dependences (a lookup gives the length, which gives the next
  *   lookup) overlap in the pipeline of the processor.
  *
- * This is the design of huff0 of Collet (in Zstandard), and of the
- * decoders of Moffat and Turpin by tables; the speed comes from the table
- * and from the streams, the size of the code is that of Huffman, within one
- * bit per byte of the entropy [see Entropy.h]. A string of one distinct
- * byte is written as that byte.
+ * These are the decoders by tables of Moffat and Turpin, with the
+ * interleaved streams of Zstandard; the speed comes from the table and from
+ * the streams, the size of the code is that of Huffman, within one bit per
+ * byte of the entropy, \f$ H_0 \le \bar\ell < H_0 + 1 \f$ [see
+ * Entropy.h] (the limit of 11 bits costs a fraction of a percent on a text
+ * of bytes, the optimum under it being found exactly). A string of one
+ * distinct byte is written as that byte.
  *
  * The format: the size n in 8 bytes, the longest length (0 for one
  * distinct byte, which follows), the 128 bytes of the lengths, the sizes of

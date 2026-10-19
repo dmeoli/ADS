@@ -708,6 +708,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   saturating arithmetic on their bytes and one mask, and
   streamVByteDecode() decodes 32 integers with no test while 12 more
   follow, 8 control bytes taken in a word
+- huffmanCompress() joins 4 codes before writing them and writes the
+  streams straight into the output, and huffmanDecompress() decodes up to
+  3 symbols a lookup and counts the rounds that fit instead of testing
+  each; byteHistogram() on eight tables
 
 ### Fixed
 

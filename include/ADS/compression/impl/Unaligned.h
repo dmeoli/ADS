@@ -5,9 +5,9 @@
  * The loads and the stores of little-endian integers at any address, which
  * the fast coders of this folder use [see HuffmanCoder.h, Rans.h]: one move
  * of the processor on the little-endian machines, and a turn of the bytes
- * on the others; and the histogram of a string of bytes, on four tables of
- * counts, so that a run of equal bytes does not wait for the store of the
- * count before.
+ * on the others; and the histogram of a string of bytes, on eight tables
+ * of counts, one for each byte of a word, so that a run of equal bytes does
+ * not wait for the store of the count before.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -67,7 +67,7 @@ inline void storeLE( std::uint8_t * p , T x )
 inline std::array< std::uint64_t , 256 > byteHistogram(
                                            std::span< const std::uint8_t > s )
 {
- std::array< std::array< std::uint32_t , 256 > , 4 > c{};
+ std::array< std::array< std::uint32_t , 256 > , 8 > c{};
  std::array< std::uint64_t , 256 > f{};
  // chunks of 2^30 bytes, so that no count of 32 bits overflows, 8 bytes
  // of a load at a time
@@ -77,14 +77,7 @@ inline std::array< std::uint64_t , 256 > byteHistogram(
   std::size_t i = a;
   for( ; i + 8 <= b ; i += 8 ) {
    const std::uint64_t x = loadLE< std::uint64_t >( s.data() + i );
-   ++c[ 0 ][ x & 0xFF ];
-   ++c[ 1 ][ ( x >> 8 ) & 0xFF ];
-   ++c[ 2 ][ ( x >> 16 ) & 0xFF ];
-   ++c[ 3 ][ ( x >> 24 ) & 0xFF ];
-   ++c[ 0 ][ ( x >> 32 ) & 0xFF ];
-   ++c[ 1 ][ ( x >> 40 ) & 0xFF ];
-   ++c[ 2 ][ ( x >> 48 ) & 0xFF ];
-   ++c[ 3 ][ x >> 56 ];
+   for( unsigned k = 0 ; k < 8 ; ++k ) ++c[ k ][ ( x >> ( 8 * k ) ) & 0xFF ];
    }
   for( ; i < b ; ++i ) ++c[ 0 ][ s[ i ] ];
   for( auto & t : c )
