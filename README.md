@@ -563,6 +563,17 @@ Bazel, `bazel_dep(name = "ads", version = "0.1.0")` in `MODULE.bazel` and
 install ads` and `dependency('ads')`, from WrapDB; in both, the targets
 compile in C++20.
 
+`BigInteger` (and through it `Rational`) can run on the backend of
+[GMP](https://gmplib.org), which takes the products, the quotients, the
+conversions and the greatest common divisor in the ranges of lengths where
+GMP is the faster, and leaves the others to the code of ADS: with CMake,
+`-DADS_WITH_GMP=ON` (off by default, and an error at configure time if GMP
+is not found) defines `ADS_WITH_GMP` on `ADS::ADS` and links GMP, also for
+the projects that find the installed ADS; without CMake, `-DADS_WITH_GMP`
+and `-lgmp`, as `make test ADS_WITH_GMP=1 [GMP=<prefix>]` does. GMP is
+under the LGPL v3 (or the GPL v2), compatible with the LGPL v3 of ADS;
+without the macro nothing of GMP is included.
+
 ```cpp
 #include "ADS/sequence/List.h"
 

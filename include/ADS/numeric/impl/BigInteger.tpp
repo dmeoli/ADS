@@ -1513,6 +1513,26 @@ inline BigInteger::BigInteger( const std::string & s , int base )
  else {                                     // chunks of k figures
   const auto [ P , k ] = detail::bigBase( base );
   const std::size_t K = std::size_t( k ) , C = ( L + K - 1 ) / K;
+#if ADS_BIGINT_GMP
+  {
+   // mpn_set_str() on the values of the figures, the most significant
+   // first, into room for the bits of L figures and one digit more
+   std::vector< unsigned char > f( L );
+   for( std::size_t j = 0 ; j < L ; ++j )
+    f[ j ] = static_cast< unsigned char >(
+                                        detail::digitValue( s[ i + j ] ) );
+   f_d.resize( ( L * std::size_t( std::bit_width( unsigned( base - 1 ) ) )
+                 + 63 ) / 64 + 1 );
+   f_d.resize( std::size_t( mpn_set_str(
+                             reinterpret_cast< mp_limb_t * >( f_d.data() ) ,
+                             f.data() , L , base ) ) );
+   trim( f_d );
+   f_neg = neg && ! f_d.empty();
+   ADS_INVARIANT( normal() );
+   ADS_AUDIT( *this == fromStringSchool( s , base ) );
+   return;
+   }
+#endif
   Mag c( C );                               // the least significant first
   for( std::size_t j = 0 ; j < C ; ++j ) {
    const std::size_t hi = s.size() - j * K , lo = hi - std::min( K , hi - i );
@@ -1640,6 +1660,16 @@ inline std::string BigInteger::toString( int base ) const
    }
   }
  else if( n < kConvert ) figures( f_d , 0 , base , out );
+#if ADS_BIGINT_GMP
+ else if( n < kGmpToStringTop ) {
+  mpz_t X;                                  // mpz_get_str(), in place
+  mpz_srcptr x = gmpView( X , f_d.data() , n );
+  const std::size_t o = out.size();
+  out.resize( o + mpz_sizeinbase( x , base ) + 1 );
+  mpz_get_str( out.data() + o , base , x );
+  out.resize( o + std::strlen( out.data() + o ) );
+  }
+#endif
  else {
   const auto [ P , k ] = detail::bigBase( base );
   // the powers up to half the digits, pw[ i ] b^{zs[ i ]}, without the low
@@ -2085,6 +2115,26 @@ inline void BigInteger::mulP( Limb * r , const Limb * a , std::size_t na ,
   std::swap( a , b );
   std::swap( na , nb );
   }
+#if ADS_BIGINT_GMP
+ // the lengths where GMP is faster, unless a method was asked by name
+ // [see multiplyKaratsuba() and multiplyFFT()]
+ if( ( fft == kFFT ) && ( nb > 0 ) ) {
+  auto g = []( const Limb * x ) {
+   return( reinterpret_cast< const mp_limb_t * >( x ) ); };
+  mp_limb_t * const gr = reinterpret_cast< mp_limb_t * >( r );
+  if( ( a == b ) && ( na == nb ) ) {
+   if( nb < kGmpSqrTop ) {
+    mpn_sqr( gr , g( a ) , mp_size_t( na ) );
+    return;
+    }
+   }
+  else if( ( nb >= kGmpMul ) &&
+           ( nb < ( na < 2 * nb ? kGmpMulTop : kGmpMulLongTop ) ) ) {
+   mpn_mul( gr , g( a ) , mp_size_t( na ) , g( b ) , mp_size_t( nb ) );
+   return;
+   }
+  }
+#endif
  if( nb < kKaratsuba ) {
   if( ( a == b ) && ( na == nb ) ) sqrSchool( r , a , na );
   else mulSchool( r , a , na , b , nb );
@@ -2406,6 +2456,32 @@ inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
   return( std::pair( std::move( q ) , r ? Mag{ r } : Mag() ) );
   }
  const std::size_t n = v.size();
+#if ADS_BIGINT_GMP
+ // the lengths where GMP is faster, unless Algorithm D was asked or the
+ // reciprocal is to be kept: mpn_tdiv_qr() with the remainder, else
+ // mpz_tdiv_q(), which skips most of it
+ if( ! school && ! keep && gmpDivides( u.size() , n , rem ) ) {
+  if( ! rem ) {
+   mpz_t U , V , Q;
+   mpz_init2( Q , mp_bitcnt_t( 64 * ( u.size() - n + 1 ) ) );
+   mpz_tdiv_q( Q , gmpView( U , u.data() , u.size() ) ,
+               gmpView( V , v.data() , n ) );
+   std::pair< Mag , Mag > out( gmpDigits( Q ) , Mag() );
+   mpz_clear( Q );
+   return( out );
+   }
+  Mag q( u.size() - n + 1 ) , r( n );
+  mpn_tdiv_qr( reinterpret_cast< mp_limb_t * >( q.data() ) ,
+               reinterpret_cast< mp_limb_t * >( r.data() ) , 0 ,
+               reinterpret_cast< const mp_limb_t * >( u.data() ) ,
+               mp_size_t( u.size() ) ,
+               reinterpret_cast< const mp_limb_t * >( v.data() ) ,
+               mp_size_t( n ) );
+  trim( q );
+  trim( r );
+  return( std::pair( std::move( q ) , std::move( r ) ) );
+  }
+#endif
  std::size_t m = u.size() + 1 - n;
  const int s = std::countl_zero( v.back() );   // D1: normalize
  auto shift = [ s ]( Limb * r , const Limb * x , std::size_t nx ) {
@@ -2546,6 +2622,18 @@ inline BigInteger BigInteger::divExact( BigInteger a , const BigInteger & b )
 {
  ADS_PRE( b.sign() != 0 );
  if( b.f_d.size() > 1 ) {
+#if ADS_BIGINT_GMP
+  if( b.f_d.size() < kGmpExactTop ) {      // mpz_divexact(), by Jebelean
+   mpz_t A , B , Q;
+   mpz_init2( Q , mp_bitcnt_t( 64 * a.f_d.size() ) );
+   mpz_divexact( Q , gmpView( A , a.f_d.data() , a.f_d.size() ) ,
+                 gmpView( B , b.f_d.data() , b.f_d.size() ) );
+   BigInteger q( a.f_neg != b.f_neg , gmpDigits( Q ) );
+   mpz_clear( Q );
+   ADS_AUDIT( q * b == a );
+   return( q );
+   }
+#endif
   BigInteger q = a / b;
   ADS_AUDIT( q * b == a );
   return( q );
@@ -2696,6 +2784,18 @@ inline BigInteger BigInteger::gcd( const BigInteger & a ,
  const Mag & x = a.f_d.size() >= b.f_d.size() ? a.f_d : b.f_d;
  const Mag & y = a.f_d.size() >= b.f_d.size() ? b.f_d : a.f_d;
  BigInteger g;
+#if ADS_BIGINT_GMP
+ if( y.size() >= kGmpGcd ) {                // mpz_gcd(), subquadratic
+  mpz_t X , Y , G;
+  mpz_init2( G , mp_bitcnt_t( 64 * y.size() ) );
+  mpz_gcd( G , gmpView( X , x.data() , x.size() ) ,
+           gmpView( Y , y.data() , y.size() ) );
+  g.f_d = gmpDigits( G );
+  mpz_clear( G );
+  ADS_AUDIT( g == gcdEuclid( a , b ) );
+  return( g );
+  }
+#endif
  if( y.size() == 1 )                        // no copy of the longer one
   g.f_d = { gcdLimb( x.data() , x.size() , y[ 0 ] ) };
  else g.f_d = gcdMag( x , y );
@@ -2714,6 +2814,38 @@ inline BigInteger BigInteger::gcdEuclid( BigInteger a , BigInteger b )
   }
  return( a );
  }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- THE BACKEND OF GMP --------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#if ADS_BIGINT_GMP
+
+static_assert( sizeof( mp_limb_t ) == sizeof( BigInteger::Limb ) ,
+               "the limbs of GMP are the digits of BigInteger" );
+
+inline mpz_srcptr BigInteger::gmpView( mpz_t z , const Limb * d ,
+                                       std::size_t n )
+{
+ return( mpz_roinit_n( z , reinterpret_cast< const mp_limb_t * >( d ) ,
+                       mp_size_t( n ) ) );
+ }
+
+inline BigInteger::Mag BigInteger::gmpDigits( mpz_srcptr z )
+{
+ const Limb * d = reinterpret_cast< const Limb * >( mpz_limbs_read( z ) );
+ return( Mag( d , d + mpz_size( z ) ) );
+ }
+
+inline bool BigInteger::gmpDivides( std::size_t u , std::size_t v , bool rem )
+{
+ const std::size_t m = u - v;               // the quotient has m + 1 at most
+ if( rem ) return( ( m < kGmpShort ) || ( v < kGmpDivTop ) );
+ if( m > v ) return( v < kGmpDivTop );
+ return( ( v >= kGmpQuot ) && ( ( v < kGmpQuotTop ) || ( 2 * m <= v ) ) );
+ }
+
+#endif
 
 /*--------------------------------------------------------------------------*/
 

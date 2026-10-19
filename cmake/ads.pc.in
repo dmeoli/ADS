@@ -5,4 +5,5 @@ Name: ADS
 Description: Algorithms and data structures, header-only C++20
 URL: https://github.com/dmeoli/ADS
 Version: @PROJECT_VERSION@
-Cflags: -I${includedir}
+Requires: @ADS_PC_REQUIRES@
+Cflags: -I${includedir}@ADS_PC_CFLAGS@

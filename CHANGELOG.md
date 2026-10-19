@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Nix derivation and flake.nix, the PKGBUILDs of the AUR and of MSYS2, the
   xmake package; packaging/bump.sh writes the version and the checksums
   of a release into all of them
+- the backend of GMP for BigInteger, and so for Rational, behind
+  ADS_WITH_GMP (the CMake option of the same name, off by default, links
+  GMP to ADS::ADS and fails at configure time without it): the products,
+  the squares, the quotients with and without the remainder, the exact
+  quotients, the conversions in the bases not powers of 2 and the gcd go
+  to the mpn and mpz layers of GMP in the ranges of lengths where these
+  were faster on a Xeon Gold 5120 (the thresholds kGmp...), on the digits
+  of BigInteger in place; the test big-integer-gmp at the edges of the
+  ranges, make test ADS_WITH_GMP=1, the CI job gmp, and bench-bignum-gmp
+  with the rows "ADS::BigInteger GMP" and "ADS::Rational GMP"
 - MODULE.bazel and BUILD.bazel, ADS as the module ads of Bazel with the
   target @ads//:ads, and packaging/test as a module that uses it; the entry
   of the Bazel Central Registry in packaging/bcr and the port of Meson
