@@ -62,8 +62,8 @@
  *   grows as \f$ ( n / n_0 )^{\log_2 18} n_0^2 u \| A \| \| B \| \f$ for
  *   the cutoff \f$ n_0 \f$ and the unit roundoff u, against the \f$ n u
  *   | A | | B | \f$ of the classical product (Higham), which is the price
- *   of the fewer products: with the cutoff 1536 one level spares 1/8 of
- *   the operations of a product of 2048, two levels of 4096 more; the
+ *   of the fewer products: with the cutoff 3072, found on the benchmark,
+ *   one level spares 1/8 of the operations of a product of 4096; the
  *   schedule of the sums needs three temporaries of a quadrant.
  *
  * The contracts [see Contract.h]: the sizes of the factors agree, the
@@ -250,7 +250,7 @@ DenseMatrix< T > transpose( const DenseMatrix< T > & A );
 template< class T >
 DenseMatrix< T > multiplyStrassen( const DenseMatrix< T > & A ,
                                    const DenseMatrix< T > & B ,
-                                   std::size_t cutoff = 1536 );
+                                   std::size_t cutoff = 3072 );
 
 /*--------------------------------------------------------------------------*/
 
