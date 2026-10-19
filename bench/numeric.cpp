@@ -19,6 +19,10 @@
  *   boost::multiprecision::miller_rabin_test with 25 bases, GMP's
  *   mpz_probab_prime_p with 24 (the test of Baillie and PSW alone, exact
  *   on 64 bits), hurchalla::is_prime and ADS::isPrime;
+ * - "factorize", n / 100 factorizations of random odd words and of
+ *   products of two random primes of 32 bits (the hardest words for the
+ *   rho of Pollard): hurchalla::factorize (ADS_HAS_HURCHALLA) and
+ *   ADS::factorize;
  * - "generators", the sum of n words: std::mt19937_64, std::minstd_rand,
  *   boost::random::mt19937_64 and taus88, pcg64 and pcg32 of O'Neill
  *   (ADS_HAS_PCG), and the generators of ADS (xoshiro256++, xoshiro256**,
@@ -83,6 +87,7 @@
 #endif
 
 #ifdef ADS_HAS_HURCHALLA
+ #include "hurchalla/factoring/factorize.h"
  #include "hurchalla/factoring/is_prime.h"
  #include "hurchalla/modular_arithmetic/modular_pow.h"
  #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
@@ -253,6 +258,37 @@ void primality( std::size_t n , unsigned seed , int r )
   }
  }
 
+void factorizations( std::size_t n , unsigned seed , int r )
+{
+ std::mt19937_64 g( seed );
+ for( int c = 0 ; c < 2 ; ++c ) {
+  const char * what = c ? "semiprime64" : "random64";
+  std::vector< U64 > N( n );
+  for( auto & x : N )
+   if( c ) {                                // two primes of 32 bits
+    U64 p , q;
+    do p = ( g() >> 32 ) | 1; while( ! ADS::isPrime( p ) );
+    do q = ( g() >> 32 ) | 1; while( ! ADS::isPrime( q ) );
+    x = p * q;
+    }
+   else
+    x = g() | 1;
+#ifdef ADS_HAS_HURCHALLA
+  for( const char * who : { "hurchalla::factorize" ,
+                            "hurchalla::factorize A/A" } )
+   cell( "factorize" , what , n , who , r , [ & ]( std::size_t i ) {
+    std::vector< U64 > F;
+    hurchalla::factorize( N[ i ] , F );
+    return( F.back() ); } );
+#endif
+#ifndef ADS_BENCH_OLD
+  cell( "factorize" , what , n , "ADS::factorize" , r ,
+        [ & ]( std::size_t i ) {
+         return( ADS::factorize( N[ i ] ).back() ); } );
+#endif
+  }
+ }
+
 /// the sum of n words of the generator that make() builds
 template< class M >
 void words( const std::string & who , std::size_t n , int r , M && make )
@@ -412,6 +448,7 @@ int main( int argc , char ** argv )
   gcds( n , o.seed , o.runs );
   powers( n / 10 , o.seed , o.runs );
   primality( n / 10 , o.seed , o.runs );
+  factorizations( n / 100 , o.seed , o.runs );
   generators( n , o.seed , o.runs );
   discrete( n , o.seed , o.runs );
   sampling( 10 * n , o.seed , o.runs );

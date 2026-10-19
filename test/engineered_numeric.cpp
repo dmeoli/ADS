@@ -179,6 +179,60 @@ ADS_TEST( "is-prime" )
  for( const U64 n : S ) CHECK( isPrime( n ) == isPrimeBook( n ) );
  }
 
+// factorize(): 1, 2, the primes, the powers of 2 and of a prime, squares
+// of large primes, products of two primes of 32 bits and of three of 21,
+// Carmichael numbers, 2^64 - 1, and random words against the divisions
+// for those small enough, the product and the primality of the factors
+// for the others
+ADS_TEST( "factorize" )
+{
+ using V = std::vector< U64 >;
+ CHECK( factorize( 1 ).empty() && factorize( 2 ) == V( { 2 } ) &&
+        factorize( 4 ) == V( { 2 , 2 } ) &&
+        factorize( 1ULL << 63 ) == V( 63 , 2 ) &&
+        factorize( 18446744073709551557ULL ) ==
+        V( { 18446744073709551557ULL } ) );
+ CHECK( factorize( ~U64( 0 ) ) == V( { 3 , 5 , 17 , 257 , 641 , 65537 ,
+                                       6700417 } ) );
+ CHECK( factorize( 4294967291ULL * 4294967291ULL ) ==
+        V( { 4294967291ULL , 4294967291ULL } ) );
+ CHECK( factorize( 4294967279ULL * 4294967291ULL ) ==
+        V( { 4294967279ULL , 4294967291ULL } ) );
+ CHECK( factorize( 561 ) == V( { 3 , 11 , 17 } ) &&
+        factorize( 3215031751ULL ) == V( { 151 , 751 , 28351 } ) );
+ U64 p3 = 1;
+ for( int i = 0 ; i < 3 ; ++i ) p3 *= 2097143;   // a prime of 21 bits
+ CHECK( factorize( p3 ) == V( 3 , 2097143 ) );
+ CHECK( factorize( 257ULL * 257 * 65537 ) == V( { 257 , 257 , 65537 } ) );
+ std::mt19937_64 g( 43 );
+ for( int t = 0 ; t < 3000 ; ++t ) {
+  const U64 n = 1 + ( g() >> ( g() % 64 ) );
+  const V F = factorize( n );
+  U64 prod = 1;
+  bool primes = std::is_sorted( F.begin() , F.end() );
+  for( const U64 p : F ) {
+   prod *= p;
+   primes = primes && isPrime( p );
+   }
+  CHECK( prod == n && primes );
+  if( n < ( U64( 1 ) << 36 ) ) {            // against the divisions
+   V D;
+   U64 m = n;
+   for( U64 d = 2 ; d * d <= m ; ++d )
+    for( ; m % d == 0 ; m /= d ) D.push_back( d );
+   if( m > 1 ) D.push_back( m );
+   CHECK( D == F );
+   }
+  }
+ for( int t = 0 ; t < 200 ; ++t ) {         // semiprimes of 32-bit primes
+  U64 p , q;
+  do p = ( g() >> 32 ) | 1; while( ! isPrime( p ) );
+  do q = ( g() >> 32 ) | 1; while( ! isPrime( q ) );
+  CHECK( factorize( p * q ) == ( p < q ? V( { p , q } ) : V( { q , p } ) ) );
+  }
+ CHECK_THROWS( (void) factorize( 0 ) , contract_violation );
+ }
+
 // the generators: the first words of the reference implementations, the
 // jump, equality and the use by the distributions of std
 ADS_TEST( "generators" )

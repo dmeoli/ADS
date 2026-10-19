@@ -96,6 +96,7 @@ PAIRS = [
      ['boost::multiprecision::miller_rabin_test']),
     ('isprime', 'ADS::isPrime', 'GMP', ['GMP mpz_probab_prime_p']),
     ('isprime', 'ADS::isPrime', 'hurchalla', ['hurchalla::is_prime']),
+    ('factorize', 'ADS::factorize', 'hurchalla', ['hurchalla::factorize']),
     ('generators', 'ADS::Xoshiro256', 'std',
      ['std::mt19937_64', 'std::minstd_rand']),
     ('generators', 'ADS::Xoshiro256', 'Boost',

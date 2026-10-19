@@ -105,6 +105,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against std::search() with its three searchers, std::string::find(),
   memmem(), the searchers of Boost.Algorithm and, when found, libsais,
   libdivsufsort, edlib and rapidfuzz-cpp
+- factorize(), the prime factors of a word by the divisions by the primes
+  below 256 and the rho of Pollard with the cycles of Brent in Montgomery
+  form, the differences multiplied 128 at a time before each gcd;
+  NumberTheory.h
+- Xoshiro256StarStar, xoshiro256** on the state of Xoshiro256, and
+  AliasTable, the alias method of Walker in the construction of Vose,
+  which draws an index from one word; RandomGenerators.h
 - MPSCQueue, the unbounded queue from many producers to one consumer with
   a lane per producer, which never compete: the queue of Lamport on a
   circular vector that the producer replaces by one twice as large when
