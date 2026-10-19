@@ -323,6 +323,12 @@ PAIRS = [
      ['RecSplit l=8 b=100']),
     ('perfect hashing', 'ADS::RecSplit l=8 b=100', 'BBHash',
      ['BBHash g=2']),
+    ('concurrent maps', 'ADS::ConcurrentCuckooTable', 'libcuckoo',
+     ['libcuckoo::cuckoohash_map']),
+    ('concurrent maps', 'ADS::ConcurrentCuckooTable', 'Boost',
+     ['boost::concurrent_flat_map']),
+    ('concurrent maps', 'ADS::ConcurrentCuckooTable', 'std',
+     ['std::unordered_map std::shared_mutex']),
 ]
 
 def read(path):

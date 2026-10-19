@@ -125,8 +125,8 @@ the algorithms by technique or by problem:
 - `backtrack/`, the enumerations by backtrack;
 - `complexity/`, the problems of NP and their reductions;
 - `intractable/`, the techniques for the intractable problems;
-- `memory/` and `concurrent/`, the allocators, the arena and the queues
-  between threads;
+- `memory/` and `concurrent/`, the allocators, the arena, the queues
+  between threads and the concurrent hash table;
 - `external/`, the two-level memory and the algorithms on it;
 - `compression/` and `succinct/`, the codes, the compressors and the
   compressed data structures;
@@ -379,6 +379,9 @@ with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm, and
 [`bench/graphs.cpp`](bench/graphs.cpp) runs the algorithms of the book on
 graphs, templates on their structures, on those of the standard library,
 of Boost and of ADS, with the same counts of work on the three.
+RecSplit, and the concurrent cuckoo table with libcuckoo,
+`boost::concurrent_flat_map` and a `std::unordered_map` under a
+`std::shared_mutex`.
 
 | What | Header | Test |
 |---|---|---|
@@ -420,6 +423,7 @@ of Boost and of ADS, with the same counts of work on the three.
 | parse of LZ77 with no window in O(n) time (Karkkainen, Kempa and Puglisi) | [`compression/LZ77Linear.h`](include/ADS/compression/LZ77Linear.h) | `engineered_succinct.lz77-linear` |
 | tree of losers with the keys in its nodes, matches with no jump on the integers (Knuth; MCSTL, tlx) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.flat-loser-tree` |
 | merge of k sorted ranges by a lazy funnel of binary mergers (Frigo et al.; Brodal et al.) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.multiway-merge` |
+| cuckoo table shared by threads, buckets of 4 places, locks on 2048 stripes, paths searched in breadth without locks (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
 
 ## Sorting
 
