@@ -25,6 +25,7 @@
 #include "ADS/compression/HuffmanCoder.h"
 #include "ADS/compression/Rans.h"
 #include "ADS/compression/StreamVByte.h"
+#include "ADS/compression/Tans.h"
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 
@@ -267,6 +268,31 @@ ADS_TEST( "rans-coder" )
  CHECK_THROWS( ( void )ransDecompress( c ) , contract_violation );
  }
 
+// tANS of order 0: the round trip, the size within a percent of the
+// entropy (and the header) on the large strings, and the malformed inputs
+ADS_TEST( "tans-coder" )
+{
+ for( const auto & s : coderInputs() ) {
+  const auto c = tansCompress( s );
+  CHECK( tansDecompress( c ) == s );
+  if( s.size() > 10000 ) {
+   const double h = entropy( std::string_view(
+                     reinterpret_cast< const char * >( s.data() ) ,
+                     s.size() ) );
+   CHECK( 8.0 * double( c.size() ) <= double( s.size() ) * h * 1.01 +
+                                       8 * 600 );
+   }
+  }
+ CHECK_THROWS( ( void )tansDecompress( std::vector< std::uint8_t >( 20 ) ) ,
+               contract_violation );
+ auto c = tansCompress( coderInputs().back() );
+ c[ 8 ] ^= 1;                              // the frequencies sum wrong
+ CHECK_THROWS( ( void )tansDecompress( c ) , contract_violation );
+ auto d = tansCompress( coderInputs().back() );
+ d[ 8 + 512 ] ^= 0x40;                     // a wrong length of the stream
+ CHECK_THROWS( ( void )tansDecompress( d ) , contract_violation );
+ }
+
 // Stream VByte: the round trip and the size of every count of integers
 // from 0 to 41 (the groups of 4 and the integers one at a time at the end)
 // on the bounds of the lengths 1 to 4, and of 10^5 random ones of random
@@ -277,7 +303,8 @@ ADS_TEST( "stream-vbyte" )
  const std::uint32_t edge[] = { 0 , 1 , 255 , 256 , 65535 , 65536 ,
                                 16777215 , 16777216 , 4294967295u };
  auto bytes = []( std::uint32_t v ) {
-  return( std::size_t( 1 + ( v > 0xFF ) + ( v > 0xFFFF ) + ( v > 0xFFFFFF ) ) );
+  return( std::size_t( 1 + ( v > 0xFF ) + ( v > 0xFFFF ) +
+                       ( v > 0xFFFFFF ) ) );
   };
  auto check = [ & ]( const std::vector< std::uint32_t > & x ) {
   const auto c = streamVByteEncode( x );

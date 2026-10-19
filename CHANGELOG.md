@@ -453,6 +453,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocks of a line each), the line of the block summed by the nibbles
   with AVX2, and the superblock of every 4096-th bit of each value for
   select; test/engineered_succinct.cpp and test/succinct_top.cpp
+- tansCompress() and tansDecompress(), tANS of order 0 of Duda with 2^11
+  states dealt by the step of Zstandard: two halves of the string, each
+  with its own stream of bits read backward and four states, decoded
+  together; the states by tables, a symbol by a lookup, a shift and an
+  addition
 
 ### Changed
 
