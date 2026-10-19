@@ -37,6 +37,15 @@ std::size_t runs( const std::vector< T > & A , C & less , std::size_t cap )
  return( r );
  }
 
+/// A sorted when it is one run: left as it is, or reversed when it is
+/// strictly decreasing, which is stable since its keys are distinct
+template< class T , class C >
+void oneRun( std::vector< T > & A , C & less )
+{
+ if( ( A.size() > 1 ) && less( A[ 1 ] , A[ 0 ] ) )
+  std::reverse( A.begin() , A.end() );
+ }
+
 /// true if a sample of 64 equally spaced keys of A, n >= 64, holds at most
 /// 16 distinct ones and they differ in at least 4 bytes: few keys, but
 /// wide, which pdqSort() sorts in \f$ O( n \log k ) \f$ with fewer passes
@@ -68,9 +77,12 @@ template< class T , class C >
 void sort( std::vector< T > & A , C less )
 {
  if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
+  std::size_t r = 0;
   if( A.size() < kRadix )
    pdqSort( A , less );
-  else if( detail::runs( A , less , kRuns ) <= kRuns )
+  else if( ( r = detail::runs( A , less , kRuns ) ) <= 1 )
+   detail::oneRun( A , less );
+  else if( r <= kRuns )
    powerSort( A , less );
   else if( detail::fewWideKeys( A ) )
    pdqSort( A , less );
@@ -79,9 +91,12 @@ void sort( std::vector< T > & A , C less )
   }
  else if constexpr( detail::naturalOrder< T , C > &&
                     std::is_same_v< T , std::string > ) {
+  std::size_t r = 0;
   if( A.size() < kStrings )
    pdqSort( A , less );
-  else if( detail::runs( A , less , kRuns ) <= kRuns )
+  else if( ( r = detail::runs( A , less , kRuns ) ) <= 1 )
+   detail::oneRun( A , less );
+  else if( r <= kRuns )
    powerSort( A , less );
   else
    msdRadixSort( A );
@@ -94,8 +109,11 @@ template< class T , class C >
 void stableSort( std::vector< T > & A , C less )
 {
  if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
-  if( ( A.size() < kRadix ) ||
-      ( detail::runs( A , less , kRuns ) <= kRuns ) )
+  const std::size_t r = A.size() < kRadix ? 0 : detail::runs( A , less ,
+                                                               kRuns );
+  if( r == 1 )
+   detail::oneRun( A , less );
+  else if( r <= kRuns )
    powerSort( A , less );
   else if constexpr( std::is_floating_point_v< T > )   // -0 and +0 equal
    radixSortBy( A , []( T x ) {
@@ -105,8 +123,11 @@ void stableSort( std::vector< T > & A , C less )
   }
  else if constexpr( detail::naturalOrder< T , C > &&
                     std::is_same_v< T , std::string > ) {
-  if( ( A.size() < kStrings ) ||
-      ( detail::runs( A , less , kRuns ) <= kRuns ) )
+  const std::size_t r = A.size() < kStrings ? 0 : detail::runs( A , less ,
+                                                                 kRuns );
+  if( r == 1 )
+   detail::oneRun( A , less );
+  else if( r <= kRuns )
    powerSort( A , less );
   else
    msdRadixSort( A );

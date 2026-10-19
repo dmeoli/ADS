@@ -848,7 +848,9 @@ ADS_TEST( "merge-paths" )
 
 // the choices of sort() and stableSort() at their edges: 0, 1, 2 items;
 // the runs counted around kRuns on vectors above kRadix and kStrings,
-// strictly decreasing runs with -0 and +0 inside; few wide keys (16
+// strictly decreasing runs with -0 and +0 inside, one run (sorted with
+// ties, or strictly decreasing and reversed) at kStrings and kRadix, a
+// tie of -0 and +0 that splits a decreasing run; few wide keys (16
 // distinct doubles, 17, two values far apart) against few narrow ones;
 // the radix sort on keys that differ in one byte only, the top, a middle
 // or the sign, all equal, two values; the MSD sort of strings around the
@@ -907,6 +909,43 @@ ADS_TEST( "dispatch-edges" )
  CHECK( Z == Zs );
  for( std::size_t i = 0 ; i < Z.size() ; ++i )
   CHECK( std::signbit( Z[ i ] ) == std::signbit( Zs[ i ] ) );
+ for( std::size_t n : { kStrings , kRadix , kRadix + 1 } ) {   // one run,
+  Ints U( n ) , Dn( n );                        // non-decreasing with
+  std::vector< std::string > SU( n ) , SD( n ); // ties, or strictly
+  for( std::size_t i = 0 ; i < n ; ++i ) {      // decreasing: one pass
+   U[ i ] = int( i / 3 );
+   Dn[ i ] = int( n - i );
+   SU[ i ] = std::to_string( 100000 + i / 3 );
+   SD[ i ] = std::to_string( 100000 + n - i );
+   }
+  CHECK( detail::runs( U , less , kRuns ) == 1 &&
+         detail::runs( Dn , less , kRuns ) == 1 );
+  for( int s = 0 ; s < 2 ; ++s ) {
+   Ints U2 = U , D2 = Dn , DE = Dn;
+   auto SU2 = SU , SD2 = SD , SDE = SD;
+   if( s == 0 ) {
+    sort( U2 ); sort( D2 ); sort( SU2 ); sort( SD2 );
+    }
+   else {
+    stableSort( U2 ); stableSort( D2 ); stableSort( SU2 ); stableSort( SD2 );
+    }
+   std::sort( DE.begin() , DE.end() );
+   std::sort( SDE.begin() , SDE.end() );
+   CHECK( U2 == U && D2 == DE && SU2 == SU && SD2 == SDE );
+   }
+  }
+ std::vector< double > Y( kRadix );             // decreasing but for a
+ for( std::size_t i = 0 ; i < Y.size() ; ++i )  // tie of -0 and +0: two
+  Y[ i ] = double( 300 - int( i ) );            // runs, not one reversed
+ Y[ 300 ] = 0.0;
+ Y[ 301 ] = -0.0;
+ for( std::size_t i = 302 ; i < Y.size() ; ++i ) Y[ i ] = -double( i );
+ auto Ys = Y;
+ stableSort( Y );
+ std::stable_sort( Ys.begin() , Ys.end() );
+ CHECK( Y == Ys );
+ for( std::size_t i = 0 ; i < Y.size() ; ++i )
+  CHECK( std::signbit( Y[ i ] ) == std::signbit( Ys[ i ] ) );
  for( std::size_t k : { 1u , 2u , 16u , 17u , 64u } ) {   // few keys,
   std::vector< double > V( 4096 ) , W( k );
   for( auto & w : W ) w = ( double( g() ) - 2e9 ) / 7.0;
