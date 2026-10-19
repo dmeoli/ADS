@@ -26,12 +26,45 @@
  *   those with one (e.g., the Xeon Gold 5120) both widths make 16
  *   operations a cycle and the vectors of 256 bits run at a higher clock.
  *   KC = 384, MC = 480 and NC = 4096 came from a search on the same
- *   processor. The partial tiles at the borders are packed with zeros,
- *   and only their entries inside C are written.
+ *   processor. The product makes \f$ 2 m n k \f$ operations in
+ *   \f$ \Theta( m n k ) \f$ time; a step of the micro-kernel makes
+ *   \f$ M_R N_R \f$ fused operations on \f$ M_R + N_R \f$ entries loaded
+ *   from the first level (\f$ 96 / 22 \f$ for 6 x 16), the packing moves
+ *   \f$ m k \lceil n / N_C \rceil + k n \f$ entries, a fraction
+ *   \f$ O( 1 / M_C + 1 / N_C ) \f$ of the work, and the buffers take
+ *   \f$ K_C ( M_C + N_C ) \f$ entries, kept by the thread between the
+ *   calls. The partial tiles at the borders are packed with zeros, and
+ *   only their entries inside C are written. A small product (\f$ m n k
+ *   \le 2^{21} \f$) packs B alone and reads A where it is, the tiles of
+ *   its last rows and columns by kernels of their shape.
  * - transpose() moves blocks of 32 x 32 entries, which stay in the cache of
- *   first level both read by rows and written by columns, instead of
- *   running through the whole columns of the result.
+ *   first level both read by columns and written by rows, instead of
+ *   running through whole columns: \f$ \Theta( m n ) \f$ time and
+ *   \f$ O( m n / L ) \f$ misses of lines of L entries when a block of
+ *   \f$ 32 L \f$ entries fits the cache (the tall cache), the bound of the
+ *   cache-oblivious transposition.
  * - multiply() is the product A B, a new matrix, by gemm().
+ * - multiplyStrassen() is the product by the variant of Winograd of the
+ *   algorithm of Strassen [see strassen() of Matrix.h], on the views of
+ *   the quadrants: with \f$ S_1 = A_{21} + A_{22} \f$, \f$ S_2 = S_1 -
+ *   A_{11} \f$, \f$ S_3 = A_{11} - A_{21} \f$, \f$ S_4 = A_{12} - S_2 \f$,
+ *   \f$ T_1 = B_{12} - B_{11} \f$, \f$ T_2 = B_{22} - T_1 \f$, \f$ T_3 =
+ *   B_{22} - B_{12} \f$, \f$ T_4 = T_2 - B_{21} \f$ and the products \f$ P_1
+ *   = A_{11} B_{11} \f$, \f$ P_2 = A_{12} B_{21} \f$, \f$ P_3 = S_4 B_{22}
+ *   \f$, \f$ P_4 = A_{22} T_4 \f$, \f$ P_5 = S_1 T_1 \f$, \f$ P_6 = S_2 T_2
+ *   \f$, \f$ P_7 = S_3 T_3 \f$, the quadrants of C are \f$ C_{11} = P_1 +
+ *   P_2 \f$, \f$ C_{12} = U + P_5 + P_3 \f$, \f$ C_{21} = U + P_7 - P_4 \f$,
+ *   \f$ C_{22} = U + P_7 + P_5 \f$ with \f$ U = P_1 + P_6 \f$: 7 products
+ *   and 15 sums of halves, \f$ T( n ) = 7 T( n / 2 ) + O( n^2 ) =
+ *   O( n^{\log_2 7} ) = O( n^{2.81} ) \f$, until a dimension falls below
+ *   the cutoff, where gemm() takes over; an odd dimension leaves its last
+ *   row or column to gemm() (dynamic peeling). The bound of the error
+ *   grows as \f$ ( n / n_0 )^{\log_2 18} n_0^2 u \| A \| \| B \| \f$ for
+ *   the cutoff \f$ n_0 \f$ and the unit roundoff u, against the \f$ n u
+ *   | A | | B | \f$ of the classical product (Higham), which is the price
+ *   of the fewer products: with the cutoff 1536 one level spares 1/8 of
+ *   the operations of a product of 2048, two levels of 4096 more; the
+ *   schedule of the sums needs three temporaries of a quadrant.
  *
  * The contracts [see Contract.h]: the sizes of the factors agree, the
  * entries read are inside the matrices; gemm() needs leading dimensions at
@@ -46,6 +79,21 @@
  * \see T. M. Low, F. D. Igual, T. M. Smith, E. S. Quintana-Orti, Analytical
  *      modeling is enough for high-performance BLIS, ACM Transactions on
  *      Mathematical Software 43(2), 12:1-18, 2016, doi:10.1145/2925987
+ * \see V. Strassen, Gaussian elimination is not optimal, Numerische
+ *      Mathematik 13(4), 354-356, 1969, doi:10.1007/BF02165411
+ * \see S. Winograd, On multiplication of 2 x 2 matrices, Linear Algebra
+ *      and its Applications 4(4), 381-388, 1971,
+ *      doi:10.1016/0024-3795(71)90009-7
+ * \see N. J. Higham, Exploiting fast matrix multiplication within the
+ *      level 3 BLAS, ACM Transactions on Mathematical Software 16(4),
+ *      352-368, 1990, doi:10.1145/98267.98290
+ * \see J. Huang, T. M. Smith, G. M. Henry, R. A. van de Geijn, Strassen's
+ *      algorithm reloaded, SC16: International Conference for High
+ *      Performance Computing, Networking, Storage and Analysis, 690-701,
+ *      2016, doi:10.1109/SC.2016.58
+ * \see M. Frigo, C. E. Leiserson, H. Prokop, S. Ramachandran,
+ *      Cache-oblivious algorithms, ACM Transactions on Algorithms 8(1),
+ *      4:1-22, 2012, doi:10.1145/2071379.2071383
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -194,6 +242,15 @@ DenseMatrix< T > multiply( const DenseMatrix< T > & A ,
 /// the transpose of A
 template< class T >
 DenseMatrix< T > transpose( const DenseMatrix< T > & A );
+
+/// the product A B by the variant of Winograd of the algorithm of
+/// Strassen, 7 products of halves and 15 sums a level, down to blocks of
+/// fewer than cutoff rows, columns or inner terms, multiplied by gemm()
+/// \pre A.cols() == B.rows() and cutoff >= 2
+template< class T >
+DenseMatrix< T > multiplyStrassen( const DenseMatrix< T > & A ,
+                                   const DenseMatrix< T > & B ,
+                                   std::size_t cutoff = 1536 );
 
 /*--------------------------------------------------------------------------*/
 

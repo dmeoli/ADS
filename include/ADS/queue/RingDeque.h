@@ -9,7 +9,10 @@
  * new vector (O( 1 ) amortized time per insertion). The four operations
  * at the ends take O( 1 ) time, an item is read by its rank in O( 1 ), and
  * the items lie in at most two contiguous pieces, which the moves and the
- * visits run through at the speed of the memory.
+ * visits run through at the speed of the memory. The doubling of a deque
+ * of \f$ 2^j \f$ places moves its \f$ 2^j \f$ items, so that n insertions
+ * move fewer than \f$ 2 n \f$ items in all, and the places are fewer than
+ * \f$ 2 n + 8 \f$ for n items at the largest.
  *
  * Compared with std::deque, which keeps the items in blocks of 512 bytes
  * reached by a map of pointers, there is no indirection and no allocation
@@ -259,15 +262,20 @@ class RingDeque {
 
 /*--------------------------------------------------------------------------*/
  private:
- /// a vector of 2 m places, m the current one or 8 if none, the items
- /// moved to its front in order
- void grow( void );
+ /// the vector of 2 m places (8 if m = 0) with the n items of the vector
+ /// A of m places from the place h moved to its front, A freed; out of
+ /// line and with no access to the deque, which the loops of operations
+ /// can then keep in registers, its address never given away
+ ADS_RING_NOINLINE static T * relocate( T * A , std::size_t m ,
+                                        std::size_t h , std::size_t n );
+
+ /// the vector of twice the places, the items moved to its front in order
+ ADS_RING_INLINE void grow( void );
 
  /// v, which may have been an item, at the back or at the front of a deque
- /// that grows first; out of line, so that the insertions that need no
- /// growth are small enough to inline
- ADS_RING_NOINLINE T & growBack( T && v );
- ADS_RING_NOINLINE T & growFront( T && v );
+ /// that grows first
+ ADS_RING_INLINE T & growBack( T && v );
+ ADS_RING_INLINE T & growFront( T && v );
 
  /// the capacity 0 or a power of 2 at least size()
  [[nodiscard]] bool fits( void ) const;

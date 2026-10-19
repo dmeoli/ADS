@@ -13,9 +13,11 @@
  *   counting sort on the rows, a sort of the columns of each row and the
  *   sum of the equal places, O( nnz + m + sort ), or from a SparseMatrix.
  * - multiply() is the product y = A x, by rows: the nonzeros stream from
- *   memory in one pass, the entries of x are read by column; the product
- *   is bound by the memory, and on the benchmark neither more
- *   accumulators per row nor the gathers of AVX-512 made it faster.
+ *   memory in one pass, the entries of x are read by column: \f$ 2\,nnz
+ *   \f$ operations on \f$ 12\,nnz + 8 ( m + 1 ) \f$ bytes of the matrix,
+ *   8 m written and up to 8 nnz read of x, so that the product is bound
+ *   by the memory, and on the benchmark neither more accumulators per row
+ *   nor the gathers of AVX-512 made it faster.
  * - transpose() is the CSR of the transpose, i.e., the matrix by columns,
  *   by a counting sort on the columns that keeps the rows sorted, O( nnz +
  *   m + n ); a large matrix whose rows span columns far apart (a sample
@@ -23,7 +25,9 @@
  *   consecutive columns and then each bucket into its slice of the
  *   transpose, two passes whose writes stay in few streams and in the
  *   cache instead of one pass of writes scattered over all the transpose
- *   (the partitioned radix sort of the databases).
+ *   (the partitioned radix sort of the databases): 2 nnz moves instead of
+ *   nnz, but \f$ O( nnz / L ) \f$ misses instead of up to nnz, for lines
+ *   of L items, when a slice of \f$ nnz / 256 \f$ items fits the cache.
  *
  * The contracts [see Contract.h]: the places of the triplets are in the
  * matrix, and the columns fit 32 bits (the rows too, for transpose()); x
@@ -37,6 +41,11 @@
  *      Optimization of sparse matrix-vector multiplication on emerging
  *      multicore platforms, Parallel Computing 35(3), 178-194, 2009,
  *      doi:10.1016/j.parco.2008.12.006
+ * \see O. Polychroniou, K. A. Ross, A comprehensive study of main-memory
+ *      partitioning and its application to large-scale comparison- and
+ *      radix-sort, Proceedings of the 2014 ACM SIGMOD International
+ *      Conference on Management of Data, 755-766, 2014,
+ *      doi:10.1145/2588555.2610522
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

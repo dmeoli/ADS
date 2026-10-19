@@ -27,8 +27,14 @@
  *      doi:10.1145/69624.357207
  * \see P. P. C. Lee, T. Bu, G. Chandranmenon, A lock-free, cache-efficient
  *      multi-core synchronization mechanism for line-rate network traffic
- *      monitoring, IPDPS 2010, doi:10.1109/IPDPS.2010.5470368 (the copies
- *      of the indices)
+ *      monitoring, IEEE International Symposium on Parallel and
+ *      Distributed Processing (IPDPS), 1-12, 2010,
+ *      doi:10.1109/IPDPS.2010.5470368 (the copies of the indices)
+ * \see Intel 64 and IA-32 Architectures Optimization Reference Manual,
+ *      the spatial prefetcher that fetches the pairs of lines of 128
+ *      bytes, https://www.intel.com/content/www/us/en/content-details/
+ *      671488/intel-64-and-ia-32-architectures-optimization-reference-
+ *      manual-volume-1.html
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

@@ -154,6 +154,80 @@ sweep( const std::vector< Point > & P , std::vector< std::uint64_t > & K ,
  return( std::tuple( best , K[ a ] , K[ b ] ) );
  }
 
+/// the closest pair by the randomized grid of Golin, Raman, Schwarz and
+/// Smid: the points in a random order, each one looked for in the 9
+/// cells around its own of a grid of side at least the least distance of
+/// those before it, the grid built again when that distance falls
+inline std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
+closestGrid( const std::vector< Point > & P )
+{
+ using U = std::uint64_t;
+ const std::size_t n = P.size();
+ std::vector< std::uint32_t > I( n );       // the order, random
+ std::iota( I.begin() , I.end() , std::uint32_t( 0 ) );
+ shuffleFast( I.begin() , I.end() , Xoshiro256( n ) );
+ ClosestSoFar b;
+ b.offer( P , I[ 0 ] , I[ 1 ] );
+ // a table of 2^k places, each the last point of a cell, or -1, the cell
+ // of its key in cellOf; next[ u ] the point before u in its cell
+ std::vector< std::int32_t > head , next( n );
+ std::vector< U > cellOf;
+ U side = 1;
+ int shift = 64;
+ const std::int64_t M = 1000000000;
+ auto cell = [ & ]( std::size_t u , std::int64_t dx , std::int64_t dy ) {
+  const std::int64_t s = std::int64_t( side );   // the cells from 1, so
+  return( ( U( ( P[ u ].x + M ) / s + 1 + dx ) << 32 ) |   // that the ones
+          U( ( P[ u ].y + M ) / s + 1 + dy ) );   // around are not negative
+  };
+ auto place = [ & ]( U key ) {
+  return( std::size_t( ( key * 0x9e3779b97f4a7c15ULL ) >> shift ) );
+  };
+ auto insert = [ & ]( std::size_t r ) {
+  const std::uint32_t u = I[ r ];
+  const U key = cell( u , 0 , 0 );
+  std::size_t h = place( key );
+  const std::size_t mask = head.size() - 1;
+  while( ( head[ h ] >= 0 ) && ( cellOf[ h ] != key ) )
+   h = ( h + 1 ) & mask;
+  next[ u ] = head[ h ];
+  head[ h ] = std::int32_t( u );
+  cellOf[ h ] = key;
+  };
+ auto rebuild = [ & ]( std::size_t m ) {    // the points I[ 0 .. m )
+  side = U( std::sqrt( double( b.d ) ) ) + 1;   // at least the distance
+  std::size_t size = 4;
+  for( shift = 62 ; size < 2 * m ; size *= 2 , --shift ) {}
+  head.assign( size , -1 );
+  cellOf.assign( size , 0 );
+  for( std::size_t r = 0 ; r < m ; ++r ) insert( r );
+  };
+ if( b.d > 0 ) {
+  rebuild( 2 );
+  for( std::size_t r = 2 ; r < n ; ++r ) {
+   const std::uint32_t u = I[ r ];
+   const std::int64_t d0 = b.d;
+   const std::size_t mask = head.size() - 1;
+   for( std::int64_t dx = -1 ; dx <= 1 ; ++dx )
+    for( std::int64_t dy = -1 ; dy <= 1 ; ++dy ) {
+     const U key = cell( u , dx , dy );
+     std::size_t h = place( key );
+     while( ( head[ h ] >= 0 ) && ( cellOf[ h ] != key ) )
+      h = ( h + 1 ) & mask;
+     for( std::int32_t v = head[ h ] ; v >= 0 ; v = next[ v ] )
+      b.offer( P , u , std::size_t( v ) );
+     }
+   if( b.d == 0 )                           // two equal points
+    break;
+   if( ( b.d < d0 ) || ( 2 * ( r + 1 ) > head.size() ) )
+    rebuild( r + 1 );                       // a new side, or more places
+   else
+    insert( r );
+   }
+  }
+ return( std::pair( std::pair( b.i , b.j ) , b.d ) );
+ }
+
 }  // end( namespace detail )
 
 inline std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
@@ -166,8 +240,8 @@ closestPairSweep( const std::vector< Point > & P )
  auto r = detail::sweep( P , K , false , 16 * n );
  const bool byY = ! r;                      // a long scan along x: along y
  if( byY ) r = detail::sweep( P , K , true , 16 * n );
- if( ! r )                                  // and along y: the book
-  return( closestPair( P ) );
+ if( ! r )                                  // and along y: the grid
+  return( detail::closestGrid( P ) );
  const auto [ best , ka , kb ] = *r;
  // the places of the two keys in P, two different ones if they are equal
  const std::int64_t B = std::int64_t( 1 ) << 31;

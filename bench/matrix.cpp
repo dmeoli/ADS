@@ -11,7 +11,8 @@
  *   thread); the book's multiplyNaive() and strassen() (with the blocks of
  *   at most 64 rows by the naive product) on Matrix up to n = 512; each
  *   cell in nanoseconds per 1000 floating point operations, of the
- *   2 n^3 of the product;
+ *   2 n^3 of the product; ADS::multiplyStrassen() from n = 1024, whose
+ *   cells count the same 2 n^3 operations;
  * - "transpose", a new matrix B = A^T: ADS::transpose() on DenseMatrix
  *   against Eigen, and the book's transpose() on Matrix; ns per entry.
  *
@@ -133,6 +134,13 @@ int main( int argc , char ** argv )
           [ & ]( int ) {
            ads( 0 );
            sink = sink + ( DC( 0 , 0 ) > 0 ); } , r , ops ) );
+  if( n >= 1024 ) {
+   settle();
+   print( "gemm" , "double" , n , "ADS::multiplyStrassen" , median( none ,
+           [ & ]( int ) {
+            sink = sink + ( ADS::multiplyStrassen( DA , DB )( 0 , 0 ) > 0 );
+            } , r , ops ) );
+   }
 #endif
   if( n <= 512 ) {
    print( "gemm" , "double" , n , "ADS::multiplyNaive" , median( none ,

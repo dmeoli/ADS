@@ -27,16 +27,26 @@
  *
  * closestPairSweep(), beyond the book, is the sweep of the plane of
  * Hinrichs, Nievergelt and Schorn with no tree: the points, each made a
- * key of 64 bits ( x , y ), sorted by the radix sort of ADS [see Sort.h],
- * and each one compared with those before it while their difference in x
- * is below \f$ \delta \f$, the least distance so far, a point of the same
- * x ending the scan of its column as soon as the difference in y reaches
- * \f$ \delta \f$, since the column is sorted by y; on points spread in
- * the plane each point meets O( 1 ) others, O( n ) after the sort. Some
- * inputs make the scan long (many points within \f$ \delta \f$ in x and
- * far in y): after 16 n comparisons the sweep gives up and starts again
- * along y, and if that fails too closestPair() solves the problem, so
- * that the time stays \f$ O( n \log n ) \f$.
+ * key of 64 bits ( x , y ), sorted by the radix sort of ADS [see Sort.h]
+ * in O( n ), and each one compared with those before it while their
+ * difference in x is below \f$ \delta \f$, the least distance so far (all
+ * on squares, exact on 64 bits), a point of the same x ending the scan of
+ * its column as soon as the difference in y reaches \f$ \delta \f$, since
+ * the column is sorted by y. A point meets the points in the strip of
+ * width \f$ \delta \f$ before it, O( 1 ) of them on points spread in the
+ * plane, whence O( n ) after the sort; some inputs make the strips full
+ * of points far in y: after 16 n comparisons the sweep gives up and
+ * starts again along y, and if that fails too the randomized grid of
+ * Golin, Raman, Schwarz and Smid solves the problem: the points in a
+ * random order, the i-th looked for in the 9 cells around its own of a
+ * grid of side \f$ \lceil \delta_i \rceil \f$ hashed by the cells, each
+ * cell with O( 1 ) points of the grid; the grid is built again with
+ * the i points when \f$ \delta \f$ falls, which happens with probability
+ * at most 2 / i over the random order, whence \f$ \sum_i ( 1 + i \cdot 2 /
+ * i ) = O( n ) \f$ expected time on any input. The time is thus O( n )
+ * when a sweep succeeds and O( n ) expected always, against the
+ * \f$ \Omega( n \log n ) \f$ of the algebraic decision trees, which the
+ * grid escapes by the floor function.
  *
  * The contracts [see Contract.h]: at least two points, coordinates of
  * absolute value at most \f$ 10^9 \f$, so that the square of a distance
@@ -51,6 +61,9 @@
  * \see K. Hinrichs, J. Nievergelt, P. Schorn, Plane-sweep solves the
  *      closest pair problem elegantly, Information Processing Letters
  *      26(5), 255-261, 1988, doi:10.1016/0020-0190(88)90150-0
+ * \see M. Golin, R. Raman, C. Schwarz, M. Smid, Simple randomized
+ *      algorithms for closest pair problems, Nordic Journal of Computing
+ *      2(1), 3-27, 1995
  * \see S. Khuller, Y. Matias, A simple randomized sieve algorithm for the
  *      closest-pair problem, Information and Computation 118(1), 34-37,
  *      1995, doi:10.1006/inco.1995.1049
@@ -75,6 +88,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/geometry/ConvexHull.h"
+#include "ADS/numeric/RandomGenerators.h"
 #include "ADS/sort/Sort.h"
 
 #include <algorithm>

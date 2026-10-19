@@ -105,6 +105,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against std::search() with its three searchers, std::string::find(),
   memmem(), the searchers of Boost.Algorithm and, when found, libsais,
   libdivsufsort, edlib and rapidfuzz-cpp
+- MPSCQueue, the unbounded queue from many producers to one consumer with
+  a lane of blocks per producer, which never compete, no allocation per
+  item and the blocks given back by the consumer used again
+- multiplyStrassen(), the variant of Winograd of the product of Strassen
+  on the views of the quadrants of DenseMatrix, down to gemm() below a
+  cutoff, the odd dimensions peeled
 - DenseMatrix, the matrices by rows in one vector, with gemm(), the
   product of GotoBLAS and BLIS (the five loops, B and A packed in
   micro-panels, a micro-kernel of 6 x 16 doubles on AVX2, of 12 x 16 on
@@ -407,6 +413,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   places h1 + i h2 mod m one from the other by an addition, with no
   remainder past the first two, and PartitionedBloomFilter hashes an item
   once instead of once per part
+- closestPairSweep() falls back, after the sweeps along x and y, to the
+  randomized grid of Golin, Raman, Schwarz and Smid, O( n ) expected on
+  any input, instead of the divide et impera of the book
+- RingDeque moves its items into a larger vector by a function that does
+  not see the deque, so that the loops of its operations keep it in
+  registers
+- the documentation of the numeric, random, sampling, geometry, queue and
+  concurrent headers touched: the mathematics in LaTeX and the references
+  checked against their doi
 - SPSCQueue keeps its indices and their copies on four lines of cache,
   in pairs of lines that the adjacent line prefetcher cannot make shared
   between the threads, its places in raw memory padded by a line at each

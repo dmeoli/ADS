@@ -21,21 +21,35 @@
  *   the product of 128 bits where the compiler has one, and the doubling
  *   of Ahmes, O( log b ) additions, where it has not (MSVC);
  * - powMod(), \f$ x^v \bmod m \f$ by repeated squaring, O( log v )
- *   multiplications (exercise 17.1), each one of Montgomery when m is odd
- *   (see below), with no division but those that set up the modulus, and
- *   below \f$ 2^{62} \f$ with the forms kept in [ 0 , 2 m ), which spares
- *   the comparison that ends each product (the lazy reduction);
+ *   multiplications (exercise 17.1), \f$ \lfloor \log_2 v \rfloor + 1 \f$
+ *   squarings and as many products, each one of Montgomery when m is odd
+ *   (see Montgomery64 below): the products and the squarings are two
+ *   chains that do not depend on each other (from the lowest bit up), and
+ *   the bit selects the product with no branch. Below \f$ 2^{62} \f$ the
+ *   forms are kept in \f$ [ 0 , 2 m ) \f$ (the lazy reduction): for
+ *   \f$ a , b < 2 m \f$, \f$ T = a b < 4 m^2 < m R \f$, so that
+ *   \f$ ( T - q m ) / R + m \in ( 0 , 2 m ) \f$ and the comparison that
+ *   ends each product is spared;
  * - binaryGcd(), beyond the book, the binary gcd of Stein (Algorithm 4.5.2B
- *   of Knuth) with the trailing zeros counted by one instruction: the
- *   common power of 2 set apart, then \f$ \gcd( a , b ) =
- *   \gcd( \min( a , b ) , | a - b | ) \f$ with the zeros of the difference
- *   shifted out, O( log a + log b ) subtractions and no division;
+ *   of Knuth): with \f$ k \f$ the trailing zeros of \f$ a \lor b \f$,
+ *   \f$ \gcd( a , b ) = 2^k \gcd( a' , b' ) \f$ for the odd parts, and
+ *   \f$ \gcd( a , b ) = \gcd( \min( a , b ) , | a - b | ) \f$ with the
+ *   trailing zeros of the even difference shifted out, by one instruction;
+ *   each step halves at least \f$ \max( a , b ) \f$, hence at most
+ *   \f$ \log_2 a + \log_2 b + 2 \f$ steps and no division, the minimum and
+ *   the difference by conditional moves, with no branch to mispredict;
  * - Montgomery64, beyond the book, the arithmetic modulo an odd n of 64
  *   bits in the form \f$ \bar{x} = x R \bmod n \f$, \f$ R = 2^{64} \f$:
- *   the product \f$ \bar{a} \bar{b} R^{-1} \bmod n \f$ is the high half
- *   of \f$ \bar{a} \bar{b} \f$ minus that of \f$ q n \f$, q the low half
- *   times \f$ n^{-1} \bmod R \f$, i.e., two products of 128 bits and one
- *   of 64 instead of a division of 128 bits, exact for every odd n;
+ *   the product is \f$ \mathrm{REDC}( \bar{a} \bar{b} ) = \bar{a} \bar{b}
+ *   R^{-1} \bmod n \f$, where for \f$ T = h R + l < n R \f$ and \f$ q = l
+ *   n^{-1} \bmod R \f$ the low half of \f$ q n \f$ equals l, so that
+ *   \f$ ( T - q n ) / R = h - \lfloor q n / R \rfloor \in ( - n , n ) \f$
+ *   and one addition of n when negative ends it: two products of 128 bits
+ *   and one of 64 instead of a division of 128 bits, exact for every odd
+ *   n; \f$ n^{-1} \bmod 2^{64} \f$ comes from \f$ x_0 = 3 n \oplus 2 \f$,
+ *   right on 5 bits, by 4 steps of Newton \f$ x_{i+1} = x_i ( 2 - n x_i )
+ *   \f$, each doubling the bits that are right, and \f$ R \bmod n \f$ and
+ *   \f$ R^2 \bmod n \f$ by one division of 128 by 64 bits each;
  * - isPrimeTrial(), the divisions up to \f$ \sqrt{n} \f$,
  *   \f$ O( 2^{d/2} ) \f$ for n of d bits;
  * - witness(), b is a witness that n is composite if
@@ -44,19 +58,30 @@
  *   for some 0 <= i < v; millerRabin() tries K random bases in
  *   [ 2 , n - 2 ], at least 3/4 of which are witnesses for a composite n,
  *   and errs with probability at most \f$ ( 1 / 4 )^K \f$, only by saying
- *   prime; isPrime(), beyond the book, is exact on 64 bits: the divisions
- *   by the primes up to 53 by one product each (n is a multiple of the odd
- *   p iff \f$ n p^{-1} \bmod 2^{64} \le \lfloor ( 2^{64} - 1 ) / p
- *   \rfloor \f$), then the test of Miller and Rabin in Montgomery form on
- *   the fewest bases known to have no strong pseudoprime below n, from 1
- *   base below 341531 to the 7 of Sinclair for every n of 64 bits, and
- *   below \f$ 2^{32} \f$ the base 2 with a second base read in a table of
- *   32 by a hash of n, chosen to be a witness for each of the 2314 strong
- *   pseudoprimes to the base 2 below \f$ 2^{32} \f$ in its bucket (the
- *   hashing of Forisek and Jancina); the bases are tested in lockstep, in
- *   the arithmetic of Montgomery of 32 bits below \f$ 2^{32} \f$, whose
- *   constants cost divisions of 32 bits, and with the lazy reduction below
- *   \f$ 2^{62} \f$;
+ *   prime;
+ * - isPrime(), beyond the book, exact on 64 bits: first the divisions by
+ *   the 46 odd primes up to 211, by one product each with no branch, all
+ *   at once on vectors (for the odd p, \f$ p \mid n \iff n p^{-1} \bmod
+ *   2^{64} \le \lfloor ( 2^{64} - 1 ) / p \rfloor \f$, since \f$ x
+ *   \mapsto x p^{-1} \f$ is a bijection that sends the multiples of p onto
+ *   \f$ [ 0 , \lfloor ( 2^{64} - 1 ) / p \rfloor ] \f$), which leave about
+ *   \f$ \prod_{3 \le p \le 211} ( 1 - 1 / p ) \approx 0.21 \f$ of the odd
+ *   numbers; then the test of Miller and Rabin on the fewest bases known
+ *   to have no strong pseudoprime below n: 1 base below 341531, and
+ *   below \f$ 2^{32} \f$ the base 2 with a second one read in a table of
+ *   32 at the hash \f$ \lfloor ( n \cdot 2654435761 \bmod 2^{32} ) /
+ *   2^{27} \rfloor \f$, chosen to be a witness for each of the 2314
+ *   strong pseudoprimes to the base 2 below \f$ 2^{32} \f$ in its bucket
+ *   (computed for ADS by the exhaustive search), up to the 7 bases of
+ *   Sinclair for every n of 64 bits. The k bases run in lockstep, k chains
+ *   of products that the processor overlaps, so that 2 cost about as much
+ *   as 1; with 3 or more, the exponent goes by windows of 4 bits with a
+ *   table of \f$ b^0 , \dots , b^{15} \f$, \f$ \lceil \log_2 d \rceil + \lceil
+ *   \log_2 d / 4 \rceil + 14 \f$ products per base instead of up to
+ *   \f$ 2 \lceil \log_2 d \rceil \f$. The arithmetic is that of Montgomery
+ *   of 32 bits below \f$ 2^{32} \f$ (\f$ R = 2^{32} \f$, its constants by
+ *   divisions of 32 bits), the lazy one below \f$ 2^{62} \f$, and
+ *   Montgomery64 above;
  * - sieve(), the sieve of Eratosthenes on a SET of the integers from 2 to n
  *   [see BoolSet.h], beyond the book: the least item p left in the set is a
  *   prime, and its multiples are removed; since the multiples of the primes
@@ -74,30 +99,32 @@
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 17.2 and
  *      exercises 17.1-17.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap17.pdf
- * \see G. L. Miller, Riemann's hypothesis and tests for primality, Journal
- *      of Computer and System Sciences 13(3), 300-317, 1976,
- *      doi:10.1016/S0022-0000(76)80043-8
- * \see M. O. Rabin, Probabilistic algorithm for testing primality, Journal
- *      of Number Theory 12(1), 128-138, 1980,
- *      doi:10.1016/0022-314X(80)90084-0
- * \see J. Sorenson, J. Webster, Strong pseudoprimes to twelve prime bases,
- *      Mathematics of Computation 86(304), 985-1003, 2017,
- *      doi:10.1090/mcom/3134
  * \see P. L. Montgomery, Modular multiplication without trial division,
  *      Mathematics of Computation 44(170), 519-521, 1985,
  *      doi:10.1090/S0025-5718-1985-0777282-X
  * \see J. Stein, Computational problems associated with Racah algebra,
  *      Journal of Computational Physics 1(3), 397-405, 1967,
  *      doi:10.1016/0021-9991(67)90047-2
+ * \see D. E. Knuth, The Art of Computer Programming, vol. 2, 3rd ed.,
+ *      Addison-Wesley, 1998, section 4.5.2 (Algorithm B)
+ * \see G. L. Miller, Riemann's hypothesis and tests for primality, Journal
+ *      of Computer and System Sciences 13(3), 300-317, 1976,
+ *      doi:10.1016/S0022-0000(76)80043-8
+ * \see M. O. Rabin, Probabilistic algorithm for testing primality, Journal
+ *      of Number Theory 12(1), 128-138, 1980,
+ *      doi:10.1016/0022-314X(80)90084-0
  * \see T. Granlund, P. L. Montgomery, Division by invariant integers using
- *      multiplication, PLDI 1994, 61-72, doi:10.1145/178243.178249
- * \see M. Forisek, J. Jancina, Fast primality testing for integers that fit
- *      into a machine word, Proceedings of the 15th Conference on
- *      Information Technologies - Applications and Theory (ITAT), 2015,
- *      CEUR-WS 1422, 20-26
+ *      multiplication, Proceedings of the ACM SIGPLAN 1994 Conference on
+ *      Programming Language Design and Implementation (PLDI), 61-72, 1994,
+ *      doi:10.1145/178243.178249
  * \see G. Jaeschke, On strong pseudoprimes to several bases, Mathematics
- *      of Computation 61(204), 915-926, 1993, doi:10.2307/2153262, and the
- *      bases of J. Sinclair and others at https://miller-rabin.appspot.com
+ *      of Computation 61(204), 915-926, 1993,
+ *      doi:10.1090/S0025-5718-1993-1192971-8
+ * \see M. Forisek, J. Jancina, Fast primality testing for integers that fit
+ *      into a machine word, SOFSEM 2015 Student Research Forum, CEUR-WS
+ *      1326, 20-30, 2015, https://ceur-ws.org/Vol-1326/020-Forisek.pdf
+ * \see J. Sinclair and others, the deterministic sets of bases for the
+ *      test of Miller and Rabin, https://miller-rabin.appspot.com
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

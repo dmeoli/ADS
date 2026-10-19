@@ -446,6 +446,17 @@ ADS_TEST( "closest-pair-sweep" )
    }
   CHECK( check( P ) );
   }
+ for( int t = 0 ; t < 1000 ; ++t ) {        // the grid of the fallback
+  const long w = 2 + long( g() % 100000 );
+  Points P( 2 + g() % 300 );
+  for( auto & p : P ) p = Point{ long( g() % std::uint64_t( w ) ) - w / 2 ,
+                                 long( g() % std::uint64_t( w ) ) - w / 2 };
+  const auto [ ij , d ] = detail::closestGrid( P );
+  CHECK( ( d == closestPairBrute( P ).second ) && ( ij.first < ij.second ) &&
+         ( squaredDistance( P[ ij.first ] , P[ ij.second ] ) == d ) );
+  }
+ CHECK( detail::closestGrid( { { -G , -G } , { G , G } } ).second ==
+        std::int64_t( 8 ) * G * G );
  Points D( 6000 );                          // a diagonal strip: both
  for( auto & p : D ) {                      // sweeps give up
   const long a = long( g() % 2000000000 ) - G;
@@ -506,6 +517,22 @@ ADS_TEST( "dense-gemm" )
  CHECK_THROWS( gemm( 2 , 3 , 4 , 1.0 , ( const double * ) nullptr , 3 ,
                      ( const double * ) nullptr , 3 , 0.0 ,
                      ( double * ) nullptr , 3 ) , contract_violation );
+ // the variant of Winograd against the product, exact on small integers,
+ // with cutoffs that make many levels and every parity of the dimensions
+ for( int t = 0 ; t < 60 ; ++t ) {
+  const std::size_t m = 1 + g() % 40 , k = 1 + g() % 40 , n = 1 + g() % 40;
+  DenseMatrix< double > X( m , k ) , Y( k , n );
+  for( std::size_t i = 0 ; i < m ; ++i )
+   for( std::size_t j = 0 ; j < k ; ++j ) X( i , j ) = double( g() % 7 ) - 3;
+  for( std::size_t i = 0 ; i < k ; ++i )
+   for( std::size_t j = 0 ; j < n ; ++j ) Y( i , j ) = double( g() % 7 ) - 3;
+  CHECK( multiplyStrassen( X , Y , 2 + g() % 6 ) == multiply( X , Y ) );
+  }
+ CHECK( multiplyStrassen( DenseMatrix< double >( 0 , 3 ) ,
+                          DenseMatrix< double >( 3 , 2 ) ).rows() == 0 );
+ CHECK_THROWS( (void) multiplyStrassen( DenseMatrix< double >( 2 , 3 ) ,
+                                        DenseMatrix< double >( 2 , 3 ) ) ,
+               contract_violation );
  Matrix< double > A( 30 , std::vector< double >( 20 ) ) ,
                   B( 20 , std::vector< double >( 25 ) );
  for( auto & r : A ) for( auto & x : r ) x = double( g() % 9 );

@@ -45,14 +45,17 @@
  *
  * - reservoirSampleL() is Algorithm L of Li, beyond the notes, the reservoir
  *   for a stream of unknown length that draws the number of items to skip
- *   instead of a number per item: the n-th largest of the random keys of
- *   the items seen is distributed as a product W of n-th roots of
- *   uniforms, the next item to enter the reservoir is a geometric number
- *   of items later, \f$ \lfloor \log U / \log( 1 - W ) \rfloor \f$, and
- *   it replaces a random item of the reservoir; it draws
- *   \f$ O( n ( 1 + \log( N / n ) ) ) \f$ random numbers in all and, on a
- *   random access range, takes as much time, the skipped items never
- *   touched.
+ *   instead of a number per item: with a uniform key per item, the
+ *   reservoir holds the n items of the smallest keys, and W, the largest
+ *   of them, is distributed as a product of n-th roots of uniforms, \f$ W
+ *   \leftarrow W U^{1/n} \f$ at each entry; the next item whose key is
+ *   below W comes after a geometric number of items, \f$ S = \lfloor \ln
+ *   U' / \ln( 1 - W ) \rfloor \f$, \f$ P( S = s ) = ( 1 - W )^s W \f$, and
+ *   replaces a uniform item of the reservoir. The
+ *   item t > n enters with probability n / t, so that \f$ n ( H_N - H_n )
+ *   \approx n \ln( N / n ) \f$ items enter, each for 3 random numbers:
+ *   \f$ O( n ( 1 + \log( N / n ) ) ) \f$ of them in all and, on a random
+ *   access range, as much time, the skipped items never touched.
  *
  * Compared with the literature: Vitter's Algorithm D is the method of
  * choice when N is known, Algorithm Z of the same author does the same for
