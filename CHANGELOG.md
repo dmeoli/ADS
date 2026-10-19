@@ -105,6 +105,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against std::search() with its three searchers, std::string::find(),
   memmem(), the searchers of Boost.Algorithm and, when found, libsais,
   libdivsufsort, edlib and rapidfuzz-cpp
+- DenseMatrix, the matrices by rows in one vector, with gemm(), the
+  product of GotoBLAS and BLIS (the five loops, B and A packed in
+  micro-panels, a micro-kernel of 6 x 16 doubles on AVX2, of 12 x 16 on
+  AVX-512 with ADS_GEMM_AVX512, portable C++ otherwise, the small
+  products with only B packed and the kernels of the shape of the
+  borders), multiply() and transpose() by blocks; CsrMatrix, the sparse
+  matrices in compressed rows, from triplets or from SparseMatrix, with
+  the product by a vector and the transpose by a counting sort, through
+  256 buckets of columns when its writes would scatter; bench/matrix.cpp
+  and bench/sparse.cpp against Eigen and OpenBLAS
+- the registration of bench/numeric.cpp, queues.cpp, concurrent.cpp,
+  geometry.cpp, matrix.cpp and sparse.cpp in the makefile, in
+  CMakeLists.txt, in bench/run.sh and in the pairs of bench/summary.py
 - convexHull(), the octagon of Akl and Toussaint, the radix sort of keys
   of 64 bits and the monotone chain of Andrew; closestPairSweep(), the
   sweep of Hinrichs, Nievergelt and Schorn on the points sorted by the

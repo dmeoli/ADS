@@ -5,7 +5,8 @@
  * Tests of the engineered numerics and geometry, beyond the book: the
  * binary gcd, the Montgomery form and the exact primality on 64 bits, the
  * generators and the bounded integers, the batched shuffle and the
- * reservoir of Algorithm L, the convex hull of the octagon and of the
+ * reservoir of Algorithm L, the product of dense matrices by blocks, the
+ * sparse matrices by rows, the convex hull of the octagon and of the
  * monotone chain and the closest pair by the sweep, checked against the
  * book's functions and the standard library on random and extreme inputs,
  * at the level 3 of the contracts.
@@ -25,6 +26,8 @@
 #include "ADS/geometry/ClosestPair.h"
 #include "ADS/geometry/ConvexHull.h"
 
+#include "ADS/numeric/CsrMatrix.h"
+#include "ADS/numeric/DenseMatrix.h"
 #include "ADS/numeric/NumberTheory.h"
 #include "ADS/numeric/RandomGenerators.h"
 #include "ADS/numeric/RandomNumbers.h"
@@ -449,6 +452,130 @@ ADS_TEST( "closest-pair-sweep" )
   p = Point{ a / 2 , a / 2 + long( g() % 2000 ) };
   }
  CHECK( check( D ) );
+ }
+
+// gemm() against the naive product on every shape from 0 to beyond the
+// blocks, with leading dimensions larger than the columns, alpha and beta,
+// beta = 0 on a C of NaN (which must not be read), k = 0 and alpha = 0;
+// on doubles, floats and integers (the portable kernel); multiply() and
+// transpose() of DenseMatrix against the book's Matrix
+ADS_TEST( "dense-gemm" )
+{
+ std::mt19937_64 g( 31 );
+ auto run = [ & ]< class T >( T , std::size_t m , std::size_t n ,
+                              std::size_t k , T alpha , T beta ,
+                              bool nanC ) {
+  const std::size_t lda = k + g() % 3 , ldb = n + g() % 3 ,
+                    ldc = n + g() % 3;
+  std::vector< T > A( m * lda + 1 ) , B( k * ldb + 1 ) , C( m * ldc + 1 );
+  for( auto & x : A ) x = T( long( g() % 7 ) - 3 );
+  for( auto & x : B ) x = T( long( g() % 7 ) - 3 );
+  for( auto & x : C ) x = nanC ? std::numeric_limits< T >::quiet_NaN()
+                               : T( long( g() % 7 ) - 3 );
+  std::vector< T > R = C;                   // the naive product
+  for( std::size_t i = 0 ; i < m ; ++i )
+   for( std::size_t j = 0 ; j < n ; ++j ) {
+    T s = 0;
+    for( std::size_t p = 0 ; p < k ; ++p )
+     s += A[ i * lda + p ] * B[ p * ldb + j ];
+    R[ i * ldc + j ] = beta == T( 0 ) ? alpha * s
+                                      : alpha * s + beta * C[ i * ldc + j ];
+    }
+  gemm( m , n , k , alpha , A.data() , lda , B.data() , ldb , beta ,
+        C.data() , ldc );
+  for( std::size_t i = 0 ; i < m ; ++i )    // small integers: exact
+   for( std::size_t j = 0 ; j < n ; ++j )
+    if( !( C[ i * ldc + j ] == R[ i * ldc + j ] ) ) return( false );
+  return( true );
+  };
+ const std::size_t S[] = { 0 , 1 , 2 , 7 , 12 , 13 , 16 , 17 , 33 , 65 };
+ for( std::size_t m : S )
+  for( std::size_t n : S )
+   for( std::size_t k : { 0 , 1 , 5 , 16 , 40 } ) {
+    CHECK( run( 1.0 , m , n , k , 1.0 , 0.0 , true ) );
+    CHECK( run( 1.0 , m , n , k , -2.0 , 3.0 , false ) );
+    CHECK( run( 1.0f , m , n , k , 2.0f , -1.0f , false ) );
+    CHECK( run( 1.0f , m , n , k , 1.0f , 0.0f , true ) );
+    CHECK( run( 1L , m , n , k , 3L , 2L , false ) );
+    }
+ // beyond the blocks KC , MC and the panels, and alpha = 0
+ CHECK( run( 1.0 , 250 , 70 , 300 , 1.0 , 1.0 , false ) );
+ CHECK( run( 1.0 , 260 , 33 , 520 , -1.0 , 0.0 , true ) );
+ CHECK( run( 1.0f , 37 , 4100 , 3 , 1.0f , 0.0f , false ) );
+ CHECK( run( 1.0 , 9 , 9 , 9 , 0.0 , 2.0 , false ) );
+ CHECK_THROWS( gemm( 2 , 3 , 4 , 1.0 , ( const double * ) nullptr , 3 ,
+                     ( const double * ) nullptr , 3 , 0.0 ,
+                     ( double * ) nullptr , 3 ) , contract_violation );
+ Matrix< double > A( 30 , std::vector< double >( 20 ) ) ,
+                  B( 20 , std::vector< double >( 25 ) );
+ for( auto & r : A ) for( auto & x : r ) x = double( g() % 9 );
+ for( auto & r : B ) for( auto & x : r ) x = double( g() % 9 );
+ const DenseMatrix< double > DA( A ) , DB( B );
+ CHECK( multiply( DA , DB ).toMatrix() == multiply( A , B ) );
+ CHECK( transpose( DA ).toMatrix() == transpose( A ) );
+ CHECK( transpose( transpose( DA ) ) == DA );
+ CHECK( transpose( DenseMatrix< double >( 0 , 5 ) ).rows() == 5 );
+ DenseMatrix< int > E( 2 , 3 , 7 );
+ CHECK( E( 1 , 2 ) == 7 && E.rows() == 2 && E.cols() == 3 );
+ CHECK_THROWS( (void) E( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) multiply( DA , DA ) , contract_violation );
+ CHECK_THROWS( DenseMatrix< double >( Matrix< double >( { { 1 , 2 } ,
+                                                          { 3 } } ) ) ,
+               contract_violation );
+ }
+
+// CsrMatrix against a dense reference: triplets in random order with
+// equal places summed and empty rows, the zero matrix, a matrix of one
+// row and one of one column, the product (rows long enough for the
+// gathers and short ones), the transpose and its transpose, the
+// conversion from the book's SparseMatrix
+ADS_TEST( "csr-matrix" )
+{
+ std::mt19937_64 g( 37 );
+ for( int t = 0 ; t < 300 ; ++t ) {
+  const std::size_t m = g() % 40 , n = 1 + g() % 40;
+  std::vector< std::vector< double > > D( m , std::vector< double >( n ) );
+  std::vector< CsrMatrix::Triplet > T;
+  const std::size_t z = g() % ( 1 + 3 * m * n );
+  for( std::size_t e = 0 ; e < z && m ; ++e ) {
+   const std::size_t i = g() % m , j = g() % n;
+   const double v = double( long( g() % 9 ) - 4 );
+   T.emplace_back( i , j , v );
+   D[ i ][ j ] += v;
+   }
+  const CsrMatrix A( m , n , T );
+  CHECK( A.rows() == m && A.cols() == n );
+  for( std::size_t i = 0 ; i < m ; ++i )
+   for( std::size_t j = 0 ; j < n ; ++j )
+    CHECK( A.get( i , j ) == D[ i ][ j ] );
+  std::vector< double > x( n );
+  for( auto & v : x ) v = double( long( g() % 9 ) - 4 );
+  const auto y = A.multiply( x );
+  for( std::size_t i = 0 ; i < m ; ++i ) {
+   double s = 0;
+   for( std::size_t j = 0 ; j < n ; ++j ) s += D[ i ][ j ] * x[ j ];
+   CHECK( y[ i ] == s );                    // small integers: exact
+   }
+  const CsrMatrix Tr = A.transpose();
+  CHECK( Tr.rows() == n && Tr.cols() == m && Tr.transpose() == A );
+  for( std::size_t i = 0 ; i < m ; ++i )
+   for( std::size_t j = 0 ; j < n ; ++j )
+    CHECK( Tr.get( j , i ) == D[ i ][ j ] );
+  }
+ const CsrMatrix Z( 3 , 4 );
+ CHECK( Z.nonzeros() == 0 && Z.multiply( { 1 , 2 , 3 , 4 } ) ==
+        std::vector< double >( 3 , 0.0 ) && Z.transpose().rows() == 4 );
+ SparseMatrix S( 5 , 6 );
+ S.set( 0 , 5 , 2 );
+ S.set( 4 , 0 , -3 );
+ S.set( 2 , 2 , 7 );
+ const CsrMatrix C( S );
+ CHECK( C.get( 0 , 5 ) == 2 && C.get( 4 , 0 ) == -3 && C.get( 2 , 2 ) == 7 &&
+        C.nonzeros() == 3 && C.get( 1 , 1 ) == 0 );
+ CHECK_THROWS( CsrMatrix( 2 , 2 , { { 2 , 0 , 1.0 } } ) ,
+               contract_violation );
+ CHECK_THROWS( (void) C.multiply( { 1.0 } ) , contract_violation );
+ CHECK_THROWS( (void) C.get( 5 , 0 ) , contract_violation );
  }
 
 }  // end( namespace )

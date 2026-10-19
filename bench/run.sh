@@ -5,7 +5,8 @@
 # Runs all the benchmarks on one core and writes their lines, with a header   #
 # that records the machine, the compiler, the load and the date, to           #
 # results/<host>-<date>.tsv; then bench/tables.py turns the file into the     #
-# tables of the README. The core comes from CORE (default 0), the runs per    #
+# tables of the README. The core comes from CORE (default 0), the second one  #
+# of the benchmark of two threads from CORE2 (default CORE + 1), the runs per #
 # cell from RUNS (default 11), the build directory from BUILD.                #
 #                                                                             #
 #   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
@@ -46,6 +47,14 @@ run hashing 100000 1000000
 run search 100000 1000000 10000000
 run suffix 100000 1000000 10000000
 run edit 100 1000 10000 100000
+run numeric 100000 1000000
+run queues 100000 1000000
+run geometry 100000 1000000
+run matrix 64 256 1024 2048
+run sparse 100000 1000000
+# the queues between threads on the core and the next one allowed
+taskset -c "$CORE,${CORE2:-$((CORE + 1))}" "$BUILD/bench-concurrent" \
+ -r "$RUNS" 1000000 10000000 >> "$out"
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################
