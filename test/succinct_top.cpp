@@ -68,8 +68,8 @@ void checkAll( const std::vector< bool > & R )
 // many densities and sizes around the multiples of 2^10; and the groups
 // of select that span 2^16 bits or more: dense runs of 1s (and of 0s)
 // separated by long empty stretches, so that the groups across them are
-// sparse, and a vector whose last group is sparse; the directories with
-// one select or none
+// sparse, and a vector whose last group is sparse; a vector built from
+// its words; the directories with one select or none
 ADS_TEST( "rank-select-top" )
 {
  std::mt19937 g( 3 );
@@ -90,6 +90,18 @@ ADS_TEST( "rank-select-top" )
  T.insert( T.end() , 200000 , false );
  T.push_back( true );
  checkAll( T );
+ // a vector from its words, the bits past the size cleared
+ std::vector< Word > W( 9 );
+ for( auto & w : W ) w = g() | ( Word( g() ) << 32 );
+ for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 575 , 576 } ) {
+  const BitVector v( W , n );
+  BitVector u;
+  for( std::size_t i = 0 ; i < n ; ++i )
+   u.push_back( ( W[ i / 64 ] >> ( i % 64 ) ) & 1 );
+  CHECK( v == u && v.size() == n );
+  }
+ CHECK_THROWS( BitVector( std::span< const Word >( W ).first( 1 ) , 65 ) ,
+               contract_violation );
  // the directories with fewer selects: the same ranks and the selects
  // asked for, in fewer bits, and the others refused
  BitVector b;

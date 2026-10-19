@@ -682,6 +682,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FMIndex::rank() counts the symbol in the block 8 bytes at a time, by the
   zero bytes of the word xor the symbol, instead of one byte at a time;
   FMIndex::sizeInBits()
+- RankSelect builds the inventories of select from its directory, a block
+  at a time, instead of a scan of the words, and its directory with no
+  test per word; the third level of counts is kept also when only the
+  last block reaches it; BitVector from a span of words
 
 ### Fixed
 
