@@ -47,6 +47,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   RecSplit; the libraries from their sources given to the makefile by
   HASHING and ABSL (ADS_HASHING and find_package( absl ) with CMake)
 
+- StringSearcher, the engineered exact search of string/StringSearch.h:
+  a pattern prepared once, two or four probes of its rarest bytes compared
+  with 64, 32 or 16 places of the text at once (AVX-512, AVX2, SSE2,
+  memchr() elsewhere), the shifts of its q-grams for the patterns of 64
+  bytes or more, and the Two-Way algorithm of Crochemore and Perrin once
+  the failed comparisons cost more than 16 times the text scanned, so that
+  no text costs more than O( n + m ); find(), findAll(), count() and the
+  interface of the searchers of std::search(); test
+  engineered_strings.string-search
+- suffixArray() and lcpArrayPhi() of string/SuffixSorting.h: SA-IS on 32
+  or 64 bits without an array of the types, the LMS-substrings named by
+  their lengths and memcmp(), the scans of the induction without branches
+  on the small alphabets and with the text, the buckets and the places
+  written prefetched; the LCP array by the permuted LCP of Karkkainen,
+  Manzini and Puglisi, the text read 8 bytes at a time; test
+  engineered_strings.suffix-sorting
+- levenshtein(), lcsLength() and approximateMatches() of
+  string/EditDistance.h: the bit vectors of Myers and Hyyro, one word up
+  to 64 bytes, the band of Ukkonen with the blocks dropped by the cost
+  still to pay, doubled from 64, and all the blocks four columns at a time
+  in the lanes of AVX2 once the band grows too wide; the bit-parallel LCS
+  of Allison and Dix; the search of Myers with the cut-off of Ukkonen;
+  test engineered_strings.edit-distance
+- the benchmarks of the exact search, of the suffix and LCP arrays and of
+  the edit distance, LCS and approximate search (bench/search.cpp,
+  bench/suffix.cpp, bench/edit.cpp, on the texts of bench/Texts.h)
+  against std::search() with its three searchers, std::string::find(),
+  memmem(), the searchers of Boost.Algorithm and, when found, libsais,
+  libdivsufsort, edlib and rapidfuzz-cpp
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the

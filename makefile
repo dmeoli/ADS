@@ -52,8 +52,11 @@ test: $(BINS)
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
 # fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
-# Abseil
-BENCHES   = sort dictionaries priority sequences bignum fft hashing
+# Abseil; LIBSAIS=<prefix> and DIVSUFSORT=<prefix> add libsais and
+# libdivsufsort to suffix, EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
+# rapidfuzz-cpp to edit
+BENCHES   = sort dictionaries priority sequences bignum fft hashing search \
+            suffix edit
 comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
@@ -61,6 +64,13 @@ GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
             -Wl$(comma)-rpath$(comma)$(GMP)/lib -lgmpxx -lgmp)
 FFTWFLAGS = $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
             -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3)
+SAISFLAGS = $(if $(LIBSAIS),-DADS_HAS_LIBSAIS -I$(LIBSAIS)/include \
+            -L$(LIBSAIS)/lib -lsais) \
+            $(if $(DIVSUFSORT),-DADS_HAS_DIVSUFSORT -I$(DIVSUFSORT)/include \
+            -L$(DIVSUFSORT)/lib -ldivsufsort)
+EDITFLAGS = $(if $(EDLIB),-DADS_HAS_EDLIB -I$(EDLIB)/include \
+            -L$(EDLIB)/lib -ledlib) \
+            $(if $(RAPIDFUZZ),-DADS_HAS_RAPIDFUZZ -I$(RAPIDFUZZ)/include)
 
 HASHINC   = unordered_dense/include robin-map/include libcuckoo \
             xxHash wyhash rapidhash fastfilter_cpp/src \
@@ -83,6 +93,16 @@ $(BUILD)/bench-fft: bench/fft.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-hashing: bench/hashing.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(HASHFLAGS)
+$(BUILD)/bench-search: bench/search.cpp bench/Bench.h bench/Texts.h \
+                      $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $<
+
+$(BUILD)/bench-suffix: bench/suffix.cpp bench/Bench.h bench/Texts.h \
+                      $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(SAISFLAGS)
+
+$(BUILD)/bench-edit: bench/edit.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(EDITFLAGS)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

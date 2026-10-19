@@ -10,6 +10,8 @@
 #                                                                             #
 #   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
 #                           [HASHING=<dir>] [ABSL=<prefix>]                   #
+#                           [LIBSAIS=<prefix>] [DIVSUFSORT=<prefix>]          #
+#                           [EDLIB=<prefix>] [RAPIDFUZZ=<prefix>]             #
 ###############################################################################
 
 set -e
@@ -39,6 +41,9 @@ run sequences 100000 10000000
 run bignum 16 256 4096 32768
 run fft 1024 65536 1048576
 run hashing 100000 1000000
+run search 100000 1000000 10000000
+run suffix 100000 1000000 10000000
+run edit 100 1000 10000 100000
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################
