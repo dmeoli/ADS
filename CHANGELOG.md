@@ -651,6 +651,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RankSelect builds the inventories of select only for the values asked
   for, RankSelect::Selects: JacobsonTree keeps those of the 1s, K2Tree
   none
+- EliasFano::nextGEQ() compares the low bits of the items of the bucket of
+  x with those of x, instead of an access(), and its select, per item
 
 ### Fixed
 
