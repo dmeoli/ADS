@@ -357,6 +357,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   block with a header that links it to the one before instead of a vector
   of the blocks, so that a pool is six words, allocates nothing but its
   blocks, and a structure of few items takes no more than it holds
+- List keeps its cells in an ObjectPool, the cell of remove() serving
+  the next insert(); a list of items with a trivial destructor dies a
+  block at a time; List< T , false > takes its cells one by one from new
+  and delete, as the chains of ChainedHashTable do, which are short
 
 ### Fixed
 

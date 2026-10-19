@@ -39,6 +39,7 @@ ch03  ex3.8              Esercizio 3.8, rango
 
 # chapter 4, Strutture di dati elementari
 ch04  spec.List          sezione 4.1, lista bidirezionale circolare
+ch04  sec4.1.pool        sezione 4.1, lista bidirezionale sul pool
 ch04  spec.ArraySequence sezione 4.2, realizzazione con vettori
 ch04  sec4.2.doubling    sezione 4.2, raddoppio del vettore
 ch04  sec4.2.1.counter   sezione 4.2.1, contatore binario

@@ -247,7 +247,68 @@ void sequence_spec( void )
 /*--------------------------------------------------------------------------*/
 
 // section 4.1, the LIST with pointers
-ADS_TEST( "spec.List" ) { sequence_spec< List< int > >(); }
+ADS_TEST( "spec.List" )
+{
+ sequence_spec< List< int > >();
+ sequence_spec< List< int , false > >();       // the cells with no pool
+ }
+
+// the list of section 4.1 on its pool: random insertions and removals at
+// random positions against std::deque, the cells removed taken again by
+// the insertions, the walk backwards and std::reverse on the iterators;
+// the edges: the empty list, one item in and out, copies, moves and swaps
+// between lists of different pools whose cells stay valid and are freed
+// by the list that holds them, a list moved from and used again, a
+// self-swap, and items with a destructor (std::string, beyond the
+// short-string buffer) left in the list when it dies
+ADS_TEST( "sec4.1.pool" )
+{
+ std::mt19937 g( 41 );
+ List< std::string > L;
+ std::deque< std::string > R;
+ CHECK( L.isEmpty() && L.begin() == L.end() );
+ L.remove( L.insert( L.head() , std::string( 30 , 'x' ) ) );
+ CHECK( L.isEmpty() && L.finished( L.head() ) );
+ for( int op = 0 ; op < 20000 ; ++op ) {
+  const std::size_t k = R.empty() ? 0 : g() % ( R.size() + 1 );
+  auto p = L.head();
+  for( std::size_t i = 0 ; i < k ; ++i ) p = L.next( p );
+  if( R.empty() || ( g() % 5 < 3 ) ) {
+   const std::string v( 20 + g() % 20 , char( 'a' + op % 26 ) );
+   L.insert( p , v );
+   R.insert( R.begin() + std::ptrdiff_t( k ) , v );
+   }
+  else if( k < R.size() ) {
+   L.remove( p );
+   R.erase( R.begin() + std::ptrdiff_t( k ) );
+   }
+  if( op % 4000 == 0 )
+   CHECK( std::equal( L.begin() , L.end() , R.begin() , R.end() ) );
+  }
+ CHECK( std::equal( L.begin() , L.end() , R.begin() , R.end() ) );
+ CHECK( std::equal( L.rbegin() , L.rend() , R.rbegin() , R.rend() ) );
+ std::reverse( L.begin() , L.end() );
+ std::reverse( R.begin() , R.end() );
+ CHECK( std::equal( L.begin() , L.end() , R.begin() , R.end() ) );
+ List< std::string > C( L );                   // a copy, a pool of its own
+ List< std::string > M( std::move( L ) );      // the cells move along
+ CHECK( L.isEmpty() && C == M );
+ L.push_back( "again" );                       // the list moved from
+ CHECK( L.read( L.head() ) == "again" && L.head() == L.tail() );
+ L.swap( C );
+ CHECK( L == M && C.read( C.head() ) == "again" );
+ L.swap( L );
+ CHECK( L == M );
+ C = M;
+ M.remove( M.head() );
+ CHECK( C == L && !( M == L ) );
+ List< int > I;
+ for( int i = 0 ; i < 100000 ; ++i ) I.push_back( i );
+ int expect = 0;
+ bool ok = true;
+ for( int x : I ) ok = ok && ( x == expect++ );
+ CHECK( ok && expect == 100000 );
+ }
 
 // section 4.2, the vector
 ADS_TEST( "spec.ArraySequence" ) { sequence_spec< ArraySequence< int > >(); }

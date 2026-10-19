@@ -182,7 +182,7 @@ std::size_t ChainedHashTable< K , V , C , H >::place( const K & k ) const
 template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
 typename ChainedHashTable< K , V , C , H >::Pos
-ChainedHashTable< K , V , C , H >::find( const List< Pair > & L ,
+ChainedHashTable< K , V , C , H >::find( const Bucket & L ,
                                          const K & k ) const
 {
  f_probes = 1;
@@ -247,7 +247,7 @@ template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
 void ChainedHashTable< K , V , C , H >::rebuild( std::size_t m )
 {
- std::vector< List< Pair > > T( m );
+ std::vector< Bucket > T( m );
  std::swap( f_T , T );
  for( auto & L : T )
   for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) ) {

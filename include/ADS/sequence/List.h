@@ -14,7 +14,17 @@
  * that moving a list relinks its first and last cells to the new sentinel in
  * O( 1 ) time and allocates nothing: the list moved from is left empty, and
  * still usable. Copying a list copies its cells (the rule of five, with the
- * copy and swap idiom for the assignment).
+ * copy and swap idiom for the assignment). Beyond the book, the cells come
+ * from an ObjectPool [see ObjectPool.h] of the list, which takes back the
+ * cell of remove() for the next insert(): a cell costs no call to the
+ * allocator, the cells made one after another are next to each other in
+ * memory, and a list of items with a trivial destructor dies a block at a
+ * time; the price is that the list keeps the memory of its largest size
+ * until it dies, and that a move takes the pool along with the cells. A
+ * pool is no gain for a list of a few cells, which still takes a block per
+ * cell and a header per block: a structure of many short lists (the chains
+ * of ChainedHashTable) takes List< T , false >, whose cells come one by one
+ * from new and delete.
  *
  * The contracts [see Contract.h]: a position is a cell of this list, which
  * costs a scan of the list and is therefore an audit, checked by the
@@ -51,6 +61,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/ObjectPool.h"
 
 #include <cstddef>
 #include <initializer_list>
@@ -68,8 +79,9 @@ namespace ADS {
 /*---------------------------- CLASS List ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a SEQUENCE realized as a bidirectional circular list with a sentinel
-template< class T >
+/// a SEQUENCE realized as a bidirectional circular list with a sentinel,
+/// its cells from a pool if Pooled
+template< class T , bool Pooled = true >
 class List {
 
 /*--------------------------------------------------------------------------*/
@@ -252,7 +264,20 @@ class List {
  /// \pre this list is empty
  void adopt( List & o ) noexcept;
 
+ /// the cells one by one from new and delete, as a pool would give them
+ struct Plain {
+  template< class... Args >
+  Cell * make( Args &&... args ) {
+   return( new Cell{ std::forward< Args >( args )... } );
+   }
+  void free( Cell * c ) noexcept { delete c; }
+  void swap( Plain & ) noexcept {}
+  };
+
  mutable Cell f_sentinel;   ///< the sentinel, i.e., the list
+ /// the cells
+ [[no_unique_address]]
+ std::conditional_t< Pooled , ObjectPool< Cell > , Plain > f_pool;
 
  };  // end( class List )
 

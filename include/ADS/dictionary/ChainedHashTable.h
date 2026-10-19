@@ -149,7 +149,8 @@ class ChainedHashTable {
  private:
 
  using Pair = std::pair< K , V >;
- using Pos = typename List< Pair >::Pos;
+ using Bucket = List< Pair , false >;   ///< a chain, short: no pool
+ using Pos = typename Bucket::Pos;
 
  public:
 
@@ -161,7 +162,7 @@ class ChainedHashTable {
  // which invalidate it
 
  class const_iterator {
-  using Lists = std::vector< List< Pair > >;
+  using Lists = std::vector< Bucket >;
 
   public:
   using iterator_category = std::forward_iterator_tag;
@@ -202,7 +203,7 @@ class ChainedHashTable {
 
   const Lists * f_T = nullptr;
   std::size_t f_b = 0;
-  typename List< Pair >::const_iterator f_c;
+  typename Bucket::const_iterator f_c;
   };
 
  using value_type = Pair;
@@ -227,7 +228,7 @@ class ChainedHashTable {
 
  /// the cell of k, or where the search stopped: the end of the list, or for
  /// a sorted list the first larger key
- Pos find( const List< Pair > & L , const K & k ) const;
+ Pos find( const Bucket & L , const K & k ) const;
 
  /// whether k is in the table, without counting the probes
  [[nodiscard]] bool present( const K & k ) const;
@@ -244,7 +245,7 @@ class ChainedHashTable {
 
  void rebuild( std::size_t m );
 
- mutable std::vector< List< Pair > > f_T;  ///< the lists
+ mutable std::vector< Bucket > f_T;       ///< the lists
  std::size_t f_m0;                         ///< the initial size
  bool f_restructure;                       ///< whether it restructures
  H f_h;                                    ///< the hash of the keys
