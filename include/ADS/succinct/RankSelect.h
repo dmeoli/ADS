@@ -127,10 +127,14 @@ class RankSelect {
 /*--------------------------------------------------------------------------*/
  public:
 
+ /// the values whose select the directory answers: a structure that needs
+ /// only rank, or one of the selects, spares the inventories of the others
+ enum class Selects { NONE , ONES , ZEROS , BOTH };
+
  RankSelect( void );
 
- /// the directory of the bits b, which it keeps
- explicit RankSelect( BitVector b );
+ /// the directory of the bits b, which it keeps, with the selects s
+ explicit RankSelect( BitVector b , Selects s = Selects::BOTH );
 
  /// the bits
  [[nodiscard]] const BitVector & bits( void ) const;
@@ -156,12 +160,12 @@ class RankSelect {
  [[nodiscard]] std::size_t rank0( std::size_t i ) const;
 
  /// the place of the k-th 1
- /// \pre 1 <= k <= ones()
+ /// \pre 1 <= k <= ones(), and the selects of the 1s were asked for
  /// \post the bit there is 1 and rank1() of it is k - 1
  [[nodiscard]] std::size_t select1( std::size_t k ) const;
 
  /// the place of the k-th 0
- /// \pre 1 <= k <= zeros()
+ /// \pre 1 <= k <= zeros(), and the selects of the 0s were asked for
  /// \post the bit there is 0 and rank0() of it is k - 1
  [[nodiscard]] std::size_t select0( std::size_t k ) const;
 
@@ -246,6 +250,7 @@ class RankSelect {
  std::vector< std::uint64_t > f_top;    ///< the 1s before each 2^kTop bits
  bool f_big = false;                    ///< more than 2^kTop bits
  Inventory f_inv[ 2 ];                  ///< of the 0s and of the 1s
+ bool f_has[ 2 ] = { true , true };     ///< whether each one is built
  std::size_t f_ones = 0;
 
  };  // end( class RankSelect )

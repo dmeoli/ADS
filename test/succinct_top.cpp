@@ -68,7 +68,8 @@ void checkAll( const std::vector< bool > & R )
 // many densities and sizes around the multiples of 2^10; and the groups
 // of select that span 2^16 bits or more: dense runs of 1s (and of 0s)
 // separated by long empty stretches, so that the groups across them are
-// sparse, and a vector whose last group is sparse
+// sparse, and a vector whose last group is sparse; the directories with
+// one select or none
 ADS_TEST( "rank-select-top" )
 {
  std::mt19937 g( 3 );
@@ -89,6 +90,25 @@ ADS_TEST( "rank-select-top" )
  T.insert( T.end() , 200000 , false );
  T.push_back( true );
  checkAll( T );
+ // the directories with fewer selects: the same ranks and the selects
+ // asked for, in fewer bits, and the others refused
+ BitVector b;
+ for( int i = 0 ; i < 30000 ; ++i ) b.push_back( g() % 3 == 0 );
+ const RankSelect A( b ) , O( b , RankSelect::Selects::ONES ) ,
+                  Z( b , RankSelect::Selects::ZEROS ) ,
+                  N( b , RankSelect::Selects::NONE );
+ for( std::size_t i = 0 ; i <= b.size() ; i += 7 )
+  CHECK( N.rank1( i ) == A.rank1( i ) && O.rank0( i ) == A.rank0( i ) );
+ for( std::size_t k = 1 ; k <= A.ones() ; k += 5 )
+  CHECK( O.select1( k ) == A.select1( k ) );
+ for( std::size_t k = 1 ; k <= A.zeros() ; k += 5 )
+  CHECK( Z.select0( k ) == A.select0( k ) );
+ CHECK( N.directoryBits() < O.directoryBits() &&
+        O.directoryBits() < A.directoryBits() &&
+        Z.directoryBits() < A.directoryBits() );
+ CHECK_THROWS( ( void )N.select1( 1 ) , contract_violation );
+ CHECK_THROWS( ( void )O.select0( 1 ) , contract_violation );
+ CHECK_THROWS( ( void )Z.select1( 1 ) , contract_violation );
  }
 
 // Elias-Fano and the balanced parentheses on the directory with the top
