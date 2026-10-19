@@ -24,6 +24,7 @@
 #include "ADS/compression/DirectAccessCodes.h"
 #include "ADS/compression/Entropy.h"
 #include "ADS/compression/HuffmanCoder.h"
+#include "ADS/compression/LZ77Linear.h"
 #include "ADS/compression/Rans.h"
 #include "ADS/compression/StreamVByte.h"
 #include "ADS/compression/Tans.h"
@@ -337,6 +338,35 @@ ADS_TEST( "direct-access-codes" )
  for( std::size_t i = 0 ; i < z.size() ; ++i )
   z[ i ] = i % 1000 == 0 ? ( 1ULL << 40 ) + i : i % 8;
  CHECK( check( z ) < 20000 * 5 );
+ }
+
+// the parse of LZ77 in linear time: the same lengths as the parse of the
+// notes with no window, and the round trip, on random texts of small and
+// large alphabets, on runs (copies that overlap their source), on texts of
+// one symbol, on the empty text and on one symbol
+ADS_TEST( "lz77-linear" )
+{
+ std::mt19937 g( 17 );
+ auto check = [ & ]( const std::string & s ) {
+  const auto L = lz77ParseLinear( s ) , B = lz77Parse( s );
+  CHECK( lz77Decode( L ) == s );
+  CHECK( L.size() == B.size() );
+  for( std::size_t k = 0 ; k < std::min( L.size() , B.size() ) ; ++k )
+   CHECK( L[ k ].length == B[ k ].length && L[ k ].next == B[ k ].next );
+  };
+ for( const int sigma : { 1 , 2 , 4 , 26 } )
+  for( const std::size_t n : { 1 , 2 , 3 , 10 , 200 , 3000 } ) {
+   std::string s;
+   for( std::size_t i = 0 ; i < n ; ++i ) s += char( 'a' + g() % sigma );
+   check( s );
+   }
+ check( "" );
+ check( "abababababababababab" );
+ check( "aaaaaaaaaaaaaaaaaaaaaaaaab" );
+ check( "abracadabra abracadabra abracadabra" );
+ const auto P = lz77ParseLinear( "aaaa" );
+ CHECK( P.size() == 2 && P[ 1 ].distance == 1 && P[ 1 ].length == 3 &&
+        ! P[ 1 ].next );
  }
 
 // Stream VByte: the round trip and the size of every count of integers
