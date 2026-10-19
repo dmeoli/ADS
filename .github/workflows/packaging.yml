@@ -50,7 +50,9 @@ jobs:
           mkdir -p "$dl"
           git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
             gzip -n > "$dl/ADS-0.1.0.tar.gz"
-          sha=$(sha512sum "$dl/ADS-0.1.0.tar.gz" | cut -d' ' -f1)
+          # from stdin, since on Windows a path with backslashes makes
+          # sha512sum escape its line with a leading backslash
+          sha=$(sha512sum < "$dl/ADS-0.1.0.tar.gz" | cut -d' ' -f1)
           sed -i "s|SHA512 .*|SHA512 $sha|" \
               packaging/vcpkg/ports/ads/portfile.cmake
           "$VCPKG_INSTALLATION_ROOT/vcpkg.exe" install ads \
@@ -96,13 +98,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: the PKGBUILD, with makepkg and namcap
+        shell: bash
         run: |
+          set -euo pipefail
           pacman -Syu --noconfirm git cmake namcap pacman-contrib
-          git config --global --add safe.directory "$PWD"
           useradd -m builder
-          mkdir /tmp/pkg
-          git archive --format=tar --prefix=ADS-0.1.0/ HEAD |
-            gzip -n > /tmp/pkg/ADS-0.1.0.tar.gz
+          mkdir -p /tmp/pkg /tmp/src
+          # the checkout ran with no git in the container, hence it has no
+          # .git and the tarball is made from the tree
+          cp -a . /tmp/src/ADS-0.1.0
+          tar -C /tmp/src -czf /tmp/pkg/ADS-0.1.0.tar.gz ADS-0.1.0
           cp packaging/aur/PKGBUILD /tmp/pkg/
           # $pkgver is for makepkg, not for this shell
           # shellcheck disable=SC2016
