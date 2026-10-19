@@ -1662,8 +1662,9 @@ ADS_TEST( "big-integer-radix" )
 // the greatest common divisor of Lehmer against Euclid (and the audit):
 // a zero argument, equal and opposite arguments, the coprime neighbours
 // of Fibonacci, where every quotient is 1, gcd( F_m , F_n ) = F_gcd(m,n),
-// the multiples of a common factor, the lengths so different that a long
-// division runs, and the last steps on one and two digits
+// the multiples of a common factor, the numbers whose leading digits
+// agree and those of digits all ones, the lengths so different that a
+// long division runs, and the last steps on one and two digits
 ADS_TEST( "big-integer-gcd" )
 {
  std::mt19937_64 g( 23 );
@@ -1685,6 +1686,13 @@ ADS_TEST( "big-integer-gcd" )
                    b = c * digits( 1 + g() % 200 , g ) ,
                    d = BigInteger::gcd( a , b );
   CHECK( d == BigInteger::gcdEuclid( a , b ) && d % c == 0 );
+  }
+ for( std::size_t n : { 2 , 3 , 4 , 17 , 64 } ) {   // close, and all ones
+  const BigInteger a = digits( n , g ) , o = digits( n , g , true );
+  for( const BigInteger & b : { a - 1 , a - digits( n - 1 , g ) , o - a ,
+                                digits( n - 1 , g , true ) } )
+   CHECK( BigInteger::gcd( a , b ) == BigInteger::gcdEuclid( a , b ) &&
+          BigInteger::gcd( o , -b ) == BigInteger::gcdEuclid( o , b ) );
   }
  for( std::size_t n : { 1 , 2 , 3 } ) {     // a long and a short one
   const BigInteger a = digits( 300 , g ) , b = digits( n , g );

@@ -349,10 +349,11 @@ class BigInteger {
  static std::pair< Mag , Mag > divModMag( const Mag & u , const Mag & v ,
                                           bool school = false );
 
- /// a u + b v, nonnegative and at most u, |a| , |b| < 2^30 of opposite
- /// signs
- static Mag linComb( const Mag & u , const Mag & v , std::int64_t a ,
-                     std::int64_t b );
+ /// ( u , v ) = ( A u + B v , C u + D v ) in one pass, u >= v, both
+ /// results nonnegative and at most u, |A| , |B| , |C| , |D| < 2^30, A
+ /// and B of opposite signs, C and D too
+ static void linComb( Mag & u , Mag & v , std::int64_t A , std::int64_t B ,
+                      std::int64_t C , std::int64_t D );
 
  /// the greatest common divisor of the magnitudes, by Lehmer
  static Mag gcdMag( Mag u , Mag v );

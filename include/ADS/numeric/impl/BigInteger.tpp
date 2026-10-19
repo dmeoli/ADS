@@ -1251,25 +1251,29 @@ inline std::uint64_t BigInteger::gcdWord( std::uint64_t a , std::uint64_t b )
  return( a << s );
  }
 
-inline BigInteger::Mag BigInteger::linComb( const Mag & u , const Mag & v ,
-                                            std::int64_t a , std::int64_t b )
+inline void BigInteger::linComb( Mag & u , Mag & v , std::int64_t A ,
+                                 std::int64_t B , std::int64_t C ,
+                                 std::int64_t D )
 {
- // a u + b v = x X - y Y with x , y >= 0: the two products by one digit
- // and their difference in one pass, which never borrows past the top
- const bool sw = b > 0;
- const Mag & X = sw ? v : u , & Y = sw ? u : v;
- const Limb x = Limb( sw ? b : a ) , y = Limb( sw ? -a : -b );
- Mag r( u.size() );
- Limb cx = 0 , cy = 0 , br = 0;
- for( std::size_t i = 0 ; i < u.size() ; ++i ) {
-  const Limb px = detail::mulAdd( i < X.size() ? X[ i ] : 0 , x , cx , 0 ,
-                                  cx ) ,
-             py = detail::mulAdd( i < Y.size() ? Y[ i ] : 0 , y , cy , 0 ,
-                                  cy );
-  r[ i ] = detail::subBorrow( px , py , br );
+ // each row x X - y Y with x , y >= 0: the two products by one digit and
+ // their difference, which never borrows past the top, as X is u or v
+ const bool s1 = B > 0 , s2 = D > 0;
+ const Limb x1 = Limb( s1 ? B : A ) , y1 = Limb( s1 ? -A : -B ) ,
+            x2 = Limb( s2 ? D : C ) , y2 = Limb( s2 ? -C : -D );
+ const std::size_t n = u.size();
+ v.resize( n , 0 );
+ Limb cx1 = 0 , cy1 = 0 , b1 = 0 , cx2 = 0 , cy2 = 0 , b2 = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  const Limb ui = u[ i ] , vi = v[ i ] ,
+             p1 = detail::mulAdd( s1 ? vi : ui , x1 , cx1 , 0 , cx1 ) ,
+             q1 = detail::mulAdd( s1 ? ui : vi , y1 , cy1 , 0 , cy1 ) ,
+             p2 = detail::mulAdd( s2 ? vi : ui , x2 , cx2 , 0 , cx2 ) ,
+             q2 = detail::mulAdd( s2 ? ui : vi , y2 , cy2 , 0 , cy2 );
+  u[ i ] = detail::subBorrow( p1 , q1 , b1 );
+  v[ i ] = detail::subBorrow( p2 , q2 , b2 );
   }
- trim( r );
- return( r );
+ trim( u );
+ trim( v );
  }
 
 inline BigInteger::Mag BigInteger::gcdMag( Mag u , Mag v )
@@ -1288,9 +1292,13 @@ inline BigInteger::Mag BigInteger::gcdMag( Mag u , Mag v )
    };
   std::int64_t uh = top( u ) , vh = top( v ) , A = 1 , B = 0 , C = 0 , D = 1;
   for( ; ; ) {                              // L2, L3: Euclid on 62 bits
-   if( ( vh + C == 0 ) || ( vh + D == 0 ) ) break;
-   const std::int64_t q = ( uh + A ) / ( vh + C );
-   if( ( q != ( uh + B ) / ( vh + D ) ) || ( q >= kCap ) ) break;
+   const std::int64_t x = uh + A , y = vh + C , z = vh + D;
+   if( ( y <= 0 ) || ( z <= 0 ) ) break;
+   const std::int64_t q = x / y;
+   if( q >= kCap ) break;
+   // q = ( uh + B ) / z, q z = q y + q ( D - C ) < 2^62 + 2^61
+   const std::int64_t e = uh + B - q * z;
+   if( ( e < 0 ) || ( e >= z ) ) break;
    const std::int64_t T = A - q * C , S = B - q * D;
    if( ( T <= -kCap ) || ( T >= kCap ) || ( S <= -kCap ) || ( S >= kCap ) )
     break;
@@ -1307,11 +1315,7 @@ inline BigInteger::Mag BigInteger::gcdMag( Mag u , Mag v )
    u = std::move( v );
    v = std::move( r );
    }
-  else {                                    // L4: the cofactors
-   Mag t = linComb( u , v , A , B ) , w = linComb( u , v , C , D );
-   u = std::move( t );
-   v = std::move( w );
-   }
+  else linComb( u , v , A , B , C , D );    // L4: the cofactors
   }
  if( v.empty() ) return( u );
  const Limb g = gcdWord( modSmall( u.data() , u.size() , v[ 0 ] ) , v[ 0 ] );
