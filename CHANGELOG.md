@@ -704,6 +704,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value instead of 7%
 - BalancedParentheses builds its leaves a byte at a time by its tables of
   the excess, instead of a bit at a time
+- streamVByteEncode() finds the lengths of 8 integers at once by
+  saturating arithmetic on their bytes and one mask, and
+  streamVByteDecode() decodes 32 integers with no test while 12 more
+  follow, 8 control bytes taken in a word
 
 ### Fixed
 

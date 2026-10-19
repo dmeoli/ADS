@@ -58,7 +58,7 @@ inline std::vector< std::uint8_t > streamVByteEncode(
 {
  using namespace detail;
  const std::size_t n = x.size() , nc = ( n + 3 ) / 4;
- std::vector< std::uint8_t > out( nc + 4 * n + 16 );   // room for a store
+ std::vector< std::uint8_t > out( nc + 4 * n + 32 );   // room for stores
  std::uint8_t * d = out.data() + nc;
  // each integer stored in 4 bytes, the place moved by its length: the
  // bytes less 1, 0 for v < 2^8, ..., 3 for v >= 2^24
@@ -70,33 +70,37 @@ inline std::vector< std::uint8_t > streamVByteEncode(
   };
  std::size_t i = 0;
 #if defined( __SSE4_1__ )
- // 4 integers a step: v <= 2^( 8k ) - 1 for k = 1 , 2 , 3 by the unsigned
- // minimum, the lengths less 1 as the number of the failed tests, packed in
- // the control byte by shifts, and the bytes moved together by a shuffle
- const __m128i b1 = _mm_set1_epi32( 0xFF ) , b2 = _mm_set1_epi32( 0xFFFF ) ,
-               b3 = _mm_set1_epi32( 0xFFFFFF ) , three = _mm_set1_epi32( 3 );
- for( ; i + 4 <= n ; i += 4 ) {
-  const __m128i v = _mm_loadu_si128(
-                     reinterpret_cast< const __m128i * >( x.data() + i ) );
-  const __m128i le = _mm_add_epi32(
-                      _mm_add_epi32( _mm_cmpeq_epi32( _mm_min_epu32( v , b1 ) ,
-                                                      v ) ,
-                                     _mm_cmpeq_epi32( _mm_min_epu32( v , b2 ) ,
-                                                      v ) ) ,
-                      _mm_cmpeq_epi32( _mm_min_epu32( v , b3 ) , v ) );
-  // the lengths less 1, one per byte of the low word
-  const __m128i l = _mm_add_epi32( three , le );
-  const std::uint32_t w = std::uint32_t( _mm_cvtsi128_si32(
-                           _mm_packus_epi16( _mm_packus_epi32( l , l ) ,
-                                             _mm_setzero_si128() ) ) );
-  const std::uint32_t c = ( w & 3 ) | ( ( w >> 6 ) & 0xC ) |
-                          ( ( w >> 12 ) & 0x30 ) | ( ( w >> 18 ) & 0xC0 );
-  out[ i / 4 ] = std::uint8_t( c );
-  _mm_storeu_si128( reinterpret_cast< __m128i * >( d ) ,
-                    _mm_shuffle_epi8( v , _mm_loadu_si128(
-                     reinterpret_cast< const __m128i * >(
-                      kVByte.pack[ c ].data() ) ) ) );
-  d += kVByte.len[ c ];
+ // 8 integers a step, their lengths by saturations with no table: each
+ // byte not 0 made 1 (unsigned minimum with 1), each half of 16 bits made
+ // 0, 1 or 255 as its bytes are 0, its high byte is 0 or not (saturated
+ // pack), the pair of an integer made 0x0101 if its high half is 1 and its
+ // low one 255 (signed minimum), then 0x7F00 added with saturation, so that
+ // the high bits of its 2 bytes are its length less 1 (0x7F00 , 0x7F01 ->
+ // 0; 0x7FFF -> 1; 0x8000 , 0x8001 -> 2; 0xFFFF -> 3): a mask of the 16
+ // bytes is the 2 control bytes; then the bytes moved together by the
+ // shuffle of each control byte
+ const __m128i one = _mm_set1_epi8( 1 ) , cap = _mm_set1_epi16( 0x0101 ) ,
+               lift = _mm_set1_epi16( 0x7F00 );
+ for( ; i + 8 <= n ; i += 8 ) {
+  const __m128i v0 = _mm_loadu_si128(
+                      reinterpret_cast< const __m128i * >( x.data() + i ) );
+  const __m128i v1 = _mm_loadu_si128(
+                      reinterpret_cast< const __m128i * >( x.data() + i ) + 1 );
+  const __m128i t = _mm_min_epi16( _mm_packus_epi16(
+                                    _mm_min_epu8( v0 , one ) ,
+                                    _mm_min_epu8( v1 , one ) ) , cap );
+  const unsigned key = unsigned( _mm_movemask_epi8(
+                                  _mm_adds_epu16( t , lift ) ) );
+  storeLE< std::uint16_t >( out.data() + i / 4 , std::uint16_t( key ) );
+  auto store = [ & ]( __m128i v , unsigned c ) {
+   _mm_storeu_si128( reinterpret_cast< __m128i * >( d ) ,
+                     _mm_shuffle_epi8( v , _mm_loadu_si128(
+                      reinterpret_cast< const __m128i * >(
+                       kVByte.pack[ c ].data() ) ) ) );
+   d += kVByte.len[ c ];
+   };
+  store( v0 , key & 0xFF );
+  store( v1 , key >> 8 );
   }
 #endif
  for( ; i + 4 <= n ; i += 4 ) {
@@ -125,10 +129,10 @@ inline std::vector< std::uint32_t > streamVByteDecode(
  const std::uint8_t * const end = code.data() + code.size();
  std::size_t i = 0;
 #if defined( __SSSE3__ )
- // 4 integers a step, as long as 16 bytes can be loaded, and 8 of them
- // while two steps fit for sure (16 bytes a step at most)
- auto step = [ & ]( std::size_t j ) {
-  const std::uint8_t c = code[ j / 4 ];
+ // 4 integers a step by the shuffle of their control byte: 32 at a time
+ // while 12 more follow, whose bytes leave room for the loads of 16 bytes,
+ // with no test on the data, then 4 at a time while 16 bytes are left
+ auto step = [ & ]( std::size_t j , unsigned c ) {
   const __m128i v = _mm_loadu_si128(
                      reinterpret_cast< const __m128i * >( d ) );
   const __m128i m = _mm_loadu_si128( reinterpret_cast< const __m128i * >(
@@ -137,11 +141,13 @@ inline std::vector< std::uint32_t > streamVByteDecode(
                     _mm_shuffle_epi8( v , m ) );
   d += kVByte.len[ c ];
   };
- for( ; ( i + 8 <= n ) && ( end - d >= 32 ) ; i += 8 ) {
-  step( i );
-  step( i + 4 );
+ for( ; i + 32 + 12 <= n ; i += 32 ) {
+  const std::uint64_t keys = loadLE< std::uint64_t >( code.data() + i / 4 );
+  for( unsigned g = 0 ; g < 8 ; ++g )
+   step( i + 4 * g , unsigned( keys >> ( 8 * g ) ) & 0xFF );
   }
- for( ; ( i + 4 <= n ) && ( end - d >= 16 ) ; i += 4 ) step( i );
+ for( ; ( i + 4 <= n ) && ( end - d >= 16 ) ; i += 4 )
+  step( i , code[ i / 4 ] );
 #endif
  for( ; i < n ; ++i ) {                     // an integer at a time
   const std::uint32_t l = ( ( code[ i / 4 ] >> ( 2 * ( i % 4 ) ) ) & 3 ) + 1;
