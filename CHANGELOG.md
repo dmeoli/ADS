@@ -679,6 +679,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   excess in 16 bits, then the tree of the groups; about 0.1 bits per
   parenthesis instead of 0.5, and the directory with the select of the 1s
   alone
+- FMIndex::rank() counts the symbol in the block 8 bytes at a time, by the
+  zero bytes of the word xor the symbol, instead of one byte at a time;
+  FMIndex::sizeInBits()
 
 ### Fixed
 

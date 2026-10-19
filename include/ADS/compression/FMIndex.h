@@ -25,12 +25,13 @@
  *
  * The rank of a symbol in L, the number of its occurrences in a prefix, is
  * the count stored every b places for each symbol of the text plus a scan
- * of fewer than b symbols, O( b ) time and \f$ \sigma ( n / b ) \f$ counts
- * of 32 bits; the marks of the rows are a vector of bits with the rank
- * directory of RankSelect [see RankSelect.h], so a row is tested and its
- * sample found in O( 1 ) time. The counts of L are the simplest rank on a
- * sequence, which any structure of rank and select
- * on sequences can replace: the wavelet tree of Grossi, Gupta and Vitter
+ * of fewer than b symbols, 8 at a time by the zero bytes of a word, O( b )
+ * time and \f$ \sigma ( n / b ) \f$ counts of 32 bits; the marks of the
+ * rows are a vector of bits with the rank directory of RankSelect [see
+ * RankSelect.h], so a row is tested and its sample found in O( 1 ) time.
+ * The counts of L are the simplest rank on a sequence, which any structure
+ * of rank and select on sequences can replace [see WaveletMatrix.h]: the
+ * wavelet tree of Grossi, Gupta and Vitter
  * gives the rank in \f$ O( \log \sigma ) \f$ time on \f$ n H_0 + o( n \log
  * \sigma ) \f$ bits, and the compressed representations of Ferragina,
  * Manzini, Makinen and Navarro reach \f$ n H_k + o( n \log \sigma ) \f$
@@ -92,8 +93,10 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -148,6 +151,10 @@ class FMIndex {
  /// s[ i , j )
  /// \pre i <= j <= n
  [[nodiscard]] std::string extract( std::size_t i , std::size_t j ) const;
+
+ /// the bits of the index: L, the counts, the marks with their directory,
+ /// the samples and the arrays of the alphabet
+ [[nodiscard]] std::size_t sizeInBits( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:

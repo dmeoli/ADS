@@ -51,7 +51,7 @@ inline FMIndex::FMIndex( std::string_view s , std::size_t b , std::size_t mu )
    f_place.push_back( sa[ i ] );
    f_row[ sa[ i ] / f_mu ] = i;
    }
- f_mark = RankSelect( std::move( mark ) );
+ f_mark = RankSelect( std::move( mark ) , RankSelect::Selects::NONE );
  }
 
 inline BWT FMIndex::transform( void ) const
@@ -68,8 +68,23 @@ inline std::size_t FMIndex::rank( char c , std::size_t k ) const
  if( id < 0 ) return( 0 );
  const std::size_t blk = k / f_b;
  std::size_t r = f_occ[ blk * f_sigma + std::size_t( id ) ];
- for( std::size_t i = blk * f_b ; i < k ; ++i )
-  if( ( f_L[ i ] == c ) && ( i != f_dollar ) ) ++r;
+ // the scan of the block up to k, 8 symbols at a time: the bytes equal to
+ // c are the zero bytes of the word xor c, each one found exactly by its
+ // high bit; the $ is stored as a 0, which a symbol 0 does not count
+ const std::size_t a = blk * f_b;
+ const auto * L = reinterpret_cast< const unsigned char * >( f_L.data() );
+ const std::uint64_t cc = 0x0101010101010101ULL *
+                          static_cast< unsigned char >( c );
+ constexpr std::uint64_t lo7 = 0x7F7F7F7F7F7F7F7FULL;
+ std::size_t i = a;
+ for( ; i + 8 <= k ; i += 8 ) {
+  std::uint64_t x;
+  std::memcpy( &x , L + i , 8 );
+  x ^= cc;
+  r += std::size_t( std::popcount( ~( ( ( x & lo7 ) + lo7 ) | x | lo7 ) ) );
+  }
+ for( ; i < k ; ++i ) r += ( L[ i ] == static_cast< unsigned char >( c ) );
+ if( ( c == '\0' ) && ( f_dollar >= a ) && ( f_dollar < k ) ) --r;
  return( r );
  }
 
@@ -136,6 +151,14 @@ inline std::string FMIndex::extract( std::size_t i , std::size_t j ) const
   r = lf( r );
   }
  return( out );
+ }
+
+inline std::size_t FMIndex::sizeInBits( void ) const
+{
+ return( 8 * f_L.size() + 32 * f_occ.size() + f_mark.size() +
+         f_mark.directoryBits() +
+         64 * ( f_place.size() + f_row.size() + f_C.size() ) +
+         32 * f_id.size() );
  }
 
 /*--------------------------------------------------------------------------*/
