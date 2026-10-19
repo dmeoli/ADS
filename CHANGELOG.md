@@ -105,6 +105,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against std::search() with its three searchers, std::string::find(),
   memmem(), the searchers of Boost.Algorithm and, when found, libsais,
   libdivsufsort, edlib and rapidfuzz-cpp
+- convexHull(), the octagon of Akl and Toussaint, the radix sort of keys
+  of 64 bits and the monotone chain of Andrew; closestPairSweep(), the
+  sweep of Hinrichs, Nievergelt and Schorn on the points sorted by the
+  radix sort, along y if it meets too many points along x, closestPair()
+  if along y too; bench/geometry.cpp against Boost.Geometry and CGAL
+- SPSCQueue::emplace() and SPSCQueue::tryPop(); bench/concurrent.cpp, the
+  queues between two threads against boost::lockfree, rigtorp's
+  SPSCQueue, moodycamel's ReaderWriterQueue and ConcurrentQueue and
+  folly's ProducerConsumerQueue
 - RingDeque, the double ended queue on a circular vector of 2^k places
   that doubles when full, the places reduced by a mask, the front and the
   back two counters that the operations at the two ends change apart;
@@ -385,6 +394,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   places h1 + i h2 mod m one from the other by an addition, with no
   remainder past the first two, and PartitionedBloomFilter hashes an item
   once instead of once per part
+- SPSCQueue keeps its indices and their copies on four lines of cache,
+  in pairs of lines that the adjacent line prefetcher cannot make shared
+  between the threads, its places in raw memory padded by a line at each
+  end, and builds and destroys the items in them, so that T need not have
+  a default constructor
 - ArrayQueue reduces its places by a comparison instead of a division,
   and LinkedQueue takes its cells from an ObjectPool
 - powMod() multiplies in Montgomery form when the modulus is odd, and

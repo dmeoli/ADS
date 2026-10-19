@@ -107,6 +107,83 @@ closestPair( const std::vector< Point > & P )
  return( std::pair( std::pair( b.i , b.j ) , b.d ) );
  }
 
+namespace detail {
+
+/// the sweep of closestPairSweep() along x, or along y if byY, on the keys
+/// K: the least square distance and the keys of a pair at it, or nothing
+/// if it gives up after budget comparisons
+inline std::optional< std::tuple< std::int64_t , std::uint64_t ,
+                                  std::uint64_t > >
+sweep( const std::vector< Point > & P , std::vector< std::uint64_t > & K ,
+       bool byY , std::size_t budget )
+{
+ using U = std::uint64_t;
+ using I = std::int64_t;
+ const std::size_t n = P.size();
+ const I B = I( 1 ) << 31;                  // the coordinates made unsigned
+ for( std::size_t u = 0 ; u < n ; ++u ) {
+  const U x = U( P[ u ].x + B ) , y = U( P[ u ].y + B );
+  K[ u ] = byY ? ( y << 32 ) | x : ( x << 32 ) | y;
+  }
+ sort( K );
+ auto X = [ & ]( std::size_t u ) { return( I( K[ u ] >> 32 ) ); };
+ auto Y = [ & ]( std::size_t u ) { return( I( K[ u ] & 0xFFFFFFFFULL ) ); };
+ I best = std::numeric_limits< I >::max();
+ std::size_t a = 0 , b = 1;
+ for( std::size_t u = 1 , column = 0 ; ( u < n ) && ( best > 0 ) ; ++u ) {
+  if( X( u ) != X( u - 1 ) ) column = u;    // the first of its x
+  const I xu = X( u ) , yu = Y( u );
+  for( std::size_t v = u ; v-- > 0 ; ) {
+   const I dx = xu - X( v );
+   if( dx * dx >= best )
+    break;                                  // the next ones farther in x
+   const I dy = yu - Y( v );
+   if( dy * dy < best ) {
+    if( dx * dx + dy * dy < best ) {
+     best = dx * dx + dy * dy;
+     a = v;
+     b = u;
+     }
+    }
+   else if( dx == 0 )                       // farther in y in the column:
+    v = column;                             // its start
+   if( --budget == 0 )
+    return( std::nullopt );
+   }
+  }
+ return( std::tuple( best , K[ a ] , K[ b ] ) );
+ }
+
+}  // end( namespace detail )
+
+inline std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
+closestPairSweep( const std::vector< Point > & P )
+{
+ ADS_PRE( ( P.size() >= 2 ) && detail::closestPairInput( P ) );
+ using U = std::uint64_t;
+ const std::size_t n = P.size();
+ std::vector< U > K( n );
+ auto r = detail::sweep( P , K , false , 16 * n );
+ const bool byY = ! r;                      // a long scan along x: along y
+ if( byY ) r = detail::sweep( P , K , true , 16 * n );
+ if( ! r )                                  // and along y: the book
+  return( closestPair( P ) );
+ const auto [ best , ka , kb ] = *r;
+ // the places of the two keys in P, two different ones if they are equal
+ const std::int64_t B = std::int64_t( 1 ) << 31;
+ std::size_t i = n , j = n;
+ for( std::size_t u = 0 ; u < n ; ++u ) {
+  const U x = U( P[ u ].x + B ) , y = U( P[ u ].y + B ) ,
+          k = byY ? ( y << 32 ) | x : ( x << 32 ) | y;
+  if( ( i == n ) && ( k == ka ) ) i = u;
+  else if( ( j == n ) && ( k == kb ) ) j = u;
+  }
+ if( i > j ) std::swap( i , j );
+ ADS_POST( ( i < j ) && ( j < n ) && ( squaredDistance( P[ i ] , P[ j ] ) ==
+                                       best ) );
+ return( std::pair( std::pair( i , j ) , best ) );
+ }
+
 inline std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
 closestPairBrute( const std::vector< Point > & P )
 {

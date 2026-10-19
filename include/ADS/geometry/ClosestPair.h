@@ -25,6 +25,19 @@
  * problem in \f$ O( n ) \f$ expected time, with the floor function out of
  * the decision tree model.
  *
+ * closestPairSweep(), beyond the book, is the sweep of the plane of
+ * Hinrichs, Nievergelt and Schorn with no tree: the points, each made a
+ * key of 64 bits ( x , y ), sorted by the radix sort of ADS [see Sort.h],
+ * and each one compared with those before it while their difference in x
+ * is below \f$ \delta \f$, the least distance so far, a point of the same
+ * x ending the scan of its column as soon as the difference in y reaches
+ * \f$ \delta \f$, since the column is sorted by y; on points spread in
+ * the plane each point meets O( 1 ) others, O( n ) after the sort. Some
+ * inputs make the scan long (many points within \f$ \delta \f$ in x and
+ * far in y): after 16 n comparisons the sweep gives up and starts again
+ * along y, and if that fails too closestPair() solves the problem, so
+ * that the time stays \f$ O( n \log n ) \f$.
+ *
  * The contracts [see Contract.h]: at least two points, coordinates of
  * absolute value at most \f$ 10^9 \f$, so that the square of a distance
  * fits in 63 bits; the distance found is that of its two points, a
@@ -35,6 +48,9 @@
  * \see M. I. Shamos, D. Hoey, Closest-point problems, 16th Annual
  *      Symposium on Foundations of Computer Science, 151-162, 1975,
  *      doi:10.1109/SFCS.1975.8
+ * \see K. Hinrichs, J. Nievergelt, P. Schorn, Plane-sweep solves the
+ *      closest pair problem elegantly, Information Processing Letters
+ *      26(5), 255-261, 1988, doi:10.1016/0020-0190(88)90150-0
  * \see S. Khuller, Y. Matias, A simple randomized sieve algorithm for the
  *      closest-pair problem, Information and Computation 118(1), 34-37,
  *      1995, doi:10.1006/inco.1995.1049
@@ -59,13 +75,17 @@
 
 #include "ADS/Contract.h"
 #include "ADS/geometry/ConvexHull.h"
+#include "ADS/sort/Sort.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <numeric>
+#include <optional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -84,6 +104,14 @@ inline std::int64_t squaredDistance( const Point & p , const Point & q );
 /// \post the square of the distance of P[ i ] and P[ j ]
 inline std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
 closestPair( const std::vector< Point > & P );
+
+/// the same by the sweep on the points sorted by x, closestPair() when the
+/// sweep takes too long; a pair of the least distance, not always the one
+/// of closestPair()
+/// \pre n >= 2, | x | and | y | at most 10^9
+/// \post the square of the distance of P[ i ] and P[ j ]
+inline std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
+closestPairSweep( const std::vector< Point > & P );
 
 /// closestPairBrute(): the same, the first pair of the least distance by
 /// all the pairs; Theta( n^2 )

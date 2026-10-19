@@ -5,9 +5,10 @@
  * Tests of the engineered numerics and geometry, beyond the book: the
  * binary gcd, the Montgomery form and the exact primality on 64 bits, the
  * generators and the bounded integers, the batched shuffle and the
- * reservoir of Algorithm L, checked against the book's functions and the
- * standard library on random and extreme inputs, at the level 3 of the
- * contracts.
+ * reservoir of Algorithm L, the convex hull of the octagon and of the
+ * monotone chain and the closest pair by the sweep, checked against the
+ * book's functions and the standard library on random and extreme inputs,
+ * at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -20,6 +21,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADSTest.h"
+
+#include "ADS/geometry/ClosestPair.h"
+#include "ADS/geometry/ConvexHull.h"
 
 #include "ADS/numeric/NumberTheory.h"
 #include "ADS/numeric/RandomGenerators.h"
@@ -334,6 +338,117 @@ ADS_TEST( "reservoir-l" )
    return( x >= 900000 ); } );
   }
  CHECK( std::abs( last - 20000 ) < 800 );   // 10% of the 100 items
+ }
+
+// convexHull() against graham() of the book: no point, one, two, equal
+// points, collinear ones, a square with points on its sides, the extreme
+// coordinates, random sets with many collinear and equal points on a small
+// grid, uniform sets in a square, in a disk and near a circle (where the
+// octagon drops most points, or none)
+ADS_TEST( "convex-hull" )
+{
+ using Points = std::vector< Point >;
+ CHECK( convexHull( {} ).empty() );
+ CHECK( convexHull( Points( 7 , { 3 , -2 } ) ) == Points( { { 3 , -2 } } ) );
+ CHECK( convexHull( { { 1 , 1 } , { 0 , 0 } } ) == graham( { { 1 , 1 } ,
+                                                           { 0 , 0 } } ) );
+ CHECK( convexHull( { { 0 , 0 } , { 1 , 1 } , { 2 , 2 } , { 3 , 3 } } ) ==
+        Points( { { 0 , 0 } , { 3 , 3 } } ) );
+ const Points sq = { { 0 , 0 } , { 2 , 0 } , { 4 , 0 } , { 4 , 2 } ,
+                     { 4 , 4 } , { 2 , 4 } , { 0 , 4 } , { 0 , 2 } ,
+                     { 2 , 2 } };
+ CHECK( convexHull( sq ) == Points( { { 4 , 0 } , { 4 , 4 } , { 0 , 4 } ,
+                                      { 0 , 0 } } ) );
+ const long G = 1000000000L;
+ const Points far = { { -G , -G } , { G , -G } , { G , G } , { -G , G } ,
+                      { 0 , 0 } , { G , 0 } , { -G , G - 1 } };
+ CHECK( convexHull( far ) == graham( far ) );
+ CHECK_THROWS( (void) convexHull( { { G + 1 , 0 } , { 0 , 0 } } ) ,
+               contract_violation );
+ std::mt19937_64 g( 23 );
+ for( int t = 0 ; t < 3000 ; ++t ) {        // small grids: ties of all kinds
+  const long w = 1 + long( g() % 12 );
+  Points P( 1 + g() % 60 );
+  for( auto & p : P )
+   p = Point{ long( g() % std::uint64_t( w ) ) - w / 2 ,
+              long( g() % std::uint64_t( w ) ) - w / 2 };
+  CHECK( convexHull( P ) == graham( P ) );
+  }
+ for( int c = 0 ; c < 3 ; ++c )             // square, disk, circle
+  for( int t = 0 ; t < 20 ; ++t ) {
+   Points P( 2000 );
+   const double R = 1e9;
+   std::uniform_real_distribution< double > U( -R , R );
+   for( auto & p : P ) {
+    double x = U( g ) , y = U( g );
+    if( c == 1 ) while( x * x + y * y > R * R ) { x = U( g ); y = U( g ); }
+    if( c == 2 ) {
+     const double a = x / R * 3.14159265358979;
+     x = R * std::cos( a );
+     y = R * std::sin( a );
+     }
+    p = Point{ long( std::llround( x ) ) , long( std::llround( y ) ) };
+    }
+   CHECK( convexHull( P ) == graham( P ) );
+   }
+ }
+
+// closestPairSweep() against closestPairBrute(): two points, equal points
+// (the distance 0), points in a column and in a row, random sets on small
+// grids, the extreme coordinates, and strips along x and along y long
+// enough that the sweeps give up for closestPair()
+ADS_TEST( "closest-pair-sweep" )
+{
+ using Points = std::vector< Point >;
+ auto check = []( const Points & P ) {
+  const auto [ ij , d ] = closestPairSweep( P );
+  const auto [ ij2 , d2 ] = closestPairBrute( P );
+  return( ( d == d2 ) && ( ij.first < ij.second ) &&
+          ( ij.second < P.size() ) &&
+          ( squaredDistance( P[ ij.first ] , P[ ij.second ] ) == d ) );
+  };
+ CHECK( check( { { 0 , 0 } , { 3 , 4 } } ) &&
+        closestPairSweep( { { 0 , 0 } , { 3 , 4 } } ).second == 25 );
+ CHECK( closestPairSweep( { { 5 , 5 } , { 1 , 1 } , { 5 , 5 } } ) ==
+        std::pair( std::pair( std::size_t( 0 ) , std::size_t( 2 ) ) ,
+                   std::int64_t( 0 ) ) );
+ Points col , row;
+ for( long i = 0 ; i < 500 ; ++i ) {
+  col.push_back( { 7 , i * i } );
+  row.push_back( { i * i , -7 } );
+  }
+ CHECK( check( col ) && check( row ) );
+ const long G = 1000000000L;
+ CHECK( check( { { -G , -G } , { G , G } , { G , -G } } ) );
+ CHECK( closestPairSweep( { { -G , -G } , { G , G } } ).second ==
+        std::int64_t( 8 ) * G * G );
+ CHECK_THROWS( (void) closestPairSweep( { { 0 , 0 } } ) ,
+               contract_violation );
+ std::mt19937_64 g( 29 );
+ for( int t = 0 ; t < 2000 ; ++t ) {
+  const long w = 2 + long( g() % 1000 );
+  Points P( 2 + g() % 200 );
+  for( auto & p : P ) {
+   p = Point{ long( g() % std::uint64_t( w ) ) ,
+              long( g() % std::uint64_t( w ) ) };
+   if( t % 3 == 0 ) p.x %= 3;               // a few columns
+   }
+  CHECK( check( P ) );
+  }
+ for( int byY = 0 ; byY < 2 ; ++byY ) {     // strips: the fallbacks
+  Points P( 6000 );
+  for( auto & p : P ) {
+   const long a = long( g() % 2000 ) , b = long( g() % 2000000000 ) - G;
+   p = byY ? Point{ b , a } : Point{ a , b };
+   }
+  CHECK( check( P ) );
+  }
+ Points D( 6000 );                          // a diagonal strip: both
+ for( auto & p : D ) {                      // sweeps give up
+  const long a = long( g() % 2000000000 ) - G;
+  p = Point{ a / 2 , a / 2 + long( g() % 2000 ) };
+  }
+ CHECK( check( D ) );
  }
 
 }  // end( namespace )

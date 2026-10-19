@@ -512,11 +512,14 @@ engineered_numeric  generators        xoshiro256++ e wyrand
 engineered_numeric  bounded-integers  interi limitati di Lemire
 engineered_numeric  shuffle-fast      mescolamento a gruppi di indici
 engineered_numeric  reservoir-l       campionamento con l'Algoritmo L
+engineered_numeric  convex-hull       inviluppo con ottagono e catena monotona
+engineered_numeric  closest-pair-sweep coppia piu' vicina con la scansione
 
 # the engineered queues and stacks, beyond the book
 engineered_queues  ring-deque              coda doppia su vettore circolare
 engineered_queues  ring-deque-items        elementi con memoria propria
 engineered_queues  book-queues-engineered  code del libro senza divisioni
+engineered_queues  spsc-queue-items        coda fra due thread, elementi propri
 
 # the standard interface of the containers, beyond the book
 interop  sequences            iteratori delle sequenze, std e Boost
