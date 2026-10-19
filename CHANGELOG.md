@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- RadixHeap, the monotone queue of integer keys of Ahuja, Mehlhorn, Orlin
+  and Tarjan with digits of B bits: a key goes to the bucket of the
+  highest digit in which it differs from the last key extracted, the
+  least bucket in use is found by a mask, and the keys of a bucket of the
+  lowest row are equal, so that they come out with no move; PairingHeap,
+  the pairing heap with decrease-key, two-pass or auxiliary two-pass, its
+  nodes in an ObjectPool and the passes in place on the sibling pointers;
+  their tests in test/heaps.cpp
+- the benchmark of the priority queues also against the binomial and the
+  skew heaps of Boost, the d-ary heaps and the radix heap of tlx and the
+  radix heap of radix-heap (PRIORITY=<dir> in the makefile), and in
+  Dijkstra's algorithm on a random graph of n nodes and 4 n arcs, the
+  queues with handles by decrease-key and the others by lazy deletion
+
 - COPYING, the text of the GNU GPL v3 that the LGPL v3 of LICENSE
   supplements, as the LGPL asks, installed by the recipes next to LICENSE
 
@@ -390,6 +404,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the default allocator of ObjectPool
 
 ### Changed
+
+- BucketQueue keeps its items in one vector of cells linked in lists, the
+  cells freed by pop() taken first by push(), and the heads of the lists
+  of g < 4 in the layer itself: a layer costs no allocation unless its g
+  reaches 4, and a push or a pop none once the vector has grown, 4 to 8
+  times faster in the hold model of bench/priority.cpp
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the

@@ -526,6 +526,11 @@ engineered_queues  book-queues-engineered  code del libro senza divisioni
 engineered_queues  spsc-queue-items        coda fra due thread, elementi propri
 engineered_queues  mpsc-queue              coda di molti produttori a corsie
 
+# the engineered priority queues beyond the d-ary heap
+heaps  bucket-queue-cells    coda a bucket sulle celle di un vettore
+heaps  radix-heap            heap radix monotono a cifre di B bit
+heaps  pairing-heap          pairing heap a due passate e ausiliario
+
 # the standard interface of the containers, beyond the book
 interop  sequences            iteratori delle sequenze, std e Boost
 interop  restricted           viste di pile, code e heap

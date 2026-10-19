@@ -71,6 +71,10 @@ test: $(BINS)
 BENCHES   = sort dictionaries priority sequences bignum fft hashing search \
             suffix edit numeric queues concurrent geometry matrix sparse \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+# Abseil; PRIORITY=<dir> adds to priority the libraries whose sources are
+# in <dir> (tlx, radix-heap)
+BENCHES   = sort dictionaries priority sequences bignum fft hashing
+comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
@@ -113,6 +117,9 @@ CONCURRENTFLAGS = $(if $(RIGTORP),-DADS_HAS_RIGTORP -I$(RIGTORP)) \
 CGALFLAGS = $(if $(CGAL),-DADS_HAS_CGAL -I$(CGAL) $(if $(GMP),\
             -I$(GMP)/include -L$(GMP)/lib) -lgmp)
 
+PRIOFLAGS = $(if $(PRIORITY),-isystem $(PRIORITY)/tlx \
+            -isystem $(PRIORITY)/radix-heap $(PRIORITY)/tlx/tlx/die/core.cpp)
+
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
 $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
@@ -153,6 +160,10 @@ $(BUILD)/bench-matrix: bench/matrix.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-sparse: bench/sparse.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS)
+
+$(BUILD)/bench-priority: bench/priority.cpp bench/Bench.h $(HEADERS) | \
+                         $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(PRIOFLAGS)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

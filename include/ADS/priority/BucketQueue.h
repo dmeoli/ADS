@@ -13,8 +13,17 @@
  * and pop() O( 1 ) amortized when the keys are bounded by C, against the
  * \f$ O( \log n ) \f$ of a heap: the queue of Dial for the shortest
  * paths with integer weights, nested as in the search code of Burns et al.
- * The lists of a layer are freed when it empties, so that the memory
- * follows the band of the keys in the queue.
+ *
+ * The items lie in one vector of cells, each with the index of the next
+ * cell of its list, and the cells freed by pop() form a list of their own
+ * that push() takes from first, so that a push or a pop costs no call to
+ * the allocator once the vector has grown to the largest size of the
+ * queue. A layer keeps the heads of its first four lists in itself and
+ * those of larger g in a vector, which it frees when it empties, so that
+ * a layer of small g costs no allocation and the memory follows the band
+ * of the keys in the queue: \f$ O( n + F + \sum_f G_f ) \f$ words for n
+ * items, F the largest f pushed and \f$ G_f \f$ the largest g in the
+ * layer f while it is in use.
  *
  * There is no decrease-key: as in the lazy deletion of A*, an item whose
  * key improves is pushed again, and the caller skips the stale copies when
@@ -54,6 +63,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <utility>
 #include <vector>
@@ -120,11 +130,31 @@ class BucketQueue {
 /*--------------------------------------------------------------------------*/
  private:
 
+ using Index = std::uint32_t;
+ static constexpr Index NIL = ~Index( 0 );   ///< no cell
+ static constexpr std::size_t S = 4;          ///< the heads in a layer
+
+ /// a cell: an item and the next cell of its list
+ struct Cell {
+  T item;
+  Index next;
+  };
+
  /// the items of one f
  struct Layer {
-  std::vector< std::vector< T > > byG;   ///< a LIFO list per g
-  std::size_t count = 0;                 ///< the items in the layer
-  std::size_t topG = 0;                  ///< no list above it has items
+  Index count = 0;                      ///< the items in the layer
+  Index topG = 0;                       ///< no list above it has items
+  Index small[ S ] = { NIL , NIL , NIL , NIL };   ///< the heads, g < S
+  std::vector< Index > big;             ///< the heads, g >= S
+
+  Index & head( std::size_t g ) {
+   return( g < S ? small[ g ] : big[ g - S ] );
+   }
+  Index head( std::size_t g ) const {
+   return( g < S ? small[ g ] : g - S < big.size() ? big[ g - S ] : NIL );
+   }
+  /// the lists, S at least
+  std::size_t lists( void ) const { return( S + big.size() ); }
   };
 
  public:
@@ -145,40 +175,44 @@ class BucketQueue {
   using pointer = const T *;
 
   const_iterator( void ) = default;
-  const_iterator( const std::vector< Layer > * L , std::size_t f )
-   : f_L( L ) , f_f( f ) { settle(); }
+  const_iterator( const BucketQueue * q , std::size_t f )
+   : f_q( q ) , f_f( f ) { settle(); }
 
-  reference operator*( void ) const {
-   const auto & byG = ( *f_L )[ f_f ].byG;
-   const auto & v = byG[ byG.size() - 1 - f_g ];   // f_g from the top
-   return( v[ v.size() - 1 - f_k ] );
-   }
+  reference operator*( void ) const { return( f_q->f_cells[ f_c ].item ); }
   pointer operator->( void ) const { return( &**this ); }
 
   const_iterator & operator++( void ) {
-   ++f_k;
-   settle();
+   f_c = f_q->f_cells[ f_c ].next;
+   if( f_c == NIL ) {
+    ++f_g;
+    settle();
+    }
    return( *this );
    }
   const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
 
   bool operator==( const const_iterator & o ) const {
-   return( ( f_f == o.f_f ) && ( f_g == o.f_g ) && ( f_k == o.f_k ) );
+   return( ( f_f == o.f_f ) && ( f_g == o.f_g ) && ( f_c == o.f_c ) );
    }
 
   private:
-  /// on an item, or at the end ( size of the layers , 0 , 0 )
+  /// on the head of the list f_g from the top of the layer f_f, or at the
+  /// end ( size of the layers , 0 , NIL )
   void settle( void ) {
-   for( ; f_f < f_L->size() ; ++f_f , f_g = 0 , f_k = 0 ) {
-    const auto & byG = ( *f_L )[ f_f ].byG;
-    for( ; f_g < byG.size() ; ++f_g , f_k = 0 )
-     if( f_k < byG[ byG.size() - 1 - f_g ].size() ) return;
+   const auto & L = f_q->f_layers;
+   for( ; f_f < L.size() ; ++f_f , f_g = 0 ) {
+    const Layer & l = L[ f_f ];
+    if( l.count )
+     for( ; f_g < l.lists() ; ++f_g )
+      if( ( f_c = l.head( l.lists() - 1 - f_g ) ) != NIL ) return;
     }
-   f_g = f_k = 0;
+   f_g = 0;
+   f_c = NIL;
    }
 
-  const std::vector< Layer > * f_L = nullptr;
-  std::size_t f_f = 0 , f_g = 0 , f_k = 0;
+  const BucketQueue * f_q = nullptr;
+  std::size_t f_f = 0 , f_g = 0;
+  Index f_c = NIL;
   };
 
  using value_type = T;
@@ -189,10 +223,10 @@ class BucketQueue {
  using iterator = const_iterator;
 
  [[nodiscard]] const_iterator begin( void ) const {
-  return( const_iterator( &f_layers , 0 ) );
+  return( const_iterator( this , 0 ) );
   }
  [[nodiscard]] const_iterator end( void ) const {
-  return( const_iterator( &f_layers , f_layers.size() ) );
+  return( const_iterator( this , f_layers.size() ) );
   }
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
@@ -206,6 +240,8 @@ class BucketQueue {
  [[nodiscard]] bool counted( void ) const;
 
  std::vector< Layer > f_layers;   ///< a layer per f
+ std::vector< Cell > f_cells;     ///< the cells of the items
+ Index f_free = NIL;              ///< the cells freed, the last first
  std::size_t f_minF = 0;          ///< no layer below it has items
  std::size_t f_size = 0;          ///< the number of items
 
