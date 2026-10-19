@@ -258,6 +258,189 @@ bool saisDoubling( const S * R , S * SA , S m ,
  return( true );
  }
 
+/// the first stage of SA-IS, the partial induction: the types and the LMS
+/// places of T (n >= 2 symbols in [ 0 , K )), and the LMS-substrings
+/// sorted and named by one scan of the L-suffixes whose predecessor is L
+/// and one of those whose predecessor is S. The suffixes i >= 1 fall into
+/// four kinds by the types of i and i - 1, LL, LS, LMS (S after L) and SS,
+/// counted per first symbol in size4; the area A, an LL part and an LMS
+/// part per symbol, holds the entries that the scan from left to right
+/// moves, and the area C, an LS part and an SS part per symbol, those that
+/// the scan from right to left moves, so that no scan visits an entry with
+/// nothing to do. An entry is marked (its top bit) when it starts a new
+/// name: a moved suffix is marked unless the last one moved into the same
+/// part came from a suffix of the same name, the name being the number d
+/// of the marks met by the scan. On return SA[ 0 .. m ) holds the LMS
+/// places sorted by their substrings, SA[ m + p / 2 ] the name (from 1) of
+/// p, 0 elsewhere in [ m , n ), runs the LMS-substrings of each name, lms
+/// the bit vector of the LMS places and *first the type of the suffix 0
+/// (1 for S); the number of the LMS places is returned
+template< class C , class S >
+S saisPartial( const C * T , S * SA , S n , S K ,
+               std::vector< S > & size4 ,
+               std::vector< std::uint64_t > & lms , S * first ,
+               S * names , std::vector< S > & runs )
+{
+ constexpr S top = std::numeric_limits< S >::min() ,
+             low = std::numeric_limits< S >::max();
+ constexpr S D = S( saisAhead );
+ const std::size_t k = std::size_t( K );
+ // the kinds, right to left: 0 LL , 1 LS , 2 LMS , 3 SS, 2 t( i ) +
+ // t( i - 1 ), 1 for S
+ size4.assign( 4 * k , 0 );
+ lms.assign( std::size_t( n ) / 64 + 1 , 0 );
+ S m = 0 , s = 0;                    // the suffix n - 1 is of type L
+ for( S i = n - 1 ; i >= 1 ; --i ) {
+  const S a = S( T[ i - 1 ] ) , b = S( T[ i ] );
+  const S u = S( a < b ) | ( S( a == b ) & s );
+  const S kind = 2 * s + u;
+  if( ( K > S( saisSmall ) ) && ( i > D ) )
+   saisPrefetchW( size4.data() + 4 * std::size_t( T[ i - D ] ) );
+  ++size4[ 4 * std::size_t( b ) + std::size_t( kind ) ];
+  const S l = S( kind == 2 );
+  lms[ std::size_t( i ) >> 6 ] |= std::uint64_t( l ) << ( i & 63 );
+  m += l;
+  s = u;
+  }
+ *first = s;
+ if( m == 0 ) return( 0 );
+
+ // the parts: A = LL , LMS per symbol; C = LS , SS per symbol; the LMS
+ // places sorted at last in [ 0 , m ), per symbol
+ // a part v = 2 c + t of the moves of a scan: where the next move goes,
+ // and the name of the last one, side by side in one line of cache
+ struct Part {
+  S to , last;
+  };
+ std::vector< Part > L( 2 * k , Part{ 0 , 0 } ) , R( 2 * k , Part{ 0 , 0 } );
+ std::vector< S > seed( k );
+ S sum = 0;
+ for( std::size_t c = 0 ; c < k ; ++c ) {
+  L[ 2 * c ].to = sum;               // LL: the moves of the L-scan into A
+  sum += size4[ 4 * c ];
+  seed[ c ] = sum;
+  sum += size4[ 4 * c + 2 ];
+  }
+ const S endA = sum;
+ for( std::size_t c = 0 , o = 0 ; c < k ; ++c ) {
+  L[ 2 * c + 1 ].to = sum;           // LS: the moves of the L-scan into C
+  sum += size4[ 4 * c + 1 ] + size4[ 4 * c + 3 ];
+  R[ 2 * c ].to = sum;               // SS: the moves of the S-scan
+  o += std::size_t( size4[ 4 * c + 2 ] );
+  R[ 2 * c + 1 ].to = S( o );        // the LMS places, from the end
+  }
+ const S endC = sum;                 // n - 1: the suffix 0 is in none
+ const bool large = K > S( saisSmall );
+ // the prefetches of the large alphabets read the symbols of entries not
+ // written yet, which must then be 0
+ if( large ) std::fill( SA , SA + n , S( 0 ) );
+
+ // the seeds, the LMS places by their first symbol, the first one of each
+ // symbol marked
+ for( std::size_t w = 0 ; w < lms.size() ; ++w ) {
+  if( large && ( w + 1 < lms.size() ) )
+   for( std::uint64_t v = lms[ w + 1 ] ; v ; v &= v - 1 )
+    saisPrefetchW( seed.data() + T[ ( w + 1 ) * 64 +
+                                    std::size_t( std::countr_zero( v ) ) ] );
+  for( std::uint64_t v = lms[ w ] ; v ; v &= v - 1 ) {
+   const S p = S( w * 64 + std::size_t( std::countr_zero( v ) ) );
+   SA[ seed[ std::size_t( T[ p ] ) ]++ ] = p;
+   }
+  }
+ for( std::size_t c = 0 ; c < k ; ++c )
+  if( size4[ 4 * c + 2 ] ) SA[ seed[ c ] - size4[ 4 * c + 2 ] ] |= top;
+
+ // the scan of A from left to right: the suffix p - 1, of type L, to the
+ // LL part of its symbol if p - 2 is of type L, to its LS part otherwise
+ S d = 1;
+ {
+  const S j = n - 1;
+  const std::size_t v = 2 * std::size_t( T[ j ] ) +
+                        std::size_t( T[ j - 1 ] < T[ j ] );
+  SA[ L[ v ].to++ ] = j | top;
+  L[ v ].last = d;
+  }
+ // the part of an entry p: the symbol before it and the type of the one
+ // before that, with no check (p > 1 , or 0 for an entry not yet there)
+ auto part = [ & ]( S p , bool forS ) {
+  const S j = p - ( p > 1 ? 1 : 0 );
+  const S c = S( T[ j ] ) , b = S( T[ j - ( j > 0 ? 1 : 0 ) ] );
+  return( 2 * std::size_t( c ) + std::size_t( forS ? b > c : b < c ) );
+  };
+ for( S i = 0 ; i < endA ; ++i ) {
+  if( i + D < endA ) {
+   const S a = SA[ i + D ] & low;
+   saisPrefetch( T + ( a - ( a > 1 ? 2 : a ) ) );
+   if( large ) {                      // its part, and where it writes
+    saisPrefetchW( L.data() + part( SA[ i + D / 2 ] & low , false ) );
+    saisPrefetchW( SA + L[ part( SA[ i + D / 4 ] & low , false ) ].to );
+    }
+   }
+  S p = SA[ i ];
+  d += S( p < 0 );
+  p &= low;
+  const S j = p - 1;
+  if( j == 0 ) continue;             // the suffix 0 moves nothing
+  const S c = S( T[ j ] );
+  Part & q = L[ 2 * std::size_t( c ) + std::size_t( S( T[ j - 1 ] ) < c ) ];
+  SA[ q.to++ ] = j | ( q.last != d ? top : 0 );
+  q.last = d;
+  }
+
+ // the marks of the LS parts moved one place left, so that a mark tells
+ // that an entry differs from the one after it, as the scan from right to
+ // left meets them; the last entry of a part is always marked
+ for( std::size_t c = 0 ; c < k ; ++c ) {
+  const S e = L[ 2 * c + 1 ].to , b = e - size4[ 4 * c + 1 ];
+  for( S i = e - 1 , carry = top ; i >= b ; --i ) {
+   const S x = SA[ i ];
+   SA[ i ] = ( x & low ) | carry;
+   carry = x & top;
+   }
+  }
+
+ // the scan of C from right to left: the suffix p - 1, of type S, to the
+ // SS part of its symbol if p - 2 is of type S, among the sorted LMS
+ // places otherwise
+ for( S i = endC - 1 ; i >= endA ; --i ) {
+  if( i - D >= endA ) {
+   const S a = SA[ i - D ] & low;
+   saisPrefetch( T + ( a - ( a > 1 ? 2 : a ) ) );
+   if( large ) {
+    saisPrefetchW( R.data() + part( SA[ i - D / 2 ] & low , true ) );
+    saisPrefetchW( SA + ( R[ part( SA[ i - D / 4 ] & low , true ) ].to -
+                          1 ) );
+    }
+   }
+  S p = SA[ i ];
+  d += S( p < 0 );
+  p &= low;
+  const S j = p - 1;
+  if( j == 0 ) continue;
+  const S c = S( T[ j ] );
+  Part & q = R[ 2 * std::size_t( c ) + std::size_t( S( T[ j - 1 ] ) > c ) ];
+  SA[ --q.to ] = j | ( q.last != d ? top : 0 );
+  q.last = d;
+  }
+
+ // the names: SA[ i ] marked if it differs from SA[ i + 1 ]
+ std::fill( SA + m , SA + n , S( 0 ) );
+ S name = 1;
+ runs.assign( 1 , 0 );
+ for( S i = 0 ; i < m ; ++i ) {
+  const S p = SA[ i ] & low;
+  SA[ m + p / 2 ] = name;
+  ++runs.back();
+  if( ( SA[ i ] < 0 ) && ( i + 1 < m ) ) {
+   ++name;
+   runs.push_back( 0 );
+   }
+  SA[ i ] = p;
+  }
+ *names = name;
+ return( m );
+ }
+
 /// SA-IS on T[ 0 .. n - 1 ], symbols in [ 0 , K ), into SA[ 0 .. n - 1 ];
 /// the number of each symbol from *counts if given (the names of the
 /// level above, counted in their sorted order), else counted here
@@ -269,41 +452,19 @@ void sais( const C * T , S * SA , S n , S K ,
   if( n == 1 ) SA[ 0 ] = 0;
   return;
   }
- std::vector< S > size , B( std::size_t( K ) , 0 );
- if( counts ) size = std::move( *counts );
- else {
-  size.assign( std::size_t( K ) , 0 );
-  for( S i = 0 ; i < n ; ++i ) ++size[ std::size_t( T[ i ] ) ];
-  }
  constexpr S D = S( saisAhead );
-
- // the LMS places at the ends of their buckets, and in a bit vector; on
- // the small alphabets with no branch on the types, a place that is not
- // LMS writing to x, on the large ones a bucket is touched only by an LMS
- // place
- std::vector< std::uint64_t > lms( std::size_t( n ) / 64 + 1 , 0 );
- std::fill( SA , SA + n , S( 0 ) );
- saisBuckets( size.data() , B.data() , K , true );
- S m = 0 , x = 0;
- S s = 0;                           // the type of i + 1: n - 1 is L
- for( S i = n - 2 ; i >= 0 ; --i ) {
-  const S a = S( T[ i ] ) , b = S( T[ i + 1 ] );
-  const S t = S( a < b ) | ( S( a == b ) & s );
-  const S l = ( t ^ 1 ) & s;        // i + 1 is LMS
-  if( K <= S( saisSmall ) ) {
-   S & bucket = B[ std::size_t( b ) ];
-   bucket -= l;
-   *( l ? SA + bucket : &x ) = i + 1;
-   }
-  else {
-   if( i >= D ) saisPrefetch( B.data() + T[ i - D ] );
-   if( l ) SA[ --B[ std::size_t( b ) ] ] = i + 1;
-   }
-  lms[ std::size_t( i + 1 ) >> 6 ] |= std::uint64_t( l ) << ( ( i + 1 ) &
-                                                             63 );
-  m += l;
-  s = t;
-  }
+ (void) counts;
+ std::vector< S > size4 , runs;
+ std::vector< std::uint64_t > lms;
+ S first , names;
+ const S m = saisPartial( T , SA , n , K , size4 , lms , &first , &names ,
+                          runs );
+ // the numbers of the symbols, the suffix 0 in none of the kinds
+ std::vector< S > size( std::size_t( K ) , 0 ) , B( std::size_t( K ) , 0 );
+ for( std::size_t c = 0 ; c < std::size_t( K ) ; ++c )
+  size[ c ] = size4[ 4 * c ] + size4[ 4 * c + 1 ] + size4[ 4 * c + 2 ] +
+              size4[ 4 * c + 3 ];
+ ++size[ std::size_t( T[ 0 ] ) ];
  // the LMS places from the last to the first, by the bits set
  auto forLms = [ & ]( auto && f ) {
   for( std::size_t w = lms.size() ; w-- > 0 ; )
@@ -315,45 +476,16 @@ void sais( const C * T , S * SA , S n , S K ,
   };
 
  // no LMS place: the suffixes of type S, if any, are a prefix of T; with
- // none (s, the type of the suffix 0, is L) T never rises, each suffix is
- // larger than the next one and SA is n - 1 , ... , 0
+ // none (the suffix 0 is of type L) T never rises, each suffix is larger
+ // than the next one and SA is n - 1 , ... , 0
  if( m == 0 ) {
-  if( s == 0 )
+  if( first == 0 )
    for( S r = 0 ; r < n ; ++r ) SA[ r ] = n - 1 - r;
-  else
+  else {
+   std::fill( SA , SA + n , S( 0 ) );
    saisInduce< false >( T , SA , n , size.data() , B.data() , K );
+   }
   return;
-  }
-
- // the LMS-substrings sorted by one induction, then compacted
- saisInduce< true >( T , SA , n , size.data() , B.data() , K );
- for( S i = 0 , k = 0 ; i < n ; ++i )
-  if( SA[ i ] < -1 ) SA[ k++ ] = ~SA[ i ];
-
- // their lengths at m + p / 2, then their names, from 1
- std::fill( SA + m , SA + n , S( 0 ) );
- S p = n;
- forLms( [ & ]( S i ) {
-  SA[ m + i / 2 ] = p - i + 1;       // the last one includes the end
-  p = i; } );
- S names = 0;
- std::vector< S > runs;              // the LMS-substrings of each name
- for( S i = 0 , prev = -1 , plen = 0 ; i < m ; ++i ) {
-  if( i + D < m ) {
-   const S q = SA[ i + D ];
-   saisPrefetch( SA + m + q / 2 );
-   saisPrefetch( T + q );
-   }
-  const S p = SA[ i ] , len = SA[ m + p / 2 ];
-  if( ( prev < 0 ) || ( len != plen ) || ( p + len > n ) ||
-      ( prev + plen > n ) || ! saisEqual( T , p , prev , len ) ) {
-   ++names;
-   runs.push_back( 0 );
-   }
-  ++runs.back();
-  prev = p;
-  plen = len;
-  SA[ m + p / 2 ] = names;
   }
 
  // the LMS-suffixes sorted by the string of the names at the back of SA,
