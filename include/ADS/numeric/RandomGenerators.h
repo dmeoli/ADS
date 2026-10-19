@@ -14,6 +14,9 @@
  *   it; jump() advances it by \f$ 2^{128} \f$ steps (the product of the
  *   state by a fixed polynomial of the map, 256 steps), so that each of \f$
  *   2^{128} \f$ streams of \f$ 2^{128} \f$ numbers serves a thread.
+ *   Xoshiro256StarStar is xoshiro256** on the same state, the output
+ *   \f$ \mathrm{rotl}( 5 s_1 , 7 ) \cdot 9 \f$. The seed fills the state
+ *   by SplitMix64 of Steele, Lea and Flood [see RandomHashing.h].
  * - WyRand is the generator of Wang Yi: the Weyl sequence \f$ s_{i+1} = s_i
  *   + c \bmod 2^{64} \f$, c odd, of period \f$ 2^{64} \f$, hashed by the
  *   folding of a product of 128 bits, \f$ h \oplus l \f$ for \f$ h R + l =
@@ -39,6 +42,20 @@
  *   below \f$ 2^{32} \f$, so that a shuffle of n items draws about
  *   \f$ n / 2 \f$ words instead of n.
  *
+ * - AliasTable is the alias method of Walker in the construction of Vose:
+ *   with \f$ p_i = n w_i / \sum_j w_j \f$, the items with \f$ p_i < 1 \f$
+ *   and those with \f$ p_i \ge 1 \f$ in two lists, each step gives to a
+ *   small one its alias, a large one that gives up \f$ 1 - p_i \f$ of its
+ *   mass, so that the cell i keeps i with probability \f$ p_i \f$ and
+ *   gives its alias otherwise: O( n ) time and space to build, the
+ *   probabilities exact up to the rounding of \f$ p_i \f$. A draw is one
+ *   word x: \f$ x n = h 2^{64} + l \f$, the cell h and the coin \f$ l <
+ *   \lfloor p_h 2^{64} \rfloor \f$ from the same product, O( 1 ) time and
+ *   two loads, against the \f$ O( \log n ) \f$ of the search in the
+ *   cumulative sums; the cells and the coins are off the exact ones by at
+ *   most \f$ n / 2^{64} \f$ each, as for the products of Lemire with no
+ *   rejection.
+ *
  * The generators meet UniformRandomBitGenerator, with min() = 0 and max()
  * = \f$ 2^{64} - 1 \f$, so that they serve the distributions of std; the
  * functions above need such a generator of 64 full bits.
@@ -49,6 +66,10 @@
  * \see D. Blackman, S. Vigna, Scrambled linear pseudorandom number
  *      generators, ACM Transactions on Mathematical Software 47(4), 36:1-32,
  *      2021, doi:10.1145/3460772
+ * \see G. L. Steele, D. Lea, C. H. Flood, Fast splittable pseudorandom
+ *      number generators, Proceedings of the 2014 ACM International
+ *      Conference on Object Oriented Programming Systems Languages and
+ *      Applications (OOPSLA), 453-472, 2014, doi:10.1145/2660193.2660195
  * \see W. Yi, wyhash and wyrand, https://github.com/wangyi-fudan/wyhash
  * \see D. Lemire, Fast random integer generation in an interval, ACM
  *      Transactions on Modeling and Computer Simulation 29(1), 3:1-12,
@@ -60,6 +81,12 @@
  * \see N. Brackett-Rozinsky, D. Lemire, Batched ranged random integer
  *      generation, Software: Practice and Experience 55(1), 155-169, 2025,
  *      doi:10.1002/spe.3369
+ * \see A. J. Walker, An efficient method for generating discrete random
+ *      variables with general distributions, ACM Transactions on
+ *      Mathematical Software 3(3), 253-256, 1977, doi:10.1145/355744.355749
+ * \see M. D. Vose, A linear algorithm for generating random numbers with a
+ *      given distribution, IEEE Transactions on Software Engineering
+ *      17(9), 972-975, 1991, doi:10.1109/32.92917
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -84,12 +111,14 @@
 #include "ADS/numeric/NumberTheory.h"
 
 #include <bit>
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <limits>
 #include <utility>
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -111,13 +140,15 @@ concept FullWordGenerator =
 /*--------------------------- CLASS Xoshiro256 -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// xoshiro256++, a UniformRandomBitGenerator of 64 bits
-class Xoshiro256 {
+/// xoshiro256++ (or xoshiro256** if StarStar), a UniformRandomBitGenerator
+/// of 64 bits
+template< bool StarStar >
+class Xoshiro256T {
  public:
  using result_type = std::uint64_t;
 
  /// the state from the seed by SplitMix64, never all zero
- explicit constexpr Xoshiro256( std::uint64_t seed = 1 );
+ explicit constexpr Xoshiro256T( std::uint64_t seed = 1 );
 
  constexpr std::uint64_t operator()( void );
 
@@ -129,11 +160,14 @@ class Xoshiro256 {
   return( std::numeric_limits< std::uint64_t >::max() );
   }
 
- bool operator==( const Xoshiro256 & ) const = default;
+ bool operator==( const Xoshiro256T & ) const = default;
 
  private:
  std::uint64_t f_s[ 4 ];
- };  // end( class Xoshiro256 )
+ };  // end( class Xoshiro256T )
+
+using Xoshiro256 = Xoshiro256T< false >;          ///< xoshiro256++
+using Xoshiro256StarStar = Xoshiro256T< true >;   ///< xoshiro256**
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS WyRand -------------------------------*/
@@ -158,6 +192,37 @@ class WyRand {
  private:
  std::uint64_t f_s;
  };  // end( class WyRand )
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- CLASS AliasTable -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the alias method of Walker and Vose: draws i with probability
+/// w_i / sum w, in O( 1 ) time from one random word
+class AliasTable {
+ public:
+ /// the table of the weights w, not all zero
+ /// \pre w not empty, its items finite and >= 0 with a positive sum, and
+ ///      fewer than 2^32 of them
+ explicit AliasTable( const std::vector< double > & w );
+
+ [[nodiscard]] std::size_t size( void ) const { return( f_T.size() ); }
+
+ /// an index drawn with probability proportional to its weight
+ template< FullWordGenerator G >
+ std::size_t operator()( G && g ) const;
+
+ /// the probability of i, as the table gives it
+ /// \pre i < size()
+ [[nodiscard]] double probability( std::size_t i ) const;
+
+ private:
+ struct Entry {
+  std::uint64_t keep;      ///< the threshold of the low word to keep i
+  std::uint32_t alias;     ///< the index otherwise
+  };
+ std::vector< Entry > f_T;
+ };  // end( class AliasTable )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/

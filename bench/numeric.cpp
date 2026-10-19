@@ -21,12 +21,17 @@
  *   on 64 bits), hurchalla::is_prime and ADS::isPrime;
  * - "generators", the sum of n words: std::mt19937_64, std::minstd_rand,
  *   boost::random::mt19937_64 and taus88, pcg64 and pcg32 of O'Neill
- *   (ADS_HAS_PCG), and the generators of ADS;
+ *   (ADS_HAS_PCG), and the generators of ADS (xoshiro256++, xoshiro256**,
+ *   wyrand);
  * - "bounded", n integers uniform in [ 0 , s ), s random below 2^32:
  *   std::uniform_int_distribution and boost::random's on the same
  *   generator (xoshiro256++), and ADS::uniformBelow;
  * - "shuffle", a shuffle of n items: std::shuffle and ADS::shuffleFast on
  *   the same generator, ADS::shuffle of Knuth, std::shuffle on mt19937_64;
+ * - "discrete", n draws from 100 and from 10^5 categories of random
+ *   weights: std::discrete_distribution (the search in the cumulative
+ *   sums), boost::random::discrete_distribution (an alias table) and
+ *   ADS::AliasTable, on the same generator;
  * - "sampling", a sample of 1000 items of a stream of n: std::sample on a
  *   forward range (the selection of Knuth) and on an input range (the
  *   reservoir), ADS::reservoirSampling, ADS::reservoirSampleL and
@@ -68,6 +73,7 @@
  #include <boost/multiprecision/miller_rabin.hpp>
  #include <boost/random/mersenne_twister.hpp>
  #include <boost/random/taus88.hpp>
+ #include <boost/random/discrete_distribution.hpp>
  #include <boost/random/uniform_int_distribution.hpp>
  #define ADS_HAS_BOOST 1
 #endif
@@ -279,6 +285,8 @@ void generators( std::size_t n , unsigned seed , int r )
 #ifndef ADS_BENCH_OLD
  words( "ADS::Xoshiro256" , n , r , [ & ](){
         return( ADS::Xoshiro256( seed ) ); } );
+ words( "ADS::Xoshiro256StarStar" , n , r , [ & ](){
+        return( ADS::Xoshiro256StarStar( seed ) ); } );
  words( "ADS::WyRand" , n , r , [ & ](){ return( ADS::WyRand( seed ) ); } );
 #endif
 
@@ -329,6 +337,38 @@ void generators( std::size_t n , unsigned seed , int r )
 #endif
  }
 
+/// n draws from k categories of random weights
+void discrete( std::size_t n , unsigned seed , int r )
+{
+ for( const std::size_t k : { std::size_t( 100 ) , std::size_t( 100000 ) } ) {
+  const std::string what = "k=" + std::to_string( k );
+  std::mt19937_64 h( seed );
+  std::vector< double > w( k );
+  for( auto & x : w ) x = double( h() % 1000 + 1 );
+  auto cellOf = [ & ]( const std::string & who , auto && draw ) {
+   print( "discrete" , what.c_str() , n , who , median( [ & ](){
+           return( Gen( seed ) ); } , [ & ]( Gen & G ) {
+            U64 s = 0;
+            for( std::size_t i = 0 ; i < n ; ++i ) s += U64( draw( G ) );
+            sink = sink + s; } , r , n ) );
+   };
+  std::discrete_distribution< std::size_t > D( w.begin() , w.end() );
+  for( const char * who : { "std::discrete_distribution" ,
+                            "std::discrete_distribution A/A" } )
+   cellOf( who , [ & ]( Gen & G ) { return( D( G ) ); } );
+#ifdef ADS_HAS_BOOST
+  boost::random::discrete_distribution< std::size_t > E( w.begin() ,
+                                                         w.end() );
+  cellOf( "boost::random::discrete_distribution" , [ & ]( Gen & G ) {
+   return( E( G ) ); } );
+#endif
+#ifndef ADS_BENCH_OLD
+  const ADS::AliasTable T( w );
+  cellOf( "ADS::AliasTable" , [ & ]( Gen & G ) { return( T( G ) ); } );
+#endif
+  }
+ }
+
 void sampling( std::size_t N , unsigned seed , int r )
 {
  const std::size_t n = 1000;
@@ -373,6 +413,7 @@ int main( int argc , char ** argv )
   powers( n / 10 , o.seed , o.runs );
   primality( n / 10 , o.seed , o.runs );
   generators( n , o.seed , o.runs );
+  discrete( n , o.seed , o.runs );
   sampling( 10 * n , o.seed , o.runs );
   }
  return( 0 );

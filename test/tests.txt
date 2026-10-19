@@ -509,6 +509,7 @@ engineered_numeric  binary-gcd        gcd binario senza divisioni
 engineered_numeric  montgomery        forma di Montgomery a 64 bit
 engineered_numeric  is-prime          primalita' esatta a 64 bit
 engineered_numeric  generators        xoshiro256++ e wyrand
+engineered_numeric  xoshiro-alias     xoshiro256** e metodo degli alias
 engineered_numeric  bounded-integers  interi limitati di Lemire
 engineered_numeric  shuffle-fast      mescolamento a gruppi di indici
 engineered_numeric  reservoir-l       campionamento con l'Algoritmo L

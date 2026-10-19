@@ -219,6 +219,74 @@ ADS_TEST( "generators" )
  CHECK( std::abs( s / 100000 - 0.5 ) < 0.01 );
  }
 
+// xoshiro256** and xoshiro256++ against the reference algorithms of
+// Blackman and Vigna on the same state, the words of SplitMix64 of the
+// seed; the alias method: the probabilities of the table against the
+// weights, the chi-square of the draws, weights zero, a single item, a
+// mass on one item, and the contracts
+ADS_TEST( "xoshiro-alias" )
+{
+ for( std::uint64_t seed : { 0ULL , 1ULL , 123456789ULL } ) {
+  std::uint64_t st[ 4 ] , x = seed;
+  for( auto & w : st ) {
+   w = splitmix64( x );
+   x += 0x9e3779b97f4a7c15ULL;
+   }
+  std::uint64_t a[ 4 ] = { st[ 0 ] , st[ 1 ] , st[ 2 ] , st[ 3 ] } ,
+                b[ 4 ] = { st[ 0 ] , st[ 1 ] , st[ 2 ] , st[ 3 ] };
+  auto step = []( std::uint64_t * q ) {
+   const std::uint64_t t = q[ 1 ] << 17;
+   q[ 2 ] ^= q[ 0 ]; q[ 3 ] ^= q[ 1 ]; q[ 1 ] ^= q[ 2 ]; q[ 0 ] ^= q[ 3 ];
+   q[ 2 ] ^= t; q[ 3 ] = std::rotl( q[ 3 ] , 45 ); };
+  Xoshiro256 P( seed );
+  Xoshiro256StarStar S( seed );
+  for( int i = 0 ; i < 1000 ; ++i ) {
+   CHECK( P() == std::rotl( a[ 0 ] + a[ 3 ] , 23 ) + a[ 0 ] );
+   step( a );
+   CHECK( S() == std::rotl( b[ 1 ] * 5 , 7 ) * 9 );
+   step( b );
+   }
+  }
+ Xoshiro256 g( 41 );
+ for( const auto & w : std::vector< std::vector< double > >{
+       { 1 } , { 0 , 5 , 0 } , { 1 , 1 , 1 , 1 } , { 1 , 2 , 3 , 4 , 0 , 10 } ,
+       { 1e-9 , 1 , 1e9 } } ) {
+  const AliasTable T( w );
+  double sum = 0 , tot = 0;
+  for( double x : w ) sum += x;
+  for( std::size_t i = 0 ; i < w.size() ; ++i ) {
+   CHECK( std::abs( T.probability( i ) - w[ i ] / sum ) < 1e-12 );
+   tot += T.probability( i );
+   }
+  CHECK( std::abs( tot - 1 ) < 1e-12 );
+  std::vector< long > Y( w.size() , 0 );
+  const int draws = 200000;
+  for( int t = 0 ; t < draws ; ++t ) ++Y[ T( g ) ];
+  for( std::size_t i = 0 ; i < w.size() ; ++i )
+   if( w[ i ] == 0 ) CHECK( Y[ i ] == 0 );
+  std::vector< long > Z;                    // the chi-square on the cells
+  std::vector< double > q;                  // of a positive weight
+  for( std::size_t i = 0 ; i < w.size() ; ++i )
+   if( w[ i ] / sum > 1e-3 ) {
+    Z.push_back( Y[ i ] );
+    q.push_back( w[ i ] / sum );
+    }
+  double qs = 0;
+  for( double v : q ) qs += v;
+  for( double & v : q ) v /= qs;
+  if( Z.size() > 1 ) CHECK( chiSquare( Z , q ) < 30 );
+  }
+ std::vector< double > R( 1000 );           // random weights
+ for( auto & x : R ) x = double( g() % 1000 );
+ const AliasTable T( R );
+ double tot = 0;
+ for( std::size_t i = 0 ; i < R.size() ; ++i ) tot += T.probability( i );
+ CHECK( std::abs( tot - 1 ) < 1e-9 );
+ CHECK_THROWS( AliasTable( std::vector< double >() ) , contract_violation );
+ CHECK_THROWS( AliasTable( { 0.0 , 0.0 } ) , contract_violation );
+ CHECK_THROWS( AliasTable( { 1.0 , -1.0 } ) , contract_violation );
+ }
+
 // uniformBelow() and uniformReal(): the bounds 1, 2, 3, 2^63 + 1 and
 // 2^64 - 1 (rejections half of the times), the chi-square of small
 // bounds, the contract of the bound 0

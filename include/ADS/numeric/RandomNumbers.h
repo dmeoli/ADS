@@ -40,8 +40,15 @@
  * \see S. K. Park, K. W. Miller, Random number generators: good ones are
  *      hard to find, Communications of the ACM 31(10), 1192-1201, 1988,
  *      doi:10.1145/63039.63042
+ * \see R. A. Fisher, F. Yates, Statistical Tables for Biological,
+ *      Agricultural and Medical Research, Oliver and Boyd, 1938, and R.
+ *      Durstenfeld, Algorithm 235: random permutation, Communications of
+ *      the ACM 7(7), 420, 1964, doi:10.1145/364520.364540
  * \see J. S. Vitter, Random sampling with a reservoir, ACM Transactions on
  *      Mathematical Software 11(1), 37-57, 1985, doi:10.1145/3147.3165
+ * \see R. P. Brent, An improved Monte Carlo factorization algorithm, BIT
+ *      Numerical Mathematics 20(2), 176-184, 1980, doi:10.1007/BF01933190
+ *      (the detection of the cycle of period())
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

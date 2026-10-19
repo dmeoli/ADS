@@ -15,6 +15,9 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 4.9,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ * \see U. Pape, Implementation and efficiency of Moore-algorithms for the
+ *      shortest route problem, Mathematical Programming 7(1), 212-222,
+ *      1974, doi:10.1007/BF01585517
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
