@@ -107,16 +107,16 @@ void checkSearch( std::string_view T , std::string_view P )
 /*--------------------------------------------------------------------------*/
 
 // the exact search against naiveMatching(): the empty pattern and text, a
-// pattern longer than the text, of one, two and three bytes, at the two
-// ends of the text, overlapping occurrences, the bytes 0 and 255, texts
-// shorter and longer than the vectors of the filter, random texts over 2,
-// 4, 26 and 256 bytes with patterns taken from them or not, the Fibonacci
-// word, and the adversarial texts: a^n with a^{m-1} b and b a^{m-1}, and a
-// periodic text that passes every probe of its pattern and fails in the
-// middle, which sends the search to the Two-Way algorithm; the interface
-// of std::search(); patterns of 64 to 363 bytes, searched by the shifts of
-// their q-grams, found, repeated and off by one byte, and on texts of 10^5
-// and 2 10^5 bytes, whose two halves are searched at once
+// pattern longer than the text, of one, two and three bytes, at the two ends
+// of the text, overlapping occurrences, the bytes 0 and 255, texts shorter and
+// longer than the vectors of the filter, random texts over 2, 4, 26 and 256
+// bytes with patterns taken from them or not, the Fibonacci word, and the
+// adversarial texts: a^n with a^m (an occurrence at every place), a^{m-1} b
+// and b a^{m-1}, and a periodic text that passes every probe of its pattern
+// and fails in the middle, which sends the search to the Two-Way algorithm;
+// the interface of std::search(); patterns of 64 to 363 bytes, searched by the
+// shifts of their q-grams, found, repeated and off by one byte, and on texts
+// of 10^5 and 2 10^5 bytes, whose two halves are searched at once
 ADS_TEST( "string-search" )
 {
  checkSearch( "" , "" );
@@ -178,6 +178,8 @@ ADS_TEST( "string-search" )
  const std::string F = fibonacciWord( 3000 );
  for( std::size_t m : { 2 , 5 , 13 , 34 , 100 , 377 } )
   checkSearch( F , F.substr( 500 , m ) );
+ for( std::size_t m : { 2 , 20 , 100 , 300 } )    // an occurrence at every
+  checkSearch( std::string( 20000 , 'a' ) , std::string( m , 'a' ) );
  for( std::size_t m : { 2 , 3 , 9 , 64 , 65 , 200 } ) {
   const std::string A( 5000 , 'a' );
   checkSearch( A , std::string( m - 1 , 'a' ) + "b" );
@@ -207,12 +209,13 @@ ADS_TEST( "string-search" )
 
 // the engineered SA-IS on 32 and 64 bits against suffixArraySais() of the
 // textbook (and the audit of the suffix array in both): the empty text, one
-// and two bytes, one repeated byte, the bytes 0 and 255, random texts over
-// 1, 2, 4, 26 and 256 bytes, of 60000 bytes over 64, 128 and 256 bytes
-// (whose few repeated names are sorted by doubling), the Fibonacci word, a
-// periodic text whose reduced strings recurse several times, a text with
-// all its LMS-substrings distinct; integer texts over large alphabets; the LCP array of the
-// permuted LCP against lcpArray() of Kasai et al., on the same texts
+// and two bytes, one repeated byte, the bytes 0 and 255, random texts over 1,
+// 2, 4, 26 and 256 bytes, of 60000 bytes over 64, 128 and 256 bytes (whose few
+// repeated names are sorted by doubling), the Fibonacci word, a periodic text
+// whose reduced strings recurse several times, a text with all its
+// LMS-substrings distinct, texts that never rise, never fall, or rise and then
+// fall; integer texts over large alphabets; the LCP array of the permuted LCP
+// against lcpArray() of Kasai et al., on the same texts
 ADS_TEST( "suffix-sorting" )
 {
  auto check = [ & ]( const std::string & T ) {

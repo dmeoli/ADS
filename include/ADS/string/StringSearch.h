@@ -7,77 +7,105 @@
  * benchmark of the searches compares with memmem() of the C library,
  * std::search() with its three searchers and the searchers of
  * Boost.Algorithm, while kmp() [see StringMatching.h] stays the algorithm
- * of the textbook.
+ * of the textbook. The occurrences are the places
+ * \f[
+ *   \mathrm{Occ}( P , T ) = \{ s \in [ 0 , n - m ] : T[ s .. s + m - 1 ]
+ *                            = P \} .
+ * \f]
  *
  * StringSearcher prepares P once, as the searchers of the standard
  * library do, and then finds its occurrences in any text:
  *
  * - P of one byte is found by memchr();
- * - otherwise k probes, two places of P with their bytes (four if P has
- *   fewer than 8 distinct bytes, as on DNA), filter W places of T at once:
- *   the bytes of T at the offsets of the probes from W consecutive starts
- *   are compared with the bytes of the probes by W-byte vector
- *   comparisons, AVX-512 (W = 64), AVX2 (32) or SSE2 (16) as the target
- *   allows, and only the starts that pass every probe are compared with P
- *   by memcmp(); elsewhere memchr() finds the first probe and the others
- *   are checked one by one. The probes are the rarest bytes of P under a
- *   fixed ranking of the bytes by their frequency in text (the letters of
+ * - P of fewer than kSkip bytes goes through the filter of k probes (the
+ *   packed filters of Faro and Kulekci and of Mula): the places \f$ o_1 ,
+ *   \ldots , o_k \f$ of the rarest bytes \f$ b_i = P[ o_i ] \f$ of P, k = 2,
+ *   or 4 if P has fewer than 8 distinct bytes (as on DNA), and the start s
+ *   is compared with P by memcmp() only if \f$ T[ s + o_i ] = b_i \f$ for
+ *   every i. The test is made for W consecutive starts at once by k vector
+ *   comparisons of W bytes and their AND, AVX-512 (W = 64), AVX2 (32) or
+ *   SSE2 (16) as the target allows (elsewhere memchr() finds the first
+ *   probe and the others are checked one by one), so that on a text of
+ *   independent bytes of probabilities \f$ p_c \f$ the expected number of
+ *   comparisons with P is \f$ ( n - m + 1 ) \prod_i p_{b_i} \f$, e.g.,
+ *   \f$ n / 256 \f$ on DNA with four probes. The rarest bytes are those of
+ *   a fixed ranking of the bytes by their frequency in text (the letters of
  *   English by frequency, the blank and the newline the most common, the
- *   control and the high bytes the rarest), and on a tie the later
- *   places, so that a probe of a frequent byte (e.g., the blank) passes
- *   seldom;
- * - P of kSkip bytes or more is searched first by the shifts of its
- *   q-grams (of Wu and Manber, and of the Hash3 of Lecroq): q is the least
- *   length with \f$ d^q \ge 16 m \f$ for the d distinct bytes of P, at
- *   most 8, the q-grams are hashed into 4096 shifts of a byte, the
- *   distance from the last place of each q-gram in P to the end of P (at
- *   most 255), and the q-gram at the end of the window of T moves it by its
- *   shift, one load of 8 bytes per window, the text 1024 bytes ahead
- *   prefetched, and the two halves of a text of 16 KB or more at once, so
- *   that the chains of loads of the two overlap (the occurrences of the
- *   second half wait for the end of the first); when 64 windows have
- *   moved by less than m / 4 each on average (a text of few distinct
- *   q-grams), the filter of the probes takes over;
- * - every search keeps the comparisons that fail: when their cost, m per
- *   failure, exceeds 16 times the length of the text scanned, the search
- *   goes on with the Two-Way algorithm of Crochemore and Perrin, so that
- *   no text costs more than O( n + m ) comparisons in all (e.g., a pattern
- *   that agrees with a periodic text on its probes and nowhere else). The
- *   Two-Way algorithm cuts P at a critical factorization u v, found by two
- *   computations of maximal suffixes, compares v from left to right and u
- *   from right to left, and shifts by the period of P (with a memory of
- *   the prefix that is known to match) or by max( |u| , |v| ) + 1, in
- *   constant extra space, its factorization made only when the search
- *   comes to it; it is the algorithm of memmem() in the GNU C library,
- *   which adds a table of shifts for the long patterns.
+ *   control and the high bytes the rarest), the later place on a tie;
+ * - P of kSkip bytes or more is searched by the shifts of its q-grams, in
+ *   the spirit of Horspool and of Wu and Manber, as the hashed q-grams of
+ *   Lecroq: q is the least length with \f$ d^q \ge 16 m \f$ for the d
+ *   distinct bytes of P, \f$ 2 \le q \le 8 \f$, a q-gram g is hashed to
+ *   \f$ h( g ) \in [ 0 , 4096 ) \f$ (the 12 top bits of its product by
+ *   \f$ \lfloor 2^{64} / \phi \rfloor \f$), and
+ *   \f[
+ *     \mathit{shift}[ x ] = \min\bigl\{ 255 , m - q + 1 , \min\{ m - q - i :
+ *       0 \le i < m - q , \; h( P[ i .. i + q - 1 ] ) = x \} \bigr\} ,
+ *   \f]
+ *   0 for the hash of the last q-gram of P; the window at s moves to \f$ s
+ *   + \mathit{shift}[ h( T[ s + m - q .. s + m - 1 ] ) ] \f$, and a window
+ *   of shift 0 is compared with P and moves by the shift that the last
+ *   q-gram of P has among the others. A shift never passes an occurrence,
+ *   since it is at most the distance to the last place where the q-gram at
+ *   the end of the window occurs in P. On random texts a window moves by
+ *   about m - q + 1, \f$ O( n / m ) \f$ windows of one load of 8 bytes; the
+ *   text 1024 bytes ahead is prefetched, and the two halves of a text of
+ *   16 KB or more are searched at once, so that the chains of loads of the
+ *   two overlap (the occurrences of the second half wait for the end of
+ *   the first). When 64 windows have moved by less than m / 4 each on
+ *   average (a text of few distinct q-grams), the filter of the probes
+ *   takes over;
+ * - every search counts its comparisons with P, m bytes each, those that find
+ *   an occurrence too: once their bytes exceed \f$ 16 ( s - s_0 ) + 4096 \f$
+ *   at the window s of a search begun at \f$ s_0 \f$, the search goes on with
+ *   the Two-Way algorithm of Crochemore and Perrin, so that no text costs more
+ *   than \f$ 16 n + 4096 + m \f$ bytes compared before it, and \f$ 2 n \f$
+ *   comparisons after it, O( n + m ) in all (e.g., a pattern that agrees with
+ *   a periodic text on its probes and nowhere else, or one that occurs at
+ *   every place, \f$ a^m \f$ in \f$ a^n \f$, which cost \f$ \Theta( n m ) \f$
+ *   to the comparisons with P alone). The Two-Way algorithm cuts P at a
+ *   critical factorization P = u v, whose local period at |u| is the period p
+ *   of P, found by the two maximal suffixes of P for an order of the bytes and
+ *   its reverse (the longer one gives |u|); it compares v from left to right
+ *   and then u from right to left, and moves by p, with a memory of the prefix
+ *   of P that is known to match, if u is a suffix of \f$ P[ 0 .. p + |u| - 1 ]
+ *   \f$, or else by \f$ \max( |u| , |v| ) + 1 \f$, in O( 1 ) extra space and
+ *   at most \f$ 2 n \f$ comparisons; its factorization, O( m ), is made only
+ *   when a search comes to it.
  *
- * find() gives the first occurrence at or after from (npos if none),
- * findAll() all of them, overlapping ones included, in increasing order,
- * count() their number, and operator() the range of the first occurrence
- * in [ first , last ), the interface of the searchers of std::search().
- * The empty pattern occurs at every place 0 , ... , n. The functions
- * findFirst() and findAll() of the namespace prepare P and search once.
+ * Preparing P takes O( m ) time and 4 KB for the shifts; find() gives the
+ * first occurrence at or after from (npos if none), findAll() all of them,
+ * overlapping ones included, in increasing order, count() their number,
+ * and operator() the range of the first occurrence in [ first , last ),
+ * the interface of the searchers of std::search(). The empty pattern
+ * occurs at every place 0 , ... , n. The functions findFirst() and
+ * findAll() of the namespace prepare P and search once.
  *
  * The contracts [see Contract.h]: an occurrence found is one, and
  * findAll() gives those of naiveMatching() [see StringMatching.h] (an
  * audit, O( n m ) time). The functions are defined in StringSearch.tpp.
  *
- * \see M. Crochemore, D. Perrin, Two-way string-matching, Journal of the
- *      ACM 38(3), 651-675, 1991, doi:10.1145/116825.116845
- * \see S. Faro, T. Lecroq, The exact online string matching problem: a
- *      review of the most recent results, ACM Computing Surveys 45(2), 13,
- *      2013, doi:10.1145/2431211.2431212
  * \see S. Faro, M. O. Kulekci, Fast packed string matching for short
- *      patterns, Proceedings of the 15th Meeting on Algorithm Engineering
+ *      patterns, Proceedings of the 15th Workshop on Algorithm Engineering
  *      and Experiments (ALENEX), 113-121, 2013,
  *      doi:10.1137/1.9781611972931.10
  * \see W. Mula, SIMD-friendly algorithms for substring searching, 2016,
  *      http://0x80.pl/notesen/2016-11-28-simd-strfind.html
+ * \see R. N. Horspool, Practical fast searching in strings, Software:
+ *      Practice and Experience 10(6), 501-506, 1980,
+ *      doi:10.1002/spe.4380100608
  * \see S. Wu, U. Manber, A fast algorithm for multi-pattern searching,
- *      Technical Report TR-94-17, University of Arizona, 1994
+ *      Technical Report TR-94-17, Department of Computer Science,
+ *      University of Arizona, 1994,
+ *      https://www.cs.arizona.edu/sites/default/files/TR94-17.pdf
  * \see T. Lecroq, Fast exact string matching algorithms, Information
  *      Processing Letters 102(6), 229-235, 2007,
  *      doi:10.1016/j.ipl.2007.01.002
+ * \see M. Crochemore, D. Perrin, Two-way string-matching, Journal of the
+ *      ACM 38(3), 650-674, 1991, doi:10.1145/116825.116845
+ * \see S. Faro, T. Lecroq, The exact online string matching problem: a
+ *      review of the most recent results, ACM Computing Surveys 45(2),
+ *      13:1-13:42, 2013, doi:10.1145/2431211.2431212
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

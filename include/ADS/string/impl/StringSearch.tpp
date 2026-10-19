@@ -248,10 +248,9 @@ std::size_t StringSearcher::skip( const unsigned char * T , std::size_t n ,
    continue;
    }
   if( ( T[ s + f_off[ 0 ] ] == f_byte[ 0 ] ) &&
-      ( std::memcmp( T + s , f_P.data() , m ) == 0 ) ) {
-   if( report( s ) ) return( s );
-   }
-  else if( ( work += m ) > 16 * ( s - from ) + 4096 )
+      ( std::memcmp( T + s , f_P.data() , m ) == 0 ) && report( s ) )
+   return( s );
+  if( ( work += m ) > 16 * ( s - from ) + 4096 )
    return( twoWay( T , n , s + 1 , report ) );
   s += f_shift0;
   }
@@ -295,7 +294,7 @@ std::size_t StringSearcher::skipPair( const unsigned char * T ,
     return( false );
     }
    }
-  else if( ( work += m ) > 16 * ( ( a - from ) + ( b - mid ) ) + 4096 ) {
+  if( ( work += m ) > 16 * ( ( a - from ) + ( b - mid ) ) + 4096 ) {
    out = twoWay( T , n , first ? s + 1 : a , report );
    return( false );
    }
@@ -394,10 +393,9 @@ std::size_t StringSearcher::filterBytes( const unsigned char * T ,
   for( int k = 1 ; k < f_probes ; ++k )
    pass = pass && ( T[ s + f_off[ k ] ] == f_byte[ k ] );
   if( ! pass ) continue;
-  if( std::memcmp( T + s , f_P.data() , m ) == 0 ) {
-   if( report( s ) ) return( s );
-   }
-  else if( ( work += m ) > 16 * ( s - from ) + budget )
+  if( ( std::memcmp( T + s , f_P.data() , m ) == 0 ) && report( s ) )
+   return( s );
+  if( ( work += m ) > 16 * ( s - from ) + budget )
    return( twoWay( T , n , s + 1 , report ) );
   }
  return( npos );
@@ -426,13 +424,11 @@ std::size_t StringSearcher::filter( const unsigned char * T ,
   for( int q = 0 ; q < k ; ++q ) mask &= SV::equal( Q[ q ] + s , B[ q ] );
   for( ; mask ; mask &= mask - 1 ) {
    const std::size_t c = s + std::size_t( std::countr_zero( mask ) );
-   if( std::memcmp( T + c , f_P.data() , m ) == 0 ) {
-    if( report( c ) ) {
-     result = c;
-     return( true );
-     }
+   if( ( std::memcmp( T + c , f_P.data() , m ) == 0 ) && report( c ) ) {
+    result = c;
+    return( true );
     }
-   else if( ( work += m ) > 16 * ( c - from ) + budget ) {
+   if( ( work += m ) > 16 * ( c - from ) + budget ) {
     result = twoWay( T , n , c + 1 , report );
     return( true );
     }
