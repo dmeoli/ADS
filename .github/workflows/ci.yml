@@ -4,8 +4,9 @@
 # Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
 # UBSan, BigInteger with its portable products, the queues between threads    #
-# under ThreadSanitizer, and FlatHashTable on its broadword fallback; it      #
-# measures the coverage of the tests and sends it to Coveralls.               #
+# under ThreadSanitizer, FlatHashTable on its broadword fallback and fft()    #
+# on the lanes of AVX and on arrays of doubles; it measures the coverage of   #
+# the tests and sends it to Coveralls.                                        #
 ###############################################################################
 
 name: CI
@@ -81,6 +82,16 @@ jobs:
               -Iinclude -Itest -DADS_CONTRACTS=3 -DADS_FLAT_SIMD=0 \
               -o swar test/engineered.cpp -pthread
           ./swar flat-hash-table
+      - name: fft() on arrays of doubles and on AVX, under ASan and UBSan
+        run: |
+          for f in -DADS_FFT_SIMD=0 -mavx2; do
+            g++ -std=c++20 -O1 -g -fsanitize=address,undefined $f \
+                -Iinclude -Itest -DADS_CONTRACTS=3 -o lanes test/taocp.cpp \
+                -pthread
+            for t in fft fft-sizes fft-large fft-lanes convolve-real; do
+              ./lanes $t
+            done
+          done
 
   coverage:
     runs-on: ubuntu-latest
