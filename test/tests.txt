@@ -433,8 +433,11 @@ sorting  sorting-networks    reti di Batcher, merge exchange e bitonica
 sorting  didactic-sorts      stooge, slow sort e bogo sort
 sorting  engineered-quicksorts introsort, pdqsort, dual-pivot, 3-way
 sorting  run-sorts           Timsort e Powersort
+sorting  pdq-edges           pdqsort, soglie e casi limite
+sorting  merge-paths         Timsort e Powersort, i due merge
 sorting  radix-sorts         radix LSD, MSD, American flag, bucket
 sorting  dispatch            sort() e stableSort() che scelgono
+sorting  dispatch-edges      le scelte di sort() ai loro limiti
 
 # the structures and the algorithms of Knuth's TAOCP, beyond the book
 taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme

@@ -709,6 +709,276 @@ ADS_TEST( "dispatch" )
   CHECK( std::signbit( Z[ i ] ) == std::signbit( Zs[ i ] ) );
  }
 
+// the edges of the mechanisms of the fast sorts: the cutoffs of pdqSort()
+// (insertion below 24, ninther above 128, blocks of 64) on organ pipe,
+// sawtooth, two values and all equal, with doubles (the partition by
+// blocks) and records; the killer of the median of 3 of Musser
+ADS_TEST( "pdq-edges" )
+{
+ using R = std::pair< int , std::size_t >;
+ auto byKey = []( const R & a , const R & b ) {
+  return( a.first < b.first ); };
+ std::mt19937 g( 31 );
+ for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 127u , 128u ,
+                        129u , 191u , 192u , 193u , 257u } )
+  for( int p = 0 ; p < 6 ; ++p ) {
+   std::vector< double > D( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    switch( p ) {
+     case( 0 ): D[ i ] = double( std::min( i , n - 1 - i ) ); break;
+     case( 1 ): D[ i ] = double( i % 7 ); break;
+     case( 2 ): D[ i ] = ( g() % 2 ) ? 1e300 : -1e300; break;
+     case( 3 ): D[ i ] = 0.5; break;
+     case( 4 ): D[ i ] = double( n - i ); break;
+     default: D[ i ] = double( g() % 1000 ) - 500;
+     }
+   std::vector< R > Q( n );
+   for( std::size_t i = 0 ; i < n ; ++i )        // 1e300 as 1
+    Q[ i ] = { int( std::max( -1e3 , std::min( 1e3 , D[ i ] ) ) ) , i };
+   auto E = D , F = D;
+   auto Q2 = Q;
+   pdqSort( D );
+   sort( F );
+   std::sort( E.begin() , E.end() );
+   pdqSort( Q , byKey );
+   std::stable_sort( Q2.begin() , Q2.end() , byKey );
+   CHECK( D == E && F == E );
+   CHECK( std::is_sorted( Q.begin() , Q.end() , byKey ) &&
+          detail::samePermutation( Q , Q2 , std::less<>() ) );
+   }
+ for( std::size_t n : { 64u , 1000u , 4096u } ) {   // the median-of-3
+  std::vector< double > K( n );                     // killer
+  const std::size_t k = n / 2;
+  for( std::size_t i = 0 ; i < k ; ++i ) {
+   K[ 2 * i ] = double( i + 1 );
+   K[ 2 * i + 1 ] = double( k + i + 1 );
+   }
+  auto E = K;
+  pdqSort( K );
+  std::sort( E.begin() , E.end() );
+  CHECK( K == E );
+  }
+ }
+
+// the two merges of the run sorts, with no branch on the numbers in
+// disorder and by galloping otherwise: stability checked on -0 and +0,
+// which std::less finds equal, and on records ( key , place ) in the
+// patterns that matter: one descending run with equal keys, organ pipe,
+// sawtooth, runs of length 1 and 2, all equal, two values, and two runs
+// that interleave in blocks of 6, 7 and 8, around the start of the
+// galloping; all against std::stable_sort
+ADS_TEST( "merge-paths" )
+{
+ std::mt19937 g( 21 );
+ using D = std::vector< double >;
+ auto stableAs = []( const D & A , D B ) {      // the signs too
+  std::stable_sort( B.begin() , B.end() );
+  for( std::size_t i = 0 ; i < A.size() ; ++i )
+   if( ( A[ i ] != B[ i ] ) ||
+       ( std::signbit( A[ i ] ) != std::signbit( B[ i ] ) ) )
+    return( false );
+  return( A.size() == B.size() ); };
+ const double v[] = { -1.0 , -0.0 , 0.0 , 1.0 };
+ for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 48u , 49u ,
+                        511u , 512u , 513u , 20000u } ) {
+  D X( n ) , L;                                  // in disorder, in runs
+  for( auto & x : X ) x = v[ g() % 4 ];
+  for( std::size_t r = 0 ; L.size() < n ; ++r ) {
+   D run( std::min< std::size_t >( n - L.size() , 1 + n / 5 ) );
+   for( auto & x : run ) x = v[ g() % 4 ];
+   std::stable_sort( run.begin() , run.end() );
+   if( r % 2 )                                   // strictly decreasing
+    std::reverse( run.begin() , run.end() );     // only if no equals
+   L.insert( L.end() , run.begin() , run.end() );
+   }
+  for( const D & Y : { X , L } ) {
+   D A = Y , B = Y , C = Y;
+   timSort( A );
+   powerSort( B );
+   stableSort( C );
+   CHECK( stableAs( A , Y ) && stableAs( B , Y ) && stableAs( C , Y ) );
+   }
+  }
+ using R = std::pair< int , std::size_t >;
+ auto byKey = []( const R & a , const R & b ) {
+  return( a.first < b.first ); };
+ for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 100u , 511u ,
+                        512u , 513u , 5000u } )
+  for( int p = 0 ; p < 10 ; ++p ) {
+   std::vector< R > Q( n );
+   const std::size_t h = n / 2 , L = 6 + std::size_t( p % 3 );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    int k = 0;
+    switch( p ) {
+     case( 0 ): k = int( ( n - i ) / 2 ); break;   // descending, equals
+     case( 1 ): k = int( std::min( i , n - 1 - i ) ); break;
+     case( 2 ): k = int( i % 17 ); break;
+     case( 3 ): k = int( i ^ 1 ); break;            // runs of length 2
+     case( 4 ): k = int( g() % 3 ); break;          // runs of 1 and 2
+     case( 5 ): k = 7; break;
+     case( 6 ): k = int( g() % 2 ); break;
+     default: {                                     // blocks of L
+      const std::size_t j = i < h ? i : i - h;
+      k = int( ( j / L ) * 2 * L + ( i < h ? 0 : L ) + j % L );
+      }
+     }
+    Q[ i ] = { k , i };
+    }
+   auto A = Q , B = Q , C = Q , E = Q;
+   timSort( A , byKey );
+   powerSort( B , byKey );
+   stableSort( C , byKey );
+   std::stable_sort( E.begin() , E.end() , byKey );
+   CHECK( A == E && B == E && C == E );
+   }
+ for( int t = 0 ; t < 200 ; ++t ) {             // randomized
+  const std::size_t n = g() % 3000;
+  std::vector< R > Q( n );
+  const int keys = 1 + int( g() % 50 );
+  for( std::size_t i = 0 ; i < n ; ++i ) Q[ i ] = { int( g() % keys ) , i };
+  if( t % 3 == 1 )                              // partly presorted
+   std::sort( Q.begin() , Q.begin() + n / 2 , byKey );
+  auto A = Q , B = Q , E = Q;
+  powerSort( A , byKey );
+  timSort( B , byKey );
+  std::stable_sort( E.begin() , E.end() , byKey );
+  CHECK( A == E && B == E );
+  }
+ }
+
+// the choices of sort() and stableSort() at their edges: 0, 1, 2 items;
+// the runs counted around kRuns on vectors above kRadix and kStrings,
+// strictly decreasing runs with -0 and +0 inside; few wide keys (16
+// distinct doubles, 17, two values far apart) against few narrow ones;
+// the radix sort on keys that differ in one byte only, the top, a middle
+// or the sign, all equal, two values; the MSD sort of strings around the
+// insertion cutoff of 16, groups of equal strings, prefixes of each other,
+// the shortest first, empty strings and long shared prefixes
+ADS_TEST( "dispatch-edges" )
+{
+ std::mt19937 g( 41 );
+ auto less = std::less<>();
+ for( std::size_t n : { 0u , 1u , 2u } ) {
+  std::vector< double > D( n );
+  std::vector< std::string > S( n );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   D[ i ] = double( n - i );
+   S[ i ] = std::string( n - i , 'a' );
+   }
+  auto D2 = D , D3 = D;
+  auto S2 = S , S3 = S;
+  sort( D2 );
+  stableSort( D3 );
+  sort( S2 );
+  stableSort( S3 );
+  std::sort( D.begin() , D.end() );
+  std::sort( S.begin() , S.end() );
+  CHECK( D2 == D && D3 == D && S2 == S && S3 == S );
+  }
+ for( std::size_t n : { kRadix , std::size_t( 4096 ) } )
+  for( std::size_t r : { std::size_t( 1 ) , kRuns - 1 , kRuns , kRuns + 1 ,
+                         2 * kRuns } ) {
+   Ints A( n );                                  // exactly r runs
+   for( std::size_t k = 0 ; k < r ; ++k )
+    for( std::size_t i = k * n / r ; i < ( k + 1 ) * n / r ; ++i )
+     A[ i ] = int( i - k * n / r );
+   CHECK( detail::runs( A , less , kRuns ) == std::min( r , kRuns + 1 ) );
+   Ints B = A , C = A , E = A;
+   sort( B );
+   stableSort( C );
+   std::sort( E.begin() , E.end() );
+   CHECK( B == E && C == E );
+   std::vector< std::string > S( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    S[ i ] = std::to_string( 100000 + A[ i ] );
+   auto S2 = S , S3 = S , S4 = S;
+   sort( S2 );
+   stableSort( S3 );
+   std::sort( S4.begin() , S4.end() );
+   CHECK( S2 == S4 && S3 == S4 );
+   }
+ std::vector< double > Z( 1000 );               // strictly decreasing
+ for( std::size_t i = 0 ; i < Z.size() ; ++i )  // runs, then -0 and +0
+  Z[ i ] = double( 500 - int( i ) );
+ for( std::size_t i = 500 ; i < 520 ; ++i ) Z[ i ] = ( i % 2 ) ? -0.0 : 0.0;
+ auto Zs = Z;
+ stableSort( Z );
+ std::stable_sort( Zs.begin() , Zs.end() );
+ CHECK( Z == Zs );
+ for( std::size_t i = 0 ; i < Z.size() ; ++i )
+  CHECK( std::signbit( Z[ i ] ) == std::signbit( Zs[ i ] ) );
+ for( std::size_t k : { 1u , 2u , 16u , 17u , 64u } ) {   // few keys,
+  std::vector< double > V( 4096 ) , W( k );
+  for( auto & w : W ) w = ( double( g() ) - 2e9 ) / 7.0;
+  W[ 0 ] = -0.0;
+  if( k > 1 ) W[ 1 ] = 0.0;
+  for( auto & x : V ) x = W[ g() % k ];
+  if( k != 17 )                                 // -0 and +0 are wide
+   CHECK( detail::fewWideKeys( V ) == ( ( k > 1 ) && ( k <= 16 ) ) );
+  auto V2 = V , V3 = V;
+  sort( V );
+  stableSort( V2 );
+  std::stable_sort( V3.begin() , V3.end() );
+  CHECK( V == V3 && V2 == V3 );
+  for( std::size_t i = 0 ; i < V2.size() ; ++i )
+   CHECK( std::signbit( V2[ i ] ) == std::signbit( V3[ i ] ) );
+  std::vector< std::uint32_t > U( 4096 );       // narrow: one byte
+  for( auto & x : U ) x = std::uint32_t( g() % k );
+  CHECK( ! detail::fewWideKeys( U ) );
+  }
+ std::vector< double > Far( 4096 );             // two values, far apart
+ for( auto & x : Far ) x = ( g() % 2 ) ? 1e300 : -1e300;
+ auto Far2 = Far;
+ sort( Far );
+ std::sort( Far2.begin() , Far2.end() );
+ CHECK( Far == Far2 );
+ for( int b = 0 ; b < 6 ; ++b )                 // one byte that differs
+  for( std::size_t n : { 0u , 1u , 2u , 1000u } ) {
+   std::vector< std::uint32_t > U( n );
+   std::vector< long long > L( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::uint32_t x = std::uint32_t( g() % 256 );
+    U[ i ] = b < 4 ? ( x << ( 8 * b ) ) : ( b == 4 ? 7u : x % 2 );
+    L[ i ] = b < 4 ? ( ( long long )( x ) << ( 8 * b ) ) :
+             ( b == 4 ? ( x % 2 ? -1 : 0 ) : -( long long )( x % 2 ) - 5 );
+    }
+   auto U2 = U;
+   auto L2 = L;
+   radixSort( U );
+   radixSort( L );
+   std::sort( U2.begin() , U2.end() );
+   std::sort( L2.begin() , L2.end() );
+   CHECK( U == U2 && L == L2 );
+   }
+ std::vector< std::uint8_t > Small = { 3 , 3 , 3 };
+ radixSort( Small );
+ CHECK( Small == std::vector< std::uint8_t >( { 3 , 3 , 3 } ) );
+ const std::string pre( 1000 , 'p' );
+ for( std::size_t c : { 15u , 16u , 17u , 18u , 40u } ) {   // groups
+  std::vector< std::vector< std::string > > T( 7 );
+  for( std::size_t i = 0 ; i < c ; ++i ) {
+   T[ 0 ].push_back( "abc" );                   // all equal
+   T[ 1 ].push_back( "abc" );                   // and a longer one
+   T[ 2 ].push_back( "abc" );                   // and a shorter one
+   T[ 3 ].push_back( "" );                      // empty strings
+   T[ 4 ].push_back( pre + char( 'a' + g() % 3 ) );   // shared prefix
+   T[ 5 ].push_back( std::string( g() % 5 , 'x' ) );  // prefixes
+   T[ 6 ].push_back( i % 2 ? "ab" : "abc" );
+   }
+  T[ 1 ].push_back( "abcd" );
+  T[ 2 ].insert( T[ 2 ].begin() , "ab" );       // the shortest first
+  T[ 4 ].push_back( pre );
+  for( auto & X : T ) {
+   auto Y = X , W = X , V = X;
+   msdRadixSort( Y );
+   sort( W );
+   multikeyQuickSort( V );
+   std::sort( X.begin() , X.end() );
+   CHECK( Y == X && W == X && V == X );
+   }
+  }
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/

@@ -259,6 +259,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocking flow of Dinic use an explicit stack, so that chains of 10^5
   nodes do not overflow the stack
 - linked() of BinaryTree and Tree checks the links of the node alone
+- sort() and stableSort() count the runs of a long vector of numbers or
+  strings and give at most kRuns of them to powerSort(), so that organ
+  pipes and few sorted runs merge instead of going through the radix
+  sort; sort() gives to pdqSort() the doubles with few distinct wide keys
+- radixSort() finds in one first sweep the bytes in which the keys
+  differ, and counts and passes over those alone
+- msdRadixSort() skips the prefix that a group of strings shares, keeps
+  the character of each string aside and moves the strings once per pass,
+  back and forth between the vector and its buffer
+- pdqSort() and the insertion sort scan by pointers, and the merges of
+  timSort() and powerSort() gallop adaptively, with no branch on the order
+  for numbers in disorder
 
 ### Fixed
 
