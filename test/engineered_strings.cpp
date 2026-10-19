@@ -115,7 +115,8 @@ void checkSearch( std::string_view T , std::string_view P )
 // periodic text that passes every probe of its pattern and fails in the
 // middle, which sends the search to the Two-Way algorithm; the interface
 // of std::search(); patterns of 64 to 363 bytes, searched by the shifts of
-// their q-grams, found, repeated and off by one byte
+// their q-grams, found, repeated and off by one byte, and on texts of 10^5
+// and 2 10^5 bytes, whose two halves are searched at once
 ADS_TEST( "string-search" )
 {
  checkSearch( "" , "" );
@@ -159,6 +160,21 @@ ADS_TEST( "string-search" )
    Q[ g() % m ] ^= 1;                    // one byte off
    checkSearch( T + P + T , Q );
    }
+ {                                 // the two halves at once
+  const std::string T = randomString( g , 100000 , 256 , 0 );
+  for( std::size_t at : { std::size_t( 0 ) , std::size_t( 1000 ) ,
+                          std::size_t( 49800 ) , std::size_t( 50000 ) ,
+                          std::size_t( 99700 ) } ) {
+   const std::string P = T.substr( at , 300 );
+   checkSearch( T , P );
+   checkSearch( T + T , P );
+   }
+  std::string W = T;                   // the same pattern in both halves
+  const std::string P = T.substr( 7000 , 200 );
+  W.replace( 60000 , 200 , P );
+  W.replace( 30000 , 200 , P );
+  checkSearch( W , P );
+  }
  const std::string F = fibonacciWord( 3000 );
  for( std::size_t m : { 2 , 5 , 13 , 34 , 100 , 377 } )
   checkSearch( F , F.substr( 500 , m ) );
