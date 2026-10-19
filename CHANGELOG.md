@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Multiprecision, Rational) and, when found, GMP and FFTW, with a run
   "A/A" of the reference for the noise; bench/run.sh runs them on one core
   and bench/tables.py writes their tables
+- the results of two runs of all the benchmarks on an idle Xeon Gold 5120,
+  in results/ with their tables, and their summary at the top of the
+  README, written by bench/summary.py with the noise A/A between the runs
 - the product of Karatsuba in BigInteger, between Algorithm M and the FFT
 - the move constructor of FibonacciHeapPriorityQueue
 - BucketQueue::popEntry(), the top item with its keys f and g

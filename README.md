@@ -26,6 +26,87 @@ its pseudocode has a defect (a few figures, too, disagree with the formulae
 they illustrate), the header states the choice made and the reason for
 it.
 
+## Performance
+
+The table below compares the engineered structures of ADS with those of
+the standard library (libstdc++), of Boost 1.83, of GMP 6.3.0 and of
+FFTW 3.3.10, as measured by the benchmarks in [`bench/`](bench/) (`make
+bench`). These were run twice on an otherwise idle Intel Xeon Gold 5120
+at 2.2 GHz, on one core pinned by `taskset`, with g++ 13.3 at `-O3
+-march=native`; GMP was configured for that processor, and FFTW was built
+with SSE2, AVX, AVX2 and AVX-512. Each cell of a benchmark is the median
+of 11 runs, and the clock does not include the building of the input nor
+the planning of FFTW. A row gives the time of the library divided by that
+of ADS (above 1 when ADS is faster), as the median and the range over the
+cells of the benchmark, i.e., its cases (e.g., random, sorted or few
+distinct keys for the sorts) and its sizes ($10^5$ and $10^6$ items for
+the containers). When a library has more than one candidate, the time of
+a cell is that of the fastest of them (e.g., the faster of
+`boost::pdqsort` and `boost::spreadsort`). The same code measured twice
+differs by 1.1% in the median cell and by 4.3% at the 90th percentile,
+over the 1544 cells of the two runs; the largest differences, up to 50%,
+are in cells of a few hundred nanoseconds, where they are the resolution
+of the clock. Hence, a ratio between 0.95 and 1.05 is usually a tie.
+
+| benchmark | ADS | against | cells | median | range |
+|---|---|---|---:|---:|---:|
+| sort double | `ADS::sort` | std | 12 | 8.83 | 1.95 to 32 |
+| sort int64 | `ADS::sort` | std | 12 | 14 | 1.95 to 39 |
+| sort record | `ADS::sort` | std | 12 | 2.33 | 1.10 to 6.60 |
+| sort string | `ADS::sort` | std | 12 | 3.36 | 1.67 to 5.15 |
+| sort uint32 | `ADS::sort` | std | 12 | 15 | 3.90 to 36 |
+| sort double | `ADS::sort` | Boost | 12 | 2.20 | 0.93 to 14 |
+| sort int64 | `ADS::sort` | Boost | 12 | 3.52 | 0.84 to 17 |
+| sort record | `ADS::sort` | Boost | 12 | 1.00 | 0.98 to 1.02 |
+| sort string | `ADS::sort` | Boost | 12 | 1.45 | 0.90 to 2.20 |
+| sort uint32 | `ADS::sort` | Boost | 12 | 3.93 | 0.75 to 16 |
+| sort double | `ADS::stableSort` | std | 12 | 4.35 | 1.67 to 25 |
+| sort int64 | `ADS::stableSort` | std | 12 | 13 | 2.33 to 32 |
+| sort record | `ADS::stableSort` | std | 12 | 5.53 | 0.75 to 32 |
+| sort string | `ADS::stableSort` | std | 12 | 2.37 | 1.68 to 6.10 |
+| sort uint32 | `ADS::stableSort` | std | 12 | 13 | 1.34 to 41 |
+| sort double | `ADS::stableSort` | Boost | 12 | 1.20 | 0.88 to 3.01 |
+| sort int64 | `ADS::stableSort` | Boost | 12 | 1.40 | 0.71 to 26 |
+| sort record | `ADS::stableSort` | Boost | 12 | 0.98 | 0.57 to 1.16 |
+| sort string | `ADS::stableSort` | Boost | 12 | 2.76 | 1.34 to 5.62 |
+| sort uint32 | `ADS::stableSort` | Boost | 12 | 1.03 | 0.63 to 36 |
+| dictionaries | `ADS::FlatHashTable` | std | 8 | 5.47 | 4.32 to 16 |
+| dictionaries | `ADS::FlatHashTable` | Boost | 8 | 0.93 | 0.75 to 1.16 |
+| dictionaries | `ADS::RedBlackTree` | std | 8 | 1.45 | 1.00 to 2.38 |
+| priority | `ADS::DaryHeap d=4` | std | 6 | 1.62 | 1.38 to 2.17 |
+| priority | `ADS::DaryHeap d=4` | Boost | 6 | 1.04 | 0.87 to 1.68 |
+| priority | `ADS::FibonacciHeapPriorityQueue` | Boost | 6 | 0.61 | 0.54 to 0.86 |
+| sequences | `ADS::ArraySequence` | std | 6 | 1.05 | 1.00 to 1.12 |
+| sequences | `ADS::List` | std | 6 | 1.02 | 0.99 to 1.10 |
+| sequences | `ADS::SinglyList` | std | 6 | 0.98 | 0.86 to 1.03 |
+| bignum | `ADS::BigInteger` | Boost | 12 | 4.04 | 1.00 to 91 |
+| bignum | `ADS::BigInteger` | GMP | 12 | 0.33 | 0.20 to 1.25 |
+| bignum | `ADS::Rational` | Boost | 3 | 4.74 | 1.93 to 6.03 |
+| bignum | `ADS::Rational` | GMP | 3 | 0.42 | 0.40 to 0.46 |
+| fft | `ADS::fft` | FFTW | 3 | 0.50 | 0.34 to 0.78 |
+
+`ADS::sort()` and `ADS::stableSort()` are faster than the standard library
+in almost all the cells, by 2 to 15 times in the median (the radix sorts
+accounting for most of it), and they are often as fast as Boost or faster.
+However, `boost::spinsort` is 1.4 to 1.8 times faster on the stable sort
+of records, of sorted 32-bit keys and of reversed 64-bit keys at $10^5$,
+and `boost::spreadsort` is 1.3 times faster on sorted 32-bit keys.
+`FlatHashTable` is 4 to 16 times faster than `std::unordered_map`, and it
+is on a par with `boost::unordered_flat_map` on the lookups, but for the
+misses among $10^5$ keys (where Boost is 1.15 times faster). Boost is also
+1.3 times faster on the insertions and the visits of $10^5$ keys, and 1.16
+times slower on the insertions of $10^6$. It is fair to remark that the
+libraries built on hand-written kernels stay ahead. GMP is 2 to 5 times
+faster than `BigInteger` on products, quotients and decimal conversion
+(twice as fast already at 16 limbs, where both use the schoolbook
+algorithms), and `mpq_class` is 2.2 to 2.5 times faster than `Rational`;
+FFTW is 1.3 to 3 times faster than `ADS::fft`, whose radix-4 transform is
+vectorized only by the compiler. Also, the Fibonacci heap of Boost is 1.2
+to 1.9 times faster than that of ADS, which follows the pseudocode of the
+book. The tables of all the structures, those of the book included, are
+in [`results/`](results/README.md) together with the raw files of the two
+runs.
+
 ## Layout
 
 Headers are grouped by abstract data type, one header per realization,
@@ -305,9 +386,8 @@ and Boost.Sort (`make bench`, or CMake with `-DADS_BENCHMARKS=ON`).
 `ADS::sort()` and `ADS::stableSort()`
 ([`sort/Sort.h`](include/ADS/sort/Sort.h)) choose among them by the type of
 the items and by the order, i.e., the radix sort for numbers, the MSD
-radix sort for strings, and pdqsort and Powersort for the rest. Their
-thresholds are still provisional, since the benchmark has not yet been run
-on an otherwise idle machine.
+radix sort for strings, and pdqsort and Powersort for the rest, with
+thresholds chosen on the measures of [`results/`](results/README.md).
 
 | What | Header |
 |---|---|

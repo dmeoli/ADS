@@ -1,0 +1,1553 @@
+# machine	Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz
+# cores	16
+# compiler	g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+# load	1.00 1.00 1.00
+# date	2026-10-19T13:15:18+02:00
+# core	2
+# runs	11
+# fft	run again at 14:20 against FFTW 3.3.10 built with SSE2, AVX, AVX2 and AVX-512
+sort uint32	random	100000	std::sort	76.2434
+sort uint32	random	100000	std::stable_sort	96.446
+sort uint32	random	100000	ADS::sort	11.502
+sort uint32	random	100000	ADS::stableSort	11.551
+sort uint32	random	100000	pdqSort	36.311
+sort uint32	random	100000	introSort	80.4017
+sort uint32	random	100000	dualPivotQuickSort	79.0676
+sort uint32	random	100000	threeWayQuickSort	102.412
+sort uint32	random	100000	quickSortTuned	82.9399
+sort uint32	random	100000	powerSort	86.1102
+sort uint32	random	100000	timSort	89.9285
+sort uint32	random	100000	mergeSort	102.762
+sort uint32	random	100000	heapsort	141.742
+sort uint32	random	100000	smoothsort	172.098
+sort uint32	random	100000	shellSort	168.619
+sort uint32	random	100000	boost::pdqsort	35.492
+sort uint32	random	100000	boost::spinsort	88.2564
+sort uint32	random	100000	boost::flat_stable_sort	96.115
+sort uint32	random	100000	radixSort	8.57071
+sort uint32	random	100000	americanFlagSort	27.9003
+sort uint32	random	100000	boost::spreadsort	34.6329
+sort uint32	sorted	100000	std::sort	11.828
+sort uint32	sorted	100000	std::stable_sort	13.4471
+sort uint32	sorted	100000	ADS::sort	0.77207
+sort uint32	sorted	100000	ADS::stableSort	0.77206
+sort uint32	sorted	100000	pdqSort	0.89108
+sort uint32	sorted	100000	introSort	11.1919
+sort uint32	sorted	100000	dualPivotQuickSort	9.95283
+sort uint32	sorted	100000	threeWayQuickSort	13.9152
+sort uint32	sorted	100000	quickSortTuned	12.447
+sort uint32	sorted	100000	powerSort	0.51604
+sort uint32	sorted	100000	timSort	0.51704
+sort uint32	sorted	100000	mergeSort	5.56246
+sort uint32	sorted	100000	heapsort	87.3613
+sort uint32	sorted	100000	smoothsort	15.6653
+sort uint32	sorted	100000	shellSort	29.0324
+sort uint32	sorted	100000	boost::pdqsort	1.25811
+sort uint32	sorted	100000	boost::spinsort	0.48304
+sort uint32	sorted	100000	boost::flat_stable_sort	1.1711
+sort uint32	sorted	100000	radixSort	17.5325
+sort uint32	sorted	100000	americanFlagSort	12.6151
+sort uint32	sorted	100000	boost::spreadsort	0.58005
+sort uint32	reversed	100000	std::sort	9.15077
+sort uint32	reversed	100000	std::stable_sort	13.4911
+sort uint32	reversed	100000	ADS::sort	0.59805
+sort uint32	reversed	100000	ADS::stableSort	0.59905
+sort uint32	reversed	100000	pdqSort	7.58863
+sort uint32	reversed	100000	introSort	11.371
+sort uint32	reversed	100000	dualPivotQuickSort	9.82082
+sort uint32	reversed	100000	threeWayQuickSort	21.8328
+sort uint32	reversed	100000	quickSortTuned	20.3907
+sort uint32	reversed	100000	powerSort	1.27311
+sort uint32	reversed	100000	timSort	1.66313
+sort uint32	reversed	100000	mergeSort	23.726
+sort uint32	reversed	100000	heapsort	90.0535
+sort uint32	reversed	100000	smoothsort	93.5438
+sort uint32	reversed	100000	shellSort	37.3931
+sort uint32	reversed	100000	boost::pdqsort	2.4742
+sort uint32	reversed	100000	boost::spinsort	0.88807
+sort uint32	reversed	100000	boost::flat_stable_sort	0.61106
+sort uint32	reversed	100000	radixSort	16.5694
+sort uint32	reversed	100000	americanFlagSort	18.0325
+sort uint32	reversed	100000	boost::spreadsort	13.6411
+sort uint32	few	100000	std::sort	29.3524
+sort uint32	few	100000	std::stable_sort	49.3111
+sort uint32	few	100000	ADS::sort	1.1961
+sort uint32	few	100000	ADS::stableSort	1.1901
+sort uint32	few	100000	pdqSort	6.16251
+sort uint32	few	100000	introSort	34.2659
+sort uint32	few	100000	dualPivotQuickSort	24.014
+sort uint32	few	100000	threeWayQuickSort	23.2839
+sort uint32	few	100000	quickSortTuned	35.1979
+sort uint32	few	100000	powerSort	85.4081
+sort uint32	few	100000	timSort	88.4784
+sort uint32	few	100000	mergeSort	56.4597
+sort uint32	few	100000	heapsort	95.0059
+sort uint32	few	100000	smoothsort	130.529
+sort uint32	few	100000	shellSort	65.6795
+sort uint32	few	100000	boost::pdqsort	6.58055
+sort uint32	few	100000	boost::spinsort	42.9766
+sort uint32	few	100000	boost::flat_stable_sort	49.3521
+sort uint32	few	100000	radixSort	1.1871
+sort uint32	few	100000	americanFlagSort	16.7184
+sort uint32	few	100000	boost::spreadsort	8.95475
+sort uint32	organ	100000	std::sort	84.6671
+sort uint32	organ	100000	std::stable_sort	13.7991
+sort uint32	organ	100000	ADS::sort	2.50121
+sort uint32	organ	100000	ADS::stableSort	2.50621
+sort uint32	organ	100000	pdqSort	37.9192
+sort uint32	organ	100000	introSort	99.6503
+sort uint32	organ	100000	dualPivotQuickSort	28.2194
+sort uint32	organ	100000	threeWayQuickSort	48.057
+sort uint32	organ	100000	quickSortTuned	57.6158
+sort uint32	organ	100000	powerSort	2.71023
+sort uint32	organ	100000	timSort	2.90624
+sort uint32	organ	100000	mergeSort	15.7553
+sort uint32	organ	100000	heapsort	94.6389
+sort uint32	organ	100000	smoothsort	127.091
+sort uint32	organ	100000	shellSort	41.1764
+sort uint32	organ	100000	boost::pdqsort	38.4012
+sort uint32	organ	100000	boost::spinsort	2.86124
+sort uint32	organ	100000	boost::flat_stable_sort	3.89732
+sort uint32	organ	100000	radixSort	15.3743
+sort uint32	organ	100000	americanFlagSort	25.1471
+sort uint32	organ	100000	boost::spreadsort	20.6477
+sort uint32	runs16	100000	std::sort	44.4127
+sort uint32	runs16	100000	std::stable_sort	15.0943
+sort uint32	runs16	100000	ADS::sort	11.3019
+sort uint32	runs16	100000	ADS::stableSort	11.3199
+sort uint32	runs16	100000	pdqSort	37.4661
+sort uint32	runs16	100000	introSort	47.641
+sort uint32	runs16	100000	dualPivotQuickSort	42.4905
+sort uint32	runs16	100000	threeWayQuickSort	62.7242
+sort uint32	runs16	100000	quickSortTuned	48.197
+sort uint32	runs16	100000	powerSort	11.571
+sort uint32	runs16	100000	timSort	11.0709
+sort uint32	runs16	100000	mergeSort	16.2154
+sort uint32	runs16	100000	heapsort	122.342
+sort uint32	runs16	100000	smoothsort	154.851
+sort uint32	runs16	100000	shellSort	78.0315
+sort uint32	runs16	100000	boost::pdqsort	37.1481
+sort uint32	runs16	100000	boost::spinsort	9.03376
+sort uint32	runs16	100000	boost::flat_stable_sort	16.5694
+sort uint32	runs16	100000	radixSort	15.9673
+sort uint32	runs16	100000	americanFlagSort	25.5081
+sort uint32	runs16	100000	boost::spreadsort	34.2179
+sort uint32	random	1000000	std::sort	93.5523
+sort uint32	random	1000000	std::stable_sort	118.82
+sort uint32	random	1000000	ADS::sort	15.5807
+sort uint32	random	1000000	ADS::stableSort	16.2261
+sort uint32	random	1000000	pdqSort	40.0156
+sort uint32	random	1000000	introSort	96.9259
+sort uint32	random	1000000	dualPivotQuickSort	96.8103
+sort uint32	random	1000000	threeWayQuickSort	124.521
+sort uint32	random	1000000	quickSortTuned	98.9556
+sort uint32	random	1000000	powerSort	98.8624
+sort uint32	random	1000000	timSort	110.901
+sort uint32	random	1000000	mergeSort	126.839
+sort uint32	random	1000000	heapsort	187.066
+sort uint32	random	1000000	smoothsort	232.737
+sort uint32	random	1000000	boost::pdqsort	40.5635
+sort uint32	random	1000000	boost::spinsort	109.679
+sort uint32	random	1000000	boost::flat_stable_sort	120.061
+sort uint32	random	1000000	radixSort	15.6087
+sort uint32	random	1000000	americanFlagSort	33.1758
+sort uint32	random	1000000	boost::spreadsort	44.3703
+sort uint32	sorted	1000000	std::sort	13.107
+sort uint32	sorted	1000000	std::stable_sort	18.9874
+sort uint32	sorted	1000000	ADS::sort	0.787165
+sort uint32	sorted	1000000	ADS::stableSort	0.786365
+sort uint32	sorted	1000000	pdqSort	0.936878
+sort uint32	sorted	1000000	introSort	13.2333
+sort uint32	sorted	1000000	dualPivotQuickSort	11.8516
+sort uint32	sorted	1000000	threeWayQuickSort	15.6634
+sort uint32	sorted	1000000	quickSortTuned	14.495
+sort uint32	sorted	1000000	powerSort	0.543046
+sort uint32	sorted	1000000	timSort	0.624652
+sort uint32	sorted	1000000	mergeSort	5.9785
+sort uint32	sorted	1000000	heapsort	96.2682
+sort uint32	sorted	1000000	smoothsort	15.477
+sort uint32	sorted	1000000	boost::pdqsort	1.28341
+sort uint32	sorted	1000000	boost::spinsort	0.487441
+sort uint32	sorted	1000000	boost::flat_stable_sort	1.1786
+sort uint32	sorted	1000000	radixSort	27.9434
+sort uint32	sorted	1000000	americanFlagSort	12.6737
+sort uint32	sorted	1000000	boost::spreadsort	0.584049
+sort uint32	reversed	1000000	std::sort	10.0058
+sort uint32	reversed	1000000	std::stable_sort	17.3806
+sort uint32	reversed	1000000	ADS::sort	0.646854
+sort uint32	reversed	1000000	ADS::stableSort	0.654955
+sort uint32	reversed	1000000	pdqSort	8.95435
+sort uint32	reversed	1000000	introSort	13.2365
+sort uint32	reversed	1000000	dualPivotQuickSort	11.483
+sort uint32	reversed	1000000	threeWayQuickSort	23.7403
+sort uint32	reversed	1000000	quickSortTuned	24.1548
+sort uint32	reversed	1000000	powerSort	1.34961
+sort uint32	reversed	1000000	timSort	1.73734
+sort uint32	reversed	1000000	mergeSort	29.357
+sort uint32	reversed	1000000	heapsort	101.546
+sort uint32	reversed	1000000	smoothsort	100.878
+sort uint32	reversed	1000000	boost::pdqsort	2.4569
+sort uint32	reversed	1000000	boost::spinsort	0.95678
+sort uint32	reversed	1000000	boost::flat_stable_sort	0.659856
+sort uint32	reversed	1000000	radixSort	28.0322
+sort uint32	reversed	1000000	americanFlagSort	17.897
+sort uint32	reversed	1000000	boost::spreadsort	17.2153
+sort uint32	few	1000000	std::sort	31.768
+sort uint32	few	1000000	std::stable_sort	56.1505
+sort uint32	few	1000000	ADS::sort	1.37912
+sort uint32	few	1000000	ADS::stableSort	1.38302
+sort uint32	few	1000000	pdqSort	8.01127
+sort uint32	few	1000000	introSort	37.4216
+sort uint32	few	1000000	dualPivotQuickSort	24.4442
+sort uint32	few	1000000	threeWayQuickSort	24.5648
+sort uint32	few	1000000	quickSortTuned	37.774
+sort uint32	few	1000000	powerSort	95.6096
+sort uint32	few	1000000	timSort	98.9588
+sort uint32	few	1000000	mergeSort	63.6033
+sort uint32	few	1000000	heapsort	107.652
+sort uint32	few	1000000	smoothsort	144.254
+sort uint32	few	1000000	boost::pdqsort	8.3452
+sort uint32	few	1000000	boost::spinsort	47.6973
+sort uint32	few	1000000	boost::flat_stable_sort	55.0623
+sort uint32	few	1000000	radixSort	1.43052
+sort uint32	few	1000000	americanFlagSort	17.1555
+sort uint32	few	1000000	boost::spreadsort	9.23217
+sort uint32	organ	1000000	std::sort	97.8417
+sort uint32	organ	1000000	std::stable_sort	18.364
+sort uint32	organ	1000000	ADS::sort	2.67162
+sort uint32	organ	1000000	ADS::stableSort	2.66612
+sort uint32	organ	1000000	pdqSort	42.6839
+sort uint32	organ	1000000	introSort	113.142
+sort uint32	organ	1000000	dualPivotQuickSort	30.079
+sort uint32	organ	1000000	threeWayQuickSort	52.7294
+sort uint32	organ	1000000	quickSortTuned	75.4219
+sort uint32	organ	1000000	powerSort	2.87854
+sort uint32	organ	1000000	timSort	3.06646
+sort uint32	organ	1000000	mergeSort	18.403
+sort uint32	organ	1000000	heapsort	108.755
+sort uint32	organ	1000000	smoothsort	141.399
+sort uint32	organ	1000000	boost::pdqsort	43.6462
+sort uint32	organ	1000000	boost::spinsort	2.78513
+sort uint32	organ	1000000	boost::flat_stable_sort	3.85982
+sort uint32	organ	1000000	radixSort	21.0063
+sort uint32	organ	1000000	americanFlagSort	31.2365
+sort uint32	organ	1000000	boost::spreadsort	43.561
+sort uint32	runs16	1000000	std::sort	48.2274
+sort uint32	runs16	1000000	std::stable_sort	20.6984
+sort uint32	runs16	1000000	ADS::sort	9.19697
+sort uint32	runs16	1000000	ADS::stableSort	9.15706
+sort uint32	runs16	1000000	pdqSort	41.8823
+sort uint32	runs16	1000000	introSort	53.7059
+sort uint32	runs16	1000000	dualPivotQuickSort	45.8704
+sort uint32	runs16	1000000	threeWayQuickSort	68.5279
+sort uint32	runs16	1000000	quickSortTuned	51.8722
+sort uint32	runs16	1000000	powerSort	8.94935
+sort uint32	runs16	1000000	timSort	8.86474
+sort uint32	runs16	1000000	mergeSort	15.9936
+sort uint32	runs16	1000000	heapsort	148.111
+sort uint32	runs16	1000000	smoothsort	179.834
+sort uint32	runs16	1000000	boost::pdqsort	41.5049
+sort uint32	runs16	1000000	boost::spinsort	9.23677
+sort uint32	runs16	1000000	boost::flat_stable_sort	13.4327
+sort uint32	runs16	1000000	radixSort	26.561
+sort uint32	runs16	1000000	americanFlagSort	29.1445
+sort uint32	runs16	1000000	boost::spreadsort	43.686
+sort int64	random	100000	std::sort	84.358
+sort int64	random	100000	std::stable_sort	99.2583
+sort int64	random	100000	ADS::sort	24.325
+sort int64	random	100000	ADS::stableSort	24.8481
+sort int64	random	100000	pdqSort	40.1944
+sort int64	random	100000	introSort	88.5784
+sort int64	random	100000	dualPivotQuickSort	87.2403
+sort int64	random	100000	threeWayQuickSort	100.365
+sort int64	random	100000	quickSortTuned	79.2936
+sort int64	random	100000	powerSort	91.6977
+sort int64	random	100000	timSort	94.8119
+sort int64	random	100000	mergeSort	90.3486
+sort int64	random	100000	heapsort	125.788
+sort int64	random	100000	smoothsort	177.645
+sort int64	random	100000	shellSort	144.466
+sort int64	random	100000	boost::pdqsort	37.6081
+sort int64	random	100000	boost::spinsort	88.9144
+sort int64	random	100000	boost::flat_stable_sort	94.6149
+sort int64	random	100000	radixSort	24.299
+sort int64	random	100000	americanFlagSort	33.0738
+sort int64	random	100000	boost::spreadsort	36.5491
+sort int64	sorted	100000	std::sort	11.391
+sort int64	sorted	100000	std::stable_sort	12.8671
+sort int64	sorted	100000	ADS::sort	0.49504
+sort int64	sorted	100000	ADS::stableSort	0.49604
+sort int64	sorted	100000	pdqSort	1.1981
+sort int64	sorted	100000	introSort	11.896
+sort int64	sorted	100000	dualPivotQuickSort	11.355
+sort int64	sorted	100000	threeWayQuickSort	15.4913
+sort int64	sorted	100000	quickSortTuned	13.5881
+sort int64	sorted	100000	powerSort	0.77407
+sort int64	sorted	100000	timSort	0.77606
+sort int64	sorted	100000	mergeSort	2.80424
+sort int64	sorted	100000	heapsort	70.1329
+sort int64	sorted	100000	smoothsort	15.3153
+sort int64	sorted	100000	shellSort	21.6348
+sort int64	sorted	100000	boost::pdqsort	1.10409
+sort int64	sorted	100000	boost::spinsort	0.77406
+sort int64	sorted	100000	boost::flat_stable_sort	0.51004
+sort int64	sorted	100000	radixSort	18.2925
+sort int64	sorted	100000	americanFlagSort	25.0641
+sort int64	sorted	100000	boost::spreadsort	0.77406
+sort int64	reversed	100000	std::sort	8.75473
+sort int64	reversed	100000	std::stable_sort	16.0263
+sort int64	reversed	100000	ADS::sort	0.95207
+sort int64	reversed	100000	ADS::stableSort	0.95208
+sort int64	reversed	100000	pdqSort	7.98967
+sort int64	reversed	100000	introSort	12.305
+sort int64	reversed	100000	dualPivotQuickSort	11.502
+sort int64	reversed	100000	threeWayQuickSort	24.004
+sort int64	reversed	100000	quickSortTuned	23.2589
+sort int64	reversed	100000	powerSort	0.97308
+sort int64	reversed	100000	timSort	1.33911
+sort int64	reversed	100000	mergeSort	17.6405
+sort int64	reversed	100000	heapsort	75.9063
+sort int64	reversed	100000	smoothsort	94.1399
+sort int64	reversed	100000	shellSort	31.0836
+sort int64	reversed	100000	boost::pdqsort	2.4482
+sort int64	reversed	100000	boost::spinsort	0.67605
+sort int64	reversed	100000	boost::flat_stable_sort	0.68906
+sort int64	reversed	100000	radixSort	18.4075
+sort int64	reversed	100000	americanFlagSort	29.6615
+sort int64	reversed	100000	boost::spreadsort	13.8442
+sort int64	few	100000	std::sort	34.1679
+sort int64	few	100000	std::stable_sort	48.8521
+sort int64	few	100000	ADS::sort	1.69515
+sort int64	few	100000	ADS::stableSort	1.68614
+sort int64	few	100000	pdqSort	7.44362
+sort int64	few	100000	introSort	38.5602
+sort int64	few	100000	dualPivotQuickSort	27.9433
+sort int64	few	100000	threeWayQuickSort	22.4529
+sort int64	few	100000	quickSortTuned	34.5119
+sort int64	few	100000	powerSort	87.8653
+sort int64	few	100000	timSort	90.2145
+sort int64	few	100000	mergeSort	46.9729
+sort int64	few	100000	heapsort	82.7759
+sort int64	few	100000	smoothsort	132.81
+sort int64	few	100000	shellSort	56.0107
+sort int64	few	100000	boost::pdqsort	7.73965
+sort int64	few	100000	boost::spinsort	44.1297
+sort int64	few	100000	boost::flat_stable_sort	50.5022
+sort int64	few	100000	radixSort	1.68714
+sort int64	few	100000	americanFlagSort	28.7764
+sort int64	few	100000	boost::spreadsort	9.26577
+sort int64	organ	100000	std::sort	86.0102
+sort int64	organ	100000	std::stable_sort	14.7932
+sort int64	organ	100000	ADS::sort	2.28019
+sort int64	organ	100000	ADS::stableSort	2.19119
+sort int64	organ	100000	pdqSort	40.3184
+sort int64	organ	100000	introSort	101.025
+sort int64	organ	100000	dualPivotQuickSort	29.8585
+sort int64	organ	100000	threeWayQuickSort	47.0689
+sort int64	organ	100000	quickSortTuned	63.2773
+sort int64	organ	100000	powerSort	2.46721
+sort int64	organ	100000	timSort	2.66323
+sort int64	organ	100000	mergeSort	11.429
+sort int64	organ	100000	heapsort	80.8498
+sort int64	organ	100000	smoothsort	127.142
+sort int64	organ	100000	shellSort	34.5099
+sort int64	organ	100000	boost::pdqsort	40.1684
+sort int64	organ	100000	boost::spinsort	3.24227
+sort int64	organ	100000	boost::flat_stable_sort	4.48738
+sort int64	organ	100000	radixSort	17.5935
+sort int64	organ	100000	americanFlagSort	38.1912
+sort int64	organ	100000	boost::spreadsort	23.543
+sort int64	runs16	100000	std::sort	47.0259
+sort int64	runs16	100000	std::stable_sort	15.0512
+sort int64	runs16	100000	ADS::sort	6.67156
+sort int64	runs16	100000	ADS::stableSort	6.39254
+sort int64	runs16	100000	pdqSort	40.8044
+sort int64	runs16	100000	introSort	51.8073
+sort int64	runs16	100000	dualPivotQuickSort	44.5347
+sort int64	runs16	100000	threeWayQuickSort	63.0683
+sort int64	runs16	100000	quickSortTuned	48.9641
+sort int64	runs16	100000	powerSort	6.72956
+sort int64	runs16	100000	timSort	6.87257
+sort int64	runs16	100000	mergeSort	9.4978
+sort int64	runs16	100000	heapsort	104.753
+sort int64	runs16	100000	smoothsort	153.33
+sort int64	runs16	100000	shellSort	65.5295
+sort int64	runs16	100000	boost::pdqsort	39.3373
+sort int64	runs16	100000	boost::spinsort	9.49079
+sort int64	runs16	100000	boost::flat_stable_sort	21.3048
+sort int64	runs16	100000	radixSort	18.1185
+sort int64	runs16	100000	americanFlagSort	36.9481
+sort int64	runs16	100000	boost::spreadsort	37.0811
+sort int64	random	1000000	std::sort	101.144
+sort int64	random	1000000	std::stable_sort	121.631
+sort int64	random	1000000	ADS::sort	55.3113
+sort int64	random	1000000	ADS::stableSort	54.4199
+sort int64	random	1000000	pdqSort	43.8273
+sort int64	random	1000000	introSort	104.69
+sort int64	random	1000000	dualPivotQuickSort	102.474
+sort int64	random	1000000	threeWayQuickSort	117.111
+sort int64	random	1000000	quickSortTuned	96.032
+sort int64	random	1000000	powerSort	108.968
+sort int64	random	1000000	timSort	117.34
+sort int64	random	1000000	mergeSort	117.566
+sort int64	random	1000000	heapsort	178.452
+sort int64	random	1000000	smoothsort	253.656
+sort int64	random	1000000	boost::pdqsort	42.5168
+sort int64	random	1000000	boost::spinsort	110.177
+sort int64	random	1000000	boost::flat_stable_sort	122.043
+sort int64	random	1000000	radixSort	53.8557
+sort int64	random	1000000	americanFlagSort	43.9352
+sort int64	random	1000000	boost::spreadsort	54.1826
+sort int64	sorted	1000000	std::sort	13.7617
+sort int64	sorted	1000000	std::stable_sort	21.9849
+sort int64	sorted	1000000	ADS::sort	0.667056
+sort int64	sorted	1000000	ADS::stableSort	0.650955
+sort int64	sorted	1000000	pdqSort	1.39812
+sort int64	sorted	1000000	introSort	14.546
+sort int64	sorted	1000000	dualPivotQuickSort	14.1278
+sort int64	sorted	1000000	threeWayQuickSort	18.1821
+sort int64	sorted	1000000	quickSortTuned	16.145
+sort int64	sorted	1000000	powerSort	0.876473
+sort int64	sorted	1000000	timSort	0.865572
+sort int64	sorted	1000000	mergeSort	9.5737
+sort int64	sorted	1000000	heapsort	78.9488
+sort int64	sorted	1000000	smoothsort	16.7575
+sort int64	sorted	1000000	boost::pdqsort	1.40012
+sort int64	sorted	1000000	boost::spinsort	0.893774
+sort int64	sorted	1000000	boost::flat_stable_sort	0.667455
+sort int64	sorted	1000000	radixSort	37.817
+sort int64	sorted	1000000	americanFlagSort	25.1913
+sort int64	sorted	1000000	boost::spreadsort	0.899475
+sort int64	reversed	1000000	std::sort	10.2088
+sort int64	reversed	1000000	std::stable_sort	23.6083
+sort int64	reversed	1000000	ADS::sort	1.25231
+sort int64	reversed	1000000	ADS::stableSort	1.2372
+sort int64	reversed	1000000	pdqSort	9.74011
+sort int64	reversed	1000000	introSort	14.6863
+sort int64	reversed	1000000	dualPivotQuickSort	13.94
+sort int64	reversed	1000000	threeWayQuickSort	27.6855
+sort int64	reversed	1000000	quickSortTuned	29.2039
+sort int64	reversed	1000000	powerSort	1.31901
+sort int64	reversed	1000000	timSort	1.62054
+sort int64	reversed	1000000	mergeSort	31.9139
+sort int64	reversed	1000000	heapsort	86.7887
+sort int64	reversed	1000000	smoothsort	103.718
+sort int64	reversed	1000000	boost::pdqsort	2.73663
+sort int64	reversed	1000000	boost::spinsort	1.02168
+sort int64	reversed	1000000	boost::flat_stable_sort	1.01108
+sort int64	reversed	1000000	radixSort	39.1527
+sort int64	reversed	1000000	americanFlagSort	29.7961
+sort int64	reversed	1000000	boost::spreadsort	18.2059
+sort int64	few	1000000	std::sort	38.8751
+sort int64	few	1000000	std::stable_sort	57.0959
+sort int64	few	1000000	ADS::sort	2.11868
+sort int64	few	1000000	ADS::stableSort	2.08097
+sort int64	few	1000000	pdqSort	9.18677
+sort int64	few	1000000	introSort	43.2138
+sort int64	few	1000000	dualPivotQuickSort	28.5753
+sort int64	few	1000000	threeWayQuickSort	23.5159
+sort int64	few	1000000	quickSortTuned	37.2067
+sort int64	few	1000000	powerSort	104.019
+sort int64	few	1000000	timSort	108.299
+sort int64	few	1000000	mergeSort	59.4195
+sort int64	few	1000000	heapsort	91.248
+sort int64	few	1000000	smoothsort	149.318
+sort int64	few	1000000	boost::pdqsort	9.68851
+sort int64	few	1000000	boost::spinsort	50.6286
+sort int64	few	1000000	boost::flat_stable_sort	58.9614
+sort int64	few	1000000	radixSort	2.14048
+sort int64	few	1000000	americanFlagSort	29.7262
+sort int64	few	1000000	boost::spreadsort	9.43839
+sort int64	organ	1000000	std::sort	102.968
+sort int64	organ	1000000	std::stable_sort	23.0596
+sort int64	organ	1000000	ADS::sort	2.78293
+sort int64	organ	1000000	ADS::stableSort	2.67482
+sort int64	organ	1000000	pdqSort	47.4662
+sort int64	organ	1000000	introSort	119.837
+sort int64	organ	1000000	dualPivotQuickSort	33.0216
+sort int64	organ	1000000	threeWayQuickSort	53.1035
+sort int64	organ	1000000	quickSortTuned	82.9775
+sort int64	organ	1000000	powerSort	2.75863
+sort int64	organ	1000000	timSort	2.92904
+sort int64	organ	1000000	mergeSort	21.5819
+sort int64	organ	1000000	heapsort	91.6748
+sort int64	organ	1000000	smoothsort	143.116
+sort int64	organ	1000000	boost::pdqsort	47.2224
+sort int64	organ	1000000	boost::spinsort	3.20797
+sort int64	organ	1000000	boost::flat_stable_sort	5.06112
+sort int64	organ	1000000	radixSort	32.8363
+sort int64	organ	1000000	americanFlagSort	46.656
+sort int64	organ	1000000	boost::spreadsort	56.1768
+sort int64	runs16	1000000	std::sort	52.195
+sort int64	runs16	1000000	std::stable_sort	22.6107
+sort int64	runs16	1000000	ADS::sort	7.85406
+sort int64	runs16	1000000	ADS::stableSort	7.59403
+sort int64	runs16	1000000	pdqSort	46.9587
+sort int64	runs16	1000000	introSort	59.3418
+sort int64	runs16	1000000	dualPivotQuickSort	48.0453
+sort int64	runs16	1000000	threeWayQuickSort	69.4334
+sort int64	runs16	1000000	quickSortTuned	53.7389
+sort int64	runs16	1000000	powerSort	7.98507
+sort int64	runs16	1000000	timSort	8.26359
+sort int64	runs16	1000000	mergeSort	20.214
+sort int64	runs16	1000000	heapsort	137.234
+sort int64	runs16	1000000	smoothsort	187.811
+sort int64	runs16	1000000	boost::pdqsort	46.7191
+sort int64	runs16	1000000	boost::spinsort	10.1392
+sort int64	runs16	1000000	boost::flat_stable_sort	20.4754
+sort int64	runs16	1000000	radixSort	35.6845
+sort int64	runs16	1000000	americanFlagSort	41.9728
+sort int64	runs16	1000000	boost::spreadsort	49.7166
+sort double	random	100000	std::sort	83.175
+sort double	random	100000	std::stable_sort	106.823
+sort double	random	100000	ADS::sort	24.298
+sort double	random	100000	ADS::stableSort	31.7347
+sort double	random	100000	pdqSort	41.6915
+sort double	random	100000	introSort	95.177
+sort double	random	100000	dualPivotQuickSort	91.8027
+sort double	random	100000	threeWayQuickSort	105.932
+sort double	random	100000	quickSortTuned	86.6453
+sort double	random	100000	powerSort	99.8674
+sort double	random	100000	timSort	104.972
+sort double	random	100000	mergeSort	110.009
+sort double	random	100000	heapsort	138.391
+sort double	random	100000	smoothsort	188.464
+sort double	random	100000	shellSort	157.605
+sort double	random	100000	boost::pdqsort	43.5636
+sort double	random	100000	boost::spinsort	95.641
+sort double	random	100000	boost::flat_stable_sort	112.321
+sort double	random	100000	radixSort	28.1284
+sort double	random	100000	americanFlagSort	49.3901
+sort double	random	100000	boost::spreadsort	43.1906
+sort double	sorted	100000	std::sort	18.1255
+sort double	sorted	100000	std::stable_sort	14.9683
+sort double	sorted	100000	ADS::sort	0.96308
+sort double	sorted	100000	ADS::stableSort	0.77606
+sort double	sorted	100000	pdqSort	1.50312
+sort double	sorted	100000	introSort	11.1979
+sort double	sorted	100000	dualPivotQuickSort	14.2122
+sort double	sorted	100000	threeWayQuickSort	16.6004
+sort double	sorted	100000	quickSortTuned	13.2201
+sort double	sorted	100000	powerSort	0.62206
+sort double	sorted	100000	timSort	1.17009
+sort double	sorted	100000	mergeSort	2.3882
+sort double	sorted	100000	heapsort	79.9707
+sort double	sorted	100000	smoothsort	14.4932
+sort double	sorted	100000	shellSort	22.2339
+sort double	sorted	100000	boost::pdqsort	1.2521
+sort double	sorted	100000	boost::spinsort	0.77506
+sort double	sorted	100000	boost::flat_stable_sort	0.78807
+sort double	sorted	100000	radixSort	23.648
+sort double	sorted	100000	americanFlagSort	16.2944
+sort double	sorted	100000	boost::spreadsort	1.54513
+sort double	reversed	100000	std::sort	11.709
+sort double	reversed	100000	std::stable_sort	16.6984
+sort double	reversed	100000	ADS::sort	0.78407
+sort double	reversed	100000	ADS::stableSort	0.78406
+sort double	reversed	100000	pdqSort	10.1648
+sort double	reversed	100000	introSort	12.05
+sort double	reversed	100000	dualPivotQuickSort	15.7213
+sort double	reversed	100000	threeWayQuickSort	24.184
+sort double	reversed	100000	quickSortTuned	23.1149
+sort double	reversed	100000	powerSort	0.94308
+sort double	reversed	100000	timSort	0.94708
+sort double	reversed	100000	mergeSort	19.9287
+sort double	reversed	100000	heapsort	85.3491
+sort double	reversed	100000	smoothsort	98.4602
+sort double	reversed	100000	shellSort	31.9547
+sort double	reversed	100000	boost::pdqsort	2.79924
+sort double	reversed	100000	boost::spinsort	0.94008
+sort double	reversed	100000	boost::flat_stable_sort	0.95408
+sort double	reversed	100000	radixSort	23.449
+sort double	reversed	100000	americanFlagSort	32.3757
+sort double	reversed	100000	boost::spreadsort	18.2695
+sort double	few	100000	std::sort	32.6897
+sort double	few	100000	std::stable_sort	54.9916
+sort double	few	100000	ADS::sort	8.92375
+sort double	few	100000	ADS::stableSort	26.2242
+sort double	few	100000	pdqSort	8.91175
+sort double	few	100000	introSort	43.4596
+sort double	few	100000	dualPivotQuickSort	27.1913
+sort double	few	100000	threeWayQuickSort	24.507
+sort double	few	100000	quickSortTuned	37.8672
+sort double	few	100000	powerSort	96.21
+sort double	few	100000	timSort	99.0153
+sort double	few	100000	mergeSort	55.6737
+sort double	few	100000	heapsort	92.0827
+sort double	few	100000	smoothsort	136.555
+sort double	few	100000	shellSort	57.7868
+sort double	few	100000	boost::pdqsort	8.83674
+sort double	few	100000	boost::spinsort	44.7978
+sort double	few	100000	boost::flat_stable_sort	49.3491
+sort double	few	100000	radixSort	22.4669
+sort double	few	100000	americanFlagSort	47.0049
+sort double	few	100000	boost::spreadsort	15.0263
+sort double	organ	100000	std::sort	95.569
+sort double	organ	100000	std::stable_sort	15.4273
+sort double	organ	100000	ADS::sort	2.94425
+sort double	organ	100000	ADS::stableSort	2.91524
+sort double	organ	100000	pdqSort	45.2418
+sort double	organ	100000	introSort	97.7972
+sort double	organ	100000	dualPivotQuickSort	31.6506
+sort double	organ	100000	threeWayQuickSort	48.018
+sort double	organ	100000	quickSortTuned	64.1444
+sort double	organ	100000	powerSort	2.92024
+sort double	organ	100000	timSort	3.28127
+sort double	organ	100000	mergeSort	12.406
+sort double	organ	100000	heapsort	89.8435
+sort double	organ	100000	smoothsort	130.206
+sort double	organ	100000	shellSort	34.5429
+sort double	organ	100000	boost::pdqsort	45.8528
+sort double	organ	100000	boost::spinsort	3.77132
+sort double	organ	100000	boost::flat_stable_sort	3.98333
+sort double	organ	100000	radixSort	23.1539
+sort double	organ	100000	americanFlagSort	40.1674
+sort double	organ	100000	boost::spreadsort	41.3875
+sort double	runs16	100000	std::sort	49.8722
+sort double	runs16	100000	std::stable_sort	15.9353
+sort double	runs16	100000	ADS::sort	9.35179
+sort double	runs16	100000	ADS::stableSort	9.4908
+sort double	runs16	100000	pdqSort	44.0867
+sort double	runs16	100000	introSort	54.7526
+sort double	runs16	100000	dualPivotQuickSort	47.0519
+sort double	runs16	100000	threeWayQuickSort	63.9504
+sort double	runs16	100000	quickSortTuned	50.3552
+sort double	runs16	100000	powerSort	9.28978
+sort double	runs16	100000	timSort	9.84982
+sort double	runs16	100000	mergeSort	12.439
+sort double	runs16	100000	heapsort	116.281
+sort double	runs16	100000	smoothsort	162.254
+sort double	runs16	100000	shellSort	68.7037
+sort double	runs16	100000	boost::pdqsort	46.6449
+sort double	runs16	100000	boost::spinsort	9.74782
+sort double	runs16	100000	boost::flat_stable_sort	18.1825
+sort double	runs16	100000	radixSort	23.592
+sort double	runs16	100000	americanFlagSort	46.1459
+sort double	runs16	100000	boost::spreadsort	44.4057
+sort double	random	1000000	std::sort	102.178
+sort double	random	1000000	std::stable_sort	134.335
+sort double	random	1000000	ADS::sort	53.0379
+sort double	random	1000000	ADS::stableSort	58.8989
+sort double	random	1000000	pdqSort	48.2351
+sort double	random	1000000	introSort	117.07
+sort double	random	1000000	dualPivotQuickSort	109.128
+sort double	random	1000000	threeWayQuickSort	125.013
+sort double	random	1000000	quickSortTuned	106.302
+sort double	random	1000000	powerSort	119.389
+sort double	random	1000000	timSort	132.825
+sort double	random	1000000	mergeSort	140.291
+sort double	random	1000000	heapsort	194.194
+sort double	random	1000000	smoothsort	269.642
+sort double	random	1000000	boost::pdqsort	48.4938
+sort double	random	1000000	boost::spinsort	114.869
+sort double	random	1000000	boost::flat_stable_sort	132.312
+sort double	random	1000000	radixSort	51.5308
+sort double	random	1000000	americanFlagSort	62.9104
+sort double	random	1000000	boost::spreadsort	52.2501
+sort double	sorted	1000000	std::sort	19.8949
+sort double	sorted	1000000	std::stable_sort	22.5685
+sort double	sorted	1000000	ADS::sort	0.882274
+sort double	sorted	1000000	ADS::stableSort	0.861472
+sort double	sorted	1000000	pdqSort	1.66324
+sort double	sorted	1000000	introSort	13.0176
+sort double	sorted	1000000	dualPivotQuickSort	16.9935
+sort double	sorted	1000000	threeWayQuickSort	18.8373
+sort double	sorted	1000000	quickSortTuned	16.2269
+sort double	sorted	1000000	powerSort	0.83267
+sort double	sorted	1000000	timSort	1.2316
+sort double	sorted	1000000	mergeSort	9.11946
+sort double	sorted	1000000	heapsort	88.506
+sort double	sorted	1000000	smoothsort	16.2397
+sort double	sorted	1000000	boost::pdqsort	1.50823
+sort double	sorted	1000000	boost::spinsort	0.875373
+sort double	sorted	1000000	boost::flat_stable_sort	0.886174
+sort double	sorted	1000000	radixSort	40.8895
+sort double	sorted	1000000	americanFlagSort	22.5301
+sort double	sorted	1000000	boost::spreadsort	1.64374
+sort double	reversed	1000000	std::sort	14.1758
+sort double	reversed	1000000	std::stable_sort	24.1497
+sort double	reversed	1000000	ADS::sort	1.13969
+sort double	reversed	1000000	ADS::stableSort	1.12299
+sort double	reversed	1000000	pdqSort	12.4299
+sort double	reversed	1000000	introSort	13.7764
+sort double	reversed	1000000	dualPivotQuickSort	16.7564
+sort double	reversed	1000000	threeWayQuickSort	27.4587
+sort double	reversed	1000000	quickSortTuned	28.7465
+sort double	reversed	1000000	powerSort	1.42642
+sort double	reversed	1000000	timSort	1.31051
+sort double	reversed	1000000	mergeSort	34.1515
+sort double	reversed	1000000	heapsort	97.3402
+sort double	reversed	1000000	smoothsort	109.038
+sort double	reversed	1000000	boost::pdqsort	3.05436
+sort double	reversed	1000000	boost::spinsort	1.31541
+sort double	reversed	1000000	boost::flat_stable_sort	1.2254
+sort double	reversed	1000000	radixSort	39.9846
+sort double	reversed	1000000	americanFlagSort	40.0791
+sort double	reversed	1000000	boost::spreadsort	20.4823
+sort double	few	1000000	std::sort	36.295
+sort double	few	1000000	std::stable_sort	63.2751
+sort double	few	1000000	ADS::sort	11.3887
+sort double	few	1000000	ADS::stableSort	35.6114
+sort double	few	1000000	pdqSort	11.043
+sort double	few	1000000	introSort	48.4803
+sort double	few	1000000	dualPivotQuickSort	29.158
+sort double	few	1000000	threeWayQuickSort	25.356
+sort double	few	1000000	quickSortTuned	40.5481
+sort double	few	1000000	powerSort	114.089
+sort double	few	1000000	timSort	117.929
+sort double	few	1000000	mergeSort	67.7062
+sort double	few	1000000	heapsort	101.428
+sort double	few	1000000	smoothsort	154.508
+sort double	few	1000000	boost::pdqsort	11.0091
+sort double	few	1000000	boost::spinsort	49.5176
+sort double	few	1000000	boost::flat_stable_sort	58.7764
+sort double	few	1000000	radixSort	31.7868
+sort double	few	1000000	americanFlagSort	46.3151
+sort double	few	1000000	boost::spreadsort	16.8176
+sort double	organ	1000000	std::sort	112.374
+sort double	organ	1000000	std::stable_sort	23.9806
+sort double	organ	1000000	ADS::sort	3.38528
+sort double	organ	1000000	ADS::stableSort	3.39808
+sort double	organ	1000000	pdqSort	53.4992
+sort double	organ	1000000	introSort	112.529
+sort double	organ	1000000	dualPivotQuickSort	35.3492
+sort double	organ	1000000	threeWayQuickSort	53.5496
+sort double	organ	1000000	quickSortTuned	86.2417
+sort double	organ	1000000	powerSort	3.36968
+sort double	organ	1000000	timSort	3.6026
+sort double	organ	1000000	mergeSort	23.2627
+sort double	organ	1000000	heapsort	102.745
+sort double	organ	1000000	smoothsort	148.368
+sort double	organ	1000000	boost::pdqsort	54.3368
+sort double	organ	1000000	boost::spinsort	3.97953
+sort double	organ	1000000	boost::flat_stable_sort	4.54918
+sort double	organ	1000000	radixSort	41.6636
+sort double	organ	1000000	americanFlagSort	50.9267
+sort double	organ	1000000	boost::spreadsort	38.4347
+sort double	runs16	1000000	std::sort	55.8019
+sort double	runs16	1000000	std::stable_sort	24.0171
+sort double	runs16	1000000	ADS::sort	10.9055
+sort double	runs16	1000000	ADS::stableSort	10.9413
+sort double	runs16	1000000	pdqSort	51.6544
+sort double	runs16	1000000	introSort	62.7995
+sort double	runs16	1000000	dualPivotQuickSort	51.8545
+sort double	runs16	1000000	threeWayQuickSort	70.1963
+sort double	runs16	1000000	quickSortTuned	56.8334
+sort double	runs16	1000000	powerSort	10.8239
+sort double	runs16	1000000	timSort	11.169
+sort double	runs16	1000000	mergeSort	21.5981
+sort double	runs16	1000000	heapsort	149.62
+sort double	runs16	1000000	smoothsort	199.777
+sort double	runs16	1000000	boost::pdqsort	52.7953
+sort double	runs16	1000000	boost::spinsort	9.5755
+sort double	runs16	1000000	boost::flat_stable_sort	15.2826
+sort double	runs16	1000000	radixSort	39.413
+sort double	runs16	1000000	americanFlagSort	52.7046
+sort double	runs16	1000000	boost::spreadsort	50.1165
+sort string	random	100000	std::sort	272.001
+sort string	random	100000	std::stable_sort	312.563
+sort string	random	100000	ADS::sort	89.9485
+sort string	random	100000	ADS::stableSort	92.4457
+sort string	random	100000	pdqSort	251.176
+sort string	random	100000	introSort	270.466
+sort string	random	100000	dualPivotQuickSort	274.439
+sort string	random	100000	threeWayQuickSort	336.053
+sort string	random	100000	quickSortTuned	259.566
+sort string	random	100000	powerSort	387.82
+sort string	random	100000	timSort	416.755
+sort string	random	100000	mergeSort	400.951
+sort string	random	100000	heapsort	568.705
+sort string	random	100000	smoothsort	683.282
+sort string	random	100000	shellSort	660.076
+sort string	random	100000	boost::pdqsort	248.324
+sort string	random	100000	boost::spinsort	302.507
+sort string	random	100000	boost::flat_stable_sort	319.623
+sort string	random	100000	multikeyQuickSort	207.008
+sort string	random	100000	msdRadixSort	92.4067
+sort string	random	100000	boost::spreadsort	136.764
+sort string	sorted	100000	std::sort	253.99
+sort string	sorted	100000	std::stable_sort	154.334
+sort string	sorted	100000	ADS::sort	61.5072
+sort string	sorted	100000	ADS::stableSort	60.217
+sort string	sorted	100000	pdqSort	232.882
+sort string	sorted	100000	introSort	252.399
+sort string	sorted	100000	dualPivotQuickSort	258.166
+sort string	sorted	100000	threeWayQuickSort	322.089
+sort string	sorted	100000	quickSortTuned	252.96
+sort string	sorted	100000	powerSort	189.271
+sort string	sorted	100000	timSort	265.136
+sort string	sorted	100000	mergeSort	238.49
+sort string	sorted	100000	heapsort	543.683
+sort string	sorted	100000	smoothsort	657.252
+sort string	sorted	100000	shellSort	507.674
+sort string	sorted	100000	boost::pdqsort	234.241
+sort string	sorted	100000	boost::spinsort	173.492
+sort string	sorted	100000	boost::flat_stable_sort	199.637
+sort string	sorted	100000	multikeyQuickSort	205.675
+sort string	sorted	100000	msdRadixSort	62.3892
+sort string	sorted	100000	boost::spreadsort	132.867
+sort string	reversed	100000	std::sort	276.849
+sort string	reversed	100000	std::stable_sort	165.022
+sort string	reversed	100000	ADS::sort	72.7441
+sort string	reversed	100000	ADS::stableSort	70.4419
+sort string	reversed	100000	pdqSort	242.501
+sort string	reversed	100000	introSort	264.105
+sort string	reversed	100000	dualPivotQuickSort	269.598
+sort string	reversed	100000	threeWayQuickSort	336.53
+sort string	reversed	100000	quickSortTuned	256.031
+sort string	reversed	100000	powerSort	191.239
+sort string	reversed	100000	timSort	283.278
+sort string	reversed	100000	mergeSort	271.697
+sort string	reversed	100000	heapsort	619.656
+sort string	reversed	100000	smoothsort	692.52
+sort string	reversed	100000	shellSort	551.2
+sort string	reversed	100000	boost::pdqsort	241.926
+sort string	reversed	100000	boost::spinsort	214.361
+sort string	reversed	100000	boost::flat_stable_sort	239.906
+sort string	reversed	100000	multikeyQuickSort	199.596
+sort string	reversed	100000	msdRadixSort	72.275
+sort string	reversed	100000	boost::spreadsort	146.496
+sort string	few	100000	std::sort	170.446
+sort string	few	100000	std::stable_sort	202.815
+sort string	few	100000	ADS::sort	34.2879
+sort string	few	100000	ADS::stableSort	34.3589
+sort string	few	100000	pdqSort	72.5101
+sort string	few	100000	introSort	180.114
+sort string	few	100000	dualPivotQuickSort	122.454
+sort string	few	100000	threeWayQuickSort	84.7911
+sort string	few	100000	quickSortTuned	174.983
+sort string	few	100000	powerSort	226.11
+sort string	few	100000	timSort	238.242
+sort string	few	100000	mergeSort	274.469
+sort string	few	100000	heapsort	407.973
+sort string	few	100000	smoothsort	515.356
+sort string	few	100000	shellSort	371.964
+sort string	few	100000	boost::pdqsort	74.7973
+sort string	few	100000	boost::spinsort	194.001
+sort string	few	100000	boost::flat_stable_sort	187.974
+sort string	few	100000	multikeyQuickSort	81.2788
+sort string	few	100000	msdRadixSort	32.5647
+sort string	few	100000	boost::spreadsort	27.7383
+sort string	organ	100000	std::sort	266.532
+sort string	organ	100000	std::stable_sort	158.259
+sort string	organ	100000	ADS::sort	68.0757
+sort string	organ	100000	ADS::stableSort	67.9527
+sort string	organ	100000	pdqSort	233.502
+sort string	organ	100000	introSort	260.933
+sort string	organ	100000	dualPivotQuickSort	259.122
+sort string	organ	100000	threeWayQuickSort	312.336
+sort string	organ	100000	quickSortTuned	250.938
+sort string	organ	100000	powerSort	186.52
+sort string	organ	100000	timSort	273.065
+sort string	organ	100000	mergeSort	260.747
+sort string	organ	100000	heapsort	573.711
+sort string	organ	100000	smoothsort	684.015
+sort string	organ	100000	shellSort	524.318
+sort string	organ	100000	boost::pdqsort	241.815
+sort string	organ	100000	boost::spinsort	187.841
+sort string	organ	100000	boost::flat_stable_sort	224.3
+sort string	organ	100000	multikeyQuickSort	219.473
+sort string	organ	100000	msdRadixSort	69.4838
+sort string	organ	100000	boost::spreadsort	138.224
+sort string	runs16	100000	std::sort	264.962
+sort string	runs16	100000	std::stable_sort	199.103
+sort string	runs16	100000	ADS::sort	72.9711
+sort string	runs16	100000	ADS::stableSort	71.667
+sort string	runs16	100000	pdqSort	241.059
+sort string	runs16	100000	introSort	261.754
+sort string	runs16	100000	dualPivotQuickSort	266.731
+sort string	runs16	100000	threeWayQuickSort	333.794
+sort string	runs16	100000	quickSortTuned	252.098
+sort string	runs16	100000	powerSort	279.574
+sort string	runs16	100000	timSort	327.841
+sort string	runs16	100000	mergeSort	295.148
+sort string	runs16	100000	heapsort	572.569
+sort string	runs16	100000	smoothsort	669.997
+sort string	runs16	100000	shellSort	571.018
+sort string	runs16	100000	boost::pdqsort	237.963
+sort string	runs16	100000	boost::spinsort	220.281
+sort string	runs16	100000	boost::flat_stable_sort	230.462
+sort string	runs16	100000	multikeyQuickSort	202.829
+sort string	runs16	100000	msdRadixSort	70.3729
+sort string	runs16	100000	boost::spreadsort	134.665
+sort string	random	1000000	std::sort	488.954
+sort string	random	1000000	std::stable_sort	633.973
+sort string	random	1000000	ADS::sort	296.713
+sort string	random	1000000	ADS::stableSort	297.564
+sort string	random	1000000	pdqSort	408.531
+sort string	random	1000000	introSort	463.064
+sort string	random	1000000	dualPivotQuickSort	484.983
+sort string	random	1000000	threeWayQuickSort	580.84
+sort string	random	1000000	quickSortTuned	450.925
+sort string	random	1000000	powerSort	623.1
+sort string	random	1000000	timSort	651.147
+sort string	random	1000000	mergeSort	667.734
+sort string	random	1000000	heapsort	1904.08
+sort string	random	1000000	smoothsort	1557.23
+sort string	random	1000000	boost::pdqsort	410.155
+sort string	random	1000000	boost::spinsort	504.105
+sort string	random	1000000	boost::flat_stable_sort	550.415
+sort string	random	1000000	multikeyQuickSort	365.342
+sort string	random	1000000	msdRadixSort	293.402
+sort string	random	1000000	boost::spreadsort	385.686
+sort string	sorted	1000000	std::sort	443.169
+sort string	sorted	1000000	std::stable_sort	396.372
+sort string	sorted	1000000	ADS::sort	168.915
+sort string	sorted	1000000	ADS::stableSort	168.04
+sort string	sorted	1000000	pdqSort	367.531
+sort string	sorted	1000000	introSort	421.289
+sort string	sorted	1000000	dualPivotQuickSort	436.255
+sort string	sorted	1000000	threeWayQuickSort	527.075
+sort string	sorted	1000000	quickSortTuned	417.007
+sort string	sorted	1000000	powerSort	344.324
+sort string	sorted	1000000	timSort	436.699
+sort string	sorted	1000000	mergeSort	421.54
+sort string	sorted	1000000	heapsort	1824.51
+sort string	sorted	1000000	smoothsort	1494.88
+sort string	sorted	1000000	boost::pdqsort	364.901
+sort string	sorted	1000000	boost::spinsort	311.129
+sort string	sorted	1000000	boost::flat_stable_sort	356.265
+sort string	sorted	1000000	multikeyQuickSort	328.327
+sort string	sorted	1000000	msdRadixSort	172.36
+sort string	sorted	1000000	boost::spreadsort	317.121
+sort string	reversed	1000000	std::sort	435.474
+sort string	reversed	1000000	std::stable_sort	415.578
+sort string	reversed	1000000	ADS::sort	200.933
+sort string	reversed	1000000	ADS::stableSort	205.599
+sort string	reversed	1000000	pdqSort	353.944
+sort string	reversed	1000000	introSort	398.98
+sort string	reversed	1000000	dualPivotQuickSort	409.138
+sort string	reversed	1000000	threeWayQuickSort	489.67
+sort string	reversed	1000000	quickSortTuned	388.25
+sort string	reversed	1000000	powerSort	341.66
+sort string	reversed	1000000	timSort	442.427
+sort string	reversed	1000000	mergeSort	438.449
+sort string	reversed	1000000	heapsort	1672.01
+sort string	reversed	1000000	smoothsort	1392.67
+sort string	reversed	1000000	boost::pdqsort	351.129
+sort string	reversed	1000000	boost::spinsort	340.188
+sort string	reversed	1000000	boost::flat_stable_sort	385.27
+sort string	reversed	1000000	multikeyQuickSort	330.198
+sort string	reversed	1000000	msdRadixSort	205.862
+sort string	reversed	1000000	boost::spreadsort	258.648
+sort string	few	1000000	std::sort	313.308
+sort string	few	1000000	std::stable_sort	403.129
+sort string	few	1000000	ADS::sort	65.816
+sort string	few	1000000	ADS::stableSort	66.1377
+sort string	few	1000000	pdqSort	108.652
+sort string	few	1000000	introSort	291.644
+sort string	few	1000000	dualPivotQuickSort	183.3
+sort string	few	1000000	threeWayQuickSort	132.231
+sort string	few	1000000	quickSortTuned	280.571
+sort string	few	1000000	powerSort	262.897
+sort string	few	1000000	timSort	282.036
+sort string	few	1000000	mergeSort	411.894
+sort string	few	1000000	heapsort	745.088
+sort string	few	1000000	smoothsort	736.365
+sort string	few	1000000	boost::pdqsort	107.519
+sort string	few	1000000	boost::spinsort	284.981
+sort string	few	1000000	boost::flat_stable_sort	254.614
+sort string	few	1000000	multikeyQuickSort	158.608
+sort string	few	1000000	msdRadixSort	64.5803
+sort string	few	1000000	boost::spreadsort	79.5676
+sort string	organ	1000000	std::sort	425.35
+sort string	organ	1000000	std::stable_sort	389.997
+sort string	organ	1000000	ADS::sort	180.407
+sort string	organ	1000000	ADS::stableSort	178.977
+sort string	organ	1000000	pdqSort	355.372
+sort string	organ	1000000	introSort	400.272
+sort string	organ	1000000	dualPivotQuickSort	401.106
+sort string	organ	1000000	threeWayQuickSort	477.901
+sort string	organ	1000000	quickSortTuned	397.742
+sort string	organ	1000000	powerSort	323.073
+sort string	organ	1000000	timSort	419.357
+sort string	organ	1000000	mergeSort	414.617
+sort string	organ	1000000	heapsort	1562.56
+sort string	organ	1000000	smoothsort	1362.77
+sort string	organ	1000000	boost::pdqsort	353.413
+sort string	organ	1000000	boost::spinsort	318.335
+sort string	organ	1000000	boost::flat_stable_sort	362.335
+sort string	organ	1000000	multikeyQuickSort	321.668
+sort string	organ	1000000	msdRadixSort	181.237
+sort string	organ	1000000	boost::spreadsort	251.714
+sort string	runs16	1000000	std::sort	490.484
+sort string	runs16	1000000	std::stable_sort	453.479
+sort string	runs16	1000000	ADS::sort	275.171
+sort string	runs16	1000000	ADS::stableSort	276.132
+sort string	runs16	1000000	pdqSort	381.774
+sort string	runs16	1000000	introSort	431.736
+sort string	runs16	1000000	dualPivotQuickSort	450.035
+sort string	runs16	1000000	threeWayQuickSort	541.882
+sort string	runs16	1000000	quickSortTuned	426.528
+sort string	runs16	1000000	powerSort	391.817
+sort string	runs16	1000000	timSort	450.897
+sort string	runs16	1000000	mergeSort	478.114
+sort string	runs16	1000000	heapsort	1787.56
+sort string	runs16	1000000	smoothsort	1451.81
+sort string	runs16	1000000	boost::pdqsort	385.499
+sort string	runs16	1000000	boost::spinsort	369.637
+sort string	runs16	1000000	boost::flat_stable_sort	385.331
+sort string	runs16	1000000	multikeyQuickSort	348.919
+sort string	runs16	1000000	msdRadixSort	281.072
+sort string	runs16	1000000	boost::spreadsort	314.747
+sort record	random	100000	std::sort	92.0268
+sort record	random	100000	std::stable_sort	109.807
+sort record	random	100000	ADS::sort	83.556
+sort record	random	100000	ADS::stableSort	145.535
+sort record	random	100000	pdqSort	83.236
+sort record	random	100000	introSort	97.8053
+sort record	random	100000	dualPivotQuickSort	97.6502
+sort record	random	100000	threeWayQuickSort	98.9763
+sort record	random	100000	quickSortTuned	90.5606
+sort record	random	100000	powerSort	145.648
+sort record	random	100000	timSort	150.278
+sort record	random	100000	mergeSort	122.077
+sort record	random	100000	heapsort	154.644
+sort record	random	100000	smoothsort	203.695
+sort record	random	100000	shellSort	161.255
+sort record	random	100000	boost::pdqsort	84.2261
+sort record	random	100000	boost::spinsort	101.653
+sort record	random	100000	boost::flat_stable_sort	104.659
+sort record	sorted	100000	std::sort	18.6106
+sort record	sorted	100000	std::stable_sort	44.9578
+sort record	sorted	100000	ADS::sort	2.79324
+sort record	sorted	100000	ADS::stableSort	1.41112
+sort record	sorted	100000	pdqSort	2.79623
+sort record	sorted	100000	introSort	13.8412
+sort record	sorted	100000	dualPivotQuickSort	16.8984
+sort record	sorted	100000	threeWayQuickSort	16.5554
+sort record	sorted	100000	quickSortTuned	15.2543
+sort record	sorted	100000	powerSort	1.45313
+sort record	sorted	100000	timSort	1.44312
+sort record	sorted	100000	mergeSort	4.6804
+sort record	sorted	100000	heapsort	93.8569
+sort record	sorted	100000	smoothsort	18.9656
+sort record	sorted	100000	shellSort	23.745
+sort record	sorted	100000	boost::pdqsort	2.81923
+sort record	sorted	100000	boost::spinsort	1.38712
+sort record	sorted	100000	boost::flat_stable_sort	1.40712
+sort record	reversed	100000	std::sort	13.7612
+sort record	reversed	100000	std::stable_sort	48.7241
+sort record	reversed	100000	ADS::sort	4.02634
+sort record	reversed	100000	ADS::stableSort	2.68423
+sort record	reversed	100000	pdqSort	4.02534
+sort record	reversed	100000	introSort	14.7422
+sort record	reversed	100000	dualPivotQuickSort	16.8194
+sort record	reversed	100000	threeWayQuickSort	24.5961
+sort record	reversed	100000	quickSortTuned	26.2282
+sort record	reversed	100000	powerSort	2.69222
+sort record	reversed	100000	timSort	2.71023
+sort record	reversed	100000	mergeSort	49.8242
+sort record	reversed	100000	heapsort	91.7477
+sort record	reversed	100000	smoothsort	100.23
+sort record	reversed	100000	shellSort	33.5828
+sort record	reversed	100000	boost::pdqsort	4.01534
+sort record	reversed	100000	boost::spinsort	2.66823
+sort record	reversed	100000	boost::flat_stable_sort	2.80424
+sort record	few	100000	std::sort	43.2677
+sort record	few	100000	std::stable_sort	71.31
+sort record	few	100000	ADS::sort	20.6357
+sort record	few	100000	ADS::stableSort	94.936
+sort record	few	100000	pdqSort	20.7217
+sort record	few	100000	introSort	51.2783
+sort record	few	100000	dualPivotQuickSort	31.2476
+sort record	few	100000	threeWayQuickSort	24.7541
+sort record	few	100000	quickSortTuned	46.874
+sort record	few	100000	powerSort	96.5161
+sort record	few	100000	timSort	101.864
+sort record	few	100000	mergeSort	77.9776
+sort record	few	100000	heapsort	110.92
+sort record	few	100000	smoothsort	144.735
+sort record	few	100000	shellSort	63.0133
+sort record	few	100000	boost::pdqsort	20.9568
+sort record	few	100000	boost::spinsort	54.7776
+sort record	few	100000	boost::flat_stable_sort	56.5378
+sort record	organ	100000	std::sort	119.029
+sort record	organ	100000	std::stable_sort	49.0351
+sort record	organ	100000	ADS::sort	42.3356
+sort record	organ	100000	ADS::stableSort	6.39554
+sort record	organ	100000	pdqSort	42.0485
+sort record	organ	100000	introSort	124.02
+sort record	organ	100000	dualPivotQuickSort	39.5373
+sort record	organ	100000	threeWayQuickSort	48.7121
+sort record	organ	100000	quickSortTuned	83.7351
+sort record	organ	100000	powerSort	6.34053
+sort record	organ	100000	timSort	6.46154
+sort record	organ	100000	mergeSort	32.4717
+sort record	organ	100000	heapsort	97.4532
+sort record	organ	100000	smoothsort	130.304
+sort record	organ	100000	shellSort	37.7962
+sort record	organ	100000	boost::pdqsort	41.1515
+sort record	organ	100000	boost::spinsort	9.58981
+sort record	organ	100000	boost::flat_stable_sort	7.41062
+sort record	runs16	100000	std::sort	58.957
+sort record	runs16	100000	std::stable_sort	47.18
+sort record	runs16	100000	ADS::sort	53.5935
+sort record	runs16	100000	ADS::stableSort	15.9854
+sort record	runs16	100000	pdqSort	54.2026
+sort record	runs16	100000	introSort	62.9353
+sort record	runs16	100000	dualPivotQuickSort	55.6047
+sort record	runs16	100000	threeWayQuickSort	65.9436
+sort record	runs16	100000	quickSortTuned	58.2599
+sort record	runs16	100000	powerSort	15.9363
+sort record	runs16	100000	timSort	15.4813
+sort record	runs16	100000	mergeSort	29.6345
+sort record	runs16	100000	heapsort	121.628
+sort record	runs16	100000	smoothsort	165.592
+sort record	runs16	100000	shellSort	71.674
+sort record	runs16	100000	boost::pdqsort	54.0996
+sort record	runs16	100000	boost::spinsort	18.1055
+sort record	runs16	100000	boost::flat_stable_sort	18.4566
+sort record	random	1000000	std::sort	118.106
+sort record	random	1000000	std::stable_sort	158.926
+sort record	random	1000000	ADS::sort	105.604
+sort record	random	1000000	ADS::stableSort	184.595
+sort record	random	1000000	pdqSort	105.477
+sort record	random	1000000	introSort	123.051
+sort record	random	1000000	dualPivotQuickSort	121.713
+sort record	random	1000000	threeWayQuickSort	123.374
+sort record	random	1000000	quickSortTuned	114.985
+sort record	random	1000000	powerSort	185.473
+sort record	random	1000000	timSort	192.334
+sort record	random	1000000	mergeSort	171.189
+sort record	random	1000000	heapsort	437.266
+sort record	random	1000000	smoothsort	373.831
+sort record	random	1000000	boost::pdqsort	107.781
+sort record	random	1000000	boost::spinsort	124.372
+sort record	random	1000000	boost::flat_stable_sort	140.947
+sort record	sorted	1000000	std::sort	35.9566
+sort record	sorted	1000000	std::stable_sort	113.646
+sort record	sorted	1000000	ADS::sort	7.79066
+sort record	sorted	1000000	ADS::stableSort	4.16775
+sort record	sorted	1000000	pdqSort	7.75685
+sort record	sorted	1000000	introSort	27.7062
+sort record	sorted	1000000	dualPivotQuickSort	30.0059
+sort record	sorted	1000000	threeWayQuickSort	31.0857
+sort record	sorted	1000000	quickSortTuned	28.7047
+sort record	sorted	1000000	powerSort	4.27136
+sort record	sorted	1000000	timSort	4.21465
+sort record	sorted	1000000	mergeSort	9.98364
+sort record	sorted	1000000	heapsort	124.898
+sort record	sorted	1000000	smoothsort	31.3241
+sort record	sorted	1000000	boost::pdqsort	7.78066
+sort record	sorted	1000000	boost::spinsort	4.00694
+sort record	sorted	1000000	boost::flat_stable_sort	4.05634
+sort record	reversed	1000000	std::sort	28.4254
+sort record	reversed	1000000	std::stable_sort	118.543
+sort record	reversed	1000000	ADS::sort	11.2735
+sort record	reversed	1000000	ADS::stableSort	7.56804
+sort record	reversed	1000000	pdqSort	11.2885
+sort record	reversed	1000000	introSort	28.8894
+sort record	reversed	1000000	dualPivotQuickSort	29.0598
+sort record	reversed	1000000	threeWayQuickSort	39.5886
+sort record	reversed	1000000	quickSortTuned	45.3244
+sort record	reversed	1000000	powerSort	7.62614
+sort record	reversed	1000000	timSort	7.81366
+sort record	reversed	1000000	mergeSort	93.2925
+sort record	reversed	1000000	heapsort	132.047
+sort record	reversed	1000000	smoothsort	117.194
+sort record	reversed	1000000	boost::pdqsort	11.0316
+sort record	reversed	1000000	boost::spinsort	7.35762
+sort record	reversed	1000000	boost::flat_stable_sort	7.35522
+sort record	few	1000000	std::sort	54.5336
+sort record	few	1000000	std::stable_sort	131.597
+sort record	few	1000000	ADS::sort	26.6413
+sort record	few	1000000	ADS::stableSort	120.412
+sort record	few	1000000	pdqSort	26.4271
+sort record	few	1000000	introSort	64.6077
+sort record	few	1000000	dualPivotQuickSort	35.1431
+sort record	few	1000000	threeWayQuickSort	29.7927
+sort record	few	1000000	quickSortTuned	56.7461
+sort record	few	1000000	powerSort	120.841
+sort record	few	1000000	timSort	127.867
+sort record	few	1000000	mergeSort	118.022
+sort record	few	1000000	heapsort	147.66
+sort record	few	1000000	smoothsort	183.297
+sort record	few	1000000	boost::pdqsort	26.8192
+sort record	few	1000000	boost::spinsort	75.133
+sort record	few	1000000	boost::flat_stable_sort	78.0876
+sort record	organ	1000000	std::sort	195.825
+sort record	organ	1000000	std::stable_sort	115.719
+sort record	organ	1000000	ADS::sort	64.0794
+sort record	organ	1000000	ADS::stableSort	15.2052
+sort record	organ	1000000	pdqSort	64.1097
+sort record	organ	1000000	introSort	210.956
+sort record	organ	1000000	dualPivotQuickSort	52.1195
+sort record	organ	1000000	threeWayQuickSort	66.1684
+sort record	organ	1000000	quickSortTuned	176.287
+sort record	organ	1000000	powerSort	14.9688
+sort record	organ	1000000	timSort	14.8513
+sort record	organ	1000000	mergeSort	57.9677
+sort record	organ	1000000	heapsort	140.512
+sort record	organ	1000000	smoothsort	159.348
+sort record	organ	1000000	boost::pdqsort	63.7591
+sort record	organ	1000000	boost::spinsort	16.387
+sort record	organ	1000000	boost::flat_stable_sort	16.9608
+sort record	runs16	1000000	std::sort	85.9703
+sort record	runs16	1000000	std::stable_sort	112.42
+sort record	runs16	1000000	ADS::sort	77.4688
+sort record	runs16	1000000	ADS::stableSort	32.6229
+sort record	runs16	1000000	pdqSort	78.3979
+sort record	runs16	1000000	introSort	95.8714
+sort record	runs16	1000000	dualPivotQuickSort	69.0341
+sort record	runs16	1000000	threeWayQuickSort	92.6876
+sort record	runs16	1000000	quickSortTuned	85.5455
+sort record	runs16	1000000	powerSort	32.9281
+sort record	runs16	1000000	timSort	32.6
+sort record	runs16	1000000	mergeSort	61.5061
+sort record	runs16	1000000	heapsort	253.646
+sort record	runs16	1000000	smoothsort	220.054
+sort record	runs16	1000000	boost::pdqsort	77.8815
+sort record	runs16	1000000	boost::spinsort	36.8349
+sort record	runs16	1000000	boost::flat_stable_sort	33.2536
+dictionaries	insert	100000	std::unordered_map	147.00
+dictionaries	lookup hit	100000	std::unordered_map	35.53
+dictionaries	lookup miss	100000	std::unordered_map	41.80
+dictionaries	visit	100000	std::unordered_map	17.10
+dictionaries	insert	100000	std::unordered_map A/A	142.44
+dictionaries	lookup hit	100000	std::unordered_map A/A	35.63
+dictionaries	lookup miss	100000	std::unordered_map A/A	41.87
+dictionaries	visit	100000	std::unordered_map A/A	17.14
+dictionaries	insert	100000	boost::unordered_flat_map	22.79
+dictionaries	lookup hit	100000	boost::unordered_flat_map	7.52
+dictionaries	lookup miss	100000	boost::unordered_flat_map	5.49
+dictionaries	visit	100000	boost::unordered_flat_map	3.01
+dictionaries	insert	100000	ADS::ChainedHashTable	78.11
+dictionaries	lookup hit	100000	ADS::ChainedHashTable	41.36
+dictionaries	lookup miss	100000	ADS::ChainedHashTable	42.73
+dictionaries	visit	100000	ADS::ChainedHashTable	18.48
+dictionaries	insert	100000	ADS::OpenHashTable linear	41.25
+dictionaries	lookup hit	100000	ADS::OpenHashTable linear	36.26
+dictionaries	lookup miss	100000	ADS::OpenHashTable linear	53.92
+dictionaries	visit	100000	ADS::OpenHashTable linear	12.47
+dictionaries	insert	100000	ADS::FlatHashTable	30.36
+dictionaries	lookup hit	100000	ADS::FlatHashTable	7.57
+dictionaries	lookup miss	100000	ADS::FlatHashTable	6.31
+dictionaries	visit	100000	ADS::FlatHashTable	4.09
+dictionaries	insert	100000	ADS::PointerTable	75.08
+dictionaries	lookup hit	100000	ADS::PointerTable	15.72
+dictionaries	lookup miss	100000	ADS::PointerTable	20.10
+dictionaries	visit	100000	ADS::PointerTable	14.58
+dictionaries	insert	100000	std::map	359.11
+dictionaries	lookup hit	100000	std::map	327.60
+dictionaries	lookup miss	100000	std::map	282.83
+dictionaries	visit	100000	std::map	38.68
+dictionaries	lookup hit	100000	boost::container::flat_map	147.78
+dictionaries	lookup miss	100000	boost::container::flat_map	150.04
+dictionaries	visit	100000	boost::container::flat_map	0.64
+dictionaries	insert	100000	ADS::RedBlackTree	309.72
+dictionaries	lookup hit	100000	ADS::RedBlackTree	135.99
+dictionaries	lookup miss	100000	ADS::RedBlackTree	155.15
+dictionaries	visit	100000	ADS::RedBlackTree	38.10
+dictionaries	insert	100000	ADS::AVLTree	431.78
+dictionaries	lookup hit	100000	ADS::AVLTree	258.85
+dictionaries	lookup miss	100000	ADS::AVLTree	303.08
+dictionaries	visit	100000	ADS::AVLTree	16.47
+dictionaries	insert	100000	ADS::Treap	513.26
+dictionaries	lookup hit	100000	ADS::Treap	325.36
+dictionaries	lookup miss	100000	ADS::Treap	361.46
+dictionaries	visit	100000	ADS::Treap	28.92
+dictionaries	insert	100000	ADS::SkipList	754.84
+dictionaries	lookup hit	100000	ADS::SkipList	698.75
+dictionaries	lookup miss	100000	ADS::SkipList	710.77
+dictionaries	visit	100000	ADS::SkipList	67.45
+dictionaries	insert	100000	ADS::SplayTree	465.12
+dictionaries	lookup hit	100000	ADS::SplayTree	427.10
+dictionaries	lookup miss	100000	ADS::SplayTree	381.70
+dictionaries	visit	100000	ADS::SplayTree	28.89
+dictionaries	insert	100000	ADS::BTree t=16	233.88
+dictionaries	lookup hit	100000	ADS::BTree t=16	206.31
+dictionaries	lookup miss	100000	ADS::BTree t=16	205.18
+dictionaries	visit	100000	ADS::BTree t=16	4.87
+dictionaries	insert	100000	ADS::BPlusTree m=64	195.85
+dictionaries	lookup hit	100000	ADS::BPlusTree m=64	180.95
+dictionaries	lookup miss	100000	ADS::BPlusTree m=64	170.82
+dictionaries	visit	100000	ADS::BPlusTree m=64	2.05
+dictionaries	lookup hit	100000	ADS::SortedArrayDictionary	150.98
+dictionaries	lookup miss	100000	ADS::SortedArrayDictionary	150.98
+dictionaries	visit	100000	ADS::SortedArrayDictionary	0.66
+dictionaries	insert	1000000	std::unordered_map	337.32
+dictionaries	lookup hit	1000000	std::unordered_map	121.66
+dictionaries	lookup miss	1000000	std::unordered_map	119.53
+dictionaries	visit	1000000	std::unordered_map	62.59
+dictionaries	insert	1000000	std::unordered_map A/A	326.55
+dictionaries	lookup hit	1000000	std::unordered_map A/A	120.17
+dictionaries	lookup miss	1000000	std::unordered_map A/A	120.50
+dictionaries	visit	1000000	std::unordered_map A/A	62.89
+dictionaries	insert	1000000	boost::unordered_flat_map	77.31
+dictionaries	lookup hit	1000000	boost::unordered_flat_map	19.85
+dictionaries	lookup miss	1000000	boost::unordered_flat_map	7.78
+dictionaries	visit	1000000	boost::unordered_flat_map	6.27
+dictionaries	insert	1000000	ADS::ChainedHashTable	201.57
+dictionaries	lookup hit	1000000	ADS::ChainedHashTable	96.79
+dictionaries	lookup miss	1000000	ADS::ChainedHashTable	88.64
+dictionaries	visit	1000000	ADS::ChainedHashTable	33.81
+dictionaries	insert	1000000	ADS::OpenHashTable linear	86.82
+dictionaries	lookup hit	1000000	ADS::OpenHashTable linear	78.92
+dictionaries	lookup miss	1000000	ADS::OpenHashTable linear	105.02
+dictionaries	visit	1000000	ADS::OpenHashTable linear	14.07
+dictionaries	insert	1000000	ADS::FlatHashTable	66.37
+dictionaries	lookup hit	1000000	ADS::FlatHashTable	20.64
+dictionaries	lookup miss	1000000	ADS::FlatHashTable	7.44
+dictionaries	visit	1000000	ADS::FlatHashTable	7.03
+dictionaries	insert	1000000	ADS::PointerTable	125.34
+dictionaries	lookup hit	1000000	ADS::PointerTable	46.35
+dictionaries	lookup miss	1000000	ADS::PointerTable	44.77
+dictionaries	visit	1000000	ADS::PointerTable	19.45
+dictionaries	insert	1000000	std::map	999.01
+dictionaries	lookup hit	1000000	std::map	986.62
+dictionaries	lookup miss	1000000	std::map	921.35
+dictionaries	visit	1000000	std::map	123.11
+dictionaries	lookup hit	1000000	boost::container::flat_map	267.98
+dictionaries	lookup miss	1000000	boost::container::flat_map	270.19
+dictionaries	visit	1000000	boost::container::flat_map	0.88
+dictionaries	insert	1000000	ADS::RedBlackTree	957.37
+dictionaries	lookup hit	1000000	ADS::RedBlackTree	467.81
+dictionaries	lookup miss	1000000	ADS::RedBlackTree	518.07
+dictionaries	visit	1000000	ADS::RedBlackTree	124.00
+dictionaries	insert	1000000	ADS::AVLTree	1228.62
+dictionaries	lookup hit	1000000	ADS::AVLTree	788.89
+dictionaries	lookup miss	1000000	ADS::AVLTree	953.75
+dictionaries	visit	1000000	ADS::AVLTree	44.02
+dictionaries	insert	1000000	ADS::Treap	1373.98
+dictionaries	lookup hit	1000000	ADS::Treap	1071.95
+dictionaries	lookup miss	1000000	ADS::Treap	1172.29
+dictionaries	visit	1000000	ADS::Treap	59.27
+dictionaries	insert	1000000	ADS::SkipList	2222.97
+dictionaries	lookup hit	1000000	ADS::SkipList	2236.79
+dictionaries	lookup miss	1000000	ADS::SkipList	2241.54
+dictionaries	visit	1000000	ADS::SkipList	232.94
+dictionaries	insert	1000000	ADS::SplayTree	1533.36
+dictionaries	lookup hit	1000000	ADS::SplayTree	1441.96
+dictionaries	lookup miss	1000000	ADS::SplayTree	1260.98
+dictionaries	visit	1000000	ADS::SplayTree	62.83
+dictionaries	insert	1000000	ADS::BTree t=16	457.40
+dictionaries	lookup hit	1000000	ADS::BTree t=16	444.33
+dictionaries	lookup miss	1000000	ADS::BTree t=16	425.33
+dictionaries	visit	1000000	ADS::BTree t=16	11.15
+dictionaries	insert	1000000	ADS::BPlusTree m=64	352.33
+dictionaries	lookup hit	1000000	ADS::BPlusTree m=64	347.89
+dictionaries	lookup miss	1000000	ADS::BPlusTree m=64	330.23
+dictionaries	visit	1000000	ADS::BPlusTree m=64	4.15
+dictionaries	lookup hit	1000000	ADS::SortedArrayDictionary	273.27
+dictionaries	lookup miss	1000000	ADS::SortedArrayDictionary	269.94
+dictionaries	visit	1000000	ADS::SortedArrayDictionary	0.86
+priority	fill	100000	std::priority_queue	33.56
+priority	hold	100000	std::priority_queue	170.33
+priority	drain	100000	std::priority_queue	147.90
+priority	fill	100000	std::priority_queue A/A	33.33
+priority	hold	100000	std::priority_queue A/A	169.91
+priority	drain	100000	std::priority_queue A/A	148.41
+priority	fill	100000	boost::heap::d_ary_heap d=4	25.82
+priority	hold	100000	boost::heap::d_ary_heap d=4	116.55
+priority	drain	100000	boost::heap::d_ary_heap d=4	81.24
+priority	fill	100000	boost::heap::fibonacci_heap	68.61
+priority	hold	100000	boost::heap::fibonacci_heap	596.04
+priority	drain	100000	boost::heap::fibonacci_heap	557.77
+priority	fill	100000	boost::heap::pairing_heap	752.57
+priority	hold	100000	boost::heap::pairing_heap	709.92
+priority	drain	100000	boost::heap::pairing_heap	648.55
+priority	fill	100000	ADS::DaryHeap d=4	15.05
+priority	hold	100000	ADS::DaryHeap d=4	113.11
+priority	drain	100000	ADS::DaryHeap d=4	76.10
+priority	fill	100000	ADS::HeapPriorityQueue	89.99
+priority	hold	100000	ADS::HeapPriorityQueue	219.76
+priority	drain	100000	ADS::HeapPriorityQueue	239.91
+priority	fill	100000	ADS::LinkedHeapPriorityQueue	140.69
+priority	hold	100000	ADS::LinkedHeapPriorityQueue	286.82
+priority	drain	100000	ADS::LinkedHeapPriorityQueue	361.42
+priority	fill	100000	ADS::FibonacciHeapPriorityQueue	78.37
+priority	hold	100000	ADS::FibonacciHeapPriorityQueue	981.55
+priority	drain	100000	ADS::FibonacciHeapPriorityQueue	984.05
+priority	fill	100000	ADS::TreePriorityQueue	451.57
+priority	hold	100000	ADS::TreePriorityQueue	405.05
+priority	drain	100000	ADS::TreePriorityQueue	106.56
+priority	fill	100000	ADS::BucketQueue	176.51
+priority	hold	100000	ADS::BucketQueue	50.44
+priority	drain	100000	ADS::BucketQueue	48.40
+priority	fill	1000000	std::priority_queue	21.97
+priority	hold	1000000	std::priority_queue	232.63
+priority	drain	1000000	std::priority_queue	207.43
+priority	fill	1000000	std::priority_queue A/A	22.16
+priority	hold	1000000	std::priority_queue A/A	231.37
+priority	drain	1000000	std::priority_queue A/A	205.17
+priority	fill	1000000	boost::heap::d_ary_heap d=4	13.92
+priority	hold	1000000	boost::heap::d_ary_heap d=4	144.27
+priority	drain	1000000	boost::heap::d_ary_heap d=4	132.54
+priority	fill	1000000	boost::heap::fibonacci_heap	127.69
+priority	hold	1000000	boost::heap::fibonacci_heap	1230.61
+priority	drain	1000000	boost::heap::fibonacci_heap	1181.72
+priority	fill	1000000	boost::heap::pairing_heap	1956.67
+priority	hold	1000000	boost::heap::pairing_heap	1257.02
+priority	drain	1000000	boost::heap::pairing_heap	1583.44
+priority	fill	1000000	ADS::DaryHeap d=4	15.71
+priority	hold	1000000	ADS::DaryHeap d=4	139.01
+priority	drain	1000000	ADS::DaryHeap d=4	127.63
+priority	fill	1000000	ADS::HeapPriorityQueue	117.90
+priority	hold	1000000	ADS::HeapPriorityQueue	399.33
+priority	drain	1000000	ADS::HeapPriorityQueue	711.18
+priority	fill	1000000	ADS::LinkedHeapPriorityQueue	280.42
+priority	hold	1000000	ADS::LinkedHeapPriorityQueue	488.32
+priority	drain	1000000	ADS::LinkedHeapPriorityQueue	1062.87
+priority	fill	1000000	ADS::FibonacciHeapPriorityQueue	154.68
+priority	hold	1000000	ADS::FibonacciHeapPriorityQueue	2008.92
+priority	drain	1000000	ADS::FibonacciHeapPriorityQueue	2192.91
+priority	fill	1000000	ADS::TreePriorityQueue	1197.58
+priority	hold	1000000	ADS::TreePriorityQueue	644.49
+priority	drain	1000000	ADS::TreePriorityQueue	172.82
+priority	fill	1000000	ADS::BucketQueue	584.91
+priority	hold	1000000	ADS::BucketQueue	42.11
+priority	drain	1000000	ADS::BucketQueue	134.38
+sequences	fill	100000	std::vector	7.60
+sequences	visit	100000	std::vector	0.15
+sequences	std::sort	100000	std::vector	83.57
+sequences	fill	100000	std::vector A/A	7.41
+sequences	visit	100000	std::vector A/A	0.15
+sequences	std::sort	100000	std::vector A/A	84.27
+sequences	fill	100000	ADS::ArraySequence	7.12
+sequences	visit	100000	ADS::ArraySequence	0.15
+sequences	std::sort	100000	ADS::ArraySequence	75.65
+sequences	fill	100000	std::list	32.53
+sequences	visit	100000	std::list	3.30
+sequences	reverse	100000	std::list	1.86
+sequences	fill	100000	ADS::List	29.66
+sequences	visit	100000	ADS::List	3.17
+sequences	reverse	100000	ADS::List	1.86
+sequences	fill	100000	std::forward_list	31.00
+sequences	visit	100000	std::forward_list	3.38
+sequences	visit again	100000	std::forward_list	4.26
+sequences	fill	100000	ADS::SinglyList	32.26
+sequences	visit	100000	ADS::SinglyList	3.43
+sequences	visit again	100000	ADS::SinglyList	4.19
+sequences	visit by positions	100000	ADS::ArraySequence	0.17
+sequences	visit by positions	100000	ADS::List	2.24
+sequences	fill	10000000	std::vector	8.93
+sequences	visit	10000000	std::vector	0.54
+sequences	std::sort	10000000	std::vector	110.11
+sequences	fill	10000000	std::vector A/A	8.92
+sequences	visit	10000000	std::vector A/A	0.56
+sequences	std::sort	10000000	std::vector A/A	109.88
+sequences	fill	10000000	ADS::ArraySequence	8.38
+sequences	visit	10000000	ADS::ArraySequence	0.54
+sequences	std::sort	10000000	ADS::ArraySequence	98.64
+sequences	fill	10000000	std::list	36.71
+sequences	visit	10000000	std::list	7.45
+sequences	reverse	10000000	std::list	4.49
+sequences	fill	10000000	ADS::List	33.10
+sequences	visit	10000000	ADS::List	7.18
+sequences	reverse	10000000	ADS::List	4.51
+sequences	fill	10000000	std::forward_list	35.87
+sequences	visit	10000000	std::forward_list	9.13
+sequences	visit again	10000000	std::forward_list	6.93
+sequences	fill	10000000	ADS::SinglyList	40.09
+sequences	visit	10000000	ADS::SinglyList	10.66
+sequences	visit again	10000000	ADS::SinglyList	6.54
+sequences	visit by positions	10000000	ADS::ArraySequence	0.57
+sequences	visit by positions	10000000	ADS::List	5.96
+bignum	product	16	ADS::BigInteger	200.00
+bignum	quotient 2n/n	16	ADS::BigInteger	500.00
+bignum	to decimal	16	ADS::BigInteger	600.00
+bignum	product	16	ADS::BigInteger A/A	200.00
+bignum	quotient 2n/n	16	ADS::BigInteger A/A	400.00
+bignum	to decimal	16	ADS::BigInteger A/A	500.00
+bignum	product	16	ADS::BigInteger school	200.00
+bignum	quotient 2n/n	16	ADS::BigInteger school	400.00
+bignum	to decimal	16	ADS::BigInteger school	500.00
+bignum	product	16	ADS::BigInteger Karatsuba	100.00
+bignum	quotient 2n/n	16	ADS::BigInteger Karatsuba	400.00
+bignum	to decimal	16	ADS::BigInteger Karatsuba	500.00
+bignum	product	16	ADS::BigInteger FFT	4201.00
+bignum	quotient 2n/n	16	ADS::BigInteger FFT	401.00
+bignum	to decimal	16	ADS::BigInteger FFT	500.00
+bignum	product	16	boost::multiprecision::cpp_int	200.00
+bignum	quotient 2n/n	16	boost::multiprecision::cpp_int	1501.00
+bignum	to decimal	16	boost::multiprecision::cpp_int	2800.00
+bignum	product	16	GMP mpz_class	101.00
+bignum	quotient 2n/n	16	GMP mpz_class	300.00
+bignum	to decimal	16	GMP mpz_class	700.00
+bignum	harmonic H_n	1024	ADS::Rational	1077691.00
+bignum	harmonic H_n	1024	boost::rational<cpp_int>	2090478.00
+bignum	harmonic H_n	1024	GMP mpq_class	457939.00
+bignum	product	256	ADS::BigInteger	12401.00
+bignum	quotient 2n/n	256	ADS::BigInteger	25002.00
+bignum	to decimal	256	ADS::BigInteger	36703.00
+bignum	product	256	ADS::BigInteger A/A	12501.00
+bignum	quotient 2n/n	256	ADS::BigInteger A/A	25002.00
+bignum	to decimal	256	ADS::BigInteger A/A	35403.00
+bignum	product	256	ADS::BigInteger school	24102.00
+bignum	quotient 2n/n	256	ADS::BigInteger school	25002.00
+bignum	to decimal	256	ADS::BigInteger school	35203.00
+bignum	product	256	ADS::BigInteger Karatsuba	12401.00
+bignum	quotient 2n/n	256	ADS::BigInteger Karatsuba	25102.00
+bignum	to decimal	256	ADS::BigInteger Karatsuba	34703.00
+bignum	product	256	ADS::BigInteger FFT	63705.00
+bignum	quotient 2n/n	256	ADS::BigInteger FFT	25502.00
+bignum	to decimal	256	ADS::BigInteger FFT	36203.00
+bignum	product	256	boost::multiprecision::cpp_int	18802.00
+bignum	quotient 2n/n	256	boost::multiprecision::cpp_int	85207.00
+bignum	to decimal	256	boost::multiprecision::cpp_int	415535.00
+bignum	product	256	GMP mpz_class	6800.00
+bignum	quotient 2n/n	256	GMP mpz_class	7801.00
+bignum	to decimal	256	GMP mpz_class	16401.00
+bignum	harmonic H_n	16384	ADS::Rational	70059044.00
+bignum	harmonic H_n	16384	boost::rational<cpp_int>	330386532.00
+bignum	harmonic H_n	16384	GMP mpq_class	28234096.00
+bignum	product	4096	ADS::BigInteger	1383817.00
+bignum	quotient 2n/n	4096	ADS::BigInteger	2152483.00
+bignum	to decimal	4096	ADS::BigInteger	2720730.00
+bignum	product	4096	ADS::BigInteger A/A	1385418.00
+bignum	quotient 2n/n	4096	ADS::BigInteger A/A	2175084.00
+bignum	to decimal	4096	ADS::BigInteger A/A	2715930.00
+bignum	product	4096	ADS::BigInteger school	5866798.00
+bignum	quotient 2n/n	4096	ADS::BigInteger school	2151882.00
+bignum	to decimal	4096	ADS::BigInteger school	2747433.00
+bignum	product	4096	ADS::BigInteger Karatsuba	1089093.00
+bignum	quotient 2n/n	4096	ADS::BigInteger Karatsuba	2148082.00
+bignum	to decimal	4096	ADS::BigInteger Karatsuba	2712730.00
+bignum	product	4096	ADS::BigInteger FFT	1384118.00
+bignum	quotient 2n/n	4096	ADS::BigInteger FFT	2149483.00
+bignum	to decimal	4096	ADS::BigInteger FFT	2715630.00
+bignum	product	4096	boost::multiprecision::cpp_int	1590035.00
+bignum	quotient 2n/n	4096	boost::multiprecision::cpp_int	24127948.00
+bignum	to decimal	4096	boost::multiprecision::cpp_int	102609706.00
+bignum	product	4096	GMP mpz_class	332028.00
+bignum	quotient 2n/n	4096	GMP mpz_class	701559.00
+bignum	to decimal	4096	GMP mpz_class	942180.00
+bignum	harmonic H_n	262144	ADS::Rational	13562684282.00
+bignum	harmonic H_n	262144	boost::rational<cpp_int>	81701847256.00
+bignum	harmonic H_n	262144	GMP mpq_class	6309759384.00
+bignum	product	32768	ADS::BigInteger	13427535.00
+bignum	quotient 2n/n	32768	ADS::BigInteger	53523224.00
+bignum	to decimal	32768	ADS::BigInteger	73416505.00
+bignum	product	32768	ADS::BigInteger A/A	12842686.00
+bignum	quotient 2n/n	32768	ADS::BigInteger A/A	53250701.00
+bignum	to decimal	32768	ADS::BigInteger A/A	73797538.00
+bignum	product	32768	ADS::BigInteger school	375172312.00
+bignum	quotient 2n/n	32768	ADS::BigInteger school	54247885.00
+bignum	to decimal	32768	ADS::BigInteger school	73869044.00
+bignum	product	32768	ADS::BigInteger Karatsuba	29927729.00
+bignum	quotient 2n/n	32768	ADS::BigInteger Karatsuba	53006480.00
+bignum	to decimal	32768	ADS::BigInteger Karatsuba	72945266.00
+bignum	product	32768	ADS::BigInteger FFT	12306740.00
+bignum	quotient 2n/n	32768	ADS::BigInteger FFT	53186895.00
+bignum	to decimal	32768	ADS::BigInteger FFT	72642040.00
+bignum	product	32768	boost::multiprecision::cpp_int	44071325.00
+bignum	quotient 2n/n	32768	boost::multiprecision::cpp_int	882503294.00
+bignum	to decimal	32768	boost::multiprecision::cpp_int	6659033228.00
+bignum	product	32768	GMP mpz_class	4236258.00
+bignum	quotient 2n/n	32768	GMP mpz_class	10653300.00
+bignum	to decimal	32768	GMP mpz_class	19579855.00
+fft	forward	1024	ADS::fft	9.86
+fft	forward	1024	ADS::fft A/A	9.86
+fft	forward	1024	ADS::dft (definition)	42187.45
+fft	forward	1024	FFTW estimate	5.47
+fft	forward	1024	FFTW measure	3.32
+fft	forward	65536	ADS::fft	17.71
+fft	forward	65536	ADS::fft A/A	17.83
+fft	forward	65536	FFTW estimate	24.54
+fft	forward	65536	FFTW measure	8.83
+fft	forward	1048576	ADS::fft	32.68
+fft	forward	1048576	ADS::fft A/A	31.09
+fft	forward	1048576	FFTW estimate	43.70
+fft	forward	1048576	FFTW measure	23.62
+# load at the end	1.11 1.04 1.01
