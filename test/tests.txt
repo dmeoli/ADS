@@ -438,6 +438,7 @@ sorting  merge-paths         Timsort e Powersort, i due merge
 sorting  radix-sorts         radix LSD, MSD, American flag, bucket
 sorting  dispatch            sort() e stableSort() che scelgono
 sorting  dispatch-edges      le scelte di sort() ai loro limiti
+sorting  fast-paths          i percorsi veloci di sort() e stableSort()
 
 # the structures and the algorithms of Knuth's TAOCP, beyond the book
 taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme

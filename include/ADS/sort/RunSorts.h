@@ -26,16 +26,20 @@
  * A merge first skips the items of the left run already before the first
  * item of the right one, and those of the right run already after the last
  * item of the left one, both by galloping (an exponential search and then a
- * binary one); it then merges with a buffer of the left run, switching to
- * galloping when one run wins 7 times in a row, as McIlroy proposed, so
- * that two interleaved runs merge in O( n ) and two runs one after the
- * other in \f$ O( \log n ) \f$ comparisons; as in Timsort, the 7 drops
- * by one at each gallop that pays and rises by two at each that does not.
- * On the arithmetic types, two runs that both come from runs extended to
- * minrun, i.e., from an input in disorder whose merge no branch predictor
- * guesses, merge with no branch on the order (a conditional move and two
+ * binary one), and rotates the two runs if the right one comes all before
+ * the left one; it then merges with a buffer of the shorter run, from the
+ * front if it is the left one and from the back otherwise, so that the
+ * buffer, made once, holds half of the items, switching to galloping when
+ * one run wins 7 times in a row, as McIlroy proposed, so that two
+ * interleaved runs merge in O( n ) and two runs one after the other in
+ * \f$ O( \log n ) \f$ comparisons; as in Timsort, the 7 drops by one at
+ * each gallop that pays and rises by two at each that does not. On the
+ * arithmetic types, two runs that both come from runs extended to minrun,
+ * i.e., from an input in disorder whose merge no branch predictor guesses,
+ * merge with no branch on the order (a conditional move and two
  * increments); the runs of an input with long runs keep the branches,
- * which follow its patterns.
+ * which follow its patterns, and with the natural order they do not
+ * gallop, whose steps cost more than the comparisons that it saves.
  *
  * The contracts [see Contract.h]: each sort ends with the same items
  * sorted, an audit. The functions are defined in RunSorts.tpp.

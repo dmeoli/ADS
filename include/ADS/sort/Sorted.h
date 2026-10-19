@@ -35,6 +35,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
+#include <type_traits>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -76,6 +78,11 @@ bool samePermutation( const std::vector< T > & A ,
 /// the items of the SEQUENCE L [see ADT.h] are sorted by less
 template< class S , class C >
 bool sequenceSorted( const S & L , C less );
+
+/// the order is the natural one of T
+template< class T , class C >
+inline constexpr bool naturalOrder =
+ std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > >;
 
 }  // end( namespace detail )
 

@@ -18,11 +18,6 @@ namespace ADS {
 
 namespace detail {
 
-/// the order is the natural one of T
-template< class T , class C >
-inline constexpr bool naturalOrder =
- std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > >;
-
 /// heapsort of A[ lo .. hi )
 template< class T , class C >
 void heapRange( std::vector< T > & A , std::size_t lo , std::size_t hi ,

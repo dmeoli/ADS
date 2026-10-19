@@ -71,6 +71,26 @@ class RunMerger {
   e2 = gallopLeft( f_A[ e1 - 1 ] , e1 , e2 );
   if( e2 == e1 )
    return;
+  if( f_less( f_A[ e2 - 1 ] , f_A[ s1 ] ) ) {   // the right one first
+   std::rotate( f_A.begin() + std::ptrdiff_t( s1 ) ,
+                f_A.begin() + std::ptrdiff_t( e1 ) ,
+                f_A.begin() + std::ptrdiff_t( e2 ) );
+   return;
+   }
+  if( f_B.capacity() == 0 )                 // half of A at once: a
+   f_B.reserve( ( f_A.size() + 1 ) / 2 );   // buffer that grows faults in
+  if( e2 - e1 < e1 - s1 )                   // new pages at each copy
+   mergeHigh( s1 , e1 , e2 , disorder );
+  else
+   mergeLow( s1 , e1 , e2 , disorder );
+  }
+
+ private:
+
+ /// the merge of merge() when the left run is not longer, which goes to
+ /// the buffer: the items from the front
+ void mergeLow( std::size_t s1 , std::size_t e1 , std::size_t e2 ,
+                bool disorder ) {
   f_B.assign( std::make_move_iterator( f_A.begin() + s1 ) ,
               std::make_move_iterator( f_A.begin() + e1 ) );
   T * const a = f_A.data();
@@ -88,6 +108,15 @@ class RunMerger {
     while( i < n1 ) a[ k++ ] = b[ i++ ];
     return;
     }
+  if constexpr( std::is_arithmetic_v< T > && naturalOrder< T , C > ) {
+   while( ( i < n1 ) && ( j < e2 ) )        // a branch that the order of
+    if( f_less( a[ j ] , b[ i ] ) )         // the runs makes predictable,
+     a[ k++ ] = a[ j++ ];                   // and no gallop, which saves
+    else                                    // comparisons that cost less
+     a[ k++ ] = b[ i++ ];                   // than its steps
+   while( i < n1 ) a[ k++ ] = b[ i++ ];
+   return;
+   }
   std::size_t gallop = f_gallop;            // a local: the moves of the
   for( bool done = false ; ! done ; ) {     // items may alias a member
    std::size_t winsL = 0 , winsR = 0;       // one by one, while no run
@@ -133,7 +162,99 @@ class RunMerger {
   while( i < n1 ) a[ k++ ] = std::move( b[ i++ ] );
   }
 
- private:
+ /// the merge of merge() when the right run is shorter, which goes to the
+ /// buffer: the items from the back, the right one on a tie
+ void mergeHigh( std::size_t s1 , std::size_t e1 , std::size_t e2 ,
+                 bool disorder ) {
+  f_B.assign( std::make_move_iterator( f_A.begin() + e1 ) ,
+              std::make_move_iterator( f_A.begin() + e2 ) );
+  T * const a = f_A.data();
+  T * const b = f_B.data();
+  std::size_t i = e1 , j = f_B.size() , k = e2;   // the ends, exclusive
+  if constexpr( std::is_arithmetic_v< T > )
+   if( disorder ) {                         // no branch on the order
+    while( ( i > s1 ) && ( j > 0 ) ) {
+     const bool left = f_less( b[ j - 1 ] , a[ i - 1 ] );
+     a[ --k ] = left ? a[ i - 1 ] : b[ j - 1 ];
+     i -= left;
+     j -= ! left;
+     }
+    while( j > 0 ) a[ --k ] = b[ --j ];
+    return;
+    }
+  if constexpr( std::is_arithmetic_v< T > && naturalOrder< T , C > ) {
+   while( ( i > s1 ) && ( j > 0 ) )         // as in mergeLow()
+    if( f_less( b[ j - 1 ] , a[ i - 1 ] ) )
+     a[ --k ] = a[ --i ];
+    else
+     a[ --k ] = b[ --j ];
+   while( j > 0 ) a[ --k ] = b[ --j ];
+   return;
+   }
+  std::size_t gallop = f_gallop;
+  for( bool done = false ; ! done ; ) {
+   std::size_t winsL = 0 , winsR = 0;
+   for( ; ; )
+    if( f_less( b[ j - 1 ] , a[ i - 1 ] ) ) {   // the left one, strictly
+     a[ --k ] = std::move( a[ --i ] );
+     winsR = 0;
+     if( ( done = i == s1 ) || ( ++winsL >= gallop ) )
+      break;
+     }
+    else {
+     a[ --k ] = std::move( b[ --j ] );
+     winsL = 0;
+     if( ( done = j == 0 ) || ( ++winsR >= gallop ) )
+      break;
+     }
+   while( ! done ) {                        // by galloping, while it pays
+    const std::size_t tR = gallopLeftIn( f_B , a[ i - 1 ] , 0 , j );
+    winsR = j - tR;                         // the right items >= A[ i - 1 ]
+    while( j > tR ) a[ --k ] = std::move( b[ --j ] );
+    if( ( done = j == 0 ) )
+     break;
+    a[ --k ] = std::move( a[ --i ] );
+    if( ( done = i == s1 ) )
+     break;
+    const std::size_t tL = gallopRightBack( b[ j - 1 ] , s1 , i );
+    winsL = i - tL;                         // the left items > B[ j - 1 ]
+    while( i > tL ) a[ --k ] = std::move( a[ --i ] );
+    if( ( done = i == s1 ) )
+     break;
+    a[ --k ] = std::move( b[ --j ] );
+    if( ( done = j == 0 ) )
+     break;
+    if( ( winsL < 7 ) && ( winsR < 7 ) ) {
+     gallop += 2;
+     break;
+     }
+    if( gallop > 1 )
+     --gallop;
+    }
+   }
+  f_gallop = gallop;
+  while( j > 0 ) a[ --k ] = std::move( b[ --j ] );
+  }
+
+ /// the first place in [ lo , hi ) of A whose item is larger than x, by
+ /// galloping from hi backwards
+ std::size_t gallopRightBack( const T & x , std::size_t lo ,
+                              std::size_t hi ) {
+  std::size_t a = lo , b = hi;              // A[ b .. hi ) > x
+  for( std::size_t off = 1 ; off <= hi - lo ; off *= 2 ) {
+   const std::size_t t = hi - off;
+   if( ! f_less( x , f_A[ t ] ) ) {
+    a = t + 1;
+    break;
+    }
+   b = t;
+   }
+  while( a < b ) {
+   const std::size_t m = a + ( b - a ) / 2;
+   if( f_less( x , f_A[ m ] ) ) b = m; else a = m + 1;
+   }
+  return( a );
+  }
 
  /// the first place in [ lo , hi ) of V whose item is larger than x,
  /// by galloping from lo
@@ -158,13 +279,15 @@ class RunMerger {
   return( gallopRightIn( f_A , x , lo , hi ) );
   }
 
- /// the first place in [ lo , hi ) of A whose item is not smaller than x,
+ /// the first place in [ lo , hi ) of V whose item is not smaller than x,
  /// by galloping from hi backwards
- std::size_t gallopLeft( const T & x , std::size_t lo , std::size_t hi ) {
-  std::size_t a = lo , b = hi;              // A[ b .. hi ) >= x
+ template< class V >
+ std::size_t gallopLeftIn( const V & v , const T & x , std::size_t lo ,
+                           std::size_t hi ) {
+  std::size_t a = lo , b = hi;              // v[ b .. hi ) >= x
   for( std::size_t off = 1 ; off <= hi - lo ; off *= 2 ) {
    const std::size_t t = hi - off;          // probes hi - 1 , hi - 2 ,
-   if( f_less( f_A[ t ] , x ) ) {           // hi - 4 , ...
+   if( f_less( v[ t ] , x ) ) {             // hi - 4 , ...
     a = t + 1;
     break;
     }
@@ -172,14 +295,18 @@ class RunMerger {
    }
   while( a < b ) {
    const std::size_t m = a + ( b - a ) / 2;
-   if( f_less( f_A[ m ] , x ) ) a = m + 1; else b = m;
+   if( f_less( v[ m ] , x ) ) a = m + 1; else b = m;
    }
   return( a );
   }
 
+ std::size_t gallopLeft( const T & x , std::size_t lo , std::size_t hi ) {
+  return( gallopLeftIn( f_A , x , lo , hi ) );
+  }
+
  std::vector< T > & f_A;   ///< the vector
  C & f_less;               ///< the order
- std::vector< T > f_B;     ///< the buffer of a left run
+ std::vector< T > f_B;     ///< the buffer of the shorter run
  std::size_t f_gallop = 7; ///< the wins in a row that start galloping
  bool f_extended = false;  ///< the last run was extended
 

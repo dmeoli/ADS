@@ -9,7 +9,8 @@
  * - With the natural order (std::less) on integers or floating point
  *   numbers, a short vector goes to pdqSort(); a long one with at most
  *   kRuns runs (non-decreasing or strictly decreasing stretches, counted
- *   by a pass that stops at the run kRuns + 1 and keeps where they end)
+ *   by a pass that stops at the run kRuns + 1 and keeps where they end,
+ *   with no branch inside blocks of 32 items, which vectorize)
  *   goes to the merges of powerSort() [see RunSorts.h] on those runs,
  *   with no second search for them, \f$ O( n \log r ) \f$ for r runs,
  *   O( n ) if sorted or reversed; sort() sends to pdqSort() a vector
@@ -28,10 +29,22 @@
  *   shares and, on the benchmark, beats the in-place multikeyQuickSort()
  *   of Bentley and Sedgewick [see MultikeyQuickSort.h] (two equal strings
  *   cannot be told apart, so that stability means nothing there).
- * - Otherwise, i.e., with any other order or item, sort() uses pdqSort()
- *   [see EngineeredQuickSorts.h], \f$ O( n \log n ) \f$ in the worst case,
- *   O( n ) on a sorted or reversed vector and \f$ O( n \log k ) \f$ with
- *   k distinct keys, and stableSort() uses powerSort() [see RunSorts.h],
+ * - With any other order, items that are copied as bytes (trivially
+ *   copyable) go the same way (sort() sends fewer than kRadix of them to
+ *   pdqSort()): at most kRuns runs to the merges of powerSort(), and the
+ *   others, if a sample of 64 shows at most 16 distinct keys that all the
+ *   items have, to a counting sort by those keys, stable, each item found
+ *   among them by a binary search with no branch, through a buffer of
+ *   n / 2 items, \f$ O( n \log k ) \f$ comparisons for k keys; otherwise
+ *   to a merge sort through a buffer of n / 2 items, as the spinsort of
+ *   Boost: its halves are sorted with the other array as their room and
+ *   merged back, one move per item and level, with no branch on the
+ *   order, from both ends at once, so that no step checks where a half
+ *   ends.
+ * - Any other item goes to pdqSort() for sort() [see
+ *   EngineeredQuickSorts.h], \f$ O( n \log n ) \f$ in the worst case, O( n )
+ *   on a sorted or reversed vector and \f$ O( n \log k ) \f$ with k
+ *   distinct keys, and to powerSort() for stableSort() [see RunSorts.h],
  *   O( n ) on few runs and nearly optimal on any number of them.
  *
  * The thresholds between the algorithms, kRadix items for the numbers,
@@ -81,6 +94,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>

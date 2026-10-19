@@ -18,7 +18,12 @@
  *   (all the histograms in a second sweep) and make a pass, so that small
  *   keys in wide types cost only the bytes they use; when they differ in
  *   one byte alone, the key tells the number, and a counting sort writes
- *   the numbers back from one of each value, with no buffer;
+ *   the numbers back from one of each value, with no buffer. A vector
+ *   larger than the cache (1 MiB), whose keys differ in 3 bytes or more,
+ *   first goes by its top byte into the buffer, the one pass that scatters
+ *   over the whole memory, and each part is sorted in the same way and
+ *   then by the other bytes while it fits, so that their passes stay in
+ *   the cache (an MSD pass before the LSD ones);
  * - radixSortBy() is the same on any items, by an unsigned key that a
  *   function gives, stable, e.g., the records by one field;
  * - americanFlagSort() is the radix sort from the most significant byte
@@ -28,8 +33,11 @@
  *   byte, the small ones by insertion; O( n ) extra space for no buffer of
  *   the items, not stable;
  * - msdRadixSort() sorts strings by their characters from the first one,
- *   the end of a string before every character, with a buffer, between
- *   which and the vector the strings go back and forth, one move per pass,
+ *   the end of a string before every character: the first pass permutes
+ *   them into their buckets in place, as the American flag sort does, and
+ *   then each bucket has a buffer, made only if some bucket is not all of
+ *   equal strings, between which and the vector the strings go back and
+ *   forth, one move per pass,
  *   the character of each string read once per pass and kept aside, and
  *   the small groups sorted by insertion, so that it reads only the
  *   distinguishing prefixes of the strings: O( D + n log 256 ) for D the
@@ -84,6 +92,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>

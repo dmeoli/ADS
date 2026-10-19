@@ -1154,6 +1154,191 @@ ADS_TEST( "dispatch-edges" )
   }
  }
 
+// the fast paths of sort() and stableSort(): the stable merge sort of
+// items with an order of their own, around its insertion cutoff of 16 and
+// the parity of the halves, on few keys, sorted, reversed, all equal,
+// organ pipe and sawtooth, with halves already in order or in reverse,
+// against std::stable_sort; the sort by few keys around kRadix, with 1,
+// 2, 16 and 17 keys, and with a key out of the sample, at the end or the
+// largest, which falls back to the merge sort; the runs counted in blocks
+// of 32, ending around the multiples of 32, against a count item by item;
+// the merges of the runs with the shorter one on either side, of numbers
+// and of pairs with ties; the radix sort of vectors around the size of the
+// cache, the first pass by the top byte, the parts of at most 32 items, a
+// byte that does not split a part, keys of 3 bytes and -0 with +0 among
+// few doubles; the strings of few distinct values, around the cutoff of
+// 16, all equal, with the empty ones and those that end inside a bucket
+ADS_TEST( "fast-paths" )
+{
+ std::mt19937_64 g( 57 );
+ struct Rec { std::uint64_t key; std::size_t id; };
+ auto byKey = []( const Rec & a , const Rec & b ) {
+  return( a.key < b.key ); };
+ auto same = []( const std::vector< Rec > & A ,
+                 const std::vector< Rec > & B ) {
+  for( std::size_t i = 0 ; i < A.size() ; ++i )
+   if( ( A[ i ].key != B[ i ].key ) || ( A[ i ].id != B[ i ].id ) )
+    return( false );
+  return( A.size() == B.size() ); };
+ for( std::size_t n : { 0u , 1u , 2u , 3u , 15u , 16u , 17u , 31u , 32u ,
+                        33u , 34u , 63u , 64u , 65u , 1000u , 4097u } )
+  for( int p = 0 ; p < 9 ; ++p ) {
+   std::vector< Rec > A( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::uint64_t k[] = { g() , g() % 3 , i , n - i , 7 ,
+                                std::min( i , n - 1 - i ) , i % 17 ,
+                                i / 8 * 8 + ( ( i % 8 ) ^ 5 ) ,
+                                ( n - i ) / 8 * 8 + ( ( i % 8 ) ^ 5 ) };
+    A[ i ] = { k[ p ] , i };                     // random, few, sorted,
+    }                                            // reversed, equal, organ,
+   auto B = A;                                   // sawtooth, blocks in
+   stableSort( A , byKey );                      // order and in reverse
+   std::stable_sort( B.begin() , B.end() , byKey );
+   CHECK( same( A , B ) );
+   }
+ for( std::size_t n : { 511u , 512u , 513u , 5000u } )   // few keys: 16
+  for( std::uint64_t k : { 1u , 2u , 16u , 17u , 1000u } )   // and 17,
+   for( int rare = 0 ; rare < 3 ; ++rare ) {    // one out of the sample
+    std::vector< Rec > A( n );
+    for( std::size_t i = 0 ; i < n ; ++i )
+     A[ i ] = { ( g() % k ) * 1000003 , i };
+    if( rare == 1 )
+     A[ n - 1 ].key = 7;                         // at the end
+    if( rare == 2 )
+     A[ n / 2 ].key = 999999999999;              // the largest
+    auto B = A , C = A;
+    stableSort( A , byKey );
+    sort( C , byKey );
+    std::stable_sort( B.begin() , B.end() , byKey );
+    CHECK( same( A , B ) );
+    for( std::size_t i = 0 ; i < n ; ++i )
+     CHECK( C[ i ].key == B[ i ].key );
+    }
+ for( std::size_t n : { 31u , 32u , 33u , 63u , 64u , 65u , 97u , 128u ,
+                        1000u } )
+  for( int t = 0 ; t < 40 ; ++t ) {              // runs of every length
+   std::vector< double > V( n );
+   std::size_t i = 0;
+   while( i < n ) {
+    const std::size_t l = std::min< std::size_t >( n - i ,
+                                                  t < 20 ? 30 + g() % 6 :
+                                                  1 + g() % 70 );
+    const bool down = g() % 2;
+    for( std::size_t j = 0 ; j < l ; ++j )
+     V[ i + j ] = down ? double( l - j ) : double( j / 2 );
+    if( ( ! down ) && ( l > 3 ) && ( g() % 2 ) )
+     V[ i + 1 ] = -0.0;                          // a tie of -0 and +0
+    i += l;
+    }
+   auto less = std::less<>();
+   std::array< std::size_t , kRuns + 1 > E , F;
+   const std::size_t r = detail::runs( V , less , kRuns , E.data() );
+   std::size_t q = 0;                            // item by item
+   for( std::size_t k = 0 ; ( k < n ) && ( q <= kRuns ) ; ++q ) {
+    std::size_t j = k + 1;
+    if( ( j < n ) && ( V[ j ] < V[ k ] ) )
+     while( ( j < n ) && ( V[ j ] < V[ j - 1 ] ) ) ++j;
+    else
+     while( ( j < n ) && ! ( V[ j ] < V[ j - 1 ] ) ) ++j;
+    F[ q ] = k = j;
+    }
+   CHECK( r == q && std::equal( E.begin() , E.begin() + r , F.begin() ) );
+   auto W = V , Ws = V;
+   stableSort( W );
+   stdStable( Ws );
+   for( std::size_t k = 0 ; k < n ; ++k )
+    CHECK( W[ k ] == Ws[ k ] &&
+           std::signbit( W[ k ] ) == std::signbit( Ws[ k ] ) );
+   }
+ for( int t = 0 ; t < 60 ; ++t ) {               // the shorter run on
+  const std::size_t a = 1 + g() % 3000 , b = 1 + g() % 3000;   // either
+  std::vector< std::pair< int , std::size_t > > P( a + b );    // side
+  Ints I( a + b );
+  for( std::size_t i = 0 ; i < a + b ; ++i ) {
+   const int k = int( g() % ( t % 2 ? 7 : 100000 ) );
+   P[ i ] = { k , i };
+   I[ i ] = k;
+   }
+  auto first = []( const auto & x , const auto & y ) {
+   return( x.first < y.first ); };
+  std::stable_sort( P.begin() , P.begin() + a , first );
+  std::stable_sort( P.begin() + a , P.end() , first );
+  std::sort( I.begin() , I.begin() + a );
+  std::sort( I.begin() + a , I.end() );
+  auto P2 = P , P3 = P;
+  auto I2 = I , I3 = I;
+  powerSort( P2 , first );
+  timSort( P3 , first );
+  powerSort( I2 );
+  timSort( I3 );
+  std::stable_sort( P.begin() , P.end() , first );
+  std::sort( I.begin() , I.end() );
+  CHECK( P2 == P && P3 == P && I2 == I && I3 == I );
+  }
+ const std::size_t c64 = ( std::size_t( 1 ) << 20 ) / 8;   // the cache
+ for( std::size_t n : { c64 - 1 , c64 , c64 + 1 , 3 * c64 } )
+  for( int p = 0 ; p < 5 ; ++p ) {
+   std::vector< long long > L( n );
+   std::vector< double > Z( n );
+   std::vector< std::uint32_t > U( 2 * n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::uint64_t x = g();
+    const std::uint64_t k[] = { x , x & 0xFFFFFF ,    // all, 3 bytes,
+                                ( x % 1000 ? 0 : ( x % 7 + 1 ) << 56 ) |
+                                ( x & 0xFFFFFF ) ,    // parts of <= 32,
+                                ( x % 2 ) << 56 | ( x % 2 ) << 49 |
+                                ( x & 0xFFFF00 ) ,    // no split in a
+                                x % 16 };             // part, few
+    L[ i ] = ( long long )( k[ p ] );
+    Z[ i ] = p == 4 ? double( int( x % 5 ) - 2 ) * ( x % 3 ? 1.0 : 0.0 ) *
+                      ( x % 7 < 3 ? -1.0 : 1.0 ) : double( L[ i ] ) / 1e3;
+    U[ 2 * i ] = std::uint32_t( k[ p ] );
+    U[ 2 * i + 1 ] = std::uint32_t( k[ p ] >> 8 );
+    }
+   auto L2 = L , L3 = L;
+   auto U2 = U;
+   auto Z2 = Z , Z3 = Z;
+   sort( L2 );
+   stableSort( L3 );
+   sort( U2 );
+   stableSort( Z2 );
+   std::sort( L.begin() , L.end() );
+   std::sort( U.begin() , U.end() );
+   stdStable( Z3 );
+   CHECK( L2 == L && L3 == L && U2 == U );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    CHECK( Z2[ i ] == Z3[ i ] &&
+           std::signbit( Z2[ i ] ) == std::signbit( Z3[ i ] ) );
+   std::vector< std::pair< std::uint64_t , std::size_t > > P( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) P[ i ] = { L[ ( i * 7919 ) % n ] ,
+                                                    i };
+   auto P2 = P;
+   radixSortBy( P , []( const auto & x ) { return( x.first ); } );
+   std::stable_sort( P2.begin() , P2.end() , []( const auto & x ,
+                                                 const auto & y ) {
+    return( x.first < y.first ); } );
+   CHECK( P == P2 );
+   }
+ for( std::size_t n : { 15u , 16u , 17u , 18u , 33u , 5000u } )
+  for( int p = 0 ; p < 4 ; ++p ) {
+   std::vector< std::string > S( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::size_t k = g() % 4;
+    S[ i ] = p == 0 ? "item" + std::string( 12 , char( 'a' + k ) ) :
+             p == 1 ? std::string( "same" ) :
+             p == 2 ? std::string( k , 'z' ) :      // empty, and ended
+                      "ab" + std::string( 1 , char( 'a' + k ) ) +
+                      std::string( g() % 2 , 'q' );
+    }
+   auto S2 = S , S3 = S , S4 = S;
+   sort( S2 );
+   stableSort( S3 );
+   msdRadixSort( S4 );
+   std::sort( S.begin() , S.end() );
+   CHECK( S2 == S && S3 == S && S4 == S );
+   }
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/

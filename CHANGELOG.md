@@ -306,6 +306,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   samples of the pivot do not stop them, and the partition by blocks
   fills its offsets 8 at a time and swaps through two pointers, each
   place found once
+- stableSort() of items copied as bytes with an order of their own, and
+  sort() of them from kRadix items, count the runs as for the numbers and
+  sort few keys of a sample of 64 by counting, stable, and the rest by a
+  merge sort through a buffer of n / 2 items, as the spinsort of Boost,
+  whose merges go from both ends at once with no branch on the order and
+  no check of where a half ends, instead of powerSort() and pdqSort()
+- the runs of sort() and stableSort() are counted in blocks of 32 items
+  with no branch inside, which vectorize on numbers, so that a sorted or
+  reversed vector costs one read at the speed of the memory
+- the merges of timSort() and powerSort() copy the shorter run, from the
+  back if it is the right one, into a buffer of n / 2 items made once,
+  rotate two runs in reverse order, and on numbers in their natural order
+  merge by a branch that follows the runs, with no gallop
+- radixSort() and radixSortBy() first split a vector larger than the
+  cache by its top byte, if its keys differ in 3 bytes or more, so that
+  the passes over the other bytes stay in the cache; the buffer is not
+  zeroed, and the counts of the parts are of 32 bits
+- msdRadixSort() permutes the strings in place at the first character,
+  and makes its buffer only if a bucket is not all of equal strings
 - DaryHeap::push() compares the item with the parent of the new place
   before storing it, and pop() keeps the last item aside, so that no item
   is stored and read back at once; push(), pop() and their sifts are
