@@ -4,59 +4,88 @@
 /** @file
  * The integers of any length of Knuth (4.3.1), beyond the book: a sign and
  * the magnitude as a vector of digits (limbs) in base \f$ b = 2^{64} \f$,
- * the least significant first, with no leading zero. The long operations
+ * the least significant first, with no leading zero, the numbers of one
+ * or two digits kept in place with no allocation. The long operations
  * work on spans of digits with the scratch space allocated once per call,
  * and the digits are not zeroed before they are written. The product of
  * two digits in two and the sums with carry are one instruction where the
  * compiler offers them (unsigned __int128 in GCC and Clang, _umul128() and
  * _addcarry_u64() in MSVC on x64), else the four products of the halves
- * of 32 bits; ADS_BIGINT_PORTABLE forces the latter.
+ * of 32 bits; ADS_BIGINT_PORTABLE forces the latter. Where GCC or Clang
+ * compile for x86-64 with BMI2 and ADX, the loops of the sums and of the
+ * products by one digit are in assembly, with MULX, which leaves the
+ * carry alone; ADS_BIGINT_NOASM keeps them in C++.
  *
  * - The sum and the difference are Algorithms 4.3.1A and 4.3.1S, a carry
  *   or a borrow per digit, \f$ O( n ) \f$.
- * - The product is Algorithm 4.3.1M, a row per digit, \f$ O( m n ) \f$,
- *   for the short factors, with half the rows for a square; from
+ * - The product is Algorithm 4.3.1M, \f$ O( m n ) \f$, two rows per pass
+ *   in C++, for the short factors, with half the rows for a square; from
  *   kKaratsuba digits it is the product of Karatsuba (4.3.3A) in the
  *   subtractive form, three products of halves instead of four on one
- *   scratch buffer, \f$ O( n^{\log_2 3} ) \f$, the longer factor cut in
+ *   scratch buffer, the sum of the middle halves shared by the two
+ *   middle quarters, \f$ O( n^{\log_2 3} ) \f$, the longer factor cut in
  *   pieces as long as the shorter one when their lengths differ; from kFFT
- *   digits it is a convolution of the digits, cut in two pieces of 32 bits
- *   each, by the number theoretic transform (4.3.3, 4.6.4) modulo three
- *   primes \f$ p < 2^{31} \f$ with \f$ 2^{26} \mid p - 1 \f$, in the
- *   arithmetic of Montgomery, and the Chinese remainder theorem (4.3.2),
- *   \f$ O( n \log n ) \f$: exact, since a coefficient, below
- *   \f$ n \, 2^{64} \f$ for n pieces, stays below the product of the
- *   primes, \f$ 2^{90} \f$, up to transforms of \f$ 2^{26} \f$ pieces,
- *   i.e., products of \f$ 2^{25} \f$ digits, past which Karatsuba splits
- *   the factors. multiplySchool(), multiplyKaratsuba() and multiplyFFT()
- *   are kept apart for the comparison.
+ *   digits it is a convolution of the digits by the number theoretic
+ *   transform (4.3.3, 4.6.4) and the Chinese remainder theorem (4.3.2),
+ *   \f$ O( n \log n ) \f$. With AVX2 and the fused product and sum, the
+ *   transform runs on lanes of doubles, one digit per term, modulo three
+ *   primes \f$ p < 2^{50} \f$ with \f$ 3 \cdot 2^{30} \mid p - 1 \f$,
+ *   on \f$ 2^k \f$ or \f$ 3 \cdot 2^k \f$ terms, whichever is shorter, the
+ *   residues exact integers in \f$ [ -p , p ] \f$ and the product of two
+ *   of them reduced by the quotient rounded from the product by
+ *   \f$ 1 / p \f$, two rounds per pass over the terms: exact, since a
+ *   coefficient, below \f$ n \, 2^{128} \f$, stays below the product of
+ *   the primes, \f$ 2^{149} \f$, up to \f$ 2^{21} \f$ digits per
+ *   factor. Elsewhere and past that the digits are cut in two pieces of
+ *   32 bits each, modulo three primes \f$ p < 2^{31} \f$ with
+ *   \f$ 2^{26} \mid p - 1 \f$, on 8 lanes of AVX2 or one at a time, the
+ *   products by the roots of unity those of Shoup and the others those of
+ *   Montgomery: exact up to transforms of \f$ 2^{26} \f$ pieces, i.e.,
+ *   products of \f$ 2^{25} \f$ digits, past which Karatsuba splits the
+ *   factors. multiplySchool(), multiplyKaratsuba() and multiplyFFT() are
+ *   kept apart for the comparison.
  * - The quotient and the remainder are Algorithm 4.3.1D for the short
  *   quotients: the divisor is shifted until its leading digit has the top
- *   bit set, which makes the trial quotient \f$ \hat q \f$, taken from the
- *   two leading digits of the remainder, exceed the true one by at most 2
- *   (Theorem 4.3.1B), and the test on the third digit makes the rare
- *   correction after the multiplication and subtraction ("add back")
- *   happen with probability about 2 / b. A division of two digits by one,
- *   here and in the short division, is two products by a reciprocal of
- *   the divisor computed once (Moeller and Granlund); the reciprocal is a
- *   division of 128 bits by 64, in the portable form by halves of 32 bits
- *   (Warren, section 9.4). The remainder alone by a digit below
- *   \f$ 2^{60} \f$ from kModFold digits folds 4 digits per step into a
- *   remainder of two digits, by the residues of \f$ b^k \f$, with one
- *   division at the end. From kDivide digits of quotient the division is
- *   recursive (Burnikel and Ziegler; Brent and Zimmermann, Algorithm 1.8):
- *   the upper half of the quotient from the upper half of the divisor,
- *   corrected at most twice, then the lower half,
- *   \f$ O( M( n ) \log n ) \f$ for products in \f$ M( n ) \f$, a
- *   quotient longer than the divisor taken by blocks as long as the
- *   divisor. divModSchool() is Algorithm D alone. The quotient is
+ *   bit set, and each trial quotient \f$ \hat q \f$ is the quotient of the
+ *   three leading digits of the remainder by the two of the divisor, by
+ *   their reciprocal (Moeller and Granlund, Algorithms 5 and 6), which
+ *   exceeds the true one by at most 1 and makes the correction after the
+ *   multiplication and subtraction ("add back") happen with probability
+ *   about 2 / b. A division of two digits by one, in the short division,
+ *   is two products by a reciprocal of the divisor computed once, from a
+ *   table and three steps of Newton (Moeller and Granlund, Algorithms 2
+ *   and 4). The remainder alone by a digit below \f$ 2^{61} \f$ from
+ *   kModFold digits folds 4 digits per step into a remainder of two
+ *   digits, by the residues of \f$ b^k \f$, with one division at the end;
+ *   divExact() divides by one digit by its inverse modulo b (Hensel).
+ *   From kDivide digits of quotient the division is recursive (Burnikel
+ *   and Ziegler; Brent and Zimmermann, Algorithm 1.8): the upper half of
+ *   the quotient from the upper half of the divisor, corrected at most
+ *   twice, then the lower half, \f$ O( M( n ) \log n ) \f$ for products in
+ *   \f$ M( n ) \f$, a quotient longer than the divisor taken by blocks as
+ *   long as the divisor. From kNewton digits of divisor it goes by blocks
+ *   of about half the quotient, each block the product of the top digits
+ *   of the remainder by a reciprocal of the top digits of the divisor
+ *   (Newton's method, Brent and Zimmermann, Algorithm 3.5), short by a few
+ *   units at most, and the product of the block by the divisor taken
+ *   modulo \f$ b^N - 1 \f$ by a cyclic convolution as long as the
+ *   divisor, the digits that wrap known from the remainder and the lowest
+ *   digit, \f$ O( M( n ) ) \f$. The quotient alone, for operator/(), is
+ *   that of the dividend with one digit more, so that the last digit tells
+ *   when the quotient may be one off: below kDivCut digits of divisor by
+ *   Algorithm D with the divisor cut to the j + 2 leading digits for the
+ *   digit j, about half the work, and from kNewton digits with no
+ *   remainder for the last block; the rare doubtful case is checked by a
+ *   product. divModSchool() is Algorithm D alone. The quotient is
  *   truncated toward zero, as for the integers of C++.
  * - The conversion to and from the bases 2 to 36 (4.4) works with the
  *   largest power P of the base in one digit, \f$ 10^{19} \f$ for the base
  *   10. In the bases that are powers of 2 it is a slice of bits per
  *   figure, \f$ O( n ) \f$. In the others it is divide and conquer
  *   (Brent and Zimmermann, section 1.7), with the powers \f$ P^{2^i} \f$
- *   computed once per call: the output splits the number by the power
+ *   computed once per call, their low digits 0 (about 30 per cent of the
+ *   digits in the base 10) set aside, and their reciprocals once for all
+ *   the divisions by them: the output splits the number by the power
  *   nearest the square root, the lower part padded with zeros, and the
  *   input joins two halves with one product per level,
  *   \f$ O( M( n ) \log n ) \f$; below kConvert digits they divide or
@@ -68,23 +97,27 @@
  *   precision while the two bounds of each quotient agree and the
  *   cofactors stay below \f$ 2^{30} \f$, and then one pass of the two
  *   linear combinations replaces many long divisions, down to one digit,
- *   where the binary algorithm ends; gcdEuclid() is the algorithm of
- *   Euclid.
+ *   where the binary algorithm ends, with no branch but its loop; the
+ *   number of one digit d = 2^t e, e odd, meets the long one by the
+ *   folded remainder by e, or below kHensel digits by Hensel's division,
+ *   whose \f$ a b^{-n} \f$ modulo e has the same gcd with e; gcdEuclid()
+ *   is the algorithm of Euclid.
  *
  * The contracts [see Contract.h]: the divisor is not 0, the base is in
  * [ 2 , 36 ] and the string a number in it; the invariant is the normal
  * form (no leading zero, 0 not negative); divMod() ensures a = q b + r
- * with |r| < |b| and r of the sign of a, and that it equals divModSchool();
- * multiplyKaratsuba() and multiplyFFT() that they equal multiplySchool();
- * the conversions that they equal toStringSchool() and fromStringSchool(),
- * gcd() that it equals gcdEuclid(), all audits. The operations are defined
- * in BigInteger.tpp.
+ * with |r| < |b| and r of the sign of a, and that it equals divModSchool(),
+ * operator/() that its quotient does, divExact() that its result times b
+ * is a; multiplyKaratsuba() and multiplyFFT() that they equal
+ * multiplySchool(); the conversions that they equal toStringSchool() and
+ * fromStringSchool(), gcd() that it equals gcdEuclid(), all audits. The
+ * operations are defined in BigInteger.tpp.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 2, 3rd ed.,
  *      Addison-Wesley, 1998, sections 4.3.1, 4.3.2, 4.3.3, 4.4, 4.5.2 and
  *      4.6.3
  * \see R. P. Brent, P. Zimmermann, Modern Computer Arithmetic, Cambridge
- *      University Press, 2010, sections 1.3, 1.4, 1.6 and 1.7
+ *      University Press, 2010, sections 1.3, 1.4, 1.6, 1.7, 2.4 and 3.4
  * \see C. Burnikel, J. Ziegler, Fast recursive division, research report
  *      MPI-I-98-1-022, Max-Planck-Institut fuer Informatik, 1998
  * \see N. Moeller, T. Granlund, Improved division by invariant integers,
@@ -93,6 +126,11 @@
  * \see P. L. Montgomery, Modular multiplication without trial division,
  *      Mathematics of Computation 44(170), 519-521, 1985,
  *      doi:10.1090/S0025-5718-1985-0777282-X
+ * \see V. Shoup, NTL: a library for doing number theory, the products
+ *      by a constant with its precomputed quotient
+ * \see D. Harvey, Faster arithmetic for number-theoretic transforms,
+ *      Journal of Symbolic Computation 60, 113-119, 2014,
+ *      doi:10.1016/j.jsc.2013.09.002
  * \see H. S. Warren, Hacker's Delight, 2nd ed., Addison-Wesley, 2012,
  *      sections 9.2 and 9.4
  *
@@ -117,10 +155,12 @@
 #include "ADS/Contract.h"
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -141,6 +181,45 @@
 #endif
 #if ADS_BIGINT_WIDE == 64
  #include <intrin.h>
+#endif
+
+// the lanes of the NTT: 256 with AVX2, else 0, one at a time
+#ifndef ADS_BIGINT_SIMD
+ #if defined( __AVX2__ )
+  #define ADS_BIGINT_SIMD 256
+ #else
+  #define ADS_BIGINT_SIMD 0
+ #endif
+#endif
+#if ADS_BIGINT_SIMD > 0
+ #include <immintrin.h>
+#endif
+
+// the NTT on doubles, with the fused product and sum, where the lanes of
+// AVX2 and the products of 128 bits are there
+#ifndef ADS_BIGINT_FNTT
+ #if ( ADS_BIGINT_SIMD >= 256 ) && defined( __FMA__ ) && \
+     ( ADS_BIGINT_WIDE == 128 )
+  #define ADS_BIGINT_FNTT 1
+ #else
+  #define ADS_BIGINT_FNTT 0
+ #endif
+#endif
+#if ADS_BIGINT_FNTT
+ #include <cmath>
+#endif
+
+// the loops of the sums and of the products by one digit in the assembly
+// of x86-64, with MULX, where GCC or Clang compile for a processor that has
+// BMI2 and ADX; ADS_BIGINT_NOASM keeps them in C++
+#ifndef ADS_BIGINT_ASM
+ #if ( ADS_BIGINT_WIDE == 128 ) && defined( __x86_64__ ) && \
+     defined( __GNUC__ ) && defined( __BMI2__ ) && defined( __ADX__ ) && \
+     ! defined( ADS_BIGINT_NOASM )
+  #define ADS_BIGINT_ASM 1
+ #else
+  #define ADS_BIGINT_ASM 0
+ #endif
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -169,6 +248,118 @@ struct NoInit : std::allocator< T > {
   }
  };
 
+/// the digits of a number, as a std::vector but with up to two of them
+/// in place, so that the numbers of one or two digits are made with no
+/// allocation; the digits made with no value are left without one
+class Digits {
+
+ public:
+
+ using T = std::uint64_t;
+
+ Digits( void ) noexcept {}
+ explicit Digits( std::size_t n ) { resize( n ); }
+ Digits( std::size_t n , T v ) { resize( n , v ); }
+ Digits( const T * b , const T * e ) {
+  resize( std::size_t( e - b ) );
+  std::copy( b , e , data() );
+  }
+ Digits( std::initializer_list< T > l ) {
+  resize( l.size() );
+  std::copy( l.begin() , l.end() , data() );
+  }
+ Digits( const Digits & o ) : Digits( o.data() , o.data() + o.f_n ) {}
+ Digits( Digits && o ) noexcept { take( o ); }
+ Digits & operator=( const Digits & o ) {
+  if( this != &o ) {
+   f_n = 0;
+   resize( o.f_n );
+   std::copy( o.data() , o.data() + o.f_n , data() );
+   }
+  return( *this );
+  }
+ Digits & operator=( Digits && o ) noexcept {
+  if( this != &o ) {
+   free();
+   take( o );
+   }
+  return( *this );
+  }
+ ~Digits( void ) { free(); }
+
+ [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
+ [[nodiscard]] bool empty( void ) const { return( f_n == 0 ); }
+ T * data( void ) { return( f_p ); }
+ const T * data( void ) const { return( f_p ); }
+ T * begin( void ) { return( data() ); }
+ T * end( void ) { return( data() + f_n ); }
+ const T * begin( void ) const { return( data() ); }
+ const T * end( void ) const { return( data() + f_n ); }
+ T & operator[]( std::size_t i ) { return( data()[ i ] ); }
+ const T & operator[]( std::size_t i ) const { return( data()[ i ] ); }
+ T & back( void ) { return( data()[ f_n - 1 ] ); }
+ const T & back( void ) const { return( data()[ f_n - 1 ] ); }
+
+ void reserve( std::size_t n ) { grow( n , n ); }
+ void resize( std::size_t n ) {
+  grow( n , n );
+  f_n = n;
+  }
+ void resize( std::size_t n , T v ) {
+  grow( n , n );
+  if( n > f_n ) std::fill( data() + f_n , data() + n , v );
+  f_n = n;
+  }
+ void assign( std::size_t n , T v ) {
+  f_n = 0;
+  resize( n , v );
+  }
+ void push_back( T v ) {
+  grow( f_n + 1 , 2 * f_n );
+  data()[ f_n++ ] = v;
+  }
+ void pop_back( void ) { --f_n; }
+
+ friend bool operator==( const Digits & a , const Digits & b ) {
+  return( ( a.f_n == b.f_n ) &&
+          std::equal( a.data() , a.data() + a.f_n , b.data() ) );
+  }
+
+ private:
+
+ static constexpr std::size_t kIn = 2;      ///< the digits in place
+
+ /// room for n digits, c if it must move to the heap
+ void grow( std::size_t n , std::size_t c ) {
+  if( n <= f_cap ) return;
+  c = std::max( n , c );
+  T * q = std::allocator< T >().allocate( c );
+  std::copy( data() , data() + f_n , q );
+  free();
+  f_p = q;
+  f_cap = c;
+  }
+ void free( void ) {
+  if( f_p != f_in ) std::allocator< T >().deallocate( f_p , f_cap );
+  f_p = f_in;
+  f_cap = kIn;
+  }
+ void take( Digits & o ) {
+  f_n = o.f_n;
+  f_cap = o.f_cap;
+  if( o.f_p != o.f_in ) f_p = o.f_p;
+  else std::copy( o.f_in , o.f_in + f_n , f_in );
+  o.f_p = o.f_in;
+  o.f_n = 0;
+  o.f_cap = kIn;
+  }
+
+ T * f_p = f_in;                            ///< f_in or on the heap
+ std::size_t f_n = 0 , f_cap = kIn;
+ T f_in[ kIn ] = {};
+
+ };  // end( class Digits )
+
 }  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
@@ -183,13 +374,17 @@ class BigInteger {
 
  using Limb = std::uint64_t;
 
- // the thresholds, in digits, from the instruction counts of the
- // benchmark bench/bignum.cpp; provisional, as those of ADS::sort()
- static constexpr std::size_t kKaratsuba = 16;   ///< limbs for Karatsuba
- static constexpr std::size_t kFFT = 2048;       ///< limbs for the NTT
- static constexpr std::size_t kDivide = 32;      ///< quotient limbs, recursion
- static constexpr std::size_t kConvert = 64;     ///< limbs, divide and conquer
+ // the thresholds, in digits, from the timings of bench/bignum.cpp on a
+ // Xeon Gold 5120, against GMP
+ static constexpr std::size_t kKaratsuba = 32;   ///< limbs for Karatsuba
+ static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
+ static constexpr std::size_t kDivide = 48;      ///< quotient limbs, recursion
+ static constexpr std::size_t kConvert = 24;     ///< limbs, divide and conquer
  static constexpr std::size_t kModFold = 16;     ///< limbs, folded remainder
+ static constexpr std::size_t kHensel = 24;      ///< limbs, gcd by folding
+ static constexpr std::size_t kNewton = 768;     ///< limbs, by the reciprocal
+ static constexpr std::size_t kRecip = 32;       ///< limbs, reciprocal by D
+ static constexpr std::size_t kDivCut = 600;     ///< limbs, quotient alone
 
  BigInteger( long long v = 0 );
 
@@ -255,6 +450,18 @@ class BigInteger {
                                       const BigInteger & b );
  static BigInteger multiplyFFT( const BigInteger & a , const BigInteger & b );
 
+ /// a / b for b a divisor of a: by one digit by the inverse of b modulo
+ /// 2^64 (Hensel's division, 4.3.1 exercise 16), with no division of two
+ /// digits by one, in place of a, else as a / b
+ /// \pre b != 0 and b divides a
+ /// \post the result times b is a (an audit)
+ static BigInteger divExact( BigInteger a , const BigInteger & b );
+
+ /// r += a b, in place when a or b has one digit, r at least as long as
+ /// the other and of the sign of the product
+ static void addMul( BigInteger & r , const BigInteger & a ,
+                     const BigInteger & b );
+
  /// x^n by the binary method
  static BigInteger pow( const BigInteger & x , unsigned long n );
 
@@ -268,7 +475,7 @@ class BigInteger {
 /*--------------------------------------------------------------------------*/
  private:
 
- using Mag = std::vector< Limb , detail::NoInit< Limb > >;
+ using Mag = detail::Digits;
 
  /// the longest product of the NTT, 2^25 digits, 2^26 pieces of 32 bits
  static constexpr std::size_t kNTTMax = std::size_t( 1 ) << 25;
@@ -300,6 +507,10 @@ class BigInteger {
  static Limb addMul1( Limb * r , const Limb * a , std::size_t n , Limb m );
  static Limb subMul1( Limb * r , const Limb * a , std::size_t n , Limb m );
 
+ /// r += a ( m0 + m1 b ), n digits, r[ n ] and r[ n + 1 ] written
+ static void addMul2( Limb * r , const Limb * a , std::size_t n , Limb m0 ,
+                      Limb m1 );
+
  /// r = |a - b|, na >= nb, r of na digits; true if a < b
  static bool absDiff( Limb * r , const Limb * a , std::size_t na ,
                       const Limb * b , std::size_t nb );
@@ -322,9 +533,23 @@ class BigInteger {
                         std::size_t n , Limb * w , std::size_t fft );
  static std::size_t karatsubaScratch( std::size_t n );
 
- /// r = a b by the NTT, na + nb <= kNTTMax
+ /// r = a b by the NTT, na + nb <= kNTTMax; by the transforms of n terms
+ /// on the lanes of O
  static void mulNTT( Limb * r , const Limb * a , std::size_t na ,
                      const Limb * b , std::size_t nb );
+ template< class O >
+ static void mulNTT3( Limb * r , const Limb * a , std::size_t na ,
+                      const Limb * b , std::size_t nb , std::size_t n );
+ template< class O >
+ static void mulFNTT( Limb * r , const Limb * a , std::size_t na ,
+                      const Limb * b , std::size_t nb , std::size_t n ,
+                      bool cyclic = false );
+
+ /// r = a b modulo b^n - 1, n digits, by the cyclic convolution of n
+ /// terms: n a power of 2 from 16 or 3 times one from 24, n <= 2^22,
+ /// na , nb <= n and min( na , nb ) <= 2^21
+ static void mulCyclic( Limb * r , const Limb * a , std::size_t na ,
+                        const Limb * b , std::size_t nb , std::size_t n );
 
  /// r = a b, r of na + nb digits, by the method of the lengths; the NTT
  /// from fft digits
@@ -333,9 +558,14 @@ class BigInteger {
                    std::size_t fft = kFFT );
  static Mag mulMag( const Mag & a , const Mag & b , std::size_t fft = kFFT );
 
- /// a /= d, the remainder; the remainder of a by d
+ /// a /= d, the remainder; the same for d = dn / 2^s, dn with the top bit
+ /// set and its reciprocal v; the remainder of a by d
  static Limb divSmall( Mag & a , Limb d );
+ static Limb divSmall( Mag & a , Limb dn , Limb v , int s );
  static Limb modSmall( const Limb * a , std::size_t n , Limb d );
+
+ /// a /= d, d a divisor of a, by Hensel's division
+ static void divExactSmall( Mag & a , Limb d );
 
  /// a = a m + c
  static void mulAddSmall( Mag & a , Limb m , Limb c );
@@ -343,16 +573,38 @@ class BigInteger {
  /// the quotient of a, n + m digits, by b, n >= 2 digits with the top bit
  /// set, a < 2 b 2^{64 m}: its m low digits in q and the top one, 0 or 1,
  /// returned, the remainder in a[ 0 , n ); by Algorithm D, and recursively
- /// for m <= n with the scratch t of n digits
+ /// for m <= n with the scratch t of n digits; with cut, the digit j of
+ /// the quotient by the j + 2 leading digits of b alone, which leaves a
+ /// quotient one off at most and no remainder [see divModMag()], or 2
+ /// returned for a digit of b or more
  static Limb divBase( Limb * a , std::size_t m , const Limb * b ,
-                      std::size_t n , Limb * q );
+                      std::size_t n , Limb * q , bool cut = false );
  static Limb divRec( Limb * a , std::size_t m , const Limb * b ,
                      std::size_t n , Limb * q , Limb * t );
 
+ /// x, n digits, such that X = b^n + x has a X < b^{2n} <= a ( X + 2 ),
+ /// for a of n digits with the top bit set: by Newton's method (Brent
+ /// and Zimmermann, Algorithm 3.5), from kRecip digits
+ static void recip( Limb * x , const Limb * a , std::size_t n );
+
+ /// as divBase(), by blocks of quotient digits from the reciprocal of the
+ /// top digits of b, the products by b modulo b^N - 1 where the NTT
+ /// gives them (Barrett; Brent and Zimmermann, section 2.4.1); the
+ /// reciprocal is kept in keep, if given, for the next divisions by b,
+ /// whose top digits serve the shorter blocks; with quot, the last block
+ /// skips the remainder when its quotient cannot reach its last digit,
+ /// which leaves the digits above it exact
+ static Limb divNewton( Limb * a , std::size_t m , const Limb * b ,
+                        std::size_t n , Limb * q , Mag * keep = nullptr ,
+                        bool quot = false );
+
  /// the quotient and the remainder of the magnitudes, recursive or by
- /// Algorithm D alone if school
+ /// Algorithm D alone if school, the reciprocal kept in keep as by
+ /// divNewton(), the remainder left empty unless rem
  static std::pair< Mag , Mag > divModMag( const Mag & u , const Mag & v ,
-                                          bool school = false );
+                                          bool school = false ,
+                                          Mag * keep = nullptr ,
+                                          bool rem = true );
 
  /// ( u , v ) = ( A u + B v , C u + D v ) in one pass, u >= v, both
  /// results nonnegative and at most u, |A| , |B| , |C| , |D| < 2^30, A
@@ -364,15 +616,18 @@ class BigInteger {
  static Mag gcdMag( Mag u , Mag v );
 
  /// out += the figures of a in the base, at least pad of them, dividing
- /// by P
+ /// by P, then those of b, if given, at least padb, divided with them
  static void figures( Mag a , std::size_t pad , int base ,
-                      std::string & out );
+                      std::string & out , Mag * b = nullptr ,
+                      std::size_t padb = 0 );
 
  /// out += the figures of x, at least pad, by halves from kConvert digits,
- /// pw[ i ] = P^{2^i} with P^1 holding k figures
+ /// pw[ i ] b^{zs[ i ]} = P^{2^i} with P^1 holding k figures, rc[ i ] the
+ /// reciprocal of pw[ i ] kept by the divisions [see divNewton()]
  static void toFigures( const Mag & x , std::size_t pad , int base ,
-                        const std::vector< Mag > & pw , int k ,
-                        std::string & out );
+                        const std::vector< Mag > & pw ,
+                        const std::vector< std::size_t > & zs , int k ,
+                        std::vector< Mag > & rc , std::string & out );
 
  /// the sum of c[ j ] P^j for j < n, by halves from kConvert digits,
  /// pw[ i ] = P^{2^i}
@@ -381,6 +636,9 @@ class BigInteger {
 
  /// the greatest common divisor of two numbers below 2^64, binary
  static std::uint64_t gcdWord( std::uint64_t a , std::uint64_t b );
+
+ /// the greatest common divisor of a, n > 0 digits, not 0, and d != 0
+ static Limb gcdLimb( const Limb * a , std::size_t n , Limb d );
 
  [[nodiscard]] bool normal( void ) const;
 

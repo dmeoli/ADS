@@ -264,6 +264,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
   same on every architecture
 
+- BigInteger closer to GMP: the loops of the sums and of the products by
+  one digit in assembly with MULX, ADCX and ADOX where GCC or Clang build
+  for BMI2 and ADX (ADS_BIGINT_NOASM keeps the C++); the NTT on lanes of
+  doubles of AVX2 with FMA, one digit per term modulo three primes below
+  2^50, on 2^k or 3 2^k terms, two rounds per pass, and the NTT on pieces
+  of 32 bits on lanes of AVX2 with the products of Shoup; the trial
+  quotients of Algorithm D from three digits by two and the reciprocal of
+  a digit with no division (Moeller and Granlund); the division by
+  Newton's reciprocal by blocks, the products by the divisor modulo
+  b^N - 1, from 768 digits; the quotient alone by the divisor cut digit
+  by digit, or with no last remainder; the reciprocals of the powers kept
+  by the conversion to a base; the Karatsuba middle sum shared; the
+  numbers of one or two digits with no allocation; the thresholds tuned
+  against GMP on a Xeon Gold 5120
+
+- Rational: the divisions by a gcd exact by Hensel's division when the gcd
+  has one digit, BigInteger::divExact(), and the sum of the products in
+  place, BigInteger::addMul()
+
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);
