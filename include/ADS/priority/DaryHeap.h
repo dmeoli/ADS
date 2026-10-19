@@ -122,9 +122,13 @@ class DaryHeap {
 /*--------------------------------------------------------------------------*/
  private:
 
- void up( std::size_t i );
+ // the hole at i moves up (down) until x fits in it; x comes as a value,
+ // never stored and read back, which would stall the forwarding of the
+ // store to the load
 
- void down( std::size_t i );
+ void up( std::size_t i , T x );
+
+ void down( std::size_t i , T x );
 
  /// no item better than its parent, O( n )
  [[nodiscard]] bool ordered( void ) const;

@@ -2,7 +2,10 @@
 /*--------------------------- File DaryHeap.tpp ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The operations of DaryHeap [see DaryHeap.h], with their contracts.
+ * The operations of DaryHeap [see DaryHeap.h], with their contracts. The
+ * hot ones are inline: a member of a template defined out of its class is
+ * not, and the compiler would call it rather than expand it in the loop of
+ * the caller, as it does with the members defined in the class.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -23,29 +26,37 @@ DaryHeap< T , Better , D >::DaryHeap( Better better )
  }
 
 template< class T , class Better , unsigned D >
-void DaryHeap< T , Better , D >::push( const T & x )
+inline void DaryHeap< T , Better , D >::push( const T & x )
 {
- f_A.push_back( x );
- up( f_A.size() - 1 );
+ const std::size_t i = f_A.size();
+ const std::size_t p = i > 0 ? ( i - 1 ) / D : 0;
+ if( ( i == 0 ) || ! f_better( x , f_A[ p ] ) )
+  f_A.push_back( x );                       // x stays at the bottom
+ else {                                     // the parent opens the place
+  T z = x;                                  // x may live in f_A, which
+  T y = std::move( f_A[ p ] );              // may move as it grows
+  f_A.push_back( std::move( y ) );
+  up( p , std::move( z ) );
+  }
  ADS_INVARIANT( ordered() );
  }
 
 template< class T , class Better , unsigned D >
-const T & DaryHeap< T , Better , D >::top( void ) const
+inline const T & DaryHeap< T , Better , D >::top( void ) const
 {
  ADS_PRE( ! f_A.empty() );
  return( f_A.front() );
  }
 
 template< class T , class Better , unsigned D >
-T DaryHeap< T , Better , D >::pop( void )
+inline T DaryHeap< T , Better , D >::pop( void )
 {
  ADS_PRE( ! f_A.empty() );
  T x = std::move( f_A.front() );
- f_A.front() = std::move( f_A.back() );
+ T y = std::move( f_A.back() );
  f_A.pop_back();
  if( ! f_A.empty() )
-  down( 0 );
+  down( 0 , std::move( y ) );
  ADS_INVARIANT( ordered() );
  return( x );
  }
@@ -75,9 +86,8 @@ void DaryHeap< T , Better , D >::clear( void )
  }
 
 template< class T , class Better , unsigned D >
-void DaryHeap< T , Better , D >::up( std::size_t i )
+inline void DaryHeap< T , Better , D >::up( std::size_t i , T x )
 {
- T x = std::move( f_A[ i ] );               // a hole moves up, no swaps
  while( i > 0 ) {
   const std::size_t p = ( i - 1 ) / D;
   if( ! f_better( x , f_A[ p ] ) )
@@ -89,9 +99,8 @@ void DaryHeap< T , Better , D >::up( std::size_t i )
  }
 
 template< class T , class Better , unsigned D >
-void DaryHeap< T , Better , D >::down( std::size_t i )
+inline void DaryHeap< T , Better , D >::down( std::size_t i , T x )
 {
- T x = std::move( f_A[ i ] );
  const std::size_t n = f_A.size();
  for( ; ; ) {
   const std::size_t c = D * i + 1;

@@ -208,6 +208,22 @@ ADS_TEST( "dary-heap" )
   A.push( "a" );
   CHECK( A.size() == 42 && A.pop() == "a" && A.top() == "b" );
   }
+ for( std::size_t n = 1 ; n <= 33 ; ++n )      // an item of the heap that
+  for( std::size_t k = 0 ; k < n ; ++k ) {     // moves up, pushed when the
+   DaryHeap< std::string , std::less<> , 2 > A;   // vector is full or not
+   std::multiset< std::string > R;
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::string s( 24 , char( 'a' + ( i * 7 ) % 26 ) );   // no SSO
+    A.push( s );
+    R.insert( s );
+    }
+   const std::string & x = A.begin()[ k ];
+   R.insert( x );
+   A.push( x );
+   for( const auto & s : R )
+    CHECK( A.pop() == s );
+   CHECK( A.isEmpty() );
+   }
  DaryHeap< int > I;                             // the least first
  for( int x : { 5 , 3 , 9 , 1 } ) I.push( x );
  CHECK( I.pop() == 1 && I.pop() == 3 && I.size() == 2 );

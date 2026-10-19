@@ -292,6 +292,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pdqSort() and the insertion sort scan by pointers, and the merges of
   timSort() and powerSort() gallop adaptively, with no branch on the order
   for numbers in disorder
+- DaryHeap::push() compares the item with the parent of the new place
+  before storing it, and pop() keeps the last item aside, so that no item
+  is stored and read back at once; push(), pop() and their sifts are
+  inline, so that the compiler expands them in the loop of the caller
 
 ### Fixed
 
