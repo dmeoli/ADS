@@ -80,8 +80,16 @@
  * \see M. Farach, Optimal suffix tree construction with large alphabets,
  *      Proceedings of the 38th Annual Symposium on Foundations of Computer
  *      Science (FOCS), 137-143, 1997, doi:10.1109/SFCS.1997.646102
- * \see D. Gusfield, Algorithms on Strings, Trees, and Sequences, Cambridge
+ * \see D. Gusfield, Algorithms on Strings, Trees and Sequences, Cambridge
  *      University Press, 1997, doi:10.1017/CBO9780511574931
+ * \see G. Nong, S. Zhang, W. H. Chan, Two efficient algorithms for linear
+ *      time suffix array construction, IEEE Transactions on Computers
+ *      60(10), 1471-1484, 2011, doi:10.1109/TC.2010.188
+ * \see T. Kasai, G. Lee, H. Arimura, S. Arikawa, K. Park, Linear-time
+ *      longest-common-prefix computation in suffix arrays and its
+ *      applications, Proceedings of the 12th Symposium on Combinatorial
+ *      Pattern Matching (CPM), LNCS 2089, 181-192, 2001,
+ *      doi:10.1007/3-540-48194-X_17
  * \see M. A. Bender, M. Farach-Colton, The LCA problem revisited,
  *      Proceedings of the 4th Latin American Symposium on Theoretical
  *      Informatics (LATIN), LNCS 1776, 88-94, 2000,

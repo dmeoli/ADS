@@ -498,6 +498,11 @@ hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
 engineered_strings  string-search   filtro SIMD, q-grammi e Two-Way
 engineered_strings  suffix-sorting  SA-IS ingegnerizzato e LCP con Phi
 engineered_strings  edit-distance   distanza, LCS e ricerca bit-parallele
+engineered_strings  classic-matching  Boyer-Moore, Horspool, Shift-Or, Z
+engineered_strings  aho-corasick    automa di Aho e Corasick
+engineered_strings  lyndon          fattorizzazione di Lyndon, rotazione minima
+engineered_strings  suffix-automaton  automa dei suffissi
+engineered_strings  eertree         eertree e fattorizzazione palindromica
 
 # the standard interface of the containers, beyond the book
 interop  sequences            iteratori delle sequenze, std e Boost

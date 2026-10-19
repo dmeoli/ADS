@@ -111,36 +111,6 @@ inline constexpr int searchWidth = ADS_SEARCH_SIMD == 3 ? 64 :
                                    ADS_SEARCH_SIMD == 2 ? 32 :
                                    ADS_SEARCH_SIMD == 1 ? 16 : 0;
 
-/// the maximal suffix of P under the order of the bytes (or the reverse
-/// one if reverse): the place before it, and its period in *period
-inline long maximalSuffix( const unsigned char * P , long m , bool reverse ,
-                           std::size_t * period )
-{
- long ms = -1 , j = 0 , k = 1 , p = 1;
- while( j + k < m ) {
-  const unsigned char a = P[ j + k ] , b = P[ ms + k ];
-  if( a == b ) {
-   if( k != p ) ++k;
-   else {
-    j += p;
-    k = 1;
-    }
-   }
-  else if( ( a < b ) != reverse ) {   // the suffix at j + k is smaller
-   j += k;
-   k = 1;
-   p = j - ms;
-   }
-  else {                               // a larger suffix starts at j
-   ms = j;
-   j = ms + 1;
-   k = p = 1;
-   }
-  }
- *period = std::size_t( p );
- return( ms );
- }
-
 }  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
@@ -329,53 +299,8 @@ std::size_t StringSearcher::twoWay( const unsigned char * T ,
                                     std::size_t n , std::size_t from ,
                                     F && report ) const
 {
- const auto * P = reinterpret_cast< const unsigned char * >( f_P.data() );
- const long m = long( f_P.size() );
- if( n < std::size_t( m ) ) return( npos );
- const std::size_t last = n - std::size_t( m );
- // the critical factorization of P = u v, u = P[ 0 .. ell ], made here,
- // since most searches never come to the Two-Way algorithm
- std::size_t p1 , p2;
- const long i1 = detail::maximalSuffix( P , m , false , &p1 );
- const long i2 = detail::maximalSuffix( P , m , true , &p2 );
- const long ell = std::max( i1 , i2 );
- std::size_t period = i1 > i2 ? p1 : p2;
- const bool periodic = std::memcmp( P , P + period ,
-                                    std::size_t( ell + 1 ) ) == 0;
- if( ! periodic )
-  period = std::size_t( std::max( ell + 1 , m - ell - 1 ) + 1 );
- if( periodic ) {
-  long memory = -1;               // P[ 0 .. memory ] known to match
-  for( std::size_t j = from ; j <= last ; ) {
-   long i = std::max( ell , memory ) + 1;
-   while( ( i < m ) && ( P[ i ] == T[ std::size_t( i ) + j ] ) ) ++i;
-   if( i >= m ) {
-    i = ell;
-    while( ( i > memory ) && ( P[ i ] == T[ std::size_t( i ) + j ] ) ) --i;
-    if( ( i <= memory ) && report( j ) ) return( j );
-    j += period;
-    memory = m - long( period ) - 1;
-    }
-   else {
-    j += std::size_t( i - ell );
-    memory = -1;
-    }
-   }
-  }
- else
-  for( std::size_t j = from ; j <= last ; ) {
-   long i = ell + 1;
-   while( ( i < m ) && ( P[ i ] == T[ std::size_t( i ) + j ] ) ) ++i;
-   if( i >= m ) {
-    i = ell;
-    while( ( i >= 0 ) && ( P[ i ] == T[ std::size_t( i ) + j ] ) ) --i;
-    if( ( i < 0 ) && report( j ) ) return( j );
-    j += period;
-    }
-   else
-    j += std::size_t( i - ell );
-   }
- return( npos );
+ return( detail::twoWayScan( T , n , reinterpret_cast< const unsigned char * >(
+                              f_P.data() ) , f_P.size() , from , report ) );
  }
 
 template< class F >

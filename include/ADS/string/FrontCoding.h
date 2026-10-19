@@ -62,6 +62,9 @@
  * \see P. Ferragina, R. Grossi, The string B-tree: a new data structure
  *      for string search in external memory and its applications, Journal
  *      of the ACM 46(2), 236-280, 1999, doi:10.1145/301970.301973
+ * \see D. R. Morrison, PATRICIA - practical algorithm to retrieve
+ *      information coded in alphanumeric, Journal of the ACM 15(4),
+ *      514-534, 1968, doi:10.1145/321479.321481
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
