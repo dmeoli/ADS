@@ -354,8 +354,6 @@ class AdaptiveRadixTree {
 
   const_iterator & operator++( void ) {
    f_leaf = step( f_S );
-   if( ! f_L.empty() )                      // the lead one leaf further
-    fetch( step( f_L ) );
    return( *this );
    }
   const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
@@ -373,9 +371,6 @@ class AdaptiveRadixTree {
    int next;
    };
 
-  /// the leaves this many places ahead of the current one are prefetched
-  static constexpr int AHEAD = 16;
-
   explicit const_iterator( const void * root ) {
    if( ! root )
     return;
@@ -385,24 +380,12 @@ class AdaptiveRadixTree {
     }
    f_S.push_back( Frame{ static_cast< const Node * >( root ) , -1 } );
    f_leaf = step( f_S );
-   f_L = f_S;                               // a lead cursor, AHEAD leaves
-   for( int i = 0 ; ( i < AHEAD ) && ! f_L.empty() ; ++i )   // ahead
-    fetch( step( f_L ) );
    }
 
   /// the next leaf of the walk of the stack S, nullptr at its end
   static const Leaf * step( std::vector< Frame > & S );
 
-  static void fetch( const Leaf * l ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
-   if( l ) __builtin_prefetch( l );
-#else
-   ( void ) l;
-#endif
-   }
-
   std::vector< Frame > f_S;           ///< the nodes on the way
-  std::vector< Frame > f_L;           ///< those of the lead cursor
   const Leaf * f_leaf = nullptr;      ///< the current leaf, or nullptr
 
  };  // end( class const_iterator )
