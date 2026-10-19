@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Nix derivation and flake.nix, the PKGBUILDs of the AUR and of MSYS2, the
   xmake package; packaging/bump.sh writes the version and the checksums
   of a release into all of them
+- MODULE.bazel and BUILD.bazel, ADS as the module ads of Bazel with the
+  target @ads//:ads, and packaging/test as a module that uses it; the entry
+  of the Bazel Central Registry in packaging/bcr and the port of Meson
+  WrapDB in packaging/wrapdb, both filled by packaging/bump.sh, with the
+  steps of their submission in packaging/README.md
 - the source tarball ADS-X.Y.Z.tar.gz and its sha256, attached by
   release.yml to the release of each tag
 - the workflow packaging.yml, which builds and tests the Homebrew formula on

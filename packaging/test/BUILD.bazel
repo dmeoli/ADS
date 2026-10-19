@@ -1,0 +1,22 @@
+###############################################################################
+#                         packaging/test/BUILD.bazel                          #
+#                                                                             #
+# main.cpp against @ads//:ads, in C++20.                                      #
+###############################################################################
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+cc_test(
+    name = "use-bazel",
+    size = "small",
+    srcs = ["main.cpp"],
+    copts = select({
+        "@rules_cc//cc/compiler:msvc-cl": ["/std:c++20"],
+        "//conditions:default": ["-std=c++20"],
+    }),
+    deps = ["@ads"],
+)
+
+###############################################################################
+#                      End of packaging/test/BUILD.bazel                      #
+###############################################################################

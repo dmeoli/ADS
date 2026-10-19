@@ -1,0 +1,24 @@
+###############################################################################
+#                         packaging/test/MODULE.bazel                         #
+#                                                                             #
+# The module that uses ADS from Bazel, the test module of the Bazel Central   #
+# Registry: ADS is the checkout two levels up, which the registry replaces    #
+# with the version under test.                                                #
+#                                                                             #
+#   cd packaging/test && bazel test //...                                     #
+###############################################################################
+
+module(name = "ads_test")
+
+bazel_dep(name = "ads")
+local_path_override(
+    module_name = "ads",
+    path = "../..",
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.16")
+
+###############################################################################
+#                     End of packaging/test/MODULE.bazel                      #
+###############################################################################

@@ -4,7 +4,9 @@
 #                                                                             #
 # Writes the version of a tag and the checksums of its source tarball into    #
 # every recipe of packaging/ and into the snippets of the README; flake.nix   #
-# needs nothing, since it builds the checkout itself.                         #
+# needs nothing, since it builds the checkout itself. The entry of the Bazel  #
+# Central Registry takes the MODULE.bazel of the tarball, which must already  #
+# have the version of the tag.                                                #
 #                                                                             #
 #   packaging/bump.sh v0.1.0                 downloads ADS-0.1.0.tar.gz from  #
 #                                            the GitHub release of the tag    #
@@ -21,12 +23,12 @@ set -euo pipefail
 tag=${1:?usage: bump.sh vX.Y.Z [tarball]}
 version=${tag#v}
 here=$(cd "$(dirname "$0")" && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
 
 if [ $# -ge 2 ]; then
     tarball=$(realpath "$2")
 else
-    tmp=$(mktemp -d)
-    trap 'rm -rf "$tmp"' EXIT
     tarball=$tmp/ADS-$version.tar.gz
     base=https://github.com/dmeoli/ADS/releases/download
     curl -fsSL -o "$tarball" "$base/$tag/ADS-$version.tar.gz"
@@ -40,11 +42,20 @@ echo "  sha256 $sha256"
 echo "  sha512 $sha512"
 echo "  sri    $sri"
 
-python3 - "$here" "$version" "$sha256" "$sha512" "$sri" <<'EOF'
-import email.utils, json, re, sys, time
+# the MODULE.bazel of the tarball, which the Bazel Central Registry keeps,
+# must have the new version, else nothing is written
+module=$tmp/MODULE.bazel
+tar -xzOf "$tarball" "ADS-$version/MODULE.bazel" > "$module"
+if ! grep -q "^    version = \"$version\",\$" "$module"; then
+    echo "bump.sh: the MODULE.bazel of the tarball is not at $version" >&2
+    exit 1
+fi
+
+python3 - "$here" "$version" "$sha256" "$sha512" "$sri" "$module" <<'EOF'
+import email.utils, json, re, shutil, sys, time
 from pathlib import Path
 
-root, v, sha256, sha512, sri = sys.argv[1:]
+root, v, sha256, sha512, sri, module = sys.argv[1:]
 root = Path(root)
 author = "Donato Meoli <donato.meoli.95@gmail.com>"
 
@@ -143,7 +154,7 @@ if n == 0:
 p.write_text(s)
 print("  xmake/packages/a/ads/xmake.lua")
 
-# the snippets of FetchContent and CPM.cmake in the README
+# the snippets of FetchContent, CPM.cmake and Bazel in the README
 p = root.parent / "README.md"
 s = p.read_text()
 s = re.sub(r"download/v[0-9.]+/ADS-[0-9.]+\.tar\.gz",
@@ -151,8 +162,48 @@ s = re.sub(r"download/v[0-9.]+/ADS-[0-9.]+\.tar\.gz",
 s = re.sub(r"FIND_PACKAGE_ARGS [0-9.]+\)",
            f"FIND_PACKAGE_ARGS {'.'.join(v.split('.')[:2])})", s)
 s = re.sub(r'"gh:dmeoli/ADS@[0-9.]+"', f'"gh:dmeoli/ADS@{v}"', s)
+s = re.sub(r'bazel_dep\(name = "ads", version = "[0-9.]+"\)',
+           f'bazel_dep(name = "ads", version = "{v}")', s)
 p.write_text(s)
 print("  ../README.md")
+
+# Bazel Central Registry: a directory per version, with the MODULE.bazel of
+# the tarball, the source and the presubmit of the latest version before it
+bcr = root / "bcr/modules/ads"
+p = bcr / "metadata.json"
+j = json.loads(p.read_text())
+if v not in j["versions"]:
+    last = bcr / j["versions"][-1]
+    j["versions"].append(v)
+    p.write_text(json.dumps(j, indent=4) + "\n")
+    (bcr / v).mkdir(exist_ok=True)
+    shutil.copy(last / "presubmit.yml", bcr / v / "presubmit.yml")
+print("  bcr/modules/ads/metadata.json")
+shutil.copy(module, bcr / v / "MODULE.bazel")
+(bcr / v / "source.json").write_text(json.dumps({
+    "url": f"https://github.com/dmeoli/ADS/releases/download/v{v}/"
+           f"ADS-{v}.tar.gz",
+    "integrity": sri,
+    "strip_prefix": f"ADS-{v}"}, indent=4) + "\n")
+print(f"  bcr/modules/ads/{v}/")
+
+# WrapDB: the wrap and the version of the port, and a release of it, whose
+# revision goes back to 1 with a new version
+edit("wrapdb/subprojects/ads.wrap",
+     (r"^directory = .*", f"directory = ADS-{v}"),
+     (r"^source_url = .*",
+      f"source_url = https://github.com/dmeoli/ADS/releases/download/"
+      f"v{v}/ADS-{v}.tar.gz"),
+     (r"^source_filename = .*", f"source_filename = ADS-{v}.tar.gz"),
+     (r"^source_hash = .*", f"source_hash = {sha256}"))
+edit("wrapdb/subprojects/packagefiles/ads/meson.build",
+     (r"^  version: '.*',", f"  version: '{v}',"))
+p = root / "wrapdb/releases.json"
+j = json.loads(p.read_text())
+if not any(r.rsplit("-", 1)[0] == v for r in j["ads"]["versions"]):
+    j["ads"]["versions"].insert(0, f"{v}-1")
+p.write_text(json.dumps(j, indent=2) + "\n")
+print("  wrapdb/releases.json")
 
 # Debian: an entry of the changelog for a new version
 p = root / "debian/changelog"

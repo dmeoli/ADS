@@ -1,0 +1,31 @@
+###############################################################################
+#                                BUILD.bazel                                  #
+#                                                                             #
+# The library of headers, @ads//:ads, with include/ on the path of the        #
+# includes and the threads of the concurrent structures. The copts in C++20   #
+# hold for the library alone, as Bazel does not pass them on: a target using  #
+# it compiles in C++20 by its own copts or by --cxxopt=-std=c++20 (or         #
+# /std:c++20 with MSVC) [see packaging/test/BUILD.bazel].                     #
+###############################################################################
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "ads",
+    hdrs = glob(["include/ADS/**/*.h"]),
+    copts = select({
+        "@rules_cc//cc/compiler:msvc-cl": ["/std:c++20"],
+        "//conditions:default": ["-std=c++20"],
+    }),
+    includes = ["include"],
+    linkopts = select({
+        "@platforms//os:windows": [],
+        "//conditions:default": ["-pthread"],
+    }),
+    textual_hdrs = glob(["include/ADS/**/*.tpp"]),
+    visibility = ["//visibility:public"],
+)
+
+###############################################################################
+#                             End of BUILD.bazel                              #
+###############################################################################

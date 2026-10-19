@@ -12,3 +12,7 @@ site/
 .vscode/
 docs/generated/
 docs/api/
+
+# Bazel
+bazel-*
+MODULE.bazel.lock
