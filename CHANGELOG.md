@@ -163,6 +163,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hash function by pilots of PTHash; BucketCuckooTable, the cuckoo table
   with buckets of 4 places, tags of 8 bits and the search in breadth of
   Li et al.
+- RecSplit, the minimal perfect hash function by recursive splitting of
+  Esposito, Mueller Graf and Vigna, about 1.83 bits per key with leaves of
+  8 keys and buckets of 100 (1.73 with buckets of 2000, 1.73 with leaves
+  of 12): the seeds of the splitting trees with the lower and the upper
+  aggregation, in codes of Golomb and Rice with the optimal parameter of
+  each size, the keys and the places of the buckets in two Elias-Fano
+  sequences less their averages, the leaves searched by the rotation
+  fitting of Bez, Kurpicz, Lehmann and Sanders; leaves of 1 to 24 keys;
+  its tests in test/hashing.cpp, and in bench/hashing.cpp against the
+  RecSplit of sux and BBHash
 - the benchmark of the hashing, bench/hashing.cpp: the hash functions
   against std::hash, boost::hash, absl::Hash, XXH3, wyhash, rapidhash and
   the hash of unordered_dense; the hash maps against std, Boost (the map,

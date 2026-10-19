@@ -4,10 +4,10 @@
 /** @file
  * Tests of the engineered hashing, beyond the book: the hash functions of
  * FastHash.h, the blocked filter of Bloom, the binary fuse filter, the
- * minimal perfect hash function by pilots and the cuckoo table with
- * buckets of 4 places. Each one is checked against a reference of the
- * standard library or against its own analysis, on random and adversarial
- * inputs, at the level 3 of the contracts.
+ * minimal perfect hash functions by pilots and by recursive splitting and
+ * the cuckoo table with buckets of 4 places. Each one is checked against a
+ * reference of the standard library or against its own analysis, on random
+ * and adversarial inputs, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -25,6 +25,7 @@
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
+#include "ADS/dictionary/RecSplit.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
 
@@ -369,6 +370,71 @@ ADS_TEST( "minimal-perfect-hash" )
                                           0.4 ) , contract_violation );
  CHECK_THROWS( MinimalPerfectHash< int >( std::vector< int >{ 1 } , 5 ,
                                           1.1 ) , contract_violation );
+ }
+
+// the minimal perfect hash function by recursive splitting, leaves of 8
+// keys: 1, 2, 7, 8, 9 keys (below, at and above a leaf), 99, 100, 101 and
+// 199, 200, 201 (a bucket and two, at b = 100), 1000 and 10^5 random keys
+// with the buckets of 1, 5, 100 and 2000 keys; 10^5 consecutive keys and
+// strings; between log2 e and 2.2 bits per key at b = 100 for 10^5 keys;
+// the leaves of 1, 2, 4, 12 and 16 keys; a key out of the set below n;
+// repeated keys, b out of range and an empty function violate the
+// contracts
+ADS_TEST( "recsplit" )
+{
+ auto bijective = []( const auto & f , const auto & K ) {
+  std::vector< char > seen( K.size() , 0 );
+  for( const auto & k : K ) {
+   const std::size_t v = f( k );
+   if( v >= K.size() || seen[ v ] )
+    return( false );
+   seen[ v ] = 1;
+   }
+  return( true ); };
+ for( std::size_t n : { 1 , 2 , 7 , 8 , 9 , 99 , 100 , 101 , 199 , 200 ,
+                        201 , 1000 , 100000 } ) {
+  const auto K = randomKeys( n , unsigned( 3 * n + 1 ) );
+  for( std::size_t b : { 1 , 5 , 100 , 2000 } ) {
+   const RecSplit< std::uint64_t > f( K , b );
+   CHECK( f.size() == n && ! f.empty() && f.trials() >= 1 );
+   CHECK( f.buckets() == ( n + b - 1 ) / b );
+   CHECK( bijective( f , K ) );
+   CHECK( f( 0xDEADBEEF ) < n );
+   }
+  }
+ {
+  const auto K = randomKeys( 100000 , 31 );
+  const RecSplit< std::uint64_t > f( K );
+  const double bpk = double( f.bits() ) / 1e5;
+  CHECK( bijective( f , K ) && bpk > 1.4427 && bpk < 2.2 );
+  }
+ std::vector< std::uint64_t > C( 100000 );
+ for( std::size_t i = 0 ; i < C.size() ; ++i )
+  C[ i ] = i;
+ CHECK( bijective( RecSplit< std::uint64_t >( C ) , C ) );
+ const auto S = randomStrings( 100000 , 32 );
+ CHECK( bijective( RecSplit< std::string >( S ) , S ) );
+ for( std::size_t n : { 1 , 3 , 50 , 10000 } ) {
+  const auto K = randomKeys( n , unsigned( 5 * n + 3 ) );
+  CHECK( bijective( RecSplit< std::uint64_t , 1 >( K ) , K ) );
+  CHECK( bijective( RecSplit< std::uint64_t , 2 >( K , 7 ) , K ) );
+  CHECK( bijective( RecSplit< std::uint64_t , 4 >( K ) , K ) );
+  CHECK( bijective( RecSplit< std::uint64_t , 12 >( K , 500 ) , K ) );
+  }
+ {
+  const auto K = randomKeys( 2000 , 33 );
+  const RecSplit< std::uint64_t , 16 > f( K , 200 );
+  CHECK( bijective( f , K ) && double( f.bits() ) / 2000 < 4 );
+  }
+ const RecSplit< int > E( std::vector< int >{} );
+ CHECK( E.empty() && E.size() == 0 && E.trials() == 0 );
+ CHECK_THROWS( (void) E( 3 ) , contract_violation );
+ CHECK_THROWS( RecSplit< int >( std::vector< int >{ 1 , 2 , 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( RecSplit< int >( std::vector< int >{ 1 } , 0 ) ,
+               contract_violation );
+ CHECK_THROWS( RecSplit< int >( std::vector< int >{ 1 } , 2001 ) ,
+               contract_violation );
  }
 
 // the cuckoo table with buckets of 4 places against std::unordered_map on
