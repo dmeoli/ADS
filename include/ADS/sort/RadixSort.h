@@ -32,10 +32,10 @@
  *   the small groups sorted by insertion, so that it reads only the
  *   distinguishing prefixes of the strings: O( D + n log 256 ) for D the
  *   total length of those prefixes; the prefix that all the strings of a
- *   group share is first skipped by comparing them with one of them, so
- *   that a group of equal strings, or of strings with a long common
- *   prefix, costs one comparison per character instead of one pass per
- *   character;
+ *   group share is first skipped by comparing them with one of them (one
+ *   memcmp() for a string that keeps the whole prefix), so that a group
+ *   of equal strings, or of strings with a long common prefix, costs one
+ *   comparison instead of one pass per character;
  * - bucketSort() sorts numbers in [ 0 , 1 ) into n buckets by their value,
  *   each sorted by insertion: O( n ) expected time on numbers drawn
  *   uniformly, \f$ O( n^2 ) \f$ in the worst case.

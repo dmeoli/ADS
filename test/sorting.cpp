@@ -897,7 +897,9 @@ ADS_TEST( "merge-paths" )
 // the radix sort on keys that differ in one byte only, the top, a middle
 // or the sign, all equal, two values; the MSD sort of strings around the
 // insertion cutoff of 16, groups of equal strings, prefixes of each other,
-// the shortest first, empty strings and long shared prefixes
+// the shortest first, empty strings and long shared prefixes, cut by the
+// last string at their last place or in their middle, and the bytes 0 and
+// 255 inside
 ADS_TEST( "dispatch-edges" )
 {
  std::mt19937 g( 41 );
@@ -1080,8 +1082,10 @@ ADS_TEST( "dispatch-edges" )
  radixSort( Small );
  CHECK( Small == std::vector< std::uint8_t >( { 3 , 3 , 3 } ) );
  const std::string pre( 1000 , 'p' );
+ std::string cut = pre;                        // the prefix cut in the
+ cut[ 500 ] = 'q';                              // middle, by the last
  for( std::size_t c : { 15u , 16u , 17u , 18u , 40u } ) {   // groups
-  std::vector< std::vector< std::string > > T( 7 );
+  std::vector< std::vector< std::string > > T( 10 );
   for( std::size_t i = 0 ; i < c ; ++i ) {
    T[ 0 ].push_back( "abc" );                   // all equal
    T[ 1 ].push_back( "abc" );                   // and a longer one
@@ -1090,7 +1094,12 @@ ADS_TEST( "dispatch-edges" )
    T[ 4 ].push_back( pre + char( 'a' + g() % 3 ) );   // shared prefix
    T[ 5 ].push_back( std::string( g() % 5 , 'x' ) );  // prefixes
    T[ 6 ].push_back( i % 2 ? "ab" : "abc" );
-   }
+   T[ 7 ].push_back( pre + "b" );
+   T[ 8 ].push_back( pre );
+   T[ 9 ].push_back( std::string( "a\0\xff" , 2 + i % 2 ) );   // bytes 0
+   }                                            // and 255
+  T[ 7 ].push_back( pre + "a" );                // a cut at the last place
+  T[ 8 ].push_back( cut );
   T[ 1 ].push_back( "abcd" );
   T[ 2 ].insert( T[ 2 ].begin() , "ab" );       // the shortest first
   T[ 4 ].push_back( pre );

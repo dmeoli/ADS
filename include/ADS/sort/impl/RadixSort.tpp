@@ -155,7 +155,9 @@ inline void msd( std::vector< std::string > & S ,
   }
  // the prefix that all the strings share from d, skipped with one
  // comparison per character: equal keys and long shared prefixes make no
- // pass of their own
+ // pass of their own; a string that keeps the whole prefix costs one call
+ // of memcmp(), and only one that cuts it is compared character by
+ // character
  const char * f = s[ lo ].data() + d;
  const std::size_t n0 = s[ lo ].size();
  std::size_t l = n0 - d;
@@ -164,7 +166,8 @@ inline void msd( std::vector< std::string > & S ,
  for( ; ( i < hi ) && ( l > 0 ) ; ++i ) {
   const char * x = s[ i ].data() + d;
   const std::size_t m = std::min( l , s[ i ].size() - d );
-  l = std::size_t( std::mismatch( x , x + m , f ).first - x );
+  if( ( m < l ) || ( std::memcmp( x , f , m ) != 0 ) )
+   l = std::size_t( std::mismatch( x , x + m , f ).first - x );
   same = same && ( s[ i ].size() == n0 );
   }
  if( ( i == hi ) && same && ( d + l == n0 ) ) {   // all equal

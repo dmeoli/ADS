@@ -289,7 +289,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   differ, and counts and passes over those alone
 - msdRadixSort() skips the prefix that a group of strings shares, keeps
   the character of each string aside and moves the strings once per pass,
-  back and forth between the vector and its buffer
+  back and forth between the vector and its buffer; a string that keeps
+  the whole prefix costs one memcmp() instead of a comparison per
+  character
 - pdqSort() and the insertion sort scan by pointers, and the merges of
   timSort() and powerSort() gallop adaptively, with no branch on the order
   for numbers in disorder; the merge one by one keeps its threshold of
