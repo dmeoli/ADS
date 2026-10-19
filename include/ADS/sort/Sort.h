@@ -9,8 +9,9 @@
  * - With the natural order (std::less) on integers or floating point
  *   numbers, a short vector goes to pdqSort(); a long one with at most
  *   kRuns runs (non-decreasing or strictly decreasing stretches, counted
- *   by a pass that stops at the run kRuns + 1) goes to powerSort() [see
- *   RunSorts.h], which merges them in \f$ O( n \log r ) \f$ for r runs,
+ *   by a pass that stops at the run kRuns + 1 and keeps where they end)
+ *   goes to the merges of powerSort() [see RunSorts.h] on those runs,
+ *   with no second search for them, \f$ O( n \log r ) \f$ for r runs,
  *   O( n ) if sorted or reversed; sort() sends to pdqSort() a vector
  *   whose sample of 64 keys shows at most 16 distinct ones differing in 4
  *   bytes or more, which it sorts in \f$ O( n \log k ) \f$ with fewer
@@ -21,12 +22,12 @@
  *   std::less finds them equal (radixSort() puts -0 first). A NaN breaks
  *   the natural order, so that a vector with a NaN has no defined order.
  * - With the natural order on strings, a vector of at most kRuns runs goes
- *   to powerSort() and any other to msdRadixSort() [see RadixSort.h],
- *   which reads one character at a time instead of comparing whole
- *   strings, skips the prefixes that a group shares and, on the benchmark,
- *   beats the in-place multikeyQuickSort() of Bentley and Sedgewick [see
- *   MultikeyQuickSort.h] (two equal strings cannot be told apart, so that
- *   stability means nothing there).
+ *   to the merges of powerSort() in the same way and any other to
+ *   msdRadixSort() [see RadixSort.h], which reads one character at a time
+ *   instead of comparing whole strings, skips the prefixes that a group
+ *   shares and, on the benchmark, beats the in-place multikeyQuickSort()
+ *   of Bentley and Sedgewick [see MultikeyQuickSort.h] (two equal strings
+ *   cannot be told apart, so that stability means nothing there).
  * - Otherwise, i.e., with any other order or item, sort() uses pdqSort()
  *   [see EngineeredQuickSorts.h], \f$ O( n \log n ) \f$ in the worst case,
  *   O( n ) on a sorted or reversed vector and \f$ O( n \log k ) \f$ with

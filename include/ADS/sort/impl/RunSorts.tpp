@@ -216,6 +216,42 @@ inline int nodePower( std::size_t s1 , std::size_t s2 , std::size_t e2 ,
  return( k + 1 );
  }
 
+/// the merges of Powersort over the runs of the n items from 0 on, where
+/// next( lo ) makes the run from lo ascending and gives its end and whether
+/// it was extended; the number of runs
+template< class T , class C , class N >
+std::size_t powerMerges( RunMerger< T , C > & M , std::size_t n , N next )
+{
+ if( n == 0 )
+  return( 0 );
+ struct Run { std::size_t start , end; int power; bool disorder; };
+ std::vector< Run > S;                      // the powers increase upwards
+ const auto r0 = next( std::size_t( 0 ) );
+ std::size_t s = 0 , e = r0.first;          // the current run s .. e
+ bool d = r0.second;                        // and its disorder
+ std::size_t count = 1;
+ auto mergeTop = [ & ]( void ) {           // the top merged with s .. e
+  d = d && S.back().disorder;
+  M.merge( S.back().start , s , e , d );
+  s = S.back().start;
+  S.pop_back();
+  };
+ while( e < n ) {
+  const auto [ e2 , d2 ] = next( e );        // the run after
+  ++count;
+  const int p = nodePower( s , e , e2 , n );
+  while( ! S.empty() && ( S.back().power > p ) )
+   mergeTop();
+  S.push_back( { s , e , p , d } );
+  s = e;
+  e = e2;
+  d = d2;
+  }
+ while( ! S.empty() )
+  mergeTop();
+ return( count );
+ }
+
 }  // end( namespace detail )
 
 template< class T , class C >
@@ -263,34 +299,10 @@ void powerSort( std::vector< T > & A , C less , std::size_t * runs )
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
  detail::RunMerger< T , C > M( A , less );
- struct Run { std::size_t start , end; int power; bool disorder; };
- std::vector< Run > S;                      // the powers increase upwards
- std::size_t count = 0;
- if( n > 0 ) {
-  std::size_t s = 0 , e = M.nextRun( 0 , 24 );   // the current run
-  bool d = M.extended();                    // and its disorder
-  count = 1;
-  auto mergeTop = [ & ]( void ) {          // the top merged with s .. e
-   d = d && S.back().disorder;
-   M.merge( S.back().start , s , e , d );
-   s = S.back().start;
-   S.pop_back();
-   };
-  while( e < n ) {
-   const std::size_t e2 = M.nextRun( e , 24 );
-   const bool d2 = M.extended();
-   ++count;
-   const int p = detail::nodePower( s , e , e2 , n );
-   while( ! S.empty() && ( S.back().power > p ) )
-    mergeTop();
-   S.push_back( { s , e , p , d } );
-   s = e;
-   e = e2;
-   d = d2;
-   }
-  while( ! S.empty() )
-   mergeTop();
-  }
+ const std::size_t count = detail::powerMerges( M , n ,
+                                                [ & ]( std::size_t lo ) {
+  const std::size_t e = M.nextRun( lo , 24 );
+  return( std::pair( e , M.extended() ) ); } );
  if( runs ) *runs = count;
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }

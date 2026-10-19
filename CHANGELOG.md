@@ -282,8 +282,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strings and give at most kRuns of them to powerSort(), so that organ
   pipes and few sorted runs merge instead of going through the radix
   sort; one run is left as it is, or reversed when strictly decreasing,
-  in the same pass that counts it; sort() gives to pdqSort() the doubles
-  with few distinct wide keys
+  in the same pass that counts it, and more runs are merged where that
+  pass found them, with no second search; sort() gives to pdqSort() the
+  doubles with few distinct wide keys
 - radixSort() finds in one first sweep the bytes in which the keys
   differ, and counts and passes over those alone
 - msdRadixSort() skips the prefix that a group of strings shares, keeps

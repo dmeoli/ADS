@@ -38,6 +38,7 @@
 #include "ADS/sort/TreeSort.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -847,7 +848,10 @@ ADS_TEST( "merge-paths" )
  }
 
 // the choices of sort() and stableSort() at their edges: 0, 1, 2 items;
-// the runs counted around kRuns on vectors above kRadix and kStrings,
+// the runs counted around kRuns on vectors above kRadix and kStrings, and
+// where they end; random runs of either direction merged on the ends that
+// the count found, the runs of 1 and 2 items, the last of 1, and a tie of
+// -0 and +0 at a boundary, against std::stable_sort;
 // strictly decreasing runs with -0 and +0 inside, one run (sorted with
 // ties, or strictly decreasing and reversed) at kStrings and kRadix, a
 // tie of -0 and +0 that splits a decreasing run; few wide keys (16
@@ -884,7 +888,11 @@ ADS_TEST( "dispatch-edges" )
    for( std::size_t k = 0 ; k < r ; ++k )
     for( std::size_t i = k * n / r ; i < ( k + 1 ) * n / r ; ++i )
      A[ i ] = int( i - k * n / r );
-   CHECK( detail::runs( A , less , kRuns ) == std::min( r , kRuns + 1 ) );
+   std::array< std::size_t , kRuns + 1 > ends;
+   const std::size_t found = detail::runs( A , less , kRuns , ends.data() );
+   CHECK( found == std::min( r , kRuns + 1 ) );
+   for( std::size_t k = 0 ; k < found ; ++k )   // where they end
+    CHECK( ends[ k ] == ( k + 1 ) * n / r );
    Ints B = A , C = A , E = A;
    sort( B );
    stableSort( C );
@@ -899,6 +907,44 @@ ADS_TEST( "dispatch-edges" )
    std::sort( S4.begin() , S4.end() );
    CHECK( S2 == S4 && S3 == S4 );
    }
+ for( int trial = 0 ; trial < 300 ; ++trial ) {  // random runs, each
+  const std::size_t n = kRadix + g() % 3000;    // ascending with ties or
+  const std::size_t r = 2 + g() % kRuns;        // strictly descending
+  std::vector< std::size_t > cut;               // 2 .. kRuns + 1 runs
+  for( std::size_t k = 1 ; k < r ; ++k )
+   cut.push_back( trial % 3 == 0 ? n - r + k     // runs of 1 at the end
+                  : trial % 3 == 1 ? 2 * k       // runs of 2 at the start
+                  : 1 + g() % ( n - 1 ) );
+  cut.push_back( n );
+  std::sort( cut.begin() , cut.end() );
+  cut.erase( std::unique( cut.begin() , cut.end() ) , cut.end() );
+  std::vector< double > V( n );
+  std::size_t lo = 0;
+  for( std::size_t c : cut ) {
+   const bool down = g() % 2;
+   for( std::size_t i = lo ; i < c ; ++i )
+    V[ i ] = down ? double( c - i ) * 3 : double( ( i - lo ) / 2 ) - 1;
+   if( ! down && ( c - lo > 3 ) )            // a tie of -0 and +0
+    V[ lo + 2 ] = -0.0;
+   lo = c;
+   }
+  Ints A( n );
+  std::vector< std::string > S( n );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   A[ i ] = int( V[ i ] );
+   S[ i ] = std::to_string( 100000 + A[ i ] );
+   }
+  auto V2 = V , V3 = V , Vs = V;
+  auto A2 = A , A3 = A , As = A;
+  auto S2 = S , S3 = S , Ss = S;
+  sort( V2 ); stableSort( V3 ); std::stable_sort( Vs.begin() , Vs.end() );
+  sort( A2 ); stableSort( A3 ); std::sort( As.begin() , As.end() );
+  sort( S2 ); stableSort( S3 ); std::sort( Ss.begin() , Ss.end() );
+  CHECK( V2 == Vs && V3 == Vs && A2 == As && A3 == As && S2 == Ss &&
+         S3 == Ss );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( std::signbit( V3[ i ] ) == std::signbit( Vs[ i ] ) );
+  }
  std::vector< double > Z( 1000 );               // strictly decreasing
  for( std::size_t i = 0 ; i < Z.size() ; ++i )  // runs, then -0 and +0
   Z[ i ] = double( 500 - int( i ) );
@@ -918,8 +964,11 @@ ADS_TEST( "dispatch-edges" )
    SU[ i ] = std::to_string( 100000 + i / 3 );
    SD[ i ] = std::to_string( 100000 + n - i );
    }
-  CHECK( detail::runs( U , less , kRuns ) == 1 &&
-         detail::runs( Dn , less , kRuns ) == 1 );
+  std::array< std::size_t , kRuns + 1 > ends;
+  CHECK( detail::runs( U , less , kRuns , ends.data() ) == 1 &&
+         ends[ 0 ] == n &&
+         detail::runs( Dn , less , kRuns , ends.data() ) == 1 &&
+         ends[ 0 ] == n );
   for( int s = 0 ; s < 2 ; ++s ) {
    Ints U2 = U , D2 = Dn , DE = Dn;
    auto SU2 = SU , SD2 = SD , SDE = SD;
