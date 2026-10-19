@@ -460,7 +460,9 @@ taocp  generation            tuple, permutazioni, combinazioni, partizioni
 taocp  random-numbers        generatori congruenziali e test statistici
 taocp  fft                   trasformata veloce di Fourier
 taocp  fft-sizes             FFT da 1 a 1024 punti, contro dft
-taocp  fft-blocks            FFT attorno ai blocchi, contro radix 2
+taocp  fft-large             FFT da 2^11 a 2^20 punti, contro radix 2
+taocp  fft-lanes             FFT su ogni larghezza dei vettori
+taocp  fft-offsets           FFT a ogni allineamento dei punti
 taocp  convolve-real         convoluzione per FFT reali
 taocp  big-integer-words     parole di 64 bit: prodotti, riporti, 128/64
 taocp  big-integer           interi di lunghezza qualsiasi, Algorithm D

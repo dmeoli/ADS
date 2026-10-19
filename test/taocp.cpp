@@ -1170,24 +1170,126 @@ ADS_TEST( "fft-sizes" )
   }
  }
 
-// fft() at the length of the blocks transformed one at a time and around
-// it, where the rounds go depth first, for both parities of log_2 n,
-// against the transform of radix 2 by its rounds
-ADS_TEST( "fft-blocks" )
+// the output k of the transform of a by its definition, in long double
+Complex dftAt( const std::vector< Complex > & a , std::size_t k , bool inv )
+{
+ const std::size_t n = a.size();
+ const long double pi = 3.141592653589793238462643383279502884L;
+ std::complex< long double > s = 0;
+ for( std::size_t j = 0 ; j < n ; ++j ) {
+  const long double x = ( inv ? 2 : -2 ) * pi *
+                        ( long double )( j * k % n ) / ( long double )( n );
+  s += std::complex< long double >( a[ j ] ) *
+       std::complex< long double >( std::cos( x ) , std::sin( x ) );
+  }
+ if( inv ) s /= ( long double )( n );
+ return( Complex( s ) );
+ }
+
+// fft() at every power of 2 from 2^11 to 2^20, where the four steps work
+// on columns and rows of 32 and 64 points and then on longer ones by the
+// rounds of Stockham: against the transform of radix 2 by its rounds up to
+// 2^16, above it against the definition at the outputs 0 , 1 , n / 2 ,
+// n - 1 and at random ones; the inverse of the transform and Parseval
+ADS_TEST( "fft-large" )
 {
  std::mt19937 g( 29 );
  std::uniform_real_distribution< double > U( -1 , 1 );
- for( std::size_t n = detail::fftBlock / 4 ; n <= 16 * detail::fftBlock ;
-      n *= 2 ) {
+ for( unsigned K = 11 ; K <= 20 ; ++K ) {
+  const std::size_t n = std::size_t( 1 ) << K;
   std::vector< Complex > a( n );
   for( auto & x : a ) x = Complex( U( g ) , U( g ) );
   for( bool inv : { false , true } ) {
-   auto f = a , r = a;
+   auto f = a;
    fft( f , inv );
-   radix2FFT( r , inv );
-   CHECK( maxDistance( f , r ) < ( inv ? 1e-14 : 1e-13 * std::sqrt( n ) ) );
+   if( K <= 16 ) {
+    auto r = a;
+    radix2FFT( r , inv );
+    CHECK( maxDistance( f , r ) < ( inv ? 1e-14 : 1e-13 * std::sqrt( n ) ) );
+    }
+   else
+    for( std::size_t k : { std::size_t( 0 ) , std::size_t( 1 ) , n / 2 ,
+                           n - 1 , std::size_t( g() % n ) ,
+                           std::size_t( g() % n ) } )
+     CHECK( std::abs( f[ k ] - dftAt( a , k , inv ) ) <
+            ( inv ? 1e-14 : 1e-13 * std::sqrt( n ) ) );
+   double ea = 0 , ef = 0;                  // Parseval
+   for( std::size_t k = 0 ; k < n ; ++k ) {
+    ea += std::norm( a[ k ] );
+    ef += std::norm( f[ k ] );
+    }
+   CHECK( std::abs( ( inv ? double( n ) * ef : ef / double( n ) ) - ea ) <
+          1e-12 * ea );
    fft( f , ! inv );
-   CHECK( maxDistance( f , a ) < 1e-13 );
+   CHECK( maxDistance( f , a ) < 1e-14 * K );
+   }
+  }
+ }
+
+// the transform on each width of the lanes the build has: single numbers
+// (the scalar code), 2, 4 and the widest, ADS_FFT_SIMD (or the arrays of 4
+// doubles if it is 0), from 1 point to 2^13, against dft() up to 512 and
+// against each other above it, in both directions; run also with
+// ADS_FFT_SIMD=0, which has no vector extensions
+template< std::size_t W >
+void fftOnLanes( std::vector< Complex > & a , bool inv )
+{
+ if( inv ) detail::transform< true , W >( a.data() , a.size() );
+ else detail::transform< false , W >( a.data() , a.size() );
+ }
+
+ADS_TEST( "fft-lanes" )
+{
+ std::mt19937 g( 37 );
+ std::uniform_real_distribution< double > U( -1 , 1 );
+ for( std::size_t n = 1 ; n <= 8192 ; n *= 2 ) {
+  std::vector< Complex > a( n );
+  for( auto & x : a ) x = Complex( U( g ) , U( g ) );
+  const double tol = 1e-14 * double( 4 + std::countr_zero( n ) );
+  for( bool inv : { false , true } ) {
+   std::vector< std::vector< Complex > > f( 4 , a );
+   fftOnLanes< 1 >( f[ 0 ] , inv );
+   fftOnLanes< 2 >( f[ 1 ] , inv );
+   fftOnLanes< std::min( std::size_t( 4 ) , detail::fftWidth ) >( f[ 2 ] ,
+                                                                 inv );
+   fftOnLanes< detail::fftWidth >( f[ 3 ] , inv );
+   const auto d = n <= 512 ? dft( a , inv ) : f[ 0 ];
+   const double s = inv ? 1 : double( n );  // the size of the outputs
+   for( const auto & y : f ) {
+    CHECK( maxDistance( y , d ) < tol * std::sqrt( s ) );
+    auto b = y;
+    fftOnLanes< detail::fftWidth >( b , ! inv );
+    CHECK( maxDistance( b , a ) < tol );
+    }
+   }
+  }
+ }
+
+// the transform of the same points at the offsets 0 to 7 of a buffer,
+// where the lines of the cache start at a different number: the blocks of
+// the four steps start there and the last one wraps around the rows, also
+// with the powers of omega_n from two tables (2^16) and with the rounds of
+// Stockham on both steps (2^17), against fft() and in both directions
+ADS_TEST( "fft-offsets" )
+{
+ std::mt19937 g( 41 );
+ std::uniform_real_distribution< double > U( -1 , 1 );
+ for( std::size_t n : { 128 , 4096 , 8192 , 16384 , 65536 , 131072 } ) {
+  std::vector< Complex > a( n ) , buf( n + 8 );
+  for( auto & x : a ) x = Complex( U( g ) , U( g ) );
+  for( bool inv : { false , true } ) {
+   auto f = a;
+   fft( f , inv );
+   const double tol = ( inv ? 1e-14 : 1e-13 ) * std::sqrt( double( n ) );
+   for( std::size_t o = 0 ; o < 8 ; ++o ) {
+    std::copy( a.begin() , a.end() , buf.begin() + o );
+    if( inv ) detail::transform< true >( buf.data() + o , n );
+    else detail::transform< false >( buf.data() + o , n );
+    double d = 0;
+    for( std::size_t k = 0 ; k < n ; ++k )
+     d = std::max( d , std::abs( buf[ o + k ] - f[ k ] ) );
+    CHECK( d < tol );
+    }
    }
   }
  }

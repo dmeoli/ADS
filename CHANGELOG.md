@@ -315,14 +315,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the documentation is a site of Sphinx with the theme of Read the Docs,
   its pages written from the README by docs/pages.py, with the API
   reference built by Exhale and Breathe from the XML of Doxygen
-- fft() works in radix 4 on separate arrays of the real and imaginary
-  parts, which the compiler vectorizes, reverses the bits in the sweep of
-  its first rounds and goes depth first above blocks of 2048 items; the
-  powers of the root of unity are computed once per thread for every size
-  and both directions, each with its angle taken to [0, pi/4]; convolve()
-  transforms each real vector by a complex transform of half its length,
-  and the product back by another, 3 half transforms instead of 3 whole
-  ones
+- fft() is one unrolled codelet up to 64 points and above it the four
+  steps of Bailey, with no reversal of the bits: the columns, then the
+  rows, transformed 4 at a time in the lanes of the vectors of AVX (2 on
+  SSE2 and NEON, arrays of doubles elsewhere or with ADS_FFT_SIMD=0), by
+  codelets of up to 64 points and, above them, by the rounds of Stockham
+  on 4 columns or rows gathered at a time with the next rows prefetched;
+  the blocks between the steps are transposed in registers, those of the
+  outputs start on a line of the cache; the powers of the root of unity
+  are computed once per thread for every size and both directions, each
+  with its angle taken to [0, pi/4]; convolve() transforms each real
+  vector by a complex transform of half its length, and the product back
+  by another, 3 half transforms instead of 3 whole ones
 - PreorderArrayTree::end( i ), the place after the subtree of i, is now
   subtreeEnd( i ), so that the name end() is left to the standard interface
 - SequenceRange is a view whose end() is an iterator, so that the range is
