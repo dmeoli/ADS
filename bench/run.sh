@@ -14,6 +14,7 @@
 #                           [LIBSAIS=<prefix>] [DIVSUFSORT=<prefix>]          #
 #                           [EDLIB=<prefix>] [RAPIDFUZZ=<prefix>]             #
 #                           (with GMP also bignum-gmp, BigInteger on GMP)     #
+#                           [PRIORITY=<dir>]                                  #
 ###############################################################################
 
 set -e
