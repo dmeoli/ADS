@@ -493,9 +493,7 @@ class FlatHashTable {
    }
 
   const_iterator & operator++( void ) {
-   f_m &= f_m - 1;
-   if( f_m )
-    f_m &= fulls( *f_g );
+   f_m &= ( f_m - 1 ) & fulls( *f_g );
    if( ! f_m ) [[unlikely]]
     forward();
    return( *this );
