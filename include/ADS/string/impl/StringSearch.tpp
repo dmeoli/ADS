@@ -197,9 +197,16 @@ inline StringSearcher::StringSearcher( std::string_view P ) : f_P( P )
  f_qmask = f_q == 8 ? ~std::uint64_t( 0 ) :
                       ( std::uint64_t( 1 ) << ( 8 * f_q ) ) - 1;
  const std::size_t none = std::min< std::size_t >( m - f_q + 1 , 255 );
- f_shift.assign( 4096 , std::uint8_t( none ) );
- std::string Q = f_P + std::string( 8 , '\0' );   // room for the loads
- const auto * q = reinterpret_cast< const unsigned char * >( Q.data() );
+ f_shift.fill( std::uint8_t( none ) );
+ // P with room for the loads of 8 bytes, on the stack if short
+ unsigned char small[ 512 + 8 ] = {};
+ std::vector< unsigned char > large;
+ unsigned char * q = small;
+ if( m > 512 ) {
+  large.assign( m + 8 , 0 );
+  q = large.data();
+  }
+ std::memcpy( q , p , m );
  for( std::size_t i = 0 ; i + f_q < m ; ++i )
   f_shift[ gram( q + i ) ] = std::uint8_t( std::min< std::size_t >(
                                                  m - f_q - i , 255 ) );
@@ -255,6 +262,67 @@ std::size_t StringSearcher::skip( const unsigned char * T , std::size_t n ,
  else
   return( f_probes == 4 ? filter< 4 , W >( T , n , s , report )
                         : filter< 2 , W >( T , n , s , report ) );
+ }
+
+template< class F >
+std::size_t StringSearcher::skipPair( const unsigned char * T ,
+                                      std::size_t n , std::size_t from ,
+                                      F && report ) const
+{
+ const std::size_t m = f_P.size() , last = n - m , end = m - f_q;
+ if( last - from < ( std::size_t( 1 ) << 14 ) )
+  return( skip( T , n , from , report ) );
+ const std::uint8_t * shift = f_shift.data();
+ // the windows [ from , mid ) by a, those from mid on by b, whose
+ // occurrences wait in later until a is done
+ const std::size_t mid = from + ( last - from ) / 2;
+ std::size_t a = from , b = mid , work = 0 , steps = 0 , ma = a , mb = b;
+ bool alive = true;
+ std::vector< std::size_t > later;
+ // a step of the window s: false when the search must go on otherwise
+ auto step = [ & ]( std::size_t & s , bool first , std::size_t & out ) {
+  if( s + end + 1024 < n ) detail::searchPrefetch( T + s + end + 1024 );
+  const std::size_t d = shift[ gram( T + s + end ) ];
+  if( d ) {
+   s += d;
+   return( true );
+   }
+  if( ( T[ s + f_off[ 0 ] ] == f_byte[ 0 ] ) &&
+      ( std::memcmp( T + s , f_P.data() , m ) == 0 ) ) {
+   if( ! first ) later.push_back( s );
+   else if( report( s ) ) {
+    out = s;
+    return( false );
+    }
+   }
+  else if( ( work += m ) > 16 * ( ( a - from ) + ( b - mid ) ) + 4096 ) {
+   out = twoWay( T , n , first ? s + 1 : a , report );
+   return( false );
+   }
+  s += f_shift0;
+  return( true );
+  };
+ std::size_t out;
+ while( a < mid ) {
+  if( ++steps == 64 ) {                // too short shifts: one window
+   if( ( a - ma < 16 * m ) || ( alive && ( b - mb < 16 * m ) ) )
+    return( skip( T , n , a , report ) );
+   steps = 0;
+   ma = a;
+   mb = b;
+   }
+  if( ! step( a , true , out ) ) return( out );
+  if( alive ) {
+   if( ( b <= last ) && ( b + end + 8 <= n ) ) {
+    if( ! step( b , false , out ) ) return( out );
+    }
+   else
+    alive = false;
+   }
+  }
+ for( const std::size_t s : later )
+  if( report( s ) ) return( s );
+ return( skip( T , n , b , report ) );
  }
 
 template< class F >
@@ -403,7 +471,7 @@ std::size_t StringSearcher::scan( std::string_view T , std::size_t from ,
    }
   return( npos );
   }
- if( f_q > 0 ) return( skip( t , n , from , report ) );
+ if( f_q > 0 ) return( skipPair( t , n , from , report ) );
  constexpr int W = detail::searchWidth;
  if constexpr( W == 0 )
   return( filterBytes( t , n , from , report ) );

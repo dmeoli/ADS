@@ -33,9 +33,11 @@
  *   distance from the last place of each q-gram in P to the end of P (at
  *   most 255), and the q-gram at the end of the window of T moves it by its
  *   shift, one load of 8 bytes per window, the text 1024 bytes ahead
- *   prefetched; when 64 windows have moved by less than m / 4 each on
- *   average (a text of few distinct q-grams), the
- *   filter of the probes takes over;
+ *   prefetched, and the two halves of a text of 16 KB or more at once, so
+ *   that the chains of loads of the two overlap (the occurrences of the
+ *   second half wait for the end of the first); when 64 windows have
+ *   moved by less than m / 4 each on average (a text of few distinct
+ *   q-grams), the filter of the probes takes over;
  * - every search keeps the comparisons that fail: when their cost, m per
  *   failure, exceeds 16 times the length of the text scanned, the search
  *   goes on with the Two-Way algorithm of Crochemore and Perrin, so that
@@ -99,6 +101,7 @@
 #include "ADS/string/StringMatching.h"
 
 #include <cstddef>
+#include <array>
 #include <cstdint>
 #include <iterator>
 #include <string>
@@ -146,7 +149,7 @@ class StringSearcher {
 
  /// the patterns of kSkip bytes or more are searched by the shifts of the
  /// q-grams
- static constexpr std::size_t kSkip = 128;
+ static constexpr std::size_t kSkip = 64;
 
  /// the empty pattern
  StringSearcher( void ) : StringSearcher( std::string_view() ) {}
@@ -207,6 +210,12 @@ class StringSearcher {
  std::size_t skip( const unsigned char * T , std::size_t n ,
                    std::size_t from , F && report ) const;
 
+ /// skip() on the two halves of T at once, whose chains of loads overlap,
+ /// the occurrences of the second half reported after those of the first
+ template< class F >
+ std::size_t skipPair( const unsigned char * T , std::size_t n ,
+                       std::size_t from , F && report ) const;
+
  /// the hash of the q-gram at p, in [ 0 , 4096 )
  [[nodiscard]] std::size_t gram( const unsigned char * p ) const;
 
@@ -221,7 +230,7 @@ class StringSearcher {
  int f_probes = 0;                            ///< 0 , 2 or 4
  std::size_t f_q = 0;      ///< the length of the q-grams, 0 if no skip
  std::uint64_t f_qmask = 0;              ///< the q bytes of a load of 8
- std::vector< std::uint8_t > f_shift;    ///< the shift of each hash
+ std::array< std::uint8_t , 4096 > f_shift; ///< the shift of each hash
  std::size_t f_shift0 = 1;               ///< after a window that ends in
                                          ///< the last q-gram of P
 
