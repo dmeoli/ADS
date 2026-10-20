@@ -29,8 +29,11 @@
  * The search in breadth finds a shorter path than the random walk of the
  * cuckoo hashing, and moves fewer keys. When no path is found within 5
  * moves and 1024 buckets (or past the load of 98 %), the table doubles and
- * every key is placed again, which costs O( 1 ) amortized per insertion. A
- * removal clears the tag of the place.
+ * every key is placed again, which costs O( 1 ) amortized per insertion;
+ * when the hash of a key reads memory that the key points to, as for the
+ * strings, the doubling prefetches the memory of the key 8 places ahead,
+ * so that the misses of the keys overlap. A removal clears the tag of the
+ * place.
  *
  * The iterators visit the pairs in the order of the places, as constant
  * pairs of references ( key , value ); find() gives a value to change in
@@ -56,6 +59,10 @@
  * \see M. Dietzfelbinger, C. Weidling, Balanced allocation and dictionaries
  *      with tightly packed constant size bins, Theoretical Computer Science
  *      380(1-2), 47-68, 2007 (the buckets of several places)
+ * \see S. Chen, A. Ailamaki, P. B. Gibbons, T. C. Mowry, Improving hash
+ *      join performance through prefetching, Proceedings of ICDE 2004,
+ *      116-127, 2004, doi:10.1109/ICDE.2004.1319989 (the prefetch of the
+ *      memory of the keys some keys ahead, in the doubling)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
