@@ -16,6 +16,87 @@
 
 namespace ADS {
 
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SEQUENCES OF BUCKETS -----------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline detail::RecSplitSequence::RecSplitSequence(
+                                   const std::vector< std::uint64_t > & x )
+{
+ const std::size_t n = x.size();
+ if( n == 0 )
+  return;
+ const std::uint64_t u = x.back() + 1;
+ f_l = ( u / n > 1 ) ? int( std::bit_width( u / n ) ) - 1 : 0;
+ f_low.assign( ( n * std::size_t( f_l ) ) / 64 + 2 , 0 );
+ const std::size_t hb = n + std::size_t( x.back() >> f_l ) + 1;
+ f_high.assign( hb / 64 + 2 , 0 );
+ f_inv.reserve( n / 64 + 1 );
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  if( f_l > 0 ) {
+   const std::uint64_t v = x[ i ] & ( ( std::uint64_t( 1 ) << f_l ) - 1 );
+   const std::size_t at = i * std::size_t( f_l );
+   f_low[ at >> 6 ] |= v << ( at & 63 );
+   if( ( at & 63 ) + std::size_t( f_l ) > 64 )
+    f_low[ ( at >> 6 ) + 1 ] |= v >> ( 64 - ( at & 63 ) );
+   }
+  const std::size_t h = std::size_t( x[ i ] >> f_l ) + i;
+  f_high[ h >> 6 ] |= std::uint64_t( 1 ) << ( h & 63 );
+  if( ( i & 63 ) == 0 )
+   f_inv.push_back( h );
+  }
+ }
+
+inline std::uint64_t detail::RecSplitSequence::low( std::size_t i ) const
+{
+ if( f_l == 0 )
+  return( 0 );
+ const std::size_t at = i * std::size_t( f_l );
+ const unsigned s = unsigned( at & 63 );
+ const std::uint64_t lo = f_low[ at >> 6 ] >> s ,
+                     hi = ( f_low[ ( at >> 6 ) + 1 ] << 1 ) << ( 63 - s );
+ return( ( lo | hi ) & ( ( std::uint64_t( 1 ) << f_l ) - 1 ) );
+ }
+
+inline std::size_t detail::RecSplitSequence::select( std::size_t i ) const
+{
+ // from the 1 of the item 64 ( i / 64 ), the ( i mod 64 )-th 1 after it
+ std::size_t p = f_inv[ i >> 6 ] , w = p >> 6;
+ std::uint64_t bits = f_high[ w ] & ( ~std::uint64_t( 0 ) << ( p & 63 ) );
+ std::size_t r = i & 63;
+ for( ; ; bits = f_high[ ++w ] ) {
+  const std::size_t c = std::size_t( std::popcount( bits ) );
+  if( r < c )
+   return( 64 * w + std::size_t( selectInWord( bits , int( r ) ) ) );
+  r -= c;
+  }
+ }
+
+inline std::uint64_t detail::RecSplitSequence::access( std::size_t i ) const
+{
+ return( ( std::uint64_t( select( i ) - i ) << f_l ) | low( i ) );
+ }
+
+inline std::pair< std::uint64_t , std::uint64_t >
+detail::RecSplitSequence::pair( std::size_t i ) const
+{
+ const std::size_t p = select( i );
+ std::size_t w = ( p + 1 ) >> 6;            // the next 1 after p
+ std::uint64_t bits = ( p + 1 ) & 63 ? f_high[ w ] &
+  ( ~std::uint64_t( 0 ) << ( ( p + 1 ) & 63 ) ) : f_high[ w ];
+ while( bits == 0 )
+  bits = f_high[ ++w ];
+ const std::size_t q = 64 * w + std::size_t( std::countr_zero( bits ) );
+ return( std::pair< std::uint64_t , std::uint64_t >(
+          ( std::uint64_t( p - i ) << f_l ) | low( i ) ,
+          ( std::uint64_t( q - i - 1 ) << f_l ) | low( i + 1 ) ) );
+ }
+
+inline std::size_t detail::RecSplitSequence::sizeInBits( void ) const
+{
+ return( 64 * ( f_low.size() + f_high.size() + f_inv.size() ) );
+ }
+
 namespace detail {
 
 /// the odd constants of the two hashes of a key and of the hashes of the
@@ -345,8 +426,8 @@ bool RecSplit< T , L , H >::build( const std::vector< std::uint64_t > & B ,
   start[ j ] -= std::uint64_t( j ) * f_dk;
   place[ j ] = std::uint64_t( z[ j ] - std::int64_t( j ) * f_dp );
   }
- f_keys = EliasFano( start , start.back() + 1 );
- f_place = EliasFano( place , place.back() + 1 );
+ f_keys = detail::RecSplitSequence( start );
+ f_place = detail::RecSplitSequence( place );
  return( true );
  }
 
@@ -360,9 +441,9 @@ std::size_t RecSplit< T , L , H >::operator()( const T & k ) const
  const std::uint64_t h2 = foldedProduct( x , detail::kRecSplitK[ 1 ] );
  const std::size_t b = remap( foldedProduct( x , detail::kRecSplitK[ 0 ] ) ,
                               f_nb );
- const std::uint64_t s0 = f_keys.access( b ) + b * f_dk;
- std::size_t m = std::size_t( f_keys.access( b + 1 ) + ( b + 1 ) * f_dk -
-                              s0 );
+ const auto [ k0 , k1 ] = f_keys.pair( b );
+ const std::uint64_t s0 = k0 + b * f_dk;
+ std::size_t m = std::size_t( k1 + ( b + 1 ) * f_dk - s0 );
  std::size_t out = std::size_t( s0 );
  if( m <= 1 )
   return( out );
