@@ -733,10 +733,21 @@ void stringMap( void )
  CHECK( ( t.size() == 3 ) && ( *t.lookup( "a" ) == 5 ) );
  }
 
-// the adaptive radix tree [see stringMap()]
+// the adaptive radix tree [see stringMap()], and values with a destructor
+// of their own (strings), replaced, removed and left in the tree
 ADS_TEST( "adaptive-radix-tree" )
 {
  stringMap< AdaptiveRadixTree< int > >();
+ AdaptiveRadixTree< std::string > t;
+ for( int i = 0 ; i < 3000 ; ++i )
+  t.insert( "k" + std::to_string( i % 1000 ) , std::string( 30 , char( 'a' +
+                                                            i % 26 ) ) );
+ CHECK( t.size() == 1000 );
+ for( int i = 0 ; i < 1000 ; i += 2 )
+  CHECK( t.remove( "k" + std::to_string( i ) ) );
+ CHECK( ( t.size() == 500 ) && ( t.lookup( "k1" )->size() == 30 ) );
+ auto c = t;
+ CHECK( c.size() == 500 );
  }
 
 // the PGM-index against std::lower_bound: the empty array, one item, two,
