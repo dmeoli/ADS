@@ -499,6 +499,7 @@ hashing  fast-hash             funzioni hash per prodotti ripiegati
 hashing  blocked-bloom         filtro di Bloom a blocchi
 hashing  binary-fuse           filtro binary fuse
 hashing  cuckoo-filter         filtro cuckoo, inserimenti e rimozioni
+hashing  prefix-filter         filtro prefix, dizionari tascabili e spare
 hashing  ribbon-filter         filtro Ribbon, eliminazione a bande
 hashing  minimal-perfect-hash  hash perfetto minimo a piloti
 hashing  recsplit              hash perfetto minimo per divisione ricorsiva

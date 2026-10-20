@@ -4,11 +4,11 @@
 /** @file
  * Tests of the engineered hashing, beyond the book: the hash functions of
  * FastHash.h, the blocked filter of Bloom, the binary fuse filter, the
- * cuckoo filter, the Ribbon filter, the minimal perfect hash functions by
- * pilots and by recursive splitting and the cuckoo table with buckets of 4
- * places. Each one is checked against a reference of the standard library
- * or against its own analysis, on random and adversarial inputs, at the
- * level 3 of the contracts.
+ * cuckoo filter, the prefix filter, the Ribbon filter, the minimal perfect
+ * hash functions by pilots and by recursive splitting and the cuckoo table
+ * with buckets of 4 places. Each one is checked against a reference of
+ * the standard library or against its own analysis, on random and
+ * adversarial inputs, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -32,10 +32,12 @@
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/CuckooFilter.h"
+#include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 
 #include <algorithm>
 #include <bit>
+#include <cmath>
 #include <cstdint>
 #include <random>
 #include <set>
@@ -94,6 +96,10 @@ std::vector< std::string > randomStrings( std::size_t n , unsigned seed )
   }
  return( S );
  }
+
+/// the answers of the prefix filter of 10^6 random keys to 10^6 absent
+/// ones, folded, the same on every machine
+constexpr std::uint64_t kPrefixAnswers = 6080367913530849277ULL;
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -435,6 +441,115 @@ ADS_TEST( "cuckoo-filter" )
  for( int i = 0 ; i < 5 ; ++i )
   CHECK( Z.maybe( i ) );
  CHECK( Z.remove( 4 ) && Z.insert( 5 ) && Z.maybe( 5 ) );
+ }
+
+/// the hash of a key whose high 32 bits are 0: every key in the bin 0
+struct OneBin {
+ using is_avalanching = void;
+
+ std::size_t operator()( std::uint64_t k ) const {
+  return( std::size_t( hashWord( k ) & 0xFFFFFFFFU ) );
+  }
+ };
+
+// the prefix filter: for 0, 1, 2, 24, 25, 26, 100, 1000 and 10^5 random
+// keys every key in, an insertion past the capacity failing with nothing
+// changed, the clear; at 10^6 keys the fingerprints in the spare near
+// their expectation, about 5.9 % of the keys, the bits per key near 11.6,
+// the false positives on 10^6 absent keys near the analysis and below the
+// bound 0.95 / 256 + eps' / sqrt( 50 pi ) of the paper, and their answers
+// equal to known ones, which the paths of AVX-512, AVX2 and of any
+// machine must give alike; consecutive keys by std::hash, keys equal in
+// their low 32 bits and strings, against the analysis too; a key
+// inserted 100 times, the copies past 25 in the spare; all the keys in one
+// bin by a hash, the keys past 25 in the spare and every one found; a
+// filter for no key
+ADS_TEST( "prefix-filter" )
+{
+ for( std::size_t n : { 0 , 1 , 2 , 24 , 25 , 26 , 100 , 1000 , 100000 } ) {
+  const auto K = randomKeys( n + 1 , unsigned( n + 51 ) );
+  PrefixFilter< std::uint64_t > F( n );
+  CHECK( F.empty() && F.capacity() == n && F.size() == 0 );
+  CHECK( F.bins() * 25 * 95 >= n * 100 && F.bins() >= 1 );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( F.insert( K[ i ] ) );
+  CHECK( F.size() == n && F.empty() == ( n == 0 ) && F.load() <= 0.96 );
+  CHECK( ! F.insert( K[ n ] ) && F.size() == n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( F.maybe( K[ i ] ) );
+  F.clear();
+  CHECK( F.empty() && F.spareSize() == 0 && F.load() == 0 );
+  if( n > 0 )
+   CHECK( ! F.maybe( K[ 0 ] ) && F.insert( K[ 0 ] ) && F.maybe( K[ 0 ] ) );
+  }
+ {
+  const std::size_t n = 1000000;
+  const auto K = randomKeys( 2 * n , 61 );
+  PrefixFilter< std::uint64_t > F( n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( F.insert( K[ i ] ) );
+  CHECK( ! F.insert( K[ n ] ) );
+  const double es = F.expectedSpareSize();
+  CHECK( es > 0.055 * double( n ) && es < 0.062 * double( n ) );
+  CHECK( double( F.spareSize() ) > 0.97 * es &&
+         double( F.spareSize() ) < 1.03 * es );
+  const double bpk = double( F.bits() ) / double( n );
+  CHECK( bpk > 11.3 && bpk < 11.8 );
+  std::size_t f = 0;
+  std::uint64_t sum = 0;
+  for( std::size_t i = n ; i < K.size() ; ++i ) {
+   const bool y = F.maybe( K[ i ] );
+   f += y;
+   sum = sum * 31 + ( y ? i : 0 );
+   }
+  const double e = F.falsePositiveRate();
+  CHECK( double( f ) > 0.9 * e * double( n ) &&
+         double( f ) < 1.1 * e * double( n ) );
+  CHECK( e < 0.95 / 256 + 0.01 / std::sqrt( 50 * 3.14159265358979 ) );
+  CHECK( sum == kPrefixAnswers );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( F.maybe( K[ i ] ) );
+  }
+ {                                             // adversarial
+  const std::size_t n = 200000;
+  PrefixFilter< std::uint64_t , std::hash< std::uint64_t > > C( n );
+  PrefixFilter< std::uint64_t > L( n );
+  for( std::uint64_t k = 0 ; k < n ; ++k )
+   CHECK( C.insert( k ) && L.insert( k << 32 ) );
+  std::size_t f = 0 , g = 0;
+  for( std::uint64_t k = 0 ; k < n ; ++k ) {
+   CHECK( C.maybe( k ) && L.maybe( k << 32 ) );
+   f += C.maybe( k + n );
+   g += L.maybe( ( k + n ) << 32 );
+   }
+  CHECK( double( f ) < 1.15 * C.falsePositiveRate() * double( n ) );
+  CHECK( double( g ) < 1.15 * L.falsePositiveRate() * double( n ) );
+  const auto S = randomStrings( 30000 , 63 );
+  PrefixFilter< std::string > T( S.size() );
+  for( const auto & s : S )
+   CHECK( T.insert( s ) );
+  for( const auto & s : S )
+   CHECK( T.maybe( s ) );
+  }
+ {                                             // duplicates
+  PrefixFilter< std::uint64_t > D( 1000 );
+  for( int i = 0 ; i < 100 ; ++i )
+   CHECK( D.insert( 77 ) );
+  CHECK( D.size() == 100 && D.spareSize() == 75 && D.maybe( 77 ) );
+  }
+ {                                             // one bin
+  const std::size_t n = 5000;
+  const auto K = randomKeys( 2 * n , 67 );
+  PrefixFilter< std::uint64_t , OneBin > B( n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( B.insert( K[ i ] ) );
+  CHECK( B.spareSize() == n - 25 && B.size() == n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( B.maybe( K[ i ] ) );
+  }
+ PrefixFilter< int > Z( 0 );                   // no key: one bin
+ CHECK( Z.bins() == 1 && Z.capacity() == 0 && ! Z.maybe( 3 ) );
+ CHECK( ! Z.insert( 3 ) && Z.empty() && ! Z.maybe( 3 ) );
  }
 
 // the Ribbon filter of 8 and 16 bits: every key maybe there for 0, 1, 2,

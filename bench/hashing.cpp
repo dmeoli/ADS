@@ -28,7 +28,9 @@
  *   keys and, for the cuckoo filters, the n removals, by the filters of
  *   ADS against the blocked filter of Bloom, the cuckoo filter and the
  *   standard Ribbon filter (of RocksDB) of fastfilter_cpp and the xor and
- *   binary fuse filters of xor_singleheader;
+ *   binary fuse filters of xor_singleheader; the prefix filter of ADS
+ *   against the cuckoo filters and the blocked filters of Bloom, since
+ *   the prefix filter of fastfilter_cpp lives in its benchmark driver;
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, by those of ADS (by pilots, by
  *   recursive splitting and by levels of fingerprints, the method of
@@ -90,6 +92,7 @@
 #include "ADS/set/BloomFilter.h"
 #include "ADS/set/BloomVariants.h"
 #include "ADS/set/CuckooFilter.h"
+#include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 
 #if __has_include( <boost/unordered/unordered_flat_map.hpp> )
@@ -537,6 +540,20 @@ void dynamic( const std::string & who , const std::vector< Key > & K ,
           sink = sink + s; } , r , K.size() ) );
  }
 
+/// the filter that make() builds, filled by ins( f , k ) as the build of
+/// filters(), for the filters with no removals
+template< class M , class I , class F , class Z >
+void dynamic( const std::string & who , const std::vector< Key > & K ,
+              const std::vector< Key > & H , const std::vector< Key > & Q ,
+              int r , M && make , I && ins , F && has , Z && bits )
+{
+ auto fill = [ & ]( const std::vector< Key > & S ) {
+  auto f = make( S.size() );
+  for( Key k : S ) ins( f , k );
+  return( f ); };
+ filters( who , K , H , Q , r , fill , has , bits );
+ }
+
 #ifdef ADS_HAS_RIBBON
 /// the settings of the standard Ribbon filter of RocksDB, with
 /// coefficients of 64 bits and results of C bits
@@ -728,6 +745,11 @@ void allFilters( const std::vector< Key > & K , const std::vector< Key > & H ,
           []( auto & f , Key k ) { f.insert( k ); } ,
           []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
           []( auto & f , Key k ) { return( f.remove( k ) ); } ,
+          []( const auto & f ) { return( f.bits() ); } );
+ dynamic( "ADS::PrefixFilter" , K , H , Q , r , []( std::size_t m ) {
+          return( ADS::PrefixFilter< Key >( m ) ); } ,
+          []( auto & f , Key k ) { f.insert( k ); } ,
+          []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
           []( const auto & f ) { return( f.bits() ); } );
 #ifdef ADS_HAS_CUCKOOFILTER
  dynamic( "fastfilter::CuckooFilter 8" , K , H , Q , r ,
