@@ -21,6 +21,9 @@
  * \see W. Pugh, Skip lists: a probabilistic alternative to balanced trees,
  *      Communications of the ACM 33(6), 668-676, 1990,
  *      doi:10.1145/78973.78977
+ * \see G. L. Steele, D. Lea, C. H. Flood, Fast splittable pseudorandom
+ *      number generators, Proceedings of OOPSLA 2014, 453-472, 2014,
+ *      doi:10.1145/2660193.2660195 (SplitMix64)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

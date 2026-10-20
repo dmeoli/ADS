@@ -63,6 +63,10 @@
  *      465-492, 2011, doi:10.1137/090779759
  * \see J. Vuillemin, A unifying look at data structures, Communications of
  *      the ACM 23(4), 229-239, 1980, doi:10.1145/358841.358852
+ * \see V. L. Arlazarov, E. A. Dinic, M. A. Kronrod, I. A. Faradzev, On
+ *      economical construction of the transitive closure of an oriented
+ *      graph, Soviet Mathematics Doklady 11, 1209-1210, 1970 (the trick of
+ *      the Four Russians)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

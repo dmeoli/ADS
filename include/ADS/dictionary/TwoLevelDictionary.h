@@ -36,6 +36,9 @@
  * \see M. A. Bender, M. Farach-Colton, B. C. Kuszmaul, Cache-oblivious
  *      string B-trees, Proceedings of PODS 2006, 233-242, 2006,
  *      doi:10.1145/1142351.1142385
+ * \see D. R. Morrison, PATRICIA: practical algorithm to retrieve
+ *      information coded in alphanumeric, Journal of the ACM 15(4),
+ *      514-534, 1968, doi:10.1145/321479.321481
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
