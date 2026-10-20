@@ -648,6 +648,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from kRadix items if they are copied as bytes and in no few runs or few
   keys, instead of the merge sort through a buffer, and from kRadix items
   otherwise, instead of pdqSort()
+- RibbonFilter keeps its solution in lines of cache aligned to 64 bytes,
+  8 columns of a block per line, and answers a query 8 columns at a time
+  (AVX-512 or AVX2, the parities of the bytes by vpshufb and vpsadbw, a
+  popcount per word on any machine), stopping at the first line that
+  disagrees, so that a key out of the set reads 2 lines whatever the
+  results; it takes the coefficients from a product of 64 bits, prefetches
+  the rows of the key 16 places ahead in the banding, and with AVX-512
+  solves 4 rows at a time in the back substitution; the answers are the
+  same on every machine, its tests in test/hashing.cpp now also for
+  results of 32 bits and for the answers of every ISA
+
 - FlatHashTable removes a key of its first group by writing the 16
   control bytes of the group whole, at an address known from the hash
   alone, and bounds the places left counted by one per removal, counting
