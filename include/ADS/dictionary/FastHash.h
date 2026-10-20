@@ -138,10 +138,12 @@ struct Product128 {
 template< class T >
 struct FastHash;
 
-/// the hash of an integer, an enumeration or a pointer
+/// the hash of an integer, an enumeration, a pointer or a floating point
+/// number, +0 and -0 the same
 template< class T >
  requires( std::is_integral_v< T > || std::is_enum_v< T > ||
-           std::is_pointer_v< T > )
+           std::is_pointer_v< T > ||
+           ( std::is_floating_point_v< T > && ( sizeof( T ) <= 8 ) ) )
 struct FastHash< T > {
  using is_avalanching = void;   ///< the hash needs no further mixing
 
@@ -155,25 +157,15 @@ struct FastHash< T > {
   else if constexpr( std::is_enum_v< T > )
    return( std::size_t( hashWord( std::uint64_t(
                          std::underlying_type_t< T >( x ) ) , seed ) ) );
+  else if constexpr( std::is_floating_point_v< T > ) {
+   if( x == T( 0 ) )
+    x = T( 0 );                     // -0 == +0
+   std::uint64_t w = 0;
+   std::memcpy( &w , &x , sizeof( T ) );
+   return( std::size_t( hashWord( w , seed ) ) );
+   }
   else
    return( std::size_t( hashWord( std::uint64_t( x ) , seed ) ) );
-  }
- };
-
-/// the hash of a floating point number, +0 and -0 the same
-template< class T >
- requires( std::is_floating_point_v< T > && ( sizeof( T ) <= 8 ) )
-struct FastHash< T > {
- using is_avalanching = void;
-
- std::uint64_t seed = 0;
-
- [[nodiscard]] std::size_t operator()( T x ) const noexcept {
-  if( x == T( 0 ) )
-   x = T( 0 );                     // -0 == +0
-  std::uint64_t w = 0;
-  std::memcpy( &w , &x , sizeof( T ) );
-  return( std::size_t( hashWord( w , seed ) ) );
   }
  };
 
