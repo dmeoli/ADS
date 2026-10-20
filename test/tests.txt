@@ -546,6 +546,7 @@ heaps  radix-heap            heap radix monotono a cifre di B bit
 heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool
 heaps  linked-heap-pool      heap con puntatori, nodi in un pool
 heaps  pairing-heap          pairing heap a due passate e ausiliario
+hashing  dense-hash-map        mappa hash a vettore denso e indice
 
 # the standard interface of the containers, beyond the book
 interop  sequences            iteratori delle sequenze, std e Boost

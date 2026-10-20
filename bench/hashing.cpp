@@ -16,7 +16,9 @@
  *   keys in random order, n lookups of absent keys, the n removals in
  *   random order and a visit of the pairs, on keys of 64 bits and on
  *   strings of 8 to 24 characters, with values of 64 bits, by the hash
- *   tables of ADS against std::unordered_map, boost::unordered_map,
+ *   tables of ADS (DenseHashMap, with its pairs in a dense vector, against
+ *   the same layout of unordered_dense) against std::unordered_map,
+ *   boost::unordered_map,
  *   unordered_node_map and unordered_flat_map, absl::flat_hash_map,
  *   ankerl::unordered_dense::map, tsl::robin_map and the cuckoo table of
  *   libcuckoo; each table with the default hash of its library, and those
@@ -60,6 +62,7 @@
 #include "ADS/dictionary/BucketCuckooTable.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/CuckooHashing.h"
+#include "ADS/dictionary/DenseHashMap.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
@@ -385,6 +388,10 @@ void hashMaps( const std::string & type , const std::vector< T > & K ,
  for( const char * who : { "ADS::FlatHashTable" , "ADS::FlatHashTable A/A" } )
   maps( type , who , K , H , Q , r ,
         [](){ return( ADS::FlatHashTable< T , Key , FH >() ); } , adsIns ,
+        adsFind , adsErase , sum );
+ for( const char * who : { "ADS::DenseHashMap" , "ADS::DenseHashMap A/A" } )
+  maps( type , who , K , H , Q , r ,
+        [](){ return( ADS::DenseHashMap< T , Key , FH >() ); } , adsIns ,
         adsFind , adsErase , sum );
  maps( type , "ADS::FlatHashTable std::hash" , K , H , Q , r ,
        [](){ return( ADS::FlatHashTable< T , Key , std::hash< T > >() ); } ,

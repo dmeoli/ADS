@@ -196,6 +196,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tests in test/hashing.cpp, and in bench/hashing.cpp against the cuckoo
   filter and the standard Ribbon filter of RocksDB shipped with
   fastfilter_cpp, with the removals of the cuckoo filters timed too
+- DenseHashMap, the hash map whose pairs lie in a dense vector, in the
+  order of the insertions, beside an index of open addressing in groups of
+  one line of cache, 12 control bytes matched at once and the 12
+  positions of their pairs, so that a search costs one miss in the index
+  and one in the vector; a removal moves the last pair into the place left
+  free, so that a visit of the pairs is a scan of a vector; its tests in
+  test/hashing.cpp, and in bench/hashing.cpp against the same layout of
+  ankerl::unordered_dense and the other maps
 
 - StringSearcher, the engineered exact search of string/StringSearch.h:
   a pattern prepared once, two or four probes of its rarest bytes compared

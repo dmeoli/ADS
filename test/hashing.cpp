@@ -23,6 +23,7 @@
 #include "ADSTest.h"
 
 #include "ADS/dictionary/BucketCuckooTable.h"
+#include "ADS/dictionary/DenseHashMap.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
@@ -698,6 +699,158 @@ ADS_TEST( "bucket-cuckoo" )
  E.insert( 1 , 10 );
  *E.find( 1 ) = 11;
  CHECK( E.lookup( 1 ) == 11 && ! E.insert( 1 , 12 ) && E.lookup( 1 ) == 12 );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ DENSE MAP ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a hash that sends every key to the same group, with the same
+/// fingerprint, and declares it needs no mixing
+struct OneGroup {
+ using is_avalanching = void;
+ std::size_t operator()( std::uint64_t ) const { return( 0x105 ); }
+ };
+
+/// the pairs of a DenseHashMap the same as those of a reference, the
+/// vector dense
+template< class M , class R >
+void sameAs( const M & T , const R & Ref )
+{
+ CHECK( T.size() == Ref.size() &&
+        std::size_t( T.end() - T.begin() ) == Ref.size() );
+ for( const auto & [ k , v ] : T )
+  CHECK( Ref.at( k ) == v );
+ for( const auto & [ k , v ] : Ref )
+  CHECK( T.lookup( k ) == v );
+ }
+
+ADS_TEST( "dense-hash-map" )
+{
+ {                                             // random operations
+  DenseHashMap< std::uint64_t , std::uint64_t > T;
+  std::unordered_map< std::uint64_t , std::uint64_t > R;
+  std::mt19937_64 g( 41 );
+  for( int s = 0 ; s < 200000 ; ++s ) {
+   const std::uint64_t k = g() % 30000 , v = g();
+   switch( g() % 4 ) {
+    case( 0 ): case( 1 ):
+     CHECK( T.insert( k , v ) == R.insert_or_assign( k , v ).second );
+     break;
+    case( 2 ):
+     CHECK( T.remove( k ) == ( R.erase( k ) == 1 ) );
+     break;
+    default: {
+     const auto it = R.find( k );
+     const std::uint64_t * p = T.find( k );
+     CHECK( ( p == nullptr ) == ( it == R.end() ) );
+     if( p )
+      CHECK( *p == it->second );
+     }
+    }
+   }
+  sameAs( T , R );
+  const std::size_t m = T.capacity();
+  CHECK( T.load() <= 0.875 && m > 0 );
+  auto C = T;                                  // copy, move, swap
+  sameAs( C , R );
+  auto M = std::move( C );
+  CHECK( C.empty() && C.capacity() == 0 && ! C.contains( 1 ) );
+  sameAs( M , R );
+  C.insert( 1 , 2 );
+  C.swap( M );
+  sameAs( C , R );
+  CHECK( M.size() == 1 && M.lookup( 1 ) == 2 );
+  for( const auto & [ k , v ] : R )          // all out, in random order
+   CHECK( T.remove( k ) );
+  CHECK( T.empty() && T.begin() == T.end() && T.capacity() == m );
+  }
+ {                                             // strings
+  DenseHashMap< std::string , int > T;
+  std::unordered_map< std::string , int > R;
+  const auto S = randomStrings( 5000 , 42 );
+  std::mt19937 g( 43 );
+  for( int s = 0 ; s < 40000 ; ++s ) {
+   const std::string & k = S[ g() % S.size() ];
+   if( g() % 3 )
+    CHECK( T.insert( k , s ) == R.insert_or_assign( k , s ).second );
+   else
+    CHECK( T.remove( k ) == ( R.erase( k ) == 1 ) );
+   }
+  sameAs( T , R );
+  std::string a = "moved";
+  CHECK( T.insert( std::move( a ) , 7 ) && T.lookup( "moved" ) == 7 );
+  }
+ {                                             // one group, one tag
+  DenseHashMap< std::uint64_t , int , OneGroup > T;
+  std::unordered_map< std::uint64_t , int > R;
+  for( std::uint64_t k = 0 ; k < 300 ; ++k ) {
+   CHECK( T.insert( k , int( k ) ) );
+   R[ k ] = int( k );
+   }
+  sameAs( T , R );
+  CHECK( T.deleted() == 0 );
+  for( std::uint64_t k = 0 ; k < 300 ; k += 3 ) {   // the first group too
+   CHECK( T.remove( k ) );
+   R.erase( k );
+   }
+  CHECK( T.deleted() > 0 && ! T.remove( 0 ) );
+  sameAs( T , R );
+  for( std::uint64_t k = 1000 ; k < 1100 ; ++k ) {  // the places reused
+   CHECK( T.insert( k , 1 ) );
+   R[ k ] = 1;
+   }
+  sameAs( T , R );
+  }
+ {                          // churn at a steady size: recounts, no drift
+  DenseHashMap< std::uint64_t , std::uint64_t > T;
+  std::unordered_map< std::uint64_t , std::uint64_t > R;
+  std::mt19937_64 g( 44 );
+  std::vector< std::uint64_t > in;
+  for( std::uint64_t k = 0 ; k < 1500 ; ++k ) {
+   T.insert( k , k );
+   R[ k ] = k;
+   in.push_back( k );
+   }
+  const std::size_t m = T.capacity();
+  for( std::uint64_t t = 0 ; t < 60000 ; ++t ) {
+   const std::size_t i = g() % in.size();
+   CHECK( T.remove( in[ i ] ) && R.erase( in[ i ] ) == 1 );
+   in[ i ] = 1500 + t;
+   CHECK( T.insert( in[ i ] , t ) );
+   R[ in[ i ] ] = t;
+   const std::size_t c = T.capacity();
+   CHECK( T.size() + T.deleted() <= c - c / 8 );
+   }
+  CHECK( T.capacity() <= 2 * m );
+  sameAs( T , R );
+  }
+ {                                             // sizes and reserve
+  DenseHashMap< int , int > E;
+  CHECK( E.empty() && E.capacity() == 0 && E.load() == 0.0 );
+  CHECK( ! E.lookup( 1 ) && ! E.remove( 1 ) && E.find( 1 ) == nullptr );
+  CHECK( E.deleted() == 0 && E.begin() == E.end() );
+  CHECK( E.insert( 1 , 10 ) && E.capacity() == 24 );
+  *E.find( 1 ) = 11;
+  CHECK( ! E.insert( 1 , 12 ) && E.lookup( 1 ) == 12 && E.size() == 1 );
+  for( int k = 0 ; k < 21 ; ++k ) E.insert( k , k );   // 7 / 8 of 24
+  CHECK( E.capacity() == 24 && E.size() == 21 );
+  E.insert( 21 , 21 );
+  CHECK( E.capacity() == 48 && E.size() == 22 );
+  CHECK( E.remove( 1 ) && ! E.contains( 1 ) && E.size() == 21 );
+  DenseHashMap< int , int > F( 1000 );
+  const std::size_t m = F.capacity();
+  CHECK( m >= 1000 * 8 / 7 );
+  for( int k = 0 ; k < 1000 ; ++k ) F.insert( k , -k );
+  CHECK( F.capacity() == m );
+  long s = 0;
+  F.forEach( [ & ]( int , int v ) { s += v; } );
+  CHECK( s == -499500 && F.data()[ 999 ].first == 999 );
+  F.clear();
+  CHECK( F.empty() && F.capacity() == m && ! F.contains( 5 ) );
+  F.insert( 5 , 5 );
+  CHECK( F.lookup( 5 ) == 5 && F.size() == 1 );
+  }
  }
 
 }  // end( namespace )
