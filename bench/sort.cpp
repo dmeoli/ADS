@@ -4,7 +4,10 @@
 /** @file
  * The benchmark of the sorts: each sort of ADS against std::sort,
  * std::stable_sort and, if Boost.Sort is found, boost::sort::pdqsort,
- * spreadsort, spinsort and flat_stable_sort, on integers of 32 and 64 bits,
+ * spreadsort, spinsort and flat_stable_sort; if their headers are found,
+ * the sequential IPS4o and IPS2Ra, x86-simd-sort, ska_sort, fluxsort,
+ * crumsort and quadsort, and vqsort of Highway if ADS_HAS_VQSORT is
+ * defined (it needs its library); on integers of 32 and 64 bits,
  * doubles, strings and records with an order of their own, each in the
  * patterns random, sorted, reversed, few distinct keys, organ pipe and 16
  * sorted runs, for the sizes given on the command line.
@@ -12,7 +15,11 @@
  * Each cell is the median of r runs of the time to sort a fresh copy of the
  * same input, in nanoseconds per item, the copy excluded; the contracts are
  * off (ADS_CONTRACTS=0). The output is one line per ( type , pattern , n ,
- * sort ), tab separated, so that a script can tabulate it.
+ * sort ), tab separated, so that a script can tabulate it; the row "A/A"
+ * is std::sort run a second time, the noise of the machine, and a sort
+ * that leaves a copy out of order gets -1. The records are also sorted by
+ * their key, by IPS2Ra, ska_sort and radixSortBy, marked "(key)", which
+ * do not compare with the order of the records.
  *
  *   sort [ -r runs ] [ -s seed ] n1 n2 ...
  *
@@ -38,16 +45,59 @@
 #include "ADS/sort/QuickSort.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
+#include "ADS/sort/SampleSort.h"
 #include "ADS/sort/ShellSort.h"
 #include "ADS/sort/Smoothsort.h"
 #include "ADS/sort/Sort.h"
+#include "ADS/sort/VectorQuickSort.h"
 
 #if __has_include( <boost/sort/sort.hpp> )
  #include <boost/sort/sort.hpp>
  #define ADS_HAS_BOOST_SORT 1
 #endif
 
+#if __has_include( <ips4o.hpp> )
+ #include <ips4o.hpp>
+ #define ADS_HAS_IPS4O 1
+#endif
+
+#if __has_include( <ips2ra.hpp> )
+ #include <ips2ra.hpp>
+ #define ADS_HAS_IPS2RA 1
+#endif
+
+#if __has_include( <x86simdsort-static-incl.h> ) && defined( __AVX2__ )
+ #include <x86simdsort-static-incl.h>
+ #define ADS_HAS_XSS 1
+#endif
+
+#if __has_include( <ska_sort.hpp> )
+ #include <ska_sort.hpp>
+ #define ADS_HAS_SKA 1
+#endif
+
+#if __has_include( <fluxsort.h> ) && __has_include( <crumsort.h> )
+ #include <cassert>
+ #include <cerrno>
+ #include <cfloat>
+ #include <cstdio>
+ #include <cstring>
+ #include <stdalign.h>
+ #define restrict __restrict
+namespace scandum {
+ #include <fluxsort.h>
+ #include <crumsort.h>
+}
+ #undef restrict
+ #define ADS_HAS_SCANDUM 1
+#endif
+
+#ifdef ADS_HAS_VQSORT
+ #include <hwy/contrib/sort/vqsort.h>
+#endif
+
 #include <algorithm>
+#include <bit>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -114,9 +164,47 @@ template<> Record make( std::uint64_t k ) {
  return( Record{ k , { 0 , 0 , 0 } } );
  }
 
-/// the median of r times, in nanoseconds per item, of sort on copies of A
-template< class T , class F >
-double timeIt( const std::vector< T > & A , F && sort , int r )
+/// the order of the bits of T as an unsigned key, for the radix sorts
+/// that take one
+template< class T >
+auto bitsKey( const T & x )
+{
+ if constexpr( std::is_same_v< T , Record > )
+  return( x.key );
+ else if constexpr( std::is_unsigned_v< T > )
+  return( x );
+ else if constexpr( std::is_integral_v< T > )
+  return( std::uint64_t( x ) ^ ( std::uint64_t( 1 ) << 63 ) );
+ else {
+  const auto b = std::bit_cast< std::uint64_t >( x );
+  return( b ^ ( ( b >> 63 ) ? ~std::uint64_t( 0 ) :
+                              std::uint64_t( 1 ) << 63 ) );
+  }
+ }
+
+#ifdef ADS_HAS_SCANDUM
+/// the comparison of the generic entries of fluxsort and crumsort
+template< class T , class C >
+int scandumCmp( const void * a , const void * b )
+{
+ return( C()( *static_cast< const T * >( b ) ,
+              *static_cast< const T * >( a ) ) );
+ }
+
+/// the same through the pointers to the items, for the entries _size,
+/// which sort an array of pointers
+template< class T , class C >
+int scandumCmpRef( const void * a , const void * b )
+{
+ return( C()( **static_cast< const T * const * >( b ) ,
+              **static_cast< const T * const * >( a ) ) );
+ }
+#endif
+
+/// the median of r times, in nanoseconds per item, of sort on copies of A,
+/// or -1 if the sort left a copy out of order by less (checked untimed)
+template< class T , class F , class C >
+double timeIt( const std::vector< T > & A , F && sort , int r , C less )
 {
  std::vector< double > t;
  for( int i = 0 ; i < r ; ++i ) {
@@ -124,6 +212,8 @@ double timeIt( const std::vector< T > & A , F && sort , int r )
   const auto a = std::chrono::steady_clock::now();
   sort( B );
   const auto b = std::chrono::steady_clock::now();
+  if( ! std::is_sorted( B.begin() , B.end() , less ) )
+   return( -1 );
   t.push_back( std::chrono::duration< double , std::nano >( b - a ).count()
                / double( std::max< std::size_t >( A.size() , 1 ) ) );
   }
@@ -140,11 +230,14 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
  std::vector< std::pair< std::string , std::function< void( V & ) > > > S = {
   { "std::sort" , [ & ]( V & A ) {
    std::sort( A.begin() , A.end() , less ); } } ,
+  { "A/A" , [ & ]( V & A ) {
+   std::sort( A.begin() , A.end() , less ); } } ,
   { "std::stable_sort" , [ & ]( V & A ) {
    std::stable_sort( A.begin() , A.end() , less ); } } ,
   { "ADS::sort" , [ & ]( V & A ) { ADS::sort( A , less ); } } ,
   { "ADS::stableSort" , [ & ]( V & A ) { ADS::stableSort( A , less ); } } ,
   { "pdqSort" , [ & ]( V & A ) { ADS::pdqSort( A , less ); } } ,
+  { "sampleSort" , [ & ]( V & A ) { ADS::sampleSort( A , less ); } } ,
   { "introSort" , [ & ]( V & A ) { ADS::introSort( A , less ); } } ,
   { "dualPivotQuickSort" , [ & ]( V & A ) {
    ADS::dualPivotQuickSort( A , less ); } } ,
@@ -168,7 +261,71 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
    boost::sort::flat_stable_sort( A.begin() , A.end() , less ); } } ,
 #endif
   };
+#ifdef ADS_HAS_IPS4O
+ S.emplace_back( "ips4o" , [ & ]( V & A ) {
+  ips4o::sort( A.begin() , A.end() , less ); } );
+#endif
+#ifdef ADS_HAS_IPS2RA
+ if constexpr( ! std::is_same_v< T , std::string > )        // the records
+  S.emplace_back( std::is_same_v< T , Record > ? "ips2ra (key)" : "ips2ra" ,
+                  []( V & A ) {                 // by a key, as radixSortBy
+   ips2ra::sort( A.begin() , A.end() , []( const T & x ) {
+    return( bitsKey( x ) ); } ); } );
+#endif
+ if constexpr( std::is_same_v< T , Record > )
+  S.emplace_back( "ADS::radixSortBy (key)" , []( V & A ) {
+   ADS::radixSortBy( A , []( const Record & x ) { return( x.key ); } ); } );
+#ifdef ADS_HAS_SKA
+ if constexpr( std::is_same_v< T , Record > )
+  S.emplace_back( "ska_sort (key)" , []( V & A ) {
+   ska_sort( A.begin() , A.end() , []( const Record & x ) {
+    return( x.key ); } ); } );
+ else
+  S.emplace_back( "ska_sort" , []( V & A ) {
+   ska_sort( A.begin() , A.end() ); } );
+#endif
+#ifdef ADS_HAS_SCANDUM
+ if constexpr( std::is_integral_v< T > ) {
+  constexpr std::size_t z = sizeof( T ) + std::is_unsigned_v< T >;
+  S.emplace_back( "crumsort" , []( V & A ) {
+   scandum::crumsort_prim( A.data() , A.size() , z ); } );
+  S.emplace_back( "fluxsort" , []( V & A ) {
+   scandum::fluxsort_prim( A.data() , A.size() , z ); } );
+  S.emplace_back( "quadsort" , []( V & A ) {
+   scandum::quadsort_prim( A.data() , A.size() , z ); } );
+  }
+ else if constexpr( std::is_floating_point_v< T > ) {
+  S.emplace_back( "crumsort" , []( V & A ) {
+   scandum::crumsort( A.data() , A.size() , sizeof( T ) ,
+                      scandumCmp< T , C > ); } );
+  S.emplace_back( "fluxsort" , []( V & A ) {
+   scandum::fluxsort( A.data() , A.size() , sizeof( T ) ,
+                      scandumCmp< T , C > ); } );
+  S.emplace_back( "quadsort" , []( V & A ) {
+   scandum::quadsort( A.data() , A.size() , sizeof( T ) ,
+                      scandumCmp< T , C > ); } );
+  }
+ else if constexpr( std::is_same_v< T , Record > ) {
+  S.emplace_back( "fluxsort" , []( V & A ) {
+   scandum::fluxsort_size( A.data() , A.size() , sizeof( T ) ,
+                           scandumCmpRef< T , C > ); } );
+  S.emplace_back( "quadsort" , []( V & A ) {
+   scandum::quadsort_size( A.data() , A.size() , sizeof( T ) ,
+                           scandumCmpRef< T , C > ); } );
+  }
+#endif
  if constexpr( ADS::RadixKey< T > ) {
+#ifdef ADS_HAS_XSS
+  S.emplace_back( "x86-simd-sort" , []( V & A ) {
+   x86simdsortStatic::qsort( A.data() , A.size() ); } );
+#endif
+#ifdef ADS_HAS_VQSORT
+  S.emplace_back( "vqsort" , []( V & A ) {
+   hwy::VQSort( A.data() , A.size() , hwy::SortAscending() ); } );
+#endif
+  if constexpr( ADS::VectorKey< T > )
+   S.emplace_back( "vectorQuickSort" , []( V & A ) {
+    ADS::vectorQuickSort( A ); } );
   S.emplace_back( "radixSort" , []( V & A ) { ADS::radixSort( A ); } );
   S.emplace_back( "americanFlagSort" , []( V & A ) {
    ADS::americanFlagSort( A ); } );
@@ -200,7 +357,7 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
     if( ( n > 200000 ) && ( name == "shellSort" ) )
      continue;                              // too slow to matter
     std::cout << type << '\t' << patterns[ p ] << '\t' << n << '\t'
-              << name << '\t' << timeIt( A , sort , r ) << std::endl;
+              << name << '\t' << timeIt( A , sort , r , less ) << std::endl;
     }
    }
  }
