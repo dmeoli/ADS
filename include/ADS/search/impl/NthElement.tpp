@@ -155,12 +155,12 @@ template< class It , class C >
 bool selectReversed( It first , It last , C & less )
 {
  const std::ptrdiff_t n = last - first , h = n / 2;
- bool bad = false;
+ int bad = 0;
  for( std::ptrdiff_t i = 0 ; i < h ; i += 64 ) {
   const std::ptrdiff_t e = std::min( h , i + 64 );
   for( std::ptrdiff_t j = i ; j < e ; ++j )   // neighbours not yet swapped
-   bad |= less( first[ j ] , first[ j + 1 ] ) |
-          less( first[ n - 2 - j ] , first[ n - 1 - j ] );
+   bad |= int( less( first[ j ] , first[ j + 1 ] ) ) |
+          int( less( first[ n - 2 - j ] , first[ n - 1 - j ] ) );
   if( bad )
    return( false );
   for( std::ptrdiff_t j = i ; j < e ; ++j )

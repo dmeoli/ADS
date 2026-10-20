@@ -819,6 +819,8 @@ template< class V >
 template< class F >
 void AdaptiveRadixTree< V >::forPrefix( std::string_view p , F && f ) const
 {
+ // down by the bytes of p, comparing the bytes of the prefixes kept in the
+ // nodes; a prefix longer than them is checked on a leaf below its node
  const void * x = f_root;
  std::size_t d = 0;
  while( x ) {
@@ -829,14 +831,17 @@ void AdaptiveRadixTree< V >::forPrefix( std::string_view p , F && f ) const
    return;
    }
   const Node * n = static_cast< const Node * >( x );
-  const std::string_view m = minimum( n )->view();   // all share its path
-  if( d + n->plen >= p.size() ) {           // the subtree, if it fits
-   if( m.substr( 0 , p.size() ) == p )
-    visit( x , f );
+  const std::size_t r = std::min< std::size_t >( n->plen , p.size() - d );
+  if( r > MAXP ) {                          // past the bytes kept
+   if( minimum( n )->view().substr( d , r ) != p.substr( d , r ) )
+    return;
+   }
+  else if( std::memcmp( n->prefix , p.data() + d , r ) != 0 )
+   return;
+  if( d + n->plen >= p.size() ) {           // all the subtree
+   visit( x , f );
    return;
    }
-  if( m.substr( d , n->plen ) != p.substr( d , n->plen ) )
-   return;
   d += n->plen;
   void * const * s = child( n , (unsigned char) p[ d ] );
   if( ! s )
