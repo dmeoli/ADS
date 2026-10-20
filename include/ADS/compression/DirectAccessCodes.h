@@ -16,20 +16,23 @@
  * width, and a bit telling whether it continues past the level (none on
  * the last level). The integer of place i at a level is at the place
  * \f$ rank_1( i ) \f$ of the next one, among those that continue [see
- * CompactRankSelect.h], so that
+ * RankSelect.h, with no select], so that
  * \f[ x_i = \sum_{\ell} A_\ell[ i_\ell ] \, 2^{s_\ell} , \quad
  *     i_0 = i , \quad i_{\ell + 1} = rank_1( B_\ell , i_\ell ) , \f]
  * over the levels that it reaches: O( 1 + the levels of \f$ x_i \f$ )
  * time. With \f$ n_k \f$ the integers of more than k bits, the level of
  * the chunk \f$ [ s , s + b ) \f$ costs \f$ n_s ( b + 1 ) \f$ bits (b + 0
- * on the last), plus about 3.5% for the ranks, and the widths
+ * on the last), plus 25% of the continuation bits for their ranks (one
+ * load and one sideways sum), and the widths
  * \f$ b_0 , b_1 , \ldots \f$ that minimize the sum are found by the dynamic
  * program of the authors over the 64 places of a cut,
  * \f[ C( s ) = \min_{s < s' \le 64} \big( n_s ( s' - s ) +
- *     [ s' < w ] \, n_s ( 1 + 0.035 ) + C( s' ) \big) , \quad
+ *     [ s' < w ] \, n_s ( 1 + 0.25 ) + C( s' ) \big) , \quad
  *     C( w ) = 0 , \f]
  * w the bits of the largest integer, in \f$ O( w^2 ) \f$ steps on the counts
- * \f$ n_s \f$. The chunks of one width are a code with a fixed alphabet,
+ * \f$ n_s \f$; a fixed width b for every level trades bits for fewer
+ * levels, i.e., fewer ranks per access. The chunks of one width are a code
+ * with a fixed alphabet,
  * the vbyte of the notes when every \f$ b_\ell = 7 \f$, the continuation
  * bits moved to their own vector with rank.
  *
@@ -63,7 +66,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/succinct/BitVector.h"
-#include "ADS/succinct/CompactRankSelect.h"
+#include "ADS/succinct/RankSelect.h"
 
 #include <array>
 #include <bit>
@@ -92,6 +95,11 @@ class DirectAccessCodes {
 
  /// the sequence x, with the widths of the levels that minimize its bits
  explicit DirectAccessCodes( std::span< const std::uint64_t > x );
+
+ /// the sequence x, with levels of b bits each (the last one up to the
+ /// bits of the largest item), which trades bits for fewer levels
+ /// \pre 1 <= b <= 64
+ DirectAccessCodes( std::span< const std::uint64_t > x , int b );
 
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
 
@@ -139,8 +147,12 @@ class DirectAccessCodes {
  struct Level {
   int width = 0 , shift = 0;
   BitVector chunks;
-  CompactRankSelect more;
+  RankSelect more;
   };
+
+ /// the levels of the cuts at the places cut[ s ] from s = 0 to w
+ void build( std::span< const std::uint64_t > x ,
+             const std::array< int , 65 > & cut , int w );
 
  std::size_t f_n = 0;
  std::vector< Level > f_lev;

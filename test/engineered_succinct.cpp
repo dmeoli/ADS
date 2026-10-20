@@ -332,7 +332,8 @@ ADS_TEST( "tans-coder" )
 // uniform and skewed integers, of all zeros, of one item, of the largest
 // integers; the widths cover the bits of the largest item, and the bits
 // stay within those of a plain array of fixed width (and its ranks) and
-// below those of a split in bytes on a skewed sequence
+// below those of a split in bytes on a skewed sequence; the levels of a
+// fixed width
 ADS_TEST( "direct-access-codes" )
 {
  std::mt19937_64 g( 13 );
@@ -367,6 +368,17 @@ ADS_TEST( "direct-access-codes" )
  check( std::vector< std::uint64_t >( 300 , ~0ULL ) );
  check( std::vector< std::uint64_t >{ 1ULL << 63 , 0 , 5 } );
  check( {} );
+ for( const int b : { 1 , 4 , 8 , 64 } ) {   // the levels of fixed width
+  std::vector< std::uint64_t > a( 3000 );
+  for( auto & v : a ) v = G( g ) << ( g() % 20 );
+  const DirectAccessCodes D( a , b );
+  CHECK( std::equal( a.begin() , a.end() , D.begin() , D.end() ) );
+  const auto W = D.widths();
+  for( std::size_t k = 0 ; k + 1 < W.size() ; ++k ) CHECK( W[ k ] == b );
+  CHECK( W.back() <= b );
+  }
+ CHECK_THROWS( DirectAccessCodes( std::vector< std::uint64_t >{ 1 } , 0 ) ,
+               contract_violation );
  std::vector< std::uint64_t > z( 20000 );      // 3 bits but a few of 40
  for( std::size_t i = 0 ; i < z.size() ; ++i )
   z[ i ] = i % 1000 == 0 ? ( 1ULL << 40 ) + i : i % 8;

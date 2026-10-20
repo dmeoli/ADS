@@ -802,6 +802,12 @@ void dacs( std::size_t n , int r , unsigned seed )
        []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
        [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } ,
        r );
+ dac( X , I , "ADS::DirectAccessCodes b=8" ,
+      []( const std::vector< std::uint64_t > & X ) {
+       return( std::make_unique< D >( X , 8 ) ); } ,
+      []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+      [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } ,
+      r );
 #endif
 #ifdef ADS_HAS_SDSL
  auto sdslDac = [ & ]< class T >( const char * who , T * ) {
