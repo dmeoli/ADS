@@ -172,6 +172,7 @@ inline std::size_t RankSelect::select( std::size_t k , bool b ) const
                        I.off[ ( j << I.s ) + ( ( r >> I.g ) &
                                                ( ( std::size_t( 1 ) << I.s )
                                                  - 1 ) ) ];
+ if( I.g == 0 ) return( p );             // every bit b has its offset
  std::size_t t = r & ( ( std::size_t( 1 ) << I.g ) - 1 );
  const Word * W = f_b.words().data();
  std::size_t w = p / 64;
