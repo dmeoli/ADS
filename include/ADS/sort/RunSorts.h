@@ -14,7 +14,10 @@
  *   Java) keeps the runs on a stack whose lengths, from the top, must grow
  *   faster than the Fibonacci numbers, merging when the rule fails, with the
  *   check on the fourth run from the top added after the proof by de Gouw
- *   et al. that the original rule could fail;
+ *   et al. that the original rule could fail; its merges cost
+ *   \f$ O( n + n H ) \f$ comparisons for H the entropy of the lengths of
+ *   the runs, \f$ O( n \log n ) \f$ in the worst case, as Auger et al.
+ *   proved;
  * - powerSort() of Munro and Wild (the sort of Python from 3.11) gives each
  *   boundary between two runs a power, the first bit where the midpoints of
  *   the two runs, as fractions of n, differ, and merges the runs on the
@@ -49,6 +52,9 @@
  * \see S. de Gouw, J. Rot, F. S. de Boer, R. Bubel, R. Hähnle, OpenJDK's
  *      java.utils.Collection.sort() is broken: the good, the bad and the
  *      worst case, Proceedings of CAV 2015, LNCS 9206, 273-289, 2015
+ * \see N. Auger, V. Jugé, C. Nicaud, C. Pivoteau, On the worst-case
+ *      complexity of TimSort, Proceedings of ESA 2018, LIPIcs 112,
+ *      4:1-4:13, 2018, doi:10.4230/LIPIcs.ESA.2018.4
  * \see J. I. Munro, S. Wild, Nearly-optimal mergesorts: fast, practical
  *      sorting methods that optimally adapt to existing runs, Proceedings
  *      of ESA 2018, LIPIcs 112, article 63, 2018

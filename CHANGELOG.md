@@ -47,6 +47,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   radix heap of radix-heap (PRIORITY=<dir> in the makefile), and in
   Dijkstra's algorithm on a random graph of n nodes and 4 n arcs, the
   queues with handles by decrease-key and the others by lazy deletion
+- vectorQuickSort(), the quicksort in the lanes of the vector registers
+  for the integers and the floating point numbers of 32 and 64 bits:
+  the partition of Bramas by vpcompress on AVX-512 and by a table of
+  permutations on AVX2, 8 registers read at a time from the end with fewer
+  free places, three ways in one pass when the sample repeats the pivot,
+  and the parts of at most 16 registers sorted by a network held by
+  columns (the odd-even merge sort of Batcher between registers, the
+  bitonic merges with all comparators upwards, a transposition); the
+  floating point numbers by the integers of their order, the unsigned
+  integers compared as such on AVX-512; the same algorithm on arrays where
+  neither AVX-512 nor AVX2 is there, kVectorSort telling which; its tests
+  in test/sorting.cpp on every size up to 600 and on the extremes, the
+  zeros, the infinities and the NaN, also in the CI on AVX2 and AVX-512
+- sampleSort(), the in-place super scalar samplesort of Axtmann, Witt,
+  Ferizovic and Sanders for any order: up to 256 buckets by a tree of
+  splitters walked with no branch, 4 items at a time, buckets of the items
+  equal to a repeated splitter, the classification into blocks of 2 KiB,
+  the permutation of the blocks and the cleanup, the buckets of at most 64
+  items sorted by insertion at once; its tests in test/sorting.cpp
+- in bench/sort.cpp the sequential IPS4o and IPS2Ra, x86-simd-sort,
+  vqsort of Highway, ska_sort, fluxsort, crumsort and quadsort, from their
+  sources given to the makefile by SORTING and HWY (ADS_SORTING and
+  find_package( hwy ) with CMake), the A/A row of std::sort, a check that
+  each sort leaves its copy in order, and their pairs in bench/summary.py
+- the references of the analysis of Timsort by Auger, Jugé, Nicaud and
+  Pivoteau in RunSorts.h, of the ninther of Tukey in
+  EngineeredQuickSorts.h and of Boost.Sort in Sort.h
 
 - COPYING, the text of the GNU GPL v3 that the LGPL v3 of LICENSE
   supplements, as the LGPL asks, installed by the recipes next to LICENSE
@@ -496,6 +523,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of g < 4 in the layer itself: a layer costs no allocation unless its g
   reaches 4, and a push or a pop none once the vector has grown, 4 to 8
   times faster in the hold model of bench/priority.cpp
+- sort() and stableSort() of the integers and the floating point numbers
+  of 32 and 64 bits, when the vector registers are there, go to
+  vectorQuickSort() instead of the radix sort and of pdqSort(), and to the
+  merges of powerSort() only up to 8 runs for the keys of 32 bits;
+  stableSort() goes the same way on the integers, and on the floating
+  point numbers when no -0 is there
+- sort() of the items with an order of their own goes to sampleSort():
+  from kRadix items if they are copied as bytes and in no few runs or few
+  keys, instead of the merge sort through a buffer, and from kRadix items
+  otherwise, instead of pdqSort()
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the

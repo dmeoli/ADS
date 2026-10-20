@@ -7,21 +7,32 @@
  * one that suits it.
  *
  * - With the natural order (std::less) on integers or floating point
- *   numbers, a short vector goes to pdqSort(); a long one with at most
+ *   numbers of 32 or 64 bits, when the vector registers are there
+ *   (kVectorSort, AVX-512 or AVX2), a short vector goes to
+ *   vectorQuickSort() [see VectorQuickSort.h]; a long one with at most
  *   kRuns runs (non-decreasing or strictly decreasing stretches, counted
  *   by a pass that stops at the run kRuns + 1 and keeps where they end,
- *   with no branch inside blocks of 32 items, which vectorize)
- *   goes to the merges of powerSort() [see RunSorts.h] on those runs,
- *   with no second search for them, \f$ O( n \log r ) \f$ for r runs,
- *   O( n ) if sorted or reversed; sort() sends to pdqSort() a vector
- *   whose sample of 64 keys shows at most 16 distinct ones differing in 4
- *   bytes or more, which it sorts in \f$ O( n \log k ) \f$ with fewer
- *   passes than the radix sort needs; the rest goes to radixSort() [see
- *   RadixSort.h], which makes no comparison and takes O( w n ) for keys of
- *   w bytes, skipping the bytes that all the keys share; radixSort() is
- *   stable, so stableSort() uses it too, with -0 and +0 as one key, since
- *   std::less finds them equal (radixSort() puts -0 first). A NaN breaks
- *   the natural order, so that a vector with a NaN has no defined order.
+ *   with no branch inside blocks of 32 items, which vectorize), or at most
+ *   8 for the keys of 32 bits, goes to the merges of powerSort() [see
+ *   RunSorts.h] on those runs, with no second search for them,
+ *   \f$ O( n \log r ) \f$ for r runs, O( n ) if sorted or reversed; any
+ *   other goes to vectorQuickSort(), \f$ O( n \log n ) \f$ and
+ *   \f$ O( n \log k ) \f$ for k distinct keys, W keys per instruction.
+ *   stableSort() does the same, since two equal numbers cannot be told
+ *   apart, but for a vector of floating point numbers that holds a -0,
+ *   which std::less finds equal to +0, and which goes as below.
+ * - With the natural order on the other integers and floating point
+ *   numbers, or with no vector registers, a short vector goes to
+ *   pdqSort() and a long one in few runs to powerSort() in the same way;
+ *   sort() sends to pdqSort() a vector whose sample of 64 keys shows at
+ *   most 16 distinct ones differing in 4 bytes or more, which it sorts in
+ *   \f$ O( n \log k ) \f$ with fewer passes than the radix sort needs;
+ *   the rest goes to radixSort() [see RadixSort.h], which makes no
+ *   comparison and takes O( w n ) for keys of w bytes, skipping the bytes
+ *   that all the keys share; radixSort() is stable, so stableSort() uses
+ *   it too, with -0 and +0 as one key, since std::less finds them equal
+ *   (radixSort() puts -0 first). A NaN breaks the natural order, so that
+ *   a vector with a NaN has no defined order.
  * - With the natural order on strings, a vector of at most kRuns runs goes
  *   to the merges of powerSort() in the same way and any other to
  *   msdRadixSort() [see RadixSort.h], which reads one character at a time
@@ -36,16 +47,18 @@
  *   items have, to a counting sort by those keys, stable, each item found
  *   among them by a binary search with no branch, through a buffer of
  *   n / 2 items, \f$ O( n \log k ) \f$ comparisons for k keys; otherwise
- *   to a merge sort through a buffer of n / 2 items, as the spinsort of
- *   Boost: its halves are sorted with the other array as their room and
- *   merged back, one move per item and level, with no branch on the
- *   order, from both ends at once, so that no step checks where a half
- *   ends.
- * - Any other item goes to pdqSort() for sort() [see
- *   EngineeredQuickSorts.h], \f$ O( n \log n ) \f$ in the worst case, O( n )
- *   on a sorted or reversed vector and \f$ O( n \log k ) \f$ with k
- *   distinct keys, and to powerSort() for stableSort() [see RunSorts.h],
- *   O( n ) on few runs and nearly optimal on any number of them.
+ *   sort() sends them to sampleSort() [see SampleSort.h], the in-place
+ *   super scalar samplesort, and stableSort() to a merge sort through a
+ *   buffer of n / 2 items, as the spinsort of Boost: its halves are sorted
+ *   with the other array as their room and merged back, one move per item
+ *   and level, with no branch on the order, from both ends at once, so
+ *   that no step checks where a half ends.
+ * - Any other item goes, for sort(), to pdqSort() [see
+ *   EngineeredQuickSorts.h] if fewer than kRadix, \f$ O( n \log n ) \f$
+ *   in the worst case, O( n ) on a sorted or reversed vector and
+ *   \f$ O( n \log k ) \f$ with k distinct keys, and to sampleSort()
+ *   otherwise; for stableSort(), to powerSort() [see RunSorts.h], O( n )
+ *   on few runs and nearly optimal on any number of them.
  *
  * The thresholds between the algorithms, kRadix items for the numbers,
  * kStrings for the strings and kRuns runs, are measured by the benchmark of
@@ -65,6 +78,9 @@
  * \see J. L. Bentley, R. Sedgewick, Fast algorithms for sorting and
  *      searching strings, Proceedings of the 8th ACM-SIAM Symposium on
  *      Discrete Algorithms (SODA), 360-369, 1997
+ * \see F. J. Tapia, Boost.Sort: spinsort, flat_stable_sort, Boost C++
+ *      Libraries 1.67, 2018,
+ *      https://www.boost.org/doc/libs/1_67_0/libs/sort/doc/html/index.html
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -88,15 +104,19 @@
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
+#include "ADS/sort/SampleSort.h"
+#include "ADS/sort/VectorQuickSort.h"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
