@@ -1905,6 +1905,21 @@ ADS_TEST( "big-integer-radix" )
    CHECK( x.toStringSchool() == s && BigInteger::fromStringSchool( s ) == x );
    }
   }
+ // the fractions of the remainders [see fracTree()], whose roundings must
+ // not carry across runs of 9 or of 0: 10^a - 10^b and 10^a + 10^b - 1,
+ // runs ending at every place and across the halves of the powers
+ for( std::size_t a : { 19 * C + 7 , std::size_t( 19 * 64 ) ,
+                        std::size_t( 19 * 64 + 1 ) ,
+                        std::size_t( 19 * 300 ) } )
+  for( std::size_t b : { std::size_t( 0 ) , std::size_t( 1 ) ,
+                         std::size_t( 19 ) , std::size_t( 19 * 16 ) ,
+                         std::size_t( 19 * 16 + 5 ) , a / 2 , a - 20 ,
+                         a - 1 } ) {
+   const BigInteger A = BigInteger::pow( 10 , a ) ,
+                    Bb = BigInteger::pow( 10 , b );
+   for( const BigInteger & x : { A - Bb , A + Bb - 1 , A - 1 + Bb * 7 } )
+    CHECK( x.toString() == x.toStringSchool() );
+   }
  for( int t = 0 ; t < 40 ; ++t ) {          // random, 8 and 32 first
   const int base = t < 8 ? 1 << ( 3 + 2 * ( t % 2 ) ) : 2 + int( g() % 35 );
   const BigInteger x = ( t % 2 ? -1 : 1 ) * digits( C - 2 + g() % ( 9 * C ) ,

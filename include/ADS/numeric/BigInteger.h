@@ -205,6 +205,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cmath>
 #include <compare>
 #include <cstddef>
 #include <cstdint>
@@ -446,12 +447,18 @@ class BigInteger {
  static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
  static constexpr std::size_t kDivide = 48;      ///< quotient limbs, recursion
  static constexpr std::size_t kConvert = 24;     ///< limbs, divide and conquer
+ static constexpr std::size_t kConvertF = 64;    ///< limbs, by fractions
+ static constexpr std::size_t kFracLeaf = 32;    ///< chunks, by products
+ static constexpr std::size_t kFracLevel = 4;    ///< 2^k chunks, fractions
+ static constexpr std::size_t npos = std::size_t( -1 );
  static constexpr std::size_t kModFold = 16;     ///< limbs, folded remainder
  static constexpr std::size_t kHensel = 24;      ///< limbs, gcd by folding
  static constexpr std::size_t kNewton = 768;     ///< limbs, by the reciprocal
  static constexpr std::size_t kRecip = 32;       ///< limbs, reciprocal by D
  static constexpr std::size_t kDivCut = 600;     ///< limbs, quotient alone
  static constexpr std::size_t kDivShort = 16;    ///< limbs, on the stack
+ static constexpr std::size_t kDivBlock = 40;    ///< limbs, 4 digits a step
+ static constexpr std::size_t kDivQuot = 4096;   ///< limbs, quotient halves
 
  // with ADS_WITH_GMP, the lengths in digits that go to GMP, where it was
  // faster in the timings of the same benchmark: the products whose shorter
@@ -756,11 +763,38 @@ class BigInteger {
 
  /// out += the figures of x, at least pad, by halves from kConvert digits,
  /// pw[ i ] b^{zs[ i ]} = P^{2^i} with P^1 holding k figures, rc[ i ] the
- /// reciprocal of pw[ i ] kept by the divisions [see divNewton()]
+ /// reciprocal of pw[ i ] kept by the divisions [see divNewton()]; a
+ /// remainder x < P^{2^j}, j given, of up to kConvertF digits by fractions
  static void toFigures( const Mag & x , std::size_t pad , int base ,
                         const std::vector< Mag > & pw ,
                         const std::vector< std::size_t > & zs , int k ,
-                        std::vector< Mag > & rc , std::string & out );
+                        std::vector< Mag > & rc , std::vector< Mag > & rf ,
+                        std::string & out , std::size_t j );
+
+ /// out += the 2^j k figures of x < P^{2^j}, by the fraction x / P^{2^j},
+ /// made by the reciprocal of P^{2^j} kept in rf[ j ] [see fracTree()]
+ static void fracFigures( const Mag & x , std::size_t j , int base , int k ,
+                          Limb P , const std::vector< Mag > & pw ,
+                          const std::vector< std::size_t > & zs ,
+                          std::vector< Mag > & rf , std::string & out );
+
+ /// the C k figures of the fraction f, of C = 2^j chunks, to out: the
+ /// high half from the top digits of f, the low half from the fraction of
+ /// f P^{C/2}, both rounded up, by halves down to kFracLeaf chunks, which
+ /// are the integer parts of f P, f P^2 and so on
+ static void fracTree( Mag & f , std::size_t j , int base , int k , Limb P ,
+                       const std::vector< Mag > & pw ,
+                       const std::vector< std::size_t > & zs , bool up ,
+                       char * out );
+ static void fracLeaf( Mag & f , std::size_t c , Limb P , int k , int base ,
+                       bool up , char * out );
+
+ /// the digits [ s , e ) of a b, na > nb, short of the exact ones by 2 at
+ /// most, from the products a_i b_j with s - 5 <= i + j < e + 3 only,
+ /// in r from the place s on; false, r unchanged, if it does not apply
+ static bool mulBand( Limb * r , const Limb * a , std::size_t na ,
+                      const Limb * b , std::size_t nb , std::size_t s ,
+                      std::size_t e );
 
  /// the sum of c[ j ] P^j for j < n, by halves from kConvert digits,
  /// pw[ i ] = P^{2^i}

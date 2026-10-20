@@ -933,6 +933,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   m + 2 digits of the divisor and 2 m + 1 of the dividend, checked by the
   remainder of the top digits and, rarely, by one product (a quotient of
   5 digits by 4096: from 140 times slower than GMP to about its time)
+- BigInteger: the carries of the NTT by three passes of products by one
+  digit on the three residues, each below 2^50 and so one digit; Newton's
+  reciprocal with a x_h modulo b^N - 1, N = length( n ) or n, the three
+  values of t = b^{n+h} - a x_h told apart by its lowest digit, and the
+  correction by the h + 1 digits of t that are not 0 (from 2.9 to 1.8 to
+  2.1 products of the same length); Algorithm D by blocks of 4 digits of
+  the quotient from kDivBlock digits, each block from the top 6 digits of
+  the divisor and subtracted by a pass of 4 rows of the complements
+  (subPass4()), also with the divisor cut; the submultiples by blocks of
+  4 digits on the chains of ADC and SBB; the conversion to a base by
+  fractions below kConvertF digits: the remainder x < P^{2^j} times the
+  reciprocal of P^{2^j}, then halves of the chunks by the band of the
+  products that the fraction of f P^h needs (mulBand()), rounded up or
+  down as the fraction below says, so that a run of 9 or of 0 does not
+  carry wrong, the leaves by products by P; the powers and their
+  reciprocals kept per thread and base; the figures of a chunk of 10^19
+  by pairs from a table
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
