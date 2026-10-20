@@ -419,7 +419,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Kemper and Neumann on strings; PGMIndex, the learned index of Ferragina
   and Vinciguerra on the optimal piecewise linear approximation;
   RoaringBitmap, the compressed bitmap of Chambi, Lemire, Kaser and Godin
-  with arrays and bitmaps, the arrays combined by blocks of 8 with SSE4.2;
+  with arrays and bitmaps, the arrays combined by blocks of 8 with SSE4.2,
+  and its rank(), select() and lowerBound();
   test/ordered.cpp
 - the benchmarks of the ordered dictionaries, of the searches in arrays
   (lower bound, selection, range minima) and of the sets (intersection,

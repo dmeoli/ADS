@@ -845,6 +845,78 @@ inline bool RoaringBitmap::valid( void ) const
 /*------------------------------ THE ITERATORS -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
+inline std::size_t RoaringBitmap::rank( std::uint32_t x ) const
+{
+ const std::uint16_t key = std::uint16_t( x >> 16 ) , v = std::uint16_t( x );
+ const std::size_t i = find( key );
+ std::size_t r = 0;
+ for( std::size_t b = 0 ; b < i ; ++b ) r += f_B[ b ].card;
+ if( ( i == f_B.size() ) || ( f_B[ i ].key != key ) )
+  return( r );
+ const Block & b = f_B[ i ];
+ if( b.bits() ) {                           // the bits below v
+  for( std::size_t k = 0 ; k < std::size_t( v >> 6 ) ; ++k )
+   r += std::size_t( std::popcount( b.w[ k ] ) );
+  r += std::size_t( std::popcount( b.w[ v >> 6 ] &
+                                   ( ( std::uint64_t( 1 ) << ( v & 63 ) ) -
+                                     1 ) ) );
+  }
+ else
+  r += std::size_t( std::lower_bound( b.a.begin() , b.a.end() , v ) -
+                    b.a.begin() );
+ ADS_POST( r <= f_size );
+ return( r );
+ }
+
+inline auto RoaringBitmap::lowerBound( std::uint32_t x ) const
+ -> const_iterator
+{
+ const std::uint16_t key = std::uint16_t( x >> 16 ) , v = std::uint16_t( x );
+ const_iterator it;
+ it.f_s = this;
+ it.f_b = find( key );
+ it.f_i = 0;
+ if( ( it.f_b < f_B.size() ) && ( f_B[ it.f_b ].key == key ) ) {
+  const Block & b = f_B[ it.f_b ];
+  if( b.bits() ) {                          // the word of v, from v on
+   const std::uint64_t w = b.w[ v >> 6 ] & ( ~std::uint64_t( 0 ) <<
+                                             ( v & 63 ) );
+   if( w ) {
+    it.f_i = v >> 6;
+    it.f_word = w;
+    it.f_base = ( std::uint32_t( key ) << 16 ) | std::uint32_t( it.f_i * 64 );
+    it.f_x = it.f_base + std::uint32_t( std::countr_zero( w ) );
+    return( it );
+    }
+   it.f_i = std::size_t( v >> 6 ) + 1;
+   }
+  else
+   it.f_i = std::size_t( std::lower_bound( b.a.begin() , b.a.end() , v ) -
+                         b.a.begin() );
+  }
+ it.settle();
+ return( it );
+ }
+
+inline auto RoaringBitmap::select( std::size_t i ) const -> const_iterator
+{
+ if( i >= f_size )
+  return( end() );
+ std::size_t b = 0;
+ while( i >= f_B[ b ].card ) i -= f_B[ b++ ].card;   // the container
+ const Block & c = f_B[ b ];
+ const std::uint32_t hi = std::uint32_t( c.key ) << 16;
+ if( ! c.bits() )
+  return( lowerBound( hi | c.a[ i ] ) );
+ std::size_t k = 0;                         // the word, then the bit
+ while( i >= std::size_t( std::popcount( c.w[ k ] ) ) )
+  i -= std::size_t( std::popcount( c.w[ k++ ] ) );
+ std::uint64_t w = c.w[ k ];
+ for( ; i > 0 ; --i ) w &= w - 1;
+ return( lowerBound( hi | std::uint32_t( k * 64 + std::size_t(
+                                          std::countr_zero( w ) ) ) ) );
+ }
+
 inline RoaringBitmap::const_iterator::const_iterator( const RoaringBitmap * s ,
                                                       std::size_t b )
  : f_s( s ) , f_b( b )
