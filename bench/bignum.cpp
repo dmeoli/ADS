@@ -15,8 +15,10 @@
  * the others coming from the build without it.
  *
  * Each cell is the median of r runs, in nanoseconds per operation (one
- * product, one quotient, one conversion, one sum of n fractions); the
- * contracts are off (ADS_CONTRACTS=0).
+ * product, one quotient, one conversion, one sum of n fractions), a run
+ * of the first three repeating the operation 4096 / n times, so that the
+ * short ones last many ticks of the clock; the contracts are off
+ * (ADS_CONTRACTS=0).
  *
  *   bignum [ -r runs ] [ -s seed ] n1 n2 ... *
  * \author Donato Meoli \n
@@ -56,6 +58,7 @@
  #define ADS_WHO ""
 #endif
 
+#include <algorithm>
 #include <string>
 
 using namespace ADS::bench;
@@ -72,21 +75,32 @@ std::string hex( std::size_t n , std::mt19937_64 & g )
  }
 
 /// the four cases on the number type N, made from a hexadecimal string by
-/// make( s ) and written in decimal by dec( x )
+/// make( s ) and written in decimal by dec( x ); each run repeats the
+/// operation k times, k n about 2^12, so that the short ones last many
+/// ticks of the clock
 template< class N , class M , class D , class Mul >
 void run( const std::string & who , std::size_t n , const std::string & a ,
           const std::string & b , const std::string & c , int r , M && make ,
           D && dec , Mul && mul )
 {
  const N x = make( a ) , y = make( b ) , z = make( c );   // c has 2n digits
+ const std::size_t k = std::max< std::size_t >( 1 , 4096 / n );
  print( "bignum" , "product" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) { const N p = mul( x , y ); sink = sink + ( p != 0 ); } ,
-         r , 1 ) );
+         [ & ]( int ) {
+          for( std::size_t i = 0 ; i < k ; ++i ) {
+           const N p = mul( x , y );
+           sink = sink + ( p != 0 );
+           } } , r , k ) );
  print( "bignum" , "quotient 2n/n" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) { const N q = z / y; sink = sink + ( q != 0 ); } , r ,
-         1 ) );
+         [ & ]( int ) {
+          for( std::size_t i = 0 ; i < k ; ++i ) {
+           const N q = z / y;
+           sink = sink + ( q != 0 );
+           } } , r , k ) );
  print( "bignum" , "to decimal" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) { sink = sink + dec( x ).size(); } , r , 1 ) );
+         [ & ]( int ) {
+          for( std::size_t i = 0 ; i < k ; ++i )
+           sink = sink + dec( x ).size(); } , r , k ) );
  }
 
 /// the harmonic number H_n summed as a fraction of the type R

@@ -914,6 +914,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - isPrime() below 2^32 by one base, read in a table of 1024 at a hash
   of n (found by an exhaustive search), in a Montgomery arithmetic with
   no constant but the inverse of n
+- BigInteger past GMP on the short products: the products by passes of 4
+  rows in assembly, the window of 5 places in registers on the two chains
+  of carries of ADCX and ADOX, about 1.4 cycles per product on a Xeon Gold
+  5120 against the 1.45 to 2.2 of the basecase of GMP 6.3; the squares by
+  the same passes across the tiles of 4 digits and the squares of the
+  tiles; the products by one digit and the sums with any count of digits
+  in assembly, 1, 2 and 4 steps before the loop of 8 with no table of
+  jumps, the submultiples of up to 8 digits with no loop; the sum of the
+  middle of Karatsuba in two passes on the two chains; Toom-3 with the
+  interpolation of Bodrato from kToom3 digits; the short divisions on the
+  stack (kDivShort); bench/bignum.cpp repeats the short operations in a
+  run, so that the clock of 100 ns of a virtual machine reads them
+
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
   same on every architecture

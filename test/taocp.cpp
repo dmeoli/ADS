@@ -1573,6 +1573,27 @@ BigInteger digits( std::size_t n , std::mt19937_64 & g , bool ones = false ,
  return( fromLimbs( d ) );
  }
 
+/// the product of two numbers given by their digits, the most significant
+/// first, by the rows of the school on words of 128 bits, apart from the
+/// code of BigInteger
+BigInteger naiveProduct( const std::vector< std::uint64_t > & a ,
+                         const std::vector< std::uint64_t > & b )
+{
+ __extension__ typedef unsigned __int128 U;
+ std::vector< std::uint64_t > r( a.size() + b.size() , 0 );
+ for( std::size_t i = 0 ; i < a.size() ; ++i ) {
+  std::uint64_t c = 0;
+  for( std::size_t j = 0 ; j < b.size() ; ++j ) {
+   std::uint64_t & x = r[ r.size() - 1 - ( i + j ) ];
+   const U t = U( a[ a.size() - 1 - i ] ) * b[ b.size() - 1 - j ] + x + c;
+   x = std::uint64_t( t );
+   c = std::uint64_t( t >> 64 );
+   }
+  r[ r.size() - 1 - ( i + b.size() ) ] = c;
+  }
+ return( fromLimbs( r ) );
+ }
+
 /// a number of n digits of 64 bits drawn from the edges of their range and
 /// of their halves, where the trial quotients are too large and the
 /// corrections run
@@ -1590,8 +1611,9 @@ BigInteger edges( std::size_t n , std::mt19937_64 & g )
 
 }  // end( namespace )
 
-// the products by their methods just below, at and above kKaratsuba and
-// kFFT, balanced and not, against Algorithm M (and the audits), the
+// the products by their methods just below, at and above kKaratsuba,
+// kToom3 and kFFT, balanced and not, against Algorithm M (and the audits),
+// the short ones against the school apart, the
 // squares, which take their own paths, the digits all ones, where the
 // carries are longest, a square of 2^16 such digits, every piece of the
 // NTT at its largest, where the old convolution in doubles rounded wrong,
@@ -1599,8 +1621,27 @@ BigInteger edges( std::size_t n , std::mt19937_64 & g )
 ADS_TEST( "big-integer-product" )
 {
  std::mt19937_64 g( 20 );
- const std::size_t K = BigInteger::kKaratsuba , F = BigInteger::kFFT;
+ const std::size_t K = BigInteger::kKaratsuba , F = BigInteger::kFFT ,
+                   T = BigInteger::kToom3;
+ // the short products, by passes of 4 rows and the rows left, and the
+ // squares, by passes and the squares of the tiles of 4 digits, against
+ // the school apart, for digits random, all ones and at the edges
+ for( std::size_t m = 1 ; m <= 40 ; ++m )
+  for( std::size_t k = 1 ; k <= m ; ++k )
+   for( int kind = 0 ; kind < 3 ; ++kind ) {
+    std::vector< std::uint64_t > a( m ) , b( k );
+    for( auto * v : { &a , &b } )
+     for( auto & x : *v )
+      x = kind == 0 ? g() : kind == 1 ? ~std::uint64_t( 0 )
+                          : ( g() & 1 ? ~std::uint64_t( 0 ) : g() & 3 );
+    a[ 0 ] |= 1;
+    b[ 0 ] |= 1;
+    const BigInteger x = fromLimbs( a ) , y = fromLimbs( b );
+    CHECK( x * y == naiveProduct( a , b ) && y * x == x * y );
+    if( k == m ) CHECK( x * x == naiveProduct( a , a ) );
+    }
  for( std::size_t n : { K - 1 , K , K + 1 , 2 * K - 1 , 2 * K , 2 * K + 1 ,
+                        T - 1 , T , T + 1 , T + 2 , 3 * T + 1 ,
                         F - 1 , F , F + 1 } )
   for( bool ones : { false , true } ) {
    const BigInteger a = digits( n , g , ones ) , b = digits( n , g , ones ) ,
@@ -1666,11 +1707,14 @@ ADS_TEST( "big-integer-product" )
 ADS_TEST( "big-integer-division" )
 {
  std::mt19937_64 g( 21 );
- const std::size_t D = BigInteger::kDivide;
- for( std::size_t n : { std::size_t( 2 ) , std::size_t( 3 ) , D - 1 , D ,
-                        D + 1 , 2 * D - 1 , 2 * D , 2 * D + 1 , 3 * D + 5 } )
+ const std::size_t D = BigInteger::kDivide , S = BigInteger::kDivShort;
+ for( std::size_t n : { std::size_t( 2 ) , std::size_t( 3 ) , S - 1 , S ,
+                        D - 1 , D , D + 1 , 2 * D - 1 , 2 * D , 2 * D + 1 ,
+                        3 * D + 5 } )
   for( std::size_t m : { std::size_t( 1 ) , D - 1 , D , D + 1 , 2 * D ,
-                         n - 1 , n , n + 1 , 2 * n + 1 , 3 * n + 7 } ) {
+                         n - 1 , n , n + 1 , 2 * n + 1 , 3 * n + 7 ,
+                         2 * S - n , 2 * S + 1 - n } ) {
+   if( m > 4 * S + 8 * n ) continue;
    if( m == 0 ) continue;
    for( std::uint64_t top : { std::uint64_t( 0 ) , std::uint64_t( 1 ) ,
                               ~std::uint64_t( 0 ) } ) {

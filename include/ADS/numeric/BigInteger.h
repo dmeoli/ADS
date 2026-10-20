@@ -18,13 +18,24 @@
  *
  * - The sum and the difference are Algorithms 4.3.1A and 4.3.1S, a carry
  *   or a borrow per digit, \f$ O( n ) \f$.
- * - The product is Algorithm 4.3.1M, \f$ O( m n ) \f$, two rows per pass
- *   in C++, for the short factors, with half the rows for a square; from
- *   kKaratsuba digits it is the product of Karatsuba (4.3.3A) in the
- *   subtractive form, three products of halves instead of four on one
- *   scratch buffer, the sum of the middle halves shared by the two
- *   middle quarters, \f$ O( n^{\log_2 3} ) \f$, the longer factor cut in
- *   pieces as long as the shorter one when their lengths differ; from kFFT
+ * - The product is Algorithm 4.3.1M, \f$ O( m n ) \f$, for the short
+ *   factors: in the assembly by passes of 4 rows over the longer factor,
+ *   a digit \f$ a_i \f$ at a time, the window of the 5 places
+ *   \f$ i , \ldots , i + 4 \f$ in registers, the low halves of the 4
+ *   products added on the chain of carries of ADCX and the high halves on
+ *   that of ADOX, about 1.4 cycles per product on a Skylake, the rows left
+ *   one at a time; elsewhere two rows per pass in C++. A square
+ *   \f$ a^2 = 2 T + D \f$ takes the products \f$ a_i a_j \f$, \f$ i < j
+ *   \f$, of digits of different tiles of 4 digits by the same passes in T,
+ *   and the squares of the tiles, side by side, in D. From kKaratsuba
+ *   digits it is the product of Karatsuba (4.3.3A) in the subtractive
+ *   form, three products of halves instead of four, the sum
+ *   \f$ z_0 + z_2 \mp t \f$ of the middle in two passes on the two
+ *   chains of carries, \f$ O( n^{\log_2 3} ) \f$; from kToom3 digits that
+ *   of Toom-3, five products of thirds from the values at
+ *   \f$ 0 , 1 , -1 , 2 , \infty \f$ and the interpolation of Bodrato,
+ *   \f$ O( n^{\log_3 5} ) \f$; the longer factor cut in pieces as long as
+ *   the shorter one when their lengths differ; from kFFT
  *   digits it is a convolution of the digits by the number theoretic
  *   transform (4.3.3, 4.6.4) and the Chinese remainder theorem (4.3.2),
  *   \f$ O( n \log n ) \f$. With AVX2 and the fused product and sum, the
@@ -431,6 +442,7 @@ class BigInteger {
  // the thresholds, in digits, from the timings of bench/bignum.cpp on a
  // Xeon Gold 5120, against GMP
  static constexpr std::size_t kKaratsuba = 32;   ///< limbs for Karatsuba
+ static constexpr std::size_t kToom3 = 160;      ///< limbs for Toom-3
  static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
  static constexpr std::size_t kDivide = 48;      ///< quotient limbs, recursion
  static constexpr std::size_t kConvert = 24;     ///< limbs, divide and conquer
@@ -439,6 +451,7 @@ class BigInteger {
  static constexpr std::size_t kNewton = 768;     ///< limbs, by the reciprocal
  static constexpr std::size_t kRecip = 32;       ///< limbs, reciprocal by D
  static constexpr std::size_t kDivCut = 600;     ///< limbs, quotient alone
+ static constexpr std::size_t kDivShort = 16;    ///< limbs, on the stack
 
  // with ADS_WITH_GMP, the lengths in digits that go to GMP, where it was
  // faster in the timings of the same benchmark: the products whose shorter
@@ -605,11 +618,41 @@ class BigInteger {
                         const Limb * b , std::size_t nb );
  static void sqrSchool( Limb * r , const Limb * a , std::size_t n );
 
- /// r = a b, n digits each, by Karatsuba on the scratch w of
- /// karatsubaScratch( n ) digits; the NTT from fft digits
+ /// r = a^2, r of 2 n digits, n <= 4
+ static void sqrTile( Limb * r , const Limb * a , std::size_t n );
+
+ /// r = a b, n digits each, on the scratch w of mulScratch( n ) digits:
+ /// Algorithm M, from kKaratsuba digits Karatsuba, from toom digits
+ /// Toom-3, from fft digits the NTT
+ static void mulN( Limb * r , const Limb * a , const Limb * b ,
+                   std::size_t n , Limb * w , std::size_t fft ,
+                   std::size_t toom );
+ static std::size_t mulScratch( std::size_t n );
+
+ /// one step of Karatsuba and of Toom-3 on n digits, the products of the
+ /// parts by mulN()
  static void karatsuba( Limb * r , const Limb * a , const Limb * b ,
-                        std::size_t n , Limb * w , std::size_t fft );
- static std::size_t karatsubaScratch( std::size_t n );
+                        std::size_t n , Limb * w , std::size_t fft ,
+                        std::size_t toom );
+ static void toom3( Limb * r , const Limb * a , const Limb * b ,
+                    std::size_t n , Limb * w , std::size_t fft ,
+                    std::size_t toom );
+
+ /// a /= 3 for a multiple of 3, by Hensel's division
+ static void divExact3( Limb * a , std::size_t n );
+
+ /// r = a + 2 b and r = a - 2 b, n > 0 digits, the carry or the borrow
+ static Limb addLsh1( Limb * r , const Limb * a , const Limb * b ,
+                      std::size_t n );
+ static Limb subLsh1( Limb * r , const Limb * a , const Limb * b ,
+                      std::size_t n );
+
+ /// r = ( a + b ) / 2 and r = ( a - b ) / 2, n > 0 digits, the carry or
+ /// the borrow the top bit
+ static void rsh1Add( Limb * r , const Limb * a , const Limb * b ,
+                      std::size_t n );
+ static void rsh1Sub( Limb * r , const Limb * a , const Limb * b ,
+                      std::size_t n );
 
  /// r = a b by the NTT, na + nb <= kNTTMax; by the transforms of n terms
  /// on the lanes of O
@@ -633,8 +676,15 @@ class BigInteger {
  /// from fft digits
  static void mulP( Limb * r , const Limb * a , std::size_t na ,
                    const Limb * b , std::size_t nb ,
-                   std::size_t fft = kFFT );
- static Mag mulMag( const Mag & a , const Mag & b , std::size_t fft = kFFT );
+                   std::size_t fft = kFFT , std::size_t toom = kToom3 );
+ static Mag mulMag( const Mag & a , const Mag & b , std::size_t fft = kFFT ,
+                    std::size_t toom = kToom3 );
+
+ /// mulP() for na >= nb >= kKaratsuba below the NTT, apart so that the
+ /// short products do not set up its scratch on the stack
+ static void mulRec( Limb * r , const Limb * a , std::size_t na ,
+                     const Limb * b , std::size_t nb , std::size_t fft ,
+                     std::size_t toom );
 
  /// a /= d, the remainder; the same for d = dn / 2^s, dn with the top bit
  /// set and its reciprocal v; the remainder of a by d
@@ -664,6 +714,11 @@ class BigInteger {
  /// for a of n digits with the top bit set: by Newton's method (Brent
  /// and Zimmermann, Algorithm 3.5), from kRecip digits
  static void recip( Limb * x , const Limb * a , std::size_t n );
+
+ /// the quotient of u by v, 2 <= v.size() < kDivShort and
+ /// u.size() < 2 kDivShort, u >= v, and the remainder if r, by Algorithm D
+ /// on the stack
+ static void divShort( const Mag & u , const Mag & v , Mag & q , Mag * r );
 
  /// as divBase(), by blocks of quotient digits from the reciprocal of the
  /// top digits of b, the products by b modulo b^N - 1 where the NTT
