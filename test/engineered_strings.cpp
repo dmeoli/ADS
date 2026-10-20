@@ -258,6 +258,20 @@ ADS_TEST( "suffix-sorting" )
  check( fibonacciWord( 10000 ) );
  for( unsigned sigma : { 64u , 128u , 256u } )   // few names repeat: the
   check( randomString( g , 60000 , sigma , 0 ) );  // doubling of the groups
+ // equal LMS-substrings sorted by the text after them: in small groups
+ // and in groups large enough for the radix sort, and with long repeats,
+ // where the first round gives up for the names
+ check( randomString( g , 300000 , 26 , 'a' ) );
+ {
+  std::string W , R = randomString( g , 20000 , 26 , 'a' );
+  for( int i = 0 ; W.size() < 120000 ; ++i ) W += i % 2 ? "the " : "then ";
+  for( int i = 0 ; i < 5 ; ++i ) W += R;
+  check( W );
+  std::string E;                          // words: ends inside the keys
+  const char * word[] = { "a " , "an " , "and " , "ant " , "antenna " };
+  while( E.size() < 100000 ) E += word[ g() % 5 ];
+  check( E );
+  }
  std::string P;
  for( int i = 0 ; i < 3000 ; ++i ) P += "abaabab";
  check( P );
