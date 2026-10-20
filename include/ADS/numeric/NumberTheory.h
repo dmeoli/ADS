@@ -42,6 +42,10 @@
  *   each step halves at least \f$ \max( a , b ) \f$, hence at most
  *   \f$ \log_2 a + \log_2 b + 2 \f$ steps and no division, the minimum and
  *   the difference by conditional moves, with no branch to mispredict;
+ *   on x86-64 the trailing zeros are those of \f$ b - a \f$ (equal to
+ *   those of \f$ | a - b | \f$), so that the count starts with the
+ *   difference and the step is a subtraction, a count and a shift, the
+ *   two conditional moves beside them;
  * - Montgomery64, beyond the book, the arithmetic modulo an odd n of 64
  *   bits in the form \f$ \bar{x} = x R \bmod n \f$, \f$ R = 2^{64} \f$:
  *   the product is \f$ \mathrm{REDC}( \bar{a} \bar{b} ) = \bar{a} \bar{b}

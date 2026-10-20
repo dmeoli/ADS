@@ -32,6 +32,25 @@ constexpr U64 binaryGcd( U64 a , U64 b )
  if( b == 0 ) return( a );
  const int k = std::countr_zero( a | b );   // the common power of 2
  a >>= std::countr_zero( a );
+#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
+ if( ! std::is_constant_evaluated() ) {
+  // the shift by the trailing zeros of b - a, which are those of a - b,
+  // starts with the difference, the minimum and | a - b | by two
+  // conditional moves next to it: 5 cycles a step (sub, tzcnt, shrx)
+  b >>= std::countr_zero( b );
+  for( U64 d = b - a ; d != 0 ; d = b - a ) {   // a , b odd
+   const U64 e = a - b;
+   const int s = std::countr_zero( d );
+   asm( "cmpq %[a], %[b]\n\t"
+        "cmovbq %[e], %[d]\n\t"
+        "cmovbq %[b], %[a]"
+        : [d] "+&r"( d ) , [a] "+&r"( a ) : [b] "r"( b ) , [e] "r"( e )
+        : "cc" );
+   b = d >> s;
+   }
+  return( a << k );
+  }
+#endif
  do {                                       // a odd, b not 0
   b >>= std::countr_zero( b );
   const U64 lo = a < b ? a : b , hi = a < b ? b : a;
