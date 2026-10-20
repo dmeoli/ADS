@@ -6,9 +6,11 @@
  * array (benchmark "search"), the selection of the item of a rank
  * ("select") and the range minimum queries ("rmq").
  *
- * - search: SPlusTree, branchlessLowerBound() and the binary search of the
- *   book against std::lower_bound and the layout of Eytzinger with the
- *   prefetch of Khuong and Morin (written here from their paper), on n
+ * - search: SPlusTree, PGMIndex, branchlessLowerBound() and the binary
+ *   search of the book against std::lower_bound, the layout of Eytzinger
+ *   with the prefetch of Khuong and Morin (written here from their paper)
+ *   and, if found, the PGM-index of Ferragina and Vinciguerra (64 and 4 its
+ *   errors, its window searched by std::lower_bound, as in its README), on n
  *   sorted random keys of 32 and of 64 bits and n random queries, mostly
  *   absent; each query gives the item found, so that all of them pay for
  *   reading it.
@@ -47,6 +49,7 @@
 
 #include "ADS/search/BinarySearch.h"
 #include "ADS/search/NthElement.h"
+#include "ADS/search/PGMIndex.h"
 #include "ADS/search/RangeMinimum.h"
 #include "ADS/search/Selection.h"
 #include "ADS/search/StaticSearch.h"
@@ -57,6 +60,11 @@
  #include <miniselect/median_of_ninthers.h>
  #include <miniselect/pdqselect.h>
  #define ADS_HAS_MINISELECT 1
+#endif
+
+#if __has_include( <pgm/pgm_index.hpp> )
+ #include <pgm/pgm_index.hpp>
+ #define ADS_HAS_PGM 1
 #endif
 
 #if __has_include( <sdsl/rmq_succinct_sct.hpp> )
@@ -167,8 +175,25 @@ void search( const char * type , std::size_t n , int r , unsigned seed )
   return( at( ADS::branchlessLowerBound( A , q ) ) ); } );
  if( wanted( "ADS::SPlusTree" ) ) {
   const ADS::SPlusTree< T > S( A );
-  cell( "ADS::SPlusTree" , [ & ]( T q ) {
-   return( at( S.lowerBound( q ) ) ); } );
+  cell( "ADS::SPlusTree" , [ & ]( T q ) {   // the item of its own copy
+   const std::size_t r = S.lowerBound( q );
+   return( r < n ? S[ r ] : T( 0 ) ); } );
+  }
+#ifdef ADS_HAS_PGM
+ if( wanted( "pgm::PGMIndex" ) ) {          // the search of its README
+  const pgm::PGMIndex< T , 64 , 4 > P( A.begin() , A.end() );
+  cell( "pgm::PGMIndex" , [ & ]( T q ) {
+   const auto w = P.search( q );
+   return( at( std::size_t( std::lower_bound( A.begin() + long( w.lo ) ,
+                                              A.begin() + long( w.hi ) ,
+                                              q ) - A.begin() ) ) ); } );
+  }
+#endif
+ if( wanted( "ADS::PGMIndex" ) ) {
+  const ADS::PGMIndex< T , 64 , 4 > P( A );
+  cell( "ADS::PGMIndex" , [ & ]( T q ) {    // the item of its own copy
+   const std::size_t r = P.lowerBound( q );
+   return( r < n ? P[ r ] : T( 0 ) ); } );
   }
  }
 

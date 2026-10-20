@@ -570,6 +570,7 @@ hashing  dense-hash-map        mappa hash a vettore denso e indice
 # the engineered ordered structures, beyond the book
 ordered  btree-map            B+-albero in memoria, nodi di 512 byte
 ordered  static-search        S+-albero di Slotin, ricerca senza salti
+ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
 ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
 ordered  word-range-minimum   minimo di un intervallo, pile in una parola
 ordered  vector-intersection  intersezione a blocchi di 8 e a galoppo

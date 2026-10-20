@@ -413,13 +413,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   WordRangeMinimum, the range minima by stacks in a word and a sparse
   table on blocks of 64; intersect(), the intersection of sorted lists by
   blocks of 8 with AVX2 and by galloping; RemUnionFind, the algorithm of Rem
-  with splicing; test/ordered.cpp
+  with splicing; AdaptiveRadixTree, the adaptive radix tree of Leis,
+  Kemper and Neumann on strings; PGMIndex, the learned index of Ferragina
+  and Vinciguerra on the optimal piecewise linear approximation;
+  test/ordered.cpp
 - the benchmarks of the ordered dictionaries, of the searches in arrays
   (lower bound, selection, range minima) and of the sets (intersection,
   union of disjoint sets, boolean vectors), against the standard library,
   Boost and, when found, Abseil, tlx, miniselect, sdsl-lite, the SIMD
-  intersections of Lemire et al. and CRoaring; bench/ordered.cpp,
-  bench/arrays.cpp, bench/sets.cpp
+  intersections of Lemire et al., CRoaring, the PGM-index, tsl::htrie_map
+  and libart; bench/ordered.cpp, bench/arrays.cpp, bench/sets.cpp,
+  bench/tries.cpp
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the
