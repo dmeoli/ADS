@@ -646,6 +646,96 @@ bool saisResolveTies( S * SA , S n , S m , const std::vector< S > & runs ,
  return( true );
  }
 
+/// a part of a bucket in the partial induction: where the next entry
+/// goes, and the name (the count of the marks met) of the last one moved in
+template< class S >
+struct SaisPart {
+ S to , last;
+ };
+
+/// the move of the entry SA[ i ] by a scan of the partial induction, from
+/// left to right (forS false: the suffix p - 1 , of type L , to the part
+/// of its symbol by the type of p - 2 , at its start) or from right to left
+/// (forS true: of type S, at its end); the suffix 0 moves nothing
+template< bool forS , class C , class S >
+inline void saisPartialMove( const C * ADS_SAIS_RESTRICT T ,
+                             S * ADS_SAIS_RESTRICT SA ,
+                             SaisPart< S > * ADS_SAIS_RESTRICT P , S i ,
+                             S & d )
+{
+ constexpr S top = std::numeric_limits< S >::min() ,
+             low = std::numeric_limits< S >::max();
+ S p = SA[ i ];
+ d += S( p < 0 );
+ p &= low;
+ const S j = p - 1;
+ if( j == 0 ) return;
+ const S c = S( T[ j ] ) , b = S( T[ j - 1 ] );
+ SaisPart< S > & q = P[ 2 * std::size_t( c ) +
+                        std::size_t( forS ? b > c : b < c ) ];
+ const S at = forS ? --q.to : q.to++;
+ SA[ at ] = j | ( top & -S( q.last != d ) );
+ q.last = d;
+ }
+
+/// a scan of the partial induction over SA[ from .. to ), two entries a
+/// step, with the prefetches of the final scans; returns d
+template< bool forS , bool large , class C , class S >
+S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
+                   SaisPart< S > * ADS_SAIS_RESTRICT P , S from , S to ,
+                   S d )
+{
+ constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
+ // the part of an entry p, with no check (p > 1 , or 0 for an entry not
+ // yet there)
+ auto part = [ & ]( S p ) {
+  const S j = p - S( p > 1 );
+  const S c = S( T[ j ] ) , b = S( T[ j - S( j > 0 ) ] );
+  return( 2 * std::size_t( c ) + std::size_t( forS ? b > c : b < c ) );
+  };
+ auto ahead = [ & ]( S x , S y , S e , S f ) {
+  x &= low;
+  y &= low;
+  saisPrefetch( T + saisClamp( x - 2 ) );
+  saisPrefetch( T + saisClamp( y - 2 ) );
+  if constexpr( large ) {             // the part, and where it writes
+   saisPrefetchW( P + part( e & low ) );
+   saisPrefetchW( SA + ( P[ part( f & low ) ].to - S( forS ) ) );
+   }
+  };
+ auto ahead2 = [ & ]( S e , S f ) {   // the second entry of a step
+  if constexpr( large ) {
+   saisPrefetchW( P + part( e & low ) );
+   saisPrefetchW( SA + ( P[ part( f & low ) ].to - S( forS ) ) );
+   }
+  };
+ if constexpr( ! forS ) {
+  S i = from;
+  for( ; i + 2 * D + 1 < to ; i += 2 ) {
+   saisPrefetch( SA + i + 2 * D );
+   ahead( SA[ i + D ] , SA[ i + D + 1 ] , SA[ i + D / 2 ] ,
+          SA[ i + D / 4 ] );
+   ahead2( SA[ i + D / 2 + 1 ] , SA[ i + D / 4 + 1 ] );
+   saisPartialMove< false >( T , SA , P , i , d );
+   saisPartialMove< false >( T , SA , P , i + 1 , d );
+   }
+  for( ; i < to ; ++i ) saisPartialMove< false >( T , SA , P , i , d );
+  }
+ else {
+  S i = to - 1;
+  for( ; i - 2 * D - 1 >= from ; i -= 2 ) {
+   saisPrefetch( SA + i - 2 * D );
+   ahead( SA[ i - D ] , SA[ i - D - 1 ] , SA[ i - D / 2 ] ,
+          SA[ i - D / 4 ] );
+   ahead2( SA[ i - D / 2 - 1 ] , SA[ i - D / 4 - 1 ] );
+   saisPartialMove< true >( T , SA , P , i , d );
+   saisPartialMove< true >( T , SA , P , i - 1 , d );
+   }
+  for( ; i >= from ; --i ) saisPartialMove< true >( T , SA , P , i , d );
+  }
+ return( d );
+ }
+
 /// the first stage of SA-IS, the partial induction: the types and the LMS
 /// places of T (n >= 2 symbols in [ 0 , K )), and the LMS-substrings
 /// sorted and named by one scan of the L-suffixes whose predecessor is L
@@ -755,9 +845,7 @@ S saisPartial( const C * T , S * SA , S n , S K ,
  // places sorted at last in [ 0 , m ), per symbol
  // a part v = 2 c + t of the moves of a scan: where the next move goes,
  // and the name of the last one, side by side in one line of cache
- struct Part {
-  S to , last;
-  };
+ using Part = SaisPart< S >;
  std::vector< Part > L( 2 * k , Part{ 0 , 0 } ) , R( 2 * k , Part{ 0 , 0 } );
  std::vector< S > seed( k );
  S sum = 0;
@@ -806,32 +894,12 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   SA[ L[ v ].to++ ] = j | top;
   L[ v ].last = d;
   }
- // the part of an entry p: the symbol before it and the type of the one
- // before that, with no check (p > 1 , or 0 for an entry not yet there)
- auto part = [ & ]( S p , bool forS ) {
-  const S j = p - S( p > 1 );
-  const S c = S( T[ j ] ) , b = S( T[ j - S( j > 0 ) ] );
-  return( 2 * std::size_t( c ) + std::size_t( forS ? b > c : b < c ) );
-  };
- for( S i = 0 ; i < endA ; ++i ) {
-  if( i + D < endA ) {
-   const S a = SA[ i + D ] & low;
-   saisPrefetch( T + saisClamp( a - 2 ) );
-   if( large ) {                      // its part, and where it writes
-    saisPrefetchW( L.data() + part( SA[ i + D / 2 ] & low , false ) );
-    saisPrefetchW( SA + L[ part( SA[ i + D / 4 ] & low , false ) ].to );
-    }
-   }
-  S p = SA[ i ];
-  d += S( p < 0 );
-  p &= low;
-  const S j = p - 1;
-  if( j == 0 ) continue;             // the suffix 0 moves nothing
-  const S c = S( T[ j ] );
-  Part & q = L[ 2 * std::size_t( c ) + std::size_t( S( T[ j - 1 ] ) < c ) ];
-  SA[ q.to++ ] = j | ( top & -S( q.last != d ) );
-  q.last = d;
-  }
+ // the parts and the places they point to prefetched only on the
+ // alphabets whose parts do not fit in the cache
+ const bool huge = K > S( 65536 );
+ d = huge ?
+     saisPartialScan< false , true >( T , SA , L.data() , S( 0 ) , endA , d ) :
+     saisPartialScan< false , false >( T , SA , L.data() , S( 0 ) , endA , d );
 
  // the marks of the LS parts moved one place left, so that a mark tells
  // that an entry differs from the one after it, as the scan from right to
@@ -848,26 +916,9 @@ S saisPartial( const C * T , S * SA , S n , S K ,
  // the scan of C from right to left: the suffix p - 1, of type S, to the
  // SS part of its symbol if p - 2 is of type S, among the sorted LMS
  // places otherwise
- for( S i = endC - 1 ; i >= endA ; --i ) {
-  if( i - D >= endA ) {
-   const S a = SA[ i - D ] & low;
-   saisPrefetch( T + saisClamp( a - 2 ) );
-   if( large ) {
-    saisPrefetchW( R.data() + part( SA[ i - D / 2 ] & low , true ) );
-    saisPrefetchW( SA + ( R[ part( SA[ i - D / 4 ] & low , true ) ].to -
-                          1 ) );
-    }
-   }
-  S p = SA[ i ];
-  d += S( p < 0 );
-  p &= low;
-  const S j = p - 1;
-  if( j == 0 ) continue;
-  const S c = S( T[ j ] );
-  Part & q = R[ 2 * std::size_t( c ) + std::size_t( S( T[ j - 1 ] ) > c ) ];
-  SA[ --q.to ] = j | ( top & -S( q.last != d ) );
-  q.last = d;
-  }
+ d = huge ?
+     saisPartialScan< true , true >( T , SA , R.data() , endA , endC , d ) :
+     saisPartialScan< true , false >( T , SA , R.data() , endA , endC , d );
 
  // the names: SA[ i ] marked if it differs from SA[ i + 1 ]; here only
  // their groups, the names themselves written when needed
