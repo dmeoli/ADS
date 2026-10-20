@@ -133,6 +133,19 @@ ADS_TEST( "montgomery" )
    }
   CHECK( M.to( ~U64( 0 ) ) == M.to( ~U64( 0 ) % n ) );
   }
+ // the moduli below 2^32: the bases above the modulus, the exponents 0,
+ // the powers of 2 and their neighbours
+ for( const U64 n : { U64( 3 ) , U64( 4294967291ULL ) ,
+                      ( U64( 1 ) << 32 ) - 1 , U64( 65537 ) } )
+  for( const U64 x : { U64( 0 ) , U64( 1 ) , n - 1 , n , ~U64( 0 ) } )
+   for( int k = 0 ; k < 64 ; ++k )
+    for( const U64 v : { U64( 1 ) << k , ( U64( 1 ) << k ) - 1 ,
+                         ( U64( 1 ) << k ) + 1 } ) {
+     U64 r = 1 % n;
+     for( U64 y = x % n , e = v ; e ; e >>= 1 , y = mulMod( y , y , n ) )
+      if( e & 1 ) r = mulMod( r , y , n );
+     CHECK( powMod( x , v , n ) == r );
+     }
  CHECK( powMod( 0 , 0 , 7 ) == 1 && powMod( 3 , 5 , 1 ) == 0 &&
         powMod( 2 , 64 , 18446744073709551557ull ) == 59 &&
         powMod( 3 , 4 , 10 ) == 1 );        // an even modulus
