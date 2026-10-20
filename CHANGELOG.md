@@ -34,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   maximum flow and of the properties of graphs named without citing them:
   Fredman and Tarjan, Ford, Moore, Karzanov, Malhotra-Kumar-Maheshwari,
   Karmarkar, Konig
+- listSort(), the sort of a List by relinking its cells, stable: the
+  numbers in their natural order by the radix sort of an array of pairs
+  ( key , cell ) and one pass that relinks them, 4 to 15 times faster than
+  std::list::sort; any other order by the bottom-up merge of the natural
+  runs (the strictly decreasing ones reversed) with an array of 64 runs,
+  1.3 to 2.7 times faster; its test in test/sequences.cpp and its cells in
+  bench/sequences.cpp
 
 - DialQueue, the monotone bucket queue of Dial on a circular window of W
   buckets with a radix heap for the keys beyond it, the next bucket in use

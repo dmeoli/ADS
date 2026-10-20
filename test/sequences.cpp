@@ -26,6 +26,7 @@
 #include "ADS/sequence/ArraySequence.h"
 #include "ADS/sequence/CursorList.h"
 #include "ADS/sequence/List.h"
+#include "ADS/sequence/ListSort.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SequenceAlgorithms.h"
 #include "ADS/sequence/SinglyList.h"
@@ -35,6 +36,7 @@
 #include <cstdint>
 #include <random>
 #include <stdexcept>
+#include <utility>
 #include <string>
 #include <vector>
 
@@ -311,6 +313,74 @@ ADS_TEST( "small-vector" )
  CHECK_THROWS( X.push_back( Bomb( 9 ) ) , std::runtime_error );
  Bomb::left = -1;
  CHECK( X.small() && X.size() == 2 && X[ 0 ].v == 0 && X[ 1 ].v == 1 );
+ }
+
+/// listSort() on the items X of a List against std::stable_sort; the
+/// positions of the items stay on them
+template< class T , class C >
+void sorted( const std::vector< T > & X , C less )
+{
+ List< T > L( X.begin() , X.end() );
+ std::vector< typename List< T >::Pos > P;
+ for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
+  P.push_back( p );
+ listSort( L , less );
+ std::vector< T > R( X );
+ std::stable_sort( R.begin() , R.end() , less );
+ std::vector< T > Y;
+ for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
+  Y.push_back( L.read( p ) );
+ CHECK( Y == R );
+ for( std::size_t i = 0 ; i < X.size() ; ++i )   // the cells kept
+  CHECK( P[ i ]->value == X[ i ] );
+ std::vector< T > B;                         // and linked both ways
+ for( auto p = L.tail() ; ! L.finished( p ) ; p = L.prev( p ) )
+  B.push_back( L.read( p ) );
+ CHECK( std::equal( B.rbegin() , B.rend() , R.begin() , R.end() ) );
+ }
+
+/// the patterns of n items made by key( i , g )
+template< class T , class C , class Key >
+void patterns( std::size_t n , C less , Key key )
+{
+ std::mt19937 g{ unsigned( n ) };
+ std::vector< T > A( n );
+ for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = key( i , g );
+ sorted( A , less );                         // random
+ std::vector< T > S( A );
+ std::stable_sort( S.begin() , S.end() , less );
+ sorted( S , less );                         // sorted
+ std::reverse( S.begin() , S.end() );
+ sorted( S , less );                         // reversed (equal items too)
+ }
+
+// the sort of a List by relinking its cells against std::stable_sort, by
+// the radix sort on integers (negative ones too) and doubles and by the
+// merge of the natural runs on strings and on pairs ordered by their first
+// item only, which checks the stability; on no items, one, two, sorted,
+// reversed, all equal and random lists; the positions stay on their items
+// and the predecessors are relinked
+ADS_TEST( "list-sort" )
+{
+ for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
+                        std::size_t( 2 ) , std::size_t( 3 ) ,
+                        std::size_t( 100 ) , std::size_t( 5000 ) } ) {
+  patterns< int >( n , std::less<>() , []( std::size_t , auto & g ) {
+   return( int( g() % 2001 ) - 1000 ); } );
+  patterns< double >( n , std::less< double >() , []( std::size_t ,
+                                                      auto & g ) {
+   return( double( int( g() % 200 ) - 100 ) / 8 ); } );
+  patterns< std::string >( n , std::less<>() , []( std::size_t ,
+                                                  auto & g ) {
+   return( std::to_string( g() % 300 ) ); } );
+  using Pair = std::pair< int , int >;
+  patterns< Pair >( n , []( const Pair & a , const Pair & b ) {
+   return( a.first < b.first ); } , []( std::size_t i , auto & g ) {
+   return( Pair( int( g() % 7 ) , int( i ) ) ); } );
+  patterns< int >( n , std::greater<>() , []( std::size_t , auto & g ) {
+   return( int( g() % 50 ) ); } );          // not the natural order
+  sorted( std::vector< int >( n , 4 ) , std::less<>() );   // all equal
+  }
  }
 
 }  // end( namespace )
