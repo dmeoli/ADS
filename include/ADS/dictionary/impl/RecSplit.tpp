@@ -20,6 +20,16 @@ namespace ADS {
 /*------------------------- THE SEQUENCES OF BUCKETS -----------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the place of the 1 of rank k in x, by PDEP where the machine has it
+[[nodiscard]] inline int detail::recSplitSelect( std::uint64_t x , int k )
+{
+#if defined( __BMI2__ ) && defined( __x86_64__ )
+ return( int( _tzcnt_u64( _pdep_u64( std::uint64_t( 1 ) << k , x ) ) ) );
+#else
+ return( selectInWord( x , k ) );
+#endif
+ }
+
 inline detail::RecSplitSequence::RecSplitSequence(
                                    const std::vector< std::uint64_t > & x )
 {
@@ -67,7 +77,7 @@ inline std::size_t detail::RecSplitSequence::select( std::size_t i ) const
  for( ; ; bits = f_high[ ++w ] ) {
   const std::size_t c = std::size_t( std::popcount( bits ) );
   if( r < c )
-   return( 64 * w + std::size_t( selectInWord( bits , int( r ) ) ) );
+   return( 64 * w + std::size_t( recSplitSelect( bits , int( r ) ) ) );
   r -= c;
   }
  }
@@ -264,7 +274,8 @@ std::uint64_t RecSplit< T , L , H >::skipOnes( std::uint64_t at ,
   const std::uint64_t w = window( at );
   const auto pc = std::size_t( std::popcount( w ) );
   if( pc >= c )
-   return( at + std::uint64_t( selectInWord( w , int( c - 1 ) ) ) + 1 );
+   return( at + std::uint64_t( detail::recSplitSelect( w , int( c - 1 ) ) ) +
+           1 );
   c -= pc;
   at += 64;
   }
