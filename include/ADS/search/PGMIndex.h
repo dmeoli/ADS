@@ -43,9 +43,9 @@
  * on huge pages [see HugePageAllocator.h], so that the window of a search
  * costs no miss of the TLB of its own. On repeated keys, whose places a
  * line cannot all approximate, the search goes on past the window by
- * galloping. The keys are mapped to integers of 64 bits in the same order (the signed by
- * flipping the top bit, the floating by their bits), so that the hulls are
- * kept with exact products of 128 bits.
+ * galloping. The keys are mapped to integers of 64 bits in the same order
+ * (the signed by flipping the top bit, the floating by their bits), so that
+ * the hulls are kept with exact products of 128 bits.
  *
  * The contracts [see Contract.h]: the keys sorted, an audit; \f$ \epsilon
  * \ge 1 \f$, \f$ \epsilon_r \ge 1 \f$; each result r is such that the items
