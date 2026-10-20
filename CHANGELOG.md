@@ -950,6 +950,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   carry wrong, the leaves by products by P; the powers and their
   reciprocals kept per thread and base; the figures of a chunk of 10^19
   by pairs from a table
+- BigInteger: the passes of 6 rows (window of 7 places, 31 instructions
+  for 6 products), about 1.22 cycles per product on long rows and 1.38 on
+  32 digits against 1.70 for the basecase of GMP; Algorithm D by blocks
+  of 6 digits of the quotient from kDivBlock6 digits of divisor
+  (subPass6()), 1.06 to 1.18 times the schoolbook division of GMP from
+  128 digits; kKaratsuba 40 and kDivide 96
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
