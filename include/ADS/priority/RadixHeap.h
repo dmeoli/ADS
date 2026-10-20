@@ -39,7 +39,9 @@
  * no allocator, and the items of a bucket come out last pushed first.
  *
  * The contracts [see Contract.h]: a key pushed is not smaller than the
- * last one extracted (than topKey()), top(), topKey() and pop() need a
+ * last one extracted or read by top() and topKey() (any key before the
+ * first of them and after clear()), and top(), topKey(), peekKey() and
+ * pop() need a
  * queue that is not empty; the invariant, checked on queues of at most 1024
  * items, is that each item is in its bucket and that the mask and the
  * least keys of the buckets are right. The operations are defined in
@@ -106,7 +108,8 @@ class RadixHeap {
  using Key = K;    ///< the type of the keys
 
  /// pushes x with the key k
- /// \pre the queue is empty or k >= topKey() of the last extraction
+ /// \pre k is not smaller than the last key extracted or read by top() and
+ ///      topKey() (any key before the first of them and after clear())
  void push( const T & x , K k );
 
  /// an item of least key, the last pushed among those
@@ -116,6 +119,12 @@ class RadixHeap {
  /// the least key
  /// \pre the queue is not empty
  [[nodiscard]] K topKey( void );
+
+ /// the least key, read from the least key of the first bucket in use,
+ /// which does not move the buckets: the keys pushed next need only be not
+ /// smaller than the last one extracted, as if topKey() were not called
+ /// \pre the queue is not empty
+ [[nodiscard]] K peekKey( void ) const;
 
  /// removes top() and returns it
  /// \pre the queue is not empty

@@ -20,6 +20,7 @@
 #include "ADSTest.h"
 
 #include "ADS/priority/BucketQueue.h"
+#include "ADS/priority/DialQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
 #include "ADS/priority/PairingHeap.h"
@@ -102,6 +103,72 @@ ADS_TEST( "bucket-queue-cells" )
  CHECK( Q.pop() == "b" && Q.empty() );
  }
 
+/// the Dial queue of window for c against a multiset, the keys pushed up
+/// to C above the last one extracted
+template< class K >
+void dial( unsigned seed , std::size_t c , std::uint64_t C , int steps )
+{
+ DialQueue< int , K > Q( c );
+ std::multiset< K > R;
+ std::mt19937_64 g( seed );
+ K last = std::is_signed_v< K > ? K( -1000000 ) : K( 0 );
+ for( int t = 0 ; t < steps ; ++t )
+  if( R.empty() || ( g() % 5 < 3 ) ) {
+   const K k = K( last + K( g() % ( C + 1 ) ) );
+   Q.push( t , k );
+   R.insert( k );
+   }
+  else {
+   CHECK( Q.topKey() == *R.begin() );
+   last = Q.topKey();
+   Q.pop();
+   R.erase( R.begin() );
+   }
+ CHECK( Q.size() == R.size() );
+ while( ! R.empty() ) {
+  CHECK( Q.topKey() == *R.begin() );
+  Q.pop();
+  R.erase( R.begin() );
+  }
+ CHECK( Q.empty() );
+ }
+
+// the Dial queue against a multiset: keys within the window (never the
+// overflow), up to 10 and 1000 times beyond it (through the overflow), on
+// windows of 64 and 1024 buckets, signed and unsigned keys; the edge
+// cases: an empty queue violates the contracts, a key below the last
+// extracted as well, equal keys come out last pushed first, a key just
+// at the edge of the window, any key after clear(), a window of one word
+// of bits and the wrap around the circle
+ADS_TEST( "dial-queue" )
+{
+ DialQueue< int > E( 10 );
+ CHECK( E.window() == 64 );
+ CHECK_THROWS( (void) E.top() , contract_violation );
+ CHECK_THROWS( E.pop() , contract_violation );
+ E.push( 0 , 50u );                         // the window from 50
+ CHECK( E.pop() == 0 );
+ E.push( 1 , 100u );
+ E.push( 2 , 100u );
+ E.push( 3 , 113u );                        // the last bucket of the window
+ E.push( 4 , 114u );                        // the first beyond it
+ CHECK( E.top() == 2 && E.pop() == 2 && E.pop() == 1 );
+ CHECK_THROWS( E.push( 5 , 99u ) , contract_violation );
+ CHECK( E.topKey() == 113u && E.pop() == 3 && E.pop() == 4 );
+ CHECK( E.empty() );
+ E.clear();
+ E.push( 6 , 7u );                          // any key after clear()
+ E.push( 7 , 7u + 64u * 5u );
+ CHECK( E.pop() == 6 && E.topKey() == 7u + 320u && E.pop() == 7 );
+ dial< std::uint32_t >( 1 , 63 , 63 , 5000 );        // in the window
+ dial< std::uint32_t >( 2 , 63 , 640 , 5000 );       // overflow
+ dial< std::uint32_t >( 3 , 1023 , 1000 , 5000 );
+ dial< std::uint64_t >( 4 , 1023 , 1000000 , 5000 );
+ dial< std::int32_t >( 5 , 100 , 1000 , 5000 );
+ dial< std::uint32_t >( 6 , 255 , 255 , 30000 );     // past 1024 items
+ dial< std::uint32_t >( 7 , 63 , 0 , 2000 );         // all equal
+ }
+
 /// the radix heap of digits of B bits against a multiset of ( key , id ),
 /// on keys pushed at most C above the last one extracted
 template< class K , unsigned B >
@@ -118,7 +185,7 @@ void radix( unsigned seed , std::uint64_t C , int steps )
    R.insert( k );
    }
   else {
-   CHECK( H.topKey() == *R.begin() );
+   CHECK( H.peekKey() == *R.begin() && H.topKey() == *R.begin() );
    last = H.topKey();
    H.pop();
    R.erase( R.begin() );
@@ -150,7 +217,11 @@ ADS_TEST( "radix-heap" )
  CHECK( E.pop() == 3 && E.pop() == 2 );
  CHECK_THROWS( E.push( 4 , 9u ) , contract_violation );
  E.push( 4 , 10u );
- CHECK( E.pop() == 4 && E.pop() == 1 && E.empty() );
+ CHECK( E.pop() == 4 );
+ E.push( 8 , 20u );                         // peekKey() keeps the base,
+ CHECK( E.pop() == 1 && E.peekKey() == 20u );   // so 15 may come next
+ E.push( 9 , 15u );
+ CHECK( E.topKey() == 15u && E.pop() == 9 && E.pop() == 8 );
  E.clear();
  E.push( 5 , 0u );                          // any key after clear()
  CHECK( E.topKey() == 0u && E.size() == 1 );
