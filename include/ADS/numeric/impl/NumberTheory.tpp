@@ -209,6 +209,47 @@ struct Montgomery32 {
  [[nodiscard]] U64 canon( U64 x ) const { return( x ); }
  };
 
+/// the strong probable primality of the odd n < 2^32 to the base b < n,
+/// with n - 1 = 2^s d, in the Montgomery arithmetic of R = 2^32 with none
+/// of its constants but n^-1: the form of b by one division of 64 by 32
+/// bits, the power from the lowest bit of d, which is 1, so that it needs
+/// no form of 1, and the comparisons on the numbers, by one reduction
+inline bool strongProbablePrime32( std::uint32_t n , std::uint32_t b ,
+                                   std::uint32_t d , int s )
+{
+ std::uint32_t inv = ( 3 * n ) ^ 2;         // n^-1 mod 2^32 by Newton
+ for( int i = 0 ; i < 3 ; ++i ) inv *= 2 - n * inv;
+ auto mul = [ n , inv ]( U64 a , U64 c ) {  // a c 2^-32 mod n
+  const U64 t = a * c , mn = U64( std::uint32_t( t ) * inv ) * n;
+  const U64 th = t >> 32 , mh = mn >> 32;
+  return( th < mh ? th - mh + n : th - mh ); };
+ const U64 sq = U64( b ) << 32;             // b 2^32 mod n
+#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
+ std::uint32_t q , bf;
+ asm( "divl %4" : "=a"( q ) , "=d"( bf )
+      : "a"( std::uint32_t( sq ) ) , "d"( std::uint32_t( sq >> 32 ) ) ,
+        "rm"( n ) );
+#else
+ const std::uint32_t bf = std::uint32_t( sq % n );
+#endif
+ U64 x = bf , r = bf;                       // b^1 , and b^( 2^i ) in x
+ for( std::uint32_t v = d >> 1 ; v ; v >>= 1 ) {
+  x = mul( x , x );
+  const U64 t = mul( r , x );
+  r = ( v & 1 ) ? t : r;
+  }
+ U64 y = mul( r , 1 );                      // b^d mod n
+ if( ( y == 1 ) || ( y == n - 1 ) )
+  return( true );
+ for( int i = 1 ; i < s ; ++i ) {
+  r = mul( r , r );
+  y = mul( r , 1 );
+  if( y == n - 1 ) return( true );
+  if( y == 1 ) return( false );
+  }
+ return( false );
+ }
+
 }  // end( namespace detail )
 
 inline std::tuple< long long , long long , long long > extendedEuclid(
@@ -489,9 +530,9 @@ inline bool isPrime( U64 n )
  if( n < 223 * 223 )                        // 223 the next prime
   return( true );
  // the fewest bases with no strong pseudoprime below the bound
- static constexpr U64 B1[] = { 9345883071009581737ULL } ,
-  B3[] = { 4230279247111683200ULL , 14694767155120705706ULL ,
-           16641139526367750375ULL } ,
+ static constexpr U64 B3[] = { 4230279247111683200ULL ,
+                               14694767155120705706ULL ,
+                               16641139526367750375ULL } ,
   B4[] = { 2 , 141889084524735ULL , 1199124725622454117ULL ,
            11096072698276303650ULL } ,
   B5[] = { 2 , 4130806001517ULL , 149795463772692060ULL ,
@@ -504,17 +545,76 @@ inline bool isPrime( U64 n )
  const U64 d = ( n - 1 ) >> s;
  using detail::strongProbablePrimes;
  if( n < ( U64( 1 ) << 32 ) ) {
-  const detail::Montgomery32 M( n );
-  if( n < 341531ULL ) return( strongProbablePrimes< 1 >( M , B1 , d , s ) );
-  // the base 2 and a second one chosen by a hash of n among 32, each a
-  // witness for every strong pseudoprime to the base 2 below 2^32 of its
-  // bucket (the 2314 of them), so that no composite passes both
-  static constexpr unsigned char H[ 32 ] = {
-   34 , 33 , 17 , 15 , 13 , 45 , 59 , 163 , 15 , 41 , 7 , 33 , 21 , 53 , 7 ,
-   59 , 83 , 15 , 11 , 35 , 15 , 106 , 15 , 39 , 110 , 51 , 38 , 30 , 30 ,
-   38 , 7 , 17 };
-  const U64 b[ 2 ] = { 2 , H[ ( std::uint32_t( n ) * 0x9E3779B1u ) >> 27 ] };
-  return( strongProbablePrimes< 2 >( M , b , d , s ) );
+  // one base, read in a table of 1024 at the hash of n: for each bucket
+  // the least base for which no odd composite of the bucket with no prime
+  // factor up to 211 (those that come here) is a strong probable prime,
+  // found by the exhaustive search over the 2^31 odd numbers below 2^32
+  static constexpr unsigned char H[ 1024 ] = {
+  5 , 19 , 3 , 12 , 2 , 18 , 2 , 10 , 3 , 14 , 14 , 2 , 10 , 6 , 3 , 5 , 11 ,
+  7 , 7 , 5 , 11 , 5 , 10 , 3 , 15 , 5 , 17 , 3 , 5 , 11 , 5 , 11 , 7 , 14 ,
+  18 , 5 , 3 , 6 , 7 , 2 , 3 , 6 , 21 , 3 , 14 , 6 , 17 , 6 , 57 , 6 , 7 ,
+  6 , 2 , 13 , 2 , 2 , 17 , 20 , 7 , 2 , 12 , 15 , 6 , 2 , 2 , 6 , 10 , 5 ,
+  2 , 28 , 10 , 7 , 11 , 7 , 24 , 3 , 26 , 17 , 6 , 14 , 3 , 7 , 24 , 5 ,
+  10 , 3 , 6 , 6 , 7 , 2 , 6 , 2 , 2 , 14 , 7 , 5 , 6 , 3 , 3 , 10 , 19 , 5 ,
+  11 , 2 , 13 , 3 , 5 , 5 , 11 , 6 , 11 , 13 , 6 , 7 , 22 , 28 , 3 , 3 , 3 ,
+  11 , 19 , 20 , 2 , 5 , 20 , 13 , 6 , 5 , 13 , 7 , 3 , 2 , 6 , 7 , 18 , 10 ,
+  17 , 2 , 2 , 6 , 6 , 5 , 3 , 19 , 12 , 10 , 11 , 11 , 19 , 11 , 13 , 2 ,
+  13 , 5 , 10 , 18 , 22 , 5 , 10 , 3 , 3 , 7 , 11 , 6 , 33 , 2 , 21 , 5 ,
+  15 , 7 , 2 , 12 , 13 , 11 , 6 , 6 , 13 , 5 , 13 , 13 , 3 , 7 , 31 , 3 , 7 ,
+  3 , 10 , 11 , 6 , 19 , 6 , 5 , 13 , 3 , 67 , 2 , 2 , 6 , 3 , 29 , 10 , 11 ,
+  7 , 3 , 2 , 2 , 14 , 17 , 2 , 6 , 5 , 3 , 33 , 6 , 15 , 2 , 10 , 14 , 2 ,
+  3 , 2 , 11 , 2 , 19 , 2 , 2 , 21 , 2 , 2 , 41 , 2 , 10 , 7 , 12 , 14 , 7 ,
+  2 , 10 , 11 , 6 , 15 , 20 , 5 , 6 , 20 , 13 , 10 , 11 , 63 , 3 , 13 , 14 ,
+  2 , 13 , 6 , 10 , 2 , 3 , 29 , 11 , 2 , 15 , 10 , 2 , 3 , 5 , 6 , 7 , 19 ,
+  11 , 21 , 13 , 15 , 2 , 2 , 10 , 11 , 5 , 2 , 21 , 19 , 10 , 6 , 2 , 7 ,
+  20 , 2 , 3 , 14 , 18 , 6 , 7 , 10 , 6 , 6 , 6 , 2 , 19 , 3 , 37 , 3 , 6 ,
+  3 , 5 , 21 , 6 , 5 , 10 , 2 , 3 , 2 , 17 , 5 , 19 , 28 , 11 , 3 , 11 , 5 ,
+  5 , 12 , 6 , 10 , 14 , 14 , 23 , 13 , 2 , 17 , 14 , 3 , 7 , 58 , 7 , 19 ,
+  5 , 2 , 2 , 7 , 5 , 37 , 10 , 17 , 10 , 7 , 7 , 7 , 19 , 3 , 2 , 30 , 15 ,
+  6 , 2 , 5 , 10 , 21 , 12 , 13 , 19 , 5 , 5 , 2 , 10 , 11 , 11 , 12 , 2 ,
+  5 , 11 , 5 , 10 , 10 , 2 , 7 , 46 , 15 , 2 , 7 , 15 , 2 , 11 , 6 , 22 ,
+  13 , 2 , 3 , 5 , 3 , 26 , 15 , 6 , 5 , 13 , 6 , 6 , 2 , 2 , 24 , 7 , 34 ,
+  19 , 2 , 7 , 5 , 3 , 6 , 2 , 24 , 13 , 11 , 5 , 2 , 5 , 11 , 13 , 6 , 3 ,
+  5 , 17 , 7 , 15 , 2 , 5 , 6 , 5 , 6 , 3 , 11 , 6 , 11 , 7 , 3 , 6 , 11 ,
+  2 , 6 , 7 , 2 , 2 , 6 , 10 , 13 , 3 , 5 , 14 , 5 , 11 , 2 , 15 , 3 , 3 ,
+  6 , 7 , 3 , 7 , 2 , 6 , 5 , 10 , 2 , 7 , 3 , 3 , 10 , 11 , 11 , 5 , 17 ,
+  23 , 11 , 6 , 13 , 2 , 6 , 5 , 5 , 11 , 7 , 18 , 17 , 10 , 11 , 11 , 6 ,
+  17 , 3 , 15 , 2 , 3 , 14 , 12 , 12 , 10 , 7 , 13 , 2 , 6 , 6 , 2 , 5 , 6 ,
+  26 , 15 , 31 , 2 , 38 , 11 , 7 , 7 , 19 , 2 , 6 , 5 , 3 , 40 , 7 , 10 , 2 ,
+  11 , 13 , 10 , 10 , 10 , 10 , 17 , 6 , 11 , 7 , 6 , 5 , 11 , 2 , 10 , 7 ,
+  3 , 13 , 13 , 11 , 11 , 5 , 10 , 23 , 2 , 7 , 2 , 52 , 26 , 10 , 3 , 28 ,
+  22 , 3 , 2 , 2 , 15 , 10 , 7 , 3 , 11 , 2 , 6 , 3 , 6 , 2 , 15 , 2 , 6 ,
+  5 , 7 , 10 , 2 , 2 , 15 , 2 , 5 , 12 , 5 , 5 , 6 , 3 , 2 , 2 , 3 , 6 , 3 ,
+  7 , 6 , 10 , 15 , 10 , 7 , 15 , 13 , 2 , 7 , 7 , 2 , 3 , 3 , 11 , 26 , 5 ,
+  7 , 10 , 12 , 18 , 3 , 2 , 19 , 26 , 15 , 22 , 2 , 11 , 11 , 2 , 2 , 2 ,
+  7 , 10 , 2 , 20 , 5 , 6 , 10 , 7 , 23 , 6 , 6 , 7 , 10 , 17 , 14 , 7 , 6 ,
+  5 , 6 , 2 , 2 , 6 , 3 , 2 , 15 , 6 , 11 , 17 , 5 , 6 , 5 , 15 , 10 , 5 ,
+  3 , 13 , 26 , 2 , 5 , 29 , 13 , 2 , 2 , 15 , 12 , 7 , 2 , 2 , 2 , 3 , 11 ,
+  13 , 5 , 2 , 7 , 3 , 5 , 2 , 14 , 7 , 5 , 6 , 6 , 2 , 18 , 13 , 31 , 2 ,
+  2 , 15 , 5 , 6 , 3 , 23 , 2 , 15 , 2 , 13 , 2 , 5 , 7 , 3 , 6 , 6 , 11 ,
+  5 , 12 , 2 , 13 , 5 , 28 , 24 , 3 , 13 , 5 , 3 , 2 , 6 , 10 , 11 , 2 , 2 ,
+  3 , 11 , 7 , 14 , 12 , 2 , 2 , 2 , 10 , 17 , 17 , 11 , 2 , 17 , 5 , 37 ,
+  21 , 12 , 6 , 20 , 10 , 7 , 12 , 3 , 33 , 35 , 6 , 19 , 3 , 18 , 17 , 6 ,
+  10 , 15 , 6 , 14 , 5 , 6 , 5 , 6 , 38 , 6 , 3 , 3 , 5 , 3 , 3 , 15 , 10 ,
+  23 , 17 , 6 , 37 , 15 , 10 , 10 , 2 , 6 , 17 , 19 , 7 , 14 , 10 , 6 , 5 ,
+  15 , 6 , 18 , 6 , 5 , 11 , 14 , 3 , 2 , 6 , 13 , 7 , 10 , 11 , 3 , 13 , 2 ,
+  6 , 15 , 7 , 6 , 10 , 5 , 10 , 2 , 5 , 10 , 6 , 10 , 17 , 2 , 2 , 24 , 2 ,
+  6 , 10 , 3 , 3 , 2 , 2 , 2 , 3 , 11 , 11 , 3 , 17 , 2 , 17 , 7 , 5 , 12 ,
+  23 , 6 , 52 , 15 , 6 , 7 , 20 , 13 , 24 , 5 , 2 , 2 , 2 , 7 , 7 , 6 , 18 ,
+  23 , 2 , 10 , 6 , 10 , 13 , 2 , 11 , 3 , 5 , 5 , 3 , 12 , 12 , 10 , 13 ,
+  11 , 15 , 11 , 59 , 11 , 21 , 7 , 23 , 37 , 10 , 7 , 13 , 2 , 2 , 14 , 7 ,
+  5 , 5 , 6 , 13 , 13 , 2 , 2 , 6 , 18 , 11 , 11 , 3 , 14 , 12 , 12 , 11 ,
+  7 , 12 , 2 , 2 , 17 , 7 , 18 , 5 , 15 , 38 , 13 , 10 , 2 , 5 , 2 , 14 , 3 ,
+  17 , 12 , 3 , 3 , 7 , 6 , 13 , 15 , 2 , 17 , 12 , 2 , 11 , 30 , 6 , 2 ,
+  17 , 7 , 2 , 6 , 17 , 23 , 5 , 19 , 2 , 5 , 2 , 10 , 2 , 5 , 13 , 7 , 14 ,
+  7 , 13 , 6 , 11 , 2 , 5 , 2 , 13 , 11 , 11 , 5 , 7 , 3 , 7 , 2 , 15 , 13 ,
+  2 , 10 , 6 , 14 , 2 , 13 , 22 , 17 , 5 , 17 , 6 , 7 , 12 , 5 , 6 , 3 , 6 ,
+  5 , 2 , 2 , 3 , 6 , 6 , 11 , 2 , 6 , 22 , 14 , 5 , 3 , 22 , 5 , 10 , 3 ,
+  40 , 6 , 11 , 3 , 11 , 3 , 2 , 6 , 37 , 5 , 7 , 13 , 5 , 13 , 6 , 7 , 23 ,
+  13 , 15 , 15 , 14  };
+  return( detail::strongProbablePrime32( std::uint32_t( n ) ,
+           H[ ( std::uint32_t( n ) * 0x9E3779B1u ) >> 22 ] ,
+           std::uint32_t( d ) , s ) );
   }
  // two bases first, as fast as one, which most composites fail; then the
  // others at once; with no comparison in the products below 2^62

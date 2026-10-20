@@ -162,6 +162,17 @@ ADS_TEST( "is-prime" )
   const U64 n = g() >> ( g() % 64 );
   CHECK( isPrime( n ) == isPrimeBook( n ) );
   }
+ // the one base of a bucket below 2^32: the edges at 223^2 and at 2^32,
+ // the squares and the products of two primes above 211, and a sweep
+ for( const U64 e : { U64( 223 * 223 ) , U64( 1 ) << 32 } )
+  for( U64 n = e - 3000 ; n < e + 3000 ; ++n )
+   CHECK( isPrime( n ) == isPrimeBook( n ) );
+ for( U64 p = 223 ; p < 65536 ; p += 2 )
+  if( isPrimeTrial( p ) )
+   for( const U64 q : { p , p + 2 , p + 6 } )
+    if( p * q < ( U64( 1 ) << 32 ) ) CHECK( ! isPrime( p * q ) );
+ for( U64 n = 1 ; n < ( U64( 1 ) << 32 ) ; n += 2 * 1009 + ( n & 2 ) )
+  CHECK( isPrime( n ) == isPrimeBook( n ) );
  for( U64 n = ~U64( 0 ) ; n > ~U64( 0 ) - 3000 ; --n )
   CHECK( isPrime( n ) == isPrimeBook( n ) );
  CHECK( isPrime( 18446744073709551557ULL ) && ! isPrime( ~U64( 0 ) ) );
