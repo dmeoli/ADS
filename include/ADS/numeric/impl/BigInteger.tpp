@@ -1093,17 +1093,44 @@ inline std::pair< std::uint64_t , int > bigBase( int base )
 inline constexpr const char * kFigures =
                                        "0123456789abcdefghijklmnopqrstuvwxyz";
 
+/// the pairs of decimal figures "00" to "99"
+inline constexpr auto kPairs = []() {
+ std::array< char , 200 > t{};
+ for( int i = 0 ; i < 100 ; ++i ) {
+  t[ 2 * i ] = char( '0' + i / 10 );
+  t[ 2 * i + 1 ] = char( '0' + i % 10 );
+  }
+ return( t );
+ }();
+
+/// the 8 decimal figures of y < 10^8 at p, by pairs: the halves of 4
+/// figures and their pairs, all independent of each other
+inline void put8( char * p , std::uint32_t y )
+{
+ const std::uint32_t a = y / 10000 , b = y % 10000 , a1 = a / 100 ,
+                     a0 = a % 100 , b1 = b / 100 , b0 = b % 100;
+ std::copy( kPairs.data() + 2 * a1 , kPairs.data() + 2 * a1 + 2 , p );
+ std::copy( kPairs.data() + 2 * a0 , kPairs.data() + 2 * a0 + 2 , p + 2 );
+ std::copy( kPairs.data() + 2 * b1 , kPairs.data() + 2 * b1 + 2 , p + 4 );
+ std::copy( kPairs.data() + 2 * b0 , kPairs.data() + 2 * b0 + 2 , p + 6 );
+ }
+
 /// the k figures of r in the base, the last one at end[ -1 ]; the base 10
-/// by 9 figures at a time in 32 bits, each divided by a constant
+/// as 3 + 8 + 8 figures, r < 10^{19}, by put8()
 inline void putFigures( char * end , std::uint64_t r , int k , int base )
 {
  if( base == 10 ) {
-  for( ; k > 9 ; k -= 9 , r /= 1000000000u ) {
-   std::uint32_t x = std::uint32_t( r % 1000000000u );
-   for( int t = 0 ; t < 9 ; ++t , x /= 10 ) *--end = char( '0' + x % 10 );
-   }
-  std::uint32_t x = std::uint32_t( r );
-  for( int t = 0 ; t < k ; ++t , x /= 10 ) *--end = char( '0' + x % 10 );
+  char t[ 19 ];
+  const std::uint64_t x2 = r / 10000000000000000ULL ,
+                      x = r % 10000000000000000ULL;
+  const std::uint32_t x1 = std::uint32_t( x / 100000000 ) ,
+                      x0 = std::uint32_t( x % 100000000 );
+  t[ 0 ] = char( '0' + x2 / 100 );
+  t[ 1 ] = kPairs[ 2 * ( x2 % 100 ) ];
+  t[ 2 ] = kPairs[ 2 * ( x2 % 100 ) + 1 ];
+  put8( t + 3 , x1 );
+  put8( t + 11 , x0 );
+  std::copy( t + 19 - k , t + 19 , end - k );
   }
  else
   for( int t = 0 ; t < k ; ++t , r /= std::uint64_t( base ) )
@@ -2919,11 +2946,37 @@ inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
  ADS_PRE( na + nb <= kNTTMax );
  const std::size_t n = std::bit_ceil( 2 * ( na + nb ) - 1 );
 #if ADS_BIGINT_FNTT
- // one coefficient per digit, the transforms half as long
- const std::size_t nf = detail::length( na + nb - 1 );
+ // one coefficient per digit, the transforms half as long; the top t
+ // digits of the longer factor by rows when the transform of the rest is
+ // shorter by more than they cost: about 12 L log2( L ) cycles for a
+ // transform of L terms, 1.6 per product of the rows
+ if( na < nb ) {
+  std::swap( a , b );
+  std::swap( na , nb );
+  }
+ const std::size_t L = na + nb - 1 , nf0 = detail::length( L );
+ auto cost = []( std::size_t m ) {
+  return( 12.0 * double( m ) * double( std::bit_width( m ) ) );
+  };
+ std::size_t t = 0 , nf = nf0;
+ double best = cost( nf0 );
+ for( std::size_t k = 4 ; k < 23 ; ++k )    // the lengths 2^k and 3 2^{k-1}
+  for( std::size_t m : { std::size_t( 1 ) << k ,
+                         std::size_t( 3 ) << ( k - 1 ) } )
+   if( ( m < nf0 ) && ( m + na / 8 >= L ) && ( m + 1 <= L ) ) {
+    const double c = cost( m ) + 1.6 * double( L - m ) * double( nb );
+    if( c < best ) {
+     best = c;
+     t = L - m;
+     nf = m;
+     }
+    }
  if( ( nf >= 16 ) && ( nf <= ( std::size_t( 1 ) << 22 ) ) &&
-     ( std::min( na , nb ) <= ( std::size_t( 1 ) << 21 ) ) ) {
-  mulFNTT< detail::FLanes4 >( r , a , na , b , nb , nf );
+     ( nb <= ( std::size_t( 1 ) << 21 ) ) ) {
+  mulFNTT< detail::FLanes4 >( r , a , na - t , b , nb , nf );
+  std::fill( r + na - t + nb , r + na + nb , 0 );
+  for( std::size_t j = na - t ; j < na ; ++j )
+   r[ j + nb ] = addMul1( r + j , b , nb , a[ j ] );
   return;
   }
 #endif
@@ -3375,6 +3428,28 @@ inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
   Mag q = u;
   const Limb r = divSmall( q , v[ 0 ] );
   return( std::pair( std::move( q ) , r ? Mag{ r } : Mag() ) );
+  }
+ if( ! rem && ! school && ( u.size() + 4 < 2 * v.size() ) ) {
+  // the quotient alone, of m digits, from the top k = m + 2 digits of v
+  // and the top m + k of u: with v = vt b^s + vl and u = ut b^s + ul, the
+  // quotient qt of ut by vt is the quotient q of u by v or q + 1, since
+  // ut / vt - ut / ( vt + 1 ) < 2 / b; it is q unless
+  // rt b^s + ul < qt vl, below b^{|qt| + s}, so that rt of more digits than
+  // qt says so with no product
+  const std::size_t m = u.size() - v.size() + 1 , s = v.size() - m - 2;
+  const Mag ut( u.data() + s , u.data() + u.size() ) ,
+            vt( v.data() + s , v.data() + v.size() );
+  auto [ q , rt ] = divModMag( ut , vt , false , nullptr , true );
+  if( ( rt.size() <= q.size() ) && ! q.empty() ) {
+   Mag x( s + rt.size() );                  // rt b^s + ul
+   std::copy( u.data() , u.data() + s , x.data() );
+   std::copy( rt.begin() , rt.end() , x.data() + s );
+   trim( x );
+   Mag vl( v.data() , v.data() + s );
+   trim( vl );
+   if( compareMag( x , mulMag( q , vl ) ) < 0 ) q = subMag( q , Mag{ 1 } );
+   }
+  return( std::pair( std::move( q ) , Mag() ) );
   }
  if( ( v.size() < kDivShort ) && ( u.size() < 2 * kDivShort ) ) {
   std::pair< Mag , Mag > out;
