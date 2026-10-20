@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The benchmark of the priority queues: the heaps, the sequence heap, the
- * bucket queue and the radix heap of ADS against std::priority_queue,
+ * bucket queues and the radix heap of ADS against std::priority_queue,
  * against the d-ary, binomial, Fibonacci, pairing and skew heaps of
  * Boost.Heap if Boost is found, and against the d-ary heaps and the radix
  * heap of tlx and the radix heap of radix-heap (iwiwi) when their headers
@@ -44,6 +44,7 @@
 
 #include "ADS/priority/BucketQueue.h"
 #include "ADS/priority/DaryHeap.h"
+#include "ADS/priority/DialQueue.h"
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
@@ -405,6 +406,14 @@ int main( int argc , char ** argv )
         q.pop();
         return( p ); } );
 
+  run( "ADS::DialQueue" , n , P , U , r , [](){
+       return( ADS::DialQueue< int , unsigned >( 1023 ) ); } ,
+       []( auto & q , int p , int x ) { q.push( x , unsigned( p ) ); } ,
+       []( auto & q ) {
+        const int p = int( q.topKey() );
+        q.pop();
+        return( p ); } );
+
   // Dijkstra's algorithm
 
   const Graph G = graph( n , o.seed );
@@ -497,6 +506,14 @@ int main( int argc , char ** argv )
   dijkstra( "ADS::PairingHeap aux" , G , r , []( const Graph & G ) {
    using Q = ADS::PairingHeap< unsigned , int , true >;
    return( adsHandles< Q >( G , [](){ return( Q() ); } ) ); } );
+  dijkstra( "ADS::DialQueue" , G , r , []( const Graph & G ) {
+   ADS::DialQueue< unsigned , unsigned > q( 1000 );
+   return( lazy( G , q , []( auto & q , int d , unsigned v ) {
+                  q.push( v , unsigned( d ) ); } ,
+                 []( auto & q , int & d , unsigned & v ) {
+                  d = int( q.topKey() );
+                  v = q.pop(); } ,
+                 []( auto & q ) { return( q.empty() ); } ) ); } );
   dijkstra( "ADS::RadixHeap" , G , r , []( const Graph & G ) {
    ADS::RadixHeap< unsigned , unsigned > q;
    return( lazy( G , q , []( auto & q , int d , unsigned v ) {

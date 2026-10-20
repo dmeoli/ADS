@@ -378,6 +378,7 @@ with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm, and
 | two-level bucket queue for integer keys (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue` |
 | d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
 | radix heap, monotone integer keys in buckets by digits of B bits (Ahuja et al.) | [`priority/RadixHeap.h`](include/ADS/priority/RadixHeap.h) | `heaps.radix-heap` |
+| monotone bucket queue on a circular window, overflow to a radix heap (Dial) | [`priority/DialQueue.h`](include/ADS/priority/DialQueue.h) | `heaps.dial-queue` |
 | sequence heap, sorted sequences merged in batches by trees of losers (Sanders) | [`priority/SequenceHeap.h`](include/ADS/priority/SequenceHeap.h) | `heaps.sequence-heap` |
 | pairing heap with decrease-key, two-pass or auxiliary two-pass (Fredman et al.; Stasko and Vitter) | [`priority/PairingHeap.h`](include/ADS/priority/PairingHeap.h) | `heaps.pairing-heap` |
 | vector with room for N items inside itself | [`sequence/SmallVector.h`](include/ADS/sequence/SmallVector.h) | `sequences.small-vector` |

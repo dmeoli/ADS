@@ -65,6 +65,14 @@ inline K RadixHeap< T , K , B >::topKey( void )
  }
 
 template< class T , std::integral K , unsigned B >
+inline K RadixHeap< T , K , B >::peekKey( void ) const
+{
+ ADS_PRE( f_size > 0 );
+ const unsigned i = first();
+ return( decode( i < R ? ( f_last & ~U( R - 1 ) ) | U( i ) : f_min[ i ] ) );
+ }
+
+template< class T , std::integral K , unsigned B >
 inline T RadixHeap< T , K , B >::pop( void )
 {
  pull();

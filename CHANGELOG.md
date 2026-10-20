@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- DialQueue, the monotone bucket queue of Dial on a circular window of W
+  buckets with a radix heap for the keys beyond it, the next bucket in use
+  found by a mask of W bits; RadixHeap::peekKey(), the least key without
+  moving the base of the buckets; their tests in test/heaps.cpp
 - SequenceHeap, the sequence heap of Sanders: an insertion heap of 256
   items, groups of up to 64 sorted sequences merged in batches by trees of
   losers with the keys at hand, a buffer per group and a deletion buffer;
