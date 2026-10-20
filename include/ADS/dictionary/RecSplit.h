@@ -60,11 +60,14 @@
  * for each \f$ \ell \f$, gives r, the low bits of a subtree and its number
  * of nodes, so that a subtree is skipped by moving a pointer on the low
  * bits and by a select on the unary parts. The numbers of keys before each
- * bucket and the place of its code are two Elias-Fano sequences [see
- * EliasFano.h], the second one less \f$ \beta \f$ times the first, for the
- * \f$ \beta \f$ bits per key of the codes, and both less i times their
- * least gap, which leaves to their low bits only the deviations from the
- * average.
+ * bucket and the place of its code are two Elias-Fano sequences, the
+ * second one less \f$ \beta \f$ times the first, for the \f$ \beta \f$
+ * bits per key of the codes, and both less i times their least gap, which
+ * leaves to their low bits only the deviations from the average; each
+ * keeps the place of every 64th 1 of its high bits, 64 bits per 64
+ * buckets, so that a query costs two selects of one or two words each
+ * instead of the searches of a general select, the numbers of keys before
+ * the bucket and before the next one coming from the same select.
  *
  * The search of a leaf uses the rotation fitting of Bez, Kurpicz, Lehmann
  * and Sanders: the keys of the leaf go to two sets A and B by the highest
@@ -147,7 +150,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
-#include "ADS/succinct/EliasFano.h"
+#include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
 #include <array>
@@ -158,6 +161,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -175,6 +179,39 @@ struct RecSplitTables {
  std::vector< std::uint8_t > rice;
  std::vector< std::uint32_t > low;
  std::vector< std::uint16_t > nodes;
+ };
+
+/// a non-decreasing sequence by Elias and Fano with an inventory of the
+/// place of every 64th 1 of its high bits, so that the item i costs the
+/// inventory and one or two words of the high bits, and the items i and
+/// i + 1 the same plus the next 1
+class RecSplitSequence {
+ public:
+ RecSplitSequence( void ) = default;
+
+ /// the sequence x, non-decreasing
+ explicit RecSplitSequence( const std::vector< std::uint64_t > & x );
+
+ /// the item i
+ [[nodiscard]] std::uint64_t access( std::size_t i ) const;
+
+ /// the items i and i + 1
+ [[nodiscard]] std::pair< std::uint64_t , std::uint64_t > pair(
+                                                    std::size_t i ) const;
+
+ [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+ private:
+ /// the place of the 1 of the item i in the high bits
+ [[nodiscard]] std::size_t select( std::size_t i ) const;
+
+ /// the l low bits of the item i
+ [[nodiscard]] std::uint64_t low( std::size_t i ) const;
+
+ int f_l = 0;                          ///< the low bits of an item
+ std::vector< std::uint64_t > f_low;   ///< the low bits, one word more
+ std::vector< std::uint64_t > f_high;  ///< item i: a 1 at ( x_i >> l ) + i
+ std::vector< std::uint64_t > f_inv;   ///< the place of the 1 of item 64 j
  };
 
 }  // end( namespace detail )
@@ -269,8 +306,10 @@ class RecSplit {
  std::size_t f_n = 0;
  std::size_t f_nb = 0;                 ///< the buckets
  std::vector< std::uint64_t > f_code;  ///< the codes, two words more
- EliasFano f_keys;          ///< the keys before bucket i, less i f_dk
- EliasFano f_place;         ///< the place of bucket i, less its estimate
+ detail::RecSplitSequence f_keys;    ///< the keys before bucket i, less
+                                     ///< i f_dk
+ detail::RecSplitSequence f_place;   ///< the place of bucket i, less its
+                                     ///< estimate
  std::uint64_t f_dk = 0;    ///< the least gap of the keys before
  std::int64_t f_dp = 0;     ///< the least gap of the places, less beta
  std::uint64_t f_beta = 0;  ///< the bits per key of the codes, by 2^16
