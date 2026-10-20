@@ -189,207 +189,818 @@ inline std::uint64_t div2by1( std::uint64_t u1 , std::uint64_t u0 ,
  }
 
 #if ADS_BIGINT_ASM
-/// r = a m and r -= a m, n > 0 digits, n a multiple of 4, the carry or the
-/// borrow; r = a + b and r = a - b, the same n, the carry or the borrow.
-/// MULX leaves the flags alone and DEC leaves CF alone, so one chain of
-/// carries runs through the loop: in each block of 4 digits the high
-/// halves are added to the next low ones, the borrow of the previous block
-/// with them, the top half absorbing the last carry (it is at most
-/// b - 2), and then the 4 digits are stored, or taken from r
+// The loops on n >= 1 digits: 1, 2 and 4 steps first, as the bits of n
+// say, then the blocks of 8 steps. MULX leaves the flags alone, and MOV,
+// LEA and JRCXZ too, so the chains of carries run through all of them. In
+// r = a m the high half of each product is added to the low half of the
+// next on the chain of ADCX (CF). In r += a m that sum t_s for the digit s
+// is made on the same chain, and added to r_s on the chain of ADOX (OF)
+// one step later, after the next product, so that the two chains do not
+// wait for each other; in r -= a m the complement of t_s is added, the
+// chain of OF starting at 1, and the borrow is the complement of its
+// carry. The steps work by turns on the registers w0 , w1 and w2 , w3
+// (the low and the high half), and between the groups of steps t is in w2
+// and the high half in w3.
+
+/// the step s of r += a m: the product a_s m in LO and HI, the sum t of
+/// the step before, in PL with its high half PH, added to r; the even
+/// steps add t to r first, the odd ones make their t first
+#define ADS_ADDMUL_STEP( s , LO , HI , PL , PH )                             \
+ "mulx " #s "*8(%[a]), %[" #LO "], %[" #HI "]\n\t"                           \
+ "adox " #s "*8-8(%[r]), %[" #PL "]\n\t"                                     \
+ "mov %[" #PL "], " #s "*8-8(%[r])\n\t"                                      \
+ "adcx %[" #PH "], %[" #LO "]\n\t"
+
+#define ADS_ADDMUL_STEP_ODD( s , LO , HI , PL , PH )                         \
+ "mulx " #s "*8(%[a]), %[" #LO "], %[" #HI "]\n\t"                           \
+ "adcx %[" #PH "], %[" #LO "]\n\t"                                           \
+ "adox " #s "*8-8(%[r]), %[" #PL "]\n\t"                                     \
+ "mov %[" #PL "], " #s "*8-8(%[r])\n\t"
+
+/// the step s of r -= a m
+#define ADS_SUBMUL_STEP( s , LO , HI , PL , PH )                             \
+ "mulx " #s "*8(%[a]), %[" #LO "], %[" #HI "]\n\t"                           \
+ "adox " #s "*8-8(%[r]), %[" #PL "]\n\t"                                     \
+ "mov %[" #PL "], " #s "*8-8(%[r])\n\t"                                      \
+ "adcx %[" #PH "], %[" #LO "]\n\t"                                           \
+ "not %[" #LO "]\n\t"
+
+#define ADS_SUBMUL_STEP_ODD( s , LO , HI , PL , PH )                         \
+ "mulx " #s "*8(%[a]), %[" #LO "], %[" #HI "]\n\t"                           \
+ "adcx %[" #PH "], %[" #LO "]\n\t"                                           \
+ "not %[" #LO "]\n\t"                                                        \
+ "adox " #s "*8-8(%[r]), %[" #PL "]\n\t"                                     \
+ "mov %[" #PL "], " #s "*8-8(%[r])\n\t"
+
+/// the step s of r = a m
+#define ADS_MUL1_STEP( s , LO , HI , PL , PH )                               \
+ "mulx " #s "*8(%[a]), %[" #LO "], %[" #HI "]\n\t"                           \
+ "adcx %[" #PH "], %[" #LO "]\n\t"                                           \
+ "mov %[" #LO "], " #s "*8(%[r])\n\t"
+
+#define ADS_MUL1_STEP_ODD ADS_MUL1_STEP
+
+/// the steps s and s + 1
+#define ADS_STEP2( STEP , s , t )                                            \
+ STEP( s , w0 , w1 , w2 , w3 ) STEP##_ODD( t , w2 , w3 , w0 , w1 )
+
+/// the steps of a loop on the digits of a and r, after the first if any:
+/// 1, 2 and 4 steps if M1, M2 and M4 are not 0, then M8 blocks of 8
+/// steps, the counts in registers or in memory; the high half at the end
+/// in w3
+#define ADS_LADDER( STEP , M1 , M2 , M4 , M8 )                               \
+ "mov " M1 ", %[c]\n\t"                                                      \
+ "jrcxz 1f\n\t"                                                              \
+ STEP( 0 , w0 , w1 , w2 , w3 )                                               \
+ "mov %[w0], %[w2]\n\t"                                                      \
+ "mov %[w1], %[w3]\n\t"                                                      \
+ "lea 8(%[a]), %[a]\n\t"                                                     \
+ "lea 8(%[r]), %[r]\n"                                                       \
+ "1:\n\t"                                                                    \
+ "mov " M2 ", %[c]\n\t"                                                      \
+ "jrcxz 2f\n\t"                                                              \
+ ADS_STEP2( STEP , 0 , 1 )                                                   \
+ "lea 16(%[a]), %[a]\n\t"                                                    \
+ "lea 16(%[r]), %[r]\n"                                                      \
+ "2:\n\t"                                                                    \
+ "mov " M4 ", %[c]\n\t"                                                      \
+ "jrcxz 3f\n\t"                                                              \
+ ADS_STEP2( STEP , 0 , 1 ) ADS_STEP2( STEP , 2 , 3 )                         \
+ "lea 32(%[a]), %[a]\n\t"                                                    \
+ "lea 32(%[r]), %[r]\n"                                                      \
+ "3:\n\t"                                                                    \
+ "mov " M8 ", %[c]\n\t"                                                      \
+ "jmp 7f\n\t"                                                                \
+ ".p2align 5\n"                                                              \
+ "9:\n\t"                                                                    \
+ ADS_STEP2( STEP , 0 , 1 ) ADS_STEP2( STEP , 2 , 3 )                         \
+ ADS_STEP2( STEP , 4 , 5 ) ADS_STEP2( STEP , 6 , 7 )                         \
+ "lea 64(%[a]), %[a]\n\t"                                                    \
+ "lea 64(%[r]), %[r]\n\t"                                                    \
+ "lea -1(%[c]), %[c]\n"                                                      \
+ "7:\n\t"                                                                    \
+ "jrcxz 8f\n\t"                                                              \
+ "jmp 9b\n"                                                                  \
+ "8:\n\t"
+
+/// the loop of the products by one digit with the steps STEP, started by
+/// START, the first digit by FIRST, which leaves t in w2 and the high half
+/// in w3 and moves a and r one digit, ended by FOLD, which folds the
+/// carries into w3
+#define ADS_MUL_LOOP( STEP , START , FIRST , FOLD )                          \
+ __asm__ __volatile__(                                                       \
+          START                                                              \
+          FIRST                                                              \
+          ADS_LADDER( STEP , "%[n1]" , "%[n2]" , "%[n4]" , "%[n8]" )         \
+          FOLD                                                               \
+          : [ w0 ] "=&r" ( w0 ) , [ w1 ] "=&r" ( w1 ) , [ w2 ] "=&r" ( w2 ) , \
+            [ w3 ] "=&r" ( w3 ) , [ c ] "=&c" ( c ) , [ a ] "+&r" ( a ) ,   \
+            [ r ] "+&r" ( r )                                                \
+          : "d" ( m ) , [ n1 ] "r" ( n1 & 1 ) , [ n2 ] "r" ( n1 & 2 ) ,      \
+            [ n4 ] "r" ( n1 & 4 ) , [ n8 ] "r" ( n1 / 8 )                    \
+          : "cc" , "memory" )
+
+/// the first digit of r += a m and r -= a m, its t in w2
+#define ADS_FIRST_ADD                                                        \
+ "mulx (%[a]), %[w2], %[w3]\n\t"                                             \
+ "lea 8(%[a]), %[a]\n\t"                                                     \
+ "lea 8(%[r]), %[r]\n\t"
+
+#define ADS_FIRST_SUB ADS_FIRST_ADD "not %[w2]\n\t"
+
+/// the last t of r += a m and r -= a m into r, and the carries into w3
+#define ADS_FOLD_ADD                                                         \
+ "adox -8(%[r]), %[w2]\n\t"                                                  \
+ "mov %[w2], -8(%[r])\n\t"                                                   \
+ "mov $0, %k[w0]\n\t"                                                        \
+ "adcx %[w0], %[w3]\n\t"
+
+/// r = a m, n > 0 digits, the carry
 inline std::uint64_t mul1Asm( std::uint64_t * r , const std::uint64_t * a ,
                               std::size_t n , std::uint64_t m )
 {
- std::uint64_t c = 0 , i = n / 4 , l0 , l1 , l2 , l3 , h0 , h1;
- __asm__( "xor %k[h0], %k[h0]\n\t"
-          "1:\n\t"
-          "mulx (%[a]), %[l0], %[h0]\n\t"
-          "mulx 8(%[a]), %[l1], %[h1]\n\t"
-          "adc %[c], %[l0]\n\t"
-          "adc %[h0], %[l1]\n\t"
-          "mulx 16(%[a]), %[l2], %[h0]\n\t"
-          "mulx 24(%[a]), %[l3], %[c]\n\t"
-          "adc %[h1], %[l2]\n\t"
-          "adc %[h0], %[l3]\n\t"
-          "mov %[l0], (%[r])\n\t"
-          "mov %[l1], 8(%[r])\n\t"
-          "mov %[l2], 16(%[r])\n\t"
-          "mov %[l3], 24(%[r])\n\t"
-          "lea 32(%[a]), %[a]\n\t"
-          "lea 32(%[r]), %[r]\n\t"
-          "dec %[i]\n\t"
-          "jnz 1b\n\t"
-          "adc $0, %[c]"
-          : [ c ] "+&r" ( c ) , [ i ] "+&r" ( i ) , [ a ] "+&r" ( a ) ,
-            [ r ] "+&r" ( r ) , [ l0 ] "=&r" ( l0 ) , [ l1 ] "=&r" ( l1 ) ,
-            [ l2 ] "=&r" ( l2 ) , [ l3 ] "=&r" ( l3 ) , [ h0 ] "=&r" ( h0 ) ,
-            [ h1 ] "=&r" ( h1 )
-          : "d" ( m )
-          : "cc" , "memory" );
- return( c );
+ std::uint64_t c , w0 , w1 , w2 , w3;
+ const std::size_t n1 = n;
+ ADS_MUL_LOOP( ADS_MUL1_STEP , "xor %k[w3], %k[w3]\n\t" , "" ,
+               "mov $0, %k[w0]\n\t" "adcx %[w0], %[w3]" );
+ return( w3 );
  }
 
-/// r += a m, n > 0 digits, n a multiple of 8, the carry: MULX leaves the
-/// flags alone, so the high halves are added to the next low ones on the
-/// chain of ADCX (CF) while the sum into r runs on that of ADOX (OF), and
-/// the count runs down by LEA and JRCXZ, which keep the flags too
+/// r += a m, n > 0 digits, the carry
 inline std::uint64_t addMul1Adx( std::uint64_t * r , const std::uint64_t * a ,
                                  std::size_t n , std::uint64_t m )
 {
- std::uint64_t c = 0 , t , u , i = n / 8;
- __asm__( "xor %k[t], %k[t]\n\t"
-          "1:\n\t"
-          "mulx (%[a]), %[t], %[u]\n\t"
-          "adcx %[c], %[t]\n\t"
-          "adox (%[r]), %[t]\n\t"
-          "mov %[t], (%[r])\n\t"
-          "mulx 8(%[a]), %[t], %[c]\n\t"
-          "adcx %[u], %[t]\n\t"
-          "adox 8(%[r]), %[t]\n\t"
-          "mov %[t], 8(%[r])\n\t"
-          "mulx 16(%[a]), %[t], %[u]\n\t"
-          "adcx %[c], %[t]\n\t"
-          "adox 16(%[r]), %[t]\n\t"
-          "mov %[t], 16(%[r])\n\t"
-          "mulx 24(%[a]), %[t], %[c]\n\t"
-          "adcx %[u], %[t]\n\t"
-          "adox 24(%[r]), %[t]\n\t"
-          "mov %[t], 24(%[r])\n\t"
-          "mulx 32(%[a]), %[t], %[u]\n\t"
-          "adcx %[c], %[t]\n\t"
-          "adox 32(%[r]), %[t]\n\t"
-          "mov %[t], 32(%[r])\n\t"
-          "mulx 40(%[a]), %[t], %[c]\n\t"
-          "adcx %[u], %[t]\n\t"
-          "adox 40(%[r]), %[t]\n\t"
-          "mov %[t], 40(%[r])\n\t"
-          "mulx 48(%[a]), %[t], %[u]\n\t"
-          "adcx %[c], %[t]\n\t"
-          "adox 48(%[r]), %[t]\n\t"
-          "mov %[t], 48(%[r])\n\t"
-          "mulx 56(%[a]), %[t], %[c]\n\t"
-          "adcx %[u], %[t]\n\t"
-          "adox 56(%[r]), %[t]\n\t"
-          "mov %[t], 56(%[r])\n\t"
-          "lea 64(%[a]), %[a]\n\t"
-          "lea 64(%[r]), %[r]\n\t"
-          "lea -1(%[i]), %[i]\n\t"
-          "jrcxz 2f\n\t"
-          "jmp 1b\n"
-          "2:\n\t"
-          "mov $0, %k[t]\n\t"
-          "adcx %[t], %[c]\n\t"
-          "adox %[t], %[c]"
-          : [ c ] "+&r" ( c ) , [ t ] "=&r" ( t ) , [ u ] "=&r" ( u ) ,
-            [ i ] "+&c" ( i ) , [ a ] "+&r" ( a ) , [ r ] "+&r" ( r )
-          : "d" ( m )
-          : "cc" , "memory" );
- return( c );
+ std::uint64_t c , w0 , w1 , w2 , w3;
+ const std::size_t n1 = n - 1;
+ ADS_MUL_LOOP( ADS_ADDMUL_STEP , "xor %k[w0], %k[w0]\n\t" , ADS_FIRST_ADD ,
+               ADS_FOLD_ADD "adox %[w0], %[w3]" );
+ return( w3 );
  }
 
+/// r -= a m, n > 0 digits, the borrow: OF starts at 1 from the signed
+/// overflow of 2^63 - 1 + 1, which leaves CF at 0
 inline std::uint64_t subMul1Asm( std::uint64_t * r , const std::uint64_t * a ,
                                  std::size_t n , std::uint64_t m )
 {
- std::uint64_t c = 0 , i = n / 4 , l0 , l1 , l2 , l3 , h0 , h1;
- __asm__( "xor %k[h0], %k[h0]\n\t"
-          "1:\n\t"
-          "mulx (%[a]), %[l0], %[h0]\n\t"
-          "mulx 8(%[a]), %[l1], %[h1]\n\t"
-          "adc %[c], %[l0]\n\t"
-          "adc %[h0], %[l1]\n\t"
-          "mulx 16(%[a]), %[l2], %[h0]\n\t"
-          "mulx 24(%[a]), %[l3], %[c]\n\t"
-          "adc %[h1], %[l2]\n\t"
-          "adc %[h0], %[l3]\n\t"
-          "adc $0, %[c]\n\t"
-          "mov (%[r]), %[h0]\n\t"
-          "sub %[l0], %[h0]\n\t"
-          "mov %[h0], (%[r])\n\t"
-          "mov 8(%[r]), %[h0]\n\t"
-          "sbb %[l1], %[h0]\n\t"
-          "mov %[h0], 8(%[r])\n\t"
-          "mov 16(%[r]), %[h0]\n\t"
-          "sbb %[l2], %[h0]\n\t"
-          "mov %[h0], 16(%[r])\n\t"
-          "mov 24(%[r]), %[h0]\n\t"
-          "sbb %[l3], %[h0]\n\t"
-          "mov %[h0], 24(%[r])\n\t"
-          "lea 32(%[a]), %[a]\n\t"
-          "lea 32(%[r]), %[r]\n\t"
-          "dec %[i]\n\t"
-          "jnz 1b\n\t"
-          "adc $0, %[c]"
-          : [ c ] "+&r" ( c ) , [ i ] "+&r" ( i ) , [ a ] "+&r" ( a ) ,
-            [ r ] "+&r" ( r ) , [ l0 ] "=&r" ( l0 ) , [ l1 ] "=&r" ( l1 ) ,
-            [ l2 ] "=&r" ( l2 ) , [ l3 ] "=&r" ( l3 ) , [ h0 ] "=&r" ( h0 ) ,
-            [ h1 ] "=&r" ( h1 )
-          : "d" ( m )
-          : "cc" , "memory" );
- return( c );
+ std::uint64_t c , w0 , w1 , w2 , w3;
+ const std::size_t n1 = n - 1;
+ ADS_MUL_LOOP( ADS_SUBMUL_STEP ,
+               "movabs $0x7FFFFFFFFFFFFFFF, %[w0]\n\t" "add $1, %[w0]\n\t" ,
+               ADS_FIRST_SUB ,
+               ADS_FOLD_ADD "seto %b[w0]\n\t" "lea 1(%[w3]), %[w3]\n\t"
+               "sub %[w0], %[w3]" );
+ return( w3 );
  }
 
+/// r -= a m for n = K digits, 2 <= K <= 8, the steps of the loop in a
+/// row with no count: the first digit, K - 1 steps, the last t into r
+#define ADS_SUBMUL_SHORT( STEPS , FIX , K )                                  \
+ __asm__ __volatile__(                                                       \
+  "movabs $0x7FFFFFFFFFFFFFFF, %[w0]\n\t"                                   \
+  "add $1, %[w0]\n\t"                                                        \
+  ADS_FIRST_SUB                                                              \
+  STEPS                                                                      \
+  FIX                                                                        \
+  "lea 8*" #K "-8(%[r]), %[r]\n\t"                                          \
+  ADS_FOLD_ADD                                                               \
+  "seto %b[w0]\n\t"                                                          \
+  "lea 1(%[w3]), %[w3]\n\t"                                                  \
+  "sub %[w0], %[w3]"                                                         \
+  : [ w0 ] "=&r" ( w0 ) , [ w1 ] "=&r" ( w1 ) , [ w2 ] "=&r" ( w2 ) ,        \
+    [ w3 ] "=&r" ( w3 ) , [ a ] "+&r" ( a ) , [ r ] "+&r" ( r )             \
+  : "d" ( m )                                                                \
+  : "cc" , "memory" )
+
+/// the first k steps after the first digit, by turns on the registers
+#define ADS_SM_1 ADS_SUBMUL_STEP( 0 , w0 , w1 , w2 , w3 )
+#define ADS_SM_2 ADS_SM_1 ADS_SUBMUL_STEP_ODD( 1 , w2 , w3 , w0 , w1 )
+#define ADS_SM_3 ADS_SM_2 ADS_SUBMUL_STEP( 2 , w0 , w1 , w2 , w3 )
+#define ADS_SM_4 ADS_SM_3 ADS_SUBMUL_STEP_ODD( 3 , w2 , w3 , w0 , w1 )
+#define ADS_SM_5 ADS_SM_4 ADS_SUBMUL_STEP( 4 , w0 , w1 , w2 , w3 )
+#define ADS_SM_6 ADS_SM_5 ADS_SUBMUL_STEP_ODD( 5 , w2 , w3 , w0 , w1 )
+#define ADS_SM_7 ADS_SM_6 ADS_SUBMUL_STEP( 6 , w0 , w1 , w2 , w3 )
+#define ADS_SM_FIX "mov %[w0], %[w2]\n\t" "mov %[w1], %[w3]\n\t"
+
+/// r -= a m, 2 <= n <= 8 digits, the borrow, with no loop
+inline std::uint64_t subMul1Short( std::uint64_t * r ,
+                                   const std::uint64_t * a , std::size_t n ,
+                                   std::uint64_t m )
+{
+ std::uint64_t w0 , w1 , w2 , w3;
+ switch( n ) {
+  case 2: ADS_SUBMUL_SHORT( ADS_SM_1 , ADS_SM_FIX , 2 ); break;
+  case 3: ADS_SUBMUL_SHORT( ADS_SM_2 , "" , 3 ); break;
+  case 4: ADS_SUBMUL_SHORT( ADS_SM_3 , ADS_SM_FIX , 4 ); break;
+  case 5: ADS_SUBMUL_SHORT( ADS_SM_4 , "" , 5 ); break;
+  case 6: ADS_SUBMUL_SHORT( ADS_SM_5 , ADS_SM_FIX , 6 ); break;
+  case 7: ADS_SUBMUL_SHORT( ADS_SM_6 , "" , 7 ); break;
+  default: ADS_SUBMUL_SHORT( ADS_SM_7 , ADS_SM_FIX , 8 ); break;
+  }
+ return( w3 );
+ }
+
+/// the masks of a ladder on n digits, in memory, by the register T
+#define ADS_MASKS( N , T )                                                   \
+ "mov " N ", " T "\n\t" "and $1, " T "\n\t" "mov " T ", %[m1]\n\t"           \
+ "mov " N ", " T "\n\t" "and $2, " T "\n\t" "mov " T ", %[m2]\n\t"           \
+ "mov " N ", " T "\n\t" "and $4, " T "\n\t" "mov " T ", %[m4]\n\t"           \
+ "mov " N ", " T "\n\t" "shr $3, " T "\n\t" "mov " T ", %[m8]\n\t"
+
+/// the rows of a product [see mulRows()], the masks of the rows after the
+/// first made again at each row by MASKS
+#define ADS_ROWS( MASKS )                                                    \
+ __asm__ __volatile__(                                                       \
+  "mov (%[b]), %%rdx\n\t"                                                    \
+  "xor %k[w3], %k[w3]\n\t"                                                   \
+  ADS_LADDER( ADS_MUL1_STEP , "%[f1]" , "%[f2]" , "%[f4]" , "%[f8]" )        \
+  "mov $0, %k[w0]\n\t"                                                       \
+  "adcx %[w0], %[w3]\n\t"                                                    \
+  "mov %[w3], (%[r])\n\t"                                                    \
+  "jmp 5f\n"                                                                 \
+  "4:\n\t"                                                                   \
+  MASKS                                                                      \
+  "mov (%[b]), %%rdx\n\t"                                                    \
+  "xor %k[w0], %k[w0]\n\t"                                                   \
+  ADS_FIRST_ADD                                                              \
+  ADS_LADDER( ADS_ADDMUL_STEP , "%[m1]" , "%[m2]" , "%[m4]" , "%[m8]" )      \
+  ADS_FOLD_ADD                                                               \
+  "adox %[w0], %[w3]\n\t"                                                    \
+  "mov %[w3], (%[r])\n"                                                      \
+  "5:\n\t"                                                                   \
+  "lea 8(%[b]), %[b]\n\t"                                                    \
+  "mov %[len], %[w0]\n\t"                                                    \
+  "shl $3, %[w0]\n\t"                                                        \
+  "sub %[w0], %[a]\n\t"                                                      \
+  "sub %[w0], %[r]\n\t"                                                      \
+  "lea %c[da](%[a]), %[a]\n\t"                                               \
+  "lea %c[dr](%[r]), %[r]\n\t"                                               \
+  "lea %c[dl](%[len]), %[len]\n\t"                                           \
+  "dec %[rows]\n\t"                                                          \
+  "jnz 4b"                                                                   \
+  : [ w0 ] "=&r" ( w0 ) , [ w1 ] "=&r" ( w1 ) , [ w2 ] "=&r" ( w2 ) ,        \
+    [ w3 ] "=&r" ( w3 ) , [ c ] "=&c" ( c ) , [ a ] "+&r" ( a ) ,           \
+    [ r ] "+&r" ( r ) , [ b ] "+&r" ( b ) , [ len ] "+&r" ( len ) ,         \
+    [ rows ] "+&r" ( rows ) , [ m1 ] "+m" ( m[ 0 ] ) ,                       \
+    [ m2 ] "+m" ( m[ 1 ] ) , [ m4 ] "+m" ( m[ 2 ] ) , [ m8 ] "+m" ( m[ 3 ] ) \
+  : [ f1 ] "m" ( f[ 0 ] ) , [ f2 ] "m" ( f[ 1 ] ) , [ f4 ] "m" ( f[ 2 ] ) ,  \
+    [ f8 ] "m" ( f[ 3 ] ) , [ da ] "i" ( 8 * da ) , [ dr ] "i" ( 8 * dr ) ,  \
+    [ dl ] "i" ( -dl )                                                       \
+  : "rdx" , "cc" , "memory" )
+
+/// the rows of a product, R > 0 of them: r[ 0 , L ] = a m_0, then for
+/// j = 1 , ... , R - 1, with a_j = a + j da, r_j = r + j dr, m_j = b[ j ]
+/// and L_j = L - j dl >= 1, r_j[ 0 , L_j ] = r_j[ 0 , L_j ) + a_j m_j: the
+/// product a b of L and R digits for da = dl = 0 and dr = 1, the products
+/// a_i a_j, i < j, of a square for b = a, a = a + 1, r = r + 1, L = n - 1,
+/// R = n - 1 and da = dl = 1, dr = 2
+template< int da , int dr , int dl >
+inline void mulRows( std::uint64_t * r , const std::uint64_t * a ,
+                     std::size_t L , const std::uint64_t * b , std::size_t R )
+{
+ std::uint64_t c , w0 , w1 , w2 , w3 , len = L , rows = R;
+ const std::uint64_t f[ 4 ] = { L & 1 , L & 2 , L & 4 , L / 8 };
+ std::uint64_t m[ 4 ] = { ( L - 1 ) & 1 , ( L - 1 ) & 2 , ( L - 1 ) & 4 ,
+                          ( L - 1 ) / 8 };
+ if constexpr( dl == 0 ) ADS_ROWS( "" );
+ else ADS_ROWS( "lea -1(%[len]), %[w0]\n\t" ADS_MASKS( "%[w0]" , "%[w1]" ) );
+ }
+
+// The product of a by 4 digits of b in one pass over a, a digit a_i at a
+// time: the window P0 , ... , P4 holds the sums for the places i to i + 4,
+// the last one new and 0; r_i is added to P0 on the chain of ADOX (OF),
+// then each product a_i b_c, c < 4, its low half to P_c on the chain of
+// ADCX (CF) and its high half to P_{c+1} on that of OF, the carry of CF
+// into P4 at the end; P0 then holds the digit i, and the sum of the window
+// with a_i b and r_i, below b^5, leaves no carry out of P4, so both flags
+// are 0 again for the next digit. Per digit: 4 products, 22 instructions
+// of the front end, about 1.35 cycles per product on a Skylake against
+// the 1.45 to 2 of the rows of r += a m. The window turns by one register
+// per digit, so the loop is 5 digits long and is entered at the digit
+// ( -n ) mod 5 by a table of jumps, the pointers moved back as many digits.
+
+/// the digit s of the pass, the window ( P0 , ... , P4 ), and r_i added to
+/// P0 by RADD
+#define ADS_PASS_STEP( s , RADD , P0 , P1 , P2 , P3 , P4 )                   \
+ "1" #s ":\n\t"                                                              \
+ "mov " #s "*8(%[a]), %%rdx\n\t"                                             \
+ "mov $0, %k[" #P4 "]\n\t"                                                   \
+ RADD( s , P0 )                                                              \
+ "mulx (%[b]), %[lo], %[hi]\n\t"                                             \
+ "adcx %[lo], %[" #P0 "]\n\t"                                                \
+ "adox %[hi], %[" #P1 "]\n\t"                                                \
+ "mulx 8(%[b]), %[lo], %[hi]\n\t"                                            \
+ "adcx %[lo], %[" #P1 "]\n\t"                                                \
+ "adox %[hi], %[" #P2 "]\n\t"                                                \
+ "mulx 16(%[b]), %[lo], %[hi]\n\t"                                           \
+ "adcx %[lo], %[" #P2 "]\n\t"                                                \
+ "adox %[hi], %[" #P3 "]\n\t"                                                \
+ "mulx 24(%[b]), %[lo], %[hi]\n\t"                                           \
+ "adcx %[lo], %[" #P3 "]\n\t"                                                \
+ "adox %[hi], %[" #P4 "]\n\t"                                                \
+ "adcx %[z], %[" #P4 "]\n\t"                                                 \
+ "mov %[" #P0 "], " #s "*8(%[r])\n\t"
+
+#define ADS_PASS_RADD( s , P0 ) "adox " #s "*8(%[r]), %[" #P0 "]\n\t"
+#define ADS_PASS_RNONE( s , P0 )
+
+/// the pass, r_i added by RADD
+#define ADS_PASS( RADD )                                                     \
+ __asm__ __volatile__(                                                       \
+  "xor %k[w0], %k[w0]\n\t"                                                   \
+  "xor %k[w1], %k[w1]\n\t"                                                   \
+  "xor %k[w2], %k[w2]\n\t"                                                   \
+  "xor %k[w3], %k[w3]\n\t"                                                   \
+  "xor %k[w4], %k[w4]\n\t"                                                   \
+  "lea 7f(%%rip), %[lo]\n\t"                                                 \
+  "movslq (%[lo],%[e],4), %[hi]\n\t"                                         \
+  "add %[lo], %[hi]\n\t"                                                     \
+  "xor %k[lo], %k[lo]\n\t"                                                   \
+  "jmp *%[hi]\n\t"                                                           \
+  ".p2align 2\n"                                                             \
+  "7:\n\t"                                                                   \
+  ".long 10f-7b, 11f-7b, 12f-7b, 13f-7b, 14f-7b\n\t"                         \
+  ".p2align 5\n"                                                             \
+  "9:\n\t"                                                                   \
+  ADS_PASS_STEP( 0 , RADD , w0 , w1 , w2 , w3 , w4 )                         \
+  ADS_PASS_STEP( 1 , RADD , w1 , w2 , w3 , w4 , w0 )                         \
+  ADS_PASS_STEP( 2 , RADD , w2 , w3 , w4 , w0 , w1 )                         \
+  ADS_PASS_STEP( 3 , RADD , w3 , w4 , w0 , w1 , w2 )                         \
+  ADS_PASS_STEP( 4 , RADD , w4 , w0 , w1 , w2 , w3 )                         \
+  "lea 40(%[a]), %[a]\n\t"                                                   \
+  "lea 40(%[r]), %[r]\n\t"                                                   \
+  "dec %[c]\n\t"                                                             \
+  "jnz 9b\n\t"                                                               \
+  "mov %[w0], (%[r])\n\t"                                                    \
+  "mov %[w1], 8(%[r])\n\t"                                                   \
+  "mov %[w2], 16(%[r])\n\t"                                                  \
+  "mov %[w3], 24(%[r])"                                                      \
+  : [ w0 ] "=&r" ( w0 ) , [ w1 ] "=&r" ( w1 ) , [ w2 ] "=&r" ( w2 ) ,        \
+    [ w3 ] "=&r" ( w3 ) , [ w4 ] "=&r" ( w4 ) , [ lo ] "=&r" ( lo ) ,       \
+    [ hi ] "=&r" ( hi ) , [ c ] "+&r" ( c ) , [ a ] "+&r" ( pa ) ,          \
+    [ r ] "+&r" ( pr )                                                       \
+  : [ b ] "r" ( b ) , [ z ] "r" ( std::uint64_t( 0 ) ) , [ e ] "r" ( e )     \
+  : "rdx" , "cc" , "memory" )
+
+/// r[ 0 , n + 4 ) = a[ 0 , n ) b[ 0 , 4 ) if not add, else
+/// r[ 0 , n + 4 ) = r[ 0 , n ) + a b, n > 0
+template< bool add >
+inline void mulPass4( std::uint64_t * r , const std::uint64_t * a ,
+                      std::size_t n , const std::uint64_t * b )
+{
+ const std::uint64_t e = ( 5 - n % 5 ) % 5;
+ std::uint64_t w0 , w1 , w2 , w3 , w4 , lo , hi , c = ( n + e ) / 5 ,
+               pa = std::uint64_t( reinterpret_cast< std::uintptr_t >( a ) ) -
+                    8 * e ,
+               pr = std::uint64_t( reinterpret_cast< std::uintptr_t >( r ) ) -
+                    8 * e;
+ if constexpr( add ) ADS_PASS( ADS_PASS_RADD );
+ else ADS_PASS( ADS_PASS_RNONE );
+ }
+
+/// r[ 0 , 8 ) = a[ 0 , 4 )^2: the products a_i a_j, i < j, at the places 1
+/// to 6 in t1 , ... , t6, on the chains of CF and OF, then 2 t on the
+/// chain of OF and the squares a_i^2 on that of CF
+inline void sqr4Asm( std::uint64_t * r , const std::uint64_t * a )
+{
+ std::uint64_t t1 , t2 , t3 , t4 , t5 , t6 , lo , hi , z;
+ __asm__ __volatile__(
+  "xor %k[z], %k[z]\n\t"
+  "mov (%[a]), %%rdx\n\t"
+  "mulx 8(%[a]), %[t1], %[t2]\n\t"
+  "mulx 16(%[a]), %[lo], %[t3]\n\t"
+  "adcx %[lo], %[t2]\n\t"
+  "mulx 24(%[a]), %[lo], %[t4]\n\t"
+  "adcx %[lo], %[t3]\n\t"
+  "mov 8(%[a]), %%rdx\n\t"
+  "mulx 16(%[a]), %[lo], %[hi]\n\t"
+  "adox %[lo], %[t3]\n\t"
+  "adcx %[hi], %[t4]\n\t"
+  "mulx 24(%[a]), %[lo], %[t5]\n\t"
+  "adox %[lo], %[t4]\n\t"
+  "adcx %[z], %[t5]\n\t"
+  "mov 16(%[a]), %%rdx\n\t"
+  "mulx 24(%[a]), %[lo], %[t6]\n\t"
+  "adox %[lo], %[t5]\n\t"
+  "adox %[z], %[t6]\n\t"
+  "adcx %[z], %[t6]\n\t"
+  "xor %k[z], %k[z]\n\t"
+  "mov (%[a]), %%rdx\n\t"
+  "mulx %%rdx, %[lo], %[hi]\n\t"
+  "mov %[lo], (%[r])\n\t"
+  "adox %[t1], %[t1]\n\t"
+  "adcx %[hi], %[t1]\n\t"
+  "mov %[t1], 8(%[r])\n\t"
+  "mov 8(%[a]), %%rdx\n\t"
+  "mulx %%rdx, %[lo], %[hi]\n\t"
+  "adox %[t2], %[t2]\n\t"
+  "adcx %[lo], %[t2]\n\t"
+  "mov %[t2], 16(%[r])\n\t"
+  "adox %[t3], %[t3]\n\t"
+  "adcx %[hi], %[t3]\n\t"
+  "mov %[t3], 24(%[r])\n\t"
+  "mov 16(%[a]), %%rdx\n\t"
+  "mulx %%rdx, %[lo], %[hi]\n\t"
+  "adox %[t4], %[t4]\n\t"
+  "adcx %[lo], %[t4]\n\t"
+  "mov %[t4], 32(%[r])\n\t"
+  "adox %[t5], %[t5]\n\t"
+  "adcx %[hi], %[t5]\n\t"
+  "mov %[t5], 40(%[r])\n\t"
+  "mov 24(%[a]), %%rdx\n\t"
+  "mulx %%rdx, %[lo], %[hi]\n\t"
+  "adox %[t6], %[t6]\n\t"
+  "adcx %[lo], %[t6]\n\t"
+  "mov %[t6], 48(%[r])\n\t"
+  "adox %[z], %[hi]\n\t"
+  "adcx %[z], %[hi]\n\t"
+  "mov %[hi], 56(%[r])"
+  : [ t1 ] "=&r" ( t1 ) , [ t2 ] "=&r" ( t2 ) , [ t3 ] "=&r" ( t3 ) ,
+    [ t4 ] "=&r" ( t4 ) , [ t5 ] "=&r" ( t5 ) , [ t6 ] "=&r" ( t6 ) ,
+    [ lo ] "=&r" ( lo ) , [ hi ] "=&r" ( hi ) , [ z ] "=&r" ( z )
+  : [ a ] "r" ( a ) , [ r ] "r" ( r )
+  : "rdx" , "cc" , "memory" );
+ }
+
+/// the digit s of r = 2 r + d: r_s doubled with the top bit of r_{s-1} on
+/// the chain of OF, d_s added on that of CF
+#define ADS_LSH1ADD_STEP( s )                                                \
+ "mov " #s "*8(%[r]), %[x]\n\t"                                              \
+ "adox %[x], %[x]\n\t"                                                       \
+ "adcx " #s "*8(%[d]), %[x]\n\t"                                             \
+ "mov %[x], " #s "*8(%[r])\n\t"
+
+/// r = 2 r + d, n > 0 digits, n even, the result below b^n
+inline void lsh1AddAsm( std::uint64_t * r , const std::uint64_t * d ,
+                        std::size_t n )
+{
+ std::uint64_t x , c;
+ __asm__ __volatile__(
+  "xor %k[x], %k[x]\n\t"
+  "mov %[n2], %[c]\n\t"
+  "jrcxz 1f\n\t"
+  ADS_LSH1ADD_STEP( 0 ) ADS_LSH1ADD_STEP( 1 )
+  "lea 16(%[r]), %[r]\n\t"
+  "lea 16(%[d]), %[d]\n"
+  "1:\n\t"
+  "mov %[n4], %[c]\n\t"
+  "jmp 7f\n"
+  "9:\n\t"
+  ADS_LSH1ADD_STEP( 0 ) ADS_LSH1ADD_STEP( 1 )
+  ADS_LSH1ADD_STEP( 2 ) ADS_LSH1ADD_STEP( 3 )
+  "lea 32(%[r]), %[r]\n\t"
+  "lea 32(%[d]), %[d]\n\t"
+  "lea -1(%[c]), %[c]\n"
+  "7:\n\t"
+  "jrcxz 8f\n\t"
+  "jmp 9b\n"
+  "8:"
+  : [ x ] "=&r" ( x ) , [ c ] "=&c" ( c ) , [ r ] "+&r" ( r ) ,
+    [ d ] "+&r" ( d )
+  : [ n2 ] "r" ( n & 2 ) , [ n4 ] "r" ( n / 4 )
+  : "cc" , "memory" );
+ }
+
+// The loops on the digits of a, b and r, one step per digit, 1 and 2 and
+// 4 steps first as the bits of n say, then blocks of 8, the chains of
+// carries kept across them by MOV, LEA and JRCXZ; the steps use x and y by
+// turns, and the 1-step group moves x to y for the steps that keep a
+// digit from the step before.
+
+/// the steps STEP over n digits, the counts in the registers n1, n2, n4
+/// and n8, the pointers a, b and r moved on
+#define ADS_ELEM( STEP , FIX1 )                                              \
+ "mov %[n1], %[c]\n\t"                                                       \
+ "jrcxz 1f\n\t"                                                              \
+ STEP( 0 , x , y )                                                           \
+ FIX1                                                                        \
+ "lea 8(%[a]), %[a]\n\t"                                                     \
+ "lea 8(%[b]), %[b]\n\t"                                                     \
+ "lea 8(%[r]), %[r]\n"                                                       \
+ "1:\n\t"                                                                    \
+ "mov %[n2], %[c]\n\t"                                                       \
+ "jrcxz 2f\n\t"                                                              \
+ STEP( 0 , x , y ) STEP( 1 , y , x )                                         \
+ "lea 16(%[a]), %[a]\n\t"                                                    \
+ "lea 16(%[b]), %[b]\n\t"                                                    \
+ "lea 16(%[r]), %[r]\n"                                                      \
+ "2:\n\t"                                                                    \
+ "mov %[n4], %[c]\n\t"                                                       \
+ "jrcxz 3f\n\t"                                                              \
+ STEP( 0 , x , y ) STEP( 1 , y , x ) STEP( 2 , x , y ) STEP( 3 , y , x )     \
+ "lea 32(%[a]), %[a]\n\t"                                                    \
+ "lea 32(%[b]), %[b]\n\t"                                                    \
+ "lea 32(%[r]), %[r]\n"                                                      \
+ "3:\n\t"                                                                    \
+ "mov %[n8], %[c]\n\t"                                                       \
+ "jmp 7f\n\t"                                                                \
+ ".p2align 4\n"                                                              \
+ "9:\n\t"                                                                    \
+ STEP( 0 , x , y ) STEP( 1 , y , x ) STEP( 2 , x , y ) STEP( 3 , y , x )     \
+ STEP( 4 , x , y ) STEP( 5 , y , x ) STEP( 6 , x , y ) STEP( 7 , y , x )     \
+ "lea 64(%[a]), %[a]\n\t"                                                    \
+ "lea 64(%[b]), %[b]\n\t"                                                    \
+ "lea 64(%[r]), %[r]\n\t"                                                    \
+ "lea -1(%[c]), %[c]\n"                                                      \
+ "7:\n\t"                                                                    \
+ "jrcxz 8f\n\t"                                                              \
+ "jmp 9b\n"                                                                  \
+ "8:\n\t"
+
+/// the operands of the loops, with more inputs in MORE
+#define ADS_ELEM_OPS( MORE )                                                 \
+ : [ x ] "=&r" ( x ) , [ y ] "=&r" ( y ) , [ t ] "=&r" ( t ) ,              \
+   [ c ] "=&c" ( c ) , [ a ] "+&r" ( a ) , [ b ] "+&r" ( b ) ,              \
+   [ r ] "+&r" ( r ) , [ h ] "+&r" ( h )                                     \
+ : [ n1 ] "r" ( n & 1 ) , [ n2 ] "r" ( n & 2 ) , [ n4 ] "r" ( n & 4 ) ,     \
+   [ n8 ] "r" ( n / 8 ) MORE                                                 \
+ : "cc" , "memory"
+
+#define ADS_ELEM_VARS                                                        \
+ std::uint64_t x , y , t , c , h = 0;
+
+/// r = a + b and r = a - b
+#define ADS_ADC_STEP( s , X , Y )                                            \
+ "mov " #s "*8(%[a]), %[" #X "]\n\t"                                         \
+ "adc " #s "*8(%[b]), %[" #X "]\n\t"                                         \
+ "mov %[" #X "], " #s "*8(%[r])\n\t"
+
+#define ADS_SBB_STEP( s , X , Y )                                            \
+ "mov " #s "*8(%[a]), %[" #X "]\n\t"                                         \
+ "sbb " #s "*8(%[b]), %[" #X "]\n\t"                                         \
+ "mov %[" #X "], " #s "*8(%[r])\n\t"
+
+/// r = a + b and r = a - b, n > 0 digits, the carry or the borrow
 inline std::uint64_t addNAsm( std::uint64_t * r , const std::uint64_t * a ,
                               const std::uint64_t * b , std::size_t n )
 {
- std::uint64_t i = n / 4 , x , y;
- __asm__( "xor %k[x], %k[x]\n\t"
-          "1:\n\t"
-          "mov (%[a]), %[x]\n\t"
-          "adc (%[b]), %[x]\n\t"
-          "mov %[x], (%[r])\n\t"
-          "mov 8(%[a]), %[y]\n\t"
-          "adc 8(%[b]), %[y]\n\t"
-          "mov %[y], 8(%[r])\n\t"
-          "mov 16(%[a]), %[x]\n\t"
-          "adc 16(%[b]), %[x]\n\t"
-          "mov %[x], 16(%[r])\n\t"
-          "mov 24(%[a]), %[y]\n\t"
-          "adc 24(%[b]), %[y]\n\t"
-          "mov %[y], 24(%[r])\n\t"
-          "lea 32(%[a]), %[a]\n\t"
-          "lea 32(%[b]), %[b]\n\t"
-          "lea 32(%[r]), %[r]\n\t"
-          "dec %[i]\n\t"
-          "jnz 1b\n\t"
-          "mov $0, %k[x]\n\t"
-          "adc %k[x], %k[x]"
-          : [ x ] "=&r" ( x ) , [ y ] "=&r" ( y ) , [ i ] "+&r" ( i ) ,
-            [ a ] "+&r" ( a ) , [ b ] "+&r" ( b ) , [ r ] "+&r" ( r )
-          :
-          : "cc" , "memory" );
- return( x );
+ ADS_ELEM_VARS
+ __asm__ __volatile__( "xor %k[x], %k[x]\n\t"
+                       ADS_ELEM( ADS_ADC_STEP , "" )
+                       "setc %b[h]"
+                       ADS_ELEM_OPS( ) );
+ return( h );
  }
 
 inline std::uint64_t subNAsm( std::uint64_t * r , const std::uint64_t * a ,
                               const std::uint64_t * b , std::size_t n )
 {
- std::uint64_t i = n / 4 , x , y;
- __asm__( "xor %k[x], %k[x]\n\t"
-          "1:\n\t"
-          "mov (%[a]), %[x]\n\t"
-          "sbb (%[b]), %[x]\n\t"
-          "mov %[x], (%[r])\n\t"
-          "mov 8(%[a]), %[y]\n\t"
-          "sbb 8(%[b]), %[y]\n\t"
-          "mov %[y], 8(%[r])\n\t"
-          "mov 16(%[a]), %[x]\n\t"
-          "sbb 16(%[b]), %[x]\n\t"
-          "mov %[x], 16(%[r])\n\t"
-          "mov 24(%[a]), %[y]\n\t"
-          "sbb 24(%[b]), %[y]\n\t"
-          "mov %[y], 24(%[r])\n\t"
-          "lea 32(%[a]), %[a]\n\t"
-          "lea 32(%[b]), %[b]\n\t"
-          "lea 32(%[r]), %[r]\n\t"
-          "dec %[i]\n\t"
-          "jnz 1b\n\t"
-          "mov $0, %k[x]\n\t"
-          "adc %k[x], %k[x]"
-          : [ x ] "=&r" ( x ) , [ y ] "=&r" ( y ) , [ i ] "+&r" ( i ) ,
-            [ a ] "+&r" ( a ) , [ b ] "+&r" ( b ) , [ r ] "+&r" ( r )
-          :
-          : "cc" , "memory" );
- return( x );
+ ADS_ELEM_VARS
+ __asm__ __volatile__( "xor %k[x], %k[x]\n\t"
+                       ADS_ELEM( ADS_SBB_STEP , "" )
+                       "setc %b[h]"
+                       ADS_ELEM_OPS( ) );
+ return( h );
  }
+
+/// the steps s of the four phases of the sum of Karatsuba [see
+/// karaSum()]: p walks on r, t on the product of the differences, L8 is
+/// 8 l; the subtraction adds the complement of t, CF starting at 1
+#define ADS_KA_STEP( s )                                                     \
+ "mov " #s "*8(%[p],%[L8]), %[x]\n\t"                                        \
+ "adcx " #s "*8(%[p],%[L8],2), %[x]\n\t"                                     \
+ "mov %[x], " #s "*8(%[p],%[L8],2)\n\t"                                      \
+ "adox " #s "*8(%[p]), %[x]\n\t"                                             \
+ "mov %[x], " #s "*8(%[p],%[L8])\n\t"
+#define ADS_KB1_ADD( s )                                                     \
+ "mov " #s "*8(%[p]), %[x]\n\t"                                              \
+ "adcx " #s "*8(%[t]), %[x]\n\t"                                             \
+ "mov %[x], " #s "*8(%[p])\n\t"
+#define ADS_KB1_SUB( s )                                                     \
+ "mov " #s "*8(%[t]), %[y]\n\t"                                              \
+ "not %[y]\n\t"                                                              \
+ "adcx " #s "*8(%[p]), %[y]\n\t"                                             \
+ "mov %[y], " #s "*8(%[p])\n\t"
+#define ADS_KB2_ADD( s )                                                     \
+ "mov " #s "*8(%[p]), %[x]\n\t"                                              \
+ "adox " #s "*8(%[p],%[L8]), %[x]\n\t"                                       \
+ "adcx " #s "*8(%[t]), %[x]\n\t"                                             \
+ "mov %[x], " #s "*8(%[p])\n\t"
+#define ADS_KB2_SUB( s )                                                     \
+ "mov " #s "*8(%[t]), %[y]\n\t"                                              \
+ "not %[y]\n\t"                                                              \
+ "mov " #s "*8(%[p]), %[x]\n\t"                                              \
+ "adox " #s "*8(%[p],%[L8]), %[x]\n\t"                                       \
+ "adcx %[y], %[x]\n\t"                                                       \
+ "mov %[x], " #s "*8(%[p])\n\t"
+#define ADS_KB3_ADD( s )                                                     \
+ "mov " #s "*8(%[p]), %[x]\n\t"                                              \
+ "adox %[z], %[x]\n\t"                                                       \
+ "adcx " #s "*8(%[t]), %[x]\n\t"                                             \
+ "mov %[x], " #s "*8(%[p])\n\t"
+#define ADS_KB3_SUB( s )                                                     \
+ "mov " #s "*8(%[t]), %[y]\n\t"                                              \
+ "not %[y]\n\t"                                                              \
+ "mov " #s "*8(%[p]), %[x]\n\t"                                              \
+ "adox %[z], %[x]\n\t"                                                       \
+ "adcx %[y], %[x]\n\t"                                                       \
+ "mov %[x], " #s "*8(%[p])\n\t"
+
+/// a phase: the steps STEP over the digits counted by the masks at
+/// mk[ M ] , ... , mk[ M + 3 ], p moved on, and t if T
+#define ADS_KPHASE( STEP , M , T )                                           \
+ "mov 8*" #M "(%[mk]), %[c]\n\t"                                             \
+ "jrcxz 1f\n\t"                                                              \
+ STEP( 0 )                                                                   \
+ "lea 8(%[p]), %[p]\n\t"                                                     \
+ T( "lea 8(%[t]), %[t]\n\t" )                                                \
+ "1:\n\t"                                                                    \
+ "mov 8*" #M "+8(%[mk]), %[c]\n\t"                                           \
+ "jrcxz 2f\n\t"                                                              \
+ STEP( 0 ) STEP( 1 )                                                         \
+ "lea 16(%[p]), %[p]\n\t"                                                    \
+ T( "lea 16(%[t]), %[t]\n\t" )                                               \
+ "2:\n\t"                                                                    \
+ "mov 8*" #M "+16(%[mk]), %[c]\n\t"                                          \
+ "jrcxz 3f\n\t"                                                              \
+ STEP( 0 ) STEP( 1 ) STEP( 2 ) STEP( 3 )                                     \
+ "lea 32(%[p]), %[p]\n\t"                                                    \
+ T( "lea 32(%[t]), %[t]\n\t" )                                               \
+ "3:\n\t"                                                                    \
+ "mov 8*" #M "+24(%[mk]), %[c]\n\t"                                          \
+ "jmp 7f\n"                                                                  \
+ "9:\n\t"                                                                    \
+ STEP( 0 ) STEP( 1 ) STEP( 2 ) STEP( 3 )                                     \
+ STEP( 4 ) STEP( 5 ) STEP( 6 ) STEP( 7 )                                     \
+ "lea 64(%[p]), %[p]\n\t"                                                    \
+ T( "lea 64(%[t]), %[t]\n\t" )                                               \
+ "lea -1(%[c]), %[c]\n"                                                      \
+ "7:\n\t"                                                                    \
+ "jrcxz 8f\n\t"                                                              \
+ "jmp 9b\n"                                                                  \
+ "8:\n\t"
+
+#define ADS_KT_YES( x ) x
+#define ADS_KT_NO( x )
+
+/// the sum of Karatsuba, SUB for the subtraction of t
+#define ADS_KARA_SUM( B1 , B2 , B3 , START )                                 \
+ __asm__ __volatile__(                                                       \
+  "xor %k[z], %k[z]\n\t"                                                     \
+  ADS_KPHASE( ADS_KA_STEP , 0 , ADS_KT_NO )                                  \
+  "setc 128(%[mk])\n\t"                                                      \
+  "seto 129(%[mk])\n\t"                                                      \
+  "movzbl 129(%[mk]), %k[y]\n\t"                                             \
+  "xor %k[z], %k[z]\n\t"                                                     \
+  "adox 136(%[mk]), %[y]\n\t"                                                \
+  START                                                                      \
+  ADS_KPHASE( B1 , 4 , ADS_KT_YES )                                          \
+  ADS_KPHASE( B2 , 8 , ADS_KT_YES )                                          \
+  ADS_KPHASE( B3 , 12 , ADS_KT_YES )                                         \
+  "setc 130(%[mk])\n\t"                                                      \
+  "seto 131(%[mk])"                                                          \
+  : [ x ] "=&r" ( x ) , [ y ] "=&r" ( y ) , [ z ] "=&r" ( z ) ,             \
+    [ c ] "=&c" ( c ) , [ p ] "+&r" ( p ) , [ t ] "+&r" ( t )               \
+  : [ L8 ] "r" ( 8 * l ) , [ mk ] "r" ( mk )                                 \
+  : "cc" , "memory" )
+
+/// r[ l , 2n ) += z0 + z2 -+ t, z0 = r[ 0 , 2 l ), z2 = r[ 2 l , 2 n ),
+/// of 2 h digits, l - 1 <= h <= l, t of 2 l digits, subtracted if sub:
+/// with zi = zi0 + zi1 b^l, H = z01 + z20 goes to r[ l , 2 l ) with z00
+/// and to r[ 2 l , 3 l ) with z21 (phase A, on the chains of CF and OF),
+/// then t goes to r[ l , 3 l ) (phases B, on CF) with z21 (on OF); the
+/// carry of H, which goes to b^{2 l} and b^{3 l}, in cH, and the carry at
+/// b^{3 l}, -1 to 3, returned
+template< bool sub >
+inline std::int64_t karaSumAsm( std::uint64_t * r , const std::uint64_t * t ,
+                                std::size_t l , std::size_t h ,
+                                std::uint64_t & cH )
+{
+ const std::size_t m = 2 * h - l;           // the digits of z21
+ alignas( 8 ) std::uint64_t mk[ 18 ] = {
+  l & 1 , l & 2 , l & 4 , l / 8 , l & 1 , l & 2 , l & 4 , l / 8 ,
+  m & 1 , m & 2 , m & 4 , m / 8 , ( l - m ) & 1 , ( l - m ) & 2 ,
+  ( l - m ) & 4 , ( l - m ) / 8 , 0 , ~std::uint64_t( 0 ) };
+ std::uint64_t x , y , z , c , * p = r;
+ if constexpr( sub )
+  ADS_KARA_SUM( ADS_KB1_SUB , ADS_KB2_SUB , ADS_KB3_SUB , "stc\n\t" );
+ else ADS_KARA_SUM( ADS_KB1_ADD , ADS_KB2_ADD , ADS_KB3_ADD , "" );
+ const auto * f = reinterpret_cast< const unsigned char * >( mk + 16 );
+ cH = f[ 0 ];
+ return( std::int64_t( f[ 0 ] ) + std::int64_t( f[ 3 ] ) +
+         std::int64_t( f[ 2 ] ) - std::int64_t( sub ) );
+ }
+
+/// r = a + 2 b and r = a - 2 b: b doubled with the top bit of the digit
+/// before on the chain of OF, added to a or its complement subtracted on
+/// that of CF, which starts at 1 for the difference
+#define ADS_ADDLSH1_STEP( s , X , Y )                                        \
+ "mov " #s "*8(%[b]), %[" #X "]\n\t"                                         \
+ "adox %[" #X "], %[" #X "]\n\t"                                             \
+ "adcx " #s "*8(%[a]), %[" #X "]\n\t"                                        \
+ "mov %[" #X "], " #s "*8(%[r])\n\t"
+
+#define ADS_SUBLSH1_STEP( s , X , Y )                                        \
+ "mov " #s "*8(%[b]), %[" #X "]\n\t"                                         \
+ "adox %[" #X "], %[" #X "]\n\t"                                             \
+ "not %[" #X "]\n\t"                                                         \
+ "adcx " #s "*8(%[a]), %[" #X "]\n\t"                                        \
+ "mov %[" #X "], " #s "*8(%[r])\n\t"
+
+/// r = a + 2 b, n > 0 digits, the carry, 0 to 2
+inline std::uint64_t addLsh1Asm( std::uint64_t * r , const std::uint64_t * a ,
+                                 const std::uint64_t * b , std::size_t n )
+{
+ ADS_ELEM_VARS
+ __asm__ __volatile__( "xor %k[x], %k[x]\n\t"
+                       ADS_ELEM( ADS_ADDLSH1_STEP , "" )
+                       "mov $0, %k[h]\n\t"
+                       "adcx %[h], %[h]\n\t"
+                       "adox %[c], %[h]"
+                       ADS_ELEM_OPS( ) );
+ return( h );
+ }
+
+/// r = a - 2 b, n > 0 digits, the borrow, 0 to 2
+inline std::uint64_t subLsh1Asm( std::uint64_t * r , const std::uint64_t * a ,
+                                 const std::uint64_t * b , std::size_t n )
+{
+ ADS_ELEM_VARS
+ __asm__ __volatile__( "xor %k[x], %k[x]\n\t"
+                       "stc\n\t"
+                       ADS_ELEM( ADS_SUBLSH1_STEP , "" )
+                       "mov $1, %k[h]\n\t"
+                       "mov $0, %k[t]\n\t"
+                       "adox %[t], %[h]\n\t"
+                       "sbb %[t], %[h]"
+                       ADS_ELEM_OPS( ) );
+ return( h );
+ }
+
+/// r = ( a + b ) / 2 and r = ( a - b ) / 2, the bit shifted in at the top
+/// the carry or the borrow (the sign bit of a negative difference): the
+/// digit s of the sum is made on the chain of CF, and the digit s - 1 of
+/// the result from it and the one before it by SHRX, SHLX and LEA, which
+/// leave the flags alone; X holds the digit s of the sum, Y the one before
+#define ADS_RSH1_STEP( s , X , Y , OP )                                      \
+ "mov " #s "*8(%[a]), %[" #X "]\n\t"                                         \
+ #OP " " #s "*8(%[b]), %[" #X "]\n\t"                                        \
+ "shrx %[one], %[" #Y "], %[t]\n\t"                                          \
+ "shlx %[s63], %[" #X "], %[h]\n\t"                                          \
+ "lea (%[t],%[h]), %[t]\n\t"                                                 \
+ "mov %[t], " #s "*8-8(%[r])\n\t"
+
+#define ADS_RSH1ADD_STEP( s , X , Y ) ADS_RSH1_STEP( s , X , Y , adc )
+#define ADS_RSH1SUB_STEP( s , X , Y ) ADS_RSH1_STEP( s , X , Y , sbb )
+
+/// the first digit of the sum, in y, the pointers one digit on, and n - 1
+#define ADS_RSH1_FIRST( OP )                                                 \
+ "mov (%[a]), %[y]\n\t"                                                      \
+ #OP " (%[b]), %[y]\n\t"                                                     \
+ "lea 8(%[a]), %[a]\n\t"                                                     \
+ "lea 8(%[b]), %[b]\n\t"                                                     \
+ "lea 8(%[r]), %[r]\n\t"
+
+/// the last digit: the top of the sum and the carry or the borrow
+#define ADS_RSH1_LAST                                                        \
+ "setc %b[h]\n\t"                                                            \
+ "movzx %b[h], %k[h]\n\t"                                                    \
+ "shl $63, %[h]\n\t"                                                         \
+ "shr $1, %[y]\n\t"                                                          \
+ "or %[h], %[y]\n\t"                                                         \
+ "mov %[y], -8(%[r])"
+
+#define ADS_RSH1_FN( name , OP , STEP )                                      \
+inline void name( std::uint64_t * r , const std::uint64_t * a ,              \
+                  const std::uint64_t * b , std::size_t n0 )                 \
+{                                                                            \
+ ADS_ELEM_VARS                                                               \
+ const std::size_t n = n0 - 1;                                               \
+ __asm__ __volatile__( "xor %k[x], %k[x]\n\t"                                \
+                       ADS_RSH1_FIRST( OP )                                  \
+                       ADS_ELEM( STEP , "mov %[x], %[y]\n\t" )               \
+                       ADS_RSH1_LAST                                         \
+                       ADS_ELEM_OPS( ADS_RSH1_MORE ) );                      \
+ }
+
+#define ADS_RSH1_MORE , [ one ] "r" ( std::uint64_t( 1 ) ) ,                 \
+                        [ s63 ] "r" ( std::uint64_t( 63 ) )
+
+/// r = ( a + b ) / 2 and r = ( a - b ) / 2, n > 0 digits, the carry or the
+/// borrow shifted in at the top
+ADS_RSH1_FN( rsh1AddAsm , adc , ADS_RSH1ADD_STEP )
+ADS_RSH1_FN( rsh1SubAsm , sbb , ADS_RSH1SUB_STEP )
+
+/// r = a / 3 for a multiple of 3 (Hensel): with d = ( b - 1 ) / 3,
+/// -d is 1 / 3 modulo b and r = -a d ( 1 + b + b^2 + ... ) modulo b^n, the
+/// sums of the products a_i d made by the running difference h, on the
+/// chain of SUB and SBB, the products independent of it
+#define ADS_DIV3_STEP( s , X , Y )                                           \
+ "mulx " #s "*8(%[a]), %[" #X "], %[" #Y "]\n\t"                             \
+ "sub %[" #X "], %[h]\n\t"                                                   \
+ "mov %[h], " #s "*8(%[r])\n\t"                                              \
+ "sbb %[" #Y "], %[h]\n\t"
+
+#define ADS_DIV3_MORE , [ d ] "d" ( 0x5555555555555555ULL )
+
+inline void divExact3Asm( std::uint64_t * r , const std::uint64_t * a ,
+                          std::size_t n )
+{
+ ADS_ELEM_VARS
+ const std::uint64_t * b = a;
+ __asm__ __volatile__( ADS_ELEM( ADS_DIV3_STEP , "" )
+                       ADS_ELEM_OPS( ADS_DIV3_MORE ) );
+ }
+
 #endif
 
 /// the reciprocal of d1 b + d0, d1 with the top bit set,
@@ -1222,7 +1833,7 @@ inline BigInteger::Limb BigInteger::addN( Limb * r , const Limb * a ,
  Limb c = 0;
  std::size_t i = 0;
 #if ADS_BIGINT_ASM
- if( ( i = nb - nb % 4 ) ) c = detail::addNAsm( r , a , b , i );
+ if( nb >= 4 ) c = detail::addNAsm( r , a , b , i = nb );
 #endif
  for( ; i < nb ; ++i ) r[ i ] = detail::addCarry( a[ i ] , b[ i ] , c );
  for( ; c && ( i < na ) ; ++i ) c = ( ( r[ i ] = a[ i ] + 1 ) == 0 );
@@ -1237,7 +1848,7 @@ inline BigInteger::Limb BigInteger::subN( Limb * r , const Limb * a ,
  Limb c = 0;                                // the borrow, 0 or 1
  std::size_t i = 0;
 #if ADS_BIGINT_ASM
- if( ( i = nb - nb % 4 ) ) c = detail::subNAsm( r , a , b , i );
+ if( nb >= 4 ) c = detail::subNAsm( r , a , b , i = nb );
 #endif
  for( ; i < nb ; ++i ) r[ i ] = detail::subBorrow( a[ i ] , b[ i ] , c );
  for( ; c && ( i < na ) ; ++i ) c = ( ( r[ i ] = a[ i ] - 1 ) == ~Limb( 0 ) );
@@ -1263,7 +1874,7 @@ inline BigInteger::Limb BigInteger::mul1( Limb * r , const Limb * a ,
  Limb c = 0;
  std::size_t i = 0;
 #if ADS_BIGINT_ASM
- if( ( i = n - n % 4 ) ) c = detail::mul1Asm( r , a , i , m );
+ if( ( i = n ) ) c = detail::mul1Asm( r , a , i , m );
 #endif
  for( ; i < n ; ++i ) r[ i ] = detail::mulAdd( a[ i ] , m , c , 0 , c );
  return( c );
@@ -1275,7 +1886,7 @@ inline BigInteger::Limb BigInteger::addMul1( Limb * r , const Limb * a ,
  Limb c = 0;                                // a m + r + c < 2^128
  std::size_t i = 0;
 #if ADS_BIGINT_ASM
- if( ( i = n - n % 8 ) ) c = detail::addMul1Adx( r , a , i , m );
+ if( ( i = n ) ) c = detail::addMul1Adx( r , a , i , m );
 #endif
  for( ; i < n ; ++i ) r[ i ] = detail::mulAdd( a[ i ] , m , r[ i ] , c , c );
  return( c );
@@ -1287,7 +1898,9 @@ inline BigInteger::Limb BigInteger::subMul1( Limb * r , const Limb * a ,
  Limb c = 0;
  std::size_t i = 0;
 #if ADS_BIGINT_ASM
- if( ( i = n - n % 4 ) ) c = detail::subMul1Asm( r , a , i , m );
+ if( ( n >= 2 ) && ( n <= 8 ) )
+  return( detail::subMul1Short( r , a , n , m ) );
+ if( ( i = n ) ) c = detail::subMul1Asm( r , a , i , m );
 #endif
  for( ; i < n ; ++i ) {
   Limb hi;
@@ -1816,14 +2429,46 @@ inline void BigInteger::mulSchool( Limb * r , const Limb * a , std::size_t na ,
   std::fill( r , r + na , 0 );
   return;
   }
+#if ADS_BIGINT_ASM
+ if( nb < 4 ) {                             // Algorithm M, by rows
+  detail::mulRows< 0 , 1 , 0 >( r , a , na , b , nb );
+  return;
+  }
+ // by passes of 4 rows, the rows left one at a time
+ detail::mulPass4< false >( r , a , na , b );
+ std::size_t j = 4;
+ for( ; j + 4 <= nb ; j += 4 )
+  detail::mulPass4< true >( r + j , a , na , b + j );
+ for( ; j < nb ; ++j ) r[ na + j ] = addMul1( r + j , a , na , b[ j ] );
+#else
  r[ na ] = mul1( r , a , na , b[ 0 ] );     // Algorithm M
  std::size_t j = 1;
-#if ! ADS_BIGINT_ASM
- // two rows at once in C++, which keeps the digits of r in registers;
- // one in the assembly, whose rows are faster than two
+ // two rows at once, which keeps the digits of r in registers
  for( ; j + 1 < nb ; j += 2 ) addMul2( r + j , a , na , b[ j ] , b[ j + 1 ] );
-#endif
  for( ; j < nb ; ++j ) r[ na + j ] = addMul1( r + j , a , na , b[ j ] );
+#endif
+ }
+
+inline void BigInteger::sqrTile( Limb * r , const Limb * a , std::size_t n )
+{
+ // the products a_i a_j, i < j, in t, then 2 t plus the squares
+ Limb t[ 8 ] = {};
+ for( std::size_t i = 0 ; i + 1 < n ; ++i ) {
+  Limb c = 0;
+  for( std::size_t j = i + 1 ; j < n ; ++j )
+   t[ i + j ] = detail::mulAdd( a[ i ] , a[ j ] , t[ i + j ] , c , c );
+  t[ i + n ] = c;
+  }
+ Limb s = 0 , c = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  const Limb lo = t[ 2 * i ] , hi = t[ 2 * i + 1 ];
+  const Limb l2 = ( lo << 1 ) | s , h2 = ( hi << 1 ) | ( lo >> 63 );
+  s = hi >> 63;
+  Limb ph;
+  const Limb pl = detail::mulWide( a[ i ] , a[ i ] , ph );
+  r[ 2 * i ] = detail::addCarry( l2 , pl , c );
+  r[ 2 * i + 1 ] = detail::addCarry( h2 , ph , c );
+  }
  }
 
 inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
@@ -1831,9 +2476,32 @@ inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
  if( n == 0 ) return;
  r[ 0 ] = 0;                                // the products a_i a_j, i < j
  r[ 2 * n - 1 ] = 0;
+#if ADS_BIGINT_ASM
+ if( n >= 8 ) {
+  // a = sum of the tiles A_k b^{4k} of 4 digits (the last one shorter),
+  // a^2 = 2 T + D: T the products a_i a_j, i < j, of digits of different
+  // tiles, by passes of 4 rows over the digits after each tile, and D the
+  // squares A_k^2, of 8 digits each and side by side, at b^{8k}
+  std::fill( r , r + 2 * n , 0 );
+  for( std::size_t i = 0 ; i + 4 < n ; i += 4 )
+   detail::mulPass4< true >( r + 2 * i + 4 , a + i + 4 , n - i - 4 , a + i );
+  constexpr std::size_t kStack = 64;
+  Limb in[ kStack ];
+  std::unique_ptr< Limb[] > heap( 2 * n > kStack ? new Limb[ 2 * n ]
+                                                 : nullptr );
+  Limb * const d = heap ? heap.get() : in;
+  std::size_t i = 0;
+  for( ; i + 4 <= n ; i += 4 ) detail::sqr4Asm( d + 2 * i , a + i );
+  if( i < n ) sqrTile( d + 2 * i , a + i , n - i );
+  detail::lsh1AddAsm( r , d , 2 * n );
+  return;
+  }
+ if( n > 1 ) detail::mulRows< 1 , 2 , 1 >( r + 1 , a + 1 , n - 1 , a , n - 1 );
+#else
  r[ n ] = mul1( r + 1 , a + 1 , n - 1 , a[ 0 ] );
  for( std::size_t i = 1 ; i + 1 < n ; ++i )
   r[ n + i ] = addMul1( r + 2 * i + 1 , a + i + 1 , n - i - 1 , a[ i ] );
+#endif
  Limb s = 0 , c = 0;                        // twice them, and the squares
  for( std::size_t i = 0 ; i < n ; ++i ) {
   const Limb lo = r[ 2 * i ] , hi = r[ 2 * i + 1 ];
@@ -1846,38 +2514,60 @@ inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
   }
  }
 
-inline std::size_t BigInteger::karatsubaScratch( std::size_t n )
+inline std::size_t BigInteger::mulScratch( std::size_t n )
 {
- std::size_t s = 0;
- for( ; n >= kKaratsuba ; n -= n / 2 ) s += 4 * ( n - n / 2 );
- return( s );
+ // a step on n digits takes at most 4 n + 24 and leaves at most
+ // n / 2 + 2 digits to the next one
+ return( 8 * n + 64 * std::size_t( std::bit_width( n ) ) + 64 );
+ }
+
+inline void BigInteger::mulN( Limb * r , const Limb * a , const Limb * b ,
+                              std::size_t n , Limb * w , std::size_t fft ,
+                              std::size_t toom )
+{
+ if( n < kKaratsuba ) {
+  if( a == b ) sqrSchool( r , a , n );
+  else mulSchool( r , a , n , b , n );
+  }
+ else if( ( n >= fft ) && ( 2 * n <= kNTTMax ) ) mulNTT( r , a , n , b , n );
+ else if( n >= toom ) toom3( r , a , b , n , w , fft , toom );
+ else karatsuba( r , a , b , n , w , fft , toom );
  }
 
 inline void BigInteger::karatsuba( Limb * r , const Limb * a , const Limb * b ,
-                                   std::size_t n , Limb * w ,
-                                   std::size_t fft )
+                                   std::size_t n , Limb * w , std::size_t fft ,
+                                   std::size_t toom )
 {
  const bool sq = a == b;
- if( n < kKaratsuba ) {
-  if( sq ) sqrSchool( r , a , n );
-  else mulSchool( r , a , n , b , n );
-  return;
-  }
- if( ( n >= fft ) && ( 2 * n <= kNTTMax ) ) {
-  mulNTT( r , a , n , b , n );
-  return;
-  }
  const std::size_t h = n / 2 , l = n - h;   // a = a1 b^l + a0, the same b
- karatsuba( r , a , b , l , w , fft );      // z0 = a0 b0
- karatsuba( r + 2 * l , a + l , b + l , h , w , fft );   // z2 = a1 b1
+ mulN( r , a , b , l , w , fft , toom );    // z0 = a0 b0
+ mulN( r + 2 * l , a + l , b + l , h , w , fft , toom );   // z2 = a1 b1
  Limb * da = w , * db = w + l , * t = w + 2 * l;
  bool neg = absDiff( da , a , l , a + l , h );   // t = |a0 - a1| |b0 - b1|
  if( sq ) neg = false;
  else neg = neg != absDiff( db , b , l , b + l , h );
- karatsuba( t , da , sq ? da : db , l , w + 4 * l , fft );
+ mulN( t , da , sq ? da : db , l , w + 4 * l , fft , toom );
  // r += b^l ( z0 + z2 - ( a0 - a1 ) ( b0 - b1 ) ): with zi = zi0 + b^l zi1,
  // the sum S = z01 + z20 goes to b^l with z00 and to b^{2l} with z21
  Limb * x = r + l , * y = r + 2 * l;
+#if ADS_BIGINT_ASM
+ if( 2 * h > l ) {                          // z21 not empty
+  Limb cH;
+  const std::int64_t e =
+   neg ? detail::karaSumAsm< false >( r , t , l , h , cH )
+       : detail::karaSumAsm< true >( r , t , l , h , cH );
+  if( cH ) addTo( r + 2 * l , 2 * n - 2 * l , &cH , 1 );
+  if( e > 0 ) {
+   const Limb u = Limb( e );
+   addTo( r + 3 * l , 2 * n - 3 * l , &u , 1 );
+   }
+  else if( e < 0 ) {
+   const Limb u = 1;
+   subFrom( r + 3 * l , 2 * n - 3 * l , &u , 1 );
+   }
+  return;
+  }
+#endif
  const Limb c = addN( y , x , l , y , l );  // S
  const Limb cx = addN( x , y , l , r , l ) + c ,
             cy = addTo( y , l , r + 3 * l , 2 * h - l ) + c;
@@ -1885,6 +2575,145 @@ inline void BigInteger::karatsuba( Limb * r , const Limb * a , const Limb * b ,
  addTo( r + 3 * l , 2 * n - 3 * l , &cy , 1 );
  if( neg ) addTo( x , 2 * n - l , t , 2 * l );
  else subFrom( x , 2 * n - l , t , 2 * l );
+ }
+
+inline BigInteger::Limb BigInteger::addLsh1( Limb * r , const Limb * a ,
+                                             const Limb * b , std::size_t n )
+{
+#if ADS_BIGINT_ASM
+ return( detail::addLsh1Asm( r , a , b , n ) );
+#else
+ Limb c = 0 , s = 0;                        // the carry, the bit of b out
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  const Limb x = b[ i ];
+  r[ i ] = detail::addCarry( a[ i ] , ( x << 1 ) | s , c );
+  s = x >> 63;
+  }
+ return( c + s );
+#endif
+ }
+
+inline BigInteger::Limb BigInteger::subLsh1( Limb * r , const Limb * a ,
+                                             const Limb * b , std::size_t n )
+{
+#if ADS_BIGINT_ASM
+ return( detail::subLsh1Asm( r , a , b , n ) );
+#else
+ Limb c = 0 , s = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  const Limb x = b[ i ];
+  r[ i ] = detail::subBorrow( a[ i ] , ( x << 1 ) | s , c );
+  s = x >> 63;
+  }
+ return( c + s );
+#endif
+ }
+
+inline void BigInteger::rsh1Add( Limb * r , const Limb * a , const Limb * b ,
+                                 std::size_t n )
+{
+#if ADS_BIGINT_ASM
+ detail::rsh1AddAsm( r , a , b , n );
+#else
+ Limb c = 0 , y = detail::addCarry( a[ 0 ] , b[ 0 ] , c );
+ for( std::size_t i = 1 ; i < n ; ++i ) {
+  const Limb x = detail::addCarry( a[ i ] , b[ i ] , c );
+  r[ i - 1 ] = ( y >> 1 ) | ( x << 63 );
+  y = x;
+  }
+ r[ n - 1 ] = ( y >> 1 ) | ( c << 63 );
+#endif
+ }
+
+inline void BigInteger::rsh1Sub( Limb * r , const Limb * a , const Limb * b ,
+                                 std::size_t n )
+{
+#if ADS_BIGINT_ASM
+ detail::rsh1SubAsm( r , a , b , n );
+#else
+ Limb c = 0 , y = detail::subBorrow( a[ 0 ] , b[ 0 ] , c );
+ for( std::size_t i = 1 ; i < n ; ++i ) {
+  const Limb x = detail::subBorrow( a[ i ] , b[ i ] , c );
+  r[ i - 1 ] = ( y >> 1 ) | ( x << 63 );
+  y = x;
+  }
+ r[ n - 1 ] = ( y >> 1 ) | ( c << 63 );
+#endif
+ }
+
+inline void BigInteger::divExact3( Limb * a , std::size_t n )
+{
+#if ADS_BIGINT_ASM
+ detail::divExact3Asm( a , a , n );
+#else
+ // with d = ( b - 1 ) / 3, -d = 1 / 3 modulo b, and a / 3 is
+ // -a d ( 1 + b + ... + b^{n-1} ) modulo b^n, a running difference
+ constexpr Limb d = 0x5555555555555555ULL;
+ Limb h = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  Limb p1;
+  const Limb p0 = detail::mulWide( a[ i ] , d , p1 ) , c = h < p0;
+  h -= p0;
+  a[ i ] = h;
+  h -= p1 + c;
+  }
+#endif
+ }
+
+inline void BigInteger::toom3( Limb * r , const Limb * a , const Limb * b ,
+                               std::size_t n , Limb * w , std::size_t fft ,
+                               std::size_t toom )
+{
+ // a = a2 x^2 + a1 x + a0, x = b^k, a0 and a1 of k digits, a2 of s; the
+ // same for b; the product r( x ) = r4 x^4 + ... + r0 from its values at
+ // 0, 1, -1, 2 and infinity (Toom; Bodrato's sequence of interpolation)
+ const bool sq = a == b;
+ const std::size_t k = ( n + 2 ) / 3 , s = n - 2 * k , K = k + 1 , L = 2 * K;
+ Limb * const ap = w , * const am = w + K , * const bp = w + 2 * K ,
+      * const bm = w + 3 * K , * const a2 = w + 4 * K ,
+      * const b2 = w + 5 * K ,
+      * const vm1 = w + 6 * K , * const v2 = vm1 + L , * const v1 = v2 + L ,
+      * const ws = v1 + L;
+ // the values of a and b at 1, -1 and 2, of K digits: a0 + a2 +- a1 and
+ // a0 + 2 ( a1 + 2 a2 ), the sign of the value at -1
+ auto eval = [ & ]( const Limb * x , Limb * p , Limb * m , Limb * t ) {
+  p[ k ] = addN( p , x , k , x + 2 * k , s );
+  const bool neg = absDiff( m , p , K , x + k , k );
+  addTo( p , K , x + k , k );
+  Limb c = addLsh1( t , x + k , x + 2 * k , s );
+  t[ k ] = s < k ? addN( t + s , x + k + s , k - s , &c , 1 ) : c;
+  c = addLsh1( t , x , t , k );
+  t[ k ] = 2 * t[ k ] + c;
+  return( neg );
+  };
+ bool neg = eval( a , ap , am , a2 );
+ if( ! sq ) neg = neg != eval( b , bp , bm , b2 );
+ else neg = false;
+ mulN( vm1 , am , sq ? am : bm , K , ws , fft , toom );
+ mulN( v2 , a2 , sq ? a2 : b2 , K , ws , fft , toom );
+ mulN( v1 , ap , sq ? ap : bp , K , ws , fft , toom );
+ mulN( r , a , b , k , ws , fft , toom );   // v0
+ mulN( r + 4 * k , a + 2 * k , b + 2 * k , s , ws , fft , toom );   // vinf
+ const Limb * const v0 = r , * const vi = r + 4 * k;
+ // r3 = ( ( v2 - vm1 ) / 3 - ( v1 - v0 ) ) / 2 - 2 vinf,
+ // r1 = ( v1 - vm1 ) / 2 - r3, r2 = v1 - v0 - r1 - r3 - vinf
+ if( neg ) addTo( v2 , L , vm1 , L );
+ else subFrom( v2 , L , vm1 , L );
+ divExact3( v2 , L );
+ if( neg ) rsh1Add( vm1 , v1 , vm1 , L );
+ else rsh1Sub( vm1 , v1 , vm1 , L );
+ subFrom( v1 , L , v0 , 2 * k );
+ rsh1Sub( v2 , v2 , v1 , L );
+ subFrom( v1 , L , vm1 , L );
+ subFrom( v1 , L , vi , 2 * s );
+ const Limb c = subLsh1( v2 , v2 , vi , 2 * s );
+ subFrom( v2 + 2 * s , L - 2 * s , &c , 1 );
+ subFrom( vm1 , L , v2 , L );
+ // r = vinf x^4 + r3 x^3 + r2 x^2 + r1 x + v0, each r_i below b^{2n - ik}
+ std::copy( v1 , v1 + 2 * k , r + 2 * k );
+ addTo( r + 4 * k , 2 * s , v1 + 2 * k , std::min( L - 2 * k , 2 * s ) );
+ addTo( r + k , 2 * n - k , vm1 , std::min( L , 2 * n - k ) );
+ addTo( r + 3 * k , 2 * n - 3 * k , v2 , std::min( L , 2 * n - 3 * k ) );
  }
 
 template< class O >
@@ -2109,7 +2938,7 @@ inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
 
 inline void BigInteger::mulP( Limb * r , const Limb * a , std::size_t na ,
                               const Limb * b , std::size_t nb ,
-                              std::size_t fft )
+                              std::size_t fft , std::size_t toom )
 {
  if( na < nb ) {
   std::swap( a , b );
@@ -2144,9 +2973,24 @@ inline void BigInteger::mulP( Limb * r , const Limb * a , std::size_t na ,
   mulNTT( r , a , na , b , nb );
   return;
   }
- Mag w( karatsubaScratch( nb ) );
+ mulRec( r , a , na , b , nb , fft , toom );
+ }
+
+#if defined( __GNUC__ )
+__attribute__(( noinline ))
+#endif
+inline void BigInteger::mulRec( Limb * r , const Limb * a , std::size_t na ,
+                                const Limb * b , std::size_t nb ,
+                                std::size_t fft , std::size_t toom )
+{
+ // the scratch on the stack up to 16 KiB
+ constexpr std::size_t kStack = 2048;
+ const std::size_t ns = mulScratch( nb );
+ Limb in[ kStack ];
+ Mag heap( ns > kStack ? ns : 0 );
+ Limb * const w = ns > kStack ? heap.data() : in;
  if( na == nb ) {
-  karatsuba( r , a , b , nb , w.data() , fft );
+  mulN( r , a , b , nb , w , fft , toom );
   return;
   }
  Mag t( 2 * nb );                           // a in pieces of nb digits
@@ -2154,18 +2998,18 @@ inline void BigInteger::mulP( Limb * r , const Limb * a , std::size_t na ,
  for( std::size_t off = 0 ; off < na ; off += nb ) {
   const std::size_t len = std::min( nb , na - off );
   if( len == nb )
-   karatsuba( t.data() , a + off , b , nb , w.data() , fft );
-  else mulP( t.data() , b , nb , a + off , len , fft );
+   mulN( t.data() , a + off , b , nb , w , fft , toom );
+  else mulP( t.data() , b , nb , a + off , len , fft , toom );
   addTo( r + off , na + nb - off , t.data() , len + nb );
   }
  }
 
 inline BigInteger::Mag BigInteger::mulMag( const Mag & a , const Mag & b ,
-                                           std::size_t fft )
+                                           std::size_t fft , std::size_t toom )
 {
  if( a.empty() || b.empty() ) return( Mag() );
  Mag r( a.size() + b.size() );
- mulP( r.data() , a.data() , a.size() , b.data() , b.size() , fft );
+ mulP( r.data() , a.data() , a.size() , b.data() , b.size() , fft , toom );
  trim( r );
  return( r );
  }
@@ -2183,6 +3027,7 @@ inline BigInteger BigInteger::multiplyKaratsuba( const BigInteger & a ,
                                                  const BigInteger & b )
 {
  BigInteger r( a.f_neg != b.f_neg , mulMag( a.f_d , b.f_d ,
+                                            std::size_t( -1 ) ,
                                             std::size_t( -1 ) ) );
  ADS_AUDIT( r == multiplySchool( a , b ) );
  return( r );
@@ -2445,6 +3290,82 @@ inline BigInteger::Limb BigInteger::divNewton( Limb * a , std::size_t m ,
  return( top );
  }
 
+#if defined( __GNUC__ )
+__attribute__(( noinline ))
+#endif
+inline void BigInteger::divShort( const Mag & u , const Mag & v , Mag & q ,
+                                  Mag * r )
+{
+ // Algorithm D on the stack: v and u shifted so that the top bit of v is
+ // set, u with one digit more, the trial quotient of each digit by the
+ // three leading digits of the remainder and the two of v (div3by2())
+ const std::size_t n = v.size() , nu = u.size() , m = nu - n;
+ const int s = std::countl_zero( v.back() );
+ Limb vn[ kDivShort ] , un[ 2 * kDivShort + 1 ];
+ if( s ) {
+  for( std::size_t i = n ; --i > 0 ; )
+   vn[ i ] = ( v[ i ] << s ) | ( v[ i - 1 ] >> ( 64 - s ) );
+  vn[ 0 ] = v[ 0 ] << s;
+  un[ nu ] = u[ nu - 1 ] >> ( 64 - s );
+  for( std::size_t i = nu ; --i > 0 ; )
+   un[ i ] = ( u[ i ] << s ) | ( u[ i - 1 ] >> ( 64 - s ) );
+  un[ 0 ] = u[ 0 ] << s;
+  }
+ else {
+  std::copy( v.begin() , v.end() , vn );
+  std::copy( u.begin() , u.end() , un );
+  un[ nu ] = 0;
+  }
+ const Limb d1 = vn[ n - 1 ] , d0 = vn[ n - 2 ] ,
+            iv = detail::reciprocal2( d1 , d0 );
+ q.resize( m + 1 );
+ for( std::size_t j = m + 1 ; j-- > 0 ; ) { // D2-D7
+  Limb * const x = un + j;
+  const Limb u2 = x[ n ] , u1 = x[ n - 1 ] , u0 = x[ n - 2 ];
+  Limb qhat;
+  if( ( u2 == d1 ) && ( u1 == d0 ) ) {      // qhat = b - 1, rarely
+   qhat = ~Limb( 0 );
+   if( subMul1( x , vn , n , qhat ) > u2 ) {   // D6: add back
+    --qhat;
+    addN( x , x , n , vn , n );
+    }
+   }
+  else {
+   Limb r1 , r0;
+   qhat = detail::div3by2( u2 , u1 , u0 , d1 , d0 , iv , r1 , r0 );
+   Limb c = 0;
+#if ADS_BIGINT_ASM
+   if( n > 3 ) c = subMul1( x , vn , n - 2 , qhat );
+   else
+#endif
+   for( std::size_t i = 0 ; i + 2 < n ; ++i ) {   // D4, inline
+    Limb hi;
+    const Limb lo = detail::mulAdd( vn[ i ] , qhat , c , 0 , hi ) ,
+               y = x[ i ];
+    x[ i ] = y - lo;
+    c = hi + ( y < lo );
+    }
+   const Limb c1 = r0 < c , c2 = r1 < c1;
+   x[ n - 2 ] = r0 - c;
+   x[ n - 1 ] = r1 - c1;
+   if( c2 ) {                               // D6: add back, rarely
+    --qhat;
+    addN( x , x , n , vn , n );
+    }
+   }
+  x[ n ] = 0;
+  q[ j ] = qhat;
+  }
+ trim( q );
+ if( r ) {                                  // D8: unnormalize
+  r->resize( n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   ( *r )[ i ] = s ? ( un[ i ] >> s ) |
+                     ( i + 1 < n ? un[ i + 1 ] << ( 64 - s ) : 0 ) : un[ i ];
+  trim( *r );
+  }
+ }
+
 inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
                                 const Mag & u , const Mag & v , bool school ,
                                 Mag * keep , bool rem )
@@ -2454,6 +3375,11 @@ inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
   Mag q = u;
   const Limb r = divSmall( q , v[ 0 ] );
   return( std::pair( std::move( q ) , r ? Mag{ r } : Mag() ) );
+  }
+ if( ( v.size() < kDivShort ) && ( u.size() < 2 * kDivShort ) ) {
+  std::pair< Mag , Mag > out;
+  divShort( u , v , out.first , rem ? &out.second : nullptr );
+  return( out );
   }
  const std::size_t n = v.size();
 #if ADS_BIGINT_GMP
