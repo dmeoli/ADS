@@ -1734,6 +1734,18 @@ ADS_TEST( "big-integer-division" )
            BigInteger::divMod( a , -b ) == std::pair( -q , r ) );
     }
    }
+ // the quotient alone of a long divisor, from its top digits: random,
+ // the exact multiples and those minus 1, where the top digits mislead
+ for( std::size_t n : { std::size_t( 20 ) , std::size_t( 700 ) ,
+                        std::size_t( 2000 ) } )
+  for( std::size_t m : { std::size_t( 1 ) , std::size_t( 2 ) ,
+                         std::size_t( 5 ) , n / 4 , n - 4 } ) {
+   const BigInteger b = digits( n , g ) , q0 = digits( m , g ) ,
+                    a = digits( n + m - 1 , g ) , e = q0 * b;
+   CHECK( a / b == BigInteger::divModSchool( a , b ).first );
+   CHECK( e / b == q0 && ( e - 1 ) / b == q0 - 1 &&
+          ( e + b - 1 ) / b == q0 );
+   }
  for( std::size_t n : { D - 1 , D + 1 , 2 * D + 3 } )   // quotients all
   for( std::size_t m : { D , 2 * D + 1 , 3 * n } ) {    // ones
    const BigInteger b = digits( n , g , true , std::uint64_t( 1 ) << 63 ) ,

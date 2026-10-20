@@ -926,6 +926,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   interpolation of Bodrato from kToom3 digits; the short divisions on the
   stack (kDivShort); bench/bignum.cpp repeats the short operations in a
   run, so that the clock of 100 ns of a virtual machine reads them
+- BigInteger: the products by the NTT leave the top digits of the longer
+  factor to rows of products by one digit when the transform of the rest
+  is shorter by more than they cost (1025 digits: 1.07 times GMP instead
+  of 0.63); the quotient alone of a divisor longer than it by the top
+  m + 2 digits of the divisor and 2 m + 1 of the dividend, checked by the
+  remainder of the top digits and, rarely, by one product (a quotient of
+  5 digits by 4096: from 140 times slower than GMP to about its time)
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
