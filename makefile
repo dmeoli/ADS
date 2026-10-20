@@ -67,16 +67,13 @@ test: $(BINS)
 # fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
 # Abseil; LIBSAIS=<prefix> and DIVSUFSORT=<prefix> add libsais and
 # libdivsufsort to suffix, EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
-# rapidfuzz-cpp to edit
-BENCHES   = sort dictionaries priority sequences bignum fft hashing search \
-            suffix edit numeric queues concurrent geometry matrix sparse \
-            $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
-# Abseil; PRIORITY=<dir> adds to priority the libraries whose sources are
-# in <dir> (tlx, radix-heap); MIMALLOC=<prefix> and JEMALLOC=<prefix> add
-# to memory mimalloc (built without the override of malloc) and jemalloc
-# (built with the prefix je_)
-BENCHES   = sort dictionaries priority sequences bignum fft hashing memory
-comma    := ,
+# rapidfuzz-cpp to edit; PRIORITY=<dir> adds to priority the libraries
+# whose sources are in <dir> (tlx, radix-heap); MIMALLOC=<prefix> and
+# JEMALLOC=<prefix> add to memory mimalloc (built without the override of
+# malloc) and jemalloc (built with the prefix je_)
+BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
+            search suffix edit numeric queues concurrent geometry matrix \
+            sparse $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
