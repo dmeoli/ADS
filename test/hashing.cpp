@@ -101,6 +101,10 @@ std::vector< std::string > randomStrings( std::size_t n , unsigned seed )
 /// ones, folded, the same on every machine
 constexpr std::uint64_t kPrefixAnswers = 6080367913530849277ULL;
 
+/// the answers of the Ribbon filters of 8, 16 and 32 bits of 10^5 random
+/// keys to 10^5 absent ones, folded, the same on every machine
+constexpr std::uint64_t kRibbonAnswers = 914496213114749030ULL;
+
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -556,8 +560,10 @@ ADS_TEST( "prefix-filter" )
 // 3, 10, 63, 64, 65, 100, 1000 and 10^5 random keys, 10^5 consecutive
 // keys, keys equal in their low 32 bits and strings; the false positives
 // near 2^-8 and 2^-16 on 10^6 absent keys; about 9.1 and 18.3 bits per key
-// at 10^6 keys; repeated keys counted with their repetitions; no key of an
-// empty filter
+// at 10^6 keys; results of 32 bits; the answers of the three to absent
+// keys the same on every machine, whichever parities and back
+// substitution the processor takes; repeated keys counted with their
+// repetitions; no key of an empty filter
 ADS_TEST( "ribbon-filter" )
 {
  for( std::size_t n : { 0 , 1 , 2 , 3 , 10 , 63 , 64 , 65 , 100 , 1000 ,
@@ -604,6 +610,25 @@ ADS_TEST( "ribbon-filter" )
   for( std::uint64_t k = 100000 ; k < 1100000 ; ++k )
    f += F.maybe( k );
   CHECK( f > 3200 && f < 4600 );
+  }
+ {                                   // 32 bits, every machine the same
+  const auto K = randomKeys( 200000 , 65 );
+  const std::vector< std::uint64_t > In( K.begin() , K.begin() + 100000 );
+  RibbonFilter< std::uint64_t > F( In );
+  RibbonFilter< std::uint64_t , std::uint16_t > G( In );
+  RibbonFilter< std::uint64_t , std::uint32_t > W( In );
+  CHECK( W.bits() == 2 * G.bits() && G.bits() == 2 * F.bits() );
+  std::uint64_t sum = 0;
+  std::size_t w = 0;
+  for( std::size_t i = 100000 ; i < K.size() ; ++i ) {
+   sum = sum * 7 + 4 * F.maybe( K[ i ] ) + 2 * G.maybe( K[ i ] ) +
+         W.maybe( K[ i ] );
+   w += W.maybe( K[ i ] );
+   }
+  for( std::uint64_t k : In )
+   CHECK( W.maybe( k ) );
+  CHECK( w <= 1 );                             // 10^5 / 2^32
+  CHECK( sum == kRibbonAnswers );
   }
  {                                             // repeated, strings
   auto K = randomKeys( 5000 , 63 );
