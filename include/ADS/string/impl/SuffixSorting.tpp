@@ -1092,32 +1092,38 @@ bool isLcpArrayOf( std::string_view T , const std::vector< I > & SA ,
  }
 
 /// the permuted LCP of T and SA into P, by Phi
+/// (the arrays are declared not to overlap, so that the stores into P do
+/// not reload SA and the text)
 template< class I >
-void plcp( std::string_view T , const I * SA , I * P )
+void plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
+           const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT P )
 {
- const std::size_t n = T.size();
- const auto * t = reinterpret_cast< const unsigned char * >( T.data() );
  if( n == 0 ) return;
- // Phi in P, n for the first suffix of SA
+ // Phi in P, n for the first suffix of SA, the last suffix of SA kept
  constexpr std::size_t D = saisAhead;
- P[ SA[ 0 ] ] = I( n );
- std::size_t r = 1;
- for( ; r + D + 4 <= n ; r += 4 ) {             // 4 at a time, no checks
+ I prev = I( n );
+ std::size_t r = 0;
+ for( ; r + 2 * D + 4 <= n ; r += 4 ) {         // 4 at a time, no checks
+  saisPrefetch( SA + r + 2 * D );
   for( std::size_t q = 0 ; q < 4 ; ++q ) saisPrefetchW( P + SA[ r + D + q ] );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) P[ SA[ r + q ] ] = SA[ r + q - 1 ];
+  for( std::size_t q = 0 ; q < 4 ; ++q ) {
+   P[ SA[ r + q ] ] = prev;
+   prev = SA[ r + q ];
+   }
   }
- for( ; r < n ; ++r ) P[ SA[ r ] ] = SA[ r - 1 ];
+ for( ; r < n ; ++r ) {
+  P[ SA[ r ] ] = prev;
+  prev = SA[ r ];
+  }
  // the text at Phi prefetched ahead, the place of the comparison but for
  // h; the first suffix of SA has Phi = n, and h is then already 0, since
  // the suffix before it in the text shares at most one symbol with its
- // predecessor in SA. The first 2 symbols are compared one by one, since
- // the lcp is short on the texts with few repeats, then 8 at a time
- std::size_t h = 0;
- for( std::size_t i = 0 ; i < n ; ++i ) {
-  if( i + D < n ) saisPrefetch( t + std::min< std::size_t >( P[ i + D ] + h ,
-                                                            n ) );
+ // predecessor in SA. The first 4 symbols are compared one by one, since
+ // the lcp is short on the texts with few repeats (and a load of 8 would
+ // often reach a line not prefetched), then 8 at a time
+ auto lcp = [ & ]( std::size_t i , std::size_t h ) {
   const std::size_t j = P[ i ] , far = n - std::max( i , j );
-  const std::size_t near = std::min( far , h + 2 );
+  const std::size_t near = std::min( far , h + 4 );
   while( ( h < near ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
   if( h == near )
    for( ; ; ) {
@@ -1137,9 +1143,41 @@ void plcp( std::string_view T , const I * SA , I * P )
      }
     h += 8;
     }
+  return( h );
+  };
+ std::size_t h = 0 , i = 0;
+ for( ; i + 2 * D < n ; ++i ) {                 // no checks
+  saisPrefetchW( P + i + 2 * D );
+  saisPrefetch( t + std::min< std::size_t >( P[ i + D ] + h , n ) );
+  h = lcp( i , h );
   P[ i ] = I( h );
   h -= ( h != 0 );
   }
+ for( ; i < n ; ++i ) {
+  if( i + D < n )
+   saisPrefetch( t + std::min< std::size_t >( P[ i + D ] + h , n ) );
+  h = lcp( i , h );
+  P[ i ] = I( h );
+  h -= ( h != 0 );
+  }
+ }
+
+/// LCP[ r ] = P[ SA[ r ] ] for r in [ 0 , n ), the arrays declared not to
+/// overlap and P prefetched D entries ahead
+template< class I >
+void plcpToLcp( const I * ADS_SAIS_RESTRICT P ,
+                const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT LCP ,
+                std::size_t n )
+{
+ constexpr std::size_t D = saisAhead;
+ std::size_t r = 0;
+ for( ; r + 2 * D + 4 <= n ; r += 4 ) {         // 4 at a time, no checks
+  saisPrefetch( SA + r + 2 * D );
+  saisPrefetchW( LCP + r + D );
+  for( std::size_t q = 0 ; q < 4 ; ++q ) saisPrefetch( P + SA[ r + D + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q ) LCP[ r + q ] = P[ SA[ r + q ] ];
+  }
+ for( ; r < n ; ++r ) LCP[ r ] = P[ SA[ r ] ];
  }
 
 }  // end( namespace detail )
@@ -1189,7 +1227,8 @@ std::vector< I > plcpArray( std::string_view T , const std::vector< I > & SA )
              reinterpret_cast< const unsigned char * >( T.data() ) , n ,
              SA.data() ) );
  std::vector< I > P( n );
- detail::plcp( T , SA.data() , P.data() );
+ detail::plcp( reinterpret_cast< const unsigned char * >( T.data() ) , n ,
+               SA.data() , P.data() );
  return( P );
  }
 
@@ -1202,17 +1241,11 @@ std::vector< I > lcpArrayPhi( std::string_view T ,
              reinterpret_cast< const unsigned char * >( T.data() ) , n ,
              SA.data() ) );
  const auto P = std::make_unique_for_overwrite< I[] >( n );
- detail::plcp( T , SA.data() , P.get() );
+ detail::plcp( reinterpret_cast< const unsigned char * >( T.data() ) , n ,
+               SA.data() , P.get() );
  std::vector< I > LCP( n < 2 ? 0 : n - 1 );
- constexpr std::size_t D = detail::saisAhead;
- const I * const Q = P.get();
- std::size_t r = 0;
- for( ; r + D + 5 <= n ; r += 4 ) {             // 4 at a time, no checks
-  for( std::size_t q = 0 ; q < 4 ; ++q )
-   detail::saisPrefetch( Q + SA[ r + D + 1 + q ] );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) LCP[ r + q ] = Q[ SA[ r + 1 + q ] ];
-  }
- for( ; r + 1 < n ; ++r ) LCP[ r ] = Q[ SA[ r + 1 ] ];
+ if( n >= 2 )
+  detail::plcpToLcp( P.get() , SA.data() + 1 , LCP.data() , n - 1 );
  ADS_AUDIT( detail::isLcpArrayOf( T , SA , LCP ) );
  return( LCP );
  }
