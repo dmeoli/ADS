@@ -31,9 +31,10 @@
  * moves and 1024 buckets (or past the load of 98 %), the table doubles and
  * every key is placed again, which costs O( 1 ) amortized per insertion;
  * when the hash of a key reads memory that the key points to, as for the
- * strings, the doubling prefetches the memory of the key 8 places ahead,
- * so that the misses of the keys overlap. A removal clears the tag of the
- * place.
+ * strings, the doubling hashes all the keys first, prefetching the memory
+ * of the key 8 places ahead, and then places them, prefetching the first
+ * bucket of the key 8 places ahead, so that the misses of the keys
+ * overlap. A removal clears the tag of the place.
  *
  * The iterators visit the pairs in the order of the places, as constant
  * pairs of references ( key , value ); find() gives a value to change in
