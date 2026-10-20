@@ -653,6 +653,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- SequenceHeap pushes into an empty heap in bulk, an array in the order of
+  the pushes, whose best item a first look finds by a scan and which then
+  becomes an incremental quicksort (Paredes and Navarro), a further source
+  of the deletion buffer; the insertion heap of 4096 items is 4-ary and
+  made a heap only when a top() or a pop() needs it, the groups hold 16
+  sequences, the new sequence is merged with the two buffers by a merge of
+  two with no jump, and the numbers and the pairs of numbers in the order
+  of std::less or std::greater are compared in the merges by keys of one
+  word and sorted by the radix sort (OrderKey.h): at 10^6 items 1.8 times
+  faster than DaryHeap on the insertions, 1.4 times in the hold model and
+  1.6 times on the extractions
+
 - HeapPriorityQueue and LinkedHeapPriorityQueue take their items and
   nodes from an ObjectPool, the slot of deleteMin() taken by the next
   insert(), instead of one allocation each: 3 to 4 times faster on the
