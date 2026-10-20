@@ -203,6 +203,7 @@ PAIRS = [
      ['sdsl::wm_int', 'sdsl::wt_int']),
     ('dac', 'ADS::DirectAccessCodes', 'sdsl',
      ['sdsl::dac_vector<4>', 'sdsl::dac_vector<8>']),
+    ('dac', 'ADS::DirectAccessCodes b=8', 'sdsl', ['sdsl::dac_vector<8>']),
     ('entropy', 'ADS::huffmanCompress', 'huff0', ['huff0']),
     ('entropy', 'ADS::ransCompress', 'ryg_rans', ['ryg_rans']),
     ('entropy', 'ADS::tansCompress', 'FSE', ['FSE']),

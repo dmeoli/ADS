@@ -13,9 +13,11 @@
  * \rceil \f$ bits. The offset of the block with its 1s at the places
  * \f$ p_1 < \cdots < p_c \f$ is its rank in the colexicographic order,
  * \f[ o = \sum_{t=1}^{c} \binom{p_t}{t} , \f]
- * the combinatorial number system, and the block is rebuilt from o by
- * taking, for t = c down to 1, the largest p with \f$ \binom{p}{t} \le o
- * \f$, in at most b steps. Since \f$ \sum_j \log_2 \binom{b}{c_j} \le
+ * the combinatorial number system, and the block is rebuilt from o from
+ * its highest place down: the place p holds the t-th 1 from the lowest,
+ * t the 1s not yet met, if and only if \f$ \binom{p}{t} \le o \f$, which
+ * is then taken away from o. A query walks only the places it needs: rank
+ * stops at its place or at the last 1, select at its bit. Since \f$ \sum_j \log_2 \binom{b}{c_j} \le
  * \log_2 \binom{m}{n} \le m H_0( B ) \f$ (the product of the binomials of
  * the blocks counts a part of the vectors of n 1s), the offsets take at
  * most \f$ m H_0( B ) + m / b \f$ bits, the rounding up costing a bit per
@@ -143,19 +145,21 @@ class RRRBitVector {
   };
  static const Tables & tables( void );
 
- /// the offset of the block x of class c, and the block of an offset
+ /// the offset of the block x of class c
  static std::uint64_t offset( std::uint64_t x , int c );
- static std::uint64_t block( std::uint64_t o , int c );
 
- /// the class and the block j, its first place of offset known
+ /// the 1s below the place q of the block of offset o and class c: the
+ /// places from the highest down to q, with no branch
+ static int below( std::uint64_t o , int c , int q );
+
+ /// the offset and the class of the block j, and the 1s before it
+ [[nodiscard]] std::uint64_t locate( std::size_t j , int & c ,
+                                     std::size_t & ones ) const;
+
+ /// the class of the block j
  [[nodiscard]] int cls( std::size_t j ) const {
   return( int( f_cls.get( 6 * j , 6 ) ) );
   }
-
- /// the block j decoded, from the superblock of j: its class, the 1s
- /// before it
- [[nodiscard]] std::uint64_t decode( std::size_t j , std::size_t & ones )
-                                                                    const;
 
  /// the place of the k-th bit b
  [[nodiscard]] std::size_t select( std::size_t k , bool b ) const;
@@ -163,8 +167,9 @@ class RRRBitVector {
  std::size_t f_m = 0 , f_ones = 0;
  BitVector f_cls;                          ///< 6 bits a block
  BitVector f_off;                          ///< the offsets
- std::vector< std::uint64_t > f_rank;      ///< 1s before each superblock
- std::vector< std::uint64_t > f_ptr;       ///< its first bit of offset
+ BitVector f_rank;                         ///< 1s before each superblock
+ BitVector f_ptr;                          ///< its first bit of offset
+ int f_wr = 1 , f_wp = 1;                  ///< the widths of the two
 
  };  // end( class RRRBitVector )
 

@@ -36,13 +36,34 @@ inline DirectAccessCodes::DirectAccessCodes(
   C[ s ] = -1;
   for( int t = s + 1 ; t <= w ; ++t ) {
    const double c = users( s ) * ( t - s ) +
-                    ( t < w ? users( s ) * 1.035 : 0.0 ) + C[ t ];
+                    ( t < w ? users( s ) * 1.25 : 0.0 ) + C[ t ];
    if( ( C[ s ] < 0 ) || ( c < C[ s ] ) ) {
     C[ s ] = c;
     cut[ s ] = t;
     }
    }
   }
+ build( x , cut , w );
+ }
+
+inline DirectAccessCodes::DirectAccessCodes(
+                       std::span< const std::uint64_t > x , int b )
+ : f_n( x.size() )
+{
+ ADS_PRE( ( b >= 1 ) && ( b <= 64 ) );
+ if( f_n == 0 ) return;
+ std::uint64_t m = 0;
+ for( const auto v : x ) m |= v;
+ const int w = std::max( 1 , int( std::bit_width( m ) ) );
+ std::array< int , 65 > cut{};
+ for( int s = 0 ; s < w ; s += b ) cut[ s ] = std::min( w , s + b );
+ build( x , cut , w );
+ }
+
+inline void DirectAccessCodes::build( std::span< const std::uint64_t > x ,
+                                      const std::array< int , 65 > & cut ,
+                                      int w )
+{
  // the levels, the integers that continue moved to the next one in order
  std::vector< std::uint64_t > cur( x.begin() , x.end() ) , next;
  for( int s = 0 ; s < w ; s = cut[ s ] ) {
@@ -62,7 +83,8 @@ inline DirectAccessCodes::DirectAccessCodes(
     next.push_back( cur[ i ] );
     }
    }
-  if( ! last ) L.more = CompactRankSelect( std::move( B ) );
+  if( ! last ) L.more = RankSelect( std::move( B ) ,
+                                     RankSelect::Selects::NONE );
   f_lev.push_back( std::move( L ) );
   cur.swap( next );
   }
