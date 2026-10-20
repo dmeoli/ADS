@@ -3,8 +3,8 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The benchmark of the sets: the intersection of sorted lists
- * ("intersection"), the union of disjoint sets ("mfset") and the boolean
- * vector ("boolset").
+ * ("intersection"), the union of disjoint sets ("mfset"), the boolean
+ * vector ("boolset") and the compressed bitmap ("bitmap").
  *
  * - intersection: intersect() and the intersections of the notes [see
  *   SortedIntersection.h] against std::set_intersection and, where they
@@ -25,9 +25,17 @@
  *   64 integers of the universe for the operations, per test for the
  *   tests and per integer for the visit.
  *
+ * - bitmap: RoaringBitmap against the bitmaps of CRoaring, if found, on two
+ *   sets of n random integers of 32 bits out of 4 n ("dense", bitmaps),
+ *   32 n ("medium", arrays of about 2048 items) and 1000 n ("sparse",
+ *   short arrays): the building from the sorted items, the four
+ *   operations of two sets, n random membership tests and the visit by
+ *   the iterators; the time is per item of a set.
+ *
  * Each cell is the median of r runs, in nanoseconds; the contracts are off
  * (ADS_CONTRACTS=0). ONLY=a|b|... runs only the structures whose name has
- * a or b ... in it, PART=intersection, mfset or boolset only that part.
+ * a or b ... in it, PART=intersection, mfset, boolset or bitmap only that
+ * part.
  *
  *   sets [ -r runs ] [ -s seed ] n1 n2 ...
  *
@@ -50,6 +58,7 @@
 #include "ADS/mfset/MFSet.h"
 #include "ADS/mfset/RemUnionFind.h"
 #include "ADS/set/BoolSet.h"
+#include "ADS/set/RoaringBitmap.h"
 #include "ADS/set/SortedIntersection.h"
 #include "ADS/set/VectorIntersection.h"
 
@@ -350,6 +359,93 @@ void boolset( std::size_t n , int r , unsigned seed )
   }
  }
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- BITMAP ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void bitmap( std::size_t n , int r , unsigned seed )
+{
+ const char * ops[] = { "union" , "intersection" , "difference" ,
+                        "symmetric difference" };
+ for( int d = 0 ; d < 3 ; ++d ) {
+  const std::uint64_t u = d == 0 ? 4 * std::uint64_t( n ) :
+                          d == 1 ? 32 * std::uint64_t( n ) :
+                                   std::min< std::uint64_t >(
+                                    1000 * std::uint64_t( n ) ,
+                                    0xFFFFFFFFull );
+  const char * density = d == 0 ? "dense" : d == 1 ? "medium" : "sparse";
+  std::mt19937_64 g( seed + unsigned( d ) );
+  const auto X = sample( n , u , g ) , Y = sample( n , u , g );
+  std::vector< std::uint32_t > T( n );
+  for( auto & t : T ) t = std::uint32_t( g() % u );
+  // the cases on two sets a and b built by make( items ), by op( a , b ,
+  // k ) (the size of the result of the operation k), has( a , x ) and
+  // visit( a ) (the sum of the items)
+  auto run = [ & ]( const std::string & who , auto && make , auto && op ,
+                    auto && has , auto && visit ) {
+   if( ! wanted( who ) )
+    return;
+   const std::string w = std::string( density ) + " ";
+   print( "bitmap" , w + "build" , n , who , median( [](){ return( 0 ); } ,
+           [ & ]( int ) { auto a = make( X ); sink = sink + has( a , 0 ); } ,
+           r , n ) );
+   auto a = make( X ) , b = make( Y );
+   for( int k = 0 ; k < 4 ; ++k )
+    print( "bitmap" , w + ops[ k ] , n , who , median(
+            [](){ return( 0 ); } , [ & ]( int ) {
+             sink = sink + op( a , b , k ); } , r , n ) );
+   print( "bitmap" , w + "contains" , n , who , median(
+           [](){ return( 0 ); } , [ & ]( int ) {
+            std::size_t c = 0;
+            for( std::uint32_t t : T ) c += has( a , t );
+            sink = sink + c; } , r , n ) );
+   print( "bitmap" , w + "visit" , n , who , median( [](){ return( 0 ); } ,
+           [ & ]( int ) { sink = sink + visit( a ); } , r , n ) );
+   };
+#ifdef ADS_HAS_ROARING
+  struct Roar {                             // a bitmap and its release
+   roaring_bitmap_t * p;
+   explicit Roar( roaring_bitmap_t * q ) : p( q ) {}
+   Roar( Roar && o ) noexcept : p( std::exchange( o.p , nullptr ) ) {}
+   ~Roar() { if( p ) roaring_bitmap_free( p ); }
+   };
+  for( const char * who : { "Roaring" , "Roaring A/A" } )
+   run( who , []( const std::vector< std::uint32_t > & V ) {
+         return( Roar( roaring_bitmap_of_ptr( V.size() , V.data() ) ) ); } ,
+        []( const Roar & p , const Roar & q , int k ) {
+         roaring_bitmap_t * c = k == 0 ? roaring_bitmap_or( p.p , q.p ) :
+                                k == 1 ? roaring_bitmap_and( p.p , q.p ) :
+                                k == 2 ? roaring_bitmap_andnot( p.p , q.p ) :
+                                         roaring_bitmap_xor( p.p , q.p );
+         const auto s = roaring_bitmap_get_cardinality( c );
+         roaring_bitmap_free( c );
+         return( std::size_t( s ) ); } ,
+        []( const Roar & p , std::uint32_t x ) {
+         return( std::size_t( roaring_bitmap_contains( p.p , x ) ) ); } ,
+        []( const Roar & p ) {
+         std::uint64_t s = 0;
+         roaring_iterate( p.p , []( std::uint32_t v , void * q ) {
+                           *static_cast< std::uint64_t * >( q ) += v;
+                           return( true ); } , &s );
+         return( s ); } );
+#endif
+  run( "ADS::RoaringBitmap" , []( const std::vector< std::uint32_t > & V ) {
+        return( ADS::RoaringBitmap( V.data() , V.size() ) ); } ,
+       []( const ADS::RoaringBitmap & p , const ADS::RoaringBitmap & q ,
+           int k ) {
+        return( ( k == 0 ? setUnion( p , q ) :
+                  k == 1 ? setIntersection( p , q ) :
+                  k == 2 ? setDifference( p , q ) :
+                           setSymmetricDifference( p , q ) ).size() ); } ,
+       []( const ADS::RoaringBitmap & p , std::uint32_t x ) {
+        return( std::size_t( p.contains( x ) ) ); } ,
+       []( const ADS::RoaringBitmap & p ) {
+        std::uint64_t s = 0;
+        for( const std::uint32_t x : p ) s += x;
+        return( s ); } );
+  }
+ }
+
 }  // end( namespace )
 
 int main( int argc , char ** argv )
@@ -365,6 +461,8 @@ int main( int argc , char ** argv )
    mfset( n , o.runs , o.seed );
   if( doing( "boolset" ) )
    boolset( n , o.runs , o.seed );
+  if( doing( "bitmap" ) )
+   bitmap( n , o.runs , o.seed );
   }
  return( 0 );
  }

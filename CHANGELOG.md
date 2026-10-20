@@ -416,10 +416,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with splicing; AdaptiveRadixTree, the adaptive radix tree of Leis,
   Kemper and Neumann on strings; PGMIndex, the learned index of Ferragina
   and Vinciguerra on the optimal piecewise linear approximation;
+  RoaringBitmap, the compressed bitmap of Chambi, Lemire, Kaser and Godin
+  with arrays and bitmaps, the arrays combined by blocks of 8 with SSE4.2;
   test/ordered.cpp
 - the benchmarks of the ordered dictionaries, of the searches in arrays
   (lower bound, selection, range minima) and of the sets (intersection,
-  union of disjoint sets, boolean vectors), against the standard library,
+  union of disjoint sets, boolean vectors, compressed bitmaps), against the standard library,
   Boost and, when found, Abseil, tlx, miniselect, sdsl-lite, the SIMD
   intersections of Lemire et al., CRoaring, the PGM-index, tsl::htrie_map
   and libart; bench/ordered.cpp, bench/arrays.cpp, bench/sets.cpp,

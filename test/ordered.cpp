@@ -29,6 +29,7 @@
 #include "ADS/search/StaticSearch.h"
 #include "ADS/search/WordRangeMinimum.h"
 #include "ADS/set/BoolSet.h"
+#include "ADS/set/RoaringBitmap.h"
 #include "ADS/set/VectorIntersection.h"
 #include "ADS/tree/BTreeMap.h"
 
@@ -792,6 +793,128 @@ ADS_TEST( "pgm-index" )
   }
  std::vector< U > W = { 3 , 1 , 2 };
  CHECK_THROWS( PGMIndex< U >( W ) , contract_violation );
+ }
+
+// the Roaring bitmap against std::set: the kernels of two arrays of every
+// length up to 70 (the blocks of 8 and their tails) on few and many values,
+// sets of few and of many items per
+// chunk (the arrays and the bitmaps), the four operations on every pair of
+// them (results that change kind both ways), insertions and removals that
+// cross the 4096 items of an array, the items 0, 65535, 65536 and the
+// largest one, the iterators and forEach(), copies, and items not sorted
+ADS_TEST( "roaring-bitmap" )
+{
+ {                                          // the kernels of the arrays
+  std::mt19937_64 h( 41 );
+  auto list = [ & ]( std::size_t n , unsigned u ) {
+   std::set< std::uint16_t > S;
+   while( S.size() < n ) S.insert( std::uint16_t( h() % u ) );
+   return( std::vector< std::uint16_t >( S.begin() , S.end() ) );
+   };
+  for( std::size_t na = 0 ; na < 70 ; na += 1 + na / 8 )
+   for( std::size_t nb = 0 ; nb < 70 ; nb += 1 + nb / 8 )
+    for( unsigned u : { 80u , 400u , 65536u } ) {
+     if( ( na > u ) || ( nb > u ) ) continue;
+     for( int rep = 0 ; rep < 3 ; ++rep ) {
+      const auto A = list( na , u ) , B = list( nb , u );
+      std::vector< std::uint16_t > E , O( na + nb + 8 );
+      std::set_union( A.begin() , A.end() , B.begin() , B.end() ,
+                      std::back_inserter( E ) );
+      O.resize( detail::union16( A.data() , na , B.data() , nb ,
+                                 O.data() ) );
+      CHECK( O == E );
+      E.clear();
+      O.assign( na + 8 , 0 );
+      std::set_difference( A.begin() , A.end() , B.begin() , B.end() ,
+                           std::back_inserter( E ) );
+      O.resize( detail::difference16( A.data() , na , B.data() , nb ,
+                                      O.data() ) );
+      CHECK( O == E );
+      E.clear();
+      O.assign( std::min( na , nb ) + 8 , 0 );
+      std::set_intersection( A.begin() , A.end() , B.begin() , B.end() ,
+                             std::back_inserter( E ) );
+      O.resize( detail::intersect16( A.data() , na , B.data() , nb ,
+                                     O.data() ) );
+      CHECK( O == E );
+      }
+     }
+  }
+ std::mt19937_64 g( 40 );
+ auto make = [ & ]( int kind ) {
+  std::set< std::uint32_t > S;
+  const std::size_t n = kind == 0 ? 3000 : kind == 1 ? 30000 : 9000;
+  while( S.size() < n ) {
+   std::uint32_t x;
+   if( kind == 0 ) x = std::uint32_t( g() );           // sparse
+   else if( kind == 1 ) x = std::uint32_t( g() % 160000 );   // dense
+   else x = std::uint32_t( ( g() % 3 ) << 16 | ( g() % 9000 ) );
+   S.insert( x );
+   }
+  for( std::uint32_t x : { 0u , 65535u , 65536u , 0xFFFFFFFFu } )
+   S.insert( x );
+  return( S );
+  };
+ auto items = []( const RoaringBitmap & R ) {
+  std::vector< std::uint32_t > V( R.begin() , R.end() );
+  CHECK( V == R.items() );
+  CHECK( V.size() == R.size() );
+  return( V );
+  };
+ std::vector< std::set< std::uint32_t > > S;
+ std::vector< RoaringBitmap > R;
+ for( int k = 0 ; k < 3 ; ++k ) {
+  S.push_back( make( k ) );
+  const std::vector< std::uint32_t > V( S.back().begin() , S.back().end() );
+  R.emplace_back( V.data() , V.size() );
+  CHECK( items( R.back() ) == V );
+  }
+ CHECK( R[ 1 ].bitmaps() > 0 );
+ for( int a = 0 ; a < 3 ; ++a )
+  for( int b = 0 ; b < 3 ; ++b ) {
+   std::vector< std::uint32_t > u , i , d , x;
+   std::set_union( S[ a ].begin() , S[ a ].end() , S[ b ].begin() ,
+                   S[ b ].end() , std::back_inserter( u ) );
+   std::set_intersection( S[ a ].begin() , S[ a ].end() , S[ b ].begin() ,
+                          S[ b ].end() , std::back_inserter( i ) );
+   std::set_difference( S[ a ].begin() , S[ a ].end() , S[ b ].begin() ,
+                        S[ b ].end() , std::back_inserter( d ) );
+   std::set_symmetric_difference( S[ a ].begin() , S[ a ].end() ,
+                                  S[ b ].begin() , S[ b ].end() ,
+                                  std::back_inserter( x ) );
+   CHECK( items( setUnion( R[ a ] , R[ b ] ) ) == u );
+   CHECK( items( setIntersection( R[ a ] , R[ b ] ) ) == i );
+   CHECK( items( setDifference( R[ a ] , R[ b ] ) ) == d );
+   CHECK( items( setSymmetricDifference( R[ a ] , R[ b ] ) ) == x );
+   }
+ {                                          // across 4096, both ways
+  RoaringBitmap T;
+  std::set< std::uint32_t > ref;
+  for( int t = 0 ; t < 30000 ; ++t ) {
+   const std::uint32_t v = std::uint32_t( 70000 + g() % 9000 );
+   if( t < 15000 || g() % 2 ) {
+    CHECK( T.insert( v ) == ref.insert( v ).second );
+    }
+   else
+    CHECK( T.remove( v ) == ( ref.erase( v ) == 1 ) );
+   CHECK( T.size() == ref.size() );
+   }
+  for( std::uint32_t v = 69990 ; v < 79010 ; ++v )
+   CHECK( T.contains( v ) == ( ref.count( v ) == 1 ) );
+  CHECK( items( T ) == std::vector< std::uint32_t >( ref.begin() ,
+                                                     ref.end() ) );
+  for( auto v : std::vector< std::uint32_t >( ref.begin() , ref.end() ) )
+   CHECK( T.remove( v ) );
+  CHECK( T.empty() && ( T.containers() == 0 ) && ( T.begin() == T.end() ) );
+  }
+ RoaringBitmap C = R[ 1 ];                  // a copy is independent
+ C.remove( 0 );
+ CHECK( R[ 1 ].contains( 0 ) && ! C.contains( 0 ) );
+ RoaringBitmap E;
+ CHECK( E.empty() && setIntersection( E , R[ 0 ] ).empty() );
+ CHECK( setUnion( E , R[ 2 ] ).size() == R[ 2 ].size() );
+ const std::vector< std::uint32_t > U = { 5 , 3 };
+ CHECK_THROWS( RoaringBitmap( U.data() , U.size() ) , contract_violation );
  }
 
 }  // end( namespace )
