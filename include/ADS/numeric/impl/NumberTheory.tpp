@@ -209,41 +209,59 @@ struct Montgomery32 {
  [[nodiscard]] U64 canon( U64 x ) const { return( x ); }
  };
 
+/// the Montgomery arithmetic of R = 2^32 modulo the odd n < 2^32 with
+/// none of the constants of Montgomery32 but n^-1: the form of x by one
+/// division of 64 by 32 bits, the powers from the lowest bit of the
+/// exponent that is 1, so that they need no form of 1
+struct Montgomery32Lite {
+ std::uint32_t n , inv;
+ explicit Montgomery32Lite( std::uint32_t m ) : n( m ) ,
+                                                 inv( ( 3 * m ) ^ 2 ) {
+  for( int i = 0 ; i < 3 ; ++i ) inv *= 2 - n * inv;   // Newton
+  }
+ /// a c 2^-32 mod n, a , c < n
+ [[nodiscard]] U64 mul( U64 a , U64 c ) const {
+  const U64 t = a * c , mn = U64( std::uint32_t( t ) * inv ) * n;
+  const U64 th = t >> 32 , mh = mn >> 32;   // the low halves are equal
+  return( th < mh ? th - mh + n : th - mh );
+  }
+ /// x 2^32 mod n, x < n
+ [[nodiscard]] U64 to( std::uint32_t x ) const {
+  const U64 sq = U64( x ) << 32;
+#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
+  std::uint32_t q , r;
+  asm( "divl %4" : "=a"( q ) , "=d"( r )
+       : "a"( std::uint32_t( sq ) ) , "d"( std::uint32_t( sq >> 32 ) ) ,
+         "rm"( n ) );
+  return( r );
+#else
+  return( sq % n );
+#endif
+  }
+ /// the form of b^v, v odd, from the form b of b
+ [[nodiscard]] U64 powOdd( U64 b , U64 v ) const {
+  U64 r = b;
+  for( v >>= 1 ; v ; v >>= 1 ) {
+   b = mul( b , b );
+   const U64 t = mul( r , b );
+   r = ( v & 1 ) ? t : r;
+   }
+  return( r );
+  }
+ };
+
 /// the strong probable primality of the odd n < 2^32 to the base b < n,
-/// with n - 1 = 2^s d, in the Montgomery arithmetic of R = 2^32 with none
-/// of its constants but n^-1: the form of b by one division of 64 by 32
-/// bits, the power from the lowest bit of d, which is 1, so that it needs
-/// no form of 1, and the comparisons on the numbers, by one reduction
+/// with n - 1 = 2^s d, the comparisons on the numbers after one reduction
 inline bool strongProbablePrime32( std::uint32_t n , std::uint32_t b ,
                                    std::uint32_t d , int s )
 {
- std::uint32_t inv = ( 3 * n ) ^ 2;         // n^-1 mod 2^32 by Newton
- for( int i = 0 ; i < 3 ; ++i ) inv *= 2 - n * inv;
- auto mul = [ n , inv ]( U64 a , U64 c ) {  // a c 2^-32 mod n
-  const U64 t = a * c , mn = U64( std::uint32_t( t ) * inv ) * n;
-  const U64 th = t >> 32 , mh = mn >> 32;
-  return( th < mh ? th - mh + n : th - mh ); };
- const U64 sq = U64( b ) << 32;             // b 2^32 mod n
-#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
- std::uint32_t q , bf;
- asm( "divl %4" : "=a"( q ) , "=d"( bf )
-      : "a"( std::uint32_t( sq ) ) , "d"( std::uint32_t( sq >> 32 ) ) ,
-        "rm"( n ) );
-#else
- const std::uint32_t bf = std::uint32_t( sq % n );
-#endif
- U64 x = bf , r = bf;                       // b^1 , and b^( 2^i ) in x
- for( std::uint32_t v = d >> 1 ; v ; v >>= 1 ) {
-  x = mul( x , x );
-  const U64 t = mul( r , x );
-  r = ( v & 1 ) ? t : r;
-  }
- U64 y = mul( r , 1 );                      // b^d mod n
+ const Montgomery32Lite M( n );
+ U64 r = M.powOdd( M.to( b ) , d ) , y = M.mul( r , 1 );   // b^d mod n
  if( ( y == 1 ) || ( y == n - 1 ) )
   return( true );
  for( int i = 1 ; i < s ; ++i ) {
-  r = mul( r , r );
-  y = mul( r , 1 );
+  r = M.mul( r , r );
+  y = M.mul( r , 1 );
   if( y == n - 1 ) return( true );
   if( y == 1 ) return( false );
   }
@@ -323,6 +341,15 @@ inline U64 powMod( U64 x , U64 v , U64 m )
 {
  ADS_PRE( m >= 1 );
  if( ( m & 1 ) && ( m > 1 ) ) {
+  if( m < ( U64( 1 ) << 32 ) ) {           // the powers of 2 of v by
+   if( v == 0 )                             // squares, then the odd part
+    return( 1 );
+   const detail::Montgomery32Lite M( ( std::uint32_t( m ) ) );
+   const int z = std::countr_zero( v );
+   U64 b = M.to( std::uint32_t( x % m ) );
+   for( int i = 0 ; i < z ; ++i ) b = M.mul( b , b );
+   return( M.mul( M.powOdd( b , v >> z ) , 1 ) );
+   }
   if( m >= ( U64( 1 ) << 62 ) ) {
    const Montgomery64 M( m );
    return( M.from( M.pow( M.to( x ) , v ) ) );

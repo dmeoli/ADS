@@ -29,7 +29,11 @@
  *   forms are kept in \f$ [ 0 , 2 m ) \f$ (the lazy reduction): for
  *   \f$ a , b < 2 m \f$, \f$ T = a b < 4 m^2 < m R \f$, so that
  *   \f$ ( T - q m ) / R + m \in ( 0 , 2 m ) \f$ and the comparison that
- *   ends each product is spared;
+ *   ends each product is spared; below \f$ 2^{32} \f$ the forms are of
+ *   \f$ R = 2^{32} \f$, the products of 64 bits, the form of x by one
+ *   division of 64 by 32 bits, the trailing zeros of v by squarings and
+ *   the power from the lowest bit 1 of the odd part, so that the form of
+ *   1 (a division more) is never needed;
  * - binaryGcd(), beyond the book, the binary gcd of Stein (Algorithm 4.5.2B
  *   of Knuth): with \f$ k \f$ the trailing zeros of \f$ a \lor b \f$,
  *   \f$ \gcd( a , b ) = 2^k \gcd( a' , b' ) \f$ for the odd parts, and

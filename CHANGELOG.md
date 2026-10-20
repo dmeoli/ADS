@@ -836,6 +836,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplication fewer: GCC compiled the product shared by the two
   branches as a product of 128 bits
 
+- powMod() below 2^32 in a Montgomery arithmetic of 32 bits with no
+  constant but the inverse of m and no form of 1
 - isPrime() below 2^32 by one base, read in a table of 1024 at a hash
   of n (found by an exhaustive search), in a Montgomery arithmetic with
   no constant but the inverse of n
