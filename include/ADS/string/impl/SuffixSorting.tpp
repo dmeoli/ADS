@@ -327,13 +327,14 @@ bool saisDoubling( const S * R , S * SA , S m ,
   for( const auto & [ f , g ] : G ) tied += g;
   if( ( tied > limit ) || ( h > ( S( 1 ) << 16 ) ) ) return( false );
   // the keys of all the groups first, then the new ranks
-  key.clear();
+  key.resize( std::size_t( tied ) );
+  auto * kz = key.data();
   for( const auto & [ f , g ] : G )
    for( S i = f ; i < f + g ; ++i ) {
     if( i + D < m ) saisPrefetch( V.data() + std::min( SA[ i + D ] + h ,
                                                         m - 1 ) );
     const S k = SA[ i ];
-    key.emplace_back( k + h < m ? V[ std::size_t( k + h ) ] : S( -1 ) , k );
+    *kz++ = { k + h < m ? V[ std::size_t( k + h ) ] : S( -1 ) , k };
     }
   H.clear();
   std::size_t at = 0;
@@ -407,8 +408,9 @@ inline S saisNextLms( const std::vector< std::uint64_t > & lms , S n , S p )
 /// the bytes, a suffix that ends inside the key before one that goes on
 /// with the same symbols. In rest the sizes of the groups still tied after
 /// at most rounds rounds or once budget keys are read (1 for each place
-/// that is sorted), true if none is; with groups of more than 16 places
-/// on average, rest is runs and nothing is done
+/// that is sorted), true if none is; nothing is done if the groups have
+/// more than 16 places on average, or if half of those in the first round
+/// on the first groups stay tied
 template< class C , class S >
 bool saisTextTies( const C * T , S n , S * SA , S m ,
                    const std::vector< S > & runs ,
@@ -436,72 +438,137 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
    }
   f += g;
   }
- // large groups: the sorts cost more than the names do
- if( tied > 16 * G.size() ) {
-  rest = runs;
-  return( false );
-  }
  std::vector< Key > key;
+ std::vector< std::uint64_t > u , w;  // the radix sort of large groups
  std::size_t spent = 0;
- for( unsigned r = 0 ; ( r < rounds ) && ! G.empty() ; ++r ) {
-  std::size_t total = 0;
-  for( const Group & q : G ) total += std::size_t( q.g );
-  if( spent + total > budget ) break;
-  spent += total;
+ // a group sorted by its keys: by insertion if small, else by a radix
+ // sort on the bits that are not the same in all its keys (gathered by
+ // pext, in their order), if at most 32 and no suffix ends in the keys
+ auto sort = [ & ]( Key * a , S g ) {
+  if( g <= 16 ) {
+   for( S i = 1 ; i < g ; ++i ) {
+    const Key x = a[ i ];
+    S j = i;
+    for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j ) a[ j ] = a[ j - 1 ];
+    a[ j ] = x;
+    }
+   return;
+   }
+#if defined( __BMI2__ )
+  std::uint64_t one = ~std::uint64_t( 0 ) , any = 0;
+  S full = 8;
+  for( S i = 0 ; i < g ; ++i ) {
+   one &= a[ i ].key;
+   any |= a[ i ].key;
+   full = std::min( full , a[ i ].left );
+   }
+  const std::uint64_t mask = one ^ any;
+  const int b = std::popcount( mask );
+  if( ( full == 8 ) && ( b <= 32 ) ) {
+   if( b == 0 ) return;               // all equal
+   u.resize( std::size_t( g ) );
+   w.resize( std::size_t( g ) );
+   for( S i = 0 ; i < g ; ++i )
+    u[ i ] = ( _pext_u64( a[ i ].key , mask ) << 32 ) |
+             std::uint32_t( a[ i ].p );
+   for( int shift = 32 ; shift < 32 + b ; shift += 8 ) {
+    S count[ 257 ] = {};
+    for( S i = 0 ; i < g ; ++i ) ++count[ ( ( u[ i ] >> shift ) & 255 ) + 1 ];
+    for( int c = 0 ; c < 256 ; ++c ) count[ c + 1 ] += count[ c ];
+    for( S i = 0 ; i < g ; ++i )
+     w[ std::size_t( count[ ( u[ i ] >> shift ) & 255 ]++ ) ] = u[ i ];
+    u.swap( w );
+    }
+   for( S i = 0 ; i < g ; ++i )       // the key only for its equalities
+    a[ i ] = { u[ i ] >> 32 , 8 , S( std::uint32_t( u[ i ] ) ) };
+   return;
+   }
+#endif
+  std::sort( a , a + g );
+  };
+ // one round on the groups [ from , to ) of G, the parts still tied to H;
+ // the number of places in them
+ auto round = [ & ]( std::size_t from , std::size_t to ) {
+  std::size_t total = 0 , left = 0;
+  for( std::size_t z = from ; z < to ; ++z ) total += std::size_t( G[ z ].g );
   key.resize( total );
   // the keys, the text ahead prefetched
   std::size_t at = 0;
-  for( std::size_t z = 0 ; z < G.size() ; ++z ) {
+  for( std::size_t z = from ; z < to ; ++z ) {
    const Group & q = G[ z ];
    for( S i = q.f ; i < q.f + q.g ; ++i , ++at ) {
     if( i + D < q.f + q.g ) saisPrefetch( T + std::min( SA[ i + D ] + q.at ,
                                                          n - 1 ) );
-    else if( ( z + 1 < G.size() ) && ( i + D - q.f - q.g < G[ z + 1 ].g ) )
+    else if( ( z + 1 < to ) && ( i + D - q.f - q.g < G[ z + 1 ].g ) )
      saisPrefetch( T + std::min( SA[ G[ z + 1 ].f + ( i + D - q.f - q.g ) ]
                                  + G[ z + 1 ].at , n - 1 ) );
     const S p = SA[ i ] , a = p + q.at;
     std::uint64_t v = 0;
-    S left = 8;
+    S l = 8;
     if( a + 8 <= n ) {
      std::memcpy( &v , T + a , 8 );
      if constexpr( std::endian::native == std::endian::little )
       v = saisSwap( v );
      }
     else {
-     left = std::max< S >( n - a , 0 );
-     for( S j = 0 ; j < left ; ++j )
+     l = std::max< S >( n - a , 0 );
+     for( S j = 0 ; j < l ; ++j )
       v |= std::uint64_t( std::uint8_t( T[ a + j ] ) ) << ( 56 - 8 * j );
      }
-    key[ at ] = { v , left , p };
+    key[ at ] = { v , l , p };
     }
    }
   // each group sorted, and the parts still tied to the next round
-  H.clear();
   at = 0;
-  for( const Group & q : G ) {
+  for( std::size_t z = from ; z < to ; ++z ) {
+   const Group q = G[ z ];
    Key * a = key.data() + at;
-   if( q.g <= 16 )
-    for( S i = 1 ; i < q.g ; ++i ) {
-     const Key x = a[ i ];
-     S j = i;
-     for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j ) a[ j ] = a[ j - 1 ];
-     a[ j ] = x;
-     }
-   else
-    std::sort( a , a + q.g );
+   sort( a , q.g );
    for( S i = 0 ; i < q.g ; ) {
     S j = i + 1;
     while( ( j < q.g ) && ( a[ j ].key == a[ i ].key ) &&
            ( a[ j ].left == a[ i ].left ) )
      ++j;
-    if( ( j - i > 1 ) && ( a[ i ].left == 8 ) )
+    if( ( j - i > 1 ) && ( a[ i ].left == 8 ) ) {
      H.push_back( { q.f + i , j - i , q.at + 8 } );
-    for( S z = i ; z < j ; ++z ) SA[ q.f + z ] = a[ z ].p;
+     left += std::size_t( j - i );
+     }
+    for( S y = i ; y < j ; ++y ) SA[ q.f + y ] = a[ y ].p;
     i = j;
     }
    at += std::size_t( q.g );
    }
+  spent += total;
+  return( std::pair( total , left ) );
+  };
+ // the first round on the first groups alone, up to an eighth of the
+ // places: if half of them stay tied, the text is not the way (long
+ // repeats), and the names do the work
+ // large groups (more than 16 places on average): the names do better
+ if( ( tied > budget ) || ( tied > 16 * G.size() ) ) {
+  rest = runs;
+  return( false );
+  }
+ std::size_t z = 0;
+ for( std::size_t probe = 0 ; ( z < G.size() ) && ( 8 * probe < tied ) ; )
+  probe += std::size_t( G[ z++ ].g );
+ H.clear();
+ const auto [ total , left ] = round( 0 , z );
+ if( 2 * left > total ) {
+  H.insert( H.end() , G.begin() + std::ptrdiff_t( z ) , G.end() );
   G.swap( H );
+  }
+ else {
+  round( z , G.size() );
+  G.swap( H );
+  for( unsigned r = 1 ; ( r < rounds ) && ! G.empty() ; ++r ) {
+   std::size_t next = 0;
+   for( const Group & q : G ) next += std::size_t( q.g );
+   if( spent + next > budget ) break;
+   H.clear();
+   round( 0 , G.size() );
+   G.swap( H );
+   }
   }
  rest.clear();
  if( G.empty() ) return( true );
@@ -762,18 +829,19 @@ S saisPartial( const C * T , S * SA , S n , S K ,
 
  // the names: SA[ i ] marked if it differs from SA[ i + 1 ]; here only
  // their groups, the names themselves written when needed
- S name = 1 , start = 0;              // the first LMS place of the name
- runs.clear();
- for( S i = 0 ; i < m ; ++i ) {
-  const S x = SA[ i ];
+ S name = 0 , start = 0;              // the first LMS place of the name
+ runs.resize( std::size_t( m ) );
+ S * ADS_SAIS_RESTRICT run = runs.data();
+ for( S i = 0 ; i < m - 1 ; ++i ) {
+  const S x = SA[ i ] , b = S( x < 0 );
   SA[ i ] = x & low;
-  if( ( x < 0 ) && ( i + 1 < m ) ) {
-   runs.push_back( i + 1 - start );
-   start = i + 1;
-   ++name;
-   }
+  run[ name ] = i + 1 - start;        // final at the end of the group
+  start += b * ( i + 1 - start );
+  name += b;
   }
- runs.push_back( m - start );
+ SA[ m - 1 ] &= low;
+ run[ name++ ] = m - start;
+ runs.resize( std::size_t( name ) );
  *names = name;
  return( m );
  }
