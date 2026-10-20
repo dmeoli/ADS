@@ -7,7 +7,8 @@
 # results/<host>-<date>.tsv; then bench/tables.py turns the file into the     #
 # tables of the README. The core comes from CORE (default 0), the second one  #
 # of the benchmark of two threads from CORE2 (default CORE + 1), the runs per #
-# cell from RUNS (default 11), the build directory from BUILD.                #
+# cell from RUNS (default 11), the build directory from BUILD, the text of    #
+# the compressors from ADS_BENCH_TEXT (a file, repeated up to each size).     #
 #                                                                             #
 #   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
 #                           [HASHING=<dir>] [ABSL=<prefix>]                   #
@@ -15,13 +16,7 @@
 #                           [EDLIB=<prefix>] [RAPIDFUZZ=<prefix>]             #
 #                           (with GMP also bignum-gmp, BigInteger on GMP)     #
 #                           [PRIORITY=<dir>] [MIMALLOC=<prefix>]              #
-#                           [JEMALLOC=<prefix>]                               #
-# tables of the README. The core comes from CORE (default 0), the runs per    #
-# cell from RUNS (default 11), the build directory from BUILD, the text of    #
-# the compressors from ADS_BENCH_TEXT (a file, repeated up to each size).     #
-#                                                                             #
-#   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
-#                                              [OPT=<prefix>]                 #
+#                           [JEMALLOC=<prefix>] [OPT=<prefix>]                #
 ###############################################################################
 
 set -e
