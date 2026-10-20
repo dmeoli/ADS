@@ -37,7 +37,8 @@
  * tree end in the leaf of i, at the cost of a miss of the cache. The tree
  * takes \f$ 32 / 512 \f$ bits per parenthesis for the leaves and at most
  * \f$ 4 \cdot 128 / 8192 \f$ for the groups, besides the rank directory
- * [see RankSelect.h]. The excess of any place is
+ * [see CompactRankSelect.h], 3.5% of the bits, since no search needs a
+ * rank. The excess of any place is
  * \f$ E( i ) = 2 rank_1( i + 1 ) - ( i + 1 ) \f$, in O( 1 ) time.
  *
  * Jacobson gives findClose() in O( log n ) time with the pioneers, and Munro
@@ -85,7 +86,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/succinct/BitVector.h"
-#include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/CompactRankSelect.h"
 
 #include <algorithm>
 #include <array>
@@ -142,7 +143,7 @@ class BalancedParentheses {
  [[nodiscard]] std::size_t enclose( std::size_t i ) const;
 
  /// the parentheses with their rank and select
- [[nodiscard]] const RankSelect & bits( void ) const;
+ [[nodiscard]] const CompactRankSelect & bits( void ) const;
 
  /// the bits of the range min-max tree
  [[nodiscard]] std::size_t treeBits( void ) const;
@@ -182,7 +183,7 @@ class BalancedParentheses {
  /// the excess never negative and 0 at the end
  [[nodiscard]] bool balanced( void ) const;
 
- RankSelect f_b;
+ CompactRankSelect f_b;
  std::size_t f_nleaf = 0;                ///< the leaves
  std::size_t f_groups = 1;               ///< leaves of the tree, a power of 2
  /// the excess of a leaf and the least excess of its places and of the
