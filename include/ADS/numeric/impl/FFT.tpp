@@ -15,11 +15,10 @@
 /*--------------------------------------------------------------------------*/
 
 /// a function inlined even where the compiler would not, so that the
-/// items of a codelet stay in registers
+/// items of a codelet stay in registers; MSVC is left to choose, since
+/// forcing it through the unrolled codelets does not end
 #if defined( __GNUC__ ) || defined( __clang__ )
  #define ADS_FFT_INLINE inline __attribute__(( always_inline ))
-#elif defined( _MSC_VER )
- #define ADS_FFT_INLINE __forceinline
 #else
  #define ADS_FFT_INLINE inline
 #endif
