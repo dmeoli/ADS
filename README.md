@@ -408,6 +408,7 @@ RecSplit, and the concurrent cuckoo table with libcuckoo,
 | standard Ribbon filter, Gauss elimination on the fly, solution by columns (Dillinger and Walzer) | [`set/RibbonFilter.h`](include/ADS/set/RibbonFilter.h) | `hashing.ribbon-filter` |
 | minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |
 | minimal perfect hash function by recursive splitting, about 1.8 bits per key, leaves by rotation fitting (RecSplit; Bez et al.) | [`dictionary/RecSplit.h`](include/ADS/dictionary/RecSplit.h) | `hashing.recsplit` |
+| minimal perfect hash function by levels of fingerprints, ranks by blocks of 512 bits (Müller, Sanders, Schulze, Zhou; BBHash; FMPH) | [`dictionary/FingerprintPerfectHash.h`](include/ADS/dictionary/FingerprintPerfectHash.h) | `hashing.fingerprint-perfect-hash` |
 | cuckoo table with buckets of 4 places, tags of 8 bits, search in breadth (Li et al.; libcuckoo) | [`dictionary/BucketCuckooTable.h`](include/ADS/dictionary/BucketCuckooTable.h) | `hashing.bucket-cuckoo` |
 | hash map with its pairs in a dense vector and an index of positions in groups of 12 control bytes, a removal by moving the last pair (the dictionaries of CPython 3.6; `ankerl::unordered_dense`) | [`dictionary/DenseHashMap.h`](include/ADS/dictionary/DenseHashMap.h) | `hashing.dense-hash-map` |
 | lock-free queue from one producer to one consumer | [`concurrent/SPSCQueue.h`](include/ADS/concurrent/SPSCQueue.h) | `engineered.spsc-queue` |

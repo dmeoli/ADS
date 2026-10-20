@@ -25,6 +25,7 @@
 #include "ADS/dictionary/BucketCuckooTable.h"
 #include "ADS/dictionary/DenseHashMap.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/RecSplit.h"
@@ -56,6 +57,13 @@ namespace {
 /*--------------------------------------------------------------------------*/
 /*------------------------------- HELPERS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+/// a hash that sends every key to the same group, with the same
+/// fingerprint, and declares it needs no mixing
+struct OneGroup {
+ using is_avalanching = void;
+ std::size_t operator()( std::uint64_t ) const { return( 0x105 ); }
+ };
 
 /// n distinct random words from the seed
 std::vector< std::uint64_t > randomKeys( std::size_t n , unsigned seed )
@@ -552,6 +560,56 @@ ADS_TEST( "minimal-perfect-hash" )
                                           1.1 ) , contract_violation );
  }
 
+// the minimal perfect hash function by fingerprints: 1, 2, 3, 10, 1000 and
+// 10^5 random keys with gamma 1, 1.5, 2 and 5; 10^6 keys in fewer than
+// 3.7 bits per key at gamma 2; consecutive keys and strings; a key out of
+// the set below n; equal hashes throw; repeated keys, gamma below 1 and an
+// empty function violate the contracts
+ADS_TEST( "fingerprint-perfect-hash" )
+{
+ auto bijective = []( const auto & f , const auto & K ) {
+  std::vector< char > seen( K.size() , 0 );
+  for( const auto & k : K ) {
+   const std::size_t v = f( k );
+   if( v >= K.size() || seen[ v ] )
+    return( false );
+   seen[ v ] = 1;
+   }
+  return( true ); };
+ for( std::size_t n : { 1 , 2 , 3 , 10 , 1000 , 100000 } ) {
+  const auto K = randomKeys( n , unsigned( 3 * n + 1 ) );
+  for( double gamma : { 1.0 , 1.5 , 2.0 , 5.0 } ) {
+   const FingerprintPerfectHash< std::uint64_t > f( K , gamma );
+   CHECK( f.size() == n && ! f.empty() && f.levels() >= 1 );
+   CHECK( bijective( f , K ) && f( 0xDEADBEEF ) < n );
+   }
+  }
+ {
+  const auto K = randomKeys( 1000000 , 23 );
+  const FingerprintPerfectHash< std::uint64_t > f( K );
+  const double b = double( f.bits() ) / 1e6;  // 2 e^{1/2} = 3.30 + 1/16
+  CHECK( bijective( f , K ) && b > 3.2 && b < 3.7 && f.levels() < 40 );
+  const FingerprintPerfectHash< std::uint64_t > g( K , 1.0 , 7 );
+  CHECK( bijective( g , K ) && double( g.bits() ) / 1e6 < 3.1 );
+  }
+ std::vector< std::uint64_t > C( 100000 );
+ for( std::size_t i = 0 ; i < C.size() ; ++i )
+  C[ i ] = i;
+ CHECK( bijective( FingerprintPerfectHash< std::uint64_t >( C ) , C ) );
+ const auto S = randomStrings( 50000 , 24 );
+ CHECK( bijective( FingerprintPerfectHash< std::string >( S ) , S ) );
+ const FingerprintPerfectHash< int > E( std::vector< int >{} );
+ CHECK( E.empty() && E.size() == 0 && E.levels() == 0 );
+ CHECK_THROWS( (void) E( 3 ) , contract_violation );
+ CHECK_THROWS( FingerprintPerfectHash< int >( std::vector< int >{ 1 , 1 } ) ,
+               contract_violation );
+ CHECK_THROWS( FingerprintPerfectHash< int >( std::vector< int >{ 1 } ,
+                                              0.5 ) , contract_violation );
+ CHECK_THROWS( ( FingerprintPerfectHash< std::uint64_t , OneGroup >(
+                  std::vector< std::uint64_t >{ 1 , 2 } ) ) ,
+               std::runtime_error );
+ }
+
 // the minimal perfect hash function by recursive splitting, leaves of 8
 // keys: 1, 2, 7, 8, 9 keys (below, at and above a leaf), 99, 100, 101 and
 // 199, 200, 201 (a bucket and two, at b = 100), 1000 and 10^5 random keys
@@ -704,13 +762,6 @@ ADS_TEST( "bucket-cuckoo" )
 /*--------------------------------------------------------------------------*/
 /*------------------------------ DENSE MAP ---------------------------------*/
 /*--------------------------------------------------------------------------*/
-
-/// a hash that sends every key to the same group, with the same
-/// fingerprint, and declares it needs no mixing
-struct OneGroup {
- using is_avalanching = void;
- std::size_t operator()( std::uint64_t ) const { return( 0x105 ); }
- };
 
 /// the pairs of a DenseHashMap the same as those of a reference, the
 /// vector dense
