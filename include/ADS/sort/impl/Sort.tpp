@@ -90,12 +90,10 @@ void oneRun( std::vector< T > & A , C & less )
   std::reverse( A.begin() , A.end() );
  }
 
-/// true if a sample of 64 equally spaced keys of A, n >= 64, holds at most
-/// 16 distinct ones and they differ in at least 4 bytes: few keys, but
-/// wide, which pdqSort() sorts in \f$ O( n \log k ) \f$ with fewer passes
-/// than radixSort() needs bytes
+/// the distinct keys, up to 64, of a sample of 64 equally spaced keys of A,
+/// n >= 64, and the bytes in which they differ
 template< RadixKey T >
-bool fewWideKeys( const std::vector< T > & A )
+std::pair< std::size_t , int > sampleKeys( const std::vector< T > & A )
 {
  using U = decltype( radixKey( T() ) );
  std::array< U , 64 > S;
@@ -112,7 +110,40 @@ bool fewWideKeys( const std::vector< T > & A )
  int bytes = 0;
  for( ; diff != 0 ; diff >>= 8 )
   bytes += ( diff & 0xFF ) != 0;
+ return( std::pair( k , bytes ) );
+ }
+
+/// true if a sample of 64 equally spaced keys of A, n >= 64, holds at most
+/// 16 distinct ones and they differ in at least 4 bytes: few keys, but
+/// wide, which pdqSort() sorts in \f$ O( n \log k ) \f$ with fewer passes
+/// than radixSort() needs bytes
+template< RadixKey T >
+bool fewWideKeys( const std::vector< T > & A )
+{
+ const auto [ k , bytes ] = sampleKeys( A );
  return( ( k <= 16 ) && ( bytes >= 4 ) );
+ }
+
+/// the runs up to which the numbers of T go to powerSort() when the vector
+/// registers are there: fewer for the keys of 32 bits, which
+/// vectorQuickSort() sorts faster than the merges of 16 runs
+template< class T >
+inline constexpr std::size_t kVectorRuns = sizeof( T ) == 4 ? 8 : kRuns;
+
+/// true if A holds a -0
+template< class T >
+bool negativeZero( const std::vector< T > & A )
+{
+ using U = std::conditional_t< sizeof( T ) == 4 , std::uint32_t ,
+                               std::uint64_t >;
+ constexpr U z = U( 1 ) << ( 8 * sizeof( T ) - 1 );
+ std::size_t c = 0;                         // a count, which vectorizes
+ for( const T x : A ) {
+  U b;
+  std::memcpy( &b , &x , sizeof( b ) );
+  c += b == z;
+  }
+ return( c > 0 );
  }
 
 /// the stable sort of A, n >= 64, if a sample of 64 equally spaced items
@@ -283,7 +314,20 @@ void pingPongSort( std::vector< T > & A , C & less )
 template< class T , class C >
 void sort( std::vector< T > & A , C less )
 {
- if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
+ if constexpr( detail::naturalOrder< T , C > && VectorKey< T > &&
+               kVectorSort ) {
+  std::array< std::size_t , kRuns + 1 > E;
+  std::size_t r = 0;
+  if( A.size() < kRadix )
+   vectorQuickSort( A );
+  else if( ( r = detail::runs( A , less , kRuns , E.data() ) ) <= 1 )
+   detail::oneRun( A , less );
+  else if( r <= detail::kVectorRuns< T > )
+   detail::powerSortRuns( A , less , E.data() , r );
+  else
+   vectorQuickSort( A );
+  }
+ else if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
   std::size_t r = 0;
   if( A.size() < kRadix )
@@ -321,15 +365,23 @@ void sort( std::vector< T > & A , C less )
   else if( r <= kRuns )
    detail::powerSortRuns( A , less , E.data() , r );
   else if( ! detail::fewKeysSort( A , less ) )
-   detail::pingPongSort( A , less );
+   sampleSort( A , less );
   }
- else
+ else if( A.size() < kRadix )
   pdqSort( A , less );
+ else
+  sampleSort( A , less );
  }
 
 template< class T , class C >
 void stableSort( std::vector< T > & A , C less )
 {
+ if constexpr( detail::naturalOrder< T , C > && VectorKey< T > &&
+               kVectorSort )                // equal numbers are the same,
+  if( std::is_integral_v< T > || ! detail::negativeZero( A ) ) {   // but
+   sort( A , less );                        // -0 and +0
+   return;
+   }
  if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
   const std::size_t r = A.size() < kRadix ? 0 : detail::runs( A , less ,

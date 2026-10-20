@@ -31,16 +31,19 @@
 #include "ADS/sort/PatienceSort.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
+#include "ADS/sort/SampleSort.h"
 #include "ADS/sort/Smoothsort.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/SortingNetworks.h"
 #include "ADS/sort/StrandSort.h"
 #include "ADS/sort/TreeSort.h"
+#include "ADS/sort/VectorQuickSort.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <string>
 #include <cstddef>
@@ -1168,6 +1171,174 @@ ADS_TEST( "dispatch-edges" )
 // byte that does not split a part, keys of 3 bytes and -0 with +0 among
 // few doubles; the strings of few distinct values, around the cutoff of
 // 16, all equal, with the empty ones and those that end inside a bucket
+/// the bits of x as an unsigned integer, so that -0, +0 and the NaN of
+/// different signs are told apart
+template< class T >
+auto bitsOf( T x )
+{
+ std::conditional_t< sizeof( T ) == 4 , std::uint32_t , std::uint64_t > b;
+ std::memcpy( &b , &x , sizeof( b ) );
+ return( b );
+ }
+
+/// the order of vectorQuickSort(): the natural one, extended for floating
+/// point numbers to the total order of IEEE 754 (-NaN, -inf, ..., -0, +0,
+/// ..., +inf, +NaN)
+template< class T >
+bool totalLess( T a , T b )
+{
+ if constexpr( std::is_floating_point_v< T > ) {
+  using S = std::conditional_t< sizeof( T ) == 4 , std::int32_t ,
+                                std::int64_t >;
+  using U = std::make_unsigned_t< S >;
+  auto key = []( T x ) {
+   const U u = U( bitsOf( x ) );
+   return( S( u ^ ( U( S( u ) >> ( 8 * sizeof( S ) - 1 ) ) >> 1 ) ) ); };
+  return( key( a ) < key( b ) );
+  }
+ else
+  return( a < b );
+ }
+
+/// vectorQuickSort() and its portable registers on A, against std::sort
+/// by the total order, bit by bit
+template< class T >
+bool vectorSortsLike( const std::vector< T > & A )
+{
+ using K = detail::vqs::KeyOf< T >;
+ auto B = A , C = A , R = A;
+ vectorQuickSort( B );
+ detail::vqs::sortWith< detail::vqs::Lanes< K > >( C.data() , C.size() );
+ std::sort( R.begin() , R.end() , totalLess< T > );
+ for( std::size_t i = 0 ; i < A.size() ; ++i )
+  if( ( bitsOf( B[ i ] ) != bitsOf( R[ i ] ) ) ||
+      ( bitsOf( C[ i ] ) != bitsOf( R[ i ] ) ) )
+   return( false );
+ return( true );
+ }
+
+/// the battery of vectorQuickSort() on the numbers of type T: every size
+/// up to 600 (the networks of 1 to 16 registers and the first partitions),
+/// then larger ones, in the patterns random, few keys, two keys, all
+/// equal, sorted, reversed, organ pipe, the extremes of T and, for the
+/// floating point numbers, the zeros, the infinities and the NaN
+template< class T >
+void vectorBattery()
+{
+ std::mt19937_64 g( 91 );
+ using L = std::numeric_limits< T >;
+ std::vector< T > ext = { L::lowest() , L::max() , T( 0 ) , T( 1 ) };
+ if constexpr( std::is_signed_v< T > )
+  ext.push_back( T( -1 ) );
+ if constexpr( std::is_floating_point_v< T > )
+  for( T x : { T( -0.0 ) , L::infinity() , -L::infinity() ,
+               L::quiet_NaN() , -L::quiet_NaN() , L::denorm_min() ,
+               -L::denorm_min() } )
+   ext.push_back( x );
+ std::vector< std::size_t > sizes;
+ for( std::size_t n = 0 ; n <= 600 ; ++n ) sizes.push_back( n );
+ for( std::size_t n : { 1023u , 1024u , 1025u , 4095u , 4097u , 20000u ,
+                        100000u } )
+  sizes.push_back( n );
+ for( std::size_t n : sizes )
+  for( int p = 0 ; p < 8 ; ++p ) {
+   if( ( n <= 600 ) && ( n % 7 != 0 ) && ( p > 1 ) )
+    continue;                               // all sizes on random keys
+   std::vector< T > A( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::uint64_t r = g();
+    switch( p ) {
+     case( 0 ): std::memcpy( &A[ i ] , &r , sizeof( T ) );   // any bits
+                if constexpr( std::is_floating_point_v< T > )
+                 if( A[ i ] != A[ i ] ) A[ i ] = T( r % 1000 );
+                break;
+     case( 1 ): A[ i ] = T( r % 16 ); break;
+     case( 2 ): A[ i ] = r % 2 ? L::max() : T( 3 ); break;
+     case( 3 ): A[ i ] = L::max(); break;
+     case( 4 ): A[ i ] = T( i ); break;
+     case( 5 ): A[ i ] = T( n - i ); break;
+     case( 6 ): A[ i ] = T( std::min( i , n - 1 - i ) ); break;
+     default:   A[ i ] = ext[ r % ext.size() ];
+     }
+    }
+   CHECK( vectorSortsLike( A ) );
+   }
+ }
+
+ADS_TEST( "vector-quicksort" )
+{
+ vectorBattery< std::int32_t >();
+ vectorBattery< std::uint32_t >();
+ vectorBattery< std::int64_t >();
+ vectorBattery< std::uint64_t >();
+ vectorBattery< float >();
+ vectorBattery< double >();
+ vectorBattery< long long >();
+ vectorBattery< unsigned long long >();
+ std::mt19937_64 g( 92 );                   // the last resort, heapsort,
+ for( std::size_t n : { 0u , 1u , 2u , 3u , 100u , 1001u } ) {   // alone
+  std::vector< std::int64_t > A( n );
+  for( auto & x : A ) x = std::int64_t( g() );
+  auto B = A;
+  detail::vqs::heapKeys( A.data() , n );
+  std::sort( B.begin() , B.end() );
+  CHECK( A == B );
+  }
+ for( std::size_t n : { 600u , 5000u } ) {  // the recursion with no depth
+  std::vector< std::int32_t > A( n );       // left, at once to heapsort
+  for( auto & x : A ) x = std::int32_t( g() );
+  auto B = A;
+  std::uint64_t s = 1;
+  detail::vqs::quick< detail::vqs::Best< std::int32_t > >( A.data() , n , 0 ,
+                                                          s );
+  std::sort( B.begin() , B.end() );
+  CHECK( A == B );
+  }
+ std::vector< double > A = { 2.0 , -0.0 , 0.0 , -0.0 , 1.0 };
+ vectorQuickSort( A );                      // -0 before +0
+ CHECK( std::signbit( A[ 0 ] ) && std::signbit( A[ 1 ] ) &&
+        ! std::signbit( A[ 2 ] ) && ( A[ 4 ] == 2.0 ) );
+ }
+
+ADS_TEST( "sample-sort" )
+{
+ struct Rec { std::uint64_t key; std::uint64_t pad[ 3 ]; };
+ auto byKey = []( const Rec & a , const Rec & b ) {
+  return( a.key < b.key ); };
+ std::mt19937_64 g( 93 );
+ for( std::size_t n : { 0u , 1u , 2u , 64u , 65u , 100u , 1000u , 2185u ,
+                        4096u , 4097u , 30000u , 300000u } )
+  for( int p = 0 ; p < 8 ; ++p ) {
+   std::vector< Rec > A( n );
+   std::vector< std::uint64_t > U( n );
+   std::vector< std::string > S( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::uint64_t k[] = { g() , g() % 16 , g() % 2 , 7 , i , n - i ,
+                                std::min( i , n - 1 - i ) , g() % 1000 };
+    A[ i ] = Rec{ k[ p ] , { i , 0 , 0 } };
+    U[ i ] = k[ p ];
+    S[ i ] = "k" + std::to_string( k[ p ] % 100003 );
+    }
+   auto B = A;
+   auto V = U;
+   auto T = S;
+   sampleSort( A , byKey );
+   std::stable_sort( B.begin() , B.end() , byKey );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    CHECK( A[ i ].key == B[ i ].key );
+   sampleSort( U , std::greater<>() );      // another order
+   std::sort( V.begin() , V.end() , std::greater<>() );
+   CHECK( U == V );
+   if( n <= 30000 ) {                       // items that are not bytes
+    sampleSort( S );
+    std::sort( T.begin() , T.end() );
+    CHECK( S == T );
+    }
+   }
+ battery( []( auto & A , auto less ) { sampleSort( A , less ); } , 4096 ,
+          false );
+ }
+
 ADS_TEST( "fast-paths" )
 {
  std::mt19937_64 g( 57 );
