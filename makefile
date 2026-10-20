@@ -70,18 +70,14 @@ test: $(BINS)
 # rapidfuzz-cpp to edit; PRIORITY=<dir> adds to priority the libraries
 # whose sources are in <dir> (tlx, radix-heap); MIMALLOC=<prefix> and
 # JEMALLOC=<prefix> add to memory mimalloc (built without the override of
-# malloc) and jemalloc (built with the prefix je_)
+# malloc) and jemalloc (built with the prefix je_); OPT=<prefix> adds to
+# succinct and compression the libraries installed there: the headers of
+# sdsl-lite, sux, pasta (with tlx) and succinct with libsuccinct, those of
+# FiniteStateEntropy in fse/ with libfse, and streamvbyte, lz4 and libsais
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
-            sparse $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
-# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft;
-# OPT=<prefix> adds to succinct and compression the libraries installed
-# there: the headers of sdsl-lite, sux, pasta (with tlx) and succinct with
-# libsuccinct, those of FiniteStateEntropy in fse/ with libfse, and
-# streamvbyte, lz4 and libsais
-BENCHES   = sort dictionaries priority sequences bignum fft succinct \
-            compression
-comma    := ,
+            sparse succinct compression \
+            $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
