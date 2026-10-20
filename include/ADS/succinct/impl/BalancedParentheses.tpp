@@ -63,7 +63,7 @@ inline BalancedParentheses::BalancedParentheses( void )
  }
 
 inline BalancedParentheses::BalancedParentheses( BitVector b )
- : f_b( std::move( b ) , RankSelect::Selects::ONES )
+ : f_b( std::move( b ) )
 {
  ADS_AUDIT( balanced() );
  const std::size_t m = f_b.size();
@@ -250,7 +250,7 @@ inline std::size_t BalancedParentheses::enclose( std::size_t i ) const
  return( p );
  }
 
-inline const RankSelect & BalancedParentheses::bits( void ) const
+inline const CompactRankSelect & BalancedParentheses::bits( void ) const
 {
  return( f_b );
  }

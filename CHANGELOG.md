@@ -731,6 +731,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   streams straight into the output, and huffmanDecompress() decodes up to
   3 symbols a lookup and counts the rounds that fit instead of testing
   each; byteHistogram() on eight tables
+- BalancedParentheses keeps its bits on CompactRankSelect, since no search
+  needs a rank: 1.14 bits per parenthesis in all instead of 1.5
 
 ### Fixed
 
