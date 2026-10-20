@@ -406,6 +406,7 @@ of Boost and of ADS, with the same counts of work on the three.
 | minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |
 | minimal perfect hash function by recursive splitting, about 1.8 bits per key, leaves by rotation fitting (RecSplit; Bez et al.) | [`dictionary/RecSplit.h`](include/ADS/dictionary/RecSplit.h) | `hashing.recsplit` |
 | cuckoo table with buckets of 4 places, tags of 8 bits, search in breadth (Li et al.; libcuckoo) | [`dictionary/BucketCuckooTable.h`](include/ADS/dictionary/BucketCuckooTable.h) | `hashing.bucket-cuckoo` |
+| hash map with its pairs in a dense vector and an index of positions in groups of 12 control bytes, a removal by moving the last pair (the dictionaries of CPython 3.6; `ankerl::unordered_dense`) | [`dictionary/DenseHashMap.h`](include/ADS/dictionary/DenseHashMap.h) | `hashing.dense-hash-map` |
 | lock-free queue from one producer to one consumer | [`concurrent/SPSCQueue.h`](include/ADS/concurrent/SPSCQueue.h) | `engineered.spsc-queue` |
 | lock-free inbox of many producers | [`concurrent/MPSCInbox.h`](include/ADS/concurrent/MPSCInbox.h) | `engineered.mpsc-inbox` |
 | wavelet matrix: access, rank, select, range quantiles (Claude, Navarro and Ordonez) | [`succinct/WaveletMatrix.h`](include/ADS/succinct/WaveletMatrix.h) | `engineered_succinct.wavelet-matrix` |
