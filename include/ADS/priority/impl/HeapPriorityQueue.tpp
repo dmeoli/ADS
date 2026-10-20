@@ -31,6 +31,41 @@ HeapPriorityQueue< T , P , D >::HeapPriorityQueue( int n ) : f_capacity( n )
 
 template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
+HeapPriorityQueue< T , P , D >::HeapPriorityQueue(
+                                       HeapPriorityQueue && other ) noexcept
+ : f_capacity( std::exchange( other.f_capacity , 0 ) ) ,
+   f_H( std::exchange( other.f_H , {} ) ) ,
+   f_pool( std::move( other.f_pool ) )
+{
+ }
+
+template< class T , std::totally_ordered P , int D >
+ requires( D >= 2 )
+HeapPriorityQueue< T , P , D > &
+HeapPriorityQueue< T , P , D >::operator=( HeapPriorityQueue && other )
+ noexcept
+{
+ if( this != &other ) {
+  for( PriorityItem * h : f_H )
+   f_pool.free( h );
+  f_capacity = std::exchange( other.f_capacity , 0 );
+  f_H = std::exchange( other.f_H , {} );
+  f_pool = std::move( other.f_pool );
+  }
+ return( *this );
+ }
+
+template< class T , std::totally_ordered P , int D >
+ requires( D >= 2 )
+HeapPriorityQueue< T , P , D >::~HeapPriorityQueue()
+{
+ if constexpr( ! std::is_trivially_destructible_v< PriorityItem > )
+  for( PriorityItem * h : f_H )
+   f_pool.free( h );
+ }
+
+template< class T , std::totally_ordered P , int D >
+ requires( D >= 2 )
 bool HeapPriorityQueue< T , P , D >::empty( void ) const
 {
  return( f_H.empty() );
@@ -76,6 +111,7 @@ T HeapPriorityQueue< T , P , D >::deleteMin( void )
  swap( 0 , dim );
  minHeapRestore( 0 , dim );
  T v = std::move( f_H.back()->value );
+ f_pool.free( f_H.back() );
  f_H.pop_back();
  ADS_POST( ( size() == dim ) && ( empty() || !( minPriority() < p ) ) );
  ADS_INVARIANT( isHeap() );
@@ -89,9 +125,8 @@ HeapPriorityQueue< T , P , D >::insert( const T & x , const P & p )
 {
  ADS_PRE( size() < capacity() );
  const int i = size();
- f_H.push_back( std::make_unique< PriorityItem >(
-                                           PriorityItem{ p , x , i } ) );
- Handle h = f_H.back().get();
+ Handle h = f_pool.make( p , x , i );       // the vector has room for it
+ f_H.push_back( h );
  up( i );
  ADS_POST( ( size() == i + 1 ) && owns( h ) );
  ADS_INVARIANT( isHeap() );
@@ -165,7 +200,7 @@ template< class T , std::totally_ordered P , int D >
 bool HeapPriorityQueue< T , P , D >::owns( Handle y ) const
 {
  return( ( y != nullptr ) && ( y->pos >= 0 ) && ( y->pos < size() ) &&
-         ( f_H[ y->pos ].get() == y ) );
+         ( f_H[ y->pos ] == y ) );
  }
 
 template< class T , std::totally_ordered P , int D >

@@ -536,6 +536,8 @@ sequences  small-vector           vettore con posto per N elementi dentro
 heaps  bucket-queue-cells    coda a bucket sulle celle di un vettore
 heaps  sequence-heap         sequence heap di Sanders
 heaps  radix-heap            heap radix monotono a cifre di B bit
+heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool
+heaps  linked-heap-pool      heap con puntatori, nodi in un pool
 heaps  pairing-heap          pairing heap a due passate e ausiliario
 
 # the standard interface of the containers, beyond the book
