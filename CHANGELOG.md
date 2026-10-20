@@ -604,6 +604,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from kRadix items if they are copied as bytes and in no few runs or few
   keys, instead of the merge sort through a buffer, and from kRadix items
   otherwise, instead of pdqSort()
+- FlatHashTable removes a key of its first group by writing the 16
+  control bytes of the group whole, at an address known from the hash
+  alone, and bounds the places left counted by one per removal, counting
+  them exactly only when the bound fills the table: the removals of random
+  keys overlap their misses as the searches do, 1.6 to 1.9 times faster
+  (31 to 35 ns against 55 to 65 per removal from 10^6 keys of 64 bits on
+  wolfe, against 35 to 38 of tsl::robin_map and 53 to 74 of
+  boost::unordered_flat_map); the rebuilds of FlatHashTable and of
+  BucketCuckooTable prefetch the memory of the string keys 8 keys ahead,
+  1.05 to 1.2 times faster insertions of strings; FlatHashTable passes a
+  small key by value to the search past the first group, so that a search
+  stores nothing
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the

@@ -203,8 +203,35 @@ FlatHashTable< K , V , H , Eq >::insert( K && k , V && v )
 template< class K , class V , class H , class Eq >
 bool FlatHashTable< K , V , H , Eq >::remove( const K & k )
 {
+ // the first group alone, the common case, as in locate(): the place j
+ // found there is emptied by writing the whole group, whose address
+ // depends only on the hash, while that of the byte j depends on the
+ // control bytes just read; a later load can then pass the store before
+ // the control bytes arrive, so that the removals of distinct keys overlap
+ // their misses as the searches do
  const std::uint64_t x = mix( k );
- Slot * s = locate( x , k );
+ const std::size_t g = home( x );
+ Group & c = f_ctrl[ g ];
+ const std::uint8_t over = c.c[ OVER ];
+ if( Mask m = match( c , tag( x ) ) ) {
+  Slot * p = f_slot + g * SLOTS;
+  do {
+   const std::size_t j = lowest( m );
+   if( f_eq( p[ j ].kv.first , k ) ) [[likely]] {
+    std::destroy_at( &p[ j ].kv );
+    vacate( c , j );
+    ++f_deleted;                            // see drop()
+    --f_size;
+    ADS_POST( locate( x , k ) == nullptr );
+    ADS_INVARIANT( consistent( x ) );
+    return( true );
+    }
+   m &= m - 1;
+   } while( m );
+  }
+ if( ! ( over & bit( x ) ) ) [[likely]]
+  return( false );                          // no key of x went past g
+ Slot * s = further( x , g , k );
  if( ! s )
   return( false );
  const std::size_t e = std::size_t( s - f_slot );   // the place of s
@@ -248,7 +275,18 @@ double FlatHashTable< K , V , H , Eq >::load( void ) const
 template< class K , class V , class H , class Eq >
 std::size_t FlatHashTable< K , V , H , Eq >::deleted( void ) const
 {
- return( f_deleted );
+ std::size_t d = 0;                         // the empty places counted
+ for( std::size_t g = 0 ; f_cap && ( g <= f_mask ) ; ++g )
+  if( f_ctrl[ g ].c[ OVER ] )
+   d += std::size_t( std::popcount( empties( f_ctrl[ g ] ) ) );
+ return( d );
+ }
+
+template< class K , class V , class H , class Eq >
+bool FlatHashTable< K , V , H , Eq >::recount( void )
+{
+ f_deleted = deleted();
+ return( f_size + f_deleted + f_cap / 16 < f_max );
  }
 
 template< class K , class V , class H , class Eq >
@@ -583,8 +621,8 @@ FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x ,
  // the first group alone, the common case; the others out of line
  const std::size_t g = home( x );
  const Group & c = f_ctrl[ g ];
- if( const Mask m = match( c , tag( x ) ) )
-  if( Slot * p = scan( g , m , k ) ) [[likely]]
+ if( const Mask m = match( c , tag( x ) ) ) [[likely]]   // a hit falls
+  if( Slot * p = scan( g , m , k ) ) [[likely]]           // through
    return( p );
  if( ! ( c.c[ OVER ] & bit( x ) ) ) [[likely]]
   return( nullptr );                        // no key of x went past g
@@ -594,7 +632,7 @@ FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x ,
 template< class K , class V , class H , class Eq >
 typename FlatHashTable< K , V , H , Eq >::Slot *
 FlatHashTable< K , V , H , Eq >::further( std::uint64_t x , std::size_t g ,
-                                          const K & k ) const
+                                          KeyArg k ) const
 {
  const std::uint32_t t = tag( x );
  for( std::size_t i = 1 ; i <= f_mask ; ++i ) {
@@ -642,15 +680,18 @@ FlatHashTable< K , V , H , Eq >::put( KK && k , VV && v )
   return( false );
   }
  std::size_t i;
- if( f_size + f_deleted >= f_max ) [[unlikely]]
+ if( ( f_size + f_deleted >= f_max ) && ! recount() ) [[unlikely]]
   i = grow( x , std::forward< KK >( k ) , std::forward< VV >( v ) );
  else {
   const Mask e = empties( c );
   i = e ? g * GROUP + lowest( e ) : claim( x );
   std::construct_at( &slot( i )->kv , std::forward< KK >( k ) ,
                      std::forward< VV >( v ) );
-  if( f_deleted && f_ctrl[ i / GROUP ].c[ OVER ] )   // a place counted
-   --f_deleted;
+  // a place counted, by no branch past the test of the bound, 0 with no
+  // removals; an empty place of a group with some overflow was emptied by
+  // a removal, so that then the bound is at least 1
+  if( f_deleted ) [[unlikely]]
+   f_deleted -= std::size_t( f_ctrl[ i / GROUP ].c[ OVER ] != 0 );
   ctrl( i ) = std::uint8_t( tag( x ) );
   ++f_size;
   }
@@ -682,9 +723,31 @@ void FlatHashTable< K , V , H , Eq >::drop( std::size_t i )
 {
  std::destroy_at( &slot( i )->kv );
  ctrl( i ) = EMPTY;
- if( f_ctrl[ i / GROUP ].c[ OVER ] )        // inspections pass here
-  ++f_deleted;
+ ++f_deleted;                               // a bound, see f_deleted
  --f_size;
+ }
+
+template< class K , class V , class H , class Eq >
+ADS_FLAT_INLINE void FlatHashTable< K , V , H , Eq >::vacate( Group & c ,
+                                                              std::size_t j )
+{
+#if ADS_FLAT_SIMD == 1
+ const __m128i w = _mm_load_si128( reinterpret_cast< __m128i * >( c.c ) ) ,
+               at = _mm_cmpeq_epi8( _mm_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 ,
+                                     6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 ,
+                                     15 ) , _mm_set1_epi8( char( j ) ) );
+ _mm_store_si128( reinterpret_cast< __m128i * >( c.c ) ,
+                  _mm_andnot_si128( at , w ) );
+#elif ADS_FLAT_SIMD == 2
+ static constexpr std::uint8_t iota[ 16 ] = { 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
+                                              7 , 8 , 9 , 10 , 11 , 12 , 13 ,
+                                              14 , 15 };
+ const uint8x16_t at = vceqq_u8( vld1q_u8( iota ) ,
+                                 vdupq_n_u8( std::uint8_t( j ) ) );
+ vst1q_u8( c.c , vbicq_u8( vld1q_u8( c.c ) , at ) );
+#else
+ c.c[ j ] = EMPTY;
+#endif
  }
 
 template< class K , class V , class H , class Eq >
@@ -715,14 +778,30 @@ void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
  first( o , place );
  // the full places, group by group; a copy that throws leaves this table
  // as it was
- each( [ & ]( std::size_t i ) {
+ auto move = [ & ]( std::size_t i ) {
   auto & kv = this->slot( i )->kv;
   const std::uint64_t x = mix( kv.first );
   const std::size_t j = place( x );
   std::construct_at( &o.slot( j )->kv , std::move_if_noexcept( kv ) );
   o.ctrl( j ) = std::uint8_t( tag( x ) );
   ++o.f_size;
-  } );
+  };
+ if constexpr( detail::kIndirectKey< K > ) {
+  // the hash of a key reads memory at a random place, a miss per key in
+  // the order of the places: the places are listed and the memory of the
+  // key AHEAD places later is prefetched, so that the misses overlap
+  constexpr std::size_t AHEAD = 8;
+  std::vector< std::size_t > at;
+  at.reserve( f_size );
+  each( [ & ]( std::size_t i ) { at.push_back( i ); } );
+  for( std::size_t r = 0 ; r < at.size() ; ++r ) {
+   if( r + AHEAD < at.size() )
+    detail::prefetchKey( slot( at[ r + AHEAD ] )->kv.first );
+   move( at[ r ] );
+   }
+  }
+ else
+  each( move );
  swap( o );
  }
 

@@ -89,6 +89,7 @@
 
 #include <array>
 #include <bit>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -207,6 +208,28 @@ template< class K >
 struct DefaultHashOf< K > {
  using type = FastHash< K >;
  };
+
+/// true if the hash of a K reads memory that the K points to, as for the
+/// strings: a rebuild of a table then prefetches it some keys ahead
+template< class K >
+inline constexpr bool kIndirectKey = requires( const K & k ) {
+ { k.data() } -> std::convertible_to< const void * >;
+ k.size();
+ };
+
+/// brings into the cache the first line of what the key k points to, if
+/// its hash reads it [see kIndirectKey], else nothing
+template< class K >
+inline void prefetchKey( const K & k )
+{
+ if constexpr( kIndirectKey< K > ) {
+#if defined( __GNUC__ ) || defined( __clang__ )
+  __builtin_prefetch( static_cast< const void * >( k.data() ) );
+#else
+  ( void ) k;
+#endif
+  }
+ }
 
 }  // end( namespace detail )
 
