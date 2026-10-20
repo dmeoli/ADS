@@ -204,6 +204,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   free, so that a visit of the pairs is a scan of a vector; its tests in
   test/hashing.cpp, and in bench/hashing.cpp against the same layout of
   ankerl::unordered_dense and the other maps
+- FingerprintPerfectHash, the minimal perfect hash function by levels of
+  fingerprints of Mueller, Sanders, Schulze and Zhou, the method of BBHash
+  and FMPH: in each level of gamma bits per key a key alone in its place
+  keeps it, the others go to the next level, and the value of a key is the
+  rank of its bit, kept by blocks of 512 bits; about 3.5 bits per key at
+  gamma 2 (2.9 at gamma 1), a build of two passes per level over vectors
+  that stay in the cache; its tests in test/hashing.cpp, and in
+  bench/hashing.cpp against BBHash
 - ConcurrentCuckooTable, in concurrent/, the cuckoo table with buckets of
   4 places and tags of 8 bits shared by threads, after Li et al.: 2048
   spin locks on stripes of buckets taken in increasing order, lookups

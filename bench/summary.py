@@ -127,6 +127,8 @@ PAIRS = [
     ('perfect hashing', 'ADS::MinimalPerfectHash', 'PHOBIC',
      ['PHOBIC R-int']),
     ('perfect hashing', 'ADS::MinimalPerfectHash', 'BBHash', ['BBHash g=2']),
+    ('perfect hashing', 'ADS::FingerprintPerfectHash g=2', 'BBHash',
+     ['BBHash g=2']),
     ('perfect hashing', 'ADS::MinimalPerfectHash', 'RecSplit',
      ['RecSplit l=8 b=100']),
     ('search', 'ADS::StringSearcher', 'std',

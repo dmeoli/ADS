@@ -30,8 +30,9 @@
  *   standard Ribbon filter (of RocksDB) of fastfilter_cpp and the xor and
  *   binary fuse filters of xor_singleheader;
  * - "perfect hashing": the build of a minimal perfect hash function of n
- *   random keys of 64 bits and n queries, by those of ADS (by pilots and
- *   by recursive splitting) against PTHash, PHOBIC, BBHash and RecSplit;
+ *   random keys of 64 bits and n queries, by those of ADS (by pilots, by
+ *   recursive splitting and by levels of fingerprints, the method of
+ *   BBHash) against PTHash, PHOBIC, BBHash and RecSplit;
  * - "concurrent maps": on p threads, each doing its share of the n
  *   operations, the n insertions into an empty map, n lookups of present
  *   and of absent keys, n operations of which 1 in 10 inserts a new key
@@ -77,6 +78,7 @@
 #include "ADS/dictionary/CuckooHashing.h"
 #include "ADS/dictionary/DenseHashMap.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/OpenHashTable.h"
@@ -796,6 +798,11 @@ void perfectHashing( const std::vector< Key > & K ,
           []( const auto & f ) { return( f.bits() ); } );
  perfect( "ADS::RecSplit l=8 b=100" , K , H , r , []( const auto & S ) {
           return( ADS::RecSplit< Key , 8 >( S , 100 ) ); } ,
+          []( const auto & f , Key k ) { return( f( k ) ); } ,
+          []( const auto & f ) { return( f.bits() ); } );
+ perfect( "ADS::FingerprintPerfectHash g=2" , K , H , r ,
+          []( const auto & S ) {
+           return( ADS::FingerprintPerfectHash< Key >( S , 2.0 ) ); } ,
           []( const auto & f , Key k ) { return( f( k ) ); } ,
           []( const auto & f ) { return( f.bits() ); } );
 #ifdef ADS_HAS_PTHASH
