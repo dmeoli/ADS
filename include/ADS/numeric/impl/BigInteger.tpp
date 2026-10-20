@@ -337,19 +337,52 @@ inline std::uint64_t addMul1Adx( std::uint64_t * r , const std::uint64_t * a ,
  return( w3 );
  }
 
-/// r -= a m, n > 0 digits, the borrow: OF starts at 1 from the signed
-/// overflow of 2^63 - 1 + 1, which leaves CF at 0
+/// r -= a m, n > 0 digits a multiple of 4, the borrow, c subtracted at the
+/// bottom too: in each block of 4 digits the products are summed on the
+/// chain of ADC, the top half absorbing the last carry, then subtracted
+/// from r on the chain of SBB, whose borrow goes into the next block
 inline std::uint64_t subMul1Asm( std::uint64_t * r , const std::uint64_t * a ,
-                                 std::size_t n , std::uint64_t m )
+                                 std::size_t n , std::uint64_t m ,
+                                 std::uint64_t c = 0 )
 {
- std::uint64_t c , w0 , w1 , w2 , w3;
- const std::size_t n1 = n - 1;
- ADS_MUL_LOOP( ADS_SUBMUL_STEP ,
-               "movabs $0x7FFFFFFFFFFFFFFF, %[w0]\n\t" "add $1, %[w0]\n\t" ,
-               ADS_FIRST_SUB ,
-               ADS_FOLD_ADD "seto %b[w0]\n\t" "lea 1(%[w3]), %[w3]\n\t"
-               "sub %[w0], %[w3]" );
- return( w3 );
+ std::uint64_t i = n / 4 , l0 , l1 , l2 , l3 , h0 , h1;
+ __asm__ __volatile__(
+  "xor %k[h0], %k[h0]\n\t"
+  ".p2align 4\n"
+  "1:\n\t"
+  "mulx (%[a]), %[l0], %[h0]\n\t"
+  "mulx 8(%[a]), %[l1], %[h1]\n\t"
+  "adc %[c], %[l0]\n\t"
+  "adc %[h0], %[l1]\n\t"
+  "mulx 16(%[a]), %[l2], %[h0]\n\t"
+  "mulx 24(%[a]), %[l3], %[c]\n\t"
+  "adc %[h1], %[l2]\n\t"
+  "adc %[h0], %[l3]\n\t"
+  "adc $0, %[c]\n\t"
+  "mov (%[r]), %[h0]\n\t"
+  "sub %[l0], %[h0]\n\t"
+  "mov %[h0], (%[r])\n\t"
+  "mov 8(%[r]), %[h0]\n\t"
+  "sbb %[l1], %[h0]\n\t"
+  "mov %[h0], 8(%[r])\n\t"
+  "mov 16(%[r]), %[h0]\n\t"
+  "sbb %[l2], %[h0]\n\t"
+  "mov %[h0], 16(%[r])\n\t"
+  "mov 24(%[r]), %[h0]\n\t"
+  "sbb %[l3], %[h0]\n\t"
+  "mov %[h0], 24(%[r])\n\t"
+  "lea 32(%[a]), %[a]\n\t"
+  "lea 32(%[r]), %[r]\n\t"
+  "dec %[i]\n\t"
+  "jnz 1b\n\t"
+  "adc $0, %[c]"
+  : [ c ] "+&r" ( c ) , [ i ] "+&r" ( i ) , [ a ] "+&r" ( a ) ,
+    [ r ] "+&r" ( r ) , [ l0 ] "=&r" ( l0 ) , [ l1 ] "=&r" ( l1 ) ,
+    [ l2 ] "=&r" ( l2 ) , [ l3 ] "=&r" ( l3 ) , [ h0 ] "=&r" ( h0 ) ,
+    [ h1 ] "=&r" ( h1 )
+  : "d" ( m )
+  : "cc" , "memory" );
+ return( c );
  }
 
 /// r -= a m for n = K digits, 2 <= K <= 8, the steps of the loop in a
@@ -480,7 +513,7 @@ inline void mulRows( std::uint64_t * r , const std::uint64_t * a ,
 
 /// the digit s of the pass, the window ( P0 , ... , P4 ), and r_i added to
 /// P0 by RADD
-#define ADS_PASS_STEP( s , RADD , P0 , P1 , P2 , P3 , P4 )                   \
+#define ADS_PASS_STEP( s , RADD , STORE , P0 , P1 , P2 , P3 , P4 )           \
  "1" #s ":\n\t"                                                              \
  "mov " #s "*8(%[a]), %%rdx\n\t"                                             \
  "mov $0, %k[" #P4 "]\n\t"                                                   \
@@ -498,13 +531,21 @@ inline void mulRows( std::uint64_t * r , const std::uint64_t * a ,
  "adcx %[lo], %[" #P3 "]\n\t"                                                \
  "adox %[hi], %[" #P4 "]\n\t"                                                \
  "adcx %[z], %[" #P4 "]\n\t"                                                 \
- "mov %[" #P0 "], " #s "*8(%[r])\n\t"
+ STORE( s , P0 )
 
 #define ADS_PASS_RADD( s , P0 ) "adox " #s "*8(%[r]), %[" #P0 "]\n\t"
 #define ADS_PASS_RNONE( s , P0 )
+#define ADS_PASS_RNOT( s , P0 )                                              \
+ "mov " #s "*8(%[r]), %[lo]\n\t"                                             \
+ "not %[lo]\n\t"                                                             \
+ "adox %[lo], %[" #P0 "]\n\t"
+#define ADS_PASS_STORE( s , P0 ) "mov %[" #P0 "], " #s "*8(%[r])\n\t"
+#define ADS_PASS_STNOT( s , P0 )                                             \
+ "not %[" #P0 "]\n\t"                                                        \
+ "mov %[" #P0 "], " #s "*8(%[r])\n\t"
 
-/// the pass, r_i added by RADD
-#define ADS_PASS( RADD )                                                     \
+/// the pass, r_i added by RADD, the digits stored by STORE
+#define ADS_PASS( RADD , STORE )                                             \
  __asm__ __volatile__(                                                       \
   "xor %k[w0], %k[w0]\n\t"                                                   \
   "xor %k[w1], %k[w1]\n\t"                                                   \
@@ -521,11 +562,11 @@ inline void mulRows( std::uint64_t * r , const std::uint64_t * a ,
   ".long 10f-7b, 11f-7b, 12f-7b, 13f-7b, 14f-7b\n\t"                         \
   ".p2align 5\n"                                                             \
   "9:\n\t"                                                                   \
-  ADS_PASS_STEP( 0 , RADD , w0 , w1 , w2 , w3 , w4 )                         \
-  ADS_PASS_STEP( 1 , RADD , w1 , w2 , w3 , w4 , w0 )                         \
-  ADS_PASS_STEP( 2 , RADD , w2 , w3 , w4 , w0 , w1 )                         \
-  ADS_PASS_STEP( 3 , RADD , w3 , w4 , w0 , w1 , w2 )                         \
-  ADS_PASS_STEP( 4 , RADD , w4 , w0 , w1 , w2 , w3 )                         \
+  ADS_PASS_STEP( 0 , RADD , STORE , w0 , w1 , w2 , w3 , w4 )                 \
+  ADS_PASS_STEP( 1 , RADD , STORE , w1 , w2 , w3 , w4 , w0 )                 \
+  ADS_PASS_STEP( 2 , RADD , STORE , w2 , w3 , w4 , w0 , w1 )                 \
+  ADS_PASS_STEP( 3 , RADD , STORE , w3 , w4 , w0 , w1 , w2 )                 \
+  ADS_PASS_STEP( 4 , RADD , STORE , w4 , w0 , w1 , w2 , w3 )                 \
   "lea 40(%[a]), %[a]\n\t"                                                   \
   "lea 40(%[r]), %[r]\n\t"                                                   \
   "dec %[c]\n\t"                                                             \
@@ -553,8 +594,23 @@ inline void mulPass4( std::uint64_t * r , const std::uint64_t * a ,
                     8 * e ,
                pr = std::uint64_t( reinterpret_cast< std::uintptr_t >( r ) ) -
                     8 * e;
- if constexpr( add ) ADS_PASS( ADS_PASS_RADD );
- else ADS_PASS( ADS_PASS_RNONE );
+ if constexpr( add ) ADS_PASS( ADS_PASS_RADD , ADS_PASS_STORE );
+ else ADS_PASS( ADS_PASS_RNONE , ADS_PASS_STORE );
+ }
+
+/// r[ 0 , n ) = ~( ~r[ 0 , n ) + a b ) and r[ n , n + 4 ) the top 4 digits
+/// of ~r[ 0 , n ) + a b, n > 0: so that r - a b, r of n + 4 digits, is
+/// ( r_top - s ) b^n + r[ 0 , n ), s the top digits, r_top the old ones
+inline void subPass4( std::uint64_t * r , const std::uint64_t * a ,
+                      std::size_t n , const std::uint64_t * b )
+{
+ const std::uint64_t e = ( 5 - n % 5 ) % 5;
+ std::uint64_t w0 , w1 , w2 , w3 , w4 , lo , hi , c = ( n + e ) / 5 ,
+               pa = std::uint64_t( reinterpret_cast< std::uintptr_t >( a ) ) -
+                    8 * e ,
+               pr = std::uint64_t( reinterpret_cast< std::uintptr_t >( r ) ) -
+                    8 * e;
+ ADS_PASS( ADS_PASS_RNOT , ADS_PASS_STNOT );
  }
 
 /// r[ 0 , 8 ) = a[ 0 , 4 )^2: the products a_i a_j, i < j, at the places 1
@@ -1927,7 +1983,15 @@ inline BigInteger::Limb BigInteger::subMul1( Limb * r , const Limb * a ,
 #if ADS_BIGINT_ASM
  if( ( n >= 2 ) && ( n <= 8 ) )
   return( detail::subMul1Short( r , a , n , m ) );
- if( ( i = n ) ) c = detail::subMul1Asm( r , a , i , m );
+ if( n >= 4 ) {                             // the n mod 4 low digits first
+  for( ; i < n % 4 ; ++i ) {
+   Limb hi;
+   const Limb lo = detail::mulAdd( a[ i ] , m , c , 0 , hi ) , x = r[ i ];
+   r[ i ] = x - lo;
+   c = hi + ( x < lo );
+   }
+  return( detail::subMul1Asm( r + i , a + i , n - i , m , c ) );
+  }
 #endif
  for( ; i < n ; ++i ) {
   Limb hi;
@@ -2248,12 +2312,143 @@ inline void BigInteger::figures( Mag a , std::size_t pad , int base ,
   }
  }
 
+inline bool BigInteger::mulBand( Limb * r , const Limb * a , std::size_t na ,
+                                 const Limb * b , std::size_t nb ,
+                                 std::size_t s , std::size_t e )
+{
+#if ADS_BIGINT_ASM
+ if( ( nb < 4 ) || ( nb >= 2 * kKaratsuba ) || ( s < 6 ) ||
+     ( s + 6 > na ) )
+  return( false );
+ // by passes of 4 rows of b, each over the digits a_i with
+ // s - 5 - j <= i < e - j for its first row j: the place of a product
+ // a_i b_j, i + j, is in [ s - 5 , e + 3 ), the passes write r from the
+ // place s - 5 on, each its top 4 digits fresh, as in Algorithm M
+ std::size_t j = 0;
+ for( ; j + 4 <= nb ; j += 4 ) {
+  const std::size_t i0 = s - 5 > j ? s - 5 - j : 0 ,
+                    i1 = std::min( na , e - std::min( e , j ) );
+  if( i0 >= i1 ) continue;
+  if( j == 0 ) detail::mulPass4< false >( r + j + i0 , a + i0 , i1 - i0 , b );
+  else detail::mulPass4< true >( r + j + i0 , a + i0 , i1 - i0 , b + j );
+  }
+ for( ; j < nb ; ++j ) {
+  const std::size_t i0 = s - 5 > j ? s - 5 - j : 0 ,
+                    i1 = std::min( na , e - std::min( e , j ) );
+  if( i0 < i1 )
+   r[ j + i1 ] = addMul1( r + j + i0 , a + i0 , i1 - i0 , b[ j ] );
+  }
+ return( true );
+#else
+ (void) r; (void) a; (void) na; (void) b; (void) nb; (void) s; (void) e;
+ return( false );
+#endif
+ }
+
+inline void BigInteger::fracLeaf( Mag & f , std::size_t c , Limb P , int k ,
+                                  int base , bool up , char * out )
+{
+ // the chunks of k figures, the integer parts of f P , f P^2 , ...; with
+ // c' chunks left, ceil( c' log_b P ) + 2 digits of f are enough, the
+ // others dropped, f rounded up if up [see fracTree()]
+ const double lg = std::log2( double( P ) ) / 64;
+ Limb * x = f.data();
+ std::size_t p = f.size();
+ const Limb one = 1;
+ for( std::size_t i = 0 ; i < c ; ++i ) {
+  detail::putFigures( out + ( i + 1 ) * std::size_t( k ) ,
+                      mul1( x , x , p , P ) , k , base );
+  const std::size_t need = std::size_t( double( c - i - 1 ) * lg ) + 3;
+  if( need < p ) {
+   x += p - need;
+   p = need;
+   if( up ) addTo( x , p , &one , 1 );
+   }
+  }
+ }
+
+inline void BigInteger::fracTree( Mag & f , std::size_t j , int base , int k ,
+                                  Limb P , const std::vector< Mag > & pw ,
+                                  const std::vector< std::size_t > & zs ,
+                                  bool up , char * out )
+{
+ const std::size_t c = std::size_t( 1 ) << j;   // the chunks
+ if( c <= kFracLeaf ) {
+  fracLeaf( f , c , P , k , base , up , out );
+  return;
+  }
+ // f = ( X + theta ) / P^c, X the integer of the c chunks, 0 <= theta < 1,
+ // theta below 1 / 2 by a little if up, else above: then the integer parts
+ // of f P^i , i <= c, are those of X / P^{c-i}. With h = c / 2 chunks
+ // each half and P^h = pw b^z of q digits, the low half has the fraction
+ // of f P^h, the digits below the place p - z of f pw, the same theta;
+ // the high half has the top digits of f, its theta the fraction r of
+ // the low half: if r >= 1 / 2 it goes down, else up. The digits kept
+ // are q + 2, so that each rounding moves theta by less than 3 b^{-2}
+ const Mag & w = pw[ j - 1 ];
+ const std::size_t z = zs[ j - 1 ] , q = w.size() + z , p = f.size() ,
+                   pc = q + 2;
+ const Limb one = 1;
+ Mag t( p + w.size() + 4 );
+ const std::size_t s = p - z - pc;          // the window [ s , p - z )
+ Limb e = 1;                                // short by e at most
+ if( mulBand( t.data() , f.data() , p , w.data() , w.size() , s , p - z ) )
+  e = 3;                                    // 2 for the products left out
+ else mulP( t.data() , f.data() , p , w.data() , w.size() );
+ Mag lo( t.data() + s , t.data() + p - z );
+ if( up ) addTo( lo.data() , pc , &e , 1 );
+ const bool uph = ( lo.back() >> 63 ) == 0;
+ Mag hi( f.data() + p - pc , f.data() + p );
+ if( uph ) addTo( hi.data() , pc , &one , 1 );
+ const std::size_t h = std::size_t( k ) << ( j - 1 );
+ fracTree( hi , j - 1 , base , k , P , pw , zs , uph , out );
+ fracTree( lo , j - 1 , base , k , P , pw , zs , up , out + h );
+ }
+
+inline void BigInteger::fracFigures( const Mag & x , std::size_t j , int base ,
+                                     int k , Limb P ,
+                                     const std::vector< Mag > & pw ,
+                                     const std::vector< std::size_t > & zs ,
+                                     std::vector< Mag > & rf ,
+                                     std::string & out )
+{
+ // f = x / P^C, C = 2^j chunks, to p = q + 2 digits, from the reciprocal
+ // R = ceil( b^{q+p} / P^C ), once per j: x R < b^{q+p} x / P^C + x, whose
+ // top p digits plus 1 are no smaller than f b^p and larger by 2 at most
+ const std::size_t q = pw[ j ].size() + zs[ j ] , p = q + 2;
+ if( rf.size() <= j ) rf.resize( j + 1 );
+ if( rf[ j ].empty() ) {
+  Mag u( q + p - zs[ j ] + 1 , 0 );         // b^{q+p-z}
+  u.back() = 1;
+  auto [ r , rem ] = divModMag( u , pw[ j ] );
+  if( ! rem.empty() ) r = addMag( r , Mag{ 1 } );
+  rf[ j ] = std::move( r );
+  }
+ const Mag & R = rf[ j ];
+ Mag t( std::max( x.size() + R.size() , q + p ) , 0 );
+ if( ! x.empty() )
+  mulP( t.data() , x.data() , x.size() , R.data() , R.size() );
+ Mag f( t.data() + q , t.data() + q + p );
+ const Limb one = 1;
+ addTo( f.data() , p , &one , 1 );
+ const std::size_t o = out.size();         // the C k figures
+ out.resize( o + ( std::size_t( k ) << j ) );
+ fracTree( f , j , base , k , P , pw , zs , true , out.data() + o );
+ }
+
 inline void BigInteger::toFigures( const Mag & x , std::size_t pad , int base ,
                                    const std::vector< Mag > & pw ,
                                    const std::vector< std::size_t > & zs ,
                                    int k , std::vector< Mag > & rc ,
-                                   std::string & out )
+                                   std::vector< Mag > & rf ,
+                                   std::string & out , std::size_t j )
 {
+ if( ( j != npos ) && ( j >= kFracLevel ) &&
+     ( pw[ j ].size() + zs[ j ] <= kConvertF ) ) {
+  fracFigures( x , j , base , k , detail::bigBase( base ).first , pw , zs ,
+               rf , out );
+  return;
+  }
  if( x.size() < kConvert ) {
   figures( x , pad , base , out );
   return;
@@ -2271,12 +2466,14 @@ inline void BigInteger::toFigures( const Mag & x , std::size_t pad , int base ,
  std::copy( rh.data() , rh.data() + rh.size() , r.data() + z );
  trim( r );
  const std::size_t low = std::size_t( k ) << i;   // the figures of r
- if( ( q.size() < kConvert ) && ( r.size() < kConvert ) ) {   // together
+ if( ( q.size() < kConvert ) && ( r.size() < kConvert ) &&
+     ( i < kFracLevel ) ) {                 // together
   figures( q , pad > low ? pad - low : 0 , base , out , &r , low );
   return;
   }
- toFigures( q , pad > low ? pad - low : 0 , base , pw , zs , k , rc , out );
- toFigures( r , low , base , pw , zs , k , rc , out );
+ toFigures( q , pad > low ? pad - low : 0 , base , pw , zs , k , rc , rf ,
+            out , npos );
+ toFigures( r , low , base , pw , zs , k , rc , rf , out , i );
  }
 
 inline std::string BigInteger::toString( int base ) const
@@ -2314,20 +2511,28 @@ inline std::string BigInteger::toString( int base ) const
   const auto [ P , k ] = detail::bigBase( base );
   // the powers up to half the digits, pw[ i ] b^{zs[ i ]}, without the low
   // digits 0 that those of the even bases have, squared so, and their
-  // reciprocals, once
-  std::vector< Mag > pw( 1 , Mag{ P } );
-  std::vector< std::size_t > zs( 1 , 0 );
-  while( 2 * ( pw.back().size() + zs.back() ) - 1 <= ( n + 1 ) / 2 ) {
-   Mag p = mulMag( pw.back() , pw.back() );
+  // reciprocals, kept per thread and base for the next conversions
+  struct Powers {
+   std::vector< Mag > pw , rc , rf;
+   std::vector< std::size_t > zs;
+   };
+  thread_local Powers kept[ 37 ];
+  Powers & c = kept[ base ];
+  if( c.pw.empty() ) {
+   c.pw.assign( 1 , Mag{ P } );
+   c.zs.assign( 1 , 0 );
+   }
+  while( 2 * ( c.pw.back().size() + c.zs.back() ) - 1 <= ( n + 1 ) / 2 ) {
+   Mag p = mulMag( c.pw.back() , c.pw.back() );
    std::size_t z = 0;
    while( p[ z ] == 0 ) ++z;
-   if( p.size() + 2 * zs.back() > ( n + 1 ) / 2 ) break;
-   zs.push_back( 2 * zs.back() + z );
-   pw.push_back( z ? Mag( p.data() + z , p.data() + p.size() )
-                   : std::move( p ) );
+   if( p.size() + 2 * c.zs.back() > ( n + 1 ) / 2 ) break;
+   c.zs.push_back( 2 * c.zs.back() + z );
+   c.pw.push_back( z ? Mag( p.data() + z , p.data() + p.size() )
+                     : std::move( p ) );
    }
-  std::vector< Mag > rc( pw.size() );
-  toFigures( f_d , 0 , base , pw , zs , k , rc , out );
+  c.rc.resize( c.pw.size() );
+  toFigures( f_d , 0 , base , c.pw , c.zs , k , c.rc , c.rf , out , npos );
   }
  ADS_AUDIT( out == toStringSchool( base ) );
  return( out );
@@ -2899,33 +3104,35 @@ inline void BigInteger::mulFNTT( Limb * r , const Limb * a , std::size_t na ,
   O::store( r3 + i , O::pos( N3::template mulmod< O >(
                                        O::sub( s , y1 ) , I3 ) , P3 ) );
   }
- // the coefficient i at the bit 64 i, the carry in c and e, below 2^192
+ // the coefficient i, at the bit 64 i, is y1 + p1 t2 + p1 p2 t3, each of
+ // the three below 2^50 and so one digit: the product is the sum of the
+ // numbers Y1, p1 T2 and p1 p2 T3 of those digits, by the products by one
+ // digit, the second digit of p1 p2 one place up; the m coefficients give
+ // m + 2 digits, the top two 0 unless cyclic, where they wrap to the bottom
  const U p12 = U( p1 ) * p2;
  const std::uint64_t p12lo = std::uint64_t( p12 ) ,
                      p12hi = std::uint64_t( p12 >> 64 );
- const std::size_t nr = cyclic ? n : na + nb;
- U c = 0;
- std::uint64_t e = 0;
- for( std::size_t i = 0 ; i < nr ; ++i ) {
-  if( cyclic || ( i + 1 < nr ) ) {
-   const std::uint64_t y1 = std::uint64_t( r1[ i ] ) ,
-                       t2 = std::uint64_t( r2[ i ] ) ,
-                       t3 = std::uint64_t( r3[ i ] );
-   const U x = U( p1 ) * t2 + y1 + U( p12lo ) * t3 , z = U( p12hi ) * t3;
-   c += x;
-   e += c < x;
-   const U zl = U( std::uint64_t( z ) ) << 64;
-   c += zl;
-   e += ( c < zl ) + std::uint64_t( z >> 64 );
-   }
-  r[ i ] = Limb( c );
-  c = ( c >> 64 ) | ( U( e ) << 64 );
-  e = 0;
+ const std::size_t m = cyclic ? n : na + nb - 1;
+ thread_local std::vector< Limb , detail::NoInit< Limb > > keptW;
+ std::vector< Limb , detail::NoInit< Limb > > ownW;
+ auto & W = m <= ( std::size_t( 1 ) << 17 ) ? keptW : ownW;
+ if( W.size() < 2 * m + 2 ) W.resize( 2 * m + 2 );
+ Limb * const x = W.data() , * const t = x + m + 2;
+ for( std::size_t i = 0 ; i < m ; ++i ) x[ i ] = std::uint64_t( r2[ i ] );
+ x[ m ] = mul1( x , x , m , p1 );
+ for( std::size_t i = 0 ; i < m ; ++i ) t[ i ] = std::uint64_t( r3[ i ] );
+ const Limb c = addMul1( x , t , m , p12lo );
+ x[ m ] += c;
+ x[ m + 1 ] = Limb( x[ m ] < c ) + addMul1( x + 1 , t , m , p12hi );
+ for( std::size_t i = 0 ; i < m ; ++i ) t[ i ] = std::uint64_t( r1[ i ] );
+ addTo( x , m + 2 , t , m );
+ if( ! cyclic ) {
+  std::copy( x , x + m + 1 , r );
+  return;
   }
- if( cyclic ) {                             // c b^n = c modulo b^n - 1
-  const Limb t[ 2 ] = { Limb( c ) , Limb( c >> 64 ) };
-  for( Limb k = addTo( r , n , t , 2 ) ; k ; k = addTo( r , n , &k , 1 ) ) {}
-  }
+ std::copy( x , x + n , r );                // x[ n , n + 2 ) b^n wraps
+ for( Limb k = addTo( r , n , x + n , 2 ) ; k ; )
+  k = addTo( r , n , &k , 1 );
  }
 
 inline void BigInteger::mulCyclic( Limb * r , const Limb * a , std::size_t na ,
@@ -3159,6 +3366,69 @@ inline BigInteger::Limb BigInteger::divBase( Limb * a , std::size_t m ,
   }
  const Limb d1 = b[ n - 1 ] , d0 = b[ n - 2 ] ,
             v = detail::reciprocal2( d1 , d0 );
+#if ADS_BIGINT_ASM
+ // the digits of the quotient 4 at a time: the 4 digits Q of the window
+ // a[ j - 4 , j + n ), below b b^4, from its top t + 4 digits by the top
+ // t digits of b, t = 6: no smaller than Q, and larger by 1 at most
+ // (by 1 + Q / b^{t-1} < 2), then the window less Q b by a pass of 4 rows
+ // [see subPass4()], and b added back while it is negative; if cut, the
+ // window and b cut to the L = j + 1 leading digits that the digit j - 1
+ // takes [see below], Q of b^4 or more for the cut b sending back 2
+ for( ; m >= 4 ; m -= 4 ) {
+  constexpr std::size_t t = 6;
+  const std::size_t L = cut ? std::min( n , m + 1 ) : n , o = n - L;
+  if( L < kDivBlock ) break;
+  Limb * const x = a + m - 4 + o;           // the window
+  const Limb * const y = b + o;
+  Limb w[ t + 4 ] , Q[ 4 ] , T[ 4 ] , S[ 4 ];
+  const Limb * const D = b + n - t;
+  std::copy( x + L - t , x + L + 4 , w );
+  bool full = cmpN( w + 4 , D , t ) >= 0;   // then Q = b^4 - 1
+  for( std::size_t k = 4 ; ! full && k-- > 0 ; ) {
+   Limb * const z = w + k;                  // Algorithm D on t digits
+   const Limb u2 = z[ t ] , u1 = z[ t - 1 ] , u0 = z[ t - 2 ];
+   Limb qh;
+   if( ( u2 == d1 ) && ( u1 == d0 ) ) {     // b - 1, rarely
+    qh = ~Limb( 0 );
+    if( subMul1( z , D , t , qh ) > u2 ) {
+     --qh;
+     addN( z , z , t , D , t );
+     }
+    }
+   else {
+    Limb r1 , r0;
+    qh = detail::div3by2( u2 , u1 , u0 , d1 , d0 , v , r1 , r0 );
+    const Limb c = subMul1( z , D , t - 2 , qh ) , c1 = r0 < c ,
+               c2 = r1 < c1;
+    z[ t - 2 ] = r0 - c;
+    z[ t - 1 ] = r1 - c1;
+    if( c2 ) {
+     --qh;
+     addN( z , z , t , D , t );
+     }
+    }
+   z[ t ] = 0;
+   Q[ k ] = qh;
+   }
+  if( full ) {
+   if( cut ) return( 2 );
+   std::fill( Q , Q + 4 , ~Limb( 0 ) );
+   }
+  std::copy( x + L , x + L + 4 , T );
+  detail::subPass4( x , y , L , Q );
+  std::copy( x + L , x + L + 4 , S );
+  // the top D = T - S of the window less Q b, -1 or 0 since the window
+  // is in [ -b , b ): S - T is 0 or 1
+  const Limb br = subN( S , S , 4 , T , 4 ) , one = 1;
+  ADS_INVARIANT( ! br && ! S[ 1 ] && ! S[ 2 ] && ! S[ 3 ] && ( S[ 0 ] < 2 ) );
+  for( Limb d = S[ 0 ] ; d ; ) {            // b back, rarely
+   subFrom( Q , 4 , &one , 1 );
+   d -= addTo( x , L , y , L );
+   }
+  std::fill( x + L , x + L + 4 , 0 );
+  std::copy( Q , Q + 4 , q + m - 4 );
+  }
+#endif
  for( std::size_t j = m ; j-- > 0 ; ) {     // D2-D7
   // the digits of b at work, all, or the j + 2 leading ones if cut
   const std::size_t L = cut ? std::min( n , j + 2 ) : n , o = n - L;
@@ -3239,21 +3509,61 @@ inline void BigInteger::recip( Limb * x , const Limb * a , std::size_t n )
  // the reciprocal Xh = b^h + xh of the top h digits, then
  // X = Xh b^l + Xh ( b^{n+h} - a Xh ) / b^{2h}, Newton's step
  const std::size_t l = ( n - 1 ) / 2 , h = n - l;
- Mag xh( h + 1 ) , T( n + h + 1 ) , U( 3 * h + 1 );
+ Mag xh( h + 1 ) , U( 2 * h + 2 );
  recip( xh.data() , a + l , h );
  xh[ h ] = 1;
- mulP( T.data() , a , n , xh.data() , h + 1 );
+ // t = b^{n+h} - a Xh, below 2 a < b^{n+1} once Xh is not too large: of T
+ // = a Xh only the low n + 1 digits matter, or T modulo b^N - 1 for any
+ // N > n + 1, by a cyclic convolution of N terms where the NTT gives it
  const Limb one = 1;
- while( T[ n + h ] ) {                      // at most twice
-  subFrom( xh.data() , h + 1 , &one , 1 );
-  subFrom( T.data() , n + h + 1 , a , n );
+ Mag t;
+#if ADS_BIGINT_FNTT
+ const std::size_t N = std::max( detail::length( n ) , std::size_t( 16 ) );
+ if( ( n >= kFFT ) && ( N <= ( std::size_t( 1 ) << 21 ) ) ) {
+  t.resize( N + 1 );
+  mulCyclic( t.data() , a , n , xh.data() , h + 1 , N );
+  // t' = b^e - T modulo b^N - 1, e = n + h modulo N: the complement of
+  // T, b^N - 1 - T, plus b^e, the carry out of the top back to the bottom
+  for( std::size_t i = 0 ; i < N ; ++i ) t[ i ] = ~t[ i ];
+  const std::size_t e = ( n + h ) % N;
+  for( Limb k = addTo( t.data() + e , N - e , &one , 1 ) ; k ; )
+   k = addTo( t.data() , N , &k , 1 );
+  // t is t', t' + b^N - 1 or, Xh too large, t' - b^N + 1 < 0; the three
+  // differ in the lowest digit, that of t known as -a_0 xh_0 modulo b
+  Limb t0 = Limb( 0 ) - a[ 0 ] * xh[ 0 ];
+  for( ; ; ) {
+   if( t[ 0 ] == t0 ) {
+    t[ N ] = 0;
+    break;
+    }
+   if( t[ 0 ] - 1 == t0 ) {                 // t' + b^N - 1
+    subFrom( t.data() , N , &one , 1 );
+    t[ N ] = 1;
+    break;
+    }
+   subFrom( xh.data() , h + 1 , &one , 1 );   // Xh - 1, T - a, t + a
+   for( Limb k = addTo( t.data() , N , a , n ) ; k ; )
+    k = addTo( t.data() , N , &k , 1 );
+   t0 += a[ 0 ];
+   }
   }
- Mag t( n + h , 0 );                        // b^{n+h} - T, T > 0
- subN( t.data() , t.data() , n + h , T.data() , n + h );
- mulP( U.data() , t.data() + l , 2 * h , xh.data() , h + 1 );
+ else
+#endif
+ {
+  Mag T( n + h + 1 );
+  mulP( T.data() , a , n , xh.data() , h + 1 );
+  while( T[ n + h ] ) {                     // at most twice
+   subFrom( xh.data() , h + 1 , &one , 1 );
+   subFrom( T.data() , n + h + 1 , a , n );
+   }
+  t.assign( n + 1 , 0 );                    // b^{n+h} - T modulo b^{n+1}
+  subN( t.data() , t.data() , n + 1 , T.data() , n + 1 );
+  }
+ // X = Xh b^l + Xh t / b^{2h}, of t its h + 1 digits from the place l
+ mulP( U.data() , t.data() + l , h + 1 , xh.data() , h + 1 );
  Mag X( n + 1 , 0 );                        // b^n <= X < 2 b^n
  std::copy( xh.begin() , xh.end() , X.begin() + std::ptrdiff_t( l ) );
- addTo( X.data() , n + 1 , U.data() + 2 * h - l , n + 1 );
+ addTo( X.data() , n + 1 , U.data() + 2 * h - l , l + 2 );
  std::copy( X.begin() , X.begin() + std::ptrdiff_t( n ) , x );
  }
 
@@ -3449,6 +3759,25 @@ inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
    trim( vl );
    if( compareMag( x , mulMag( q , vl ) ) < 0 ) q = subMag( q , Mag{ 1 } );
    }
+  return( std::pair( std::move( q ) , Mag() ) );
+  }
+ if( ! rem && ! school && ( v.size() >= kDivQuot ) &&
+     ( v.size() < kNewton ) && ( u.size() + 1 >= 2 * v.size() ) ) {
+  // the quotient alone in two halves: the high one, of m - k digits, with
+  // its remainder r1, then the low one, of k digits, alone, the quotient
+  // of r1 b^k + ( u mod b^k ) < v b^k by the top digits of v [see above]
+  const std::size_t m = u.size() - v.size() + 1 , k = m / 2;
+  auto [ q1 , r1 ] = divModMag( Mag( u.data() + k , u.data() + u.size() ) ,
+                                v , false , nullptr , true );
+  Mag w( k + r1.size() );
+  std::copy( u.data() , u.data() + k , w.data() );
+  std::copy( r1.begin() , r1.end() , w.data() + k );
+  trim( w );
+  const Mag q0 = divModMag( w , v , false , nullptr , false ).first;
+  Mag q( k + q1.size() , 0 );
+  std::copy( q0.begin() , q0.end() , q.data() );
+  std::copy( q1.begin() , q1.end() , q.data() + k );
+  trim( q );
   return( std::pair( std::move( q ) , Mag() ) );
   }
  if( ( v.size() < kDivShort ) && ( u.size() < 2 * kDivShort ) ) {
