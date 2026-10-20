@@ -34,9 +34,23 @@
  * node apart from the children, so that any string, null bytes included,
  * can be a key. A search, an insertion and a removal take \f$ O( k ) \f$
  * time for a key of k bytes, whatever the number of the keys, with a
- * branch of \f$ O( 1 ) \f$ per node; the nodes take \f$ O( n ) \f$ words
- * for n keys, since every node branches or ends a key, and at most 52
- * bytes per key on the worst case of the paper (the leaves aside).
+ * branch of \f$ O( 1 ) \f$ per node; since every node but the root has at
+ * least two things below it among its children and its own key, the nodes
+ * are at most n - 1 for n keys, and the leaves n, \f$ \lceil ( 16 + k ) /
+ * 16 \rceil \f$ slots of 16 bytes for a key of k bytes and a value of 8.
+ *
+ * A search descends with the byte of the key that follows each node, and
+ * prefetches the lines of the next node that it reads for that byte
+ * whatever the layout of the node (its header and the keys of a Node16,
+ * the place of the byte in the index of a Node48 or among the children of
+ * a Node256) while the first line is on its way. An insertion first
+ * descends as a search; if no prefix on the way was longer than its 8
+ * bytes, the way is the one of the key, and the key goes where the search
+ * stopped, in one pass; otherwise the search ends at a leaf l below the
+ * last node that the key reaches, and a second pass goes down again to the
+ * node or the leaf whose prefix parts from the key at the first byte c
+ * where the key and l differ, the whole prefixes of the nodes on the way
+ * being those of l, with no search of a leaf below each node.
  *
  * The iterators visit the pairs ( key , value ) by increasing keys (a
  * key before the longer ones that begin with it, the children of a node
@@ -44,9 +58,14 @@
  * reference to its value, with a stack of the nodes on the way; forEach()
  * and forPrefix() visit all the pairs, and those whose key begins with a
  * prefix, by a recursion with no stack, and find() gives a value to change
- * in place. An insertion or a removal invalidates the iterators. The
- * internal nodes come from pools [see ObjectPool.h] on huge pages, the
- * leaves from the allocator.
+ * in place; the visits prefetch the children of a Node4 or of a Node16, and
+ * the iterators those of the next sibling too, so that the leaves of a
+ * subtree are on their way while the one before is visited. An insertion
+ * or a removal invalidates the iterators. The internal nodes come from
+ * pools [see ObjectPool.h] on huge pages, the leaves from slabs of 16 to
+ * 512 bytes in steps of 16, each size with the list of its free slots, cut
+ * from blocks that double up to 2 MB (the larger leaves come from the
+ * allocator), so that a leaf costs no call to the allocator.
  *
  * The contracts [see Contract.h]: after insert() the key is there and
  * after remove() it is not; the invariant is that the keys of the leaves
@@ -59,6 +78,9 @@
  * \see V. Leis, A. Kemper, T. Neumann, The adaptive radix tree: ARTful
  *      indexing for main-memory databases, Proceedings of ICDE 2013,
  *      38-49, 2013, doi:10.1109/ICDE.2013.6544812
+ * \see J. Bonwick, The slab allocator: an object-caching kernel memory
+ *      allocator, Proceedings of the USENIX Summer 1994 Technical
+ *      Conference, 87-98, 1994
  * \see D. R. Morrison, PATRICIA: practical algorithm to retrieve
  *      information coded in alphanumeric, Journal of the ACM 15(4),
  *      514-534, 1968, doi:10.1145/321479.321481

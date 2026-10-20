@@ -27,8 +27,12 @@
  * segments are themselves approximated, with an error \f$ \epsilon_r \f$,
  * by the segments of a level above, and so on up to a single segment: for
  * m segments at the level below, a level has at most \f$ m / ( 2
- * \epsilon_r ) \f$ of them, the levels are \f$ O( \log_{\epsilon_r} m )
- * \f$, and the index takes \f$ O( m ) \f$ words, m at most \f$ n / ( 2
+ * \epsilon_r ) \f$ of them (a segment of the optimal approximation covers at
+ * least \f$ 2 \epsilon \f$ points, since the horizontal line through the
+ * middle of any \f$ 2 \epsilon \f$ consecutive ranks is within the error),
+ * the levels are \f$ 1 + \lceil \log_{2 \epsilon_r} m \rceil \f$ at most,
+ * and the index takes 28 bytes per segment (its first key, the two doubles of
+ * its line and its first place), m at most \f$ n / ( 2
  * \epsilon ) \f$ and much fewer on regular keys.
  *
  * A search starts from the segment at the top, and at each level the
@@ -39,11 +43,11 @@
  * at the last level the prediction is the place of the answer within \f$
  * \pm ( \epsilon + 2 ) \f$, whose lines of cache are all prefetched at
  * once, so that their misses overlap, and searched in the same way: \f$
- * O( \log_{\epsilon_r} m + \log \epsilon ) \f$ time. The items are a copy
- * on huge pages [see HugePageAllocator.h], so that the window of a search
- * costs no miss of the TLB of its own. On repeated keys, whose places a
- * line cannot all approximate, the search goes on past the window by
- * galloping. The keys are mapped to integers of 64 bits in the same order
+ * O( \log \epsilon_r \log_{2 \epsilon_r} m + \log \epsilon ) \f$ time.
+ * The items are a copy on huge pages [see HugePageAllocator.h], so that the
+ * window of a search costs no miss of the TLB of its own. On repeated keys,
+ * whose places a line cannot all approximate, the search goes on past the
+ * window by galloping. The keys are mapped to integers of 64 bits in the same order
  * (the signed by flipping the top bit, the floating by their bits), so that
  * the hulls are kept with exact products of 128 bits.
  *

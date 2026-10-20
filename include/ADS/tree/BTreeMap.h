@@ -50,10 +50,15 @@
  * so that the two end up balanced; a merge may leave the parent short in
  * turn, and a root with a single child gives way to it. Hence every node
  * but those of the leftmost and of the rightmost paths, and those the
- * removals have not touched since a split, is at least half full, and the
- * height is \f$ O( \log n ) \f$; all the operations take \f$ O( ( L + I )
- * \log n ) \f$ time, a few lines of cache per level. build() loads a
- * sorted sequence bottom up in O( n ), all the nodes full.
+ * removals have not touched since a split, is at least half full, so that,
+ * but for the two nodes of each level on those paths, a level of internal
+ * nodes has at least \f$ \lceil I / 2 \rceil + 1 \f$ times the nodes of the
+ * level above and the leaves hold at least \f$ \lceil L / 2 \rceil \f$
+ * pairs each: the height of a tree of n pairs is about \f$ 1 + \log_{\lceil
+ * I / 2 \rceil + 1} ( n / \lceil L / 2 \rceil ) \f$ at worst (5 levels for
+ * a million pairs of 64 bits, L = I = 32), and all the operations take \f$
+ * O( ( L + I ) \log n ) \f$ time, a few lines of cache per level. build()
+ * loads a sorted sequence bottom up in O( n ), all the nodes full.
  *
  * The iterators are a leaf, a place in it and the parent of the leaf,
  * bidirectional, on constant pairs of references ( key , value ); find()

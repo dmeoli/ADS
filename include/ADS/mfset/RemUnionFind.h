@@ -9,7 +9,9 @@
  * sequential algorithms of union and find.
  *
  * The parents are a vector of 32-bit integers, and a parent is never
- * smaller than its child, p[ x ] >= x, the roots having p[ x ] = x: the
+ * smaller than its child, \f$ p[ x ] \ge x \f$ for every x, the roots
+ * having \f$ p[ x ] = x \f$ (so that every path increases strictly to its
+ * root, and a climb ends after at most n steps): the
  * union by index takes the place of the union by rank, with no array of
  * ranks. merge( x , y ) climbs the two paths from x and y together, always
  * from the one whose parent is smaller: if that one is a root it is linked
@@ -42,15 +44,11 @@
  * \see A. Goel, S. Khanna, D. H. Larkin, R. E. Tarjan, Disjoint set union
  *      with randomized linking, Proceedings of SODA 2014, 1005-1017, 2014,
  *      doi:10.1137/1.9781611973402.75
- * \see E. W. Dijkstra, A Discipline of Programming, Prentice-Hall, 1976,
- *      chapter 23 (the algorithm of Rem)
+ * \see E. W. Dijkstra, A Discipline of Programming, Prentice-Hall, 1976
+ *      (the chapter on the algorithm of Rem for the equivalence classes)
  * \see R. E. Tarjan, J. van Leeuwen, Worst-case analysis of set union
  *      algorithms, Journal of the ACM 31(2), 245-281, 1984,
  *      doi:10.1145/62.2160
- * \see S. Dhulipala, C. Hong, J. Shun, ConnectIt: a framework for static
- *      and incremental parallel graph connectivity algorithms, Proceedings
- *      of the VLDB Endowment 14(4), 653-667, 2020,
- *      doi:10.14778/3436905.3436921
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

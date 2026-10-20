@@ -13,10 +13,12 @@
  * and the scans of min(), max() and forEach() go a word at a time: the
  * same loops on the N booleans, 64 of them in one operation of the
  * processor, which leaves the bounds unchanged and divides the time by up
- * to 64; the size of a result is the count of its bits, with AVX2 by the
- * method of Muła, Kurz and Lemire (a shuffle of bytes looks up the bits of
- * each half byte, and a sum of absolute differences adds the bytes), 4
- * words at a time.
+ * to 64 (\f$ \lceil N / 64 \rceil \f$ operations on words for a set of
+ * dimension N); the size of a result is the count of its bits, in the same
+ * pass as the operation, with AVX2 by the method of Muła, Kurz and Lemire
+ * (a shuffle of bytes looks up the bits of each half byte, and a sum of
+ * absolute differences adds the bytes), 4 words at a time, and the words of
+ * a result are written once, not filled with zeros before.
  *
  * The contracts [see Contract.h]: N >= 0, an item inserted is in
  * [ 0 , N ), and each operation of two sets gives, item by item, what its
@@ -25,6 +27,9 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 8.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
+ * \see W. Muła, N. Kurz, D. Lemire, Faster population counts using AVX2
+ *      instructions, The Computer Journal 61(1), 2018,
+ *      doi:10.1093/comjnl/bxx046
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
