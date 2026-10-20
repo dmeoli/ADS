@@ -71,6 +71,8 @@ if (ADS_BENCHMARKS)
     find_package(Threads REQUIRED)
     foreach (b sort dictionaries priority sequences bignum fft hashing search
                suffix edit numeric queues concurrent geometry matrix sparse)
+    foreach (b sort dictionaries priority sequences bignum fft hashing
+               memory)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -140,6 +142,36 @@ if (ADS_BENCHMARKS)
         target_compile_definitions(bench-edit PRIVATE ADS_HAS_RAPIDFUZZ)
         target_include_directories(bench-edit PRIVATE ${RAPIDFUZZ_INCLUDE})
     endif ()
+    # the competitors of bench-priority: tlx and radix-heap from the
+    # directory of their sources ADS_PRIORITY
+    set(ADS_PRIORITY "" CACHE PATH "the sources of the priority queues")
+    if (ADS_PRIORITY)
+        target_include_directories(bench-priority SYSTEM PRIVATE
+                                   ${ADS_PRIORITY}/tlx
+                                   ${ADS_PRIORITY}/radix-heap)
+        target_sources(bench-priority PRIVATE
+                       ${ADS_PRIORITY}/tlx/tlx/die/core.cpp)
+    endif ()
+    # the competitors of bench-memory: mimalloc (without the override of
+    # malloc) and jemalloc (with the prefix je_) from their prefixes
+    set(ADS_MIMALLOC "" CACHE PATH "the prefix of mimalloc")
+    if (ADS_MIMALLOC)
+        target_compile_definitions(bench-memory PRIVATE ADS_HAS_MIMALLOC)
+        target_include_directories(bench-memory PRIVATE
+                                   ${ADS_MIMALLOC}/include/mimalloc-2.1)
+        target_link_libraries(bench-memory PRIVATE
+                     ${ADS_MIMALLOC}/lib/mimalloc-2.1/libmimalloc.a)
+    endif ()
+    set(ADS_JEMALLOC "" CACHE PATH "the prefix of jemalloc")
+    if (ADS_JEMALLOC)
+        target_compile_definitions(bench-memory PRIVATE ADS_HAS_JEMALLOC)
+        target_include_directories(bench-memory PRIVATE
+                                   ${ADS_JEMALLOC}/include)
+        target_link_libraries(bench-memory PRIVATE
+                              ${ADS_JEMALLOC}/lib/libjemalloc.a
+                              ${CMAKE_DL_LIBS})
+    endif ()
+    target_link_libraries(bench-memory PRIVATE Threads::Threads)
 endif ()
 
 # ----- install and export, for find_package(ADS) and pkg-config ---------- #
