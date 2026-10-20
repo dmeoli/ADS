@@ -26,6 +26,13 @@ namespace ADS {
 
 namespace detail {
 
+/// a pointer whose array no other pointer of the function reaches
+#if defined( __GNUC__ ) || defined( __clang__ ) || defined( _MSC_VER )
+ #define ADS_SAIS_RESTRICT __restrict
+#else
+ #define ADS_SAIS_RESTRICT
+#endif
+
 /// how far ahead the scans of the induction prefetch the text; on the
 /// large alphabets the buckets are prefetched half as far and the places
 /// they point to a quarter
@@ -35,6 +42,13 @@ inline constexpr std::ptrdiff_t saisAhead = 64;
 /// the places these point to prefetched too, and their LMS places are
 /// set with a branch, which touches a bucket only for an LMS place
 inline constexpr std::ptrdiff_t saisSmall = 1024;
+
+/// x if not negative, 0 otherwise, with no branch
+template< class S >
+inline S saisClamp( S x )
+{
+ return( x & ~( x >> ( 8 * sizeof( S ) - 1 ) ) );
+ }
 
 /// prefetches the line of p for a read
 inline void saisPrefetch( const void * p )
@@ -68,98 +82,115 @@ void saisBuckets( const S * size , S * B , S K , bool tails )
   }
  }
 
+/// the move of the entry h by the scan from left to right
+template< class C , class S >
+inline void saisMoveL( const C * ADS_SAIS_RESTRICT T ,
+                       S * ADS_SAIS_RESTRICT SA , S * ADS_SAIS_RESTRICT B ,
+                       S h )
+{
+ S q = SA[ h ];
+ SA[ h ] = ~q;
+ if( q > 0 ) {
+  --q;
+  const S c0 = S( T[ q ] );
+  // complemented by an XOR with all ones, with no branch
+  SA[ B[ c0 ]++ ] = q ^ -S( S( T[ q - ( q > 0 ) ] ) < c0 );
+  }
+ }
+
+/// the move of the entry h by the scan from right to left
+template< class C , class S >
+inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
+                       S * ADS_SAIS_RESTRICT SA , S * ADS_SAIS_RESTRICT B ,
+                       S h )
+{
+ const S q = SA[ h ];
+ if( q > 0 ) {
+  const S p = q - 1;
+  const S c0 = S( T[ p ] );
+  SA[ --B[ c0 ] ] = p ^ -( S( p == 0 ) | S( S( T[ p - ( p > 0 ) ] ) > c0 ) );
+  }
+ else
+  SA[ h ] = ~q;
+ }
+
 /// the scan from left to right: the L-suffixes, each stored complemented
 /// if the suffix before it is of type S, and every entry scanned
-/// complemented; in the first induction the entries moved are cleared
-/// instead. Two entries a step, the text before the entries D ahead
+/// complemented. Two entries a step, the text before the entries D ahead
 /// prefetched, and on the large alphabets also their buckets (D / 2
-/// ahead) and the places these point to (D / 4 ahead)
-template< bool small , bool first , class C , class S >
-void saisInduceL( const C * T , S * SA , S n , const S * size , S * B ,
-                  S K )
+/// ahead) and the places these point to (D / 4 ahead); the arrays are
+/// declared not to overlap (restrict), so that the loads of the next
+/// entries need not wait for the stores of the moves
+template< bool small , class C , class S >
+void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
+                  S n , const S * size , S * ADS_SAIS_RESTRICT B , S K )
 {
  constexpr S D = S( saisAhead );
  saisBuckets( size , B , K , false );
- S j = n - 1;
- SA[ B[ T[ j ] ]++ ] = ( j > 0 ) && ( T[ j - 1 ] < T[ j ] ) ? ~j : j;
- // an entry: the suffix before it moved to the head of its bucket
- auto move = [ & ]( S i ) {
-  S q = SA[ i ];
-  SA[ i ] = first && ( q > 0 ) ? 0 : ~q;
-  if( q > 0 ) {
-   --q;
-   const S c0 = S( T[ q ] );
-   SA[ B[ c0 ]++ ] = ( q > 0 ) && ( S( T[ q - 1 ] ) < c0 ) ? ~q : q;
-   }
-  };
+ {
+  const S j = n - 1;
+  SA[ B[ T[ j ] ]++ ] = ( j > 0 ) && ( T[ j - 1 ] < T[ j ] ) ? ~j : j;
+  }
  S i = 0;
- for( ; i + D + 1 < n ; i += 2 ) {     // two at a time, no checks
+ for( ; i + 2 * D + 1 < n ; i += 2 ) { // two at a time, no checks
+  saisPrefetchW( SA + i + 2 * D );
   const S a = SA[ i + D ] , b = SA[ i + D + 1 ];
-  saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );
-  saisPrefetch( T + ( b > 0 ? b - 1 : 0 ) );
+  saisPrefetch( T + saisClamp( a - 2 ) );
+  saisPrefetch( T + saisClamp( a - 1 ) );
+  saisPrefetch( T + saisClamp( b - 2 ) );
+  saisPrefetch( T + saisClamp( b - 1 ) );
   if constexpr( ! small ) {
    const S e = SA[ i + D / 2 ] , f = SA[ i + D / 4 ];
-   saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
-   saisPrefetchW( SA + B[ T[ f > 0 ? f - 1 : 0 ] ] );
+   saisPrefetch( B + T[ saisClamp( e - 1 ) ] );
+   saisPrefetchW( SA + B[ T[ saisClamp( f - 1 ) ] ] );
    }
-  move( i );
-  move( i + 1 );
+  saisMoveL( T , SA , B , i );
+  saisMoveL( T , SA , B , i + 1 );
   }
- for( ; i < n ; ++i ) move( i );
+ for( ; i < n ; ++i ) saisMoveL( T , SA , B , i );
  }
 
 /// the scan from right to left: the S-suffixes, each stored complemented
 /// if the suffix before it is of type L (or it is the suffix 0), and the
-/// complemented entries restored; in the first induction the entries
-/// moved are cleared instead, and the complemented ones, the LMS-suffixes
-/// (and the suffix 0), stay complemented. Two entries a step, prefetched
-/// as in saisInduceL()
-template< bool small , bool first , class C , class S >
-void saisInduceS( const C * T , S * SA , S n , const S * size , S * B ,
-                  S K )
+/// complemented entries restored. Two entries a step, prefetched as in
+/// saisInduceL()
+template< bool small , class C , class S >
+void saisInduceS( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
+                  S n , const S * size , S * ADS_SAIS_RESTRICT B , S K )
 {
  constexpr S D = S( saisAhead );
  saisBuckets( size , B , K , true );
- // an entry: the suffix before it moved to the tail of its bucket
- auto move = [ & ]( S i ) {
-  const S q = SA[ i ];
-  if( q > 0 ) {
-   const S p = q - 1;
-   const S c0 = S( T[ p ] );
-   SA[ --B[ c0 ] ] = ( p == 0 ) || ( S( T[ p - 1 ] ) > c0 ) ? ~p : p;
-   if constexpr( first ) SA[ i ] = 0;
-   }
-  else if constexpr( ! first )
-   SA[ i ] = ~q;
-  };
  S i = n - 1;
- for( ; i >= D + 1 ; i -= 2 ) {        // two at a time, no checks
+ for( ; i >= 2 * D + 1 ; i -= 2 ) {    // two at a time, no checks
+  saisPrefetchW( SA + i - 2 * D );
   const S a = SA[ i - D ] , b = SA[ i - D - 1 ];
-  saisPrefetch( T + ( a > 0 ? a - 1 : 0 ) );
-  saisPrefetch( T + ( b > 0 ? b - 1 : 0 ) );
+  saisPrefetch( T + saisClamp( a - 2 ) );
+  saisPrefetch( T + saisClamp( a - 1 ) );
+  saisPrefetch( T + saisClamp( b - 2 ) );
+  saisPrefetch( T + saisClamp( b - 1 ) );
   if constexpr( ! small ) {
    const S e = SA[ i - D / 2 ] , f = SA[ i - D / 4 ];
-   saisPrefetch( B + T[ e > 0 ? e - 1 : 0 ] );
-   saisPrefetchW( SA + ( B[ T[ f > 0 ? f - 1 : 0 ] ] - 1 ) );
+   saisPrefetch( B + T[ saisClamp( e - 1 ) ] );
+   saisPrefetchW( SA + ( B[ T[ saisClamp( f - 1 ) ] ] - 1 ) );
    }
-  move( i );
-  move( i - 1 );
+  saisMoveS( T , SA , B , i );
+  saisMoveS( T , SA , B , i - 1 );
   }
- for( ; i >= 0 ; --i ) move( i );
+ for( ; i >= 0 ; --i ) saisMoveS( T , SA , B , i );
  }
 
 /// the two scans of the induction
-template< bool first , class C , class S >
+template< class C , class S >
 void saisInduce( const C * T , S * SA , S n , const S * size , S * B ,
                  S K )
 {
  if( K <= S( saisSmall ) ) {
-  saisInduceL< true , first >( T , SA , n , size , B , K );
-  saisInduceS< true , first >( T , SA , n , size , B , K );
+  saisInduceL< true >( T , SA , n , size , B , K );
+  saisInduceS< true >( T , SA , n , size , B , K );
   }
  else {
-  saisInduceL< false , first >( T , SA , n , size , B , K );
-  saisInduceS< false , first >( T , SA , n , size , B , K );
+  saisInduceL< false >( T , SA , n , size , B , K );
+  saisInduceS< false >( T , SA , n , size , B , K );
   }
  }
 
@@ -254,6 +285,63 @@ bool saisDoubling( const S * R , S * SA , S m ,
    at += std::size_t( g );
    }
   G.swap( H );
+  }
+ return( true );
+ }
+
+/// the groups of equal names among the LMS places sorted by their
+/// substrings, SA[ 0 .. m ), each sorted by the names of the LMS places that
+/// follow, read in the slots SA[ m + q / 2 ] (from 1, 0 elsewhere): two LMS
+/// suffixes of equal names compare as the strings of the names from the
+/// next LMS place on, which the bit vector lms gives; a group of 2 by
+/// walking both, a larger one by a sort with that comparison. The suffixes
+/// of the other names are already in place, and no recursion is needed.
+/// False, with the groups in some order, if more than m / 4 suffixes are
+/// tied or the names walked exceed budget
+template< class S >
+bool saisResolveTies( S * SA , S n , S m , const std::vector< S > & runs ,
+                      const std::vector< std::uint64_t > & lms ,
+                      std::size_t budget )
+{
+ const S * name = SA + m;
+ // the next LMS place after p, n if none
+ auto next = [ & ]( S p ) {
+  std::size_t w = std::size_t( p + 1 ) >> 6;
+  std::uint64_t v = lms[ w ] & ( ~std::uint64_t( 0 ) << ( ( p + 1 ) & 63 ) );
+  while( ! v ) {
+   if( ++w == lms.size() ) return( n );
+   v = lms[ w ];
+   }
+  return( S( w * 64 + std::size_t( std::countr_zero( v ) ) ) );
+  };
+ // the suffixes tied, those of the names of more than one; too many and
+ // the doubling or the recursion do better
+ std::size_t tied = 0 , spent = 0;
+ for( const S g : runs )
+  if( g > 1 ) tied += std::size_t( g );
+ if( tied > std::size_t( m ) / 4 ) return( false );
+ // a before b, of equal names: their next names, until they differ; past
+ // the budget every pair is equal, which ends any sort at once
+ auto less = [ & ]( S a , S b ) {
+  while( spent <= budget ) {
+   a = next( a );
+   b = next( b );
+   if( ( a == n ) || ( b == n ) ) return( a == n );   // an end first
+   const S x = name[ a / 2 ] , y = name[ b / 2 ];
+   if( x != y ) return( x < y );
+   ++spent;
+   }
+  return( false );
+  };
+ S f = 0;
+ for( const S g : runs ) {
+  if( g == 2 ) {
+   if( less( SA[ f + 1 ] , SA[ f ] ) ) std::swap( SA[ f ] , SA[ f + 1 ] );
+   }
+  else if( g > 2 )
+   std::sort( SA + f , SA + f + g , less );
+  if( spent > budget ) return( false );
+  f += g;
   }
  return( true );
  }
@@ -363,14 +451,14 @@ S saisPartial( const C * T , S * SA , S n , S K ,
  // the part of an entry p: the symbol before it and the type of the one
  // before that, with no check (p > 1 , or 0 for an entry not yet there)
  auto part = [ & ]( S p , bool forS ) {
-  const S j = p - ( p > 1 ? 1 : 0 );
-  const S c = S( T[ j ] ) , b = S( T[ j - ( j > 0 ? 1 : 0 ) ] );
+  const S j = p - S( p > 1 );
+  const S c = S( T[ j ] ) , b = S( T[ j - S( j > 0 ) ] );
   return( 2 * std::size_t( c ) + std::size_t( forS ? b > c : b < c ) );
   };
  for( S i = 0 ; i < endA ; ++i ) {
   if( i + D < endA ) {
    const S a = SA[ i + D ] & low;
-   saisPrefetch( T + ( a - ( a > 1 ? 2 : a ) ) );
+   saisPrefetch( T + saisClamp( a - 2 ) );
    if( large ) {                      // its part, and where it writes
     saisPrefetchW( L.data() + part( SA[ i + D / 2 ] & low , false ) );
     saisPrefetchW( SA + L[ part( SA[ i + D / 4 ] & low , false ) ].to );
@@ -383,7 +471,7 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   if( j == 0 ) continue;             // the suffix 0 moves nothing
   const S c = S( T[ j ] );
   Part & q = L[ 2 * std::size_t( c ) + std::size_t( S( T[ j - 1 ] ) < c ) ];
-  SA[ q.to++ ] = j | ( q.last != d ? top : 0 );
+  SA[ q.to++ ] = j | ( top & -S( q.last != d ) );
   q.last = d;
   }
 
@@ -405,7 +493,7 @@ S saisPartial( const C * T , S * SA , S n , S K ,
  for( S i = endC - 1 ; i >= endA ; --i ) {
   if( i - D >= endA ) {
    const S a = SA[ i - D ] & low;
-   saisPrefetch( T + ( a - ( a > 1 ? 2 : a ) ) );
+   saisPrefetch( T + saisClamp( a - 2 ) );
    if( large ) {
     saisPrefetchW( R.data() + part( SA[ i - D / 2 ] & low , true ) );
     saisPrefetchW( SA + ( R[ part( SA[ i - D / 4 ] & low , true ) ].to -
@@ -419,7 +507,7 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   if( j == 0 ) continue;
   const S c = S( T[ j ] );
   Part & q = R[ 2 * std::size_t( c ) + std::size_t( S( T[ j - 1 ] ) > c ) ];
-  SA[ --q.to ] = j | ( q.last != d ? top : 0 );
+  SA[ --q.to ] = j | ( top & -S( q.last != d ) );
   q.last = d;
   }
 
@@ -483,15 +571,18 @@ void sais( const C * T , S * SA , S n , S K ,
    for( S r = 0 ; r < n ; ++r ) SA[ r ] = n - 1 - r;
   else {
    std::fill( SA , SA + n , S( 0 ) );
-   saisInduce< false >( T , SA , n , size.data() , B.data() , K );
+   saisInduce( T , SA , n , size.data() , B.data() , K );
    }
   return;
   }
 
- // the LMS-suffixes sorted by the string of the names at the back of SA,
- // unless the names are all distinct: by the doubling on the groups of
- // equal names, if few, or else by recursion
- if( names < m ) {
+ // the LMS-suffixes sorted by the string of the names: if the names are
+ // not all distinct, each group of equal names by the names that follow,
+ // within a budget of names compared; beyond it, by the doubling on the
+ // groups of equal names, if few, or else by recursion, on the string of
+ // the names at the back of SA
+ if( ( names < m ) && ! saisResolveTies( SA , n , m , runs , lms ,
+                                          std::size_t( m ) ) ) {
   for( S i = n - 1 , j = n - 1 ; i >= m ; --i ) {
    const S v = SA[ i ];
    SA[ j ] = v - 1;                   // a slot of no LMS place is 0
@@ -510,15 +601,20 @@ void sais( const C * T , S * SA , S n , S K ,
   }
 
  // the LMS-suffixes at the ends of their buckets, and the induction
- std::fill( SA + m , SA + n , S( 0 ) );
+ // the sorted LMS places come grouped by their first symbol, so that
+ // each group moves at once to the end of its bucket, from the last one
  saisBuckets( size.data() , B.data() , K , true );
- for( S i = m - 1 ; i >= 0 ; --i ) {
-  if( i >= D ) saisPrefetch( T + SA[ i - D ] );
-  const S p = SA[ i ];
-  SA[ i ] = 0;
-  SA[ --B[ std::size_t( T[ p ] ) ] ] = p;
+ S j = n , at = m;                   // [ j , n ) placed, SA[ 0 .. at ) to go
+ for( S c = K - 1 ; ( c >= 0 ) && ( at > 0 ) ; --c ) {
+  const S l = size4[ 4 * std::size_t( c ) + 2 ] , e = B[ std::size_t( c ) ];
+  if( l == 0 ) continue;
+  std::fill( SA + e , SA + j , S( 0 ) );
+  std::memmove( SA + e - l , SA + at - l , std::size_t( l ) * sizeof( S ) );
+  j = e - l;
+  at -= l;
   }
- saisInduce< false >( T , SA , n , size.data() , B.data() , K );
+ std::fill( SA , SA + j , S( 0 ) );
+ saisInduce( T , SA , n , size.data() , B.data() , K );
  }
 
 /// SA is the suffix array of T (bytes or integers), O( n )
