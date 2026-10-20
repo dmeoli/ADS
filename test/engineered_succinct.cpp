@@ -29,6 +29,7 @@
 #include "ADS/compression/StreamVByte.h"
 #include "ADS/compression/Tans.h"
 #include "ADS/succinct/CompactRankSelect.h"
+#include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/WaveletMatrix.h"
 
 #include <algorithm>
@@ -85,6 +86,38 @@ ADS_TEST( "compact-rank-select" )
  std::vector< bool > runs;
  for( int k = 0 ; k < 8 ; ++k ) runs.insert( runs.end() , 30000 , k % 2 );
  check( runs );
+ }
+
+// the compressed vector of bits of RRR against a scan: every bit, rank
+// and select of both bits, on vectors of many sizes around the blocks of 63
+// and the superblocks of 2016 bits and of many densities (all 0s, all 1s
+// in blocks of class 63); and the size within the entropy and 0.18 bits
+// more per bit
+ADS_TEST( "rrr-bit-vector" )
+{
+ std::mt19937_64 g( 23 );
+ for( const std::size_t n : { 0 , 1 , 62 , 63 , 64 , 2016 , 2017 , 30000 } )
+  for( const double p : { 0.0 , 0.01 , 0.2 , 0.5 , 0.97 , 1.0 } ) {
+   BitVector b;
+   std::bernoulli_distribution B( p );
+   for( std::size_t i = 0 ; i < n ; ++i ) b.push_back( B( g ) );
+   const RRRBitVector R( b );
+   std::size_t ones = 0 , zeros = 0;
+   for( std::size_t i = 0 ; i <= n ; ++i ) {
+    CHECK( R.rank1( i ) == ones && R.rank0( i ) == zeros );
+    if( i == n ) break;
+    CHECK( R[ i ] == b[ i ] );
+    if( b[ i ] ) CHECK( R.select1( ++ones ) == i );
+    else CHECK( R.select0( ++zeros ) == i );
+    }
+   CHECK( R.ones() == ones && R.zeros() == zeros && R.size() == n );
+   const double q = n ? double( ones ) / double( n ) : 0.0;
+   const double h = ( q <= 0 || q >= 1 ) ? 0 :
+                    -q * std::log2( q ) - ( 1 - q ) * std::log2( 1 - q );
+   CHECK( double( R.sizeInBits() ) <= double( n ) * ( h + 0.18 ) + 512 );
+   CHECK_THROWS( ( void )R.select1( ones + 1 ) , contract_violation );
+   CHECK_THROWS( ( void )R.rank1( n + 1 ) , contract_violation );
+   }
  }
 
 // the wavelet matrix against a scan: access, rank and select of every item

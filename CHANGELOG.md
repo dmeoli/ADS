@@ -466,6 +466,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - lz77ParseLinear(), the parse of LZ77 with no window of Karkkainen, Kempa
   and Puglisi in O( n ) time, by the previous and the next smaller values
   of the suffix array, instead of the O( n w ) search of the window
+- RRRBitVector, the compressed vector of bits of Raman, Raman and Rao in
+  the form of Claude and Navarro: blocks of 63 bits as their class and
+  their offset in the combinatorial number system, superblocks of 32
+  blocks with their rank and the place of their offsets, in at most
+  m H0 + 0.175 m bits, with access, rank and select
 
 ### Changed
 

@@ -12,6 +12,8 @@
  *
  * - bitvector: rank1, select1 and select0 on n random bits with 50%, 10%
  *   and 1% of 1s, and the building of the directory;
+ * - rrr: the same on the vectors compressed to their entropy, against the
+ *   rrr_vector of sdsl-lite, for n up to 10^7;
  * - eliasfano: access and nextGEQ (the rank of the competitors) on n
  *   random distinct integers in [ 0 , 128 n ), and the building, for n up
  *   to 10^7;
@@ -58,6 +60,10 @@
  #include "ADS/succinct/CompactRankSelect.h"
  #define ADS_HAS_COMPACT 1
 #endif
+#if __has_include( "ADS/succinct/RRRBitVector.h" )
+ #include "ADS/succinct/RRRBitVector.h"
+ #define ADS_HAS_RRR 1
+#endif
 #if __has_include( "ADS/compression/DirectAccessCodes.h" )
  #include "ADS/compression/DirectAccessCodes.h"
  #define ADS_HAS_DAC 1
@@ -73,6 +79,7 @@
  #include <sdsl/rank_support.hpp>
  #include <sdsl/select_support.hpp>
  #include <sdsl/dac_vector.hpp>
+ #include <sdsl/rrr_vector.hpp>
  #include <sdsl/wavelet_trees.hpp>
  #define ADS_HAS_SDSL 1
 #endif
@@ -185,6 +192,27 @@ void bitvector( const std::string & dname , const Bits & b ,
  print( "space" , "bitvector " + dname , b.n , c.who , c.bits( *s ) );
  }
 
+/// the cells of a compressed vector of bits: as bitvector(), under the
+/// benchmark rrr
+template< class B , class R , class S1 , class S0 , class Z >
+void compressed( const std::string & dname , const Bits & b ,
+                 const std::string & who , B build , R rank , S1 sel1 ,
+                 S0 sel0 , Z bits , int r )
+{
+ print( "rrr" , "build " + dname , b.n , who , median(
+         [](){ return( 0 ); } , [ & ]( int ) {
+          auto s = build( b );
+          sink = sink + std::uint64_t( s != nullptr ); } , r , b.n / 64 ) );
+ const auto s = build( b );
+ print( "rrr" , "rank1 " + dname , b.n , who , queries( b.R , r ,
+         [ & ]( std::uint64_t i ) { return( rank( *s , i ) ); } ) );
+ print( "rrr" , "select1 " + dname , b.n , who , queries( b.S1 , r ,
+         [ & ]( std::uint64_t x ) { return( sel1( *s , x ) ); } ) );
+ print( "rrr" , "select0 " + dname , b.n , who , queries( b.S0 , r ,
+         [ & ]( std::uint64_t x ) { return( sel0( *s , x ) ); } ) );
+ print( "space" , "rrr " + dname , b.n , who , bits( *s ) );
+ }
+
 /// a bit vector of ADS from the words (a word at a time, in the versions
 /// of ADS with no constructor from the words)
 template< class BV = ADS::BitVector >
@@ -223,6 +251,42 @@ void bitvectors( std::size_t n , int r , unsigned seed )
      return( s.select0( k ) ); } ,
     [ nb ]( const ADS::RankSelect & s ) {
      return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+#ifdef ADS_HAS_RRR
+  if( b.n <= 10000000 ) {
+   compressed( dname , b , "ADS::RRRBitVector" , []( const Bits & b ) {
+     return( std::make_unique< ADS::RRRBitVector >( adsBits( b ) ) ); } ,
+    []( const ADS::RRRBitVector & s , std::uint64_t i ) {
+     return( s.rank1( i ) ); } ,
+    []( const ADS::RRRBitVector & s , std::uint64_t k ) {
+     return( s.select1( k ) ); } ,
+    []( const ADS::RRRBitVector & s , std::uint64_t k ) {
+     return( s.select0( k ) ); } ,
+    [ nb ]( const ADS::RRRBitVector & s ) {
+     return( double( s.sizeInBits() ) / nb ); } , r );
+#ifdef ADS_HAS_SDSL
+   struct SR {
+    sdsl::rrr_vector< 63 > v;
+    sdsl::rrr_vector< 63 >::rank_1_type rk;
+    sdsl::rrr_vector< 63 >::select_1_type s1;
+    sdsl::rrr_vector< 63 >::select_0_type s0;
+    };
+   compressed( dname , b , "sdsl::rrr_vector<63>" , []( const Bits & b ) {
+     auto s = std::make_unique< SR >();
+     sdsl::bit_vector v( b.n , 0 );
+     std::copy( b.words.begin() , b.words.end() , v.data() );
+     s->v = sdsl::rrr_vector< 63 >( v );
+     s->rk = sdsl::rrr_vector< 63 >::rank_1_type( &s->v );
+     s->s1 = sdsl::rrr_vector< 63 >::select_1_type( &s->v );
+     s->s0 = sdsl::rrr_vector< 63 >::select_0_type( &s->v );
+     return( s ); } ,
+    []( const SR & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
+    []( const SR & s , std::uint64_t k ) { return( s.s1.select( k ) ); } ,
+    []( const SR & s , std::uint64_t k ) { return( s.s0.select( k ) ); } ,
+    [ nb ]( const SR & s ) {
+     return( 8 * double( sdsl::size_in_bytes( s.v ) ) / nb ); } , r );
+#endif
+   }
+#endif
 #ifdef ADS_HAS_COMPACT
   bitvector( dname , b , "ADS::CompactRankSelect" , []( const Bits & b ) {
     return( std::make_unique< ADS::CompactRankSelect >( adsBits( b ) ) ); } ,
