@@ -20,7 +20,9 @@
  * library: the Dutch national flag of n random colours against two passes
  * of std::partition, the sort of a vector k-sorted (each item at most
  * k = 16 places from its place) against std::sort, and the natural merge
- * sort of a List against std::list::sort.
+ * sort of the book and the sort by relinking the cells of a List against
+ * std::list::sort, by less (the radix sort) and by greater (the merge of
+ * the natural runs).
  *
  * Each cell is the median of r runs, in nanoseconds per item; the contracts
  * are off (ADS_CONTRACTS=0).
@@ -46,6 +48,7 @@
 #include "ADS/sequence/ArraySequence.h"
 #include "ADS/sequence/CursorList.h"
 #include "ADS/sequence/List.h"
+#include "ADS/sequence/ListSort.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SequenceAlgorithms.h"
 #include "ADS/sequence/SinglyList.h"
@@ -268,6 +271,13 @@ int main( int argc , char ** argv )
           []( std::list< int > & B ) { B.sort(); } );
   onCopy( "list sort" , "ADS::naturalMergeSort" , L , n , r ,
           []( ADS::List< int > & B ) { ADS::naturalMergeSort( B ); } );
+  onCopy( "list sort" , "ADS::listSort" , L , n , r ,
+          []( ADS::List< int > & B ) { ADS::listSort( B ); } );
+  onCopy( "list sort by greater" , "std::list::sort" , SL , n , r ,
+          []( std::list< int > & B ) { B.sort( std::greater<>() ); } );
+  onCopy( "list sort by greater" , "ADS::listSort" , L , n , r ,
+          []( ADS::List< int > & B ) {
+           ADS::listSort( B , std::greater<>() ); } );
   }
  return( 0 );
  }

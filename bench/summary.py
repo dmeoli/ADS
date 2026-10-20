@@ -63,6 +63,7 @@ PAIRS = [
     ('sequences', 'ADS::dutchNationalFlag', 'std', ['std::partition x2']),
     ('sequences', 'ADS::sortKSorted', 'std', ['std::sort']),
     ('sequences', 'ADS::naturalMergeSort', 'std', ['std::list::sort']),
+    ('sequences', 'ADS::listSort', 'std', ['std::list::sort']),
     ('sequences', 'ADS::List', 'std', ['std::list']),
     ('sequences', 'ADS::SinglyList', 'std', ['std::forward_list']),
     ('memory', 'ADS::Arena', 'std',
