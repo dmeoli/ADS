@@ -21,6 +21,9 @@
  *
  * \see R. Seidel, C. R. Aragon, Randomized search trees, Algorithmica
  *      16(4-5), 464-497, 1996, doi:10.1007/BF01940876
+ * \see G. L. Steele, D. Lea, C. H. Flood, Fast splittable pseudorandom
+ *      number generators, Proceedings of OOPSLA 2014, 453-472, 2014,
+ *      doi:10.1145/2660193.2660195 (SplitMix64)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

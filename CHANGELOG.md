@@ -864,6 +864,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   writes their bounds in LaTeX; the README lists the compact directory,
   the vector of RRR, tANS, the DACs and the linear parse of LZ77 among the
   engineered structures
+- the papers of SplitMix64 in SkipList.h and Treap.h, of the trick of the
+  Four Russians in RangeMinimum.h and of Patricia in TwoLevelDictionary.h
 - BoolSet keeps its vector as words of 64 bits, and its operations of two
   sets, min(), max() and forEach() go a word at a time, the operations of
   two sets counting the bits of the result in the same pass, 4 words at a
