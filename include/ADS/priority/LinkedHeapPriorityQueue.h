@@ -23,6 +23,10 @@
  * sibling unless at the root, and down along the right children. Both walks
  * take \f$ O( \log n ) \f$ steps, and need no counter of the nodes.
  *
+ * The nodes come from an ObjectPool [see ObjectPool.h] of the queue,
+ * which takes back the node of deleteMin() for the next insert(), so that
+ * a node costs no call to the allocator.
+ *
  * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
  * need a queue that is not empty; after deleteMin() no item has a smaller
  * priority than the one removed; the invariant is the order of the heap,
@@ -56,6 +60,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/memory/ObjectPool.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
@@ -83,6 +88,19 @@ class LinkedHeapPriorityQueue {
  using Item = T;            ///< the type of the items
  using Priority = P;        ///< the type of the priorities
 
+ LinkedHeapPriorityQueue( void ) = default;
+ LinkedHeapPriorityQueue( const LinkedHeapPriorityQueue & ) = delete;
+ LinkedHeapPriorityQueue & operator=( const LinkedHeapPriorityQueue & ) =
+  delete;
+
+ /// the items of other, which is left empty
+ LinkedHeapPriorityQueue( LinkedHeapPriorityQueue && other ) noexcept;
+
+ LinkedHeapPriorityQueue & operator=( LinkedHeapPriorityQueue && other )
+  noexcept;
+
+ ~LinkedHeapPriorityQueue();
+
  [[nodiscard]] bool empty( void ) const;
 
  [[nodiscard]] int size( void ) const;
@@ -109,7 +127,7 @@ class LinkedHeapPriorityQueue {
   P priority;
   T value;
   Node * parent;
-  std::unique_ptr< Node > left , right;
+  Node * left = nullptr , * right = nullptr;
   Node( const P & p , const T & v , Node * u )
    : priority( p ) , value( v ) , parent( u ) {}
   };
@@ -123,9 +141,15 @@ class LinkedHeapPriorityQueue {
 
  /// the shape of the tree, for PathIterator
  struct Shape {
-  static auto root( const auto & o ) { return( o.f_root.get() ); }
-  static auto left( const auto * n ) { return( n->left.get() ); }
-  static auto right( const auto * n ) { return( n->right.get() ); }
+  static auto root( const auto & o ) {
+   return( static_cast< const Node * >( o.f_root ) );
+   }
+  static auto left( const auto * n ) {
+   return( static_cast< const Node * >( n->left ) );
+   }
+  static auto right( const auto * n ) {
+   return( static_cast< const Node * >( n->right ) );
+   }
   static auto read( const auto * n ) {
    return( std::pair< const P & , const T & >( n->priority , n->value ) );
    }
@@ -171,9 +195,13 @@ class LinkedHeapPriorityQueue {
  /// \pre f_last is not the root
  [[nodiscard]] Node * previousLeaf( void ) const;
 
- std::unique_ptr< Node > f_root;
+ /// destroys the nodes of the subtree of u
+ void release( Node * u );
+
+ Node * f_root = nullptr;
  Node * f_last = nullptr;   ///< the last leaf, the node f_n
  int f_n = 0;
+ ObjectPool< Node > f_pool; ///< the nodes
 
  };  // end( class LinkedHeapPriorityQueue )
 

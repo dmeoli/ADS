@@ -20,6 +20,8 @@
 #include "ADSTest.h"
 
 #include "ADS/priority/BucketQueue.h"
+#include "ADS/priority/HeapPriorityQueue.h"
+#include "ADS/priority/LinkedHeapPriorityQueue.h"
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/priority/SequenceHeap.h"
@@ -361,6 +363,74 @@ ADS_TEST( "sequence-heap" )
  CHECK( X.empty() );
  X.push( 1 );
  CHECK( X.pop() == 1 );
+ }
+
+// the heap of the book with its items in a pool: the slot of deleteMin()
+// taken by the next insert(), a move that keeps the handles valid, a
+// move-assignment over a queue with items, strings left in the queue
+// (destroyed with it), and the capacity 0
+ADS_TEST( "heap-priority-queue-pool" )
+{
+ HeapPriorityQueue< std::string , int , 4 > Q( 100 );
+ std::vector< HeapPriorityQueue< std::string , int , 4 >::Handle > hs;
+ for( int i = 0 ; i < 50 ; ++i )
+  hs.push_back( Q.insert( std::string( 30 , char( 'a' + i % 26 ) ) ,
+                          100 - i ) );
+ const std::string m = Q.min();
+ auto * slot = hs[ 49 ];
+ CHECK( Q.deleteMin() == m );
+ auto h = Q.insert( "new" , 1000 );          // the slot freed last
+ CHECK( h == slot && h->value == "new" );
+ hs[ 49 ] = h;
+ HeapPriorityQueue< std::string , int , 4 > M( std::move( Q ) );
+ CHECK( Q.empty() && M.size() == 50 );
+ M.decrease( hs[ 0 ] , -5 );                 // a handle of the moved one
+ CHECK( M.minPriority() == -5 && M.min() == hs[ 0 ]->value );
+ HeapPriorityQueue< std::string , int , 4 > N( 10 );
+ N.insert( "x" , 1 );
+ N = std::move( M );
+ CHECK( N.size() == 50 && N.minPriority() == -5 );
+ HeapPriorityQueue< int > Z( 0 );
+ CHECK( Z.empty() && Z.capacity() == 0 );
+ CHECK_THROWS( Z.insert( 1 , 1 ) , contract_violation );
+ }
+
+/// the heap with pointers of L, its nodes in a pool, against a multiset:
+/// random inserts and deleteMin()s, a move, a move-assignment over a heap
+/// with items, strings left in the heap
+template< bool L >
+void linked( void )
+{
+ LinkedHeapPriorityQueue< std::string , int , L > Q;
+ std::multiset< int > R;
+ std::mt19937 g( L ? 7 : 8 );
+ for( int t = 0 ; t < 3000 ; ++t )
+  if( R.empty() || ( g() % 3 ) ) {
+   const int p = int( g() % 500 );
+   Q.insert( std::string( 20 , char( 'a' + p % 26 ) ) , p );
+   R.insert( p );
+   }
+  else {
+   CHECK( Q.minPriority() == *R.begin() );
+   Q.deleteMin();
+   R.erase( R.begin() );
+   }
+ LinkedHeapPriorityQueue< std::string , int , L > M( std::move( Q ) );
+ CHECK( Q.empty() && M.size() == int( R.size() ) );
+ LinkedHeapPriorityQueue< std::string , int , L > N;
+ N.insert( "x" , -1 );
+ N = std::move( M );
+ CHECK( N.size() == int( R.size() ) && N.minPriority() == *R.begin() );
+ Q.insert( "again" , 3 );                   // the one moved from, reused
+ CHECK( Q.min() == "again" && Q.deleteMin() == "again" && Q.empty() );
+ }
+
+// the heap with pointers, both ways of finding the last leaf, its nodes in
+// a pool: against a multiset, with moves and items left in it
+ADS_TEST( "linked-heap-pool" )
+{
+ linked< false >();
+ linked< true >();
  }
 
 }  // end( namespace )

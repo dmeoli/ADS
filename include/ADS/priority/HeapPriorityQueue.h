@@ -14,7 +14,10 @@
  * leaf down from the root [see minHeapRestore()], in
  * \f$ O( \log_d n ) \f$ and \f$ O( d \log_d n ) \f$ time; each item knows
  * its place, kept by swap(), and so the handle finds it (exercise 10.6
- * for d > 2).
+ * for d > 2). Beyond the book, the items come from an ObjectPool [see
+ * ObjectPool.h] of the queue, which takes back the item of deleteMin() for
+ * the next insert(), so that an item costs no call to the allocator and
+ * the items in use stay close in memory.
  *
  * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
  * need a queue that is not empty, insert() one that is not full, and
@@ -53,6 +56,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/memory/ObjectPool.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <concepts>
@@ -93,6 +97,16 @@ class HeapPriorityQueue {
  /// PriorityQueue( n ): the empty queue of capacity n
  /// \pre n >= 0
  explicit HeapPriorityQueue( int n );
+
+ HeapPriorityQueue( const HeapPriorityQueue & ) = delete;
+ HeapPriorityQueue & operator=( const HeapPriorityQueue & ) = delete;
+
+ /// the items of other, which is left empty; its handles stay valid here
+ HeapPriorityQueue( HeapPriorityQueue && other ) noexcept;
+
+ HeapPriorityQueue & operator=( HeapPriorityQueue && other ) noexcept;
+
+ ~HeapPriorityQueue();
 
  [[nodiscard]] bool empty( void ) const;
 
@@ -145,7 +159,7 @@ class HeapPriorityQueue {
  using reference = const PriorityItem &;
  using const_reference = const PriorityItem &;
  using const_iterator = IndirectIterator<
-  typename std::vector< std::unique_ptr< PriorityItem > >::const_iterator >;
+  typename std::vector< PriorityItem * >::const_iterator >;
  using iterator = const_iterator;
 
  [[nodiscard]] const_iterator begin( void ) const {
@@ -176,8 +190,9 @@ class HeapPriorityQueue {
  /// on more than 1024 items, the root and the last item only
  [[nodiscard]] bool isHeap( void ) const;
 
- int f_capacity;                                    ///< the capacity
- std::vector< std::unique_ptr< PriorityItem > > f_H; ///< the heap
+ int f_capacity;                       ///< the capacity
+ std::vector< PriorityItem * > f_H;    ///< the heap
+ ObjectPool< PriorityItem > f_pool;    ///< the items
 
  };  // end( class HeapPriorityQueue )
 

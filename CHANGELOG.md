@@ -425,6 +425,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- HeapPriorityQueue and LinkedHeapPriorityQueue take their items and
+  nodes from an ObjectPool, the slot of deleteMin() taken by the next
+  insert(), instead of one allocation each: 3 to 4 times faster on the
+  insertions, 1.1 to 2 times on the extractions, 1.2 to 1.6 times in
+  Dijkstra's algorithm; both are moved, not copied, as before
+
 - dutchNationalFlag() moves the items of a trivially copyable type with no
   branch, the place of the swap computed from the colour, the same swaps
   as before, 1.5 times faster on random colours; sortKSorted() replaces the
