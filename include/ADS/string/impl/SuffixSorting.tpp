@@ -54,6 +54,20 @@ inline S saisClamp( S x )
  return( x & ~( x >> ( 8 * sizeof( S ) - 1 ) ) );
  }
 
+/// the 8 bytes of x in the reverse order
+inline std::uint64_t saisSwap( std::uint64_t x )
+{
+#if defined( __GNUC__ ) || defined( __clang__ )
+ return( __builtin_bswap64( x ) );
+#else
+ x = ( ( x >> 8 ) & 0x00FF00FF00FF00FFull ) |
+     ( ( x & 0x00FF00FF00FF00FFull ) << 8 );
+ x = ( ( x >> 16 ) & 0x0000FFFF0000FFFFull ) |
+     ( ( x & 0x0000FFFF0000FFFFull ) << 16 );
+ return( ( x >> 32 ) | ( x << 32 ) );
+#endif
+ }
+
 /// the 64 bits of x in the reverse order
 inline std::uint64_t saisReverse( std::uint64_t x )
 {
@@ -372,22 +386,142 @@ bool saisDoubling( const S * R , S * SA , S m ,
 /// of the other names are already in place, and no recursion is needed.
 /// False, with the groups in some order, if more than m / 4 suffixes are
 /// tied or the names walked exceed budget
+/// the first LMS place after p by the bit vector lms, n if none
+template< class S >
+inline S saisNextLms( const std::vector< std::uint64_t > & lms , S n , S p )
+{
+ std::size_t w = std::size_t( p + 1 ) >> 6;
+ std::uint64_t v = lms[ w ] & ( ~std::uint64_t( 0 ) << ( ( p + 1 ) & 63 ) );
+ while( ! v ) {
+  if( ++w == lms.size() ) return( n );
+  v = lms[ w ];
+  }
+ return( S( w * 64 + std::size_t( std::countr_zero( v ) ) ) );
+ }
+
+/// the groups of equal names among the LMS places sorted by their
+/// substrings, SA[ 0 .. m ) by the sizes in runs, refined by the text that
+/// follows the substring of the group (of the same length l in a group):
+/// two suffixes p and q of equal LMS-substrings compare as T[ p + l .. ]
+/// and T[ q + l .. ], read 8 symbols a round as one key in the order of
+/// the bytes, a suffix that ends inside the key before one that goes on
+/// with the same symbols. In rest the sizes of the groups still tied after
+/// at most rounds rounds or once budget keys are read (1 for each place
+/// that is sorted), true if none is; with groups of more than 16 places
+/// on average, rest is runs and nothing is done
+template< class C , class S >
+bool saisTextTies( const C * T , S n , S * SA , S m ,
+                   const std::vector< S > & runs ,
+                   const std::vector< std::uint64_t > & lms ,
+                   std::vector< S > & rest , std::size_t budget ,
+                   unsigned rounds )
+{
+ static_assert( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > );
+ constexpr S D = S( saisAhead );
+ struct Key {
+  std::uint64_t key;
+  S left , p;                         // the symbols in the key (<= 8)
+  bool operator<( const Key & o ) const {
+   return( ( key < o.key ) || ( ( key == o.key ) && ( left < o.left ) ) );
+   }
+  };
+ struct Group { S f , g , at; };      // SA[ f .. f + g ), offset at
+ std::vector< Group > G , H;
+ std::size_t tied = 0;
+ for( S f = 0 ; const S g : runs ) {
+  if( g > 1 ) {
+   const S p = SA[ f ];
+   G.push_back( { f , g , saisNextLms( lms , n , p ) + 1 - p } );
+   tied += std::size_t( g );
+   }
+  f += g;
+  }
+ // large groups: the sorts cost more than the names do
+ if( tied > 16 * G.size() ) {
+  rest = runs;
+  return( false );
+  }
+ std::vector< Key > key;
+ std::size_t spent = 0;
+ for( unsigned r = 0 ; ( r < rounds ) && ! G.empty() ; ++r ) {
+  std::size_t total = 0;
+  for( const Group & q : G ) total += std::size_t( q.g );
+  if( spent + total > budget ) break;
+  spent += total;
+  key.resize( total );
+  // the keys, the text ahead prefetched
+  std::size_t at = 0;
+  for( std::size_t z = 0 ; z < G.size() ; ++z ) {
+   const Group & q = G[ z ];
+   for( S i = q.f ; i < q.f + q.g ; ++i , ++at ) {
+    if( i + D < q.f + q.g ) saisPrefetch( T + std::min( SA[ i + D ] + q.at ,
+                                                         n - 1 ) );
+    else if( ( z + 1 < G.size() ) && ( i + D - q.f - q.g < G[ z + 1 ].g ) )
+     saisPrefetch( T + std::min( SA[ G[ z + 1 ].f + ( i + D - q.f - q.g ) ]
+                                 + G[ z + 1 ].at , n - 1 ) );
+    const S p = SA[ i ] , a = p + q.at;
+    std::uint64_t v = 0;
+    S left = 8;
+    if( a + 8 <= n ) {
+     std::memcpy( &v , T + a , 8 );
+     if constexpr( std::endian::native == std::endian::little )
+      v = saisSwap( v );
+     }
+    else {
+     left = std::max< S >( n - a , 0 );
+     for( S j = 0 ; j < left ; ++j )
+      v |= std::uint64_t( std::uint8_t( T[ a + j ] ) ) << ( 56 - 8 * j );
+     }
+    key[ at ] = { v , left , p };
+    }
+   }
+  // each group sorted, and the parts still tied to the next round
+  H.clear();
+  at = 0;
+  for( const Group & q : G ) {
+   Key * a = key.data() + at;
+   if( q.g <= 16 )
+    for( S i = 1 ; i < q.g ; ++i ) {
+     const Key x = a[ i ];
+     S j = i;
+     for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j ) a[ j ] = a[ j - 1 ];
+     a[ j ] = x;
+     }
+   else
+    std::sort( a , a + q.g );
+   for( S i = 0 ; i < q.g ; ) {
+    S j = i + 1;
+    while( ( j < q.g ) && ( a[ j ].key == a[ i ].key ) &&
+           ( a[ j ].left == a[ i ].left ) )
+     ++j;
+    if( ( j - i > 1 ) && ( a[ i ].left == 8 ) )
+     H.push_back( { q.f + i , j - i , q.at + 8 } );
+    for( S z = i ; z < j ; ++z ) SA[ q.f + z ] = a[ z ].p;
+    i = j;
+    }
+   at += std::size_t( q.g );
+   }
+  G.swap( H );
+  }
+ rest.clear();
+ if( G.empty() ) return( true );
+ S f = 0;
+ for( const Group & q : G ) {
+  rest.insert( rest.end() , std::size_t( q.f - f ) , S( 1 ) );
+  rest.push_back( q.g );
+  f = q.f + q.g;
+  }
+ rest.insert( rest.end() , std::size_t( m - f ) , S( 1 ) );
+ return( false );
+ }
+
 template< class S >
 bool saisResolveTies( S * SA , S n , S m , const std::vector< S > & runs ,
                       const std::vector< std::uint64_t > & lms ,
                       std::size_t budget )
 {
  const S * name = SA + m;
- // the next LMS place after p, n if none
- auto next = [ & ]( S p ) {
-  std::size_t w = std::size_t( p + 1 ) >> 6;
-  std::uint64_t v = lms[ w ] & ( ~std::uint64_t( 0 ) << ( ( p + 1 ) & 63 ) );
-  while( ! v ) {
-   if( ++w == lms.size() ) return( n );
-   v = lms[ w ];
-   }
-  return( S( w * 64 + std::size_t( std::countr_zero( v ) ) ) );
-  };
+ auto next = [ & ]( S p ) { return( saisNextLms( lms , n , p ) ); };
  // the suffixes tied, those of the names of more than one; too many and
  // the doubling or the recursion do better
  std::size_t tied = 0 , spent = 0;
@@ -626,16 +760,13 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   q.last = d;
   }
 
- // the names: SA[ i ] marked if it differs from SA[ i + 1 ]
- std::fill( SA + m , SA + n , S( 0 ) );
+ // the names: SA[ i ] marked if it differs from SA[ i + 1 ]; here only
+ // their groups, the names themselves written when needed
  S name = 1 , start = 0;              // the first LMS place of the name
  runs.clear();
- runs.reserve( std::size_t( m ) );
  for( S i = 0 ; i < m ; ++i ) {
-  if( i + D < m ) saisPrefetchW( SA + m + ( SA[ i + D ] & low ) / 2 );
-  const S x = SA[ i ] , p = x & low;
-  SA[ m + p / 2 ] = name;
-  SA[ i ] = p;
+  const S x = SA[ i ];
+  SA[ i ] = x & low;
   if( ( x < 0 ) && ( i + 1 < m ) ) {
    runs.push_back( i + 1 - start );
    start = i + 1;
@@ -699,8 +830,34 @@ void sais( const C * T , S * SA , S n , S K ,
  // within a budget of names compared; beyond it, by the doubling on the
  // groups of equal names, if few, or else by recursion, on the string of
  // the names at the back of SA
- if( ( names < m ) && ! saisResolveTies( SA , n , m , runs , lms ,
-                                          std::size_t( m ) ) ) {
+ // the names, in the slot m + p / 2 of the LMS place p, when the text
+ // leaves some tied
+ auto write = [ & ]() {
+  std::fill( SA + m , SA + n , S( 0 ) );
+  S i = 0 , name = 1;
+  for( const S g : runs ) {
+   for( const S e = i + g ; i < e ; ++i ) {
+    if( i + D < m ) saisPrefetchW( SA + m + SA[ i + D ] / 2 );
+    SA[ m + SA[ i ] / 2 ] = name;
+    }
+   ++name;
+   }
+  };
+ std::vector< S > rest;
+ const std::vector< S > * tied = nullptr;
+ if( names < m ) {
+  tied = &runs;
+  if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) {
+   if( saisTextTies( T , n , SA , m , runs , lms , rest ,
+                     2 * std::size_t( m ) , 8 ) )
+    tied = nullptr;
+   else
+    tied = &rest;
+   }
+  if( tied ) write();
+  }
+ if( tied && ! saisResolveTies( SA , n , m , *tied , lms ,
+                                std::size_t( m ) ) ) {
   for( S i = n - 1 , j = n - 1 ; i >= m ; --i ) {
    const S v = SA[ i ];
    SA[ j ] = v - 1;                   // a slot of no LMS place is 0
