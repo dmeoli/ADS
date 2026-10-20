@@ -19,8 +19,10 @@
  *   other goes to vectorQuickSort(), \f$ O( n \log n ) \f$ and
  *   \f$ O( n \log k ) \f$ for k distinct keys, W keys per instruction.
  *   stableSort() does the same, since two equal numbers cannot be told
- *   apart, but for a vector of floating point numbers that holds a -0,
- *   which std::less finds equal to +0, and which goes as below.
+ *   apart, but a vector of floating point numbers that holds a -0, which
+ *   std::less finds equal to +0, and has more than 8 or kRuns runs goes
+ *   to powerSort() below kRadix items and to radixSortBy() with -0 and +0
+ *   as one key from there.
  * - With the natural order on the other integers and floating point
  *   numbers, or with no vector registers, a short vector goes to
  *   pdqSort() and a long one in few runs to powerSort() in the same way;
@@ -43,16 +45,17 @@
  * - With any other order, items that are copied as bytes (trivially
  *   copyable) go the same way (sort() sends fewer than kRadix of them to
  *   pdqSort()): at most kRuns runs to the merges of powerSort(), and the
- *   others, if a sample of 64 shows at most 16 distinct keys that all the
- *   items have, to a counting sort by those keys, stable, each item found
- *   among them by a binary search with no branch, through a buffer of
- *   n / 2 items, \f$ O( n \log k ) \f$ comparisons for k keys; otherwise
- *   sort() sends them to sampleSort() [see SampleSort.h], the in-place
- *   super scalar samplesort, and stableSort() to a merge sort through a
- *   buffer of n / 2 items, as the spinsort of Boost: its halves are sorted
- *   with the other array as their room and merged back, one move per item
- *   and level, with no branch on the order, from both ends at once, so
- *   that no step checks where a half ends.
+ *   others, for sort(), to sampleSort() [see SampleSort.h], the in-place
+ *   super scalar samplesort, whose buckets of equal keys sort k distinct
+ *   keys in \f$ O( n \log k ) \f$; for stableSort(), if a sample of 64
+ *   shows at most 16 distinct keys that all the items have, to a counting
+ *   sort by those keys, stable, each item found among them by a binary
+ *   search with no branch, through a buffer of n / 2 items,
+ *   \f$ O( n \log k ) \f$ comparisons for k keys, and otherwise to a merge
+ *   sort through a buffer of n / 2 items, as the spinsort of Boost: its
+ *   halves are sorted with the other array as their room and merged back,
+ *   one move per item and level, with no branch on the order, from both
+ *   ends at once, so that no step checks where a half ends.
  * - Any other item goes, for sort(), to pdqSort() [see
  *   EngineeredQuickSorts.h] if fewer than kRadix, \f$ O( n \log n ) \f$
  *   in the worst case, O( n ) on a sorted or reversed vector and
