@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- SequenceHeap, the sequence heap of Sanders: an insertion heap of 256
+  items, groups of up to 64 sorted sequences merged in batches by trees of
+  losers with the keys at hand, a buffer per group and a deletion buffer;
+  its test in test/heaps.cpp and its cells in bench/priority.cpp
+- SmallVector, the vector with room for N items inside itself, which
+  moves to the allocator and doubles past N; its tests in
+  test/sequences.cpp, with those of the engineered paths of the
+  rearrangements and of the natural merge sort
+- the benchmark of the sequences also against boost::container::vector,
+  devector and small_vector, CursorList against std::forward_list, the
+  vectors of 8 items, the stacks against std::stack on a vector and on a
+  deque, the Dutch national flag against two passes of std::partition,
+  the sort of a k-sorted vector against std::sort and the natural merge
+  sort of a List against std::list::sort
+- bench/memory.cpp, the benchmark of Arena and ObjectPool against
+  new and delete, std::pmr::monotonic_buffer_resource and
+  unsynchronized_pool_resource, boost::object_pool and boost::pool,
+  mimalloc and jemalloc (MIMALLOC=<prefix> and JEMALLOC=<prefix> in the
+  makefile)
+
 - RadixHeap, the monotone queue of integer keys of Ahuja, Mehlhorn, Orlin
   and Tarjan with digits of B bits: a key goes to the bucket of the
   highest digit in which it differs from the last key extracted, the
@@ -404,6 +424,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the default allocator of ObjectPool
 
 ### Changed
+
+- dutchNationalFlag() moves the items of a trivially copyable type with no
+  branch, the place of the swap computed from the colour, the same swaps
+  as before, 1.5 times faster on random colours; sortKSorted() replaces the
+  root of its heap of k + 1 items by the next item with one sift down
+  instead of a pop and a push, 1.3 times faster; naturalMergeSort(),
+  mergeSorted() and sublist() append at the position they keep after the
+  last item instead of finding it by tail(), which scans a singly linked
+  list, and the natural merge sort merges the runs straight into the
+  result, 2 times faster on a List
 
 - BucketQueue keeps its items in one vector of cells linked in lists, the
   cells freed by pop() taken first by push(), and the heads of the lists

@@ -2,12 +2,12 @@
 /*--------------------------- File priority.cpp ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The benchmark of the priority queues: the heaps, the bucket queue and the
- * radix heap of ADS against std::priority_queue, against the d-ary,
- * binomial, Fibonacci, pairing and skew heaps of Boost.Heap if Boost is
- * found, and against the d-ary heaps and the radix heap of tlx and the
- * radix heap of radix-heap (iwiwi) when their headers are found (PRIORITY
- * in the makefile), in two models:
+ * The benchmark of the priority queues: the heaps, the sequence heap, the
+ * bucket queue and the radix heap of ADS against std::priority_queue,
+ * against the d-ary, binomial, Fibonacci, pairing and skew heaps of
+ * Boost.Heap if Boost is found, and against the d-ary heaps and the radix
+ * heap of tlx and the radix heap of radix-heap (iwiwi) when their headers
+ * are found (PRIORITY in the makefile), in two models:
  *
  * - the "hold" model of the simulations: n insertions of random priorities
  *   in [ 0 , n ) (fill), then n steps that extract the minimum p and insert
@@ -49,6 +49,7 @@
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
+#include "ADS/priority/SequenceHeap.h"
 #include "ADS/priority/TreePriorityQueue.h"
 
 #if __has_include( <boost/heap/d_ary_heap.hpp> )
@@ -360,6 +361,10 @@ int main( int argc , char ** argv )
         const int p = q.top().first;
         q.pop();
         return( p ); } );
+  run( "ADS::SequenceHeap" , n , P , U , r , [](){
+       return( ADS::SequenceHeap< Pair >() ); } ,
+       []( auto & q , int p , int x ) { q.push( Pair( p , x ) ); } ,
+       []( auto & q ) { return( q.pop().first ); } );
   auto adsPush = []( auto & q , int p , int x ) { q.insert( x , p ); };
   auto adsPop = []( auto & q ) {
    const int p = q.minPriority();
@@ -476,6 +481,8 @@ int main( int argc , char ** argv )
 #endif
   dijkstra( "ADS::DaryHeap d=4" , G , r , stdLazy< ADS::DaryHeap< DPair ,
             std::less< DPair > , 4 > > );
+  dijkstra( "ADS::SequenceHeap" , G , r , stdLazy< ADS::SequenceHeap<
+            DPair > > );
   dijkstra( "ADS::HeapPriorityQueue" , G , r , []( const Graph & G ) {
    using Q = ADS::HeapPriorityQueue< unsigned , int >;
    return( adsHandles< Q >( G , [ & ](){

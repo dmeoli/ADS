@@ -22,19 +22,29 @@ namespace ADS {
 
 namespace detail {
 
+/// the insertions at the end of a sequence, which keep the position after
+/// its last item instead of finding it by tail() at each one, a scan of the
+/// whole sequence on the singly linked lists
 template< Sequence S >
-void append( S & s , const typename S::Item & v )
-{
- s.insert( s.next( s.tail() ) , v );
- }
+struct Appender {
+ S & s;
+ typename S::Pos end;
 
-/// the run of s from p to the end of a sorted stretch appended to d; the
+ explicit Appender( S & t ) : s( t ) , end( t.next( t.tail() ) ) {}
+
+ void operator()( const typename S::Item & v ) {
+  end = s.next( s.insert( end , v ) );
+  }
+ };
+
+/// the run of s from p to the end of a sorted stretch appended by out; the
 /// position after it
 template< Sequence S >
-typename S::Pos copyRun( const S & s , typename S::Pos p , S & d )
+typename S::Pos copyRun( const S & s , typename S::Pos p ,
+                         Appender< S > & out )
 {
  for( ; ; ) {
-  append( d , s.read( p ) );
+  out( s.read( p ) );
   const auto q = s.next( p );
   if( s.finished( q ) || ( s.read( q ) < s.read( p ) ) ) return( q );
   p = q;
@@ -126,9 +136,10 @@ S sublist( const S & s , typename S::Pos p , typename S::Pos q )
  S r;
  if( s.finished( p ) )
   return( r );
+ detail::Appender< S > out( r );
  for( ; ; p = s.next( p ) ) {
   ADS_PRE( ! s.finished( p ) );            // q follows p
-  detail::append( r , s.read( p ) );
+  out( s.read( p ) );
   if( p == q )
    return( r );
   }
@@ -183,21 +194,22 @@ S mergeSorted( const S & a , const S & b )
 {
  ADS_AUDIT( detail::isSorted( a ) && detail::isSorted( b ) );
  S c;
+ detail::Appender< S > out( c );
  auto p = a.head();
  auto q = b.head();
  while( ! a.finished( p ) && ! b.finished( q ) )
   if( b.read( q ) < a.read( p ) ) {
-   detail::append( c , b.read( q ) );
+   out( b.read( q ) );
    q = b.next( q );
    }
   else {
-   detail::append( c , a.read( p ) );
+   out( a.read( p ) );
    p = a.next( p );
    }
  for( ; ! a.finished( p ) ; p = a.next( p ) )
-  detail::append( c , a.read( p ) );
+  out( a.read( p ) );
  for( ; ! b.finished( q ) ; q = b.next( q ) )
-  detail::append( c , b.read( q ) );
+  out( b.read( q ) );
  ADS_AUDIT( detail::isSorted( c ) &&
             ( detail::length( c ) ==
               detail::length( a ) + detail::length( b ) ) );
@@ -211,21 +223,34 @@ void naturalMergeSort( S & s , long * passes )
  if( passes ) *passes = 0;
  for( ; ; ) {
   S a , b;                               // distribute
+  detail::Appender< S > toA( a ) , toB( b );
   long runs = 0;
   for( auto p = s.head() ; ! s.finished( p ) ; ++runs )
-   p = detail::copyRun( s , p , runs % 2 ? b : a );
+   p = detail::copyRun( s , p , runs % 2 ? toB : toA );
   if( runs <= 1 ) break;
   if( passes ) ++*passes;
-  S m;                                   // merge the runs in pairs
+  S m;                                   // merge the runs in pairs,
+  detail::Appender< S > out( m );        // straight into m
   auto p = a.head();
   auto q = b.head();
   while( ! a.finished( p ) || ! b.finished( q ) ) {
-   S x , y;
-   if( ! a.finished( p ) ) p = detail::copyRun( a , p , x );
-   if( ! b.finished( q ) ) q = detail::copyRun( b , q , y );
-   const S z = mergeSorted( x , y );
-   for( auto r = z.head() ; ! z.finished( r ) ; r = z.next( r ) )
-    detail::append( m , z.read( r ) );
+   bool ra = ! a.finished( p ) , rb = ! b.finished( q );   // in the runs
+   while( ra && rb ) {
+    if( b.read( q ) < a.read( p ) ) {
+     out( b.read( q ) );
+     const auto t = b.next( q );
+     rb = ! b.finished( t ) && !( b.read( t ) < b.read( q ) );
+     q = t;
+     }
+    else {
+     out( a.read( p ) );
+     const auto t = a.next( p );
+     ra = ! a.finished( t ) && !( a.read( t ) < a.read( p ) );
+     p = t;
+     }
+    }
+   if( ra ) p = detail::copyRun( a , p , out );
+   if( rb ) q = detail::copyRun( b , q , out );
    }
   s = std::move( m );
   }

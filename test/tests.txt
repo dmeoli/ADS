@@ -526,8 +526,15 @@ engineered_queues  book-queues-engineered  code del libro senza divisioni
 engineered_queues  spsc-queue-items        coda fra due thread, elementi propri
 engineered_queues  mpsc-queue              coda di molti produttori a corsie
 
+# the engineered paths of the rearrangements, beyond the book
+sequences  dutch-flag-branchless  bandiera olandese senza salti
+sequences  k-sorted-sift          k-ordinato con un setaccio per elemento
+sequences  merge-sort-appender    merge sort naturale accodando in fondo
+sequences  small-vector           vettore con posto per N elementi dentro
+
 # the engineered priority queues beyond the d-ary heap
 heaps  bucket-queue-cells    coda a bucket sulle celle di un vettore
+heaps  sequence-heap         sequence heap di Sanders
 heaps  radix-heap            heap radix monotono a cifre di B bit
 heaps  pairing-heap          pairing heap a due passate e ausiliario
 

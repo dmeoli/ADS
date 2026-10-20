@@ -22,12 +22,15 @@
 #include "ADS/priority/BucketQueue.h"
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
+#include "ADS/priority/SequenceHeap.h"
 
 #include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <limits>
+#include <functional>
 #include <map>
+#include <queue>
 #include <memory>
 #include <random>
 #include <set>
@@ -178,13 +181,12 @@ ADS_TEST( "radix-heap" )
  radix< std::uint64_t , 4 >( 9 , 100 , 20000 );   // past 1024 items
  }
 
-/// the pairing heap against a map of the priorities by handle, on random
-/// inserts, deleteMin()s and decreases to a random priority, to the
-/// minimum and to the same priority
-template< bool Aux >
-void pairing( unsigned seed , int steps , int range )
+/// the heap H against a map of the priorities by
+/// handle, on random inserts, deleteMin()s and decreases to a random
+/// priority, to the minimum and to the same priority
+template< class H >
+void handled( unsigned seed , int steps , int range )
 {
- using H = PairingHeap< int , int , Aux >;
  H Q;
  std::map< typename H::Handle , int > R;   // handle -> priority
  std::set< std::pair< int , typename H::Handle > > O;
@@ -236,10 +238,10 @@ void pairing( unsigned seed , int steps , int range )
 // contracts, an increase as well, one item, all equal priorities, sorted
 // and reverse sorted inserts, a decrease of the root and of a node of the
 // list, a move, items with a destructor left in the heap
-template< bool Aux >
-void pairing_edges( void )
+template< class H , class HS >
+void handled_edges( void )
 {
- PairingHeap< int , int , Aux > E;
+ H E;
  CHECK_THROWS( (void) E.min() , contract_violation );
  CHECK_THROWS( E.deleteMin() , contract_violation );
  auto h = E.insert( 7 , 5 );
@@ -249,8 +251,8 @@ void pairing_edges( void )
  CHECK( E.min() == 7 && E.minPriority() == 1 && E.size() == 1 );
  CHECK( E.deleteMin() == 7 && E.empty() );
  for( int dir = 0 ; dir < 3 ; ++dir ) {     // sorted, reversed, equal
-  PairingHeap< int , int , Aux > Q;
-  std::vector< typename PairingHeap< int , int , Aux >::Handle > hs;
+  H Q;
+  std::vector< typename H::Handle > hs;
   for( int i = 0 ; i < 300 ; ++i )
    hs.push_back( Q.insert( i , dir == 0 ? i : dir == 1 ? 300 - i : 4 ) );
   Q.decrease( hs[ 150 ] , -1 );             // a node of the list (Aux)
@@ -262,24 +264,103 @@ void pairing_edges( void )
    Q.deleteMin();
    }
   }
- PairingHeap< std::string , int , Aux > S;  // a move, and items with a
+ HS S;                                      // a move, and items with a
  for( int i = 0 ; i < 50 ; ++i )            // destructor left in it
   S.insert( std::string( 30 , char( 'a' + i % 26 ) ) , i % 9 );
  S.deleteMin();
- PairingHeap< std::string , int , Aux > M( std::move( S ) );
+ HS M( std::move( S ) );
  CHECK( S.empty() && M.size() == 49 && M.minPriority() == 0 );
  }
 
 ADS_TEST( "pairing-heap" )
 {
- pairing_edges< false >();
- pairing_edges< true >();
- pairing< false >( 1 , 3000 , 100 );
- pairing< true >( 2 , 3000 , 100 );
- pairing< false >( 3 , 3000 , 3 );          // many ties
- pairing< true >( 4 , 3000 , 3 );
- pairing< false >( 5 , 6000 , 1000000 );    // past 1024 nodes
- pairing< true >( 6 , 6000 , 1000000 );
+ handled_edges< PairingHeap< int , int > ,
+                PairingHeap< std::string , int > >();
+ handled_edges< PairingHeap< int , int , true > ,
+                PairingHeap< std::string , int , true > >();
+ using P2 = PairingHeap< int , int >;
+ using PA = PairingHeap< int , int , true >;
+ handled< P2 >( 1 , 3000 , 100 );
+ handled< PA >( 2 , 3000 , 100 );
+ handled< P2 >( 3 , 3000 , 3 );             // many ties
+ handled< PA >( 4 , 3000 , 3 );
+ handled< P2 >( 5 , 6000 , 1000000 );       // past 1024 nodes
+ handled< PA >( 6 , 6000 , 1000000 );
+ }
+
+/// the sequence heap against std::priority_queue on steps random pushes
+/// and pops, the pushes a fraction push of 10, the keys in [ 0 , range )
+void sequence( unsigned seed , int steps , unsigned push , int range )
+{
+ SequenceHeap< int > H;
+ std::priority_queue< int , std::vector< int > , std::greater<> > R;
+ std::mt19937 g( seed );
+ for( int t = 0 ; t < steps ; ++t )
+  if( R.empty() || ( g() % 10 < push ) ) {
+   const int x = int( g() % unsigned( range ) );
+   H.push( x );
+   R.push( x );
+   }
+  else {
+   CHECK( H.top() == R.top() && H.pop() == R.top() );
+   R.pop();
+   }
+ CHECK( H.size() == R.size() );
+ while( ! R.empty() ) {
+  CHECK( H.pop() == R.top() );
+  R.pop();
+  }
+ CHECK( H.empty() );
+ }
+
+// the sequence heap against std::priority_queue: with few items (all in
+// the insertion heap), past one insertion heap (a sequence in the group 1,
+// merged with the deletion buffer), past k sequences (the group 2), with
+// the pops between, with many equal keys and with all equal; the edge
+// cases: the empty heap violates the contracts, sorted and reversed
+// pushes, pops that empty the deletion buffer while the groups have
+// items, strings, a pushed item of the heap itself, clear(), and a max
+// heap by std::greater
+ADS_TEST( "sequence-heap" )
+{
+ SequenceHeap< int > E;
+ CHECK_THROWS( (void) E.top() , contract_violation );
+ CHECK_THROWS( E.pop() , contract_violation );
+ E.push( 3 );
+ CHECK( E.top() == 3 && E.pop() == 3 && E.empty() );
+ sequence( 1 , 500 , 6 , 1000 );
+ sequence( 2 , 3000 , 7 , 1000 );
+ sequence( 3 , 3000 , 7 , 2 );               // many equal
+ sequence( 4 , 3000 , 7 , 1 );               // all equal
+ sequence( 5 , 60000 , 9 , 1000000 );        // past the group 1
+ sequence( 6 , 200000 , 6 , 100000 );        // pops all along
+ const std::size_t big = SequenceHeap< int >::M * SequenceHeap< int >::K * 3;
+ for( int dir = 0 ; dir < 2 ; ++dir ) {      // sorted, reversed
+  SequenceHeap< int > S;
+  for( std::size_t i = 0 ; i < big ; ++i )
+   S.push( dir ? int( big - i ) : int( i ) );
+  for( std::size_t i = 0 ; i < big ; ++i )
+   CHECK( S.pop() == ( dir ? int( i + 1 ) : int( i ) ) );
+  CHECK( S.empty() );
+  }
+ SequenceHeap< std::string > T;              // strings, and an item of
+ for( int i = 0 ; i < 1000 ; ++i )           // the heap pushed again
+  T.push( std::to_string( 100000 + i * 7919 % 1000 ) );
+ for( int i = 0 ; i < 600 ; ++i )
+  T.push( T.top() );
+ std::string last;
+ while( ! T.empty() ) {
+  const std::string x = T.pop();
+  CHECK( last <= x );
+  last = x;
+  }
+ SequenceHeap< int , std::greater<> > X;     // the largest first
+ for( int i = 0 ; i < 2000 ; ++i ) X.push( i % 777 );
+ CHECK( X.top() == 776 && X.size() == 2000 );
+ X.clear();
+ CHECK( X.empty() );
+ X.push( 1 );
+ CHECK( X.pop() == 1 );
  }
 
 }  // end( namespace )

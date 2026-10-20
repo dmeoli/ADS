@@ -19,6 +19,26 @@ namespace ADS {
 
 namespace detail {
 
+/// the root of the heap H, whose children are heaps, replaced by x, which
+/// goes down while a child comes out before it, after( a , b ) true if a
+/// comes out after b: one comparison of the children and one with x per
+/// level
+template< class T , class C >
+void siftDown( std::vector< T > & H , T x , C & after )
+{
+ const std::size_t n = H.size();
+ std::size_t i = 0;
+ for( std::size_t c = 1 ; c < n ; c = 2 * i + 1 ) {
+  if( ( c + 1 < n ) && after( H[ c ] , H[ c + 1 ] ) )
+   ++c;
+  if( ! after( x , H[ c ] ) )
+   break;
+  H[ i ] = std::move( H[ c ] );
+  i = c;
+  }
+ H[ i ] = std::move( x );
+ }
+
 /// A[ 0 ] <= A[ 1 ] >= A[ 2 ] <= ... by less
 template< class T , class C >
 bool wiggles( const std::vector< T > & A , C & less )
@@ -58,7 +78,23 @@ std::pair< std::size_t , std::size_t > dutchNationalFlag(
  while( j < k ) {                           // A[ j .. k ) not examined
   const int c = int( colour( A[ j ] ) );
   ADS_PRE( ( c >= 0 ) && ( c <= 2 ) );
-  if( c == 0 ) {
+  if constexpr( std::is_trivially_copyable_v< T > ) {
+   // the same swap with no branch: A[ j ] goes to the place t of its
+   // class, i for 0, k - 1 for 2, j itself for 1, and A[ t ] to j; the
+   // place is computed, not chosen, so that the compiler emits no jump
+   T * a = A.data();
+   const std::size_t z = c == 0 , w = c == 2;
+   const std::size_t t = j + z * ( i - j ) + w * ( k - 1 - j );
+   const T x = a[ j ];
+   const T y = a[ t ];
+   a[ t ] = x;
+   a[ j ] = y;
+   i += z;
+   j += 1 - w;
+   k -= w;
+   moved += z + w;
+   }
+  else if( c == 0 ) {
    std::swap( A[ i++ ] , A[ j++ ] );
    ++moved;
    }
@@ -104,15 +140,16 @@ void sortKSorted( std::vector< T > & A , std::size_t k , C less )
   const std::size_t w = std::min( k , n - 1 ) + 1;   // the window
   std::vector< T > H( A.begin() , A.begin() + std::ptrdiff_t( w ) );
   std::make_heap( H.begin() , H.end() , greater );   // A[ i .. i + k ]
-  for( std::size_t i = 0 ; i < n ; ++i ) {
-   std::pop_heap( H.begin() , H.end() , greater );
-   A[ i ] = std::move( H.back() );
-   H.pop_back();
-   if( i + w < n ) {
-    H.push_back( A[ i + w ] );
-    std::push_heap( H.begin() , H.end() , greater );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   if( i + w < n ) {                        // the least out, A[ i + w ]
+    A[ i ] = std::move( H[ 0 ] );           // in its place at the root,
+    detail::siftDown( H , T( std::move( A[ i + w ] ) ) , greater );
+    }                                       // one sift for both
+   else {
+    std::pop_heap( H.begin() , H.end() , greater );
+    A[ i ] = std::move( H.back() );
+    H.pop_back();
     }
-   }
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
