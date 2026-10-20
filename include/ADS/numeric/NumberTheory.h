@@ -67,12 +67,16 @@
  *   \f$ [ 0 , \lfloor ( 2^{64} - 1 ) / p \rfloor ] \f$), which leave about
  *   \f$ \prod_{3 \le p \le 211} ( 1 - 1 / p ) \approx 0.21 \f$ of the odd
  *   numbers; then the test of Miller and Rabin on the fewest bases known
- *   to have no strong pseudoprime below n: 1 base below 341531, and
- *   below \f$ 2^{32} \f$ the base 2 with a second one read in a table of
- *   32 at the hash \f$ \lfloor ( n \cdot 2654435761 \bmod 2^{32} ) /
- *   2^{27} \rfloor \f$, chosen to be a witness for each of the 2314
- *   strong pseudoprimes to the base 2 below \f$ 2^{32} \f$ in its bucket
- *   (computed for ADS by the exhaustive search), up to the 7 bases of
+ *   to have no strong pseudoprime below n: below \f$ 2^{32} \f$ one base
+ *   read in a table of 1024 at the hash \f$ \lfloor ( n \cdot 2654435761
+ *   \bmod 2^{32} ) / 2^{22} \rfloor \f$ (the hashed bases of Forisek and
+ *   Jancina), the least base, at most 67, of which no odd composite of the
+ *   bucket with no prime factor up to 211 is a strong pseudoprime
+ *   (computed for ADS by the exhaustive search over the \f$ 2^{31} \f$
+ *   odd numbers), in an arithmetic of Montgomery of 32 bits that needs
+ *   only \f$ n^{-1} \bmod 2^{32} \f$ (the form of b by one division, the
+ *   power from the lowest bit of d, the comparisons after one
+ *   reduction), up to the 7 bases of
  *   Sinclair for every n of 64 bits. The k bases run in lockstep, k chains
  *   of products that the processor overlaps, so that 2 cost about as much
  *   as 1; with 3 or more, the exponent goes by windows of 4 bits with a
