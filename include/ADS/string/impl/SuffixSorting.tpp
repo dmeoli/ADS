@@ -22,6 +22,10 @@
 #include <memory>
 #include <type_traits>
 
+#if defined( __AVX2__ )
+ #include <immintrin.h>
+#endif
+
 namespace ADS {
 
 namespace detail {
@@ -48,6 +52,57 @@ template< class S >
 inline S saisClamp( S x )
 {
  return( x & ~( x >> ( 8 * sizeof( S ) - 1 ) ) );
+ }
+
+/// the 64 bits of x in the reverse order
+inline std::uint64_t saisReverse( std::uint64_t x )
+{
+ x = ( ( x >> 1 ) & 0x5555555555555555ull ) |
+     ( ( x & 0x5555555555555555ull ) << 1 );
+ x = ( ( x >> 2 ) & 0x3333333333333333ull ) |
+     ( ( x & 0x3333333333333333ull ) << 2 );
+ x = ( ( x >> 4 ) & 0x0F0F0F0F0F0F0F0Full ) |
+     ( ( x & 0x0F0F0F0F0F0F0F0Full ) << 4 );
+ x = ( ( x >> 8 ) & 0x00FF00FF00FF00FFull ) |
+     ( ( x & 0x00FF00FF00FF00FFull ) << 8 );
+ x = ( ( x >> 16 ) & 0x0000FFFF0000FFFFull ) |
+     ( ( x & 0x0000FFFF0000FFFFull ) << 16 );
+ return( ( x >> 32 ) | ( x << 32 ) );
+ }
+
+/// bit j of *G: T[ j ] < T[ j + 1 ], of *P: T[ j ] == T[ j + 1 ], for
+/// j in [ 0 , 64 )
+template< typename C >
+inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
+{
+#if defined( __AVX2__ )
+ if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) {
+  const __m256i flip = _mm256_set1_epi8( char( 0x80 ) );
+  std::uint64_t g[ 2 ] , p[ 2 ];
+  for( int h = 0 ; h < 2 ; ++h ) {
+   const __m256i a = _mm256_loadu_si256(
+                      reinterpret_cast< const __m256i * >( T + 32 * h ) ) ,
+                 b = _mm256_loadu_si256(
+                      reinterpret_cast< const __m256i * >( T + 32 * h + 1 ) );
+   const __m256i sa = _mm256_xor_si256( a , flip ) ,
+                 sb = _mm256_xor_si256( b , flip );
+   g[ h ] = std::uint32_t( _mm256_movemask_epi8(
+                            _mm256_cmpgt_epi8( sb , sa ) ) );
+   p[ h ] = std::uint32_t( _mm256_movemask_epi8(
+                            _mm256_cmpeq_epi8( a , b ) ) );
+   }
+  *G = g[ 0 ] | ( g[ 1 ] << 32 );
+  *P = p[ 0 ] | ( p[ 1 ] << 32 );
+  return;
+  }
+#endif
+ std::uint64_t g = 0 , p = 0;
+ for( unsigned j = 0 ; j < 64 ; ++j ) {
+  g |= std::uint64_t( T[ j ] < T[ j + 1 ] ) << j;
+  p |= std::uint64_t( T[ j ] == T[ j + 1 ] ) << j;
+  }
+ *G = g;
+ *P = p;
  }
 
 /// prefetches the line of p for a read
@@ -211,17 +266,25 @@ bool saisEqual( const C * T , S a , S b , S l )
 /// once is already in place, and a group of equal ranks is sorted by the
 /// rank of the suffix h places ahead, h = 1, 2, 4, ..., its rank the last
 /// place of its group; false, with SA undefined, if more than limit
-/// suffixes are still tied after a round, or after 16 rounds, which
-/// leaves the work to the recursion
+/// suffixes are tied, unless the groups of a repeated name are small (16
+/// suffixes on average, so that a round costs little and few rounds
+/// separate them), and false if more than limit are still tied after a
+/// round, or after 16 rounds, which leaves the work to the recursion
 template< class S >
 bool saisDoubling( const S * R , S * SA , S m ,
                    const std::vector< S > & count , S limit )
 {
  const std::size_t K = count.size();
- S tied = 0;                          // in the groups of a repeated name
+ S tied = 0 , groups = 0;             // in the groups of a repeated name
  for( std::size_t c = 0 ; c < K ; ++c )
-  if( count[ c ] > 1 ) tied += count[ c ];
- if( tied > limit ) return( false );
+  if( count[ c ] > 1 ) {
+   tied += count[ c ];
+   ++groups;
+   }
+ if( tied > limit ) {
+  if( tied > 16 * groups ) return( false );
+  limit = m;
+  }
  std::vector< S > V( std::size_t( m ) , 0 ) , start( K , 0 );
  for( std::size_t c = 0 , sum = 0 ; c < K ; ++c ) {
   start[ c ] = S( sum );
@@ -253,15 +316,24 @@ bool saisDoubling( const S * R , S * SA , S m ,
   key.clear();
   for( const auto & [ f , g ] : G )
    for( S i = f ; i < f + g ; ++i ) {
+    if( i + D < m ) saisPrefetch( V.data() + std::min( SA[ i + D ] + h ,
+                                                        m - 1 ) );
     const S k = SA[ i ];
-    if( k + h < m ) saisPrefetch( V.data() + ( k + h ) );
     key.emplace_back( k + h < m ? V[ std::size_t( k + h ) ] : S( -1 ) , k );
     }
   H.clear();
   std::size_t at = 0;
   for( const auto & [ f , g ] : G ) {
    auto * a = key.data() + at;
-   std::sort( a , a + g );
+   if( g <= 16 )                      // most groups: few suffixes
+    for( S i = 1 ; i < g ; ++i ) {
+     const auto x = a[ i ];
+     S j = i;
+     for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j ) a[ j ] = a[ j - 1 ];
+     a[ j ] = x;
+     }
+   else
+    std::sort( a , a + g );
    for( S i = 0 ; i < g ; ) {
     S j = i + 1;
     while( ( j < g ) && ( a[ j ].first == a[ i ].first ) ) ++j;
@@ -277,6 +349,8 @@ bool saisDoubling( const S * R , S * SA , S m ,
     S j = i + 1;
     while( ( j < g ) && ( a[ j ].first == a[ i ].first ) ) ++j;
     for( S q = i ; q < j ; ++q ) {
+     if( at + std::size_t( q + D ) < key.size() )
+      saisPrefetchW( V.data() + a[ q + D ].second );
      SA[ f + q ] = a[ q ].second;
      V[ std::size_t( a[ q ].second ) ] = f + j - 1;
      }
@@ -373,24 +447,65 @@ S saisPartial( const C * T , S * SA , S n , S K ,
              low = std::numeric_limits< S >::max();
  constexpr S D = S( saisAhead );
  const std::size_t k = std::size_t( K );
- // the kinds, right to left: 0 LL , 1 LS , 2 LMS , 3 SS, 2 t( i ) +
- // t( i - 1 ), 1 for S
- size4.assign( 4 * k , 0 );
- lms.assign( std::size_t( n ) / 64 + 1 , 0 );
- S m = 0 , s = 0;                    // the suffix n - 1 is of type L
- for( S i = n - 1 ; i >= 1 ; --i ) {
-  const S a = S( T[ i - 1 ] ) , b = S( T[ i ] );
-  const S u = S( a < b ) | ( S( a == b ) & s );
-  const S kind = 2 * s + u;
-  if( ( K > S( saisSmall ) ) && ( i > D ) )
-   saisPrefetchW( size4.data() + 4 * std::size_t( T[ i - D ] ) );
-  ++size4[ 4 * std::size_t( b ) + std::size_t( kind ) ];
-  const S l = S( kind == 2 );
-  lms[ std::size_t( i ) >> 6 ] |= std::uint64_t( l ) << ( i & 63 );
-  m += l;
-  s = u;
+ // the types, 64 places a word from the last word: with G the places i
+ // where T[ i ] < T[ i + 1 ] and P those where they are equal, t( i ) =
+ // G( i ) | ( P( i ) & t( i + 1 ) ), the carries of the sum G + ( G | P )
+ // read from the higher places to the lower ones, so that a word costs one
+ // addition and the dependence passes from word to word only (the place
+ // n - 1 is of type L, as if T[ n ] were smaller than every symbol)
+ const std::size_t words = std::size_t( n ) / 64 + 1;
+ std::vector< std::uint64_t > type( words , 0 );
+ std::uint64_t above = 0;             // the type of the place above
+ for( std::size_t w = words ; w-- > 0 ; ) {
+  std::uint64_t Ga = 0 , Pa = 0;      // bit j: the place 64 w + j
+  const S base = S( 64 * w );
+  if( base + 64 < n )                 // T[ base + 64 ] is there
+   saisCompare( T + base , &Ga , &Pa );
+  else
+   for( S i = base ; i < n - 1 ; ++i ) {
+    const S a = S( T[ i ] ) , b = S( T[ i + 1 ] );
+    Ga |= std::uint64_t( a < b ) << ( i - base );
+    Pa |= std::uint64_t( a == b ) << ( i - base );
+    }
+  // bit j of G and P: the place 64 w + 63 - j
+  const std::uint64_t G = saisReverse( Ga ) , P = saisReverse( Pa );
+  const std::uint64_t B2 = G | P , s1 = G + B2 , s2 = s1 + above;
+  const std::uint64_t out = std::uint64_t( s1 < G ) | std::uint64_t( s2 < s1 );
+  const std::uint64_t X = ( ( s2 ^ G ^ B2 ) >> 1 ) | ( out << 63 );
+  type[ w ] = saisReverse( X );       // bit j: the place 64 w + j
+  above = X >> 63;
   }
- *first = s;
+ *first = S( type[ 0 ] & 1 );
+ // the kinds of the places i >= 1, 2 t( i ) + t( i - 1 ): 0 LL , 1 LS ,
+ // 2 LMS , 3 SS; on the small alphabets in two histograms, the even and
+ // the odd places, so that equal symbols in a row do not wait for each
+ // other
+ size4.assign( 4 * k , 0 );
+ lms.assign( words , 0 );
+ const bool smallK = K <= S( saisSmall );
+ std::vector< S > odd( smallK ? 4 * k : 0 , 0 );
+ S m = 0;
+ for( std::size_t w = 0 ; w < words ; ++w ) {
+  const std::uint64_t t = type[ w ] ,
+                      before = ( t << 1 ) | ( w ? type[ w - 1 ] >> 63 : 0 );
+  std::uint64_t l = t & ~before;      // LMS: S after L
+  if( w == 0 ) l &= ~std::uint64_t( 1 );
+  lms[ w ] = l;
+  m += S( std::popcount( l ) );
+  const S base = S( 64 * w ) , end = std::min< S >( base + 64 , n );
+  for( S i = std::max< S >( base , 1 ) ; i < end ; ++i ) {
+   const unsigned j = unsigned( i - base );
+   const std::size_t kind = 2 * ( ( t >> j ) & 1 ) + ( ( before >> j ) & 1 );
+   if( smallK && ( i & 1 ) )
+    ++odd[ 4 * std::size_t( T[ i ] ) + kind ];
+   else {
+    if( ! smallK && ( i + D < n ) )
+     saisPrefetchW( size4.data() + 4 * std::size_t( T[ i + D ] ) );
+    ++size4[ 4 * std::size_t( T[ i ] ) + kind ];
+    }
+   }
+  }
+ for( std::size_t c = 0 ; c < odd.size() ; ++c ) size4[ c ] += odd[ c ];
  if( m == 0 ) return( 0 );
 
  // the parts: A = LL , LMS per symbol; C = LS , SS per symbol; the LMS
@@ -513,18 +628,21 @@ S saisPartial( const C * T , S * SA , S n , S K ,
 
  // the names: SA[ i ] marked if it differs from SA[ i + 1 ]
  std::fill( SA + m , SA + n , S( 0 ) );
- S name = 1;
- runs.assign( 1 , 0 );
+ S name = 1 , start = 0;              // the first LMS place of the name
+ runs.clear();
+ runs.reserve( std::size_t( m ) );
  for( S i = 0 ; i < m ; ++i ) {
-  const S p = SA[ i ] & low;
+  if( i + D < m ) saisPrefetchW( SA + m + ( SA[ i + D ] & low ) / 2 );
+  const S x = SA[ i ] , p = x & low;
   SA[ m + p / 2 ] = name;
-  ++runs.back();
-  if( ( SA[ i ] < 0 ) && ( i + 1 < m ) ) {
-   ++name;
-   runs.push_back( 0 );
-   }
   SA[ i ] = p;
+  if( ( x < 0 ) && ( i + 1 < m ) ) {
+   runs.push_back( i + 1 - start );
+   start = i + 1;
+   ++name;
+   }
   }
+ runs.push_back( m - start );
  *names = name;
  return( m );
  }
