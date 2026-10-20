@@ -735,7 +735,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   needs a rank: 1.14 bits per parenthesis in all instead of 1.5
 - RankSelect answers select straight from the inventory, with no access
   to the bits, when every bit b of a group has its offset (a value of
-  density below about 1/128)
+  density below about 1%); BitVector copies the words of a span once
 
 ### Fixed
 
