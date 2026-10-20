@@ -584,6 +584,32 @@ ADS_TEST( "flat-hash-table" )
  for( std::uint64_t k = 0 ; k < 150 ; ++k ) S.insert( k , 1 );   // reused
  CHECK( S.size() == 150 && S.capacity() == mS );
  for( std::uint64_t k = 0 ; k < 150 ; ++k ) CHECK( S.lookup( k ) == 1 );
+ {                          // churn at a steady size near the bound: the
+                              // places counted recounted, few rebuilds
+  FlatHashTable< std::uint64_t , std::uint64_t > C;
+  std::unordered_map< std::uint64_t , std::uint64_t > R;
+  std::mt19937_64 g( 7 );
+  for( std::uint64_t k = 0 ; k < 1200 ; ++k ) {   // 1200 of 1920 places
+   C.insert( k , k );
+   R[ k ] = k;
+   }
+  const std::size_t m = C.capacity();
+  CHECK( m == 1920 );
+  std::vector< std::uint64_t > in( 1200 );
+  for( std::uint64_t k = 0 ; k < 1200 ; ++k ) in[ k ] = k;
+  for( std::uint64_t t = 0 ; t < 100000 ; ++t ) {   // one out, one in
+   const std::size_t i = g() % in.size();
+   CHECK( C.remove( in[ i ] ) && R.erase( in[ i ] ) == 1 );
+   in[ i ] = 1200 + t;
+   CHECK( C.insert( in[ i ] , t ) );
+   R[ in[ i ] ] = t;
+   const std::size_t c = C.capacity();
+   CHECK( C.size() + C.deleted() <= c - c / 8 );
+   }
+  CHECK( C.capacity() <= 2 * m && C.size() == R.size() );
+  for( const auto & [ k , v ] : R ) CHECK( C.lookup( k ) == v );
+  for( const auto & [ k , v ] : C ) CHECK( R.at( k ) == v );
+  }
  {                                             // deleted places churned
   FlatHashTable< std::uint64_t , int , Same > D;
   for( int round = 0 ; round < 50 ; ++round ) {

@@ -46,7 +46,20 @@
  * pairs. remove() empties the place, with no deleted marks; but a place
  * emptied in a group whose overflow is not 0 still counts as full, since
  * the bits stay set until the next rebuild and the searches keep going past
- * the group. An insertion takes the first empty place of the inspection of
+ * the group. A removal in the first group of its key writes the 16 control
+ * bytes of the group whole, at an address that depends only on the hash:
+ * the store of the single byte would have an address known only once the
+ * control bytes arrive from memory, and the loads of the next operations
+ * could not pass it before then, so that the removals of random keys would
+ * pay their misses one after the other instead of overlapping them (on a
+ * Xeon Gold 5120, 55 ns against 33 ns per removal from 10^6 keys). For the
+ * same reason a removal counts the places it may leave counted by a bound
+ * d, one more per removal, with no load: when $ n + d $ reaches the
+ * bound of the full places, the places counted are counted exactly, in
+ * $ O( m / 15 ) $ time, and the table is rebuilt only if fewer than
+ * $ m / 16 $ places are left, so that the next count comes at least
+ * $ m / 16 $ operations later and costs O( 1 ) amortized. An insertion
+ * takes the first empty place of the inspection of
  * its key. The full places and those still counted stay at most 7 / 8 of
  * the places: past it the table is rebuilt, twice as large if the pairs
  * exceed half of that bound, of the same size otherwise (only the bits of
@@ -129,6 +142,7 @@
 #include <optional>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 /// the matching of the 15 control bytes of a group: 1 by SSE2, 2 by NEON,
 /// 0 by broadword operations, on any machine; by default the first that
@@ -262,7 +276,8 @@ class FlatHashTable {
  [[nodiscard]] double load( void ) const;
 
  /// the places emptied by remove() in groups that some inspection went
- /// past, which count as full until the table is rebuilt
+ /// past, which count as full until the table is rebuilt; O( m ) time, by
+ /// a scan of the groups
  [[nodiscard]] std::size_t deleted( void ) const;
 
  /// room for n pairs before the table grows
@@ -411,10 +426,16 @@ class FlatHashTable {
  /// fingerprint matches, nil if k is not there
  [[nodiscard]] Slot * scan( std::size_t g , Mask m , const K & k ) const;
 
+ /// a key passed out of line: by value if it is a small trivial type, so
+ /// that the common path never stores it to memory to take its address
+ using KeyArg = std::conditional_t< std::is_trivially_copyable_v< K > &&
+                                    ( sizeof( K ) <= 2 * sizeof( void * ) ) ,
+                                    K , const K & >;
+
  /// locate( x , k ) past the first group g of x, whose overflow has the
  /// bit of x
  ADS_FLAT_NOINLINE Slot * further( std::uint64_t x , std::size_t g ,
-                                   const K & k ) const;
+                                   KeyArg k ) const;
 
  /// the first empty place of the inspection of x, the bit of x set in the
  /// overflow of the full groups before it
@@ -431,6 +452,15 @@ class FlatHashTable {
 
  /// empties the place i, whose pair is destroyed
  void drop( std::size_t i );
+
+ /// f_deleted set to deleted(); true if the table has room for f_cap / 16
+ /// more pairs or places counted before the next recount, false if it is
+ /// to be rebuilt
+ ADS_FLAT_NOINLINE bool recount( void );
+
+ /// the group c with the control byte of its place j EMPTY, written whole
+ /// at the address of c [see remove()]
+ static void vacate( Group & c , std::size_t j );
 
  /// the table rebuilt with G groups, a power of 2 at least 2, first( o )
  /// called on
@@ -464,7 +494,7 @@ class FlatHashTable {
  int f_shift = 63;                 ///< 64 - log2 of the groups
  std::size_t f_max = 0;            ///< bound( f_cap )
  std::size_t f_size = 0;           ///< the full places
- std::size_t f_deleted = 0;        ///< see deleted()
+ std::size_t f_deleted = 0;        ///< a bound of deleted() [see recount()]
  H f_h;                            ///< the hash of the keys
  Eq f_eq;                          ///< the equality of the keys
 

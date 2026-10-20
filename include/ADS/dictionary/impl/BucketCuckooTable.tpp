@@ -210,12 +210,18 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
   ++f_rehashes;
   };
  fresh( f_lg + 1 );
+ // the memory of the key 8 places later prefetched, if its hash reads it
+ // [see detail::kIndirectKey], so that the misses of the keys overlap
+ constexpr std::size_t AHEAD = 8;
  std::size_t i = 0;
- for( ; i < S.size() ; ++i )
+ for( ; i < S.size() ; ++i ) {
+  if( i + AHEAD < S.size() )
+   detail::prefetchKey( S[ i + AHEAD ].key );
   if( ( ( T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF ) &&
       ! place( hash( S[ i ].key ) , std::move( S[ i ].key ) ,
                std::move( S[ i ].value ) ) )
    break;
+  }
  if( i == S.size() )
   return;
  std::vector< Slot > P;                   // the rare case
