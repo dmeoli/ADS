@@ -657,6 +657,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wolfe, against 35 to 38 of tsl::robin_map and 53 to 74 of
   boost::unordered_flat_map); the rebuilds of FlatHashTable and of
   BucketCuckooTable prefetch the memory of the string keys 8 keys ahead,
+  and the doubling of BucketCuckooTable hashes the keys in a first pass
+  and prefetches the first bucket of each key 8 keys ahead in the second,
   1.05 to 1.2 times faster insertions of strings; FlatHashTable passes a
   small key by value to the search past the first group, so that a search
   stores nothing

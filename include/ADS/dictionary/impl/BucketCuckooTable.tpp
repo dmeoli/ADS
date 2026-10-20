@@ -210,16 +210,31 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
   ++f_rehashes;
   };
  fresh( f_lg + 1 );
- // the memory of the key 8 places later prefetched, if its hash reads it
- // [see detail::kIndirectKey], so that the misses of the keys overlap
+ // two passes, so that the misses overlap: the hashes of the keys, the
+ // memory of the key AHEAD places later prefetched if its hash reads it
+ // [see detail::kIndirectKey]; then the placements, the first bucket of
+ // the key AHEAD places later prefetched
  constexpr std::size_t AHEAD = 8;
+ auto full = [ & ]( std::size_t j ) {
+  return( ( ( T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF ) != 0 ); };
+ std::vector< std::uint64_t > X( S.size() );
+ for( std::size_t j = 0 ; j < S.size() ; ++j ) {
+  if( j + AHEAD < S.size() )
+   detail::prefetchKey( S[ j + AHEAD ].key );
+  if( full( j ) )
+   X[ j ] = hash( S[ j ].key );
+  }
  std::size_t i = 0;
  for( ; i < S.size() ; ++i ) {
-  if( i + AHEAD < S.size() )
-   detail::prefetchKey( S[ i + AHEAD ].key );
-  if( ( ( T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF ) &&
-      ! place( hash( S[ i ].key ) , std::move( S[ i ].key ) ,
-               std::move( S[ i ].value ) ) )
+#if defined( __GNUC__ ) || defined( __clang__ )
+  if( ( i + AHEAD < S.size() ) && full( i + AHEAD ) ) {
+   const std::size_t b = first( X[ i + AHEAD ] );
+   __builtin_prefetch( &f_T[ b ] , 1 );
+   __builtin_prefetch( &f_S[ 4 * b ] , 1 );
+   }
+#endif
+  if( full( i ) && ! place( X[ i ] , std::move( S[ i ].key ) ,
+                            std::move( S[ i ].value ) ) )
    break;
   }
  if( i == S.size() )
