@@ -31,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   new and delete, std::pmr::monotonic_buffer_resource and
   unsynchronized_pool_resource, boost::object_pool and boost::pool,
   mimalloc and jemalloc (MIMALLOC=<prefix> and JEMALLOC=<prefix> in the
-  makefile)
+  makefile, ADS_MIMALLOC and ADS_JEMALLOC in CMake, which also takes the
+  sources of tlx and radix-heap from ADS_PRIORITY)
 
 - RadixHeap, the monotone queue of integer keys of Ahuja, Mehlhorn, Orlin
   and Tarjan with digits of B bits: a key goes to the bucket of the
