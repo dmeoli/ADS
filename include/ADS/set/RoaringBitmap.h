@@ -74,7 +74,7 @@
  *      an array of structures, Proceedings of the VLDB Endowment 8(11),
  *      1274-1285, 2015, doi:10.14778/2809974.2809988
  * \see W. Muła, N. Kurz, D. Lemire, Faster population counts using AVX2
- *      instructions, The Computer Journal 61(1), 111-120, 2018,
+ *      instructions, The Computer Journal 61(1), 2018,
  *      doi:10.1093/comjnl/bxx046
  *
  * \author Donato Meoli \n

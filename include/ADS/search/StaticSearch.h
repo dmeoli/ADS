@@ -14,7 +14,9 @@
  *   whether the base moves (a conditional move rather than a jump), and the
  *   two items that the next step may compare are prefetched, so that the
  *   misses of the cache of two steps overlap; \f$ \lceil \log_2 n \rceil
- *   \f$ comparisons, none of them mispredicted.
+ *   + 1 \f$ comparisons on an array of n > 0 items (the length goes from
+ *   n to \f$ \lceil n / 2 \rceil \f$ at each step, down to 1, and a last
+ *   comparison decides), none of them mispredicted.
  * - SPlusTree is the static B+-tree of Slotin (the S+ tree), the sorted
  *   items themselves being its leaves: the items are cut into blocks of B
  *   items, B the items of 64 bytes, a line of cache (16 of 32 bits, 8 of
@@ -23,17 +25,26 @@
  *   stored one after the other, the children of the node k being the nodes
  *   k ( B + 1 ) , ... , k ( B + 1 ) + B of the next level, so that no
  *   pointer is stored, and the levels one after the other, the leaves last.
- *   A search reads one line per level, \f$ \lceil \log_{B+1} ( n / B )
- *   \rceil + 1 \f$ lines in all (3 for a million keys of 32 bits, against
- *   the 20 of the binary search, of which the last 4 share a line), and in
- *   a node it counts the keys smaller than the key looked for, which is the
- *   child to take: on the arithmetic keys under std::less the count runs on
- *   the whole line with no branch, the places past the last item holding
- *   the largest value of the type, and the compiler turns it into one or
- *   two comparisons of vectors; on the others it is a scan of the line. The
- *   space is \f$ n ( 1 + 1 / B + 1 / B^2 + \dots ) \f$ items, and the
- *   building O( n ) time.
- *
+ *   The level of the leaves has \f$ s_{H-1} = \lceil n / B \rceil \f$
+ *   nodes and each level above \f$ s_\ell = \lceil s_{\ell+1} / ( B + 1 )
+ *   \rceil \f$, up to the root, so that there are
+ *   \f[
+ *     H = 1 + \Big\lceil \log_{B+1} \Big\lceil \frac{n}{B}
+ *     \Big\rceil \Big\rceil
+ *   \f]
+ *   levels, and a search reads one line per level, H in all (3 for a
+ *   million keys of 32 bits, against the 20 probes of the binary search, of
+ *   which the last 4 share a line). In a node the search counts the keys
+ *   smaller than the key looked for, which is the child to take: on the
+ *   arithmetic keys under std::less the count runs on the whole line with
+ *   no branch, the places past the last item holding the largest value of
+ *   the type, as one or two comparisons of vectors [see CountLess.h]; on the
+ *   others it is a scan of the keys in use. The space is \f$ B \sum_\ell
+ *   s_\ell \approx n ( 1 + \frac{1}{B+1} + \frac{1}{(B+1)^2} + \dots ) = n
+ *   \frac{B+1}{B} \f$ items, on huge pages when they are at least 2 MB [see
+ *   HugePageAllocator.h], so that a search misses the TLB at most once, and
+ *   the building takes O( n ) time.
+
  * Compared with the literature: the layout of Eytzinger (a heap order of
  * the items) also reads one line for the last 4 levels of the binary
  * search, and with the prefetch of the 16 descendants 4 levels down it
@@ -43,7 +54,11 @@
  * the arrays that do not fit in the cache. The S+ tree removes from the
  * B-tree of Khuong and Morin the comparison with the key at every level
  * (the leaves are the array, and the internal keys only route), and counts
- * instead of searching in a node.
+ * instead of searching in a node; the FAST trees of Kim et al. lay out a
+ * binary tree in blocks of lines and pages and search a block with SIMD
+ * comparisons, and the comparative study of Bellomo et al. finds the
+ * B-trees with SIMD searches the fastest in a lookup among the classic,
+ * the compressed and the learned indexes [see PGMIndex.h] of integers.
  *
  * The contracts [see Contract.h]: the array sorted, an audit; each result
  * r is such that the items before r are smaller than the key and those
@@ -60,6 +75,14 @@
  * \see J. Rao, K. A. Ross, Cache conscious indexing for decision-support
  *      in main memory, Proceedings of VLDB 1999, 78-89, 1999 (the CSS
  *      trees, B-trees with no pointers)
+ * \see C. Kim, J. Chhugani, N. Satish, E. Sedlar, A. D. Nguyen, T.
+ *      Kaldewey, V. W. Lee, S. A. Brandt, P. Dubey, FAST: fast architecture
+ *      sensitive tree search on modern CPUs and GPUs, Proceedings of SIGMOD
+ *      2010, 339-350, 2010, doi:10.1145/1807167.1807206
+ * \see L. Bellomo, G. Cianci, L. de Rosa, P. Ferragina, M. Odorisio, A
+ *      comparative study of compressed, learned, and traditional indexing
+ *      methods for integer data, Proceedings of SEA 2025, LIPIcs 338,
+ *      5:1-5:23, 2025, doi:10.4230/LIPIcs.SEA.2025.5
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

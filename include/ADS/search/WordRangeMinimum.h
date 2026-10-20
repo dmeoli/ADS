@@ -8,36 +8,58 @@
  * ) time with a few accesses to the memory and O( n ) words of space.
  *
  * The array is cut into blocks of 64 items, the bits of a word. Inside a
- * block, the stack of the minima from the right is kept as a mask for every
- * place j: the bit t of mask[ j ] is set if A[ t ] is not larger than every
- * item of A[ t + 1 .. j ], i.e., if t is on the stack of the scan of the
- * block from its start up to j, which pops the items larger than the new
- * one and pushes it. The leftmost minimum of A[ i .. j ] in a block is then
- * the lowest bit of mask[ j ] at or above i, one count of the trailing zeros:
- * the items of the stack from i on are the minima from the right of A[ i ..
- * j ], increasing, and the first of them is the minimum, the leftmost one
- * since the equal items stay on the stack. A query across blocks takes the
- * minimum of the suffix of the block of i, that of the prefix of the block
- * of j, and that of the blocks in between from a sparse table on the minima
- * of the blocks, two entries that cover them [see SparseTable in
- * RangeMinimum.h]; the minima of the suffixes and of the prefixes are kept
- * for every place, the value and its offset in the block side by side, and
- * so are the minima in the table, so that such a query makes four reads of
- * the memory, independent of one another, and never reads the array. The
- * masks take 8 bytes per item, the minima of the suffixes and of the
- * prefixes two items and two bytes, and the table \f$ ( n / 64 ) \log_2( n
- * / 64 ) \f$ items and indices, less than the masks; all are built in O( n )
- * time.
+ * block that starts at b, the stack of the minima from the right is kept
+ * as a mask for every place j:
+ * \f[
+ *   \mathit{mask}[ j ] = \sum \big\{ 2^{t - b} \;:\; b \le t \le j , \;
+ *   A[ t ] \le A[ u ] \mbox{ for all } t < u \le j \big\} ,
+ * \f]
+ * i.e., the places on the stack of the scan of the block from b up to j,
+ * which pops the items larger than the new one and pushes it. The leftmost
+ * minimum of A[ i .. j ] in a block is then the lowest bit of mask[ j ] at
+ * or above i, \f$ b + \mathrm{ctz}( \mathit{mask}[ j ] \wedge \neg ( 2^{i
+ * - b} - 1 ) ) \f$, one count of the trailing zeros: the places of the stack
+ * from i on are the minima from the right of A[ i .. j ], increasing, and the
+ * first of them is the minimum, the leftmost one since the equal items stay
+ * on the stack. A query across blocks takes the minimum of the suffix of
+ * the block of i, that of the prefix of the block of j and, if there are
+ * blocks in between, that of the two entries of a sparse table on the
+ * minima of the blocks that cover them [see SparseTable in RangeMinimum.h],
+ * the leftmost of the smallest of three; the minima of the suffixes and of
+ * the prefixes are kept for every place, the value and its offset in the
+ * block side by side, and so are the minima in the table, so that a query
+ * makes at most five reads of the memory, independent of one another, and
+ * never reads the array; the minima are chosen by conditional moves, which
+ * a random range would mispredict as branches half of the times.
+ *
+ * The masks are built by the stacks in O( n ) time, or on the integers and
+ * the floating types under std::less by one comparison of vectors of the
+ * block per item [see greaterBits() in CountLess.h], the larger items
+ * cleared from the mask of the item before all at once, \f$ \mathit{mask}[
+ * j ] = ( \mathit{mask}[ j - 1 ] \wedge \neg G_j ) \vee 2^{j - b} \f$ with
+ * \f$ G_j \f$ the bits of the items of the block larger than A[ j ] (the
+ * stack is increasing, so the items it pops are exactly those of it larger
+ * than A[ j ]), with no branch. The space is
+ * \f[
+ *   n \big( 8 + 2 \, \mathit{sizeof}( T ) + 2 \big) +
+ *   \Big\lceil \frac{n}{64} \Big\rceil \Big\lceil \log_2
+ *   \Big\lceil \frac{n}{64} \Big\rceil \Big\rceil
+ *   \big( \mathit{sizeof}( T ) + 4 \big)
+ * \f]
+ * bytes besides the array (the masks, the minima of the suffixes and of the
+ * prefixes with their offsets, and the table), on huge pages [see
+ * HugePageAllocator.h]: about 20 bytes per item of 32 bits, against the
+ * \f$ 4 \lceil \log_2 n \rceil \f$ bytes of a sparse table on all the
+ * items (80 for a million).
  *
  * Compared with the literature: the masks are the in-word stacks of the
  * practical solutions that came after the succinct one of Fischer and Heun
  * (who encode the Cartesian tree of each block in 2 n + o( n ) bits and
  * answer through a table of the shapes of the trees), e.g., the structure
- * of Baumstark, Gog, Heuer and Labeit, and the "linear RMQ" of the
- * competitive programming, which trade those bits for a query that touches
- * one or two words; the sparse table alone answers with two accesses but
- * takes \f$ n \log_2 n \f$ words, too many past the cache.
- *
+ * of Baumstark, Gog, Heuer and Labeit, which trade those bits for a query
+ * that touches one or two words; the decomposition into blocks with a
+ * sparse table on their minima is that of Bender and Farach-Colton.
+
  * The contracts [see Contract.h]: fewer than \f$ 2^{32} \f$ items; a query
  * asks for i <= j < n, and its answer is a leftmost minimum of the range,
  * an audit. The functions are defined in WordRangeMinimum.tpp.
@@ -45,6 +67,9 @@
  * \see J. Fischer, V. Heun, Space-efficient preprocessing schemes for range
  *      minimum queries on static arrays, SIAM Journal on Computing 40(2),
  *      465-492, 2011, doi:10.1137/090779759
+ * \see M. A. Bender, M. Farach-Colton, The LCA problem revisited,
+ *      Proceedings of LATIN 2000, LNCS 1776, 88-94, 2000,
+ *      doi:10.1007/10719839_9
  * \see N. Baumstark, S. Gog, T. Heuer, J. Labeit, Practical range minimum
  *      queries revisited, Proceedings of SEA 2017, LIPIcs 75, 12:1-12:16,
  *      2017, doi:10.4230/LIPIcs.SEA.2017.12

@@ -9,8 +9,9 @@
  * gives their number.
  *
  * - On lists of similar lengths (the longer at most 32 times the shorter)
- *   the two lists are merged a block of 8 items at a time on each side,
- *   on the integers of 32 bits with AVX2: the block of A is compared with
+ *   the two lists are merged a block of 8 items at a time on each side, in
+ *   at most \f$ ( n + m ) / 8 \f$ steps, on the integers of 32 bits with
+ *   AVX2: the block of A is compared with
  *   the 8 rotations of the block of B, 8 comparisons of vectors that find
  *   all the equal pairs, the items of A found are packed to the front of
  *   a vector by a permutation looked up from the mask of the comparison and
@@ -21,25 +22,30 @@
  *   the output advances on equality, and each list advances when its item
  *   is not larger, three additions in place of the jumps of the merge,
  *   which mispredict on lists that interleave at random.
- * - On lists of very different lengths, each item of the shorter one is
- *   looked for in the longer one from the place of the previous one. On
- *   the integers of 32 bits with AVX2 the longer list is cut into blocks of
- *   16 items: the block of an item is found on the last items of the
- *   blocks, in strides of 8 blocks and then one block at a time (or, on
- *   lists that differ by 1000 times or more, by galloping on the blocks,
- *   the places 1, 2, 4, ... ahead, and a binary search), and the item is
- *   compared with the 16 of its block by two comparisons of vectors, with
- *   no search inside the block; elsewhere the item is found by galloping
- *   and then by a binary search with no branch [see branchlessLowerBound()
- *   in StaticSearch.h], \f$ O( m \log( n / m ) ) \f$ comparisons [see
+ * - On lists of very different lengths (the longer more than 32 times the
+ *   shorter), each item of the shorter one is looked for in the longer one
+ *   from the place of the previous one. On the integers of 32 bits with
+ *   AVX2, the longer list is read through a window of 64 items, which moves
+ *   by strides of 1024 and then of 64 items while its last item is smaller
+ *   than the item looked for (the line 8 strides ahead prefetched); the
+ *   item is then compared with the 64 of the window at once, 8 comparisons
+ *   of vectors and no search inside the window, so that an item at a gap
+ *   of g places from the previous one costs \f$ \lfloor g / 1024 \rfloor +
+ *   \min( 16 , \lfloor g / 64 \rfloor ) + O( 1 ) \f$ steps that the
+ *   processor predicts (a binary search on the windows would mispredict
+ *   half of its steps). Elsewhere the item is found by galloping, the
+ *   places 1, 2, 4, ... ahead, and a binary search with no branch [see
+ *   branchlessLowerBound() in StaticSearch.h], \f$ 2 \lceil \log_2 ( g + 1
+ *   ) \rceil + 1 \f$ comparisons, \f$ O( m \log( n / m ) ) \f$ for all [see
  *   intersectDoubling() in SortedIntersection.h].
  *
  * Compared with the literature: the blocks compared all against all are
  * the method of Schlegel, Willhalm and Lehner on SSE (with the instruction
- * of the comparison of strings) and of Katsov, Lemire, Boytsov and Kurz,
- * whose library switches to galloping on a ratio of 50; the compressed
- * bitmaps of Roaring answer by and-ing the containers of 2^16 values
- * instead, which is faster on dense sets and slower on sparse ones.
+ * of the comparison of strings) and of Lemire, Boytsov and Kurz, whose
+ * library switches to galloping on a ratio of 50; the compressed bitmaps of
+ * Roaring [see RoaringBitmap.h] answer by and-ing the containers of \f$
+ * 2^{16} \f$ values instead, which is faster on dense sets and slower on
+ * sparse ones.
  *
  * The contracts [see Contract.h]: A and B strictly increasing, audits; out
  * has room for min( n , m ) + 8 items (the vectors store 8 at a time); the
