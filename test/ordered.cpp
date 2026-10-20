@@ -622,14 +622,15 @@ ADS_TEST( "bool-set-words" )
    }
  }
 
-// the adaptive radix tree against std::map on random insertions, removals
-// and searches: keys on 2 letters (long shared paths, keys that are
-// prefixes of others), keys of 0 to 40 bytes on all the 256 values (null
-// bytes, the four layouts of the nodes growing and shrinking), prefixes
-// longer than the 8 bytes kept in a node, the empty key, the visits in
-// order by the iterators, forEach() and forPrefix(), copies and moves, and
-// all the keys removed
-ADS_TEST( "adaptive-radix-tree" )
+// a map from strings to integers T against std::map on random
+// insertions, removals and searches: keys on 2 letters (long shared paths,
+// keys that are prefixes of others), keys of 0 to 40 bytes on all the 256
+// values (null bytes, the four layouts of the nodes growing and
+// shrinking), prefixes longer than the bytes kept in a node, the empty
+// key, the visits in order by the iterators, forEach() and forPrefix(),
+// copies and moves, and all the keys removed
+template< class T >
+void stringMap( void )
 {
  std::mt19937 g( 38 );
  auto key = [ & ]( int sigma , int maxlen , const std::string & base ) {
@@ -646,7 +647,7 @@ ADS_TEST( "adaptive-radix-tree" )
  for( int round = 0 ; round < 4 ; ++round ) {
   const int sigma = round % 2 ? 256 : 2;
   const std::string base = round >= 2 ? std::string( 20 , 'x' ) : "";
-  AdaptiveRadixTree< int > t;
+  T t;
   std::map< std::string , int > ref;
   for( int op = 0 ; op < 6000 ; ++op ) {
    const std::string k = key( sigma , sigma == 2 ? 12 : 3 , base );
@@ -693,7 +694,7 @@ ADS_TEST( "adaptive-radix-tree" )
    CHECK( t.remove( k ) );
   CHECK( t.empty() && ( t.begin() == t.end() ) );
   }
- AdaptiveRadixTree< int > t;
+ T t;
  CHECK( ! t.lookup( "" ) && ! t.remove( "a" ) && ( t.begin() == t.end() ) );
  CHECK( t.insert( "" , 1 ) && t.insert( std::string( "a\0b" , 3 ) , 2 ) );
  CHECK( t.insert( "a" , 3 ) && ! t.insert( "" , 4 ) );
@@ -713,6 +714,12 @@ ADS_TEST( "adaptive-radix-tree" )
    CHECK( *t.lookup( std::string( 1 , char( c ) ) + "tail" ) == c );
   }
  CHECK( ( t.size() == 3 ) && ( *t.lookup( "a" ) == 5 ) );
+ }
+
+// the adaptive radix tree [see stringMap()]
+ADS_TEST( "adaptive-radix-tree" )
+{
+ stringMap< AdaptiveRadixTree< int > >();
  }
 
 }  // end( namespace )
