@@ -660,6 +660,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1.05 to 1.2 times faster insertions of strings; FlatHashTable passes a
   small key by value to the search past the first group, so that a search
   stores nothing
+- hashBytes() computes the product of the strings of 4 to 8 bytes and that
+  of the shorter ones in their own branches, the same values with one
+  multiplication fewer: GCC compiled the product shared by the two
+  branches as a product of 128 bits
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
