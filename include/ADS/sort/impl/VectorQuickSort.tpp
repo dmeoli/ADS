@@ -905,15 +905,19 @@ std::size_t partition( typename V::K * a , std::size_t n , typename V::K p ,
  return( lw );
  }
 
-/// a pivot of a[ 0 .. n ): the median of a sample of S = 8 or N keys, the
-/// larger, one from each of S equal stretches, at the same random offset
-/// in each, the generator s advanced
+/// the registers of the sample of the pivot of a part of n keys: 8 keys
+/// or N, the larger, and four times as many from 1024 N keys
 template< class V >
+inline constexpr unsigned kSample = V::N >= 8 ? 1 : 8 / V::N;
+
+/// a pivot of a[ 0 .. n ): the median of a sample of S = M N keys, one
+/// from each of S equal stretches, at the same random offset in each, the
+/// generator s advanced; and whether the sample repeats it
+template< class V , unsigned M >
 std::pair< typename V::K , bool > pivot( const typename V::K * a ,
                                          std::size_t n , std::uint64_t & s )
 {
  using K = typename V::K;
- constexpr unsigned M = V::N >= 8 ? 1 : 8 / V::N;
  constexpr std::size_t S = M * V::N;
  K t[ S ];
  const std::size_t step = n / S;
@@ -942,7 +946,9 @@ void quick( typename V::K * a , std::size_t n , int depth ,
    heapKeys( a , n );
    return;
    }
-  const auto [ p , dup ] = pivot< V >( a , n , s );
+  const auto [ p , dup ] = n < 1024 * V::N ?
+                           pivot< V , kSample< V > >( a , n , s ) :
+                           pivot< V , 4 * kSample< V > >( a , n , s );
   std::size_t m;
   if constexpr( requires { V::part3; } )
    if( dup ) {                              // the sample repeats p: the

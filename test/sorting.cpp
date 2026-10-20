@@ -1300,6 +1300,54 @@ ADS_TEST( "vector-quicksort" )
         ! std::signbit( A[ 2 ] ) && ( A[ 4 ] == 2.0 ) );
  }
 
+ADS_TEST( "vector-dispatch" )
+{
+ for( std::size_t n : { 512u , 513u , 640u , 1000u , 4096u , 4099u } ) {
+  const std::size_t q = n / 4;
+  std::vector< std::size_t > at = { 1 , 2 , 31 , 32 , 33 , 34 , 64 , 65 ,
+                                    n - 2 , n - 1 };
+  for( std::size_t s = 1 ; s < 4 ; ++s )   // the borders of the quarters
+   for( std::size_t d = 0 ; d < 5 ; ++d )
+    at.push_back( s * q + d - 2 );
+  for( std::size_t j : at ) {
+   std::vector< std::int64_t > U( n ) , D( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    U[ i ] = std::int64_t( i );
+    D[ i ] = std::int64_t( n - i );
+    }
+   std::swap( U[ j ] , U[ j - 1 ] );        // one place out of order
+   std::swap( D[ j ] , D[ j - 1 ] );
+   for( auto * V : { &U , &D } ) {
+    auto W = *V , R = *V;
+    sort( *V );
+    stableSort( W );
+    std::sort( R.begin() , R.end() );
+    CHECK( ( *V == R ) && ( W == R ) );
+    }
+   }
+  std::vector< std::int64_t > E( n , 3 );   // all equal: sorted, not
+  sort( E );                                // strictly decreasing
+  CHECK( E == std::vector< std::int64_t >( n , 3 ) );
+  }
+ std::mt19937_64 g( 94 );                   // -0 and +0 keep their order
+ for( std::size_t n : { 10u , 600u , 5000u } )   // in stableSort()
+  for( int p = 0 ; p < 3 ; ++p ) {
+   std::vector< double > A( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    A[ i ] = p == 0 ? ( g() % 2 ? -0.0 : 0.0 ) :
+             p == 1 ? double( std::int64_t( g() % 5 ) - 2 ) * ( g() % 2 ) :
+             double( n - i ) * ( i % 7 == 0 ? 0.0 : 1.0 );
+   if( p == 1 )
+    for( auto & x : A ) if( x == 0.0 && ( g() % 2 ) ) x = -0.0;
+   auto B = A;
+   stableSort( A );
+   std::stable_sort( B.begin() , B.end() , []( double x , double y ) {
+    return( x < y ); } );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    CHECK( bitsOf( A[ i ] ) == bitsOf( B[ i ] ) );
+   }
+ }
+
 ADS_TEST( "sample-sort" )
 {
  struct Rec { std::uint64_t key; std::uint64_t pad[ 3 ]; };

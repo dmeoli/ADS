@@ -309,24 +309,46 @@ void pingPongSort( std::vector< T > & A , C & less )
  ADS_AUDIT( sortedPermutation( A , before , less ) );
  }
 
+/// sort() of the numbers of 32 or 64 bits when the vector registers are
+/// there, and stableSort() of them if stable: a vector of one run left as
+/// it is or reversed, one of at most kVectorRuns< T > runs by the merges of
+/// powerSort(), the others by vectorQuickSort(); for stableSort() of the
+/// floating point numbers with a -0, whose order to +0 vectorQuickSort()
+/// does not keep, powerSort() below kRadix items and the radix sort with
+/// -0 and +0 as one key from there
+template< class T , class C >
+void vectorNumbers( std::vector< T > & A , C & less , bool stable )
+{
+ auto zeros = [ & ]() {
+  return( stable && std::is_floating_point_v< T > && negativeZero( A ) ); };
+ if( A.size() < kRadix ) {
+  if( zeros() )
+   powerSort( A , less );
+  else
+   vectorQuickSort( A );
+  return;
+  }
+ std::array< std::size_t , kRuns + 1 > E;
+ const std::size_t r = runs( A , less , kRuns , E.data() );
+ if( r <= 1 )
+  oneRun( A , less );
+ else if( r <= kVectorRuns< T > )
+  powerSortRuns( A , less , E.data() , r );
+ else if( ! zeros() )
+  vectorQuickSort( A );
+ else if constexpr( std::is_floating_point_v< T > )   // -0 and +0 equal
+  radixSortBy( A , []( T x ) {
+   return( radixKey( x == T( 0 ) ? T( 0 ) : x ) ); } );
+ }
+
 }  // end( namespace detail )
 
 template< class T , class C >
 void sort( std::vector< T > & A , C less )
 {
  if constexpr( detail::naturalOrder< T , C > && VectorKey< T > &&
-               kVectorSort ) {
-  std::array< std::size_t , kRuns + 1 > E;
-  std::size_t r = 0;
-  if( A.size() < kRadix )
-   vectorQuickSort( A );
-  else if( ( r = detail::runs( A , less , kRuns , E.data() ) ) <= 1 )
-   detail::oneRun( A , less );
-  else if( r <= detail::kVectorRuns< T > )
-   detail::powerSortRuns( A , less , E.data() , r );
-  else
-   vectorQuickSort( A );
-  }
+               kVectorSort )
+  detail::vectorNumbers( A , less , false );
  else if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
   std::size_t r = 0;
@@ -364,8 +386,8 @@ void sort( std::vector< T > & A , C less )
    detail::oneRun( A , less );
   else if( r <= kRuns )
    detail::powerSortRuns( A , less , E.data() , r );
-  else if( ! detail::fewKeysSort( A , less ) )
-   sampleSort( A , less );
+  else
+   sampleSort( A , less );                  // its buckets of equal keys
   }
  else if( A.size() < kRadix )
   pdqSort( A , less );
@@ -377,12 +399,9 @@ template< class T , class C >
 void stableSort( std::vector< T > & A , C less )
 {
  if constexpr( detail::naturalOrder< T , C > && VectorKey< T > &&
-               kVectorSort )                // equal numbers are the same,
-  if( std::is_integral_v< T > || ! detail::negativeZero( A ) ) {   // but
-   sort( A , less );                        // -0 and +0
-   return;
-   }
- if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
+               kVectorSort )
+  detail::vectorNumbers( A , less , true );
+ else if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
   const std::size_t r = A.size() < kRadix ? 0 : detail::runs( A , less ,
                                                                kRuns ,
