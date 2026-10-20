@@ -458,7 +458,7 @@ class BigInteger {
  static constexpr std::size_t kDivCut = 600;     ///< limbs, quotient alone
  static constexpr std::size_t kDivShort = 16;    ///< limbs, on the stack
  static constexpr std::size_t kDivBlock = 40;    ///< limbs, 4 digits a step
- static constexpr std::size_t kDivQuot = 4096;   ///< limbs, quotient halves
+ static constexpr std::size_t kDivExact2 = 32;   ///< limbs, exact both ways
 
  // with ADS_WITH_GMP, the lengths in digits that go to GMP, where it was
  // faster in the timings of the same benchmark: the products whose shorter

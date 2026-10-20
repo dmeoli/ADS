@@ -177,10 +177,9 @@ inline std::uint64_t div2by1( std::uint64_t u1 , std::uint64_t u0 ,
  const std::uint64_t q0 = mulAdd( v , u1 , u0 , 0 , q1 );
  q1 += u1 + 1;
  r = u0 - q1 * d;
- if( r > q0 ) {
-  --q1;
-  r += d;
-  }
+ const std::uint64_t m = 0 - std::uint64_t( r > q0 );   // with no branch,
+ q1 += m;                                   // as it is taken half the time
+ r += m & d;
  if( r >= d ) {                             // rarely
   ++q1;
   r -= d;
@@ -581,6 +580,143 @@ inline void mulRows( std::uint64_t * r , const std::uint64_t * a ,
     [ r ] "+&r" ( pr )                                                       \
   : [ b ] "r" ( b ) , [ z ] "r" ( std::uint64_t( 0 ) ) , [ e ] "r" ( e )     \
   : "rdx" , "cc" , "memory" )
+
+/// the registers of the window turned by k, and a step on them
+#define ADS_W0 w0 , w1 , w2 , w3 , w4
+#define ADS_W1 w1 , w2 , w3 , w4 , w0
+#define ADS_W2 w2 , w3 , w4 , w0 , w1
+#define ADS_W3 w3 , w4 , w0 , w1 , w2
+#define ADS_W4 w4 , w0 , w1 , w2 , w3
+#define ADS_PSTEP_X( s , R , ... )                                           \
+ ADS_PASS_STEP( s , R , ADS_PASS_STORE , __VA_ARGS__ )
+#define ADS_PSTEP( s , R , W ) ADS_PSTEP_X( s , R , W )
+
+/// the pass of N = 4 to 8 digits in a row, with no loop: the steps 0 to
+/// N - 1 on the window turned by one register each, its last 4
+/// registers the top
+#define ADS_PASS_ROW( RADD , N , STEPS , T0 , T1 , T2 , T3 )                \
+ __asm__ __volatile__(                                                       \
+  "xor %k[w0], %k[w0]\n\t"                                                   \
+  "xor %k[w1], %k[w1]\n\t"                                                   \
+  "xor %k[w2], %k[w2]\n\t"                                                   \
+  "xor %k[w3], %k[w3]\n\t"                                                   \
+  "xor %k[w4], %k[w4]\n\t"                                                   \
+  STEPS                                                                      \
+  "mov %[" #T0 "], 8*" #N "(%[r])\n\t"                                       \
+  "mov %[" #T1 "], 8*" #N "+8(%[r])\n\t"                                     \
+  "mov %[" #T2 "], 8*" #N "+16(%[r])\n\t"                                    \
+  "mov %[" #T3 "], 8*" #N "+24(%[r])"                                        \
+  : [ w0 ] "=&r" ( w0 ) , [ w1 ] "=&r" ( w1 ) , [ w2 ] "=&r" ( w2 ) ,        \
+    [ w3 ] "=&r" ( w3 ) , [ w4 ] "=&r" ( w4 ) , [ lo ] "=&r" ( lo ) ,       \
+    [ hi ] "=&r" ( hi )                                                      \
+  : [ a ] "r" ( a ) , [ r ] "r" ( r ) , [ b ] "r" ( b ) ,                   \
+    [ z ] "r" ( std::uint64_t( 0 ) )                                         \
+  : "rdx" , "cc" , "memory" )
+
+#define ADS_ROW_RADD_1 \
+ ADS_PSTEP( 0 , ADS_PASS_RADD , ADS_W0 )
+
+#define ADS_ROW_RADD_2 ADS_ROW_RADD_1 \
+ ADS_PSTEP( 1 , ADS_PASS_RADD , ADS_W1 )
+
+#define ADS_ROW_RADD_3 ADS_ROW_RADD_2 \
+ ADS_PSTEP( 2 , ADS_PASS_RADD , ADS_W2 )
+
+#define ADS_ROW_RADD_4 ADS_ROW_RADD_3 \
+ ADS_PSTEP( 3 , ADS_PASS_RADD , ADS_W3 )
+
+#define ADS_ROW_RADD_5 ADS_ROW_RADD_4 \
+ ADS_PSTEP( 4 , ADS_PASS_RADD , ADS_W4 )
+
+#define ADS_ROW_RADD_6 ADS_ROW_RADD_5 \
+ ADS_PSTEP( 5 , ADS_PASS_RADD , ADS_W0 )
+
+#define ADS_ROW_RADD_7 ADS_ROW_RADD_6 \
+ ADS_PSTEP( 6 , ADS_PASS_RADD , ADS_W1 )
+
+#define ADS_ROW_RADD_8 ADS_ROW_RADD_7 \
+ ADS_PSTEP( 7 , ADS_PASS_RADD , ADS_W2 )
+
+#define ADS_ROW_RNONE_1 \
+ ADS_PSTEP( 0 , ADS_PASS_RNONE , ADS_W0 )
+
+#define ADS_ROW_RNONE_2 ADS_ROW_RNONE_1 \
+ ADS_PSTEP( 1 , ADS_PASS_RNONE , ADS_W1 )
+
+#define ADS_ROW_RNONE_3 ADS_ROW_RNONE_2 \
+ ADS_PSTEP( 2 , ADS_PASS_RNONE , ADS_W2 )
+
+#define ADS_ROW_RNONE_4 ADS_ROW_RNONE_3 \
+ ADS_PSTEP( 3 , ADS_PASS_RNONE , ADS_W3 )
+
+#define ADS_ROW_RNONE_5 ADS_ROW_RNONE_4 \
+ ADS_PSTEP( 4 , ADS_PASS_RNONE , ADS_W4 )
+
+#define ADS_ROW_RNONE_6 ADS_ROW_RNONE_5 \
+ ADS_PSTEP( 5 , ADS_PASS_RNONE , ADS_W0 )
+
+#define ADS_ROW_RNONE_7 ADS_ROW_RNONE_6 \
+ ADS_PSTEP( 6 , ADS_PASS_RNONE , ADS_W1 )
+
+#define ADS_ROW_RNONE_8 ADS_ROW_RNONE_7 \
+ ADS_PSTEP( 7 , ADS_PASS_RNONE , ADS_W2 )
+
+/// r[ 0 , N + 4 ) = a[ 0 , N ) b[ 0 , 4 ), added to r[ 0 , N ) if add, for
+/// 4 <= N <= 8 [see mulPass4()]
+template< bool add >
+inline void mulPassRow( std::uint64_t * r , const std::uint64_t * a ,
+                        std::size_t N , const std::uint64_t * b )
+{
+ std::uint64_t w0 , w1 , w2 , w3 , w4 , lo , hi;
+ if constexpr( add ) {
+  switch( N ) {
+   case 4:
+    ADS_PASS_ROW( ADS_PASS_RADD , 4 , ADS_ROW_RADD_4 ,
+                  w4 , w0 , w1 , w2 );
+    break;
+   case 5:
+    ADS_PASS_ROW( ADS_PASS_RADD , 5 , ADS_ROW_RADD_5 ,
+                  w0 , w1 , w2 , w3 );
+    break;
+   case 6:
+    ADS_PASS_ROW( ADS_PASS_RADD , 6 , ADS_ROW_RADD_6 ,
+                  w1 , w2 , w3 , w4 );
+    break;
+   case 7:
+    ADS_PASS_ROW( ADS_PASS_RADD , 7 , ADS_ROW_RADD_7 ,
+                  w2 , w3 , w4 , w0 );
+    break;
+   default:
+    ADS_PASS_ROW( ADS_PASS_RADD , 8 , ADS_ROW_RADD_8 ,
+                  w3 , w4 , w0 , w1 );
+    break;
+   }
+  }
+ if constexpr( ! add ) {
+  switch( N ) {
+   case 4:
+    ADS_PASS_ROW( ADS_PASS_RNONE , 4 , ADS_ROW_RNONE_4 ,
+                  w4 , w0 , w1 , w2 );
+    break;
+   case 5:
+    ADS_PASS_ROW( ADS_PASS_RNONE , 5 , ADS_ROW_RNONE_5 ,
+                  w0 , w1 , w2 , w3 );
+    break;
+   case 6:
+    ADS_PASS_ROW( ADS_PASS_RNONE , 6 , ADS_ROW_RNONE_6 ,
+                  w1 , w2 , w3 , w4 );
+    break;
+   case 7:
+    ADS_PASS_ROW( ADS_PASS_RNONE , 7 , ADS_ROW_RNONE_7 ,
+                  w2 , w3 , w4 , w0 );
+    break;
+   default:
+    ADS_PASS_ROW( ADS_PASS_RNONE , 8 , ADS_ROW_RNONE_8 ,
+                  w3 , w4 , w0 , w1 );
+    break;
+   }
+  }
+ }
 
 /// r[ 0 , n + 4 ) = a[ 0 , n ) b[ 0 , 4 ) if not add, else
 /// r[ 0 , n + 4 ) = r[ 0 , n ) + a b, n > 0
@@ -2666,11 +2802,19 @@ inline void BigInteger::mulSchool( Limb * r , const Limb * a , std::size_t na ,
   detail::mulRows< 0 , 1 , 0 >( r , a , na , b , nb );
   return;
   }
- // by passes of 4 rows, the rows left one at a time
- detail::mulPass4< false >( r , a , na , b );
+ // by passes of 4 rows, the rows left one at a time; the passes of up to
+ // 8 digits with no loop
  std::size_t j = 4;
- for( ; j + 4 <= nb ; j += 4 )
-  detail::mulPass4< true >( r + j , a , na , b + j );
+ if( na <= 8 ) {
+  detail::mulPassRow< false >( r , a , na , b );
+  for( ; j + 4 <= nb ; j += 4 )
+   detail::mulPassRow< true >( r + j , a , na , b + j );
+  }
+ else {
+  detail::mulPass4< false >( r , a , na , b );
+  for( ; j + 4 <= nb ; j += 4 )
+   detail::mulPass4< true >( r + j , a , na , b + j );
+  }
  for( ; j < nb ; ++j ) r[ na + j ] = addMul1( r + j , a , na , b[ j ] );
 #else
  r[ na ] = mul1( r , a , na , b[ 0 ] );     // Algorithm M
@@ -3310,8 +3454,14 @@ inline BigInteger BigInteger::multiplyFFT( const BigInteger & a ,
 
 inline BigInteger operator*( const BigInteger & a , const BigInteger & b )
 {
- return( BigInteger( a.f_neg != b.f_neg , BigInteger::mulMag( a.f_d ,
-                                                              b.f_d ) ) );
+ BigInteger r;                              // in place, with no move
+ const std::size_t na = a.f_d.size() , nb = b.f_d.size();
+ if( ( na == 0 ) || ( nb == 0 ) ) return( r );
+ r.f_d.resize( na + nb );
+ BigInteger::mulP( r.f_d.data() , a.f_d.data() , na , b.f_d.data() , nb );
+ if( r.f_d.back() == 0 ) r.f_d.pop_back();  // na + nb - 1 digits or more
+ r.f_neg = a.f_neg != b.f_neg;
+ return( r );
  }
 
 inline void BigInteger::addMul( BigInteger & r , const BigInteger & a ,
@@ -3665,14 +3815,15 @@ inline void BigInteger::divShort( const Mag & u , const Mag & v , Mag & q ,
  const std::size_t n = v.size() , nu = u.size() , m = nu - n;
  const int s = std::countl_zero( v.back() );
  Limb vn[ kDivShort ] , un[ 2 * kDivShort + 1 ];
- if( s ) {
-  for( std::size_t i = n ; --i > 0 ; )
-   vn[ i ] = ( v[ i ] << s ) | ( v[ i - 1 ] >> ( 64 - s ) );
+ if( s ) {                                  // forward, in lanes
+  const int t = 64 - s;
   vn[ 0 ] = v[ 0 ] << s;
-  un[ nu ] = u[ nu - 1 ] >> ( 64 - s );
-  for( std::size_t i = nu ; --i > 0 ; )
-   un[ i ] = ( u[ i ] << s ) | ( u[ i - 1 ] >> ( 64 - s ) );
+  for( std::size_t i = 1 ; i < n ; ++i )
+   vn[ i ] = ( v[ i ] << s ) | ( v[ i - 1 ] >> t );
   un[ 0 ] = u[ 0 ] << s;
+  for( std::size_t i = 1 ; i < nu ; ++i )
+   un[ i ] = ( u[ i ] << s ) | ( u[ i - 1 ] >> t );
+  un[ nu ] = u[ nu - 1 ] >> t;
   }
  else {
   std::copy( v.begin() , v.end() , vn );
@@ -3759,25 +3910,6 @@ inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
    trim( vl );
    if( compareMag( x , mulMag( q , vl ) ) < 0 ) q = subMag( q , Mag{ 1 } );
    }
-  return( std::pair( std::move( q ) , Mag() ) );
-  }
- if( ! rem && ! school && ( v.size() >= kDivQuot ) &&
-     ( v.size() < kNewton ) && ( u.size() + 1 >= 2 * v.size() ) ) {
-  // the quotient alone in two halves: the high one, of m - k digits, with
-  // its remainder r1, then the low one, of k digits, alone, the quotient
-  // of r1 b^k + ( u mod b^k ) < v b^k by the top digits of v [see above]
-  const std::size_t m = u.size() - v.size() + 1 , k = m / 2;
-  auto [ q1 , r1 ] = divModMag( Mag( u.data() + k , u.data() + u.size() ) ,
-                                v , false , nullptr , true );
-  Mag w( k + r1.size() );
-  std::copy( u.data() , u.data() + k , w.data() );
-  std::copy( r1.begin() , r1.end() , w.data() + k );
-  trim( w );
-  const Mag q0 = divModMag( w , v , false , nullptr , false ).first;
-  Mag q( k + q1.size() , 0 );
-  std::copy( q0.begin() , q0.end() , q.data() );
-  std::copy( q1.begin() , q1.end() , q.data() + k );
-  trim( q );
   return( std::pair( std::move( q ) , Mag() ) );
   }
  if( ( v.size() < kDivShort ) && ( u.size() < 2 * kDivShort ) ) {
@@ -3938,7 +4070,40 @@ inline void BigInteger::divExactSmall( Mag & a , Limb d )
  Limb v = d;                                // 1 / d modulo 2^64, by Newton
  for( int i = 0 ; i < 5 ; ++i ) v *= 2 - d * v;
  Limb c = 0;                                // the borrow of a - q d
- for( std::size_t i = 0 ; i < n ; ++i ) {
+ std::size_t m = n;                         // the digits by Hensel
+ if( n >= kDivExact2 ) {
+  // both ways at once (Krandick and Jebelean): the low m = n - n / 3 of the
+  // quotient by Hensel from the bottom, the others by the division of
+  // a[ m , n ) from the top, on two chains that do not wait for each
+  // other; with q = qh b^m + ql, ql d = a mod b^m + c b^m for the last
+  // borrow c < d, so a / b^m = qh d + c and its quotient is qh
+  const std::size_t top = n / 3;           // the digits from the top
+  m = n - top;
+  const int t = std::countl_zero( d );
+  const Limb dn = d << t , w = detail::reciprocal( dn ) , below = y[ m - 1 ];
+  Limb r = t ? y[ n - 1 ] >> ( 64 - t ) : 0;
+  auto hensel = [ & ]( std::size_t i ) {
+   const Limb x = y[ i ] , q = ( x - c ) * v;
+   Limb hi;
+   detail::mulWide( q , d , hi );
+   c = hi + ( x < c );
+   y[ i ] = q;
+   };
+  // two digits from the bottom for each one from the top, whose chain is
+  // about twice as long
+  for( std::size_t k = 0 ; k < top ; ++k ) {
+   hensel( 2 * k );
+   hensel( 2 * k + 1 );
+   const std::size_t i = n - 1 - k;
+   const Limb lower = i > m ? y[ i - 1 ] : below ,
+              u = t ? ( y[ i ] << t ) | ( lower >> ( 64 - t ) ) : y[ i ];
+   y[ i ] = detail::div2by1( r , u , dn , w , r );
+   }
+  for( std::size_t i = 2 * top ; i < m ; ++i ) hensel( i );
+  trim( a );
+  return;
+  }
+ for( std::size_t i = 0 ; i < m ; ++i ) {
   const Limb x = y[ i ] , q = ( x - c ) * v;
   Limb hi;
   detail::mulWide( q , d , hi );
