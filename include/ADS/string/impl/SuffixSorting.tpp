@@ -109,6 +109,22 @@ inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
   *P = p[ 0 ] | ( p[ 1 ] << 32 );
   return;
   }
+ else if constexpr( ( sizeof( C ) == 4 ) && std::is_signed_v< C > ) {
+  std::uint64_t g = 0 , p = 0;        // the names, never negative
+  for( int h = 0 ; h < 8 ; ++h ) {
+   const __m256i a = _mm256_loadu_si256(
+                      reinterpret_cast< const __m256i * >( T + 8 * h ) ) ,
+                 b = _mm256_loadu_si256(
+                      reinterpret_cast< const __m256i * >( T + 8 * h + 1 ) );
+   g |= std::uint64_t( unsigned( _mm256_movemask_ps( _mm256_castsi256_ps(
+         _mm256_cmpgt_epi32( b , a ) ) ) ) ) << ( 8 * h );
+   p |= std::uint64_t( unsigned( _mm256_movemask_ps( _mm256_castsi256_ps(
+         _mm256_cmpeq_epi32( a , b ) ) ) ) ) << ( 8 * h );
+   }
+  *G = g;
+  *P = p;
+  return;
+  }
 #endif
  std::uint64_t g = 0 , p = 0;
  for( unsigned j = 0 ; j < 64 ; ++j ) {
@@ -432,11 +448,18 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
  std::size_t tied = 0;
  for( S f = 0 ; const S g : runs ) {
   if( g > 1 ) {
-   const S p = SA[ f ];
-   G.push_back( { f , g , saisNextLms( lms , n , p ) + 1 - p } );
+   G.push_back( { f , g , 0 } );
    tied += std::size_t( g );
    }
   f += g;
+  }
+ // the length of the LMS-substring of each group, the words of lms that
+ // give the next LMS places prefetched
+ for( std::size_t z = 0 ; z < G.size() ; ++z ) {
+  if( z + D < G.size() )
+   saisPrefetch( lms.data() + std::size_t( SA[ G[ z + D ].f ] + 1 ) / 64 );
+  const S p = SA[ G[ z ].f ];
+  G[ z ].at = saisNextLms( lms , n , p ) + 1 - p;
   }
  std::vector< Key > key;
  std::vector< std::uint64_t > u , w;  // the radix sort of large groups
@@ -492,31 +515,33 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
   std::size_t total = 0 , left = 0;
   for( std::size_t z = from ; z < to ; ++z ) total += std::size_t( G[ z ].g );
   key.resize( total );
-  // the keys, the text ahead prefetched
+  // the places of the keys first (key holds them), the groups ahead
+  // prefetched; then the keys, the text D keys ahead prefetched
   std::size_t at = 0;
   for( std::size_t z = from ; z < to ; ++z ) {
+   if( z + 8 < to ) saisPrefetch( SA + G[ z + 8 ].f );
    const Group & q = G[ z ];
-   for( S i = q.f ; i < q.f + q.g ; ++i , ++at ) {
-    if( i + D < q.f + q.g ) saisPrefetch( T + std::min( SA[ i + D ] + q.at ,
-                                                         n - 1 ) );
-    else if( ( z + 1 < to ) && ( i + D - q.f - q.g < G[ z + 1 ].g ) )
-     saisPrefetch( T + std::min( SA[ G[ z + 1 ].f + ( i + D - q.f - q.g ) ]
-                                 + G[ z + 1 ].at , n - 1 ) );
-    const S p = SA[ i ] , a = p + q.at;
-    std::uint64_t v = 0;
-    S l = 8;
-    if( a + 8 <= n ) {
-     std::memcpy( &v , T + a , 8 );
-     if constexpr( std::endian::native == std::endian::little )
-      v = saisSwap( v );
-     }
-    else {
-     l = std::max< S >( n - a , 0 );
-     for( S j = 0 ; j < l ; ++j )
-      v |= std::uint64_t( std::uint8_t( T[ a + j ] ) ) << ( 56 - 8 * j );
-     }
-    key[ at ] = { v , l , p };
+   for( S i = q.f ; i < q.f + q.g ; ++i , ++at )
+    key[ at ] = { std::uint64_t( SA[ i ] + q.at ) , 8 , SA[ i ] };
+   }
+  for( at = 0 ; at < total ; ++at ) {
+   if( at + D < total )
+    saisPrefetch( T + std::min( S( key[ at + D ].key ) , n - 1 ) );
+   const S a = S( key[ at ].key );
+   std::uint64_t v = 0;
+   S l = 8;
+   if( a + 8 <= n ) {
+    std::memcpy( &v , T + a , 8 );
+    if constexpr( std::endian::native == std::endian::little )
+     v = saisSwap( v );
     }
+   else {
+    l = std::max< S >( n - a , 0 );
+    for( S j = 0 ; j < l ; ++j )
+     v |= std::uint64_t( std::uint8_t( T[ a + j ] ) ) << ( 56 - 8 * j );
+    }
+   key[ at ].key = v;
+   key[ at ].left = l;
    }
   // each group sorted, and the parts still tied to the next round
   at = 0;
@@ -683,9 +708,12 @@ S saisPartial( const C * T , S * SA , S n , S K ,
  // other
  size4.assign( 4 * k , 0 );
  lms.assign( words , 0 );
- const bool smallK = K <= S( saisSmall );
+ const bool smallK = K <= S( saisSmall ) ,
+            hugeK = K > S( 65536 );  // the counts beyond the cache
  std::vector< S > odd( smallK ? 4 * k : 0 , 0 );
  S m = 0;
+ // the place 0 is counted too, as if the place before were of type L,
+ // and taken back after
  for( std::size_t w = 0 ; w < words ; ++w ) {
   const std::uint64_t t = type[ w ] ,
                       before = ( t << 1 ) | ( w ? type[ w - 1 ] >> 63 : 0 );
@@ -693,19 +721,33 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   if( w == 0 ) l &= ~std::uint64_t( 1 );
   lms[ w ] = l;
   m += S( std::popcount( l ) );
-  const S base = S( 64 * w ) , end = std::min< S >( base + 64 , n );
-  for( S i = std::max< S >( base , 1 ) ; i < end ; ++i ) {
-   const unsigned j = unsigned( i - base );
-   const std::size_t kind = 2 * ( ( t >> j ) & 1 ) + ( ( before >> j ) & 1 );
-   if( smallK && ( i & 1 ) )
-    ++odd[ 4 * std::size_t( T[ i ] ) + kind ];
-   else {
-    if( ! smallK && ( i + D < n ) )
+  const S base = S( 64 * w );
+  const C * ADS_SAIS_RESTRICT x = T + base;
+  // the kind of each place, 2 bits a place: bit 2 j + 1 the type of
+  // 64 w + j, bit 2 j that of the place before
+  if( smallK && ( base + 64 <= n ) ) {
+   S * ADS_SAIS_RESTRICT even = size4.data();
+   S * ADS_SAIS_RESTRICT o = odd.data();
+   for( unsigned j = 0 ; j < 64 ; j += 2 ) {
+    const std::size_t k0 = 2 * ( ( t >> j ) & 1 ) + ( ( before >> j ) & 1 ) ,
+                      k1 = 2 * ( ( t >> ( j + 1 ) ) & 1 ) +
+                           ( ( before >> ( j + 1 ) ) & 1 );
+    ++even[ 4 * std::size_t( x[ j ] ) + k0 ];
+    ++o[ 4 * std::size_t( x[ j + 1 ] ) + k1 ];
+    }
+   }
+  else {
+   const S end = std::min< S >( base + 64 , n );
+   for( S i = base ; i < end ; ++i ) {
+    const unsigned j = unsigned( i - base );
+    const std::size_t kind = 2 * ( ( t >> j ) & 1 ) + ( ( before >> j ) & 1 );
+    if( hugeK && ( i + D < n ) )
      saisPrefetchW( size4.data() + 4 * std::size_t( T[ i + D ] ) );
     ++size4[ 4 * std::size_t( T[ i ] ) + kind ];
     }
    }
   }
+ --size4[ 4 * std::size_t( T[ 0 ] ) + 2 * std::size_t( type[ 0 ] & 1 ) ];
  for( std::size_t c = 0 ; c < odd.size() ; ++c ) size4[ c ] += odd[ c ];
  if( m == 0 ) return( 0 );
 
