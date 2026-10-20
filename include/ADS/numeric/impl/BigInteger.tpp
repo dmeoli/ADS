@@ -734,6 +734,122 @@ inline void mulPass4( std::uint64_t * r , const std::uint64_t * a ,
  else ADS_PASS( ADS_PASS_RNONE , ADS_PASS_STORE );
  }
 
+/// the digit s of the pass of 6 rows [see mulPass6()], the window
+/// ( P0 , ... , P6 )
+#define ADS_PASS6_STEP( s , RADD , STORE , P0 , P1 , P2 , P3 , P4 , P5 , P6 ) \
+ "1" #s ":\n\t"                                                              \
+ "mov " #s "*8(%[a]), %%rdx\n\t"                                             \
+ "mov $0, %k[" #P6 "]\n\t"                                                   \
+ RADD( s , P0 )                                                              \
+ "mulx (%[b]), %[lo], %[hi]\n\t"                                             \
+ "adcx %[lo], %[" #P0 "]\n\t"                                                \
+ "adox %[hi], %[" #P1 "]\n\t"                                                \
+ "mulx 8(%[b]), %[lo], %[hi]\n\t"                                            \
+ "adcx %[lo], %[" #P1 "]\n\t"                                                \
+ "adox %[hi], %[" #P2 "]\n\t"                                                \
+ "mulx 16(%[b]), %[lo], %[hi]\n\t"                                           \
+ "adcx %[lo], %[" #P2 "]\n\t"                                                \
+ "adox %[hi], %[" #P3 "]\n\t"                                                \
+ "mulx 24(%[b]), %[lo], %[hi]\n\t"                                           \
+ "adcx %[lo], %[" #P3 "]\n\t"                                                \
+ "adox %[hi], %[" #P4 "]\n\t"                                                \
+ "mulx 32(%[b]), %[lo], %[hi]\n\t"                                           \
+ "adcx %[lo], %[" #P4 "]\n\t"                                                \
+ "adox %[hi], %[" #P5 "]\n\t"                                                \
+ "mulx 40(%[b]), %[lo], %[hi]\n\t"                                           \
+ "adcx %[lo], %[" #P5 "]\n\t"                                                \
+ "adox %[hi], %[" #P6 "]\n\t"                                                \
+ "adcx %[z], %[" #P6 "]\n\t"                                                 \
+ STORE( s , P0 )
+
+/// the registers of the window of 7 turned by k, and a step on them
+#define ADS_V0 w0 , w1 , w2 , w3 , w4 , w5 , w6
+#define ADS_V1 w1 , w2 , w3 , w4 , w5 , w6 , w0
+#define ADS_V2 w2 , w3 , w4 , w5 , w6 , w0 , w1
+#define ADS_V3 w3 , w4 , w5 , w6 , w0 , w1 , w2
+#define ADS_V4 w4 , w5 , w6 , w0 , w1 , w2 , w3
+#define ADS_V5 w5 , w6 , w0 , w1 , w2 , w3 , w4
+#define ADS_V6 w6 , w0 , w1 , w2 , w3 , w4 , w5
+#define ADS_P6_X( s , R , S , ... ) ADS_PASS6_STEP( s , R , S , __VA_ARGS__ )
+#define ADS_P6( s , R , S , V ) ADS_P6_X( s , R , S , V )
+
+/// the pass of 6 rows, r_i added by RADD, the digits stored by STORE
+#define ADS_PASS6( RADD , STORE )                                            \
+ __asm__ __volatile__(                                                       \
+  "xor %k[w0], %k[w0]\n\t"                                                   \
+  "xor %k[w1], %k[w1]\n\t"                                                   \
+  "xor %k[w2], %k[w2]\n\t"                                                   \
+  "xor %k[w3], %k[w3]\n\t"                                                   \
+  "xor %k[w4], %k[w4]\n\t"                                                   \
+  "xor %k[w5], %k[w5]\n\t"                                                   \
+  "lea 7f(%%rip), %[lo]\n\t"                                                 \
+  "movslq (%[lo],%[c],4), %[hi]\n\t"                                         \
+  "add %[lo], %[hi]\n\t"                                                     \
+  "mov %[n7], %[c]\n\t"                                                      \
+  "xor %k[lo], %k[lo]\n\t"                                                   \
+  "xor %k[w6], %k[w6]\n\t"                                                   \
+  "jmp *%[hi]\n\t"                                                           \
+  ".p2align 2\n"                                                             \
+  "7:\n\t"                                                                   \
+  ".long 10f-7b, 11f-7b, 12f-7b, 13f-7b, 14f-7b, 15f-7b, 16f-7b\n\t"         \
+  ".p2align 5\n"                                                             \
+  "9:\n\t"                                                                   \
+  ADS_P6( 0 , RADD , STORE , ADS_V0 )                                        \
+  ADS_P6( 1 , RADD , STORE , ADS_V1 )                                        \
+  ADS_P6( 2 , RADD , STORE , ADS_V2 )                                        \
+  ADS_P6( 3 , RADD , STORE , ADS_V3 )                                        \
+  ADS_P6( 4 , RADD , STORE , ADS_V4 )                                        \
+  ADS_P6( 5 , RADD , STORE , ADS_V5 )                                        \
+  ADS_P6( 6 , RADD , STORE , ADS_V6 )                                        \
+  "lea 56(%[a]), %[a]\n\t"                                                   \
+  "lea 56(%[r]), %[r]\n\t"                                                   \
+  "dec %[c]\n\t"                                                             \
+  "jnz 9b\n\t"                                                               \
+  "mov %[w0], (%[r])\n\t"                                                    \
+  "mov %[w1], 8(%[r])\n\t"                                                   \
+  "mov %[w2], 16(%[r])\n\t"                                                  \
+  "mov %[w3], 24(%[r])\n\t"                                                  \
+  "mov %[w4], 32(%[r])\n\t"                                                  \
+  "mov %[w5], 40(%[r])"                                                      \
+  : [ w0 ] "=&r" ( w0 ) , [ w1 ] "=&r" ( w1 ) , [ w2 ] "=&r" ( w2 ) ,        \
+    [ w3 ] "=&r" ( w3 ) , [ w4 ] "=&r" ( w4 ) , [ w5 ] "=&r" ( w5 ) ,       \
+    [ w6 ] "=&r" ( w6 ) , [ lo ] "=&r" ( lo ) , [ hi ] "=&r" ( hi ) ,       \
+    [ c ] "+&r" ( c ) , [ a ] "+&r" ( pa ) , [ r ] "+&r" ( pr )             \
+  : [ b ] "r" ( b ) , [ z ] "m" ( zero ) , [ n7 ] "m" ( n7 )                 \
+  : "rdx" , "cc" , "memory" )
+
+/// r[ 0 , n + 6 ) = a[ 0 , n ) b[ 0 , 6 ) if not add, else
+/// r[ 0 , n + 6 ) = r[ 0 , n ) + a b, n > 0: the pass of 4 rows [see
+/// mulPass4()] on 6, the window of 7 places, the loop 7 digits long, 31
+/// instructions for 6 products instead of 22 for 4
+template< bool add >
+inline void mulPass6( std::uint64_t * r , const std::uint64_t * a ,
+                      std::size_t n , const std::uint64_t * b )
+{
+ const std::uint64_t e = ( 7 - n % 7 ) % 7 , zero = 0 , n7 = ( n + e ) / 7;
+ std::uint64_t w0 , w1 , w2 , w3 , w4 , w5 , w6 , lo , hi , c = e ,
+               pa = std::uint64_t( reinterpret_cast< std::uintptr_t >( a ) ) -
+                    8 * e ,
+               pr = std::uint64_t( reinterpret_cast< std::uintptr_t >( r ) ) -
+                    8 * e;
+ if constexpr( add ) ADS_PASS6( ADS_PASS_RADD , ADS_PASS_STORE );
+ else ADS_PASS6( ADS_PASS_RNONE , ADS_PASS_STORE );
+ }
+
+/// as subPass4() on 6 digits of b: r[ 0 , n ) = ~( ~r[ 0 , n ) + a b ) and
+/// r[ n , n + 6 ) the top 6 digits of ~r[ 0 , n ) + a b
+inline void subPass6( std::uint64_t * r , const std::uint64_t * a ,
+                      std::size_t n , const std::uint64_t * b )
+{
+ const std::uint64_t e = ( 7 - n % 7 ) % 7 , zero = 0 , n7 = ( n + e ) / 7;
+ std::uint64_t w0 , w1 , w2 , w3 , w4 , w5 , w6 , lo , hi , c = e ,
+               pa = std::uint64_t( reinterpret_cast< std::uintptr_t >( a ) ) -
+                    8 * e ,
+               pr = std::uint64_t( reinterpret_cast< std::uintptr_t >( r ) ) -
+                    8 * e;
+ ADS_PASS6( ADS_PASS_RNOT , ADS_PASS_STNOT );
+ }
+
 /// r[ 0 , n ) = ~( ~r[ 0 , n ) + a b ) and r[ n , n + 4 ) the top 4 digits
 /// of ~r[ 0 , n ) + a b, n > 0: so that r - a b, r of n + 4 digits, is
 /// ( r_top - s ) b^n + r[ 0 , n ), s the top digits, r_top the old ones
@@ -2810,11 +2926,14 @@ inline void BigInteger::mulSchool( Limb * r , const Limb * a , std::size_t na ,
   for( ; j + 4 <= nb ; j += 4 )
    detail::mulPassRow< true >( r + j , a , na , b + j );
   }
- else {
-  detail::mulPass4< false >( r , a , na , b );
+ else if( nb >= 6 ) {                      // by 6 rows, 4 for the rest
+  detail::mulPass6< false >( r , a , na , b );
+  for( j = 6 ; j + 6 <= nb ; j += 6 )
+   detail::mulPass6< true >( r + j , a , na , b + j );
   for( ; j + 4 <= nb ; j += 4 )
    detail::mulPass4< true >( r + j , a , na , b + j );
   }
+ else detail::mulPass4< false >( r , a , na , b );
  for( ; j < nb ; ++j ) r[ na + j ] = addMul1( r + j , a , na , b[ j ] );
 #else
  r[ na ] = mul1( r , a , na , b[ 0 ] );     // Algorithm M
@@ -3505,36 +3624,32 @@ inline BigInteger BigInteger::pow( const BigInteger & x , unsigned long n )
 /*------------------------------ THE QUOTIENT ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-inline BigInteger::Limb BigInteger::divBase( Limb * a , std::size_t m ,
-                                             const Limb * b , std::size_t n ,
-                                             Limb * q , bool cut )
+template< std::size_t K >
+inline bool BigInteger::divBlocks( Limb * a , std::size_t & m ,
+                                   const Limb * b , std::size_t n , Limb * q ,
+                                   bool cut ,
+                                   Limb d1 , Limb d0 , Limb v ,
+                                   std::size_t least )
 {
- Limb top = 0;
- if( cmpN( a + m , b , n ) >= 0 ) {
-  subFrom( a + m , n , b , n );
-  top = 1;
-  }
- const Limb d1 = b[ n - 1 ] , d0 = b[ n - 2 ] ,
-            v = detail::reciprocal2( d1 , d0 );
 #if ADS_BIGINT_ASM
- // the digits of the quotient 4 at a time: the 4 digits Q of the window
- // a[ j - 4 , j + n ), below b b^4, from its top t + 4 digits by the top
- // t digits of b, t = 6: no smaller than Q, and larger by 1 at most
- // (by 1 + Q / b^{t-1} < 2), then the window less Q b by a pass of 4 rows
+ // the digits of the quotient K at a time: the K digits Q of the window
+ // a[ j - K , j + n ), below b b^K, from its top t + K digits by the top
+ // t = K + 2 digits of b: no smaller than Q, and larger by 1 at most (by
+ // 1 + Q / b^{t-1} < 2), then the window less Q b by a pass of K rows
  // [see subPass4()], and b added back while it is negative; if cut, the
  // window and b cut to the L = j + 1 leading digits that the digit j - 1
- // takes [see below], Q of b^4 or more for the cut b sending back 2
- for( ; m >= 4 ; m -= 4 ) {
-  constexpr std::size_t t = 6;
+ // takes [see divBase()], Q of b^K or more for the cut b sending back true
+ constexpr std::size_t t = K + 2;
+ for( ; m >= K ; m -= K ) {
   const std::size_t L = cut ? std::min( n , m + 1 ) : n , o = n - L;
-  if( L < kDivBlock ) break;
-  Limb * const x = a + m - 4 + o;           // the window
+  if( L < least ) break;
+  Limb * const x = a + m - K + o;           // the window
   const Limb * const y = b + o;
-  Limb w[ t + 4 ] , Q[ 4 ] , T[ 4 ] , S[ 4 ];
+  Limb w[ t + K ] , Q[ K ] , T[ K ] , S[ K ];
   const Limb * const D = b + n - t;
-  std::copy( x + L - t , x + L + 4 , w );
-  bool full = cmpN( w + 4 , D , t ) >= 0;   // then Q = b^4 - 1
-  for( std::size_t k = 4 ; ! full && k-- > 0 ; ) {
+  std::copy( x + L - t , x + L + K , w );
+  bool full = cmpN( w + K , D , t ) >= 0;   // then Q = b^K - 1
+  for( std::size_t k = K ; ! full && k-- > 0 ; ) {
    Limb * const z = w + k;                  // Algorithm D on t digits
    const Limb u2 = z[ t ] , u1 = z[ t - 1 ] , u0 = z[ t - 2 ];
    Limb qh;
@@ -3561,23 +3676,48 @@ inline BigInteger::Limb BigInteger::divBase( Limb * a , std::size_t m ,
    Q[ k ] = qh;
    }
   if( full ) {
-   if( cut ) return( 2 );
-   std::fill( Q , Q + 4 , ~Limb( 0 ) );
+   if( cut ) return( true );
+   std::fill( Q , Q + K , ~Limb( 0 ) );
    }
-  std::copy( x + L , x + L + 4 , T );
-  detail::subPass4( x , y , L , Q );
-  std::copy( x + L , x + L + 4 , S );
+  std::copy( x + L , x + L + K , T );
+  if constexpr( K == 6 ) detail::subPass6( x , y , L , Q );
+  else detail::subPass4( x , y , L , Q );
+  std::copy( x + L , x + L + K , S );
   // the top D = T - S of the window less Q b, -1 or 0 since the window
   // is in [ -b , b ): S - T is 0 or 1
-  const Limb br = subN( S , S , 4 , T , 4 ) , one = 1;
-  ADS_INVARIANT( ! br && ! S[ 1 ] && ! S[ 2 ] && ! S[ 3 ] && ( S[ 0 ] < 2 ) );
+  const Limb br = subN( S , S , K , T , K ) , one = 1;
+  ADS_INVARIANT( ! br && ( S[ 0 ] < 2 ) &&
+                 std::all_of( S + 1 , S + K ,
+                              []( Limb y0 ) { return( y0 == 0 ); } ) );
   for( Limb d = S[ 0 ] ; d ; ) {            // b back, rarely
-   subFrom( Q , 4 , &one , 1 );
+   subFrom( Q , K , &one , 1 );
    d -= addTo( x , L , y , L );
    }
-  std::fill( x + L , x + L + 4 , 0 );
-  std::copy( Q , Q + 4 , q + m - 4 );
+  std::fill( x + L , x + L + K , 0 );
+  std::copy( Q , Q + K , q + m - K );
   }
+#else
+ (void) a; (void) m; (void) b; (void) n; (void) q; (void) cut; (void) d1;
+ (void) d0; (void) v; (void) least;
+#endif
+ return( false );
+ }
+
+inline BigInteger::Limb BigInteger::divBase( Limb * a , std::size_t m ,
+                                             const Limb * b , std::size_t n ,
+                                             Limb * q , bool cut )
+{
+ Limb top = 0;
+ if( cmpN( a + m , b , n ) >= 0 ) {
+  subFrom( a + m , n , b , n );
+  top = 1;
+  }
+ const Limb d1 = b[ n - 1 ] , d0 = b[ n - 2 ] ,
+            v = detail::reciprocal2( d1 , d0 );
+#if ADS_BIGINT_ASM
+ if( divBlocks< 6 >( a , m , b , n , q , cut , d1 , d0 , v , kDivBlock6 ) ||
+     divBlocks< 4 >( a , m , b , n , q , cut , d1 , d0 , v , kDivBlock ) )
+  return( 2 );
 #endif
  for( std::size_t j = m ; j-- > 0 ; ) {     // D2-D7
   // the digits of b at work, all, or the j + 2 leading ones if cut

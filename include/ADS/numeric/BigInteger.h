@@ -442,10 +442,10 @@ class BigInteger {
 
  // the thresholds, in digits, from the timings of bench/bignum.cpp on a
  // Xeon Gold 5120, against GMP
- static constexpr std::size_t kKaratsuba = 32;   ///< limbs for Karatsuba
+ static constexpr std::size_t kKaratsuba = 40;   ///< limbs for Karatsuba
  static constexpr std::size_t kToom3 = 160;      ///< limbs for Toom-3
  static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
- static constexpr std::size_t kDivide = 48;      ///< quotient limbs, recursion
+ static constexpr std::size_t kDivide = 96;      ///< quotient limbs, recursion
  static constexpr std::size_t kConvert = 24;     ///< limbs, divide and conquer
  static constexpr std::size_t kConvertF = 64;    ///< limbs, by fractions
  static constexpr std::size_t kFracLeaf = 32;    ///< chunks, by products
@@ -458,6 +458,7 @@ class BigInteger {
  static constexpr std::size_t kDivCut = 600;     ///< limbs, quotient alone
  static constexpr std::size_t kDivShort = 16;    ///< limbs, on the stack
  static constexpr std::size_t kDivBlock = 40;    ///< limbs, 4 digits a step
+ static constexpr std::size_t kDivBlock6 = 64;   ///< limbs, 6 digits a step
  static constexpr std::size_t kDivExact2 = 32;   ///< limbs, exact both ways
 
  // with ADS_WITH_GMP, the lengths in digits that go to GMP, where it was
@@ -714,6 +715,13 @@ class BigInteger {
  /// returned for a digit of b or more
  static Limb divBase( Limb * a , std::size_t m , const Limb * b ,
                       std::size_t n , Limb * q , bool cut = false );
+ /// the digits of the quotient K at a time as divBase() takes them, while
+ /// m >= K and the divisor, cut or not, has least digits or more; false,
+ /// or true if a cut divisor gives a digit too large [see divBase()]
+ template< std::size_t K >
+ static bool divBlocks( Limb * a , std::size_t & m , const Limb * b ,
+                        std::size_t n , Limb * q , bool cut , Limb d1 ,
+                        Limb d0 , Limb v , std::size_t least );
  static Limb divRec( Limb * a , std::size_t m , const Limb * b ,
                      std::size_t n , Limb * q , Limb * t );
 
