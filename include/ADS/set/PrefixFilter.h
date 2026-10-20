@@ -27,7 +27,8 @@
  * Even: a header of \f$ Q + k = 50 \f$ bits that writes the number
  * \f$ c_q \f$ of the remainders of each quotient q in unary,
  * \f$ 1^{c_0} 0 \, 1^{c_1} 0 \cdots 1^{c_{24}} 0 \f$ from the low bit,
- * one bit telling whether the bin has overflowed, and a body of 25 bytes
+ * 6 bits for the quotient of the largest fingerprint of the bin once it
+ * has overflowed (63 before), and a body of 25 bytes
  * holding the remainders in the order of their quotients, those of one
  * quotient (its run) in increasing order. The run of q is the slots
  * \f$ [ z_{q-1} + 1 - q , z_q - q ) \f$ of the body, \f$ z_q \f$ being the
@@ -35,19 +36,26 @@
  * a zero put below the header, its zeros of ranks q and q + 1 are
  * \f$ z_{q-1} + 1 \f$ and \f$ z_q + 1 \f$, both found by one pdep of
  * \f$ 3 \cdot 2^q \f$ into the complement (BMI2), or by clearing the
- * lowest bit q times on any machine. A query compares the 32 bytes of the
+ * lowest bit q times on any machine; the pdep gives the two bits
+ * \f$ d_0 = 2^{z_{q-1}+1} \f$ and \f$ d_1 = 2^{z_q+1} \f$, and the slots
+ * of the run are the bits of \f$ ( d_1 / 2 - d_0 ) / 2^q \f$, with no
+ * count of zeros. A query compares the 32 bytes of the
  * bin with r at once (AVX-512 or AVX2, a byte at a time on any machine),
  * stops if no byte of the body is equal, as it is for about 91 % of the
  * keys out of S (\f$ 1 - ( 1 - 2^{-8} )^{23.75} \f$ of them have one),
  * and otherwise tells whether one of the equal bytes is in the run of q.
- * Whether the bin overflowed is folded into the bound of x with no branch,
- * so that the only branch on the bin is the rare one to the spare, a
- * mispredicted branch on a load costing the loads of the queries in
- * flight. An insertion finds the place of r in its run by counting the
- * bytes of the run below r (one comparison of the 32 bytes), and moves the
- * bytes above it by one within a register of 256 bits (AVX2), or within 4
- * words on any machine, while one more one goes into the header at the
- * end of the run. The answers are the same on every machine.
+ * A key not found in the bin is compared with the bound of x in the
+ * bin, its largest fingerprint if it overflowed and above every x if
+ * not, which is the 6 bits of the quotient and the last byte of the body;
+ * the bound is out of the path of a key found, and the only branch on
+ * the bin besides those on the equal bytes is the rare one to the spare,
+ * out of line, a mispredicted branch on a load costing the loads of the
+ * queries in flight. An insertion finds the place of r in its run by
+ * counting the bytes of the run below r (one comparison of the 32
+ * bytes), and moves the bytes above it by one within a register of 256
+ * bits (AVX2), or within 4 words on any machine, while one more one goes
+ * into the header at the end of the run. The answers are the same on
+ * every machine.
  *
  * The bins keep the prefix of their fingerprints. Each bin holds the
  * smallest, in the order of \f$ x = 2^8 q + r \f$, of the fingerprints
@@ -55,13 +63,16 @@
  * \f$ x \f$ not below the maximum \f$ x_{\max} \f$ of the bin sends
  * \f$ ( b , x ) \f$ to the spare, and one with \f$ x < x_{\max} \f$
  * evicts \f$ x_{\max} \f$ to the spare and takes its place; either way the
- * bin is marked overflowed. Its maximum is the last byte of the body,
- * with the quotient \f$ \lfloor \log_2 w \rfloor - 24 \f$ of the last run,
- * w the header, since the maximum of a bin never grows once it is full.
+ * bin is marked overflowed, by writing in the header the quotient of its
+ * maximum. Its maximum is the last byte of the body, with the quotient
+ * \f$ \lfloor \log_2 w \rfloor - 24 \f$ of the last run, w the header
+ * (written again after an eviction), since the maximum of a bin never
+ * grows once it is full.
  * Every fingerprint sent to the spare is then at least the maximum of its
- * bin, and a query of x looks in the bin, unless the bin has overflowed
- * and \f$ x > x_{\max} \f$, when it looks in the spare only: a key of S
- * is always found, the fingerprint equal to the maximum being in the bin.
+ * bin, and a query of x looks in the bin and, if x is not there, in the
+ * spare only if the bin has overflowed and \f$ x > x_{\max} \f$ (a key
+ * of the bin is at most \f$ x_{\max} \f$): a key of S is always found,
+ * the fingerprint equal to the maximum being in the bin.
  * The spare holds the pairs \f$ s b + x \f$ hashed again.
  *
  * Analysis. Let n keys fall into \f$ m = \lceil n / ( \alpha k ) \rceil \f$
@@ -163,6 +174,28 @@
  #include <immintrin.h>
 #endif
 
+/// a function inlined even where the compiler would not
+#ifndef ADS_FILTER_INLINE
+ #if defined( __GNUC__ ) || defined( __clang__ )
+  #define ADS_FILTER_INLINE inline __attribute__(( always_inline ))
+ #elif defined( _MSC_VER )
+  #define ADS_FILTER_INLINE __forceinline
+ #else
+  #define ADS_FILTER_INLINE inline
+ #endif
+#endif
+
+/// a function never inlined, the rare path out of a query
+#ifndef ADS_FILTER_NOINLINE
+ #if defined( __GNUC__ ) || defined( __clang__ )
+  #define ADS_FILTER_NOINLINE __attribute__(( noinline ))
+ #elif defined( _MSC_VER )
+  #define ADS_FILTER_NOINLINE __declspec( noinline )
+ #else
+  #define ADS_FILTER_NOINLINE
+ #endif
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -232,10 +265,11 @@ class PrefixFilter {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// a pocket dictionary: the header and the flag in the low 7 bytes, the
- /// 25 remainders in the others
+ /// a pocket dictionary: the header in the low 50 bits, the quotient of
+ /// the maximum (63 before an overflow) in the next 6, the 25 remainders
+ /// in the other bytes
  struct alignas( 32 ) Bin {
-  unsigned char b[ 32 ];
+  unsigned char b[ 32 ] = { 0 , 0 , 0 , 0 , 0 , 0 , 0xFC };
   };
 
  static constexpr unsigned kK = 25;        ///< remainders in a bin
@@ -243,14 +277,14 @@ class PrefixFilter {
  static constexpr std::uint32_t kS = kQ << 8;   ///< mini-fingerprints
  static constexpr unsigned kBody = 7;      ///< the first byte of the body
  static constexpr std::uint64_t kHead = ( std::uint64_t( 1 ) << 50 ) - 1;
- static constexpr std::uint64_t kOver = std::uint64_t( 1 ) << 55;
+ static constexpr std::uint64_t kTop = std::uint64_t( 63 ) << 50;
  static constexpr double kAlpha = 0.95;    ///< the load of the bins
  static constexpr double kSpareBits = 12;  ///< bits per spare item
 
- /// the header and the flag of a bin
+ /// the header and the quotient of the maximum of a bin
  [[nodiscard]] static std::uint64_t header( const Bin & B );
 
- /// writes the header and the flag w into B
+ /// writes the header and the quotient of the maximum w into B
  static void setHeader( Bin & B , std::uint64_t w );
 
  /// the place of the zero of rank j of w, j < 64 - popcount( w ), by
@@ -266,6 +300,9 @@ class PrefixFilter {
 
  /// the bits i of the body bytes i of B below r
  [[nodiscard]] static std::uint32_t below( const Bin & B , unsigned r );
+
+ /// the bits of the slots of the run of q of the header w
+ [[nodiscard]] static std::uint32_t runMask( std::uint64_t w , unsigned q );
 
  /// true if r is in the run of q of B, whose header is w
  [[nodiscard]] static bool find( const Bin & B , std::uint64_t w ,
@@ -293,6 +330,10 @@ class PrefixFilter {
 
  /// the mini-fingerprint of the hash h, in [ 0 , 6400 )
  [[nodiscard]] static std::uint32_t mini( std::uint64_t h );
+
+ /// the answer of the spare to the mini-fingerprint x of the bin i, the
+ /// rare path of a query, out of line
+ [[nodiscard]] bool spare( std::size_t i , std::uint32_t x ) const;
 
  /// the hash in the spare of the mini-fingerprint x of the bin i
  [[nodiscard]] static std::uint64_t spareHash( std::size_t i ,

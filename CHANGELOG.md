@@ -662,6 +662,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   64 bits of the hash instead of a folded product of 128 bits, tells
   whether one lane of the two buckets is equal by one test of a zero lane
   and reads the victim only when there is one
+- PrefixFilter keeps in the 6 bits above its header the quotient of the
+  largest fingerprint of an overflowed bin (63 before), so that the bound
+  of a query is two loads and a shift, read only for a key not found in
+  the bin, takes the run of a quotient from the two bits of its pdep with
+  no count of zeros, and answers the rare queries of the spare out of line
+- bench/summary.py compares PrefixFilter with the cuckoo filter of
+  fastfilter_cpp only, of the same false positives, not with its blocked
+  filter of Bloom
 
 - FlatHashTable removes a key of its first group by writing the 16
   control bytes of the group whole, at an address known from the hash

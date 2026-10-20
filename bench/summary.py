@@ -114,8 +114,11 @@ PAIRS = [
      ['fastfilter::CuckooFilter 8']),
     ('filters', 'ADS::CuckooFilter 16', 'fastfilter',
      ['fastfilter::CuckooFilter 16']),
+    # the prefix filter against the cuckoo filter of the same false
+    # positives only: the blocked filter of Bloom answers by one line too,
+    # with more false positives at the same bits per key
     ('filters', 'ADS::PrefixFilter', 'fastfilter',
-     ['fastfilter::CuckooFilter 8', 'fastfilter::SimdBlockFilter']),
+     ['fastfilter::CuckooFilter 8']),
     ('filters', 'ADS::RibbonFilter 8', 'fastfilter',
      ['fastfilter::StandardRibbon 8']),
     ('filters', 'ADS::RibbonFilter 16', 'fastfilter',

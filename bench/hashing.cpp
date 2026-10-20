@@ -29,8 +29,9 @@
  *   ADS against the blocked filter of Bloom, the cuckoo filter and the
  *   standard Ribbon filter (of RocksDB) of fastfilter_cpp and the xor and
  *   binary fuse filters of xor_singleheader; the prefix filter of ADS
- *   against the cuckoo filters and the blocked filters of Bloom, since
- *   the prefix filter of fastfilter_cpp lives in its benchmark driver;
+ *   against the cuckoo filters (its pair in summary.py, of the same false
+ *   positives) and the blocked filters of Bloom, since the prefix filter
+ *   of fastfilter_cpp lives in its benchmark driver;
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, by those of ADS (by pilots, by
  *   recursive splitting and by levels of fingerprints, the method of
