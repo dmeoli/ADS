@@ -432,8 +432,9 @@ void bulk( unsigned seed , std::size_t n , int k , Make && make )
 // empty heap (one scan for a first look, then the incremental quicksort,
 // on random keys, on 3 keys, on strings, within one buffer); with few
 // items (all in the insertion heap), past one insertion heap (a sequence
-// in the group 1, merged with the deletion buffer), past k sequences (the group 2), with
-// the pops between, with many equal keys and with all equal; the edge
+// in the group 1, merged with the deletion buffer), past k sequences
+// (the group 2), with the pops between, with many equal keys and with all
+// equal; the edge
 // cases: the empty heap violates the contracts, sorted and reversed
 // pushes, pops that empty the deletion buffer while the groups have
 // items, strings, a pushed item of the heap itself, clear(), and a max
