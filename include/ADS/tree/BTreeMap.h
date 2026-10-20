@@ -60,6 +60,16 @@
  * O( ( L + I ) \log n ) \f$ time, a few lines of cache per level. build()
  * loads a sorted sequence bottom up in O( n ), all the nodes full.
  *
+ * With R, each internal node keeps the number of the pairs below each of its
+ * children, \f$ \mathit{cnt}[ j ] = | \{ \mbox{pairs below } c[ j ] \} |
+ * \f$, which an insertion or a removal adds or takes one to along its way
+ * and a split, a merge or a loan counts again on the nodes it touches (\f$
+ * O( I ) \f$ children each); then rank( k ), the number of the keys smaller
+ * than k, is the sum of the counts of the children before the way down
+ * plus the place in the leaf, and select( i ), the pair of rank i, goes
+ * down to the child whose counts pass i, both in \f$ O( ( L + I ) \log n )
+ * \f$ time (the order-statistic tree of Cormen et al. on a B-tree).
+ *
  * The iterators are a leaf, a place in it and the parent of the leaf,
  * bidirectional, on constant pairs of references ( key , value ); find()
  * gives a value to change in place. An iterator steps to the next leaf
@@ -86,6 +96,9 @@
  * \see S. Chen, P. B. Gibbons, T. C. Mowry, Improving index performance
  *      through prefetching, Proceedings of SIGMOD 2001, 235-246, 2001,
  *      doi:10.1145/375663.375688
+ * \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
+ *      to Algorithms, 4th ed., MIT Press, 2022, chapter 17 (augmenting
+ *      data structures)
  * \see G. Graefe, Modern B-tree techniques, Foundations and Trends in
  *      Databases 3(4), 203-402, 2011, doi:10.1561/1900000028
  *
@@ -112,6 +125,7 @@
 #include "ADS/search/CountLess.h"
 
 #include <algorithm>
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -134,9 +148,10 @@ namespace ADS {
 /*---------------------------- CLASS BTreeMap ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// an ordered map on a B+-tree of nodes of B bytes, by the order less()
+/// an ordered map on a B+-tree of nodes of B bytes, by the order less(),
+/// with the counts of the pairs below each child if R (the ranks)
 template< class K , class V , class Less = std::less< K > ,
-          std::size_t B = 512 >
+          std::size_t B = 512 , bool R = false >
  requires std::default_initializable< K > &&
           std::default_initializable< V >
 class BTreeMap {
@@ -238,6 +253,12 @@ class BTreeMap {
  /// removes the pair of it, and gives the one after it
  const_iterator erase( const_iterator it );
 
+ /// the pairs whose key is smaller than k, O( ( L + I ) log n ) time
+ [[nodiscard]] std::size_t rank( const K & k ) const requires R;
+
+ /// the pair of rank i (from 0), end() if i >= size()
+ [[nodiscard]] const_iterator select( std::size_t i ) const requires R;
+
 /*--------------------------------------------------------------------------*/
  private:
 
@@ -262,13 +283,24 @@ class BTreeMap {
   std::uint32_t n = 0;             ///< the pairs
   };
 
+ struct None {};
+
  struct alignas( 64 ) Inner {
   K k[ I ];                        ///< the bounds of the children
   void * c[ I + 1 ];               ///< the children
   Inner * prev = nullptr;          ///< the node before, on its level
   Inner * next = nullptr;          ///< the node after, on its level
   std::uint32_t n = 0;             ///< the keys, the children - 1
+  /// the pairs below each child, if R
+  [[no_unique_address]] std::conditional_t< R ,
+                         std::array< std::size_t , I + 1 > , None > cnt;
   };
+
+ /// the pairs below the node x of height h
+ [[nodiscard]] static std::size_t total( const void * x , int h );
+
+ /// the counts of the children of u, of height h, from the children
+ static void recount( Inner * u , int h );
 
  /// the place of an internal node on a path, and the child taken
  struct Step {
@@ -291,8 +323,8 @@ class BTreeMap {
  static void fetch( const void * x , std::size_t bytes );
 
  template< std::size_t C >
- [[nodiscard]] std::size_t rank( const K * a , std::uint32_t n ,
-                                 const K & x ) const;
+ [[nodiscard]] std::size_t place( const K * a , std::uint32_t n ,
+                                  const K & x ) const;
 
  template< bool Values >
  [[nodiscard]] const Leaf * descend( const K & x ,
