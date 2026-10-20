@@ -119,6 +119,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comparisons; the samplings of n of 10^8 positions of RandomSampling.h
   against std::ranges::sample(); TLX in the makefile, ADS_TLX in CMake,
   the pairs of the summary
+- the engineered combinatorial structures, beyond the book, tested in
+  test/engineered_combinatorial.cpp and measured by bench/combinatorial.cpp
+  and bench/backtrack.cpp: popcount() and popcountAnd(), the counts of
+  arrays of words by the carry-save adders of Harley and Seal on AVX-512 or
+  AVX2, pdep(), pext(), select() and the Morton codes by BMI2
+  (FastBitwise.h); forEachPermutation(), Heap's method with the first
+  three places in straight-line code, forEachPermutationLex(), the
+  lexicographic permutations of a multiset with the last three places
+  written directly, forEachCombination() and forEachCombinationMask(), the
+  combinations with the last place in a loop of its own and Gosper's word
+  by the trailing zeros (FastGeneration.h); FastExactCover, the exact
+  covering with colors on sparse sets, the dancing cells of Knuth's SSXCC
+  with the forced moves (FastExactCover.h)
+- Bitwise.h cites HAKMEM, Gray and Morton, Generation.h Trotter, Johnson
+  and Heap
+- SatSolvers.h cites Davis and Putnam, the restarts of Luby, Sinclair and
+  Zuckerman and the phase saving of Pipatsrisawat and Darwiche
 
 - COPYING, the text of the GNU GPL v3 that the LGPL v3 of LICENSE
   supplements, as the LGPL asks, installed by the recipes next to LICENSE

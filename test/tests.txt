@@ -494,6 +494,11 @@ engineered  mpsc-inbox           casella di molti produttori
 engineered  concurrent-cuckoo    cuckoo concorrente, su un thread
 engineered  concurrent-cuckoo-threads cuckoo concorrente, su più thread
 
+# the engineered combinatorial algorithms, beyond the book
+engineered_combinatorial  fast-bitwise     Harley-Seal, pdep, select
+engineered_combinatorial  fast-generation  permutazioni e combinazioni veloci
+engineered_combinatorial  fast-exact-cover copertura esatta, celle danzanti
+
 # the engineered hashing, beyond the book
 hashing  fast-hash             funzioni hash per prodotti ripiegati
 hashing  blocked-bloom         filtro di Bloom a blocchi

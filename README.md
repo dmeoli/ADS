@@ -382,6 +382,12 @@ of Boost and of ADS, with the same counts of work on the three.
 RecSplit, and the concurrent cuckoo table with libcuckoo,
 `boost::concurrent_flat_map` and a `std::unordered_map` under a
 `std::shared_mutex`.
+RecSplit. The combinatorial ones are tested in
+[`test/engineered_combinatorial.cpp`](test/engineered_combinatorial.cpp)
+and compared by [`bench/combinatorial.cpp`](bench/combinatorial.cpp)
+and [`bench/backtrack.cpp`](bench/backtrack.cpp) with libpopcnt,
+libmorton, Hinnant's combinations and the programs DLX1, DLX2 and SSXCC
+of Knuth.
 
 | What | Header | Test |
 |---|---|---|
@@ -412,6 +418,9 @@ RecSplit, and the concurrent cuckoo table with libcuckoo,
 | minimal perfect hash function by levels of fingerprints, ranks by blocks of 512 bits (Müller, Sanders, Schulze, Zhou; BBHash; FMPH) | [`dictionary/FingerprintPerfectHash.h`](include/ADS/dictionary/FingerprintPerfectHash.h) | `hashing.fingerprint-perfect-hash` |
 | cuckoo table with buckets of 4 places, tags of 8 bits, search in breadth (Li et al.; libcuckoo) | [`dictionary/BucketCuckooTable.h`](include/ADS/dictionary/BucketCuckooTable.h) | `hashing.bucket-cuckoo` |
 | hash map with its pairs in a dense vector and an index of positions in groups of 12 control bytes, a removal by moving the last pair (the dictionaries of CPython 3.6; `ankerl::unordered_dense`) | [`dictionary/DenseHashMap.h`](include/ADS/dictionary/DenseHashMap.h) | `hashing.dense-hash-map` |
+| population count of arrays by the carry-save adders of Harley and Seal (AVX-512, AVX2), pdep, pext, select in a word (Mula, Kurz and Lemire) | [`combinatorial/FastBitwise.h`](include/ADS/combinatorial/FastBitwise.h) | `engineered_combinatorial.fast-bitwise` |
+| permutations by Heap's method and in lexicographic order, combinations, with the innermost places in straight-line code | [`combinatorial/FastGeneration.h`](include/ADS/combinatorial/FastGeneration.h) | `engineered_combinatorial.fast-generation` |
+| exact cover with colors on sparse sets, the dancing cells of Knuth's SSXCC | [`backtrack/FastExactCover.h`](include/ADS/backtrack/FastExactCover.h) | `engineered_combinatorial.fast-exact-cover` |
 | lock-free queue from one producer to one consumer | [`concurrent/SPSCQueue.h`](include/ADS/concurrent/SPSCQueue.h) | `engineered.spsc-queue` |
 | lock-free inbox of many producers | [`concurrent/MPSCInbox.h`](include/ADS/concurrent/MPSCInbox.h) | `engineered.mpsc-inbox` |
 | wavelet matrix: access, rank, select, range quantiles (Claude, Navarro and Ordonez) | [`succinct/WaveletMatrix.h`](include/ADS/succinct/WaveletMatrix.h) | `engineered_succinct.wavelet-matrix` |

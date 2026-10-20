@@ -30,6 +30,11 @@
  * \see D. E. Knuth, The Art of Computer Programming, vol. 4A, Addison-Wesley,
  *      2011, section 7.1.3
  * \see H. S. Warren, Hacker's Delight, 2nd ed., Addison-Wesley, 2012
+ * \see M. Beeler, R. W. Gosper, R. Schroeppel, HAKMEM, MIT AI Memo 239,
+ *      1972, item 175 (the next word with as many 1 bits)
+ * \see F. Gray, Pulse code communication, U.S. Patent 2,632,058, 1953
+ * \see G. M. Morton, A computer oriented geodetic data base and a new
+ *      technique in file sequencing, IBM report, Ottawa, 1966
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

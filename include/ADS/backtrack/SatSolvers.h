@@ -29,6 +29,9 @@
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 4B, Addison-Wesley,
  *      2022, section 7.2.2.2
+ * \see M. Davis, H. Putnam, A computing procedure for quantification
+ *      theory, Journal of the ACM 7(3), 201-215, 1960,
+ *      doi:10.1145/321033.321034
  * \see M. Davis, G. Logemann, D. Loveland, A machine program for
  *      theorem-proving, Communications of the ACM 5(7), 394-397, 1962,
  *      doi:10.1145/368273.368557
@@ -38,6 +41,12 @@
  * \see M. W. Moskewicz, C. F. Madigan, Y. Zhao, L. Zhang, S. Malik,
  *      Chaff: engineering an efficient SAT solver, DAC 2001, 530-535,
  *      doi:10.1145/378239.379017
+ * \see M. Luby, A. Sinclair, D. Zuckerman, Optimal speedup of Las Vegas
+ *      algorithms, Information Processing Letters 47(4), 173-180, 1993,
+ *      doi:10.1016/0020-0190(93)90029-9
+ * \see K. Pipatsrisawat, A. Darwiche, A lightweight component caching
+ *      scheme for satisfiability solvers, SAT 2007, LNCS 4501, 294-299,
+ *      doi:10.1007/978-3-540-72788-0_28 (phase saving)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
