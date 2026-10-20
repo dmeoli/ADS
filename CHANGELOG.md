@@ -554,6 +554,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strong pseudoprimes to the base 2 there, 7 bases for every word), the
   bases in lockstep and the powers with no branch on the exponent; powMod()
   reduces lazily below 2^62
+- the documentation of the succinct structures and of the compressors
+  cites every paper whose method or analysis they use, with its doi, and
+  writes their bounds in LaTeX; the README lists the compact directory,
+  the vector of RRR, tANS, the DACs and the linear parse of LZ77 among the
+  engineered structures
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);

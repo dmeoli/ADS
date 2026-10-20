@@ -46,8 +46,8 @@
  * 2n + o( n ) bits; the range min-max tree of Navarro and Sadakane reaches
  * O( 1 ) time with a tree of degree \f$ \Theta( \log n ) \f$ and tables,
  * and its binary form with blocks of a few hundred bits, the one here, is
- * the fastest in practice (Arroyuelo, Canovas, Navarro and Sadakane;
- * the bp_support of sdsl).
+ * the fastest in practice (Arroyuelo, Canovas, Navarro and Sadakane; Gog
+ * and Petri; Grossi and Ottaviano).
  *
  * The contracts [see Contract.h]: the sequence is balanced (an audit),
  * findClose() and enclose() get a '(' and findOpen() a ')'; the
@@ -65,6 +65,12 @@
  * \see D. Arroyuelo, R. Canovas, G. Navarro, K. Sadakane, Succinct trees in
  *      practice, Proc. 12th ALENEX, 84-97, 2010,
  *      doi:10.1137/1.9781611972900.9
+ * \see S. Gog, M. Petri, Optimized succinct data structures for massive
+ *      data, Software: Practice and Experience 44(11), 1287-1314, 2014,
+ *      doi:10.1002/spe.2198
+ * \see R. Grossi, G. Ottaviano, Design of practical succinct data
+ *      structures for large data collections, Proc. 12th SEA, LNCS 7933,
+ *      5-17, 2013, doi:10.1007/978-3-642-38527-8_3
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

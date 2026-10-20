@@ -38,10 +38,13 @@
  * keeps one vector of n bits per level and no tree, at the same costs: it
  * is the form of choice for the large alphabets (Claude, Navarro and
  * Ordonez), and the base of the compressed indices of the integers and of
- * the r-index. A wavelet tree shaped by the code of Huffman (the wt_huff of
- * sdsl) takes \f$ n ( H_0 + 1 ) \f$ bits instead of n w and is faster on
- * a skewed alphabet; the matrix here is the form for the alphabets of
- * integers with no known distribution.
+ * the r-index. A wavelet tree shaped by the code of Huffman (Makinen and
+ * Navarro) takes \f$ n ( H_0 + 1 ) \f$ bits instead of n w and is faster
+ * on a skewed alphabet; the matrix here is the form for the alphabets of
+ * integers with no known distribution. Each level carries the directory of
+ * RankSelect [see RankSelect.h], so that the matrix takes about
+ * \f$ 1.5 \, n w \f$ bits, and a query of rank 2w ranks of one load and
+ * one sideways sum each.
  *
  * The contracts [see Contract.h]: the items fit in w bits, \f$ 1 \le w
  * \le 64 \f$, the places are in the sequence, i <= j for a range, and k
@@ -54,6 +57,9 @@
  *      2015, doi:10.1016/j.is.2014.06.002
  * \see R. Grossi, A. Gupta, J. S. Vitter, High-order entropy-compressed
  *      text indexes, Proc. 14th SODA, 841-850, 2003
+ * \see V. Makinen, G. Navarro, Succinct suffix arrays based on run-length
+ *      encoding, Proc. 16th CPM, LNCS 3537, 45-56, 2005,
+ *      doi:10.1007/11496656_5
  * \see G. Navarro, Wavelet trees for all, Journal of Discrete Algorithms
  *      25, 2-20, 2014, doi:10.1016/j.jda.2013.07.004
  *

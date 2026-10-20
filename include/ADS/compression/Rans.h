@@ -27,10 +27,9 @@
  * overlap in the pipeline of the processor (the interleaving of Giesen);
  * they share one stream. The frequencies are scaled to M with each byte of
  * the string kept at 1 at least, which costs a fraction of a percent on a
- * string of bytes; the tabled variant (tANS, the FSE of Collet in
- * Zstandard) makes the state transitions a lookup and needs no
- * multiplication, at the price of a table per alphabet built in the
- * encoder too.
+ * string of bytes; the tabled variant [see Tans.h] makes the state
+ * transitions a lookup and needs no multiplication, at the price of a
+ * table per alphabet built in the encoder too.
  *
  * The format: the size n in 8 bytes, the 256 frequencies scaled to M in 2
  * bytes each, the four final states in 4 bytes each, the stream of 16 bits
@@ -46,7 +45,9 @@
  *      of Huffman coding with compression rate of arithmetic coding,
  *      arXiv:1311.2540, 2013
  * \see F. Giesen, Interleaved entropy coders, arXiv:1402.3392, 2014
- * \see Y. Collet, FSE and Zstandard, RFC 8878, 2021, doi:10.17487/RFC8878
+ * \see T. Granlund, P. L. Montgomery, Division by invariant integers using
+ *      multiplication, Proc. ACM PLDI 1994, 61-72, 1994,
+ *      doi:10.1145/178243.178249
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
