@@ -386,9 +386,53 @@ void sequence( unsigned seed , int steps , unsigned push , int range )
  CHECK( H.empty() );
  }
 
-// the sequence heap against std::priority_queue: with few items (all in
-// the insertion heap), past one insertion heap (a sequence in the group 1,
-// merged with the deletion buffer), past k sequences (the group 2), with
+/// a bulk of n pushes of keys in [ 0 , range ) to a fresh heap, a pop by
+/// the scan, k more pushes into the bulk, and then random pushes and pops
+/// (the bulk by the incremental quicksort, the rest by the sequences)
+/// against std::priority_queue, down to empty and once more
+template< class T , class Make >
+void bulk( unsigned seed , std::size_t n , int k , Make && make )
+{
+ SequenceHeap< T > H;
+ std::priority_queue< T , std::vector< T > , std::greater<> > R;
+ std::mt19937 g( seed );
+ for( int round = 0 ; round < 2 ; ++round ) {
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   const T x = make( g );
+   H.push( x );
+   R.push( x );
+   }
+  CHECK( H.pop() == R.top() );               // the scan of the bulk
+  R.pop();
+  for( int i = 0 ; i < k ; ++i ) {           // still in the bulk
+   const T x = make( g );
+   H.push( x );
+   R.push( x );
+   }
+  CHECK( H.top() == R.top() );               // the bulk closed
+  for( std::size_t t = 0 ; t < 2 * n ; ++t )
+   if( g() % 2 ) {
+    const T x = make( g );
+    H.push( x );
+    R.push( x );
+    }
+   else if( ! R.empty() ) {
+    CHECK( H.pop() == R.top() );
+    R.pop();
+    }
+  while( ! R.empty() ) {
+   CHECK( H.pop() == R.top() );
+   R.pop();
+   }
+  CHECK( H.empty() );
+  }
+ }
+
+// the sequence heap against std::priority_queue: a bulk of pushes to an
+// empty heap (one scan for a first look, then the incremental quicksort,
+// on random keys, on 3 keys, on strings, within one buffer); with few
+// items (all in the insertion heap), past one insertion heap (a sequence
+// in the group 1, merged with the deletion buffer), past k sequences (the group 2), with
 // the pops between, with many equal keys and with all equal; the edge
 // cases: the empty heap violates the contracts, sorted and reversed
 // pushes, pops that empty the deletion buffer while the groups have
@@ -426,6 +470,37 @@ ADS_TEST( "sequence-heap" )
   const std::string x = T.pop();
   CHECK( last <= x );
   last = x;
+  }
+ bulk< int >( 7 , 100000 , 10 , []( auto & g ) {   // a bulk of random
+  return( int( g() % 1000000 ) ); } );             // keys, of 3 keys,
+ bulk< int >( 8 , 50000 , 0 , []( auto & g ) {     // and of strings
+  return( int( g() % 3 ) ); } );
+ bulk< std::string >( 9 , 20000 , 5 , []( auto & g ) {
+  return( std::to_string( g() % 100000 ) ); } );
+ bulk< int >( 10 , 3000 , 3 , []( auto & g ) {     // within one buffer
+  return( int( g() % 100 ) ); } );
+ {                                           // the keys of OrderKey.h:
+  SequenceHeap< std::pair< int , short > > A;    // a pair with negative
+  SequenceHeap< double , std::greater<> > B;     // items, doubles largest
+  std::priority_queue< std::pair< int , short > ,   // first
+   std::vector< std::pair< int , short > > , std::greater<> > RA;
+  std::priority_queue< double > RB;
+  std::mt19937 g( 12 );
+  for( int t = 0 ; t < 30000 ; ++t )
+   if( RA.empty() || ( g() % 3 ) ) {
+    const std::pair< int , short > p( int( g() % 2001 ) - 1000 ,
+                                      short( int( g() % 201 ) - 100 ) );
+    const double d = double( int( g() % 2001 ) - 1000 ) / 7;
+    A.push( p );
+    RA.push( p );
+    B.push( d );
+    RB.push( d );
+    }
+   else {
+    CHECK( A.pop() == RA.top() && B.pop() == RB.top() );
+    RA.pop();
+    RB.pop();
+    }
   }
  SequenceHeap< int , std::greater<> > X;     // the largest first
  for( int i = 0 ; i < 2000 ; ++i ) X.push( i % 777 );
