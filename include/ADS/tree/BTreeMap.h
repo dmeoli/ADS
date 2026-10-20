@@ -44,7 +44,9 @@
  * smallest one, splits the node so that the old one stays full and the new
  * one gets the new key alone (the trick of the B-trees of Abseil and of
  * the bulk loaders): the keys inserted in increasing order fill all the
- * nodes, instead of half of them. A removal that leaves a node with fewer
+ * nodes, instead of half of them; and a key larger than all the others
+ * goes into the last leaf, if it has room, with no descent, since no bound
+ * of an internal node lies above the largest key. A removal that leaves a node with fewer
  * than half of its places full either merges it with a sibling, if the
  * two fit in one node, or takes from the sibling half of the difference,
  * so that the two end up balanced; a merge may leave the parent short in

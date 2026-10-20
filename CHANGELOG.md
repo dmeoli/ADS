@@ -406,7 +406,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in main memory with nodes of 512 bytes, the keys counted by comparisons
   of vectors, the nodes prefetched and taken from pools on huge pages, and
   iterators that prefetch the leaves ahead through their parents, and with
-  the counts of the pairs below each child its rank() and select();
+  the counts of the pairs below each child its rank() and select(), a key
+  past the largest one appended to the last leaf with no descent;
   SPlusTree, the static B+-tree of Slotin over a sorted array, and
   branchlessLowerBound(); nthElement(), the selection of Floyd and Rivest
   with the partition of Lomuto with no branch, the one of Hoare on ranges

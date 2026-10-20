@@ -429,6 +429,17 @@ bool ADS_BTM::insert( const K & k , const V & v )
   ADS_POST( contains( k ) );
   return( true );
   }
+ if constexpr( ! R )                        // past the largest key, in a
+  if( ( f_last->n < L ) &&                  // leaf with room: no descent,
+      f_less( f_last->k[ f_last->n - 1 ] , k ) ) {   // no bound to change
+   f_last->k[ f_last->n ] = k;
+   f_last->v[ f_last->n ] = v;
+   ++f_last->n;
+   ++f_size;
+   ADS_POST( contains( k ) );
+   ADS_INVARIANT( ( f_size > 4096 ) || valid() );
+   return( true );
+   }
  Step path[ DEPTH ];
  Leaf * x = const_cast< Leaf * >( descend( k , path ) );
  const auto p = std::uint32_t( place< L >( x->k , x->n , k ) );
