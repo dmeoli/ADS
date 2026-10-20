@@ -358,20 +358,29 @@ and the date of its exam.
 
 Beside the classes of the book, which follow its pseudocode, a few
 structures are written for speed, for the programs that need it, and
-tested in [`test/engineered.cpp`](test/engineered.cpp) and, the hashing,
-in [`test/hashing.cpp`](test/hashing.cpp), the concurrent ones also on
+tested in [`test/engineered.cpp`](test/engineered.cpp), the heaps in
+[`test/heaps.cpp`](test/heaps.cpp), the vectors in
+[`test/sequences.cpp`](test/sequences.cpp) and, the hashing, in
+[`test/hashing.cpp`](test/hashing.cpp), the concurrent ones also on
 real threads under ThreadSanitizer. `FlatHashTable` is the hash
 table that [`bench/dictionaries.cpp`](bench/dictionaries.cpp) compares with
 `boost::unordered_flat_map`, while `OpenHashTable` stays the table of
 section 7.2 of the book; [`bench/hashing.cpp`](bench/hashing.cpp) compares
 the hashing with Abseil, unordered_dense, robin-map, libcuckoo, XXH3,
 wyhash, rapidhash, fastfilter_cpp, xor_singleheader, PTHash, BBHash and
-RecSplit.
+RecSplit; [`bench/priority.cpp`](bench/priority.cpp) compares the heaps
+with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm, and
+[`bench/memory.cpp`](bench/memory.cpp) the arena and the pool with
+`std::pmr`, Boost.Pool, mimalloc and jemalloc.
 
 | What | Header | Test |
 |---|---|---|
 | two-level bucket queue for integer keys (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue` |
 | d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
+| radix heap, monotone integer keys in buckets by digits of B bits (Ahuja et al.) | [`priority/RadixHeap.h`](include/ADS/priority/RadixHeap.h) | `heaps.radix-heap` |
+| sequence heap, sorted sequences merged in batches by trees of losers (Sanders) | [`priority/SequenceHeap.h`](include/ADS/priority/SequenceHeap.h) | `heaps.sequence-heap` |
+| pairing heap with decrease-key, two-pass or auxiliary two-pass (Fredman et al.; Stasko and Vitter) | [`priority/PairingHeap.h`](include/ADS/priority/PairingHeap.h) | `heaps.pairing-heap` |
+| vector with room for N items inside itself | [`sequence/SmallVector.h`](include/ADS/sequence/SmallVector.h) | `sequences.small-vector` |
 | hash table with control bytes in groups of 15 matched by SSE2, NEON or SWAR, the hash mixed on 128 bits, at most 7/8 full (Swiss tables; Boost's `unordered_flat_map`) | [`dictionary/FlatHashTable.h`](include/ADS/dictionary/FlatHashTable.h) | `engineered.flat-hash-table` |
 | hash table of pointers, linear probing, Fibonacci hashing | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table` |
 | arena of objects in blocks, stable addresses | [`memory/Arena.h`](include/ADS/memory/Arena.h) | `engineered.arena` |
