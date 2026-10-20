@@ -405,6 +405,7 @@ RecSplit, and the concurrent cuckoo table with libcuckoo,
 | filter of Bloom in blocks of 256 bits, one bit in each of 8 words (Putze et al.; Parquet) | [`set/BlockedBloomFilter.h`](include/ADS/set/BlockedBloomFilter.h) | `hashing.blocked-bloom` |
 | binary fuse filter, fingerprints of 8 or 16 bits (Graf and Lemire) | [`set/BinaryFuseFilter.h`](include/ADS/set/BinaryFuseFilter.h) | `hashing.binary-fuse` |
 | cuckoo filter with removals, fingerprints of 8 or 16 bits, buckets of 4 places in one word (Fan et al.) | [`set/CuckooFilter.h`](include/ADS/set/CuckooFilter.h) | `hashing.cuckoo-filter` |
+| prefix filter, bins of 25 fingerprints as pocket dictionaries of 32 bytes, the overflow in a blocked filter of Bloom (Even, Even and Morrison) | [`set/PrefixFilter.h`](include/ADS/set/PrefixFilter.h) | `hashing.prefix-filter` |
 | standard Ribbon filter, Gauss elimination on the fly, solution by columns (Dillinger and Walzer) | [`set/RibbonFilter.h`](include/ADS/set/RibbonFilter.h) | `hashing.ribbon-filter` |
 | minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |
 | minimal perfect hash function by recursive splitting, about 1.8 bits per key, leaves by rotation fitting (RecSplit; Bez et al.) | [`dictionary/RecSplit.h`](include/ADS/dictionary/RecSplit.h) | `hashing.recsplit` |

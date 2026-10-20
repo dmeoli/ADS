@@ -227,6 +227,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   too, and the part "concurrent maps" of bench/hashing.cpp, on 1 and 2
   threads (THREADS) against libcuckoo, boost::concurrent_flat_map and
   std::unordered_map under a std::shared_mutex
+- PrefixFilter, the prefix filter of Even, Even and Morrison: an
+  incremental filter for n keys whose bins are pocket dictionaries of 32
+  bytes, 25 remainders of 8 bits over 25 quotients with a header of 50
+  bits in unary, keeping the 25 smallest fingerprints of each bin and
+  sending the others to a spare, a blocked filter of Bloom of 12 bits per
+  fingerprint built for 1.1 times their expected number (5.9 % of the
+  keys); a query reads one bin, compared at once with AVX-512 or AVX2, and
+  the spare only for a fingerprint above the maximum of an overflowed bin,
+  the bound folded in with no branch; an insertion moves the bytes of a
+  bin within a register; the same answers on every machine (11.55 bits
+  per key, false positives 0.39 % when full, as the analysis gives); its
+  tests in test/hashing.cpp, and in bench/hashing.cpp against the cuckoo
+  filters and the blocked filters of Bloom
 
 - StringSearcher, the engineered exact search of string/StringSearch.h:
   a pattern prepared once, two or four probes of its rarest bytes compared

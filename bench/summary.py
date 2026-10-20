@@ -119,6 +119,8 @@ PAIRS = [
      ['fastfilter::CuckooFilter 8']),
     ('filters', 'ADS::CuckooFilter 16', 'fastfilter',
      ['fastfilter::CuckooFilter 16']),
+    ('filters', 'ADS::PrefixFilter', 'fastfilter',
+     ['fastfilter::CuckooFilter 8', 'fastfilter::SimdBlockFilter']),
     ('filters', 'ADS::RibbonFilter 8', 'fastfilter',
      ['fastfilter::StandardRibbon 8']),
     ('filters', 'ADS::RibbonFilter 16', 'fastfilter',
