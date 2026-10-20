@@ -21,9 +21,10 @@
 
 namespace ADS {
 
-#define ADS_BTM_T template< class K , class V , class Less , std::size_t B > \
+#define ADS_BTM_T template< class K , class V , class Less , std::size_t B , \
+                           bool R > \
  requires std::default_initializable< K > && std::default_initializable< V >
-#define ADS_BTM BTreeMap< K , V , Less , B >
+#define ADS_BTM BTreeMap< K , V , Less , B , R >
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE NODES ---------------------------------*/
@@ -66,6 +67,31 @@ inline void ADS_BTM::clean( K * a , std::size_t from , std::size_t to )
  }
 
 ADS_BTM_T
+inline std::size_t ADS_BTM::total( const void * x , int h )
+{
+ if( h == 1 )
+  return( static_cast< const Leaf * >( x )->n );
+ const Inner * u = static_cast< const Inner * >( x );
+ std::size_t t = 0;
+ if constexpr( R )
+  for( std::uint32_t j = 0 ; j <= u->n ; ++j )
+   t += u->cnt[ j ];
+ return( t );
+ }
+
+ADS_BTM_T
+inline void ADS_BTM::recount( Inner * u , int h )
+{
+ if constexpr( R )
+  for( std::uint32_t j = 0 ; j <= u->n ; ++j )
+   u->cnt[ j ] = total( u->c[ j ] , h - 1 );
+ else {
+  ( void ) u;
+  ( void ) h;
+  }
+ }
+
+ADS_BTM_T
 inline void ADS_BTM::fetch( const void * x , std::size_t bytes )
 {
 #if defined( __GNUC__ ) || defined( __clang__ )
@@ -80,8 +106,8 @@ inline void ADS_BTM::fetch( const void * x , std::size_t bytes )
 
 ADS_BTM_T
 template< std::size_t C >
-inline std::size_t ADS_BTM::rank( const K * a , std::uint32_t n ,
-                                  const K & x ) const
+inline std::size_t ADS_BTM::place( const K * a , std::uint32_t n ,
+                                   const K & x ) const
 {
  if constexpr( FAST ) {                     // all the places, padded
   ( void ) n;
@@ -108,7 +134,7 @@ inline auto ADS_BTM::descend( const K & x , const Inner * * up ,
  const void * u = f_root;
  for( int h = f_height ; h > 1 ; --h ) {
   const Inner * w = static_cast< const Inner * >( u );
-  const auto i = std::uint32_t( rank< I >( w->k , w->n , x ) );
+  const auto i = std::uint32_t( place< I >( w->k , w->n , x ) );
   u = w->c[ i ];
   fetch( u , h > 2 ? I * sizeof( K ) : Values ? sizeof( Leaf ) :
                                                 L * sizeof( K ) );
@@ -138,7 +164,7 @@ inline auto ADS_BTM::descend( const K & x , Step * path ) const
  const void * u = f_root;
  for( int h = f_height , d = 0 ; h > 1 ; --h , ++d ) {
   Inner * w = static_cast< Inner * >( const_cast< void * >( u ) );
-  const auto i = std::uint32_t( rank< I >( w->k , w->n , x ) );
+  const auto i = std::uint32_t( place< I >( w->k , w->n , x ) );
   path[ d ] = Step{ w , i };
   u = w->c[ i ];
   fetch( u , h > 2 ? I * sizeof( K ) : sizeof( Leaf ) );
@@ -234,7 +260,7 @@ inline const V * ADS_BTM::find( const K & k ) const
  if( ! f_root )
   return( nullptr );
  const Leaf * x = descend< true >( k );
- const std::size_t p = rank< L >( x->k , x->n , k );
+ const std::size_t p = place< L >( x->k , x->n , k );
  if( ( p < x->n ) && equal( x->k[ p ] , k ) )
   return( &x->v[ p ] );
  return( nullptr );
@@ -298,7 +324,7 @@ inline auto ADS_BTM::lowerBound( const K & k ) const -> const_iterator
  std::uint32_t c = 0;
  const Leaf * x = descend< false >( k , &u , &c );
  return( const_iterator( this , x ,
-                         std::uint32_t( rank< L >( x->k , x->n , k ) ) ,
+                         std::uint32_t( place< L >( x->k , x->n , k ) ) ,
                          u , c ) );
  }
 
@@ -340,6 +366,51 @@ void ADS_BTM::forRange( const K & lo , const K & hi , F && f ) const
   }
  }
 
+ADS_BTM_T
+std::size_t ADS_BTM::rank( const K & k ) const requires R
+{
+ std::size_t r = 0;
+ if( ! f_root )
+  return( 0 );
+ const void * x = f_root;
+ for( int h = f_height ; h > 1 ; --h ) {    // the children before the way
+  const Inner * u = static_cast< const Inner * >( x );
+  const auto i = std::uint32_t( place< I >( u->k , u->n , k ) );
+  for( std::uint32_t j = 0 ; j < i ; ++j )
+   r += u->cnt[ j ];
+  x = u->c[ i ];
+  }
+ const Leaf * l = static_cast< const Leaf * >( x );
+ r += place< L >( l->k , l->n , k );
+ ADS_POST( r <= f_size );
+ return( r );
+ }
+
+ADS_BTM_T
+auto ADS_BTM::select( std::size_t i ) const -> const_iterator requires R
+{
+ if( i >= f_size )
+  return( end() );
+ const void * x = f_root;
+ const Inner * up = nullptr;
+ std::uint32_t at = 0;
+ for( int h = f_height ; h > 1 ; --h ) {    // the child that holds rank i
+  const Inner * u = static_cast< const Inner * >( x );
+  std::uint32_t j = 0;
+  while( i >= u->cnt[ j ] ) {
+   i -= u->cnt[ j ];
+   ++j;
+   }
+  if( h == 2 ) {
+   up = u;
+   at = j;
+   }
+  x = u->c[ j ];
+  }
+ return( const_iterator( this , static_cast< const Leaf * >( x ) ,
+                         std::uint32_t( i ) , up , at ) );
+ }
+
 /*--------------------------------------------------------------------------*/
 /*----------------------------- INSERTION ----------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -360,11 +431,14 @@ bool ADS_BTM::insert( const K & k , const V & v )
   }
  Step path[ DEPTH ];
  Leaf * x = const_cast< Leaf * >( descend( k , path ) );
- const auto p = std::uint32_t( rank< L >( x->k , x->n , k ) );
+ const auto p = std::uint32_t( place< L >( x->k , x->n , k ) );
  if( ( p < x->n ) && equal( x->k[ p ] , k ) ) {
   x->v[ p ] = v;
   return( false );
   }
+ if constexpr( R )                          // one pair more below the way
+  for( int d = 0 ; d + 1 < f_height ; ++d )
+   ++path[ d ].u->cnt[ path[ d ].i ];
  if( x->n < L ) [[likely]] {
   if constexpr( std::is_trivially_copyable_v< V > ) {
    const V w = v;                           // v may live in x
@@ -467,6 +541,7 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
    u->c[ 0 ] = before ? r : f_root;
    u->c[ 1 ] = before ? f_root : r;
    u->n = 1;
+   recount( u , f_height + 1 );
    f_root = u;
    ++f_height;
    return;
@@ -481,6 +556,7 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
    if( before )
     std::swap( u->c[ i ] , u->c[ i + 1 ] );
    ++u->n;
+   recount( u , f_height - d );
    return;
    }
   K t[ I + 1 ];                             // I + 1 keys, I + 2 children
@@ -511,6 +587,8 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
   std::copy( c , c + m + 1 , u->c );
   u->n = m;
   clean( u->k , m , I );
+  recount( u , f_height - d );
+  recount( w , f_height - d );
   s = std::move( t[ m ] );
   r = w;
   before = false;
@@ -528,9 +606,12 @@ bool ADS_BTM::remove( const K & k )
   return( false );
  Step path[ DEPTH ];
  Leaf * x = const_cast< Leaf * >( descend( k , path ) );
- const auto p = std::uint32_t( rank< L >( x->k , x->n , k ) );
+ const auto p = std::uint32_t( place< L >( x->k , x->n , k ) );
  if( ( p >= x->n ) || ! equal( x->k[ p ] , k ) )
   return( false );
+ if constexpr( R )                          // one pair less below the way
+  for( int d = 0 ; d + 1 < f_height ; ++d )
+   --path[ d ].u->cnt[ path[ d ].i ];
  std::move( x->k + p + 1 , x->k + x->n , x->k + p );
  std::move( x->v + p + 1 , x->v + x->n , x->v + p );
  --x->n;
@@ -575,6 +656,7 @@ void ADS_BTM::shrink( Leaf * x , Step * path , int d )
   std::move( u->c + a + 2 , u->c + u->n + 1 , u->c + a + 1 );
   --u->n;
   clean( u->k , u->n , u->n + 1 );
+  recount( u , f_height - d );
   if( d == 0 ) {
    if( u->n == 0 ) {                        // the root gives way
     f_root = u->c[ 0 ];
@@ -612,6 +694,7 @@ void ADS_BTM::shrink( Leaf * x , Step * path , int d )
   r->n += t;
   }
  u->k[ a ] = l->k[ l->n - 1 ];
+ recount( u , f_height - d );
  }
 
 ADS_BTM_T
@@ -632,10 +715,12 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
   if( r->next )
    r->next->prev = l;
   free( r );
+  recount( l , f_height - d - 1 );
   std::move( u->k + a + 1 , u->k + u->n , u->k + a );
   std::move( u->c + a + 2 , u->c + u->n + 1 , u->c + a + 1 );
   --u->n;
   clean( u->k , u->n , u->n + 1 );
+  recount( u , f_height - d );
   if( d == 0 ) {
    if( u->n == 0 ) {
     f_root = u->c[ 0 ];
@@ -672,6 +757,9 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
   l->n = h;
   r->n += t;
   }
+ recount( l , f_height - d - 1 );
+ recount( r , f_height - d - 1 );
+ recount( u , f_height - d );
  }
 
 ADS_BTM_T
@@ -742,6 +830,7 @@ void ADS_BTM::build( It first , It last )
      u->k[ q ] = top[ s + q ];
     }
    u->n = std::uint32_t( c - 1 );
+   recount( u , f_height + 1 );
    if( ! up.empty() ) {
     u->prev = static_cast< Inner * >( up.back() );
     u->prev->next = u;
@@ -821,10 +910,15 @@ bool ADS_BTM::valid( const void * x , int h , const K * lo , const K * hi ,
   for( std::uint32_t i = u->n ; i < I ; ++i )
    if( !( u->k[ i ] == pad() ) )
     return( false );
- for( std::uint32_t i = 0 ; i <= u->n ; ++i )
+ for( std::uint32_t i = 0 ; i <= u->n ; ++i ) {
+  const std::size_t before = count;
   if( ! valid( u->c[ i ] , h - 1 , i > 0 ? &u->k[ i - 1 ] : lo ,
                i < u->n ? &u->k[ i ] : hi , last , left , count ) )
    return( false );
+  if constexpr( R )                         // the counts of the children
+   if( u->cnt[ i ] != count - before )
+    return( false );
+  }
  return( true );
  }
 

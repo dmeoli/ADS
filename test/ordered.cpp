@@ -120,6 +120,15 @@ void against( std::mt19937 & g , int ops , int u )
    CHECK( ( ub == m.end() ) == ( ru == ref.end() ) );
    if( ru != ref.end() )
     CHECK( ( *ub ).first == ru->first );
+   if constexpr( requires { m.rank( k ); } ) {   // the order statistics
+    const auto r = std::size_t( std::distance( ref.begin() , rl ) );
+    CHECK( m.rank( k ) == r );
+    const auto s = m.select( r );
+    CHECK( ( s == m.end() ) == ( rl == ref.end() ) );
+    if( rl != ref.end() )
+     CHECK( ( *s ).first == rl->first );
+    CHECK( m.select( ref.size() ) == m.end() );
+    }
    }
   CHECK( m.size() == ref.size() );
   }
@@ -134,7 +143,8 @@ void against( std::mt19937 & g , int ops , int u )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// the B+-tree against std::map on random operations, with nodes of 4
+// the B+-tree against std::map on random operations (with the ranks and
+// the selections of the counted tree too), with nodes of 4
 // places (every operation splits or merges) and of the default size, on
 // few and on many distinct keys; the empty tree, one key, the keys in
 // increasing and decreasing order (the nodes of the edges filled), the
@@ -150,6 +160,11 @@ ADS_TEST( "btree-map" )
                                                            5000 );
  against< BTreeMap< int , int > >( g , 30000 , 3000 );
  against< BTreeMap< int , int , std::less<> , 64 > >( g , 20000 , 400 );
+ against< BTreeMap< int , int , std::less< int > , 16 , true > >( g , 20000 ,
+                                                                 3000 );
+ against< BTreeMap< int , int , std::less< int > , 512 , true > >( g ,
+                                                                  20000 ,
+                                                                  5000 );
 
  BTreeMap< int , int > e;
  CHECK( e.empty() && ! e.lookup( 1 ) && ! e.remove( 1 ) );
