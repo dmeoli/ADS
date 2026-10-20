@@ -658,6 +658,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   solves 4 rows at a time in the back substitution; the answers are the
   same on every machine, its tests in test/hashing.cpp now also for
   results of 32 bits and for the answers of every ISA
+- CuckooFilter takes the fingerprint from the high bits of a product of
+  64 bits of the hash instead of a folded product of 128 bits, tells
+  whether one lane of the two buckets is equal by one test of a zero lane
+  and reads the victim only when there is one
 
 - FlatHashTable removes a key of its first group by writing the 16
   control bytes of the group whole, at an address known from the hash
