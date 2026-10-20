@@ -48,7 +48,8 @@
  * of huffmanCompress() is that the output decompresses to the input. The
  * functions are defined in HuffmanCoder.tpp.
  *
- * \see Y. Collet, huff0 and FSE, in Zstandard, RFC 8878, 2021,
+ * \see Y. Collet, M. Kucherawy, Zstandard Compression and the
+ *      'application/zstd' Media Type, RFC 8878, 2021,
  *      doi:10.17487/RFC8878
  * \see L. L. Larmore, D. S. Hirschberg, A fast algorithm for optimal
  *      length-limited Huffman codes, Journal of the ACM 37(3), 464-473,

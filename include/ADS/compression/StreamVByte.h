@@ -20,10 +20,13 @@
  * its two high bits are the length less 1), the 2 control bytes being one
  * mask of 16 bytes, and moves their bytes together by the shuffle of the
  * inverse table; the decoder takes 8 control bytes in a word and decodes
- * 32 integers with no test while 12 more follow. Elsewhere the integers are moved one at a time, still
- * with no test. The
- * size is that of the variable-byte code up to the control bits, 2 bits
- * per integer instead of 1 per byte, and an integer is at least one byte.
+ * 32 integers with no test while 12 more follow; elsewhere the integers
+ * are moved one at a time, still with no test. With \f$ \ell_i =
+ * \max( 1 , \lceil \mathrm{bitwidth}( x_i ) / 8 \rceil ) \f$ the bytes of
+ * \f$ x_i \f$, the code takes
+ * \f[ \lceil n / 4 \rceil + \sum_{i=0}^{n-1} \ell_i \f]
+ * bytes, i.e., the variable-byte code with 2 control bits per integer
+ * instead of 1 per byte.
  *
  * The format: the \f$ \lceil n / 4 \rceil \f$ control bytes, the lengths
  * less 1 of the integers 4i, 4i + 1, 4i + 2 and 4i + 3 in the bits 0-1,

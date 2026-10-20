@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The tabled variant of the asymmetric numeral systems of Duda (tANS), the
- * entropy coder of order 0 of Zstandard (its FSE), beside the range variant
+ * entropy coder of order 0 of Zstandard (RFC 8878), beside the range variant
  * [see Rans.h]: the transitions of the state are read from tables, so that
  * a symbol costs a lookup, a shift and an addition, and no multiplication.
  *
@@ -23,7 +23,7 @@
  * \f$ ( X / 2^k - f_s ) \f$-th place of s. A symbol costs about
  * \f$ \log_2 ( L / f_s ) \f$ bits, and the code comes within a fraction of a
  * percent of \f$ n H_0 \f$ [see Entropy.h] for \f$ L \f$ a few times the
- * alphabet (Duda; Yokoo and Dubé for the analysis of the spread).
+ * alphabet (Duda; Dube and Yokoo for the analysis of the spread).
  *
  * The string is cut in two halves, each with a stream of bits of its own
  * and four states that take its symbols in turn; a stream is written
@@ -52,8 +52,9 @@
  *      asymmetric numeral systems as an accurate replacement for Huffman
  *      coding, Proc. 31st Picture Coding Symposium (PCS 2015), 65-69, 2015,
  *      doi:10.1109/PCS.2015.7170048
- * \see H. Yokoo, T. Dube, A study on the effect of the spread function in
- *      tANS coding, arXiv:2104.14434, 2021
+ * \see D. Dube, H. Yokoo, Fast construction of almost optimal symbol
+ *      distributions for asymmetric numeral systems, Proc. IEEE ISIT 2019,
+ *      1682-1686, 2019, doi:10.1109/ISIT.2019.8849430
  * \see Y. Collet, M. Kucherawy, Zstandard Compression and the
  *      'application/zstd' Media Type, RFC 8878, 2021, doi:10.17487/RFC8878
  *

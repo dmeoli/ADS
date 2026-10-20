@@ -395,6 +395,15 @@ with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm, and
 | cuckoo table with buckets of 4 places, tags of 8 bits, search in breadth (Li et al.; libcuckoo) | [`dictionary/BucketCuckooTable.h`](include/ADS/dictionary/BucketCuckooTable.h) | `hashing.bucket-cuckoo` |
 | lock-free queue from one producer to one consumer | [`concurrent/SPSCQueue.h`](include/ADS/concurrent/SPSCQueue.h) | `engineered.spsc-queue` |
 | lock-free inbox of many producers | [`concurrent/MPSCInbox.h`](include/ADS/concurrent/MPSCInbox.h) | `engineered.mpsc-inbox` |
+| wavelet matrix: access, rank, select, range quantiles (Claude, Navarro and Ordonez) | [`succinct/WaveletMatrix.h`](include/ADS/succinct/WaveletMatrix.h) | `engineered_succinct.wavelet-matrix` |
+| code of Huffman of bytes, lengths of at most 11 bits by package-merge, four streams, up to three symbols a lookup | [`compression/HuffmanCoder.h`](include/ADS/compression/HuffmanCoder.h) | `engineered_succinct.huffman-coder` |
+| rANS of order 0 with four interleaved states (Duda; Giesen) | [`compression/Rans.h`](include/ADS/compression/Rans.h) | `engineered_succinct.rans-coder` |
+| Stream VByte, the lengths apart, one shuffle per 4 integers (Lemire, Kurz and Rupp) | [`compression/StreamVByte.h`](include/ADS/compression/StreamVByte.h) | `engineered_succinct.stream-vbyte` |
+| rank and select in about 3.9% of the bits, one 128-bit entry per 4096 bits (Kurpicz; Zhou, Andersen and Kaminsky) | [`succinct/CompactRankSelect.h`](include/ADS/succinct/CompactRankSelect.h) | `engineered_succinct.compact-rank-select` |
+| compressed vector of bits in m H0 + 0.175 m bits with rank and select (Raman, Raman and Rao; Claude and Navarro) | [`succinct/RRRBitVector.h`](include/ADS/succinct/RRRBitVector.h) | `engineered_succinct.rrr-bit-vector` |
+| tANS of order 0 with 2^11 states, two halves of four states each (Duda) | [`compression/Tans.h`](include/ADS/compression/Tans.h) | `engineered_succinct.tans-coder` |
+| directly addressable codes with the optimal widths (Brisaboa, Ladra and Navarro) | [`compression/DirectAccessCodes.h`](include/ADS/compression/DirectAccessCodes.h) | `engineered_succinct.direct-access-codes` |
+| parse of LZ77 with no window in O(n) time (Karkkainen, Kempa and Puglisi) | [`compression/LZ77Linear.h`](include/ADS/compression/LZ77Linear.h) | `engineered_succinct.lz77-linear` |
 
 ## Sorting
 

@@ -21,14 +21,16 @@
  * \f$ Z = \log^2 m \f$ and \f$ z = \log m / 2 \f$ so that the directory
  * takes o( m ) bits (Theorem 15.1); with constant blocks it takes a
  * constant fraction, the trade of the practical designs: Vigna's rank9
- * and the rank_support_v of sdsl take the same 25% with two words per 512
- * bits, the poppy of Zhou, Andersen and Kaminsky and the flat rank of
- * Kurpicz 3% with a sum of up to 8 words per query. Above \f$ 2^{40} \f$
+ * and the directory of Gog and Petri take the same 25% with two words per
+ * 512 bits, the poppy of Zhou, Andersen and Kaminsky and the flat rank of
+ * Kurpicz 3% with a sum of up to 8 words per query [see
+ * CompactRankSelect.h]. Above \f$ 2^{40} \f$
  * bits a third level of 64 bits counts every \f$ 2^{40} \f$ bits.
  *
  * select is the inventory of Vigna's simple select, for the 1s and for
- * the 0s: the 1s are cut in groups of \f$ 2^\ell \f$, with \f$ 2^\ell
- * \f$ chosen so that a group spans about 4096 bits; for each group the
+ * the 0s: the 1s are cut in groups of \f$ 2^\ell \f$, with
+ * \f$ \ell = \lfloor \log_2 ( 1.5 \cdot 4096 \, k / m ) \rfloor \f$ for k
+ * of them, so that a group spans between 3072 and 6144 bits; for each the
  * place of its first 1 is kept in 64 bits, and the places of its 1s of rank
  * multiple of \f$ 2^{\ell - 5} \f$ in 16 bits from it, a line of the
  * cache. \f$ select_1( k ) \f$ reads the place of the 1 of rank k rounded
@@ -36,7 +38,8 @@
  * word, by the sideways sums, and ends in the word by the broadword
  * selectInWord() [see BitVector.h]: three accesses to memory and a few
  * words, O( 1 ) time where the 1s are spread evenly, with about
- * \f$ 576 / 4096 = 14 \% \f$ of m bits more for each value. A group that
+ * \f$ 576 / 6144 \f$ to \f$ 576 / 3072 \f$, 9.4% to 18.8%, of m bits
+ * more for each value. A group that
  * spans \f$ 2^{16} \f$ bits or more, whose offsets do not fit, is sparse,
  * and its 1s are found by a binary search on the directory of rank between
  * its ends, \f$ O( \log ( m / 256 ) ) \f$ in the worst case. The notes
@@ -45,9 +48,10 @@
  * again with \f$ ( \log \log m )^2 \f$ 1s and ended by a table: O( 1 )
  * time in the worst case and o( m ) bits (Theorem 15.2), at the price of
  * three levels whose constants are large for the sizes of practice; the
- * inventories with constant groups are what the practical libraries use
- * (Vigna's sux, the select_support_mcl of sdsl of Gog and Petri, the
- * darray of Okanohara and Sadakane).
+ * inventories with constant groups are what the practical designs use
+ * (Vigna; Gog and Petri; the darray of Okanohara and Sadakane). A group
+ * of fewer than 32 bits b, below about 1% of them, keeps the place of each
+ * one, and select reads no bit at all.
  *
  * The places count from 0: \f$ rank_1( i ) \f$ here is \f$ Rank_1( i ) \f$
  * of the notes on the places \f$ 1 , \ldots , i \f$, and \f$ select_1( k )
