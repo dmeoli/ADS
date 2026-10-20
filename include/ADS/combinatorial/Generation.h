@@ -37,6 +37,13 @@
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 4A, Addison-Wesley,
  *      2011, section 7.2.1
+ * \see H. F. Trotter, Algorithm 115: Perm, Communications of the ACM 5(8),
+ *      434-435, 1962, doi:10.1145/368637.368660
+ * \see S. M. Johnson, Generation of permutations by adjacent transposition,
+ *      Mathematics of Computation 17(83), 282-285, 1963,
+ *      doi:10.1090/S0025-5718-1963-0159764-2
+ * \see B. R. Heap, Permutations by interchanges, The Computer Journal 6(3),
+ *      293-298, 1963, doi:10.1093/comjnl/6.3.293
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

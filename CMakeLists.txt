@@ -72,6 +72,8 @@ if (ADS_BENCHMARKS)
     foreach (b sort dictionaries priority sequences memory bignum fft hashing
                search suffix edit numeric queues concurrent geometry matrix
                sparse external graphs)
+    foreach (b sort dictionaries priority sequences bignum fft hashing
+               combinatorial backtrack)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -192,6 +194,16 @@ if (ADS_BENCHMARKS)
     if (hwy_FOUND)
         target_compile_definitions(bench-sort PRIVATE ADS_HAS_VQSORT)
         target_link_libraries(bench-sort PRIVATE hwy::hwy_contrib hwy::hwy)
+    # the competitors of the combinatorial benchmarks: the header-only
+    # libraries and the programs of Knuth from the directory ADS_COMBI
+    set(ADS_COMBI "" CACHE PATH "the sources of the combinatorial libraries")
+    if (ADS_COMBI)
+        foreach (d combinations libpopcnt libmorton/include)
+            target_include_directories(bench-combinatorial SYSTEM
+                                       PRIVATE ${ADS_COMBI}/${d})
+        endforeach ()
+        target_compile_definitions(bench-backtrack
+                                   PRIVATE ADS_KNUTH="${ADS_COMBI}/knuth")
     endif ()
 endif ()
 

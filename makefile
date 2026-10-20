@@ -82,6 +82,12 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+# Abseil; COMBI=<dir> adds to combinatorial and backtrack the competitors
+# whose sources are in <dir> (combinations, libpopcnt, libmorton, and the
+# programs of Knuth built in knuth)
+BENCHES   = sort dictionaries priority sequences bignum fft hashing \
+            combinatorial backtrack
+comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
@@ -140,6 +146,10 @@ SORTINC   = ips4o/include ips2ra/include x86-simd-sort/src ska_sort \
 SORTFLAGS = $(if $(SORTING),$(addprefix -isystem $(SORTING)/,$(SORTINC))) \
             $(if $(HWY),-DADS_HAS_VQSORT -isystem $(HWY)/include \
             -L$(HWY)/lib -lhwy_contrib -lhwy)
+
+COMBIFLAGS = $(if $(COMBI),-isystem $(COMBI)/combinations \
+             -isystem $(COMBI)/libpopcnt -isystem $(COMBI)/libmorton/include)
+BACKFLAGS  = $(if $(COMBI),-DADS_KNUTH=\"$(COMBI)/knuth\")
 
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
@@ -202,6 +212,14 @@ $(BUILD)/bench-sort: bench/sort.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 $(BUILD)/bench-external: bench/external.cpp bench/Bench.h $(HEADERS) | \
                          $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(TLX),-DADS_HAS_TLX -isystem $(TLX))
+
+$(BUILD)/bench-combinatorial: bench/combinatorial.cpp bench/Bench.h \
+                             $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(COMBIFLAGS)
+
+$(BUILD)/bench-backtrack: bench/backtrack.cpp bench/Bench.h $(HEADERS) \
+                         | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BACKFLAGS)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<
