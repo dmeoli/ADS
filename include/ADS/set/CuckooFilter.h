@@ -10,10 +10,12 @@
  * places that keeps of each key only a fingerprint of f bits (8 or 16, the
  * type F), never 0, so that 0 marks a free place.
  *
- * A key k with the hash h has the fingerprint \f$ t = t( h ) \f$, the low
- * f bits of a folded product of h by a constant (1 if they are 0), so that
- * t does not follow the bucket when h is a single product of structured
- * keys, such as consecutive integers, and the two buckets
+ * A key k with the hash h has the fingerprint \f$ t = t( h ) \f$, the
+ * high f bits of \f$ h a \bmod 2^{64} \f$, a an odd constant (1 if they
+ * are 0), which depend on every bit of h, so that t does not follow the
+ * bucket when h is a folded product of structured keys, such as
+ * consecutive integers, at the cost of one product of 64 bits, and the
+ * two buckets
  * \f[ b_1 = h_1( h ) \bmod 2^\ell \;, \qquad
  *     b_2 = b_1 \oplus g( t ) \bmod 2^\ell \;, \f]
  * \f$ h_1( h ) \f$ the high 32 bits of h and \f$ g( t ) \f$ the high half
@@ -32,11 +34,18 @@
  *
  * The 4 fingerprints of a bucket are one word (32 bits for f = 8, 64 for
  * f = 16), and a query loads the two words before comparing: the places
- * equal to t are the lanes of zero bits of \f$ w \oplus t \cdot
+ * equal to t are the lanes of zero bits of \f$ u = w \oplus t \cdot
  * ( 1 , \dots , 1 ) \f$, found for the 4 lanes at once by
- * \f$ \lnot( ( ( w \wedge m ) + m ) \vee w \vee m ) \f$, m having all the
+ * \f$ \lnot( ( ( u \wedge m ) + m ) \vee u \vee m ) \f$, m having all the
  * bits but the top one of every lane (exact, with no carry from a lane to
- * the next); the free places are found the same way.
+ * the next), which an insertion and a removal need to know the place; a
+ * query only asks whether one lane of the two words is zero, by
+ * \f$ ( ( u_1 - \mathbf{1} ) \wedge \lnot u_1 \vee ( u_2 - \mathbf{1} )
+ * \wedge \lnot u_2 ) \wedge \lnot m \ne 0 \f$, \f$ \mathbf{1} \f$ having
+ * the bit 0 of every lane (Knuth, Warren): a borrow may mark a lane
+ * above a zero one, never a word with no zero lane, so that the test is
+ * exact. The victim is read only when there is one, a branch that is
+ * taken only when the filter is full.
  *
  * Analysis. A query of a key out of S compares t with the at most
  * \f$ 2 b = 8 \f$ fingerprints of its buckets, each equal to t with
@@ -81,6 +90,11 @@
  * \see A. Kirsch, M. Mitzenmacher, U. Wieder, More robust hashing: cuckoo
  *      hashing with a stash, SIAM Journal on Computing 39(4), 1543-1561,
  *      2009, doi:10.1137/080728743 (the stash)
+ * \see D. E. Knuth, The Art of Computer Programming, vol. 4A,
+ *      Combinatorial Algorithms, Part 1, Addison-Wesley, 2011, section
+ *      7.1.3 (the broadword computing, the test of a zero byte)
+ * \see H. S. Warren, Hacker's Delight, 2nd ed., Addison-Wesley, 2013,
+ *      section 6-1 (the first zero byte), ISBN 978-0-321-84268-8
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -109,6 +123,17 @@
 #include <cstdint>
 #include <type_traits>
 #include <vector>
+
+/// a function inlined even where the compiler would not
+#ifndef ADS_FILTER_INLINE
+ #if defined( __GNUC__ ) || defined( __clang__ )
+  #define ADS_FILTER_INLINE inline __attribute__(( always_inline ))
+ #elif defined( _MSC_VER )
+  #define ADS_FILTER_INLINE __forceinline
+ #else
+  #define ADS_FILTER_INLINE inline
+ #endif
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

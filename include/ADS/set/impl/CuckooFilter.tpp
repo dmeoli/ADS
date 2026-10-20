@@ -44,7 +44,7 @@ std::uint64_t CuckooFilter< T , F , H >::hash( const T & x ) const
 template< class T , class F , class H >
 F CuckooFilter< T , F , H >::tag( std::uint64_t h )
 {
- const auto t = F( foldedProduct( h , 0xC2B2AE3D27D4EB4FULL ) );
+ const auto t = F( ( h * 0xC2B2AE3D27D4EB4FULL ) >> ( 64 - kLane ) );
  return( F( t + ( t == 0 ) ) );
  }
 
@@ -118,14 +118,18 @@ bool CuckooFilter< T , F , H >::insertHash( std::uint64_t h )
  }
 
 template< class T , class F , class H >
-bool CuckooFilter< T , F , H >::maybeHash( std::uint64_t h ) const
+ADS_FILTER_INLINE bool CuckooFilter< T , F , H >::maybeHash(
+                                                   std::uint64_t h ) const
 {
  const F t = tag( h );
  const std::size_t b1 = bucket( h ) , b2 = other( b1 , t );
- const W w1 = f_T[ b1 ] , w2 = f_T[ b2 ];
  const W p = kOnes * W( t );
- const bool v = ( f_vt == t ) & ( ( f_vb == b1 ) | ( f_vb == b2 ) );
- return( ( ( zeros( w1 ^ p ) | zeros( w2 ^ p ) ) != 0 ) | v );
+ const W u = f_T[ b1 ] ^ p , v = f_T[ b2 ] ^ p;
+ bool in = ( ( ( ( u - kOnes ) & ~u ) | ( ( v - kOnes ) & ~v ) ) & ~kLow ) !=
+           0;
+ if( f_vt != 0 ) [[unlikely]]                // the victim, once full
+  in |= ( f_vt == t ) & ( ( f_vb == b1 ) | ( f_vb == b2 ) );
+ return( in );
  }
 
 template< class T , class F , class H >
@@ -169,7 +173,7 @@ bool CuckooFilter< T , F , H >::remove( const T & x )
  }
 
 template< class T , class F , class H >
-bool CuckooFilter< T , F , H >::maybe( const T & x ) const
+ADS_FILTER_INLINE bool CuckooFilter< T , F , H >::maybe( const T & x ) const
 {
  return( maybeHash( hash( x ) ) );
  }
