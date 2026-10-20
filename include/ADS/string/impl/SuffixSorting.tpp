@@ -42,10 +42,13 @@ namespace detail {
 /// they point to a quarter
 inline constexpr std::ptrdiff_t saisAhead = 64;
 
-/// the alphabets of more than saisSmall symbols have their buckets and
-/// the places these point to prefetched too, and their LMS places are
-/// set with a branch, which touches a bucket only for an LMS place
+/// the alphabets of more than saisSmall symbols count their kinds in one
+/// histogram, and have the seeds of their LMS places prefetched
 inline constexpr std::ptrdiff_t saisSmall = 1024;
+
+/// the alphabets of more than saisCached symbols, whose buckets do not fit
+/// in the cache, have them prefetched in the scans of the induction
+inline constexpr std::ptrdiff_t saisCached = 65536;
 
 /// x if not negative, 0 otherwise, with no branch
 template< class S >
@@ -269,7 +272,7 @@ template< class C , class S >
 void saisInduce( const C * T , S * SA , S n , const S * size , S * B ,
                  S K )
 {
- if( K <= S( saisSmall ) ) {
+ if( K <= S( saisCached ) ) {
   saisInduceL< true >( T , SA , n , size , B , K );
   saisInduceS< true >( T , SA , n , size , B , K );
   }
@@ -799,7 +802,7 @@ S saisPartial( const C * T , S * SA , S n , S K ,
  size4.assign( 4 * k , 0 );
  lms.assign( words , 0 );
  const bool smallK = K <= S( saisSmall ) ,
-            hugeK = K > S( 65536 );  // the counts beyond the cache
+            hugeK = K > S( saisCached );
  std::vector< S > odd( smallK ? 4 * k : 0 , 0 );
  S m = 0;
  // the place 0 is counted too, as if the place before were of type L,
@@ -864,10 +867,10 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   R[ 2 * c + 1 ].to = S( o );        // the LMS places, from the end
   }
  const S endC = sum;                 // n - 1: the suffix 0 is in none
- const bool large = K > S( saisSmall );
- // the prefetches of the large alphabets read the symbols of entries not
+ const bool large = K > S( saisSmall ) , huge = K > S( saisCached );
+ // the prefetches of the huge alphabets read the symbols of entries not
  // written yet, which must then be 0
- if( large ) std::fill( SA , SA + n , S( 0 ) );
+ if( huge ) std::fill( SA , SA + n , S( 0 ) );
 
  // the seeds, the LMS places by their first symbol, the first one of each
  // symbol marked
@@ -896,7 +899,6 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   }
  // the parts and the places they point to prefetched only on the
  // alphabets whose parts do not fit in the cache
- const bool huge = K > S( 65536 );
  d = huge ?
      saisPartialScan< false , true >( T , SA , L.data() , S( 0 ) , endA , d ) :
      saisPartialScan< false , false >( T , SA , L.data() , S( 0 ) , endA , d );
