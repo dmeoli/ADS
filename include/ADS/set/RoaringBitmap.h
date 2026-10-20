@@ -52,6 +52,12 @@
  * bitmaps of the other families (WAH, Concise, EWAH) compress runs of words
  * and are slower to combine.
  *
+ * rank( x ), the items smaller than x, sums the counts of the containers
+ * before that of x and adds the place of x in it, \f$ O( c + 4096 ) \f$;
+ * select( i ) finds the container of the rank i by the same counts and the
+ * item in it; lowerBound( x ) starts an iterator at the first item not
+ * smaller than x.
+ *
  * The iterators visit the items in increasing order; an insertion or a
  * removal invalidates them. The contracts [see Contract.h]: after insert()
  * the item is there and after remove() it is not; build() needs strictly
@@ -167,6 +173,10 @@ class RoaringBitmap {
 
  /// the items in increasing order
  [[nodiscard]] std::vector< std::uint32_t > items( void ) const;
+
+ /// the items smaller than x: the counts of the containers before that of
+ /// x, O( c ), and the place of x in it
+ [[nodiscard]] std::size_t rank( std::uint32_t x ) const;
 
  friend RoaringBitmap setUnion( const RoaringBitmap & A ,
                                 const RoaringBitmap & B );
@@ -289,6 +299,12 @@ class RoaringBitmap {
   }
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+ /// the first item not smaller than x, end() if none
+ [[nodiscard]] const_iterator lowerBound( std::uint32_t x ) const;
+
+ /// the item of rank i (from 0), end() if i >= size()
+ [[nodiscard]] const_iterator select( std::size_t i ) const;
 
  };  // end( class RoaringBitmap )
 

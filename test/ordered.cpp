@@ -823,11 +823,11 @@ ADS_TEST( "pgm-index" )
 
 // the Roaring bitmap against std::set: the kernels of two arrays of every
 // length up to 70 (the blocks of 8 and their tails) on few and many values,
-// sets of few and of many items per
-// chunk (the arrays and the bitmaps), the four operations on every pair of
-// them (results that change kind both ways), insertions and removals that
-// cross the 4096 items of an array, the items 0, 65535, 65536 and the
-// largest one, the iterators and forEach(), copies, and items not sorted
+// sets of few and of many items per chunk (the arrays and the bitmaps), the
+// four operations on every pair of them (results that change kind both
+// ways), insertions and removals that cross the 4096 items of an array, the
+// items 0, 65535, 65536 and the largest one, the iterators and forEach(),
+// rank(), select() and lowerBound(), copies, and items not sorted
 ADS_TEST( "roaring-bitmap" )
 {
  {                                          // the kernels of the arrays
@@ -932,6 +932,25 @@ ADS_TEST( "roaring-bitmap" )
   for( auto v : std::vector< std::uint32_t >( ref.begin() , ref.end() ) )
    CHECK( T.remove( v ) );
   CHECK( T.empty() && ( T.containers() == 0 ) && ( T.begin() == T.end() ) );
+  }
+ for( int k = 0 ; k < 3 ; ++k ) {           // ranks, selections, bounds
+  const std::vector< std::uint32_t > V( S[ k ].begin() , S[ k ].end() );
+  for( int q = 0 ; q < 2000 ; ++q ) {
+   const std::uint32_t x = q % 3 ? std::uint32_t( g() ) :
+                           V[ g() % V.size() ] + std::uint32_t( q % 2 );
+   const auto lb = std::lower_bound( V.begin() , V.end() , x );
+   const std::size_t r = std::size_t( lb - V.begin() );
+   CHECK( R[ k ].rank( x ) == r );
+   const auto it = R[ k ].lowerBound( x );
+   CHECK( ( it == R[ k ].end() ) == ( lb == V.end() ) );
+   if( lb != V.end() ) {
+    CHECK( *it == *lb );
+    CHECK( *R[ k ].select( r ) == *lb );
+    }
+   }
+  CHECK( R[ k ].select( V.size() ) == R[ k ].end() );
+  CHECK( ( *R[ k ].select( 0 ) == V.front() ) &&
+         ( *R[ k ].lowerBound( 0xFFFFFFFFu ) == 0xFFFFFFFFu ) );
   }
  RoaringBitmap C = R[ 1 ];                  // a copy is independent
  C.remove( 0 );
