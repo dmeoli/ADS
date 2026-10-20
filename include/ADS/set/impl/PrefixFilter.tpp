@@ -152,16 +152,31 @@ std::uint32_t PrefixFilter< T , H >::below( const Bin & B , unsigned r )
  }
 
 template< class T , class H >
+std::uint32_t PrefixFilter< T , H >::runMask( std::uint64_t w , unsigned q )
+{
+#if defined( __BMI2__ ) && defined( __x86_64__ )
+ // the zeros of ranks q and q + 1 of the header with a zero put below,
+ // the bits d_0 < d_1 of one pdep: the run is the slots between them,
+ // ( d_1 / 2 - d_0 ) >> q, with no count of the bits
+ const std::uint64_t d = _pdep_u64( std::uint64_t( 3 ) << q ,
+                                    ~( ( w & kHead ) << 1 ) );
+ const std::uint64_t d0 = d & ( 0 - d );
+ return( std::uint32_t( ( ( ( d ^ d0 ) >> 1 ) - d0 ) >> q ) );
+#else
+ unsigned s , e;
+ run( w , q , s , e );
+ return( ( std::uint32_t( 1 ) << e ) - ( std::uint32_t( 1 ) << s ) );
+#endif
+ }
+
+template< class T , class H >
 bool PrefixFilter< T , H >::find( const Bin & B , std::uint64_t w ,
                                   unsigned q , unsigned r )
 {
  const std::uint32_t v = equal( B , r );
  if( v == 0 )                              // most of the misses
   return( false );
- unsigned s , e;
- run( w , q , s , e );
- return( ( v & ( ( std::uint32_t( 1 ) << e ) -
-                 ( std::uint32_t( 1 ) << s ) ) ) != 0 );
+ return( ( v & runMask( w , q ) ) != 0 );
  }
 
 template< class T , class H >
@@ -286,36 +301,51 @@ bool PrefixFilter< T , H >::insertHash( std::uint64_t h )
  if( c == kK ) [[unlikely]] {
   const std::uint32_t y = maximum( B , w );
   ++f_spareN;
-  w |= kOver;
   if( x >= y ) {                           // x past the prefix
-   setHeader( B , w );
+   setHeader( B , ( w & ~kTop ) | ( std::uint64_t( y >> 8 ) << 50 ) );
    f_spare.insertHash( spareHash( i , x ) );
    return( true );
    }
-  // y evicted: the last one of the header, the last byte of the body
+  // y evicted: the last one of the header, the last byte of the body;
+  // the quotient of the new maximum written after the put
   w &= ( std::uint64_t( 1 ) << ( std::bit_width( w & kHead ) - 1 ) ) - 1;
-  w |= kOver;
-  c = kK - 1;
   f_spare.insertHash( spareHash( i , y ) );
+  put( B , w , x >> 8 , x & 255 , kK - 1 );
+  w = header( B );
+  setHeader( B , ( w & ~kTop ) | ( std::uint64_t( maximum( B , w ) >> 8 )
+                                   << 50 ) );
+  return( true );
   }
  put( B , w , x >> 8 , x & 255 , c );
  return( true );
  }
 
 template< class T , class H >
-bool PrefixFilter< T , H >::maybeHash( std::uint64_t h ) const
+ADS_FILTER_INLINE bool PrefixFilter< T , H >::maybeHash( std::uint64_t h )
+ const
 {
  const std::size_t i = bin( h );
  const std::uint32_t x = mini( h );
  const Bin & B = f_B[ i ];
  const std::uint64_t w = header( B );
- // the bound of x in the bin: its maximum if it overflowed, all ones
- // (above every x) if not, with no branch on the flag
- const std::uint32_t lim = maximum( B , w ) |
-                           ( std::uint32_t( ( w >> 55 ) & 1 ) - 1 );
+ if( find( B , w , x >> 8 , x & 255 ) )
+  return( true );
+ // not in the bin: in the spare if the bin overflowed and x is above its
+ // maximum, from the 6 top bits of the header and the last byte (above
+ // every x if it did not)
+ const std::uint32_t lim = std::uint32_t( ( w >> 42 ) & 0x3F00 ) |
+                           B.b[ kBody + kK - 1 ];
  if( x > lim ) [[unlikely]]
-  return( f_spare.maybeHash( spareHash( i , x ) ) );
- return( find( B , w , x >> 8 , x & 255 ) );
+  return( spare( i , x ) );
+ return( false );
+ }
+
+template< class T , class H >
+ADS_FILTER_NOINLINE bool PrefixFilter< T , H >::spare( std::size_t i ,
+                                                       std::uint32_t x )
+ const
+{
+ return( f_spare.maybeHash( spareHash( i , x ) ) );
  }
 
 template< class T , class H >
@@ -327,7 +357,7 @@ bool PrefixFilter< T , H >::insert( const T & x )
  }
 
 template< class T , class H >
-bool PrefixFilter< T , H >::maybe( const T & x ) const
+ADS_FILTER_INLINE bool PrefixFilter< T , H >::maybe( const T & x ) const
 {
  return( maybeHash( hash( x ) ) );
  }
