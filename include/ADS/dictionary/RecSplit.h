@@ -67,7 +67,9 @@
  * keeps the place of every 64th 1 of its high bits, 64 bits per 64
  * buckets, so that a query costs two selects of one or two words each
  * instead of the searches of a general select, the numbers of keys before
- * the bucket and before the next one coming from the same select.
+ * the bucket and before the next one coming from the same select; the
+ * select in a word, there and in the unary parts, is one PDEP and one
+ * count of the trailing zeros where the machine has BMI2.
  *
  * The search of a leaf uses the rotation fitting of Bez, Kurpicz, Lehmann
  * and Sanders: the keys of the leaf go to two sets A and B by the highest
@@ -152,6 +154,10 @@
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/succinct/BitVector.h"
 
+#if defined( __BMI2__ ) && defined( __x86_64__ )
+ #include <immintrin.h>
+#endif
+
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -180,6 +186,9 @@ struct RecSplitTables {
  std::vector< std::uint32_t > low;
  std::vector< std::uint16_t > nodes;
  };
+
+/// the place of the 1 of rank k in x, k below the 1s of x
+[[nodiscard]] int recSplitSelect( std::uint64_t x , int k );
 
 /// a non-decreasing sequence by Elias and Fano with an inventory of the
 /// place of every 64th 1 of its high bits, so that the item i costs the

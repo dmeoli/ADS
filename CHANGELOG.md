@@ -665,8 +665,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RecSplit keeps the numbers of keys before the buckets and the places of
   their codes in Elias-Fano sequences of its own, with the place of every
   64th 1 of the high bits, 64 bits per 64 buckets, and takes the numbers of
-  keys before a bucket and before the next from one select: a query costs
-  168 ns instead of 300 for 10^6 keys on wolfe, the same bits per key
+  keys before a bucket and before the next from one select, and selects
+  in a word by PDEP where the machine has BMI2: a query costs 111 ns
+  instead of 300 for 10^6 keys on wolfe, the same bits per key
 - hashBytes() computes the product of the strings of 4 to 8 bytes and that
   of the shorter ones in their own branches, the same values with one
   multiplication fewer: GCC compiled the product shared by the two
