@@ -171,6 +171,21 @@ if (ADS_BENCHMARKS)
                               ${CMAKE_DL_LIBS})
     endif ()
     target_link_libraries(bench-memory PRIVATE Threads::Threads)
+    # the competitors of bench-sort: the header-only sorts from the directory
+    # of their sources ADS_SORTING, vqsort of Highway if found
+    set(ADS_SORTING "" CACHE PATH "the sources of the sorting libraries")
+    if (ADS_SORTING)
+        foreach (d ips4o/include ips2ra/include x86-simd-sort/src ska_sort
+                   fluxsort/src crumsort/src)
+            target_include_directories(bench-sort SYSTEM
+                                       PRIVATE ${ADS_SORTING}/${d})
+        endforeach ()
+    endif ()
+    find_package(hwy QUIET)
+    if (hwy_FOUND)
+        target_compile_definitions(bench-sort PRIVATE ADS_HAS_VQSORT)
+        target_link_libraries(bench-sort PRIVATE hwy::hwy_contrib hwy::hwy)
+    endif ()
 endif ()
 
 # ----- install and export, for find_package(ADS) and pkg-config ---------- #

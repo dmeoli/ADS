@@ -17,6 +17,8 @@
 #                           (with GMP also bignum-gmp, BigInteger on GMP)     #
 #                           [PRIORITY=<dir>] [MIMALLOC=<prefix>]              #
 #                           [JEMALLOC=<prefix>] [OPT=<prefix>]                #
+#                           [HASHING=<dir>] [ABSL=<prefix>] [SORTING=<dir>]   #
+#                           [HWY=<prefix>]                                    #
 ###############################################################################
 
 set -e
