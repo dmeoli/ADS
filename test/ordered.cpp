@@ -25,6 +25,7 @@
 #include "ADS/mfset/MFSet.h"
 #include "ADS/mfset/RemUnionFind.h"
 #include "ADS/search/NthElement.h"
+#include "ADS/search/PGMIndex.h"
 #include "ADS/search/StaticSearch.h"
 #include "ADS/search/WordRangeMinimum.h"
 #include "ADS/set/BoolSet.h"
@@ -720,6 +721,77 @@ void stringMap( void )
 ADS_TEST( "adaptive-radix-tree" )
 {
  stringMap< AdaptiveRadixTree< int > >();
+ }
+
+// the PGM-index against std::lower_bound: the empty array, one item, two,
+// random keys of 64 bits (the extremes included), consecutive keys (one
+// segment), keys in clusters, many repeated keys (the gallop past the
+// window), signed keys, doubles with the infinities, the errors 1 and 1
+// (a segment every few keys, many levels), and an unsorted array
+ADS_TEST( "pgm-index" )
+{
+ std::mt19937_64 g( 39 );
+ auto check = [ & ]< class I >( const std::vector< typename I::Item > & A ,
+                                const std::vector< typename I::Item > & Q ) {
+  const I P( A );
+  CHECK( P.size() == A.size() );
+  for( const auto & q : Q ) {
+   const auto r = std::size_t( std::lower_bound( A.begin() , A.end() , q ) -
+                               A.begin() );
+   CHECK( P.lowerBound( q ) == r );
+   CHECK( P.contains( q ) == ( ( r < A.size() ) && !( q < A[ r ] ) ) );
+   }
+  return( P.segments() );
+  };
+ using U = std::uint64_t;
+ check.operator()< PGMIndex< U > >( {} , { 0 , 5 } );
+ check.operator()< PGMIndex< U > >( { 7 } , { 0 , 7 , 8 } );
+ check.operator()< PGMIndex< U > >( { 7 , 9 } , { 0 , 7 , 8 , 9 , 10 } );
+ for( int t = 0 ; t < 3 ; ++t ) {
+  std::vector< U > A( 50000 ) , Q;
+  for( std::size_t i = 0 ; i < A.size() ; ++i )
+   A[ i ] = t == 0 ? g() : t == 1 ? 1000 + i :
+            ( i / 500 ) * 1000000 + g() % 1000;   // clusters
+  A.push_back( 0 );
+  A.push_back( ~U( 0 ) );
+  std::sort( A.begin() , A.end() );
+  for( int q = 0 ; q < 20000 ; ++q )
+   Q.push_back( q % 2 ? A[ g() % A.size() ] + ( q % 4 == 1 ? 0 : 1 ) :
+                g() % ( A[ A.size() - 2 ] + 2 ) );
+  Q.push_back( 0 );
+  Q.push_back( ~U( 0 ) );
+  const std::size_t s = check.operator()< PGMIndex< U > >( A , Q );
+  if( t == 1 ) CHECK( s <= 3 );             // a line, and the extremes
+  check.operator()< PGMIndex< U , 1 , 1 > >( A , Q );
+  }
+ {                                          // repeated keys
+  std::vector< U > A;
+  for( U k = 0 ; k < 50 ; ++k )
+   A.insert( A.end() , std::size_t( 1 + g() % 3000 ) , 10 * k );
+  std::vector< U > Q;
+  for( U q = 0 ; q < 510 ; ++q ) Q.push_back( q );
+  check.operator()< PGMIndex< U , 4 , 2 > >( A , Q );
+  check.operator()< PGMIndex< U > >( A , Q );
+  }
+ {                                          // signed and floating keys
+  std::vector< std::int32_t > A( 20000 ) , Q;
+  for( auto & a : A ) a = std::int32_t( g() );
+  std::sort( A.begin() , A.end() );
+  for( int q = 0 ; q < 5000 ; ++q ) Q.push_back( std::int32_t( g() ) );
+  Q.push_back( INT32_MIN );
+  Q.push_back( INT32_MAX );
+  check.operator()< PGMIndex< std::int32_t , 8 , 2 > >( A , Q );
+  const double inf = std::numeric_limits< double >::infinity();
+  std::vector< double > D = { -inf , -3.5 , -0.0 , 0.0 , 1e-300 , 2.25 ,
+                              1e300 , inf };
+  for( int i = 0 ; i < 3000 ; ++i ) D.push_back( double( g() % 100000 ) /
+                                                 7 - 5000 );
+  std::sort( D.begin() , D.end() );
+  check.operator()< PGMIndex< double , 2 , 1 > >( D , { -inf , -1e301 ,
+                    -3.5 , 0.0 , 1.0 , 2.25 , 1e299 , inf , -0.5 } );
+  }
+ std::vector< U > W = { 3 , 1 , 2 };
+ CHECK_THROWS( PGMIndex< U >( W ) , contract_violation );
  }
 
 }  // end( namespace )
