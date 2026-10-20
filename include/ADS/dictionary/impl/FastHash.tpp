@@ -338,12 +338,14 @@ inline std::uint64_t hashBytes( const void * p , std::size_t n ,
  const auto * s = static_cast< const unsigned char * >( p );
  const std::uint64_t h = seed ^ kHashK[ 0 ];
  if( n <= 8 ) {
-  std::uint64_t a = 0;
+  // a product in each branch: one shared by the two is compiled by GCC as
+  // a product of 128 bits, one more multiplication
   if( n >= 4 )
-   a = ( read32( s ) << 32 ) | read32( s + n - 4 );
-  else if( n > 0 )
-   a = ( std::uint64_t( s[ 0 ] ) << 48 ) |
-       ( std::uint64_t( s[ n >> 1 ] ) << 24 ) | s[ n - 1 ];
+   return( foldedProduct( ( ( read32( s ) << 32 ) | read32( s + n - 4 ) ) ^
+                          h , kHashK[ 1 ] ^ n ) );
+  const std::uint64_t a = n == 0 ? 0 :
+   ( std::uint64_t( s[ 0 ] ) << 48 ) |
+   ( std::uint64_t( s[ n >> 1 ] ) << 24 ) | s[ n - 1 ];
   return( foldedProduct( a ^ h , kHashK[ 1 ] ^ n ) );
   }
  if( n <= 16 )
