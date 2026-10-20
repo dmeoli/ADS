@@ -67,12 +67,10 @@ if (ADS_BENCHMARKS)
     find_path(EDLIB_INCLUDE edlib.h)
     find_library(EDLIB_LIB edlib)
     find_path(RAPIDFUZZ_INCLUDE rapidfuzz/distance.hpp)
-    foreach (b sort dictionaries priority sequences bignum fft hashing search
-               suffix edit)
     find_package(Eigen3 QUIET NO_MODULE)
     find_package(Threads REQUIRED)
-    foreach (b sort dictionaries priority sequences bignum fft numeric queues
-               concurrent geometry matrix sparse)
+    foreach (b sort dictionaries priority sequences bignum fft hashing search
+               suffix edit numeric queues concurrent geometry matrix sparse)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
