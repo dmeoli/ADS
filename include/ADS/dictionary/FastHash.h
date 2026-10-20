@@ -138,8 +138,10 @@ struct Product128 {
 template< class T >
 struct FastHash;
 
-/// the hash of an integer, an enumeration, a pointer or a floating point
-/// number, +0 and -0 the same
+/// \cond
+// the hash of an integer, an enumeration, a pointer or a floating point
+// number, +0 and -0 the same; out of the documentation, which describes it
+// with the primary template
 template< class T >
  requires( std::is_integral_v< T > || std::is_enum_v< T > ||
            std::is_pointer_v< T > ||
@@ -168,6 +170,8 @@ struct FastHash< T > {
    return( std::size_t( hashWord( std::uint64_t( x ) , seed ) ) );
   }
  };
+
+/// \endcond
 
 /// the hash of a string, by its bytes; any string_view, std::string and
 /// C string with the same characters hash the same
