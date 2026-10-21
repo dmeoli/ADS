@@ -424,11 +424,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   test/ordered.cpp
 - the benchmarks of the ordered dictionaries, of the searches in arrays
   (lower bound, selection, range minima) and of the sets (intersection,
-  union of disjoint sets, boolean vectors, compressed bitmaps), against the standard library,
-  Boost and, when found, Abseil, tlx, miniselect, sdsl-lite, the SIMD
-  intersections of Lemire et al., CRoaring, the PGM-index, tsl::htrie_map
-  and libart; bench/ordered.cpp, bench/arrays.cpp, bench/sets.cpp,
-  bench/tries.cpp
+  union of disjoint sets, boolean vectors, compressed bitmaps), against
+  the standard library, Boost and, when found, Abseil, tlx, miniselect,
+  sdsl-lite, the SIMD intersections of Lemire et al., CRoaring, the
+  PGM-index, tsl::htrie_map and libart; bench/ordered.cpp,
+  bench/arrays.cpp, bench/sets.cpp, bench/tries.cpp
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the
@@ -871,7 +871,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BoolSet keeps its vector as words of 64 bits, and its operations of two
   sets, min(), max() and forEach() go a word at a time, the operations of
   two sets counting the bits of the result in the same pass, 4 words at a
-  time with AVX2
+  time with AVX2; contains() tests the bounds with one comparison
+- nthElement() checks whether a range is sorted on raw pointers when the
+  iterators are contiguous, so that the check is vectorized
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);

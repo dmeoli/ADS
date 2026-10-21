@@ -134,10 +134,18 @@ bool selectSorted( It first , It last , C & less )
 {
  const std::ptrdiff_t n = last - first;
  std::ptrdiff_t i = 0;
- for( ; i + 65 <= n ; i += 64 ) {
-  bool bad = false;
+ auto block = [ & ]( auto a ) {             // a block of 64 pairs from a
+  int bad = 0;
   for( std::ptrdiff_t j = 0 ; j < 64 ; ++j )
-   bad |= less( first[ i + j + 1 ] , first[ i + j ] );
+   bad |= int( less( a[ j + 1 ] , a[ j ] ) );
+  return( bad );
+  };
+ for( ; i + 65 <= n ; i += 64 ) {
+  int bad;
+  if constexpr( std::contiguous_iterator< It > )
+   bad = block( std::to_address( first ) + i );   // a pointer, vectorized
+  else
+   bad = block( first + i );
   if( bad )
    return( false );
   }
