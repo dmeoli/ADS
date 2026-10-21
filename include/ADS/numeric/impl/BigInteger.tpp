@@ -4147,7 +4147,9 @@ inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
   std::copy( q.data() + 1 , q.data() + k + 1 , q.data() );
   q.resize( m );
   }
- else if( n >= kNewton ) top = divNewton( un , k , vn , n , q.data() , keep );
+ else if( ( n >= kNewton ) ||
+          ( keep && ( n >= kNewtonKept ) ) )
+  top = divNewton( un , k , vn , n , q.data() , keep );
  else {                                     // by blocks of n digits
   Mag t( n );
   std::size_t j = k;

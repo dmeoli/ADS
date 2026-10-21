@@ -454,6 +454,7 @@ class BigInteger {
  static constexpr std::size_t kModFold = 16;     ///< limbs, folded remainder
  static constexpr std::size_t kHensel = 24;      ///< limbs, gcd by folding
  static constexpr std::size_t kNewton = 768;     ///< limbs, by the reciprocal
+ static constexpr std::size_t kNewtonKept = 512; ///< limbs, the same if kept
  static constexpr std::size_t kRecip = 32;       ///< limbs, reciprocal by D
  static constexpr std::size_t kDivCut = 900;     ///< limbs, quotient alone
  static constexpr std::size_t kDivShort = 16;    ///< limbs, on the stack
