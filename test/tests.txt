@@ -1669,6 +1669,8 @@ succinct_top  succinct-top      Elias-Fano e parentesi col livello alto
 engineered_succinct  compact-rank-select  rank e select compatti, 3.5% di bit
 engineered_succinct  rank-select-lazy  inventari di select costruiti al primo uso
 engineered_succinct  rank-select-words  RankSelect e compatto dalle parole, copiate contandole
+engineered_succinct  huffman-wavelet-tree  wavelet tree di Huffman, access rank select
+engineered_succinct  huffman-fm-index  FM-index sul wavelet tree di Huffman
 engineered_succinct  rrr-bit-vector   vettore di bit compresso di RRR
 engineered_succinct  wavelet-matrix   wavelet matrix, rank, select, quantili
 engineered_succinct  huffman-coder    Huffman a tabella, quattro flussi

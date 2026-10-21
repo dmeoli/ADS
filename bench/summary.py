@@ -263,6 +263,9 @@ PAIRS = [
      ['succinct::bp_vector']),
     ('wavelet', 'ADS::WaveletMatrix', 'sdsl',
      ['sdsl::wm_int', 'sdsl::wt_int']),
+    ('wavelet', 'ADS::HuffmanWaveletTree', 'sdsl', ['sdsl::wt_huff_int']),
+    ('wavelet', 'ADS::HuffmanWaveletTree compact', 'sdsl',
+     ['sdsl::wt_huff_int']),
     ('dac', 'ADS::DirectAccessCodes', 'sdsl',
      ['sdsl::dac_vector<4>', 'sdsl::dac_vector<8>']),
     ('dac', 'ADS::DirectAccessCodes b=8', 'sdsl', ['sdsl::dac_vector<8>']),
@@ -274,6 +277,9 @@ PAIRS = [
     ('integers', 'ADS::encodeDelta', 'sdsl', ['sdsl::elias_delta']),
     ('bwt', 'ADS::bwt', 'libsais', ['libsais']),
     ('fmindex', 'ADS::FMIndex', 'sdsl', ['sdsl::csa_wt<wt_huff>']),
+    ('fmindex', 'ADS::HuffmanFMIndex', 'sdsl', ['sdsl::csa_wt<wt_huff>']),
+    ('fmindex', 'ADS::HuffmanFMIndex compact', 'sdsl',
+     ['sdsl::csa_wt<wt_huff>']),
     ('lz', 'ADS::lzssParseHashed', 'LZ4', ['LZ4_compress_default']),
     ('lz', 'ADS::lzssDecode', 'LZ4', ['LZ4_decompress_safe']),
     # the bits, against the structures of the same queries
@@ -293,6 +299,9 @@ PAIRS = [
     ('space', 'ADS::BalancedParentheses', 'sdsl', ['sdsl::bp_support_sada']),
     ('space', 'ADS::BalancedParentheses', 'succinct', ['succinct::bp_vector']),
     ('space', 'ADS::WaveletMatrix', 'sdsl', ['sdsl::wm_int', 'sdsl::wt_int']),
+    ('space', 'ADS::HuffmanWaveletTree', 'sdsl', ['sdsl::wt_huff_int']),
+    ('space', 'ADS::HuffmanWaveletTree compact', 'sdsl',
+     ['sdsl::wt_huff_int']),
     ('space', 'ADS::DirectAccessCodes', 'sdsl',
      ['sdsl::dac_vector<4>', 'sdsl::dac_vector<8>']),
     ('space', 'ADS::huffmanCompress', 'huff0', ['huff0']),
@@ -428,6 +437,9 @@ PAIRS = [
     ('tries', 'ADS::AdaptiveRadixTree', 'Abseil', ['absl::btree_map']),
     ('tries', 'ADS::AdaptiveRadixTree', 'tsl', ['tsl::htrie_map']),
     ('tries', 'ADS::AdaptiveRadixTree', 'libart', ['libart']),
+    ('space', 'ADS::HuffmanFMIndex', 'sdsl', ['sdsl::csa_wt<wt_huff>']),
+    ('space', 'ADS::HuffmanFMIndex compact', 'sdsl',
+     ['sdsl::csa_wt<wt_huff>']),
 ]
 
 def read(path):
