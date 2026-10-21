@@ -22,8 +22,9 @@
  * - bwt: the transform of Burrows and Wheeler of n bytes of the text;
  * - rindex: count() and locate() of patterns of 8 bytes of a repetitive
  *   text (copies of n / 100 bytes of the text, 1 byte in 1000 changed) by
- *   the r-index, against the FM-index of Huffman, the r-index of Prezza
- *   and the csa_wt of sdsl-lite;
+ *   the r-index and by the r-index on move structures, against the
+ *   FM-index of Huffman, the r-index of Prezza and the csa_wt of
+ *   sdsl-lite;
  * - fmindex: count() and locate() of patterns of 8 bytes of the text, by
  *   the FM-index of the notes and by the one on the wavelet tree of
  *   Huffman (on RankSelect and on CompactRankSelect), and
@@ -72,6 +73,10 @@
 #if __has_include( "ADS/compression/RIndex.h" )
  #include "ADS/compression/RIndex.h"
  #define ADS_HAS_RINDEX 1
+#endif
+#if __has_include( "ADS/compression/MoveRIndex.h" )
+ #include "ADS/compression/MoveRIndex.h"
+ #define ADS_HAS_MOVER 1
 #endif
 #if __has_include( <r_index.hpp> ) && __has_include( <sdsl/csa_wt.hpp> )
  #include <r_index.hpp>
@@ -743,6 +748,15 @@ void rIndexes( std::size_t n , int r , unsigned seed )
         []( const ADS::RIndex & F , const std::string & p ) {
          return( F.locate( p ).size() ); } ,
         []( const ADS::RIndex & F ) { return( F.sizeInBits() ); } );
+#endif
+#ifdef ADS_HAS_MOVER
+ cells( "ADS::MoveRIndex" , [ & ]() {
+         return( std::make_unique< ADS::MoveRIndex >( s ) ); } ,
+        []( const ADS::MoveRIndex & F , const std::string & p ) {
+         return( F.count( p ) ); } ,
+        []( const ADS::MoveRIndex & F , const std::string & p ) {
+         return( F.locate( p ).size() ); } ,
+        []( const ADS::MoveRIndex & F ) { return( F.sizeInBits() ); } );
 #endif
 #ifdef ADS_HAS_HFM
  using H = ADS::HuffmanFMIndex<>;

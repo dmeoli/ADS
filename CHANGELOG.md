@@ -167,6 +167,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ducc0, on complex, real and single precision data, the cosines of type
   2, many transforms, 2 dimensions and convolutions, with the cost of the
   plans apart; POCKETFFT and DUCC0 in the makefile
+- MoveStructure, the move structure of Nishimoto and Tabei: a
+  permutation that shifts each of its intervals alike, balanced so that
+  no image holds 4 starts (an image cut at its third start), with the
+  image of a place and its interval in O( 1 ) time; MoveRIndex, the
+  r-index on two of them (LF on the runs and phi on the places of their
+  starts), after the move-r of Bertram, Fischer and Nalbach; their tests
+  and the cells of MoveRIndex in the benchmark rindex
 - RIndex, the r-index of Gagie, Navarro and Prezza: the runs of the
   transform as the Elias-Fano sequence of their starts, their heads in a
   wavelet tree of Huffman on CompactRankSelect and the starts of the runs
