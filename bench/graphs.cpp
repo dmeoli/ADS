@@ -112,6 +112,7 @@
 #include <set>
 #include <sstream>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -342,14 +343,22 @@ using Priority = std::pair< int , int >;
 
 // std: the rows, a queue, a priority queue on a set
 
-/// a GRAPH on a std::vector of rows of std::pairs ( head , weight )
+/// a GRAPH on a std::vector of rows of std::pairs ( head , weight ), or of
+/// heads only if not Weighted
+template< bool Weighted = true >
 struct StdGraph {
  using Weight = int;
- std::vector< std::vector< std::pair< int , int > > > out;
+ using Arc = std::conditional_t< Weighted , std::pair< int , int > , int >;
+ std::vector< std::vector< Arc > > out;
  bool dir = true;
  StdGraph( int n , const std::vector< Edge > & A , bool d )
   : out( std::size_t( n ) ) , dir( d ) {
-  for( const auto & [ u , v , w ] : A ) out[ u ].emplace_back( v , w );
+  for( const auto & [ u , v , w ] : A )
+   if constexpr( Weighted ) out[ u ].emplace_back( v , w );
+   else out[ u ].push_back( v );
+  }
+ static int head( const Arc & a ) {
+  if constexpr( Weighted ) return( a.first ); else return( a );
   }
  int n( void ) const { return( int( out.size() ) ); }
  int bound( void ) const { return( n() ); }
@@ -362,15 +371,16 @@ struct StdGraph {
   }
  std::vector< int > adj( int u ) const {
   std::vector< int > R;
-  for( const auto & a : out[ u ] ) R.push_back( a.first );
+  R.reserve( out[ u ].size() );
+  for( const auto & a : out[ u ] ) R.push_back( head( a ) );
   return( R );
   }
  template< class F >
  void forEachAdj( int u , F && f ) const {
-  for( const auto & a : out[ u ] ) f( a.first );
+  for( const auto & a : out[ u ] ) f( head( a ) );
   }
  template< class F >
- void forEachEdge( int u , F && f ) const {
+ void forEachEdge( int u , F && f ) const requires( Weighted ) {
   for( const auto & a : out[ u ] ) f( a.first , a.second );
   }
  };
@@ -415,24 +425,33 @@ struct StdSetQueue {
 // Boost: the compressed rows of the Boost Graph Library, its queue, the
 // mutable heaps of Boost.Heap, its disjoint sets
 
+/// the compressed rows of Boost with nodes and offsets of 32 bits, the
+/// weights in the bundle of the arcs or none
+template< bool Weighted >
 using BCsr = boost::compressed_sparse_row_graph< boost::directedS ,
-                                                 boost::no_property , int >;
+             boost::no_property , std::conditional_t< Weighted , int ,
+             boost::no_property > , boost::no_property , unsigned ,
+             unsigned >;
 
-/// a GRAPH on a compressed_sparse_row_graph, its weights in the bundle of
-/// the arcs
+/// a GRAPH on a compressed_sparse_row_graph, weighted or not
+template< bool Weighted = true >
 struct BoostGraph {
  using Weight = int;
- BCsr g;
+ BCsr< Weighted > g;
  bool dir = true;
  BoostGraph( int n , const std::vector< Edge > & A , bool d ) : dir( d ) {
-  std::vector< std::pair< int , int > > P;
+  std::vector< std::pair< unsigned , unsigned > > P;
   std::vector< int > W;
   for( const auto & [ u , v , w ] : A ) {
-   P.emplace_back( u , v );
+   P.emplace_back( unsigned( u ) , unsigned( v ) );
    W.push_back( w );
    }
-  g = BCsr( boost::edges_are_sorted , P.begin() , P.end() , W.begin() ,
-            std::size_t( n ) );
+  if constexpr( Weighted )
+   g = BCsr< Weighted >( boost::edges_are_sorted , P.begin() , P.end() ,
+                         W.begin() , unsigned( n ) );
+  else
+   g = BCsr< Weighted >( boost::edges_are_sorted , P.begin() , P.end() ,
+                         unsigned( n ) );
   }
  int n( void ) const { return( int( boost::num_vertices( g ) ) ); }
  int bound( void ) const { return( n() ); }
@@ -445,20 +464,20 @@ struct BoostGraph {
   }
  std::vector< int > adj( int u ) const {
   std::vector< int > R;
-  for( auto [ a , b ] = boost::out_edges( std::size_t( u ) , g ) ; a != b ;
+  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ;
        ++a )
    R.push_back( int( boost::target( *a , g ) ) );
   return( R );
   }
  template< class F >
  void forEachAdj( int u , F && f ) const {
-  for( auto [ a , b ] = boost::out_edges( std::size_t( u ) , g ) ; a != b ;
+  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ;
        ++a )
    f( int( boost::target( *a , g ) ) );
   }
  template< class F >
- void forEachEdge( int u , F && f ) const {
-  for( auto [ a , b ] = boost::out_edges( std::size_t( u ) , g ) ; a != b ;
+ void forEachEdge( int u , F && f ) const requires( Weighted ) {
+  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ;
        ++a )
    f( int( boost::target( *a , g ) ) , g[ *a ] );
   }
@@ -632,19 +651,20 @@ void bfs( const std::string & c , int n0 , int r , unsigned seed )
  const auto A = arcs( I );
  Cell C( "bfs" , c , std::size_t( n ) , A.size() , r );
  {
-  const StdGraph G( n , A , false );
+  const StdGraph< false > G( n , A , false );
   for( const char * who : { "std vector queue" , "std vector queue A/A" } )
    C( who , [ & ]( Counts & k ) {
     return( bfsRun( G , src , StdQueue() , k ) ); } );
   }
 #ifdef ADS_HAS_BOOST
  {
-  const BoostGraph G( n , A , false );
+  const BoostGraph< false > G( n , A , false );
   C( "Boost csr queue" , [ & ]( Counts & k ) {
    return( bfsRun( G , src , BoostQueue() , k ) ); } );
   }
 #endif
- const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , false );
+ const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
+                                                      false ) );
  C( "ADS StaticGraph ArrayQueue" , [ & ]( Counts & k ) {
   return( bfsRun( S , src , ADS::ArrayQueue< int >( std::max( n , 1 ) ) ,
                   k ) ); } );
@@ -684,13 +704,13 @@ void priorityQueues( Cell & C , const Input & I ,
  const int n = I.n;
  using P = Priority;
  {
-  const StdGraph G( n , A , I.directed );
+  const StdGraph<> G( n , A , I.directed );
   C( "std vector set" , withQueue< StdSetQueue >( G , src , run ) );
   C( "std vector set A/A" , withQueue< StdSetQueue >( G , src , run ) );
   }
 #ifdef ADS_HAS_BOOST
  {
-  const BoostGraph G( n , A , I.directed );
+  const BoostGraph<> G( n , A , I.directed );
   C( "Boost csr d_ary_heap<4>" , withQueue< BoostDary4 >( G , src , run ) );
   C( "Boost csr d_ary_heap<2>" , withQueue< BoostDary2 >( G , src , run ) );
   C( "Boost csr pairing_heap" , withQueue< BoostPairing >( G , src , run ) );
@@ -732,7 +752,7 @@ void bfm( const std::string & c , int n0 , int r , unsigned seed )
  const auto A = arcs( I );
  Cell C( "bfm" , c , std::size_t( n ) , A.size() , r );
  {
-  const StdGraph G( n , A , true );
+  const StdGraph<> G( n , A , true );
   for( const char * who : { "std vector queue" , "std vector queue A/A" } )
    C( who , [ & ]( Counts & k ) {
     StdQueue q;
@@ -740,7 +760,7 @@ void bfm( const std::string & c , int n0 , int r , unsigned seed )
   }
 #ifdef ADS_HAS_BOOST
  {
-  const BoostGraph G( n , A , true );
+  const BoostGraph<> G( n , A , true );
   C( "Boost csr queue" , [ & ]( Counts & k ) {
    BoostQueue q;
    return( spRun( G , src , q , k ) ); } );
@@ -832,17 +852,18 @@ void scc( const std::string & c , int n0 , int r , unsigned seed )
  const auto A = arcs( I );
  Cell C( "scc" , c , std::size_t( n ) , A.size() , r );
  {
-  const StdGraph G( n , A , true );
+  const StdGraph< false > G( n , A , true );
   for( const char * who : { "std vector" , "std vector A/A" } )
    C( who , [ & ]( Counts & k ) { return( sccRun( G , k ) ); } );
   }
 #ifdef ADS_HAS_BOOST
  {
-  const BoostGraph G( n , A , true );
+  const BoostGraph< false > G( n , A , true );
   C( "Boost csr" , [ & ]( Counts & k ) { return( sccRun( G , k ) ); } );
   }
 #endif
- const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , true );
+ const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
+                                                      true ) );
  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( sccRun( S , k ) ); } );
  }
 

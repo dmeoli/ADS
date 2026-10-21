@@ -139,8 +139,12 @@ template< class F >
 void StaticGraph< W >::forEachAdj( int u , F && f ) const
 {
  ADS_PRE( hasNode( u ) );
- for( int k = f_off[ u ] ; k < f_off[ u + 1 ] ; ++k )
-  f( head( f_arc[ k ] ) );
+ // the row read once: f may write anywhere, and the compiler could not
+ // keep the end and the arcs in registers across its calls
+ const Arc * a = f_arc.data() + f_off[ u ];
+ const Arc * const end = f_arc.data() + f_off[ u + 1 ];
+ for( ; a != end ; ++a )
+  f( head( *a ) );
  }
 
 template< class W >
@@ -149,8 +153,10 @@ void StaticGraph< W >::forEachEdge( int u , F && f ) const
  requires( weighted )
 {
  ADS_PRE( hasNode( u ) );
- for( int k = f_off[ u ] ; k < f_off[ u + 1 ] ; ++k )
-  f( f_arc[ k ].to , f_arc[ k ].w );
+ const Arc * a = f_arc.data() + f_off[ u ];
+ const Arc * const end = f_arc.data() + f_off[ u + 1 ];
+ for( ; a != end ; ++a )
+  f( a->to , a->w );
  }
 
 template< class W >
