@@ -210,7 +210,8 @@ template< Executor E , class F >
 void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
                         F && f , std::size_t grain )
 {
- const auto [ b , size ] = blocksOf( first , last , grain );
+ const auto cut = blocksOf( first , last , grain );
+ const std::size_t b = cut.first , size = cut.second;
  if( b == 0 )
   return;
  if( ( b == 1 ) || ( ex.concurrency() == 1 ) ) {
@@ -251,7 +252,8 @@ template< Executor E , class T , class F , class Op >
 T parallelReduce( E & ex , std::size_t first , std::size_t last , T id ,
                   F && f , Op op , std::size_t grain )
 {
- const auto [ b , size ] = blocksOf( first , last , grain );
+ const auto cut = blocksOf( first , last , grain );
+ const std::size_t b = cut.first , size = cut.second;
  if( b == 0 )
   return( id );
  std::vector< std::optional< T > > part( b );

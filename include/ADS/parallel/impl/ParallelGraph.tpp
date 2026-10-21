@@ -107,8 +107,9 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
    if( awake == 0 )
     break;
    // back from the top down: the frontier from the bitmap
-   const auto [ B , size ] = blocksOf( 0 , words , 64 );
-   F = detail::gatherBlocks( ex , B , [ & , size = size ]( std::size_t b ) {
+   const auto cut = blocksOf( 0 , words , 64 );
+   const std::size_t B = cut.first , size = cut.second;
+   F = detail::gatherBlocks( ex , B , [ & ]( std::size_t b ) {
     std::vector< int > L;
     const std::size_t w1 = std::min( words , ( b + 1 ) * size );
     for( std::size_t w = b * size ; w < w1 ; ++w )
@@ -120,9 +121,10 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
    }
   // from the top down: each node of the frontier claims its neighbours
   toCheck -= scout;
-  const auto [ B , size ] = blocksOf( 0 , F.size() , 64 );
+  const auto cut = blocksOf( 0 , F.size() , 64 );
+  const std::size_t B = cut.first , size = cut.second;
   std::vector< std::int64_t > part( B , 0 );
-  F = detail::gatherBlocks( ex , B , [ & , size = size ]( std::size_t b ) {
+  F = detail::gatherBlocks( ex , B , [ & ]( std::size_t b ) {
    std::vector< int > L;
    std::int64_t sc = 0;
    const std::size_t i1 = std::min( F.size() , ( b + 1 ) * size );
