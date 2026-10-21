@@ -11,6 +11,14 @@
  * with D = 4 the heap is half as deep as a binary one, the four children
  * of a node lie in one line of cache, and a push moves up half as many
  * levels, at the price of D - 1 more comparisons per level on the way down.
+ * With BottomUp, pop() moves the hole of the root down to a leaf by the
+ * best children, D - 1 comparisons per level and none with the item that
+ * fills it, and then moves the last item up from there (the bottom-up
+ * heapsort of Floyd and Wegener): it pays when the last item, as in a heap
+ * full of stale copies, would go down to the bottom anyway, and loses when
+ * it stops halfway, as in the hold model of the simulations, where the
+ * default walk from the top stops as soon as the item fits.
+ *
  * There are no handles and no decrease-key: an item whose key improves is
  * pushed again and the stale copy skipped (lazy deletion), which is what
  * makes the items plain and the heap fast. The vector of a large heap is
@@ -28,6 +36,12 @@
  * \see D. B. Johnson, Priority queues with update and finding minimum
  *      spanning trees, Information Processing Letters 4(3), 53-57, 1975,
  *      doi:10.1016/0020-0190(75)90001-0
+ * \see R. W. Floyd, Algorithm 245: Treesort, Communications of the ACM
+ *      7(12), 701, 1964, doi:10.1145/355588.365103
+ * \see I. Wegener, BOTTOM-UP-HEAPSORT, a new variant of HEAPSORT beating,
+ *      on an average, QUICKSORT (if n is not very small), Theoretical
+ *      Computer Science 118(1), 81-98, 1993,
+ *      doi:10.1016/0304-3975(93)90364-Y
  * \see A. LaMarca, R. E. Ladner, The influence of caches on the
  *      performance of heaps, ACM Journal of Experimental Algorithmics 1,
  *      article 4, 1996, doi:10.1145/235141.235145
@@ -68,8 +82,10 @@ namespace ADS {
 /*---------------------------- CLASS DaryHeap ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a D-ary heap of plain items, the best one by better() on top
-template< class T , class Better = std::less< T > , unsigned D = 4 >
+/// a D-ary heap of plain items, the best one by better() on top; pop() by
+/// the walk down from the top, or from the bottom up if BottomUp
+template< class T , class Better = std::less< T > , unsigned D = 4 ,
+          bool BottomUp = false >
 class DaryHeap {
 
  static_assert( D >= 2 , "a heap needs at least two children per node" );
@@ -133,6 +149,10 @@ class DaryHeap {
  void up( std::size_t i , T x );
 
  void down( std::size_t i , T x );
+
+ /// the hole at the root moved down to a leaf by the best children, and x
+ /// up from there (Floyd; Wegener)
+ void bottomUp( T x );
 
  /// no item better than its parent, O( n )
  [[nodiscard]] bool ordered( void ) const;

@@ -56,9 +56,10 @@ void SmallVector< T , N >::take( SmallVector & o )
   f_cap = std::exchange( o.f_cap , N );
   f_n = std::exchange( o.f_n , 0 );
   }
- else {                                     // its items, one by one
-  std::uninitialized_move( o.f_A , o.f_A + o.f_n , f_A );
-  f_n = o.f_n;
+ else {                                     // its items, one by one,
+  const std::size_t k = o.f_n < N ? o.f_n : N;   // at most N of them
+  std::uninitialized_move( o.f_A , o.f_A + k , f_A );
+  f_n = k;
   o.clear();
   }
  }

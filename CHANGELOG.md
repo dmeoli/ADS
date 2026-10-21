@@ -46,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the insertion and removal anywhere in O( sqrt( n ) ), 8 times
   faster than std::vector at 10^5 items; its test in test/sequences.cpp
   and its cells against std::vector and std::deque
+- DaryHeap< T , Better , D , true >, the pop() from the bottom up (the hole
+  down to a leaf by the best children, the last item up from there, Floyd
+  and Wegener); the default stays the walk from the top, 1.45 times faster
+  in the hold model; its test in test/heaps.cpp
 - MinMaxHeap and IntervalHeap, the double-ended queues of Atkinson et al.
   and of van Leeuwen and Wood, whose runs of removals sort the items once
   and then serve both ends in O( 1 ), made a heap again in O( n ) by the
