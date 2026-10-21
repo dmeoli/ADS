@@ -3058,6 +3058,140 @@ inline void columns( T * x , std::size_t L , std::size_t c , std::size_t ld ,
   }
  }
 
+#if ADS_FFT_SHUFFLE
+/// the VL = W / 2 complex numbers of a vector of W numbers of type T, real
+/// and imaginary parts alternated, as FFTW keeps them: the codelets of the
+/// many small transforms, VL of them at a time, one in each pair of lanes,
+/// with no transposition; a product by -i or by a power of omega costs one
+/// shuffle, the swap of the parts of each number
+template< class T , std::size_t W >
+struct FFTPair {
+ using V = FFTLane< T , W >;
+
+ /// the parts of each number swapped
+ static ADS_FFT_INLINE V swp( const V & z ) {
+  return( [ & ]< std::size_t ... L >( std::index_sequence< L ... > ) {
+   return( __builtin_shufflevector( z , z , int( L ^ 1 ) ... ) );
+   }( std::make_index_sequence< W >() ) );
+  }
+
+ /// ( s , -s , ... )
+ static ADS_FFT_INLINE V alt( T s ) {
+  V z{};
+  for( std::size_t l = 0 ; l < W ; ++l ) z[ l ] = l % 2 ? - s : s;
+  return( z );
+  }
+
+ /// z times -i, or times i if inv
+ template< bool inv >
+ static ADS_FFT_INLINE V mulMinusI( const V & z ) {
+  return( swp( z ) * alt( inv ? T( -1 ) : T( 1 ) ) );
+  }
+
+ /// z times c + i s, or times its conjugate if inv
+ template< bool inv >
+ static ADS_FFT_INLINE V mul( const V & z , T c , T s ) {
+  return( z * splat< T , W >( c ) + swp( z ) * alt( inv ? s : - s ) );
+  }
+ };
+
+/// the transform of N items of VL numbers each, N a power of 2 up to
+/// fftCodelet, unrolled as codelet() in radix 4 by decimation in time, on
+/// the numbers alternated of FFTPair
+template< std::size_t N , bool inv , class T , std::size_t W , class In ,
+          class Out >
+ADS_FFT_INLINE void pairCodelet( In & in , Out & out , const T * R )
+{
+ using P = FFTPair< T , W >;
+ using V = FFTLane< T , W >;
+ auto dft4 = [ & ]( V & x0 , V & x1 , V & x2 , V & x3 ) ADS_FFT_LAMBDA {
+  const V t0 = x0 + x2 , t1 = x0 - x2 , t2 = x1 + x3 ,
+          t3 = P::template mulMinusI< inv >( x1 - x3 );
+  x0 = t0 + t2;
+  x2 = t0 - t2;
+  x1 = t1 + t3;
+  x3 = t1 - t3;
+  };
+ if constexpr( N == 1 ) out( 0 , in( 0 ) );
+ else if constexpr( N == 2 ) {
+  const V u = in( 0 ) , v = in( 1 );
+  out( 0 , u + v );
+  out( 1 , u - v );
+  }
+ else if constexpr( N == 4 ) {
+  V x0 = in( 0 ) , x1 = in( 1 ) , x2 = in( 2 ) , x3 = in( 3 );
+  dft4( x0 , x1 , x2 , x3 );
+  out( 0 , x0 );
+  out( 1 , x1 );
+  out( 2 , x2 );
+  out( 3 , x3 );
+  }
+ else {
+  constexpr std::size_t M = N / 4;
+  V s[ N ];
+  unroll< 4 >( [ & ]( auto t ) ADS_FFT_LAMBDA {
+   FFTStride< 4 , t , In > i{ in };
+   FFTArray< V > o{ s + t * M };
+   pairCodelet< M , inv , T , W >( i , o , R );
+   } );
+  unroll< M >( [ & ]( auto k ) ADS_FFT_LAMBDA {
+   V y[ 4 ];
+   y[ 0 ] = s[ k ];
+   unroll< 3 >( [ & ]( auto t1 ) ADS_FFT_LAMBDA {
+    constexpr std::size_t t = t1 + 1 , e = t * k % N;
+    const V & z = s[ t * M + k ];
+    if constexpr( e == 0 ) y[ t ] = z;
+    else if constexpr( 4 * e == N )
+     y[ t ] = P::template mulMinusI< inv >( z );
+    else if constexpr( 2 * e == N ) y[ t ] = - z;
+    else if constexpr( 4 * e == 3 * N )
+     y[ t ] = P::template mulMinusI< ! inv >( z );
+    else {
+     constexpr std::size_t f = e * ( fftCodelet / N );
+     y[ t ] = P::template mul< inv >( z , R[ 2 * f ] , R[ 2 * f + 1 ] );
+     }
+    } );
+   dft4( y[ 0 ] , y[ 1 ] , y[ 2 ] , y[ 3 ] );
+   unroll< 4 >( [ & ]( auto u ) ADS_FFT_LAMBDA {
+    out( k + u * M , y[ u ] ); } );
+   } );
+  }
+ }
+
+/// the transforms of q >= VL rows of N points of a, a power of 2 from 4 up
+/// to fftPairMax, VL at a time by pairCodelet(): the item i of VL rows
+/// gathered into one vector, the numbers apart in memory; the rows left
+/// one at a time; the inverse divided by N
+template< std::size_t N , class T , std::size_t W >
+ADS_FFT_NOINLINE void pairRows( std::complex< T > * a , std::size_t q ,
+                                bool inv )
+{
+ using V = FFTLane< T , W >;
+ using H = FFTLane< T , 2 >;               // one number
+ const T * R = codeletRoots< T >();
+ const V f = splat< T , W >( inv ? T( 1 ) / T( N ) : T( 1 ) );
+ std::size_t t0 = 0;
+ for( ; t0 + 2 <= q ; t0 += 2 ) {
+  T * x = reinterpret_cast< T * >( a + t0 * N );
+  auto in = [ & ]( std::size_t i ) ADS_FFT_LAMBDA {
+   const H u = loadLanes< T , 2 >( x + 2 * i ) ,
+           v = loadLanes< T , 2 >( x + 2 * ( N + i ) );
+   return( V( __builtin_shufflevector( u , v , 0 , 1 , 2 , 3 ) ) );
+   };
+  auto out = [ & ]( std::size_t k , V y ) ADS_FFT_LAMBDA {
+   y = y * f;
+   storeLanes< T , 2 >( x + 2 * k ,
+                        H( __builtin_shufflevector( y , y , 0 , 1 ) ) );
+   storeLanes< T , 2 >( x + 2 * ( N + k ) ,
+                        H( __builtin_shufflevector( y , y , 2 , 3 ) ) );
+   };
+  if( inv ) pairCodelet< N , true , T , W >( in , out , R );
+  else pairCodelet< N , false , T , W >( in , out , R );
+  }
+ for( ; t0 < q ; ++t0 ) transformTo( a + t0 * N , a + t0 * N , N , inv );
+ }
+#endif
+
 /// the transforms of W rows of n points from x, the row l from x + 2 l n
 /// on, in the lanes: gathered by blocks of W x W transposed in registers
 /// into g, transformed by tr( g , h ) into h, scattered back by the
@@ -3100,8 +3234,9 @@ ADS_FFT_INLINE void rowsGroup( T * x , std::size_t n ,
   }
  }
 
-/// the largest transforms of rows() that go W at a time in the lanes
-inline constexpr std::size_t fftManyLanes = 256;
+/// the largest transforms of rows() that go W at a time in the lanes, and
+/// those that go by pairRows()
+inline constexpr std::size_t fftManyLanes = 256 , fftPairMax = 64;
 
 /// the transforms of the q rows of n points of a, each contiguous, the row
 /// t from t n on: by smallFour() one at a time if n has a shape; W rows at
@@ -3115,6 +3250,13 @@ inline void rows( std::complex< T > * a , std::size_t n , std::size_t q ,
  using V = FFTLane< T , W >;
  using C = FFTCx< V >;
  if( n <= 1 ) return;
+#if ADS_FFT_SHUFFLE
+ if constexpr( fftIsExt< T , W > && W == 4 && sizeof( T ) == 8 )
+  if( q >= W / 2 && n >= 4 && n <= fftPairMax &&
+      byCodelet< fftPairMax >( n , [ & ]< std::size_t N >() {
+       if constexpr( N >= 4 ) pairRows< N , T , W >( a , q , inv ); } ) )
+   return;
+#endif
  std::size_t t0 = 0;
  bool done = false;                         // the shape found once
  unroll< std::size( fftSmallShapes< T > ) >( [ & ]( auto I ) {

@@ -53,10 +53,12 @@
  * parts in separate vectors: a codelet on such items does W transforms
  * with the instructions of one, and the blocks of W by W between the two
  * steps are transposed in registers, as in the short vector codes of
- * Franchetti and Pueschel. The vectors are those of the extensions of GCC
- * and Clang, the registers of SSE2 and AVX by the intrinsics of x86 with
- * the compilers that have no such extensions (MSVC), or arrays of W
- * numbers elsewhere or with ADS_FFT_SIMD defined as 0. The columns and
+ * Franchetti and Pueschel; the numbers alternated in memory and apart in
+ * the registers, as the mixed layout of Popovici, Franchetti and Low. The
+ * vectors are those of the extensions of GCC and Clang, the registers of
+ * SSE2 and AVX by the intrinsics of x86 with the compilers that have no
+ * such extensions (MSVC), or arrays of W numbers elsewhere or with
+ * ADS_FFT_SIMD defined as 0. The columns and
  * the rows longer than the codelets go by the rounds of Stockham, each a
  * codelet of radix \f$ R_t \f$ with its powers of \f$ \omega \f$,
  * \f[ y_{q + s ( R p + j )} = \omega_{m R}^{p j} \sum_{i<R} x_{q + s ( p +
@@ -188,6 +190,10 @@
  *      discrete Fourier transform, Proceedings of the International
  *      Parallel and Distributed Processing Symposium (IPDPS), 2003,
  *      doi:10.1109/IPDPS.2003.1213153
+ * \see D. T. Popovici, F. Franchetti, T. M. Low, Mixed data layout kernels
+ *      for vectorized complex arithmetic, IEEE High Performance Extreme
+ *      Computing Conference (HPEC), 1-7, 2017,
+ *      doi:10.1109/HPEC.2017.8091024
  * \see T. G. Stockham, High-speed convolution and correlation, AFIPS
  *      Spring Joint Computer Conference, 229-233, 1966,
  *      doi:10.1145/1464182.1464209
