@@ -20,6 +20,10 @@
  *   codes gamma and delta of Elias, and of their prefix sums by the
  *   packings of the differences at a distance of 4;
  * - bwt: the transform of Burrows and Wheeler of n bytes of the text;
+ * - rindex: count() and locate() of patterns of 8 bytes of a repetitive
+ *   text (copies of n / 100 bytes of the text, 1 byte in 1000 changed) by
+ *   the r-index, against the FM-index of Huffman, the r-index of Prezza
+ *   and the csa_wt of sdsl-lite;
  * - fmindex: count() and locate() of patterns of 8 bytes of the text, by
  *   the FM-index of the notes and by the one on the wavelet tree of
  *   Huffman (on RankSelect and on CompactRankSelect), and
@@ -65,6 +69,14 @@
 #include "ADS/compression/FMIndex.h"
 #include "ADS/compression/IntegerCodes.h"
 #include "ADS/compression/LempelZiv.h"
+#if __has_include( "ADS/compression/RIndex.h" )
+ #include "ADS/compression/RIndex.h"
+ #define ADS_HAS_RINDEX 1
+#endif
+#if __has_include( <r_index.hpp> ) && __has_include( <sdsl/csa_wt.hpp> )
+ #include <r_index.hpp>
+ #define ADS_HAS_PREZZA 1
+#endif
 #if __has_include( "ADS/compression/HuffmanFMIndex.h" )
  #include "ADS/compression/HuffmanFMIndex.h"
  #define ADS_HAS_HFM 1
@@ -130,6 +142,7 @@
 #endif
 
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <span>
 #include <sstream>
@@ -675,6 +688,108 @@ void transforms( std::size_t n , int r , unsigned seed )
 /*----------------------------------- LZ -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// a repetitive text of n bytes: copies of the first n / 100 bytes of the
+/// text (1000 at least) with 1 byte in 1000 changed, its bytes 0 and 1
+/// made 2 (the r-index of Prezza keeps them)
+std::string repetitive( std::size_t n , unsigned seed )
+{
+ const Bytes t = text( std::max< std::size_t >( n / 100 , 1000 ) , seed );
+ std::string base( t.begin() , t.end() ) , s;
+ std::mt19937_64 g( seed );
+ while( s.size() < n ) {
+  std::string copy = base;
+  for( auto & c : copy )
+   if( g() % 1000 == 0 ) c = static_cast< char >( 'a' + g() % 26 );
+  s += copy.substr( 0 , n - s.size() );
+  }
+ for( auto & c : s )
+  if( static_cast< unsigned char >( c ) < 2 ) c = '\2';
+ return( s );
+ }
+
+void rIndexes( std::size_t n , int r , unsigned seed )
+{
+ const std::string s = repetitive( n , seed );
+ std::mt19937_64 g( seed );
+ std::vector< std::string > P( 2000 );
+ for( auto & p : P ) p = s.substr( g() % ( n - 8 ) , 8 );
+ std::size_t occ = 0;
+ {
+ const ADS::HuffmanFMIndex<> F( s , 32 );
+ for( std::size_t i = 0 ; i < 200 ; ++i ) occ += F.count( P[ i ] );
+ }
+ auto cells = [ & ]( const std::string & who , auto build , auto count ,
+                     auto locate , auto bits ) {
+  print( "rindex" , "build" , n , who , median( [](){ return( 0 ); } ,
+          [ & ]( int ) { sink = sink + bits( *build() ); } , r , n ) );
+  const auto F = build();
+  print( "rindex" , "count" , n , who , median( [](){ return( 0 ); } ,
+          [ & ]( int ) {
+           std::size_t c = 0;
+           for( const auto & p : P ) c += count( *F , p );
+           sink = sink + c; } , r , P.size() ) );
+  print( "rindex" , "locate" , n , who , median( [](){ return( 0 ); } ,
+          [ & ]( int ) {
+           std::size_t c = 0;
+           for( std::size_t i = 0 ; i < 200 ; ++i ) c += locate( *F , P[ i ] );
+           sink = sink + c; } , r , std::max< std::size_t >( occ , 1 ) ) );
+  print( "space" , "rindex" , n , who , double( bits( *F ) ) / double( n ) );
+  };
+#ifdef ADS_HAS_RINDEX
+ cells( "ADS::RIndex" , [ & ]() { return( std::make_unique< ADS::RIndex >(
+                                           s ) ); } ,
+        []( const ADS::RIndex & F , const std::string & p ) {
+         return( F.count( p ) ); } ,
+        []( const ADS::RIndex & F , const std::string & p ) {
+         return( F.locate( p ).size() ); } ,
+        []( const ADS::RIndex & F ) { return( F.sizeInBits() ); } );
+#endif
+#ifdef ADS_HAS_HFM
+ using H = ADS::HuffmanFMIndex<>;
+ cells( "ADS::HuffmanFMIndex" , [ & ]() {
+         return( std::make_unique< H >( s , 32 ) ); } ,
+        []( const H & F , const std::string & p ) { return( F.count( p ) ); } ,
+        []( const H & F , const std::string & p ) {
+         return( F.locate( p ).size() ); } ,
+        []( const H & F ) { return( F.sizeInBits() ); } );
+#endif
+#ifdef ADS_HAS_PREZZA
+ // its building writes its steps on the standard output, silenced
+ using RI = ri::r_index<>;
+ cells( "ri::r_index" , [ & ]() {
+         std::string t = s;
+         std::ofstream null( "/dev/null" );
+         auto * old = std::cout.rdbuf( null.rdbuf() );
+         auto R = std::make_unique< RI >( t , true );
+         std::cout.rdbuf( old );
+         return( R ); } ,
+        []( const RI & F , const std::string & p ) {
+         std::string q = p;
+         const auto [ a , b ] = const_cast< RI & >( F ).count( q );
+         return( b >= a ? std::size_t( b - a + 1 ) : std::size_t( 0 ) ); } ,
+        []( const RI & F , const std::string & p ) {
+         std::string q = p;
+         return( const_cast< RI & >( F ).locate_all( q ).size() ); } ,
+        []( const RI & F ) {
+         std::ofstream null( "/dev/null" );
+         return( 8 * std::size_t( const_cast< RI & >( F ).serialize(
+                                   null ) ) ); } );
+#endif
+#ifdef ADS_HAS_SDSL
+ using CSA = sdsl::csa_wt< sdsl::wt_huff<> , 32 , 32 >;
+ cells( "sdsl::csa_wt<wt_huff>" , [ & ]() {
+         auto F = std::make_unique< CSA >();
+         sdsl::construct_im( *F , s.c_str() , 1 );
+         return( F ); } ,
+        []( const CSA & F , const std::string & p ) {
+         return( sdsl::count( F , p.begin() , p.end() ) ); } ,
+        []( const CSA & F , const std::string & p ) {
+         return( sdsl::locate( F , p.begin() , p.end() ).size() ); } ,
+        []( const CSA & F ) {
+         return( 8 * std::size_t( sdsl::size_in_bytes( F ) ) ); } );
+#endif
+ }
+
 void lempelZiv( std::size_t n , int r , unsigned seed )
 {
  const Bytes t = text( n , seed );
@@ -721,6 +836,8 @@ int main( int argc , char ** argv )
  for( std::size_t n : o.sizes ) integerCodes( n , o.runs , o.seed );
  for( std::size_t n : o.sizes )
   if( n <= 10000000 ) transforms( n , o.runs , o.seed );
+ for( std::size_t n : o.sizes )
+  if( n <= 10000000 ) rIndexes( n , o.runs , o.seed );
  for( std::size_t n : o.sizes )
   if( n <= 10000000 ) lempelZiv( n , o.runs , o.seed );
  return( 0 );

@@ -262,7 +262,10 @@ $(BUILD)/bench-succinct: bench/succinct.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 $(BUILD)/bench-compression: bench/compression.cpp bench/Bench.h $(HEADERS) \
                             | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(OPTFLAGS) \
-	       $(call OPTLIBS,fse streamvbyte lz4 sais FastPFOR)
+	       $(if $(wildcard $(OPT)/src/r-index/internal),\
+	       -I$(OPT)/src/r-index/internal) \
+	       $(call OPTLIBS,fse streamvbyte lz4 sais FastPFOR divsufsort \
+	       divsufsort64)
 
 $(BUILD)/bench-sort: bench/sort.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(SORTFLAGS)
