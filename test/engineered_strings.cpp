@@ -167,11 +167,12 @@ ADS_TEST( "string-search" )
    Q[ g() % m ] ^= 1;                    // one byte off
    checkSearch( T + P + T , Q );
    }
- {                                 // the two halves at once
+ {                                 // the four segments at once
   const std::string T = randomString( g , 100000 , 256 , 0 );
   for( std::size_t at : { std::size_t( 0 ) , std::size_t( 1000 ) ,
+                          std::size_t( 24850 ) , std::size_t( 24925 ) ,
                           std::size_t( 49800 ) , std::size_t( 50000 ) ,
-                          std::size_t( 99700 ) } ) {
+                          std::size_t( 74800 ) , std::size_t( 99700 ) } ) {
    const std::string P = T.substr( at , 300 );
    checkSearch( T , P );
    checkSearch( T + T , P );
@@ -181,6 +182,10 @@ ADS_TEST( "string-search" )
   W.replace( 60000 , 200 , P );
   W.replace( 30000 , 200 , P );
   checkSearch( W , P );
+  for( std::size_t at : { 24900 , 49900 , 74900 , 90000 } )
+   W.replace( at , 200 , P );          // in all, and across the borders
+  checkSearch( W , P );
+  checkSearch( W.substr( 0 , 70000 ) , P );
   }
  const std::string F = fibonacciWord( 3000 );
  for( std::size_t m : { 2 , 5 , 13 , 34 , 100 , 377 } )

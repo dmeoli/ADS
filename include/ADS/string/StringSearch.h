@@ -238,8 +238,9 @@ class StringSearcher {
  std::size_t skip( const unsigned char * T , std::size_t n ,
                    std::size_t from , F && report ) const;
 
- /// skip() on the two halves of T at once, whose chains of loads overlap,
- /// the occurrences of the second half reported after those of the first
+ /// skip() on four segments of T at once, whose chains of loads overlap,
+ /// the occurrences of each segment reported after those of the ones
+ /// before it
  template< class F >
  std::size_t skipPair( const unsigned char * T , std::size_t n ,
                        std::size_t from , F && report ) const;
