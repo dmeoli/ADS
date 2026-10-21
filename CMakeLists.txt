@@ -42,6 +42,40 @@ if (ADS_WITH_GMP)
 endif ()
 
 # ----- the tests: the exercises of the book -------------------------------- #
+# the executors of the parallel algorithms beyond the pool of ADS [see
+# include/ADS/parallel]: OpenMP, oneTBB and FastFlow, OFF by default
+find_package(Threads REQUIRED)
+target_link_libraries(ADS INTERFACE Threads::Threads)
+option(ADS_WITH_OPENMP "the executor of OpenMP [see OpenMPExecutor.h]" OFF)
+if (ADS_WITH_OPENMP)
+    find_package(OpenMP REQUIRED)
+    target_link_libraries(ADS INTERFACE OpenMP::OpenMP_CXX)
+endif ()
+option(ADS_WITH_TBB "the executor of oneTBB [see TBBExecutor.h]" OFF)
+if (ADS_WITH_TBB)
+    find_package(TBB REQUIRED)
+    target_compile_definitions(ADS INTERFACE ADS_WITH_TBB)
+    target_link_libraries(ADS INTERFACE TBB::tbb)
+endif ()
+# FastFlow is made of headers: from FASTFLOW_DIR if given, from its
+# repository otherwise
+option(ADS_WITH_FASTFLOW "the executor of FastFlow [see FastFlowExecutor.h]"
+       OFF)
+if (ADS_WITH_FASTFLOW)
+    set(FASTFLOW_DIR "" CACHE PATH "the sources of FastFlow")
+    if (NOT FASTFLOW_DIR)
+        include(FetchContent)
+        FetchContent_Declare(fastflow
+                GIT_REPOSITORY https://github.com/fastflow/fastflow.git
+                GIT_TAG master)
+        FetchContent_Populate(fastflow)
+        set(FASTFLOW_DIR ${fastflow_SOURCE_DIR})
+    endif ()
+    target_compile_definitions(ADS INTERFACE ADS_WITH_FASTFLOW)
+    target_include_directories(ADS SYSTEM INTERFACE
+                               $<BUILD_INTERFACE:${FASTFLOW_DIR}>)
+endif ()
+
 option(ADS_BUILD_TESTS "build the tests (by default only as the main project)"
        ${PROJECT_IS_TOP_LEVEL})
 if (ADS_BUILD_TESTS)
@@ -75,7 +109,8 @@ if (ADS_BENCHMARKS)
     foreach (b sort dictionaries priority sequences memory bignum fft hashing
                search suffix edit numeric queues concurrent geometry matrix
                sparse external graphs combinatorial backtrack ordered arrays
-               sets tries allocators positions assembly fingerprints multi lce)
+               sets tries allocators positions assembly fingerprints multi lce
+               parallel)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -90,6 +125,26 @@ if (ADS_BENCHMARKS)
         target_link_libraries(bench-bignum PRIVATE ${GMPXX_LIB} ${GMP_LIB})
     endif ()
     target_link_libraries(bench-concurrent PRIVATE Threads::Threads)
+    # the competitors of bench-parallel: OpenMP and the parallel mode of
+    # libstdc++, oneTBB with the policies of std::execution, ParlayLib from
+    # the directory of its sources ADS_PARLAY, the parallel IPS4o and IPS2Ra
+    # from ADS_SORTING
+    find_package(OpenMP QUIET)
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(bench-parallel PRIVATE OpenMP::OpenMP_CXX)
+    endif ()
+    find_package(TBB QUIET)
+    if (TBB_FOUND)
+        target_compile_definitions(bench-parallel PRIVATE ADS_HAS_TBB
+                                                          ADS_WITH_TBB)
+        target_link_libraries(bench-parallel PRIVATE TBB::tbb)
+    endif ()
+    set(ADS_PARLAY "" CACHE PATH "the sources of ParlayLib")
+    if (ADS_PARLAY)
+        target_include_directories(bench-parallel SYSTEM
+                                   PRIVATE ${ADS_PARLAY}/include)
+    endif ()
+    target_link_libraries(bench-parallel PRIVATE Threads::Threads)
     if (TARGET Eigen3::Eigen)
         target_link_libraries(bench-matrix PRIVATE Eigen3::Eigen)
         target_link_libraries(bench-sparse PRIVATE Eigen3::Eigen)
@@ -223,6 +278,12 @@ if (ADS_BENCHMARKS)
             target_include_directories(bench-sort SYSTEM
                                        PRIVATE ${ADS_SORTING}/${d})
         endforeach ()
+        foreach (d ips4o/include ips2ra/include)
+            target_include_directories(bench-parallel SYSTEM
+                                       PRIVATE ${ADS_SORTING}/${d})
+        endforeach ()
+        target_compile_options(bench-parallel PRIVATE -mcx16)
+        target_link_libraries(bench-parallel PRIVATE atomic)
     endif ()
     find_package(hwy QUIET)
     if (hwy_FOUND)
