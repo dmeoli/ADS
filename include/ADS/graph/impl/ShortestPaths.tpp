@@ -21,12 +21,14 @@ namespace ADS {
 /*------------------------------ PROTOTYPE ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< Graph G >
+template< Graph G , class S >
+requires PrototypeFrontier< S , typename G::Weight >
 ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
-                                                      Frontier how )
+                                     S & frontier , FrontierCounts * c )
 {
- ADS_PRE( g.hasNode( r ) );
- ADS_AUDIT( ( how == Frontier::QUEUE ) || ! reachesNegativeCycle( g , r ) );
+ constexpr bool fifo = requires { requires S::fifo; };
+ ADS_PRE( g.hasNode( r ) && frontier.empty() );
+ ADS_AUDIT( fifo || ! reachesNegativeCycle( g , r ) );
  using D = typename G::Weight;
  const D INF = infinity< D >();
  const int n = g.bound();
@@ -34,101 +36,89 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
  R.d.assign( n , INF );
  R.T.assign( n , NIL );
  std::vector< bool > b( n , false );
- std::vector< int > count( n , 0 );
-
- // the six structures, only one of which is used
- using LQ = ListPriorityQueue< int , D , false >;
- using HQ = HeapPriorityQueue< int , D >;
- using FQ = FibonacciHeapPriorityQueue< int , D >;
- std::unique_ptr< LQ > lq;
- std::unique_ptr< HQ > hq;
- std::unique_ptr< FQ > fq;
- std::vector< typename LQ::Handle > lh;
- std::vector< typename HQ::Handle > hh;
- std::vector< typename FQ::Handle > fh;
- ArrayQueue< int > Q( std::max( n , 1 ) );
- ArrayStack< int > St( std::max( n , 1 ) );
- Dequeue< int > Dq;
- switch( how ) {
-  case( Frontier::LIST ): lq = std::make_unique< LQ >(); lh.resize( n );
-                          break;
-  case( Frontier::HEAP ): hq = std::make_unique< HQ >( n ); hh.resize( n );
-                          break;
-  case( Frontier::FIBONACCI ): fq = std::make_unique< FQ >(); fh.resize( n );
-                               break;
-  default: break;
-  }
-
- auto add = [ & ]( int v , D key , bool first ) {          // (1) and (3)
-  switch( how ) {
-   case( Frontier::LIST ): lh[ v ] = lq->insert( v , key ); break;
-   case( Frontier::HEAP ): hh[ v ] = hq->insert( v , key ); break;
-   case( Frontier::FIBONACCI ): fh[ v ] = fq->insert( v , key ); break;
-   case( Frontier::QUEUE ): Q.enqueue( v ); break;
-   case( Frontier::STACK ): St.push( v ); break;
-   case( Frontier::DEQUE ):
-    if( first ) Dq.insertTail( v ); else Dq.insertHead( v );
-   }
-  };
- auto empty = [ & ]( void ) {
-  switch( how ) {
-   case( Frontier::LIST ): return( lq->empty() );
-   case( Frontier::HEAP ): return( hq->empty() );
-   case( Frontier::FIBONACCI ): return( fq->empty() );
-   case( Frontier::QUEUE ): return( Q.empty() );
-   case( Frontier::STACK ): return( St.empty() );
-   default: return( Dq.empty() );
-   }
-  };
- auto extract = [ & ]( void ) {                             // (2)
-  switch( how ) {
-   case( Frontier::LIST ): return( lq->deleteMin() );
-   case( Frontier::HEAP ): return( hq->deleteMin() );
-   case( Frontier::FIBONACCI ): return( fq->deleteMin() );
-   case( Frontier::QUEUE ): return( Q.dequeue() );
-   case( Frontier::STACK ): return( St.pop() );
-   default: return( Dq.removeHead() );
-   }
-  };
- auto update = [ & ]( int v , D key ) {                     // (4)
-  switch( how ) {
-   case( Frontier::LIST ): lq->decrease( lh[ v ] , key ); break;
-   case( Frontier::HEAP ): hq->decrease( hh[ v ] , key ); break;
-   case( Frontier::FIBONACCI ): fq->decrease( fh[ v ] , key ); break;
-   default: break;
-   }
-  };
+ std::vector< int > count( fifo ? n : 0 , 0 );
+ FrontierCounts k;
 
  R.d[ r ] = D( 0 );
  b[ r ] = true;
- add( r , D( 0 ) , true );
- while( ! empty() ) {
-  const int u = extract();
+ frontier.add( r , D( 0 ) , true );                        // (1)
+ ++k.adds;
+ while( ! frontier.empty() ) {
+  const int u = frontier.extract();                        // (2)
+  ++k.extracts;
   b[ u ] = false;
   R.order.push_back( u );
-  if( ( how == Frontier::QUEUE ) && ( ++count[ u ] > n ) ) {
-   // a node is extracted at most n times by a queue, unless there is a
-   // negative cycle; the other frontiers have no such bound
-   R.negativeCycle = true;
-   return( R );
-   }
+  if constexpr( fifo )
+   if( ++count[ u ] > n ) {
+    // a node is extracted at most n times by a queue, unless there is a
+    // negative cycle; the other frontiers have no such bound
+    R.negativeCycle = true;
+    if( c ) *c = k;
+    return( R );
+    }
   g.forEachEdge( u , [ & ]( int v , const D & w ) {
+   ++k.edges;
    const D nd = R.d[ u ] + w;
    if( nd < R.d[ v ] ) {
     const bool first = ( R.d[ v ] == INF );
     R.d[ v ] = nd;
     R.T[ v ] = u;
     if( ! b[ v ] ) {
-     add( v , nd , first );
+     frontier.add( v , nd , first );                       // (3)
+     ++k.adds;
      b[ v ] = true;
      }
-    else
-     update( v , nd );
+    else {
+     frontier.update( v , nd );                            // (4)
+     ++k.decreases;
+     }
     }
    } );
   }
+ if( c ) *c = k;
  ADS_AUDIT( isShortestPathTree( g , r , R ) );
  return( R );
+ }
+
+template< Graph G >
+ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
+                                                      Frontier how )
+{
+ ADS_PRE( g.hasNode( r ) );
+ using D = typename G::Weight;
+ const int n = g.bound();
+ switch( how ) {
+  case( Frontier::LIST ): {
+   ListPriorityQueue< int , D , false > Q;
+   PriorityFrontier S( Q , n );
+   return( shortestPaths( g , r , S ) );
+   }
+  case( Frontier::HEAP ): {
+   HeapPriorityQueue< int , D > Q( std::max( n , 1 ) );
+   PriorityFrontier S( Q , n );
+   return( shortestPaths( g , r , S ) );
+   }
+  case( Frontier::FIBONACCI ): {
+   FibonacciHeapPriorityQueue< int , D > Q;
+   PriorityFrontier S( Q , n );
+   return( shortestPaths( g , r , S ) );
+   }
+  case( Frontier::QUEUE ): {
+   ArrayQueue< int > Q( std::max( n , 1 ) );
+   QueueFrontier S( Q );
+   return( shortestPaths( g , r , S ) );
+   }
+  case( Frontier::STACK ): {
+   ArrayStack< int > Q( std::max( n , 1 ) );
+   StackFrontier S( Q );
+   return( shortestPaths( g , r , S ) );
+   }
+  default: {
+   Dequeue< int > Q;
+   DequeFrontier S( Q );
+   return( shortestPaths( g , r , S ) );
+   }
+  }
  }
 
 template< Graph G >

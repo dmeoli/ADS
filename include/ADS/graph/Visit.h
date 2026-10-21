@@ -17,7 +17,9 @@
  *   increasing distance from the root r; distance() computes the distance
  *   (the minimum number of edges, the Erdos number of the example) and the
  *   tree of the shortest paths as a vector of parents, and path() reads a
- *   path from it, as printPath() does;
+ *   path from it, as printPath() does; distance() runs on an ArrayQueue
+ *   or on any queue given, with enqueue() and dequeue() [see
+ *   VisitCounts];
  * - dfs(), the visit in depth, recursive, with a previsit and a postvisit;
  * - cc(), the connected components of an unoriented graph, starting the
  *   visits from the nodes in the order in which they leave a STACK;
@@ -91,6 +93,7 @@
 #include "ADS/queue/ArrayQueue.h"
 
 #include <algorithm>
+#include <concepts>
 #include <deque>
 #include <limits>
 #include <set>
@@ -140,6 +143,22 @@ void bfs( const G & g , int r , FN && node , FE && edge );
 template< Graph G >
 std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
                                                                 int r );
+
+/// what a visit did: the nodes taken out of its structure and the edges
+/// examined
+struct VisitCounts {
+ long long nodes = 0 , edges = 0;
+ };
+
+/// distance() with the queue S given, empty, whose enqueue() and dequeue()
+/// keep the order of arrival [see ArrayQueue.h]; its work in *c, if given
+/// \pre r is a node, S is empty
+/// \post as distance()
+template< Graph G , class Q >
+requires requires( Q q , int v ) { q.enqueue( v ); { q.dequeue() } ->
+                                   std::convertible_to< int >; }
+std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
+                                 int r , Q & S , VisitCounts * c = nullptr );
 
 /// the path from r to s in the tree of the parents p, empty if there is
 /// none (the printPath() of the book)
