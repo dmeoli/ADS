@@ -743,6 +743,32 @@ bool saisResolveTies( S * SA , S n , S m ,
  return( spent <= budget );
  }
 
+/// the values but 0 of a[ from .. to ), less one, moved to a[ from .. ) in
+/// their order (a slot of no LMS place is 0, a name is one more than its
+/// value)
+template< class S >
+void saisCompact( S * a , S from , S to )
+{
+ S i = from , j = from;
+#if defined( __AVX512F__ )
+ if constexpr( sizeof( S ) == 4 ) {   // 16 at a time: the place j + 16 is
+  const __m512i one = _mm512_set1_epi32( 1 );       // past no slot unread
+  for( ; i + 16 <= to ; i += 16 ) {
+   const __m512i v = _mm512_loadu_si512( a + i );
+   const __mmask16 k = _mm512_test_epi32_mask( v , v );
+   _mm512_storeu_si512( a + j , _mm512_maskz_compress_epi32( k ,
+                                 _mm512_sub_epi32( v , one ) ) );
+   j += S( std::popcount( unsigned( k ) ) );
+   }
+  }
+#endif
+ for( ; i < to ; ++i ) {
+  const S v = a[ i ];
+  a[ j ] = v - 1;
+  j += S( v != 0 );
+  }
+ }
+
 /// a part of a bucket in the partial induction: where the next entry
 /// goes, and the name (the count of the marks met) of the last one moved in
 template< class S >
@@ -1474,15 +1500,6 @@ void sais( const C * T , S * SA , S n , S K )
   size[ c ] = size4[ 4 * c ] + size4[ 4 * c + 1 ] + size4[ 4 * c + 2 ] +
               size4[ 4 * c + 3 ];
  ++size[ std::size_t( T[ 0 ] ) ];
- // the LMS places from the last to the first, by the bits set
- auto forLms = [ & ]( auto && f ) {
-  for( std::size_t w = lms.size() ; w-- > 0 ; )
-   for( std::uint64_t v = lms[ w ] ; v ; ) {
-    const int h = 63 - std::countl_zero( v );
-    v &= ~( std::uint64_t( 1 ) << h );
-    f( S( w * 64 + std::size_t( h ) ) );
-    }
-  };
 
  // no LMS place: the suffixes of type S, if any, are a prefix of T; with
  // none (the suffix 0 is of type L) T never rises, each suffix is larger
@@ -1501,7 +1518,7 @@ void sais( const C * T , S * SA , S n , S K )
  // not all distinct, each group of equal names by the names that follow,
  // within a budget of names compared; beyond it, by the doubling on the
  // groups of equal names, if few, or else by recursion, on the string of
- // the names at the back of SA
+ // the names, gathered in SA[ m .. 2 m ) in the order of the text
 
  // the names, in the slot m + p / 2 of the LMS place p, when the text
  // leaves some tied: by the groups left, finer than those of the
@@ -1511,10 +1528,12 @@ void sais( const C * T , S * SA , S n , S K )
   std::fill( SA + m , SA + n , S( 0 ) );
   S name = 1;
   saisForGroups( by , m , [ & ]( S f , S g ) {
-   for( S i = f ; i < f + g ; ++i ) {
-    if( i + D < m ) saisPrefetchW( SA + m + ( SA[ i + D ] >> 1 ) );
+   S i = f;
+   for( const S e = std::min( f + g , m - D ) ; i < e ; ++i ) {
+    saisPrefetchW( SA + m + ( SA[ i + D ] >> 1 ) );
     SA[ m + ( SA[ i ] >> 1 ) ] = name;
     }
+   for( ; i < f + g ; ++i ) SA[ m + ( SA[ i ] >> 1 ) ] = name;
    ++name;
    } );
   };
@@ -1540,20 +1559,18 @@ void sais( const C * T , S * SA , S n , S K )
   }
  if( tied && ! saisResolveTies( SA , n , m , *tied , lms ,
                                 std::size_t( m ) ) ) {
-  for( S i = n - 1 , j = n - 1 ; i >= m ; --i ) {
-   const S v = SA[ i ];
-   SA[ j ] = v - 1;                   // a slot of no LMS place is 0
-   j -= S( v != 0 );
-   }
-  S * R = SA + ( n - m );
+  saisCompact( SA , m , n );          // the names, in R = SA[ m .. 2 m )
+  S * R = SA + m;
   std::vector< S > count;              // of each name, in their order
   count.reserve( std::size_t( names ) );
   saisForGroups( *tied , m , [ & ]( S , S g ) { count.push_back( g ); } );
   if( ! saisDoubling( static_cast< const S * >( R ) , SA , m , count ,
                       m / 4 ) )
    sais( static_cast< const S * >( R ) , SA , m , S( count.size() ) );
-  S j = m;                            // the LMS places, in order
-  forLms( [ & ]( S i ) { R[ --j ] = i; } );
+  S j = 0;                            // the LMS places, in order
+  for( std::size_t w = 0 ; w < lms.size() ; ++w )
+   for( std::uint64_t v = lms[ w ] ; v ; v &= v - 1 )
+    R[ j++ ] = S( w * 64 + std::size_t( std::countr_zero( v ) ) );
   for( S i = 0 ; i < m ; ++i ) {
    if( i + D < m ) saisPrefetch( R + SA[ i + D ] );
    SA[ i ] = R[ SA[ i ] ];
