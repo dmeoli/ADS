@@ -583,7 +583,7 @@ class BigInteger {
  // the thresholds, in digits, from the timings of bench/bignum.cpp on a
  // Xeon Gold 5120, against GMP
  static constexpr std::size_t kKaratsuba = 40;   ///< limbs for Karatsuba
- static constexpr std::size_t kToom3 = 160;      ///< limbs for Toom-3
+ static constexpr std::size_t kToom3 = 120;      ///< limbs for Toom-3
  static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
  static constexpr std::size_t kDivide = 96;      ///< quotient limbs, recursion
  static constexpr std::size_t kConvert = 24;     ///< limbs, divide and conquer
