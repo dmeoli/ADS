@@ -82,7 +82,7 @@ namespace ADS::detail {
 
 /// pages of C size classes of 8 bytes, a free list per page
 template< std::size_t C >
-class PageHeap {
+class alignas( 64 ) PageHeap {
 
 /*--------------------------------------------------------------------------*/
  public:
