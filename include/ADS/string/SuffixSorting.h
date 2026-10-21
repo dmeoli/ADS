@@ -101,7 +101,7 @@
  *   left are sorted by the names that follow, within a budget of m
  *   names, and only then by the doubling of
  *   Larsson and Sadakane on the groups of equal names (when few, or small)
- *   or by the recursion on the string of the names, at the back of SA:
+ *   or by the recursion on the string of the names, in SA[ m .. 2 m ):
  *   in the round h = 1, 2, 4, ... of the doubling the suffixes of a group,
  *   equal on their first h names, are sorted by \f$ V[ i + h ] \f$, the
  *   rank of the suffix h places ahead, a group of g suffixes costing
