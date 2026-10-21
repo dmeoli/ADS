@@ -41,9 +41,9 @@
  * The contracts [see Contract.h]: a key pushed is not smaller than the
  * last one extracted or read by top() and topKey() (any key before the
  * first of them and after clear()), and top(), topKey(), peekKey() and
- * pop() need a queue that is not empty; the invariant, checked on queues of at most 1024
- * items, is that each item is in its bucket and that the mask and the
- * least keys of the buckets are right. The operations are defined in
+ * pop() need a queue that is not empty; the invariant, checked on queues
+ * of at most 1024 items, is that each item is in its bucket and that the
+ * mask and the least keys of the buckets are right. The operations are defined in
  * RadixHeap.tpp.
  *
  * \see R. K. Ahuja, K. Mehlhorn, J. Orlin, R. E. Tarjan, Faster algorithms
