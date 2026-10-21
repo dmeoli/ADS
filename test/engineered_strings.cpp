@@ -27,6 +27,7 @@
 #include "ADS/string/AhoCorasick.h"
 #include "ADS/string/ApproximateMatching.h"
 #include "ADS/string/EditDistance.h"
+#include "ADS/string/LongestCommonExtension.h"
 #include "ADS/string/LongestCommonSubsequence.h"
 #include "ADS/string/Lyndon.h"
 #include "ADS/string/Palindromes.h"
@@ -549,6 +550,69 @@ ADS_TEST( "suffix-automaton" )
 // palindromicPartition() of the textbook (and the audit): the empty string,
 // one byte, a^n (n distinct palindromes, one piece), a string with no
 // palindrome longer than 1, random strings over 1, 2, 3 and 26 letters;
+// the longest common extensions against the direct comparison (and an
+// audit each): the empty text and one symbol, the ends of the text, i = j,
+// extensions shorter than 16 and longer, within a block of the range
+// minimum and across blocks, on random texts, the Fibonacci word, a^n and
+// texts with bytes 0 (which the padding of the text must not extend)
+ADS_TEST( "lce" )
+{
+ auto check = []( const std::string & T , std::mt19937_64 & g ,
+                  int queries ) {
+  const LceIndex<> X( T );
+  const LceIndex< std::uint64_t > Y( T );
+  const std::size_t n = T.size();
+  auto naive = [ & ]( std::size_t i , std::size_t j ) {
+   std::size_t h = 0;
+   while( ( i + h < n ) && ( j + h < n ) && ( T[ i + h ] == T[ j + h ] ) )
+    ++h;
+   return( h );
+   };
+  for( std::size_t i : { std::size_t( 0 ) , n / 2 , n } )
+   for( std::size_t j : { std::size_t( 0 ) , n / 3 , n ? n - 1 : 0 , n } )
+    CHECK( X.lce( i , j ) == naive( i , j ) );
+  for( int q = 0 ; q < queries ; ++q ) {
+   const std::size_t i = g() % ( n + 1 ) , j = g() % ( n + 1 );
+   CHECK( X.lce( i , j ) == naive( i , j ) );
+   CHECK( Y.lce( i , j ) == naive( i , j ) );
+   }
+  };
+ std::mt19937_64 g( 31 );
+ check( "" , g , 4 );
+ check( "a" , g , 4 );
+ check( std::string( 1 , '\0' ) , g , 4 );
+ check( std::string( 300 , '\0' ) , g , 200 );
+ check( std::string( 5000 , 'a' ) , g , 500 );
+ check( fibonacciWord( 3000 ) , g , 2000 );
+ for( unsigned sigma : { 2u , 4u , 26u , 256u } )
+  for( std::size_t n : { 10 , 100 , 1000 , 20000 } )
+   check( randomString( g , n , sigma , sigma == 256 ? 0 : 'a' ) , g , 500 );
+ std::string R = randomString( g , 3000 , 4 , 'a' );
+ check( R + R + R , g , 2000 );          // long extensions, many blocks
+ // suffixes near in SA, up to 5000 ranks apart: every shape of the range
+ // minimum (one block, two, within a group of blocks, across groups),
+ // against the minimum of LCP by a scan
+ for( const std::string & T : { fibonacciWord( 100000 ) ,
+                                randomString( g , 100000 , 2 , 'a' ) } ) {
+  const auto SA = suffixArray( T );
+  const auto LCP = lcpArrayPhi( T , SA );
+  std::vector< std::size_t > rank( T.size() );
+  for( std::size_t r = 0 ; r < T.size() ; ++r ) rank[ SA[ r ] ] = r;
+  const LceIndex<> X( T );
+  for( int q = 0 ; q < 3000 ; ++q ) {
+   const std::size_t r = g() % T.size() ,
+                     d = 1 + g() % ( q % 2 ? 40 : 5000 ) ,
+                     i = SA[ r ] , j = SA[ std::min( r + d , T.size() - 1 ) ];
+   if( i == j ) continue;
+   const std::size_t a = std::min( rank[ i ] , rank[ j ] ) ,
+                     b = std::max( rank[ i ] , rank[ j ] );
+   CHECK( X.lce( i , j ) ==
+          *std::min_element( LCP.begin() + std::ptrdiff_t( a ) ,
+                             LCP.begin() + std::ptrdiff_t( b ) ) );
+   }
+  }
+ }
+
 // the number of distinct palindromes against their enumeration
 ADS_TEST( "eertree" )
 {

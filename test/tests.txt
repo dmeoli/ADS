@@ -514,6 +514,7 @@ hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
 # the engineered algorithms on strings, beyond the book
 engineered_strings  string-search   filtro SIMD, q-grammi e Two-Way
 engineered_strings  suffix-sorting  SA-IS ingegnerizzato e LCP con Phi
+engineered_strings  lce             estensioni comuni: confronto diretto e RMQ a blocchi
 engineered_strings  edit-distance   distanza, LCS e ricerca bit-parallele
 engineered_strings  classic-matching  Boyer-Moore, Horspool, Shift-Or, Z
 engineered_strings  aho-corasick    automa di Aho e Corasick

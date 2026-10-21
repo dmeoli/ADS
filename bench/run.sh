@@ -21,6 +21,7 @@
 #                           [COMBI=<dir>] [MINISELECT=<dir>] [SDSL=<dir>]     #
 #                           [PGM=<dir>] [LEMIRE=<prefix>] [ROARING=<prefix>]  #
 #                           [HTRIE=<dir>] [LIBART=<prefix>]                   #
+#                           [SDSL=<prefix>]                                   #
 ###############################################################################
 
 set -e
@@ -55,6 +56,7 @@ run fft 1024 65536 1048576
 run hashing 100000 1000000
 run search 100000 1000000 10000000
 run suffix 100000 1000000 10000000
+run lce 100000 1000000 10000000
 run edit 100 1000 10000 100000
 run numeric 100000 1000000
 run queues 100000 1000000
