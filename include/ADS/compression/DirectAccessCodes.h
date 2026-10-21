@@ -31,8 +31,11 @@
  *     C( w ) = 0 , \f]
  * w the bits of the largest integer, in \f$ O( w^2 ) \f$ steps on the counts
  * \f$ n_s \f$; a fixed width b for every level trades bits for fewer
- * levels, i.e., fewer ranks per access. The chunks of one width are a code
- * with a fixed alphabet,
+ * levels, i.e., fewer ranks per access; a chunk of 8 or 16 bits is read as
+ * its byte or its pair of bytes, one load that stays in its line of the
+ * cache. The construction packs the chunks and the continuation bits of a
+ * level in order, a field of 64 bits at a time. The chunks of one width
+ * are a code with a fixed alphabet,
  * the vbyte of the notes when every \f$ b_\ell = 7 \f$, the continuation
  * bits moved to their own vector with rank.
  *
@@ -72,6 +75,7 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <span>
 #include <vector>
 

@@ -934,6 +934,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operated on by loops, which the compilers vectorize, and take the four
   steps unrolled too
 
+- DirectAccessCodes reads a chunk of 8 or 16 bits as its byte or its
+  pair of bytes, and builds a level by packing its chunks and its
+  continuation bits in order, a field of 64 bits at a time, from the
+  integers that reach it with no copy of the first level
 - CompactRankSelect builds its directory a superblock at a time with no
   test on the words, the counts of the blocks packed by constant shifts,
   and reserves its samples, and a vector from its words copies them as it

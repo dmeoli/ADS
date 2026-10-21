@@ -64,29 +64,43 @@ inline void DirectAccessCodes::build( std::span< const std::uint64_t > x ,
                                       const std::array< int , 65 > & cut ,
                                       int w )
 {
- // the levels, the integers that continue moved to the next one in order
- std::vector< std::uint64_t > cur( x.begin() , x.end() ) , next;
+ // the levels: the chunks of the integers that reach a level and the bits
+ // of those that continue, each packed in order into words by a field of
+ // 64 bits, then the integers that continue moved to the next level
+ std::vector< std::uint64_t > cur , next;
+ std::vector< Word > C , B;
+ std::span< const std::uint64_t > in = x;
  for( int s = 0 ; s < w ; s = cut[ s ] ) {
   Level L;
   L.shift = s;
   L.width = cut[ s ] - s;
   const bool last = cut[ s ] == w;
-  L.chunks = BitVector( cur.size() * std::size_t( L.width ) );
-  BitVector B( last ? 0 : cur.size() );
+  const std::size_t m = in.size();
+  const int b = L.width;
+  const std::uint64_t mask = detail::lowMask( b );
+  C.assign( ( m * std::size_t( b ) + 63 ) / 64 + 1 , 0 );
+  B.assign( last ? 0 : m / 64 + 1 , 0 );
   next.clear();
-  for( std::size_t i = 0 ; i < cur.size() ; ++i ) {
-   const std::uint64_t v = cur[ i ] >> s;
-   L.chunks.put( i * std::size_t( L.width ) ,
-                 v & detail::lowMask( L.width ) , L.width );
-   if( ! last && ( v >> L.width ) ) {
-    B.set( i );
-    next.push_back( cur[ i ] );
+  next.reserve( last ? 0 : m );
+  std::size_t at = 0;                       // the bit of the next chunk
+  for( std::size_t i = 0 ; i < m ; ++i , at += std::size_t( b ) ) {
+   const std::uint64_t v = in[ i ] >> s , c = v & mask;
+   const std::size_t q = at / 64;
+   const unsigned o = unsigned( at % 64 );
+   C[ q ] |= c << o;
+   if( o + unsigned( b ) > 64 ) C[ q + 1 ] |= c >> ( 64 - o );
+   if( ! last ) {
+    const bool more = ( v >> b ) != 0;
+    B[ i / 64 ] |= Word( more ) << ( i % 64 );
+    if( more ) next.push_back( in[ i ] );
     }
    }
-  if( ! last ) L.more = RankSelect( std::move( B ) ,
-                                     RankSelect::Selects::NONE );
+  L.chunks = BitVector( std::span< const Word >( C ) , m * std::size_t( b ) );
+  if( ! last ) L.more = RankSelect( std::span< const Word >( B ) , m ,
+                                    RankSelect::Selects::NONE );
   f_lev.push_back( std::move( L ) );
   cur.swap( next );
+  in = cur;
   }
  ADS_AUDIT( std::equal( x.begin() , x.end() , begin() ) );
  }
@@ -95,10 +109,25 @@ inline std::uint64_t DirectAccessCodes::access( std::size_t i ) const
 {
  ADS_PRE( i < f_n );
  std::uint64_t v = 0;
+ const std::size_t last = f_lev.size() - 1;
  for( std::size_t l = 0 ; ; ++l ) {
   const Level & L = f_lev[ l ];
-  v |= L.chunks.get( i * std::size_t( L.width ) , L.width ) << L.shift;
-  if( ( l + 1 == f_lev.size() ) || ! L.more[ i ] ) break;
+  // a chunk of 8 or 16 bits is its byte or its pair of bytes (the chunks
+  // from the bit 0 of the words, little-endian)
+  std::uint64_t c;
+  if( ( std::endian::native == std::endian::little ) && ( L.width == 8 ) )
+   c = reinterpret_cast< const std::uint8_t * >(
+        L.chunks.words().data() )[ i ];
+  else if( ( std::endian::native == std::endian::little ) &&
+           ( L.width == 16 ) ) {
+   std::uint16_t h;
+   std::memcpy( &h , reinterpret_cast< const std::uint8_t * >(
+                      L.chunks.words().data() ) + 2 * i , 2 );
+   c = h;
+   }
+  else c = L.chunks.get( i * std::size_t( L.width ) , L.width );
+  v |= c << L.shift;
+  if( ( l == last ) || ! L.more[ i ] ) break;
   i = L.more.rank1( i );
   }
  return( v );
