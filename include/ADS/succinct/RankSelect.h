@@ -291,6 +291,9 @@ class RankSelect {
  /// the building of the inventory of the bits b
  void build( bool b ) const;
 
+ /// the first call of inventory( b ), out of the line of select
+ void first( bool b ) const;
+
  /// the inventories that o has built taken (by a copy, or by a move)
  void adopt( const RankSelect & o , bool move );
 
