@@ -1261,11 +1261,12 @@ ADS_TEST( "concurrent-cuckoo" )
 // the concurrent cuckoo table on real threads: 2, 4 and 8 threads insert
 // disjoint keys into a table of capacity 0, which doubles under them, while
 // a reader looks keys up and another reserves room, takes the size and
-// visits the table;
-// then 4 threads insert, assign, update, remove and find their own keys,
-// each keeping the set it expects, and read the keys of the others, whose
-// values must be ones written for that key; at the end the table holds the
-// union of the expected sets, each key in one of its buckets
+// visits the table; then 4 threads insert, assign, update, remove and find
+// their own keys, each keeping the set it expects, and read the keys of
+// the others, whose values must be ones written for that key, and at the
+// end the table holds the union of the expected sets, each key in one of
+// its buckets; last, values that are strings, read under the locks,
+// inserted and removed by 4 threads while a reader checks them
 ADS_TEST( "concurrent-cuckoo-threads" )
 {
  auto key = []( std::uint64_t i ) { return( i * 0x9E3779B97F4A7C15ULL ); };
@@ -1377,6 +1378,41 @@ ADS_TEST( "concurrent-cuckoo-threads" )
     CHECK( T.find( key( i ) ) == v );
    }
   CHECK( T.size() == n );
+  }
+ {                                              // values read under locks
+  using CT = ConcurrentCuckooTable< std::uint64_t , std::string >;
+  static_assert( ! CT::optimistic );
+  static_assert( ConcurrentCuckooTable< std::uint64_t , int >::optimistic );
+  const std::uint64_t n = 20000;
+  CT T;
+  std::atomic< bool > done{ false };
+  std::atomic< int > bad{ 0 };
+  std::vector< std::thread > W;
+  for( std::uint64_t t = 0 ; t < 4 ; ++t )
+   W.emplace_back( [ & , t ] {
+    for( std::uint64_t i = t ; i < n ; i += 4 ) {
+     if( ! T.insert( key( i ) , std::to_string( i ) ) )
+      ++bad;
+     if( ( i % 3 == 0 ) && ! T.erase( key( i ) ) )
+      ++bad;
+     }
+    } );
+  std::thread reader( [ & ] {
+   std::mt19937_64 g( 49 );
+   while( ! done.load() ) {
+    const std::uint64_t i = g() % n;
+    const auto o = T.find( key( i ) );
+    if( o && ( *o != std::to_string( i ) ) )
+     ++bad;
+    }
+   } );
+  for( auto & w : W )
+   w.join();
+  done = true;
+  reader.join();
+  CHECK( bad == 0 && T.consistent() && T.size() == n - ( n + 2 ) / 3 );
+  for( std::uint64_t i = 0 ; i < n ; ++i )
+   CHECK( T.contains( key( i ) ) == ( i % 3 != 0 ) );
   }
  }
 
