@@ -929,6 +929,126 @@ inline void sqr4Asm( std::uint64_t * r , const std::uint64_t * a )
   : "rdx" , "cc" , "memory" );
  }
 
+/// the products a_i a_j, 0 <= i < j < 6, at the places i + j = 1 .. 10,
+/// in t[ 0 .. 10 ): the rows of a0 .. a4 on the digits after them, each
+/// row's high halves on the chain of CF and its sums into the places on
+/// that of OF, the places final after each row stored to free registers
+inline void tri6Asm( std::uint64_t * t , const std::uint64_t * a )
+{
+ std::uint64_t x1 , x2 , x3 , x4 , x5 , x6 , lo , hi , z;
+ __asm__ __volatile__(
+  "xor %k[z], %k[z]\n\t"
+  "mov (%[a]), %%rdx\n\t"                  // a0: places 1 .. 6
+  "mulx 8(%[a]), %[x1], %[x2]\n\t"
+  "mulx 16(%[a]), %[lo], %[x3]\n\t"
+  "adcx %[lo], %[x2]\n\t"
+  "mulx 24(%[a]), %[lo], %[x4]\n\t"
+  "adcx %[lo], %[x3]\n\t"
+  "mulx 32(%[a]), %[lo], %[x5]\n\t"
+  "adcx %[lo], %[x4]\n\t"
+  "mulx 40(%[a]), %[lo], %[x6]\n\t"
+  "adcx %[lo], %[x5]\n\t"
+  "adcx %[z], %[x6]\n\t"
+  "mov %[x1], (%[t])\n\t"
+  "mov %[x2], 8(%[t])\n\t"
+  "mov 8(%[a]), %%rdx\n\t"                 // a1: places 3 .. 7, in x1
+  "mulx 16(%[a]), %[lo], %[hi]\n\t"
+  "adox %[lo], %[x3]\n\t"
+  "adcx %[hi], %[x4]\n\t"
+  "mulx 24(%[a]), %[lo], %[hi]\n\t"
+  "adox %[lo], %[x4]\n\t"
+  "adcx %[hi], %[x5]\n\t"
+  "mulx 32(%[a]), %[lo], %[hi]\n\t"
+  "adox %[lo], %[x5]\n\t"
+  "adcx %[hi], %[x6]\n\t"
+  "mulx 40(%[a]), %[lo], %[x1]\n\t"
+  "adox %[lo], %[x6]\n\t"
+  "adcx %[z], %[x1]\n\t"
+  "adox %[z], %[x1]\n\t"
+  "mov %[x3], 16(%[t])\n\t"
+  "mov %[x4], 24(%[t])\n\t"
+  "mov 16(%[a]), %%rdx\n\t"                // a2: places 5 .. 8, in x2
+  "mulx 24(%[a]), %[lo], %[hi]\n\t"
+  "adox %[lo], %[x5]\n\t"
+  "adcx %[hi], %[x6]\n\t"
+  "mulx 32(%[a]), %[lo], %[hi]\n\t"
+  "adox %[lo], %[x6]\n\t"
+  "adcx %[hi], %[x1]\n\t"
+  "mulx 40(%[a]), %[lo], %[x2]\n\t"
+  "adox %[lo], %[x1]\n\t"
+  "adcx %[z], %[x2]\n\t"
+  "adox %[z], %[x2]\n\t"
+  "mov %[x5], 32(%[t])\n\t"
+  "mov %[x6], 40(%[t])\n\t"
+  "mov 24(%[a]), %%rdx\n\t"                // a3: places 7 .. 9, in x3
+  "mulx 32(%[a]), %[lo], %[hi]\n\t"
+  "adox %[lo], %[x1]\n\t"
+  "adcx %[hi], %[x2]\n\t"
+  "mulx 40(%[a]), %[lo], %[x3]\n\t"
+  "adox %[lo], %[x2]\n\t"
+  "adcx %[z], %[x3]\n\t"
+  "adox %[z], %[x3]\n\t"
+  "mov %[x1], 48(%[t])\n\t"
+  "mov %[x2], 56(%[t])\n\t"
+  "mov 32(%[a]), %%rdx\n\t"                // a4: places 9 .. 10, in x4
+  "mulx 40(%[a]), %[lo], %[x4]\n\t"
+  "adox %[lo], %[x3]\n\t"
+  "adox %[z], %[x4]\n\t"
+  "mov %[x3], 64(%[t])\n\t"
+  "mov %[x4], 72(%[t])"
+  : [ x1 ] "=&r" ( x1 ) , [ x2 ] "=&r" ( x2 ) , [ x3 ] "=&r" ( x3 ) ,
+    [ x4 ] "=&r" ( x4 ) , [ x5 ] "=&r" ( x5 ) , [ x6 ] "=&r" ( x6 ) ,
+    [ lo ] "=&r" ( lo ) , [ hi ] "=&r" ( hi ) , [ z ] "=&r" ( z )
+  : [ a ] "r" ( a ) , [ t ] "r" ( t )
+  : "rdx" , "cc" , "memory" );
+ }
+
+/// the digit i of r = 2 r + the squares a_i^2 at b^{2i}: the places 2i
+/// and 2i + 1 doubled with the top bit before on the chain of OF, the
+/// halves of a_i^2 added on that of CF
+#define ADS_SQRDIAG_STEP( s )                                                \
+ "mov " #s "*8(%[a]), %%rdx\n\t"                                             \
+ "mulx %%rdx, %[lo], %[hi]\n\t"                                              \
+ "mov " #s "*16(%[r]), %[x]\n\t"                                             \
+ "adox %[x], %[x]\n\t"                                                       \
+ "adcx %[lo], %[x]\n\t"                                                      \
+ "mov %[x], " #s "*16(%[r])\n\t"                                             \
+ "mov " #s "*16+8(%[r]), %[x]\n\t"                                           \
+ "adox %[x], %[x]\n\t"                                                       \
+ "adcx %[hi], %[x]\n\t"                                                      \
+ "mov %[x], " #s "*16+8(%[r])\n\t"
+
+/// r = 2 r + sum of a_i^2 b^{2i}, r of 2 n digits, n > 0, the result
+/// below b^{2n}
+inline void sqrDiagAsm( std::uint64_t * r , const std::uint64_t * a ,
+                        std::size_t n )
+{
+ std::uint64_t x , lo , hi , c;
+ __asm__ __volatile__(
+  "xor %k[x], %k[x]\n\t"
+  "mov %[n1], %[c]\n\t"
+  "jrcxz 1f\n\t"
+  ADS_SQRDIAG_STEP( 0 )
+  "lea 8(%[a]), %[a]\n\t"
+  "lea 16(%[r]), %[r]\n"
+  "1:\n\t"
+  "mov %[n2], %[c]\n\t"
+  "jmp 7f\n"
+  "9:\n\t"
+  ADS_SQRDIAG_STEP( 0 ) ADS_SQRDIAG_STEP( 1 )
+  "lea 16(%[a]), %[a]\n\t"
+  "lea 32(%[r]), %[r]\n\t"
+  "lea -1(%[c]), %[c]\n"
+  "7:\n\t"
+  "jrcxz 8f\n\t"
+  "jmp 9b\n"
+  "8:"
+  : [ x ] "=&r" ( x ) , [ lo ] "=&r" ( lo ) , [ hi ] "=&r" ( hi ) ,
+    [ c ] "=&c" ( c ) , [ r ] "+&r" ( r ) , [ a ] "+&r" ( a )
+  : [ n1 ] "r" ( n & 1 ) , [ n2 ] "r" ( n / 2 )
+  : "rdx" , "cc" , "memory" );
+ }
+
 /// the digit s of r = 2 r + d: r_s doubled with the top bit of r_{s-1} on
 /// the chain of OF, d_s added on that of CF
 #define ADS_LSH1ADD_STEP( s )                                                \
@@ -3037,22 +3157,24 @@ inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
  r[ 2 * n - 1 ] = 0;
 #if ADS_BIGINT_ASM
  if( n >= 8 ) {
-  // a = sum of the tiles A_k b^{4k} of 4 digits (the last one shorter),
-  // a^2 = 2 T + D: T the products a_i a_j, i < j, of digits of different
-  // tiles, by passes of 4 rows over the digits after each tile, and D the
-  // squares A_k^2, of 8 digits each and side by side, at b^{8k}
+  // a^2 = 2 T + D, T the products a_i a_j, i < j, and D the squares a_i^2
+  // at b^{2i}: T by blocks of 6 digits, the passes of 6 rows over the
+  // digits after each block and the products inside each block, then D
+  // with the doubling in one pass
   std::fill( r , r + 2 * n , 0 );
-  for( std::size_t i = 0 ; i + 4 < n ; i += 4 )
-   detail::mulPass4< true >( r + 2 * i + 4 , a + i + 4 , n - i - 4 , a + i );
-  constexpr std::size_t kStack = 64;
-  Limb in[ kStack ];
-  std::unique_ptr< Limb[] > heap( 2 * n > kStack ? new Limb[ 2 * n ]
-                                                 : nullptr );
-  Limb * const d = heap ? heap.get() : in;
   std::size_t i = 0;
-  for( ; i + 4 <= n ; i += 4 ) detail::sqr4Asm( d + 2 * i , a + i );
-  if( i < n ) sqrTile( d + 2 * i , a + i , n - i );
-  detail::lsh1AddAsm( r , d , 2 * n );
+  for( ; i + 6 <= n ; i += 6 ) {
+   if( i + 6 < n )
+    detail::mulPass6< true >( r + 2 * i + 6 , a + i + 6 , n - i - 6 , a + i );
+   Limb t[ 10 ];
+   detail::tri6Asm( t , a + i );
+   addTo( r + 2 * i + 1 , 2 * n - 2 * i - 1 , t , 10 );
+   }
+  for( ; i + 1 < n ; ++i ) {                // the last block, short
+   const Limb c = addMul1( r + 2 * i + 1 , a + i + 1 , n - i - 1 , a[ i ] );
+   addTo( r + n + i , n - i , &c , 1 );
+   }
+  detail::sqrDiagAsm( r , a , n );
   return;
   }
  if( n > 1 ) detail::mulRows< 1 , 2 , 1 >( r + 1 , a + 1 , n - 1 , a , n - 1 );
@@ -3075,20 +3197,28 @@ inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
 
 inline std::size_t BigInteger::mulScratch( std::size_t n )
 {
- // a step on n digits takes at most 4 n + 24 and leaves at most
+ // a step on n digits takes at most 6 n + 40 and leaves at most
  // n / 2 + 2 digits to the next one
- return( 8 * n + 64 * std::size_t( std::bit_width( n ) ) + 64 );
+ return( 12 * n + 64 * std::size_t( std::bit_width( n ) ) + 64 );
  }
 
 inline void BigInteger::mulN( Limb * r , const Limb * a , const Limb * b ,
                               std::size_t n , Limb * w , std::size_t fft ,
                               std::size_t toom )
 {
- if( n < kKaratsuba ) {
-  if( a == b ) sqrSchool( r , a , n );
+ // the squares by thresholds of their own, unless a method was asked
+ const bool sq = a == b;
+ if( sq ) {
+  if( fft == kFFT ) fft = kSqrFFT;
+  if( toom == kToom3 ) toom = kSqrToom3;
+  }
+ if( n < ( sq ? kSqrKaratsuba : kKaratsuba ) ) {
+  if( sq ) sqrSchool( r , a , n );
   else mulSchool( r , a , n , b , n );
   }
  else if( ( n >= fft ) && ( 2 * n <= kNTTMax ) ) mulNTT( r , a , n , b , n );
+ else if( ( n >= ( sq ? kSqrToom4 : kToom4 ) ) && ( n >= toom ) )
+  toom4( r , a , b , n , w , fft , toom );
  else if( n >= toom ) toom3( r , a , b , n , w , fft , toom );
  else karatsuba( r , a , b , n , w , fft , toom );
  }
@@ -3273,6 +3403,132 @@ inline void BigInteger::toom3( Limb * r , const Limb * a , const Limb * b ,
  addTo( r + 4 * k , 2 * s , v1 + 2 * k , std::min( L - 2 * k , 2 * s ) );
  addTo( r + k , 2 * n - k , vm1 , std::min( L , 2 * n - k ) );
  addTo( r + 3 * k , 2 * n - 3 * k , v2 , std::min( L , 2 * n - 3 * k ) );
+ }
+
+inline void BigInteger::divExactN( Limb * a , std::size_t n , Limb d )
+{
+ Limb v = d;                                // 1 / d modulo 2^64, by Newton
+ for( int i = 0 ; i < 5 ; ++i ) v *= 2 - d * v;
+ Limb c = 0;                                // the borrow of a - q d
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  const Limb x = a[ i ] , q = ( x - c ) * v;
+  Limb hi;
+  detail::mulWide( q , d , hi );
+  c = hi + ( x < c );
+  a[ i ] = q;
+  }
+ }
+
+inline void BigInteger::rshN( Limb * a , std::size_t n , int s )
+{
+ for( std::size_t i = 0 ; i + 1 < n ; ++i )
+  a[ i ] = ( a[ i ] >> s ) | ( a[ i + 1 ] << ( 64 - s ) );
+ a[ n - 1 ] >>= s;
+ }
+
+inline void BigInteger::toom4( Limb * r , const Limb * a , const Limb * b ,
+                               std::size_t n , Limb * w , std::size_t fft ,
+                               std::size_t toom )
+{
+ // a = a3 x^3 + a2 x^2 + a1 x + a0, x = b^k, a3 of s digits, the same
+ // for b; the product r( x ) = r6 x^6 + ... + r0 from its values at 0,
+ // 1, -1, 2, -2, 1/2 (times 2^6) and infinity, all the steps of the
+ // interpolation on nonnegative numbers: with E1 = ( v1 + v-1 ) / 2,
+ // O1 = ( v1 - v-1 ) / 2, E2 = ( v2 + v-2 ) / 2, O2 = ( v2 - v-2 ) / 4,
+ // r4 = ( ( E2 - r0 - 64 r6 ) / 4 - ( E1 - r0 - r6 ) ) / 3,
+ // r2 = E1 - r0 - r6 - r4, H = ( vh - 64 r0 - 16 r2 - 4 r4 - r6 ) / 2 =
+ // 16 r1 + 4 r3 + r5, r3 = ( 17 O1 - O2 - H ) / 9,
+ // r5 = ( O2 - O1 - 3 r3 ) / 15, r1 = O1 - r3 - r5
+ const bool sq = a == b;
+ const std::size_t k = ( n + 3 ) / 4 , s = n - 3 * k , K = k + 1 , L = 2 * K;
+ Limb * const e = w;                        // the 10 values, K digits each
+ Limb * const v1 = e + 10 * K , * const vm1 = v1 + L , * const v2 = vm1 + L ,
+      * const vm2 = v2 + L , * const vh = vm2 + L , * const t = vh + L ,
+      * const ws = t + L;
+ // x( 1 ), |x( -1 )|, x( 2 ), |x( -2 )| and 8 x( 1 / 2 ) in p[ 0 .. 4 ],
+ // the signs of x( -1 ) and x( -2 )
+ auto eval = [ & ]( const Limb * x , Limb * p , bool & n1 , bool & n2 ) {
+  Limb * const P1 = p , * const M1 = p + K , * const P2 = p + 2 * K ,
+       * const M2 = p + 3 * K , * const H = p + 4 * K , * const u = t ,
+       * const z = t + K;
+  u[ k ] = addN( u , x , k , x + 2 * k , k );       // x0 + x2
+  z[ k ] = addN( z , x + k , k , x + 3 * k , s );   // x1 + x3
+  addN( P1 , u , K , z , K );
+  n1 = absDiff( M1 , u , K , z , K );
+  std::copy( x , x + k , u );               // x0 + 4 x2
+  u[ k ] = addMul1( u , x + 2 * k , k , 4 );
+  z[ k ] = mul1( z , x + k , k , 2 );       // 2 x1 + 8 x3
+  const Limb c = addMul1( z , x + 3 * k , s , 8 );
+  addTo( z + s , K - s , &c , 1 );
+  addN( P2 , u , K , z , K );
+  n2 = absDiff( M2 , u , K , z , K );
+  std::copy( x + 3 * k , x + 3 * k + s , H );   // x3 + 2 x2 + 4 x1 + 8 x0
+  std::fill( H + s , H + K , 0 );
+  H[ k ] = addMul1( H , x + 2 * k , k , 2 );
+  H[ k ] += addMul1( H , x + k , k , 4 );
+  H[ k ] += addMul1( H , x , k , 8 );
+  };
+ bool na1 , na2 , nb1 = false , nb2 = false;
+ eval( a , e , na1 , na2 );
+ if( ! sq ) eval( b , e + 5 * K , nb1 , nb2 );
+ else {                                   // the values of a square are >= 0
+  nb1 = na1;
+  nb2 = na2;
+  }
+ const Limb * const f = sq ? e : e + 5 * K;
+ mulN( v1 , e , f , K , ws , fft , toom );
+ mulN( vm1 , e + K , f + K , K , ws , fft , toom );
+ mulN( v2 , e + 2 * K , f + 2 * K , K , ws , fft , toom );
+ mulN( vm2 , e + 3 * K , f + 3 * K , K , ws , fft , toom );
+ mulN( vh , e + 4 * K , f + 4 * K , K , ws , fft , toom );
+ mulN( r , a , b , k , ws , fft , toom );   // r0
+ mulN( r + 6 * k , a + 3 * k , b + 3 * k , s , ws , fft , toom );   // r6
+ const Limb * const r0 = r , * const r6 = r + 6 * k;
+ // O1 in vm1, E1 - r0 - r6 in v1; 2 O2 in vm2, E2 in v2
+ if( na1 != nb1 ) rsh1Add( vm1 , v1 , vm1 , L );
+ else rsh1Sub( vm1 , v1 , vm1 , L );
+ subFrom( v1 , L , vm1 , L );
+ subFrom( v1 , L , r0 , 2 * k );
+ subFrom( v1 , L , r6 , 2 * s );
+ if( na2 != nb2 ) rsh1Add( vm2 , v2 , vm2 , L );
+ else rsh1Sub( vm2 , v2 , vm2 , L );
+ subFrom( v2 , L , vm2 , L );
+ rshN( vm2 , L , 1 );
+ // r4 = ( ( E2 - r0 - 64 r6 ) / 4 - v1 ) / 3 in v2, r2 = v1 - r4 in v1
+ subFrom( v2 , L , r0 , 2 * k );
+ const Limb c6 = subMul1( v2 , r6 , 2 * s , 64 );
+ subFrom( v2 + 2 * s , L - 2 * s , &c6 , 1 );
+ rshN( v2 , L , 2 );
+ subFrom( v2 , L , v1 , L );
+ divExact3( v2 , L );
+ subFrom( v1 , L , v2 , L );
+ // H = ( vh - 64 r0 - 16 r2 - 4 r4 - r6 ) / 2 in vh
+ const Limb c0 = subMul1( vh , r0 , 2 * k , 64 );
+ subFrom( vh + 2 * k , L - 2 * k , &c0 , 1 );
+ subMul1( vh , v1 , L , 16 );
+ subMul1( vh , v2 , L , 4 );
+ subFrom( vh , L , r6 , 2 * s );
+ rshN( vh , L , 1 );
+ // r3 = ( 17 O1 - O2 - H ) / 9 in t, r5 = ( O2 - O1 - 3 r3 ) / 15 in vm2,
+ // r1 = O1 - r3 - r5 in vm1
+ mul1( t , vm1 , L , 17 );
+ subFrom( t , L , vm2 , L );
+ subFrom( t , L , vh , L );
+ divExactN( t , L , 9 );
+ subFrom( vm2 , L , vm1 , L );
+ subMul1( vm2 , t , L , 3 );
+ divExactN( vm2 , L , 15 );
+ subFrom( vm1 , L , t , L );
+ subFrom( vm1 , L , vm2 , L );
+ // r = r6 x^6 + r5 x^5 + ... + r0, each r_i below b^{2n - ik}
+ std::copy( v1 , v1 + 2 * k , r + 2 * k );
+ std::copy( v2 , v2 + 2 * k , r + 4 * k );
+ const std::size_t N = 2 * n;
+ addTo( r + 4 * k , N - 4 * k , v1 + 2 * k , L - 2 * k );
+ addTo( r + 6 * k , N - 6 * k , v2 + 2 * k , std::min( L - 2 * k , 2 * s ) );
+ addTo( r + k , N - k , vm1 , L );
+ addTo( r + 3 * k , N - 3 * k , t , L );
+ addTo( r + 5 * k , N - 5 * k , vm2 , std::min( L , N - 5 * k ) );
  }
 
 template< class O >
@@ -3494,7 +3750,8 @@ inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
   };
  std::size_t t = 0 , nf = nf0;
  double best = cost( nf0 );
- for( std::size_t k = 4 ; k < 23 ; ++k )    // the lengths 2^k and 3 2^{k-1}
+ const bool sq = ( a == b ) && ( na == nb );   // no rows, one transform
+ for( std::size_t k = 4 ; k < ( sq ? 4 : 23 ) ; ++k )    // the lengths 2^k and 3 2^{k-1}
   for( std::size_t m : { std::size_t( 1 ) << k ,
                          std::size_t( 3 ) << ( k - 1 ) } )
    if( ( m < nf0 ) && ( m + na / 8 >= L ) && ( m + 1 <= L ) ) {
@@ -3551,12 +3808,14 @@ inline void BigInteger::mulP( Limb * r , const Limb * a , std::size_t na ,
    }
   }
 #endif
- if( nb < kKaratsuba ) {
-  if( ( a == b ) && ( na == nb ) ) sqrSchool( r , a , na );
+ const bool sq = ( a == b ) && ( na == nb );
+ if( nb < ( sq ? kSqrKaratsuba : kKaratsuba ) ) {
+  if( sq ) sqrSchool( r , a , na );
   else mulSchool( r , a , na , b , nb );
   return;
   }
- if( ( nb >= fft ) && ( na + nb <= kNTTMax ) ) {
+ if( ( nb >= ( sq && ( fft == kFFT ) ? kSqrFFT : fft ) ) &&
+     ( na + nb <= kNTTMax ) ) {
   mulNTT( r , a , na , b , nb );
   return;
   }
@@ -4361,6 +4620,131 @@ inline BigInteger operator/( const BigInteger & a , const BigInteger & b )
 inline BigInteger operator%( const BigInteger & a , const BigInteger & b )
 {
  return( BigInteger::divMod( a , b ).second );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- THE SQUARE ROOT -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+inline void BigInteger::sqrt2( Limb h , Limb l , Mag & s , Mag & r )
+{
+ // Newton's method from above, x_{k+1} = ( x_k + a / x_k ) / 2, from the
+ // root in doubles plus 2^14, more than its error; while x_k is above the
+ // root, a / x_k < x_k < 2^64 and the steps decrease
+ const double e = std::sqrt( double( h ) * 0x1p64 + double( l ) );
+ Limb x = e >= 0x1p64 - 0x1p14 ? ~Limb( 0 ) : Limb( e ) + ( Limb( 1 ) << 14 );
+ for( ; ; ) {
+  if( h >= x ) break;                       // a / x >= 2^64 > x: x too small
+  const Limb q = detail::divWide( h , l , x ) ,
+             y = ( x >> 1 ) + ( q >> 1 ) + ( x & q & 1 );
+  if( y >= x ) break;
+  x = y;
+  }
+ Limb ph;                                   // r = a - x^2 < 2^65
+ const Limb pl = detail::mulWide( x , x , ph );
+ Limb c = 0;
+ const Limb r0 = detail::subBorrow( l , pl , c ) , r1 = h - ph - c;
+ s = Mag{ x };
+ r.resize( 0 );
+ if( r1 ) r = Mag{ r0 , r1 };
+ else if( r0 ) r = Mag{ r0 };
+ }
+
+inline void BigInteger::sqrtRec( const Limb * m , std::size_t k , Mag & s ,
+                                 Mag & r )
+{
+ // m of 2 k digits, its top digit at least b / 4: with beta = b^l,
+ // m = A beta^2 + a1 beta + a0, ( s' , r' ) the root and the remainder
+ // of A, ( q , u ) the quotient and the remainder of r' beta + a1 by
+ // 2 s', s = s' beta + q and r = u beta + a0 - q^2, corrected once if
+ // negative (Zimmermann's Karatsuba square root)
+ if( k == 1 ) {
+  sqrt2( m[ 1 ] , m[ 0 ] , s , r );
+  return;
+  }
+ const std::size_t l = k / 2 , h = k - l;
+ Mag s1 , r1;
+ sqrtRec( m + 2 * l , h , s1 , r1 );
+ Mag num( r1.size() + l );                  // r' beta + a1
+ std::copy( m + l , m + 2 * l , num.data() );
+ std::copy( r1.begin() , r1.end() , num.data() + l );
+ trim( num );
+ auto [ q , u ] = divModMag( num , addMag( s1 , s1 ) );
+ s = Mag( s1.size() + l + 1 , 0 );          // s' beta + q, q <= beta
+ std::copy( s1.begin() , s1.end() , s.data() + l );
+ if( ! q.empty() ) addTo( s.data() , s.size() , q.data() , q.size() );
+ trim( s );
+ Mag x( u.size() + l );                     // u beta + a0
+ std::copy( m , m + l , x.data() );
+ std::copy( u.begin() , u.end() , x.data() + l );
+ trim( x );
+ const Mag q2 = mulMag( q , q );
+ if( compareMag( x , q2 ) >= 0 ) r = subMag( x , q2 );
+ else {                                     // r + 2 s - 1, s - 1
+  r = subMag( addMag( x , addMag( s , s ) ) , addMag( q2 , Mag{ 1 } ) );
+  s = subMag( s , Mag{ 1 } );
+  }
+ }
+
+inline std::pair< BigInteger , BigInteger > BigInteger::sqrtRem(
+                                                       const BigInteger & a )
+{
+ ADS_PRE( a.sign() >= 0 );
+ std::pair< BigInteger , BigInteger > out;
+ const std::size_t n = a.f_d.size();
+ if( n == 0 ) return( out );
+ // m = a 4^t with an even number of digits, its top one at least b / 4;
+ // the root of a is that of m shifted by t
+ const unsigned c = unsigned( std::countl_zero( a.f_d.back() ) ) / 2 ,
+                z = n % 2;                  // a digit 0 below
+ const std::size_t t = c + 32 * z , N = n + z;
+ Mag m( N , 0 );
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  m[ i + z ] |= c ? a.f_d[ i ] << ( 2 * c ) : a.f_d[ i ];
+  if( c && ( i + 1 < n ) ) m[ i + 1 + z ] = a.f_d[ i ] >> ( 64 - 2 * c );
+  }
+ Mag s , r;
+ sqrtRec( m.data() , N / 2 , s , r );
+ if( t ) {                                  // s >> t
+  const std::size_t w = t / 64 , b = t % 64;
+  for( std::size_t i = 0 ; i + w < s.size() ; ++i )
+   s[ i ] = b ? ( s[ i + w ] >> b ) |
+                ( i + w + 1 < s.size() ? s[ i + w + 1 ] << ( 64 - b ) : 0 )
+              : s[ i + w ];
+  s.resize( s.size() - w );
+  trim( s );
+  r = subMag( a.f_d , mulMag( s , s ) );
+  }
+ out.first = BigInteger( false , std::move( s ) );
+ out.second = BigInteger( false , std::move( r ) );
+ ADS_AUDIT( ( out.first * out.first + out.second == a ) &&
+            ( out.second <= 2 * out.first ) );
+ ADS_AUDIT( out.first == sqrtNewton( a ) );
+ return( out );
+ }
+
+inline BigInteger BigInteger::sqrt( const BigInteger & a )
+{
+ return( sqrtRem( a ).first );
+ }
+
+inline BigInteger BigInteger::sqrtNewton( const BigInteger & a )
+{
+ ADS_PRE( a.sign() >= 0 );
+ if( a.sign() == 0 ) return( a );
+ // from 2^ceil( bits / 2 ), above the root, x = ( x + a / x ) / 2 while
+ // it decreases
+ const std::size_t bits = 64 * a.f_d.size() -
+                          std::size_t( std::countl_zero( a.f_d.back() ) );
+ BigInteger x = pow( 2 , ( bits + 1 ) / 2 );
+ for( ; ; ) {
+  BigInteger y = x + a / x;
+  Mag d = y.f_d;
+  divSmall( d , 2 );
+  y = BigInteger( false , std::move( d ) );
+  if( y >= x ) return( x );
+  x = std::move( y );
+  }
  }
 
 /*--------------------------------------------------------------------------*/

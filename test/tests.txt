@@ -473,6 +473,7 @@ taocp  big-integer-product   prodotti alle soglie, quadrati, NTT esatta
 taocp  big-integer-division  divisione ricorsiva contro Algorithm D
 taocp  big-integer-newton    divisione col reciproco di Newton, ai bordi
 taocp  big-integer-radix     conversioni divide et impera, 10^k e 10^k - 1
+taocp  big-integer-sqrt      radice quadrata di Zimmermann contro Newton
 taocp  big-integer-gcd       gcd di Lehmer e hgcd, Fibonacci, nulli
 taocp  big-integer-pool      blocchi di cifre tenuti per thread, ai bordi
 taocp  big-integer-gmp       backend di GMP: ai bordi dei suoi intervalli

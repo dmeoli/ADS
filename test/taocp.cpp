@@ -1623,7 +1623,10 @@ ADS_TEST( "big-integer-product" )
 {
  std::mt19937_64 g( 20 );
  const std::size_t K = BigInteger::kKaratsuba , F = BigInteger::kFFT ,
-                   T = BigInteger::kToom3;
+                   T = BigInteger::kToom3 , T4 = BigInteger::kToom4 ,
+                   SK = BigInteger::kSqrKaratsuba ,
+                   S3 = BigInteger::kSqrToom3 , S4 = BigInteger::kSqrToom4 ,
+                   SF = BigInteger::kSqrFFT;
  // the short products, by passes of 4 rows and the rows left, and the
  // squares, by passes and the squares of the tiles of 4 digits, against
  // the school apart, for digits random, all ones and at the edges
@@ -1641,8 +1644,24 @@ ADS_TEST( "big-integer-product" )
     CHECK( x * y == naiveProduct( a , b ) && y * x == x * y );
     if( k == m ) CHECK( x * x == naiveProduct( a , a ) );
     }
+ // the squares by blocks of 6 digits, up to past their Karatsuba
+ for( std::size_t n = 1 ; n <= 2 * SK + 13 ; ++n )
+  for( int kind = 0 ; kind < 3 ; ++kind ) {
+   std::vector< std::uint64_t > a( n );
+   for( auto & x : a )
+    x = kind == 0 ? g() : kind == 1 ? ~std::uint64_t( 0 )
+                        : ( g() & 1 ? ~std::uint64_t( 0 ) : g() & 3 );
+   a[ 0 ] |= 1;
+   const BigInteger x = fromLimbs( a );
+   CHECK( x * x == naiveProduct( a , a ) );
+   }
+ // the thresholds of Karatsuba, Toom-3, Toom-4 and the NTT, of the
+ // products and of the squares, Toom-4 with its last piece 1 to k digits
  for( std::size_t n : { K - 1 , K , K + 1 , 2 * K - 1 , 2 * K , 2 * K + 1 ,
                         T - 1 , T , T + 1 , T + 2 , 3 * T + 1 ,
+                        T4 - 1 , T4 , T4 + 1 , T4 + 2 , T4 + 3 , T4 + 4 ,
+                        SK - 1 , SK , S3 - 1 , S3 , S4 - 1 , S4 , S4 + 1 ,
+                        S4 + 2 , S4 + 3 , SF - 1 , SF ,
                         F - 1 , F , F + 1 } )
   for( bool ones : { false , true } ) {
    const BigInteger a = digits( n , g , ones ) , b = digits( n , g , ones ) ,
@@ -1954,6 +1973,34 @@ ADS_TEST( "big-integer-radix" )
 // agree and those of digits all ones, the gcds by one digit, odd or even,
 // of short and long numbers, the lengths so different that a long
 // division runs, and the last steps on one and two digits
+// the square root of Zimmermann: 0, the squares, one below and one above
+// them, the powers of 2 and 4 and all ones, odd and even lengths, the top
+// digit below b / 4 and above, against Newton's method
+ADS_TEST( "big-integer-sqrt" )
+{
+ std::mt19937_64 g( 37 );
+ CHECK( BigInteger::sqrt( 0 ) == 0 && BigInteger::sqrt( 1 ) == 1 &&
+        BigInteger::sqrt( 3 ) == 1 && BigInteger::sqrt( 4 ) == 2 &&
+        BigInteger::sqrtRem( 99 ) == std::pair( BigInteger( 9 ) ,
+                                                BigInteger( 18 ) ) );
+ for( std::size_t n : { 1 , 2 , 3 , 4 , 5 , 7 , 8 , 9 , 16 , 31 , 64 , 129 ,
+                        300 , 1001 } ) {
+  const BigInteger a = digits( n , g ) , o = digits( n , g , true ) ,
+                   s = digits( ( n + 1 ) / 2 , g ) , q = s * s ,
+                   p2 = BigInteger::pow( 2 , 64 * n - 1 ) ,
+                   p4 = BigInteger::pow( 4 , 32 * n );
+  for( const BigInteger & x : { a , o , q , q - 1 , q + 1 , p2 , p2 - 1 ,
+                                p4 , p4 - 1 , digits( n , g , false , 1 ) ,
+                                digits( n , g , false , 3 ) } ) {
+   const auto [ r , e ] = BigInteger::sqrtRem( x );
+   CHECK( r * r + e == x && e >= 0 && e <= 2 * r &&
+          r == BigInteger::sqrtNewton( x ) && BigInteger::sqrt( x ) == r );
+   }
+  CHECK( BigInteger::sqrt( q ) == s && BigInteger::sqrtRem( q ).second == 0 &&
+         BigInteger::sqrt( q - 1 ) == s - 1 );
+  }
+ }
+
 ADS_TEST( "big-integer-gcd" )
 {
  std::mt19937_64 g( 23 );
