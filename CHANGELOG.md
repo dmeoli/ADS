@@ -47,9 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parallelExclusiveScan() (one pass by decoupled look-back)
 - the parallel algorithms on an executor, with the results of the
   sequential ones: sort() and stableSort() (a survey of the order, then a
-  distribution by the highest bits of the keys for the numbers or by a
-  tree of splitters with buckets of equality, and the buckets sorted by
-  the sequential sorts), multiwayMerge() with multisequenceSplit(), the
+  distribution by the highest bits of the keys for the numbers, their
+  range from a sample, or by a tree of splitters with buckets of
+  equality, and the buckets sorted by the sequential sorts, those of
+  numbers in their places by vectorQuickSort()), multiwayMerge() with
+  multisequenceSplit(), the
   products of CsrMatrix, SellMatrix and gemm() bit for bit, fft() by the
   four steps on the sequential one, bfsDistances() that optimizes its
   direction and connectedComponents() by Afforest on StaticGraph, and

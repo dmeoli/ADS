@@ -512,6 +512,64 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 | multikey quicksort of strings | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) |
 | sort of strings by integer keys of 8 characters, sorted in the vector registers | [`sort/StringSort.h`](include/ADS/sort/StringSort.h) |
 
+## Parallelism
+
+The parallel algorithms of ADS take an *executor* as their first argument,
+i.e., any object that runs the calls `f( 0 )`, ..., `f( n - 1 )` of a
+function on its threads and returns when they have returned (`bulk()`),
+and that tells how many threads it has (`concurrency()`); the sequential
+algorithms, which take none, are unchanged, and an algorithm called with
+one thread, or on a small input, is the sequential one. The executors are
+`Sequential`, `ThreadPool`, the pool of ADS on `std::thread` (a deque of
+work stealing of Chase and Lev per thread, the idle threads asleep on an
+event count after 2 ms), and, as options, `OpenMPExecutor`, `TBBExecutor`
+and `FastFlowExecutor`, which run the same calls on the threads of OpenMP,
+oneTBB and FastFlow, so that a program that already has one of these
+runtimes does not start a second
+one. On them [`parallel/Executor.h`](include/ADS/parallel/Executor.h) builds
+the loops, the reductions (whose blocks do not depend on the threads, so
+that a sum of doubles is the same on every executor) and the prefix sums
+in one pass over the memory (the decoupled look-back of Merrill and
+Garland), and the other headers of
+[`parallel/`](include/ADS/parallel) the algorithms below, each with the
+results of its sequential version (bit for bit for the products of
+matrices, up to the rounding for the transform).
+
+| What | Header |
+|---|---|
+| executors: the pool of ADS, OpenMP, oneTBB, FastFlow | [`parallel/ThreadPool.h`](include/ADS/parallel/ThreadPool.h), [`parallel/OpenMPExecutor.h`](include/ADS/parallel/OpenMPExecutor.h), [`parallel/TBBExecutor.h`](include/ADS/parallel/TBBExecutor.h), [`parallel/FastFlowExecutor.h`](include/ADS/parallel/FastFlowExecutor.h) |
+| parallel loops, reductions and prefix sums, fork and join | [`parallel/Executor.h`](include/ADS/parallel/Executor.h) |
+| `sort()` and `stableSort()` by distribution (radix classifier for the numbers, tree of splitters with buckets of equality for the rest) | [`parallel/ParallelSort.h`](include/ADS/parallel/ParallelSort.h) |
+| `multiwayMerge()` by exact multisequence selection | [`parallel/ParallelMerge.h`](include/ADS/parallel/ParallelMerge.h) |
+| products of `CsrMatrix`, `SellMatrix` and `gemm()` | [`parallel/ParallelNumeric.h`](include/ADS/parallel/ParallelNumeric.h) |
+| `fft()` by the four steps of Bailey | [`parallel/ParallelFFT.h`](include/ADS/parallel/ParallelFFT.h) |
+| visit in breadth that optimizes its direction, connected components by Afforest | [`parallel/ParallelGraph.h`](include/ADS/parallel/ParallelGraph.h) |
+| LCP array by the permuted LCP | [`parallel/ParallelText.h`](include/ADS/parallel/ParallelText.h) |
+| union-find with no lock, for many threads | [`concurrent/ConcurrentUnionFind.h`](include/ADS/concurrent/ConcurrentUnionFind.h) |
+| sort over the processes of MPI by regular sampling | [`distributed/DistributedSort.h`](include/ADS/distributed/DistributedSort.h) |
+
+```cpp
+#include "ADS/parallel/ParallelSort.h"
+#include "ADS/parallel/ThreadPool.h"
+
+ADS::ThreadPool pool( 8 );               // 8 threads, the caller included
+ADS::sort( pool , A );                   // the result of ADS::sort( A )
+```
+
+The pool needs nothing but the threads of the standard library (with
+CMake, `ADS::ADS` links them). The other executors are compiled only when
+asked for: with CMake, `-DADS_WITH_OPENMP=ON`, `-DADS_WITH_TBB=ON` and
+`-DADS_WITH_FASTFLOW=ON` (all off by default) link OpenMP and oneTBB and
+take the headers of FastFlow from `FASTFLOW_DIR` or, if it is not given,
+from its repository; without CMake, `-fopenmp`,
+`-DADS_WITH_TBB -ltbb` and `-DADS_WITH_FASTFLOW -I<fastflow>`. The header
+of FastFlow defines `NO_DEFAULT_MAPPING` (unless `ADS_FASTFLOW_MAPPING` is
+defined), since FastFlow otherwise pins its threads to the first cores of
+the machine whatever the affinity of the process. The sort over the
+processes of MPI, `ADS::distributed::sort()`, is a layer of its own, on
+`-DADS_WITH_MPI=ON` (Open MPI or MPICH found by CMake), tested on 1 to 4
+processes by `ctest` or by `make test-mpi`.
+
 ## Design by contract
 
 ADS follows the design by contract of B. Meyer: each operation checks its
