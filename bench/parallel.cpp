@@ -38,8 +38,8 @@
  *   GAP benchmark suite, and the visit of the examples of ParlayLib), per
  *   arc;
  * - the LCP array of texts of 10^6 and 4 10^6 symbols, of 4 letters or of
- *   words of a Zipf law (lcpArray against the one of the examples of
- *   ParlayLib), per symbol;
+ *   words of a Zipf law, from a suffix array of 32 bits (lcpArrayPhi
+ *   against the one of the examples of ParlayLib), per symbol;
  * - the insertion and the lookup of n distinct keys in the concurrent hash
  *   tables, all driven by the same threads of the pool
  *   (ConcurrentCuckooTable against tbb::concurrent_hash_map,
@@ -90,6 +90,7 @@
 #include "ADS/parallel/ParallelText.h"
 #include "ADS/priority/MultiwayMerge.h"
 #include "ADS/string/SuffixArray.h"
+#include "ADS/string/SuffixSorting.h"
 #include "ADS/parallel/TBBExecutor.h"
 #include "ADS/parallel/ThreadPool.h"
 #include "ADS/sort/Sort.h"
@@ -1150,22 +1151,18 @@ void texts( const std::vector< std::size_t > & sizes , int r ,
      }
     T.resize( n );
     }
-   const auto SA = ADS::suffixArraySais( T );
-   const auto ref = ADS::lcpArray( T , SA );
-   std::vector< std::size_t > L;
+   const auto SA = ADS::suffixArray< std::uint32_t >( T );
+   const auto ref = ADS::lcpArrayPhi( T , SA );
+   std::vector< std::uint32_t > L;
    Works S;
-   onExecutorsW( S , X , "ADS::lcpArray" , [ & ]( auto & ex ) {
-    L = ADS::lcpArray( ex , T , SA ); } );
+   onExecutorsW( S , X , "ADS::lcpArrayPhi" , [ & ]( auto & ex ) {
+    L = ADS::lcpArrayPhi( ex , T , SA ); } );
    if( threads == 1 )
-    addW( S , "seq" , "ADS::lcpArray (sequential)" , [ & ] {
-     L = ADS::lcpArray( T , SA ); } );
+    addW( S , "seq" , "ADS::lcpArrayPhi (sequential)" , [ & ] {
+     L = ADS::lcpArrayPhi( T , SA ); } );
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
-   parlay::sequence< unsigned > PSA;
-   if( runs( "parlay" ) )
-    PSA = parlay::tabulate( n , [ & ]( std::size_t i ) {
-     return( unsigned( SA[ i ] ) ); } );
    addW( S , "parlay" , "parlay lcp" , [ & ] {
-    const auto P = lcp( T , PSA );
+    const auto P = lcp( T , SA );
     L.assign( P.begin() , P.end() ); } );
 #endif
    runWorks( bench( "lcp" ) , kind ? "words" : "dna" , n , S , r ,

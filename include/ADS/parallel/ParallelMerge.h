@@ -38,7 +38,7 @@
  * \see P. J. Varman, S. D. Scheufler, B. R. Iyer, G. R. Ricard, Merging
  *      multiple lists on hierarchical-memory multiprocessors, Journal of
  *      Parallel and Distributed Computing 12(2), 171-177, 1991,
- *      doi:10.1016/0743-7315(91)90122-H
+ *      doi:10.1016/0743-7315(91)90022-2
  * \see J. Singler, P. Sanders, F. Putze, MCSTL: the multi-core standard
  *      template library, Euro-Par 2007 Parallel Processing, LNCS 4641,
  *      682-694, 2007, doi:10.1007/978-3-540-74466-5_72
