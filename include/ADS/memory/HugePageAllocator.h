@@ -13,14 +13,15 @@
  * of address space per block, which is not touched, so that it costs no
  * memory. Elsewhere than on Linux the large requests are only aligned.
  *
- * A large block given back is kept by its thread, up to 16 blocks and
- * 64 MB in all, and given again to the next request of the same size, as
- * the size-class allocators keep their freed spans (Berger et al.;
- * Leijen et al.): its pages are already faulted in, cleared and made huge,
- * so that a structure that is built and destroyed again and again, or
- * that grows through the same sizes (a vector that doubles, a pool whose
- * blocks double), pays the faults once; the blocks kept go back to the
- * system when the thread ends.
+ * A block of 8 MB or more given back is kept by its thread, up to 16
+ * blocks and 64 MB in all, and given again to the next request of the
+ * same size, as the size-class allocators keep their freed spans (Berger
+ * et al.; Leijen et al.): its pages are already faulted in, cleared and
+ * made huge, so that a structure that is built and destroyed again and
+ * again, or that grows through the same sizes (a vector that doubles, a
+ * pool whose blocks double), pays the faults once; a smaller block goes
+ * back to the allocator of the system, which serves it again from its
+ * heap, and the blocks kept go back to the system when the thread ends.
  *
  * The allocators are all equal, and stateless.
  *
@@ -77,6 +78,7 @@ namespace detail {
 struct HugeCache {
  static constexpr int N = 16;                            ///< the blocks
  static constexpr std::size_t BYTES = std::size_t( 64 ) << 20;   ///< all
+ static constexpr std::size_t LEAST = std::size_t( 8 ) << 20;    ///< each
 
  void * p[ N ];
  std::size_t r[ N ];
@@ -98,7 +100,7 @@ struct HugeCache {
 
  /// the block q of s bytes kept, if there is room
  bool keep( void * q , std::size_t s ) {
-  if( ( n == N ) || ( bytes + s > BYTES ) )
+  if( ( s < LEAST ) || ( n == N ) || ( bytes + s > BYTES ) )
    return( false );
   p[ n ] = q;
   r[ n++ ] = s;

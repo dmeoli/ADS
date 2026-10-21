@@ -21,8 +21,11 @@
  * left in it, which their owner destroys (or does not, if their destructor
  * is trivial) before the pool dies.
  *
+ * allocate() and deallocate() give and take back the raw slots, the
+ * objects built and destroyed by the caller, as with std::allocator.
+ *
  * The contracts [see Contract.h]: a block holds at least one slot, free()
- * needs an object of the pool; the invariant is that size() objects are
+ * and deallocate() need an object (a slot) of the pool; the invariant is that size() objects are
  * alive. The operations are defined in ObjectPool.tpp.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
@@ -99,6 +102,15 @@ class ObjectPool {
  /// \pre x was made by this pool and is alive
  void free( T * x );
 
+ /// the raw slot of an object, not built, as std::allocator gives it: the
+ /// caller builds the object in it (and destroys it before deallocate())
+ [[nodiscard]] T * allocate( void );
+
+ /// keeps the slot of x, whose object is already destroyed (or was never
+ /// built), for the next make() or allocate()
+ /// \pre x was given by this pool
+ void deallocate( T * x );
+
  /// the number of objects alive
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -128,6 +140,9 @@ class ObjectPool {
 
  /// frees the blocks
  void release( void ) noexcept;
+
+ /// the slot freed last, or the next one never used, a new block if none
+ Slot * slot( void );
 
  Slot * f_free = nullptr;   ///< the free slots, the last one freed first
  Slot * f_next = nullptr;   ///< the first slot never used of the last block

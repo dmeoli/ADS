@@ -34,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   maximum flow and of the properties of graphs named without citing them:
   Fredman and Tarjan, Ford, Moore, Karzanov, Malhotra-Kumar-Maheshwari,
   Karmarkar, Konig
+- SizeClassAllocator, the allocator of small blocks by size classes for one
+  thread (multiples of 16 up to 128 bytes, then 4 classes per power of 2
+  up to 32 KB), a free list and a page of 64 KB per class, the class found
+  with no table nor loop; ObjectPool::allocate() and deallocate(), the raw
+  slots; their tests in test/memory.cpp and the case mixed of
+  bench/memory.cpp, blocks of 8 to 4096 bytes, against new and delete,
+  mimalloc, jemalloc and std::pmr::unsynchronized_pool_resource
 - TieredVector, the tiered vector of Goodrich and Kloss: blocks of a power
   of 2 near sqrt( n ) items, each a circular buffer, the access in O( 1 )
   and the insertion and removal anywhere in O( sqrt( n ) ), 8 times
@@ -667,8 +674,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- HugePageAllocator keeps the large blocks given back, up to 16 blocks and
-  64 MB per thread, for the next requests of the same size, which find
+- HugePageAllocator keeps the blocks of 8 MB or more given back, up to 16
+  blocks and 64 MB per thread, for the next requests of the same size, which find
   their pages faulted in and huge: an ObjectPool built again and again
   3.5 times faster at 10^6 objects (7 ns against 25, mimalloc 16.5), 1.3
   times in the churn; the test in test/memory.cpp

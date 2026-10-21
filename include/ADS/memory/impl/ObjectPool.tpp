@@ -73,8 +73,13 @@ void ObjectPool< T , A >::swap( ObjectPool & other ) noexcept
  }
 
 template< class T , class A >
-template< class... Args >
-inline T * ObjectPool< T , A >::make( Args &&... args )
+inline T * ObjectPool< T , A >::allocate( void )
+{
+ return( reinterpret_cast< T * >( slot()->object ) );
+ }
+
+template< class T , class A >
+inline typename ObjectPool< T , A >::Slot * ObjectPool< T , A >::slot( void )
 {
  Slot * s;
  if( f_free )                               // the last one freed
@@ -92,6 +97,15 @@ inline T * ObjectPool< T , A >::make( Args &&... args )
    }
   s = f_next++;
   }
+ ++f_size;
+ return( s );
+ }
+
+template< class T , class A >
+template< class... Args >
+inline T * ObjectPool< T , A >::make( Args &&... args )
+{
+ Slot * s = slot();
  T * x;
  try {
   if constexpr( std::is_constructible_v< T , Args... > )
@@ -104,9 +118,9 @@ inline T * ObjectPool< T , A >::make( Args &&... args )
  catch( ... ) {
   s->next = f_free;                         // the slot stays free
   f_free = s;
+  --f_size;
   throw;
   }
- ++f_size;
  return( x );
  }
 
@@ -115,6 +129,16 @@ inline void ObjectPool< T , A >::free( T * x )
 {
  ADS_PRE( ( x != nullptr ) && ( f_size > 0 ) );
  std::destroy_at( x );
+ Slot * s = reinterpret_cast< Slot * >( x );
+ s->next = f_free;
+ f_free = s;
+ --f_size;
+ }
+
+template< class T , class A >
+inline void ObjectPool< T , A >::deallocate( T * x )
+{
+ ADS_PRE( ( x != nullptr ) && ( f_size > 0 ) );
  Slot * s = reinterpret_cast< Slot * >( x );
  s->next = f_free;
  f_free = s;

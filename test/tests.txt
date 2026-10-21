@@ -544,6 +544,8 @@ engineered_queues  mpsc-queue              coda di molti produttori a corsie
 
 # the engineered memory beyond the arena and the pool
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura
+memory  size-class-allocator  allocatore per classi di misura
+memory  pool-raw-slots        posti del pool senza costruzione
 
 # the engineered paths of the rearrangements, beyond the book
 sequences  dutch-flag-branchless  bandiera olandese senza salti
