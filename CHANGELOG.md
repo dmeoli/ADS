@@ -167,6 +167,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ducc0, on complex, real and single precision data, the cosines of type
   2, many transforms, 2 dimensions and convolutions, with the cost of the
   plans apart; POCKETFFT and DUCC0 in the makefile
+- PartitionedEliasFano, the partitioned Elias-Fano of Ottaviano and
+  Venturini on blocks of 128 items, each full, a vector of bits or
+  Elias-Fano relative to the end of the block before, whichever is
+  shortest, with records of fixed width holding the last item, the place
+  of the code and the kind of each block, and the last items of every
+  8-th block in the layout of Eytzinger for nextGEQ; its test against a
+  scan on uniform, dense, run and clustered sequences, and its cells in
+  the benchmark with a clustered sequence beside the uniform one
 - HuffmanWaveletTree, the wavelet tree shaped by the code of Huffman of
   Makinen and Navarro: the bits of the trie of the canonical codes in one
   vector with rank and select (RankSelect or CompactRankSelect), access,

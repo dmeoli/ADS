@@ -31,7 +31,9 @@
 #include "ADS/compression/StreamVByte.h"
 #include "ADS/compression/Tans.h"
 #include "ADS/succinct/CompactRankSelect.h"
+#include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
+#include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/RankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
@@ -307,6 +309,65 @@ ADS_TEST( "huffman-fm-index" )
  std::mt19937_64 g( 19 );
  huffmanFMCheck< RankSelect >( g );
  huffmanFMCheck< CompactRankSelect >( g );
+ }
+
+// the partitioned Elias-Fano against a scan: every access, the nextGEQ
+// of every value from below the first item to above the last and every
+// contains, on sequences of many sizes around the blocks of 128 items,
+// uniform (blocks by Elias-Fano), dense (blocks as vectors), of runs (full
+// blocks) and of clusters mixing the three; fewer bits than Elias-Fano on
+// the clusters; the empty sequence and the bounds
+ADS_TEST( "partitioned-elias-fano" )
+{
+ std::mt19937_64 g( 23 );
+ std::array< std::size_t , 3 > seen{};
+ auto check = [ & ]( const std::vector< std::uint64_t > & x ,
+                     std::uint64_t u ) {
+  const PartitionedEliasFano P( x , u );
+  CHECK( P.size() == x.size() && P.universe() == u );
+  bool ok = std::equal( x.begin() , x.end() , P.begin() );
+  const std::uint64_t top = x.empty() ? 3 : x.back() + 3;
+  const std::uint64_t step = 1 + top / 5000;
+  for( std::uint64_t v = 0 ; ok && ( v <= top ) ; v += step ) {
+   const std::size_t r = std::size_t( std::lower_bound( x.begin() , x.end() ,
+                                                        v ) - x.begin() );
+   ok = ( P.nextGEQ( v ) == r ) &&
+        ( P.contains( v ) == ( ( r < x.size() ) && ( x[ r ] == v ) ) );
+   }
+  for( std::size_t i = 0 ; ok && ( i < x.size() ) ; i += 1 + i / 100 )
+   ok = ( P.nextGEQ( x[ i ] ) == i ) && P.contains( x[ i ] ) &&
+        ( ( x[ i ] == 0 ) || ( P.nextGEQ( x[ i ] - 1 ) <= i ) );
+  CHECK( ok );
+  const auto k = P.kinds();
+  for( int t = 0 ; t < 3 ; ++t ) seen[ t ] += k[ t ];
+  CHECK_THROWS( ( void )P.access( x.size() ) , contract_violation );
+  };
+ check( {} , 0 );
+ check( { 0 } , 1 );
+ check( { 5 } , 100 );
+ for( const std::size_t n : { 1 , 127 , 128 , 129 , 256 , 1000 , 20000 } ) {
+  std::vector< std::uint64_t > uni , dense , run , mix;
+  std::uint64_t a = 0 , b = 0 , c = g() % 1000 , d = 0;
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   a += 1 + g() % 300;                     // gaps of mean 150
+   b += 1 + g() % 3;                       // gaps of mean 2
+   c += 1;                                 // a run
+   d += ( i / 128 ) % 3 == 0 ? 1 : ( i / 128 ) % 3 == 1 ? 1 + g() % 2
+                                                     : 1 + g() % 5000;
+   uni.push_back( a );
+   dense.push_back( b );
+   run.push_back( c );
+   mix.push_back( d );
+   }
+  check( uni , uni.back() + 1 );
+  check( dense , dense.back() + 7 );
+  check( run , run.back() + 1 );
+  check( mix , mix.back() + 1000 );
+  if( n == 20000 )
+   CHECK( PartitionedEliasFano( mix ).sizeInBits() <
+          EliasFano( mix ).sizeInBits() / 2 );
+  }
+ CHECK( seen[ 0 ] > 0 && seen[ 1 ] > 0 && seen[ 2 ] > 0 );
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank
