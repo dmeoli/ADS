@@ -36,6 +36,7 @@
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
+#include "ADS/succinct/InterleavedRankSelect.h"
 #include "ADS/succinct/MoveStructure.h"
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
@@ -569,6 +570,49 @@ ADS_TEST( "move-r-index" )
   rep += copy;
   }
  check( rep );
+ }
+
+// the counts inside the lines against a scan: every rank and every select
+// of both bits on vectors of many sizes, around the lines of 496 bits and
+// the superblocks of 63488, and densities (the guesses of select far off
+// on the long runs of one bit); the vector from its words; the bounds
+ADS_TEST( "interleaved-rank-select" )
+{
+ std::mt19937_64 g( 43 );
+ auto check = [ & ]( const std::vector< bool > & R ) {
+  BitVector b;
+  for( const bool x : R ) b.push_back( x );
+  const InterleavedRankSelect S( b );
+  const InterleavedRankSelect T( std::span< const Word >( b.words() ) ,
+                                 b.size() );
+  std::size_t ones = 0 , zeros = 0;
+  bool ok = ( S.size() == R.size() ) && ( T.ones() == S.ones() );
+  for( std::size_t i = 0 ; ok && ( i <= R.size() ) ; ++i ) {
+   ok = ( S.rank1( i ) == ones ) && ( S.rank0( i ) == zeros ) &&
+        ( T.rank1( i ) == ones );
+   if( i == R.size() ) break;
+   ok = ok && ( S[ i ] == R[ i ] );
+   if( R[ i ] ) ok = ok && ( S.select1( ++ones ) == i );
+   else ok = ok && ( S.select0( ++zeros ) == i );
+   }
+  CHECK( ok && S.ones() == ones && S.zeros() == zeros );
+  CHECK( S.directoryBits() <= R.size() / 20 + 2048 );
+  CHECK_THROWS( ( void )S.select1( ones + 1 ) , contract_violation );
+  CHECK_THROWS( ( void )S.select0( zeros + 1 ) , contract_violation );
+  CHECK_THROWS( ( void )S.rank1( R.size() + 1 ) , contract_violation );
+  };
+ for( const std::size_t n : { 0 , 1 , 495 , 496 , 497 , 4096 , 63487 ,
+                              63488 , 63489 , 140000 } )
+  for( const double p : { 0.0 , 0.002 , 0.1 , 0.5 , 0.99 , 1.0 } ) {
+   std::vector< bool > R( n );
+   std::bernoulli_distribution B( p );
+   for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = B( g );
+   check( R );
+   }
+ std::vector< bool > runs;
+ for( int k = 0 ; k < 8 ; ++k )
+  runs.insert( runs.end() , k % 2 ? 70000 : 300 , k % 2 );
+ check( runs );
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank

@@ -167,6 +167,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ducc0, on complex, real and single precision data, the cosines of type
   2, many transforms, 2 dimensions and convolutions, with the cost of the
   plans apart; POCKETFFT and DUCC0 in the makefile
+- InterleavedRankSelect, the layout of SPIDER of Laws et al.: each line
+  of 512 bits holds 496 bits of the vector and the 1s before it since its
+  superblock of 128 lines in 16 bits, so that rank reads one line, and
+  select guesses the line between two samples by interpolation and
+  corrects it a line at a time; its test (also from the words) and its
+  cells in the benchmark against the directories of the same space
 - MoveStructure, the move structure of Nishimoto and Tabei: a
   permutation that shifts each of its intervals alike, balanced so that
   no image holds 4 starts (an image cut at its third start), with the

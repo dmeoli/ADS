@@ -1677,6 +1677,7 @@ engineered_succinct  binary-packing   SIMD-BP128 e PFor, blocchi di 128 interi
 engineered_succinct  r-index          r-index, count e locate in spazio O( r )
 engineered_succinct  move-structure   move structure bilanciata di Nishimoto e Tabei
 engineered_succinct  move-r-index     r-index su move structure, passi O( 1 )
+engineered_succinct  interleaved-rank-select  conteggi nelle linee, rank con un accesso
 engineered_succinct  rrr-bit-vector   vettore di bit compresso di RRR
 engineered_succinct  wavelet-matrix   wavelet matrix, rank, select, quantili
 engineered_succinct  huffman-coder    Huffman a tabella, quattro flussi
