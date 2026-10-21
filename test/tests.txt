@@ -1672,3 +1672,9 @@ engineered_memory  pool-allocate-shared       allocate_shared in un posto solo
 engineered_memory  concurrent-pool            heap per thread, un thread solo
 engineered_memory  concurrent-pool-threads    liberazioni da altri thread
 
+# the engineered structures of the rows of a model, beyond the book
+engineered_sparse  position-index             indice delle posizioni, Robin Hood
+engineered_sparse  position-index-renumber    rinumerazione dopo le cancellazioni
+engineered_sparse  sparse-assembly            CSC e CSR da triplette, somme
+engineered_sparse  dynamic-csr                righe aggiunte e tolte a blocchi
+engineered_sparse  row-fingerprint            impronte delle righe, zeri e NaN

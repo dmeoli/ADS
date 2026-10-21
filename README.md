@@ -390,8 +390,15 @@ libmorton, Hinnant's combinations and the programs DLX1, DLX2 and SSXCC
 of Knuth.
 `std::pmr`, Boost.Pool, mimalloc and jemalloc, and
 [`bench/allocators.cpp`](bench/allocators.cpp) the standard allocators in
-the node containers, in `std::allocate_shared` and across two threads,
-tested in [`test/engineered_memory.cpp`](test/engineered_memory.cpp).
+the node containers, in `std::allocate_shared` and across two threads;
+[`bench/positions.cpp`](bench/positions.cpp),
+[`bench/assembly.cpp`](bench/assembly.cpp) and
+[`bench/fingerprints.cpp`](bench/fingerprints.cpp) measure the structures
+of the rows of a model (the index of their positions, their assembly for
+the solvers of linear programs and their fingerprints) against the
+standard library, Boost and Eigen; their tests are in
+[`test/engineered_memory.cpp`](test/engineered_memory.cpp) and
+[`test/engineered_sparse.cpp`](test/engineered_sparse.cpp).
 
 | What | Header | Test |
 |---|---|---|
@@ -416,6 +423,10 @@ tested in [`test/engineered_memory.cpp`](test/engineered_memory.cpp).
 | allocator of the large blocks on transparent huge pages | [`memory/HugePageAllocator.h`](include/ADS/memory/HugePageAllocator.h) | `engineered.huge-page-allocator` |
 | standard allocator of size classes of 8 bytes, free lists by page, for the node containers and `std::allocate_shared` (mimalloc) | [`memory/PoolAllocator.h`](include/ADS/memory/PoolAllocator.h) | `engineered_memory.pool-allocator-containers` |
 | pool of size classes shared by threads, a heap per thread, the frees of the others sent back in batches (mimalloc; snmalloc) | [`memory/ConcurrentPool.h`](include/ADS/memory/ConcurrentPool.h) | `engineered_memory.concurrent-pool-threads` |
+| index of the positions of objects in a vector, renumbered in one pass after an erasure by rank (Jacobson) | [`dictionary/PositionIndex.h`](include/ADS/dictionary/PositionIndex.h) | `engineered_sparse.position-index-renumber` |
+| fingerprints of rows of doubles, dense and sparse, +0 equal to -0 and every NaN to every NaN | [`dictionary/RowFingerprint.h`](include/ADS/dictionary/RowFingerprint.h) | `engineered_sparse.row-fingerprint` |
+| compressed sparse columns or rows from triplets, repetitions summed, into the arrays of the caller (Gustavson; Davis) | [`numeric/SparseAssembly.h`](include/ADS/numeric/SparseAssembly.h) | `engineered_sparse.sparse-assembly` |
+| compressed sparse rows that grow by rows and shrink by sets of rows in one pass | [`numeric/DynamicCsr.h`](include/ADS/numeric/DynamicCsr.h) | `engineered_sparse.dynamic-csr` |
 | SplitMix64, Zobrist and simple tabulation hashing | [`dictionary/RandomHashing.h`](include/ADS/dictionary/RandomHashing.h) | `engineered.random-hashing` |
 | hashes of words and strings by folded products of 128 bits, stripes in AVX2 or AVX-512 past 256 bytes (wyhash, XXH3) | [`dictionary/FastHash.h`](include/ADS/dictionary/FastHash.h) | `hashing.fast-hash` |
 | filter of Bloom in blocks of 256 bits, one bit in each of 8 words (Putze et al.; Parquet) | [`set/BlockedBloomFilter.h`](include/ADS/set/BlockedBloomFilter.h) | `hashing.blocked-bloom` |

@@ -79,6 +79,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   test/engineered_memory.cpp and bench/allocators.cpp, against
   std::allocator, std::pmr, boost::fast_pool_allocator and mimalloc, also
   with the frees in a second thread
+- PositionIndex, the index of the positions of objects in a vector on
+  FlatHashTable, whose renumber() takes the sorted positions erased, drops
+  their keys and moves every other position by its rank among them, in one
+  walk over the table with a bit vector and the counts of its words;
+  FlatHashTable::forEach() with the values to change in place; its tests in
+  test/engineered_sparse.cpp and bench/positions.cpp, against
+  std::unordered_map and boost::unordered_flat_map
+- compressTriplets(), assembleCsc() and assembleCsr(), the compressed
+  sparse columns or rows of triplets into the arrays beg, ind and val of
+  the caller, the repetitions summed in the order of the input, by one
+  distribution by the major index, a mark per minor index and the sort of
+  each major index; DynamicCsr, the compressed sparse rows that grow by
+  rows and batches of rows and shrink by sorted sets of rows in one pass;
+  their tests in test/engineered_sparse.cpp and bench/assembly.cpp, against
+  setFromTriplets() of Eigen, an assembly by std::map and a vector of rows
+- rowFingerprint() and sameRow(), the fingerprints of dense and sparse
+  rows of doubles on hashBytes(), +0 equal to -0 and every NaN to every
+  NaN, and their exact comparison; their tests in
+  test/engineered_sparse.cpp and bench/fingerprints.cpp, against std::hash,
+  boost::hash_range and std::equal
 - DialQueue, the monotone bucket queue of Dial on a circular window of W
   buckets with a radix heap for the keys beyond it, the next bucket in use
   found by a mask of W bits; RadixHeap::peekKey(), the least key without

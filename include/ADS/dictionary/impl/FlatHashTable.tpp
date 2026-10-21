@@ -319,6 +319,16 @@ void FlatHashTable< K , V , H , Eq >::forEach( F && f ) const
  }
 
 template< class K , class V , class H , class Eq >
+template< class F >
+void FlatHashTable< K , V , H , Eq >::forEach( F && f )
+{
+ each( [ & ]( std::size_t i ) {
+  auto & kv = slot( i )->kv;
+  f( std::as_const( kv.first ) , kv.second );
+  } );
+ }
+
+template< class K , class V , class H , class Eq >
 typename FlatHashTable< K , V , H , Eq >::const_iterator
 FlatHashTable< K , V , H , Eq >::begin( void ) const
 {

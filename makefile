@@ -91,6 +91,8 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries \
             sparse succinct compression allocators \
+            sparse succinct compression allocators positions assembly \
+            fingerprints \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
@@ -221,6 +223,10 @@ $(BUILD)/bench-memory: bench/memory.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 $(BUILD)/bench-allocators: bench/allocators.cpp bench/Bench.h $(HEADERS) \
                            | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(MEMFLAGS)
+
+$(BUILD)/bench-assembly: bench/assembly.cpp bench/Bench.h $(HEADERS) \
+                         | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS)
 $(BUILD)/bench-succinct: bench/succinct.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(OPTFLAGS) $(call OPTLIBS,succinct)
 

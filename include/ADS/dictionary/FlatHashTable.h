@@ -301,6 +301,10 @@ class FlatHashTable {
  template< class F >
  void forEach( F && f ) const;
 
+ /// f( k , v ) on the pairs, place after place, v to change in place
+ template< class F >
+ void forEach( F && f );
+
  void swap( FlatHashTable & o ) noexcept;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
