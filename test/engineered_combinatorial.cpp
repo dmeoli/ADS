@@ -4,7 +4,8 @@
 /** @file
  * Tests of the engineered combinatorial structures, beyond the book: the
  * operations on arrays of words, the generation of permutations and
- * combinations, and the exact cover on sparse sets. Each one is checked
+ * combinations, the exact cover on sparse sets, and the algorithms of the
+ * book on the structures of std, Boost and ADS. Each one is checked
  * against the algorithm of the book or a reference of the standard
  * library, on the limits (empty, one item, the largest sizes) and on
  * random and adversarial inputs, at the level 3 of the contracts.
@@ -29,13 +30,30 @@
 #include "ADS/combinatorial/FastBitwise.h"
 #include "ADS/combinatorial/FastGeneration.h"
 #include "ADS/combinatorial/Generation.h"
+#include "ADS/backtrack/SatSolvers.h"
+#include "ADS/dictionary/FastHash.h"
+#include "ADS/dictionary/FlatHashTable.h"
+#include "ADS/intractable/FifteenPuzzle.h"
+#include "ADS/intractable/Pseudopolynomial.h"
+#include "ADS/priority/DaryHeap.h"
+#include "ADS/succinct/BitVector.h"
+
+#if __has_include( <boost/heap/d_ary_heap.hpp> )
+ #include <boost/dynamic_bitset.hpp>
+ #include <boost/heap/d_ary_heap.hpp>
+ #include <boost/heap/pairing_heap.hpp>
+ #include <boost/unordered/unordered_flat_map.hpp>
+ #define ADS_TEST_BOOST 1
+#endif
 
 #include <algorithm>
 #include <bit>
 #include <cstdint>
 #include <random>
 #include <set>
+#include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -306,6 +324,88 @@ ADS_TEST( "fast-exact-cover" )
  CHECK_THROWS( P.addOption( { 0 , 2 } , { 1 , 0 } ) , contract_violation );
  CHECK_THROWS( P.addOption( { 2 } ) , contract_violation );
  }
+/// the hash of a configuration, its bytes
+struct BoardHash {
+ using is_avalanching = void;
+ std::size_t operator()( const Board & b ) const {
+  return( std::size_t( hashBytes( b.data() , b.size() * sizeof( int ) ) ) );
+  }
+ };
+
+// the algorithms of the book on the structures of std, Boost and ADS: the
+// clause learning on the heaps of std, of Boost and of ADS, with the same
+// decisions and conflicts; the A* of the fifteen puzzle on std::map,
+// std::unordered_map, Boost and FlatHashTable, with the same nodes; the
+// subset sum on std::vector< bool >, boost::dynamic_bitset and BitVector
+ADS_TEST( "book-structures" )
+{
+ using Pair = std::pair< double , int >;
+ std::mt19937 g( 41 );
+ for( int trial = 0 ; trial < 30 ; ++trial ) {
+  const int n = 20 + int( g() % 60 );
+  Cnf F;
+  for( int i = 0 ; i < int( 4.2 * n ) ; ++i ) {
+   Clause c;
+   for( int j = 0 ; j < 3 ; ++j )
+    c.push_back( ( 1 + int( g() % n ) ) * ( g() % 2 ? 1 : -1 ) );
+   F.push_back( c );
+   }
+  Cdcl A( F , n );
+  BasicCdcl< DaryHeap< Pair , std::greater< Pair > , 4 > > B( F , n );
+  const auto a = A.solve();
+  CHECK( int( B.solve() ) == int( a ) );
+  CHECK( ( A.decisions() == B.decisions() ) &&
+         ( A.conflicts() == B.conflicts() ) );
+  if( a == Cdcl::Result::SAT ) CHECK( A.model() == B.model() );
+#ifdef ADS_TEST_BOOST
+  BasicCdcl< boost::heap::d_ary_heap< Pair , boost::heap::arity< 4 > > > C(
+                                                                     F , n );
+  BasicCdcl< boost::heap::pairing_heap< Pair > > D( F , n );
+  CHECK( int( C.solve() ) == int( a ) );
+  CHECK( int( D.solve() ) == int( a ) );
+  CHECK( ( C.decisions() == A.decisions() ) &&
+         ( D.conflicts() == A.conflicts() ) );
+#endif
+  }
+ const Board goal = puzzleGoal( 3 );
+ for( int trial = 0 ; trial < 20 ; ++trial ) {
+  Board B = goal;
+  for( int i = 0 ; i < 25 ; ++i ) {
+   const auto M = puzzleMoves( B , 3 );
+   B = M[ g() % M.size() ];
+   }
+  long v1 = 0 , v2 = 0 , v3 = 0;
+  const auto s1 = solvePuzzle( B , 3 , &v1 );
+  const auto s2 = solvePuzzle< std::unordered_map< Board , int , BoardHash > >(
+                   B , 3 , &v2 );
+  const auto s3 = solvePuzzle< FlatHashTable< Board , int , BoardHash > >(
+                   B , 3 , &v3 );
+  CHECK( s1 && ( s1 == s2 ) && ( s1 == s3 ) && ( v1 == v2 ) && ( v1 == v3 ) );
+#ifdef ADS_TEST_BOOST
+  long v4 = 0;
+  const auto s4 = solvePuzzle< boost::unordered_flat_map< Board , int ,
+                                                           BoardHash > >(
+                   B , 3 , &v4 );
+  CHECK( ( s4 == s1 ) && ( v4 == v1 ) );
+#endif
+  }
+ for( int trial = 0 ; trial < 100 ; ++trial ) {
+  const int n = int( g() % 20 );
+  std::vector< long > A( n );
+  for( auto & a : A ) a = long( g() % 200 );
+  const long k = long( g() % 1500 );
+  const bool want = subsetSumDP( A , k );
+  CHECK( subsetSumDP< BitVector >( A , k ) == want );
+#ifdef ADS_TEST_BOOST
+  CHECK( subsetSumDP< boost::dynamic_bitset<> >( A , k ) == want );
+#endif
+  }
+ std::vector< std::vector< bool > > r1 , r2;
+ subsetSumDP( { 3 , 5 , 2 } , 9 , &r1 );
+ subsetSumDP< BitVector >( { 3 , 5 , 2 } , 9 , &r2 );
+ CHECK( r1 == r2 );
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/

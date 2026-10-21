@@ -93,7 +93,8 @@ inline std::optional< std::vector< bool > > dpll( const Cnf & F , int n )
  return( x );
  }
 
-inline Cdcl::Cdcl( const Cnf & F , int n )
+template< class Heap >
+BasicCdcl< Heap >::BasicCdcl( const Cnf & F , int n )
  : f_F( F ) , f_n( n )
 {
  ADS_PRE( n >= 0 );                         // before sizing by n
@@ -106,7 +107,7 @@ inline Cdcl::Cdcl( const Cnf & F , int n )
  f_phase.assign( n , false );
  f_seen.assign( n , false );
  f_act.assign( n , 0 );
- for( int v = 0 ; v < n ; ++v ) f_heap.emplace( 0 , v );
+ for( int v = 0 ; v < n ; ++v ) f_heap.push( std::pair( 0.0 , v ) );
  for( const auto & c : F ) {
   std::vector< int > k;
   for( int l : c ) k.push_back( code( l ) );
@@ -127,14 +128,16 @@ inline Cdcl::Cdcl( const Cnf & F , int n )
   }
  }
 
-inline int Cdcl::value( int c ) const
+template< class Heap >
+int BasicCdcl< Heap >::value( int c ) const
 {
  const int x = f_assign[ c >> 1 ];
  if( x < 0 ) return( 0 );
  return( ( x == 1 ) == ( ( c & 1 ) == 0 ) ? 1 : -1 );
  }
 
-inline void Cdcl::enqueue( int c , int reason )
+template< class Heap >
+void BasicCdcl< Heap >::enqueue( int c , int reason )
 {
  const int v = c >> 1;
  f_assign[ v ] = ( c & 1 ) == 0;
@@ -143,7 +146,8 @@ inline void Cdcl::enqueue( int c , int reason )
  f_trail.push_back( c );
  }
 
-inline int Cdcl::addClause( std::vector< int > c )
+template< class Heap >
+int BasicCdcl< Heap >::addClause( std::vector< int > c )
 {
  const int ci = int( f_C.size() );
  f_watch[ c[ 0 ] ].push_back( ci );         // the first two watched
@@ -152,7 +156,8 @@ inline int Cdcl::addClause( std::vector< int > c )
  return( ci );
  }
 
-inline int Cdcl::propagate( void )
+template< class Heap >
+int BasicCdcl< Heap >::propagate( void )
 {
  while( f_qhead < f_trail.size() ) {
   const int fl = f_trail[ f_qhead++ ] ^ 1;  // the literal now false
@@ -189,20 +194,23 @@ inline int Cdcl::propagate( void )
  return( -1 );
  }
 
-inline void Cdcl::bump( int v )
+template< class Heap >
+void BasicCdcl< Heap >::bump( int v )
 {
  if( ( f_act[ v ] += f_inc ) > 1e100 ) {    // rescale all, rebuild
   for( auto & a : f_act ) a *= 1e-100;
   f_inc *= 1e-100;
-  f_heap = {};
-  for( int u = 0 ; u < f_n ; ++u ) f_heap.emplace( f_act[ u ] , u );
+  f_heap = Heap();
+  for( int u = 0 ; u < f_n ; ++u )
+   f_heap.push( std::pair( f_act[ u ] , u ) );
   }
  else
-  f_heap.emplace( f_act[ v ] , v );         // the old entry goes stale
+  f_heap.push( std::pair( f_act[ v ] , v ) );   // the old entry goes stale
  }
 
-inline void Cdcl::analyze( int confl , std::vector< int > & learnt ,
-                           int & back )
+template< class Heap >
+void BasicCdcl< Heap >::analyze( int confl , std::vector< int > & learnt ,
+                                 int & back )
 {
  learnt.assign( 1 , -1 );                   // room for the UIP
  int pathC = 0 , p = -1;
@@ -237,7 +245,8 @@ inline void Cdcl::analyze( int confl , std::vector< int > & learnt ,
  f_inc /= 0.95;                             // the decay of VSIDS
  }
 
-inline void Cdcl::cancelUntil( int lev )
+template< class Heap >
+void BasicCdcl< Heap >::cancelUntil( int lev )
 {
  if( level() <= lev ) return;
  const auto from = std::size_t( f_trailLim[ lev ] );
@@ -246,14 +255,15 @@ inline void Cdcl::cancelUntil( int lev )
   f_phase[ v ] = f_assign[ v ] == 1;        // phase saving
   f_assign[ v ] = -1;
   f_reason[ v ] = -1;
-  f_heap.emplace( f_act[ v ] , v );
+  f_heap.push( std::pair( f_act[ v ] , v ) );
   }
  f_trail.resize( f_trailLim[ lev ] );
  f_trailLim.resize( lev );
  f_qhead = f_trail.size();
  }
 
-inline int Cdcl::pickBranch( void )
+template< class Heap >
+int BasicCdcl< Heap >::pickBranch( void )
 {
  while( ! f_heap.empty() ) {
   const auto [ a , v ] = f_heap.top();
@@ -282,7 +292,9 @@ inline long luby( long i )
 
 }  // end( namespace detail )
 
-inline Cdcl::Result Cdcl::solve( long maxConflicts )
+template< class Heap >
+typename BasicCdcl< Heap >::Result BasicCdcl< Heap >::solve(
+                                                     long maxConflicts )
 {
  if( f_empty ) return( Result::UNSAT );
  std::vector< int > learnt;
@@ -323,7 +335,8 @@ inline Cdcl::Result Cdcl::solve( long maxConflicts )
   }
  }
 
-inline const std::vector< bool > & Cdcl::model( void ) const
+template< class Heap >
+const std::vector< bool > & BasicCdcl< Heap >::model( void ) const
 {
  return( f_model );
  }

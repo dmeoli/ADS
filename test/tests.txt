@@ -498,6 +498,7 @@ engineered  concurrent-cuckoo-threads cuckoo concorrente, su più thread
 engineered_combinatorial  fast-bitwise     Harley-Seal, pdep, select
 engineered_combinatorial  fast-generation  permutazioni e combinazioni veloci
 engineered_combinatorial  fast-exact-cover copertura esatta, celle danzanti
+engineered_combinatorial  book-structures  il libro su strutture std, Boost, ADS
 
 # the engineered hashing, beyond the book
 hashing  fast-hash             funzioni hash per prodotti ripiegati

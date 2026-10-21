@@ -14,7 +14,10 @@
  * consistent heuristic, so that the first goal extracted is optimal). A
  * configuration is reached from the goal if and only if the parity of
  * its permutation, plus that of the row of the hole when n is even,
- * matches the goal [see solvable()].
+ * matches the goal [see solvable()]. The map of the least level of each
+ * configuration is a parameter of solvePuzzle(), std::map by default, so
+ * that the same search runs on the maps of std, Boost or ADS with the same
+ * nodes.
  *
  * Beyond the text, two searches that work with any goal, e.g., the spiral
  * one of puzzleSpiralGoal() (1 2 3 / 8 0 4 / 7 6 5 for n = 3): puzzleBFS()
@@ -61,6 +64,7 @@
 
 #include <cstdlib>
 #include <map>
+#include <type_traits>
 #include <optional>
 #include <queue>
 #include <set>
@@ -118,11 +122,15 @@ inline std::optional< std::vector< Board > > puzzleDFS(
 inline bool solvable( const Board & B , int n );
 
 /// the configurations from B to the goal of a shortest solution, or
-/// nothing; the number of nodes extracted goes to *visited, if given
+/// nothing; the number of nodes extracted goes to *visited, if given; the
+/// least level of each configuration is kept in a Map, std::map by
+/// default, or another map of std or Boost, or a hash table of ADS
+/// [see FlatHashTable.h], with the same nodes visited
 /// \pre B is a configuration of n x n squares
 /// \post a solution returned goes from B to the goal one move at a time
-inline std::optional< std::vector< Board > > solvePuzzle(
-                        const Board & B , int n , long * visited = nullptr );
+template< class Map = std::map< Board , int > >
+std::optional< std::vector< Board > > solvePuzzle( const Board & B , int n ,
+                                                   long * visited = nullptr );
 
 /*--------------------------------------------------------------------------*/
 

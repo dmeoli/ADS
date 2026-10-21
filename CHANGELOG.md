@@ -134,6 +134,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with the forced moves (FastExactCover.h)
 - Bitwise.h cites HAKMEM, Gray and Morton, Generation.h Trotter, Johnson
   and Heap
+- the algorithms of the book on the structures of std, Boost and ADS:
+  BasicCdcl, the clause learning of SatSolvers.h on any heap of pairs
+  (Cdcl is the one on std::priority_queue), solvePuzzle() on any map of
+  the levels, subsetSumDP() on any vector of bits, each with the same
+  counts on all of them, tested in test/engineered_combinatorial.cpp and
+  measured by bench/backtrack.cpp on std::priority_queue, the heaps of
+  Boost and DaryHeap, on std::map, std::unordered_map,
+  boost::unordered_flat_map and FlatHashTable, and on std::vector< bool >,
+  boost::dynamic_bitset and BitVector
 - SatSolvers.h cites Davis and Putnam, the restarts of Luby, Sinclair and
   Zuckerman and the phase saving of Pipatsrisawat and Darwiche
 
