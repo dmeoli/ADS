@@ -426,6 +426,7 @@ RecSplit, and the concurrent cuckoo table with libcuckoo,
 | tree of losers with the keys in its nodes, matches with no jump on the integers (Knuth; MCSTL, tlx) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.flat-loser-tree` |
 | merge of k sorted ranges by a lazy funnel of binary mergers (Frigo et al.; Brodal et al.) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.multiway-merge` |
 | cuckoo table shared by threads, buckets of 4 places, locks on 2048 stripes, paths searched in breadth without locks (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
+| cuckoo table shared by threads, buckets of 4 places, one lock per region of buckets, lookups without locks under versions (seqlock), huge pages (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
 
 ## Sorting
 
