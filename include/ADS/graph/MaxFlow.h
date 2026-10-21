@@ -46,6 +46,15 @@
  * \see E. A. Dinic, Algorithm for solution of a problem of maximum flow in
  *      a network with power estimation, Soviet Mathematics Doklady 11,
  *      1277-1280, 1970
+ * \see A. V. Karzanov, Determining the maximal flow in a network by the
+ *      method of preflows, Soviet Mathematics Doklady 15, 434-437, 1974
+ * \see V. M. Malhotra, M. P. Kumar, S. N. Maheshwari, An O( |V|^3 )
+ *      algorithm for finding maximum flows in networks, Information
+ *      Processing Letters 7(6), 277-278, 1978,
+ *      doi:10.1016/0020-0190(78)90016-9
+ * \see N. Karmarkar, A new polynomial-time algorithm for linear
+ *      programming, Combinatorica 4(4), 373-395, 1984,
+ *      doi:10.1007/BF02579150
  * \see A. V. Goldberg, R. E. Tarjan, A new approach to the maximum-flow
  *      problem, Journal of the ACM 35(4), 921-940, 1988,
  *      doi:10.1145/48014.61051
