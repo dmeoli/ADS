@@ -479,6 +479,7 @@ standard library, Boost and Eigen; their tests are in
 | FM-index on the wavelet tree of Huffman, the succinct suffix array (Makinen and Navarro) | [`compression/HuffmanFMIndex.h`](include/ADS/compression/HuffmanFMIndex.h) | `engineered_succinct.huffman-fm-index` |
 | partitioned Elias-Fano, blocks full, as vectors or by Elias-Fano (Ottaviano and Venturini) | [`succinct/PartitionedEliasFano.h`](include/ADS/succinct/PartitionedEliasFano.h) | `engineered_succinct.partitioned-elias-fano` |
 | binary packing SIMD-BP128 and its patched form PFor (Lemire and Boytsov; Zukowski et al.) | [`compression/BinaryPacking.h`](include/ADS/compression/BinaryPacking.h) | `engineered_succinct.binary-packing` |
+| r-index: count and locate in space proportional to the runs of the transform (Gagie, Navarro and Prezza) | [`compression/RIndex.h`](include/ADS/compression/RIndex.h) | `engineered_succinct.r-index` |
 
 ## Sorting
 

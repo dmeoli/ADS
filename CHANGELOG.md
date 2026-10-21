@@ -167,6 +167,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ducc0, on complex, real and single precision data, the cosines of type
   2, many transforms, 2 dimensions and convolutions, with the cost of the
   plans apart; POCKETFFT and DUCC0 in the makefile
+- RIndex, the r-index of Gagie, Navarro and Prezza: the runs of the
+  transform as the Elias-Fano sequence of their starts, their heads in a
+  wavelet tree of Huffman on CompactRankSelect and the starts of the runs
+  in F in one more Elias-Fano sequence, count() by the backward search on
+  them, locate() by the toehold and the function phi, from the places of
+  the starts of the runs and the samples at their ends; its test against
+  a scan, and the benchmark rindex on a repetitive text against the
+  r-index of Prezza, the FM-index of Huffman and the csa_wt of sdsl-lite
 - binaryPack() and binaryUnpack(), the binary packing SIMD-BP128 of
   Lemire and Boytsov: blocks of 128 integers at the width of their
   largest, laid out over the 4 lanes of a register and packed by an

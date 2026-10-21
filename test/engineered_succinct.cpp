@@ -27,6 +27,7 @@
 #include "ADS/compression/HuffmanCoder.h"
 #include "ADS/compression/FMIndex.h"
 #include "ADS/compression/HuffmanFMIndex.h"
+#include "ADS/compression/RIndex.h"
 #include "ADS/compression/LZ77Linear.h"
 #include "ADS/compression/Rans.h"
 #include "ADS/compression/StreamVByte.h"
@@ -425,6 +426,55 @@ ADS_TEST( "binary-packing" )
  auto c = binaryPack( y );
  c.pop_back();
  CHECK_THROWS( ( void )binaryUnpack( c , y.size() ) , contract_violation );
+ }
+
+// the r-index against a scan: the count and the places of every
+// substring of lengths 1 to 8 (sampled) of random texts over 1, 2, 4 and
+// 256 bytes (the byte 0 included) and of repetitive ones (copies of a
+// text with a few changes, where the runs are far fewer than the bytes),
+// of absent patterns and of the whole text; the empty text; the bounds
+ADS_TEST( "r-index" )
+{
+ std::mt19937_64 g( 31 );
+ auto check = [ & ]( const std::string & s ) {
+  const RIndex X( s );
+  CHECK( X.size() == s.size() );
+  bool ok = true;
+  for( std::size_t len = 1 ; ok && ( len <= 8 ) ; ++len )
+   for( std::size_t i = 0 ; ok && ( i + len <= s.size() ) ;
+        i += 1 + s.size() / 150 ) {
+    const std::string P = s.substr( i , len );
+    std::vector< std::size_t > at;
+    for( std::size_t j = 0 ; j + len <= s.size() ; ++j )
+     if( s.compare( j , len , P ) == 0 ) at.push_back( j );
+    ok = ( X.count( P ) == at.size() ) && ( X.locate( P ) == at );
+    }
+  CHECK( ok );
+  if( ! s.empty() )
+   CHECK( X.count( s ) == 1 &&
+          X.locate( s ) == std::vector< std::size_t >{ 0 } );
+  CHECK( X.count( s + "\x7f\x7f" ) == 0 && X.locate( s + "\x7f" ).empty() );
+  CHECK_THROWS( ( void )X.count( "" ) , contract_violation );
+  return( X.runs() );
+  };
+ check( "" );
+ check( "a" );
+ check( std::string( 300 , 'z' ) );
+ for( const int sigma : { 1 , 2 , 4 , 256 } ) {
+  std::string s( 900 , 'a' );
+  for( auto & c : s ) c = static_cast< char >( 'a' + g() % unsigned( sigma ) );
+  if( sigma == 256 )
+   for( auto & c : s ) c = static_cast< char >( g() % 256 );
+  check( s );
+  }
+ std::string base( 400 , 'a' ) , rep;
+ for( auto & c : base ) c = static_cast< char >( 'a' + g() % 20 );
+ for( int k = 0 ; k < 20 ; ++k ) {
+  std::string copy = base;
+  for( int e = 0 ; e < 2 ; ++e ) copy[ g() % copy.size() ] = 'Z';
+  rep += copy;
+  }
+ CHECK( check( rep ) < rep.size() / 8 );
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank
