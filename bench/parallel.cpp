@@ -95,6 +95,10 @@
 #include "ADS/parallel/ThreadPool.h"
 #include "ADS/sort/Sort.h"
 
+#if defined( ADS_WITH_FASTFLOW )
+ #include <ff/dc.hpp>
+#endif
+
 #if defined( ADS_HAS_TBB )
  #include <tbb/concurrent_hash_map.h>
  #include <tbb/concurrent_unordered_map.h>
@@ -299,6 +303,44 @@ ff::ParallelForReduce< std::uint64_t > & ffNative( void )
  }
 #endif
 
+/// the merge sort of A by the pattern ff_DC of FastFlow on t - 1 workers,
+/// the leaves of at most n / 4t items sorted by ADS::stableSort, the two
+/// sorted halves of a part merged through a buffer by std::merge; stable.
+/// The pattern is built for each sort, as FastFlow uses it (its operand is
+/// bound at the construction, and a pattern frozen and run again on a new
+/// operand fails), so that the time includes the start of its farm
+template< class T , class C >
+void ffMergeSort( std::vector< T > & A , C less )
+{
+ struct Part {
+  T * a;                                    // the items
+  T * b;                                    // room for as many
+  std::size_t n;
+  };
+ const std::size_t leaf = std::max< std::size_t >(
+                           A.size() / ( 4 * std::size_t( threads ) ) , 1024 );
+ std::vector< T > room( A.size() );
+ Part all{ A.data() , room.data() , A.size() } , out{};
+ ff::ff_DC< Part , Part > dc(
+  []( const Part & p , std::vector< Part > & sub ) {
+   const std::size_t h = p.n / 2;
+   sub.push_back( Part{ p.a , p.b , h } );
+   sub.push_back( Part{ p.a + h , p.b + h , p.n - h } ); } ,
+  [ & ]( std::vector< Part > & r , Part & m ) {
+   std::merge( r[ 0 ].a , r[ 0 ].a + r[ 0 ].n , r[ 1 ].a ,
+               r[ 1 ].a + r[ 1 ].n , r[ 0 ].b , less );
+   std::copy( r[ 0 ].b , r[ 0 ].b + r[ 0 ].n + r[ 1 ].n , r[ 0 ].a );
+   m = Part{ r[ 0 ].a , r[ 0 ].b , r[ 0 ].n + r[ 1 ].n }; } ,
+  [ & ]( const Part & p , Part & m ) {
+   std::vector< T > v( p.a , p.a + p.n );
+   ADS::stableSort( v , less );
+   std::copy( v.begin() , v.end() , p.a );
+   m = p; } ,
+  [ & ]( const Part & p ) { return( p.n <= leaf ); } ,
+  all , out , std::max( threads - 1 , 1 ) );
+ dc.run_and_wait_end();
+ }
+
 /// the executors of ADS on the threads of the run, each built at its first
 /// use
 struct Executors {
@@ -453,6 +495,13 @@ void sorts( const char * type , const std::vector< std::size_t > & sizes ,
      ips2ra::parallel::sort( A.begin() , A.end() ,
                              []( const T & x ) { return( x ); } ,
                              threads ); } );
+#endif
+#if defined( ADS_WITH_FASTFLOW )
+  // the divide and conquer of FastFlow: a merge sort whose halves go to
+  // its workers down to n / 4t items, sorted by ADS::stableSort, and whose
+  // merges (std::merge, on one thread each) climb back
+  add( S , "ff" , "ff_DC mergesort (ADS leaves)" , [ & ]( V & A ) {
+   ffMergeSort( A , less ); } );
 #endif
 #if defined( ADS_HAS_PARLAY )
   if( ! stable )
