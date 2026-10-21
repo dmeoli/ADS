@@ -316,7 +316,8 @@ class BitVector {
 /*--------------------------------------------------------------------------*/
  private:
 
- friend class RankSelect;   // which copies the words as it counts them
+ friend class RankSelect;          // which copy the words as they count
+ friend class CompactRankSelect;   // them
 
  /// the words for n bits: n / 64 + 2, rounded up to a line of 8
  [[nodiscard]] static std::size_t wordsFor( std::size_t n ) {

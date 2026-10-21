@@ -1662,13 +1662,13 @@ contract_tree         other-trees          B-albero, espressioni, cursori
 
 # the paths of rank and select that practical sizes do not take
 succinct_top  rank-select-top   rank e select col livello alto e gruppi radi
-succinct_top  rank-select-words-top  RankSelect dalle parole copiate contandole, livello alto
+succinct_top  rank-select-words-top  RankSelect e compatto dalle parole, livello alto
 succinct_top  succinct-top      Elias-Fano e parentesi col livello alto
 
 # the engineered succinct structures and codes, beyond the book
 engineered_succinct  compact-rank-select  rank e select compatti, 3.5% di bit
 engineered_succinct  rank-select-lazy  inventari di select costruiti al primo uso
-engineered_succinct  rank-select-words  RankSelect dalle parole, copiate contandole
+engineered_succinct  rank-select-words  RankSelect e compatto dalle parole, copiate contandole
 engineered_succinct  rrr-bit-vector   vettore di bit compresso di RRR
 engineered_succinct  wavelet-matrix   wavelet matrix, rank, select, quantili
 engineered_succinct  huffman-coder    Huffman a tabella, quattro flussi

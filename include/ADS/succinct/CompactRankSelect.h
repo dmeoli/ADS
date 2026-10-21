@@ -35,6 +35,11 @@
  * is the one of the literature: a sum of up to 8 words and a search of the
  * entries instead of one word and an inventory, in 15 times fewer bits.
  *
+ * The directory and the samples are built in one pass on the words, a
+ * superblock at a time with no test on the words that exist; from words
+ * in memory the words are copied in the same pass, above \f$ 2^{23} \f$
+ * bits, as in RankSelect.
+ *
  * The contracts [see Contract.h]: \f$ i \le m \f$ for rank and
  * \f$ 1 \le k \f$ up to the number of the bits b for select; the
  * postconditions are that the bit at \f$ select_b( k ) \f$ is b and that
@@ -83,6 +88,7 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #if defined( __AVX2__ )
@@ -109,6 +115,11 @@ class CompactRankSelect {
 
  /// the directory of the bits b, which it keeps
  explicit CompactRankSelect( BitVector b );
+
+ /// the directory of the n bits of the words w, copied as they are
+ /// counted
+ /// \pre w.size() >= ceil( n / 64 )
+ CompactRankSelect( std::span< const Word > w , std::size_t n );
 
  /// the bits
  [[nodiscard]] const BitVector & bits( void ) const { return( f_b ); }
@@ -195,6 +206,18 @@ class CompactRankSelect {
                                  : e.hi >> ( s - 64 );
   return( std::size_t( v & 0xFFF ) );
   }
+
+ /// the bits from which the words are copied as they are counted, where
+ /// reading them twice costs more than a copy in the caches
+#ifndef ADS_RANKSELECT_FUSE
+ static constexpr std::size_t kFuse = std::size_t( 1 ) << 23;
+#else
+ static constexpr std::size_t kFuse = ADS_RANKSELECT_FUSE;   // a test
+#endif
+
+ /// the directory of the bits, the words first copied from w where w is
+ /// not null
+ void directory( const Word * w );
 
  /// the bits b before the superblock s
  [[nodiscard]] std::size_t before( std::size_t s , bool b ) const;
