@@ -20,6 +20,7 @@
 #include "ADSTest.h"
 
 #include "ADS/priority/BucketQueue.h"
+#include "ADS/priority/DaryHeap.h"
 #include "ADS/priority/DialQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
@@ -730,6 +731,49 @@ ADS_TEST( "double-ended-heaps" )
   }
  ends< MinMaxHeap< int > >( 5 , 20000 , 1000000 ); // past 1024 items
  ends< IntervalHeap< int > >( 6 , 20000 , 1000000 );
+ }
+
+/// the d-ary heap with the bottom-up pop against std::priority_queue on
+/// random pushes and pops of keys in [ 0 , range )
+template< unsigned D >
+void bottomUp( unsigned seed , int steps , int range )
+{
+ DaryHeap< int , std::less< int > , D , true > H;
+ std::priority_queue< int , std::vector< int > , std::greater<> > R;
+ std::mt19937 g( seed );
+ for( int t = 0 ; t < steps ; ++t )
+  if( R.empty() || ( g() % 3 ) ) {
+   const int x = int( g() % unsigned( range ) );
+   H.push( x );
+   R.push( x );
+   }
+  else {
+   CHECK( H.top() == R.top() && H.pop() == R.top() );
+   R.pop();
+   }
+ while( ! R.empty() ) {
+  CHECK( H.pop() == R.top() );
+  R.pop();
+  }
+ CHECK( H.empty() );
+ }
+
+// the d-ary heap with the bottom-up pop (the hole down to a leaf, the last
+// item up from there), for D = 2, 3, 4 and 8, against std::priority_queue:
+// random keys, many equal keys, past 1024 items, one item popped onto
+// itself, all equal, and the empty heap violating the contracts
+ADS_TEST( "dary-heap-bottom-up" )
+{
+ bottomUp< 2 >( 1 , 5000 , 1000 );
+ bottomUp< 3 >( 2 , 5000 , 3 );
+ bottomUp< 4 >( 3 , 20000 , 1000000 );
+ bottomUp< 8 >( 4 , 5000 , 100 );
+ DaryHeap< int , std::less< int > , 4 , true > E;
+ CHECK_THROWS( E.pop() , contract_violation );
+ E.push( 1 );
+ CHECK( E.pop() == 1 && E.empty() );
+ for( int i = 0 ; i < 100 ; ++i ) E.push( 5 );
+ for( int i = 0 ; i < 100 ; ++i ) CHECK( E.pop() == 5 );
  }
 
 }  // end( namespace )
