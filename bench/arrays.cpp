@@ -247,12 +247,13 @@ void select( const char * type , std::size_t n , int r , unsigned seed )
 #endif
    cell( "ADS::nthElement" , [ & ]( V & B ) {
     ADS::nthElement( B.begin() , B.begin() + at , B.end() ); } );
-   cell( "ADS::selection" , [ & ]( V & B ) {
-    std::mt19937 rng( 7 );
-    ADS::selection( B , k + 1 , &rng ); } );
-   if( p != 3 )                             // quadratic on equal items
+   if( p != 3 ) {                           // quadratic on equal items
+    cell( "ADS::selection" , [ & ]( V & B ) {
+     std::mt19937 rng( 7 );
+     ADS::selection( B , k + 1 , &rng ); } );
     cell( "ADS::medianOfMedians" , [ & ]( V & B ) {
      ADS::medianOfMedians( B , k + 1 ); } );
+    }
    }
  }
 
