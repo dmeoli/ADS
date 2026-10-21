@@ -61,6 +61,8 @@ PAIRS = [
     ('sequences', 'ADS::ArraySequence', 'std', ['std::vector']),
     ('sequences', 'ADS::ArraySequence', 'Boost',
      ['boost::container::vector', 'boost::container::devector']),
+    ('sequences', 'ADS::TieredVector', 'std',
+     ['std::vector', 'std::deque']),
     ('sequences', 'ADS::SmallVector', 'Boost',
      ['boost::container::small_vector']),
     ('sequences', 'ADS::ArrayStack', 'std',

@@ -10,7 +10,10 @@
  * against std::forward_list), on n integers. The cases are n insertions
  * at the end (at the front for the singly linked lists), a visit that sums
  * the items, std::sort or the reversal in place by the iterators, and a
- * visit by the positions of the book where it applies. The vectors with
+ * visit by the positions of the book where it applies. The tiered vector
+ * against std::vector and std::deque, at 10^5 items: n insertions at
+ * random places, n reads at random places, n removals at random places.
+ * The vectors with
  * room inside themselves (SmallVector against boost::container::small_vector
  * and std::vector): n / 8 vectors of 8 items each made and visited. The
  * stacks
@@ -53,6 +56,7 @@
 #include "ADS/sequence/SequenceAlgorithms.h"
 #include "ADS/sequence/SinglyList.h"
 #include "ADS/sequence/SmallVector.h"
+#include "ADS/sequence/TieredVector.h"
 #include "ADS/stack/ArrayStack.h"
 #include "ADS/stack/SequenceStack.h"
 
@@ -110,6 +114,36 @@ void positions( const std::string & who , const S & s , std::size_t n ,
           for( auto p = s.head() ; ! s.finished( p ) ; p = s.next( p ) )
            t += s.read( p );
           sink = sink + std::uint64_t( t ); } , r , n ) );
+ }
+
+/// n insertions, reads and removals at random places R on the sequence
+/// that make() builds, by insert( s , i , x ) and erase( s , i )
+template< class M , class I , class E >
+void middle( const std::string & who , const std::vector< int > & X ,
+             const std::vector< std::size_t > & R , int r , M && make ,
+             I && insert , E && erase )
+{
+ const std::size_t n = X.size();
+ auto fill = [ & ]( void ) {
+  auto s = make();
+  for( std::size_t i = 0 ; i < n ; ++i ) insert( s , R[ i ] % ( i + 1 ) ,
+                                                X[ i ] );
+  return( s );
+  };
+ print( "sequences" , "insert anywhere" , n , who , median(
+         [](){ return( 0 ); } , [ & ]( int ) {
+          auto s = fill();
+          sink = sink + std::uint64_t( s[ 0 ] ); } , r , n ) );
+ const auto s = fill();
+ print( "sequences" , "read anywhere" , n , who , median(
+         [](){ return( 0 ); } , [ & ]( int ) {
+          long t = 0;
+          for( std::size_t i = 0 ; i < n ; ++i ) t += s[ R[ i ] % n ];
+          sink = sink + std::uint64_t( t ); } , r , n ) );
+ print( "sequences" , "erase anywhere" , n , who , median( fill ,
+         [ & ]( auto & t ) {
+          for( std::size_t i = n ; i > 0 ; --i ) erase( t , R[ i - 1 ] % i );
+          sink = sink + std::uint64_t( t.size() ); } , r , n ) );
  }
 
 /// n / 8 vectors V of 8 items, made one after another and then visited
@@ -208,6 +242,26 @@ int main( int argc , char ** argv )
   ADS::List< int > L( X.begin() , X.end() );
   positions( "ADS::ArraySequence" , A , n , r );
   positions( "ADS::List" , L , n , r );
+
+  // insertions and removals anywhere, at 10^5 items at most
+
+  if( n <= 100000 ) {
+   std::vector< std::size_t > R( n );
+   for( auto & i : R ) i = std::size_t( g() );
+   auto vIns = []( auto & s , std::size_t i , int x ) {
+    s.insert( s.begin() + std::ptrdiff_t( i ) , x ); };
+   auto vErase = []( auto & s , std::size_t i ) {
+    s.erase( s.begin() + std::ptrdiff_t( i ) ); };
+   for( const char * who : { "std::vector" , "std::vector A/A" } )
+    middle( who , X , R , r , [](){ return( std::vector< int >() ); } ,
+            vIns , vErase );
+   middle( "std::deque" , X , R , r , [](){ return( std::deque< int >() ); } ,
+           vIns , vErase );
+   middle( "ADS::TieredVector" , X , R , r , [](){
+           return( ADS::TieredVector< int >() ); } ,
+           []( auto & s , std::size_t i , int x ) { s.insert( i , x ); } ,
+           []( auto & s , std::size_t i ) { s.erase( i ); } );
+   }
 
   // the vectors with room inside themselves
 
