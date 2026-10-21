@@ -31,8 +31,11 @@
  *   on a Skylake, 1.4 on 32 digits; the rows left one at a time, and up to
  *   8 digits the passes with no loop. Elsewhere two rows per pass in C++.
  *   A square \f$ a^2 = 2 T + D \f$ takes the products \f$ a_i a_j \f$,
- *   \f$ i < j \f$, of digits of different tiles of 4 digits by the same
- *   passes in T, and the squares of the tiles, side by side, in D. From
+ *   \f$ i < j \f$, by blocks of 6 digits: those of a block with the
+ *   digits after it by the passes of 6 rows, those inside it by a kernel
+ *   of 15 products in registers, all in T, and D, the squares
+ *   \f$ a_i^2 \f$ at \f$ b^{2i} \f$, added in the pass that doubles T;
+ *   the squares follow thresholds of their own (kSqr...). From
  *   kKaratsuba digits it is the product of Karatsuba (4.3.3A) in the
  *   subtractive form,
  *   \f[ a b = z_2 b^{2l} + \bigl( z_0 + z_2 - ( a_0 - a_1 ) ( b_0 - b_1 )
@@ -46,7 +49,19 @@
  *   2 v_\infty \f$, \f$ r_1 = ( v_1 - v_{-1} ) / 2 - r_3 \f$,
  *   \f$ r_2 = v_1 - v_0 - r_1 - r_3 - v_\infty \f$, the divisions exact,
  *   by 3 as the product by \f$ -( b - 1 ) / 3 \f$ and a running
- *   difference, \f$ M( n ) = 5 M( n / 3 ) + O( n ) \f$; the longer
+ *   difference, \f$ M( n ) = 5 M( n / 3 ) + O( n ) \f$; from kToom4
+ *   digits that of Toom-4, from the seven values at \f$ 0 , \pm 1 ,
+ *   \pm 2 , 1 / 2 \f$ (times \f$ 2^6 \f$) and \f$ \infty \f$, by an
+ *   interpolation whose steps all stay on nonnegative numbers: with
+ *   \f$ E_1 = ( v_1 + v_{-1} ) / 2 \f$, \f$ O_1 = ( v_1 - v_{-1} ) / 2
+ *   \f$, \f$ E_2 = ( v_2 + v_{-2} ) / 2 \f$ and \f$ O_2 = ( v_2 -
+ *   v_{-2} ) / 4 \f$, \f$ r_4 = ( ( E_2 - r_0 - 64 r_6 ) / 4 - ( E_1 -
+ *   r_0 - r_6 ) ) / 3 \f$, \f$ r_2 = E_1 - r_0 - r_6 - r_4 \f$,
+ *   \f$ H = ( v_{1/2} - 64 r_0 - 16 r_2 - 4 r_4 - r_6 ) / 2 = 16 r_1 +
+ *   4 r_3 + r_5 \f$, \f$ r_3 = ( 17 O_1 - O_2 - H ) / 9 \f$,
+ *   \f$ r_5 = ( O_2 - O_1 - 3 r_3 ) / 15 \f$ and \f$ r_1 = O_1 - r_3 -
+ *   r_5 \f$, \f$ M( n ) = 7 M( n / 4 ) + O( n ) = O( n^{\log_4 7} )
+ *   \f$; the longer
  *   factor cut in pieces as long as the shorter one when their lengths
  *   differ; from kFFT digits it is a convolution of the digits by the
  *   number theoretic transform (4.3.3, 4.6.4) and the Chinese remainder
@@ -171,6 +186,17 @@
  *   the integer parts of \f$ f P \f$, \f$ f P^2 \f$, ..., f cut to the
  *   digits that the chunks left need, and the 19 figures of a chunk come
  *   by pairs from a table.
+ * - sqrtRem() is the Karatsuba square root of Zimmermann (Brent and
+ *   Zimmermann, Algorithm 1.12): m, shifted by an even number of bits to
+ *   2k digits with the top one at least b / 4, is
+ *   \f$ A \beta^2 + a_1 \beta + a_0 \f$ with \f$ \beta = b^{\lfloor k /
+ *   2 \rfloor} \f$; with \f$ ( s' , r' ) \f$ the root and the remainder of
+ *   A and \f$ ( q , u ) \f$ the quotient and the remainder of
+ *   \f$ r' \beta + a_1 \f$ by \f$ 2 s' \f$, \f$ s = s' \beta + q \f$ and
+ *   \f$ r = u \beta + a_0 - q^2 \f$, if negative \f$ r + 2 s - 1 \f$
+ *   and \f$ s - 1 \f$, \f$ O( M( n ) ) \f$ for the products of the
+ *   divisions; two digits by Newton's method from the root in doubles;
+ *   sqrtNewton() is Newton's method from above on the whole number.
  * - pow() is the binary method of 4.6.3, from left to right, squares and
  *   products by x. gcd() is the algorithm of Lehmer (4.5.2L) on two
  *   digits: the leading 128 bits \f$ ( a_t , b_t ) \f$ of the two numbers
@@ -620,7 +646,12 @@ class BigInteger {
  // Xeon Gold 5120, against GMP
  static constexpr std::size_t kKaratsuba = 40;   ///< limbs for Karatsuba
  static constexpr std::size_t kToom3 = 120;      ///< limbs for Toom-3
+ static constexpr std::size_t kToom4 = 300;      ///< limbs for Toom-4
  static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
+ static constexpr std::size_t kSqrKaratsuba = 40;   ///< the same, squares
+ static constexpr std::size_t kSqrToom3 = 120;
+ static constexpr std::size_t kSqrToom4 = 300;
+ static constexpr std::size_t kSqrFFT = 448;
  static constexpr std::size_t kDivide = 96;      ///< quotient limbs, recursion
  static constexpr std::size_t kConvert = 24;     ///< limbs, divide and conquer
  static constexpr std::size_t kConvertF = 64;    ///< limbs, by fractions
@@ -743,6 +774,17 @@ class BigInteger {
  /// x^n by the binary method
  static BigInteger pow( const BigInteger & x , unsigned long n );
 
+ /// the integer square root s = floor( sqrt( a ) ) and r = a - s^2, by
+ /// Zimmermann's Karatsuba square root
+ /// \pre a >= 0
+ /// \post s^2 + r = a, 0 <= r <= 2 s, s equal to sqrtNewton( a ) (audits)
+ static std::pair< BigInteger , BigInteger > sqrtRem( const BigInteger & a );
+ static BigInteger sqrt( const BigInteger & a );
+
+ /// the integer square root by Newton's method from above
+ /// \pre a >= 0
+ static BigInteger sqrtNewton( const BigInteger & a );
+
  /// the greatest common divisor of |a| and |b|, by Lehmer
  /// \post it equals gcdEuclid( a , b ) (an audit)
  static BigInteger gcd( const BigInteger & a , const BigInteger & b );
@@ -825,8 +867,15 @@ class BigInteger {
                     std::size_t n , Limb * w , std::size_t fft ,
                     std::size_t toom );
 
- /// a /= 3 for a multiple of 3, by Hensel's division
+ static void toom4( Limb * r , const Limb * a , const Limb * b ,
+                    std::size_t n , Limb * w , std::size_t fft ,
+                    std::size_t toom );
+
+ /// a /= 3 for a multiple of 3, by Hensel's division; a /= d for a
+ /// multiple of d odd; a >>= s, 0 < s < 64, n > 0 digits
  static void divExact3( Limb * a , std::size_t n );
+ static void divExactN( Limb * a , std::size_t n , Limb d );
+ static void rshN( Limb * a , std::size_t n , int s );
 
  /// r = a + 2 b and r = a - 2 b, n > 0 digits, the carry or the borrow
  static Limb addLsh1( Limb * r , const Limb * a , const Limb * b ,
@@ -1035,6 +1084,11 @@ class BigInteger {
  /// pw[ i ] = P^{2^i}
  static Mag fromChunks( const Limb * c , std::size_t n ,
                         const std::vector< Mag > & pw , Limb P );
+
+ /// the root s and the remainder r of h b + l, h >= 2^62, by Newton's
+ /// method; of m of 2 k digits, its top one at least b / 4, recursively
+ static void sqrt2( Limb h , Limb l , Mag & s , Mag & r );
+ static void sqrtRec( const Limb * m , std::size_t k , Mag & s , Mag & r );
 
  /// the greatest common divisor of two numbers below 2^64, binary
  static std::uint64_t gcdWord( std::uint64_t a , std::uint64_t b );

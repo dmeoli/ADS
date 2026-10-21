@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- BigInteger::sqrtRem() and BigInteger::sqrt(), the integer square root
+  by the Karatsuba square root of Zimmermann, two digits by Newton's
+  method; BigInteger::sqrtNewton(), Newton's method from above, for the
+  audits; the test big-integer-sqrt
 - the algorithms of the book on graphs as templates on the structures they
   use: shortestPaths() on a frontier given as a type (PrototypeFrontier;
   PriorityFrontier on any priority queue of section 10.1, its priority the
@@ -974,6 +978,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the complement); against mpz_gcd() of GMP 6.3.0 from 0.12 to 0.39 times
   to 1.05 to 1.33 times on 4 to 1024 digits, 0.96 to 0.99 on 2048 and
   4096
+- BigInteger: Toom-4 from kToom4 digits, its interpolation from the
+  values at 0, 1, -1, 2, -2, 1/2 and infinity on nonnegative numbers
+  only; the squares by thresholds of their own (kSqrKaratsuba, kSqrToom3,
+  kSqrToom4, kSqrFFT), the square of the school by blocks of 6 digits
+  (the passes of 6 rows after each block, tri6Asm() inside it, the
+  squares of the digits added in the pass that doubles, sqrDiagAsm()),
+  and the NTT of a square with one transform even where the rows take
+  the top digits of a product
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
