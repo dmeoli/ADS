@@ -268,9 +268,9 @@ inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
 
 /// the scan from left to right: the L-suffixes, each stored with its top
 /// bit set if the suffix before it is of type S, and the top bit of every
-/// entry scanned flipped. Two entries a step, the text before the entries D ahead
-/// prefetched, and on the large alphabets also their buckets (D / 2
-/// ahead) and the places these point to (D / 4 ahead); the arrays are
+/// entry scanned flipped. Two entries a step, the text before the entries
+/// D ahead prefetched, and on the large alphabets also their buckets (D /
+/// 2 ahead) and the places these point to (D / 4 ahead); the arrays are
 /// declared not to overlap (restrict), so that the loads of the next
 /// entries need not wait for the stores of the moves
 template< bool small , class C , class S >
@@ -694,7 +694,7 @@ bool saisResolveTies( S * SA , S n , S m ,
    a = next( a );
    b = next( b );
    if( ( a == n ) || ( b == n ) ) return( a == n );   // an end first
-   const S x = name[ a / 2 ] , y = name[ b / 2 ];
+   const S x = name[ a >> 1 ] , y = name[ b >> 1 ];
    if( x != y ) return( x < y );
    ++spent;
    }
@@ -761,8 +761,8 @@ S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
  auto ahead = [ & ]( S x , S y , S e , S f ) {
   x &= low;
   y &= low;
-  saisPrefetch( T + saisClamp( x - 2 ) );
-  saisPrefetch( T + saisClamp( y - 2 ) );
+  saisPrefetch( T + ( x > 1 ? x : S( 2 ) ) - 2 );
+  saisPrefetch( T + ( y > 1 ? y : S( 2 ) ) - 2 );
   if constexpr( large ) {             // the part, and where it writes
    saisPrefetchW( P + part( e & low ) );
    saisPrefetchW( SA + ( P[ part( f & low ) ].to - S( forS ) ) );
@@ -1010,11 +1010,37 @@ void saisPartial( const C * T , S * SA , S n , S K ,
  // their groups, the names themselves written when needed
  ends.assign( std::size_t( m ) / 64 + 1 , 0 );
  S name = 0;
- for( S i = 0 ; i < m ; ++i ) {
-  const S x = SA[ i ] , b = S( x < 0 ) | S( i + 1 == m );
-  SA[ i ] = x & low;
-  ends[ std::size_t( i ) >> 6 ] |= std::uint64_t( b ) << ( i & 63 );
-  name += b;
+ for( std::size_t w = 0 ; 64 * w < std::size_t( m ) ; ++w ) {
+  const S from = S( 64 * w ) , to = std::min< S >( from + 64 , m );
+  std::uint64_t word = 0;
+#if defined( __AVX2__ )
+  if constexpr( sizeof( S ) == 4 )
+   if( to - from == 64 ) {            // the signs by 8 at a time
+    const __m256i keep = _mm256_set1_epi32( int( low ) );
+    for( int h = 0 ; h < 8 ; ++h ) {
+     auto * a = reinterpret_cast< __m256i * >( SA + from + 8 * h );
+     const __m256i v = _mm256_loadu_si256( a );
+     word |= std::uint64_t( unsigned( _mm256_movemask_ps(
+              _mm256_castsi256_ps( v ) ) ) ) << ( 8 * h );
+     _mm256_storeu_si256( a , _mm256_and_si256( v , keep ) );
+     }
+    ends[ w ] = word;
+    name += S( std::popcount( word ) );
+    continue;
+    }
+#endif
+  for( S i = from ; i < to ; ++i ) {
+   const S x = SA[ i ];
+   word |= std::uint64_t( x < 0 ) << ( i - from );
+   SA[ i ] = x & low;
+   }
+  ends[ w ] = word;
+  name += S( std::popcount( word ) );
+  }
+ {                                    // the last place ends its group
+  const std::size_t i = std::size_t( m - 1 );
+  name += S( ( ( ends[ i >> 6 ] >> ( i & 63 ) ) & 1 ) == 0 );
+  ends[ i >> 6 ] |= std::uint64_t( 1 ) << ( i & 63 );
   }
  *names = name;
  }
@@ -1444,15 +1470,18 @@ void sais( const C * T , S * SA , S n , S K )
  // within a budget of names compared; beyond it, by the doubling on the
  // groups of equal names, if few, or else by recursion, on the string of
  // the names at the back of SA
+
  // the names, in the slot m + p / 2 of the LMS place p, when the text
- // leaves some tied
- auto write = [ & ]() {
+ // leaves some tied: by the groups left, finer than those of the
+ // LMS-substrings when the text has split some (equal names still mean
+ // equal LMS-substrings, and the names grow with the suffixes)
+ auto write = [ & ]( const std::vector< std::uint64_t > & by ) {
   std::fill( SA + m , SA + n , S( 0 ) );
   S name = 1;
-  saisForGroups( ends , m , [ & ]( S f , S g ) {
+  saisForGroups( by , m , [ & ]( S f , S g ) {
    for( S i = f ; i < f + g ; ++i ) {
-    if( i + D < m ) saisPrefetchW( SA + m + SA[ i + D ] / 2 );
-    SA[ m + SA[ i ] / 2 ] = name;
+    if( i + D < m ) saisPrefetchW( SA + m + ( SA[ i + D ] >> 1 ) );
+    SA[ m + ( SA[ i ] >> 1 ) ] = name;
     }
    ++name;
    } );
@@ -1475,7 +1504,7 @@ void sais( const C * T , S * SA , S n , S K )
    else
     tied = &rest;
    }
-  if( tied ) write();
+  if( tied ) write( *tied );
   }
  if( tied && ! saisResolveTies( SA , n , m , *tied , lms ,
                                 std::size_t( m ) ) ) {
@@ -1487,10 +1516,10 @@ void sais( const C * T , S * SA , S n , S K )
   S * R = SA + ( n - m );
   std::vector< S > count;              // of each name, in their order
   count.reserve( std::size_t( names ) );
-  saisForGroups( ends , m , [ & ]( S , S g ) { count.push_back( g ); } );
+  saisForGroups( *tied , m , [ & ]( S , S g ) { count.push_back( g ); } );
   if( ! saisDoubling( static_cast< const S * >( R ) , SA , m , count ,
                       m / 4 ) )
-   sais( static_cast< const S * >( R ) , SA , m , names );
+   sais( static_cast< const S * >( R ) , SA , m , S( count.size() ) );
   S j = m;                            // the LMS places, in order
   forLms( [ & ]( S i ) { R[ --j ] = i; } );
   for( S i = 0 ; i < m ; ++i ) {
@@ -1552,14 +1581,17 @@ bool isLcpArrayOf( std::string_view T , const std::vector< I > & SA ,
  return( true );
  }
 
-/// the permuted LCP of T and SA into P, by Phi
-/// (the arrays are declared not to overlap, so that the stores into P do
-/// not reload SA and the text)
+/// the permuted LCP of T and SA into P, by Phi, and if Y is not null each
+/// value also in Y[ i ], a byte, 255 for 255 or more, until more than n /
+/// 64 values are 255 or more (long repeats): whether Y was filled is
+/// returned (the arrays are declared not to overlap, so that the stores
+/// into P do not reload SA and the text)
 template< class I >
-void plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
-           const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT P )
+bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
+           const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT P ,
+           unsigned char * ADS_SAIS_RESTRICT Y = nullptr )
 {
- if( n == 0 ) return;
+ if( n == 0 ) return( Y != nullptr );
  // Phi in P, n for the first suffix of SA, the last suffix of SA kept
  constexpr std::size_t D = saisAhead;
  I prev = I( n );
@@ -1586,7 +1618,7 @@ void plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
   const std::size_t j = P[ i ] , far = n - std::max( i , j );
   const std::size_t near = std::min( far , h + 4 );
   while( ( h < near ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
-  if( h == near )
+  if( ( h == near ) && ( h < far ) )
    for( ; ; ) {
     if( h + 8 > far ) {
      while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
@@ -1606,21 +1638,30 @@ void plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
     }
   return( h );
   };
- std::size_t h = 0 , i = 0;
+ std::size_t h = 0 , i = 0 , big = 0;
+ auto put = [ & ]( std::size_t x ) {
+  P[ x ] = I( h );
+  if( Y ) {
+   Y[ x ] = static_cast< unsigned char >( std::min< std::size_t >( h , 255 ) );
+   big += h >= 255;
+   if( big > n / 64 ) Y = nullptr;
+   }
+  };
  for( ; i + 2 * D < n ; ++i ) {                 // no checks
   saisPrefetchW( P + i + 2 * D );
   saisPrefetch( t + std::min< std::size_t >( P[ i + D ] + h , n ) );
   h = lcp( i , h );
-  P[ i ] = I( h );
+  put( i );
   h -= ( h != 0 );
   }
  for( ; i < n ; ++i ) {
   if( i + D < n )
    saisPrefetch( t + std::min< std::size_t >( P[ i + D ] + h , n ) );
   h = lcp( i , h );
-  P[ i ] = I( h );
+  put( i );
   h -= ( h != 0 );
   }
+ return( Y != nullptr );
  }
 
 /// LCP[ r ] = P[ SA[ r ] ] for r in [ 0 , n ), the arrays declared not to
@@ -1640,6 +1681,35 @@ void plcpToLcp( const I * ADS_SAIS_RESTRICT P ,
   }
  for( ; r < n ; ++r ) LCP[ r ] = P[ SA[ r ] ];
  }
+
+/// LCP[ r ] = P[ SA[ r ] ] for r in [ 0 , n ) by the bytes Y of P [ see
+/// plcp() ], P read only for the values of 255 or more: the random reads
+/// fall in an array of n bytes, not of n integers, which stays in the
+/// cache four times longer
+template< class I >
+void plcpToLcp( const unsigned char * ADS_SAIS_RESTRICT Y ,
+                const I * ADS_SAIS_RESTRICT P ,
+                const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT LCP ,
+                std::size_t n )
+{
+ constexpr std::size_t D = saisAhead;
+ std::size_t r = 0;
+ auto get = [ & ]( std::size_t x ) {
+  const I y = Y[ x ];
+  return( y == 255 ? P[ x ] : y );
+  };
+ for( ; r + 2 * D + 4 <= n ; r += 4 ) {         // 4 at a time, no checks
+  saisPrefetch( SA + r + 2 * D );
+  saisPrefetchW( LCP + r + D );
+  for( std::size_t q = 0 ; q < 4 ; ++q ) saisPrefetch( Y + SA[ r + D + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q ) LCP[ r + q ] = get( SA[ r + q ] );
+  }
+ for( ; r < n ; ++r ) LCP[ r ] = get( SA[ r ] );
+ }
+
+/// the texts from which the LCP array reads the permuted LCP by its bytes
+/// [ see plcpToLcp() ]: where the integers would not stay in the cache
+inline constexpr std::size_t lcpBytesFrom = std::size_t( 1 ) << 18;
 
 }  // end( namespace detail )
 
@@ -1702,11 +1772,22 @@ std::vector< I > lcpArrayPhi( std::string_view T ,
              reinterpret_cast< const unsigned char * >( T.data() ) , n ,
              SA.data() ) );
  const auto P = std::make_unique_for_overwrite< I[] >( n );
- detail::plcp( reinterpret_cast< const unsigned char * >( T.data() ) , n ,
-               SA.data() , P.get() );
+ const auto * t = reinterpret_cast< const unsigned char * >( T.data() );
  std::vector< I > LCP( n < 2 ? 0 : n - 1 );
- if( n >= 2 )
-  detail::plcpToLcp( P.get() , SA.data() + 1 , LCP.data() , n - 1 );
+ if( n >= detail::lcpBytesFrom ) {
+  // the bytes, unless many values do not fit (long repeats)
+  const auto Y = std::make_unique_for_overwrite< unsigned char[] >( n );
+  if( detail::plcp( t , n , SA.data() , P.get() , Y.get() ) )
+   detail::plcpToLcp( Y.get() , P.get() , SA.data() + 1 , LCP.data() ,
+                      n - 1 );
+  else
+   detail::plcpToLcp( P.get() , SA.data() + 1 , LCP.data() , n - 1 );
+  }
+ else {
+  detail::plcp( t , n , SA.data() , P.get() );
+  if( n >= 2 )
+   detail::plcpToLcp( P.get() , SA.data() + 1 , LCP.data() , n - 1 );
+  }
  ADS_AUDIT( detail::isLcpArrayOf( T , SA , LCP ) );
  return( LCP );
  }
