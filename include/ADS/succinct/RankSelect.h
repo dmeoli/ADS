@@ -53,6 +53,21 @@
  * of fewer than 32 bits b, below about 1% of them, keeps the place of each
  * one, and select reads no bit at all.
  *
+ * The directory is built in one pass on the words: the sideways sums
+ * \f$ p_0 , \ldots , p_3 \f$ of the words of a block, at most 64 each,
+ * are put in the bytes of a word, and one product gives their prefix sums
+ * in the bytes, which do not overflow,
+ * \f[ ( p_0 + 2^8 p_1 + 2^{16} p_2 ) \cdot ( 1 + 2^8 + 2^{16} ) \bmod
+ *     2^{24} = p_0 + 2^8 ( p_0 + p_1 ) + 2^{16} ( p_0 + p_1 + p_2 ) , \f]
+ * the three relative ranks of the entry; from words in memory the words
+ * are copied in the same pass, above \f$ 2^{23} \f$ bits, where reading
+ * them twice costs more than a copy in the caches. The inventory of select
+ * of a value is built by the first select of that value, in a pass on the
+ * directory, so that a structure that only ranks never pays for it; the
+ * first call builds it once, whichever the threads that call it (with
+ * std::call_once, and a flag read with acquire semantics before it), and a
+ * copy keeps the inventories already built.
+ *
  * The places count from 0: \f$ rank_1( i ) \f$ here is \f$ Rank_1( i ) \f$
  * of the notes on the places \f$ 1 , \ldots , i \f$, and \f$ select_1( k )
  * \f$ here is \f$ Select_1( k ) - 1 \f$ (in Example 15.1, \f$ rank_1( 6 ) =
@@ -110,9 +125,13 @@
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
+#include <atomic>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <mutex>
+#include <span>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -137,8 +156,27 @@ class RankSelect {
 
  RankSelect( void );
 
- /// the directory of the bits b, which it keeps, with the selects s
+ /// the directory of the bits b, which it keeps, with the selects s; the
+ /// inventory of select of a value is built by its first select
  explicit RankSelect( BitVector b , Selects s = Selects::BOTH );
+
+ /// the directory of the n bits of the words w, copied as they are
+ /// counted, with the selects s
+ /// \pre w.size() >= ceil( n / 64 )
+ RankSelect( std::span< const Word > w , std::size_t n ,
+             Selects s = Selects::BOTH );
+
+ /// a copy, with the inventories that o has built
+ RankSelect( const RankSelect & o );
+
+ /// a move, with the inventories that o has built
+ RankSelect( RankSelect && o ) noexcept;
+
+ RankSelect & operator=( const RankSelect & o );
+
+ RankSelect & operator=( RankSelect && o ) noexcept;
+
+ ~RankSelect( void ) = default;
 
  /// the bits
  [[nodiscard]] const BitVector & bits( void ) const;
@@ -173,7 +211,8 @@ class RankSelect {
  /// \post the bit there is 0 and rank0() of it is k - 1
  [[nodiscard]] std::size_t select0( std::size_t k ) const;
 
- /// the bits of the directory, beyond those of the vector
+ /// the bits of the directory, beyond those of the vector, with those of
+ /// the inventories of the selects asked for, built or not
  [[nodiscard]] std::size_t directoryBits( void ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
@@ -210,6 +249,14 @@ class RankSelect {
 #else
  static constexpr int kTop = ADS_RANKSELECT_TOP;   // a test of the top level
 #endif
+ /// the bits from which the words are copied as they are counted, where
+ /// reading them twice costs more than a copy in the caches
+#ifndef ADS_RANKSELECT_FUSE
+ static constexpr std::size_t kFuse = std::size_t( 1 ) << 23;
+#else
+ static constexpr std::size_t kFuse = ADS_RANKSELECT_FUSE;   // a test
+#endif
+
  /// the bits of the vector spanned by a group of select, on average,
  /// and the most of its places that its 16 bits offsets can tell apart
  static constexpr std::size_t kGroup = 4096;
@@ -230,8 +277,22 @@ class RankSelect {
  /// the bits b before the block t
  [[nodiscard]] std::size_t before( std::size_t t , bool b ) const;
 
- /// the inventory of the bits b
- void inventory( bool b );
+ /// the selects s asked for, and the directory of the bits, the words
+ /// first copied from w where w is not null
+ void directory( Selects s , const Word * w );
+
+ /// the shape of the inventory of the bits b: its l, g and s, and the
+ /// number of its groups
+ void shape( bool b , Inventory & I , std::size_t & groups ) const;
+
+ /// the inventory of the bits b, built by the first call
+ const Inventory & inventory( bool b ) const;
+
+ /// the building of the inventory of the bits b
+ void build( bool b ) const;
+
+ /// the inventories that o has built taken (by a copy, or by a move)
+ void adopt( const RankSelect & o , bool move );
 
  /// the place of the k-th bit b
  [[nodiscard]] std::size_t select( std::size_t k , bool b ) const;
@@ -251,9 +312,13 @@ class RankSelect {
  /// in kRel bits each, the word 1 in the lowest
  std::vector< std::uint64_t , detail::LineAllocator< std::uint64_t > >
                                                                      f_dir;
- std::vector< std::uint64_t > f_top;    ///< the 1s before each 2^kTop bits
+ /// the 1s before each 2^kTop bits, when there are more (f_big)
+ std::vector< std::uint64_t > f_top;
  bool f_big = false;                    ///< more than 2^kTop bits
- Inventory f_inv[ 2 ];                  ///< of the 0s and of the 1s
+ mutable Inventory f_inv[ 2 ];          ///< of the 0s and of the 1s
+ /// the flags that build each inventory once, and whether it is built
+ mutable std::once_flag f_flag[ 2 ];
+ mutable std::atomic< bool > f_ready[ 2 ] = { false , false };
  bool f_has[ 2 ] = { true , true };     ///< whether each one is built
  std::size_t f_ones = 0;
 

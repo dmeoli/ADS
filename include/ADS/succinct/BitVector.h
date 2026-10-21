@@ -80,6 +80,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #ifdef __BMI2__
@@ -112,6 +113,17 @@ class LineAllocator {
    return( HugePageAllocator< T >().allocate( n ) );
   return( static_cast< T * >( ::operator new( n * sizeof( T ) ,
                                               std::align_val_t( LINE ) ) ) );
+  }
+
+ /// a value constructed with no argument is left uninitialized (the
+ /// words that are about to be written), any other one as asked
+ template< class U >
+ void construct( U * p ) noexcept {
+  ::new( static_cast< void * >( p ) ) U;
+  }
+ template< class U , class... A >
+ void construct( U * p , A &&... a ) {
+  ::new( static_cast< void * >( p ) ) U( std::forward< A >( a )... );
   }
 
  void deallocate( T * p , std::size_t n ) noexcept {
@@ -303,6 +315,8 @@ class BitVector {
 
 /*--------------------------------------------------------------------------*/
  private:
+
+ friend class RankSelect;   // which copies the words as it counts them
 
  /// the words for n bits: n / 64 + 2, rounded up to a line of 8
  [[nodiscard]] static std::size_t wordsFor( std::size_t n ) {
