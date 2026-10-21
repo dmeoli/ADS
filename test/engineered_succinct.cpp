@@ -27,6 +27,7 @@
 #include "ADS/compression/HuffmanCoder.h"
 #include "ADS/compression/FMIndex.h"
 #include "ADS/compression/HuffmanFMIndex.h"
+#include "ADS/compression/MoveRIndex.h"
 #include "ADS/compression/RIndex.h"
 #include "ADS/compression/LZ77Linear.h"
 #include "ADS/compression/Rans.h"
@@ -35,6 +36,7 @@
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
+#include "ADS/succinct/MoveStructure.h"
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/RankSelect.h"
@@ -475,6 +477,98 @@ ADS_TEST( "r-index" )
   rep += copy;
   }
  CHECK( check( rep ) < rep.size() / 8 );
+ }
+
+// the move structure against the permutation: random intervals of
+// [ 0 , n ) moved in a random order, so that the images partition it too
+// (some of them long, holding many starts, which the balance cuts); every
+// move from every place with its interval, and the interval of every
+// place; at most twice the intervals, with their tags kept
+ADS_TEST( "move-structure" )
+{
+ std::mt19937_64 g( 37 );
+ for( const std::size_t m : { 1 , 2 , 5 , 40 , 300 } ) {
+  std::vector< std::uint64_t > len( m );
+  for( auto & l : len ) l = g() % 4 == 0 ? 1 + g() % 200 : 1 + g() % 3;
+  std::vector< std::size_t > order( m );
+  for( std::size_t i = 0 ; i < m ; ++i ) order[ i ] = i;
+  std::shuffle( order.begin() , order.end() , g );
+  std::vector< std::uint64_t > p( m ) , q( m );
+  std::vector< std::uint32_t > tag( m );
+  std::uint64_t n = 0 , at = 0;
+  for( std::size_t i = 0 ; i < m ; ++i ) {
+   p[ i ] = n;
+   n += len[ i ];
+   tag[ i ] = std::uint32_t( i % 7 );
+   }
+  for( const auto i : order ) {             // the images in that order
+   q[ i ] = at;
+   at += len[ i ];
+   }
+  const MoveStructure M( p , q , tag , n );
+  CHECK( M.size() == n && M.intervals() >= m && M.intervals() <= 2 * m );
+  bool ok = true;
+  for( std::uint64_t x = 0 ; ok && ( x < n ) ; ++x ) {
+   const std::size_t i = M.interval( x );
+   const std::size_t o = std::size_t( std::upper_bound( p.begin() , p.end() ,
+                                                        x ) - p.begin() ) -
+                         1;
+   const auto [ y , j ] = M.move( x , i );
+   ok = ( M.start( i ) <= x ) && ( x < M.start( i + 1 ) ) &&
+        ( M.tag( i ) == tag[ o ] ) && ( y == q[ o ] + ( x - p[ o ] ) ) &&
+        ( M.start( j ) <= y ) && ( y < M.start( j + 1 ) );
+   }
+  CHECK( ok );
+  CHECK_THROWS( ( void )M.move( n , M.intervals() - 1 ) ,
+                contract_violation );
+  }
+ }
+
+// the r-index on move structures against a scan, as the r-index: the count
+// and the places of every substring of lengths 1 to 8 (sampled) of random
+// and of repetitive texts, of absent patterns and of the whole text; the
+// empty text; the bounds
+ADS_TEST( "move-r-index" )
+{
+ std::mt19937_64 g( 41 );
+ auto check = [ & ]( const std::string & s ) {
+  const MoveRIndex X( s );
+  CHECK( X.size() == s.size() );
+  bool ok = true;
+  for( std::size_t len = 1 ; ok && ( len <= 8 ) ; ++len )
+   for( std::size_t i = 0 ; ok && ( i + len <= s.size() ) ;
+        i += 1 + s.size() / 150 ) {
+    const std::string P = s.substr( i , len );
+    std::vector< std::size_t > at;
+    for( std::size_t j = 0 ; j + len <= s.size() ; ++j )
+     if( s.compare( j , len , P ) == 0 ) at.push_back( j );
+    ok = ( X.count( P ) == at.size() ) && ( X.locate( P ) == at );
+    }
+  CHECK( ok );
+  if( ! s.empty() )
+   CHECK( X.count( s ) == 1 &&
+          X.locate( s ) == std::vector< std::size_t >{ 0 } );
+  CHECK( X.count( s + "\x7f\x7f" ) == 0 && X.locate( s + "\x7f" ).empty() );
+  CHECK_THROWS( ( void )X.count( "" ) , contract_violation );
+  };
+ check( "" );
+ check( "a" );
+ check( std::string( 300 , 'z' ) );
+ for( const int sigma : { 1 , 2 , 4 , 256 } ) {
+  std::string s( 900 , 'a' );
+  for( auto & c : s ) c = static_cast< char >( 'a' + g() % unsigned( sigma ) );
+  if( sigma == 256 )
+   for( auto & c : s ) c = static_cast< char >( g() % 256 );
+  check( s );
+  }
+ std::string base( 400 , 'a' ) , rep;
+ for( auto & c : base ) c = static_cast< char >( 'a' + g() % 20 );
+ for( int k = 0 ; k < 20 ; ++k ) {
+  std::string copy = base;
+  for( int e = 0 ; e < 2 ; ++e ) copy[ g() % copy.size() ] = 'Z';
+  rep += copy;
+  }
+ check( rep );
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank

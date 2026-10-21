@@ -480,6 +480,8 @@ standard library, Boost and Eigen; their tests are in
 | partitioned Elias-Fano, blocks full, as vectors or by Elias-Fano (Ottaviano and Venturini) | [`succinct/PartitionedEliasFano.h`](include/ADS/succinct/PartitionedEliasFano.h) | `engineered_succinct.partitioned-elias-fano` |
 | binary packing SIMD-BP128 and its patched form PFor (Lemire and Boytsov; Zukowski et al.) | [`compression/BinaryPacking.h`](include/ADS/compression/BinaryPacking.h) | `engineered_succinct.binary-packing` |
 | r-index: count and locate in space proportional to the runs of the transform (Gagie, Navarro and Prezza) | [`compression/RIndex.h`](include/ADS/compression/RIndex.h) | `engineered_succinct.r-index` |
+| move structure, a permutation of shifted intervals in O(1) a step (Nishimoto and Tabei) | [`succinct/MoveStructure.h`](include/ADS/succinct/MoveStructure.h) | `engineered_succinct.move-structure` |
+| r-index on move structures (Bertram, Fischer and Nalbach) | [`compression/MoveRIndex.h`](include/ADS/compression/MoveRIndex.h) | `engineered_succinct.move-r-index` |
 
 ## Sorting
 
