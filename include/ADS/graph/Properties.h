@@ -68,6 +68,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 9.5 and
  *      18, https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
+ * \see D. Konig, Grafok es matrixok, Matematikai es Fizikai Lapok 38,
+ *      116-119, 1931
  * \see R. Seidel, On the all-pairs-shortest-path problem in unweighted
  *      undirected graphs, Journal of Computer and System Sciences 51(3),
  *      400-403, 1995, doi:10.1006/jcss.1995.1078
