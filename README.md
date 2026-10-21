@@ -29,19 +29,20 @@ it.
 ## Performance
 
 The table below compares the engineered structures of ADS with those of
-the standard library (libstdc++), of Boost 1.83, of GMP 6.3.0 and of
-FFTW 3.3.10, as measured by the benchmarks in [`bench/`](bench/) (`make
-bench`). These were run twice on an otherwise idle Intel Xeon Gold 5120
-at 2.2 GHz, on one core pinned by `taskset`, with g++ 13.3 at `-O3
--march=native`; GMP was configured for that processor, and FFTW was built
-with SSE2, AVX, AVX2 and AVX-512. Each cell of a benchmark is the median
-of 11 runs, and the clock does not include the building of the input nor
-the planning of FFTW. A row gives the time of the library divided by that
-of ADS (above 1 when ADS is faster), as the median and the range over the
-cells of the benchmark, i.e., its cases (e.g., random, sorted or few
-distinct keys for the sorts) and its sizes ($10^5$ and $10^6$ items for
-the containers). When a library has more than one candidate, the time of
-a cell is that of the fastest of them (e.g., the faster of
+the standard library (libstdc++), of Boost 1.83, of GMP 6.3.0, of FFTW
+3.3.10 and of pocketfft and ducc0, as measured by the benchmarks in
+[`bench/`](bench/) (`make bench`). These were run twice on an otherwise
+idle Intel Xeon Gold 5120 at 2.2 GHz, on one core pinned by `taskset`,
+with g++ 13.3 at `-O3 -march=native`; GMP was configured for that
+processor, and FFTW was built with SSE2, AVX, AVX2 and AVX-512. Each cell
+of a benchmark is the median of 11 runs, and the clock does not include
+the building of the input nor the planning of FFTW and of ADS (measured
+apart in the row "fft plan"). A row gives the time of the library divided
+by that of ADS (above 1 when ADS is faster), as the median and the range
+over the cells of the benchmark, i.e., its cases (e.g., random, sorted or
+few distinct keys for the sorts) and its sizes ($10^5$ and $10^6$ items
+for the containers). When a library has more than one candidate, the time
+of a cell is that of the fastest of them (e.g., the faster of
 `boost::pdqsort` and `boost::spreadsort`). The same code measured twice
 differs by 1.1% in the median cell and by 4.3% at the 90th percentile,
 over the 1544 cells of the two runs; the largest differences, up to 50%,
@@ -83,7 +84,10 @@ of the clock. Hence, a ratio between 0.95 and 1.05 is usually a tie.
 <tr><td>GMP</td><td align="right">12</td><td align="right">0.33</td><td align="right">0.20 to 1.25</td></tr>
 <tr><td rowspan="2"><code>ADS::Rational</code></td><td>Boost</td><td align="right">3</td><td align="right">4.74</td><td align="right">1.93 to 6.03</td></tr>
 <tr><td>GMP</td><td align="right">3</td><td align="right">0.42</td><td align="right">0.40 to 0.46</td></tr>
-<tr><td rowspan="1">fft</td><td rowspan="1"><code>ADS::fft</code></td><td>FFTW</td><td align="right">3</td><td align="right">0.50</td><td align="right">0.34 to 0.78</td></tr>
+<tr><td rowspan="3">fft</td><td rowspan="3"><code>ADS::fft</code></td><td>FFTW</td><td align="right">44</td><td align="right">1.12</td><td align="right">0.73 to 2.41</td></tr>
+<tr><td>pocketfft</td><td align="right">44</td><td align="right">3.12</td><td align="right">1.41 to 21</td></tr>
+<tr><td>ducc0</td><td align="right">37</td><td align="right">1.97</td><td align="right">1.13 to 17</td></tr>
+<tr><td rowspan="1">fft plan</td><td rowspan="1"><code>ADS::fft</code></td><td>FFTW</td><td align="right">6</td><td align="right">0.17</td><td align="right">0.07 to 32</td></tr>
 </table>
 
 `ADS::sort()` and `ADS::stableSort()` are faster than the standard library
@@ -101,11 +105,19 @@ libraries built on hand-written kernels stay ahead. GMP is 2 to 5 times
 faster than `BigInteger` on products, quotients and decimal conversion
 (twice as fast already at 16 limbs, where both use the schoolbook
 algorithms), and `mpq_class` is 2.2 to 2.5 times faster than `Rational`;
-FFTW is 1.3 to 3 times faster than `ADS::fft`, whose radix-4 transform is
-vectorized only by the compiler. Also, the Fibonacci heap of Boost is 1.2
-to 1.9 times faster than that of ADS, which follows the pseudocode of the
-book. The tables of all the structures, those of the book included, are
-in [`results/`](results/README.md) together with the raw files of the two
+`ADS::fft` (complex, real and single precision data, the cosines of type
+2, many transforms, 2 dimensions and convolutions, on powers of 2 and on
+other sizes) is faster than the faster plan of FFTW in the median cell, by
+1.12, and 1.4 to 3 times faster than pocketfft and ducc0; FFTW stays ahead
+by 1.1 to 1.4 times on the real transforms of 64 and of $2^{14}$ points,
+on the convolution of 64, on the transforms of 32 x 32 and 128 x 128
+points and on the complex one of $2^{17}$, the other cells below 1 being
+ties. The plans of ADS, which time 4 factorizations up to $2^{17}$ points,
+cost up to 0.4 µs per point, against up to 900 µs of `FFTW_MEASURE` and 3
+µs of `FFTW_ESTIMATE`. Also, the Fibonacci heap of Boost is 1.2 to 1.9
+times faster than that of ADS, which follows the pseudocode of the book.
+The tables of all the structures, those of the book included, are in
+[`results/`](results/README.md) together with the raw files of the two
 runs.
 
 ## Layout
