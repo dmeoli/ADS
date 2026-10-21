@@ -574,7 +574,7 @@ ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
 ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
 ordered  word-range-minimum   minimo di un intervallo, pile in una parola
 ordered  vector-intersection  intersezione a blocchi di 8 e a galoppo
-ordered  union-find           algoritmo di Rem con lo splicing
+ordered  rem-union-find       algoritmo di Rem con lo splicing
 ordered  bool-set-words       vettore booleano a parole di 64 bit
 ordered  roaring-bitmap       bitmap compresse Roaring
 ordered  adaptive-radix-tree  albero radice adattivo su stringhe

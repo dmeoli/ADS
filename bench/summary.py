@@ -396,6 +396,7 @@ PAIRS = [
     ('intersection', 'ADS::intersect', 'Lemire',
      ['Lemire SIMDintersection']),
     ('mfset', 'ADS::RemUnionFind', 'Boost', ['boost::disjoint_sets']),
+    ('mfset', 'ADS::UnionFind', 'Boost', ['boost::disjoint_sets']),
     ('boolset', 'ADS::BoolSet', 'Boost', ['boost::dynamic_bitset']),
     ('boolset', 'ADS::BoolSet', 'Roaring', ['Roaring']),
     ('bitmap', 'ADS::RoaringBitmap', 'Roaring', ['Roaring']),

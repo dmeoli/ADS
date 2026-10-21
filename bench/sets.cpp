@@ -13,8 +13,9 @@
  *   longer list has n random distinct integers of 32 bits out of 4 n, the
  *   shorter one n / r out of the same range, for r = 1, 10, 100 and 1000,
  *   and the time is per item of the shorter list.
- * - mfset: RemUnionFind and MFSet against boost::disjoint_sets (union by rank
- *   and compression of the paths): 2 n merges of random pairs of n
+ * - mfset: RemUnionFind, UnionFind (union by size and halving) and MFSet
+ *   against boost::disjoint_sets (union by rank and compression of the
+ *   paths): 2 n merges of random pairs of n
  *   elements, then n queries of random pairs, and the n - 1 merges of a
  *   chain ( i , i + 1 ) in random order; the time is per operation.
  * - boolset: BoolSet against boost::dynamic_bitset and, where it is found,
@@ -57,6 +58,7 @@
 
 #include "ADS/mfset/MFSet.h"
 #include "ADS/mfset/RemUnionFind.h"
+#include "ADS/mfset/UnionFind.h"
 #include "ADS/set/BoolSet.h"
 #include "ADS/set/RoaringBitmap.h"
 #include "ADS/set/SortedIntersection.h"
@@ -251,6 +253,12 @@ void mfset( std::size_t n , int r , unsigned seed )
        return( u.merge( x , y ) ); } ,
       []( ADS::RemUnionFind & u , std::uint32_t x , std::uint32_t y ) {
        return( u.same( x , y ) ); } );
+ run( "ADS::UnionFind" , [ & ](){
+       return( std::make_unique< ADS::UnionFind >( int( n ) ) ); } ,
+      []( ADS::UnionFind & u , std::uint32_t x , std::uint32_t y ) {
+       return( u.merge( int( x ) , int( y ) ) ); } ,
+      []( ADS::UnionFind & u , std::uint32_t x , std::uint32_t y ) {
+       return( u.same( int( x ) , int( y ) ) ); } );
  run( "ADS::MFSet" , [ & ](){
        return( std::make_unique< ADS::MFSet >( int( n ) ) ); } ,
       []( ADS::MFSet & u , std::uint32_t x , std::uint32_t y ) {

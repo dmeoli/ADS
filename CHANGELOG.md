@@ -874,6 +874,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   time with AVX2; contains() tests the bounds with one comparison
 - nthElement() checks whether a range is sorted on raw pointers when the
   iterators are contiguous, so that the check is vectorized
+- the union of Rem is RemUnionFind, next to UnionFind, and the benchmark
+  of the sets measures both
 - BigInteger on digits of 64 bits instead of 32: the product of two
   digits and the sums with carry by unsigned __int128, by the intrinsics
   of MSVC on x64, or by halves of 32 bits (forced by ADS_BIGINT_PORTABLE);
