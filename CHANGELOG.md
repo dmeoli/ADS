@@ -361,24 +361,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   filters and the blocked filters of Bloom
 
 - StringSearcher, the engineered exact search of string/StringSearch.h:
-  a pattern prepared once, two or four probes of its rarest bytes compared
-  with 64, 32 or 16 places of the text at once (AVX-512, AVX2, SSE2,
-  memchr() elsewhere), the shifts of its hashed q-grams for the patterns
-  of 64 bytes or more, on the two halves of a long text at once, and the
-  Two-Way algorithm of Crochemore and Perrin once the comparisons with
-  the pattern cost more than 16 times the text scanned, so that no text
-  costs more than O( n + m ); find(), findAll(), count() and the
-  interface of the searchers of std::search(); test
-  engineered_strings.string-search
+  a pattern prepared once in O( 256 + m ), two or four probes of its
+  rarest bytes (four only on the patterns that hint at a small alphabet)
+  compared with 64, 32 or 16 places of the text at once (AVX-512, AVX2,
+  SSE2, memchr() elsewhere), four blocks a step with the verifications
+  aside, the shifts of its hashed q-grams for the patterns of 64 bytes or
+  more, on four segments of a long text at once with the windows in
+  registers, and the Two-Way algorithm of Crochemore and Perrin, its
+  scans 8 bytes at a time, once the comparisons with the pattern cost more
+  than 16 times the text scanned, so that no text costs more than
+  O( n + m ); find(), findAll(), count() and the interface of the
+  searchers of std::search(); test engineered_strings.string-search
 - suffixArray() and lcpArrayPhi() of string/SuffixSorting.h: SA-IS on 32
-  or 64 bits without an array of the types, the LMS-substrings named by
-  their lengths and memcmp(), the scans of the induction two entries a
-  step with the text, the buckets and the places written prefetched, the
-  reduced string sorted by the doubling of Larsson and Sadakane on the
-  groups of equal names when few names repeat, a text that never rises
-  sorted at once; the LCP array by the permuted LCP of Karkkainen,
-  Manzini and Puglisi, the text read 8 bytes at a time; test
+  or 64 bits, the types of 64 places at a time from the carries of one
+  addition and vector comparisons, the partial induction on the buckets
+  split by the type of the suffix before (so that each scan visits only
+  the entries it moves) with the names marked during the scans, the
+  groups of equal LMS-substrings sorted by the text that follows them in
+  keys of 8 bytes (by insertion, or by a radix sort on the bits the keys
+  do not share), then by the names that follow, then by the doubling of
+  Larsson and Sadakane on few or small groups, and only then by the
+  recursion; the scans in functions whose arrays do not overlap, two
+  entries a step, with no branch for the complement, the text and, on
+  the alphabets beyond the cache, the buckets and the places written
+  prefetched; a text that never rises sorted at once; the LCP array by
+  the permuted LCP of Karkkainen, Manzini and Puglisi, the text read 8
+  bytes at a time after the first 4, the three passes prefetched; test
   engineered_strings.suffix-sorting
+- LceIndex, the longest common extensions of a text in O( 1 )
+  (string/LongestCommonExtension.h): the first 64 symbols compared
+  directly, 32 at a time with AVX2, then the range minimum on LCP in
+  blocks of 16 entries, one line each, with the stacks of their suffix
+  minima in words, groups of 64 blocks with their sparse tables and a
+  sparse table of the groups, so that a query waits for two reads of the
+  memory in a row; test engineered_strings.lce
+- MultiSearcher, the search of many patterns at once
+  (string/MultiSearch.h): up to 64 patterns in 8 buckets by a filter of
+  shuffles on the halves of the bytes of their first places (AVX-512,
+  AVX2), as many places as bring the probability of a place to pass below
+  2^-10; more patterns by the shift-or filter of FDR on super characters
+  of 11 bits, a block of 8 places in one register of 16 bytes, with a
+  table of the prefixes for the checks; one pattern by StringSearcher; the
+  automaton of Aho and Corasick from the place where a filter lets too
+  much through; AhoCorasick::forEach(); test
+  engineered_strings.multi-search
 - levenshtein(), lcsLength() and approximateMatches() of
   string/EditDistance.h: the bit vectors of Myers and Hyyro, one word up
   to 64 bytes, the diagonal transitions of Landau and Vishkin for the
@@ -485,6 +511,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sdsl-lite, the SIMD intersections of Lemire et al., CRoaring, the
   PGM-index, tsl::htrie_map and libart; bench/ordered.cpp,
   bench/arrays.cpp, bench/sets.cpp, bench/tries.cpp
+- the benchmarks of the exact search, of the search of many patterns, of
+  the suffix and LCP arrays, of the longest common extensions and of the
+  edit distance, LCS and approximate search (bench/search.cpp,
+  bench/multi.cpp, bench/suffix.cpp, bench/lce.cpp, bench/edit.cpp, on the
+  texts of bench/Texts.h) against std::search() with its three searchers,
+  std::string::find(), memmem(), the searchers of Boost.Algorithm, the
+  SuffixArray of the textbook and, when found, libsais, libdivsufsort,
+  Vectorscan (HYPERSCAN), the range minima of sdsl-lite (SDSL), edlib and
+  rapidfuzz-cpp; the benchmarks print 4 decimals below 1 ns
 - from Ferragina's Pearls of Algorithm Engineering: the variants of the
   maximum sub-array sum, the random sampling on disk and on streams, the
   list ranking, the two-level memory with the external mergesorts and the
