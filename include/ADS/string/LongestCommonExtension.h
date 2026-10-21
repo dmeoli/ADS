@@ -19,33 +19,39 @@
  * a range minimum query; LceIndex builds SA by suffixArray() and LCP by
  * lcpArrayPhi() [see SuffixSorting.h], and answers in two stages:
  *
- * - the first 16 symbols of the two suffixes are compared directly, two
- *   loads of 8 bytes each, since on most texts most extensions are short,
- *   and the direct comparison, which reads two lines of the text, is then
- *   faster than any query that reads the inverse and the LCP array at
- *   random (Ilie, Navarro and Tinta found it the fastest on the texts with
- *   few long repeats);
- * - the longer ones go to the range minimum on LCP, cut into blocks of 64
- *   entries. For the entry r of a block that starts at s a word
- *   \f$ M_r \f$ has the bit k set if \f$ LCP[ s + k ] < LCP[ s + k' ] \f$
- *   for every \f$ k < k' \le r - s \f$, i.e., if s + k is on the stack of
- *   the suffix minima of the block up to r; the minimum of
- *   \f$ LCP[ s + a .. r ] \f$ is then \f$ LCP[ s + a + \mathrm{ctz}(
- *   M_r \gg a ) ] \f$, one shift and one count of trailing zeros (the
- *   words of Alstrup, Gavoille, Kaplan and Rauhe). The minima of the blocks
- *   are in a sparse table, \f$ \min_{ c \le d < c + 2^L } \f$ for each
- *   block c and level L, which covers the blocks strictly between those
- *   of a and b - 1 with two overlapping ranges. Building it costs O( n )
- *   for the words (a block's stack in one word, every entry pushed and
- *   popped once) and \f$ O( ( n / 64 ) \log( n / 64 ) ) \f$ for the table,
- *   and a query O( 1 ): three reads of words and of LCP, two of the table.
+ * - the first 64 symbols of the two suffixes are compared directly, 32 at
+ *   a time with AVX2 (8 else), since on most texts most extensions are
+ *   short, and the direct comparison, which reads two lines of the text,
+ *   is then faster than any query that reads the inverse and the LCP
+ *   array at random (Ilie, Navarro and Tinta found it the fastest on the
+ *   texts with few long repeats); the first chunk is inlined where lce()
+ *   is called, the rest is out of line;
+ * - the longer ones go to the range minimum on LCP, cut into blocks of 16
+ *   entries, each one line of the cache. For the entry r of a block that
+ *   starts at s a word \f$ M_r \f$ of 16 bits has the bit k set if
+ *   \f$ LCP[ s + k ] < LCP[ s + k' ] \f$ for every \f$ k < k' \le r - s
+ *   \f$, i.e., if s + k is on the stack of the suffix minima of the block
+ *   up to r; the minimum of \f$ LCP[ s + a .. r ] \f$ is then
+ *   \f$ LCP[ s + a + \mathrm{ctz}( M_r \gg a ) ] \f$, one shift and one
+ *   count of trailing zeros (the words of Alstrup, Gavoille, Kaplan and
+ *   Rauhe). The blocks form groups of 64, each with the sparse table of
+ *   the minima of its blocks, \f$ \min_{ x \le d < x + 2^L } \f$ for
+ *   \f$ L \le 6 \f$, and the minima of the groups are in a sparse table of
+ *   their own; the blocks strictly between those of a and b - 1 are
+ *   covered by two overlapping ranges of one group, or by those of two
+ *   partial groups and of the groups between them. Every place that a
+ *   query reads is known once the two ranks are, and the lines of the two
+ *   blocks are requested with their words, so that a query waits for two
+ *   reads of the memory in a row: the ranks, then all the rest. Building
+ *   it costs O( n ) but for the table of the groups, \f$ O( ( n / 1024 )
+ *   \log( n / 1024 ) ) \f$, and a query O( 1 ).
  *
  * The space is 4 n bytes for each of \f$ SA^{-1} \f$ and LCP (on 32 bits),
- * 8 n for the words and \f$ ( n / 16 ) \log_2( n / 64 ) \f$ for the
- * table, against the 2 n + o( n ) bits of the succinct range minima of
- * Fischer and Heun, whose practical form (Baumstark, Gog, Heuer and
- * Labeit) pays for its space with a select on a balanced-parentheses
- * sequence at each query.
+ * 2 n for the words, 1.75 n for the tables of the groups and a vanishing
+ * share for the table of the groups, against the 2 n + o( n ) bits of the
+ * succinct range minima of Fischer and Heun, whose practical form
+ * (Baumstark, Gog, Heuer and Labeit) pays for its space with a select on
+ * a balanced-parentheses sequence at each query.
  *
  * The contracts [see Contract.h]: a query asks for i , j <= n (n gives 0),
  * and its answer is the lcp of the two suffixes (an audit, linear in it).
