@@ -197,6 +197,7 @@ if (ADS_BENCHMARKS)
     if (hwy_FOUND)
         target_compile_definitions(bench-sort PRIVATE ADS_HAS_VQSORT)
         target_link_libraries(bench-sort PRIVATE hwy::hwy_contrib hwy::hwy)
+    endif ()
     # the competitors of the combinatorial benchmarks: the header-only
     # libraries and the programs of Knuth from the directory ADS_COMBI
     set(ADS_COMBI "" CACHE PATH "the sources of the combinatorial libraries")
