@@ -31,6 +31,8 @@ def main(path):
     for b, case, n, who, ns in rows:
         benches.setdefault(b, []).append((case, n, who, ns))
     for b, R in benches.items():
+        if b.endswith(':count'):          # the counts that identify a run
+            continue
         cols = list(OrderedDict.fromkeys((c, n) for c, n, _, _ in R))
         whos = list(OrderedDict.fromkeys(w for _, _, w, _ in R))
         cell = {(c, n, w): ns for c, n, w, ns in R}

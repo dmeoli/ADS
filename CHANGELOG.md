@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the algorithms of the book on graphs as templates on the structures they
+  use: shortestPaths() on a frontier given as a type (PrototypeFrontier;
+  PriorityFrontier on any priority queue of section 10.1, its priority the
+  distance or the pair ( distance , node ), QueueFrontier, StackFrontier
+  and DequeFrontier), prim() on a priority queue, kruskal() on any MFSET
+  with merge(), distance() on a queue, each counting its work
+  (FrontierCounts, MergeCounts, VisitCounts); the versions with Frontier
+  run on them
+- StaticGraph, a GRAPH in compressed rows with each arc next to its
+  weight and the rows sorted by head, with transpose(), relabel() and
+  bfsOrder(); IndexedDaryHeap, a d-ary heap of the ids [ 0 , n ) with
+  decrease-key and a vector of places, also a PRIORITYQUEUE whose handles
+  are the ids; DisjointSets, the union-find in one vector by size or by
+  rank with the paths halved or compressed, UnionFind the union by size
+  with halving; test/engineered_graph.cpp
+- bench/graphs.cpp, the algorithms of the book (the visit in breadth, the
+  shortest paths on a priority queue and on a queue, Prim, Kruskal, the
+  strongly connected components, the union-find) on the structures of the
+  standard library, of Boost and of this library, the same arcs in the
+  same order, with their counts checked equal; bench/tables.py leaves the
+  rows of the counts out
+- the references that the documentation of the shortest paths, of the
+  maximum flow and of the properties of graphs named without citing them:
+  Fredman and Tarjan, Ford, Moore, Karzanov, Malhotra-Kumar-Maheshwari,
+  Karmarkar, Konig
+
 - DialQueue, the monotone bucket queue of Dial on a circular window of W
   buckets with a radix heap for the keys beyond it, the next bucket in use
   found by a mask of W bits; RadixHeap::peekKey(), the least key without
