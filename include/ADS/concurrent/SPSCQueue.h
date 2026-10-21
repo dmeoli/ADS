@@ -16,7 +16,12 @@
  * adjacent line); a consumer that finds the queue empty asks for the line
  * of its next place before it reads the tail again, so that, when the item
  * has come, the two lines travel together and a round trip between the
- * threads costs one miss a side instead of two in a row;
+ * threads costs one miss a side instead of two in a row; a consumer whose
+ * last pop took an item and that finds fewer than min( 64 , capacity / 2 )
+ * new ones waits 64 pauses of the processor for a batch before it takes
+ * them (the backtracking of B-Queue), while after a pop that found nothing
+ * it takes at once what comes, so that a single item after a silence
+ * costs no wait;
  * the places are raw memory with a line of padding at each end, so that
  * the first and the last items share no line with other data. The
  * capacity is a power of 2 and the indices are reduced by a mask.
@@ -33,6 +38,10 @@
  *      monitoring, IEEE International Symposium on Parallel and
  *      Distributed Processing (IPDPS), 1-12, 2010,
  *      doi:10.1109/IPDPS.2010.5470368 (the copies of the indices)
+ * \see J. Wang, K. Zhang, X. Tang, B. Hua, B-Queue: efficient and
+ *      practical queuing for fast core-to-core communication,
+ *      International Journal of Parallel Programming 41(1), 137-159, 2013,
+ *      doi:10.1007/s10766-012-0213-x (the wait for a batch)
  * \see Intel 64 and IA-32 Architectures Optimization Reference Manual,
  *      the spatial prefetcher that fetches the pairs of lines of 128
  *      bytes, https://www.intel.com/content/www/us/en/content-details/
@@ -58,7 +67,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/concurrent/EventCount.h"
 
+#include <algorithm>
 #include <atomic>
 #include <bit>
 #include <cstddef>
@@ -113,6 +124,15 @@ class SPSCQueue {
  /// consumer calls it
  bool tryPop( T & x );
 
+ /// wakes the consumer if it sleeps in waitPop(), after pushes: a fence
+ /// and the read of a line when it does not; only the producer calls it
+ void notify( void ) noexcept { f_wait.notify(); }
+
+ /// dequeues an item into x, sleeping until one comes [see
+ /// EventCount.h], the producer calling notify() after its pushes; only
+ /// the consumer calls it
+ void waitPop( T & x ) { f_wait.await( [ & ] { return( tryPop( x ) ); } ); }
+
  /// the number of items at some moment of the call
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -126,6 +146,21 @@ class SPSCQueue {
  [[nodiscard]] T * at( std::size_t i ) const {
   return( f_A + pad + ( i & f_mask ) );
   }
+
+ /// the tail into the consumer's copy, when it has taken all those of
+ /// the copy (h is the head): if its last pop took an item and only a few
+ /// came since, it first waits 64 pauses of the processor for a batch, so
+ /// that a consumer right behind a streaming producer does not take from
+ /// it the lines of the tail and of the items at each item
+ void refresh( std::size_t h );
+
+ /// the batch of items that a streaming consumer waits for
+ [[nodiscard]] std::size_t batch( void ) const {
+  return( std::min< std::size_t >( 64 , capacity() / 2 ) );
+  }
+
+ /// the wait for a batch, 64 pauses of the processor
+ static void relax( void );
 
  /// a hint to load the line of p, so that a consumer that finds the queue
  /// empty fetches the place and the tail together, one miss and not two
@@ -149,7 +184,9 @@ class SPSCQueue {
  alignas( line ) std::size_t f_headSeen = 0;   ///< the head it saw
  alignas( line ) std::atomic< std::size_t > f_head{ 0 };   ///< consumer
  alignas( line ) std::size_t f_tailSeen = 0;   ///< the tail it saw
+ bool f_streaming = false;                 ///< its last pop took one
  alignas( line ) char f_end = 0;           ///< no other data on that line
+ EventCount f_wait;                        ///< the sleep of the consumer
  };  // end( class SPSCQueue )
 
 /*--------------------------------------------------------------------------*/

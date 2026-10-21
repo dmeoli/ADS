@@ -39,6 +39,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/concurrent/EventCount.h"
 
 #include <atomic>
 #include <utility>
@@ -70,12 +71,21 @@ class MPSCInbox {
  /// frees the messages not taken
  ~MPSCInbox();
 
- /// sends v; any thread may call it
+ /// sends v, and wakes the consumer if it sleeps in waitTake() (a fence
+ /// and the read of a line when it does not); any thread may call it
  void push( T v );
 
  /// all the messages sent so far and not yet taken, those of each sender
  /// in the order of sending; only the consumer calls it
  [[nodiscard]] std::vector< T > take( void );
+
+ /// as take(), sleeping until at least one message comes [see
+ /// EventCount.h]; only the consumer calls it
+ [[nodiscard]] std::vector< T > waitTake( void ) {
+  std::vector< T > v;
+  f_wait.await( [ & ] { v = take(); return( ! v.empty() ); } );
+  return( v );
+  }
 
  /// true if no message was waiting at some moment of the call
  [[nodiscard]] bool empty( void ) const;
@@ -90,6 +100,7 @@ class MPSCInbox {
   };
 
  std::atomic< Cell * > f_top{ nullptr };   ///< the top of the stack
+ EventCount f_wait;                        ///< the sleep of the consumer
 
  };  // end( class MPSCInbox )
 

@@ -68,6 +68,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/concurrent/EventCount.h"
 
 #include <algorithm>
 #include <atomic>
@@ -124,7 +125,9 @@ class MPSCQueue {
   bool streaming = false;                   ///< its last call took some
   alignas( 2 * line ) std::atomic< Block * > given{ nullptr };
   Lane * nextLane = nullptr;                ///< in the list of the lanes
-  Lane( void ) : in( new Block ) , out( in ) {}
+  EventCount * wait;                        ///< the sleep of the consumer
+  explicit Lane( EventCount * w ) : in( new Block ) , out( in ) ,
+                                    wait( w ) {}
   };
 
 /*--------------------------------------------------------------------------*/
@@ -150,6 +153,14 @@ class MPSCQueue {
   void push( const T & v ) { emplace( v ); }
   void push( T && v ) { emplace( std::move( v ) ); }
 
+  /// wakes the consumer if it sleeps in waitPop() or waitPopInto(), after
+  /// pushes: a fence and the read of a line when it does not
+  /// \pre the handle comes from producer()
+  void notify( void ) {
+   ADS_PRE( f_lane != nullptr );
+   f_lane->wait->notify();
+   }
+
   private:
   friend class MPSCQueue;
   explicit Producer( Lane * l ) : f_lane( l ) {}
@@ -174,6 +185,19 @@ class MPSCQueue {
  /// one, and returns how many; only the consumer calls it
  std::size_t popInto( T * out , std::size_t n );
 
+ /// dequeues an item into x, sleeping until one comes [see
+ /// EventCount.h], the producers calling notify() after their pushes;
+ /// only the consumer calls it
+ void waitPop( T & x ) { f_wait.await( [ & ] { return( tryPop( x ) ); } ); }
+
+ /// as popInto(), sleeping until at least one item comes; n >= 1
+ std::size_t waitPopInto( T * out , std::size_t n ) {
+  ADS_PRE( n >= 1 );
+  std::size_t k = 0;
+  f_wait.await( [ & ] { return( ( k = popInto( out , n ) ) > 0 ); } );
+  return( k );
+  }
+
  /// true if no item was found in a turn of the lanes; only the consumer
  /// calls it
  [[nodiscard]] bool empty( void );
@@ -191,6 +215,7 @@ class MPSCQueue {
 
  std::atomic< Lane * > f_lanes{ nullptr };   ///< the list of the lanes
  Lane * f_at = nullptr;                    ///< the consumer's lane
+ EventCount f_wait;                        ///< the sleep of the consumer
  };  // end( class MPSCQueue )
 
 /*--------------------------------------------------------------------------*/

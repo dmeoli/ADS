@@ -21,13 +21,18 @@
 
 #include "ADSTest.h"
 
+#include "ADS/concurrent/EventCount.h"
+#include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
+#include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/queue/LinkedQueue.h"
 #include "ADS/queue/RingDeque.h"
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <deque>
 #include <iterator>
@@ -372,6 +377,174 @@ ADS_TEST( "mpsc-queue" )
  std::unique_ptr< int > v;
  for( int i = 0 ; i < 5 ; ++i ) CHECK( U.tryPop( v ) && *v == i );
  CHECK( ! U.tryPop( v ) );
+ }
+
+// EventCount and the waits of the queues: 20000 round trips between two
+// threads that sleep in turn (a lost wake-up would hang the test), a
+// condition already true (no sleep), the consumers of SPSCQueue,
+// MPSCQueue and MPSCInbox asleep while the producers pause now and then,
+// all the items in order
+ADS_TEST( "event-count" )
+{
+ {
+  EventCount a , b;
+  std::atomic< int > turn{ 0 };
+  const int rounds = 20000;
+  std::thread t( [ & ] {
+   for( int i = 0 ; i < rounds ; ++i ) {
+    a.await( [ & ] { return( turn.load() == 2 * i + 1 ); } );
+    turn.store( 2 * i + 2 );
+    b.notify();
+    }
+   } );
+  for( int i = 0 ; i < rounds ; ++i ) {
+   turn.store( 2 * i + 1 );
+   a.notify();
+   b.await( [ & ] { return( turn.load() == 2 * i + 2 ); } );
+   }
+  t.join();
+  CHECK( turn.load() == 2 * rounds && a.waiters() == 0 &&
+         b.waiters() == 0 );
+  int calls = 0;
+  a.await( [ & ] { return( ++calls > 0 ); } );
+  CHECK( calls == 1 && a.waiters() == 0 );
+  }
+ const int n = 20000;
+ auto pause = []( int i ) {
+  if( i % 1000 == 0 ) std::this_thread::sleep_for(
+                       std::chrono::microseconds( 200 ) ); };
+ {
+  SPSCQueue< int > Q( 64 );
+  std::thread t( [ & ] {
+   for( int i = 0 ; i < n ; ++i ) {
+    while( ! Q.push( i ) ) {}
+    Q.notify();
+    pause( i );
+    }
+   } );
+  bool ordered = true;
+  for( int i = 0 ; i < n ; ++i ) {
+   int x;
+   Q.waitPop( x );
+   ordered = ordered && ( x == i );
+   }
+  t.join();
+  CHECK( ordered );
+  }
+ {
+  MPSCQueue< std::pair< int , int > , 4 > Q;
+  const int P = 3;
+  std::vector< std::thread > T;
+  for( int p = 0 ; p < P ; ++p )
+   T.emplace_back( [ & , p ] {
+    auto h = Q.producer();
+    for( int i = 0 ; i < n ; ++i ) {
+     h.push( std::pair( p , i ) );
+     h.notify();
+     pause( i );
+     }
+    } );
+  std::vector< int > next( P , 0 );
+  bool ordered = true;
+  std::pair< int , int > buf[ 16 ];
+  for( int got = 0 ; got < P * n ; ) {
+   const std::size_t k = got % 2 ? Q.waitPopInto( buf , 16 )
+                                 : ( Q.waitPop( buf[ 0 ] ) , 1 );
+   for( std::size_t i = 0 ; i < k ; ++i , ++got )
+    ordered = ordered && ( buf[ i ].second == next[ buf[ i ].first ]++ );
+   }
+  for( auto & t : T ) t.join();
+  CHECK( ordered && Q.empty() );
+  CHECK_THROWS( (void) Q.waitPopInto( buf , 0 ) , contract_violation );
+  MPSCQueue< int >::Producer none;
+  CHECK_THROWS( none.notify() , contract_violation );
+  }
+ {
+  MPSCInbox< int > I;
+  std::thread t( [ & ] {
+   for( int i = 0 ; i < n ; ++i ) {
+    I.push( i );
+    pause( i );
+    }
+   } );
+  bool ordered = true;
+  for( int got = 0 ; got < n ; )
+   for( const int x : I.waitTake() ) ordered = ordered && ( x == got++ );
+  t.join();
+  CHECK( ordered && I.empty() );
+  }
+ }
+
+// WorkStealingDeque: the owner alone (LIFO), a thief alone (FIFO), the
+// vector of 2 places doubled many times, the empty deque; 4 thieves that
+// steal while the owner pushes and takes, each item taken exactly once;
+// 20000 rounds of a single item raced by the owner and a thief, exactly one
+// of them getting it; the contract of the capacity
+ADS_TEST( "work-stealing-deque" )
+{
+ CHECK_THROWS( WorkStealingDeque< int >( 3 ) , contract_violation );
+ CHECK_THROWS( WorkStealingDeque< int >( 1 ) , contract_violation );
+ {
+  WorkStealingDeque< int > D( 2 );
+  int x;
+  CHECK( D.empty() && ! D.take() && ! D.steal( x ) );
+  for( int i = 0 ; i < 100 ; ++i ) D.push( i );
+  CHECK( D.size() == 100 && D.capacity() == 128 );
+  bool lifo = true , fifo = true;
+  for( int i = 99 ; i >= 50 ; --i ) lifo = lifo && ( D.take() == i );
+  for( int i = 0 ; i < 50 ; ++i ) fifo = fifo && D.steal( x ) && x == i;
+  CHECK( lifo && fifo && D.empty() && ! D.take() && ! D.steal( x ) );
+  D.push( 7 );
+  CHECK( D.steal( x ) && x == 7 && ! D.take() );
+  }
+ {
+  const int n = 200000 , P = 4;
+  WorkStealingDeque< int > D( 2 );
+  std::vector< std::atomic< int > > got( n );
+  std::atomic< bool > done{ false };
+  std::vector< std::thread > T;
+  for( int p = 0 ; p < P ; ++p )
+   T.emplace_back( [ & ] {
+    int x;
+    while( ! done.load() || ! D.empty() )
+     if( D.steal( x ) ) got[ x ].fetch_add( 1 );
+    } );
+  for( int i = 0 ; i < n ; ++i ) {
+   D.push( i );
+   if( i % 3 == 0 )
+    if( auto y = D.take() ) got[ *y ].fetch_add( 1 );
+   }
+  while( auto y = D.take() ) got[ *y ].fetch_add( 1 );
+  done.store( true );
+  for( auto & t : T ) t.join();
+  bool once = true;
+  for( auto & g : got ) once = once && ( g.load() == 1 );
+  CHECK( once && D.empty() );
+  }
+ {
+  WorkStealingDeque< int > D( 4 );
+  const int rounds = 20000;
+  std::atomic< int > round{ -1 } , stolen{ 0 } , acked{ -1 };
+  std::thread t( [ & ] {
+   int x;
+   for( int r = 0 ; r < rounds ; ++r ) {
+    while( round.load() < r ) {}
+    if( D.steal( x ) ) stolen.fetch_add( 1 );
+    acked.store( r );
+    }
+   } );
+  int taken = 0;
+  for( int r = 0 ; r < rounds ; ++r ) {
+   D.push( r );
+   round.store( r );
+   if( D.take() ) ++taken;
+   while( acked.load() < r ) {}
+   int x;
+   CHECK( ! D.steal( x ) );
+   }
+  t.join();
+  CHECK( taken + stolen.load() == rounds );
+  }
  }
 
 }  // end( namespace )
