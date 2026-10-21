@@ -4,19 +4,21 @@
 /** @file
  * The engineered search of many patterns at once, beyond the book:
  * MultiSearcher finds all the occurrences in a text T of n bytes of k
- * patterns \f$ P_0 , \ldots , P_{k-1} \f$, by a filter of SIMD
- * instructions on few patterns and by the automaton of Aho and Corasick
- * [see AhoCorasick.h] on many; the benchmark of the multiple search
- * compares it with AhoCorasick and with Vectorscan (the portable Hyperscan).
+ * patterns \f$ P_0 , \ldots , P_{k-1} \f$: one pattern by StringSearcher
+ * [see StringSearch.h], up to 64 by a filter of shuffles of bytes, more
+ * by a filter of shift-or on super characters, and by the automaton of
+ * Aho and Corasick [see AhoCorasick.h] where a filter lets too much
+ * through; the benchmark of the multiple search compares it with
+ * AhoCorasick and with Vectorscan (the portable Hyperscan).
  *
- * The filter puts the patterns, sorted, into 8 buckets of consecutive
- * ones, so that the patterns of a bucket tend to share their first bytes
- * (the patterns go into buckets, and the buckets are told apart by the 8
- * bits of a byte, as in the FDR matcher of Hyperscan). The place i of T
- * is a candidate for the bucket b if, for every \f$ r < q \f$, some
+ * The filter of shuffles puts the patterns, sorted, into 8 buckets of
+ * consecutive ones, so that the patterns of a bucket tend to share their
+ * first bytes (the patterns go into buckets, and the buckets are told apart
+ * by the 8 bits of a byte, as in the FDR matcher of Hyperscan). The place i
+ * of T is a candidate for the bucket b if, for every \f$ r < q \f$, some
  * pattern of b has the low half (4 bits) of \f$ T[ i + r ] \f$ as the low
- * half of its byte r and some pattern of b (maybe another) the high half
- * as the high half:
+ * half of its byte r and some pattern of b (maybe another) the high half as
+ * the high half:
  * \f[
  *   C_i = \bigwedge_{ r < q } \mathit{lo}_r[ T[ i + r ] \bmod 16 ] \wedge
  *         \mathit{hi}_r[ \lfloor T[ i + r ] / 16 \rfloor ] ,
@@ -37,8 +39,32 @@
  * its place a candidate for its bucket, so that nothing is missed; when
  * the checks exceed 2 a place on average (patterns everywhere, or a text
  * whose bytes the filter cannot tell apart), the automaton goes on from
- * the place reached, its occurrences that start before it left out, and
- * above 64 patterns the automaton does the whole search.
+ * the place reached, its occurrences that start before it left out (and
+ * count() takes the count of the automaton from a little before that
+ * place, less the occurrences before it in a window of the length of the
+ * longest pattern).
+ *
+ * Above 64 patterns the halves of the bytes of a bucket cover them all,
+ * and the filter of shift-or of FDR takes over, on the first
+ * \f$ L = \min( 8 , \ell ) \f$ bytes of the patterns, \f$ \ell \f$ the
+ * shortest. The super character of the place p is \f$ T[ p ] \f$ with the
+ * low 3 bits of \f$ T[ p + 1 ] \f$, 11 bits, and its mask of 64 bits has
+ * the bit b of its byte \f$ L - 1 - r \f$ off if a pattern of the bucket b
+ * has that super character at its place r < L (its byte r and the low
+ * bits of the byte r + 1, any of them past its end), the bytes from L on
+ * all off. A pattern that starts at s can then end its window at
+ * \f$ e = s + L - 1 \f$ only if the bit b of the byte \f$ e - p \f$ of the
+ * mask of p is off for every \f$ e - L < p \le e \f$:
+ * \f[
+ *   \mathit{St}_e = \bigvee_{ t < L } \mathit{sh}[ x( e - t ) ]_t
+ * \f]
+ * has a bit off. A block of 8 places adds each mask moved by d bytes into
+ * a register of 16 bytes, the states of its 8 ends and of the next 8,
+ * one load, one shift of bytes and one or a place, the 11 bits read from
+ * two words of the text with no other load; the table of the masks is
+ * 16 KB. A state with a bit off sends its start to a table of the
+ * prefixes of L bytes of the patterns (chained, by a multiplicative hash),
+ * which checks the patterns of that prefix.
  *
  * findAll() gives the pairs ( start , number ) of the occurrences, by
  * increasing start and number, count() their number; the patterns are
