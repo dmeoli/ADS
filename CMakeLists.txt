@@ -73,6 +73,7 @@ if (ADS_BENCHMARKS)
                search suffix edit numeric queues concurrent geometry matrix
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries)
+               sparse allocators)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -160,14 +161,17 @@ if (ADS_BENCHMARKS)
                        ${ADS_PRIORITY}/tlx/tlx/die/core.cpp)
     endif ()
     # the competitors of bench-memory: mimalloc (without the override of
-    # malloc) and jemalloc (with the prefix je_) from their prefixes
+    # malloc, also for bench-allocators) and jemalloc (with the prefix
+    # je_) from their prefixes
     set(ADS_MIMALLOC "" CACHE PATH "the prefix of mimalloc")
     if (ADS_MIMALLOC)
-        target_compile_definitions(bench-memory PRIVATE ADS_HAS_MIMALLOC)
-        target_include_directories(bench-memory PRIVATE
-                                   ${ADS_MIMALLOC}/include/mimalloc-2.1)
-        target_link_libraries(bench-memory PRIVATE
-                     ${ADS_MIMALLOC}/lib/mimalloc-2.1/libmimalloc.a)
+        foreach (b memory allocators)
+            target_compile_definitions(bench-${b} PRIVATE ADS_HAS_MIMALLOC)
+            target_include_directories(bench-${b} PRIVATE
+                                       ${ADS_MIMALLOC}/include/mimalloc-2.1)
+            target_link_libraries(bench-${b} PRIVATE
+                         ${ADS_MIMALLOC}/lib/mimalloc-2.1/libmimalloc.a)
+        endforeach ()
     endif ()
     set(ADS_JEMALLOC "" CACHE PATH "the prefix of jemalloc")
     if (ADS_JEMALLOC)
@@ -204,6 +208,7 @@ if (ADS_BENCHMARKS)
         target_compile_definitions(bench-backtrack
                                    PRIVATE ADS_KNUTH="${ADS_COMBI}/knuth")
     endif ()
+    target_link_libraries(bench-allocators PRIVATE Threads::Threads)
 endif ()
 
 # ----- install and export, for find_package(ADS) and pkg-config ---------- #

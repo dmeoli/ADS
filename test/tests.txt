@@ -1663,3 +1663,12 @@ engineered_graph  static-graph        grafo a righe compresse
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
 engineered_graph  union-find          union-find per dimensione o rango
 engineered_graph  book-on-structures  algoritmi del libro su ogni struttura
+
+# the engineered allocators of the size classes, beyond the book
+engineered_memory  pool-resource              classi di 16 byte su ObjectPool
+engineered_memory  pool-allocator-containers  allocatore standard nei contenitori
+engineered_memory  pool-allocator-propagation copie, spostamenti e scambi
+engineered_memory  pool-allocate-shared       allocate_shared in un posto solo
+engineered_memory  concurrent-pool            heap per thread, un thread solo
+engineered_memory  concurrent-pool-threads    liberazioni da altri thread
+

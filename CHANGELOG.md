@@ -67,6 +67,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1.3 to 2.7 times faster; its test in test/sequences.cpp and its cells in
   bench/sequences.cpp
 
+- PoolAllocator, the standard allocator over size classes of 8 bytes up
+  to 256, rebound to any type, with the three propagation traits true, for
+  the node containers and std::allocate_shared (the control block and the
+  object in one slot); PoolResource, its resource for one thread, and
+  ConcurrentPoolResource, the resource shared by threads, a heap per
+  thread, the frees of the other threads sent back to the owner in batches
+  of up to 32 by one compare-and-swap on a stack of Treiber, which the
+  owner takes whole; both on PageHeap, pages of 64 KB of one class each in
+  segments of 2 MB on huge pages, with a free list per page; their tests in
+  test/engineered_memory.cpp and bench/allocators.cpp, against
+  std::allocator, std::pmr, boost::fast_pool_allocator and mimalloc, also
+  with the frees in a second thread
 - DialQueue, the monotone bucket queue of Dial on a circular window of W
   buckets with a radix heap for the keys beyond it, the next bucket in use
   found by a mask of W bits; RadixHeap::peekKey(), the least key without
