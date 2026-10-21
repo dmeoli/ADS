@@ -28,8 +28,13 @@
  * \see J. T. Schwartz, Fast probabilistic algorithms for verification of
  *      polynomial identities, Journal of the ACM 27(4), 701-717, 1980,
  *      doi:10.1145/322217.322225
+ * \see R. Zippel, Probabilistic algorithms for sparse polynomials,
+ *      EUROSAM 1979, LNCS 72, 216-226, 1979, doi:10.1007/3-540-09519-5_73
  * \see R. Freivalds, Probabilistic machines can use less running time,
  *      IFIP Congress 1977, 839-842
+ * \see W. Hoeffding, Probability inequalities for sums of bounded random
+ *      variables, Journal of the American Statistical Association
+ *      58(301), 13-30, 1963, doi:10.1080/01621459.1963.10500830
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

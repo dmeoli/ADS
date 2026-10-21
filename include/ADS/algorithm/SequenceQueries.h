@@ -48,6 +48,9 @@
  * \see P. M. Fenwick, A new data structure for cumulative frequency
  *      tables, Software: Practice and Experience 24(3), 327-336, 1994,
  *      doi:10.1002/spe.4380240306
+ * \see H. W. Kuhn, The Hungarian method for the assignment problem, Naval
+ *      Research Logistics Quarterly 2(1-2), 83-97, 1955,
+ *      doi:10.1002/nav.3800020109
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
