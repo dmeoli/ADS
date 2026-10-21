@@ -6,7 +6,10 @@
  * section 10.2 with the union by rank and the compression of the paths]:
  * the union of disjoint sets by the algorithm of Rem with splicing, which
  * the experiments of Patwary, Blair and Manne found the fastest of the
- * sequential algorithms of union and find.
+ * sequential algorithms of union and find. UnionFind [see UnionFind.h]
+ * is the other engineered MFSET, the union by size with the halving of
+ * the paths on signed integers; this one links by index, needs no sizes,
+ * and its merge() stops as soon as the two climbs meet.
  *
  * The parents are a vector of 32-bit integers, and a parent is never
  * smaller than its child, \f$ p[ x ] \ge x \f$ for every x, the roots
@@ -81,7 +84,7 @@
 namespace ADS {
 
 /*--------------------------------------------------------------------------*/
-/*---------------------------- CLASS RemUnionFind -----------------------------*/
+/*--------------------------- CLASS RemUnionFind ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the union of disjoint sets of the elements 0 , ... , n - 1

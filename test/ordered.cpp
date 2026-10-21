@@ -543,7 +543,7 @@ ADS_TEST( "vector-intersection" )
 // on 1, 2 and 3000 elements, merges of an element with itself, of
 // elements already together, chains in increasing and decreasing order,
 // the count of the sets, and an element out of the range
-ADS_TEST( "union-find" )
+ADS_TEST( "rem-union-find" )
 {
  std::mt19937 g( 36 );
  for( std::size_t n : { 1 , 2 , 3000 } ) {
