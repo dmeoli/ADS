@@ -13,7 +13,10 @@
  * grouped in pairs of lines so that a thread that spins on a full or empty
  * queue, rewriting its copy, does not invalidate the line that the other
  * one writes or reads (false sharing, also through the prefetch of the
- * adjacent line);
+ * adjacent line); a consumer that finds the queue empty asks for the line
+ * of its next place before it reads the tail again, so that, when the item
+ * has come, the two lines travel together and a round trip between the
+ * threads costs one miss a side instead of two in a row;
  * the places are raw memory with a line of padding at each end, so that
  * the first and the last items share no line with other data. The
  * capacity is a power of 2 and the indices are reduced by a mask.
@@ -122,6 +125,17 @@ class SPSCQueue {
  /// the place of the index i
  [[nodiscard]] T * at( std::size_t i ) const {
   return( f_A + pad + ( i & f_mask ) );
+  }
+
+ /// a hint to load the line of p, so that a consumer that finds the queue
+ /// empty fetches the place and the tail together, one miss and not two
+ /// in a row when the item has come
+ static void prefetch( const T * p ) {
+#if defined( __GNUC__ ) || defined( __clang__ )
+  __builtin_prefetch( p );
+#else
+  (void) p;
+#endif
   }
 
  // the queue begins on a pair of lines, which the processor may fetch

@@ -836,6 +836,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplication fewer: GCC compiled the product shared by the two
   branches as a product of 128 bits
 
+- SPSCQueue: a consumer that finds the queue empty prefetches its next
+  place while it reads the tail again (one miss a side per round trip)
 - MPSCQueue: a lane is a list of blocks of B places that the consumer
   gives back to its producer, which reuses them before it allocates, and
   a consumer right behind a streaming producer waits a moment for a batch;
