@@ -982,6 +982,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operated on by loops, which the compilers vectorize, and take the four
   steps unrolled too
 
+- huffmanDecompress() looks up its table of up to 3 symbols in entries of
+  32 bits, the bits read and the symbols in the high byte, and from 2^18
+  bytes on with a window of 12 bits instead of 11
 - EliasFano::nextGEQ() scans at most 8 items of the bucket of x and then
   finds the end of the bucket by select0 and the item by a binary search
   on the low bits, O( log c ) for a bucket of c items instead of O( c )

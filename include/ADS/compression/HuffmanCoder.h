@@ -17,13 +17,15 @@
  *   64 bits (the bits of a codeword turned around, so that the code stays
  *   prefix-free in the order of reading), 4 of them joined by shifts and
  *   written at once, whole bytes at a time;
- * - the decoder peeks at L <= 11 bits and finds in a table of
- *   \f$ 2^L \f$ entries the symbols whose codes fit whole in them, up to
- *   3, with their number and their bits, in a few instructions and no
- *   branch (one lookup decodes \f$ \min( 3 , \lfloor 11 / \bar\ell
- *   \rfloor ) \f$ symbols or so for an average length \f$ \bar\ell
- *   \f$, about 2.4 on English text); 4 lookups of 11 bits at most fit in
- *   the bits of a word after a refill, so that a load serves 4 lookups;
+ * - the decoder peeks at W bits and finds in a table of \f$ 2^W \f$
+ *   entries of 32 bits the symbols whose codes fit whole in them, up to
+ *   3 in the low 24 bits, then their bits in 4 and their number in 2, so
+ *   that a lookup costs two shifts and a mask and no branch (it decodes
+ *   \f$ \min( 3 , \lfloor W / \bar\ell \rfloor ) \f$ symbols or so for
+ *   an average length \f$ \bar\ell \f$); W = 12 from \f$ 2^{18} \f$
+ *   bytes on (a table of 16 KB, more symbols a lookup) and 11 below
+ *   (half the table to build); 4 lookups of 12 bits at most fit in the
+ *   bits of a word after a refill, so that a load serves 4 lookups;
  * - the string is cut in four streams, decoded together, so that the four
  *   chains of dependences (a lookup gives the length, which gives the next
  *   lookup) overlap in the pipeline of the processor.

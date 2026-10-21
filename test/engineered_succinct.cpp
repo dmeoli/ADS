@@ -754,7 +754,8 @@ std::vector< std::vector< std::uint8_t > > coderInputs( void )
 // the code of Huffman of bytes: the round trip, the lengths within 11 bits
 // and their Kraft sum, the size within the entropy and one bit per byte
 // (and the header), package-merge against the code of Huffman when it fits
-// and on a skewed source that it cuts, and the malformed inputs
+// and on a skewed source that it cuts, the decoder with a window of 12
+// bits (from 2^18 bytes on), and the malformed inputs
 ADS_TEST( "huffman-coder" )
 {
  for( const auto & s : coderInputs() ) {
@@ -787,6 +788,18 @@ ADS_TEST( "huffman-coder" )
  CHECK( limitedHuffmanLengths( one , 11 )[ 5 ] == 1 );
  CHECK_THROWS( ( void )huffmanDecompress( std::vector< std::uint8_t >( 5 ) ) ,
                contract_violation );
+ // the window of 12 bits, from 2^18 bytes on: skewed (codes up to 11
+ // bits) and uniform bytes, at the threshold and past it
+ std::mt19937_64 g( 13 );
+ for( const std::size_t n : { std::size_t( 1 ) << 18 ,
+                              std::size_t( 300001 ) } ) {
+  std::vector< std::uint8_t > z( n ) , u( n );
+  for( auto & x : z ) x = std::uint8_t( std::min( 40 , std::countr_zero(
+                                          g() | ( 1ULL << 40 ) ) ) );
+  for( auto & x : u ) x = std::uint8_t( g() );
+  CHECK( huffmanDecompress( huffmanCompress( z ) ) == z &&
+         huffmanDecompress( huffmanCompress( u ) ) == u );
+  }
  auto c = huffmanCompress( coderInputs().back() );
  c[ 9 ] = 0x11;                            // two codes of 1 bit too many
  CHECK_THROWS( ( void )huffmanDecompress( c ) , contract_violation );
