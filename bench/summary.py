@@ -118,6 +118,8 @@ PAIRS = [
     ('bignum', 'ADS::BigInteger GMP', 'GMP', ['GMP mpz_class']),
     ('bignum', 'ADS::Rational GMP', 'GMP', ['GMP mpq_class']),
     ('fft', 'ADS::fft', 'FFTW', ['FFTW estimate', 'FFTW measure']),
+    ('fft', 'ADS::fft', 'pocketfft', ['pocketfft']),
+    ('fft', 'ADS::fft', 'ducc0', ['ducc0']),
     ('hash functions', 'ADS::FastHash', 'std', ['std::hash']),
     ('hash functions', 'ADS::FastHash', 'Boost', ['boost::hash']),
     ('hash functions', 'ADS::FastHash', 'Abseil', ['absl::Hash']),

@@ -63,6 +63,11 @@ test: $(BINS)
 # GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft, and
 # GMP=<prefix> or ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP; FLINT=
 # <prefix> adds FLINT to bignum (with GMP and MPFR in the same prefix);
+# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft (also
+# in single precision, if FFTW has libfftw3f), and GMP=<prefix> or
+# ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP; POCKETFFT=<dir> and
+# DUCC0=<dir> add to fft pocketfft (the directory of pocketfft_hdronly.h)
+# and ducc0 (the directory src of its sources);
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
 # fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
@@ -103,7 +108,11 @@ FLINTFLAGS = $(if $(FLINT),-DADS_HAS_FLINT -I$(FLINT)/include \
              -L$(FLINT)/lib -Wl$(comma)-rpath$(comma)$(FLINT)/lib -lflint \
              -lmpfr -lgmp)
 FFTWFLAGS = $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
-            -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3)
+            -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3 \
+            $(if $(wildcard $(FFTW)/lib/libfftw3f.*),-DADS_HAS_FFTWF \
+            -lfftw3f)) \
+            $(if $(POCKETFFT),-DADS_HAS_POCKETFFT -isystem $(POCKETFFT)) \
+            $(if $(DUCC0),-DADS_HAS_DUCC0 -isystem $(DUCC0)) -pthread
 SAISFLAGS = $(if $(LIBSAIS),-DADS_HAS_LIBSAIS -I$(LIBSAIS)/include \
             -L$(LIBSAIS)/lib -lsais) \
             $(if $(DIVSUFSORT),-DADS_HAS_DIVSUFSORT -I$(DIVSUFSORT)/include \

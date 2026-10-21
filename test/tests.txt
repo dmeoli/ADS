@@ -504,6 +504,15 @@ engineered_combinatorial  fast-generation  permutazioni e combinazioni veloci
 engineered_combinatorial  fast-exact-cover copertura esatta, celle danzanti
 engineered_combinatorial  book-structures  il libro su strutture std, Boost, ADS
 
+# the fast Fourier transforms of every size and kind, beyond the book
+fft  fft-any-size          FFT di ogni lunghezza da 0 a 300
+fft  fft-plans             piani: radici miste, Rader, Bluestein
+fft  fft-float             FFT in precisione singola
+fft  rfft                  trasformate di dati reali
+fft  dct-dst               trasformate dei coseni e dei seni, tipi 1-4
+fft  fft-many-nd           molte trasformate, 2 e 3 dimensioni
+fft  convolve-float        convoluzione in precisione singola
+
 # the engineered hashing, beyond the book
 hashing  fast-hash             funzioni hash per prodotti ripiegati
 hashing  blocked-bloom         filtro di Bloom a blocchi

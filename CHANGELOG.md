@@ -124,6 +124,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   NaN, and their exact comparison; their tests in
   test/engineered_sparse.cpp and bench/fingerprints.cpp, against std::hash,
   boost::hash_range and std::equal
+- fft() of every size, in double and single precision: codelets of the
+  sizes 2^a 3^b 5^c up to 25 besides the powers of 2 up to 64, the primes
+  7, 11 and 13 by pairs of symmetric sums, the other primes up to 101 by
+  the same sums in loops, the rounds of Stockham in the fewest radices of
+  the codelets, the four steps on any divisor of n with the last block of
+  the lanes shorter, Rader for the large primes and Bluestein for the
+  sizes with a prime above 101; the four steps unrolled up to 4096 points;
+  the plans kept per thread for each size; their tests in test/fft.cpp
+  against the definition in long double
+- rfft() and irfft(), the transforms of real data by a complex transform
+  of half the points and a pass on lanes of pairs; dct() and dst(), the
+  transforms of the cosines and of the sines of types 1 to 4 as those of
+  FFTW (Makhoul for the types 2 and 3, the half-length complex transform
+  for the type 4); fftMany(), fft2() and fftn(), many transforms and
+  those in more dimensions; convolve() in single precision
+- the lanes of fft() by the intrinsics of SSE2 and AVX on the compilers
+  with no vector extensions (MSVC), ADS_FFT_INTRINSICS to take them with
+  GCC and Clang too, and ADS_FFT_LEAN, fewer codelets for the compilers
+  that take long on them, the default of MSVC
+- bench/fft.cpp against FFTW in double and single precision, pocketfft and
+  ducc0, on complex, real and single precision data, the cosines of type
+  2, many transforms, 2 dimensions and convolutions, with the cost of the
+  plans apart; POCKETFFT and DUCC0 in the makefile
+
 - DialQueue, the monotone bucket queue of Dial on a circular window of W
   buckets with a radix heap for the keys beyond it, the next bucket in use
   found by a mask of W bits; RadixHeap::peekKey(), the least key without
@@ -884,6 +908,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   word and sorted by the radix sort (OrderKey.h): at 10^6 items 1.8 times
   faster than DaryHeap on the insertions, 1.4 times in the hold model and
   1.6 times on the extractions
+- fft() takes every size, no longer only the powers of 2; convolve()
+  transforms the smallest even size 2^a 3^b 5^c that holds the product,
+  by rfft() and irfft()
 
 - HeapPriorityQueue and LinkedHeapPriorityQueue take their items and
   nodes from an ObjectPool, the slot of deleteMin() taken by the next
