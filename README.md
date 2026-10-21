@@ -375,12 +375,18 @@ wyhash, rapidhash, fastfilter_cpp, xor_singleheader, PTHash, BBHash and
 RecSplit; [`bench/priority.cpp`](bench/priority.cpp) compares the heaps
 with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm, and
 [`bench/memory.cpp`](bench/memory.cpp) the arena and the pool with
-`std::pmr`, Boost.Pool, mimalloc and jemalloc.
+`std::pmr`, Boost.Pool, mimalloc and jemalloc;
+[`bench/graphs.cpp`](bench/graphs.cpp) runs the algorithms of the book on
+graphs, templates on their structures, on those of the standard library,
+of Boost and of ADS, with the same counts of work on the three.
 
 | What | Header | Test |
 |---|---|---|
 | two-level bucket queue for integer keys (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue` |
 | d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
+| d-ary heap of the ids with decrease-key, the places in a vector, a PRIORITYQUEUE whose handles are the ids | [`priority/IndexedDaryHeap.h`](include/ADS/priority/IndexedDaryHeap.h) | `engineered_graph.indexed-dary-heap` |
+| graph in compressed rows, each arc next to its weight, the rows sorted by head; transpose and relabelling | [`graph/StaticGraph.h`](include/ADS/graph/StaticGraph.h) | `engineered_graph.static-graph` |
+| union-find in one vector, by size or rank, the paths halved or compressed (Tarjan and van Leeuwen) | [`mfset/UnionFind.h`](include/ADS/mfset/UnionFind.h) | `engineered_graph.union-find` |
 | radix heap, monotone integer keys in buckets by digits of B bits (Ahuja et al.) | [`priority/RadixHeap.h`](include/ADS/priority/RadixHeap.h) | `heaps.radix-heap` |
 | monotone bucket queue on a circular window, overflow to a radix heap (Dial) | [`priority/DialQueue.h`](include/ADS/priority/DialQueue.h) | `heaps.dial-queue` |
 | sequence heap, sorted sequences merged in batches by trees of losers (Sanders) | [`priority/SequenceHeap.h`](include/ADS/priority/SequenceHeap.h) | `heaps.sequence-heap` |
