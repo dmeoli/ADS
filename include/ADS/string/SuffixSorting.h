@@ -122,9 +122,9 @@
  *   \qquad \mathit{PLCP}[ i + 1 ] \ge \mathit{PLCP}[ i ] - 1
  * \f]
  * (Lemma of Kasai et al.), is computed in the order of the text from the
- * value at i - 1 less one, \f$ 2 n \f$ comparisons of symbols in all, the
- * first four one by one (a load of 8 bytes would often reach a line not
- * prefetched) and then 8 at a time; the text at \f$ \Phi[ i + 64 ] \f$ is
+ * value at i - 1 less one, \f$ 2 n \f$ comparisons of symbols in all, one
+ * symbol at a time (the lcp grows by n + 1 at most in all, so that loads
+ * of 8 bytes would save little); the text at \f$ \Phi[ i + 64 ] \f$ is
  * prefetched, and \f$ \mathit{LCP}[ r ] = \mathit{PLCP}[ SA[ r + 1 ] ] \f$
  * costs one random read per entry, prefetched too: from \f$ 2^{18} \f$
  * bytes on, where n integers leave the cache, PLCP is also kept as n
@@ -135,6 +135,11 @@
  * lcpArray(); \f$ \Phi \f$ and PLCP share one array of n integers, and
  * the three passes keep their arrays in functions that declare them not
  * to overlap.
+ *
+ * The arrays built, SA, PLCP and LCP, ask for transparent huge pages
+ * (madvise(), on Linux) before they are first written, so that their
+ * page faults are 512 times fewer and the random writes of the
+ * induction and of \f$ \Phi \f$ miss the TLB less.
  *
  * The contracts [see Contract.h]: the symbols of an integer text are less
  * than K and n fits the integers; the arrays built are a suffix array and
