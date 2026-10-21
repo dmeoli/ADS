@@ -231,9 +231,11 @@
  *   until |a - b| has \f$ s = \lfloor n / 2 \rfloor + 1 \f$ digits,
  *   from kHgcd digits by a recursive call on the top half, its matrix
  *   applied to the low digits, a few steps, and a second recursive call
- *   on the top of what is left, the two matrices multiplied, \f$ O( M( n )
- *   \log n ) \f$; a step that the leading digits cannot make (a quotient
- *   of many digits) is a subtraction and a division. Down to two digits,
+ *   on the top of what is left, the two matrices multiplied (from
+ *   kHgcdMul7 digits by the 7 products of Winograd's form of Strassen's,
+ *   on signed numbers), \f$ O( M( n ) \log n ) \f$; a step that the
+ *   leading digits cannot make (a quotient of many digits) is a
+ *   subtraction and a division. Down to two digits,
  *   where the binary algorithm ends; the number of one digit d = 2^t e,
  *   e odd, meets the long one by the folded remainder by e, or below
  *   kHensel digits by Hensel's division, whose \f$ a b^{-n} \f$ modulo e
@@ -290,8 +292,6 @@
  *      17-24, 2007, doi:10.1145/1277548.1277552
  * \see R. P. Brent, P. Zimmermann, Modern Computer Arithmetic, Cambridge
  *      University Press, 2010, sections 1.3, 1.4, 1.6, 1.7, 2.4 and 3.4
- * \see P. Zimmermann, Karatsuba square root, INRIA research report
- *      RR-3805, 1999, https://hal.inria.fr/inria-00072854
  * \see C. Burnikel, J. Ziegler, Fast recursive division, research report
  *      MPI-I-98-1-022, Max-Planck-Institut fuer Informatik, 1998
  * \see N. Moeller, T. Granlund, Improved division by invariant integers,
@@ -317,6 +317,8 @@
  * \see C. Bouvier, P. Zimmermann, Division-free binary-to-decimal
  *      conversion, IEEE Transactions on Computers 63(8), 1895-1901, 2014,
  *      doi:10.1109/TC.2014.2315621
+ * \see P. Zimmermann, Karatsuba square root, INRIA research report
+ *      RR-3805, 1999, https://hal.inria.fr/inria-00072854
  * \see D. H. Lehmer, Euclid's algorithm for large numbers, The American
  *      Mathematical Monthly 45(4), 227-233, 1938,
  *      doi:10.1080/00029890.1938.11990797
@@ -325,6 +327,11 @@
  * \see N. Moeller, On Schoenhage's algorithm and subquadratic integer gcd
  *      computation, Mathematics of Computation 77(261), 589-607, 2008,
  *      doi:10.1090/S0025-5718-07-02017-0
+ * \see V. Strassen, Gaussian elimination is not optimal, Numerische
+ *      Mathematik 13(4), 354-356, 1969, doi:10.1007/BF02165411
+ * \see S. Winograd, On multiplication of 2 x 2 matrices, Linear Algebra and
+ *      its Applications 4(4), 381-388, 1971,
+ *      doi:10.1016/0024-3795(71)90009-7
  * \see T. Granlund and the GMP development team, GNU MP: The GNU Multiple
  *      Precision Arithmetic Library, version 6.3.0, 2023,
  *      https://gmplib.org/gmp-man-6.3.0.pdf, the layers mpn and mpz of the
