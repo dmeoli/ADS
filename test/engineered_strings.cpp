@@ -30,6 +30,7 @@
 #include "ADS/string/LongestCommonExtension.h"
 #include "ADS/string/LongestCommonSubsequence.h"
 #include "ADS/string/Lyndon.h"
+#include "ADS/string/MultiSearch.h"
 #include "ADS/string/Palindromes.h"
 #include "ADS/string/StringMatching.h"
 #include "ADS/string/StringSearch.h"
@@ -610,6 +611,75 @@ ADS_TEST( "lce" )
           *std::min_element( LCP.begin() + std::ptrdiff_t( a ) ,
                              LCP.begin() + std::ptrdiff_t( b ) ) );
    }
+  }
+ }
+
+// the search of many patterns against naiveMatching() of each (and an
+// audit): no pattern, patterns of 1 to 3 bytes (filters of fewer bytes),
+// equal and overlapping patterns, prefixes of one another, at the two ends
+// of the text, bytes of the high half (above 127), texts shorter than a
+// block, and more patterns than the filter takes (the automaton)
+ADS_TEST( "multi-search" )
+{
+ auto check = []( std::string_view T , const std::vector< std::string > & P ) {
+  const MultiSearcher S( P );
+  std::vector< std::pair< std::size_t , std::size_t > > N;
+  for( std::size_t j = 0 ; j < P.size() ; ++j )
+   for( const std::size_t i : naiveMatching( T , P[ j ] ) )
+    N.emplace_back( i , j );
+  std::sort( N.begin() , N.end() );
+  CHECK( S.findAll( T ) == N );           // an audit too
+  CHECK( S.count( T ) == N.size() );
+  CHECK( S.filtered() == ( ! P.empty() &&
+                           ( P.size() <= MultiSearcher::kFilter ) ) );
+  };
+ check( "abc" , {} );
+ check( "" , { "a" } );
+ check( "aaaa" , { "a" , "aa" , "aa" , "aaa" } );
+ check( "abcabcab" , { "ab" , "abc" , "bca" , "cab" , "b" } );
+ check( std::string( "\xff\x80\x7f\xff\x80" , 5 ) ,
+        { std::string( "\xff\x80" , 2 ) , std::string( "\x80\x7f" , 2 ) } );
+ std::mt19937_64 g( 37 );
+ for( unsigned sigma : { 2u , 4u , 26u , 256u } )
+  for( std::size_t k : { 1 , 2 , 7 , 8 , 9 , 30 , 64 , 65 , 200 } )
+   for( int r = 0 ; r < 3 ; ++r ) {
+    const std::string T = randomString( g , g() % 3000 , sigma ,
+                                        sigma == 256 ? 0 : 'a' );
+    std::vector< std::string > P;
+    for( std::size_t z = 0 ; z < k ; ++z ) {
+     const std::size_t m = 1 + g() % 12;
+     if( ( T.size() >= m ) && ( g() % 4 ) )
+      P.push_back( T.substr( g() % ( T.size() - m + 1 ) , m ) );
+     else
+      P.push_back( randomString( g , m , sigma , sigma == 256 ? 0 : 'a' ) );
+     }
+    check( T , P );
+    check( T.substr( 0 , std::min< std::size_t >( T.size() , 40 ) ) , P );
+    }
+ // the filter that lets too much through, the automaton from where it
+ // gives up: patterns everywhere, and a small alphabet
+ check( std::string( 20000 , 'a' ) , { "a" , "aaa" , "ab" , "aaaaaaaaa" } );
+ for( unsigned sigma : { 2u , 3u } )
+  for( int k : { 16 , 100 } ) {
+   const std::string T = randomString( g , 50000 , sigma , 'a' );
+   std::vector< std::string > P;
+   for( int z = 0 ; z < k ; ++z ) P.push_back( T.substr( g() % 40000 ,
+                                                          4 + g() % 5 ) );
+   check( T , P );
+   }
+ // the shift-or filter on many patterns, of 1 to 20 bytes, and with
+ // prefixes shared
+ for( std::size_t least : { 1 , 2 , 5 , 8 } ) {
+  const std::string T = randomString( g , 60000 , 26 , 'a' );
+  std::vector< std::string > P;
+  for( int z = 0 ; z < 300 ; ++z ) {
+   const std::size_t m = least + g() % 12;
+   P.push_back( z % 3 ? T.substr( g() % ( T.size() - m ) , m )
+                      : randomString( g , m , 26 , 'a' ) );
+   }
+  P.push_back( P[ 0 ] + "xyz" );
+  check( T , P );
+  check( T.substr( 0 , 100 ) , P );
   }
  }
 
