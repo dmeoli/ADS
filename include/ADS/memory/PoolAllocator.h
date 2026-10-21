@@ -170,12 +170,16 @@ class PoolResource {
 
  /// a slot of the class c
  [[nodiscard]] void * take( std::size_t c ) {
-  if( void * p = f_heap.local( c ) ) [[likely]]
+  if( void * p = f_heap->local( c ) ) [[likely]]
    return( p );
-  return( f_heap.more( c ) );
+  return( f_heap->more( c ) );
   }
 
- detail::PageHeap< CLASSES > f_heap;   ///< the pages of the classes
+ /// the pages of the classes, apart from the resource, so that their
+ /// state, read and written at each operation, never shares the lines or
+ /// the low bits of the addresses of the variables around the resource
+ /// (e.g., on a stack)
+ std::unique_ptr< detail::PageHeap< CLASSES > > f_heap;
 
  };  // end( class PoolResource )
 
