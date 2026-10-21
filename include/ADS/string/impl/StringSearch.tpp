@@ -124,35 +124,51 @@ inline StringSearcher::StringSearcher( std::string_view P ) : f_P( P )
  if( m < 2 ) return;
 
  // the probes: the rarest bytes, the later place on a tie, distinct bytes
- // first, then distinct places
- bool seen[ 256 ] = {};
+ // first, then distinct places; the last place of each byte (m if none),
+ // and the number of bytes
+ std::size_t last[ 256 ];
+ std::fill( last , last + 256 , m );
+ for( std::size_t i = 0 ; i < m ; ++i ) last[ p[ i ] ] = i;
  int distinct = 0;
- for( std::size_t i = 0 ; i < m ; ++i )
-  if( ! seen[ p[ i ] ] ) {
-   seen[ p[ i ] ] = true;
-   ++distinct;
-   }
- f_probes = ( distinct < 8 ) && ( m >= 4 ) ? 4 : 2;
+ for( unsigned c = 0 ; c < 256 ; ++c ) distinct += int( last[ c ] < m );
+ // 4 probes on the patterns of few bytes (a small alphabet, likely), 2
+ // else: a pattern shorter than 8 with no repeated byte is no sign of one
+ f_probes = ( m >= 4 ) && ( ( ( distinct < 8 ) && ( m >= 8 ) ) ||
+                            ( std::size_t( distinct ) < m ) ) ? 4 : 2;
+ // the distinct bytes: those of least rank, the later last place on a
+ // tie, by one look at each of the 256 bytes
  int t = 0;
- for( int pass = 0 ; ( pass < 2 ) && ( t < f_probes ) ; ++pass )
-  while( t < f_probes ) {
-   std::size_t best = m;
-   for( std::size_t i = m ; i-- > 0 ; ) {
-    bool fresh = true , taken = false;
-    for( int q = 0 ; q < t ; ++q ) {
-     fresh = fresh && ( f_byte[ q ] != p[ i ] );
-     taken = taken || ( f_off[ q ] == i );
-     }
-    if( taken || ( ( pass == 0 ) && ! fresh ) ) continue;
-    if( ( best == m ) || ( detail::searchRanks.r[ p[ i ] ] <
-                           detail::searchRanks.r[ p[ best ] ] ) )
-     best = i;
-    }
-   if( best == m ) break;
-   f_off[ t ] = best;
-   f_byte[ t ] = p[ best ];
-   ++t;
+ for( unsigned c = 0 ; c < 256 ; ++c ) {
+  if( last[ c ] == m ) continue;
+  auto before = [ & ]( unsigned a , unsigned b ) {
+   const unsigned ra = detail::searchRanks.r[ a ] ,
+                  rb = detail::searchRanks.r[ b ];
+   return( ( ra < rb ) || ( ( ra == rb ) && ( last[ a ] > last[ b ] ) ) );
+   };
+  int z = t < f_probes ? t++ : f_probes;
+  if( ( z == f_probes ) && ! before( c , f_byte[ f_probes - 1 ] ) ) continue;
+  if( z == f_probes ) --z;
+  for( ; ( z > 0 ) && before( c , f_byte[ z - 1 ] ) ; --z )
+   f_byte[ z ] = f_byte[ z - 1 ];
+  f_byte[ z ] = (unsigned char)( c );
+  }
+ for( int q = 0 ; q < t ; ++q ) f_off[ q ] = last[ f_byte[ q ] ];
+ // then distinct places, if fewer bytes than probes
+ while( t < f_probes ) {
+  std::size_t best = m;
+  for( std::size_t i = m ; i-- > 0 ; ) {
+   bool taken = false;
+   for( int q = 0 ; q < t ; ++q ) taken = taken || ( f_off[ q ] == i );
+   if( taken ) continue;
+   if( ( best == m ) || ( detail::searchRanks.r[ p[ i ] ] <
+                          detail::searchRanks.r[ p[ best ] ] ) )
+    best = i;
    }
+  if( best == m ) break;
+  f_off[ t ] = best;
+  f_byte[ t ] = p[ best ];
+  ++t;
+  }
  for( ; t < f_probes ; ++t ) {        // m = 2 or 3 with 4 probes: repeat
   f_off[ t ] = f_off[ 0 ];
   f_byte[ t ] = f_byte[ 0 ];
@@ -239,59 +255,97 @@ std::size_t StringSearcher::skipPair( const unsigned char * T ,
                                       F && report ) const
 {
  const std::size_t m = f_P.size() , last = n - m , end = m - f_q;
- if( last - from < ( std::size_t( 1 ) << 14 ) )
+ if( ( last - from < ( std::size_t( 1 ) << 14 ) ) || ( n < end + 8 ) )
   return( skip( T , n , from , report ) );
  const std::uint8_t * shift = f_shift.data();
- // the windows [ from , mid ) by a, those from mid on by b, whose
- // occurrences wait in later until a is done
- const std::size_t mid = from + ( last - from ) / 2;
- std::size_t a = from , b = mid , work = 0 , steps = 0 , ma = a , mb = b;
- bool alive = true;
- std::vector< std::size_t > later;
- // a step of the window s: false when the search must go on otherwise
- auto step = [ & ]( std::size_t & s , bool first , std::size_t & out ) {
-  if( s + end + 1024 < n ) detail::searchPrefetch( T + s + end + 1024 );
-  const std::size_t d = shift[ gram( T + s + end ) ];
-  if( d ) {
-   s += d;
-   return( true );
-   }
-  if( ( T[ s + f_off[ 0 ] ] == f_byte[ 0 ] ) &&
-      ( std::memcmp( T + s , f_P.data() , m ) == 0 ) ) {
-   if( ! first ) later.push_back( s );
-   else if( report( s ) ) {
-    out = s;
+ // the windows [ from , top ) in C segments, each scanned by its chain of
+ // shifts, the C chains a step at a time so that their loads overlap;
+ // the windows from top on, whose q-gram cannot be loaded as 8 bytes,
+ // and those of a search gone wrong, by skip()
+ constexpr int C = 4;
+ const std::size_t top = std::min( last , n - end - 8 ) + 1;
+ std::size_t s[ C ] , lim[ C ];
+ for( int k = 0 ; k < C ; ++k )
+  s[ k ] = from + ( top - from ) / C * std::size_t( k );
+ for( int k = 0 ; k + 1 < C ; ++k ) lim[ k ] = s[ k + 1 ];
+ lim[ C - 1 ] = top;
+ // the occurrences of the chains after the first, reported when the
+ // chains before them are done
+ std::vector< std::size_t > later[ C ];
+ std::size_t work = 0 , steps = 0 , mark = s[ 0 ];
+ // the window of chain k whose q-gram has shift 0: false if the search
+ // must go on otherwise (out then its result)
+ auto check = [ & ]( int k , bool direct , std::size_t & out ) {
+  const std::size_t w = s[ k ];
+  if( ( T[ w + f_off[ 0 ] ] == f_byte[ 0 ] ) &&
+      ( std::memcmp( T + w , f_P.data() , m ) == 0 ) ) {
+   if( ! direct ) later[ k ].push_back( w );
+   else if( report( w ) ) {
+    out = w;
     return( false );
     }
    }
-  if( ( work += m ) > 16 * ( ( a - from ) + ( b - mid ) ) + 4096 ) {
-   out = twoWay( T , n , first ? s + 1 : a , report );
+  std::size_t done = 0;
+  for( int z = 0 ; z < C ; ++z )
+   done += s[ z ] - ( from + ( top - from ) / C * std::size_t( z ) );
+  if( ( work += m ) > 16 * done + 4096 ) {
+   out = twoWay( T , n , direct ? w + 1 : s[ 0 ] , report );
    return( false );
    }
-  s += f_shift0;
+  s[ k ] = w + f_shift0;
   return( true );
   };
  std::size_t out;
- while( a < mid ) {
-  if( ++steps == 64 ) {                // too short shifts: one window
-   if( ( a - ma < 16 * m ) || ( alive && ( b - mb < 16 * m ) ) )
-    return( skip( T , n , a , report ) );
-   steps = 0;
-   ma = a;
-   mb = b;
-   }
-  if( ! step( a , true , out ) ) return( out );
-  if( alive ) {
-   if( ( b <= last ) && ( b + end + 8 <= n ) ) {
-    if( ! step( b , false , out ) ) return( out );
+ // all the chains at once, while none is done; every 64 steps the first
+ // one must have moved by 16 m, or the filter does better
+ for( bool on = true ; on ; ) {
+  std::size_t x[ C ];
+  for( int k = 0 ; k < C ; ++k ) x[ k ] = s[ k ];
+  for( ; ; ) {
+   bool in = true;
+   for( int k = 0 ; k < C ; ++k ) in = in && ( x[ k ] < lim[ k ] );
+   if( ! in ) {
+    on = false;
+    break;
     }
-   else
-    alive = false;
+   if( ++steps == 64 ) {
+    if( x[ 0 ] - mark < 16 * m ) return( skip( T , n , x[ 0 ] , report ) );
+    steps = 0;
+    mark = x[ 0 ];
+    }
+   std::size_t d[ C ];
+   bool zero = false;
+   for( int k = 0 ; k < C ; ++k ) {
+    detail::searchPrefetch( T + std::min( x[ k ] + end + 1024 , n - 1 ) );
+    d[ k ] = shift[ gram( T + x[ k ] + end ) ];
+    zero = zero || ( d[ k ] == 0 );
+    }
+   if( zero ) break;
+   for( int k = 0 ; k < C ; ++k ) x[ k ] += d[ k ];
+   }
+  for( int k = 0 ; k < C ; ++k ) s[ k ] = x[ k ];
+  if( ! on ) break;
+  for( int k = 0 ; k < C ; ++k )
+   if( ( s[ k ] < lim[ k ] ) && ( shift[ gram( T + s[ k ] + end ) ] == 0 ) &&
+       ! check( k , k == 0 , out ) )
+    return( out );
+  }
+ // each chain to the end of its segment, in order, its occurrences found
+ // so far reported first
+ for( int k = 0 ; k < C ; ++k ) {
+  for( const std::size_t w : later[ k ] )
+   if( report( w ) ) return( w );
+  later[ k ].clear();
+  while( s[ k ] < lim[ k ] ) {
+   const std::size_t d = shift[ gram( T + s[ k ] + end ) ];
+   if( d ) {
+    s[ k ] += d;
+    continue;
+    }
+   if( ! check( k , true , out ) ) return( out );
    }
   }
- for( const std::size_t s : later )
-  if( report( s ) ) return( s );
- return( skip( T , n , b , report ) );
+ return( skip( T , n , top , report ) );
  }
 
 template< class F >
@@ -343,10 +397,9 @@ std::size_t StringSearcher::filter( const unsigned char * T ,
   }
  const std::size_t budget = 4096;
  std::size_t work = 0 , result = npos;
- // the block of the W starts from s, those of the bits off in mask
- // skipped: true when the scan ends, at result
- auto block = [ & ]( std::size_t s , std::uint64_t mask ) {
-  for( int q = 0 ; q < k ; ++q ) mask &= SV::equal( Q[ q ] + s , B[ q ] );
+ // the starts from s whose bits are on in mask, which passed the probes:
+ // true when the scan ends, at result
+ auto verify = [ & ]( std::size_t s , std::uint64_t mask ) {
   for( ; mask ; mask &= mask - 1 ) {
    const std::size_t c = s + std::size_t( std::countr_zero( mask ) );
    if( ( std::memcmp( T + c , f_P.data() , m ) == 0 ) && report( c ) ) {
@@ -360,8 +413,27 @@ std::size_t StringSearcher::filter( const unsigned char * T ,
    }
   return( false );
   };
+ // the block of the W starts from s, those of the bits off in mask
+ // skipped
+ auto probe = [ & ]( std::size_t s , std::uint64_t mask ) {
+  for( int q = 0 ; q < k ; ++q ) mask &= SV::equal( Q[ q ] + s , B[ q ] );
+  return( mask );
+  };
+ auto block = [ & ]( std::size_t s , std::uint64_t mask ) {
+  return( verify( s , probe( s , mask ) ) );
+  };
  constexpr std::uint64_t all = ~std::uint64_t( 0 ) >> ( 64 - W );
  std::size_t s = from;
+ // 4 blocks a step, the verifications out of the way of the probes
+ for( ; s + 4 * W - 1 <= last ; s += 4 * W ) {
+  const std::uint64_t a = probe( s , all ) , b = probe( s + W , all ) ,
+                      c = probe( s + 2 * W , all ) ,
+                      d = probe( s + 3 * W , all );
+  if( ( a | b | c | d ) == 0 ) [[likely]] continue;
+  if( verify( s , a ) || verify( s + W , b ) || verify( s + 2 * W , c ) ||
+      verify( s + 3 * W , d ) )
+   return( result );
+  }
  for( ; s + W - 1 <= last ; s += W )
   if( block( s , all ) ) return( result );
  if( s <= last ) {                   // the last W starts, overlapping

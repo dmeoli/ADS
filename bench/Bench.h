@@ -70,8 +70,9 @@ inline std::vector< std::uint64_t > keys( std::size_t n , unsigned seed )
 inline void print( const char * bench , const std::string & what ,
                    std::size_t n , const std::string & who , double ns )
 {
- std::printf( "%s\t%s\t%zu\t%s\t%.2f\n" , bench , what.c_str() , n ,
-              who.c_str() , ns );
+ // 4 decimals below 1 ns, where 2 would leave one or two digits
+ std::printf( ns < 1 ? "%s\t%s\t%zu\t%s\t%.4f\n" : "%s\t%s\t%zu\t%s\t%.2f\n" ,
+              bench , what.c_str() , n , who.c_str() , ns );
  std::fflush( stdout );
  }
 
