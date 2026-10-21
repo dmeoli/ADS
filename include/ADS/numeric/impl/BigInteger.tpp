@@ -177,9 +177,10 @@ inline std::uint64_t div2by1( std::uint64_t u1 , std::uint64_t u0 ,
  const std::uint64_t q0 = mulAdd( v , u1 , u0 , 0 , q1 );
  q1 += u1 + 1;
  r = u0 - q1 * d;
- const std::uint64_t m = 0 - std::uint64_t( r > q0 );   // with no branch,
- q1 += m;                                   // as it is taken half the time
- r += m & d;
+ if( r > q0 ) {
+  --q1;
+  r += d;
+  }
  if( r >= d ) {                             // rarely
   ++q1;
   r -= d;
