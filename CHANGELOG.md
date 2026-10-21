@@ -210,6 +210,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SatSolvers.h cites Davis and Putnam, the restarts of Luby, Sinclair and
   Zuckerman and the phase saving of Pipatsrisawat and Darwiche
 
+- EventCount, the sleep of a thread until a condition on a lock-free
+  structure holds (an epoch and the waiters in one word, std::atomic::wait
+  on a copy of the epoch, asymmetric fences by membarrier(2) on Linux, 20
+  us of looks before the sleep), and with it waitPop() and notify() of
+  SPSCQueue, waitPop(), waitPopInto() and Producer::notify() of MPSCQueue,
+  waitTake() of MPSCInbox, whose push() notifies; the test event-count and
+  the cells wake of bench-concurrent (latency, idle, throughput)
+- WorkStealingDeque, the deque of Chase and Lev with the orders of Lê et
+  al., its fences as sequentially consistent operations; the test
+  work-stealing-deque
 - COPYING, the text of the GNU GPL v3 that the LGPL v3 of LICENSE
   supplements, as the LGPL asks, installed by the recipes next to LICENSE
 
@@ -836,6 +846,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplication fewer: GCC compiled the product shared by the two
   branches as a product of 128 bits
 
+- SPSCQueue: a consumer whose last pop took an item and that finds only a
+  few new ones waits 64 pauses for a batch
+- bench-concurrent: the processors read once at the start (the threads
+  created after a pin ran on one processor, or on processor 0), and
+  moodycamel::ReaderWriterQueue built with the same 1024 places
 - SPSCQueue: a consumer that finds the queue empty prefetches its next
   place while it reads the tail again (one miss a side per round trip)
 - MPSCQueue: a lane is a list of blocks of B places that the consumer

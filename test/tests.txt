@@ -541,6 +541,8 @@ engineered_queues  ring-deque-items        elementi con memoria propria
 engineered_queues  book-queues-engineered  code del libro senza divisioni
 engineered_queues  spsc-queue-items        coda fra due thread, elementi propri
 engineered_queues  mpsc-queue              coda di molti produttori a corsie
+engineered_queues  event-count             attese con sonno, mai sveglie perse
+engineered_queues  work-stealing-deque     deque di Chase e Lev, furti
 
 # the engineered memory beyond the arena and the pool
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura

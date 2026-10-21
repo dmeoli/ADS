@@ -43,7 +43,7 @@ MPSCQueue< T , B >::~MPSCQueue()
 template< class T , std::size_t B >
 typename MPSCQueue< T , B >::Producer MPSCQueue< T , B >::producer( void )
 {
- Lane * l = new Lane;
+ Lane * l = new Lane( &f_wait );
  l->nextLane = f_lanes.load( std::memory_order_relaxed );
  while( ! f_lanes.compare_exchange_weak( l->nextLane , l ,
                                          std::memory_order_release ,

@@ -49,20 +49,43 @@ bool SPSCQueue< T >::emplace( Args && ... args )
  }
 
 template< class T >
+void SPSCQueue< T >::relax( void )
+{
+ for( int i = 0 ; i < 64 ; ++i ) {
+#if defined( __x86_64__ ) || defined( __i386__ )
+  __builtin_ia32_pause();
+#elif defined( __aarch64__ )
+  asm volatile( "yield" );
+#endif
+  }
+ }
+
+template< class T >
+void SPSCQueue< T >::refresh( std::size_t h )
+{
+ std::size_t t = f_tail.load( std::memory_order_acquire );
+ if( f_streaming && ( t != h ) && ( t - h < batch() ) ) {
+  relax();                                  // a moment for a batch
+  t = f_tail.load( std::memory_order_acquire );
+  }
+ f_tailSeen = t;
+ }
+
+template< class T >
 bool SPSCQueue< T >::tryPop( T & x )
 {
  const std::size_t h = f_head.load( std::memory_order_relaxed );
  if( h == f_tailSeen ) {                    // empty, as far as we know:
   prefetch( at( h ) );                      // the place on its way with
-  f_tailSeen = f_tail.load( std::memory_order_acquire );   // the tail
+  refresh( h );                             // the tail
   if( h == f_tailSeen )
-   return( false );
+   return( f_streaming = false );
   }
  T * p = at( h );
  x = std::move( *p );
  p->~T();
  f_head.store( h + 1 , std::memory_order_release );
- return( true );
+ return( f_streaming = true );
  }
 
 template< class T >
@@ -71,14 +94,17 @@ std::optional< T > SPSCQueue< T >::pop( void )
  const std::size_t h = f_head.load( std::memory_order_relaxed );
  if( h == f_tailSeen ) {                    // empty, as far as we know:
   prefetch( at( h ) );                      // the place on its way with
-  f_tailSeen = f_tail.load( std::memory_order_acquire );   // the tail
-  if( h == f_tailSeen )
+  refresh( h );                             // the tail
+  if( h == f_tailSeen ) {
+   f_streaming = false;
    return( std::nullopt );
+   }
   }
  T * p = at( h );
  std::optional< T > v( std::move( *p ) );
  p->~T();
  f_head.store( h + 1 , std::memory_order_release );
+ f_streaming = true;
  return( v );
  }
 

@@ -34,6 +34,7 @@ void MPSCInbox< T >::push( T v )
  while( ! f_top.compare_exchange_weak( c->next , c ,
                                        std::memory_order_release ,
                                        std::memory_order_relaxed ) ) {}
+ f_wait.notify();
  }
 
 template< class T >
