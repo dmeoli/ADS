@@ -296,16 +296,29 @@ $(BUILD)/bench-tries: bench/tries.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 # the parallel benchmark: OpenMP always (the executor of OpenMP and the
 # parallel mode of libstdc++), TBB=1 (or TBB=<prefix>) oneTBB as executor
-# and competitor, FASTFLOW=<dir> FastFlow, PARLAY=<dir> ParlayLib and
-# SORTING=<dir> the parallel IPS4o and IPS2Ra
+# and competitor, FASTFLOW=<dir> FastFlow, PARLAY=<dir> ParlayLib (with
+# its examples), SORTING=<dir> the parallel IPS4o and IPS2Ra, TLX=<dir>
+# the parallel merge of tlx, GAPBS=<dir> the GAP benchmark suite, EIGEN=
+# <dir> Eigen, OPENBLAS=<prefix> OpenBLAS, FFTW=<prefix> FFTW with its
+# threads, HASHING=<dir> libcuckoo
 TBBFLAGS  = $(if $(TBB),-DADS_HAS_TBB -DADS_WITH_TBB \
             $(if $(filter-out 1,$(TBB)),-I$(TBB)/include -L$(TBB)/lib \
             -Wl$(comma)-rpath$(comma)$(TBB)/lib) -ltbb)
 PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
             $(if $(FASTFLOW),-DADS_WITH_FASTFLOW -isystem $(FASTFLOW)) \
-            $(if $(PARLAY),-isystem $(PARLAY)/include) \
+            $(if $(PARLAY),-isystem $(PARLAY)/include -isystem $(PARLAY)) \
             $(if $(SORTING),-isystem $(SORTING)/ips4o/include \
-            -isystem $(SORTING)/ips2ra/include -mcx16 -latomic)
+            -isystem $(SORTING)/ips2ra/include -mcx16 -latomic) \
+            $(if $(TLX),-isystem $(TLX) \
+            $(TLX)/tlx/algorithm/parallel_multiway_merge.cpp) \
+            $(if $(GAPBS),-isystem $(GAPBS)/src) \
+            $(if $(EIGEN),-isystem $(EIGEN)) \
+            $(if $(OPENBLAS),-DADS_HAS_OPENBLAS -I$(OPENBLAS)/include \
+            -L$(OPENBLAS)/lib -Wl$(comma)-rpath$(comma)$(OPENBLAS)/lib \
+            -lopenblas) \
+            $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
+            -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3_threads -lfftw3) \
+            $(if $(HASHING),-isystem $(HASHING)/libcuckoo)
 
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)

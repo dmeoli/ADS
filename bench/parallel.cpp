@@ -20,16 +20,42 @@
  *   std::inclusive_scan with par, parlay::scan_inclusive and a scan of
  *   OpenMP in two passes) and a loop that maps each item (parallelFor
  *   against tbb::parallel_for, std::for_each with par, an OpenMP loop,
- *   parlay::parallel_for and the ParallelFor of FastFlow).
+ *   parlay::parallel_for and the ParallelFor of FastFlow);
+ * - the stable merge of 4 and 64 sorted runs (multiwayMerge against
+ *   __gnu_parallel::stable_multiway_merge and the parallel merge of tlx);
+ * - the products of sparse matrices of 10^5 and 10^6 rows by a vector,
+ *   8 nonzeros per row or rows of lengths from a power law (CsrMatrix
+ *   and SellMatrix against loops on the rows of oneTBB, OpenMP and
+ *   ParlayLib and the product of Eigen on OpenMP), per nonzero;
+ * - the products of dense matrices of 1024 and 2048 (gemm against
+ *   OpenBLAS and Eigen on OpenMP), per multiplication;
+ * - the transforms of 2^20 and 2^22 points (fft against FFTW with its
+ *   threads, planned with FFTW_MEASURE, the plan not timed), per point;
+ * - the visit in breadth from the node of largest degree and the connected
+ *   components of graphs of 2^16 and 2^19 nodes and 16 edges per node, at
+ *   random or of Kronecker (bfsDistances and connectedComponents against
+ *   the direction-optimizing visit, Afforest and Shiloach-Vishkin of the
+ *   GAP benchmark suite, and the visit of the examples of ParlayLib), per
+ *   arc;
+ * - the LCP array of texts of 10^6 and 4 10^6 symbols, of 4 letters or of
+ *   words of a Zipf law (lcpArray against the one of the examples of
+ *   ParlayLib), per symbol;
+ * - the insertion and the lookup of n distinct keys in the concurrent hash
+ *   tables, all driven by the same threads of the pool
+ *   (ConcurrentCuckooTable against tbb::concurrent_hash_map,
+ *   tbb::concurrent_unordered_map, the cuckoohash_map of libcuckoo and the
+ *   hashtable of ParlayLib), per key.
  * Each cell is the median of r runs, in nanoseconds per item, of the work
- * on a fresh copy of the input, the copy excluded; a result different from
+ * on a fresh copy of the input, the copy excluded, after a first run not
+ * timed that starts the threads of the runtime; a result different from
  * the sequential one gets -1. The benchmark of a cell is "parallel
  * <algorithm> t<t>", so that the cells of each number of threads make a
  * table of their own; its first structure is run twice, the second time as
  * "A/A".
  *
- *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -b sort|patterns ]
- *            [ -w family ] n1 n2 ...
+ *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
+ *            [ -b sort|patterns|merge|spmv|gemm|fft|graphs|lcp|hash ]
+ *            n1 n2 ...
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -49,13 +75,28 @@
 
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
+#include "ADS/concurrent/ConcurrentCuckooTable.h"
+#include "ADS/graph/StaticGraph.h"
+#include "ADS/numeric/CsrMatrix.h"
+#include "ADS/numeric/DenseMatrix.h"
+#include "ADS/numeric/FFT.h"
+#include "ADS/numeric/SellMatrix.h"
 #include "ADS/parallel/OpenMPExecutor.h"
+#include "ADS/parallel/ParallelFFT.h"
+#include "ADS/parallel/ParallelGraph.h"
+#include "ADS/parallel/ParallelMerge.h"
+#include "ADS/parallel/ParallelNumeric.h"
 #include "ADS/parallel/ParallelSort.h"
+#include "ADS/parallel/ParallelText.h"
+#include "ADS/priority/MultiwayMerge.h"
+#include "ADS/string/SuffixArray.h"
 #include "ADS/parallel/TBBExecutor.h"
 #include "ADS/parallel/ThreadPool.h"
 #include "ADS/sort/Sort.h"
 
 #if defined( ADS_HAS_TBB )
+ #include <tbb/concurrent_hash_map.h>
+ #include <tbb/concurrent_unordered_map.h>
  #include <tbb/global_control.h>
  #include <tbb/parallel_for.h>
  #include <tbb/parallel_reduce.h>
@@ -80,14 +121,78 @@
 #endif
 
 #if __has_include( <parlay/primitives.h> )
+ #include <parlay/hash_table.h>
  #include <parlay/parallel.h>
  #include <parlay/primitives.h>
  #define ADS_HAS_PARLAY 1
+ #if __has_include( <examples/BFS_ligra.h> )
+  #include <examples/BFS_ligra.h>
+  #include <examples/longest_common_prefix.h>
+  #define ADS_HAS_PARLAY_EXAMPLES 1
+ #endif
+#endif
+
+#if __has_include( <tlx/algorithm/parallel_multiway_merge.hpp> ) && \
+    defined( _OPENMP )
+ #include <tlx/algorithm/parallel_multiway_merge.hpp>
+ #define ADS_HAS_TLX 1
+#endif
+
+#if __has_include( <libcuckoo/cuckoohash_map.hh> )
+ #include <libcuckoo/cuckoohash_map.hh>
+ #define ADS_HAS_LIBCUCKOO 1
+#endif
+
+#if __has_include( <Eigen/Sparse> ) && defined( _OPENMP )
+ #include <Eigen/Dense>
+ #include <Eigen/Sparse>
+ #define ADS_HAS_EIGEN 1
+#endif
+
+#if defined( ADS_HAS_OPENBLAS )
+ #include <cblas.h>
+extern "C" void openblas_set_num_threads( int );
+#endif
+
+#if defined( ADS_HAS_FFTW )
+ #include <fftw3.h>
+#endif
+
+// the kernels of the GAP benchmark suite, each in a namespace of its own
+// (their files define main(), and helpers of the same names)
+#if __has_include( <benchmark.h> ) && __has_include( <bfs.cc> ) && \
+    defined( _OPENMP )
+ #include <cinttypes>
+ #include <iostream>
+ #include <unordered_map>
+ #include <benchmark.h>
+ #include <bitmap.h>
+ #include <builder.h>
+ #include <command_line.h>
+ #include <graph.h>
+ #include <platform_atomics.h>
+ #include <pvector.h>
+ #include <sliding_queue.h>
+ #include <timer.h>
+ #define main gapbsMain
+namespace gapbsBfs {
+ #include <bfs.cc>
+}
+namespace gapbsCc {
+ #include <cc.cc>
+}
+namespace gapbsSv {
+ #include <cc_sv.cc>
+}
+ #undef main
+ #define ADS_HAS_GAPBS 1
 #endif
 
 #include <algorithm>
+#include <atomic>
 #include <bit>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -144,10 +249,15 @@ std::string bench( const std::string & what )
  }
 
 /// the median of r times, in nanoseconds per item, of work on copies of A,
-/// or -1 if ok( copy ) is false after a run (checked untimed)
+/// or -1 if ok( copy ) is false after a run (checked untimed); a first run,
+/// not timed, starts the threads of the runtime
 template< class V , class W , class K >
 double timeIt( const V & A , W && work , int r , K && ok )
 {
+ {
+  V B = A;
+  work( B );
+ }
  std::vector< double > t;
  for( int i = 0 ; i < r ; ++i ) {
   V B = A;
@@ -538,6 +648,638 @@ void patternsOn( const std::vector< std::size_t > & sizes , int r ,
   }
  }
 
+/*--------------------------------------------------------------------------*/
+/*------------------------------ NO COPIES ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the median of r runs of work(), in nanoseconds per one of n items, each
+/// after an untimed prepare(), or -1 if ok() is false after a run; a first
+/// run, not timed, starts the threads of the runtime
+template< class P , class W , class K >
+double timeRuns( std::size_t n , P && prepare , W && work , int r , K && ok )
+{
+ prepare();
+ work();
+ std::vector< double > t;
+ for( int i = 0 ; i < r ; ++i ) {
+  prepare();
+  const auto a = std::chrono::steady_clock::now();
+  work();
+  const auto b = std::chrono::steady_clock::now();
+  if( ! ok() )
+   return( -1 );
+  t.push_back( std::chrono::duration< double , std::nano >( b - a ).count()
+               / double( std::max< std::size_t >( n , 1 ) ) );
+  }
+ std::nth_element( t.begin() , t.begin() + t.size() / 2 , t.end() );
+ return( t[ t.size() / 2 ] );
+ }
+
+/// a battery of works on inputs that need no copy
+using Works = std::vector< std::pair< std::string ,
+                                      std::function< void( void ) > > >;
+
+void addW( Works & S , const char * f , const std::string & name ,
+           std::function< void( void ) > work )
+{
+ if( runs( f ) )
+  S.emplace_back( name , std::move( work ) );
+ }
+
+/// the work of an algorithm of ADS on each executor, f( ex )
+template< class F >
+void onExecutorsW( Works & S , Executors & X , const std::string & name ,
+                   F && f )
+{
+ addW( S , "pool" , name + " pool" , [ & X , f ] { f( X.pool() ); } );
+#if defined( ADS_WITH_FASTFLOW )
+ addW( S , "fastflow" , name + " FastFlow" , [ & X , f ] { f( X.ff() ); } );
+#endif
+#if defined( _OPENMP )
+ addW( S , "openmp" , name + " OpenMP" , [ & X , f ] { f( X.omp() ); } );
+#endif
+#if defined( ADS_WITH_TBB )
+ addW( S , "tbb" , name + " TBB" , [ & X , f ] { f( X.tbb() ); } );
+#endif
+ }
+
+/// runs a battery: its first structure twice, the second as "A/A"
+template< class P , class K >
+void runWorks( const std::string & b , const std::string & c , std::size_t n ,
+               Works & S , int r , P && prepare , K && ok )
+{
+ for( std::size_t i = 0 ; i < S.size() ; ++i ) {
+  ADS::bench::print( b.c_str() , c , n , S[ i ].first ,
+                     timeRuns( n , prepare , S[ i ].second , r , ok ) );
+  if( i == 0 )
+   ADS::bench::print( b.c_str() , c , n , S[ i ].first + " A/A" ,
+                      timeRuns( n , prepare , S[ i ].second , r , ok ) );
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- MERGES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the stable merge of k sorted runs of 64-bit integers, k = 4 and 64
+void merges( const std::vector< std::size_t > & sizes , int r ,
+             unsigned seed , Executors & X )
+{
+ using U = std::uint64_t;
+ using Range = std::pair< const U * , const U * >;
+ for( std::size_t n : sizes )
+  for( std::size_t k : { 4 , 64 } ) {
+   std::mt19937_64 g( seed );
+   std::vector< std::vector< U > > R( k );
+   std::vector< Range > Q;
+   // the merges of libstdc++ and tlx want iterators that can write
+   std::vector< std::pair< U * , U * > > Qw;
+   for( std::size_t i = 0 ; i < k ; ++i ) {
+    R[ i ].resize( n / k + ( i < n % k ) );
+    for( auto & x : R[ i ] ) x = g() % ( n / 2 + 1 );   // with ties
+    std::sort( R[ i ].begin() , R[ i ].end() );
+    Q.emplace_back( R[ i ].data() , R[ i ].data() + R[ i ].size() );
+    Qw.emplace_back( R[ i ].data() , R[ i ].data() + R[ i ].size() );
+    }
+   std::vector< U > ref( n ) , out( n , 0 );
+   ADS::multiwayMerge( Q , ref.begin() );
+   Works S;
+#if defined( _OPENMP )
+   addW( S , "openmp" , "__gnu_parallel::stable_multiway_merge" , [ & ] {
+    auto C = Qw;
+    __gnu_parallel::stable_multiway_merge( C.begin() , C.end() ,
+                                           out.begin() , n , std::less<>() ,
+                                           __gnu_parallel::exact_tag() ); } );
+#endif
+   onExecutorsW( S , X , "ADS::multiwayMerge" , [ & ]( auto & ex ) {
+    ADS::multiwayMerge( ex , Q , out.begin() ); } );
+   if( threads == 1 )
+    addW( S , "seq" , "ADS::multiwayMerge (sequential)" , [ & ] {
+     ADS::multiwayMerge( Q , out.begin() ); } );
+#if defined( ADS_HAS_TLX )
+   addW( S , "openmp" , "tlx::stable_parallel_multiway_merge" , [ & ] {
+    auto C = Qw;
+    tlx::stable_parallel_multiway_merge( C.begin() , C.end() , out.begin() ,
+                                         std::ptrdiff_t( n ) ,
+                                         std::less<>() ,
+                                         tlx::MWMA_ALGORITHM_DEFAULT ,
+                                         tlx::MWMSA_DEFAULT ,
+                                         std::size_t( threads ) ); } );
+#endif
+   runWorks( bench( "merge" ) , "k" + std::to_string( k ) , n , S , r ,
+             [ & ] { std::fill( out.begin() , out.end() , 0 ); } ,
+             [ & ] { return( out == ref ); } );
+   }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- PRODUCTS ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the products y = A x of sparse matrices of n rows, 8 nonzeros per row
+/// at random columns ("uniform") or rows of lengths from a power law
+/// ("powerlaw", a Pareto law of exponent 1.5, 4 nonzeros at least), in
+/// nanoseconds per nonzero
+void sparse( const std::vector< std::size_t > & sizes , int r ,
+             unsigned seed , Executors & X )
+{
+ for( std::size_t n : sizes )
+  for( int shape = 0 ; shape < 2 ; ++shape ) {
+   std::mt19937_64 g( seed );
+   std::uniform_real_distribution< double > u( 0 , 1 );
+   std::vector< ADS::CsrMatrix::Triplet > T;
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    std::size_t d = 8;
+    if( shape == 1 )
+     d = std::min< std::size_t >( n / 4 , std::size_t(
+                                  4 * std::pow( 1 - u( g ) , -2.0 / 3 ) ) );
+    for( std::size_t e = 0 ; e < d ; ++e )
+     T.emplace_back( i , g() % n , u( g ) - 0.5 );
+    }
+   const ADS::CsrMatrix A( n , n , T );
+   const ADS::SellMatrix<> L( A );
+   std::vector< double > x( n ) , y( n ) , ref;
+   for( auto & v : x ) v = u( g );
+   ref = A.multiply( x );
+   const std::size_t nnz = A.nonzeros();
+   Works S;
+#if defined( ADS_HAS_TBB )
+   addW( S , "tbb" , "tbb::parallel_for rows" , [ & ] {
+    tbb::parallel_for( tbb::blocked_range< std::size_t >( 0 , n ) ,
+     [ & ]( const tbb::blocked_range< std::size_t > & q ) {
+      const std::size_t * st = A.rowStart();
+      for( std::size_t i = q.begin() ; i < q.end() ; ++i ) {
+       double s = 0;
+       for( std::size_t k = st[ i ] ; k < st[ i + 1 ] ; ++k )
+        s += A.values()[ k ] * x[ A.columns()[ k ] ];
+       y[ i ] = s;
+       } } ); } );
+#endif
+   onExecutorsW( S , X , "ADS::CsrMatrix" , [ & ]( auto & ex ) {
+    ADS::multiply( ex , A , x.data() , y.data() ); } );
+   onExecutorsW( S , X , "ADS::SellMatrix" , [ & ]( auto & ex ) {
+    ADS::multiply( ex , L , x.data() , y.data() ); } );
+   if( threads == 1 ) {
+    addW( S , "seq" , "ADS::CsrMatrix (sequential)" , [ & ] {
+     A.multiply( x.data() , y.data() ); } );
+    addW( S , "seq" , "ADS::SellMatrix (sequential)" , [ & ] {
+     L.multiply( x.data() , y.data() ); } );
+    }
+#if defined( _OPENMP )
+   addW( S , "openmp" , "omp for rows" , [ & ] {
+    const std::size_t * st = A.rowStart();
+    const long m = long( n );
+    #pragma omp parallel for schedule( dynamic , 256 ) num_threads( threads )
+    for( long i = 0 ; i < m ; ++i ) {
+     double s = 0;
+     for( std::size_t k = st[ i ] ; k < st[ i + 1 ] ; ++k )
+      s += A.values()[ k ] * x[ A.columns()[ k ] ];
+     y[ std::size_t( i ) ] = s;
+     } } );
+#endif
+#if defined( ADS_HAS_EIGEN )
+   using ES = Eigen::SparseMatrix< double , Eigen::RowMajor , std::int64_t >;
+   std::shared_ptr< ES > E;
+   if( runs( "openmp" ) ) {
+    E = std::make_shared< ES >( long( n ) , long( n ) );
+    std::vector< Eigen::Triplet< double , std::int64_t > > ET;
+    for( const auto & [ i , j , v ] : T )
+     ET.emplace_back( std::int64_t( i ) , std::int64_t( j ) , v );
+    E->setFromTriplets( ET.begin() , ET.end() );
+    E->makeCompressed();
+    }
+   addW( S , "openmp" , "Eigen::SparseMatrix" , [ & ] {
+    Eigen::setNbThreads( threads );
+    Eigen::Map< const Eigen::VectorXd > xv( x.data() , long( n ) );
+    Eigen::Map< Eigen::VectorXd > yv( y.data() , long( n ) );
+    yv.noalias() = *E * xv; } );
+#endif
+#if defined( ADS_HAS_PARLAY )
+   addW( S , "parlay" , "parlay::parallel_for rows" , [ & ] {
+    const std::size_t * st = A.rowStart();
+    parlay::parallel_for( 0 , n , [ & ]( std::size_t i ) {
+     double s = 0;
+     for( std::size_t k = st[ i ] ; k < st[ i + 1 ] ; ++k )
+      s += A.values()[ k ] * x[ A.columns()[ k ] ];
+     y[ i ] = s; } ); } );
+#endif
+   // the products by rows sum in the same order; Eigen and the SELL
+   // format may differ in the last bits
+   runWorks( bench( "spmv" ) , shape ? "powerlaw" : "uniform" , nnz , S , r ,
+             [ & ] { std::fill( y.begin() , y.end() , 0.0 ); } ,
+             [ & ] {
+              for( std::size_t i = 0 ; i < n ; ++i )
+               if( std::abs( y[ i ] - ref[ i ] ) > 1e-9 ) return( false );
+              return( true ); } );
+   }
+ }
+
+/// the products C = A B of square dense matrices of doubles, n = 1024 and
+/// 2048, in nanoseconds per multiplication of entries (n^3)
+void dense( int r , unsigned seed , Executors & X )
+{
+ for( std::size_t n : { 1024 , 2048 } ) {
+  std::mt19937_64 g( seed );
+  std::uniform_real_distribution< double > u( -1 , 1 );
+  ADS::DenseMatrix< double > A( n , n ) , B( n , n ) , C( n , n ) ;
+  for( std::size_t i = 0 ; i < n * n ; ++i ) {
+   A.data()[ i ] = u( g );
+   B.data()[ i ] = u( g );
+   }
+  const auto ref = ADS::multiply( A , B );
+  Works S;
+#if defined( ADS_HAS_OPENBLAS )
+  addW( S , "blas" , "OpenBLAS dgemm" , [ & ] {
+   openblas_set_num_threads( threads );
+   cblas_dgemm( CblasRowMajor , CblasNoTrans , CblasNoTrans , int( n ) ,
+                int( n ) , int( n ) , 1.0 , A.data() , int( n ) , B.data() ,
+                int( n ) , 0.0 , C.data() , int( n ) ); } );
+#endif
+  onExecutorsW( S , X , "ADS::gemm" , [ & ]( auto & ex ) {
+   ADS::gemm( ex , n , n , n , 1.0 , A.data() , n , B.data() , n , 0.0 ,
+              C.data() , n ); } );
+  if( threads == 1 )
+   addW( S , "seq" , "ADS::gemm (sequential)" , [ & ] {
+    ADS::gemm( n , n , n , 1.0 , A.data() , n , B.data() , n , 0.0 ,
+               C.data() , n ); } );
+#if defined( ADS_HAS_EIGEN )
+  addW( S , "openmp" , "Eigen::Matrix" , [ & ] {
+   using M = Eigen::Matrix< double , Eigen::Dynamic , Eigen::Dynamic ,
+                            Eigen::RowMajor >;
+   Eigen::setNbThreads( threads );
+   Eigen::Map< const M > a( A.data() , long( n ) , long( n ) ) ,
+                         b( B.data() , long( n ) , long( n ) );
+   Eigen::Map< M > c( C.data() , long( n ) , long( n ) );
+   c.noalias() = a * b; } );
+#endif
+  runWorks( bench( "gemm" ) , "double" , n * n * n , S , r ,
+            [ & ] { std::fill( C.data() , C.data() + n * n , 0.0 ); } ,
+            [ & ] {
+             for( std::size_t i = 0 ; i < n * n ; ++i )
+              if( std::abs( C.data()[ i ] - ref.data()[ i ] ) > 1e-9 )
+               return( false );
+             return( true ); } );
+  }
+ }
+
+#if defined( ADS_HAS_FFTW )
+/// the allocator of FFTW, so that every array of the benchmark has the
+/// alignment of the one its plan was made on
+template< class T >
+struct FftwAllocator {
+ using value_type = T;
+ FftwAllocator( void ) = default;
+ template< class U > FftwAllocator( const FftwAllocator< U > & ) {}
+ T * allocate( std::size_t n ) {
+  return( static_cast< T * >( fftw_malloc( n * sizeof( T ) ) ) );
+  }
+ void deallocate( T * p , std::size_t ) { fftw_free( p ); }
+ template< class U > bool operator==( const FftwAllocator< U > & ) const {
+  return( true );
+  }
+ };
+#endif
+
+/// the transforms of n = 2^20 and 2^22 complex points, in nanoseconds per
+/// point; FFTW planned with FFTW_MEASURE (the plan not timed)
+void ffts( int r , unsigned seed , Executors & X )
+{
+ for( std::size_t n : { std::size_t( 1 ) << 20 , std::size_t( 1 ) << 22 } ) {
+  std::mt19937_64 g( seed );
+  std::uniform_real_distribution< double > u( -1 , 1 );
+  std::vector< ADS::Complex > A( n );
+  for( auto & z : A ) z = ADS::Complex( u( g ) , u( g ) );
+  std::vector< ADS::Complex > ref = A;
+  ADS::fft( ref , false );
+  auto close = [ & ]( const auto & B ) {
+   for( std::size_t i = 0 ; i < n ; ++i )
+    if( std::abs( B[ i ] - ref[ i ] ) > 1e-8 ) return( false );
+   return( true ); };
+  using V = std::vector< ADS::Complex >;
+  Battery< V > S;
+  onExecutors( S , X , "ADS::fft" , []( auto & ex , V & B ) {
+   ADS::fft( ex , B , false ); } );
+  if( threads == 1 )
+   add( S , "seq" , "ADS::fft (sequential)" , []( V & B ) {
+    ADS::fft( B , false ); } );
+  runBattery( bench( "fft" ) , "complex" , A , S , r , close );
+#if defined( ADS_HAS_FFTW )
+  if( runs( "fftw" ) ) {
+   using FV = std::vector< ADS::Complex , FftwAllocator< ADS::Complex > >;
+   FV F( A.begin() , A.end() );
+   fftw_init_threads();
+   fftw_plan_with_nthreads( threads );
+   FV P( n );
+   auto * pp = reinterpret_cast< fftw_complex * >( P.data() );
+   fftw_plan plan = fftw_plan_dft_1d( int( n ) , pp , pp , FFTW_FORWARD ,
+                                      FFTW_MEASURE );
+   Battery< FV > W;
+   W.emplace_back( "FFTW" , [ & ]( FV & B ) {
+    auto * b = reinterpret_cast< fftw_complex * >( B.data() );
+    fftw_execute_dft( plan , b , b ); } );
+   runBattery( bench( "fft" ) , "complex" , F , W , r , close );
+   fftw_destroy_plan( plan );
+   }
+#endif
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- GRAPHS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the edges of an unoriented graph of 2^scale nodes and 16 edges per node:
+/// at random ("uniform"), or by the recursive matrix of Kronecker with the
+/// parameters of the Graph 500, a = 0.57 , b = c = 0.19 ("kronecker"), the
+/// names of the nodes shuffled; no loop
+std::vector< std::pair< int , int > > edges( int scale , bool kron ,
+                                             unsigned seed )
+{
+ std::mt19937_64 g( seed );
+ const int n = 1 << scale;
+ std::vector< int > name( static_cast< std::size_t >( n ) );
+ std::iota( name.begin() , name.end() , 0 );
+ std::shuffle( name.begin() , name.end() , g );
+ std::vector< std::pair< int , int > > E;
+ std::uniform_real_distribution< double > u( 0 , 1 );
+ for( std::size_t e = 0 ; e < 16 * std::size_t( n ) ; ++e ) {
+  int a = 0 , b = 0;
+  if( kron )
+   for( int l = 0 ; l < scale ; ++l ) {
+    // the quadrant: a ( 0 , 0 ), b ( 0 , 1 ), c ( 1 , 0 ), d ( 1 , 1 )
+    const double x = u( g );
+    a = 2 * a + int( x >= 0.76 );
+    b = 2 * b + int( ( ( x >= 0.57 ) && ( x < 0.76 ) ) || ( x >= 0.95 ) );
+    }
+  else {
+   a = int( g() % unsigned( n ) );
+   b = int( g() % unsigned( n ) );
+   }
+  if( a != b )
+   E.emplace_back( name[ std::size_t( a ) ] , name[ std::size_t( b ) ] );
+  }
+ return( E );
+ }
+
+/// the visit in breadth from a node of the largest component and the
+/// connected components, on graphs of 2^scale nodes, in nanoseconds per
+/// arc
+void graphs( const std::vector< int > & scales , int r , unsigned seed ,
+             Executors & X )
+{
+ using G = ADS::StaticGraph<>;
+ for( int scale : scales )
+  for( bool kron : { false , true } ) {
+   const auto E = edges( scale , kron , seed );
+   const G g( 1 << scale , E , false );
+   const int n = g.n();
+   const std::size_t arcs = std::size_t( g.arcs() );
+   // the source: the node of largest degree
+   int src = 0;
+   for( int v = 0 ; v < n ; ++v )
+    if( g.degree( v ) > g.degree( src ) ) src = v;
+   ADS::Sequential seq;
+   const auto ref = ADS::bfsDistances( seq , g , src );
+   const auto lab = ADS::connectedComponents( seq , g );
+   std::size_t reached = 0 , comps = 0;
+   for( int v = 0 ; v < n ; ++v ) {
+    reached += ref[ std::size_t( v ) ] >= 0;
+    comps += lab[ std::size_t( v ) ] == v;
+    }
+   const char * c = kron ? "kronecker" : "uniform";
+   std::vector< int > dist , comp;
+   std::size_t count = 0;
+#if defined( ADS_HAS_GAPBS )
+   std::unique_ptr< Graph > gg;
+   if( runs( "openmp" ) ) {
+    NodeID * neighs = new NodeID[ arcs ];
+    pvector< SGOffset > off( std::size_t( n ) + 1 );
+    for( int v = 0 ; v <= n ; ++v ) off[ std::size_t( v ) ] = g.offsets()[ v ];
+    std::copy( g.arcData() , g.arcData() + arcs , neighs );
+    gg = std::make_unique< Graph >( n , Graph::GenIndex( off , neighs ) ,
+                                    neighs );
+    }
+#endif
+#if defined( ADS_HAS_PARLAY_EXAMPLES )
+   parlay::sequence< parlay::sequence< int > > pg;
+   if( runs( "parlay" ) )
+    pg = parlay::tabulate( std::size_t( n ) , [ & ]( std::size_t v ) {
+     return( parlay::to_sequence( g.out( int( v ) ) ) ); } );
+#endif
+   {
+    Works S;
+#if defined( ADS_HAS_GAPBS )
+    addW( S , "openmp" , "gapbs DOBFS" , [ & ] {
+     const auto p = gapbsBfs::DOBFS( *gg , src );
+     count = std::size_t( std::count_if( p.begin() , p.end() , []( auto x ) {
+      return( x >= 0 ); } ) ); } );
+#endif
+    onExecutorsW( S , X , "ADS::bfsDistances" , [ & ]( auto & ex ) {
+     dist = ADS::bfsDistances( ex , g , src ); } );
+    if( threads == 1 )
+     addW( S , "seq" , "ADS::bfsDistances (sequential)" , [ & ] {
+      dist = ADS::bfsDistances( seq , g , src ); } );
+#if defined( ADS_HAS_PARLAY_EXAMPLES )
+    addW( S , "parlay" , "parlay BFS_ligra" , [ & ] {
+     const auto F = BFS( src , pg , pg );
+     count = 0;
+     for( const auto & f : F ) count += f.size(); } );
+#endif
+    runWorks( bench( "bfs" ) , c , arcs , S , r ,
+              [ & ] { dist.clear(); count = 0; } ,
+              [ & ] { return( dist.empty() ? count == reached
+                                           : dist == ref ); } );
+   }
+   {
+    Works S;
+#if defined( ADS_HAS_GAPBS )
+    auto distinct = [ & ]( const auto & p ) {
+     std::vector< int > q( p.begin() , p.end() );
+     std::sort( q.begin() , q.end() );
+     return( std::size_t( std::unique( q.begin() , q.end() ) -
+                          q.begin() ) ); };
+    addW( S , "openmp" , "gapbs Afforest" , [ & ] {
+     count = distinct( gapbsCc::Afforest( *gg ) ); } );
+#endif
+    onExecutorsW( S , X , "ADS::connectedComponents" , [ & ]( auto & ex ) {
+     comp = ADS::connectedComponents( ex , g ); } );
+    if( threads == 1 )
+     addW( S , "seq" , "ADS::connectedComponents (sequential)" , [ & ] {
+      comp = ADS::connectedComponents( seq , g ); } );
+#if defined( ADS_HAS_GAPBS )
+    addW( S , "openmp" , "gapbs ShiloachVishkin" , [ & ] {
+     count = distinct( gapbsSv::ShiloachVishkin( *gg ) ); } );
+#endif
+    runWorks( bench( "cc" ) , c , arcs , S , r ,
+              [ & ] { comp.clear(); count = 0; } ,
+              [ & ] { return( comp.empty() ? count == comps
+                                           : comp == lab ); } );
+   }
+   }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------------- TEXTS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the LCP array from the suffix array of n random symbols of 4 letters
+/// ("dna") and of a text of words of a Zipf law ("words"), in nanoseconds
+/// per symbol
+void texts( const std::vector< std::size_t > & sizes , int r ,
+            unsigned seed , Executors & X )
+{
+ for( std::size_t n : sizes )
+  for( int kind = 0 ; kind < 2 ; ++kind ) {
+   std::mt19937_64 g( seed );
+   std::string T;
+   if( kind == 0 )
+    for( std::size_t i = 0 ; i < n ; ++i ) T += "acgt"[ g() % 4 ];
+   else {
+    std::vector< std::string > W;
+    for( int w = 0 ; w < 5000 ; ++w ) {
+     std::string s;
+     for( int l = 0 ; l < 2 + int( g() % 8 ) ; ++l )
+      s += char( 'a' + g() % 26 );
+     W.push_back( s );
+     }
+    while( T.size() < n ) {
+     const double x = std::uniform_real_distribution<>( 0 , 1 )( g );
+     T += W[ std::min< std::size_t >( 4999 , std::size_t(
+                                       std::pow( 5000.0 , x ) ) - 1 ) ];
+     T += ' ';
+     }
+    T.resize( n );
+    }
+   const auto SA = ADS::suffixArraySais( T );
+   const auto ref = ADS::lcpArray( T , SA );
+   std::vector< std::size_t > L;
+   Works S;
+   onExecutorsW( S , X , "ADS::lcpArray" , [ & ]( auto & ex ) {
+    L = ADS::lcpArray( ex , T , SA ); } );
+   if( threads == 1 )
+    addW( S , "seq" , "ADS::lcpArray (sequential)" , [ & ] {
+     L = ADS::lcpArray( T , SA ); } );
+#if defined( ADS_HAS_PARLAY_EXAMPLES )
+   parlay::sequence< unsigned > PSA;
+   if( runs( "parlay" ) )
+    PSA = parlay::tabulate( n , [ & ]( std::size_t i ) {
+     return( unsigned( SA[ i ] ) ); } );
+   addW( S , "parlay" , "parlay lcp" , [ & ] {
+    const auto P = lcp( T , PSA );
+    L.assign( P.begin() , P.end() ); } );
+#endif
+   runWorks( bench( "lcp" ) , kind ? "words" : "dna" , n , S , r ,
+             [ & ] { L.clear(); } , [ & ] { return( L == ref ); } );
+   }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------------- HASHING --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// n distinct keys inserted into concurrent hash tables by the threads of
+/// the pool of ADS (a parallelFor on blocks of 1024), the tables sized
+/// for n keys, then looked up; the same threads for all the tables, so
+/// that only the tables differ
+void hashing( const std::vector< std::size_t > & sizes , int r ,
+              unsigned seed , Executors & X )
+{
+ if( ! runs( "pool" ) )
+  return;
+ using K = std::uint64_t;
+ for( std::size_t n : sizes ) {
+  const auto keys = ADS::bench::keys( n , seed );
+  auto & pool = X.pool();
+  std::atomic< std::size_t > found{ 0 };
+  auto lookups = [ & ]( auto && find ) {
+   found = 0;
+   ADS::parallelForBlocks( pool , 0 , n , [ & ]( std::size_t lo ,
+                                                 std::size_t hi ) {
+    std::size_t f = 0;
+    for( std::size_t i = lo ; i < hi ; ++i ) f += find( keys[ i ] );
+    found.fetch_add( f , std::memory_order_relaxed ); } ); };
+  // each table: a factory, the insertion and the lookups
+  struct Table {
+   std::string name;
+   std::function< void( void ) > make , insert , find , drop;
+   };
+  std::vector< Table > T;
+  std::unique_ptr< ADS::ConcurrentCuckooTable< K , K > > a;
+  T.push_back( { "ADS::ConcurrentCuckooTable" ,
+   [ & ] { a = std::make_unique< ADS::ConcurrentCuckooTable< K , K > >( n );
+    } ,
+   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
+    a->insert( keys[ i ] , K( i ) ); } ); } ,
+   [ & ] { lookups( [ & ]( K k ) { return( a->find( k ).has_value() ); } );
+    } , [ & ] { a.reset(); } } );
+#if defined( ADS_HAS_TBB )
+  using HM = tbb::concurrent_hash_map< K , K >;
+  std::unique_ptr< HM > b;
+  T.push_back( { "tbb::concurrent_hash_map" ,
+   [ & ] { b = std::make_unique< HM >( n ); } ,
+   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
+    b->insert( { keys[ i ] , K( i ) } ); } ); } ,
+   [ & ] { lookups( [ & ]( K k ) {
+    HM::const_accessor c;
+    return( b->find( c , k ) ); } ); } , [ & ] { b.reset(); } } );
+  using UM = tbb::concurrent_unordered_map< K , K >;
+  std::unique_ptr< UM > c;
+  T.push_back( { "tbb::concurrent_unordered_map" ,
+   [ & ] { c = std::make_unique< UM >( n ); } ,
+   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
+    c->insert( { keys[ i ] , K( i ) } ); } ); } ,
+   [ & ] { lookups( [ & ]( K k ) { return( c->find( k ) != c->end() ); } );
+    } , [ & ] { c.reset(); } } );
+#endif
+#if defined( ADS_HAS_LIBCUCKOO )
+  using LC = libcuckoo::cuckoohash_map< K , K >;
+  std::unique_ptr< LC > d;
+  T.push_back( { "libcuckoo::cuckoohash_map" ,
+   [ & ] { d = std::make_unique< LC >( n ); } ,
+   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
+    d->insert( keys[ i ] , K( i ) ); } ); } ,
+   [ & ] { lookups( [ & ]( K k ) { return( d->contains( k ) ); } ); } ,
+   [ & ] { d.reset(); } } );
+#endif
+#if defined( ADS_HAS_PARLAY )
+  struct PH {
+   using eType = K;
+   using kType = K;
+   eType empty( void ) { return( ~K( 0 ) ); }
+   kType getKey( eType v ) { return( v ); }
+   std::size_t hash( kType v ) {
+    return( std::size_t( ( v * 0x9E3779B97F4A7C15ull ) >> 3 ) ); }
+   int cmp( kType v , kType w ) { return( v > w ? 1 : ( v == w ? 0 : -1 ) ); }
+   bool replaceQ( eType , eType ) { return( false ); }
+   eType update( eType v , eType ) { return( v ); }
+   bool cas( eType * p , eType o , eType nw ) {
+    return( std::atomic_ref< K >( *p ).compare_exchange_strong( o , nw ) );
+    }
+   };
+  using PT = parlay::hashtable< PH >;
+  std::unique_ptr< PT > e;
+  T.push_back( { "parlay::hashtable (keys only)" ,
+   [ & ] { e = std::make_unique< PT >( n , PH() ); } ,
+   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
+    e->insert( keys[ i ] ); } ); } ,
+   [ & ] { lookups( [ & ]( K k ) { return( e->find( k ) != ~K( 0 ) ); } );
+    } , [ & ] { e.reset(); } } );
+#endif
+  for( std::size_t i = 0 ; i < T.size() ; ++i )
+   for( int aa = 0 ; aa < ( i == 0 ? 2 : 1 ) ; ++aa ) {
+    const std::string who = T[ i ].name + ( aa ? " A/A" : "" );
+    ADS::bench::print( bench( "hash insert" ).c_str() , "uint64" , n , who ,
+                       timeRuns( n , [ & ] { T[ i ].drop(); T[ i ].make(); } ,
+                                 T[ i ].insert , r ,
+                                 [] { return( true ); } ) );
+    ADS::bench::print( bench( "hash find" ).c_str() , "uint64" , n , who ,
+                       timeRuns( n , [] {} , T[ i ].find , r ,
+                                 [ & ] { return( found == n ); } ) );
+    T[ i ].drop();
+    }
+  }
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/
@@ -580,6 +1322,20 @@ int main( int argc , char ** argv )
   }
  if( only.empty() || ( only == "patterns" ) )
   patternsOn( o.sizes , o.runs , o.seed , X );
+ if( only.empty() || ( only == "merge" ) )
+  merges( o.sizes , o.runs , o.seed , X );
+ if( only.empty() || ( only == "spmv" ) )
+  sparse( { 100000 , 1000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "gemm" ) )
+  dense( o.runs , o.seed , X );
+ if( only.empty() || ( only == "fft" ) )
+  ffts( o.runs , o.seed , X );
+ if( only.empty() || ( only == "graphs" ) )
+  graphs( { 16 , 19 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "lcp" ) )
+  texts( { 1000000 , 4000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "hash" ) )
+  hashing( o.sizes , o.runs , o.seed , X );
  }
 
 /*--------------------------------------------------------------------------*/
