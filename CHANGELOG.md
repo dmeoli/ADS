@@ -947,7 +947,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RankSelect builds the inventory of select of a value at its first
   select, once whatever the threads (std::call_once behind a flag read
   with acquire semantics), so that a directory that only ranks never pays
-  for it, and a copy keeps the inventories built; the directory takes the
+  for it, and a copy keeps the inventories built (the first call out of
+  the line of select, which stays inlined); the directory takes the
   prefix sums of the sideways sums of a block by one product on their
   bytes, in a loop per top block with no test, and a vector from its
   words copies them as it counts them above 2^23 bits; the top level is

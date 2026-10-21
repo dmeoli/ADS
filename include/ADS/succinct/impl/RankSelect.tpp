@@ -231,11 +231,20 @@ inline void RankSelect::shape( bool b , Inventory & I ,
 
 inline const RankSelect::Inventory & RankSelect::inventory( bool b ) const
 {
- if( ! f_ready[ b ].load( std::memory_order_acquire ) ) [[unlikely]] {
-  std::call_once( f_flag[ b ] , [ this , b ]() { build( b ); } );
-  f_ready[ b ].store( true , std::memory_order_release );
-  }
+ if( ! f_ready[ b ].load( std::memory_order_acquire ) ) [[unlikely]]
+  first( b );
  return( f_inv[ b ] );
+ }
+
+#if defined( __GNUC__ )
+__attribute__(( noinline , cold ))
+#elif defined( _MSC_VER )
+__declspec( noinline )
+#endif
+inline void RankSelect::first( bool b ) const
+{
+ std::call_once( f_flag[ b ] , [ this , b ]() { build( b ); } );
+ f_ready[ b ].store( true , std::memory_order_release );
  }
 
 inline void RankSelect::build( bool b ) const
