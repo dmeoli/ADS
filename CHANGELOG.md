@@ -55,10 +55,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   direction and connectedComponents() by Afforest on StaticGraph, and
   lcpArray() by the permuted LCP; test/engineered_parallel.cpp
 - SellMatrix::multiply() on a range of chunks, chunks() and chunkStart()
+- distributed::sort(), include/ADS/distributed: the sort by regular
+  sampling of the items spread over the processes of MPI, one round of
+  all-to-all, the pieces merged by multiwayMerge(), with an executor for
+  the threads of each process (the CMake option ADS_WITH_MPI, OFF by
+  default); test/engineered_mpi.cpp (make test-mpi, ctest on 1 to 4
+  processes) and bench/mpi.cpp
 - bench/parallel.cpp, the parallel algorithms on 1 to t threads against
   oneTBB, std::execution::par, the parallel mode of libstdc++, OpenMP,
-  ParlayLib, the parallel IPS4o and IPS2Ra and FastFlow, each runtime in
-  a process of its own (-w)
+  ParlayLib, the parallel IPS4o and IPS2Ra and FastFlow on the sorts and
+  the patterns, the parallel merges of libstdc++ and tlx, Eigen and
+  OpenBLAS on the products, FFTW with its threads, the GAP benchmark
+  suite on the visits, and the concurrent tables of oneTBB, libcuckoo and
+  ParlayLib, each runtime in a process of its own (-w)
 
 - the algorithms of the book on graphs as templates on the structures they
   use: shortestPaths() on a frontier given as a type (PrototypeFrontier;

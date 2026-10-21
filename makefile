@@ -7,6 +7,7 @@
 #                                                                             #
 #   make             builds the tests                                         #
 #   make test        runs them                                                #
+#   make test-mpi    the sort over the processes of MPI, by mpicxx and mpirun #
 #   make test ADS_WITH_GMP=1 [GMP=<prefix>]                                   #
 #                    the same with BigInteger on the backend of GMP           #
 #   make bench       builds the benchmarks in $(BUILD)                        #
@@ -42,6 +43,20 @@ $(BUILD)/%: test/%.cpp $(HEADERS) | $(BUILD)
 
 $(BUILD):
 	mkdir -p $@
+
+# the sort over the processes of MPI, not in tests.txt: make test-mpi
+# [MPICXX=mpicxx] [MPIRUN=mpirun], on 1 to 4 processes (Open MPI is told
+# that they may outnumber the cores)
+MPICXX   ?= mpicxx
+MPIRUN   ?= mpirun $(if $(shell $(MPICXX) --showme:version 2>/dev/null),\
+            --oversubscribe)
+test-mpi: | $(BUILD)
+	$(MPICXX) $(CXXFLAGS) $(INC) -DADS_WITH_MPI -o $(BUILD)/engineered_mpi \
+	 test/engineered_mpi.cpp -pthread
+	for np in 1 2 3 4; do \
+	  $(MPIRUN) -np $$np $(BUILD)/engineered_mpi \
+	   distributed-sort || exit 1; \
+	done
 
 # each line of tests.txt is a test, and each program must have the tests of
 # the list, no more and no less
@@ -324,6 +339,11 @@ $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(PARFLAGS)
 
+# the sort over the processes of MPI, by mpicxx (not among BENCHES): make
+# $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi
+$(BUILD)/bench-mpi: bench/mpi.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(MPICXX) $(BENCHFLAGS) -DADS_WITH_MPI -o $@ $< -pthread
+
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<
 
@@ -334,7 +354,7 @@ install:
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all test bench install clean
+.PHONY: all test test-mpi bench install clean
 
 ###############################################################################
 #                             End of makefile                                 #
