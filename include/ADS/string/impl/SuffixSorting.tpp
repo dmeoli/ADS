@@ -387,6 +387,22 @@ bool saisDoubling( const S * R , S * SA , S m ,
  return( true );
  }
 
+/// the groups of SA[ 0 .. m ) by the bit vector ends (bit i on if SA[ i ]
+/// ends its group), each f( start , size ) in order
+template< class S , class F >
+inline void saisForGroups( const std::vector< std::uint64_t > & ends , S m ,
+                           F && f )
+{
+ S start = 0;
+ for( std::size_t w = 0 ; w < ends.size() ; ++w )
+  for( std::uint64_t v = ends[ w ] ; v ; v &= v - 1 ) {
+   const S e = S( w * 64 + std::size_t( std::countr_zero( v ) ) ) + 1;
+   if( e > m ) return;
+   f( start , e - start );
+   start = e;
+   }
+ }
+
 /// the groups of equal names among the LMS places sorted by their
 /// substrings, SA[ 0 .. m ), each sorted by the names of the LMS places that
 /// follow, read in the slots SA[ m + q / 2 ] (from 1, 0 elsewhere): two LMS
@@ -410,21 +426,21 @@ inline S saisNextLms( const std::vector< std::uint64_t > & lms , S n , S p )
  }
 
 /// the groups of equal names among the LMS places sorted by their
-/// substrings, SA[ 0 .. m ) by the sizes in runs, refined by the text that
+/// substrings, SA[ 0 .. m ) by the bit vector ends, refined by the text that
 /// follows the substring of the group (of the same length l in a group):
 /// two suffixes p and q of equal LMS-substrings compare as T[ p + l .. ]
 /// and T[ q + l .. ], read 8 symbols a round as one key in the order of
 /// the bytes, a suffix that ends inside the key before one that goes on
-/// with the same symbols. In rest the sizes of the groups still tied after
+/// with the same symbols. In rest the ends of the groups still tied after
 /// at most rounds rounds or once budget keys are read (1 for each place
 /// that is sorted), true if none is; nothing is done if the groups have
 /// more than 16 places on average, or if half of those in the first round
 /// on the first groups stay tied
 template< class C , class S >
 bool saisTextTies( const C * T , S n , S * SA , S m ,
-                   const std::vector< S > & runs ,
+                   const std::vector< std::uint64_t > & ends ,
                    const std::vector< std::uint64_t > & lms ,
-                   std::vector< S > & rest , std::size_t budget ,
+                   std::vector< std::uint64_t > & rest , std::size_t budget ,
                    unsigned rounds )
 {
  static_assert( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > );
@@ -439,13 +455,12 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
  struct Group { S f , g , at; };      // SA[ f .. f + g ), offset at
  std::vector< Group > G , H;
  std::size_t tied = 0;
- for( S f = 0 ; const S g : runs ) {
+ saisForGroups( ends , m , [ & ]( S f , S g ) {
   if( g > 1 ) {
    G.push_back( { f , g , 0 } );
    tied += std::size_t( g );
    }
-  f += g;
-  }
+  } );
  // the length of the LMS-substring of each group, the words of lms that
  // give the next LMS places prefetched
  for( std::size_t z = 0 ; z < G.size() ; ++z ) {
@@ -564,7 +579,7 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
  // repeats), and the names do the work
  // large groups (more than 16 places on average): the names do better
  if( ( tied > budget ) || ( tied > 16 * G.size() ) ) {
-  rest = runs;
+  rest = ends;
   return( false );
   }
  std::size_t z = 0;
@@ -588,20 +603,18 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
    G.swap( H );
    }
   }
- rest.clear();
  if( G.empty() ) return( true );
- S f = 0;
- for( const Group & q : G ) {
-  rest.insert( rest.end() , std::size_t( q.f - f ) , S( 1 ) );
-  rest.push_back( q.g );
-  f = q.f + q.g;
-  }
- rest.insert( rest.end() , std::size_t( m - f ) , S( 1 ) );
+ // every place a group of its own, but those of the groups left
+ rest.assign( ends.size() , ~std::uint64_t( 0 ) );
+ for( const Group & q : G )
+  for( S i = q.f ; i < q.f + q.g - 1 ; ++i )
+   rest[ std::size_t( i ) >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );
  return( false );
  }
 
 template< class S >
-bool saisResolveTies( S * SA , S n , S m , const std::vector< S > & runs ,
+bool saisResolveTies( S * SA , S n , S m ,
+                      const std::vector< std::uint64_t > & ends ,
                       const std::vector< std::uint64_t > & lms ,
                       std::size_t budget )
 {
@@ -610,8 +623,8 @@ bool saisResolveTies( S * SA , S n , S m , const std::vector< S > & runs ,
  // the suffixes tied, those of the names of more than one; too many and
  // the doubling or the recursion do better
  std::size_t tied = 0 , spent = 0;
- for( const S g : runs )
-  if( g > 1 ) tied += std::size_t( g );
+ saisForGroups( ends , m , [ & ]( S , S g ) {
+  if( g > 1 ) tied += std::size_t( g ); } );
  if( tied > std::size_t( m ) / 4 ) return( false );
  // a before b, of equal names: their next names, until they differ; past
  // the budget every pair is equal, which ends any sort at once
@@ -626,17 +639,15 @@ bool saisResolveTies( S * SA , S n , S m , const std::vector< S > & runs ,
    }
   return( false );
   };
- S f = 0;
- for( const S g : runs ) {
+ saisForGroups( ends , m , [ & ]( S f , S g ) {
+  if( spent > budget ) return;
   if( g == 2 ) {
    if( less( SA[ f + 1 ] , SA[ f ] ) ) std::swap( SA[ f ] , SA[ f + 1 ] );
    }
   else if( g > 2 )
    std::sort( SA + f , SA + f + g , less );
-  if( spent > budget ) return( false );
-  f += g;
-  }
- return( true );
+  } );
+ return( spent <= budget );
  }
 
 /// a part of a bucket in the partial induction: where the next entry
@@ -742,15 +753,15 @@ S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
 /// name: a moved suffix is marked unless the last one moved into the same
 /// part came from a suffix of the same name, the name being the number d
 /// of the marks met by the scan. On return SA[ 0 .. m ) holds the LMS
-/// places sorted by their substrings, runs the number of LMS-substrings
-/// of each name in their order, *names the number of the names, lms the
+/// places sorted by their substrings, ends the bit vector of the last LMS
+/// place of each name, *names the number of the names, lms the
 /// bit vector of the LMS places and *first the type of the suffix 0 (1 for
 /// S); the number of the LMS places is returned
 template< class C , class S >
 S saisPartial( const C * T , S * SA , S n , S K ,
                std::vector< S > & size4 ,
                std::vector< std::uint64_t > & lms , S * first ,
-               S * names , std::vector< S > & runs )
+               S * names , std::vector< std::uint64_t > & ends )
 {
  constexpr S top = std::numeric_limits< S >::min() ,
              low = std::numeric_limits< S >::max();
@@ -914,19 +925,14 @@ S saisPartial( const C * T , S * SA , S n , S K ,
 
  // the names: SA[ i ] marked if it differs from SA[ i + 1 ]; here only
  // their groups, the names themselves written when needed
- S name = 0 , start = 0;              // the first LMS place of the name
- runs.resize( std::size_t( m ) );
- S * ADS_SAIS_RESTRICT run = runs.data();
- for( S i = 0 ; i < m - 1 ; ++i ) {
-  const S x = SA[ i ] , b = S( x < 0 );
+ ends.assign( std::size_t( m ) / 64 + 1 , 0 );
+ S name = 0;
+ for( S i = 0 ; i < m ; ++i ) {
+  const S x = SA[ i ] , b = S( x < 0 ) | S( i + 1 == m );
   SA[ i ] = x & low;
-  run[ name ] = i + 1 - start;        // final at the end of the group
-  start += b * ( i + 1 - start );
+  ends[ std::size_t( i ) >> 6 ] |= std::uint64_t( b ) << ( i & 63 );
   name += b;
   }
- SA[ m - 1 ] &= low;
- run[ name++ ] = m - start;
- runs.resize( std::size_t( name ) );
  *names = name;
  return( m );
  }
@@ -940,11 +946,11 @@ void sais( const C * T , S * SA , S n , S K )
   return;
   }
  constexpr S D = S( saisAhead );
- std::vector< S > size4 , runs;
- std::vector< std::uint64_t > lms;
+ std::vector< S > size4;
+ std::vector< std::uint64_t > lms , ends;
  S first , names;
  const S m = saisPartial( T , SA , n , K , size4 , lms , &first , &names ,
-                          runs );
+                          ends );
  // the numbers of the symbols, the suffix 0 in none of the kinds
  std::vector< S > size( std::size_t( K ) , 0 ) , B( std::size_t( K ) , 0 );
  for( std::size_t c = 0 ; c < std::size_t( K ) ; ++c )
@@ -983,21 +989,21 @@ void sais( const C * T , S * SA , S n , S K )
  // leaves some tied
  auto write = [ & ]() {
   std::fill( SA + m , SA + n , S( 0 ) );
-  S i = 0 , name = 1;
-  for( const S g : runs ) {
-   for( const S e = i + g ; i < e ; ++i ) {
+  S name = 1;
+  saisForGroups( ends , m , [ & ]( S f , S g ) {
+   for( S i = f ; i < f + g ; ++i ) {
     if( i + D < m ) saisPrefetchW( SA + m + SA[ i + D ] / 2 );
     SA[ m + SA[ i ] / 2 ] = name;
     }
    ++name;
-   }
+   } );
   };
- std::vector< S > rest;
- const std::vector< S > * tied = nullptr;
+ std::vector< std::uint64_t > rest;
+ const std::vector< std::uint64_t > * tied = nullptr;
  if( names < m ) {
-  tied = &runs;
+  tied = &ends;
   if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) {
-   if( saisTextTies( T , n , SA , m , runs , lms , rest ,
+   if( saisTextTies( T , n , SA , m , ends , lms , rest ,
                      2 * std::size_t( m ) , 8 ) )
     tied = nullptr;
    else
@@ -1013,7 +1019,10 @@ void sais( const C * T , S * SA , S n , S K )
    j -= S( v != 0 );
    }
   S * R = SA + ( n - m );
-  if( ! saisDoubling( static_cast< const S * >( R ) , SA , m , runs ,
+  std::vector< S > count;              // of each name, in their order
+  count.reserve( std::size_t( names ) );
+  saisForGroups( ends , m , [ & ]( S , S g ) { count.push_back( g ); } );
+  if( ! saisDoubling( static_cast< const S * >( R ) , SA , m , count ,
                       m / 4 ) )
    sais( static_cast< const S * >( R ) , SA , m , names );
   S j = m;                            // the LMS places, in order
