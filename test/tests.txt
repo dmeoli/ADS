@@ -527,6 +527,8 @@ engineered_numeric  is-prime          primalita' esatta a 64 bit
 engineered_numeric  factorize         fattori primi, rho di Pollard e Brent
 engineered_numeric  generators        xoshiro256++ e wyrand
 engineered_numeric  xoshiro-alias     xoshiro256** e metodo degli alias
+engineered_numeric  philox            generatore a contatore di Philox
+engineered_numeric  ziggurat          normali ed esponenziali a ziggurat
 engineered_numeric  bounded-integers  interi limitati di Lemire
 engineered_numeric  shuffle-fast      mescolamento a gruppi di indici
 engineered_numeric  reservoir-l       campionamento con l'Algoritmo L

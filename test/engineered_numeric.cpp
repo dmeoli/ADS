@@ -365,6 +365,133 @@ ADS_TEST( "xoshiro-alias" )
  CHECK_THROWS( AliasTable( { 1.0 , -1.0 } ) , contract_violation );
  }
 
+// Philox4x32-10 and Philox4x64-10: the known answers of Random123 for the
+// counters and keys 0, all ones and the digits of pi, the 10000-th output
+// of the default engine of C++26, discard() across the buffer and the
+// carries of the counter, the order of a counter set near its top
+ADS_TEST( "philox" )
+{
+ using B32 = Philox4x32::Block;
+ using B64 = Philox4x64::Block;
+ CHECK( Philox4x32::block( B32{ 0 , 0 , 0 , 0 } , { 0 , 0 } ) ==
+        B32( { 0x6627e8d5u , 0xe169c58du , 0xbc57ac4cu , 0x9b00dbd8u } ) );
+ const std::uint32_t o = ~0u;
+ CHECK( Philox4x32::block( B32{ o , o , o , o } , { o , o } ) ==
+        B32( { 0x408f276du , 0x41c83b0eu , 0xa20bc7c6u , 0x6d5451fdu } ) );
+ CHECK( Philox4x32::block( B32{ 0x243f6a88u , 0x85a308d3u , 0x13198a2eu ,
+                                0x03707344u } ,
+                           { 0xa4093822u , 0x299f31d0u } ) ==
+        B32( { 0xd16cfe09u , 0x94fdccebu , 0x5001e420u , 0x24126ea1u } ) );
+ CHECK( Philox4x64::block( B64{ 0 , 0 , 0 , 0 } , { 0 , 0 } ) ==
+        B64( { 0x16554d9eca36314cull , 0xdb20fe9d672d0fdcull ,
+               0xd7e772cee186176bull , 0x7e68b68aec7ba23bull } ) );
+ const std::uint64_t O = ~0ull;
+ CHECK( Philox4x64::block( B64{ O , O , O , O } , { O , O } ) ==
+        B64( { 0x87b092c3013fe90bull , 0x438c3c67be8d0224ull ,
+               0x9cc7d7c69cd777b6ull , 0xa09caebf594f0ba0ull } ) );
+ CHECK( Philox4x64::block( B64{ 0x243f6a8885a308d3ull ,
+                                0x13198a2e03707344ull ,
+                                0xa4093822299f31d0ull ,
+                                0x082efa98ec4e6c89ull } ,
+                           { 0x452821e638d01377ull ,
+                             0xbe5466cf34e90c6cull } ) ==
+        B64( { 0xa528f45403e61d95ull , 0x38c72dbd566e9788ull ,
+               0xa5a1610e72fd18b5ull , 0x57bd43b5e52b7fe6ull } ) );
+ {
+  Philox4x32 a;
+  Philox4x64 b;
+  std::uint32_t x = 0;
+  std::uint64_t y = 0;
+  for( int i = 0 ; i < 10000 ; ++i ) {
+   x = a();
+   y = b();
+   }
+  CHECK( x == 1955073260u && y == 3409172418970261260ull );
+  }
+ for( const unsigned long long z : { 0ull , 1ull , 3ull , 4ull , 15ull ,
+                                     16ull , 17ull , 63ull , 1000ull ,
+                                     12345ull } )
+  for( int pre = 0 ; pre < 20 ; pre += 7 ) {
+   Philox4x32 a( 7 ) , b( 7 );
+   for( int i = 0 ; i < pre ; ++i ) ( void ) a() , ( void ) b();
+   a.discard( z );
+   for( unsigned long long i = 0 ; i < z ; ++i ) ( void ) b();
+   CHECK( a() == b() && a() == b() );
+   }
+ {
+  Philox4x32 a( 3 );                        // the counter carries from
+  a.setCounter( { o , o , 5 , 0 } );        // word to word
+  for( int i = 0 ; i < 4 ; ++i ) ( void ) a();
+  const auto next = Philox4x32::block( { 0 , 0 , 6 , 0 } , { 3 , 0 } );
+  CHECK( a() == next[ 0 ] && a() == next[ 1 ] );
+  Philox4x32 c( 3 );
+  c.setCounter( { o - 1 , o , 5 , 0 } );
+  c.discard( 8 );
+  CHECK( c() == next[ 0 ] );
+  Philox4x64 d( 9 );
+  d.setCounter( { O , O , O , O } );
+  for( int i = 0 ; i < 4 ; ++i ) ( void ) d();
+  CHECK( d() == Philox4x64::block( { 0 , 0 , 0 , 0 } , { 9 , 0 } )[ 0 ] );
+  }
+ }
+
+// normalZiggurat() and exponentialZiggurat(): 4 million draws each, the
+// first four moments, the distance of Kolmogorov from the exact
+// distribution, the frequencies of the tails beyond the base strip (3.654
+// and 7.697) and of the layers near the top, and finiteness
+ADS_TEST( "ziggurat" )
+{
+ const int n = 4000000;
+ Xoshiro256 g( 11 );
+ std::vector< double > N( n ) , E( n );
+ for( auto & x : N ) x = normalZiggurat( g );
+ for( auto & x : E ) x = exponentialZiggurat( g );
+ auto moments = []( const std::vector< double > & v ) {
+  double m[ 5 ] = {};
+  for( const double x : v ) {
+   double p = 1;
+   for( int k = 1 ; k <= 4 ; ++k ) m[ k ] += ( p *= x );
+   }
+  for( int k = 1 ; k <= 4 ; ++k ) m[ k ] /= double( v.size() );
+  return( std::vector< double >( m + 1 , m + 5 ) ); };
+ const auto mn = moments( N ) , me = moments( E );
+ CHECK( std::fabs( mn[ 0 ] ) < 0.003 && std::fabs( mn[ 1 ] - 1 ) < 0.004 &&
+        std::fabs( mn[ 2 ] ) < 0.01 && std::fabs( mn[ 3 ] - 3 ) < 0.03 );
+ CHECK( std::fabs( me[ 0 ] - 1 ) < 0.003 && std::fabs( me[ 1 ] - 2 ) < 0.01 &&
+        std::fabs( me[ 2 ] - 6 ) < 0.06 && std::fabs( me[ 3 ] - 24 ) < 0.6 );
+ auto ks = []( std::vector< double > v , auto cdf ) {
+  std::sort( v.begin() , v.end() );
+  double d = 0;
+  for( std::size_t i = 0 ; i < v.size() ; ++i ) {
+   const double c = cdf( v[ i ] );
+   d = std::max( { d , c - double( i ) / double( v.size() ) ,
+                   double( i + 1 ) / double( v.size() ) - c } );
+   }
+  return( d ); };
+ // 1.63 / sqrt( n ) is the level 1% of the distance of Kolmogorov
+ const double level = 1.63 / std::sqrt( double( n ) );
+ CHECK( ks( N , []( double x ) {
+         return( 0.5 * std::erfc( -x / std::sqrt( 2.0 ) ) ); } ) < level );
+ CHECK( ks( E , []( double x ) { return( -std::expm1( -x ) ); } ) < level );
+ auto count = []( const std::vector< double > & v , auto in ) {
+  return( double( std::count_if( v.begin() , v.end() , in ) ) ); };
+ const double rn = 3.6541528853610088 , re = 7.69711747013104972;
+ const double tn = count( N , [ & ]( double x ) { return( x > rn ); } ) ,
+              tnExp = n * 0.5 * std::erfc( rn / std::sqrt( 2.0 ) ) ,
+              te = count( E , [ & ]( double x ) { return( x > re ); } ) ,
+              teExp = n * std::exp( -re );
+ CHECK( std::fabs( tn - tnExp ) < 5 * std::sqrt( tnExp ) );   // 5 sigma
+ CHECK( std::fabs( te - teExp ) < 5 * std::sqrt( teExp ) );
+ const double near = count( N , []( double x ) {
+                             return( std::fabs( x ) < 0.05 ); } ) ,
+              nearExp = n * std::erf( 0.05 / std::sqrt( 2.0 ) );
+ CHECK( std::fabs( near - nearExp ) < 5 * std::sqrt( nearExp ) );
+ CHECK( std::all_of( N.begin() , N.end() , []( double x ) {
+         return( std::isfinite( x ) ); } ) &&
+        std::all_of( E.begin() , E.end() , []( double x ) {
+         return( std::isfinite( x ) && x >= 0 ); } ) );
+ }
+
 // uniformBelow() and uniformReal(): the bounds 1, 2, 3, 2^63 + 1 and
 // 2^64 - 1 (rejections half of the times), the chi-square of small
 // bounds, the contract of the bound 0

@@ -21,6 +21,32 @@
  *   + c \bmod 2^{64} \f$, c odd, of period \f$ 2^{64} \f$, hashed by the
  *   folding of a product of 128 bits, \f$ h \oplus l \f$ for \f$ h R + l =
  *   s ( s \oplus c' ) \f$.
+ * - Philox4x32 and Philox4x64 are the counter-based generators Philox4xW-10
+ *   of Salmon, Moraes, Dror and Shaw: the output of the counter c (4 words
+ *   of W bits) under the key k (2 words) is 10 rounds of the bijection
+ *   \f$ ( c_0 , c_1 , c_2 , c_3 ) \mapsto ( h( M_1 c_2 ) \oplus c_1 \oplus
+ *   k_0 , l( M_1 c_2 ) , h( M_0 c_0 ) \oplus c_3 \oplus k_1 , l( M_0 c_0 )
+ *   ) \f$, h and l the high and the low word of a product of 2W bits, the
+ *   key bumped by the Weyl constants between the rounds; the counter only
+ *   increases, so that discard( z ) costs O( 1 ) and any block of the
+ *   stream is computed on its own. The sequence is that of std::philox4x32
+ *   and std::philox4x64 of C++26 (the key ( seed , 0 ), the counter from
+ *   0, the words of a block in order); two blocks are computed at once,
+ *   their rounds interleaved, so that the products of one fill the
+ *   latency of those of the other.
+ * - normalZiggurat() and exponentialZiggurat() are the ziggurats of
+ *   Marsaglia and Tsang with 256 layers of equal area v under the density
+ *   [see ZigguratTables.tpp]: one word gives the layer i (its low 8 bits)
+ *   and a uniform u of [ -1 , 1 ) or [ 0 , 1 ) (its top 53 bits, apart
+ *   from the layer, as Leong et al. ask), and \f$ u x_i \f$ is the result
+ *   when \f$ | u | < x_{i+1} / x_i \f$, about 98.8% (normal) and 98.9%
+ *   (exponential) of the draws, at the cost of a word, a product and a
+ *   comparison; otherwise a uniform height decides the wedge against the
+ *   density, and in the base strip the tail beyond r is drawn by the
+ *   exponentials of Marsaglia (normal) or from r again (exponential, with
+ *   no memory). The tables are constants, and the functions are inlined,
+ *   so that the state of the generator stays in the registers of the
+ *   caller.
  * - uniformBelow( g , s ) is the integer uniform in [ 0 , s ) of Lemire:
  *   for the word x, \f$ x s = h 2^{64} + l \f$ and the result is h, which
  *   is uniform once the l below \f$ t = 2^{64} \bmod s \f$ are rejected;
@@ -81,6 +107,16 @@
  * \see N. Brackett-Rozinsky, D. Lemire, Batched ranged random integer
  *      generation, Software: Practice and Experience 55(1), 155-169, 2025,
  *      doi:10.1002/spe.3369
+ * \see J. K. Salmon, M. A. Moraes, R. O. Dror, D. E. Shaw, Parallel random
+ *      numbers: as easy as 1, 2, 3, International Conference for High
+ *      Performance Computing, Networking, Storage and Analysis (SC), 1-12,
+ *      2011, doi:10.1145/2063384.2063405
+ * \see G. Marsaglia, W. W. Tsang, The ziggurat method for generating random
+ *      variables, Journal of Statistical Software 5(8), 2000,
+ *      doi:10.18637/jss.v005.i08
+ * \see P. H. W. Leong, G. Zhang, D.-U. Lee, W. Luk, J. D. Villasenor, A
+ *      comment on the implementation of the ziggurat method, Journal of
+ *      Statistical Software 12(7), 2005, doi:10.18637/jss.v012.i07
  * \see A. J. Walker, An efficient method for generating discrete random
  *      variables with general distributions, ACM Transactions on
  *      Mathematical Software 3(3), 253-256, 1977, doi:10.1145/355744.355749
@@ -110,6 +146,7 @@
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/numeric/NumberTheory.h"
 
+#include <array>
 #include <bit>
 #include <cmath>
 #include <concepts>
@@ -123,6 +160,16 @@
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+/// a function inlined where it is used, so that the state of the
+/// generator stays in the registers of the caller's loop
+#if defined( __GNUC__ ) || defined( __clang__ )
+ #define ADS_RNG_INLINE inline __attribute__(( always_inline ))
+#elif defined( _MSC_VER )
+ #define ADS_RNG_INLINE __forceinline
+#else
+ #define ADS_RNG_INLINE inline
+#endif
 
 namespace ADS {
 
@@ -194,6 +241,64 @@ class WyRand {
  };  // end( class WyRand )
 
 /*--------------------------------------------------------------------------*/
+/*----------------------------- CLASS PhiloxT ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// Philox4xW-10, the counter-based UniformRandomBitGenerator of words of W
+/// bits (32 or 64) of Salmon, Moraes, Dror and Shaw, with the sequence of
+/// std::philox4x32 and std::philox4x64 of C++26
+template< class W >
+class PhiloxT {
+ static_assert( std::same_as< W , std::uint32_t > ||
+                std::same_as< W , std::uint64_t > ,
+                "words of 32 or 64 bits" );
+ public:
+ using result_type = W;
+ using Block = std::array< W , 4 >;   ///< a counter, or its 4 outputs
+ using Key = std::array< W , 2 >;     ///< a key
+
+ static constexpr W default_seed = 20111115u;
+
+ /// the key ( seed , 0 ) and the counter 0
+ explicit constexpr PhiloxT( W seed = default_seed );
+
+ constexpr W operator()( void );
+
+ /// advances by z outputs, in O( 1 ) blocks
+ constexpr void discard( unsigned long long z );
+
+ /// the counter of the next output, which will be the first word of its
+ /// block
+ constexpr void setCounter( const Block & c );
+
+ /// the block of the counter c under the key k: 10 rounds of the products
+ /// of 2W bits by the multipliers, with the key bumped by the Weyl
+ /// constants between the rounds
+ static constexpr Block block( Block c , Key k );
+
+ static constexpr W min( void ) { return( 0 ); }
+ static constexpr W max( void ) { return( std::numeric_limits< W >::max() ); }
+
+ bool operator==( const PhiloxT & ) const = default;
+
+ private:
+ /// the blocks computed at once, their rounds interleaved (more run out
+ /// of registers, as measured on a Xeon Gold 5120)
+ static constexpr unsigned lanes = 2;
+
+ /// the next lanes blocks into the buffer
+ constexpr void refill( void );
+
+ Key f_key;                                ///< the key
+ Block f_ctr{};                            ///< the counter after the buffer
+ W f_buf[ 4 * lanes ] = {};                ///< the outputs not yet given
+ unsigned f_at = 4 * lanes;                ///< the next one
+ };  // end( class PhiloxT )
+
+using Philox4x32 = PhiloxT< std::uint32_t >;   ///< Philox4x32-10
+using Philox4x64 = PhiloxT< std::uint64_t >;   ///< Philox4x64-10
+
+/*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS AliasTable -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -237,6 +342,16 @@ std::uint64_t uniformBelow( G && g , std::uint64_t s );
 /// a double uniform in [ 0 , 1 ), the top 53 bits of a word
 template< FullWordGenerator G >
 double uniformReal( G && g );
+
+/// a normal deviate of mean 0 and variance 1, by the ziggurat of Marsaglia
+/// and Tsang with 256 layers
+template< FullWordGenerator G >
+ADS_RNG_INLINE double normalZiggurat( G && g );
+
+/// an exponential deviate of mean 1, by the ziggurat of Marsaglia and
+/// Tsang with 256 layers
+template< FullWordGenerator G >
+ADS_RNG_INLINE double exponentialZiggurat( G && g );
 
 /// the items of [ first , last ) shuffled by g, every permutation equally
 /// likely, the indices drawn in batches
