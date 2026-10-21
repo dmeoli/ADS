@@ -657,6 +657,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- HugePageAllocator keeps the large blocks given back, up to 16 blocks and
+  64 MB per thread, for the next requests of the same size, which find
+  their pages faulted in and huge: an ObjectPool built again and again
+  3.5 times faster at 10^6 objects (7 ns against 25, mimalloc 16.5), 1.3
+  times in the churn; the test in test/memory.cpp
+
 - SequenceHeap pushes into an empty heap in bulk, an array in the order of
   the pushes, whose best item a first look finds by a scan and which then
   becomes an incremental quicksort (Paredes and Navarro), a further source
