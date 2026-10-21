@@ -52,8 +52,9 @@ template< class T >
 bool SPSCQueue< T >::tryPop( T & x )
 {
  const std::size_t h = f_head.load( std::memory_order_relaxed );
- if( h == f_tailSeen ) {                    // empty, as far as we know
-  f_tailSeen = f_tail.load( std::memory_order_acquire );
+ if( h == f_tailSeen ) {                    // empty, as far as we know:
+  prefetch( at( h ) );                      // the place on its way with
+  f_tailSeen = f_tail.load( std::memory_order_acquire );   // the tail
   if( h == f_tailSeen )
    return( false );
   }
@@ -68,8 +69,9 @@ template< class T >
 std::optional< T > SPSCQueue< T >::pop( void )
 {
  const std::size_t h = f_head.load( std::memory_order_relaxed );
- if( h == f_tailSeen ) {                    // empty, as far as we know
-  f_tailSeen = f_tail.load( std::memory_order_acquire );
+ if( h == f_tailSeen ) {                    // empty, as far as we know:
+  prefetch( at( h ) );                      // the place on its way with
+  f_tailSeen = f_tail.load( std::memory_order_acquire );   // the tail
   if( h == f_tailSeen )
    return( std::nullopt );
   }
