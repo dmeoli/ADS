@@ -304,8 +304,12 @@ void bitvectors( std::size_t n , int r , unsigned seed )
    }
 #endif
 #ifdef ADS_HAS_COMPACT
-  bitvector( dname , b , "ADS::CompactRankSelect" , []( const Bits & b ) {
-    return( std::make_unique< ADS::CompactRankSelect >( adsBits( b ) ) ); } ,
+  bitvector( dname , b , "ADS::CompactRankSelect" ,
+   []< class RS = ADS::CompactRankSelect >( const Bits & b ) {
+    using Span = std::span< const std::uint64_t >;
+    if constexpr( std::is_constructible_v< RS , Span , std::size_t > )
+     return( std::make_unique< RS >( Span( b.words ) , b.n ) );
+    else return( std::make_unique< RS >( adsBits( b ) ) ); } ,
    []( const ADS::CompactRankSelect & s , std::uint64_t i ) {
     return( s.rank1( i ) ); } ,
    []( const ADS::CompactRankSelect & s , std::uint64_t k ) {

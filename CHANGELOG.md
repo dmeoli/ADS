@@ -934,6 +934,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operated on by loops, which the compilers vectorize, and take the four
   steps unrolled too
 
+- CompactRankSelect builds its directory a superblock at a time with no
+  test on the words, the counts of the blocks packed by constant shifts,
+  and reserves its samples, and a vector from its words copies them as it
+  counts them above 2^23 bits, as RankSelect; the tests of the building
+  from the words against the one from a BitVector, also with the top
+  regions of 2^13 bits
 - RankSelect builds the inventory of select of a value at its first
   select, once whatever the threads (std::call_once behind a flag read
   with acquire semantics), so that a directory that only ranks never pays

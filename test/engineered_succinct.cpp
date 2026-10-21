@@ -138,11 +138,11 @@ ADS_TEST( "rank-select-lazy" )
   }
  }
 
-// RankSelect from the words, copied as they are counted, against the one
-// from a BitVector of the same words: the bits, every rank and select of
-// both values, on sizes around the words and the blocks of 256 bits, with
-// 1s in the words past the size (which the copy cuts) and at many
-// densities
+// RankSelect and CompactRankSelect from the words, copied as they are
+// counted, against those from a BitVector of the same words: the bits,
+// every rank and select of both values, on sizes around the words and the
+// blocks of 256 bits, with 1s in the words past the size (which the copy
+// cuts) and at many densities
 ADS_TEST( "rank-select-words" )
 {
  std::mt19937_64 g( 11 );
@@ -164,6 +164,17 @@ ADS_TEST( "rank-select-words" )
     ok = A.select1( k ) == C.select1( k );
    for( std::size_t k = 1 ; ok && k <= A.zeros() ; ++k )
     ok = A.select0( k ) == C.select0( k );
+   CHECK( ok );
+   const CompactRankSelect X( std::span< const Word >( w ) , n );
+   const CompactRankSelect Y( BitVector( std::span< const Word >( w ) , n ) );
+   ok = X.size() == n && X.ones() == Y.ones() && X.bits() == Y.bits() &&
+        X.directoryBits() == Y.directoryBits() && X.ones() == A.ones();
+   for( std::size_t i = 0 ; ok && i <= n ; ++i )
+    ok = X.rank1( i ) == A.rank1( i );
+   for( std::size_t k = 1 ; ok && k <= X.ones() ; ++k )
+    ok = X.select1( k ) == A.select1( k );
+   for( std::size_t k = 1 ; ok && k <= X.zeros() ; ++k )
+    ok = X.select0( k ) == A.select0( k );
    CHECK( ok );
    }
  }

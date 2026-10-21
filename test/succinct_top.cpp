@@ -73,16 +73,17 @@ void checkAll( const std::vector< bool > & R )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// RankSelect from the words, copied as they are counted (from 64 bits
-// here), against the one from a BitVector of the same words, with the top
-// count every 2^10 bits: the bits, every rank and select, on sizes around
-// the words, the blocks of 256 bits and the multiples of 2^10, with 1s in
-// the words past the size
+// RankSelect and CompactRankSelect from the words, copied as they are
+// counted (from 64 bits here), against those from a BitVector of the same
+// words, with the top counts every 2^10 and 2^13 bits: the bits, every
+// rank and select, on sizes around the words, the blocks and the top
+// regions, with 1s in the words past the size
 ADS_TEST( "rank-select-words-top" )
 {
  std::mt19937_64 g( 13 );
  for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 1023 ,
-                              1024 , 1025 , 3000 , 70001 } )
+                              1024 , 1025 , 3000 , 4096 , 8191 , 8192 ,
+                              8193 , 70001 } )
   for( const double p : { 0.0 , 0.05 , 0.5 , 1.0 } ) {
    std::vector< Word > w( ( n + 63 ) / 64 + 3 );
    std::bernoulli_distribution B( p );
@@ -99,6 +100,17 @@ ADS_TEST( "rank-select-words-top" )
     ok = A.select1( k ) == C.select1( k );
    for( std::size_t k = 1 ; ok && k <= A.zeros() ; ++k )
     ok = A.select0( k ) == C.select0( k );
+   CHECK( ok );
+   const CompactRankSelect X( std::span< const Word >( w ) , n );
+   const CompactRankSelect Y( BitVector( std::span< const Word >( w ) , n ) );
+   ok = X.size() == n && X.ones() == Y.ones() && X.bits() == Y.bits() &&
+        X.directoryBits() == Y.directoryBits() && X.ones() == A.ones();
+   for( std::size_t i = 0 ; ok && i <= n ; ++i )
+    ok = X.rank1( i ) == A.rank1( i );
+   for( std::size_t k = 1 ; ok && k <= X.ones() ; ++k )
+    ok = X.select1( k ) == A.select1( k );
+   for( std::size_t k = 1 ; ok && k <= X.zeros() ; ++k )
+    ok = X.select0( k ) == A.select0( k );
    CHECK( ok );
    }
  }

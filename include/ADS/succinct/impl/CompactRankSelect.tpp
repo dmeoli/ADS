@@ -19,51 +19,98 @@ namespace ADS {
 inline CompactRankSelect::CompactRankSelect( BitVector b )
  : f_b( std::move( b ) )
 {
- const auto & W = f_b.words();
+ directory( nullptr );
+ }
+
+inline CompactRankSelect::CompactRankSelect( std::span< const Word > w ,
+                                             std::size_t n )
+{
+ ADS_PRE( w.size() >= ( n + 63 ) / 64 );
+ if( n < kFuse ) {                         // a copy, then a count in cache
+  f_b = BitVector( w , n );
+  directory( nullptr );
+  return;
+  }
+ f_b.f_n = n;
+ f_b.f_w.clear();
+ f_b.f_w.resize( BitVector::wordsFor( n ) );   // written by directory()
+ directory( w.data() );
+ }
+
+inline void CompactRankSelect::directory( const Word * w )
+{
  const std::size_t n = f_b.size() , ns = n / kSuper + 1;   // and one more
+ Word * const P = f_b.f_w.data();
+ const std::size_t nw = f_b.f_w.size();     // a multiple of 8
  f_e.resize( ns + 1 );
  f_top.assign( ( ( ( ns + 1 ) * kSuper ) >> kTop ) + 1 , 0 );
+ for( auto & S : f_s ) {                    // at most n / kSample + 2 each
+  S.clear();
+  S.reserve( n / kSample + 2 );
+  }
  constexpr std::size_t kTopSupers = ( std::size_t( 1 ) << kTop ) / kSuper;
- // the words of a superblock, 0 past the words
- auto word = [ & ]( std::size_t w ) { return( w < W.size() ? W[ w ] : 0 ); };
- std::uint64_t c = 0;
- std::array< std::size_t , 2 > next = { 1 , 1 };   // the next samples
- for( std::size_t s = 0 ; s <= ns ; ++s ) {
-  if( s % kTopSupers == 0 ) f_top[ s / kTopSupers ] = c;
-  const std::uint64_t base = c;
-  std::uint64_t lo = c - f_top[ s / kTopSupers ] , hi = 0;
-  const bool full = ( s + 1 ) * ( kSuper / 64 ) <= W.size();
+ constexpr std::size_t kW = kSuper / 64;    // the words of a superblock
+ std::uint64_t c = 0 , top = 0;
+ std::size_t next1 = 1 , next0 = 1;         // the next samples
+ // the entry of the superblock s from its words Q (copied to the bits if
+ // Copy): the 1s before the superblock since its top region in 32 bits
+ // and those before each block since the superblock in 12 each; the
+ // samples whose bit falls in it (the 0s only those before n)
+ auto super = [ & ]< bool Copy >( std::size_t s , const Word * Q ) {
+  if( s % kTopSupers == 0 ) f_top[ s / kTopSupers ] = top = c;
+  std::uint64_t v[ 9 ];                     // the 1s before each block
+  v[ 0 ] = 0;
   for( std::size_t k = 0 ; k < 8 ; ++k ) {
-   const std::size_t at = 32 + 12 * k;      // the count of block k
-   const std::uint64_t v = c - base;
-   if( at < 64 ) {
-    lo |= v << at;
-    if( at + 12 > 64 ) hi |= v >> ( 64 - at );
+   std::uint64_t in = 0;
+   for( std::size_t j = 0 ; j < 8 ; ++j ) {
+    const Word x = Q[ 8 * k + j ];
+    if constexpr( Copy ) P[ kW * s + 8 * k + j ] = x;
+    in += std::uint64_t( std::popcount( x ) );
     }
-   else hi |= v << ( at - 64 );
-   const std::size_t w = s * ( kSuper / 64 ) + 8 * k;
-   for( std::size_t j = 0 ; j < 8 ; ++j )
-    c += std::uint64_t( std::popcount( full ? W[ w + j ] : word( w + j ) ) );
+   v[ k + 1 ] = v[ k ] + in;
    }
-  f_e[ s ] = Entry{ lo , hi };
-  // the samples whose bit falls in this superblock (the 0s only those
-  // before n)
-  const std::size_t end1 = std::size_t( c ) ,
-                    end0 = std::min( n , ( s + 1 ) * kSuper ) - end1;
-  for( ; ( next[ 1 ] <= end1 ) && ( s < ns ) ; next[ 1 ] += kSample )
-   f_s[ 1 ].push_back( std::uint32_t( s ) );
-  for( ; ( next[ 0 ] <= end0 ) && ( s < ns ) ; next[ 0 ] += kSample )
-   f_s[ 0 ].push_back( std::uint32_t( s ) );
+  // the count of block k at the bit 32 + 12 k of ( hi , lo )
+  f_e[ s ] = Entry{ ( c - top ) | ( v[ 1 ] << 44 ) | ( v[ 2 ] << 56 ) ,
+                    ( v[ 2 ] >> 8 ) | ( v[ 3 ] << 4 ) | ( v[ 4 ] << 16 ) |
+                    ( v[ 5 ] << 28 ) | ( v[ 6 ] << 40 ) | ( v[ 7 ] << 52 ) };
+  c += v[ 8 ];
+  if( s < ns ) {
+   const std::size_t end1 = std::size_t( c ) ,
+                     end0 = std::min( n , ( s + 1 ) * kSuper ) - end1;
+   for( ; next1 <= end1 ; next1 += kSample )
+    f_s[ 1 ].push_back( std::uint32_t( s ) );
+   for( ; next0 <= end0 ; next0 += kSample )
+    f_s[ 0 ].push_back( std::uint32_t( s ) );
+   }
+  };
+ std::size_t s = 0;
+ if( w ) {
+  // the superblocks of whole words of w copied as they are counted, then
+  // the rest of w, its last word cut at n, and 0s up to the end
+  const std::size_t sw = ( n + 63 ) / 64;
+  for( ; kW * ( s + 1 ) <= n / 64 ; ++s )
+   super.template operator()< true >( s , w + kW * s );
+  for( std::size_t i = kW * s ; i < nw ; ++i ) P[ i ] = i < sw ? w[ i ] : 0;
+  if( n % 64 ) P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
+  }
+ // the superblocks whose words exist, then the rest from a line of 0s
+ for( ; ( s <= ns ) && ( kW * ( s + 1 ) <= nw ) ; ++s )
+  super.template operator()< false >( s , P + kW * s );
+ for( ; s <= ns ; ++s ) {
+  std::array< Word , kW > Z{};
+  for( std::size_t i = kW * s ; i < nw ; ++i ) Z[ i - kW * s ] = P[ i ];
+  super.template operator()< false >( s , Z.data() );
   }
  f_ones = std::size_t( c );
  // the superblock of the last bit b closes the samples
  for( const bool v : { false , true } )
   if( ! f_s[ v ].empty() ) {
    const std::size_t total = v ? f_ones : zeros();
-   std::size_t s = f_s[ v ].back();
-   while( ( s + 1 < ns ) && ( before( s + 1 , v ) < total ) ) ++s;
-   f_s[ v ].push_back( std::uint32_t( s ) );
+   std::size_t t = f_s[ v ].back();
+   while( ( t + 1 < ns ) && ( before( t + 1 , v ) < total ) ) ++t;
+   f_s[ v ].push_back( std::uint32_t( t ) );
    }
+ ADS_INVARIANT( f_b.clean() );
  ADS_AUDIT( consistent() );
  }
 
