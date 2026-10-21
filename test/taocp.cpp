@@ -60,6 +60,7 @@
 #include <random>
 #include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -2001,6 +2002,51 @@ ADS_TEST( "big-integer-gcd" )
   CHECK( BigInteger::gcd( a , b ) == BigInteger::gcdEuclid( a , b ) &&
          BigInteger::gcd( a * b , b ) == b );
   }
+ }
+
+// the blocks of digits kept per thread [see DigitPool in BigInteger.h]:
+// the lengths at the edges of the capacities 2^k, so that a block taken
+// back from the pool is too short by one digit or just long enough; more
+// numbers of one capacity freed than the pool keeps; the largest one
+// kept and the next, which goes to the allocator; the numbers made in a
+// thread and freed in another, after the first has ended, and those freed
+// by the thread itself at its end
+ADS_TEST( "big-integer-pool" )
+{
+ std::mt19937_64 g( 29 );
+ for( int round = 0 ; round < 3 ; ++round )
+  for( std::size_t n : { 3 , 4 , 5 , 31 , 32 , 33 , 2047 , 2048 , 2049 ,
+                         32767 , 32768 , 32769 , 65536 , 65537 } ) {
+   std::vector< BigInteger > v;
+   for( int i = 0 ; i < 12 ; ++i ) v.push_back( digits( n , g ) );
+   const BigInteger s = std::accumulate( v.begin() , v.end() ,
+                                         BigInteger( 0 ) );
+   BigInteger t = 0;
+   for( const BigInteger & x : v ) t -= x;
+   v.clear();                               // 12 freed, 8 or 2 kept
+   const BigInteger a = digits( n , g ) , b = digits( n + 1 , g );
+   CHECK( s + t == 0 && ( a + b ) - b == a && ( a * b ) / b == a );
+   }
+ std::vector< BigInteger > out( 4 );
+ BigInteger expect = 0;
+ {
+  std::thread T( [ & ] {
+   std::mt19937_64 h( 31 );
+   for( int i = 0 ; i < 40 ; ++i ) {
+    BigInteger x = digits( 1 + h() % 300 , h ) , y = x * x;
+    if( i < 4 ) out[ i ] = std::move( y );
+    }
+   } );
+  T.join();
+  }
+ std::mt19937_64 h( 31 );
+ for( int i = 0 ; i < 4 ; ++i ) {
+  const BigInteger x = digits( 1 + h() % 300 , h );
+  CHECK( out[ i ] == x * x );
+  }
+ out.clear();                               // the other thread is gone
+ const BigInteger x = digits( 100 , g );
+ CHECK( x * x / x == x );
  }
 
 // the edges of the ranges that go to GMP under ADS_WITH_GMP [see
