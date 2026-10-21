@@ -16,21 +16,26 @@
  * \f]
  * i.e., the \f$ n_2 \f$ transforms of the columns, the multiplication by
  * the twiddle factors \f$ \omega_n^{j_2 k_1} \f$, the \f$ n_1 \f$
- * transforms of the rows, and the transposition of the result. Each step
- * is a parallel loop: the transforms of length \f$ n_1 \f$ or \f$ n_2 \f$
- * (about \f$ \sqrt n \f$, in the cache of each core) are independent and
- * each is the sequential fft() of a row, and the columns become rows by
- * three transpositions of the whole matrix by blocks of 32 x 32 points,
- * also in parallel. The twiddle \f$ \omega_n^t \f$, \f$ t = j_2 k_1 \bmod
+ * transforms of the rows, and the transposition of the result. The work
+ * goes in two parallel loops, each over blocks of 8 columns or rows (the
+ * transforms of length \f$ n_1 \f$ or \f$ n_2 \f$, about \f$ \sqrt n
+ * \f$, are independent, each the sequential fft() of a vector in the
+ * cache of its core): the first gathers 8 columns, reading from each row
+ * 8 consecutive points (two lines of the cache), transforms them and
+ * writes them back multiplied by their twiddles; the second transforms 8
+ * rows and writes them transposed into the output by runs of 8 points.
+ * The points thus cross the memory twice, where three transpositions of
+ * the whole matrix and the two passes of the transforms would cross it
+ * five times. The twiddle \f$ \omega_n^t \f$, \f$ t = j_2 k_1 \bmod
  * n \f$, is the product of two entries of tables of \f$ 2^{\lceil k / 2
  * \rceil} \f$ powers, \f$ \omega_n^{t_h 2^h} \omega_n^{t_l} \f$, each
  * computed by the library within an ulp, so that a twiddle has an error
  * of a few ulps instead of growing with a recurrence of products. The
  * inverse runs the same steps with \f$ \omega_n^{-1} \f$, and its row
  * transforms divide by \f$ n_1 \f$ and by \f$ n_2 \f$, by n in all.
- * The work is that of the sequential transform plus 3 passes of
- * transposition and one of twiddles over the n points, \f$ O( n \log n /
- * p + n / p ) \f$ time on p threads; the transform of a row is not split.
+ * The work is that of the sequential transform plus the twiddles,
+ * \f$ O( n \log n / p ) \f$ time on p threads, the transform of a row or a
+ * column not split; a vector of n points holds the output.
  * The result equals the sequential one up to the rounding, the error of
  * both being \f$ O( \epsilon \log n ) \f$ relative to the norm.
  *
@@ -83,26 +88,6 @@ void fft( E & ex , std::vector< Complex > & a , bool inverse );
 
 /*--------------------------------------------------------------------------*/
 
-namespace detail {
-
-/// D = the transpose of the r x c matrix S by rows, by blocks of 32 x 32
-template< Executor E >
-void parallelTranspose( E & ex , const Complex * S , Complex * D ,
-                        std::size_t r , std::size_t c )
-{
- constexpr std::size_t b = 32;
- const std::size_t rb = ( r + b - 1 ) / b , cb = ( c + b - 1 ) / b;
- parallelFor( ex , 0 , rb * cb , [ & ]( std::size_t t ) {
-  const std::size_t i0 = ( t / cb ) * b , j0 = ( t % cb ) * b ,
-                    i1 = std::min( r , i0 + b ) , j1 = std::min( c , j0 + b );
-  for( std::size_t i = i0 ; i < i1 ; ++i )
-   for( std::size_t j = j0 ; j < j1 ; ++j )
-    D[ j * r + i ] = S[ i * c + j ];
-  } , 16 );
- }
-
-}  // end( namespace detail )
-
 template< Executor E >
 void fft( E & ex , std::vector< Complex > & a , bool inverse )
 {
@@ -126,33 +111,42 @@ void fft( E & ex , std::vector< Complex > & a , bool inverse )
   Hi[ t ] = std::polar( 1.0 , sgn * 2 * std::numbers::pi *
                               double( t << h ) / double( n ) ); } );
  std::vector< Complex > b( n );
- // the columns as rows: b is n2 x n1
- detail::parallelTranspose( ex , a.data() , b.data() , n1 , n2 );
- parallelForBlocks( ex , 0 , n2 , [ & ]( std::size_t r0 , std::size_t r1 ) {
-  std::vector< Complex > v( n1 );
-  for( std::size_t j2 = r0 ; j2 < r1 ; ++j2 ) {
-   Complex * row = b.data() + j2 * n1;
-   std::copy( row , row + n1 , v.begin() );
-   fft( v , inverse );
-   for( std::size_t k1 = 0 ; k1 < n1 ; ++k1 ) {
-    const std::size_t t = ( j2 * k1 ) & ( n - 1 );
-    row[ k1 ] = v[ k1 ] * ( Hi[ t >> h ] * Lo[ t & ( lo - 1 ) ] );
+ // the columns, W at a time: each row gives W consecutive points (whole
+ // lines of the cache) to the W transforms, which go back where they came
+ // from multiplied by their twiddles
+ constexpr std::size_t W = 8;
+ parallelFor( ex , 0 , n2 / W , [ & ]( std::size_t c ) {
+  std::vector< Complex > v[ W ];
+  const std::size_t j0 = c * W;
+  for( auto & x : v ) x.resize( n1 );
+  for( std::size_t j1 = 0 ; j1 < n1 ; ++j1 ) {
+   const Complex * row = a.data() + j1 * n2 + j0;
+   for( std::size_t q = 0 ; q < W ; ++q ) v[ q ][ j1 ] = row[ q ];
+   }
+  for( std::size_t q = 0 ; q < W ; ++q ) fft( v[ q ] , inverse );
+  for( std::size_t k1 = 0 ; k1 < n1 ; ++k1 ) {
+   Complex * row = a.data() + k1 * n2 + j0;
+   for( std::size_t q = 0 ; q < W ; ++q ) {
+    const std::size_t t = ( ( j0 + q ) * k1 ) & ( n - 1 );
+    row[ q ] = v[ q ][ k1 ] * ( Hi[ t >> h ] * Lo[ t & ( lo - 1 ) ] );
     }
    }
   } , 1 );
- // back to rows of n2: a is n1 x n2, each row transformed
- detail::parallelTranspose( ex , b.data() , a.data() , n2 , n1 );
- parallelForBlocks( ex , 0 , n1 , [ & ]( std::size_t r0 , std::size_t r1 ) {
-  std::vector< Complex > v( n2 );
-  for( std::size_t k1 = r0 ; k1 < r1 ; ++k1 ) {
-   Complex * row = a.data() + k1 * n2;
-   std::copy( row , row + n2 , v.begin() );
-   fft( v , inverse );
-   std::copy( v.begin() , v.end() , row );
+ // the rows, W at a time, written transposed into b by runs of W points:
+ // \hat a[ k1 + n1 k2 ] is the entry k2 of the row k1
+ parallelFor( ex , 0 , n1 / W , [ & ]( std::size_t c ) {
+  std::vector< Complex > v[ W ];
+  const std::size_t k0 = c * W;
+  for( std::size_t q = 0 ; q < W ; ++q ) {
+   const Complex * row = a.data() + ( k0 + q ) * n2;
+   v[ q ].assign( row , row + n2 );
+   fft( v[ q ] , inverse );
+   }
+  for( std::size_t k2 = 0 ; k2 < n2 ; ++k2 ) {
+   Complex * out = b.data() + k2 * n1 + k0;
+   for( std::size_t q = 0 ; q < W ; ++q ) out[ q ] = v[ q ][ k2 ];
    }
   } , 1 );
- // the output in its order: \hat a[ k1 + n1 k2 ] is a[ k1 ][ k2 ]
- detail::parallelTranspose( ex , a.data() , b.data() , n1 , n2 );
  a.swap( b );
  }
 
