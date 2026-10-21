@@ -166,45 +166,48 @@ void checkComplex( std::size_t n , std::mt19937 & g , double slack = 1 )
 std::vector< CL > trig( const std::vector< LD > & x , bool c , unsigned t )
 {
  const std::size_t N = x.size();
+ // cos or sin of pi a / d, the angle reduced mod 2 pi in integers first
+ auto cs = [ & ]( std::size_t a , std::size_t d ) {
+  const LD v = pi * LD( a % ( 2 * d ) ) / LD( d );
+  return( c ? std::cos( v ) : std::sin( v ) );
+  };
  std::vector< CL > y( N );
  for( std::size_t k = 0 ; k < N ; ++k ) {
   LD s = 0;
   for( std::size_t j = 0 ; j < N ; ++j ) {
-   const LD J = LD( j ) , K = LD( k ) , M = LD( N );
+   const LD sg = k % 2 ? -1 : 1;
    if( c )
     switch( t ) {
      case( 1 ):
-      s += j == 0 ? x[ 0 ] : j + 1 == N ? ( k % 2 ? -x[ j ] : x[ j ] )
-           : 2 * x[ j ] * std::cos( pi * J * K / ( M - 1 ) );
+      s += j == 0 ? x[ 0 ] : j + 1 == N ? sg * x[ j ]
+           : 2 * x[ j ] * cs( j * k , N - 1 );
       break;
-     case( 2 ): s += 2 * x[ j ] * std::cos( pi * ( 2 * J + 1 ) * K /
-                                            ( 2 * M ) ); break;
+     case( 2 ): s += 2 * x[ j ] * cs( ( 2 * j + 1 ) * k , 2 * N ); break;
      case( 3 ):
-      s += j == 0 ? x[ 0 ] : 2 * x[ j ] * std::cos( pi * J * ( 2 * K + 1 ) /
-                                                    ( 2 * M ) );
+      s += j == 0 ? x[ 0 ] : 2 * x[ j ] * cs( j * ( 2 * k + 1 ) , 2 * N );
       break;
-     default: s += 2 * x[ j ] * std::cos( pi * ( 2 * J + 1 ) *
-                                          ( 2 * K + 1 ) / ( 4 * M ) );
+     default:
+      s += 2 * x[ j ] * cs( ( 2 * j + 1 ) * ( 2 * k + 1 ) , 4 * N );
      }
    else
     switch( t ) {
-     case( 1 ): s += 2 * x[ j ] * std::sin( pi * ( J + 1 ) * ( K + 1 ) /
-                                            ( M + 1 ) ); break;
-     case( 2 ): s += 2 * x[ j ] * std::sin( pi * ( 2 * J + 1 ) * ( K + 1 ) /
-                                            ( 2 * M ) ); break;
-     case( 3 ):
-      s += j + 1 == N ? ( k % 2 ? -x[ j ] : x[ j ] )
-           : 2 * x[ j ] * std::sin( pi * ( J + 1 ) * ( 2 * K + 1 ) /
-                                    ( 2 * M ) );
+     case( 1 ): s += 2 * x[ j ] * cs( ( j + 1 ) * ( k + 1 ) , N + 1 ); break;
+     case( 2 ):
+      s += 2 * x[ j ] * cs( ( 2 * j + 1 ) * ( k + 1 ) , 2 * N );
       break;
-     default: s += 2 * x[ j ] * std::sin( pi * ( 2 * J + 1 ) *
-                                          ( 2 * K + 1 ) / ( 4 * M ) );
+     case( 3 ):
+      s += j + 1 == N ? sg * x[ j ]
+           : 2 * x[ j ] * cs( ( j + 1 ) * ( 2 * k + 1 ) , 2 * N );
+      break;
+     default:
+      s += 2 * x[ j ] * cs( ( 2 * j + 1 ) * ( 2 * k + 1 ) , 4 * N );
      }
    }
   y[ k ] = s;
   }
  return( y );
  }
+
 
 }  // end( namespace )
 
@@ -373,9 +376,9 @@ ADS_TEST( "rfft" )
 
 // the transforms of the cosines and of the sines of the 4 types at every
 // size from 1 to 64 (2 to 64 for the type 1 of the cosines) and at some
-// larger, odd and even, against their definitions (summed in long double,
-// which is double under valgrind: hence the wider bound); the inverses
-// (the type 3 of the type 2, the type 4 of itself), and the contracts
+// larger, odd and even, against their definitions (in long double, the
+// angles reduced in integers); the inverses (the type 3 of the type 2,
+// the type 4 of itself), and the contracts
 ADS_TEST( "dct-dst" )
 {
  std::mt19937 g( 61 );
@@ -388,7 +391,7 @@ ADS_TEST( "dct-dst" )
     auto y = x;
     if( c ) dct( y , t );
     else dst( y , t );
-    CHECK( error( y , trig( xl , c , t ) ) < 16 * bound< double >( N ) );
+    CHECK( error( y , trig( xl , c , t ) ) < 4 * bound< double >( N ) );
     }
   auto y = x;                                  // III of II: 2 N x
   dct( y , 2 );
