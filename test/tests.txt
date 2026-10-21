@@ -555,6 +555,7 @@ sequences  small-vector           vettore con posto per N elementi dentro
 # the engineered priority queues beyond the d-ary heap
 heaps  bucket-queue-cells    coda a bucket sulle celle di un vettore
 heaps  sequence-heap         sequence heap di Sanders
+heaps  double-ended-heaps    heap min-max e heap a intervalli
 heaps  dial-queue            coda di Dial su una finestra circolare
 heaps  radix-heap            heap radix monotono a cifre di B bit
 heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool

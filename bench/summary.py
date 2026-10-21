@@ -48,6 +48,8 @@ PAIRS = [
     ('priority', 'ADS::SequenceHeap', 'Boost',
      ['boost::heap::d_ary_heap d=4']),
     ('priority', 'ADS::SequenceHeap', 'tlx', ['tlx::DAryHeap d=4']),
+    ('priority', 'ADS::MinMaxHeap', 'std', ['std::multiset']),
+    ('priority', 'ADS::IntervalHeap', 'std', ['std::multiset']),
     ('priority', 'ADS::PairingHeap', 'Boost',
      ['boost::heap::pairing_heap']),
     ('priority', 'ADS::RadixHeap', 'tlx', ['tlx::RadixHeap']),

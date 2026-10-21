@@ -34,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   maximum flow and of the properties of graphs named without citing them:
   Fredman and Tarjan, Ford, Moore, Karzanov, Malhotra-Kumar-Maheshwari,
   Karmarkar, Konig
+- MinMaxHeap and IntervalHeap, the double-ended queues of Atkinson et al.
+  and of van Leeuwen and Wood, whose runs of removals sort the items once
+  and then serve both ends in O( 1 ), made a heap again in O( n ) by the
+  next push; their test in test/heaps.cpp and their cells against
+  std::multiset in bench/priority.cpp
 - RadixHeap::extractBelow(), the items of keys below a limit, the buckets
   below it emptied whole and the one across it moved to the rows below;
   DialQueue moves its overflow into the window with it, a bucket of the

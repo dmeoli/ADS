@@ -23,12 +23,14 @@
 #include "ADS/priority/DialQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
+#include "ADS/priority/MinMaxHeap.h"
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/priority/SequenceHeap.h"
 
 #include <algorithm>
 #include <climits>
+#include <iterator>
 #include <cstdint>
 #include <limits>
 #include <functional>
@@ -607,6 +609,127 @@ ADS_TEST( "linked-heap-pool" )
 {
  linked< false >();
  linked< true >();
+ }
+
+/// the double-ended queue H against a multiset on random pushes and pops
+/// of both ends, the keys in [ 0 , range )
+template< class H >
+void ends( unsigned seed , int steps , int range )
+{
+ H Q;
+ std::multiset< int > R;
+ std::mt19937 g( seed );
+ for( int t = 0 ; t < steps ; ++t ) {
+  const unsigned c = g() % 10;
+  if( R.empty() || ( c < 5 ) ) {
+   const int x = int( g() % unsigned( range ) );
+   Q.push( x );
+   R.insert( x );
+   }
+  else if( c < 7 ) {
+   CHECK( Q.min() == *R.begin() && Q.popMin() == *R.begin() );
+   R.erase( R.begin() );
+   }
+  else {
+   CHECK( Q.max() == *R.rbegin() && Q.popMax() == *R.rbegin() );
+   R.erase( std::prev( R.end() ) );
+   }
+  CHECK( Q.size() == R.size() );
+  }
+ while( ! R.empty() ) {                      // from both ends in turn
+  if( R.size() % 2 ) {
+   CHECK( Q.popMax() == *R.rbegin() );
+   R.erase( std::prev( R.end() ) );
+   }
+  else {
+   CHECK( Q.popMin() == *R.begin() );
+   R.erase( R.begin() );
+   }
+  }
+ CHECK( Q.empty() );
+ }
+
+/// the edge cases of the double-ended queue H of strings S
+template< template< class , class > class H >
+void ends_edges( void )
+{
+ H< int , std::less< int > > E;
+ CHECK_THROWS( (void) E.min() , contract_violation );
+ CHECK_THROWS( (void) E.max() , contract_violation );
+ CHECK_THROWS( E.popMin() , contract_violation );
+ CHECK_THROWS( E.popMax() , contract_violation );
+ E.push( 5 );                                // one item: both ends
+ CHECK( E.min() == 5 && E.max() == 5 && E.popMax() == 5 && E.empty() );
+ E.push( 2 );
+ E.push( 1 );                                // two, three items
+ CHECK( E.min() == 1 && E.max() == 2 );
+ E.push( 3 );
+ CHECK( E.popMin() == 1 && E.popMax() == 3 && E.popMin() == 2 );
+ for( int i = 0 ; i < 100 ; ++i ) E.push( 7 );   // all equal
+ for( int i = 0 ; i < 100 ; ++i )
+  CHECK( ( i % 2 ? E.popMin() : E.popMax() ) == 7 );
+ for( int i = 0 ; i < 500 ; ++i ) E.push( i );   // sorted, reversed
+ for( int i = 500 ; i-- > 0 ; ) E.push( i );
+ CHECK( E.min() == 0 && E.max() == 499 && E.size() == 1000 );
+ E.clear();
+ CHECK( E.empty() );
+ H< std::string , std::greater<> > S;        // strings, reversed order
+ for( int i = 0 ; i < 200 ; ++i )
+  S.push( std::to_string( i * 7919 % 1000 ) );
+ std::string last = S.min();
+ S.popMin();
+ while( S.size() > 1 ) {
+  CHECK( !( std::greater<>()( S.min() , last ) ) );
+  last = S.popMin();
+  CHECK( !( std::greater<>()( S.max() , S.min() ) ) );
+  S.popMax();
+  }
+ }
+
+// the min-max heap and the interval heap against a multiset, with pops of
+// both ends and their edge cases: the empty queue violates the contracts,
+// one, two and three items, all equal, sorted and reversed pushes, past
+// 1024 items, strings in the order of std::greater, and runs of removals
+// that sort the items followed by the pushes that make them a heap again
+ADS_TEST( "double-ended-heaps" )
+{
+ ends_edges< MinMaxHeap >();
+ ends_edges< IntervalHeap >();
+ ends< MinMaxHeap< int > >( 1 , 5000 , 1000 );
+ ends< IntervalHeap< int > >( 2 , 5000 , 1000 );
+ ends< MinMaxHeap< int > >( 3 , 5000 , 3 );        // many equal
+ ends< IntervalHeap< int > >( 4 , 5000 , 3 );
+ for( int k = 0 ; k < 2 ; ++k ) {           // a run of removals sorts
+  MinMaxHeap< int > A;                       // the items, a push makes a
+  IntervalHeap< int > B;                     // heap again
+  std::multiset< int > R;
+  std::mt19937 g( 30 + k );
+  for( int round = 0 ; round < 3 ; ++round ) {
+   for( int i = 0 ; i < 3000 ; ++i ) {
+    const int x = int( g() % 500 );
+    A.push( x );
+    B.push( x );
+    R.insert( x );
+    }
+   for( int i = 0 ; i < 1500 ; ++i ) {
+    const bool lo = ( i + k ) % 3 != 0;
+    const int want = lo ? *R.begin() : *R.rbegin();
+    CHECK( A.min() == *R.begin() && A.max() == *R.rbegin() );
+    CHECK( B.min() == *R.begin() && B.max() == *R.rbegin() );
+    CHECK( ( lo ? A.popMin() : A.popMax() ) == want );
+    CHECK( ( lo ? B.popMin() : B.popMax() ) == want );
+    R.erase( lo ? R.begin() : std::prev( R.end() ) );
+    }
+   CHECK( A.size() == R.size() && B.size() == R.size() );
+   }
+  while( ! R.empty() ) {
+   CHECK( A.popMin() == *R.begin() && B.popMin() == *R.begin() );
+   R.erase( R.begin() );
+   }
+  CHECK( A.empty() && B.empty() );
+  }
+ ends< MinMaxHeap< int > >( 5 , 20000 , 1000000 ); // past 1024 items
+ ends< IntervalHeap< int > >( 6 , 20000 , 1000000 );
  }
 
 }  // end( namespace )

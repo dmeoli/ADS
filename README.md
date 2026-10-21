@@ -397,6 +397,7 @@ of Knuth.
 | graph in compressed rows, each arc next to its weight, the rows sorted by head; transpose and relabelling | [`graph/StaticGraph.h`](include/ADS/graph/StaticGraph.h) | `engineered_graph.static-graph` |
 | union-find in one vector, by size or rank, the paths halved or compressed (Tarjan and van Leeuwen) | [`mfset/UnionFind.h`](include/ADS/mfset/UnionFind.h) | `engineered_graph.union-find` |
 | radix heap, monotone integer keys in buckets by digits of B bits (Ahuja et al.) | [`priority/RadixHeap.h`](include/ADS/priority/RadixHeap.h) | `heaps.radix-heap` |
+| double-ended queues: min-max heap (Atkinson et al.) and interval heap (van Leeuwen and Wood) | [`priority/MinMaxHeap.h`](include/ADS/priority/MinMaxHeap.h) | `heaps.double-ended-heaps` |
 | monotone bucket queue on a circular window, overflow to a radix heap (Dial) | [`priority/DialQueue.h`](include/ADS/priority/DialQueue.h) | `heaps.dial-queue` |
 | sequence heap, sorted sequences merged in batches by trees of losers (Sanders) | [`priority/SequenceHeap.h`](include/ADS/priority/SequenceHeap.h) | `heaps.sequence-heap` |
 | pairing heap with decrease-key, two-pass or auxiliary two-pass (Fredman et al.; Stasko and Vitter) | [`priority/PairingHeap.h`](include/ADS/priority/PairingHeap.h) | `heaps.pairing-heap` |
