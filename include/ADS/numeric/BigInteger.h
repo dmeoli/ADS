@@ -405,7 +405,8 @@ struct NoInit : std::allocator< T > {
  };
 
 /// the blocks of digits freed, kept per thread for the next numbers: 8 at
-/// most of each capacity \f$ 2^k \f$, \f$ 2 \le k < 17 \f$, so that the
+/// most of each capacity \f$ 2^k \f$, \f$ 2 \le k < 12 \f$, and 2 up to
+/// \f$ k = 16 \f$, about 2 MiB in all at most, so that the
 /// temporaries of the operations cost no call to the allocator once the
 /// thread has made a few; trivial, so that the thread reads it with no
 /// guard, the blocks freed at the end of the thread by Reaper
@@ -537,7 +538,7 @@ class Digits {
    DigitPool & P = digitPool;
    const unsigned k = unsigned( std::countr_zero( f_cap ) );
    if( std::has_single_bit( f_cap ) && ( k < DigitPool::kBins ) &&
-       ( P.cnt[ k ] < DigitPool::kKeep ) && ! P.dead ) {
+       ( P.cnt[ k ] < ( k < 12 ? DigitPool::kKeep : 2u ) ) && ! P.dead ) {
     if( ! P.armed ) {                      // the reaper, once per thread
      (void) &digitReaper;
      P.armed = true;
