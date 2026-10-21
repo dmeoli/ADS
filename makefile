@@ -85,19 +85,15 @@ test: $(BINS)
 # and PGM=<dir> (their sources) miniselect, sdsl-lite and the PGM-index to
 # arrays, LEMIRE=<prefix> and ROARING=<prefix> the SIMD intersections of
 # Lemire et al. and CRoaring to sets, ABSL=<prefix>, HTRIE=<dir> (its
-# source) and LIBART=<prefix> Abseil, tsl::htrie_map and libart to tries
+# source) and LIBART=<prefix> Abseil, tsl::htrie_map and libart to tries;
+# SDSL adds the range minima of sdsl-lite to lce, HYPERSCAN=<prefix>
+# Vectorscan (or Hyperscan) to multi
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
-            assembly fingerprints \
+            assembly fingerprints multi lce \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
-# rapidfuzz-cpp to edit, SDSL=<prefix> the range minima of sdsl-lite to lce
-# rapidfuzz-cpp to edit, SDSL=<prefix> the range minima of sdsl-lite to lce,
-# HYPERSCAN=<prefix> Vectorscan (or Hyperscan) to multi
-BENCHES   = sort dictionaries priority sequences bignum fft hashing search \
-            multi suffix lce edit
-comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \

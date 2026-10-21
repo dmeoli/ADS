@@ -21,8 +21,7 @@
 #                           [COMBI=<dir>] [MINISELECT=<dir>] [SDSL=<dir>]     #
 #                           [PGM=<dir>] [LEMIRE=<prefix>] [ROARING=<prefix>]  #
 #                           [HTRIE=<dir>] [LIBART=<prefix>]                   #
-#                           [SDSL=<prefix>]                                   #
-#                           [SDSL=<prefix>] [HYPERSCAN=<prefix>]              #
+#                           [HYPERSCAN=<prefix>]                              #
 ###############################################################################
 
 set -e
