@@ -1136,10 +1136,10 @@ class BigInteger {
  static std::pair< Mag , Mag > sqrtMag( const Mag & a , bool rem );
 
  /// sqrtRec() on the stack for k <= kSqrtSmall: s of k digits, r of k + 1
- /// written; the length of r
+ /// written; the length of r, 0 with root when it is not needed
  static constexpr std::size_t kSqrtSmall = 64;
  static std::size_t sqrtN( const Limb * m , std::size_t k , Limb * s ,
-                           Limb * r );
+                           Limb * r , bool root = false );
 
  /// the greatest common divisor of two numbers below 2^64, binary
  static std::uint64_t gcdWord( std::uint64_t a , std::uint64_t b );
