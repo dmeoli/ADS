@@ -9,7 +9,8 @@
  *   sqrt( n ) x sqrt( n ) points by its stencil of 5 points (case
  *   laplacian, a band): CsrMatrix::multiply() of ADS against the product
  *   of Eigen on a SparseMatrix by rows, and the walk of the orthogonal
- *   lists of the book's SparseMatrix (rowEntries()) up to n = 10^5; ns per
+ *   lists of the book's SparseMatrix (rowEntries()) up to n = 10^5, and
+ *   the products of SellMatrix of ADS in SELL-8-256 and SELL-4-256; ns per
  *   nonzero;
  * - "sptranspose", the transpose of the same matrices, as a new matrix by
  *   rows: CsrMatrix::transpose() against Eigen; ns per nonzero.
@@ -38,6 +39,7 @@
 #include "ADS/numeric/SparseMatrix.h"
 #ifndef ADS_BENCH_OLD
  #include "ADS/numeric/CsrMatrix.h"
+ #include "ADS/numeric/SellMatrix.h"
 #endif
 
 #if __has_include( <Eigen/Sparse> )
@@ -114,6 +116,18 @@ int main( int argc , char ** argv )
    print( "spmv" , what , n , "ADS::CsrMatrix" , median( none , [ & ]( int ) {
            A.multiply( x.data() , y.data() );
            sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
+#endif
+#ifndef ADS_BENCH_OLD
+   const ADS::SellMatrix< 8 > S8( A );
+   print( "spmv" , what , n , "ADS::SellMatrix<8>" , median( none ,
+           [ & ]( int ) {
+            S8.multiply( x.data() , y.data() );
+            sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
+   const ADS::SellMatrix< 4 > S4( A );
+   print( "spmv" , what , n , "ADS::SellMatrix<4>" , median( none ,
+           [ & ]( int ) {
+            S4.multiply( x.data() , y.data() );
+            sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
 #endif
    if( n <= 100000 ) {
     ADS::SparseMatrix S( n , n );

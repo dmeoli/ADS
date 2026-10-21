@@ -210,6 +210,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SatSolvers.h cites Davis and Putnam, the restarts of Luby, Sinclair and
   Zuckerman and the phase saving of Pipatsrisawat and Darwiche
 
+- SellMatrix, the sparse format SELL-C-sigma of Kreutzer et al. (the rows
+  sorted by length in windows of sigma, chunks of C rows by columns), its
+  product in the lanes of the vector registers; the test sell-matrix and
+  the cells of bench-sparse
 - Philox4x32 and Philox4x64, the counter-based generators Philox4xW-10
   with the sequence of std::philox4x32 and std::philox4x64 of C++26, two
   blocks at once, discard() in O( 1 ); normalZiggurat() and
