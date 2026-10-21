@@ -178,34 +178,55 @@ class TreeClassifier {
  std::vector< T > f_sorted;                ///< the splitters in order
  };
 
-/// the classifier of the numbers by the highest bits of their keys in
-/// which they differ
+/// the classifier of the numbers by the highest bits in which their keys
+/// differ, between the least and the greatest key of a sample: the keys
+/// below the least go to the first bucket and those above the greatest to
+/// the last, so that the order of the buckets stays that of the keys
 template< class T >
 class RadixClassifier {
  public:
 
  using Key = decltype( radixKey( T() ) );
 
- RadixClassifier( Key lo , Key hi ) : f_lo( lo ) {
+ /// the bounds from a sample of 1024 items of A
+ explicit RadixClassifier( const std::vector< T > & A ) {
+  const std::size_t n = A.size();
+  std::uint64_t r = 0x9E3779B97F4A7C15ull ^ n;
+  Key lo = sortKey( A[ 0 ] ) , hi = lo;
+  for( int i = 0 ; i < 1024 ; ++i ) {
+   r ^= r << 13;
+   r ^= r >> 7;
+   r ^= r << 17;
+   const Key x = sortKey( A[ r % n ] );
+   lo = std::min( lo , x );
+   hi = std::max( hi , x );
+   }
   const int w = std::bit_width( Key( hi - lo ) );
+  f_lo = lo;
   f_shift = w > 8 ? w - 8 : 0;
-  f_buckets = std::size_t( Key( hi - lo ) >> f_shift ) + 1;
+  f_last = std::size_t( Key( hi - lo ) >> f_shift );
   }
 
- [[nodiscard]] std::size_t buckets( void ) const { return( f_buckets ); }
+ [[nodiscard]] std::size_t buckets( void ) const { return( f_last + 1 ); }
 
- /// with no shift each bucket holds one key
- [[nodiscard]] bool equal( std::size_t ) const { return( f_shift == 0 ); }
+ /// with no shift, each bucket but the two at the ends, which take the
+ /// keys out of the bounds, holds one key
+ [[nodiscard]] bool equal( std::size_t b ) const {
+  return( ( f_shift == 0 ) && ( b > 0 ) && ( b < f_last ) );
+  }
 
  [[nodiscard]] std::size_t operator()( const T & x ) const {
-  return( std::size_t( Key( sortKey( x ) - f_lo ) >> f_shift ) );
+  const Key k = sortKey( x );
+  const std::size_t b = k < f_lo ? 0 : std::size_t( Key( k - f_lo ) >>
+                                                    f_shift );
+  return( std::min( b , f_last ) );
   }
 
  private:
 
  Key f_lo;
  int f_shift;
- std::size_t f_buckets;
+ std::size_t f_last;
  };
 
 template< bool Stable , class E , class T , class C >
@@ -324,24 +345,9 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
   } );
  }
 
-/// the survey of the order of A: whether sorted, whether decreasing, and
-/// the least and greatest key for the numbers
-template< class Key >
+/// the survey of the order of A: whether sorted, whether decreasing
 struct Survey {
  bool up = true , down = true;
- Key lo = std::numeric_limits< Key >::max() , hi = 0;
- };
-
-/// the type of the keys of the survey: those of radixKey() for the
-/// numbers, a byte that goes unused otherwise
-template< class T , bool Numbers >
-struct SurveyKey {
- using type = std::uint8_t;
- };
-
-template< class T >
-struct SurveyKey< T , true > {
- using type = decltype( radixKey( T() ) );
  };
 
 template< bool Stable , class E , class T , class C >
@@ -353,7 +359,7 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
   return;
   }
  constexpr bool numbers = naturalNumbers< T , C >;
- using S = Survey< typename SurveyKey< T , numbers >::type >;
+ using S = Survey;
  const S sv = parallelReduce( ex , 0 , n , S() ,
   [ & ]( std::size_t lo , std::size_t hi ) {
    S s;
@@ -364,19 +370,11 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
     if( Stable ? ! less( A[ i + 1 ] , A[ i ] ) : less( A[ i ] , A[ i + 1 ] ) )
      s.down = false;
     }
-   if constexpr( numbers )
-    for( std::size_t i = lo ; i < hi ; ++i ) {
-     const auto x = sortKey( A[ i ] );
-     s.lo = std::min( s.lo , x );
-     s.hi = std::max( s.hi , x );
-     }
    return( s );
    } ,
   []( S a , const S & b ) {
    a.up = a.up && b.up;
    a.down = a.down && b.down;
-   a.lo = std::min( a.lo , b.lo );
-   a.hi = std::max( a.hi , b.hi );
    return( a );
    } , 16384 );
  if( sv.up )
@@ -392,7 +390,7 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
                                  std::bit_floor( n / 4096 ) );
  if constexpr( numbers ) {
   distribute< Stable , void >( ex , A , less ,
-                               RadixClassifier< T >( sv.lo , sv.hi ) ,
+                               RadixClassifier< T >( A ) ,
                                depth );
   }
  else {
