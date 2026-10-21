@@ -229,6 +229,9 @@ inline void RankSelect::shape( bool b , Inventory & I ,
  groups = ( ( total - 1 ) >> I.l ) + 1;
  }
 
+#if defined( __GNUC__ )
+__attribute__(( always_inline ))
+#endif
 inline const RankSelect::Inventory & RankSelect::inventory( bool b ) const
 {
  if( ! f_ready[ b ].load( std::memory_order_acquire ) ) [[unlikely]]
@@ -314,6 +317,9 @@ inline void RankSelect::build( bool b ) const
    I.pos[ j ] |= Word( 1 ) << 63;
  }
 
+#if defined( __GNUC__ )
+__attribute__(( always_inline ))
+#endif
 inline std::size_t RankSelect::select( std::size_t k , bool b ) const
 {
  const Inventory & I = inventory( b );
