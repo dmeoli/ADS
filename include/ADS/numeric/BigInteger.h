@@ -1034,6 +1034,11 @@ class BigInteger {
  /// q times the other, q of qn digits
  static void hgcdMul1( HMat & M , const HMat1 & M1 );
  static void hgcdMul( HMat & M , const HMat & M1 );
+
+ /// M = M M1 by the 7 products of Winograd's form of Strassen's, from
+ /// kHgcdMul7 digits of both
+ static constexpr std::size_t kHgcdMul7 = 32;
+ static void hgcdMul7( HMat & M , const HMat & M1 );
  static void hgcdUpdate( HMat & M , const Limb * q , std::size_t qn ,
                          unsigned c );
 
