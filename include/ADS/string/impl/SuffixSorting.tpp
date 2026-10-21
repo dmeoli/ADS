@@ -138,6 +138,49 @@ inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
  *P = p;
  }
 
+/// idx[ j ] = 4 x[ j ] + 2 t_j + b_j for j in [ 0 , 64 ), with t_j and b_j
+/// the bits j of t and b: the counters of the kinds of 64 places
+inline void saisKinds( const unsigned char * x , std::uint64_t t ,
+                       std::uint64_t b , std::uint16_t * idx )
+{
+#if defined( __AVX2__ )
+ // each bit of a 32-bit mask to a byte of all ones or zeros
+ const __m256i spread = _mm256_setr_epi8( 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 1 ,
+                         1 , 1 , 1 , 1 , 1 , 1 , 1 , 2 , 2 , 2 , 2 , 2 , 2 ,
+                         2 , 2 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 ) ,
+               bit = _mm256_set1_epi64x( std::int64_t( 0x8040201008040201ull ) );
+ auto bytes = [ & ]( std::uint32_t v ) {
+  const __m256i a = _mm256_and_si256( _mm256_shuffle_epi8(
+                     _mm256_set1_epi32( int( v ) ) , spread ) , bit );
+  return( _mm256_cmpeq_epi8( a , bit ) );
+  };
+ for( int h = 0 ; h < 2 ; ++h ) {
+  const __m256i k = _mm256_or_si256(
+                     _mm256_and_si256( bytes( std::uint32_t( t >> 32 * h ) ) ,
+                                       _mm256_set1_epi8( 2 ) ) ,
+                     _mm256_and_si256( bytes( std::uint32_t( b >> 32 * h ) ) ,
+                                       _mm256_set1_epi8( 1 ) ) );
+  const __m256i v = _mm256_loadu_si256(
+                     reinterpret_cast< const __m256i * >( x + 32 * h ) );
+  for( int g = 0 ; g < 2 ; ++g ) {
+   const __m128i vg = g ? _mm256_extracti128_si256( v , 1 ) :
+                          _mm256_castsi256_si128( v ) ,
+                 kg = g ? _mm256_extracti128_si256( k , 1 ) :
+                          _mm256_castsi256_si128( k );
+   const __m256i r = _mm256_or_si256(
+                      _mm256_slli_epi16( _mm256_cvtepu8_epi16( vg ) , 2 ) ,
+                      _mm256_cvtepu8_epi16( kg ) );
+   _mm256_storeu_si256( reinterpret_cast< __m256i * >( idx + 32 * h +
+                                                       16 * g ) , r );
+   }
+  }
+#else
+ for( unsigned j = 0 ; j < 64 ; ++j )
+  idx[ j ] = std::uint16_t( 4 * x[ j ] + 2 * ( ( t >> j ) & 1 ) +
+                            ( ( b >> j ) & 1 ) );
+#endif
+ }
+
 /// prefetches the line of p for a read
 inline void saisPrefetch( const void * p )
 {
@@ -146,6 +189,16 @@ inline void saisPrefetch( const void * p )
 #else
  (void) p;
 #endif
+ }
+
+/// prefetches the text before the entry a (T[ a - 1 ] and T[ a - 2 ]),
+/// that of the entry 2 if a <= 0 (a select, no branch)
+template< class C , class S >
+inline void saisPrefetch2( const C * T , S a )
+{
+ const C * t = T + ( a > 0 ? a : S( 2 ) );
+ saisPrefetch( t - 1 );
+ saisPrefetch( t - 2 );
  }
 
 /// prefetches the line of p for a write
@@ -170,19 +223,27 @@ void saisBuckets( const S * size , S * B , S K , bool tails )
   }
  }
 
+/// the top bit of an S, set if b
+template< class S >
+inline S saisTop( bool b )
+{
+ using U = std::make_unsigned_t< S >;
+ return( S( U( b ) << ( 8 * sizeof( S ) - 1 ) ) );
+ }
+
 /// the move of the entry h by the scan from left to right
 template< class C , class S >
 inline void saisMoveL( const C * ADS_SAIS_RESTRICT T ,
                        S * ADS_SAIS_RESTRICT SA , S * ADS_SAIS_RESTRICT B ,
                        S h )
 {
- S q = SA[ h ];
- SA[ h ] = ~q;
+ constexpr S top = std::numeric_limits< S >::min();
+ const S q = SA[ h ];
+ SA[ h ] = q ^ top;
  if( q > 0 ) {
-  --q;
-  const S c0 = S( T[ q ] );
-  // complemented by an XOR with all ones, with no branch
-  SA[ B[ c0 ]++ ] = q ^ -S( S( T[ q - ( q > 0 ) ] ) < c0 );
+  const S p = q - 1;
+  const S c0 = S( T[ p ] );
+  SA[ B[ c0 ]++ ] = p | saisTop< S >( S( T[ p - ( p > 0 ) ] ) < c0 );
   }
  }
 
@@ -192,14 +253,15 @@ inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
                        S * ADS_SAIS_RESTRICT SA , S * ADS_SAIS_RESTRICT B ,
                        S h )
 {
+ constexpr S low = std::numeric_limits< S >::max();
  const S q = SA[ h ];
  if( q > 0 ) {
   const S p = q - 1;
   const S c0 = S( T[ p ] );
-  SA[ --B[ c0 ] ] = p ^ -( S( p == 0 ) | S( S( T[ p - ( p > 0 ) ] ) > c0 ) );
+  SA[ --B[ c0 ] ] = p | saisTop< S >( S( T[ p - ( p > 0 ) ] ) > c0 );
   }
  else
-  SA[ h ] = ~q;
+  SA[ h ] = q & low;
  }
 
 /// the scan from left to right: the L-suffixes, each stored complemented
@@ -213,24 +275,23 @@ template< bool small , class C , class S >
 void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
                   S n , const S * size , S * ADS_SAIS_RESTRICT B , S K )
 {
- constexpr S D = S( saisAhead );
+ constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  saisBuckets( size , B , K , false );
  {
   const S j = n - 1;
-  SA[ B[ T[ j ] ]++ ] = ( j > 0 ) && ( T[ j - 1 ] < T[ j ] ) ? ~j : j;
+  SA[ B[ T[ j ] ]++ ] = j | saisTop< S >( ( j > 0 ) &&
+                                           ( T[ j - 1 ] < T[ j ] ) );
   }
  S i = 0;
  for( ; i + 2 * D + 1 < n ; i += 2 ) { // two at a time, no checks
   saisPrefetchW( SA + i + 2 * D );
   const S a = SA[ i + D ] , b = SA[ i + D + 1 ];
-  saisPrefetch( T + saisClamp( a - 2 ) );
-  saisPrefetch( T + saisClamp( a - 1 ) );
-  saisPrefetch( T + saisClamp( b - 2 ) );
-  saisPrefetch( T + saisClamp( b - 1 ) );
+  saisPrefetch2( T , a );
+  saisPrefetch2( T , b );
   if constexpr( ! small ) {
    const S e = SA[ i + D / 2 ] , f = SA[ i + D / 4 ];
-   saisPrefetch( B + T[ saisClamp( e - 1 ) ] );
-   saisPrefetchW( SA + B[ T[ saisClamp( f - 1 ) ] ] );
+   saisPrefetch( B + T[ saisClamp( ( e & low ) - 1 ) ] );
+   saisPrefetchW( SA + B[ T[ saisClamp( ( f & low ) - 1 ) ] ] );
    }
   saisMoveL( T , SA , B , i );
   saisMoveL( T , SA , B , i + 1 );
@@ -246,20 +307,18 @@ template< bool small , class C , class S >
 void saisInduceS( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
                   S n , const S * size , S * ADS_SAIS_RESTRICT B , S K )
 {
- constexpr S D = S( saisAhead );
+ constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  saisBuckets( size , B , K , true );
  S i = n - 1;
  for( ; i >= 2 * D + 1 ; i -= 2 ) {    // two at a time, no checks
   saisPrefetchW( SA + i - 2 * D );
   const S a = SA[ i - D ] , b = SA[ i - D - 1 ];
-  saisPrefetch( T + saisClamp( a - 2 ) );
-  saisPrefetch( T + saisClamp( a - 1 ) );
-  saisPrefetch( T + saisClamp( b - 2 ) );
-  saisPrefetch( T + saisClamp( b - 1 ) );
+  saisPrefetch2( T , a );
+  saisPrefetch2( T , b );
   if constexpr( ! small ) {
    const S e = SA[ i - D / 2 ] , f = SA[ i - D / 4 ];
-   saisPrefetch( B + T[ saisClamp( e - 1 ) ] );
-   saisPrefetchW( SA + ( B[ T[ saisClamp( f - 1 ) ] ] - 1 ) );
+   saisPrefetch( B + T[ saisClamp( ( e & low ) - 1 ) ] );
+   saisPrefetchW( SA + ( B[ T[ saisClamp( ( f & low ) - 1 ) ] ] - 1 ) );
    }
   saisMoveS( T , SA , B , i );
   saisMoveS( T , SA , B , i - 1 );
@@ -819,6 +878,18 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   const C * ADS_SAIS_RESTRICT x = T + base;
   // the kind of each place, 2 bits a place: bit 2 j + 1 the type of
   // 64 w + j, bit 2 j that of the place before
+  if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > )
+   if( base + 64 <= n ) {
+    S * ADS_SAIS_RESTRICT even = size4.data();
+    S * ADS_SAIS_RESTRICT o = odd.data();
+    alignas( 32 ) std::uint16_t idx[ 64 ];
+    saisKinds( x , t , before , idx );
+    for( unsigned j = 0 ; j < 64 ; j += 2 ) {
+     ++even[ idx[ j ] ];
+     ++o[ idx[ j + 1 ] ];
+     }
+    continue;
+    }
   if( smallK && ( base + 64 <= n ) ) {
    S * ADS_SAIS_RESTRICT even = size4.data();
    S * ADS_SAIS_RESTRICT o = odd.data();
