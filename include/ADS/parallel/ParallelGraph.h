@@ -26,12 +26,13 @@
  *   the top down only. The distance of a node is its level, the same
  *   whoever claims it: -1 for the nodes not reached.
  * - connectedComponents( ex , g ) labels each node with the least node of
- *   its component, by the union-find of Afforest (Sutton, Ben-Nun and
- *   Barak): the parent of a root is always a smaller node, so that the
- *   root of a tree is its least node, and a link hooks the larger of two
- *   roots under the smaller by a compare-and-swap, trying again from the
- *   new roots if another thread moved first (the concurrent union-find of
- *   Shiloach and Vishkin, whose hooks never form a cycle). Each node first
+ *   its component, by the sampling of Afforest (Sutton, Ben-Nun and
+ *   Barak) on the concurrent union-find of ADS [see
+ *   ConcurrentUnionFind.h], whose roots are the least elements of their
+ *   sets: a link hooks the larger of two roots under the smaller by a
+ *   compare-and-swap, trying again from the new roots if another thread
+ *   moved first (the hooks of Shiloach and Vishkin, which never form a
+ *   cycle), and the paths are split as they are walked. Each node first
  *   links its first 2 neighbours, all the trees are compressed, a sample
  *   of 1024 nodes finds the largest component c, and then only the nodes
  *   outside c link the rest of their neighbours: in an unoriented graph
@@ -74,6 +75,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/concurrent/ConcurrentUnionFind.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/parallel/Executor.h"
 

@@ -25,6 +25,7 @@
 
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
+#include "ADS/concurrent/ConcurrentUnionFind.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
@@ -641,6 +642,61 @@ ADS_TEST( "parallel-lcp" )
    CHECK( lcpArrayPhi( ex , t , SA32 ) == lcpArrayPhi( t , SA32 ) );
    }
   } );
+ }
+
+// the concurrent union-find: 8 threads unite random pairs of 100000
+// elements, then the roots are the least elements of the sets that a
+// sequential union-find of the same pairs gives, sameSet() agrees, and
+// unite() says false on a pair already in one set; the same with chains
+// (each element with the next), where the trees would be the deepest
+ADS_TEST( "concurrent-union-find" )
+{
+ for( int shape = 0 ; shape < 2 ; ++shape ) {
+  const int n = 100000 , m = 60000;
+  std::mt19937_64 g( 23 );
+  std::vector< std::pair< int , int > > P( m );
+  for( int i = 0 ; i < m ; ++i )
+   P[ std::size_t( i ) ] = shape ? std::make_pair( i , i + 1 ) :
+    std::make_pair( int( g() % n ) , int( g() % n ) );
+  // the reference: the least element of each set, by a sequential forest
+  std::vector< int > up( static_cast< std::size_t >( n ) );
+  std::iota( up.begin() , up.end() , 0 );
+  auto root = [ & ]( int x ) {
+   while( up[ std::size_t( x ) ] != x ) x = up[ std::size_t( x ) ];
+   return( x ); };
+  for( const auto & [ a , b ] : P ) {
+   const int x = root( a ) , y = root( b );
+   if( x != y ) up[ std::size_t( std::max( x , y ) ) ] = std::min( x , y );
+   }
+  ConcurrentUnionFind uf{ std::size_t( n ) };
+  CHECK( uf.size() == std::size_t( n ) );
+  std::vector< std::thread > T;
+  std::atomic< int > merged{ 0 };
+  for( int t = 0 ; t < 8 ; ++t )
+   T.emplace_back( [ & , t ] {
+    for( int i = t ; i < m ; i += 8 )
+     merged += uf.unite( P[ std::size_t( i ) ].first ,
+                         P[ std::size_t( i ) ].second );
+    } );
+  for( auto & t : T ) t.join();
+  int sets = 0;
+  bool same = true;
+  for( int x = 0 ; x < n ; ++x ) {
+   same = same && ( uf.find( x ) == root( x ) );
+   sets += root( x ) == x;
+   }
+  CHECK( same && ( merged.load() == n - sets ) );
+  for( int i = 0 ; i < 1000 ; ++i ) {
+   const int a = int( g() % n ) , b = int( g() % n );
+   CHECK( uf.sameSet( a , b ) == ( root( a ) == root( b ) ) );
+   }
+  CHECK( ! uf.unite( P[ 0 ].first , P[ 0 ].second ) );
+  for( int x = 0 ; x < n ; ++x ) uf.compress( x );
+  bool flat = true;
+  for( int x = 0 ; x < n ; ++x )
+   flat = flat && ( uf.parent( x ) == root( x ) );
+  CHECK( flat );
+  }
  }
 
 /*--------------------------------------------------------------------------*/

@@ -1720,3 +1720,4 @@ engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
 engineered_parallel  parallel-fft        trasformata in quattro passi
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
 engineered_parallel  parallel-lcp        array LCP permutato
+engineered_parallel  concurrent-union-find  union-find concorrente

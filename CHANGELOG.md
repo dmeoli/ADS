@@ -54,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   four steps on the sequential one, bfsDistances() that optimizes its
   direction and connectedComponents() by Afforest on StaticGraph, and
   lcpArray() by the permuted LCP; test/engineered_parallel.cpp
+- ConcurrentUnionFind, the union-find of Jayanti and Tarjan with the
+  linking by index (the root of a set is its least element) and the paths
+  split by compare-and-swap, with compress() and parent();
+  connectedComponents() runs on it
 - SellMatrix::multiply() on a range of chunks, chunks() and chunkStart()
 - distributed::sort(), include/ADS/distributed: the sort by regular
   sampling of the items spread over the processes of MPI, one round of

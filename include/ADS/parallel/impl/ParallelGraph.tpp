@@ -161,40 +161,12 @@ std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
  const int n = g.n();
  const int * off = g.offsets();
  const auto * arc = g.arcData();
- std::vector< int > comp( static_cast< std::size_t >( n ) );
- parallelFor( ex , 0 , std::size_t( n ) , [ & ]( std::size_t v ) {
-  comp[ v ] = int( v ); } , 4096 );
- auto at = [ & ]( int v ) {
-  return( std::atomic_ref< int >( comp[ std::size_t( v ) ] ) ); };
- // hooks the larger of the roots of u and v under the smaller
- auto link = [ & ]( int u , int v ) {
-  int p1 = at( u ).load( std::memory_order_relaxed ) ,
-      p2 = at( v ).load( std::memory_order_relaxed );
-  while( p1 != p2 ) {
-   const int high = std::max( p1 , p2 ) , low = std::min( p1 , p2 );
-   int ph = at( high ).load( std::memory_order_relaxed );
-   if( ph == low )
-    break;
-   if( ( ph == high ) &&
-       at( high ).compare_exchange_strong( ph , low ,
-                                           std::memory_order_relaxed ) )
-    break;
-   p1 = at( at( high ).load( std::memory_order_relaxed ) )
-         .load( std::memory_order_relaxed );
-   p2 = at( low ).load( std::memory_order_relaxed );
-   }
-  };
+ ConcurrentUnionFind uf{ std::size_t( n ) };
+ auto link = [ & ]( int u , int v ) { uf.unite( u , v ); };
+ // each node points to its root
  auto compress = [ & ] {
-  parallelFor( ex , 0 , std::size_t( n ) , [ & ]( std::size_t i ) {
-   const int v = int( i );
-   for( ;; ) {
-    const int p = at( v ).load( std::memory_order_relaxed ) ,
-              q = at( p ).load( std::memory_order_relaxed );
-    if( p == q )
-     break;
-    at( v ).store( q , std::memory_order_relaxed );
-    }
-   } , 4096 );
+  parallelFor( ex , 0 , std::size_t( n ) , [ & ]( std::size_t v ) {
+   uf.compress( std::int32_t( v ) ); } , 4096 );
   };
  constexpr int rounds = 2;
  for( int r = 0 ; r < rounds ; ++r ) {
@@ -212,7 +184,7 @@ std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
   std::unordered_map< int , int > count;
   int best = 0;
   for( int k = 0 ; k < 1024 ; ++k ) {
-   const int x = comp[ std::size_t( rng() % unsigned( n ) ) ];
+   const int x = uf.parent( std::int32_t( rng() % unsigned( n ) ) );
    if( ++count[ x ] > best ) {
     best = count[ x ];
     c = x;
@@ -221,12 +193,14 @@ std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
   }
  parallelFor( ex , 0 , std::size_t( n ) , [ & ]( std::size_t i ) {
   const int v = int( i );
-  if( at( v ).load( std::memory_order_relaxed ) == c )
+  if( uf.parent( v ) == c )
    return;
   for( int k = off[ v ] + rounds ; k < off[ v + 1 ] ; ++k )
    link( v , G::head( arc[ k ] ) );
   } , 1024 );
- compress();
+ std::vector< int > comp( static_cast< std::size_t >( n ) );
+ parallelFor( ex , 0 , std::size_t( n ) , [ & ]( std::size_t v ) {
+  comp[ v ] = uf.find( std::int32_t( v ) ); } , 4096 );
  return( comp );
  }
 
