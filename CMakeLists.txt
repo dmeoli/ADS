@@ -69,15 +69,13 @@ if (ADS_BENCHMARKS)
     find_path(RAPIDFUZZ_INCLUDE rapidfuzz/distance.hpp)
     find_package(Eigen3 QUIET NO_MODULE)
     find_package(Threads REQUIRED)
-    foreach (b sort dictionaries priority sequences memory bignum fft hashing
-               search suffix edit numeric queues concurrent geometry matrix
-               sparse external graphs combinatorial backtrack ordered arrays
-               sets tries allocators positions assembly fingerprints)
     find_path(SDSL_INCLUDE sdsl/rmq_succinct_sct.hpp)
     find_path(HYPERSCAN_INCLUDE hs/hs.h)
     find_library(HYPERSCAN_LIB hs)
-    foreach (b sort dictionaries priority sequences bignum fft hashing search
-               multi suffix lce edit)
+    foreach (b sort dictionaries priority sequences memory bignum fft hashing
+               search suffix edit numeric queues concurrent geometry matrix
+               sparse external graphs combinatorial backtrack ordered arrays
+               sets tries allocators positions assembly fingerprints multi lce)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
