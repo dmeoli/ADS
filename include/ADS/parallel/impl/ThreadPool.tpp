@@ -272,12 +272,14 @@ void ThreadPool::invoke( F && f , G && g )
  catch( ... ) {
   ef = std::current_exception();
   }
- auto t = d.take();
- if( t && ( *t == &k ) )
+ Task * t = nullptr;
+ if( const auto o = d.take() )
+  t = *o;
+ if( t == &k )
   Inv::entry( &k );                         // not stolen: here
  else {
   if( t )                                   // a task of an enclosing call
-   d.push( *t );
+   d.push( t );
   unsigned w = 0;
   while( ! k.done.load( std::memory_order_acquire ) )
    if( ! help( e.slot() ) )
