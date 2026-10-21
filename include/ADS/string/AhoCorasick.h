@@ -114,6 +114,15 @@ class AhoCorasick {
  /// \pre built
  [[nodiscard]] std::size_t count( std::string_view T ) const;
 
+ /// each occurrence ( start , number ) of the patterns in T given to
+ /// report(), by increasing end, the longer pattern first for one end
+ /// \pre built
+ template< class F >
+ void forEach( std::string_view T , F && report ) const {
+  scan( T , [ & ]( std::size_t j , std::uint32_t id ) {
+   report( j + 1 - f_P[ id ].size() , std::size_t( id ) ); } );
+  }
+
  /// the number of patterns
  [[nodiscard]] std::size_t size( void ) const { return( f_P.size() ); }
 

@@ -22,6 +22,7 @@
 #                           [PGM=<dir>] [LEMIRE=<prefix>] [ROARING=<prefix>]  #
 #                           [HTRIE=<dir>] [LIBART=<prefix>]                   #
 #                           [SDSL=<prefix>]                                   #
+#                           [SDSL=<prefix>] [HYPERSCAN=<prefix>]              #
 ###############################################################################
 
 set -e
@@ -55,6 +56,7 @@ run bignum 16 256 4096 32768
 run fft 1024 65536 1048576
 run hashing 100000 1000000
 run search 100000 1000000 10000000
+run multi 1000000 10000000
 run suffix 100000 1000000 10000000
 run lce 100000 1000000 10000000
 run edit 100 1000 10000 100000

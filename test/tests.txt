@@ -518,6 +518,7 @@ engineered_strings  lce             estensioni comuni: confronto diretto e RMQ a
 engineered_strings  edit-distance   distanza, LCS e ricerca bit-parallele
 engineered_strings  classic-matching  Boyer-Moore, Horspool, Shift-Or, Z
 engineered_strings  aho-corasick    automa di Aho e Corasick
+engineered_strings  multi-search    filtro SIMD a bucket per molti pattern
 engineered_strings  lyndon          fattorizzazione di Lyndon, rotazione minima
 engineered_strings  suffix-automaton  automa dei suffissi
 engineered_strings  eertree         eertree e fattorizzazione palindromica
