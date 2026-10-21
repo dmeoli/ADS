@@ -810,15 +810,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   than 64 occur), a radix sort on their top bits (by the 256 buckets of the
   top 8 first on large texts) and the next windows for the ties, with no
   partial induction, no names and no recursion; a sample of the windows
-  that repeats, or ties beyond a budget, leave the text to the induction
-  as before. Against libsais 2.12 on wolfe (one core, A/A of libsais under
-  3%): random texts over 256 bytes 1.05, 1.20 and 1.44 times faster at
-  10^5, 10^6 and 10^7 bytes (0.80 to 0.97 before), over 26 1.28 to 2.31
-  (0.84 to 1.28), over 4 1.59 to 1.65 (0.84 to 0.92); the final induction
-  marks a suffix by its top bit (one shift, no branch) and prefetches the
-  text at a place chosen by one select, and the kinds of the places are
-  counted from counters built by vector operations, 2 to 7% on all the
-  texts; the tests in test/engineered_strings.cpp
+  that repeats, or ties beyond a budget, leave the text to the induction.
+  On the induction the names are those of the groups the text leaves
+  (finer than the LMS-substrings), the marks of the sorted LMS-suffixes
+  cleared 8 at a time, the names gathered forward (16 at a time by a
+  compress on AVX-512); the final induction marks a suffix by its top bit
+  and prefetches by one select, and the kinds of the places are counted
+  from counters built by vector operations. suffixArray(), plcpArray() and
+  lcpArrayPhi() build their arrays on transparent huge pages (Linux), and
+  lcpArrayPhi() reads the permuted LCP from a copy of n bytes on texts of
+  2^18 bytes or more and compares one symbol at a time. Against libsais
+  2.12 on wolfe, bench/suffix.cpp as built by the makefile, two runs
+  alternated with the previous version (ratios libsais / ADS at 10^5,
+  10^6, 10^7 bytes): random over 4 bytes 1.30, 1.35, 1.75 (0.83, 0.87,
+  0.90 before), over 26 1.07, 1.80, 2.25 (0.85, 1.27, 1.20), over 256
+  0.86, 1.03, 1.54 (0.80, 0.87, 0.94), English 1.02, 0.96, 1.12 (0.97,
+  0.82, 0.88), Fibonacci 0.84, 0.98, 1.20 (0.82, 0.84, 0.91), repeats
+  0.82, 0.99, 1.09 (0.82, 0.85, 0.92); the LCP 1.08 to 1.21 at 10^5, 0.98
+  to 1.18 at 10^6, 1.31 to 1.71 at 10^7 (0.91 to 1.18, 0.96 to 1.13, 0.91
+  to 1.05). The cells below 1 are those of the alignment of the jumps
+  (the JCC erratum of Skylake): with the assembler told to keep the jumps
+  within 32 bytes on both libraries the cells of 10^5 are 1.03 to 1.05
+  and English at 10^6 0.98 to 1.00; the tests in
+  test/engineered_strings.cpp
 
 - HugePageAllocator keeps the blocks of 8 MB or more given back, up to 16
   blocks and 64 MB per thread, for the next requests of the same size, which find
