@@ -25,6 +25,8 @@ namespace detail {
 /// the longest codeword of HuffmanCoder.h, and the bytes of its header
 constexpr int kHuffMax = 11;
 constexpr std::size_t kHuffHead = 8 + 1 + 128 + 12;
+/// the bytes from which the decoder reads a window of 12 bits
+constexpr std::size_t kHuffWide = std::size_t( 1 ) << 18;
 
 /// the l low bits of c turned around
 constexpr std::uint32_t reverseLow( std::uint32_t c , int l )
@@ -210,6 +212,99 @@ inline std::vector< std::uint8_t > huffmanCompress(
  return( out );
  }
 
+namespace detail {
+
+/// the four streams of the code in decoded into out, by a window of W
+/// bits: the table of the single symbols of each value of W bits, and the
+/// table of up to 3 symbols a lookup, an entry of 32 bits each, the
+/// symbols in the low 24, then the bits read in 4 and the symbols in 2
+template< int W >
+inline void huffmanDecodeStreams( std::span< const std::uint8_t > in ,
+                                  const std::array< std::uint8_t , 256 > &
+                                   len , int L , std::size_t n ,
+                                  std::uint8_t * out )
+{
+ ( void )L;
+ std::array< std::uint16_t , 1 << W > T{};
+ const auto code = huffmanCodes( len );
+ for( int s = 0 ; s < 256 ; ++s )
+  for( std::uint32_t h = 0 ;
+       ( len[ s ] > 0 ) && ( h < ( std::uint32_t( 1 ) << ( W - len[ s ] ) ) ) ;
+       ++h )
+   T[ code[ s ] | ( h << len[ s ] ) ] = std::uint16_t( ( s << 8 ) | len[ s ] );
+ std::array< std::uint32_t , 1 << W > T3;
+ for( std::uint32_t v = 0 ; v < ( 1u << W ) ; ++v ) {
+  std::uint32_t syms = 0 , bits = 0 , cnt = 0;
+  for( ; cnt < 3 ; ++cnt ) {
+   const std::uint16_t e = T[ ( v >> bits ) & ( ( 1u << W ) - 1 ) ];
+   const std::uint32_t l = e & 0xFF;
+   if( ( l == 0 ) || ( bits + l > std::uint32_t( W ) ) ) break;
+   syms |= std::uint32_t( e >> 8 ) << ( 8 * cnt );
+   bits += l;
+   }
+  if( cnt == 0 ) {                          // a code of no symbol: none
+   cnt = 1;
+   bits = T[ v ] & 0xFF;
+   }
+  T3[ v ] = syms | ( bits << 24 ) | ( cnt << 28 );
+  }
+ // the four streams
+ std::array< const std::uint8_t * , 4 > p;
+ p[ 0 ] = in.data() + kHuffHead;
+ for( std::size_t k = 1 ; k < 4 ; ++k ) {
+  const auto sz = loadLE< std::uint32_t >( in.data() + 137 + 4 * ( k - 1 ) );
+  ADS_PRE( std::size_t( p[ k - 1 ] - in.data() ) + sz + 8 <= in.size() );
+  p[ k ] = p[ k - 1 ] + sz;
+  }
+ const std::size_t q = ( n + 3 ) / 4;
+ std::array< std::uint8_t * , 4 > o , end;
+ for( std::size_t k = 0 ; k < 4 ; ++k ) {
+  o[ k ] = out + std::min( n , k * q );
+  end[ k ] = out + std::min( n , ( k + 1 ) * q );
+  }
+ constexpr std::uint64_t mask = ( std::uint64_t( 1 ) << W ) - 1;
+ std::array< std::uint64_t , 4 > w;        // the word of each stream
+ std::array< unsigned , 4 > used{};         // its bits read
+ for( std::size_t k = 0 ; k < 4 ; ++k )
+  w[ k ] = loadLE< std::uint64_t >( p[ k ] );
+ // all four at once, 4 lookups of each between two loads of its word
+ // (48 bits at most), as long as the 12 symbols that they may give, and
+ // the 4 bytes that each lookup stores, stay in the stream (the bytes past
+ // its symbols are overwritten by the next lookup); the rounds that
+ // surely fit, counted again when they are over
+ auto rounds = [ & ]( void ) {
+  std::ptrdiff_t m = end[ 0 ] - o[ 0 ];
+  for( std::size_t k = 1 ; k < 4 ; ++k ) m = std::min( m , end[ k ] - o[ k ] );
+  return( m >= 3 ? std::size_t( ( m - 3 ) / 12 ) : std::size_t( 0 ) );
+  };
+ for( std::size_t R = rounds() ; R > 0 ; R = rounds() )
+  for( ; R > 0 ; --R ) {
+  for( std::size_t j = 0 ; j < 4 ; ++j )
+   for( std::size_t k = 0 ; k < 4 ; ++k ) {
+    const std::uint32_t e = T3[ ( w[ k ] >> used[ k ] ) & mask ];
+    storeLE< std::uint32_t >( o[ k ] , e );
+    o[ k ] += e >> 28;
+    used[ k ] += ( e >> 24 ) & 15;
+    }
+  for( std::size_t k = 0 ; k < 4 ; ++k ) {
+   p[ k ] += used[ k ] >> 3;
+   used[ k ] &= 7;
+   w[ k ] = loadLE< std::uint64_t >( p[ k ] );
+   }
+  }
+ for( std::size_t k = 0 ; k < 4 ; ++k )     // the rest, a symbol a time
+  for( ; o[ k ] < end[ k ] ; ++o[ k ] ) {
+   const std::uint16_t e = T[ ( w[ k ] >> used[ k ] ) & mask ];
+   *o[ k ] = std::uint8_t( e >> 8 );
+   used[ k ] += e & 0xFF;
+   p[ k ] += used[ k ] >> 3;
+   used[ k ] &= 7;
+   w[ k ] = loadLE< std::uint64_t >( p[ k ] );
+   }
+ }
+
+}  // end( namespace detail )
+
 inline std::vector< std::uint8_t > huffmanDecompress(
                                           std::span< const std::uint8_t > in )
 {
@@ -227,90 +322,12 @@ inline std::vector< std::uint8_t > huffmanDecompress(
   len[ s ] = std::uint8_t( ( in[ 9 + s / 2 ] >> ( 4 * ( s % 2 ) ) ) & 15 );
  ADS_PRE( ( huffmanKraft( len ) <= ( std::uint64_t( 1 ) << kHuffMax ) ) &&
           ( *std::max_element( len.begin() , len.end() ) == L ) );
- // the tables of the values of L bits: the symbol and its length, and
- // the two symbols that fit in them (one, if the second does not), their
- // number and their bits
- std::array< std::uint16_t , 1 << kHuffMax > T{};
- const auto code = huffmanCodes( len );
- for( int s = 0 ; s < 256 ; ++s )
-  for( std::uint32_t h = 0 ;
-       ( len[ s ] > 0 ) && ( h < ( std::uint32_t( 1 ) << ( L - len[ s ] ) ) ) ;
-       ++h )
-   T[ code[ s ] | ( h << len[ s ] ) ] = std::uint16_t( ( s << 8 ) | len[ s ] );
- // up to 3 symbols a lookup: the symbols in the low 24 bits of an entry,
- // their number in the next 8 and their bits in the next 8
- std::array< std::uint64_t , 1 << kHuffMax > T2;
- for( std::uint32_t v = 0 ; v < ( 1u << L ) ; ++v ) {
-  std::uint64_t syms = 0;
-  std::uint32_t bits = 0 , cnt = 0;
-  for( ; cnt < 3 ; ++cnt ) {
-   const std::uint16_t e = T[ ( v >> bits ) & ( ( 1u << L ) - 1 ) ];
-   const std::uint32_t l = e & 0xFF;
-   if( ( l == 0 ) || ( bits + l > std::uint32_t( L ) ) ) break;
-   syms |= std::uint64_t( e >> 8 ) << ( 8 * cnt );
-   bits += l;
-   }
-  if( cnt == 0 ) {                          // a code of no symbol: none
-   cnt = 1;
-   bits = T[ v ] & 0xFF;
-   }
-  T2[ v ] = syms | ( std::uint64_t( cnt ) << 24 ) |
-            ( std::uint64_t( bits ) << 32 );
-  }
- // the four streams
- std::array< const std::uint8_t * , 4 > p;
- p[ 0 ] = in.data() + kHuffHead;
- for( std::size_t k = 1 ; k < 4 ; ++k ) {
-  const auto sz = loadLE< std::uint32_t >( in.data() + 137 + 4 * ( k - 1 ) );
-  ADS_PRE( std::size_t( p[ k - 1 ] - in.data() ) + sz + 8 <= in.size() );
-  p[ k ] = p[ k - 1 ] + sz;
-  }
+ // a window of 12 bits on a long input, where the table of 16 KB pays
+ // for itself (more symbols a lookup), of 11 bits on a short one
  std::vector< std::uint8_t > out( n + 8 );  // room for the triples
- const std::size_t q = ( n + 3 ) / 4;
- std::array< std::uint8_t * , 4 > o , end;
- for( std::size_t k = 0 ; k < 4 ; ++k ) {
-  o[ k ] = out.data() + std::min( n , k * q );
-  end[ k ] = out.data() + std::min( n , ( k + 1 ) * q );
-  }
- const std::uint64_t mask = ( std::uint64_t( 1 ) << L ) - 1;
- std::array< std::uint64_t , 4 > w;        // the word of each stream
- std::array< unsigned , 4 > used{};         // its bits read
- for( std::size_t k = 0 ; k < 4 ; ++k )
-  w[ k ] = loadLE< std::uint64_t >( p[ k ] );
- // all four at once, 4 lookups of each between two loads of its word, as
- // long as the 12 symbols that they may give, and the 4 bytes that each
- // lookup stores, stay in the stream (the bytes past its symbols are
- // overwritten by the next lookup)
- // the rounds that surely fit, counted again when they are over
- auto rounds = [ & ]( void ) {
-  std::ptrdiff_t m = end[ 0 ] - o[ 0 ];
-  for( std::size_t k = 1 ; k < 4 ; ++k ) m = std::min( m , end[ k ] - o[ k ] );
-  return( m >= 3 ? std::size_t( ( m - 3 ) / 12 ) : std::size_t( 0 ) );
-  };
- for( std::size_t R = rounds() ; R > 0 ; R = rounds() )
-  for( ; R > 0 ; --R ) {
-  for( std::size_t j = 0 ; j < 4 ; ++j )
-   for( std::size_t k = 0 ; k < 4 ; ++k ) {
-    const std::uint64_t e = T2[ ( w[ k ] >> used[ k ] ) & mask ];
-    storeLE< std::uint32_t >( o[ k ] , std::uint32_t( e ) );
-    o[ k ] += ( e >> 24 ) & 0xFF;
-    used[ k ] += unsigned( e >> 32 );
-    }
-  for( std::size_t k = 0 ; k < 4 ; ++k ) {
-   p[ k ] += used[ k ] >> 3;
-   used[ k ] &= 7;
-   w[ k ] = loadLE< std::uint64_t >( p[ k ] );
-   }
-  }
- for( std::size_t k = 0 ; k < 4 ; ++k )     // the rest, a symbol a time
-  for( ; o[ k ] < end[ k ] ; ++o[ k ] ) {
-   const std::uint16_t e = T[ ( w[ k ] >> used[ k ] ) & mask ];
-   *o[ k ] = std::uint8_t( e >> 8 );
-   used[ k ] += e & 0xFF;
-   p[ k ] += used[ k ] >> 3;
-   used[ k ] &= 7;
-   w[ k ] = loadLE< std::uint64_t >( p[ k ] );
-   }
+ if( n >= kHuffWide )
+  huffmanDecodeStreams< 12 >( in , len , L , n , out.data() );
+ else huffmanDecodeStreams< kHuffMax >( in , len , L , n , out.data() );
  out.resize( n );
  return( out );
  }
