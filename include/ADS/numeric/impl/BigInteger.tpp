@@ -3831,9 +3831,11 @@ inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
  const std::size_t n = std::bit_ceil( 2 * ( na + nb ) - 1 );
 #if ADS_BIGINT_FNTT
  // one coefficient per digit, the transforms half as long; the top t
- // digits of the longer factor by rows when the transform of the rest is
+ // digits of the longer factor apart when the transform of the rest is
  // shorter by more than they cost: about 12 L log2( L ) cycles for a
- // transform of L terms, 1.6 per product of the rows
+ // transform of L terms, 1.6 per product of the rows below kKaratsuba
+ // digits, and from there nb / t products of t digits by Karatsuba, each
+ // 1.6 K^2 ( t / K )^{log2 3} for K = kKaratsuba
  if( na < nb ) {
   std::swap( a , b );
   std::swap( na , nb );
@@ -3849,8 +3851,12 @@ inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
  for( std::size_t k = 4 ; k < ( sq ? 4 : 23 ) ; ++k )
   for( std::size_t m : { std::size_t( 1 ) << k ,
                          std::size_t( 3 ) << ( k - 1 ) } )
-   if( ( m < nf0 ) && ( m + na / 8 >= L ) && ( m + 1 <= L ) ) {
-    const double c = cost( m ) + 1.6 * double( L - m ) * double( nb );
+   if( ( m < nf0 ) && ( m + na / 2 >= L ) && ( m + 1 <= L ) ) {
+    const double tt = double( L - m ) , K = double( kKaratsuba ) ,
+                 top = tt < K ? 1.6 * tt * double( nb )
+                              : double( nb ) / tt * 1.6 * K * K *
+                                std::pow( tt / K , 1.585 );
+    const double c = cost( m ) + top;
     if( c < best ) {
      best = c;
      t = L - m;
@@ -3861,8 +3867,14 @@ inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
      ( nb <= ( std::size_t( 1 ) << 21 ) ) ) {
   mulFNTT< detail::FLanes4 >( r , a , na - t , b , nb , nf );
   std::fill( r + na - t + nb , r + na + nb , 0 );
-  for( std::size_t j = na - t ; j < na ; ++j )
-   r[ j + nb ] = addMul1( r + j , b , nb , a[ j ] );
+  if( t < kKaratsuba )
+   for( std::size_t j = na - t ; j < na ; ++j )
+    r[ j + nb ] = addMul1( r + j , b , nb , a[ j ] );
+  else {                                    // the top digits by mulP()
+   Mag x( t + nb );
+   mulP( x.data() , a + na - t , t , b , nb );
+   addTo( r + na - t , t + nb , x.data() , t + nb );
+   }
   return;
   }
 #endif
@@ -5303,6 +5315,10 @@ inline void BigInteger::hgcdMul( HMat & M , const HMat & M1 )
  // ( x y ) of each row of M times M1, x u00 + y u10 and x u01 + y u11
  const std::size_t n = M.n , m = M1.n , k = n + m + 1;
  ADS_AUDIT( k <= M.alloc );
+ if( std::min( n , m ) >= kHgcdMul7 ) {
+  hgcdMul7( M , M1 );
+  return;
+  }
  Mag t( 3 * k );
  Limb * const s0 = t.data() , * const s1 = s0 + k , * const w = s1 + k;
  for( std::size_t r = 0 ; r < 2 ; ++r ) {
@@ -5321,6 +5337,89 @@ inline void BigInteger::hgcdMul( HMat & M , const HMat & M1 )
                          M.p[ 2 ][ e - 1 ] | M.p[ 3 ][ e - 1 ] ) == 0 ) )
   --e;
  M.n = e;
+ }
+
+inline void BigInteger::hgcdMul7( HMat & M , const HMat & M1 )
+{
+ // Winograd's form of Strassen's product, 7 products instead of 8: with
+ // M = ( a b ; c d ) and M1 = ( e f ; g h ), s1 = c + d, s2 = s1 - a,
+ // s3 = a - c, s4 = b - s2, t1 = f - e, t2 = h - t1, t3 = h - f,
+ // t4 = t2 - g, p1 = a e, p2 = b g, p3 = s4 h, p4 = d t4, p5 = s1 t1,
+ // p6 = s2 t2, p7 = s3 t3, u2 = p1 + p6, u3 = u2 + p7, the result
+ // ( p1 + p2 , u2 + p5 + p3 ; u3 - p4 , u3 + p5 ); the numbers between
+ // signed, as magnitudes of K digits and their signs
+ const std::size_t n = M.n , m = M1.n , K = n + m + 3;
+ Mag buf( 16 * K , 0 );
+ struct S { Limb * d; bool neg; };
+ std::size_t used = 0;
+ auto fresh = [ & ]( void ) {
+  S x{ buf.data() + used , false };
+  used += K;
+  return( x );
+  };
+ auto load = [ & ]( const Limb * x , std::size_t len ) {
+  S y = fresh();
+  std::copy( x , x + len , y.d );
+  return( y );
+  };
+ // r = x + y or x - y (sub), all K digits
+ auto add = [ & ]( S & r , const S & x , const S & y , bool sub ) {
+  const bool yn = y.neg != sub;
+  if( x.neg == yn ) {
+   addN( r.d , x.d , K , y.d , K );
+   r.neg = x.neg;
+   }
+  else {                                   // the signs differ
+   const bool less = absDiff( r.d , x.d , K , y.d , K );
+   r.neg = less ? yn : x.neg;
+   }
+  };
+ const S a = load( M.p[ 0 ] , n ) , b = load( M.p[ 1 ] , n ) ,
+         c = load( M.p[ 2 ] , n ) , d = load( M.p[ 3 ] , n ) ,
+         e = load( M1.p[ 0 ] , m ) , f = load( M1.p[ 1 ] , m ) ,
+         g = load( M1.p[ 2 ] , m ) , h = load( M1.p[ 3 ] , m );
+ S s1 = fresh() , s2 = fresh() , s3 = fresh() , s4 = fresh() ,
+   t1 = fresh() , t2 = fresh() , t3 = fresh() , t4 = fresh();
+ add( s1 , c , d , false );
+ add( s2 , s1 , a , true );
+ add( s3 , a , c , true );
+ add( s4 , b , s2 , true );
+ add( t1 , f , e , true );
+ add( t2 , h , t1 , true );
+ add( t3 , h , f , true );
+ add( t4 , t2 , g , true );
+ Mag pb( 7 * K , 0 );                      // the products
+ auto into = [ & ]( std::size_t i , const S & x , std::size_t lx ,
+                    const S & y , std::size_t ly ) {
+  S r{ pb.data() + i * K , x.neg != y.neg };
+  mulP( r.d , x.d , lx , y.d , ly );
+  return( r );
+  };
+ const std::size_t n1 = n + 1 , m1 = m + 1;
+ S p1 = into( 0 , a , n , e , m ) , p2 = into( 1 , b , n , g , m ) ,
+   p3 = into( 2 , s4 , n1 , h , m ) , p4 = into( 3 , d , n , t4 , m1 ) ,
+   p5 = into( 4 , s1 , n1 , t1 , m ) , p6 = into( 5 , s2 , n1 , t2 , m1 ) ,
+   p7 = into( 6 , s3 , n , t3 , m );
+ S u2 = s1 , u3 = s2;                       // the room of s1 and s2 again
+ add( u2 , p1 , p6 , false );
+ add( u3 , u2 , p7 , false );
+ S c00 = s3 , c01 = s4 , c10 = t1 , c11 = t2;
+ add( c00 , p1 , p2 , false );
+ add( c11 , u3 , p5 , false );
+ add( u2 , u2 , p5 , false );
+ add( c01 , u2 , p3 , false );
+ add( c10 , u3 , p4 , true );
+ ADS_AUDIT( ! c00.neg && ! c01.neg && ! c10.neg && ! c11.neg );
+ const std::size_t k = n + m + 1;
+ std::copy( c00.d , c00.d + k , M.p[ 0 ] );
+ std::copy( c01.d , c01.d + k , M.p[ 1 ] );
+ std::copy( c10.d , c10.d + k , M.p[ 2 ] );
+ std::copy( c11.d , c11.d + k , M.p[ 3 ] );
+ std::size_t z = k;                         // up to 3 digits 0 on top
+ while( ( z > 1 ) && ( ( M.p[ 0 ][ z - 1 ] | M.p[ 1 ][ z - 1 ] |
+                         M.p[ 2 ][ z - 1 ] | M.p[ 3 ][ z - 1 ] ) == 0 ) )
+  --z;
+ M.n = z;
  }
 
 inline std::size_t BigInteger::hgcdAdjust( const HMat & M , std::size_t n ,
