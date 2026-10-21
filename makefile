@@ -80,8 +80,7 @@ test: $(BINS)
 # sources of tlx in <dir>
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
-            sparse succinct compression external \
-            sparse succinct compression graphs \
+            sparse succinct compression external graphs \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
