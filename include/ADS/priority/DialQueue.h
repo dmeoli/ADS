@@ -20,7 +20,8 @@
  * than the first bucket in use (or the buckets are empty), its items in
  * the window
  * \f$ [ \ell' , \ell' + W ) \f$ of its least key \f$ \ell' \f$ move to
- * the buckets, each once. Hence, with all the keys pushed in
+ * the buckets, each once, a bucket of the radix heap at a time [see
+ * RadixHeap::extractBelow()]. Hence, with all the keys pushed in
  * \f$ [ \ell , \ell + C ] \f$, C < W, the overflow is never used, push()
  * takes O( 1 ) time and pop() \f$ O( 1 + W / w ) \f$, w = 64, against
  * the \f$ O( 1 + C ) \f$ of the scan of the buckets one by one; a key

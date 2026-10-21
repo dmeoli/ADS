@@ -89,6 +89,57 @@ inline T RadixHeap< T , K , B >::pop( void )
  }
 
 template< class T , std::integral K , unsigned B >
+template< class F >
+void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
+{
+ const U u = encode( limit );
+ while( f_size > 0 ) {
+  const unsigned i = first();
+  std::vector< Entry > & b = f_B[ i ];
+  if( f_min[ i ] >= u )                     // nothing below the limit
+   break;
+  if( ceiling( i ) < u ) {                  // all of them, as they are
+   for( Entry & e : b )
+    f( std::move( e.item ) , decode( e.key ) );
+   f_size -= b.size();
+   b.clear();
+   f_min[ i ] = std::numeric_limits< U >::max();
+   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );
+   continue;
+   }
+  if( i >= R ) {                            // a bucket across the limit,
+   f_last = f_min[ i ];                     // above the row 0: down to the
+   f_min[ i ] = std::numeric_limits< U >::max();   // rows below, for its
+   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );   // least
+   for( Entry & e : b )                     // key (removed next)
+    place( bucket( e.key ) , std::move( e ) );
+   b.clear();
+   continue;
+   }
+  std::size_t k = 0;                        // those below, and the rest
+  U m = std::numeric_limits< U >::max();    // kept in the bucket
+  for( std::size_t j = 0 ; j < b.size() ; ++j )
+   if( b[ j ].key < u )
+    f( std::move( b[ j ].item ) , decode( b[ j ].key ) );
+   else {
+    m = b[ j ].key < m ? b[ j ].key : m;
+    if( k != j )
+     b[ k ] = std::move( b[ j ] );
+    ++k;
+    }
+  f_size -= b.size() - k;
+  b.erase( b.begin() + std::ptrdiff_t( k ) , b.end() );
+  f_min[ i ] = m;
+  if( k == 0 ) {                            // all below after all: on to
+   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );   // the next
+   continue;
+   }
+  break;
+  }
+ ADS_INVARIANT( bucketed() );
+ }
+
+template< class T , std::integral K , unsigned B >
 void RadixHeap< T , K , B >::clear( void )
 {
  for( auto & b : f_B )

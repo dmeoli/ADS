@@ -41,8 +41,7 @@
  * The contracts [see Contract.h]: a key pushed is not smaller than the
  * last one extracted or read by top() and topKey() (any key before the
  * first of them and after clear()), and top(), topKey(), peekKey() and
- * pop() need a
- * queue that is not empty; the invariant, checked on queues of at most 1024
+ * pop() need a queue that is not empty; the invariant, checked on queues of at most 1024
  * items, is that each item is in its bucket and that the mask and the
  * least keys of the buckets are right. The operations are defined in
  * RadixHeap.tpp.
@@ -130,6 +129,15 @@ class RadixHeap {
  /// \pre the queue is not empty
  T pop( void );
 
+ /// removes the items of keys below limit, calling f( item , key ) for
+ /// each of them in no given order, which count as extracted: the buckets
+ /// whose keys are all below limit are emptied whole, with no move, and
+ /// the first one that holds a key not below it is moved to the rows below
+ /// for its least key, as by pop(), until the limit falls between two
+ /// buckets or within one of the row 0
+ template< class F >
+ void extractBelow( K limit , F && f );
+
  [[nodiscard]] bool empty( void ) const { return( f_size == 0 ); }
 
  [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
@@ -182,6 +190,14 @@ class RadixHeap {
   if( e.key < f_min[ i ] ) f_min[ i ] = e.key;
   f_mask[ i >> 6 ] |= std::uint64_t( 1 ) << ( i & 63 );
   f_B[ i ].push_back( std::move( e ) );
+  }
+
+ /// the largest key that the bucket i may hold for the last key extracted
+ U ceiling( unsigned i ) const {
+  const unsigned r = i / R , sh = ( r + 1 ) * B;
+  const U high = sh >= W ? U( 0 ) : U( ( f_last >> sh ) << sh );
+  const U low = r * B >= W ? ~U( 0 ) : U( ( U( 1 ) << ( r * B ) ) - 1 );
+  return( U( high | ( U( i % R ) << ( r * B ) ) | low ) );
   }
 
  /// the first bucket that is not empty

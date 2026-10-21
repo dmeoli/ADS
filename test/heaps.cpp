@@ -204,7 +204,8 @@ void radix( unsigned seed , std::uint64_t C , int steps )
 // (all equal), 1, 1000 and the whole type; the edge cases: an empty heap
 // violates the contracts, a key below the last extracted as well, equal
 // keys come out last pushed first, the extremes of the types, clear()
-// lets any key in again, and items with a destructor
+// lets any key in again, items with a destructor, and extractBelow() of
+// nothing, of whole buckets and of a part of a bucket
 ADS_TEST( "radix-heap" )
 {
  RadixHeap< int > E;
@@ -243,6 +244,34 @@ ADS_TEST( "radix-heap" )
   N.push( std::string( 40 , char( 'a' + i % 26 ) ) , unsigned( i % 7 ) );
  CHECK( N.pop().size() == 40 && N.size() == 99 );
 
+ for( unsigned limit : { 0u , 1u , 37u , 500u , 4096u , 100000u } ) {
+  RadixHeap< int , unsigned > Q;             // extractBelow() against a
+  std::multiset< unsigned > R;               // multiset, after some pops
+  std::mt19937 g( limit + 1 );
+  for( int i = 0 ; i < 3000 ; ++i ) {
+   const unsigned k = unsigned( g() % 5000 );
+   Q.push( i , k );
+   R.insert( k );
+   }
+  for( int i = 0 ; i < 10 ; ++i ) {
+   CHECK( Q.topKey() == *R.begin() );
+   Q.pop();
+   R.erase( R.begin() );
+   }
+  std::multiset< unsigned > out;
+  Q.extractBelow( *R.begin() + limit , [ & ]( int , unsigned k ) {
+   out.insert( k ); } );
+  std::multiset< unsigned > want( R.begin() ,
+                                  R.lower_bound( *R.begin() + limit ) );
+  CHECK( out == want && Q.size() == R.size() - want.size() );
+  R.erase( R.begin() , R.lower_bound( *R.begin() + limit ) );
+  while( ! R.empty() ) {
+   CHECK( Q.topKey() == *R.begin() );
+   Q.pop();
+   R.erase( R.begin() );
+   }
+  CHECK( Q.empty() );
+  }
  radix< std::uint32_t , 1 >( 1 , 1000 , 4000 );
  radix< std::uint32_t , 4 >( 2 , 0 , 2000 );
  radix< std::uint32_t , 4 >( 3 , 1 , 4000 );
