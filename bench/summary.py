@@ -478,6 +478,109 @@ PAIRS = [
      ['sdsl::csa_wt<wt_huff>']),
 ]
 
+# the parallel algorithms [see bench/parallel.cpp], on the pool of ADS
+# against the parallel libraries and against the same algorithm on the
+# other executors; a benchmark "parallel <algorithm> t<threads>" is a
+# group of its own for each number of threads
+PARALLEL = [
+    ('sort uint64', 'ADS::sort', [
+        ('oneTBB', ['tbb::parallel_sort']),
+        ('std::execution', ['std::sort(par)']),
+        ('GNU parallel', ['__gnu_parallel::sort']),
+        ('IPS4o', ['ips4o::parallel::sort', 'ips2ra::parallel::sort']),
+        ('ParlayLib', ['parlay::sort_inplace',
+                       'parlay::integer_sort_inplace'])]),
+    ('sort double', 'ADS::sort', [
+        ('oneTBB', ['tbb::parallel_sort']),
+        ('std::execution', ['std::sort(par)']),
+        ('GNU parallel', ['__gnu_parallel::sort']),
+        ('IPS4o', ['ips4o::parallel::sort']),
+        ('ParlayLib', ['parlay::sort_inplace'])]),
+    ('sort string', 'ADS::sort', [
+        ('oneTBB', ['tbb::parallel_sort']),
+        ('std::execution', ['std::sort(par)']),
+        ('GNU parallel', ['__gnu_parallel::sort']),
+        ('IPS4o', ['ips4o::parallel::sort']),
+        ('ParlayLib', ['parlay::sort_inplace'])]),
+    ('stableSort uint64', 'ADS::stableSort', [
+        ('std::execution', ['std::stable_sort(par)']),
+        ('GNU parallel', ['__gnu_parallel::stable_sort']),
+        ('ParlayLib', ['parlay::stable_sort_inplace',
+                       'parlay::integer_sort_inplace'])]),
+    ('stableSort double', 'ADS::stableSort', [
+        ('std::execution', ['std::stable_sort(par)']),
+        ('GNU parallel', ['__gnu_parallel::stable_sort']),
+        ('ParlayLib', ['parlay::stable_sort_inplace'])]),
+    ('stableSort string', 'ADS::stableSort', [
+        ('std::execution', ['std::stable_sort(par)']),
+        ('GNU parallel', ['__gnu_parallel::stable_sort']),
+        ('ParlayLib', ['parlay::stable_sort_inplace'])]),
+    ('reduce', 'ADS::parallelReduce', [
+        ('oneTBB', ['tbb::parallel_reduce']),
+        ('std::execution', ['std::reduce(par)']),
+        ('OpenMP', ['omp reduction']),
+        ('ParlayLib', ['parlay::reduce']),
+        ('FastFlow', ['ff::ParallelForReduce'])]),
+    ('scan', 'ADS::parallelInclusiveScan', [
+        ('oneTBB', ['tbb::parallel_scan']),
+        ('std::execution', ['std::inclusive_scan(par)']),
+        ('OpenMP', ['omp scan']),
+        ('ParlayLib', ['parlay::scan_inclusive_inplace'])]),
+    ('map', 'ADS::parallelForBlocks', [
+        ('oneTBB', ['tbb::parallel_for']),
+        ('std::execution', ['std::for_each(par)']),
+        ('OpenMP', ['omp for']),
+        ('ParlayLib', ['parlay::parallel_for']),
+        ('FastFlow', ['ff::ParallelFor'])]),
+    ('merge', 'ADS::multiwayMerge', [
+        ('GNU parallel', ['__gnu_parallel::stable_multiway_merge']),
+        ('tlx', ['tlx::stable_parallel_multiway_merge'])]),
+    ('spmv', 'ADS::CsrMatrix', [
+        ('oneTBB', ['tbb::parallel_for rows']),
+        ('OpenMP', ['omp for rows']),
+        ('Eigen', ['Eigen::SparseMatrix']),
+        ('ParlayLib', ['parlay::parallel_for rows'])]),
+    ('spmv', 'ADS::SellMatrix', [
+        ('oneTBB', ['tbb::parallel_for rows']),
+        ('OpenMP', ['omp for rows']),
+        ('Eigen', ['Eigen::SparseMatrix']),
+        ('ParlayLib', ['parlay::parallel_for rows'])]),
+    ('gemm', 'ADS::gemm', [
+        ('OpenBLAS', ['OpenBLAS dgemm']),
+        ('Eigen', ['Eigen::Matrix'])]),
+    ('fft', 'ADS::fft', [('FFTW', ['FFTW'])]),
+    ('bfs', 'ADS::bfsDistances', [
+        ('GAPBS', ['gapbs DOBFS']),
+        ('ParlayLib', ['parlay BFS_ligra'])]),
+    ('cc', 'ADS::connectedComponents', [
+        ('GAPBS', ['gapbs Afforest', 'gapbs ShiloachVishkin'])]),
+    ('lcp', 'ADS::lcpArrayPhi', [('ParlayLib', ['parlay lcp'])]),
+    ('hash insert', 'ADS::ConcurrentCuckooTable', [
+        ('oneTBB', ['tbb::concurrent_hash_map',
+                    'tbb::concurrent_unordered_map']),
+        ('libcuckoo', ['libcuckoo::cuckoohash_map']),
+        ('ParlayLib', ['parlay::hashtable (keys only)'])]),
+    ('hash find', 'ADS::ConcurrentCuckooTable', [
+        ('oneTBB', ['tbb::concurrent_hash_map',
+                    'tbb::concurrent_unordered_map']),
+        ('libcuckoo', ['libcuckoo::cuckoohash_map']),
+        ('ParlayLib', ['parlay::hashtable (keys only)'])]),
+]
+# the executors of ADS run the same algorithm: FastFlow, OpenMP and oneTBB
+# against the pool, and the sequential algorithm (in the groups of 1
+# thread); the tables are driven by the pool only
+for b, ads, libs in PARALLEL:
+    pool = ads if b.startswith('hash') else ads + ' pool'
+    for lib, whos in libs:
+        PAIRS.append(('parallel ' + b, pool, lib, whos))
+    if b.startswith('hash'):
+        continue
+    for e in ['FastFlow', 'OpenMP', 'TBB']:
+        PAIRS.append(('parallel ' + b, pool, 'ADS on ' + e,
+                      [ads + ' ' + e]))
+    PAIRS.append(('parallel ' + b, pool, 'ADS sequential',
+                  [ads + ' (sequential)']))
+
 def read(path):
     head, cell = {}, {}
     for line in open(path):

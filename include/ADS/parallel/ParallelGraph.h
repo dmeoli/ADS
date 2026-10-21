@@ -47,8 +47,8 @@
  * transpose of g.
  * \see S. Beamer, K. Asanovic, D. Patterson, Direction-optimizing
  *      breadth-first search, International Conference for High
- *      Performance Computing, Networking, Storage and Analysis (SC),
- *      article 12, 2012, doi:10.1109/SC.2012.50
+ *      Performance Computing, Networking, Storage and Analysis (SC), 1-10,
+ *      2012, doi:10.1109/SC.2012.50
  * \see M. Sutton, T. Ben-Nun, A. Barak, Optimizing parallel graph
  *      connectivity computation via subgraph sampling, IEEE International
  *      Parallel and Distributed Processing Symposium (IPDPS), 12-21, 2018,

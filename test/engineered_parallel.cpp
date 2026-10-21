@@ -612,9 +612,10 @@ ADS_TEST( "parallel-graph" )
   } );
  }
 
-// the parallel LCP array against the sequential one: texts shorter than
+// the parallel LCP arrays against the sequential ones: texts shorter than
 // the threshold, random texts on 2 and 26 letters, a periodic text and a
-// text of one letter (the longest lcp), on bytes and on symbols
+// text of one letter (the longest lcp), on bytes and on symbols, and by
+// the permuted LCP on indices of 32 bits
 ADS_TEST( "parallel-lcp" )
 {
  std::mt19937_64 g( 19 );
@@ -636,6 +637,8 @@ ADS_TEST( "parallel-lcp" )
    CHECK( lcpArray( ex , t , SA ) == lcpArray( t , SA ) );
    const Symbols S = toSymbols( t );
    CHECK( lcpArray( ex , S , SA ) == lcpArray( S , SA ) );
+   const auto SA32 = suffixArray< std::uint32_t >( t );
+   CHECK( lcpArrayPhi( ex , t , SA32 ) == lcpArrayPhi( t , SA32 ) );
    }
   } );
  }

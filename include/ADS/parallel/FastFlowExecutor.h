@@ -25,7 +25,7 @@
  * executor (the others wait on a mutex); an exception thrown by f stops
  * the claims and is thrown again by bulk().
  * \see M. Aldinucci, M. Danelutto, P. Kilpatrick, M. Torquati, FastFlow:
- *      high-level and efficient streaming on multi-core, in S. Pllana,
+ *      high-level and efficient streaming on multicore, in S. Pllana,
  *      F. Xhafa (eds.), Programming Multi-core and Many-core Computing
  *      Systems, Wiley, 261-280, 2017, doi:10.1002/9781119332015.ch13
  * \see M. Danelutto, M. Torquati, Loop parallelism: a new skeleton

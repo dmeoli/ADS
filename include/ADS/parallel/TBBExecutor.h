@@ -14,7 +14,8 @@
  *
  * The contracts [see Contract.h]: p >= 1; an exception thrown by f is
  * thrown again by bulk(), as oneTBB does.
- * \see J. Reinders, Intel Threading Building Blocks, O'Reilly, 2007
+ * \see J. Reinders, Intel Threading Building Blocks: Outfitting C++ for
+ *      Multi-core Processor Parallelism, O'Reilly, 2007
  * \see M. Voss, R. Asenjo, J. Reinders, Pro TBB: C++ Parallel Programming
  *      with Threading Building Blocks, Apress, 2019,
  *      doi:10.1007/978-1-4842-4398-5

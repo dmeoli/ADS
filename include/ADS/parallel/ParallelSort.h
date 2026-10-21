@@ -64,7 +64,7 @@
  *      doi:10.1007/978-3-540-30140-0_69
  * \see M. Axtmann, S. Witt, D. Ferizovic, P. Sanders, Engineering in-place
  *      (shared-memory) sorting algorithms, ACM Transactions on Parallel
- *      Computing 9(1), article 2, 2022, doi:10.1145/3505286
+ *      Computing 9(1), 1-62, 2022, doi:10.1145/3505286
  * \see R. L. Graham, Bounds on multiprocessing timing anomalies, SIAM
  *      Journal on Applied Mathematics 17(2), 416-429, 1969,
  *      doi:10.1137/0117039

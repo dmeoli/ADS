@@ -22,6 +22,13 @@
  * and \f$ T[ \Phi[ i ] + h ] \f$ at random once per suffix, where the
  * algorithm of Kasai reads the rank and the suffix array at random.
  *
+ * lcpArrayPhi( ex , T , SA ) does the same on a text of bytes and a suffix
+ * array of indices of the type I (e.g., 32 bits), the result of
+ * lcpArrayPhi( T , SA ) [see SuffixSorting.h]: its scans compare the first
+ * 4 symbols one by one and then 8 at a time by a load of 8 bytes, the
+ * first different byte found by the trailing zeros of the exclusive or,
+ * and fetch the text at \f$ \Phi[ i + 16 ] \f$ ahead of its use.
+ *
  * The contracts [see Contract.h]: SA is the suffix array of T (an audit);
  * the result is the LCP array (an audit).
  * \see J. Karkkainen, G. Manzini, S. J. Puglisi, Permuted longest-common-
@@ -51,8 +58,14 @@
 #include "ADS/Contract.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/string/SuffixArray.h"
+#include "ADS/string/SuffixSorting.h"
 
+#include <algorithm>
+#include <bit>
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <memory>
 #include <string_view>
 #include <vector>
 
@@ -68,6 +81,14 @@ namespace ADS {
 template< Executor E , class S >
 [[nodiscard]] std::vector< std::size_t > lcpArray( E & ex , const S & T ,
                                        const std::vector< std::size_t > & SA );
+
+/// the LCP array of the text T of bytes and its suffix array SA, by the
+/// indices I of SA, on the threads of ex: the result of lcpArrayPhi( T ,
+/// SA ) [see SuffixSorting.h]
+/// \pre SA is a suffix array of T
+template< Executor E , class I >
+[[nodiscard]] std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
+                                            const std::vector< I > & SA );
 
 /*--------------------------------------------------------------------------*/
 
@@ -101,6 +122,69 @@ std::vector< std::size_t > lcpArray( E & ex , const S & T ,
    }
   } , 1 );
  std::vector< std::size_t > LCP( n - 1 );
+ parallelFor( ex , 0 , n - 1 , [ & ]( std::size_t r ) {
+  LCP[ r ] = P[ SA[ r + 1 ] ]; } , 4096 );
+ return( LCP );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< Executor E , class I >
+std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
+                              const std::vector< I > & SA )
+{
+ const std::size_t n = SA.size();
+ ADS_PRE( T.size() == n );
+ if( ( ex.concurrency() == 1 ) || ( n < ( std::size_t( 1 ) << 15 ) ) )
+  return( lcpArrayPhi( T , SA ) );
+ const auto * t = reinterpret_cast< const unsigned char * >( T.data() );
+ const auto P = std::make_unique_for_overwrite< I[] >( n );
+ parallelFor( ex , 0 , n , [ & ]( std::size_t r ) {
+  P[ SA[ r ] ] = r == 0 ? I( n ) : SA[ r - 1 ]; } , 4096 );
+ // the lcp of the suffixes i and Phi[ i ] from h on: 8 symbols at a time
+ // after the first 4, which are compared one by one (most lcp are short)
+ auto lcp = [ & ]( std::size_t i , std::size_t j , std::size_t h ) {
+  const std::size_t far = n - std::max( i , j ) ,
+                    near = std::min( far , h + 4 );
+  while( ( h < near ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
+  if( h == near )
+   for( ; ; ) {
+    if( h + 8 > far ) {
+     while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
+     break;
+     }
+    std::uint64_t a , b;
+    std::memcpy( &a , t + i + h , 8 );
+    std::memcpy( &b , t + j + h , 8 );
+    if( a != b ) {
+     if constexpr( std::endian::native == std::endian::little )
+      h += std::size_t( std::countr_zero( a ^ b ) ) / 8;
+     else
+      h += std::size_t( std::countl_zero( a ^ b ) ) / 8;
+     break;
+     }
+    h += 8;
+    }
+  return( h );
+  };
+ const std::size_t B = std::min( n , 4 * ex.concurrency() );
+ parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
+  const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
+  constexpr std::size_t D = 16;            // the text at Phi, ahead
+  std::size_t h = 0;
+  for( std::size_t i = i0 ; i < i1 ; ++i ) {
+#if defined( __GNUC__ )
+   if( i + D < i1 )
+    __builtin_prefetch( t + std::min< std::size_t >( std::size_t(
+                                             P[ i + D ] ) + h , n - 1 ) );
+#endif
+   const std::size_t j = std::size_t( P[ i ] );
+   h = j == n ? 0 : lcp( i , j , h );
+   P[ i ] = I( h );
+   h -= ( h != 0 );
+   }
+  } , 1 );
+ std::vector< I > LCP( n - 1 );
  parallelFor( ex , 0 , n - 1 , [ & ]( std::size_t r ) {
   LCP[ r ] = P[ SA[ r + 1 ] ]; } , 4096 );
  return( LCP );
