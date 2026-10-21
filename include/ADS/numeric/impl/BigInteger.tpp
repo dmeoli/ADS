@@ -5515,18 +5515,16 @@ inline BigInteger::Mag BigInteger::gcd22( Limb u1 , Limb u0 , Limb v1 ,
  shr( u1 , u0 , tz( u1 , u0 ) );            // u odd from here on
  while( ( u1 | v1 ) && ( v1 | v0 ) ) {
   shr( v1 , v0 , tz( v1 , v0 ) );
+  // ( u , v ) = ( min , |v - u| ) with no branch, by the mask of the
+  // borrow of v - u
   Limb c = 0;
-  if( ( v1 > u1 ) || ( ( v1 == u1 ) && ( v0 >= u0 ) ) ) {
-   v0 = detail::subBorrow( v0 , u0 , c );   // v -= u
-   v1 -= u1 + c;
-   }
-  else {                                    // ( u , v ) = ( v , u - v )
-   const Limb d0 = detail::subBorrow( u0 , v0 , c ) , d1 = u1 - v1 - c;
-   u0 = v0;
-   u1 = v1;
-   v0 = d0;
-   v1 = d1;
-   }
+  const Limb d0 = detail::subBorrow( v0 , u0 , c ) ,
+             d1 = detail::subBorrow( v1 , u1 , c ) , m = 0 - c ,
+             e = Limb( d0 != 0 );
+  u0 ^= ( u0 ^ v0 ) & m;                    // min( u , v )
+  u1 ^= ( u1 ^ v1 ) & m;
+  v0 = ( d0 ^ m ) - m;                      // |v - u|
+  v1 = ( d1 ^ m ) + ( m & ( 1 - e ) );
   }
  Limb h = u1 , l = u0;
  if( ( u1 | v1 ) == 0 ) l = gcdWord( u0 , v0 );   // v = 0 too
@@ -5541,16 +5539,21 @@ inline BigInteger::Mag BigInteger::gcd22( Limb u1 , Limb u0 , Limb v1 ,
  return( make( h , l ) );
  }
 
-inline BigInteger::Mag BigInteger::gcdMag( Mag u , Mag v )
+inline BigInteger::Mag BigInteger::gcdMag( const Mag & x , const Mag & y )
 {
- if( compareMag( u , v ) < 0 ) std::swap( u , v );
- if( v.empty() ) return( u );
- if( v.size() == 1 ) return( Mag{ gcdLimb( u.data() , u.size() , v[ 0 ] ) } );
- if( u.size() > v.size() ) {                // u = u mod v first
-  Mag r = divModMag( u , v ).second;
+ const bool sw = compareMag( x , y ) < 0;
+ const Mag & u0 = sw ? y : x , & v = sw ? x : y;
+ if( v.empty() ) return( u0 );
+ if( v.size() == 1 )
+  return( Mag{ gcdLimb( u0.data() , u0.size() , v[ 0 ] ) } );
+ if( ( u0.size() <= 2 ) )                   // both of two digits
+  return( gcd22( u0[ 1 ] , u0[ 0 ] , v[ 1 ] , v[ 0 ] ) );
+ Mag r;                                     // u = u mod v first
+ if( u0.size() > v.size() ) {
+  r = divModMag( u0 , v ).second;
   if( r.empty() ) return( v );
-  u = std::move( r );
   }
+ const Mag & u = u0.size() > v.size() ? r : u0;
  std::size_t n = v.size();
  Mag A( n + 1 , 0 ) , B( n + 1 , 0 );
  std::copy( u.begin() , u.end() , A.data() );
