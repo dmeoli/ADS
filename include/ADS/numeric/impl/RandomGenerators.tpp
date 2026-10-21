@@ -150,6 +150,188 @@ double uniformReal( G && g )
 
 namespace detail {
 
+/// the multipliers and the Weyl constants of Philox for words of W bits
+template< class W >
+struct PhiloxConstants;
+
+template<>
+struct PhiloxConstants< std::uint32_t > {
+ static constexpr std::uint32_t m0 = 0xD2511F53u , m1 = 0xCD9E8D57u ,
+                                w0 = 0x9E3779B9u , w1 = 0xBB67AE85u;
+ };
+
+template<>
+struct PhiloxConstants< std::uint64_t > {
+ static constexpr std::uint64_t m0 = 0xD2E7470EE14C6C93ull ,
+                                m1 = 0xCA5A826395121157ull ,
+                                w0 = 0x9E3779B97F4A7C15ull ,
+                                w1 = 0xBB67AE8584CAA73Bull;
+ };
+
+/// the high and the low word of a b, words of W bits
+template< class W >
+constexpr W mulHiLo( W a , W b , W & lo )
+{
+ if constexpr( std::same_as< W , std::uint32_t > ) {
+  const std::uint64_t p = std::uint64_t( a ) * b;
+  lo = std::uint32_t( p );
+  return( std::uint32_t( p >> 32 ) );
+  }
+ else {
+  W hi;
+  lo = mul128( a , b , hi );
+  return( hi );
+  }
+ }
+
+}  // end( namespace detail )
+
+template< class W >
+constexpr PhiloxT< W >::PhiloxT( W seed ) : f_key{ seed , 0 } {}
+
+template< class W >
+constexpr typename PhiloxT< W >::Block PhiloxT< W >::block( Block c , Key k )
+{
+ using C = detail::PhiloxConstants< W >;
+ for( int r = 0 ; r < 10 ; ++r ) {
+  if( r ) {
+   k[ 0 ] += C::w0;
+   k[ 1 ] += C::w1;
+   }
+  W lo0 , lo1;
+  const W hi0 = detail::mulHiLo< W >( C::m0 , c[ 0 ] , lo0 ) ,
+          hi1 = detail::mulHiLo< W >( C::m1 , c[ 2 ] , lo1 );
+  c = Block{ W( hi1 ^ c[ 1 ] ^ k[ 0 ] ) , lo1 , W( hi0 ^ c[ 3 ] ^ k[ 1 ] ) ,
+             lo0 };
+  }
+ return( c );
+ }
+
+template< class W >
+constexpr void PhiloxT< W >::refill( void )
+{
+ using C = detail::PhiloxConstants< W >;
+ W x[ lanes ][ 4 ];                         // the lanes blocks, the rounds
+ for( unsigned l = 0 ; l < lanes ; ++l ) {  // interleaved so that their
+  for( int j = 0 ; j < 4 ; ++j ) x[ l ][ j ] = f_ctr[ j ];   // products
+  for( int j = 0 ; j < 4 && ++f_ctr[ j ] == 0 ; ++j ) {}     // overlap
+  }
+ Key k = f_key;
+#if defined( __GNUC__ )
+ #pragma GCC unroll 10
+#endif
+ for( int r = 0 ; r < 10 ; ++r ) {
+  if( r ) {
+   k[ 0 ] += C::w0;
+   k[ 1 ] += C::w1;
+   }
+  for( unsigned l = 0 ; l < lanes ; ++l ) {
+   W lo0 , lo1;
+   const W hi0 = detail::mulHiLo< W >( C::m0 , x[ l ][ 0 ] , lo0 ) ,
+           hi1 = detail::mulHiLo< W >( C::m1 , x[ l ][ 2 ] , lo1 );
+   const W y0 = hi1 ^ x[ l ][ 1 ] ^ k[ 0 ] , y2 = hi0 ^ x[ l ][ 3 ] ^ k[ 1 ];
+   x[ l ][ 0 ] = y0;
+   x[ l ][ 1 ] = lo1;
+   x[ l ][ 2 ] = y2;
+   x[ l ][ 3 ] = lo0;
+   }
+  }
+ for( unsigned l = 0 ; l < lanes ; ++l )
+  for( int j = 0 ; j < 4 ; ++j ) f_buf[ 4 * l + unsigned( j ) ] = x[ l ][ j ];
+ f_at = 0;
+ }
+
+template< class W >
+constexpr W PhiloxT< W >::operator()( void )
+{
+ if( f_at == 4 * lanes ) [[unlikely]]
+  refill();
+ return( f_buf[ f_at++ ] );
+ }
+
+template< class W >
+constexpr void PhiloxT< W >::setCounter( const Block & c )
+{
+ f_ctr = c;
+ f_at = 4 * lanes;
+ }
+
+template< class W >
+constexpr void PhiloxT< W >::discard( unsigned long long z )
+{
+ const unsigned long long left = 4 * lanes - f_at;   // in the buffer
+ if( z <= left ) {
+  f_at += unsigned( z );
+  return;
+  }
+ z -= left;                                 // the counter of the block of
+ Block c = f_ctr;                           // the next output, z / 4
+ unsigned long long add = z / 4;            // blocks on
+ for( int j = 0 ; ( j < 4 ) && add ; ++j ) {
+  const W old = c[ j ];
+  c[ j ] = W( old + W( add ) );
+  add = ( sizeof( W ) == 8 ? 0 : ( add >> 32 ) ) + ( c[ j ] < old );
+  }
+ setCounter( c );
+ for( unsigned i = 0 ; i < unsigned( z % 4 ) ; ++i ) (void) ( *this )();
+ }
+
+}  // end( namespace ADS )
+
+#include "ADS/numeric/impl/ZigguratTables.tpp"
+
+namespace ADS {
+
+template< FullWordGenerator G >
+ADS_RNG_INLINE double normalZiggurat( G && g )
+{
+ using Z = detail::NormalZiggurat;
+ for( ; ; ) {
+  // the layer from the low 8 bits, a uniform of [ -1 , 1 ) from the top
+  // 53, and the point inside the next layer in 98.8% of the draws
+  const std::uint64_t u = g();
+  const unsigned i = unsigned( u & 255 );
+  const double f = double( std::int64_t( u ) >> 11 ) * 0x1.0p-52 ,
+               x = f * Z::x[ i ];
+  if( std::fabs( f ) < Z::k[ i ] ) [[likely]]
+   return( x );
+  if( i == 0 ) {                            // the tail beyond r, by the
+   const double r = Z::x[ 1 ];              // exponentials of Marsaglia
+   double a , b;
+   do {
+    a = -std::log1p( -uniformReal( g ) ) / r;
+    b = -std::log1p( -uniformReal( g ) );
+    } while( 2 * b < a * a );
+   return( f < 0 ? -( r + a ) : r + a );
+   }
+  // the wedge between the layers: a uniform height against the density
+  if( Z::y[ i + 1 ] + ( Z::y[ i ] - Z::y[ i + 1 ] ) * uniformReal( g ) <
+      std::exp( -x * x / 2 ) )
+   return( x );
+  }
+ }
+
+template< FullWordGenerator G >
+ADS_RNG_INLINE double exponentialZiggurat( G && g )
+{
+ using Z = detail::ExponentialZiggurat;
+ double base = 0;                           // the tails passed over
+ for( ; ; ) {
+  const std::uint64_t u = g();
+  const unsigned i = unsigned( u & 255 );
+  const double f = double( u >> 11 ) * 0x1.0p-53 , x = f * Z::x[ i ];
+  if( f < Z::k[ i ] ) [[likely]]
+   return( base + x );
+  if( i == 0 )                              // beyond r, again from r: the
+   base += Z::x[ 1 ];                       // density has no memory
+  else if( Z::y[ i + 1 ] + ( Z::y[ i ] - Z::y[ i + 1 ] ) *
+           uniformReal( g ) < std::exp( -x ) )
+   return( base + x );
+  }
+ }
+
+namespace detail {
+
 /// the indices of the k steps of the shuffle of bounds n , n - 1 , ... ,
 /// n - k + 1, whose product is p <= 2^64 (0 for 2^64), swapped at once
 template< int k , class I , class G >

@@ -25,8 +25,15 @@
  *   ADS::factorize;
  * - "generators", the sum of n words: std::mt19937_64, std::minstd_rand,
  *   boost::random::mt19937_64 and taus88, pcg64 and pcg32 of O'Neill
- *   (ADS_HAS_PCG), and the generators of ADS (xoshiro256++, xoshiro256**,
- *   wyrand);
+ *   (ADS_HAS_PCG), Philox4x32-10 and Philox4x64-10 of Random123
+ *   (ADS_HAS_RANDOM123, r123::Engine), and the generators of ADS
+ *   (xoshiro256++, xoshiro256**, wyrand, Philox4x32 and Philox4x64), the
+ *   words of 32 bits counted as words;
+ * - "normal" and "exponential", the sum of n deviates of N( 0 , 1 ) and of
+ *   mean 1 on the same generator (xoshiro256++): std::normal_distribution
+ *   (the polar method of Marsaglia) and std::exponential_distribution (a
+ *   logarithm), the ziggurats of boost::random, ADS::normalZiggurat and
+ *   ADS::exponentialZiggurat;
  * - "bounded", n integers uniform in [ 0 , s ), s random below 2^32:
  *   std::uniform_int_distribution and boost::random's on the same
  *   generator (xoshiro256++), and ADS::uniformBelow;
@@ -79,6 +86,8 @@
  #include <boost/random/taus88.hpp>
  #include <boost/random/discrete_distribution.hpp>
  #include <boost/random/uniform_int_distribution.hpp>
+ #include <boost/random/normal_distribution.hpp>
+ #include <boost/random/exponential_distribution.hpp>
  #define ADS_HAS_BOOST 1
 #endif
 
@@ -93,6 +102,10 @@
  #include "hurchalla/montgomery_arithmetic/MontgomeryForm.h"
 #endif
 
+#ifdef ADS_HAS_RANDOM123
+ #include <Random123/philox.h>
+ #include <Random123/conventional/Engine.hpp>
+#endif
 #ifdef ADS_HAS_PCG
  #include "pcg_random.hpp"
 #endif
@@ -325,6 +338,18 @@ void generators( std::size_t n , unsigned seed , int r )
         return( ADS::Xoshiro256StarStar( seed ) ); } );
  words( "ADS::WyRand" , n , r , [ & ](){ return( ADS::WyRand( seed ) ); } );
 #endif
+#ifdef ADS_HAS_RANDOM123
+ words( "r123 Philox4x32" , n , r , [ & ](){
+        return( r123::Engine< r123::Philox4x32 >( seed ) ); } );
+ words( "r123 Philox4x64" , n , r , [ & ](){
+        return( r123::Engine< r123::Philox4x64 >( seed ) ); } );
+#endif
+#ifndef ADS_BENCH_OLD
+ words( "ADS::Philox4x32" , n , r , [ & ](){
+        return( ADS::Philox4x32( seed ) ); } );
+ words( "ADS::Philox4x64" , n , r , [ & ](){
+        return( ADS::Philox4x64( seed ) ); } );
+#endif
 
  std::mt19937_64 h( seed );                 // the bounds below 2^32
  std::vector< U64 > S( 1024 );
@@ -370,6 +395,46 @@ void generators( std::size_t n , unsigned seed , int r )
 #ifndef ADS_BENCH_OLD
  shuffle( "ADS::shuffleFast" , []( auto & B , Gen & G ) {
   ADS::shuffleFast( B.begin() , B.end() , G ); } );
+#endif
+ }
+
+/// the sums of n normal and n exponential deviates
+void deviates( std::size_t n , unsigned seed , int r )
+{
+ auto cellOf = [ & ]( const char * what , const std::string & who ,
+                      auto && draw ) {
+  print( what , "sum" , n , who , median( [ & ](){
+          return( Gen( seed ) ); } , [ & ]( Gen & G ) {
+           double s = 0;
+           for( std::size_t i = 0 ; i < n ; ++i ) s += draw( G );
+           sink = sink + U64( s ); } , r , n ) );
+  };
+ for( const char * who : { "std::normal_distribution" ,
+                           "std::normal_distribution A/A" } )
+  cellOf( "normal" , who , [ D = std::normal_distribution< double >() ](
+                            Gen & G ) mutable { return( D( G ) ); } );
+#ifdef ADS_HAS_BOOST
+ cellOf( "normal" , "boost::random::normal_distribution" ,
+         [ D = boost::random::normal_distribution< double >() ](
+          Gen & G ) mutable { return( D( G ) ); } );
+#endif
+#ifndef ADS_BENCH_OLD
+ cellOf( "normal" , "ADS::normalZiggurat" , []( Gen & G ) {
+  return( ADS::normalZiggurat( G ) ); } );
+#endif
+ for( const char * who : { "std::exponential_distribution" ,
+                           "std::exponential_distribution A/A" } )
+  cellOf( "exponential" , who ,
+          [ D = std::exponential_distribution< double >() ](
+           Gen & G ) mutable { return( D( G ) ); } );
+#ifdef ADS_HAS_BOOST
+ cellOf( "exponential" , "boost::random::exponential_distribution" ,
+         [ D = boost::random::exponential_distribution< double >() ](
+          Gen & G ) mutable { return( D( G ) ); } );
+#endif
+#ifndef ADS_BENCH_OLD
+ cellOf( "exponential" , "ADS::exponentialZiggurat" , []( Gen & G ) {
+  return( ADS::exponentialZiggurat( G ) ); } );
 #endif
  }
 
@@ -450,6 +515,7 @@ int main( int argc , char ** argv )
   primality( n / 10 , o.seed , o.runs );
   factorizations( n / 100 , o.seed , o.runs );
   generators( n , o.seed , o.runs );
+  deviates( n , o.seed , o.runs );
   discrete( n , o.seed , o.runs );
   sampling( 10 * n , o.seed , o.runs );
   }

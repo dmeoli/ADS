@@ -210,6 +210,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SatSolvers.h cites Davis and Putnam, the restarts of Luby, Sinclair and
   Zuckerman and the phase saving of Pipatsrisawat and Darwiche
 
+- Philox4x32 and Philox4x64, the counter-based generators Philox4xW-10
+  with the sequence of std::philox4x32 and std::philox4x64 of C++26, two
+  blocks at once, discard() in O( 1 ); normalZiggurat() and
+  exponentialZiggurat(), the ziggurats of Marsaglia and Tsang with 256
+  layers, their tables computed in 60 digits (ZigguratTables.tpp); the
+  tests philox and ziggurat and the cells normal and exponential of
+  bench-numeric, Random123 (ADS_HAS_RANDOM123) among the generators
 - MPMCQueue, the bounded queue of many producers and many consumers of
   Vyukov (a sequence number in each place, one compare-and-swap an
   operation); the test mpmc-queue and the cells mpmc of bench-concurrent
