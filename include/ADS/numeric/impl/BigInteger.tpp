@@ -3751,7 +3751,8 @@ inline void BigInteger::mulNTT( Limb * r , const Limb * a , std::size_t na ,
  std::size_t t = 0 , nf = nf0;
  double best = cost( nf0 );
  const bool sq = ( a == b ) && ( na == nb );   // no rows, one transform
- for( std::size_t k = 4 ; k < ( sq ? 4 : 23 ) ; ++k )    // the lengths 2^k and 3 2^{k-1}
+ // the lengths 2^k and 3 2^{k-1}
+ for( std::size_t k = 4 ; k < ( sq ? 4 : 23 ) ; ++k )
   for( std::size_t m : { std::size_t( 1 ) << k ,
                          std::size_t( 3 ) << ( k - 1 ) } )
    if( ( m < nf0 ) && ( m + na / 8 >= L ) && ( m + 1 <= L ) ) {
