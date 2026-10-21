@@ -11,15 +11,23 @@
  *
  * A first pass, a parallel reduction by blocks, finds whether A is
  * already sorted (then nothing moves) or in decreasing order (strictly,
- * for the stable sort: then a parallel reversal), and, for numbers in
- * their natural order, the least and the greatest of the keys of
- * radixKey() [see RadixSort.h], -0 taken as +0. Then the items are
- * distributed into k buckets whose concatenation is sorted, by one of two
- * classifiers:
- * - numbers in their natural order: the bucket of x is
- *   \f$ ( key( x ) - key_{min} ) \gg s \f$, with s the least shift that
- *   leaves at most 256 buckets, i.e., the 8 highest bits in which the keys
- *   differ, as the parallel radix sort of IPS2Ra does;
+ * for the stable sort: then a parallel reversal); a block stops at the
+ * first pair out of both orders, so that on most inputs the pass reads
+ * little. Then the items are distributed into k buckets whose
+ * concatenation is sorted, by one of two classifiers:
+ * - numbers in their natural order: with \f$ \ell \f$ and u the least and
+ *   the greatest of the keys of radixKey() [see RadixSort.h] (-0 taken as
+ *   +0) in a sample of 1024 items, the bucket of x is
+ *   \f[
+ *     \min\bigl( \max( key( x ) - \ell , 0 ) \gg s , ( u - \ell ) \gg s
+ *     \bigr) ,
+ *   \f]
+ *   with s the least shift that leaves at most 256 buckets, i.e., the 8
+ *   highest bits in which the keys of the sample differ (the parallel
+ *   radix sort of IPS2Ra takes them from the least and the greatest of all
+ *   the keys, a pass more over the input); the keys out of the sample's
+ *   range go to the two buckets at the ends, which the sort of the
+ *   buckets takes care of;
  * - any other item: k - 1 splitters taken from a sorted random sample of
  *   16 k items (oversampling, so that the buckets are within a small
  *   factor of n / k with high probability), placed in an implicit binary
