@@ -400,8 +400,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shuffles on the halves of the bytes of their first places (AVX-512,
   AVX2), as many places as bring the probability of a place to pass below
   2^-10; more patterns by the shift-or filter of FDR on super characters
-  of 11 bits, a block of 8 places in one register of 16 bytes, with a
-  table of the prefixes for the checks; one pattern by StringSearcher; the
+  of 11 bits, a block of 8 places in one register of 16 bytes, of stride
+  2 on patterns of 8 bytes or more when selective enough, with a table of
+  the prefixes for the checks; one pattern by StringSearcher; the
   automaton of Aho and Corasick from the place where a filter lets too
   much through; AhoCorasick::forEach(); test
   engineered_strings.multi-search
