@@ -525,8 +525,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   times faster in the hold model of bench/priority.cpp
 - sort() and stableSort() of the integers and the floating point numbers
   of 32 and 64 bits, when the vector registers are there, go to
-  vectorQuickSort() instead of the radix sort and of pdqSort(), and to the
-  merges of powerSort() only up to 8 runs for the keys of 32 bits;
+  vectorQuickSort() instead of the radix sort and of pdqSort() (but the
+  integers of 64 bits whose sample differs in one byte, which go to the
+  counting sort of radixSort()), and to the merges of powerSort() only up
+  to 8 runs for the keys of 32 bits;
   stableSort() goes the same way on the integers, and on the floating
   point numbers when no -0 is there
 - sort() of the items with an order of their own goes to sampleSort():

@@ -15,9 +15,11 @@
  *   with no branch inside blocks of 32 items, which vectorize), or at most
  *   8 for the keys of 32 bits, goes to the merges of powerSort() [see
  *   RunSorts.h] on those runs, with no second search for them,
- *   \f$ O( n \log r ) \f$ for r runs, O( n ) if sorted or reversed; any
- *   other goes to vectorQuickSort(), \f$ O( n \log n ) \f$ and
- *   \f$ O( n \log k ) \f$ for k distinct keys, W keys per instruction.
+ *   \f$ O( n \log r ) \f$ for r runs, O( n ) if sorted or reversed; one
+ *   of integers of 64 bits whose sample of 64 keys differs in one byte
+ *   goes to the counting sort of radixSort(), and any other to
+ *   vectorQuickSort(), \f$ O( n \log n ) \f$ and \f$ O( n \log k ) \f$ for
+ *   k distinct keys, W keys per instruction.
  *   stableSort() does the same, since two equal numbers cannot be told
  *   apart, but a vector of floating point numbers that holds a -0, which
  *   std::less finds equal to +0, and has more than 8 or kRuns runs goes

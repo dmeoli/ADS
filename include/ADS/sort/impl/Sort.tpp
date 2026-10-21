@@ -312,10 +312,11 @@ void pingPongSort( std::vector< T > & A , C & less )
 /// sort() of the numbers of 32 or 64 bits when the vector registers are
 /// there, and stableSort() of them if stable: a vector of one run left as
 /// it is or reversed, one of at most kVectorRuns< T > runs by the merges of
-/// powerSort(), the others by vectorQuickSort(); for stableSort() of the
-/// floating point numbers with a -0, whose order to +0 vectorQuickSort()
-/// does not keep, powerSort() below kRadix items and the radix sort with
-/// -0 and +0 as one key from there
+/// powerSort(), the integers of 64 bits whose sample differs in one byte
+/// by the counting sort of radixSort(), the others by vectorQuickSort();
+/// for stableSort() of the floating point numbers with a -0, whose order
+/// to +0 vectorQuickSort() does not keep, powerSort() below kRadix items
+/// and the radix sort with -0 and +0 as one key from there
 template< class T , class C >
 void vectorNumbers( std::vector< T > & A , C & less , bool stable )
 {
@@ -334,6 +335,9 @@ void vectorNumbers( std::vector< T > & A , C & less , bool stable )
   oneRun( A , less );
  else if( r <= kVectorRuns< T > )
   powerSortRuns( A , less , E.data() , r );
+ else if( sizeof( T ) == 8 && std::is_integral_v< T > &&
+          ( sampleKeys( A ).second <= 1 ) )
+  radixSort( A );                           // one byte: a counting sort
  else if( ! zeros() )
   vectorQuickSort( A );
  else if constexpr( std::is_floating_point_v< T > )   // -0 and +0 equal
