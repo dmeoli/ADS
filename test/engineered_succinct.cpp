@@ -21,6 +21,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/compression/BinaryPacking.h"
 #include "ADS/compression/DirectAccessCodes.h"
 #include "ADS/compression/Entropy.h"
 #include "ADS/compression/HuffmanCoder.h"
@@ -368,6 +369,62 @@ ADS_TEST( "partitioned-elias-fano" )
           EliasFano( mix ).sizeInBits() / 2 );
   }
  CHECK( seen[ 0 ] > 0 && seen[ 1 ] > 0 && seen[ 2 ] > 0 );
+ }
+
+// the binary packing against the integers: the round trip of sequences of
+// many sizes around the blocks of 128 and the groups of 16 blocks, with
+// widths from 0 to 32 bits, of random and of sorted sequences (up to near
+// 2^32); the size, 16 bytes per group and 16 b bytes per block of width b;
+// the patched code (PFor) on the same sequences, and on blocks with a few
+// large integers, where it takes less than a third; the empty sequence;
+// the codes cut short
+ADS_TEST( "binary-packing" )
+{
+ std::mt19937_64 g( 29 );
+ for( const std::size_t n : { 0 , 1 , 4 , 127 , 128 , 129 , 2047 , 2048 ,
+                              2049 , 5000 } )
+  for( int t = 0 ; t < 6 ; ++t ) {
+   std::vector< std::uint32_t > x( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const int b = t == 5 ? int( ( i / 128 ) % 33 ) : t * 6 + 2;
+    x[ i ] = b == 0 ? 0
+                    : std::uint32_t( g() ) >> ( 32 - std::min( b , 32 ) );
+    }
+   const auto c = binaryPack( x );
+   std::size_t bytes = 16 * ( ( n + 2047 ) / 2048 );
+   for( std::size_t k = 0 ; 128 * k < n ; ++k ) {
+    std::uint32_t o = 0;
+    for( std::size_t i = 128 * k ; i < std::min( n , 128 * k + 128 ) ; ++i )
+     o |= x[ i ];
+    bytes += 16 * std::size_t( std::bit_width( o ) );
+    }
+   CHECK( c.size() == bytes && binaryUnpack( c , n ) == x );
+   CHECK( patchedUnpack( patchedPack( x ) , n ) == x );
+   CHECK( patchedPack( x ).size() <= bytes + 2 * ( ( n + 127 ) / 128 ) + 8 );
+   std::sort( x.begin() , x.end() );
+   CHECK( binaryUnpack( binaryPack( x , true ) , n , true ) == x );
+   CHECK( patchedUnpack( patchedPack( x , true ) , n , true ) == x );
+   }
+ // a few large integers in each block: the patched code writes them apart
+ std::vector< std::uint32_t > out( 5000 );
+ for( std::size_t i = 0 ; i < out.size() ; ++i )
+  out[ i ] = i % 50 == 7 ? std::uint32_t( g() ) : std::uint32_t( g() % 16 );
+ const auto pc = patchedPack( out );
+ CHECK( patchedUnpack( pc , out.size() ) == out &&
+        pc.size() < binaryPack( out ).size() / 3 );
+ auto pt = pc;
+ pt.pop_back();
+ CHECK_THROWS( ( void )patchedUnpack( pt , out.size() ) ,
+               contract_violation );
+ std::vector< std::uint32_t > big( 3000 );
+ for( std::size_t i = 0 ; i < big.size() ; ++i )
+  big[ i ] = 0xFFFFF000u + std::uint32_t( i );
+ CHECK( binaryUnpack( binaryPack( big , true ) , big.size() , true ) == big );
+ CHECK( binaryPack( big , true ).size() < binaryPack( big ).size() / 4 );
+ std::vector< std::uint32_t > y( 300 , 77 );
+ auto c = binaryPack( y );
+ c.pop_back();
+ CHECK_THROWS( ( void )binaryUnpack( c , y.size() ) , contract_violation );
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank

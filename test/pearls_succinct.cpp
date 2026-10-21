@@ -816,6 +816,19 @@ ADS_TEST( "elias-fano" )
    CHECK( E.contains( x ) == std::binary_search( A.begin() , A.end() , x ) );
    }
   }
+ // clusters: buckets of tens of items with low bits, searched past the
+ // first 8 items by a binary search
+ std::vector< std::uint64_t > K;
+ for( std::uint64_t x = 0 ; K.size() < 3000 ; )
+  K.push_back( x += g() % 64 == 0 ? 1 + g() % 9000 : 1 + g() % 3 );
+ const EliasFano EK( K );
+ CHECK( EK.lowWidth() > 0 );
+ bool okK = true;
+ for( std::uint64_t x = 0 ; okK && ( x <= K.back() + 1 ) ; ++x )
+  okK = EK.nextGEQ( x ) == std::size_t( std::lower_bound( K.begin() ,
+                                                          K.end() , x ) -
+                                        K.begin() );
+ CHECK( okK );
  const EliasFano Z;
  CHECK( Z.empty() && Z.nextGEQ( 5 ) == 0 );
  const EliasFano W( { 0 , ~std::uint64_t( 0 ) - 1 } );
