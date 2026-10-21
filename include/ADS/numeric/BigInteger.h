@@ -172,16 +172,34 @@
  *   digits that the chunks left need, and the 19 figures of a chunk come
  *   by pairs from a table.
  * - pow() is the binary method of 4.6.3, from left to right, squares and
- *   products by x. gcd() is the algorithm of Lehmer (4.5.2L): the leading
- *   62 bits of the two numbers run the algorithm of Euclid in single
- *   precision while the two bounds of each quotient agree and the
- *   cofactors stay below \f$ 2^{30} \f$, and then one pass of the two
- *   linear combinations replaces many long divisions, down to one digit,
- *   where the binary algorithm ends, with no branch but its loop; the
- *   number of one digit d = 2^t e, e odd, meets the long one by the
- *   folded remainder by e, or below kHensel digits by Hensel's division,
- *   whose \f$ a b^{-n} \f$ modulo e has the same gcd with e; gcdEuclid()
- *   is the algorithm of Euclid.
+ *   products by x. gcd() is the algorithm of Lehmer (4.5.2L) on two
+ *   digits: the leading 128 bits \f$ ( a_t , b_t ) \f$ of the two numbers
+ *   run the algorithm of Euclid while the remainders keep more than 65
+ *   bits, so that by the lemma of Moeller its quotients are those of the
+ *   numbers, \f$ ( a ; b ) = M ( \alpha ; \beta ) \f$ with \f$ \det M = 1
+ *   \f$ and entries below \f$ 2^{62} \f$, and one pass makes
+ *   \f$ ( \alpha ; \beta ) = ( u_{11} a - u_{01} b ; u_{00} b - u_{10} a )
+ *   \f$, about 64 bits off both numbers; the pass has no subtraction, as
+ *   \f$ -b = \overline{b} + 1 - b^n \f$ makes \f$ \alpha \equiv u_{11} a
+ *   + u_{01} \overline{b} + u_{01} \f$ modulo \f$ b^n \f$, the two
+ *   products of a digit summed below \f$ 2^{128} \f$. The steps run first
+ *   on the leading digits alone down to remainders of \f$ 2^{33} \f$, then
+ *   their matrix of entries below \f$ 2^{31} \f$ reduces the 128 bits
+ *   exactly and the leading 64 bits of the result run again: all in one
+ *   digit, with the steps on each number written apart so that their
+ *   state stays in registers; two digits only when the leading digits
+ *   allow no step. From kGcdDC digits the top third goes to the half gcd
+ *   of Moeller (after Knuth and Schoenhage): hgcd() of n digits reduces
+ *   until |a - b| has \f$ s = \lfloor n / 2 \rfloor + 1 \f$ digits,
+ *   from kHgcd digits by a recursive call on the top half, its matrix
+ *   applied to the low digits, a few steps, and a second recursive call
+ *   on the top of what is left, the two matrices multiplied, \f$ O( M( n )
+ *   \log n ) \f$; a step that the leading digits cannot make (a quotient
+ *   of many digits) is a subtraction and a division. Down to two digits,
+ *   where the binary algorithm ends; the number of one digit d = 2^t e,
+ *   e odd, meets the long one by the folded remainder by e, or below
+ *   kHensel digits by Hensel's division, whose \f$ a b^{-n} \f$ modulo e
+ *   has the same gcd with e; gcdEuclid() is the algorithm of Euclid.
  * - With ADS_WITH_GMP defined (by hand, or by the option of CMake of the
  *   same name), the products, the quotients, the conversions in the bases
  *   that are not powers of 2 and the greatest common divisor go to the
@@ -262,6 +280,8 @@
  * \see D. H. Lehmer, Euclid's algorithm for large numbers, The American
  *      Mathematical Monthly 45(4), 227-233, 1938,
  *      doi:10.1080/00029890.1938.11990797
+ * \see A. Schoenhage, Schnelle Berechnung von Kettenbruchentwicklungen,
+ *      Acta Informatica 1(2), 139-144, 1971, doi:10.1007/BF00289520
  * \see N. Moeller, On Schoenhage's algorithm and subquadratic integer gcd
  *      computation, Mathematics of Computation 77(261), 589-607, 2008,
  *      doi:10.1090/S0025-5718-07-02017-0
@@ -617,6 +637,8 @@ class BigInteger {
  static constexpr std::size_t kDivBlock = 40;    ///< limbs, 4 digits a step
  static constexpr std::size_t kDivBlock6 = 64;   ///< limbs, 6 digits a step
  static constexpr std::size_t kDivExact2 = 32;   ///< limbs, exact both ways
+ static constexpr std::size_t kHgcd = 64;        ///< limbs, recursive hgcd
+ static constexpr std::size_t kGcdDC = 600;      ///< limbs, gcd by hgcd
 
  // with ADS_WITH_GMP, the lengths in digits that go to GMP, where it was
  // faster in the timings of the same benchmark: the products whose shorter
@@ -911,13 +933,61 @@ class BigInteger {
                                           Mag * keep = nullptr ,
                                           bool rem = true );
 
- /// ( u , v ) = ( A u + B v , C u + D v ) in one pass, u >= v, both
- /// results nonnegative and at most u, |A| , |B| , |C| , |D| < 2^30, A
- /// and B of opposite signs, C and D too
- static void linComb( Mag & u , Mag & v , std::int64_t A , std::int64_t B ,
-                      std::int64_t C , std::int64_t D );
+ /// the matrix of a half gcd, ( a ; b ) = M ( alpha ; beta ) with
+ /// det M = 1: its entries u00 , u01 , u10 , u11 in p[ 0 .. 3 ], n digits
+ /// each, room for alloc, for the half gcd of len digits
+ struct HMat {
+  explicit HMat( std::size_t len );
+  Mag d;
+  Limb * p[ 4 ];
+  std::size_t n , alloc;
+  };
 
- /// the greatest common divisor of the magnitudes, by Lehmer
+ /// the matrix of one digit per entry of hgcd2(), u00 , u01 , u10 , u11
+ struct HMat1 { Limb u[ 4 ]; };
+
+ /// the steps of Euclid on the leading two digits ( ah , al ) and
+ /// ( bh , bl ) of two numbers while their remainders keep more than 65
+ /// bits, in M: false if none can be taken
+ static bool hgcd2( Limb ah , Limb al , Limb bh , Limb bl , HMat1 & M );
+
+ /// ( a ; b ) = M^{-1} ( a ; b ), n digits, in place; the new length
+ static std::size_t hgcdInv1( const HMat1 & M , Limb * a , Limb * b ,
+                              std::size_t n );
+
+ /// M = M M1, M1 of one digit per entry; M = M M1; the column c of M plus
+ /// q times the other, q of qn digits
+ static void hgcdMul1( HMat & M , const HMat1 & M1 );
+ static void hgcdMul( HMat & M , const HMat & M1 );
+ static void hgcdUpdate( HMat & M , const Limb * q , std::size_t qn ,
+                         unsigned c );
+
+ /// ( a ; b ) of n digits with their top n - p already reduced by M:
+ /// their low p digits times M^{-1} added; the new length
+ static std::size_t hgcdAdjust( const HMat & M , std::size_t n , Limb * a ,
+                                Limb * b , std::size_t p );
+
+ /// one subtraction and one division of ( a ; b ), n digits each, the
+ /// larger by the smaller, none that leaves s digits or less; the new
+ /// length, 0 if none, or with s = 0 when the gcd is found, in g; the
+ /// quotients into M if given
+ static std::size_t gcdSubdiv( Limb * a , Limb * b , std::size_t n ,
+                               std::size_t s , HMat * M , Mag * g );
+
+ /// a step of hgcd(): hgcd2() on the leading digits, else gcdSubdiv()
+ static std::size_t hgcdStep( std::size_t n , Limb * a , Limb * b ,
+                              std::size_t s , HMat & M );
+
+ /// the half gcd of ( a ; b ), n digits each (Moeller): reduced in place
+ /// until |a - b| has n / 2 + 1 digits, M the matrix; the new length, 0
+ /// if no step could be taken
+ static std::size_t hgcd( Limb * a , Limb * b , std::size_t n , HMat & M );
+
+ /// the greatest common divisor of two numbers of two digits, binary
+ static Mag gcd22( Limb u1 , Limb u0 , Limb v1 , Limb v0 );
+
+ /// the greatest common divisor of the magnitudes, by Lehmer with the
+ /// leading two digits, from kGcdDC digits by the half gcd
  static Mag gcdMag( Mag u , Mag v );
 
  /// out += the figures of a in the base, at least pad of them, dividing

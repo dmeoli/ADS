@@ -965,6 +965,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the conversions with their formulas, and the references of
   Karatsuba and Ofman, Toom, Bodrato and Zanoni, Krandick and Jebelean,
   Barrett, Bouvier and Zimmermann, Lehmer; kToom3 120, kHensel 20
+- BigInteger::gcd() by Lehmer on two digits and by the half gcd of
+  Moeller from kGcdDC 600 digits (hgcd() from kHgcd 64): the steps of
+  Euclid on the leading digit alone down to 2^33, their matrix applied
+  to the leading 128 bits, and the leading 64 bits of the result again,
+  instead of two-digit arithmetic; the matrix applied to both numbers in
+  one pass of sums of products (rowsAsm(), the subtraction folded into
+  the complement); against mpz_gcd() of GMP 6.3.0 from 0.12 to 0.39 times
+  to 1.05 to 1.33 times on 4 to 1024 digits, 0.96 to 0.99 on 2048 and
+  4096
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
