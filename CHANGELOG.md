@@ -152,6 +152,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   FFTW (Makhoul for the types 2 and 3, the half-length complex transform
   for the type 4); fftMany(), fft2() and fftn(), many transforms and
   those in more dimensions; convolve() in single precision
+- convolve() on the four steps makes the products of the transforms as
+  the columns of the inverse read them, with no pass of its own; rfft()
+  and irfft() of 48 points by the complex transform of 48
 - the lanes of fft() by the intrinsics of SSE2 and AVX on the compilers
   with no vector extensions (MSVC), ADS_FFT_INTRINSICS to take them with
   GCC and Clang too, and ADS_FFT_LEAN, fewer codelets for the compilers
