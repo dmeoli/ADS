@@ -404,6 +404,15 @@ struct NoInit : std::allocator< T > {
   }
  };
 
+/// a function never inlined, the rare path of one called everywhere
+#if defined( __GNUC__ ) || defined( __clang__ )
+ #define ADS_BIGINT_NOINLINE __attribute__(( noinline ))
+#elif defined( _MSC_VER )
+ #define ADS_BIGINT_NOINLINE __declspec( noinline )
+#else
+ #define ADS_BIGINT_NOINLINE
+#endif
+
 /// the blocks of digits freed, kept per thread for the next numbers: 8 at
 /// most of each capacity \f$ 2^k \f$, \f$ 2 \le k < 12 \f$, and 2 up to
 /// \f$ k = 16 \f$, about 2 MiB in all at most, so that the
@@ -516,7 +525,18 @@ class Digits {
 
  /// room for n digits, c if it must move to the heap
  void grow( std::size_t n , std::size_t c ) {
-  if( n <= f_cap ) return;
+  if( n > f_cap ) regrow( n , c );
+  }
+ void free( void ) {
+  if( f_p != f_in ) {
+   release( f_p , f_cap );
+   f_p = f_in;
+   f_cap = kIn;
+   }
+  }
+ /// the move to a block of max( n , c ) digits, at least, out of line so
+ /// that grow() and free(), called everywhere, stay a test and a jump
+ ADS_BIGINT_NOINLINE void regrow( std::size_t n , std::size_t c ) {
   c = std::max( n , c );
   T * q;
   if( c < ( std::size_t( 1 ) << ( DigitPool::kBins - 1 ) ) ) {
@@ -533,22 +553,18 @@ class Digits {
   f_p = q;
   f_cap = c;
   }
- void free( void ) {
-  if( f_p != f_in ) {
-   DigitPool & P = digitPool;
-   const unsigned k = unsigned( std::countr_zero( f_cap ) );
-   if( std::has_single_bit( f_cap ) && ( k < DigitPool::kBins ) &&
-       ( P.cnt[ k ] < ( k < 12 ? DigitPool::kKeep : 2u ) ) && ! P.dead ) {
-    if( ! P.armed ) {                      // the reaper, once per thread
-     (void) &digitReaper;
-     P.armed = true;
-     }
-    P.bin[ k ][ P.cnt[ k ]++ ] = f_p;
+ ADS_BIGINT_NOINLINE static void release( T * p , std::size_t cap ) {
+  DigitPool & P = digitPool;
+  const unsigned k = unsigned( std::countr_zero( cap ) );
+  if( std::has_single_bit( cap ) && ( k < DigitPool::kBins ) &&
+      ( P.cnt[ k ] < ( k < 12 ? DigitPool::kKeep : 2u ) ) && ! P.dead ) {
+   if( ! P.armed ) {                        // the reaper, once per thread
+    (void) &digitReaper;
+    P.armed = true;
     }
-   else std::allocator< T >().deallocate( f_p , f_cap );
+   P.bin[ k ][ P.cnt[ k ]++ ] = p;
    }
-  f_p = f_in;
-  f_cap = kIn;
+  else std::allocator< T >().deallocate( p , cap );
   }
  void take( Digits & o ) {
   f_n = o.f_n;
