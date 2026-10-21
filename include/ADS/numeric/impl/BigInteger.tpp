@@ -2827,13 +2827,41 @@ inline void BigInteger::fracTree( Mag & f , std::size_t j , int base , int k ,
  const std::size_t z = zs[ j - 1 ] , q = w.size() + z , p = f.size() ,
                    pc = q + 2;
  const Limb one = 1;
- Mag t( p + w.size() + 4 );
  const std::size_t s = p - z - pc;          // the window [ s , p - z )
  Limb e = 1;                                // short by e at most
- if( mulBand( t.data() , f.data() , p , w.data() , w.size() , s , p - z ) )
-  e = 3;                                    // 2 for the products left out
- else mulP( t.data() , f.data() , p , w.data() , w.size() );
- Mag lo( t.data() + s , t.data() + p - z );
+ Mag lo;
+ // past kFracCyclic digits of w the product modulo b^N - 1, N >= p and
+ // N >= p + |w| - s + 2, so that its top digits W wrap onto the bottom,
+ // below the window, which the sum raises by 1 at most; but for the low
+ // N digits L of the product at least b^N - 1 - W, rare, when the
+ // residue is L + W - b^N + 1 < b^{s-1}: then the digits from s - 1 up are
+ // 0 and the product is made in full
+ bool done = false;
+#if ADS_BIGINT_FNTT
+ const std::size_t ws = w.size() ,
+                   N = detail::length( std::max( p , p + ws - s + 2 ) );
+ if( ( ws >= kFracCyclic ) && ( N < p + ws ) && ( s >= 2 ) &&
+     ( N <= ( std::size_t( 1 ) << 22 ) ) ) {
+  Mag t( N );
+  mulCyclic( t.data() , f.data() , p , w.data() , ws , N );
+  bool zero = true;
+  for( std::size_t i = s - 1 ; i < N ; ++i ) zero = zero && ( t[ i ] == 0 );
+  if( ! zero ) {
+   lo = Mag( t.data() + s , t.data() + p - z );
+   bool lz = true;                          // over by 1 at most: rounded
+   for( const Limb d : lo ) lz = lz && ( d == 0 );   // down, one less
+   if( ! up && ! lz ) subFrom( lo.data() , pc , &one , 1 );
+   done = true;
+   }
+  }
+#endif
+ if( ! done ) {
+  Mag t( p + w.size() + 4 );
+  if( mulBand( t.data() , f.data() , p , w.data() , w.size() , s , p - z ) )
+   e = 3;                                   // 2 for the products left out
+  else mulP( t.data() , f.data() , p , w.data() , w.size() );
+  lo = Mag( t.data() + s , t.data() + p - z );
+  }
  if( up ) addTo( lo.data() , pc , &e , 1 );
  const bool uph = ( lo.back() >> 63 ) == 0;
  Mag hi( f.data() + p - pc , f.data() + p );
