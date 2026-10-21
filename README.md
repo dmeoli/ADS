@@ -402,6 +402,7 @@ of Knuth.
 | sequence heap, sorted sequences merged in batches by trees of losers (Sanders) | [`priority/SequenceHeap.h`](include/ADS/priority/SequenceHeap.h) | `heaps.sequence-heap` |
 | pairing heap with decrease-key, two-pass or auxiliary two-pass (Fredman et al.; Stasko and Vitter) | [`priority/PairingHeap.h`](include/ADS/priority/PairingHeap.h) | `heaps.pairing-heap` |
 | sort of a List by relinking its cells: radix sort of ( key , cell ) or merge of the natural runs | [`sequence/ListSort.h`](include/ADS/sequence/ListSort.h) | `sequences.list-sort` |
+| tiered vector: access in O( 1 ), insertion and removal anywhere in O( sqrt n ) (Goodrich and Kloss) | [`sequence/TieredVector.h`](include/ADS/sequence/TieredVector.h) | `sequences.tiered-vector` |
 | vector with room for N items inside itself | [`sequence/SmallVector.h`](include/ADS/sequence/SmallVector.h) | `sequences.small-vector` |
 | hash table with control bytes in groups of 15 matched by SSE2, NEON or SWAR, the hash mixed on 128 bits, at most 7/8 full (Swiss tables; Boost's `unordered_flat_map`) | [`dictionary/FlatHashTable.h`](include/ADS/dictionary/FlatHashTable.h) | `engineered.flat-hash-table` |
 | hash table of pointers, linear probing, Fibonacci hashing | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table` |

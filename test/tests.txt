@@ -550,6 +550,7 @@ sequences  dutch-flag-branchless  bandiera olandese senza salti
 sequences  k-sorted-sift          k-ordinato con un setaccio per elemento
 sequences  merge-sort-appender    merge sort naturale accodando in fondo
 sequences  list-sort              lista ordinata ricollegando le celle
+sequences  tiered-vector          vettore a blocchi circolari
 sequences  small-vector           vettore con posto per N elementi dentro
 
 # the engineered priority queues beyond the d-ary heap

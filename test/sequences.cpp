@@ -31,6 +31,7 @@
 #include "ADS/sequence/SequenceAlgorithms.h"
 #include "ADS/sequence/SinglyList.h"
 #include "ADS/sequence/SmallVector.h"
+#include "ADS/sequence/TieredVector.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -381,6 +382,79 @@ ADS_TEST( "list-sort" )
    return( int( g() % 50 ) ); } );          // not the natural order
   sorted( std::vector< int >( n , 4 ) , std::less<>() );   // all equal
   }
+ }
+
+/// random insertions, removals and reads of a TieredVector against
+/// std::vector, the insertions a fraction ins of 10, up to steps of them
+template< class T , class Make >
+void tiered( unsigned seed , int steps , unsigned ins , Make && make )
+{
+ TieredVector< T > A;
+ std::vector< T > R;
+ std::mt19937 g( seed );
+ for( int t = 0 ; t < steps ; ++t ) {
+  const unsigned c = g() % 10;
+  if( R.empty() || ( c < ins ) ) {
+   const std::size_t i = g() % ( R.size() + 1 );
+   const T x = make( t );
+   A.insert( i , x );
+   R.insert( R.begin() + std::ptrdiff_t( i ) , x );
+   }
+  else if( c < 9 ) {
+   const std::size_t i = g() % R.size();
+   A.erase( i );
+   R.erase( R.begin() + std::ptrdiff_t( i ) );
+   }
+  else {
+   const std::size_t i = g() % R.size();
+   CHECK( A[ i ] == R[ i ] );
+   }
+  }
+ CHECK( A.size() == R.size() &&
+        std::equal( A.begin() , A.end() , R.begin() , R.end() ) );
+ }
+
+// the tiered vector against std::vector: random insertions, removals and
+// reads that grow it past the sizes where the blocks double (64, 128,
+// 256 items) and shrink it back, on integers and strings; the edge cases:
+// the empty vector violates the contracts of erase(), pop_back() and of an
+// index, insertions at the front and at the end, an item of the vector
+// inserted into it, the iterators of the standard interface (std::sort
+// and a reverse walk), and clear()
+ADS_TEST( "tiered-vector" )
+{
+ TieredVector< int > E;
+ CHECK( E.empty() && E.block() == 64 && E.begin() == E.end() );
+ CHECK_THROWS( E.erase( 0 ) , contract_violation );
+ CHECK_THROWS( E.pop_back() , contract_violation );
+ CHECK_THROWS( (void) E[ 0 ] , contract_violation );
+ CHECK_THROWS( E.insert( 1 , 5 ) , contract_violation );
+ for( int i = 0 ; i < 1000 ; ++i )           // the front and the end
+  if( i % 2 ) E.insert( 0 , -i ); else E.push_back( i );
+ CHECK( E.size() == 1000 && E[ 0 ] == -999 && E[ 999 ] == 998 );
+ E.insert( 500 , E[ 0 ] );                   // an item of itself
+ CHECK( E[ 500 ] == -999 && E.size() == 1001 );
+ std::sort( E.begin() , E.end() );
+ CHECK( std::is_sorted( E.begin() , E.end() ) );
+ int prev = E[ E.size() - 1 ];
+ for( auto it = E.end() ; it != E.begin() ; ) {
+  --it;
+  CHECK( *it <= prev );
+  prev = *it;
+  }
+ E.pop_back();
+ CHECK( E.size() == 1000 );
+ E.clear();
+ CHECK( E.empty() && E.block() == 64 );
+ tiered< int >( 1 , 5000 , 5 , []( int t ) { return( t ); } );
+ tiered< int >( 2 , 150000 , 7 , []( int t ) { return( t ); } );   // grow
+ TieredVector< int > G;                      // past 4 b^2 and back
+ for( int i = 0 ; i < 70000 ; ++i ) G.insert( std::size_t( i ) / 2 , i );
+ CHECK( G.block() == 256 && G.size() == 70000 );
+ while( G.size() > 100 ) G.erase( G.size() / 3 );
+ CHECK( G.block() == 64 && G.size() == 100 );
+ tiered< std::string >( 3 , 4000 , 6 , []( int t ) {
+  return( std::to_string( t ) + std::string( 20 , 'w' ) ); } );
  }
 
 }  // end( namespace )
