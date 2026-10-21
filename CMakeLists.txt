@@ -72,9 +72,7 @@ if (ADS_BENCHMARKS)
     foreach (b sort dictionaries priority sequences memory bignum fft hashing
                search suffix edit numeric queues concurrent geometry matrix
                sparse external graphs combinatorial backtrack ordered arrays
-               sets tries)
-               sparse allocators)
-               sparse allocators positions assembly fingerprints)
+               sets tries allocators positions assembly fingerprints)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
