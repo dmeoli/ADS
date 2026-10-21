@@ -79,11 +79,11 @@
  * into one function whose columns stay in an array of n / W items, the
  * transform of 16 points in 2 codelets of 4; so are the transforms in 2
  * dimensions of the powers of 2 up to 32 x 32. In double precision on the
- * vectors of AVX the many transforms of 4 to 64 points (those of
+ * vectors of AVX the many transforms of 4 to 32 points (those of
  * fftMany(), the rows and the columns of fft2() and fftn()) go two at a
  * time, one in each half of a vector of the numbers alternated, with no
  * transposition (a product by i costs one swap of the parts), and a power
- * of 2 n from 8 to 128 by the two halves \f$ E \f$ and \f$ O \f$ of the
+ * of 2 n of 8 or 16 points by the two halves \f$ E \f$ and \f$ O \f$ of the
  * even and the odd points so made, then \f$ \hat a_k = E_k + \omega_n^k
  * O_k \f$, \f$ \hat a_{k + n/2} = E_k - \omega_n^k O_k \f$. The powers
  * of \f$ \omega \f$ are each computed alone, the angle taken to \f$ [ 0 ,
@@ -116,7 +116,7 @@
  * \f$ and \f$ O_k = ( Z_k - \overline{Z_{h-k}} ) / 2 i \f$ (the transforms
  * of the even and of the odd items), \f$ \hat x_k = E_k + \omega_n^k O_k
  * \f$ and \f$ \hat x_{h-k} = \overline{E_k - \omega_n^k O_k} \f$; the
- * inverse runs the same steps backwards. Up to 64 points the complex
+ * inverse runs the same steps backwards. Up to 16 points the complex
  * transform is one codelet whose outputs stay in registers for the pass;
  * above 2048 points, on the four steps, the pass is done by their last
  * step: the block of the rows k and that of their mirrors m - k are

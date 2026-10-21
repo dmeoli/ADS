@@ -2357,9 +2357,11 @@ inline bool smallTransform( T * x , std::size_t n , bool inv )
   } ) && ! ( fftSmallCovers< T > && n >= 16 && ( n & ( n - 1 ) ) == 0 ) );
  }
 
-/// the largest transforms of rows() that go W at a time in the lanes, and
-/// those that go by pairRows()
-inline constexpr std::size_t fftManyLanes = 256 , fftPairMax = 64;
+/// the largest transforms of rows() that go W at a time in the lanes,
+/// those that go by pairRows() and pairColumns(), and those of
+/// pairSingle()
+inline constexpr std::size_t fftManyLanes = 256 , fftPairMax = 32 ,
+                             fftPairSingle = 16;
 
 template< std::size_t W = 0 , class T >
 inline void transformTo( const std::complex< T > * a , std::complex< T > * b ,
@@ -2525,7 +2527,7 @@ ADS_FFT_NOINLINE void pairColumns( T * x , std::size_t c , std::size_t ld ,
 
 #if ADS_FFT_SHUFFLE
 /// the transform of the N points of xi into x, which may be xi, N a power
-/// of 2 from 8 to 2 fftPairMax, by the numbers alternated of FFTPair: the
+/// of 2 from 8 to fftPairSingle, by the numbers alternated of FFTPair: the
 /// points 2 i and 2 i + 1, next to each other, are the item i of the two
 /// transforms of N / 2 points of the even and of the odd ones, done
 /// together by pairCodelet() with no shuffle on the loads; then, two
@@ -2562,7 +2564,7 @@ ADS_FFT_NOINLINE void pairSingle( const T * xi , T * x , bool inv )
  }
 
 /// the transform of the n points of xi into x by pairSingle() if n is a
-/// power of 2 from 8 to 2 fftPairMax and the lanes are 4 doubles, and true;
+/// power of 2 from 8 to fftPairSingle and the lanes are 4 doubles, and true;
 /// else false
 template< class T >
 ADS_FFT_INLINE bool byPairSingle( const T * xi , T * x , std::size_t n ,
@@ -2570,9 +2572,9 @@ ADS_FFT_INLINE bool byPairSingle( const T * xi , T * x , std::size_t n ,
 {
  constexpr std::size_t W = fftWidthOf< T >;
  if constexpr( fftIsExt< T , W > && W == 4 && sizeof( T ) == 8 )
-  return( n >= 8 && n <= 2 * fftPairMax &&
-          byCodelet< 2 * fftPairMax >( n , [ & ]< std::size_t N >() {
-           if constexpr( N >= 8 && N <= 2 * fftPairMax )
+  return( n >= 8 && n <= fftPairSingle &&
+          byCodelet< fftPairSingle >( n , [ & ]< std::size_t N >() {
+           if constexpr( N >= 8 )
             pairSingle< N , T , W >( xi , x , inv ); } ) );
  else return( false );
  }
@@ -3102,7 +3104,7 @@ inline void realForward( const T * x , std::size_t n , std::complex< T > * X )
   return;
   }
  const std::size_t h = n / 2;
- if( h <= 32 && byAnyCodelet< 32 >( h , [ & ]< std::size_t N >() {
+ if( h <= 8 && byAnyCodelet< 8 >( h , [ & ]< std::size_t N >() {
       FFTCx< T > Z[ N ];               // small: the codelet into Z, the pass
       auto in = [ & ]( std::size_t i ) ADS_FFT_LAMBDA {
        return( FFTCx< T >{ x[ 2 * i ] , x[ 2 * i + 1 ] } );
@@ -3180,7 +3182,7 @@ inline void realInverse( const std::complex< T > * X , std::size_t n , T * x )
   for( std::size_t j = 0 ; j < n ; ++j ) x[ j ] = z[ j ].real();
   return;
   }
- if( h <= 32 && byAnyCodelet< 32 >( h , [ & ]< std::size_t N >() {
+ if( h <= 8 && byAnyCodelet< 8 >( h , [ & ]< std::size_t N >() {
       std::complex< T > Y[ N ];        // small: the pass into Y, the codelet
       halfPass< false >( X , Y , N , fftHalfRoots< T >( n ) );
       Y[ 0 ] = std::complex< T >( T( 0.5 ) * ( x0 + xh ) ,

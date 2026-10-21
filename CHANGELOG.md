@@ -141,7 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   kernel is compiled once; the plans kept per thread for each size; their
   tests in test/fft.cpp against the definition in long double
 - rfft() and irfft(), the transforms of real data by a complex transform
-  of half the points and a pass on the pairs k , h - k: up to 64 points
+  of half the points and a pass on the pairs k , h - k: up to 16 points
   one codelet and the pass on its outputs; above 2048 points on the four
   steps, the pass in their last step (forward: the block of the rows k and
   that of their mirrors m - k transformed together, the pairs in the same
@@ -156,10 +156,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the columns of the inverse read them, with no pass of its own; rfft()
   and irfft() of 48 points by the complex transform of 48
 - in double precision on the vectors of AVX, the many transforms of 4 to
-  64 points of fftMany() and of the rows and the columns of fft2() and
+  32 points of fftMany() and of the rows and the columns of fft2() and
   fftn(), two at a time on the numbers alternated with no transposition,
-  and fft() of 8 to 128 points as two halves of the even and the odd
-  points so made, then one butterfly
+  and fft() of 8 and 16 points as two halves of the even and the odd
+  points so made, then one butterfly; rfft() and irfft() by one codelet
+  only up to 16 points
 - the lanes of fft() by the intrinsics of SSE2 and AVX on the compilers
   with no vector extensions (MSVC), ADS_FFT_INTRINSICS to take them with
   GCC and Clang too, and ADS_FFT_LEAN, fewer codelets for the compilers
