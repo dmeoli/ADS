@@ -461,6 +461,7 @@ standard library, Boost and Eigen; their tests are in
 | rANS of order 0 with four interleaved states (Duda; Giesen) | [`compression/Rans.h`](include/ADS/compression/Rans.h) | `engineered_succinct.rans-coder` |
 | Stream VByte, the lengths apart, one shuffle per 4 integers (Lemire, Kurz and Rupp) | [`compression/StreamVByte.h`](include/ADS/compression/StreamVByte.h) | `engineered_succinct.stream-vbyte` |
 | rank and select in about 3.9% of the bits, one 128-bit entry per 4096 bits (Kurpicz; Zhou, Andersen and Kaminsky) | [`succinct/CompactRankSelect.h`](include/ADS/succinct/CompactRankSelect.h) | `engineered_succinct.compact-rank-select` |
+| rank and select with the counts inside the lines of the bits, rank in one access (SPIDER, Laws et al.) | [`succinct/InterleavedRankSelect.h`](include/ADS/succinct/InterleavedRankSelect.h) | `engineered_succinct.interleaved-rank-select` |
 | compressed vector of bits in m H0 + 0.175 m bits with rank and select (Raman, Raman and Rao; Claude and Navarro) | [`succinct/RRRBitVector.h`](include/ADS/succinct/RRRBitVector.h) | `engineered_succinct.rrr-bit-vector` |
 | tANS of order 0 with 2^11 states, two halves of four states each (Duda) | [`compression/Tans.h`](include/ADS/compression/Tans.h) | `engineered_succinct.tans-coder` |
 | directly addressable codes with the optimal widths (Brisaboa, Ladra and Navarro) | [`compression/DirectAccessCodes.h`](include/ADS/compression/DirectAccessCodes.h) | `engineered_succinct.direct-access-codes` |

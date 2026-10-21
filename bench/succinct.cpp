@@ -66,6 +66,10 @@
  #include "ADS/succinct/CompactRankSelect.h"
  #define ADS_HAS_COMPACT 1
 #endif
+#if __has_include( "ADS/succinct/InterleavedRankSelect.h" )
+ #include "ADS/succinct/InterleavedRankSelect.h"
+ #define ADS_HAS_IRS 1
+#endif
 #if __has_include( "ADS/succinct/RRRBitVector.h" )
  #include "ADS/succinct/RRRBitVector.h"
  #define ADS_HAS_RRR 1
@@ -329,6 +333,18 @@ void bitvectors( std::size_t n , int r , unsigned seed )
    []( const ADS::CompactRankSelect & s , std::uint64_t k ) {
     return( s.select0( k ) ); } ,
    [ nb ]( const ADS::CompactRankSelect & s ) {
+    return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+#endif
+#ifdef ADS_HAS_IRS
+  using IRS = ADS::InterleavedRankSelect;
+  bitvector( dname , b , "ADS::InterleavedRankSelect" ,
+   []( const Bits & b ) {
+    return( std::make_unique< IRS >( std::span< const std::uint64_t >(
+                                      b.words ) , b.n ) ); } ,
+   []( const IRS & s , std::uint64_t i ) { return( s.rank1( i ) ); } ,
+   []( const IRS & s , std::uint64_t k ) { return( s.select1( k ) ); } ,
+   []( const IRS & s , std::uint64_t k ) { return( s.select0( k ) ); } ,
+   [ nb ]( const IRS & s ) {
     return( double( s.size() + s.directoryBits() ) / nb ); } , r );
 #endif
 #ifdef ADS_HAS_SDSL
