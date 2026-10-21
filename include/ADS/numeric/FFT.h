@@ -78,12 +78,19 @@
  * in single precision), and at 48 and 96, the four steps are unrolled
  * into one function whose columns stay in an array of n / W items, the
  * transform of 16 points in 2 codelets of 4; so are the transforms in 2
- * dimensions of the powers of 2 up to 32 x 32. The powers of \f$ \omega
- * \f$ are each computed alone, the angle taken to \f$ [ 0 , \pi / 4 ] \f$
- * by the symmetries of the circle, in integers, so that each has the error
- * of a sine or a cosine of a small angle; from \f$ 2^{16} \f$ points on,
- * those between the steps are the products of two tables of about \f$ n
- * / W \f$ and r items, rather than one of n.
+ * dimensions of the powers of 2 up to 32 x 32. In double precision on the
+ * vectors of AVX the many transforms of 4 to 64 points (those of
+ * fftMany(), the rows and the columns of fft2() and fftn()) go two at a
+ * time, one in each half of a vector of the numbers alternated, with no
+ * transposition (a product by i costs one swap of the parts), and a power
+ * of 2 n from 8 to 128 by the two halves \f$ E \f$ and \f$ O \f$ of the
+ * even and the odd points so made, then \f$ \hat a_k = E_k + \omega_n^k
+ * O_k \f$, \f$ \hat a_{k + n/2} = E_k - \omega_n^k O_k \f$. The powers
+ * of \f$ \omega \f$ are each computed alone, the angle taken to \f$ [ 0 ,
+ * \pi / 4 ] \f$ by the symmetries of the circle, in integers, so that
+ * each has the error of a sine or a cosine of a small angle; from \f$
+ * 2^{16} \f$ points on, those between the steps are the products of two
+ * tables of about \f$ n / W \f$ and r items, rather than one of n.
  *
  * <b>The large primes.</b> A prime n above 13 goes by the algorithm of
  * Rader, the transform of the nonzero indices as a cyclic convolution of

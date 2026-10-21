@@ -147,14 +147,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that of their mirrors m - k transformed together, the pairs in the same
   lane) or in their first (inverse: the points made as the columns read
   them); elsewhere on the numbers alternated, with 3 shuffles for a vector
-  of pairs; dct() and dst(), the
-  transforms of the cosines and of the sines of types 1 to 4 as those of
-  FFTW (Makhoul for the types 2 and 3, the half-length complex transform
-  for the type 4); fftMany(), fft2() and fftn(), many transforms and
-  those in more dimensions; convolve() in single precision
+  of pairs; dct() and dst(), the transforms of the cosines and of the
+  sines of types 1 to 4 as those of FFTW (Makhoul for the types 2 and 3,
+  the half-length complex transform for the type 4); fftMany(), fft2() and
+  fftn(), many transforms and those in more dimensions; convolve() in
+  single precision
 - convolve() on the four steps makes the products of the transforms as
   the columns of the inverse read them, with no pass of its own; rfft()
   and irfft() of 48 points by the complex transform of 48
+- in double precision on the vectors of AVX, the many transforms of 4 to
+  64 points of fftMany() and of the rows and the columns of fft2() and
+  fftn(), two at a time on the numbers alternated with no transposition,
+  and fft() of 8 to 128 points as two halves of the even and the odd
+  points so made, then one butterfly
 - the lanes of fft() by the intrinsics of SSE2 and AVX on the compilers
   with no vector extensions (MSVC), ADS_FFT_INTRINSICS to take them with
   GCC and Clang too, and ADS_FFT_LEAN, fewer codelets for the compilers
