@@ -1418,10 +1418,12 @@ ADS_RSH1_FN( rsh1SubAsm , sbb , ADS_RSH1SUB_STEP )
  "mov %[h], " #s "*8(%[r])\n\t"                                              \
  "sbb %[" #Y "], %[h]\n\t"
 
-#define ADS_DIV3_MORE , [ d ] "d" ( 0x5555555555555555ULL )
+#define ADS_DIV3_MORE , [ d ] "d" ( f )
 
-inline void divExact3Asm( std::uint64_t * r , const std::uint64_t * a ,
-                          std::size_t n )
+/// r = a / d for a multiple of d, d a divisor of b - 1, f = ( b - 1 ) / d,
+/// as above with f for ( b - 1 ) / 3
+inline void divExactAsm( std::uint64_t * r , const std::uint64_t * a ,
+                         std::size_t n , std::uint64_t f )
 {
  ADS_ELEM_VARS
  const std::uint64_t * b = a;
@@ -3332,16 +3334,20 @@ inline void BigInteger::rsh1Sub( Limb * r , const Limb * a , const Limb * b ,
 
 inline void BigInteger::divExact3( Limb * a , std::size_t n )
 {
+ divExactB1( a , n , 0x5555555555555555ULL );
+ }
+
+inline void BigInteger::divExactB1( Limb * a , std::size_t n , Limb f )
+{
 #if ADS_BIGINT_ASM
- detail::divExact3Asm( a , a , n );
+ detail::divExactAsm( a , a , n , f );
 #else
- // with d = ( b - 1 ) / 3, -d = 1 / 3 modulo b, and a / 3 is
- // -a d ( 1 + b + ... + b^{n-1} ) modulo b^n, a running difference
- constexpr Limb d = 0x5555555555555555ULL;
+ // with f = ( b - 1 ) / d, -f = 1 / d modulo b, and a / d is
+ // -a f ( 1 + b + ... + b^{n-1} ) modulo b^n, a running difference
  Limb h = 0;
  for( std::size_t i = 0 ; i < n ; ++i ) {
   Limb p1;
-  const Limb p0 = detail::mulWide( a[ i ] , d , p1 ) , c = h < p0;
+  const Limb p0 = detail::mulWide( a[ i ] , f , p1 ) , c = h < p0;
   h -= p0;
   a[ i ] = h;
   h -= p1 + c;
@@ -3403,20 +3409,6 @@ inline void BigInteger::toom3( Limb * r , const Limb * a , const Limb * b ,
  addTo( r + 4 * k , 2 * s , v1 + 2 * k , std::min( L - 2 * k , 2 * s ) );
  addTo( r + k , 2 * n - k , vm1 , std::min( L , 2 * n - k ) );
  addTo( r + 3 * k , 2 * n - 3 * k , v2 , std::min( L , 2 * n - 3 * k ) );
- }
-
-inline void BigInteger::divExactN( Limb * a , std::size_t n , Limb d )
-{
- Limb v = d;                                // 1 / d modulo 2^64, by Newton
- for( int i = 0 ; i < 5 ; ++i ) v *= 2 - d * v;
- Limb c = 0;                                // the borrow of a - q d
- for( std::size_t i = 0 ; i < n ; ++i ) {
-  const Limb x = a[ i ] , q = ( x - c ) * v;
-  Limb hi;
-  detail::mulWide( q , d , hi );
-  c = hi + ( x < c );
-  a[ i ] = q;
-  }
  }
 
 inline void BigInteger::rshN( Limb * a , std::size_t n , int s )
@@ -3514,10 +3506,11 @@ inline void BigInteger::toom4( Limb * r , const Limb * a , const Limb * b ,
  mul1( t , vm1 , L , 17 );
  subFrom( t , L , vm2 , L );
  subFrom( t , L , vh , L );
- divExactN( t , L , 9 );
+ divExact3( t , L );                       // by 9
+ divExact3( t , L );
  subFrom( vm2 , L , vm1 , L );
  subMul1( vm2 , t , L , 3 );
- divExactN( vm2 , L , 15 );
+ divExactB1( vm2 , L , 0x1111111111111111ULL );   // by 15
  subFrom( vm1 , L , t , L );
  subFrom( vm1 , L , vm2 , L );
  // r = r6 x^6 + r5 x^5 + ... + r0, each r_i below b^{2n - ik}
