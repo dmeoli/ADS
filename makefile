@@ -92,6 +92,10 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+# rapidfuzz-cpp to edit, SDSL=<prefix> the range minima of sdsl-lite to lce
+BENCHES   = sort dictionaries priority sequences bignum fft hashing search \
+            suffix lce edit
+comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
@@ -102,6 +106,7 @@ SAISFLAGS = $(if $(LIBSAIS),-DADS_HAS_LIBSAIS -I$(LIBSAIS)/include \
             -L$(LIBSAIS)/lib -lsais) \
             $(if $(DIVSUFSORT),-DADS_HAS_DIVSUFSORT -I$(DIVSUFSORT)/include \
             -L$(DIVSUFSORT)/lib -ldivsufsort)
+LCEFLAGS  = $(if $(SDSL),-DADS_HAS_SDSL -isystem $(SDSL)/include)
 EDITFLAGS = $(if $(EDLIB),-DADS_HAS_EDLIB -I$(EDLIB)/include \
             -L$(EDLIB)/lib -ledlib) \
             $(if $(RAPIDFUZZ),-DADS_HAS_RAPIDFUZZ -I$(RAPIDFUZZ)/include)
@@ -191,6 +196,10 @@ $(BUILD)/bench-search: bench/search.cpp bench/Bench.h bench/Texts.h \
 $(BUILD)/bench-suffix: bench/suffix.cpp bench/Bench.h bench/Texts.h \
                       $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(SAISFLAGS)
+
+$(BUILD)/bench-lce: bench/lce.cpp bench/Bench.h bench/Texts.h \
+                   $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(LCEFLAGS)
 
 $(BUILD)/bench-edit: bench/edit.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(EDITFLAGS)
