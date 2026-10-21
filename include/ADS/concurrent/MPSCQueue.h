@@ -5,40 +5,50 @@
  * A queue that many producer threads fill and one consumer thread empties,
  * lock-free and unbounded, beyond the book: each producer has a lane of its
  * own, so that the producers never compete with each other, and a lane is
- * the queue of Lamport between its producer and the consumer [see
- * SPSCQueue.h] on a circular vector of places, each thread with a copy of
- * the index of the other, read again only when the vector looks full or
- * empty, the indices and the copies on lines of cache of their own. When
- * the vector is full the producer links a new one of twice the places and
- * goes on there, and the consumer, which finds the old one empty and its
- * successor linked, frees it and follows: a lane in a steady state runs
- * on one vector that stays in the caches, an item costs O( 1 ) time and
- * no allocation, and the vectors of a lane, \f$ C , 2 C , 4 C , \dots \f$
- * places from \f$ C = B \f$, hold at most twice the most items the lane
- * ever held at once, plus B.
- *
+ * a list of blocks of B places between its producer and the consumer. The
+ * producer writes the places of its last block in order and publishes,
+ * after each item, their count in the block (a store, no read-modify-write
+ * operation); when the block is full it links a new one after it. The
+ * consumer reads the count of its first block once for all the items it
+ * shows, takes them, and when it has taken the B items of a block and finds
+ * the next one linked it gives the block back to its lane, on a stack that
+ * the producer empties at once (an exchange) when it needs a block, before
+ * it allocates one. A lane in a steady state therefore cycles over the same
+ * blocks, which stay in the caches: an item costs O( 1 ) time, a store of
+ * the count and no allocation, the count and the link of a block share a
+ * line that only the producer writes, and the consumer touches the lines
+ * of the producer once per batch; a lane keeps \f$ \lceil m / B \rceil + 1
+ * \f$ blocks for the most items m it ever held at once. A consumer that is
+ * right behind its producer and looks again at once would take from it,
+ * at each item, the lines of the count and of the items it is writing, and
+ * slow it down several times over: when a call took some items and the
+ * next one finds fewer than min( B , 64 ) in the block, the consumer first
+ * waits 64 pauses of the processor for a batch (the backtracking of
+ * B-Queue), while after a call that took none it takes at once what it
+ * finds, so that a single item after a silence costs no wait.
  * A producer is a handle that producer() returns, to be used by one thread
  * at a time; the items of a producer come out in the order in which it
  * pushed them, and the consumer takes the lanes in turn, draining the one
  * it is on before the next. The lanes live as long as the queue, also when
  * their producer is gone, its items still to be taken.
- *
  * The contracts [see Contract.h]: B >= 2 is a power of 2; only one thread
  * at a time calls the consumer's operations, and only one at a time pushes
  * through a producer. The operations are defined in MPSCQueue.tpp.
- *
  * \see L. Lamport, Specifying concurrent program modules, ACM Transactions
  *      on Programming Languages and Systems 5(2), 190-222, 1983,
  *      doi:10.1145/69624.357207
- * \see P. P. C. Lee, T. Bu, G. Chandranmenon, A lock-free, cache-efficient
- *      multi-core synchronization mechanism for line-rate network traffic
- *      monitoring, IEEE International Symposium on Parallel and
- *      Distributed Processing (IPDPS), 1-12, 2010,
- *      doi:10.1109/IPDPS.2010.5470368 (the copy of the count)
+ * \see M. Aldinucci, M. Danelutto, P. Kilpatrick, M. Meneghin, M.
+ *      Torquati, An efficient unbounded lock-free queue for multi-core
+ *      systems, Euro-Par 2012, LNCS 7484, 662-673, 2012,
+ *      doi:10.1007/978-3-642-32820-6_65 (the list of bounded buffers and
+ *      the pool that recycles them)
+ * \see J. Wang, K. Zhang, X. Tang, B. Hua, B-Queue: efficient and
+ *      practical queuing for fast core-to-core communication,
+ *      International Journal of Parallel Programming 41(1), 137-159, 2013,
+ *      doi:10.1007/s10766-012-0213-x (the wait for a batch)
  * \see R. K. Treiber, Systems programming: coping with parallelism,
  *      Technical Report RJ 5118, IBM Almaden Research Center, 1986 (the
- *      list of the lanes, which only grows)
- *
+ *      stacks of the lanes and of the given back blocks)
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
@@ -59,6 +69,7 @@
 
 #include "ADS/Contract.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <memory>
@@ -79,32 +90,41 @@ namespace ADS {
 template< class T , std::size_t B = 1024 >
 class MPSCQueue {
  static_assert( ( B >= 2 ) && ( ( B & ( B - 1 ) ) == 0 ) ,
-                "the first vector of a lane has 2^k places" );
+                "a block has 2^k places" );
 
  static constexpr std::size_t line = 64;   ///< a line of cache
+ /// the batch below which a consumer that is streaming waits, and the
+ /// pauses of the processor of the wait
+ static constexpr std::size_t want = B < 64 ? B : 64;
+ static constexpr int pauses = 64;
 
- /// a circular vector of a lane, with the indices of the queue of
- /// Lamport and the link to the next vector, each on lines of its own
- struct Ring {
-  T * place;                                ///< mask + 1 places
-  std::size_t mask;
-  alignas( 2 * line ) std::atomic< std::size_t > tail{ 0 };   ///< producer
-  alignas( line ) std::size_t headSeen = 0; ///< the head it saw
-  alignas( line ) std::atomic< std::size_t > head{ 0 };   ///< consumer
-  alignas( line ) std::size_t tailSeen = 0; ///< the tail it saw
-  alignas( line ) std::atomic< Ring * > next{ nullptr };   ///< when full
-  explicit Ring( std::size_t c )
-   : place( std::allocator< T >().allocate( c ) ) , mask( c - 1 ) {}
-  ~Ring() { std::allocator< T >().deallocate( place , mask + 1 ); }
+ /// a block of B places, with the count of the items written and the
+ /// link to the next block on a line that only the producer writes
+ struct Block {
+  alignas( 2 * line ) std::atomic< std::size_t > filled{ 0 };
+  std::atomic< Block * > next{ nullptr };
+  Block * spare = nullptr;                  ///< in the stacks of the lane
+  alignas( 2 * line ) unsigned char raw[ B * sizeof( T ) ];
+  [[nodiscard]] T * at( std::size_t i ) {
+   return( std::launder( reinterpret_cast< T * >( raw ) ) + i );
+   }
+  [[nodiscard]] void * slot( std::size_t i ) {
+   return( raw + i * sizeof( T ) );
+   }
   };
 
- /// the lane of a producer: the vector it writes and the one the consumer
- /// reads, on lines of their own
+ /// the lane of a producer: its block and place, the consumer's block
+ /// and place, the blocks the consumer gave back, each on lines of its own
  struct Lane {
-  alignas( line ) Ring * in;                ///< the producer's vector
-  alignas( line ) Ring * out;               ///< the consumer's vector
+  alignas( 2 * line ) Block * in;           ///< the producer's block
+  std::size_t pos = 0;                      ///< its next place
+  Block * spare = nullptr;                  ///< its blocks to reuse
+  alignas( 2 * line ) Block * out;          ///< the consumer's block
+  std::size_t at = 0;                       ///< its next place
+  bool streaming = false;                   ///< its last call took some
+  alignas( 2 * line ) std::atomic< Block * > given{ nullptr };
   Lane * nextLane = nullptr;                ///< in the list of the lanes
-  Lane( void ) : in( new Ring( B ) ) , out( in ) {}
+  Lane( void ) : in( new Block ) , out( in ) {}
   };
 
 /*--------------------------------------------------------------------------*/
@@ -162,6 +182,12 @@ class MPSCQueue {
  private:
  /// the items of the lane l, up to n, into out; their number
  std::size_t drain( Lane * l , T * out , std::size_t n );
+
+ /// gives the block b, all taken, back to the lane l
+ static void giveBack( Lane * l , Block * b );
+
+ /// the wait of a consumer for a batch
+ static void relax( void );
 
  std::atomic< Lane * > f_lanes{ nullptr };   ///< the list of the lanes
  Lane * f_at = nullptr;                    ///< the consumer's lane
