@@ -64,7 +64,15 @@
  * two words of the text with no other load; the table of the masks is
  * 16 KB. A state with a bit off sends its start to a table of the
  * prefixes of L bytes of the patterns (chained, by a multiplicative hash),
- * which checks the patterns of that prefix.
+ * which checks the patterns of that prefix. When the patterns have 8
+ * bytes or more, the filter takes the masks of the even places alone (a
+ * stride of 2, as FDR does on long patterns), half the loads: a window
+ * of \f$ W = \min( 8 , \lfloor \ell / 2 \rfloor ) \f$ even places, and
+ * each pattern twice, at its even offsets for the occurrences that start
+ * at an even place (in 4 buckets, the bits 0 to 3) and at its odd ones
+ * for the others (the bits 4 to 7), kept only if a window passes with
+ * probability below 2^-8 on a text of the super characters of the
+ * patterns, since its buckets hold twice the patterns.
  *
  * findAll() gives the pairs ( start , number ) of the occurrences, by
  * increasing start and number, count() their number; the patterns are
@@ -174,6 +182,10 @@ class MultiSearcher {
  template< class F >
  std::size_t shiftOr( std::string_view T , F && report ) const;
 
+ /// shiftOr() of stride 2, on the masks of the even places
+ template< class F >
+ std::size_t shiftOr2( std::string_view T , F && report ) const;
+
  /// the occurrences that start at s, by the table of the prefixes of the
  /// shift-or filter; the number of the checks
  template< class F >
@@ -199,6 +211,8 @@ class MultiSearcher {
  std::vector< std::uint64_t > f_mask;  ///< those of them in the pattern
  std::size_t f_L = 0;                ///< the window of the shift-or filter
  std::vector< std::uint64_t > f_sh;  ///< its masks, by super character
+ std::size_t f_W = 0;                ///< the window of stride 2, 0 if none
+ std::vector< std::uint64_t > f_sh2;  ///< its masks
  std::vector< std::uint32_t > f_first;  ///< the table of the prefixes
  std::vector< std::uint32_t > f_next;   ///< its chains
  std::vector< std::uint64_t > f_key;    ///< the prefix of each pattern
