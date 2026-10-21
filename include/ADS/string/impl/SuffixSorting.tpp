@@ -282,16 +282,6 @@ void saisInduce( const C * T , S * SA , S n , const S * size , S * B ,
   }
  }
 
-/// the symbols T[ a .. a + l - 1 ] and T[ b .. b + l - 1 ] are equal
-template< class C , class S >
-bool saisEqual( const C * T , S a , S b , S l )
-{
- if constexpr( sizeof( C ) == 1 )
-  return( std::memcmp( T + a , T + b , std::size_t( l ) ) == 0 );
- else
-  return( std::equal( T + a , T + a + l , T + b ) );
- }
-
 /// the suffix array of R, m names in [ 0 , K ) of which few repeat, into
 /// SA[ 0 .. m - 1 ], by the doubling of Larsson and Sadakane on the groups
 /// of equal names alone: the suffixes are first sorted by their name (a
@@ -752,10 +742,10 @@ S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
 /// name: a moved suffix is marked unless the last one moved into the same
 /// part came from a suffix of the same name, the name being the number d
 /// of the marks met by the scan. On return SA[ 0 .. m ) holds the LMS
-/// places sorted by their substrings, SA[ m + p / 2 ] the name (from 1) of
-/// p, 0 elsewhere in [ m , n ), runs the LMS-substrings of each name, lms
-/// the bit vector of the LMS places and *first the type of the suffix 0
-/// (1 for S); the number of the LMS places is returned
+/// places sorted by their substrings, runs the number of LMS-substrings
+/// of each name in their order, *names the number of the names, lms the
+/// bit vector of the LMS places and *first the type of the suffix 0 (1 for
+/// S); the number of the LMS places is returned
 template< class C , class S >
 S saisPartial( const C * T , S * SA , S n , S K ,
                std::vector< S > & size4 ,
@@ -941,19 +931,15 @@ S saisPartial( const C * T , S * SA , S n , S K ,
  return( m );
  }
 
-/// SA-IS on T[ 0 .. n - 1 ], symbols in [ 0 , K ), into SA[ 0 .. n - 1 ];
-/// the number of each symbol from *counts if given (the names of the
-/// level above, counted in their sorted order), else counted here
+/// SA-IS on T[ 0 .. n - 1 ], symbols in [ 0 , K ), into SA[ 0 .. n - 1 ]
 template< class C , class S >
-void sais( const C * T , S * SA , S n , S K ,
-           std::vector< S > * counts = nullptr )
+void sais( const C * T , S * SA , S n , S K )
 {
  if( n <= 1 ) {
   if( n == 1 ) SA[ 0 ] = 0;
   return;
   }
  constexpr S D = S( saisAhead );
- (void) counts;
  std::vector< S > size4 , runs;
  std::vector< std::uint64_t > lms;
  S first , names;
@@ -1029,7 +1015,7 @@ void sais( const C * T , S * SA , S n , S K ,
   S * R = SA + ( n - m );
   if( ! saisDoubling( static_cast< const S * >( R ) , SA , m , runs ,
                       m / 4 ) )
-   sais( static_cast< const S * >( R ) , SA , m , names , &runs );
+   sais( static_cast< const S * >( R ) , SA , m , names );
   S j = m;                            // the LMS places, in order
   forLms( [ & ]( S i ) { R[ --j ] = i; } );
   for( S i = 0 ; i < m ; ++i ) {
