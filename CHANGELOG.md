@@ -222,7 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the cells wake of bench-concurrent (latency, idle, throughput)
 - WorkStealingDeque, the deque of Chase and Lev with the orders of Lê et
   al., its fences as sequentially consistent operations; the test
-  work-stealing-deque
+  work-stealing-deque and the cells steal of bench-concurrent
 - COPYING, the text of the GNU GPL v3 that the LGPL v3 of LICENSE
   supplements, as the LGPL asks, installed by the recipes next to LICENSE
 

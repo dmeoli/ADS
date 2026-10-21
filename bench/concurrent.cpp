@@ -30,6 +30,10 @@
  *   retrying when it is full, while a consumer pops them (ns per item):
  *   MPMCQueue of ADS against boost::lockfree::queue of fixed capacity and
  *   moodycamel::ConcurrentQueue with no tokens;
+ * - "steal", the deques of work stealing: WorkStealingDeque of ADS against
+ *   std::deque under a std::mutex; case owner: n pushes and n takes of
+ *   the owner alone (ns per operation); case thief: the owner pushes n
+ *   integers while a thief steals them (ns per item);
  * - "wake", the consumer that sleeps until an item comes: SPSCQueue,
  *   MPSCQueue and MPSCInbox of ADS with their waits (waitPop(),
  *   waitTake(), the producer calling notify()) against a consumer that
@@ -66,6 +70,7 @@
 #include "ADS/concurrent/MPSCInbox.h"
 #ifndef ADS_BENCH_OLD
  #include "ADS/concurrent/MPMCQueue.h"
+ #include "ADS/concurrent/WorkStealingDeque.h"
 #endif
 #ifndef ADS_BENCH_OLD
  #include "ADS/concurrent/MPSCQueue.h"
@@ -453,6 +458,65 @@ int main( int argc , char ** argv )
             got += B.size();
             }
            return( s ); } ) );
+  }
+ // ----- the deques of work stealing
+ {
+  const std::size_t n = o.sizes.front();
+  const int r = o.runs;
+  struct Locked {
+   std::mutex m;
+   std::deque< Item > d;
+   void push( Item x ) {
+    std::lock_guard< std::mutex > g( m );
+    d.push_back( x ); }
+   bool take( Item & x ) {
+    std::lock_guard< std::mutex > g( m );
+    if( d.empty() ) return( false );
+    x = d.back();
+    d.pop_back();
+    return( true ); }
+   bool steal( Item & x ) {
+    std::lock_guard< std::mutex > g( m );
+    if( d.empty() ) return( false );
+    x = d.front();
+    d.pop_front();
+    return( true ); }
+   };
+  auto cells = [ & ]( const std::string & who , auto make , auto push ,
+                      auto take , auto steal ) {
+   print( "steal" , "owner" , n , who , median( make , [ & ]( auto & q ) {
+           Item s = 0 , x;
+           for( std::size_t i = 0 ; i < n ; ++i ) push( *q , Item( i ) );
+           while( take( *q , x ) ) s += x;
+           sink = sink + s; } , r , 2 * n ) );
+   print( "steal" , "thief" , n , who , transfer( n , r , make ,
+           [ & ]( auto & q , std::size_t m ) {
+            for( std::size_t i = 0 ; i < m ; ++i ) push( q , Item( i ) ); } ,
+           [ & ]( auto & q , std::size_t m ) {
+            Item s = 0 , x;
+            for( std::size_t got = 0 ; got < m ; )
+             if( steal( q , x ) ) {
+              s += x;
+              ++got;
+              }
+            return( s ); } ) ); };
+  for( const char * who : { "std::deque + std::mutex" ,
+                            "std::deque + std::mutex A/A" } )
+   cells( who , [](){ return( std::make_unique< Locked >() ); } ,
+          []( Locked & q , Item x ) { q.push( x ); } ,
+          []( Locked & q , Item & x ) { return( q.take( x ) ); } ,
+          []( Locked & q , Item & x ) { return( q.steal( x ) ); } );
+#ifndef ADS_BENCH_OLD
+  using WS = ADS::WorkStealingDeque< Item >;
+  cells( "ADS::WorkStealingDeque" , [](){
+          return( std::make_unique< WS >() ); } ,
+         []( WS & q , Item x ) { q.push( x ); } ,
+         []( WS & q , Item & x ) {
+          auto v = q.take();
+          if( v ) x = *v;
+          return( v.has_value() ); } ,
+         []( WS & q , Item & x ) { return( q.steal( x ) ); } );
+#endif
   }
  // ----- the consumer that sleeps
  const std::size_t n = o.sizes.front();
