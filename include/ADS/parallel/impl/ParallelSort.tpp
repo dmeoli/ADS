@@ -48,6 +48,18 @@ auto sortKey( T x )
  return( radixKey( x ) );
  }
 
+/// whether the buckets are sorted in their places by vectorQuickSort():
+/// numbers of 32 or 64 bits in their natural order with the vector
+/// registers there, not the floating point numbers of the stable sort (it
+/// would put -0 before +0, which std::less finds equal)
+template< bool Stable , class T , class C >
+inline constexpr bool inPlace = []() {
+ if constexpr( VectorKey< T > && naturalNumbers< T , C > )
+  return( kVectorSort && ( ! Stable || std::is_integral_v< T > ) );
+ else
+  return( false );
+ }();
+
 /// the sequential sort of the parts
 template< bool Stable , class T , class C >
 void sequentialSort( std::vector< T > & A , C & less )
@@ -334,6 +346,13 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
      A[ i ] = std::move( B[ i ] );
      std::destroy_at( B + i );
      }
+    continue;
+    }
+   if constexpr( inPlace< Stable , T , C > ) {
+    // back to its place, sorted there by the quicksort in the vector
+    // registers that the sequential sort would choose for it
+    std::copy( B + s , B + s + m , A.begin() + std::ptrdiff_t( s ) );
+    vectorQuickSort( A.data() + s , m );
     continue;
     }
    v.assign( std::make_move_iterator( B + s ) ,

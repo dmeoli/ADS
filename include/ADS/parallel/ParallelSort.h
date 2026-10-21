@@ -49,10 +49,14 @@
  * block moves its items in their order and the blocks take consecutive
  * places, so that the distribution is stable. Last, the threads claim
  * the buckets from the largest down (the schedule LPT of Graham, within
- * 4/3 of the best), and each moves
- * the bucket into a vector of its own, sorts it by the sequential sort,
- * and moves it into its place in A; a bucket of equal items is moved
- * back as it is. A bucket larger than n / p, which one thread would take
+ * 4/3 of the best), and each moves the bucket into a vector of its own,
+ * sorts it by the sequential sort, and moves it into its place in A; a
+ * bucket of numbers of 32 or 64 bits in their natural order goes instead
+ * straight to its place, where vectorQuickSort() [see VectorQuickSort.h],
+ * the sort that sort() would choose for it, sorts it (one move less per
+ * item; not for the stable sort of floating point numbers, which must
+ * keep the order of -0 and +0), and a bucket of equal items is moved back
+ * as it is. A bucket larger than n / p, which one thread would take
  * too long on, is sorted first by the same parallel sort, on all the
  * threads.
  *
@@ -98,6 +102,7 @@
 #include "ADS/parallel/Executor.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/Sort.h"
+#include "ADS/sort/VectorQuickSort.h"
 
 #include <algorithm>
 #include <cstddef>
