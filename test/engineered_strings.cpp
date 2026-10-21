@@ -228,8 +228,10 @@ ADS_TEST( "string-search" )
 // repeated names are sorted by doubling), the Fibonacci word, a periodic text
 // whose reduced strings recurse several times, a text with all its
 // LMS-substrings distinct, texts that never rise, never fall, or rise and then
-// fall; integer texts over large alphabets; the LCP array of the permuted LCP
-// against lcpArray() of Kasai et al., on the same texts
+// fall; the texts sorted directly by the windows of their packed codes
+// (1 to 8 bits, few and many LMS places, ties at the end, short and long
+// repeated blocks); integer texts over large alphabets; the LCP array of
+// the permuted LCP against lcpArray() of Kasai et al., on the same texts
 ADS_TEST( "suffix-sorting" )
 {
  auto check = [ & ]( const std::string & T ) {
@@ -278,6 +280,30 @@ ADS_TEST( "suffix-sorting" )
   const char * word[] = { "a " , "an " , "and " , "ant " , "antenna " };
   while( E.size() < 100000 ) E += word[ g() % 5 ];
   check( E );
+  }
+ // the LMS-suffixes sorted directly by the windows of the packed text:
+ // codes of 1 to 6 bits and the bytes themselves, on few places (one
+ // radix sort) and on many (the buckets of the top bits first); a text
+ // that ends in the smallest symbol (windows padded with zeros), a short
+ // block repeated (ties settled by the next windows), a long one (the
+ // ties beyond the budget, and the induction instead), all the symbols
+ // spread over the bytes (the ranks, not the bytes)
+ for( unsigned sigma : { 2u , 3u , 5u , 16u , 17u , 33u , 64u , 65u , 200u } )
+  for( std::size_t n : { std::size_t( 5000 ) , std::size_t( 250000 ) } ) {
+   std::string T = randomString( g , n , sigma , sigma > 64 ? 0 : 'a' );
+   check( T );
+   T.append( 40 , sigma > 64 ? '\0' : 'a' );
+   check( T );
+   }
+ {
+  std::string T = randomString( g , 100000 , 256 , 0 );
+  std::copy( T.begin() + 1000 , T.begin() + 1100 , T.begin() + 50000 );
+  check( T );
+  std::copy( T.begin() + 1000 , T.begin() + 21000 , T.begin() + 60000 );
+  check( T );
+  std::string U = randomString( g , 70000 , 4 , 0 );
+  for( auto & c : U ) c = "\x01\x40\x7f\xfe"[ unsigned( c ) ];
+  check( U );
   }
  std::string P;
  for( int i = 0 ; i < 3000 ; ++i ) P += "abaabab";

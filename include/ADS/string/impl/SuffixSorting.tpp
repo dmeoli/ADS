@@ -16,6 +16,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cstring>
 #include <limits>
@@ -148,7 +149,8 @@ inline void saisKinds( const unsigned char * x , std::uint64_t t ,
  const __m256i spread = _mm256_setr_epi8( 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 1 ,
                          1 , 1 , 1 , 1 , 1 , 1 , 1 , 2 , 2 , 2 , 2 , 2 , 2 ,
                          2 , 2 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 ) ,
-               bit = _mm256_set1_epi64x( std::int64_t( 0x8040201008040201ull ) );
+               bit = _mm256_set1_epi64x(
+                      std::int64_t( 0x8040201008040201ull ) );
  auto bytes = [ & ]( std::uint32_t v ) {
   const __m256i a = _mm256_and_si256( _mm256_shuffle_epi8(
                      _mm256_set1_epi32( int( v ) ) , spread ) , bit );
@@ -264,9 +266,9 @@ inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
   SA[ h ] = q & low;
  }
 
-/// the scan from left to right: the L-suffixes, each stored complemented
-/// if the suffix before it is of type S, and every entry scanned
-/// complemented. Two entries a step, the text before the entries D ahead
+/// the scan from left to right: the L-suffixes, each stored with its top
+/// bit set if the suffix before it is of type S, and the top bit of every
+/// entry scanned flipped. Two entries a step, the text before the entries D ahead
 /// prefetched, and on the large alphabets also their buckets (D / 2
 /// ahead) and the places these point to (D / 4 ahead); the arrays are
 /// declared not to overlap (restrict), so that the loads of the next
@@ -299,9 +301,9 @@ void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
  for( ; i < n ; ++i ) saisMoveL( T , SA , B , i );
  }
 
-/// the scan from right to left: the S-suffixes, each stored complemented
-/// if the suffix before it is of type L (or it is the suffix 0), and the
-/// complemented entries restored. Two entries a step, prefetched as in
+/// the scan from right to left: the S-suffixes, each stored with its top
+/// bit set if the suffix before it is of type L, and the entries with the
+/// top bit set (or 0) restored. Two entries a step, prefetched as in
 /// saisInduceL()
 template< bool small , class C , class S >
 void saisInduceS( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
@@ -799,31 +801,16 @@ S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
  return( d );
  }
 
-/// the first stage of SA-IS, the partial induction: the types and the LMS
-/// places of T (n >= 2 symbols in [ 0 , K )), and the LMS-substrings
-/// sorted and named by one scan of the L-suffixes whose predecessor is L
-/// and one of those whose predecessor is S. The suffixes i >= 1 fall into
-/// four kinds by the types of i and i - 1, LL, LS, LMS (S after L) and SS,
-/// counted per first symbol in size4; the area A, an LL part and an LMS
-/// part per symbol, holds the entries that the scan from left to right
-/// moves, and the area C, an LS part and an SS part per symbol, those that
-/// the scan from right to left moves, so that no scan visits an entry with
-/// nothing to do. An entry is marked (its top bit) when it starts a new
-/// name: a moved suffix is marked unless the last one moved into the same
-/// part came from a suffix of the same name, the name being the number d
-/// of the marks met by the scan. On return SA[ 0 .. m ) holds the LMS
-/// places sorted by their substrings, ends the bit vector of the last LMS
-/// place of each name, *names the number of the names, lms the
-/// bit vector of the LMS places and *first the type of the suffix 0 (1 for
-/// S); the number of the LMS places is returned
+/// the classification of T (n >= 2 symbols in [ 0 , K )): the types of
+/// its places and their kinds. The suffixes i >= 1 fall into four kinds
+/// by the types of i and i - 1, LL, LS, LMS (S after L) and SS, counted
+/// per first symbol in size4; lms is the bit vector of the LMS places,
+/// *first the type of the suffix 0 (1 for S), and the number of the LMS
+/// places is returned
 template< class C , class S >
-S saisPartial( const C * T , S * SA , S n , S K ,
-               std::vector< S > & size4 ,
-               std::vector< std::uint64_t > & lms , S * first ,
-               S * names , std::vector< std::uint64_t > & ends )
+S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
+                std::vector< std::uint64_t > & lms , S * first )
 {
- constexpr S top = std::numeric_limits< S >::min() ,
-             low = std::numeric_limits< S >::max();
  constexpr S D = S( saisAhead );
  const std::size_t k = std::size_t( K );
  // the types, 64 places a word from the last word: with G the places i
@@ -914,7 +901,32 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   }
  --size4[ 4 * std::size_t( T[ 0 ] ) + 2 * std::size_t( type[ 0 ] & 1 ) ];
  for( std::size_t c = 0 ; c < odd.size() ; ++c ) size4[ c ] += odd[ c ];
- if( m == 0 ) return( 0 );
+ return( m );
+ }
+
+/// the first stage of SA-IS, the partial induction: the LMS-substrings of
+/// T (n >= 2 symbols in [ 0 , K ), m >= 1 LMS places classified by
+/// saisClassify()) sorted and named by one scan of the L-suffixes whose
+/// predecessor is L and one of those whose predecessor is S. The area A,
+/// an LL part and an LMS part per symbol, holds the entries that the scan
+/// from left to right moves, and the area C, an LS part and an SS part
+/// per symbol, those that the scan from right to left moves, so that no
+/// scan visits an entry with nothing to do. An entry is marked (its top
+/// bit) when it starts a new name: a moved suffix is marked unless the
+/// last one moved into the same part came from a suffix of the same name,
+/// the name being the number d of the marks met by the scan. On return
+/// SA[ 0 .. m ) holds the LMS places sorted by their substrings, ends the
+/// bit vector of the last LMS place of each name and *names the number of
+/// the names
+template< class C , class S >
+void saisPartial( const C * T , S * SA , S n , S K ,
+                  const std::vector< S > & size4 ,
+                  const std::vector< std::uint64_t > & lms , S m ,
+                  S * names , std::vector< std::uint64_t > & ends )
+{
+ constexpr S top = std::numeric_limits< S >::min() ,
+             low = std::numeric_limits< S >::max();
+ const std::size_t k = std::size_t( K );
 
  // the parts: A = LL , LMS per symbol; C = LS , SS per symbol; the LMS
  // places sorted at last in [ 0 , m ), per symbol
@@ -1005,7 +1017,384 @@ S saisPartial( const C * T , S * SA , S n , S K ,
   name += b;
   }
  *names = name;
- return( m );
+ }
+
+/// the text in codes of b bits a symbol, most significant first: the
+/// ranks of the symbols that occur when they fit in 6 bits (b < 8), the
+/// bytes themselves otherwise (b = 8); the windows of 64 bits at any bit
+/// read past its end as zeros
+struct SaisPacked {
+ const unsigned char * t;             // the bytes, 8 bits a symbol
+ std::size_t len;                     // the bytes in t
+ std::vector< unsigned char > own;    // the packed text, padded
+ unsigned b;                          // the bits of a symbol
+
+ /// the bits [ o , o + 64 ) of the text
+ std::uint64_t window( std::uint64_t o ) const {
+  const std::size_t at = std::size_t( o >> 3 );
+  const unsigned s = unsigned( o & 7 );
+  std::uint64_t hi = 0 , lo = 0;
+  if( at + 9 <= len ) {
+   std::memcpy( &hi , t + at , 8 );
+   if constexpr( std::endian::native == std::endian::little )
+    hi = saisSwap( hi );
+   lo = t[ at + 8 ];
+   }
+  else
+   for( std::size_t j = 0 ; j < 9 ; ++j ) {
+    const std::uint64_t v = at + j < len ? t[ at + j ] : 0;
+    if( j < 8 ) hi |= v << ( 56 - 8 * j );
+    else lo = v;
+    }
+  return( ( hi << s ) | ( lo >> ( 8 - s ) ) );
+  }
+ };
+
+/// the codes of the symbols that occur as told by occurs, their ranks if
+/// they fit in 6 bits, the bytes themselves otherwise; the bits of a code
+inline unsigned saisCodes( const bool * occurs , unsigned char * code )
+{
+ unsigned sigma = 0;
+ for( unsigned c = 0 ; c < 256 ; ++c ) {
+  code[ c ] = static_cast< unsigned char >( sigma );
+  sigma += occurs[ c ];
+  }
+ const unsigned b = unsigned( std::bit_width( std::max( sigma , 2u ) - 1 ) );
+ if( b <= 6 ) return( b );
+ for( unsigned c = 0 ; c < 256 ; ++c )
+  code[ c ] = static_cast< unsigned char >( c );
+ return( 8 );
+ }
+
+/// the window of 64 bits of the codes of T (b bits each) at the place p,
+/// one symbol at a time, or only the symbols that cover its first limit
+/// bits, the others zero
+inline std::uint64_t saisSlowWindow( const unsigned char * T , std::size_t n ,
+                                     const unsigned char * code , unsigned b ,
+                                     std::size_t p , unsigned limit = 64 )
+{
+ std::uint64_t w = 0;
+ unsigned have = 0;
+ for( ; ( have < limit ) && ( have + b <= 64 ) && ( p < n ) ;
+      have += b , ++p )
+  w = ( w << b ) | code[ T[ p ] ];
+ if( ( have >= limit ) || ( have + b <= 64 ) )        // or the text ended
+  return( w << ( 64 - have ) );
+ if( have == 64 ) return( w );
+ const unsigned r = 64 - have;        // a part of the next symbol
+ const std::uint64_t c = p < n ? code[ T[ p ] ] : 0;
+ return( ( w << r ) | ( c >> ( b - r ) ) );
+ }
+
+/// the packed text of T, its codes of b bits [ see saisCodes() ]
+inline void saisPack( const unsigned char * T , std::size_t n ,
+                      const unsigned char * code , unsigned b ,
+                      SaisPacked & P )
+{
+ if( b == 8 ) {                       // the bytes themselves
+  P.t = T;
+  P.len = n;
+  P.b = 8;
+  return;
+  }
+ P.b = b;
+ P.own.assign( ( n * b + 7 ) / 8 + 16 , 0 );
+ unsigned char * out = P.own.data();
+ std::uint64_t acc = 0;               // the low have bits pending
+ unsigned have = 0;
+ auto put = [ & ]( std::uint64_t v , unsigned w ) {    // w <= 56 bits
+  if( have + w < 64 ) {
+   acc = ( acc << w ) | v;
+   have += w;
+   return;
+   }
+  const unsigned r = 64 - have;       // have >= 8, so r <= 56
+  std::uint64_t word = ( acc << r ) | ( v >> ( w - r ) );
+  if constexpr( std::endian::native == std::endian::little )
+   word = saisSwap( word );
+  std::memcpy( out , &word , 8 );
+  out += 8;
+  acc = v & ( ( std::uint64_t( 1 ) << ( w - r ) ) - 1 );
+  have = w - r;
+  };
+ std::size_t i = 0;
+#if defined( __BMI2__ )
+ const std::uint64_t mask = 0x0101010101010101ull *
+                            ( ( std::uint64_t( 1 ) << b ) - 1 );
+ for( ; i + 8 <= n ; i += 8 ) {
+  std::uint64_t x = 0;
+  for( unsigned j = 0 ; j < 8 ; ++j )
+   x |= std::uint64_t( code[ T[ i + j ] ] ) << ( 56 - 8 * j );
+  put( _pext_u64( x , mask ) , 8 * b );
+  }
+#endif
+ for( ; i < n ; ++i ) put( code[ T[ i ] ] , b );
+ if( have ) {
+  std::uint64_t word = acc << ( 64 - have );
+  if constexpr( std::endian::native == std::endian::little )
+   word = saisSwap( word );
+  std::memcpy( out , &word , 8 );
+  }
+ P.t = P.own.data();
+ P.len = P.own.size();
+ }
+
+/// the items e[ 0 .. g ) sorted by the P digits of bits bits of their keys
+/// (keyOf) at the shifts sh[ 0 ] < ... < sh[ P - 1 ], by a radix sort from
+/// the lowest digit, the counts of all the digits taken in one pass, back
+/// and forth between e and t; count holds P << bits counters
+template< unsigned P , class E , class F , class S >
+void saisLsd( E * ADS_SAIS_RESTRICT e , E * ADS_SAIS_RESTRICT t , S g ,
+              F keyOf , const unsigned * sh , unsigned bits ,
+              S * ADS_SAIS_RESTRICT count )
+{
+ const std::size_t width = std::size_t( 1 ) << bits , mask = width - 1;
+ std::fill( count , count + P * width , S( 0 ) );
+ for( S i = 0 ; i < g ; ++i ) {
+  const auto x = keyOf( e[ i ] );
+  for( unsigned d = 0 ; d < P ; ++d )
+   ++count[ d * width + ( std::size_t( x >> sh[ d ] ) & mask ) ];
+  }
+ for( unsigned d = 0 ; d < P ; ++d ) {   // the starts, exclusive
+  S sum = 0;
+  for( std::size_t z = 0 ; z < width ; ++z ) {
+   const S c = count[ d * width + z ];
+   count[ d * width + z ] = sum;
+   sum += c;
+   }
+  }
+ E * from = e , * to = t;
+ for( unsigned d = 0 ; d < P ; ++d ) {
+  S * const c = count + d * width;
+  const unsigned s = sh[ d ];
+  for( S i = 0 ; i < g ; ++i ) {
+   const E x = from[ i ];
+   to[ c[ std::size_t( keyOf( x ) >> s ) & mask ]++ ] = x;
+   }
+  std::swap( from , to );
+  }
+ if( from != e ) std::copy( from , from + g , e );
+ }
+
+/// the LMS-suffixes of T (n bytes, m LMS places in the bit vector lms,
+/// size4 the counts of saisClassify()) sorted directly, into SA[ 0 .. m ),
+/// by the windows of 64 bits of the packed text at their places: by the
+/// top 8 bits into 256 buckets, then each bucket by a radix sort of the
+/// bits of their keys below (the top 8 * sizeof( S ) bits of the window,
+/// kept in SA[ m .. 2 m )) that its size needs and an insertion sort, and
+/// the suffixes of equal keys by their whole windows and those that follow,
+/// a shorter suffix first when one ends. False, with SA undefined, if a
+/// sample of the windows repeats (the text has long repeats, and the
+/// induction does better) or the ties read more than m windows
+template< class S >
+bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
+                 const std::vector< S > & size4 ,
+                 const std::vector< std::uint64_t > & lms )
+{
+ using U = std::make_unsigned_t< S >;
+ constexpr unsigned kb = 8 * sizeof( S );   // the bits of a key
+ constexpr S D = S( saisAhead );
+ bool occurs[ 256 ];
+ for( unsigned c = 0 ; c < 256 ; ++c )
+  occurs[ c ] = ( size4[ 4 * c ] | size4[ 4 * c + 1 ] | size4[ 4 * c + 2 ] |
+                  size4[ 4 * c + 3 ] ) != 0;
+ occurs[ T[ 0 ] ] = true;
+ unsigned char code[ 256 ];
+ const std::uint64_t b = saisCodes( occurs , code );
+ // a sample of about 1024 keys of 32 bits, spread over the text: on a
+ // text with no long repeats two of them are equal with a probability of
+ // about 2^-32 per pair, and a few equal pairs tell of many ties among
+ // all the windows, that the induction sorts in less time
+ {
+  std::vector< std::uint64_t > w;
+  const std::size_t words = lms.size() , step = ( words + 1023 ) / 1024;
+  for( std::size_t x = 0 ; x < words ; x += step )
+   if( lms[ x ] )
+    w.push_back( saisSlowWindow( T , std::size_t( n ) , code , unsigned( b ) ,
+                  64 * x + std::size_t( std::countr_zero( lms[ x ] ) ) ,
+                  32 ) );
+  std::sort( w.begin() , w.end() );
+  std::size_t twins = 0;
+  for( std::size_t i = 1 ; i < w.size() ; ++i ) twins += w[ i ] == w[ i - 1 ];
+  if( 256 * twins > w.size() ) return( false );
+  }
+ SaisPacked P;
+ saisPack( T , std::size_t( n ) , code , unsigned( b ) , P );
+ auto window = [ & ]( S p , std::uint64_t off ) {
+  return( P.window( b * std::uint64_t( p ) + off ) );
+  };
+ // an item: the top bits of the window of a place (all 64 if S has 64
+ // bits, else the top 32) and the place; on 32 bits one word, the key in
+ // its high half, so that the items compare as their keys
+ struct Wide {
+  U k;
+  S p;
+  bool operator<( const Wide & o ) const { return( k < o.k ); }
+  };
+ using E = std::conditional_t< kb == 32 , std::uint64_t , Wide >;
+ auto make = [ & ]( std::uint64_t w , S p ) {
+  if constexpr( kb == 32 )
+   return( E( ( w & 0xFFFFFFFF00000000ull ) | std::uint32_t( p ) ) );
+  else
+   return( E{ U( w ) , p } );
+  };
+ auto keyOf = [ & ]( const E & e ) {
+  if constexpr( kb == 32 ) return( U( e >> 32 ) );
+  else return( e.k );
+  };
+ auto placeOf = [ & ]( const E & e ) {
+  if constexpr( kb == 32 ) return( S( std::uint32_t( e ) ) );
+  else return( e.p );
+  };
+ // the items in SA[ 0 .. 2 m ). A radix sort on the top N bits of the
+ // keys, N six more than the logarithm of m, so that few keys are equal
+ // on them: on few items (m < 2^16, all in the cache) by passes of at
+ // most 11 bits on all of them, else first into the 256 buckets of the
+ // top 8 bits (on the bytes themselves the first symbols, whose LMS
+ // places are counted), which then fit in the cache, and each bucket by
+ // passes on the rest
+ if( reinterpret_cast< std::uintptr_t >( SA ) % alignof( E ) ) return( false );
+ E * const A = reinterpret_cast< E * >( SA );
+ const unsigned N = std::min( kb ,
+                     unsigned( std::bit_width( std::size_t( m ) ) ) + 6 ) ,
+                B1 = m < ( S( 1 ) << 16 ) ? 0 : 8;
+ std::vector< S > start( ( std::size_t( 1 ) << B1 ) + 1 , 0 );
+ auto forLms = [ & ]( auto && f ) {
+  for( std::size_t x = 0 ; x < lms.size() ; ++x )
+   for( std::uint64_t v = lms[ x ] ; v ; v &= v - 1 )
+    f( S( 64 * x + std::size_t( std::countr_zero( v ) ) ) );
+  };
+ if( B1 == 0 ) {
+  start[ 1 ] = m;
+  S i = 0;
+  forLms( [ & ]( S p ) { A[ i++ ] = make( window( p , 0 ) , p ); } );
+  }
+ else {
+  if( b == 8 )
+   for( unsigned c = 0 ; c < 256 ; ++c ) start[ c + 1 ] = size4[ 4 * c + 2 ];
+  else
+   forLms( [ & ]( S p ) { ++start[ ( window( p , 0 ) >> 56 ) + 1 ]; } );
+  for( std::size_t c = 0 ; c + 1 < start.size() ; ++c )
+   start[ c + 1 ] += start[ c ];
+  std::array< S , 256 > at;
+  std::copy( start.begin() , start.end() - 1 , at.begin() );
+  forLms( [ & ]( S p ) {
+   const std::uint64_t w = window( p , 0 );
+   A[ at[ w >> 56 ]++ ] = make( w , p );
+   } );
+  }
+ // each bucket by the next N - B1 bits of its keys, in passes of at most
+ // 11 bits and no more counters than twice its items; then the runs still
+ // equal on the N bits (few) by insertion if short, else by a comparison
+ // sort, and the runs of equal keys kept
+ std::vector< E > A2;
+ std::vector< std::pair< S , S > > G;      // ( first place , size )
+ std::vector< S > count;
+ auto insertion = [ & ]( E * e , S g ) {
+  for( S i = 1 ; i < g ; ++i ) {
+   const E x = e[ i ];
+   S j = i;
+   for( ; ( j > 0 ) && ( x < e[ j - 1 ] ) ; --j ) e[ j ] = e[ j - 1 ];
+   e[ j ] = x;
+   }
+  };
+ const unsigned low = kb - N;         // the bits of a key not sorted
+ for( std::size_t c = 0 ; c + 1 < start.size() ; ++c ) {
+  const S f = start[ c ] , g = start[ c + 1 ] - f;
+  if( g < 2 ) continue;
+  E * const e = A + f;
+  if( g <= 16 )
+   insertion( e , g );
+  else {
+   const unsigned R = N - B1 ,
+                  most = std::min( 11u , unsigned( std::bit_width(
+                                                  std::size_t( g ) ) ) + 1 ) ,
+                  passes = std::min( ( R + most - 1 ) / most , 3u ) ,
+                  bits = ( R + passes - 1 ) / passes;
+   if( A2.size() < std::size_t( g ) ) A2.resize( std::size_t( g ) );
+   std::array< unsigned , 3 > sh{};
+   for( unsigned d = 0 ; d < passes ; ++d )
+    sh[ d ] = unsigned( std::max( int( kb - B1 ) -
+                                  int( bits * ( passes - d ) ) ,
+                                  int( low ) ) );
+   count.resize( std::size_t( 3 ) << bits );
+   auto lsd = [ & ]< unsigned P >() {
+    saisLsd< P >( e , A2.data() , g , keyOf , sh.data() , bits ,
+                  count.data() );
+    };
+   if( passes == 1 ) lsd.template operator()< 1 >();
+   else if( passes == 2 ) lsd.template operator()< 2 >();
+   else lsd.template operator()< 3 >();
+   for( S i = 1 ; i < g ; ++i )       // the runs equal on the N bits
+    if( ( keyOf( e[ i ] ) >> low ) == ( keyOf( e[ i - 1 ] ) >> low ) ) {
+     const U r = keyOf( e[ i ] ) >> low;
+     S j = i + 1;
+     while( ( j < g ) && ( ( keyOf( e[ j ] ) >> low ) == r ) ) ++j;
+     if( j - i < 16 ) insertion( e + i - 1 , j - i + 1 );
+     else std::sort( e + i - 1 , e + j );
+     i = j;
+     }
+   }
+  for( S i = 1 ; i < g ; ++i )        // the runs of equal keys
+   if( keyOf( e[ i ] ) == keyOf( e[ i - 1 ] ) ) {
+    S j = i + 1;
+    while( ( j < g ) && ( keyOf( e[ j ] ) == keyOf( e[ i ] ) ) ) ++j;
+    G.emplace_back( f + i - 1 , j - i + 1 );
+    i = j;
+    }
+  }
+ // the places alone in SA[ 0 .. m ), forward: the place i is written
+ // after the item i (at or past it) is read
+ S * const Q = SA;
+ for( S i = 0 ; i < m ; ++i ) Q[ i ] = placeOf( A[ i ] );
+ // the ties, by the windows from the bit off on (the first kb bits are
+ // equal): with r the bits of the text from that bit on, a suffix that
+ // ends in the window (r < 64) goes before those that go on (the shorter
+ // first), and those that go on with equal windows carry on to the next
+ // window; at most m windows read
+ struct Key {
+  std::uint64_t w;
+  std::int64_t left;
+  S p;
+  bool operator<( const Key & o ) const {
+   return( ( w < o.w ) || ( ( w == o.w ) && ( left < o.left ) ) );
+   }
+  };
+ std::vector< Key > key;
+ std::vector< std::pair< S , S > > H;
+ std::size_t spent = 0;
+ const std::int64_t bits = std::int64_t( b ) * std::int64_t( n );
+ for( std::uint64_t off = kb ; ! G.empty() ; off += 64 ) {
+  H.clear();
+  for( const auto & [ f , g ] : G ) {
+   spent += std::size_t( g );
+   if( spent > std::size_t( m ) ) return( false );
+   key.resize( std::size_t( g ) );
+   for( S i = 0 ; i < g ; ++i ) {
+    const S p = Q[ f + i ];
+    if( i + D < g ) saisPrefetch( P.t + std::min< std::uint64_t >(
+                      ( b * std::uint64_t( Q[ f + i + D ] ) + off ) >> 3 ,
+                      P.len ) );
+    const std::int64_t r = bits - std::int64_t( b * std::uint64_t( p ) +
+                                                off );
+    key[ std::size_t( i ) ] = { window( p , off ) ,
+                                std::min< std::int64_t >( r , 64 ) , p };
+    }
+   std::sort( key.begin() , key.end() );
+   for( S i = 0 ; i < g ; ) {
+    S j = i + 1;
+    while( ( j < g ) && ( key[ j ].w == key[ i ].w ) &&
+           ( key[ j ].left == key[ i ].left ) )
+     ++j;
+    if( ( j - i > 1 ) && ( key[ i ].left == 64 ) )
+     H.emplace_back( f + i , j - i );
+    i = j;
+    }
+   for( S i = 0 ; i < g ; ++i ) Q[ f + i ] = key[ std::size_t( i ) ].p;
+   }
+  G.swap( H );
+  }
+ return( true );
  }
 
 /// SA-IS on T[ 0 .. n - 1 ], symbols in [ 0 , K ), into SA[ 0 .. n - 1 ]
@@ -1020,8 +1409,7 @@ void sais( const C * T , S * SA , S n , S K )
  std::vector< S > size4;
  std::vector< std::uint64_t > lms , ends;
  S first , names;
- const S m = saisPartial( T , SA , n , K , size4 , lms , &first , &names ,
-                          ends );
+ const S m = saisClassify( T , n , K , size4 , lms , &first );
  // the numbers of the symbols, the suffix 0 in none of the kinds
  std::vector< S > size( std::size_t( K ) , 0 ) , B( std::size_t( K ) , 0 );
  for( std::size_t c = 0 ; c < std::size_t( K ) ; ++c )
@@ -1071,6 +1459,13 @@ void sais( const C * T , S * SA , S n , S K )
   };
  std::vector< std::uint64_t > rest;
  const std::vector< std::uint64_t > * tied = nullptr;
+ bool sorted = false;
+ if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > )
+  sorted = saisDirect( T , SA , n , m , size4 , lms );
+ if( ! sorted )
+  saisPartial( T , SA , n , K , size4 , lms , m , &names , ends );
+ else
+  names = m;
  if( names < m ) {
   tied = &ends;
   if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) {

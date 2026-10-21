@@ -804,6 +804,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- suffixArray() of a text of bytes sorts its LMS-suffixes directly, as
+  strings, before the induction: the windows of 64 bits of the text packed
+  in codes of the ranks of its bytes (1 to 6 bits, or the bytes when more
+  than 64 occur), a radix sort on their top bits (by the 256 buckets of the
+  top 8 first on large texts) and the next windows for the ties, with no
+  partial induction, no names and no recursion; a sample of the windows
+  that repeats, or ties beyond a budget, leave the text to the induction
+  as before. Against libsais 2.12 on wolfe (one core, A/A of libsais under
+  3%): random texts over 256 bytes 1.05, 1.20 and 1.44 times faster at
+  10^5, 10^6 and 10^7 bytes (0.80 to 0.97 before), over 26 1.28 to 2.31
+  (0.84 to 1.28), over 4 1.59 to 1.65 (0.84 to 0.92); the final induction
+  marks a suffix by its top bit (one shift, no branch) and prefetches the
+  text at a place chosen by one select, and the kinds of the places are
+  counted from counters built by vector operations, 2 to 7% on all the
+  texts; the tests in test/engineered_strings.cpp
+
 - HugePageAllocator keeps the blocks of 8 MB or more given back, up to 16
   blocks and 64 MB per thread, for the next requests of the same size, which find
   their pages faulted in and huge: an ObjectPool built again and again
