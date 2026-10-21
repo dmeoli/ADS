@@ -18,7 +18,7 @@
 #                           [PRIORITY=<dir>] [MIMALLOC=<prefix>]              #
 #                           [JEMALLOC=<prefix>] [OPT=<prefix>]                #
 #                           [SORTING=<dir>] [HWY=<prefix>] [TLX=<dir>]        #
-#                           [HASHING=<dir>] [ABSL=<prefix>] [COMBI=<dir>]     #
+#                           [COMBI=<dir>]                                     #
 ###############################################################################
 
 set -e

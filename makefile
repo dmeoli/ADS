@@ -77,17 +77,14 @@ test: $(BINS)
 # SORTING=<dir> adds to sort the sorts whose sources are in <dir> (ips4o,
 # ips2ra, x86-simd-sort, ska_sort, fluxsort, crumsort), HWY=<prefix> vqsort
 # of Highway; TLX=<dir> adds tlx::multiway_merge to external from the
-# sources of tlx in <dir>
+# sources of tlx in <dir>; COMBI=<dir> adds to combinatorial and backtrack
+# the competitors whose sources are in <dir> (combinations, libpopcnt,
+# libmorton, and the programs of Knuth built in knuth)
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
-            sparse succinct compression external graphs \
+            sparse succinct compression external graphs combinatorial \
+            backtrack \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
-# Abseil; COMBI=<dir> adds to combinatorial and backtrack the competitors
-# whose sources are in <dir> (combinations, libpopcnt, libmorton, and the
-# programs of Knuth built in knuth)
-BENCHES   = sort dictionaries priority sequences bignum fft hashing \
-            combinatorial backtrack
-comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
