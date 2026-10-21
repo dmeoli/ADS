@@ -8,6 +8,10 @@
 # it), the queues between threads under ThreadSanitizer, FlatHashTable on     #
 # its broadword fallback and fft() on the lanes of AVX and on arrays of       #
 # doubles; it measures the coverage of the tests and sends it to Coveralls.   #
+# FastHash on AVX2, the queues between threads under ThreadSanitizer,         #
+# FlatHashTable on its broadword fallback and fft() on the lanes of AVX, on   #
+# arrays of doubles and on the intrinsics of x86 that MSVC takes; it          #
+# measures the coverage of the tests and sends it to Coveralls.               #
 ###############################################################################
 
 name: CI
@@ -136,6 +140,17 @@ jobs:
             for t in fft fft-sizes fft-large fft-lanes convolve-real; do
               ./lanes $t
             done
+          done
+      - name: the transforms of fft.cpp on arrays, on AVX, on the
+              intrinsics of SSE2 and AVX (those of MSVC) and lean
+        run: |
+          for f in -DADS_FFT_SIMD=0 -mavx2 -DADS_FFT_INTRINSICS=1 \
+                   "-mavx2 -DADS_FFT_INTRINSICS=1" \
+                   "-mavx2 -DADS_FFT_LEAN=1"; do
+            g++ -std=c++20 -O1 -g -fsanitize=address,undefined $f \
+                -Iinclude -Itest -DADS_CONTRACTS=3 -o ffts test/fft.cpp \
+                -pthread
+            for t in $(./ffts -l); do ./ffts $t; done
           done
 
   coverage:

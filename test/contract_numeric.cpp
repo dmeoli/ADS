@@ -47,6 +47,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <numbers>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -298,7 +299,15 @@ ADS_TEST( "other-numeric" )
  fft( a1 , false );
  fft( a4 , false );
  CHECK( a0.empty() && a1[ 0 ] == 2.0 && std::abs( a4[ 0 ] - 4.0 ) < 1e-12 );
- CHECK_THROWS( fft( a3 , false ) , contract_violation );
+ a3[ 1 ] = 3.0;                                       // any size
+ fft( a3 , false );
+ CHECK( std::abs( a3[ 0 ] - 3.0 ) < 1e-12 &&
+        std::abs( a3[ 1 ] - 3.0 * std::polar( 1.0 , -2 * std::numbers::pi /
+                                               3 ) ) < 1e-12 );
+ CHECK_THROWS( (void) irfft( std::vector< Complex >( 2 ) , 5 ) ,
+               contract_violation );
+ std::vector< double > d1( 1 );
+ CHECK_THROWS( dct( d1 , 1 ) , contract_violation );
  CHECK( convolve( {} , { 1.0 } ).empty() || convolve( {} , { 1.0 } ).size()
         <= 1 );
 

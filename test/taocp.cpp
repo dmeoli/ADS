@@ -1045,7 +1045,7 @@ ADS_TEST( "random-numbers" )
 // the FFT against the transform by its definition, the inverse of the
 // transform, and the product of polynomials against the naive one; no
 // point, an empty polynomial, two constants, the zero polynomial, the
-// impulse, and sizes that are not powers of 2
+// impulse, and sizes that are not powers of 2 [see fft.cpp for all]
 ADS_TEST( "fft" )
 {
  std::mt19937 g( 17 );
@@ -1087,10 +1087,15 @@ ADS_TEST( "fft" )
  imp[ 0 ] = 1;
  fft( imp , false );
  for( const auto & v : imp ) CHECK( std::abs( v - Complex( 1 ) ) < 1e-12 );
- std::vector< Complex > bad( 3 );
- CHECK_THROWS( fft( bad , false ) , contract_violation );
- std::vector< Complex > bad6( 6 );
- CHECK_THROWS( fft( bad6 , true ) , contract_violation );
+ for( std::size_t n : { 3 , 6 } ) {             // not powers of 2
+  std::vector< Complex > a( n );
+  for( auto & x : a ) x = Complex( int( g() % 21 ) - 10 , 1 );
+  auto f = a;
+  fft( f , true );
+  const auto d = dft( a , true );
+  for( std::size_t k = 0 ; k < n ; ++k )
+   CHECK( std::abs( f[ k ] - d[ k ] ) < 1e-12 );
+  }
  }
 
 // the transform of radix 2 by its rounds, with the powers of omega by
