@@ -1658,6 +1658,42 @@ struct FFTFour {
    }
   }
 
+ /// the powers of omega_n of the item of the column j of the block u of
+ /// the rows (o = 0 and no wrap), as rowBlock() takes them
+ ADS_FFT_INLINE C twiddleOf( std::size_t u , std::size_t j ) const {
+  if( ! split ) return( Tw->t[ u * r + j ] );
+  const T * s = Tw->s.data() + 2 * ( u * r + j );
+  return( cmul< false >( Tw->t[ j ] , splat< T , W >( s[ 0 ] ) ,
+                         splat< T , W >( s[ 1 ] ) ) );
+  }
+
+ /// the block b of the rows ( m - k ) mod m , k = u W + fftLane( l ), of
+ /// B, the mirrors of those of rowBlock( u , b ) (o = 0), transposed and
+ /// times omega_n^{j ( m - k )} = omega_r^j conj( omega_n^{j k} ), wr[ j ]
+ /// = omega_r^j; the item of the column j < r at c[ j ]
+ ADS_FFT_INLINE void mirrorBlock( std::size_t u , std::size_t b , C * c ,
+                                  const std::complex< T > * wr ) const {
+  V re[ W ] , im[ W ];
+  const C * a = B + b * M;
+  for( std::size_t l = 0 ; l < W ; ++l ) {
+   const std::size_t k = u * W + fftLane< T , W >( l ) ,
+                     q = k ? m - k : 0;
+   re[ l ] = a[ q ].r;
+   im[ l ] = a[ q ].i;
+   }
+  transpose< T , W >( re );
+  transpose< T , W >( im );
+  for( std::size_t l = 0 ; l < W ; ++l ) {
+   const std::size_t j = b * W + fftLane< T , W >( l );
+   if( j >= r ) continue;
+   const C w = twiddleOf( u , j ) ,
+           v = cmul< false >( C{ w.r , - w.i } ,
+                              splat< T , W >( wr[ j ].real() ) ,
+                              splat< T , W >( wr[ j ].imag() ) );
+   c[ j ] = cmul< false >( C{ re[ l ] , im[ l ] } , v.r , v.i );
+   }
+  }
+
  /// the W numbers of the row i of x from the column t W on, and the
  /// following ones up to r only in the last block
  ADS_FFT_INLINE C input( std::size_t i , std::size_t t ) const {
@@ -1776,6 +1812,69 @@ ADS_FFT_INLINE bool byStepCodelet( std::size_t L , F && f )
  return( true );
  }
 
+/// the columns of the four steps not by a codelet: fftStrips blocks of W
+/// columns at a time, each of the rows i gathered by get( i , t ) into g
+/// (rather than one line each at a stride of a power of 2), fftAhead rows
+/// ahead of xi brought into the cache, transformed by the rounds sm into
+/// the blocks of B; g, u and v of fftStrips ( m + W ) items
+template< class T , std::size_t W , class Get >
+inline void fourColumns( const FFTFour< T , W > & F ,
+                         const FFTSteps< T > & sm , const Get & get ,
+                         FFTCx< FFTLane< T , W > > * g ,
+                         FFTCx< FFTLane< T , W > > * u ,
+                         FFTCx< FFTLane< T , W > > * v )
+{
+ constexpr std::size_t S = fftStrips , P = fftAhead ,
+                       Q = 64 / ( 2 * sizeof( T ) * W ) ?
+                           64 / ( 2 * sizeof( T ) * W ) : 1;
+ const std::size_t r = F.r , m = F.m , rb = F.rb;
+ for( std::size_t t0 = 0 ; t0 < rb ; t0 += S ) {
+  const std::size_t St = std::min( S , rb - t0 );
+  for( std::size_t i = 0 ; i < m ; ++i ) {
+   if( i + P < m )
+    for( std::size_t t = 0 ; t < St ; t += Q )
+     ADS_FFT_PREFETCH( F.xi + 2 * ( r * ( i + P ) + ( t0 + t ) * W ) , 0 );
+   for( std::size_t t = 0 ; t < St ; ++t ) g[ t * m + i ] = get( i , t0 + t );
+   }
+  for( std::size_t t = 0 ; t < St ; ++t )
+   batched< T , W >( sm , g + t * m , F.B + ( t0 + t ) * F.M , u , v );
+  }
+ }
+
+/// the rows of the four steps not by a codelet: fftStrips blocks of W rows
+/// of B at a time, transformed by the rounds sr into g and scattered to the
+/// output a few lines at a time, fftAhead rows ahead brought into the
+/// cache; g , u and v of fftStrips ( r + W ) items, v of 2 ( r + W )
+template< class T , std::size_t W >
+inline void fourRows( const FFTFour< T , W > & F , const FFTSteps< T > & sr ,
+                      FFTCx< FFTLane< T , W > > * g ,
+                      FFTCx< FFTLane< T , W > > * u ,
+                      FFTCx< FFTLane< T , W > > * v )
+{
+ constexpr std::size_t S = fftStrips , P = fftAhead ,
+                       Q = 64 / ( 2 * sizeof( T ) * W ) ?
+                           64 / ( 2 * sizeof( T ) * W ) : 1;
+ const std::size_t r = F.r , m = F.m , mb = F.mb , rb = F.rb , o = F.o;
+ for( std::size_t u0 = 0 ; u0 < mb ; u0 += S ) {
+  const std::size_t St = std::min( S , mb - u0 );
+  for( std::size_t t = 0 ; t < St ; ++t ) {
+   for( std::size_t b = 0 ; b < rb ; ++b ) {
+    if( b + 4 < rb )                        // 4 blocks ahead
+     for( std::size_t l = 0 ; l < W ; ++l )
+      ADS_FFT_PREFETCH( F.B + ( b + 4 ) * F.M + o + ( u0 + t ) * W + l , 0 );
+    F.template rowBlock<>( u0 + t , b , v );
+    }
+   batched< T , W >( sr , v , g + t * r , u , v + r + W );
+   }
+  for( std::size_t i = 0 ; i < r ; ++i )
+   for( std::size_t t = 0 ; t < St ; ++t ) {
+    if( i + P < r && t % Q == 0 )
+     ADS_FFT_PREFETCH( F.x + 2 * ( m * ( i + P ) + o + ( u0 + t ) * W ) , 1 );
+    F.output( i , o + ( u0 + t ) * W , F.scale( g[ t * r + i ] ) );
+    }
+  }
+ }
+
 /// the transform of the n = r m points of x in place, r , m >= W, by the
 /// four steps of Bailey on the matrix of m rows and r columns of x [see
 /// FFTFour]: the transforms of length m of its columns, W at a time, kept
@@ -1796,9 +1895,7 @@ inline void fourStep( const T * xi , T * x , std::size_t r , std::size_t m ,
 {
  using V = FFTLane< T , W >;
  using C = FFTCx< V >;
- constexpr std::size_t S = fftStrips , P = fftAhead ,
-                       Q = 64 / ( 2 * sizeof( T ) * W ) ?
-                           64 / ( 2 * sizeof( T ) * W ) : 1;
+ constexpr std::size_t S = fftStrips;
  const std::size_t n = r * m , L = std::max( r , m ) , M = m + W ,
                    o = m % W ? 0 : fftShift< T , W >( x ) ,
                    rb = ( r + W - 1 ) / W , mb = ( m + W - 1 ) / W;
@@ -1813,39 +1910,246 @@ inline void fourStep( const T * xi , T * x , std::size_t r , std::size_t m ,
  if( ! byStepCodelet< W >( m , [ & ]< std::size_t N >() {   // the columns
         fourStepColumns< N , T , W >( F );
         } ) )
-  for( std::size_t t0 = 0 ; t0 < rb ; t0 += S ) {
-   const std::size_t St = std::min( S , rb - t0 );
-   for( std::size_t i = 0 ; i < m ; ++i ) {
-    if( i + P < m )
-     for( std::size_t t = 0 ; t < St ; t += Q )
-      ADS_FFT_PREFETCH( xi + 2 * ( r * ( i + P ) + ( t0 + t ) * W ) , 0 );
-    for( std::size_t t = 0 ; t < St ; ++t )
-     g[ t * m + i ] = F.input( i , t0 + t );
-    }
-   for( std::size_t t = 0 ; t < St ; ++t )
-    batched< T , W >( sm , g + t * m , B + ( t0 + t ) * M , u , v );
-   }
+  fourColumns( F , sm , [ & ]( std::size_t i , std::size_t t ) {
+   return( F.input( i , t ) ); } , g , u , v );
  if( ! byStepCodelet< W >( r , [ & ]< std::size_t N >() {   // the rows
         fourStepRows< N , T , W >( F );
         } ) ) {
-  for( std::size_t u0 = 0 ; u0 < mb ; u0 += S ) {
-   const std::size_t St = std::min( S , mb - u0 );
-   for( std::size_t t = 0 ; t < St ; ++t ) {
-    for( std::size_t b = 0 ; b < rb ; ++b ) {
-     if( b + 4 < rb )                       // 4 blocks ahead
-      for( std::size_t l = 0 ; l < W ; ++l )
-       ADS_FFT_PREFETCH( B + ( b + 4 ) * M + o + ( u0 + t ) * W + l , 0 );
-     F.template rowBlock<>( u0 + t , b , v );
+  fourRows( F , sr , g , u , v );
+  }
+ }
+
+/// the powers of omega of realFourStep() on h = r m points: the lanes
+/// omega_{2h}^{u W + fftLane( l )} of the block u in A, omega_{2r}^q in
+/// wq and omega_r^j in wr; kept per thread
+template< class T , std::size_t W >
+struct FFTRealRoots {
+ std::vector< FFTCx< FFTLane< T , W > > > A;
+ std::vector< std::complex< T > > wq , wr;
+ };
+
+/// the transform of the n = 2 h real numbers of x into the h + 1 outputs X,
+/// h = r m, by the four steps on z_j = x_{2j} + i x_{2j+1} whose last step
+/// does the pass of realForward(): the block u of the rows of B, k = u W +
+/// fftLane( l ) <= m / 2, and its mirror, the rows m - k, transformed
+/// together; the outputs K = k + m q and h - K = ( m - k ) + m ( r - 1 - q
+/// ) of the complex transform in the same lane of the two, so that X_K =
+/// E + t and X_{h-K} = conj( E - t ) [see halfPass()] are made in registers
+/// and stored at once, the second block in the reverse order; the column
+/// k = 0 apart. W must divide m, 2 W <= m, and the rows have a codelet;
+/// false otherwise, with nothing done
+template< class T , std::size_t W , class G >
+inline bool realFourStep( const T * x , std::complex< T > * X , std::size_t r ,
+                          std::size_t m , const FFTSteps< T > & sm ,
+                          G && roots )
+{
+ using V = FFTLane< T , W >;
+ using C = FFTCx< V >;
+ if constexpr( W == 1 ) return( false );
+ else {
+  if( m % W || m < 2 * W || ! fftStepCodelet< W >( r ) ) return( false );
+  const std::size_t h = r * m , half = m / 2 , M = m + W ,
+                    rb = ( r + W - 1 ) / W , mb = m / W , U = half / W + 1;
+  C * B = fftBuffer< C >( rb * M + 3 * fftStrips * ( m + W ) );
+  C * g = B + rb * M , * bu = g + fftStrips * ( m + W ) ,
+    * bv = bu + fftStrips * ( m + W );
+  T * Xt = reinterpret_cast< T * >( X );
+  const V one = splat< T , W >( T( 1 ) ) , hf = splat< T , W >( T( 0.5 ) );
+  const FFTFour< T , W > F{ x , Xt , r , m , 0 , M , rb , mb , B ,
+                            & roots( 0 ) , h >= fftSplitRoots , one , one ,
+                            one };
+  thread_local std::unordered_map< std::size_t , FFTRealRoots< T , W > > TT;
+  FFTRealRoots< T , W > & Tb = TT[ h * 128 + r ];
+  if( Tb.A.empty() ) {
+   Tb.A.resize( U );
+   for( std::size_t u = 0 ; u < U ; ++u )
+    for( std::size_t l = 0 ; l < W ; ++l ) {
+     const std::complex< T > z = omega< T >( u * W + fftLane< T , W >( l ) ,
+                                             2 * h );
+     Tb.A[ u ].r[ l ] = z.real();
+     Tb.A[ u ].i[ l ] = z.imag();
      }
-    batched< T , W >( sr , v , g + t * r , u , v + r + W );
+   for( std::size_t q = 0 ; q < r ; ++q ) {
+    Tb.wq.push_back( omega< T >( q , 2 * r ) );
+    Tb.wr.push_back( omega< T >( q , r ) );
     }
-   for( std::size_t i = 0 ; i < r ; ++i )
-    for( std::size_t t = 0 ; t < St ; ++t ) {
-     if( i + P < r && t % Q == 0 )
-      ADS_FFT_PREFETCH( x + 2 * ( m * ( i + P ) + o + ( u0 + t ) * W ) , 1 );
-     F.output( i , o + ( u0 + t ) * W , F.scale( g[ t * r + i ] ) );
-     }
    }
+  if( ! byStepCodelet< W >( m , [ & ]< std::size_t N >() {   // the columns
+         fourStepColumns< N , T , W >( F );
+         } ) )
+   fourColumns( F , sm , [ & ]( std::size_t i , std::size_t t ) {
+    return( F.input( i , t ) ); } , g , bu , bv );
+  const T * R = codeletRoots< T >();
+  std::complex< T > zc[ fftCodelet ];      // the column k = 0
+  byStepCodelet< W >( r , [ & ]< std::size_t N >() {
+   for( std::size_t u = 0 ; u < U ; ++u ) {
+    C cf[ ( N + W - 1 ) / W * W ] , cm[ ( N + W - 1 ) / W * W ] , yf[ N ] ,
+      ym[ N ];
+    for( std::size_t b = 0 ; b < rb ; ++b ) {
+     F.template rowBlock< N % W != 0 >( u , b , cf );
+     F.mirrorBlock( u , b , cm , Tb.wr.data() );
+     }
+    {
+     FFTArray< C > in{ cf } , out{ yf };
+     codelet< N , false , T , W >( in , out , R );
+     }
+    {
+     FFTArray< C > in{ cm } , out{ ym };
+     codelet< N , false , T , W >( in , out , R );
+     }
+    if( u == 0 )
+     for( std::size_t q = 0 ; q < N ; ++q )
+      zc[ q ] = std::complex< T >( yf[ q ].r[ 0 ] , yf[ q ].i[ 0 ] );
+    const bool full = u >= 1 && ( u + 1 ) * W - 1 <= half;
+    const C & Au = Tb.A[ u ];
+    for( std::size_t q = 0 ; q < N ; ++q ) {
+     const C & a = yf[ q ] , & bm = ym[ N - 1 - q ];
+     const C e{ ( a.r + bm.r ) * hf , ( a.i - bm.i ) * hf } ,
+             d{ ( a.r - bm.r ) * hf , ( a.i + bm.i ) * hf } ,
+             o{ d.i , - d.r } ,                         // -i d
+             w = cmul< false >( Au , splat< T , W >( Tb.wq[ q ].real() ) ,
+                                splat< T , W >( Tb.wq[ q ].imag() ) ) ,
+             t = cmul< false >( o , w.r , w.i ) , f = e + t , g = e - t;
+     if( full ) {
+      storeComplex< T , W >( Xt + 2 * ( m * q + u * W ) , f );
+      storeComplex< T , W >( Xt + 2 * ( m * ( N - 1 - q ) + m - u * W - W +
+                                        1 ) ,
+                             C{ reverse< T , W >( g.r ) ,
+                                - reverse< T , W >( g.i ) } );
+      }
+     else {
+      T zf[ 2 * W ] , zb[ 2 * W ];
+      storeComplex< T , W >( zf , f );
+      storeComplex< T , W >( zb , g );
+      for( std::size_t c = 0 ; c < W ; ++c ) {
+       const std::size_t k = u * W + c;
+       if( k == 0 || k > half ) continue;
+       X[ m * q + k ] = std::complex< T >( zf[ 2 * c ] , zf[ 2 * c + 1 ] );
+       X[ m * ( N - 1 - q ) + m - k ] = std::complex< T >( zb[ 2 * c ] ,
+                                                           - zb[ 2 * c + 1 ] );
+       }
+      }
+     }
+    }
+   // the column k = 0: the pairs q , r - q
+   X[ 0 ] = std::complex< T >( zc[ 0 ].real() + zc[ 0 ].imag() , 0 );
+   X[ h ] = std::complex< T >( zc[ 0 ].real() - zc[ 0 ].imag() , 0 );
+   for( std::size_t q = 1 ; 2 * q <= N ; ++q ) {
+    const std::complex< T > a = zc[ q ] , b = std::conj( zc[ N - q ] ) ,
+                            e = T( 0.5 ) * ( a + b ) ,
+                            d = T( 0.5 ) * ( a - b ) , w = Tb.wq[ q ] ,
+                            t( w.real() * d.imag() + w.imag() * d.real() ,
+                               w.imag() * d.imag() - w.real() * d.real() );
+    X[ m * q ] = e + t;
+    if( 2 * q < N ) X[ m * ( N - q ) ] = std::conj( e - t );
+    }
+   } );
+  return( true );
+  }
+ }
+
+/// the first step on the columns of length N <= fftCodelet by codelets,
+/// as fourStepColumns(), the W columns of the block t , W | r, read by in(
+/// i , t ) rather than from x
+template< std::size_t N , class T , std::size_t W , class In >
+ADS_FFT_NOINLINE void fourStepColumnsBy( const FFTFour< T , W > & F ,
+                                         const In & get )
+{
+ using C = FFTCx< FFTLane< T , W > >;
+ const T * R = codeletRoots< T >();
+ for( std::size_t t = 0 ; t < F.rb ; ++t ) {
+  C * o = F.B + t * F.M;
+  auto in = [ & ]( std::size_t i ) ADS_FFT_LAMBDA { return( get( i , t ) ); };
+  auto out = [ & ]( std::size_t k , const C & y ) ADS_FFT_LAMBDA {
+   o[ k ] = y;
+   };
+  codelet< N , false , T , W >( in , out , R );
+  }
+ }
+
+/// the powers of omega of realInverseFour() on h = r m points: the lanes
+/// omega_{2h}^{t W + fftLane( l )} of the block t of the columns in A,
+/// omega_{2m}^i in wi; kept per thread
+template< class T , std::size_t W >
+struct FFTRealInverseRoots {
+ std::vector< FFTCx< FFTLane< T , W > > > A;
+ std::vector< std::complex< T > > wi;
+ };
+
+/// the n = 2 h real numbers x of the h + 1 outputs X of their transform,
+/// h = r m, W | r, by the four steps whose first one does the pass of
+/// realInverse(): the inputs z_K , K = r i + t W + fftLane( l ), of the
+/// complex transform made in the lanes from X_K and X_{h-K}, the second
+/// loaded in the reverse order, as the columns read them, and conjugated,
+/// so that the inverse is the forward transform of the conjugates; x may
+/// be where X is. False if W does not divide r, with nothing done
+template< class T , std::size_t W , class G >
+inline bool realInverseFour( const std::complex< T > * X , T * x ,
+                             std::size_t r , std::size_t m ,
+                             const FFTSteps< T > & sm ,
+                             const FFTSteps< T > & sr , G && roots )
+{
+ using V = FFTLane< T , W >;
+ using C = FFTCx< V >;
+ if constexpr( W == 1 ) return( false );
+ else {
+  if( r % W ) return( false );
+  const std::size_t h = r * m , M = m + W , L = std::max( r , m ) ,
+                    rb = r / W , mb = ( m + W - 1 ) / W ,
+                    o = m % W ? 0 : fftShift< T , W >( x );
+  C * B = fftBuffer< C >( rb * M + 3 * fftStrips * ( L + W ) );
+  C * g = B + rb * M , * bu = g + fftStrips * ( L + W ) ,
+    * bv = bu + fftStrips * ( L + W );
+  const T f = T( 1 ) / T( h );
+  const V one = splat< T , W >( T( 1 ) ) , hf = splat< T , W >( T( 0.5 ) );
+  const FFTFour< T , W > F{ reinterpret_cast< const T * >( X ) , x , r , m ,
+                            o , M , rb , mb , B , & roots( o ) ,
+                            h >= fftSplitRoots , one , splat< T , W >( f ) ,
+                            splat< T , W >( - f ) };
+  thread_local std::unordered_map< std::size_t ,
+                                   FFTRealInverseRoots< T , W > > TT;
+  FFTRealInverseRoots< T , W > & Tb = TT[ h * 128 + r ];
+  if( Tb.A.empty() ) {
+   Tb.A.resize( rb );
+   for( std::size_t t = 0 ; t < rb ; ++t )
+    for( std::size_t l = 0 ; l < W ; ++l ) {
+     const std::complex< T > z = omega< T >( t * W + fftLane< T , W >( l ) ,
+                                             2 * h );
+     Tb.A[ t ].r[ l ] = z.real();
+     Tb.A[ t ].i[ l ] = z.imag();
+     }
+   for( std::size_t i = 0 ; i < m ; ++i )
+    Tb.wi.push_back( omega< T >( i , 2 * m ) );
+   }
+  const T * Xt = reinterpret_cast< const T * >( X );
+  // conj( z_K ), z_K = E + i conj( omega^K ) D, E = ( X_K + conj( X_{h-K}
+  // ) ) / 2, D = ( X_K - conj( X_{h-K} ) ) / 2
+  auto get = [ & ]( std::size_t i , std::size_t t ) ADS_FFT_LAMBDA {
+   const std::size_t K = r * i + t * W;
+   const C a = loadComplex< T , W >( Xt + 2 * K ) ,
+           z = loadComplex< T , W >( Xt + 2 * ( h - K - ( W - 1 ) ) ) ,
+           b{ reverse< T , W >( z.r ) , - reverse< T , W >( z.i ) } ,
+           e{ ( a.r + b.r ) * hf , ( a.i + b.i ) * hf } ,
+           d{ ( a.r - b.r ) * hf , ( a.i - b.i ) * hf } ,
+           w = cmul< false >( Tb.A[ t ] , splat< T , W >( Tb.wi[ i ].real() ) ,
+                              splat< T , W >( Tb.wi[ i ].imag() ) ) ,
+           q = cmul< true >( d , w.r , w.i );     // conj( w ) d
+   C y{ e.r - q.i , - ( e.i + q.r ) };             // conj( e + i q )
+   if( K == 0 ) {                                  // X_0 and X_h real
+    y.r[ 0 ] = T( 0.5 ) * ( X[ 0 ].real() + X[ h ].real() );
+    y.i[ 0 ] = - T( 0.5 ) * ( X[ 0 ].real() - X[ h ].real() );
+    }
+   return( y );
+   };
+  if( ! byStepCodelet< W >( m , [ & ]< std::size_t N >() {   // the columns
+         fourStepColumnsBy< N , T , W >( F , get );
+         } ) )
+   fourColumns( F , sm , get , g , bu , bv );
+  if( ! byStepCodelet< W >( r , [ & ]< std::size_t N >() {   // the rows
+         fourStepRows< N , T , W >( F );
+         } ) )
+   fourRows( F , sr , g , bu , bv );
+  return( true );
   }
  }
 
@@ -2389,23 +2693,37 @@ inline void transform( std::complex< T > * a , std::size_t n )
 /*--------------------------------------------------------------------------*/
 
 /// the powers omega_n^k , k <= n / 4, of the real transforms of n points,
-/// kept per thread
+/// as complex numbers in w, and alternated in the parts P_k = ( c , -c )
+/// and Q_k = ( s , s ) of omega_n^k = c + i s, so that the pass on the
+/// numbers alternated takes them as they are; kept per thread
 template< class T >
-inline const std::complex< T > * fftHalfRoots( std::size_t n )
+struct FFTHalf {
+ std::vector< std::complex< T > > w;
+ std::vector< T > P , Q;
+ };
+
+template< class T >
+inline const FFTHalf< T > & fftHalfRoots( std::size_t n )
 {
- thread_local std::unordered_map< std::size_t ,
-                                  std::vector< std::complex< T > > > H;
+ thread_local std::unordered_map< std::size_t , FFTHalf< T > > H;
  thread_local std::size_t lastN = 0;
- thread_local const std::complex< T > * lastP = nullptr;
- if( lastN == n ) return( lastP );
- std::vector< std::complex< T > > & t = H[ n ];
- if( t.empty() ) {
-  t.resize( n / 4 + 1 );
-  for( std::size_t k = 0 ; k <= n / 4 ; ++k ) t[ k ] = omega< T >( k , n );
+ thread_local const FFTHalf< T > * lastP = nullptr;
+ if( lastN == n ) return( * lastP );
+ FFTHalf< T > & t = H[ n ];
+ if( t.w.empty() ) {
+  t.w.resize( n / 4 + 1 );
+  t.P.resize( 2 * ( n / 4 + 1 ) );
+  t.Q.resize( 2 * ( n / 4 + 1 ) );
+  for( std::size_t k = 0 ; k <= n / 4 ; ++k ) {
+   t.w[ k ] = omega< T >( k , n );
+   t.P[ 2 * k ] = t.w[ k ].real();
+   t.P[ 2 * k + 1 ] = - t.w[ k ].real();
+   t.Q[ 2 * k ] = t.Q[ 2 * k + 1 ] = t.w[ k ].imag();
+   }
   }
  lastN = n;
- lastP = t.data();
- return( lastP );
+ lastP = & t;
+ return( t );
  }
 
 /// the pass between the complex transform of h = n / 2 points and the real
@@ -2419,8 +2737,9 @@ inline const std::complex< T > * fftHalfRoots( std::size_t n )
 /// meet; w holds omega_n^k , k <= n / 4
 template< bool fwd , class T >
 inline void halfPass( const std::complex< T > * X , std::complex< T > * Y ,
-                      std::size_t h , const std::complex< T > * w )
+                      std::size_t h , const FFTHalf< T > & H )
 {
+ const std::complex< T > * w = H.w.data();
  constexpr std::size_t W = fftWidthOf< T >;
  using V = FFTLane< T , W >;
  using C = FFTCx< V >;
@@ -2429,6 +2748,42 @@ inline void halfPass( const std::complex< T > * X , std::complex< T > * Y ,
  T * y = reinterpret_cast< T * >( Y );
  const T * wr = reinterpret_cast< const T * >( w );
  std::size_t k = 1;
+#if ADS_FFT_SHUFFLE
+ if constexpr( fftIsExt< T , W > ) {
+  // the numbers alternated, VL = W / 2 to a vector: the order of the
+  // numbers reversed, their parts swapped and conjugated by the shuffles
+  // of one vector each, 3 for VL pairs, and the tables as they are
+  constexpr std::size_t VL = W / 2;
+  const V sg = [] {                        // ( 1 , -1 , ... )
+   V z{};
+   for( std::size_t l = 0 ; l < W ; ++l ) z[ l ] = l % 2 ? T( -1 ) : T( 1 );
+   return( z );
+   }();
+  auto rev = []( const V & z ) ADS_FFT_LAMBDA {   // the numbers reversed
+   return( [ & ]< std::size_t ... L >( std::index_sequence< L ... > ) {
+    return( __builtin_shufflevector( z , z ,
+             int( 2 * ( VL - 1 - L / 2 ) + L % 2 ) ... ) );
+    }( std::make_index_sequence< W >() ) );
+   };
+  auto swp = []( const V & z ) ADS_FFT_LAMBDA {   // the parts swapped
+   return( [ & ]< std::size_t ... L >( std::index_sequence< L ... > ) {
+    return( __builtin_shufflevector( z , z , int( L ^ 1 ) ... ) );
+    }( std::make_index_sequence< W >() ) );
+   };
+  for( ; 2 * ( k + VL ) <= h + 1 ; k += VL ) {
+   const std::size_t b = h - k - VL + 1;
+   const V u = loadLanes< T , W >( x + 2 * k ) ,
+           v = rev( loadLanes< T , W >( x + 2 * b ) ) * sg ,
+           e = ( u + v ) * half , d = ( u - v ) * half ,
+           P = loadLanes< T , W >( H.P.data() + 2 * k ) ,
+           Q = loadLanes< T , W >( H.Q.data() + 2 * k ) ,
+           t = fwd ? swp( d ) * P + d * Q : d * Q - swp( d ) * P;
+   storeLanes< T , W >( y + 2 * k , e + t );
+   storeLanes< T , W >( y + 2 * b , rev( ( e - t ) * sg ) );
+   }
+  }
+ else
+#endif
  for( ; 2 * ( k + W ) <= h + 1 ; k += W ) {   // k + W - 1 < h - k - W + 1
   const std::size_t b = h - k - W + 1;
   const C u = loadComplex< T , W >( x + 2 * k ) ,
@@ -2494,6 +2849,15 @@ inline void realForward( const T * x , std::size_t n , std::complex< T > * X )
       X[ N ] = std::complex< T >( z0r - z0i , 0 );
       } ) )
   return;
+ if( h > fftCodelet * fftCodelet / 4 ) {   // the pass in the last step
+  constexpr std::size_t W = fftWidthOf< T >;
+  FFTPlan< T , W > & p = fftPlan< T , W >( h );
+  if( p.kind == FFTKind::Four &&
+      realFourStep< T , W >( x , X , p.r , p.m , p.s1 ,
+                             [ & ]( std::size_t o ) -> const auto & {
+                              return( p.fourRoots( o ) ); } ) )
+   return;
+  }
  transformTo( reinterpret_cast< const std::complex< T > * >( x ) , X , h ,
               false );
  const T z0r = X[ 0 ].real() , z0i = X[ 0 ].imag();
@@ -2541,6 +2905,15 @@ inline void realInverse( const std::complex< T > * X , std::size_t n , T * x )
       codelet< N , false , T , 1 >( in , out , codeletRoots< T >() );
       } ) )
   return;
+ if( h > fftCodelet * fftCodelet / 4 ) {   // the pass in the first step
+  constexpr std::size_t W = fftWidthOf< T >;
+  FFTPlan< T , W > & p = fftPlan< T , W >( h );
+  if( p.kind == FFTKind::Four &&
+      realInverseFour< T , W >( X , x , p.r , p.m , p.s1 , p.s2 ,
+                                [ & ]( std::size_t o ) -> const auto & {
+                                 return( p.fourRoots( o ) ); } ) )
+   return;
+  }
  std::complex< T > * Z = reinterpret_cast< std::complex< T > * >( x );
  halfPass< false >( X , Z , h , fftHalfRoots< T >( n ) );
  Z[ 0 ] = std::complex< T >( T( 0.5 ) * ( x0 + xh ) ,
