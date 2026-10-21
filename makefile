@@ -73,16 +73,14 @@ test: $(BINS)
 # malloc) and jemalloc (built with the prefix je_); OPT=<prefix> adds to
 # succinct and compression the libraries installed there: the headers of
 # sdsl-lite, sux, pasta (with tlx) and succinct with libsuccinct, those of
-# FiniteStateEntropy in fse/ with libfse, and streamvbyte, lz4 and libsais
+# FiniteStateEntropy in fse/ with libfse, and streamvbyte, lz4 and libsais;
+# SORTING=<dir> adds to sort the sorts whose sources are in <dir> (ips4o,
+# ips2ra, x86-simd-sort, ska_sort, fluxsort, crumsort), HWY=<prefix> vqsort
+# of Highway
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
-# Abseil; SORTING=<dir> adds to sort the sorts whose sources are in <dir>
-# (ips4o, ips2ra, x86-simd-sort, ska_sort, fluxsort, crumsort), HWY=<prefix>
-# vqsort of Highway
-BENCHES   = sort dictionaries priority sequences bignum fft hashing
-comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
