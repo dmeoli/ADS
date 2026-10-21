@@ -2003,6 +2003,40 @@ ADS_TEST( "big-integer-gcd" )
   CHECK( BigInteger::gcd( a , b ) == BigInteger::gcdEuclid( a , b ) &&
          BigInteger::gcd( a * b , b ) == b );
   }
+ // the half gcd, at its thresholds and past them: random pairs with a
+ // common factor, of equal and of different lengths; quotients all 1
+ // (Fibonacci), one huge quotient, pairs one apart, powers of 2 and
+ // all ones, so that hgcd2() fails, gcdSubdiv() undoes its subtraction
+ // and the matrices grow by the quotients of many digits
+ const std::size_t K = BigInteger::kHgcd , G = BigInteger::kGcdDC;
+ for( std::size_t n : { std::size_t( 3 ) , K - 1 , K , 2 * K + 1 , G - 1 ,
+                        G , G + 1 , 3 * G } ) {
+  const BigInteger c = digits( 1 + g() % 9 , g ) , a = c * digits( n , g ) ,
+                   b = c * digits( n , g ) , d = digits( n , g ) ,
+                   o = digits( n , g , true );
+  for( const auto & [ x , y ] : std::vector< std::pair< BigInteger ,
+                                                         BigInteger > >{
+        { a , b } , { a , c * digits( n / 2 + 1 , g ) } , { d , d - 1 } ,
+        { d * BigInteger::pow( 2 , 64 * n / 2 + 5 ) + 3 , d } ,
+        { o , o - BigInteger::pow( 2 , 64 * ( n / 2 ) ) } ,
+        { a * BigInteger::pow( 2 , 70 ) , b * BigInteger::pow( 2 , 9 ) } } )
+   CHECK( BigInteger::gcd( x , y ) == BigInteger::gcdEuclid( x , y ) &&
+          BigInteger::gcd( y , -x ) == BigInteger::gcdEuclid( x , y ) );
+  CHECK( BigInteger::gcd( a , b ) % c == 0 );
+  }
+ std::map< std::size_t , BigInteger > Fk;    // past 3 kGcdDC digits
+ BigInteger h0 = 0 , h1 = 1;                // F_k and F_{k+1}
+ for( std::size_t k = 0 ; k < 140000 ; ++k ) {
+  if( ( k == 35000 ) || ( k == 70000 ) || ( k == 105000 ) ) {
+   Fk[ k ] = h0;
+   Fk[ k + 1 ] = h1;
+   }
+  h1 += h0;
+  h0 = h1 - h0;
+  }
+ CHECK( BigInteger::gcd( h0 , h1 - h0 ) == 1 &&
+        BigInteger::gcd( h0 , Fk[ 105000 ] ) == Fk[ 35000 ] &&
+        BigInteger::gcd( Fk[ 70000 ] * 6 , Fk[ 70001 ] * 4 ) == 2 );
  }
 
 // the blocks of digits kept per thread [see DigitPool in BigInteger.h]:

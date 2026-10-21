@@ -1309,6 +1309,70 @@ inline void divExact3Asm( std::uint64_t * r , const std::uint64_t * a ,
                        ADS_ELEM_OPS( ADS_DIV3_MORE ) );
  }
 
+/// ( a ; b ) = ( w3 a + w1 b' + c1 ; w2 a' + w0 b + c2 ) in place, n > 0
+/// digits, w = { w0 , w1 , w2 , w3 } each below 2^63, x' = ~x if inv,
+/// else x, the carries out in c1 and c2 [see BigInteger::hgcdInv1() and
+/// BigInteger::hgcdMul1()]: the two products of a digit of a row summed
+/// on ADD and ADC, as their high halves and the carries stay below 2^64,
+/// then the carry of the row before; two digits a turn, the carry of
+/// each row in the registers of the high halves of the other digit
+#define ADS_ROWS_DIGIT( s , L1 , H1 , L2 , H2 , C1 , C2 , TL , TH , NOT )     \
+ "mov " #s "*8(%[a],%[i],8), %%rdx\n\t"                                      \
+ "mulx 24(%[w]), %[" #L1 "], %[" #H1 "]\n\t"                                 \
+ NOT                                                                         \
+ "mulx 16(%[w]), %[" #L2 "], %[" #H2 "]\n\t"                                 \
+ "mov " #s "*8(%[b],%[i],8), %%rdx\n\t"                                      \
+ "mulx (%[w]), %[" #TL "], %[" #TH "]\n\t"                                   \
+ "add %[" #TL "], %[" #L2 "]\n\t"                                            \
+ "adc %[" #TH "], %[" #H2 "]\n\t"                                            \
+ NOT                                                                         \
+ "mulx 8(%[w]), %[" #TL "], %[" #TH "]\n\t"                                  \
+ "add %[" #TL "], %[" #L1 "]\n\t"                                            \
+ "adc %[" #TH "], %[" #H1 "]\n\t"                                            \
+ "add %[" #C1 "], %[" #L1 "]\n\t"                                            \
+ "adc $0, %[" #H1 "]\n\t"                                                    \
+ "add %[" #C2 "], %[" #L2 "]\n\t"                                            \
+ "adc $0, %[" #H2 "]\n\t"                                                    \
+ "mov %[" #L1 "], " #s "*8(%[a],%[i],8)\n\t"                                 \
+ "mov %[" #L2 "], " #s "*8(%[b],%[i],8)\n\t"
+
+#define ADS_ROWS_LOOP( NOT )                                                 \
+ __asm__ __volatile__(                                                       \
+  "test $1, %[i]\n\t"                                                        \
+  "jz 1f\n\t"                                                                \
+  ADS_ROWS_DIGIT( 0 , m1 , g1 , m2 , g2 , h1 , h2 , l1 , l2 , NOT )          \
+  "mov %[g1], %[h1]\n\t"                                                     \
+  "mov %[g2], %[h2]\n\t"                                                     \
+  "add $1, %[i]\n\t"                                                         \
+  "1:\n\t"                                                                   \
+  "test %[i], %[i]\n\t"                                                      \
+  "jz 3f\n\t"                                                                \
+  ".p2align 4\n"                                                             \
+  "2:\n\t"                                                                   \
+  ADS_ROWS_DIGIT( 0 , m1 , g1 , m2 , g2 , h1 , h2 , l1 , l2 , NOT )          \
+  ADS_ROWS_DIGIT( 1 , l1 , h1 , l2 , h2 , g1 , g2 , m1 , m2 , NOT )          \
+  "add $2, %[i]\n\t"                                                         \
+  "jnz 2b\n"                                                                 \
+  "3:\n\t"                                                                   \
+  : [ l1 ] "=&r" ( l1 ) , [ h1 ] "+&r" ( c1 ) , [ l2 ] "=&r" ( l2 ) ,        \
+    [ h2 ] "+&r" ( c2 ) , [ m1 ] "=&r" ( m1 ) , [ g1 ] "=&r" ( g1 ) ,        \
+    [ m2 ] "=&r" ( m2 ) , [ g2 ] "=&r" ( g2 ) , [ i ] "+&r" ( i )            \
+  : [ a ] "r" ( a ) , [ b ] "r" ( b ) , [ w ] "r" ( w )                      \
+  : "rdx" , "cc" , "memory" )
+
+template< bool inv >
+inline void rowsAsm( std::uint64_t * a , std::uint64_t * b , std::size_t n ,
+                     const std::uint64_t * w , std::uint64_t & c1 ,
+                     std::uint64_t & c2 )
+{
+ std::uint64_t l1 , l2 , m1 , g1 , m2 , g2;
+ std::int64_t i = -std::int64_t( n );
+ a += n;
+ b += n;
+ if constexpr( inv ) ADS_ROWS_LOOP( "not %%rdx\n\t" );
+ else ADS_ROWS_LOOP( "" );
+ }
+
 #endif
 
 /// the reciprocal of d1 b + d0, d1 with the top bit set,
@@ -4319,75 +4383,582 @@ inline std::uint64_t BigInteger::gcdWord( std::uint64_t a , std::uint64_t b )
  return( a << s );
  }
 
-inline void BigInteger::linComb( Mag & u , Mag & v , std::int64_t A ,
-                                 std::int64_t B , std::int64_t C ,
-                                 std::int64_t D )
+inline BigInteger::HMat::HMat( std::size_t len )
+ : d( 4 * ( ( len + 1 ) / 2 + 2 ) , 0 ) , n( 1 ) ,
+   alloc( ( len + 1 ) / 2 + 2 )
 {
- // each row x X - y Y with x , y >= 0: the two products by one digit and
- // their difference, which never borrows past the top, as X is u or v
- const bool s1 = B > 0 , s2 = D > 0;
- const Limb x1 = Limb( s1 ? B : A ) , y1 = Limb( s1 ? -A : -B ) ,
-            x2 = Limb( s2 ? D : C ) , y2 = Limb( s2 ? -C : -D );
- const std::size_t n = u.size();
- v.resize( n , 0 );
- Limb cx1 = 0 , cy1 = 0 , b1 = 0 , cx2 = 0 , cy2 = 0 , b2 = 0 ,
-      * const U = u.data() , * const W = v.data();
+ for( std::size_t i = 0 ; i < 4 ; ++i ) p[ i ] = d.data() + i * alloc;
+ p[ 0 ][ 0 ] = p[ 3 ][ 0 ] = 1;             // the identity
+ }
+
+namespace detail {
+
+/// ( a ; b ) = ( w3 a + w1 b' + c1 ; w2 a' + w0 b + c2 ) in place, n > 0
+/// digits, w0 , w1 , w2 , w3 below 2^63, x' = ~x if inv, else x, the
+/// carries out in c1 and c2: each row the sum of two products by one digit
+/// and its carry, below 2^128
+template< bool inv >
+inline void rows( std::uint64_t * a , std::uint64_t * b , std::size_t n ,
+                  const std::uint64_t * w , std::uint64_t & c1 ,
+                  std::uint64_t & c2 )
+{
+#if ADS_BIGINT_ASM
+ rowsAsm< inv >( a , b , n , w , c1 , c2 );
+#else
  for( std::size_t i = 0 ; i < n ; ++i ) {
-  const Limb ui = U[ i ] , vi = W[ i ] ,
-             p1 = detail::mulAdd( s1 ? vi : ui , x1 , cx1 , 0 , cx1 ) ,
-             q1 = detail::mulAdd( s1 ? ui : vi , y1 , cy1 , 0 , cy1 ) ,
-             p2 = detail::mulAdd( s2 ? vi : ui , x2 , cx2 , 0 , cx2 ) ,
-             q2 = detail::mulAdd( s2 ? ui : vi , y2 , cy2 , 0 , cy2 );
-  U[ i ] = detail::subBorrow( p1 , q1 , b1 );
-  W[ i ] = detail::subBorrow( p2 , q2 , b2 );
+  const std::uint64_t x = a[ i ] , y = b[ i ];
+  std::uint64_t h1 , h2 , h3 , h4;
+  const std::uint64_t l1 = mulAdd( x , w[ 3 ] , c1 , 0 , h1 ) ,
+                      l2 = mulAdd( y , w[ 0 ] , c2 , 0 , h3 );
+  a[ i ] = mulAdd( inv ? ~y : y , w[ 1 ] , l1 , 0 , h2 );
+  b[ i ] = mulAdd( inv ? ~x : x , w[ 2 ] , l2 , 0 , h4 );
+  c1 = h1 + h2;
+  c2 = h3 + h4;
   }
- trim( u );
- trim( v );
+#endif
+ }
+
+/// the quotient of n0 by d0, n0 >= d0 > 0, the remainder left in n0: up
+/// to 7 by three trial subtractions with no branch, else by a division
+inline std::uint64_t div11( std::uint64_t & n0 , std::uint64_t d0 )
+{
+ if( ( ( d0 >> 61 ) == 0 ) && ( n0 < ( d0 << 3 ) ) ) {
+  std::uint64_t d = d0 << 2 , m = 0 - std::uint64_t( n0 >= d ) , q = 4 & m;
+  n0 -= d & m;
+  d >>= 1;
+  m = 0 - std::uint64_t( n0 >= d );
+  n0 -= d & m;
+  q += 2 & m;
+  d >>= 1;
+  m = 0 - std::uint64_t( n0 >= d );
+  n0 -= d & m;
+  return( q - m );
+  }
+ const std::uint64_t q = n0 / d0;
+ n0 -= q * d0;
+ return( q );
+ }
+
+/// the quotient of ( n1 , n0 ) by ( d1 , d0 ), n >= d, d1 > 0, the
+/// remainder left in ( n1 , n0 ): a bit at a time from the difference
+/// of the leading bits, with no branch but the loop
+inline std::uint64_t div22( std::uint64_t & n1 , std::uint64_t & n0 ,
+                            std::uint64_t d1 , std::uint64_t d0 )
+{
+ int k = std::countl_zero( d1 ) - std::countl_zero( n1 );
+ if( k > 0 ) {
+  d1 = ( d1 << k ) | ( d0 >> ( 64 - k ) );
+  d0 <<= k;
+  }
+ std::uint64_t q = 0;
+ for( ; ; ) {
+  const bool ge = ( n1 > d1 ) || ( ( n1 == d1 ) && ( n0 >= d0 ) );
+  const std::uint64_t m = 0 - std::uint64_t( ge );
+  std::uint64_t c = 0;
+  n0 = subBorrow( n0 , d0 & m , c );
+  n1 -= ( d1 & m ) + c;
+  q = ( q << 1 ) - m;
+  if( k-- <= 0 ) break;
+  d0 = ( d0 >> 1 ) | ( d1 << 63 );
+  d1 >>= 1;
+  }
+ return( q );
+ }
+
+}  // end( namespace detail )
+
+inline bool BigInteger::hgcd2( Limb ah , Limb al , Limb bh , Limb bl ,
+                               HMat1 & M )
+{
+ // Euclid on ( a , b ), each remainder by one subtraction and, if it is
+ // still the larger, a division, the quotient that would leave less than
+ // 2^65 (the high digit below 2) taken one less and the steps stopped
+ // there. With the remainders at least 2^65 the quotients are those of
+ // the numbers whose leading digits these are, and so on two digits for
+ // the leading digit alone with the remainders at least 2^33 (Moeller):
+ // the steps go on ah and bh alone, down to 2^33, then their matrix
+ // reduces ( a , b ), whose leading 64 bits go down to 2^33 again; when
+ // ah and bh allow no step, on two digits down to a high digit of 2^32,
+ // then on the top 96 bits in one digit. The steps on a and on b are
+ // written apart, so that all stays in registers
+ constexpr Limb kHalf = Limb( 1 ) << 32 , kStop = Limb( 1 ) << 33;
+ if( ( ah < 2 ) || ( bh < 2 ) ) return( false );
+ // x -= q y on one digit, the quotient into the column ( c0 , c1 ) of M
+ // from the other ( o0 , o1 ), as x -= q y is M times ( 1 q ; 0 1 ) for
+ // x = a and ( 1 0 ; q 1 ) for x = b; true to stop
+ auto one = []( Limb & x , Limb y , Limb & c0 , Limb & c1 , Limb o0 ,
+                Limb o1 ) {
+  x -= y;
+  if( x < kStop ) return( true );
+  Limb q = 1;
+  bool r = false;
+  if( x > y ) {
+   q = detail::div11( x , y );
+   if( x < kStop ) r = true;                // q right, the remainder small
+   else ++q;
+   }
+  c0 += q * o0;
+  c1 += q * o1;
+  return( r );
+  };
+ // Euclid on x and y of one digit into u, from the larger; false if no
+ // step was taken
+ auto euclid = [ & one ]( Limb x , Limb y , Limb * u ) {
+  u[ 0 ] = u[ 3 ] = 1;
+  u[ 1 ] = u[ 2 ] = 0;
+  bool onB = x < y;
+  for( bool first = true ; ; first = false ) {
+   if( ! onB ) {
+    if( one( x , y , u[ 1 ] , u[ 3 ] , u[ 0 ] , u[ 2 ] ) ) return( ! first );
+    first = false;
+    }
+   if( one( y , x , u[ 0 ] , u[ 2 ] , u[ 1 ] , u[ 3 ] ) ) return( ! first );
+   onB = false;
+   }
+  };
+ Limb u[ 4 ];
+ if( ( ah >= kStop ) && ( bh >= kStop ) && euclid( ah , bh , u ) ) {
+  // ( a ; b ) = M1^{-1} ( a ; b ) modulo 2^128, exact as the results are
+  // nonnegative and below 2^128; then the leading 64 bits of both
+  Limb h1 , h2 , h3 , h4;
+  const Limb l1 = detail::mulWide( al , u[ 3 ] , h1 ) ,
+             l2 = detail::mulWide( bl , u[ 1 ] , h2 ) ,
+             l3 = detail::mulWide( bl , u[ 0 ] , h3 ) ,
+             l4 = detail::mulWide( al , u[ 2 ] , h4 );
+  Limb c = 0 , d = 0;
+  const Limb xl = detail::subBorrow( l1 , l2 , c ) ,
+             yl = detail::subBorrow( l3 , l4 , d ) ,
+             xh = h1 + ah * u[ 3 ] - h2 - bh * u[ 1 ] - c ,
+             yh = h3 + bh * u[ 0 ] - h4 - ah * u[ 2 ] - d;
+  const int k = std::countl_zero( xh | yh );
+  Limb v[ 4 ];
+  if( ( k < 64 - 33 ) &&
+      euclid( k ? ( xh << k ) | ( xl >> ( 64 - k ) ) : xh ,
+              k ? ( yh << k ) | ( yl >> ( 64 - k ) ) : yh , v ) ) {
+   M.u[ 0 ] = u[ 0 ] * v[ 0 ] + u[ 1 ] * v[ 2 ];   // M1 M2
+   M.u[ 1 ] = u[ 0 ] * v[ 1 ] + u[ 1 ] * v[ 3 ];
+   M.u[ 2 ] = u[ 2 ] * v[ 0 ] + u[ 3 ] * v[ 2 ];
+   M.u[ 3 ] = u[ 2 ] * v[ 1 ] + u[ 3 ] * v[ 3 ];
+   }
+  else std::copy( u , u + 4 , M.u );
+  return( true );
+  }
+ Limb u00 = 1 , u01 = 0 , u10 = 0 , u11 = 1;
+ // x -= q y on two digits: 0 to go on, 1 to stop, 2 to go on in one digit
+ // with the same x
+ auto two = []( Limb & xh , Limb & xl , Limb yh , Limb yl , Limb & c0 ,
+                Limb & c1 , Limb o0 , Limb o1 ) {
+  if( xh == yh ) return( 1 );
+  if( xh < kHalf ) return( 2 );
+  Limb c = 0 , q = 1;
+  xl = detail::subBorrow( xl , yl , c );
+  xh -= yh + c;
+  if( xh < 2 ) return( 1 );
+  int r = 0;
+  if( xh > yh ) {
+   q = detail::div22( xh , xl , yh , yl );
+   if( xh < 2 ) r = 1;
+   else ++q;
+   }
+  c0 += q * o0;
+  c1 += q * o1;
+  return( r );
+  };
+ bool onB;                                  // the next step reduces b
+ {
+  Limb c = 0;
+  if( ( ah > bh ) || ( ( ah == bh ) && ( al > bl ) ) ) {
+   al = detail::subBorrow( al , bl , c );
+   ah -= bh + c;
+   if( ah < 2 ) return( false );
+   u01 = 1;
+   }
+  else {
+   bl = detail::subBorrow( bl , al , c );
+   bh -= ah + c;
+   if( bh < 2 ) return( false );
+   u10 = 1;
+   }
+  onB = ah < bh;
+  }
+ int r = 0;
+ for( ; ; ) {
+  if( ! onB ) {
+   if( ( r = two( ah , al , bh , bl , u01 , u11 , u00 , u10 ) ) ) break;
+   }
+  if( ( r = two( bh , bl , ah , al , u00 , u10 , u01 , u11 ) ) ) {
+   onB = true;
+   break;
+   }
+  onB = false;
+  }
+ if( r == 2 ) {                             // to the top 96 bits
+  ah = ( ah << 32 ) | ( al >> 32 );
+  bh = ( bh << 32 ) | ( bl >> 32 );
+  for( ; ; ) {
+   if( ! onB && one( ah , bh , u01 , u11 , u00 , u10 ) ) break;
+   if( one( bh , ah , u00 , u10 , u01 , u11 ) ) break;
+   onB = false;
+   }
+  }
+ M.u[ 0 ] = u00;
+ M.u[ 1 ] = u01;
+ M.u[ 2 ] = u10;
+ M.u[ 3 ] = u11;
+ return( true );
+ }
+
+inline std::size_t BigInteger::hgcdInv1( const HMat1 & M , Limb * a ,
+                                         Limb * b , std::size_t n )
+{
+ // a = u11 a - u01 b and b = u00 b - u10 a, as M^{-1} = ( u11 -u01 ;
+ // -u10 u00 ), both nonnegative and below b^n, in one pass with no
+ // subtraction: -b = ~b + 1 - b^n, so a = u11 a + u01 ~b + u01 modulo
+ // b^n, a sum below 2^128 per digit as u11 + u01 < 2^64, the carry u01
+ // out of the top; the same for b
+ Limb c1 = M.u[ 1 ] , c2 = M.u[ 2 ];
+ detail::rows< true >( a , b , n , M.u , c1 , c2 );
+ ADS_AUDIT( ( c1 == M.u[ 1 ] ) && ( c2 == M.u[ 2 ] ) );
+ return( n - ( ( a[ n - 1 ] | b[ n - 1 ] ) == 0 ) );
+ }
+
+inline void BigInteger::hgcdMul1( HMat & M , const HMat1 & M1 )
+{
+ // each row ( x , y ) of M to ( u00 x + u10 y , u01 x + u11 y )
+ const std::size_t n = M.n;
+ const Limb w[ 4 ] = { M1.u[ 3 ] , M1.u[ 2 ] , M1.u[ 1 ] , M1.u[ 0 ] };
+ bool grow = false;
+ for( std::size_t r = 0 ; r < 2 ; ++r ) {
+  Limb * const x = M.p[ 2 * r ] , * const y = M.p[ 2 * r + 1 ];
+  Limb c1 = 0 , c2 = 0;
+  detail::rows< false >( x , y , n , w , c1 , c2 );
+  x[ n ] = c1;
+  y[ n ] = c2;
+  grow = grow || ( c1 | c2 );
+  }
+ M.n = n + grow;
+ ADS_AUDIT( M.n < M.alloc );
+ }
+
+inline void BigInteger::hgcdUpdate( HMat & M , const Limb * q ,
+                                    std::size_t qn , unsigned c )
+{
+ while( ( qn > 0 ) && ( q[ qn - 1 ] == 0 ) ) --qn;
+ if( qn == 0 ) return;
+ Limb * const t0 = M.p[ c ] , * const t1 = M.p[ 2 + c ];
+ const Limb * const o0 = M.p[ 1 - c ] , * const o1 = M.p[ 3 - c ];
+ if( qn == 1 ) {
+  const Limb e0 = addMul1( t0 , o0 , M.n , q[ 0 ] ) ,
+             e1 = addMul1( t1 , o1 , M.n , q[ 0 ] );
+  t0[ M.n ] = e0;
+  t1[ M.n ] = e1;
+  M.n += ( e0 | e1 ) != 0;
+  return;
+  }
+ // the other column cut to its digits, as the product need not grow by qn
+ std::size_t n = M.n;
+ for( ; n + qn > M.n ; --n )
+  if( o0[ n - 1 ] | o1[ n - 1 ] ) break;
+ ADS_AUDIT( n + qn < M.alloc );
+ Mag t( n + qn );
+ Limb e[ 2 ];
+ for( std::size_t r = 0 ; r < 2 ; ++r ) {
+  mulP( t.data() , r ? o1 : o0 , n , q , qn );
+  Limb * const x = r ? t1 : t0;
+  e[ r ] = addN( x , t.data() , n + qn , x , M.n );
+  }
+ n += qn;
+ if( e[ 0 ] | e[ 1 ] ) {
+  t0[ n ] = e[ 0 ];
+  t1[ n ] = e[ 1 ];
+  ++n;
+  }
+ else n -= ( t0[ n - 1 ] | t1[ n - 1 ] ) == 0;
+ M.n = n;
+ ADS_AUDIT( M.n < M.alloc );
+ }
+
+inline void BigInteger::hgcdMul( HMat & M , const HMat & M1 )
+{
+ // ( x y ) of each row of M times M1, x u00 + y u10 and x u01 + y u11
+ const std::size_t n = M.n , m = M1.n , k = n + m + 1;
+ ADS_AUDIT( k <= M.alloc );
+ Mag t( 3 * k );
+ Limb * const s0 = t.data() , * const s1 = s0 + k , * const w = s1 + k;
+ for( std::size_t r = 0 ; r < 2 ; ++r ) {
+  Limb * const x = M.p[ 2 * r ] , * const y = M.p[ 2 * r + 1 ];
+  for( std::size_t j = 0 ; j < 2 ; ++j ) {
+   Limb * const z = j ? s1 : s0;
+   mulP( z , x , n , M1.p[ j ] , m );
+   mulP( w , y , n , M1.p[ 2 + j ] , m );
+   z[ n + m ] = addTo( z , n + m , w , n + m );
+   }
+  std::copy( s0 , s0 + k , x );
+  std::copy( s1 , s1 + k , y );
+  }
+ std::size_t e = k;                         // up to 3 digits 0 on top
+ while( ( e > 1 ) && ( ( M.p[ 0 ][ e - 1 ] | M.p[ 1 ][ e - 1 ] |
+                         M.p[ 2 ][ e - 1 ] | M.p[ 3 ][ e - 1 ] ) == 0 ) )
+  --e;
+ M.n = e;
+ }
+
+inline std::size_t BigInteger::hgcdAdjust( const HMat & M , std::size_t n ,
+                                           Limb * a , Limb * b ,
+                                           std::size_t p )
+{
+ // with a = A b^p + a_l, b = B b^p + b_l and ( A ; B ) already reduced:
+ // a = A b^p + u11 a_l - u01 b_l and b = B b^p + u00 b_l - u10 a_l
+ const std::size_t m = M.n , l = p + m;
+ ADS_AUDIT( l < n );
+ Mag t( 2 * l );
+ Limb * const t0 = t.data() , * const t1 = t0 + l;
+ mulP( t0 , a , p , M.p[ 3 ] , m );
+ mulP( t1 , a , p , M.p[ 2 ] , m );
+ std::copy( t0 , t0 + p , a );
+ Limb ah = addTo( a + p , n - p , t0 + p , m );
+ mulP( t0 , b , p , M.p[ 1 ] , m );
+ ah -= subFrom( a , n , t0 , l );
+ mulP( t0 , b , p , M.p[ 0 ] , m );
+ std::copy( t0 , t0 + p , b );
+ Limb bh = addTo( b + p , n - p , t0 + p , m );
+ bh -= subFrom( b , n , t1 , l );
+ if( ah | bh ) {
+  a[ n ] = ah;
+  b[ n ] = bh;
+  return( n + 1 );
+  }
+ return( n - ( ( a[ n - 1 ] | b[ n - 1 ] ) == 0 ) );
+ }
+
+inline std::size_t BigInteger::gcdSubdiv( Limb * a , Limb * b , std::size_t n ,
+                                          std::size_t s , HMat * M , Mag * g )
+{
+ // a and b swapped as needed so that a < b; the quotients go to the
+ // column of M of the one reduced, 0 for b and 1 for a [see hgcdUpdate()]
+ auto len = []( const Limb * x , std::size_t k ) {
+  while( ( k > 0 ) && ( x[ k - 1 ] == 0 ) ) --k;
+  return( k );
+  };
+ std::size_t an = len( a , n ) , bn = len( b , n );
+ unsigned sw = 0;
+ auto cmp = [ & ]( void ) {
+  return( an != bn ? ( an < bn ? -1 : 1 ) : cmpN( a , b , an ) );
+  };
+ auto swap = [ & ]( void ) {
+  std::swap( a , b );
+  std::swap( an , bn );
+  sw ^= 1;
+  };
+ int c = cmp();
+ if( c == 0 ) {
+  if( s == 0 ) *g = Mag( a , a + an );
+  return( 0 );
+  }
+ if( c > 0 ) swap();
+ if( an <= s ) {
+  if( s == 0 ) *g = Mag( b , b + bn );
+  return( 0 );
+  }
+ subFrom( b , bn , a , an );                // b -= a
+ bn = len( b , bn );
+ if( bn <= s ) {                            // undone
+  const Limb e = addN( b , a , an , b , bn );
+  if( e ) b[ an ] = e;
+  return( 0 );
+  }
+ const Limb one = 1;
+ c = cmp();
+ if( c == 0 ) {
+  if( s == 0 ) *g = Mag( b , b + bn );
+  else hgcdUpdate( *M , &one , 1 , sw );
+  return( 0 );
+  }
+ if( M ) hgcdUpdate( *M , &one , 1 , sw );
+ if( c > 0 ) swap();
+ auto [ q , r ] = divModMag( Mag( b , b + bn ) , Mag( a , a + an ) );
+ std::copy( r.begin() , r.end() , b );      // b = b mod a
+ std::fill( b + r.size() , b + bn , 0 );
+ bn = r.size();
+ if( bn <= s ) {
+  if( s == 0 ) {
+   *g = Mag( a , a + an );
+   return( 0 );
+   }
+  if( bn > 0 ) {                            // the quotient one less
+   const Limb e = addN( b , a , an , b , bn );
+   if( e ) b[ an++ ] = e;
+   }
+  else std::copy( a , a + an , b );
+  q = subMag( q , Mag{ 1 } );
+  }
+ if( M ) hgcdUpdate( *M , q.data() , q.size() , sw );
+ return( an );
+ }
+
+inline std::size_t BigInteger::hgcdStep( std::size_t n , Limb * a , Limb * b ,
+                                         std::size_t s , HMat & M )
+{
+ const Limb mask = a[ n - 1 ] | b[ n - 1 ];
+ Limb ah , al , bh , bl;
+ bool top = true;
+ if( ( n == s + 1 ) || ( mask >> 63 ) ) {
+  top = ( n > s + 1 ) || ( mask >= 4 );
+  ah = a[ n - 1 ];
+  al = a[ n - 2 ];
+  bh = b[ n - 1 ];
+  bl = b[ n - 2 ];
+  }
+ else {                                     // the leading two digits
+  const int c = std::countl_zero( mask );
+  ah = ( a[ n - 1 ] << c ) | ( a[ n - 2 ] >> ( 64 - c ) );
+  al = ( a[ n - 2 ] << c ) | ( a[ n - 3 ] >> ( 64 - c ) );
+  bh = ( b[ n - 1 ] << c ) | ( b[ n - 2 ] >> ( 64 - c ) );
+  bl = ( b[ n - 2 ] << c ) | ( b[ n - 3 ] >> ( 64 - c ) );
+  }
+ HMat1 M1;
+ if( top && hgcd2( ah , al , bh , bl , M1 ) ) {
+  hgcdMul1( M , M1 );
+  return( hgcdInv1( M1 , a , b , n ) );
+  }
+ return( gcdSubdiv( a , b , n , s , &M , nullptr ) );
+ }
+
+inline std::size_t BigInteger::hgcd( Limb * a , Limb * b , std::size_t n ,
+                                     HMat & M )
+{
+ // Moeller's half gcd: the top half reduced by a recursive call and the
+ // low digits by its matrix, a few steps, then the top of what is left
+ // by a second recursive call, whose matrix M multiplies, and the steps
+ // that keep |a - b| above s digits
+ const std::size_t s = n / 2 + 1;
+ if( n <= s ) return( 0 );
+ bool ok = false;
+ if( n >= kHgcd ) {
+  const std::size_t n2 = 3 * n / 4 + 1 , p = n / 2;
+  std::size_t nn = hgcd( a + p , b + p , n - p , M );
+  if( nn ) {
+   n = hgcdAdjust( M , p + nn , a , b , p );
+   ok = true;
+   }
+  while( n > n2 ) {
+   nn = hgcdStep( n , a , b , s , M );
+   if( ! nn ) return( ok ? n : 0 );
+   n = nn;
+   ok = true;
+   }
+  if( n > s + 2 ) {
+   const std::size_t p2 = 2 * s - n + 1;
+   HMat M1( n - p2 );
+   nn = hgcd( a + p2 , b + p2 , n - p2 , M1 );
+   if( nn ) {
+    n = hgcdAdjust( M1 , p2 + nn , a , b , p2 );
+    hgcdMul( M , M1 );
+    ok = true;
+    }
+   }
+  }
+ for( ; ; ) {
+  const std::size_t nn = hgcdStep( n , a , b , s , M );
+  if( ! nn ) return( ok ? n : 0 );
+  n = nn;
+  ok = true;
+  }
+ }
+
+inline BigInteger::Mag BigInteger::gcd22( Limb u1 , Limb u0 , Limb v1 ,
+                                          Limb v0 )
+{
+ // the binary gcd on two digits down to gcdWord() when both fit in one
+ auto make = []( Limb h , Limb l ) {
+  Mag m;
+  if( h ) m = Mag{ l , h };
+  else if( l ) m = Mag{ l };
+  return( m );
+  };
+ if( ( u1 | u0 ) == 0 ) return( make( v1 , v0 ) );
+ if( ( v1 | v0 ) == 0 ) return( make( u1 , u0 ) );
+ auto tz = []( Limb h , Limb l ) {
+  return( l ? std::countr_zero( l ) : 64 + std::countr_zero( h ) );
+  };
+ auto shr = []( Limb & h , Limb & l , int k ) {
+  if( k >= 64 ) {
+   l = h >> ( k - 64 );
+   h = 0;
+   }
+  else if( k > 0 ) {
+   l = ( l >> k ) | ( h << ( 64 - k ) );
+   h >>= k;
+   }
+  };
+ const int z = std::min( tz( u1 , u0 ) , tz( v1 , v0 ) );
+ shr( u1 , u0 , tz( u1 , u0 ) );            // u odd from here on
+ while( ( u1 | v1 ) && ( v1 | v0 ) ) {
+  shr( v1 , v0 , tz( v1 , v0 ) );
+  Limb c = 0;
+  if( ( v1 > u1 ) || ( ( v1 == u1 ) && ( v0 >= u0 ) ) ) {
+   v0 = detail::subBorrow( v0 , u0 , c );   // v -= u
+   v1 -= u1 + c;
+   }
+  else {                                    // ( u , v ) = ( v , u - v )
+   const Limb d0 = detail::subBorrow( u0 , v0 , c ) , d1 = u1 - v1 - c;
+   u0 = v0;
+   u1 = v1;
+   v0 = d0;
+   v1 = d1;
+   }
+  }
+ Limb h = u1 , l = u0;
+ if( ( u1 | v1 ) == 0 ) l = gcdWord( u0 , v0 );   // v = 0 too
+ if( z >= 64 ) {
+  h = l << ( z - 64 );
+  l = 0;
+  }
+ else if( z > 0 ) {
+  h = ( h << z ) | ( l >> ( 64 - z ) );
+  l <<= z;
+  }
+ return( make( h , l ) );
  }
 
 inline BigInteger::Mag BigInteger::gcdMag( Mag u , Mag v )
 {
  if( compareMag( u , v ) < 0 ) std::swap( u , v );
- constexpr std::int64_t kCap = std::int64_t( 1 ) << 30;
- while( v.size() > 1 ) {                    // L1: the leading 62 bits
-  const std::size_t sh = 64 * u.size() -
-                         std::size_t( std::countl_zero( u.back() ) ) - 62;
-  auto top = [ sh ]( const Mag & x ) {
-   auto at = [ & ]( std::size_t i ) {
-    return( i < x.size() ? x[ i ] : Limb( 0 ) ); };
-   const std::size_t w = sh / 64 , o = sh % 64;
-   return( std::int64_t( o ? ( at( w ) >> o ) | ( at( w + 1 ) << ( 64 - o ) )
-                           : at( w ) ) );
-   };
-  std::int64_t uh = top( u ) , vh = top( v ) , A = 1 , B = 0 , C = 0 , D = 1;
-  for( ; ; ) {                              // L2, L3: Euclid on 62 bits
-   const std::int64_t x = uh + A , y = vh + C , z = vh + D;
-   if( ( y <= 0 ) || ( z <= 0 ) ) break;
-   const std::int64_t q = x / y;
-   if( q >= kCap ) break;
-   // q = ( uh + B ) / z, q z = q y + q ( D - C ) < 2^62 + 2^61
-   const std::int64_t e = uh + B - q * z;
-   if( ( e < 0 ) || ( e >= z ) ) break;
-   const std::int64_t T = A - q * C , S = B - q * D;
-   if( ( T <= -kCap ) || ( T >= kCap ) || ( S <= -kCap ) || ( S >= kCap ) )
-    break;
-   A = C;
-   C = T;
-   B = D;
-   D = S;
-   const std::int64_t W = uh - q * vh;
-   uh = vh;
-   vh = W;
-   }
-  if( B == 0 ) {                            // L4: one long division
-   Mag r = divModMag( u , v ).second;
-   u = std::move( v );
-   v = std::move( r );
-   }
-  else linComb( u , v , A , B , C , D );    // L4: the cofactors
-  }
  if( v.empty() ) return( u );
- return( Mag{ gcdLimb( u.data() , u.size() , v[ 0 ] ) } );
+ if( v.size() == 1 ) return( Mag{ gcdLimb( u.data() , u.size() , v[ 0 ] ) } );
+ if( u.size() > v.size() ) {                // u = u mod v first
+  Mag r = divModMag( u , v ).second;
+  if( r.empty() ) return( v );
+  u = std::move( r );
+  }
+ std::size_t n = v.size();
+ Mag A( n + 1 , 0 ) , B( n + 1 , 0 );
+ std::copy( u.begin() , u.end() , A.data() );
+ std::copy( v.begin() , v.end() , B.data() );
+ Limb * const a = A.data() , * const b = B.data();
+ Mag g;
+ while( n >= kGcdDC ) {                     // the half gcd of the top 1/3
+  const std::size_t p = 2 * n / 3;
+  HMat M( n - p );
+  const std::size_t nn = hgcd( a + p , b + p , n - p , M );
+  if( nn ) n = hgcdAdjust( M , p + nn , a , b , p );
+  else if( ! ( n = gcdSubdiv( a , b , n , 0 , nullptr , &g ) ) ) return( g );
+  }
+ while( n > 2 ) {                           // Lehmer, two digits a step
+  const Limb mask = a[ n - 1 ] | b[ n - 1 ];
+  Limb ah = a[ n - 1 ] , al = a[ n - 2 ] , bh = b[ n - 1 ] , bl = b[ n - 2 ];
+  if( ! ( mask >> 63 ) ) {
+   const int c = std::countl_zero( mask );
+   ah = ( ah << c ) | ( al >> ( 64 - c ) );
+   al = ( al << c ) | ( a[ n - 3 ] >> ( 64 - c ) );
+   bh = ( bh << c ) | ( bl >> ( 64 - c ) );
+   bl = ( bl << c ) | ( b[ n - 3 ] >> ( 64 - c ) );
+   }
+  HMat1 M;
+  if( hgcd2( ah , al , bh , bl , M ) ) n = hgcdInv1( M , a , b , n );
+  else if( ! ( n = gcdSubdiv( a , b , n , 0 , nullptr , &g ) ) ) return( g );
+  }
+ return( gcd22( n > 1 ? a[ 1 ] : 0 , a[ 0 ] , n > 1 ? b[ 1 ] : 0 , b[ 0 ] ) );
  }
 
 inline BigInteger::Limb BigInteger::gcdLimb( const Limb * a , std::size_t n ,
