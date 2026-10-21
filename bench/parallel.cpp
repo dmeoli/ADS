@@ -303,6 +303,7 @@ ff::ParallelForReduce< std::uint64_t > & ffNative( void )
  }
 #endif
 
+#if defined( ADS_WITH_FASTFLOW )
 /// the merge sort of A by the pattern ff_DC of FastFlow on t - 1 workers,
 /// the leaves of at most n / 4t items sorted by ADS::stableSort, the two
 /// sorted halves of a part merged through a buffer by std::merge; stable.
@@ -340,6 +341,7 @@ void ffMergeSort( std::vector< T > & A , C less )
   all , out , std::max( threads - 1 , 1 ) );
  dc.run_and_wait_end();
  }
+#endif
 
 /// the executors of ADS on the threads of the run, each built at its first
 /// use
