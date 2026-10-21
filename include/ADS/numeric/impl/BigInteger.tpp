@@ -4762,19 +4762,90 @@ inline void BigInteger::sqrt2( Limb h , Limb l , Mag & s , Mag & r )
  else if( r0 ) r = Mag{ r0 };
  }
 
+inline std::size_t BigInteger::sqrtN( const Limb * m , std::size_t k ,
+                                      Limb * s , Limb * r )
+{
+ // as sqrtRec() on the stack, the quotient by 2 s' as that of the half of
+ // r' beta + a1 by s', whose top bit is set, and its remainder doubled
+ // with the bit out
+ const Limb one = 1;
+ if( k == 1 ) {
+  Mag x , y;
+  sqrt2( m[ 1 ] , m[ 0 ] , x , y );
+  s[ 0 ] = x[ 0 ];
+  r[ 0 ] = y.size() > 0 ? y[ 0 ] : 0;
+  r[ 1 ] = y.size() > 1 ? y[ 1 ] : 0;
+  return( y.size() );
+  }
+ const std::size_t l = k / 2 , h = k - l;
+ Limb rr[ kSqrtSmall + 2 ] , t[ kSqrtSmall + 2 ] , q[ kSqrtSmall + 2 ] ,
+      x[ kSqrtSmall + 2 ] , q2[ kSqrtSmall + 2 ];
+ const std::size_t rn = sqrtN( m + 2 * l , h , s + l , rr );
+ std::fill( rr + rn , rr + h + 1 , 0 );
+ std::copy( m + l , m + 2 * l , t );        // ( r' beta + a1 ) / 2
+ std::copy( rr , rr + h + 1 , t + l );
+ const Limb e = t[ 0 ] & 1;
+ rshN( t , k + 1 , 1 );
+ Limb qt;                                   // the digit l of q, 0 or 1
+ if( h == 1 ) {
+  const Limb d = s[ l ];
+  qt = t[ 1 ] >= d;
+  const Limb hi = t[ 1 ] - ( qt ? d : 0 );
+  q[ 0 ] = detail::divWide( hi , t[ 0 ] , d );
+  t[ 0 ] -= q[ 0 ] * d;
+  }
+ else qt = divBase( t , l , s + l , h , q );
+ // x = u beta + a0, u = 2 u' + e of h + 1 digits
+ std::copy( m , m + l , x );
+ x[ l + h ] = t[ h - 1 ] >> 63;
+ for( std::size_t i = h ; i-- > 1 ; )
+  x[ l + i ] = ( t[ i ] << 1 ) | ( t[ i - 1 ] >> 63 );
+ x[ l ] = ( t[ 0 ] << 1 ) | e;
+ // s = s' beta + q, its digit k in sk; q^2 of 2 l + 1 digits
+ std::copy( q , q + l , s );
+ const Limb sk = qt ? addTo( s + l , h , &one , 1 ) : 0;
+ if( qt ) {                                 // q = beta
+  std::fill( q2 , q2 + 2 * l , 0 );
+  q2[ 2 * l ] = 1;
+  }
+ else {
+  mulP( q2 , q , l , q , l );
+  q2[ 2 * l ] = 0;
+  }
+ std::fill( x + k + 1 , x + kSqrtSmall + 2 , 0 );
+ std::fill( q2 + 2 * l + 1 , q2 + k + 1 , 0 );
+ if( cmpN( x , q2 , k + 1 ) >= 0 ) subN( r , x , k + 1 , q2 , k + 1 );
+ else {                                     // x + 2 s - 1 - q^2, s - 1
+  Limb c = addLsh1( r , x , s , k );
+  r[ k ] = x[ k ] + 2 * sk + c;
+  subFrom( r , k + 1 , q2 , k + 1 );
+  subFrom( r , k + 1 , &one , 1 );
+  subFrom( s , k , &one , 1 );
+  }
+ std::size_t n = k + 1;
+ while( ( n > 0 ) && ( r[ n - 1 ] == 0 ) ) --n;
+ return( n );
+ }
+
 inline void BigInteger::sqrtRec( const Limb * m , std::size_t k , Mag & s ,
-                                 Mag & r )
+                                 Mag & r , bool root )
 {
  // m of 2 k digits, its top digit at least b / 4: with beta = b^l,
  // m = A beta^2 + a1 beta + a0, ( s' , r' ) the root and the remainder
  // of A, ( q , u ) the quotient and the remainder of r' beta + a1 by
  // 2 s', s = s' beta + q and r = u beta + a0 - q^2, corrected once if
  // negative (Zimmermann's Karatsuba square root)
- if( k == 1 ) {
-  sqrt2( m[ 1 ] , m[ 0 ] , s , r );
+ if( k <= kSqrtSmall ) {                    // on the stack
+  s.resize( k + 1 );
+  r.resize( k + 1 );
+  r.resize( sqrtN( m , k , s.data() , r.data() ) );
+  s.resize( k );
+  trim( s );
   return;
   }
- const std::size_t l = k / 2 , h = k - l;
+ // for the root alone, l < h so that u >= beta and r >= 0 but with
+ // probability about b^{l-h} / 2: no remainder and no q^2 then
+ const std::size_t l = k / 2 - ( root && ( k % 2 == 0 ) ) , h = k - l;
  Mag s1 , r1;
  sqrtRec( m + 2 * l , h , s1 , r1 );
  Mag num( r1.size() + l );                  // r' beta + a1
@@ -4786,6 +4857,10 @@ inline void BigInteger::sqrtRec( const Limb * m , std::size_t k , Mag & s ,
  std::copy( s1.begin() , s1.end() , s.data() + l );
  if( ! q.empty() ) addTo( s.data() , s.size() , q.data() , q.size() );
  trim( s );
+ if( root && ( u.size() > l ) ) {
+  r.resize( 0 );
+  return;
+  }
  Mag x( u.size() + l );                     // u beta + a0
  std::copy( m , m + l , x.data() );
  std::copy( u.begin() , u.end() , x.data() + l );
@@ -4798,37 +4873,65 @@ inline void BigInteger::sqrtRec( const Limb * m , std::size_t k , Mag & s ,
   }
  }
 
-inline std::pair< BigInteger , BigInteger > BigInteger::sqrtRem(
-                                                       const BigInteger & a )
+inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::sqrtMag(
+                                                   const Mag & a , bool rem )
 {
- ADS_PRE( a.sign() >= 0 );
- std::pair< BigInteger , BigInteger > out;
- const std::size_t n = a.f_d.size();
+ std::pair< Mag , Mag > out;
+ const std::size_t n = a.size();
  if( n == 0 ) return( out );
  // m = a 4^t with an even number of digits, its top one at least b / 4;
  // the root of a is that of m shifted by t
- const unsigned c = unsigned( std::countl_zero( a.f_d.back() ) ) / 2 ,
+ const unsigned c = unsigned( std::countl_zero( a.back() ) ) / 2 ,
                 z = n % 2;                  // a digit 0 below
  const std::size_t t = c + 32 * z , N = n + z;
  Mag m( N , 0 );
  for( std::size_t i = 0 ; i < n ; ++i ) {
-  m[ i + z ] |= c ? a.f_d[ i ] << ( 2 * c ) : a.f_d[ i ];
-  if( c && ( i + 1 < n ) ) m[ i + 1 + z ] = a.f_d[ i ] >> ( 64 - 2 * c );
+  m[ i + z ] |= c ? a[ i ] << ( 2 * c ) : a[ i ];
+  if( c && ( i + 1 < n ) ) m[ i + 1 + z ] = a[ i ] >> ( 64 - 2 * c );
   }
- Mag s , r;
- sqrtRec( m.data() , N / 2 , s , r );
- if( t ) {                                  // s >> t
-  const std::size_t w = t / 64 , b = t % 64;
-  for( std::size_t i = 0 ; i + w < s.size() ; ++i )
-   s[ i ] = b ? ( s[ i + w ] >> b ) |
-                ( i + w + 1 < s.size() ? s[ i + w + 1 ] << ( 64 - b ) : 0 )
-              : s[ i + w ];
-  s.resize( s.size() - w );
-  trim( s );
-  r = subMag( a.f_d , mulMag( s , s ) );
+ Mag & s = out.first , & r = out.second;
+ sqrtRec( m.data() , N / 2 , s , r , ! rem );
+ if( t ) {
+  // with the root s_m = s 2^t + s0 of m = a 4^t and its remainder r_m,
+  // a - s^2 = ( r_m + 2 s0 s_m - s0^2 ) / 4^t, s0 < 2^t <= 2^63
+  const Limb s0 = s[ 0 ] & ( ( Limb( 1 ) << t ) - 1 );
+  if( rem && s0 ) {
+   const std::size_t n2 = std::max( r.size() , s.size() ) + 2;
+   r.resize( n2 , 0 );
+   const Limb e = addMul1( r.data() , s.data() , s.size() , 2 * s0 );
+   addTo( r.data() + s.size() , n2 - s.size() , &e , 1 );
+   Limb h;
+   const Limb l2[ 2 ] = { detail::mulWide( s0 , s0 , h ) , h };
+   subFrom( r.data() , n2 , l2 , 2 );
+   }
+  auto shr = []( Mag & x , std::size_t sh ) {   // r >> 2 t , s >> t
+   const std::size_t w = sh / 64 , b = sh % 64;
+   if( w >= x.size() ) {
+    x.resize( 0 );
+    return;
+    }
+   for( std::size_t i = 0 ; i + w < x.size() ; ++i )
+    x[ i ] = b ? ( x[ i + w ] >> b ) |
+                 ( i + w + 1 < x.size() ? x[ i + w + 1 ] << ( 64 - b ) : 0 )
+               : x[ i + w ];
+   x.resize( x.size() - w );
+   trim( x );
+   };
+  if( rem ) shr( r , 2 * t );
+  shr( s , t );
   }
- out.first = BigInteger( false , std::move( s ) );
- out.second = BigInteger( false , std::move( r ) );
+ if( ! rem ) r.resize( 0 );
+ return( out );
+ }
+
+inline std::pair< BigInteger , BigInteger > BigInteger::sqrtRem(
+                                                       const BigInteger & a )
+{
+ ADS_PRE( a.sign() >= 0 );
+ auto [ s , r ] = sqrtMag( a.f_d , true );
+ std::pair< BigInteger , BigInteger > out(
+                                       BigInteger( false , std::move( s ) ) ,
+                                       BigInteger( false , std::move( r ) ) );
  ADS_AUDIT( ( out.first * out.first + out.second == a ) &&
             ( out.second <= 2 * out.first ) );
  ADS_AUDIT( out.first == sqrtNewton( a ) );
@@ -4837,7 +4940,10 @@ inline std::pair< BigInteger , BigInteger > BigInteger::sqrtRem(
 
 inline BigInteger BigInteger::sqrt( const BigInteger & a )
 {
- return( sqrtRem( a ).first );
+ ADS_PRE( a.sign() >= 0 );
+ BigInteger s( false , sqrtMag( a.f_d , false ).first );
+ ADS_AUDIT( s == sqrtNewton( a ) );
+ return( s );
  }
 
 inline BigInteger BigInteger::sqrtNewton( const BigInteger & a )
