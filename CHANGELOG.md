@@ -956,6 +956,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of 6 digits of the quotient from kDivBlock6 digits of divisor
   (subPass6()), 1.06 to 1.18 times the schoolbook division of GMP from
   128 digits; kKaratsuba 40 and kDivide 96
+- BigInteger: the blocks of digits freed kept per thread (DigitPool), 8 of
+  each capacity 2^k up to 2^16, the capacities rounded to them, so that
+  the temporaries cost no allocation (the product of 8 digits by 8: from
+  171 to 129 cycles); the documentation of the products, the divisions
+  and the conversions with their formulas, and the references of
+  Karatsuba and Ofman, Toom, Bodrato and Zanoni, Krandick and Jebelean,
+  Barrett, Bouvier and Zimmermann, Lehmer
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the

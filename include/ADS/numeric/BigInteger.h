@@ -19,26 +19,42 @@
  * - The sum and the difference are Algorithms 4.3.1A and 4.3.1S, a carry
  *   or a borrow per digit, \f$ O( n ) \f$.
  * - The product is Algorithm 4.3.1M, \f$ O( m n ) \f$, for the short
- *   factors: in the assembly by passes of 4 rows over the longer factor,
- *   a digit \f$ a_i \f$ at a time, the window of the 5 places
- *   \f$ i , \ldots , i + 4 \f$ in registers, the low halves of the 4
- *   products added on the chain of carries of ADCX and the high halves on
- *   that of ADOX, about 1.4 cycles per product on a Skylake, the rows left
- *   one at a time; elsewhere two rows per pass in C++. A square
- *   \f$ a^2 = 2 T + D \f$ takes the products \f$ a_i a_j \f$, \f$ i < j
- *   \f$, of digits of different tiles of 4 digits by the same passes in T,
- *   and the squares of the tiles, side by side, in D. From kKaratsuba
- *   digits it is the product of Karatsuba (4.3.3A) in the subtractive
- *   form, three products of halves instead of four, the sum
- *   \f$ z_0 + z_2 \mp t \f$ of the middle in two passes on the two
- *   chains of carries, \f$ O( n^{\log_2 3} ) \f$; from kToom3 digits that
- *   of Toom-3, five products of thirds from the values at
- *   \f$ 0 , 1 , -1 , 2 , \infty \f$ and the interpolation of Bodrato,
- *   \f$ O( n^{\log_3 5} ) \f$; the longer factor cut in pieces as long as
- *   the shorter one when their lengths differ; from kFFT
- *   digits it is a convolution of the digits by the number theoretic
- *   transform (4.3.3, 4.6.4) and the Chinese remainder theorem (4.3.2),
- *   \f$ O( n \log n ) \f$. With AVX2 and the fused product and sum, the
+ *   factors: in the assembly by passes of k = 6 or 4 rows over the longer
+ *   factor, a digit \f$ a_i \f$ at a time, the window of the k + 1 places
+ *   \f$ i , \ldots , i + k \f$ in registers, \f$ r_i \f$ and the high
+ *   halves of the k products \f$ a_i b_c \f$ added on the chain of
+ *   carries of ADOX and their low halves on that of ADCX: as
+ *   \f$ W + a_i B + r_i \le ( b^k - 1 ) + ( b - 1 ) ( b^k - 1 ) + b - 1 =
+ *   b^{k+1} - 1 \f$ for the window W and the k digits B of b, no carry
+ *   leaves the window and both chains start again from 0 at the next
+ *   digit. 31 instructions for 6 products, about 1.22 cycles per product
+ *   on a Skylake, 1.4 on 32 digits; the rows left one at a time, and up to
+ *   8 digits the passes with no loop. Elsewhere two rows per pass in C++.
+ *   A square \f$ a^2 = 2 T + D \f$ takes the products \f$ a_i a_j \f$,
+ *   \f$ i < j \f$, of digits of different tiles of 4 digits by the same
+ *   passes in T, and the squares of the tiles, side by side, in D. From
+ *   kKaratsuba digits it is the product of Karatsuba (4.3.3A) in the
+ *   subtractive form,
+ *   \f[ a b = z_2 b^{2l} + \bigl( z_0 + z_2 - ( a_0 - a_1 ) ( b_0 - b_1 )
+ *       \bigr) b^l + z_0 , \qquad z_0 = a_0 b_0 , \; z_2 = a_1 b_1 , \f]
+ *   the sum of the middle in two passes on the two chains of carries,
+ *   \f$ M( n ) = 3 M( n / 2 ) + O( n ) = O( n^{\log_2 3} ) \f$; from
+ *   kToom3 digits that of Toom-3, \f$ a b = r( x ) \f$, \f$ x = b^k \f$,
+ *   from the five products \f$ v_t = a( t ) b( t ) \f$,
+ *   \f$ t = 0 , 1 , -1 , 2 , \infty \f$, and the interpolation of Bodrato
+ *   and Zanoni, \f$ r_3 = ( ( v_2 - v_{-1} ) / 3 - ( v_1 - v_0 ) ) / 2 -
+ *   2 v_\infty \f$, \f$ r_1 = ( v_1 - v_{-1} ) / 2 - r_3 \f$,
+ *   \f$ r_2 = v_1 - v_0 - r_1 - r_3 - v_\infty \f$, the divisions exact,
+ *   by 3 as the product by \f$ -( b - 1 ) / 3 \f$ and a running
+ *   difference, \f$ M( n ) = 5 M( n / 3 ) + O( n ) \f$; the longer
+ *   factor cut in pieces as long as the shorter one when their lengths
+ *   differ; from kFFT digits it is a convolution of the digits by the
+ *   number theoretic transform (4.3.3, 4.6.4) and the Chinese remainder
+ *   theorem (4.3.2), \f$ O( n \log n ) \f$, the top t digits of the
+ *   longer factor left to rows of products by one digit when the
+ *   transform of the rest is shorter by more than they cost, about
+ *   \f$ 12 L \log_2 L \f$ cycles for L terms against \f$ 1.6 t n_b \f$.
+ *   With AVX2 and the fused product and sum, the
  *   transform runs on lanes of doubles, one digit per term, modulo three
  *   primes \f$ p < 2^{50} \f$ with \f$ 3 \cdot 2^{30} \mid p - 1 \f$,
  *   on \f$ 2^k \f$ or \f$ 3 \cdot 2^k \f$ terms, whichever is shorter, the
@@ -47,7 +63,11 @@
  *   \f$ 1 / p \f$, two rounds per pass over the terms: exact, since a
  *   coefficient, below \f$ n \, 2^{128} \f$, stays below the product of
  *   the primes, \f$ 2^{149} \f$, up to \f$ 2^{21} \f$ digits per
- *   factor. Elsewhere and past that the digits are cut in two pieces of
+ *   factor. The coefficient i is \f$ y_1 + p_1 t_2 + p_1 p_2 t_3 \f$ by
+ *   Garner, \f$ 0 \le y_1 , t_2 , t_3 < 2^{50} \f$: one digit each, so the
+ *   product is \f$ Y_1 + p_1 T_2 + p_1 p_2 T_3 \f$ for the numbers of
+ *   those digits, three passes of products by one digit. Elsewhere and
+ *   past that the digits are cut in two pieces of
  *   32 bits each, modulo three primes \f$ p < 2^{31} \f$ with
  *   \f$ 2^{26} \mid p - 1 \f$, on 8 lanes of AVX2 or one at a time, the
  *   products by the roots of unity those of Shoup and the others those of
@@ -62,46 +82,95 @@
  *   their reciprocal (Moeller and Granlund, Algorithms 5 and 6), which
  *   exceeds the true one by at most 1 and makes the correction after the
  *   multiplication and subtraction ("add back") happen with probability
- *   about 2 / b. A division of two digits by one, in the short division,
+ *   about 2 / b; below kDivShort digits on the stack. From kDivBlock
+ *   digits of divisor (kDivBlock6 for K = 6) the quotient goes K = 4 or 6
+ *   digits at a time: the K digits Q of the window, below \f$ v b^K \f$,
+ *   from its top \f$ t + K \f$ digits by the top \f$ t = K + 2 \f$ of v,
+ *   \f$ Q \le \hat Q \le Q + 1 \f$ as \f$ \hat Q - Q \le 1 + Q / v_t <
+ *   2 \f$, then the window less \f$ \hat Q v \f$ by one pass of K rows on
+ *   the complements, \f$ r - a b = ( r_{top} - s ) b^n +
+ *   \overline{\overline{r} + a b} \f$ with s the top digits of
+ *   \f$ \overline{r} + a b \f$, and v added back while it is negative. A
+ *   division of two digits by one, in the short division,
  *   is two products by a reciprocal of the divisor computed once, from a
  *   table and three steps of Newton (Moeller and Granlund, Algorithms 2
  *   and 4). The remainder alone by a digit below \f$ 2^{61} \f$ from
  *   kModFold digits folds 4 digits per step into a remainder of two
  *   digits, by the residues of \f$ b^k \f$, with one division at the end;
- *   divExact() divides by one digit by its inverse modulo b (Hensel).
+ *   divExact() divides by one digit by its inverse modulo b (Hensel), from
+ *   kDivExact2 digits both ways at once (Krandick and Jebelean): with
+ *   \f$ q = q_h b^m + q_l \f$, \f$ q_l d = ( a \bmod b^m ) + c b^m \f$ for
+ *   the last borrow \f$ c < d \f$ of Hensel's division of the low m
+ *   digits, so that \f$ \lfloor a / b^m \rfloor = q_h d + c \f$ and its
+ *   quotient by d is \f$ q_h \f$; \f$ m = n - n / 3 \f$, as the chain of
+ *   the division from the top is about twice as long per digit.
  *   From kDivide digits of quotient the division is recursive (Burnikel
  *   and Ziegler; Brent and Zimmermann, Algorithm 1.8): the upper half of
  *   the quotient from the upper half of the divisor, corrected at most
  *   twice, then the lower half, \f$ O( M( n ) \log n ) \f$ for products in
  *   \f$ M( n ) \f$, a quotient longer than the divisor taken by blocks as
- *   long as the divisor. From kNewton digits of divisor it goes by blocks
+ *   long as the divisor. From kNewton digits of divisor, or kNewtonKept if
+ *   its reciprocal is kept, it goes by blocks
  *   of about half the quotient, each block the product of the top digits
  *   of the remainder by a reciprocal of the top digits of the divisor
- *   (Newton's method, Brent and Zimmermann, Algorithm 3.5), short by a few
- *   units at most, and the product of the block by the divisor taken
- *   modulo \f$ b^N - 1 \f$ by a cyclic convolution as long as the
+ *   (Newton's method, Brent and Zimmermann, Algorithm 3.5; Barrett), short
+ *   by a few units at most, and the product of the block by the divisor
+ *   taken modulo \f$ b^N - 1 \f$ by a cyclic convolution as long as the
  *   divisor, the digits that wrap known from the remainder and the lowest
- *   digit, \f$ O( M( n ) ) \f$. The quotient alone, for operator/(), is
- *   that of the dividend with one digit more, so that the last digit tells
- *   when the quotient may be one off: below kDivCut digits of divisor by
- *   Algorithm D with the divisor cut to the j + 2 leading digits for the
- *   digit j, about half the work, and from kNewton digits with no
- *   remainder for the last block; the rare doubtful case is checked by a
- *   product. divModSchool() is Algorithm D alone. The quotient is
- *   truncated toward zero, as for the integers of C++.
+ *   digit, \f$ O( M( n ) ) \f$. The reciprocal \f$ X = b^n + x \f$ of a
+ *   of n digits, \f$ a X < b^{2n} \le a ( X + 2 ) \f$, is
+ *   \f$ X = X_h b^l + \lfloor X_h t / b^{2h} \rfloor \f$ from that of the
+ *   top \f$ h = n - l \f$ digits, \f$ t = b^{n+h} - a X_h < 2 a \f$: t
+ *   from \f$ a X_h \f$ modulo \f$ b^N - 1 \f$, \f$ N \ge n \f$, as t, its
+ *   sum with \f$ b^N - 1 \f$ and, \f$ X_h \f$ too large, its difference
+ *   from it differ in the lowest digit, which is
+ *   \f$ -a_0 x_0 \bmod b \f$; and of t only its h + 1 digits from the
+ *   place l are not 0, about \f$ 1.8 \f$ to \f$ 2.1 M( n ) \f$ in all. The
+ *   quotient alone, for operator/(), is first that of the top
+ *   \f$ 2 m + 1 \f$ digits of the dividend by the top \f$ m + 2 \f$ of the
+ *   divisor if it has m digits, \f$ m < n - 3 \f$: with
+ *   \f$ v = v_t b^s + v_l \f$ and \f$ u = u_t b^s + u_l \f$, the quotient
+ *   \f$ q_t \f$ of \f$ u_t \f$ by \f$ v_t \f$ is q or q + 1, as
+ *   \f$ u_t / v_t - u_t / ( v_t + 1 ) < 2 / b \f$, and it is q unless
+ *   \f$ r_t b^s + u_l < q_t v_l < b^{|q_t| + s} \f$, which a remainder
+ *   \f$ r_t \f$ longer than \f$ q_t \f$ rules out with no product. Else
+ *   it is that of the dividend with one digit more, so that the last
+ *   digit tells when the quotient may be one off: below kDivCut digits of
+ *   divisor by Algorithm D with the divisor cut to the j + 2 leading
+ *   digits for the digit j, about half the work, and from kNewton digits
+ *   with no remainder for the last block; the rare doubtful case is
+ *   checked by a product. divModSchool() is Algorithm D alone. The
+ *   quotient is truncated toward zero, as for the integers of C++.
  * - The conversion to and from the bases 2 to 36 (4.4) works with the
  *   largest power P of the base in one digit, \f$ 10^{19} \f$ for the base
  *   10. In the bases that are powers of 2 it is a slice of bits per
  *   figure, \f$ O( n ) \f$. In the others it is divide and conquer
  *   (Brent and Zimmermann, section 1.7), with the powers \f$ P^{2^i} \f$
- *   computed once per call, their low digits 0 (about 30 per cent of the
- *   digits in the base 10) set aside, and their reciprocals once for all
- *   the divisions by them: the output splits the number by the power
- *   nearest the square root, the lower part padded with zeros, and the
- *   input joins two halves with one product per level,
- *   \f$ O( M( n ) \log n ) \f$; below kConvert digits they divide or
- *   multiply by P once per many figures, as toStringSchool() and
- *   fromStringSchool() do at every length.
+ *   without their low digits 0 (about 30 per cent of the digits in the
+ *   base 10) and their reciprocals kept per thread and base for the next
+ *   conversions: the output splits the number by the power nearest the
+ *   square root, the lower part padded with zeros, and the input joins two
+ *   halves with one product per level, \f$ O( M( n ) \log n ) \f$; below
+ *   kConvert digits they divide or multiply by P once per many figures,
+ *   as toStringSchool() and fromStringSchool() do at every length. On the
+ *   output, a remainder \f$ x < P^c \f$, \f$ c = 2^j \f$ chunks, below
+ *   kConvertF digits goes by its fraction \f$ f = x / P^c \f$ (Bouvier and
+ *   Zimmermann's scaled remainder tree), the product by the reciprocal of
+ *   \f$ P^c \f$ kept, rounded up, to the q + 2 digits of \f$ P^c \f$ plus
+ *   2: with \f$ f = ( X + \theta ) / P^c \f$, X the integer of the c
+ *   chunks, the integer parts of \f$ f P^i \f$, \f$ i \le c \f$, are
+ *   those of \f$ X / P^{c-i} \f$ while \f$ 0 \le \theta < 1 \f$. The low
+ *   half of the chunks is the fraction of \f$ f P^{c/2} \f$, the same
+ *   \f$ \theta \f$, by the band of the products that it needs (mulBand(),
+ *   short by 2 units at most); the high half is the top digits of f, its
+ *   \f$ \theta \f$ the fraction of the low half: f is rounded down if
+ *   that fraction is at least 1/2, else up, and each half keeps its
+ *   direction, so that \f$ \theta \f$ stays below 1/2 by less than
+ *   \f$ 3 b^{-2} \f$ per level if up and above it if down, and no run of
+ *   9 or of 0 carries wrong. From kFracLeaf chunks down the chunks are
+ *   the integer parts of \f$ f P \f$, \f$ f P^2 \f$, ..., f cut to the
+ *   digits that the chunks left need, and the 19 figures of a chunk come
+ *   by pairs from a table.
  * - pow() is the binary method of 4.6.3, from left to right, squares and
  *   products by x. gcd() is the algorithm of Lehmer (4.5.2L): the leading
  *   62 bits of the two numbers run the algorithm of Euclid in single
@@ -155,6 +224,14 @@
  * \see D. E. Knuth, The Art of Computer Programming, vol. 2, 3rd ed.,
  *      Addison-Wesley, 1998, sections 4.3.1, 4.3.2, 4.3.3, 4.4, 4.5.2 and
  *      4.6.3
+ * \see A. Karatsuba, Yu. Ofman, Multiplication of multidigit numbers on
+ *      automata, Soviet Physics Doklady 7, 595-596, 1963
+ * \see A. L. Toom, The complexity of a scheme of functional elements
+ *      realizing the multiplication of integers, Soviet Mathematics
+ *      Doklady 3, 714-716, 1963
+ * \see M. Bodrato, A. Zanoni, Integer and polynomial multiplication:
+ *      towards optimal Toom-Cook matrices, Proceedings of ISSAC 2007,
+ *      17-24, 2007, doi:10.1145/1277548.1277552
  * \see R. P. Brent, P. Zimmermann, Modern Computer Arithmetic, Cambridge
  *      University Press, 2010, sections 1.3, 1.4, 1.6, 1.7, 2.4 and 3.4
  * \see C. Burnikel, J. Ziegler, Fast recursive division, research report
@@ -172,6 +249,19 @@
  *      doi:10.1016/j.jsc.2013.09.002
  * \see T. Jebelean, An algorithm for exact division, Journal of Symbolic
  *      Computation 15(2), 169-180, 1993, doi:10.1006/jsco.1993.1012
+ * \see W. Krandick, T. Jebelean, Bidirectional exact integer division,
+ *      Journal of Symbolic Computation 21(4-6), 441-455, 1996,
+ *      doi:10.1006/jsco.1996.0024
+ * \see P. Barrett, Implementing the Rivest Shamir and Adleman public key
+ *      encryption algorithm on a standard digital signal processor, Proc.
+ *      CRYPTO 1986, Lecture Notes in Computer Science 263, 311-323, 1987,
+ *      doi:10.1007/3-540-47721-7_24
+ * \see C. Bouvier, P. Zimmermann, Division-free binary-to-decimal
+ *      conversion, IEEE Transactions on Computers 63(8), 1895-1901, 2014,
+ *      doi:10.1109/TC.2014.2315621
+ * \see D. H. Lehmer, Euclid's algorithm for large numbers, The American
+ *      Mathematical Monthly 45(4), 227-233, 1938,
+ *      doi:10.1080/00029890.1938.11990797
  * \see N. Moeller, On Schoenhage's algorithm and subquadratic integer gcd
  *      computation, Mathematics of Computation 77(261), 589-607, 2008,
  *      doi:10.1090/S0025-5718-07-02017-0
@@ -314,9 +404,37 @@ struct NoInit : std::allocator< T > {
   }
  };
 
+/// the blocks of digits freed, kept per thread for the next numbers: 8 at
+/// most of each capacity \f$ 2^k \f$, \f$ 2 \le k < 17 \f$, so that the
+/// temporaries of the operations cost no call to the allocator once the
+/// thread has made a few; trivial, so that the thread reads it with no
+/// guard, the blocks freed at the end of the thread by Reaper
+struct DigitPool {
+ static constexpr unsigned kBins = 17 , kKeep = 8;
+ std::uint64_t * bin[ kBins ][ kKeep ];
+ unsigned cnt[ kBins ];
+ bool armed , dead;                         ///< the reaper made, and done
+ };
+
+inline constinit thread_local DigitPool digitPool{};
+
+struct DigitReaper {
+ ~DigitReaper( void ) {
+  for( unsigned k = 0 ; k < DigitPool::kBins ; ++k )
+   for( unsigned i = 0 ; i < digitPool.cnt[ k ] ; ++i )
+    std::allocator< std::uint64_t >().deallocate( digitPool.bin[ k ][ i ] ,
+                                                  std::size_t( 1 ) << k );
+  for( unsigned & c : digitPool.cnt ) c = 0;
+  digitPool.dead = true;                    // the blocks freed later go back
+  }
+ };
+
+inline thread_local DigitReaper digitReaper;
+
 /// the digits of a number, as a std::vector but with up to two of them
 /// in place, so that the numbers of one or two digits are made with no
-/// allocation; the digits made with no value are left without one
+/// allocation; the digits made with no value are left without one; the
+/// capacities from 4 to 2^16 are powers of 2, from DigitPool
 class Digits {
 
  public:
@@ -399,14 +517,35 @@ class Digits {
  void grow( std::size_t n , std::size_t c ) {
   if( n <= f_cap ) return;
   c = std::max( n , c );
-  T * q = std::allocator< T >().allocate( c );
+  T * q;
+  if( c < ( std::size_t( 1 ) << ( DigitPool::kBins - 1 ) ) ) {
+   const unsigned k = unsigned( std::bit_width( std::max< std::size_t >( c ,
+                                                              4 ) - 1 ) );
+   c = std::size_t( 1 ) << k;
+   DigitPool & P = digitPool;
+   q = P.cnt[ k ] ? P.bin[ k ][ --P.cnt[ k ] ]
+                  : std::allocator< T >().allocate( c );
+   }
+  else q = std::allocator< T >().allocate( c );
   std::copy( data() , data() + f_n , q );
   free();
   f_p = q;
   f_cap = c;
   }
  void free( void ) {
-  if( f_p != f_in ) std::allocator< T >().deallocate( f_p , f_cap );
+  if( f_p != f_in ) {
+   DigitPool & P = digitPool;
+   const unsigned k = unsigned( std::countr_zero( f_cap ) );
+   if( std::has_single_bit( f_cap ) && ( k < DigitPool::kBins ) &&
+       ( P.cnt[ k ] < DigitPool::kKeep ) && ! P.dead ) {
+    if( ! P.armed ) {                      // the reaper, once per thread
+     (void) &digitReaper;
+     P.armed = true;
+     }
+    P.bin[ k ][ P.cnt[ k ]++ ] = f_p;
+    }
+   else std::allocator< T >().deallocate( f_p , f_cap );
+   }
   f_p = f_in;
   f_cap = kIn;
   }
