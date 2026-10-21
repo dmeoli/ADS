@@ -885,10 +885,12 @@ class BigInteger {
                      const Limb * b , std::size_t nb , Limb * w ,
                      std::size_t fft , std::size_t toom );
 
- /// a /= 3 for a multiple of 3, by Hensel's division; a /= d for a
- /// multiple of d odd; a >>= s, 0 < s < 64, n > 0 digits
+ /// a /= 3 for a multiple of 3, by Hensel's division; a >>= s,
+ /// 0 < s < 64, n > 0 digits
  static void divExact3( Limb * a , std::size_t n );
- static void divExactN( Limb * a , std::size_t n , Limb d );
+
+ /// a /= d for a multiple of d, d a divisor of b - 1, f = ( b - 1 ) / d
+ static void divExactB1( Limb * a , std::size_t n , Limb f );
  static void rshN( Limb * a , std::size_t n , int s );
 
  /// r = a + 2 b and r = a - 2 b, n > 0 digits, the carry or the borrow
