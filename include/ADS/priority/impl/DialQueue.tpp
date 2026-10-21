@@ -80,12 +80,17 @@ inline void DialQueue< T , K >::pull( void )
  if( ! f_over.empty() ) {                   // peeked, so that the keys
   const U o = f_over.peekKey();             // pushed next may be smaller
   if( ( d == f_B.size() ) || ( o < U( f_cur + U( d ) ) ) ) {
-   f_cur = o;                               // the overflow in the window
-   while( ! f_over.empty() &&
-          ( U( f_over.peekKey() - f_cur ) < U( f_B.size() ) ) ) {
-    const U u = f_over.topKey();
-    put( f_over.pop() , u );
-    }
+   f_cur = o;                               // the overflow in the window,
+   const U W = U( f_B.size() );             // a bucket of it at a time
+   if( f_cur <= U( std::numeric_limits< U >::max() - W ) )
+    f_over.extractBelow( U( f_cur + W ) , [ this ]( T && x , U u ) {
+     put( x , u ); } );
+   else
+    while( ! f_over.empty() &&
+           ( U( f_over.peekKey() - f_cur ) < W ) ) {
+     const U u = f_over.topKey();
+     put( f_over.pop() , u );
+     }
    d = next();
    }
   }

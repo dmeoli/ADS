@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   maximum flow and of the properties of graphs named without citing them:
   Fredman and Tarjan, Ford, Moore, Karzanov, Malhotra-Kumar-Maheshwari,
   Karmarkar, Konig
+- RadixHeap::extractBelow(), the items of keys below a limit, the buckets
+  below it emptied whole and the one across it moved to the rows below;
+  DialQueue moves its overflow into the window with it, a bucket of the
+  radix heap at a time, 2 times faster on the extractions at 10^6 items
 - listSort(), the sort of a List by relinking its cells, stable: the
   numbers in their natural order by the radix sort of an array of pairs
   ( key , cell ) and one pass that relinks them, 4 to 15 times faster than
