@@ -363,6 +363,10 @@ tested in [`test/engineered.cpp`](test/engineered.cpp), the heaps in
 [`test/sequences.cpp`](test/sequences.cpp) and, the hashing, in
 [`test/hashing.cpp`](test/hashing.cpp), the concurrent ones also on
 real threads under ThreadSanitizer. `FlatHashTable` is the hash
+tested in [`test/engineered.cpp`](test/engineered.cpp) and, the hashing,
+in [`test/hashing.cpp`](test/hashing.cpp) and, those of the notes of
+Ferragina, in [`test/engineered_pearls.cpp`](test/engineered_pearls.cpp),
+the concurrent ones also on real threads under ThreadSanitizer. `FlatHashTable` is the hash
 table that [`bench/dictionaries.cpp`](bench/dictionaries.cpp) compares with
 `boost::unordered_flat_map`, while `OpenHashTable` stays the table of
 section 7.2 of the book; [`bench/hashing.cpp`](bench/hashing.cpp) compares
@@ -404,6 +408,8 @@ with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm, and
 | tANS of order 0 with 2^11 states, two halves of four states each (Duda) | [`compression/Tans.h`](include/ADS/compression/Tans.h) | `engineered_succinct.tans-coder` |
 | directly addressable codes with the optimal widths (Brisaboa, Ladra and Navarro) | [`compression/DirectAccessCodes.h`](include/ADS/compression/DirectAccessCodes.h) | `engineered_succinct.direct-access-codes` |
 | parse of LZ77 with no window in O(n) time (Karkkainen, Kempa and Puglisi) | [`compression/LZ77Linear.h`](include/ADS/compression/LZ77Linear.h) | `engineered_succinct.lz77-linear` |
+| tree of losers with the keys in its nodes, matches with no jump on the integers (Knuth; MCSTL, tlx) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.flat-loser-tree` |
+| merge of k sorted ranges by a lazy funnel of binary mergers (Frigo et al.; Brodal et al.) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.multiway-merge` |
 
 ## Sorting
 

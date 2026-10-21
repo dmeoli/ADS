@@ -246,6 +246,23 @@ PAIRS = [
     ('space', 'ADS::tansCompress', 'FSE', ['FSE']),
     ('space', 'ADS::streamVByteEncode', 'Stream VByte', ['streamvbyte']),
     ('space', 'ADS::FMIndex', 'sdsl', ['sdsl::csa_wt<wt_huff>']),
+    ('multiway merge', 'ADS::multiwayMerge', 'std',
+     ['std::priority_queue']),
+    ('multiway merge', 'ADS::multiwayMerge', 'libstdc++',
+     ['libstdc++ multiway_merge']),
+    ('multiway merge', 'ADS::multiwayMerge', 'tlx',
+     ['tlx::multiway_merge', 'tlx::stable_multiway_merge']),
+    ('multiway merge', 'ADS::FlatLoserTree', 'libstdc++',
+     ['libstdc++ multiway_merge']),
+    ('multiway merge', 'ADS::FlatLoserTree', 'tlx',
+     ['tlx::multiway_merge', 'tlx::stable_multiway_merge']),
+    ('book mergesort', 'ADS::FlatLoserTree', 'std', ['std::priority_queue']),
+    ('book mergesort', 'ADS::FlatLoserTree', 'Boost',
+     ['boost::heap::d_ary_heap d=2', 'boost::heap::d_ary_heap d=4']),
+    ('book mergesort', 'ADS::LoserTree', 'std', ['std::priority_queue']),
+    ('book mergesort', 'ADS::LoserTree', 'Boost',
+     ['boost::heap::d_ary_heap d=2', 'boost::heap::d_ary_heap d=4']),
+    ('sampling', 'ADS::sampleBySkips', 'std', ['std::sample']),
 ]
 
 def read(path):

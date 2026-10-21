@@ -14,12 +14,14 @@
  *   memory; each pass reads and writes every block once, hence at most
  *   \f$ 2 \lceil n / B \rceil ( 1 + \lceil \log_2 ( n / R ) \rceil ) \f$
  *   I/Os, mergeSortIOs() with k = 2.
- * - multiwayMergeSort() merges \f$ k = M / B - 1 \f$ runs at a time, a
- *   block per run and one for the output, the minimum chosen by a tree of
- *   losers [see LoserTree.h], so that the passes drop to \f$ \lceil
- *   \log_k ( n / R ) \rceil \f$ and the I/Os to \f$ O( ( n / B ) \log_{M /
- *   B} ( n / M ) ) \f$ (Theorem 5.1 of the notes), which is optimal. With
- *   snowPlow the runs are made by replacement selection, the snow plow of
+ * - multiwayMergeSort() merges \f$ k = M / B - 1 \f$ runs at a time, a block
+ *   per run and one for the output, the minimum chosen by a tree of losers
+ *   [see LoserTree.h] or by any structure with its interface (a parameter, so
+ *   that the same algorithm runs on the trees and the heaps of ADS and of the
+ *   other libraries, with the same I/Os), so that the passes drop to \f$
+ *   \lceil \log_k ( n / R ) \rceil \f$ and the I/Os to \f$ O( ( n / B )
+ *   \log_{M / B} ( n / M ) ) \f$ (Theorem 5.1 of the notes), which is optimal.
+ *   With snowPlow the runs are made by replacement selection, the snow plow of
  *   Knuth [see replacementSelection() of ExternalSort.h, the same runs in
  *   memory], a heap of M - 2 B items that gives runs of 2 M items on
  *   average on a random input and a single run on a sorted one.
@@ -161,10 +163,12 @@ void binaryMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
                       C less = C() );
 
 /// the items of in, sorted, into out, by the mergesort of fan-in M / B - 1;
-/// the runs by replacement selection if snowPlow
+/// the runs by replacement selection if snowPlow; the least of the heads
+/// of the runs chosen by a Sel, the tree of losers of the notes by default
+/// [see LoserTree.h for its interface]
 /// \pre M >= 3 B, out empty, the two files on the same memory
 /// \post out sorted, with the items of in (an audit)
-template< class T , class C = std::less<> >
+template< class T , class C = std::less<> , class Sel = LoserTree< T , C > >
 void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
                         C less = C() , bool snowPlow = false );
 

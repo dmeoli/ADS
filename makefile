@@ -81,6 +81,11 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+# Abseil; TLX=<dir> adds tlx::multiway_merge to external from the sources
+# of tlx in <dir>
+BENCHES   = sort dictionaries priority sequences bignum fft hashing \
+            external
+comma    := ,
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
@@ -197,6 +202,10 @@ $(BUILD)/bench-compression: bench/compression.cpp bench/Bench.h $(HEADERS) \
 
 $(BUILD)/bench-sort: bench/sort.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(SORTFLAGS)
+
+$(BUILD)/bench-external: bench/external.cpp bench/Bench.h $(HEADERS) | \
+                         $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(TLX),-DADS_HAS_TLX -isystem $(TLX))
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

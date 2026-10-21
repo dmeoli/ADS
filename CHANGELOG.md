@@ -74,6 +74,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the references of the analysis of Timsort by Auger, Jugé, Nicaud and
   Pivoteau in RunSorts.h, of the ninther of Tukey in
   EngineeredQuickSorts.h and of Boost.Sort in Sort.h
+- the engineered structures of the merges of the notes of Ferragina,
+  chapter 5, tested in test/engineered_pearls.cpp: FlatLoserTree, the tree
+  of losers with the keys in its nodes, whose matches on the integers
+  compare key and source as one integer of 128 bits and swap by masks;
+  multiwayMerge(), the merge of k sorted ranges by a lazy funnel of binary
+  mergers with buffers of 4 KiB, whose stretches check no end and whose
+  steps have no jump; multiwayMergeSort() of ExternalSorting.h takes the
+  structure that picks the least head of its runs as a parameter, the
+  tree of losers of the notes by default, so that the same algorithm runs
+  on the trees and the heaps of ADS, of the standard library and of
+  Boost, with the same I/Os
+- the benchmark bench/external.cpp: multiwayMerge() and FlatLoserTree
+  against std::priority_queue, kWayMerge(), __gnu_parallel::
+  multiway_merge() and tlx::multiway_merge(), with the comparisons per
+  item; the mergesort of the notes on LoserTree, FlatLoserTree,
+  std::priority_queue and boost::heap::d_ary_heap, with the I/Os and the
+  comparisons; the samplings of n of 10^8 positions of RandomSampling.h
+  against std::ranges::sample(); TLX in the makefile, ADS_TLX in CMake,
+  the pairs of the summary
 
 - COPYING, the text of the GNU GPL v3 that the LGPL v3 of LICENSE
   supplements, as the LGPL asks, installed by the recipes next to LICENSE
