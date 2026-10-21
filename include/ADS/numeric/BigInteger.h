@@ -1100,9 +1100,21 @@ class BigInteger {
                         const std::vector< Mag > & pw , Limb P );
 
  /// the root s and the remainder r of h b + l, h >= 2^62, by Newton's
- /// method; of m of 2 k digits, its top one at least b / 4, recursively
+ /// method; of m of 2 k digits, its top one at least b / 4, recursively,
+ /// with root the remainder left empty when it is not needed
  static void sqrt2( Limb h , Limb l , Mag & s , Mag & r );
- static void sqrtRec( const Limb * m , std::size_t k , Mag & s , Mag & r );
+ static void sqrtRec( const Limb * m , std::size_t k , Mag & s , Mag & r ,
+                      bool root = false );
+
+ /// the root of a and, if rem, the remainder; for root, sqrtRec() may
+ /// leave r empty
+ static std::pair< Mag , Mag > sqrtMag( const Mag & a , bool rem );
+
+ /// sqrtRec() on the stack for k <= kSqrtSmall: s of k digits, r of k + 1
+ /// written; the length of r
+ static constexpr std::size_t kSqrtSmall = 64;
+ static std::size_t sqrtN( const Limb * m , std::size_t k , Limb * s ,
+                           Limb * r );
 
  /// the greatest common divisor of two numbers below 2^64, binary
  static std::uint64_t gcdWord( std::uint64_t a , std::uint64_t b );
