@@ -231,7 +231,9 @@ ADS_TEST( "string-search" )
 // fall; the texts sorted directly by the windows of their packed codes
 // (1 to 8 bits, few and many LMS places, ties at the end, short and long
 // repeated blocks); integer texts over large alphabets; the LCP array of
-// the permuted LCP against lcpArray() of Kasai et al., on the same texts
+// the permuted LCP against lcpArray() of Kasai et al., on the same texts,
+// and on large texts by the bytes of the permuted LCP, with few and many
+// values beyond a byte
 ADS_TEST( "suffix-sorting" )
 {
  auto check = [ & ]( const std::string & T ) {
@@ -303,6 +305,19 @@ ADS_TEST( "suffix-sorting" )
   check( T );
   std::string U = randomString( g , 70000 , 4 , 0 );
   for( auto & c : U ) c = "\x01\x40\x7f\xfe"[ unsigned( c ) ];
+  check( U );
+  }
+ // the LCP array of a large text read from the bytes of the permuted LCP:
+ // a few values of 255 or more (read from the integers), and so many
+ // that the integers are read instead
+ {
+  std::string T = randomString( g , 300000 , 4 , 'a' );
+  for( int r = 0 ; r < 5 ; ++r )       // about 1% of the values
+   std::copy( T.begin() + 1000 * r , T.begin() + 1000 * r + 600 ,
+              T.begin() + 100000 + 5000 * r );
+  check( T );
+  std::string B = randomString( g , 3000 , 26 , 'a' ) , U;
+  while( U.size() < 300000 ) U += B;
   check( U );
   }
  std::string P;

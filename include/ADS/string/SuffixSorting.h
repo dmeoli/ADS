@@ -95,8 +95,11 @@
  *   and none if a first round on a sample of the groups leaves half of
  *   them tied, as on long repeats), small groups by insertion and large
  *   ones by a radix sort on the bits that their keys do not share,
- *   gathered by pext; the groups left are sorted by the names that
- *   follow, within a budget of m names, and only then by the doubling of
+ *   gathered by pext; the names are then those of the groups left
+ *   (finer than the LMS-substrings: equal names still mean equal
+ *   LMS-substrings, and a smaller name a smaller suffix), and the groups
+ *   left are sorted by the names that follow, within a budget of m
+ *   names, and only then by the doubling of
  *   Larsson and Sadakane on the groups of equal names (when few, or small)
  *   or by the recursion on the string of the names, at the back of SA:
  *   in the round h = 1, 2, 4, ... of the doubling the suffixes of a group,
@@ -123,10 +126,15 @@
  * first four one by one (a load of 8 bytes would often reach a line not
  * prefetched) and then 8 at a time; the text at \f$ \Phi[ i + 64 ] \f$ is
  * prefetched, and \f$ \mathit{LCP}[ r ] = \mathit{PLCP}[ SA[ r + 1 ] ] \f$
- * costs one random read per entry, prefetched too. LCP[ r ] is the lcp of
- * the suffixes SA[ r ] and SA[ r + 1 ], n - 1 entries, as in lcpArray();
- * \f$ \Phi \f$ and PLCP share one array of n integers, and the three
- * passes keep their arrays in functions that declare them not to overlap.
+ * costs one random read per entry, prefetched too: from \f$ 2^{18} \f$
+ * bytes on, where n integers leave the cache, PLCP is also kept as n
+ * bytes, \f$ \min( \mathit{PLCP}[ i ] , 255 ) \f$, and the read falls
+ * in them, the integer read only for 255 (the bytes are dropped when more
+ * than n / 64 values reach 255, as on long repeats). LCP[ r ] is the lcp
+ * of the suffixes SA[ r ] and SA[ r + 1 ], n - 1 entries, as in
+ * lcpArray(); \f$ \Phi \f$ and PLCP share one array of n integers, and
+ * the three passes keep their arrays in functions that declare them not
+ * to overlap.
  *
  * The contracts [see Contract.h]: the symbols of an integer text are less
  * than K and n fits the integers; the arrays built are a suffix array and
