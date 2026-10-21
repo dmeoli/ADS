@@ -934,6 +934,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operated on by loops, which the compilers vectorize, and take the four
   steps unrolled too
 
+- RankSelect builds the inventory of select of a value at its first
+  select, once whatever the threads (std::call_once behind a flag read
+  with acquire semantics), so that a directory that only ranks never pays
+  for it, and a copy keeps the inventories built; the directory takes the
+  prefix sums of the sideways sums of a block by one product on their
+  bytes, in a loop per top block with no test, and a vector from its
+  words copies them as it counts them above 2^23 bits; the top level is
+  kept only above 2^40 bits; directoryBits() counts the inventories asked
+  for, built or not; the benchmark builds it from the words and has a
+  cell of the building with a select of each value; the tests of the
+  first select from 8 threads, of the copies and of the building from the
+  words
 - HeapPriorityQueue and LinkedHeapPriorityQueue take their items and
   nodes from an ObjectPool, the slot of deleteMin() taken by the next
   insert(), instead of one allocation each: 3 to 4 times faster on the

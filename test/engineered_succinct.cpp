@@ -30,6 +30,7 @@
 #include "ADS/compression/Tans.h"
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/RRRBitVector.h"
+#include "ADS/succinct/RankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 
 #include <algorithm>
@@ -37,6 +38,7 @@
 #include <cstdint>
 #include <random>
 #include <string>
+#include <thread>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -86,6 +88,84 @@ ADS_TEST( "compact-rank-select" )
  std::vector< bool > runs;
  for( int k = 0 ; k < 8 ; ++k ) runs.insert( runs.end() , 30000 , k % 2 );
  check( runs );
+ }
+
+// the inventories of RankSelect built by the first select: 8 threads
+// that select at once on a fresh directory, each every 1 and every 0, get
+// the places of a scan; a copy made before the first select, one made
+// after it and one assigned, each with its own inventories; the bits of
+// the directory are the same before and after the inventories are built
+ADS_TEST( "rank-select-lazy" )
+{
+ std::mt19937_64 g( 7 );
+ for( const double p : { 0.003 , 0.3 , 0.97 } ) {
+  BitVector b;
+  std::vector< std::size_t > one , zero;
+  std::bernoulli_distribution B( p );
+  for( std::size_t i = 0 ; i < 200000 ; ++i ) {
+   const bool x = B( g );
+   b.push_back( x );
+   ( x ? one : zero ).push_back( i );
+   }
+  const RankSelect S( b );
+  const RankSelect before( S );
+  const std::size_t bits = S.directoryBits();
+  std::vector< int > bad( 8 , 0 );
+  {
+   std::vector< std::jthread > T;
+   for( int t = 0 ; t < 8 ; ++t )
+    T.emplace_back( [ & , t ]() {
+     for( std::size_t k = std::size_t( t ) ; k < one.size() ; k += 8 )
+      bad[ t ] += S.select1( k + 1 ) != one[ k ];
+     for( std::size_t k = std::size_t( t ) ; k < zero.size() ; k += 8 )
+      bad[ t ] += S.select0( k + 1 ) != zero[ k ];
+     } );
+  }
+  CHECK( std::count( bad.begin() , bad.end() , 0 ) == 8 );
+  CHECK( S.directoryBits() == bits );
+  const RankSelect after( S );
+  RankSelect assigned;
+  assigned = after;
+  for( const RankSelect * C : { &before , &after ,
+                                ( const RankSelect * )&assigned } ) {
+   bool ok = C->directoryBits() == bits;
+   for( std::size_t k = 0 ; k < one.size() ; k += 97 )
+    ok = ok && C->select1( k + 1 ) == one[ k ];
+   for( std::size_t k = 0 ; k < zero.size() ; k += 97 )
+    ok = ok && C->select0( k + 1 ) == zero[ k ];
+   CHECK( ok );
+   }
+  }
+ }
+
+// RankSelect from the words, copied as they are counted, against the one
+// from a BitVector of the same words: the bits, every rank and select of
+// both values, on sizes around the words and the blocks of 256 bits, with
+// 1s in the words past the size (which the copy cuts) and at many
+// densities
+ADS_TEST( "rank-select-words" )
+{
+ std::mt19937_64 g( 11 );
+ for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 511 ,
+                              1000 , 1024 , 4099 , 70001 } )
+  for( const double p : { 0.0 , 0.05 , 0.5 , 1.0 } ) {
+   std::vector< Word > w( ( n + 63 ) / 64 + 3 );
+   std::bernoulli_distribution B( p );
+   for( auto & x : w )
+    for( int i = 0 ; i < 64 ; ++i ) x |= Word( B( g ) ) << i;
+   w.back() = ~Word( 0 );                  // past the size
+   const RankSelect A( std::span< const Word >( w ) , n );
+   const RankSelect C( BitVector( std::span< const Word >( w ) , n ) );
+   bool ok = A.size() == n && A.ones() == C.ones() &&
+             A.bits() == C.bits() && A.directoryBits() == C.directoryBits();
+   for( std::size_t i = 0 ; ok && i <= n ; ++i )
+    ok = A.rank1( i ) == C.rank1( i );
+   for( std::size_t k = 1 ; ok && k <= A.ones() ; ++k )
+    ok = A.select1( k ) == C.select1( k );
+   for( std::size_t k = 1 ; ok && k <= A.zeros() ; ++k )
+    ok = A.select0( k ) == C.select0( k );
+   CHECK( ok );
+   }
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank

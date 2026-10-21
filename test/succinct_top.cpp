@@ -7,9 +7,11 @@
  * \f$ 2^{40} \f$ bits and here at \f$ 2^{10} \f$ (ADS_RANKSELECT_TOP), and
  * the sparse groups of select, which span \f$ 2^{16} \f$ bits or more, and
  * the top level of the compact directory, at \f$ 2^{32} \f$ bits and here
- * at \f$ 2^{13} \f$ (ADS_COMPACT_TOP); rank
- * and select against a scan, and Elias-Fano and the balanced parentheses on
- * top of them, at the level 3 of the contracts.
+ * at \f$ 2^{13} \f$ (ADS_COMPACT_TOP), and the copy of the words as
+ * they are counted, from \f$ 2^{23} \f$ bits and here from 64
+ * (ADS_RANKSELECT_FUSE); rank and select against a scan, and Elias-Fano
+ * and the balanced parentheses on top of them, at the level 3 of the
+ * contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -23,6 +25,7 @@
 
 #define ADS_RANKSELECT_TOP 10
 #define ADS_COMPACT_TOP 13
+#define ADS_RANKSELECT_FUSE 64
 
 #include "ADSTest.h"
 
@@ -34,6 +37,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <random>
+#include <span>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -68,6 +72,36 @@ void checkAll( const std::vector< bool > & R )
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+// RankSelect from the words, copied as they are counted (from 64 bits
+// here), against the one from a BitVector of the same words, with the top
+// count every 2^10 bits: the bits, every rank and select, on sizes around
+// the words, the blocks of 256 bits and the multiples of 2^10, with 1s in
+// the words past the size
+ADS_TEST( "rank-select-words-top" )
+{
+ std::mt19937_64 g( 13 );
+ for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 1023 ,
+                              1024 , 1025 , 3000 , 70001 } )
+  for( const double p : { 0.0 , 0.05 , 0.5 , 1.0 } ) {
+   std::vector< Word > w( ( n + 63 ) / 64 + 3 );
+   std::bernoulli_distribution B( p );
+   for( auto & x : w )
+    for( int i = 0 ; i < 64 ; ++i ) x |= Word( B( g ) ) << i;
+   w.back() = ~Word( 0 );                  // past the size
+   const RankSelect A( std::span< const Word >( w ) , n );
+   const RankSelect C( BitVector( std::span< const Word >( w ) , n ) );
+   bool ok = A.size() == n && A.ones() == C.ones() &&
+             A.bits() == C.bits() && A.directoryBits() == C.directoryBits();
+   for( std::size_t i = 0 ; ok && i <= n ; ++i )
+    ok = A.rank1( i ) == C.rank1( i );
+   for( std::size_t k = 1 ; ok && k <= A.ones() ; ++k )
+    ok = A.select1( k ) == C.select1( k );
+   for( std::size_t k = 1 ; ok && k <= A.zeros() ; ++k )
+    ok = A.select0( k ) == C.select0( k );
+   CHECK( ok );
+   }
+ }
 
 // rank and select with a top count every 2^10 bits, on random vectors of
 // many densities and sizes around the multiples of 2^10; and the groups

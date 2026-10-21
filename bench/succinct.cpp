@@ -11,7 +11,9 @@
  * elias_fano, bp_vector):
  *
  * - bitvector: rank1, select1 and select0 on n random bits with 50%, 10%
- *   and 1% of 1s, and the building of the directory;
+ *   and 1% of 1s, the building of the directory from the words, and the
+ *   building with a select of each value (which builds the inventories of
+ *   select that RankSelect defers to the first one);
  * - rrr: the same on the vectors compressed to their entropy, against the
  *   rrr_vector of sdsl-lite, for n up to 10^7;
  * - eliasfano: access and nextGEQ (the rank of the competitors) on n
@@ -179,6 +181,17 @@ void bitvector( const std::string & dname , const Bits & b ,
          [](){ return( 0 ); } , [ & ]( int ) {
           auto s = c.build( b );
           sink = sink + std::uint64_t( s != nullptr ); } , r , b.n / 64 ) );
+ // the building with the first select of each value, which builds the
+ // inventories of a directory that defers them
+ print( "bitvector" , "build+select " + dname , b.n , c.who , median(
+         [](){ return( 0 ); } , [ & ]( int ) {
+          auto s = c.build( b );
+          std::uint64_t x = 0;
+          if constexpr( ! std::is_same_v< S1 , None > )
+           x += std::uint64_t( c.sel1( *s , 1 ) );
+          if constexpr( ! std::is_same_v< S0 , None > )
+           x += std::uint64_t( c.sel0( *s , 1 ) );
+          sink = sink + x; } , r , b.n / 64 ) );
  const auto s = c.build( b );
  if constexpr( ! std::is_same_v< R , None > )
   print( "bitvector" , "rank1 " + dname , b.n , c.who , queries( b.R , r ,
@@ -241,8 +254,11 @@ void bitvectors( std::size_t n , int r , unsigned seed )
   const double nb = double( b.n );
   for( const char * who : { "ADS::RankSelect" , "ADS::RankSelect A/A" } )
    bitvector( dname , b ,
-    who , []( const Bits & b ) {
-     return( std::make_unique< ADS::RankSelect >( adsBits( b ) ) ); } ,
+    who , []< class RS = ADS::RankSelect >( const Bits & b ) {
+     using Span = std::span< const std::uint64_t >;
+     if constexpr( std::is_constructible_v< RS , Span , std::size_t > )
+      return( std::make_unique< RS >( Span( b.words ) , b.n ) );
+     else return( std::make_unique< RS >( adsBits( b ) ) ); } ,
     []( const ADS::RankSelect & s , std::uint64_t i ) {
      return( s.rank1( i ) ); } ,
     []( const ADS::RankSelect & s , std::uint64_t k ) {
