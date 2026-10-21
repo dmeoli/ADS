@@ -14,6 +14,10 @@
  *   p + U( 0 , 1000 ) (hold), then n extractions (drain); the priorities
  *   never fall below the last minimum, which the bucket queue and the
  *   radix heaps need;
+ * - the double-ended queues, the min-max heap and the interval heap,
+ *   against std::multiset: n insertions (fill), then n steps that remove
+ *   the best or the worst item, in turn, and insert a random one (both
+ *   ends), then n removals from both ends in turn (both drain);
  * - Dijkstra's algorithm on a random graph of n nodes and 4 n arcs of
  *   weights U( 1 , 1000 ) (dijkstra): the queues with handles lower the
  *   priority of a node by their decrease-key, the others push it again and
@@ -48,6 +52,7 @@
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
+#include "ADS/priority/MinMaxHeap.h"
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/priority/SequenceHeap.h"
@@ -77,6 +82,7 @@
 #include <functional>
 #include <limits>
 #include <queue>
+#include <set>
 #include <utility>
 
 using namespace ADS::bench;
@@ -115,6 +121,45 @@ void run( const std::string & who , std::size_t n ,
           long s = 0;
           for( std::size_t i = 0 ; i < n ; ++i ) s += pop( q );
           sink = sink + std::uint64_t( s ); } , r , n ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ BOTH ENDS ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the three phases of both ends on the queue that make() builds, by
+/// push( q , x ), low( q ) and high( q ) (the best and the worst removed)
+template< class M , class Push , class Low , class High >
+void ends( const std::string & who , std::size_t n ,
+           const std::vector< int > & P , int r , M && make , Push && push ,
+           Low && low , High && high )
+{
+ auto fill = [ & ]( void ) {
+  auto q = make();
+  for( std::size_t i = 0 ; i < n ; ++i ) push( q , P[ i ] );
+  return( q );
+  };
+ print( "priority" , "fill both ends" , n , who , median(
+         [ & ](){ return( 0 ); } , [ & ]( int ) {
+          auto q = fill();
+          sink = sink + std::uint64_t( low( q ) ); } , r , n ) );
+ auto hold = [ & ]( auto & q ) {
+  std::uint64_t s = 0;
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   s += std::uint64_t( i % 2 ? high( q ) : low( q ) );
+   push( q , P[ n - 1 - i ] );
+   }
+  sink = sink + s; };
+ print( "priority" , "hold both ends" , n , who , median( fill , hold , r ,
+                                                           n ) );
+ print( "priority" , "drain both ends" , n , who , median( [ & ](){
+         auto q = fill();
+         hold( q );
+         return( q ); } , [ & ]( auto & q ) {
+          std::uint64_t s = 0;
+          for( std::size_t i = 0 ; i < n ; ++i )
+           s += std::uint64_t( i % 2 ? high( q ) : low( q ) );
+          sink = sink + s; } , r , n ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -413,6 +458,28 @@ int main( int argc , char ** argv )
         const int p = int( q.topKey() );
         q.pop();
         return( p ); } );
+
+  // both ends
+
+  for( const char * who : { "std::multiset" , "std::multiset A/A" } )
+   ends( who , n , P , r , [](){ return( std::multiset< int >() ); } ,
+         []( auto & q , int x ) { q.insert( x ); } ,
+         []( auto & q ) {
+          const int x = *q.begin();
+          q.erase( q.begin() );
+          return( x ); } ,
+         []( auto & q ) {
+          const auto it = std::prev( q.end() );
+          const int x = *it;
+          q.erase( it );
+          return( x ); } );
+  auto dePush = []( auto & q , int x ) { q.push( x ); };
+  auto deLow = []( auto & q ) { return( q.popMin() ); };
+  auto deHigh = []( auto & q ) { return( q.popMax() ); };
+  ends( "ADS::MinMaxHeap" , n , P , r , [](){
+        return( ADS::MinMaxHeap< int >() ); } , dePush , deLow , deHigh );
+  ends( "ADS::IntervalHeap" , n , P , r , [](){
+        return( ADS::IntervalHeap< int >() ); } , dePush , deLow , deHigh );
 
   // Dijkstra's algorithm
 
