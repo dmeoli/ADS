@@ -54,13 +54,20 @@
  *     i m )} \, \omega_R^{i j} , \f]
  * as few rounds as the radices of the codelets up to 32 allow, the
  * radices as equal as can be; 4 of them at a time, gathered from lines of
- * the cache brought in some rows ahead. The rows have 32 points up to
- * \f$ 2^{15} \f$ points, 64 at \f$ 2^{16} \f$ and about \f$ \sqrt n \f$
- * above (the divisor of n nearest those lengths, both r and m multiples
- * of W if can be, otherwise the last block of the lanes shorter); up to
- * 4096 points a power of 2, and at 48 and 96, the four steps are unrolled
- * into one function whose columns stay in an array of n / W items, the
- * transform of 16 points in 2 codelets of 4. The powers of \f$ \omega \f$
+ * the cache brought in some rows ahead. The rows have about 32 points up
+ * to \f$ 2^{15} \f$ points, 64 at \f$ 2^{12} \f$ and \f$ 2^{16} \f$ and
+ * about \f$ \sqrt n \f$ above: the divisors r of n by their distance from
+ * those lengths, those that make r and m multiples of W (otherwise the
+ * last block of the lanes is shorter) and whose rows and columns have a
+ * codelet first (the sizes \f$ 2^a 3^b 5^c \f$ up to 60 there); up to
+ * \f$ 2^{17} \f$ points the first 4 of them are timed when the plan is
+ * made and the fastest kept, a choice among a few, as FFTW_MEASURE makes
+ * among many (ADS_FFT_TUNE sets the limit, 0 none). Below \f$ 2 W^2 \f$
+ * points the lanes are half as wide. Up to 1024 points a power of 2, and
+ * at 48 and 96, the four steps are unrolled into one function whose
+ * columns stay in an array of n / W items, the transform of 16 points in
+ * 2 codelets of 4; so are the transforms in 2 dimensions of the powers of
+ * 2 up to 32 x 32. The powers of \f$ \omega \f$
  * are each computed alone, the angle taken to \f$ [ 0 , \pi / 4 ] \f$ by
  * the symmetries of the circle, in integers, so that each has the error
  * of a sine or a cosine of a small angle; from \f$ 2^{16} \f$ points on,
@@ -114,7 +121,8 @@
  * thread. The plans, the tables and the buffers are kept per thread for
  * each size met, made at the first transform of a size, in \f$ O( n ) \f$
  * evaluations of sines and cosines (\f$ O( n \log n ) \f$ for Rader and
- * Bluestein, whose plans also hold a transform).
+ * Bluestein, whose plans also hold a transform) and, up to \f$ 2^{17} \f$
+ * points, the 12 transforms that time the factorizations.
  *
  * <b>The rounding.</b> With powers of \f$ \omega \f$ computed to a
  * relative error \f$ \mu \f$, a transform by L rounds of radix 2 has
@@ -129,7 +137,8 @@
  *
  * The transform turns a convolution into a product item by item;
  * convolve() multiplies two polynomials so, by the real transforms of the
- * smallest even size \f$ 2^a 3^b 5^c \f$ that holds their product, and
+ * smallest even size \f$ 2^a 3^b 5^c \f$ that holds their product, or of
+ * the power of 2 if that size is not below 3 / 4 of it, and
  * the product of integers of many digits [see BigInteger.h] is a
  * convolution of their digits followed by the carries.
  *
@@ -210,6 +219,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <chrono>
 #include <cmath>
 #include <complex>
 #include <cstddef>

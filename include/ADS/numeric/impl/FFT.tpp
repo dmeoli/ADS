@@ -757,8 +757,7 @@ inline const T * codeletRoots()
  }
 
 /// the odd primes with a codelet of their own, and the table of the
-/// cosines and the sines of 2 pi q / p , 0 < q <= ( p - 1 ) / 2, from 2 (
-/// fftOddAt( p ) + q - 1 ) on
+/// cosines and the sines of 2 pi q / p , q < p, from 2 fftOddAt( p ) on
 inline constexpr std::size_t fftOddPrimes[] = { 3 , 5 , 7 , 11 , 13 };
 
 constexpr std::size_t fftOddAt( std::size_t p )
@@ -766,7 +765,7 @@ constexpr std::size_t fftOddAt( std::size_t p )
  std::size_t a = 0;
  for( std::size_t q : fftOddPrimes ) {
   if( q == p ) break;
-  a += ( q - 1 ) / 2;
+  a += q;
   }
  return( a );
  }
@@ -777,7 +776,7 @@ inline const T * oddRoots()
  static const std::vector< T > R = [] {
   std::vector< T > t;
   for( std::size_t p : fftOddPrimes )
-   for( std::size_t q = 1 ; 2 * q < p ; ++q ) {
+   for( std::size_t q = 0 ; q < p ; ++q ) {
     double c , s;
     unitRoot( q , p , c , s );
     t.push_back( T( c ) );
@@ -962,39 +961,36 @@ template< std::size_t p , bool inv , class T , std::size_t W , class In ,
           class Out >
 ADS_FFT_INLINE void oddCodelet( In & in , Out & out , const T * cs )
 {
- using V = FFTLane< T , W >;
- using C = FFTCx< V >;
+ using C = FFTCx< FFTLane< T , W > >;
  constexpr std::size_t h = ( p - 1 ) / 2;
  const C x0 = in( 0 );
  C a[ h ] , b[ h ] , R[ h ] , I[ h ] , y0 = x0;
- V c[ h ] , s[ h ];
  ADS_FFT_UNROLL
  for( std::size_t j = 0 ; j < h ; ++j ) {
   const C u = in( j + 1 ) , v = in( p - 1 - j );
   a[ j ] = u + v;
   b[ j ] = u - v;
   y0 = y0 + a[ j ];
-  c[ j ] = splat< T , W >( cs[ 2 * j ] );
-  s[ j ] = splat< T , W >( cs[ 2 * j + 1 ] );
   }
  ADS_FFT_UNROLL
  for( std::size_t k = 1 ; k <= h ; ++k ) {
-  C re = x0 , im = { c[ 0 ] - c[ 0 ] , c[ 0 ] - c[ 0 ] };
+  C re = x0 , im;
   std::size_t q = 0;
   ADS_FFT_UNROLL
   for( std::size_t j = 0 ; j < h ; ++j ) {
-   q = q + k < p ? q + k : q + k - p;       // ( j + 1 ) k mod p
-   const bool neg = q > h;
-   const std::size_t e = ( neg ? p - q : q ) - 1;
-   re.r = re.r + a[ j ].r * c[ e ];
-   re.i = re.i + a[ j ].i * c[ e ];
-   if( neg ) {
-    im.r = im.r - b[ j ].r * s[ e ];
-    im.i = im.i - b[ j ].i * s[ e ];
+   q += k;                                 // ( j + 1 ) k mod p
+   q -= q >= p ? p : 0;
+   const auto c = splat< T , W >( cs[ 2 * q ] ) ,
+              s = splat< T , W >( cs[ 2 * q + 1 ] );
+   re.r = re.r + a[ j ].r * c;
+   re.i = re.i + a[ j ].i * c;
+   if( j == 0 ) {
+    im.r = b[ j ].r * s;
+    im.i = b[ j ].i * s;
     }
    else {
-    im.r = im.r + b[ j ].r * s[ e ];
-    im.i = im.i + b[ j ].i * s[ e ];
+    im.r = im.r + b[ j ].r * s;
+    im.i = im.i + b[ j ].i * s;
     }
    }
   R[ k - 1 ] = re;
@@ -1072,16 +1068,12 @@ ADS_FFT_INLINE void mixedCodelet( In & in , Out & out , const T * R )
  ADS_FFT_UNROLL
  for( std::size_t k = 0 ; k < M ; ++k ) {
   C y[ p ];
+  y[ 0 ] = s[ k ];
   ADS_FFT_UNROLL
-  for( std::size_t t = 0 ; t < p ; ++t ) {
-   const std::size_t e = t * k % N;
-   const C & z = s[ t * M + k ];
-   if( e == 0 ) y[ t ] = z;
-   else if( 4 * e == N ) y[ t ] = mulMinusI< inv >( z );
-   else if( 2 * e == N ) y[ t ] = C{ - z.r , - z.i };
-   else if( 4 * e == 3 * N ) y[ t ] = mulMinusI< ! inv >( z );
-   else y[ t ] = cmul< inv >( z , splat< T , W >( RN[ 2 * e ] ) ,
-                              splat< T , W >( RN[ 2 * e + 1 ] ) );
+  for( std::size_t t = 1 ; t < p ; ++t ) {  // omega_N^{t k}, from a table
+   const std::size_t e = t * k;
+   y[ t ] = cmul< inv >( s[ t * M + k ] , splat< T , W >( RN[ 2 * e ] ) ,
+                         splat< T , W >( RN[ 2 * e + 1 ] ) );
    }
   if constexpr( p == 4 ) {
    dft4< inv >( y[ 0 ] , y[ 1 ] , y[ 2 ] , y[ 3 ] );
@@ -1400,6 +1392,10 @@ inline void batched( const FFTSteps< T > & S ,
  using C = FFTCx< FFTLane< T , W > >;
  const T * Rt = codeletRoots< T >();
  const std::size_t P = S.R.size();
+ if( P == 0 ) {                            // one item
+  if( S.L ) y[ 0 ] = x[ 0 ];
+  return;
+  }
  std::size_t s = 1 , Lt = S.L;
  for( std::size_t t = 0 ; t < P ; ++t ) {
   const std::size_t R = S.R[ t ] , m = Lt / R;
@@ -1676,19 +1672,41 @@ ADS_FFT_NOINLINE void fourStepRows( const FFTFour< T , W > & F )
   }
  }
 
-/// f.template operator()< N >() if L = N has a codelet, N >= 8 , W and N
-/// not 9 nor 10, and true; else false: the codelets of the columns and of
-/// the rows of the four steps, the others by the rounds
+/// the lengths of the columns and of the rows of the four steps done by a
+/// codelet: the powers of 2 from 8, the sizes 2^a 3^b 5^c from 12 to 60
+/// (to 25 if ADS_FFT_LEAN), so that the sizes with those factors go in two
+/// passes; the others go by the rounds
+#if ADS_FFT_LEAN
+inline constexpr std::size_t fftStepSizes[] = { 8 , 16 , 32 , 64 , 12 , 15 ,
+                                                20 , 25 };
+#else
+inline constexpr std::size_t fftStepSizes[] = { 8 , 16 , 32 , 64 , 12 , 15 ,
+                                                20 , 25 , 24 , 30 , 40 , 45 ,
+                                                48 , 50 , 60 };
+#endif
+
+/// whether the columns or the rows of L points of the four steps on lanes
+/// of W go by a codelet
+template< std::size_t W >
+inline bool fftStepCodelet( std::size_t L )
+{
+ if( L < W || ( W == 1 && L > fftScalarCodelet ) ) return( false );
+ return( std::find( std::begin( fftStepSizes ) , std::end( fftStepSizes ) ,
+                    L ) != std::end( fftStepSizes ) );
+ }
+
+/// f.template operator()< L >() if fftStepCodelet< W >( L ), and true;
+/// else false
 template< std::size_t W , class F >
 ADS_FFT_INLINE bool byStepCodelet( std::size_t L , F && f )
 {
- if( L < 8 || L < W || L == 9 || L == 10 ||
-     ( W == 1 && L > fftScalarCodelet ) )
-  return( false );
- return( byAnyCodelet( L , [ & ]< std::size_t N >() {
-  if constexpr( N >= 8 && N >= W && N != 9 && N != 10 &&
-                 ( W > 1 || N <= fftScalarCodelet ) )
-   f.template operator()< N >(); } ) );
+ if( ! fftStepCodelet< W >( L ) ) return( false );
+ unroll< std::size( fftStepSizes ) >( [ & ]( auto I ) {
+  constexpr std::size_t N = fftStepSizes[ I ];
+  if constexpr( N >= W && ( W > 1 || N <= fftScalarCodelet ) )
+   if( L == N ) f.template operator()< N >();
+  } );
+ return( true );
  }
 
 /// the transform of the n = r m points of x in place, r , m >= W, by the
@@ -1930,13 +1948,24 @@ inline bool smallTransform( T * x , std::size_t n , bool inv )
 inline constexpr std::size_t fftMaxPrime = 101;
 
 /// log_2 of the length of the rows of the four steps on 2^K points: 32
-/// up to 2^15 points and 64 at 2^16, the codelets that keep most of their
-/// items in registers, so that only the columns go by the rounds of
-/// batched(); 2^{floor( K / 2 )} below 2^10 and above 2^16
+/// up to 2^15 points and 64 at 2^12 and 2^16, the codelets that keep most
+/// of their items in registers, so that only the columns go by the rounds
+/// of batched(); 2^{floor( K / 2 )} below 2^10 and above 2^16
 inline constexpr unsigned fftRows( unsigned K )
 {
- return( K <= 15 ? std::min( 5u , K / 2 ) : K == 16 ? 6 : K / 2 );
+ return( K <= 11 ? std::min( 5u , K / 2 ) : K == 12 ? 6
+         : K <= 15 ? 5 : K == 16 ? 6 : K / 2 );
  }
+
+/// the sizes up to which a plan of the four steps times its first
+/// fftTuned factorizations n = r m, by their order in fftPlan(), and keeps
+/// the fastest (0: none, the first always), as FFTW_MEASURE does among many
+/// more; the plans then may differ from run to run in the last bits of the
+/// outputs
+#ifndef ADS_FFT_TUNE
+ #define ADS_FFT_TUNE 131072
+#endif
+inline constexpr std::size_t fftTuneMax = ADS_FFT_TUNE , fftTuned = 4;
 
 /// how the transform of n points goes: by the rounds of batched() on
 /// single lanes (Scalar), by the four steps on rows of r and columns of m
@@ -2089,29 +2118,51 @@ inline FFTPlan< T , W > & fftPlan( std::size_t n )
     }
    }
   if( p.kind == FFTKind::Scalar ) {
-   // the divisor r of n nearest the length of the rows of fftRows() in
-   // the steps of log_2, first those that W divides together with n / r
-   double target = double( fftRows( unsigned( std::bit_width( n ) - 1 ) ) );
-#ifdef ADS_FFT_DEV
-   if( const char * e = std::getenv( "ADS_FFT_R" ) ) target = std::atof( e );
-#endif
-   std::size_t best = 0;
-   double score = 1e300;
-   for( std::size_t r = W ; r * W <= n ; ++r )
-    if( n % r == 0 ) {
-     const double sc = std::abs( std::log2( double( r ) ) - target ) +
-                       ( r % W || ( n / r ) % W ? 1.5 : 0 ) +
-                       ( n <= fftCodelet * fftCodelet &&
-                         ! ( fftHasCodelet( r ) && fftHasCodelet( n / r ) )
-                         ? 0.5 : 0 );
-     if( sc < score ) { score = sc; best = r; }
-     }
-   if( best && n >= 2 * W * W ) {
+   // the divisors r of n by their distance from the length of the rows
+   // of fftRows() in the steps of log_2, those that W divides together
+   // with n / r and those with codelets first
+   const double target = double( fftRows( unsigned( std::bit_width( n ) -
+                                                    1 ) ) );
+   std::vector< std::pair< double , std::size_t > > cand;
+   const std::size_t w2 = std::max< std::size_t >( W , 2 );
+   for( std::size_t r = w2 ; r * w2 <= n ; ++r )
+    if( n % r == 0 )
+     cand.emplace_back( std::abs( std::log2( double( r ) ) - target ) +
+                        ( r % W || ( n / r ) % W ? 1.5 : 0 ) +
+                        ( fftStepCodelet< W >( r ) ? 0 : 0.5 ) +
+                        ( fftStepCodelet< W >( n / r ) ? 0 : 0.5 ) , r );
+   std::sort( cand.begin() , cand.end() );
+   if( ! cand.empty() && n >= 2 * W * W ) {
     p.kind = FFTKind::Four;
-    p.r = best;
-    p.m = n / best;
-    p.s1 = fftSteps< T >( p.m , W > 1 ? fftRadix : fftScalarRadix );
-    p.s2 = fftSteps< T >( p.r , W > 1 ? fftRadix : fftScalarRadix );
+    auto set = [ & ]( std::size_t r ) {
+     p.r = r;
+     p.m = n / r;
+     p.s1 = fftSteps< T >( p.m , W > 1 ? fftRadix : fftScalarRadix );
+     p.s2 = fftSteps< T >( p.r , W > 1 ? fftRadix : fftScalarRadix );
+     for( auto & q : p.roots ) q.reset();
+     };
+    set( cand[ 0 ].second );
+    const std::size_t k = std::min( fftTuned , cand.size() );
+    if( n <= fftTuneMax && k > 1 ) {          // the fastest of the first
+     std::vector< std::complex< T > > z( n , std::complex< T >( 1 ) );
+     T * x = reinterpret_cast< T * >( z.data() );
+     double best = 1e300;
+     std::size_t rb = cand[ 0 ].second;
+     for( std::size_t c = 0 ; c < k ; ++c ) {
+      set( cand[ c ].second );
+      double t = 1e300;
+      for( int rep = 0 ; rep < 3 ; ++rep ) {
+       const auto t0 = std::chrono::steady_clock::now();
+       fourStep< T , W >( x , x , p.r , p.m , p.s1 , p.s2 ,
+                          [ & ]( std::size_t o ) -> const auto & {
+                           return( p.fourRoots( o ) ); } , false );
+       t = std::min( t , std::chrono::duration< double >(
+                          std::chrono::steady_clock::now() - t0 ).count() );
+       }
+      if( t < best ) { best = t; rb = cand[ c ].second; }
+      }
+     set( rb );
+     }
     }
    else p.s1 = fftSteps< T >( n , fftScalarRadix );
    }
@@ -2228,6 +2279,11 @@ inline void transformTo( const std::complex< T > * a , std::complex< T > * b ,
   xi = x;                                  // in place from here
   a = b;
   }
+ if constexpr( W0 == 0 && W >= 4 && ! ADS_FFT_LEAN )
+  if( n < 2 * W * W ) {           // too few for the widest lanes: half
+   transformTo< W / 2 >( a , b , n , inv );
+   return;
+   }
  FFTPlan< T , W > & p = fftPlan< T , W >( n );
  switch( p.kind ) {
   case( FFTKind::Scalar ):
@@ -2458,12 +2514,55 @@ inline void columns( T * x , std::size_t L , std::size_t c , std::size_t ld ,
   }
  }
 
+/// the transforms of W rows of n points from x, the row l from x + 2 l n
+/// on, in the lanes: gathered by blocks of W x W transposed in registers
+/// into g, transformed by tr( g , h ) into h, scattered back by the
+/// transposed blocks; ci for the imaginary parts of the inputs, fr and fi
+/// for those of the outputs
+template< class T , std::size_t W , class Tr >
+ADS_FFT_INLINE void rowsGroup( T * x , std::size_t n ,
+                               FFTCx< FFTLane< T , W > > * g ,
+                               FFTCx< FFTLane< T , W > > * h , Tr && tr ,
+                               const FFTLane< T , W > & ci ,
+                               const FFTLane< T , W > & fr ,
+                               const FFTLane< T , W > & fi )
+{
+ using V = FFTLane< T , W >;
+ using C = FFTCx< V >;
+ for( std::size_t i0 = 0 ; i0 < n ; i0 += W ) {
+  V re[ W ] , im[ W ];
+  for( std::size_t l = 0 ; l < W ; ++l ) {
+   const C y = loadComplex< T , W >( x + 2 * ( l * n + i0 ) );
+   re[ l ] = y.r;
+   im[ l ] = y.i * ci;
+   }
+  transpose< T , W >( re );
+  transpose< T , W >( im );
+  for( std::size_t l = 0 ; l < W ; ++l )
+   g[ i0 + fftLane< T , W >( l ) ] = C{ re[ l ] , im[ l ] };
+  }
+ tr( g , h );
+ for( std::size_t k0 = 0 ; k0 < n ; k0 += W ) {
+  V re[ W ] , im[ W ];
+  for( std::size_t l = 0 ; l < W ; ++l ) {
+   const C & y = h[ k0 + fftLane< T , W >( l ) ];
+   re[ l ] = y.r * fr;
+   im[ l ] = y.i * fi;
+   }
+  transpose< T , W >( re );
+  transpose< T , W >( im );
+  for( std::size_t l = 0 ; l < W ; ++l )
+   storeComplex< T , W >( x + 2 * ( l * n + k0 ) , C{ re[ l ] , im[ l ] } );
+  }
+ }
+
 /// the largest transforms of rows() that go W at a time in the lanes
 inline constexpr std::size_t fftManyLanes = 256;
 
 /// the transforms of the q rows of n points of a, each contiguous, the row
-/// t from t n on: W rows at a time in the lanes, gathered by blocks of W x
-/// W transposed in registers, if W divides n and n is small; one at a time
+/// t from t n on: by smallFour() one at a time if n has a shape; W rows at
+/// a time in the lanes by rowsGroup() if W divides n and n is small, by a
+/// codelet on arrays on the stack or by the rounds; one at a time
 /// otherwise
 template< class T , std::size_t W >
 inline void rows( std::complex< T > * a , std::size_t n , std::size_t q ,
@@ -2473,76 +2572,144 @@ inline void rows( std::complex< T > * a , std::size_t n , std::size_t q ,
  using C = FFTCx< V >;
  if( n <= 1 ) return;
  std::size_t t0 = 0;
- if( q && bySmallFour( reinterpret_cast< T * >( a ) ,
-                         reinterpret_cast< T * >( a ) , n , inv ) ) {
-  for( t0 = 1 ; t0 < q ; ++t0 ) {     // the same shape again, unrolled
-   T * x = reinterpret_cast< T * >( a + t0 * n );
-   bySmallFour( x , x , n , inv );
-   }
-  return;
-  }
+ bool done = false;                         // the shape found once
+ unroll< std::size( fftSmallShapes< T > ) >( [ & ]( auto I ) {
+  constexpr FFTShape S = fftSmallShapes< T >[ I ];
+  if constexpr( S.W <= fftWidthOf< T > && S.W > 1 )
+   if( n == S.n ) {
+    for( std::size_t t = 0 ; t < q ; ++t ) {
+     T * x = reinterpret_cast< T * >( a + t * n );
+     smallFour< S.r , S.m , T , S.W >( x , x , inv );
+     }
+    done = true;
+    }
+  } );
+ if( done ) return;
+ const T f0 = inv ? T( 1 ) / T( n ) : T( 1 );
+ const V ci = splat< T , W >( inv ? T( -1 ) : T( 1 ) ) ,
+         fr = splat< T , W >( f0 ) , fi = splat< T , W >( inv ? - f0 : f0 );
  if( W > 1 && n % W == 0 && n <= fftManyLanes && q >= W ) {
-  const FFTSteps< T > * S = nullptr;
-  thread_local std::unordered_map< std::size_t , FFTSteps< T > > H;
-  const bool cod = fftHasCodelet( n );
-  if( ! cod ) {
-   FFTSteps< T > & s = H[ n ];
-   if( s.L == 0 ) s = fftSteps< T >( n );
-   S = & s;
-   }
-  C * g = fftBuffer< C >( 4 * n ) , * h = g + n , * u = h + n , * v = u + n;
-  const T f0 = inv ? T( 1 ) / T( n ) : T( 1 );
-  const V ci = splat< T , W >( inv ? T( -1 ) : T( 1 ) ) ,
-          fr = splat< T , W >( f0 ) , fi = splat< T , W >( inv ? - f0 : f0 );
-  for( ; t0 + W <= q ; t0 += W ) {
-   T * x = reinterpret_cast< T * >( a + t0 * n );
-   for( std::size_t i0 = 0 ; i0 < n ; i0 += W ) {
-    V re[ W ] , im[ W ];
-    for( std::size_t l = 0 ; l < W ; ++l ) {
-     const C y = loadComplex< T , W >( x + 2 * ( l * n + i0 ) );
-     re[ l ] = y.r;
-     im[ l ] = y.i * ci;
-     }
-    transpose< T , W >( re );
-    transpose< T , W >( im );
-    for( std::size_t l = 0 ; l < W ; ++l )
-     g[ i0 + fftLane< T , W >( l ) ] = C{ re[ l ] , im[ l ] };
-    }
-   if( cod )
-    byAnyCodelet( n , [ & ]< std::size_t N >() {
-     FFTArray< C > in{ g } , out{ h };
-     codelet< N , false , T , W >( in , out , codeletRoots< T >() ); } );
-   else batched< T , W >( * S , g , h , u , v );
-   for( std::size_t k0 = 0 ; k0 < n ; k0 += W ) {
-    V re[ W ] , im[ W ];
-    for( std::size_t l = 0 ; l < W ; ++l ) {
-     const C & y = h[ k0 + fftLane< T , W >( l ) ];
-     re[ l ] = y.r * fr;
-     im[ l ] = y.i * fi;
-     }
-    transpose< T , W >( re );
-    transpose< T , W >( im );
-    for( std::size_t l = 0 ; l < W ; ++l )
-     storeComplex< T , W >( x + 2 * ( l * n + k0 ) , C{ re[ l ] , im[ l ] } );
-    }
+  if( ! byAnyCodelet( n , [ & ]< std::size_t N >() {
+       if constexpr( N % W == 0 ) {
+        C g[ N ] , h[ N ];
+        auto tr = [ & ]( C * x , C * y ) ADS_FFT_LAMBDA {
+         FFTArray< C > in{ x } , out{ y };
+         codelet< N , false , T , W >( in , out , codeletRoots< T >() );
+         };
+        for( ; t0 + W <= q ; t0 += W )
+         rowsGroup< T , W >( reinterpret_cast< T * >( a + t0 * n ) , n , g ,
+                             h , tr , ci , fr , fi );
+        } } ) ) {
+   thread_local std::unordered_map< std::size_t , FFTSteps< T > > H;
+   FFTSteps< T > & S = H[ n ];
+   if( S.L == 0 ) S = fftSteps< T >( n );
+   C * g = fftBuffer< C >( 4 * n ) , * h = g + n , * u = h + n ,
+     * v = u + n;
+   auto tr = [ & ]( C * x , C * y ) { batched< T , W >( S , x , y , u , v ); };
+   for( ; t0 + W <= q ; t0 += W )
+    rowsGroup< T , W >( reinterpret_cast< T * >( a + t0 * n ) , n , g , h ,
+                        tr , ci , fr , fi );
    }
   }
  for( ; t0 < q ; ++t0 ) transformTo( a + t0 * n , a + t0 * n , n , inv );
  }
 
-/// the transform along the axes of the array a of the extents d, the last
+/// the transform in 2 dimensions of the n0 x n1 points of x in place, n0
+/// and n1 small multiples of W, unrolled as smallFour(): the transforms of
+/// the columns by codelets into an array of n0 n1 / W items, then those of
+/// the rows, W at a time, gathered by blocks of W x W transposed in
+/// registers and scattered back by the transposed blocks
+template< std::size_t n0 , std::size_t n1 , class T , std::size_t W >
+ADS_FFT_NOINLINE void small2D( T * x , bool inv )
+{
+ using V = FFTLane< T , W >;
+ using C = FFTCx< V >;
+ constexpr std::size_t cb = n1 / W;
+ const T * R = codeletRoots< T >();
+ const T f = inv ? T( 1 ) / T( n0 * n1 ) : T( 1 );
+ const V ci = splat< T , W >( inv ? T( -1 ) : T( 1 ) ) ,
+         fr = splat< T , W >( f ) , fi = splat< T , W >( inv ? - f : f );
+ C B[ cb * n0 ];
+ for( std::size_t b = 0 ; b < cb ; ++b ) {
+  const T * a = x + 2 * b * W;
+  C * o = B + b * n0;
+  auto in = [ & ]( std::size_t i ) ADS_FFT_LAMBDA {
+   C y = loadComplex< T , W >( a + 2 * n1 * i );
+   y.i = y.i * ci;
+   return( y );
+   };
+  auto out = [ & ]( std::size_t k , const C & y ) ADS_FFT_LAMBDA {
+   o[ k ] = y;
+   };
+  codelet< n0 , false , T , W >( in , out , R );
+  }
+ for( std::size_t k0 = 0 ; k0 < n0 ; k0 += W ) {
+  C g[ n1 ] , h[ n1 ];
+  for( std::size_t b = 0 ; b < cb ; ++b ) {
+   V re[ W ] , im[ W ];
+   for( std::size_t l = 0 ; l < W ; ++l ) {
+    re[ l ] = B[ b * n0 + k0 + l ].r;
+    im[ l ] = B[ b * n0 + k0 + l ].i;
+    }
+   transpose< T , W >( re );
+   transpose< T , W >( im );
+   for( std::size_t c = 0 ; c < W ; ++c )
+    g[ b * W + fftLane< T , W >( c ) ] = C{ re[ c ] , im[ c ] };
+   }
+  FFTArray< C > in{ g } , out{ h };
+  codelet< n1 , false , T , W >( in , out , R );
+  for( std::size_t q0 = 0 ; q0 < n1 ; q0 += W ) {
+   V re[ W ] , im[ W ];
+   for( std::size_t m = 0 ; m < W ; ++m ) {
+    const C & y = h[ q0 + fftLane< T , W >( m ) ];
+    re[ m ] = y.r * fr;
+    im[ m ] = y.i * fi;
+    }
+   transpose< T , W >( re );
+   transpose< T , W >( im );
+   for( std::size_t l = 0 ; l < W ; ++l )
+    storeComplex< T , W >( x + 2 * ( n1 * ( k0 + l ) + q0 ) ,
+                           C{ re[ l ] , im[ l ] } );
+   }
+  }
+ }
+
+/// the transform in 2 dimensions of the n0 x n1 points of x by small2D(),
+/// n0 and n1 powers of 2 from the width of the lanes to 32, and true; else
+/// false
+template< class T >
+inline bool bySmall2D( T * x , std::size_t n0 , std::size_t n1 , bool inv )
+{
+ constexpr std::size_t W = fftWidthOf< T >;
+ bool done = false;
+ unroll< 4 >( [ & ]( auto A ) {
+  constexpr std::size_t N0 = std::size_t( 4 ) << A;
+  if constexpr( N0 >= W )
+   unroll< 4 >( [ & ]( auto B ) {
+    constexpr std::size_t N1 = std::size_t( 4 ) << B;
+    if constexpr( N1 >= W )
+     if( n0 == N0 && n1 == N1 ) {
+      small2D< N0 , N1 , T , W >( x , inv );
+      done = true;
+      }
+    } );
+  } );
+ return( done );
+ }
+
+/// the transform along the axes of the array a of the D extents d, the last
 /// one contiguous: the rows of the last axis by rows(), every other axis by
 /// columns() on the blocks of the axes before it
 template< class T >
-inline void transformND( std::complex< T > * a ,
-                         const std::vector< std::size_t > & d , bool inv )
+inline void transformND( std::complex< T > * a , const std::size_t * d ,
+                         std::size_t D , bool inv )
 {
  constexpr std::size_t W = fftWidthOf< T >;
  std::size_t N = 1;
- for( std::size_t e : d ) N *= e;
+ for( std::size_t k = 0 ; k < D ; ++k ) N *= d[ k ];
  if( N == 0 ) return;
  std::size_t inner = 1;
- for( std::size_t k = d.size() ; k-- > 0 ; ) {
+ for( std::size_t k = D ; k-- > 0 ; ) {
   const std::size_t L = d[ k ] , outer = N / ( L * inner );
   if( inner == 1 ) rows< T , W >( a , L , outer , inv );
   else
@@ -2701,10 +2868,20 @@ inline void dst1( T * x , std::size_t N )
  for( std::size_t k = 0 ; k < N ; ++k ) x[ k ] = - E[ k + 1 ].imag();
  }
 
+/// the size of the real transforms of a convolution of m >= 2 outputs: the
+/// smallest even 2^a 3^b 5^c >= m if it is below 3 / 4 of the power of 2,
+/// whose transforms are faster, that power otherwise
+inline std::size_t fftConvSize( std::size_t m )
+{
+ const std::size_t p = std::max< std::size_t >( 2 , std::bit_ceil( m ) );
+ std::size_t g = fftGoodSize( m );
+ while( g % 2 ) g = fftGoodSize( g + 1 );
+ return( 4 * g < 3 * p ? g : p );
+ }
+
 /// the coefficients of the product of the polynomials p and q, by the
-/// real transforms of n >= | p | + | q | - 1 points, n even of the form
-/// 2^a 3^b 5^c, the product of the transforms item by item and the
-/// inverse real transform
+/// real transforms of fftConvSize( | p | + | q | - 1 ) points, the product
+/// of the transforms item by item and the inverse real transform
 template< class T >
 inline std::vector< T > convolveReal( const std::vector< T > & p ,
                                       const std::vector< T > & q )
@@ -2712,8 +2889,7 @@ inline std::vector< T > convolveReal( const std::vector< T > & p ,
  if( p.empty() || q.empty() ) return( std::vector< T >() );
  const std::size_t m = p.size() + q.size() - 1;
  if( m == 1 ) return( std::vector< T >( 1 , p[ 0 ] * q[ 0 ] ) );
- std::size_t n = fftGoodSize( m );
- while( n % 2 ) n = fftGoodSize( n + 1 );
+ const std::size_t n = fftConvSize( m );
  const std::size_t h = n / 2;
  std::vector< T > a( n + 2 );
  T * b = trigBuffer< T >( n + 2 );
@@ -2779,14 +2955,19 @@ inline void fftn( std::complex< T > * a ,
                   const std::vector< std::size_t > & dims , bool inverse )
 {
  static_assert( std::is_same_v< T , double > || std::is_same_v< T , float > );
- detail::transformND( a , dims , inverse );
+ detail::transformND( a , dims.data() , dims.size() , inverse );
  }
 
 template< class T >
 inline void fft2( std::complex< T > * a , std::size_t rows ,
                   std::size_t cols , bool inverse )
 {
- fftn( a , { rows , cols } , inverse );
+ static_assert( std::is_same_v< T , double > || std::is_same_v< T , float > );
+ if( detail::bySmall2D( reinterpret_cast< T * >( a ) , rows , cols ,
+                        inverse ) )
+  return;
+ const std::size_t d[ 2 ] = { rows , cols };
+ detail::transformND( a , d , 2 , inverse );
  }
 
 template< class T >

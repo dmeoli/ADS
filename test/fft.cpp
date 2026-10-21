@@ -268,14 +268,55 @@ ADS_TEST( "fft-plans" )
    }
   }
  // the plans and the buffers kept per thread, the sizes met again in
- // another order: the same outputs
+ // another order: the same outputs, up to the alignment of the points
  const auto a = randomComplex< double >( 1000 , g );
  auto b = a , c = a;
  fft( b , false );
  std::vector< Complex > d( 7203 );
  fft( d , false );
  fft( c , false );
- CHECK( b == c );
+ for( std::size_t k = 0 ; k < 1000 ; ++k )
+  CHECK( std::abs( b[ k ] - c[ k ] ) < 1e-12 );
+ }
+
+// the four steps on every factorization n = r m that the plans may time,
+// r and m from max( W , 2 ), on lanes of 1, 2 and the widest numbers, the blocks of
+// the lanes full or short, against the reference: whatever the timing
+// keeps, the transform is right
+template< std::size_t W >
+void checkFactorizations( std::mt19937 & g )
+{
+ for( std::size_t n = 4 ; n <= 400 ; n += ( n < 100 ? 1 : 7 ) ) {
+  const auto a = randomComplex< double >( n , g );
+  const auto ref = reference( a , false );
+  constexpr std::size_t w = std::max< std::size_t >( W , 2 );
+  for( std::size_t r = w ; r * w <= n ; ++r ) {
+   if( n % r ) continue;
+   const std::size_t m = n / r;
+   const auto sm = detail::fftSteps< double >( m ) ,
+              sr = detail::fftSteps< double >( r );
+   detail::FFTFourRoots< double , W > R[ 16 ];
+   bool made[ 16 ] = {};
+   auto f = a;
+   double * x = reinterpret_cast< double * >( f.data() );
+   detail::fourStep< double , W >( x , x , r , m , sm , sr ,
+    [ & ]( std::size_t o ) -> const auto & {
+     if( ! made[ o ] ) {
+      detail::fourStepRoots( R[ o ] , r , m , o );
+      made[ o ] = true;
+      }
+     return( R[ o ] ); } , false );
+   CHECK( error( f , ref ) < 2 * bound< double >( n ) );
+   }
+  }
+ }
+
+ADS_TEST( "fft-factorizations" )
+{
+ std::mt19937 g( 73 );
+ checkFactorizations< 1 >( g );
+ checkFactorizations< 2 >( g );
+ checkFactorizations< detail::fftWidth >( g );
  }
 
 // the transforms in single precision at every size up to 300 and at
@@ -289,7 +330,8 @@ ADS_TEST( "fft-float" )
  }
 
 // rfft() and irfft() at every size up to 200, odd and even, and above it
-// on the four steps, out of place and in place, against the complex
+// on the four steps, out of place and in place (whose blocks may start
+// elsewhere, as the alignment of the points does), against the complex
 // transform; the outputs 0 and n / 2 real, the inverse of the transform
 ADS_TEST( "rfft" )
 {
@@ -310,10 +352,13 @@ ADS_TEST( "rfft" )
   std::vector< T > z( n + 2 );                // in place
   std::copy( x.begin() , x.end() , z.begin() );
   auto * Z = reinterpret_cast< std::complex< T > * >( z.data() );
-  rfft( z.data() , n , Z );
-  for( std::size_t k = 0 ; k < X.size() ; ++k ) CHECK( Z[ k ] == X[ k ] );
+  rfft( z.data() , n , Z );                    // as out of place, up to
+  const double e = 4 * bound< T >( n ) * std::sqrt( double( n ) + 1 );
+  for( std::size_t k = 0 ; k < X.size() ; ++k )   // the alignment
+   CHECK( std::abs( Z[ k ] - X[ k ] ) <= e * ( 1 + std::abs( X[ k ] ) ) );
   irfft( Z , n , z.data() );
-  for( std::size_t j = 0 ; j < n ; ++j ) CHECK( z[ j ] == y[ j ] );
+  for( std::size_t j = 0 ; j < n ; ++j )
+   CHECK( std::abs( z[ j ] - y[ j ] ) <= e );
   };
  for( std::size_t n = 0 ; n <= 200 ; ++n ) {
   check.template operator()< double >( n );
@@ -370,8 +415,9 @@ ADS_TEST( "dct-dst" )
 // four steps, with codelets on the lanes, with neither, and numbers of
 // transforms below and above the width of the lanes; fft2() and fftn()
 // against the transforms along each axis, by rows and columns of every
-// kind (short blocks, one row, one column), and in 3 dimensions against
-// the definition at some outputs
+// kind (short blocks, one row, one column, the unrolled ones of the powers
+// of 2 up to 32), and in 3 dimensions against the definition at some
+// outputs
 ADS_TEST( "fft-many-nd" )
 {
  std::mt19937 g( 67 );
@@ -390,10 +436,12 @@ ADS_TEST( "fft-many-nd" )
      }
     }
    }
- for( auto [ n0 , n1 ] : std::vector< std::pair< std::size_t , std::size_t > >{
-       { 1 , 1 } , { 1 , 8 } , { 8 , 1 } , { 4 , 4 } , { 3 , 5 } , { 16 , 16 } ,
-       { 17 , 9 } , { 64 , 64 } , { 100 , 60 } , { 128 , 256 } ,
-       { 256 , 128 } , { 1 , 100 } , { 100 , 1 } , { 0 , 5 } } ) {
+ using Shape = std::pair< std::size_t , std::size_t >;
+ for( auto [ n0 , n1 ] : std::vector< Shape >{
+       { 1 , 1 } , { 1 , 8 } , { 8 , 1 } , { 4 , 4 } , { 3 , 5 } ,
+       { 16 , 16 } , { 17 , 9 } , { 64 , 64 } , { 100 , 60 } , { 128 , 256 } ,
+       { 256 , 128 } , { 1 , 100 } , { 100 , 1 } , { 0 , 5 } , { 4 , 8 } ,
+       { 8 , 32 } , { 32 , 8 } , { 32 , 32 } , { 16 , 4 } } ) {
   const auto a = randomComplex< double >( n0 * n1 , g );
   for( bool inv : { false , true } ) {
    auto f = a , r = a;
@@ -436,7 +484,8 @@ ADS_TEST( "fft-many-nd" )
 ADS_TEST( "convolve-float" )
 {
  std::mt19937 g( 71 );
- for( auto [ np , nq ] : std::vector< std::pair< std::size_t , std::size_t > >{
+ using Shape = std::pair< std::size_t , std::size_t >;
+ for( auto [ np , nq ] : std::vector< Shape >{
        { 0 , 3 } , { 1 , 1 } , { 2 , 3 } , { 7 , 9 } , { 100 , 61 } ,
        { 500 , 500 } } ) {
   const auto p = randomReal< float >( np , g ) , q = randomReal< float >( nq ,
