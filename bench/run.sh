@@ -13,7 +13,8 @@
 # benchmark in one process. The core comes from CORE (default 0), the second  #
 # one of the benchmark of two threads from CORE2 (default CORE + 1), the runs #
 # per cell from RUNS (default 11), the build directory from BUILD, the text   #
-# of the compressors from ADS_BENCH_TEXT (a file, repeated up to each size).  #
+# of the compressors from ADS_BENCH_TEXT (a file, repeated up to each size), #
+# the cores of the parallel algorithms from PCORES (default CORE).            #
 #                                                                             #
 #   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
 #                           [HASHING=<dir>] [ABSL=<prefix>]                   #
@@ -29,6 +30,8 @@
 #                           [HTRIE=<dir>] [LIBART=<prefix>]                   #
 #                           [HYPERSCAN=<prefix>]                              #
 #                           [POCKETFFT=<dir>] [DUCC0=<dir>]                   #
+#                           [TBB=1] [FASTFLOW=<dir>] [PARLAY=<dir>]           #
+#                           [GAPBS=<dir>] [EIGEN=<dir>] [OPENBLAS=<prefix>]   #
 ###############################################################################
 
 set -e
@@ -110,6 +113,16 @@ cells "$CORE,${CORE2:-$((CORE + 1))}" allocators 100000 1000000 >> "$out"
 run positions 100000 1000000
 run assembly 100000 1000000
 run fingerprints 100000 1000000
+# the parallel algorithms on the cores PCORES (default the core CORE
+# alone), on 1, 2, 4, ... threads up to their number; the GAP benchmark
+# suite prints lines of its own, left out
+PCORES=${PCORES:-$CORE}
+np=$(taskset -c "$PCORES" nproc)
+for t in 1 2 4 8 16 32 64 128; do
+ [ "$t" -le "$np" ] || break
+ cells "$PCORES" parallel -t "$t" 1000000 10000000 | grep '^parallel' \
+  >> "$out" || true
+done
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################
