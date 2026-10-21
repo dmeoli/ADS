@@ -264,6 +264,7 @@ class EventCount {
  /// sleep (the wait of std::atomic on a word of 64 bits goes through a
  /// table of proxies, and may wake late)
  std::atomic< Key > f_epoch{ 0 };
+ [[maybe_unused]]
  char f_pad[ 64 - sizeof( std::uint64_t ) - sizeof( Key ) ] = {};
 
  };  // end( class EventCount )
