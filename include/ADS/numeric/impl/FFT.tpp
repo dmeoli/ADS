@@ -737,24 +737,9 @@ inline std::complex< T > omega( std::size_t k , std::size_t L )
  return( std::complex< T >( T( c ) , T( - s ) ) );
  }
 
-/// the largest codelet, and the table of its roots: omega_64^e = c + i s
-/// at 2 e , 2 e + 1, omega_64 = e^{-2 pi i / 64}
+/// the largest codelet of a power of 2 [see codeletRoots()]
 inline constexpr std::size_t fftCodelet = 64;
 
-template< class T >
-inline const T * codeletRoots()
-{
- static const std::vector< T > R = [] {
-  std::vector< T > t( 2 * fftCodelet );
-  for( std::size_t e = 0 ; e < fftCodelet ; ++e ) {
-   const std::complex< T > w = omega< T >( e , fftCodelet );
-   t[ 2 * e ] = w.real();
-   t[ 2 * e + 1 ] = w.imag();
-   }
-  return( t );
-  }();
- return( R.data() );
- }
 
 /// the odd primes with a codelet of their own, and the table of the
 /// cosines and the sines of 2 pi q / p , q < p, from 2 fftOddAt( p ) on
@@ -770,18 +755,54 @@ constexpr std::size_t fftOddAt( std::size_t p )
  return( a );
  }
 
+/// the sizes not powers of 2 nor primes whose codelets have a table of
+/// powers of omega, and the start of the table of each in that of
+/// codeletRoots()
+inline constexpr std::size_t fftTableSizes[] = { 6 , 9 , 10 , 12 , 15 , 18 ,
+                                                 20 , 24 , 25 , 27 , 30 , 36 ,
+                                                 40 , 45 , 48 , 50 , 54 ,
+                                                 60 };
+
+inline constexpr std::size_t fftOddBase = 2 * fftCodelet;
+
+constexpr std::size_t fftMixedAt( std::size_t N )
+{
+ std::size_t a = fftOddBase;
+ for( std::size_t p : fftOddPrimes ) a += 2 * p;
+ for( std::size_t q : fftTableSizes ) {
+  if( q == N ) return( a );
+  a += 2 * q;
+  }
+ return( std::size_t( -1 ) );
+ }
+
+/// the table of all the codelets, made once: omega_64^e = c + i s at 2 e ,
+/// 2 e + 1, e < 64; then, from fftOddBase + 2 fftOddAt( p ) on, the
+/// cosines and the sines of 2 pi q / p , q < p, of each odd prime of
+/// fftOddPrimes; then, from fftMixedAt( N ) on, omega_N^e , e < N, of each
+/// size of fftTableSizes. One table whose start the codelets receive, so
+/// that none reads a static of its own in its loops
 template< class T >
-inline const T * oddRoots()
+inline const T * codeletRoots()
 {
  static const std::vector< T > R = [] {
   std::vector< T > t;
+  auto add = [ & ]( std::size_t N ) {
+   for( std::size_t e = 0 ; e < N ; ++e ) {
+    const std::complex< T > w = omega< T >( e , N );
+    t.push_back( w.real() );
+    t.push_back( w.imag() );
+    }
+   };
+  add( fftCodelet );
   for( std::size_t p : fftOddPrimes )
    for( std::size_t q = 0 ; q < p ; ++q ) {
-    double c , s;
-    unitRoot( q , p , c , s );
+    double c , si;
+    unitRoot( q , p , c , si );
     t.push_back( T( c ) );
-    t.push_back( T( s ) );
+    t.push_back( T( si ) );
     }
+  for( std::size_t N : fftTableSizes ) add( N );
   return( t );
   }();
  return( R.data() );
@@ -948,7 +969,7 @@ ADS_FFT_INLINE void codelet( In & in , Out & out , const T * R )
                                std::make_index_sequence< N / 4 >() );
  else if constexpr( fftIsOdd( N ) )
   oddCodelet< N , inv , T , W >( in , out ,
-                                 oddRoots< T >() + 2 * fftOddAt( N ) );
+                                 R + fftOddBase + 2 * fftOddAt( N ) );
  else mixedCodelet< N , inv , T , W >( in , out , R );
  }
 
@@ -1004,37 +1025,60 @@ ADS_FFT_INLINE void oddCodelet( In & in , Out & out , const T * cs )
   }
  }
 
-/// the table of omega_N^e = c + i s at 2 e , 2 e + 1, e < N, for a
-/// codelet of N points not a power of 2
-template< class T , std::size_t N >
-inline const T * mixedRoots()
+/// the largest power of the smallest prime of N, and whether it is not N:
+/// the first factor of the prime-factor algorithm
+constexpr std::size_t fftPrimePower( std::size_t N )
 {
- static const std::vector< T > R = [] {
-  std::vector< T > t( 2 * N );
-  for( std::size_t e = 0 ; e < N ; ++e ) {
-   const std::complex< T > w = omega< T >( e , N );
-   t[ 2 * e ] = w.real();
-   t[ 2 * e + 1 ] = w.imag();
-   }
-  return( t );
-  }();
- return( R.data() );
+ std::size_t p = 2;
+ while( N % p ) ++p;
+ std::size_t q = 1;
+ while( N % ( q * p ) == 0 ) q *= p;
+ return( q );
  }
 
-/// x times omega_N^e, by nothing, -i, -1 and i without products, from the
-/// table R of mixedRoots() otherwise
-template< std::size_t N , std::size_t e0 , bool inv , class T ,
-          std::size_t W , class V >
-ADS_FFT_INLINE FFTCx< V > twiddleN( const FFTCx< V > & x , const T * R )
-{
- constexpr std::size_t e = e0 % N;
- if constexpr( e == 0 ) return( x );
- else if constexpr( 4 * e == N ) return( mulMinusI< inv >( x ) );
- else if constexpr( 2 * e == N ) return( FFTCx< V >{ - x.r , - x.i } );
- else if constexpr( 4 * e == 3 * N ) return( mulMinusI< ! inv >( x ) );
- else return( cmul< inv >( x , splat< T , W >( R[ 2 * e ] ) ,
-                           splat< T , W >( R[ 2 * e + 1 ] ) ) );
- }
+/// the maps of the prime-factor algorithm on N = A B, A and B coprime: the
+/// input b A + a B mod N of the transform of length A of the column b at
+/// in[ b A + a ], the output of its row a , b at out[ a B + b ], k = ( a B (
+/// B^{-1} mod A ) + b A ( A^{-1} mod B ) ) mod N
+template< std::size_t A , std::size_t B >
+struct FFTGoodThomas {
+ std::size_t in[ A * B ] , out[ A * B ];
+
+ constexpr FFTGoodThomas() : in{} , out{} {
+  constexpr std::size_t N = A * B;
+  std::size_t ia = 1 , ib = 1;               // B^{-1} mod A , A^{-1} mod B
+  while( ( ia * B ) % A != 1 % A ) ++ia;
+  while( ( ib * A ) % B != 1 % B ) ++ib;
+  for( std::size_t b = 0 ; b < B ; ++b )
+   for( std::size_t a = 0 ; a < A ; ++a ) {
+    in[ b * A + a ] = ( b * A + a * B ) % N;
+    out[ a * B + b ] = ( a * B * ia + b * A * ib ) % N;
+    }
+  }
+ };
+
+/// the inputs in( m[ j ] ) of a codelet within a larger one, and its
+/// outputs out( m[ j ] , y )
+template< class In >
+struct FFTMapIn {
+ In & in;
+ const std::size_t * m;
+
+ ADS_FFT_INLINE auto operator()( std::size_t j ) const {
+  return( in( m[ j ] ) );
+  }
+ };
+
+template< class Out >
+struct FFTMapOut {
+ Out & out;
+ const std::size_t * m;
+
+ template< class C >
+ ADS_FFT_INLINE void operator()( std::size_t j , const C & y ) const {
+  out( m[ j ] , y );
+  }
+ };
 
 /// the smallest prime of N, 4 before 2
 constexpr std::size_t fftFirstRadix( std::size_t N )
@@ -1045,17 +1089,39 @@ constexpr std::size_t fftFirstRadix( std::size_t N )
  return( N );
  }
 
-/// the transform of N items, N not a power of 2 nor a prime, unrolled: by
-/// decimation in time in the radix p = fftFirstRadix( N ), the transforms
-/// of the M = N / p items t , t + p , ... by codelets, their outputs k
-/// times omega_N^{t k} and the transform of p items of those, the outputs
-/// k + u M
+/// the transform of N items, N not a power of 2 nor a prime, unrolled: if
+/// N = A B with A = fftPrimePower( N ) < N, by the prime-factor algorithm
+/// of Good and Thomas, the transforms of length A of the B columns and of
+/// length B of the A rows of the matrix of the maps of FFTGoodThomas, with
+/// no powers of omega between them; otherwise by decimation in time in
+/// the radix p = fftFirstRadix( N ), the transforms of the M = N / p items
+/// t , t + p , ... by codelets, their outputs k times omega_N^{t k} and
+/// the transform of p items of those, the outputs k + u M
 template< std::size_t N , bool inv , class T , std::size_t W , class In ,
           class Out >
 ADS_FFT_INLINE void mixedCodelet( In & in , Out & out , const T * R )
 {
  using V = FFTLane< T , W >;
  using C = FFTCx< V >;
+ constexpr std::size_t A = fftPrimePower( N ) , B = N / A;
+ if constexpr( A < N ) {                   // coprime: no powers of omega
+  static constexpr FFTGoodThomas< A , B > G{};
+  C s[ N ];                                // the column b from b A on
+  ADS_FFT_UNROLL
+  for( std::size_t b = 0 ; b < B ; ++b ) {
+   FFTMapIn< In > i{ in , G.in + b * A };
+   FFTArray< C > o{ s + b * A };
+   codelet< A , inv , T , W >( i , o , R );
+   }
+  FFTArray< C > sa{ s };
+  ADS_FFT_UNROLL
+  for( std::size_t a = 0 ; a < A ; ++a ) {  // the rows, to their outputs
+   FFTSkip< FFTArray< C > > i{ sa , A , a };
+   FFTMapOut< Out > o{ out , G.out + a * B };
+   codelet< B , inv , T , W >( i , o , R );
+   }
+  return;
+  }
  constexpr std::size_t p = fftFirstRadix( N ) , M = N / p;
  C s[ N ];                                 // the part t from t M on
  ADS_FFT_UNROLL
@@ -1064,7 +1130,8 @@ ADS_FFT_INLINE void mixedCodelet( In & in , Out & out , const T * R )
   FFTArray< C > o{ s + t * M };
   codelet< M , inv , T , W >( i , o , R );
   }
- const T * RN = mixedRoots< T , N >();
+ static_assert( fftMixedAt( N ) != std::size_t( -1 ) );
+ const T * RN = R + fftMixedAt( N );
  ADS_FFT_UNROLL
  for( std::size_t k = 0 ; k < M ; ++k ) {
   C y[ p ];
@@ -1090,7 +1157,7 @@ ADS_FFT_INLINE void mixedCodelet( In & in , Out & out , const T * R )
    FFTArray< C > yi{ y };
    FFTSkipOut< Out > o{ out , M , k };
    oddCodelet< p , inv , T , W >( yi , o ,
-                                  oddRoots< T >() + 2 * fftOddAt( p ) );
+                                  R + fftOddBase + 2 * fftOddAt( p ) );
    }
   }
  }
@@ -1175,8 +1242,8 @@ ADS_FFT_INLINE bool byRadix( std::size_t R , F && f )
 /// the rounds of the transforms of L items by Stockham: the round t in
 /// radix R_t on the length L_t, R_t of fftRadices(); its powers of
 /// omega_{L_t} from at[ t ] in w, those of p < L_t / R_t , 0 < j < R_t at
-/// 2 ( ( R_t - 1 ) p + j - 1 ); the cosines and the sines of a prime of no
-/// codelet from g[ t ] in w, as those of oddRoots()
+/// 2 ( ( R_t - 1 ) p + j - 1 ); the cosines and the sines of 2 pi q / R_t
+/// , 0 < q <= ( R_t - 1 ) / 2, of a prime of no codelet from g[ t ] in w
 template< class T >
 struct FFTSteps {
  std::size_t L = 0;
@@ -1874,7 +1941,8 @@ ADS_FFT_NOINLINE void smallFour( const T * xi , T * x , bool inv )
   }
  }
 
-/// the shapes of smallFour(): n = r m points on lanes of W numbers
+/// the shapes of smallFour(): n = r m points on lanes of W numbers (none
+/// if W is 0: 2048 points in single precision only)
 struct FFTShape {
  std::size_t n , r , m , W;
  };
@@ -1888,7 +1956,9 @@ inline constexpr FFTShape fftSmallShapes[] = {
  { 256 , 16 , 16 , std::min< std::size_t >( 8 , fftWidthOf< T > ) }
 #if ! ADS_FFT_LEAN
  , { 512 , 16 , 32 , std::min< std::size_t >( 8 , fftWidthOf< T > ) } ,
- { 1024 , 32 , 32 , std::min< std::size_t >( 8 , fftWidthOf< T > ) }
+ { 1024 , 32 , 32 , std::min< std::size_t >( 8 , fftWidthOf< T > ) } ,
+ { 2048 , 32 , 64 , sizeof( T ) == 4 ? std::min< std::size_t >(
+                                         8 , fftWidthOf< T > ) : 0 }
 #endif
  };
 
@@ -2409,6 +2479,21 @@ inline void realForward( const T * x , std::size_t n , std::complex< T > * X )
   return;
   }
  const std::size_t h = n / 2;
+ if( h <= 32 && byAnyCodelet< 32 >( h , [ & ]< std::size_t N >() {
+      FFTCx< T > Z[ N ];               // small: the codelet into Z, the pass
+      auto in = [ & ]( std::size_t i ) ADS_FFT_LAMBDA {
+       return( FFTCx< T >{ x[ 2 * i ] , x[ 2 * i + 1 ] } );
+       };
+      FFTArray< FFTCx< T > > out{ Z };
+      codelet< N , false , T , 1 >( in , out , codeletRoots< T >() );
+      std::complex< T > * Y = reinterpret_cast< std::complex< T > * >( Z );
+      const T z0r = Z[ 0 ].r , z0i = Z[ 0 ].i;
+      halfPass< true >( Y , Y , N , fftHalfRoots< T >( n ) );
+      std::copy( Y + 1 , Y + N , X + 1 );
+      X[ 0 ] = std::complex< T >( z0r + z0i , 0 );
+      X[ N ] = std::complex< T >( z0r - z0i , 0 );
+      } ) )
+  return;
  transformTo( reinterpret_cast< const std::complex< T > * >( x ) , X , h ,
               false );
  const T z0r = X[ 0 ].real() , z0i = X[ 0 ].imag();
@@ -2439,8 +2524,24 @@ inline void realInverse( const std::complex< T > * X , std::size_t n , T * x )
   return;
   }
  const std::size_t h = n / 2;
- std::complex< T > * Z = reinterpret_cast< std::complex< T > * >( x );
  const T x0 = X[ 0 ].real() , xh = X[ h ].real();
+ if( h <= 32 && byAnyCodelet< 32 >( h , [ & ]< std::size_t N >() {
+      std::complex< T > Y[ N ];        // small: the pass into Y, the codelet
+      halfPass< false >( X , Y , N , fftHalfRoots< T >( n ) );
+      Y[ 0 ] = std::complex< T >( T( 0.5 ) * ( x0 + xh ) ,
+                                  T( 0.5 ) * ( x0 - xh ) );
+      const T f = T( 1 ) / T( N );            // the conjugates, forward
+      auto in = [ & ]( std::size_t i ) ADS_FFT_LAMBDA {
+       return( FFTCx< T >{ Y[ i ].real() , - Y[ i ].imag() } );
+       };
+      auto out = [ & ]( std::size_t k , const FFTCx< T > & y ) ADS_FFT_LAMBDA {
+       x[ 2 * k ] = y.r * f;
+       x[ 2 * k + 1 ] = - y.i * f;
+       };
+      codelet< N , false , T , 1 >( in , out , codeletRoots< T >() );
+      } ) )
+  return;
+ std::complex< T > * Z = reinterpret_cast< std::complex< T > * >( x );
  halfPass< false >( X , Z , h , fftHalfRoots< T >( n ) );
  Z[ 0 ] = std::complex< T >( T( 0.5 ) * ( x0 + xh ) ,
                             T( 0.5 ) * ( x0 - xh ) );

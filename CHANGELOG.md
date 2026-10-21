@@ -125,21 +125,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   test/engineered_sparse.cpp and bench/fingerprints.cpp, against std::hash,
   boost::hash_range and std::equal
 - fft() of every size, in double and single precision: codelets of the
-  sizes 2^a 3^b 5^c up to 25 besides the powers of 2 up to 64, the primes
-  7, 11 and 13 by pairs of symmetric sums, the other primes up to 101 by
-  the same sums in loops, the rounds of Stockham in the fewest radices of
-  the codelets, the four steps on any divisor of n with the last block of
-  the lanes shorter and codelets of 2^a 3^b 5^c up to 60 on their rows
-  and columns, Rader for the large primes and Bluestein for the sizes
-  with a prime above 101; the four steps unrolled up to 1024 points, and
-  in 2 dimensions up to 32 x 32; up to 2^17 points the fastest of 4
-  factorizations, timed when the plan is made (ADS_FFT_TUNE); the lanes
-  half as wide on few points; the inverse as the conjugate of the forward
-  transform of the conjugates, so that each kernel is compiled once; the
-  plans kept per thread for each size; their tests in test/fft.cpp
-  against the definition in long double
+  sizes 2^a 3^b 5^c up to 25 besides the powers of 2 up to 64, those of
+  coprime factors by the prime-factor algorithm of Good and Thomas with no
+  powers of omega, the primes 7, 11 and 13 by pairs of symmetric sums,
+  their tables in one with that of the powers of 2, the other primes up to
+  101 by the same sums in loops, the rounds of Stockham in the fewest
+  radices of the codelets, the four steps on any divisor of n with the
+  last block of the lanes shorter and codelets of 2^a 3^b 5^c up to 60 on
+  their rows and columns, Rader for the large primes and Bluestein for the
+  sizes with a prime above 101; the four steps unrolled up to 1024 points
+  (2048 in single precision), and in 2 dimensions up to 32 x 32; up to
+  2^17 points the fastest of 4 factorizations, timed when the plan is made
+  (ADS_FFT_TUNE); the lanes half as wide on few points; the inverse as the
+  conjugate of the forward transform of the conjugates, so that each
+  kernel is compiled once; the plans kept per thread for each size; their
+  tests in test/fft.cpp against the definition in long double
 - rfft() and irfft(), the transforms of real data by a complex transform
-  of half the points and a pass on lanes of pairs; dct() and dst(), the
+  of half the points and a pass on lanes of pairs, up to 64 points one
+  codelet and the pass on its outputs; dct() and dst(), the
   transforms of the cosines and of the sines of types 1 to 4 as those of
   FFTW (Makhoul for the types 2 and 3, the half-length complex transform
   for the type 4); fftMany(), fft2() and fftn(), many transforms and

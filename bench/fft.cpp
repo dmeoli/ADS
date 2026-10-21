@@ -430,8 +430,8 @@ int main( int argc , char ** argv )
   }
   // --------------------------------------------------------- convolve
   if( n >= 4 ) {
-   const std::size_t h = n / 2 , m = 2 * h - 1 , N = convSize( m ) ,
-                     q = k * m;
+   const std::size_t h = n / 2 , m = 2 * h - 1 , q = k * m;
+   [[maybe_unused]] const std::size_t N = convSize( m );
    std::vector< std::vector< double > > P( k ) , Q( k );
    for( std::size_t c = 0 ; c < k ; ++c ) {
     P[ c ] = random< double >( h , o.seed + unsigned( 2 * c ) );

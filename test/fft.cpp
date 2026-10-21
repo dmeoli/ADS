@@ -280,9 +280,9 @@ ADS_TEST( "fft-plans" )
  }
 
 // the four steps on every factorization n = r m that the plans may time,
-// r and m from max( W , 2 ), on lanes of 1, 2 and the widest numbers, the blocks of
-// the lanes full or short, against the reference: whatever the timing
-// keeps, the transform is right
+// r and m from max( W , 2 ), on lanes of 1, 2 and the widest numbers, the
+// blocks of the lanes full or short, against the reference: whatever the
+// timing keeps, the transform is right
 template< std::size_t W >
 void checkFactorizations( std::mt19937 & g )
 {
@@ -325,7 +325,8 @@ ADS_TEST( "fft-float" )
 {
  std::mt19937 g( 53 );
  for( std::size_t n = 0 ; n <= 300 ; ++n ) checkComplex< float >( n , g );
- for( std::size_t n : { 512 , 1000 , 4096 , 6000 , 1031 , 65536 , 131072 } )
+ for( std::size_t n : { 512 , 1000 , 2048 , 4096 , 6000 , 1031 , 65536 ,
+                        131072 } )
   checkComplex< float >( n , g , 2 );
  }
 
@@ -372,8 +373,9 @@ ADS_TEST( "rfft" )
 
 // the transforms of the cosines and of the sines of the 4 types at every
 // size from 1 to 64 (2 to 64 for the type 1 of the cosines) and at some
-// larger, odd and even, against their definitions; the inverses (the type
-// 3 of the type 2, the type 4 of itself), and the contracts
+// larger, odd and even, against their definitions (summed in long double,
+// which is double under valgrind: hence the wider bound); the inverses
+// (the type 3 of the type 2, the type 4 of itself), and the contracts
 ADS_TEST( "dct-dst" )
 {
  std::mt19937 g( 61 );
@@ -386,7 +388,7 @@ ADS_TEST( "dct-dst" )
     auto y = x;
     if( c ) dct( y , t );
     else dst( y , t );
-    CHECK( error( y , trig( xl , c , t ) ) < 4 * bound< double >( N ) );
+    CHECK( error( y , trig( xl , c , t ) ) < 16 * bound< double >( N ) );
     }
   auto y = x;                                  // III of II: 2 N x
   dct( y , 2 );

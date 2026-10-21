@@ -19,7 +19,16 @@
  * \f[ \hat a_{k + u N/4} = \sum_{t<4} ( -i )^{t u} \omega_N^{t k}
  *     \hat a^{(t)}_k , \qquad k < N / 4 , \f]
  * \f$ \hat a^{(t)} \f$ the transform of the items \f$ t , t + 4 , \ldots
- * \f$, and in the smallest prime radix p of N otherwise. A prime p is done
+ * \f$; a size N = A B with A and B coprime (A the power of the smallest
+ * prime of N) by the prime-factor algorithm of Good and Thomas, with no
+ * power of \f$ \omega \f$ between its two stages: the input \f$ ( a B +
+ * b A ) \bmod N \f$ and the output \f$ ( u B ( B^{-1} \bmod A ) + v A (
+ * A^{-1} \bmod B ) ) \bmod N \f$ of indices \f$ a , u < A \f$ and \f$ b ,
+ * v < B \f$ make the transform one in 2 dimensions,
+ * \f[ \hat a_{k( u , v )} = \sum_{b<B} \omega_B^{b v} \sum_{a<A}
+ *     \omega_A^{a u} \, a_{( a B + b A ) \bmod N} , \f]
+ * the transforms of length A of B columns and of length B of A rows; the
+ * other sizes in the smallest prime radix p of N. A prime p is done
  * by pairs, with \f$ s_j = a_j + a_{p-j} \f$, \f$ d_j = a_j - a_{p-j} \f$
  * and \f$ h = ( p - 1 ) / 2 \f$:
  * \f[ \hat a_{k} , \hat a_{p-k} = a_0 + \sum_{j \le h} s_j \cos \frac{2 \pi
@@ -63,13 +72,13 @@
  * \f$ 2^{17} \f$ points the first 4 of them are timed when the plan is
  * made and the fastest kept, a choice among a few, as FFTW_MEASURE makes
  * among many (ADS_FFT_TUNE sets the limit, 0 none). Below \f$ 2 W^2 \f$
- * points the lanes are half as wide. Up to 1024 points a power of 2, and
- * at 48 and 96, the four steps are unrolled into one function whose
- * columns stay in an array of n / W items, the transform of 16 points in
- * 2 codelets of 4; so are the transforms in 2 dimensions of the powers of
- * 2 up to 32 x 32. The powers of \f$ \omega \f$
- * are each computed alone, the angle taken to \f$ [ 0 , \pi / 4 ] \f$ by
- * the symmetries of the circle, in integers, so that each has the error
+ * points the lanes are half as wide. Up to 1024 points a power of 2 (2048
+ * in single precision), and at 48 and 96, the four steps are unrolled
+ * into one function whose columns stay in an array of n / W items, the
+ * transform of 16 points in 2 codelets of 4; so are the transforms in 2
+ * dimensions of the powers of 2 up to 32 x 32. The powers of \f$ \omega
+ * \f$ are each computed alone, the angle taken to \f$ [ 0 , \pi / 4 ] \f$
+ * by the symmetries of the circle, in integers, so that each has the error
  * of a sine or a cosine of a small angle; from \f$ 2^{16} \f$ points on,
  * those between the steps are the products of two tables of about \f$ n
  * / W \f$ and r items, rather than one of n.
@@ -98,7 +107,9 @@
  * \f$ and \f$ O_k = ( Z_k - \overline{Z_{h-k}} ) / 2 i \f$ (the transforms
  * of the even and of the odd items), \f$ \hat x_k = E_k + \omega_n^k O_k
  * \f$ and \f$ \hat x_{h-k} = \overline{E_k - \omega_n^k O_k} \f$, W pairs
- * at a time; the inverse runs the same steps backwards. The transforms of
+ * at a time; the inverse runs the same steps backwards; up to 64 points,
+ * the complex transform is one codelet whose outputs stay in registers
+ * for the pass. The transforms of
  * the cosines and of the sines are those of FFTW (REDFT00, REDFT10,
  * REDFT01, REDFT11 and RODFT00 to RODFT11), with no normalization; the
  * type 2 by the algorithm of Makhoul, the real transform V of \f$ v_j =
@@ -152,6 +163,12 @@
  * \see J. W. Cooley, J. W. Tukey, An algorithm for the machine calculation
  *      of complex Fourier series, Mathematics of Computation 19(90),
  *      297-301, 1965, doi:10.1090/S0025-5718-1965-0178586-1
+ * \see I. J. Good, The interaction algorithm and practical Fourier
+ *      analysis, Journal of the Royal Statistical Society, Series B 20(2),
+ *      361-372, 1958, doi:10.1111/j.2517-6161.1958.tb00300.x
+ * \see L. H. Thomas, Using computers to solve problems in physics, in W.
+ *      F. Freiberger, W. Prager (eds.), Applications of Digital Computers,
+ *      Ginn, Boston, 1963 (no doi)
  * \see R. C. Singleton, An algorithm for computing the mixed radix fast
  *      Fourier transform, IEEE Transactions on Audio and Electroacoustics
  *      17(2), 93-103, 1969, doi:10.1109/TAU.1969.1162042
