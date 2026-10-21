@@ -170,8 +170,10 @@ inline std::vector< std::uint8_t > binaryPack(
  // the blocks, the differences taken and the last one filled; their
  // widths first, then the bytes
  std::vector< std::uint32_t > v( blocks * kBlock , 0 );
- for( std::size_t i = 0 ; i < n ; ++i )
-  v[ i ] = sorted ? x[ i ] - ( i >= 4 ? x[ i - 4 ] : 0 ) : x[ i ];
+ if( ! sorted ) std::copy( x.begin() , x.end() , v.begin() );
+ else
+  for( std::size_t i = 0 ; i < n ; ++i )
+   v[ i ] = x[ i ] - ( i >= 4 ? x[ i - 4 ] : 0 );
  std::vector< std::uint8_t > width( blocks );
  std::size_t bytes = 0;
  for( std::size_t k = 0 ; k < blocks ; ++k ) {
