@@ -109,9 +109,38 @@ inline bool solvable( const Board & B , int n )
  return( ( inv + ( n - 1 - hole ) ) % 2 == 0 );
  }
 
-inline std::optional< std::vector< Board > > solvePuzzle( const Board & B ,
-                                                          int n ,
-                                                          long * visited )
+namespace detail {
+
+/// the value of k in the map m of the levels, or nullptr: the find() of
+/// the maps of std and Boost, or of the hash tables of ADS
+template< class M , class K >
+int * levelOf( M & m , const K & k )
+{
+ if constexpr( std::is_pointer_v< decltype( m.find( k ) ) > )
+  return( m.find( k ) );                    // a table of ADS
+ else {
+  auto it = m.find( k );
+  return( it == m.end() ? nullptr : &it->second );
+  }
+ }
+
+/// the value of k in m set to v
+template< class M , class K >
+void setLevel( M & m , const K & k , int v )
+{
+ if constexpr( std::is_pointer_v< decltype( m.find( k ) ) > ) {
+  if( int * p = m.find( k ) ) *p = v;
+  else m.insert( k , v );
+  }
+ else
+  m.insert_or_assign( k , v );
+ }
+
+}  // end( namespace detail )
+
+template< class Map >
+std::optional< std::vector< Board > > solvePuzzle( const Board & B , int n ,
+                                                   long * visited )
 {
  ADS_PRE( detail::board( B , n ) );
  const auto result = [ & ]( void ) -> std::optional< std::vector< Board > > {
@@ -120,13 +149,14 @@ inline std::optional< std::vector< Board > > solvePuzzle( const Board & B ,
   const Board goal = puzzleGoal( n );
   std::vector< Board > node( 1 , B );
   std::vector< int > parent( 1 , -1 ) , level( 1 , 0 );
-  std::map< Board , int > best;           // the least level of each one
-  best[ B ] = 0;
+  Map best;                               // the least level of each one
+  detail::setLevel( best , B , 0 );
   FibonacciHeapPriorityQueue< int , int > Q;
   Q.insert( 0 , manhattan( B , n ) );
   while( ! Q.empty() ) {
    const int k = Q.deleteMin();
-   if( level[ k ] > best[ node[ k ] ] ) continue;     // a stale entry
+   if( level[ k ] > *detail::levelOf( best , node[ k ] ) )
+    continue;                                         // a stale entry
    if( visited ) ++*visited;
    if( node[ k ] == goal ) {
     std::vector< Board > S;
@@ -136,9 +166,9 @@ inline std::optional< std::vector< Board > > solvePuzzle( const Board & B ,
     }
    for( Board & C : puzzleMoves( node[ k ] , n ) ) {
     const int g = level[ k ] + 1;
-    auto it = best.find( C );
-    if( ( it != best.end() ) && ( it->second <= g ) ) continue;
-    best[ C ] = g;
+    const int * at = detail::levelOf( best , C );
+    if( at && ( *at <= g ) ) continue;
+    detail::setLevel( best , C , g );
     const int lb = manhattan( C , n );
     node.push_back( std::move( C ) );
     parent.push_back( k );

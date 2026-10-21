@@ -351,6 +351,15 @@ PAIRS = [
      ['hinnant::for_each_combination']),
     ('exact cover', 'ADS::FastExactCover', 'Knuth',
      ['knuth::dlx1', 'knuth::dlx2', 'knuth::ssxcc']),
+    ('book cdcl', 'ADS::DaryHeap d=4', 'std', ['std::priority_queue']),
+    ('book cdcl', 'ADS::DaryHeap d=4', 'Boost',
+     ['boost::heap::d_ary_heap d=4', 'boost::heap::pairing_heap']),
+    ('book a-star', 'ADS::FlatHashTable', 'std',
+     ['std::map', 'std::unordered_map']),
+    ('book a-star', 'ADS::FlatHashTable', 'Boost',
+     ['boost::unordered_flat_map']),
+    ('book subset sum', 'ADS::BitVector', 'std', ['std::vector<bool>']),
+    ('book subset sum', 'ADS::BitVector', 'Boost', ['boost::dynamic_bitset']),
 ]
 
 def read(path):

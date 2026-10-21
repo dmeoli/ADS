@@ -19,7 +19,10 @@
  *   conflicts gain activity (VSIDS), and the decisions take the most
  *   active one, with the value it had last (phase saving); restarts follow
  *   the sequence of Luby, Sinclair and Zuckerman. The learned clauses are
- *   kept (no deletion), which suits formulae of moderate size.
+ *   kept (no deletion), which suits formulae of moderate size. The heap of
+ *   the variables is a parameter of BasicCdcl (Cdcl is the one on
+ *   std::priority_queue), so that the same algorithm runs on the heaps of
+ *   std, Boost or ADS with the same decisions and conflicts.
  *
  * The contracts [see Contract.h]: the literals are \f$ \pm ( v + 1 ) \f$
  * with v in [ 0 , n ); a model returned passes satCertificate(), a
@@ -88,11 +91,16 @@ namespace ADS {
 inline std::optional< std::vector< bool > > dpll( const Cnf & F , int n );
 
 /*--------------------------------------------------------------------------*/
-/*------------------------------ CLASS Cdcl --------------------------------*/
+/*---------------------------- CLASS BasicCdcl -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// conflict-driven clause learning with two watched literals
-class Cdcl {
+/// conflict-driven clause learning with two watched literals; the free
+/// variables by activity in a Heap of pairs ( activity , variable ), the
+/// largest on top: std::priority_queue by default, or a heap of Boost or
+/// of ADS [see DaryHeap.h], with the same decisions and conflicts, since
+/// the pairs are ordered totally
+template< class Heap = std::priority_queue< std::pair< double , int > > >
+class BasicCdcl {
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -100,7 +108,7 @@ class Cdcl {
  enum class Result { SAT , UNSAT , UNKNOWN };
 
  /// \pre n >= 0 and the literals of F are variables of [ 0 , n )
- Cdcl( const Cnf & F , int n );
+ BasicCdcl( const Cnf & F , int n );
 
  /// the search, UNKNOWN after maxConflicts conflicts if that is >= 0
  /// \post SAT means that model() passes satCertificate()
@@ -144,10 +152,13 @@ class Cdcl {
  std::size_t f_qhead = 0;
  std::vector< double > f_act;
  double f_inc = 1;
- std::priority_queue< std::pair< double , int > > f_heap;
+ Heap f_heap;
  long f_conflicts = 0 , f_decisions = 0;
 
- };  // end( class Cdcl )
+ };  // end( class BasicCdcl )
+
+/// the clause learning on std::priority_queue
+using Cdcl = BasicCdcl<>;
 
 /*--------------------------------------------------------------------------*/
 

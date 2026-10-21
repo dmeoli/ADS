@@ -73,11 +73,14 @@ namespace ADS {
 
 /// subsetSum(): M[ j ] tells whether some of A[ 0 .. i ] sum to j; the
 /// vector M after each element goes to *rows, if given, the first one
-/// before any; O( n k ) time
+/// before any; O( n k ) time; M is a vector of Bits, std::vector< bool >
+/// by default, or boost::dynamic_bitset, or BitVector of ADS
+/// [see BitVector.h], with the same cells written
 /// \pre k >= 0 and A is not negative
 /// \post *rows, if given, has n + 1 rows
-inline bool subsetSumDP( const std::vector< long > & A , long k ,
-                         std::vector< std::vector< bool > > * rows = nullptr );
+template< class Bits = std::vector< bool > >
+bool subsetSumDP( const std::vector< long > & A , long k ,
+                  std::vector< std::vector< bool > > * rows = nullptr );
 
 /// the places of a subset of A of sum k, by the table of all the rows,
 /// O( n k ) time and space, or nothing

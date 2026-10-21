@@ -67,20 +67,45 @@ inline bool fairShares( const std::vector< long > & P ,
 /*---------------------------- SUBSET SUM ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-inline bool subsetSumDP( const std::vector< long > & A , long k ,
-                         std::vector< std::vector< bool > > * rows )
+namespace detail {
+
+/// the bit j of M set to b: set() of the bit vectors of ADS, the
+/// references of std and Boost
+template< class Bits >
+void setBit( Bits & M , std::size_t j , bool b )
+{
+ if constexpr( requires { M.set( j , b ); } ) M.set( j , b );
+ else M[ j ] = b;
+ }
+
+/// the bits of M as a std::vector< bool >
+template< class Bits >
+std::vector< bool > bitsOf( const Bits & M , std::size_t n )
+{
+ std::vector< bool > r( n );
+ for( std::size_t j = 0 ; j < n ; ++j ) r[ j ] = M[ j ];
+ return( r );
+ }
+
+}  // end( namespace detail )
+
+template< class Bits >
+bool subsetSumDP( const std::vector< long > & A , long k ,
+                  std::vector< std::vector< bool > > * rows )
 {
  ADS_PRE( ( k >= 0 ) && detail::nonnegative( A ) );
- std::vector< bool > M( k + 1 , false );
- M[ 0 ] = true;
- if( rows ) rows->push_back( M );
+ const std::size_t K = std::size_t( k ) + 1;
+ Bits M( K );                           // all false
+ detail::setBit( M , 0 , true );
+ if( rows ) rows->push_back( detail::bitsOf( M , K ) );
  for( long a : A ) {
   for( long j = k ; j >= a ; --j )      // downwards, each a used once
-   M[ j ] = M[ j - a ] || M[ j ];
-  if( rows ) rows->push_back( M );
+   detail::setBit( M , std::size_t( j ) ,
+                   M[ std::size_t( j - a ) ] || M[ std::size_t( j ) ] );
+  if( rows ) rows->push_back( detail::bitsOf( M , K ) );
   }
  ADS_POST( ! rows || ( rows->size() == A.size() + 1 ) );
- return( M[ k ] );
+ return( M[ std::size_t( k ) ] );
  }
 
 inline std::optional< Nodes > subsetSumSet( const std::vector< long > & A ,
