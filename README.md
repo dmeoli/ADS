@@ -458,6 +458,7 @@ standard library, Boost and Eigen; their tests are in
 | cuckoo table shared by threads, buckets of 4 places, locks on 2048 stripes, paths searched in breadth without locks (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
 | cuckoo table shared by threads, buckets of 4 places, one lock per region of buckets, lookups without locks under versions (seqlock), huge pages (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
 | lock-free queue of many producers, a lane of recycled blocks each | [`concurrent/MPSCQueue.h`](include/ADS/concurrent/MPSCQueue.h) | `engineered_queues.mpsc-queue` |
+| bounded queue of many producers and many consumers, a sequence in each place (Vyukov) | [`concurrent/MPMCQueue.h`](include/ADS/concurrent/MPMCQueue.h) | `engineered_queues.mpmc-queue` |
 | event count, the sleep of a thread until a condition holds, with asymmetric fences | [`concurrent/EventCount.h`](include/ADS/concurrent/EventCount.h) | `engineered_queues.event-count` |
 | work-stealing deque (Chase and Lev; Lê et al.) | [`concurrent/WorkStealingDeque.h`](include/ADS/concurrent/WorkStealingDeque.h) | `engineered_queues.work-stealing-deque` |
 

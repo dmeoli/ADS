@@ -210,6 +210,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SatSolvers.h cites Davis and Putnam, the restarts of Luby, Sinclair and
   Zuckerman and the phase saving of Pipatsrisawat and Darwiche
 
+- MPMCQueue, the bounded queue of many producers and many consumers of
+  Vyukov (a sequence number in each place, one compare-and-swap an
+  operation); the test mpmc-queue and the cells mpmc of bench-concurrent
 - EventCount, the sleep of a thread until a condition on a lock-free
   structure holds (an epoch and the waiters in one word, std::atomic::wait
   on a copy of the epoch, asymmetric fences by membarrier(2) on Linux, 20

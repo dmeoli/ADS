@@ -25,6 +25,11 @@
  *   messages at once, the others pop by batches of up to 256 where they
  *   can.
  *
+ * - "mpmc", case throughput: a producer pushes n integers into a queue of
+ *   1024 places of many producers and many consumers, one by one and
+ *   retrying when it is full, while a consumer pops them (ns per item):
+ *   MPMCQueue of ADS against boost::lockfree::queue of fixed capacity and
+ *   moodycamel::ConcurrentQueue with no tokens;
  * - "wake", the consumer that sleeps until an item comes: SPSCQueue,
  *   MPSCQueue and MPSCInbox of ADS with their waits (waitPop(),
  *   waitTake(), the producer calling notify()) against a consumer that
@@ -59,6 +64,9 @@
 #include "Bench.h"
 
 #include "ADS/concurrent/MPSCInbox.h"
+#ifndef ADS_BENCH_OLD
+ #include "ADS/concurrent/MPMCQueue.h"
+#endif
 #ifndef ADS_BENCH_OLD
  #include "ADS/concurrent/MPSCQueue.h"
 #endif
@@ -398,6 +406,42 @@ int main( int argc , char ** argv )
              }
             return( s ); } ) );
    }
+#endif
+  // ----- mpmc, one producer and one consumer on the same queue type
+  auto mpmc = [ & ]( const std::string & who , auto make , auto push ,
+                     auto pop ) {
+   print( "mpmc" , "throughput" , n , who , transfer( n , r , make ,
+           [ & ]( auto & q , std::size_t m ) {
+            for( std::size_t i = 0 ; i < m ; ++i )
+             while( ! push( q , Item( i ) ) ) {} } ,
+           [ & ]( auto & q , std::size_t m ) {
+            Item s = 0 , x;
+            for( std::size_t i = 0 ; i < m ; ++i ) {
+             while( ! pop( q , x ) ) {}
+             s += x;
+             }
+            return( s ); } ) ); };
+#ifdef ADS_HAS_BOOST
+  for( const char * who : { "boost::lockfree::queue" ,
+                            "boost::lockfree::queue A/A" } )
+   mpmc( who , [ & ](){
+          return( std::make_unique< boost::lockfree::queue< Item ,
+                   boost::lockfree::capacity< 1024 > > >() ); } ,
+         []( auto & q , Item x ) { return( q.bounded_push( x ) ); } ,
+         []( auto & q , Item & x ) { return( q.pop( x ) ); } );
+#endif
+#ifdef ADS_HAS_MOODYCAMEL
+  mpmc( "moodycamel::ConcurrentQueue" , [ & ](){
+         return( std::make_unique< moodycamel::ConcurrentQueue< Item > >(
+                  cap ) ); } ,
+        []( auto & q , Item x ) { return( q.try_enqueue( x ) ); } ,
+        []( auto & q , Item & x ) { return( q.try_dequeue( x ) ); } );
+#endif
+#ifndef ADS_BENCH_OLD
+  mpmc( "ADS::MPMCQueue" , [ & ](){
+         return( std::make_unique< ADS::MPMCQueue< Item > >( cap ) ); } ,
+        []( auto & q , Item x ) { return( q.push( x ) ); } ,
+        []( auto & q , Item & x ) { return( q.tryPop( x ) ); } );
 #endif
   print( "mpsc" , "throughput" , n , "ADS::MPSCInbox" , transfer( n , r ,
           [](){ return( std::make_unique< ADS::MPSCInbox< Item > >() ); } ,
