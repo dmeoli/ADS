@@ -477,6 +477,7 @@ standard library, Boost and Eigen; their tests are in
 | work-stealing deque (Chase and Lev; Lê et al.) | [`concurrent/WorkStealingDeque.h`](include/ADS/concurrent/WorkStealingDeque.h) | `engineered_queues.work-stealing-deque` |
 | wavelet tree shaped by the code of Huffman, n(H0+1) bits (Makinen and Navarro) | [`succinct/HuffmanWaveletTree.h`](include/ADS/succinct/HuffmanWaveletTree.h) | `engineered_succinct.huffman-wavelet-tree` |
 | FM-index on the wavelet tree of Huffman, the succinct suffix array (Makinen and Navarro) | [`compression/HuffmanFMIndex.h`](include/ADS/compression/HuffmanFMIndex.h) | `engineered_succinct.huffman-fm-index` |
+| partitioned Elias-Fano, blocks full, as vectors or by Elias-Fano (Ottaviano and Venturini) | [`succinct/PartitionedEliasFano.h`](include/ADS/succinct/PartitionedEliasFano.h) | `engineered_succinct.partitioned-elias-fano` |
 
 ## Sorting
 

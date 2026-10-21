@@ -17,8 +17,9 @@
  * - rrr: the same on the vectors compressed to their entropy, against the
  *   rrr_vector of sdsl-lite, for n up to 10^7;
  * - eliasfano: access and nextGEQ (the rank of the competitors) on n
- *   random distinct integers in [ 0 , 128 n ), and the building, for n up
- *   to 10^7;
+ *   random distinct integers in [ 0 , 128 n ) and on n integers in
+ *   clusters (as the lists of an inverted index), by Elias-Fano and by
+ *   its partitioned form, and the building, for n up to 10^7;
  * - parentheses: findClose, findOpen and enclose on the parentheses of a
  *   random tree of n nodes (a uniform Dyck word of 2n bits), for n up to
  *   10^7;
@@ -76,6 +77,10 @@
 #if __has_include( "ADS/succinct/WaveletMatrix.h" )
  #include "ADS/succinct/WaveletMatrix.h"
  #define ADS_HAS_WM 1
+#endif
+#if __has_include( "ADS/succinct/PartitionedEliasFano.h" )
+ #include "ADS/succinct/PartitionedEliasFano.h"
+ #define ADS_HAS_PEF 1
 #endif
 #if __has_include( "ADS/succinct/HuffmanWaveletTree.h" )
  #include "ADS/succinct/HuffmanWaveletTree.h"
@@ -473,7 +478,8 @@ void bitvectors( std::size_t n , int r , unsigned seed )
 /// the cells of an Elias-Fano structure: access( i ) of the item i, from
 /// 0, and nextGEQ( x ), the number of the items below x
 template< class B , class A , class G , class Z >
-void eliasFano( const std::vector< std::uint64_t > & X , std::uint64_t u ,
+void eliasFano( const std::string & tag ,
+                const std::vector< std::uint64_t > & X , std::uint64_t u ,
                 const std::vector< std::uint64_t > & I ,
                 const std::vector< std::uint64_t > & Q ,
                 const std::string & who , B build , A access , G geq ,
@@ -482,93 +488,117 @@ void eliasFano( const std::vector< std::uint64_t > & X , std::uint64_t u ,
  struct { const std::string & who; B & build; A & access; G & geq;
           Z & bits; } c{ who , build , access , geq , bits };
  const std::size_t n = X.size();
- print( "eliasfano" , "build" , n , c.who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
+ print( "eliasfano" , "build" + tag , n , c.who , median(
+         [](){ return( 0 ); } , [ & ]( int ) {
           auto s = c.build( X , u );
           sink = sink + std::uint64_t( s != nullptr ); } , r , n ) );
  auto s = c.build( X , u );
- print( "eliasfano" , "access" , n , c.who , queries( I , r ,
+ print( "eliasfano" , "access" + tag , n , c.who , queries( I , r ,
          [ & ]( std::uint64_t i ) { return( c.access( *s , i ) ); } ) );
- print( "eliasfano" , "nextGEQ" , n , c.who , queries( Q , r ,
+ print( "eliasfano" , "nextGEQ" + tag , n , c.who , queries( Q , r ,
          [ & ]( std::uint64_t x ) { return( c.geq( *s , x ) ); } ) );
- print( "space" , "eliasfano" , n , c.who , c.bits( *s ) );
+ print( "space" , "eliasfano" + tag , n , c.who , c.bits( *s ) );
  }
 
 void eliasFanos( std::size_t n , int r , unsigned seed )
 {
- const std::uint64_t u = 128 * std::uint64_t( n );
  std::mt19937_64 g( seed );
- std::vector< std::uint64_t > X;
- {
- std::unordered_set< std::uint64_t > seen;
- while( X.size() < n )
-  if( const std::uint64_t x = g() % u ; seen.insert( x ).second )
-   X.push_back( x );
- std::sort( X.begin() , X.end() );
- }
- std::vector< std::uint64_t > I , Q;
- for( std::size_t q = 0 ; q < kQueries ; ++q ) {
-  I.push_back( g() % n );
-  Q.push_back( g() % u );
-  }
- const double nn = double( n );
- using EF = ADS::EliasFano;
- for( const char * who : { "ADS::EliasFano" , "ADS::EliasFano A/A" } )
-  eliasFano( X , u , I , Q ,
-   who , []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
-    return( std::make_unique< EF >( X , u ) ); } ,
-   []( const EF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-   []( const EF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
-   [ nn ]( const EF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-   r );
+ for( const bool clustered : { false , true } ) {
+  const std::string tag = clustered ? " clustered" : "";
+  std::vector< std::uint64_t > X;
+  std::uint64_t u = 128 * std::uint64_t( n );
+  if( ! clustered ) {
+   std::unordered_set< std::uint64_t > seen;
+   while( X.size() < n )
+    if( const std::uint64_t x = g() % u ; seen.insert( x ).second )
+     X.push_back( x );
+   std::sort( X.begin() , X.end() );
+   }
+  else {
+   // clusters of 64 items on average with gaps of 1 to 4, between gaps
+   // of up to 2^14, a universe of about 130 n as for the uniform items
+   std::uint64_t x = 0;
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    x += g() % 64 == 0 ? 1 + g() % 16384 : 1 + g() % 4;
+    X.push_back( x );
+    }
+   u = x + 1;
+   }
+  std::vector< std::uint64_t > I , Q;
+  for( std::size_t q = 0 ; q < kQueries ; ++q ) {
+   I.push_back( g() % n );
+   Q.push_back( g() % u );
+   }
+  const double nn = double( n );
+  using EF = ADS::EliasFano;
+  for( const char * who : { "ADS::EliasFano" , "ADS::EliasFano A/A" } )
+   eliasFano( tag , X , u , I , Q ,
+    who , []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
+     return( std::make_unique< EF >( X , u ) ); } ,
+    []( const EF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+    []( const EF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
+    [ nn ]( const EF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
+    r );
 #ifdef ADS_HAS_SDSL
- struct SD {
-  sdsl::sd_vector<> v;
-  sdsl::sd_vector<>::rank_1_type rk;
-  sdsl::sd_vector<>::select_1_type sl;
-  };
- eliasFano( X , u , I , Q ,
-  "sdsl::sd_vector" , []( const std::vector< std::uint64_t > & X ,
-                          std::uint64_t u ) {
-   auto s = std::make_unique< SD >();
-   sdsl::sd_vector_builder b( u , X.size() );
-   for( const auto x : X ) b.set( x );
-   s->v = sdsl::sd_vector<>( b );
-   s->rk = sdsl::sd_vector<>::rank_1_type( &s->v );
-   s->sl = sdsl::sd_vector<>::select_1_type( &s->v );
-   return( s ); } ,
-  []( const SD & s , std::uint64_t i ) { return( s.sl.select( i + 1 ) ); } ,
-  []( const SD & s , std::uint64_t x ) { return( s.rk.rank( x ) ); } ,
-  [ nn ]( const SD & s ) {
-   return( 8 * double( sdsl::size_in_bytes( s.v ) ) / nn ); } , r );
+  struct SD {
+   sdsl::sd_vector<> v;
+   sdsl::sd_vector<>::rank_1_type rk;
+   sdsl::sd_vector<>::select_1_type sl;
+   };
+  eliasFano( tag , X , u , I , Q ,
+   "sdsl::sd_vector" , []( const std::vector< std::uint64_t > & X ,
+                           std::uint64_t u ) {
+    auto s = std::make_unique< SD >();
+    sdsl::sd_vector_builder b( u , X.size() );
+    for( const auto x : X ) b.set( x );
+    s->v = sdsl::sd_vector<>( b );
+    s->rk = sdsl::sd_vector<>::rank_1_type( &s->v );
+    s->sl = sdsl::sd_vector<>::select_1_type( &s->v );
+    return( s ); } ,
+   []( const SD & s , std::uint64_t i ) { return( s.sl.select( i + 1 ) ); } ,
+   []( const SD & s , std::uint64_t x ) { return( s.rk.rank( x ) ); } ,
+   [ nn ]( const SD & s ) {
+    return( 8 * double( sdsl::size_in_bytes( s.v ) ) / nn ); } , r );
 #endif
 #ifdef ADS_HAS_SUX
- using SE = sux::bits::EliasFano<>;
- eliasFano( X , u , I , Q ,
-  "sux::EliasFano" , []( const std::vector< std::uint64_t > & X ,
-                         std::uint64_t u ) {
-   return( std::make_unique< SE >( X , u ) ); } ,
-  []( const SE & s , std::uint64_t i ) {
-   return( const_cast< SE & >( s ).select( i ) ); } ,
-  []( const SE & s , std::uint64_t x ) {
-   return( const_cast< SE & >( s ).rank( x ) ); } ,
-  [ nn ]( const SE & s ) {
-   return( double( const_cast< SE & >( s ).bitCount() ) / nn ); } , r );
+  using SE = sux::bits::EliasFano<>;
+  eliasFano( tag , X , u , I , Q ,
+   "sux::EliasFano" , []( const std::vector< std::uint64_t > & X ,
+                          std::uint64_t u ) {
+    return( std::make_unique< SE >( X , u ) ); } ,
+   []( const SE & s , std::uint64_t i ) {
+    return( const_cast< SE & >( s ).select( i ) ); } ,
+   []( const SE & s , std::uint64_t x ) {
+    return( const_cast< SE & >( s ).rank( x ) ); } ,
+   [ nn ]( const SE & s ) {
+    return( double( const_cast< SE & >( s ).bitCount() ) / nn ); } , r );
 #endif
 #ifdef ADS_HAS_SUCCINCT
- using SC = succinct::elias_fano;
- eliasFano( X , u , I , Q ,
-  "succinct::elias_fano" , []( const std::vector< std::uint64_t > & X ,
-                               std::uint64_t u ) {
-   succinct::elias_fano::elias_fano_builder b( u , X.size() );
-   for( const auto x : X ) b.push_back( x );
-   return( std::make_unique< SC >( &b , true ) ); } ,
-  []( const SC & s , std::uint64_t i ) { return( s.select( i ) ); } ,
-  []( const SC & s , std::uint64_t x ) { return( s.rank( x ) ); } ,
-  [ nn ]( const SC & s ) {
-   return( 8 * double( succinct::mapper::size_of(
-                        const_cast< SC & >( s ) ) ) / nn ); } , r );
+  using SC = succinct::elias_fano;
+  eliasFano( tag , X , u , I , Q ,
+   "succinct::elias_fano" , []( const std::vector< std::uint64_t > & X ,
+                                std::uint64_t u ) {
+    succinct::elias_fano::elias_fano_builder b( u , X.size() );
+    for( const auto x : X ) b.push_back( x );
+    return( std::make_unique< SC >( &b , true ) ); } ,
+   []( const SC & s , std::uint64_t i ) { return( s.select( i ) ); } ,
+   []( const SC & s , std::uint64_t x ) { return( s.rank( x ) ); } ,
+   [ nn ]( const SC & s ) {
+    return( 8 * double( succinct::mapper::size_of(
+                         const_cast< SC & >( s ) ) ) / nn ); } , r );
 #endif
+#ifdef ADS_HAS_PEF
+  using PEF = ADS::PartitionedEliasFano;
+  eliasFano( tag , X , u , I , Q ,
+   "ADS::PartitionedEliasFano" , []( const std::vector< std::uint64_t > & X ,
+                                     std::uint64_t u ) {
+    return( std::make_unique< PEF >( X , u ) ); } ,
+   []( const PEF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+   []( const PEF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
+   [ nn ]( const PEF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
+   r );
+#endif
+ }
  }
 
 /*--------------------------------------------------------------------------*/
