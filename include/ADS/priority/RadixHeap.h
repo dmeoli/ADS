@@ -43,8 +43,8 @@
  * first of them and after clear()), and top(), topKey(), peekKey() and
  * pop() need a queue that is not empty; the invariant, checked on queues
  * of at most 1024 items, is that each item is in its bucket and that the
- * mask and the least keys of the buckets are right. The operations are defined in
- * RadixHeap.tpp.
+ * mask and the least keys of the buckets are right. The operations are
+ * defined in RadixHeap.tpp.
  *
  * \see R. K. Ahuja, K. Mehlhorn, J. Orlin, R. E. Tarjan, Faster algorithms
  *      for the shortest path problem, Journal of the ACM 37(2), 213-223,
