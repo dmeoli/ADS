@@ -111,6 +111,85 @@ inline constexpr int searchWidth = ADS_SEARCH_SIMD == 3 ? 64 :
                                    ADS_SEARCH_SIMD == 2 ? 32 :
                                    ADS_SEARCH_SIMD == 1 ? 16 : 0;
 
+/// the first place i in [ i , m ) where P[ i ] != T[ i ], m if none,
+/// 8 bytes at a time
+inline long searchForward( const unsigned char * P , const unsigned char * T ,
+                           long i , long m )
+{
+ for( ; i + 8 <= m ; i += 8 ) {
+  std::uint64_t a , b;
+  std::memcpy( &a , P + i , 8 );
+  std::memcpy( &b , T + i , 8 );
+  if( a != b ) {
+   if constexpr( std::endian::native == std::endian::little )
+    return( i + long( std::countr_zero( a ^ b ) / 8 ) );
+   else
+    return( i + long( std::countl_zero( a ^ b ) / 8 ) );
+   }
+  }
+ while( ( i < m ) && ( P[ i ] == T[ i ] ) ) ++i;
+ return( i );
+ }
+
+/// the last place i in ( low , i ] where P[ i ] != T[ i ], at most low
+/// if none, 8 bytes at a time
+inline long searchBackward( const unsigned char * P ,
+                            const unsigned char * T , long i , long low )
+{
+ for( ; i - 8 >= low ; i -= 8 ) {
+  std::uint64_t a , b;
+  std::memcpy( &a , P + i - 7 , 8 );
+  std::memcpy( &b , T + i - 7 , 8 );
+  if( a != b ) {
+   if constexpr( std::endian::native == std::endian::little )
+    return( i - long( std::countl_zero( a ^ b ) / 8 ) );
+   else
+    return( i - long( std::countr_zero( a ^ b ) / 8 ) );
+   }
+  }
+ while( ( i > low ) && ( P[ i ] == T[ i ] ) ) --i;
+ return( i );
+ }
+
+/// the Two-Way algorithm of Crochemore and Perrin as detail::twoWayScan()
+/// [see StringMatching.h], the two scans of each window 8 bytes at a time
+template< class F >
+std::size_t searchTwoWay( const unsigned char * T , std::size_t n ,
+                          const unsigned char * P , std::size_t mm ,
+                          std::size_t from , F && report )
+{
+ constexpr std::size_t npos = std::string_view::npos;
+ const long m = long( mm );
+ if( n < mm ) return( npos );
+ const std::size_t last = n - mm;
+ std::size_t p1 , p2;
+ const long i1 = maximalSuffix( P , m , false , &p1 );
+ const long i2 = maximalSuffix( P , m , true , &p2 );
+ const long ell = std::max( i1 , i2 );
+ std::size_t period = i1 > i2 ? p1 : p2;
+ const bool periodic = std::memcmp( P , P + period ,
+                                    std::size_t( ell + 1 ) ) == 0;
+ if( ! periodic )
+  period = std::size_t( std::max( ell + 1 , m - ell - 1 ) + 1 );
+ long memory = -1;                    // P[ 0 .. memory ] known to match
+ for( std::size_t j = from ; j <= last ; ) {
+  const unsigned char * W = T + j;
+  const long i = searchForward( P , W , std::max( ell , memory ) + 1 , m );
+  if( i >= m ) {
+   const long low = periodic ? memory : -1;
+   if( ( searchBackward( P , W , ell , low ) <= low ) && report( j ) )
+    return( j );
+   j += period;
+   if( periodic ) memory = m - long( period ) - 1;
+   }
+  else {
+   j += std::size_t( i - ell );
+   memory = -1;
+   }
+  }
+ return( npos );
+ }
+
 }  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
@@ -353,8 +432,8 @@ std::size_t StringSearcher::twoWay( const unsigned char * T ,
                                     std::size_t n , std::size_t from ,
                                     F && report ) const
 {
- return( detail::twoWayScan( T , n , reinterpret_cast< const unsigned char * >(
-                              f_P.data() ) , f_P.size() , from , report ) );
+ const auto * p = reinterpret_cast< const unsigned char * >( f_P.data() );
+ return( detail::searchTwoWay( T , n , p , f_P.size() , from , report ) );
  }
 
 template< class F >
