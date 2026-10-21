@@ -117,9 +117,7 @@ std::size_t rows2d( std::size_t n )
 /// the size of the transforms of convolve() for an output of m points
 std::size_t convSize( std::size_t m )
 {
- std::size_t n = ADS::detail::fftGoodSize( m );
- while( n % 2 ) n = ADS::detail::fftGoodSize( n + 1 );
- return( n );
+ return( ADS::detail::fftConvSize( m ) );
  }
 
 /// the median time of f() per one of pts points, the input restored by

@@ -129,9 +129,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   7, 11 and 13 by pairs of symmetric sums, the other primes up to 101 by
   the same sums in loops, the rounds of Stockham in the fewest radices of
   the codelets, the four steps on any divisor of n with the last block of
-  the lanes shorter, Rader for the large primes and Bluestein for the
-  sizes with a prime above 101; the four steps unrolled up to 4096 points;
-  the plans kept per thread for each size; their tests in test/fft.cpp
+  the lanes shorter and codelets of 2^a 3^b 5^c up to 60 on their rows
+  and columns, Rader for the large primes and Bluestein for the sizes
+  with a prime above 101; the four steps unrolled up to 1024 points, and
+  in 2 dimensions up to 32 x 32; up to 2^17 points the fastest of 4
+  factorizations, timed when the plan is made (ADS_FFT_TUNE); the lanes
+  half as wide on few points; the inverse as the conjugate of the forward
+  transform of the conjugates, so that each kernel is compiled once; the
+  plans kept per thread for each size; their tests in test/fft.cpp
   against the definition in long double
 - rfft() and irfft(), the transforms of real data by a complex transform
   of half the points and a pass on lanes of pairs; dct() and dst(), the
@@ -910,7 +915,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1.6 times on the extractions
 - fft() takes every size, no longer only the powers of 2; convolve()
   transforms the smallest even size 2^a 3^b 5^c that holds the product,
-  by rfft() and irfft()
+  or the power of 2 if that size is not below 3 / 4 of it, by rfft() and
+  irfft(); the arrays of doubles of ADS_FFT_SIMD=0 are aligned and
+  operated on by loops, which the compilers vectorize, and take the four
+  steps unrolled too
 
 - HeapPriorityQueue and LinkedHeapPriorityQueue take their items and
   nodes from an ObjectPool, the slot of deleteMin() taken by the next

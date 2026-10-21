@@ -507,6 +507,7 @@ engineered_combinatorial  book-structures  il libro su strutture std, Boost, ADS
 # the fast Fourier transforms of every size and kind, beyond the book
 fft  fft-any-size          FFT di ogni lunghezza da 0 a 300
 fft  fft-plans             piani: radici miste, Rader, Bluestein
+fft  fft-factorizations    quattro passi su ogni fattorizzazione
 fft  fft-float             FFT in precisione singola
 fft  rfft                  trasformate di dati reali
 fft  dct-dst               trasformate dei coseni e dei seni, tipi 1-4
