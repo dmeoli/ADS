@@ -25,8 +25,9 @@
  * objects built and destroyed by the caller, as with std::allocator.
  *
  * The contracts [see Contract.h]: a block holds at least one slot, free()
- * and deallocate() need an object (a slot) of the pool; the invariant is that size() objects are
- * alive. The operations are defined in ObjectPool.tpp.
+ * and deallocate() need an object (a slot) of the pool; the invariant is
+ * that size() objects are alive. The operations are defined in
+ * ObjectPool.tpp.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
  *      Addison-Wesley, 1997, section 2.2.3 (the list AVAIL)
