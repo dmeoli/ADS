@@ -464,6 +464,17 @@ ADS_TEST( "fft-many-nd" )
                                                              a.size() ) ) );
    }
   }
+ for( auto [ n0 , n1 ] : std::vector< Shape >{ { 4 , 4 } , { 8 , 32 } ,
+                                                { 32 , 16 } , { 5 , 64 } } ) {
+  const auto a = randomComplex< double >( n0 * n1 , g );   // two ways
+  for( bool inv : { false , true } ) {
+   auto f = a , h = a;
+   fft2( f.data() , n0 , n1 , inv );
+   fftn( h.data() , { n0 , n1 } , inv );
+   for( std::size_t k = 0 ; k < a.size() ; ++k )
+    CHECK( std::abs( f[ k ] - h[ k ] ) < 1e-12 );
+   }
+  }
  const std::vector< std::size_t > d = { 6 , 5 , 8 };
  const auto a = randomComplex< double >( 240 , g );
  auto f = a;
