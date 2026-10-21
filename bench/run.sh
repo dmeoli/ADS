@@ -76,6 +76,9 @@ run ordered 100000 1000000
 run arrays 100000 1000000 10000000
 run sets 100000 1000000
 run tries 100000 1000000
+# the allocators, whose case cross-thread frees in a second thread
+taskset -c "$CORE,${CORE2:-$((CORE + 1))}" "$BUILD/bench-allocators" \
+ -r "$RUNS" 100000 1000000 >> "$out"
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################

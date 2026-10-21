@@ -70,7 +70,8 @@ test: $(BINS)
 # rapidfuzz-cpp to edit; PRIORITY=<dir> adds to priority the libraries
 # whose sources are in <dir> (tlx, radix-heap); MIMALLOC=<prefix> and
 # JEMALLOC=<prefix> add to memory mimalloc (built without the override of
-# malloc) and jemalloc (built with the prefix je_); OPT=<prefix> adds to
+# malloc) and jemalloc (built with the prefix je_), MIMALLOC mimalloc to
+# allocators too; OPT=<prefix> adds to
 # succinct and compression the libraries installed there: the headers of
 # sdsl-lite, sux, pasta (with tlx) and succinct with libsuccinct, those of
 # FiniteStateEntropy in fse/ with libfse, and streamvbyte, lz4 and libsais;
@@ -89,6 +90,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries \
+            sparse succinct compression allocators \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
@@ -214,6 +216,10 @@ $(BUILD)/bench-priority: bench/priority.cpp bench/Bench.h $(HEADERS) | \
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(PRIOFLAGS)
 
 $(BUILD)/bench-memory: bench/memory.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(MEMFLAGS)
+
+$(BUILD)/bench-allocators: bench/allocators.cpp bench/Bench.h $(HEADERS) \
+                           | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(MEMFLAGS)
 $(BUILD)/bench-succinct: bench/succinct.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(OPTFLAGS) $(call OPTLIBS,succinct)

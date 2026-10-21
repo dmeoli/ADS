@@ -388,6 +388,10 @@ and compared by [`bench/combinatorial.cpp`](bench/combinatorial.cpp)
 and [`bench/backtrack.cpp`](bench/backtrack.cpp) with libpopcnt,
 libmorton, Hinnant's combinations and the programs DLX1, DLX2 and SSXCC
 of Knuth.
+`std::pmr`, Boost.Pool, mimalloc and jemalloc, and
+[`bench/allocators.cpp`](bench/allocators.cpp) the standard allocators in
+the node containers, in `std::allocate_shared` and across two threads,
+tested in [`test/engineered_memory.cpp`](test/engineered_memory.cpp).
 
 | What | Header | Test |
 |---|---|---|
@@ -410,6 +414,8 @@ of Knuth.
 | pool of objects in doubling blocks, the slot freed last made first | [`memory/ObjectPool.h`](include/ADS/memory/ObjectPool.h) | `engineered.pool` |
 | allocator of small blocks by size classes, a free list and a page of 64 KB per class (mimalloc, TLSF) | [`memory/SizeClassAllocator.h`](include/ADS/memory/SizeClassAllocator.h) | `memory.size-class-allocator` |
 | allocator of the large blocks on transparent huge pages | [`memory/HugePageAllocator.h`](include/ADS/memory/HugePageAllocator.h) | `engineered.huge-page-allocator` |
+| standard allocator of size classes of 8 bytes, free lists by page, for the node containers and `std::allocate_shared` (mimalloc) | [`memory/PoolAllocator.h`](include/ADS/memory/PoolAllocator.h) | `engineered_memory.pool-allocator-containers` |
+| pool of size classes shared by threads, a heap per thread, the frees of the others sent back in batches (mimalloc; snmalloc) | [`memory/ConcurrentPool.h`](include/ADS/memory/ConcurrentPool.h) | `engineered_memory.concurrent-pool-threads` |
 | SplitMix64, Zobrist and simple tabulation hashing | [`dictionary/RandomHashing.h`](include/ADS/dictionary/RandomHashing.h) | `engineered.random-hashing` |
 | hashes of words and strings by folded products of 128 bits, stripes in AVX2 or AVX-512 past 256 bytes (wyhash, XXH3) | [`dictionary/FastHash.h`](include/ADS/dictionary/FastHash.h) | `hashing.fast-hash` |
 | filter of Bloom in blocks of 256 bits, one bit in each of 8 words (Putze et al.; Parquet) | [`set/BlockedBloomFilter.h`](include/ADS/set/BlockedBloomFilter.h) | `hashing.blocked-bloom` |
