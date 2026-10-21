@@ -106,11 +106,18 @@
  * x_{2j+1} \f$, and a pass: with \f$ E_k = ( Z_k + \overline{Z_{h-k}} ) / 2
  * \f$ and \f$ O_k = ( Z_k - \overline{Z_{h-k}} ) / 2 i \f$ (the transforms
  * of the even and of the odd items), \f$ \hat x_k = E_k + \omega_n^k O_k
- * \f$ and \f$ \hat x_{h-k} = \overline{E_k - \omega_n^k O_k} \f$, W pairs
- * at a time; the inverse runs the same steps backwards; up to 64 points,
- * the complex transform is one codelet whose outputs stay in registers
- * for the pass. The transforms of
- * the cosines and of the sines are those of FFTW (REDFT00, REDFT10,
+ * \f$ and \f$ \hat x_{h-k} = \overline{E_k - \omega_n^k O_k} \f$; the
+ * inverse runs the same steps backwards. Up to 64 points the complex
+ * transform is one codelet whose outputs stay in registers for the pass;
+ * above 2048 points, on the four steps, the pass is done by their last
+ * step: the block of the rows k and that of their mirrors m - k are
+ * transformed together, so that \f$ Z_K \f$ and \f$ Z_{h-K} \f$, \f$ K =
+ * k + m q \f$, \f$ h - K = ( m - k ) + m ( r - 1 - q ) \f$, are in the same
+ * lane of the two and the outputs leave the registers once, as the
+ * inverse does its pass in the first step, on the points as the columns
+ * read them; elsewhere the pass runs on the numbers alternated, VL pairs
+ * to a vector with 3 shuffles. The transforms of the cosines and of the
+ * sines are those of FFTW (REDFT00, REDFT10,
  * REDFT01, REDFT11 and RODFT00 to RODFT11), with no normalization; the
  * type 2 by the algorithm of Makhoul, the real transform V of \f$ v_j =
  * x_{2j} , v_{n-1-j} = x_{2j+1} \f$ and \f$ y_k = 2 \Re( \omega_{4n}^k V_k
