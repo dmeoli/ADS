@@ -1,12 +1,12 @@
 /*--------------------------------------------------------------------------*/
-/*---------------------------- File search.cpp -----------------------------*/
+/*---------------------------- File arrays.cpp -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The benchmark of the searches in arrays: the lower bound in a sorted
- * array (benchmark "search"), the selection of the item of a rank
- * ("select") and the range minimum queries ("rmq").
+ * The benchmark of the searches in arrays (benchmark "arrays"): the lower
+ * bound in a sorted array (group "array search"), the selection of the
+ * item of a rank ("select") and the range minimum queries ("rmq").
  *
- * - search: SPlusTree, PGMIndex, branchlessLowerBound() and the binary
+ * - array search: SPlusTree, PGMIndex, branchlessLowerBound() and the binary
  *   search of the book against std::lower_bound, the layout of Eytzinger
  *   with the prefetch of Khuong and Morin (written here from their paper)
  *   and, if found, the PGM-index of Ferragina and Vinciguerra (64 and 4 its
@@ -29,7 +29,7 @@
  * contracts are off (ADS_CONTRACTS=0). ONLY=a|b|... runs only the
  * structures whose name has a or b ... in it.
  *
- *   search [ -r runs ] [ -s seed ] n1 n2 ...
+ *   arrays [ -r runs ] [ -s seed ] n1 n2 ...
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -155,7 +155,7 @@ void search( const char * type , std::size_t n , int r , unsigned seed )
  auto cell = [ & ]( const std::string & who , auto && f ) {
   if( ! wanted( who ) )
    return;
-  print( "search" , type , n , who , median( [](){ return( 0 ); } ,
+  print( "array search" , type , n , who , median( [](){ return( 0 ); } ,
           [ & ]( int ) {
            T s = 0;
            for( T q : Q ) s += f( q );
@@ -330,11 +330,11 @@ void rmq( std::size_t n , int r , unsigned seed )
 int main( int argc , char ** argv )
 {
  const Options o( argc , argv , { 100000 , 1000000 , 10000000 } );
- const char * part = std::getenv( "PART" );   // search, select or rmq
+ const char * part = std::getenv( "PART" );   // array search, select, rmq
  auto doing = [ & ]( const char * p ) {
   return( ! part || ! *part || ( std::string( part ) == p ) ); };
  for( std::size_t n : o.sizes ) {
-  if( doing( "search" ) ) {
+  if( doing( "array search" ) ) {
    search< std::uint32_t >( "uint32" , n , o.runs , o.seed );
    search< std::uint64_t >( "uint64" , n , o.runs , o.seed );
    }
@@ -350,5 +350,5 @@ int main( int argc , char ** argv )
  }
 
 /*--------------------------------------------------------------------------*/
-/*--------------------------- End File search.cpp --------------------------*/
+/*--------------------------- End File arrays.cpp --------------------------*/
 /*--------------------------------------------------------------------------*/
