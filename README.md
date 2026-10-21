@@ -460,6 +460,7 @@ standard library, Boost and Eigen; their tests are in
 | lock-free queue of many producers, a lane of recycled blocks each | [`concurrent/MPSCQueue.h`](include/ADS/concurrent/MPSCQueue.h) | `engineered_queues.mpsc-queue` |
 | bounded queue of many producers and many consumers, a sequence in each place (Vyukov) | [`concurrent/MPMCQueue.h`](include/ADS/concurrent/MPMCQueue.h) | `engineered_queues.mpmc-queue` |
 | event count, the sleep of a thread until a condition holds, with asymmetric fences | [`concurrent/EventCount.h`](include/ADS/concurrent/EventCount.h) | `engineered_queues.event-count` |
+| sparse matrices in compressed rows and in SELL-C-sigma (Kreutzer et al.) | [`numeric/CsrMatrix.h`](include/ADS/numeric/CsrMatrix.h), [`numeric/SellMatrix.h`](include/ADS/numeric/SellMatrix.h) | `engineered_numeric.csr-matrix`, `.sell-matrix` |
 | generators xoshiro256++, xoshiro256**, wyrand and the counter-based Philox4x32 and Philox4x64 (Salmon et al.), the alias method, normal and exponential deviates by ziggurats (Marsaglia and Tsang) | [`numeric/RandomGenerators.h`](include/ADS/numeric/RandomGenerators.h) | `engineered_numeric.generators`, `.philox`, `.ziggurat` |
 | work-stealing deque (Chase and Lev; Lê et al.) | [`concurrent/WorkStealingDeque.h`](include/ADS/concurrent/WorkStealingDeque.h) | `engineered_queues.work-stealing-deque` |
 

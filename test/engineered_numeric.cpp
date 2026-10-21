@@ -32,6 +32,7 @@
 #include "ADS/numeric/RandomGenerators.h"
 #include "ADS/numeric/RandomNumbers.h"
 #include "ADS/numeric/RandomSampling.h"
+#include "ADS/numeric/SellMatrix.h"
 
 #include <algorithm>
 #include <cmath>
@@ -876,6 +877,48 @@ ADS_TEST( "csr-matrix" )
                contract_violation );
  CHECK_THROWS( (void) C.multiply( { 1.0 } ) , contract_violation );
  CHECK_THROWS( (void) C.get( 5 , 0 ) , contract_violation );
+ }
+
+// SellMatrix: the product against that of CSR on 300 random matrices of
+// up to 40 x 40 (empty rows and matrices, rows not a multiple of the
+// chunk, rows of very different lengths), for chunks of 1, 4 and 8 rows and
+// windows of 1, 3 and all the rows, the places at least the nonzeros and
+// none of padding on rows of equal length; the contract of the window
+ADS_TEST( "sell-matrix" )
+{
+ std::mt19937_64 g( 41 );
+ bool same = true;
+ for( int t = 0 ; t < 300 ; ++t ) {
+  const std::size_t m = g() % 41 , n = 1 + g() % 40;
+  std::vector< CsrMatrix::Triplet > T;
+  for( std::size_t i = 0 ; i < m ; ++i ) {
+   const std::size_t k = ( i % 7 == 0 ) ? g() % ( 3 * n ) : g() % 4;
+   for( std::size_t e = 0 ; e < k ; ++e )
+    T.emplace_back( i , g() % n , double( long( g() % 9 ) - 4 ) );
+   }
+  const CsrMatrix A( m , n , T );
+  std::vector< double > x( n );
+  for( auto & v : x ) v = double( long( g() % 9 ) - 4 );
+  const auto y = A.multiply( x );
+  for( const std::size_t sigma : { std::size_t( 1 ) , std::size_t( 3 ) ,
+                                   std::size_t( 1000 ) } ) {
+   const SellMatrix< 1 > S1( A , sigma );
+   const SellMatrix< 4 > S4( A , sigma );
+   const SellMatrix< 8 > S8( A , sigma );
+   same = same && S1.multiply( x ) == y && S4.multiply( x ) == y &&
+          S8.multiply( x ) == y && S1.places() == A.nonzeros() &&
+          S8.places() >= A.nonzeros() && S8.nonzeros() == A.nonzeros() &&
+          S8.rows() == m && S8.cols() == n;
+   }
+  }
+ CHECK( same );
+ std::vector< CsrMatrix::Triplet > L;      // 4 nonzeros in every row
+ for( std::size_t i = 0 ; i < 64 ; ++i )
+  for( std::size_t j = 0 ; j < 4 ; ++j ) L.emplace_back( i , i + j , 1.0 );
+ const SellMatrix< 8 > S( CsrMatrix( 64 , 70 , L ) );
+ CHECK( S.places() == S.nonzeros() );
+ CHECK_THROWS( SellMatrix< 8 >( CsrMatrix( 2 , 2 ) , 0 ) ,
+               contract_violation );
  }
 
 }  // end( namespace )
