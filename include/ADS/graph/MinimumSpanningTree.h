@@ -22,7 +22,11 @@
  *   O( m + n log n ) with a Fibonacci heap (exercise 14.4).
  *
  * A graph that is not connected gives a minimum spanning forest by
- * kruskal(), and the tree of the component of r by prim().
+ * kruskal(), and the tree of the component of r by prim(). Both take
+ * their structure as well: kruskal() any MFSET with merge() [see
+ * Mergeable], prim() any priority queue of section 10.1, whose priority
+ * may be the pair ( weight , node ) so that every queue gives the same
+ * tree with the same counts [see FrontierCounts, MergeCounts].
  *
  * The contracts [see Contract.h]: the graph is unoriented; the edges given
  * to kruskal() join nodes in [ 0 , n ), with weights in [ 0 , k ) when k >
@@ -69,6 +73,7 @@
 #include "ADS/priority/ListPriorityQueue.h"
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <memory>
 #include <tuple>
@@ -104,6 +109,30 @@ std::vector< WeightedEdge< W > > kruskal( int n ,
                                           std::vector< WeightedEdge< W > > A ,
                                           long k = 0 );
 
+/// a union of disjoint sets as kruskal() needs it: merge( u , v ) joins
+/// the components of u and v and tells whether they were apart
+template< class M >
+concept Mergeable = requires( M m , int u , int v ) {
+ { m.merge( u , v ) } -> std::convertible_to< bool >;
+ };
+
+/// what a run of kruskal() did: the merges tried and those that joined
+/// two components
+struct MergeCounts {
+ long long merges = 0 , unions = 0;
+ };
+
+/// kruskal() with the MFSET sets given, whose merge( u , v ) joins the
+/// components of u and v and tells whether they were apart [see MFSet.h];
+/// its work in *c, if given
+/// \pre as kruskal(), sets has the components {0} , ... , {n - 1}
+/// \post a minimum spanning forest (audit)
+template< class W , Mergeable M >
+std::vector< WeightedEdge< W > > kruskal( int n ,
+                                          std::vector< WeightedEdge< W > > A ,
+                                          M & sets , long k = 0 ,
+                                          MergeCounts * c = nullptr );
+
 /// kruskal() on the edges of an unoriented graph
 template< Graph G >
 auto kruskal( const G & g , long k = 0 );
@@ -114,6 +143,15 @@ auto kruskal( const G & g , long k = 0 );
 /// \post a minimum spanning tree of the component of r (audit)
 template< Graph G >
 std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP );
+
+/// prim() on the priority queue q given [see PriorityQueue.h], whose
+/// priority is the weight or the pair ( weight , node ), which breaks the
+/// ties by the names of the nodes; its work in *c, if given
+/// \pre the graph is unoriented, r is a node, q is empty
+/// \post a minimum spanning tree of the component of r (audit)
+template< Graph G , PriorityQueue Q >
+std::vector< int > prim( const G & g , int r , Q & q ,
+                         FrontierCounts * c = nullptr );
 
 /// whether T is a minimum spanning forest of the edges A on the nodes
 /// [ 0 , n ): its edges are in A, it has no cycle, as many edges as n

@@ -1621,3 +1621,10 @@ engineered_succinct  tans-coder       tANS di ordine 0, quattro stati
 engineered_pearls  flat-loser-tree      albero dei perdenti con le chiavi
 engineered_pearls  multiway-merge       fusione a k vie, stabile
 engineered_pearls  book-mergesort-selectors mergesort delle note, selettori
+
+# the engineered structures of the graphs, and the algorithms of the book
+# on them
+engineered_graph  static-graph        grafo a righe compresse
+engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
+engineered_graph  union-find          union-find per dimensione o rango
+engineered_graph  book-on-structures  algoritmi del libro su ogni struttura

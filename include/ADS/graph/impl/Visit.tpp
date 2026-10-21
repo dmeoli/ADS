@@ -101,18 +101,22 @@ void bfs( const G & g , int r , FN && node , FE && edge )
   }
  }
 
-template< Graph G >
+template< Graph G , class Q >
+requires requires( Q q , int v ) { q.enqueue( v ); { q.dequeue() } ->
+                                   std::convertible_to< int >; }
 std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
-                                                                int r )
+                                 int r , Q & S , VisitCounts * c )
 {
- ADS_PRE( g.hasNode( r ) );
+ ADS_PRE( g.hasNode( r ) && S.empty() );
  std::vector< int > d( g.bound() , INF ) , p( g.bound() , NIL );
- ArrayQueue< int > S( std::max( g.n() , 1 ) );
+ VisitCounts k;
  S.enqueue( r );
  d[ r ] = 0;
  while( ! S.empty() ) {
   const int u = S.dequeue();
+  ++k.nodes;
   g.forEachAdj( u , [ & ]( int v ) {
+   ++k.edges;
    if( d[ v ] == INF ) {
     d[ v ] = d[ u ] + 1;
     p[ v ] = u;
@@ -120,8 +124,18 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
     }
    } );
   }
+ if( c ) *c = k;
  ADS_AUDIT( detail::bfsTree( g , r , d , p ) );
- return( std::pair( d , p ) );
+ return( std::pair( std::move( d ) , std::move( p ) ) );
+ }
+
+template< Graph G >
+std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
+                                                                int r )
+{
+ ADS_PRE( g.hasNode( r ) );
+ ArrayQueue< int > S( std::max( g.n() , 1 ) );
+ return( distance( g , r , S ) );
  }
 
 inline std::vector< int > path( int r , int s , const std::vector< int > & p )
