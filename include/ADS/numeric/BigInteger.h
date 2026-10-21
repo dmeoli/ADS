@@ -190,7 +190,7 @@
  *   the integer parts of \f$ f P \f$, \f$ f P^2 \f$, ..., f cut to the
  *   digits that the chunks left need, and the 19 figures of a chunk come
  *   by pairs from a table.
- * - sqrtRem() is the Karatsuba square root of Zimmermann (Brent and
+ * - sqrtRem() is the Karatsuba square root of Zimmermann (also Brent and
  *   Zimmermann, Algorithm 1.12): m, shifted by an even number of bits to
  *   2k digits with the top one at least b / 4, is
  *   \f$ A \beta^2 + a_1 \beta + a_0 \f$ with \f$ \beta = b^{\lfloor k /
@@ -199,7 +199,15 @@
  *   \f$ r' \beta + a_1 \f$ by \f$ 2 s' \f$, \f$ s = s' \beta + q \f$ and
  *   \f$ r = u \beta + a_0 - q^2 \f$, if negative \f$ r + 2 s - 1 \f$
  *   and \f$ s - 1 \f$, \f$ O( M( n ) ) \f$ for the products of the
- *   divisions; two digits by Newton's method from the root in doubles;
+ *   divisions; up to kSqrtSmall digits on the stack, two digits from the
+ *   root in doubles plus the nearest integer to \f$ ( a - x^2 ) / 2 x \f$,
+ *   then steps of 1. The remainder of a, shifted by 2t bits to m, is
+ *   \f$ ( r_m + 2 s_0 s_m - s_0^2 ) / 4^t \f$ for the t bits \f$ s_0 \f$
+ *   that the shift of the root drops. sqrt() needs no remainder: at the
+ *   top \f$ l < h \f$ digits and the quotient alone of \f$ ( r' \beta +
+ *   a_1 ) b \f$ by \f$ 2 s' \f$, \f$ q b + d \f$: \f$ d \ge 1 \f$ makes
+ *   \f$ u \ge 2 s' / b \ge \beta \f$, so \f$ r \ge 0 \f$, with no remainder
+ *   and no \f$ q^2 \f$, but with probability about \f$ 1 / b \f$;
  *   sqrtNewton() is Newton's method from above on the whole number.
  * - pow() is the binary method of 4.6.3, from left to right, squares and
  *   products by x. gcd() is the algorithm of Lehmer (4.5.2L) on two
@@ -282,6 +290,8 @@
  *      17-24, 2007, doi:10.1145/1277548.1277552
  * \see R. P. Brent, P. Zimmermann, Modern Computer Arithmetic, Cambridge
  *      University Press, 2010, sections 1.3, 1.4, 1.6, 1.7, 2.4 and 3.4
+ * \see P. Zimmermann, Karatsuba square root, INRIA research report
+ *      RR-3805, 1999, https://hal.inria.fr/inria-00072854
  * \see C. Burnikel, J. Ziegler, Fast recursive division, research report
  *      MPI-I-98-1-022, Max-Planck-Institut fuer Informatik, 1998
  * \see N. Moeller, T. Granlund, Improved division by invariant integers,
