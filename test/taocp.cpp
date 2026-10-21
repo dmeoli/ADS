@@ -1983,10 +1983,11 @@ ADS_TEST( "big-integer-gcd" )
    CHECK( BigInteger::gcd( a , b ) == BigInteger::gcdEuclid( a , b ) &&
           BigInteger::gcd( o , -b ) == BigInteger::gcdEuclid( o , b ) );
   }
- // by one digit, on both sides of kModFold: the digits odd and even, the
- // powers of 2 in both, 1, and the low digits 0
- const std::size_t M = BigInteger::kModFold;
- for( std::size_t n : { std::size_t( 1 ) , std::size_t( 2 ) , M - 1 , M } )
+ // by one digit, on both sides of kModFold and kHensel: the digits odd
+ // and even, the powers of 2 in both, 1, and the low digits 0
+ const std::size_t M = BigInteger::kModFold , H = BigInteger::kHensel;
+ for( std::size_t n : { std::size_t( 1 ) , std::size_t( 2 ) , M - 1 , M ,
+                        H - 1 , H } )
   for( std::uint64_t d : { std::uint64_t( 1 ) , std::uint64_t( 2 ) ,
                            std::uint64_t( 3 ) , std::uint64_t( 96 ) ,
                            std::uint64_t( 1 ) << 63 , ~std::uint64_t( 0 ) ,

@@ -962,7 +962,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   171 to 129 cycles); the documentation of the products, the divisions
   and the conversions with their formulas, and the references of
   Karatsuba and Ofman, Toom, Bodrato and Zanoni, Krandick and Jebelean,
-  Barrett, Bouvier and Zimmermann, Lehmer
+  Barrett, Bouvier and Zimmermann, Lehmer; kToom3 120, kHensel 20
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
