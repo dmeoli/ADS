@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- bench/bignum.cpp: the squares, the gcd of two numbers with a common
+  factor of 3 and the integer square root of 2n digits, the length of 1024
+  digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>
 - BigInteger::sqrtRem() and BigInteger::sqrt(), the integer square root
   by the Karatsuba square root of Zimmermann, two digits by Newton's
   method; BigInteger::sqrtNewton(), Newton's method from above, for the
