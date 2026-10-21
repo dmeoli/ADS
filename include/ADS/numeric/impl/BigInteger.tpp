@@ -3197,9 +3197,9 @@ inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
 
 inline std::size_t BigInteger::mulScratch( std::size_t n )
 {
- // a step on n digits takes at most 6 n + 40 and leaves at most
+ // a step on n digits takes at most 7 n + 40 and leaves at most
  // n / 2 + 2 digits to the next one
- return( 12 * n + 64 * std::size_t( std::bit_width( n ) ) + 64 );
+ return( 16 * n + 64 * std::size_t( std::bit_width( n ) ) + 64 );
  }
 
 inline void BigInteger::mulN( Limb * r , const Limb * a , const Limb * b ,
@@ -3531,6 +3531,107 @@ inline void BigInteger::toom4( Limb * r , const Limb * a , const Limb * b ,
  addTo( r + 5 * k , N - 5 * k , vm2 , std::min( L , N - 5 * k ) );
  }
 
+inline bool BigInteger::toom32( Limb * r , const Limb * a , std::size_t na ,
+                                const Limb * b , std::size_t nb , Limb * w ,
+                                std::size_t fft , std::size_t toom )
+{
+ // a = a2 x^2 + a1 x + a0 and b = b1 x + b0, x = b^k: the product
+ // r3 x^3 + ... + r0 from v0 = a0 b0, v1 = a( 1 ) b( 1 ),
+ // v-1 = a( -1 ) b( -1 ) and r3 = a2 b1: r2 = ( v1 + v-1 ) / 2 - v0,
+ // r1 = ( v1 - v-1 ) / 2 - r3
+ const std::size_t k = std::max( ( na + 2 ) / 3 , ( nb + 1 ) / 2 );
+ if( ( na <= 2 * k ) || ( nb <= k ) ) return( false );
+ const std::size_t s = na - 2 * k , t = nb - k , K = k + 1 , L = 2 * K ,
+                   N = na + nb;
+ Limb * const ap = w , * const am = ap + K , * const bp = am + K ,
+      * const bm = bp + K , * const v1 = bm + K , * const vm = v1 + L ,
+      * const ws = vm + L;
+ ap[ k ] = addN( ap , a , k , a + 2 * k , s );   // a0 + a2
+ bool neg = absDiff( am , ap , K , a + k , k );
+ addTo( ap , K , a + k , k );
+ bp[ k ] = addN( bp , b , k , b + k , t );
+ bm[ k ] = 0;
+ neg = neg != absDiff( bm , b , k , b + k , t );
+ mulN( v1 , ap , bp , K , ws , fft , toom );
+ mulN( vm , am , bm , K , ws , fft , toom );
+ mulN( r , a , b , k , ws , fft , toom );   // v0
+ std::fill( r + 2 * k , r + 3 * k , 0 );
+ mulP( r + 3 * k , a + 2 * k , s , b + k , t , fft , toom );   // r3
+ // ( v1 - v-1 ) / 2 in vm, ( v1 + v-1 ) / 2 in v1, with the sign of v-1
+ if( neg ) rsh1Add( vm , v1 , vm , L );
+ else rsh1Sub( vm , v1 , vm , L );
+ subFrom( v1 , L , vm , L );
+ subFrom( v1 , L , r , 2 * k );             // r2
+ subFrom( vm , L , r + 3 * k , s + t );     // r1
+ addTo( r + k , N - k , vm , std::min( L , N - k ) );
+ addTo( r + 2 * k , N - 2 * k , v1 , std::min( L , N - 2 * k ) );
+ return( true );
+ }
+
+inline bool BigInteger::toom42( Limb * r , const Limb * a , std::size_t na ,
+                                const Limb * b , std::size_t nb , Limb * w ,
+                                std::size_t fft , std::size_t toom )
+{
+ // a = a3 x^3 + ... + a0 and b = b1 x + b0, x = b^k: the product
+ // r4 x^4 + ... + r0 from the values at 0, 1, -1, 2 and infinity: with
+ // E = ( v1 + v-1 ) / 2 and O = ( v1 - v-1 ) / 2, r2 = E - r0 - r4,
+ // r3 = ( ( v2 - r0 - 4 r2 - 16 r4 ) / 2 - O ) / 3, r1 = O - r3
+ const std::size_t k = std::max( ( na + 3 ) / 4 , ( nb + 1 ) / 2 );
+ if( ( na <= 3 * k ) || ( nb <= k ) ) return( false );
+ const std::size_t s = na - 3 * k , t = nb - k , K = k + 1 , L = 2 * K ,
+                   N = na + nb;
+ Limb * const ap = w , * const am = ap + K , * const a2 = am + K ,
+      * const bp = a2 + K , * const bm = bp + K , * const b2 = bm + K ,
+      * const v1 = b2 + K , * const vm = v1 + L , * const v2 = vm + L ,
+      * const u = v2 + L , * const ws = u + L;
+ // a( 1 ) , |a( -1 )| , a( 2 ) from x0 = a0 + a2 and x1 = a1 + a3
+ u[ k ] = addN( u , a , k , a + 2 * k , k );
+ Limb * const z = u + K;
+ z[ k ] = addN( z , a + k , k , a + 3 * k , s );
+ addN( ap , u , K , z , K );
+ bool neg = absDiff( am , u , K , z , K );
+ std::copy( a , a + k , a2 );               // a0 + 2 a1 + 4 a2 + 8 a3
+ a2[ k ] = addMul1( a2 , a + k , k , 2 );
+ a2[ k ] += addMul1( a2 , a + 2 * k , k , 4 );
+ const Limb c3 = addMul1( a2 , a + 3 * k , s , 8 );
+ addTo( a2 + s , K - s , &c3 , 1 );
+ bp[ k ] = addN( bp , b , k , b + k , t );
+ bm[ k ] = 0;
+ neg = neg != absDiff( bm , b , k , b + k , t );
+ std::copy( b , b + k , b2 );               // b0 + 2 b1
+ b2[ k ] = 0;
+ {
+  const Limb c = addMul1( b2 , b + k , t , 2 );
+  addTo( b2 + t , K - t , &c , 1 );
+ }
+ mulN( v1 , ap , bp , K , ws , fft , toom );
+ mulN( vm , am , bm , K , ws , fft , toom );
+ mulN( v2 , a2 , b2 , K , ws , fft , toom );
+ mulN( r , a , b , k , ws , fft , toom );   // r0
+ std::fill( r + 2 * k , r + 4 * k , 0 );
+ mulP( r + 4 * k , a + 3 * k , s , b + k , t , fft , toom );   // r4
+ const Limb * const r0 = r , * const r4 = r + 4 * k;
+ // O in vm, E then r2 in v1
+ if( neg ) rsh1Add( vm , v1 , vm , L );
+ else rsh1Sub( vm , v1 , vm , L );
+ subFrom( v1 , L , vm , L );
+ subFrom( v1 , L , r0 , 2 * k );
+ subFrom( v1 , L , r4 , s + t );
+ // r3 in v2, r1 in vm
+ subFrom( v2 , L , r0 , 2 * k );
+ subMul1( v2 , v1 , L , 4 );
+ const Limb c = subMul1( v2 , r4 , s + t , 16 );
+ subFrom( v2 + s + t , L - s - t , &c , 1 );
+ rshN( v2 , L , 1 );
+ subFrom( v2 , L , vm , L );
+ divExact3( v2 , L );
+ subFrom( vm , L , v2 , L );
+ addTo( r + k , N - k , vm , std::min( L , N - k ) );
+ addTo( r + 2 * k , N - 2 * k , v1 , std::min( L , N - 2 * k ) );
+ addTo( r + 3 * k , N - 3 * k , v2 , std::min( L , N - 3 * k ) );
+ return( true );
+ }
+
 template< class O >
 inline void BigInteger::mulNTT3( Limb * r , const Limb * a , std::size_t na ,
                                  const Limb * b , std::size_t nb ,
@@ -3839,6 +3940,16 @@ inline void BigInteger::mulRec( Limb * r , const Limb * a , std::size_t na ,
  if( na == nb ) {
   mulN( r , a , b , nb , w , fft , toom );
   return;
+  }
+ // a up to 7 / 4 as long as b by Toom-3/2, up to 5 / 2 by Toom-4/2, as
+ // long as a method was not asked by name
+ if( ( nb >= kToom32 ) && ( toom != npos ) ) {
+  if( 4 * na <= 7 * nb ) {
+   if( toom32( r , a , na , b , nb , w , fft , toom ) ) return;
+   }
+  else if( 2 * na <= 5 * nb ) {
+   if( toom42( r , a , na , b , nb , w , fft , toom ) ) return;
+   }
   }
  Mag t( 2 * nb );                           // a in pieces of nb digits
  std::fill( r , r + na + nb , 0 );

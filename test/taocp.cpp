@@ -1679,6 +1679,17 @@ ADS_TEST( "big-integer-product" )
    CHECK( a * BigInteger() == BigInteger() &&
           BigInteger::multiplyFFT( BigInteger() , a ) == BigInteger() );
    }
+ // the unbalanced products of Toom-3/2 and Toom-4/2, at the ratios of
+ // the lengths where each starts and ends and between
+ const std::size_t U = BigInteger::kToom32;
+ for( std::size_t n : { U - 1 , U , U + 1 , 2 * U + 3 , T4 / 2 + 1 } )
+  for( std::size_t m : { n + n / 4 , 3 * n / 2 , 7 * n / 4 , 7 * n / 4 + 1 ,
+                         2 * n , 5 * n / 2 , 5 * n / 2 + 1 , 3 * n } )
+   for( bool ones : { false , true } ) {
+    const BigInteger a = digits( m , g , ones ) , b = digits( n , g , ones );
+    CHECK( a * b == BigInteger::multiplySchool( a , b ) &&
+           b * -a == -BigInteger::multiplyKaratsuba( a , b ) );
+    }
  for( std::size_t n : { std::size_t( 1 ) , std::size_t( 2 ) , K - 1 , K ,
                         3 * K } ) {          // the carries across every digit
   const BigInteger p = BigInteger::pow( 2 , 64 * n ) , x = digits( n , g ,

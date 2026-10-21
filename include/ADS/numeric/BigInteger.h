@@ -61,7 +61,11 @@
  *   4 r_3 + r_5 \f$, \f$ r_3 = ( 17 O_1 - O_2 - H ) / 9 \f$,
  *   \f$ r_5 = ( O_2 - O_1 - 3 r_3 ) / 15 \f$ and \f$ r_1 = O_1 - r_3 -
  *   r_5 \f$, \f$ M( n ) = 7 M( n / 4 ) + O( n ) = O( n^{\log_4 7} )
- *   \f$; the longer
+ *   \f$; from kToom32 digits a factor up to 7/4 as long as the other
+ *   goes by Toom-3/2 (a in 3 pieces, b in 2, the values at 0, 1, -1 and
+ *   \f$ \infty \f$: \f$ r_2 = ( v_1 + v_{-1} ) / 2 - r_0 \f$, \f$ r_1 =
+ *   ( v_1 - v_{-1} ) / 2 - r_3 \f$), up to 5/2 by Toom-4/2 (also at 2:
+ *   \f$ r_3 = ( ( v_2 - r_0 - 4 r_2 - 16 r_4 ) / 2 - O ) / 3 \f$); the longer
  *   factor cut in pieces as long as the shorter one when their lengths
  *   differ; from kFFT digits it is a convolution of the digits by the
  *   number theoretic transform (4.3.3, 4.6.4) and the Chinese remainder
@@ -647,6 +651,7 @@ class BigInteger {
  static constexpr std::size_t kKaratsuba = 40;   ///< limbs for Karatsuba
  static constexpr std::size_t kToom3 = 120;      ///< limbs for Toom-3
  static constexpr std::size_t kToom4 = 300;      ///< limbs for Toom-4
+ static constexpr std::size_t kToom32 = 40;      ///< limbs, Toom-3/2, 4/2
  static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
  static constexpr std::size_t kSqrKaratsuba = 40;   ///< the same, squares
  static constexpr std::size_t kSqrToom3 = 120;
@@ -870,6 +875,15 @@ class BigInteger {
  static void toom4( Limb * r , const Limb * a , const Limb * b ,
                     std::size_t n , Limb * w , std::size_t fft ,
                     std::size_t toom );
+
+ /// the products of a of na digits by b of nb < na, a in 3 pieces and b
+ /// in 2, a in 4 and b in 2; false if the lengths do not fit
+ static bool toom32( Limb * r , const Limb * a , std::size_t na ,
+                     const Limb * b , std::size_t nb , Limb * w ,
+                     std::size_t fft , std::size_t toom );
+ static bool toom42( Limb * r , const Limb * a , std::size_t na ,
+                     const Limb * b , std::size_t nb , Limb * w ,
+                     std::size_t fft , std::size_t toom );
 
  /// a /= 3 for a multiple of 3, by Hensel's division; a /= d for a
  /// multiple of d odd; a >>= s, 0 < s < 64, n > 0 digits
