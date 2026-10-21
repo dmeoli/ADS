@@ -101,6 +101,7 @@
 #include <cstddef>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <utility>
 #include <vector>
 

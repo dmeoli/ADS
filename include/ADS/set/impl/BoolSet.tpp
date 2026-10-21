@@ -45,7 +45,7 @@ inline long BoolSet::dim( void ) const
 
 inline bool BoolSet::contains( long x ) const
 {
- return( ( x >= 0 ) && ( x < dim() ) &&
+ return( ( std::size_t( x ) < f_N ) &&     // a negative x is past N
          ( ( f_W[ std::size_t( x ) / 64 ] >> ( x % 64 ) ) & 1 ) );
  }
 
