@@ -2067,6 +2067,39 @@ ADS_FFT_NOINLINE void fourStepColumnsBy( const FFTFour< T , W > & F ,
   }
  }
 
+/// the outputs of a real transform for realInverseFour(): those of an
+/// array X, or the products A_K B_K of two
+template< class T >
+struct FFTSource {
+ const std::complex< T > * X;
+
+ const T * base() const { return( reinterpret_cast< const T * >( X ) ); }
+
+ std::complex< T > at( std::size_t K ) const { return( X[ K ] ); }
+
+ template< std::size_t W >
+ ADS_FFT_INLINE FFTCx< FFTLane< T , W > > load( std::size_t K ) const {
+  return( loadComplex< T , W >( base() + 2 * K ) );
+  }
+ };
+
+template< class T >
+struct FFTProduct {
+ const std::complex< T > * A , * B;
+
+ const T * base() const { return( reinterpret_cast< const T * >( A ) ); }
+
+ std::complex< T > at( std::size_t K ) const { return( A[ K ] * B[ K ] ); }
+
+ template< std::size_t W >
+ ADS_FFT_INLINE FFTCx< FFTLane< T , W > > load( std::size_t K ) const {
+  const auto a = loadComplex< T , W >( base() + 2 * K ) ,
+             b = loadComplex< T , W >( reinterpret_cast< const T * >( B ) +
+                                       2 * K );
+  return( cmul< false >( a , b.r , b.i ) );
+  }
+ };
+
 /// the powers of omega of realInverseFour() on h = r m points: the lanes
 /// omega_{2h}^{t W + fftLane( l )} of the block t of the columns in A,
 /// omega_{2m}^i in wi; kept per thread
@@ -2077,16 +2110,16 @@ struct FFTRealInverseRoots {
  };
 
 /// the n = 2 h real numbers x of the h + 1 outputs X of their transform,
-/// h = r m, W | r, by the four steps whose first one does the pass of
+/// which src gives (load< W >( K ) the W from K on as loadComplex(), at( K
+/// ) one), h = r m, W | r, by the four steps whose first one does the pass of
 /// realInverse(): the inputs z_K , K = r i + t W + fftLane( l ), of the
 /// complex transform made in the lanes from X_K and X_{h-K}, the second
 /// loaded in the reverse order, as the columns read them, and conjugated,
 /// so that the inverse is the forward transform of the conjugates; x may
 /// be where X is. False if W does not divide r, with nothing done
-template< class T , std::size_t W , class G >
-inline bool realInverseFour( const std::complex< T > * X , T * x ,
-                             std::size_t r , std::size_t m ,
-                             const FFTSteps< T > & sm ,
+template< class T , std::size_t W , class Src , class G >
+inline bool realInverseFour( const Src & src , T * x , std::size_t r ,
+                             std::size_t m , const FFTSteps< T > & sm ,
                              const FFTSteps< T > & sr , G && roots )
 {
  using V = FFTLane< T , W >;
@@ -2102,7 +2135,7 @@ inline bool realInverseFour( const std::complex< T > * X , T * x ,
     * bv = bu + fftStrips * ( L + W );
   const T f = T( 1 ) / T( h );
   const V one = splat< T , W >( T( 1 ) ) , hf = splat< T , W >( T( 0.5 ) );
-  const FFTFour< T , W > F{ reinterpret_cast< const T * >( X ) , x , r , m ,
+  const FFTFour< T , W > F{ src.base() , x , r , m ,
                             o , M , rb , mb , B , & roots( o ) ,
                             h >= fftSplitRoots , one , splat< T , W >( f ) ,
                             splat< T , W >( - f ) };
@@ -2121,13 +2154,12 @@ inline bool realInverseFour( const std::complex< T > * X , T * x ,
    for( std::size_t i = 0 ; i < m ; ++i )
     Tb.wi.push_back( omega< T >( i , 2 * m ) );
    }
-  const T * Xt = reinterpret_cast< const T * >( X );
   // conj( z_K ), z_K = E + i conj( omega^K ) D, E = ( X_K + conj( X_{h-K}
   // ) ) / 2, D = ( X_K - conj( X_{h-K} ) ) / 2
   auto get = [ & ]( std::size_t i , std::size_t t ) ADS_FFT_LAMBDA {
    const std::size_t K = r * i + t * W;
-   const C a = loadComplex< T , W >( Xt + 2 * K ) ,
-           z = loadComplex< T , W >( Xt + 2 * ( h - K - ( W - 1 ) ) ) ,
+   const C a = src.template load< W >( K ) ,
+           z = src.template load< W >( h - K - ( W - 1 ) ) ,
            b{ reverse< T , W >( z.r ) , - reverse< T , W >( z.i ) } ,
            e{ ( a.r + b.r ) * hf , ( a.i + b.i ) * hf } ,
            d{ ( a.r - b.r ) * hf , ( a.i - b.i ) * hf } ,
@@ -2136,8 +2168,9 @@ inline bool realInverseFour( const std::complex< T > * X , T * x ,
            q = cmul< true >( d , w.r , w.i );     // conj( w ) d
    C y{ e.r - q.i , - ( e.i + q.r ) };             // conj( e + i q )
    if( K == 0 ) {                                  // X_0 and X_h real
-    y.r[ 0 ] = T( 0.5 ) * ( X[ 0 ].real() + X[ h ].real() );
-    y.i[ 0 ] = - T( 0.5 ) * ( X[ 0 ].real() - X[ h ].real() );
+    const T x0 = src.at( 0 ).real() , xh = src.at( h ).real();
+    y.r[ 0 ] = T( 0.5 ) * ( x0 + xh );
+    y.i[ 0 ] = - T( 0.5 ) * ( x0 - xh );
     }
    return( y );
    };
@@ -2282,6 +2315,19 @@ ADS_FFT_INLINE bool bySmallFour( const T * xi , T * x , std::size_t n ,
     }
   } );
  return( done );
+ }
+
+/// whether n is a shape of fftSmallShapes whose lanes the build has
+template< class T >
+inline bool fftHasShape( std::size_t n )
+{
+ bool has = false;
+ unroll< std::size( fftSmallShapes< T > ) >( [ & ]( auto I ) {
+  constexpr FFTShape S = fftSmallShapes< T >[ I ];
+  if constexpr( S.W <= fftWidthOf< T > && S.W > 1 )
+   if( n == S.n ) has = true;
+  } );
+ return( has );
  }
 
 /// whether the powers of 2 from 16 to fftCodelet go by smallFour(): the
@@ -2849,6 +2895,16 @@ inline void realForward( const T * x , std::size_t n , std::complex< T > * X )
       X[ N ] = std::complex< T >( z0r - z0i , 0 );
       } ) )
   return;
+ if( h <= fftCodelet && ! fftHasCodelet( h ) && ! fftHasShape< T >( h ) &&
+     fftHasShape< T >( n ) ) {        // the n points by the unrolled steps
+  std::complex< T > * z = fftScratch< T >( n , 3 );
+  for( std::size_t j = 0 ; j < n ; ++j ) z[ j ] = x[ j ];
+  transform< false >( z , n );
+  std::copy( z , z + h + 1 , X );
+  X[ 0 ] = X[ 0 ].real();
+  X[ h ] = X[ h ].real();
+  return;
+  }
  if( h > fftCodelet * fftCodelet / 4 ) {   // the pass in the last step
   constexpr std::size_t W = fftWidthOf< T >;
   FFTPlan< T , W > & p = fftPlan< T , W >( h );
@@ -2889,6 +2945,19 @@ inline void realInverse( const std::complex< T > * X , std::size_t n , T * x )
   }
  const std::size_t h = n / 2;
  const T x0 = X[ 0 ].real() , xh = X[ h ].real();
+ if( h <= fftCodelet && ! fftHasCodelet( h ) && ! fftHasShape< T >( h ) &&
+     fftHasShape< T >( n ) ) {        // the n points by the unrolled steps
+  std::complex< T > * z = fftScratch< T >( n , 3 );
+  z[ 0 ] = x0;
+  z[ h ] = xh;
+  for( std::size_t k = 1 ; k < h ; ++k ) {
+   z[ k ] = X[ k ];
+   z[ n - k ] = std::conj( X[ k ] );
+   }
+  transform< true >( z , n );
+  for( std::size_t j = 0 ; j < n ; ++j ) x[ j ] = z[ j ].real();
+  return;
+  }
  if( h <= 32 && byAnyCodelet< 32 >( h , [ & ]< std::size_t N >() {
       std::complex< T > Y[ N ];        // small: the pass into Y, the codelet
       halfPass< false >( X , Y , N , fftHalfRoots< T >( n ) );
@@ -2909,7 +2978,8 @@ inline void realInverse( const std::complex< T > * X , std::size_t n , T * x )
   constexpr std::size_t W = fftWidthOf< T >;
   FFTPlan< T , W > & p = fftPlan< T , W >( h );
   if( p.kind == FFTKind::Four &&
-      realInverseFour< T , W >( X , x , p.r , p.m , p.s1 , p.s2 ,
+      realInverseFour< T , W >( FFTSource< T >{ X } , x , p.r , p.m ,
+                                p.s1 , p.s2 ,
                                 [ & ]( std::size_t o ) -> const auto & {
                                  return( p.fourRoots( o ) ); } ) )
    return;
@@ -3355,7 +3425,8 @@ inline std::size_t fftConvSize( std::size_t m )
 
 /// the coefficients of the product of the polynomials p and q, by the
 /// real transforms of fftConvSize( | p | + | q | - 1 ) points, the product
-/// of the transforms item by item and the inverse real transform
+/// of the transforms item by item and the inverse real transform, which
+/// on the four steps makes the products as its columns read them
 template< class T >
 inline std::vector< T > convolveReal( const std::vector< T > & p ,
                                       const std::vector< T > & q )
@@ -3373,8 +3444,20 @@ inline std::vector< T > convolveReal( const std::vector< T > & p ,
  auto * B = reinterpret_cast< std::complex< T > * >( b );
  realForward( a.data() , n , A );
  realForward( b , n , B );
- for( std::size_t k = 0 ; k <= h ; ++k ) A[ k ] = times( A[ k ] , B[ k ] );
- realInverse( A , n , a.data() );
+ bool done = false;
+ if( h > fftCodelet * fftCodelet / 4 ) {   // the product in the first step
+  constexpr std::size_t W = fftWidthOf< T >;
+  FFTPlan< T , W > & pl = fftPlan< T , W >( h );
+  done = pl.kind == FFTKind::Four &&
+         realInverseFour< T , W >( FFTProduct< T >{ A , B } , a.data() ,
+                                   pl.r , pl.m , pl.s1 , pl.s2 ,
+                                   [ & ]( std::size_t o ) -> const auto & {
+                                    return( pl.fourRoots( o ) ); } );
+  }
+ if( ! done ) {
+  for( std::size_t k = 0 ; k <= h ; ++k ) A[ k ] = times( A[ k ] , B[ k ] );
+  realInverse( A , n , a.data() );
+  }
  a.resize( m );
  return( a );
  }
