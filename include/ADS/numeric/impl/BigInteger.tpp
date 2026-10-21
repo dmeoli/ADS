@@ -4740,22 +4740,34 @@ inline BigInteger operator%( const BigInteger & a , const BigInteger & b )
 
 inline void BigInteger::sqrt2( Limb h , Limb l , Mag & s , Mag & r )
 {
- // Newton's method from above, x_{k+1} = ( x_k + a / x_k ) / 2, from the
- // root in doubles plus 2^14, more than its error; while x_k is above the
- // root, a / x_k < x_k < 2^64 and the steps decrease
+ // the root x in doubles, about 2^11 off at most, then x + d with d the
+ // nearest integer to ( a - x^2 ) / 2 x, in doubles too, off by 1 at
+ // most, then a step of 1 at a time, the remainder kept exact on 128 bits
+ // (a - x^2 >= 0 for x <= root, and below 2 x + 1 at the end)
  const double e = std::sqrt( double( h ) * 0x1p64 + double( l ) );
- Limb x = e >= 0x1p64 - 0x1p14 ? ~Limb( 0 ) : Limb( e ) + ( Limb( 1 ) << 14 );
- for( ; ; ) {
-  if( h >= x ) break;                       // a / x >= 2^64 > x: x too small
-  const Limb q = detail::divWide( h , l , x ) ,
-             y = ( x >> 1 ) + ( q >> 1 ) + ( x & q & 1 );
-  if( y >= x ) break;
-  x = y;
+ Limb x = e >= 0x1p64 ? ~Limb( 0 ) : Limb( e );
+ auto rem = [ & ]( Limb y , Limb & r1 ) {   // a - y^2 modulo 2^128
+  Limb ph , c = 0;
+  const Limb pl = detail::mulWide( y , y , ph ) ,
+             r0 = detail::subBorrow( l , pl , c );
+  r1 = h - ph - c;
+  return( r0 );
+  };
+ Limb r1 , r0 = rem( x , r1 );
+ const double d = ( double( std::int64_t( r1 ) ) * 0x1p64 + double( r0 ) ) /
+                  ( 2 * double( x ) );
+ x += Limb( std::int64_t( std::nearbyint( d ) ) );
+ r0 = rem( x , r1 );
+ while( std::int64_t( r1 ) < 0 ) {          // x above the root
+  --x;
+  r0 = rem( x , r1 );
   }
- Limb ph;                                   // r = a - x^2 < 2^65
- const Limb pl = detail::mulWide( x , x , ph );
- Limb c = 0;
- const Limb r0 = detail::subBorrow( l , pl , c ) , r1 = h - ph - c;
+ // a - x^2 > 2 x: x below the root
+ while( ( r1 > ( x >> 63 ) ) ||
+        ( ( r1 == ( x >> 63 ) ) && ( r0 > ( x << 1 ) ) ) ) {
+  ++x;
+  r0 = rem( x , r1 );
+  }
  s = Mag{ x };
  r.resize( 0 );
  if( r1 ) r = Mag{ r0 , r1 };
@@ -4852,15 +4864,28 @@ inline void BigInteger::sqrtRec( const Limb * m , std::size_t k , Mag & s ,
  std::copy( m + l , m + 2 * l , num.data() );
  std::copy( r1.begin() , r1.end() , num.data() + l );
  trim( num );
- auto [ q , u ] = divModMag( num , addMag( s1 , s1 ) );
+ const Mag d2 = addMag( s1 , s1 );
+ if( root ) {
+  // the quotient of num b alone, q b + d: d >= 1 makes u >= 2 s' / b >=
+  // b^{h-1} >= beta, so r >= 0, with no remainder; else the remainder
+  Mag nb( num.size() + 1 );
+  nb[ 0 ] = 0;
+  std::copy( num.begin() , num.end() , nb.data() + 1 );
+  Mag qe = divModMag( nb , d2 , false , nullptr , false ).first;
+  if( ! qe.empty() && ( qe[ 0 ] != 0 ) ) {
+   s = Mag( s1.size() + l + 1 , 0 );        // s' beta + q, q <= beta
+   std::copy( s1.begin() , s1.end() , s.data() + l );
+   addTo( s.data() , s.size() , qe.data() + 1 , qe.size() - 1 );
+   trim( s );
+   r.resize( 0 );
+   return;
+   }
+  }
+ auto [ q , u ] = divModMag( num , d2 );
  s = Mag( s1.size() + l + 1 , 0 );          // s' beta + q, q <= beta
  std::copy( s1.begin() , s1.end() , s.data() + l );
  if( ! q.empty() ) addTo( s.data() , s.size() , q.data() , q.size() );
  trim( s );
- if( root && ( u.size() > l ) ) {
-  r.resize( 0 );
-  return;
-  }
  Mag x( u.size() + l );                     // u beta + a0
  std::copy( m , m + l , x.data() );
  std::copy( u.begin() , u.end() , x.data() + l );
