@@ -31,10 +31,12 @@
  *   on a Skylake, 1.4 on 32 digits; the rows left one at a time, and up to
  *   8 digits the passes with no loop. Elsewhere two rows per pass in C++.
  *   A square \f$ a^2 = 2 T + D \f$ takes the products \f$ a_i a_j \f$,
- *   \f$ i < j \f$, by blocks of 6 digits: those of a block with the
- *   digits after it by the passes of 6 rows, those inside it by a kernel
- *   of 15 products in registers, all in T, and D, the squares
+ *   \f$ i < j \f$, from 32 digits by blocks of 6: those of a block with
+ *   the digits after it by the passes of 6 rows, those inside it by a
+ *   kernel of 15 products in registers, all in T, and D, the squares
  *   \f$ a_i^2 \f$ at \f$ b^{2i} \f$, added in the pass that doubles T;
+ *   below 32 by tiles of 4 digits, the passes of 4 rows after each tile
+ *   in T and the squares of the tiles side by side in D;
  *   the squares follow thresholds of their own (kSqr...). From
  *   kKaratsuba digits it is the product of Karatsuba (4.3.3A) in the
  *   subtractive form,
@@ -667,13 +669,13 @@ class BigInteger {
  // Xeon Gold 5120, against GMP
  static constexpr std::size_t kKaratsuba = 40;   ///< limbs for Karatsuba
  static constexpr std::size_t kToom3 = 120;      ///< limbs for Toom-3
- static constexpr std::size_t kToom4 = 300;      ///< limbs for Toom-4
- static constexpr std::size_t kToom32 = 40;      ///< limbs, Toom-3/2, 4/2
- static constexpr std::size_t kFFT = 448;        ///< limbs for the NTT
- static constexpr std::size_t kSqrKaratsuba = 40;   ///< the same, squares
- static constexpr std::size_t kSqrToom3 = 120;
+ static constexpr std::size_t kToom4 = 200;      ///< limbs for Toom-4
+ static constexpr std::size_t kToom32 = 64;      ///< limbs, Toom-3/2, 4/2
+ static constexpr std::size_t kFFT = 768;        ///< limbs for the NTT
+ static constexpr std::size_t kSqrKaratsuba = 56;   ///< the same, squares
+ static constexpr std::size_t kSqrToom3 = 160;
  static constexpr std::size_t kSqrToom4 = 300;
- static constexpr std::size_t kSqrFFT = 448;
+ static constexpr std::size_t kSqrFFT = 768;
  static constexpr std::size_t kDivide = 96;      ///< quotient limbs, recursion
  static constexpr std::size_t kConvert = 24;     ///< limbs, divide and conquer
  static constexpr std::size_t kConvertF = 64;    ///< limbs, by fractions
@@ -691,8 +693,8 @@ class BigInteger {
  static constexpr std::size_t kDivBlock = 40;    ///< limbs, 4 digits a step
  static constexpr std::size_t kDivBlock6 = 64;   ///< limbs, 6 digits a step
  static constexpr std::size_t kDivExact2 = 32;   ///< limbs, exact both ways
- static constexpr std::size_t kHgcd = 64;        ///< limbs, recursive hgcd
- static constexpr std::size_t kGcdDC = 600;      ///< limbs, gcd by hgcd
+ static constexpr std::size_t kHgcd = 128;       ///< limbs, recursive hgcd
+ static constexpr std::size_t kGcdDC = 300;      ///< limbs, gcd by hgcd
 
  // with ADS_WITH_GMP, the lengths in digits that go to GMP, where it was
  // faster in the timings of the same benchmark: the products whose shorter
@@ -716,7 +718,7 @@ class BigInteger {
  static constexpr std::size_t kGmpQuotTop = 49152;
  static constexpr std::size_t kGmpExactTop = 262144;   ///< mpz_divexact
  static constexpr std::size_t kGmpToStringTop = 49152; ///< mpz_get_str
- static constexpr std::size_t kGmpGcd = 2;          ///< limbs, mpz_gcd
+ static constexpr std::size_t kGmpGcd = 2048;       ///< limbs, mpz_gcd
 
  BigInteger( long long v = 0 );
 

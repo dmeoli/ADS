@@ -3186,7 +3186,22 @@ inline void BigInteger::sqrSchool( Limb * r , const Limb * a , std::size_t n )
  r[ 0 ] = 0;                                // the products a_i a_j, i < j
  r[ 2 * n - 1 ] = 0;
 #if ADS_BIGINT_ASM
- if( n >= 8 ) {
+ if( ( n >= 8 ) && ( n < 32 ) ) {
+  // a = sum of the tiles A_k b^{4k} of 4 digits (the last one shorter),
+  // a^2 = 2 T + D: T the products a_i a_j, i < j, of digits of different
+  // tiles, by passes of 4 rows over the digits after each tile, and D the
+  // squares A_k^2, of 8 digits each and side by side, at b^{8k}
+  std::fill( r , r + 2 * n , 0 );
+  for( std::size_t i = 0 ; i + 4 < n ; i += 4 )
+   detail::mulPass4< true >( r + 2 * i + 4 , a + i + 4 , n - i - 4 , a + i );
+  Limb d[ 64 ];
+  std::size_t i = 0;
+  for( ; i + 4 <= n ; i += 4 ) detail::sqr4Asm( d + 2 * i , a + i );
+  if( i < n ) sqrTile( d + 2 * i , a + i , n - i );
+  detail::lsh1AddAsm( r , d , 2 * n );
+  return;
+  }
+ if( n >= 32 ) {
   // a^2 = 2 T + D, T the products a_i a_j, i < j, and D the squares a_i^2
   // at b^{2i}: T by blocks of 6 digits, the passes of 6 rows over the
   // digits after each block and the products inside each block, then D
