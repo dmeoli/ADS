@@ -20,12 +20,15 @@
  * - P of fewer than kSkip bytes goes through the filter of k probes (the
  *   packed filters of Faro and Kulekci and of Mula): the places \f$ o_1 ,
  *   \ldots , o_k \f$ of the rarest bytes \f$ b_i = P[ o_i ] \f$ of P, k = 2,
- *   or 4 if P has fewer than 8 distinct bytes (as on DNA), and the start s
- *   is compared with P by memcmp() only if \f$ T[ s + o_i ] = b_i \f$ for
+ *   or 4 if P hints at a small alphabet (fewer than 8 distinct bytes in 8
+ *   or more, or a repeated byte in fewer, as on DNA), and the start s is
+ *   compared with P by memcmp() only if \f$ T[ s + o_i ] = b_i \f$ for
  *   every i. The test is made for W consecutive starts at once by k vector
  *   comparisons of W bytes and their AND, AVX-512 (W = 64), AVX2 (32) or
- *   SSE2 (16) as the target allows (elsewhere memchr() finds the first
- *   probe and the others are checked one by one), so that on a text of
+ *   SSE2 (16) as the target allows, four blocks a step with the
+ *   comparisons with P out of the way of the probes (elsewhere memchr()
+ *   finds the first probe and the others are checked one by one), so that
+ *   on a text of
  *   independent bytes of probabilities \f$ p_c \f$ the expected number of
  *   comparisons with P is \f$ ( n - m + 1 ) \prod_i p_{b_i} \f$, e.g.,
  *   \f$ n / 256 \f$ on DNA with four probes. The rarest bytes are those of
@@ -49,12 +52,12 @@
  *   since it is at most the distance to the last place where the q-gram at
  *   the end of the window occurs in P. On random texts a window moves by
  *   about m - q + 1, \f$ O( n / m ) \f$ windows of one load of 8 bytes; the
- *   text 1024 bytes ahead is prefetched, and the two halves of a text of
- *   16 KB or more are searched at once, so that the chains of loads of the
- *   two overlap (the occurrences of the second half wait for the end of
- *   the first). When 64 windows have moved by less than m / 4 each on
- *   average (a text of few distinct q-grams), the filter of the probes
- *   takes over;
+ *   text 1024 bytes ahead is prefetched, and the four quarters of a text
+ *   of 16 KB or more are searched at once, their windows in registers, so
+ *   that the chains of loads of the four overlap (the occurrences of a
+ *   quarter wait for the end of the ones before it). When 64 steps have
+ *   moved the first window by less than 16 m (a text of few distinct
+ *   q-grams), the filter of the probes takes over;
  * - every search counts its comparisons with P, m bytes each, those that find
  *   an occurrence too: once their bytes exceed \f$ 16 ( s - s_0 ) + 4096 \f$
  *   at the window s of a search begun at \f$ s_0 \f$, the search goes on with
@@ -70,16 +73,18 @@
  *   and then u from right to left, and moves by p, with a memory of the prefix
  *   of P that is known to match, if u is a suffix of \f$ P[ 0 .. p + |u| - 1 ]
  *   \f$, or else by \f$ \max( |u| , |v| ) + 1 \f$, in O( 1 ) extra space and
- *   at most \f$ 2 n \f$ comparisons; its factorization, O( m ), is made only
- *   when a search comes to it.
+ *   at most \f$ 2 n \f$ comparisons, made here 8 bytes at a time in both
+ *   directions; its factorization, O( m ), is made only when a search
+ *   comes to it.
  *
- * Preparing P takes O( m ) time and 4 KB for the shifts; find() gives the
- * first occurrence at or after from (npos if none), findAll() all of them,
- * overlapping ones included, in increasing order, count() their number,
- * and operator() the range of the first occurrence in [ first , last ),
- * the interface of the searchers of std::search(). The empty pattern
- * occurs at every place 0 , ... , n. The functions findFirst() and
- * findAll() of the namespace prepare P and search once.
+ * Preparing P takes O( 256 + m ) time (the last place of each byte gives
+ * the probes) and 4 KB for the shifts; find() gives the first occurrence at
+ * or after from (npos if none), findAll() all of them, overlapping ones
+ * included, in increasing order, count() their number, and operator() the
+ * range of the first occurrence in [ first , last ), the interface of the
+ * searchers of std::search(). The empty pattern occurs at every place 0 ,
+ * ... , n. The functions findFirst() and findAll() of the namespace prepare
+ * P and search once.
  *
  * The contracts [see Contract.h]: an occurrence found is one, and
  * findAll() gives those of naiveMatching() [see StringMatching.h] (an
