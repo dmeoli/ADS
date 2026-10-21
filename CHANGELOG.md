@@ -33,6 +33,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - test/sorting.cpp: vector-merge, prefix-key-sort, and the patterns of few
   keys at the ends of the type, with a key apart, and of 16 keys of any
   bits
+- the parallel layer, include/ADS/parallel: the concept Executor (bulk()
+  and concurrency()), Sequential, ThreadPool (a pool on std::thread with a
+  deque of Chase and Lev per thread, jobs of bulk() on the stack of the
+  caller with tokens stolen by the workers, invoke() by work stealing with
+  leapfrogging, idle workers asleep on EventCount after 2 ms), and the
+  optional executors of OpenMP, oneTBB and FastFlow (OpenMPExecutor,
+  TBBExecutor, FastFlowExecutor, with the CMake options ADS_WITH_OPENMP,
+  ADS_WITH_TBB, ADS_WITH_FASTFLOW, OFF by default); the patterns
+  parallelInvoke(), parallelFor(), parallelForBlocks(), parallelReduce()
+  (blocks that do not depend on the threads, so that a sum of doubles is
+  the same on every executor) and parallelInclusiveScan() and
+  parallelExclusiveScan() (one pass by decoupled look-back)
+- the parallel algorithms on an executor, with the results of the
+  sequential ones: sort() and stableSort() (a survey of the order, then a
+  distribution by the highest bits of the keys for the numbers or by a
+  tree of splitters with buckets of equality, and the buckets sorted by
+  the sequential sorts), multiwayMerge() with multisequenceSplit(), the
+  products of CsrMatrix, SellMatrix and gemm() bit for bit, fft() by the
+  four steps on the sequential one, bfsDistances() that optimizes its
+  direction and connectedComponents() by Afforest on StaticGraph, and
+  lcpArray() by the permuted LCP; test/engineered_parallel.cpp
+- SellMatrix::multiply() on a range of chunks, chunks() and chunkStart()
+- bench/parallel.cpp, the parallel algorithms on 1 to t threads against
+  oneTBB, std::execution::par, the parallel mode of libstdc++, OpenMP,
+  ParlayLib, the parallel IPS4o and IPS2Ra and FastFlow, each runtime in
+  a process of its own (-w)
 
 - the algorithms of the book on graphs as templates on the structures they
   use: shortestPaths() on a frontier given as a type (PrototypeFrontier;

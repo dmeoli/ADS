@@ -68,11 +68,19 @@ SellMatrix< C >::SellMatrix( const CsrMatrix & A , std::size_t sigma )
 template< std::size_t C >
 void SellMatrix< C >::multiply( const double * x , double * y ) const
 {
- const std::size_t chunks = f_start.size() - 1 , m = f_m;
+ multiply( x , y , 0 , f_start.size() - 1 );
+ }
+
+template< std::size_t C >
+void SellMatrix< C >::multiply( const double * x , double * y ,
+                                std::size_t first , std::size_t last ) const
+{
+ ADS_PRE( ( first <= last ) && ( last < f_start.size() ) );
+ const std::size_t m = f_m;
  const std::uint32_t * col = f_col.data();
  const double * val = f_val.data();
  const std::uint32_t * perm = f_perm.data();
- for( std::size_t c = 0 ; c < chunks ; ++c ) {
+ for( std::size_t c = first ; c < last ; ++c ) {
   double s[ C ] = {};
   for( std::size_t p = f_start[ c ] , e = f_start[ c + 1 ] ; p < e ;
        p += C )

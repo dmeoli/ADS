@@ -1712,3 +1712,11 @@ engineered_sparse  position-index-renumber    rinumerazione dopo le cancellazion
 engineered_sparse  sparse-assembly            CSC e CSR da triplette, somme
 engineered_sparse  dynamic-csr                righe aggiunte e tolte a blocchi
 engineered_sparse  row-fingerprint            impronte delle righe, zeri e NaN
+engineered_parallel  parallel-executors  esecutori: vuoti, annidati, eccezioni
+engineered_parallel  parallel-patterns   cicli, riduzioni, scansioni
+engineered_parallel  parallel-sort       ordinamenti contro quelli di std
+engineered_parallel  parallel-merge      fusione a piu' vie, selezione
+engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
+engineered_parallel  parallel-fft        trasformata in quattro passi
+engineered_parallel  parallel-graph      visita in ampiezza, componenti
+engineered_parallel  parallel-lcp        array LCP permutato

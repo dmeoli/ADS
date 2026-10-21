@@ -96,7 +96,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
-            assembly fingerprints multi lce \
+            assembly fingerprints multi lce parallel \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -293,6 +293,23 @@ $(BUILD)/bench-sets: bench/sets.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-tries: bench/tries.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(TRIEFLAGS)
+
+# the parallel benchmark: OpenMP always (the executor of OpenMP and the
+# parallel mode of libstdc++), TBB=1 (or TBB=<prefix>) oneTBB as executor
+# and competitor, FASTFLOW=<dir> FastFlow, PARLAY=<dir> ParlayLib and
+# SORTING=<dir> the parallel IPS4o and IPS2Ra
+TBBFLAGS  = $(if $(TBB),-DADS_HAS_TBB -DADS_WITH_TBB \
+            $(if $(filter-out 1,$(TBB)),-I$(TBB)/include -L$(TBB)/lib \
+            -Wl$(comma)-rpath$(comma)$(TBB)/lib) -ltbb)
+PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
+            $(if $(FASTFLOW),-DADS_WITH_FASTFLOW -isystem $(FASTFLOW)) \
+            $(if $(PARLAY),-isystem $(PARLAY)/include) \
+            $(if $(SORTING),-isystem $(SORTING)/ips4o/include \
+            -isystem $(SORTING)/ips2ra/include -mcx16 -latomic)
+
+$(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
+                        | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(PARFLAGS)
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

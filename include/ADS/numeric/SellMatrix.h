@@ -99,6 +99,24 @@ class SellMatrix {
  /// \pre x has n entries and y m entries, apart from x
  void multiply( const double * x , double * y ) const;
 
+ /// the entries of y = A x of the rows of the chunks [ first , last ) of
+ /// C rows (by the permutation), so that the chunks may be split among
+ /// threads
+ /// \pre x has n entries and y m entries, apart from x, first <= last <=
+ ///      chunks()
+ void multiply( const double * x , double * y , std::size_t first ,
+                std::size_t last ) const;
+
+ /// the number of chunks
+ [[nodiscard]] std::size_t chunks( void ) const {
+  return( f_start.size() - 1 );
+  }
+
+ /// the place where the chunk c starts, chunks() for the end
+ [[nodiscard]] std::size_t chunkStart( std::size_t c ) const {
+  return( f_start[ c ] );
+  }
+
  /// y = A x
  /// \pre x has n entries
  [[nodiscard]] std::vector< double > multiply(
