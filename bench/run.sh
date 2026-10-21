@@ -58,6 +58,7 @@ run queues 100000 1000000
 run geometry 100000 1000000
 run matrix 64 256 1024 2048 4096
 run sparse 100000 1000000
+run graphs 100000 1000000
 # the queues between threads on the core and the next one allowed
 taskset -c "$CORE,${CORE2:-$((CORE + 1))}" "$BUILD/bench-concurrent" \
  -r "$RUNS" 1000000 10000000 >> "$out"
