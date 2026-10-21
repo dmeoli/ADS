@@ -61,7 +61,8 @@ test: $(BINS)
 
 # the benchmarks, with the contracts off and the Boost headers if found;
 # GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft, and
-# GMP=<prefix> or ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP;
+# GMP=<prefix> or ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP; FLINT=
+# <prefix> adds FLINT to bignum (with GMP and MPFR in the same prefix);
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
 # fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
@@ -98,6 +99,9 @@ BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
              -Iinclude
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
             -Wl$(comma)-rpath$(comma)$(GMP)/lib -lgmpxx -lgmp)
+FLINTFLAGS = $(if $(FLINT),-DADS_HAS_FLINT -I$(FLINT)/include \
+             -L$(FLINT)/lib -Wl$(comma)-rpath$(comma)$(FLINT)/lib -lflint \
+             -lmpfr -lgmp)
 FFTWFLAGS = $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
             -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3)
 SAISFLAGS = $(if $(LIBSAIS),-DADS_HAS_LIBSAIS -I$(LIBSAIS)/include \
@@ -178,7 +182,7 @@ TRIEFLAGS = $(ABSLFLAGS) $(if $(HTRIE),-I$(HTRIE)/include) \
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
 $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(GMPFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(GMPFLAGS) $(FLINTFLAGS)
 
 $(BUILD)/bench-bignum-gmp: bench/bignum.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)

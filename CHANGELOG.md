@@ -986,6 +986,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   squares of the digits added in the pass that doubles, sqrDiagAsm()),
   and the NTT of a square with one transform even where the rows take
   the top digits of a product
+- BigInteger: the unbalanced products by Toom-3/2 (a up to 7/4 as long
+  as b) and Toom-4/2 (up to 5/2) from kToom32 digits, instead of slices
+  of a as long as b
 
 - the CMake package ADS installed under share/cmake/ADS instead of
   lib/cmake/ADS (ADS_INSTALL_CMAKEDIR), since a library of headers is the
