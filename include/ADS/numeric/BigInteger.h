@@ -592,7 +592,7 @@ class BigInteger {
  static constexpr std::size_t kFracLevel = 4;    ///< 2^k chunks, fractions
  static constexpr std::size_t npos = std::size_t( -1 );
  static constexpr std::size_t kModFold = 16;     ///< limbs, folded remainder
- static constexpr std::size_t kHensel = 24;      ///< limbs, gcd by folding
+ static constexpr std::size_t kHensel = 20;      ///< limbs, gcd by folding
  static constexpr std::size_t kNewton = 768;     ///< limbs, by the reciprocal
  static constexpr std::size_t kNewtonKept = 512; ///< limbs, the same if kept
  static constexpr std::size_t kRecip = 32;       ///< limbs, reciprocal by D
