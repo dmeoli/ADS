@@ -76,6 +76,16 @@ if (ADS_WITH_FASTFLOW)
                                $<BUILD_INTERFACE:${FASTFLOW_DIR}>)
 endif ()
 
+# the sort over the processes of MPI [see include/ADS/distributed], OFF by
+# default
+option(ADS_WITH_MPI "the distributed sort on MPI [see DistributedSort.h]"
+       OFF)
+if (ADS_WITH_MPI)
+    find_package(MPI REQUIRED COMPONENTS CXX)
+    target_compile_definitions(ADS INTERFACE ADS_WITH_MPI)
+    target_link_libraries(ADS INTERFACE MPI::MPI_CXX)
+endif ()
+
 option(ADS_BUILD_TESTS "build the tests (by default only as the main project)"
        ${PROJECT_IS_TOP_LEVEL})
 if (ADS_BUILD_TESTS)
