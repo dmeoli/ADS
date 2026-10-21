@@ -1053,7 +1053,7 @@ class BigInteger {
 
  /// the greatest common divisor of the magnitudes, by Lehmer with the
  /// leading two digits, from kGcdDC digits by the half gcd
- static Mag gcdMag( Mag u , Mag v );
+ static Mag gcdMag( const Mag & x , const Mag & y );
 
  /// out += the figures of a in the base, at least pad of them, dividing
  /// by P, then those of b, if given, at least padb, divided with them

@@ -2061,6 +2061,24 @@ ADS_TEST( "big-integer-gcd" )
   CHECK( BigInteger::gcd( a , b ) == BigInteger::gcdEuclid( a , b ) &&
          BigInteger::gcd( a * b , b ) == b );
   }
+ // the binary gcd of two digits: the lengths of the two numbers from 1 to
+ // 128 bits, a common factor, powers of 2 in one or both
+ for( int t = 0 ; t < 2000 ; ++t ) {
+  auto bits = [ & ]( unsigned b ) {
+   const std::uint64_t lo = b >= 64 ? g() : g() >> ( 64 - b ) ,
+                       hi = b > 64 ? g() >> ( 128 - b ) : 0;
+   return( hi ? fromLimbs( { hi , lo } ) : fromLimbs( { lo } ) );
+   };
+  BigInteger x = bits( 1 + unsigned( g() % 128 ) ) ,
+             y = bits( 1 + unsigned( g() % 128 ) );
+  if( t % 3 == 0 ) {
+   const BigInteger c = bits( 1 + unsigned( g() % 30 ) );
+   x = x * c;
+   y = y * c;
+   }
+  if( t % 5 == 0 ) x = x * BigInteger::pow( 2 , g() % 40 );
+  CHECK( BigInteger::gcd( x , y ) == BigInteger::gcdEuclid( x , y ) );
+  }
  // the half gcd, at its thresholds and past them: random pairs with a
  // common factor, of equal and of different lengths; quotients all 1
  // (Fibonacci), one huge quotient, pairs one apart, powers of 2 and
