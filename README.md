@@ -408,6 +408,7 @@ of Knuth.
 | hash table of pointers, linear probing, Fibonacci hashing | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table` |
 | arena of objects in blocks, stable addresses | [`memory/Arena.h`](include/ADS/memory/Arena.h) | `engineered.arena` |
 | pool of objects in doubling blocks, the slot freed last made first | [`memory/ObjectPool.h`](include/ADS/memory/ObjectPool.h) | `engineered.pool` |
+| allocator of small blocks by size classes, a free list and a page of 64 KB per class (mimalloc, TLSF) | [`memory/SizeClassAllocator.h`](include/ADS/memory/SizeClassAllocator.h) | `memory.size-class-allocator` |
 | allocator of the large blocks on transparent huge pages | [`memory/HugePageAllocator.h`](include/ADS/memory/HugePageAllocator.h) | `engineered.huge-page-allocator` |
 | SplitMix64, Zobrist and simple tabulation hashing | [`dictionary/RandomHashing.h`](include/ADS/dictionary/RandomHashing.h) | `engineered.random-hashing` |
 | hashes of words and strings by folded products of 128 bits, stripes in AVX2 or AVX-512 past 256 bytes (wyhash, XXH3) | [`dictionary/FastHash.h`](include/ADS/dictionary/FastHash.h) | `hashing.fast-hash` |
