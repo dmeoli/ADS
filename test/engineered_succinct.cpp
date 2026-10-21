@@ -24,11 +24,14 @@
 #include "ADS/compression/DirectAccessCodes.h"
 #include "ADS/compression/Entropy.h"
 #include "ADS/compression/HuffmanCoder.h"
+#include "ADS/compression/FMIndex.h"
+#include "ADS/compression/HuffmanFMIndex.h"
 #include "ADS/compression/LZ77Linear.h"
 #include "ADS/compression/Rans.h"
 #include "ADS/compression/StreamVByte.h"
 #include "ADS/compression/Tans.h"
 #include "ADS/succinct/CompactRankSelect.h"
+#include "ADS/succinct/HuffmanWaveletTree.h"
 #include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/RankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
@@ -177,6 +180,133 @@ ADS_TEST( "rank-select-words" )
     ok = X.select0( k ) == A.select0( k );
    CHECK( ok );
    }
+ }
+
+// the wavelet tree of Huffman against a scan, on RankSelect and on
+// CompactRankSelect: every access with its rank, every rank of each symbol
+// at every place and every select, on alphabets of 1 to 3000 symbols,
+// uniform and skewed (geometric, so that the codes are long), with absent
+// symbols in the alphabet; a code shorter for a more frequent symbol, the
+// total within n ( H0 + 1 ) bits; the empty sequence and the bounds
+template< class RS >
+void huffmanTreeCheck( std::mt19937_64 & g )
+{
+ auto check = [ & ]( const std::vector< std::uint32_t > & x ) {
+  const HuffmanWaveletTree< RS > T( x );
+  CHECK( T.size() == x.size() );
+  std::uint32_t top = 0;
+  for( const auto c : x ) top = std::max( top , c );
+  std::vector< std::size_t > seen( std::size_t( top ) + 2 , 0 );
+  bool ok = true;
+  for( std::size_t i = 0 ; ok && ( i < x.size() ) ; ++i ) {
+   const auto [ c , r ] = T.accessRank( i );
+   ok = ( c == x[ i ] ) && ( r == seen[ c ] ) && ( T[ i ] == c );
+   ++seen[ c ];
+   ok = ok && ( T.select( c , seen[ c ] ) == i );
+   }
+  CHECK( ok );
+  std::vector< std::size_t > cnt( std::size_t( top ) + 2 , 0 );
+  for( std::size_t i = 0 ; ok && ( i <= x.size() ) ; i += 1 + i / 64 ) {
+   for( std::uint32_t c = 0 ; ok && ( c <= top + 1 ) ; ++c ) {
+    std::size_t r = 0;
+    for( std::size_t j = 0 ; j < i ; ++j ) r += x[ j ] == c;
+    ok = T.rank( c , i ) == r;
+    }
+   }
+  CHECK( ok );
+  if( x.empty() ) return;
+  // the bits of the codes within the entropy plus 1 per item
+  double h = 0;
+  std::size_t bits = 0;
+  for( std::uint32_t c = 0 ; c <= top ; ++c )
+   if( seen[ c ] > 0 ) {
+    const double p = double( seen[ c ] ) / double( x.size() );
+    h -= double( seen[ c ] ) * std::log2( p );
+    bits += seen[ c ] * std::size_t( T.codeLength( c ) );
+    for( std::uint32_t d = 0 ; d <= top ; ++d )
+     if( ( seen[ d ] > seen[ c ] ) && ( T.codeLength( d ) >
+                                        T.codeLength( c ) ) ) ok = false;
+    }
+  CHECK( ok && ( double( bits ) <= h + double( x.size() ) + 1e-6 ) );
+  CHECK_THROWS( ( void )T.access( x.size() ) , contract_violation );
+  CHECK_THROWS( ( void )T.rank( 0 , x.size() + 1 ) , contract_violation );
+  CHECK_THROWS( ( void )T.select( x[ 0 ] , seen[ x[ 0 ] ] + 1 ) ,
+                contract_violation );
+  CHECK_THROWS( ( void )T.select( top + 1 , 1 ) , contract_violation );
+  };
+ check( {} );
+ check( { 7 } );
+ check( std::vector< std::uint32_t >( 1000 , 3 ) );
+ for( const std::uint32_t sigma : { 2u , 3u , 17u , 256u , 3000u } )
+  for( const std::size_t n : { 1 , 100 , 5000 } ) {
+   std::vector< std::uint32_t > u( n ) , k( n );
+   std::geometric_distribution< std::uint32_t > G( 0.3 );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    u[ i ] = std::uint32_t( g() % sigma );
+    k[ i ] = std::min( G( g ) , sigma - 1 ) * 2;   // the odd ones absent
+    }
+   check( u );
+   check( k );
+   }
+ }
+
+ADS_TEST( "huffman-wavelet-tree" )
+{
+ std::mt19937_64 g( 17 );
+ huffmanTreeCheck< RankSelect >( g );
+ huffmanTreeCheck< CompactRankSelect >( g );
+ }
+
+// the FM-index of Huffman against a scan, on RankSelect and on
+// CompactRankSelect: the count and the places of every substring of
+// lengths 1 to 6 of texts over alphabets of 1, 4 and 256 bytes (the byte
+// 0 included), of absent patterns and of the whole text, and every extract
+// of short ranges, for samples every 1, 3 and 32 places; its bits on a
+// skewed text below those of the FM-index of the notes
+template< class RS >
+void huffmanFMCheck( std::mt19937_64 & g )
+{
+ for( const int sigma : { 1 , 4 , 256 } )
+  for( const std::size_t mu : { 1 , 3 , 32 } ) {
+   std::string s( 700 , 'a' );
+   for( auto & c : s ) c = static_cast< char >( g() % unsigned( sigma ) );
+   const HuffmanFMIndex< RS > F( s , mu );
+   CHECK( F.size() == s.size() );
+   bool ok = true;
+   for( std::size_t len = 1 ; ok && ( len <= 6 ) ; ++len )
+    for( std::size_t i = 0 ; ok && ( i + len <= s.size() ) ; i += 7 ) {
+     const std::string P = s.substr( i , len );
+     std::vector< std::size_t > at;
+     for( std::size_t j = 0 ; j + len <= s.size() ; ++j )
+      if( s.compare( j , len , P ) == 0 ) at.push_back( j );
+     ok = ( F.count( P ) == at.size() ) && ( F.locate( P ) == at );
+     }
+   CHECK( ok );
+   CHECK( F.count( s ) == 1 &&
+          F.locate( s ) == std::vector< std::size_t >{ 0 } );
+   CHECK( F.count( s + "x" ) == 0 && F.locate( s + "x" ).empty() );
+   for( std::size_t i = 0 ; ok && ( i <= s.size() ) ; i += 13 )
+    for( std::size_t j = i ; ok && ( j <= std::min( s.size() , i + 40 ) ) ;
+         j += 5 )
+     ok = F.extract( i , j ) == s.substr( i , j - i );
+   CHECK( ok && F.extract( 0 , s.size() ) == s );
+   CHECK_THROWS( ( void )F.count( "" ) , contract_violation );
+   CHECK_THROWS( ( void )F.extract( 2 , 1 ) , contract_violation );
+   }
+ const HuffmanFMIndex< RS > E( "" );
+ CHECK( E.size() == 0 && E.count( "a" ) == 0 && E.extract( 0 , 0 ).empty() );
+ std::string t( 20000 , 'e' );
+ std::geometric_distribution< int > G( 0.4 );
+ for( auto & c : t ) c = static_cast< char >( 'a' + std::min( G( g ) , 25 ) );
+ CHECK( HuffmanFMIndex< RS >( t , 32 ).sizeInBits() <
+        FMIndex( t , 64 , 32 ).sizeInBits() );
+ }
+
+ADS_TEST( "huffman-fm-index" )
+{
+ std::mt19937_64 g( 19 );
+ huffmanFMCheck< RankSelect >( g );
+ huffmanFMCheck< CompactRankSelect >( g );
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank

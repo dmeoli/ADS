@@ -17,7 +17,9 @@
  *   geometric distribution (the gaps of a posting list) by the
  *   variable-byte code and by the codes gamma and delta of Elias;
  * - bwt: the transform of Burrows and Wheeler of n bytes of the text;
- * - fmindex: count() and locate() of patterns of 8 bytes of the text, and
+ * - fmindex: count() and locate() of patterns of 8 bytes of the text, by
+ *   the FM-index of the notes and by the one on the wavelet tree of
+ *   Huffman (on RankSelect and on CompactRankSelect), and
  *   the building, with the sdsl index on a wavelet tree shaped by Huffman,
  *   both sampling one suffix in 32;
  * - lz: the parse of LZSS by the chains of gzip against the compression
@@ -60,6 +62,10 @@
 #include "ADS/compression/FMIndex.h"
 #include "ADS/compression/IntegerCodes.h"
 #include "ADS/compression/LempelZiv.h"
+#if __has_include( "ADS/compression/HuffmanFMIndex.h" )
+ #include "ADS/compression/HuffmanFMIndex.h"
+ #define ADS_HAS_HFM 1
+#endif
 #if __has_include( "ADS/compression/LZ77Linear.h" )
  #include "ADS/compression/LZ77Linear.h"
  #define ADS_HAS_LZLIN 1
@@ -505,7 +511,10 @@ void integerCodes( std::size_t n , int r , unsigned seed )
 void transforms( std::size_t n , int r , unsigned seed )
 {
  const Bytes t = text( n , seed );
- const std::string s( t.begin() , t.end() );
+ // the bytes 0 made 1, since sdsl-lite keeps the 0 for the end of the
+ // text (book1 has one) and would index only the text before it
+ std::string s( t.begin() , t.end() );
+ std::replace( s.begin() , s.end() , '\0' , '\1' );
  for( const char * who : { "ADS::bwt" , "ADS::bwt A/A" } )
   print( "bwt" , "text" , n , who , median( [](){ return( 0 ); } ,
           [ & ]( int ) { sink = sink + ADS::bwt( s ).primary; } , r , n ) );
@@ -558,6 +567,20 @@ void transforms( std::size_t n , int r , unsigned seed )
           if constexpr( requires { F.sizeInBits(); } )
            return( std::size_t( F.sizeInBits() ) );
           else return( std::size_t( 0 ) ); } );
+#ifdef ADS_HAS_HFM
+ auto huffman = [ & ]< class RS >( const char * who , RS * ) {
+  using H = ADS::HuffmanFMIndex< RS >;
+  cells( who , [ & ]() { return( std::make_unique< H >( s , 32 ) ); } ,
+         []( const H & F , const std::string & p ) {
+          return( F.count( p ) ); } ,
+         []( const H & F , const std::string & p ) {
+          return( F.locate( p ).size() ); } ,
+         []( const H & F ) { return( F.sizeInBits() ); } );
+  };
+ huffman( "ADS::HuffmanFMIndex" , ( ADS::RankSelect * )nullptr );
+ huffman( "ADS::HuffmanFMIndex compact" ,
+          ( ADS::CompactRankSelect * )nullptr );
+#endif
 #ifdef ADS_HAS_SDSL
  using CSA = sdsl::csa_wt< sdsl::wt_huff<> , 32 , 32 >;
  cells( "sdsl::csa_wt<wt_huff>" , [ & ]() {

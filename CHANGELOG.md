@@ -167,6 +167,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ducc0, on complex, real and single precision data, the cosines of type
   2, many transforms, 2 dimensions and convolutions, with the cost of the
   plans apart; POCKETFFT and DUCC0 in the makefile
+- HuffmanWaveletTree, the wavelet tree shaped by the code of Huffman of
+  Makinen and Navarro: the bits of the trie of the canonical codes in one
+  vector with rank and select (RankSelect or CompactRankSelect), access,
+  rank, select and access with the rank of the symbol in time
+  proportional to the length of its code, in n ( H0 + 1 ) bits and the
+  directory; HuffmanFMIndex, the FM-index on it (the succinct suffix
+  array), with the two ranks of a step of the backward search by one
+  descent, LF by one descent and the marks of the samples on
+  CompactRankSelect; their tests against a scan and their cells in the
+  benchmarks against wt_huff_int and csa_wt<wt_huff> of sdsl-lite, on a
+  text whose bytes 0 are made 1, as sdsl-lite keeps the 0 for its end
 - DialQueue, the monotone bucket queue of Dial on a circular window of W
   buckets with a radix heap for the keys beyond it, the next bucket in use
   found by a mask of W bits; RadixHeap::peekKey(), the least key without

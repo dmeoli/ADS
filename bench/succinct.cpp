@@ -23,7 +23,10 @@
  *   random tree of n nodes (a uniform Dyck word of 2n bits), for n up to
  *   10^7;
  * - wavelet: access, rank and select on n random symbols of 8 and 16
- *   bits, 10^5 queries a cell, and the building;
+ *   bits and on n symbols of 8 bits of a geometric distribution (where
+ *   the tree of Huffman takes fewer levels), by the wavelet matrix and the
+ *   wavelet tree of Huffman against wm_int, wt_int and wt_huff_int of
+ *   sdsl-lite, 10^5 queries a cell, and the building;
  * - dac: access to n integers of variable length (geometric of mean 100,
  *   one in 64 a thousand times larger) by the directly addressable codes,
  *   against the dac_vector of sdsl-lite, and the building;
@@ -73,6 +76,10 @@
 #if __has_include( "ADS/succinct/WaveletMatrix.h" )
  #include "ADS/succinct/WaveletMatrix.h"
  #define ADS_HAS_WM 1
+#endif
+#if __has_include( "ADS/succinct/HuffmanWaveletTree.h" )
+ #include "ADS/succinct/HuffmanWaveletTree.h"
+ #define ADS_HAS_HWT 1
 #endif
 
 #if __has_include( <sdsl/bit_vectors.hpp> )
@@ -720,11 +727,17 @@ void wavelet( const std::string & what ,
 void wavelets( std::size_t n , int r , unsigned seed )
 {
  constexpr std::uint64_t M = ( std::uint64_t( 1 ) << 40 ) - 1;
- for( const int w : { 8 , 16 } ) {
-  const std::string what = std::to_string( w ) + " bits";
+ for( const auto [ w , skew ] : { std::pair( 8 , false ) ,
+                                  std::pair( 16 , false ) ,
+                                  std::pair( 8 , true ) } ) {
+  const std::string what = std::to_string( w ) + " bits" +
+                           ( skew ? " skewed" : "" );
   std::mt19937_64 g( seed );
   std::vector< std::uint64_t > X( n ) , I , R , L;
-  for( auto & x : X ) x = g() % ( std::uint64_t( 1 ) << w );
+  std::geometric_distribution< std::uint64_t > G( 0.2 );
+  for( auto & x : X )
+   x = skew ? std::min< std::uint64_t >( G( g ) , 255 )
+            : g() % ( std::uint64_t( 1 ) << w );
   // the occurrence of each item among those equal to it, for select
   std::vector< std::uint64_t > seen( std::size_t( 1 ) << w , 0 ) , occ( n );
   for( std::size_t i = 0 ; i < n ; ++i ) occ[ i ] = ++seen[ X[ i ] ];
@@ -749,6 +762,25 @@ void wavelets( std::size_t n , int r , unsigned seed )
      return( s.select( q >> 40 , q & M ) ); } ,
     [ nn ]( const WM & s ) { return( double( s.sizeInBits() ) / nn ); } ,
     r );
+#endif
+#ifdef ADS_HAS_HWT
+  auto huffman = [ & ]< class RS >( const char * who , RS * ) {
+   using T = ADS::HuffmanWaveletTree< RS >;
+   wavelet( what , X , w , I , R , L ,
+    who , []( const std::vector< std::uint64_t > & X , int ) {
+     std::vector< std::uint32_t > Y( X.begin() , X.end() );
+     return( std::make_unique< T >( Y ) ); } ,
+    []( const T & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+    []( const T & s , std::uint64_t q ) {
+     return( s.rank( std::uint32_t( q >> 40 ) , q & M ) ); } ,
+    []( const T & s , std::uint64_t q ) {
+     return( s.select( std::uint32_t( q >> 40 ) , q & M ) ); } ,
+    [ nn ]( const T & s ) { return( double( s.sizeInBits() ) / nn ); } ,
+    r );
+   };
+  huffman( "ADS::HuffmanWaveletTree" , ( ADS::RankSelect * )nullptr );
+  huffman( "ADS::HuffmanWaveletTree compact" ,
+           ( ADS::CompactRankSelect * )nullptr );
 #endif
 #ifdef ADS_HAS_SDSL
   auto sdslInts = []( const std::vector< std::uint64_t > & X , int w ) {
@@ -778,6 +810,7 @@ void wavelets( std::size_t n , int r , unsigned seed )
    };
   sdslCand( "sdsl::wm_int" , ( SWM * )nullptr );
   sdslCand( "sdsl::wt_int" , ( SWT * )nullptr );
+  sdslCand( "sdsl::wt_huff_int" , ( sdsl::wt_huff_int<> * )nullptr );
 #endif
   }
  }
