@@ -22,6 +22,7 @@
 #include "ADSTest.h"
 
 #include "ADS/concurrent/EventCount.h"
+#include "ADS/concurrent/MPMCQueue.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
@@ -544,6 +545,72 @@ ADS_TEST( "work-stealing-deque" )
    }
   t.join();
   CHECK( taken + stolen.load() == rounds );
+  }
+ }
+
+// MPMCQueue: one thread on 2 places for many laps, full and empty; items
+// that own memory, those left destroyed with the queue; 2 producers and 2
+// consumers, each item taken once and those of a producer seen by each
+// consumer in order; the contract of the capacity
+ADS_TEST( "mpmc-queue" )
+{
+ CHECK_THROWS( MPMCQueue< int >( 6 ) , contract_violation );
+ CHECK_THROWS( MPMCQueue< int >( 1 ) , contract_violation );
+ {
+  MPMCQueue< int > Q( 2 );
+  int x;
+  bool laps = true;
+  CHECK( Q.empty() && ! Q.tryPop( x ) );
+  for( int i = 0 ; i < 1000 ; ++i ) {
+   laps = laps && Q.push( 2 * i ) && Q.push( 2 * i + 1 ) && ! Q.push( -1 ) &&
+          Q.size() == 2;
+   laps = laps && Q.tryPop( x ) && x == 2 * i && Q.tryPop( x ) &&
+          x == 2 * i + 1 && ! Q.tryPop( x );
+   }
+  CHECK( laps && Q.empty() && Q.capacity() == 2 );
+  }
+ Counted::alive = 0;
+ {
+  MPMCQueue< Counted > Q( 8 );
+  for( int i = 0 ; i < 5 ; ++i ) Q.emplace( std::string( 30 , 'a' + i ) );
+  Counted c;
+  CHECK( Q.tryPop( c ) && Counted::alive == 5 );
+  }
+ CHECK( Counted::alive == 0 );
+ {
+  MPMCQueue< std::unique_ptr< int > > U( 4 );
+  CHECK( U.push( std::make_unique< int >( 3 ) ) );
+  std::unique_ptr< int > v;
+  CHECK( U.tryPop( v ) && *v == 3 && ! U.tryPop( v ) );
+  }
+ {
+  const int n = 100000 , P = 2 , C = 2;
+  MPMCQueue< std::pair< int , int > > Q( 64 );
+  std::vector< std::atomic< int > > got( P * n );
+  std::atomic< int > taken{ 0 };
+  std::atomic< bool > ordered{ true };
+  std::vector< std::thread > T;
+  for( int p = 0 ; p < P ; ++p )
+   T.emplace_back( [ & , p ] {
+    for( int i = 0 ; i < n ; ++i )
+     while( ! Q.push( std::pair( p , i ) ) ) {}
+    } );
+  for( int c = 0 ; c < C ; ++c )
+   T.emplace_back( [ & ] {
+    std::vector< int > last( P , -1 );
+    std::pair< int , int > x;
+    while( taken.load() < P * n )
+     if( Q.tryPop( x ) ) {
+      if( x.second <= last[ x.first ] ) ordered.store( false );
+      last[ x.first ] = x.second;
+      got[ x.first * n + x.second ].fetch_add( 1 );
+      taken.fetch_add( 1 );
+      }
+    } );
+  for( auto & t : T ) t.join();
+  bool once = true;
+  for( auto & g : got ) once = once && ( g.load() == 1 );
+  CHECK( once && ordered.load() && Q.empty() );
   }
  }
 
