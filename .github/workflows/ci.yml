@@ -4,15 +4,10 @@
 # Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
 # UBSan, BigInteger with its portable products and on the backend of GMP,     #
-# FastHash on AVX2, the queues between threads under ThreadSanitizer,         #
-# FlatHashTable on its broadword fallback and fft() on the lanes of AVX and   #
-# on arrays of doubles; it measures the coverage of the tests and sends it    #
-# to Coveralls.                                                               #
-# UBSan, BigInteger with its portable products, FastHash and the vector       #
-# quicksort on AVX2 (and AVX-512 when the runner has it), the queues          #
-# between threads under ThreadSanitizer, FlatHashTable on its broadword       #
-# fallback and fft() on the lanes of AVX and on arrays of doubles; it         #
-# measures the coverage of the tests and sends it to Coveralls.               #
+# FastHash and the vector quicksort on AVX2 (and AVX-512 when the runner has  #
+# it), the queues between threads under ThreadSanitizer, FlatHashTable on     #
+# its broadword fallback and fft() on the lanes of AVX and on arrays of       #
+# doubles; it measures the coverage of the tests and sends it to Coveralls.   #
 ###############################################################################
 
 name: CI
