@@ -48,7 +48,31 @@
  *   four kinds of the types of i and i - 1 (LL, LS, LMS and SS), counted
  *   per first symbol with no branch in two histograms, one for the even
  *   places and one for the odd, so that equal symbols in a row do not
- *   wait for each other;
+ *   wait for each other, the counters 4 T[ i ] + kind of 64 places built
+ *   by vector operations from the bits of the types;
+ * - on a text of bytes the LMS-suffixes are first sorted directly, as
+ *   strings, and the induction only follows (the two stages of Itoh and
+ *   Tanaka and of DivSufSort, on the LMS-suffixes of SA-IS): the \f$
+ *   \sigma \f$ bytes that occur are ranked, and when \f$ \sigma \le 64
+ *   \f$ the text is packed in codes of \f$ b = \lceil \log_2 \sigma
+ *   \rceil \f$ bits (the bytes themselves otherwise, b = 8), so that the
+ *   window of 64 bits at the bit b p of the packed text holds the first
+ *   \f$ 64 / b \f$ symbols of the suffix p and two suffixes compare as
+ *   their windows, then as the windows 64 bits on. The items ( top bits
+ *   of the window , p ), one word on 32 bits, are sorted by a radix sort
+ *   on the top \f$ N = \lceil \log_2 ( m + 1 ) \rceil + 6 \f$ bits of
+ *   their windows (into the 256 buckets of the top 8 bits first when \f$
+ *   m \ge 2^{16} \f$, then each bucket in the cache by passes of at most
+ *   11 bits), so that on a text with no long repeats about \f$ m^2 /
+ *   2^{N+1} \le m / 128 \f$ pairs stay equal, settled by insertion; the
+ *   suffixes of equal windows go on to the next windows, a suffix that
+ *   ends inside a window before those that go on. The whole of it reads
+ *   the text in order, against the 2 random reads a suffix of the partial
+ *   induction, and needs no names and no recursion. It is tried when a
+ *   sample of 1024 keys of 32 bits has at most one equal pair in 256 (on a
+ *   text whose windows repeat, as in English or in long repeats, the
+ *   induction does better), and given up for the partial induction once
+ *   the ties read more than m windows;
  * - the partial induction, which sorts the LMS-substrings, splits the
  *   bucket of each symbol c into parts by the type of the suffix before:
  *   an area A, with the LL part and the LMS part (the seeds) of each
@@ -81,9 +105,9 @@
  *   \f$ O( g \log g ) \f$;
  * - the sorted LMS-suffixes go to the ends of their buckets a group of
  *   symbol at a time, by memmove(), and the final induction stores a
- *   suffix complemented when the suffix before it is of the other type, by
- *   an XOR with all ones and no branch, the places it prefetches computed
- *   with no branch either;
+ *   suffix with its top bit set when the suffix before it is of the other
+ *   type, by a shift and no branch, the text it prefetches at a place
+ *   chosen by a select;
  * - a text whose suffixes are all of type L never rises, so that each
  *   suffix is larger than the next one and SA is \f$ n - 1 , \ldots , 0
  *   \f$.
@@ -112,6 +136,15 @@
  * \see G. Nong, S. Zhang, W. H. Chan, Two efficient algorithms for linear
  *      time suffix array construction, IEEE Transactions on Computers
  *      60(10), 1471-1484, 2011, doi:10.1109/TC.2010.188
+ * \see H. Itoh, H. Tanaka, An efficient method for in memory construction
+ *      of suffix arrays, Proceedings of the 6th Symposium on String
+ *      Processing and Information Retrieval (SPIRE), 81-88, 1999,
+ *      doi:10.1109/SPIRE.1999.796581
+ * \see J. Fischer, F. Kurpicz, Dismantling DivSufSort, Proceedings of the
+ *      Prague Stringology Conference (PSC), 62-76, 2017,
+ *      https://arxiv.org/abs/1710.01896
+ * \see D. E. Knuth, The Art of Computer Programming, vol. 3, 2nd ed.,
+ *      Addison-Wesley, 1998, section 5.2.5 (radix sorting)
  * \see U. Manber, G. Myers, Suffix arrays: a new method for on-line string
  *      searches, SIAM Journal on Computing 22(5), 935-948, 1993,
  *      doi:10.1137/0222058
