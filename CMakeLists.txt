@@ -72,6 +72,8 @@ if (ADS_BENCHMARKS)
     foreach (b sort dictionaries priority sequences memory bignum fft hashing
                search suffix edit numeric queues concurrent geometry matrix
                sparse)
+    foreach (b sort dictionaries priority sequences bignum fft hashing
+               external)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -119,6 +121,13 @@ if (ADS_BENCHMARKS)
         target_compile_definitions(bench-hashing PRIVATE ADS_HAS_ABSL)
         target_link_libraries(bench-hashing PRIVATE absl::flat_hash_map
                                                     absl::hash)
+    endif ()
+    # the competitor of bench-external: tlx from the directory of its
+    # sources ADS_TLX
+    set(ADS_TLX "" CACHE PATH "the sources of tlx")
+    if (ADS_TLX)
+        target_compile_definitions(bench-external PRIVATE ADS_HAS_TLX)
+        target_include_directories(bench-external SYSTEM PRIVATE ${ADS_TLX})
     endif ()
     find_package(Threads REQUIRED)
     target_link_libraries(bench-hashing PRIVATE Threads::Threads)

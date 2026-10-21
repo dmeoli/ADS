@@ -130,7 +130,7 @@ std::vector< DiskFile< T > > snowPlowRuns( const DiskFile< T > & in ,
 
 /// the runs lo , ... , hi - 1 merged into dest through a tree of losers, a
 /// block per run and one for dest; the runs are emptied
-template< class T , class C >
+template< class Sel , class T , class C >
 void mergeGroup( std::vector< DiskFile< T > > & runs , std::size_t lo ,
                  std::size_t hi , DiskFile< T > & dest , C less )
 {
@@ -141,7 +141,7 @@ void mergeGroup( std::vector< DiskFile< T > > & runs , std::size_t lo ,
   first.push_back( rd.back()->hasNext() ?
                    std::optional< T >( rd.back()->next() ) : std::nullopt );
   }
- LoserTree< T , C > L( std::move( first ) , less );
+ Sel L( std::move( first ) , less );
  DiskWriter< T > w( dest );
  while( ! L.empty() ) {
   const std::size_t j = L.winner();
@@ -154,7 +154,7 @@ void mergeGroup( std::vector< DiskFile< T > > & runs , std::size_t lo ,
  }
 
 /// the passes of the merge of fan-in k, the last one into out
-template< class T , class C >
+template< class Sel , class T , class C >
 void mergePasses( std::vector< DiskFile< T > > runs , std::size_t k ,
                   DiskFile< T > & out , C less )
 {
@@ -167,7 +167,7 @@ void mergePasses( std::vector< DiskFile< T > > runs , std::size_t k ,
     next.push_back( std::move( runs[ g ] ) );
    else {
     next.emplace_back( mem );
-    mergeGroup( runs , g , hi , next.back() , less );
+    mergeGroup< Sel >( runs , g , hi , next.back() , less );
     }
    }
   runs = std::move( next );
@@ -295,13 +295,14 @@ void binaryMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
  ADS_PRE( mem.memorySize() >= 3 * mem.blockSize() );
  ADS_PRE( ( &out.memory() == &mem ) && out.empty() );
  auto before = detail::auditCopy( in.contents() );
- detail::mergePasses( detail::loadSortRuns( in , less ) , 2 , out , less );
+ detail::mergePasses< LoserTree< T , C > >( detail::loadSortRuns( in , less ) ,
+                                            2 , out , less );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( detail::sortedPermutation( out.contents() , std::move( before ) ,
                                      less ) ); } ) );
  }
 
-template< class T , class C >
+template< class T , class C , class Sel >
 void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
                         C less , bool snowPlow )
 {
@@ -310,9 +311,9 @@ void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
  ADS_PRE( k >= 2 );
  ADS_PRE( ( &out.memory() == &mem ) && out.empty() );
  auto before = detail::auditCopy( in.contents() );
- detail::mergePasses( snowPlow ? detail::snowPlowRuns( in , less ) :
-                                 detail::loadSortRuns( in , less ) ,
-                      k , out , less );
+ detail::mergePasses< Sel >( snowPlow ? detail::snowPlowRuns( in , less ) :
+                                       detail::loadSortRuns( in , less ) ,
+                            k , out , less );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( detail::sortedPermutation( out.contents() , std::move( before ) ,
                                      less ) ); } ) );

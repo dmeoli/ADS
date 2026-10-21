@@ -18,6 +18,7 @@
 #                           [PRIORITY=<dir>] [MIMALLOC=<prefix>]              #
 #                           [JEMALLOC=<prefix>] [OPT=<prefix>]                #
 #                           [SORTING=<dir>] [HWY=<prefix>]                    #
+#                           [HASHING=<dir>] [ABSL=<prefix>] [TLX=<dir>]       #
 ###############################################################################
 
 set -e
@@ -63,6 +64,9 @@ taskset -c "$CORE,${CORE2:-$((CORE + 1))}" "$BUILD/bench-concurrent" \
  -r "$RUNS" 1000000 10000000 >> "$out"
 run succinct 100000 1000000 10000000 100000000
 run compression 100000 1000000 10000000
+run external merge 1000000 10000000
+run external book 1000000 10000000
+run external sampling 1000 100000 1000000
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
 ###############################################################################

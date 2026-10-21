@@ -1617,3 +1617,7 @@ engineered_succinct  direct-access-codes  DACs, larghezze ottime per programma d
 engineered_succinct  lz77-linear      LZ77 senza finestra in tempo lineare
 engineered_succinct  stream-vbyte     Stream VByte, controllo a parte
 engineered_succinct  tans-coder       tANS di ordine 0, quattro stati
+# the engineered structures of the notes of Ferragina, beyond the book
+engineered_pearls  flat-loser-tree      albero dei perdenti con le chiavi
+engineered_pearls  multiway-merge       fusione a k vie, stabile
+engineered_pearls  book-mergesort-selectors mergesort delle note, selettori
