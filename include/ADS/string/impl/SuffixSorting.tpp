@@ -27,6 +27,10 @@
  #include <immintrin.h>
 #endif
 
+#if defined( __linux__ )
+ #include <sys/mman.h>
+#endif
+
 namespace ADS {
 
 namespace detail {
@@ -181,6 +185,34 @@ inline void saisKinds( const unsigned char * x , std::uint64_t t ,
   idx[ j ] = std::uint16_t( 4 * x[ j ] + 2 * ( ( t >> j ) & 1 ) +
                             ( ( b >> j ) & 1 ) );
 #endif
+ }
+
+/// asks for transparent huge pages under the whole pages of 2 MB of the b
+/// bytes at p, not touched yet: their faults then come 512 times fewer
+inline void saisHuge( void * p , std::size_t b )
+{
+#if defined( __linux__ ) && defined( MADV_HUGEPAGE )
+ constexpr std::uintptr_t page = std::uintptr_t( 1 ) << 21;
+ const std::uintptr_t from = ( std::uintptr_t( p ) + page - 1 ) &
+                             ~( page - 1 ) ,
+                      to = ( std::uintptr_t( p ) + b ) & ~( page - 1 );
+ if( to > from )
+  madvise( reinterpret_cast< void * >( from ) , to - from , MADV_HUGEPAGE );
+#else
+ (void) p;
+ (void) b;
+#endif
+ }
+
+/// a vector of n values, its pages huge where the system allows it
+template< class I >
+std::vector< I > saisVector( std::size_t n )
+{
+ std::vector< I > V;
+ V.reserve( n );
+ saisHuge( V.data() , n * sizeof( I ) );
+ V.assign( n , I( 0 ) );              // a fill of zeros: one memset
+ return( V );
  }
 
 /// prefetches the line of p for a read
@@ -1586,12 +1618,12 @@ bool isLcpArrayOf( std::string_view T , const std::vector< I > & SA ,
 /// 64 values are 255 or more (long repeats): whether Y was filled is
 /// returned (the arrays are declared not to overlap, so that the stores
 /// into P do not reload SA and the text)
-template< class I >
+template< bool bytes , class I >
 bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
            const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT P ,
            unsigned char * ADS_SAIS_RESTRICT Y = nullptr )
 {
- if( n == 0 ) return( Y != nullptr );
+ if( n == 0 ) return( bytes );
  // Phi in P, n for the first suffix of SA, the last suffix of SA kept
  constexpr std::size_t D = saisAhead;
  I prev = I( n );
@@ -1611,37 +1643,18 @@ bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
  // the text at Phi prefetched ahead, the place of the comparison but for
  // h; the first suffix of SA has Phi = n, and h is then already 0, since
  // the suffix before it in the text shares at most one symbol with its
- // predecessor in SA. The first 4 symbols are compared one by one, since
- // the lcp is short on the texts with few repeats (and a load of 8 would
- // often reach a line not prefetched), then 8 at a time
+ // predecessor in SA. The symbols compared one by one: h grows by n + 1
+ // at most in all, so that wider loads would save little and cost on the
+ // short lcps of the texts with few repeats
  auto lcp = [ & ]( std::size_t i , std::size_t h ) {
   const std::size_t j = P[ i ] , far = n - std::max( i , j );
-  const std::size_t near = std::min( far , h + 4 );
-  while( ( h < near ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
-  if( ( h == near ) && ( h < far ) )
-   for( ; ; ) {
-    if( h + 8 > far ) {
-     while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
-     break;
-     }
-    std::uint64_t a , b;
-    std::memcpy( &a , t + i + h , 8 );
-    std::memcpy( &b , t + j + h , 8 );
-    if( a != b ) {
-     if constexpr( std::endian::native == std::endian::little )
-      h += std::size_t( std::countr_zero( a ^ b ) ) / 8;
-     else
-      h += std::size_t( std::countl_zero( a ^ b ) ) / 8;
-     break;
-     }
-    h += 8;
-    }
+  while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
   return( h );
   };
  std::size_t h = 0 , i = 0 , big = 0;
  auto put = [ & ]( std::size_t x ) {
   P[ x ] = I( h );
-  if( Y ) {
+  if constexpr( bytes ) if( Y ) {
    Y[ x ] = static_cast< unsigned char >( std::min< std::size_t >( h , 255 ) );
    big += h >= 255;
    if( big > n / 64 ) Y = nullptr;
@@ -1649,7 +1662,8 @@ bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
   };
  for( ; i + 2 * D < n ; ++i ) {                 // no checks
   saisPrefetchW( P + i + 2 * D );
-  saisPrefetch( t + std::min< std::size_t >( P[ i + D ] + h , n ) );
+  saisPrefetch( reinterpret_cast< const void * >(
+                 reinterpret_cast< std::uintptr_t >( t ) + P[ i + D ] + h ) );
   h = lcp( i , h );
   put( i );
   h -= ( h != 0 );
@@ -1722,7 +1736,7 @@ std::vector< I > suffixArray( std::string_view T )
 {
  using S = std::make_signed_t< I >;
  ADS_PRE( T.size() < std::size_t( std::numeric_limits< S >::max() ) );
- std::vector< I > SA( T.size() );
+ auto SA = detail::saisVector< I >( T.size() );
  detail::sais( reinterpret_cast< const unsigned char * >( T.data() ) ,
                reinterpret_cast< S * >( SA.data() ) , S( T.size() ) ,
                S( 256 ) );
@@ -1742,7 +1756,7 @@ std::vector< I > suffixArray( const std::vector< I > & T , std::size_t K )
  ADS_PRE( K <= std::size_t( std::numeric_limits< S >::max() ) );
  ADS_PRE( std::all_of( T.begin() , T.end() , [ K ]( I c ) {
   return( c < K ); } ) );
- std::vector< I > SA( T.size() );
+ auto SA = detail::saisVector< I >( T.size() );
  detail::sais( reinterpret_cast< const S * >( T.data() ) ,
                reinterpret_cast< S * >( SA.data() ) , S( T.size() ) ,
                S( std::max< std::size_t >( K , 1 ) ) );
@@ -1757,9 +1771,9 @@ std::vector< I > plcpArray( std::string_view T , const std::vector< I > & SA )
  ADS_AUDIT( ( SA.size() == n ) && detail::isSuffixArrayOf(
              reinterpret_cast< const unsigned char * >( T.data() ) , n ,
              SA.data() ) );
- std::vector< I > P( n );
- detail::plcp( reinterpret_cast< const unsigned char * >( T.data() ) , n ,
-               SA.data() , P.data() );
+ auto P = detail::saisVector< I >( n );
+ detail::plcp< false >( reinterpret_cast< const unsigned char * >(
+                         T.data() ) , n , SA.data() , P.data() );
  return( P );
  }
 
@@ -1772,19 +1786,21 @@ std::vector< I > lcpArrayPhi( std::string_view T ,
              reinterpret_cast< const unsigned char * >( T.data() ) , n ,
              SA.data() ) );
  const auto P = std::make_unique_for_overwrite< I[] >( n );
+ detail::saisHuge( P.get() , n * sizeof( I ) );
  const auto * t = reinterpret_cast< const unsigned char * >( T.data() );
- std::vector< I > LCP( n < 2 ? 0 : n - 1 );
+ auto LCP = detail::saisVector< I >( n < 2 ? 0 : n - 1 );
  if( n >= detail::lcpBytesFrom ) {
   // the bytes, unless many values do not fit (long repeats)
   const auto Y = std::make_unique_for_overwrite< unsigned char[] >( n );
-  if( detail::plcp( t , n , SA.data() , P.get() , Y.get() ) )
+  detail::saisHuge( Y.get() , n );
+  if( detail::plcp< true >( t , n , SA.data() , P.get() , Y.get() ) )
    detail::plcpToLcp( Y.get() , P.get() , SA.data() + 1 , LCP.data() ,
                       n - 1 );
   else
    detail::plcpToLcp( P.get() , SA.data() + 1 , LCP.data() , n - 1 );
   }
  else {
-  detail::plcp( t , n , SA.data() , P.get() );
+  detail::plcp< false >( t , n , SA.data() , P.get() );
   if( n >= 2 )
    detail::plcpToLcp( P.get() , SA.data() + 1 , LCP.data() , n - 1 );
   }
