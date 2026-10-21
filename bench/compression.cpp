@@ -15,7 +15,10 @@
  *   huff0 and FSE code blocks of 128 KB, as Zstandard does;
  * - integers: the encoding and the decoding of n integers of 32 bits of a
  *   geometric distribution (the gaps of a posting list) by the
- *   variable-byte code and by the codes gamma and delta of Elias;
+ *   variable-byte code, by the binary packing and its patched form (PFor),
+ *   against the SIMD-BP128 and the SIMD-FastPFor of FastPFor, and by the
+ *   codes gamma and delta of Elias, and of their prefix sums by the
+ *   packings of the differences at a distance of 4;
  * - bwt: the transform of Burrows and Wheeler of n bytes of the text;
  * - fmindex: count() and locate() of patterns of 8 bytes of the text, by
  *   the FM-index of the notes and by the one on the wavelet tree of
@@ -77,6 +80,10 @@
  #include "ADS/compression/StreamVByte.h"
  #define ADS_HAS_CODERS 1
 #endif
+#if __has_include( "ADS/compression/BinaryPacking.h" )
+ #include "ADS/compression/BinaryPacking.h"
+ #define ADS_HAS_BP 1
+#endif
 #if __has_include( "ADS/compression/Tans.h" )
  #include "ADS/compression/Tans.h"
  #define ADS_HAS_TANS 1
@@ -86,6 +93,12 @@
  #include <fse/fse.h>
  #include <fse/huf.h>
  #define ADS_HAS_FSE 1
+#endif
+
+#if __has_include( <fastpfor/codecfactory.h> )
+ #include <fastpfor/codecfactory.h>
+ #include <emmintrin.h>
+ #define ADS_HAS_FASTPFOR 1
 #endif
 
 #if __has_include( <streamvbyte.h> )
@@ -462,6 +475,68 @@ void integerCodes( std::size_t n , int r , unsigned seed )
             V x( n );
             streamvbyte_decode( c.data() , x.data() , std::uint32_t( n ) );
             return( x ); } , r );
+#endif
+ // the binary packing, of the integers and of their prefix sums
+ V sx( x.size() );
+ std::uint32_t acc = 0;
+ for( std::size_t i = 0 ; i < x.size() ; ++i ) sx[ i ] = acc += x[ i ];
+#ifdef ADS_HAS_BP
+ for( const bool sorted : { false , true } )
+  integers( sorted ? "sorted" : "packed" , sorted ? sx : x ,
+            "ADS::binaryPack" , [ sorted ]( const V & x ) {
+             return( ADS::binaryPack( x , sorted ) ); } ,
+            [ sorted ]( const Bytes & c , std::size_t n ) {
+             return( ADS::binaryUnpack( c , n , sorted ) ); } , r );
+ for( const bool sorted : { false , true } )
+  integers( sorted ? "sorted" : "packed" , sorted ? sx : x ,
+            "ADS::patchedPack" , [ sorted ]( const V & x ) {
+             return( ADS::patchedPack( x , sorted ) ); } ,
+            [ sorted ]( const Bytes & c , std::size_t n ) {
+             return( ADS::patchedUnpack( c , n , sorted ) ); } , r );
+#endif
+#ifdef ADS_HAS_FASTPFOR
+ // the codecs of FastPFor, their last integers by variable bytes; the
+ // sorted ones by the differences at a distance of 4 taken and summed 4
+ // at a time by SSE2, as the library does
+ auto d4 = []( std::uint32_t * p , std::size_t m ) {
+  for( std::size_t i = m ; ( i-- > 4 ) && ( i >= m / 4 * 4 ) ; )
+   p[ i ] -= p[ i - 4 ];
+  for( std::size_t q = m / 4 ; q-- > 1 ; ) {
+   auto * a = reinterpret_cast< __m128i * >( p ) + q;
+   _mm_storeu_si128( a , _mm_sub_epi32( _mm_loadu_si128( a ) ,
+                                        _mm_loadu_si128( a - 1 ) ) );
+   }
+  };
+ auto i4 = []( std::uint32_t * p , std::size_t m ) {
+  for( std::size_t q = 1 ; q < m / 4 ; ++q ) {
+   auto * a = reinterpret_cast< __m128i * >( p ) + q;
+   _mm_storeu_si128( a , _mm_add_epi32( _mm_loadu_si128( a ) ,
+                                        _mm_loadu_si128( a - 1 ) ) );
+   }
+  for( std::size_t i = std::max< std::size_t >( m / 4 * 4 , 4 ) ; i < m ;
+       ++i ) p[ i ] += p[ i - 4 ];
+  };
+ for( const char * name : { "simdbinarypacking" , "simdfastpfor128" } )
+  for( const bool sorted : { false , true } ) {
+   FastPForLib::CODECFactory F;
+   auto codec = F.getFromName( name );
+   integers( sorted ? "sorted" : "packed" , sorted ? sx : x ,
+             std::string( "FastPFor::" ) + name ,
+             [ & , sorted ]( const V & x ) {
+              V in( x ) , out( x.size() + 1024 );
+              if( sorted ) d4( in.data() , in.size() );
+              std::size_t m = out.size();
+              codec->encodeArray( in.data() , in.size() , out.data() , m );
+              out.resize( m );
+              return( out ); } ,
+             [ & , sorted ]( const V & c , std::size_t n ) {
+              V y( n + 1024 );
+              std::size_t m = y.size();
+              codec->decodeArray( c.data() , c.size() , y.data() , m );
+              y.resize( n );
+              if( sorted ) i4( y.data() , n );
+              return( y ); } , r );
+   }
 #endif
  for( const bool delta : { false , true } ) {
   const std::string what = delta ? "delta" : "gamma";

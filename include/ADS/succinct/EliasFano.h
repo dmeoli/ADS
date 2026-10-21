@@ -25,6 +25,9 @@
  *   successor: \f$ select_0 \f$ of the bucket of x gives the first item of
  *   that bucket, and the scan stops at its end, in O( 1 + c ) time for a
  *   bucket of c items, expected O( 1 ) since \f$ 2^\ell \approx u / n \f$;
+ *   past 8 items (the clusters of a sequence fill some buckets) the end of
+ *   the bucket is found by \f$ select_0 \f$ too and its low bits, sorted,
+ *   by a binary search, \f$ O( \log c ) \f$ time;
  * - viewed as the places of the 1s of a vector of bits B of u bits with n
  *   1s (section 15.1.2), access( i ) is \f$ select_1( i + 1 ) \f$ of B and
  *   nextGEQ( i ) is \f$ rank_1( i ) \f$ of B, in \f$ n ( 2 + \log ( u / n ) )

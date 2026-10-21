@@ -85,8 +85,22 @@ inline std::size_t EliasFano::nextGEQ( std::uint64_t x ) const
   // the items of the bucket share the high bits of x: their low bits
   // decide, and the first item of a later bucket is above x
   const std::uint64_t xl = x & detail::lowMask( f_l );
-  for( ; ( pos < f_high.size() ) && f_high[ pos ] ; ++pos , ++p )
-   if( f_low.get( p * std::size_t( f_l ) , f_l ) >= xl ) break;
+  auto low = [ & ]( std::size_t i ) {
+   return( f_low.get( i * std::size_t( f_l ) , f_l ) ); };
+  int t = 0;                                // a few items one by one
+  for( ; ( t < 8 ) && ( pos < f_high.size() ) && f_high[ pos ] ;
+       ++t , ++pos , ++p )
+   if( low( p ) >= xl ) break;
+  if( ( t == 8 ) && ( pos < f_high.size() ) && f_high[ pos ] ) {
+   // a long bucket: its end by the 0 that closes it, then a binary search
+   // on the low bits, sorted within the bucket
+   std::size_t q = f_high.select0( std::size_t( h ) + 1 ) - std::size_t( h );
+   while( p < q ) {
+    const std::size_t mid = p + ( q - p ) / 2;
+    if( low( mid ) < xl ) p = mid + 1;
+    else q = mid;
+    }
+   }
   }
  ADS_POST( ( p == f_n ) || ( access( p ) >= x ) );
  ADS_POST( ( p == 0 ) || ( access( p - 1 ) < x ) );

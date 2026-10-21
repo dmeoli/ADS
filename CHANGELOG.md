@@ -167,6 +167,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ducc0, on complex, real and single precision data, the cosines of type
   2, many transforms, 2 dimensions and convolutions, with the cost of the
   plans apart; POCKETFFT and DUCC0 in the makefile
+- binaryPack() and binaryUnpack(), the binary packing SIMD-BP128 of
+  Lemire and Boytsov: blocks of 128 integers at the width of their
+  largest, laid out over the 4 lanes of a register and packed by an
+  unrolled code for each width, with the differences at a distance of 4
+  for sorted sequences; patchedPack() and patchedUnpack(), its patched
+  form PFor, the width of least cost and the exceptions written apart;
+  their tests (also a lane at a time, ADS_BP_SCALAR) and their cells in
+  the benchmark against the SIMD-BP128 and SIMD-FastPFor of FastPFor
 - PartitionedEliasFano, the partitioned Elias-Fano of Ottaviano and
   Venturini on blocks of 128 items, each full, a vector of bits or
   Elias-Fano relative to the end of the block before, whichever is
@@ -953,6 +961,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operated on by loops, which the compilers vectorize, and take the four
   steps unrolled too
 
+- EliasFano::nextGEQ() scans at most 8 items of the bucket of x and then
+  finds the end of the bucket by select0 and the item by a binary search
+  on the low bits, O( log c ) for a bucket of c items instead of O( c )
 - DirectAccessCodes reads a chunk of 8 or 16 bits as its byte or its
   pair of bytes, and builds a level by packing its chunks and its
   continuation bits in order, a field of 64 bits at a time, from the

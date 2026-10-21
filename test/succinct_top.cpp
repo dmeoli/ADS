@@ -9,7 +9,8 @@
  * the top level of the compact directory, at \f$ 2^{32} \f$ bits and here
  * at \f$ 2^{13} \f$ (ADS_COMPACT_TOP), and the copy of the words as
  * they are counted, from \f$ 2^{23} \f$ bits and here from 64
- * (ADS_RANKSELECT_FUSE); rank and select against a scan, and Elias-Fano
+ * (ADS_RANKSELECT_FUSE), and the binary packing a lane at a time, as with
+ * no SSE2 (ADS_BP_SCALAR); rank and select against a scan, and Elias-Fano
  * and the balanced parentheses on top of them, at the level 3 of the
  * contracts.
  *
@@ -26,8 +27,11 @@
 #define ADS_RANKSELECT_TOP 10
 #define ADS_COMPACT_TOP 13
 #define ADS_RANKSELECT_FUSE 64
+#define ADS_BP_SCALAR 1
 
 #include "ADSTest.h"
+
+#include "ADS/compression/BinaryPacking.h"
 
 #include "ADS/succinct/BalancedParentheses.h"
 #include "ADS/succinct/CompactRankSelect.h"
@@ -35,6 +39,7 @@
 #include "ADS/succinct/RankSelect.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <random>
 #include <span>
@@ -72,6 +77,62 @@ void checkAll( const std::vector< bool > & R )
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+// the binary packing a lane at a time, against the integers: the round
+// trip of sequences of many sizes around the blocks of 128 and the groups
+// of 16 blocks, with widths from 0 to 32 bits, of random and of sorted
+// sequences (up to near 2^32); the size, 16 bytes per group and 16 b bytes
+// per block of width b; the patched code (PFor) on the same sequences,
+// and on blocks with a few large integers, where it takes less than a
+// third; the empty sequence; the codes cut short
+ADS_TEST( "binary-packing-scalar" )
+{
+ std::mt19937_64 g( 29 );
+ for( const std::size_t n : { 0 , 1 , 4 , 127 , 128 , 129 , 2047 , 2048 ,
+                              2049 , 5000 } )
+  for( int t = 0 ; t < 6 ; ++t ) {
+   std::vector< std::uint32_t > x( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const int b = t == 5 ? int( ( i / 128 ) % 33 ) : t * 6 + 2;
+    x[ i ] = b == 0 ? 0
+                    : std::uint32_t( g() ) >> ( 32 - std::min( b , 32 ) );
+    }
+   const auto c = binaryPack( x );
+   std::size_t bytes = 16 * ( ( n + 2047 ) / 2048 );
+   for( std::size_t k = 0 ; 128 * k < n ; ++k ) {
+    std::uint32_t o = 0;
+    for( std::size_t i = 128 * k ; i < std::min( n , 128 * k + 128 ) ; ++i )
+     o |= x[ i ];
+    bytes += 16 * std::size_t( std::bit_width( o ) );
+    }
+   CHECK( c.size() == bytes && binaryUnpack( c , n ) == x );
+   CHECK( patchedUnpack( patchedPack( x ) , n ) == x );
+   CHECK( patchedPack( x ).size() <= bytes + 2 * ( ( n + 127 ) / 128 ) + 8 );
+   std::sort( x.begin() , x.end() );
+   CHECK( binaryUnpack( binaryPack( x , true ) , n , true ) == x );
+   CHECK( patchedUnpack( patchedPack( x , true ) , n , true ) == x );
+   }
+ // a few large integers in each block: the patched code writes them apart
+ std::vector< std::uint32_t > out( 5000 );
+ for( std::size_t i = 0 ; i < out.size() ; ++i )
+  out[ i ] = i % 50 == 7 ? std::uint32_t( g() ) : std::uint32_t( g() % 16 );
+ const auto pc = patchedPack( out );
+ CHECK( patchedUnpack( pc , out.size() ) == out &&
+        pc.size() < binaryPack( out ).size() / 3 );
+ auto pt = pc;
+ pt.pop_back();
+ CHECK_THROWS( ( void )patchedUnpack( pt , out.size() ) ,
+               contract_violation );
+ std::vector< std::uint32_t > big( 3000 );
+ for( std::size_t i = 0 ; i < big.size() ; ++i )
+  big[ i ] = 0xFFFFF000u + std::uint32_t( i );
+ CHECK( binaryUnpack( binaryPack( big , true ) , big.size() , true ) == big );
+ CHECK( binaryPack( big , true ).size() < binaryPack( big ).size() / 4 );
+ std::vector< std::uint32_t > y( 300 , 77 );
+ auto c = binaryPack( y );
+ c.pop_back();
+ CHECK_THROWS( ( void )binaryUnpack( c , y.size() ) , contract_violation );
+ }
 
 // RankSelect and CompactRankSelect from the words, copied as they are
 // counted (from 64 bits here), against those from a BitVector of the same
