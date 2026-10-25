@@ -7,13 +7,56 @@
 # per ( case , n ), each cell the time per operation in nanoseconds and,      #
 # in parentheses, its ratio to the first structure of the benchmark (the      #
 # one of the standard library). The noise of the machine is the largest       #
-# relative difference between that structure and its run "A/A".               #
+# relative difference between that structure and its run "A/A". The           #
+# order of the columns keeps that of the cells of each structure, so that     #
+# the lines of a run with a process per structure give the tables of one      #
+# process.                                                                    #
 #                                                                             #
 #   python3 bench/tables.py results/<file>.tsv                                #
 ###############################################################################
 
+import heapq
 import sys
 from collections import OrderedDict
+
+def columns(R):
+    """the ( case , n ) of the cells R, in an order that keeps that of the
+    cells of each structure; where it leaves a choice, the earlier size of
+    its structure first, then the earlier cell"""
+    first, size, after, before = {}, {}, {}, {}
+    last, sizes = {}, {}
+    for c, n, w, _ in R:
+        k = (c, n)
+        seen = sizes.setdefault(w, [])
+        if n not in seen:
+            seen.append(n)
+        if k not in first:
+            first[k] = len(first)
+            size[k] = seen.index(n)
+            after[k], before[k] = set(), 0
+        p = last.get(w)
+        if p is not None and p != k and k not in after[p]:
+            after[p].add(k)
+            before[k] += 1
+        last[w] = k
+    rank = {k: (size[k], first[k]) for k in first}
+    ready = [(rank[k], k) for k in first if before[k] == 0]
+    heapq.heapify(ready)
+    out, done = [], set()
+    while len(out) < len(first):
+        if not ready:               # a cycle: the earliest left goes first
+            k = min((k for k in first if k not in done), key=rank.get)
+            ready.append((rank[k], k))
+        _, k = heapq.heappop(ready)
+        if k in done:
+            continue
+        done.add(k)
+        out.append(k)
+        for q in after[k]:
+            before[q] -= 1
+            if before[q] == 0:
+                heapq.heappush(ready, (rank[q], q))
+    return out
 
 def main(path):
     head, rows = [], []
@@ -33,7 +76,7 @@ def main(path):
     for b, R in benches.items():
         if b.endswith(':count'):          # the counts that identify a run
             continue
-        cols = list(OrderedDict.fromkeys((c, n) for c, n, _, _ in R))
+        cols = columns(R)
         whos = list(OrderedDict.fromkeys(w for _, _, w, _ in R))
         cell = {(c, n, w): ns for c, n, w, ns in R}
         ref = whos[0]
