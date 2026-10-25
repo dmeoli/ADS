@@ -23,6 +23,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/Portable.h"
 #include "ADS/backtrack/DancingLinks.h"
 #include "ADS/backtrack/NQueens.h"
 #include "ADS/backtrack/SatSolvers.h"
@@ -1585,15 +1586,20 @@ BigInteger digits( std::size_t n , std::mt19937_64 & g , bool ones = false ,
 BigInteger naiveProduct( const std::vector< std::uint64_t > & a ,
                          const std::vector< std::uint64_t > & b )
 {
- __extension__ typedef unsigned __int128 U;
  std::vector< std::uint64_t > r( a.size() + b.size() , 0 );
  for( std::size_t i = 0 ; i < a.size() ; ++i ) {
   std::uint64_t c = 0;
   for( std::size_t j = 0 ; j < b.size() ; ++j ) {
    std::uint64_t & x = r[ r.size() - 1 - ( i + j ) ];
-   const U t = U( a[ a.size() - 1 - i ] ) * b[ b.size() - 1 - j ] + x + c;
-   x = std::uint64_t( t );
-   c = std::uint64_t( t >> 64 );
+   std::uint64_t h;                         // a b + x + c < 2^128
+   std::uint64_t l = ADS::detail::wideProduct( a[ a.size() - 1 - i ] ,
+                                               b[ b.size() - 1 - j ] , h );
+   l += x;
+   h += ( l < x ? 1 : 0 );
+   l += c;
+   h += ( l < c ? 1 : 0 );
+   x = l;
+   c = h;
    }
   r[ r.size() - 1 - ( i + b.size() ) ] = c;
   }

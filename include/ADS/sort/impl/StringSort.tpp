@@ -41,7 +41,7 @@ inline std::uint64_t window( const std::string & s , std::size_t d )
  std::uint64_t w = 0;
  std::memcpy( &w , s.data() + d , std::min< std::size_t >( len - d , 8 ) );
  if constexpr( std::endian::native == std::endian::little )
-  w = __builtin_bswap64( w );
+  w = detail::byteSwap( w );
  return( w );
  }
 

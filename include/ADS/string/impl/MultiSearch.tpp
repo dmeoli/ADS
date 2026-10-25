@@ -15,6 +15,7 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Portable.h"
 #include "ADS/string/StringMatching.h"
 #include "ADS/string/StringSearch.h"
 
@@ -315,8 +316,8 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
    std::memcpy( &w[ 1 ] , pad + 4 , 8 );
    }
   if constexpr( std::endian::native == std::endian::big ) {
-   w[ 0 ] = __builtin_bswap64( w[ 0 ] );
-   w[ 1 ] = __builtin_bswap64( w[ 1 ] );
+   w[ 0 ] = detail::byteSwap( w[ 0 ] );
+   w[ 1 ] = detail::byteSwap( w[ 1 ] );
    }
 #if defined( __SSE2__ )
   // the 16 bytes of cur and nxt in one register, each mask moved by d
@@ -390,8 +391,8 @@ std::size_t MultiSearcher::shiftOr2( std::string_view Tv ,
    std::memcpy( &w[ 1 ] , pad + 8 , 8 );
    }
   if constexpr( std::endian::native == std::endian::big ) {
-   w[ 0 ] = __builtin_bswap64( w[ 0 ] );
-   w[ 1 ] = __builtin_bswap64( w[ 1 ] );
+   w[ 0 ] = detail::byteSwap( w[ 0 ] );
+   w[ 1 ] = detail::byteSwap( w[ 1 ] );
    }
 #if defined( __SSE2__ )
   __m128i acc = _mm_set_epi64x( std::int64_t( nxt ) , std::int64_t( cur ) );
