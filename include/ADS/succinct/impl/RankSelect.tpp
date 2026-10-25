@@ -16,18 +16,22 @@
 
 namespace ADS {
 
-inline RankSelect::RankSelect( void ) : RankSelect( BitVector() )
+template< bool Lazy >
+inline BasicRankSelect< Lazy >::BasicRankSelect( void )
+ : BasicRankSelect( BitVector() )
 {
  }
 
-inline RankSelect::RankSelect( BitVector b , Selects s )
+template< bool Lazy >
+inline BasicRankSelect< Lazy >::BasicRankSelect( BitVector b , Selects s )
  : f_b( std::move( b ) )
 {
  directory( s , nullptr );
  }
 
-inline RankSelect::RankSelect( std::span< const Word > w , std::size_t n ,
-                               Selects s )
+template< bool Lazy >
+inline BasicRankSelect< Lazy >::BasicRankSelect( std::span< const Word > w ,
+                                                 std::size_t n , Selects s )
 {
  ADS_PRE( w.size() >= ( n + 63 ) / 64 );
  if( n < kFuse ) {                         // a copy, then a count in cache
@@ -41,7 +45,8 @@ inline RankSelect::RankSelect( std::span< const Word > w , std::size_t n ,
  directory( s , w.data() );
  }
 
-inline void RankSelect::directory( Selects s , const Word * w )
+template< bool Lazy >
+inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
 {
  f_has[ 1 ] = ( s == Selects::ONES ) || ( s == Selects::BOTH );
  f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
@@ -108,29 +113,41 @@ inline void RankSelect::directory( Selects s , const Word * w )
                ( 3 * kRel );
   }
  f_ones = std::size_t( c );
+ if constexpr( ! Lazy )                   // the inventories at once
+  for( const bool v : { false , true } )
+   if( f_has[ v ] ) build( v );
  ADS_INVARIANT( f_b.clean() );
  ADS_AUDIT( consistent() );
  }
 
-inline void RankSelect::adopt( const RankSelect & o , bool move )
+template< bool Lazy >
+inline void BasicRankSelect< Lazy >::adopt( const BasicRankSelect & o ,
+                                            bool move )
 {
  for( const bool v : { false , true } )
-  if( o.f_ready[ v ].load( std::memory_order_acquire ) ) {
+  if constexpr( ! Lazy ) {                  // all of them, built at once
    if( move ) f_inv[ v ] = std::move( o.f_inv[ v ] );
    else f_inv[ v ] = o.f_inv[ v ];
-   std::call_once( f_flag[ v ] , [](){} );
-   f_ready[ v ].store( true , std::memory_order_release );
+   }
+  else if( o.f_once.ready[ v ].load( std::memory_order_acquire ) ) {
+   if( move ) f_inv[ v ] = std::move( o.f_inv[ v ] );
+   else f_inv[ v ] = o.f_inv[ v ];
+   std::call_once( f_once.flag[ v ] , [](){} );
+   f_once.ready[ v ].store( true , std::memory_order_release );
    }
  }
 
-inline RankSelect::RankSelect( const RankSelect & o )
+template< bool Lazy >
+inline BasicRankSelect< Lazy >::BasicRankSelect( const BasicRankSelect & o )
  : f_b( o.f_b ) , f_dir( o.f_dir ) , f_top( o.f_top ) , f_big( o.f_big ) ,
    f_has{ o.f_has[ 0 ] , o.f_has[ 1 ] } , f_ones( o.f_ones )
 {
  adopt( o , false );
  }
 
-inline RankSelect::RankSelect( RankSelect && o ) noexcept
+template< bool Lazy >
+inline BasicRankSelect< Lazy >::BasicRankSelect( BasicRankSelect && o )
+ noexcept
  : f_b( std::move( o.f_b ) ) , f_dir( std::move( o.f_dir ) ) ,
    f_top( std::move( o.f_top ) ) , f_big( o.f_big ) ,
    f_has{ o.f_has[ 0 ] , o.f_has[ 1 ] } , f_ones( o.f_ones )
@@ -138,58 +155,70 @@ inline RankSelect::RankSelect( RankSelect && o ) noexcept
  adopt( o , true );
  }
 
-inline RankSelect & RankSelect::operator=( const RankSelect & o )
+template< bool Lazy >
+inline BasicRankSelect< Lazy > & BasicRankSelect< Lazy >::operator=(
+                                                  const BasicRankSelect & o )
 {
  if( this != &o ) {
-  RankSelect c( o );
+  BasicRankSelect c( o );
   *this = std::move( c );
   }
  return( *this );
  }
 
-inline RankSelect & RankSelect::operator=( RankSelect && o ) noexcept
+template< bool Lazy >
+inline BasicRankSelect< Lazy > & BasicRankSelect< Lazy >::operator=(
+                                         BasicRankSelect && o ) noexcept
 {
  if( this != &o ) {
   // the flags cannot be reset: the object is rebuilt in place
-  this->~RankSelect();
-  ::new( static_cast< void * >( this ) ) RankSelect( std::move( o ) );
+  this->~BasicRankSelect();
+  ::new( static_cast< void * >( this ) ) BasicRankSelect( std::move( o ) );
   }
  return( *this );
  }
 
-inline const BitVector & RankSelect::bits( void ) const
+template< bool Lazy >
+inline const BitVector & BasicRankSelect< Lazy >::bits( void ) const
 {
  return( f_b );
  }
 
-inline std::size_t RankSelect::size( void ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::size( void ) const
 {
  return( f_b.size() );
  }
 
-inline bool RankSelect::operator[]( std::size_t i ) const
+template< bool Lazy >
+inline bool BasicRankSelect< Lazy >::operator[]( std::size_t i ) const
 {
  return( f_b[ i ] );
  }
 
-inline std::size_t RankSelect::ones( void ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::ones( void ) const
 {
  return( f_ones );
  }
 
-inline std::size_t RankSelect::zeros( void ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::zeros( void ) const
 {
  return( f_b.size() - f_ones );
  }
 
-inline std::size_t RankSelect::before( std::size_t t , bool b ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::before( std::size_t t ,
+                                                    bool b ) const
 {
  std::size_t o = std::size_t( f_dir[ t ] >> ( 3 * kRel ) );
  if( f_big ) o += std::size_t( f_top[ ( t * kBlock ) >> kTop ] );
  return( b ? o : t * kBlock - o );
  }
 
-inline std::size_t RankSelect::rank1( std::size_t i ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::rank1( std::size_t i ) const
 {
  ADS_PRE( i <= f_b.size() );
  const std::uint64_t e = f_dir[ i / kBlock ];
@@ -210,13 +239,15 @@ inline std::size_t RankSelect::rank1( std::size_t i ) const
 #endif
  }
 
-inline std::size_t RankSelect::rank0( std::size_t i ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::rank0( std::size_t i ) const
 {
  return( i - rank1( i ) );
  }
 
-inline void RankSelect::shape( bool b , Inventory & I ,
-                               std::size_t & groups ) const
+template< bool Lazy >
+inline void BasicRankSelect< Lazy >::shape( bool b , Inventory & I ,
+                                            std::size_t & groups ) const
 {
  const std::size_t total = b ? f_ones : zeros() , n = f_b.size();
  groups = 0;
@@ -229,28 +260,33 @@ inline void RankSelect::shape( bool b , Inventory & I ,
  groups = ( ( total - 1 ) >> I.l ) + 1;
  }
 
+template< bool Lazy >
 #if defined( __GNUC__ )
 __attribute__(( always_inline ))
 #endif
-inline const RankSelect::Inventory & RankSelect::inventory( bool b ) const
+inline const typename BasicRankSelect< Lazy >::Inventory &
+ BasicRankSelect< Lazy >::inventory( bool b ) const
 {
- if( ! f_ready[ b ].load( std::memory_order_acquire ) ) [[unlikely]]
-  first( b );
+ if constexpr( Lazy )
+  if( ! f_once.ready[ b ].load( std::memory_order_acquire ) ) [[unlikely]]
+   first( b );
  return( f_inv[ b ] );
  }
 
+template< bool Lazy >
 #if defined( __GNUC__ )
 __attribute__(( noinline , cold ))
 #elif defined( _MSC_VER )
 __declspec( noinline )
 #endif
-inline void RankSelect::first( bool b ) const
+inline void BasicRankSelect< Lazy >::first( bool b ) const
 {
- std::call_once( f_flag[ b ] , [ this , b ]() { build( b ); } );
- f_ready[ b ].store( true , std::memory_order_release );
+ std::call_once( f_once.flag[ b ] , [ this , b ]() { build( b ); } );
+ f_once.ready[ b ].store( true , std::memory_order_release );
  }
 
-inline void RankSelect::build( bool b ) const
+template< bool Lazy >
+inline void BasicRankSelect< Lazy >::build( bool b ) const
 {
  Inventory & I = f_inv[ b ];
  const std::size_t total = b ? f_ones : zeros() , n = f_b.size();
@@ -317,10 +353,12 @@ inline void RankSelect::build( bool b ) const
    I.pos[ j ] |= Word( 1 ) << 63;
  }
 
+template< bool Lazy >
 #if defined( __GNUC__ )
 __attribute__(( always_inline ))
 #endif
-inline std::size_t RankSelect::select( std::size_t k , bool b ) const
+inline std::size_t BasicRankSelect< Lazy >::select( std::size_t k ,
+                                                    bool b ) const
 {
  const Inventory & I = inventory( b );
  const std::size_t r = k - 1;               // the bits b before it
@@ -350,9 +388,12 @@ inline std::size_t RankSelect::select( std::size_t k , bool b ) const
  return( 64 * w + std::size_t( selectInWord( x , int( t ) ) ) );
  }
 
-inline std::size_t RankSelect::selectSparse( std::size_t k , bool b ,
-                                             std::size_t p ,
-                                             std::size_t q ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::selectSparse( std::size_t k ,
+                                                          bool b ,
+                                                          std::size_t p ,
+                                                          std::size_t q )
+ const
 {
  // the last block with fewer than k bits b before it, between the blocks
  // of p and of q
@@ -381,7 +422,8 @@ inline std::size_t RankSelect::selectSparse( std::size_t k , bool b ,
          std::size_t( selectInWord( b ? x : ~x , int( r - 1 ) ) ) );
  }
 
-inline std::size_t RankSelect::select1( std::size_t k ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::select1( std::size_t k ) const
 {
  ADS_PRE( ( k >= 1 ) && ( k <= f_ones ) && f_has[ 1 ] );
  const std::size_t p = select( k , true );
@@ -389,7 +431,8 @@ inline std::size_t RankSelect::select1( std::size_t k ) const
  return( p );
  }
 
-inline std::size_t RankSelect::select0( std::size_t k ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::select0( std::size_t k ) const
 {
  ADS_PRE( ( k >= 1 ) && ( k <= zeros() ) && f_has[ 0 ] );
  const std::size_t p = select( k , false );
@@ -397,7 +440,8 @@ inline std::size_t RankSelect::select0( std::size_t k ) const
  return( p );
  }
 
-inline std::size_t RankSelect::directoryBits( void ) const
+template< bool Lazy >
+inline std::size_t BasicRankSelect< Lazy >::directoryBits( void ) const
 {
  std::size_t s = 64 * ( f_dir.size() + f_top.size() );
  for( const bool v : { false , true } )
@@ -410,7 +454,8 @@ inline std::size_t RankSelect::directoryBits( void ) const
  return( s );
  }
 
-inline bool RankSelect::consistent( void ) const
+template< bool Lazy >
+inline bool BasicRankSelect< Lazy >::consistent( void ) const
 {
  std::size_t c = 0;
  for( std::size_t i = 0 ; i <= f_b.size() ; ++i ) {

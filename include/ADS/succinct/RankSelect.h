@@ -61,12 +61,17 @@
  *     2^{24} = p_0 + 2^8 ( p_0 + p_1 ) + 2^{16} ( p_0 + p_1 + p_2 ) , \f]
  * the three relative ranks of the entry; from words in memory the words
  * are copied in the same pass, above \f$ 2^{23} \f$ bits, where reading
- * them twice costs more than a copy in the caches. The inventory of select
- * of a value is built by the first select of that value, in a pass on the
- * directory, so that a structure that only ranks never pays for it; the
- * first call builds it once, whichever the threads that call it (with
- * std::call_once, and a flag read with acquire semantics before it), and a
- * copy keeps the inventories already built.
+ * them twice costs more than a copy in the caches. The inventories of
+ * select are built in the constructor (RankSelect, the default), or by
+ * the first select of each value (LazyRankSelect), in a pass on the
+ * directory, so that a structure that only ranks never pays for them; the
+ * first call builds an inventory once, whichever the threads that call it
+ * (with std::call_once, and a flag read with acquire semantics before
+ * it), and a copy keeps the inventories already built. The lazy form costs
+ * select 10 to 15%: the load of the flag with acquire semantics makes the
+ * compiler read the fields of the inventory again at each query, which
+ * the eager form, with no flag at all (the template parameter Lazy),
+ * keeps in plain fields.
  *
  * The places count from 0: \f$ rank_1( i ) \f$ here is \f$ Rank_1( i ) \f$
  * of the notes on the places \f$ 1 , \ldots , i \f$, and \f$ select_1( k )
@@ -132,6 +137,8 @@
 #include <memory>
 #include <mutex>
 #include <span>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -141,42 +148,46 @@
 namespace ADS {
 
 /*--------------------------------------------------------------------------*/
-/*---------------------------- CLASS RankSelect ----------------------------*/
+/*------------------------- CLASS BasicRankSelect --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a static vector of bits with rank and select in O( 1 ) time
-class RankSelect {
+/// the values whose select a directory answers: a structure that needs
+/// only rank, or one of the selects, spares the inventories of the others
+struct RankSelectOptions {
+ enum class Selects { NONE , ONES , ZEROS , BOTH };
+ };
+
+/// a static vector of bits with rank and select in O( 1 ) time, the
+/// inventories of select built in the constructor if not Lazy, and at the
+/// first select of each value if Lazy
+template< bool Lazy >
+class BasicRankSelect : public RankSelectOptions {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// the values whose select the directory answers: a structure that needs
- /// only rank, or one of the selects, spares the inventories of the others
- enum class Selects { NONE , ONES , ZEROS , BOTH };
+ BasicRankSelect( void );
 
- RankSelect( void );
-
- /// the directory of the bits b, which it keeps, with the selects s; the
- /// inventory of select of a value is built by its first select
- explicit RankSelect( BitVector b , Selects s = Selects::BOTH );
+ /// the directory of the bits b, which it keeps, with the selects s
+ explicit BasicRankSelect( BitVector b , Selects s = Selects::BOTH );
 
  /// the directory of the n bits of the words w, copied as they are
  /// counted, with the selects s
  /// \pre w.size() >= ceil( n / 64 )
- RankSelect( std::span< const Word > w , std::size_t n ,
-             Selects s = Selects::BOTH );
+ BasicRankSelect( std::span< const Word > w , std::size_t n ,
+                  Selects s = Selects::BOTH );
 
  /// a copy, with the inventories that o has built
- RankSelect( const RankSelect & o );
+ BasicRankSelect( const BasicRankSelect & o );
 
  /// a move, with the inventories that o has built
- RankSelect( RankSelect && o ) noexcept;
+ BasicRankSelect( BasicRankSelect && o ) noexcept;
 
- RankSelect & operator=( const RankSelect & o );
+ BasicRankSelect & operator=( const BasicRankSelect & o );
 
- RankSelect & operator=( RankSelect && o ) noexcept;
+ BasicRankSelect & operator=( BasicRankSelect && o ) noexcept;
 
- ~RankSelect( void ) = default;
+ ~BasicRankSelect( void ) = default;
 
  /// the bits
  [[nodiscard]] const BitVector & bits( void ) const;
@@ -222,7 +233,7 @@ class RankSelect {
  using difference_type = std::ptrdiff_t;
  using reference = bool;
  using const_reference = bool;
- using const_iterator = SubscriptIterator< RankSelect , bool >;
+ using const_iterator = SubscriptIterator< BasicRankSelect , bool >;
  using iterator = const_iterator;
 
  [[nodiscard]] const_iterator begin( void ) const {
@@ -285,17 +296,17 @@ class RankSelect {
  /// number of its groups
  void shape( bool b , Inventory & I , std::size_t & groups ) const;
 
- /// the inventory of the bits b, built by the first call
+ /// the inventory of the bits b (built by the first call if Lazy)
  const Inventory & inventory( bool b ) const;
 
  /// the building of the inventory of the bits b
  void build( bool b ) const;
 
- /// the first call of inventory( b ), out of the line of select
+ /// the first call of inventory( b ) if Lazy, out of the line of select
  void first( bool b ) const;
 
  /// the inventories that o has built taken (by a copy, or by a move)
- void adopt( const RankSelect & o , bool move );
+ void adopt( const BasicRankSelect & o , bool move );
 
  /// the place of the k-th bit b
  [[nodiscard]] std::size_t select( std::size_t k , bool b ) const;
@@ -319,13 +330,27 @@ class RankSelect {
  std::vector< std::uint64_t > f_top;
  bool f_big = false;                    ///< more than 2^kTop bits
  mutable Inventory f_inv[ 2 ];          ///< of the 0s and of the 1s
- /// the flags that build each inventory once, and whether it is built
- mutable std::once_flag f_flag[ 2 ];
- mutable std::atomic< bool > f_ready[ 2 ] = { false , false };
  bool f_has[ 2 ] = { true , true };     ///< whether each one is built
  std::size_t f_ones = 0;
+ /// if Lazy, the flags that build each inventory once, and whether it is
+ /// built; nothing if not
+ struct Once {
+  mutable std::once_flag flag[ 2 ];
+  mutable std::atomic< bool > ready[ 2 ] = { false , false };
+  };
+ struct None {};
+ [[no_unique_address]] std::conditional_t< Lazy , Once , None > f_once;
 
- };  // end( class RankSelect )
+ };  // end( class BasicRankSelect )
+
+/// the directory with its inventories of select built in the constructor,
+/// the fastest select
+using RankSelect = BasicRankSelect< false >;
+
+/// the directory with its inventories of select built at the first select
+/// of each value, the fastest construction (for a directory that may never
+/// select, or that selects only some values)
+using LazyRankSelect = BasicRankSelect< true >;
 
 /*--------------------------------------------------------------------------*/
 

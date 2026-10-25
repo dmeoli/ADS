@@ -101,25 +101,28 @@
 namespace ADS {
 
 /*--------------------------------------------------------------------------*/
-/*---------------------------- CLASS EliasFano -----------------------------*/
+/*-------------------------- CLASS BasicEliasFano --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a non-decreasing sequence of integers in the Elias-Fano representation
-class EliasFano {
+/// a non-decreasing sequence of integers in the Elias-Fano representation,
+/// the inventories of select of H built in the constructor if not Lazy
+/// and at the first select of each value if Lazy [see RankSelect.h]
+template< bool Lazy >
+class BasicEliasFano {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- EliasFano( void ) = default;
+ BasicEliasFano( void ) = default;
 
  /// the sequence x in the universe [ 0 , x.back() + 1 )
  /// \pre x is non-decreasing (an audit) and x.back() < 2^64 - 1, so that
  ///      the universe fits in 64 bits
- explicit EliasFano( const std::vector< std::uint64_t > & x );
+ explicit BasicEliasFano( const std::vector< std::uint64_t > & x );
 
  /// the sequence x in the universe [ 0 , u )
  /// \pre x is non-decreasing (an audit) and its items are below u
- EliasFano( const std::vector< std::uint64_t > & x , std::uint64_t u );
+ BasicEliasFano( const std::vector< std::uint64_t > & x , std::uint64_t u );
 
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -151,7 +154,7 @@ class EliasFano {
  [[nodiscard]] const BitVector & low( void ) const;
 
  /// the high bits, H, with their directory
- [[nodiscard]] const RankSelect & high( void ) const;
+ [[nodiscard]] const BasicRankSelect< Lazy > & high( void ) const;
 
  /// the bits of L and H, without the directory of H
  [[nodiscard]] std::size_t codeBits( void ) const;
@@ -169,7 +172,7 @@ class EliasFano {
  using difference_type = std::ptrdiff_t;
  using reference = std::uint64_t;
  using const_reference = std::uint64_t;
- using const_iterator = SubscriptIterator< EliasFano , std::uint64_t >;
+ using const_iterator = SubscriptIterator< BasicEliasFano , std::uint64_t >;
  using iterator = const_iterator;
 
  [[nodiscard]] const_iterator begin( void ) const {
@@ -191,9 +194,17 @@ class EliasFano {
  std::uint64_t f_u = 0;
  int f_l = 0;                ///< the low bits of an item
  BitVector f_low;            ///< L
- RankSelect f_high;          ///< H
+ BasicRankSelect< Lazy > f_high;   ///< H
 
- };  // end( class EliasFano )
+ };  // end( class BasicEliasFano )
+
+/// Elias-Fano with the inventories of H built in the constructor, the
+/// fastest access and nextGEQ
+using EliasFano = BasicEliasFano< false >;
+
+/// Elias-Fano with the inventories of H built at the first query that
+/// needs them, the fastest construction
+using LazyEliasFano = BasicEliasFano< true >;
 
 /*--------------------------------------------------------------------------*/
 

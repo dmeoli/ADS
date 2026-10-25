@@ -85,7 +85,7 @@ inline std::vector< std::uint8_t > streamVByteEncode(
   const __m128i v0 = _mm_loadu_si128(
                       reinterpret_cast< const __m128i * >( x.data() + i ) );
   const __m128i v1 = _mm_loadu_si128(
-                      reinterpret_cast< const __m128i * >( x.data() + i ) + 1 );
+                    reinterpret_cast< const __m128i * >( x.data() + i ) + 1 );
   const __m128i t = _mm_min_epi16( _mm_packus_epi16(
                                     _mm_min_epu8( v0 , one ) ,
                                     _mm_min_epu8( v1 , one ) ) , cap );
