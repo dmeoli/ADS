@@ -93,6 +93,8 @@ void run( const std::string & who , std::size_t n , const std::string & a ,
           const std::string & b , const std::string & c , int r , M && make ,
           D && dec , Mul && mul , bool all , G && gcd , S && root )
 {
+ if( skip( who ) )
+  return;
  const N x = make( a ) , y = make( b ) , z = make( c );   // c has 2n digits
  const N x3 = mul( x , make( "3" ) ) , y3 = mul( y , make( "3" ) );
  const std::size_t k = std::max< std::size_t >( 1 , 4096 / n );
@@ -170,6 +172,8 @@ template< class R , class Make >
 void harmonic( const std::string & who , std::size_t n , int r ,
                Make && frac )
 {
+ if( skip( who ) )
+  return;
  print( "bignum" , "harmonic H_n" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
           R h = frac( 0 , 1 );

@@ -62,6 +62,8 @@ template< class F >
 void rows( const char * what , const char * who , std::size_t n , int r ,
            F && f )
 {
+ if( skip( who ) )
+  return;
  print( "fingerprints" , what , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) { sink = sink + f(); } , r , n ) );
  }

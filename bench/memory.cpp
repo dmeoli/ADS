@@ -83,6 +83,8 @@ template< class M , class Make , class Done >
 void arena( const std::string & who , std::size_t n , int r , M && start ,
             Make && make , Done && done )
 {
+ if( skip( who ) )
+  return;
  print( "memory" , "arena" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
           auto s = start();
@@ -103,6 +105,8 @@ template< class M , class Make , class Free >
 void churn( const std::string & who , std::size_t n , int r , M && start ,
             Make && make , Free && free )
 {
+ if( skip( who ) )
+  return;
  print( "memory" , "churn" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
           auto s = start();
@@ -129,6 +133,8 @@ template< class A , class D >
 void allocators( const std::string & who , std::size_t n , int r ,
                  A && allocate , D && deallocate )
 {
+ if( skip( who ) )
+  return;
  struct None {};
  std::vector< Node * > all;
  arena( who , n , r , [ & ](){
@@ -154,6 +160,8 @@ template< class M , class A , class D >
 void mixed( const std::string & who , std::size_t n , int r , M && start ,
             A && alloc , D && dealloc )
 {
+ if( skip( who ) )
+  return;
  print( "memory" , "mixed" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
           auto s = start();

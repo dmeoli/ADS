@@ -143,6 +143,8 @@ template< class F >
 void cell( const char * bench , const char * what , std::size_t n ,
            const std::string & who , int r , F && op )
 {
+ if( skip( who ) )
+  return;
  print( bench , what , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
           U64 s = 0;
@@ -306,6 +308,8 @@ void factorizations( std::size_t n , unsigned seed , int r )
 template< class M >
 void words( const std::string & who , std::size_t n , int r , M && make )
 {
+ if( skip( who ) )
+  return;
  print( "generators" , "words" , n , who , median( make ,
          [ & ]( auto & G ) {
           U64 s = 0;
@@ -355,6 +359,8 @@ void generators( std::size_t n , unsigned seed , int r )
  std::vector< U64 > S( 1024 );
  for( auto & s : S ) s = ( h() >> 32 ) | 1;
  auto bounded = [ & ]( const std::string & who , auto && draw ) {
+  if( skip( who ) )
+   return;
   print( "bounded" , "below2^32" , n , who , median(
           [ & ](){ return( Gen( seed ) ); } , [ & ]( Gen & G ) {
            U64 s = 0;
@@ -379,6 +385,8 @@ void generators( std::size_t n , unsigned seed , int r )
  std::vector< std::uint32_t > A( n );
  std::iota( A.begin() , A.end() , 0u );
  auto shuffle = [ & ]( const std::string & who , auto && sh ) {
+  if( skip( who ) )
+   return;
   print( "shuffle" , "uint32" , n , who , median( [ & ](){
           return( std::pair( A , Gen( seed ) ) ); } , [ & ]( auto & P ) {
            sh( P.first , P.second );
@@ -403,6 +411,8 @@ void deviates( std::size_t n , unsigned seed , int r )
 {
  auto cellOf = [ & ]( const char * what , const std::string & who ,
                       auto && draw ) {
+  if( skip( who ) )
+   return;
   print( what , "sum" , n , who , median( [ & ](){
           return( Gen( seed ) ); } , [ & ]( Gen & G ) {
            double s = 0;
@@ -447,25 +457,35 @@ void discrete( std::size_t n , unsigned seed , int r )
   std::vector< double > w( k );
   for( auto & x : w ) x = double( h() % 1000 + 1 );
   auto cellOf = [ & ]( const std::string & who , auto && draw ) {
+   if( skip( who ) )
+    return;
    print( "discrete" , what.c_str() , n , who , median( [ & ](){
            return( Gen( seed ) ); } , [ & ]( Gen & G ) {
             U64 s = 0;
             for( std::size_t i = 0 ; i < n ; ++i ) s += U64( draw( G ) );
             sink = sink + s; } , r , n ) );
    };
-  std::discrete_distribution< std::size_t > D( w.begin() , w.end() );
-  for( const char * who : { "std::discrete_distribution" ,
-                            "std::discrete_distribution A/A" } )
-   cellOf( who , [ & ]( Gen & G ) { return( D( G ) ); } );
+  // each table built only if one of its cells runs
+  if( ! skip( "std::discrete_distribution" ) ||
+      ! skip( "std::discrete_distribution A/A" ) ) {
+   std::discrete_distribution< std::size_t > D( w.begin() , w.end() );
+   for( const char * who : { "std::discrete_distribution" ,
+                             "std::discrete_distribution A/A" } )
+    cellOf( who , [ & ]( Gen & G ) { return( D( G ) ); } );
+   }
 #ifdef ADS_HAS_BOOST
-  boost::random::discrete_distribution< std::size_t > E( w.begin() ,
-                                                         w.end() );
-  cellOf( "boost::random::discrete_distribution" , [ & ]( Gen & G ) {
-   return( E( G ) ); } );
+  if( ! skip( "boost::random::discrete_distribution" ) ) {
+   boost::random::discrete_distribution< std::size_t > E( w.begin() ,
+                                                          w.end() );
+   cellOf( "boost::random::discrete_distribution" , [ & ]( Gen & G ) {
+    return( E( G ) ); } );
+   }
 #endif
 #ifndef ADS_BENCH_OLD
-  const ADS::AliasTable T( w );
-  cellOf( "ADS::AliasTable" , [ & ]( Gen & G ) { return( T( G ) ); } );
+  if( ! skip( "ADS::AliasTable" ) ) {
+   const ADS::AliasTable T( w );
+   cellOf( "ADS::AliasTable" , [ & ]( Gen & G ) { return( T( G ) ); } );
+   }
 #endif
   }
  }
@@ -476,6 +496,8 @@ void sampling( std::size_t N , unsigned seed , int r )
  std::vector< U64 > S( N );
  std::iota( S.begin() , S.end() , U64( 0 ) );
  auto sample = [ & ]( const std::string & who , auto && smp ) {
+  if( skip( who ) )
+   return;
   print( "sampling" , "1000" , N , who , median( [ & ](){
           return( Gen( seed ) ); } , [ & ]( Gen & G ) {
            sink = sink + smp( G ); } , r , N ) );

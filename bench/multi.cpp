@@ -72,6 +72,8 @@ int main( int argc , char ** argv )
     std::size_t expected = 0;
     bool first = true;
     auto run = [ & ]( const char * who , auto && count ) {
+     if( skip( who ) )
+      return;
      std::size_t c = 0;
      const double t = median( [](){ return( 0 ); } , [ & ]( int ) {
       c = count();
@@ -85,11 +87,16 @@ int main( int argc , char ** argv )
      first = false;
      print( "multi" , what , n , who , t );
      };
-    const ADS::MultiSearcher M( P );
-    run( "ADS::MultiSearcher" , [ & ]() { return( M.count( T ) ); } );
-    run( "ADS::MultiSearcher A/A" , [ & ]() { return( M.count( T ) ); } );
-    const ADS::AhoCorasick C( P );
-    run( "ADS::AhoCorasick" , [ & ]() { return( C.count( T ) ); } );
+    if( ! skip( "ADS::MultiSearcher" ) ||
+        ! skip( "ADS::MultiSearcher A/A" ) ) {
+     const ADS::MultiSearcher M( P );
+     run( "ADS::MultiSearcher" , [ & ]() { return( M.count( T ) ); } );
+     run( "ADS::MultiSearcher A/A" , [ & ]() { return( M.count( T ) ); } );
+     }
+    if( ! skip( "ADS::AhoCorasick" ) ) {
+     const ADS::AhoCorasick C( P );
+     run( "ADS::AhoCorasick" , [ & ]() { return( C.count( T ) ); } );
+     }
     if( k <= 64 )
      run( "std::string_view::find" , [ & ]() {
       std::size_t c = 0;
@@ -100,7 +107,7 @@ int main( int argc , char ** argv )
         ++c;
       return( c ); } );
 #ifdef ADS_HAS_HYPERSCAN
-    {
+    if( ! skip( "Vectorscan" ) ) {
      // each pattern as an expression of escaped bytes, \xHH (the literal
      // API refuses the patterns with a byte 0)
      std::vector< std::string > X( k );

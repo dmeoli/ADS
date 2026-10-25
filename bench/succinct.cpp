@@ -193,6 +193,8 @@ void bitvector( const std::string & dname , const Bits & b ,
                 const std::string & who , B build , R rank , S1 sel1 ,
                 S0 sel0 , Z bits , int r )
 {
+ if( skip( who ) )
+  return;
  struct { const std::string & who; B & build; R & rank; S1 & sel1; S0 & sel0;
           Z & bits; } c{ who , build , rank , sel1 , sel0 , bits };
  print( "bitvector" , "build " + dname , b.n , c.who , median(
@@ -230,6 +232,8 @@ void compressed( const std::string & dname , const Bits & b ,
                  const std::string & who , B build , R rank , S1 sel1 ,
                  S0 sel0 , Z bits , int r )
 {
+ if( skip( who ) )
+  return;
  print( "rrr" , "build " + dname , b.n , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
           auto s = build( b );
@@ -514,6 +518,8 @@ void eliasFano( const std::string & tag ,
                 const std::string & who , B build , A access , G geq ,
                 Z bits , int r )
 {
+ if( skip( who ) )
+  return;
  struct { const std::string & who; B & build; A & access; G & geq;
           Z & bits; } c{ who , build , access , geq , bits };
  const std::size_t n = X.size();
@@ -685,6 +691,8 @@ template< class B , class C , class O , class E , class Z >
 void parentheses( const Bits & b , const std::string & who , B build ,
                   C close , O open , E enclose , Z bits , int r )
 {
+ if( skip( who ) )
+  return;
  struct { const std::string & who; B & build; C & close; O & open;
           E & enclose; Z & bits; } c{ who , build , close , open , enclose ,
                                       bits };
@@ -774,6 +782,8 @@ void wavelet( const std::string & what ,
               const std::string & who , B build , A access , K rank ,
               S select , Z bits , int r )
 {
+ if( skip( who ) )
+  return;
  struct { const std::string & who; B & build; A & access; K & rank;
           S & select; Z & bits; } c{ who , build , access , rank , select ,
                                      bits };
@@ -894,6 +904,8 @@ void dac( const std::vector< std::uint64_t > & X ,
           const std::vector< std::uint64_t > & I , const std::string & who ,
           B build , A access , Z bits , int r )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = X.size();
  print( "dac" , "build" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {

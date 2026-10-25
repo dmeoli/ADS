@@ -95,7 +95,7 @@ int main( int argc , char ** argv )
 #ifdef ADS_HAS_EIGEN
    using ES = Eigen::SparseMatrix< double , Eigen::RowMajor >;
    ES E{ Eigen::Index( n ) , Eigen::Index( n ) };
-   {
+   if( ! skip( "Eigen" ) || ! skip( "Eigen A/A" ) ) {
     std::vector< Eigen::Triplet< double > > ET;
     for( const auto & [ i , j , v ] : T )
      ET.emplace_back( Eigen::Index( i ) , Eigen::Index( j ) , v );
@@ -106,30 +106,42 @@ int main( int argc , char ** argv )
                                                  Eigen::Index( n ) );
    Eigen::VectorXd ey( n );
    for( const char * who : { "Eigen" , "Eigen A/A" } )
-    print( "spmv" , what , n , who , median( none , [ & ]( int ) {
-            ey.noalias() = E * ex;
-            sink = sink + ( ey[ 0 ] > 0 ); } , r , nnz ) );
+    if( ! skip( who ) )
+     print( "spmv" , what , n , who , median( none , [ & ]( int ) {
+             ey.noalias() = E * ex;
+             sink = sink + ( ey[ 0 ] > 0 ); } , r , nnz ) );
 #endif
 #ifndef ADS_BENCH_OLD
-   const ADS::CsrMatrix A( n , n , T );
+   // the matrix of the CSR and of the SELL formats, built for them only
+   const bool csr = ! skip( "ADS::CsrMatrix" ) ||
+                    ! skip( "ADS::SellMatrix<8>" ) ||
+                    ! skip( "ADS::SellMatrix<4>" );
+   const ADS::CsrMatrix A = csr ? ADS::CsrMatrix( n , n , T ) :
+                                  ADS::CsrMatrix();
    std::vector< double > y( n );
-   print( "spmv" , what , n , "ADS::CsrMatrix" , median( none , [ & ]( int ) {
-           A.multiply( x.data() , y.data() );
-           sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
+   if( ! skip( "ADS::CsrMatrix" ) )
+    print( "spmv" , what , n , "ADS::CsrMatrix" , median( none ,
+            [ & ]( int ) {
+             A.multiply( x.data() , y.data() );
+             sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
 #endif
 #ifndef ADS_BENCH_OLD
-   const ADS::SellMatrix< 8 > S8( A );
-   print( "spmv" , what , n , "ADS::SellMatrix<8>" , median( none ,
-           [ & ]( int ) {
-            S8.multiply( x.data() , y.data() );
-            sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
-   const ADS::SellMatrix< 4 > S4( A );
-   print( "spmv" , what , n , "ADS::SellMatrix<4>" , median( none ,
-           [ & ]( int ) {
-            S4.multiply( x.data() , y.data() );
-            sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
+   if( ! skip( "ADS::SellMatrix<8>" ) ) {
+    const ADS::SellMatrix< 8 > S8( A );
+    print( "spmv" , what , n , "ADS::SellMatrix<8>" , median( none ,
+            [ & ]( int ) {
+             S8.multiply( x.data() , y.data() );
+             sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
+    }
+   if( ! skip( "ADS::SellMatrix<4>" ) ) {
+    const ADS::SellMatrix< 4 > S4( A );
+    print( "spmv" , what , n , "ADS::SellMatrix<4>" , median( none ,
+            [ & ]( int ) {
+             S4.multiply( x.data() , y.data() );
+             sink = sink + ( y[ 0 ] > 0 ); } , r , A.nonzeros() ) );
+    }
 #endif
-   if( n <= 100000 ) {
+   if( ( n <= 100000 ) && ! skip( "ADS::SparseMatrix" ) ) {
     ADS::SparseMatrix S( n , n );
     for( const auto & [ i , j , v ] : T ) S.set( i , j , S.get( i , j ) + v );
     std::vector< double > z( n );
@@ -144,14 +156,17 @@ int main( int argc , char ** argv )
     }
 #ifdef ADS_HAS_EIGEN
    for( const char * who : { "Eigen" , "Eigen A/A" } )
-    print( "sptranspose" , what , n , who , median( none , [ & ]( int ) {
-            const ES Tr = E.transpose();
-            sink = sink + std::uint64_t( Tr.nonZeros() ); } , r , nnz ) );
+    if( ! skip( who ) )
+     print( "sptranspose" , what , n , who , median( none , [ & ]( int ) {
+             const ES Tr = E.transpose();
+             sink = sink + std::uint64_t( Tr.nonZeros() ); } , r , nnz ) );
 #endif
 #ifndef ADS_BENCH_OLD
-   print( "sptranspose" , what , n , "ADS::CsrMatrix" , median( none ,
-           [ & ]( int ) {
-            sink = sink + A.transpose().nonzeros(); } , r , A.nonzeros() ) );
+   if( ! skip( "ADS::CsrMatrix" ) )
+    print( "sptranspose" , what , n , "ADS::CsrMatrix" , median( none ,
+            [ & ]( int ) {
+             sink = sink + A.transpose().nonzeros(); } , r ,
+            A.nonzeros() ) );
 #endif
    }
   }

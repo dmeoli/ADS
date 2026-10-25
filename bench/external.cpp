@@ -133,30 +133,34 @@ void merges( const char * type , std::size_t n , std::size_t k , int r ,
  auto none = [ & ]( void ) { return( 0 ); };
  for( const char * who : { "std::priority_queue" ,
                            "std::priority_queue A/A" } )
-  print( "multiway merge" , what , n , who , median( none , [ & ]( int ) {
-   using P = std::pair< T , std::size_t >;
-   auto greater = [ & ]( const P & a , const P & b ) {
-    return( less( b.first , a.first ) ); };
-   std::priority_queue< P , std::vector< P > , decltype( greater ) >
-    Q( greater );
-   std::vector< std::size_t > next( k , 1 );
-   for( std::size_t s = 0 ; s < k ; ++s )
-    if( ! R[ s ].empty() ) Q.emplace( R[ s ][ 0 ] , s );
-   T * o = out.data();
-   while( ! Q.empty() ) {
-    const std::size_t s = Q.top().second;
-    *o++ = Q.top().first;
-    Q.pop();
-    if( next[ s ] < R[ s ].size() ) Q.emplace( R[ s ][ next[ s ]++ ] , s );
-    }
-   check(); } , r , n ) );
- print( "multiway merge" , what , n , "ADS::kWayMerge" , median( none ,
-  [ & ]( int ) { out = ADS::kWayMerge( R , less ); check(); } , r , n ) );
- print( "multiway merge" , what , n , "ADS::multiwayMerge" , median( none ,
-  [ & ]( int ) {
-   ADS::multiwayMerge( ranges , out.begin() , less ); check(); } , r ,
-  n ) );
- print( "multiway merge" , what , n , "libstdc++ multiway_merge" ,
+  if( ! skip( who ) )
+   print( "multiway merge" , what , n , who , median( none , [ & ]( int ) {
+    using P = std::pair< T , std::size_t >;
+    auto greater = [ & ]( const P & a , const P & b ) {
+     return( less( b.first , a.first ) ); };
+    std::priority_queue< P , std::vector< P > , decltype( greater ) >
+     Q( greater );
+    std::vector< std::size_t > next( k , 1 );
+    for( std::size_t s = 0 ; s < k ; ++s )
+     if( ! R[ s ].empty() ) Q.emplace( R[ s ][ 0 ] , s );
+    T * o = out.data();
+    while( ! Q.empty() ) {
+     const std::size_t s = Q.top().second;
+     *o++ = Q.top().first;
+     Q.pop();
+     if( next[ s ] < R[ s ].size() ) Q.emplace( R[ s ][ next[ s ]++ ] , s );
+     }
+    check(); } , r , n ) );
+ if( ! skip( "ADS::kWayMerge" ) )
+  print( "multiway merge" , what , n , "ADS::kWayMerge" , median( none ,
+   [ & ]( int ) { out = ADS::kWayMerge( R , less ); check(); } , r , n ) );
+ if( ! skip( "ADS::multiwayMerge" ) )
+  print( "multiway merge" , what , n , "ADS::multiwayMerge" , median( none ,
+   [ & ]( int ) {
+    ADS::multiwayMerge( ranges , out.begin() , less ); check(); } , r ,
+   n ) );
+ if( ! skip( "libstdc++ multiway_merge" ) )
+  print( "multiway merge" , what , n , "libstdc++ multiway_merge" ,
   median( none , [ & ]( int ) {
    auto S = ranges;
    __gnu_parallel::multiway_merge( S.begin() , S.end() , out.begin() ,
@@ -181,44 +185,56 @@ void merges( const char * type , std::size_t n , std::size_t k , int r ,
    else L.exhaustTop();
    }
   };
- print( "multiway merge" , what , n , "ADS::FlatLoserTree" , median( none ,
-  [ & ]( int ) { tree( less ); check(); } , r , n ) );
+ if( ! skip( "ADS::FlatLoserTree" ) )
+  print( "multiway merge" , what , n , "ADS::FlatLoserTree" , median( none ,
+   [ & ]( int ) { tree( less ); check(); } , r , n ) );
  {                                          // the comparisons per item
   std::uint64_t count = 0;
   auto counted = [ & ]( const T & a , const T & b ) {
    ++count;
    return( less( a , b ) ); };
-  tree( counted );
-  print( "multiway merge counts" , what , n ,
-         "ADS::FlatLoserTree comparisons" , double( count ) / double( n ) );
-  count = 0;
-  ADS::multiwayMerge( ranges , out.begin() , counted );
-  print( "multiway merge counts" , what , n ,
-         "ADS::multiwayMerge comparisons" , double( count ) / double( n ) );
+  if( ! skip( "ADS::FlatLoserTree comparisons" ) ) {
+   count = 0;
+   tree( counted );
+   print( "multiway merge counts" , what , n ,
+          "ADS::FlatLoserTree comparisons" , double( count ) / double( n ) );
+   }
+  if( ! skip( "ADS::multiwayMerge comparisons" ) ) {
+   count = 0;
+   ADS::multiwayMerge( ranges , out.begin() , counted );
+   print( "multiway merge counts" , what , n ,
+          "ADS::multiwayMerge comparisons" , double( count ) / double( n ) );
+   }
 #if defined( ADS_HAS_TLX )
-  count = 0;
-  auto S = ranges;
-  tlx::multiway_merge( S.begin() , S.end() , out.begin() ,
-                       std::ptrdiff_t( n ) , counted );
-  print( "multiway merge counts" , what , n ,
-         "tlx::multiway_merge comparisons" , double( count ) / double( n ) );
-  count = 0;
-  S = ranges;
-  tlx::stable_multiway_merge( S.begin() , S.end() , out.begin() ,
-                              std::ptrdiff_t( n ) , counted );
-  print( "multiway merge counts" , what , n ,
-         "tlx::stable_multiway_merge comparisons" ,
-         double( count ) / double( n ) );
+  if( ! skip( "tlx::multiway_merge comparisons" ) ) {
+   count = 0;
+   auto S = ranges;
+   tlx::multiway_merge( S.begin() , S.end() , out.begin() ,
+                        std::ptrdiff_t( n ) , counted );
+   print( "multiway merge counts" , what , n ,
+          "tlx::multiway_merge comparisons" , double( count ) / double( n ) );
+   }
+  if( ! skip( "tlx::stable_multiway_merge comparisons" ) ) {
+   count = 0;
+   auto S = ranges;
+   tlx::stable_multiway_merge( S.begin() , S.end() , out.begin() ,
+                               std::ptrdiff_t( n ) , counted );
+   print( "multiway merge counts" , what , n ,
+          "tlx::stable_multiway_merge comparisons" ,
+          double( count ) / double( n ) );
+   }
 #endif
  }
 #if defined( ADS_HAS_TLX )
- print( "multiway merge" , what , n , "tlx::multiway_merge" , median( none ,
-  [ & ]( int ) {
-   auto S = ranges;
-   tlx::multiway_merge( S.begin() , S.end() , out.begin() ,
-                        std::ptrdiff_t( n ) , less );
-   check(); } , r , n ) );
- print( "multiway merge" , what , n , "tlx::stable_multiway_merge" ,
+ if( ! skip( "tlx::multiway_merge" ) )
+  print( "multiway merge" , what , n , "tlx::multiway_merge" , median( none ,
+   [ & ]( int ) {
+    auto S = ranges;
+    tlx::multiway_merge( S.begin() , S.end() , out.begin() ,
+                         std::ptrdiff_t( n ) , less );
+    check(); } , r , n ) );
+ if( ! skip( "tlx::stable_multiway_merge" ) )
+  print( "multiway merge" , what , n , "tlx::stable_multiway_merge" ,
   median( none , [ & ]( int ) {
    auto S = ranges;
    tlx::stable_multiway_merge( S.begin() , S.end() , out.begin() ,
@@ -239,21 +255,25 @@ void samplings( std::size_t n , int r , unsigned seed )
  auto none = [ & ]( void ) { return( 0 ); };
  const std::string what = "positions of 1e8";
  for( const char * who : { "std::sample" , "std::sample A/A" } )
-  print( "sampling" , what , n , who , median( none , [ & ]( int ) {
-   std::vector< int > out( n );           // on 32 bits: the difference
-   std::ranges::sample( std::views::iota( 0 , int( N ) ) ,  // of 64 is
-                        out.begin() , std::ptrdiff_t( n ) , g );  // wider
-   sink = sink + std::size_t( out[ n / 2 ] ); } , r , n ) );
- print( "sampling" , what , n , "ADS::sampleBySkips" , median( none ,
-  [ & ]( int ) { sink = sink + ADS::sampleBySkips( n , N , g )[ n / 2 ]; } ,
-  r , n ) );
- print( "sampling" , what , n , "ADS::sampleBySorting" , median( none ,
-  [ & ]( int ) {
-   sink = sink + ADS::sampleBySorting( n , N , g )[ n / 2 ]; } , r , n ) );
- print( "sampling" , what , n , "ADS::sampleByDictionary" , median( none ,
-  [ & ]( int ) {
-   sink = sink + ADS::sampleByDictionary( n , N , g )[ n / 2 ]; } , r ,
-  n ) );
+  if( ! skip( who ) )
+   print( "sampling" , what , n , who , median( none , [ & ]( int ) {
+    std::vector< int > out( n );          // on 32 bits: the difference
+    std::ranges::sample( std::views::iota( 0 , int( N ) ) , // of 64 is
+                         out.begin() , std::ptrdiff_t( n ) , g ); // wider
+    sink = sink + std::size_t( out[ n / 2 ] ); } , r , n ) );
+ if( ! skip( "ADS::sampleBySkips" ) )
+  print( "sampling" , what , n , "ADS::sampleBySkips" , median( none ,
+   [ & ]( int ) {
+    sink = sink + ADS::sampleBySkips( n , N , g )[ n / 2 ]; } , r , n ) );
+ if( ! skip( "ADS::sampleBySorting" ) )
+  print( "sampling" , what , n , "ADS::sampleBySorting" , median( none ,
+   [ & ]( int ) {
+    sink = sink + ADS::sampleBySorting( n , N , g )[ n / 2 ]; } , r , n ) );
+ if( ! skip( "ADS::sampleByDictionary" ) )
+  print( "sampling" , what , n , "ADS::sampleByDictionary" , median( none ,
+   [ & ]( int ) {
+    sink = sink + ADS::sampleByDictionary( n , N , g )[ n / 2 ]; } , r ,
+   n ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -358,6 +378,10 @@ void books( std::size_t n , int r , unsigned seed )
    using S = typename decltype( sel )::type;
    using CC = typename decltype( sel )::cmp;
    auto none = [ & ]( void ) { return( 0 ); };
+   // the counts measured if one of their two labels is, both listed
+   const bool ios = skip( std::string( who ) + ( timed ? "" : " I/Os" ) );
+   if( ( timed || skip( std::string( who ) + " comparisons" ) ) && ios )
+    return;
    if( timed )
     print( "book mergesort" , what , n , who , median( none , [ & ]( int ) {
      ADS::DiskFile< T > out( mem );

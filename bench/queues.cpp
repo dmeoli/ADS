@@ -88,6 +88,8 @@ template< class M , class Push , class Pop >
 void queue( const std::string & who , std::size_t n , int r , M && make ,
             Push && push , Pop && pop )
 {
+ if( skip( who ) )
+  return;
  print( "queue" , "fill-drain" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
           auto q = make( n );
@@ -113,6 +115,8 @@ template< class M , class F >
 void deque( const std::string & who , const std::vector< char > & op ,
             int r , M && make , F && apply )
 {
+ if( skip( who ) )
+  return;
  print( "deque" , "mixed" , op.size() , who , median( make ,
          [ & ]( auto & d ) {
          Key s = 0;
@@ -126,6 +130,8 @@ template< class M , class Push , class Pop >
 void stack( const std::string & who , std::size_t n , int r , M && make ,
             Push && push , Pop && pop )
 {
+ if( skip( who ) )
+  return;
  print( "stack" , "push-pop" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
           auto q = make( n );

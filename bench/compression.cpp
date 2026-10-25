@@ -221,6 +221,8 @@ template< class E , class D >
 void coder( const std::string & what , const Bytes & in ,
             const std::string & who , E encode , D decode , int r )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = in.size();
  Bytes code = encode( in );
  if( decode( code , n ) != in ) {
@@ -441,6 +443,8 @@ void integers( const std::string & what ,
                const std::vector< std::uint32_t > & x ,
                const std::string & who , E encode , D decode , int r )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = x.size();
  auto code = encode( x );
  if( decode( code , n ) != x ) {
@@ -536,6 +540,8 @@ void integerCodes( std::size_t n , int r , unsigned seed )
   };
  for( const char * name : { "simdbinarypacking" , "simdfastpfor128" } )
   for( const bool sorted : { false , true } ) {
+   if( skip( std::string( "FastPFor::" ) + name ) )
+    continue;
    FastPForLib::CODECFactory F;
    auto codec = F.getFromName( name );
    integers( sorted ? "sorted" : "packed" , sorted ? sx : x ,
@@ -609,17 +615,21 @@ void transforms( std::size_t n , int r , unsigned seed )
  std::string s( t.begin() , t.end() );
  std::replace( s.begin() , s.end() , '\0' , '\1' );
  for( const char * who : { "ADS::bwt" , "ADS::bwt A/A" } )
-  print( "bwt" , "text" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) { sink = sink + ADS::bwt( s ).primary; } , r , n ) );
+  if( ! skip( who ) )
+   print( "bwt" , "text" , n , who , median( [](){ return( 0 ); } ,
+           [ & ]( int ) { sink = sink + ADS::bwt( s ).primary; } , r ,
+           n ) );
 #ifdef ADS_HAS_SAIS
- print( "bwt" , "text" , n , "libsais" , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          Bytes U( n );
-          std::vector< std::int32_t > A( n );
-          sink = sink + std::uint64_t( libsais_bwt( t.data() , U.data() ,
-                                                    A.data() ,
-                                                    std::int32_t( n ) , 0 ,
-                                                    nullptr ) ); } , r , n ) );
+ if( ! skip( "libsais" ) )
+  print( "bwt" , "text" , n , "libsais" , median( [](){ return( 0 ); } ,
+          [ & ]( int ) {
+           Bytes U( n );
+           std::vector< std::int32_t > A( n );
+           sink = sink + std::uint64_t( libsais_bwt( t.data() , U.data() ,
+                                                     A.data() ,
+                                                     std::int32_t( n ) , 0 ,
+                                                     nullptr ) ); } , r ,
+          n ) );
 #endif
  // the index: patterns of 8 bytes at random places of the text
  std::mt19937_64 g( seed );
@@ -632,6 +642,8 @@ void transforms( std::size_t n , int r , unsigned seed )
  }
  auto cells = [ & ]( const std::string & who , auto build , auto count ,
                      auto locate , auto bits ) {
+  if( skip( who ) )
+   return;
   print( "fmindex" , "build" , n , who , median( [](){ return( 0 ); } ,
           [ & ]( int ) { sink = sink + bits( *build() ); } , r , n ) );
   const auto F = build();
@@ -725,6 +737,8 @@ void rIndexes( std::size_t n , int r , unsigned seed )
  }
  auto cells = [ & ]( const std::string & who , auto build , auto count ,
                      auto locate , auto bits ) {
+  if( skip( who ) )
+   return;
   print( "rindex" , "build" , n , who , median( [](){ return( 0 ); } ,
           [ & ]( int ) { sink = sink + bits( *build() ); } , r , n ) );
   const auto F = build();
@@ -810,26 +824,38 @@ void lempelZiv( std::size_t n , int r , unsigned seed )
  const std::string s( t.begin() , t.end() );
  for( const char * who : { "ADS::lzssParseHashed" ,
                            "ADS::lzssParseHashed A/A" } )
-  print( "lz" , "parse" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           sink = sink + ADS::lzssParseHashed( s , 65536 , 4 , 16 ).size(); } ,
-          r , n ) );
- const auto Z = ADS::lzssParseHashed( s , 65536 , 4 , 16 );
+  if( ! skip( who ) )
+   print( "lz" , "parse" , n , who , median( [](){ return( 0 ); } ,
+           [ & ]( int ) {
+            sink = sink + ADS::lzssParseHashed( s , 65536 , 4 ,
+                                                16 ).size(); } , r , n ) );
 #ifdef ADS_HAS_LZLIN
- print( "lz" , "parse unbounded" , n , "ADS::lz77ParseLinear" , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          sink = sink + ADS::lz77ParseLinear( s ).size(); } , r , n ) );
+ if( ! skip( "ADS::lz77ParseLinear" ) )
+  print( "lz" , "parse unbounded" , n , "ADS::lz77ParseLinear" , median(
+          [](){ return( 0 ); } , [ & ]( int ) {
+           sink = sink + ADS::lz77ParseLinear( s ).size(); } , r , n ) );
 #endif
- print( "lz" , "decode" , n , "ADS::lzssDecode" , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          sink = sink + ADS::lzssDecode( Z ).size(); } , r , n ) );
+ if( ! skip( "ADS::lzssDecode" ) ) {
+  const auto Z = ADS::lzssParseHashed( s , 65536 , 4 , 16 );
+  print( "lz" , "decode" , n , "ADS::lzssDecode" , median(
+          [](){ return( 0 ); } , [ & ]( int ) {
+           sink = sink + ADS::lzssDecode( Z ).size(); } , r , n ) );
+  }
 #ifdef ADS_HAS_LZ4
+ // the decoding needs the code of the encoding
+ const bool lz4c = ! skip( "LZ4_compress_default" ) ,
+            lz4d = ! skip( "LZ4_decompress_safe" );
+ if( ! lz4c && ! lz4d )
+  return;
  std::string c( std::size_t( LZ4_compressBound( int( n ) ) ) , '\0' );
- print( "lz" , "parse" , n , "LZ4_compress_default" , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          sink = sink + std::uint64_t( LZ4_compress_default(
-                   s.data() , c.data() , int( n ) , int( c.size() ) ) ); } ,
-         r , n ) );
+ if( lz4c )
+  print( "lz" , "parse" , n , "LZ4_compress_default" , median(
+          [](){ return( 0 ); } , [ & ]( int ) {
+           sink = sink + std::uint64_t( LZ4_compress_default(
+                    s.data() , c.data() , int( n ) , int( c.size() ) ) ); } ,
+          r , n ) );
+ if( ! lz4d )
+  return;
  c.resize( std::size_t( LZ4_compress_default( s.data() , c.data() , int( n ) ,
                                               int( c.size() ) ) ) );
  std::string d( n , '\0' );

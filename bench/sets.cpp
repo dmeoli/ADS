@@ -104,6 +104,13 @@ bool wanted( const std::string & who )
  return( false );
  }
 
+/// whether to measure the structure who: wanted() and not left out by
+/// skip()
+bool measured( const std::string & who )
+{
+ return( wanted( who ) && ! skip( who ) );
+ }
+
 /// k distinct random integers below u, sorted
 std::vector< std::uint32_t > sample( std::size_t k , std::uint64_t u ,
                                      std::mt19937_64 & g )
@@ -138,7 +145,7 @@ void intersection( std::size_t n , int r , unsigned seed )
   const std::string what = "1:" + std::to_string( ratio );
   const std::size_t items = B.size();
   auto cell = [ & ]( const std::string & who , auto && f ) {
-   if( ! wanted( who ) )
+   if( ! measured( who ) )
     return;
    print( "intersection" , what , n , who , median( [](){ return( 0 ); } ,
            [ & ]( int ) { sink = sink + std::uint64_t( f() ); } , r ,
@@ -158,7 +165,7 @@ void intersection( std::size_t n , int r , unsigned seed )
                                                  out.data() ) ); } );
 #endif
 #ifdef ADS_HAS_ROARING
-  if( wanted( "Roaring" ) ) {
+  if( wanted( "Roaring" ) && ! skip( "Roaring and" ) ) {
    roaring_bitmap_t * a = roaring_bitmap_of_ptr( A.size() , A.data() );
    roaring_bitmap_t * b = roaring_bitmap_of_ptr( B.size() , B.data() );
    roaring_bitmap_run_optimize( a );
@@ -207,7 +214,7 @@ void mfset( std::size_t n , int r , unsigned seed )
  // y ) and same( s , x , y )
  auto run = [ & ]( const std::string & who , auto && make , auto && merge ,
                    auto && same ) {
-  if( ! wanted( who ) )
+  if( ! measured( who ) )
    return;
   print( "mfset" , "random merges" , n , who , median( make ,
           [ & ]( auto & s ) {
@@ -288,7 +295,7 @@ void boolset( std::size_t n , int r , unsigned seed )
  auto run = [ & ]( const std::string & who , const auto & a ,
                    const auto & b , auto && op , auto && has ,
                    auto && visit ) {
-  if( ! wanted( who ) )
+  if( ! measured( who ) )
    return;
   for( int k = 0 ; k < 4 ; ++k )
    print( "boolset" , ops[ k ] , n , who , median( [](){ return( 0 ); } ,
@@ -303,7 +310,8 @@ void boolset( std::size_t n , int r , unsigned seed )
           [ & ]( int ) { sink = sink + visit( a ); } , r , n ) );
   };
 #ifdef ADS_HAS_BOOST
- {
+ if( measured( "boost::dynamic_bitset" ) ||
+     measured( "boost::dynamic_bitset A/A" ) ) {
   using D = boost::dynamic_bitset< std::uint64_t >;
   D a( n ) , b( n );
   for( auto x : X ) a.set( x );
@@ -323,7 +331,7 @@ void boolset( std::size_t n , int r , unsigned seed )
   }
 #endif
 #ifdef ADS_HAS_ROARING
- if( wanted( "Roaring" ) ) {
+ if( measured( "Roaring" ) ) {
   roaring_bitmap_t * a = roaring_bitmap_of_ptr( X.size() , X.data() );
   roaring_bitmap_t * b = roaring_bitmap_of_ptr( Y.size() , Y.data() );
   run( "Roaring" , a , b , []( const roaring_bitmap_t * p ,
@@ -347,7 +355,7 @@ void boolset( std::size_t n , int r , unsigned seed )
   roaring_bitmap_free( b );
   }
 #endif
- {
+ if( measured( "ADS::BoolSet" ) ) {
   ADS::BoolSet a{ long( n ) } , b{ long( n ) };
   for( auto x : X ) a.insert( long( x ) );
   for( auto y : Y ) b.insert( long( y ) );
@@ -391,7 +399,7 @@ void bitmap( std::size_t n , int r , unsigned seed )
   // visit( a ) (the sum of the items)
   auto run = [ & ]( const std::string & who , auto && make , auto && op ,
                     auto && has , auto && visit ) {
-   if( ! wanted( who ) )
+   if( ! measured( who ) )
     return;
    const std::string w = std::string( density ) + " ";
    print( "bitmap" , w + "build" , n , who , median( [](){ return( 0 ); } ,

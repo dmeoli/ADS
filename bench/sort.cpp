@@ -37,6 +37,8 @@
  #define ADS_CONTRACTS 0
 #endif
 
+#include "Bench.h"
+
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/Heapsort.h"
 #include "ADS/sort/MergeSort.h"
@@ -222,6 +224,15 @@ double timeIt( const std::vector< T > & A , F && sort , int r , C less )
  return( t[ t.size() / 2 ] );
  }
 
+/// the header of the table, before its first row, so that a run that
+/// measures no sort prints none
+void header( void )
+{
+ static bool done = false;
+ if( ! std::exchange( done , true ) )
+  std::cout << "type\tpattern\tn\tsort\tns_per_item" << std::endl;
+ }
+
 /// the sorts of the battery for T, with their names
 template< class T , class C >
 void run( const char * type , const std::vector< std::size_t > & sizes ,
@@ -359,6 +370,9 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
    for( auto & [ name , sort ] : S ) {
     if( ( n > 200000 ) && ( name == "shellSort" ) )
      continue;                              // too slow to matter
+    if( ADS::bench::skip( name ) )
+     continue;
+    header();
     std::cout << type << '\t' << patterns[ p ] << '\t' << n << '\t'
               << name << '\t' << timeIt( A , sort , r , less ) << std::endl;
     }
@@ -385,7 +399,6 @@ int main( int argc , char ** argv )
   }
  if( sizes.empty() )
   sizes = { 1000 , 100000 };
- std::cout << "type\tpattern\tn\tsort\tns_per_item" << std::endl;
  run< std::uint32_t >( "uint32" , sizes , r , seed , std::less<>() );
  run< std::int64_t >( "int64" , sizes , r , seed , std::less<>() );
  run< double >( "double" , sizes , r , seed , std::less<>() );

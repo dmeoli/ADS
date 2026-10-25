@@ -161,6 +161,8 @@ template< class M , class Push , class Pop >
 void spsc( const std::string & who , std::size_t n , int r , M && make ,
            Push && push , Pop && pop )
 {
+ if( skip( who ) )
+  return;
  print( "spsc" , "throughput" , n , who , transfer( n , r , make ,
          [ & ]( auto & q , std::size_t m ) {
           for( std::size_t i = 0 ; i < m ; ++i )
@@ -217,6 +219,8 @@ template< class M , class S , class R >
 void wake( const std::string & who , std::size_t n , int r , M && make ,
            S && send , R && recv )
 {
+ if( skip( who ) )
+  return;
  const int k = 2000;                        // the latency: one item every
  std::vector< double > lat;                 // 50 us, stamped
  for( int run = 0 ; run < r ; ++run ) {
@@ -346,75 +350,81 @@ int main( int argc , char ** argv )
 #ifdef ADS_HAS_BOOST
   for( const char * who : { "boost::lockfree::queue" ,
                             "boost::lockfree::queue A/A" } )
-   print( "mpsc" , "throughput" , n , who , transfer( n , r , [ & ](){
-           return( std::make_unique< boost::lockfree::queue< Item > >(
-                    cap ) ); } , []( auto & q , std::size_t m ) {
-            for( std::size_t i = 0 ; i < m ; ++i ) q.push( Item( i ) ); } ,
-           []( auto & q , std::size_t m ) {
-            Item s = 0 , x;
-            for( std::size_t got = 0 ; got < m ; )
-             if( q.pop( x ) ) {
-              s += x;
-              ++got;
-              }
-            return( s ); } ) );
+   if( ! skip( who ) )
+    print( "mpsc" , "throughput" , n , who , transfer( n , r , [ & ](){
+            return( std::make_unique< boost::lockfree::queue< Item > >(
+                     cap ) ); } , []( auto & q , std::size_t m ) {
+             for( std::size_t i = 0 ; i < m ; ++i ) q.push( Item( i ) ); } ,
+            []( auto & q , std::size_t m ) {
+             Item s = 0 , x;
+             for( std::size_t got = 0 ; got < m ; )
+              if( q.pop( x ) ) {
+               s += x;
+               ++got;
+               }
+             return( s ); } ) );
 #endif
 #ifdef ADS_HAS_MOODYCAMEL
-  print( "mpsc" , "throughput" , n , "moodycamel::ConcurrentQueue" ,
-         transfer( n , r , [ & ](){
-          return( std::make_unique< moodycamel::ConcurrentQueue< Item > >(
-                   cap ) ); } , []( auto & q , std::size_t m ) {
-           for( std::size_t i = 0 ; i < m ; ++i ) q.enqueue( Item( i ) ); } ,
-          []( auto & q , std::size_t m ) {
-           Item s = 0 , B[ 256 ];
-           for( std::size_t got = 0 ; got < m ; ) {
-            const std::size_t k = q.try_dequeue_bulk( B , 256 );
-            for( std::size_t i = 0 ; i < k ; ++i ) s += B[ i ];
-            got += k;
-            }
-           return( s ); } ) );
-#endif
-#ifdef ADS_HAS_MOODYCAMEL
-  {
-   using CQ = moodycamel::ConcurrentQueue< Item >;
-   print( "mpsc" , "throughput" , n , "moodycamel::ConcurrentQueue tokens" ,
+  if( ! skip( "moodycamel::ConcurrentQueue" ) )
+   print( "mpsc" , "throughput" , n , "moodycamel::ConcurrentQueue" ,
           transfer( n , r , [ & ](){
-            return( std::make_unique< CQ >( cap ) ); } ,
-           []( CQ & q , std::size_t m ) {
-            moodycamel::ProducerToken t( q );
-            for( std::size_t i = 0 ; i < m ; ++i ) q.enqueue( t , Item( i ) );
-            } , []( CQ & q , std::size_t m ) {
-            moodycamel::ConsumerToken t( q );
+           return( std::make_unique< moodycamel::ConcurrentQueue< Item > >(
+                    cap ) ); } , []( auto & q , std::size_t m ) {
+            for( std::size_t i = 0 ; i < m ; ++i ) q.enqueue( Item( i ) ); } ,
+           []( auto & q , std::size_t m ) {
             Item s = 0 , B[ 256 ];
             for( std::size_t got = 0 ; got < m ; ) {
-             const std::size_t k = q.try_dequeue_bulk( t , B , 256 );
+             const std::size_t k = q.try_dequeue_bulk( B , 256 );
              for( std::size_t i = 0 ; i < k ; ++i ) s += B[ i ];
              got += k;
              }
             return( s ); } ) );
+#endif
+#ifdef ADS_HAS_MOODYCAMEL
+  {
+   using CQ = moodycamel::ConcurrentQueue< Item >;
+   if( ! skip( "moodycamel::ConcurrentQueue tokens" ) )
+    print( "mpsc" , "throughput" , n , "moodycamel::ConcurrentQueue tokens" ,
+           transfer( n , r , [ & ](){
+             return( std::make_unique< CQ >( cap ) ); } ,
+            []( CQ & q , std::size_t m ) {
+             moodycamel::ProducerToken t( q );
+             for( std::size_t i = 0 ; i < m ; ++i ) q.enqueue( t , Item( i ) );
+             } , []( CQ & q , std::size_t m ) {
+             moodycamel::ConsumerToken t( q );
+             Item s = 0 , B[ 256 ];
+             for( std::size_t got = 0 ; got < m ; ) {
+              const std::size_t k = q.try_dequeue_bulk( t , B , 256 );
+              for( std::size_t i = 0 ; i < k ; ++i ) s += B[ i ];
+              got += k;
+              }
+             return( s ); } ) );
    }
 #endif
 #ifndef ADS_BENCH_OLD
   {
    using AQ = ADS::MPSCQueue< Item >;
-   print( "mpsc" , "throughput" , n , "ADS::MPSCQueue" , transfer( n , r ,
-           [](){ return( std::make_unique< AQ >() ); } ,
-           []( AQ & q , std::size_t m ) {
-            auto p = q.producer();
-            for( std::size_t i = 0 ; i < m ; ++i ) p.push( Item( i ) ); } ,
-           []( AQ & q , std::size_t m ) {
-            Item s = 0 , B[ 256 ];
-            for( std::size_t got = 0 ; got < m ; ) {
-             const std::size_t k = q.popInto( B , 256 );
-             for( std::size_t i = 0 ; i < k ; ++i ) s += B[ i ];
-             got += k;
-             }
-            return( s ); } ) );
+   if( ! skip( "ADS::MPSCQueue" ) )
+    print( "mpsc" , "throughput" , n , "ADS::MPSCQueue" , transfer( n , r ,
+            [](){ return( std::make_unique< AQ >() ); } ,
+            []( AQ & q , std::size_t m ) {
+             auto p = q.producer();
+             for( std::size_t i = 0 ; i < m ; ++i ) p.push( Item( i ) ); } ,
+            []( AQ & q , std::size_t m ) {
+             Item s = 0 , B[ 256 ];
+             for( std::size_t got = 0 ; got < m ; ) {
+              const std::size_t k = q.popInto( B , 256 );
+              for( std::size_t i = 0 ; i < k ; ++i ) s += B[ i ];
+              got += k;
+              }
+             return( s ); } ) );
    }
 #endif
   // ----- mpmc, one producer and one consumer on the same queue type
   auto mpmc = [ & ]( const std::string & who , auto make , auto push ,
                      auto pop ) {
+   if( skip( who ) )
+    return;
    print( "mpmc" , "throughput" , n , who , transfer( n , r , make ,
            [ & ]( auto & q , std::size_t m ) {
             for( std::size_t i = 0 ; i < m ; ++i )
@@ -448,16 +458,17 @@ int main( int argc , char ** argv )
         []( auto & q , Item x ) { return( q.push( x ) ); } ,
         []( auto & q , Item & x ) { return( q.tryPop( x ) ); } );
 #endif
-  print( "mpsc" , "throughput" , n , "ADS::MPSCInbox" , transfer( n , r ,
-          [](){ return( std::make_unique< ADS::MPSCInbox< Item > >() ); } ,
-          sendAll , []( auto & q , std::size_t m ) {
-           Item s = 0;
-           for( std::size_t got = 0 ; got < m ; ) {
-            const auto B = q.take();
-            for( Item x : B ) s += x;
-            got += B.size();
-            }
-           return( s ); } ) );
+  if( ! skip( "ADS::MPSCInbox" ) )
+   print( "mpsc" , "throughput" , n , "ADS::MPSCInbox" , transfer( n , r ,
+           [](){ return( std::make_unique< ADS::MPSCInbox< Item > >() ); } ,
+           sendAll , []( auto & q , std::size_t m ) {
+            Item s = 0;
+            for( std::size_t got = 0 ; got < m ; ) {
+             const auto B = q.take();
+             for( Item x : B ) s += x;
+             got += B.size();
+             }
+            return( s ); } ) );
   }
  // ----- the deques of work stealing
  {
@@ -484,6 +495,8 @@ int main( int argc , char ** argv )
    };
   auto cells = [ & ]( const std::string & who , auto make , auto push ,
                       auto take , auto steal ) {
+   if( skip( who ) )
+    return;
    print( "steal" , "owner" , n , who , median( make , [ & ]( auto & q ) {
            Item s = 0 , x;
            for( std::size_t i = 0 ; i < n ; ++i ) push( *q , Item( i ) );

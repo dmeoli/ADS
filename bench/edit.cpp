@@ -146,7 +146,7 @@ int main( int argc , char ** argv )
     const std::string c = "sigma" + std::to_string( sigma ) + " " + what;
     std::map< std::string , std::size_t > first;    // the result of each
     for( const auto & [ bench , who , of , upto ] : D ) {
-     if( n > upto ) continue;
+     if( ( n > upto ) || skip( who ) ) continue;
      std::size_t sum = 0;
      const double t = median( [](){ return( 0 ); } , [ & ]( int ) {
       sum = 0;
@@ -172,32 +172,38 @@ int main( int argc , char ** argv )
    const std::size_t k = m / 8;
    const std::string c = "sigma4 m=" + std::to_string( m );
    std::size_t best = 0;
+   [[maybe_unused]] bool found = false;     // whether best is known
    for( const char * who : { "ADS::approximateMatches" ,
-                             "ADS::approximateMatches A/A" } )
+                             "ADS::approximateMatches A/A" } ) {
+    if( skip( who ) ) continue;
+    found = true;
     print( "approximate search" , c , n , who , median(
             [](){ return( 0 ); } , [ & ]( int ) {
              const auto R = ADS::approximateMatches( T , P , k );
              best = k + 1;
              for( const auto & e : R ) best = std::min( best , e.second );
              sink = sink + best; } , o.runs , n ) );
-   if( ( n <= 100000 ) && ( m <= 64 ) )
+    }
+   if( ( n <= 100000 ) && ( m <= 64 ) &&
+       ! skip( "ADS::stringMatchingSingleRow" ) )
     print( "approximate search" , c , n , "ADS::stringMatchingSingleRow" ,
            median( [](){ return( 0 ); } , [ & ]( int ) {
             sink = sink + std::uint64_t( ADS::stringMatchingSingleRow(
                                           P , T ) ); } , o.runs , n ) );
 #ifdef ADS_HAS_EDLIB
    std::size_t e = 0;
-   print( "approximate search" , c , n , "edlib" , median(
-           [](){ return( 0 ); } , [ & ]( int ) {
-            EdlibAlignResult r = edlibAlign( P.data() , int( P.size() ) ,
-                                  T.data() , int( n ) ,
-                                  edlibNewAlignConfig( int( k ) ,
-                                  EDLIB_MODE_HW , EDLIB_TASK_DISTANCE ,
-                                  nullptr , 0 ) );
-            e = r.editDistance < 0 ? k + 1 : std::size_t( r.editDistance );
-            edlibFreeAlignResult( r );
-            sink = sink + e; } , o.runs , n ) );
-   if( e != best ) {
+   if( ! skip( "edlib" ) )
+    print( "approximate search" , c , n , "edlib" , median(
+            [](){ return( 0 ); } , [ & ]( int ) {
+             EdlibAlignResult r = edlibAlign( P.data() , int( P.size() ) ,
+                                   T.data() , int( n ) ,
+                                   edlibNewAlignConfig( int( k ) ,
+                                   EDLIB_MODE_HW , EDLIB_TASK_DISTANCE ,
+                                   nullptr , 0 ) );
+             e = r.editDistance < 0 ? k + 1 : std::size_t( r.editDistance );
+             edlibFreeAlignResult( r );
+             sink = sink + e; } , o.runs , n ) );
+   if( found && ! skip( "edlib" ) && ( e != best ) ) {
     std::fprintf( stderr , "edlib: %zu, not %zu\n" , e , best );
     return( 1 );
     }
