@@ -798,7 +798,8 @@ ADS_TEST( "elias-fano" )
   for( auto & a : A ) a = ( ( std::uint64_t( g() ) << 32 ) | g() ) % u;
   std::sort( A.begin() , A.end() );
   const EliasFano E( A , u );
-  CHECK( E.size() == n && E.universe() == u );
+  const LazyEliasFano Lz( A , u );
+  CHECK( E.size() == n && E.universe() == u && Lz.decode() == A );
   CHECK( std::equal( E.begin() , E.end() , A.begin() , A.end() ) );
   CHECK( E.decode() == A );
   const double ell = n ? std::ceil( std::log2( double( u ) / double( n ) ) )
@@ -812,7 +813,7 @@ ADS_TEST( "elias-fano" )
    const std::size_t r = std::size_t( std::lower_bound( A.begin() ,
                                                         A.end() , x ) -
                                       A.begin() );
-   CHECK( E.nextGEQ( x ) == r );
+   CHECK( E.nextGEQ( x ) == r && Lz.nextGEQ( x ) == r );
    CHECK( E.contains( x ) == std::binary_search( A.begin() , A.end() , x ) );
    }
   }

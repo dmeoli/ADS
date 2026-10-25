@@ -12,14 +12,16 @@
  *
  * - bitvector: rank1, select1 and select0 on n random bits with 50%, 10%
  *   and 1% of 1s, the building of the directory from the words, and the
- *   building with a select of each value (which builds the inventories of
- *   select that RankSelect defers to the first one);
+ *   building with a select of each value; RankSelect with its inventories
+ *   of select built in the constructor and, as "lazy", at the first
+ *   select of each value;
  * - rrr: the same on the vectors compressed to their entropy, against the
  *   rrr_vector of sdsl-lite, for n up to 10^7;
  * - eliasfano: access and nextGEQ (the rank of the competitors) on n
  *   random distinct integers in [ 0 , 128 n ) and on n integers in
- *   clusters (as the lists of an inverted index), by Elias-Fano and by
- *   its partitioned form, and the building, for n up to 10^7;
+ *   clusters (as the lists of an inverted index), by Elias-Fano (also with
+ *   lazy inventories) and by its partitioned form, and the building, for
+ *   n up to 10^7;
  * - parentheses: findClose, findOpen and enclose on the parentheses of a
  *   random tree of n nodes (a uniform Dyck word of 2n bits), for n up to
  *   10^7;
@@ -283,6 +285,17 @@ void bitvectors( std::size_t n , int r , unsigned seed )
      return( s.select0( k ) ); } ,
     [ nb ]( const ADS::RankSelect & s ) {
      return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+  // the inventories of select built at the first select of each value
+  using LRS = ADS::LazyRankSelect;
+  bitvector( dname , b ,
+   "ADS::RankSelect lazy" , []( const Bits & b ) {
+    return( std::make_unique< LRS >( std::span< const std::uint64_t >(
+                                      b.words ) , b.n ) ); } ,
+   []( const LRS & s , std::uint64_t i ) { return( s.rank1( i ) ); } ,
+   []( const LRS & s , std::uint64_t k ) { return( s.select1( k ) ); } ,
+   []( const LRS & s , std::uint64_t k ) { return( s.select0( k ) ); } ,
+   [ nb ]( const LRS & s ) {
+    return( double( s.size() + s.directoryBits() ) / nb ); } , r );
 #ifdef ADS_HAS_RRR
   if( b.n <= 10000000 ) {
    compressed( dname , b , "ADS::RRRBitVector" , []( const Bits & b ) {
@@ -555,6 +568,15 @@ void eliasFanos( std::size_t n , int r , unsigned seed )
     []( const EF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
     [ nn ]( const EF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
     r );
+  using LEF = ADS::LazyEliasFano;
+  eliasFano( tag , X , u , I , Q ,
+   "ADS::EliasFano lazy" , []( const std::vector< std::uint64_t > & X ,
+                               std::uint64_t u ) {
+    return( std::make_unique< LEF >( X , u ) ); } ,
+   []( const LEF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+   []( const LEF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
+   [ nn ]( const LEF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
+   r );
 #ifdef ADS_HAS_SDSL
   struct SD {
    sdsl::sd_vector<> v;

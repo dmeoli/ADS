@@ -998,20 +998,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   counts them above 2^23 bits, as RankSelect; the tests of the building
   from the words against the one from a BitVector, also with the top
   regions of 2^13 bits
-- RankSelect builds the inventory of select of a value at its first
-  select, once whatever the threads (std::call_once behind a flag read
-  with acquire semantics), so that a directory that only ranks never pays
-  for it, and a copy keeps the inventories built (the first call out of
-  the line of select, which is forced inline, as the check of the flag
-  would else cost it its inlining); the directory takes the
-  prefix sums of the sideways sums of a block by one product on their
-  bytes, in a loop per top block with no test, and a vector from its
-  words copies them as it counts them above 2^23 bits; the top level is
-  kept only above 2^40 bits; directoryBits() counts the inventories asked
-  for, built or not; the benchmark builds it from the words and has a
-  cell of the building with a select of each value; the tests of the
-  first select from 8 threads, of the copies and of the building from the
-  words
+- RankSelect comes in two forms, BasicRankSelect< Lazy >: RankSelect,
+  the default, builds the inventories of select in its constructor and
+  keeps them in plain fields, so that select is as fast as before;
+  LazyRankSelect builds the inventory of a value at its first select,
+  once whatever the threads (std::call_once behind a flag read with
+  acquire semantics), so that a directory that only ranks never pays for
+  it, at the price of a select 10 to 15% slower, the load of the flag
+  making the compiler reload the fields of the inventory at each query;
+  a copy keeps the inventories built, and select is forced inline;
+  EliasFano and LazyEliasFano, BasicEliasFano< Lazy >, put their high
+  bits on the matching form, and write their low bits in a local, which
+  the stores of the loop cannot alias (the constructor of the lazy form,
+  not inlined, was 25% slower); the directory takes the prefix sums of the
+  sideways sums of a block by one product on their bytes, in a loop per
+  top block with no test, and a vector from its words copies them as it
+  counts them above 2^23 bits; the top level is kept only above 2^40
+  bits; directoryBits() counts the inventories asked for, built or not;
+  the benchmark builds both forms from the words and has a cell of the
+  building with a select of each value; the tests of the first select
+  from 8 threads, of the copies, of the two forms against each other and
+  of the building from the words
 - HeapPriorityQueue and LinkedHeapPriorityQueue take their items and
   nodes from an ObjectPool, the slot of deleteMin() taken by the next
   insert(), instead of one allocation each: 3 to 4 times faster on the

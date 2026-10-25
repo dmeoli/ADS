@@ -17,8 +17,9 @@
  * its highest place down: the place p holds the t-th 1 from the lowest,
  * t the 1s not yet met, if and only if \f$ \binom{p}{t} \le o \f$, which
  * is then taken away from o. A query walks only the places it needs: rank
- * stops at its place or at the last 1, select at its bit. Since \f$ \sum_j \log_2 \binom{b}{c_j} \le
- * \log_2 \binom{m}{n} \le m H_0( B ) \f$ (the product of the binomials of
+ * stops at its place or at the last 1, select at its bit. Since
+ * \f$ \sum_j \log_2 \binom{b}{c_j} \le \log_2 \binom{m}{n} \le
+ * m H_0( B ) \f$ (the product of the binomials of
  * the blocks counts a part of the vectors of n 1s), the offsets take at
  * most \f$ m H_0( B ) + m / b \f$ bits, the rounding up costing a bit per
  * block, and the classes \f$ 6 m / b \f$; a superblock of 32 blocks (2016

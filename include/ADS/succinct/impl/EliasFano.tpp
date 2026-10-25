@@ -16,13 +16,16 @@
 
 namespace ADS {
 
-inline EliasFano::EliasFano( const std::vector< std::uint64_t > & x )
- : EliasFano( x , x.empty() ? 0 : x.back() + 1 )
+template< bool Lazy >
+inline BasicEliasFano< Lazy >::BasicEliasFano(
+                                       const std::vector< std::uint64_t > & x )
+ : BasicEliasFano( x , x.empty() ? 0 : x.back() + 1 )
 {
  }
 
-inline EliasFano::EliasFano( const std::vector< std::uint64_t > & x ,
-                             std::uint64_t u )
+template< bool Lazy >
+inline BasicEliasFano< Lazy >::BasicEliasFano(
+                     const std::vector< std::uint64_t > & x , std::uint64_t u )
  : f_n( x.size() ) , f_u( u )
 {
  ADS_AUDIT( std::is_sorted( x.begin() , x.end() ) );
@@ -32,36 +35,46 @@ inline EliasFano::EliasFano( const std::vector< std::uint64_t > & x ,
   f_l = c <= 1 ? 0 : lambda( c - 1 ) + 1;
   }
  BitVector H( f_n == 0 ? 0 : f_n + std::size_t( bucket( u - 1 ) ) + 1 );
- f_low.reserve( f_n * std::size_t( f_l ) );
+ // L in a local, which the writes of the loop cannot alias, so that its
+ // fields stay in registers when the constructor is not inlined
+ BitVector L;
+ L.reserve( f_n * std::size_t( f_l ) );
+ const int l = f_l;
  for( std::size_t i = 0 ; i < f_n ; ++i ) {
-  f_low.append( x[ i ] & detail::lowMask( f_l ) , f_l );
-  H.set( std::size_t( bucket( x[ i ] ) ) + i );
+  L.append( x[ i ] & detail::lowMask( l ) , l );
+  H.set( std::size_t( l >= 64 ? 0 : x[ i ] >> l ) + i );
   }
- f_high = RankSelect( std::move( H ) );
+ f_low = std::move( L );
+ f_high = BasicRankSelect< Lazy >( std::move( H ) );
  ADS_AUDIT( decode() == x );
  }
 
-inline std::uint64_t EliasFano::bucket( std::uint64_t x ) const
+template< bool Lazy >
+inline std::uint64_t BasicEliasFano< Lazy >::bucket( std::uint64_t x ) const
 {
  return( f_l >= 64 ? 0 : x >> f_l );
  }
 
-inline std::size_t EliasFano::size( void ) const
+template< bool Lazy >
+inline std::size_t BasicEliasFano< Lazy >::size( void ) const
 {
  return( f_n );
  }
 
-inline bool EliasFano::empty( void ) const
+template< bool Lazy >
+inline bool BasicEliasFano< Lazy >::empty( void ) const
 {
  return( f_n == 0 );
  }
 
-inline std::uint64_t EliasFano::universe( void ) const
+template< bool Lazy >
+inline std::uint64_t BasicEliasFano< Lazy >::universe( void ) const
 {
  return( f_u );
  }
 
-inline std::uint64_t EliasFano::access( std::size_t i ) const
+template< bool Lazy >
+inline std::uint64_t BasicEliasFano< Lazy >::access( std::size_t i ) const
 {
  ADS_PRE( i < f_n );
  const std::uint64_t h = f_high.select1( i + 1 ) - i;
@@ -69,12 +82,14 @@ inline std::uint64_t EliasFano::access( std::size_t i ) const
  return( f_l >= 64 ? l : ( h << f_l ) | l );
  }
 
-inline std::uint64_t EliasFano::operator[]( std::size_t i ) const
+template< bool Lazy >
+inline std::uint64_t BasicEliasFano< Lazy >::operator[]( std::size_t i ) const
 {
  return( access( i ) );
  }
 
-inline std::size_t EliasFano::nextGEQ( std::uint64_t x ) const
+template< bool Lazy >
+inline std::size_t BasicEliasFano< Lazy >::nextGEQ( std::uint64_t x ) const
 {
  std::size_t p = f_n;
  if( ( f_n > 0 ) && ( x < f_u ) ) {
@@ -107,38 +122,47 @@ inline std::size_t EliasFano::nextGEQ( std::uint64_t x ) const
  return( p );
  }
 
-inline bool EliasFano::contains( std::uint64_t x ) const
+template< bool Lazy >
+inline bool BasicEliasFano< Lazy >::contains( std::uint64_t x ) const
 {
  const std::size_t p = nextGEQ( x );
  return( ( p < f_n ) && ( access( p ) == x ) );
  }
 
-inline int EliasFano::lowWidth( void ) const
+template< bool Lazy >
+inline int BasicEliasFano< Lazy >::lowWidth( void ) const
 {
  return( f_l );
  }
 
-inline const BitVector & EliasFano::low( void ) const
+template< bool Lazy >
+inline const BitVector & BasicEliasFano< Lazy >::low( void ) const
 {
  return( f_low );
  }
 
-inline const RankSelect & EliasFano::high( void ) const
+template< bool Lazy >
+inline const BasicRankSelect< Lazy > & BasicEliasFano< Lazy >::high( void )
+ const
 {
  return( f_high );
  }
 
-inline std::size_t EliasFano::codeBits( void ) const
+template< bool Lazy >
+inline std::size_t BasicEliasFano< Lazy >::codeBits( void ) const
 {
  return( f_low.size() + f_high.size() );
  }
 
-inline std::size_t EliasFano::sizeInBits( void ) const
+template< bool Lazy >
+inline std::size_t BasicEliasFano< Lazy >::sizeInBits( void ) const
 {
  return( codeBits() + f_high.directoryBits() );
  }
 
-inline std::vector< std::uint64_t > EliasFano::decode( void ) const
+template< bool Lazy >
+inline std::vector< std::uint64_t > BasicEliasFano< Lazy >::decode( void )
+ const
 {
  std::vector< std::uint64_t > x;
  x.reserve( f_n );

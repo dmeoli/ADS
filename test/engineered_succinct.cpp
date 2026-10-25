@@ -100,11 +100,12 @@ ADS_TEST( "compact-rank-select" )
  check( runs );
  }
 
-// the inventories of RankSelect built by the first select: 8 threads
-// that select at once on a fresh directory, each every 1 and every 0, get
-// the places of a scan; a copy made before the first select, one made
-// after it and one assigned, each with its own inventories; the bits of
-// the directory are the same before and after the inventories are built
+// the inventories of LazyRankSelect built by the first select:
+// 8 threads that select at once on a fresh directory, each every 1 and
+// every 0, get the places of a scan; a copy made before the first select,
+// one made after it and one assigned, each with its own inventories, and
+// the eager directory and its copy agree; the bits of the directory are
+// the same before and after the inventories are built, and eager
 ADS_TEST( "rank-select-lazy" )
 {
  std::mt19937_64 g( 7 );
@@ -117,8 +118,9 @@ ADS_TEST( "rank-select-lazy" )
    b.push_back( x );
    ( x ? one : zero ).push_back( i );
    }
-  const RankSelect S( b );
-  const RankSelect before( S );
+  const LazyRankSelect S( b );
+  const RankSelect Eager( b );
+  const LazyRankSelect before( S );
   const std::size_t bits = S.directoryBits();
   std::vector< int > bad( 8 , 0 );
   {
@@ -132,19 +134,21 @@ ADS_TEST( "rank-select-lazy" )
      } );
   }
   CHECK( std::count( bad.begin() , bad.end() , 0 ) == 8 );
-  CHECK( S.directoryBits() == bits );
-  const RankSelect after( S );
-  RankSelect assigned;
+  CHECK( S.directoryBits() == bits && Eager.directoryBits() == bits );
+  const LazyRankSelect after( S );
+  LazyRankSelect assigned;
   assigned = after;
-  for( const RankSelect * C : { &before , &after ,
-                                ( const RankSelect * )&assigned } ) {
-   bool ok = C->directoryBits() == bits;
+  const RankSelect eagerCopy( Eager );
+  auto same = [ & ]( const auto & C ) {
+   bool ok = C.directoryBits() == bits;
    for( std::size_t k = 0 ; k < one.size() ; k += 97 )
-    ok = ok && C->select1( k + 1 ) == one[ k ];
+    ok = ok && C.select1( k + 1 ) == one[ k ];
    for( std::size_t k = 0 ; k < zero.size() ; k += 97 )
-    ok = ok && C->select0( k + 1 ) == zero[ k ];
-   CHECK( ok );
-   }
+    ok = ok && C.select0( k + 1 ) == zero[ k ];
+   return( ok );
+   };
+  CHECK( same( before ) && same( after ) && same( assigned ) &&
+         same( Eager ) && same( eagerCopy ) );
   }
  }
 
