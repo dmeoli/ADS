@@ -23,7 +23,6 @@
 #                           [PGM=<dir>] [LEMIRE=<prefix>] [ROARING=<prefix>]  #
 #                           [HTRIE=<dir>] [LIBART=<prefix>]                   #
 #                           [HYPERSCAN=<prefix>]                              #
-#                           [JEMALLOC=<prefix>]                               #
 #                           [POCKETFFT=<dir>] [DUCC0=<dir>]                   #
 ###############################################################################
 
@@ -55,9 +54,6 @@ run sequences 100000 10000000
 run memory 100000 1000000
 run bignum 16 256 1024 4096 32768
 [ -x "$BUILD/bench-bignum-gmp" ] && run bignum-gmp 16 256 1024 4096 32768
-run fft 1024 65536 1048576
-run bignum 16 256 4096 32768
-[ -x "$BUILD/bench-bignum-gmp" ] && run bignum-gmp 16 256 4096 32768
 run fft 64 1000 1024 16384 100000 131072 1048576
 run hashing 100000 1000000
 run search 100000 1000000 10000000

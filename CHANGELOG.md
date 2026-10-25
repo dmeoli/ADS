@@ -140,16 +140,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   conjugate of the forward transform of the conjugates, so that each
   kernel is compiled once; the plans kept per thread for each size; their
   tests in test/fft.cpp against the definition in long double
-- rfft() and irfft(), the transforms of real data by a complex transform
-  of half the points and a pass on the pairs k , h - k: up to 16 points
-  one codelet and the pass on its outputs; the inverse of 4098 to 131072
-  points on the four steps with the pass in their first step, the points
-  made as the columns read them; elsewhere the pass on the numbers
-  alternated, with 3 shuffles for a vector of pairs; dct() and dst(), the transforms of the cosines and of the
-  sines of types 1 to 4 as those of FFTW (Makhoul for the types 2 and 3,
-  the half-length complex transform for the type 4); fftMany(), fft2() and
-  fftn(), many transforms and those in more dimensions; convolve() in
-  single precision
+- rfft() and irfft(), the transforms of real data by a complex transform of
+  half the points and a pass on the pairs k , h - k: up to 16 points one
+  codelet and the pass on its outputs; the inverse of 4098 to 131072 points
+  on the four steps with the pass in their first step, the points made as the
+  columns read them; elsewhere the pass on the numbers alternated, with 3
+  shuffles for a vector of pairs; dct() and dst(), the transforms of the
+  cosines and of the sines of types 1 to 4 as those of FFTW (Makhoul for the
+  types 2 and 3, the half-length complex transform for the type 4);
+  fftMany(), fft2() and fftn(), many transforms and those in more dimensions;
+  convolve() in single precision
 - convolve() on the four steps makes the products of the transforms as
   the columns of the inverse read them, with no pass of its own; rfft()
   and irfft() of 48 points by the complex transform of 48
@@ -167,7 +167,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ducc0, on complex, real and single precision data, the cosines of type
   2, many transforms, 2 dimensions and convolutions, with the cost of the
   plans apart; POCKETFFT and DUCC0 in the makefile
-
 - DialQueue, the monotone bucket queue of Dial on a circular window of W
   buckets with a radix heap for the keys beyond it, the next bucket in use
   found by a mask of W bits; RadixHeap::peekKey(), the least key without
