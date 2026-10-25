@@ -11,9 +11,10 @@
  *
  * A first pass, a parallel reduction by blocks, finds whether A is
  * already sorted (then nothing moves) or in decreasing order (strictly,
- * for the stable sort: then a parallel reversal); a block stops at the
- * first pair out of both orders, so that on most inputs the pass reads
- * little. A second pass, by blocks as well, cuts each of 8 blocks (or p
+ * for the stable sort: then a parallel reversal), by stretches of 32
+ * pairs with no branch inside (which vectorize); a block stops at the
+ * first stretch out of both orders, so that on most inputs the pass
+ * reads little. A second pass, by blocks as well, cuts each of 8 blocks (or p
  * blocks, if more) into its maximal runs, non-decreasing or strictly
  * decreasing, and gives up at the ninth run of a block, which again on
  * most inputs comes after a few items; if no block gave up, A is made of
@@ -41,7 +42,9 @@
  *   not when the keys are the floating point numbers of a few exponents,
  *   whose highest bits are the sign and the exponent, or integers of a
  *   law with a heavy tail: if a bucket gets more than 4 times its share
- *   of the sample (and 32 more), the numbers go to the other classifier.
+ *   of the sample (and 32 more), the numbers go to the other classifier,
+ *   as they do when the sample shows at most 32 distinct keys that the
+ *   bits do not separate (its buckets of equality move them once).
  *   When the sample holds at most 256 distinct keys, each key has a bucket
  *   of its own; if the integers of A all fall within the bounds of the
  *   sample (which the pass of the counts checks), the counts are those of
@@ -79,7 +82,9 @@
  * bucket of numbers of 32 or 64 bits in their natural order goes instead
  * straight to its place, where vectorQuickSort() [see VectorQuickSort.h],
  * the sort that sort() would choose for it, sorts it unless a scan finds
- * it already in order (e.g., a bucket of equal keys at an end; one move
+ * it already in order (e.g., a bucket of equal keys at an end) or made of
+ * at most kRuns runs, which go to the sequential sort and its merges (one
+ * move
  * less per
  * item; not for the stable sort of floating point numbers, which must
  * keep the order of -0 and +0), and a bucket of equal items is moved back

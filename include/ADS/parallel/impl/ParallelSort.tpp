@@ -281,15 +281,23 @@ class RadixClassifier {
   f_lo = lo;
   f_shift = w > 8 ? w - 8 : 0;
   f_last = std::size_t( Key( hi - lo ) >> f_shift );
-  // the share of the fullest bucket in the sample
+  // the share of the fullest bucket in the sample, and its distinct keys
   std::vector< int > h( f_last + 1 , 0 );
+  std::vector< Key > S;
+  S.reserve( 1024 );
   for( int i = 0 ; i < 1024 ; ++i ) {
    r ^= r << 13;
    r ^= r >> 7;
    r ^= r << 17;
    f_full = std::max( f_full , ++h[ ( *this )( A[ r % n ] ) ] );
+   S.push_back( sortKey( A[ r % n ] ) );
    }
+  std::sort( S.begin() , S.end() );
+  f_distinct = std::size_t( std::unique( S.begin() , S.end() ) - S.begin() );
   }
+
+ /// the distinct keys of the sample
+ [[nodiscard]] std::size_t distinct( void ) const { return( f_distinct ); }
 
  /// whether the bits spread the keys of the sample: no bucket with more
  /// than 4 times its share of them, and 32 more (the floating point
@@ -329,6 +337,7 @@ class RadixClassifier {
  int f_shift;
  std::size_t f_last;
  int f_full = 0;                           ///< the fullest of the sample
+ std::size_t f_distinct = 0;               ///< the keys of the sample
  };
 
 template< bool Stable , class E , class T , class C >
@@ -504,9 +513,20 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
     // back to its place, sorted there by the quicksort in the vector
     // registers that the sequential sort would choose for it
     std::copy( B + s , B + s + m , A.begin() + std::ptrdiff_t( s ) );
-    if( ! std::is_sorted( A.begin() + std::ptrdiff_t( s ) ,
-                          A.begin() + std::ptrdiff_t( s + m ) , less ) )
-     vectorQuickSort( A.data() + s , m );   // unless already in order
+    // unless in order, or in few runs, which the sequential sort merges
+    const T * a = A.data() + s;
+    std::size_t r = 1;
+    for( std::size_t i = 1 ; ( i < m ) && ( r <= kRuns ) ; ++i )
+     r += less( a[ i ] , a[ i - 1 ] );
+    if( r == 1 )
+     continue;
+    if( r > kRuns ) {
+     vectorQuickSort( A.data() + s , m );
+     continue;
+     }
+    v.assign( a , a + m );
+    sequentialSort< Stable >( v , less );
+    std::copy( v.begin() , v.end() , A.begin() + std::ptrdiff_t( s ) );
     continue;
     }
    v.assign( std::make_move_iterator( B + s ) ,
@@ -597,12 +617,25 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
   [ & ]( std::size_t lo , std::size_t hi ) {
    S s;
    const std::size_t e = std::min( hi , n - 1 );
-   for( std::size_t i = lo ; ( i < e ) && ( s.up || s.down ) ; ++i ) {
-    if( less( A[ i + 1 ] , A[ i ] ) )
-     s.up = false;
-    if( Stable ? ! less( A[ i + 1 ] , A[ i ] ) : less( A[ i ] , A[ i + 1 ] ) )
-     s.down = false;
+   // stretches of 32 pairs with no branch inside, which vectorize; the
+   // order looked for only while it may still hold
+   bool up = true , down = true;
+   for( std::size_t i = lo ; ( i < e ) && ( up || down ) ; ) {
+    const std::size_t f = std::min( e , i + 32 );
+    bool u = true , d = true;
+    if( up )
+     for( std::size_t j = i ; j < f ; ++j )
+      u &= ! less( A[ j + 1 ] , A[ j ] );
+    if( down )
+     for( std::size_t j = i ; j < f ; ++j )
+      d &= Stable ? less( A[ j + 1 ] , A[ j ] )
+                  : ! less( A[ j ] , A[ j + 1 ] );
+    up = up && u;
+    down = down && d;
+    i = f;
     }
+   s.up = up;
+   s.down = down;
    return( s );
    } ,
   []( S a , const S & b ) {
@@ -625,7 +658,7 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
                                  std::bit_floor( n / 4096 ) );
  if constexpr( numbers ) {
   const RadixClassifier< T > cls( A );
-  if( cls.spread() ) {
+  if( cls.spread() && ( cls.exact() || ( cls.distinct() > 32 ) ) ) {
    distribute< Stable , void >( ex , A , less , cls , depth );
    return;
    }
