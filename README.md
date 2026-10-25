@@ -84,10 +84,10 @@ of the clock. Hence, a ratio between 0.95 and 1.05 is usually a tie.
 <tr><td>GMP</td><td align="right">12</td><td align="right">0.33</td><td align="right">0.20 to 1.25</td></tr>
 <tr><td rowspan="2"><code>ADS::Rational</code></td><td>Boost</td><td align="right">3</td><td align="right">4.74</td><td align="right">1.93 to 6.03</td></tr>
 <tr><td>GMP</td><td align="right">3</td><td align="right">0.42</td><td align="right">0.40 to 0.46</td></tr>
-<tr><td rowspan="3">fft</td><td rowspan="3"><code>ADS::fft</code></td><td>FFTW</td><td align="right">44</td><td align="right">1.12</td><td align="right">0.73 to 2.41</td></tr>
-<tr><td>pocketfft</td><td align="right">44</td><td align="right">3.12</td><td align="right">1.41 to 21</td></tr>
-<tr><td>ducc0</td><td align="right">37</td><td align="right">1.97</td><td align="right">1.13 to 17</td></tr>
-<tr><td rowspan="1">fft plan</td><td rowspan="1"><code>ADS::fft</code></td><td>FFTW</td><td align="right">6</td><td align="right">0.17</td><td align="right">0.07 to 32</td></tr>
+<tr><td rowspan="3">fft</td><td rowspan="3"><code>ADS::fft</code></td><td>FFTW</td><td align="right">44</td><td align="right">1.11</td><td align="right">0.84 to 2.41</td></tr>
+<tr><td>pocketfft</td><td align="right">44</td><td align="right">3.18</td><td align="right">1.44 to 21</td></tr>
+<tr><td>ducc0</td><td align="right">37</td><td align="right">1.97</td><td align="right">1.09 to 17</td></tr>
+<tr><td rowspan="1">fft plan</td><td rowspan="1"><code>ADS::fft</code></td><td>FFTW</td><td align="right">7</td><td align="right">0.22</td><td align="right">0.07 to 1290</td></tr>
 </table>
 
 `ADS::sort()` and `ADS::stableSort()` are faster than the standard library
@@ -108,11 +108,11 @@ algorithms), and `mpq_class` is 2.2 to 2.5 times faster than `Rational`;
 `ADS::fft` (complex, real and single precision data, the cosines of type
 2, many transforms, 2 dimensions and convolutions, on powers of 2 and on
 other sizes) is faster than the faster plan of FFTW in the median cell, by
-1.12, and 1.4 to 3 times faster than pocketfft and ducc0; FFTW stays ahead
-by 1.1 to 1.4 times on the real transforms of 64 and of $2^{14}$ points,
-on the convolution of 64, on the transforms of 32 x 32 and 128 x 128
-points and on the complex one of $2^{17}$, the other cells below 1 being
-ties. The plans of ADS, which time 4 factorizations up to $2^{17}$ points,
+1.11, and 1.4 to 3 times faster than pocketfft and ducc0; FFTW stays ahead
+by 1.15 to 1.2 times on the real transform of $2^{14}$ points, by 1.1
+on the transform of 32 x 32 points and by 1.06 to 1.23 on the real one of
+$2^{20}$, the other cells below 1 (0.94 to 0.99 in one of the two runs,
+at least 1 in the other) being ties. The plans of ADS, which time 4 factorizations up to $2^{17}$ points,
 cost up to 0.4 µs per point, against up to 900 µs of `FFTW_MEASURE` and 3
 µs of `FFTW_ESTIMATE`. Also, the Fibonacci heap of Boost is 1.2 to 1.9
 times faster than that of ADS, which follows the pseudocode of the book.
