@@ -60,12 +60,10 @@ test: $(BINS)
 	echo "$$failed failed"; test $$failed -eq 0
 
 # the benchmarks, with the contracts off and the Boost headers if found;
-# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft, and
-# GMP=<prefix> or ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP; FLINT=
-# <prefix> adds FLINT to bignum (with GMP and MPFR in the same prefix);
 # GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft (also
 # in single precision, if FFTW has libfftw3f), and GMP=<prefix> or
-# ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP; POCKETFFT=<dir> and
+# ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP; FLINT=<prefix> adds FLINT
+# to bignum (with GMP and MPFR in the same prefix); POCKETFFT=<dir> and
 # DUCC0=<dir> add to fft pocketfft (the directory of pocketfft_hdronly.h)
 # and ducc0 (the directory src of its sources);
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
