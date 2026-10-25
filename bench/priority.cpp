@@ -101,6 +101,8 @@ void run( const std::string & who , std::size_t n ,
           const std::vector< int > & P , const std::vector< int > & U , int r ,
           M && make , Push && push , Pop && pop )
 {
+ if( skip( who ) )
+  return;
  auto fill = [ & ]( void ) {
   auto q = make();
   for( std::size_t i = 0 ; i < n ; ++i ) push( q , P[ i ] , int( i ) );
@@ -134,6 +136,8 @@ void ends( const std::string & who , std::size_t n ,
            const std::vector< int > & P , int r , M && make , Push && push ,
            Low && low , High && high )
 {
+ if( skip( who ) )
+  return;
  auto fill = [ & ]( void ) {
   auto q = make();
   for( std::size_t i = 0 ; i < n ; ++i ) push( q , P[ i ] );
@@ -268,6 +272,8 @@ std::uint64_t reference = 0;
 template< class F >
 void dijkstra( const std::string & who , const Graph & G , int r , F && f )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = G.first.size() - 1;
  print( "priority" , "dijkstra" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {

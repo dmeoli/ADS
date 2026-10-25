@@ -80,6 +80,8 @@ void run( const std::string & who , const std::vector< Key > & K ,
           int r , M && make , I && ins , F && find , S && sum ,
           bool inserts = true )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = K.size();
  auto d = make();
  if( inserts ) {

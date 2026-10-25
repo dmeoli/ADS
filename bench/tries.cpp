@@ -72,18 +72,19 @@ using Value = std::uint64_t;
 namespace {
 
 /// whether to run the structure who: all, or those whose name has in it
-/// one of the texts separated by | in the variable ONLY
+/// one of the texts separated by | in the variable ONLY, and of these
+/// those that skip() keeps
 bool wanted( const std::string & who )
 {
  const char * o = std::getenv( "ONLY" );
  if( ! o || ! *o )
-  return( true );
+  return( ! skip( who ) );
  const std::string s = o;
  for( std::size_t a = 0 , b ; a <= s.size() ; a = b + 1 ) {
   b = std::min( s.find( '|' , a ) , s.size() );
   if( ( b > a ) && ( who.find( s.substr( a , b - a ) ) !=
                      std::string::npos ) )
-   return( true );
+   return( ! skip( who ) );
   }
  return( false );
  }

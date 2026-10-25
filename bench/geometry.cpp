@@ -103,6 +103,8 @@ template< class F >
 void cell( const char * b , const char * what , std::size_t n ,
            const std::string & who , int r , F && f )
 {
+ if( skip( who ) )
+  return;
  print( b , what , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) { sink = sink + std::uint64_t( f() ); } , r , n ) );
  }

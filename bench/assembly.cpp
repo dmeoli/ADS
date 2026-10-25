@@ -115,20 +115,25 @@ void assembly( const char * what , const Triplets & T , std::size_t n ,
                                   T.val.data() , A.beg.data() ,
                                   A.ind.data() , A.val.data() , W ); };
  for( const char * who : { "ADS::assembleCsc" , "ADS::assembleCsc A/A" } )
-  print( "assembly" , what , n , who , median( [](){ return( 0 ); } , ads ,
-                                               r , z ) );
+  if( ! skip( who ) )
+   print( "assembly" , what , n , who , median( [](){ return( 0 ); } , ads ,
+                                                r , z ) );
 #ifdef ADS_HAS_EIGEN
- using E = Eigen::Triplet< double , int >;
- std::vector< E > ET;
- for( std::size_t k = 0 ; k < z ; ++k )
-  ET.emplace_back( T.row[ k ] , T.col[ k ] , T.val[ k ] );
- print( "assembly" , what , n , "Eigen::setFromTriplets" ,
-        median( [](){ return( 0 ); } , [ & ]( int ) {
-         Eigen::SparseMatrix< double , Eigen::ColMajor , int > S{ int( m ) ,
-                                                                  int( m ) };
-         S.setFromTriplets( ET.begin() , ET.end() );
-         sink = sink + std::uint64_t( S.nonZeros() ); } , r , z ) );
+ if( ! skip( "Eigen::setFromTriplets" ) ) {
+  using E = Eigen::Triplet< double , int >;
+  std::vector< E > ET;
+  for( std::size_t k = 0 ; k < z ; ++k )
+   ET.emplace_back( T.row[ k ] , T.col[ k ] , T.val[ k ] );
+  print( "assembly" , what , n , "Eigen::setFromTriplets" ,
+         median( [](){ return( 0 ); } , [ & ]( int ) {
+          Eigen::SparseMatrix< double , Eigen::ColMajor , int > S{
+           int( m ) , int( m ) };
+          S.setFromTriplets( ET.begin() , ET.end() );
+          sink = sink + std::uint64_t( S.nonZeros() ); } , r , z ) );
+  }
 #endif
+ if( skip( "std::map" ) )
+  return;
  print( "assembly" , what , n , "std::map" , median( [](){ return( 0 ); } ,
         [ & ]( int ) {
          std::map< std::pair< int , int > , double > M;
@@ -210,8 +215,11 @@ void bundles( std::size_t n , int r , unsigned seed )
    }
   sink = sink + t; };
  for( const char * who : { "ADS::DynamicCsr" , "ADS::DynamicCsr A/A" } )
-  print( "assembly" , "bundle" , n , who ,
-         median( [](){ return( 0 ); } , ads , r , ops ) );
+  if( ! skip( who ) )
+   print( "assembly" , "bundle" , n , who ,
+          median( [](){ return( 0 ); } , ads , r , ops ) );
+ if( skip( "std::vector rows" ) )
+  return;
  print( "assembly" , "bundle" , n , "std::vector rows" ,
         median( [](){ return( 0 ); } , [ & ]( int ) {
          using Entries = std::vector< std::pair< int , double > >;

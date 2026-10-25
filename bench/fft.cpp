@@ -154,11 +154,13 @@ void complexCase( const char * what , std::size_t n , const Options & o ,
  auto reset = [ & ] { B = A; };
  const int r = o.runs;
  for( const char * who : { "ADS::fft" , "ADS::fft A/A" } )
-  print( "fft" , what , n , who , timed( r , q , reset , [ & ] {
-          for( std::size_t c = 0 ; c < k ; ++c )
-           ADS::fft( B.data() + c * s , n , false );
-          sink = sink + ( B[ 0 ].real() > 0 ); } ) );
- if( std::is_same_v< T , double > && n <= 1024 ) {
+  if( ! skip( who ) )
+   print( "fft" , what , n , who , timed( r , q , reset , [ & ] {
+           for( std::size_t c = 0 ; c < k ; ++c )
+            ADS::fft( B.data() + c * s , n , false );
+           sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+ if( std::is_same_v< T , double > && ( n <= 1024 ) &&
+     ! skip( "ADS::dft (definition)" ) ) {
   const std::vector< Cd > a( A.begin() , A.begin() + n );
   print( "fft" , what , n , "ADS::dft (definition)" ,
          timed( r , n , []{} , [ & ] {
@@ -173,21 +175,23 @@ void complexCase( const char * what , std::size_t n , const Options & o ,
   destroy( p );
   } , k * s );
 #ifdef ADS_HAS_POCKETFFT
- print( "fft" , what , n , "pocketfft" , timed( r , q , reset , [ & ] {
-         for( std::size_t c = 0 ; c < k ; ++c )
-          pocketfft::c2c< T >( { n } , { sizeof( X ) } , { sizeof( X ) } ,
-                               { 0 } , true , B.data() + c * s ,
-                               B.data() + c * s , T( 1 ) );
-         sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+ if( ! skip( "pocketfft" ) )
+  print( "fft" , what , n , "pocketfft" , timed( r , q , reset , [ & ] {
+          for( std::size_t c = 0 ; c < k ; ++c )
+           pocketfft::c2c< T >( { n } , { sizeof( X ) } , { sizeof( X ) } ,
+                                { 0 } , true , B.data() + c * s ,
+                                B.data() + c * s , T( 1 ) );
+          sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #endif
 #ifdef ADS_HAS_DUCC0
- print( "fft" , what , n , "ducc0" , timed( r , q , reset , [ & ] {
-         for( std::size_t c = 0 ; c < k ; ++c ) {
-          ducc0::cfmav< X > in( B.data() + c * s , { n } );
-          ducc0::vfmav< X > out( B.data() + c * s , { n } );
-          ducc0::c2c( in , out , { 0 } , true , T( 1 ) , 1 );
-          }
-         sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+ if( ! skip( "ducc0" ) )
+  print( "fft" , what , n , "ducc0" , timed( r , q , reset , [ & ] {
+          for( std::size_t c = 0 ; c < k ; ++c ) {
+           ducc0::cfmav< X > in( B.data() + c * s , { n } );
+           ducc0::vfmav< X > out( B.data() + c * s , { n } );
+           ducc0::c2c( in , out , { 0 } , true , T( 1 ) , 1 );
+           }
+          sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #endif
  }
 
@@ -204,6 +208,8 @@ int main( int argc , char ** argv )
                                                     std::size_t len ) {
 #ifdef ADS_HAS_FFTW
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     auto * in = fftw_alloc_complex( len );
     fftw_plan p = fftw_plan_dft_1d( int( n ) , in , in , FFTW_FORWARD ,
                                     flag );
@@ -231,6 +237,8 @@ int main( int argc , char ** argv )
                                                  std::size_t len ) {
 #ifdef ADS_HAS_FFTWF
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     auto * in = fftwf_alloc_complex( len );
     fftwf_plan p = fftwf_plan_dft_1d( int( n ) , in , in , FFTW_FORWARD ,
                                       flag );
@@ -259,12 +267,15 @@ int main( int argc , char ** argv )
    const std::size_t h = stride( n / 2 + 1 ) , q = k * n;
    const auto x = random< double >( k * s , o.seed );
    std::vector< Cd > X( k * h );
-   print( "fft" , "real" , n , "ADS::fft" , timed( r , q , []{} , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c )
-            ADS::rfft( x.data() + c * s , n , X.data() + c * h );
-           sink = sink + ( X[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "ADS::fft" ) )
+    print( "fft" , "real" , n , "ADS::fft" , timed( r , q , []{} , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c )
+             ADS::rfft( x.data() + c * s , n , X.data() + c * h );
+            sink = sink + ( X[ 0 ].real() > 0 ); } ) );
 #ifdef ADS_HAS_FFTW
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     double * in = fftw_alloc_real( k * s );
     auto * out = fftw_alloc_complex( k * h );
     fftw_plan p = fftw_plan_dft_r2c_1d( int( n ) , in , out , flag );
@@ -280,22 +291,24 @@ int main( int argc , char ** argv )
     }
 #endif
 #ifdef ADS_HAS_POCKETFFT
-   print( "fft" , "real" , n , "pocketfft" , timed( r , q , []{} , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c )
-            pocketfft::r2c< double >( { n } , { sizeof( double ) } ,
-                                      { sizeof( Cd ) } , 0 , true ,
-                                      x.data() + c * s , X.data() + c * h ,
-                                      1.0 );
-           sink = sink + ( X[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "pocketfft" ) )
+    print( "fft" , "real" , n , "pocketfft" , timed( r , q , []{} , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c )
+             pocketfft::r2c< double >( { n } , { sizeof( double ) } ,
+                                       { sizeof( Cd ) } , 0 , true ,
+                                       x.data() + c * s , X.data() + c * h ,
+                                       1.0 );
+            sink = sink + ( X[ 0 ].real() > 0 ); } ) );
 #endif
 #ifdef ADS_HAS_DUCC0
-   print( "fft" , "real" , n , "ducc0" , timed( r , q , []{} , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c ) {
-            ducc0::cfmav< double > in( x.data() + c * s , { n } );
-            ducc0::vfmav< Cd > out( X.data() + c * h , { n / 2 + 1 } );
-            ducc0::r2c( in , out , { 0 } , true , 1.0 , 1 );
-            }
-           sink = sink + ( X[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "ducc0" ) )
+    print( "fft" , "real" , n , "ducc0" , timed( r , q , []{} , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c ) {
+             ducc0::cfmav< double > in( x.data() + c * s , { n } );
+             ducc0::vfmav< Cd > out( X.data() + c * h , { n / 2 + 1 } );
+             ducc0::r2c( in , out , { 0 } , true , 1.0 , 1 );
+             }
+            sink = sink + ( X[ 0 ].real() > 0 ); } ) );
 #endif
   }
   // ------------------------------------------------------------- dct2
@@ -304,12 +317,15 @@ int main( int argc , char ** argv )
    const auto x = random< double >( k * s , o.seed );
    std::vector< double > y( k * s );
    auto reset = [ & ] { y = x; };
-   print( "fft" , "dct2" , n , "ADS::fft" , timed( r , q , reset , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c )
-            ADS::dct( y.data() + c * s , n , 2 );
-           sink = sink + ( y[ 0 ] > 0 ); } ) );
+   if( ! skip( "ADS::fft" ) )
+    print( "fft" , "dct2" , n , "ADS::fft" , timed( r , q , reset , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c )
+             ADS::dct( y.data() + c * s , n , 2 );
+            sink = sink + ( y[ 0 ] > 0 ); } ) );
 #ifdef ADS_HAS_FFTW
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     double * in = fftw_alloc_real( k * s );
     fftw_plan p = fftw_plan_r2r_1d( int( n ) , in , in , FFTW_REDFT10 ,
                                     flag );
@@ -323,22 +339,24 @@ int main( int argc , char ** argv )
     }
 #endif
 #ifdef ADS_HAS_POCKETFFT
-   print( "fft" , "dct2" , n , "pocketfft" , timed( r , q , reset , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c )
-            pocketfft::dct< double >( { n } , { sizeof( double ) } ,
-                                      { sizeof( double ) } , { 0 } , 2 ,
-                                      y.data() + c * s , y.data() + c * s ,
-                                      1.0 , false );
-           sink = sink + ( y[ 0 ] > 0 ); } ) );
+   if( ! skip( "pocketfft" ) )
+    print( "fft" , "dct2" , n , "pocketfft" , timed( r , q , reset , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c )
+             pocketfft::dct< double >( { n } , { sizeof( double ) } ,
+                                       { sizeof( double ) } , { 0 } , 2 ,
+                                       y.data() + c * s , y.data() + c * s ,
+                                       1.0 , false );
+            sink = sink + ( y[ 0 ] > 0 ); } ) );
 #endif
 #ifdef ADS_HAS_DUCC0
-   print( "fft" , "dct2" , n , "ducc0" , timed( r , q , reset , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c ) {
-            ducc0::cfmav< double > in( y.data() + c * s , { n } );
-            ducc0::vfmav< double > out( y.data() + c * s , { n } );
-            ducc0::dct( in , out , { 0 } , 2 , 1.0 , false , 1 );
-            }
-           sink = sink + ( y[ 0 ] > 0 ); } ) );
+   if( ! skip( "ducc0" ) )
+    print( "fft" , "dct2" , n , "ducc0" , timed( r , q , reset , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c ) {
+             ducc0::cfmav< double > in( y.data() + c * s , { n } );
+             ducc0::vfmav< double > out( y.data() + c * s , { n } );
+             ducc0::dct( in , out , { 0 } , 2 , 1.0 , false , 1 );
+             }
+            sink = sink + ( y[ 0 ] > 0 ); } ) );
 #endif
   }
   // ------------------------------------------------------------- many
@@ -347,11 +365,14 @@ int main( int argc , char ** argv )
    const auto A = random< Cd >( n * q , o.seed );
    std::vector< Cd > B( n * q );
    auto reset = [ & ] { B = A; };
-   print( "fft" , "many" , n , "ADS::fft" , timed( r , n * q , reset , [ & ] {
-           ADS::fftMany( B.data() , n , q , false );
-           sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "ADS::fft" ) )
+    print( "fft" , "many" , n , "ADS::fft" , timed( r , n * q , reset , [ & ] {
+            ADS::fftMany( B.data() , n , q , false );
+            sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #ifdef ADS_HAS_FFTW
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     auto * in = fftw_alloc_complex( n * q );
     const int N = int( n );
     fftw_plan p = fftw_plan_many_dft( 1 , & N , int( q ) , in , nullptr , 1 ,
@@ -367,20 +388,22 @@ int main( int argc , char ** argv )
     }
 #endif
 #ifdef ADS_HAS_POCKETFFT
-   print( "fft" , "many" , n , "pocketfft" ,
-          timed( r , n * q , reset , [ & ] {
-           const pocketfft::stride_t st{ std::ptrdiff_t( n * sizeof( Cd ) ) ,
-                                         sizeof( Cd ) };
-           pocketfft::c2c< double >( { q , n } , st , st , { 1 } , true ,
-                                     B.data() , B.data() , 1.0 );
-           sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "pocketfft" ) )
+    print( "fft" , "many" , n , "pocketfft" ,
+           timed( r , n * q , reset , [ & ] {
+            const pocketfft::stride_t st{ std::ptrdiff_t( n * sizeof( Cd ) ) ,
+                                          sizeof( Cd ) };
+            pocketfft::c2c< double >( { q , n } , st , st , { 1 } , true ,
+                                      B.data() , B.data() , 1.0 );
+            sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #endif
 #ifdef ADS_HAS_DUCC0
-   print( "fft" , "many" , n , "ducc0" , timed( r , n * q , reset , [ & ] {
-           ducc0::cfmav< Cd > in( B.data() , { q , n } );
-           ducc0::vfmav< Cd > out( B.data() , { q , n } );
-           ducc0::c2c( in , out , { 1 } , true , 1.0 , 1 );
-           sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "ducc0" ) )
+    print( "fft" , "many" , n , "ducc0" , timed( r , n * q , reset , [ & ] {
+            ducc0::cfmav< Cd > in( B.data() , { q , n } );
+            ducc0::vfmav< Cd > out( B.data() , { q , n } );
+            ducc0::c2c( in , out , { 1 } , true , 1.0 , 1 );
+            sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #endif
   }
   // --------------------------------------------------------------- 2d
@@ -389,12 +412,15 @@ int main( int argc , char ** argv )
    const auto A = random< Cd >( k * s , o.seed );
    std::vector< Cd > B( k * s );
    auto reset = [ & ] { B = A; };
-   print( "fft" , "2d" , n , "ADS::fft" , timed( r , q , reset , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c )
-            ADS::fft2( B.data() + c * s , n0 , n1 , false );
-           sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "ADS::fft" ) )
+    print( "fft" , "2d" , n , "ADS::fft" , timed( r , q , reset , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c )
+             ADS::fft2( B.data() + c * s , n0 , n1 , false );
+            sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #ifdef ADS_HAS_FFTW
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     auto * in = fftw_alloc_complex( k * s );
     fftw_plan p = fftw_plan_dft_2d( int( n0 ) , int( n1 ) , in , in ,
                                     FFTW_FORWARD , flag );
@@ -409,23 +435,25 @@ int main( int argc , char ** argv )
     }
 #endif
 #ifdef ADS_HAS_POCKETFFT
-   print( "fft" , "2d" , n , "pocketfft" , timed( r , q , reset , [ & ] {
-           const pocketfft::stride_t st{ std::ptrdiff_t( n1 * sizeof( Cd ) ) ,
-                                         sizeof( Cd ) };
-           for( std::size_t c = 0 ; c < k ; ++c )
-            pocketfft::c2c< double >( { n0 , n1 } , st , st , { 0 , 1 } ,
-                                      true , B.data() + c * s ,
-                                      B.data() + c * s , 1.0 );
-           sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "pocketfft" ) )
+    print( "fft" , "2d" , n , "pocketfft" , timed( r , q , reset , [ & ] {
+            const pocketfft::stride_t st{ std::ptrdiff_t( n1 * sizeof( Cd ) ) ,
+                                          sizeof( Cd ) };
+            for( std::size_t c = 0 ; c < k ; ++c )
+             pocketfft::c2c< double >( { n0 , n1 } , st , st , { 0 , 1 } ,
+                                       true , B.data() + c * s ,
+                                       B.data() + c * s , 1.0 );
+            sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #endif
 #ifdef ADS_HAS_DUCC0
-   print( "fft" , "2d" , n , "ducc0" , timed( r , q , reset , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c ) {
-            ducc0::cfmav< Cd > in( B.data() + c * s , { n0 , n1 } );
-            ducc0::vfmav< Cd > out( B.data() + c * s , { n0 , n1 } );
-            ducc0::c2c( in , out , { 0 , 1 } , true , 1.0 , 1 );
-            }
-           sink = sink + ( B[ 0 ].real() > 0 ); } ) );
+   if( ! skip( "ducc0" ) )
+    print( "fft" , "2d" , n , "ducc0" , timed( r , q , reset , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c ) {
+             ducc0::cfmav< Cd > in( B.data() + c * s , { n0 , n1 } );
+             ducc0::vfmav< Cd > out( B.data() + c * s , { n0 , n1 } );
+             ducc0::c2c( in , out , { 0 , 1 } , true , 1.0 , 1 );
+             }
+            sink = sink + ( B[ 0 ].real() > 0 ); } ) );
 #endif
   }
   // --------------------------------------------------------- convolve
@@ -437,13 +465,16 @@ int main( int argc , char ** argv )
     P[ c ] = random< double >( h , o.seed + unsigned( 2 * c ) );
     Q[ c ] = random< double >( h , o.seed + unsigned( 2 * c + 1 ) );
     }
-   print( "fft" , "convolve" , n , "ADS::fft" , timed( r , q , []{} , [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c ) {
-            const auto z = ADS::convolve( P[ c ] , Q[ c ] );
-            sink = sink + ( z[ 0 ] > 0 );
-            } } ) );
+   if( ! skip( "ADS::fft" ) )
+    print( "fft" , "convolve" , n , "ADS::fft" , timed( r , q , []{} , [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c ) {
+             const auto z = ADS::convolve( P[ c ] , Q[ c ] );
+             sink = sink + ( z[ 0 ] > 0 );
+             } } ) );
 #ifdef ADS_HAS_FFTW
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     double * a = fftw_alloc_real( N ) , * b = fftw_alloc_real( N );
     auto * A = fftw_alloc_complex( N / 2 + 1 ) ,
          * B = fftw_alloc_complex( N / 2 + 1 );
@@ -485,25 +516,26 @@ int main( int argc , char ** argv )
     }
 #endif
 #ifdef ADS_HAS_POCKETFFT
-   print( "fft" , "convolve" , n , "pocketfft" , timed( r , q , []{} ,
-          [ & ] {
-           for( std::size_t c = 0 ; c < k ; ++c ) {
-            std::vector< double > a( N ) , b( N );
-            std::vector< Cd > A( N / 2 + 1 ) , B( N / 2 + 1 );
-            std::copy( P[ c ].begin() , P[ c ].end() , a.begin() );
-            std::copy( Q[ c ].begin() , Q[ c ].end() , b.begin() );
-            const pocketfft::stride_t sr{ sizeof( double ) } ,
-                                      sc{ sizeof( Cd ) };
-            pocketfft::r2c< double >( { N } , sr , sc , 0 , true , a.data() ,
-                                      A.data() , 1.0 );
-            pocketfft::r2c< double >( { N } , sr , sc , 0 , true , b.data() ,
-                                      B.data() , 1.0 );
-            for( std::size_t j = 0 ; j <= N / 2 ; ++j ) A[ j ] *= B[ j ];
-            pocketfft::c2r< double >( { N } , sc , sr , 0 , false , A.data() ,
-                                      a.data() , 1.0 / double( N ) );
-            a.resize( m );
-            sink = sink + ( a[ 0 ] > 0 );
-            } } ) );
+   if( ! skip( "pocketfft" ) )
+    print( "fft" , "convolve" , n , "pocketfft" , timed( r , q , []{} ,
+           [ & ] {
+            for( std::size_t c = 0 ; c < k ; ++c ) {
+             std::vector< double > a( N ) , b( N );
+             std::vector< Cd > A( N / 2 + 1 ) , B( N / 2 + 1 );
+             std::copy( P[ c ].begin() , P[ c ].end() , a.begin() );
+             std::copy( Q[ c ].begin() , Q[ c ].end() , b.begin() );
+             const pocketfft::stride_t sr{ sizeof( double ) } ,
+                                       sc{ sizeof( Cd ) };
+             pocketfft::r2c< double >( { N } , sr , sc , 0 , true , a.data() ,
+                                       A.data() , 1.0 );
+             pocketfft::r2c< double >( { N } , sr , sc , 0 , true , b.data() ,
+                                       B.data() , 1.0 );
+             for( std::size_t j = 0 ; j <= N / 2 ; ++j ) A[ j ] *= B[ j ];
+             pocketfft::c2r< double >( { N } , sc , sr , 0 , false , A.data() ,
+                                       a.data() , 1.0 / double( N ) );
+             a.resize( m );
+             sink = sink + ( a[ 0 ] > 0 );
+             } } ) );
 #endif
   }
   // -------------------------------------------------------- the plans
@@ -511,7 +543,7 @@ int main( int argc , char ** argv )
    const auto A = random< Cd >( n , o.seed );
    const int R = std::max( 3 , r / 4 );
    std::vector< double > t;
-   for( int i = 0 ; i < R ; ++i ) {
+   for( int i = 0 ; ( i < R ) && ! skip( "ADS::fft" ) ; ++i ) {
     double d = 0;
     std::thread( [ & ] {
      auto B = A , C = A;
@@ -526,10 +558,14 @@ int main( int argc , char ** argv )
      } ).join();
     t.push_back( d / double( n ) );
     }
-   std::nth_element( t.begin() , t.begin() + t.size() / 2 , t.end() );
-   print( "fft plan" , "complex" , n , "ADS::fft" , t[ t.size() / 2 ] );
+   if( ! t.empty() ) {
+    std::nth_element( t.begin() , t.begin() + t.size() / 2 , t.end() );
+    print( "fft plan" , "complex" , n , "ADS::fft" , t[ t.size() / 2 ] );
+    }
 #ifdef ADS_HAS_FFTW
    for( unsigned flag : fftwFlags ) {
+    if( skip( fftwName( flag ) ) )
+     continue;
     auto * in = fftw_alloc_complex( n );
     std::vector< double > w;
     for( int i = 0 ; i < R ; ++i ) {

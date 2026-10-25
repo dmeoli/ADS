@@ -158,7 +158,8 @@ int main( int argc , char ** argv )
     std::size_t expected = 0;
     bool first = true;
     for( const auto & [ who , count , quadratic ] : S ) {
-     if( hard && quadratic && ( double( n ) * double( m ) > 1e8 ) )
+     if( ( hard && quadratic && ( double( n ) * double( m ) > 1e8 ) ) ||
+         skip( who ) )
       continue;
      std::size_t c = 0;
      const double t = median( [](){ return( 0 ); } , [ & ]( int ) {

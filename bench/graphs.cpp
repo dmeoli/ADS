@@ -108,6 +108,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <functional>
+#include <initializer_list>
 #include <queue>
 #include <set>
 #include <sstream>
@@ -569,6 +570,16 @@ struct Check {
   }
  };
 
+/// whether any of the structures whos is measured, all of them listed
+/// under ADS_BENCH_LIST: the graph they share is built only then
+bool measured( std::initializer_list< const char * > whos )
+{
+ bool m = false;
+ for( const char * w : whos )
+  m = ! skip( w ) || m;
+ return( m );
+ }
+
 /// the sum of the finite distances and their count, as one number
 long long digest( const std::vector< int > & d , int inf )
 {
@@ -601,6 +612,8 @@ struct Cell {
  /// than 5 s); the result and the counts checked against the first run
  template< class W >
  void operator()( const std::string & who , W && work ) {
+  if( skip( who ) )
+   return;
   long long res = 0;
   Counts k;
   auto run = [ & ]( int ) { k.clear(); res = work( k ); };
@@ -650,19 +663,21 @@ void bfs( const std::string & c , int n0 , int r , unsigned seed )
  const int n = I.n , src = source( I );
  const auto A = arcs( I );
  Cell C( "bfs" , c , std::size_t( n ) , A.size() , r );
- {
+ if( measured( { "std vector queue" , "std vector queue A/A" } ) ) {
   const StdGraph< false > G( n , A , false );
   for( const char * who : { "std vector queue" , "std vector queue A/A" } )
    C( who , [ & ]( Counts & k ) {
     return( bfsRun( G , src , StdQueue() , k ) ); } );
   }
 #ifdef ADS_HAS_BOOST
- {
+ if( measured( { "Boost csr queue" } ) ) {
   const BoostGraph< false > G( n , A , false );
   C( "Boost csr queue" , [ & ]( Counts & k ) {
    return( bfsRun( G , src , BoostQueue() , k ) ); } );
   }
 #endif
+ if( ! measured( { "ADS StaticGraph ArrayQueue" } ) )
+  return;
  const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
                                                       false ) );
  C( "ADS StaticGraph ArrayQueue" , [ & ]( Counts & k ) {
@@ -703,13 +718,14 @@ void priorityQueues( Cell & C , const Input & I ,
 {
  const int n = I.n;
  using P = Priority;
- {
+ if( measured( { "std vector set" , "std vector set A/A" } ) ) {
   const StdGraph<> G( n , A , I.directed );
   C( "std vector set" , withQueue< StdSetQueue >( G , src , run ) );
   C( "std vector set A/A" , withQueue< StdSetQueue >( G , src , run ) );
   }
 #ifdef ADS_HAS_BOOST
- {
+ if( measured( { "Boost csr d_ary_heap<4>" , "Boost csr d_ary_heap<2>" ,
+                 "Boost csr pairing_heap" , "Boost csr fibonacci_heap" } ) ) {
   const BoostGraph<> G( n , A , I.directed );
   C( "Boost csr d_ary_heap<4>" , withQueue< BoostDary4 >( G , src , run ) );
   C( "Boost csr d_ary_heap<2>" , withQueue< BoostDary2 >( G , src , run ) );
@@ -718,6 +734,13 @@ void priorityQueues( Cell & C , const Input & I ,
      withQueue< BoostFibonacci >( G , src , run ) );
   }
 #endif
+ if( ! measured( { "ADS StaticGraph HeapPriorityQueue<4>" ,
+                   "ADS StaticGraph HeapPriorityQueue<2>" ,
+                   "ADS StaticGraph IndexedDaryHeap<4>" ,
+                   "ADS StaticGraph IndexedDaryHeap<2>" ,
+                   "ADS StaticGraph PairingHeap" ,
+                   "ADS StaticGraph FibonacciHeapPriorityQueue" } ) )
+  return;
  const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , I.directed );
  C( "ADS StaticGraph HeapPriorityQueue<4>" ,
     withQueue< ADS::HeapPriorityQueue< int , P , 4 > >( S , src , run ) );
@@ -751,7 +774,7 @@ void bfm( const std::string & c , int n0 , int r , unsigned seed )
  const int n = I.n , src = source( I );
  const auto A = arcs( I );
  Cell C( "bfm" , c , std::size_t( n ) , A.size() , r );
- {
+ if( measured( { "std vector queue" , "std vector queue A/A" } ) ) {
   const StdGraph<> G( n , A , true );
   for( const char * who : { "std vector queue" , "std vector queue A/A" } )
    C( who , [ & ]( Counts & k ) {
@@ -759,13 +782,15 @@ void bfm( const std::string & c , int n0 , int r , unsigned seed )
     return( spRun( G , src , q , k ) ); } );
   }
 #ifdef ADS_HAS_BOOST
- {
+ if( measured( { "Boost csr queue" } ) ) {
   const BoostGraph<> G( n , A , true );
   C( "Boost csr queue" , [ & ]( Counts & k ) {
    BoostQueue q;
    return( spRun( G , src , q , k ) ); } );
   }
 #endif
+ if( ! measured( { "ADS StaticGraph ArrayQueue" } ) )
+  return;
  const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , true );
  C( "ADS StaticGraph ArrayQueue" , [ & ]( Counts & k ) {
   ADS::ArrayQueue< int > q( std::max( n , 1 ) );
@@ -851,17 +876,19 @@ void scc( const std::string & c , int n0 , int r , unsigned seed )
  const int n = I.n;
  const auto A = arcs( I );
  Cell C( "scc" , c , std::size_t( n ) , A.size() , r );
- {
+ if( measured( { "std vector" , "std vector A/A" } ) ) {
   const StdGraph< false > G( n , A , true );
   for( const char * who : { "std vector" , "std vector A/A" } )
    C( who , [ & ]( Counts & k ) { return( sccRun( G , k ) ); } );
   }
 #ifdef ADS_HAS_BOOST
- {
+ if( measured( { "Boost csr" } ) ) {
   const BoostGraph< false > G( n , A , true );
   C( "Boost csr" , [ & ]( Counts & k ) { return( sccRun( G , k ) ); } );
   }
 #endif
+ if( ! measured( { "ADS StaticGraph" } ) )
+  return;
  const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
                                                       true ) );
  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( sccRun( S , k ) ); } );

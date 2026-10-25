@@ -74,11 +74,12 @@ int main( int argc , char ** argv )
 
    // the suffix arrays
    for( const char * who : { "ADS::suffixArray" , "ADS::suffixArray A/A" } )
-    out( "suffix array" , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           const auto A = ADS::suffixArray( T );
-           sink = sink + A[ n / 2 ]; } , r , n ) );
-   if( n <= 1000000 ) {
+    if( ! skip( who ) )
+     out( "suffix array" , who , median( [](){ return( 0 ); } ,
+           [ & ]( int ) {
+            const auto A = ADS::suffixArray( T );
+            sink = sink + A[ n / 2 ]; } , r , n ) );
+   if( ( n <= 1000000 ) && ! skip( "ADS::suffixArraySais" ) ) {
     std::vector< std::size_t > A;
     out( "suffix array" , "ADS::suffixArraySais" , median(
           [](){ return( 0 ); } , [ & ]( int ) {
@@ -87,7 +88,7 @@ int main( int argc , char ** argv )
     same( A , "ADS::suffixArraySais" );
     }
 #ifdef ADS_HAS_LIBSAIS
-   {
+   if( ! skip( "libsais" ) ) {
     std::vector< std::int32_t > A;
     out( "suffix array" , "libsais" , median( [](){ return( 0 ); } ,
           [ & ]( int ) {
@@ -98,7 +99,7 @@ int main( int argc , char ** argv )
     }
 #endif
 #ifdef ADS_HAS_DIVSUFSORT
-   {
+   if( ! skip( "divsufsort" ) ) {
     std::vector< saidx_t > A;
     out( "suffix array" , "divsufsort" , median( [](){ return( 0 ); } ,
           [ & ]( int ) {
@@ -112,10 +113,11 @@ int main( int argc , char ** argv )
    // the LCP arrays of the same suffix array
    const auto L = ADS::lcpArrayPhi( T , ref );
    for( const char * who : { "ADS::lcpArrayPhi" , "ADS::lcpArrayPhi A/A" } )
-    out( "lcp" , who , median( [](){ return( 0 ); } , [ & ]( int ) {
-          const auto P = ADS::lcpArrayPhi( T , ref );
-          sink = sink + P[ n / 2 ]; } , r , n ) );
-   if( n <= 1000000 ) {
+    if( ! skip( who ) )
+     out( "lcp" , who , median( [](){ return( 0 ); } , [ & ]( int ) {
+           const auto P = ADS::lcpArrayPhi( T , ref );
+           sink = sink + P[ n / 2 ]; } , r , n ) );
+   if( ( n <= 1000000 ) && ! skip( "ADS::lcpArray (Kasai)" ) ) {
     const std::vector< std::size_t > S( ref.begin() , ref.end() );
     std::vector< std::size_t > K;
     out( "lcp" , "ADS::lcpArray (Kasai)" , median( [](){ return( 0 ); } ,
@@ -126,7 +128,7 @@ int main( int argc , char ** argv )
      return( 1 );
     }
 #ifdef ADS_HAS_LIBSAIS
-   {
+   if( ! skip( "libsais plcp+lcp" ) ) {
     const std::vector< std::int32_t > S( ref.begin() , ref.end() );
     std::vector< std::int32_t > Q;
     out( "lcp" , "libsais plcp+lcp" , median( [](){ return( 0 ); } ,

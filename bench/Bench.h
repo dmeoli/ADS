@@ -8,7 +8,13 @@
  * ( benchmark , case , n , structure , ns/op ), so that a script can
  * tabulate it. Each benchmark also runs its first structure twice, the
  * second time under the name "A/A", which measures the noise of the
- * machine: two runs of the same code differ by that much. *
+ * machine: two runs of the same code differ by that much.
+ *
+ * Two variables of the environment pick the cells to measure, so that
+ * each structure can run in a process of its own: with ADS_BENCH_WHO set
+ * to a label only the cells of the structure of that label are measured,
+ * with ADS_BENCH_LIST set none is, and the labels of the structures are
+ * printed instead, once each, in the order of their first cell. *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
@@ -28,6 +34,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <random>
 #include <string>
 #include <unordered_set>
@@ -66,10 +73,42 @@ inline std::vector< std::uint64_t > keys( std::size_t n , unsigned seed )
  return( K );
  }
 
-/// a line of the output
+/// whether ADS_BENCH_LIST is set: the labels are printed, no cell is
+/// measured
+inline bool listing( void )
+{
+ static const bool list = [](){
+  const char * l = std::getenv( "ADS_BENCH_LIST" );
+  return( l && *l && std::strcmp( l , "0" ) ); }();
+ return( list );
+ }
+
+/// whether the cells of the structure who are not to be measured: those
+/// of a label other than that of ADS_BENCH_WHO, and all of them under
+/// ADS_BENCH_LIST, which prints who the first time; a benchmark calls it
+/// before any work of who, its preparation too
+inline bool skip( const std::string & who )
+{
+ static const char * const only = [](){
+  const char * w = std::getenv( "ADS_BENCH_WHO" );
+  return( w && *w ? w : nullptr ); }();
+ if( listing() ) {
+  static std::unordered_set< std::string > seen;
+  if( seen.insert( who ).second ) {
+   std::printf( "%s\n" , who.c_str() );
+   std::fflush( stdout );
+   }
+  return( true );
+  }
+ return( only && ( who != only ) );
+ }
+
+/// a line of the output, none for a structure that skip() leaves out
 inline void print( const char * bench , const std::string & what ,
                    std::size_t n , const std::string & who , double ns )
 {
+ if( skip( who ) )
+  return;
  // 4 decimals below 1 ns, where 2 would leave one or two digits
  std::printf( ns < 1 ? "%s\t%s\t%zu\t%s\t%.4f\n" : "%s\t%s\t%zu\t%s\t%.2f\n" ,
               bench , what.c_str() , n , who.c_str() , ns );

@@ -89,31 +89,39 @@ void popcounts( std::size_t n , int r , unsigned seed )
   sink = sink + s;
   };
  for( const char * who : { "std::popcount" , "std::popcount A/A" } )
-  print( "popcount" , "array" , n , who , timed( loop , r , n ) );
- print( "popcount" , "array" , n , "ADS::sidewaysSum" , timed( [ & ](){
-         std::uint64_t s = 0;
-         for( std::size_t i = 0 ; i < n ; ++i )
-          s += std::uint64_t( ADS::sidewaysSum( A[ i ] ) );
-         sink = sink + s; } , r , n ) );
+  if( ! skip( who ) )
+   print( "popcount" , "array" , n , who , timed( loop , r , n ) );
+ if( ! skip( "ADS::sidewaysSum" ) )
+  print( "popcount" , "array" , n , "ADS::sidewaysSum" , timed( [ & ](){
+          std::uint64_t s = 0;
+          for( std::size_t i = 0 ; i < n ; ++i )
+           s += std::uint64_t( ADS::sidewaysSum( A[ i ] ) );
+          sink = sink + s; } , r , n ) );
 #ifdef ADS_HAS_BOOST
- boost::dynamic_bitset< ADS::Word > D( A.begin() , A.end() );
- print( "popcount" , "array" , n , "boost::dynamic_bitset" , timed( [ & ](){
-         sink = sink + D.count(); } , r , n ) );
+ if( ! skip( "boost::dynamic_bitset" ) ) {
+  boost::dynamic_bitset< ADS::Word > D( A.begin() , A.end() );
+  print( "popcount" , "array" , n , "boost::dynamic_bitset" , timed( [ & ](){
+          sink = sink + D.count(); } , r , n ) );
+  }
 #endif
 #ifdef ADS_HAS_LIBPOPCNT
- print( "popcount" , "array" , n , "libpopcnt" , timed( [ & ](){
-         sink = sink + popcnt( A.data() , n * 8 ); } , r , n ) );
+ if( ! skip( "libpopcnt" ) )
+  print( "popcount" , "array" , n , "libpopcnt" , timed( [ & ](){
+          sink = sink + popcnt( A.data() , n * 8 ); } , r , n ) );
 #endif
- print( "popcount" , "array" , n , "ADS::popcount" , timed( [ & ](){
-         sink = sink + ADS::popcount( A.data() , n ); } , r , n ) );
- print( "popcount" , "and" , n , "std::popcount" , timed( [ & ](){
-         std::uint64_t s = 0;
-         for( std::size_t i = 0 ; i < n ; ++i )
-          s += std::uint64_t( std::popcount( A[ i ] & B[ i ] ) );
-         sink = sink + s; } , r , n ) );
- print( "popcount" , "and" , n , "ADS::popcountAnd" , timed( [ & ](){
-         sink = sink + ADS::popcountAnd( A.data() , B.data() , n ); } , r ,
-         n ) );
+ if( ! skip( "ADS::popcount" ) )
+  print( "popcount" , "array" , n , "ADS::popcount" , timed( [ & ](){
+          sink = sink + ADS::popcount( A.data() , n ); } , r , n ) );
+ if( ! skip( "std::popcount" ) )
+  print( "popcount" , "and" , n , "std::popcount" , timed( [ & ](){
+          std::uint64_t s = 0;
+          for( std::size_t i = 0 ; i < n ; ++i )
+           s += std::uint64_t( std::popcount( A[ i ] & B[ i ] ) );
+          sink = sink + s; } , r , n ) );
+ if( ! skip( "ADS::popcountAnd" ) )
+  print( "popcount" , "and" , n , "ADS::popcountAnd" , timed( [ & ](){
+          sink = sink + ADS::popcountAnd( A.data() , B.data() , n ); } , r ,
+          n ) );
  }
 
 void mortons( std::size_t n , int r , unsigned seed )
@@ -127,12 +135,16 @@ void mortons( std::size_t n , int r , unsigned seed )
   Z[ i ] = g();
   }
  auto encode = [ & ]( const char * who , auto && f ) {
+  if( skip( who ) )
+   return;
   print( "morton" , "encode" , n , who , timed( [ & ](){
           ADS::Word s = 0;
           for( std::size_t i = 0 ; i < n ; ++i ) s ^= f( X[ i ] , Y[ i ] );
           sink = sink + s; } , r , n ) );
   };
  auto decode = [ & ]( const char * who , auto && f ) {
+  if( skip( who ) )
+   return;
   print( "morton" , "decode" , n , who , timed( [ & ](){
           ADS::Word s = 0;
           for( std::size_t i = 0 ; i < n ; ++i ) s ^= f( Z[ i ] );
@@ -171,6 +183,8 @@ void permutations( const std::string & what , const std::vector< int > & a ,
  do ++count;
  while( std::next_permutation( b.begin() , b.end() ) );
  auto cell = [ & ]( const char * who , auto && gen ) {
+  if( skip( who ) )
+   return;
   print( "permutations" , what , count , who , timed( [ & ](){
           std::vector< int > c = a;
           int s = 0;
@@ -220,6 +234,8 @@ void combinations( int n , int t , int r )
  const std::string what = "C(" + std::to_string( n ) + "," +
                           std::to_string( t ) + ")";
  auto cell = [ & ]( const char * who , auto && gen ) {
+  if( skip( who ) )
+   return;
   print( "combinations" , what , count , who , timed( [ & ](){
           int s = 0;
           gen( s );

@@ -72,6 +72,7 @@
 #include <forward_list>
 #include <list>
 #include <numeric>
+#include <optional>
 #include <stack>
 
 using namespace ADS::bench;
@@ -84,6 +85,8 @@ template< class M , class A , class R >
 void run( const std::string & who , const std::vector< int > & X , int r ,
           M && make , A && add , const char * what , R && reorder )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = X.size();
  auto fill = [ & ]( void ) {
   auto s = make();
@@ -108,6 +111,8 @@ template< class S >
 void positions( const std::string & who , const S & s , std::size_t n ,
                 int r )
 {
+ if( skip( who ) )
+  return;
  print( "sequences" , "visit by positions" , n , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
           long t = 0;
@@ -123,6 +128,8 @@ void middle( const std::string & who , const std::vector< int > & X ,
              const std::vector< std::size_t > & R , int r , M && make ,
              I && insert , E && erase )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = X.size();
  auto fill = [ & ]( void ) {
   auto s = make();
@@ -150,6 +157,8 @@ void middle( const std::string & who , const std::vector< int > & X ,
 template< class V >
 void many( const std::string & who , const std::vector< int > & X , int r )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = X.size() / 8 * 8;
  print( "sequences" , "8-item vectors" , X.size() , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
@@ -168,6 +177,8 @@ template< class M , class Push , class Pop >
 void stack( const std::string & who , const std::vector< int > & X , int r ,
             M && make , Push && push , Pop && pop )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = X.size();
  print( "sequences" , "stack" , n , who , median( [](){ return( 0 ); } ,
          [ & ]( int ) {
@@ -183,6 +194,8 @@ template< class V , class F >
 void onCopy( const char * what , const std::string & who , const V & A ,
              std::size_t n , int r , F && f )
 {
+ if( skip( who ) )
+  return;
  print( "sequences" , what , n , who , median( [ & ](){
          return( A ); } , [ & ]( V & B ) {
           f( B );
@@ -238,9 +251,12 @@ int main( int argc , char ** argv )
   run( "ADS::CursorList" , X , r , [](){
        return( ADS::CursorList< int >() ); } , front , "visit again" ,
        again );
-  ADS::ArraySequence< int > A( X.begin() , X.end() );
-  ADS::List< int > L( X.begin() , X.end() );
-  positions( "ADS::ArraySequence" , A , n , r );
+  std::optional< ADS::ArraySequence< int > > A;
+  if( ! skip( "ADS::ArraySequence" ) )
+   A.emplace( X.begin() , X.end() );
+  ADS::List< int > L( X.begin() , X.end() );  // also the input of the sorts
+  if( A )
+   positions( "ADS::ArraySequence" , *A , n , r );
   positions( "ADS::List" , L , n , r );
 
   // insertions and removals anywhere, at 10^5 items at most

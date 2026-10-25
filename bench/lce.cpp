@@ -46,6 +46,7 @@
 
 #include <bit>
 #include <cstring>
+#include <optional>
 #include <random>
 
 using namespace ADS::bench;
@@ -61,7 +62,9 @@ int main( int argc , char ** argv )
    std::vector< std::uint32_t > rank( n );
    for( std::size_t r = 0 ; r < n ; ++r ) rank[ SA[ r ] ] = std::uint32_t( r );
    const auto LCP = ADS::lcpArrayPhi( T , SA );
-   const ADS::LceIndex<> X( T );
+   std::optional< ADS::LceIndex<> > X;     // built only to be measured
+   if( ! skip( "ADS::LceIndex" ) || ! skip( "ADS::LceIndex A/A" ) )
+    X.emplace( T );
    const std::string k( kind );
    const bool longRepeats = ( k == "one-byte" ) || ( k == "fibonacci" ) ||
                             ( k == "repeats" );
@@ -95,6 +98,8 @@ int main( int argc , char ** argv )
     const std::string what = k + " " + set;
     std::uint64_t expected = 0;
     auto run = [ & ]( const char * who , auto && lce , std::size_t q ) {
+     if( skip( who ) )
+      return;
      std::uint64_t c = 0;
      const double t = median( [](){ return( 0 ); } , [ & ]( int ) {
       c = 0;
@@ -111,10 +116,10 @@ int main( int argc , char ** argv )
      print( "lce" , what , n , who , t );
      };
     run( "ADS::LceIndex" , [ & ]( std::size_t i , std::size_t j ) {
-     return( X.lce( i , j ) ); } , Q );
+     return( X->lce( i , j ) ); } , Q );
     run( "ADS::LceIndex A/A" , [ & ]( std::size_t i , std::size_t j ) {
-     return( X.lce( i , j ) ); } , Q );
-    if( n <= 1000000 ) {
+     return( X->lce( i , j ) ); } , Q );
+    if( ( n <= 1000000 ) && ! skip( "ADS::SuffixArray::lce" ) ) {
      static ADS::SuffixArray B;
      static std::string built;
      if( built != T ) {
@@ -126,7 +131,7 @@ int main( int argc , char ** argv )
      }
     run( "direct comparison" , direct , longRepeats ? 10000 : Q );
 #ifdef ADS_HAS_SDSL
-    {
+    if( ! skip( "sdsl rmq_succinct_sct" ) ) {
      static sdsl::int_vector<> L;
      static sdsl::rmq_succinct_sct<> R;
      L = sdsl::int_vector<>( LCP.size() );

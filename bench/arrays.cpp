@@ -85,18 +85,19 @@ using namespace ADS::bench;
 namespace {
 
 /// whether to run the structure who: all, or those whose name has in it
-/// one of the texts separated by | in the variable ONLY
+/// one of the texts separated by | in the variable ONLY, and of these
+/// those that skip() keeps
 bool wanted( const std::string & who )
 {
  const char * o = std::getenv( "ONLY" );
  if( ! o || ! *o )
-  return( true );
+  return( ! skip( who ) );
  const std::string s = o;
  for( std::size_t a = 0 , b ; a <= s.size() ; a = b + 1 ) {
   b = std::min( s.find( '|' , a ) , s.size() );
   if( ( b > a ) && ( who.find( s.substr( a , b - a ) ) !=
                      std::string::npos ) )
-   return( true );
+   return( ! skip( who ) );
   }
  return( false );
  }
@@ -275,11 +276,11 @@ void rmq( std::size_t n , int r , unsigned seed )
   S[ q ] = { i , std::min( n - 1 , i + g() % 64 ) };
   }
  auto cells = [ & ]( const std::string & who , auto && build , auto && ask ) {
-  if( ! wanted( who ) )                     // the tables of n log n words
-   return;                                  // are left out past 4 10^6
   if( ( n > 4000000 ) && ( ( who.find( "parse" ) != std::string::npos ) ||
                            ( who.find( "sparse_table" ) !=
                              std::string::npos ) ) )
+   return;                                  // the tables of n log n words
+  if( ! wanted( who ) )                     // are left out past 4 10^6
    return;
   print( "rmq" , "build" , n , who , median( [](){ return( 0 ); } ,
           [ & ]( int ) { auto s = build(); sink = sink + ask( *s , 0 ,

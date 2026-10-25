@@ -105,6 +105,8 @@ double passes( int r , std::size_t n , M && make , Insert && insert )
 template< class A >
 void cases( const std::string & who , std::size_t n , int r , const A & a )
 {
+ if( skip( who ) )
+  return;
  using T = std::allocator_traits< A >;
  using LA = typename T::template rebind_alloc< std::uint64_t >;
  using MA = typename T::template rebind_alloc<
@@ -151,6 +153,8 @@ template< class A >
 void crossThread( const std::string & who , std::size_t n , int r ,
                   const A & a )
 {
+ if( skip( who ) )
+  return;
  using SA = typename std::allocator_traits< A >::template rebind_alloc<
              Message >;
  print( "allocators" , "cross-thread" , n , who ,

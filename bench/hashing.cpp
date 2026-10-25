@@ -213,6 +213,8 @@ template< class F >
 void hashes( const char * what , const std::string & who , const Strings & S ,
              int r , F && h )
 {
+ if( skip( who ) )
+  return;
  print( "hash functions" , what , S.at.size() , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
           std::uint64_t s = 0;
@@ -229,6 +231,8 @@ template< class F >
 void words( const std::string & who , const std::vector< Key > & K , int r ,
             F && h )
 {
+ if( skip( who ) )
+  return;
  print( "hash functions" , "word" , K.size() , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
           std::uint64_t s = 0;
@@ -342,6 +346,8 @@ void maps( const std::string & type , const std::string & who ,
            const std::vector< T > & Q , int r , M && make , I && ins ,
            F && find , E && erase , S && sum )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = K.size();
  print( "hash maps" , "insert " + type , n , who , median(
          make , [ & ]( auto & e ) {
@@ -497,6 +503,8 @@ void filters( const std::string & who , const std::vector< Key > & K ,
               const std::vector< Key > & H , const std::vector< Key > & Q ,
               int r , B && build , F && has , Z && bits )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = K.size();
  print( "filters" , "build" , n , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
@@ -529,6 +537,8 @@ void dynamic( const std::string & who , const std::vector< Key > & K ,
               int r , M && make , I && ins , F && has , R && rem ,
               Z && bits )
 {
+ if( skip( who ) )
+  return;
  auto fill = [ & ]( const std::vector< Key > & S ) {
   auto f = make( S.size() );
   for( Key k : S ) ins( f , k );
@@ -783,6 +793,8 @@ void perfect( const std::string & who , const std::vector< Key > & K ,
               const std::vector< Key > & H , int r , B && build , F && at ,
               Z && bits )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = K.size();
  print( "perfect hashing" , "build" , n , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
@@ -960,6 +972,8 @@ void concurrent( const std::string & who , const std::vector< Key > & K ,
                  int r , int p , M && make , I && ins , F && find ,
                  E && erase )
 {
+ if( skip( who ) )
+  return;
  const std::size_t n = K.size();
  const std::string tp = " p=" + std::to_string( p );
  auto full = [ & ]( void ) {

@@ -213,27 +213,29 @@ void covers( const Cover & C , int r )
   sink = sink + std::uint64_t( X.solve( []( const std::vector< int > & ) {
    return( false ); } ) );
   };
- print( "exact cover" , C.name , count , "ADS::ExactCover" ,
-        timed( book , r ) );
- print( "exact cover" , C.name , count , "ADS::ExactCover A/A" ,
-        timed( book , r ) );
+ for( const char * who : { "ADS::ExactCover" , "ADS::ExactCover A/A" } )
+  if( ! skip( who ) )
+   print( "exact cover" , C.name , count , who , timed( book , r ) );
 #ifdef ADS_KNUTH
  const std::string f = knuthFile( C );
  for( const char * p : { "dlx1" , "dlx2" , "ssxcc" } ) {
   const std::string cmd = std::string( ADS_KNUTH ) + "/" + p + " < " + f +
                           " > /dev/null 2>&1";
+  if( skip( std::string( "knuth::" ) + p ) )
+   continue;
   print( "exact cover" , C.name , count , std::string( "knuth::" ) + p ,
          timed( [ & ](){ sink = sink + std::uint64_t(
                          std::system( cmd.c_str() ) ); } , r ) );
   }
  std::remove( f.c_str() );
 #endif
- print( "exact cover" , C.name , count , "ADS::FastExactCover" ,
-        timed( [ & ](){
-         ADS::FastExactCover X( C.primary , C.secondary );
-         for( const auto & o : C.options ) X.addOption( o );
-         sink = sink + std::uint64_t( X.solve(
-          []( const std::vector< int > & ) {} ) ); } , r ) );
+ if( ! skip( "ADS::FastExactCover" ) )
+  print( "exact cover" , C.name , count , "ADS::FastExactCover" ,
+         timed( [ & ](){
+          ADS::FastExactCover X( C.primary , C.secondary );
+          for( const auto & o : C.options ) X.addOption( o );
+          sink = sink + std::uint64_t( X.solve(
+           []( const std::vector< int > & ) {} ) ); } , r ) );
  }
 
 /// the clause learning of the book on random formulae of 3 literals at
@@ -252,6 +254,8 @@ void bookCdcl( int n , int r , unsigned seed )
    }
  long want = -1;
  auto cell = [ & ]( const char * who , auto make ) {
+  if( skip( who ) )
+   return;
   long conflicts = 0;
   print( "book cdcl" , "random 3-sat" , std::size_t( n ) , who ,
          median( [](){ return( 0 ); } , [ & ]( int ) {
@@ -311,6 +315,8 @@ void bookAStar( int n , int m , int count , int r , unsigned seed )
                           " walk " + std::to_string( m );
  long want = -1;
  auto cell = [ & ]( const char * who , auto solve ) {
+  if( skip( who ) )
+   return;
   long visited = 0;
   print( "book a-star" , what , S.size() , who , median( [](){
           return( 0 ); } , [ & ]( int ) {
@@ -353,6 +359,8 @@ void bookSubsetSum( std::size_t k , int r , unsigned seed )
  const long t = long( k ) | 1;
  const std::size_t ops = A.size() * k;
  auto cell = [ & ]( const char * who , auto solve ) {
+  if( skip( who ) )
+   return;
   print( "book subset sum" , "even" , k , who , median( [](){
           return( 0 ); } , [ & ]( int ) {
            sink = sink + std::uint64_t( solve() ); } , r , ops ) );

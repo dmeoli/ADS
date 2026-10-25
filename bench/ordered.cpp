@@ -118,7 +118,7 @@ void run( const std::string & who , const Data & X , int r , M && make ,
           I && ins , F && find , Lo && low , D && del , S && sum ,
           Sc && scan , So && sorted = None() )
 {
- if( ! wanted( who ) )
+ if( ! wanted( who ) || skip( who ) )
   return;
  const std::size_t n = X.K.size();
  const char * b = "ordered";
@@ -227,7 +227,7 @@ struct Linked {
 template< class N , class T >
 void intrusive( const std::string & who , const Data & X , int r )
 {
- if( ! wanted( who ) )
+ if( ! wanted( who ) || skip( who ) )
   return;
  using P = std::unique_ptr< Linked< N , T > >;
  const std::size_t n = X.K.size();
