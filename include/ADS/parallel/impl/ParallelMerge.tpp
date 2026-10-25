@@ -29,16 +29,38 @@ std::vector< std::size_t > multisequenceSplit(
  for( std::size_t i = 0 ; i < k ; ++i )
   total += hi[ i ] = std::size_t( R[ i ].second - R[ i ].first );
  ADS_PRE( r <= total );
+ std::vector< std::size_t > cand;
  for( ;; ) {
-  std::size_t j = 0 , w = 0;                // the widest window
+  // the pivot: the weighted median of the middles of the windows, each
+  // weighted by its width, so that at least a quarter of the total width
+  // goes at each step
+  cand.clear();
+  std::size_t width = 0;
   for( std::size_t i = 0 ; i < k ; ++i )
-   if( hi[ i ] - lo[ i ] > w ) {
-    w = hi[ i ] - lo[ i ];
-    j = i;
+   if( hi[ i ] > lo[ i ] ) {
+    cand.push_back( i );
+    width += hi[ i ] - lo[ i ];
     }
-  if( w == 0 )
+  if( cand.empty() )
    break;
-  const std::size_t m = lo[ j ] + w / 2;
+  auto mid = [ & ]( std::size_t i ) {
+   return( lo[ i ] + ( hi[ i ] - lo[ i ] ) / 2 ); };
+  auto at = [ & ]( std::size_t i ) -> const auto & {
+   return( R[ i ].first[ std::ptrdiff_t( mid( i ) ) ] ); };
+  std::sort( cand.begin() , cand.end() , [ & ]( std::size_t a ,
+                                               std::size_t b ) {
+   if( less( at( a ) , at( b ) ) ) return( true );
+   if( less( at( b ) , at( a ) ) ) return( false );
+   return( a < b ); } );
+  std::size_t j = cand.back() , acc = 0;
+  for( std::size_t i : cand ) {
+   acc += hi[ i ] - lo[ i ];
+   if( 2 * acc >= width ) {
+    j = i;
+    break;
+    }
+   }
+  const std::size_t m = mid( j );
   const auto & x = R[ j ].first[ std::ptrdiff_t( m ) ];
   // the items before ( x , j , m ): <= x in the ranges before j, < x in
   // those after it
