@@ -156,6 +156,26 @@ struct Lanes {
 
 /// ------------------------------------------------------------- AVX-512
 
+/// the permutations of 8 lanes that put the lanes of a mask first, in
+/// their order, and the others after them, a byte per lane
+struct PartTable8 {
+ std::array< std::uint64_t , 256 > idx{};
+
+ constexpr PartTable8() {
+  for( unsigned m = 0 ; m < 256 ; ++m ) {
+   std::uint64_t t = 0;
+   unsigned k = 0;
+   for( int pass = 0 ; pass < 2 ; ++pass )
+    for( unsigned i = 0 ; i < 8 ; ++i )
+     if( ( ( m >> i ) & 1 ) == unsigned( pass == 0 ) )
+      t |= std::uint64_t( i ) << ( 8 * k++ );
+   idx[ m ] = t;
+   }
+  }
+ };
+
+inline constexpr PartTable8 kPart8{};
+
 /// a register of AVX-512 of 16 keys of 32 bits or 8 of 64, signed or not,
 /// K the type of a key
 template< class Key >
@@ -251,6 +271,29 @@ struct Avx512 {
   else if constexpr( S ) return( _mm512_mask_max_epi64( x , m , x , a ) );
   else return( _mm512_mask_max_epu64( x , m , x , a ) );
   }
+ /// the lanes m of r, each to p plus its index
+ static void storeLanes( K * p , R r , Mask m ) {
+  if constexpr( W32 ) _mm512_mask_storeu_epi32( p , m , r );
+  else _mm512_mask_storeu_epi64( p , m , r );
+  }
+ /// the lanes of a reversed within the blocks of B lanes, by one
+ /// permutation
+ template< unsigned B >
+ static R reverse( R a ) {
+  constexpr auto idx = []() {
+   std::array< std::int32_t , 16 > t{};
+   for( unsigned i = 0 ; i < 16 ; ++i ) {
+    const unsigned l = W32 ? i : i / 2 , h = W32 ? 0 : i % 2;
+    const unsigned j = ( l / B ) * B + ( B - 1 - l % B );
+    t[ i ] = std::int32_t( W32 ? j : 2 * j + h );
+    }
+   return( t );
+   }();
+  return( _mm512_permutexvar_epi32( _mm512_setr_epi32(
+   idx[ 0 ] , idx[ 1 ] , idx[ 2 ] , idx[ 3 ] , idx[ 4 ] , idx[ 5 ] ,
+   idx[ 6 ] , idx[ 7 ] , idx[ 8 ] , idx[ 9 ] , idx[ 10 ] , idx[ 11 ] ,
+   idx[ 12 ] , idx[ 13 ] , idx[ 14 ] , idx[ 15 ] ) , a ) );
+  }
  /// the keys of a in the lanes m at l
  static void compress( K * l , Mask m , R a ) {
   if constexpr( W32 ) _mm512_mask_compressstoreu_epi32( l , m , a );
@@ -310,8 +353,16 @@ struct Avx512 {
  static unsigned part( R a , K p , K * l , K * r ) {
   const Mask m = less( Mask( -1 ) , a , set1( p ) );
   const unsigned nl = unsigned( std::popcount( unsigned( m ) ) );
-  compress( l , m , a );
-  compress( r - ( N - nl ) , Mask( ~m ) , a );
+  if constexpr( W32 ) {
+   compress( l , m , a );
+   compress( r - ( N - nl ) , Mask( ~m ) , a );
+   }
+  else {
+   const R b = _mm512_permutexvar_epi64( _mm512_cvtepu8_epi64(
+    _mm_cvtsi64_si128( std::int64_t( kPart8.idx[ m ] ) ) ) , a );
+   store( l , b );
+   store( r - N , b );
+   }
   return( nl );
   }
  };
@@ -611,7 +662,9 @@ constexpr std::uint32_t clearMask()
 template< class V , unsigned B >
 ADS_VQS_INLINE typename V::R reverse( typename V::R a )
 {
- if constexpr( B > 1 ) {
+ if constexpr( ( B > 2 ) && requires { V::template reverse< B >( a ); } )
+  return( V::template reverse< B >( a ) );
+ else if constexpr( B > 1 ) {
   a = V::template swap< B / 2 >( a );
   return( reverse< V , B / 2 >( a ) );
   }
@@ -692,8 +745,14 @@ ADS_VQS_INLINE void columnNetwork( typename V::R * r )
  columns< V , M >( r , std::make_index_sequence<
                           oddEvenPairs< M >().size() >() );
  merges< V , M , 2 * M >( r );
- transpose< V , M , V::N / 2 >( r );
+ transpose< V , M , ( M < V::N ? M : V::N ) / 2 >( r );
  }
+
+/// true if V stores the lanes of a mask, which the column network on
+/// fewer registers than lanes needs
+template< class V >
+concept LaneStores = requires( typename V::K * p , typename V::R r ) {
+ V::storeLanes( p , r , typename V::Mask() ); };
 
 /// a[ 0 .. n ) sorted in M registers, n <= M N
 template< class V , unsigned M >
@@ -706,11 +765,24 @@ void smallSort( typename V::K * a , std::size_t n )
            s < n ? V::loadPad( a + s , n - s ) :
            V::set1( std::numeric_limits< typename V::K >::max() );
   }
- constexpr bool byColumns = ( M >= V::N ) && ( M >= 4 );
+ constexpr bool narrow = ( M < V::N ) && ( 2 * M >= V::N ) && ( M >= 4 ) &&
+                         LaneStores< V >;
+ constexpr bool byColumns = ( ( M >= V::N ) && ( M >= 4 ) ) || narrow;
  if constexpr( byColumns )
   columnNetwork< V , M >( r );
  else
   network< V , M >( r );
+ if constexpr( narrow ) {                   // the chunk c of r[ h ], its
+  using Mask = typename V::Mask;            // lanes [ c M , c M + M ),
+  for( unsigned h = 0 ; h < M ; ++h )       // holds M keys from
+   for( unsigned c = 0 ; c < V::N / M ; ++c ) {   // ( c M + h ) M
+    const std::size_t s = std::size_t( c * M + h ) * M;
+    const std::size_t k = s >= n ? 0 : std::min< std::size_t >( n - s , M );
+    const Mask m = Mask( ( ( 1u << k ) - 1 ) << ( c * M ) );
+    V::storeLanes( a + s - c * M , r[ h ] , m );
+    }
+  return;
+  }
  for( unsigned q = 0 ; q < M ; ++q ) {
   constexpr unsigned b = byColumns ? M / V::N : 1;
   const unsigned i = byColumns ? ( q % b ) * V::N + q / b : q;
@@ -737,6 +809,91 @@ void networkSort( typename V::K * a , std::size_t n )
  else if( m <= 4 ) smallSort< V , 4 >( a , n );
  else if( m <= 8 ) smallSort< V , 8 >( a , n );
  else smallSort< V , kRegs< V > >( a , n );
+ }
+
+/// the merge of the sorted a[ 0 .. na ) and b[ 0 .. nb ) into
+/// o[ 0 .. na + nb ), register by register as in mergeLeaf(): forward,
+/// the smallest keys first, if not Down, and backward, the largest first
+/// from the end, if Down. The writes never overtake the reads of b, so
+/// that b may lie at the end of o (at its start if Down), the run that
+/// stays in place, while a is a copy aside. The keys left when the run to
+/// read has less than a register, with the register of the keys carried,
+/// are merged one by one
+template< class V , bool Down >
+void mergeRuns( const typename V::K * a , std::size_t na ,
+                const typename V::K * b , std::size_t nb , typename V::K * o )
+{
+ using K = typename V::K;
+ using R = typename V::R;
+ constexpr std::size_t N = V::N;
+ // the keys as seen from the end that the merge starts from
+ auto at = [ ]( const K * p , std::size_t n , std::size_t i ) {
+  return( get( Down ? p + n - 1 - i : p + i ) ); };
+ auto before = [ ]( K x , K y ) { return( Down ? y < x : x < y ); };
+ auto put1 = [ & ]( std::size_t i , K x ) {
+  put( Down ? o + na + nb - 1 - i : o + i , x ); };
+ std::size_t ia = 0 , ib = 0 , io = 0;      // taken from the start side
+ K carry[ N ];
+ std::size_t nc = 0;
+ if( ( na >= N ) && ( nb >= N ) ) {
+  R x = V::load( Down ? a + na - N : a ) , y = V::load( Down ? b + nb - N :
+                                                       b );
+  ia = ib = N;
+  for( ; ; ) {
+   y = reverse< V , N >( y );
+   R lo = V::min( x , y ) , hi = V::max( x , y );
+   halves< V , 1 , N / 2 >( &lo );
+   halves< V , 1 , N / 2 >( &hi );
+   if constexpr( Down ) {
+    V::store( o + na + nb - io - N , hi );
+    x = lo;
+    }
+   else {
+    V::store( o + io , lo );
+    x = hi;
+    }
+   io += N;
+   const bool fromA = ( ia < na ) &&
+                      ( ( ib >= nb ) || ! before( at( b , nb , ib ) ,
+                                                  at( a , na , ia ) ) );
+   if( ( fromA ? na - ia : nb - ib ) < N )
+    break;
+   y = fromA ? V::load( Down ? a + na - ia - N : a + ia ) :
+               V::load( Down ? b + nb - ib - N : b + ib );
+   ia += fromA ? N : 0;
+   ib += fromA ? 0 : N;
+   }
+  K t[ N ];                                 // the carried keys, in the
+  V::store( t , x );                        // order of the merge
+  for( std::size_t i = 0 ; i < N ; ++i ) carry[ i ] = t[ Down ? N - 1 - i :
+                                                         i ];
+  nc = N;
+  }
+ std::size_t ic = 0;                        // three ways, one by one, until
+ while( ( ic < nc ) || ( ( ia < na ) && ( ib < nb ) ) ) {   // two are out
+  const K * best = nullptr;
+  K v{};
+  if( ic < nc ) {
+   v = carry[ ic ];
+   best = carry;
+   }
+  if( ( ia < na ) && ( ! best || before( at( a , na , ia ) , v ) ) ) {
+   v = at( a , na , ia );
+   best = a;
+   }
+  if( ( ib < nb ) && ( ! best || before( at( b , nb , ib ) , v ) ) ) {
+   v = at( b , nb , ib );
+   best = b;
+   }
+  put1( io++ , v );
+  ic += best == carry;
+  ia += best == a;
+  ib += best == b;
+  }
+ for( ; ia < na ; ++ia ) put1( io++ , at( a , na , ia ) );
+ if( ( ib < nb ) && ( Down ? ( o + na + nb - io != b + nb - ib ) :
+                             ( o + io != b + ib ) ) )
+  for( ; ib < nb ; ++ib ) put1( io++ , at( b , nb , ib ) );
  }
 
 /// ------------------------------------------------------- the recursion
@@ -774,15 +931,16 @@ inline constexpr std::size_t kUnroll = 8;
 /// least U N; the choice is a branch, mispredicted half of the times on
 /// random keys but once for U vectors, while a choice by a mask would chain
 /// each load to the stores before it
-template< class V , bool Track = false , bool Three = false >
-std::size_t partition( typename V::K * a , std::size_t n , typename V::K p ,
-                       typename V::K * lo = nullptr ,
-                       typename V::K * hi = nullptr ,
-                       std::size_t * gt = nullptr , bool * single = nullptr )
+template< class V , bool Track = false , bool Three = false ,
+          std::size_t U = kUnroll< V > >
+std::size_t partitionU( typename V::K * a , std::size_t n , typename V::K p ,
+                        typename V::K * lo = nullptr ,
+                        typename V::K * hi = nullptr ,
+                        std::size_t * gt = nullptr , bool * single = nullptr )
 {
  using K = typename V::K;
  using R = typename V::R;
- constexpr std::size_t N = V::N , U = kUnroll< V > , UN = U * N;
+ constexpr std::size_t N = V::N , UN = U * N;
  R aside[ 2 * U ];
  for( std::size_t u = 0 ; u < U ; ++u ) {
   aside[ u ] = V::load( a + u * N );
@@ -823,8 +981,11 @@ std::size_t partition( typename V::K * a , std::size_t n , typename V::K p ,
    at = a + rr;
    }
   R v[ U ];
+  const std::ptrdiff_t ahead = at == a + rr ? -std::ptrdiff_t( 8 * UN ) :
+                                              std::ptrdiff_t( 8 * UN );
   for( std::size_t u = 0 ; u < U ; ++u ) {
    v[ u ] = V::load( at + u * N );
+   __builtin_prefetch( at + u * N + ahead );
    if constexpr( Track ) {
     mn = V::min( mn , v[ u ] );
     mx = V::max( mx , v[ u ] );
@@ -905,6 +1066,25 @@ std::size_t partition( typename V::K * a , std::size_t n , typename V::K p ,
  return( lw );
  }
 
+/// partitionU() with the most vectors kept aside that a[ 0 .. n ) allows,
+/// n >= 2 N
+template< class V , bool Track = false , bool Three = false >
+std::size_t partition( typename V::K * a , std::size_t n , typename V::K p ,
+                       typename V::K * lo = nullptr ,
+                       typename V::K * hi = nullptr ,
+                       std::size_t * gt = nullptr , bool * single = nullptr )
+{
+ constexpr std::size_t N = V::N , U = kUnroll< V >;
+ if( n >= 2 * U * N )
+  return( partitionU< V , Track , Three , U >( a , n , p , lo , hi , gt ,
+                                               single ) );
+ if( n >= 4 * N )
+  return( partitionU< V , Track , Three , 2 >( a , n , p , lo , hi , gt ,
+                                               single ) );
+ return( partitionU< V , Track , Three , 1 >( a , n , p , lo , hi , gt ,
+                                              single ) );
+ }
+
 /// the registers of the sample of the pivot of a part of n keys: 8 keys
 /// or N, the larger, and four times as many from 1024 N keys
 template< class V >
@@ -978,7 +1158,7 @@ void quick( typename V::K * a , std::size_t n , int depth ,
     n = m;
     continue;
     }
-   if( n - m >= 2 * kUnroll< V > * V::N ) {
+   if( n - m >= 2 * V::N ) {
     const std::size_t e = partition< V >( a + m , n - m , K( p + 1 ) );
     if( m < n - m - e )
      quick< V >( a , m , depth , s );
@@ -1033,12 +1213,284 @@ void toKeys( T * a , std::size_t n )
   }
  }
 
-/// the sort of a[ 0 .. n ) with the registers of V
+/// the range of keys of 64 bits from which the sample of rangeSort() is
+/// too wide, 0 if there is no rangeSort()
+inline constexpr std::uint64_t kCountRange =
+#if ADS_VECTOR_SORT && defined( __AVX512F__ )
+ 32;
+#else
+ 0;
+#endif
+
+#if ADS_VECTOR_SORT && defined( __AVX512F__ )
+
+/// the keys from which rangeSort() is tried
+inline constexpr std::size_t kRangeMin = 1 << 12;
+
+/// the counts of the keys of k[ 0 .. n ) by their index in [ 0 , W ), W =
+/// A L / 4 for lanes of L bits, into c, if every index is in it: index(x)
+/// gives the indices of the keys of the register x, any index past W for
+/// a key out of the window, and scalar( x ) that of one key. The lane i of
+/// the register a counts the index a L / 4 + j in its nibble j, one bit
+/// 4 ( d - a L / 4 ) set by a variable shift for the index d, which sets
+/// none in the registers out of reach; every 15 registers the nibbles are
+/// added into bytes, every 255 / 15 times the bytes into c, and the
+/// largest index is checked
+template< class K , unsigned A , class F , class G >
+bool countBy( const K * k , std::size_t n , F index , G scalar ,
+              std::uint64_t * c )
+{
+ constexpr bool W32 = sizeof( K ) == 4;
+ constexpr unsigned N = 64 / sizeof( K ) , L = 8 * sizeof( K ) ,
+                    V = L / 4 , W = A * V;   // the indices per register, all
+ const __m512i one = W32 ? _mm512_set1_epi32( 1 ) : _mm512_set1_epi64( 1 );
+ const __m512i nib = _mm512_set1_epi8( 0x0F );
+ __m512i bytes[ 2 * A ];
+ for( auto & b : bytes ) b = _mm512_setzero_si512();
+ __m512i top = _mm512_setzero_si512();      // the largest index
+ auto widen = [ & ]() {
+  for( unsigned a = 0 ; a < A ; ++a )
+   for( unsigned h = 0 ; h < 2 ; ++h ) {
+    alignas( 64 ) std::uint8_t b[ 64 ];
+    _mm512_store_si512( b , bytes[ 2 * a + h ] );
+    for( unsigned l = 0 ; l < 64 ; ++l )    // byte l / ( L / 8 ) of a lane
+     c[ a * V + 2 * ( l % ( L / 8 ) ) + h ] += b[ l ];
+    bytes[ 2 * a + h ] = _mm512_setzero_si512();
+    }
+  };
+ std::size_t i = 0;
+ for( unsigned rounds = 0 ; i + 15 * N <= n ; ) {
+  __m512i acc[ A ];
+  for( auto & x : acc ) x = _mm512_setzero_si512();
+  for( unsigned v = 0 ; v < 15 ; ++v , i += N ) {
+   const __m512i d = index( _mm512_loadu_si512( k + i ) );
+   top = W32 ? _mm512_max_epu32( top , d ) : _mm512_max_epu64( top , d );
+   const __m512i sh = W32 ? _mm512_slli_epi32( d , 2 ) :
+                            _mm512_slli_epi64( d , 2 );
+   for( unsigned a = 0 ; a < A ; ++a ) {
+    if constexpr( W32 ) {
+     const __m512i s = _mm512_sub_epi32( sh , _mm512_set1_epi32(
+                        int( 4 * a * V ) ) );
+     acc[ a ] = _mm512_add_epi32( acc[ a ] , _mm512_sllv_epi32( one , s ) );
+     }
+    else {
+     const __m512i s = _mm512_sub_epi64( sh , _mm512_set1_epi64(
+                        ( long long )( 4 * a * V ) ) );
+     acc[ a ] = _mm512_add_epi64( acc[ a ] , _mm512_sllv_epi64( one , s ) );
+     }
+    }
+   }
+  for( unsigned a = 0 ; a < A ; ++a ) {
+   bytes[ 2 * a ] = _mm512_add_epi8( bytes[ 2 * a ] ,
+                                     _mm512_and_si512( acc[ a ] , nib ) );
+   bytes[ 2 * a + 1 ] = _mm512_add_epi8( bytes[ 2 * a + 1 ] ,
+    _mm512_and_si512( _mm512_srli_epi32( acc[ a ] , 4 ) , nib ) );
+   }
+  const bool out = W32 ? _mm512_cmpge_epu32_mask( top ,
+                          _mm512_set1_epi32( int( W ) ) ) != 0 :
+                         _mm512_cmpge_epu64_mask( top ,
+                          _mm512_set1_epi64( W ) ) != 0;
+  if( out )
+   return( false );
+  if( ++rounds == 255 / 15 ) {
+   widen();
+   rounds = 0;
+   }
+  }
+ widen();
+ for( ; i < n ; ++i ) {
+  const std::size_t d = scalar( get( k + i ) );
+  if( d >= W )
+   return( false );
+  ++c[ d ];
+  }
+ return( true );
+ }
+
+/// k[ 0 .. n ) from the keys D[ 0 .. d ) in order, D[ j ] repeated
+/// c[ at( j ) ] times
+template< class K , class F >
+void writeCounts( K * k , const K * D , std::size_t d ,
+                  const std::uint64_t * c , F at )
+{
+ constexpr std::size_t N = 64 / sizeof( K );
+ for( std::size_t j = 0 ; j < d ; ++j ) {
+  const std::size_t m = c[ at( j ) ];
+  const K x = D[ j ];
+  const __m512i v = sizeof( K ) == 4 ? _mm512_set1_epi32( int( x ) ) :
+                    _mm512_set1_epi64( ( long long )( x ) );
+  std::size_t t = 0;
+  for( ; t + N <= m ; t += N ) _mm512_storeu_si512( k + t , v );
+  for( ; t < m ; ++t ) put( k + t , x );
+  k += m;
+  }
+ }
+
+/// k[ 0 .. n ) sorted by counting if a sample of 64 keys spans fewer than
+/// W = A L / 4 values and every key falls in a window of W values around
+/// them, false otherwise, k unchanged: the fewest registers A that hold
+/// the range of the sample, the index of a key its offset from the window
+/// [see countBy()], and a pass that writes the keys
+template< class K , unsigned A = sizeof( K ) == 4 ? 4 : 2 >
+bool rangeSort( K * k , std::size_t n )
+{
+ using U = std::make_unsigned_t< K >;
+ constexpr bool W32 = sizeof( K ) == 4;
+ constexpr unsigned W = A * 2 * unsigned( sizeof( K ) );
+ const std::size_t step = n / 64;
+ K lo = get( k + step / 2 ) , hi = lo;
+ for( std::size_t i = 1 ; i < 64 ; ++i ) {
+  const K x = get( k + i * step + step / 2 );
+  lo = x < lo ? x : lo;
+  hi = hi < x ? x : hi;
+  }
+ const U r = U( U( hi ) - U( lo ) );
+ if constexpr( A > 1 )                      // the fewest registers that
+  if( r < W / 2 )                           // hold the range
+   return( rangeSort< K , A / 2 >( k , n ) );
+ if( r >= W )
+  return( false );
+ constexpr K kmin = std::numeric_limits< K >::min();
+ constexpr K kmax = std::numeric_limits< K >::max();
+ const U pad = ( W - 1 - r ) / 2;           // the sample in the middle,
+ lo = U( U( lo ) - U( kmin ) ) >= pad ? K( U( lo ) - pad ) : kmin;
+ if( U( U( kmax ) - U( lo ) ) < W - 1 )     // the window within the keys
+  lo = K( U( kmax ) - ( W - 1 ) );
+ const __m512i base = W32 ? _mm512_set1_epi32( int( lo ) ) :
+                            _mm512_set1_epi64( ( long long )( lo ) );
+ std::uint64_t c[ W ] = {};
+ if( ! countBy< K , A >( k , n , [ & ]( __m512i x ) {
+      return( W32 ? _mm512_sub_epi32( x , base ) :
+                    _mm512_sub_epi64( x , base ) ); } ,
+     [ & ]( K x ) { return( std::size_t( U( U( x ) - U( lo ) ) ) ); } ,
+     c ) )
+  return( false );
+ K D[ W ];
+ for( unsigned j = 0 ; j < W ; ++j ) D[ j ] = K( U( lo ) + U( j ) );
+ writeCounts( k , D , W , c , []( std::size_t j ) { return( j ); } );
+ return( true );
+ }
+
+/// the most distinct keys that hashSort() counts
+inline constexpr std::size_t kHashKeys = 16;
+
+/// k[ 0 .. n ) sorted by counting if a sample of S keys (256 of 32 bits,
+/// 128 of 64) holds at most kHashKeys distinct ones and every key is one
+/// of them, false otherwise, k unchanged. The index of a key x is
+/// \f$ h( x ) = ( ( x \gg s_1 ) \oplus ( x \gg s_2 ) ) \wedge 31 \f$, the
+/// first shifts, s_2 = L (no term) first, that tell apart the keys of the
+/// sample; a table of the 32 indices, held in registers, gives back the
+/// key of each, and a key that differs from it gets an index out of reach
+/// [see countBy()]. So any few keys are counted in one pass, the
+/// bits of floating point numbers too, whatever their range
+template< class K >
+bool hashSort( K * k , std::size_t n )
+{
+ using U = std::make_unsigned_t< K >;
+ using V = Avx512< K >;
+ constexpr bool W32 = sizeof( K ) == 4;
+ constexpr unsigned L = 8 * sizeof( K ) , S = kRegs< V > * V::N , H = 32;
+ alignas( 64 ) K D[ S ];
+ const std::size_t step = n / S;
+ for( std::size_t i = 0 ; i < S ; ++i ) D[ i ] = get( k + i * step +
+                                                      step / 2 );
+ networkSort< V >( D , S );
+ std::size_t d = 1;                         // the distinct keys, to D
+ for( std::size_t i = 1 ; i < S ; ++i )
+  if( D[ i ] != D[ d - 1 ] ) {
+   if( d == kHashKeys )
+    return( false );
+   D[ d++ ] = D[ i ];
+   }
+ unsigned s1 = 0 , s2 = 0;
+ auto slot = [ & ]( K x ) {
+  const U u = U( x );
+  return( unsigned( ( ( u >> s1 ) ^ ( s2 < L ? u >> s2 : U( 0 ) ) ) & 31 ) );
+  };
+ auto injective = [ & ]() {
+  std::uint32_t seen = 0;
+  for( std::size_t j = 0 ; j < d ; ++j ) {
+   const std::uint32_t b = std::uint32_t( 1 ) << slot( D[ j ] );
+   if( seen & b )
+    return( false );
+   seen |= b;
+   }
+  return( true );
+  };
+ bool found = false;
+ for( s1 = 0 ; ( s1 + 5 <= L ) && ! found ; ++s1 )
+  for( s2 = L ; ( s2 > s1 ) && ! found ; --s2 )
+   found = injective();
+ if( ! found )
+  return( false );
+ --s1;                                      // the loops stepped past them
+ ++s2;
+ alignas( 64 ) K T[ H ];
+ for( auto & x : T ) x = D[ 0 ];            // an empty index: a key of
+ for( std::size_t j = 0 ; j < d ; ++j )     // another index, never equal
+  T[ slot( D[ j ] ) ] = D[ j ];
+ const __m128i c1 = _mm_cvtsi32_si128( int( s1 ) );
+ const __m128i c2 = _mm_cvtsi32_si128( int( s2 ) );   // past L: 0
+ __m512i t[ 4 ];
+ for( unsigned r = 0 ; r < 4 ; ++r )
+  t[ r ] = W32 ? _mm512_load_si512( T + 16 * ( r % 2 ) ) :
+                 _mm512_load_si512( T + 8 * r );
+ const __m512i five = W32 ? _mm512_set1_epi32( 31 ) :
+                            _mm512_set1_epi64( 31 );
+ const __m512i out = W32 ? _mm512_set1_epi32( int( H ) ) :
+                           _mm512_set1_epi64( H );
+ std::uint64_t c[ H ] = {};
+ auto index = [ & ]( __m512i x ) {
+  if constexpr( W32 ) {
+   const __m512i h = _mm512_and_si512( _mm512_xor_si512(
+    _mm512_srl_epi32( x , c1 ) , _mm512_srl_epi32( x , c2 ) ) , five );
+   const __m512i y = _mm512_permutex2var_epi32( t[ 0 ] , h , t[ 1 ] );
+   return( _mm512_mask_mov_epi32( h , _mm512_cmpneq_epi32_mask( x , y ) ,
+                                  out ) );
+   }
+  else {
+   const __m512i h = _mm512_and_si512( _mm512_xor_si512(
+    _mm512_srl_epi64( x , c1 ) , _mm512_srl_epi64( x , c2 ) ) , five );
+   const __m512i y = _mm512_mask_blend_epi64(
+    _mm512_test_epi64_mask( h , _mm512_set1_epi64( 16 ) ) ,
+    _mm512_permutex2var_epi64( t[ 0 ] , h , t[ 1 ] ) ,
+    _mm512_permutex2var_epi64( t[ 2 ] , h , t[ 3 ] ) );
+   return( _mm512_mask_mov_epi64( h , _mm512_cmpneq_epi64_mask( x , y ) ,
+                                  out ) );
+   }
+  };
+ if( ! countBy< K , W32 ? 4 : 2 >( k , n , index , [ & ]( K x ) {
+      const unsigned h = slot( x );
+      return( std::size_t( T[ h ] == x ? h : H ) ); } , c ) )
+  return( false );
+ writeCounts( k , D , d , c , [ & ]( std::size_t j ) {
+  return( slot( D[ j ] ) ); } );
+ return( true );
+ }
+
+#endif
+
+/// k[ 0 .. n ) reversed
+template< class K >
+void reverseKeys( K * k , std::size_t n )
+{
+ for( std::size_t i = 0 , j = n ; i + 1 < j ; ++i ) {
+  --j;
+  const K x = get( k + i );
+  put( k + i , get( k + j ) );
+  put( k + j , x );
+  }
+ }
+
+/// the sort of a[ 0 .. n ) with the registers of V. The floating point
+/// numbers are sorted as the signed integers of their bits, which keep the
+/// order of the positive ones and reverse that of the negative ones, all
+/// first: their block is then reversed, a pass over it alone
 template< class V , class T >
 void sortWith( T * a , std::size_t n )
 {
  using K = typename V::K;
- constexpr bool convert = std::is_floating_point_v< T > ||
+ constexpr bool convert = ( ! std::is_floating_point_v< T > ) &&
                           ( std::is_unsigned_v< T > !=
                             std::is_unsigned_v< K > );
  if( n <= 1 )
@@ -1050,10 +1502,28 @@ void sortWith( T * a , std::size_t n )
   networkSort< V >( k , n );
  else {
   std::uint64_t s = 0x9E3779B97F4A7C15ull ^ n;
-  quick< V >( k , n , 2 * std::bit_width( n ) , s );
+  bool done = false;
+#if ADS_VECTOR_SORT && defined( __AVX512F__ )
+  if( n >= kRangeMin ) {
+   if constexpr( ! std::is_floating_point_v< T > )
+    done = rangeSort( k , n );
+   done = done || hashSort( k , n );
+   }
+#endif
+  if( ! done )
+   quick< V >( k , n , 2 * std::bit_width( n ) , s );
   }
  if constexpr( convert )
   toKeys< T , K >( a , n );
+ if constexpr( std::is_floating_point_v< T > ) {
+  std::size_t lo = 0 , hi = n;              // the first key not negative
+  while( lo < hi ) {
+   const std::size_t mid = lo + ( hi - lo ) / 2;
+   if( get( k + mid ) < K( 0 ) ) lo = mid + 1;
+   else hi = mid;
+   }
+  reverseKeys( k , lo );
+  }
  }
 
 
