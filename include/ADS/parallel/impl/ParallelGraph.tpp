@@ -64,6 +64,10 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
  dist[ std::size_t( s ) ] = 0;
  const std::size_t words = ( std::size_t( n ) + 63 ) / 64;
  std::vector< std::uint64_t > cur , nxt;
+ // the nodes reached, a bit each: the visits test them there, in a
+ // sixteenth of the room of the distances, which stay in the cache
+ std::vector< std::uint64_t > seen( words , 0 );
+ seen[ std::size_t( s ) >> 6 ] |= std::uint64_t( 1 ) << ( s & 63 );
  std::vector< int > F{ s };
  std::int64_t toCheck = g.arcs() , scout = g.degree( s );
  int level = 0;
@@ -87,13 +91,15 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
       std::size_t c = 0;
       const int v1 = int( std::min( std::size_t( n ) , w1 * 64 ) );
       for( int v = int( w0 * 64 ) ; v < v1 ; ++v ) {
-       if( dist[ std::size_t( v ) ] >= 0 )
+       const std::uint64_t bit = std::uint64_t( 1 ) << ( v & 63 );
+       if( seen[ std::size_t( v ) >> 6 ] & bit )
         continue;
        for( int k = ioff[ v ] ; k < ioff[ v + 1 ] ; ++k ) {
         const int u = G::head( iarc[ k ] );
         if( ( cur[ std::size_t( u ) >> 6 ] >> ( u & 63 ) ) & 1 ) {
          dist[ std::size_t( v ) ] = level + 1;
-         nxt[ std::size_t( v ) >> 6 ] |= std::uint64_t( 1 ) << ( v & 63 );
+         seen[ std::size_t( v ) >> 6 ] |= bit;
+         nxt[ std::size_t( v ) >> 6 ] |= bit;
          ++c;
          break;
          }
@@ -132,11 +138,11 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
     const int u = F[ i ];
     for( int k = off[ u ] ; k < off[ u + 1 ] ; ++k ) {
      const int v = G::head( arc[ k ] );
-     std::atomic_ref< int > d( dist[ std::size_t( v ) ] );
-     int e = -1;
-     if( ( d.load( std::memory_order_relaxed ) < 0 ) &&
-         d.compare_exchange_strong( e , level + 1 ,
-                                    std::memory_order_relaxed ) ) {
+     std::atomic_ref< std::uint64_t > w( seen[ std::size_t( v ) >> 6 ] );
+     const std::uint64_t bit = std::uint64_t( 1 ) << ( v & 63 );
+     if( ! ( w.load( std::memory_order_relaxed ) & bit ) &&
+         ! ( w.fetch_or( bit , std::memory_order_relaxed ) & bit ) ) {
+      dist[ std::size_t( v ) ] = level + 1; // claimed by this thread
       L.push_back( v );
       sc += off[ v + 1 ] - off[ v ];
       }
