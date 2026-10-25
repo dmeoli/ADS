@@ -8,8 +8,9 @@
  * as the sequential visits.
  * - bfsDistances( ex , g , s ) is the visit in breadth from s that
  *   optimizes its direction, as Beamer, Asanovic and Patterson: a level
- *   goes from the top down (each node of the frontier claims, by a
- *   compare-and-swap on its distance, its neighbours not yet reached, and
+ *   goes from the top down (each node of the frontier claims, by an
+ *   atomic or on a bitmap of the nodes reached, its neighbours not yet
+ *   reached, and
  *   the nodes claimed by each block of the frontier are gathered into the
  *   next one) while the frontier is small, and from the bottom up (each
  *   node not yet reached looks for a neighbour in the frontier, kept as a
@@ -20,8 +21,12 @@
  *   steps from the bottom up skip most of the arcs of the large levels of
  *   the graphs of small diameter, e.g., the social networks and the
  *   graphs of Kronecker of the Graph 500, where a level may hold most of
- *   the nodes. The steps from the bottom up read the arcs into each node,
- *   i.e., those of g if it is unoriented, of its transpose (given as gt)
+ *   the nodes. Both directions test whether a node was reached on the
+ *   bitmap, a bit per node, instead of on its distance (the visit of
+ *   GAPBS tests the parents, 4 bytes per node): the bitmap of \f$ 2^{19}
+ *   \f$ nodes takes 64 KB, in the cache of second level of each core.
+ *   The steps from the bottom up read the arcs into each node, i.e.,
+ *   those of g if it is unoriented, of its transpose (given as gt)
  *   if it is oriented; with no transpose an oriented graph is visited from
  *   the top down only. The distance of a node is its level, the same
  *   whoever claims it: -1 for the nodes not reached.
