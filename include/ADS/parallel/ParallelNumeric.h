@@ -21,17 +21,19 @@
  *   few rows holding most of the nonzeros is unbalanced.
  * - multiply( ex , A , x , y ) for a SellMatrix cuts its chunks of C rows
  *   in the same way by their places, padding included.
- * - gemm( ex , ... ) cuts C into p stripes of rows (multiples of the
- *   micro-tile, if \f$ m \geq n \f$) or of columns, and each thread runs
- *   the sequential gemm() on its stripe, A B of the stripe of A by all of
- *   B, or of all of A by the stripe of B, packing its own panels in the
- *   buffers of its thread: the packing of the shared operand is repeated
- *   by each thread, a fraction \f$ O( 1 / m_s ) \f$ of the work for
- *   stripes of \f$ m_s \f$ rows, where BLIS packs it once and shares it.
- *   A stripe is taken only when its product is above the threshold of the
- *   small products of gemm() (\f$ 2^{21} \f$ multiplications), so that it
- *   takes the same path, and the same order of the sums, as the whole
- *   product; smaller products are computed by one thread.
+ * - gemm( ex , ... ) runs the loops of the sequential gemm() on the
+ *   panels of NC columns of B and on the slices of KC of the common
+ *   dimension, and parallelizes within them as BLIS does: the panel
+ *   \f$ K_C \times N_C \f$ of B is packed once, its micro-panels shared
+ *   among the threads, and each thread takes a range of the rows of C
+ *   (whole micro-panels of MR rows, as many to each thread as they go),
+ *   packs its blocks of MC rows of A in its own buffer and runs the
+ *   micro-kernels on them and on the shared panel of B (the loop of the
+ *   blocks of A in parallel, which Smith et al. found the one that scales
+ *   on the processors whose cores have private second levels). Each entry
+ *   of C sees the same slices and the same micro-kernel as in gemm(); the
+ *   small products, which gemm() computes by another path, go to it on one
+ *   thread.
  * The products by a vector move \f$ 12 nnz + 8 ( m + n ) \f$ bytes and are
  * bound by the bandwidth of the memory, so that p threads gain at most the
  * ratio of the bandwidth of the socket to that of one core.
