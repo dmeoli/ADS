@@ -10,14 +10,28 @@
  * network held in 16 registers.
  *
  * - The keys: an integer is its own key, compared signed or not on
- *   AVX-512 and made signed on AVX2 by flipping its sign bit; a floating
- *   point number is sorted as the signed integer of its bits that has the
- *   same order, \f$ k( x ) = b \oplus ( ( b \gg ( w - 1 ) ) \wedge ( 2^{w-1}
- *   - 1 ) ) \f$ for the bits b of x and an arithmetic shift, which is its
- *   own inverse, so that one pass before the sort and one after it convert
- *   the vector in place. The order of the keys is that of IEEE 754
- *   extended to a total order, -0 before +0 and the NaN at the ends, so
- *   that a NaN breaks nothing.
+ *   AVX-512 and made signed on AVX2 by flipping its sign bit. A floating
+ *   point number is sorted as the signed integer b of its bits, with no
+ *   conversion: b keeps the order of the numbers with the sign bit clear
+ *   and reverses that of those with it set, which come all first, since
+ *   for them \f$ b = -2^{w-1} + | x |_{bits} \f$ grows with the magnitude;
+ *   once sorted, their block, found by a binary search, is reversed in
+ *   place, a pass over the negative numbers alone instead of a conversion
+ *   of all of them before and after the sort. The order is that of IEEE
+ *   754 extended to a total order, -0 before +0 and the NaN at the ends,
+ *   so that a NaN breaks nothing.
+ * - Few keys in a small range: on AVX-512, from 4096 integers, if a sample
+ *   of 64 spans fewer than \f$ A L / 4 \f$ values, for L the bits of a lane
+ *   and \f$ A \in \{ 1 , 2 , 4 \} \f$ registers (32 values for either
+ *   width), the keys are counted in one pass with no comparison: the key
+ *   \f$ x = lo + d \f$ sets the bit \f$ 4 ( d - a L / 4 ) \f$ of its lane
+ *   in the register a by a variable shift (none if out of reach), so that
+ *   each lane counts L / 4 values in its nibbles; every 15 registers the
+ *   nibbles are added into bytes, every 17 of those the bytes into the
+ *   counts, and the largest offset is checked, a key out of the window
+ *   giving up the counting for the quicksort. A second pass writes the
+ *   keys, whole registers at a time: \f$ O( n ) \f$ against the
+ *   \f$ O( n \log k ) \f$ of the partitions by three ways.
  * - The partition of a part a[ 0 .. n ) by a pivot p, as in the quicksort
  *   of Bramas: the first and the last U W keys (U = 8) are loaded aside,
  *   which leaves U W free places at each end, and then U blocks of W keys
@@ -33,7 +47,14 @@
  *   compressed into the memory (vpcompress); on AVX2 a table of
  *   \f$ 2^W \f$ permutations puts the lanes of m first and the others after
  *   them in one register, which is written whole at the left end and whole
- *   at the right one, as in the quicksort of Gueron and Krasnov.
+ *   at the right one, as in the quicksort of Gueron and Krasnov; on
+ *   AVX-512 the keys of 64 bits take the same way, with a table of 256
+ *   permutations of 8 lanes and one vpermq, cheaper than two compressions
+ *   into the memory. Each read of U blocks prefetches into the first
+ *   level the U blocks 8 U W keys further in the same direction, which
+ *   nearly halves the time of a pass over a part larger than the cache of
+ *   the second level, where the hardware prefetcher alone falls behind
+ *   the two ends read in turn.
  * - The pivot is the median of a sample of \f$ S = \max( 8 , W ) \f$ keys,
  *   one from each of S equal stretches of the part at the same random
  *   offset, sorted by the network below. If the sample repeats the pivot,
@@ -65,10 +86,24 @@
  *   by \f$ \log_2 W \f$ steps of exchanges of blocks of lanes. The steps
  *   within registers, the dearer ones (a shuffle besides the minimum and
  *   the maximum), are then \f$ \frac{1}{2} \log_2 W ( \log_2 W - 1 ) \f$
- *   in all, besides a reversal per merge and the transposition, 14 for
- *   M = W = 16 against the 26 of the bitonic network on registers held by
- *   rows, which the smaller networks use, with constant masks of the lanes
- *   that keep the minimum.
+ *   in all, besides a reversal per merge (one permutation of the lanes on
+ *   AVX-512) and the transposition, 14 for M = W = 16 against the 26 of
+ *   the bitonic network on registers held by rows, which the smaller
+ *   networks use, with constant masks of the lanes that keep the minimum.
+ *   On AVX-512 the column network also serves \f$ W / 2 \leq M < W \f$:
+ *   each block of M lanes is transposed by \f$ \log_2 M \f$ steps, after
+ *   which the lanes \f$ [ c M , c M + M ) \f$ of the register h hold the M
+ *   keys from \f$ ( c M + h ) M \f$, each block written by a masked store.
+ *
+ * - Two sorted runs are merged in the registers by mergeRuns(), as in the
+ *   merge sort of Chhugani et al.: the register of the keys carried over
+ *   is merged with the next register of the run whose next key is smaller
+ *   (the second one reversed, a minimum and a maximum, then the steps of a
+ *   bitonic merge within each register), the smaller W keys written and
+ *   the larger carried; the writes never overtake the reads, so that one
+ *   run may stay in place while the other is a copy aside, forward from
+ *   the smallest keys or backward from the largest. sort() merges with it
+ *   the runs of the integers of 32 bits [see Sort.h].
  *
  * The instructions are chosen when compiling: AVX-512 (F) if __AVX512F__
  * is defined, AVX2 if __AVX2__ is, with GCC or Clang; otherwise, or with
@@ -91,6 +126,10 @@
  * \see J. Wassenberg, M. Blacher, J. Giesen, P. Sanders, Vectorized and
  *      performance-portable quicksort, Software: Practice and Experience
  *      52(12), 2684-2699, 2022, doi:10.1002/spe.3142
+ * \see J. Chhugani, A. D. Nguyen, V. W. Lee, W. Macy, M. Hagog, Y.-K. Chen,
+ *      A. Baransi, S. Kumar, P. Dubey, Efficient implementation of sorting
+ *      on multi-core SIMD CPU architecture, Proceedings of the VLDB
+ *      Endowment 1(2), 1313-1324, 2008, doi:10.14778/1454159.1454171
  * \see K. E. Batcher, Sorting networks and their applications, Proceedings
  *      of the AFIPS Spring Joint Computer Conference 32, 307-314, 1968,
  *      doi:10.1145/1468075.1468121
@@ -125,6 +164,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <memory>
 #include <type_traits>
 #include <utility>
 #include <vector>
