@@ -16,6 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   by the Karatsuba square root of Zimmermann, two digits by Newton's
   method; BigInteger::sqrtNewton(), Newton's method from above, for the
   audits; the test big-integer-sqrt
+- prefixKeySort() (sort/StringSort.h), the stable sort of strings by
+  integer keys of 8 of their characters from the prefix that a group
+  shares, each with the place of its string in the low bits, sorted by
+  vectorQuickSort(): each string read a few times in all instead of once
+  per pass or comparison; sort() and stableSort() use it for strings when
+  the vector registers are there, but for few distinct strings
+- vectorQuickSort(): a counting sort of the keys in the nibbles of the
+  lanes, with no comparison, when a sample spans a small range of
+  integers (rangeSort()) or holds at most 16 distinct keys of any bits
+  (hashSort(), a key found by a shifted window of its bits and checked
+  against a table in the registers)
+- the merge of two sorted runs in the vector registers (mergeRuns()),
+  forward or backward; sort() merges with it the runs of integers of 32
+  bits
+- test/sorting.cpp: vector-merge, prefix-key-sort, and the patterns of few
+  keys at the ends of the type, with a key apart, and of 16 keys of any
+  bits
+
 - the algorithms of the book on graphs as templates on the structures they
   use: shortestPaths() on a frontier given as a type (PrototypeFrontier;
   PriorityFrontier on any priority queue of section 10.1, its priority the
@@ -833,6 +851,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   within 32 bytes on both libraries the cells of 10^5 are 1.03 to 1.05
   and English at 10^6 0.98 to 1.00; the tests in
   test/engineered_strings.cpp
+- vectorQuickSort(): the partition prefetches the blocks 8 U W keys ahead
+  of each end, nearly halving a pass over a part out of the cache of the
+  second level; on AVX-512 the keys of 64 bits are partitioned by a table
+  of 256 permutations and one vpermq instead of two compressions; the
+  column network also serves 8 registers of 16 keys, with a masked store
+  per block, and reverses the lanes by one permutation; floating point
+  numbers are sorted as the signed integers of their bits and the block
+  of the negative ones reversed at the end, instead of two conversions of
+  the whole vector
+- sort() and stableSort(): a vector of 16384 items or more is checked for
+  one run first, a strictly decreasing one reversed in the same pass that
+  checks it, from both ends, and an ascending one scanned with
+  prefetching, in four streams for items of at most 8 bytes past the
+  cache of the second level; the scan of the first run goes on from where
+  that check stopped
 
 - HugePageAllocator keeps the blocks of 8 MB or more given back, up to 16
   blocks and 64 MB per thread, for the next requests of the same size, which find
