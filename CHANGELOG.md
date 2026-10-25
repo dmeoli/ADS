@@ -50,8 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   distribution by the highest bits of the keys for the numbers, their
   range from a sample, or by a tree of splitters with buckets of
   equality, and the buckets sorted by the sequential sorts, those of
-  numbers in their places by vectorQuickSort()), multiwayMerge() with
-  multisequenceSplit(), the
+  numbers in their places by vectorQuickSort(); few runs merged by the
+  parallel multiwayMerge(), few integer keys counted; the buffer kept
+  between the sorts and filled by whole lines of the cache),
+  multiwayMerge() with multisequenceSplit(), the
   products of CsrMatrix, SellMatrix and gemm() bit for bit, fft() by the
   four steps on the sequential one, bfsDistances() that optimizes its
   direction and connectedComponents() by Afforest on StaticGraph, and
