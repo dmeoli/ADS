@@ -1227,8 +1227,9 @@ void texts( const std::vector< std::size_t > & sizes , int r ,
 
 /// n distinct keys inserted into concurrent hash tables by the threads of
 /// the pool of ADS (a parallelFor on blocks of 1024), the tables sized
-/// for n keys, then looked up; the same threads for all the tables, so
-/// that only the tables differ
+/// for n keys, then looked up (by contains() where the table has it, as
+/// libcuckoo); the same threads for all the tables, so that only the
+/// tables differ
 void hashing( const std::vector< std::size_t > & sizes , int r ,
               unsigned seed , Executors & X )
 {
@@ -1258,8 +1259,8 @@ void hashing( const std::vector< std::size_t > & sizes , int r ,
     } ,
    [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
     a->insert( keys[ i ] , K( i ) ); } ); } ,
-   [ & ] { lookups( [ & ]( K k ) { return( a->find( k ).has_value() ); } );
-    } , [ & ] { a.reset(); } } );
+   [ & ] { lookups( [ & ]( K k ) { return( a->contains( k ) ); } ); } ,
+   [ & ] { a.reset(); } } );
 #if defined( ADS_HAS_TBB )
   using HM = tbb::concurrent_hash_map< K , K >;
   std::unique_ptr< HM > b;
