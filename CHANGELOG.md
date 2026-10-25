@@ -142,12 +142,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tests in test/fft.cpp against the definition in long double
 - rfft() and irfft(), the transforms of real data by a complex transform
   of half the points and a pass on the pairs k , h - k: up to 16 points
-  one codelet and the pass on its outputs; above 2048 points on the four
-  steps, the pass in their last step (forward: the block of the rows k and
-  that of their mirrors m - k transformed together, the pairs in the same
-  lane) or in their first (inverse: the points made as the columns read
-  them); elsewhere on the numbers alternated, with 3 shuffles for a vector
-  of pairs; dct() and dst(), the transforms of the cosines and of the
+  one codelet and the pass on its outputs; the inverse of 4098 to 131072
+  points on the four steps with the pass in their first step, the points
+  made as the columns read them; elsewhere the pass on the numbers
+  alternated, with 3 shuffles for a vector of pairs; dct() and dst(), the transforms of the cosines and of the
   sines of types 1 to 4 as those of FFTW (Makhoul for the types 2 and 3,
   the half-length complex transform for the type 4); fftMany(), fft2() and
   fftn(), many transforms and those in more dimensions; convolve() in
