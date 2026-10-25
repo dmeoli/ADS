@@ -178,7 +178,8 @@ class FlatLoserTree {
  /// the arithmetic types in their natural order
  static constexpr bool kNatural = detail::kNaturalOrder< T , C >;
 
- /// the integers of at most 64 bits in their natural order
+ /// the integers of at most 64 bits in their natural order, compared with
+ /// their sources as one integer of 128 bits where the compiler has it
  static constexpr bool kInteger = kNatural && std::is_integral_v< T > &&
                                   ! std::is_same_v< T , bool > &&
                                   ( sizeof( T ) <= 8 );

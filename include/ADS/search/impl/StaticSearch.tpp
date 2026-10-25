@@ -93,7 +93,7 @@ auto ADS_SPT::operator=( SPlusTree o ) noexcept
 ADS_SPT_T
 T * ADS_SPT::allocate( std::size_t n )
 {
- if( n * sizeof( T ) >= HUGE )
+ if( n * sizeof( T ) >= HUGE_BYTES )
   return( HugePageAllocator< T >().allocate( n ) );
  return( static_cast< T * >( ::operator new( n * sizeof( T ) ,
                                              std::align_val_t( 64 ) ) ) );
