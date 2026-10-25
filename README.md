@@ -490,6 +490,7 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 | Timsort and Powersort | [`sort/RunSorts.h`](include/ADS/sort/RunSorts.h) |
 | LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings, bucket sort | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |
 | multikey quicksort of strings | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) |
+| sort of strings by integer keys of 8 characters, sorted in the vector registers | [`sort/StringSort.h`](include/ADS/sort/StringSort.h) |
 
 ## Design by contract
 

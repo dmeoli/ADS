@@ -49,6 +49,7 @@
 #include "ADS/sort/ShellSort.h"
 #include "ADS/sort/Smoothsort.h"
 #include "ADS/sort/Sort.h"
+#include "ADS/sort/StringSort.h"
 #include "ADS/sort/VectorQuickSort.h"
 
 #if __has_include( <boost/sort/sort.hpp> )
@@ -342,6 +343,8 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
   S.emplace_back( "multikeyQuickSort" , []( V & A ) {
    ADS::multikeyQuickSort( A ); } );
   S.emplace_back( "msdRadixSort" , []( V & A ) { ADS::msdRadixSort( A ); } );
+  S.emplace_back( "prefixKeySort" , []( V & A ) {
+   ADS::prefixKeySort( A ); } );
 #ifdef ADS_HAS_BOOST_SORT
   S.emplace_back( "boost::spreadsort" , []( V & A ) {
    boost::sort::spreadsort::string_sort( A.begin() , A.end() ); } );

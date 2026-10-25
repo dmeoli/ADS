@@ -14,6 +14,7 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+
 namespace ADS {
 
 namespace detail {
@@ -39,20 +40,150 @@ std::size_t runEnd( const T * a , std::size_t j , std::size_t n , C & less )
  return( j );
  }
 
+/// the items from which runs() looks for a single run first
+inline constexpr std::size_t kOneRun = 1 << 14;
+
+/// the blocks ahead of the scan of ascendingIn() that it prefetches
+inline constexpr std::size_t kAhead = 4;
+
+/// true if no less( a[ k ] , a[ k - 1 ] ) for k in [ 1 , n ), n >= 128:
+/// S stretches scanned in step, 64 items each at a time with no branch,
+/// so that S streams of reads are in flight, each prefetching the block
+/// kAhead blocks ahead into the first level, and the first block out of
+/// order in any of them stops all
+template< std::size_t S , class T , class C >
+std::size_t ascendingIn( const T * a , std::size_t n , C & less )
+{
+ constexpr std::size_t B = 64;
+ const std::size_t q = n / S;
+ const T * b[ S ];
+ for( std::size_t j = 0 ; j < S ; ++j ) b[ j ] = a + j * q;
+ for( std::size_t j = 1 ; j < S ; ++j )     // the joints
+  if( less( b[ j ][ 0 ] , b[ j ][ -1 ] ) )
+   return( 1 );
+ std::size_t t = 1;
+ for( ; t + B <= q ; t += B ) {
+  unsigned stop = 0;
+  for( std::size_t j = 0 ; j < S ; ++j )     // the block kAhead on
+   for( std::size_t c = 0 ; c < B * sizeof( T ) ; c += 64 )
+    __builtin_prefetch( reinterpret_cast< const char * >( b[ j ] + t ) +
+                        kAhead * B * sizeof( T ) + c );
+  for( std::size_t j = 0 ; j < S ; ++j )
+   for( std::size_t k = t ; k < t + B ; ++k )
+    stop |= unsigned( less( b[ j ][ k ] , b[ j ][ k - 1 ] ) );
+  if( stop )
+   return( t );
+  }
+ for( std::size_t j = 0 ; j < S ; ++j )
+  for( std::size_t k = t ; k < q ; ++k )
+   if( less( b[ j ][ k ] , b[ j ][ k - 1 ] ) )
+    return( t );
+ for( std::size_t k = S * q ; k < n ; ++k )
+  if( less( a[ k ] , a[ k - 1 ] ) )
+   return( t );
+ return( n );
+ }
+
+/// the bytes from which ascending() scans four streams: past the cache of
+/// the second level, where one stream waits on the memory
+inline constexpr std::size_t kStreamBytes = std::size_t( 1 ) << 20;
+
+/// ascendingIn() with one stream, or four on more than kStreamBytes of
+/// items of at most 8 bytes, whose comparisons vectorize and outrun one
+/// stream (larger items are compared one by one, and four streams only
+/// take more of the cache): n if
+/// a[ 0 .. n ) is non-decreasing, otherwise a place p >= 1 such that
+/// a[ 0 .. p ) is, from which the scan of the first run may go on
+template< class T , class C >
+std::size_t ascending( const T * a , std::size_t n , C & less )
+{
+ return( ( sizeof( T ) <= 8 ) && ( n * sizeof( T ) > kStreamBytes ) ?
+         ascendingIn< 4 >( a , n , less ) :
+         ascendingIn< 1 >( a , n , less ) );
+ }
+
+/// true if less( a[ k ] , a[ k - 1 ] ) for every k in [ 1 , n ), n >= 128,
+/// and a[ 0 .. n ) reversed, false with a unchanged otherwise: the pairs
+/// ( i , n - 1 - i ) swapped 32 at a time from both ends inwards, each
+/// block checked before it is written (its items and the next one inwards,
+/// not yet touched), so that a strictly decreasing vector is reversed in
+/// one pass; a block out of order stops the pass, and the blocks already
+/// swapped are swapped back
+template< class T , class C >
+bool reverseIfDescending( T * a , std::size_t n , C & less )
+{
+ constexpr std::size_t B = 32;
+ const std::size_t h = n / 2;
+ std::size_t t = 0;
+ bool down = true;
+ for( ; t + B <= h ; t += B ) {
+  T * const f = a + t , * const g = a + n - t - B;
+  unsigned stop = 0;                       // f[ 1 .. B ] and g[ -1 .. B )
+  for( std::size_t k = 1 ; k <= B ; ++k )
+   stop |= unsigned( ! less( f[ k ] , f[ k - 1 ] ) );
+  for( std::size_t k = 0 ; k < B ; ++k )
+   stop |= unsigned( ! less( g[ k ] , g[ std::ptrdiff_t( k ) - 1 ] ) );
+  if( stop ) {
+   down = false;
+   break;
+   }
+  for( std::size_t k = 0 ; k < B ; ++k ) {
+   const T x = f[ k ];
+   f[ k ] = g[ B - 1 - k ];
+   g[ B - 1 - k ] = x;
+   }
+  }
+ if( down )                                 // the middle, as it is
+  for( std::size_t k = t + 1 ; k < n - t ; ++k )
+   if( ! less( a[ k ] , a[ k - 1 ] ) ) {
+    down = false;
+    break;
+    }
+ if( down ) {
+  std::reverse( a + t , a + n - t );
+  return( true );
+  }
+ for( std::size_t i = 0 ; i < t ; ++i ) {   // undone
+  const T x = a[ i ];
+  a[ i ] = a[ n - 1 - i ];
+  a[ n - 1 - i ] = x;
+  }
+ return( false );
+ }
+
 /// the runs of A as powerSort() finds them, the maximal non-decreasing
 /// or strictly decreasing stretches, counted up to cap + 1: one pass that
 /// stops at the run cap + 1, so that an input in no order costs O( cap );
-/// the end of each goes to E, room for cap + 1
+/// the end of each goes to E, room for cap + 1. From kOneRun items of a
+/// type copied as bytes, a vector of one run is found first by
+/// ascending(), or reversed in place by reverseIfDescending(), and counted
+/// as one non-decreasing run; otherwise the scan of the first run goes on
+/// from where ascending() stopped
 template< class T , class C >
-std::size_t runs( const std::vector< T > & A , C & less , std::size_t cap ,
+std::size_t runs( std::vector< T > & A , C & less , std::size_t cap ,
                   std::size_t * E )
 {
  const std::size_t n = A.size();
- const T * const a = A.data();
- std::size_t r = 0;
+ T * const a = A.data();
+ std::size_t r = 0 , from = 1;              // a[ 0 .. from ) in order
+ if constexpr( std::is_trivially_copyable_v< T > )
+  if( n >= kOneRun ) {
+   if( less( a[ 1 ] , a[ 0 ] ) ) {
+    if( reverseIfDescending( a , n , less ) )
+     from = n;
+    }
+   else
+    from = ascending( a , n , less );
+   if( from == n ) {
+    E[ 0 ] = n;
+    return( 1 );
+    }
+   }
  for( std::size_t i = 0 ; ( i < n ) && ( r <= cap ) ; ++r ) {
   std::size_t j = i + 1;
-  if( ( j < n ) && less( a[ j ] , a[ i ] ) )
+  if( ( i == 0 ) && ( from > 1 ) )          // the first run, scanned on
+   j = runEnd< false >( a , from , n , less );   // from where it stopped
+  else if( ( j < n ) && less( a[ j ] , a[ i ] ) )
    j = runEnd< true >( a , j + 1 , n , less );
   else
    j = runEnd< false >( a , j , n , less );
@@ -91,9 +222,11 @@ void oneRun( std::vector< T > & A , C & less )
  }
 
 /// the distinct keys, up to 64, of a sample of 64 equally spaced keys of A,
-/// n >= 64, and the bytes in which they differ
+/// n >= 64, the bytes in which they differ and the difference of the
+/// largest and the smallest
 template< RadixKey T >
-std::pair< std::size_t , int > sampleKeys( const std::vector< T > & A )
+std::tuple< std::size_t , int , std::uint64_t > sampleKeys(
+ const std::vector< T > & A )
 {
  using U = decltype( radixKey( T() ) );
  std::array< U , 64 > S;
@@ -110,7 +243,7 @@ std::pair< std::size_t , int > sampleKeys( const std::vector< T > & A )
  int bytes = 0;
  for( ; diff != 0 ; diff >>= 8 )
   bytes += ( diff & 0xFF ) != 0;
- return( std::pair( k , bytes ) );
+ return( std::tuple( k , bytes , std::uint64_t( S.back() - S.front() ) ) );
  }
 
 /// true if a sample of 64 equally spaced keys of A, n >= 64, holds at most
@@ -120,7 +253,8 @@ std::pair< std::size_t , int > sampleKeys( const std::vector< T > & A )
 template< RadixKey T >
 bool fewWideKeys( const std::vector< T > & A )
 {
- const auto [ k , bytes ] = sampleKeys( A );
+ const auto [ k , bytes , range ] = sampleKeys( A );
+ static_cast< void >( range );
  return( ( k <= 16 ) && ( bytes >= 4 ) );
  }
 
@@ -144,6 +278,23 @@ bool negativeZero( const std::vector< T > & A )
   c += b == z;
   }
  return( c > 0 );
+ }
+
+/// true if a sample of 64 equally spaced strings of A, n >= 64, holds at
+/// most 16 distinct ones: few strings, each repeated, which the passes of
+/// msdRadixSort() split at once, while prefixKeySort() would sort n
+/// distinct keys of their places
+inline bool fewStrings( const std::vector< std::string > & A )
+{
+ std::array< const std::string * , 64 > S;
+ const std::size_t step = A.size() / S.size();
+ for( std::size_t i = 0 ; i < S.size() ; ++i ) S[ i ] = &A[ i * step ];
+ std::sort( S.begin() , S.end() , []( const std::string * x ,
+                                      const std::string * y ) {
+  return( *x < *y ); } );
+ std::size_t k = 1;
+ for( std::size_t i = 1 ; i < S.size() ; ++i ) k += *S[ i ] != *S[ i - 1 ];
+ return( k <= 16 );
  }
 
 /// the stable sort of A, n >= 64, if a sample of 64 equally spaced items
@@ -309,6 +460,67 @@ void pingPongSort( std::vector< T > & A , C & less )
  ADS_AUDIT( sortedPermutation( A , before , less ) );
  }
 
+/// true if mergeVectorRuns() sorts T: integers of 32 bits that are their
+/// own keys in the vector registers (AVX-512); on keys of 64 bits, 8 to a
+/// register, the merges of powerSort() are faster
+template< class T >
+inline constexpr bool kVectorRunsOf = []() {
+ if constexpr( std::is_integral_v< T > && VectorKey< T > &&
+               ( sizeof( T ) == 4 ) )
+  return( std::is_signed_v< T > == std::is_signed_v< vqs::KeyOf< T > > );
+ else
+  return( false );
+ }();
+
+/// A sorted from its r runs ending at E[ 0 .. r ), integers of T with
+/// kVectorRunsOf< T >: each strictly decreasing run reversed, then the
+/// runs merged two by two, a round at a time, by the merge of the vector
+/// registers [see VectorQuickSort.h], the shorter run of each pair copied
+/// to a buffer of n / 2 keys and merged forward, or backward if it is the
+/// right one, with the other in place
+template< class T , class C >
+void mergeVectorRuns( std::vector< T > & A , C & less , const std::size_t * E ,
+                      std::size_t r )
+{
+ using V = vqs::Best< vqs::KeyOf< T > >;
+ using K = typename V::K;
+ const auto before = auditCopy( A );
+ const std::size_t n = A.size();
+ T * const x = A.data();
+ std::vector< std::size_t > b( r + 1 );
+ b[ 0 ] = 0;
+ for( std::size_t i = 0 ; i < r ; ++i ) {
+  b[ i + 1 ] = E[ i ];
+  const std::size_t s = b[ i ] , e = E[ i ];
+  if( ( e - s > 1 ) && less( x[ s + 1 ] , x[ s ] ) )
+   std::reverse( x + s , x + e );
+  }
+ K * const a = reinterpret_cast< K * >( x );
+ const auto B = std::make_unique_for_overwrite< K[] >( n / 2 + 1 );
+ K * const buf = B.get();
+ while( b.size() > 2 ) {
+  std::size_t w = 1;
+  for( std::size_t j = 0 ; j + 2 < b.size() ; j += 2 ) {
+   const std::size_t s = b[ j ] , m = b[ j + 1 ] , e = b[ j + 2 ];
+   if( a[ m ] < a[ m - 1 ] ) {              // not already in order
+    if( m - s <= e - m ) {
+     std::memcpy( buf , a + s , ( m - s ) * sizeof( K ) );
+     vqs::mergeRuns< V , false >( buf , m - s , a + m , e - m , a + s );
+     }
+    else {
+     std::memcpy( buf , a + m , ( e - m ) * sizeof( K ) );
+     vqs::mergeRuns< V , true >( buf , e - m , a + s , m - s , a + s );
+     }
+    }
+   b[ w++ ] = e;
+   }
+  if( b.size() % 2 == 0 )                   // an odd run out, to the next
+   b[ w++ ] = b.back();                     // round
+  b.resize( w );
+  }
+ ADS_AUDIT( sortedPermutation( A , before , less ) );
+ }
+
 /// sort() of the numbers of 32 or 64 bits when the vector registers are
 /// there, and stableSort() of them if stable: a vector of one run left as
 /// it is or reversed, one of at most kVectorRuns< T > runs by the merges of
@@ -333,10 +545,16 @@ void vectorNumbers( std::vector< T > & A , C & less , bool stable )
  const std::size_t r = runs( A , less , kRuns , E.data() );
  if( r <= 1 )
   oneRun( A , less );
+ else if( kVectorRunsOf< T > && ( r <= kRuns ) ) {
+  if constexpr( kVectorRunsOf< T > )
+   mergeVectorRuns( A , less , E.data() , r );
+  }
  else if( r <= kVectorRuns< T > )
   powerSortRuns( A , less , E.data() , r );
- else if( sizeof( T ) == 8 && std::is_integral_v< T > &&
-          ( sampleKeys( A ).second <= 1 ) )
+ else if( sizeof( T ) == 8 && std::is_integral_v< T > && [ & ]() {
+           const auto [ k , bytes , range ] = sampleKeys( A );
+           static_cast< void >( k );
+           return( ( bytes <= 1 ) && ( range >= vqs::kCountRange ) ); }() )
   radixSort( A );                           // one byte: a counting sort
  else if( ! zeros() )
   vectorQuickSort( A );
@@ -377,6 +595,8 @@ void sort( std::vector< T > & A , C less )
    detail::oneRun( A , less );
   else if( r <= kRuns )
    detail::powerSortRuns( A , less , E.data() , r );
+  else if( kVectorSort && ! detail::fewStrings( A ) )
+   prefixKeySort( A );
   else
    msdRadixSort( A );
   }
@@ -434,6 +654,8 @@ void stableSort( std::vector< T > & A , C less )
    detail::oneRun( A , less );
   else if( r <= kRuns )
    detail::powerSortRuns( A , less , E.data() , r );
+  else if( kVectorSort && ! detail::fewStrings( A ) )
+   prefixKeySort( A );
   else
    msdRadixSort( A );
   }

@@ -12,19 +12,33 @@
  *   vectorQuickSort() [see VectorQuickSort.h]; a long one with at most
  *   kRuns runs (non-decreasing or strictly decreasing stretches, counted
  *   by a pass that stops at the run kRuns + 1 and keeps where they end,
- *   with no branch inside blocks of 32 items, which vectorize), or at most
- *   8 for the keys of 32 bits, goes to the merges of powerSort() [see
- *   RunSorts.h] on those runs, with no second search for them,
- *   \f$ O( n \log r ) \f$ for r runs, O( n ) if sorted or reversed; one
- *   of integers of 64 bits whose sample of 64 keys differs in one byte
- *   goes to the counting sort of radixSort(), and any other to
- *   vectorQuickSort(), \f$ O( n \log n ) \f$ and \f$ O( n \log k ) \f$ for
- *   k distinct keys, W keys per instruction.
+ *   with no branch inside blocks of 32 items, which vectorize) has its
+ *   runs merged with no second search for them: those of integers of 32
+ *   bits two by two in the vector registers (mergeVectorRuns(), on
+ *   AVX-512), the others, up to 16 of them, by the merges of powerSort()
+ *   [see RunSorts.h], \f$ O( n \log r ) \f$ for r runs; one of integers
+ *   of 64 bits whose sample of 64 keys differs in one byte and spans at
+ *   least kCountRange values goes to the counting sort of radixSort(), and
+ *   any other to vectorQuickSort(), \f$ O( n \log n ) \f$, O( n ) for
+ *   few keys in a small range or for at most 16 distinct keys (counted in
+ *   the registers) and \f$ O( n \log k ) \f$ for k distinct keys
+ *   otherwise, W keys per instruction.
  *   stableSort() does the same, since two equal numbers cannot be told
  *   apart, but a vector of floating point numbers that holds a -0, which
  *   std::less finds equal to +0, and has more than 8 or kRuns runs goes
  *   to powerSort() below kRadix items and to radixSortBy() with -0 and +0
  *   as one key from there.
+ * - A vector of kOneRun items or more copied as bytes, of any type and
+ *   order, is first checked for one run: strictly decreasing, it is
+ *   reversed in the same pass that checks it, 32 pairs of items from the
+ *   two ends at a time, checked before they are swapped (and swapped back
+ *   if a later block is out of order), one read and one write of each
+ *   item instead of a scan and then a reversal; otherwise it is scanned
+ *   for an item smaller than the one before it, 64 items at a time with
+ *   the block 4 blocks ahead prefetched, by quarters in step if its items
+ *   have at most 8 bytes and fill more than the cache of the second level
+ *   (four streams of reads), and the scan of the first run goes on from
+ *   where that stopped.
  * - With the natural order on the other integers and floating point
  *   numbers, or with no vector registers, a short vector goes to
  *   pdqSort() and a long one in few runs to powerSort() in the same way;
@@ -38,12 +52,17 @@
  *   (radixSort() puts -0 first). A NaN breaks the natural order, so that
  *   a vector with a NaN has no defined order.
  * - With the natural order on strings, a vector of at most kRuns runs goes
- *   to the merges of powerSort() in the same way and any other to
- *   msdRadixSort() [see RadixSort.h], which reads one character at a time
- *   instead of comparing whole strings, skips the prefixes that a group
- *   shares and, on the benchmark, beats the in-place multikeyQuickSort()
- *   of Bentley and Sedgewick [see MultikeyQuickSort.h] (two equal strings
- *   cannot be told apart, so that stability means nothing there).
+ *   to the merges of powerSort() in the same way; any other goes, when the
+ *   vector registers are there, to prefixKeySort() [see StringSort.h],
+ *   which reads each string a few times in all and sorts integer keys of
+ *   8 of its characters in the registers, unless a sample of 64 strings
+ *   holds at most 16 distinct ones, and otherwise to msdRadixSort() [see
+ *   RadixSort.h], which reads one character at a time instead of comparing
+ *   whole strings, skips the prefixes that a group shares and splits few
+ *   distinct strings at once, and on the benchmark beats the in-place
+ *   multikeyQuickSort() of Bentley and Sedgewick [see MultikeyQuickSort.h]
+ *   (two equal strings cannot be told apart, so that stability means
+ *   nothing there).
  * - With any other order, items that are copied as bytes (trivially
  *   copyable) go the same way (sort() sends fewer than kRadix of them to
  *   pdqSort()): at most kRuns runs to the merges of powerSort(), and the
@@ -110,6 +129,7 @@
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
 #include "ADS/sort/SampleSort.h"
+#include "ADS/sort/StringSort.h"
 #include "ADS/sort/VectorQuickSort.h"
 
 #include <algorithm>
@@ -120,6 +140,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
