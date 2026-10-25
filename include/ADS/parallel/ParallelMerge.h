@@ -23,13 +23,15 @@
  * items before ( x , j , m ), those \f$ \leq x \f$ in the ranges i < j and
  * those < x in the ranges i > j; if they are fewer than r, x and all of
  * them go to the left (each \f$ lo_i \f$ rises to its count, \f$ lo_j \f$
- * past x), otherwise to the right. The widest window halves at each step
- * and is at least the k-th of the total, so that a split takes
- * \f$ O( k \log N ) \f$ steps of k binary searches, \f$ O( k^2 \log^2 N )
- * \f$ comparisons; the splits are found in parallel, one per part, and
- * cost far less than the merge, \f$ O( N \log k ) \f$, when
- * \f$ k \ll N \f$ (the selection of Varman et al. does it in
- * \f$ O( k \log k \log N ) \f$, which matters only for large k).
+ * past x), otherwise to the right. The pivot is the middle item of a
+ * window, the weighted median of the middles of all the windows by their
+ * widths: the windows whose middles are on the side of x that goes lose
+ * half of their width, at least a quarter of the total, so that a split
+ * takes \f$ O( \log( k N ) ) \f$ steps of k binary searches and a sort of
+ * k middles, \f$ O( k \log N \log( k N ) ) \f$ comparisons (the bound of
+ * the selection of Varman et al., up to a factor \f$ \log k \f$); the
+ * splits are found in parallel, one per part, and cost far less than the
+ * merge, \f$ O( N \log k ) \f$.
  *
  * The contracts [see Contract.h]: the iterators are random access, each
  * range sorted by less (an audit, as in the sequential merge), out does
