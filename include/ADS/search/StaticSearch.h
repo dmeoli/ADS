@@ -199,14 +199,14 @@ class SPlusTree {
  struct Free {
   std::size_t n = 0;                    ///< the items
   void operator()( T * p ) const noexcept {
-   if( n * sizeof( T ) >= HUGE )
+   if( n * sizeof( T ) >= HUGE_BYTES )
     HugePageAllocator< T >().deallocate( p , n );
    else
     ::operator delete( p , std::align_val_t( 64 ) );
    }
   };
 
- static constexpr std::size_t HUGE = std::size_t( 1 ) << 21;
+ static constexpr std::size_t HUGE_BYTES = std::size_t( 1 ) << 21;
 
  /// the keys of the node at a smaller than v, or not larger if Up
  template< bool Up >

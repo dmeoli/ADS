@@ -77,6 +77,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/sort/Sorted.h"
 #include "ADS/sort/VectorQuickSort.h"
 

@@ -31,13 +31,13 @@ namespace detail {
 /// a point of the plane with coordinates of 128 bits, so that the products
 /// of the hulls are exact
 struct PlaPoint {
- __int128 x;
- __int128 y;
+ Int128 x;
+ Int128 y;
  };
 
 /// the cross product of b - a and c - a, positive on a left turn
-inline __int128 plaCross( const PlaPoint & a , const PlaPoint & b ,
-                          const PlaPoint & c )
+inline Int128 plaCross( const PlaPoint & a , const PlaPoint & b ,
+                        const PlaPoint & c )
 {
  return( ( b.x - a.x ) * ( c.y - a.y ) - ( b.y - a.y ) * ( c.x - a.x ) );
  }
@@ -125,8 +125,8 @@ auto ADS_PGM::approximate( const std::vector< std::uint64_t > & x ,
   L.line.push_back( Line{ double( c ) , double( s ) } );
   };
  for( std::size_t i = 0 ; i < x.size() ; ++i ) {
-  const P pu{ __int128( x[ i ] ) , __int128( y[ i ] ) + e };
-  const P pd{ __int128( x[ i ] ) , __int128( y[ i ] ) - e };
+  const P pu{ detail::Int128( x[ i ] ) , detail::Int128( y[ i ] ) + e };
+  const P pd{ detail::Int128( x[ i ] ) , detail::Int128( y[ i ] ) - e };
   if( count >= 2 && ( detail::plaLess( r2 , pu , r0 , r2 ) ||
                       detail::plaLess( r1 , r3 , r3 , pd ) ) ) {
    close();                                 // no line is left
