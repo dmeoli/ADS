@@ -15,7 +15,10 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include <array>
 #include <atomic>
+#include <cstring>
+#include <mutex>
 #include <bit>
 #include <iterator>
 #include <limits>
@@ -48,6 +51,13 @@ auto sortKey( T x )
  return( radixKey( x ) );
  }
 
+/// whether the distribution writes the items a line of the cache at a
+/// time: those copied as bytes, several to a line
+template< class T >
+inline constexpr bool lined = std::is_trivially_copyable_v< T > &&
+                              ( sizeof( T ) <= 16 ) &&
+                              ( 64 % sizeof( T ) == 0 );
+
 /// whether the buckets are sorted in their places by vectorQuickSort():
 /// numbers of 32 or 64 bits in their natural order with the vector
 /// registers there, not the floating point numbers of the stable sort (it
@@ -70,21 +80,75 @@ void sequentialSort( std::vector< T > & A , C & less )
   sort( A , less );
  }
 
-/// room for n items, not constructed, from the allocator of huge pages,
-/// which keeps a large block for the next sort of the thread with its
-/// pages already faulted in
+/// the room of the sorts, kept between them: the block of the last sort
+/// that gave its room back, which the next one takes if it is large
+/// enough, so that its pages are already faulted in (a fresh block of 80
+/// MB costs, in the faults that clear its pages, as much as the moves of
+/// the items into it); the block goes back to the system at the exit, or
+/// when a larger one replaces it
+class SortRoom {
+ public:
+
+ /// a block of at least b bytes, aligned to a huge page
+ static std::byte * take( std::size_t b , std::size_t & got ) {
+  {
+   std::lock_guard< std::mutex > g( slot().lock );
+   if( slot().p && ( slot().size >= b ) ) {
+    got = slot().size;
+    return( std::exchange( slot().p , nullptr ) );
+    }
+  }
+  got = b;
+  return( HugePageAllocator< std::byte >().allocate( b ) );
+  }
+
+ /// gives the block of b bytes back: kept if no larger one is
+ static void give( std::byte * p , std::size_t b ) {
+  std::byte * drop = p;
+  std::size_t db = b;
+  {
+   std::lock_guard< std::mutex > g( slot().lock );
+   if( ! slot().p || ( slot().size < b ) ) {
+    std::swap( drop , slot().p );
+    std::swap( db , slot().size );
+    }
+  }
+  if( drop )
+   HugePageAllocator< std::byte >().deallocate( drop , db );
+  }
+
+ private:
+
+ struct Slot {
+  std::mutex lock;
+  std::byte * p = nullptr;
+  std::size_t size = 0;
+  ~Slot() {
+   if( p ) HugePageAllocator< std::byte >().deallocate( p , size );
+   }
+  };
+
+ static Slot & slot( void ) {
+  static Slot s;
+  return( s );
+  }
+ };
+
+/// room for n items, not constructed, from SortRoom
 template< class T >
 class RawBuffer {
  public:
  explicit RawBuffer( std::size_t n )
-  : f_n( std::max< std::size_t >( n , 1 ) ) ,
-    f_p( HugePageAllocator< T >().allocate( f_n ) ) {}
- ~RawBuffer() { HugePageAllocator< T >().deallocate( f_p , f_n ); }
+  : f_p( reinterpret_cast< T * >( SortRoom::take(
+                                  std::max< std::size_t >( n , 1 ) *
+                                  sizeof( T ) , f_b ) ) ) {}
+ ~RawBuffer() { SortRoom::give( reinterpret_cast< std::byte * >( f_p ) ,
+                                f_b ); }
  RawBuffer( const RawBuffer & ) = delete;
  RawBuffer & operator=( const RawBuffer & ) = delete;
  [[nodiscard]] T * data( void ) const { return( f_p ); }
  private:
- std::size_t f_n;
+ std::size_t f_b = 0;                      ///< the bytes of the block
  T * f_p;
  };
 
@@ -217,9 +281,34 @@ class RadixClassifier {
   f_lo = lo;
   f_shift = w > 8 ? w - 8 : 0;
   f_last = std::size_t( Key( hi - lo ) >> f_shift );
+  // the share of the fullest bucket in the sample
+  std::vector< int > h( f_last + 1 , 0 );
+  for( int i = 0 ; i < 1024 ; ++i ) {
+   r ^= r << 13;
+   r ^= r >> 7;
+   r ^= r << 17;
+   f_full = std::max( f_full , ++h[ ( *this )( A[ r % n ] ) ] );
+   }
+  }
+
+ /// whether the bits spread the keys of the sample: no bucket with more
+ /// than 4 times its share of them, and 32 more (the floating point
+ /// numbers of a few exponents, or integers of a power law, are not)
+ [[nodiscard]] bool spread( void ) const {
+  return( ( f_shift == 0 ) ||
+          ( f_full <= int( 4 * 1024 / ( f_last + 1 ) ) + 32 ) );
   }
 
  [[nodiscard]] std::size_t buckets( void ) const { return( f_last + 1 ); }
+
+ /// whether each key in the bounds of the sample has a bucket of its own
+ [[nodiscard]] bool exact( void ) const { return( f_shift == 0 ); }
+
+ /// whether x is in the bounds of the sample
+ [[nodiscard]] bool inBounds( const T & x ) const {
+  const Key k = sortKey( x );
+  return( ( k >= f_lo ) && ( Key( k - f_lo ) <= Key( f_last ) ) );
+  }
 
  /// with no shift, each bucket but the two at the ends, which take the
  /// keys out of the bounds, holds one key
@@ -239,6 +328,7 @@ class RadixClassifier {
  Key f_lo;
  int f_shift;
  std::size_t f_last;
+ int f_full = 0;                           ///< the fullest of the sample
  };
 
 template< bool Stable , class E , class T , class C >
@@ -256,6 +346,15 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
  const std::size_t nb = std::min( 4 * p , std::max( p , n / 16384 ) ) ,
                    bs = ( n + nb - 1 ) / nb;
  std::vector< std::size_t > cnt( nb * k , 0 );
+ // the integers of few distinct keys, each with a bucket of its own: the
+ // counts are a counting sort, and each bucket is filled with its key
+ constexpr bool counting = std::is_integral_v< T > &&
+                           std::is_same_v< K , RadixClassifier< T > >;
+ const bool exact = [ & ]() {
+  if constexpr( counting ) return( cls.exact() ); else return( false );
+  }();
+ std::atomic< bool > outside{ false };
+ std::vector< T > key( counting && exact ? k : 0 );
  constexpr bool keep = ! std::is_void_v< Id >;
  using Ids = std::conditional_t< keep , Id , char >;
  std::unique_ptr< Ids[] > id( keep ? new Ids[ n ] : nullptr );
@@ -271,6 +370,23 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
    cls.classify( A.data() + lo , hi - lo , id.get() + lo );
    for( std::size_t i = lo ; i < hi ; ++i )
     ++c[ id[ i ] ];
+   }
+  else if constexpr( counting ) {
+   if( exact ) {
+    bool out = false;
+    for( std::size_t i = lo ; i < hi ; ++i ) {
+     out |= ! cls.inBounds( A[ i ] );
+     const std::size_t b = cls( A[ i ] );
+     if( c[ b ]++ == 0 )                    // the key of the bucket
+      std::atomic_ref< T >( key[ b ] ).store( A[ i ] ,
+                                             std::memory_order_relaxed );
+     }
+    if( out )
+     outside.store( true , std::memory_order_relaxed );
+    }
+   else
+    for( std::size_t i = lo ; i < hi ; ++i )
+     ++c[ cls( A[ i ] ) ];
    }
   else
    for( std::size_t i = lo ; i < hi ; ++i )
@@ -291,20 +407,56 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
    }
   start[ k ] = s;
   }
+ if constexpr( counting )
+  if( exact && ! outside.load() ) {
+   // the buckets filled with their keys
+   parallelForBlocks( ex , 0 , n , [ & ]( std::size_t lo , std::size_t hi ) {
+    std::size_t b = std::size_t( std::upper_bound( start.begin() ,
+                                                   start.end() , lo ) -
+                                 start.begin() ) - 1;
+    for( std::size_t i = lo ; i < hi ; ++b ) {
+     const std::size_t e = std::min( hi , start[ b + 1 ] );
+     std::fill( A.begin() + std::ptrdiff_t( i ) ,
+                A.begin() + std::ptrdiff_t( e ) , key[ b ] );
+     i = e;
+     }
+    } , 16384 );
+   return;
+   }
  RawBuffer< T > buf( n );
  T * const B = buf.data();
  ex.bulk( nb , [ & ]( std::size_t j ) {
   const std::size_t lo = j * bs , hi = std::min( n , lo + bs );
   std::vector< std::size_t > c( cnt.begin() + std::ptrdiff_t( j * k ) ,
                                 cnt.begin() + std::ptrdiff_t( j * k + k ) );
-  for( std::size_t i = lo ; i < hi ; ++i ) {
-   std::size_t b;
+  auto bucket = [ & ]( std::size_t i ) {
    if constexpr( keep )
-    b = id[ i ];
+    return( std::size_t( id[ i ] ) );
    else
-    b = cls( A[ i ] );
-   std::construct_at( B + c[ b ]++ , std::move( A[ i ] ) );
+    return( cls( A[ i ] ) );
+   };
+  if constexpr( lined< T > ) {
+   // a line of the cache per bucket on the stack, written out whole
+   constexpr std::size_t L = 64 / sizeof( T );
+   std::vector< std::array< T , L > > line( k );
+   std::vector< std::uint8_t > fill( k , 0 );
+   for( std::size_t i = lo ; i < hi ; ++i ) {
+    const std::size_t b = bucket( i );
+    line[ b ][ fill[ b ] ] = A[ i ];
+    if( ++fill[ b ] == L ) {
+     std::memcpy( static_cast< void * >( B + c[ b ] ) , line[ b ].data() ,
+                  64 );
+     c[ b ] += L;
+     fill[ b ] = 0;
+     }
+    }
+   for( std::size_t b = 0 ; b < k ; ++b )
+    std::memcpy( static_cast< void * >( B + c[ b ] ) , line[ b ].data() ,
+                 fill[ b ] * sizeof( T ) );
    }
+  else
+   for( std::size_t i = lo ; i < hi ; ++i )
+    std::construct_at( B + c[ bucket( i ) ]++ , std::move( A[ i ] ) );
   } );
  id.reset();
  // the buckets from the largest; those beyond n / p first, on all threads
@@ -352,7 +504,9 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
     // back to its place, sorted there by the quicksort in the vector
     // registers that the sequential sort would choose for it
     std::copy( B + s , B + s + m , A.begin() + std::ptrdiff_t( s ) );
-    vectorQuickSort( A.data() + s , m );
+    if( ! std::is_sorted( A.begin() + std::ptrdiff_t( s ) ,
+                          A.begin() + std::ptrdiff_t( s + m ) , less ) )
+     vectorQuickSort( A.data() + s , m );   // unless already in order
     continue;
     }
    v.assign( std::make_move_iterator( B + s ) ,
@@ -362,6 +516,66 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
    std::move( v.begin() , v.end() , A.begin() + std::ptrdiff_t( s ) );
    }
   } );
+ }
+
+/// the runs of A, if few: each of B blocks cut into its maximal runs,
+/// non-decreasing or strictly decreasing, each block giving up beyond
+/// 8 of them (on most inputs after a few items); if no block gave up,
+/// the decreasing runs are reversed and all are merged by the parallel
+/// multiwayMerge() through a buffer, stably, and true is returned
+template< bool Stable , class E , class T , class C >
+bool fewRuns( E & ex , std::vector< T > & A , C & less )
+{
+ const std::size_t n = A.size() ,
+                   B = std::max< std::size_t >( 8 , ex.concurrency() );
+ constexpr std::size_t cap = 8;
+ // the starts of the runs of each block, and their directions
+ std::vector< std::vector< std::pair< std::size_t , bool > > > R( B );
+ std::atomic< bool > many{ false };
+ parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
+  const std::size_t lo = n * b / B , hi = n * ( b + 1 ) / B;
+  auto & r = R[ b ];
+  for( std::size_t i = lo ; i < hi ; ) {
+   if( ( r.size() == cap ) || many.load( std::memory_order_relaxed ) ) {
+    many.store( true , std::memory_order_relaxed );
+    return;
+    }
+   const bool down = ( i + 1 < hi ) && less( A[ i + 1 ] , A[ i ] );
+   r.emplace_back( i , down );
+   std::size_t j = i + 1;
+   if( down )
+    while( ( j < hi ) && less( A[ j ] , A[ j - 1 ] ) ) ++j;
+   else
+    while( ( j < hi ) && ! less( A[ j ] , A[ j - 1 ] ) ) ++j;
+   i = j;
+   }
+  } , 1 );
+ if( many.load() )
+  return( false );
+ std::vector< std::pair< T * , T * > > runs;
+ for( std::size_t b = 0 ; b < B ; ++b )
+  for( std::size_t q = 0 ; q < R[ b ].size() ; ++q ) {
+   const std::size_t s = R[ b ][ q ].first ,
+                     e = q + 1 < R[ b ].size() ? R[ b ][ q + 1 ].first :
+                                                 n * ( b + 1 ) / B;
+   if( R[ b ][ q ].second )
+    std::reverse( A.begin() + std::ptrdiff_t( s ) ,
+                  A.begin() + std::ptrdiff_t( e ) );
+   runs.emplace_back( A.data() + s , A.data() + e );
+   }
+ if constexpr( std::is_trivially_copyable_v< T > ) {
+  RawBuffer< T > buf( n );
+  multiwayMerge( ex , runs , buf.data() , less );
+  parallelFor( ex , 0 , n , [ & ]( std::size_t i ) {
+   A[ i ] = buf.data()[ i ]; } , 16384 );
+  }
+ else {
+  std::vector< T > out( n );
+  multiwayMerge( ex , runs , out.begin() , less );
+  parallelFor( ex , 0 , n , [ & ]( std::size_t i ) {
+   A[ i ] = std::move( out[ i ] ); } , 4096 );
+  }
+ return( true );
  }
 
 /// the survey of the order of A: whether sorted, whether decreasing
@@ -404,15 +618,19 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
    } , 16384 );
   return;
   }
+ if( fewRuns< Stable >( ex , A , less ) )
+  return;
  const std::size_t k = n >= 256 * 4096 ? 256 :
                        std::max( std::bit_ceil( 4 * p ) ,
                                  std::bit_floor( n / 4096 ) );
  if constexpr( numbers ) {
-  distribute< Stable , void >( ex , A , less ,
-                               RadixClassifier< T >( A ) ,
-                               depth );
+  const RadixClassifier< T > cls( A );
+  if( cls.spread() ) {
+   distribute< Stable , void >( ex , A , less , cls , depth );
+   return;
+   }
   }
- else {
+ {
   TreeClassifier< T , C > cls( A , std::min( k , std::size_t( 256 ) ) ,
                                less );
   if( cls.buckets() <= 256 )
