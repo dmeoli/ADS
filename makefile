@@ -98,8 +98,15 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+# on x86 the branches are kept off the 32-byte boundaries, where the
+# erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
+# the same for ADS and for the libraries it is compared with, so that a
+# ratio does not depend on where the code falls
+JCCFLAGS := $(shell echo 'int main(){}' | $(CXX) -x c++ -c -o /dev/null \
+            -Wa,-mbranches-within-32B-boundaries - 2>/dev/null && \
+            echo -Wa,-mbranches-within-32B-boundaries)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
-             -Iinclude
+             -Iinclude $(JCCFLAGS)
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
             -Wl$(comma)-rpath$(comma)$(GMP)/lib -lgmpxx -lgmp)
 FLINTFLAGS = $(if $(FLINT),-DADS_HAS_FLINT -I$(FLINT)/include \
