@@ -80,78 +80,6 @@ void sequentialSort( std::vector< T > & A , C & less )
   sort( A , less );
  }
 
-/// the room of the sorts, kept between them: the block of the last sort
-/// that gave its room back, which the next one takes if it is large
-/// enough, so that its pages are already faulted in (a fresh block of 80
-/// MB costs, in the faults that clear its pages, as much as the moves of
-/// the items into it); the block goes back to the system at the exit, or
-/// when a larger one replaces it
-class SortRoom {
- public:
-
- /// a block of at least b bytes, aligned to a huge page
- static std::byte * take( std::size_t b , std::size_t & got ) {
-  {
-   std::lock_guard< std::mutex > g( slot().lock );
-   if( slot().p && ( slot().size >= b ) ) {
-    got = slot().size;
-    return( std::exchange( slot().p , nullptr ) );
-    }
-  }
-  got = b;
-  return( HugePageAllocator< std::byte >().allocate( b ) );
-  }
-
- /// gives the block of b bytes back: kept if no larger one is
- static void give( std::byte * p , std::size_t b ) {
-  std::byte * drop = p;
-  std::size_t db = b;
-  {
-   std::lock_guard< std::mutex > g( slot().lock );
-   if( ! slot().p || ( slot().size < b ) ) {
-    std::swap( drop , slot().p );
-    std::swap( db , slot().size );
-    }
-  }
-  if( drop )
-   HugePageAllocator< std::byte >().deallocate( drop , db );
-  }
-
- private:
-
- struct Slot {
-  std::mutex lock;
-  std::byte * p = nullptr;
-  std::size_t size = 0;
-  ~Slot() {
-   if( p ) HugePageAllocator< std::byte >().deallocate( p , size );
-   }
-  };
-
- static Slot & slot( void ) {
-  static Slot s;
-  return( s );
-  }
- };
-
-/// room for n items, not constructed, from SortRoom
-template< class T >
-class RawBuffer {
- public:
- explicit RawBuffer( std::size_t n )
-  : f_p( reinterpret_cast< T * >( SortRoom::take(
-                                  std::max< std::size_t >( n , 1 ) *
-                                  sizeof( T ) , f_b ) ) ) {}
- ~RawBuffer() { SortRoom::give( reinterpret_cast< std::byte * >( f_p ) ,
-                                f_b ); }
- RawBuffer( const RawBuffer & ) = delete;
- RawBuffer & operator=( const RawBuffer & ) = delete;
- [[nodiscard]] T * data( void ) const { return( f_p ); }
- private:
- std::size_t f_b = 0;                      ///< the bytes of the block
- T * f_p;
- };
-
 /// the classifier by k - 1 splitters in an implicit binary tree, with
 /// the buckets of the items equal to a splitter if eq
 template< class T , class C >
@@ -432,7 +360,7 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
     } , 16384 );
    return;
    }
- RawBuffer< T > buf( n );
+ ScratchBuffer< T > buf( n );
  T * const B = buf.data();
  ex.bulk( nb , [ & ]( std::size_t j ) {
   const std::size_t lo = j * bs , hi = std::min( n , lo + bs );
@@ -584,7 +512,7 @@ bool fewRuns( E & ex , std::vector< T > & A , C & less )
    runs.emplace_back( A.data() + s , A.data() + e );
    }
  if constexpr( std::is_trivially_copyable_v< T > ) {
-  RawBuffer< T > buf( n );
+  ScratchBuffer< T > buf( n );
   multiwayMerge( ex , runs , buf.data() , less );
   parallelFor( ex , 0 , n , [ & ]( std::size_t i ) {
    A[ i ] = buf.data()[ i ]; } , 16384 );

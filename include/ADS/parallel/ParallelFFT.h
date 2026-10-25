@@ -16,26 +16,22 @@
  * \f]
  * i.e., the \f$ n_2 \f$ transforms of the columns, the multiplication by
  * the twiddle factors \f$ \omega_n^{j_2 k_1} \f$, the \f$ n_1 \f$
- * transforms of the rows, and the transposition of the result. The work
- * goes in two parallel loops, each over blocks of 8 columns or rows (the
- * transforms of length \f$ n_1 \f$ or \f$ n_2 \f$, about \f$ \sqrt n
- * \f$, are independent, each the sequential fft() of a vector in the
- * cache of its core): the first gathers 8 columns, reading from each row
- * 8 consecutive points (two lines of the cache), transforms them and
- * writes them back multiplied by their twiddles; the second transforms 8
- * rows and writes them transposed into the output by runs of 8 points.
- * The points thus cross the memory twice, where three transpositions of
- * the whole matrix and the two passes of the transforms would cross it
- * five times. The twiddle \f$ \omega_n^t \f$, \f$ t = j_2 k_1 \bmod
- * n \f$, is the product of two entries of tables of \f$ 2^{\lceil k / 2
- * \rceil} \f$ powers, \f$ \omega_n^{t_h 2^h} \omega_n^{t_l} \f$, each
- * computed by the library within an ulp, so that a twiddle has an error
- * of a few ulps instead of growing with a recurrence of products. The
- * inverse runs the same steps with \f$ \omega_n^{-1} \f$, and its row
- * transforms divide by \f$ n_1 \f$ and by \f$ n_2 \f$, by n in all.
- * The work is that of the sequential transform plus the twiddles,
- * \f$ O( n \log n / p ) \f$ time on p threads, the transform of a row or a
- * column not split; a vector of n points holds the output.
+ * transforms of the rows, and the transposition of the result. The
+ * transforms of length \f$ n_1 \f$ or \f$ n_2 \f$ (about \f$ \sqrt n \f$,
+ * in the cache of each core) are independent, each the sequential fft()
+ * of a row copied into a vector of its thread, and they run in parallel
+ * loops; the columns become rows, and the rows columns, by three parallel
+ * transpositions through a buffer of n points [see Scratch.h], each in
+ * tasks of 16 rows by 256 columns and tiles of 16 x 16. A transposition
+ * that walks whole columns instead, e.g., gathering 8 columns at a time
+ * from the rows, crosses a page at each row (a row of \f$ 2^{11} \f$
+ * points is 32 KB) and misses the TLB at each one: on the benchmark,
+ * gathering and putting back the columns of \f$ 2^{22} \f$ points takes
+ * longer than the whole sequential transform.
+ * The work is that of the sequential transform plus the twiddles and 4
+ * passes of moves (3 transpositions and the copy of the result back),
+ * \f$ O( n \log n / p ) \f$ time on p threads, the transform of a row
+ * not split.
  * The result equals the sequential one up to the rounding, the error of
  * both being \f$ O( \epsilon \log n ) \f$ relative to the norm.
  *
@@ -64,6 +60,7 @@
 #include "ADS/Contract.h"
 #include "ADS/numeric/FFT.h"
 #include "ADS/parallel/Executor.h"
+#include "ADS/parallel/Scratch.h"
 
 #include <bit>
 #include <cmath>
@@ -88,6 +85,32 @@ void fft( E & ex , std::vector< Complex > & a , bool inverse );
 
 /*--------------------------------------------------------------------------*/
 
+namespace detail {
+
+/// D = the transpose of the r x c matrix S by rows, in tasks of 16 rows of
+/// S by 256 of its columns, each by tiles of 16 x 16: a task reads 16 rows
+/// and writes 256, so that its pages fit the TLB whatever the distance of
+/// two rows (a column of a large matrix crosses a page at each row)
+template< Executor E >
+void tiledTranspose( E & ex , const Complex * S , Complex * D ,
+                     std::size_t r , std::size_t c )
+{
+ constexpr std::size_t R = 16 , Cn = 256;
+ const std::size_t rt = ( r + R - 1 ) / R , ct = ( c + Cn - 1 ) / Cn;
+ parallelFor( ex , 0 , rt * ct , [ & ]( std::size_t task ) {
+  const std::size_t i0 = ( task / ct ) * R , i1 = std::min( r , i0 + R ) ,
+                    c0 = ( task % ct ) * Cn , c1 = std::min( c , c0 + Cn );
+  for( std::size_t j0 = c0 ; j0 < c1 ; j0 += R ) {
+   const std::size_t j1 = std::min( c1 , j0 + R );
+   for( std::size_t i = i0 ; i < i1 ; ++i )
+    for( std::size_t j = j0 ; j < j1 ; ++j )
+     D[ j * r + i ] = S[ i * c + j ];
+   }
+  } , 1 );
+ }
+
+}  // end( namespace detail )
+
 template< Executor E >
 void fft( E & ex , std::vector< Complex > & a , bool inverse )
 {
@@ -110,44 +133,38 @@ void fft( E & ex , std::vector< Complex > & a , bool inverse )
  parallelFor( ex , 0 , hiN , [ & ]( std::size_t t ) {
   Hi[ t ] = std::polar( 1.0 , sgn * 2 * std::numbers::pi *
                               double( t << h ) / double( n ) ); } );
- std::vector< Complex > b( n );
- // the columns, W at a time: each row gives W consecutive points (whole
- // lines of the cache) to the W transforms, which go back where they came
- // from multiplied by their twiddles
- constexpr std::size_t W = 8;
- parallelFor( ex , 0 , n2 / W , [ & ]( std::size_t c ) {
-  std::vector< Complex > v[ W ];
-  const std::size_t j0 = c * W;
-  for( auto & x : v ) x.resize( n1 );
-  for( std::size_t j1 = 0 ; j1 < n1 ; ++j1 ) {
-   const Complex * row = a.data() + j1 * n2 + j0;
-   for( std::size_t q = 0 ; q < W ; ++q ) v[ q ][ j1 ] = row[ q ];
-   }
-  for( std::size_t q = 0 ; q < W ; ++q ) fft( v[ q ] , inverse );
-  for( std::size_t k1 = 0 ; k1 < n1 ; ++k1 ) {
-   Complex * row = a.data() + k1 * n2 + j0;
-   for( std::size_t q = 0 ; q < W ; ++q ) {
-    const std::size_t t = ( ( j0 + q ) * k1 ) & ( n - 1 );
-    row[ q ] = v[ q ][ k1 ] * ( Hi[ t >> h ] * Lo[ t & ( lo - 1 ) ] );
+ detail::ScratchBuffer< Complex > room( n );
+ Complex * const b = room.data();
+ // the columns as rows (b is n2 x n1), transformed and multiplied by
+ // their twiddles; back to rows of n2 (in a), transformed; the result
+ // transposed into b and copied to a
+ detail::tiledTranspose( ex , a.data() , b , n1 , n2 );
+ parallelForBlocks( ex , 0 , n2 , [ & ]( std::size_t r0 , std::size_t r1 ) {
+  std::vector< Complex > v( n1 );
+  for( std::size_t j2 = r0 ; j2 < r1 ; ++j2 ) {
+   Complex * row = b + j2 * n1;
+   std::copy( row , row + n1 , v.begin() );
+   fft( v , inverse );
+   for( std::size_t k1 = 0 ; k1 < n1 ; ++k1 ) {
+    const std::size_t t = ( j2 * k1 ) & ( n - 1 );
+    row[ k1 ] = v[ k1 ] * ( Hi[ t >> h ] * Lo[ t & ( lo - 1 ) ] );
     }
    }
   } , 1 );
- // the rows, W at a time, written transposed into b by runs of W points:
- // \hat a[ k1 + n1 k2 ] is the entry k2 of the row k1
- parallelFor( ex , 0 , n1 / W , [ & ]( std::size_t c ) {
-  std::vector< Complex > v[ W ];
-  const std::size_t k0 = c * W;
-  for( std::size_t q = 0 ; q < W ; ++q ) {
-   const Complex * row = a.data() + ( k0 + q ) * n2;
-   v[ q ].assign( row , row + n2 );
-   fft( v[ q ] , inverse );
-   }
-  for( std::size_t k2 = 0 ; k2 < n2 ; ++k2 ) {
-   Complex * out = b.data() + k2 * n1 + k0;
-   for( std::size_t q = 0 ; q < W ; ++q ) out[ q ] = v[ q ][ k2 ];
+ detail::tiledTranspose( ex , b , a.data() , n2 , n1 );
+ parallelForBlocks( ex , 0 , n1 , [ & ]( std::size_t r0 , std::size_t r1 ) {
+  std::vector< Complex > v( n2 );
+  for( std::size_t k1 = r0 ; k1 < r1 ; ++k1 ) {
+   Complex * row = a.data() + k1 * n2;
+   std::copy( row , row + n2 , v.begin() );
+   fft( v , inverse );
+   std::copy( v.begin() , v.end() , row );
    }
   } , 1 );
- a.swap( b );
+ // \hat a[ k1 + n1 k2 ] is the entry k2 of the row k1
+ detail::tiledTranspose( ex , a.data() , b , n1 , n2 );
+ parallelForBlocks( ex , 0 , n , [ & ]( std::size_t lo2 , std::size_t hi2 ) {
+  std::copy( b + lo2 , b + hi2 , a.data() + lo2 ); } , 16384 );
  }
 
 /*--------------------------------------------------------------------------*/
