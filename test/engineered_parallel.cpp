@@ -296,7 +296,8 @@ ADS_TEST( "parallel-patterns" )
 // distinct (the buckets of equality), sorted, reversed, strictly reversed
 // with ties (which the stable sort may not reverse), organ pipe, skewed
 // (a power law: one bucket of the radix holds most items), the extremes
-// of the type
+// of the type, a few runs with ties (merged, stably), runs up and down,
+// few keys with a rare one that the sample misses
 ADS_TEST( "parallel-sort" )
 {
  std::mt19937_64 g( 11 );
@@ -318,13 +319,21 @@ ADS_TEST( "parallel-sort" )
     case( 7 ): k[ i ] = std::min( i , n - 1 - i ); break;
     case( 8 ): k[ i ] = std::uint64_t( std::pow( double( g() % 1000000 + 1 ) ,
                                                  -2.0 ) * 1e18 ); break;
-    default: k[ i ] = g() % 3 ? std::uint64_t( 1 ) << 63 : g(); break;
+    case( 9 ): k[ i ] = g() % 3 ? std::uint64_t( 1 ) << 63 : g(); break;
+    case( 10 ):                             // 5 non-decreasing runs, ties
+     k[ i ] = ( ( i % ( n / 5 + 1 ) ) / 7 ) << 40; break;
+    case( 11 ):                             // few keys, and a rare one
+     k[ i ] = ( i % 50000 == 49999 ) ? 1000 : g() % 16; break;  // far off
+    default: {                              // 6 runs, up and down in turn
+     const std::size_t r = i / ( n / 6 + 1 ) , o = i % ( n / 6 + 1 );
+     k[ i ] = ( ( r % 2 ? n - o : o ) + r * 3 ) << 40;
+     }
     }
   return( k );
   };
  onEach( [ & ]( auto & ex ) {
   for( std::size_t n : sizes )
-   for( int pattern = 0 ; pattern < 10 ; ++pattern ) {
+   for( int pattern = 0 ; pattern < 13 ; ++pattern ) {
     const auto k = keys( pattern , n );
     // 64-bit integers, signed and not
     {

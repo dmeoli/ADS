@@ -13,8 +13,18 @@
  * already sorted (then nothing moves) or in decreasing order (strictly,
  * for the stable sort: then a parallel reversal); a block stops at the
  * first pair out of both orders, so that on most inputs the pass reads
- * little. Then the items are distributed into k buckets whose
- * concatenation is sorted, by one of two classifiers:
+ * little. A second pass, by blocks as well, cuts each of 8 blocks (or p
+ * blocks, if more) into its maximal runs, non-decreasing or strictly
+ * decreasing, and gives up at the ninth run of a block, which again on
+ * most inputs comes after a few items; if no block gave up, A is made of
+ * at most 8 runs per block (e.g., the vectors made of a few sorted
+ * sequences, or of an increasing and a decreasing one), whose decreasing
+ * ones are reversed and which are merged by the parallel multiwayMerge()
+ * [see ParallelMerge.h] through a buffer, stably, in \f$ O( n \log r / p
+ * ) \f$ time for r runs, as powerSort() [see RunSorts.h] merges them in
+ * the sequential sort (a distribution would forget that order). Otherwise
+ * the items are distributed into k buckets whose concatenation is sorted,
+ * by one of two classifiers:
  * - numbers in their natural order: with \f$ \ell \f$ and u the least and
  *   the greatest of the keys of radixKey() [see RadixSort.h] (-0 taken as
  *   +0) in a sample of 1024 items, the bucket of x is
@@ -27,7 +37,16 @@
  *   radix sort of IPS2Ra takes them from the least and the greatest of all
  *   the keys, a pass more over the input); the keys out of the sample's
  *   range go to the two buckets at the ends, which the sort of the
- *   buckets takes care of;
+ *   buckets takes care of. The bits must spread the keys, which they do
+ *   not when the keys are the floating point numbers of a few exponents,
+ *   whose highest bits are the sign and the exponent, or integers of a
+ *   law with a heavy tail: if a bucket gets more than 4 times its share
+ *   of the sample (and 32 more), the numbers go to the other classifier.
+ *   When the sample holds at most 256 distinct keys, each key has a bucket
+ *   of its own; if the integers of A all fall within the bounds of the
+ *   sample (which the pass of the counts checks), the counts are those of
+ *   a counting sort, and each bucket is filled with its key, read in the
+ *   same pass, with no move of the items: 2 passes over A in all;
  * - any other item: k - 1 splitters taken from a sorted random sample of
  *   16 k items (oversampling, so that the buckets are within a small
  *   factor of n / k with high probability), placed in an implicit binary
@@ -42,18 +61,26 @@
  * when the classifier compares, so that the items are classified once);
  * the counts give, by a prefix sum in the order (bucket, block), where
  * each block puts its items of each bucket in a buffer of n items, and a
- * second parallel loop moves them there (the buffer comes from the
- * allocator of huge pages [see HugePageAllocator.h], which keeps it for
- * the next sort of the same thread with its pages already faulted in:
- * the faults of a fresh buffer of 8 MB cost as much as moving it). A
- * block moves its items in their order and the blocks take consecutive
- * places, so that the distribution is stable. Last, the threads claim
+ * second parallel loop moves them there. Items copied as bytes, several
+ * to a line of the cache, go first to a line of 64 bytes per bucket on
+ * the stack of the thread, which is copied to the buffer when full (the
+ * software write-combining of the radix sorts): the k streams of stores
+ * then leave whole lines, instead of reading each line of the buffer
+ * before writing an item into it. The buffer is kept for the next sort
+ * (the block of the last sort that gave it back, freed at the exit or
+ * when a larger one replaces it), from the allocator of huge pages [see
+ * HugePageAllocator.h]: a fresh buffer of 80 MB costs, in the faults that
+ * clear its pages, as much as the moves of the items into it. A block
+ * moves its items in their order and the blocks take consecutive places,
+ * so that the distribution is stable. Last, the threads claim
  * the buckets from the largest down (the schedule LPT of Graham, within
  * 4/3 of the best), and each moves the bucket into a vector of its own,
  * sorts it by the sequential sort, and moves it into its place in A; a
  * bucket of numbers of 32 or 64 bits in their natural order goes instead
  * straight to its place, where vectorQuickSort() [see VectorQuickSort.h],
- * the sort that sort() would choose for it, sorts it (one move less per
+ * the sort that sort() would choose for it, sorts it unless a scan finds
+ * it already in order (e.g., a bucket of equal keys at an end; one move
+ * less per
  * item; not for the stable sort of floating point numbers, which must
  * keep the order of -0 and +0), and a bucket of equal items is moved back
  * as it is. A bucket larger than n / p, which one thread would take
@@ -100,6 +127,7 @@
 #include "ADS/Contract.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/parallel/Executor.h"
+#include "ADS/parallel/ParallelMerge.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/VectorQuickSort.h"
