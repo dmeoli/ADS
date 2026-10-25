@@ -36,6 +36,7 @@
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/SortingNetworks.h"
 #include "ADS/sort/StrandSort.h"
+#include "ADS/sort/StringSort.h"
 #include "ADS/sort/TreeSort.h"
 #include "ADS/sort/VectorQuickSort.h"
 
@@ -1221,7 +1222,10 @@ bool vectorSortsLike( const std::vector< T > & A )
 /// up to 600 (the networks of 1 to 16 registers and the first partitions),
 /// then larger ones, in the patterns random, few keys, two keys, all
 /// equal, sorted, reversed, organ pipe, the extremes of T and, for the
-/// floating point numbers, the zeros, the infinities and the NaN
+/// floating point numbers, the zeros, the infinities and the NaN, a few
+/// keys at either end of T, a few keys with one far from them, inside or
+/// among the last keys (the counting sorts that give up), and 16 keys of
+/// any bits
 template< class T >
 void vectorBattery()
 {
@@ -1240,8 +1244,13 @@ void vectorBattery()
  for( std::size_t n : { 1023u , 1024u , 1025u , 4095u , 4097u , 20000u ,
                         100000u } )
   sizes.push_back( n );
+ std::array< T , 16 > pool;                 // 16 keys of any bits
+ for( auto & x : pool ) {
+  const std::uint64_t r = g();
+  std::memcpy( &x , &r , sizeof( T ) );
+  }
  for( std::size_t n : sizes )
-  for( int p = 0 ; p < 8 ; ++p ) {
+  for( int p = 0 ; p < 12 ; ++p ) {
    if( ( n <= 600 ) && ( n % 7 != 0 ) && ( p > 1 ) )
     continue;                               // all sizes on random keys
    std::vector< T > A( n );
@@ -1258,9 +1267,16 @@ void vectorBattery()
      case( 4 ): A[ i ] = T( i ); break;
      case( 5 ): A[ i ] = T( n - i ); break;
      case( 6 ): A[ i ] = T( std::min( i , n - 1 - i ) ); break;
-     default:   A[ i ] = ext[ r % ext.size() ];
+     case( 7 ): A[ i ] = ext[ r % ext.size() ]; break;
+     case( 8 ): A[ i ] = n % 2 ? T( L::max() - T( r % 20 ) ) :   // a few
+                         T( L::lowest() + T( r % 20 ) );   // keys at an end
+                break;
+     case( 11 ): A[ i ] = pool[ r % 16 ]; break;
+     default:   A[ i ] = T( r % 16 );       // a few keys and one apart
      }
     }
+   if( ( p >= 9 ) && ( p <= 10 ) && ( n > 0 ) )   // inside, or last
+    A[ p == 9 ? n * 7 / 8 : n - 1 ] = T( 100 );
    CHECK( vectorSortsLike( A ) );
    }
  }
@@ -1300,12 +1316,157 @@ ADS_TEST( "vector-quicksort" )
         ! std::signbit( A[ 2 ] ) && ( A[ 4 ] == 2.0 ) );
  }
 
+/// detail::vqs::mergeRuns() of V forward and backward, with the run that
+/// stays in place at the end of the output (at its start backward), on
+/// runs of every length up to 70 and some longer, of random keys and of
+/// few, against std::merge
+template< class V >
+void mergeKeys()
+{
+ using K = typename V::K;
+ std::mt19937_64 g( 96 );
+ std::vector< std::size_t > lens;
+ for( std::size_t l = 0 ; l <= 70 ; ++l ) lens.push_back( l );
+ for( std::size_t l : { 127u , 128u , 129u , 1000u , 4099u } )
+  lens.push_back( l );
+ for( std::size_t na : lens )
+  for( std::size_t nb : lens ) {
+   if( ( na > 70 ) && ( nb > 70 ) && ( na != nb ) )
+    continue;
+   for( int p = 0 ; p < 2 ; ++p ) {
+    std::vector< K > A( na ) , B( nb ) , R( na + nb );
+    for( auto & x : A ) x = p ? K( g() % 5 ) : K( g() );
+    for( auto & x : B ) x = p ? K( g() % 5 ) : K( g() );
+    std::sort( A.begin() , A.end() );
+    std::sort( B.begin() , B.end() );
+    std::merge( A.begin() , A.end() , B.begin() , B.end() , R.begin() );
+    std::vector< K > F( na + nb ) , D( na + nb );
+    std::copy( B.begin() , B.end() , F.begin() + std::ptrdiff_t( na ) );
+    detail::vqs::mergeRuns< V , false >( A.data() , na , F.data() + na ,
+                                         nb , F.data() );
+    std::copy( B.begin() , B.end() , D.begin() );
+    detail::vqs::mergeRuns< V , true >( A.data() , na , D.data() , nb ,
+                                        D.data() );
+    CHECK( ( F == R ) && ( D == R ) );
+    }
+   }
+ }
+
+/// mergeKeys() on the registers of K, where K is its own key
+template< class K >
+void mergeBattery()
+{
+ using V = detail::vqs::Best< detail::vqs::KeyOf< K > >;
+ if constexpr( std::is_same_v< typename V::K , K > )   // its own key
+  mergeKeys< V >();
+ }
+
+ADS_TEST( "vector-merge" )
+{
+ mergeBattery< std::int32_t >();
+ mergeBattery< std::uint32_t >();
+ mergeBattery< std::int64_t >();
+ mergeBattery< std::uint64_t >();
+ std::mt19937_64 g( 97 );                   // sort() on 2 to 17 runs,
+ for( std::size_t n : { 600u , 5000u , 70001u } )   // some decreasing
+  for( std::size_t r = 2 ; r <= 17 ; ++r ) {
+   std::vector< std::uint32_t > U( n );
+   std::vector< std::int64_t > S( n );
+   std::size_t at = 0;
+   for( std::size_t k = 0 ; k < r ; ++k ) {
+    const std::size_t e = k + 1 == r ? n : at + ( n / r ) +
+                                           ( g() % ( n / r / 2 + 1 ) );
+    std::vector< std::uint32_t > run;
+    for( ; at < std::min( e , n ) ; ++at ) run.push_back(
+     std::uint32_t( g() % ( k % 3 == 0 ? 7 : 1000000 ) ) );
+    std::sort( run.begin() , run.end() );
+    if( ( k % 2 == 1 ) && ( std::adjacent_find( run.begin() ,
+                                                run.end() ) == run.end() ) )
+     std::reverse( run.begin() , run.end() );   // strictly decreasing
+    std::copy( run.begin() , run.end() ,
+               U.begin() + std::ptrdiff_t( at - run.size() ) );
+    }
+   std::vector< double > F( n ) , Z( n );   // negative, and with zeros
+   for( std::size_t i = 0 ; i < n ; ++i ) {   // of either sign
+    S[ i ] = std::int64_t( U[ i ] ) - 500000;
+    F[ i ] = double( S[ i ] ) / 7.0;
+    Z[ i ] = U[ i ] % 7 == 0 ? ( g() % 2 ? -0.0 : 0.0 ) : F[ i ];
+    }
+   auto RU = U;
+   auto RS = S;
+   auto RF = F , RZ = Z;
+   std::sort( RU.begin() , RU.end() );
+   std::sort( RS.begin() , RS.end() );
+   std::sort( RF.begin() , RF.end() );
+   std::sort( RZ.begin() , RZ.end() );
+   sort( U );
+   stableSort( S );
+   stableSort( F );
+   sort( Z );
+   CHECK( ( U == RU ) && ( S == RS ) && ( F == RF ) && ( Z == RZ ) );
+   }
+ }
+
+ADS_TEST( "prefix-key-sort" )
+{
+ std::mt19937_64 g( 95 );
+ auto check = [ & ]( std::vector< std::string > A ) {
+  auto B = A , C = A;
+  prefixKeySort( A );
+  std::sort( B.begin() , B.end() );
+  sort( C );
+  CHECK( ( A == B ) && ( C == B ) );
+  };
+ for( std::size_t n : { 0u , 1u , 2u , 3u , 8u , 9u , 100u , 1000u ,
+                        20000u } )
+  for( int p = 0 ; p < 9 ; ++p ) {
+   std::vector< std::string > A( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    std::string & x = A[ i ];
+    const std::size_t len = g() % 24;
+    switch( p ) {
+     case( 0 ):                             // random, any length
+      for( std::size_t c = 0 ; c < len ; ++c ) x += char( 'a' + g() % 26 );
+      break;
+     case( 1 ):                             // a long common prefix
+      x = std::string( 40 , 'p' );
+      for( std::size_t c = 0 ; c < len ; ++c ) x += char( 'a' + g() % 3 );
+      break;
+     case( 2 ): x = "same string"; break;   // all equal
+     case( 3 ):                             // the character 0, any byte
+      for( std::size_t c = 0 ; c < len % 6 ; ++c )
+       x += char( g() % 3 == 0 ? 0 : g() % 256 );
+      break;
+     case( 4 ): x = std::string( i % 200 , 'a' ) + 'b'; break;   // a ladder
+     case( 5 ): x = std::string( g() % 12 , '\0' ); break;   // zeros alone
+     case( 6 ):                             // few distinct
+      x = "key" + std::to_string( g() % 7 );
+      break;
+     case( 7 ):                             // sorted, numbered
+      x = std::to_string( 1000000 + i );
+      break;
+     default:                               // empty or one character
+      if( g() % 2 ) x = char( g() % 256 );
+     }
+    }
+   check( A );
+   }
+ std::vector< std::string > L( 3000 );      // long strings that differ
+ for( std::size_t i = 0 ; i < L.size() ; ++i )   // only at the end
+  L[ i ] = std::string( 5000 , 'z' ) + std::to_string( g() % 100000 );
+ check( L );
+ }
+
 ADS_TEST( "vector-dispatch" )
 {
- for( std::size_t n : { 512u , 513u , 640u , 1000u , 4096u , 4099u } ) {
+ for( std::size_t n : { 512u , 513u , 640u , 1000u , 4096u , 4099u ,
+                        16384u , 16385u , 50001u , 140001u } ) {
   const std::size_t q = n / 4;
   std::vector< std::size_t > at = { 1 , 2 , 31 , 32 , 33 , 34 , 64 , 65 ,
-                                    n - 2 , n - 1 };
+                                    n - 2 , n - 1 , n - 31 , n - 32 ,
+                                    n - 33 , n - 64 , n - 65 };
+  for( std::size_t d = 0 ; d < 5 ; ++d )   // the middle
+   at.push_back( n / 2 + d - 2 );
   for( std::size_t s = 1 ; s < 4 ; ++s )   // the borders of the quarters
    for( std::size_t d = 0 ; d < 5 ; ++d )
     at.push_back( s * q + d - 2 );

@@ -445,6 +445,8 @@ sorting  fast-paths          i percorsi veloci di sort() e stableSort()
 sorting  vector-quicksort    quicksort nei registri vettoriali, reti
 sorting  sample-sort         samplesort super scalare in place
 sorting  vector-dispatch     sort() dei numeri: ordinati, rovesciati, -0
+sorting  vector-merge        fusione nei registri vettoriali, corse
+sorting  prefix-key-sort     stringhe per chiavi intere dei prefissi
 
 # the structures and the algorithms of Knuth's TAOCP, beyond the book
 taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme
