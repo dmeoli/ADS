@@ -42,9 +42,14 @@
  *   not when the keys are the floating point numbers of a few exponents,
  *   whose highest bits are the sign and the exponent, or integers of a
  *   law with a heavy tail: if a bucket gets more than 4 times its share
- *   of the sample (and 32 more), the numbers go to the other classifier,
- *   as they do when the sample shows at most 32 distinct keys that the
- *   bits do not separate (its buckets of equality move them once).
+ *   of the sample (and 32 more), the numbers go to the other classifier.
+ *   When the sample shows at most 32 distinct values that the bits do not
+ *   separate, the numbers are counted instead (not the floating point
+ *   numbers of the stable sort): each item is found among those values by
+ *   a search with no branch on their keys, which tell apart all the
+ *   values, -0 and +0 included, and A is filled with them in order, 2
+ *   passes over A; an item of another value sends A to the other
+ *   classifier, whose buckets of equality move the items once.
  *   When the sample holds at most 256 distinct keys, each key has a bucket
  *   of its own; if the integers of A all fall within the bounds of the
  *   sample (which the pass of the counts checks), the counts are those of

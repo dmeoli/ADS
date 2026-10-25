@@ -41,6 +41,23 @@ inline constexpr bool naturalNumbers = []() {
   return( false );
  }();
 
+/// the bits of the number whose key of radixKey() is k, the inverse of it
+template< class T , class K >
+auto fromRadixKey( K k )
+{
+ constexpr K sign = K( K( 1 ) << ( 8 * sizeof( K ) - 1 ) );
+ using U = std::conditional_t< sizeof( T ) == 1 , std::uint8_t ,
+           std::conditional_t< sizeof( T ) == 2 , std::uint16_t ,
+           std::conditional_t< sizeof( T ) == 4 , std::uint32_t ,
+                                                  std::uint64_t > > >;
+ if constexpr( std::is_floating_point_v< T > )
+  return( U( ( k & sign ) ? ( k ^ sign ) : ~k ) );
+ else if constexpr( std::is_signed_v< T > )
+  return( U( k ^ sign ) );
+ else
+  return( U( k ) );
+ }
+
 /// the key of x for the classifier of the numbers, -0 as +0
 template< class T >
 auto sortKey( T x )
@@ -526,6 +543,79 @@ bool fewRuns( E & ex , std::vector< T > & A , C & less )
  return( true );
  }
 
+/// the counting sort of the numbers of A if they take at most 32 distinct
+/// values, those of a sample of 1024 of them: each item found among them
+/// (by their keys of radixKey(), which tell apart all the values, -0 and
+/// +0 included) by a search with no branch, the counts of the blocks
+/// summed, and A filled with the values in order; false, A untouched, if
+/// an item has another value
+template< class E , class T >
+bool fewKeys( E & ex , std::vector< T > & A )
+{
+ using Key = decltype( radixKey( T() ) );
+ const std::size_t n = A.size();
+ constexpr std::size_t D = 32;
+ std::vector< Key > key;
+ std::uint64_t r = 0x9E3779B97F4A7C15ull ^ ( n + 1 );
+ for( int i = 0 ; i < 1024 ; ++i ) {
+  r ^= r << 13;
+  r ^= r >> 7;
+  r ^= r << 17;
+  key.push_back( radixKey( A[ r % n ] ) );
+  }
+ std::sort( key.begin() , key.end() );
+ key.erase( std::unique( key.begin() , key.end() ) , key.end() );
+ const std::size_t d = key.size();
+ if( d > D )
+  return( false );
+ std::array< Key , D > K;                  // the keys, the last repeated
+ for( std::size_t i = 0 ; i < D ; ++i )
+  K[ i ] = key[ std::min( i , d - 1 ) ];
+ const std::size_t B = std::max< std::size_t >( 1 , std::min( n / 16384 ,
+                                         4 * ex.concurrency() ) );
+ std::vector< std::array< std::size_t , D > > cnt( B );
+ std::atomic< bool > other{ false };
+ parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
+  auto & c = cnt[ b ];
+  c.fill( 0 );
+  bool out = false;
+  for( std::size_t i = n * b / B ; i < n * ( b + 1 ) / B ; ++i ) {
+   const Key x = radixKey( A[ i ] );
+   std::size_t j = 0;                       // the first key >= x
+   for( std::size_t h = D / 2 ; h > 0 ; h /= 2 )
+    j += ( K[ j + h - 1 ] < x ) ? h : 0;
+   out |= K[ j ] != x;
+   ++c[ j ];
+   }
+  if( out )
+   other.store( true , std::memory_order_relaxed );
+  } , 1 );
+ if( other.load() )
+  return( false );
+ // the start of each value, and A filled
+ std::array< std::size_t , D + 1 > start{};
+ for( std::size_t j = 0 ; j < D ; ++j ) {
+  std::size_t t = 0;
+  for( std::size_t b = 0 ; b < B ; ++b ) t += cnt[ b ][ j ];
+  start[ j + 1 ] = start[ j ] + t;
+  }
+ std::array< T , D > value;
+ for( std::size_t j = 0 ; j < D ; ++j )
+  value[ j ] = std::bit_cast< T >( fromRadixKey< T >( K[ j ] ) );
+ parallelForBlocks( ex , 0 , n , [ & ]( std::size_t lo , std::size_t hi ) {
+  std::size_t j = std::size_t( std::upper_bound( start.begin() ,
+                                                 start.end() , lo ) -
+                               start.begin() ) - 1;
+  for( std::size_t i = lo ; i < hi ; ++j ) {
+   const std::size_t e = std::min( hi , start[ j + 1 ] );
+   std::fill( A.begin() + std::ptrdiff_t( i ) ,
+              A.begin() + std::ptrdiff_t( e ) , value[ j ] );
+   i = e;
+   }
+  } , 16384 );
+ return( true );
+ }
+
 /// the survey of the order of A: whether sorted, whether decreasing
 struct Survey {
  bool up = true , down = true;
@@ -590,6 +680,12 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
    distribute< Stable , void >( ex , A , less , cls , depth );
    return;
    }
+  // few distinct keys that the bits do not separate: counted, if no item
+  // has another one (not for the stable sort of floating point numbers,
+  // whose -0 and +0 are equal and differ)
+  if constexpr( std::is_integral_v< T > || ! Stable )
+   if( ( cls.distinct() <= 32 ) && fewKeys( ex , A ) )
+    return;
   }
  {
   TreeClassifier< T , C > cls( A , std::min( k , std::size_t( 256 ) ) ,

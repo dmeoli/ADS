@@ -356,7 +356,7 @@ ADS_TEST( "parallel-sort" )
      for( std::size_t i = 0 ; i < n ; ++i )
       A[ i ] = ( k[ i ] % 5 == 0 ) ? ( i % 2 ? -0.0 : 0.0 )
                                    : double( std::int64_t( k[ i ] ) ) / 7;
-     std::vector< double > B = A , C = A , D = A;
+     std::vector< double > B = A , C = A , D = A , A0 = A;
      ADS::stableSort( ex , A );
      std::stable_sort( B.begin() , B.end() );
      bool same = true;
@@ -367,6 +367,16 @@ ADS_TEST( "parallel-sort" )
      ADS::sort( ex , C , std::greater<>() );
      std::sort( D.begin() , D.end() , std::greater<>() );
      CHECK( C == D );
+     // the natural order: sorted, and the same bits (-0 and +0 kept)
+     std::vector< double > N = A0;
+     ADS::sort( ex , N );
+     CHECK( std::is_sorted( N.begin() , N.end() ) );
+     std::vector< std::uint64_t > bn , ba;
+     for( double x : N ) bn.push_back( std::bit_cast< std::uint64_t >( x ) );
+     for( double x : A0 ) ba.push_back( std::bit_cast< std::uint64_t >( x ) );
+     std::sort( bn.begin() , bn.end() );
+     std::sort( ba.begin() , ba.end() );
+     CHECK( bn == ba );
      }
     // records by key: the stable sort equals std::stable_sort, the other
     // has the same keys in order and the same records
