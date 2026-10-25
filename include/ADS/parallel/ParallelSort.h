@@ -69,16 +69,14 @@
  * the stack of the thread, which is copied to the buffer when full (the
  * software write-combining of the radix sorts): the k streams of stores
  * then leave whole lines, instead of reading each line of the buffer
- * before writing an item into it. The buffer is kept for the next sort
- * (the block of the last sort that gave it back, freed at the exit or
- * when a larger one replaces it), from the allocator of huge pages [see
- * HugePageAllocator.h]: a fresh buffer of 80 MB costs, in the faults that
- * clear its pages, as much as the moves of the items into it. A block
- * moves its items in their order and the blocks take consecutive places,
- * so that the distribution is stable. Last, the threads claim
- * the buckets from the largest down (the schedule LPT of Graham, within
- * 4/3 of the best), and each moves the bucket into a vector of its own,
- * sorts it by the sequential sort, and moves it into its place in A; a
+ * before writing an item into it. The buffer is kept for the next call
+ * [see Scratch.h], since the faults of a fresh one cost as much as the
+ * moves of the items into it. A block moves its items in their order and
+ * the blocks take consecutive places, so that the distribution is stable.
+ * Last, the threads claim the buckets from the largest down (the
+ * schedule LPT of Graham, within 4/3 of the best), and each moves the
+ * bucket into a vector of its own, sorts it by the sequential sort, and
+ * moves it into its place in A; a
  * bucket of numbers of 32 or 64 bits in their natural order goes instead
  * straight to its place, where vectorQuickSort() [see VectorQuickSort.h],
  * the sort that sort() would choose for it, sorts it unless a scan finds
@@ -133,6 +131,7 @@
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/ParallelMerge.h"
+#include "ADS/parallel/Scratch.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/VectorQuickSort.h"
