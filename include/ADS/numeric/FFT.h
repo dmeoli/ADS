@@ -118,27 +118,24 @@
  * \f$ and \f$ \hat x_{h-k} = \overline{E_k - \omega_n^k O_k} \f$; the
  * inverse runs the same steps backwards. Up to 16 points the complex
  * transform is one codelet whose outputs stay in registers for the pass;
- * above 2048 points, on the four steps, the pass is done by their last
- * step: the block of the rows k and that of their mirrors m - k are
- * transformed together, so that \f$ Z_K \f$ and \f$ Z_{h-K} \f$, \f$ K =
- * k + m q \f$, \f$ h - K = ( m - k ) + m ( r - 1 - q ) \f$, are in the same
- * lane of the two and the outputs leave the registers once, as the
- * inverse does its pass in the first step, on the points as the columns
- * read them; elsewhere the pass runs on the numbers alternated, VL pairs
- * to a vector with 3 shuffles. The transforms of the cosines and of the
- * sines are those of FFTW (REDFT00, REDFT10,
- * REDFT01, REDFT11 and RODFT00 to RODFT11), with no normalization; the
- * type 2 by the algorithm of Makhoul, the real transform V of \f$ v_j =
- * x_{2j} , v_{n-1-j} = x_{2j+1} \f$ and \f$ y_k = 2 \Re( \omega_{4n}^k V_k
- * ) , y_{n-k} = -2 \Im( \omega_{4n}^k V_k ) \f$; the type 3 by the same
- * steps backwards; the type 4, for n even, by the complex transform of n
- * / 2 points of \f$ ( x_{2j} + i x_{n-1-2j} ) \omega_{8n}^{4j+1} \f$ times
- * \f$ \omega_{2n}^k \f$, the outputs 2 k and n - 1 - 2 k its real part
- * and minus its imaginary part, times 2; the type 1 of both by the real
- * transform of the even, or odd, extension of 2 ( n - 1 ), or 2 ( n + 1 ),
- * points; the sines of types 2 to 4 by the cosines, the items with the
- * signs alternated or in the reverse order. The type 3 is the inverse of
- * the type 2, and the type 4 of itself, times 2 n.
+ * the inverse of 4098 to 131072 points on the four steps does its pass in
+ * their first step, the points \f$ Z_K \f$ made from \f$ \hat x_K \f$ and
+ * \f$ \hat x_{h-K} \f$ as the columns read them (and convolve() there the
+ * products of the two transforms); elsewhere the pass runs on its own on
+ * the numbers alternated, VL pairs to a vector with 3 shuffles. The transforms
+ * of the cosines and of the sines are those of FFTW (REDFT00, REDFT10,
+ * REDFT01, REDFT11 and RODFT00 to RODFT11), with no normalization; the type 2
+ * by the algorithm of Makhoul, the real transform V of \f$ v_j = x_{2j} ,
+ * v_{n-1-j} = x_{2j+1} \f$ and \f$ y_k = 2 \Re( \omega_{4n}^k V_k ) , y_{n-k}
+ * = -2 \Im( \omega_{4n}^k V_k ) \f$; the type 3 by the same steps backwards;
+ * the type 4, for n even, by the complex transform of n / 2 points of \f$ (
+ * x_{2j} + i x_{n-1-2j} ) \omega_{8n}^{4j+1} \f$ times \f$ \omega_{2n}^k \f$,
+ * the outputs 2 k and n - 1 - 2 k its real part and minus its imaginary part,
+ * times 2; the type 1 of both by the real transform of the even, or odd,
+ * extension of 2 ( n - 1 ), or 2 ( n + 1 ), points; the sines of types 2 to 4
+ * by the cosines, the items with the signs alternated or in the reverse order.
+ * The type 3 is the inverse of the type 2, and the type 4 of itself, times 2
+ * n.
  *
  * <b>The cost.</b> A transform of \f$ n = 2^K \f$ points does about \f$
  * 4.25 n K \f$ real operations, the radix 4 saving 15% of those of
