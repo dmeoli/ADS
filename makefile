@@ -112,7 +112,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
-            assembly fingerprints multi lce parallel joins \
+            assembly fingerprints multi lce parallel joins dynamic \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):

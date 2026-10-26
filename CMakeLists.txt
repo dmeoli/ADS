@@ -120,7 +120,7 @@ if (ADS_BENCHMARKS)
                search suffix edit numeric queues concurrent geometry matrix
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries allocators positions assembly fingerprints multi lce
-               parallel joins)
+               parallel joins dynamic)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)

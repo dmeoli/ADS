@@ -51,8 +51,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tree against std::set, std::map and brute force, on Sequential and on
   ThreadPool with 1, 2 and 8 threads; bench/joins.cpp, the bulk
   operations against std::map and, with PAM=<dir>, pam_map
+- graph/Observable.h: Observable< G , O... >, the wrapper of a graph of
+  any model (ListGraph, MatrixGraph, and the weights of ArrayGraph and
+  StaticGraph) that sends each insertion and deletion of a node or of an
+  edge and each change of a weight as an event (GraphEvent, a
+  std::variant) to static observers (a std::tuple, called directly) and
+  dynamic ones (attach() and detach(), their type erased), each with a
+  mask of the kinds it wants; no event is built when no one listens;
+  batch() opens a channel of RAII, nested, whose events are coalesced
+  into their net effect per edge (coalesce()) and sent as one span when
+  the outermost one closes
+- graph/Reoptimization.h: the concept Reoptimizable (apply(), solve(),
+  outcome(): 0 from scratch, 1 by a repair, 2 by the certificate), the
+  lazy queue of the events with a threshold on its size for the
+  computation from scratch, and ShortestPathsObserver (the reduced costs
+  of Bellman, the decreases repaired by the prototype from their tails),
+  SpanningForestObserver (the cycle condition by the binary lifting, the
+  cut condition by the replacements of Tarjan, Kruskal on the forest and
+  the edges lowered, the swap of a single edge) and MaxFlowObserver (the
+  minimum cut, the augmenting paths from the flow there is when an arc of
+  the cut grows); the test program engineered_dynamic
 - ArrayGraph and StaticGraph: weight( u , v ) and setWeight( u , v , w );
   FlowNetwork: addNode() and setCapacity()
+- mfset/RollbackUnionFind.h: the union-find by rank without compression
+  whose merges are undone by undo() and rollback() to a checkpoint(), in
+  $O( \log n )$ per find; offlineConnectivity(), the dynamic
+  connectivity of a known sequence of insertions, deletions and questions
+  by a segment tree over the times, $O( k \log k \log n )$
+- bench/dynamic.cpp, the observers against the algorithms from scratch
+  after each change and the rollback
 - bench/bignum.cpp: the squares, the gcd of two numbers with a common
   factor of 3 and the integer square root of 2n digits, the length of 1024
   digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>

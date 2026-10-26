@@ -114,6 +114,7 @@ cells "$CORE,${CORE2:-$((CORE + 1))}" allocators 100000 1000000 >> "$out"
 run positions 100000 1000000
 run assembly 100000 1000000
 run fingerprints 100000 1000000
+run dynamic 10000 100000
 # the parallel algorithms on the cores PCORES (default the core CORE
 # alone), on 1, 2, 4, ... threads up to their number; the GAP benchmark
 # suite prints lines of its own, left out

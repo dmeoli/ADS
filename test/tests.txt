@@ -1753,3 +1753,13 @@ join_trees  augmented-maps        mappe aumentate contro la forza bruta
 join_trees  interval-tree         albero degli intervalli, query di stabbing
 join_trees  range-tree            albero di range 2D, conteggi nei rettangoli
 join_trees  join-executors        Sequential e ThreadPool, risultati uguali
+
+# the graphs that change and the union-find with rollback, beyond the book
+engineered_dynamic  observable-events      eventi del grafo osservabile, maschere
+engineered_dynamic  observable-batch       lotti annidati, coalescenza degli eventi
+engineered_dynamic  reopt-shortest-paths   cammini minimi, costi ridotti
+engineered_dynamic  reopt-spanning-forest  foresta minima, condizioni di ciclo e taglio
+engineered_dynamic  reopt-max-flow         flusso massimo, taglio minimo
+engineered_dynamic  reopt-lazy             coda pigra, soglia del ricalcolo
+engineered_dynamic  rollback-union-find    union-find con rollback
+engineered_dynamic  offline-connectivity   connettività dinamica offline
