@@ -141,12 +141,12 @@
  * 4.25 n K \f$ real operations, the radix 4 saving 15% of those of
  * radix 2; its data cross the memory in 2 passes (the columns, the rows)
  * plus one per round of Stockham of the columns or rows longer than a
- * codelet, the four steps keeping a buffer of n + O( \sqrt n ) items per
- * thread. The plans, the tables and the buffers are kept per thread for
- * each size met, made at the first transform of a size, in \f$ O( n ) \f$
- * evaluations of sines and cosines (\f$ O( n \log n ) \f$ for Rader and
- * Bluestein, whose plans also hold a transform) and, up to \f$ 2^{17} \f$
- * points, the 12 transforms that time the factorizations.
+ * codelet, the four steps keeping a buffer of \f$ n + O( \sqrt n ) \f$
+ * items per thread. The plans, the tables and the buffers are kept per
+ * thread for each size met, made at the first transform of a size, in
+ * \f$ O( n ) \f$ evaluations of sines and cosines (\f$ O( n \log n ) \f$
+ * for Rader and Bluestein, whose plans also hold a transform) and, up to
+ * \f$ 2^{17} \f$ points, the 12 transforms that time the factorizations.
  *
  * <b>The rounding.</b> With powers of \f$ \omega \f$ computed to a
  * relative error \f$ \mu \f$, a transform by L rounds of radix 2 has

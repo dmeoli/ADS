@@ -71,10 +71,10 @@
  #define __ADS_EventCount
                       /* self-identification: #endif constant */
 
-/// under the sanitizer of threads, which does not model the fences, the
-/// notifier reads the waiters by a read-modify-write instead (reading the
-/// last value in the order of the modifications, it either sees the
-/// waiter or is seen by it through the release sequence)
+// under the sanitizer of threads, which does not model the fences, the
+// notifier reads the waiters by a read-modify-write instead (reading the
+// last value in the order of the modifications, it either sees the
+// waiter or is seen by it through the release sequence)
 #if defined( __SANITIZE_THREAD__ )
  #define ADS_EVENTCOUNT_RMW
 #elif defined( __has_feature )

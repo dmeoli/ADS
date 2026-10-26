@@ -153,10 +153,13 @@ SequenceRange< S > range( const S & s );
 
 }  // end( namespace ADS )
 
-/// the iterators point into the sequence, not into the view
+// the iterators point into the sequence, not into the view; out of the
+// documentation, which cannot tie a specialization in std to its template
+/// \cond
 template< ADS::Sequence S >
 inline constexpr bool
 std::ranges::enable_borrowed_range< ADS::SequenceRange< S > > = true;
+/// \endcond
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- IMPLEMENTATION --------------------------------*/

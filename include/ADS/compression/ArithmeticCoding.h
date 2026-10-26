@@ -48,7 +48,7 @@
  * follow a text whose statistics change. The cumulative counts are in a
  * tree of Fenwick, where an increment, a prefix sum and the search of the
  * symbol of a count take \f$ O( \log |\Sigma| ) \f$ time; so a symbol costs
- * \f$ O( \log |\Sigma| ) \f$ time and the code O( n log |\Sigma| ).
+ * \f$ O( \log |\Sigma| ) \f$ time and the code \f$ O( n \log |\Sigma| ) \f$.
  *
  * The contracts [see Contract.h]: the probabilities are positive and sum to
  * 1, the counts are positive with a total of at most M / 4,

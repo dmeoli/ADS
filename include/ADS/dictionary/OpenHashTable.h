@@ -38,8 +38,8 @@
  * inspections, and remembers the first deleted place met [see scan()].
  *
  * With the load factor \f$ \alpha = n / m \f$, the expected number of
- * places accessed by an unsuccessful search I( \alpha ) and by a
- * successful one S( \alpha ) are, under uniform hashing,
+ * places accessed by an unsuccessful search \f$ I( \alpha ) \f$ and by a
+ * successful one \f$ S( \alpha ) \f$ are, under uniform hashing,
  * \f[
  *   \begin{array}{lll}
  *     \mbox{linear} & \frac{1}{2} \left( 1 + \frac{1}{( 1 - \alpha )^2}

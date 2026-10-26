@@ -9,9 +9,9 @@
  *   character (here by a sorted map); a string is there if the node of its
  *   last character is marked. A search, an insertion and a removal take
  *   \f$ O( m \log \sigma ) \f$ time for a string of m characters on an
- *   alphabet of \sigma, independently of the number of strings, and the
- *   strings with a given prefix are those below the node of the prefix,
- *   visited in their order;
+ *   alphabet of \f$ \sigma \f$, independently of the number of strings,
+ *   and the strings with a given prefix are those below the node of the
+ *   prefix, visited in their order;
  * - RadixTree, the compact trie (the Patricia of Morrison, on characters
  *   rather than on bits), where every chain of nodes with a single child
  *   and no mark is merged into one edge labelled by a string, so that it

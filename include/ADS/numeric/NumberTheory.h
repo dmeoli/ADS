@@ -8,7 +8,8 @@
  * - gcd(), of Euclid, \f$ \gcd( s , m ) = \gcd( m , s \bmod m ) \f$,
  *   O( log m ) steps; extendedEuclid() also gives p and q with
  *   \f$ s p + m q = \gcd( s , m ) \f$: from ( d , p' , q' ) of
- *   ( m , s mod m ), ( d , q' , p' - \lfloor s / m \rfloor q' ) (the
+ *   \f$ ( m , s \bmod m ) \f$,
+ *   \f$ ( d , q' , p' - \lfloor s / m \rfloor q' ) \f$ (the
  *   solution of exercise 17.2 in the text has the two swapped);
  * - modInverse(), the p with \f$ p s \bmod m = 1 \f$ when
  *   \f$ \gcd( s , m ) = 1 \f$ (exercise 17.3);

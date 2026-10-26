@@ -5,11 +5,13 @@ ADS is a header-only C++20 library of algorithms and data structures: those
 of A. Montresor's textbook, with their specifications checked as contracts,
 those of Knuth's *The Art of Computer Programming* and of Ferragina's
 *Pearls of Algorithm Engineering*, and engineered structures with the
-interface of the standard library.
+interface of the standard library. This site gathers the README and the API
+reference; the same reference is also on the `Doxygen site
+<doxygen/index.html>`_.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Getting Started
+   :caption: Getting started
 
    generated/index
    generated/getting-started/installation
@@ -17,7 +19,7 @@ interface of the standard library.
 
 .. toctree::
    :maxdepth: 1
-   :caption: User Guide
+   :caption: User guide
 
    generated/user-guide/layout
    generated/user-guide/book
@@ -27,18 +29,23 @@ interface of the standard library.
    generated/user-guide/exams
    generated/user-guide/engineered
    generated/user-guide/sorting
+   generated/user-guide/parallelism
    generated/user-guide/contracts
    generated/user-guide/standard-interface
+   generated/user-guide/performance
    generated/user-guide/further-reading
 
 .. toctree::
    :maxdepth: 2
-   :caption: API Reference
+   :caption: API reference
 
-   api/library_root
+   api/index
+   Index of the classes and functions <genindex>
+   Doxygen site <https://dmeoli.github.io/ADS/doxygen/>
 
 .. toctree::
    :maxdepth: 1
    :caption: Project
 
-   generated/release_notes
+   generated/project/release_notes
+   generated/project/license

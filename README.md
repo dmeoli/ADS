@@ -123,25 +123,40 @@ runs.
 ## Layout
 
 Headers are grouped by abstract data type, one header per realization,
-and `include/ADS/ADT.h` has the concepts of the book. The folders of the
-types (`sequence/`, `stack/`, `queue/`, `tree/`, `dictionary/`, `set/`,
-`priority/`, `mfset/` and `graph/`) also hold the algorithms on them, e.g.,
-the operations on sets or the visits of a graph. The other folders group
-the algorithms by technique or by problem:
+and `include/ADS/ADT.h` has the concepts of the book, next to the
+contracts (`Contract.h`), the iterators (`Iterators.h`) and the portable
+intrinsics (`Portable.h`). The folders of the types also hold the
+algorithms on them, e.g., the operations on sets or the visits of a graph:
 
-- `search/` and `sort/`, the searches and the sorts;
+- `sequence/`, the SEQUENCE and the LIST (arrays, linked lists, cursors);
+- `stack/`, the STACK and the algorithms that use it;
+- `queue/`, the QUEUE and the deque;
+- `tree/`, the TREE, the binary trees, the search trees and the B-trees;
+- `dictionary/`, the DICTIONARY (hash tables, perfect hashing, tries);
+- `set/`, the SET, the operations on sets and the filters;
+- `priority/`, the PRIORITY QUEUE (heaps, bucket and radix queues);
+- `mfset/`, the MFSET, i.e., the merge-find sets;
+- `graph/`, the GRAPH, its visits, paths, spanning trees and flows.
+
+The other folders group the algorithms by technique or by problem:
+
+- `search/`, the searches;
+- `sort/`, the sorts;
 - `numeric/`, the products of integers, polynomials and matrices;
 - `string/`, the algorithms on strings;
 - `optimization/`, the problems of optimization (knapsack, intervals);
-- `geometry/`, the convex hull;
+- `geometry/`, the convex hull and the closest pair;
 - `backtrack/`, the enumerations by backtrack;
 - `complexity/`, the problems of NP and their reductions;
 - `intractable/`, the techniques for the intractable problems;
-- `memory/` and `concurrent/`, the allocators, the arena, the queues
-  between threads and the concurrent hash table;
+- `memory/`, the allocators, the pools and the arena;
+- `concurrent/`, the queues between threads, the concurrent hash table
+  and the concurrent union-find;
+- `parallel/`, the executors and the parallel algorithms on threads;
+- `distributed/`, the sort over the processes of MPI;
 - `external/`, the two-level memory and the algorithms on it;
-- `compression/` and `succinct/`, the codes, the compressors and the
-  compressed data structures;
+- `compression/`, the codes, the compressors and the compressed indexes;
+- `succinct/`, the compressed data structures;
 - `combinatorial/`, the broadword tricks and the combinatorial generation;
 - `algorithm/`, the rest.
 

@@ -23,7 +23,7 @@
  * a short vector of ( byte , state ) pairs, searched linearly, so that the
  * time is \f$ O( n \sigma ) \f$ for \f$ \sigma \f$ distinct bytes.
  *
- * - contains( P ) follows P from the start, O( |P| \sigma );
+ * - contains( P ) follows P from the start, \f$ O( |P| \sigma ) \f$;
  * - occurrences( P ) is the size of the end set of the state of P, counted
  *   once for all by adding the count of each state (1 if it ends a prefix
  *   of S, 0 for a clone) to its link, in decreasing order of the lengths;
@@ -32,7 +32,7 @@
  *   number of nonempty distinct substrings of S;
  * - longestCommonSubstring( T ) scans T keeping the longest suffix of
  *   \f$ T[ 0 .. j ] \f$ that is a substring of S, following the links on a
- *   mismatch, O( |T| \sigma ).
+ *   mismatch, \f$ O( |T| \sigma ) \f$.
  *
  * The contracts [see Contract.h]: at most 2 n states (an invariant),
  * and the results equal those of the definitions on the substrings (the

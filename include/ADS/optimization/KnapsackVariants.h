@@ -92,9 +92,9 @@
 
 namespace ADS {
 
-/// the largest gain of a rod of length L cut in pieces of lengths 1 ..
-/// |price|, price[ t - 1 ] the price of a piece of length t, and the
-/// lengths of the pieces
+/// the largest gain of a rod of length L cut in pieces of lengths
+/// 1 .. |price|, price[ t - 1 ] the price of a piece of length t, and
+/// the lengths of the pieces
 /// \pre L = 0 or price not empty
 /// \post the pieces sum to L and their prices to the gain
 template< class T >

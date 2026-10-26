@@ -18,7 +18,7 @@
  * of \f$ \sigma \ll m \f$ rows keeps the rows near their place and so the
  * reads of x and the writes of y near each other.
  *
- * - The matrix is built from a CsrMatrix in O( nnz + m \log \sigma )
+ * - The matrix is built from a CsrMatrix in \f$ O( nnz + m \log \sigma ) \f$
  *   time: the sort of each window by row length (stable, so that rows of
  *   equal length keep their order), the widths of the chunks, and the
  *   placement of the nonzeros; it takes \f$ 12 ( nnz + pad ) + 8 m / C

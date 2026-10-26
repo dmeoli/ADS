@@ -39,7 +39,7 @@
  * uses contexts of unbounded length.
  *
  * The contracts [see Contract.h]: \f$ K \ge 0 \f$,
- * \f$ 1 \le |\Sigma| \le 2^{16} \f$, a symbol in [ 0 , |\Sigma| );
+ * \f$ 1 \le |\Sigma| \le 2^{16} \f$, a symbol in \f$ [ 0 , |\Sigma| ) \f$;
  * ppmDecode( ppmEncode( x ) ) == x, an audit. The operations are defined in
  * PPM.tpp.
  *

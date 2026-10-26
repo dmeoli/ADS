@@ -1342,9 +1342,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the option ADS_BUILD_TESTS, by default on only when ADS is the main
   project, so that add_subdirectory() and FetchContent build the interface
   target alone
-- the documentation is a site of Sphinx with the theme of Read the Docs,
-  its pages written from the README by docs/pages.py, with the API
-  reference built by Exhale and Breathe from the XML of Doxygen
+- the documentation is a site of Sphinx with the theme of Read the Docs
+  (content 1300 pixels wide, a switch to a dark theme, a button that
+  copies the code), its pages written from the README by docs/pages.py
+  and its API reference written by docs/apiref.py from the XML of Doxygen
+  as a tree (the areas of include/ADS, their headers, the concepts, the
+  classes and the functions of each one, rendered by Breathe), with the
+  Doxygen site next to it in doxygen/, with the theme of
+  doxygen-awesome-css and the same tree under its Topics; the workflow of
+  the documentation also builds the two sites on the pull requests
 - fft() is one unrolled codelet up to 64 points and above it the four
   steps of Bailey, with no reversal of the bits: the columns, then the
   rows, transformed 4 at a time in the lanes of the vectors of AVX (2 on
@@ -1495,6 +1501,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the tables of the README in HTML on the site of the documentation, with
+  the borders and the padding of the other tables, and the brief
+  descriptions of Doxygen no longer cut at the dots of the ranges
+  (A[ 0 .. n - 1 ]) and of e.g.; the formulae of a few comments out of
+  the math of Doxygen
 - the build with MSVC: PGMIndex, the loser tree of the multiway merge,
   prefixKeySort() and the multiple search no longer use __int128 or
   __builtin_bswap64() where the compiler lacks them, but the primitives
