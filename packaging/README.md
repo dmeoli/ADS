@@ -33,8 +33,7 @@ Astrophysics Data System, while on the other channels `ads` was still free
 (as far as their indexes showed) when the recipes were written. The workflow
 `packaging.yml` builds and tests the Homebrew formula on macOS, the vcpkg
 port and the MSYS2 package on Windows and the AUR package on Arch Linux, each
-from the tarball of the commit, whenever a pull request touches the
-packaging.
+from the tarball of the commit, whenever a push touches the packaging.
 
 ## The release
 

@@ -13,7 +13,7 @@
 name: Packaging
 
 on:
-  pull_request:
+  push:
     paths: [ 'packaging/**' , 'CMakeLists.txt' , 'cmake/**' ,
              'MODULE.bazel' , 'BUILD.bazel' ,
              '.github/workflows/packaging.yml' ]
