@@ -78,8 +78,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   $O( \log n )$ per find; offlineConnectivity(), the dynamic
   connectivity of a known sequence of insertions, deletions and questions
   by a segment tree over the times, $O( k \log k \log n )$
+- parallel/SpeculativeFor.h: speculativeFor() and Reservation, the
+  deterministic reservations of Blelloch, Fineman, Gibbons and Shun on any
+  executor; parallel/ParallelGreedy.h: parallelKruskal(), filterKruskal(),
+  spanningForest(), maximalIndependentSet() and maximalMatching(), the
+  results of the sequential greedy algorithms on the same order on every
+  executor, and randomOrder(); the test program engineered_speculative,
+  also under ThreadSanitizer in the CI
 - bench/dynamic.cpp, the observers against the algorithms from scratch
-  after each change and the rollback
+  after each change and the rollback, and bench/greedy.cpp, the parallel
+  greedy algorithms against the examples of ParlayLib (PARLAY=<dir>)
 - bench/bignum.cpp: the squares, the gcd of two numbers with a common
   factor of 3 and the integer square root of 2n digits, the length of 1024
   digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>

@@ -125,6 +125,7 @@ for t in 1 2 4 8 16 32 64 128; do
  cells "$PCORES" parallel -t "$t" 1000000 10000000 | grep '^parallel' \
   >> "$out" || true
  cells "$PCORES" joins -t "$t" 1000000 >> "$out"
+ cells "$PCORES" greedy -t "$t" 1000000 10000000 >> "$out"
 done
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"

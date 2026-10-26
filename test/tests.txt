@@ -1763,3 +1763,8 @@ engineered_dynamic  reopt-max-flow         flusso massimo, taglio minimo
 engineered_dynamic  reopt-lazy             coda pigra, soglia del ricalcolo
 engineered_dynamic  rollback-union-find    union-find con rollback
 engineered_dynamic  offline-connectivity   connettività dinamica offline
+
+# the deterministic reservations and the parallel greedy algorithms
+engineered_speculative  speculative-for        prenotazioni deterministiche
+engineered_speculative  parallel-kruskal       Kruskal, filter-Kruskal, foresta
+engineered_speculative  parallel-mis-matching  insieme indipendente, abbinamento

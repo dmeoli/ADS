@@ -120,7 +120,7 @@ if (ADS_BENCHMARKS)
                search suffix edit numeric queues concurrent geometry matrix
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries allocators positions assembly fingerprints multi lce
-               parallel joins dynamic)
+               parallel joins dynamic greedy)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -136,6 +136,8 @@ if (ADS_BENCHMARKS)
     endif ()
     target_link_libraries(bench-concurrent PRIVATE Threads::Threads)
     target_link_libraries(bench-joins PRIVATE Threads::Threads)
+
+    target_link_libraries(bench-greedy PRIVATE Threads::Threads)
     # the competitors of bench-parallel: OpenMP and the parallel mode of
     # libstdc++, oneTBB with the policies of std::execution, ParlayLib from
     # the directory of its sources ADS_PARLAY, the parallel IPS4o and IPS2Ra
@@ -154,6 +156,9 @@ if (ADS_BENCHMARKS)
     if (ADS_PARLAY)
         target_include_directories(bench-parallel SYSTEM
                                    PRIVATE ${ADS_PARLAY}/include)
+        target_include_directories(bench-greedy SYSTEM
+                                   PRIVATE ${ADS_PARLAY}/include
+                                           ${ADS_PARLAY})
     endif ()
     target_link_libraries(bench-parallel PRIVATE Threads::Threads)
     # the competitor of bench-joins: PAM from the directory of its sources

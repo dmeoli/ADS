@@ -569,6 +569,8 @@ matrices, up to the rounding for the transform).
 | LCP array by the permuted LCP | [`parallel/ParallelText.h`](include/ADS/parallel/ParallelText.h) |
 | union-find with no lock, for many threads | [`concurrent/ConcurrentUnionFind.h`](include/ADS/concurrent/ConcurrentUnionFind.h) |
 | balanced trees whose only balancing is join (AVL, Red-Black, by weight, treap): split, join, union, intersection and difference with the optimal work, batches of insertions and removals, filter, map and reduce, augmented maps with the sums of ranges, the interval tree and the 2D range tree | [`tree/JoinAlgorithms.h`](include/ADS/tree/JoinAlgorithms.h), [`tree/JoinTree.h`](include/ADS/tree/JoinTree.h), [`geometry/IntervalTree.h`](include/ADS/geometry/IntervalTree.h), [`geometry/RangeTree.h`](include/ADS/geometry/RangeTree.h) |
+| deterministic reservations, `speculativeFor()` | [`parallel/SpeculativeFor.h`](include/ADS/parallel/SpeculativeFor.h) |
+| Kruskal and filter-Kruskal, spanning forest, maximal independent set and maximal matching, the results of the sequential greedy algorithms | [`parallel/ParallelGreedy.h`](include/ADS/parallel/ParallelGreedy.h) |
 | sort over the processes of MPI by regular sampling | [`distributed/DistributedSort.h`](include/ADS/distributed/DistributedSort.h) |
 
 ```cpp
