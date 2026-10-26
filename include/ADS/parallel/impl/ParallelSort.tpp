@@ -546,7 +546,8 @@ bool fewRuns( E & ex , std::vector< T > & A , C & less )
 /// the counting sort of the numbers of A if they take at most 32 distinct
 /// values, those of a sample of 1024 of them: each item found among them
 /// (by their keys of radixKey(), which tell apart all the values, -0 and
-/// +0 included) by a search with no branch, the counts of the blocks
+/// +0 included) by counting the keys less than its own, 32 comparisons
+/// that the compiler puts in vectors, the counts of the blocks
 /// summed, and A filled with the values in order; false, A untouched, if
 /// an item has another value
 template< class E , class T >
@@ -576,17 +577,23 @@ bool fewKeys( E & ex , std::vector< T > & A )
  std::vector< std::array< std::size_t , D > > cnt( B );
  std::atomic< bool > other{ false };
  parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
-  auto & c = cnt[ b ];
-  c.fill( 0 );
+  // the counts, the keys and the bounds in locals of the thread, which no
+  // store of a count may alias
+  std::size_t c[ D ] = {};
+  const std::array< Key , D > k = K;
+  const T * a = A.data();
+  const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
   bool out = false;
-  for( std::size_t i = n * b / B ; i < n * ( b + 1 ) / B ; ++i ) {
-   const Key x = radixKey( A[ i ] );
-   std::size_t j = 0;                       // the first key >= x
-   for( std::size_t h = D / 2 ; h > 0 ; h /= 2 )
-    j += ( K[ j + h - 1 ] < x ) ? h : 0;
-   out |= K[ j ] != x;
+  for( std::size_t i = i0 ; i < i1 ; ++i ) {
+   const Key x = radixKey( a[ i ] );
+   unsigned j = 0;                          // the keys less than x, by
+   for( std::size_t q = 0 ; q < D ; ++q )   // comparisons in vectors
+    j += k[ q ] < x;
+   j = std::min( j , unsigned( D - 1 ) );
+   out |= k[ j ] != x;
    ++c[ j ];
    }
+  std::copy( c , c + D , cnt[ b ].begin() );
   if( out )
    other.store( true , std::memory_order_relaxed );
   } , 1 );

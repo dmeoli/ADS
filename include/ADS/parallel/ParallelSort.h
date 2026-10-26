@@ -46,10 +46,11 @@
  *   When the sample shows at most 32 distinct values that the bits do not
  *   separate, the numbers are counted instead (not the floating point
  *   numbers of the stable sort): each item is found among those values by
- *   a search with no branch on their keys, which tell apart all the
- *   values, -0 and +0 included, and A is filled with them in order, 2
- *   passes over A; an item of another value sends A to the other
- *   classifier, whose buckets of equality move the items once.
+ *   counting the keys less than its own (32 comparisons in vectors), the
+ *   keys telling apart all the values, -0 and +0 included, and A is
+ *   filled with them in order, 2 passes over A; an item of another value
+ *   sends A to the other classifier, whose buckets of equality move the
+ *   items once.
  *   When the sample holds at most 256 distinct keys, each key has a bucket
  *   of its own; if the integers of A all fall within the bounds of the
  *   sample (which the pass of the counts checks), the counts are those of
