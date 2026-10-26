@@ -41,6 +41,31 @@ DOXYGEN = '../../doxygen/'
 # the headers in include/ADS itself, which form an area of their own
 TOP = 'ADS'
 
+# the title of each area, its folder being given next to it on its page
+NAMES = {
+    TOP: 'Foundations', 'sequence': 'Sequences and lists',
+    'stack': 'Stacks', 'queue': 'Queues', 'tree': 'Trees',
+    'dictionary': 'Dictionaries', 'set': 'Sets',
+    'priority': 'Priority queues', 'mfset': 'Merge-find sets',
+    'graph': 'Graphs', 'search': 'Searching', 'sort': 'Sorting',
+    'numeric': 'Numerical algorithms', 'string': 'Strings',
+    'optimization': 'Optimization', 'geometry': 'Geometry',
+    'backtrack': 'Backtracking', 'complexity': 'Complexity',
+    'intractable': 'Intractable problems', 'memory': 'Memory',
+    'concurrent': 'Concurrency', 'parallel': 'Parallelism',
+    'distributed': 'Distributed algorithms',
+    'external': 'External memory', 'compression': 'Compression',
+    'succinct': 'Succinct structures',
+    'combinatorial': 'Combinatorial algorithms',
+    'algorithm': 'Other algorithms',
+}
+
+
+def name_of(area):
+    """the title of an area, else its folder"""
+    return NAMES.get(area, area)
+
+
 # the kinds of areas, in the order of the pages; the folders not listed
 # here are algorithms
 FOUNDATIONS = 'Foundations'
@@ -352,7 +377,8 @@ def toctree(entries, hidden=True, maxdepth=1):
 def table(rows, header):
     if not rows:
         return ''
-    out = '.. list-table::\n   :header-rows: 1\n   :widths: 30 70\n\n'
+    out = ('.. list-table::\n   :header-rows: 1\n   :widths: 30 70\n'
+           '   :width: 100%\n\n')
     for row in [header] + rows:
         out += '   * - %s\n     - %s\n' % (row[0], row[1] or ' ')
     return out + '\n'
@@ -370,7 +396,7 @@ def class_page(c, h):
     out = title(escape(c.short))
     out += ('Declared in :doc:`%s <%s>` (area :doc:`%s <index>`); the same %s'
             ' on the `Doxygen site <%s%s>`__.\n\n'
-            % (escape(h.name), h.page, h.area, kind, DOXYGEN,
+            % (escape(h.name), h.page, name_of(h.area), kind, DOXYGEN,
                html_page(c.refid)))
     if c.bases or c.derived:
         # the diagram of the hierarchy that the Doxygen site draws for the
@@ -422,7 +448,7 @@ def header_page(h, pages, overloaded, defined):
     out = title(escape(h.name))
     out += ('Header ``#include "%s"`` of the area :doc:`%s <index>`; the same'
             ' header on the `Doxygen site <%s%s>`__.\n\n'
-            % (h.file, h.area, DOXYGEN, html_page(h.refid)))
+            % (h.file, name_of(h.area), DOXYGEN, html_page(h.refid)))
     # the comment of the file, which explains what the header holds
     out += ('.. doxygenfile:: %s\n   :sections: briefdescription '
             'detaileddescription\n\n' % h.file)
@@ -504,7 +530,7 @@ def topics(order, areas, lines):
     out = ['/* written by docs/apiref.py from the XML of Doxygen */\n']
     for area in order:
         grp = ident('area', area)
-        out.append(block('\\defgroup %s %s' % (grp, area),
+        out.append(block('\\defgroup %s %s' % (grp, name_of(area)),
                          '\\brief %s' % dox([('text', line_of_area(
                              area, lines).replace('`', ''))])))
         for h in areas[area]:
@@ -570,7 +596,7 @@ def main():
               'the files, is on the `Doxygen site <%s>`__.\n\n'
               % DOXYGEN[3:])
     for kind in KINDS:
-        rows = [(':doc:`%s <%s/index>`' % (a, a),
+        rows = [(':doc:`%s <%s/index>`' % (name_of(a), a),
                  md_inline(line_of_area(a, lines)))
                 for a in order if kind_of(a, types) == kind]
         if rows:
@@ -581,7 +607,7 @@ def main():
 
     for area in order:
         hs = areas[area]
-        out = title(area)
+        out = title(name_of(area))
         out += md_inline(line_of_area(area, lines)) + '\n\n'
         where = ('include/ADS' if area == TOP else 'include/ADS/%s' % area)
         out += ('The headers are in `%s <https://github.com/dmeoli/ADS/tree/'
