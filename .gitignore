@@ -16,3 +16,6 @@ docs/api/
 # Bazel
 bazel-*
 MODULE.bazel.lock
+
+# Python
+__pycache__/
