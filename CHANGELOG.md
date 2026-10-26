@@ -1447,6 +1447,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the build with MSVC: PGMIndex, the loser tree of the multiway merge,
+  prefixKeySort() and the multiple search no longer use __int128 or
+  __builtin_bswap64() where the compiler lacks them, but the primitives
+  of Portable.h, the same instructions on GCC and Clang; sort() and the
+  vector quicksort prefetch only on GCC and Clang; the suffix sorting
+  declares its arrays not to overlap only there, as the optimizer of MSVC
+  fails on its loops with __restrict; the build on macOS: StaticSearch no
+  longer names a constant HUGE, a macro of math.h
+- the tests of the pools on macOS and Windows: the slots of 16 bytes
+  asked with that alignment, which max_align_t does not have there, and
+  the sentinel that std::list of MSVC takes from its allocator
 - the random graphs of the exams of trees and of the collections of
   exercises with an edge probability of 2.0 / n or 1.5 / n, more than 1
   for n = 1, which std::bernoulli_distribution rejects under the
