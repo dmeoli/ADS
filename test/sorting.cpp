@@ -27,6 +27,7 @@
 #include "ADS/sort/DidacticSorts.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/ExchangeSorts.h"
+#include "ADS/sort/LearnedSort.h"
 #include "ADS/sort/MultikeyQuickSort.h"
 #include "ADS/sort/PatienceSort.h"
 #include "ADS/sort/RadixSort.h"
@@ -1717,6 +1718,144 @@ ADS_TEST( "fast-paths" )
    std::sort( S.begin() , S.end() );
    CHECK( S2 == S && S3 == S && S4 == S );
    }
+ }
+
+/// the key of rank i of n in the pattern p of the learned sort, from g:
+/// random, all equal, few distinct, sorted, reversed, organ pipe, half of
+/// them equal, Zipf, exponential, clustered, the ends of the type
+std::uint64_t learnedKey( int p , std::size_t i , std::size_t n ,
+                          std::mt19937_64 & g )
+{
+ const double u = double( g() >> 11 ) * 0x1p-53;
+ switch( p ) {
+  case( 0 ): return( g() );
+  case( 1 ): return( 42 );
+  case( 2 ): return( g() % 16 );
+  case( 3 ): return( i << 20 );
+  case( 4 ): return( ( n - i ) << 20 );
+  case( 5 ): return( std::min( i , n - 1 - i ) << 20 );
+  case( 6 ): return( g() % 2 ? std::uint64_t( 7 ) << 40 : g() >> 1 );
+  case( 7 ): return( std::uint64_t( 1e6 / std::pow( 1 - u , 1 / 1.2 ) ) );
+  case( 8 ): return( std::uint64_t( -std::log( 1 - u ) * 1e12 ) );
+  case( 9 ): return( ( ( g() % 8 ) << 52 ) + g() % 1000 );
+  default: {
+   const std::uint64_t r = g() % 4;
+   return( r == 0 ? std::uint64_t( 1 ) << 63 :
+           r == 1 ? ( std::uint64_t( 1 ) << 63 ) - 1 : g() );
+   }
+  }
+ }
+
+/// the item of T of the key k: the integer, or a floating point number
+/// whose order follows k for the patterns of smooth laws
+template< class T >
+T learnedItem( std::uint64_t k , int p )
+{
+ if constexpr( std::is_integral_v< T > )
+  return( T( k ) );
+ else if( p == 0 || p == 10 )
+  return( T( double( std::int64_t( k ) ) / 1e3 ) );
+ else
+  return( T( double( k ) ) );
+ }
+
+/// learnedSort() of A against the total order of radixKey() bit for bit,
+/// and against sort() when A holds no NaN
+template< class T >
+void learnedCheck( std::vector< T > A )
+{
+ auto R = A , S = A;
+ learnedSort( A );
+ std::sort( R.begin() , R.end() , []( T x , T y ) {
+  return( radixKey( x ) < radixKey( y ) ); } );
+ bool same = A.size() == R.size();
+ for( std::size_t i = 0 ; same && ( i < A.size() ) ; ++i )
+  same = bitsOf( A[ i ] ) == bitsOf( R[ i ] );
+ CHECK( same );
+ if( std::none_of( S.begin() , S.end() , []( T x ) { return( x != x ); } ) ) {
+  sort( S );
+  CHECK( S == A );
+  }
+ }
+
+// the learned sort: the sizes around the least that the model takes, the
+// patterns of learnedKey() on integers and floating point numbers of 32
+// and 64 bits, the specials of IEEE 754 (-0, +0, the infinities, the NaN
+// of both signs, the subnormals); the model taken on smooth laws, left to
+// sampleSort() on few keys, with buckets of equality on half of them equal
+ADS_TEST( "learned-sort" )
+{
+ const std::size_t L = 4 * detail::kLearnedBucket;
+ std::mt19937_64 g( 95 );
+ for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
+                        std::size_t( 2 ) , std::size_t( 100 ) , L - 1 , L ,
+                        L + 1 , std::size_t( 100000 ) ,
+                        std::size_t( 300001 ) } )
+  for( int p = 0 ; p < 11 ; ++p ) {
+   std::vector< std::uint64_t > k( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    k[ i ] = learnedKey( p , i , n , g );
+   std::vector< std::int64_t > I( n );
+   std::vector< std::uint64_t > U( n );
+   std::vector< std::int32_t > I32( n );
+   std::vector< double > D( n );
+   std::vector< float > F( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    I[ i ] = learnedItem< std::int64_t >( k[ i ] , p );
+    U[ i ] = k[ i ];
+    I32[ i ] = std::int32_t( k[ i ] >> 32 );
+    D[ i ] = learnedItem< double >( k[ i ] , p );
+    F[ i ] = learnedItem< float >( k[ i ] , p );
+    }
+   learnedCheck( I );
+   learnedCheck( U );
+   learnedCheck( I32 );
+   learnedCheck( D );
+   learnedCheck( F );
+   }
+ {                                         // the specials of IEEE 754
+  constexpr double inf = std::numeric_limits< double >::infinity() ,
+                   nan = std::numeric_limits< double >::quiet_NaN() ,
+                   sub = std::numeric_limits< double >::denorm_min();
+  for( std::size_t n : { std::size_t( 50 ) , std::size_t( 100000 ) } ) {
+   std::vector< double > D( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const std::uint64_t r = g() % 16;
+    D[ i ] = r == 0 ? -0.0 : r == 1 ? 0.0 : r == 2 ? inf : r == 3 ? -inf :
+             r == 4 ? nan : r == 5 ? -nan : r == 6 ? sub * double( g() % 9 ) :
+             double( std::int64_t( g() ) ) / 1e9;
+    }
+   learnedCheck( D );
+   std::vector< float > F( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    F[ i ] = float( D[ i ] );
+   learnedCheck( F );
+   std::vector< double > Z( n );           // -0 and +0 only
+   for( std::size_t i = 0 ; i < n ; ++i )
+    Z[ i ] = g() % 2 ? -0.0 : 0.0;
+   learnedCheck( Z );
+   }
+  }
+ {                                         // which way the sort went
+  std::vector< std::uint64_t > R( 100000 ) , E( 100000 , 5 ) , H( 100000 );
+  for( std::size_t i = 0 ; i < R.size() ; ++i ) {
+   R[ i ] = g();
+   H[ i ] = i % 2 ? 0 : g();
+   }
+  CHECK( detail::learnedSortIf( R ) && std::is_sorted( R.begin() ,
+                                                        R.end() ) );
+  CHECK( ! detail::learnedSortIf( E ) );   // few keys: left as they are
+  CHECK( E == std::vector< std::uint64_t >( 100000 , 5 ) );
+  auto S = detail::learnedSample( H , 16 * 64 );
+  const detail::CdfModel< std::uint64_t > M( S.data() , S.size() , 64 );
+  CHECK( M.equality() && M.fits() && M.equal( 1 ) && ! M.equal( 2 ) );
+  CHECK( detail::learnedSortIf( H ) && std::is_sorted( H.begin() ,
+                                                        H.end() ) );
+  std::vector< std::uint64_t > Z( 100000 );   // a heavy tail: no fit
+  for( auto & x : Z )
+   x = ( std::uint64_t( 1 ) << ( g() % 63 ) ) + g() % 1000;
+  CHECK( ! detail::learnedSortIf( Z ) );
+  }
  }
 
 }  // end( namespace )

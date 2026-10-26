@@ -32,6 +32,12 @@
  *   against the cuckoo filters (its pair in summary.py, of the same false
  *   positives) and the blocked filters of Bloom, since the prefix filter
  *   of fastfilter_cpp lives in its benchmark driver;
+ * - "ranges": the range filters, built on n random keys of 64 bits and
+ *   asked n empty ranges of \f$ \ell \f$ = 1, 32 and 1024 keys, at random
+ *   (uncorrelated) and right after a key (correlated, the queries of a
+ *   key-value store that defeat the heuristics), by GrafiteFilter and
+ *   BucketingFilter of ADS against the binary fuse filter asked the
+ *   \f$ \ell \f$ points of the range (for \f$ \ell \le 32 \f$);
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, by those of ADS (by pilots, by
  *   recursive splitting and by levels of fingerprints, the method of
@@ -93,6 +99,7 @@
 #include "ADS/set/BloomFilter.h"
 #include "ADS/set/BloomVariants.h"
 #include "ADS/set/CuckooFilter.h"
+#include "ADS/set/GrafiteFilter.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 
@@ -783,6 +790,94 @@ void allFilters( const std::vector< Key > & K , const std::vector< Key > & H ,
  }
 
 /*--------------------------------------------------------------------------*/
+/*----------------------------- RANGE FILTERS ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the range filter build( K ), its bits per key and its queries by
+/// may( f , a , b ) of the empty ranges of l keys, at random and right
+/// after the keys; the false positives to the standard error
+template< class B , class F , class Z >
+void ranges( const std::string & who , const std::vector< Key > & K ,
+             int r , std::uint64_t seed , B && build , F && may ,
+             Z && bits , std::uint64_t maxLength = ~std::uint64_t( 0 ) )
+{
+ if( skip( who ) )
+  return;
+ const std::size_t n = K.size();
+ std::vector< Key > S = K;
+ std::sort( S.begin() , S.end() );
+ print( "ranges" , "build" , n , who , median(
+         [](){ return( 0 ); } , [ & ]( int ) {
+          auto f = build( K );
+          sink = sink + bits( f ); } , r , n ) );
+ auto f = build( K );
+ std::cerr << "ranges\t" << n << '\t' << who << "\tbits/key "
+           << double( bits( f ) ) / double( n ) << '\n';
+ for( std::uint64_t l : { 1 , 32 , 1024 } ) {
+  if( l > maxLength )
+   continue;
+  // the empty ranges [ a , a + l - 1 ], at random and right after a key
+  std::vector< Key > U , C;
+  std::mt19937_64 g( seed + l );
+  while( U.size() < n ) {
+   const Key a = g() >> 1;
+   const auto it = std::lower_bound( S.begin() , S.end() , a );
+   if( ( it == S.end() ) || ( *it > a + l - 1 ) )
+    U.push_back( a );
+   }
+  for( std::size_t i = 0 ; ( i + 1 < n ) && ( C.size() < n ) ; ++i )
+   if( S[ i + 1 ] - S[ i ] > l )
+    C.push_back( S[ i ] + 1 );
+  std::shuffle( C.begin() , C.end() , g );
+  for( const auto & [ what , A ] : { std::pair( "uncorrelated" , &U ) ,
+                                     std::pair( "correlated" , &C ) } ) {
+   std::size_t yes = 0;
+   for( Key a : *A ) yes += may( f , a , a + l - 1 ) ? 1 : 0;
+   const std::string cell = std::string( "query " ) + what + " l=" +
+                            std::to_string( l );
+   std::cerr << "ranges\t" << n << '\t' << who << '\t' << cell
+             << "\tfalse positives "
+             << double( yes ) / double( A->size() ) << '\n';
+   print( "ranges" , cell , n , who , median(
+           [](){ return( 0 ); } , [ & ]( int ) {
+            std::size_t s = 0;
+            for( Key a : *A ) s += may( f , a , a + l - 1 );
+            sink = sink + s; } , r , A->size() ) );
+   }
+  }
+ }
+
+void rangeFilters( const std::vector< Key > & K , int r ,
+                   std::uint64_t seed )
+{
+ auto bits = []( const auto & f ) { return( f.sizeInBits() ); };
+ auto may = []( const auto & f , Key a , Key b ) {
+  return( f.mayContain( a , b ) ); };
+ for( const char * who : { "ADS::GrafiteFilter 16" ,
+                           "ADS::GrafiteFilter 16 A/A" } )
+  ranges( who , K , r , seed , []( const auto & S ) {
+          return( ADS::GrafiteFilter< Key >( S , 16 ) ); } , may , bits );
+ ranges( "ADS::GrafiteFilter 12" , K , r , seed , []( const auto & S ) {
+         return( ADS::GrafiteFilter< Key >( S , 12 ) ); } , may , bits );
+ ranges( "ADS::GrafiteFilter 20" , K , r , seed , []( const auto & S ) {
+         return( ADS::GrafiteFilter< Key >( S , 20 ) ); } , may , bits );
+ ranges( "ADS::BucketingFilter 16" , K , r , seed , []( const auto & S ) {
+         return( ADS::BucketingFilter< Key >( S , 16 ) ); } , may , bits );
+ // a filter of points asked the l points of the range
+ ranges( "ADS::BinaryFuseFilter 16 (points)" , K , r , seed ,
+         []( const auto & S ) {
+          return( ADS::BinaryFuseFilter< Key , std::uint16_t >( S ) ); } ,
+         []( const auto & f , Key a , Key b ) {
+          for( Key x = a ; ; ++x ) {
+           if( f.maybe( x ) )
+            return( true );
+           if( x == b )
+            return( false );
+           } } ,
+         []( const auto & f ) { return( f.bits() ); } , 32 );
+ }
+
+/*--------------------------------------------------------------------------*/
 /*---------------------------- PERFECT HASHING -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -1118,6 +1213,7 @@ int main( int argc , char ** argv )
    hashMaps( "str" , S , G , T , r );
   }
   if( part( "filters" ) ) allFilters( K , H , Q , r );
+  if( part( "ranges" ) ) rangeFilters( K , r , o.seed );
   if( part( "perfect" ) ) perfectHashing( K , H , r );
   if( part( "concurrent" ) )
    for( int p : threadCounts() ) concurrentMaps( K , H , Q , r , p );

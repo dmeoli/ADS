@@ -104,6 +104,16 @@
  * balanced; the buffer takes n items and the counts \f$ k B \f$ words
  * for B blocks.
  *
+ * learnedSort( ex , A ) and learnedStableSort( ex , A ) distribute the
+ * numbers of 32 or 64 bits by the model of the CDF of LearnedSort.h
+ * instead of the two classifiers above, a grid on the range of a sample
+ * of 4096 keys that finds the bucket of a key among 256 by its cell and 4
+ * comparisons with no branch (the tree takes 8 dependent steps), when the
+ * sample shows a distribution that the model fits, and are sort( ex , A )
+ * and stableSort( ex , A ) otherwise; the buckets go on as above. sort(
+ * ex , A ) does not choose them by itself, since on the measures they did
+ * not beat the bits and the tree beyond the noise.
+ *
  * The contracts [see Contract.h]: less is a strict weak order, and its
  * calls from several threads at once do not race; the vector ends with
  * the same items sorted (an audit).
@@ -138,6 +148,7 @@
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/Scratch.h"
+#include "ADS/sort/LearnedSort.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/VectorQuickSort.h"
@@ -172,6 +183,33 @@ void sort( E & ex , std::vector< T > & A , C less = C() );
 /// \post A is sorted, with the same items (an audit)
 template< Executor E , class T , class C = std::less<> >
 void stableSort( E & ex , std::vector< T > & A , C less = C() );
+
+/// A sorted in its natural order on the threads of ex, distributed by the
+/// model of the CDF of a sample [see LearnedSort.h] when it fits, as
+/// sort( ex , A ) otherwise and for the buckets; not necessarily stable,
+/// and with no NaN, as sort( ex , A )
+///
+/// In pseudocode:
+/// \f[
+/// \begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{learnedSort}( \mathit{ex} , A )
+/// \\ 2 & \quad M \gets \text{the model of 256 buckets of a sample of }
+///     4096 \text{ keys}
+/// \\ 3 & \quad \textbf{if}\ M\ \text{fits}\ \textbf{then}
+///     \ \text{distribute } A \text{ by } M \text{ on the threads, and sort
+///     the buckets}
+/// \\ 4 & \quad \textbf{else}\ \mathrm{sort}( \mathit{ex} , A )
+/// \end{array}
+/// \f]
+/// \post A is sorted, with the same items (an audit)
+template< Executor E , VectorKey T >
+void learnedSort( E & ex , std::vector< T > & A );
+
+/// learnedSort( ex , A ), the equal items in their order (-0 and +0 among
+/// them), as stableSort( ex , A )
+/// \post A is sorted, with the same items (an audit)
+template< Executor E , VectorKey T >
+void learnedStableSort( E & ex , std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
 

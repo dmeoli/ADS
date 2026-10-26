@@ -41,6 +41,7 @@
 
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/Heapsort.h"
+#include "ADS/sort/LearnedSort.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/sort/MultikeyQuickSort.h"
 #include "ADS/sort/PatienceSort.h"
@@ -335,9 +336,11 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
   S.emplace_back( "vqsort" , []( V & A ) {
    hwy::VQSort( A.data() , A.size() , hwy::SortAscending() ); } );
 #endif
-  if constexpr( ADS::VectorKey< T > )
+  if constexpr( ADS::VectorKey< T > ) {
    S.emplace_back( "vectorQuickSort" , []( V & A ) {
     ADS::vectorQuickSort( A ); } );
+   S.emplace_back( "learnedSort" , []( V & A ) { ADS::learnedSort( A ); } );
+   }
   S.emplace_back( "radixSort" , []( V & A ) { ADS::radixSort( A ); } );
   S.emplace_back( "americanFlagSort" , []( V & A ) {
    ADS::americanFlagSort( A ); } );

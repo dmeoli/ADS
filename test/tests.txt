@@ -447,6 +447,7 @@ sorting  sample-sort         samplesort super scalare in place
 sorting  vector-dispatch     sort() dei numeri: ordinati, rovesciati, -0
 sorting  vector-merge        fusione nei registri vettoriali, corse
 sorting  prefix-key-sort     stringhe per chiavi intere dei prefissi
+sorting  learned-sort        modello della CDF, ripiego, -0, NaN, code
 
 # the structures and the algorithms of Knuth's TAOCP, beyond the book
 taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme
@@ -525,6 +526,8 @@ hashing  minimal-perfect-hash  hash perfetto minimo a piloti
 hashing  recsplit              hash perfetto minimo per divisione ricorsiva
 hashing  fingerprint-perfect-hash  hash perfetto minimo a impronte per livelli
 hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
+hashing  grafite-filter        filtro di intervalli Grafite, query correlate
+hashing  bucketing-filter      filtro di intervalli a bucket
 # the engineered algorithms on strings, beyond the book
 engineered_strings  string-search   filtro SIMD, q-grammi e Two-Way
 engineered_strings  suffix-sorting  SA-IS ingegnerizzato e LCP con Phi
@@ -1715,6 +1718,7 @@ engineered_sparse  row-fingerprint            impronte delle righe, zeri e NaN
 engineered_parallel  parallel-executors  esecutori: vuoti, annidati, eccezioni
 engineered_parallel  parallel-patterns   cicli, riduzioni, scansioni
 engineered_parallel  parallel-sort       ordinamenti contro quelli di std
+engineered_parallel  learned-parallel-sort  splitter della CDF sul pool
 engineered_parallel  parallel-merge      fusione a piu' vie, selezione
 engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
 engineered_parallel  parallel-fft        trasformata in quattro passi

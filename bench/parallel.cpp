@@ -12,7 +12,8 @@
  *   IPS4o and IPS2Ra, parlay::sort_inplace, stable_sort_inplace and
  *   integer_sort_inplace of ParlayLib, on 64-bit integers, doubles and
  *   strings in the patterns of bench/sort.cpp, the sequential ADS::sort and
- *   ADS::stableSort as well when t = 1;
+ *   ADS::stableSort as well when t = 1, and the learned sorts of ADS on
+ *   the numbers, on the pool;
  * - the patterns: the sum of 64-bit integers (parallelReduce against
  *   tbb::parallel_reduce, std::reduce with par, an OpenMP reduction,
  *   parlay::reduce and the ParallelForReduce of FastFlow), the inclusive
@@ -470,6 +471,14 @@ void sorts( const char * type , const std::vector< std::size_t > & sizes ,
   else
    onExecutors( S , X , "ADS::stableSort" , [ less ]( auto & ex , V & A ) {
     ADS::stableSort( ex , A , less ); } );
+  if constexpr( ADS::VectorKey< T > ) {
+   if( ! stable )
+    add( S , "pool" , "ADS::learnedSort pool" , [ & X ]( V & A ) {
+     ADS::learnedSort( X.pool() , A ); } );
+   else
+    add( S , "pool" , "ADS::learnedStableSort pool" , [ & X ]( V & A ) {
+     ADS::learnedStableSort( X.pool() , A ); } );
+   }
   if( threads == 1 )
    add( S , "seq" , stable ? "ADS::stableSort (sequential)" :
                                  "ADS::sort (sequential)" ,

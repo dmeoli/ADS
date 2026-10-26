@@ -4,9 +4,10 @@
 /** @file
  * Tests of the engineered hashing, beyond the book: the hash functions of
  * FastHash.h, the blocked filter of Bloom, the binary fuse filter, the
- * cuckoo filter, the prefix filter, the Ribbon filter, the minimal perfect
- * hash functions by pilots and by recursive splitting and the cuckoo table
- * with buckets of 4 places. Each one is checked against a reference of
+ * cuckoo filter, the prefix filter, the Ribbon filter, the range filters
+ * of Grafite and by buckets, the minimal perfect hash functions by pilots
+ * and by recursive splitting and the cuckoo table with buckets of 4
+ * places. Each one is checked against a reference of
  * the standard library or against its own analysis, on random and
  * adversarial inputs, at the level 3 of the contracts.
  *
@@ -32,6 +33,7 @@
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/CuckooFilter.h"
+#include "ADS/set/GrafiteFilter.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 
@@ -39,11 +41,13 @@
 #include <bit>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -1042,6 +1046,178 @@ ADS_TEST( "dense-hash-map" )
   F.insert( 5 , 5 );
   CHECK( F.lookup( 5 ) == 5 && F.size() == 1 );
   }
+ }
+
+
+/*--------------------------------------------------------------------------*/
+
+/// whether the sorted keys K hold a key in [ a , b ]
+bool holds( const std::vector< std::uint64_t > & K , std::uint64_t a ,
+            std::uint64_t b )
+{
+ const auto it = std::lower_bound( K.begin() , K.end() , a );
+ return( ( it != K.end() ) && ( *it <= b ) );
+ }
+
+/// the empty ranges [ k + 1 , k + l ] right after each key k of the sorted
+/// K, the queries correlated with the keys, and how many of them F passes
+template< class F >
+std::pair< std::size_t , std::size_t > correlated(
+ const F & f , const std::vector< std::uint64_t > & K , std::uint64_t l )
+{
+ std::size_t q = 0 , fp = 0;
+ for( std::size_t i = 0 ; i + 1 < K.size() ; ++i )
+  if( K[ i + 1 ] - K[ i ] > l ) {
+   ++q;
+   fp += f.mayContain( K[ i ] + 1 , K[ i ] + l );
+   }
+ return( std::pair( q , fp ) );
+ }
+
+/// the false positives fp of q queries within the bound p of each, with a
+/// margin of 6 standard deviations of the binomial, and 8 more, so that
+/// the test fails only if the bound does not hold
+bool withinBound( std::size_t fp , std::size_t q , double p )
+{
+ const double m = double( q ) * p;
+ return( double( fp ) <= m + 6 * std::sqrt( m ) + 8 );
+ }
+
+ADS_TEST( "grafite-filter" )
+{
+ constexpr std::uint64_t kMax = ~std::uint64_t( 0 );
+ {                                             // empty
+  const GrafiteFilter<> F( std::vector< std::uint64_t >{} );
+  CHECK( F.empty() && F.size() == 0 && F.codes() == 0 );
+  CHECK( ! F.maybe( 0 ) && ! F.maybe( kMax ) );
+  CHECK( ! F.mayContain( 0 , kMax ) && ! F.mayContain( 5 , 5 ) );
+  }
+ for( const std::uint64_t k : { std::uint64_t( 0 ) , std::uint64_t( 1 ) ,
+                                std::uint64_t( 1 ) << 63 , kMax - 1 ,
+                                kMax } ) {
+  // one key, at the ends of the universe too, and all keys equal
+  const GrafiteFilter<> F( std::vector< std::uint64_t >( 7 , k ) , 10 );
+  CHECK( F.size() == 1 && F.codes() == 1 && F.reduced() == 256 );
+  CHECK( F.maybe( k ) && F.mayContain( k , k ) );
+  CHECK( F.mayContain( 0 , kMax ) && F.mayContain( 0 , k ) &&
+         F.mayContain( k , kMax ) );
+  if( k > 0 )
+   CHECK( F.mayContain( k - 1 , k ) );
+  if( k < kMax )
+   CHECK( F.mayContain( k , k + 1 ) );
+  // a range of r keys or more is maybe there; a shorter one, with no key
+  // and inside one block, is not, the block of the key mapped one to one
+  CHECK( F.mayContain( k < 1000 ? 1000 : 0 , k < 1000 ? 1255 : 255 ) );
+  const std::uint64_t base = k - k % 256;
+  if( k > base )
+   CHECK( ! F.mayContain( base , k - 1 ) );
+  if( k % 256 != 255 )
+   CHECK( ! F.mayContain( k + 1 , base + 255 ) );
+  }
+ {                                             // the bound and the bits
+  const auto K0 = randomKeys( 20000 , 21 );
+  std::vector< std::uint64_t > K = K0;
+  std::sort( K.begin() , K.end() );
+  for( int B : { 8 , 12 , 16 } ) {
+   const GrafiteFilter<> F( K0 , B , std::uint64_t( B ) );
+   CHECK( F.size() == K.size() && F.codes() <= K.size() );
+   CHECK( F.reduced() == std::uint64_t( K.size() ) << ( B - 2 ) );
+   CHECK( double( F.sizeInBits() ) < double( K.size() ) * ( B + 1.5 ) );
+   for( std::uint64_t k : K )
+    CHECK( F.maybe( k ) && F.mayContain( k , k ) );
+   std::mt19937_64 g( static_cast< std::uint64_t >( B ) );
+   std::size_t q = 0 , fp = 0;
+   for( int t = 0 ; t < 200000 ; ++t ) {        // ranges of 1 to 64 keys,
+    const std::uint64_t l = 1 + g() % 64;       // at random, across the
+    std::uint64_t a = g();                      // ends of the blocks too
+    if( t % 4 == 0 )
+     a = ( a / F.reduced() ) * F.reduced() - l / 2;
+    const std::uint64_t b = a > kMax - l ? kMax : a + l - 1;
+    const bool in = holds( K , a , b ) , ans = F.mayContain( a , b );
+    CHECK( ans || ! in );                       // no false negative
+    if( ! in ) {
+     ++q;
+     fp += ans;
+     }
+    }
+   CHECK( withinBound( fp , q , 64.0 / double( 1 << ( B - 2 ) ) ) );
+   for( std::uint64_t l : { 1 , 2 , 16 , 256 } ) {   // correlated queries
+    const auto [ cq , cfp ] = correlated( F , K , l );
+    CHECK( withinBound( cfp , cq , F.falsePositiveBound( double( l ) ) ) );
+    }
+   }
+  CHECK( GrafiteFilter<>( K , 12 ).falsePositiveBound( 1e9 ) == 1 );
+  }
+ {                                             // adversarial: dense keys,
+  std::vector< std::uint64_t > K;              // the queries in their gaps
+  for( std::uint64_t i = 0 ; i < 50000 ; ++i )
+   K.push_back( kMax - 3 * i );                 // up to the max of the
+  std::sort( K.begin() , K.end() );            // universe
+  const GrafiteFilter<> F( K , 14 , 7 );
+  std::size_t fp = 0 , q = 0;
+  for( std::size_t i = 0 ; i + 1 < K.size() ; ++i ) {
+   CHECK( F.mayContain( K[ i ] , K[ i ] + 1 ) );
+   ++q;
+   fp += F.mayContain( K[ i ] + 1 , K[ i ] + 2 );   // the empty gap
+   }
+  CHECK( withinBound( fp , q , 2.0 / double( 1 << 12 ) ) );
+  CHECK( F.mayContain( kMax - 1 , kMax ) && F.mayContain( kMax , kMax ) );
+  }
+ {                                             // signed and floating keys
+  const std::vector< std::int64_t > I = {
+   std::numeric_limits< std::int64_t >::min() , -5 , 0 , 7 ,
+   std::numeric_limits< std::int64_t >::max() };
+  const GrafiteFilter< std::int64_t > F( I , 12 );
+  for( auto x : I )
+   CHECK( F.maybe( x ) );
+  CHECK( F.mayContain( -6 , -5 ) && F.mayContain( -1 , 1 ) );
+  CHECK( F.mayContain( std::numeric_limits< std::int64_t >::min() ,
+                       std::numeric_limits< std::int64_t >::max() ) );
+  const std::vector< double > D = { -2.5 , -0.0 , 1e-300 , 3.0 ,
+   std::numeric_limits< double >::infinity() };
+  const GrafiteFilter< double > G( D , 12 );
+  for( double x : D )
+   CHECK( G.maybe( x ) );
+  CHECK( G.mayContain( -3.0 , -2.0 ) && G.mayContain( 2.0 , 4.0 ) &&
+         G.mayContain( -0.0 , 0.0 ) && G.mayContain( 1e300 ,
+          std::numeric_limits< double >::infinity() ) );
+  }
+ }
+
+ADS_TEST( "bucketing-filter" )
+{
+ constexpr std::uint64_t kMax = ~std::uint64_t( 0 );
+ {
+  const BucketingFilter<> F( std::vector< std::uint64_t >{} );
+  CHECK( F.buckets() == 0 && ! F.maybe( 0 ) && ! F.mayContain( 0 , kMax ) );
+  }
+ for( const std::uint64_t k : { std::uint64_t( 0 ) , kMax } ) {
+  const BucketingFilter<> F( std::vector< std::uint64_t >( 3 , k ) , 10 );
+  CHECK( F.buckets() == 1 && F.maybe( k ) && F.mayContain( 0 , kMax ) );
+  CHECK( F.mayContain( k , k ) );
+  }
+ const auto K0 = randomKeys( 20000 , 23 );
+ std::vector< std::uint64_t > K = K0;
+ std::sort( K.begin() , K.end() );
+ const BucketingFilter<> F( K0 , 12 );
+ CHECK( double( F.sizeInBits() ) < double( K.size() ) * 13.5 );
+ for( std::uint64_t k : K )
+  CHECK( F.maybe( k ) );
+ std::mt19937_64 g( 5 );
+ std::size_t q = 0 , fp = 0;
+ for( int t = 0 ; t < 200000 ; ++t ) {          // uncorrelated: exact but
+  const std::uint64_t a = g() >> 1 , b = a + g() % 64;   // for the
+  const bool in = holds( K , a , b ) , ans = F.mayContain( a , b );
+  CHECK( ans || ! in );                          // buckets of the keys
+  if( ! in ) {
+   ++q;
+   fp += ans;
+   }
+  }
+ CHECK( withinBound( fp , q , 2.0 / 1024 ) );
+ // correlated: a gap shorter than a bucket is always a false positive
+ const auto [ cq , cfp ] = correlated( F , K , 1 );
+ CHECK( cfp == cq );
  }
 
 }  // end( namespace )

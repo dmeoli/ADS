@@ -285,6 +285,55 @@ class RadixClassifier {
  std::size_t f_distinct = 0;               ///< the keys of the sample
  };
 
+/// the classifier of the numbers by the model of the CDF of a sample of
+/// 16 k of their keys of sortKey() [see LearnedSort.h]: the buckets of
+/// the splitters of a samplesort, each key found from the cell of a grid
+/// on the range of the sample by kCellSplitters comparisons with no
+/// branch instead of the log2 k of the tree
+template< class T >
+class CdfClassifier {
+ public:
+
+ using Key = decltype( sortKey( T() ) );
+
+ /// the model of a sample of A for k buckets, k a power of 2 at least 2
+ CdfClassifier( const std::vector< T > & A , std::size_t k )
+  : f_k( k ) , f_m( [ & ]() {
+   const std::size_t n = A.size() , s = std::min( n , 16 * k );
+   std::vector< Key > S( s );
+   std::uint64_t r = 0x9E3779B97F4A7C15ull ^ ( n + 2 );
+   for( std::size_t i = 0 ; i < s ; ++i ) {
+    r ^= r << 13;
+    r ^= r >> 7;
+    r ^= r << 17;
+    S[ i ] = sortKey( A[ r % n ] );
+    }
+   std::sort( S.begin() , S.end() );
+   return( CdfModel< Key >( S.data() , s , k ) ); }() ) {}
+
+ /// whether the model fits the sample: a grid of at most kCellSplitters
+ /// splitters per cell, and at least k / 2 distinct splitters
+ [[nodiscard]] bool fits( void ) const {
+  return( f_m.fits() && ( 2 * f_m.splitters() >= f_k ) );
+  }
+
+ [[nodiscard]] std::size_t buckets( void ) const { return( f_m.buckets() ); }
+
+ [[nodiscard]] bool equal( std::size_t b ) const { return( f_m.equal( b ) ); }
+
+ /// the buckets of the m items from a into id
+ template< class Id >
+ void classify( const T * a , std::size_t m , Id * id ) const {
+  for( std::size_t i = 0 ; i < m ; ++i )
+   id[ i ] = Id( f_m( sortKey( a[ i ] ) ) );
+  }
+
+ private:
+
+ std::size_t f_k;
+ CdfModel< Key > f_m;
+ };
+
 template< bool Stable , class E , class T , class C >
 void parallelSort( E & ex , std::vector< T > & A , C & less , int depth );
 
@@ -623,6 +672,27 @@ bool fewKeys( E & ex , std::vector< T > & A )
  return( true );
  }
 
+/// the buckets of CdfClassifier
+inline constexpr std::size_t kCdfBuckets = 256;
+
+/// the parallel learned sort of A: the distribution by CdfClassifier if
+/// its model fits the sample, parallelSort() otherwise and for its
+/// buckets
+template< bool Stable , class E , class T >
+void learnedParallelSort( E & ex , std::vector< T > & A )
+{
+ std::less<> less;
+ if( ( ex.concurrency() >= kParallelSortThreads ) &&
+     ( A.size() >= kParallelSort ) ) {
+  const CdfClassifier< T > cdf( A , kCdfBuckets );
+  if( cdf.fits() ) {
+   distribute< Stable , std::uint16_t >( ex , A , less , cdf , 0 );
+   return;
+   }
+  }
+ parallelSort< Stable >( ex , A , less , 0 );
+ }
+
 /// the survey of the order of A: whether sorted, whether decreasing
 struct Survey {
  bool up = true , down = true;
@@ -721,6 +791,24 @@ void stableSort( E & ex , std::vector< T > & A , C less )
 {
  detail::parallelSort< true >( ex , A , less , 0 );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() , less ) );
+ }
+
+template< Executor E , VectorKey T >
+void learnedSort( E & ex , std::vector< T > & A )
+{
+ const auto before = detail::auditCopy( A );
+ detail::learnedParallelSort< false >( ex , A );
+ ADS_AUDIT( detail::sortedPermutation( A , before , []( T x , T y ) {
+  return( detail::sortKey( x ) < detail::sortKey( y ) ); } ) );
+ }
+
+template< Executor E , VectorKey T >
+void learnedStableSort( E & ex , std::vector< T > & A )
+{
+ const auto before = detail::auditCopy( A );
+ detail::learnedParallelSort< true >( ex , A );
+ ADS_AUDIT( detail::sortedPermutation( A , before , []( T x , T y ) {
+  return( detail::sortKey( x ) < detail::sortKey( y ) ); } ) );
  }
 
 /*--------------------------------------------------------------------------*/

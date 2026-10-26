@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- GrafiteFilter (set/GrafiteFilter.h), the range filter of Costa,
+  Ferragina and Vinciguerra: a locality-preserving hash of the keys onto
+  a universe of n 2^(B-2) codes kept by Elias-Fano, false positives at
+  most l / 2^(B-2) for a range of l keys whatever the keys and the
+  queries, and point queries; BucketingFilter, the heuristic of the same
+  paper; the tests grafite-filter and bucketing-filter
+- learnedSort() (sort/LearnedSort.h), the learned sort of the numbers of
+  32 or 64 bits: the buckets of a model of the CDF of a sample (a grid of
+  cells over the quantiles, the bucket of a key by its cell and 4
+  comparisons with no branch), each sorted by vectorQuickSort(), with
+  sampleSort() when the sample shows a law that the model does not fit;
+  learnedSort( ex , A ) and learnedStableSort( ex , A ), the parallel sorts
+  with the same model as their classifier; sort() does not choose them;
+  the tests learned-sort and learned-parallel-sort
+
 - bench/bignum.cpp: the squares, the gcd of two numbers with a common
   factor of 3 and the integer square root of 2n digits, the length of 1024
   digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>

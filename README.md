@@ -446,6 +446,7 @@ standard library, Boost and Eigen; their tests are in
 | cuckoo filter with removals, fingerprints of 8 or 16 bits, buckets of 4 places in one word (Fan et al.) | [`set/CuckooFilter.h`](include/ADS/set/CuckooFilter.h) | `hashing.cuckoo-filter` |
 | prefix filter, bins of 25 fingerprints as pocket dictionaries of 32 bytes, the overflow in a blocked filter of Bloom (Even, Even and Morrison) | [`set/PrefixFilter.h`](include/ADS/set/PrefixFilter.h) | `hashing.prefix-filter` |
 | standard Ribbon filter, Gauss elimination on the fly, solution by columns (Dillinger and Walzer) | [`set/RibbonFilter.h`](include/ADS/set/RibbonFilter.h) | `hashing.ribbon-filter` |
+| range filter Grafite, false positives at most $\ell / 2^{B-2}$ for a range of $\ell$ keys with B bits per key whatever the queries, by a locality-preserving hash and Elias-Fano; the bucketing filter of the same paper (Costa, Ferragina and Vinciguerra) | [`set/GrafiteFilter.h`](include/ADS/set/GrafiteFilter.h) | `hashing.grafite-filter`, `hashing.bucketing-filter` |
 | minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |
 | minimal perfect hash function by recursive splitting, about 1.8 bits per key, leaves by rotation fitting (RecSplit; Bez et al.) | [`dictionary/RecSplit.h`](include/ADS/dictionary/RecSplit.h) | `hashing.recsplit` |
 | minimal perfect hash function by levels of fingerprints, ranks by blocks of 512 bits (Müller, Sanders, Schulze, Zhou; BBHash; FMPH) | [`dictionary/FingerprintPerfectHash.h`](include/ADS/dictionary/FingerprintPerfectHash.h) | `hashing.fingerprint-perfect-hash` |
@@ -511,6 +512,7 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 | LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings, bucket sort | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |
 | multikey quicksort of strings | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) |
 | sort of strings by integer keys of 8 characters, sorted in the vector registers | [`sort/StringSort.h`](include/ADS/sort/StringSort.h) |
+| learned sort of numbers, buckets by a model of the CDF of a sample, sequential and on the threads of an executor (Kristo et al.; Ferragina and Odorisio) | [`sort/LearnedSort.h`](include/ADS/sort/LearnedSort.h), [`parallel/ParallelSort.h`](include/ADS/parallel/ParallelSort.h) |
 
 ## Parallelism
 

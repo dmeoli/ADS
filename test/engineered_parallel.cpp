@@ -419,6 +419,96 @@ ADS_TEST( "parallel-sort" )
   } );
  }
 
+// the parallel learned sorts against the sequential sort on each
+// executor: the sizes around kParallelSort, keys of smooth laws (the
+// model taken), few keys and a heavy tail (the model left), the ends of
+// the integers, doubles with -0, +0 and the infinities, whose stable sort
+// keeps the order of -0 and +0, that of the pairs ( item , index ) sorted
+ADS_TEST( "learned-parallel-sort" )
+{
+ std::mt19937_64 g( 12 );
+ const std::size_t K = kParallelSort;
+ auto key = [ & ]( int p , std::size_t i , std::size_t n ) {
+  const double u = double( g() >> 11 ) * 0x1p-53;
+  switch( p ) {
+   case( 0 ): return( g() );
+   case( 1 ): return( std::uint64_t( -std::log( 1 - u ) * 1e12 ) );
+   case( 2 ): return( g() % 16 );
+   case( 3 ): return( std::uint64_t( 1e6 / std::pow( 1 - u , 1 / 1.2 ) ) );
+   case( 4 ): return( ( ( g() % 8 ) << 52 ) + g() % 1000 );
+   case( 5 ): return( g() % 2 ? std::uint64_t( 7 ) << 40 : g() >> 1 );
+   case( 6 ): return( std::uint64_t( std::min( i , n - 1 - i ) ) << 20 );
+   default: {
+    const std::uint64_t r = g() % 4;
+    return( r == 0 ? std::uint64_t( 1 ) << 63 :
+            r == 1 ? ( std::uint64_t( 1 ) << 63 ) - 1 : g() );
+    }
+   }
+  };
+ onEach( [ & ]( auto & ex ) {
+  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
+                         std::size_t( 2 ) , K - 1 , K , K + 1 ,
+                         std::size_t( 200000 ) } )
+   for( int p = 0 ; p < 8 ; ++p ) {
+    std::vector< std::uint64_t > k( n );
+    for( std::size_t i = 0 ; i < n ; ++i )
+     k[ i ] = key( p , i , n );
+    {
+     std::vector< std::uint64_t > A = k , B = k , C = k;
+     learnedSort( ex , A );
+     learnedStableSort( ex , B );
+     std::sort( C.begin() , C.end() );
+     CHECK( ( A == C ) && ( B == C ) );
+     std::vector< std::int64_t > S( n );
+     for( std::size_t i = 0 ; i < n ; ++i )
+      S[ i ] = std::int64_t( k[ i ] );
+     std::vector< std::int64_t > T = S;
+     learnedSort( ex , S );
+     std::sort( T.begin() , T.end() );
+     CHECK( S == T );
+     std::vector< float > F( n );
+     for( std::size_t i = 0 ; i < n ; ++i )
+      F[ i ] = float( std::int64_t( k[ i ] ) );
+     std::vector< float > G = F;
+     learnedSort( ex , F );
+     std::sort( G.begin() , G.end() );
+     CHECK( F == G );
+     }
+    {
+     constexpr double inf = std::numeric_limits< double >::infinity();
+     std::vector< double > A( n );
+     for( std::size_t i = 0 ; i < n ; ++i )
+      A[ i ] = ( k[ i ] % 5 == 0 ) ? ( i % 2 ? -0.0 : 0.0 ) :
+               ( k[ i ] % 97 == 1 ) ? ( i % 2 ? -inf : inf ) :
+               p == 0 ? double( std::int64_t( k[ i ] ) ) / 7 :
+               double( k[ i ] );
+     const std::vector< double > A0 = A;
+     std::vector< std::size_t > ix( n );
+     std::iota( ix.begin() , ix.end() , std::size_t( 0 ) );
+     std::sort( ix.begin() , ix.end() , [ & ]( std::size_t a ,
+                                               std::size_t b ) {
+      return( ( A0[ a ] < A0[ b ] ) ||
+              ( ! ( A0[ b ] < A0[ a ] ) && ( a < b ) ) ); } );
+     learnedStableSort( ex , A );
+     bool same = true;
+     for( std::size_t i = 0 ; i < n ; ++i )
+      same = same && ( std::bit_cast< std::uint64_t >( A[ i ] ) ==
+                       std::bit_cast< std::uint64_t >( A0[ ix[ i ] ] ) );
+     CHECK( same );
+     std::vector< double > N = A0;           // sorted, the same bits
+     learnedSort( ex , N );
+     CHECK( std::is_sorted( N.begin() , N.end() ) );
+     std::vector< std::uint64_t > bn , ba;
+     for( double x : N ) bn.push_back( std::bit_cast< std::uint64_t >( x ) );
+     for( double x : A0 ) ba.push_back( std::bit_cast< std::uint64_t >( x ) );
+     std::sort( bn.begin() , bn.end() );
+     std::sort( ba.begin() , ba.end() );
+     CHECK( bn == ba );
+     }
+    }
+  } );
+ }
+
 // the parallel merge against the sequential one: no range, empty ranges,
 // one range, many short ranges, few long ones with many equal items
 // across the ranges (the order of the ranges on ties), records whose
