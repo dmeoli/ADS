@@ -156,6 +156,15 @@ if (ADS_BENCHMARKS)
                                    PRIVATE ${ADS_PARLAY}/include)
     endif ()
     target_link_libraries(bench-parallel PRIVATE Threads::Threads)
+    # the competitor of bench-joins: PAM from the directory of its sources
+    # ADS_PAM, on ParlayLib from ADS_PARLAY
+    set(ADS_PAM "" CACHE PATH "the sources of PAM")
+    if (ADS_PAM AND ADS_PARLAY)
+        target_compile_definitions(bench-joins PRIVATE ADS_HAS_PAM)
+        target_include_directories(bench-joins SYSTEM
+                                   PRIVATE ${ADS_PAM}/include
+                                           ${ADS_PARLAY}/include)
+    endif ()
     if (TARGET Eigen3::Eigen)
         target_link_libraries(bench-matrix PRIVATE Eigen3::Eigen)
         target_link_libraries(bench-sparse PRIVATE Eigen3::Eigen)
