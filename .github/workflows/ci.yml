@@ -18,6 +18,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# a new push to a branch cancels the run still going on its previous commit,
+# except on main, where every commit is tested
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   test:
     strategy:
