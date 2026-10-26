@@ -14,6 +14,7 @@
 #   sphinx-build -b html docs build-docs/html                                 #
 ###############################################################################
 
+import glob
 import os
 import re
 
@@ -64,8 +65,18 @@ def mend_xml():
     names each header by its file name alone, while two folders have an
     Anagrams.h each, and doxygenfile finds a header by the name in the
     index, so each header is named there by its path from include/, as
-    docs/apiref.py names it in the pages"""
+    docs/apiref.py names it in the pages; the parts of the concepts, which
+    Doxygen 1.17 writes and Breathe does not know, are dropped (Breathe
+    shows the concepts from their initializer)"""
     xml = breathe_projects['ADS']
+    for path in glob.glob(os.path.join(xml, 'concept*.xml')):
+        with open(path) as f:
+            text = f.read()
+        new = re.sub(r'\s*<conceptparts>.*?</conceptparts>', '', text,
+                     flags=re.S)
+        if new != text:
+            with open(path, 'w') as f:
+                f.write(new)
     index = os.path.join(xml, 'index.xml')
     if not os.path.isfile(index):
         return

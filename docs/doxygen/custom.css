@@ -44,12 +44,24 @@ div.groupHeader {
 }
 
 /* the entries of the outline on the right on more lines, where the types
-   of the parameters of the overloads make them wider than the panel */
+   of the parameters of the overloads make them wider than the panel, the
+   lines after the first under the first, after the indentation of the
+   entry, and not under the margin of the panel */
 #page-nav-contents div.item {
+    display: flex;
+    align-items: baseline;
     white-space: normal;
 }
 
-#page-nav-contents div.item > a {
-    display: inline;
+#page-nav-contents div.item > span.arrow {
+    flex: none;
+}
+
+#page-nav ul.page-outline li div.item > a {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
     overflow-wrap: anywhere;
+    line-height: 1.4;
+    padding: 0.3em 0;
 }
