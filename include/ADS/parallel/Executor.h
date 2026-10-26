@@ -79,7 +79,7 @@
  *      decoupled look-back, Technical Report NVR-2016-002, NVIDIA, 2016
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

@@ -21,7 +21,7 @@
  *      doi:10.1007/978-1-4842-4398-5
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

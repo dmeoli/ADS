@@ -40,7 +40,7 @@
  *      (CPM), LNCS 2089, 181-192, 2001, doi:10.1007/3-540-48194-X_17
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

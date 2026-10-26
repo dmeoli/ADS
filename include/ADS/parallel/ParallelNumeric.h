@@ -50,7 +50,7 @@
  *      doi:10.1109/IPDPS.2014.110
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

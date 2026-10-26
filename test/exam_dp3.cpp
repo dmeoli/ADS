@@ -16,7 +16,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -2218,12 +2218,12 @@ ADS_TEST( "dp-100" )
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/
-/*--------------- dp-101, 2025-07-14, Massima espressivita' ----------------*/
+/*--------------- dp-101, 2025-07-14, Massima espressività -----------------*/
 /*--------------------------------------------------------------------------*/
 
 namespace dp {
 
-/// Massima espressivita': the largest value of V[ 0 ] op[ 0 ] V[ 1 ] ...
+/// Massima espressività: the largest value of V[ 0 ] op[ 0 ] V[ 1 ] ...
 /// V[ n - 1 ] over all the parenthesizations, op of '+' and '*', V
 /// positive. DP[ i ][ i ] = V[ i ], DP[ i ][ j ] = max over i <= k < j of
 /// DP[ i ][ k ] op[ k ] DP[ k + 1 ][ j ], by increasing length, enough since

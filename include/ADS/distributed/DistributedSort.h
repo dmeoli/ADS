@@ -49,7 +49,7 @@
  *      Architectures (SPAA), 13-23, 2015, doi:10.1145/2755573.2755595
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

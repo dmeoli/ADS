@@ -20,7 +20,7 @@
  *   hamiltonianChain() (unoriented, exercise 18.14), longestPath() and
  *   longestPathDag(), polynomial on an acyclic graph (exercise 18.15),
  *   boundedSpanningTree() (exercise 18.16);
- * - satisfiable() (SODDISFATTIBILITA'), lp01() (PROGRAMMAZIONE LINEARE
+ * - satisfiable() (SODDISFATTIBILITÀ), lp01() (PROGRAMMAZIONE LINEARE
  *   0/1);
  * - partition(), subsetSumExists(), knapsackDecision() (ZAINO, exercise
  *   18.5), multiprocessorScheduling(), exactCover3() (exercise 18.7),
@@ -42,7 +42,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */

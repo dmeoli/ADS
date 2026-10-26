@@ -34,7 +34,7 @@
  *      (PDP), 52-59, 2014, doi:10.1109/PDP.2014.13
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

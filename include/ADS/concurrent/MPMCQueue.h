@@ -30,7 +30,7 @@
  *      doi:10.4230/LIPIcs.DISC.2019.28 (the rings with a cycle per place)
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

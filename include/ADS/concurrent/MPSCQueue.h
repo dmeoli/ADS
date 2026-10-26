@@ -51,7 +51,7 @@
  *      stacks of the lanes and of the given back blocks)
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */

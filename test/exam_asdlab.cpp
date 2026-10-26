@@ -18,7 +18,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -1018,7 +1018,7 @@ inline std::vector< int > topOrder( int n , const Arcs & A )
  return( topsort( arrayGraph( n , A ) ) );
  }
 
-/*--------------------- 2026-11-26, Cammino piu' lungo ---------------------*/
+/*--------------------- 2026-11-26, Cammino più lungo ----------------------*/
 
 /// the most arcs of a path of a directed acyclic graph: the largest layer
 /// of longestPathLayering() of the library, each arc u -> v giving L[ v ]
@@ -2987,7 +2987,7 @@ ADS_TEST( "asdlab-2026-lab05-toporder" )
  CHECK_THROWS( topOrder( 2 , { { 0 , 2 } } ) , contract_violation );
  }
 
-/*--------------------- 2026-11-26, Cammino piu' lungo ---------------------*/
+/*--------------------- 2026-11-26, Cammino più lungo ----------------------*/
 
 // the most arcs of a path from u, by all the paths
 int longestFrom( int u , const std::vector< std::vector< int > > & adj )

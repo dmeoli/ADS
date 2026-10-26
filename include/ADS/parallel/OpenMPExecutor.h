@@ -20,7 +20,7 @@
  *      Interface, version 5.2, 2021, https://www.openmp.org/spec-html/5.2/
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

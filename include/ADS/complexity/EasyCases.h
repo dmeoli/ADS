@@ -6,7 +6,7 @@
  * problems close to NP-hard ones but solvable in polynomial time, and the
  * special cases that the Conclusione names, the interval graphs:
  *
- * - twoSat(), SODDISFATTIBILITA' with at most two literals per clause, by
+ * - twoSat(), SODDISFATTIBILITÀ with at most two literals per clause, by
  *   the graph of the implications \f$ \neg a \Rightarrow b \f$ and
  *   \f$ \neg b \Rightarrow a \f$ of each clause \f$ a \vee b \f$: the formula
  *   is satisfiable if and only if no variable is in the strongly connected
@@ -39,7 +39,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */

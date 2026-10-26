@@ -42,7 +42,7 @@
  *      Transform, SIAM, 1992, doi:10.1137/1.9781611970999
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

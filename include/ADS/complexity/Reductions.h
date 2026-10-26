@@ -11,7 +11,7 @@
  *   in the square ( i , j ), only u_000 in ( 0 , 0 ), joined to the nodes
  *   of the squares not adjacent and to those of the adjacent squares whose
  *   tile fits, and k = n^2;
- * - DOMINO LIMITATO to SODDISFATTIBILITA' (Teorema 18.3): u_000, a tile at
+ * - DOMINO LIMITATO to SODDISFATTIBILITÀ (Teorema 18.3): u_000, a tile at
  *   least and one at most in each square, and no two tiles that do not fit
  *   side by side;
  * - DOMINO LIMITATO to PROGRAMMAZIONE LINEARE 0/1 (Teorema 18.4): x_000 =
@@ -49,7 +49,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -95,7 +95,7 @@ inline int tileVar( int h , int i , int j , int n );
 inline std::pair< Adjacency , int > dominoToClique(
                                    const std::vector< Tile > & D , int n );
 
-/// DOMINO LIMITATO to SODDISFATTIBILITA', on the m n^2 variables of
+/// DOMINO LIMITATO to SODDISFATTIBILITÀ, on the m n^2 variables of
 /// tileVar()
 /// \pre n >= 1 and D is not empty
 /// \post the literals are variables of [ 0 , m n^2 )

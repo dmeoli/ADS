@@ -6,7 +6,7 @@
  * problems, the certificates, the nondeterministic algorithms simulated by
  * enumeration, the linear tiling in polynomial time, the reduction of the
  * sorting to the convex hull, the reductions of the square tiling to
- * CRICCA, SODDISFATTIBILITA' and PROGRAMMAZIONE LINEARE 0/1 on Figura 18.8
+ * CRICCA, SODDISFATTIBILITÀ and PROGRAMMAZIONE LINEARE 0/1 on Figura 18.8
  * and on random tiles, the other reductions on random instances, and the
  * exercises 18.1 to 18.16, each a test named after it.
  *
@@ -15,7 +15,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */

@@ -46,7 +46,7 @@
  *      682-694, 2007, doi:10.1007/978-3-540-74466-5_72
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/

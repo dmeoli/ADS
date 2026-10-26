@@ -23,7 +23,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -197,7 +197,7 @@ void printElegantFast( int n , F && f )
  }
 
 /*--------------------------------------------------------------------------*/
-/* 29. 2023-01-17, Min-Cardinalita'                                         */
+/* 29. 2023-01-17, Min-Cardinalità                                          */
 /*--------------------------------------------------------------------------*/
 
 /// minCardinality(): the non-empty subsets of { 1 , ... , n } whose minimum
@@ -348,7 +348,7 @@ void printCycles( const Adjacency & G , int start , F && f )
  }
 
 /*--------------------------------------------------------------------------*/
-/* 34. 2024-02-01, Meta' o meno                                             */
+/* 34. 2024-02-01, Metà o meno                                              */
 /*--------------------------------------------------------------------------*/
 
 /// lessThanHalf(): the sequences of positive integers from n, each item at
@@ -1023,7 +1023,7 @@ ADS_TEST( "backtrack-28" )
  }
 
 /*--------------------------------------------------------------------------*/
-/* 29. 2023-01-17, Min-Cardinalita'                                         */
+/* 29. 2023-01-17, Min-Cardinalità                                          */
 /*--------------------------------------------------------------------------*/
 
 // minCardinality() on the example n = 6, against the 2^n subsets with
@@ -1318,7 +1318,7 @@ ADS_TEST( "backtrack-33" )
  }
 
 /*--------------------------------------------------------------------------*/
-/* 34. 2024-02-01, Meta' o meno                                             */
+/* 34. 2024-02-01, Metà o meno                                              */
 /*--------------------------------------------------------------------------*/
 
 // lessThanHalf() on the example n = 7, and for n <= 150 each sequence
