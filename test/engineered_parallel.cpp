@@ -350,19 +350,26 @@ ADS_TEST( "parallel-sort" )
      CHECK( S == T );
      }
     // doubles with -0 and +0 among them: the stable sort keeps their
-    // order, as std::stable_sort
+    // order, that of the pairs ( item , index ) sorted (not that of
+    // std::stable_sort, which in libc++ sorts the parts of 1024 to 32768
+    // doubles by a radix sort that puts -0 before +0)
     {
      std::vector< double > A( n );
      for( std::size_t i = 0 ; i < n ; ++i )
       A[ i ] = ( k[ i ] % 5 == 0 ) ? ( i % 2 ? -0.0 : 0.0 )
                                    : double( std::int64_t( k[ i ] ) ) / 7;
-     std::vector< double > B = A , C = A , D = A , A0 = A;
+     std::vector< double > C = A , D = A , A0 = A;
+     std::vector< std::size_t > ix( n );
+     std::iota( ix.begin() , ix.end() , std::size_t( 0 ) );
+     std::sort( ix.begin() , ix.end() , [ & ]( std::size_t a ,
+                                               std::size_t b ) {
+      return( ( A0[ a ] < A0[ b ] ) ||
+              ( ! ( A0[ b ] < A0[ a ] ) && ( a < b ) ) ); } );
      ADS::stableSort( ex , A );
-     std::stable_sort( B.begin() , B.end() );
      bool same = true;
      for( std::size_t i = 0 ; i < n ; ++i )
       same = same && ( std::bit_cast< std::uint64_t >( A[ i ] ) ==
-                       std::bit_cast< std::uint64_t >( B[ i ] ) );
+                       std::bit_cast< std::uint64_t >( A0[ ix[ i ] ] ) );
      CHECK( same );
      ADS::sort( ex , C , std::greater<>() );
      std::sort( D.begin() , D.end() , std::greater<>() );
