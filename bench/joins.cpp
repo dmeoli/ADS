@@ -20,7 +20,8 @@
  *
  * Each cell is the median of r runs, in nanoseconds per key of the two
  * trees (per pair of the batch for the insertion and the construction),
- * of the operation alone: the trees are built before each run, not timed.
+ * of the operation alone: the trees are built before each run, and checked
+ * and freed after it, out of the time.
  * The benchmark of a cell is "joins <operation> t<t>"; its first structure
  * runs twice, the second time as "A/A", and ADS_BENCH_WHO and
  * ADS_BENCH_LIST pick the structures [see Bench.h], so that run.sh runs
@@ -95,12 +96,15 @@ Input input( std::size_t n , std::size_t m , unsigned seed )
  return( in );
  }
 
-/// the checksum of the keys of a tree of ADS
+/// the checksum of the keys of a tree of ADS (or of a pam_map)
 template< class T >
 std::uint64_t sum( const T & t )
 {
  std::uint64_t s = 0;
- t.forEach( [ & ]( const Key & k , const Key & ) { s += k; } );
+ if constexpr( requires { t.forEach( []( const Key & , const Key & ) {} ); } )
+  t.forEach( [ & ]( const Key & k , const Key & ) { s += k; } );
+ else
+  T::foreach_seq( t , [ & ]( const auto & e ) { s += e.first; } );
  return( s + t.size() );
  }
 
@@ -111,6 +115,16 @@ std::uint64_t sum( const std::map< Key , Key > & m )
  for( const auto & kv : m ) s += kv.first;
  return( s + m.size() );
  }
+
+/// the two trees of a run, whose checksum goes to *got when the run is
+/// over: the destructor runs after the clock of median() has stopped, so
+/// that the visit of the whole result is not timed
+template< class T >
+struct Run {
+ std::unique_ptr< T > first , second;   ///< the two trees
+ std::uint64_t * got;                   ///< where the checksum goes
+ ~Run() { if( first ) *got = sum( *first ); }
+ };
 
 /// the operations of the cells, by name
 const char * const kOps[] = { "union" , "intersection" , "difference" ,
@@ -134,7 +148,7 @@ void adsCells( const std::string & who , ThreadPool & pool , int t ,
      auto x = std::make_unique< T >() , y = std::make_unique< T >();
      if( op != 4 ) x->multiInsert( in.a );
      if( op < 3 ) y->multiInsert( in.b );
-     return( std::make_pair( std::move( x ) , std::move( y ) ) );
+     return( Run< T >{ std::move( x ) , std::move( y ) , &got } );
      };
     auto work = [ & ]( auto & s ) {
      T & x = *s.first;
@@ -153,7 +167,6 @@ void adsCells( const std::string & who , ThreadPool & pool , int t ,
       Sequential seq;
       go( seq );
       }
-     got = sum( x );
      };
     const std::size_t ops = op == 3 ? m : ( op == 4 ? n : n + m );
     const double ns = median( prep , work , runs , ops );
@@ -208,7 +221,8 @@ int main( int argc , char ** argv )
            y = std::make_unique< std::map< Key , Key > >();
       if( op != 4 ) x->insert( in.a.begin() , in.a.end() );
       if( op < 3 ) y->insert( in.b.begin() , in.b.end() );
-      return( std::make_pair( std::move( x ) , std::move( y ) ) );
+      return( Run< std::map< Key , Key > >{ std::move( x ) , std::move( y ) ,
+                                            &got } );
       };
      auto work = [ & ]( auto & s ) {
       auto & x = *s.first;
@@ -239,7 +253,6 @@ int main( int argc , char ** argv )
         x.insert( in.a.begin() , in.a.end() );
         break;
        }
-      got = sum( x );
       };
      const std::size_t ops = op == 3 ? m : ( op == 4 ? n : n + m );
      const double ns = median( prep , work , o.runs , ops );
@@ -279,7 +292,7 @@ int main( int argc , char ** argv )
       auto x = std::make_unique< M >() , y = std::make_unique< M >();
       if( op != 4 ) *x = M( in.a.begin() , in.a.end() );
       if( op < 3 ) *y = M( in.b.begin() , in.b.end() );
-      return( std::make_pair( std::move( x ) , std::move( y ) ) );
+      return( Run< M >{ std::move( x ) , std::move( y ) , &got } );
       };
      auto work = [ & ]( auto & s ) {
       M & x = *s.first;
@@ -293,9 +306,6 @@ int main( int argc , char ** argv )
        case 3: x = M::multi_insert( std::move( x ) , in.b ); break;
        default: x = M( in.a.begin() , in.a.end() ); break;
        }
-      std::uint64_t r = x.size();
-      M::foreach_seq( x , [ & ]( const auto & e ) { r += e.first; } );
-      got = r;
       };
      const std::size_t ops = op == 3 ? m : ( op == 4 ? n : n + m );
      const double ns = median( prep , work , o.runs , ops );
