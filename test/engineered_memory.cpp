@@ -134,11 +134,11 @@ ADS_TEST( "pool-resource" )
  CHECK( r.size() == 0 );
  const std::size_t kept = r.bytes();
  CHECK( kept > 0 );
- void * p = r.allocate< 24 >();
- r.deallocate< 24 >( p );
- void * q = r.allocate< 32 >();             // the same class, the same slot
+ void * p = r.allocate< 24 , 16 >();       // aligned to 16, as max_align_t
+ r.deallocate< 24 , 16 >( p );              // is not everywhere
+ void * q = r.allocate< 32 , 16 >();        // the same class, the same slot
  CHECK( q == p && r.size() == 1 );
- r.deallocate< 32 >( q );
+ r.deallocate< 32 , 16 >( q );
  void * big = r.allocate< 4096 >();         // operator new
  CHECK( r.size() == 0 && r.bytes() == kept );
  r.deallocate< 4096 >( big );
@@ -215,29 +215,34 @@ ADS_TEST( "pool-allocator-propagation" )
 {
  PoolResource<> r , s;
  using A = PoolAllocator< Counted >;
+ std::size_t h = 0;                         // the slots of an empty list,
+ {                                          // its sentinel on MSVC
+  const std::list< Counted , A > E{ A( r ) };
+  h = r.size();
+  }
  {
   std::list< Counted , A > L{ A( r ) } , M{ A( s ) };
   for( int i = 0 ; i < 100 ; ++i ) {
    L.emplace_back( std::to_string( i ) );
    M.emplace_back( std::to_string( -i ) );
    }
-  CHECK( r.size() == 100 && s.size() == 100 );
+  CHECK( r.size() == 100 + h && s.size() == 100 + h );
   M = L;                                    // the copy takes r
   CHECK( M.get_allocator().resource() == &r && s.size() == 0 &&
-         r.size() == 200 && std::ranges::equal( L , M ) );
+         r.size() == 200 + 2 * h && std::ranges::equal( L , M ) );
   std::list< Counted , A > N{ A( s ) };
   N.emplace_back( "x" );
   N = std::move( L );                       // the move takes r
   CHECK( N.get_allocator().resource() == &r && s.size() == 0 &&
-         r.size() == 200 && N.size() == 100 );
+         r.size() == 200 + 3 * h && N.size() == 100 );
   std::list< Counted , A > O{ A( s ) };
   O.emplace_back( "y" );
   O.swap( N );                              // the swap swaps them
   CHECK( O.get_allocator().resource() == &r &&
          N.get_allocator().resource() == &s && N.size() == 1 &&
-         s.size() == 1 );
+         s.size() == 1 + h );
   std::list< Counted , A > C( O );          // the copy keeps r
-  CHECK( C.get_allocator().resource() == &r && r.size() == 300 );
+  CHECK( C.get_allocator().resource() == &r && r.size() == 300 + 4 * h );
   }
  CHECK( r.size() == 0 && s.size() == 0 && Counted::alive == 0 );
  }
@@ -284,16 +289,16 @@ ADS_TEST( "concurrent-pool" )
    requests( r , b , a );
  CHECK( r.heaps() == 1 && r.bytes() == ConcurrentPoolResource<>::SEGMENT &&
         s.heaps() == 0 );
- void * p = r.allocate< 40 >();
- r.deallocate< 40 >( p );
- CHECK( r.allocate< 48 >() == p );
- r.deallocate< 48 >( p );
+ void * p = r.allocate< 40 , 16 >();       // aligned to 16, as max_align_t
+ r.deallocate< 40 , 16 >( p );              // is not everywhere
+ CHECK( ( r.allocate< 48 , 16 >() == p ) );
+ r.deallocate< 48 , 16 >( p );
  r.collect();
- CHECK( r.allocate< 33 >() == p );
+ CHECK( ( r.allocate< 33 , 16 >() == p ) );
  void * q = s.allocate< 33 >();
  CHECK( q != p && s.heaps() == 1 );
  s.deallocate< 33 >( q );
- r.deallocate< 33 >( p );
+ r.deallocate< 33 , 16 >( p );
  // more pages than a segment holds, all written
  std::vector< void * > P;
  for( int i = 0 ; i < 20000 ; ++i ) {
