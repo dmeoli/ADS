@@ -112,7 +112,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
-            assembly fingerprints multi lce parallel \
+            assembly fingerprints multi lce parallel joins \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -339,6 +339,13 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(PARFLAGS)
+
+# the bulk operations of the trees based on join: PAM=<dir> (its sources)
+# with PARLAY=<dir> (those of ParlayLib) adds pam_map
+JOINFLAGS = $(if $(PAM),-DADS_HAS_PAM -isystem $(PAM)/include \
+            -isystem $(PARLAY)/include) -pthread
+$(BUILD)/bench-joins: bench/joins.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(JOINFLAGS)
 
 # the sort over the processes of MPI, by mpicxx (not among BENCHES): make
 # $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi

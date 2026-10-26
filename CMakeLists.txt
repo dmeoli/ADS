@@ -120,7 +120,7 @@ if (ADS_BENCHMARKS)
                search suffix edit numeric queues concurrent geometry matrix
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries allocators positions assembly fingerprints multi lce
-               parallel)
+               parallel joins)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -135,6 +135,7 @@ if (ADS_BENCHMARKS)
         target_link_libraries(bench-bignum PRIVATE ${GMPXX_LIB} ${GMP_LIB})
     endif ()
     target_link_libraries(bench-concurrent PRIVATE Threads::Threads)
+    target_link_libraries(bench-joins PRIVATE Threads::Threads)
     # the competitors of bench-parallel: OpenMP and the parallel mode of
     # libstdc++, oneTBB with the policies of std::execution, ParlayLib from
     # the directory of its sources ADS_PARLAY, the parallel IPS4o and IPS2Ra

@@ -74,12 +74,14 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/tree/JoinAlgorithms.h"
 
 #include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -96,9 +98,28 @@ namespace ADS {
 /// the color of a node of a Red-Black tree
 enum class Color : unsigned char { RED , BLACK };
 
-/// a binary search tree, balanced as a Red-Black tree if RB
 template< std::totally_ordered K , class V , bool RB >
-class SearchTree {
+class SearchTree;
+
+/// the adaptor of the nodes of a Red-Black tree [see JoinAdaptor]
+template< std::totally_ordered K , class V , bool RB >
+struct SearchTreeNodes;
+
+/// the base of a binary search tree that is not balanced: no operation
+/// based on join, whose recursion would be as deep as the tree
+struct NotJoinable {};
+
+/// a binary search tree, balanced as a Red-Black tree if RB, and then with
+/// the operations based on join [see Joinable]
+template< std::totally_ordered K , class V , bool RB >
+class SearchTree
+ : public std::conditional_t< RB ,
+                              Joinable< SearchTree< K , V , RB > ,
+                                        SearchTreeNodes< K , V , RB > ,
+                                        K , V > ,
+                              NotJoinable > {
+
+ friend struct SearchTreeNodes< K , V , RB >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -112,6 +133,7 @@ class SearchTree {
   Link * left;                  ///< the left child
   Link * right;                 ///< the right child
   Color color = Color::BLACK;   ///< the color, read only if RB
+  std::size_t size = 0;         ///< the nodes of the subtree, 0 for nil
   };
 
  /// a node of the tree, with its key and its value
@@ -255,7 +277,7 @@ class SearchTree {
   return( const_iterator( this , min() ) );
   }
  [[nodiscard]] const_iterator end( void ) const {
-  return( const_iterator( this , f_nil.get() ) );
+  return( const_iterator( this , nil() ) );
   }
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
@@ -263,13 +285,11 @@ class SearchTree {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the order of the keys, the parents, the number of nodes and, if RB,
- /// the constraints (V1)-(V4), \f$ O( n ) \f$
+ /// the order of the keys, the parents, the number of nodes, the sizes of
+ /// the subtrees and, if RB, the constraints (V1)-(V4), $ O( n ) $
  [[nodiscard]] bool valid( void ) const;
 
  [[nodiscard]] Link * nil( void ) const;
-
- void clear_nil( void );
 
  static K & key_ref( Link * u );
 
@@ -313,14 +333,16 @@ class SearchTree {
 
  void balanceInsert( Link * t );
 
- /// balanceDelete(): the cases (1) to (4) with t a left child, and their
- /// mirrors (5) to (8), the same code with left and right swapped
- void balanceDelete( Link * t );
+ /// balanceDelete(): the cases (1) to (4) with t a left child of p, and
+ /// their mirrors (5) to (8), the same code with left and right swapped
+ void balanceDelete( Link * t , Link * p );
 
 /*--------------------------------------------------------------------------*/
 
- std::unique_ptr< Link > f_nil;   ///< the sentinel leaf
- Link * f_root = f_nil.get();     ///< the root, the sentinel if empty
+ /// the sentinel leaf, one for all the trees of the type, never written
+ static Link s_nil;
+
+ Link * f_root = &s_nil;          ///< the root, the sentinel if empty
  std::size_t f_size = 0;          ///< the number of keys
 
  };  // end( class SearchTree )

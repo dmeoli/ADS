@@ -46,6 +46,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/tree/JoinAlgorithms.h"
 
 #include <algorithm>
 #include <concepts>
@@ -65,9 +66,20 @@ namespace ADS {
 /*------------------------------ CLASS Treap -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a DICTIONARY on a treap
 template< std::totally_ordered K , class V >
-class Treap {
+class Treap;
+
+/// the adaptor of the nodes of a Treap [see JoinAdaptor]
+template< std::totally_ordered K , class V >
+struct TreapNodes;
+
+/// a DICTIONARY on a treap, with the operations based on join [see
+/// Joinable]
+template< std::totally_ordered K , class V >
+class Treap
+ : public Joinable< Treap< K , V > , TreapNodes< K , V > , K , V > {
+
+ friend struct TreapNodes< K , V >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -103,6 +115,7 @@ class Treap {
   K key;
   V value;
   std::uint64_t priority;
+  std::size_t s = 1;             ///< the nodes of the subtree
   std::unique_ptr< Node > left , right;
   };
 
@@ -143,6 +156,8 @@ class Treap {
  private:
  using Ptr = std::unique_ptr< Node >;
 
+ static std::size_t sz( const Ptr & t ) { return( t ? t->s : 0 ); }
+ static void update( Ptr & t ) { t->s = 1 + sz( t->left ) + sz( t->right ); }
  static void rotateRight( Ptr & t );
  static void rotateLeft( Ptr & t );
  bool insert( Ptr & t , const K & k , const V & v );

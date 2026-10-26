@@ -45,6 +45,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/tree/JoinAlgorithms.h"
 
 #include <algorithm>
 #include <concepts>
@@ -63,9 +64,20 @@ namespace ADS {
 /*---------------------------- CLASS AVLTree -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a DICTIONARY on an AVL tree
 template< std::totally_ordered K , class V >
-class AVLTree {
+class AVLTree;
+
+/// the adaptor of the nodes of an AVLTree [see JoinAdaptor]
+template< std::totally_ordered K , class V >
+struct AVLTreeNodes;
+
+/// a DICTIONARY on an AVL tree, with the operations based on join [see
+/// Joinable]
+template< std::totally_ordered K , class V >
+class AVLTree
+ : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > , K , V > {
+
+ friend struct AVLTreeNodes< K , V >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -104,6 +116,7 @@ class AVLTree {
   K key;
   V value;
   int h = 0;                     ///< the height of the subtree
+  std::size_t s = 1;             ///< the nodes of the subtree
   std::unique_ptr< Node > left , right;
   };
 
@@ -145,6 +158,7 @@ class AVLTree {
  using Ptr = std::unique_ptr< Node >;
 
  static int h( const Ptr & t ) { return( t ? t->h : -1 ); }
+ static std::size_t sz( const Ptr & t ) { return( t ? t->s : 0 ); }
  static void update( Ptr & t );
  static void rotateRight( Ptr & t );
  static void rotateLeft( Ptr & t );
@@ -154,7 +168,8 @@ class AVLTree {
  template< class F >
  static void visit( const Ptr & t , F & f );
 
- /// the order, the heights and the balance of the subtree, \f$ O( n ) \f$
+ /// the order, the heights, the sizes and the balance of the subtree,
+ /// $ O( n ) $
  static bool valid( const Ptr & t , const K * lo , const K * hi );
 
  Ptr f_root;              ///< the root

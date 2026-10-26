@@ -17,17 +17,19 @@
 namespace ADS {
 
 template< std::totally_ordered K , class V , bool RB >
+typename SearchTree< K , V , RB >::Link SearchTree< K , V , RB >::s_nil{
+ &s_nil , &s_nil , &s_nil , Color::BLACK , 0 };
+
+template< std::totally_ordered K , class V , bool RB >
 SearchTree< K , V , RB >::SearchTree( void )
- : f_nil( new Link )
 {
- clear_nil();
  }
 
 template< std::totally_ordered K , class V , bool RB >
 SearchTree< K , V , RB >::SearchTree( const SearchTree & o )
  : SearchTree()
 {
- f_root = copy( o , o.f_root , f_nil.get() );
+ f_root = copy( o , o.f_root , nil() );
  f_size = o.f_size;
  }
 
@@ -56,7 +58,6 @@ SearchTree< K , V , RB >::~SearchTree()
 template< std::totally_ordered K , class V , bool RB >
 void SearchTree< K , V , RB >::swap( SearchTree & o ) noexcept
 {
- std::swap( f_nil , o.f_nil );
  std::swap( f_root , o.f_root );
  std::swap( f_size , o.f_size );
  }
@@ -120,7 +121,6 @@ void SearchTree< K , V , RB >::clear( void )
   }
  f_root = nil();
  f_size = 0;
- clear_nil();
  }
 
 template< std::totally_ordered K , class V , bool RB >
@@ -217,6 +217,7 @@ bool SearchTree< K , V , RB >::valid( void ) const
   if( u == nil() )
    return( 0 );
   if( ( u->parent != p ) || ( ++count > f_size ) ||
+      ( u->size != 1 + u->left->size + u->right->size ) ||
       ( lo && !( *lo < key( u ) ) ) || ( hi && !( key( u ) < *hi ) ) )
    return( -1 );                         // the parent and the order
   const long l = self( self , u->left , u , lo , &key( u ) ) ,
@@ -236,6 +237,8 @@ bool SearchTree< K , V , RB >::valid( void ) const
  if( RB && ( ( f_root->color != Color::BLACK ) ||
              ( nil()->color != Color::BLACK ) ) )
   return( false );                       // (V1) and (V2)
+ if( ( nil()->size != 0 ) || ( f_root->size != f_size ) )
+  return( false );
  return( ( rec( rec , f_root , nil() , nullptr , nullptr ) >= 0 ) &&
          ( count == f_size ) );
  }
@@ -243,14 +246,7 @@ bool SearchTree< K , V , RB >::valid( void ) const
 template< std::totally_ordered K , class V , bool RB >
 auto SearchTree< K , V , RB >::nil( void ) const -> Link *
 {
- return( f_nil.get() );
- }
-
-template< std::totally_ordered K , class V , bool RB >
-void SearchTree< K , V , RB >::clear_nil( void )
-{
- f_nil->parent = f_nil->left = f_nil->right = f_nil.get();
- f_nil->color = Color::BLACK;
+ return( &s_nil );
  }
 
 template< std::totally_ordered K , class V , bool RB >
@@ -269,7 +265,7 @@ template< std::totally_ordered K , class V , bool RB >
 auto SearchTree< K , V , RB >::new_node( const K & x , const V & v ) -> Link *
 {
  ++f_size;
- return( new Node{ { nil() , nil() , nil() , Color::BLACK } , x , v } );
+ return( new Node{ { nil() , nil() , nil() , Color::BLACK , 1 } , x , v } );
  }
 
 template< std::totally_ordered K , class V , bool RB >
@@ -284,8 +280,9 @@ auto SearchTree< K , V , RB >::copy( const SearchTree & o , Link * u ,
  while( ! S.empty() ) {
   const Item it = S.back();
   S.pop_back();
-  Link * c = new Node{ { it.parent , nil() , nil() , it.from->color } ,
-                       key( it.from ) , value( it.from ) };
+  Link * c = new Node{ { it.parent , nil() , nil() , it.from->color ,
+                         it.from->size } , key( it.from ) ,
+                       value( it.from ) };
   *it.slot = c;
   if( it.from->left != o.nil() ) S.push_back( { it.from->left , c ,
                                                 &c->left } );
@@ -323,7 +320,8 @@ auto SearchTree< K , V , RB >::max( Link * T ) const -> Link *
 template< std::totally_ordered K , class V , bool RB >
 void SearchTree< K , V , RB >::link( Link * p , Link * u , const K & x )
 {
- u->parent = p;
+ if( u != nil() )             // the sentinel is never written
+  u->parent = p;
  if( p != nil() ) {
   if( x < key( p ) ) p->left = u;
   else p->right = u;
@@ -346,6 +344,8 @@ auto SearchTree< K , V , RB >::insertNode( Link * T , const K & x ,
   }
  Link * n = new_node( x , v );
  link( p , n , x );
+ for( Link * a = p ; a != nil() ; a = a->parent )   // the sizes above n
+  ++a->size;
  if constexpr( RB ) {
   balanceInsert( n );
   while( n->parent != nil() )
@@ -377,10 +377,12 @@ auto SearchTree< K , V , RB >::removeNode( Link * T , const K & x0 ) -> Link *
   t = u->left;
  else                                                    // (2) right, (1)
   t = u->right;
+ for( Link * a = u->parent ; a != nil() ; a = a->parent )   // the sizes
+  --a->size;
  link( u->parent , t , *x );
  if constexpr( RB )
   if( u->color == Color::BLACK )
-   balanceDelete( t );
+   balanceDelete( t , u->parent );   // mended: the parent, as t may be nil
  if( u->parent == nil() )
   T = t;
  delete static_cast< Node * >( u );
@@ -389,8 +391,6 @@ auto SearchTree< K , V , RB >::removeNode( Link * T , const K & x0 ) -> Link *
   if( T != nil() )
    while( T->parent != nil() )
     T = T->parent;
- if( T == nil() )
-  clear_nil();
  return( T );
  }
 
@@ -408,6 +408,8 @@ auto SearchTree< K , V , RB >::rotateLeft( Link * x ) -> Link *
   if( p->left == x ) p->left = y;
   else p->right = y;
   }
+ x->size = 1 + x->left->size + x->right->size;
+ y->size = 1 + y->left->size + y->right->size;
  return( y );
  }
 
@@ -425,6 +427,8 @@ auto SearchTree< K , V , RB >::rotateRight( Link * x ) -> Link *
   if( p->right == x ) p->right = y;
   else p->left = y;
   }
+ x->size = 1 + x->left->size + x->right->size;
+ y->size = 1 + y->left->size + y->right->size;
  return( y );
  }
 
@@ -468,10 +472,9 @@ void SearchTree< K , V , RB >::balanceInsert( Link * t )
  }
 
 template< std::totally_ordered K , class V , bool RB >
-void SearchTree< K , V , RB >::balanceDelete( Link * t )
+void SearchTree< K , V , RB >::balanceDelete( Link * t , Link * p )
 {
- while( ( t->parent != nil() ) && ( t->color == BLACK ) ) {  // mended
-  Link * p = t->parent;                                       // parent
+ while( ( p != nil() ) && ( t->color == BLACK ) ) {          // mended
   const bool L = ( t == p->left );
   Link * Link::* near = L ? &Link::left : &Link::right;
   Link * Link::* far = L ? &Link::right : &Link::left;
@@ -490,6 +493,7 @@ void SearchTree< K , V , RB >::balanceDelete( Link * t )
   else if( ( ns->color == BLACK ) && ( nd->color == BLACK ) ) {  // (2)
    f->color = RED;
    t = p;
+   p = t->parent;
    }
   else if( ( ns->color == RED ) && ( nd->color == BLACK ) ) {    // (3)
    ns->color = BLACK;
@@ -504,10 +508,102 @@ void SearchTree< K , V , RB >::balanceDelete( Link * t )
    t = f;                 // mended: t = T, the current root
    while( t->parent != nil() )
     t = t->parent;
+   p = nil();
    }
   }
- t->color = BLACK;        // on the sentinel too, which stays black
+ if( t != nil() )         // the sentinel is never written
+  t->color = BLACK;
  }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- SearchTreeNodes -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< std::totally_ordered K , class V , bool RB >
+struct SearchTreeNodes {
+ using T = SearchTree< K , V , RB >;
+ using Node = typename T::Link;     // nil is a Link, not a Node
+ using Key = K;
+ using Value = V;
+ using Rank = int;                  // the black height
+
+ static Node * nil( void ) { return( &T::s_nil ); }
+ static Node * left( const Node * t ) { return( t->left ); }
+ static Node * right( const Node * t ) { return( t->right ); }
+ static const K & key( const Node * t ) {
+  return( static_cast< const typename T::Node * >( t )->key );
+  }
+ static V & value( Node * t ) {
+  return( static_cast< typename T::Node * >( t )->value );
+  }
+ static std::size_t size( const Node * t ) { return( t->size ); }
+ static bool red( const Node * t ) { return( t->color == Color::RED ); }
+ static void paint( Node * t , bool r ) {
+  t->color = r ? Color::RED : Color::BLACK;
+  }
+ static void expose( Node * t , Node * & l , Node * & r ) {
+  l = t->left;
+  r = t->right;
+  t->left = t->right = nil();
+  }
+ static Node * connect( Node * m , Node * l , Node * r ) {
+  m->left = l;
+  m->right = r;
+  if( l != nil() ) l->parent = m;     // the sentinel is never written
+  if( r != nil() ) r->parent = m;
+  m->size = 1 + l->size + r->size;
+  return( m );
+  }
+ static void dispose( Node * t ) {     // iterative, as in clear()
+  std::vector< Node * > S;
+  if( t != nil() )
+   S.push_back( t );
+  while( ! S.empty() ) {
+   Node * u = S.back();
+   S.pop_back();
+   if( u->left != nil() ) S.push_back( u->left );
+   if( u->right != nil() ) S.push_back( u->right );
+   delete static_cast< typename T::Node * >( u );
+   }
+  }
+ static Rank rank( const Node * t ) {  // down the left path, O( log n )
+  Rank b = 0;
+  for( ; t != nil() ; t = t->left )
+   b += red( t ) ? 0 : 1;
+  return( b );
+  }
+ static Rank childRank( const Node * t , Rank b , const Node * ) {
+  return( b - ( red( t ) ? 0 : 1 ) );
+  }
+ static std::pair< Node * , Rank > join( Node * l , Rank bl , Node * m ,
+                                         Node * r , Rank br ) {
+  return( RedBlackJoin< SearchTreeNodes >::join( l , bl , m , r , br ) );
+  }
+
+ static Node * take( T & t ) {
+  Node * r = t.f_root;
+  t.f_root = nil();
+  t.f_size = 0;
+  return( r );
+  }
+ static void put( T & t , Node * r ) {
+  if( r != nil() ) {
+   r->parent = nil();
+   r->color = Color::BLACK;           // (V1)
+   }
+  t.f_root = r;
+  t.f_size = r->size;
+  }
+ static Node * peek( const T & t ) { return( t.f_root ); }
+ static T fresh( T & ) { return( T() ); }
+ static bool valid( const T & t ) { return( t.valid() ); }
+ static std::uint64_t salt( T & ) { return( 0 ); }
+ static Node * make( const K & k , const V & v , std::uint64_t ,
+                     std::size_t ) {
+  return( new typename T::Node{ { nil() , nil() , nil() , Color::BLACK ,
+                                  1 } , k , v } );
+  }
+ };
 
 /*--------------------------------------------------------------------------*/
 

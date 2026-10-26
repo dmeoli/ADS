@@ -1741,3 +1741,15 @@ engineered_parallel  parallel-fft        trasformata in quattro passi
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
 engineered_parallel  parallel-lcp        array LCP permutato
 engineered_parallel  concurrent-union-find  union-find concorrente
+
+# the balanced trees based on join and the augmented maps, beyond the book
+join_trees  split-join-edges      split e join ai bordi, lati vuoti, altezze
+join_trees  split-join-random     split e join a caso contro std::map
+join_trees  set-operations        unione, intersezione, differenza ai bordi
+join_trees  batches               inserimenti e rimozioni a lotti, filtro
+join_trees  extract-range         estrazione di un intervallo di chiavi
+join_trees  join-tree-dictionary  JoinTree come dizionario, quattro schemi
+join_trees  augmented-maps        mappe aumentate contro la forza bruta
+join_trees  interval-tree         albero degli intervalli, query di stabbing
+join_trees  range-tree            albero di range 2D, conteggi nei rettangoli
+join_trees  join-executors        Sequential e ThreadPool, risultati uguali
