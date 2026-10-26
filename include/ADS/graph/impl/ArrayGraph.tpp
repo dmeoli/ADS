@@ -96,6 +96,37 @@ void ArrayGraph< W >::forEachEdge( int u , F && f ) const
   f( f_to[ k ] , f_w[ k ] );
  }
 
+template< class W >
+std::optional< W > ArrayGraph< W >::weight( int u , int v ) const
+{
+ if( ! hasNode( u ) )
+  return( std::nullopt );
+ for( int k = f_off[ u ] ; k < f_off[ u + 1 ] ; ++k )
+  if( f_to[ k ] == v )
+   return( f_w[ k ] );
+ return( std::nullopt );
+ }
+
+template< class W >
+bool ArrayGraph< W >::setWeight( int u , int v , const W & w )
+{
+ ADS_PRE( hasNode( u ) && hasNode( v ) );
+ // the first arc ( u , v ) of the row of u, and its twin if unoriented
+ auto set = [ & ]( int a , int b ) {
+  for( int k = f_off[ a ] ; k < f_off[ a + 1 ] ; ++k )
+   if( f_to[ k ] == b ) {
+    f_w[ k ] = w;
+    return( true );
+    }
+  return( false );
+  };
+ if( ! set( u , v ) )
+  return( false );
+ if( ! f_directed )
+  set( v , u );
+ return( true );
+ }
+
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE VECTORS -------------------------------*/
 /*--------------------------------------------------------------------------*/

@@ -51,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tree against std::set, std::map and brute force, on Sequential and on
   ThreadPool with 1, 2 and 8 threads; bench/joins.cpp, the bulk
   operations against std::map and, with PAM=<dir>, pam_map
+- ArrayGraph and StaticGraph: weight( u , v ) and setWeight( u , v , w );
+  FlowNetwork: addNode() and setCapacity()
 - bench/bignum.cpp: the squares, the gcd of two numbers with a common
   factor of 3 and the integer square root of 2n digits, the length of 1024
   digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>

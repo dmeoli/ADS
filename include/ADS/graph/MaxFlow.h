@@ -119,6 +119,15 @@ class FlowNetwork {
  /// \pre \f$ u \f$ and \f$ v \f$ are nodes, \f$ c \ge 0 \f$
  int addEdge( int u , int v , long long c );
 
+ /// a new node, with no edge, and its number
+ int addNode( void );
+
+ /// the capacity of the edge number \f$ e \f$ set to \f$ c \f$, its flow
+ /// kept
+ /// \pre \f$ e \f$ is the number of an edge, \f$ c \ge 0 \f$ and
+ ///      \f$ c \ge \f$ `flow( e )`
+ void setCapacity( int e , long long c );
+
  /// the flow on the edge number \f$ e \f$
  /// \pre \f$ e \f$ is the number of an edge
  [[nodiscard]] long long flow( int e ) const;

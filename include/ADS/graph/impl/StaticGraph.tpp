@@ -160,6 +160,46 @@ void StaticGraph< W >::forEachEdge( int u , F && f ) const
  }
 
 template< class W >
+int StaticGraph< W >::find( int u , int v ) const
+{
+ if( ! hasNode( u ) )
+  return( -1 );
+ const Arc * const a = f_arc.data() + f_off[ u ];
+ const Arc * const end = f_arc.data() + f_off[ u + 1 ];
+ const Arc * k = std::partition_point( a , end , [ & ]( const Arc & x ) {
+  return( head( x ) < v ); } );
+ return( ( k != end ) && ( head( *k ) == v ) ? int( k - f_arc.data() ) :
+                                               -1 );
+ }
+
+template< class W >
+std::optional< W > StaticGraph< W >::weight( int u , int v ) const
+ requires( weighted )
+{
+ const int k = find( u , v );
+ if( k < 0 )
+  return( std::nullopt );
+ return( f_arc[ k ].w );
+ }
+
+template< class W >
+bool StaticGraph< W >::setWeight( int u , int v , const W & w )
+ requires( weighted )
+{
+ ADS_PRE( hasNode( u ) && hasNode( v ) );
+ const int k = find( u , v );
+ if( k < 0 )
+  return( false );
+ f_arc[ k ].w = w;
+ if( ! f_directed ) {
+  const int h = find( v , u );
+  if( h >= 0 )
+   f_arc[ h ].w = w;
+  }
+ return( true );
+ }
+
+template< class W >
 std::span< const typename StaticGraph< W >::Arc > StaticGraph< W >::out(
                                                              int u ) const
 {

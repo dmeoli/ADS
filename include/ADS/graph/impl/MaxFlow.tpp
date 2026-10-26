@@ -38,6 +38,20 @@ inline int FlowNetwork::addEdge( int u , int v , long long c )
  return( int( f_e.size() ) - 2 );
  }
 
+inline int FlowNetwork::addNode( void )
+{
+ f_adj.emplace_back();
+ return( n() - 1 );
+ }
+
+inline void FlowNetwork::setCapacity( int e , long long c )
+{
+ ADS_PRE( ( e >= 0 ) && ( e < int( f_e.size() ) ) && ( e % 2 == 0 ) &&
+          ( c >= 0 ) && ( c >= f_e[ e ].flow ) );
+ f_e[ e ].cap = c;
+ ADS_INVARIANT( skewSymmetric() );
+ }
+
 inline long long FlowNetwork::flow( int e ) const
 {
  ADS_PRE( ( e >= 0 ) && ( e < int( f_e.size() ) ) );

@@ -37,6 +37,7 @@
 #include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 
+#include <optional>
 #include <ranges>
 #include <span>
 #include <tuple>
@@ -121,6 +122,16 @@ class ArrayGraph {
  /// \pre \f$ u \f$ is a node
  template< class F >
  void forEachEdge( int u , F && f ) const;
+
+ /// the weight of \f$ ( u , v ) \f$, nothing if there is no such edge,
+ /// in \f$ O( |\mathrm{adj}( u )| ) \f$
+ [[nodiscard]] std::optional< W > weight( int u , int v ) const;
+
+ /// the weight of \f$ ( u , v ) \f$ set to \f$ w \f$ (of both its arcs if
+ /// unoriented), in \f$ O( |\mathrm{adj}( u )| + |\mathrm{adj}( v )| )
+ /// \f$; false if there is no such edge
+ /// \pre \f$ u \f$ and \f$ v \f$ are nodes
+ bool setWeight( int u , int v , const W & w );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

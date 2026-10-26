@@ -66,7 +66,9 @@
 #include "ADS/Contract.h"
 #include "ADS/graph/Graph.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <ranges>
 #include <span>
 #include <tuple>
@@ -194,6 +196,19 @@ class StaticGraph {
  template< class F >
  void forEachEdge( int u , F && f ) const requires( weighted );
 
+ /// the weight of the first arc \f$ ( u , v ) \f$, nothing if there is
+ /// none, by a binary search of the row of \f$ u \f$, in
+ /// \f$ O( \log |\mathrm{adj}( u )| ) \f$
+ [[nodiscard]] std::optional< W > weight( int u , int v ) const
+  requires( weighted );
+
+ /// the weight of the first arc \f$ ( u , v ) \f$ set to \f$ w \f$, and
+ /// that of the first arc \f$ ( v , u ) \f$ if the graph is unoriented,
+ /// in \f$ O( \log |\mathrm{adj}( u )| + \log |\mathrm{adj}( v )| ) \f$;
+ /// false if there is no such arc
+ /// \pre \f$ u \f$ and \f$ v \f$ are nodes
+ bool setWeight( int u , int v , const W & w ) requires( weighted );
+
  /// the arcs out of \f$ u \f$, contiguous
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::span< const Arc > out( int u ) const;
@@ -250,6 +265,10 @@ class StaticGraph {
  /// on the tail
  template< class Edges , class Get >
  void build( int n , const Edges & E , Get && get );
+
+ /// the place of the first arc \f$ ( u , v ) \f$, \f$ -1 \f$ if there is
+ /// none
+ [[nodiscard]] int find( int u , int v ) const;
 
  /// the offsets do not decrease and end at the number of arcs, whose heads
  /// are nodes, increasing in each row
