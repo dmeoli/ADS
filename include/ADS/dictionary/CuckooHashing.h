@@ -2,27 +2,26 @@
 /*-------------------------- File CuckooHashing.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The cuckoo hashing of Pagh and Rodler, beyond the book: each key k is in
- * one of the two places \f$ h_1( k ) \f$ and \f$ h_2( k ) \f$ of a table of
- * m places, so that a search and a removal look at two places, O( 1 ) time
- * in the worst case. An insertion puts k in the first empty one of its two
- * places, else in \f$ h_1( k ) \f$, evicting the key y there, which moves to
- * its other place, possibly evicting another key, and so on; after
- * MaxLoop evictions the insertion gives up and the table is rebuilt with
- * two new functions (a rehash). In the cuckoo graph, whose vertices are the
- * places and whose edges are the keys, the evictions follow a path from a
- * place of k, and an insertion fails only if the component of k has more
- * than one cycle; for \f$ m \ge 2 c n \f$ two places are joined by a
- * shortest path of length L with probability at most \f$ c^{-L} / m \f$
- * (Theorem 8.9 of the notes), a key is in the bucket of another with
- * probability O( 1 / m ), and a cycle in the final graph has probability at
- * most \f$ 1 / ( c - 1 ) \f$, at most 1 / 2 for \f$ m \ge 6 n ( 1 +
- * \epsilon ) \f$: an insertion takes O( 1 ) amortized expected time. With
- * one table and both functions on it the graph is a random graph of m
- * vertices and n edges, whose components have at most one cycle with high
- * probability while \f$ n / m < 1 / 2 \f$; the table doubles past the load
- * maxLoad (by default 0.4) and halves below maxLoad / 4, the global
- * rebuilding of the notes.
+ * The cuckoo hashing of Pagh and Rodler, beyond the book: each key k is in one
+ * of the two places \f$ h_1( k ) \f$ and \f$ h_2( k ) \f$ of a table of m
+ * places, so that a search and a removal look at two places, \f$ O( 1 ) \f$
+ * time in the worst case. An insertion puts k in the first empty one of its
+ * two places, else in \f$ h_1( k ) \f$, evicting the key y there, which moves
+ * to its other place, possibly evicting another key, and so on; after MaxLoop
+ * evictions the insertion gives up and the table is rebuilt with two new
+ * functions (a rehash). In the cuckoo graph, whose vertices are the places and
+ * whose edges are the keys, the evictions follow a path from a place of k, and
+ * an insertion fails only if the component of k has more than one cycle; for
+ * \f$ m \ge 2 c n \f$ two places are joined by a shortest path of length L
+ * with probability at most \f$ c^{-L} / m \f$ (Theorem 8.9 of the notes), a
+ * key is in the bucket of another with probability \f$ O( 1 / m ) \f$, and a
+ * cycle in the final graph has probability at most \f$ 1 / ( c - 1 ) \f$, at
+ * most 1 / 2 for \f$ m \ge 6 n ( 1 + \epsilon ) \f$: an insertion takes
+ * \f$ O( 1 ) \f$ amortized expected time. With one table and both functions on
+ * it the graph is a random graph of m vertices and n edges, whose components
+ * have at most one cycle with high probability while \f$ n / m < 1 / 2 \f$;
+ * the table doubles past the load maxLoad (by default 0.4) and halves below
+ * maxLoad / 4, the global rebuilding of the notes.
  *
  * A stash of s places (Kirsch, Mitzenmacher and Wieder) keeps the keys
  * whose insertion fails, lowering the probability of a rehash from

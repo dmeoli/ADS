@@ -6,7 +6,7 @@
  * beyond the book:
  *
  * - isPalindrome(), the characters pushed and then popped against the
- *   string from its start, O( n );
+ *   string from its start, \f$ O( n ) \f$;
  * - sortStack(), which sorts a stack with its own operations and the
  *   recursion: a pass pops two items, pushes back the larger, sorts the
  *   rest recursively and pushes the smaller on top, so that the least item
@@ -14,10 +14,10 @@
  *   \f$ O( n^2 ) \f$;
  * - removeGreater(), which removes the items larger than k keeping the
  *   order of the others, with an auxiliary stack;
- * - forEachBottomUp(), which visits the items from the bottom to the top
- *   and leaves the stack as it was: the top is popped, the rest visited
- *   recursively, then the top visited and pushed back, in O( n ) time and
- *   O( n ) space for the recursion.
+ * - forEachBottomUp(), which visits the items from the bottom to the top and
+ *   leaves the stack as it was: the top is popped, the rest visited
+ *   recursively, then the top visited and pushed back, in \f$ O( n ) \f$ time
+ *   and \f$ O( n ) \f$ space for the recursion.
  *
  * The contracts [see Contract.h]: sortStack() ensures a sorted stack with
  * the same number of items, and removeGreater() a stack with no item

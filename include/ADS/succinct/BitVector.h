@@ -2,35 +2,35 @@
 /*---------------------------- File BitVector.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The vector of bits on which the succinct structures and the integer codes
- * of ADS are built: the bits are packed in words of 64 bits, the bit i
- * being the bit i mod 64 (from the least significant one) of the word
- * \f$ \lfloor i / 64 \rfloor \f$, so that a field of up to 64 bits is read
- * or written with two shifts at most. Besides the random access to a bit,
- * in O( 1 ) time, BitVector appends a bit or a field of len bits, push_back()
- * and append(), in O( 1 ) amortized time, and reads a field of len bits,
- * get(), in O( 1 ) time; the space is \f$ n + O( 512 ) \f$ bits for n
- * bits, the vector of words doubling as std::vector does. The words are
- * whole lines of the cache of 64 bytes, with one word at least past the
- * last bit, and they start on a line (on a huge page from 2 MB on, which
- * spares the misses of the TLB of a random access); the bits past the size
- * are 0 (the invariant). Hence count() and the rank of a word [see
- * RankSelect.h] need no mask at the end, a field is read with no test of
- * the end, and a directory may read the words of a line of its own. Unlike
- * std::vector< bool >, whose layout is left to the implementation,
+ * The vector of bits on which the succinct structures and the integer codes of
+ * ADS are built: the bits are packed in words of 64 bits, the bit i being the
+ * bit i mod 64 (from the least significant one) of the word
+ * \f$ \lfloor i / 64 \rfloor \f$, so that a field of up to 64 bits is read or
+ * written with two shifts at most. Besides the random access to a bit, in
+ * \f$ O( 1 ) \f$ time, BitVector appends a bit or a field of len bits,
+ * push_back() and append(), in \f$ O( 1 ) \f$ amortized time, and reads a
+ * field of len bits, get(), in \f$ O( 1 ) \f$ time; the space is
+ * \f$ n + O( 512 ) \f$ bits for n bits, the vector of words doubling as
+ * std::vector does. The words are whole lines of the cache of 64 bytes, with
+ * one word at least past the last bit, and they start on a line (on a huge
+ * page from 2 MB on, which spares the misses of the TLB of a random access);
+ * the bits past the size are 0 (the invariant). Hence count() and the rank of
+ * a word [see RankSelect.h] need no mask at the end, a field is read with no
+ * test of the end, and a directory may read the words of a line of its own.
+ * Unlike std::vector< bool >, whose layout is left to the implementation,
  * BitVector exposes its words, which is what a rank directory or a code
  * reading a word at a time needs.
  *
  * selectInWord() gives the place of the k-th 1 of a word by the broadword
  * method of Vigna: the sideways sums of the bytes [see Bitwise.h] are
- * accumulated by one multiplication, the byte holding the k-th 1 is found
- * by a comparison of the 8 bytes in parallel and the trailing zeros, and the
- * 1 inside it by clearing the lower 1s, in O( 1 ) time and with no loop over
- * the 64 bits. It is the last step of every select in ADS, in place of the
- * tables of the small blocks of the classical analysis (Jacobson, Clark).
- * SubscriptIterator is the random-access constant iterator of a structure
- * read by its operator[], the bits of a BitVector or the items of a
- * compressed sequence [see EliasFano.h].
+ * accumulated by one multiplication, the byte holding the k-th 1 is found by a
+ * comparison of the 8 bytes in parallel and the trailing zeros, and the 1
+ * inside it by clearing the lower 1s, in \f$ O( 1 ) \f$ time and with no loop
+ * over the 64 bits. It is the last step of every select in ADS, in place of
+ * the tables of the small blocks of the classical analysis (Jacobson, Clark).
+ * SubscriptIterator is the random-access constant iterator of a structure read
+ * by its operator[], the bits of a BitVector or the items of a compressed
+ * sequence [see EliasFano.h].
  *
  * The contracts [see Contract.h]: the places and the fields are in the
  * vector, a field has at most 64 bits and its value fits in them, and
@@ -275,7 +275,7 @@ class BitVector {
  /// \post get( i , len ) == v
  void put( std::size_t i , Word v , int len );
 
- /// the number of 1 bits, in O( n / 64 ) time
+ /// the number of 1 bits, in \f$ O( n / 64 ) \f$ time
  [[nodiscard]] std::size_t count( void ) const;
 
  /// the words, the bits past the size being 0; they are at least

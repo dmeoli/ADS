@@ -2,15 +2,15 @@
 /*------------------------ File PreorderArrayTree.h ------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * An ordered tree in a vector in preorder, beyond the book: the place i
- * holds the value of the i-th node of the previsit and the place of its
- * parent, NIL for the root in the place 0. The subtree of a node is the
- * stretch of the vector that starts with it and ends before the first
- * place whose parent precedes it, so that the first child of i, if any, is
- * i + 1, and the next sibling is the place after its subtree. Reading and
- * writing take O( 1 ) time, moving along the tree and inserting or removing
- * a subtree O( n ), since the places after it shift and their parents are
- * renumbered. It extends the vector of parents of section 5.4 [see
+ * An ordered tree in a vector in preorder, beyond the book: the place i holds
+ * the value of the i-th node of the previsit and the place of its parent, NIL
+ * for the root in the place 0. The subtree of a node is the stretch of the
+ * vector that starts with it and ends before the first place whose parent
+ * precedes it, so that the first child of i, if any, is i + 1, and the next
+ * sibling is the place after its subtree. Reading and writing take
+ * \f$ O( 1 ) \f$ time, moving along the tree and inserting or removing a
+ * subtree \f$ O( n ) \f$, since the places after it shift and their parents
+ * are renumbered. It extends the vector of parents of section 5.4 [see
  * ParentTree.h] with the values and the order of the children.
  *
  * The contracts [see Contract.h]: a node is a place of the vector, and a
@@ -121,7 +121,7 @@ class PreorderArrayTree {
 
  const Cell & cell( int i ) const;
 
- /// the root first, and each other node after its parent, O( n )
+ /// the root first, and each other node after its parent, \f$ O( n ) \f$
  [[nodiscard]] bool preordered( void ) const;
 
  /// the cells of t to the place at, its root a child of p: the places

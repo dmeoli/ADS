@@ -2,14 +2,13 @@
 /*------------------------ File CursorBinaryTree.h -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A binary tree with cursors, beyond the book: the nodes in a vector,
- * each with its value and the places of its parent and of its two
- * children, NIL if missing, so that the links are indices instead of
- * pointers and the tree can be copied, saved or moved as a whole. A
- * removed subtree returns its places to a free list, which the next
- * insertions reuse. Moving along the tree, reading, writing and inserting a
- * node take O( 1 ) amortized time; removing or copying a subtree takes time
- * linear in its size.
+ * A binary tree with cursors, beyond the book: the nodes in a vector, each
+ * with its value and the places of its parent and of its two children, NIL if
+ * missing, so that the links are indices instead of pointers and the tree can
+ * be copied, saved or moved as a whole. A removed subtree returns its places
+ * to a free list, which the next insertions reuse. Moving along the tree,
+ * reading, writing and inserting a node take \f$ O( 1 ) \f$ amortized time;
+ * removing or copying a subtree takes time linear in its size.
  *
  * The contracts [see Contract.h]: a node is a used place, setRoot() needs
  * an empty tree, a child is inserted where none is, and the subtree copied
@@ -147,7 +146,7 @@ class CursorBinaryTree {
  Node & node( int n );
 
  /// the nodes reached from the root are used, link back to their parent
- /// and are all the nodes, O( n )
+ /// and are all the nodes, \f$ O( n ) \f$
  [[nodiscard]] bool linked( void ) const;
 
  int make( const T & v , int p );

@@ -9,7 +9,7 @@
  * with succ[ t ] = t.
  *
  * - listRank() is the sequential algorithm: the predecessors, then a walk
- *   back from the tail, O( n ) time, but up to one I/O per item on the
+ *   back from the tail, \f$ O( n ) \f$ time, but up to one I/O per item on the
  *   disk, since the links jump anywhere.
  * - listRankPointerJumping() is the parallel algorithm of Wyllie: every
  *   item at once adds the rank of its successor to its own and jumps to the
@@ -25,35 +25,35 @@
  *   (Theorem 4.3, of Chiang et al.). externalPointerJumping() is the
  *   algorithm of Wyllie so simulated, the rank and the successor carried in
  *   one record, \f$ \tilde O( ( n / B ) \log n ) \f$ I/Os (Theorem 4.2).
- * - The divide and conquer of section 4.3 removes an independent set I
- *   (no item of I is the successor of another one of I), letting the
- *   predecessors of its items jump over them, ranks the shorter list and
- *   puts the items of I back, each one adding the rank of its successor.
- *   randomIndependentSet() tosses a coin per item and takes the heads whose
- *   successor shows tails, n / 4 items on average; deterministicCoinTossing()
- *   is the technique of Cole and Vishkin: the colors start as the distinct
- *   indices and each round replaces the color of i by \f$ 2 \pi + z \f$,
- *   \f$ \pi \f$ the lowest bit where it differs from the color of the
- *   successor and z that bit of i (the tail compares with its bit 0), so
- *   that adjacent colors stay different while b bits become \f$ \lceil
- *   \log_2 b \rceil + 1 \f$, down to six colors in \f$ \log^* n \f$ rounds,
- *   and three by recoloring 5, 4 and 3; independentSetOfColors() takes the
- *   local minima, at least about n / 4 items. listRankIndependentSet() is
- *   the recursion in the memory with either set, and externalListRank()
- *   is the same recursion on the disk with the random coins, each step a
- *   join of records by sorts and scans, \f$ T( n ) = \tilde O( n / B ) + T(
- *   7 n / 8 ) = \tilde O( n / B ) \f$ I/Os (Theorem 4.5; the coins are
- *   tossed again until \f$ | I | \geq n / 8 \f$, which happens after O( 1 )
- *   attempts on average), the list in memory once it fits.
+ * - The divide and conquer of section 4.3 removes an independent set I (no
+ *   item of I is the successor of another one of I), letting the predecessors
+ *   of its items jump over them, ranks the shorter list and puts the items of
+ *   I back, each one adding the rank of its successor. randomIndependentSet()
+ *   tosses a coin per item and takes the heads whose successor shows tails, n
+ *   / 4 items on average; deterministicCoinTossing() is the technique of Cole
+ *   and Vishkin: the colors start as the distinct indices and each round
+ *   replaces the color of i by \f$ 2 \pi + z \f$, \f$ \pi \f$ the lowest bit
+ *   where it differs from the color of the successor and z that bit of i (the
+ *   tail compares with its bit 0), so that adjacent colors stay different
+ *   while b bits become \f$ \lceil \log_2 b \rceil + 1 \f$, down to six colors
+ *   in \f$ \log^* n \f$ rounds, and three by recoloring 5, 4 and 3;
+ *   independentSetOfColors() takes the local minima, at least about n / 4
+ *   items. listRankIndependentSet() is the recursion in the memory with either
+ *   set, and externalListRank() is the same recursion on the disk with the
+ *   random coins, each step a join of records by sorts and scans, \f$ T( n ) =
+ *   \tilde O( n / B ) + T( 7 n / 8 ) = \tilde O( n / B ) \f$ I/Os (Theorem
+ *   4.5; the coins are tossed again until \f$ | I | \geq n / 8 \f$, which
+ *   happens after \f$ O( 1 ) \f$ attempts on average), the list in memory once
+ *   it fits.
  *
  * Compared with the literature: the optimal parallel rankings of Cole and
- * Vishkin and of Anderson and Miller reach O( n ) operations in O( log n )
- * time by the same independent sets; on the disk the bound \f$ \Theta(
- * \mathrm{sort}( n ) ) \f$ of Chiang et al. is optimal, and is what
- * externalListRank() attains, while the deterministic recursion on the
- * disk would repeat the joins of the coins \f$ \log^* n \f$ times per
- * level, and is here only in the memory. The records of the disk are
- * atomic items of the model.
+ * Vishkin and of Anderson and Miller reach \f$ O( n ) \f$ operations in
+ * \f$ O( \log n ) \f$ time by the same independent sets; on the disk the bound
+ * \f$ \Theta( \mathrm{sort}( n ) ) \f$ of Chiang et al. is optimal, and is
+ * what externalListRank() attains, while the deterministic recursion on the
+ * disk would repeat the joins of the coins \f$ \log^* n \f$ times per level,
+ * and is here only in the memory. The records of the disk are atomic items of
+ * the model.
  *
  * The contracts [see Contract.h]: succ is a list, one tail and every item
  * reached from the only head, an audit; the ops of a parallel step have

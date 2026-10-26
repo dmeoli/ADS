@@ -2,40 +2,39 @@
 /*-------------------------- File ArraySequence.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A SEQUENCE [see ADT.h] realized with a vector: the position of an item
- * is its index, \f$ pos_i = i \f$, with \f$ pos_{-1} = -1 \f$ and
+ * A SEQUENCE [see ADT.h] realized with a vector: the position of an item is
+ * its index, \f$ pos_i = i \f$, with \f$ pos_{-1} = -1 \f$ and
  * \f$ pos_n = n \f$. Moving along the sequence, reading and writing take
- * O( 1 ) time, while insert() and remove() take O( n ) time, since the
- * items after the position move by one place; inserting at the end takes
- * O( 1 ) amortized time, since a full vector is replaced by one of twice
- * its size. If the i-th insertion costs \f$ c_i = i \f$ when it finds the
- * vector full, i.e., when \f$ i = 2^k + 1 \f$, and 1 otherwise, then n
+ * \f$ O( 1 ) \f$ time, while insert() and remove() take \f$ O( n ) \f$ time,
+ * since the items after the position move by one place; inserting at the end
+ * takes \f$ O( 1 ) \f$ amortized time, since a full vector is replaced by one
+ * of twice its size. If the i-th insertion costs \f$ c_i = i \f$ when it finds
+ * the vector full, i.e., when \f$ i = 2^k + 1 \f$, and 1 otherwise, then n
  * insertions cost
  * \f[
  *   C( n ) = \sum_{i=1}^n c_i \leq n + \sum_{k=0}^{\lfloor \log_2 n \rfloor}
  *            2^k \leq n + 2^{\lfloor \log_2 n \rfloor + 1} - 1 \leq 3 n \; ,
  * \f]
  * whereas growing the vector by a constant d makes them cost
- * \f$ \Theta( n^2 ) \f$. Symmetrically, a vector that remove() leaves
- * with \f$ n \leq capacity / 4 \f$ is replaced by one of half its size,
- * so that the space stays O( n ) and any sequence of insertions and
- * removals costs O( 1 ) amortized time each: after a resize the vector is
- * half full, and \f$ \Omega( capacity ) \f$ operations must come before
- * the next one. The empty sequence has no vector, also when remove()
- * empties it, the first insertion makes one of one place, and moving a
- * sequence takes its vector in O( 1 ) time, leaving the one moved from
- * empty.
+ * \f$ \Theta( n^2 ) \f$. Symmetrically, a vector that remove() leaves with
+ * \f$ n \leq capacity / 4 \f$ is replaced by one of half its size, so that the
+ * space stays \f$ O( n ) \f$ and any sequence of insertions and removals costs
+ * \f$ O( 1 ) \f$ amortized time each: after a resize the vector is half full,
+ * and \f$ \Omega( capacity ) \f$ operations must come before the next one. The
+ * empty sequence has no vector, also when remove() empties it, the first
+ * insertion makes one of one place, and moving a sequence takes its vector in
+ * \f$ O( 1 ) \f$ time, leaving the one moved from empty.
  *
- * The contracts [see Contract.h]: a position is an index from -1 to n;
- * next() needs one from -1 to n - 1 and prev() one from 0 to n, since
- * there is nothing after \f$ pos_n \f$ nor before \f$ pos_{-1} \f$;
- * insert() needs one from 0 to n, and read(), write() and remove() one
- * that holds an item, from 0 to n - 1. insert() and write() ensure that v
- * is read back in its place, and that the other items are where they were
- * (or one place on, after the insertion), the latter costing O( n ) and
- * therefore an audit; remove() likewise. The invariant is that the n items
- * fit in the vector, \f$ 0 \leq n \leq capacity \f$. The operations are
- * defined in ArraySequence.tpp.
+ * The contracts [see Contract.h]: a position is an index from -1 to n; next()
+ * needs one from -1 to n - 1 and prev() one from 0 to n, since there is
+ * nothing after \f$ pos_n \f$ nor before \f$ pos_{-1} \f$; insert() needs one
+ * from 0 to n, and read(), write() and remove() one that holds an item, from 0
+ * to n - 1. insert() and write() ensure that v is read back in its place, and
+ * that the other items are where they were (or one place on, after the
+ * insertion), the latter costing \f$ O( n ) \f$ and therefore an audit;
+ * remove() likewise. The invariant is that the n items fit in the vector,
+ * \f$ 0 \leq n \leq capacity \f$. The operations are defined in
+ * ArraySequence.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.2, 4.2.1
  *      and 4.5,
@@ -127,7 +126,7 @@ class ArraySequence {
  [[nodiscard]] Pos prev( Pos p ) const;
 
  /// puts v at index p, the items from index p moving one place on, which
- /// takes O( n - p ) time, O( 1 ) amortized at the end
+ /// takes \f$ O( n - p ) \f$ time, \f$ O( 1 ) \f$ amortized at the end
  /// \pre 0 <= p <= n
  /// \post one item more, v at index p, the others where they were before
  ///       p and one place on from p (an audit)

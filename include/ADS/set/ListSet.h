@@ -3,9 +3,9 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The SET as an unsorted LIST of section 8.2: contains(), insert() and
- * remove() in O( n ), insertNew() in O( 1 ) when the item is known to be
- * absent, the operations in O( n m ), which is optimal when the items can
- * only be compared for equality (exercises 8.1 and 8.2).
+ * remove() in \f$ O( n ) \f$, insertNew() in \f$ O( 1 ) \f$ when the item is
+ * known to be absent, the operations in \f$ O( n m ) \f$, which is optimal
+ * when the items can only be compared for equality (exercises 8.1 and 8.2).
  *
  * The contracts [see Contract.h]: insertNew() needs an item that is not
  * there, after insert() the item is there and after remove() it is not,
@@ -76,22 +76,22 @@ class ListSet {
 
  [[nodiscard]] bool contains( const T & x ) const;
 
- /// O( n ) time, for the check that x is not there
+ /// \f$ O( n ) \f$ time, for the check that x is not there
  /// \post x is in the set
  void insert( const T & x );
 
- /// inserts x, which must not be there, at the head, O( 1 ) time
- /// \pre x is not in the set (an audit, O( n ))
+ /// inserts x, which must not be there, at the head, \f$ O( 1 ) \f$ time
+ /// \pre x is not in the set (an audit, \f$ O( n ) \f$)
  void insertNew( const T & x );
 
  /// \post x is not in the set
  void remove( const T & x );
 
- /// the smallest item, O( n ) time
+ /// the smallest item, \f$ O( n ) \f$ time
  [[nodiscard]] std::optional< T > min( void ) const
   requires std::totally_ordered< T >;
 
- /// f( x ) on the items, from the last inserted, O( n ) time
+ /// f( x ) on the items, from the last inserted, \f$ O( n ) \f$ time
  template< class F >
  void forEach( F && f ) const;
 
@@ -117,7 +117,7 @@ class ListSet {
 
  typename List< T >::Pos find( const T & x ) const;
 
- /// no item twice, and the size is the length of the list, O( n^2 )
+ /// no item twice, and the size is the length of the list, \f$ O( n^2 ) \f$
  [[nodiscard]] bool distinct( void ) const;
 
  List< T > f_L;              ///< the items
@@ -126,20 +126,20 @@ class ListSet {
  };  // end( class ListSet )
 
 /// the union: C starts as B and gets the items of A not in B, inserted
-/// without looking for them in C, O( n m ) time (exercise 8.2)
+/// without looking for them in C, \f$ O( n m ) \f$ time (exercise 8.2)
 template< class T >
 ListSet< T > setUnion( const ListSet< T > & A , const ListSet< T > & B );
 
-/// the intersection, O( n m ) time (exercise 8.1)
+/// the intersection, \f$ O( n m ) \f$ time (exercise 8.1)
 template< class T >
 ListSet< T > setIntersection( const ListSet< T > & A ,
                               const ListSet< T > & B );
 
-/// the difference, O( n m ) time (the procedure of section 8.2)
+/// the difference, \f$ O( n m ) \f$ time (the procedure of section 8.2)
 template< class T >
 ListSet< T > setDifference( const ListSet< T > & A , const ListSet< T > & B );
 
-/// the symmetric difference, O( n m ) time (exercise 8.5)
+/// the symmetric difference, \f$ O( n m ) \f$ time (exercise 8.5)
 template< class T >
 ListSet< T > setSymmetricDifference( const ListSet< T > & A ,
                                      const ListSet< T > & B );

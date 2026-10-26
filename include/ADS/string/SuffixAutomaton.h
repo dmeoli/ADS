@@ -18,10 +18,10 @@
  * bytes one at a time: the new state of \f$ S c \f$ gets the transitions on c
  * from the suffix path of the last state, which stops at the first state p
  * that has one; if it leads to q with \f$ \mathit{len}( q ) = \mathit{len}( p
- * ) + 1 \f$, q is the new link, otherwise q is cloned with that length, O( n )
- * amortized time for a constant alphabet. Here the transitions of a state are
- * a short vector of ( byte , state ) pairs, searched linearly, so that the
- * time is \f$ O( n \sigma ) \f$ for \f$ \sigma \f$ distinct bytes.
+ * ) + 1 \f$, q is the new link, otherwise q is cloned with that length,
+ * \f$ O( n ) \f$ amortized time for a constant alphabet. Here the transitions
+ * of a state are a short vector of ( byte , state ) pairs, searched linearly,
+ * so that the time is \f$ O( n \sigma ) \f$ for \f$ \sigma \f$ distinct bytes.
  *
  * - contains( P ) follows P from the start, \f$ O( |P| \sigma ) \f$;
  * - occurrences( P ) is the size of the end set of the state of P, counted

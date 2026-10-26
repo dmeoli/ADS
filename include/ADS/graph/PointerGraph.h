@@ -2,20 +2,20 @@
 /*-------------------------- File PointerGraph.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * An oriented graph with pointers, beyond the book: each node is an
- * object with its label, a flag for the visits, the number of edges that
- * touch it and the list of its edges, each a pointer to the other end and
- * a weight. A node is reached by its address, which stays valid until it
- * is deleted, and found by label in O( n ). deleteNode() deletes only an
- * isolated node, forceDeleteNode() first deletes the edges that enter or
- * leave it, in O( n + m ); dfs() and bfs() mark the nodes with the flags,
- * cleared at the start of each visit. The graphs of chapter 9 number their
- * nodes from 0 [see ListGraph.h]; this one has neither numbers nor a bound.
+ * An oriented graph with pointers, beyond the book: each node is an object
+ * with its label, a flag for the visits, the number of edges that touch it and
+ * the list of its edges, each a pointer to the other end and a weight. A node
+ * is reached by its address, which stays valid until it is deleted, and found
+ * by label in \f$ O( n ) \f$. deleteNode() deletes only an isolated node,
+ * forceDeleteNode() first deletes the edges that enter or leave it, in
+ * \f$ O( n + m ) \f$; dfs() and bfs() mark the nodes with the flags, cleared
+ * at the start of each visit. The graphs of chapter 9 number their nodes from
+ * 0 [see ListGraph.h]; this one has neither numbers nor a bound.
  *
- * The contracts [see Contract.h]: the operations need nodes of this graph,
- * not nil (whether a node belongs to the graph costs O( n ), and is checked
- * at the level of the audits); the invariant is that the degree of each
- * node counts the edges that leave it and those that enter it, and that
+ * The contracts [see Contract.h]: the operations need nodes of this graph, not
+ * nil (whether a node belongs to the graph costs \f$ O( n ) \f$, and is
+ * checked at the level of the audits); the invariant is that the degree of
+ * each node counts the edges that leave it and those that enter it, and that
  * the edges lead to nodes of the graph. The operations are defined in
  * PointerGraph.tpp.
  *
@@ -132,7 +132,7 @@ class PointerGraph {
 
  void clear( void );
 
- /// u is one of the nodes, O( n )
+ /// u is one of the nodes, \f$ O( n ) \f$
  [[nodiscard]] bool owns( const Node * u ) const;
 
  /// the degrees count the edges in and out, and the edges lead to nodes

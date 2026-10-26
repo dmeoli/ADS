@@ -43,7 +43,7 @@
  *   s_\ell \approx n ( 1 + \frac{1}{B+1} + \frac{1}{(B+1)^2} + \dots ) = n
  *   \frac{B+1}{B} \f$ items, on huge pages when they are at least 2 MB [see
  *   HugePageAllocator.h], so that a search misses the TLB at most once, and
- *   the building takes O( n ) time.
+ *   the building takes \f$ O( n ) \f$ time.
 
  * Compared with the literature: the layout of Eytzinger (a heap order of
  * the items) also reads one line for the last 4 levels of the binary

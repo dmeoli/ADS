@@ -327,7 +327,7 @@ class DLeftHashTable {
   find( const K & k ) const;
 
  /// k at most once in its lists and, up to 1024 keys, each key in one of
- /// its lists and counted once, O( n d )
+ /// its lists and counted once, \f$ O( n d ) \f$
  [[nodiscard]] bool placed( const K & k ) const;
 
  std::vector< Bucket > f_T;            ///< table i at [ i w , ( i + 1 ) w )

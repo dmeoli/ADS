@@ -2,12 +2,12 @@
 /*--------------------------- File SampleSort.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The in-place super scalar samplesort, beyond the book: sampleSort()
- * splits the vector into up to 256 buckets by splitters drawn from a
- * sample, in place with O( k b ) extra items for k buckets and blocks of b
- * items (about 2 KiB), and sorts each bucket in the same way, those of at
- * most 64 items by insertion. It sorts by comparisons alone, so that it
- * takes any order, and it is not stable.
+ * The in-place super scalar samplesort, beyond the book: sampleSort() splits
+ * the vector into up to 256 buckets by splitters drawn from a sample, in place
+ * with \f$ O( k b ) \f$ extra items for k buckets and blocks of b items (about
+ * 2 KiB), and sorts each bucket in the same way, those of at most 64 items by
+ * insertion. It sorts by comparisons alone, so that it takes any order, and it
+ * is not stable.
  *
  * - The splitters: a sample of \f$ \alpha k - 1 \f$ items, with
  *   \f$ \alpha = \max( 1 , \lfloor 0.2 \log_2 n \rfloor ) \f$, is drawn at

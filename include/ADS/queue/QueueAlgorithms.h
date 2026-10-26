@@ -6,7 +6,7 @@
  * beyond the book:
  *
  * - extractPositive() moves the positive items of q, in their order, to
- *   the back of another queue, and leaves q empty, in O( n );
+ *   the back of another queue, and leaves q empty, in \f$ O( n ) \f$;
  * - copyPositive() does the same but leaves q as it was, by moving each
  *   item to an auxiliary queue and then back.
  *

@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The MFSET on lists of section 10.2.1 [see MFSet.h], each element knowing
- * the head of its list: find() in O( 1 ), merge() relabels the shorter
+ * the head of its list: find() in \f$ O( 1 ) \f$, merge() relabels the shorter
  * list, so that an element is relabeled at most \f$ \log_2 n \f$ times.
  *
  * The contracts [see Contract.h]: the elements are in [ 0 , n ), and after
@@ -62,7 +62,7 @@ class ListMFSet {
 
  [[nodiscard]] int n( void ) const;
 
- /// O( 1 ) time
+ /// \f$ O( 1 ) \f$ time
  /// \pre x in [ 0 , n )
  [[nodiscard]] int find( int x ) const;
 
@@ -83,7 +83,7 @@ class ListMFSet {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// each element is once in the list of its head, O( n )
+ /// each element is once in the list of its head, \f$ O( n ) \f$
  [[nodiscard]] bool listed( void ) const;
 
  std::vector< int > f_head;                 ///< the head of each list

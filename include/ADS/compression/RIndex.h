@@ -36,18 +36,18 @@
  * stretch between two places of the starts of the runs alike:
  * \f[ \phi( x ) = \phi( y ) + ( x - y ) , \qquad y = \max \{ SA[ p_j ] :
  *     SA[ p_j ] \le x \} , \f]
- * so that the places \f$ SA[ p_j ] \f$ of the starts of the runs, sorted,
- * in Elias-Fano, give it by one predecessor search: \f$ \phi( SA[ p_j ] )
- * = SA[ p_j - 1 ] \f$ is the sample at the end of the run j - 1, and only
- * j is kept, in \f$ \lceil \log_2 r \rceil \f$ bits. All of it takes
- * O( r ) words: 5 sequences of r integers of \f$ \lceil \log_2 n \rceil
- * \f$ bits or less and the heads, whose rank and select are those of
- * CompactRankSelect [see CompactRankSelect.h], the smallest.
+ * so that the places \f$ SA[ p_j ] \f$ of the starts of the runs, sorted, in
+ * Elias-Fano, give it by one predecessor search: \f$ \phi( SA[ p_j ] ) = SA[
+ * p_j - 1 ] \f$ is the sample at the end of the run j - 1, and only j is kept,
+ * in \f$ \lceil \log_2 r \rceil \f$ bits. All of it takes \f$ O( r ) \f$
+ * words: 5 sequences of r integers of \f$ \lceil \log_2 n \rceil \f$ bits or
+ * less and the heads, whose rank and select are those of CompactRankSelect
+ * [see CompactRankSelect.h], the smallest.
  *
  * The symbols of L are the bytes plus 1, the end of the text being 0. The
  * transform comes from the suffix array of SA-IS [see BurrowsWheeler.h],
- * O( n ) time and words; the r-index of the literature is built in
- * O( r ) words from the run-length transform, which this one does not
+ * \f$ O( n ) \f$ time and words; the r-index of the literature is built in
+ * \f$ O( r ) \f$ words from the run-length transform, which this one does not
  * attempt.
  *
  * The contracts [see Contract.h]: n is below \f$ 2^{32} \f$, a pattern is

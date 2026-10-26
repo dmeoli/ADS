@@ -2,20 +2,20 @@
 /*--------------------------- File SuffixTree.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The suffix tree of a text T of n symbols, beyond the book: the compact
- * trie [see RadixTree in Trie.h] of the n + 1 suffixes of T$, where $ is a
+ * The suffix tree of a text T of n symbols, beyond the book: the compact trie
+ * [see RadixTree in Trie.h] of the n + 1 suffixes of T$, where $ is a
  * terminator smaller than every symbol, so that no suffix is a prefix of
- * another and each one ends in a leaf of its own. Every internal node but
- * the root has at least two children, hence there are at most n internal
- * nodes; the label of an edge is a substring of T, kept as the place of
- * one occurrence and the string depths of its two ends, O( 1 ) space, and
- * the tree takes O( n ) space (Fact 10.3), though some 10 to 20 n bytes in
- * practice against the n integers of a suffix array [see SuffixArray.h].
- * The children of a node are kept by their first symbol in a balanced
- * search tree (std::map), so that branching costs \f$ O( \log \sigma )
- * \f$ for an alphabet of \f$ \sigma \f$ symbols, and they are visited in
- * the lexicographic order. The node u spells s[ u ], the string on the
- * path from the root, and it is an internal node exactly when s[ u ]
+ * another and each one ends in a leaf of its own. Every internal node but the
+ * root has at least two children, hence there are at most n internal nodes;
+ * the label of an edge is a substring of T, kept as the place of one
+ * occurrence and the string depths of its two ends, \f$ O( 1 ) \f$ space, and
+ * the tree takes \f$ O( n ) \f$ space (Fact 10.3), though some 10 to 20 n
+ * bytes in practice against the n integers of a suffix array [see
+ * SuffixArray.h]. The children of a node are kept by their first symbol in a
+ * balanced search tree (std::map), so that branching costs
+ * \f$ O( \log \sigma ) \f$ for an alphabet of \f$ \sigma \f$ symbols, and they
+ * are visited in the lexicographic order. The node u spells s[ u ], the string
+ * on the path from the root, and it is an internal node exactly when s[ u ]
  * occurs at least twice followed by distinct symbols (Property 10.6); the
  * lowest common ancestor of the leaves i and j spells the longest common
  * prefix of the suffixes i and j (Property 10.9).
@@ -25,40 +25,40 @@
  * - Build::naive inserts the suffixes from the longest one, each by a walk
  *   down from the root that compares all its symbols, \f$ \Theta( n^2 ) \f$
  *   time for the text \f$ a^{n-1} \f$;
- * - Build::mcCreight is the algorithm of McCreight: the suffixes are
- *   inserted from the longest one too, but the walk of suffix i starts from
- *   the suffix link of the node of head_{i-1}, the longest prefix of the
- *   suffix i - 1 that occurs earlier, which spells head_{i-1} without its
- *   first symbol; when that link is not set yet, it is found from the link
- *   of the parent by a rescan that compares only the first symbol of each
- *   edge, whose total is O( n ) since the depth of the tree drops by at most
- *   2 per link. \f$ O( n \log \sigma ) \f$ time (Theorem 10.10);
+ * - Build::mcCreight is the algorithm of McCreight: the suffixes are inserted
+ *   from the longest one too, but the walk of suffix i starts from the suffix
+ *   link of the node of head_{i-1}, the longest prefix of the suffix i - 1
+ *   that occurs earlier, which spells head_{i-1} without its first symbol;
+ *   when that link is not set yet, it is found from the link of the parent by
+ *   a rescan that compares only the first symbol of each edge, whose total is
+ *   \f$ O( n ) \f$ since the depth of the tree drops by at most 2 per link.
+ *   \f$ O( n \log \sigma ) \f$ time (Theorem 10.10);
  * - Build::suffixArray builds the suffix array by SA-IS and the LCP array by
  *   Kasai et al., then inserts the leaves in the order of SA, each one
  *   climbing from the previous leaf, along the rightmost path, to the
  *   deepest node of string depth at most LCP[ i - 1 ], and splitting the
  *   edge below it when its depth is larger; each edge climbed is left to
- *   the left for good, hence O( n ) steps (Fact 10.6).
+ *   the left for good, hence \f$ O( n ) \f$ steps (Fact 10.6).
  *
  * Weiner gave the first linear construction (1973), inserting the suffixes
  * from the shortest one; Ukkonen's algorithm is the online form of
  * McCreight's, which reads T from left to right and keeps the tree of each
- * prefix; Farach reached O( n ) on integer alphabets by merging the trees of
- * the odd and of the even suffixes, the idea that the Skew algorithm turned
- * into the 2/3 : 1/3 split of the suffix arrays. Since the linear suffix
- * arrays (SA-IS, divsufsort) are smaller and faster, the construction
- * through SA and LCP is the usual one; McCreight's pays where the average
- * lcp is small.
+ * prefix; Farach reached \f$ O( n ) \f$ on integer alphabets by merging the
+ * trees of the odd and of the even suffixes, the idea that the Skew algorithm
+ * turned into the 2/3 : 1/3 split of the suffix arrays. Since the linear
+ * suffix arrays (SA-IS, divsufsort) are smaller and faster, the construction
+ * through SA and LCP is the usual one; McCreight's pays where the average lcp
+ * is small.
  *
- * locus() finds the extended locus of a pattern P of p symbols by a walk
- * down from the root, \f$ O( p \log \sigma ) \f$ time, and locate() the occ
- * occurrences below it in O( occ ), since that subtree has occ leaves and
- * fewer internal nodes (Fact 10.4). lca() answers the lowest common ancestor
- * of two nodes in O( 1 ) time by the Euler tour of the tree and the range
- * minima of its depths [see PlusMinusOneRangeMinimum in RangeMinimum.h],
- * hence lce() the longest common extension of two suffixes (Theorem
- * 10.12). toSuffixArray() reads SA and LCP back by a visit in order, the
- * leaves giving SA and the internal node met between two leaves their lcp
+ * locus() finds the extended locus of a pattern P of p symbols by a walk down
+ * from the root, \f$ O( p \log \sigma ) \f$ time, and locate() the occ
+ * occurrences below it in \f$ O( \mathit{occ} ) \f$, since that subtree has
+ * occ leaves and fewer internal nodes (Fact 10.4). lca() answers the lowest
+ * common ancestor of two nodes in \f$ O( 1 ) \f$ time by the Euler tour of the
+ * tree and the range minima of its depths [see PlusMinusOneRangeMinimum in
+ * RangeMinimum.h], hence lce() the longest common extension of two suffixes
+ * (Theorem 10.12). toSuffixArray() reads SA and LCP back by a visit in order,
+ * the leaves giving SA and the internal node met between two leaves their lcp
  * (Fact 10.5).
  *
  * The contracts [see Contract.h]: the invariant of the tree (n + 1 leaves,
@@ -195,7 +195,7 @@ class SuffixTree {
  /// suffixes; the empty pattern at the n places of the suffixes
  [[nodiscard]] std::vector< std::size_t > locate( std::string_view P ) const;
 
- /// the lowest common ancestor of u and v, O( 1 )
+ /// the lowest common ancestor of u and v, \f$ O( 1 ) \f$
  /// \pre u < size() and v < size()
  [[nodiscard]] std::size_t lca( std::size_t u , std::size_t v ) const;
 

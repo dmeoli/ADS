@@ -28,7 +28,7 @@
  *   k_0 , l( M_1 c_2 ) , h( M_0 c_0 ) \oplus c_3 \oplus k_1 , l( M_0 c_0 )
  *   ) \f$, h and l the high and the low word of a product of 2W bits, the
  *   key bumped by the Weyl constants between the rounds; the counter only
- *   increases, so that discard( z ) costs O( 1 ) and any block of the
+ *   increases, so that discard( z ) costs \f$ O( 1 ) \f$ and any block of the
  *   stream is computed on its own. The sequence is that of std::philox4x32
  *   and std::philox4x64 of C++26 (the key ( seed , 0 ), the counter from
  *   0, the words of a block in order); two blocks are computed at once,
@@ -68,19 +68,18 @@
  *   below \f$ 2^{32} \f$, so that a shuffle of n items draws about
  *   \f$ n / 2 \f$ words instead of n.
  *
- * - AliasTable is the alias method of Walker in the construction of Vose:
- *   with \f$ p_i = n w_i / \sum_j w_j \f$, the items with \f$ p_i < 1 \f$
- *   and those with \f$ p_i \ge 1 \f$ in two lists, each step gives to a
- *   small one its alias, a large one that gives up \f$ 1 - p_i \f$ of its
- *   mass, so that the cell i keeps i with probability \f$ p_i \f$ and
- *   gives its alias otherwise: O( n ) time and space to build, the
- *   probabilities exact up to the rounding of \f$ p_i \f$. A draw is one
- *   word x: \f$ x n = h 2^{64} + l \f$, the cell h and the coin \f$ l <
- *   \lfloor p_h 2^{64} \rfloor \f$ from the same product, O( 1 ) time and
- *   two loads, against the \f$ O( \log n ) \f$ of the search in the
- *   cumulative sums; the cells and the coins are off the exact ones by at
- *   most \f$ n / 2^{64} \f$ each, as for the products of Lemire with no
- *   rejection.
+ * - AliasTable is the alias method of Walker in the construction of Vose: with
+ *   \f$ p_i = n w_i / \sum_j w_j \f$, the items with \f$ p_i < 1 \f$ and those
+ *   with \f$ p_i \ge 1 \f$ in two lists, each step gives to a small one its
+ *   alias, a large one that gives up \f$ 1 - p_i \f$ of its mass, so that the
+ *   cell i keeps i with probability \f$ p_i \f$ and gives its alias otherwise:
+ *   \f$ O( n ) \f$ time and space to build, the probabilities exact up to the
+ *   rounding of \f$ p_i \f$. A draw is one word x: \f$ x n = h 2^{64} + l \f$,
+ *   the cell h and the coin \f$ l < \lfloor p_h 2^{64} \rfloor \f$ from the
+ *   same product, \f$ O( 1 ) \f$ time and two loads, against the
+ *   \f$ O( \log n ) \f$ of the search in the cumulative sums; the cells and
+ *   the coins are off the exact ones by at most \f$ n / 2^{64} \f$ each, as
+ *   for the products of Lemire with no rejection.
  *
  * The generators meet UniformRandomBitGenerator, with min() = 0 and max()
  * = \f$ 2^{64} - 1 \f$, so that they serve the distributions of std; the
@@ -264,7 +263,7 @@ class PhiloxT {
 
  constexpr W operator()( void );
 
- /// advances by z outputs, in O( 1 ) blocks
+ /// advances by z outputs, in \f$ O( 1 ) \f$ blocks
  constexpr void discard( unsigned long long z );
 
  /// the counter of the next output, which will be the first word of its
@@ -303,7 +302,7 @@ using Philox4x64 = PhiloxT< std::uint64_t >;   ///< Philox4x64-10
 /*--------------------------------------------------------------------------*/
 
 /// the alias method of Walker and Vose: draws i with probability
-/// w_i / sum w, in O( 1 ) time from one random word
+/// w_i / sum w, in \f$ O( 1 ) \f$ time from one random word
 class AliasTable {
  public:
  /// the table of the weights w, not all zero

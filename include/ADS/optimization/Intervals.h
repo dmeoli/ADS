@@ -7,16 +7,16 @@
  * - independentSet() (section 14.2), a largest set of disjoint intervals:
  *   by increasing right end, an interval that does not meet the last one
  *   taken is taken; optimal, since an optimal set can always swap its
- *   first interval for the one that ends first; O( n log n );
+ *   first interval for the one that ends first; \f$ O( n \log n ) \f$;
  * - intervalColoring() (exercise 14.6), the fewest colors such that the
  *   intervals that meet have different colors: by scanning the 2 n ends,
  *   a left end takes a free color from a stack and a right one gives it
  *   back; the colors are as many as the largest number of intervals over
- *   a point (exercise 9.8), which is a lower bound, O( n log n );
+ *   a point (exercise 9.8), which is a lower bound, \f$ O( n \log n ) \f$;
  * - towers() (exercise 14.7), the fewest points such that each of the
  *   given ones is within d of one of them: a tower at k_0 + d serves all
  *   the houses up to k_0 + 2 d, and so on from the first one left out;
- *   O( n log n ) for the sort.
+ *   \f$ O( n \log n ) \f$ for the sort.
  *
  * The contracts [see Contract.h]: each interval [ a , b ) has a < b, and d >=
  * 0; the independent set is made of disjoint intervals, the coloring gives

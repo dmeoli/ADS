@@ -7,7 +7,7 @@
  *
  * A node and the subtree rooted in it are the same thing, a Tree: the
  * constructor makes an isolated node, insertChild() and insertSibling()
- * hang a whole tree under a node in O( 1 ) time, deleteChild() and
+ * hang a whole tree under a node in \f$ O( 1 ) \f$ time, deleteChild() and
  * deleteSibling() destroy a subtree in time linear in its size. A tree owns
  * its subtrees: deleting the root of a tree destroys all of it; a tree whose
  * insertion is refused (its contract is violated) stays the caller's. As
@@ -136,10 +136,10 @@ class Tree {
  private:
 
  /// each child of this node has it as its parent (the links that a
- /// change of the tree touches), O( 1 ) per child
+ /// change of the tree touches), \f$ O( 1 ) \f$ per child
  [[nodiscard]] bool linked( void ) const;
 
- /// the root of the tree of this node, O( depth )
+ /// the root of the tree of this node, \f$ O( \mathit{depth} ) \f$
  [[nodiscard]] const Tree * top( void ) const;
 
  T f_value;                    ///< the value

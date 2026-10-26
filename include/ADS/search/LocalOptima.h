@@ -91,9 +91,10 @@ std::size_t findPeak( const std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 std::size_t localMinimum( const std::vector< T > & A , C less = C() );
 
-/// localMinimum(): a node of the tree t not larger than its children and,
-/// if it is not t, smaller than its parent: from t down to the first child
-/// smaller than the current node, the left one first; O( h ) comparisons
+/// localMinimum(): a node of the tree t not larger than its children and, if
+/// it is not t, smaller than its parent: from t down to the first child
+/// smaller than the current node, the left one first; \f$ O( h ) \f$
+/// comparisons
 /// \pre t is not nil
 /// \post no child of r smaller than r, and r smaller than its parent if
 ///       r is not t

@@ -303,7 +303,7 @@ class RadixTree {
 
  static std::size_t count( const Node * x );
 
- /// no node but the root has one child and no value, O( n )
+ /// no node but the root has one child and no value, \f$ O( n ) \f$
  static bool compact( const Node * x , bool root );
 
  Node f_root;              ///< the root, with the empty label

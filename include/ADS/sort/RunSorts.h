@@ -20,11 +20,11 @@
  *   proved;
  * - powerSort() of Munro and Wild (the sort of Python from 3.11) gives each
  *   boundary between two runs a power, the first bit where the midpoints of
- *   the two runs, as fractions of n, differ, and merges the runs on the
- *   stack while their power is larger than that of the new boundary: the
- *   merges then follow a nearly optimal tree of merges, at most
- *   \f$ n H + 2 n \f$ comparisons for H the entropy of the lengths of the
- *   runs, which is O( n ) on few runs and \f$ O( n \log n ) \f$ always.
+ *   the two runs, as fractions of n, differ, and merges the runs on the stack
+ *   while their power is larger than that of the new boundary: the merges then
+ *   follow a nearly optimal tree of merges, at most \f$ n H + 2 n \f$
+ *   comparisons for H the entropy of the lengths of the runs, which is
+ *   \f$ O( n ) \f$ on few runs and \f$ O( n \log n ) \f$ always.
  *
  * A merge first skips the items of the left run already before the first
  * item of the right one, and those of the right run already after the last
@@ -34,7 +34,7 @@
  * front if it is the left one and from the back otherwise, so that the
  * buffer, made once, holds half of the items, switching to galloping when
  * one run wins 7 times in a row, as McIlroy proposed, so that two
- * interleaved runs merge in O( n ) and two runs one after the other in
+ * interleaved runs merge in \f$ O( n ) \f$ and two runs one after the other in
  * \f$ O( \log n ) \f$ comparisons; as in Timsort, the 7 drops by one at
  * each gallop that pays and rises by two at each that does not. On the
  * arithmetic types, two runs that both come from runs extended to minrun,

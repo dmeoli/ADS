@@ -9,14 +9,14 @@
  * column i and the row j from the bottom left; a tile is left of the one
  * in ( i + 1 , j ) and below the one in ( i , j + 1 ).
  *
- * legalTiling() is the certificate, O( n^2 ); squareTiling() the
+ * legalTiling() is the certificate, \f$ O( n^2 ) \f$; squareTiling() the
  * enumeration by backtrack of the m^{n^2 - 1} coverings, pruned at the first
  * wrong side. linearTiling() solves the linear tiling, a strip 1 x n, in
  * polynomial time: by the reduction of the text, the tiles are the nodes
  * of a graph with ( d_u , d_v ) when the right side of d_u has the color of
  * the left side of d_v, and a strip is a walk of n - 1 edges from d, which
  * exists if and only if a cycle is reachable from d or the longest path
- * from d, in the acyclic part, has n - 1 edges; O( m^2 ) time.
+ * from d, in the acyclic part, has n - 1 edges; \f$ O( m^2 ) \f$ time.
  *
  * The contracts [see Contract.h]: a covering returned by squareTiling() is
  * checked by legalTiling(); the certificate and the linear tiling accept any
@@ -78,9 +78,9 @@ inline bool legalTiling( const std::vector< Tile > & D , int n ,
 inline std::optional< Tiling > squareTiling( const std::vector< Tile > & D ,
                                              int n );
 
-/// the linear tiling of a strip of n tiles from d = D[ 0 ], O( m^2 ); false
-/// if n < 1 or D is empty, true for any n if a cycle of tiles that fit is
-/// reachable from d
+/// the linear tiling of a strip of n tiles from d = D[ 0 ], \f$ O( m^2 ) \f$;
+/// false if n < 1 or D is empty, true for any n if a cycle of tiles that fit
+/// is reachable from d
 inline bool linearTiling( const std::vector< Tile > & D , long n );
 
 /*--------------------------------------------------------------------------*/

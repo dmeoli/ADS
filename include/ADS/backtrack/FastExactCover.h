@@ -16,33 +16,32 @@
  * at most once). Without colors this is the exact cover of DancingLinks.h,
  * with the same solutions, visited in another order.
  *
- * The structure: the nodes of the options are one array of records
- * { item , loc , color } of 16 bytes, the nodes of an option consecutive
- * and followed by a spacer whose item is minus the size of the option, so
- * that the other nodes of an option are walked by the index alone. Each
- * item x has a segment of an array set, where its active options are the
- * first size( x ) entries, each node knowing its place loc in the segment
- * of its item: a sparse set of Briggs and Torczon, where an option leaves
- * the set of x by a swap with the last active one and a decrement of
- * size( x ), in O( 1 ). The active items are a sparse set too, the array
- * of the items with the place pos( x ) of each.
+ * The structure: the nodes of the options are one array of records { item ,
+ * loc , color } of 16 bytes, the nodes of an option consecutive and followed
+ * by a spacer whose item is minus the size of the option, so that the other
+ * nodes of an option are walked by the index alone. Each item x has a segment
+ * of an array set, where its active options are the first size( x ) entries,
+ * each node knowing its place loc in the segment of its item: a sparse set of
+ * Briggs and Torczon, where an option leaves the set of x by a swap with the
+ * last active one and a decrement of size( x ), in \f$ O( 1 ) \f$. The active
+ * items are a sparse set too, the array of the items with the place pos( x )
+ * of each.
  *
- * The search, at each level: the active primary item x with the least
- * size( x ) (the MRV rule, ties to the least index) is taken out, its
- * options are hidden from the other items, and the sizes of all the
- * active items are pushed on a stack; then each option of x in turn takes
- * its other items out and hides their incompatible options (all of them
- * for a primary or uncolored item, those of another color for a colored
- * one), and the search goes one level deeper. Going back costs no undo of
- * the swaps: the sizes on the stack are written back, and the sets are
- * again those of the level, in another order, so that a level costs
- * O( active ) to save and restore instead of an update per link. Hiding
- * an option checks the size of each primary item it leaves: a size 0
- * abandons the choice at once, before going deeper, and a size 1 makes
- * the item a forced move, taken at the next level without saving the
- * sizes (its only option needs no return). The time is O( 1 ) per update
- * of a set; the worst case stays exponential, as the problem is
- * NP-complete.
+ * The search, at each level: the active primary item x with the least size( x
+ * ) (the MRV rule, ties to the least index) is taken out, its options are
+ * hidden from the other items, and the sizes of all the active items are
+ * pushed on a stack; then each option of x in turn takes its other items out
+ * and hides their incompatible options (all of them for a primary or uncolored
+ * item, those of another color for a colored one), and the search goes one
+ * level deeper. Going back costs no undo of the swaps: the sizes on the stack
+ * are written back, and the sets are again those of the level, in another
+ * order, so that a level costs \f$ O( \mathit{active} ) \f$ to save and
+ * restore instead of an update per link. Hiding an option checks the size of
+ * each primary item it leaves: a size 0 abandons the choice at once, before
+ * going deeper, and a size 1 makes the item a forced move, taken at the next
+ * level without saving the sizes (its only option needs no return). The time
+ * is \f$ O( 1 ) \f$ per update of a set; the worst case stays exponential, as
+ * the problem is NP-complete.
  *
  * The contracts [see Contract.h]: the items of an option are distinct, in
  * [ 0 , primary + secondary ), one at least primary, and a color, if given,

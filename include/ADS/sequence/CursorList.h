@@ -14,10 +14,10 @@
  *
  * As in SinglyList [see SinglyList.h], the position \f$ pos_i \f$ is the
  * cursor of the cell of \f$ a_{i-1} \f$ for i > 0 and 0 for i = 0, so that
- * insert() and remove() find the link to change at hand and take O( 1 )
- * time (amortized, for the growth of the space); \f$ pos_n \f$ is the
- * cursor of the last cell (0 if the list is empty) and \f$ pos_{-1} \f$
- * is -1. tail() and prev() scan the list, in O( n ).
+ * insert() and remove() find the link to change at hand and take
+ * \f$ O( 1 ) \f$ time (amortized, for the growth of the space); \f$ pos_n \f$
+ * is the cursor of the last cell (0 if the list is empty) and \f$ pos_{-1} \f$
+ * is -1. tail() and prev() scan the list, in \f$ O( n ) \f$.
  *
  * The contracts [see Contract.h]: read(), write() and remove() need a
  * position that holds an item; insert() and write() ensure that v is read
@@ -113,7 +113,7 @@ class CursorSpace {
  private:
 
  /// the free list has no cycle, and with the cells in use it makes all the
- /// places, O( capacity )
+ /// places, \f$ O( \mathit{capacity} ) \f$
  [[nodiscard]] bool partition( void ) const;
 
  std::vector< Cell > f_A;   ///< the cells, f_A[ 0 ] never used
@@ -169,13 +169,13 @@ class CursorList {
  /// \f$ pos_0 \f$, i.e., 0
  [[nodiscard]] Pos head( void ) const;
 
- /// the position of the last item, O( n )
+ /// the position of the last item, \f$ O( n ) \f$
  [[nodiscard]] Pos tail( void ) const;
 
  /// \pre p is not \f$ pos_n \f$
  [[nodiscard]] Pos next( Pos p ) const;
 
- /// O( n )
+ /// \f$ O( n ) \f$
  [[nodiscard]] Pos prev( Pos p ) const;
 
  /// puts v in position p, the new item taking the position p

@@ -3,16 +3,16 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * A priority queue for small nonnegative integer keys, beyond the book: a
- * two-level bucket queue, whose outer level is a vector indexed by the
- * first key f and whose inner one, for each f, a vector of LIFO lists
- * indexed by the second key g. top() is an item of least f and, among
- * those, of largest g, the last one pushed (the order that A* wants: least
- * f, ties broken towards the deeper nodes). The least f is found by a scan
- * that only moves forward between two pushes of a smaller f, and the
- * largest g of a layer likewise backward, so that push() takes O( 1 ) time
- * and pop() O( 1 ) amortized when the keys are bounded by C, against the
- * \f$ O( \log n ) \f$ of a heap: the queue of Dial for the shortest
- * paths with integer weights, nested as in the search code of Burns et al.
+ * two-level bucket queue, whose outer level is a vector indexed by the first
+ * key f and whose inner one, for each f, a vector of LIFO lists indexed by the
+ * second key g. top() is an item of least f and, among those, of largest g,
+ * the last one pushed (the order that A* wants: least f, ties broken towards
+ * the deeper nodes). The least f is found by a scan that only moves forward
+ * between two pushes of a smaller f, and the largest g of a layer likewise
+ * backward, so that push() takes \f$ O( 1 ) \f$ time and pop() \f$ O( 1 ) \f$
+ * amortized when the keys are bounded by C, against the \f$ O( \log n ) \f$ of
+ * a heap: the queue of Dial for the shortest paths with integer weights,
+ * nested as in the search code of Burns et al.
  *
  * The items lie in one vector of cells, each with the index of the next
  * cell of its list, and the cells freed by pop() form a list of their own
@@ -236,7 +236,7 @@ class BucketQueue {
  /// the layer of the least f, its topG moved to its largest g
  Layer & front( void );
 
- /// the counts of the layers add up to size(), O( layers )
+ /// the counts of the layers add up to size(), \f$ O( \mathit{layers} ) \f$
  [[nodiscard]] bool counted( void ) const;
 
  std::vector< Layer > f_layers;   ///< a layer per f

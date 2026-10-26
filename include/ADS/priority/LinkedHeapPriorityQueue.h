@@ -183,8 +183,8 @@ class LinkedHeapPriorityQueue {
  /// in n
  [[nodiscard]] bool shaped( const Node * u , int k , int & n ) const;
 
- /// the invariant, O( n ); on more than 1024 nodes, the root and the last
- /// leaf only
+ /// the invariant, \f$ O( n ) \f$; on more than 1024 nodes, the root and the
+ /// last leaf only
  [[nodiscard]] bool isHeap( void ) const;
 
  /// with L, the node whose child the next leaf is

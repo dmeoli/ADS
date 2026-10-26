@@ -10,7 +10,7 @@
  * - expressionTree() builds it from the postfix form of the expression
  *   [see Expressions.h] with a stack of trees: an operand is pushed as a
  *   leaf, an operator pops its right and then its left subtree and pushes
- *   the new tree, in O( n );
+ *   the new tree, in \f$ O( n ) \f$;
  * - evaluate() computes its value by a postvisit, the values of the
  *   variables given by a dictionary;
  * - prefixForm() writes it in prefix form, each subtree in parentheses,

@@ -27,7 +27,7 @@
  *   preceded by another character, or the longest prefix of P that is its
  *   suffix), both prepared in \f$ O( m + \sigma ) \f$; \f$ O( n / m ) \f$
  *   comparisons at best, \f$ O( n m ) \f$ in the worst case for all the
- *   occurrences (O( n ) for the first one);
+ *   occurrences (\f$ O( n ) \f$ for the first one);
  * - horspool() shifts by the bad character of the last character of the
  *   window alone, \f$ \mathit{shift}[ c ] = m - 1 - \max\{ i < m - 1 :
  *   P[ i ] = c \} \f$ (m if none), the simplest and often the fastest of
@@ -44,7 +44,7 @@
  * - twoWay() is the Two-Way algorithm of Crochemore and Perrin [see
  *   StringSearch.h]: the critical factorization P = u v by two maximal
  *   suffixes, v compared from left to right and u from right to left, at
- *   most \f$ 2 n \f$ comparisons in O( 1 ) extra space.
+ *   most \f$ 2 n \f$ comparisons in \f$ O( 1 ) \f$ extra space.
  *
  * The empty pattern occurs at every place 0 , ... , n.
  *

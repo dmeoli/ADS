@@ -30,7 +30,7 @@
  * CompactRankSelect.h], since a step of locate() tests the bit alone and
  * the rank is needed once per occurrence; the parameter RS is the rank and
  * select of the tree, RankSelect or CompactRankSelect. The transform comes
- * from the suffix array of SA-IS [see BurrowsWheeler.h], O( n ) time.
+ * from the suffix array of SA-IS [see BurrowsWheeler.h], \f$ O( n ) \f$ time.
  *
  * The contracts [see Contract.h]: \f$ \mu > 0 \f$, n is below
  * \f$ 2^{32} \f$, a pattern is not empty, \f$ i \le j \le n \f$; each

@@ -331,13 +331,13 @@ namespace ADS {
 
 using Complex = std::complex< double >;
 
-/// the discrete Fourier transform by its definition, O( n^2 ); the inverse
-/// one, divided by n, if inverse
+/// the discrete Fourier transform by its definition, \f$ O( n^2 ) \f$; the
+/// inverse one, divided by n, if inverse
 [[nodiscard]] inline std::vector< Complex > dft(
                          const std::vector< Complex > & a , bool inverse );
 
-/// the discrete Fourier transform of the n points of a in place, in
-/// double or single precision, O( n log n ) for every n; the inverse one,
+/// the discrete Fourier transform of the n points of a in place, in double or
+/// single precision, \f$ O( n \log n ) \f$ for every n; the inverse one,
 /// divided by n, if inverse
 template< class T >
 inline void fft( std::complex< T > * a , std::size_t n , bool inverse );

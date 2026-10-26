@@ -6,9 +6,9 @@
  * \f$ S[ 0 , n ) \f$ of integers of w bits, i.e., on the alphabet
  * \f$ [ 0 , 2^w ) \f$, in \f$ n w \f$ bits plus the directories of rank and
  * select [see RankSelect.h], with access, rank and select of any symbol in
- * O( w ) time, and the queries on a range of places that a sequence of
+ * \f$ O( w ) \f$ time, and the queries on a range of places that a sequence of
  * integers needs (the k-th smallest item of a range, the items below a
- * value), also in O( w ) time.
+ * value), also in \f$ O( w ) \f$ time.
  *
  * The level \f$ \ell = 0 , \ldots , w - 1 \f$ is a vector of bits
  * \f$ B_\ell \f$ that holds the bit \f$ w - 1 - \ell \f$ (from the most
@@ -103,7 +103,7 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// a static sequence of integers of w bits with access, rank, select and
-/// the range quantiles in O( w ) time
+/// the range quantiles in \f$ O( w ) \f$ time
 class WaveletMatrix {
 
 /*--------------------------------------------------------------------------*/

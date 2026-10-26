@@ -93,7 +93,7 @@
 namespace ADS {
 
 /// smallerToTheRight(): c[ i ], the number of j > i with A[ j ] < A[ i ],
-/// by mergesort on the places; O( n log n )
+/// by mergesort on the places; \f$ O( n \log n ) \f$
 /// \post the sum of c is the number of inversions of A (an audit)
 template< class T , class C = std::less<> >
 std::vector< std::size_t > smallerToTheRight( const std::vector< T > & A ,
@@ -101,7 +101,7 @@ std::vector< std::size_t > smallerToTheRight( const std::vector< T > & A ,
 
 /// longestKDistinctRun(): the start and the length of the first longest run
 /// of consecutive items of S with at most k distinct values, by a sliding
-/// window; O( n log k )
+/// window; \f$ O( n \log k ) \f$
 /// \post the run has at most k distinct values (an audit)
 template< std::ranges::random_access_range R >
 std::pair< std::size_t , std::size_t > longestKDistinctRun( const R & S ,
@@ -109,7 +109,7 @@ std::pair< std::size_t , std::size_t > longestKDistinctRun( const R & S ,
 
 /// largestGap(): the longest stretch ( x , y ), between the first start and
 /// the last end, covered by none of the closed intervals I, the first one
-/// on ties, or nothing; O( n log n )
+/// on ties, or nothing; \f$ O( n \log n ) \f$
 /// \pre a <= b for each interval [ a , b ]
 /// \post no interval meets ( x , y ) (an audit)
 template< class T >
@@ -118,7 +118,7 @@ std::optional< std::pair< T , T > > largestGap(
                                        std::vector< std::pair< T , T > > I );
 
 /// lineAssignment(): the least sum of | H[ i ] - L[ p( i ) ] | over the
-/// permutations p, computed in the type W, by sorting; O( n log n )
+/// permutations p, computed in the type W, by sorting; \f$ O( n \log n ) \f$
 /// \pre H and L have the same size
 template< class T , class W = T >
  requires std::is_arithmetic_v< T >

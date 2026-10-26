@@ -127,7 +127,7 @@ inline double chiSquare( const std::vector< long > & Y ,
                          const std::vector< double > & p );
 
 /// the statistics ( K+ , K- ) of Kolmogorov and Smirnov of the numbers U
-/// in [ 0 , 1 ) against the uniform distribution, scaled by sqrt( n )
+/// in [ 0 , 1 ) against the uniform distribution, scaled by \f$ \sqrt{n} \f$
 /// \pre U not empty
 inline std::pair< double , double > kolmogorovSmirnov(
                                              std::vector< double > U );

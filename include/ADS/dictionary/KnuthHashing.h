@@ -139,7 +139,7 @@ class CoalescedHashTable {
   long link = -1;                ///< the next place on the list, or -1
   };
 
- /// each key is on the list of its place, O( n^2 )
+ /// each key is on the list of its place, \f$ O( n^2 ) \f$
  [[nodiscard]] bool listed( void ) const;
 
  std::vector< Slot > f_T;        ///< the m places and the cellar

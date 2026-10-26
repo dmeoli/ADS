@@ -1505,7 +1505,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the borders and the padding of the other tables, and the brief
   descriptions of Doxygen no longer cut at the dots of the ranges
   (A[ 0 .. n - 1 ]) and of e.g.; the formulae of a few comments out of
-  the math of Doxygen
+  the math of Doxygen, and the bounds of the comments of the headers
+  (O( n log n ), Theta( n + m ), 2 n + o( n ) bits, ...) written in plain
+  text, all in the LaTeX of Doxygen now, as the other formulae; the
+  accents of the Italian words as accents, not apostrophes
 - the build with MSVC: PGMIndex, the loser tree of the multiway merge,
   prefixKeySort() and the multiple search no longer use __int128 or
   __builtin_bswap64() where the compiler lacks them, but the primitives

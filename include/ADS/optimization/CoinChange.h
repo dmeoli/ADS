@@ -7,7 +7,7 @@
  * coins of 50, 10, 5 and 1 cents, but not for coins of 11, 5 and 1, where
  * it pays 15 with five coins instead of three of 5. optimalChange() is the
  * dynamic programming, the fewest coins N[ c ] of each amount c,
- * \f$ N[ c ] = 1 + \min_{d \leq c} N[ c - d ] \f$, O( n C ).
+ * \f$ N[ c ] = 1 + \min_{d \leq c} N[ c - d ] \f$, \f$ O( n C ) \f$.
  *
  * The contracts [see Contract.h]: the coins are positive and the amount is not
  * negative; the change of greedyChange() sums to the amount, and

@@ -2,13 +2,13 @@
 /*---------------------- File SortedArrayDictionary.h ----------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A DICTIONARY [see ADT.h] realized with a vector of the pairs ( key ,
- * value ) sorted by key, beyond the book: lookup() is the binary search of
- * section 1.2 [see BinarySearch.h], in O( log n ) time, while insert() and
- * remove() move the pairs after the place of the key, in O( n ). It is the
- * realization to prefer when the lookups far outnumber the changes, and it
- * also gives the keys in order, and the range of keys between two values,
- * at no further cost.
+ * A DICTIONARY [see ADT.h] realized with a vector of the pairs ( key , value )
+ * sorted by key, beyond the book: lookup() is the binary search of section 1.2
+ * [see BinarySearch.h], in \f$ O( \log n ) \f$ time, while insert() and
+ * remove() move the pairs after the place of the key, in \f$ O( n ) \f$. It is
+ * the realization to prefer when the lookups far outnumber the changes, and it
+ * also gives the keys in order, and the range of keys between two values, at
+ * no further cost.
  *
  * The contracts [see Contract.h]: insert() ensures that k has the value v,
  * remove() that k is not there; the invariant is that the keys are
@@ -64,14 +64,14 @@ class SortedArrayDictionary {
  using Key = K;     ///< the type of the keys
  using Value = V;   ///< the type of the values
 
- /// the value of the key k, or nothing, O( log n )
+ /// the value of the key k, or nothing, \f$ O( \log n ) \f$
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
- /// associates the value v to the key k, O( n )
+ /// associates the value v to the key k, \f$ O( n ) \f$
  /// \post k has the value v
  void insert( const K & k , const V & v );
 
- /// removes the key k, if it is there, O( n )
+ /// removes the key k, if it is there, \f$ O( n ) \f$
  /// \post k is not there
  void remove( const K & k );
 
@@ -108,7 +108,7 @@ class SortedArrayDictionary {
  /// the place of the first key not smaller than k, by binary search
  [[nodiscard]] std::size_t place( const K & k ) const;
 
- /// the keys are strictly increasing, O( n )
+ /// the keys are strictly increasing, \f$ O( n ) \f$
  [[nodiscard]] bool sorted( void ) const;
 
  std::vector< std::pair< K , V > > f_A;   ///< the pairs, sorted by key

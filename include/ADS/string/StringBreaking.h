@@ -14,7 +14,7 @@
  * intervals, so the largest optimal split K[ i ][ j ] lies between
  * K[ i ][ j - 1 ] and K[ i + 1 ][ j ] (Knuth for the search trees, Yao in
  * general): the candidates of all the intervals of one length add up to
- * O( n ), and the table costs \f$ \Theta( n^2 ) \f$ time and space.
+ * \f$ O( n ) \f$, and the table costs \f$ \Theta( n^2 ) \f$ time and space.
  * stringBreakingOrder() reads an optimal order back from the splits, each
  * cut before those of its two pieces.
  *

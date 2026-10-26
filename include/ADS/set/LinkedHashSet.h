@@ -5,7 +5,7 @@
  * The SET on a hash table whose foreach follows the order of insertion
  * (exercise 8.9): a LIST keeps the items in that order and the table maps
  * each item to its position, so insert(), remove() and contains() take
- * O( 1 ) expected time and forEach() O( n ).
+ * \f$ O( 1 ) \f$ expected time and forEach() \f$ O( n ) \f$.
  *
  * The contracts [see Contract.h]: after insert() the item is there and
  * after remove() it is not; the invariant is that each item of the list
@@ -59,8 +59,8 @@ namespace ADS {
 
 /// a set on a hash table whose foreach follows the order of insertion: a
 /// LIST keeps the items in that order and the table maps each item to its
-/// position, so insert(), remove() and contains() take O( 1 ) expected
-/// time and forEach() O( n ) (exercise 8.9)
+/// position, so insert(), remove() and contains() take \f$ O( 1 ) \f$ expected
+/// time and forEach() \f$ O( n ) \f$ (exercise 8.9)
 template< class T , class H = std::hash< T > >
 class LinkedHashSet {
 
@@ -90,7 +90,7 @@ class LinkedHashSet {
  /// \post x is not in the set
  void remove( const T & x );
 
- /// f( x ) on the items in the order of insertion, O( n ) time
+ /// f( x ) on the items in the order of insertion, \f$ O( n ) \f$ time
  template< class F >
  void forEach( F && f ) const;
 
@@ -120,7 +120,7 @@ class LinkedHashSet {
  using Pos = typename List< T >::Pos;
 
  /// each item of the order is indexed at its own position, and the table
- /// has no other item, O( n )
+ /// has no other item, \f$ O( n ) \f$
  [[nodiscard]] bool indexed( void ) const;
 
  List< T > f_order;                                        ///< the order

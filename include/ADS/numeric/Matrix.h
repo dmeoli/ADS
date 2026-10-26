@@ -71,14 +71,14 @@ namespace ADS {
 template< class T >
 using Matrix = std::vector< std::vector< T > >;   ///< by rows
 
-/// moltiplicaMatrici(): Theta( n^3 )
+/// moltiplicaMatrici(): \f$ \Theta( n^3 ) \f$
 /// \pre A and B are n x n
 template< class T >
 Matrix< T > multiplyNaive( const Matrix< T > & A , const Matrix< T > & B ,
                            long * mults = nullptr );
 
-/// the product of A, p x q, and B, q x r, Theta( p q r ); with q = 0 the
-/// vector B has no row to give r, and the product is p x 0
+/// the product of A, p x q, and B, q x r, \f$ \Theta( p q r ) \f$; with q = 0
+/// the vector B has no row to give r, and the product is p x 0
 /// \pre A is p x q and B is q x r
 template< class T >
 Matrix< T > multiply( const Matrix< T > & A , const Matrix< T > & B );
@@ -111,8 +111,8 @@ Matrix< T > strassenRec( const Matrix< T > & A , const Matrix< T > & B ,
 
 }  // end( namespace detail )
 
-/// strassen(): O( n^2.81 ), the blocks of at most cutoff rows by the naive
-/// method
+/// strassen(): \f$ O( n^{2.81} ) \f$, the blocks of at most cutoff rows by the
+/// naive method
 /// \pre A and B are n x n
 /// \post the result is A B
 template< class T >

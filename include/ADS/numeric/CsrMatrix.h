@@ -9,25 +9,26 @@
  * with a vector instead of the walk of the orthogonal lists of
  * SparseMatrix [see SparseMatrix.h], whose nodes are scattered.
  *
- * - The matrix is built from triplets ( i , j , v ) in any order by a
- *   counting sort on the rows, a sort of the columns of each row and the
- *   sum of the equal places, O( nnz + m + sort ), or from a SparseMatrix.
+ * - The matrix is built from triplets ( i , j , v ) in any order by a counting
+ *   sort on the rows, a sort of the columns of each row and the sum of the
+ *   equal places, \f$ O( \mathit{nnz} + m + \mathrm{sort} ) \f$, or from a
+ *   SparseMatrix.
  * - multiply() is the product y = A x, by rows: the nonzeros stream from
  *   memory in one pass, the entries of x are read by column: \f$ 2\,nnz
  *   \f$ operations on \f$ 12\,nnz + 8 ( m + 1 ) \f$ bytes of the matrix,
  *   8 m written and up to 8 nnz read of x, so that the product is bound
  *   by the memory, and on the benchmark neither more accumulators per row
  *   nor the gathers of AVX-512 made it faster.
- * - transpose() is the CSR of the transpose, i.e., the matrix by columns,
- *   by a counting sort on the columns that keeps the rows sorted, O( nnz +
- *   m + n ); a large matrix whose rows span columns far apart (a sample
- *   of blocks of 64 rows decides) goes first into 256 buckets of
- *   consecutive columns and then each bucket into its slice of the
- *   transpose, two passes whose writes stay in few streams and in the
- *   cache instead of one pass of writes scattered over all the transpose
- *   (the partitioned radix sort of the databases): 2 nnz moves instead of
- *   nnz, but \f$ O( nnz / L ) \f$ misses instead of up to nnz, for lines
- *   of L items, when a slice of \f$ nnz / 256 \f$ items fits the cache.
+ * - transpose() is the CSR of the transpose, i.e., the matrix by columns, by a
+ *   counting sort on the columns that keeps the rows sorted,
+ *   \f$ O( \mathit{nnz} + m + n ) \f$; a large matrix whose rows span columns
+ *   far apart (a sample of blocks of 64 rows decides) goes first into 256
+ *   buckets of consecutive columns and then each bucket into its slice of the
+ *   transpose, two passes whose writes stay in few streams and in the cache
+ *   instead of one pass of writes scattered over all the transpose (the
+ *   partitioned radix sort of the databases): 2 nnz moves instead of nnz, but
+ *   \f$ O( nnz / L ) \f$ misses instead of up to nnz, for lines of L items,
+ *   when a slice of \f$ nnz / 256 \f$ items fits the cache.
  *
  * The contracts [see Contract.h]: the places of the triplets are in the
  * matrix, and the columns fit 32 bits (the rows too, for transpose()); x

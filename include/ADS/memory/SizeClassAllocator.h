@@ -7,21 +7,20 @@
  * one thread, the size of a block given back by its owner (sized
  * deallocation, as std::allocator does), so that a block needs no header.
  *
- * A request of n bytes, \f$ 1 \leq n \leq 32768 \f$, goes to the least
- * class not below it: the multiples of 16 up to 128, then four classes per
- * power of 2 (160, 192, 224, 256, 320, ...), so that the waste is below
- * 25% of a block past 128 bytes (and below 16 bytes up to it), and the
- * class is found by a shift and a count of the leading zeros, with no
- * table and no loop. Each class has a free list of the blocks given back,
- * the last one first (whose memory is still in the cache), and a page of
- * 64 KB (the size of the largest block, if larger) whose rest is cut a
- * block at a time; a request takes the first free block, or the next one
- * of the page, or a new page, in O( 1 ) time, and a release puts the block
- * at the head of the list of its class, in O( 1 ). The pages go back to the
- * system with the allocator (or by release()): memory is not returned
- * while the allocator lives, as with a pool, but the blocks given back
- * serve any later request of their class. A request of more than 32768
- * bytes goes to operator new.
+ * A request of n bytes, \f$ 1 \leq n \leq 32768 \f$, goes to the least class
+ * not below it: the multiples of 16 up to 128, then four classes per power of
+ * 2 (160, 192, 224, 256, 320, ...), so that the waste is below 25% of a block
+ * past 128 bytes (and below 16 bytes up to it), and the class is found by a
+ * shift and a count of the leading zeros, with no table and no loop. Each
+ * class has a free list of the blocks given back, the last one first (whose
+ * memory is still in the cache), and a page of 64 KB (the size of the largest
+ * block, if larger) whose rest is cut a block at a time; a request takes the
+ * first free block, or the next one of the page, or a new page, in
+ * \f$ O( 1 ) \f$ time, and a release puts the block at the head of the list of
+ * its class, in \f$ O( 1 ) \f$. The pages go back to the system with the
+ * allocator (or by release()): memory is not returned while the allocator
+ * lives, as with a pool, but the blocks given back serve any later request of
+ * their class. A request of more than 32768 bytes goes to operator new.
  *
  * The contracts [see Contract.h]: a request is of at least one byte, and
  * deallocate() gets a block of this allocator with the size of its

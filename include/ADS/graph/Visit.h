@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The visits of a GRAPH of section 9.5 and their applications, each in
- * Theta( n + m ) time on lists or vectors of adjacency:
+ * \f$ \Theta( n + m ) \f$ time on lists or vectors of adjacency:
  *
  * - genericVisit(), the general scheme of which the others are cases: the
  *   reached nodes R and the open ones Q start as { r }, the tree B as

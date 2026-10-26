@@ -39,15 +39,15 @@
  * \f$ 4 \cdot 128 / 8192 \f$ for the groups, besides the rank directory
  * [see CompactRankSelect.h], 3.5% of the bits, since no search needs a
  * rank. The excess of any place is
- * \f$ E( i ) = 2 rank_1( i + 1 ) - ( i + 1 ) \f$, in O( 1 ) time.
+ * \f$ E( i ) = 2 rank_1( i + 1 ) - ( i + 1 ) \f$, in \f$ O( 1 ) \f$ time.
  *
- * Jacobson gives findClose() in O( log n ) time with the pioneers, and Munro
- * and Raman in O( 1 ) time with two levels of pioneers and tables, in
- * 2n + o( n ) bits; the range min-max tree of Navarro and Sadakane reaches
- * O( 1 ) time with a tree of degree \f$ \Theta( \log n ) \f$ and tables,
- * and its binary form with blocks of a few hundred bits, the one here, is
- * the fastest in practice (Arroyuelo, Canovas, Navarro and Sadakane; Gog
- * and Petri; Grossi and Ottaviano).
+ * Jacobson gives findClose() in \f$ O( \log n ) \f$ time with the pioneers,
+ * and Munro and Raman in \f$ O( 1 ) \f$ time with two levels of pioneers and
+ * tables, in \f$ 2 n + o( n ) \f$ bits; the range min-max tree of Navarro and
+ * Sadakane reaches \f$ O( 1 ) \f$ time with a tree of degree
+ * \f$ \Theta( \log n ) \f$ and tables, and its binary form with blocks of a
+ * few hundred bits, the one here, is the fastest in practice (Arroyuelo,
+ * Canovas, Navarro and Sadakane; Gog and Petri; Grossi and Ottaviano).
  *
  * The contracts [see Contract.h]: the sequence is balanced (an audit),
  * findClose() and enclose() get a '(' and findOpen() a ')'; the

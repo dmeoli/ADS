@@ -76,7 +76,7 @@
 namespace ADS {
 
 /// exponentialSearch(): the least i >= lo with p( i ), p false and then
-/// true from lo; O( log( i - lo + 1 ) ) evaluations of p
+/// true from lo; \f$ O( \log( i - lo + 1 ) ) \f$ evaluations of p
 /// \pre p( i ) for some i >= lo of the type I
 /// \post p( r ), and r == lo or ! p( r - 1 )
 template< std::integral I , class P >
@@ -84,7 +84,7 @@ I exponentialSearch( P && p , I lo = I( 0 ) );
 
 /// unboundedSearch(): the first place i where get( i ), which gives an
 /// optional item, empty past the end of the sequence, gives no item or an
-/// item x with pred( x ); O( log i ) calls of get
+/// item x with pred( x ); \f$ O( \log i ) \f$ calls of get
 /// \pre pred false and then true on the items of the sequence
 /// \post get( r ) is empty or satisfies pred, and get( r - 1 ) does not
 template< class G , class P >

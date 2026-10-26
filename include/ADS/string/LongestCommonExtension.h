@@ -29,29 +29,28 @@
  * - the longer ones go to the range minimum on LCP, cut into blocks of 16
  *   entries, each one line of the cache. For the entry r of a block that
  *   starts at s a word \f$ M_r \f$ of 16 bits has the bit k set if
- *   \f$ LCP[ s + k ] < LCP[ s + k' ] \f$ for every \f$ k < k' \le r - s
- *   \f$, i.e., if s + k is on the stack of the suffix minima of the block
- *   up to r; the minimum of \f$ LCP[ s + a .. r ] \f$ is then
- *   \f$ LCP[ s + a + \mathrm{ctz}( M_r \gg a ) ] \f$, one shift and one
- *   count of trailing zeros (the words of Alstrup, Gavoille, Kaplan and
- *   Rauhe). The blocks form groups of 64, each with the sparse table of
- *   the minima of its blocks, \f$ \min_{ x \le d < x + 2^L } \f$ for
- *   \f$ L \le 6 \f$, and the minima of the groups are in a sparse table of
- *   their own; the blocks strictly between those of a and b - 1 are
- *   covered by two overlapping ranges of one group, or by those of two
- *   partial groups and of the groups between them. Every place that a
- *   query reads is known once the two ranks are, and the lines of the two
- *   blocks are requested with their words, so that a query waits for two
- *   reads of the memory in a row: the ranks, then all the rest. Building
- *   it costs O( n ) but for the table of the groups, \f$ O( ( n / 1024 )
- *   \log( n / 1024 ) ) \f$, and a query O( 1 ).
+ *   \f$ LCP[ s + k ] < LCP[ s + k' ] \f$ for every \f$ k < k' \le r - s \f$,
+ *   i.e., if s + k is on the stack of the suffix minima of the block up to r;
+ *   the minimum of \f$ LCP[ s + a .. r ] \f$ is then \f$ LCP[ s + a +
+ *   \mathrm{ctz}( M_r \gg a ) ] \f$, one shift and one count of trailing zeros
+ *   (the words of Alstrup, Gavoille, Kaplan and Rauhe). The blocks form groups
+ *   of 64, each with the sparse table of the minima of its blocks,
+ *   \f$ \min_{ x \le d < x + 2^L } \f$ for \f$ L \le 6 \f$, and the minima of
+ *   the groups are in a sparse table of their own; the blocks strictly between
+ *   those of a and b - 1 are covered by two overlapping ranges of one group,
+ *   or by those of two partial groups and of the groups between them. Every
+ *   place that a query reads is known once the two ranks are, and the lines of
+ *   the two blocks are requested with their words, so that a query waits for
+ *   two reads of the memory in a row: the ranks, then all the rest. Building
+ *   it costs \f$ O( n ) \f$ but for the table of the groups, \f$ O( ( n / 1024
+ *   ) \log( n / 1024 ) ) \f$, and a query \f$ O( 1 ) \f$.
  *
- * The space is 4 n bytes for each of \f$ SA^{-1} \f$ and LCP (on 32 bits),
- * 2 n for the words, 1.75 n for the tables of the groups and a vanishing
- * share for the table of the groups, against the 2 n + o( n ) bits of the
- * succinct range minima of Fischer and Heun, whose practical form
- * (Baumstark, Gog, Heuer and Labeit) pays for its space with a select on
- * a balanced-parentheses sequence at each query.
+ * The space is 4 n bytes for each of \f$ SA^{-1} \f$ and LCP (on 32 bits), 2 n
+ * for the words, 1.75 n for the tables of the groups and a vanishing share for
+ * the table of the groups, against the \f$ 2 n + o( n ) \f$ bits of the
+ * succinct range minima of Fischer and Heun, whose practical form (Baumstark,
+ * Gog, Heuer and Labeit) pays for its space with a select on a
+ * balanced-parentheses sequence at each query.
  *
  * The contracts [see Contract.h]: a query asks for i , j <= n (n gives 0),
  * and its answer is the lcp of the two suffixes (an audit, linear in it).
@@ -115,8 +114,8 @@ namespace ADS {
 /*---------------------------- LceIndex ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the longest common extensions of the suffixes of a text, O( 1 ) each,
-/// on integers I (32 or 64 bits, unsigned)
+/// the longest common extensions of the suffixes of a text, \f$ O( 1 ) \f$
+/// each, on integers I (32 or 64 bits, unsigned)
 template< class I = std::uint32_t >
  requires( std::same_as< I , std::uint32_t > ||
            std::same_as< I , std::uint64_t > )
@@ -128,7 +127,8 @@ class LceIndex {
 
  public:
 
- /// the index of T (a copy of it), O( n ) time but for the sparse table
+ /// the index of T (a copy of it), \f$ O( n ) \f$ time but for the sparse
+ /// table
  /// \pre T.size() < 2^31 if I has 32 bits
  explicit LceIndex( std::string_view T );
 

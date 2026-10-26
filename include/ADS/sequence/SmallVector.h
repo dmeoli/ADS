@@ -12,7 +12,7 @@
  * std::vector does: n pushes cost fewer than 2 n moves of items, and the
  * space is at most 2 n + N items.
  *
- * A move takes the memory of the other vector in O( 1 ) time when its
+ * A move takes the memory of the other vector in \f$ O( 1 ) \f$ time when its
  * items are on the allocator, and moves the items one by one, at most N,
  * when they are inside it; the vector moved from is left empty.
  *
@@ -167,7 +167,7 @@ class SmallVector {
   return( f_A[ f_n - 1 ] );
   }
 
- /// x at the end, O( 1 ) amortized; x may be an item of the vector
+ /// x at the end, \f$ O( 1 ) \f$ amortized; x may be an item of the vector
  void push_back( const T & x ) { emplace_back( x ); }
  void push_back( T && x ) { emplace_back( std::move( x ) ); }
 

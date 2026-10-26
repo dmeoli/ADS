@@ -10,8 +10,8 @@
  *   and Zippel a random point of { 1 , ... , 2 d }^n is a root of a
  *   nonzero one with probability at most 1/2; "zero" may be wrong, "not
  *   zero" never;
- * - freivalds(), whether A B = C for n x n matrices: A ( B x ) against C x
- *   for a random x of +1 and -1, O( n^2 ) per run instead of the product,
+ * - freivalds(), whether A B = C for n x n matrices: A ( B x ) against C x for
+ *   a random x of +1 and -1, \f$ O( n^2 ) \f$ per run instead of the product,
  *   wrong with probability at most 1/2 when A B != C (exercise 17.4);
  * - halfSatisfiable(), whether a boolean formula of n variables is true on
  *   more than half of the assignments, from the fraction of the true ones
@@ -73,7 +73,7 @@ namespace ADS {
 template< class F , class R >
 bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
 
-/// whether A B = C, by K runs of O( n^2 )
+/// whether A B = C, by K runs of \f$ O( n^2 ) \f$
 /// \pre A, B and C are n x n and K >= 0
 template< class T , class R >
 bool freivalds( const std::vector< std::vector< T > > & A ,

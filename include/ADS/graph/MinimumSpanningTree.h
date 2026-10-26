@@ -9,17 +9,17 @@
  * crosses the cut ( S , V - S ), then the lightest edge across it can be
  * added to A.
  *
- * - kruskal() scans the edges by increasing weight and keeps one if its
- *   ends are in two components of the forest, an MFSET with the rank and
- *   the compression of the paths: O( m log n ) for the sort and almost
- *   O( m ) for the rest; it stops after n - 1 edges. With integer weights
- *   in [ 0 , k ) the edges are sorted by Counting Sort, O( m + n + k )
- *   (exercise 14.2).
+ * - kruskal() scans the edges by increasing weight and keeps one if its ends
+ *   are in two components of the forest, an MFSET with the rank and the
+ *   compression of the paths: \f$ O( m \log n ) \f$ for the sort and almost
+ *   \f$ O( m ) \f$ for the rest; it stops after n - 1 edges. With integer
+ *   weights in [ 0 , k ) the edges are sorted by Counting Sort,
+ *   \f$ O( m + n + k ) \f$ (exercise 14.2).
  * - prim() grows the tree from a root r, adding the lightest edge that
  *   leaves it, the nodes in a priority queue by the weight of their
- *   lightest edge to the tree: O( m log n ) with a binary heap,
- *   O( n^2 ) with an unsorted list, better on dense graphs, and
- *   O( m + n log n ) with a Fibonacci heap (exercise 14.4).
+ *   lightest edge to the tree: \f$ O( m \log n ) \f$ with a binary heap,
+ *   \f$ O( n^2 ) \f$ with an unsorted list, better on dense graphs, and
+ *   \f$ O( m + n \log n ) \f$ with a Fibonacci heap (exercise 14.4).
  *
  * A graph that is not connected gives a minimum spanning forest by
  * kruskal(), and the tree of the component of r by prim(). Both take
@@ -156,7 +156,7 @@ std::vector< int > prim( const G & g , int r , Q & q ,
 /// whether T is a minimum spanning forest of the edges A on the nodes
 /// [ 0 , n ): its edges are in A, it has no cycle, as many edges as n
 /// minus the components of A, and no edge of A weighs less than the
-/// heaviest edge of the path of T between its ends, O( m n )
+/// heaviest edge of the path of T between its ends, \f$ O( m n ) \f$
 template< class W >
 bool isMinimumSpanningForest( int n ,
                               const std::vector< WeightedEdge< W > > & A ,

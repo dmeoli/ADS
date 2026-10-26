@@ -2,15 +2,15 @@
 /*-------------------------- File PatriciaTrie.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The Patricia trie with the blind search of Ferragina and Grossi, beyond
- * the book: the compacted trie of a sorted dictionary of n strings [see
- * RadixTree in Trie.h, whose edges keep their whole labels] stripped of
- * the labels, each edge keeping only its first character (the branching
- * one) and each node the length of the prefix it stands for, so that it
- * takes O( n ) space whatever the length of the strings, which are stored
- * apart (e.g., on disk). The blind search of a pattern P of p characters
- * finds its lexicographic position (the number of strings smaller than P)
- * reading a single string, in three stages:
+ * The Patricia trie with the blind search of Ferragina and Grossi, beyond the
+ * book: the compacted trie of a sorted dictionary of n strings [see RadixTree
+ * in Trie.h, whose edges keep their whole labels] stripped of the labels, each
+ * edge keeping only its first character (the branching one) and each node the
+ * length of the prefix it stands for, so that it takes \f$ O( n ) \f$ space
+ * whatever the length of the strings, which are stored apart (e.g., on disk).
+ * The blind search of a pattern P of p characters finds its lexicographic
+ * position (the number of strings smaller than P) reading a single string, in
+ * three stages:
  *
  * - it goes down from the root comparing only the branching characters
  *   with the characters of P at the lengths of the nodes, possibly
@@ -24,18 +24,18 @@
  *   \f$ P[ \ell ] \f$, else it is just before or just after the strings
  *   below v, by the comparison of \f$ P[ \ell ] \f$ and \f$ s[ \ell ] \f$.
  *
- * The two traversals take \f$ O( p \log \sigma ) \f$ time with the edges of
- * a node in a sorted array (O( p ) with a perfect hash at each node [see
- * PerfectHashing.h]) and touch no string, and the comparison reads one
- * string, i.e., \f$ O( p / B ) \f$ transfers of blocks against the \f$ O(
- * p ) \f$ of the compacted trie, which reads a label per edge, and the
- * \f$ O( ( p / B ) \log n ) \f$ of the binary search [see PrefixSearch.h].
- * The positions of P and of P# give the range of the strings prefixed by
- * P (Theorem 9.8 of the notes). A string that is a prefix of another ends
- * with a character smaller than all the others, the leaf of a string s
- * having length \f$ | s | + 1 \f$. The trie is built from the sorted
- * strings and the longest common prefixes of adjacent ones in O( N ) time
- * with a stack, N being the characters of the strings.
+ * The two traversals take \f$ O( p \log \sigma ) \f$ time with the edges of a
+ * node in a sorted array (\f$ O( p ) \f$ with a perfect hash at each node [see
+ * PerfectHashing.h]) and touch no string, and the comparison reads one string,
+ * i.e., \f$ O( p / B ) \f$ transfers of blocks against the \f$ O( p ) \f$ of
+ * the compacted trie, which reads a label per edge, and the
+ * \f$ O( ( p / B ) \log n ) \f$ of the binary search [see PrefixSearch.h]. The
+ * positions of P and of P# give the range of the strings prefixed by P
+ * (Theorem 9.8 of the notes). A string that is a prefix of another ends with a
+ * character smaller than all the others, the leaf of a string s having length
+ * \f$ | s | + 1 \f$. The trie is built from the sorted strings and the longest
+ * common prefixes of adjacent ones in \f$ O( N ) \f$ time with a stack, N
+ * being the characters of the strings.
  *
  * The contracts [see Contract.h]: the strings sorted and distinct (an
  * audit); each position r is such that the strings before r are smaller
@@ -179,7 +179,8 @@ class PatriciaTrie {
  [[nodiscard]] std::size_t blind( std::string_view P , int term ,
                                   std::vector< std::size_t > & path ) const;
 
- /// the first leaf below each node, its strings and their depths, O( N )
+ /// the first leaf below each node, its strings and their depths,
+ /// \f$ O( N ) \f$
  [[nodiscard]] bool wellFormed( void ) const;
 
  static constexpr std::size_t kNone = ~std::size_t( 0 );

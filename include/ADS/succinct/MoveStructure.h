@@ -5,11 +5,11 @@
  * The move structure of Nishimoto and Tabei: a permutation \f$ \pi \f$ of
  * \f$ [ 0 , n ) \f$ that shifts each of m intervals alike, the interval
  * \f$ [ p_i , p_{i+1} ) \f$ onto \f$ [ q_i , q_i + p_{i+1} - p_i ) \f$ (the
- * LF-mapping of a transform of Burrows and Wheeler on its runs, the
- * function \f$ \phi \f$ of the r-index on the places of the starts of the
- * runs [see RIndex.h]), with \f$ \pi( x ) \f$ and the interval of
- * \f$ \pi( x ) \f$ in O( 1 ) time from x and its interval, in O( m ) words
- * rather than n.
+ * LF-mapping of a transform of Burrows and Wheeler on its runs, the function
+ * \f$ \phi \f$ of the r-index on the places of the starts of the runs [see
+ * RIndex.h]), with \f$ \pi( x ) \f$ and the interval of \f$ \pi( x ) \f$ in
+ * \f$ O( 1 ) \f$ time from x and its interval, in \f$ O( m ) \f$ words rather
+ * than n.
  *
  * Each interval i keeps \f$ p_i \f$, \f$ q_i \f$ and the interval
  * \f$ d_i \f$ that holds \f$ q_i \f$, so that
@@ -78,7 +78,7 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// a permutation of [ 0 , n ) that shifts each of its intervals alike,
-/// with the image of a place and its interval in O( 1 ) time
+/// with the image of a place and its interval in \f$ O( 1 ) \f$ time
 class MoveStructure {
 
 /*--------------------------------------------------------------------------*/

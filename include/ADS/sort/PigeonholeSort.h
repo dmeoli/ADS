@@ -2,10 +2,10 @@
 /*------------------------- File PigeonholeSort.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Pigeonhole Sort (exercise 4.11) of the pairs ( key , value ) with keys
- * in [ 0 , k ): the value of each pair goes at the end of the LIST of its
- * key, then the lists are read in the order of the keys; O( n + k ) time,
- * and stable, unlike Counting Sort, which only counts the keys.
+ * Pigeonhole Sort (exercise 4.11) of the pairs ( key , value ) with keys in [
+ * 0 , k ): the value of each pair goes at the end of the LIST of its key, then
+ * the lists are read in the order of the keys; \f$ O( n + k ) \f$ time, and
+ * stable, unlike Counting Sort, which only counts the keys.
  *
  * The contracts [see Contract.h]: k >= 0 and each key must be in [ 0 , k ),
  * checked key by key, and the output has as many pairs as the input, its

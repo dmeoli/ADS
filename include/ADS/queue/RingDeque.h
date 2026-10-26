@@ -2,17 +2,17 @@
 /*---------------------------- File RingDeque.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A double ended queue on a circular vector that grows, beyond the book:
- * the circular vector of ArrayQueue [see ArrayQueue.h] whose capacity is a
- * power of 2, so that a place is reduced by a mask instead of a division,
- * and that doubles when full, the items moved in order to the front of the
- * new vector (O( 1 ) amortized time per insertion). The four operations
- * at the ends take O( 1 ) time, an item is read by its rank in O( 1 ), and
- * the items lie in at most two contiguous pieces, which the moves and the
- * visits run through at the speed of the memory. The doubling of a deque
- * of \f$ 2^j \f$ places moves its \f$ 2^j \f$ items, so that n insertions
- * move fewer than \f$ 2 n \f$ items in all, and the places are fewer than
- * \f$ 2 n + 8 \f$ for n items at the largest.
+ * A double ended queue on a circular vector that grows, beyond the book: the
+ * circular vector of ArrayQueue [see ArrayQueue.h] whose capacity is a power
+ * of 2, so that a place is reduced by a mask instead of a division, and that
+ * doubles when full, the items moved in order to the front of the new vector
+ * (\f$ O( 1 ) \f$ amortized time per insertion). The four operations at the
+ * ends take \f$ O( 1 ) \f$ time, an item is read by its rank in
+ * \f$ O( 1 ) \f$, and the items lie in at most two contiguous pieces, which
+ * the moves and the visits run through at the speed of the memory. The
+ * doubling of a deque of \f$ 2^j \f$ places moves its \f$ 2^j \f$ items, so
+ * that n insertions move fewer than \f$ 2 n \f$ items in all, and the places
+ * are fewer than \f$ 2 n + 8 \f$ for n items at the largest.
  *
  * Compared with std::deque, which keeps the items in blocks of 512 bytes
  * reached by a map of pointers, there is no indirection and no allocation

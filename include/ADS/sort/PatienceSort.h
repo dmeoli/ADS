@@ -4,15 +4,14 @@
 /** @file
  * The patience sort, beyond the book: the items are dealt, as in the card
  * game, onto piles whose tops increase from left to right, each item on the
- * leftmost pile whose top is not smaller than it (found by a binary search
- * on the tops) or on a new pile; each pile is then decreasing from its
- * bottom, and a k-way merge of the piles by a heap of their tops [see
- * DaryHeap.h] gives the sorted sequence, in \f$ O( n \log n ) \f$ time.
- * The number of piles is the length of a longest strictly increasing
- * subsequence, as Aldous and Diaconis tell (and lisFast() of
- * Subsequences.h computes), so the sort takes O( n log k ) on an input with
- * a longest increasing subsequence of length k, e.g., O( n ) on a
- * decreasing one.
+ * leftmost pile whose top is not smaller than it (found by a binary search on
+ * the tops) or on a new pile; each pile is then decreasing from its bottom,
+ * and a k-way merge of the piles by a heap of their tops [see DaryHeap.h]
+ * gives the sorted sequence, in \f$ O( n \log n ) \f$ time. The number of
+ * piles is the length of a longest strictly increasing subsequence, as Aldous
+ * and Diaconis tell (and lisFast() of Subsequences.h computes), so the sort
+ * takes \f$ O( n \log k ) \f$ on an input with a longest increasing
+ * subsequence of length k, e.g., \f$ O( n ) \f$ on a decreasing one.
  *
  * The contracts [see Contract.h]: the vector ends with the same items
  * sorted, an audit. The function is defined in PatienceSort.tpp.

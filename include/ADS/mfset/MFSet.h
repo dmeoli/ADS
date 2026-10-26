@@ -16,13 +16,12 @@
  *   tree of the root r, the lower tree goes under the higher one and the
  *   rank grows by one only when they are equal; by the Teorema 10.1 a tree
  *   of root r has at least \f$ 2^{rank[ r ]} \f$ nodes, so find() and
- *   merge() take O( log n );
- * - the union by size, in place of the rank: size[ r ] is the number of
- *   nodes of the tree of the root r, and the smaller tree goes under the
- *   larger one (on a tie, the root of y under that of x). A node goes one
- *   level down only when its tree at least doubles, hence a tree of root r
- *   has height at most \f$ \log_2 size[ r ] \f$, and the bound O( log n )
- *   is the same;
+ *   merge() take \f$ O( \log n ) \f$;
+ * - the union by size, in place of the rank: size[ r ] is the number of nodes
+ *   of the tree of the root r, and the smaller tree goes under the larger one
+ *   (on a tie, the root of y under that of x). A node goes one level down only
+ *   when its tree at least doubles, hence a tree of root r has height at most
+ *   \f$ \log_2 size[ r ] \f$, and the bound \f$ O( \log n ) \f$ is the same;
  * - the compression of the paths (section 10.2.4): find() makes each node
  *   on its way a child of the root. With both, a sequence of m operations,
  *   \f$ m \geq n \f$, takes \f$ O( n + m \alpha( m , n ) ) \f$, where
@@ -153,7 +152,7 @@ class MFSet {
  [[nodiscard]] int root( int x ) const;
 
  /// the parents form a forest of count() trees, with the rank growing
- /// upwards if the heuristic is on, O( n )
+ /// upwards if the heuristic is on, \f$ O( n ) \f$
  [[nodiscard]] bool forest( void ) const;
 
  std::vector< int > f_p;      ///< the parents

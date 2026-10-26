@@ -10,11 +10,11 @@
  * p_{i-1} \} \f$ otherwise. The volumes here may also be 0, and then the
  * column c = 0 follows the same maximum instead of being 0.
  *
- * knapsack() fills the table bottom up in Theta( n C ) time and reads the
- * set back; zaino() is the memoization of the book, top down, which solves
+ * knapsack() fills the table bottom up in \f$ \Theta( n C ) \f$ time and reads
+ * the set back; zaino() is the memoization of the book, top down, which solves
  * only the subproblems it reaches, in a hash table per object, of key c,
- * rather than in a table of n C places, whose initialization alone would
- * cost Theta( n C ); so any capacity up to the largest long is allowed.
+ * rather than in a table of n C places, whose initialization alone would cost
+ * \f$ \Theta( n C ) \f$; so any capacity up to the largest long is allowed.
  * Either is pseudopolynomial: C takes log C bits of the input.
  *
  * The contracts [see Contract.h]: profits and volumes of the same objects,

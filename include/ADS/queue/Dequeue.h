@@ -2,10 +2,10 @@
 /*----------------------------- File Dequeue.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The DEQUEUE (double ended queue) of exercise 4.9, a sequence changed at
- * both ends, which is a STACK when used at one end and a QUEUE when used at
- * both [see ADT.h]: realized with a LIST with pointers, every operation
- * takes O( 1 ) time. It is the structure of the algorithm of Pape-D'Esopo
+ * The DEQUEUE (double ended queue) of exercise 4.9, a sequence changed at both
+ * ends, which is a STACK when used at one end and a QUEUE when used at both
+ * [see ADT.h]: realized with a LIST with pointers, every operation takes
+ * \f$ O( 1 ) \f$ time. It is the structure of the algorithm of Pape-D'Esopo
  * (section 11.8).
  *
  * The contracts [see Contract.h]: removeHead(), removeTail(), head() and

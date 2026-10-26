@@ -5,7 +5,7 @@
  * The table with direct access of chapter 7: when the keys are the
  * integers in an interval [ a , b ] of size m, the function H( k ) = k - a
  * is injective, a perfect hash, and the DICTIONARY [see ADT.h] is a vector
- * of size m, every operation in O( 1 ) time.
+ * of size m, every operation in \f$ O( 1 ) \f$ time.
  *
  * The contracts [see Contract.h]: a <= b with b - a + 1 places that fit in
  * a std::size_t, and every key in [ a , b ], checked without overflow for
@@ -53,7 +53,7 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// the table with direct access of the keys in [ a , b ], H( k ) = k - a:
-/// every operation in O( 1 ) time, b - a + 1 places of memory
+/// every operation in \f$ O( 1 ) \f$ time, b - a + 1 places of memory
 template< class V >
 class DirectTable {
 
@@ -129,7 +129,7 @@ class DirectTable {
  /// whether k is in [ a , b ]
  [[nodiscard]] bool inRange( long k ) const;
 
- /// size() counts the places that are not empty, O( m )
+ /// size() counts the places that are not empty, \f$ O( m ) \f$
  [[nodiscard]] bool counted( void ) const;
 
  long f_a;                              ///< the smallest key

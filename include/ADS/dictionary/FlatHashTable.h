@@ -41,42 +41,41 @@
  * An insertion that goes past a full group sets in its byte of overflow the
  * bit of its key, one of 8. A search stops at the first group whose overflow
  * lacks the bit of its key, after the places of that group whose fingerprint
- * matches: a search for an absent key reads one group of 16 bytes, one line
- * of cache, in the common case and never touches the pairs. remove() empties
- * the place, with no deleted marks; but a place emptied in a group whose
- * overflow is not 0 still counts as full, since the bits stay set until the
- * next rebuild and the searches keep going past the group. A removal in the
- * first group of its key writes the 16 control bytes of the group whole, at
- * an address that depends only on the hash: the store of the single byte
- * would have an address known only once the control bytes arrive from
- * memory, and the loads of the next operations could not pass it before
- * then, so that the removals of random keys would pay their misses one after
- * the other instead of overlapping them (on a Xeon Gold 5120, 55 ns against
- * 33 ns per removal from 10^6 keys). For the same reason a removal counts
- * the places it may leave counted by a bound d, one more per removal, with
- * no load: when \f$ n + d \f$ reaches the bound of the full places, the
- * places counted are counted exactly, in \f$ O( m / 15 ) \f$ time, and the
- * table is rebuilt only if fewer than \f$ m / 16 \f$ places are left, so
- * that the next count comes at least \f$ m / 16 \f$ operations later and
- * costs O( 1 ) amortized. An insertion takes the first empty place of the
- * inspection of its key. The full places and those still counted stay at
- * most 7 / 8 of the places: past it the table is rebuilt, twice as large if
- * the pairs exceed half of that bound, of the same size otherwise (only the
- * bits of overflow and the places counted go away), which costs O( 1 )
- * amortized per insertion; the new pair is built in the new places before
- * the old pairs move, so that a key or a value that lives in the table is
- * still there to copy. When the hash of a key reads memory that the key
- * points to, as for the strings, the rebuild lists the full places and
- * prefetches the memory of the key 8 places ahead, so that the misses of the
- * keys overlap instead of coming one at a time. The rebuild only fills the
- * new places, each group in the order of its places, so that it keeps the
- * count of the full places of each group in a byte apart and never reads the
- * control bytes it has just written (a load of a group right after the store
- * of one of its bytes waits for the store). So some place is always empty,
- * and each inspection ends, since it visits each group at most once. The
- * search of an insertion is the one of find(), whose first group gives the
- * place of a new key when it has an empty one, the common case; the groups
- * after the first, and the rebuild, are out of line.
+ * matches: a search for an absent key reads one group of 16 bytes, one line of
+ * cache, in the common case and never touches the pairs. remove() empties the
+ * place, with no deleted marks; but a place emptied in a group whose overflow
+ * is not 0 still counts as full, since the bits stay set until the next
+ * rebuild and the searches keep going past the group. A removal in the first
+ * group of its key writes the 16 control bytes of the group whole, at an
+ * address that depends only on the hash: the store of the single byte would
+ * have an address known only once the control bytes arrive from memory, and
+ * the loads of the next operations could not pass it before then, so that the
+ * removals of random keys would pay their misses one after the other instead
+ * of overlapping them (on a Xeon Gold 5120, 55 ns against 33 ns per removal
+ * from 10^6 keys). For the same reason a removal counts the places it may
+ * leave counted by a bound d, one more per removal, with no load: when
+ * \f$ n + d \f$ reaches the bound of the full places, the places counted are
+ * counted exactly, in \f$ O( m / 15 ) \f$ time, and the table is rebuilt only
+ * if fewer than \f$ m / 16 \f$ places are left, so that the next count comes
+ * at least \f$ m / 16 \f$ operations later and costs \f$ O( 1 ) \f$ amortized.
+ * An insertion takes the first empty place of the inspection of its key. The
+ * full places and those still counted stay at most 7 / 8 of the places: past
+ * it the table is rebuilt, twice as large if the pairs exceed half of that
+ * bound, of the same size otherwise (only the bits of overflow and the places
+ * counted go away), which costs \f$ O( 1 ) \f$ amortized per insertion; the
+ * new pair is built in the new places before the old pairs move, so that a key
+ * or a value that lives in the table is still there to copy. When the hash of
+ * a key reads memory that the key points to, as for the strings, the rebuild
+ * lists the full places and prefetches the memory of the key 8 places ahead,
+ * so that the misses of the keys overlap instead of coming one at a time. The
+ * rebuild only fills the new places, each group in the order of its places, so
+ * that it keeps the count of the full places of each group in a byte apart and
+ * never reads the control bytes it has just written (a load of a group right
+ * after the store of one of its bytes waits for the store). So some place is
+ * always empty, and each inspection ends, since it visits each group at most
+ * once. The search of an insertion is the one of find(), whose first group
+ * gives the place of a new key when it has an empty one, the common case; the
+ * groups after the first, and the rebuild, are out of line.
  *
  * The iterators visit the pairs in the order of the places, as constant
  * pairs of references ( key , value ), a group at a time by the mask of
@@ -286,9 +285,9 @@ class FlatHashTable {
  /// the load factor n / m, 0 with no places
  [[nodiscard]] double load( void ) const;
 
- /// the places emptied by remove() in groups that some inspection went
- /// past, which count as full until the table is rebuilt; O( m ) time, by
- /// a scan of the groups
+ /// the places emptied by remove() in groups that some inspection went past,
+ /// which count as full until the table is rebuilt; \f$ O( m ) \f$ time, by a
+ /// scan of the groups
  [[nodiscard]] std::size_t deleted( void ) const;
 
  /// room for n pairs before the table grows

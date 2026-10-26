@@ -2,14 +2,14 @@
 /*----------------------------- File Huffman.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The code of Huffman (reality check of section 14.4): a prefix code, no
- * code being a prefix of another one, so that a text can be decoded, of
- * least length for the frequencies of the characters. The characters go
- * into a min-heap by frequency; the two least frequent ones, c_1 and c_2,
- * are replaced by a new virtual character of frequency f_1 + f_2, whose
- * children in a binary tree are c_1 and c_2; after n - 1 steps the root is
- * left, and the code of a character is the path from the root to its leaf,
- * 0 to the left and 1 to the right; O( n log n ) time. The least frequent
+ * The code of Huffman (reality check of section 14.4): a prefix code, no code
+ * being a prefix of another one, so that a text can be decoded, of least
+ * length for the frequencies of the characters. The characters go into a
+ * min-heap by frequency; the two least frequent ones, c_1 and c_2, are
+ * replaced by a new virtual character of frequency f_1 + f_2, whose children
+ * in a binary tree are c_1 and c_2; after n - 1 steps the root is left, and
+ * the code of a character is the path from the root to its leaf, 0 to the left
+ * and 1 to the right; \f$ O( n \log n ) \f$ time. The least frequent
  * characters get the longest codes.
  *
  * The contracts [see Contract.h]: huffman() needs at least one character and

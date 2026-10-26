@@ -7,14 +7,14 @@
  * secondary memory.
  *
  * An internal node has f children, \f$ \lceil m / 2 \rceil \leq f \leq m \f$
- * (the root at least 2), and f - 1 keys k[ 0 ] , ... , k[ f - 2 ]: the
- * child p[ i ] holds the keys in ( k[ i - 1 ] , k[ i ] ], p[ 0 ] those up to
- * k[ 0 ] and p[ f - 1 ] those larger than k[ f - 2 ]. The values are only in
- * the leaves, which hold up to m keys each, are all on the same level and
- * are linked in a list in the order of the keys, so that the keys in an
- * interval are read in O( log n + k ) time [see range()]. The height is
- * \f$ O( \log_{\lceil m / 2 \rceil} n ) \f$: with pages of 4 KB and m = 256
- * a few levels index billions of keys.
+ * (the root at least 2), and f - 1 keys k[ 0 ] , ... , k[ f - 2 ]: the child
+ * p[ i ] holds the keys in ( k[ i - 1 ] , k[ i ] ], p[ 0 ] those up to k[ 0 ]
+ * and p[ f - 1 ] those larger than k[ f - 2 ]. The values are only in the
+ * leaves, which hold up to m keys each, are all on the same level and are
+ * linked in a list in the order of the keys, so that the keys in an interval
+ * are read in \f$ O( \log n + k ) \f$ time [see range()]. The height is \f$ O(
+ * \log_{\lceil m / 2 \rceil} n ) \f$: with pages of 4 KB and m = 256 a few
+ * levels index billions of keys.
  *
  * The search goes down to the first child whose key is not smaller than the
  * one looked for. The insertion goes into the leaf of the key; a leaf with m
@@ -232,7 +232,7 @@ class BPlusTree {
  void up( Node * f , Node * g , const K & s );
 
  /// the shape: the keys in order and in their intervals, the number of
- /// children, the leaves on one level and linked in order, O( n )
+ /// children, the leaves on one level and linked in order, \f$ O( n ) \f$
  [[nodiscard]] bool shaped( void ) const;
 
  [[nodiscard]] bool shaped( const Node * u , const K * lo , const K * hi ,

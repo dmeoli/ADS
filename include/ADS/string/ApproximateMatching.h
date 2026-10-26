@@ -14,13 +14,13 @@
  *            DP[ i ][ j - 1 ] + 1 \} & \mbox{otherwise}
  *   \end{array} \right.
  * \f]
- * with \f$ \delta = 0 \f$ if p_{i-1} = t_{j-1} and 1 otherwise, Theta( m n )
- * time; the best occurrences end where the last row is smallest.
- * occurrence() walks back from DP[ m ][ j ] to where the occurrence starts
- * (exercise 13.1); stringMatchingSingleRow() keeps two rows only, O( n )
- * space (section 13.4). editDistance(), the distance of Levenshtein, has
- * DP[ 0 ][ j ] = j, since T( j ) has j characters more than the empty P,
- * and its result in DP[ m ][ n ].
+ * with \f$ \delta = 0 \f$ if p_{i-1} = t_{j-1} and 1 otherwise,
+ * \f$ \Theta( m n ) \f$ time; the best occurrences end where the last row is
+ * smallest. occurrence() walks back from DP[ m ][ j ] to where the occurrence
+ * starts (exercise 13.1); stringMatchingSingleRow() keeps two rows only,
+ * \f$ O( n ) \f$ space (section 13.4). editDistance(), the distance of
+ * Levenshtein, has DP[ 0 ][ j ] = j, since T( j ) has j characters more than
+ * the empty P, and its result in DP[ m ][ n ].
  *
  * The contracts [see Contract.h]: occurrence() needs the table of P and T and
  * a column of it; the best cost of stringMatching() is between 0 and m, the
@@ -92,7 +92,7 @@ std::size_t occurrence( const Table & DP , const S & P , const S & T ,
 template< class S >
 int stringMatchingSingleRow( const S & P , const S & T );
 
-/// the edit distance of P and T, O( min( m , n ) ) space
+/// the edit distance of P and T, \f$ O( \min( m , n ) ) \f$ space
 /// \post the distance is in [ | m - n | , max( m , n ) ]
 template< class S >
 int editDistance( const S & P , const S & T );

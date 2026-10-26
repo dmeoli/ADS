@@ -10,7 +10,7 @@
  *   the rain, \f$ \sum_i \min( \max_{j \leq i} h_j , \max_{j \geq i} h_j )
  *   - h_i \f$; two indices from the ends, the lower side moving inwards,
  *   since its level is fixed by its own maximum: \f$ \Theta( n ) \f$ time
- *   and O( 1 ) space, instead of the two arrays of the maxima or the
+ *   and \f$ O( 1 ) \f$ space, instead of the two arrays of the maxima or the
  *   stack of the decreasing columns.
  * - largestDivisibleSubset(): the largest subset of distinct positive
  *   integers in which of any two one divides the other: on the items
@@ -23,13 +23,13 @@
  *   a_j < a_i \} \f$, the maximum over the smaller values from a Fenwick
  *   tree of the prefix maxima on the ranks, \f$ O( n \log n ) \f$ time
  *   instead of the \f$ \Theta( n^2 ) \f$ scan.
- * - longestChainSubsequence(): the longest subsequence of S each item of
- *   which precedes the next in a strict partial order, e.g. boxes each
- *   fitting in the next, \f$ L[ j ] = 1 + \max\{ L[ i ] : i < j ,
- *   S_i \prec S_j \} \f$, \f$ \Theta( n^2 ) \f$ comparisons; for a total
- *   order it is the longest increasing subsequence, in O( n log n ). In
- *   d dimensions, the boxes free to be sorted and rotated give the box
- *   stacking problem, the longest path in the DAG of the dominance.
+ * - longestChainSubsequence(): the longest subsequence of S each item of which
+ *   precedes the next in a strict partial order, e.g. boxes each fitting in
+ *   the next, \f$ L[ j ] = 1 + \max\{ L[ i ] : i < j , S_i \prec S_j \} \f$,
+ *   \f$ \Theta( n^2 ) \f$ comparisons; for a total order it is the longest
+ *   increasing subsequence, in \f$ O( n \log n ) \f$. In d dimensions, the
+ *   boxes free to be sorted and rotated give the box stacking problem, the
+ *   longest path in the DAG of the dominance.
  * - longestDistinctSegment(): the longest segment of A with no value
  *   repeated, by a window whose left end jumps past the last occurrence of
  *   a repeated value, with a hash table of the last occurrences;

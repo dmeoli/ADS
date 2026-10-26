@@ -17,19 +17,19 @@
  * removal cost what they cost there: in the common case one group of 16
  * control bytes and one line of the pairs, compared all at once.
  *
- * renumber() walks all the pairs in the order of the places, which reads
- * the memory of the table once and in order, and gives each key its new
- * position: \f$ \mathrm{rank}( p ) \f$, the erased positions below p, is
- * the count of the erased positions before the word of 64 bits of p in a
- * bit vector of them plus the population count of the bits of that word
- * below p, in O( 1 ) time and with no branch [Jacobson], and a position
- * past the largest erased one, e, moves by m, the number of the erased
- * ones; the word and its count sit side by side, so that a rank costs one
- * access to the memory, which for \f$ e \le 2^{22} \f$ is a table of at
- * most 1 MB. The keys of the erased positions are gathered on the way and
- * removed afterwards. The whole of it takes \f$ O( N + m + e / 64 ) \f$
- * time for N places and \f$ e / 4 \f$ bytes of scratch, which stays with
- * the index for the next call.
+ * renumber() walks all the pairs in the order of the places, which reads the
+ * memory of the table once and in order, and gives each key its new position:
+ * \f$ \mathrm{rank}( p ) \f$, the erased positions below p, is the count of
+ * the erased positions before the word of 64 bits of p in a bit vector of them
+ * plus the population count of the bits of that word below p, in
+ * \f$ O( 1 ) \f$ time and with no branch [Jacobson], and a position past the
+ * largest erased one, e, moves by m, the number of the erased ones; the word
+ * and its count sit side by side, so that a rank costs one access to the
+ * memory, which for \f$ e \le 2^{22} \f$ is a table of at most 1 MB. The keys
+ * of the erased positions are gathered on the way and removed afterwards. The
+ * whole of it takes \f$ O( N + m + e / 64 ) \f$ time for N places and
+ * \f$ e / 4 \f$ bytes of scratch, which stays with the index for the next
+ * call.
  *
  * The contracts [see Contract.h]: no key is nil, the positions are below
  * \f$ 2^{32} - 1 \f$, and the positions given to renumber() are strictly

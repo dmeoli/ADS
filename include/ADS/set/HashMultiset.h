@@ -113,7 +113,7 @@ class HashMultiset {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the size is the sum of the counters, none of which is 0, O( n )
+ /// the size is the sum of the counters, none of which is 0, \f$ O( n ) \f$
  [[nodiscard]] bool counted( void ) const;
 
  ChainedHashTable< T , std::size_t , Chain::FRONT , H > f_count;

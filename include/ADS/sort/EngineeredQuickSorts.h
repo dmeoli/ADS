@@ -10,20 +10,20 @@
  *   past which the part is sorted by heapsort, so that the worst case is
  *   \f$ O( n \log n ) \f$; the small parts are sorted by insertion (the
  *   std::sort of the C++ libraries);
- * - pdqSort(), the pattern-defeating quicksort of Peters: the introsort
- *   with the pivot by the median of three, or by the ninther of Tukey on
- *   large parts, and three defences against the patterns: a partition that
- *   moved nothing is checked by an insertion sort that gives up after 8
- *   moves, so that a sorted or reversed run takes O( n ); a pivot equal to
- *   the item before the part, i.e., a run of equal keys, gets a partition
- *   that puts the equals on its left and skips them, so that k distinct
- *   keys take \f$ O( n \log k ) \f$; a partition too unbalanced (one side
- *   below n / 8) swaps a few items to break the pattern, and too many of
- *   them fall back to heapsort. On the arithmetic types with their natural
- *   order the partition goes by blocks, as in the BlockQuicksort of
- *   Edelkamp and Weiss: the items to swap are first collected, 64 at a
- *   time, as offsets by an increment with no branch, and then moved along
- *   a cycle, so that no comparison causes a mispredicted branch;
+ * - pdqSort(), the pattern-defeating quicksort of Peters: the introsort with
+ *   the pivot by the median of three, or by the ninther of Tukey on large
+ *   parts, and three defences against the patterns: a partition that moved
+ *   nothing is checked by an insertion sort that gives up after 8 moves, so
+ *   that a sorted or reversed run takes \f$ O( n ) \f$; a pivot equal to the
+ *   item before the part, i.e., a run of equal keys, gets a partition that
+ *   puts the equals on its left and skips them, so that k distinct keys take
+ *   \f$ O( n \log k ) \f$; a partition too unbalanced (one side below n / 8)
+ *   swaps a few items to break the pattern, and too many of them fall back to
+ *   heapsort. On the arithmetic types with their natural order the partition
+ *   goes by blocks, as in the BlockQuicksort of Edelkamp and Weiss: the items
+ *   to swap are first collected, 64 at a time, as offsets by an increment with
+ *   no branch, and then moved along a cycle, so that no comparison causes a
+ *   mispredicted branch;
  * - dualPivotQuickSort() of Yaroslavskiy (the sort of the primitive types
  *   of Java 7): two pivots p <= q, the 2nd and the 4th of five equally
  *   spaced items, split the part into three, smaller than p, between and

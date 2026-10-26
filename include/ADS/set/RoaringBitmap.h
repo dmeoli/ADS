@@ -63,7 +63,7 @@
  * the item is there and after remove() it is not; build() needs strictly
  * increasing items, an audit; the invariant is that the containers are
  * sorted by their chunks, not empty, arrays of at most 4096 sorted items
- * and bitmaps of more, with their counts right, an O( n ) check at the
+ * and bitmaps of more, with their counts right, an \f$ O( n ) \f$ check at the
  * level 3 on the sets of up to 4096 items. The operations are defined in
  * RoaringBitmap.tpp.
  *
@@ -175,7 +175,7 @@ class RoaringBitmap {
  [[nodiscard]] std::vector< std::uint32_t > items( void ) const;
 
  /// the items smaller than x: the counts of the containers before that of
- /// x, O( c ), and the place of x in it
+ /// x, \f$ O( c ) \f$, and the place of x in it
  [[nodiscard]] std::size_t rank( std::uint32_t x ) const;
 
  friend RoaringBitmap setUnion( const RoaringBitmap & A ,

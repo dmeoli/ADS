@@ -54,7 +54,7 @@
  *      connectivity computation via subgraph sampling, IEEE International
  *      Parallel and Distributed Processing Symposium (IPDPS), 12-21, 2018,
  *      doi:10.1109/IPDPS.2018.00012
- * \see Y. Shiloach, U. Vishkin, An O( log n ) parallel connectivity
+ * \see Y. Shiloach, U. Vishkin, An \f$ O( \log n ) \f$ parallel connectivity
  *      algorithm, Journal of Algorithms 3(1), 57-67, 1982,
  *      doi:10.1016/0196-6774(82)90008-6
  * \author Donato Meoli \n

@@ -731,7 +731,7 @@ class BigInteger {
  /// \post the result equals toStringSchool( base ) (an audit)
  [[nodiscard]] std::string toString( int base = 10 ) const;
 
- /// the conversions dividing or multiplying by P only, O( n^2 )
+ /// the conversions dividing or multiplying by P only, \f$ O( n^2 ) \f$
  /// \pre as for toString() and BigInteger( s , base )
  [[nodiscard]] std::string toStringSchool( int base = 10 ) const;
  static BigInteger fromStringSchool( const std::string & s , int base = 10 );
@@ -770,7 +770,7 @@ class BigInteger {
  static std::pair< BigInteger , BigInteger > divMod( const BigInteger & a ,
                                                      const BigInteger & b );
 
- /// the quotient and the remainder by Algorithm D alone, O( m n )
+ /// the quotient and the remainder by Algorithm D alone, \f$ O( m n ) \f$
  /// \pre b != 0
  static std::pair< BigInteger , BigInteger > divModSchool(
                                 const BigInteger & a , const BigInteger & b );
@@ -799,8 +799,8 @@ class BigInteger {
  /// x^n by the binary method
  static BigInteger pow( const BigInteger & x , unsigned long n );
 
- /// the integer square root s = floor( sqrt( a ) ) and r = a - s^2, by
- /// Zimmermann's Karatsuba square root
+ /// the integer square root \f$ s = \lfloor \sqrt{a} \rfloor \f$ and
+ /// \f$ r = a - s^2 \f$, by Zimmermann's Karatsuba square root
  /// \pre a >= 0
  /// \post s^2 + r = a, 0 <= r <= 2 s, s equal to sqrtNewton( a ) (audits)
  static std::pair< BigInteger , BigInteger > sqrtRem( const BigInteger & a );

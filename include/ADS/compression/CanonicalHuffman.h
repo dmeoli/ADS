@@ -43,7 +43,7 @@
  * package-merge of Larmore and Hirschberg finds the optimal code of lengths
  * at most L in \f$ O( |\Sigma| L ) \f$ time, at the price of a less simple
  * algorithm. The construction takes \f$ O( |\Sigma| \log |\Sigma| ) \f$
- * time, the encoding of a symbol O( 1 ) and its decoding
+ * time, the encoding of a symbol \f$ O( 1 ) \f$ and its decoding
  * \f$ O( L( \sigma ) ) \f$.
  *
  * The contracts [see Contract.h]: the lengths are positive, at most 63, and

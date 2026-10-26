@@ -3,9 +3,9 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The tiered vector of Goodrich and Kloss, beyond the book: a sequence
- * with access by index in O( 1 ) time, as a vector, and insertion and
+ * with access by index in \f$ O( 1 ) \f$ time, as a vector, and insertion and
  * removal at any index in \f$ O( \sqrt{n} ) \f$ time, where a vector
- * [see ArraySequence.h] moves O( n ) items.
+ * [see ArraySequence.h] moves \f$ O( n ) \f$ items.
  *
  * The items are in blocks of b items, b a power of 2, each a circular
  * buffer with the offset of its first item, all full but the last one; the
@@ -13,12 +13,12 @@
  * \f$ \lfloor i / b \rfloor \f$, a shift, a mask and two reads. An
  * insertion at i moves the items of its block after i by one place, at
  * most b - 1 of them, and then the last item of each following block to
- * the front of the next one, O( 1 ) per block since a circular buffer
+ * the front of the next one, \f$ O( 1 ) \f$ per block since a circular buffer
  * grows at the front by moving its offset: \f$ O( b + n / b ) \f$ moves.
  * A removal is the symmetric. b follows the size, the least power of 2
  * not below \f$ \sqrt{n} \f$ and 64 at least: when n leaves
  * \f$ [ b^2 / 4 , 4 b^2 ] \f$ the items are copied into the blocks of the
- * new b, in O( n ) time once every \f$ \Omega( n ) \f$ operations, so
+ * new b, in \f$ O( n ) \f$ time once every \f$ \Omega( n ) \f$ operations, so
  * that an insertion or a removal costs \f$ O( \sqrt{n} ) \f$ amortized
  * and the space is \f$ n + O( \sqrt{n} ) \f$ items.
  *
@@ -74,8 +74,8 @@ namespace ADS {
 /*-------------------------- CLASS TieredVector ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a sequence with access in O( 1 ) and insertion and removal anywhere in
-/// O( sqrt n ), in circular blocks of b items
+/// a sequence with access in \f$ O( 1 ) \f$ and insertion and removal anywhere
+/// in \f$ O( \sqrt n ) \f$, in circular blocks of b items
 template< class T >
 class TieredVector {
 
@@ -204,7 +204,8 @@ class TieredVector {
   std::size_t off = 0;
   };
 
- /// the blocks for the size n, b the least power of 2 not below sqrt( n )
+ /// the blocks for the size n, b the least power of 2 not below
+ /// \f$ \sqrt{n} \f$
  void rebuild( std::size_t n );
 
  /// the blocks but the last full, and size() items in them

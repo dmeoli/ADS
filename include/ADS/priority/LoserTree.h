@@ -20,7 +20,7 @@
  * same single call of less), no more, while a binary heap [see
  * DaryHeap.h] pays up to \f$ 2 \log_2 k \f$ for its pop and push, since
  * each level of its sift down compares the two children and then the item
- * moved down. The construction plays the k - 1 matches once, O( k ).
+ * moved down. The construction plays the k - 1 matches once, \f$ O( k ) \f$.
  *
  * kWayMerge() merges k sorted vectors through the tree, \f$ n \lceil \log_2
  * k \rceil + k \f$ comparisons at most for n items in all; in the external
@@ -115,7 +115,7 @@ class LoserTree {
  /// i beats j: a key against none, or a smaller key, or the lower index
  [[nodiscard]] bool beats( std::size_t i , std::size_t j ) const;
 
- /// the winner is not beaten by any player, O( k )
+ /// the winner is not beaten by any player, \f$ O( k ) \f$
  [[nodiscard]] bool winnerIsBest( void ) const;
 
  std::vector< std::optional< T > > f_key;   ///< the keys of the players

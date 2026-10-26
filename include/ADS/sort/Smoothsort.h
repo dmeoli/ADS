@@ -2,17 +2,17 @@
 /*--------------------------- File Smoothsort.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Smoothsort of Dijkstra, beyond the book: a heapsort on a forest of
- * Leonardo heaps, whose sizes are Leonardo numbers \f$ L_0 = L_1 = 1 ,
- * L_{k+2} = L_{k+1} + L_k + 1 \f$, laid side by side in the vector with
- * the roots increasing from left to right; the forest grows by one item at
- * a time, merging the two rightmost heaps when their orders are consecutive,
- * and shrinks by removing the root of the rightmost heap, which is the
- * maximum. It sorts in place in \f$ O( n \log n ) \f$ time like heapsort,
- * but in O( n ) on a vector that is already sorted, the transition between
- * the two being smooth, whence the name; it is not stable. The forest is
- * kept as a word of bits p, the orders of its heaps relative to the order
- * pshift of the rightmost one, as in the classical implementations.
+ * Smoothsort of Dijkstra, beyond the book: a heapsort on a forest of Leonardo
+ * heaps, whose sizes are Leonardo numbers \f$ L_0 = L_1 = 1 , L_{k+2} =
+ * L_{k+1} + L_k + 1 \f$, laid side by side in the vector with the roots
+ * increasing from left to right; the forest grows by one item at a time,
+ * merging the two rightmost heaps when their orders are consecutive, and
+ * shrinks by removing the root of the rightmost heap, which is the maximum. It
+ * sorts in place in \f$ O( n \log n ) \f$ time like heapsort, but in
+ * \f$ O( n ) \f$ on a vector that is already sorted, the transition between
+ * the two being smooth, whence the name; it is not stable. The forest is kept
+ * as a word of bits p, the orders of its heaps relative to the order pshift of
+ * the rightmost one, as in the classical implementations.
  *
  * The contracts [see Contract.h]: the vector ends with the same items
  * sorted, an audit. The function is defined in Smoothsort.tpp.

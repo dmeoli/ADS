@@ -63,32 +63,32 @@
  *   at the window s of a search begun at \f$ s_0 \f$, the search goes on with
  *   the Two-Way algorithm of Crochemore and Perrin, so that no text costs more
  *   than \f$ 16 n + 4096 + m \f$ bytes compared before it, and \f$ 2 n \f$
- *   comparisons after it, O( n + m ) in all (e.g., a pattern that agrees with
- *   a periodic text on its probes and nowhere else, or one that occurs at
- *   every place, \f$ a^m \f$ in \f$ a^n \f$, which cost \f$ \Theta( n m ) \f$
- *   to the comparisons with P alone). The Two-Way algorithm cuts P at a
- *   critical factorization P = u v, whose local period at |u| is the period p
- *   of P, found by the two maximal suffixes of P for an order of the bytes and
- *   its reverse (the longer one gives |u|); it compares v from left to right
- *   and then u from right to left, and moves by p, with a memory of the prefix
- *   of P that is known to match, if u is a suffix of \f$ P[ 0 .. p + |u| - 1 ]
- *   \f$, or else by \f$ \max( |u| , |v| ) + 1 \f$, in O( 1 ) extra space and
- *   at most \f$ 2 n \f$ comparisons, made here 8 bytes at a time in both
- *   directions; its factorization, O( m ), is made only when a search
- *   comes to it.
+ *   comparisons after it, \f$ O( n + m ) \f$ in all (e.g., a pattern that
+ *   agrees with a periodic text on its probes and nowhere else, or one that
+ *   occurs at every place, \f$ a^m \f$ in \f$ a^n \f$, which cost
+ *   \f$ \Theta( n m ) \f$ to the comparisons with P alone). The Two-Way
+ *   algorithm cuts P at a critical factorization P = u v, whose local period
+ *   at |u| is the period p of P, found by the two maximal suffixes of P for an
+ *   order of the bytes and its reverse (the longer one gives |u|); it compares
+ *   v from left to right and then u from right to left, and moves by p, with a
+ *   memory of the prefix of P that is known to match, if u is a suffix of
+ *   \f$ P[ 0 .. p + |u| - 1 ] \f$, or else by \f$ \max( |u| , |v| ) + 1 \f$,
+ *   in \f$ O( 1 ) \f$ extra space and at most \f$ 2 n \f$ comparisons, made
+ *   here 8 bytes at a time in both directions; its factorization,
+ *   \f$ O( m ) \f$, is made only when a search comes to it.
  *
- * Preparing P takes O( 256 + m ) time (the last place of each byte gives
- * the probes) and 4 KB for the shifts; find() gives the first occurrence at
- * or after from (npos if none), findAll() all of them, overlapping ones
+ * Preparing P takes \f$ O( 256 + m ) \f$ time (the last place of each byte
+ * gives the probes) and 4 KB for the shifts; find() gives the first occurrence
+ * at or after from (npos if none), findAll() all of them, overlapping ones
  * included, in increasing order, count() their number, and operator() the
  * range of the first occurrence in [ first , last ), the interface of the
- * searchers of std::search(). The empty pattern occurs at every place 0 ,
- * ... , n. The functions findFirst() and findAll() of the namespace prepare
- * P and search once.
+ * searchers of std::search(). The empty pattern occurs at every place 0 , ...
+ * , n. The functions findFirst() and findAll() of the namespace prepare P and
+ * search once.
  *
- * The contracts [see Contract.h]: an occurrence found is one, and
- * findAll() gives those of naiveMatching() [see StringMatching.h] (an
- * audit, O( n m ) time). The functions are defined in StringSearch.tpp.
+ * The contracts [see Contract.h]: an occurrence found is one, and findAll()
+ * gives those of naiveMatching() [see StringMatching.h] (an audit,
+ * \f$ O( n m ) \f$ time). The functions are defined in StringSearch.tpp.
  *
  * \see S. Faro, M. O. Kulekci, Fast packed string matching for short
  *      patterns, Proceedings of the 15th Workshop on Algorithm Engineering
@@ -187,7 +187,7 @@ class StringSearcher {
  /// the empty pattern
  StringSearcher( void ) : StringSearcher( std::string_view() ) {}
 
- /// P prepared: its probes and the shifts of its q-grams, O( m )
+ /// P prepared: its probes and the shifts of its q-grams, \f$ O( m ) \f$
  explicit StringSearcher( std::string_view P );
 
  /// the first occurrence of P at or after from in T, npos if none

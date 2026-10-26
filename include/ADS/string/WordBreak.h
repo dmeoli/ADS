@@ -2,12 +2,12 @@
 /*---------------------------- File WordBreak.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Is it Italian? (exercise 13.13): a string s[ 0 .. n - 1 ] with no spaces
- * is a sequence of words of a dictionary if one of its prefixes s[ 0 .. j )
- * is and s[ j .. i ) is a word: DP[ i ] = true if and only if there is j < i
- * with DP[ j ] and s[ j .. i ) in the dictionary, DP[ 0 ] = true; O( n^2 )
- * lookups, or O( n w ) if no word is longer than w. The words are read back
- * from the table.
+ * Is it Italian? (exercise 13.13): a string s[ 0 .. n - 1 ] with no spaces is
+ * a sequence of words of a dictionary if one of its prefixes s[ 0 .. j ) is
+ * and s[ j .. i ) is a word: DP[ i ] = true if and only if there is j < i with
+ * DP[ j ] and s[ j .. i ) in the dictionary, DP[ 0 ] = true; \f$ O( n^2 ) \f$
+ * lookups, or \f$ O( n w ) \f$ if no word is longer than w. The words are read
+ * back from the table.
  *
  * The contracts [see Contract.h]: the words found, joined, give back the
  * string. The operations are defined in WordBreak.tpp.

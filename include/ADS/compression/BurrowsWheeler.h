@@ -2,31 +2,28 @@
 /*------------------------- File BurrowsWheeler.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The transform of Burrows and Wheeler and the compressor built on it
- * (chapter 14 of the notes). The rows of the matrix M' are the rotations of
- * s$, $ a sentinel smaller than every symbol, in sorted order; the
- * transform bwt() is its last column L without the $, with the row r of
- * the $. Since the rows that start with a string w are contiguous, the
- * symbols that precede the occurrences of w are a substring of L, and on a
- * text whose symbols depend on their contexts, as those of a language do,
- * L is made of runs of few distinct symbols. The rows of M' are the
- * suffixes of s$ in order, so L[ i ] = s[ SA[ i ] - 1 ] (Theorem 14.6); the
- * suffix array SA is that of the library [see SuffixArray.h], built by the
- * induced sorting SA-IS of Nong, Zhang and Chan in O( n ) time, with the
- * suffix $ put first. The inverse transform inverseBwt() uses the
- * LF-mapping:
- * the k-th occurrence of c in L and the k-th in the first column F are the
- * same symbol of s
- * (Property 14.2), hence \f$ LF[ i ] = C[ L[ i ] ] + rank_{L[ i ]}( L , i )
- * \f$, with C[ c ] the number of the symbols smaller than c; from the row
- * 0, which is $s and ends with s[ n - 1 ], each step of LF moves one symbol
- * to the left in s, n steps in O( n ) time (Theorem 14.3), each a likely
- * miss of the cache.
+ * The transform of Burrows and Wheeler and the compressor built on it (chapter
+ * 14 of the notes). The rows of the matrix M' are the rotations of s$, $ a
+ * sentinel smaller than every symbol, in sorted order; the transform bwt() is
+ * its last column L without the $, with the row r of the $. Since the rows
+ * that start with a string w are contiguous, the symbols that precede the
+ * occurrences of w are a substring of L, and on a text whose symbols depend on
+ * their contexts, as those of a language do, L is made of runs of few distinct
+ * symbols. The rows of M' are the suffixes of s$ in order, so L[ i ] = s[ SA[
+ * i ] - 1 ] (Theorem 14.6); the suffix array SA is that of the library [see
+ * SuffixArray.h], built by the induced sorting SA-IS of Nong, Zhang and Chan
+ * in \f$ O( n ) \f$ time, with the suffix $ put first. The inverse transform
+ * inverseBwt() uses the LF-mapping: the k-th occurrence of c in L and the k-th
+ * in the first column F are the same symbol of s (Property 14.2), hence \f$
+ * LF[ i ] = C[ L[ i ] ] + rank_{L[ i ]}( L , i ) \f$, with C[ c ] the number
+ * of the symbols smaller than c; from the row 0, which is $s and ends with s[
+ * n - 1 ], each step of LF moves one symbol to the left in s, n steps in
+ * \f$ O( n ) \f$ time (Theorem 14.3), each a likely miss of the cache.
  *
  * The transforms that follow (section 14.2): the move-to-front of Bentley,
  * Sleator, Tarjan and Wei replaces each symbol with its place in a list of
  * the alphabet and moves it to the front, so the runs of few symbols of L
- * become runs of small integers, O( |\f$ \Sigma \f$| ) time per symbol
+ * become runs of small integers, \f$ O( |\Sigma| ) \f$ time per symbol
  * here; its \f$ \gamma \f$-code takes at most \f$ 2 H_0 + 1 \f$ bits per
  * symbol (Theorem 14.5). The run-length encoding replaces a run of
  * \f$ \ell \f$ symbols c with \f$ \langle \ell , c \rangle \f$. The bzip of

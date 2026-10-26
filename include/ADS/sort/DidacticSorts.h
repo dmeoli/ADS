@@ -14,7 +14,7 @@
  *   sorted again, \f$ T( n ) = 2 T( n / 2 ) + T( n - 1 ) + 1 \f$, which
  *   is not even polynomial;
  * - bogoSort() shuffles the vector until it is sorted, n! / ( number of
- *   sorted orders ) shuffles expected, each O( n ).
+ *   sorted orders ) shuffles expected, each \f$ O( n ) \f$.
  *
  * The contracts [see Contract.h]: bogoSort() needs n <= 10, so that it ends
  * in a reasonable time; each sort ends with the same items sorted, an

@@ -29,7 +29,7 @@
  *
  * - access( i ) and rank1( i ) sum the classes of the blocks of the
  *   superblock before the one of i, and of their offsets the lengths, and
- *   rebuild the block of i: O( 32 + b ) time;
+ *   rebuild the block of i: \f$ O( 32 + b ) \f$ time;
  * - select1( k ) finds the superblock by a binary search on the counts,
  *   the block by the classes, and the 1 in the rebuilt block:
  *   \f$ O( \log ( m / 2016 ) + 32 + b ) \f$ time; select0 likewise.

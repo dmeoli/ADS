@@ -6,8 +6,8 @@
  * policies for an item that is already in the queue: IGNORE_NEW does not
  * enqueue it again, FORGET_OLD removes the old copy and enqueues the item
  * at the back. The items are kept in a List [see List.h], so that
- * enqueue() takes O( n ) time for the search of the copy and the other
- * operations O( 1 ).
+ * enqueue() takes \f$ O( n ) \f$ time for the search of the copy and the other
+ * operations \f$ O( 1 ) \f$.
  *
  * The contracts [see Contract.h]: top() and dequeue() need a queue that is
  * not empty; enqueue() ensures that the item is in the queue, at the back
@@ -82,7 +82,7 @@ class UniqueQueue {
  /// \pre the queue is not empty
  [[nodiscard]] const T & top( void ) const;
 
- /// whether v is in the queue, O( n )
+ /// whether v is in the queue, \f$ O( n ) \f$
  [[nodiscard]] bool contains( const T & v ) const;
 
  /// the number of items

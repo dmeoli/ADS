@@ -7,20 +7,21 @@
  * be inspected:
  *
  * - BoundaryTagAllocator keeps the free blocks on a doubly linked list and
- *   gives a request the first block large enough (first fit, Algorithm
- *   2.5A), the smallest one (best fit), or the first one after the last
- *   block given (next fit, the roving pointer of Knuth); a block is split if
- *   the rest is not too small. Each block has a tag at both ends, its size
- *   and whether it is free (the boundary tags of Algorithm 2.5C), so that a
- *   freed block merges in O( 1 ) time with its neighbours if they are free:
- *   two free blocks are never adjacent;
+ *   gives a request the first block large enough (first fit, Algorithm 2.5A),
+ *   the smallest one (best fit), or the first one after the last block given
+ *   (next fit, the roving pointer of Knuth); a block is split if the rest is
+ *   not too small. Each block has a tag at both ends, its size and whether it
+ *   is free (the boundary tags of Algorithm 2.5C), so that a freed block
+ *   merges in \f$ O( 1 ) \f$ time with its neighbours if they are free: two
+ *   free blocks are never adjacent;
  * - BuddyAllocator (Knowlton, Algorithms 2.5R and 2.5S) splits a memory of
  *   \f$ 2^m \f$ words into blocks of powers of 2, a request taking the
- *   smallest power not below it, split from a larger free block by halves;
- *   the buddy of the block of size \f$ 2^k \f$ at the address a is at
+ *   smallest power not below it, split from a larger free block by halves; the
+ *   buddy of the block of size \f$ 2^k \f$ at the address a is at
  *   \f$ a \oplus 2^k \f$, so that a freed block merges with its buddy, if
- *   free, and so on upwards, each in O( m ) time; the internal waste is at
- *   most half of a block, and two free buddies are never both on the lists.
+ *   free, and so on upwards, each in \f$ O( m ) \f$ time; the internal waste
+ *   is at most half of a block, and two free buddies are never both on the
+ *   lists.
  *
  * Both return the address of the first word of the block given, or -1 if
  * no block fits. The contracts [see Contract.h]: a request is positive, and
@@ -107,7 +108,7 @@ class BoundaryTagAllocator {
  void unlink( long p );
  void link( long p );
 
- /// the free blocks tile the free memory, none adjacent, O( N )
+ /// the free blocks tile the free memory, none adjacent, \f$ O( N ) \f$
  [[nodiscard]] bool tiled( void ) const;
 
  std::vector< long > M;   ///< the memory and the head of the list
@@ -151,7 +152,7 @@ class BuddyAllocator {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// no two free buddies, and the free blocks disjoint, O( N log N )
+ /// no two free buddies, and the free blocks disjoint, \f$ O( N \log N ) \f$
  [[nodiscard]] bool merged( void ) const;
 
  int f_m;

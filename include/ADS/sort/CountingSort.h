@@ -2,13 +2,12 @@
 /*-------------------------- File CountingSort.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Counting Sort (section 2.7.5) of integers in [ 0 , k ): B[ v ] counts
- * the occurrences of v, then each v is written B[ v ] times in order;
+ * Counting Sort (section 2.7.5) of integers in [ 0 , k ): B[ v ] counts the
+ * occurrences of v, then each v is written B[ v ] times in order;
  * \f$ \Theta( n + k ) \f$ time and \f$ \Theta( k ) \f$ space, linear when
- * k = O( n ). The lower bound \f$ \Omega( n \log n ) \f$ of the sorts by
- * comparisons does not apply, since it compares no item: it uses that the
- * keys are small integers. A key out of [ 0 , k ) throws
- * std::out_of_range.
+ * \f$ k = O( n ) \f$. The lower bound \f$ \Omega( n \log n ) \f$ of the sorts
+ * by comparisons does not apply, since it compares no item: it uses that the
+ * keys are small integers. A key out of [ 0 , k ) throws std::out_of_range.
  *
  * The contracts [see Contract.h]: each key must be in [ 0 , k ), a
  * precondition checked key by key as the keys are counted; the output sorted

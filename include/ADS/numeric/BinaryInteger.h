@@ -17,7 +17,7 @@
  * - ahmes(), the multiplication of the papyrus of Ahmes (1650 b.C.), which
  *   adds b to p when a is odd, halves a and doubles b, until a = 0: from
  *   \f$ a b = ( a / 2 ) ( 2 b ) \f$ for a even and
- *   \f$ a b = ( ( a - 1 ) / 2 ) ( 2 b ) + b \f$ for a odd, O( log a )
+ *   \f$ a b = ( ( a - 1 ) / 2 ) ( 2 b ) + b \f$ for a odd, \f$ O( \log a ) \f$
  *   steps, the shift and add of the arithmetic units.
  *
  * The contracts [see Contract.h]: a vector of bits holds only 0 and 1, an
@@ -77,23 +77,23 @@ inline std::uint64_t fromBits( const Bits & b );
 /// carries
 inline Bits carry( const std::vector< long > & c );
 
-/// X + Y, Theta( n )
+/// X + Y, \f$ \Theta( n ) \f$
 /// \pre the items of X and Y are bits
 inline Bits binaryAdd( const Bits & X , const Bits & Y );
 
 inline std::vector< long > widen( const Bits & X );
 
-/// X Y by the method of the school, Theta( n^2 )
+/// X Y by the method of the school, \f$ \Theta( n^2 ) \f$
 /// \pre the items of X and Y are bits
 inline Bits multiplyBinarySchool( const Bits & X , const Bits & Y ,
                             long * mults = nullptr );
 
-/// X Y by four products of half size, Theta( n^2 )
+/// X Y by four products of half size, \f$ \Theta( n^2 ) \f$
 /// \pre the items of X and Y are bits
 inline Bits multiplyBinaryFour( const Bits & X , const Bits & Y ,
                           long * mults = nullptr );
 
-/// X Y by the three products of Karatsuba, O( n^1.59 )
+/// X Y by the three products of Karatsuba, \f$ O( n^{1.59} ) \f$
 /// \pre the items of X and Y are bits
 inline Bits multiplyBinaryKaratsuba( const Bits & X , const Bits & Y ,
                                long * mults = nullptr );

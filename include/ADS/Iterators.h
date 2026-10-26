@@ -36,8 +36,8 @@
  * - PathIterator visits a binary tree in symmetric order keeping the path
  *   from the root to the current node, so that it needs no link to the
  *   parent and goes both ways; a policy P gives the root, the children and
- *   the reading of a node, as for SlotIterator. A step costs O( 1 )
- *   amortized and O( h ) at most, the path O( h ) space.
+ *   the reading of a node, as for SlotIterator. A step costs \f$ O( 1 ) \f$
+ *   amortized and \f$ O( h ) \f$ at most, the path \f$ O( h ) \f$ space.
  *
  * - WalkIterator follows the nodes of a tree (pointers or indices) by a
  *   policy P whose next( o , n , root ), o a pointer to the owner (nil if

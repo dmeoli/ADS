@@ -6,11 +6,11 @@
  * anagrams if one is a permutation of the other. anagramGroups() gives the
  * signature of each word, its items sorted, and gathers the words of equal
  * signature in a hash table, \f$ O( n k \log k ) \f$ expected time and
- * O( n k ) space; the groups come in the order of their first word, and
- * the words of a group in their order. The signature by counting sort over
- * an alphabet of \f$ \sigma \f$ symbols, or the vector of the counts of
- * the symbols, costs \f$ O( k + \sigma ) \f$ per word instead; sorting the
- * pairs ( signature , word ) in place of hashing them gives the classes in
+ * \f$ O( n k ) \f$ space; the groups come in the order of their first word,
+ * and the words of a group in their order. The signature by counting sort over
+ * an alphabet of \f$ \sigma \f$ symbols, or the vector of the counts of the
+ * symbols, costs \f$ O( k + \sigma ) \f$ per word instead; sorting the pairs (
+ * signature , word ) in place of hashing them gives the classes in
  * \f$ O( n k \log n ) \f$ worst-case time.
  *
  * anagramGroups() takes the words as any sequence S with an iterator

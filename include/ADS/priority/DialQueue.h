@@ -23,7 +23,7 @@
  * the buckets, each once, a bucket of the radix heap at a time [see
  * RadixHeap::extractBelow()]. Hence, with all the keys pushed in
  * \f$ [ \ell , \ell + C ] \f$, C < W, the overflow is never used, push()
- * takes O( 1 ) time and pop() \f$ O( 1 + W / w ) \f$, w = 64, against
+ * takes \f$ O( 1 ) \f$ time and pop() \f$ O( 1 + W / w ) \f$, w = 64, against
  * the \f$ O( 1 + C ) \f$ of the scan of the buckets one by one; a key
  * pushed farther costs its moves in the radix heap and one move into the
  * window. The buckets keep their memory, so that a queue in a steady state

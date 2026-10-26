@@ -23,27 +23,26 @@
  * - extract( i , j ) gives s[ i , j ) from the row of the first sampled
  *   suffix at or after j, by \f$ j - i + O( \mu ) \f$ steps of LF.
  *
- * The rank of a symbol in L, the number of its occurrences in a prefix, is
- * the count stored every b places for each symbol of the text plus a scan
- * of fewer than b symbols, 8 at a time by the zero bytes of a word, O( b )
- * time and \f$ \sigma ( n / b ) \f$ counts of 32 bits; the marks of the
- * rows are a vector of bits with the rank directory of RankSelect [see
- * RankSelect.h], so a row is tested and its sample found in O( 1 ) time.
- * The counts of L are the simplest rank on a sequence, which any structure
- * of rank and select on sequences can replace [see WaveletMatrix.h]: the
- * wavelet tree of Grossi, Gupta and Vitter
- * gives the rank in \f$ O( \log \sigma ) \f$ time on \f$ n H_0 + o( n \log
- * \sigma ) \f$ bits, and the compressed representations of Ferragina,
- * Manzini, Makinen and Navarro reach \f$ n H_k + o( n \log \sigma ) \f$
- * bits, the space of the compressed text (Lemma 14.3 and Theorem 14.7).
- * The transform is built from the suffix array of SA-IS, O( n ) time [see
- * BurrowsWheeler.h]. Against the suffix array, which counts by
- * binary search in \f$ O( p \log n ) \f$ time and \f$ n \log n \f$ bits
- * plus the text, the FM-index counts in O( p b ) time here, O( p ) with a
- * rank in O( 1 ), at the price of random accesses to L at each step; the
- * r-index of Gagie, Navarro and Prezza samples only the ends of the runs
- * of L, and takes space proportional to their number r, small on
- * repetitive texts.
+ * The rank of a symbol in L, the number of its occurrences in a prefix, is the
+ * count stored every b places for each symbol of the text plus a scan of fewer
+ * than b symbols, 8 at a time by the zero bytes of a word, \f$ O( b ) \f$ time
+ * and \f$ \sigma ( n / b ) \f$ counts of 32 bits; the marks of the rows are a
+ * vector of bits with the rank directory of RankSelect [see RankSelect.h], so
+ * a row is tested and its sample found in \f$ O( 1 ) \f$ time. The counts of L
+ * are the simplest rank on a sequence, which any structure of rank and select
+ * on sequences can replace [see WaveletMatrix.h]: the wavelet tree of Grossi,
+ * Gupta and Vitter gives the rank in \f$ O( \log \sigma ) \f$ time on
+ * \f$ n H_0 + o( n \log \sigma ) \f$ bits, and the compressed representations
+ * of Ferragina, Manzini, Makinen and Navarro reach
+ * \f$ n H_k + o( n \log \sigma ) \f$ bits, the space of the compressed text
+ * (Lemma 14.3 and Theorem 14.7). The transform is built from the suffix array
+ * of SA-IS, \f$ O( n ) \f$ time [see BurrowsWheeler.h]. Against the suffix
+ * array, which counts by binary search in \f$ O( p \log n ) \f$ time and
+ * \f$ n \log n \f$ bits plus the text, the FM-index counts in \f$ O( p b ) \f$
+ * time here, \f$ O( p ) \f$ with a rank in \f$ O( 1 ) \f$, at the price of
+ * random accesses to L at each step; the r-index of Gagie, Navarro and Prezza
+ * samples only the ends of the runs of L, and takes space proportional to
+ * their number r, small on repetitive texts.
  *
  * The contracts [see Contract.h]: b and \f$ \mu \f$ are positive, n is
  * below \f$ 2^{32} \f$, a pattern is not empty, \f$ i \le j \le n \f$; each

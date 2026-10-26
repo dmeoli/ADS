@@ -42,10 +42,10 @@
  *
  * The contracts [see Contract.h]: the vectors must be sorted, rotatedMinimum()
  * needs a rotation of a strictly increasing vector, all audits checked at the
- * level 3 since they cost O( n ); closestValue() and rotatedMinimum() need a
- * vector that is not empty, kthOfTwoSorted() a rank k < m + n, and their
- * results are checked against a scan of the vector, an audit. The functions
- * are defined in SortedSearches.tpp.
+ * level 3 since they cost \f$ O( n ) \f$; closestValue() and rotatedMinimum()
+ * need a vector that is not empty, kthOfTwoSorted() a rank k < m + n, and
+ * their results are checked against a scan of the vector, an audit. The
+ * functions are defined in SortedSearches.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 1.2 and
  *      Esercizi Divide-et-impera, Raccolte da compiti scritti
@@ -92,14 +92,14 @@
 namespace ADS {
 
 /// rotatedMinimum(): the place of the minimum of A, a strictly increasing
-/// vector rotated right by that number of places; O( log n )
+/// vector rotated right by that number of places; \f$ O( \log n ) \f$
 /// \pre A is not empty, and a rotation of a strictly increasing vector
 /// \post no item of A smaller than A[ r ] (an audit)
 template< class T , class C = std::less<> >
 std::size_t rotatedMinimum( const std::vector< T > & A , C less = C() );
 
 /// closestValue(): the first place of an item of the sorted A at the least
-/// distance from x, the smaller item on ties; O( log n )
+/// distance from x, the smaller item on ties; \f$ O( \log n ) \f$
 /// \pre A is not empty and sorted
 /// \post no item of A closer to x than A[ r ] (an audit)
 template< class T >
@@ -107,7 +107,7 @@ template< class T >
 std::size_t closestValue( const std::vector< T > & A , const T & x );
 
 /// pairWithSum(): two places i < j of the sorted A with A[ i ] + A[ j ] = x,
-/// the sum computed in the type S, or nothing; O( n )
+/// the sum computed in the type S, or nothing; \f$ O( n ) \f$
 /// \pre A is sorted
 /// \post A[ i ] + A[ j ] = x if there is a pair
 template< class T , class S >
@@ -115,7 +115,7 @@ std::optional< std::pair< std::size_t , std::size_t > >
 pairWithSum( const std::vector< T > & A , const S & x );
 
 /// kthOfTwoSorted(): the item of rank k, from 0, of the sorted X and Y
-/// together; O( log min( m , n ) )
+/// together; \f$ O( \log \min( m , n ) ) \f$
 /// \pre X and Y are sorted, k < m + n
 /// \post the item of rank k of the merge of X and Y (an audit)
 template< class T , class C = std::less<> >

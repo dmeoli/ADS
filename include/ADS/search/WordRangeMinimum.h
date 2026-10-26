@@ -2,10 +2,10 @@
 /*------------------------ File WordRangeMinimum.h -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The engineered range minimum query, beyond the book [see
- * RangeMinimum.h for the sparse table and the solution of Bender and
- * Farach-Colton]: the place of the leftmost minimum of A[ i .. j ], in O( 1
- * ) time with a few accesses to the memory and O( n ) words of space.
+ * The engineered range minimum query, beyond the book [see RangeMinimum.h for
+ * the sparse table and the solution of Bender and Farach-Colton]: the place of
+ * the leftmost minimum of A[ i .. j ], in \f$ O( 1 ) \f$ time with a few
+ * accesses to the memory and \f$ O( n ) \f$ words of space.
  *
  * The array is cut into blocks of 64 items, the bits of a word. Inside a
  * block that starts at b, the stack of the minima from the right is kept
@@ -32,14 +32,14 @@
  * never reads the array; the minima are chosen by conditional moves, which
  * a random range would mispredict as branches half of the times.
  *
- * The masks are built by the stacks in O( n ) time, or on the integers and
- * the floating types under std::less by one comparison of vectors of the
- * block per item [see greaterBits() in CountLess.h], the larger items
- * cleared from the mask of the item before all at once, \f$ \mathit{mask}[
- * j ] = ( \mathit{mask}[ j - 1 ] \wedge \neg G_j ) \vee 2^{j - b} \f$ with
- * \f$ G_j \f$ the bits of the items of the block larger than A[ j ] (the
- * stack is increasing, so the items it pops are exactly those of it larger
- * than A[ j ]), with no branch. The space is
+ * The masks are built by the stacks in \f$ O( n ) \f$ time, or on the integers
+ * and the floating types under std::less by one comparison of vectors of the
+ * block per item [see greaterBits() in CountLess.h], the larger items cleared
+ * from the mask of the item before all at once, \f$ \mathit{mask}[ j ] = (
+ * \mathit{mask}[ j - 1 ] \wedge \neg G_j ) \vee 2^{j - b} \f$ with \f$ G_j \f$
+ * the bits of the items of the block larger than A[ j ] (the stack is
+ * increasing, so the items it pops are exactly those of it larger than A[ j
+ * ]), with no branch. The space is
  * \f[
  *   n \big( 8 + 2 \, \mathit{sizeof}( T ) + 2 \big) +
  *   \Big\lceil \frac{n}{64} \Big\rceil \Big\lceil \log_2
@@ -54,11 +54,11 @@
  *
  * Compared with the literature: the masks are the in-word stacks of the
  * practical solutions that came after the succinct one of Fischer and Heun
- * (who encode the Cartesian tree of each block in 2 n + o( n ) bits and
- * answer through a table of the shapes of the trees), e.g., the structure
- * of Baumstark, Gog, Heuer and Labeit, which trade those bits for a query
- * that touches one or two words; the decomposition into blocks with a
- * sparse table on their minima is that of Bender and Farach-Colton.
+ * (who encode the Cartesian tree of each block in \f$ 2 n + o( n ) \f$ bits
+ * and answer through a table of the shapes of the trees), e.g., the structure
+ * of Baumstark, Gog, Heuer and Labeit, which trade those bits for a query that
+ * touches one or two words; the decomposition into blocks with a sparse table
+ * on their minima is that of Bender and Farach-Colton.
 
  * The contracts [see Contract.h]: fewer than \f$ 2^{32} \f$ items; a query
  * asks for i <= j < n, and its answer is a leftmost minimum of the range,

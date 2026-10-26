@@ -19,7 +19,7 @@
  * RankSelect.h, with no select], so that
  * \f[ x_i = \sum_{\ell} A_\ell[ i_\ell ] \, 2^{s_\ell} , \quad
  *     i_0 = i , \quad i_{\ell + 1} = rank_1( B_\ell , i_\ell ) , \f]
- * over the levels that it reaches: O( 1 + the levels of \f$ x_i \f$ )
+ * over the levels that it reaches: \f$ O( 1 + \text{the levels of } x_i ) \f$
  * time. With \f$ n_k \f$ the integers of more than k bits, the level of
  * the chunk \f$ [ s , s + b ) \f$ costs \f$ n_s ( b + 1 ) \f$ bits (b + 0
  * on the last), plus 25% of the continuation bits for their ranks (one

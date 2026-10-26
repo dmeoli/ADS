@@ -5,21 +5,21 @@
  * Two problems of dynamic programming on a row of n houses, where the
  * choice of each house depends only on the one of its neighbour:
  *
- * - the largest sum of the items of A, no two of them adjacent (the
- *   donations of houses no two of which are neighbours, the maximum weight
- *   independent set of a path): \f$ D[ i ] = \max( D[ i - 1 ] , D[ i - 2 ]
- *   + A_{i-1} ) \f$, D[ 0 ] = D[ -1 ] = 0; maxNonAdjacentSum() in
- *   \f$ \Theta( n ) \f$ time and O( 1 ) space, nonAdjacentSelection() with
- *   the places read back from the table, \f$ \Theta( n ) \f$ space. It is
- *   the weighted intervals of section 13.2 [see WeightedIntervals.h] with
- *   the unit intervals [ i , i + 2 ).
- * - paintHouses(): the cheapest painting of the houses with k colors,
- *   cost[ h ][ c ] for the house h of color c, two adjacent houses of
- *   different colors: \f$ D[ h ][ c ] = cost[ h ][ c ] + \min_{p \neq c}
- *   D[ h - 1 ][ p ] \f$, which is O( n k^2 ) as written; keeping of each
- *   row its least value, its color and its second least value, the least
- *   over \f$ p \neq c \f$ is one of the two, and the time is O( n k ), the
- *   colors read back from the table of O( n k ) space.
+ * - the largest sum of the items of A, no two of them adjacent (the donations
+ *   of houses no two of which are neighbours, the maximum weight independent
+ *   set of a path): \f$ D[ i ] = \max( D[ i - 1 ] , D[ i - 2 ] + A_{i-1} )
+ *   \f$, D[ 0 ] = D[ -1 ] = 0; maxNonAdjacentSum() in \f$ \Theta( n ) \f$ time
+ *   and \f$ O( 1 ) \f$ space, nonAdjacentSelection() with the places read back
+ *   from the table, \f$ \Theta( n ) \f$ space. It is the weighted intervals of
+ *   section 13.2 [see WeightedIntervals.h] with the unit intervals [ i , i + 2
+ *   ).
+ * - paintHouses(): the cheapest painting of the houses with k colors, cost[ h
+ *   ][ c ] for the house h of color c, two adjacent houses of different
+ *   colors: \f$ D[ h ][ c ] = cost[ h ][ c ] + \min_{p \neq c} D[ h - 1 ][ p ]
+ *   \f$, which is \f$ O( n k^2 ) \f$ as written; keeping of each row its least
+ *   value, its color and its second least value, the least over
+ *   \f$ p \neq c \f$ is one of the two, and the time is \f$ O( n k ) \f$, the
+ *   colors read back from the table of \f$ O( n k ) \f$ space.
  *
  * Both are shortest paths in the DAG of the states (house, choice), and
  * generalize to a tree of houses by the same recurrence on the children.

@@ -152,14 +152,14 @@ class SequenceHeap {
  explicit SequenceHeap( Better better = Better() )
   : f_better( std::move( better ) ) {}
 
- /// pushes x, O( log n ) amortized
+ /// pushes x, \f$ O( \log n ) \f$ amortized
  void push( const T & x );
 
  /// the best item
  /// \pre the heap is not empty
  [[nodiscard]] const T & top( void );
 
- /// removes the best item and returns it, O( log n ) amortized
+ /// removes the best item and returns it, \f$ O( \log n ) \f$ amortized
  /// \pre the heap is not empty
  T pop( void );
 

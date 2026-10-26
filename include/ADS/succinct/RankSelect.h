@@ -9,49 +9,47 @@
  * (Elias-Fano, the trees by levels and by parentheses, the graphs).
  *
  * rank is the two-level directory of Jacobson, with the sizes that suit the
- * words and the caches of today: for each block of Z = 256 bits, one word
- * of 64 bits holds the absolute rank of the block in its 40 high bits and
- * the ranks of its words 1, 2 and 3 relative to the block in 8 bits each,
- * and the 1s of the word up to i are the sideways sum of the masked word,
- * which takes the place of the table of the ranks of all the small blocks
- * of the notes (a table of \f$ 2^z z \log z \f$ bits is affordable only
- * with z = log m / 2, while the sum of 64 bits is one instruction); one
- * access to the directory and one to the bits, no branch, O( 1 ) time, with
- * \f$ 64 / 256 = 25 \% \f$ of m bits more. The notes set
- * \f$ Z = \log^2 m \f$ and \f$ z = \log m / 2 \f$ so that the directory
- * takes o( m ) bits (Theorem 15.1); with constant blocks it takes a
- * constant fraction, the trade of the practical designs: Vigna's rank9
- * and the directory of Gog and Petri take the same 25% with two words per
- * 512 bits, the poppy of Zhou, Andersen and Kaminsky and the flat rank of
- * Kurpicz 3% with a sum of up to 8 words per query [see
- * CompactRankSelect.h]. Above \f$ 2^{40} \f$
- * bits a third level of 64 bits counts every \f$ 2^{40} \f$ bits.
+ * words and the caches of today: for each block of Z = 256 bits, one word of
+ * 64 bits holds the absolute rank of the block in its 40 high bits and the
+ * ranks of its words 1, 2 and 3 relative to the block in 8 bits each, and the
+ * 1s of the word up to i are the sideways sum of the masked word, which takes
+ * the place of the table of the ranks of all the small blocks of the notes (a
+ * table of \f$ 2^z z \log z \f$ bits is affordable only with
+ * \f$ z = \log m / 2 \f$, while the sum of 64 bits is one instruction); one
+ * access to the directory and one to the bits, no branch, \f$ O( 1 ) \f$ time,
+ * with \f$ 64 / 256 = 25 \% \f$ of m bits more. The notes set
+ * \f$ Z = \log^2 m \f$ and \f$ z = \log m / 2 \f$ so that the directory takes
+ * \f$ o( m ) \f$ bits (Theorem 15.1); with constant blocks it takes a constant
+ * fraction, the trade of the practical designs: Vigna's rank9 and the
+ * directory of Gog and Petri take the same 25% with two words per 512 bits,
+ * the poppy of Zhou, Andersen and Kaminsky and the flat rank of Kurpicz 3%
+ * with a sum of up to 8 words per query [see CompactRankSelect.h]. Above
+ * \f$ 2^{40} \f$ bits a third level of 64 bits counts every \f$ 2^{40} \f$
+ * bits.
  *
- * select is the inventory of Vigna's simple select, for the 1s and for
- * the 0s: the 1s are cut in groups of \f$ 2^\ell \f$, with
- * \f$ \ell = \lfloor \log_2 ( 1.5 \cdot 4096 \, k / m ) \rfloor \f$ for k
- * of them, so that a group spans between 3072 and 6144 bits; for each the
- * place of its first 1 is kept in 64 bits, and the places of its 1s of rank
- * multiple of \f$ 2^{\ell - 5} \f$ in 16 bits from it, a line of the
- * cache. \f$ select_1( k ) \f$ reads the place of the 1 of rank k rounded
- * down to \f$ 2^{\ell - 5} \f$ and counts the rest of the 1s word by
- * word, by the sideways sums, and ends in the word by the broadword
- * selectInWord() [see BitVector.h]: three accesses to memory and a few
- * words, O( 1 ) time where the 1s are spread evenly, with about
- * \f$ 576 / 6144 \f$ to \f$ 576 / 3072 \f$, 9.4% to 18.8%, of m bits
- * more for each value. A group that
- * spans \f$ 2^{16} \f$ bits or more, whose offsets do not fit, is sparse,
- * and its 1s are found by a binary search on the directory of rank between
- * its ends, \f$ O( \log ( m / 256 ) ) \f$ in the worst case. The notes
- * give the scheme of Clark, which splits the blocks of \f$ \log^2 m \f$
- * 1s into sparse ones, whose places are written down, and dense ones, split
- * again with \f$ ( \log \log m )^2 \f$ 1s and ended by a table: O( 1 )
- * time in the worst case and o( m ) bits (Theorem 15.2), at the price of
- * three levels whose constants are large for the sizes of practice; the
- * inventories with constant groups are what the practical designs use
- * (Vigna; Gog and Petri; the darray of Okanohara and Sadakane). A group
- * of fewer than 32 bits b, below about 1% of them, keeps the place of each
- * one, and select reads no bit at all.
+ * select is the inventory of Vigna's simple select, for the 1s and for the 0s:
+ * the 1s are cut in groups of \f$ 2^\ell \f$, with \f$ \ell = \lfloor \log_2 (
+ * 1.5 \cdot 4096 \, k / m ) \rfloor \f$ for k of them, so that a group spans
+ * between 3072 and 6144 bits; for each the place of its first 1 is kept in 64
+ * bits, and the places of its 1s of rank multiple of \f$ 2^{\ell - 5} \f$ in
+ * 16 bits from it, a line of the cache. \f$ select_1( k ) \f$ reads the place
+ * of the 1 of rank k rounded down to \f$ 2^{\ell - 5} \f$ and counts the rest
+ * of the 1s word by word, by the sideways sums, and ends in the word by the
+ * broadword selectInWord() [see BitVector.h]: three accesses to memory and a
+ * few words, \f$ O( 1 ) \f$ time where the 1s are spread evenly, with about
+ * \f$ 576 / 6144 \f$ to \f$ 576 / 3072 \f$, 9.4% to 18.8%, of m bits more for
+ * each value. A group that spans \f$ 2^{16} \f$ bits or more, whose offsets do
+ * not fit, is sparse, and its 1s are found by a binary search on the directory
+ * of rank between its ends, \f$ O( \log ( m / 256 ) ) \f$ in the worst case.
+ * The notes give the scheme of Clark, which splits the blocks of
+ * \f$ \log^2 m \f$ 1s into sparse ones, whose places are written down, and
+ * dense ones, split again with \f$ ( \log \log m )^2 \f$ 1s and ended by a
+ * table: \f$ O( 1 ) \f$ time in the worst case and \f$ o( m ) \f$ bits
+ * (Theorem 15.2), at the price of three levels whose constants are large for
+ * the sizes of practice; the inventories with constant groups are what the
+ * practical designs use (Vigna; Gog and Petri; the darray of Okanohara and
+ * Sadakane). A group of fewer than 32 bits b, below about 1% of them, keeps
+ * the place of each one, and select reads no bit at all.
  *
  * The directory is built in one pass on the words: the sideways sums
  * \f$ p_0 , \ldots , p_3 \f$ of the words of a block, at most 64 each,
@@ -157,7 +155,7 @@ struct RankSelectOptions {
  enum class Selects { NONE , ONES , ZEROS , BOTH };
  };
 
-/// a static vector of bits with rank and select in O( 1 ) time, the
+/// a static vector of bits with rank and select in \f$ O( 1 ) \f$ time, the
 /// inventories of select built in the constructor if not Lazy, and at the
 /// first select of each value if Lazy
 template< bool Lazy >

@@ -8,48 +8,47 @@
  * StaticSearch.h for the static B+-tree] in a space that depends on the
  * regularity of the keys rather than on their number.
  *
- * The items A[ 0 .. n ) are the points \f$ ( A[ i ] , i ) \f$ of the plane,
- * a repeated key standing for its first place. An \f$ \epsilon
- * \f$-approximation is a sequence of segments, each a line \f$ f( x ) = a
- * + b ( x - k_s ) \f$ over a range of keys from its first key \f$ k_s \f$,
- * such that \f$ | f( A[ i ] ) - i | \le \epsilon \f$ for every key of its
- * range; the segments are those of the optimal approximation, the fewest
- * possible, built in one pass in O( n ) time by the algorithm of O'Rourke
- * as engineered by Xie et al.: the lines through the points of the range
- * with error at most \f$ \epsilon \f$ are those between the line of least
- * slope and the line of largest slope that the convex hulls of the points
- * moved up and down by \f$ \epsilon \f$ admit, the two hulls updated by a
- * new point in amortized O( 1 ), and a range ends when a point leaves no
- * line. The segment keeps the line of the average of the two extreme
- * slopes through the point where they cross (any line of slope between
- * them through that point stays within the error), its slope made not
- * negative so that the prediction never decreases. The first keys of the
- * segments are themselves approximated, with an error \f$ \epsilon_r \f$,
- * by the segments of a level above, and so on up to a single segment: for
- * m segments at the level below, a level has at most \f$ m / ( 2
- * \epsilon_r ) \f$ of them (a segment of the optimal approximation covers at
- * least \f$ 2 \epsilon \f$ points, since the horizontal line through the
- * middle of any \f$ 2 \epsilon \f$ consecutive ranks is within the error),
- * the levels are \f$ 1 + \lceil \log_{2 \epsilon_r} m \rceil \f$ at most,
- * and the index takes 28 bytes per segment (its first key, the two doubles of
- * its line and its first place), m at most \f$ n / ( 2
- * \epsilon ) \f$ and much fewer on regular keys.
+ * The items A[ 0 .. n ) are the points \f$ ( A[ i ] , i ) \f$ of the plane, a
+ * repeated key standing for its first place. An \f$ \epsilon \f$-approximation
+ * is a sequence of segments, each a line \f$ f( x ) = a + b ( x - k_s ) \f$
+ * over a range of keys from its first key \f$ k_s \f$, such that
+ * \f$ | f( A[ i ] ) - i | \le \epsilon \f$ for every key of its range; the
+ * segments are those of the optimal approximation, the fewest possible, built
+ * in one pass in \f$ O( n ) \f$ time by the algorithm of O'Rourke as
+ * engineered by Xie et al.: the lines through the points of the range with
+ * error at most \f$ \epsilon \f$ are those between the line of least slope and
+ * the line of largest slope that the convex hulls of the points moved up and
+ * down by \f$ \epsilon \f$ admit, the two hulls updated by a new point in
+ * amortized \f$ O( 1 ) \f$, and a range ends when a point leaves no line. The
+ * segment keeps the line of the average of the two extreme slopes through the
+ * point where they cross (any line of slope between them through that point
+ * stays within the error), its slope made not negative so that the prediction
+ * never decreases. The first keys of the segments are themselves approximated,
+ * with an error \f$ \epsilon_r \f$, by the segments of a level above, and so
+ * on up to a single segment: for m segments at the level below, a level has at
+ * most \f$ m / ( 2 \epsilon_r ) \f$ of them (a segment of the optimal
+ * approximation covers at least \f$ 2 \epsilon \f$ points, since the
+ * horizontal line through the middle of any \f$ 2 \epsilon \f$ consecutive
+ * ranks is within the error), the levels are \f$ 1 + \lceil \log_{2
+ * \epsilon_r} m \rceil \f$ at most, and the index takes 28 bytes per segment
+ * (its first key, the two doubles of its line and its first place), m at most
+ * \f$ n / ( 2 \epsilon ) \f$ and much fewer on regular keys.
  *
  * A search starts from the segment at the top, and at each level the
- * prediction of its line, clamped to the range of the segment, is the
- * place of the next segment within \f$ \pm ( \epsilon_r + 1 ) \f$ places
- * (one more for the rounding of the line in double), found by a binary
- * search with no branch of the last first key not larger than the key;
- * at the last level the prediction is the place of the answer within \f$
- * \pm ( \epsilon + 2 ) \f$, whose lines of cache are all prefetched at
- * once, so that their misses overlap, and searched in the same way: \f$
- * O( \log \epsilon_r \log_{2 \epsilon_r} m + \log \epsilon ) \f$ time.
- * The items are a copy on huge pages [see HugePageAllocator.h], so that the
- * window of a search costs no miss of the TLB of its own. On repeated keys,
- * whose places a line cannot all approximate, the search goes on past the
- * window by galloping. The keys are mapped to integers of 64 bits in the same order
- * (the signed by flipping the top bit, the floating by their bits), so that
- * the hulls are kept with exact products of 128 bits.
+ * prediction of its line, clamped to the range of the segment, is the place of
+ * the next segment within \f$ \pm ( \epsilon_r + 1 ) \f$ places (one more for
+ * the rounding of the line in double), found by a binary search with no branch
+ * of the last first key not larger than the key; at the last level the
+ * prediction is the place of the answer within \f$ \pm ( \epsilon + 2 ) \f$,
+ * whose lines of cache are all prefetched at once, so that their misses
+ * overlap, and searched in the same way: \f$ O( \log \epsilon_r \log_{2
+ * \epsilon_r} m + \log \epsilon ) \f$ time. The items are a copy on huge pages
+ * [see HugePageAllocator.h], so that the window of a search costs no miss of
+ * the TLB of its own. On repeated keys, whose places a line cannot all
+ * approximate, the search goes on past the window by galloping. The keys are
+ * mapped to integers of 64 bits in the same order (the signed by flipping the
+ * top bit, the floating by their bits), so that the hulls are kept with exact
+ * products of 128 bits.
  *
  * The contracts [see Contract.h]: the keys sorted, an audit; \f$ \epsilon
  * \ge 1 \f$, \f$ \epsilon_r \ge 1 \f$; each result r is such that the items

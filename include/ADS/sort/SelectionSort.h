@@ -5,7 +5,7 @@
  * Selection Sort (section 2.7.1): the minimum of the part still to sort
  * A[ i .. n - 1 ] is swapped with A[ i ], extending the sorted prefix;
  * \f$ \sum_{i=0}^{n-2} ( n - i - 1 ) = n ( n - 1 ) / 2 \f$ comparisons
- * whatever the order of the input, \f$ \Theta( n^2 ) \f$ time, O( 1 )
+ * whatever the order of the input, \f$ \Theta( n^2 ) \f$ time, \f$ O( 1 ) \f$
  * space, not stable.
  *
  * The contracts [see Contract.h]: the vector ends with the same items sorted,

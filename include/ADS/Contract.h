@@ -13,7 +13,7 @@
  *   no more than the operation itself;
  * - ADS_INVARIANT( c ), at the end of the operations that change a
  *   structure, its invariant (e.g., the order of a heap), which usually
- *   costs O( n ) and is meant for the tests;
+ *   costs \f$ O( n ) \f$ and is meant for the tests;
  * - ADS_AUDIT( c ), a precondition or a postcondition that costs more than
  *   the operation (e.g., a sorted vector before a binary search), checked
  *   with the invariants.

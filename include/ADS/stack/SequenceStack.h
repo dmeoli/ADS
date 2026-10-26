@@ -8,8 +8,8 @@
  *   top() = read( head() ) \qquad pop() = remove( head() ) \qquad
  *   push( v ) = insert( head() , v ) \; ,
  * \f]
- * which takes O( 1 ) time on a list with pointers, even a singly linked one
- * (Esercizio 4.6), and has no capacity.
+ * which takes \f$ O( 1 ) \f$ time on a list with pointers, even a singly
+ * linked one (Esercizio 4.6), and has no capacity.
  *
  * The contracts [see Contract.h]: top() and pop() need a stack that is not
  * empty, and push() ensures one that is not. The operations are defined in

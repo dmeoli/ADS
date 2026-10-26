@@ -3,10 +3,10 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The SET of the integers in [ 0 , N ) as a boolean vector of section 8.1:
- * contains(), insert() and remove() in O( 1 ), min(), max() and forEach()
- * in O( N ), union, intersection, difference and symmetric difference in
- * \f$ \Theta( N ) \f$ (the first is called setUnion(), union being a
- * keyword of C++, and so the others are setIntersection(),
+ * contains(), insert() and remove() in \f$ O( 1 ) \f$, min(), max() and
+ * forEach() in \f$ O( N ) \f$, union, intersection, difference and symmetric
+ * difference in \f$ \Theta( N ) \f$ (the first is called setUnion(), union
+ * being a keyword of C++, and so the others are setIntersection(),
  * setDifference() and setSymmetricDifference()).
  *
  * The vector is kept as words of 64 bits, and the operations of two sets
@@ -132,13 +132,13 @@ class BoolSet {
  /// \post x is not in the set
  void remove( long x );
 
- /// the smallest item, O( N ) time
+ /// the smallest item, \f$ O( N ) \f$ time
  [[nodiscard]] std::optional< long > min( void ) const;
 
- /// the largest item, O( N ) time
+ /// the largest item, \f$ O( N ) \f$ time
  [[nodiscard]] std::optional< long > max( void ) const;
 
- /// f( x ) on the items in increasing order, O( N ) time
+ /// f( x ) on the items in increasing order, \f$ O( N ) \f$ time
  template< class F >
  void forEach( F && f ) const;
 
@@ -178,7 +178,7 @@ class BoolSet {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the size is the number of bits set, O( N )
+ /// the size is the number of bits set, \f$ O( N ) \f$
  [[nodiscard]] bool counted( void ) const;
 
  /// the bits of C from those of A and B by op( a , b ) on the words, a

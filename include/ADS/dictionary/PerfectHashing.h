@@ -2,12 +2,12 @@
 /*------------------------- File PerfectHashing.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Perfect hashing of a static set, beyond the book: a function is perfect
- * on a set S of n keys if it has no collision on S, minimal if its range
- * is \f$ \{ 0 , \ldots , n - 1 \} \f$, and order preserving if it maps the
- * keys in their order; a table built on it searches in O( 1 ) time in the
+ * Perfect hashing of a static set, beyond the book: a function is perfect on a
+ * set S of n keys if it has no collision on S, minimal if its range is
+ * \f$ \{ 0 , \ldots , n - 1 \} \f$, and order preserving if it maps the keys
+ * in their order; a table built on it searches in \f$ O( 1 ) \f$ time in the
  * worst case, as the table with direct access [see DirectTable.h], but in
- * O( n ) space instead of the size of the universe.
+ * \f$ O( n ) \f$ space instead of the size of the universe.
  *
  * - PerfectHashTable is the two-level scheme of Fredman, Komlós and
  *   Szemerédi: the n keys are hashed into n lists by a function h of the
@@ -21,28 +21,27 @@
  *   below 1 / 2. A search computes h and \f$ h_j \f$ and compares one key:
  *   two accesses in the worst case, \f$ O( n ) \f$ expected time to build,
  *   below 3 n places in all. Its dynamic version, by Dietzfelbinger et al.,
- *   also inserts and removes in O( 1 ) amortized expected time; the
+ *   also inserts and removes in \f$ O( 1 ) \f$ amortized expected time; the
  *   compressed schemes of today (CHD of Belazzougui, Botelho and
  *   Dietzfelbinger, RecSplit of Esposito, Mueller Graf and Vigna) need
  *   about 2 and 1.6 bits per key instead of words.
- * - OrderedMinimalPerfectHash is the scheme of Czech, Havas and Majewski: r
- *   = 2 functions map each key t to the edge \f$ ( h_1( t ) , h_2( t ) )
- *   \f$ of a random graph of \f$ m' = c n \f$ vertices, labelled by the
- *   value wanted for t (its place in the input, i.e., its rank if the input
- *   is sorted); if the graph is acyclic, a visit of each tree from a root
- *   with \f$ g = 0 \f$ solves \f$ g( u ) + g( v ) = h( t ) \bmod n \f$ on
- *   each edge (Algorithms 8.1 and 8.2 of the notes, labelAcyclicGraph()),
- *   and \f$ h( t ) = ( g( h_1( t ) ) + g( h_2( t ) ) ) \bmod n \f$ is the
- *   function. For \f$ c > 2 \f$ the graph is acyclic with probability about
- *   \f$ \sqrt{( c - 2 ) / c} \f$, i.e., about two graphs for c = 3; with
- *   r = 3 functions into three blocks of vertices the edges are triples,
- *   the hypergraph is solved in the reverse order of its peeling (the
- *   removal of the vertices of degree 1, labelByPeeling()), and \f$ c >
- *   1.23 \f$ is enough, i.e., \f$ 1.23 n \f$ values instead of \f$ 3 n \f$.
- *   It stores no key: O( m' ) words, O( 1 ) time to evaluate, O( n )
- *   expected time to build; unlike a trie [see PatriciaTrie.h] it gives
- *   nothing meaningful for a key out of S, but its space does not depend on
- *   the length of the keys.
+ * - OrderedMinimalPerfectHash is the scheme of Czech, Havas and Majewski: r =
+ *   2 functions map each key t to the edge \f$ ( h_1( t ) , h_2( t ) ) \f$ of
+ *   a random graph of \f$ m' = c n \f$ vertices, labelled by the value wanted
+ *   for t (its place in the input, i.e., its rank if the input is sorted); if
+ *   the graph is acyclic, a visit of each tree from a root with \f$ g = 0 \f$
+ *   solves \f$ g( u ) + g( v ) = h( t ) \bmod n \f$ on each edge (Algorithms
+ *   8.1 and 8.2 of the notes, labelAcyclicGraph()), and \f$ h( t ) = ( g( h_1(
+ *   t ) ) + g( h_2( t ) ) ) \bmod n \f$ is the function. For \f$ c > 2 \f$ the
+ *   graph is acyclic with probability about \f$ \sqrt{( c - 2 ) / c} \f$,
+ *   i.e., about two graphs for c = 3; with r = 3 functions into three blocks
+ *   of vertices the edges are triples, the hypergraph is solved in the reverse
+ *   order of its peeling (the removal of the vertices of degree 1,
+ *   labelByPeeling()), and \f$ c > 1.23 \f$ is enough, i.e., \f$ 1.23 n \f$
+ *   values instead of \f$ 3 n \f$. It stores no key: \f$ O( m' ) \f$ words,
+ *   \f$ O( 1 ) \f$ time to evaluate, \f$ O( n ) \f$ expected time to build;
+ *   unlike a trie [see PatriciaTrie.h] it gives nothing meaningful for a key
+ *   out of S, but its space does not depend on the length of the keys.
  *
  * The keys of PerfectHashTable are integers below \f$ 2^{61} - 1 \f$, the
  * prime of its functions; those of OrderedMinimalPerfectHash are integers
@@ -138,7 +137,7 @@ class PerfectHashTable {
  explicit PerfectHashTable( const std::vector< std::uint64_t > & S ,
                             std::uint64_t seed = 1 );
 
- /// any k, in O( 1 ) time in the worst case
+ /// any k, in \f$ O( 1 ) \f$ time in the worst case
  [[nodiscard]] bool contains( std::uint64_t k ) const;
 
  /// the number of keys

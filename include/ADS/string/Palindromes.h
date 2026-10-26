@@ -10,7 +10,7 @@
  *   dynamic programming of the textbook fills the table P[ i ][ j ], whether
  *   s[ i .. j ] is a palindrome, by increasing length, in \f$ \Theta( n^2 )
  *   \f$ time and space, and the expansion about each of the 2 n - 1 centres
- *   takes \f$ O( n^2 ) \f$ time and O( 1 ) space; Manacher keeps the
+ *   takes \f$ O( n^2 ) \f$ time and \f$ O( 1 ) \f$ space; Manacher keeps the
  *   rightmost palindrome found so far and starts each new centre from the
  *   radius of its mirror inside it, so that the right end only moves
  *   forward. The suffix tree of s and of its reverse gives the same answer
@@ -29,14 +29,14 @@
  *   the palindromes first, in \f$ \Theta( n^2 ) \f$ space; here each
  *   palindrome s[ i .. j ) relaxes D[ j ] while it is found by the expansion
  *   about its centre, the centres taken left to right, so that D[ i ] is
- *   final when it is used: \f$ O( n^2 ) \f$ time and O( n ) space.
+ *   final when it is used: \f$ O( n^2 ) \f$ time and \f$ O( n ) \f$ space.
  * - Eertree, beyond the book, is the eertree (palindromic tree) of Rubinchik
  *   and Shur: a node per distinct nonempty palindrome (at most n of them,
  *   since a byte added at the end creates at most one new palindrome, the
  *   longest palindromic suffix), two roots of lengths -1 and 0, the edge c
  *   from v to c v c, and the suffix link of v to its longest proper
- *   palindromic suffix; add() finds the longest palindromic suffix of the
- *   new string on the links of the previous one, O( 1 ) amortized steps
+ *   palindromic suffix; add() finds the longest palindromic suffix of the new
+ *   string on the links of the previous one, \f$ O( 1 ) \f$ amortized steps
  *   for a constant alphabet (the edges of a node are a short vector here,
  *   \f$ O( \sigma ) \f$ each).
  * - palindromicFactorization(), beyond the book, gives the same fewest

@@ -6,7 +6,7 @@
  * inserted in the sorted prefix A[ 0 .. i - 1 ], the larger items moving
  * one place to the right. \f$ \Theta( n ) \f$ time on a sorted vector,
  * \f$ \Theta( n^2 ) \f$ on a reversed one and on average (n ( n - 1 ) / 4
- * moves), O( 1 ) space, stable; with its simple inner loop it is the
+ * moves), \f$ O( 1 ) \f$ space, stable; with its simple inner loop it is the
  * fastest on few items, hence the base case of the hybrid sorts.
  *
  * The contracts [see Contract.h]: lo <= hi <= n, and the range ends sorted

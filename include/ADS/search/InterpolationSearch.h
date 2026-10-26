@@ -8,12 +8,12 @@
  *   m = i + \left\lfloor ( j - i ) \frac{v - A[ i ]}{A[ j ] - A[ i ]}
  *   \right\rfloor
  * \f]
- * instead of the middle one, as one opens a phone book near its start to
- * look for a name in C. With keys uniformly distributed it takes
- * \f$ O( \log \log n ) \f$ expected time, but O( n ) in the worst case, so
- * that with few keys or with keys not uniform the binary search is better.
- * The search stops when v is out of [ A[ i ] , A[ j ] ], and probes A[ i ]
- * when A[ i ] = A[ j ]. The fraction is computed in double, and when it is
+ * instead of the middle one, as one opens a phone book near its start to look
+ * for a name in C. With keys uniformly distributed it takes
+ * \f$ O( \log \log n ) \f$ expected time, but \f$ O( n ) \f$ in the worst
+ * case, so that with few keys or with keys not uniform the binary search is
+ * better. The search stops when v is out of [ A[ i ] , A[ j ] ], and probes A[
+ * i ] when A[ i ] = A[ j ]. The fraction is computed in double, and when it is
  * undefined, i.e., 0 / 0 for distinct keys equal as doubles (integers past
  * 2^53) or inf / inf for infinite keys, the probe is the middle place.
  *

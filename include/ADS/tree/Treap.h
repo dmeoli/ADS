@@ -14,9 +14,9 @@
  * ADT.h]; the priorities come from SplitMix64 [see RandomHashing.h],
  * seeded, so that a run is reproducible.
  *
- * The contracts [see Contract.h]: insert() ensures that the key is there
- * and remove() that it is not; the invariant is the order of the keys and
- * the heap order of the priorities, an O( n ) check at the level 3. The
+ * The contracts [see Contract.h]: insert() ensures that the key is there and
+ * remove() that it is not; the invariant is the order of the keys and the heap
+ * order of the priorities, an \f$ O( n ) \f$ check at the level 3. The
  * operations are defined in Treap.tpp.
  *
  * \see R. Seidel, C. R. Aragon, Randomized search trees, Algorithmica

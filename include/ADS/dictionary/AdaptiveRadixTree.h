@@ -67,13 +67,13 @@
  * from blocks that double up to 2 MB (the larger leaves come from the
  * allocator), so that a leaf costs no call to the allocator.
  *
- * The contracts [see Contract.h]: after insert() the key is there and
- * after remove() it is not; the invariant is that the keys of the leaves
- * extend the paths that lead to them, that every node but the root
- * branches or ends a key, that the bytes of a node are sorted and its
- * layout the one of its count, and that the leaves are size(), an O( n )
- * check at the level 3 on the trees of up to 2048 keys. The operations
- * are defined in AdaptiveRadixTree.tpp.
+ * The contracts [see Contract.h]: after insert() the key is there and after
+ * remove() it is not; the invariant is that the keys of the leaves extend the
+ * paths that lead to them, that every node but the root branches or ends a
+ * key, that the bytes of a node are sorted and its layout the one of its
+ * count, and that the leaves are size(), an \f$ O( n ) \f$ check at the level
+ * 3 on the trees of up to 2048 keys. The operations are defined in
+ * AdaptiveRadixTree.tpp.
  *
  * \see V. Leis, A. Kemper, T. Neumann, The adaptive radix tree: ARTful
  *      indexing for main-memory databases, Proceedings of ICDE 2013,

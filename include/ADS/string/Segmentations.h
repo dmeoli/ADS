@@ -6,16 +6,16 @@
  * of words, the counting version of the word break problem [see
  * WordBreak.h, which finds one of them].
  *
- * - countSegmentations(): D[ i ], the segmentations of X[ i .. n ), is the
- *   sum of D[ i + |w| ] over the words w of the list that occur in X at i,
- *   D[ n ] = 1, filled from the right in \f$ O( n \sum_w |w| ) \f$ time and
- *   O( n ) space. With the automaton of Aho and Corasick on the words, the
- *   occurrences ending at each place come in one scan, and the time drops
+ * - countSegmentations(): D[ i ], the segmentations of X[ i .. n ), is the sum
+ *   of D[ i + |w| ] over the words w of the list that occur in X at i, D[ n ]
+ *   = 1, filled from the right in \f$ O( n \sum_w |w| ) \f$ time and
+ *   \f$ O( n ) \f$ space. With the automaton of Aho and Corasick on the words,
+ *   the occurrences ending at each place come in one scan, and the time drops
  *   to \f$ O( n + \sum_w |w| + occ ) \f$ for occ occurrences.
  * - countDecodings(): the readings of a string of digits as letters, A = 1,
  *   ..., Z = 26, the segmentations into the words 1, ..., 26: D[ i ] = 0 if
- *   d_i = 0, else D[ i + 1 ] plus D[ i + 2 ] if d_i d_{i+1} is in 10 ..
- *   26; \f$ \Theta( n ) \f$ time and O( 1 ) space, the two last entries of
+ *   d_i = 0, else D[ i + 1 ] plus D[ i + 2 ] if d_i d_{i+1} is in 10 .. 26;
+ *   \f$ \Theta( n ) \f$ time and \f$ O( 1 ) \f$ space, the two last entries of
  *   D. On n digits 1 the count is the Fibonacci number \f$ F_{n+1} \f$.
  *
  * The counts grow exponentially with n, and they are given modulo

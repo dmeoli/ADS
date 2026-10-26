@@ -14,15 +14,15 @@
  *   made of about \f$ 2^i \f$ runs of the input, as a binary counter
  *   (the merge of std::list::sort, on the runs of the input instead of
  *   its single cells): \f$ O( n \log r ) \f$ comparisons for r runs, n -
- *   1 on a sorted or reversed list, and O( 1 ) extra space. The merges
+ *   1 on a sorted or reversed list, and \f$ O( 1 ) \f$ extra space. The merges
  *   follow the successors only, and the predecessors are set once at the
  *   end;
  * - on the numbers in their natural order (an arithmetic type and less
- *   std::less), the cells are sorted instead by an array of pairs ( key ,
- *   cell ) and the LSD radix sort [see RadixSort.h], stable, and then
- *   relinked in one pass: O( n ) time and space, two walks of the cells
- *   instead of \f$ \log r \f$ of them, each of which misses the cache
- *   once per cell when the cells are scattered.
+ *   std::less), the cells are sorted instead by an array of pairs ( key , cell
+ *   ) and the LSD radix sort [see RadixSort.h], stable, and then relinked in
+ *   one pass: \f$ O( n ) \f$ time and space, two walks of the cells instead of
+ *   \f$ \log r \f$ of them, each of which misses the cache once per cell when
+ *   the cells are scattered.
  *
  * The contracts [see Contract.h]: the list ends sorted by less, with the
  * same cells (an audit). The functions are defined in ListSort.tpp.

@@ -19,14 +19,14 @@
  * the next insert(), so that an item costs no call to the allocator and
  * the items in use stay close in memory.
  *
- * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
- * need a queue that is not empty, insert() one that is not full, and
- * decrease() a handle of an item of this queue and a priority not larger
- * than its own; the invariant, checked at level 3 in O( n ) time, is the
- * order of the heap together with the places that the items remember. On a
- * heap of more than 1024 items only the root and the last item are
- * checked, so that a long sequence of operations at the level 3 stays
- * linear. The operations are defined in HeapPriorityQueue.tpp.
+ * The contracts [see Contract.h]: min(), minPriority() and deleteMin() need a
+ * queue that is not empty, insert() one that is not full, and decrease() a
+ * handle of an item of this queue and a priority not larger than its own; the
+ * invariant, checked at level 3 in \f$ O( n ) \f$ time, is the order of the
+ * heap together with the places that the items remember. On a heap of more
+ * than 1024 items only the root and the last item are checked, so that a long
+ * sequence of operations at the level 3 stays linear. The operations are
+ * defined in HeapPriorityQueue.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
@@ -122,13 +122,13 @@ class HeapPriorityQueue {
  /// \pre the queue is not empty
  [[nodiscard]] const P & minPriority( void ) const;
 
- /// the last leaf goes to the root and down, O( d log_d n ) time; the
+ /// the last leaf goes to the root and down, \f$ O( d \log_d n ) \f$ time; the
  /// handle of the item removed is no longer valid
  /// \pre the queue is not empty
  /// \post one item less, and none of smaller priority than the one removed
  T deleteMin( void );
 
- /// a new leaf goes up, O( log_d n ) time
+ /// a new leaf goes up, \f$ O( \log_d n ) \f$ time
  /// \pre the queue is not full
  /// \post one item more, the handle at its place
  Handle insert( const T & x , const P & p );
@@ -186,8 +186,8 @@ class HeapPriorityQueue {
  /// y is the item in its own place
  [[nodiscard]] bool owns( Handle y ) const;
 
- /// no item is smaller than its parent, and each knows its place, O( n );
- /// on more than 1024 items, the root and the last item only
+ /// no item is smaller than its parent, and each knows its place,
+ /// \f$ O( n ) \f$; on more than 1024 items, the root and the last item only
  [[nodiscard]] bool isHeap( void ) const;
 
  int f_capacity;                       ///< the capacity

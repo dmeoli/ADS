@@ -12,20 +12,20 @@
  *   nonempty parts by the dynamic programming on the prefix sums S,
  *   \f$ D[ t ][ i ] = \min_{t - 1 \leq j < i} \max( D[ t - 1 ][ j ] ,
  *   S[ i ] - S[ j ] ) \f$, \f$ D[ 1 ][ i ] = S[ i ] \f$, with the best cut
- *   kept for each entry; O( k n^2 ) time and O( k n ) space.
- * - painterPartition() solves it for integer items not negative and at
- *   most k parts by a binary search on the answer x: the greedy that
- *   closes a part only when the next item does not fit in x uses the
- *   fewest parts, so x is feasible iff the greedy needs at most k of them;
- *   \f$ O( n \log \sum_i A_i ) \f$ time and O( 1 ) space. With items not
- *   negative and k <= n, at most k parts and exactly k nonempty ones give
+ *   kept for each entry; \f$ O( k n^2 ) \f$ time and \f$ O( k n ) \f$ space.
+ * - painterPartition() solves it for integer items not negative and at most k
+ *   parts by a binary search on the answer x: the greedy that closes a part
+ *   only when the next item does not fit in x uses the fewest parts, so x is
+ *   feasible iff the greedy needs at most k of them;
+ *   \f$ O( n \log \sum_i A_i ) \f$ time and \f$ O( 1 ) \f$ space. With items
+ *   not negative and k <= n, at most k parts and exactly k nonempty ones give
  *   the same value.
  *
- * In the literature, the problem on a chain of n items is solved in O( n )
- * time for k fixed, and in \f$ O( n + k^2 \log^2 n ) \f$ in general, by
- * parametric search on the prefix sums (Frederickson); the dynamic
- * programming above has the quadrangle inequality, so that the monotone
- * cuts of Knuth and Yao bring it to O( k n ) for items not negative.
+ * In the literature, the problem on a chain of n items is solved in
+ * \f$ O( n ) \f$ time for k fixed, and in \f$ O( n + k^2 \log^2 n ) \f$ in
+ * general, by parametric search on the prefix sums (Frederickson); the dynamic
+ * programming above has the quadrangle inequality, so that the monotone cuts
+ * of Knuth and Yao bring it to \f$ O( k n ) \f$ for items not negative.
  *
  * The contracts [see Contract.h]: 1 <= k <= n for linearPartition(), and
  * its cuts give the cost found (checked at level 3); k >= 1 and the items

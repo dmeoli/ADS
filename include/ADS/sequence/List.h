@@ -8,23 +8,23 @@
  * address of the cell of the item of index i, for \f$ 0 \leq i < n \f$,
  * while \f$ pos_{-1} \f$ and \f$ pos_n \f$ are both the address of the
  * sentinel, which is therefore what finished() looks for. Every operation
- * takes O( 1 ) time, the list \f$ \Theta( n ) \f$ space.
+ * takes \f$ O( 1 ) \f$ time, the list \f$ \Theta( n ) \f$ space.
  *
- * The sentinel is a member of the list rather than a cell of the heap, so
- * that moving a list relinks its first and last cells to the new sentinel in
- * O( 1 ) time and allocates nothing: the list moved from is left empty, and
- * still usable. Copying a list copies its cells (the rule of five, with the
- * copy and swap idiom for the assignment). Beyond the book, the cells come
- * from an ObjectPool [see ObjectPool.h] of the list, which takes back the
+ * The sentinel is a member of the list rather than a cell of the heap, so that
+ * moving a list relinks its first and last cells to the new sentinel in
+ * \f$ O( 1 ) \f$ time and allocates nothing: the list moved from is left
+ * empty, and still usable. Copying a list copies its cells (the rule of five,
+ * with the copy and swap idiom for the assignment). Beyond the book, the cells
+ * come from an ObjectPool [see ObjectPool.h] of the list, which takes back the
  * cell of remove() for the next insert(): a cell costs no call to the
  * allocator, the cells made one after another are next to each other in
  * memory, and a list of items with a trivial destructor dies a block at a
- * time; the price is that the list keeps the memory of its largest size
- * until it dies, and that a move takes the pool along with the cells. A
- * pool is no gain for a list of a few cells, which still takes a block per
- * cell and a header per block: a structure of many short lists (the chains
- * of ChainedHashTable) takes List< T , false >, whose cells come one by one
- * from new and delete.
+ * time; the price is that the list keeps the memory of its largest size until
+ * it dies, and that a move takes the pool along with the cells. A pool is no
+ * gain for a list of a few cells, which still takes a block per cell and a
+ * header per block: a structure of many short lists (the chains of
+ * ChainedHashTable) takes List< T , false >, whose cells come one by one from
+ * new and delete.
  *
  * The contracts [see Contract.h]: a position is a cell of this list, which
  * costs a scan of the list and is therefore an audit, checked by the
@@ -112,7 +112,7 @@ class List {
 
  List( const List & other );
 
- /// the cells of other, which is left empty, in O( 1 ) time
+ /// the cells of other, which is left empty, in \f$ O( 1 ) \f$ time
  List( List && other ) noexcept;
 
  List & operator=( List other ) noexcept;
@@ -251,10 +251,10 @@ class List {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// each cell is the predecessor of its successor, O( n )
+ /// each cell is the predecessor of its successor, \f$ O( n ) \f$
  [[nodiscard]] bool linked( void ) const;
 
- /// p is a cell of this list, the sentinel included, O( n )
+ /// p is a cell of this list, the sentinel included, \f$ O( n ) \f$
  [[nodiscard]] bool owns( Pos p ) const;
 
  /// the address of the sentinel

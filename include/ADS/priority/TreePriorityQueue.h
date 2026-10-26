@@ -5,7 +5,7 @@
  * The PRIORITYQUEUE [see PriorityQueue.h] on a tree.
  *
  * TreePriorityQueue is a Red-Black tree of the pairs ( priority , number
- * of insertion ) (section 10.1.2): every operation in O( log n ).
+ * of insertion ) (section 10.1.2): every operation in \f$ O( \log n ) \f$.
  *
  * The contracts [see Contract.h]: min() and deleteMin() need a queue that
  * is not empty, decrease() the handle of an item still in the queue and a
@@ -102,7 +102,7 @@ class TreePriorityQueue {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// each item of the tree with the priority of its handle, O( n )
+ /// each item of the tree with the priority of its handle, \f$ O( n ) \f$
  [[nodiscard]] bool consistent( void ) const;
 
  RedBlackTree< Key , T > f_t;   ///< the items by priority

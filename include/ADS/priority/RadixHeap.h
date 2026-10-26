@@ -26,16 +26,16 @@
  * \f$ r' \geq r \f$ agrees with the new \f$ \ell \f$ in the same digits as
  * with the old one.
  *
- * Each item thus moves at most \f$ \lceil W / B \rceil - 1 \f$ times, so
- * that, with the potential \f$ \Phi = \sum_x row( x ) \f$, push() takes
- * O( 1 ) time and pop() \f$ O( W / B + 2^B W / ( B w ) ) \f$ amortized,
- * the second term the scan of the mask of \f$ 2^B \lceil W / B \rceil \f$
- * bits in words of w = 64; for the keys of a band of width C above
- * \f$ \ell \f$ only the \f$ \lceil \log_2 ( C + 1 ) / B \rceil \f$ lowest
- * rows are ever used. With B = 1 it is the radix heap of the paper,
- * \f$ O( \log C ) \f$ amortized per pop(); larger digits trade fewer moves
- * for more buckets, as in the two-level heap of the paper. The buckets are
- * vectors that keep their memory, so that a queue in a steady state calls
+ * Each item thus moves at most \f$ \lceil W / B \rceil - 1 \f$ times, so that,
+ * with the potential \f$ \Phi = \sum_x row( x ) \f$, push() takes
+ * \f$ O( 1 ) \f$ time and pop() \f$ O( W / B + 2^B W / ( B w ) ) \f$
+ * amortized, the second term the scan of the mask of
+ * \f$ 2^B \lceil W / B \rceil \f$ bits in words of w = 64; for the keys of a
+ * band of width C above \f$ \ell \f$ only the \f$ \lceil \log_2 ( C + 1 ) / B
+ * \rceil \f$ lowest rows are ever used. With B = 1 it is the radix heap of the
+ * paper, \f$ O( \log C ) \f$ amortized per pop(); larger digits trade fewer
+ * moves for more buckets, as in the two-level heap of the paper. The buckets
+ * are vectors that keep their memory, so that a queue in a steady state calls
  * no allocator, and the items of a bucket come out last pushed first.
  *
  * The contracts [see Contract.h]: a key pushed is not smaller than the

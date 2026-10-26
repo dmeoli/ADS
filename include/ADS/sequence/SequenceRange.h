@@ -8,7 +8,7 @@
  * p = next( p ) until finished( p ) of the book. The iterator holds a
  * position, and the end is an iterator marked as such that compares equal
  * to any iterator on a finished position, so that no position
- * \f$ pos_n \f$ needs to be computed (tail() costs O( n ) on a singly
+ * \f$ pos_n \f$ needs to be computed (tail() costs \f$ O( n ) \f$ on a singly
  * linked list) while the range stays common, as the algorithms of C++17 and
  * of Boost want it; the range is a view, a pointer to the sequence. Each
  * step costs what next() costs.

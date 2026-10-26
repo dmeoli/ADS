@@ -8,18 +8,19 @@
  * a common prefix of two suffixes, and the suffixes that share a prefix of
  * length L are a range of SA whose LCP entries are all at least L: hence a
  * scan of LCP, or a visit of the internal nodes of the suffix tree, answers
- * the questions on the repeats in O( n ) time.
+ * the questions on the repeats in \f$ O( n ) \f$ time.
  *
- * - longestRepeatedSubstring(): the largest entry of LCP, O( n ), against
- *   the \f$ O( n^2 ) \f$ of the dynamic programming of a string against
- *   itself;
+ * - longestRepeatedSubstring(): the largest entry of LCP, \f$ O( n ) \f$,
+ *   against the \f$ O( n^2 ) \f$ of the dynamic programming of a string
+ *   against itself;
  * - repeatedSubstring( SA , L , C ), the query of text mining of section
- *   10.4.3: a substring of length L that occurs at least C times is a run
- *   of at least C - 1 entries of LCP that are at least L, one scan, O( n ),
- *   against the \f$ O( n^2 L ) \f$ of counting every substring;
+ *   10.4.3: a substring of length L that occurs at least C times is a run of
+ *   at least C - 1 entries of LCP that are at least L, one scan,
+ *   \f$ O( n ) \f$, against the \f$ O( n^2 L ) \f$ of counting every
+ *   substring;
  * - distinctSubstrings(): each suffix SA[ r ] adds the n - SA[ r ] prefixes
  *   less the LCP[ r - 1 ] it shares with the previous one, hence
- *   \f$ n ( n + 1 ) / 2 - \sum_r LCP[ r ] \f$, O( n );
+ *   \f$ n ( n + 1 ) / 2 - \sum_r LCP[ r ] \f$, \f$ O( n ) \f$;
  * - longestCommonSubstring( S , k ): the longest substring common to at
  *   least k of the m strings of S, on the suffix array of their join with m
  *   distinct separators (an integer alphabet): a window of ranks that
@@ -28,32 +29,31 @@
  *   total length, against the \f$ O( |P| |T| ) \f$ of the dynamic
  *   programming for two strings [see LongestCommonSubsequence.h] and the
  *   generalized suffix tree with the colors of Hui for any k;
- * - maximalRepeats(): the maximal repeats, the substrings that occur twice
- *   and cannot be extended to the right (an internal node, Property 10.8)
- *   nor to the left (the symbols before their occurrences are not all the
- *   same, or one occurrence starts the text): the internal nodes whose
- *   leaves are left-diverse, by one visit from the leaves up, O( n ), as in
+ * - maximalRepeats(): the maximal repeats, the substrings that occur twice and
+ *   cannot be extended to the right (an internal node, Property 10.8) nor to
+ *   the left (the symbols before their occurrences are not all the same, or
+ *   one occurrence starts the text): the internal nodes whose leaves are
+ *   left-diverse, by one visit from the leaves up, \f$ O( n ) \f$, as in
  *   Gusfield;
  * - proximity( SA , P , Q , k ), the proximity search of section 10.4.3:
  *   the occurrences of P and of Q, sorted together, have an occurrence of
  *   each at distance at most k exactly when two adjacent ones of different
  *   patterns do, \f$ O( |P| + |Q| + occ \log occ ) \f$;
  * - kMismatches( T , P , k ), Algorithm 10.4 (section 10.4.1): the places
- *   where P occurs with at most k substitutions, each checked by at most k
- *   + 1 longest common extensions of a suffix of T and a suffix of P, both
- *   suffixes of T#P, by the range minima of its LCP in O( 1 ): \f$ O( n k
- *   ) \f$ after O( n + p ) preprocessing, against the O( n p ) of trying
- *   every place, as in Landau and Vishkin;
+ *   where P occurs with at most k substitutions, each checked by at most k + 1
+ *   longest common extensions of a suffix of T and a suffix of P, both
+ *   suffixes of T#P, by the range minima of its LCP in \f$ O( 1 ) \f$:
+ *   \f$ O( n k ) \f$ after \f$ O( n + p ) \f$ preprocessing, against the
+ *   \f$ O( n p ) \f$ of trying every place, as in Landau and Vishkin;
  * - lz77ByTree( T ), the parsing of Ziv and Lempel by the suffix tree of
- *   section 10.4.2: the phrase at i copies the longest prefix of the suffix
- *   i that starts earlier, found by walking down along the suffix i while
- *   the least leaf below the next node is smaller than i, the least leaves
- *   computed by one visit; the copy is taken from the farthest occurrence,
- *   the least leaf, \f$ O( n \log \sigma ) \f$ in all (Theorem 10.13,
- *   which states O( n ) with perfect hashing at the nodes). The phrase is
- *   the triple ( distance , length , next symbol ), the last one without
- *   the symbol when the copy reaches the end of T; decodeCopyPhrases()
- *   inverts it.
+ *   section 10.4.2: the phrase at i copies the longest prefix of the suffix i
+ *   that starts earlier, found by walking down along the suffix i while the
+ *   least leaf below the next node is smaller than i, the least leaves
+ *   computed by one visit; the copy is taken from the farthest occurrence, the
+ *   least leaf, \f$ O( n \log \sigma ) \f$ in all (Theorem 10.13, which states
+ *   \f$ O( n ) \f$ with perfect hashing at the nodes). The phrase is the
+ *   triple ( distance , length , next symbol ), the last one without the
+ *   symbol when the copy reaches the end of T; decodeCopyPhrases() inverts it.
  *
  * The contracts [see Contract.h]: k is at least 1 and at most the number of
  * strings for longestCommonSubstring(), C at least 1; the parsing decodes

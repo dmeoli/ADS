@@ -6,7 +6,7 @@
  *
  * maxHeapRestore( A , i , dim ) moves the item in A[ i ] down, swapping it
  * with its largest child, when the subtrees of the children are max-heaps
- * in A[ 0 .. dim - 1 ]: O( m ) time on a node of height m. heapBuild()
+ * in A[ 0 .. dim - 1 ]: \f$ O( m ) \f$ time on a node of height m. heapBuild()
  * calls it from \f$ \lfloor n / 2 \rfloor - 1 \f$ down to 0, the places
  * from \f$ \lfloor n / 2 \rfloor \f$ on being leaves; since a heap of n
  * items has at most \f$ \lceil n / 2^{m+1} \rceil \f$ nodes of height m,
@@ -15,11 +15,11 @@
  *   O\left( \sum_{m=0}^{\lfloor \log n \rfloor} \frac{n}{2^{m+1}} m
  *   \right) = O\left( n \sum_{m=0}^{\infty} \frac{m}{2^m} \right) = O( n ),
  * \f]
- * the series being 2. heapsort() builds the heap and then swaps the maximum
- * A[ 0 ] with the last place of the heap, which shrinks by one, and
- * restores it, in \f$ O( n \log n ) \f$ time and O( 1 ) extra space, since
- * maxHeapRestore() is a loop rather than the recursion of the book
- * (exercise 10.4).
+ * the series being 2. heapsort() builds the heap and then swaps the maximum A[
+ * 0 ] with the last place of the heap, which shrinks by one, and restores it,
+ * in \f$ O( n \log n ) \f$ time and \f$ O( 1 ) \f$ extra space, since
+ * maxHeapRestore() is a loop rather than the recursion of the book (exercise
+ * 10.4).
  *
  * The contracts [see Contract.h]: maxHeapRestore() and isMaxHeap() need dim <=
  * n, maxHeapRestore() also i < dim, and heapBuild() ends with a heap and
@@ -69,18 +69,18 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// maxHeapRestore(): A[ i ] goes down in the heap A[ 0 .. dim - 1 ], with
-/// the order less, O( 1 ) extra space
+/// the order less, \f$ O( 1 ) \f$ extra space
 /// \pre i < dim <= n
 template< class T , class C = std::less<> >
 void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
                      C less = C() );
 
-/// heapBuild(): A becomes a max-heap, O( n ) time
+/// heapBuild(): A becomes a max-heap, \f$ O( n ) \f$ time
 /// \post A is a max-heap
 template< class T , class C = std::less<> >
 void heapBuild( std::vector< T > & A , C less = C() );
 
-/// heapsort(): A in increasing order, O( n log n ) time
+/// heapsort(): A in increasing order, \f$ O( n \log n ) \f$ time
 /// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
 void heapsort( std::vector< T > & A , C less = C() );

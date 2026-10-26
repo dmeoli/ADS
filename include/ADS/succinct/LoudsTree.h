@@ -10,7 +10,7 @@
  * n + 1 1s, one per node and the dummy root (Theorem 15.7). The k-th 0 is
  * the k-th node by levels, and the children of the k-th node are the 0s
  * after the (k + 1)-th 1, the 1 of the dummy root counting first; hence,
- * with rank and select [see RankSelect.h], in O( 1 ) time:
+ * with rank and select [see RankSelect.h], in \f$ O( 1 ) \f$ time:
  *
  * - \f$ degree( x ) = Select_1( x + 1 ) - Select_1( x ) - 1 \f$;
  * - \f$ parent( x ) = Rank_1( Select_0( x ) ) = Select_0( x ) - x \f$;

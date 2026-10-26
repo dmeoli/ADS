@@ -15,19 +15,18 @@
  *   ) \log n ) \f$ transfers of blocks of B characters, which the two-level
  *   dictionaries [see FrontCodedDictionary and TwoLevelDictionary] reduce
  *   to a search on a sample of the strings and the scan of one bucket;
- * - BinnedSearch, the search by interpolation of Demaine, Jones and
- *   Patrascu in a sorted array X of m integers: \f$ [ x_1 , x_m ] \f$ is cut
- *   into bins of width \f$ b = \lceil ( x_m - x_1 + 1 ) / m \rceil \f$, an
- *   array gives where each bin starts in X, and y is searched by a binary
- *   search in its bin \f$ \lfloor ( y - x_1 ) / b \rfloor \f$; a bin holds
- *   at most \f$ \Delta \f$ items, \f$ \Delta \f$ being the ratio between
- *   the largest and the smallest gap of X, since b is at most the largest
- *   gap (Theorem 9.4 of the notes), so that a search takes \f$ O( \log
- *   \min( \Delta , m ) ) \f$ time in the worst case, never worse than the
- *   binary search, and \f$ O( \log \log m ) \f$ with high probability on
- *   uniform keys, as the search by interpolation [see
- *   InterpolationSearch.h] whose worst case is O( m ), at the price of the
- *   array of the bins;
+ * - BinnedSearch, the search by interpolation of Demaine, Jones and Patrascu
+ *   in a sorted array X of m integers: \f$ [ x_1 , x_m ] \f$ is cut into bins
+ *   of width \f$ b = \lceil ( x_m - x_1 + 1 ) / m \rceil \f$, an array gives
+ *   where each bin starts in X, and y is searched by a binary search in its
+ *   bin \f$ \lfloor ( y - x_1 ) / b \rfloor \f$; a bin holds at most
+ *   \f$ \Delta \f$ items, \f$ \Delta \f$ being the ratio between the largest
+ *   and the smallest gap of X, since b is at most the largest gap (Theorem 9.4
+ *   of the notes), so that a search takes \f$ O( \log \min( \Delta , m ) ) \f$
+ *   time in the worst case, never worse than the binary search, and
+ *   \f$ O( \log \log m ) \f$ with high probability on uniform keys, as the
+ *   search by interpolation [see InterpolationSearch.h] whose worst case is
+ *   \f$ O( m ) \f$, at the price of the array of the bins;
  * - BinnedStringSearch, the same on strings, read as the integers of
  *   their first 8 characters (padded with the character 0), which keep
  *   their order: the bin of a pattern is found by its integer, and the

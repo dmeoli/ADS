@@ -3,20 +3,20 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The binary tree of Jacobson in 2n + 1 bits (section 15.2.1 of the notes):
- * the tree of n nodes is completed with a leaf in place of each missing
- * child, its 2n + 1 nodes are visited by levels, and B gets a 1 for a node
- * of the tree and a 0 for a leaf added. With the places counted from 1, the
- * children of the x-th node by levels are at the places 2x and 2x + 1, as in
- * a heap, since each node adds its two children to the visit; the node at
- * the place p is the \f$ Rank_1( p ) \f$-th one, and the x-th node is at
- * the place \f$ Select_1( x ) \f$, a child of the \f$ \lfloor Select_1( x
- * ) / 2 \rfloor \f$-th one. Hence, with rank and select in O( 1 ) time
- * [see RankSelect.h], left(), right() and parent() take O( 1 ) time, in
- * 2n + 1 + o( n ) bits (Theorem 15.6), against the \f$ \Theta( n \log n )
- * \f$ bits of the pointers. The \f$ 2n - \Theta( \log n ) \f$ bits needed
- * to tell apart the
- * \f$ C_n \approx 4^n / ( n^{3/2} \sqrt{\pi} ) \f$ binary trees of n nodes
- * show that the representation is within O( log n ) bits of the optimum.
+ * the tree of n nodes is completed with a leaf in place of each missing child,
+ * its 2n + 1 nodes are visited by levels, and B gets a 1 for a node of the
+ * tree and a 0 for a leaf added. With the places counted from 1, the children
+ * of the x-th node by levels are at the places 2x and 2x + 1, as in a heap,
+ * since each node adds its two children to the visit; the node at the place p
+ * is the \f$ Rank_1( p ) \f$-th one, and the x-th node is at the place
+ * \f$ Select_1( x ) \f$, a child of the \f$ \lfloor Select_1( x ) / 2 \rfloor
+ * \f$-th one. Hence, with rank and select in \f$ O( 1 ) \f$ time [see
+ * RankSelect.h], left(), right() and parent() take \f$ O( 1 ) \f$ time, in
+ * \f$ 2 n + 1 + o( n ) \f$ bits (Theorem 15.6), against the
+ * \f$ \Theta( n \log n ) \f$ bits of the pointers. The
+ * \f$ 2n - \Theta( \log n ) \f$ bits needed to tell apart the \f$ C_n \approx
+ * 4^n / ( n^{3/2} \sqrt{\pi} ) \f$ binary trees of n nodes show that the
+ * representation is within \f$ O( \log n ) \f$ bits of the optimum.
  *
  * The nodes are numbered 0 , ... , n - 1 by levels, from the left; node v
  * is at the place \f$ select_1( v + 1 ) \f$ of B, counted from 0, and the

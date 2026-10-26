@@ -10,7 +10,7 @@
  * - evalPostfix() evaluates an expression in postfix (reverse Polish)
  *   notation, e.g., 5 9 8 + 4 6 * * 7 + *: an operand is pushed, an
  *   operator pops its right operand t and then its left operand s and
- *   pushes s op t, and the value is the one item left, in O( n );
+ *   pushes s op t, and the value is the one item left, in \f$ O( n ) \f$;
  * - toPostfixParenthesized() turns a fully parenthesized infix expression,
  *   e.g., ( 5 * ( ( ( 9 + 8 ) * ( 4 * 6 ) ) + 7 ) ), into postfix: an
  *   operand goes to the output, an open parenthesis is skipped, an operator

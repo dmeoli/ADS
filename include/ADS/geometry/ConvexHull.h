@@ -11,32 +11,31 @@
  * negative; with integer coordinates it is exact.
  *
  * - convexHullBrute(): a segment S_ij is an edge of the hull if all the
- *   other points are on one side of its line, O( n^3 );
- * - graham(): the lowest point (the rightmost of the lowest ones) is a
- *   vertex; the others by increasing angle around it, of the collinear
- *   ones only the farthest kept, and each one pushed on a stack after
- *   popping the vertices that it makes not convex, a backtrack; each point
- *   is pushed and popped at most once, O( n ) after the sort,
- *   O( n log n ) in all. The angle is compared by the cross product, or by
- *   pseudoAngle(), a quantity of the same order as the angle that needs no
- *   arctangent (exercise 16.1).
+ *   other points are on one side of its line, \f$ O( n^3 ) \f$;
+ * - graham(): the lowest point (the rightmost of the lowest ones) is a vertex;
+ *   the others by increasing angle around it, of the collinear ones only the
+ *   farthest kept, and each one pushed on a stack after popping the vertices
+ *   that it makes not convex, a backtrack; each point is pushed and popped at
+ *   most once, \f$ O( n ) \f$ after the sort, \f$ O( n \log n ) \f$ in all.
+ *   The angle is compared by the cross product, or by pseudoAngle(), a
+ *   quantity of the same order as the angle that needs no arctangent (exercise
+ *   16.1).
  *
- * - convexHull(), beyond the book, the engineered hull: the extreme
- *   points in the eight directions of the axes and of the diagonals (the
- *   minimum and the maximum of x, y, x + y and x - y) are vertices of the
- *   hull, in counter clockwise order, and a point strictly inside their
- *   octagon (on the left of each of its edges, 8 cross products at most)
- *   is no vertex: one pass drops it (the heuristic of Akl and Toussaint).
- *   The k points left, each made a key of 64 bits
- *   \f$ ( x + 2^{31} ) 2^{32} + ( y + 2^{31} ) \f$, whose order is the one
- *   by x and then y, are sorted by the radix sort of ADS [see Sort.h] in
- *   O( k ) (at most 8 passes of bytes), and the lower and the upper chain
- *   of the monotone chain of Andrew pop the points that make a turn not
- *   to the left, each point pushed and popped at most once, O( k ): in
- *   all \f$ O( n + k ) \f$, \f$ k \le n \f$; for points uniform in a
- *   square or in a disk the octagon leaves a vanishing fraction of them,
- *   and the expected time is O( n ) (Devroye and Toussaint). The vertices
- *   come in the order and from the point of graham().
+ * - convexHull(), beyond the book, the engineered hull: the extreme points in
+ *   the eight directions of the axes and of the diagonals (the minimum and the
+ *   maximum of x, y, x + y and x - y) are vertices of the hull, in counter
+ *   clockwise order, and a point strictly inside their octagon (on the left of
+ *   each of its edges, 8 cross products at most) is no vertex: one pass drops
+ *   it (the heuristic of Akl and Toussaint). The k points left, each made a
+ *   key of 64 bits \f$ ( x + 2^{31} ) 2^{32} + ( y + 2^{31} ) \f$, whose order
+ *   is the one by x and then y, are sorted by the radix sort of ADS [see
+ *   Sort.h] in \f$ O( k ) \f$ (at most 8 passes of bytes), and the lower and
+ *   the upper chain of the monotone chain of Andrew pop the points that make a
+ *   turn not to the left, each point pushed and popped at most once,
+ *   \f$ O( k ) \f$: in all \f$ O( n + k ) \f$, \f$ k \le n \f$; for points
+ *   uniform in a square or in a disk the octagon leaves a vanishing fraction
+ *   of them, and the expected time is \f$ O( n ) \f$ (Devroye and Toussaint).
+ *   The vertices come in the order and from the point of graham().
  *
  * The contracts [see Contract.h]: the pseudo-angle is in [ 0 , 4 ), and the
  * hulls are convex, counter clockwise, made of input points and contain all
@@ -117,8 +116,8 @@ inline bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
 ///       double below 4, tying with the ones next to it)
 inline double pseudoAngle( long dx , long dy );
 
-/// the hull by checking every segment, O( n^3 ); the vertices in counter
-/// clockwise order from the lowest one
+/// the hull by checking every segment, \f$ O( n^3 ) \f$; the vertices in
+/// counter clockwise order from the lowest one
 /// \pre | x | and | y | at most 10^9, so that the cross products fit a long
 ///      long
 /// \post the hull of P

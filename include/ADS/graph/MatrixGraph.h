@@ -2,18 +2,18 @@
 /*--------------------------- File MatrixGraph.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The GRAPH with an adjacency matrix of section 9.3 [see Graph.h]: the
- * weight of ( u , v ), or nothing, the infinity of the book, in place
- * ( u , v ); Theta( n^2 ) space, hasEdge() in O( 1 ), adj( u ) in
- * Theta( n ), insertNode() and deleteNode() in Theta( n ).
+ * The GRAPH with an adjacency matrix of section 9.3 [see Graph.h]: the weight
+ * of ( u , v ), or nothing, the infinity of the book, in place ( u , v );
+ * \f$ \Theta( n^2 ) \f$ space, hasEdge() in \f$ O( 1 ) \f$, adj( u ) in
+ * \f$ \Theta( n ) \f$, insertNode() and deleteNode() in \f$ \Theta( n ) \f$.
  *
  * The contracts [see Contract.h]: insertEdge() and deleteEdge() need two
- * distinct nodes, deleteNode(), adj(), forEachAdj() and forEachEdge() a
- * node; the invariant is that the matrix is n x n with no entry on the
- * diagonal nor in the rows and columns of the names not in use, m() entries
- * in all, and symmetric for an unoriented graph. The operations check it
- * on the rows and the columns they touch, in O( n ). The operations are
- * defined in MatrixGraph.tpp.
+ * distinct nodes, deleteNode(), adj(), forEachAdj() and forEachEdge() a node;
+ * the invariant is that the matrix is n x n with no entry on the diagonal nor
+ * in the rows and columns of the names not in use, m() entries in all, and
+ * symmetric for an unoriented graph. The operations check it on the rows and
+ * the columns they touch, in \f$ O( n ) \f$. The operations are defined in
+ * MatrixGraph.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
@@ -72,7 +72,7 @@ class MatrixGraph : public GraphNodes< T > {
  /// \pre n >= 0
  explicit MatrixGraph( int n = 0 , bool directed = true );
 
- /// a new node, a new row and a new column, O( n ) time
+ /// a new node, a new row and a new column, \f$ O( n ) \f$ time
  int insertNode( const T & t = T() );
 
  /// \pre u and v are distinct nodes
@@ -83,19 +83,20 @@ class MatrixGraph : public GraphNodes< T > {
  /// \post ! hasEdge( u , v )
  void deleteEdge( int u , int v );
 
- /// removes the node u and its edges, Theta( n ) time
+ /// removes the node u and its edges, \f$ \Theta( n ) \f$ time
  /// \pre u is a node
  /// \post ! hasNode( u )
  void deleteNode( int u );
 
- /// O( 1 ) time
+ /// \f$ O( 1 ) \f$ time
  [[nodiscard]] bool hasEdge( int u , int v ) const;
 
  /// the weight of ( u , v ), nothing (the infinity of the book) if there is
  /// no such edge
  [[nodiscard]] std::optional< W > weight( int u , int v ) const;
 
- /// the set of the nodes adjacent to u, in increasing order, Theta( n ) time
+ /// the set of the nodes adjacent to u, in increasing order,
+ /// \f$ \Theta( n ) \f$ time
  /// \pre u is a node
  [[nodiscard]] std::vector< int > adj( int u ) const;
 
@@ -130,11 +131,11 @@ class MatrixGraph : public GraphNodes< T > {
  private:
 
  /// the matrix is bound() x bound(), with m() entries off the diagonal
- /// between nodes, symmetric if unoriented, Theta( n^2 )
+ /// between nodes, symmetric if unoriented, \f$ \Theta( n^2 ) \f$
  [[nodiscard]] bool consistent( void ) const;
 
  /// the row and the column of u have no entry on the diagonal nor out of
- /// the nodes, and they are equal if unoriented, O( n )
+ /// the nodes, and they are equal if unoriented, \f$ O( n ) \f$
  [[nodiscard]] bool consistentAt( int u ) const;
 
  std::vector< std::vector< std::optional< W > > > f_M;   ///< the matrix

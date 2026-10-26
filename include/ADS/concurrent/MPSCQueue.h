@@ -4,36 +4,35 @@
 /** @file
  * A queue that many producer threads fill and one consumer thread empties,
  * lock-free and unbounded, beyond the book: each producer has a lane of its
- * own, so that the producers never compete with each other, and a lane is
- * a list of blocks of B places between its producer and the consumer. The
- * producer writes the places of its last block in order and publishes,
- * after each item, their count in the block (a store, no read-modify-write
- * operation); when the block is full it links a new one after it. The
- * consumer reads the count of its first block once for all the items it
- * shows, takes them, and when it has taken the B items of a block and finds
- * the next one linked it gives the block back to its lane, on a stack that
- * the producer empties at once (an exchange) when it needs a block, before
- * it allocates one. A lane in a steady state therefore cycles over the same
- * blocks, which stay in the caches: an item costs O( 1 ) time, a store of
- * the count and no allocation, the count and the link of a block share a
- * line that only the producer writes, and the consumer touches the lines
- * of the producer once per batch; a lane keeps \f$ \lceil m / B \rceil + 1
- * \f$ blocks for the most items m it ever held at once. A consumer that is
- * right behind its producer and looks again at once would take from it,
- * at each item, the lines of the count and of the items it is writing, and
- * slow it down several times over: when a call took some items and the
- * next one finds fewer than min( B , 64 ) in the block, the consumer first
- * waits 64 pauses of the processor for a batch (the backtracking of
- * B-Queue), while after a call that took none it takes at once what it
- * finds, so that a single item after a silence costs no wait.
- * A producer is a handle that producer() returns, to be used by one thread
- * at a time; the items of a producer come out in the order in which it
- * pushed them, and the consumer takes the lanes in turn, draining the one
- * it is on before the next. The lanes live as long as the queue, also when
- * their producer is gone, its items still to be taken.
- * The contracts [see Contract.h]: B >= 2 is a power of 2; only one thread
- * at a time calls the consumer's operations, and only one at a time pushes
- * through a producer. The operations are defined in MPSCQueue.tpp.
+ * own, so that the producers never compete with each other, and a lane is a
+ * list of blocks of B places between its producer and the consumer. The
+ * producer writes the places of its last block in order and publishes, after
+ * each item, their count in the block (a store, no read-modify-write
+ * operation); when the block is full it links a new one after it. The consumer
+ * reads the count of its first block once for all the items it shows, takes
+ * them, and when it has taken the B items of a block and finds the next one
+ * linked it gives the block back to its lane, on a stack that the producer
+ * empties at once (an exchange) when it needs a block, before it allocates
+ * one. A lane in a steady state therefore cycles over the same blocks, which
+ * stay in the caches: an item costs \f$ O( 1 ) \f$ time, a store of the count
+ * and no allocation, the count and the link of a block share a line that only
+ * the producer writes, and the consumer touches the lines of the producer once
+ * per batch; a lane keeps \f$ \lceil m / B \rceil + 1 \f$ blocks for the most
+ * items m it ever held at once. A consumer that is right behind its producer
+ * and looks again at once would take from it, at each item, the lines of the
+ * count and of the items it is writing, and slow it down several times over:
+ * when a call took some items and the next one finds fewer than min( B , 64 )
+ * in the block, the consumer first waits 64 pauses of the processor for a
+ * batch (the backtracking of B-Queue), while after a call that took none it
+ * takes at once what it finds, so that a single item after a silence costs no
+ * wait. A producer is a handle that producer() returns, to be used by one
+ * thread at a time; the items of a producer come out in the order in which it
+ * pushed them, and the consumer takes the lanes in turn, draining the one it
+ * is on before the next. The lanes live as long as the queue, also when their
+ * producer is gone, its items still to be taken. The contracts [see
+ * Contract.h]: B >= 2 is a power of 2; only one thread at a time calls the
+ * consumer's operations, and only one at a time pushes through a producer. The
+ * operations are defined in MPSCQueue.tpp.
  * \see L. Lamport, Specifying concurrent program modules, ACM Transactions
  *      on Programming Languages and Systems 5(2), 190-222, 1983,
  *      doi:10.1145/69624.357207

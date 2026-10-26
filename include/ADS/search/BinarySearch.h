@@ -29,9 +29,10 @@
  * \f$ O( \log h ) \f$ time if that place is h (exercise 12.9).
  *
  * The contracts [see Contract.h]: the vector must be sorted, an audit checked
- * at the level 3 since it costs O( n ) against the O( log n ) of the search;
- * lowerBound() also needs lo <= hi <= n, and the place it returns is checked
- * against its two neighbours. The functions are defined in BinarySearch.tpp.
+ * at the level 3 since it costs \f$ O( n ) \f$ against the \f$ O( \log n ) \f$
+ * of the search; lowerBound() also needs lo <= hi <= n, and the place it
+ * returns is checked against its two neighbours. The functions are defined in
+ * BinarySearch.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 1.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap01.pdf
@@ -108,8 +109,8 @@ template< class T , class C = std::less<> >
 std::size_t upperBound( const std::vector< T > & A , const T & v ,
                         C less = C() );
 
-/// the first place h of an item not smaller than v, found by looking at
-/// the places 0 , 1 , 3 , 7 , ... and then by a binary search, O( log h )
+/// the first place h of an item not smaller than v, found by looking at the
+/// places 0 , 1 , 3 , 7 , ... and then by a binary search, \f$ O( \log h ) \f$
 /// \pre A is sorted
 /// \post A[ r - 1 ] < v <= A[ r ]
 template< class T , class C = std::less<> >

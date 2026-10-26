@@ -42,19 +42,19 @@
  *   \f$ are sorted by the pair ( T[ i ] , rank of i + 1 ); the two lists are
  *   merged by comparing a pair or a triple whose last item is a rank in the
  *   sample. \f$ T( n ) = T( 2 n / 3 ) + O( n ) = O( n ) \f$ on an integer
- *   alphabet of O( n ) symbols, and the reduction to sorting gives the
+ *   alphabet of \f$ O( n ) \f$ symbols, and the reduction to sorting gives the
  *   optimal \f$ O( Sort( n ) ) \f$ I/Os on disk (Theorem 10.3);
  * - suffixArraySais(), the induced sorting of Nong, Zhang and Chan (SA-IS):
  *   each suffix is of type S or L as it is smaller or larger than the next
- *   one, and the leftmost S-suffixes of the runs (LMS) are at most n / 2;
- *   once the LMS-suffixes are sorted, one left-to-right scan of the buckets
- *   of the first symbols places the L-suffixes and one right-to-left scan
- *   the S-suffixes. The LMS-substrings are sorted by the same induction,
- *   named, and the string of the names is solved recursively when two of
- *   them are equal. O( n ) time, the smallest working space of the linear
+ *   one, and the leftmost S-suffixes of the runs (LMS) are at most n / 2; once
+ *   the LMS-suffixes are sorted, one left-to-right scan of the buckets of the
+ *   first symbols places the L-suffixes and one right-to-left scan the
+ *   S-suffixes. The LMS-substrings are sorted by the same induction, named,
+ *   and the string of the names is solved recursively when two of them are
+ *   equal. \f$ O( n ) \f$ time, the smallest working space of the linear
  *   algorithms, and in practice two to three times faster than the Skew
- *   algorithm; with divsufsort, which also induces from a sorted sample,
- *   it is the method of the libraries in use;
+ *   algorithm; with divsufsort, which also induces from a sorted sample, it is
+ *   the method of the libraries in use;
  * - suffixArrayScan(), the scan-based algorithm of Baeza-Yates, Gonnet and
  *   Snider for the disk: T is cut into blocks of m symbols, scanned from
  *   left to right; the suffixes that start in a block are sorted by
@@ -87,19 +87,18 @@
  *   \f$ O( p + \log n ) \f$ comparisons of symbols (Lemma 10.2);
  * - lce( i , j ), the longest common extension of the suffixes i and j, is
  *   the minimum of LCP between their ranks, a query of RangeMinimum.h,
- *   O( 1 ) time after O( n ) preprocessing.
+ *   \f$ O( 1 ) \f$ time after \f$ O( n ) \f$ preprocessing.
  *
  * A text is a std::string_view, whose symbols are its bytes, or a vector
  * of integers in [ 0 , K ), e.g., several strings joined by separators
  * [see SuffixApplications.h]. The doubling needs \f$ n < 2^{32} \f$, since
  * the radix sort takes a pair of ranks as one key of 64 bits.
  *
- * The contracts [see Contract.h]: the symbols of an integer text are less
- * than K; every construction gives a suffix array, checked in O( n ) by
- * comparing each adjacent pair through the ranks of the following suffixes
- * (an audit), and lcpArray() the lcp of each adjacent pair (an audit); the
- * two searches give the same range. The functions are defined in
- * SuffixArray.tpp.
+ * The contracts [see Contract.h]: the symbols of an integer text are less than
+ * K; every construction gives a suffix array, checked in \f$ O( n ) \f$ by
+ * comparing each adjacent pair through the ranks of the following suffixes (an
+ * audit), and lcpArray() the lcp of each adjacent pair (an audit); the two
+ * searches give the same range. The functions are defined in SuffixArray.tpp.
  *
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
  *      Press, 2023, chapter 10
@@ -259,7 +258,7 @@ class SuffixArray {
  [[nodiscard]] std::pair< std::size_t , std::size_t > range(
              std::string_view P , long * comparisons = nullptr ) const;
 
- /// range() by the search of Manber and Myers, O( p + log n )
+ /// range() by the search of Manber and Myers, \f$ O( p + \log n ) \f$
  /// \post the range of range( P ) (an audit)
  [[nodiscard]] std::pair< std::size_t , std::size_t > rangeLcp(
                 const Symbols & P , long * comparisons = nullptr ) const;
@@ -273,7 +272,8 @@ class SuffixArray {
  [[nodiscard]] std::vector< std::size_t > locate( std::string_view P ) const;
  [[nodiscard]] std::vector< std::size_t > locate( const Symbols & P ) const;
 
- /// the length of the longest common prefix of the suffixes i and j, O( 1 )
+ /// the length of the longest common prefix of the suffixes i and j,
+ /// \f$ O( 1 ) \f$
  /// \pre i <= size() and j <= size()
  [[nodiscard]] std::size_t lce( std::size_t i , std::size_t j ) const;
 

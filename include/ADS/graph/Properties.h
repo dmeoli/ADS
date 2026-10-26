@@ -6,20 +6,20 @@
  * visits of section 9.5:
  *
  * - isTree(), whether an unoriented graph is a free tree: connected and
- *   with n - 1 edges, by a visit from any node, O( n + m );
- * - diameter(), the largest distance in edges between two nodes, by a
- *   visit in breadth from each node, O( n ( n + m ) ); for an unoriented
- *   graph the matrix product of Seidel gives all the distances in
+ *   with n - 1 edges, by a visit from any node, \f$ O( n + m ) \f$;
+ * - diameter(), the largest distance in edges between two nodes, by a visit in
+ *   breadth from each node, \f$ O( n ( n + m ) ) \f$; for an unoriented graph
+ *   the matrix product of Seidel gives all the distances in
  *   \f$ O( n^{\omega} \log n ) \f$, iFUB of Crescenzi et al. finds the
- *   diameter of most real graphs with few visits, and on an unoriented
- *   graph one visit from any node u gives it within a factor 2, the
- *   eccentricity e( u ) <= D <= 2 e( u );
- * - treeDiameter(), the diameter of a free tree by two visits, O( n ): the
- *   node farthest from any node is an end of a longest path, and the node
- *   farthest from it is the other end (the double sweep, proved by
- *   Bulterman et al.); and that of a binary tree with its height, in a
- *   postvisit: the longest path within a subtree or through the root,
- *   ( hl + 1 ) + ( hr + 1 ), O( n );
+ *   diameter of most real graphs with few visits, and on an unoriented graph
+ *   one visit from any node u gives it within a factor 2, the eccentricity e(
+ *   u ) <= D <= 2 e( u );
+ * - treeDiameter(), the diameter of a free tree by two visits, \f$ O( n ) \f$:
+ *   the node farthest from any node is an end of a longest path, and the node
+ *   farthest from it is the other end (the double sweep, proved by Bulterman
+ *   et al.); and that of a binary tree with its height, in a postvisit: the
+ *   longest path within a subtree or through the root, ( hl + 1 ) + ( hr + 1
+ *   ), \f$ O( n ) \f$;
  * - countTriangles(), the triangles of an unoriented graph by the ordering
  *   of Chiba and Nishizeki: each edge goes from the end of smaller degree
  *   (ties by name) to the other, and each triangle is counted once, at its
@@ -29,11 +29,11 @@
  *   lists of the ends of each edge and \f$ \Theta( n^3 ) \f$ on the matrix;
  *   the product of matrices of Itai and Rodeh takes
  *   \f$ O( n^{\omega} ) \f$;
- * - twoColoring(), a colouring 0 / 1 of the nodes of an unoriented graph
- *   with the ends of each edge apart, or nothing if there is none: by the
- *   theorem of Koenig, if and only if there is no odd cycle, which the
- *   visit in breadth from each node not coloured finds as an edge between
- *   two nodes of the same level parity, O( n + m ) (the twoColoring() of
+ * - twoColoring(), a colouring 0 / 1 of the nodes of an unoriented graph with
+ *   the ends of each edge apart, or nothing if there is none: by the theorem
+ *   of Koenig, if and only if there is no odd cycle, which the visit in
+ *   breadth from each node not coloured finds as an edge between two nodes of
+ *   the same level parity, \f$ O( n + m ) \f$ (the twoColoring() of
  *   EasyCases.h takes a matrix of adjacency, in \f$ \Theta( n^2 ) \f$);
  * - universalSink(), the node of an oriented graph with an edge from every
  *   other node and no edge out, NIL if there is none, from the matrix of
@@ -47,15 +47,15 @@
  *   the algorithm of Kahn, the order is unique if and only if the set of
  *   the nodes with no entering edge never has two of them, i.e., if and
  *   only if every two consecutive nodes of the order are joined by an
- *   edge, a Hamiltonian path, O( n + m );
- * - treeVertexCover(), a minimum vertex cover of a forest, the fewest
- *   nodes that touch every edge: by the greedy on the leaves, the parent
- *   of a leaf taken (a cover has the leaf or its parent, and the parent
- *   covers more), on the nodes in the reverse order of a visit in breadth,
- *   O( n ). The complement is a maximum independent set. A vertex cover is
- *   NP-hard on general graphs (chapter 18), and on a tree with weights on
- *   the nodes a dynamic programming on the subtrees, with the root taken or
- *   not, solves it in O( n ).
+ *   edge, a Hamiltonian path, \f$ O( n + m ) \f$;
+ * - treeVertexCover(), a minimum vertex cover of a forest, the fewest nodes
+ *   that touch every edge: by the greedy on the leaves, the parent of a leaf
+ *   taken (a cover has the leaf or its parent, and the parent covers more), on
+ *   the nodes in the reverse order of a visit in breadth, \f$ O( n ) \f$. The
+ *   complement is a maximum independent set. A vertex cover is NP-hard on
+ *   general graphs (chapter 18), and on a tree with weights on the nodes a
+ *   dynamic programming on the subtrees, with the root taken or not, solves it
+ *   in \f$ O( n ) \f$.
  *
  * The contracts [see Contract.h]: isTree(), countTriangles(), twoColoring()
  * and treeVertexCover() need an unoriented graph, the last one acyclic

@@ -2,13 +2,13 @@
 /*----------------------- File FractionalKnapsack.h ------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The real (fractional) knapsack of section 14.1: a fraction x_i in
- * [ 0 , 1 ] of each object, of largest profit \f$ \sum_i p_i x_i \f$ and
- * volume \f$ \sum_i v_i x_i \leq C \f$. The greedy choice by decreasing
- * specific profit \f$ p_i / v_i \f$ is optimal: the most profitable objects
- * per unit of volume go in whole, the next one in part, the others not;
- * O( n log n ) time for the sort. By decreasing profit or by increasing
- * volume it is not, and neither is any of them for the 0-1 knapsack
+ * The real (fractional) knapsack of section 14.1: a fraction x_i in [ 0 , 1 ]
+ * of each object, of largest profit \f$ \sum_i p_i x_i \f$ and volume
+ * \f$ \sum_i v_i x_i \leq C \f$. The greedy choice by decreasing specific
+ * profit \f$ p_i / v_i \f$ is optimal: the most profitable objects per unit of
+ * volume go in whole, the next one in part, the others not;
+ * \f$ O( n \log n ) \f$ time for the sort. By decreasing profit or by
+ * increasing volume it is not, and neither is any of them for the 0-1 knapsack
  * (exercise 14.1).
  *
  * The contracts [see Contract.h]: profits and volumes of the same objects, the

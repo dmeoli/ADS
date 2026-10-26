@@ -17,14 +17,15 @@
  *   is the excess at its '(' less 1, and u is an ancestor of v if the '(' of
  *   v is between the parentheses of u;
  *
- * in the time of a search in the range min-max tree, \f$ O( \log ( n / 512 )
- * ) \f$ plus the scan of a block, and O( 1 ) for leftmostChild(), depth() and
- * isLeaf(). Against LOUDS [see LoudsTree.h], the parentheses also give the
- * size of a subtree, the depth and the ancestors, and number the nodes of a
- * subtree consecutively (from v to v + subtreeSize( v ) - 1), at the price
- * of the searches; DFUDS of Benoit, Demaine, Munro, Raman, Raman and Rao,
- * the degrees in unary in preorder, also gives the i-th child in O( 1 )
- * time with the same matching, which the notes do not treat.
+ * in the time of a search in the range min-max tree,
+ * \f$ O( \log ( n / 512 ) ) \f$ plus the scan of a block, and \f$ O( 1 ) \f$
+ * for leftmostChild(), depth() and isLeaf(). Against LOUDS [see LoudsTree.h],
+ * the parentheses also give the size of a subtree, the depth and the
+ * ancestors, and number the nodes of a subtree consecutively (from v to v +
+ * subtreeSize( v ) - 1), at the price of the searches; DFUDS of Benoit,
+ * Demaine, Munro, Raman, Raman and Rao, the degrees in unary in preorder, also
+ * gives the i-th child in \f$ O( 1 ) \f$ time with the same matching, which
+ * the notes do not treat.
  *
  * The contracts [see Contract.h]: the children lists describe a tree rooted
  * at 0, the parentheses are balanced and enclose one tree, and the nodes

@@ -2,13 +2,13 @@
 /*--------------------------- File MultiStack.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * k STACKs in one structure [see ADT.h], beyond the book: the items of
- * all the stacks are cells of a single vector, each linked to the cell
- * below it in its stack, and the free cells form a further list, so that
- * the stacks share the space and none is full while the others have room
- * (the vector doubles when all the cells are used). push(), pop() and
- * top() on the stack i take O( 1 ) amortized time; the stacks are numbered
- * from 0. It generalizes the two stacks in one vector of exercise 4.7.
+ * k STACKs in one structure [see ADT.h], beyond the book: the items of all the
+ * stacks are cells of a single vector, each linked to the cell below it in its
+ * stack, and the free cells form a further list, so that the stacks share the
+ * space and none is full while the others have room (the vector doubles when
+ * all the cells are used). push(), pop() and top() on the stack i take
+ * \f$ O( 1 ) \f$ amortized time; the stacks are numbered from 0. It
+ * generalizes the two stacks in one vector of exercise 4.7.
  *
  * The contracts [see Contract.h]: k > 0, a stack i in [ 0 , k ), and a
  * stack that is not empty for top() and pop(); the invariant is that each
@@ -115,7 +115,7 @@ class MultiStack {
 
  private:
 
- /// each cell in one stack or free, the sizes right, O( n )
+ /// each cell in one stack or free, the sizes right, \f$ O( n ) \f$
  [[nodiscard]] bool partitioned( void ) const;
 
  std::vector< Cell > f_C;       ///< the cells of all the stacks

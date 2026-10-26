@@ -10,8 +10,8 @@
  *   \sum_{i=0}^{k-1} \left\lfloor \frac{n}{2^i} \right\rfloor
  *   < n \sum_{i=0}^{\infty} \frac{1}{2^i} = 2 n
  * \f]
- * bits, since A[ i ] changes every \f$ 2^i \f$ increments: the amortized
- * cost of an increment is O( 1 ). The same bound comes from the potential
+ * bits, since A[ i ] changes every \f$ 2^i \f$ increments: the amortized cost
+ * of an increment is \f$ O( 1 ) \f$. The same bound comes from the potential
  * \f$ \Phi \f$ = the number of bits equal to 1: an increment that clears d
  * bits and sets one costs d + 1 and changes \f$ \Phi \f$ by 1 - d, hence its
  * amortized cost is 2.

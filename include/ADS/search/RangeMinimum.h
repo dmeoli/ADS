@@ -10,37 +10,37 @@
  *
  * - SparseTable stores, for every place i and every L, the place of the
  *   minimum of A[ i .. i + 2^L - 1 ], computed from the two halves of the
- *   range; a query covers [ i , j ] by the two (possibly overlapping)
- *   ranges of length \f$ 2^L \f$, \f$ L = \lfloor \log_2( j - i + 1 )
- *   \rfloor \f$, that start at i and end at j. It takes \f$ O( n \log n )
- *   \f$ time and space and answers in O( 1 ) time, against the \f$ O( n^2 )
- *   \f$ of the table of all the answers.
- * - cartesianTree() builds the Cartesian tree of A with a stack in O( n ):
- *   its root is the leftmost minimum of A, its left and right subtrees the
- *   Cartesian trees of the parts before and after it; a range of A is a
- *   subtree, and the minimum of A[ i .. j ] is the lowest common ancestor
- *   of i and j.
+ *   range; a query covers [ i , j ] by the two (possibly overlapping) ranges
+ *   of length \f$ 2^L \f$, \f$ L = \lfloor \log_2( j - i + 1 ) \rfloor \f$,
+ *   that start at i and end at j. It takes \f$ O( n \log n ) \f$ time and
+ *   space and answers in \f$ O( 1 ) \f$ time, against the \f$ O( n^2 ) \f$ of
+ *   the table of all the answers.
+ * - cartesianTree() builds the Cartesian tree of A with a stack in
+ *   \f$ O( n ) \f$: its root is the leftmost minimum of A, its left and right
+ *   subtrees the Cartesian trees of the parts before and after it; a range of
+ *   A is a subtree, and the minimum of A[ i .. j ] is the lowest common
+ *   ancestor of i and j.
  * - PlusMinusOneRangeMinimum answers the queries on an array whose adjacent
  *   items differ by exactly 1, as the depths along an Euler tour of a tree:
  *   the array is cut into blocks of \f$ d = \max\{ 1 , \lfloor \log_2 n
  *   \rfloor / 2 \} \f$ items, a sparse table on the minima of the blocks
- *   answers for the blocks covered entirely, and a block is described by the
- *   d - 1 signs of its differences, so that a table of the \f$ 2^{d-1} \le
- *   \sqrt{n} \f$ signatures times the \f$ d^2 \f$ pairs of offsets (the trick
- *   of the Four Russians) answers inside a block: O( n ) time and space,
- *   O( 1 ) time per query.
+ *   answers for the blocks covered entirely, and a block is described by the d
+ *   - 1 signs of its differences, so that a table of the
+ *   \f$ 2^{d-1} \le \sqrt{n} \f$ signatures times the \f$ d^2 \f$ pairs of
+ *   offsets (the trick of the Four Russians) answers inside a block:
+ *   \f$ O( n ) \f$ time and space, \f$ O( 1 ) \f$ time per query.
  * - RangeMinimum is the solution of Bender and Farach-Colton for any array:
- *   the minimum of A[ i .. j ] is the lowest common ancestor of i and j in
- *   the Cartesian tree, i.e., the node of least depth on the Euler tour of
- *   the tree between the first visits of i and j, a query on the 2 n - 1
- *   depths of the tour, which differ by 1. Its time and space are O( n ),
- *   O( 1 ) time per query (Theorem 10.11), and the same reduction answers
- *   the lowest common ancestors of any tree (Theorem 10.12).
+ *   the minimum of A[ i .. j ] is the lowest common ancestor of i and j in the
+ *   Cartesian tree, i.e., the node of least depth on the Euler tour of the
+ *   tree between the first visits of i and j, a query on the 2 n - 1 depths of
+ *   the tour, which differ by 1. Its time and space are \f$ O( n ) \f$,
+ *   \f$ O( 1 ) \f$ time per query (Theorem 10.11), and the same reduction
+ *   answers the lowest common ancestors of any tree (Theorem 10.12).
  *
- * The bound O( n ) of Bender and Farach-Colton was first reached by Harel
- * and Tarjan on the lowest common ancestors, with a far more involved
- * structure; Fischer and Heun need only 2 n + o( n ) bits besides A, by
- * describing each block by its own Cartesian tree, which removes the Euler
+ * The bound \f$ O( n ) \f$ of Bender and Farach-Colton was first reached by
+ * Harel and Tarjan on the lowest common ancestors, with a far more involved
+ * structure; Fischer and Heun need only \f$ 2 n + o( n ) \f$ bits besides A,
+ * by describing each block by its own Cartesian tree, which removes the Euler
  * tour and its factor 2. The sparse table is the simplest and, on the arrays
  * that fit in a cache, often the fastest in practice.
  *
@@ -123,10 +123,10 @@ class SparseTable {
 
  SparseTable( void ) = default;
 
- /// the table of A, O( n log n )
+ /// the table of A, \f$ O( n \log n ) \f$
  explicit SparseTable( std::vector< T > A , Compare less = {} );
 
- /// the place of the leftmost minimum of A[ i .. j ], O( 1 )
+ /// the place of the leftmost minimum of A[ i .. j ], \f$ O( 1 ) \f$
  /// \pre i <= j < size()
  /// \post a leftmost minimum of A[ i .. j ] (an audit)
  [[nodiscard]] std::size_t query( std::size_t i , std::size_t j ) const;
@@ -177,11 +177,12 @@ class PlusMinusOneRangeMinimum {
 
  PlusMinusOneRangeMinimum( void ) = default;
 
- /// the blocks, their sparse table and the table of the signatures, O( n )
+ /// the blocks, their sparse table and the table of the signatures,
+ /// \f$ O( n ) \f$
  /// \pre | D[ i + 1 ] - D[ i ] | = 1 for every i
  explicit PlusMinusOneRangeMinimum( std::vector< long > D );
 
- /// the place of the leftmost minimum of D[ i .. j ], O( 1 )
+ /// the place of the leftmost minimum of D[ i .. j ], \f$ O( 1 ) \f$
  /// \pre i <= j < size()
  /// \post a leftmost minimum of D[ i .. j ] (an audit)
  [[nodiscard]] std::size_t query( std::size_t i , std::size_t j ) const;
@@ -222,10 +223,10 @@ class RangeMinimum {
 
  RangeMinimum( void ) = default;
 
- /// the structure of A, O( n )
+ /// the structure of A, \f$ O( n ) \f$
  explicit RangeMinimum( std::vector< T > A , Compare less = {} );
 
- /// the place of the leftmost minimum of A[ i .. j ], O( 1 )
+ /// the place of the leftmost minimum of A[ i .. j ], \f$ O( 1 ) \f$
  /// \pre i <= j < size()
  /// \post a leftmost minimum of A[ i .. j ] (an audit)
  [[nodiscard]] std::size_t query( std::size_t i , std::size_t j ) const;

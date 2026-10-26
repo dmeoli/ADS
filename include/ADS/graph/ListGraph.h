@@ -4,18 +4,19 @@
 /** @file
  * The GRAPH with lists of adjacency of section 9.4 [see Graph.h]: for each
  * node the LIST of its adjacent nodes and of the weights of the edges,
- * Theta( n + m ) space, adj( u ) in Theta( |adj( u )| ), hasEdge( u , v )
- * in O( |adj( u )| ), all the edges in Theta( n + m ), deleteNode() in
- * O( n + m ).
+ * \f$ \Theta( n + m ) \f$ space, adj( u ) in
+ * \f$ \Theta( |\mathrm{adj}( u )| ) \f$, hasEdge( u , v ) in
+ * \f$ O( |\mathrm{adj}( u )| ) \f$, all the edges in \f$ \Theta( n + m ) \f$,
+ * deleteNode() in \f$ O( n + m ) \f$.
  *
  * The contracts [see Contract.h]: insertEdge() and deleteEdge() need two
- * distinct nodes, deleteNode(), adj(), forEachAdj() and forEachEdge() a
- * node; the invariant is that the lists hold only nodes of the graph,
- * without loops nor repetitions, m() edges in all, and that an unoriented
- * edge is in the lists of both its ends with the same weight. The
- * insertions and the deletions of edges check it on the lists of the two
- * ends, in O( d log d ) for d adjacent nodes, deleteNode() on the whole
- * graph. The operations are defined in ListGraph.tpp.
+ * distinct nodes, deleteNode(), adj(), forEachAdj() and forEachEdge() a node;
+ * the invariant is that the lists hold only nodes of the graph, without loops
+ * nor repetitions, m() edges in all, and that an unoriented edge is in the
+ * lists of both its ends with the same weight. The insertions and the
+ * deletions of edges check it on the lists of the two ends, in
+ * \f$ O( d \log d ) \f$ for d adjacent nodes, deleteNode() on the whole graph.
+ * The operations are defined in ListGraph.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
@@ -91,7 +92,7 @@ class ListGraph : public GraphNodes< T > {
  /// \post ! hasEdge( u , v )
  void deleteEdge( int u , int v );
 
- /// removes the node u and its edges, O( n + m ) time
+ /// removes the node u and its edges, \f$ O( n + m ) \f$ time
  /// \pre u is a node
  /// \post ! hasNode( u )
  void deleteNode( int u );
@@ -136,12 +137,12 @@ class ListGraph : public GraphNodes< T > {
  bool erase( int u , int v );
 
  /// the lists hold m() edges between distinct nodes, once each, and both
- /// ends of an unoriented one, O( n + m ) for an oriented graph
+ /// ends of an unoriented one, \f$ O( n + m ) \f$ for an oriented graph
  [[nodiscard]] bool consistent( void ) const;
 
  /// the list of u holds distinct nodes other than u, and, if unoriented,
  /// the edge [ u , v ] is in both lists with the same weight or in none,
- /// O( d log d )
+ /// \f$ O( d \log d ) \f$
  [[nodiscard]] bool consistentAt( int u , int v ) const;
 
  std::vector< List< std::pair< int , W > > > f_adj;   ///< the lists

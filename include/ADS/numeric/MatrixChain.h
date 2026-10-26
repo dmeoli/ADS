@@ -10,8 +10,9 @@
  *   DP[ i ][ j ] = \min_{i \leq k < j} \{ DP[ i ][ k ] + DP[ k + 1 ][ j ] +
  *   c[ i ] c[ k + 1 ] c[ j + 1 ] \} , \qquad DP[ i ][ i ] = 0 ,
  * \f]
- * filled by increasing length h = j - i + 1 in O( n^3 ) time, with S[ i ][ j ]
- * the best k, from which stampaPar() writes the parenthesization in O( n ).
+ * filled by increasing length h = j - i + 1 in \f$ O( n^3 ) \f$ time, with S[
+ * i ][ j ] the best k, from which stampaPar() writes the parenthesization in
+ * \f$ O( n ) \f$.
  *
  * The contracts [see Contract.h]: the vector of the sizes c_0 , ... , c_n has
  * n + 1 >= 1 positive items, and the parenthesization needs i <= j < n. The

@@ -11,19 +11,19 @@
  * \f]
  * into Lyndon words (Chen, Fox and Lyndon).
  *
- * - lyndonFactorization() is the algorithm of Duval: it keeps S = s_1 s_2
- *   s_3 with s_1 factored, \f$ s_2 = w^h w' \f$ for a Lyndon word w and a
- *   proper prefix w' of w, and compares the next character c of \f$ s_3
- *   \f$ with the one |w| places before: if equal, w' grows; if larger,
- *   \f$ s_2 c \f$ is a Lyndon word and becomes w; if smaller, the h copies
- *   of w are factors and the scan resumes after them. Each comparison
- *   either advances the scan or is followed by the output of a factor at
- *   least as long as the characters rescanned, so that the time is O( n ),
- *   in O( 1 ) space besides the factors.
+ * - lyndonFactorization() is the algorithm of Duval: it keeps S = s_1 s_2 s_3
+ *   with s_1 factored, \f$ s_2 = w^h w' \f$ for a Lyndon word w and a proper
+ *   prefix w' of w, and compares the next character c of \f$ s_3 \f$ with the
+ *   one |w| places before: if equal, w' grows; if larger, \f$ s_2 c \f$ is a
+ *   Lyndon word and becomes w; if smaller, the h copies of w are factors and
+ *   the scan resumes after them. Each comparison either advances the scan or
+ *   is followed by the output of a factor at least as long as the characters
+ *   rescanned, so that the time is \f$ O( n ) \f$, in \f$ O( 1 ) \f$ space
+ *   besides the factors.
  * - leastRotation() gives the start of the lexicographically least
  *   rotation of S (the first one if several), by the same scan on S S: the
  *   least rotation starts at the start of the factor of S S that covers
- *   the place n, O( n ) time.
+ *   the place n, \f$ O( n ) \f$ time.
  *
  * The contracts [see Contract.h]: the factors are Lyndon words in
  * non-increasing order that give S back (an audit), and the rotation is

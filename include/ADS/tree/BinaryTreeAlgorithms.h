@@ -13,53 +13,55 @@
  *
  * - lowestCommonAncestor( u , v ) walks up the links to the parents: the
  *   deeper node climbs to the depth of the other, then both climb together
- *   until they meet, O( h ) time and O( 1 ) space for a tree of height h.
- *   The usual alternative pushes the two paths on two stacks and pops them
- *   while their tops agree, O( h ) space; with many queries on a fixed tree
- *   the reduction of Bender and Farach-Colton to the range minimum on the
- *   Euler tour answers in O( 1 ) after O( n ) preprocessing [see
- *   RangeMinimum.h], as the structure of Harel and Tarjan did first.
- * - equalTrees( t , s ) tells whether two trees have the same shape and
- *   equal keys in the same places, by a simultaneous visit, O( n ) time and
- *   O( h ) space; with a comparison always true it compares the shapes only.
- * - isSearchTree( t ) checks the order of a binary search tree: each key
- *   must lie in the open interval that its ancestors leave to it, and
- *   comparing a node with its children only is not enough. The visit
- *   carries the two ends down, O( n ) time and O( h ) space, the same as
- *   checking that the invisit is strictly increasing.
+ *   until they meet, \f$ O( h ) \f$ time and \f$ O( 1 ) \f$ space for a tree
+ *   of height h. The usual alternative pushes the two paths on two stacks and
+ *   pops them while their tops agree, \f$ O( h ) \f$ space; with many queries
+ *   on a fixed tree the reduction of Bender and Farach-Colton to the range
+ *   minimum on the Euler tour answers in \f$ O( 1 ) \f$ after \f$ O( n ) \f$
+ *   preprocessing [see RangeMinimum.h], as the structure of Harel and Tarjan
+ *   did first.
+ * - equalTrees( t , s ) tells whether two trees have the same shape and equal
+ *   keys in the same places, by a simultaneous visit, \f$ O( n ) \f$ time and
+ *   \f$ O( h ) \f$ space; with a comparison always true it compares the shapes
+ *   only.
+ * - isSearchTree( t ) checks the order of a binary search tree: each key must
+ *   lie in the open interval that its ancestors leave to it, and comparing a
+ *   node with its children only is not enough. The visit carries the two ends
+ *   down, \f$ O( n ) \f$ time and \f$ O( h ) \f$ space, the same as checking
+ *   that the invisit is strictly increasing.
  * - isRedBlackTree( t , red ) checks the constraints of a Red-Black
  *   colouring (the root black, no red node with a red child, the same
  *   number of black nodes on every path down to a leaf nil) by a postvisit
- *   that returns the black height of each subtree, O( n ) time.
+ *   that returns the black height of each subtree, \f$ O( n ) \f$ time.
  * - searchTreeRange( t , lo , hi , f ) reports in increasing order the
  *   nodes of a binary search tree whose keys are in [ lo , hi ], a visit
- *   pruned where the key leaves the range: O( h + k ) time for k keys
+ *   pruned where the key leaves the range: \f$ O( h + k ) \f$ time for k keys
  *   reported, since the nodes examined outside the range lie on the two
  *   paths that search for lo and for hi.
- * - minimumHeightSearchTree( A ) builds the binary search tree of the
- *   sorted keys of A of the least height, \f$ \lceil \log_2( n + 1 )
- *   \rceil - 1 \f$, by putting the middle key at the root and the two
- *   halves below, recursively: \f$ T( n ) = 2 T( n / 2 ) + O( 1 ) = O( n )
- *   \f$ time and \f$ O( \log n ) \f$ stack. The same tree comes from the
- *   sorted list in O( n ) by building the subtrees in symmetric order, and
- *   any tree is rebalanced in place, in O( n ) time and O( 1 ) space, by
- *   the algorithm of Day, Stout and Warren.
+ * - minimumHeightSearchTree( A ) builds the binary search tree of the sorted
+ *   keys of A of the least height, \f$ \lceil \log_2( n + 1 ) \rceil - 1 \f$,
+ *   by putting the middle key at the root and the two halves below,
+ *   recursively: \f$ T( n ) = 2 T( n / 2 ) + O( 1 ) = O( n ) \f$ time and
+ *   \f$ O( \log n ) \f$ stack. The same tree comes from the sorted list in
+ *   \f$ O( n ) \f$ by building the subtrees in symmetric order, and any tree
+ *   is rebalanced in place, in \f$ O( n ) \f$ time and \f$ O( 1 ) \f$ space,
+ *   by the algorithm of Day, Stout and Warren.
  * - fromPreorderInorder( pre , in ) rebuilds the binary tree of distinct
- *   values whose previsit is pre and whose invisit is in. The first value
- *   of pre is the root and splits in into the two subtrees; rather than
- *   looking the root up in in, the algorithm keeps a stack of the nodes
- *   whose right subtree is still open: the next value of pre is the left
- *   child of the top, unless the top is the next value of in, in which case
- *   the nodes are popped while they match in and the value becomes the
- *   right child of the last one. Each node is pushed and popped once, O( n )
- *   time, with no table of the places and only the equality of the values.
+ *   values whose previsit is pre and whose invisit is in. The first value of
+ *   pre is the root and splits in into the two subtrees; rather than looking
+ *   the root up in in, the algorithm keeps a stack of the nodes whose right
+ *   subtree is still open: the next value of pre is the left child of the top,
+ *   unless the top is the next value of in, in which case the nodes are popped
+ *   while they match in and the value becomes the right child of the last one.
+ *   Each node is pushed and popped once, \f$ O( n ) \f$ time, with no table of
+ *   the places and only the equality of the values.
  * - cartesianBinaryTree( A ) is the Cartesian tree of Vuillemin as a
  *   BinaryTree: its root is the leftmost minimum of A and its subtrees the
- *   Cartesian trees of the parts before and after it, i.e., the binary
- *   tree whose invisit is A and which is a heap; with std::greater it is
- *   the maximal tree, with the maximum at the root. The parents come from
- *   cartesianTree() of RangeMinimum.h, which builds them with a stack of
- *   the right spine in O( n ) time, against the \f$ O( n^2 ) \f$ of the
+ *   Cartesian trees of the parts before and after it, i.e., the binary tree
+ *   whose invisit is A and which is a heap; with std::greater it is the
+ *   maximal tree, with the maximum at the root. The parents come from
+ *   cartesianTree() of RangeMinimum.h, which builds them with a stack of the
+ *   right spine in \f$ O( n ) \f$ time, against the \f$ O( n^2 ) \f$ of the
  *   recursion of the definition on a sorted A.
  *
  * The contracts [see Contract.h]: lowestCommonAncestor() needs two nodes of
@@ -191,8 +193,9 @@ concept KeyedBinaryNode = BinaryNode< N > && requires( N n ) {
 /*---------------------------- THE ANCESTORS -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// lowestCommonAncestor(): the deepest node that is an ancestor of both u
-/// and v, each node being an ancestor of itself; O( h ) time, O( 1 ) space
+/// lowestCommonAncestor(): the deepest node that is an ancestor of both u and
+/// v, each node being an ancestor of itself; \f$ O( h ) \f$ time,
+/// \f$ O( 1 ) \f$ space
 /// \pre u and v are nodes of the same tree
 /// \post an ancestor of u and of v, none of whose children is one
 template< ParentBinaryNode N >
@@ -202,22 +205,22 @@ N lowestCommonAncestor( N u , N v );
 /*--------------------------- THE COMPARISONS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// equalTrees(): t and s have the same shape and eq( a , b ) holds on the
-/// keys a and b of each two nodes in the same place; O( n ) time, O( h )
-/// space
+/// equalTrees(): t and s have the same shape and eq( a , b ) holds on the keys
+/// a and b of each two nodes in the same place; \f$ O( n ) \f$ time,
+/// \f$ O( h ) \f$ space
 template< KeyedBinaryNode N , KeyedBinaryNode M ,
           class Equal = std::equal_to<> >
 [[nodiscard]] bool equalTrees( N t , M s , Equal eq = {} );
 
 /// isSearchTree(): the keys of t are strictly increasing in the invisit,
-/// by less; O( n ) time, O( h ) space
+/// by less; \f$ O( n ) \f$ time, \f$ O( h ) \f$ space
 template< KeyedBinaryNode N , class Compare = std::less<> >
 [[nodiscard]] bool isSearchTree( N t , Compare less = {} );
 
-/// isRedBlackTree(): the colouring of t, red( u ) telling whether the node
-/// u is red, respects the constraints of a Red-Black tree: the root black,
-/// no red node with a red child, the same number of black nodes on every
-/// path from the root down to a leaf nil; O( n ) time, O( h ) space
+/// isRedBlackTree(): the colouring of t, red( u ) telling whether the node u
+/// is red, respects the constraints of a Red-Black tree: the root black, no
+/// red node with a red child, the same number of black nodes on every path
+/// from the root down to a leaf nil; \f$ O( n ) \f$ time, \f$ O( h ) \f$ space
 template< BinaryNode N , class Red >
 [[nodiscard]] bool isRedBlackTree( N t , Red red );
 
@@ -228,7 +231,7 @@ template< BinaryNode N , class Red >
 /// searchTreeRange(): f( u ) on the nodes u of the binary search tree t
 /// whose keys are in [ lo , hi ], in increasing order of the keys; the
 /// number of the nodes examined, at most k + 2 ( h + 1 ) for k keys in the
-/// range; O( h + k ) time
+/// range; \f$ O( h + k ) \f$ time
 /// \pre ! less( hi , lo )
 template< KeyedBinaryNode N , class K , class F ,
           class Compare = std::less<> >
@@ -242,7 +245,7 @@ std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
 /// minimumHeightSearchTree(): the binary search tree of the keys of A of
 /// the least height, the lower middle key at the root of each subtree,
 /// whose nodes are made by make( v , l , r ) over the subtrees l and r,
-/// nil if A is empty; O( n ) time
+/// nil if A is empty; \f$ O( n ) \f$ time
 /// \pre A strictly increasing by less
 /// \post the height is ceil( log2( n + 1 ) ) - 1 (an audit)
 template< class T , class Make , class Compare = std::less<> >
@@ -259,15 +262,16 @@ BinaryTree< T > * minimumHeightSearchTree( const std::vector< T > & A ,
                                            Compare less = {} );
 
 /// fromPreorderInorder(): the binary tree whose previsit is pre and whose
-/// invisit is in, nil if they are empty; O( n ) time; the caller owns it
+/// invisit is in, nil if they are empty; \f$ O( n ) \f$ time; the caller owns
+/// it
 /// \pre pre and in are the visits of a binary tree of distinct values
 template< class T >
 BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
                                        const std::vector< T > & in );
 
 /// cartesianBinaryTree(): the Cartesian tree of A, the leftmost minimum by
-/// less at the root, a heap whose invisit is A, nil if A is empty; O( n )
-/// time; the caller owns it
+/// less at the root, a heap whose invisit is A, nil if A is empty;
+/// \f$ O( n ) \f$ time; the caller owns it
 /// \post the invisit is A (an audit)
 template< class T , class Compare = std::less< T > >
 BinaryTree< T > * cartesianBinaryTree( const std::vector< T > & A ,

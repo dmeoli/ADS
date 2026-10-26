@@ -19,7 +19,7 @@
  * \f$ \alpha > 2 \f$ and halving it, down to the initial size, when
  * \f$ \alpha < 1 / 2 \f$: the two thresholds are 4 times apart, so that
  * between two restructurings there are at least m / 4 operations and the
- * cost stays O( 1 ) amortized [see TableSize.h].
+ * cost stays \f$ O( 1 ) \f$ amortized [see TableSize.h].
  *
  * The contracts [see Contract.h]: m > 0 and a list that exists for
  * chain(); after insert() the key is in the table and after remove() it is
@@ -127,7 +127,7 @@ class ChainedHashTable {
  [[nodiscard]] double load( void ) const;
 
  /// the foreach of the book: f( k , v ) on the pairs, list after list,
- /// O( m + n ) time
+ /// \f$ O( m + n ) \f$ time
  template< class F >
  void forEach( F && f ) const;
 
@@ -234,8 +234,8 @@ class ChainedHashTable {
  [[nodiscard]] bool present( const K & k ) const;
 
  /// each key in the list of its place, the lists sorted if they must be,
- /// size() their total and k at most once, O( n + m ); on more than 1024
- /// lists, only the list of k
+ /// size() their total and k at most once, \f$ O( n + m ) \f$; on more than
+ /// 1024 lists, only the list of k
  [[nodiscard]] bool consistent( const K & k ) const;
 
  /// the keys of the list i in it, sorted if they must be, k at most once;

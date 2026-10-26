@@ -6,7 +6,7 @@
  * integers of 64 bits:
  *
  * - gcd(), of Euclid, \f$ \gcd( s , m ) = \gcd( m , s \bmod m ) \f$,
- *   O( log m ) steps; extendedEuclid() also gives p and q with
+ *   \f$ O( \log m ) \f$ steps; extendedEuclid() also gives p and q with
  *   \f$ s p + m q = \gcd( s , m ) \f$: from ( d , p' , q' ) of
  *   \f$ ( m , s \bmod m ) \f$,
  *   \f$ ( d , q' , p' - \lfloor s / m \rfloor q' ) \f$ (the
@@ -20,8 +20,8 @@
  *   UniversalHashing.h], four products of 32 bits folded by
  *   \f$ 2^{61} \equiv 1 \pmod{p} \f$, faster than a division of 128 bits;
  *   the product of 128 bits where the compiler has one, and the doubling
- *   of Ahmes, O( log b ) additions, where it has not (MSVC);
- * - powMod(), \f$ x^v \bmod m \f$ by repeated squaring, O( log v )
+ *   of Ahmes, \f$ O( \log b ) \f$ additions, where it has not (MSVC);
+ * - powMod(), \f$ x^v \bmod m \f$ by repeated squaring, \f$ O( \log v ) \f$
  *   multiplications (exercise 17.1), \f$ \lfloor \log_2 v \rfloor + 1 \f$
  *   squarings and as many products, each one of Montgomery when m is odd
  *   (see Montgomery64 below): the products and the squarings are two
@@ -95,18 +95,17 @@
  *   of 32 bits below \f$ 2^{32} \f$ (\f$ R = 2^{32} \f$, its constants by
  *   divisions of 32 bits), the lazy one below \f$ 2^{62} \f$, and
  *   Montgomery64 above;
- * - factorize(), beyond the book, the prime factors of a word: the
- *   divisions by the primes below 256, then, on a composite cofactor m
- *   (isPrime() decides), the rho of Pollard with the cycle detection of
- *   Brent, in the Montgomery arithmetic of m: the sequence \f$ x_{i+1} =
- *   x_i^2 + c \bmod m \f$ falls into a cycle modulo the least prime p of m
- *   after \f$ O( \sqrt{p} ) = O( m^{1/4} ) \f$ steps in expectation (the
- *   birthday paradox, the map taken as random), which
- *   \f$ \gcd( | x_i - x_j | , m ) \f$ finds; the differences are
- *   multiplied together, 128 at a time, before each gcd, and the last
- *   batch is gone through again one by one if the gcd is m; with another
- *   c if the factor is m itself. O( n^{1/4} ) products expected for n of
- *   64 bits;
+ * - factorize(), beyond the book, the prime factors of a word: the divisions
+ *   by the primes below 256, then, on a composite cofactor m (isPrime()
+ *   decides), the rho of Pollard with the cycle detection of Brent, in the
+ *   Montgomery arithmetic of m: the sequence
+ *   \f$ x_{i+1} = x_i^2 + c \bmod m \f$ falls into a cycle modulo the least
+ *   prime p of m after \f$ O( \sqrt{p} ) = O( m^{1/4} ) \f$ steps in
+ *   expectation (the birthday paradox, the map taken as random), which
+ *   \f$ \gcd( | x_i - x_j | , m ) \f$ finds; the differences are multiplied
+ *   together, 128 at a time, before each gcd, and the last batch is gone
+ *   through again one by one if the gcd is m; with another c if the factor is
+ *   m itself. \f$ O( n^{1/4} ) \f$ products expected for n of 64 bits;
  * - sieve(), the sieve of Eratosthenes on a SET of the integers from 2 to n
  *   [see BoolSet.h], beyond the book: the least item p left in the set is a
  *   prime, and its multiples are removed; since the multiples of the primes
@@ -276,7 +275,7 @@ class Montgomery64 {
 /// \pre m >= 1
 inline U64 powMod( U64 x , U64 v , U64 m );
 
-/// primo(): the divisions by 2 , ... , floor( sqrt( n ) )
+/// primo(): the divisions by \f$ 2 , \ldots , \lfloor \sqrt{n} \rfloor \f$
 inline bool isPrimeTrial( U64 n );
 
 /// true if b is a witness that the odd n > 2 is composite

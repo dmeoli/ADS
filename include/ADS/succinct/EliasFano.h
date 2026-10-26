@@ -18,31 +18,31 @@
  * With rank and select on H [see RankSelect.h] the sequence is not only
  * decoded but searched in place:
  *
- * - access( i ), \f$ x_i \f$ in O( 1 ) time, as \f$ ( select_1( i + 1 ) - i )
- *   \f$ followed by the i-th field of L;
- * - nextGEQ( x ), the place of the first item \f$ \ge x \f$, which is the
- *   rank of x (the items \f$ < x \f$) and gives the predecessor and the
- *   successor: \f$ select_0 \f$ of the bucket of x gives the first item of
- *   that bucket, and the scan stops at its end, in O( 1 + c ) time for a
- *   bucket of c items, expected O( 1 ) since \f$ 2^\ell \approx u / n \f$;
- *   past 8 items (the clusters of a sequence fill some buckets) the end of
- *   the bucket is found by \f$ select_0 \f$ too and its low bits, sorted,
- *   by a binary search, \f$ O( \log c ) \f$ time;
+ * - access( i ), \f$ x_i \f$ in \f$ O( 1 ) \f$ time, as
+ *   \f$ ( select_1( i + 1 ) - i ) \f$ followed by the i-th field of L;
+ * - nextGEQ( x ), the place of the first item \f$ \ge x \f$, which is the rank
+ *   of x (the items \f$ < x \f$) and gives the predecessor and the successor:
+ *   \f$ select_0 \f$ of the bucket of x gives the first item of that bucket,
+ *   and the scan stops at its end, in \f$ O( 1 + c ) \f$ time for a bucket of
+ *   c items, expected \f$ O( 1 ) \f$ since \f$ 2^\ell \approx u / n \f$; past
+ *   8 items (the clusters of a sequence fill some buckets) the end of the
+ *   bucket is found by \f$ select_0 \f$ too and its low bits, sorted, by a
+ *   binary search, \f$ O( \log c ) \f$ time;
  * - viewed as the places of the 1s of a vector of bits B of u bits with n
  *   1s (section 15.1.2), access( i ) is \f$ select_1( i + 1 ) \f$ of B and
  *   nextGEQ( i ) is \f$ rank_1( i ) \f$ of B, in \f$ n ( 2 + \log ( u / n ) )
- *   + o( n ) \f$ bits rather than u + o( u ) (Theorem 15.5).
+ *   + o( n ) \f$ bits rather than \f$ u + o( u ) \f$ (Theorem 15.5).
  *
  * The notes compute the rank of B by a binary search on select (Algorithm
- * 15.1), in O( log n ) time; the bucket found by \f$ select_0 \f$ makes it
- * O( 1 ) expected, the design of Vigna's quasi-succinct indices and of
- * Okanohara and Sadakane's sdarray. H is written with the 1s for the items
- * and the 0s for the buckets, as in chapter 11 (section 15.1.2 swaps them,
- * which only swaps \f$ select_0 \f$ and \f$ select_1 \f$). The
+ * 15.1), in \f$ O( \log n ) \f$ time; the bucket found by \f$ select_0 \f$
+ * makes it \f$ O( 1 ) \f$ expected, the design of Vigna's quasi-succinct
+ * indices and of Okanohara and Sadakane's sdarray. H is written with the 1s
+ * for the items and the 0s for the buckets, as in chapter 11 (section 15.1.2
+ * swaps them, which only swaps \f$ select_0 \f$ and \f$ select_1 \f$). The
  * representation ignores the regularities of the sequence: the partitioned
- * Elias-Fano of Ottaviano and Venturini splits it into chunks, each one
- * coded at its own best, and comes within a few percent of the
- * interpolative code [see IntegerCodes.h] keeping the random access.
+ * Elias-Fano of Ottaviano and Venturini splits it into chunks, each one coded
+ * at its own best, and comes within a few percent of the interpolative code
+ * [see IntegerCodes.h] keeping the random access.
  *
  * The contracts [see Contract.h]: the sequence is non-decreasing (an audit)
  * and below u, and access() needs i < n; the audit of the construction is
@@ -162,7 +162,7 @@ class BasicEliasFano {
  /// all the bits, with the directory of H
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
- /// the items, decoded in O( n ) time
+ /// the items, decoded in \f$ O( n ) \f$ time
  [[nodiscard]] std::vector< std::uint64_t > decode( void ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/

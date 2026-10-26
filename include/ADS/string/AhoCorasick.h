@@ -26,7 +26,7 @@
  * a prefix of some pattern (the invariant of the automaton), and the
  * patterns that end at j are those of the state and of the chain of its
  * output links, each the nearest proper suffix of a state that is a whole
- * pattern, so that each occurrence costs O( 1 ).
+ * pattern, so that each occurrence costs \f$ O( 1 ) \f$.
  *
  * add() gives each pattern its number, in the order of the calls (equal
  * patterns get one number each); build() prepares the automaton, which

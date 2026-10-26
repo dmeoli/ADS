@@ -32,9 +32,9 @@
  *
  * The contracts [see Contract.h]: the volumes, the profits and the sums are
  * not negative, the distances square and symmetric, and the triangle
- * inequality that the bound of deltaTsp() rests on is an audit, O( n^3 ); each
- * solution returned is checked as feasible. The operations are defined in
- * Approximation.tpp.
+ * inequality that the bound of deltaTsp() rests on is an audit,
+ * \f$ O( n^3 ) \f$; each solution returned is checked as feasible. The
+ * operations are defined in Approximation.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 19.2 and
  *      exercises 19.6, 19.8,
@@ -109,7 +109,7 @@ T tourCost( const std::vector< std::vector< T > > & D , const Nodes & S );
 /// the circuit of the nodes of a minimum spanning tree of the complete
 /// graph of the symmetric distances D in preorder from 0, the children by
 /// increasing name: at most twice the optimum if D is triangular
-/// \pre D is square and symmetric, and triangular (an audit, O( n^3 ))
+/// \pre D is square and symmetric, and triangular (an audit, \f$ O( n^3 ) \f$)
 /// \post a permutation of the cities
 template< class T >
 Nodes deltaTsp( const std::vector< std::vector< T > > & D );
@@ -148,8 +148,8 @@ inline std::pair< long , Nodes > knapsackApprox(
 /*---------------------------- VERTEX COVER --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// both ends of each edge [ u , v ], u < v, whose ends are both out of S,
-/// at most twice a minimum vertex cover; O( n^2 ) on the adjacency matrix
+/// both ends of each edge [ u , v ], u < v, whose ends are both out of S, at
+/// most twice a minimum vertex cover; \f$ O( n^2 ) \f$ on the adjacency matrix
 /// \pre G is unoriented, i.e., square and symmetric
 /// \post a cover of the edges
 inline Nodes vertexCoverApprox( const Adjacency & G );

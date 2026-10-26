@@ -10,7 +10,7 @@
  *   \max\{ DP[ i ][ j - 1 ] - 2 , DP[ i - 1 ][ j ] - 2 ,
  *          DP[ i - 1 ][ j - 1 ] + \delta_{ij} \}
  * \f]
- * with \f$ \delta_{ij} = \pm 1 \f$, Theta( m n ) time:
+ * with \f$ \delta_{ij} = \pm 1 \f$, \f$ \Theta( m n ) \f$ time:
  *
  * - global, DP[ i ][ 0 ] = -2 i and DP[ 0 ][ j ] = -2 j, the score in
  *   DP[ m ][ n ];

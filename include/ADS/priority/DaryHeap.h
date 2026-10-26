@@ -154,7 +154,7 @@ class DaryHeap {
  /// up from there (Floyd; Wegener)
  void bottomUp( T x );
 
- /// no item better than its parent, O( n )
+ /// no item better than its parent, \f$ O( n ) \f$
  [[nodiscard]] bool ordered( void ) const;
 
  /// the heap, the root in f_A[ 0 ]

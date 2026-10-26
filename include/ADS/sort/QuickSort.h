@@ -20,7 +20,7 @@
  * the median of A[ start ], A[ ( start + end ) / 2 ] and A[ end ]; the
  * partition of Hoare scans from both ends, swapping the pairs on the wrong
  * sides, so that equal items split evenly and the case of all equal items
- * takes O( n log n ); the parts of at most cutoff items are left to
+ * takes \f$ O( n \log n ) \f$; the parts of at most cutoff items are left to
  * insertionSort(); the recursion is an explicit stack that holds the
  * larger part while the smaller one is sorted, so that it never holds more
  * than \f$ \lfloor \log_2 n \rfloor \f$ parts. quickSort( L ) sorts a LIST

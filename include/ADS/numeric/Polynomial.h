@@ -64,7 +64,7 @@
 
 namespace ADS {
 
-/// moltiplicaPolinomi(): Theta( n^2 )
+/// moltiplicaPolinomi(): \f$ \Theta( n^2 ) \f$
 template< class T >
 std::vector< T > multiplyNaive( const std::vector< T > & p ,
                                 const std::vector< T > & q ,
@@ -91,14 +91,14 @@ std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,
 
 }  // end( namespace detail )
 
-/// Prodotto4() on polynomials: four recursive products, Theta( n^2 )
+/// Prodotto4() on polynomials: four recursive products, \f$ \Theta( n^2 ) \f$
 /// \post the result is p q
 template< class T >
 std::vector< T > multiplyFour( const std::vector< T > & p ,
                                const std::vector< T > & q ,
                                long * mults = nullptr );
 
-/// moltiplicaPolinomiD&I(): three recursive products, O( n^1.59 )
+/// moltiplicaPolinomiD&I(): three recursive products, \f$ O( n^{1.59} ) \f$
 /// \post the result is p q
 template< class T >
 std::vector< T > multiplyKaratsuba( const std::vector< T > & p ,

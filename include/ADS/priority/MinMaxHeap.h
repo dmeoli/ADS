@@ -27,16 +27,15 @@
  *   of the cache: about \f$ \log_2 ( n / 2 ) \f$ levels for a push and a
  *   removal, faster in practice than the min-max heap.
  *
- * A run of removals with no push, as long as an eighth of the items and
- * 64 at least, sorts the items once (by the radix sort for the numbers
- * and the pairs of numbers in the order of std::less or std::greater [see
- * OrderKey.h]), so that the rest of the run takes them from the two ends
- * of the sorted array in O( 1 ) time each, as a balanced tree does; the
- * next push makes the array a heap again in O( n ) time (an interval heap
- * straight from the sorted items, the node j holding the j-th best and the
- * j-th worst; a min-max heap by the construction from the bottom up of
- * Atkinson et al.). Both costs are paid by the run, \f$ O( \log n ) \f$
- * amortized per removal.
+ * A run of removals with no push, as long as an eighth of the items and 64 at
+ * least, sorts the items once (by the radix sort for the numbers and the pairs
+ * of numbers in the order of std::less or std::greater [see OrderKey.h]), so
+ * that the rest of the run takes them from the two ends of the sorted array in
+ * \f$ O( 1 ) \f$ time each, as a balanced tree does; the next push makes the
+ * array a heap again in \f$ O( n ) \f$ time (an interval heap straight from
+ * the sorted items, the node j holding the j-th best and the j-th worst; a
+ * min-max heap by the construction from the bottom up of Atkinson et al.).
+ * Both costs are paid by the run, \f$ O( \log n ) \f$ amortized per removal.
  *
  * The contracts [see Contract.h]: min(), max(), popMin() and popMax()
  * need a queue that is not empty; the invariant, checked on queues of at

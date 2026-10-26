@@ -53,7 +53,7 @@
  * The contracts [see Contract.h]: r is a node; with a frontier other than
  * QUEUE no negative cycle is reachable from r, and dagShortestPaths() needs
  * an acyclic graph, both checked at the level of the audits (the first by
- * Bellman-Ford, O( n m )); the tree found satisfies the conditions of
+ * Bellman-Ford, \f$ O( n m ) \f$); the tree found satisfies the conditions of
  * Bellman unless a negative cycle was found, which isShortestPathTree()
  * checks. The functions are defined in ShortestPaths.tpp.
  *
@@ -315,19 +315,20 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
                                      S & frontier ,
                                      FrontierCounts * c = nullptr );
 
-/// Dijkstra: a priority queue on an unsorted list, O( n^2 )
+/// Dijkstra: a priority queue on an unsorted list, \f$ O( n^2 ) \f$
 template< Graph G >
 auto dijkstra( const G & g , int r );
 
-/// Johnson: a priority queue on a binary heap, O( m log n )
+/// Johnson: a priority queue on a binary heap, \f$ O( m \log n ) \f$
 template< Graph G >
 auto johnson( const G & g , int r );
 
-/// Fredman-Tarjan: a priority queue on a Fibonacci heap, O( m + n log n )
+/// Fredman-Tarjan: a priority queue on a Fibonacci heap,
+/// \f$ O( m + n \log n ) \f$
 template< Graph G >
 auto fredmanTarjan( const G & g , int r );
 
-/// Bellman-Ford-Moore: a queue, O( n m ), negative cycles detected
+/// Bellman-Ford-Moore: a queue, \f$ O( n m ) \f$, negative cycles detected
 template< Graph G >
 auto bellmanFordMoore( const G & g , int r );
 
@@ -336,7 +337,7 @@ template< Graph G >
 auto papeDEsopo( const G & g , int r );
 
 /// the shortest paths of an acyclic graph, scanning its nodes in
-/// topological order, O( n + m )
+/// topological order, \f$ O( n + m ) \f$
 /// \pre r is a node, and the graph is acyclic (audit)
 /// \post the conditions of Bellman (audit)
 template< Graph G >
@@ -346,12 +347,13 @@ ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g ,
 /// whether R is a tree of shortest paths from r: d[ r ] = 0, the
 /// unreachable nodes at infinity() with no parent, d[ v ] = d[ T[ v ] ] +
 /// w( T[ v ] , v ) on the others, and d[ u ] + w( u , v ) >= d[ v ] on each
-/// edge from a reached node (the Teorema 11.1), O( n + m ) on lists
+/// edge from a reached node (the Teorema 11.1), \f$ O( n + m ) \f$ on lists
 template< Graph G >
 bool isShortestPathTree( const G & g , int r ,
                          const ShortestPathTree< typename G::Weight > & R );
 
-/// whether a negative cycle is reachable from r, by Bellman-Ford, O( n m )
+/// whether a negative cycle is reachable from r, by Bellman-Ford,
+/// \f$ O( n m ) \f$
 template< Graph G >
 bool reachesNegativeCycle( const G & g , int r );
 

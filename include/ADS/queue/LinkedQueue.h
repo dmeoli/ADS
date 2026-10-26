@@ -3,19 +3,19 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * A QUEUE [see ADT.h] realized as a singly linked list with a pointer to the
- * first cell, the front, and one to the last cell, the back (Esercizio 4.10
- * of the book): enqueue() appends a cell after the back and dequeue()
- * removes the front, both in O( 1 ) time, and the queue has no bound on its
- * size, unlike the circular vector of ArrayQueue. The cells come from an
- * ObjectPool [see ObjectPool.h], the one of a dequeue() serving the next
- * enqueue(), so that a queue in a steady state calls no allocator and its
- * cells stay in the cache.
+ * first cell, the front, and one to the last cell, the back (Esercizio 4.10 of
+ * the book): enqueue() appends a cell after the back and dequeue() removes the
+ * front, both in \f$ O( 1 ) \f$ time, and the queue has no bound on its size,
+ * unlike the circular vector of ArrayQueue. The cells come from an ObjectPool
+ * [see ObjectPool.h], the one of a dequeue() serving the next enqueue(), so
+ * that a queue in a steady state calls no allocator and its cells stay in the
+ * cache.
  *
- * The contracts [see Contract.h]: top() and dequeue() need a queue that is
- * not empty; enqueue() ensures that the queue is not empty, and that top()
- * is v if the queue was empty. A queue is copied cell by cell and moved in
- * O( 1 ) time, the one moved from left empty. The operations are defined in
- * LinkedQueue.tpp.
+ * The contracts [see Contract.h]: top() and dequeue() need a queue that is not
+ * empty; enqueue() ensures that the queue is not empty, and that top() is v if
+ * the queue was empty. A queue is copied cell by cell and moved in
+ * \f$ O( 1 ) \f$ time, the one moved from left empty. The operations are
+ * defined in LinkedQueue.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, Esercizio 4.10,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -91,7 +91,7 @@ class LinkedQueue {
  /// \pre the queue is not empty
  [[nodiscard]] const T & top( void ) const;
 
- /// the number of items, O( 1 )
+ /// the number of items, \f$ O( 1 ) \f$
  [[nodiscard]] std::size_t size( void ) const;
 
  /// the same items in the same order

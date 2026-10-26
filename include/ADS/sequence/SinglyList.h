@@ -3,28 +3,27 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * A SEQUENCE [see ADT.h] realized as a singly linked list, not circular and
- * with no sentinel (Esercizio 4.6 of the book). The position
- * \f$ pos_i \f$ is the address of the cell of \f$ a_{i-1} \f$ for i > 0
- * and nil for i = 0, so that the cell before an item, which insert() and
- * remove() change, is always at hand: every operation takes O( 1 ) time but
- * tail() and prev(), which scan the list and take O( n ). \f$ pos_n \f$ is
- * the address of the last cell (nil if the list is empty), and
- * \f$ pos_{-1} \f$ a distinguished address of the list itself. This is the
- * convention of the realizations of a list with pointers or with cursors in
- * which a position is the cell that precedes the item, e.g., in the book by
- * Aho, Hopcroft and Ullman.
+ * with no sentinel (Esercizio 4.6 of the book). The position \f$ pos_i \f$ is
+ * the address of the cell of \f$ a_{i-1} \f$ for i > 0 and nil for i = 0, so
+ * that the cell before an item, which insert() and remove() change, is always
+ * at hand: every operation takes \f$ O( 1 ) \f$ time but tail() and prev(),
+ * which scan the list and take \f$ O( n ) \f$. \f$ pos_n \f$ is the address of
+ * the last cell (nil if the list is empty), and \f$ pos_{-1} \f$ a
+ * distinguished address of the list itself. This is the convention of the
+ * realizations of a list with pointers or with cursors in which a position is
+ * the cell that precedes the item, e.g., in the book by Aho, Hopcroft and
+ * Ullman.
  *
- * The contracts [see Contract.h]: read(), write() and remove() need a
- * position that holds an item, i.e., one that is not finished();
- * insert() and write() ensure that v is read back in its position. A list
- * is copied cell by cell and moved in O( 1 ) time, the one moved from left
- * empty. Beyond the book, the cells come from an ObjectPool [see
- * ObjectPool.h] of the list, which takes back the cell of remove() for the
- * next insert(), so that a cell costs no call to the allocator, the cells
- * made one after another are next to each other in memory, and a list of
- * items with a trivial destructor dies in one step per block; the price is
- * that the list keeps the memory of its largest size until it dies. The
- * operations are defined in SinglyList.tpp.
+ * The contracts [see Contract.h]: read(), write() and remove() need a position
+ * that holds an item, i.e., one that is not finished(); insert() and write()
+ * ensure that v is read back in its position. A list is copied cell by cell
+ * and moved in \f$ O( 1 ) \f$ time, the one moved from left empty. Beyond the
+ * book, the cells come from an ObjectPool [see ObjectPool.h] of the list,
+ * which takes back the cell of remove() for the next insert(), so that a cell
+ * costs no call to the allocator, the cells made one after another are next to
+ * each other in memory, and a list of items with a trivial destructor dies in
+ * one step per block; the price is that the list keeps the memory of its
+ * largest size until it dies. The operations are defined in SinglyList.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, Esercizio 4.6,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -113,14 +112,14 @@ class SinglyList {
  /// \f$ pos_0 \f$, i.e., nil
  [[nodiscard]] Pos head( void ) const;
 
- /// the position of the last item, O( n )
+ /// the position of the last item, \f$ O( n ) \f$
  [[nodiscard]] Pos tail( void ) const;
 
  /// the position that follows p
  /// \pre p is not \f$ pos_n \f$
  [[nodiscard]] Pos next( Pos p ) const;
 
- /// the position that precedes p, O( n )
+ /// the position that precedes p, \f$ O( n ) \f$
  [[nodiscard]] Pos prev( Pos p ) const;
 
  /// puts v in position p, i.e., before the item in p; the new item takes

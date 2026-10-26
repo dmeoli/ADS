@@ -123,13 +123,13 @@ Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
               std::vector< T > * trace = nullptr );
 
 /// the size of I_k( pi ) on n >= 3 nodes: the circuits that share exactly
-/// n - k edges with pi, by enumeration of all the circuits, O( n! )
+/// n - k edges with pi, by enumeration of all the circuits, \f$ O( n! ) \f$
 /// \pre n >= 3 and 0 <= k <= n
 inline long kOptNeighbours( int n , int k );
 
 /// the side, 0 or 1, of each element of A, by the local search from side
 /// that moves an element or swaps two while the difference of the sums
-/// decreases, the best move first; O( n^2 ) each step
+/// decreases, the best move first; \f$ O( n^2 ) \f$ each step
 /// \pre side gives each element 0 or 1
 /// \post sides 0 or 1, the difference not larger than that of side
 inline std::vector< int > partitionLocalSearch( const std::vector< long > & A ,
@@ -142,7 +142,7 @@ inline std::vector< int > partitionLocalSearch( const std::vector< long > & A ,
 /// the structure with buckets of exercise 19.17: for k = 0 , 1 the nodes
 /// by the number h of their edges to \f$ V_k \f$, bucket( k , h ), its size
 /// dim( k , h ), and the least and largest bucket not empty; a node leaves
-/// a bucket in O( 1 ) by its place in it
+/// a bucket in \f$ O( 1 ) \f$ by its place in it
 class Buckets {
 
 /*--------------------------------------------------------------------------*/
@@ -196,7 +196,7 @@ class Buckets {
  void take( int k , int u );
 
  /// each node is in the bucket of its count at its place, and min( k ),
- /// max( k ) are the least and the largest bucket not empty, O( n )
+ /// max( k ) are the least and the largest bucket not empty, \f$ O( n ) \f$
  [[nodiscard]] bool consistent( void ) const;
 
  int f_n;
@@ -234,7 +234,7 @@ inline std::string greedySuperstring( const std::vector< std::string > & P );
 
 /// star alignment: the center h, the string with the largest sum of the
 /// global scores against the others, and its global alignment with each
-/// string, the center against itself included; O( k^2 n^2 )
+/// string, the center against itself included; \f$ O( k^2 n^2 ) \f$
 /// \pre P is not empty
 /// \post a center of P and an alignment per string
 inline std::pair< int , std::vector< std::pair< std::string , std::string > > >
@@ -247,7 +247,7 @@ starAlignment( const std::vector< std::string > & P );
 /// saturation degree: the color, from 0, of each node of G, colored one
 /// at a time with the least color not on its neighbours, the next node the
 /// one with most distinct colors among its neighbours, then with most
-/// neighbours colored, then the first; O( n^3 )
+/// neighbours colored, then the first; \f$ O( n^3 ) \f$
 /// \pre G is unoriented, i.e., square and symmetric
 /// \post a proper coloring
 inline std::vector< int > dsatur( const Adjacency & G );

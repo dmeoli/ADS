@@ -30,7 +30,7 @@
  * the block by the 7 counts of the superblock and the word by the sums of
  * the 8 words of its line, both by comparisons with no branch, and the bit
  * by selectInWord(); \f$ O( \log ( m / 4096 ) ) \f$ steps in the worst case
- * and O( 1 ) where the bits b are spread evenly (a sample every 2 to 8
+ * and \f$ O( 1 ) \f$ where the bits b are spread evenly (a sample every 2 to 8
  * superblocks for a density between 1/2 and 1/8). The trade with RankSelect
  * is the one of the literature: a sum of up to 8 words and a search of the
  * entries instead of one word and an inventory, in 15 times fewer bits.

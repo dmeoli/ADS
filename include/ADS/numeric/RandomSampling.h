@@ -15,12 +15,12 @@
  *   n random I/Os.
  * - sampleByDictionary() is Algorithm 3.2: random positions kept in a hash
  *   table, the repeated ones drawn again; with \f$ n \leq N / 2 \f$ a draw
- *   repeats with probability below 1/2, hence O( n ) expected time and
+ *   repeats with probability below 1/2, hence \f$ O( n ) \f$ expected time and
  *   space (Fact 3.1), and for n > N / 2 the N - n positions left out are
  *   drawn instead.
  * - sampleBySorting() is Algorithm 3.3 with the bucket sort of Fact 3.3:
  *   n random positions sorted by n buckets of width \f$ \lceil N / n
- *   \rceil \f$, O( 1 ) expected items each, sorted by insertion [see
+ *   \rceil \f$, \f$ O( 1 ) \f$ expected items each, sorted by insertion [see
  *   InsertionSort.h], and the repetitions removed; the positions missing
  *   are drawn again and merged, instead of all n as in the notes, which is
  *   the same distribution (the process is symmetric in the N positions)
@@ -29,19 +29,19 @@
  *   for n > N / 2 the positions left out are drawn, as above.
  * - Algorithm 3.4, one pass that selects position j with probability
  *   \f$ ( n - s ) / ( N - j ) \f$, s the positions already selected, is
- *   selectionSampling() of RandomNumbers.h (Algorithm S of Knuth), N
- *   random numbers. sampleBySkips() is the method of Vitter that draws the
- *   gaps instead, \f$ P( G = g ) = \binom{V - g - 1}{v - 1} / \binom{V}{v}
- *   \f$ for v positions still to select among V: Algorithm D, by rejection
- *   with a continuous envelope, about n random numbers and O( n ) expected
- *   time, falling back to Algorithm A (the gap by the sequential search of
- *   its distribution, O( N ) time but n random numbers) once n exceeds
- *   N / 13, where A is faster.
- * - heapSampling() is Algorithm 3.5 for a stream of unknown length: a
- *   random key per item, the n largest keys kept in a heap [see
- *   DaryHeap.h], \f$ O( N \log n ) \f$ time; reservoirSampling() of
- *   RandomNumbers.h is Algorithm 3.6 (Algorithm R of Knuth), O( N ) time
- *   and exactly n items of space, optimal in this model.
+ *   selectionSampling() of RandomNumbers.h (Algorithm S of Knuth), N random
+ *   numbers. sampleBySkips() is the method of Vitter that draws the gaps
+ *   instead, \f$ P( G = g ) = \binom{V - g - 1}{v - 1} / \binom{V}{v} \f$ for
+ *   v positions still to select among V: Algorithm D, by rejection with a
+ *   continuous envelope, about n random numbers and \f$ O( n ) \f$ expected
+ *   time, falling back to Algorithm A (the gap by the sequential search of its
+ *   distribution, \f$ O( N ) \f$ time but n random numbers) once n exceeds N /
+ *   13, where A is faster.
+ * - heapSampling() is Algorithm 3.5 for a stream of unknown length: a random
+ *   key per item, the n largest keys kept in a heap [see DaryHeap.h],
+ *   \f$ O( N \log n ) \f$ time; reservoirSampling() of RandomNumbers.h is
+ *   Algorithm 3.6 (Algorithm R of Knuth), \f$ O( N ) \f$ time and exactly n
+ *   items of space, optimal in this model.
  *
  * - reservoirSampleL() is Algorithm L of Li, beyond the notes, the reservoir
  *   for a stream of unknown length that draws the number of items to skip
@@ -78,7 +78,7 @@
  * \see J. S. Vitter, Random sampling with a reservoir, ACM Transactions on
  *      Mathematical Software 11(1), 37-57, 1985, doi:10.1145/3147.3165
  * \see K.-H. Li, Reservoir-sampling algorithms of time complexity
- *      O( n ( 1 + log( N / n ) ) ), ACM Transactions on Mathematical
+ *      \f$ O( n ( 1 + \log( N / n ) ) ) \f$, ACM Transactions on Mathematical
  *      Software 20(4), 481-493, 1994, doi:10.1145/198429.198435
  * \see P. S. Efraimidis, P. G. Spirakis, Weighted random sampling with a
  *      reservoir, Information Processing Letters 97(5), 181-185, 2006,

@@ -20,8 +20,8 @@
  * - interleave() and deinterleave() give the Morton code of two 32-bit
  *   coordinates by the perfect shuffle of their bits, whose order keeps
  *   nearby points of the plane nearby;
- * - hasZeroByte() tells in O( 1 ) whether one of the 8 bytes of a word is 0,
- *   the test that makes strlen() fast.
+ * - hasZeroByte() tells in \f$ O( 1 ) \f$ whether one of the 8 bytes of a word
+ *   is 0, the test that makes strlen() fast.
  *
  * The contracts [see Contract.h]: ruler() and lambda() need x != 0, and
  * nextSameWeight() a word whose next one does not overflow. The functions

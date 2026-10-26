@@ -2,27 +2,27 @@
 /*-------------------------- File EliasFanoGraph.h -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A static directed graph whose adjacency lists are coded by Elias-Fano
- * [see EliasFano.h] (section 15.3.2 of the notes), the representation of
- * the adjacency lists of large graphs in Facebook's Unicorn and in the
- * quasi-succinct indices of Vigna. The edge \f$ ( u , v ) \f$ of a graph of
- * n nodes is the integer \f$ u n + v \f$, so that the lists, each one
- * sorted, are one increasing sequence in \f$ [ 0 , n^2 ) \f$, and the
- * prefix sums of the outdegrees are a second sequence that tells where the
- * list of u starts; with m edges the graph takes about
- * \f$ m ( 2 + \lceil \log_2 ( n^2 / m ) \rceil ) + n ( 2 + \lceil \log_2 ( m
- * / n ) \rceil ) \f$ bits, plus the directories, and answers in O( 1 ) time
- * the outdegree and the i-th successor of a node, and the existence of an
- * edge by nextGEQ() in O( 1 ) expected time.
+ * A static directed graph whose adjacency lists are coded by Elias-Fano [see
+ * EliasFano.h] (section 15.3.2 of the notes), the representation of the
+ * adjacency lists of large graphs in Facebook's Unicorn and in the
+ * quasi-succinct indices of Vigna. The edge \f$ ( u , v ) \f$ of a graph of n
+ * nodes is the integer \f$ u n + v \f$, so that the lists, each one sorted,
+ * are one increasing sequence in \f$ [ 0 , n^2 ) \f$, and the prefix sums of
+ * the outdegrees are a second sequence that tells where the list of u starts;
+ * with m edges the graph takes about \f$ m ( 2 + \lceil \log_2 ( n^2 / m )
+ * \rceil ) + n ( 2 + \lceil \log_2 ( m / n ) \rceil ) \f$ bits, plus the
+ * directories, and answers in \f$ O( 1 ) \f$ time the outdegree and the i-th
+ * successor of a node, and the existence of an edge by nextGEQ() in
+ * \f$ O( 1 ) \f$ expected time.
  *
- * The notes code each list on its own, with its own universe: since
- * \f$ \sum_u d_u \log ( n / d_u ) \le m \log ( n^2 / m ) \f$ by the concavity
- * of the logarithm, the lists alone can take fewer bits when the degrees are
- * skewed, at the price of a directory and an offset per list; the single
- * sequence here keeps one directory and the same O( 1 ) access. Neither
- * exploits the locality and the similarity of the lists of the Web, which
- * the codes of Boldi and Vigna do [see BVGraph.h], nor the clustering of the
- * adjacency matrix, which the \f$ k^2 \f$-tree does [see K2Tree.h].
+ * The notes code each list on its own, with its own universe: since \f$ \sum_u
+ * d_u \log ( n / d_u ) \le m \log ( n^2 / m ) \f$ by the concavity of the
+ * logarithm, the lists alone can take fewer bits when the degrees are skewed,
+ * at the price of a directory and an offset per list; the single sequence here
+ * keeps one directory and the same \f$ O( 1 ) \f$ access. Neither exploits the
+ * locality and the similarity of the lists of the Web, which the codes of
+ * Boldi and Vigna do [see BVGraph.h], nor the clustering of the adjacency
+ * matrix, which the \f$ k^2 \f$-tree does [see K2Tree.h].
  *
  * The contracts [see Contract.h]: each list is strictly increasing (an
  * audit) with its nodes in [ 0 , n ), \f$ n^2 \f$ fits in 64 bits, and the

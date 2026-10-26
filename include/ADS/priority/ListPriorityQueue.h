@@ -5,12 +5,12 @@
  * The PRIORITYQUEUE [see PriorityQueue.h] on a list.
  *
  * ListPriorityQueue is the lists of section 10.1.1: sorted, min() and
- * deleteMin() in O( 1 ), insert() and decrease() in O( n ); unsorted, the
- * other way round. The handle is the position of the cell.
+ * deleteMin() in \f$ O( 1 ) \f$, insert() and decrease() in \f$ O( n ) \f$;
+ * unsorted, the other way round. The handle is the position of the cell.
  *
  * The contracts [see Contract.h]: min() and deleteMin() need a queue that
  * is not empty, decrease() a handle of an item of this queue (checked in
- * O( n ) with the invariants) and a priority not larger than its own;
+ * \f$ O( n ) \f$ with the invariants) and a priority not larger than its own;
  * after deleteMin() no item has a smaller priority than the one removed;
  * the invariant is that the list is sorted when it must be and that size()
  * counts its cells. The operations are defined in ListPriorityQueue.tpp.
@@ -71,20 +71,20 @@ class ListPriorityQueue {
 
  [[nodiscard]] int size( void ) const;
 
- /// O( 1 ) if sorted, O( n ) otherwise
+ /// \f$ O( 1 ) \f$ if sorted, \f$ O( n ) \f$ otherwise
  /// \pre the queue is not empty
  [[nodiscard]] const T & min( void ) const;
 
- /// O( 1 ) if sorted, O( n ) otherwise
+ /// \f$ O( 1 ) \f$ if sorted, \f$ O( n ) \f$ otherwise
  /// \pre the queue is not empty
  /// \post one item less, none of smaller priority than the one removed
  T deleteMin( void );
 
- /// O( n ) if sorted, O( 1 ) otherwise
+ /// \f$ O( n ) \f$ if sorted, \f$ O( 1 ) \f$ otherwise
  /// \post one item more
  Handle insert( const T & x , const P & p );
 
- /// O( n ) if sorted, O( 1 ) otherwise; the handle stays valid
+ /// \f$ O( n ) \f$ if sorted, \f$ O( 1 ) \f$ otherwise; the handle stays valid
  /// \pre y is an item of this queue and p is not larger than its priority
  void decrease( Handle & y , const P & p );
 
@@ -115,10 +115,10 @@ class ListPriorityQueue {
  /// the position of the first item of priority larger than p
  [[nodiscard]] Handle after( const P & p ) const;
 
- /// whether y is a cell of the list, O( n )
+ /// whether y is a cell of the list, \f$ O( n ) \f$
  [[nodiscard]] bool owns( Handle y ) const;
 
- /// sorted if it must be, and size() its length, O( n )
+ /// sorted if it must be, and size() its length, \f$ O( n ) \f$
  [[nodiscard]] bool consistent( void ) const;
 
  List< Pair > f_L;   ///< the items

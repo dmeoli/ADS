@@ -11,7 +11,7 @@
  * The heap is one tree, each node not smaller than its parent, kept in the
  * form child-sibling: a node points to its leftmost child and to its right
  * sibling, and back to its left sibling, or to its parent if it is the
- * leftmost child, so that a node is cut from its tree in O( 1 ). The
+ * leftmost child, so that a node is cut from its tree in \f$ O( 1 ) \f$. The
  * linking of two trees makes the root of larger key the leftmost child of
  * the other one. insert() links a tree of one node with the root;
  * decrease() cuts the node with its subtree, unless it is the leftmost
@@ -19,11 +19,11 @@
  * deleteMin() removes the root and joins its children by two passes: the
  * first links them in pairs from the left, the second links the results
  * from the right into one tree. The amortized bounds known for the two
- * passes are O( log n ) for deleteMin() and
+ * passes are \f$ O( \log n ) \f$ for deleteMin() and
  * \f$ O( 2^{2 \sqrt{\log \log n}} ) \f$ for insert() and decrease()
- * (Pettie; O( 1 ) for insert(), Iacono), while Fredman proved that
+ * (Pettie; \f$ O( 1 ) \f$ for insert(), Iacono), while Fredman proved that
  * \f$ \Omega( \log \log n ) \f$ is needed by decrease() in this family of
- * heaps, against the O( 1 ) of the Fibonacci heap [see
+ * heaps, against the \f$ O( 1 ) \f$ of the Fibonacci heap [see
  * FibonacciHeapPriorityQueue.h], whose constants are larger.
  *
  * With Aux = true the heap is the auxiliary two-pass variant of Stasko and

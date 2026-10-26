@@ -13,7 +13,7 @@
  * uncovered and there is no cover. An exchange argument shows that some
  * optimal cover begins with the greedy interval: the interval of an
  * optimal cover that contains x ends no farther. On the intervals sorted
- * by left end, one scan suffices, O( n log n ) time for the sort.
+ * by left end, one scan suffices, \f$ O( n \log n ) \f$ time for the sort.
  *
  * The problem is the dual of the independent set of intervals [see
  * Intervals.h], and the one-dimensional case of the set cover, which in

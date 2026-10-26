@@ -12,7 +12,7 @@
  * - maxSumSegment() is Algorithm 2.3, the scan of Kadane with the
  *   positions: a prefix of negative sum is dropped, since no optimum
  *   starts after a segment of positive sum nor has a prefix of negative
- *   sum (Properties 1 and 2), O( n ) time, one pass, \f$ \lceil n / B
+ *   sum (Properties 1 and 2), \f$ O( n ) \f$ time, one pass, \f$ \lceil n / B
  *   \rceil \f$ I/Os whatever B (cache oblivious). maxSubarraySum() of
  *   Subsequences.h is the same scan for the value only, the empty segment
  *   allowed; here the segment is not empty, so that an array of negative
@@ -20,28 +20,28 @@
  * - maxSumSegmentPrefix() is Algorithm 2.4: with the prefix sums P, the
  *   best segment ending in s is \f$ P[ s ] - \min_{b < s} P[ b ] \f$, the
  *   minimum carried along the scan.
- * - maxSumSegmentLength() bounds the length to \f$ [ L , U ] \f$: the
- *   minimum of P over the window of the admissible starts, by a deque of
- *   increasing prefix sums (the sliding minimum), O( n ), the algorithm of
- *   Lin, Jiang and Chao.
+ * - maxSumSegmentLength() bounds the length to \f$ [ L , U ] \f$: the minimum
+ *   of P over the window of the admissible starts, by a deque of increasing
+ *   prefix sums (the sliding minimum), \f$ O( n ) \f$, the algorithm of Lin,
+ *   Jiang and Chao.
  * - longestSegmentAtLeast() is the algorithm of section 2.5 for the
  *   longest segment of sum at least t: at step i only the starts left of
  *   \f$ L_i = i - \ell \f$ can beat the current length \f$ \ell \f$, and
  *   among them only the chain of leftmost minima \f$ C_1 = LMin[ L_i ] ,
  *   C_2 = LMin[ C_1 ] , \ldots \f$, whose prefix sums increase (Fact 2.2);
  *   the chain is walked while the sum stays at least t, and every step
- *   past the first lengthens the solution, hence O( n ) amortized.
+ *   past the first lengthens the solution, hence \f$ O( n ) \f$ amortized.
  *   longestSegmentAverageAtLeast() reduces the longest segment of average
  *   at least p / q to it, by \f$ q D[ k ] - p \f$.
  * - maxDensitySegment() is the segment of largest average among those of
  *   length at least L: the average of D[ x .. i ) is the slope from
  *   \f$ ( x , P[ x ] ) \f$ to \f$ ( i , P[ i ] ) \f$, and the best x for i
- *   lies on the lower convex hull of the points \f$ x \leq i - L \f$, kept
- *   by the monotone chain as i grows, the tangent found by a binary search,
+ *   lies on the lower convex hull of the points \f$ x \leq i - L \f$, kept by
+ *   the monotone chain as i grows, the tangent found by a binary search,
  *   \f$ O( n \log n ) \f$. Goldwasser, Kao and Lu, and Chung and Lu, reach
- *   O( n ) by walking the hull with a pointer that moves only forward under
- *   a further argument (and also handle an upper bound on the length); the
- *   binary search keeps the code short and exact on integers.
+ *   \f$ O( n ) \f$ by walking the hull with a pointer that moves only forward
+ *   under a further argument (and also handle an upper bound on the length);
+ *   the binary search keeps the code short and exact on integers.
  * - gcIndicator() maps a DNA sequence to 1 for C and G and 0 otherwise,
  *   the input of the two biological measures of the notes: \f$ x - p \ell
  *   \f$ (a segment sum of the scores \f$ 1 - p \f$ and \f$ -p \f$, e.g.,
@@ -114,34 +114,35 @@ struct Segment {
  std::size_t length = 0;                    ///< 0 for no segment
  };
 
-/// a nonempty segment of largest sum, by all the pairs, O( n^3 )
+/// a nonempty segment of largest sum, by all the pairs, \f$ O( n^3 ) \f$
 /// \pre D not empty
 template< class T >
 Segment< T > maxSumSegmentCubic( const std::vector< T > & D );
 
-/// a nonempty segment of largest sum, by all the pairs, O( n^2 )
+/// a nonempty segment of largest sum, by all the pairs, \f$ O( n^2 ) \f$
 /// \pre D not empty
 template< class T >
 Segment< T > maxSumSegmentQuadratic( const std::vector< T > & D );
 
-/// a nonempty segment of largest sum, by one scan, O( n )
+/// a nonempty segment of largest sum, by one scan, \f$ O( n ) \f$
 /// \pre D not empty
 /// \post its sum is maxSubarraySum( D ) if not negative (an audit)
 template< class T >
 Segment< T > maxSumSegment( const std::vector< T > & D );
 
-/// a nonempty segment of largest sum, by the minimum prefix sum, O( n )
+/// a nonempty segment of largest sum, by the minimum prefix sum,
+/// \f$ O( n ) \f$
 /// \pre D not empty
 template< class T >
 Segment< T > maxSumSegmentPrefix( const std::vector< T > & D );
 
-/// a segment of largest sum among those of length in [ L , U ], O( n )
+/// a segment of largest sum among those of length in [ L , U ], \f$ O( n ) \f$
 /// \pre 1 <= L <= U and L <= the size of D
 template< class T >
 Segment< T > maxSumSegmentLength( const std::vector< T > & D ,
                                   std::size_t L , std::size_t U );
 
-/// the longest segment of sum at least t, length 0 if none, O( n )
+/// the longest segment of sum at least t, length 0 if none, \f$ O( n ) \f$
 /// \post its sum is that of its items and at least t (an audit)
 template< class T >
 Segment< T > longestSegmentAtLeast( const std::vector< T > & D , T t );
@@ -153,7 +154,7 @@ Segment< T > longestSegmentAverageAtLeast( const std::vector< T > & D ,
                                            T p , T q );
 
 /// a segment of largest average among those of length at least L, its
-/// sum in the result, O( n log n )
+/// sum in the result, \f$ O( n \log n ) \f$
 /// \pre 1 <= L <= the size of D
 template< class T >
 Segment< T > maxDensitySegment( const std::vector< T > & D ,

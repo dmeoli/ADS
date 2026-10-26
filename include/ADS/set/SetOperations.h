@@ -86,9 +86,9 @@ S setSymmetricDifference( const S & A , const S & B );
 
 namespace detail {
 
-/// C is A op B, op one of the characters | & - ^: each item of C is in A
-/// op B, and each item of A or B in A op B is in C, O( ( n_A + n_B + n_C )
-/// times a lookup ); the sets need contains() and forEach()
+/// C is A op B, op one of the characters | & - ^: each item of C is in A op B,
+/// and each item of A or B in A op B is in C, \f$ O( n_A + n_B + n_C ) \f$
+/// lookups; the sets need contains() and forEach()
 template< class C , class A , class B >
 bool isSetOperation( const C & c , const A & a , const B & b , char op );
 

@@ -10,7 +10,7 @@
  * edge choosing its successor and a swap of two successors merging two
  * paths; here the algorithm of Hierholzer follows unused edges from a node
  * until it comes back, and splices in the closed paths found from the
- * nodes along the way, in O( n + m ) time.
+ * nodes along the way, in \f$ O( n + m ) \f$ time.
  *
  * The contracts [see Contract.h]: the graph is oriented; at the level of
  * the audits, the cycle found is closed and uses each edge exactly once,

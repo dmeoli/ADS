@@ -2,10 +2,10 @@
 /*-------------------------- File SortedListSet.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The SET as a sorted LIST of section 8.3: insert() in O( n ), min() and
- * max() in O( 1 ), the operations by merging the two lists in O( n + m ),
- * optimal since merging needs \f$ \Omega( n + m ) \f$ (exercises 8.3 and
- * 8.4).
+ * The SET as a sorted LIST of section 8.3: insert() in \f$ O( n ) \f$, min()
+ * and max() in \f$ O( 1 ) \f$, the operations by merging the two lists in
+ * \f$ O( n + m ) \f$, optimal since merging needs \f$ \Omega( n + m ) \f$
+ * (exercises 8.3 and 8.4).
  *
  * The merges append to the end of the result, the place \f$ pos_n \f$ =
  * next( tail() ) of a LIST: the C.insert( C.tail() , x ) of the book, with
@@ -81,24 +81,24 @@ class SortedListSet {
 
  [[nodiscard]] bool contains( const T & x ) const;
 
- /// O( n ) time, to keep the order
+ /// \f$ O( n ) \f$ time, to keep the order
  /// \post x is in the set
  void insert( const T & x );
 
- /// appends x, larger than all the items, O( 1 ) time
+ /// appends x, larger than all the items, \f$ O( 1 ) \f$ time
  /// \pre the set is empty or its largest item is smaller than x
  void insertLast( const T & x );
 
  /// \post x is not in the set
  void remove( const T & x );
 
- /// the smallest item, O( 1 ) time
+ /// the smallest item, \f$ O( 1 ) \f$ time
  [[nodiscard]] std::optional< T > min( void ) const;
 
- /// the largest item, O( 1 ) time
+ /// the largest item, \f$ O( 1 ) \f$ time
  [[nodiscard]] std::optional< T > max( void ) const;
 
- /// f( x ) on the items in increasing order, O( n ) time
+ /// f( x ) on the items in increasing order, \f$ O( n ) \f$ time
  template< class F >
  void forEach( F && f ) const;
 
@@ -128,7 +128,7 @@ class SortedListSet {
  /// the position of the first item not smaller than x
  typename List< T >::Pos lower( const T & x ) const;
 
- /// the list increases strictly, and the size is its length, O( n )
+ /// the list increases strictly, and the size is its length, \f$ O( n ) \f$
  [[nodiscard]] bool sorted( void ) const;
 
  List< T > f_L;              ///< the items, in increasing order
@@ -136,29 +136,30 @@ class SortedListSet {
 
  };  // end( class SortedListSet )
 
-/// the merge of the sorted lists of A and B: an item of A only, of B only
-/// or of both goes into the result if a, b or both say so; O( n + m ) time
+/// the merge of the sorted lists of A and B: an item of A only, of B only or
+/// of both goes into the result if a, b or both say so; \f$ O( n + m ) \f$
+/// time
 template< class T >
 SortedListSet< T > merge( const SortedListSet< T > & A ,
                           const SortedListSet< T > & B ,
                           bool a , bool b , bool both );
 
-/// the union, O( n + m ) time (exercise 8.3)
+/// the union, \f$ O( n + m ) \f$ time (exercise 8.3)
 template< class T >
 SortedListSet< T > setUnion( const SortedListSet< T > & A ,
                              const SortedListSet< T > & B );
 
-/// the intersection, O( n + m ) time (the procedure of section 8.3)
+/// the intersection, \f$ O( n + m ) \f$ time (the procedure of section 8.3)
 template< class T >
 SortedListSet< T > setIntersection( const SortedListSet< T > & A ,
                                     const SortedListSet< T > & B );
 
-/// the difference, O( n + m ) time (exercise 8.4)
+/// the difference, \f$ O( n + m ) \f$ time (exercise 8.4)
 template< class T >
 SortedListSet< T > setDifference( const SortedListSet< T > & A ,
                                   const SortedListSet< T > & B );
 
-/// the symmetric difference, O( n + m ) time (exercise 8.5)
+/// the symmetric difference, \f$ O( n + m ) \f$ time (exercise 8.5)
 template< class T >
 SortedListSet< T > setSymmetricDifference( const SortedListSet< T > & A ,
                                            const SortedListSet< T > & B );

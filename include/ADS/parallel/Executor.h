@@ -50,15 +50,15 @@
  * \f[
  *   P_{c - 1} = P_{c'} \oplus a_{c' + 1} \oplus \cdots \oplus a_{c - 1} ;
  * \f]
- * then it publishes \f$ P_c = P_{c - 1} \oplus a_c \f$ and writes the
- * prefixes of its tile, reading it again from the cache. The input is read
- * from the memory once and the output written once, 2 n moves, where the
- * scan in two passes of Blelloch (the reduction of the blocks, then their
- * scan) reads the input twice, 3 n. A tile waits only for tiles claimed
- * before it, which threads that are running hold; the first tile not done
- * has no tile to wait for, so that the scan always ends, on any executor.
- * The look-back reads O( 1 ) tiles on average when the threads go at the
- * same pace, and at most c.
+ * then it publishes \f$ P_c = P_{c - 1} \oplus a_c \f$ and writes the prefixes
+ * of its tile, reading it again from the cache. The input is read from the
+ * memory once and the output written once, 2 n moves, where the scan in two
+ * passes of Blelloch (the reduction of the blocks, then their scan) reads the
+ * input twice, 3 n. A tile waits only for tiles claimed before it, which
+ * threads that are running hold; the first tile not done has no tile to wait
+ * for, so that the scan always ends, on any executor. The look-back reads
+ * \f$ O( 1 ) \f$ tiles on average when the threads go at the same pace, and at
+ * most c.
  *
  * The algorithms take \f$ O( W / p + D ) \f$ time on p threads for work W
  * and depth D, with the dynamic schedule within a factor of 2 of the best

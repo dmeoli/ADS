@@ -6,13 +6,13 @@
  *
  * - the longest increasing subsequence (exercise 13.6): L[ i ], the length
  *   of the longest one that ends in A[ i ], is 1 plus the largest L[ j ],
- *   j < i, with A[ j ] < A[ i ], O( n^2 ); lisFast() keeps, for each
+ *   j < i, with A[ j ] < A[ i ], \f$ O( n^2 ) \f$; lisFast() keeps, for each
  *   length l, the least item that ends an increasing subsequence of
  *   length l, an increasing vector, and puts each item in place by a
- *   binary search, O( n log n );
+ *   binary search, \f$ O( n \log n ) \f$;
  * - the subvector of largest sum (exercises 12.2 and 13.12): t_i, the best
  *   sum of a subvector ending in A[ i ], is \f$ \max\{ t_{i-1} + A[ i ] , 0
- *   \} \f$, the empty subvector of sum 0 allowed, O( n ) (the scan of
+ *   \} \f$, the empty subvector of sum 0 allowed, \f$ O( n ) \f$ (the scan of
  *   Kadane).
  *
  * The contracts [see Contract.h]: lis() gives a strictly increasing
@@ -59,16 +59,16 @@
 
 namespace ADS {
 
-/// a longest increasing subsequence, O( n^2 )
+/// a longest increasing subsequence, \f$ O( n^2 ) \f$
 /// \post a strictly increasing subsequence of A of the largest length
 template< class T >
 std::vector< T > lis( const std::vector< T > & A );
 
-/// the length of a longest increasing subsequence, O( n log n )
+/// the length of a longest increasing subsequence, \f$ O( n \log n ) \f$
 template< class T >
 std::size_t lisLength( const std::vector< T > & A );
 
-/// the largest sum of a subvector, the empty one included, O( n )
+/// the largest sum of a subvector, the empty one included, \f$ O( n ) \f$
 /// \post the result is not negative
 template< class T >
 T maxSubarraySum( const std::vector< T > & A );

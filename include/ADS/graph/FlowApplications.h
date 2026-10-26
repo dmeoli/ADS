@@ -15,8 +15,8 @@
  *   edge gives two opposite edges of capacity 1, and their flows, if both
  *   are 1, cancel out before the walks. With DINIC the flow takes
  *   \f$ O( m \min( \sqrt{m} , n^{2/3} ) ) \f$ on these networks of unit
- *   capacities (Even and Tarjan), and O( k ( n + m ) ) by k augmenting
- *   paths; the walks take O( n + m ) more;
+ *   capacities (Even and Tarjan), and \f$ O( k ( n + m ) ) \f$ by k augmenting
+ *   paths; the walks take \f$ O( n + m ) \f$ more;
  * - decreaseCapacity(), the maximum flow f, kept on matrices of the
  *   capacities c and of the flows (f( y , x ) = - f( x , y )), after the
  *   capacity of ( u , v ) decreases by 1, without starting over. If the

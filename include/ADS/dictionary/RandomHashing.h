@@ -13,8 +13,8 @@
  *   ratio, which spreads over a table of \f$ 2^b \f$ places also the
  *   hashes whose low bits are regular;
  * - ZobristTable, a random word R[ f ][ v ] for each feature f and value v,
- *   the hash of a state being the XOR of the words of its pairs: a move
- *   that changes the value of a feature updates the hash in O( 1 ) by two
+ *   the hash of a state being the XOR of the words of its pairs: a move that
+ *   changes the value of a feature updates the hash in \f$ O( 1 ) \f$ by two
  *   XOR, which makes it the hash of the board games and of the states of a
  *   search;
  * - TabulationHash, the simple tabulation of Carter and Wegman: a key of

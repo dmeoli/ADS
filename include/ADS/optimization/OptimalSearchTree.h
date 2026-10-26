@@ -15,18 +15,18 @@
  *   C[ i ][ j ] = W( i , j ) + \min_{i \leq r < j} C[ i ][ r ]
  *                 + C[ r + 1 ][ j ] ,
  * \f]
- * O( n^3 ) time as written. Knuth proved that a best root R[ i ][ j ] can
- * be looked for between R[ i ][ j - 1 ] and R[ i + 1 ][ j ], which makes
- * the total time \f$ O( n^2 ) \f$ by a telescoping sum, with O( n^2 )
- * space; Yao derived it from the quadrangle inequality of W, the largest
- * best root being monotone. optimalSearchTree() does so.
+ * \f$ O( n^3 ) \f$ time as written. Knuth proved that a best root R[ i ][ j ]
+ * can be looked for between R[ i ][ j - 1 ] and R[ i + 1 ][ j ], which makes
+ * the total time \f$ O( n^2 ) \f$ by a telescoping sum, with \f$ O( n^2 ) \f$
+ * space; Yao derived it from the quadrangle inequality of W, the largest best
+ * root being monotone. optimalSearchTree() does so.
  *
  * In the literature: Hu and Tucker, and Garsia and Wachs, build in
- * O( n log n ) the optimal alphabetic tree, where only the q_j count
- * (the keys in the leaves); a tree within a constant of the optimum comes
- * in O( n ) from the weight-balancing rule of Mehlhorn; the splay trees
- * are within a constant of the optimal static tree without knowing the
- * weights [see SplayTree.h].
+ * \f$ O( n \log n ) \f$ the optimal alphabetic tree, where only the q_j count
+ * (the keys in the leaves); a tree within a constant of the optimum comes in
+ * \f$ O( n ) \f$ from the weight-balancing rule of Mehlhorn; the splay trees
+ * are within a constant of the optimal static tree without knowing the weights
+ * [see SplayTree.h].
  *
  * The contracts [see Contract.h]: the weights are not negative and
  * |q| = |p| + 1 when q is given; the tree has 0 .. n - 1 as its

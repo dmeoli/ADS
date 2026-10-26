@@ -138,7 +138,7 @@ class IndexedDaryHeap {
  /// \pre the heap is not empty
  Entry pop( void );
 
- /// removes all the items, in O( size() )
+ /// removes all the items, in \f$ O( \mathrm{size}() ) \f$
  void clear( void );
 
  /// PRIORITYQUEUE (section 10.1) [see PriorityQueue.h]: push( id , k ),

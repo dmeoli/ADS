@@ -19,7 +19,7 @@
  *   [see RunSorts.h], \f$ O( n \log r ) \f$ for r runs; one of integers
  *   of 64 bits whose sample of 64 keys differs in one byte and spans at
  *   least kCountRange values goes to the counting sort of radixSort(), and
- *   any other to vectorQuickSort(), \f$ O( n \log n ) \f$, O( n ) for
+ *   any other to vectorQuickSort(), \f$ O( n \log n ) \f$, \f$ O( n ) \f$ for
  *   few keys in a small range or for at most 16 distinct keys (counted in
  *   the registers) and \f$ O( n \log k ) \f$ for k distinct keys
  *   otherwise, W keys per instruction.
@@ -39,18 +39,17 @@
  *   have at most 8 bytes and fill more than the cache of the second level
  *   (four streams of reads), and the scan of the first run goes on from
  *   where that stopped.
- * - With the natural order on the other integers and floating point
- *   numbers, or with no vector registers, a short vector goes to
- *   pdqSort() and a long one in few runs to powerSort() in the same way;
- *   sort() sends to pdqSort() a vector whose sample of 64 keys shows at
- *   most 16 distinct ones differing in 4 bytes or more, which it sorts in
- *   \f$ O( n \log k ) \f$ with fewer passes than the radix sort needs;
- *   the rest goes to radixSort() [see RadixSort.h], which makes no
- *   comparison and takes O( w n ) for keys of w bytes, skipping the bytes
- *   that all the keys share; radixSort() is stable, so stableSort() uses
- *   it too, with -0 and +0 as one key, since std::less finds them equal
- *   (radixSort() puts -0 first). A NaN breaks the natural order, so that
- *   a vector with a NaN has no defined order.
+ * - With the natural order on the other integers and floating point numbers,
+ *   or with no vector registers, a short vector goes to pdqSort() and a long
+ *   one in few runs to powerSort() in the same way; sort() sends to pdqSort()
+ *   a vector whose sample of 64 keys shows at most 16 distinct ones differing
+ *   in 4 bytes or more, which it sorts in \f$ O( n \log k ) \f$ with fewer
+ *   passes than the radix sort needs; the rest goes to radixSort() [see
+ *   RadixSort.h], which makes no comparison and takes \f$ O( w n ) \f$ for
+ *   keys of w bytes, skipping the bytes that all the keys share; radixSort()
+ *   is stable, so stableSort() uses it too, with -0 and +0 as one key, since
+ *   std::less finds them equal (radixSort() puts -0 first). A NaN breaks the
+ *   natural order, so that a vector with a NaN has no defined order.
  * - With the natural order on strings, a vector of at most kRuns runs goes
  *   to the merges of powerSort() in the same way; any other goes, when the
  *   vector registers are there, to prefixKeySort() [see StringSort.h],
@@ -77,12 +76,12 @@
  *   halves are sorted with the other array as their room and merged back,
  *   one move per item and level, with no branch on the order, from both
  *   ends at once, so that no step checks where a half ends.
- * - Any other item goes, for sort(), to pdqSort() [see
- *   EngineeredQuickSorts.h] if fewer than kRadix, \f$ O( n \log n ) \f$
- *   in the worst case, O( n ) on a sorted or reversed vector and
- *   \f$ O( n \log k ) \f$ with k distinct keys, and to sampleSort()
- *   otherwise; for stableSort(), to powerSort() [see RunSorts.h], O( n )
- *   on few runs and nearly optimal on any number of them.
+ * - Any other item goes, for sort(), to pdqSort() [see EngineeredQuickSorts.h]
+ *   if fewer than kRadix, \f$ O( n \log n ) \f$ in the worst case,
+ *   \f$ O( n ) \f$ on a sorted or reversed vector and \f$ O( n \log k ) \f$
+ *   with k distinct keys, and to sampleSort() otherwise; for stableSort(), to
+ *   powerSort() [see RunSorts.h], \f$ O( n ) \f$ on few runs and nearly
+ *   optimal on any number of them.
  *
  * The thresholds between the algorithms, kRadix items for the numbers,
  * kStrings for the strings and kRuns runs, are measured by the benchmark of

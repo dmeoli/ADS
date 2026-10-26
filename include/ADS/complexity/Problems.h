@@ -179,7 +179,7 @@ inline std::optional< Nodes > longestPath( const Adjacency & G , int r ,
                                            int t , int k );
 
 /// the most edges of a path from r to t in an acyclic oriented graph, -1
-/// if t is not reachable; O( n^2 ) by the topological order
+/// if t is not reachable; \f$ O( n^2 ) \f$ by the topological order
 /// \pre G is square and acyclic, r and t are nodes
 inline int longestPathDag( const Adjacency & G , int r , int t );
 

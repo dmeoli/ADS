@@ -4,7 +4,7 @@
 /** @file
  * The STACK of the book [see ADT.h] realized with a vector of a given
  * capacity: the n items are in the first n places, the top in the place
- * n - 1, so that every operation takes O( 1 ) time.
+ * n - 1, so that every operation takes \f$ O( 1 ) \f$ time.
  *
  * The contracts [see Contract.h] are the preconditions of the book: top()
  * and pop() need a stack that is not empty (size > 0), push() one that is
@@ -13,7 +13,7 @@
  * form of the axioms \f$ top( push( S , v ) ) = v \f$ and
  * \f$ pop( push( S , v ) ) = S \f$ [see ADT.h]. The invariant is
  * \f$ 0 \leq n \leq capacity \f$. A stack is copied item by item and
- * moved in O( 1 ) time, and two stacks are equal if they hold the same
+ * moved in \f$ O( 1 ) \f$ time, and two stacks are equal if they hold the same
  * items in the same order, whatever their capacities. The operations are
  * defined in ArrayStack.tpp.
  *

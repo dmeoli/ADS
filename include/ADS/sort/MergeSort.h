@@ -14,11 +14,11 @@
  *   insertionSort(), which is faster on few items (section 2.8);
  * - mergeSortBottomUp() merges the runs of length 1 , 2 , 4 , ... with no
  *   recursion and no stack (exercise 12.5);
- * - mergeSort( L ) sorts a LIST with pointers in O( n log n ) by splitting
- *   it in two halves, sorting them and merging them (exercise 12.1), only
- *   through the operations of the SEQUENCE: each item is copied once per
- *   level of the recursion, since the abstract data type moves no cells
- *   from a list to another;
+ * - mergeSort( L ) sorts a LIST with pointers in \f$ O( n \log n ) \f$ by
+ *   splitting it in two halves, sorting them and merging them (exercise 12.1),
+ *   only through the operations of the SEQUENCE: each item is copied once per
+ *   level of the recursion, since the abstract data type moves no cells from a
+ *   list to another;
  * - countInversions() counts the pairs i < j with A[ i ] > A[ j ]: when
  *   the merge takes A[ j ] from the right part, it is smaller than all the
  *   mid - i + 1 items left in the left part (exercise 12.3).
@@ -101,7 +101,7 @@ void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 ,
 template< class T , class C = std::less<> >
 void mergeSortBottomUp( std::vector< T > & A , C less = C() );
 
-/// the number of inversions of A, which ends sorted, O( n log n )
+/// the number of inversions of A, which ends sorted, \f$ O( n \log n ) \f$
 /// \post A is sorted, with the same items
 template< class T , class C = std::less<> >
 long long countInversions( std::vector< T > & A , C less = C() );

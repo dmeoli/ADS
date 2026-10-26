@@ -11,7 +11,7 @@
  * \f]
  * DP[ 0 ] = 0, and the set is read back from DP[ n ]; the predecessors come
  * from one scan of the 2 n ends sorted, so that maxinterval() takes
- * O( n log n ) time for the sort and O( n ) for the rest.
+ * \f$ O( n \log n ) \f$ time for the sort and \f$ O( n ) \f$ for the rest.
  *
  * The contracts [see Contract.h]: each interval has a < b and a weight not
  * negative; the intervals chosen are disjoint and weigh the value found

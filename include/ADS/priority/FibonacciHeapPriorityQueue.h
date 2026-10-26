@@ -2,11 +2,11 @@
 /*------------------- File FibonacciHeapPriorityQueue.h --------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The PRIORITYQUEUE [see PriorityQueue.h] on a Fibonacci heap, the
- * structure that section 11.5 names and does not describe: insert() and
- * decrease() in O( 1 ) amortized time, deleteMin() in O( log n ), so that
+ * The PRIORITYQUEUE [see PriorityQueue.h] on a Fibonacci heap, the structure
+ * that section 11.5 names and does not describe: insert() and decrease() in
+ * \f$ O( 1 ) \f$ amortized time, deleteMin() in \f$ O( \log n ) \f$, so that
  * the algorithm of Fredman and Tarjan computes the shortest paths in
- * O( m + n log n ).
+ * \f$ O( m + n \log n ) \f$.
  *
  * The heap is a collection of trees, each node not smaller than its
  * parent, whose roots are in a circular list; the children of a node are in
@@ -20,24 +20,22 @@
  * \f$ \phi = ( 1 + \sqrt{5} ) / 2 \f$, and the degrees are
  * \f$ O( \log_\phi n ) \f$.
  *
- * Beyond the book, the nodes come from an ObjectPool [see ObjectPool.h] of
- * the heap, which takes back the node of deleteMin() for the next
- * insert(), so that a node costs no call to the allocator and the nodes in
- * use stay close in memory; the children of the minimum join the roots
- * in O( 1 ), and the consolidation walks the roots where they are, with
- * the trees by degree in an array on the stack (a degree is at most
- * \f$ \log_\phi n < 64 \f$).
+ * Beyond the book, the nodes come from an ObjectPool [see ObjectPool.h] of the
+ * heap, which takes back the node of deleteMin() for the next insert(), so
+ * that a node costs no call to the allocator and the nodes in use stay close
+ * in memory; the children of the minimum join the roots in \f$ O( 1 ) \f$, and
+ * the consolidation walks the roots where they are, with the trees by degree
+ * in an array on the stack (a degree is at most \f$ \log_\phi n < 64 \f$).
  *
- * The contracts [see Contract.h]: min(), minPriority() and deleteMin()
- * need a heap that is not empty, decrease() a handle of a node of this
- * heap (checked in O( n ) with the invariants) and a priority not larger
- * than its own; the invariant is the order of the heap, the circular lists
- * linked both ways, the parents, the degrees equal to the number of
- * children, the roots not marked, the minimum among the roots and size()
- * counting the nodes. On a heap of more than 1024 nodes it is checked on
- * the roots only, so that a long sequence of operations at the level 3
- * stays linear. The operations are defined in
- * FibonacciHeapPriorityQueue.tpp.
+ * The contracts [see Contract.h]: min(), minPriority() and deleteMin() need a
+ * heap that is not empty, decrease() a handle of a node of this heap (checked
+ * in \f$ O( n ) \f$ with the invariants) and a priority not larger than its
+ * own; the invariant is the order of the heap, the circular lists linked both
+ * ways, the parents, the degrees equal to the number of children, the roots
+ * not marked, the minimum among the roots and size() counting the nodes. On a
+ * heap of more than 1024 nodes it is checked on the roots only, so that a long
+ * sequence of operations at the level 3 stays linear. The operations are
+ * defined in FibonacciHeapPriorityQueue.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 11.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap11.pdf
@@ -128,16 +126,17 @@ class FibonacciHeapPriorityQueue {
  /// \pre the heap is not empty
  [[nodiscard]] const P & minPriority( void ) const;
 
- /// O( 1 ) time: a tree of one node among the roots
+ /// \f$ O( 1 ) \f$ time: a tree of one node among the roots
  /// \post one item more
  Handle insert( const T & x , const P & p );
 
- /// O( log n ) amortized time; the handle of the item is no longer valid
+ /// \f$ O( \log n ) \f$ amortized time; the handle of the item is no longer
+ /// valid
  /// \pre the heap is not empty
  /// \post one item less, none of smaller priority than the one removed
  T deleteMin( void );
 
- /// O( 1 ) amortized time
+ /// \f$ O( 1 ) \f$ amortized time
  /// \pre x is a node of this heap and p is not larger than its priority
  /// \post x has priority p
  void decrease( Handle x , const P & p );
@@ -226,7 +225,7 @@ class FibonacciHeapPriorityQueue {
  /// until all the degrees differ, and puts the minimum in f_min
  void consolidate( Node * w );
 
- /// whether x is a node of the heap, O( n )
+ /// whether x is a node of the heap, \f$ O( n ) \f$
  [[nodiscard]] bool owns( const Node * x ) const;
 
  /// the list of x linked both ways, its nodes children of parent, each
@@ -235,8 +234,8 @@ class FibonacciHeapPriorityQueue {
  [[nodiscard]] bool tree( const Node * x , const Node * parent ,
                           int & n ) const;
 
- /// the invariant of the heap, O( n ); on more than 1024 nodes, the list
- /// of the roots and the minimum among them only
+ /// the invariant of the heap, \f$ O( n ) \f$; on more than 1024 nodes, the
+ /// list of the roots and the minimum among them only
  [[nodiscard]] bool isHeap( void ) const;
 
  Node * f_min = nullptr;      ///< the root of least priority

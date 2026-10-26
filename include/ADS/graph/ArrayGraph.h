@@ -5,7 +5,7 @@
  * The static GRAPH with vectors of adjacency of section 9.4 [see Graph.h]:
  * the adjacent nodes of all the nodes in one vector, the ones of u in the
  * places [ off( u ) , off( u + 1 ) ); no insertion nor deletion,
- * Theta( n + m ) space and no pointer.
+ * \f$ \Theta( n + m ) \f$ space and no pointer.
  *
  * The contracts [see Contract.h]: the graph has n >= 0 nodes and its edges
  * join two distinct nodes; adj(), forEachAdj() and forEachEdge() need a

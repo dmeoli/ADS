@@ -3,17 +3,16 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The longest common subsequence (LCS) of P and T, the reality check of
- * section 13.7: DP[ i ][ j ], its length for the prefixes P( i ) and
- * T( j ), is 0 if i = 0 or j = 0, DP[ i - 1 ][ j - 1 ] + 1 if
- * p_{i-1} = t_{j-1}, and \f$ \max\{ DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] \}
- * \f$ otherwise, Theta( m n ). lcsMemo() is the memoized version of the
- * book, which solves only the subproblems that it reaches. diff() reads the
- * differences from the table in O( m + n ), as the Unix command does on
- * the lines of two files (exercise 13.10): the items of P only marked
- * '-', the items of T only '+', the common ones ' '. The longest common
- * substring, contiguous, has DP[ i ][ j ] = DP[ i - 1 ][ j - 1 ] + 1 if
- * p_{i-1} = t_{j-1} and 0 otherwise, its length the largest entry
- * (exercise 13.2).
+ * section 13.7: DP[ i ][ j ], its length for the prefixes P( i ) and T( j ),
+ * is 0 if i = 0 or j = 0, DP[ i - 1 ][ j - 1 ] + 1 if p_{i-1} = t_{j-1}, and
+ * \f$ \max\{ DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] \} \f$ otherwise,
+ * \f$ \Theta( m n ) \f$. lcsMemo() is the memoized version of the book, which
+ * solves only the subproblems that it reaches. diff() reads the differences
+ * from the table in \f$ O( m + n ) \f$, as the Unix command does on the lines
+ * of two files (exercise 13.10): the items of P only marked '-', the items of
+ * T only '+', the common ones ' '. The longest common substring, contiguous,
+ * has DP[ i ][ j ] = DP[ i - 1 ][ j - 1 ] + 1 if p_{i-1} = t_{j-1} and 0
+ * otherwise, its length the largest entry (exercise 13.2).
  *
  * The contracts [see Contract.h]: lcs() gives a subsequence of both strings as
  * long as the table says (checked at level 3), and longestCommonSubstring() a

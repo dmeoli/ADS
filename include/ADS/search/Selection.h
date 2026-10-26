@@ -20,7 +20,7 @@
  *
  * The contracts [see Contract.h]: 1 <= k <= n, and the item returned has rank
  * k, i.e., fewer than k items are smaller and at least k are not larger, an
- * audit in O( n ). The functions are defined in Selection.tpp.
+ * audit in \f$ O( n ) \f$. The functions are defined in Selection.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 17.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap17.pdf

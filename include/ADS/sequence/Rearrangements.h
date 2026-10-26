@@ -7,14 +7,14 @@
  * vector whose items are near their places, and the cost of sorting by
  * swaps.
  *
- * - dutchNationalFlag(): the items of colour 0, then those of colour 1,
- *   then those of colour 2, by Dijkstra's invariant A[ 0 .. i ) of colour
- *   0, A[ i .. j ) of colour 1, A[ j .. k ] not examined, A( k .. n ) of
- *   colour 2: each step examines A[ j ] and swaps it to its class, n
- *   colours read and at most n swaps, O( 1 ) space. It is the partition
- *   of quicksort with three ways, the keys smaller than, equal to and
- *   larger than the pivot [see EngineeredQuickSorts.h for the partition of
- *   Bentley and McIlroy, which moves the equal keys fewer times];
+ * - dutchNationalFlag(): the items of colour 0, then those of colour 1, then
+ *   those of colour 2, by Dijkstra's invariant A[ 0 .. i ) of colour 0, A[ i
+ *   .. j ) of colour 1, A[ j .. k ] not examined, A( k .. n ) of colour 2:
+ *   each step examines A[ j ] and swaps it to its class, n colours read and at
+ *   most n swaps, \f$ O( 1 ) \f$ space. It is the partition of quicksort with
+ *   three ways, the keys smaller than, equal to and larger than the pivot [see
+ *   EngineeredQuickSorts.h for the partition of Bentley and McIlroy, which
+ *   moves the equal keys fewer times];
  * - wiggleSort(): A[ 0 ] <= A[ 1 ] >= A[ 2 ] <= A[ 3 ] >= ..., by a pass
  *   of swaps of neighbours: when A[ 0 .. i ] alternates, a swap of A[ i ]
  *   and A[ i + 1 ] when they are in the wrong order keeps the order with
@@ -108,7 +108,7 @@ template< class T , class C = std::less<> >
 void wiggleSort( std::vector< T > & A , C less = C() );
 
 /// sortKSorted(): A sorted, each item at most k places away from its place
-/// in the sorted order, by a heap of k + 1 items; O( n log k )
+/// in the sorted order, by a heap of k + 1 items; \f$ O( n \log k ) \f$
 /// \pre A is k-sorted (an audit)
 /// \post A sorted, a permutation of its items (an audit)
 template< class T , class C = std::less<> >
@@ -116,7 +116,7 @@ void sortKSorted( std::vector< T > & A , std::size_t k , C less = C() );
 
 /// minimumSwapSort(): the fewest swaps that sort A, and the least total
 /// cost of the swaps that sort it, a swap costing the sum of its two
-/// items, computed in the type W; O( n log n )
+/// items, computed in the type W; \f$ O( n \log n ) \f$
 /// \pre the items of A are distinct (an audit)
 template< class T , class W = T >
  requires std::is_arithmetic_v< T >

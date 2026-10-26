@@ -10,16 +10,15 @@
  * convex polygon of n + 2 sides, and the monotone lattice paths that never
  * cross the diagonal.
  *
- * catalan() fills the table of the recurrence on the size of the left
- * subtree, \f$ C_0 = 1 \f$ and
- * \f$ C_n = \sum_{k=0}^{n-1} C_k C_{n-1-k} \f$, with
- * \f$ \Theta( n^2 ) \f$ operations on numbers of \f$ \Theta( n ) \f$ bits,
- * and with T = BigInteger for any n [see BigInteger.h]. The closed form
- * \f$ C_n = \binom{2n}{n} / ( n + 1 ) \f$ and the recurrence
- * \f$ C_{n+1} = 2 ( 2 n + 1 ) C_n / ( n + 2 ) \f$ take O( n ) operations,
- * but their intermediate values exceed the result, so that in 64 bits they
- * stop before the table does, which reaches \f$ C_{36} \f$;
- * asymptotically \f$ C_n \sim 4^n / ( n^{3/2} \sqrt{\pi} ) \f$.
+ * catalan() fills the table of the recurrence on the size of the left subtree,
+ * \f$ C_0 = 1 \f$ and \f$ C_n = \sum_{k=0}^{n-1} C_k C_{n-1-k} \f$, with
+ * \f$ \Theta( n^2 ) \f$ operations on numbers of \f$ \Theta( n ) \f$ bits, and
+ * with T = BigInteger for any n [see BigInteger.h]. The closed form
+ * \f$ C_n = \binom{2n}{n} / ( n + 1 ) \f$ and the recurrence \f$ C_{n+1} = 2 (
+ * 2 n + 1 ) C_n / ( n + 2 ) \f$ take \f$ O( n ) \f$ operations, but their
+ * intermediate values exceed the result, so that in 64 bits they stop before
+ * the table does, which reaches \f$ C_{36} \f$; asymptotically \f$ C_n \sim
+ * 4^n / ( n^{3/2} \sqrt{\pi} ) \f$.
  *
  * The contracts [see Contract.h]: n >= 0, and \f$ C_n \f$ representable in
  * T (n <= 36 for 64 bits unsigned). The functions are defined in

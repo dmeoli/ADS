@@ -59,7 +59,7 @@
  * book (0.5 and 0.25): with the latter the table just doubled has
  * \f$ \alpha \approx 1 / 4 \f$, a couple of removals halve it back to
  * \f$ \alpha \approx 1 / 2 \f$, a single insertion doubles it again, and
- * a sequence alternating them costs O( m ) per operation [see
+ * a sequence alternating them costs \f$ O( m ) \f$ per operation [see
  * TableSize.h]. A new size that the inspection does not work with, a
  * prime that divides the step of a linear one, is replaced by the next
  * prime that it works with. Since only a removal halves m, a table emptied
@@ -260,7 +260,7 @@ class OpenHashTable {
  [[nodiscard]] double load( void ) const;
 
  /// the foreach of the book: f( k , v ) on the pairs, place after place,
- /// O( m ) time
+ /// \f$ O( m ) \f$ time
  template< class F >
  void forEach( F && f ) const;
 
@@ -337,8 +337,8 @@ class OpenHashTable {
  [[nodiscard]] std::size_t where( const K & k ) const;
 
  /// each key found by its inspection in its own place, and the full and
- /// deleted places counted right, O( m ) inspections; on more than 1024
- /// places, only the keys on the inspection of k, up to its first nil
+ /// deleted places counted right, \f$ O( m ) \f$ inspections; on more than
+ /// 1024 places, only the keys on the inspection of k, up to its first nil
  [[nodiscard]] bool consistent( const K & k ) const;
 
  void rebuild( std::size_t m );

@@ -11,9 +11,9 @@
  *   \f$ \neg b \Rightarrow a \f$ of each clause \f$ a \vee b \f$: the formula
  *   is satisfiable if and only if no variable is in the strongly connected
  *   component of its negation, and a variable is true if its component
- *   comes after that of its negation in topological order, O( n + m );
+ *   comes after that of its negation in topological order, \f$ O( n + m ) \f$;
  * - twoColoring(), the 2-COLORAZIONE, by a breadth first visit of each
- *   component, O( n^2 ) on the adjacency matrix;
+ *   component, \f$ O( n^2 ) \f$ on the adjacency matrix;
  * - bipartiteMatching(), the ABBINAMENTO 2-DIMENSIONALE, by a maximum flow
  *   from a source to the left nodes, along the edges, to a sink;
  * - intervalGraph(), the graph whose nodes are intervals [ a , b ) and

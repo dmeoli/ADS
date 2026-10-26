@@ -3,33 +3,31 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The deque of work stealing of Chase and Lev, beyond the book: its owner
- * thread pushes and takes at the bottom, as on a stack, and any other
- * thread steals from the top, lock-free, the items on a circular vector of
- * \f$ 2^k \f$ places that the owner doubles when it is full. The bottom b
- * and the top t are integers that only grow (b only by the owner, t by a
- * compare-and-swap), the items are those of \f$ [ t , b ) \f$, at the
- * places of their indices modulo the size; push() and take() cost O( 1 )
- * and no read-modify-write but when they reach the last item, steal()
- * one compare-and-swap, and a doubling O( b - t ) amortized over the pushes
- * that filled the vector.
- * The orders of memory are those of Lê, Pop, Cohen and Zappa Nardelli, who
- * proved the deque correct in the model of C11, with their two fences in
- * take() and steal() written as sequentially consistent operations on the
- * bottom and the top, which the sanitizer of threads models (it does not
- * model the fences): take() writes the bottom b - 1 and then reads the
- * top, steal() reads the top and then the bottom, all four in the single
- * total order of those operations, so that when the deque holds one item
- * the owner and a thief cannot both miss each other, and the one that loses
- * the compare-and-swap on the top gives the item up. The item is read
- * before the compare-and-swap that claims it, by a thief from the vector
- * it read after the bottom, which the owner publishes with a release; the
- * vectors left by a doubling stay until the deque is destroyed, since a
- * thief may still be reading one (they add up to less than the last one).
- * The items are kept in atomics of relaxed order, so T is trivially
- * copyable, e.g., an index or a pointer to a task.
- * The contracts [see Contract.h]: only the owner, one thread at a time,
- * calls push() and take(); the initial capacity is a power of 2, at least
- * 2.
+ * thread pushes and takes at the bottom, as on a stack, and any other thread
+ * steals from the top, lock-free, the items on a circular vector of
+ * \f$ 2^k \f$ places that the owner doubles when it is full. The bottom b and
+ * the top t are integers that only grow (b only by the owner, t by a
+ * compare-and-swap), the items are those of \f$ [ t , b ) \f$, at the places
+ * of their indices modulo the size; push() and take() cost \f$ O( 1 ) \f$ and
+ * no read-modify-write but when they reach the last item, steal() one
+ * compare-and-swap, and a doubling \f$ O( b - t ) \f$ amortized over the
+ * pushes that filled the vector. The orders of memory are those of Lê, Pop,
+ * Cohen and Zappa Nardelli, who proved the deque correct in the model of C11,
+ * with their two fences in take() and steal() written as sequentially
+ * consistent operations on the bottom and the top, which the sanitizer of
+ * threads models (it does not model the fences): take() writes the bottom b -
+ * 1 and then reads the top, steal() reads the top and then the bottom, all
+ * four in the single total order of those operations, so that when the deque
+ * holds one item the owner and a thief cannot both miss each other, and the
+ * one that loses the compare-and-swap on the top gives the item up. The item
+ * is read before the compare-and-swap that claims it, by a thief from the
+ * vector it read after the bottom, which the owner publishes with a release;
+ * the vectors left by a doubling stay until the deque is destroyed, since a
+ * thief may still be reading one (they add up to less than the last one). The
+ * items are kept in atomics of relaxed order, so T is trivially copyable,
+ * e.g., an index or a pointer to a task. The contracts [see Contract.h]: only
+ * the owner, one thread at a time, calls push() and take(); the initial
+ * capacity is a power of 2, at least 2.
  * \see D. Chase, Y. Lev, Dynamic circular work-stealing deque, ACM
  *      Symposium on Parallelism in Algorithms and Architectures (SPAA),
  *      21-28, 2005, doi:10.1145/1073970.1073974

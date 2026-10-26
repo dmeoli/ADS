@@ -34,11 +34,10 @@
  * a random order (Goel, Khanna, Larkin and Tarjan).
  *
  * The contracts [see Contract.h]: the elements are in [ 0 , n ), n <
- * \f$ 2^{32} \f$; find() gives a root and after merge() x and y have the
- * same root; the invariant is that every parent is not smaller than its
- * child and that the roots are count(), an O( n ) check at the level 3 on
- * the sets of up to 4096 elements. The operations are defined in
- * RemUnionFind.tpp.
+ * \f$ 2^{32} \f$; find() gives a root and after merge() x and y have the same
+ * root; the invariant is that every parent is not smaller than its child and
+ * that the roots are count(), an \f$ O( n ) \f$ check at the level 3 on the
+ * sets of up to 4096 elements. The operations are defined in RemUnionFind.tpp.
  *
  * \see M. M. A. Patwary, J. R. S. Blair, F. Manne, Experiments on
  *      union-find algorithms for the disjoint-set data structure,

@@ -20,7 +20,7 @@
  * - naturalMergeSort(), the natural merge sort: the maximal sorted runs
  *   are distributed alternately to two sequences and merged in pairs back,
  *   until a single run is left, in \f$ O( n \log r ) \f$ time for r runs
- *   and O( n ) on a sorted sequence;
+ *   and \f$ O( n ) \f$ on a sorted sequence;
  * - mergeSorted(), the merge of two sorted sequences that keeps the
  *   repeated items, and removeDuplicates(), which keeps the first copy of
  *   each item in \f$ O( n^2 ) \f$.
@@ -28,7 +28,7 @@
  * The contracts [see Contract.h]: searchOrdered() and mergeSorted() need
  * sorted sequences, and the sorts, the merge and removeDuplicates() ensure
  * a sorted result, or one without repetitions, of the right length; all
- * of them cost O( n ) or more, and are audits, whose comparisons a
+ * of them cost \f$ O( n ) \f$ or more, and are audits, whose comparisons a
  * comparator that counts its calls can skip [see checkingContract()]. The
  * algorithms are defined in SequenceAlgorithms.tpp.
  *
@@ -127,7 +127,7 @@ S mergeSorted( const S & a , const S & b );
 template< Sequence S >
 void naturalMergeSort( S & s , long * passes = nullptr );
 
-/// keeps the first copy of each item, in O( n^2 ) comparisons
+/// keeps the first copy of each item, in \f$ O( n^2 ) \f$ comparisons
 /// \post no item appears twice (an audit)
 template< Sequence S >
 void removeDuplicates( S & s );

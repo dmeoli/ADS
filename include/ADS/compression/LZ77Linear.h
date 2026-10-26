@@ -2,7 +2,7 @@
 /*--------------------------- File LZ77Linear.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The parse of LZ77 with no window in O( n ) time, the algorithm of
+ * The parse of LZ77 with no window in \f$ O( n ) \f$ time, the algorithm of
  * Karkkainen, Kempa and Puglisi, beyond the parse of the notes [see
  * LempelZiv.h], which searches the window for each phrase, in \f$ O( n w )
  * \f$ time. The phrases are those of lz77Parse() with an unbounded window:
@@ -17,15 +17,14 @@
  * \f[ PSV( i ) = SA[ \max \{ j < r : SA[ j ] < i \} ] , \qquad
  *     NSV( i ) = SA[ \min \{ j > r : SA[ j ] < i \} ] , \f]
  * r the rank of i in the suffix array SA [see SuffixArray.h], since the
- * longest common prefix of two suffixes is the least over the suffixes
- * between them; so \f$ \ell = \max( lcp( i , PSV( i ) ) , lcp( i ,
- * NSV( i ) ) ) \f$. Both are computed for all i in one scan of SA with a
- * stack, each place pushed and popped once, and the two prefixes of a
- * phrase are compared symbol by symbol, \f$ \ell + 1 \f$ comparisons each,
- * which sum to O( n ) over the phrases. Hence O( n ) time with the suffix
- * array of SA-IS, and 4n + 8n bytes besides the text; the source found is
- * the previous or the next smaller value, not the closest one of the notes,
- * with the same lengths.
+ * longest common prefix of two suffixes is the least over the suffixes between
+ * them; so \f$ \ell = \max( lcp( i , PSV( i ) ) , lcp( i , NSV( i ) ) ) \f$.
+ * Both are computed for all i in one scan of SA with a stack, each place
+ * pushed and popped once, and the two prefixes of a phrase are compared symbol
+ * by symbol, \f$ \ell + 1 \f$ comparisons each, which sum to \f$ O( n ) \f$
+ * over the phrases. Hence \f$ O( n ) \f$ time with the suffix array of SA-IS,
+ * and 4n + 8n bytes besides the text; the source found is the previous or the
+ * next smaller value, not the closest one of the notes, with the same lengths.
  *
  * The contracts [see Contract.h]: \f$ n < 2^{32} \f$; the audit is that the
  * phrases decode to the text [see LempelZiv.h]. The function is defined in
@@ -75,7 +74,7 @@
 
 namespace ADS {
 
-/// the phrases of LZ77 of s with no window, in O( |s| ) time
+/// the phrases of LZ77 of s with no window, in \f$ O( |s| ) \f$ time
 /// \pre |s| < 2^32
 /// \post lz77Decode( result ) == s (an audit)
 [[nodiscard]] inline std::vector< LZ77Phrase > lz77ParseLinear(

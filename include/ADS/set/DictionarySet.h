@@ -3,11 +3,11 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The SET on any DICTIONARY with a foreach (sections 8.4 and 8.5):
- * ChainedHashSet and OpenHashSet on the hash tables, contains(), insert()
- * and remove() in O( 1 ) expected time and forEach() in O( m + n ) and
- * O( m ), m the size of the table; TreeSet on a Red-Black tree, the three
- * in O( log n ) and forEach() in O( n ), in order. Their operations are
- * the generic ones [see SetOperations.h].
+ * ChainedHashSet and OpenHashSet on the hash tables, contains(), insert() and
+ * remove() in \f$ O( 1 ) \f$ expected time and forEach() in \f$ O( m + n ) \f$
+ * and \f$ O( m ) \f$, m the size of the table; TreeSet on a Red-Black tree,
+ * the three in \f$ O( \log n ) \f$ and forEach() in \f$ O( n ) \f$, in order.
+ * Their operations are the generic ones [see SetOperations.h].
  *
  * The contracts [see Contract.h]: after insert() the item is there and
  * after remove() it is not; the dictionary keeps its own invariant. The

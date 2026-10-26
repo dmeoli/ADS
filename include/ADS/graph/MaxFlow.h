@@ -12,8 +12,10 @@
  * ( S , V - S ) of capacity |f|. The local search augments the flow along
  * augmenting paths:
  *
- * - FORD_FULKERSON, any path, by a depth first visit: O( ( n + m ) |f*| );
- * - EDMONDS_KARP, a shortest path, by a breadth first visit: O( n m^2 );
+ * - FORD_FULKERSON, any path, by a depth first visit:
+ *   \f$ O( ( n + m ) |f^*| ) \f$;
+ * - EDMONDS_KARP, a shortest path, by a breadth first visit:
+ *   \f$ O( n m^2 ) \f$;
  * - DINIC, the blocking flows of the levels of a breadth first visit:
  *   \f$ O( n^2 m ) \f$, and \f$ O( m \sqrt{n} ) \f$ with unit capacities,
  *   e.g., the bipartite matching (the bound that the book gives for the
@@ -48,7 +50,7 @@
  *      1277-1280, 1970
  * \see A. V. Karzanov, Determining the maximal flow in a network by the
  *      method of preflows, Soviet Mathematics Doklady 15, 434-437, 1974
- * \see V. M. Malhotra, M. P. Kumar, S. N. Maheshwari, An O( |V|^3 )
+ * \see V. M. Malhotra, M. P. Kumar, S. N. Maheshwari, An \f$ O( |V|^3 ) \f$
  *      algorithm for finding maximum flows in networks, Information
  *      Processing Letters 7(6), 277-278, 1978,
  *      doi:10.1016/0020-0190(78)90016-9

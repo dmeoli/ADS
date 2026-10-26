@@ -6,27 +6,28 @@
  * and the counting versions of the knapsack, all solved by the dynamic
  * programming on the capacity of section 13.3, in pseudopolynomial time:
  *
- * - rodCutting(): a rod of length L sold in pieces, price[ t - 1 ] the
- *   price of a piece of length t, the largest gain
- *   \f$ R[ l ] = \max_{1 \leq t \leq \min( l , m )} price[ t - 1 ] +
- *   R[ l - t ] \f$, R[ 0 ] = 0, with the pieces read back; O( L m ) time
- *   and O( L ) space for m prices;
+ * - rodCutting(): a rod of length L sold in pieces, price[ t - 1 ] the price
+ *   of a piece of length t, the largest gain \f$ R[ l ] = \max_{1 \leq t \leq
+ *   \min( l , m )} price[ t - 1 ] + R[ l - t ] \f$, R[ 0 ] = 0, with the
+ *   pieces read back; \f$ O( L m ) \f$ time and \f$ O( L ) \f$ space for m
+ *   prices;
  * - unboundedKnapsack(): the largest profit of objects of volumes v and
- *   profits p in unlimited supply in a knapsack of capacity C,
- *   \f$ P[ c ] = \max( P[ c - 1 ] , \max_{v_i \leq c} P[ c - v_i ] + p_i )
- *   \f$, and how many copies of each object; O( n C ) time, O( C ) space;
- * - minValueExactWeight(): the least value of coins of weights w and values
- *   v in unlimited supply that weigh exactly W, nothing if no such coins
- *   exist; with all the values 1 it is the fewest coins of the change
- *   (optimalChange() of CoinChange.h); O( n W ) time, O( W ) space;
+ *   profits p in unlimited supply in a knapsack of capacity C, \f$ P[ c ] =
+ *   \max( P[ c - 1 ] , \max_{v_i \leq c} P[ c - v_i ] + p_i ) \f$, and how
+ *   many copies of each object; \f$ O( n C ) \f$ time, \f$ O( C ) \f$ space;
+ * - minValueExactWeight(): the least value of coins of weights w and values v
+ *   in unlimited supply that weigh exactly W, nothing if no such coins exist;
+ *   with all the values 1 it is the fewest coins of the change
+ *   (optimalChange() of CoinChange.h); \f$ O( n W ) \f$ time, \f$ O( W ) \f$
+ *   space;
  * - coinChangeWays(): the number of ways of paying T with coins of the
  *   given values in unlimited supply, the order not counting: the coins
  *   enter one value at a time, \f$ N[ x ] \mathrel{+}= N[ x - d ] \f$ for
- *   x from d up, so that each multiset is counted once; O( n T ) time,
- *   O( T ) space;
+ *   x from d up, so that each multiset is counted once; \f$ O( n T ) \f$ time,
+ *   \f$ O( T ) \f$ space;
  * - subsetSumCount(): the number of subsets of places of A of sum k, the
- *   same scan with x going down, each item used at most once; O( n k )
- *   time, O( k ) space;
+ *   same scan with x going down, each item used at most once; \f$ O( n k ) \f$
+ *   time, \f$ O( k ) \f$ space;
  * - minimumSquares(): the fewest squares of positive integers that sum to
  *   n. The dynamic programming \f$ S[ i ] = 1 + \min_{t^2 \leq i}
  *   S[ i - t^2 ] \f$ takes \f$ \Theta( n \sqrt{n} ) \f$ time; number theory

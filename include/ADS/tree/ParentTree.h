@@ -4,9 +4,9 @@
 /** @file
  * The tree as a vector of parents: the nodes are 0 , ... , n - 1, and p[ i ]
  * is the parent of i, or -1 if i is a root. It answers parent() alone, in
- * O( 1 ) time and with the least memory, which is all that is needed when a
- * tree is built and walked towards the root, as the trees of the visits of a
- * graph; the order among siblings is lost, unless it is the one of their
+ * \f$ O( 1 ) \f$ time and with the least memory, which is all that is needed
+ * when a tree is built and walked towards the root, as the trees of the visits
+ * of a graph; the order among siblings is lost, unless it is the one of their
  * numbers. Since setParent() may hang any node anywhere, the structure is a
  * forest of n isolated nodes at the start.
  *
@@ -72,7 +72,8 @@ class ParentTree {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// true if the node j is in the subtree of i, O( depth of j )
+ /// true if the node j is in the subtree of i,
+ /// \f$ O( \text{the depth of } j ) \f$
  [[nodiscard]] bool below( int j , int i ) const;
 
  std::vector< int > f_p;   ///< the vector of parents

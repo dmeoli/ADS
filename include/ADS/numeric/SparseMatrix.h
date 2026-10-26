@@ -2,20 +2,19 @@
 /*-------------------------- File SparseMatrix.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A sparse matrix on orthogonal lists, beyond the book (2.2.6 of Knuth):
- * each nonzero entry is a node on the circular list of its row, sorted by
- * column, and on that of its column, sorted by row, each list with a head
- * node; the space is O( m + n + nnz ) and an entry is found by walking its
- * row. pivot() is the pivot step of Algorithm 2.2.6S, the core of the
+ * A sparse matrix on orthogonal lists, beyond the book (2.2.6 of Knuth): each
+ * nonzero entry is a node on the circular list of its row, sorted by column,
+ * and on that of its column, sorted by row, each list with a head node; the
+ * space is \f$ O( m + n + \mathit{nnz} ) \f$ and an entry is found by walking
+ * its row. pivot() is the pivot step of Algorithm 2.2.6S, the core of the
  * elimination by exchange: with the pivot \f$ a \f$ in the row r and the
  * column c, the pivot becomes \f$ 1 / a \f$, the rest of its row
- * \f$ b / a \f$, the rest of its column \f$ - c / a \f$, and every other
- * entry d with a nonzero b in its column of the pivot row and c in its row
- * of the pivot column becomes \f$ d - b c / a \f$, the entries that become
- * zero leaving the lists and those that appear (the fill-in) entering
- * them; it costs time proportional to the nonzeros it touches. A pivot
- * step on each diagonal place, in turn, inverts a matrix whose pivots are
- * not zero.
+ * \f$ b / a \f$, the rest of its column \f$ - c / a \f$, and every other entry
+ * d with a nonzero b in its column of the pivot row and c in its row of the
+ * pivot column becomes \f$ d - b c / a \f$, the entries that become zero
+ * leaving the lists and those that appear (the fill-in) entering them; it
+ * costs time proportional to the nonzeros it touches. A pivot step on each
+ * diagonal place, in turn, inverts a matrix whose pivots are not zero.
  *
  * The contracts [see Contract.h]: the places are in the matrix, and the
  * pivot is not zero; the invariant is that the lists are sorted and that a

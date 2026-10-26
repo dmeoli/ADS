@@ -78,7 +78,7 @@ namespace ADS {
 inline double akraBazziExponent(
                       const std::vector< std::pair< double , double > > & ab );
 
-/// T( n ) = sum_i a_i T( b_i n ) + Theta( n^beta log^k n )
+/// \f$ T( n ) = \sum_i a_i T( b_i n ) + \Theta( n^\beta \log^k n ) \f$
 /// \pre at least one term, a_i > 0 and 0 < b_i < 1
 inline Growth akraBazzi(
                   const std::vector< std::pair< double , double > > & ab ,

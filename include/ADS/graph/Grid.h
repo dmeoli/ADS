@@ -31,12 +31,12 @@
  *   marks the cells reached and no other matrix is needed. The fill by
  *   spans of Smith pushes a run of a row at a time instead of a cell, with
  *   fewer operations on the queue for the same bound;
- * - knightDistance(), the fewest moves of a knight between two squares of
- *   an n x n board, INF if there is no way (only on the boards of 1, 2 and
- *   3 squares a side): a visit in breadth of the graph of the knight moves,
+ * - knightDistance(), the fewest moves of a knight between two squares of an n
+ *   x n board, INF if there is no way (only on the boards of 1, 2 and 3
+ *   squares a side): a visit in breadth of the graph of the knight moves,
  *   \f$ \Theta( n^2 ) \f$; on the infinite board the distance has a closed
- *   form, computed in O( 1 ), which differs from that of a finite board
- *   near its corners.
+ *   form, computed in \f$ O( 1 ) \f$, which differs from that of a finite
+ *   board near its corners.
  *
  * The contracts [see Contract.h]: the grid has rows, cols >= 0, the
  * matrices are rectangular, each source or start is a cell of the grid (and

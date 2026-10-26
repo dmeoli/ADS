@@ -11,17 +11,17 @@
  *                   d^{k-1}[ k - 1 ][ v ] \} ,
  * \f]
  * from \f$ d^0 \f$ the costs of the edges, 0 on the diagonal and
- * \f$ +\infty \f$ elsewhere, with p[ u ][ v ] the predecessor of v on the
- * path from u. floydWarshall() overwrites d and p for k = 1 , ... , n,
- * Theta( n^3 ) time and Theta( n^2 ) space, with costs of any sign; there
- * is a negative cycle through u if and only if d[ u ][ u ] < 0, and then
- * negativeCycle is true. The row u of p is the tree of the shortest paths
- * from u, as a vector of parents. The matrices have bound() rows, and those
- * of a deleted node, its column and its place on the diagonal too, stay at
- * \f$ +\infty \f$ and NIL.
+ * \f$ +\infty \f$ elsewhere, with p[ u ][ v ] the predecessor of v on the path
+ * from u. floydWarshall() overwrites d and p for k = 1 , ... , n,
+ * \f$ \Theta( n^3 ) \f$ time and \f$ \Theta( n^2 ) \f$ space, with costs of
+ * any sign; there is a negative cycle through u if and only if d[ u ][ u ] <
+ * 0, and then negativeCycle is true. The row u of p is the tree of the
+ * shortest paths from u, as a vector of parents. The matrices have bound()
+ * rows, and those of a deleted node, its column and its place on the diagonal
+ * too, stay at \f$ +\infty \f$ and NIL.
  *
  * addEdge() updates d and p after the insertion of an edge ( a , b ) of
- * cost w in O( n^2 ), since a path that improves goes through it once:
+ * cost w in \f$ O( n^2 ) \f$, since a path that improves goes through it once:
  * \f$ d[ u ][ v ] = \min\{ d[ u ][ v ] , d[ u ][ a ] + w + d[ b ][ v ] \}
  * \f$, which needs that the edge closes no negative cycle, i.e., that
  * w + d[ b ][ a ] >= 0 (exercise 13.5). A deletion has no such update: the
@@ -85,7 +85,7 @@ struct AllPairs {
 template< Graph G >
 AllPairs< typename G::Weight > floydWarshall( const G & g );
 
-/// the insertion of the edge ( a , b ) of cost w, O( n^2 )
+/// the insertion of the edge ( a , b ) of cost w, \f$ O( n^2 ) \f$
 /// \pre a and b are distinct places of R, and w + d[ b ][ a ] >= 0
 /// \post d[ a ][ b ] <= w, and the distances are closed under the triangle
 ///       inequality (audit)

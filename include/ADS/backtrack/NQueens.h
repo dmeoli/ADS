@@ -6,9 +6,9 @@
  * column or a diagonal. A row holds exactly one queen, and so the solution is
  * the vector Q of their columns, a permutation: n! candidates instead of
  * 2^{n^2} placements; the backtrack prunes the columns and the two diagonals
- * already taken, kept as masks of bits, so that a choice is checked in O( 1 ).
- * The numbers of solutions are 1, 0, 0, 2, 10, 4, 40, 92, 352, 724 for n = 1 ,
- * ... , 10.
+ * already taken, kept as masks of bits, so that a choice is checked in
+ * \f$ O( 1 ) \f$. The numbers of solutions are 1, 0, 0, 2, 10, 4, 40, 92, 352,
+ * 724 for n = 1 , ... , 10.
  *
  * The contracts [see Contract.h]: 1 <= n <= 32, the solutions are admissible
  * (checked at level 3), and board() needs a column of the board for each row.

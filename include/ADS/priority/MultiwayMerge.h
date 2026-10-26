@@ -216,7 +216,7 @@ class FlatLoserTree {
  /// replays the matches of the leaf of cur up to the root
  void replay( Node cur );
 
- /// the winner is not beaten by any source, O( K )
+ /// the winner is not beaten by any source, \f$ O( K ) \f$
  [[nodiscard]] bool winnerIsBest( void ) const;
 
  std::size_t f_k;                           ///< the sources

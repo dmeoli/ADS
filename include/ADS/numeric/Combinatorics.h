@@ -4,17 +4,17 @@
 /** @file
  * The examples of the introduction and of section 13.4 of chapter 13:
  *
- * - binomial( n , k ) by its recursive definition
- *   \f$ C( n , k ) = C( n - 1 , k - 1 ) + C( n - 1 , k ) \f$, whose calls
- *   are as many as \f$ 2 C( n , k ) - 1 \f$, and tartaglia(), the triangle
- *   of Tartaglia of all the C( m , k ), m <= n, in Theta( n^2 ) time, each
- *   then read in O( 1 );
- * - fibonacci(), F_0 = F_1 = 1 and F_n = F_{n-1} + F_{n-2}, with a vector
- *   of n places and with three variables, O( n ) time and O( 1 ) space,
- *   while the recursion makes about \f$ 1.6^n \f$ calls; FibonacciCache
- *   keeps the numbers already computed between the calls, in a mutable
- *   member, so that a number already asked for costs O( 1 ) and a new one
- *   only the steps from the largest one known;
+ * - binomial( n , k ) by its recursive definition \f$ C( n , k ) = C( n - 1 ,
+ *   k - 1 ) + C( n - 1 , k ) \f$, whose calls are as many as
+ *   \f$ 2 C( n , k ) - 1 \f$, and tartaglia(), the triangle of Tartaglia of
+ *   all the C( m , k ), m <= n, in \f$ \Theta( n^2 ) \f$ time, each then read
+ *   in \f$ O( 1 ) \f$;
+ * - fibonacci(), F_0 = F_1 = 1 and F_n = F_{n-1} + F_{n-2}, with a vector of n
+ *   places and with three variables, \f$ O( n ) \f$ time and \f$ O( 1 ) \f$
+ *   space, while the recursion makes about \f$ 1.6^n \f$ calls; FibonacciCache
+ *   keeps the numbers already computed between the calls, in a mutable member,
+ *   so that a number already asked for costs \f$ O( 1 ) \f$ and a new one only
+ *   the steps from the largest one known;
  * - beyond the book, factorial() and factorialRec(), the iterative and the
  *   recursive realization of the same specification (the functional
  *   abstraction), and binomialByFactorials(), \f$ n! / ( k! ( n - k )! )
@@ -71,7 +71,7 @@ inline std::vector< std::vector< std::uint64_t > > tartaglia( int n );
 /// \pre 0 <= n <= 92
 inline std::uint64_t fibonacciTable( int n );
 
-/// the n-th number of Fibonacci, F_0 = F_1 = 1, in O( 1 ) space
+/// the n-th number of Fibonacci, F_0 = F_1 = 1, in \f$ O( 1 ) \f$ space
 /// \pre 0 <= n <= 92
 inline std::uint64_t fibonacci( int n );
 

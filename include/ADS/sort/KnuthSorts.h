@@ -11,17 +11,17 @@
  * - listInsertionSort() (Algorithm 5.2.1L) inserts each item in a list of
  *   links, so that no item moves until the end, when the list is followed
  *   to rearrange the vector: \f$ \Theta( n^2 ) \f$ comparisons and only
- *   O( n ) moves of items; stable;
+ *   \f$ O( n ) \f$ moves of items; stable;
  * - addressCalculationSort() (5.2.1, of Isaac and Singleton) inserts each
- *   number in one of M lists by its value, list i taking the numbers in
- *   the i-th of M equal ranges between the least and the largest, as one
- *   would file cards under the letters: O( n ) expected time on numbers
+ *   number in one of M lists by its value, list i taking the numbers in the
+ *   i-th of M equal ranges between the least and the largest, as one would
+ *   file cards under the letters: \f$ O( n ) \f$ expected time on numbers
  *   spread evenly, with M about n / 4; stable;
- * - radixExchangeSort() (Algorithm 5.2.2R) is the quicksort on the bits of
- *   the keys from the most significant: the part is split into the keys
- *   with the bit 0 and those with the bit 1, by exchanges as in a
- *   partition, and each half is sorted on the next bit; O( n w ) for keys of
- *   w bits, not stable;
+ * - radixExchangeSort() (Algorithm 5.2.2R) is the quicksort on the bits of the
+ *   keys from the most significant: the part is split into the keys with the
+ *   bit 0 and those with the bit 1, by exchanges as in a partition, and each
+ *   half is sorted on the next bit; \f$ O( n w ) \f$ for keys of w bits, not
+ *   stable;
  * - tournamentSort() (5.2.3, tree selection) plays a knockout tournament on
  *   a complete binary tree of the items, the winner (the least) goes out
  *   and only the matches on its path are played again, \f$ \lceil \log_2

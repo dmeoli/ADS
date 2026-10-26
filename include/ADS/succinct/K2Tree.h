@@ -17,16 +17,16 @@
  * \f$ k^2 \f$ at each level) and reverseNeighbors( v ) those that cross the
  * column v, so that the same bits give the successors and the predecessors,
  * which the lists give only by doubling them; hasEdge( u , v ) follows one
- * path, in O( h ) time. A row is read in \f$ O( \sqrt{m} ) \f$ time on
- * average for m edges spread uniformly, O( n ) in the worst case (Theorem
- * 15.8), and the tree takes \f$ k^2 m ( \log_{k^2} ( n^2 / m ) + O( 1 ) )
- * \f$ bits in the worst case (Theorem 15.9), far fewer when the edges are
+ * path, in \f$ O( h ) \f$ time. A row is read in \f$ O( \sqrt{m} ) \f$ time on
+ * average for m edges spread uniformly, \f$ O( n ) \f$ in the worst case
+ * (Theorem 15.8), and the tree takes \f$ k^2 m ( \log_{k^2} ( n^2 / m ) + O( 1
+ * ) ) \f$ bits in the worst case (Theorem 15.9), far fewer when the edges are
  * clustered, as in the Web graphs ordered by URL, where the submatrices of
- * zeros are large. A larger k gives fewer levels and faster queries, a
- * smaller one fewer bits; the authors use a larger k at the top levels and
- * a smaller one below, and the construction here works from the edges, by
- * levels, in \f$ O( m h ) \f$ time, without the matrix that the recursive
- * construction of the notes (Algorithm 15.3) visits whole.
+ * zeros are large. A larger k gives fewer levels and faster queries, a smaller
+ * one fewer bits; the authors use a larger k at the top levels and a smaller
+ * one below, and the construction here works from the edges, by levels, in
+ * \f$ O( m h ) \f$ time, without the matrix that the recursive construction of
+ * the notes (Algorithm 15.3) visits whole.
  *
  * The contracts [see Contract.h]: \f$ k \ge 2 \f$, the edges join nodes in
  * [ 0 , n ), and the nodes asked for exist; the postcondition of the

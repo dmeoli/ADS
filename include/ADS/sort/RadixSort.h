@@ -26,28 +26,27 @@
  *   the cache (an MSD pass before the LSD ones);
  * - radixSortBy() is the same on any items, by an unsigned key that a
  *   function gives, stable, e.g., the records by one field;
- * - americanFlagSort() is the radix sort from the most significant byte
- *   (MSD), in place: the items are permuted into their 256 buckets by
- *   following the cycles of the permutation, as the flag of the name
- *   divides into stripes, and each bucket is sorted recursively by the next
- *   byte, the small ones by insertion; O( n ) extra space for no buffer of
- *   the items, not stable;
- * - msdRadixSort() sorts strings by their characters from the first one,
- *   the end of a string before every character: the first pass permutes
- *   them into their buckets in place, as the American flag sort does, and
- *   then each bucket has a buffer, made only if some bucket is not all of
- *   equal strings, between which and the vector the strings go back and
- *   forth, one move per pass,
- *   the character of each string read once per pass and kept aside, and
+ * - americanFlagSort() is the radix sort from the most significant byte (MSD),
+ *   in place: the items are permuted into their 256 buckets by following the
+ *   cycles of the permutation, as the flag of the name divides into stripes,
+ *   and each bucket is sorted recursively by the next byte, the small ones by
+ *   insertion; \f$ O( n ) \f$ extra space for no buffer of the items, not
+ *   stable;
+ * - msdRadixSort() sorts strings by their characters from the first one, the
+ *   end of a string before every character: the first pass permutes them into
+ *   their buckets in place, as the American flag sort does, and then each
+ *   bucket has a buffer, made only if some bucket is not all of equal strings,
+ *   between which and the vector the strings go back and forth, one move per
+ *   pass, the character of each string read once per pass and kept aside, and
  *   the small groups sorted by insertion, so that it reads only the
- *   distinguishing prefixes of the strings: O( D + n log 256 ) for D the
- *   total length of those prefixes; the prefix that all the strings of a
+ *   distinguishing prefixes of the strings: \f$ O( D + n \log 256 ) \f$ for D
+ *   the total length of those prefixes; the prefix that all the strings of a
  *   group share is first skipped by comparing them with one of them (one
- *   memcmp() for a string that keeps the whole prefix), so that a group
- *   of equal strings, or of strings with a long common prefix, costs one
+ *   memcmp() for a string that keeps the whole prefix), so that a group of
+ *   equal strings, or of strings with a long common prefix, costs one
  *   comparison instead of one pass per character;
  * - bucketSort() sorts numbers in [ 0 , 1 ) into n buckets by their value,
- *   each sorted by insertion: O( n ) expected time on numbers drawn
+ *   each sorted by insertion: \f$ O( n ) \f$ expected time on numbers drawn
  *   uniformly, \f$ O( n^2 ) \f$ in the worst case.
  *
  * The contracts [see Contract.h]: each sort ends with the same items

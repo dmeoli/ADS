@@ -2,9 +2,9 @@
 /*------------------------------ File Paths.h ------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Problems on the paths of a GRAPH solved by the visits of section 9.5 and
- * by the topological order, each in O( n + m ) time on lists or vectors of
- * adjacency unless said otherwise:
+ * Problems on the paths of a GRAPH solved by the visits of section 9.5 and by
+ * the topological order, each in \f$ O( n + m ) \f$ time on lists or vectors
+ * of adjacency unless said otherwise:
  *
  * - countShortestPaths(), the number of distinct shortest paths, in edges,
  *   from s to each node: a visit in breadth in which a node discovered from
@@ -41,23 +41,23 @@
  *   Kelley and Walker; dagShortestPaths() of ShortestPaths.h with the
  *   lengths negated gives the same lengths from one source, while the
  *   longest path of a graph with cycles is NP-hard (section 18.4);
- * - simpleCycles(), the simple oriented cycles through s, by the algorithm
- *   of Johnson: a visit in depth that blocks the nodes on its stack and
- *   keeps them blocked, with the lists B of the nodes waiting on them,
- *   while no path from them to s avoids the stack, so that no branch is
- *   explored without a cycle at its end. It takes O( ( n + m ) ( c + 1 ) )
- *   time for c cycles, against the backtracking of section 16, which tries
- *   every simple path from s and may take exponential time between two
- *   cycles; the bound of Tarjan's algorithm of 1973 is O( n m ( c + 1 ) ).
- *   The complete digraph of n nodes has \f$ \lfloor e ( n - 1 )! \rfloor -
- *   1 \f$ cycles through a node;
- * - refuelingStops(), the fewest stops of a trip from 0 to L along a line
- *   with stations at D, where a full tank lasts R: the greedy of chapter 14
- *   that, when the next station is out of reach, stops at the last one in
- *   reach. It is a shortest path in the graph whose edges join the points
- *   at distance at most R, which the greedy finds in O( n ) by the exchange
- *   argument: a trip with fewer stops would get past the farthest point of
- *   the greedy at some stop, and so would the greedy.
+ * - simpleCycles(), the simple oriented cycles through s, by the algorithm of
+ *   Johnson: a visit in depth that blocks the nodes on its stack and keeps
+ *   them blocked, with the lists B of the nodes waiting on them, while no path
+ *   from them to s avoids the stack, so that no branch is explored without a
+ *   cycle at its end. It takes \f$ O( ( n + m ) ( c + 1 ) ) \f$ time for c
+ *   cycles, against the backtracking of section 16, which tries every simple
+ *   path from s and may take exponential time between two cycles; the bound of
+ *   Tarjan's algorithm of 1973 is \f$ O( n m ( c + 1 ) ) \f$. The complete
+ *   digraph of n nodes has \f$ \lfloor e ( n - 1 )! \rfloor - 1 \f$ cycles
+ *   through a node;
+ * - refuelingStops(), the fewest stops of a trip from 0 to L along a line with
+ *   stations at D, where a full tank lasts R: the greedy of chapter 14 that,
+ *   when the next station is out of reach, stops at the last one in reach. It
+ *   is a shortest path in the graph whose edges join the points at distance at
+ *   most R, which the greedy finds in \f$ O( n ) \f$ by the exchange argument:
+ *   a trip with fewer stops would get past the farthest point of the greedy at
+ *   some stop, and so would the greedy.
  *
  * Nil is NIL and the infinite distance INF [see Visit.h].
  *

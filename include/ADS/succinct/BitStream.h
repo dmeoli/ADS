@@ -5,7 +5,7 @@
  * The streams of bits on which the integer codes are written and read [see
  * IntegerCodes.h]: BitWriter appends bits to a BitVector [see BitVector.h]
  * and BitReader reads them back from a place that moves forward, both in
- * O( 1 ) time per field of up to 64 bits.
+ * \f$ O( 1 ) \f$ time per field of up to 64 bits.
  *
  * - write( v , len ) and read( len ) move a field with its least
  *   significant bit first, the order of the words, with two shifts;

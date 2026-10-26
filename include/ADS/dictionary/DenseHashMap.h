@@ -187,7 +187,7 @@ class DenseHashMap {
 
  /// the places of the index emptied by remove() in groups that some
  /// inspection went past, which count as full until the index is
- /// rebuilt; O( m ) time, by a scan of the groups
+ /// rebuilt; \f$ O( m ) \f$ time, by a scan of the groups
  [[nodiscard]] std::size_t deleted( void ) const;
 
  /// room for n pairs before the map grows

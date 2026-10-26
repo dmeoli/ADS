@@ -13,9 +13,9 @@
  * rotations; the generator is SplitMix64 [see RandomHashing.h], seeded, so
  * that a run is reproducible.
  *
- * The contracts [see Contract.h]: insert() ensures that the key is there
- * and remove() that it is not; the invariant is that each level is sorted
- * and a sublist of the level below, an O( n log n ) check at the level 3.
+ * The contracts [see Contract.h]: insert() ensures that the key is there and
+ * remove() that it is not; the invariant is that each level is sorted and a
+ * sublist of the level below, an \f$ O( n \log n ) \f$ check at the level 3.
  * The operations are defined in SkipList.tpp.
  *
  * \see W. Pugh, Skip lists: a probabilistic alternative to balanced trees,
@@ -167,7 +167,7 @@ class SkipList {
  /// the last node before k on each level, in update
  Node * before( const K & k , Node * update[ kMax ] ) const;
 
- /// each level sorted and a sublist of the one below, O( n log n )
+ /// each level sorted and a sublist of the one below, \f$ O( n \log n ) \f$
  [[nodiscard]] bool sorted( void ) const;
 
  std::vector< Node * > f_head;     ///< the first node on each level

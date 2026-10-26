@@ -10,16 +10,16 @@
  *   balanced. A scan matches each close with the nearest open still
  *   unmatched before it, which never loses a pair (an exchange argument),
  *   so the length is twice the number of pairs matched: \f$ \Theta( n ) \f$
- *   time and O( 1 ) space. The interval recursion of the textbook, the
+ *   time and \f$ O( 1 ) \f$ space. The interval recursion of the textbook, the
  *   pair of the two ends or the best split, gives the same in
  *   \f$ \Theta( n^3 ) \f$ time.
- * - longestBalancedSubstring(): the longest contiguous balanced substring.
- *   A stack keeps the places of the opens not matched yet; when a close
- *   matches the top, the substring from the next open still unmatched (or
- *   from the last place where the balance broke) to the close is
- *   balanced, and it is the longest one ending there: \f$ \Theta( n ) \f$
- *   time and O( n ) space. The two scans of the counts of opens and closes,
- *   left to right and right to left, need only O( 1 ) space.
+ * - longestBalancedSubstring(): the longest contiguous balanced substring. A
+ *   stack keeps the places of the opens not matched yet; when a close matches
+ *   the top, the substring from the next open still unmatched (or from the
+ *   last place where the balance broke) to the close is balanced, and it is
+ *   the longest one ending there: \f$ \Theta( n ) \f$ time and \f$ O( n ) \f$
+ *   space. The two scans of the counts of opens and closes, left to right and
+ *   right to left, need only \f$ O( 1 ) \f$ space.
  *
  * The contracts [see Contract.h]: the substring found is balanced. The
  * functions are defined in Parentheses.tpp.

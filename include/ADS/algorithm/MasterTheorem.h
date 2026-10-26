@@ -67,14 +67,14 @@
 
 namespace ADS {
 
-/// the order c^n n^p log^q n ( log log n )^r, and whether it is only an
-/// upper bound
+/// the order \f$ c^n n^p \log^q n ( \log \log n )^r \f$, and whether it is
+/// only an upper bound
 struct Growth {
  double c = 1;          ///< the base of the exponential
  double p = 0;          ///< the power of n
- double q = 0;          ///< the power of log n
- double r = 0;          ///< the power of log log n
- bool upper = false;    ///< O() rather than Theta()
+ double q = 0;          ///< the power of \f$ \log n \f$
+ double r = 0;          ///< the power of \f$ \log \log n \f$
+ bool upper = false;    ///< \f$ O \f$ rather than \f$ \Theta \f$
 
  /// the value at n, for n > e
  [[nodiscard]] double at( double n ) const {
@@ -98,13 +98,15 @@ struct Growth {
   }
  };
 
-/// T( n ) = a T( n / b ) + Theta( n^beta log^k n ); log_b a within 1e-12
-/// of an integer is taken as that integer (log_10 1000 is 3, not
-/// 2.9999999999999996), and with beta = log_b a the power is beta
+/// \f$ T( n ) = a T( n / b ) + \Theta( n^\beta \log^k n ) \f$;
+/// \f$ \log_b a \f$ within 1e-12 of an integer is taken as that integer
+/// (\f$ \log_{10} 1000 \f$ is 3, not 2.9999999999999996), and with
+/// \f$ \beta = \log_b a \f$ the power is \f$ \beta \f$
 /// \pre a >= 1 and b > 1
 inline Growth master( double a , double b , double beta , double k = 0 );
 
-/// T( n ) = sum_i a_i T( n - i ) + Theta( n^beta ), a = sum_i a_i
+/// \f$ T( n ) = \sum_i a_i T( n - i ) + \Theta( n^\beta ) \f$,
+/// \f$ a = \sum_i a_i \f$
 /// \pre a >= 1
 inline Growth linear( double a , double beta );
 

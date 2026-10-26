@@ -6,17 +6,16 @@
  * after the other, in the order that minimizes the average time of
  * completion: by increasing duration, since moving the shortest program to
  * the front of any order does not increase any time of completion;
- * O( n log n ).
+ * \f$ O( n \log n ) \f$.
  *
- * With the weights w_i of the programs (the probabilities of the files on
- * a tape, read at the times of completion), the order of least weighted
- * sum \f$ \sum_i w_i C_i \f$ of the times of completion C_i is Smith's
- * rule, by increasing \f$ t_i / w_i \f$, compared as
- * \f$ t_a w_b < t_b w_a \f$ (no division, and a program of weight 0 goes
- * last): the exchange of two adjacent programs a , b changes the sum by
- * \f$ t_a w_b - t_b w_a \f$; O( n log n ). With precedence constraints the
- * problem is NP-hard in general, and solved by Lawler's merging of chains
- * on series-parallel orders.
+ * With the weights w_i of the programs (the probabilities of the files on a
+ * tape, read at the times of completion), the order of least weighted sum
+ * \f$ \sum_i w_i C_i \f$ of the times of completion C_i is Smith's rule, by
+ * increasing \f$ t_i / w_i \f$, compared as \f$ t_a w_b < t_b w_a \f$ (no
+ * division, and a program of weight 0 goes last): the exchange of two adjacent
+ * programs a , b changes the sum by \f$ t_a w_b - t_b w_a \f$;
+ * \f$ O( n \log n ) \f$. With precedence constraints the problem is NP-hard in
+ * general, and solved by Lawler's merging of chains on series-parallel orders.
  *
  * The contracts [see Contract.h]: the times are not negative, the order is by
  * increasing time, and the order given to totalCompletion() has places of t;

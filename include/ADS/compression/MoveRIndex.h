@@ -2,23 +2,23 @@
 /*---------------------------- File MoveRIndex.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The r-index on move structures, after the move-r of Bertram, Fischer
- * and Nalbach: the operations of the r-index [see RIndex.h] with each step
- * in O( 1 ) time instead of a predecessor search, from two move structures
- * of Nishimoto and Tabei [see MoveStructure.h], at the price of a few more
- * words per run of the transform L of Burrows and Wheeler of the text.
+ * The r-index on move structures, after the move-r of Bertram, Fischer and
+ * Nalbach: the operations of the r-index [see RIndex.h] with each step in
+ * \f$ O( 1 ) \f$ time instead of a predecessor search, from two move
+ * structures of Nishimoto and Tabei [see MoveStructure.h], at the price of a
+ * few more words per run of the transform L of Burrows and Wheeler of the
+ * text.
  *
- * The LF-mapping shifts each run of L alike onto the column F, and is a
- * move structure on the runs; the backward search keeps the first and the
- * last row of the range, [ s , e ], with their intervals, and for the
- * symbol c moves s to the first row at or after it whose symbol is c,
- * the start of the next interval of c if its own is not of c, and e to
- * the last one at or before it, the end of the previous interval of c
- * (the rank and select of c on the tags of the intervals, in a wavelet
- * tree of Huffman on RankSelect [see HuffmanWaveletTree.h], the fastest),
- * and then maps both by LF in
- * O( 1 ) time each; count( P ) takes O( p ) steps and the ranks of the
- * intervals whose tag is not c.
+ * The LF-mapping shifts each run of L alike onto the column F, and is a move
+ * structure on the runs; the backward search keeps the first and the last row
+ * of the range, [ s , e ], with their intervals, and for the symbol c moves s
+ * to the first row at or after it whose symbol is c, the start of the next
+ * interval of c if its own is not of c, and e to the last one at or before it,
+ * the end of the previous interval of c (the rank and select of c on the tags
+ * of the intervals, in a wavelet tree of Huffman on RankSelect [see
+ * HuffmanWaveletTree.h], the fastest), and then maps both by LF in
+ * \f$ O( 1 ) \f$ time each; count( P ) takes \f$ O( p ) \f$ steps and the
+ * ranks of the intervals whose tag is not c.
  *
  * The function \f$ \phi( SA[ i ] ) = SA[ i - 1 ] \f$, taken cyclically
  * (\f$ \phi( SA[ 0 ] ) = SA[ n ] \f$), is a permutation of the places of
@@ -27,7 +27,7 @@
  * \f$ SA[ e ] \f$ along the search (the toehold, from the samples of SA at
  * the end of each interval, with the interval of \f$ \phi \f$ of each),
  * and then lists the occurrences by \f$ e - s \f$ steps of \f$ \phi \f$,
- * each in O( 1 ) time.
+ * each in \f$ O( 1 ) \f$ time.
  *
  * The symbols of L are the bytes plus 1, the end of the text being 0; the
  * transform comes from the suffix array of SA-IS [see BurrowsWheeler.h].
@@ -93,7 +93,7 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// the r-index of a text on move structures: count and locate with each
-/// step in O( 1 ) time
+/// step in \f$ O( 1 ) \f$ time
 class MoveRIndex {
 
 /*--------------------------------------------------------------------------*/

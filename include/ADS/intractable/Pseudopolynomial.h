@@ -13,14 +13,13 @@
  * P = NP (Teorema 19.1), while SOMMA DI SOTTOINSIEME, PARTIZIONE and ZAINO
  * are weakly NP-complete and have one.
  *
- * The scheduling of n programs of times \f$ t_i \f$ on m processors within
- * d is pseudopolynomial by dynamic programming on the loads of the
- * processors, \f$ O( n ( d + 1 )^m ) \f$; if a program may be split in
- * intervals, the rule of McNaughton fills the processors one after the
- * other up to \f$ d = \max\{ \max_i t_i , \sum_i t_i / m \} \f$ in O( n )
- * time, and the periodic tasks of REAL-TIME SCHEDULING, with
- * \f$ t_i = C_i / T_i \f$ and d = 1, are scheduled the same way when no
- * priority rule is required.
+ * The scheduling of n programs of times \f$ t_i \f$ on m processors within d
+ * is pseudopolynomial by dynamic programming on the loads of the processors,
+ * \f$ O( n ( d + 1 )^m ) \f$; if a program may be split in intervals, the rule
+ * of McNaughton fills the processors one after the other up to \f$ d = \max\{
+ * \max_i t_i , \sum_i t_i / m \} \f$ in \f$ O( n ) \f$ time, and the periodic
+ * tasks of REAL-TIME SCHEDULING, with \f$ t_i = C_i / T_i \f$ and d = 1, are
+ * scheduled the same way when no priority rule is required.
  *
  * The contracts [see Contract.h]: the numbers are not negative and the
  * processors at least one; each solution returned is checked as a
@@ -71,11 +70,11 @@ namespace ADS {
 /*---------------------------- SUBSET SUM ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// subsetSum(): M[ j ] tells whether some of A[ 0 .. i ] sum to j; the
-/// vector M after each element goes to *rows, if given, the first one
-/// before any; O( n k ) time; M is a vector of Bits, std::vector< bool >
-/// by default, or boost::dynamic_bitset, or BitVector of ADS
-/// [see BitVector.h], with the same cells written
+/// subsetSum(): M[ j ] tells whether some of A[ 0 .. i ] sum to j; the vector
+/// M after each element goes to *rows, if given, the first one before any;
+/// \f$ O( n k ) \f$ time; M is a vector of Bits, std::vector< bool > by
+/// default, or boost::dynamic_bitset, or BitVector of ADS [see BitVector.h],
+/// with the same cells written
 /// \pre k >= 0 and A is not negative
 /// \post *rows, if given, has n + 1 rows
 template< class Bits = std::vector< bool > >
@@ -83,7 +82,7 @@ bool subsetSumDP( const std::vector< long > & A , long k ,
                   std::vector< std::vector< bool > > * rows = nullptr );
 
 /// the places of a subset of A of sum k, by the table of all the rows,
-/// O( n k ) time and space, or nothing
+/// \f$ O( n k ) \f$ time and space, or nothing
 /// \pre A is not negative
 /// \post the places returned are distinct, of sum k
 inline std::optional< Nodes > subsetSumSet( const std::vector< long > & A ,
@@ -99,10 +98,10 @@ inline std::optional< Nodes > partitionDP( const std::vector< long > & A );
 /*---------------------------- SCHEDULING ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// SCHEDULING MULTIPROCESSORE by dynamic programming on the vectors of
-/// the loads of the m processors, each at most d: the processor of each
-/// program, or nothing (also if d < 0, even with no programs, since an
-/// idle processor is loaded 0); O( n ( d + 1 )^m ) time (exercise 19.2)
+/// SCHEDULING MULTIPROCESSORE by dynamic programming on the vectors of the
+/// loads of the m processors, each at most d: the processor of each program,
+/// or nothing (also if d < 0, even with no programs, since an idle processor
+/// is loaded 0); \f$ O( n ( d + 1 )^m ) \f$ time (exercise 19.2)
 /// \pre m >= 1 and t is not negative
 /// \post each processor returned is loaded at most d
 inline std::optional< std::vector< int > > schedulingDP(
@@ -117,7 +116,7 @@ struct Piece {
 /// the rule of McNaughton: the length d of the schedule and the pieces
 /// of each processor; the programs fill a processor up to d and go on at
 /// time 0 of the next one, and the two pieces of a program do not overlap
-/// because t[ i ] <= d; O( n + m ) time (exercise 19.3)
+/// because t[ i ] <= d; \f$ O( n + m ) \f$ time (exercise 19.3)
 /// \pre m >= 1 and t is not negative
 /// \post each program runs for its time within [ 0 , d ], never on two
 ///       processors at once
@@ -139,7 +138,7 @@ inline std::optional< std::vector< std::vector< Piece > > > realTimeScheduling(
 /// thieves take m / 3 each, or nothing; S[ i ][ j ][ h ] tells whether the
 /// first i jewels give j to the first and h to the second thief, and the
 /// prices are positive, so that j and h range in [ 0 , m / 3 ];
-/// O( n m^2 ) time (exercise 19.5)
+/// \f$ O( n m^2 ) \f$ time (exercise 19.5)
 /// \pre the prices are not negative
 /// \post an assignment returned gives a third of the value to each thief
 inline std::optional< std::vector< int > > bottino(

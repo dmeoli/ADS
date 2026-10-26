@@ -37,7 +37,7 @@
  *
  * - levenshtein( a , b ) strips the common prefix and suffix, then puts
  *   the shorter string, of m bytes, in the column and scans the longer one,
- *   of n bytes: one word if \f$ m \le 64 \f$, O( n ). Otherwise, the
+ *   of n bytes: one word if \f$ m \le 64 \f$, \f$ O( n ) \f$. Otherwise, the
  *   diagonal transitions of Landau and Vishkin (the furthest reaching
  *   paths of Myers, as in the wavefront alignment of Marco-Sola et al.):
  *   \f$ F_h( k ) \f$, the furthest row of the diagonal k = j - i reached by
@@ -49,7 +49,7 @@
  *   \f$ \mathit{slide}_k( i ) \f$ the row reached from i along the matches
  *   of the diagonal (compared 8 bytes at a time), and the distance is the
  *   least d with \f$ F_d( n - m ) = m \f$, \f$ O( n + d^2 ) \f$ expected
- *   time on random strings and O( d ) space. They are used for d up to
+ *   time on random strings and \f$ O( d ) \f$ space. They are used for d up to
  *   \f$ n / 48 + 128 \f$ (if m > 128), where they cost about as much as
  *   the blocks, and give up once the rows r reached by h = 32, 64, 128, ...
  *   edits suggest a distance \f$ h m / r \f$ above twice as much. Then the

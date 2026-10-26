@@ -141,10 +141,10 @@
  * page faults are 512 times fewer and the random writes of the
  * induction and of \f$ \Phi \f$ miss the TLB less.
  *
- * The contracts [see Contract.h]: the symbols of an integer text are less
- * than K and n fits the integers; the arrays built are a suffix array and
- * its LCP array (audits, O( n ) and \f$ O( n + \sum_r \mathit{LCP}[ r ] )
- * \f$ time). The functions are defined in SuffixSorting.tpp.
+ * The contracts [see Contract.h]: the symbols of an integer text are less than
+ * K and n fits the integers; the arrays built are a suffix array and its LCP
+ * array (audits, \f$ O( n ) \f$ and \f$ O( n + \sum_r \mathit{LCP}[ r ] ) \f$
+ * time). The functions are defined in SuffixSorting.tpp.
  *
  * \see G. Nong, S. Zhang, W. H. Chan, Two efficient algorithms for linear
  *      time suffix array construction, IEEE Transactions on Computers

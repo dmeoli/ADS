@@ -2,14 +2,13 @@
 /*--------------------------- File StrandSort.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The strand sort, beyond the book, on a list with pointers [see List.h]:
- * a strand, i.e., the first item and every later one not smaller than the
- * last taken, is pulled out of the list and merged with the result, until
- * the list is empty. Pulling a strand and merging it cost O( n ), and there
- * are as many strands as the decreasing runs suggest: O( n ) on a sorted
- * list and \f$ O( n^2 ) \f$ on a decreasing one. It is stable, and moves
- * cells instead of items, as the natural merge sort of which it is a
- * variant.
+ * The strand sort, beyond the book, on a list with pointers [see List.h]: a
+ * strand, i.e., the first item and every later one not smaller than the last
+ * taken, is pulled out of the list and merged with the result, until the list
+ * is empty. Pulling a strand and merging it cost \f$ O( n ) \f$, and there are
+ * as many strands as the decreasing runs suggest: \f$ O( n ) \f$ on a sorted
+ * list and \f$ O( n^2 ) \f$ on a decreasing one. It is stable, and moves cells
+ * instead of items, as the natural merge sort of which it is a variant.
  *
  * The contracts [see Contract.h]: the list ends sorted, an audit. The
  * function is defined in StrandSort.tpp.
