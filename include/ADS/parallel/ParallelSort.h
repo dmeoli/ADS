@@ -6,8 +6,8 @@
  * stableSort( ex , A , less ) sort the vector A on the threads of the
  * executor ex [see Executor.h], with the same result as sort( A , less )
  * and stableSort( A , less ) [see Sort.h], which they call on the parts
- * they cut A into; with one thread, or fewer than kParallelSort items,
- * they are those sequential sorts.
+ * they cut A into; with fewer than kParallelSortThreads threads, or fewer
+ * than kParallelSort items, they are those sequential sorts.
  *
  * A first pass, a parallel reduction by blocks, finds whether A is
  * already sorted (then nothing moves) or in decreasing order (strictly,
@@ -156,6 +156,12 @@ namespace ADS {
 
 /// the items from which the parallel sorts use more than one thread
 inline constexpr std::size_t kParallelSort = std::size_t( 1 ) << 15;
+
+/// the threads from which the parallel sorts distribute: on 2 threads the
+/// passes of the distribution cost more than the second thread saves (on
+/// the benchmark, 0.6 to 1.5 times the time of the sequential sort, 0.8
+/// in the median), and the sequential sort runs instead
+inline constexpr std::size_t kParallelSortThreads = 3;
 
 /// A sorted by less on the threads of ex, not necessarily stable
 /// \post A is sorted, with the same items (an audit)
