@@ -755,13 +755,14 @@ void rIndexes( std::size_t n , int r , unsigned seed )
   print( "space" , "rindex" , n , who , double( bits( *F ) ) / double( n ) );
   };
 #ifdef ADS_HAS_RINDEX
- cells( "ADS::RIndex" , [ & ]() { return( std::make_unique< ADS::RIndex >(
-                                           s ) ); } ,
-        []( const ADS::RIndex & F , const std::string & p ) {
-         return( F.count( p ) ); } ,
-        []( const ADS::RIndex & F , const std::string & p ) {
-         return( F.locate( p ).size() ); } ,
-        []( const ADS::RIndex & F ) { return( F.sizeInBits() ); } );
+ // the first structure, run again as "A/A" for the noise of the table
+ for( const char * who : { "ADS::RIndex" , "ADS::RIndex A/A" } )
+  cells( who , [ & ]() { return( std::make_unique< ADS::RIndex >( s ) ); } ,
+         []( const ADS::RIndex & F , const std::string & p ) {
+          return( F.count( p ) ); } ,
+         []( const ADS::RIndex & F , const std::string & p ) {
+          return( F.locate( p ).size() ); } ,
+         []( const ADS::RIndex & F ) { return( F.sizeInBits() ); } );
 #endif
 #ifdef ADS_HAS_MOVER
  cells( "ADS::MoveRIndex" , [ & ]() {
