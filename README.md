@@ -570,6 +570,47 @@ processes of MPI, `ADS::distributed::sort()`, is a layer of its own, on
 `-DADS_WITH_MPI=ON` (Open MPI or MPICH found by CMake), tested on 1 to 4
 processes by `ctest` or by `make test-mpi`.
 
+The benchmark of the parallel algorithms,
+[`bench/parallel.cpp`](bench/parallel.cpp), runs each of them on 1, 2, 4
+and 8 threads. The competitors are the parallel versions of oneTBB, of
+`std::execution` (libstdc++ on oneTBB), of the parallel mode of libstdc++,
+of OpenMP, of ParlayLib, of IPS4o and IPS2Ra, of FastFlow (its
+`ParallelFor`, `ParallelForReduce` and `ff_DC`), of tlx, of Eigen and
+OpenBLAS, of FFTW and of the GAP benchmark suite; for the hash tables, the
+concurrent tables of oneTBB, libcuckoo and ParlayLib. Each structure runs
+in a process of its own, since the threads that a runtime keeps spinning
+between its calls would slow down the next structure. The benchmark was run
+twice on 8 cores of the Xeon Gold 5120 of the table above, with 5 runs per
+cell, while other programs ran on the remaining cores. Their use of the
+memory and of the third level of the cache was not under control, and the
+same code measured twice differs by 2.8% in the median cell and by 15% at
+the 90th percentile. The ratios below are those of 8 threads, the time of
+the library divided by that of the pool of ADS (the median, and the range
+over the cells in parentheses). The sorts of ADS are faster than IPS4o and
+IPS2Ra by 1.6 to 1.8 times in the median (0.8 to 15), than the integer sort
+of ParlayLib by 2.7 times, and than `tbb::parallel_sort` and `std::sort` on
+`std::execution::par` by 6 to 7 times. They lose on few cells: 16 sorted
+runs of $10^6$ integers, which the integer sort of ParlayLib sorts 1.3
+times faster, and vectors already sorted, which IPS4o recognizes up to 1.4
+times faster. The parallel `multiwayMerge()` is faster than those of
+libstdc++ and tlx by 1.7 to 1.8 times, and 7.4 times faster than its
+sequential version; `gemm()` is 1.25 times faster than Eigen on OpenMP and
+7.3 times faster than on one thread. The connected components are 2.3 times
+faster than Afforest of the GAP benchmark suite, and the prefix sums 1.3 to
+1.7 times faster than those of ParlayLib and oneTBB, since they read the
+input once. It is fair to remark, however, that FFTW with its threads is
+faster than the parallel `fft()` (by 10% on 8 threads, and by 1.4 to 1.6
+times on 2 and 4, where the three transpositions of the four steps cost
+more than they save). Also, the visit in breadth of the GAP benchmark suite
+is 6% faster than `bfsDistances()`, which follows the same algorithm, and
+the tables of libcuckoo and ParlayLib (the latter open addressing on keys
+alone) find keys 2 and 5 times faster than `ConcurrentCuckooTable` on 8
+threads, whose lookups do not scale as well (it inserts them 1.4 times
+faster than libcuckoo). The same algorithms on the executors of OpenMP and
+oneTBB run within a few percent of the pool. On the executor of FastFlow
+they are 4% to 47% slower on 8 threads, and twice as slow on 2, since its
+caller waits without working while its idle workers spin.
+
 ## Design by contract
 
 ADS follows the design by contract of B. Meyer: each operation checks its
