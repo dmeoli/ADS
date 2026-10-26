@@ -5,12 +5,13 @@
 # Turns a file of results/ written by bench/run.sh into the Markdown tables   #
 # of the README: one table per benchmark, a row per structure and a column    #
 # per ( case , n ), each cell the time per operation in nanoseconds and,      #
-# in parentheses, its ratio to the first structure of the benchmark (the      #
-# one of the standard library). The noise of the machine is the largest       #
-# relative difference between that structure and its run "A/A". The           #
-# order of the columns keeps that of the cells of each structure, so that     #
-# the lines of a run with a process per structure give the tables of one      #
-# process.                                                                    #
+# in parentheses, its ratio to the first structure of the benchmark (the one  #
+# of the standard library, the one run again as "A/A"). The noise of the      #
+# machine is the largest relative difference between that structure and its   #
+# run "A/A". The order of the columns keeps that of the cells of each         #
+# structure, so that the lines of a run with a process per structure give the #
+# same tables, but for the order of the rows and of the columns that no       #
+# structure has in common.                                                    #
 #                                                                             #
 #   python3 bench/tables.py results/<file>.tsv                                #
 ###############################################################################
@@ -79,7 +80,11 @@ def main(path):
         cols = columns(R)
         whos = list(OrderedDict.fromkeys(w for _, _, w, _ in R))
         cell = {(c, n, w): ns for c, n, w, ns in R}
-        ref = whos[0]
+        # the first structure, the one run again as "A/A", whatever the
+        # order of the processes that measured them
+        ref = next((w for w in whos if w + ' A/A' in whos), whos[0])
+        whos.remove(ref)
+        whos.insert(0, ref)
         noise = [abs(cell[(c, n, ref + ' A/A')] - cell[(c, n, ref)]) /
                  cell[(c, n, ref)] for c, n in cols
                  if (c, n, ref + ' A/A') in cell and cell[(c, n, ref)] > 0]
