@@ -74,9 +74,9 @@ Pairs pairs( const std::map< int , int > & m )
  return( Pairs( m.begin() , m.end() ) );
  }
 
-/// a tree of the pairs of m, one insertion at a time up to 1000 pairs (the
-/// invariant, checked after each one, costs O( n )), by multiInsert()
-/// beyond
+/// a tree of the pairs of m, one insertion at a time up to 1000 pairs
+/// (the invariant, checked after each one, costs \f$ O( n ) \f$), by
+/// multiInsert() beyond
 template< class T >
 T make( const std::map< int , int > & m )
 {

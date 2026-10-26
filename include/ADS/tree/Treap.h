@@ -14,16 +14,27 @@
  * ADT.h]; the priorities come from SplitMix64 [see RandomHashing.h],
  * seeded, so that a run is reproducible.
  *
- * The contracts [see Contract.h]: insert() ensures that the key is there and
- * remove() that it is not; the invariant is the order of the keys and the heap
- * order of the priorities, an \f$ O( n ) \f$ check at the level 3. The
- * operations are defined in Treap.tpp.
+ * Each node keeps also the size of its subtree, so that the treap has the
+ * operations based on join [see JoinAlgorithms.h]: split(), join(),
+ * join2(), extractRange(), the union, the intersection and the difference
+ * with another treap (those of Blelloch and Reid-Miller), the batches of
+ * insertions and of removals, filter() and mapReduce(), sequential or on
+ * the threads of an executor; its join merges the two spines by the
+ * priorities, in \f$ O( \log n ) \f$ expected time.
+ *
+ * The contracts [see Contract.h]: insert() ensures that the key is there
+ * and remove() that it is not; the invariant is the order of the keys,
+ * the sizes and the heap order of the priorities, an \f$ O( n ) \f$ check
+ * at the level 3. The operations are defined in Treap.tpp.
  *
  * \see R. Seidel, C. R. Aragon, Randomized search trees, Algorithmica
  *      16(4-5), 464-497, 1996, doi:10.1007/BF01940876
  * \see G. L. Steele, D. Lea, C. H. Flood, Fast splittable pseudorandom
  *      number generators, Proceedings of OOPSLA 2014, 453-472, 2014,
  *      doi:10.1145/2660193.2660195 (SplitMix64)
+ * \see G. E. Blelloch, M. Reid-Miller, Fast set operations using treaps,
+ *      Proceedings of the 10th ACM Symposium on Parallel Algorithms and
+ *      Architectures (SPAA), 16-26, 1998, doi:10.1145/277651.277660
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

@@ -30,20 +30,31 @@
  * the book written once and the two balancing calls under if constexpr( RB )
  * where the book "highlights them in black"; BinarySearchTree< K , V > and
  * RedBlackTree< K , V > are its two instances. The leaves are one sentinel
- * node of the tree, black, which the book allows and which balanceDelete()
- * needs: when the removed node had no children, the leaf t that replaces it
- * must know its parent, which link() writes in the sentinel. Three points of
- * the pseudocode are mended, each marked in the code: balanceDelete() stops
- * when t is the root rather than when t is the old root T, which a rotation
- * of the case (1) may have moved down; the case (4) climbs to the root
- * instead of reading the old T; and the Red-Black insertNode() returns the
- * root also when the key was there already.
+ * node, black, which the book allows, shared by all the trees of the type
+ * and never written, so that the trees that a split makes, or that two
+ * threads join, may point to it at once. Four points of the pseudocode are
+ * mended, each marked in the code: balanceDelete() is given the parent of
+ * t, since t may be the sentinel, whose parent the book writes when the
+ * removed node had no children; it stops when t is the root rather than
+ * when t is the old root T, which a rotation of the case (1) may have
+ * moved down; the case (4) climbs to the root instead of reading the old
+ * T; and the Red-Black insertNode() returns the root also when the key was
+ * there already.
+ *
+ * Each node keeps also the size of its subtree, which the insertions, the
+ * removals and the rotations update, so that the Red-Black tree has the
+ * operations based on join [see JoinAlgorithms.h]: split(), join(),
+ * join2(), extractRange(), the union, the intersection and the difference
+ * with another tree, the batches of insertions and of removals, filter()
+ * and mapReduce(), sequential or on the threads of an executor; its join
+ * is that of the Red-Black trees of Tarjan, by the black heights. The
+ * binary search tree, whose height may be \f$ n \f$, has none of them.
  *
  * The contracts [see Contract.h]: after insert() the key is there and
  * after remove() it is not; key(), value(), successorNode() and
  * predecessorNode() need a node; the invariant is the order of the keys,
- * the parents and, for a Red-Black tree, the constraints (V1)-(V4) [see
- * valid()]. The operations are defined in SearchTree.tpp.
+ * the parents, the sizes and, for a Red-Black tree, the constraints
+ * (V1)-(V4) [see valid()]. The operations are defined in SearchTree.tpp.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 6.1 and 6.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap06.pdf
@@ -53,6 +64,13 @@
  * \see L. J. Guibas, R. Sedgewick, A dichromatic framework for balanced
  *      trees, Proceedings of the 19th FOCS, 8-21, 1978,
  *      doi:10.1109/SFCS.1978.3
+ * \see R. E. Tarjan, Data Structures and Network Algorithms, SIAM, 1983,
+ *      chapter 4 (the join of the Red-Black trees),
+ *      doi:10.1137/1.9781611970265
+ * \see G. E. Blelloch, D. Ferizovic, Y. Sun, Just join for parallel
+ *      ordered sets, Proceedings of the 28th ACM Symposium on Parallelism
+ *      in Algorithms and Architectures (SPAA), 253-264, 2016,
+ *      doi:10.1145/2935764.2935768
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -286,7 +304,7 @@ class SearchTree
  private:
 
  /// the order of the keys, the parents, the number of nodes, the sizes of
- /// the subtrees and, if RB, the constraints (V1)-(V4), $ O( n ) $
+ /// the subtrees and, if RB, the constraints (V1)-(V4), \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
 
  [[nodiscard]] Link * nil( void ) const;

@@ -32,6 +32,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   conventions of the theory pages and of the pseudocode for the other
   areas; on the Doxygen site the functions of a header are documented on
   the page of its group in the Topics
+- the balanced trees whose only balancing is join (tree/JoinAlgorithms.h):
+  the joins of the AVL trees, the Red-Black trees, the trees balanced by
+  weight and the treaps of Blelloch, Ferizovic and Sun, and on them
+  split(), join2(), the union, the intersection and the difference in
+  optimal work, the batches of insertions and of removals, filter(),
+  mapReduce() and the extraction of a range, sequential or on the threads
+  of an executor, with the same trees on every executor; AVLTree, Treap
+  and RedBlackTree keep the sizes of their subtrees and have them as
+  methods (Joinable)
+- JoinTree (tree/JoinTree.h), a dictionary balanced by the join of one of
+  the four schemes alone, augmented by a monoid given as a template
+  parameter (augValue(), augRange(), augPrefix(), augVisit()), and the
+  interval tree (geometry/IntervalTree.h, stabbing queries) and the 2D
+  range tree (geometry/RangeTree.h, counts in rectangles) on it
+- test/join_trees.cpp, the edge cases of split and join, the set
+  operations, the batches, the augmented maps, the interval and the range
+  tree against std::set, std::map and brute force, on Sequential and on
+  ThreadPool with 1, 2 and 8 threads; bench/joins.cpp, the bulk
+  operations against std::map and, with PAM=<dir>, pam_map
 - bench/bignum.cpp: the squares, the gcd of two numbers with a common
   factor of 3 and the integer square root of 2n digits, the length of 1024
   digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>
@@ -983,6 +1002,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   walk the places of the block only down to what they need
 
 ### Changed
+
+- SearchTree: the sentinel leaf is one for all the trees of the type and
+  is never written, and balanceDelete() is given the parent of t, which
+  the book wrote in the sentinel; each node keeps the size of its subtree
 
 - suffixArray() of a text of bytes sorts its LMS-suffixes directly, as
   strings, before the induction: the windows of 64 bits of the text packed

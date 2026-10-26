@@ -566,7 +566,7 @@ struct SearchTreeNodes {
    delete static_cast< typename T::Node * >( u );
    }
   }
- static Rank rank( const Node * t ) {  // down the left path, O( log n )
+ static Rank rank( const Node * t ) {  // down the left path
   Rank b = 0;
   for( ; t != nil() ; t = t->left )
    b += red( t ) ? 0 : 1;

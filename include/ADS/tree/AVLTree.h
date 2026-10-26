@@ -14,16 +14,29 @@
  * with lookup(), insert() and remove(), and forEach() visits the pairs by
  * increasing keys.
  *
+ * Each node keeps also the size of its subtree, so that the AVL tree has
+ * the operations based on join [see JoinAlgorithms.h]: split(), join(),
+ * join2(), extractRange(), the union, the intersection and the difference
+ * with another tree, the batches of insertions and of removals, filter()
+ * and mapReduce(), sequential or on the threads of an executor; its join
+ * goes down the spine of the higher tree to a subtree of the height of the
+ * other, in \f$ O( | h_l - h_r | + 1 ) \f$ time.
+ *
  * The contracts [see Contract.h]: insert() ensures that the key is there
  * and remove() that it is not; the invariant is the order of the keys, the
- * heights stored and the balance of every node, an \f$ O( n ) \f$ check at the
- * level 3. The operations are defined in AVLTree.tpp.
+ * heights and the sizes stored and the balance of every node, an
+ * \f$ O( n ) \f$ check at the level 3. The operations are defined in
+ * AVLTree.tpp.
  *
  * \see G. M. Adelson-Velsky, E. M. Landis, An algorithm for the
  *      organization of information, Soviet Mathematics Doklady 3,
  *      1259-1263, 1962
  * \see D. E. Knuth, The Art of Computer Programming, vol. 3, 2nd ed.,
  *      Addison-Wesley, 1998, section 6.2.3
+ * \see G. E. Blelloch, D. Ferizovic, Y. Sun, Just join for parallel
+ *      ordered sets, Proceedings of the 28th ACM Symposium on Parallelism
+ *      in Algorithms and Architectures (SPAA), 253-264, 2016,
+ *      doi:10.1145/2935764.2935768
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -169,7 +182,7 @@ class AVLTree
  static void visit( const Ptr & t , F & f );
 
  /// the order, the heights, the sizes and the balance of the subtree,
- /// $ O( n ) $
+ /// \f$ O( n ) \f$
  static bool valid( const Ptr & t , const K * lo , const K * hi );
 
  Ptr f_root;              ///< the root

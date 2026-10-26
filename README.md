@@ -145,7 +145,8 @@ The other folders group the algorithms by technique or by problem:
 - `numeric/`, the products of integers, polynomials and matrices;
 - `string/`, the algorithms on strings;
 - `optimization/`, the problems of optimization (knapsack, intervals);
-- `geometry/`, the convex hull and the closest pair;
+- `geometry/`, the convex hull, the closest pair, the interval tree and
+  the range tree;
 - `backtrack/`, the enumerations by backtrack;
 - `complexity/`, the problems of NP and their reductions;
 - `intractable/`, the techniques for the intractable problems;
@@ -564,6 +565,7 @@ matrices, up to the rounding for the transform).
 | visit in breadth that optimizes its direction, connected components by Afforest | [`parallel/ParallelGraph.h`](include/ADS/parallel/ParallelGraph.h) |
 | LCP array by the permuted LCP | [`parallel/ParallelText.h`](include/ADS/parallel/ParallelText.h) |
 | union-find with no lock, for many threads | [`concurrent/ConcurrentUnionFind.h`](include/ADS/concurrent/ConcurrentUnionFind.h) |
+| balanced trees whose only balancing is join (AVL, Red-Black, by weight, treap): split, join, union, intersection and difference with the optimal work, batches of insertions and removals, filter, map and reduce, augmented maps with the sums of ranges, the interval tree and the 2D range tree | [`tree/JoinAlgorithms.h`](include/ADS/tree/JoinAlgorithms.h), [`tree/JoinTree.h`](include/ADS/tree/JoinTree.h), [`geometry/IntervalTree.h`](include/ADS/geometry/IntervalTree.h), [`geometry/RangeTree.h`](include/ADS/geometry/RangeTree.h) |
 | sort over the processes of MPI by regular sampling | [`distributed/DistributedSort.h`](include/ADS/distributed/DistributedSort.h) |
 
 ```cpp
@@ -587,6 +589,13 @@ the machine whatever the affinity of the process. The sort over the
 processes of MPI, `ADS::distributed::sort()`, is a layer of its own, on
 `-DADS_WITH_MPI=ON` (Open MPI or MPICH found by CMake), tested on 1 to 4
 processes by `ctest` or by `make test-mpi`.
+
+The operations of the trees based on join are also methods of `AVLTree`,
+`Treap` and `RedBlackTree`, and are tested, with their edge cases, against
+`std::set` and `std::map` in [`test/join_trees.cpp`](test/join_trees.cpp);
+[`bench/joins.cpp`](bench/joins.cpp) compares them with the operations of
+`std::map` one key at a time and, when compiled with `PAM=<dir>`, with
+`pam_map`.
 
 The benchmark of the parallel algorithms,
 [`bench/parallel.cpp`](bench/parallel.cpp), runs each of them on 1, 2, 4

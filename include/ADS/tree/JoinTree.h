@@ -2,7 +2,72 @@
 /*---------------------------- File JoinTree.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * JOINTREE_PLACEHOLDER
+ * The binary search trees balanced by join alone, and the augmented maps,
+ * beyond the book: JoinTree< K , V , B , G > is a DICTIONARY [see ADT.h]
+ * of keys K and values V whose only balancing operation is the join of the
+ * scheme B [see JoinAlgorithms.h], AVLBalance, RedBlackBalance,
+ * WeightBalance or TreapBalance, so that the insertions and the removals
+ * are a split or a descent followed by joins, and the bulk operations of
+ * Joinable (union, intersection, difference, batches of insertions and of
+ * removals, filter, map and reduce, extraction of a range) are those of
+ * the four schemes alike. A node keeps the size of its subtree and one
+ * word for its scheme: the height plus 1 for AVL, the black height and
+ * the color for Red-Black, the priority for the treap (the weight is the
+ * size); JoinAVLTree, JoinRedBlackTree, WeightBalancedTree and JoinTreap
+ * name the four.
+ *
+ * \b Augmented maps. The augmentation G is a monoid on a type G::Value, of
+ * identity G::identity() and associative operation G::combine(), and a
+ * map G::from( k , v ) of a pair into it [see Augmentation]. A node u
+ * keeps the augmented value of its subtree \f$ T_u \f$,
+ * \f[ \mathit{aug}( u ) = \mathit{aug}( u.\mathit{left} ) \otimes
+ *     \mathit{from}( u.k , u.v ) \otimes \mathit{aug}( u.\mathit{right} )
+ * \f]
+ * the combination of the values of its pairs by increasing keys, which
+ * need not be commutative; connect() recomputes it, so that every join,
+ * and every operation built on join, keeps it at the cost of one
+ * combination per node touched. augValue() is that of the root, in
+ * \f$ O( 1 ) \f$; augRange( lo , hi ) combines the values of the
+ * \f$ O( \log n ) \f$ pieces that cover the keys of \f$ [ lo , hi ] \f$:
+ * from the node where the paths to lo and to hi part, the pairs met on
+ * the path to lo with the right subtrees it leaves behind, the pair of
+ * the node, and the left subtrees and the pairs of the path to hi;
+ * augPrefix( k ) does the same on the path to k alone, and augVisit()
+ * gives the pieces themselves, in order, to a function (the range tree
+ * counts on them [see RangeTree.h]). SumAugmentation and MaxAugmentation
+ * are the sums and the maxima of the values, and AugmentedMap the map
+ * augmented by G and balanced by weight, as in PAM; the interval tree
+ * [see IntervalTree.h] and the range tree are augmented maps.
+ *
+ * The contracts [see Contract.h]: insert() ensures that the key is there
+ * and remove() that it is not; the invariant is the order of the keys,
+ * the sizes, the augmented values (when G::Value is comparable) and the
+ * balance of the scheme (the heights of AVL; no red node with a red child
+ * and the same black height on every path, the root black, for Red-Black;
+ * \f$ \alpha ( w_l + w_r ) \le \min( w_l , w_r ) \f$ for the weights of
+ * the two children of every node; the heap order of the priorities of
+ * the treap), an \f$ O( n ) \f$ check at the level 3. The operations are
+ * defined in JoinTree.tpp.
+ *
+ * \see G. E. Blelloch, D. Ferizovic, Y. Sun, Joinable parallel balanced
+ *      binary trees, ACM Transactions on Parallel Computing 9(2), 1-41,
+ *      2022, doi:10.1145/3512769
+ * \see Y. Sun, D. Ferizovic, G. E. Blelloch, PAM: parallel augmented maps,
+ *      Proceedings of the 23rd ACM SIGPLAN Symposium on Principles and
+ *      Practice of Parallel Programming (PPoPP), 290-304, 2018,
+ *      doi:10.1145/3178487.3178509
+ * \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
+ *      to Algorithms, 3rd ed., MIT Press, 2009, chapter 14 (augmenting the
+ *      data structures)
+ * \see J. Nievergelt, E. M. Reingold, Binary search trees of bounded
+ *      balance, SIAM Journal on Computing 2(1), 33-43, 1973,
+ *      doi:10.1137/0202005
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Università di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
 /*----------------------------- DEFINITIONS --------------------------------*/

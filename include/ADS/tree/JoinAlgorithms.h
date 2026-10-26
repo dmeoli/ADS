@@ -2,7 +2,181 @@
 /*------------------------- File JoinAlgorithms.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * THEORY_PLACEHOLDER
+ * The balanced binary search trees whose only balancing operation is join,
+ * beyond the book, and the operations on ordered sets and maps built on
+ * it, sequential and parallel. join( L , k , R ), for two trees L and R
+ * whose keys are smaller and larger than k, returns a balanced tree of the
+ * keys of L, k and those of R; it is the one operation that knows the
+ * balancing scheme, and split, the removals, the insertions, the union, the
+ * intersection, the difference, the batches and the filters are written
+ * once, on join alone, for every scheme. Adams wrote the union of the trees
+ * balanced by weight in this way; Blelloch, Ferizovic and Sun showed that
+ * the joins of four schemes (the AVL trees, the Red-Black trees, the trees
+ * balanced by weight and the treaps) are enough for the set operations to
+ * take the optimal work, and that the two recursive calls of each of them
+ * can run in parallel.
+ *
+ * \b Ranks. The cost of join is bounded through a rank \f$ r( T ) \f$ of
+ * each tree, which is \f$ \Theta( \log n ) \f$ for a tree of n keys: the
+ * height h for the AVL trees; the black height \f$ \hat{h} \f$ (the black
+ * nodes on a path from the root to a leaf, the root excluded if it is
+ * black) for the Red-Black trees; \f$ \log_2 w( T ) \f$, w the weight (the
+ * keys plus 1), for the trees balanced by weight and, in expectation, for
+ * the treaps. Each join below goes down the right spine of the higher
+ * tree (the left one of the lower, symmetrically) until it meets a subtree
+ * c of the rank of the other tree, hangs k there with c and the other
+ * tree as its children, and fixes the balance on the way back by at most
+ * a double rotation per level; hence it costs
+ * \f$ O( | r( L ) - r( R ) | + 1 ) \f$, and the rank of its result is
+ * between \f$ \max( r( L ) , r( R ) ) \f$ and that plus 1. For the AVL
+ * trees the subtree met has height \f$ h( R ) \f$ or \f$ h( R ) + 1 \f$,
+ * the new node has height at most \f$ h( R ) + 2 \f$, and a rotation at
+ * the parent brings the difference back to 1 (Lemma 1 of the paper). For
+ * the Red-Black trees the subtree met is black, of black height
+ * \f$ \hat{h}( R ) \f$, the new node is red, and the only fault, a red
+ * node with a red child, is pushed up by one rotation per level and, at
+ * the root, solved by painting it black. For the trees balanced by weight
+ * of parameter \f$ \alpha \le 1 - 1 / \sqrt{2} \f$ (here 0.29), each
+ * level needs a single or a double rotation, as for the insertions of
+ * Nievergelt and Reingold, and the rank is that of the weight. For the
+ * treaps, join is the merge of the two spines by the priorities, and k
+ * goes down until its priority beats those below: its expected cost is
+ * that of an insertion, \f$ O( \log n ) \f$.
+ *
+ * \b Split. split( T , k ) exposes the root ( L , m , R ) of T, recurs on
+ * the side of k and joins the other side with m and the part of the
+ * recursion on its side. The joins at the levels of the path have ranks
+ * that differ by the ranks of the subtrees left behind, so that their
+ * costs telescope to \f$ O( r( T ) ) = O( \log n ) \f$; join2( L , R ),
+ * the join with no key in between, takes the last key of L off it by
+ * splitLast() and joins it with R, again in \f$ O( \log n ) \f$.
+ *
+ * \b Work. union( A , B ) exposes the root ( L , k , R ) of the smaller
+ * tree, splits the larger one at k, takes the unions of the two left and
+ * of the two right sides, and joins them with k; the intersection and
+ * the difference differ only in whether k survives, and use join2 when it
+ * does not. For sizes \f$ m \le n \f$, the splits at the level i of the
+ * recursion are \f$ 2^i \f$ splits of trees whose sizes sum to n, which
+ * cost \f$ O( 2^i \log( n / 2^i + 1 ) ) \f$ by the concavity of the
+ * logarithm; summed over the \f$ \log m \f$ levels, and with the joins
+ * costing no more than the splits (their rank differences telescope), the
+ * work is
+ * \f[ W( m , n ) = \Theta\Bigl( m \log\Bigl( \frac{n}{m} + 1 \Bigr) \Bigr)
+ * \f]
+ * the lower bound of the comparisons for merging two sorted sequences
+ * (Hwang and Lin; Brown and Tarjan), which is \f$ \Theta( m + n ) \f$ for
+ * \f$ m \approx n \f$ and \f$ \Theta( \log n ) \f$ for \f$ m = 1 \f$. The
+ * two recursive calls touch disjoint trees, so that they run in parallel:
+ * the span is \f$ O( \log m \log n ) \f$, as each level of the recursion
+ * waits for a split and a join. A batch of m sorted pairs, multiInsert(),
+ * is the union with the tree built from the batch, and multiRemove() the
+ * difference, both done without building it: the batch is split by a
+ * binary search on the key of the root, in the same work; filter() and
+ * mapReduce() visit every node, \f$ O( n ) \f$ work and
+ * \f$ O( \log^2 n ) \f$ span.
+ *
+ * \b Augmentation. A node may keep a value of its subtree, computed from
+ * those of its two children and of its own pair (its size, its height,
+ * the sum of the values of an augmented map [see JoinTree.h]); since every
+ * node that changes is passed to connect(), which recomputes that value,
+ * and the rotations are two exposes and two connects, join keeps it, and
+ * so does every algorithm above, at the cost of a combination per node
+ * that join touches.
+ *
+ * \b Layout. A tree gives its nodes to the algorithms through an adaptor
+ * [see JoinAdaptor]: the joins of the four schemes (AVLJoin, RedBlackJoin,
+ * WeightBalancedJoin and TreapJoin) are written on it, JoinAlgorithms
+ * writes on it split(), join2() and the bulk operations, and Joinable
+ * gives them to the class of the tree as methods: AVLTree, Treap and the
+ * Red-Black tree of SearchTree, whose nodes keep the sizes of their
+ * subtrees for it, and JoinTree [see JoinTree.h], whose four schemes are
+ * augmented by a template parameter. All the operations are destructive:
+ * they consume their arguments and reuse their nodes, and a tree is not
+ * shared between versions (the persistent trees of PAM copy the path that
+ * changes, and count the references to the nodes).
+ *
+ * \b Parallelism. An operation given an executor [see Executor.h] runs
+ * its two recursive calls by parallelInvoke(), until the two trees have
+ * fewer than kJoinGrain keys in all, or the executor one thread, where it
+ * goes on sequentially; the shape of the result does not depend on the
+ * executor, nor on the number of its threads, since join is
+ * deterministic and the priorities of a batch of a treap are drawn by the
+ * place of each pair in the batch. A key is compared, and a node read or
+ * written, by one thread at a time.
+ *
+ * \b Pseudocode. The convention: a tree is nil or a node ( L , k , R ) of
+ * children L and R and key k; expose( T ) gives the three, node( L , k ,
+ * R ) makes a node and recomputes what it keeps (connect()), r( T ) is the
+ * rank, ← the assignment, and the lines are numbered as in the paper.
+ * Each join is given for the case of the left tree higher, the other
+ * being its mirror; the parallel calls are marked "in parallel".
+ *
+ * \b State of the art. PAM is the library of the paper on augmented maps,
+ * persistent and on ParlayLib; PaC-trees (the library CPAM) keep blocks of
+ * up to B keys, possibly compressed, in the leaves of the same trees, and
+ * reach the same bounds with less space and fewer cache misses. De Man and
+ * Dhulipala give batch-parallel treaps (and link-cut and Euler tour trees)
+ * on a join of the same kind. oneTBB (concurrent_map) and folly
+ * (ConcurrentSkipList) keep concurrent skip lists, without bulk set
+ * operations or split; Boost.Intrusive has AVL, Red-Black, scapegoat,
+ * splay and treap trees with no split nor join of trees.
+ *
+ * The contracts [see Contract.h]: the preconditions of join() and join2()
+ * on the order of the keys, the batches sorted with no repeated key (an
+ * audit), and after every operation the invariant of the tree, which the
+ * class checks at the level 3: the order of the keys, the sizes, the
+ * augmented values and the balance of its scheme (the heights of AVL, the
+ * colors and the black heights of Red-Black, the weights, the heap order
+ * of the priorities). The operations are defined in JoinAlgorithms.tpp.
+ *
+ * \see S. Adams, Efficient sets: a balancing act, Journal of Functional
+ *      Programming 3(4), 553-561, 1993, doi:10.1017/S0956796800000885
+ * \see G. E. Blelloch, D. Ferizovic, Y. Sun, Just join for parallel
+ *      ordered sets, Proceedings of the 28th ACM Symposium on Parallelism
+ *      in Algorithms and Architectures (SPAA), 253-264, 2016,
+ *      doi:10.1145/2935764.2935768
+ * \see G. E. Blelloch, D. Ferizovic, Y. Sun, Joinable parallel balanced
+ *      binary trees, ACM Transactions on Parallel Computing 9(2), 1-41,
+ *      2022, doi:10.1145/3512769
+ * \see G. E. Blelloch, M. Reid-Miller, Fast set operations using treaps,
+ *      Proceedings of the 10th ACM Symposium on Parallel Algorithms and
+ *      Architectures (SPAA), 16-26, 1998, doi:10.1145/277651.277660
+ * \see M. R. Brown, R. E. Tarjan, A fast merging algorithm, Journal of the
+ *      ACM 26(2), 211-226, 1979, doi:10.1145/322123.322127
+ * \see J. Nievergelt, E. M. Reingold, Binary search trees of bounded
+ *      balance, SIAM Journal on Computing 2(1), 33-43, 1973,
+ *      doi:10.1137/0202005
+ * \see F. K. Hwang, S. Lin, A simple algorithm for merging two disjoint
+ *      linearly ordered sets, SIAM Journal on Computing 1(1), 31-39,
+ *      1972, doi:10.1137/0201004
+ * \see Y. Hirai, K. Yamamoto, Balancing weight-balanced trees, Journal of
+ *      Functional Programming 21(3), 287-307, 2011,
+ *      doi:10.1017/S0956796811000104
+ * \see R. Seidel, C. R. Aragon, Randomized search trees, Algorithmica
+ *      16(4-5), 464-497, 1996, doi:10.1007/BF01940876
+ * \see R. E. Tarjan, Data Structures and Network Algorithms, SIAM, 1983,
+ *      chapter 4 (the join of the Red-Black trees),
+ *      doi:10.1137/1.9781611970265
+ * \see Y. Sun, D. Ferizovic, G. E. Blelloch, PAM: parallel augmented maps,
+ *      Proceedings of the 23rd ACM SIGPLAN Symposium on Principles and
+ *      Practice of Parallel Programming (PPoPP), 290-304, 2018,
+ *      doi:10.1145/3178487.3178509
+ * \see L. Dhulipala, G. E. Blelloch, Y. Gu, Y. Sun, PaC-trees: supporting
+ *      parallel and compressed purely-functional collections, Proceedings
+ *      of the 43rd ACM SIGPLAN Conference on Programming Language Design
+ *      and Implementation (PLDI), 108-121, 2022,
+ *      doi:10.1145/3519939.3523733
+ * \see Q. De Man, L. Dhulipala, Fast and theoretically efficient
+ *      batch-parallel link-cut trees, Euler tour trees, and treaps,
+ *      Proceedings of the 38th ACM Symposium on Parallelism in Algorithms
+ *      and Architectures (SPAA), 234-246, 2026,
+ *      doi:10.1145/3816782.3819216
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Università di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
 /*----------------------------- DEFINITIONS --------------------------------*/
@@ -86,7 +260,25 @@ template< class A >
 struct AVLJoin {
  using Node = typename A::Node;   ///< the type of the nodes
 
- /// JOIN_AVL_DOC
+ /// the join of the AVL trees l and r with m between them, in
+ /// \f$ O( | h( l ) - h( r ) | + 1 ) \f$ time; joinLeft() is the mirror
+ /// of joinRight():
+ ///
+ ///     JOIN-AVL( L , k , R )
+ ///      1  if h( L ) > h( R ) + 1 then return JOIN-RIGHT-AVL( L , k , R )
+ ///      2  if h( R ) > h( L ) + 1 then return JOIN-LEFT-AVL( L , k , R )
+ ///      3  return node( L , k , R )
+ ///
+ ///     JOIN-RIGHT-AVL( L , k , R )
+ ///      1  ( l , k' , c ) ← expose( L )
+ ///      2  if h( c ) ≤ h( R ) + 1 then
+ ///      3     T' ← node( c , k , R )
+ ///      4     if h( T' ) ≤ h( l ) + 1 then return node( l , k' , T' )
+ ///      5     return rotateLeft( node( l , k' , rotateRight( T' ) ) )
+ ///      6  T' ← JOIN-RIGHT-AVL( c , k , R )
+ ///      7  T'' ← node( l , k' , T' )
+ ///      8  if h( T' ) ≤ h( l ) + 1 then return T''
+ ///      9  return rotateLeft( T'' )
  static Node * join( Node * l , Node * m , Node * r );
 
  /// the join when l is higher than r by more than 1
@@ -102,7 +294,30 @@ template< class A >
 struct RedBlackJoin {
  using Node = typename A::Node;   ///< the type of the nodes
 
- /// JOIN_RB_DOC
+ /// the join of the Red-Black trees l and r, of black heights bl and br,
+ /// with m between them: the root and its black height, in
+ /// \f$ O( | b_l - b_r | + 1 ) \f$ time; joinLeft() is the mirror of
+ /// joinRight():
+ ///
+ ///     JOIN-RB( L , k , R )
+ ///      1  if bh( L ) > bh( R ) then
+ ///      2     T' ← JOIN-RIGHT-RB( L , k , R )
+ ///      3     if T' and its right child are red then paint T' black
+ ///      4     return T'
+ ///      5  if bh( R ) > bh( L ) then the mirror of the lines 2 to 4
+ ///      6  if L and R are black then return node( L , k red , R )
+ ///      7  return node( L , k black , R )
+ ///
+ ///     JOIN-RIGHT-RB( L , k , R )
+ ///      1  if L is black and bh( L ) = bh( R ) then
+ ///      2     return node( L , k red , R )
+ ///      3  ( l , k' , c ) ← expose( L )
+ ///      4  T' ← JOIN-RIGHT-RB( c , k , R )
+ ///      5  T'' ← node( l , k' , T' )
+ ///      6  if k' is black and T' and its right child are red then
+ ///      7     paint the right child of T' black
+ ///      8     return rotateLeft( T'' )
+ ///      9  return T
  static std::pair< Node * , int > join( Node * l , int bl , Node * m ,
                                         Node * r , int br );
 
@@ -122,7 +337,26 @@ struct WeightBalancedJoin {
  static constexpr std::size_t kAlphaNum = 29;    ///< \f$ \alpha \f$, up
  static constexpr std::size_t kAlphaDen = 100;   ///< and down
 
- /// JOIN_WB_DOC
+ /// the join of the trees l and r balanced by weight with m between
+ /// them, in \f$ O( | \log w( l ) - \log w( r ) | + 1 ) \f$ time, where
+ /// like( a , b ) is \f$ \alpha ( a + b ) \le \min( a , b ) \f$ and
+ /// joinLeft() is the mirror of joinRight():
+ ///
+ ///     JOIN-WB( L , k , R )
+ ///      1  if like( w( L ) , w( R ) ) then return node( L , k , R )
+ ///      2  if w( L ) > w( R ) then return JOIN-RIGHT-WB( L , k , R )
+ ///      3  return JOIN-LEFT-WB( L , k , R )
+ ///
+ ///     JOIN-RIGHT-WB( L , k , R )
+ ///      1  if like( w( L ) , w( R ) ) then return node( L , k , R )
+ ///      2  ( l , k' , c ) ← expose( L )
+ ///      3  T' ← JOIN-RIGHT-WB( c , k , R )
+ ///      4  ( l1 , k1 , r1 ) ← expose( T' ), read only
+ ///      5  if like( w( l ) , w( T' ) ) then return node( l , k' , T' )
+ ///      6  if like( w( l ) , w( l1 ) ) and
+ ///            like( w( l ) + w( l1 ) , w( r1 ) ) then
+ ///      7     return rotateLeft( node( l , k' , T' ) )
+ ///      8  return rotateLeft( node( l , k' , rotateRight( T' ) ) )
  static Node * join( Node * l , Node * m , Node * r );
 
  /// the join when l is heavier than r beyond the balance
@@ -144,7 +378,17 @@ template< class A >
 struct TreapJoin {
  using Node = typename A::Node;   ///< the type of the nodes
 
- /// JOIN_TREAP_DOC
+ /// the join of the treaps l and r with m between them, in
+ /// \f$ O( \log n ) \f$ expected time, where p( nil ) is \f$ -\infty \f$:
+ ///
+ ///     JOIN-TREAP( L , k , R )
+ ///      1  if p( L ) > p( k ) and p( L ) ≥ p( R ) then
+ ///      2     ( l , k' , r ) ← expose( L )
+ ///      3     return node( l , k' , JOIN-TREAP( r , k , R ) )
+ ///      4  if p( R ) > p( k ) then
+ ///      5     ( l , k' , r ) ← expose( R )
+ ///      6     return node( JOIN-TREAP( L , k , l ) , k' , r )
+ ///      7  return node( L , k , R )
  static Node * join( Node * l , Node * m , Node * r );
  };
 
@@ -188,59 +432,152 @@ struct JoinAlgorithms {
  /// the join of the scheme
  [[nodiscard]] static Tree join( Tree l , Node * m , Tree r );
 
- /// SPLIT_DOC
+ /// the keys of x smaller than k in l, those larger in r, and the node of
+ /// k returned, alone (nil if k is not in x), in \f$ O( \log n ) \f$ time:
+ ///
+ ///     SPLIT( T , k )
+ ///      1  if T = nil then return ( nil , nil , nil )
+ ///      2  ( L , m , R ) ← expose( T )
+ ///      3  if k < m then
+ ///      4     ( L' , b , R' ) ← SPLIT( L , k )
+ ///      5     return ( L' , b , JOIN( R' , m , R ) )
+ ///      6  if m < k then
+ ///      7     ( L' , b , R' ) ← SPLIT( R , k )
+ ///      8     return ( JOIN( L , m , L' ) , b , R' )
+ ///      9  return ( L , m , R )
  static Node * split( Tree x , const Key & k , Tree & l , Tree & r );
 
- /// SPLITLAST_DOC
+ /// the node of the largest key of x returned, alone, and the others in
+ /// rest, in \f$ O( \log n ) \f$ time
+ /// \pre x is not empty
+ ///
+ ///     SPLIT-LAST( T )
+ ///      1  ( L , k , R ) ← expose( T )
+ ///      2  if R = nil then return ( L , k )
+ ///      3  ( T' , k' ) ← SPLIT-LAST( R )
+ ///      4  return ( JOIN( L , k , T' ) , k' )
  static Node * splitLast( Tree x , Tree & rest );
 
- /// JOIN2_DOC
+ /// the tree of the keys of l and of r, with no key in between, in
+ /// \f$ O( \log n ) \f$ time
+ /// \pre the keys of l are smaller than those of r
+ ///
+ ///     JOIN2( L , R )
+ ///      1  if L = nil then return R
+ ///      2  ( L' , k ) ← SPLIT-LAST( L )
+ ///      3  return JOIN( L' , k , R )
  [[nodiscard]] static Tree join2( Tree l , Tree r );
 
- /// INSERT_DOC
+ /// the node alone n inserted in x, fresh whether its key was not there
+ /// (if it was, its value replaces the old one and n is freed), by joins
+ /// on the way back, in \f$ O( \log n ) \f$ time
  [[nodiscard]] static Tree insert( Tree x , Node * n , bool & fresh );
 
- /// REMOVE_DOC
+ /// the key k taken out of x and freed, gone whether it was there, by
+ /// joins on the way back and join2 where it was, in \f$ O( \log n ) \f$
+ /// time
  [[nodiscard]] static Tree remove( Tree x , const Key & k , bool & gone );
 
- /// UNION_DOC
+ /// the union of a and b, on a key of both the value f( of a , of b ),
+ /// with \f$ O( m \log( n / m + 1 ) ) \f$ work and
+ /// \f$ O( \log m \log n ) \f$ span for sizes \f$ m \le n \f$:
+ ///
+ ///     UNION( A , B )
+ ///      1  if A = nil then return B
+ ///      2  if B = nil then return A
+ ///      3  ( L , k , R ) ← expose( the smaller of A and B )
+ ///      4  ( L' , b , R' ) ← SPLIT( the larger of A and B , k )
+ ///      5  in parallel: T1 ← UNION( L , L' ) and T2 ← UNION( R , R' )
+ ///      6  if b ≠ nil then the value of k ← f( of A , of B )
+ ///      7  return JOIN( T1 , k , T2 )
  template< Executor E , class F >
  [[nodiscard]] static Tree unite( E & ex , Tree a , Tree b , const F & f );
 
- /// INTERSECTION_DOC
+ /// the intersection of a and b, the value f( of a , of b ), with the
+ /// work and the span of unite(); the nodes that leave are freed:
+ ///
+ ///     INTERSECT( A , B )
+ ///      1  if A = nil or B = nil then return nil
+ ///      2  ( L , k , R ) ← expose( the smaller of A and B )
+ ///      3  ( L' , b , R' ) ← SPLIT( the larger of A and B , k )
+ ///      4  in parallel: T1 ← INTERSECT( L , L' ) and
+ ///                      T2 ← INTERSECT( R , R' )
+ ///      5  if b = nil then return JOIN2( T1 , T2 )
+ ///      6  the value of k ← f( of A , of B )
+ ///      7  return JOIN( T1 , k , T2 )
  template< Executor E , class F >
  [[nodiscard]] static Tree intersect( E & ex , Tree a , Tree b ,
                                       const F & f );
 
- /// DIFFERENCE_DOC
+ /// the keys of a not in b, with the work and the span of unite(); the
+ /// nodes of b and those of a that leave are freed:
+ ///
+ ///     DIFFERENCE( A , B )
+ ///      1  if A = nil or B = nil then return A
+ ///      2  if | A | < | B | then
+ ///      3     ( L , k , R ) ← expose( A ) ; ( L' , b , R' ) ← SPLIT( B , k )
+ ///      4     in parallel: T1 ← DIFFERENCE( L , L' ) and
+ ///                         T2 ← DIFFERENCE( R , R' )
+ ///      5     if b = nil then return JOIN( T1 , k , T2 )
+ ///      6     return JOIN2( T1 , T2 )
+ ///      7  ( L , k , R ) ← expose( B ) ; ( L' , b , R' ) ← SPLIT( A , k )
+ ///      8  in parallel: T1 ← DIFFERENCE( L' , L ) and
+ ///                      T2 ← DIFFERENCE( R' , R )
+ ///      9  return JOIN2( T1 , T2 )
  template< Executor E >
  [[nodiscard]] static Tree subtract( E & ex , Tree a , Tree b );
 
- /// BUILD_DOC
+ /// the tree of the n nodes alone of N, whose keys increase: the middle
+ /// one joined with the trees of the two halves, built in parallel, with
+ /// \f$ O( n ) \f$ work and \f$ O( \log^2 n ) \f$ span
  template< Executor E >
  [[nodiscard]] static Tree build( E & ex , Node * const * N ,
                                   std::size_t n );
 
- /// MULTIINSERT_DOC
+ /// the n nodes alone of N, whose keys increase, inserted in x; on a key
+ /// already there the value f( old , new ), and the node of N freed. It is
+ /// UNION( x , the tree of N ) with the split of the batch by a binary
+ /// search in place of SPLIT, so that the tree of N is never built:
+ /// \f$ O( m \log( n / m + 1 ) ) \f$ work for \f$ m = \min( n , | x | ) \f$
+ ///
+ ///     MULTI-INSERT( T , N[ 1 .. n ] )
+ ///      1  if n = 0 then return T
+ ///      2  if T = nil then return BUILD( N )
+ ///      3  ( L , k , R ) ← expose( T )
+ ///      4  j ← the first index with N[ j ] ≥ k
+ ///      5  in parallel: T1 ← MULTI-INSERT( L , N[ 1 .. j - 1 ] ) and
+ ///                      T2 ← MULTI-INSERT( R , N[ j' .. n ] ), where
+ ///                      j' is j + 1 if N[ j ] = k, j otherwise
+ ///      6  return JOIN( T1 , k , T2 )
  template< Executor E , class F >
  [[nodiscard]] static Tree multiInsert( E & ex , Tree x , Node * const * N ,
                                         std::size_t n , const F & f );
 
- /// MULTIREMOVE_DOC
+ /// the n keys of K, increasing, taken out of x and freed, gone how
+ /// many were there: DIFFERENCE( x , K ) with the split of K by a binary
+ /// search, \f$ O( m \log( n / m + 1 ) ) \f$ work
  template< Executor E >
  [[nodiscard]] static Tree multiRemove( E & ex , Tree x , const Key * K ,
                                         std::size_t n , std::size_t & gone );
 
- /// FILTER_DOC
+ /// the nodes of x with p( k , v ) kept, the others freed: the two
+ /// subtrees filtered in parallel and joined by the root if it stays, by
+ /// join2 if it does not; \f$ O( n ) \f$ work and
+ /// \f$ O( \log^2 n ) \f$ span
  template< Executor E , class P >
  [[nodiscard]] static Tree filter( E & ex , Tree x , const P & p );
 
- /// MAPREDUCE_DOC
+ /// reduce( reduce( of the left subtree , map( k , v ) ) , of the right
+ /// one ) on the tree of root t, the two subtrees in parallel: the keys
+ /// in their order, so that reduce needs to be associative only;
+ /// \f$ O( n ) \f$ work and \f$ O( \log n ) \f$ span
  template< Executor E , class M , class R , class U >
  [[nodiscard]] static U mapReduce( E & ex , Node * t , const M & map ,
                                    const R & reduce , const U & id );
 
- /// EXTRACT_DOC
+ /// the keys of x in \f$ [ lo , hi ] \f$ taken out into the tree
+ /// returned, by two splits, two joins and a join2, in
+ /// \f$ O( \log n ) \f$ time
  [[nodiscard]] static Tree extract( Tree & x , const Key & lo ,
                                     const Key & hi );
 

@@ -5,10 +5,11 @@
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
 # UBSan, BigInteger with its portable products and on the backend of GMP,     #
 # FastHash and the vector quicksort on AVX2 (and AVX-512 when the runner has  #
-# it), the queues between threads and the event count under ThreadSanitizer,  #
-# FlatHashTable on its broadword fallback and fft() on the lanes of AVX, on   #
-# arrays of doubles and on the intrinsics of x86 that MSVC takes; it measures #
-# the coverage of the tests and sends it to Coveralls.                        #
+# it), the queues between threads, the event count and the parallel           #
+# operations of the trees by join under ThreadSanitizer, FlatHashTable on its #
+# broadword fallback and fft() on the lanes of AVX, on arrays of doubles and  #
+# on the intrinsics of x86 that MSVC takes; it measures the coverage of the   #
+# tests and sends it to Coveralls.                                            #
 ###############################################################################
 
 name: CI
@@ -133,6 +134,13 @@ jobs:
               -DADS_CONTRACTS=3 -o tsanq test/engineered_queues.cpp -pthread
           ./tsanq event-count
           ./tsanq event-count-notifiers
+      - name: ThreadSanitizer on the bulk operations of the trees by join
+        run: |
+          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_CONTRACTS=3 -o tsan-joins test/join_trees.cpp -pthread
+          ./tsan-joins join-executors
+          ./tsan-joins interval-tree
+          ./tsan-joins range-tree
 
   broadword:
     runs-on: ubuntu-latest
