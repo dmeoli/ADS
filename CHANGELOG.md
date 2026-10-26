@@ -57,9 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   products of CsrMatrix, SellMatrix and gemm() bit for bit (gemm() as
   BLIS: the panel of B packed once and shared, a range of rows per
   thread), fft() by the four steps on the sequential one through three
-  tiled transpositions, bfsDistances() that optimizes its direction (the
-  nodes reached on a bitmap) and connectedComponents() by Afforest on
-  StaticGraph, and lcpArray() and lcpArrayPhi() by the permuted LCP;
+  tiled transpositions, bfsDistances() that optimizes its direction
+  and connectedComponents() by Afforest on StaticGraph, and lcpArray() and lcpArrayPhi() by the permuted LCP;
   Scratch.h, the room of the parallel algorithms kept between their
   calls; test/engineered_parallel.cpp
 - ConcurrentUnionFind, the union-find of Jayanti and Tarjan with the
