@@ -587,33 +587,34 @@ same code measured twice differs by 1.7% in the median cell and by 8.3% at
 the 90th percentile. The ratios below are those of 8 threads, the time of
 the library divided by that of the pool of ADS (the median, and the range
 over the cells in parentheses). The sorts of ADS are faster than IPS4o and
-IPS2Ra by 1.5 to 1.8 times in the median (0.8 to 15), than ParlayLib by 2.3
-to 2.8 times, and than `tbb::parallel_sort` and `std::sort` on
-`std::execution::par` by 6 to 7 times. They lose on few cells: 16 sorted
-runs of $10^6$ integers, which the integer sort of ParlayLib sorts 1.3
-times faster, few distinct strings and vectors already sorted, on which
-IPS4o is up to 1.3 times faster. On 2 threads the distribution costs more
-than the second thread saves (0.8 times the speed of the sequential sort in
-the median), and the sorts run the sequential one there. The parallel
-`multiwayMerge()` is 1.7 times faster than those of libstdc++ and tlx, and
-7.4 times faster than its sequential version; `gemm()` is 1.2 times faster
-than Eigen on OpenMP and 7.3 times faster than on one thread. The connected
-components are 2.3 times faster than Afforest of the GAP benchmark suite,
-and the prefix sums 1.3 to 1.6 times faster than those of OpenMP, ParlayLib
-and oneTBB, since they read the input once. It is fair to remark, however,
-that FFTW with its threads is faster than the parallel `fft()` (by 8% on 8
-threads, and by 1.4 to 1.6 times on 2 and 4, where the three transpositions
-of the four steps cost more than they save). Also, the visit in breadth of
-the GAP benchmark suite, which follows the same algorithm, is 4% faster
-than `bfsDistances()`, the product of sparse matrices by rows of oneTBB 7%
-faster than that of `CsrMatrix`, and the tables of libcuckoo and ParlayLib
-(the latter open addressing on keys alone) find keys 2 and 5 times faster
-than `ConcurrentCuckooTable` on 8 threads, whose lookups do not scale as
-well (it inserts them 1.4 times faster than libcuckoo, in a single run of
-$10^6$ and $4 \cdot 10^6$ keys). The same algorithms on the executors of
-OpenMP and oneTBB run within a few percent of the pool. On the executor of
-FastFlow they are 4% to 70% slower on 8 threads, and up to twice as slow on
-2, since its caller waits without working while its idle workers spin.
+IPS2Ra by 1.5 to 1.8 times in the median (0.8 to 15). They are faster than
+ParlayLib by 2.3 to 2.8 times, and than `tbb::parallel_sort` and
+`std::sort` on `std::execution::par` by 6 to 7 times. They lose on few
+cells: 16 sorted runs of $10^6$ integers, which the integer sort of
+ParlayLib sorts 1.3 times faster, few distinct strings and vectors already
+sorted, on which IPS4o is up to 1.3 times faster. On 2 threads the
+distribution costs more than the second thread saves (0.8 times the speed
+of the sequential sort in the median), and the sorts run the sequential one
+there. The parallel `multiwayMerge()` is 1.7 times faster than those of
+libstdc++ and tlx, and 7.4 times faster than its sequential version;
+`gemm()` is 1.2 times faster than Eigen on OpenMP and 7.3 times faster than
+on one thread. The connected components are 2.3 times faster than Afforest
+of the GAP benchmark suite, and the prefix sums 1.3 to 1.6 times faster
+than those of OpenMP, ParlayLib and oneTBB, since they read the input once.
+It is fair to remark, however, that FFTW with its threads is faster than
+the parallel `fft()` (by 8% on 8 threads, and by 1.4 to 1.6 times on 2 and
+4, where the three transpositions of the four steps cost more than they
+save). Also, the visit in breadth of the GAP benchmark suite, which follows
+the same algorithm, is 4% faster than `bfsDistances()`, and the product of
+sparse matrices by rows of oneTBB is 7% faster than that of `CsrMatrix`.
+The tables of libcuckoo and ParlayLib (the latter open addressing on keys
+alone) find keys 2 and 5 times faster than `ConcurrentCuckooTable` on 8
+threads, since its lookups do not scale as well; it inserts them 1.4 times
+faster than libcuckoo, in a single run of $10^6$ and $4 \cdot 10^6$ keys.
+The same algorithms on the executors of OpenMP and oneTBB run within a few
+percent of the pool. On the executor of FastFlow they are 4% to 70% slower
+on 8 threads, and up to twice as slow on 2, since its caller waits without
+working while its idle workers spin.
 
 ## Design by contract
 
