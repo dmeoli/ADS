@@ -44,7 +44,8 @@
  *   tables, all driven by the same threads of the pool
  *   (ConcurrentCuckooTable against tbb::concurrent_hash_map,
  *   tbb::concurrent_unordered_map, the cuckoohash_map of libcuckoo and the
- *   hashtable of ParlayLib), per key.
+ *   hashtable of ParlayLib), per key, for 10^6 and 4 10^6 keys (the nodes
+ *   of 10^7 keys of the tables of oneTBB take more than a GB).
  * Each structure runs only if ADS_BENCH_WHO names it, or with no such
  * variable, and ADS_BENCH_LIST lists them [see Bench.h], so that run.sh
  * runs each in a process of its own. Each cell is the median of r runs,
@@ -1394,7 +1395,7 @@ int main( int argc , char ** argv )
  if( only.empty() || ( only == "lcp" ) )
   texts( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "hash" ) )
-  hashing( o.sizes , o.runs , o.seed , X );
+  hashing( { 1000000 , 4000000 } , o.runs , o.seed , X );
  }
 
 /*--------------------------------------------------------------------------*/
