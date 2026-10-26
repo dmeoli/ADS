@@ -20,11 +20,13 @@ namespace ADS {
 
 namespace detail {
 
-constexpr int kTansLog = 11;                          ///< R
-constexpr std::uint32_t kTansStates = 1u << kTansLog; ///< L
-constexpr std::size_t kTansWays = 4;                  ///< the states
-constexpr std::size_t kTansStreams = 2;               ///< the streams
-constexpr std::size_t kTansHead = 8 + 512 + 8 * kTansStreams;   ///< header
+inline constexpr int kTansLog = 11;                   ///< R
+inline constexpr std::uint32_t kTansStates =
+ 1u << kTansLog;                                      ///< L
+inline constexpr std::size_t kTansWays = 4;           ///< the states
+inline constexpr std::size_t kTansStreams = 2;        ///< the streams
+inline constexpr std::size_t kTansHead =
+ 8 + 512 + 8 * kTansStreams;                          ///< header
 
 /// the symbol of each state, dealt by the step L / 2 + L / 8 + 3
 inline std::array< std::uint8_t , kTansStates > tansSpread(

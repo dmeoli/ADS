@@ -18,8 +18,8 @@ namespace ADS {
 
 namespace detail::bp {
 
-constexpr std::size_t kBlock = 128;         ///< the integers of a block
-constexpr std::size_t kGroup = 16;          ///< the blocks of a group
+inline constexpr std::size_t kBlock = 128;  ///< the integers of a block
+inline constexpr std::size_t kGroup = 16;   ///< the blocks of a group
 
 /// x with its bytes turned around on a big-endian machine
 constexpr std::uint64_t littleEndian64( std::uint64_t x )

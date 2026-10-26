@@ -13,6 +13,8 @@
 #   make bench       builds the benchmarks in $(BUILD)                        #
 #   bench/run.sh     runs them and writes the tables of the README            #
 #   make install     copies include/ADS into $(PREFIX)/include                #
+#   make test ADSMOD=1                                                        #
+#                    also the C++20 module ads and the test that imports it   #
 ###############################################################################
 
 CXX      ?= g++
@@ -36,7 +38,50 @@ HEADERS  = $(shell find include/ADS -name '*.h' -o -name '*.tpp') \
 PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
 BINS     = $(addprefix $(BUILD)/,$(PROGRAMS))
 
-all: $(BINS)
+# ADSMOD=1: the C++20 module ads [see src/ADS.cppm], compiled into the
+# module file and an object in $(BUILD), and $(BUILD)/module, the test that
+# imports it [see test/module.cpp], by clang++ 16 or g++ 15 or later; with
+# another compiler a warning says so, and the module is not built. The
+# module is compiled with the same $(CXXFLAGS) and $(INC) as the importer,
+# since a module file is imported only with the options it was made with.
+.DEFAULT_GOAL := all
+ifeq ($(ADSMOD),1)
+MODVER   := $(firstword $(subst ., ,$(shell $(CXX) -dumpversion)))
+MODID    := $(shell $(CXX) --version 2>/dev/null | head -n 1)
+ifneq ($(findstring clang,$(MODID)),)
+ifeq ($(shell test "$(MODVER)" -ge 16 2>/dev/null && echo ok),ok)
+MODKIND  = clang
+endif
+else ifeq ($(shell test "$(MODVER)" -ge 15 2>/dev/null && echo ok),ok)
+MODKIND  = gcc
+endif
+ifeq ($(MODKIND),)
+$(warning ADSMOD is turned off: $(CXX) $(MODVER) does not build the \
+          modules (clang++ 16 or g++ 15 or later is needed))
+endif
+endif
+
+ifeq ($(MODKIND),clang)
+MODBIN   = $(BUILD)/module
+$(BUILD)/ads.o: src/ADS.cppm $(HEADERS) | $(BUILD)
+	$(CXX) $(CXXFLAGS) $(INC) -x c++-module -c $< \
+	 -fmodule-output=$(BUILD)/ads.pcm -o $@ -pthread
+$(BUILD)/module: test/module.cpp $(BUILD)/ads.o
+	$(CXX) $(CXXFLAGS) -fprebuilt-module-path=$(BUILD) -o $@ $< \
+	 $(BUILD)/ads.o -pthread $(LIBS)
+endif
+# g++ finds the module file by the mapper $(BUILD)/ads.map
+ifeq ($(MODKIND),gcc)
+MODBIN   = $(BUILD)/module
+MODMAP   = -fmodules -fmodule-mapper=$(BUILD)/ads.map
+$(BUILD)/ads.o: src/ADS.cppm $(HEADERS) | $(BUILD)
+	echo "ads $(abspath $(BUILD))/ads.gcm" > $(BUILD)/ads.map
+	$(CXX) $(CXXFLAGS) $(INC) $(MODMAP) -x c++ -c $< -o $@ -pthread
+$(BUILD)/module: test/module.cpp $(BUILD)/ads.o
+	$(CXX) $(CXXFLAGS) $(MODMAP) -o $@ $< $(BUILD)/ads.o -pthread $(LIBS)
+endif
+
+all: $(BINS) $(MODBIN)
 
 $(BUILD)/%: test/%.cpp $(HEADERS) | $(BUILD)
 	$(CXX) $(CXXFLAGS) $(INC) -o $@ $< -pthread $(LIBS)
@@ -61,7 +106,7 @@ test-mpi: | $(BUILD)
 
 # each line of tests.txt is a test, and each program must have the tests of
 # the list, no more and no less
-test: $(BINS)
+test: $(BINS) $(MODBIN)
 	@failed=0; \
 	for p in $(PROGRAMS); do \
 	  listed=$$(awk -v p=$$p '$$1 == p {print $$2}' test/tests.txt | sort); \
@@ -73,6 +118,7 @@ test: $(BINS)
 	    $(BUILD)/$$p $$t || failed=$$((failed + 1)); \
 	  done; \
 	done; \
+	$(if $(MODBIN),$(MODBIN) || failed=$$((failed + 1));) \
 	echo "$$failed failed"; test $$failed -eq 0
 
 # the benchmarks, with the contracts off and the Boost headers if found;

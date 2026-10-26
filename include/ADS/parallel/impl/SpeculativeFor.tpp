@@ -29,7 +29,8 @@ std::size_t packKept( E & ex , const std::vector< std::size_t > & I ,
                       const std::vector< char > & keep , std::size_t k ,
                       std::vector< std::size_t > & out )
 {
- const auto [ B , size ] = blocksOf( 0 , k , 2048 );
+ const auto blocks = blocksOf( 0 , k , 2048 );
+ const std::size_t B = blocks.first , size = blocks.second;
  std::vector< std::size_t > at( B + 1 , 0 );
  parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
   std::size_t c = 0;

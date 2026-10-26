@@ -43,6 +43,7 @@ PAGES = {
     'Further reading': 'user-guide/further-reading.md',
     'Build and test': 'getting-started/installation.md',
     'Use': 'getting-started/quick-start.md',
+    'C++20 module': 'getting-started/quick-start.md',
     'License': 'project/license.md',
 }
 

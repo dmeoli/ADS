@@ -86,6 +86,39 @@ if (ADS_WITH_MPI)
     target_link_libraries(ADS INTERFACE MPI::MPI_CXX)
 endif ()
 
+# ----- the C++20 module ads [see src/ADS.cppm], off by default ----------- #
+# the module exports the names of all the headers, so that a translation
+# unit can write "import ads;" in place of including them; it needs CMake
+# 3.28, a generator that scans the module dependencies and a compiler that
+# builds modules, and where one is missing the option is turned off with a
+# warning [see cmake/ADSCheckModule.cmake]
+option(ADS_BUILD_MODULE "build the C++20 module ads [see src/ADS.cppm]" OFF)
+include(cmake/ADSCheckModule.cmake)
+ads_check_module()
+if (ADS_BUILD_MODULE)
+    # the scan of the module dependencies, which cmake_minimum_required()
+    # above leaves off
+    cmake_policy(SET CMP0155 NEW)
+    add_library(ADS_module)
+    target_sources(ADS_module PUBLIC
+            FILE_SET CXX_MODULES
+            BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
+            FILES src/ADS.cppm)
+    target_compile_features(ADS_module PUBLIC cxx_std_20)
+    target_link_libraries(ADS_module PUBLIC ADS)
+    # the include directories and the macros of ADS also on the module
+    # itself, as the importer of the installed one compiles it again with
+    # these alone, CMake 3.28 dropping those of the libraries it links
+    get_target_property(ADS_DEFINITIONS ADS INTERFACE_COMPILE_DEFINITIONS)
+    target_include_directories(ADS_module PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>)
+    if (ADS_DEFINITIONS)
+        target_compile_definitions(ADS_module PRIVATE ${ADS_DEFINITIONS})
+    endif ()
+    add_library(ADS::ADS_module ALIAS ADS_module)
+endif ()
+
 option(ADS_BUILD_TESTS "build the tests (by default only as the main project)"
        ${PROJECT_IS_TOP_LEVEL})
 if (ADS_BUILD_TESTS)
@@ -346,6 +379,13 @@ set(ADS_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_DATADIR}/pkgconfig
     CACHE STRING "where to install ads.pc")
 
 install(TARGETS ADS EXPORT ADSTargets)
+# the module, whose interface is compiled again by each importer
+if (ADS_BUILD_MODULE)
+    install(TARGETS ADS_module EXPORT ADSTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            FILE_SET CXX_MODULES
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ADS/modules)
+endif ()
 install(DIRECTORY include/ADS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT ADSTargets
         NAMESPACE ADS::

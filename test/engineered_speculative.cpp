@@ -221,7 +221,8 @@ ADS_TEST( "parallel-kruskal" )
   { 20000 , 15000 , 1 , 1000000 , 6 } ,   // disconnected
   { 500 , 60000 , 7 , 7 , 7 } ,          // all equal, parallel edges
   { 300 , 3000 , -50 , 50 , 8 } };        // small, against the book's
- for( const auto & [ n , m , lo , hi , seed ] : cases ) {
+ for( const auto & [ nodes , m , lo , hi , seed ] : cases ) {
+  const int n = nodes;  // Clang captures no binding under OpenMP
   const auto E = randomEdges( std::max( n , 1 ) , m , lo , hi , seed );
   const auto P = pairsOf( E );
   const auto ref = greedy( n , P , byWeight( E ) );
@@ -256,12 +257,13 @@ ADS_TEST( "parallel-kruskal" )
 
 ADS_TEST( "parallel-mis-matching" )
 {
- for( const auto & [ n , m , seed ] : std::vector< std::tuple< int , int ,
-                                     unsigned > >{ { 0 , 0 , 1 } ,
+ for( const auto & [ nodes , m , seed ] : std::vector< std::tuple< int ,
+                                     int , unsigned > >{ { 0 , 0 , 1 } ,
                                                    { 1 , 0 , 2 } ,
                                                    { 100 , 0 , 3 } ,
                                                    { 20000 , 60000 , 4 } ,
                                                    { 6000 , 200000 , 5 } } ) {
+  const int n = nodes;  // Clang captures no binding under OpenMP
   // the graph without loops for the set, with them for the matching
   const auto E = randomEdges( std::max( n , 1 ) , m , 0 , 0 , seed );
   std::vector< std::pair< int , int > > simple;

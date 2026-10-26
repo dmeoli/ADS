@@ -22,10 +22,11 @@ namespace ADS {
 
 namespace detail {
 
-constexpr int kRansScale = 12;                        ///< M = 2^12
-constexpr std::uint32_t kRansLow = 1u << 16;          ///< the least state
-constexpr std::size_t kRansWays = 4;                  ///< the states
-constexpr std::size_t kRansHead = 8 + 512 + 4 * kRansWays;   ///< the header
+inline constexpr int kRansScale = 12;                 ///< M = 2^12
+inline constexpr std::uint32_t kRansLow = 1u << 16;   ///< the least state
+inline constexpr std::size_t kRansWays = 4;           ///< the states
+inline constexpr std::size_t kRansHead =
+ 8 + 512 + 4 * kRansWays;                             ///< the header
 
 }  // end( namespace detail )
 

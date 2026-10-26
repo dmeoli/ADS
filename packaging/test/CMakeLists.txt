@@ -2,8 +2,9 @@
 #                      packaging/test/CMakeLists.txt                          #
 #                                                                             #
 # A project that uses an installed ADS through find_package(ADS), and, when   #
-# pkg-config is there, also through ads.pc: the recipes of packaging/ build   #
-# it against the package they made and run it.                                #
+# pkg-config is there, also through ads.pc, and through the C++20 module ads  #
+# when the package has it: the recipes of packaging/ build it against the     #
+# package they made and run it.                                               #
 #                                                                             #
 #   cmake -S packaging/test -B build-use -DCMAKE_PREFIX_PATH=<prefix>         #
 #   cmake --build build-use && ctest --test-dir build-use                     #
@@ -18,6 +19,14 @@ target_link_libraries(use-cmake PRIVATE ADS::ADS)
 
 enable_testing()
 add_test(NAME use-cmake COMMAND use-cmake)
+
+# the module ads, when the package has it [see module.cpp]
+if (TARGET ADS::ADS_module)
+    cmake_minimum_required(VERSION 3.28)
+    add_executable(use-module module.cpp)
+    target_link_libraries(use-module PRIVATE ADS::ADS_module)
+    add_test(NAME use-module COMMAND use-module)
+endif ()
 
 find_package(PkgConfig QUIET)
 if (PKG_CONFIG_FOUND)

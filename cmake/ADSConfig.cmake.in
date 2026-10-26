@@ -1,9 +1,10 @@
 ###############################################################################
 #                            ADSConfig.cmake.in                               #
 #                                                                             #
-# The configuration that find_package(ADS) reads: it defines ADS::ADS, and    #
-# ADS::GMP when ADS was built with ADS_WITH_GMP; it finds again the threads,  #
-# OpenMP and oneTBB when ADS was built with their executors, and MPI.         #
+# The configuration that find_package(ADS) reads: it defines ADS::ADS,        #
+# ADS::ADS_module when ADS was built with ADS_BUILD_MODULE and ADS::GMP when  #
+# it was built with ADS_WITH_GMP; it finds again the threads, OpenMP and      #
+# oneTBB when ADS was built with their executors, and MPI.                    #
 ###############################################################################
 
 @PACKAGE_INIT@

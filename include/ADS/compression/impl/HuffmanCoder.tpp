@@ -23,10 +23,10 @@ namespace ADS {
 namespace detail {
 
 /// the longest codeword of HuffmanCoder.h, and the bytes of its header
-constexpr int kHuffMax = 11;
-constexpr std::size_t kHuffHead = 8 + 1 + 128 + 12;
+inline constexpr int kHuffMax = 11;
+inline constexpr std::size_t kHuffHead = 8 + 1 + 128 + 12;
 /// the bytes from which the decoder reads a window of 12 bits
-constexpr std::size_t kHuffWide = std::size_t( 1 ) << 18;
+inline constexpr std::size_t kHuffWide = std::size_t( 1 ) << 18;
 
 /// the l low bits of c turned around
 constexpr std::uint32_t reverseLow( std::uint32_t c , int l )

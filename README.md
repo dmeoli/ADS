@@ -834,6 +834,46 @@ std::ranges::reverse( L );               // the algorithms of std
 for( int x : L ) std::cout << x;
 ```
 
+## C++20 module
+
+The module `ads` (`src/ADS.cppm`) exports every name that the headers
+declare in the namespace `ADS` and in those nested in it (but for the
+namespaces `detail`), so that a translation unit can write `import ads;` in
+place of the `#include` of the headers, which keep working as before. With
+CMake 3.28 or later, the Ninja generator and Clang 16 (with `clang-scan-deps`)
+or GCC 15 or later, `-DADS_BUILD_MODULE=ON` (off by default; turned off with a
+warning where one of these is missing) builds the target `ADS::ADS_module`,
+installed with the package,
+
+```cmake
+find_package(ADS REQUIRED)
+target_link_libraries(<target> PRIVATE ADS::ADS_module)
+```
+
+and, without CMake, `make test ADSMOD=1 CXX=clang++` (or `CXX=g++`) builds the
+module in `build-make` and the test that imports it. AppleClang does not
+build it, while the Clang of LLVM on macOS does; GCC 14 stops on it with an
+internal error, and MSVC discards the operators of the standard library
+(e.g., those of `std::complex`) that the templates of the module use only
+in their instantiations, so that an importer does not compile. The macros are not exported
+by a module, so a file that uses those of the contracts (e.g., `ADS_PRE`)
+still includes `ADS/Contract.h`, and those that configure the headers (e.g.,
+`ADS_CONTRACTS`, `ADS_WITH_GMP`) take the value they have where the module is
+compiled; the executors of OpenMP, oneTBB and FastFlow and the sort on MPI
+are in the module only when it is compiled with their library. The file of
+the module is written by `cmake/ads_module_exports.py` from the AST of the
+headers, and it is written again when a header gains or loses a name.
+
+The gain is small, since the library is made of templates, which an importer
+still instantiates and compiles: on a server with 384 cores and a load of 55
+to 73 (hence the times are indicative), Clang 18 at `-O2` compiles a program
+with Dijkstra's algorithm on a `ListGraph` in 1.0 to 1.2 s with `import`
+against 1.3 to 1.5 s with the headers, one with `convolve()` in 20 to 23 s
+against 22 to 26 s, and the test of the module, which takes 6 areas, in 23 to
+25 s against 24 to 27 s, the module itself taking 9 s once; the peak memory
+grows instead, from 160 to 265 MB, from 690 to 775 MB and from 710 to 800 MB,
+since the importer loads the module of the whole library (90 MB).
+
 ## License
 
 This software is released under the [GNU Lesser General Public License

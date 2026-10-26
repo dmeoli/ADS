@@ -13,7 +13,9 @@
 # fft() on the lanes of AVX, on arrays of doubles and on the intrinsics of    #
 # x86 that MSVC takes; it measures the coverage of the tests, run four at a   #
 # time and with the cases there for their scale alone made smaller, and sends #
-# it to Coveralls.                                                            #
+# it to Coveralls; it builds the C++20 module ads and runs the test that      #
+# imports it, by CMake and Ninja with Clang and GCC 15 on Linux and the Clang #
+# of LLVM on macOS, and by the makefile with clang++ and g++ 15.              #
 ###############################################################################
 
 name: CI
@@ -256,3 +258,83 @@ jobs:
         env:
           SAN: -fsanitize=address,undefined -fno-omit-frame-pointer
         run: make test CXXFLAGS="-std=c++20 -O1 -g $SAN -Wall -Wextra"
+
+  # the module by CMake: a build where it was turned off fails, as does one
+  # where ctest finds no test module; GCC 15, which the runners lack, from
+  # its image
+  module-cmake:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest , cxx: clang++ }
+          - { os: ubuntu-latest , cxx: g++ , image: "gcc:15" }
+          - { os: macos-latest , cxx: llvm }
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ninja and clang-scan-deps
+        if: runner.os == 'Linux' && !matrix.image
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang clang-tools
+      - name: CMake and Ninja in the image of GCC
+        if: matrix.image
+        run: |
+          apt-get update
+          apt-get install -y cmake ninja-build
+      - name: Ninja and LLVM
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja llvm
+          llvm=$(brew --prefix llvm)
+          echo "CXX=$llvm/bin/clang++" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$llvm/lib/c++ -Wl,-rpath,$llvm/lib/c++" \
+               >> $GITHUB_ENV
+      - name: the compiler
+        if: runner.os == 'Linux'
+        run: echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+      - name: the module and its test
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DADS_BUILD_MODULE=ON \
+                -DCMAKE_INSTALL_PREFIX="$PWD/inst" 2>&1 | tee cmake.log
+          ! grep -q 'ADS_BUILD_MODULE is turned OFF' cmake.log
+          cmake --build build --target module
+          ctest --test-dir build -R '^module$' --no-tests=error \
+                --output-on-failure
+      - name: installed and imported through find_package
+        shell: bash
+        run: |
+          cmake --install build
+          test -f inst/include/ADS/modules/ADS.cppm
+          cmake -S packaging/test -B build-use -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/inst"
+          cmake --build build-use --target use-module
+          ctest --test-dir build-use -R '^use-module$' --no-tests=error \
+                --output-on-failure
+
+  # the module by the makefile: make builds build-make/module only with the
+  # module, the rule of the other tests failing on its import
+  module-make:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { cxx: clang++ }
+          - { cxx: g++ , image: "gcc:15" }
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: the module and its test
+        shell: bash
+        run: |
+          set -o pipefail
+          make ADSMOD=1 CXX=${{ matrix.cxx }} build-make/module 2>&1 \
+               | tee make.log
+          ! grep -q 'ADSMOD is turned off' make.log
+          build-make/module

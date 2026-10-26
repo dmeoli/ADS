@@ -54,6 +54,13 @@ if (ADS_WITH_MPI)
     endforeach ()
 endif ()
 
+# the module ads, imported in place of the headers [see module.cpp]
+if (ADS_BUILD_MODULE)
+    add_executable(module module.cpp)
+    target_link_libraries(module PRIVATE ADS::ADS_module)
+    add_test(NAME module COMMAND module)
+endif ()
+
 ###############################################################################
 #                       End of test/CMakeLists.txt                            #
 ###############################################################################

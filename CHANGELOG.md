@@ -266,6 +266,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bench/dynamic.cpp, the observers against the algorithms from scratch
   after each change and the rollback, and bench/greedy.cpp, the parallel
   greedy algorithms against the examples of ParlayLib (PARLAY=<dir>)
+- the C++20 module ads (src/ADS.cppm), which exports the names of all the
+  headers, written by cmake/ads_module_exports.py from their AST: the CMake
+  option ADS_BUILD_MODULE (off by default, turned off with a warning by
+  cmake/ADSCheckModule.cmake where CMake, the generator or the compiler do
+  not build modules) and the target ADS::ADS_module, installed with the
+  package; make ADSMOD=1 with clang++ 16 or g++ 15 or later; the test
+  test/module.cpp, the program packaging/test/module.cpp, and the jobs
+  module-cmake and module-make of the CI
 - bench/bignum.cpp: the squares, the gcd of two numbers with a common
   factor of 3 and the integer square root of 2n digits, the length of 1024
   digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>
@@ -1822,6 +1830,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   position of its cell in the lists of the copy: it kept the one in the
   lists of the source, read after the source changed or was destroyed;
   the test child-list-tree-copy
+- speculativeFor() and the test program engineered_speculative compile
+  with Clang and -fopenmp, which refuses a lambda that captures a
+  structured binding: the bindings captured are copied into variables
 - BucketQueue: a layer that empties and fills again with large second
   keys and few items, as the least layer of a best-first search on a large
   grid whose nodes come in batches, no longer pays the whole range of its
@@ -1889,6 +1900,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the duplicated include of <algorithm> in ConvexHull.h, CoinChange.h,
   FractionalKnapsack.h, Intervals.h, ShortestJobFirst.h,
   WeightedIntervals.h and Anagrams.h
+- the constants at namespace scope of Rans.tpp, Tans.tpp, HuffmanCoder.tpp
+  and BinaryPacking.tpp are inline: with internal linkage, the functions of
+  a module that use them exposed them, which GCC refuses
 - the build with MSVC: PGMIndex, the loser tree of the multiway merge,
   prefixKeySort() and the multiple search no longer use __int128 or
   __builtin_bswap64() where the compiler lacks them, but the primitives
