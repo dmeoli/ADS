@@ -985,7 +985,9 @@ std::size_t partitionU( typename V::K * a , std::size_t n , typename V::K p ,
                                               std::ptrdiff_t( 8 * UN );
   for( std::size_t u = 0 ; u < U ; ++u ) {
    v[ u ] = V::load( at + u * N );
+#if defined( __GNUC__ ) || defined( __clang__ )
    __builtin_prefetch( at + u * N + ahead );
+#endif
    if constexpr( Track ) {
     mn = V::min( mn , v[ u ] );
     mx = V::max( mx , v[ u ] );

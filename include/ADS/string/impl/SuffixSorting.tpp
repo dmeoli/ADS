@@ -35,8 +35,9 @@ namespace ADS {
 
 namespace detail {
 
-/// a pointer whose array no other pointer of the function reaches
-#if defined( __GNUC__ ) || defined( __clang__ ) || defined( _MSC_VER )
+/// a pointer whose array no other pointer of the function reaches; not on
+/// MSVC, whose optimizer fails on these loops with it
+#if defined( __GNUC__ ) || defined( __clang__ )
  #define ADS_SAIS_RESTRICT __restrict
 #else
  #define ADS_SAIS_RESTRICT
