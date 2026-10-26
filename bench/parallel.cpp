@@ -45,9 +45,12 @@
  *   (ConcurrentCuckooTable against tbb::concurrent_hash_map,
  *   tbb::concurrent_unordered_map, the cuckoohash_map of libcuckoo and the
  *   hashtable of ParlayLib), per key.
- * Each cell is the median of r runs, in nanoseconds per item, of the work
- * on a fresh copy of the input, the copy excluded, after a first run not
- * timed that starts the threads of the runtime; a result different from
+ * Each structure runs only if ADS_BENCH_WHO names it, or with no such
+ * variable, and ADS_BENCH_LIST lists them [see Bench.h], so that run.sh
+ * runs each in a process of its own. Each cell is the median of r runs,
+ * in nanoseconds per item, of the work on a fresh copy of the input, the
+ * copy excluded, after a first run not timed that starts the threads of
+ * the runtime; a result different from
  * the sequential one gets -1. The benchmark of a cell is "parallel
  * <algorithm> t<t>", so that the cells of each number of threads make a
  * table of their own; its first structure is run twice, the second time as
@@ -427,9 +430,10 @@ void runBattery( const std::string & b , const std::string & c ,
  if( S.empty() )
   return;
  for( std::size_t i = 0 ; i < S.size() ; ++i ) {
-  ADS::bench::print( b.c_str() , c , A.size() , S[ i ].first ,
-                     timeIt( A , S[ i ].second , r , ok ) );
-  if( i == 0 )
+  if( ! ADS::bench::skip( S[ i ].first ) )
+   ADS::bench::print( b.c_str() , c , A.size() , S[ i ].first ,
+                      timeIt( A , S[ i ].second , r , ok ) );
+  if( ( i == 0 ) && ! ADS::bench::skip( S[ i ].first + " A/A" ) )
    ADS::bench::print( b.c_str() , c , A.size() , S[ i ].first + " A/A" ,
                       timeIt( A , S[ i ].second , r , ok ) );
   }
@@ -761,9 +765,10 @@ void runWorks( const std::string & b , const std::string & c , std::size_t n ,
                Works & S , int r , P && prepare , K && ok )
 {
  for( std::size_t i = 0 ; i < S.size() ; ++i ) {
-  ADS::bench::print( b.c_str() , c , n , S[ i ].first ,
-                     timeRuns( n , prepare , S[ i ].second , r , ok ) );
-  if( i == 0 )
+  if( ! ADS::bench::skip( S[ i ].first ) )
+   ADS::bench::print( b.c_str() , c , n , S[ i ].first ,
+                      timeRuns( n , prepare , S[ i ].second , r , ok ) );
+  if( ( i == 0 ) && ! ADS::bench::skip( S[ i ].first + " A/A" ) )
    ADS::bench::print( b.c_str() , c , n , S[ i ].first + " A/A" ,
                       timeRuns( n , prepare , S[ i ].second , r , ok ) );
   }
@@ -892,7 +897,7 @@ void sparse( const std::vector< std::size_t > & sizes , int r ,
 #if defined( ADS_HAS_EIGEN )
    using ES = Eigen::SparseMatrix< double , Eigen::RowMajor , std::int64_t >;
    std::shared_ptr< ES > E;
-   if( runs( "openmp" ) ) {
+   if( runs( "openmp" ) && ! ADS::bench::skip( "Eigen::SparseMatrix" ) ) {
     E = std::make_shared< ES >( long( n ) , long( n ) );
     std::vector< Eigen::Triplet< double , std::int64_t > > ET;
     for( const auto & [ i , j , v ] : T )
@@ -1016,7 +1021,7 @@ void ffts( int r , unsigned seed , Executors & X )
     ADS::fft( B , false ); } );
   runBattery( bench( "fft" ) , "complex" , A , S , r , close );
 #if defined( ADS_HAS_FFTW )
-  if( runs( "fftw" ) ) {
+  if( runs( "fftw" ) && ! ADS::bench::skip( "FFTW" ) ) {
    using FV = std::vector< ADS::Complex , FftwAllocator< ADS::Complex > >;
    FV F( A.begin() , A.end() );
    fftw_init_threads();
@@ -1103,7 +1108,10 @@ void graphs( const std::vector< int > & scales , int r , unsigned seed ,
    std::size_t count = 0;
 #if defined( ADS_HAS_GAPBS )
    std::unique_ptr< Graph > gg;
-   if( runs( "openmp" ) ) {
+   const bool gap = ! ADS::bench::skip( "gapbs DOBFS" ) |
+                    ! ADS::bench::skip( "gapbs Afforest" ) |
+                    ! ADS::bench::skip( "gapbs ShiloachVishkin" );
+   if( runs( "openmp" ) && gap ) {
     NodeID * neighs = new NodeID[ arcs ];
     pvector< SGOffset > off( std::size_t( n ) + 1 );
     for( int v = 0 ; v <= n ; ++v ) off[ std::size_t( v ) ] = g.offsets()[ v ];
@@ -1114,7 +1122,7 @@ void graphs( const std::vector< int > & scales , int r , unsigned seed ,
 #endif
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
    parlay::sequence< parlay::sequence< int > > pg;
-   if( runs( "parlay" ) )
+   if( runs( "parlay" ) && ! ADS::bench::skip( "parlay BFS_ligra" ) )
     pg = parlay::tabulate( std::size_t( n ) , [ & ]( std::size_t v ) {
      return( parlay::to_sequence( g.out( int( v ) ) ) ); } );
 #endif
@@ -1317,6 +1325,8 @@ void hashing( const std::vector< std::size_t > & sizes , int r ,
   for( std::size_t i = 0 ; i < T.size() ; ++i )
    for( int aa = 0 ; aa < ( i == 0 ? 2 : 1 ) ; ++aa ) {
     const std::string who = T[ i ].name + ( aa ? " A/A" : "" );
+    if( ADS::bench::skip( who ) )
+     continue;
     ADS::bench::print( bench( "hash insert" ).c_str() , "uint64" , n , who ,
                        timeRuns( n , [ & ] { T[ i ].drop(); T[ i ].make(); } ,
                                  T[ i ].insert , r ,

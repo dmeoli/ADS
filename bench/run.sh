@@ -13,7 +13,7 @@
 # benchmark in one process. The core comes from CORE (default 0), the second  #
 # one of the benchmark of two threads from CORE2 (default CORE + 1), the runs #
 # per cell from RUNS (default 11), the build directory from BUILD, the text   #
-# of the compressors from ADS_BENCH_TEXT (a file, repeated up to each size), #
+# of the compressors from ADS_BENCH_TEXT (a file, repeated up to each size),  #
 # the cores of the parallel algorithms from PCORES (default CORE).            #
 #                                                                             #
 #   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
