@@ -15,11 +15,11 @@
  * Each cell is the median of r runs of the time to sort a fresh copy of the
  * same input, in nanoseconds per item, the copy excluded; the contracts are
  * off (ADS_CONTRACTS=0). The output is one line per ( type , pattern , n ,
- * sort ), tab separated, so that a script can tabulate it; the row "A/A"
- * is std::sort run a second time, the noise of the machine, and a sort
- * that leaves a copy out of order gets -1. The records are also sorted by
- * their key, by IPS2Ra, ska_sort and radixSortBy, marked "(key)", which
- * do not compare with the order of the records.
+ * sort ), tab separated, so that a script can tabulate it; the row
+ * "std::sort A/A" is std::sort run a second time, the noise of the machine,
+ * and a sort that leaves a copy out of order gets -1. The records are also
+ * sorted by their key, by IPS2Ra, ska_sort and radixSortBy, marked "(key)",
+ * which do not compare with the order of the records.
  *
  *   sort [ -r runs ] [ -s seed ] n1 n2 ...
  *
@@ -242,7 +242,7 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
  std::vector< std::pair< std::string , std::function< void( V & ) > > > S = {
   { "std::sort" , [ & ]( V & A ) {
    std::sort( A.begin() , A.end() , less ); } } ,
-  { "A/A" , [ & ]( V & A ) {
+  { "std::sort A/A" , [ & ]( V & A ) {
    std::sort( A.begin() , A.end() , less ); } } ,
   { "std::stable_sort" , [ & ]( V & A ) {
    std::stable_sort( A.begin() , A.end() , less ); } } ,
