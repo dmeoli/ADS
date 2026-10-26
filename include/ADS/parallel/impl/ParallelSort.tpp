@@ -632,7 +632,8 @@ template< bool Stable , class E , class T , class C >
 void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
 {
  const std::size_t n = A.size() , p = ex.concurrency();
- if( ( p == 1 ) || ( n < kParallelSort ) || ( depth > 3 ) ) {
+ if( ( p < kParallelSortThreads ) || ( n < kParallelSort ) ||
+     ( depth > 3 ) ) {
   sequentialSort< Stable >( A , less );
   return;
   }
