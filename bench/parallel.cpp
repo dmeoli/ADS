@@ -1110,7 +1110,9 @@ void graphs( const std::vector< int > & scales , int r , unsigned seed ,
 #if defined( ADS_HAS_GAPBS )
    std::unique_ptr< Graph > gg;
    const bool gap = ! ADS::bench::skip( "gapbs DOBFS" ) |
+                    ! ADS::bench::skip( "gapbs DOBFS A/A" ) |
                     ! ADS::bench::skip( "gapbs Afforest" ) |
+                    ! ADS::bench::skip( "gapbs Afforest A/A" ) |
                     ! ADS::bench::skip( "gapbs ShiloachVishkin" );
    if( runs( "openmp" ) && gap ) {
     NodeID * neighs = new NodeID[ arcs ];
