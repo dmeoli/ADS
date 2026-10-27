@@ -334,7 +334,7 @@ ADS_TEST( "reopt-shortest-paths" )
   q.setRecomputeRatio( 0.5 );
   Observable< LG , ShortestPathsObserver< LG > > oh( h , q );
   long long seen[ 3 ] = { 0 , 0 , 0 };
-  for( int step = 0 ; step < 3000 ; ++step ) {
+  for( int step = 0 ; step < ADS::test::scaled( 3000 , 3000 / 5 ) ; ++step ) {
    const auto V = h.V();
    const int u = V[ rng() % V.size() ] , v = V[ rng() % V.size() ];
    const int k = int( rng() % 10 );
@@ -419,7 +419,7 @@ ADS_TEST( "reopt-spanning-forest" )
   Observable< LG > oh( h );
   oh.attach( q );
   long long seen[ 3 ] = { 0 , 0 , 0 };
-  for( int step = 0 ; step < 1500 ; ++step ) {
+  for( int step = 0 ; step < ADS::test::scaled( 1500 , 1500 / 5 ) ; ++step ) {
    const auto V = h.V();
    const int u = V[ rng() % V.size() ] , v = V[ rng() % V.size() ];
    const int k = int( rng() % 12 );
@@ -502,7 +502,7 @@ ADS_TEST( "reopt-max-flow" )
   q.setRecomputeRatio( 0.5 );
   Observable< LG , MaxFlowObserver< LG > > oh( h , q );
   long long seen[ 3 ] = { 0 , 0 , 0 };
-  for( int step = 0 ; step < 3000 ; ++step ) {
+  for( int step = 0 ; step < ADS::test::scaled( 3000 , 3000 / 5 ) ; ++step ) {
    const int u = int( rng() % n ) , v = int( rng() % n );
    if( u == v )
     continue;
@@ -581,7 +581,7 @@ ADS_TEST( "rollback-union-find" )
  const int n = 200;
  U.reset( n );
  std::vector< std::pair< int , int > > done;
- for( int step = 0 ; step < 5000 ; ++step ) {
+ for( int step = 0 ; step < ADS::test::scaled( 5000 , 5000 / 5 ) ; ++step ) {
   if( ( rng() % 4 == 0 ) && ! done.empty() ) {
    const int t = int( rng() % ( done.size() + 1 ) );
    U.rollback( t );
@@ -632,7 +632,7 @@ ADS_TEST( "offline-connectivity" )
   const int n = seed == 1 ? 30 : 8;
   std::vector< Op > R;
   std::vector< std::pair< int , int > > alive;
-  for( int step = 0 ; step < 3000 ; ++step ) {
+  for( int step = 0 ; step < ADS::test::scaled( 3000 , 3000 / 5 ) ; ++step ) {
    const int k = int( rng() % 5 );
    if( k < 2 ) {
     const int u = int( rng() % n ) , v = int( rng() % n );
