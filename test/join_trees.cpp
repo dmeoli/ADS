@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <random>
 #include <set>
@@ -771,6 +772,37 @@ ADS_TEST( "range-tree" )
            std::numeric_limits< int >::lowest() );
  CHECK( E.count( 0 , std::numeric_limits< int >::max() ,
                  std::numeric_limits< int >::lowest() , 0 ) == 1 );
+ }
+
+ADS_TEST( "infinite-bounds" )
+{
+ // the points, the intervals and the values at the infinities of a
+ // floating type, which no finite sentinel bounds
+ constexpr double inf = std::numeric_limits< double >::infinity();
+ RangeTree< double > R( { { 0 , -inf } , { 0 , inf } , { 1 , -inf } ,
+                          { 1 , 0 } , { 1 , inf } , { 2 , inf } ,
+                          { -inf , 5 } , { inf , 5 } , { -inf , -inf } ,
+                          { inf , inf } } );
+ CHECK( R.count( 0 , 1 , -inf , inf ) == 5 );
+ CHECK( R.count( 1 , 1 , -inf , -inf ) == 1 );
+ CHECK( R.count( 0 , 2 , inf , inf ) == 3 );
+ CHECK( R.count( -inf , inf , 5 , 5 ) == 2 );
+ CHECK( R.count( -inf , -inf , -inf , inf ) == 2 );
+ CHECK( R.count( inf , inf , -inf , inf ) == 2 );
+ CHECK( R.count( -inf , inf , -inf , inf ) == 10 );
+ IntervalTree< double > I( { { -inf , 0 } , { 5 , inf } , { inf , inf } ,
+                             { -inf , -inf } } );
+ CHECK( ( I.count( -inf ) == 2 ) && I.stabbed( -inf ) );
+ CHECK( ( I.count( inf ) == 2 ) && I.stabbed( inf ) );
+ CHECK( ( I.count( 3 ) == 0 ) && ! I.stabbed( 3 ) );
+ JoinTree< int , double , AVLBalance , MaxAugmentation< double > > M;
+ M.insert( 1 , -inf );
+ M.insert( 2 , -inf );
+ CHECK( M.augValue() == -inf );
+ CHECK( M.augRange( 1 , 2 ) == -inf );
+ CHECK( M.augPrefix( 1 ) == -inf );
+ M.insert( 3 , std::numeric_limits< double >::lowest() );
+ CHECK( M.augValue() == std::numeric_limits< double >::lowest() );
  }
 
 ADS_TEST( "join-executors" )

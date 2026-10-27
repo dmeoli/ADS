@@ -1752,6 +1752,7 @@ join_trees  join-tree-dictionary  JoinTree come dizionario, quattro schemi
 join_trees  augmented-maps        mappe aumentate contro la forza bruta
 join_trees  interval-tree         albero degli intervalli, query di stabbing
 join_trees  range-tree            albero di range 2D, conteggi nei rettangoli
+join_trees  infinite-bounds       punti, intervalli e valori agli infiniti
 join_trees  join-executors        Sequential e ThreadPool, risultati uguali
 
 # the graphs that change and the union-find with rollback, beyond the book
