@@ -23,7 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   learnedSort( ex , A ) and learnedStableSort( ex , A ), the parallel sorts
   with the same model as their classifier; sort() does not choose them;
   the tests learned-sort and learned-parallel-sort
-
+- the theory page of an area of the library, docs/theory/<area>.dox, with
+  the definitions, the notation, the invariants and the arguments behind
+  the costs of its headers, first under its area on both sites; the one of
+  the graphs (Theory of graphs), and the pseudocode of every algorithm of
+  include/ADS/graph in the comment of its function, numbered, with the
+  section of the book or the paper that it follows; docs/STYLE.md, the
+  conventions of the theory pages and of the pseudocode for the other
+  areas; on the Doxygen site the functions of a header are documented on
+  the page of its group in the Topics
 - bench/bignum.cpp: the squares, the gcd of two numbers with a common
   factor of 3 and the integer square root of 2n digits, the length of 1024
   digits of 32 bits, and FLINT (fmpz_t, fmpq_t) with FLINT=<prefix>
@@ -829,7 +837,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chapter 19: the pseudopolynomial algorithms (subset sum, partition,
   scheduling, McNaughton, real-time scheduling, the three thieves); the
   approximations (ff and ffd, the triangular salesman, the gap of
-  Teorema 19.2, apSubsetSum, vertex cover, knapsack); the branch-&-bound
+  Theorem 19.2, apSubsetSum, vertex cover, knapsack); the branch-&-bound
   of the salesman with the bound of the text and of the 1-tree, the
   algorithm of Little, the clique of largest weight and the knapsack;
   the heuristics (greedyTsp, 2-opt, min-max-greedy with buckets,
@@ -837,7 +845,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   puzzle; the exercises 19.1 to 19.19 as tests
 - Conclusione: 2-satisfiability, 2-coloring, bipartite matching and the
   cliques of interval graphs, each tested against its NP-hard twin of
-  Tabella 19.1
+  Table 19.1
 - beyond the book: binary trees in a positional vector and with cursors,
   ordered trees with cursors and in preorder, the heap with pointers, the
   graph with pointers, k stacks in one vector, deep copies of trees, the
@@ -1357,9 +1365,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the option ADS_BUILD_TESTS, by default on only when ADS is the main
   project, so that add_subdirectory() and FetchContent build the interface
   target alone
-- the documentation is a site of Sphinx with the theme of Read the Docs,
-  its pages written from the README by docs/pages.py, with the API
-  reference built by Exhale and Breathe from the XML of Doxygen
+- the documentation is a site of Sphinx with the theme of Read the Docs
+  (content 1300 pixels wide, a switch to a dark theme, a button that
+  copies the code), its pages written from the README by docs/pages.py
+  and its API reference written by docs/apiref.py from the XML of Doxygen
+  as a tree (the areas of include/ADS, their headers, the concepts, the
+  classes and the functions of each one, rendered by Breathe), with the
+  Doxygen site next to it in doxygen/, with the theme of
+  doxygen-awesome-css and the same tree under its Topics; the workflow of
+  the documentation also builds the two sites on the pull requests
 - fft() is one unrolled codelet up to 64 points and above it the four
   steps of Bailey, with no reversal of the bits: the columns, then the
   rows, transformed 4 at a time in the lanes of the vectors of AVX (2 on
@@ -1519,6 +1533,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the order of the pops is the same; the test bucket-queue-sparse, and in
   bench/priority.cpp the best-first searches on a grid and on the
   15-puzzle, on 1 and 64 queues
+- the tables of the README in HTML on the site of the documentation, with
+  the borders and the padding of the other tables, and the brief
+  descriptions of Doxygen no longer cut at the dots of the ranges
+  (A[ 0 .. n - 1 ]) and of e.g.; the formulae of a few comments out of
+  the math of Doxygen, and the bounds of the comments of the headers
+  (O( n log n ), Theta( n + m ), 2 n + o( n ) bits, ...) written in plain
+  text, all in the LaTeX of Doxygen now, as the other formulae; the
+  accents of the Italian words as accents, not apostrophes
 - lyndonFactorization() and leastRotation() compare the bytes as
   unsigned, the order of std::string_view and of isLyndon(): with a byte
   from 0x80 on, where char is signed, they gave wrong factors and
