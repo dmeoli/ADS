@@ -5,146 +5,153 @@
  * The engineered construction of the suffix array and of its LCP array,
  * beyond the book: the ones that the benchmark of the suffix arrays
  * compares with libsais and libdivsufsort, while the constructions of
- * SuffixArray.h stay those of the textbook, on integers of the size of a
+ * `SuffixArray.h` stay those of the textbooks, on integers of the size of a
  * pointer.
  *
- * suffixArray() is the induced sorting of Nong, Zhang and Chan (SA-IS)
- * [see SuffixArray.h] on integers of 32 bits (or of 64, for the texts of
- * \f$ 2^{31} \f$ symbols or more). The suffix i of T (n symbols in
- * [ 0 , K )) is of type
+ * `suffixArray()` is the induced sorting of Nong, Zhang and Chan (SA-IS)
+ * [see `SuffixArray.h`] on integers of 32 bits (or of 64, for the texts of
+ * \f$ 2^{31} \f$ symbols or more). The suffix \f$ i \f$ of \f$ T \f$
+ * (\f$ n \f$ symbols in \f$ [ 0 , K ) \f$) is of type
  * \f[
  *   t_i = \left\{ \begin{array}{ll}
  *     L & i = n - 1 \mbox{ or } T[ i ] > T[ i + 1 ] \mbox{ or }
- *         ( T[ i ] = T[ i + 1 ] \mbox{ and } t_{i+1} = L ) \\
+ *         ( T[ i ] = T[ i + 1 ] \mbox{ and } t_{i+1} = L ) \cr
  *     S & \mbox{otherwise,}
  *   \end{array} \right.
  * \f]
- * S if it is smaller than the suffix i + 1, and i is an LMS place if
- * \f$ t_i = S \f$ and \f$ t_{i-1} = L \f$; two LMS places are never
- * adjacent, so that there are \f$ m \le \lfloor n / 2 \rfloor \f$ of them.
- * Once the LMS-suffixes are sorted and put at the ends of the buckets of
- * their first symbols, one scan from left to right puts each L-suffix
- * i - 1 at the head of its bucket after the suffix i, and one from right
- * to left each S-suffix i - 1 at the tail of its bucket, which sorts all
- * of them; the same two scans from the LMS places in any order sort the
- * LMS-substrings (from an LMS place to the next one), whose names give a
- * string of m symbols whose suffix array orders the LMS-suffixes, so that
+ * S if it is smaller than the suffix \f$ i + 1 \f$, and \f$ i \f$ is an LMS
+ * place if \f$ t_i = S \f$ and \f$ t_{i-1} = L \f$; two LMS places are
+ * never adjacent, so that there are \f$ m \le \lfloor n / 2 \rfloor \f$ of
+ * them. Once the LMS-suffixes are sorted and put at the ends of the buckets
+ * of their first symbols, one scan from left to right puts each L-suffix
+ * \f$ i - 1 \f$ at the head of its bucket after the suffix \f$ i \f$, and
+ * one from right to left each S-suffix \f$ i - 1 \f$ at the tail of its
+ * bucket, which sorts all of them; the same two scans from the LMS places
+ * in any order sort the LMS-substrings (from an LMS place to the next one),
+ * whose names give a string of \f$ m \f$ symbols whose suffix array orders
+ * the LMS-suffixes, so that
  * \f[
  *   T( n ) \le T( \lfloor n / 2 \rfloor ) + O( n ) = O( n ) .
  * \f]
- * Besides T and the n words of SA, a level takes 8 K words for the
- * counts and the parts of the buckets and n / 32 words for two bit
- * vectors, and the levels together \f$ O( n ) \f$ words. As engineered
- * here:
+ * Besides \f$ T \f$ and the \f$ n \f$ words of \f$ \mathit{SA} \f$, a level
+ * takes \f$ 8 K \f$ words for the counts and the parts of the buckets and
+ * \f$ n / 32 \f$ words for two bit vectors, and the levels together
+ * \f$ O( n ) \f$ words. As engineered here:
  *
  * - the types, 64 places a word: with \f$ G \f$ the bits of the places
  *   where \f$ T[ i ] < T[ i + 1 ] \f$ and \f$ E \f$ of those where they
  *   are equal, both from vector comparisons (AVX2) and read from the
  *   higher places to the lower ones, the bits of type S are the carries
- *   of the one addition \f$ G + ( G \vee E ) \f$, since
- *   \f$ t_i = S \f$ if and only if \f$ G_i \vee ( E_i \wedge t_{i+1} = S )
- *   \f$, the carry rule of a sum; a word costs a few operations, and only
- *   the carry passes from word to word. The suffixes i >= 1 fall into the
- *   four kinds of the types of i and i - 1 (LL, LS, LMS and SS), counted
- *   per first symbol with no branch in two histograms, one for the even
- *   places and one for the odd, so that equal symbols in a row do not
- *   wait for each other, the counters 4 T[ i ] + kind of 64 places built
- *   by vector operations from the bits of the types;
+ *   of the one addition \f$ G + ( G \vee E ) \f$, since \f$ t_i = S \f$ if
+ *   and only if \f$ G_i \vee ( E_i \wedge t_{i+1} = S ) \f$, the carry
+ *   rule of a sum; a word costs a few operations, and only the carry passes
+ *   from word to word. The suffixes \f$ i \ge 1 \f$ fall into the four kinds
+ *   of the types of \f$ i \f$ and \f$ i - 1 \f$ (LL, LS, LMS and SS),
+ *   counted per first symbol with no branch in two histograms, one for the
+ *   even places and one for the odd, so that equal symbols in a row do not
+ *   wait for each other, the counters \f$ 4 T[ i ] + \mathit{kind} \f$ of
+ *   64 places built by vector operations from the bits of the types;
  * - on a text of bytes the LMS-suffixes are first sorted directly, as
  *   strings, and the induction only follows (the two stages of Itoh and
- *   Tanaka and of DivSufSort, on the LMS-suffixes of SA-IS): the \f$
- *   \sigma \f$ bytes that occur are ranked, and when \f$ \sigma \le 64
- *   \f$ the text is packed in codes of \f$ b = \lceil \log_2 \sigma
- *   \rceil \f$ bits (the bytes themselves otherwise, b = 8), so that the
- *   window of 64 bits at the bit b p of the packed text holds the first
- *   \f$ 64 / b \f$ symbols of the suffix p and two suffixes compare as
- *   their windows, then as the windows 64 bits on. The items ( top bits
- *   of the window , p ), one word on 32 bits, are sorted by a radix sort
- *   on the top \f$ N = \lceil \log_2 ( m + 1 ) \rceil + 6 \f$ bits of
- *   their windows (into the 256 buckets of the top 8 bits first when \f$
- *   m \ge 2^{16} \f$, then each bucket in the cache by passes of at most
- *   11 bits), so that on a text with no long repeats about \f$ m^2 /
- *   2^{N+1} \le m / 128 \f$ pairs stay equal, settled by insertion; the
- *   suffixes of equal windows go on to the next windows, a suffix that
- *   ends inside a window before those that go on. The whole of it reads
- *   the text in order, against the 2 random reads a suffix of the partial
- *   induction, and needs no names and no recursion. It is tried when a
- *   sample of 1024 keys of 32 bits has at most one equal pair in 256 (on a
- *   text whose windows repeat, as in English or in long repeats, the
- *   induction does better), and given up for the partial induction once
- *   the ties read more than m windows;
+ *   Tanaka and of DivSufSort, on the LMS-suffixes of SA-IS): the
+ *   \f$ \sigma \f$ bytes that occur are ranked, and when
+ *   \f$ \sigma \le 64 \f$ the text is packed in codes of
+ *   \f$ b = \lceil \log_2 \sigma \rceil \f$ bits (the bytes themselves
+ *   otherwise, \f$ b = 8 \f$), so that the window of 64 bits at the bit
+ *   \f$ b p \f$ of the packed text holds the first \f$ 64 / b \f$ symbols
+ *   of the suffix \f$ p \f$ and two suffixes compare as their windows, then
+ *   as the windows 64 bits on. The items (the top bits of the window,
+ *   \f$ p \f$), one word on 32 bits, are sorted by a radix sort on the top
+ *   \f$ N = \lceil \log_2 ( m + 1 ) \rceil + 6 \f$ bits of their windows
+ *   (into the 256 buckets of the top 8 bits first when \f$ m \ge 2^{16} \f$,
+ *   then each bucket in the cache by passes of at most 11 bits), so that on
+ *   a text with no long repeats about \f$ m^2 / 2^{N+1} \le m / 128 \f$
+ *   pairs stay equal, settled by insertion; the suffixes of equal windows go
+ *   on to the next windows, a suffix that ends inside a window before those
+ *   that go on. The whole of it reads the text in order, against the 2
+ *   random reads a suffix of the partial induction, and needs no names and
+ *   no recursion. It is tried when a sample of 1024 keys of 32 bits has at
+ *   most one equal pair in 256 (on a text whose windows repeat, as in
+ *   English or in long repeats, the induction does better), and given up
+ *   for the partial induction once the ties read more than \f$ m \f$
+ *   windows;
  * - the partial induction, which sorts the LMS-substrings, splits the
- *   bucket of each symbol c into parts by the type of the suffix before:
- *   an area A, with the LL part and the LMS part (the seeds) of each
- *   symbol, holds the entries that the scan from left to right moves, and
- *   an area C, with the LS part and the SS part, those that the scan from
- *   right to left moves, so that no scan visits an entry with nothing to
- *   do. An entry is marked when it starts a new name: a moved suffix is
- *   marked unless the last one moved into the same part came from a
- *   suffix of the same name, the name being the count d of the marks the
- *   scan has met; the scans keep the arrays in functions that declare
- *   them not to overlap, two entries a step, the text 64 entries ahead
- *   prefetched and, beyond 65536 symbols, the parts and the places they
- *   point to;
- * - the names are written only when some are tied, and two LMS-suffixes
- *   of equal names (equal LMS-substrings, of the same length l) compare
- *   as the text that follows them: on the bytes, when the groups of equal
- *   names have at most 16 suffixes on average, each group is sorted by
- *   keys of 8 bytes of the text read at p + l, p + l + 8, ..., round
- *   after round on the parts still tied (at most 8 rounds and 2 m keys,
- *   and none if a first round on a sample of the groups leaves half of
- *   them tied, as on long repeats), small groups by insertion and large
- *   ones by a radix sort on the bits that their keys do not share,
- *   gathered by pext; the names are then those of the groups left
- *   (finer than the LMS-substrings: equal names still mean equal
- *   LMS-substrings, and a smaller name a smaller suffix), and the groups
- *   left are sorted by the names that follow, within a budget of m
- *   names, and only then by the doubling of
+ *   bucket of each symbol \f$ c \f$ into parts by the type of the suffix
+ *   before: an area \f$ A \f$, with the LL part and the LMS part (the seeds)
+ *   of each symbol, holds the entries that the scan from left to right
+ *   moves, and an area \f$ C \f$, with the LS part and the SS part, those
+ *   that the scan from right to left moves, so that no scan visits an entry
+ *   with nothing to do. An entry is marked when it starts a new name: a
+ *   moved suffix is marked unless the last one moved into the same part
+ *   came from a suffix of the same name, the name being the count
+ *   \f$ d \f$ of the marks the scan has met; the scans keep the arrays in
+ *   functions that declare them not to overlap, two entries a step, the
+ *   text 64 entries ahead prefetched and, beyond 65536 symbols, the parts
+ *   and the places they point to;
+ * - the names are written only when some are tied, and two LMS-suffixes of
+ *   equal names (equal LMS-substrings, of the same length \f$ l \f$)
+ *   compare as the text that follows them: on the bytes, when the groups of
+ *   equal names have at most 16 suffixes on average, each group is sorted
+ *   by keys of 8 bytes of the text read at \f$ p + l \f$,
+ *   \f$ p + l + 8 \f$, \f$ \ldots \f$, round after round on the parts still
+ *   tied (at most 8 rounds and \f$ 2 m \f$ keys, and none if a first round
+ *   on a sample of the groups leaves half of them tied, as on long
+ *   repeats), small groups by insertion and large ones by a radix sort on
+ *   the bits that their keys do not share, gathered by `pext`; the names
+ *   are then those of the groups left (finer than the LMS-substrings: equal
+ *   names still mean equal LMS-substrings, and a smaller name a smaller
+ *   suffix), and the groups left are sorted by the names that follow,
+ *   within a budget of \f$ m \f$ names, and only then by the doubling of
  *   Larsson and Sadakane on the groups of equal names (when few, or small)
- *   or by the recursion on the string of the names, in SA[ m .. 2 m ):
- *   in the round h = 1, 2, 4, ... of the doubling the suffixes of a group,
- *   equal on their first h names, are sorted by \f$ V[ i + h ] \f$, the
- *   rank of the suffix h places ahead, a group of g suffixes costing
- *   \f$ O( g \log g ) \f$;
+ *   or by the recursion on the string of the names, in
+ *   \f$ \mathit{SA}[ m .. 2 m ) \f$: in the round
+ *   \f$ h = 1 , 2 , 4 , \ldots \f$ of the doubling the suffixes of a group,
+ *   equal on their first \f$ h \f$ names, are sorted by \f$ V[ i + h ] \f$,
+ *   the rank of the suffix \f$ h \f$ places ahead, a group of \f$ g \f$
+ *   suffixes costing \f$ O( g \log g ) \f$;
  * - the sorted LMS-suffixes go to the ends of their buckets a group of
- *   symbol at a time, by memmove(), and the final induction stores a
+ *   symbol at a time, by `memmove()`, and the final induction stores a
  *   suffix with its top bit set when the suffix before it is of the other
  *   type, by a shift and no branch, the text it prefetches at a place
  *   chosen by a select;
  * - a text whose suffixes are all of type L never rises, so that each
- *   suffix is larger than the next one and SA is \f$ n - 1 , \ldots , 0
- *   \f$.
+ *   suffix is larger than the next one and \f$ \mathit{SA} \f$ is
+ *   \f$ n - 1 , \ldots , 0 \f$.
  *
- * lcpArrayPhi() is the algorithm of Karkkainen, Manzini and Puglisi: with
- * \f$ \Phi[ SA[ r ] ] = SA[ r - 1 ] \f$, the permuted LCP
+ * `lcpArrayPhi()` is the algorithm of Kärkkäinen, Manzini and Puglisi: with
+ * \f$ \Phi[ \mathit{SA}[ r ] ] = \mathit{SA}[ r - 1 ] \f$, the permuted LCP
  * \f[
  *   \mathit{PLCP}[ i ] = \mathrm{lcp}( T[ i .. ] , T[ \Phi[ i ] .. ] ) ,
  *   \qquad \mathit{PLCP}[ i + 1 ] \ge \mathit{PLCP}[ i ] - 1
  * \f]
- * (Lemma of Kasai et al.), is computed in the order of the text from the
- * value at i - 1 less one, \f$ 2 n \f$ comparisons of symbols in all, one
- * symbol at a time (the lcp grows by n + 1 at most in all, so that loads
- * of 8 bytes would save little); the text at \f$ \Phi[ i + 64 ] \f$ is
- * prefetched, and \f$ \mathit{LCP}[ r ] = \mathit{PLCP}[ SA[ r + 1 ] ] \f$
- * costs one random read per entry, prefetched too: from \f$ 2^{18} \f$
- * bytes on, where n integers leave the cache, PLCP is also kept as n
- * bytes, \f$ \min( \mathit{PLCP}[ i ] , 255 ) \f$, and the read falls
- * in them, the integer read only for 255 (the bytes are dropped when more
- * than n / 64 values reach 255, as on long repeats). LCP[ r ] is the lcp
- * of the suffixes SA[ r ] and SA[ r + 1 ], n - 1 entries, as in
- * lcpArray(); \f$ \Phi \f$ and PLCP share one array of n integers, and
- * the three passes keep their arrays in functions that declare them not
- * to overlap.
+ * (the lemma of Kasai et al.), is computed in the order of the text from
+ * the value at \f$ i - 1 \f$ less one, \f$ 2 n \f$ comparisons of symbols
+ * in all, one symbol at a time (the lcp grows by \f$ n + 1 \f$ at most in
+ * all, so that loads of 8 bytes would save little); the text at
+ * \f$ \Phi[ i + 64 ] \f$ is prefetched, and
+ * \f$ \mathit{LCP}[ r ] = \mathit{PLCP}[ \mathit{SA}[ r + 1 ] ] \f$ costs
+ * one random read per entry, prefetched too: from \f$ 2^{18} \f$ bytes on,
+ * where \f$ n \f$ integers leave the cache, \f$ \mathit{PLCP} \f$ is also
+ * kept as \f$ n \f$ bytes, \f$ \min( \mathit{PLCP}[ i ] , 255 ) \f$, and
+ * the read falls in them, the integer read only for 255 (the bytes are
+ * dropped when more than \f$ n / 64 \f$ values reach 255, as on long
+ * repeats). \f$ \mathit{LCP}[ r ] \f$ is the lcp of the suffixes
+ * \f$ \mathit{SA}[ r ] \f$ and \f$ \mathit{SA}[ r + 1 ] \f$, \f$ n - 1 \f$
+ * entries, as in `lcpArray()`; \f$ \Phi \f$ and \f$ \mathit{PLCP} \f$ share
+ * one array of \f$ n \f$ integers, and the three passes keep their arrays
+ * in functions that declare them not to overlap.
  *
- * The arrays built, SA, PLCP and LCP, ask for transparent huge pages
- * (madvise(), on Linux) before they are first written, so that their
- * page faults are 512 times fewer and the random writes of the
- * induction and of \f$ \Phi \f$ miss the TLB less.
+ * The arrays built, \f$ \mathit{SA} \f$, \f$ \mathit{PLCP} \f$ and
+ * \f$ \mathit{LCP} \f$, ask for transparent huge pages (`madvise()`, on
+ * Linux) before they are first written, so that their page faults are 512
+ * times fewer and the random writes of the induction and of \f$ \Phi \f$
+ * miss the TLB less.
  *
- * The contracts [see Contract.h]: the symbols of an integer text are less
- * than K and n fits the integers; the arrays built are a suffix array and
- * its LCP array (audits, O( n ) and \f$ O( n + \sum_r \mathit{LCP}[ r ] )
- * \f$ time). The functions are defined in SuffixSorting.tpp.
+ * The contracts [see `Contract.h`]: the symbols of an integer text are less
+ * than \f$ K \f$ and \f$ n \f$ fits the integers; the arrays built are a
+ * suffix array and its LCP array (audits, \f$ O( n ) \f$ and
+ * \f$ O( n + \sum_r \mathit{LCP}[ r ] ) \f$ time). The functions are
+ * defined in `SuffixSorting.tpp`.
  *
  * \see G. Nong, S. Zhang, W. H. Chan, Two efficient algorithms for linear
  *      time suffix array construction, IEEE Transactions on Computers
@@ -164,7 +171,7 @@
  * \see N. J. Larsson, K. Sadakane, Faster suffix sorting, Theoretical
  *      Computer Science 387(3), 258-272, 2007,
  *      doi:10.1016/j.tcs.2007.07.017
- * \see J. Karkkainen, G. Manzini, S. J. Puglisi, Permuted longest-common-
+ * \see J. Kärkkäinen, G. Manzini, S. J. Puglisi, Permuted longest-common-
  *      prefix array, Proceedings of the 20th Symposium on Combinatorial
  *      Pattern Matching (CPM), LNCS 5577, 181-192, 2009,
  *      doi:10.1007/978-3-642-02441-2_17
@@ -176,7 +183,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -206,34 +213,118 @@
 
 namespace ADS {
 
-/// the suffix array of the bytes of T, by SA-IS on integers I (32 or 64
-/// bits, unsigned)
-/// \pre T.size() < 2^31 if I has 32 bits
-/// \post a suffix array of T (an audit)
+/// the suffix array of the bytes of \f$ T \f$, by SA-IS on integers `I`
+/// (32 or 64 bits, unsigned)
+///
+/// In pseudocode (SA-IS of Nong, Zhang and Chan as engineered here, beyond
+/// the book), \f$ m \f$ the number of LMS places:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{suffixArray}( T ) \cr
+/// 2 & \quad \text{the types } t_i \text{ by the carries of } G + ( G \vee
+///     E ) \text{, 64 places a word, and the counts of the kinds} \cr
+/// 3 & \quad \textbf{if}\ m = 0\ \textbf{then return}\ ( n - 1 , \ldots , 0 )
+///     \quad \triangleright\ \text{or one induction, if some } t_i =
+///     \text{S} \cr
+/// 4 & \quad \textbf{if}\  \text{a sample of the windows has few ties }
+///     \textbf{and}\ \text{the LMS-suffixes sort by their windows}
+///     \ \textbf{then} \cr
+/// 5 & \qquad \text{the LMS-suffixes are sorted, by a radix sort on the }
+///     \text{windows and insertion} \cr
+/// 6 & \quad \textbf{else} \cr
+/// 7 & \qquad \text{sort the LMS-substrings by the partial induction, and }
+///     \text{name them} \cr
+/// 8 & \qquad \textbf{if}\  \text{two names are equal}\ \textbf{then} \cr
+/// 9 & \qquad\quad \text{sort the groups of equal names by the text that }
+///     \text{follows, then by the names that follow} \cr
+/// 10 & \qquad\quad \textbf{if}\  \text{some group is still tied}
+///     \ \textbf{then}\ \text{sort by the doubling of Larsson and Sadakane,}
+///     \cr
+///    & \qquad\qquad \text{or by } \mathrm{suffixArray}( \text{the string of }
+///     \text{the names} ) \cr
+/// 11 & \quad \text{move the sorted LMS-suffixes to the ends of their }
+///     \text{buckets} \cr
+/// 12 & \quad \text{induce the L-suffixes from left to right and the }
+///     \text{S-suffixes from right to left} \cr
+/// 13 & \quad \textbf{return}\ \mathit{SA}
+/// \end{array}}
+/// \f]
+/// \pre \f$ |T| < 2^{31} - 1 \f$ if `I` has 32 bits
+/// \post a suffix array of \f$ T \f$ (an audit)
 template< class I = std::uint32_t >
  requires( std::same_as< I , std::uint32_t > ||
            std::same_as< I , std::uint64_t > )
 [[nodiscard]] std::vector< I > suffixArray( std::string_view T );
 
 /// the suffix array of an integer text, by SA-IS
-/// \pre every symbol of T is less than K, T.size() < 2^31 if I has 32 bits
-/// \post a suffix array of T (an audit)
+///
+/// It is the algorithm of `suffixArray()` above without the direct sort and
+/// the comparisons of the text, which need bytes: the LMS-substrings are
+/// sorted by the partial induction, and the ties left by the doubling or by
+/// the recursion.
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{suffixArray}( T , K ) \cr
+/// 2 & \quad \textbf{return}\ \text{the lines 2, 3 and 7 to 13 of }
+///     \mathrm{suffixArray}( T ) \text{, on symbols in } [ 0 , K )
+/// \end{array}}
+/// \f]
+/// \pre every symbol of \f$ T \f$ is less than \f$ K \f$, and
+///      \f$ |T| < 2^{31} - 1 \f$ if `I` has 32 bits
+/// \post a suffix array of \f$ T \f$ (an audit)
 template< class I >
  requires( std::same_as< I , std::uint32_t > ||
            std::same_as< I , std::uint64_t > )
 [[nodiscard]] std::vector< I > suffixArray( const std::vector< I > & T ,
                                             std::size_t K );
 
-/// the permuted LCP array: PLCP[ i ] is the lcp of the suffix i and the
-/// one before it in SA (0 for the first)
-/// \pre SA is a suffix array of T (an audit)
+/// the permuted LCP array: \f$ \mathit{PLCP}[ i ] \f$ is the lcp of the
+/// suffix \f$ i \f$ and the one before it in \f$ \mathit{SA} \f$ (0 for the
+/// first)
+///
+/// In pseudocode (the algorithm of Kärkkäinen, Manzini and Puglisi, beyond
+/// the book), \f$ \Phi \f$ and \f$ \mathit{PLCP} \f$ in one array, since
+/// \f$ \Phi[ i ] \f$ is read just before \f$ \mathit{PLCP}[ i ] \f$ is
+/// written:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{plcpArray}( T , \mathit{SA} ) \cr
+/// 2 & \quad \Phi[ \mathit{SA}[ 0 ] ] \gets n \cr
+/// 3 & \quad \textbf{for}\ r \gets 1\ \textbf{to}\ n - 1\ \textbf{do}
+///     \ \Phi[ \mathit{SA}[ r ] ] \gets \mathit{SA}[ r - 1 ] \cr
+/// 4 & \quad h \gets 0 \cr
+/// 5 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
+/// 6 & \qquad j \gets \Phi[ i ] \cr
+/// 7 & \qquad \textbf{while}\ h < n - \max\{ i , j \}\ \textbf{and}\ T[ i +
+///     h ] = T[ j + h ]\ \textbf{do}\ h \gets h + 1 \cr
+/// 8 & \qquad \mathit{PLCP}[ i ] \gets h;\ \textbf{if}\ h > 0\ \textbf{then}
+///     \ h \gets h - 1 \cr
+/// 9 & \quad \textbf{return}\ \mathit{PLCP}
+/// \end{array}}
+/// \f]
+/// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$ (an audit)
 template< class I >
 [[nodiscard]] std::vector< I > plcpArray( std::string_view T ,
                                           const std::vector< I > & SA );
 
-/// the LCP array by the permuted LCP array, n - 1 entries (none if n < 2)
-/// \pre SA is a suffix array of T (an audit)
-/// \post LCP[ r ] is the lcp of the suffixes SA[ r ] and SA[ r + 1 ] (an
+/// the LCP array by the permuted LCP array, \f$ n - 1 \f$ entries (none if
+/// \f$ n < 2 \f$)
+///
+/// In pseudocode (the algorithm of Kärkkäinen, Manzini and Puglisi, beyond
+/// the book), the reads of \f$ \mathit{PLCP} \f$ falling in its copy of
+/// \f$ n \f$ bytes when \f$ n \ge 2^{18} \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{lcpArrayPhi}( T , \mathit{SA} ) \cr
+/// 2 & \quad \mathit{PLCP} \gets \mathrm{plcpArray}( T , \mathit{SA} ) \cr
+/// 3 & \quad \textbf{for}\ r \gets 0\ \textbf{to}\ n - 2\ \textbf{do}
+///     \ \mathit{LCP}[ r ] \gets \mathit{PLCP}[ \mathit{SA}[ r + 1 ] ] \cr
+/// 4 & \quad \textbf{return}\ \mathit{LCP}
+/// \end{array}}
+/// \f]
+/// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$ (an audit)
+/// \post \f$ \mathit{LCP}[ r ] \f$ is the lcp of the suffixes
+///       \f$ \mathit{SA}[ r ] \f$ and \f$ \mathit{SA}[ r + 1 ] \f$ (an
 ///       audit)
 template< class I >
 [[nodiscard]] std::vector< I > lcpArrayPhi( std::string_view T ,

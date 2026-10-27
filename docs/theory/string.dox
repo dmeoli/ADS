@@ -1,0 +1,738 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File string.dox -----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_string */
+/** \defgroup theory_string Theory of strings
+ \ingroup area_string
+
+ \details The headers of `include/ADS/string` realize the algorithms on
+ strings of chapters 13 and 14 of the book (the approximate matching, the
+ longest common subsequence, the alignments, the segmentations and the code
+ of Huffman, all by dynamic programming or by a greedy choice) and, beyond
+ the book, those of chapters 9, Searching Strings by Prefix, and 10,
+ Searching Strings by Substring, of Ferragina's book and of the papers that
+ the headers cite, i.e., the exact search of one pattern and of many,
+ the edit distance by bit vectors, the dictionaries searched by prefix, the
+ suffix arrays, trees and automata with their applications, and a few
+ classical problems on palindromes, Lyndon words and parentheses. This page
+ collects what the headers take for granted: the definitions and the
+ notation shared by all of them (see \ref theory_string_notation), and, for
+ each family of algorithms, the property on which its correctness rests and
+ the argument behind its bound (from \ref theory_string_exact to
+ \ref theory_string_segment). The pseudocode of each algorithm is instead on
+ the page of its header, in the comment of its function, together with the
+ section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_string_notation Definitions and notation
+
+ An <em>alphabet</em> \f$ \Sigma \f$ is a finite set of \f$ \sigma \f$
+ symbols with a total order, the bytes of a `std::string_view` (\f$ \sigma
+ \le 256 \f$) or the integers in \f$ [ 0 , K ) \f$ of a vector of
+ `Symbols`, and a <em>string</em> \f$ T = T[ 0 .. n - 1 ] \f$ of length
+ \f$ n = |T| \f$ is a sequence of \f$ n \f$ symbols, the places counting
+ from 0 as in the code (the book and Ferragina's book count from 1, and
+ the headers say where they translate). The string \f$ T[ i .. j ] \f$, for
+ \f$ 0 \le i \le j < n \f$, is a <em>substring</em> of \f$ T \f$, a
+ <em>prefix</em> if \f$ i = 0 \f$ and a <em>suffix</em> if \f$ j = n - 1
+ \f$; the suffix that starts at \f$ i \f$ is called the suffix \f$ i \f$,
+ \f$ T[ i .. ] \f$ for short, and the prefix of \f$ i \f$ symbols of the
+ book is \f$ T( i ) = T[ 0 .. i - 1 ] \f$. A <em>subsequence</em> keeps
+ some of the symbols in their order, not necessarily contiguous. Two
+ strings are compared in the lexicographic order, a string that is a prefix
+ of another being the smaller; the terminator \f$ \$ \f$ that some
+ structures append is a symbol smaller than all the others, so that no
+ suffix of \f$ T \$ \f$ is a prefix of another.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ T \f$, \f$ n \f$; \f$ P \f$, \f$ m \f$ (or \f$ p \f$)</td>
+     <td>the text and its length; the pattern searched in it and its
+         length, \f$ P_0 , \ldots , P_{k-1} \f$ for several patterns of
+         \f$ M \f$ symbols in all</td></tr>
+ <tr><td>\f$ \mathrm{Occ}( P , T ) \f$, \f$ \mathit{occ} \f$</td>
+     <td>the places \f$ s \in [ 0 , n - m ] \f$ with
+         \f$ T[ s .. s + m - 1 ] = P \f$, and their number</td></tr>
+ <tr><td>\f$ \mathrm{lcp}( x , y ) \f$,
+         \f$ \mathrm{lce}( i , j ) \f$</td>
+     <td>the length of the longest common prefix of two strings, and that
+         of the suffixes \f$ i \f$ and \f$ j \f$ of one text, their longest
+         common extension</td></tr>
+ <tr><td>\f$ \mathit{SA} \f$, \f$ \mathit{SA}^{-1} \f$,
+         \f$ \mathit{LCP} \f$</td>
+     <td>the suffix array, \f$ \mathit{SA}[ r ] \f$ the start of the
+         \f$ r \f$-th smallest suffix; its inverse, the rank of each suffix;
+         and \f$ \mathit{LCP}[ r ] = \mathrm{lcp}( T[ \mathit{SA}[ r ] .. ] ,
+         T[ \mathit{SA}[ r + 1 ] .. ] ) \f$, \f$ n - 1 \f$ entries</td></tr>
+ <tr><td>\f$ F[ q ] \f$</td>
+     <td>the failure function of \f$ P \f$, the length of the longest
+         proper border of \f$ P[ 0 .. q - 1 ] \f$, a <em>border</em> being a
+         string that is both a prefix and a suffix</td></tr>
+ <tr><td>\f$ D[ i ][ j ] \f$, \f$ \mathit{DP}[ i ][ j ] \f$</td>
+     <td>the table of a dynamic programming on the prefixes of
+         \f$ i \f$ symbols of the first string and of \f$ j \f$ of the
+         second; \f$ \delta_{ij} \f$ is 0 (or \f$ +1 \f$ in a score) when
+         the symbols \f$ i - 1 \f$ and \f$ j - 1 \f$ are equal</td></tr>
+ <tr><td>\f$ d \f$, \f$ k \f$</td>
+     <td>the edit distance of two strings, and a bound on it, i.e., the
+         errors (or the mismatches) allowed</td></tr>
+ <tr><td>\f$ w \f$</td>
+     <td>the length of a machine word, 64 bits, by which the bit-parallel
+         algorithms divide their work</td></tr>
+ </table>
+
+ The <em>edit distance</em> (of Levenshtein) of two strings is the least
+ number of substitutions, insertions and deletions of single symbols that
+ turn one into the other. A <em>period</em> of \f$ P \f$ is an integer
+ \f$ q > 0 \f$ with \f$ P[ i ] = P[ i + q ] \f$ wherever both are defined;
+ \f$ q \f$ is a period if and only if \f$ P[ 0 .. m - q - 1 ] \f$ is a
+ border, and the smallest period is \f$ m - F[ m ] \f$.
+
+ \section theory_string_exact The search of one pattern
+
+ The problem is to find \f$ \mathrm{Occ}( P , T ) \f$. Trying every shift
+ costs \f$ O( n m ) \f$ comparisons (`naiveMatching()` of
+ `StringMatching.h`), and the algorithms differ in how much they learn from
+ a comparison and how far they then move the pattern.
+
+ <em>Lemma 1 (the failure function).</em> If \f$ P[ 0 .. q - 1 ] \f$
+ matches the text up to the place \f$ j - 1 \f$ and
+ \f$ P[ q ] \ne T[ j ] \f$, no occurrence starts at a place \f$ s \f$ with
+ \f$ j - q < s < j - F[ q ] \f$, and the next candidate has
+ \f$ P[ 0 .. F[ q ] - 1 ] \f$ already matched, i.e.,
+ \f[
+   q \gets F[ q ] \quad \text{and } T[ j ] \text{ compared again with }
+   P[ q ] . \tag{1}
+ \f]
+
+ Indeed, an occurrence that starts at \f$ j - q + s \f$ with
+ \f$ 0 < s < q - F[ q ] \f$ would make \f$ P[ 0 .. q - s - 1 ] \f$ a border
+ of \f$ P[ 0 .. q - 1 ] \f$ longer than \f$ F[ q ] \f$. The algorithm of
+ Knuth, Morris and Pratt (`kmp()`) applies (1) at each mismatch, and each
+ comparison either advances \f$ j \f$, which happens at most \f$ n \f$
+ times, or moves the start \f$ j - q \f$ of the pattern forward, which
+ also happens at most \f$ n \f$ times; hence at most \f$ 2 n \f$
+ comparisons, and the same argument on \f$ P \f$ against itself computes
+ \f$ F \f$ in \f$ O( m ) \f$. The strong failure function of Knuth
+ (`kmpStrong()`) skips a border whose next symbol is the one that just
+ failed, so that a symbol of \f$ T \f$ is never compared twice with the
+ same symbol of \f$ P \f$.
+
+ The Z-function \f$ Z[ i ] = \mathrm{lcp}( S , S[ i .. ] ) \f$
+ (`zFunction()`) rests on the same reuse: inside the box
+ \f$ [ l , r ) \f$ that reaches farthest, \f$ S[ i .. r - 1 ] \f$ equals
+ \f$ S[ i - l .. r - l - 1 ] \f$, and hence
+ \f$ Z[ i ] \ge \min( Z[ i - l ] , r - i ) \f$; only the symbols past
+ \f$ r \f$ are compared, each successful comparison moves \f$ r \f$
+ forward, and each \f$ i \f$ fails at most once, which gives
+ \f$ \Theta( n ) \f$. The bit-parallel Shift-Or (`shiftOr()`) keeps in one
+ word \f$ D \f$ the prefixes of \f$ P \f$ that end at the current symbol,
+ the bit \f$ i \f$ clear when \f$ P[ 0 .. i ] = T[ j - i .. j ] \f$, and
+ updates them for all \f$ i \f$ at once by
+ \f[
+   D \gets ( D \ll 1 ) \vee B[ T[ j ] ] , \tag{2}
+ \f]
+ the bit \f$ i \f$ of \f$ B[ c ] \f$ clear when \f$ P[ i ] = c \f$, since
+ \f$ P[ 0 .. i ] \f$ ends at \f$ j \f$ exactly when \f$ P[ 0 .. i - 1 ] \f$
+ ends at \f$ j - 1 \f$ and \f$ P[ i ] = T[ j ] \f$; an occurrence ends at
+ \f$ j \f$ when the bit \f$ m - 1 \f$ is clear, \f$ \Theta( n ) \f$ word
+ operations for \f$ m \le w \f$.
+
+ The algorithm of Boyer and Moore (`boyerMoore()`) compares the window
+ from right to left, and on a mismatch moves it by the larger of two safe
+ shifts: the bad character rule aligns the symbol of \f$ T \f$ that failed
+ with its last place in \f$ P \f$, and the strong good suffix rule aligns
+ the suffix already matched with its previous occurrence in \f$ P \f$
+ preceded by another symbol (or with the longest prefix of \f$ P \f$ that
+ is its suffix). A shift is safe because any smaller one would put a
+ different symbol under a symbol of \f$ T \f$ already read. When the
+ symbols of \f$ T \f$ seldom occur in \f$ P \f$, the window moves by about
+ \f$ m \f$ after a few comparisons, \f$ O( n / m ) \f$ comparisons at
+ best; the worst case is \f$ O( n m ) \f$ for all the occurrences (each
+ of the \f$ n - m + 1 \f$ windows of \f$ a^m \f$ in \f$ a^n \f$ is read
+ whole). Horspool (`horspool()`) keeps only the bad character of the last
+ symbol of the window, which is simpler and often faster on large
+ alphabets.
+
+ <em>Theorem 2 (the critical factorization).</em> Every pattern with
+ \f$ m \ge 2 \f$ can be cut as \f$ P = u v \f$ with \f$ |u| \f$ smaller than
+ the period of \f$ P \f$, so that the local period at the cut, the least
+ \f$ q \f$ such that \f$ u \f$ and \f$ v \f$ agree with a shift of
+ \f$ q \f$ around it, equals the period of \f$ P \f$; the cut is found
+ from the two maximal suffixes of \f$ P \f$ for an order of the symbols and
+ its reverse (Crochemore and Perrin, after Césari and Vincent).
+
+ The Two-Way algorithm (`twoWay()`) compares \f$ v \f$ from left to right
+ and then \f$ u \f$ from right to left: a mismatch in \f$ v \f$ at the
+ place \f$ i \f$ moves the window by \f$ i - |u| + 1 \f$, each symbol of
+ \f$ T \f$ read in \f$ v \f$ being left behind, and a mismatch in \f$ u \f$
+ moves it by the period, the prefix of the period known to match being
+ remembered when \f$ P \f$ is periodic. By Theorem 2 neither shift passes an
+ occurrence; it makes at most \f$ 2 n \f$ comparisons in \f$ O( 1 ) \f$
+ extra space, which is why the engineered `StringSearcher` of
+ `StringSearch.h` falls back on it once its filters have compared more than
+ \f$ 16 n + 4096 \f$ bytes.
+
+ <table>
+ <caption>The algorithms of the search of one pattern</caption>
+ <tr><th>Function</th><th>Preparation</th><th>Search, worst case</th>
+     <th>Remarks</th></tr>
+ <tr><td><tt>naiveMatching()</tt></td><td>none</td>
+     <td>\f$ O( n m ) \f$</td><td>\f$ O( n ) \f$ expected on random
+     texts</td></tr>
+ <tr><td><tt>kmp()</tt>, <tt>kmpStrong()</tt></td>
+     <td>\f$ O( m ) \f$</td><td>at most \f$ 2 n \f$ comparisons</td>
+     <td>reads \f$ T \f$ forward, never backs up</td></tr>
+ <tr><td><tt>boyerMoore()</tt>, <tt>horspool()</tt></td>
+     <td>\f$ O( m + \sigma ) \f$</td><td>\f$ O( n m ) \f$</td>
+     <td>\f$ O( n / m ) \f$ comparisons at best</td></tr>
+ <tr><td><tt>shiftOr()</tt></td><td>\f$ O( m + \sigma ) \f$</td>
+     <td>\f$ \Theta( n ) \f$ word operations</td>
+     <td>\f$ m \le 64 \f$</td></tr>
+ <tr><td><tt>zMatching()</tt></td><td>\f$ O( m ) \f$</td>
+     <td>\f$ \Theta( n + m ) \f$</td><td>the Z-boxes of \f$ T \f$ against
+     \f$ P \f$</td></tr>
+ <tr><td><tt>twoWay()</tt></td><td>\f$ O( m ) \f$</td>
+     <td>at most \f$ 2 n \f$ comparisons</td>
+     <td>\f$ O( 1 ) \f$ extra space</td></tr>
+ <tr><td><tt>StringSearcher</tt></td><td>\f$ O( 256 + m ) \f$</td>
+     <td>\f$ O( n + m ) \f$</td><td>filters of probes or of q-grams,
+     about \f$ n / m \f$ windows on random texts</td></tr>
+ </table>
+
+ \section theory_string_multi The search of many patterns
+
+ The automaton of Aho and Corasick (`AhoCorasick.h`) generalizes Lemma 1 to
+ \f$ k \f$ patterns: its states are the nodes of the trie of the patterns,
+ each the string \f$ u \f$ spelt from the root, and the failure of \f$ u \f$
+ is the state of the longest proper suffix of \f$ u \f$ that is in the
+ trie.
+
+ <em>Lemma 3 (the invariant of the automaton).</em> After the automaton has
+ read \f$ T[ 0 .. j ] \f$, its state is the longest suffix of
+ \f$ T[ 0 .. j ] \f$ that is a prefix of some pattern, and the patterns
+ that end at \f$ j \f$ are the suffixes of that state that are patterns.
+
+ Indeed, if \f$ u \f$ is the state after \f$ T[ 0 .. j - 1 ] \f$, every
+ suffix of \f$ T[ 0 .. j ] \f$ that is a prefix of a pattern is \f$ x c \f$
+ with \f$ c = T[ j ] \f$ and \f$ x \f$ a suffix of \f$ u \f$ in the trie,
+ and the chain \f$ u , \mathit{fail}( u ) , \ldots \f$ lists those suffixes
+ by decreasing length; the transition \f$ \delta( u , c ) \f$ takes the
+ first of them that goes on with \f$ c \f$. With the transitions tabulated
+ for every symbol a byte of \f$ T \f$ costs one lookup, and the output links
+ (each to the nearest proper suffix of a state that is a whole pattern)
+ list the occurrences that end at \f$ j \f$ at \f$ O( 1 ) \f$ each; hence
+ \f$ O( n + \mathit{occ} ) \f$ time after a preparation of
+ \f$ O( \sigma M ) \f$, the failures computed in breadth first order from
+ \f$ \mathit{fail}( u c ) = \delta( \mathit{fail}( u ) , c ) \f$. The
+ engineered `MultiSearcher` of `MultiSearch.h` puts filters in front of
+ it, by the shuffles of the halves of the bytes or by a shift-or on super
+ characters, which let through every occurrence and few other places; it
+ checks the candidates directly and gives the text to the automaton when
+ the checks exceed 2 a place, so that its worst case is that of the
+ automaton.
+
+ \section theory_string_dp Edit distance, alignments and subsequences
+
+ The problems of chapter 13 of the book compare two strings, \f$ P \f$ of
+ \f$ m \f$ symbols and \f$ T \f$ of \f$ n \f$, by a table on their
+ prefixes. The edit distance of `editDistance()` of
+ `ApproximateMatching.h` is
+ \f[
+   D[ i ][ j ] = \min\{ D[ i - 1 ][ j - 1 ] + \delta_{ij} ,
+                        D[ i - 1 ][ j ] + 1 , D[ i ][ j - 1 ] + 1 \} ,
+   \tag{3}
+ \f]
+ with \f$ D[ i ][ 0 ] = i \f$ and \f$ D[ 0 ][ j ] = j \f$, since the last
+ column of an optimal sequence of edits aligns \f$ P[ i - 1 ] \f$ with
+ \f$ T[ j - 1 ] \f$, or deletes one of the two, and what precedes it is an
+ optimal sequence for the shorter prefixes; the table costs
+ \f$ \Theta( m n ) \f$ time, and two rows suffice for the value
+ (`stringMatchingSingleRow()`). With \f$ D[ 0 ][ j ] = 0 \f$ instead, an
+ occurrence may start anywhere in \f$ T \f$, and \f$ D[ m ][ j ] \f$ is
+ the least number of errors of an occurrence of \f$ P \f$ that ends at
+ \f$ j \f$ (`stringMatching()`, the approximate matching of section 13.1,
+ after Sellers). The same scheme with a maximum gives the longest common
+ subsequence of `LongestCommonSubsequence.h` (section 13.7),
+ \f[
+   \mathit{DP}[ i ][ j ] = \left\{ \begin{array}{ll}
+     \mathit{DP}[ i - 1 ][ j - 1 ] + 1 & P[ i - 1 ] = T[ j - 1 ] , \cr
+     \max\{ \mathit{DP}[ i - 1 ][ j ] , \mathit{DP}[ i ][ j - 1 ] \} &
+     \text{otherwise,}
+   \end{array} \right. \tag{4}
+ \f]
+ since a common subsequence either uses both last symbols, when they are
+ equal (and then some longest one does, by an exchange), or leaves out one
+ of them; and the alignments of `Alignment.h` (exercises 13.7 to 13.9),
+ whose score is the maximum of
+ \f$ \mathit{DP}[ i - 1 ][ j - 1 ] + \delta_{ij} \f$ and of
+ \f$ \mathit{DP}[ i - 1 ][ j ] - 2 \f$ and \f$ \mathit{DP}[ i ][ j - 1 ] - 2
+ \f$, global with the borders \f$ -2 i \f$ and \f$ -2 j \f$ (Needleman and
+ Wunsch), semiglobal with the borders 0 and the best of the last row and
+ column, local with 0 as a fourth term of the maximum and the best entry
+ (Smith and Waterman). A solution, not only its value, is read back from
+ the table by following, from the last entry, a term that gave the
+ maximum or the minimum, in \f$ O( m + n ) \f$ steps (`lcs()`, `diff()`,
+ `globalAlignment()`).
+
+ The relatives of `SubsequenceProblems.h` follow from (4). A shortest common
+ supersequence of \f$ X \f$ and \f$ Y \f$ writes the items of a longest
+ common subsequence once and the others in their order, hence its length
+ \f$ |X| + |Y| - | \mathrm{LCS}( X , Y ) | \f$; the occurrences of \f$ P \f$
+ as a subsequence of \f$ T \f$ add, at each symbol of \f$ T \f$ equal to
+ \f$ P[ j - 1 ] \f$, the occurrences of \f$ P[ 0 .. j - 2 ] \f$ before it;
+ and three strings need the table in three dimensions,
+ \f$ \Theta( n m l ) \f$, since a longest common subsequence of two of them
+ may leave out the items that the third shares. The problems on an
+ unbounded number of strings are NP-hard (Maier; Mansfield for the
+ shuffle).
+
+ The engineered algorithms of `EditDistance.h` rest on two properties of
+ (3).
+
+ <em>Lemma 4 (the differences of the table).</em> Two adjacent entries of
+ (3), in a row or in a column, differ by \f$ -1 \f$, 0 or \f$ +1 \f$, and
+ along a diagonal the entries never decrease,
+ \f[
+   D[ i ][ j ] - D[ i - 1 ][ j ] \in \{ -1 , 0 , +1 \} , \qquad
+   D[ i - 1 ][ j - 1 ] \le D[ i ][ j ] . \tag{5}
+ \f]
+
+ The first holds since an alignment of \f$ P( i - 1 ) \f$ with
+ \f$ T( j ) \f$ becomes one of \f$ P( i ) \f$ by one more edit, and
+ back, and likewise for \f$ T \f$; the second follows from the first,
+ since each term of (3) is at least \f$ D[ i - 1 ][ j - 1 ] \f$, e.g.,
+ \f$ D[ i - 1 ][ j ] + 1 \ge D[ i - 1 ][ j - 1 ] \f$ by a horizontal
+ difference. By the
+ first, a column is determined by its top entry and the vertical
+ differences, two bit vectors \f$ P_v \f$ and \f$ M_v \f$ of \f$ m \f$
+ bits, and Myers moves them to the next column by a constant number of
+ operations on words, the carries of one addition propagating the
+ horizontal differences down the column; hence
+ \f$ O( n \lceil m / w \rceil ) \f$ time for the distance and for the
+ search (`levenshtein()`, `approximateMatches()`), and the bit-parallel
+ LCS of Allison and Dix in the same bound (`lcsLength()`). By the second
+ part, a cell of value at most \f$ k \f$ has one of value at most \f$ k \f$
+ on its diagonal in the column before; hence the last row of value at most
+ \f$ k \f$ goes down by at most one row per column, and the search of
+ \f$ k \f$ errors needs only the blocks down to the last one with a cell of
+ value at most \f$ k + 1 \f$ at its bottom (the cut-off of Ukkonen),
+ \f$ O( n k / w ) \f$ expected on random texts. The distance, finally,
+ crosses only the diagonals \f$ i - j \in [ -d , d - ( n - m ) ] \f$, each
+ step off the main diagonal costing 1, and doubling a guess \f$ t \f$ of
+ \f$ d \f$ until the band of \f$ t \f$ gives a value at most \f$ t \f$
+ costs \f$ O( n d / w ) \f$ blocks in all, a geometric sum.
+
+ By the second part of (5) the furthest row \f$ F_h( k ) \f$ of the
+ diagonal \f$ k = j - i \f$ that \f$ h \f$ edits reach determines the
+ table: it is the row reached by sliding along the matches of the
+ diagonal from the best of the three cells that one more edit reaches,
+ \f[
+   F_h( k ) = \mathit{slide}_k( \max\{ F_{h-1}( k ) + 1 ,
+              F_{h-1}( k + 1 ) + 1 , F_{h-1}( k - 1 ) \} ) , \tag{6}
+ \f]
+ and the distance is the least \f$ d \f$ with \f$ F_d( n - m ) = m \f$
+ (the diagonal transitions of Landau and Vishkin, the furthest reaching
+ paths of Myers). The rounds \f$ h \le d \f$ handle \f$ O( d ) \f$
+ diagonals each, and the slides of one diagonal never go back, so that the
+ time is \f$ O( ( n + m ) d ) \f$ in the worst case,
+ \f$ O( n + d^2 ) \f$ expected on random strings, and
+ \f$ O( n + d^2 ) \f$ in the worst case when each slide is a query of
+ longest common extension in \f$ O( 1 ) \f$ (see
+ \ref theory_string_suffix).
+
+ <table>
+ <caption>The computations of the edit distance and of the LCS</caption>
+ <tr><th>Function</th><th>Time</th><th>Space</th><th>Remarks</th></tr>
+ <tr><td><tt>editDistance()</tt>, <tt>lcs()</tt></td>
+     <td>\f$ \Theta( m n ) \f$</td><td>\f$ \Theta( m n ) \f$</td>
+     <td>the table of the book, a solution read back</td></tr>
+ <tr><td><tt>stringMatchingSingleRow()</tt></td>
+     <td>\f$ \Theta( m n ) \f$</td><td>\f$ O( n ) \f$</td>
+     <td>two rows, the value alone</td></tr>
+ <tr><td><tt>levenshtein()</tt></td>
+     <td>\f$ O( n \lceil m / w \rceil ) \f$, about
+     \f$ O( n d / w ) \f$</td><td>\f$ O( m / w + \sigma \lceil m / w
+     \rceil ) \f$</td><td>the diagonals (6) for small \f$ d \f$, then the
+     band of Ukkonen</td></tr>
+ <tr><td><tt>approximateMatches()</tt></td>
+     <td>\f$ O( n \lceil m / w \rceil ) \f$, \f$ O( n k / w ) \f$
+     expected</td><td>as above</td><td>the cut-off of Ukkonen</td></tr>
+ <tr><td><tt>lcsLength()</tt></td>
+     <td>\f$ O( n \lceil m / w \rceil ) \f$</td><td>as above</td>
+     <td>Allison and Dix</td></tr>
+ </table>
+
+ \section theory_string_suffix Suffix arrays, trees and automata
+
+ The suffixes of \f$ T \f$ hold all its substrings as their prefixes, and
+ the three indexes of this section sort them, or merge their common
+ prefixes, so that a pattern is searched in time that depends on \f$ m \f$
+ rather than on \f$ n \f$.
+
+ <em>Lemma 5 (the range of a pattern).</em> The suffixes prefixed by
+ \f$ P \f$ are consecutive in \f$ \mathit{SA} \f$: they are the suffixes
+ not smaller than \f$ P \f$ and smaller than \f$ P \# \f$, \f$ \# \f$ a
+ symbol larger than all the others.
+
+ Indeed, the strings prefixed by \f$ P \f$ are exactly those between
+ \f$ P \f$ and \f$ P \# \f$ in the lexicographic order. Hence two binary
+ searches give the range (`range()` of `SuffixArray.h`), each step a
+ comparison of \f$ P \f$ with a suffix, \f$ O( m \log n ) \f$ time, and the
+ occurrences are then listed in \f$ O( \mathit{occ} ) \f$. The search of
+ Manber and Myers (`rangeLcp()`) keeps the lcp \f$ l \f$ and \f$ r \f$ of
+ \f$ P \f$ with the suffixes at the two ends of the range, and stores for
+ the middle of each range of the search its lcp with the two ends
+ (\f$ \mathit{Llcp} \f$ and \f$ \mathit{Rlcp} \f$, \f$ 2 n \f$ integers);
+ if, e.g., \f$ l \ge r \f$ and \f$ \mathit{Llcp} \f$ of the middle differs
+ from \f$ l \f$, the side is decided with no comparison, and otherwise the
+ comparison starts from \f$ \max( l , r ) \f$. That maximum never
+ decreases, each equal symbol increases it and each step ends at the first
+ different one; hence \f$ O( m + \log n ) \f$ comparisons.
+
+ <em>Lemma 6 (Kasai et al.).</em> If the suffix \f$ i \f$ has lcp
+ \f$ h > 0 \f$ with the suffix before it in \f$ \mathit{SA} \f$, then the
+ suffix \f$ i + 1 \f$ has lcp at least \f$ h - 1 \f$ with the suffix before
+ it in \f$ \mathit{SA} \f$:
+ \f[
+   \mathit{PLCP}[ i + 1 ] \ge \mathit{PLCP}[ i ] - 1 , \tag{7}
+ \f]
+ \f$ \mathit{PLCP}[ i ] \f$ being the lcp of the suffix \f$ i \f$ with its
+ predecessor in \f$ \mathit{SA} \f$.
+
+ In fact, if the suffix \f$ k \f$ precedes the suffix \f$ i \f$ and shares
+ \f$ h > 0 \f$ symbols with it, the suffix \f$ k + 1 \f$ precedes the
+ suffix \f$ i + 1 \f$ and shares \f$ h - 1 \f$ symbols with it, and so
+ does every suffix between them in \f$ \mathit{SA} \f$. Computing the lcp
+ in the order of the text from the value at \f$ i - 1 \f$ less one
+ (`lcpArray()`, `lcpArrayPhi()` of `SuffixSorting.h`) therefore decreases
+ \f$ h \f$ at most \f$ n \f$ times, and \f$ h \le n \f$; hence at most
+ \f$ 2 n \f$ comparisons of symbols.
+
+ The constructions of the suffix array differ in how they reuse the order
+ of shorter strings. The prefix doubling sorts the suffixes by their
+ prefixes of \f$ 2^{k+1} \f$ symbols as the pairs of the ranks of two
+ prefixes of \f$ 2^k \f$ symbols, each round a radix sort in
+ \f$ O( n ) \f$, and \f$ \lceil \log_2 n \rceil \f$ rounds suffice. The
+ Skew algorithm sorts recursively the suffixes at the places
+ \f$ i \bmod 3 \ne 0 \f$ by the names of their triples, sorts the others by
+ a symbol and the rank of the next suffix, which is in the sample, and
+ merges the two lists in \f$ O( n ) \f$ by comparing a pair or a triple
+ that ends in the sample, so that
+ \f$ T( n ) = T( 2 n / 3 ) + O( n ) = O( n ) \f$. The induced sorting of
+ SA-IS rests on the following property.
+
+ <em>Lemma 7 (the induced sorting).</em> Call the suffix \f$ i \f$ of type S
+ if it is smaller than the suffix \f$ i + 1 \f$ and of type L otherwise,
+ and LMS if it is of type S and the suffix \f$ i - 1 \f$ of type L. If the
+ LMS-suffixes are placed at the ends of the buckets of their first symbols
+ in their sorted order, a scan from left to right that puts each suffix
+ \f$ i - 1 \f$ of type L at the head of its bucket, after reading the
+ suffix \f$ i \f$, and a scan from right to left that puts each suffix
+ \f$ i - 1 \f$ of type S at the tail of its bucket sort all the suffixes.
+
+ Indeed, within the bucket of a symbol \f$ c \f$ the suffixes of type L
+ come before those of type S, since the first are followed by a run of
+ \f$ c \f$ and then a smaller symbol, the second by a larger one; and two
+ suffixes \f$ i - 1 \f$ and \f$ j - 1 \f$ of type L in one bucket compare as
+ the suffixes \f$ i \f$ and \f$ j \f$, which the first scan meets in
+ their order, by induction on the scan, since each is smaller than the
+ suffix before it. The second scan does the same for the type S, from the
+ largest down. The LMS-substrings (from an LMS place to the next one) are
+ sorted by the same two scans; if two of them are equal, their names form a
+ string of at most \f$ n / 2 \f$ symbols, two LMS places never being
+ adjacent, whose suffix array orders the LMS-suffixes; hence
+ \f$ T( n ) \le T( n / 2 ) + O( n ) = O( n ) \f$.
+
+ <table>
+ <caption>The constructions of the suffix array</caption>
+ <tr><th>Function</th><th>Time</th><th>Remarks</th></tr>
+ <tr><td><tt>suffixArraySorting()</tt></td>
+     <td>\f$ O( n^2 \log n ) \f$, near \f$ O( n \log^2 n ) \f$ on random
+     texts</td><td>a sort of comparisons, each as long as an lcp</td></tr>
+ <tr><td><tt>suffixArrayDoubling()</tt></td>
+     <td>\f$ O( n \log n ) \f$</td><td>Manber and Myers, a radix sort of
+     pairs of ranks a round</td></tr>
+ <tr><td><tt>suffixArrayLarssonSadakane()</tt></td>
+     <td>\f$ O( n \log^2 n ) \f$ here, \f$ O( n \log n ) \f$ with a
+     ternary quicksort</td><td>only the groups still tied are
+     sorted</td></tr>
+ <tr><td><tt>suffixArraySkew()</tt></td><td>\f$ O( n ) \f$</td>
+     <td>the recursion on \f$ 2 n / 3 \f$ suffixes; optimal I/Os on
+     disk</td></tr>
+ <tr><td><tt>suffixArraySais()</tt>, <tt>suffixArray()</tt></td>
+     <td>\f$ O( n ) \f$</td><td>Lemma 7, the recursion on at most
+     \f$ n / 2 \f$ suffixes; the engineered one in
+     <tt>SuffixSorting.h</tt></td></tr>
+ <tr><td><tt>suffixArrayScan()</tt></td>
+     <td>\f$ O( ( n^2 / b ) \log b ) \f$ comparisons of suffixes</td>
+     <td>blocks of \f$ b \f$ symbols, all its passes sequential</td></tr>
+ </table>
+
+ The suffix tree (`SuffixTree.h`) is the compact trie of the suffixes of
+ \f$ T \$ \f$: it has \f$ n + 1 \f$ leaves, and since each internal node
+ but the root has two children or more, at most \f$ n \f$ internal nodes;
+ with each label kept as two places of \f$ T \f$ it takes \f$ O( n ) \f$
+ space. An internal node spells a substring that occurs twice followed by
+ different symbols, and the lowest common ancestor of the leaves \f$ i \f$
+ and \f$ j \f$ spells their longest common prefix; hence
+ \f$ \mathrm{lce}( i , j ) \f$ is the string depth of that ancestor, found
+ in \f$ O( 1 ) \f$ by the range minima of the depths along an Euler tour
+ (Bender and Farach-Colton), and equivalently the minimum of
+ \f$ \mathit{LCP} \f$ between the ranks of the two suffixes. McCreight's
+ construction inserts the suffixes from the longest one, and starts the
+ walk of the suffix \f$ i \f$ from the suffix link of the node of
+ \f$ \mathit{head}_{i-1} \f$ (the longest prefix of the suffix
+ \f$ i - 1 \f$ that occurs earlier), since \f$ \mathit{head}_{i-1} \f$
+ without its first symbol is a prefix of \f$ \mathit{head}_i \f$. The
+ rescan of a link not yet set jumps over whole edges, and the node depth
+ drops by at most 2 at each link, so that its total is \f$ O( n ) \f$; the
+ scan compares the symbols past the head, and since
+ \f$ |\mathit{head}_i| \ge |\mathit{head}_{i-1}| - 1 \f$ its total is
+ \f$ O( n ) \f$ too. With the children in a balanced tree, the time is
+ \f$ O( n \log \sigma ) \f$. From \f$ \mathit{SA} \f$ and
+ \f$ \mathit{LCP} \f$ instead the leaves are inserted in the order of
+ \f$ \mathit{SA} \f$, each climbing from the previous leaf to the depth
+ \f$ \mathit{LCP}[ r - 1 ] \f$; an edge climbed leaves the rightmost path
+ for good, and the construction is linear.
+
+ The suffix automaton (`SuffixAutomaton.h`) merges instead the substrings
+ with the same set of end places,
+ \f$ \mathrm{endpos}( u ) = \{ j : T[ j - |u| + 1 .. j ] = u \} \f$; two
+ such sets are disjoint or nested, so that the classes form a tree, the
+ suffix links, whose leaves are classes of prefixes of \f$ T \f$, and it has
+ at most \f$ 2 n - 1 \f$ states and \f$ 3 n - 4 \f$ transitions (Blumer et
+ al.). A class holds the suffixes of its longest member of lengths in
+ \f$ ( \mathit{len}( \mathit{link}( v ) ) , \mathit{len}( v ) ] \f$, which
+ gives the number of distinct nonempty substrings as
+ \f$ \sum_{v} ( \mathit{len}( v ) - \mathit{len}( \mathit{link}( v ) ) ) \f$;
+ in terms of the suffix array the same number is
+ \f[
+   \frac{n ( n + 1 )}{2} - \sum_{r} \mathit{LCP}[ r ] , \tag{8}
+ \f]
+ since the suffix \f$ \mathit{SA}[ r ] \f$ adds its prefixes but those it
+ shares with the suffix before it (`distinctSubstrings()` of
+ `SuffixApplications.h`). The other applications of that header follow
+ from Lemma 5 and from the constant-time \f$ \mathrm{lce} \f$: a substring
+ that occurs \f$ C \f$ times is a run of \f$ C - 1 \f$ entries of
+ \f$ \mathit{LCP} \f$ that are at least its length; the occurrences of
+ \f$ P \f$ with at most \f$ k \f$ mismatches are checked at each place by at
+ most \f$ k + 1 \f$ extensions on the suffix array of \f$ T \# P \f$,
+ \f$ O( n k ) \f$ (Landau and Vishkin); and the parsing of Ziv and Lempel
+ copies at each place the longest prefix of the suffix that starts earlier,
+ found on the suffix tree by walking down while the least leaf below the
+ next node is smaller than the place. The engineered `LceIndex` of
+ `LongestCommonExtension.h` answers the extensions by comparing the first
+ 64 symbols directly, which settles most of them on usual texts, and the
+ others by range minima on blocks of 16 entries of \f$ \mathit{LCP} \f$, in
+ \f$ O( 1 ) \f$ with two reads of memory in a row.
+
+ \section theory_string_dict Dictionaries searched by prefix
+
+ By Lemma 5 applied to a sorted array of \f$ n \f$ strings, the strings
+ prefixed by \f$ P \f$ are those between the lexicographic positions of \f$ P
+ \f$ and of \f$ P \# \f$ (`prefixRange()` of `PrefixSearch.h`), two binary
+ searches of \f$ O( m \log n ) \f$ time and of \f$ O( ( m / B ) \log n ) \f$
+ transfers of blocks of \f$ B \f$ symbols, a string far from the others being
+ read at each step. The front coding of `FrontCoding.h` stores each string as
+ the length \f$ \ell_i \f$ of its lcp with the string before and the rest of
+ it, and decodes a string from the last one stored whole (an <em>anchor</em>);
+ an anchor every \f$ b \f$ strings bounds the scan of a decoding, and the
+ search becomes a binary search on the anchors and the scan of one bucket (a
+ two-level scheme, whose first level is small enough to stay in memory). The
+ locality-preserving front coding of Bender, Farach-Colton and Kuszmaul stores
+ \f$ s_i \f$ whole when the anchor before it is more than \f$ c | s_i | \f$
+ characters back: the decoding then reads at most \f$ ( c + 1 ) | s_i | \f$
+ characters, and the anchors cost at most a factor \f$ 1 + 2 / ( c - 2 ) \f$ on
+ the space of the front coding, since each anchor is paid by the \f$ c | s_i |
+ \f$ characters coded before it, as Bender, Farach-Colton and Kuszmaul prove;
+ the time of a decoding thus controls the space. The search by bins of Demaine,
+ Jones and Pătrașcu (`BinnedSearch`) cuts the range of \f$ m \f$ sorted
+ integers into \f$ m \f$ bins of equal width; a bin is at most as wide as the
+ largest gap, and hence holds at most \f$ \Delta \f$ items, \f$ \Delta \f$ the
+ ratio of the largest gap to the smallest, which bounds a search by \f$ O( \log
+ \min( \Delta , m ) ) \f$.
+
+ \section theory_string_combin Palindromes, Lyndon words and parentheses
+
+ A palindrome reads the same in both directions. The algorithm of Manacher
+ (`longestPalindromicSubstring()` of `Palindromes.h`) computes the radius
+ of the longest palindrome about each of the \f$ 2 n - 1 \f$ centres, and
+ keeps the palindrome found so far whose right end \f$ r \f$ is the
+ largest: a centre inside it starts from the radius of its mirror, capped
+ at \f$ r \f$, since the palindrome is symmetric, and compares only the
+ symbols past \f$ r \f$; each successful comparison moves \f$ r \f$
+ forward, so that the time is \f$ \Theta( n ) \f$. The longest palindromic
+ subsequence is the longest common subsequence of \f$ s \f$ and of its
+ reverse, by (4). The eertree (`Eertree`) has a node per distinct nonempty
+ palindrome, and there are at most \f$ n \f$ of them, since a symbol added
+ at the end creates at most one new palindrome, the longest palindromic
+ suffix (a shorter one is a suffix of it, and hence its mirror, a prefix,
+ occurred before); the lengths of the palindromic suffixes of a prefix form
+ \f$ O( \log n ) \f$ arithmetic series, which gives the fewest palindromes
+ of a factorization in \f$ O( n \log n ) \f$ (`palindromicFactorization()`).
+
+ <em>Theorem 8 (Chen, Fox and Lyndon).</em> A <em>Lyndon word</em> is a
+ nonempty string strictly smaller than all its proper suffixes; every
+ string has exactly one factorization
+ \f[
+   S = w_1 w_2 \cdots w_k , \qquad w_1 \ge w_2 \ge \cdots \ge w_k , \tag{9}
+ \f]
+ into Lyndon words.
+
+ The algorithm of Duval (`lyndonFactorization()` of `Lyndon.h`) keeps the
+ unfactored part as \f$ w^h w' \f$, \f$ w \f$ a Lyndon word and \f$ w' \f$ a
+ proper prefix of it, and compares the next symbol with the one
+ \f$ |w| \f$ places before: an equal one extends \f$ w' \f$, a larger one
+ makes the whole part a Lyndon word, and a smaller one outputs the
+ \f$ h \f$ copies of \f$ w \f$, which are factors of (9). Each comparison
+ either advances the scan or comes with the output of factors at least as
+ long as the symbols scanned again, hence \f$ O( n ) \f$ time; the least
+ rotation of \f$ S \f$ starts where the factor of \f$ S S \f$ that covers
+ the place \f$ n \f$ starts. The longest balanced subsequence of
+ parentheses (`Parentheses.h`) matches each close with the nearest open
+ still unmatched, which an exchange shows to lose no pair, and the longest
+ balanced substring ending at a close starts after the open still unmatched
+ below it on a stack, both in \f$ \Theta( n ) \f$. Two words are anagrams
+ when their symbols sorted are equal, which gives a canonical signature
+ for the hashing of `anagramGroups()` of `Anagrams.h`.
+
+ \section theory_string_segment Segmentations, cuts and the code of Huffman
+
+ A string \f$ s \f$ is a sequence of words of a dictionary if and only if
+ some prefix \f$ s[ 0 .. j ) \f$ is and \f$ s[ j .. i ) \f$ is a word for
+ \f$ i = n \f$ (exercise 13.13), which `wordBreak()` of `WordBreak.h`
+ fills for every \f$ i \f$; the number of the segmentations adds, instead,
+ the counts of the words that start at each place
+ (`countSegmentations()` of `Segmentations.h`), and the readings of a
+ string of digits as letters are its segmentations into the words 1 to 26
+ (`countDecodings()`). The cuts of a string of length \f$ L \f$ at the
+ places \f$ w_1 < \cdots < w_n \f$, each costing the length of the piece it
+ splits, cost at least
+ \f[
+   D[ i ][ j ] = w_j - w_i + \min_{i < k < j} ( D[ i ][ k ] + D[ k ][ j ] )
+   , \tag{10}
+ \f]
+ \f$ w_0 = 0 \f$ and \f$ w_{n+1} = L \f$, \f$ \Theta( n^3 ) \f$ in general.
+ The cost \f$ w_j - w_i \f$ satisfies the quadrangle inequality as an
+ equality and grows with the interval; hence (Knuth, Yao) the largest
+ optimal split \f$ K[ i ][ j ] \f$ lies between \f$ K[ i ][ j - 1 ] \f$ and
+ \f$ K[ i + 1 ][ j ] \f$, the candidates of the intervals of one length
+ telescope to \f$ O( n ) \f$, and `StringBreaking.h` fills (10) in
+ \f$ \Theta( n^2 ) \f$.
+
+ The code of Huffman (`huffman()` of `Huffman.h`, section 14.4 of the book)
+ builds a prefix code of least expected length by merging, \f$ n - 1 \f$
+ times, the two least frequent characters into a new one of their total
+ frequency. Some optimal tree has the two least frequent characters as
+ sibling leaves at the largest depth, since exchanging them with the leaves
+ there does not increase the cost; and the cost of the tree with the merged
+ character differs from that of the full tree by the sum of their
+ frequencies, a constant; hence, by induction on the number of characters,
+ the greedy choice is optimal, and with a heap it takes
+ \f$ O( n \log n ) \f$ time.
+
+ \section theory_string_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 13 and 14,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapters 9, Searching Strings by Prefix, and 10,
+      Searching Strings by Substring, doi:10.1017/9781009128933
+ \see D. Gusfield, Algorithms on Strings, Trees and Sequences, Cambridge
+      University Press, 1997, doi:10.1017/CBO9780511574931
+ \see D. E. Knuth, J. H. Morris, V. R. Pratt, Fast pattern matching in
+      strings, SIAM Journal on Computing 6(2), 323-350, 1977,
+      doi:10.1137/0206024
+ \see R. S. Boyer, J. S. Moore, A fast string searching algorithm,
+      Communications of the ACM 20(10), 762-772, 1977,
+      doi:10.1145/359842.359859
+ \see R. N. Horspool, Practical fast searching in strings, Software:
+      Practice and Experience 10(6), 501-506, 1980,
+      doi:10.1002/spe.4380100608
+ \see R. A. Baeza-Yates, G. H. Gonnet, A new approach to text searching,
+      Communications of the ACM 35(10), 74-82, 1992,
+      doi:10.1145/135239.135243
+ \see M. Crochemore, D. Perrin, Two-way string-matching, Journal of the
+      ACM 38(3), 650-674, 1991, doi:10.1145/116825.116845
+ \see A. V. Aho, M. J. Corasick, Efficient string matching: an aid to
+      bibliographic search, Communications of the ACM 18(6), 333-340,
+      1975, doi:10.1145/360825.360855
+ \see P. H. Sellers, The theory and computation of evolutionary
+      distances: pattern recognition, Journal of Algorithms 1(4), 359-373,
+      1980, doi:10.1016/0196-6774(80)90016-4
+ \see S. B. Needleman, C. D. Wunsch, A general method applicable to the
+      search for similarities in the amino acid sequence of two proteins,
+      Journal of Molecular Biology 48(3), 443-453, 1970,
+      doi:10.1016/0022-2836(70)90057-4
+ \see T. F. Smith, M. S. Waterman, Identification of common molecular
+      subsequences, Journal of Molecular Biology 147(1), 195-197, 1981,
+      doi:10.1016/0022-2836(81)90087-5
+ \see E. Ukkonen, Algorithms for approximate string matching, Information
+      and Control 64(1-3), 100-118, 1985,
+      doi:10.1016/S0019-9958(85)80046-2
+ \see G. M. Landau, U. Vishkin, Fast parallel and serial approximate
+      string matching, Journal of Algorithms 10(2), 157-169, 1989,
+      doi:10.1016/0196-6774(89)90010-2
+ \see G. Myers, A fast bit-vector algorithm for approximate string
+      matching based on dynamic programming, Journal of the ACM 46(3),
+      395-415, 1999, doi:10.1145/316542.316550
+ \see L. Allison, T. I. Dix, A bit-string longest-common-subsequence
+      algorithm, Information Processing Letters 23(5), 305-310, 1986,
+      doi:10.1016/0020-0190(86)90091-8
+ \see D. Maier, The complexity of some problems on subsequences and
+      supersequences, Journal of the ACM 25(2), 322-336, 1978,
+      doi:10.1145/322063.322075
+ \see U. Manber, G. Myers, Suffix arrays: a new method for on-line string
+      searches, SIAM Journal on Computing 22(5), 935-948, 1993,
+      doi:10.1137/0222058
+ \see J. Kärkkäinen, P. Sanders, S. Burkhardt, Linear work suffix array
+      construction, Journal of the ACM 53(6), 918-936, 2006,
+      doi:10.1145/1217856.1217858
+ \see G. Nong, S. Zhang, W. H. Chan, Two efficient algorithms for linear
+      time suffix array construction, IEEE Transactions on Computers
+      60(10), 1471-1484, 2011, doi:10.1109/TC.2010.188
+ \see T. Kasai, G. Lee, H. Arimura, S. Arikawa, K. Park, Linear-time
+      longest-common-prefix computation in suffix arrays and its
+      applications, Proceedings of the 12th Symposium on Combinatorial
+      Pattern Matching (CPM), LNCS 2089, 181-192, 2001,
+      doi:10.1007/3-540-48194-X_17
+ \see E. M. McCreight, A space-economical suffix tree construction
+      algorithm, Journal of the ACM 23(2), 262-272, 1976,
+      doi:10.1145/321941.321946
+ \see M. A. Bender, M. Farach-Colton, The LCA problem revisited,
+      Proceedings of the 4th Latin American Symposium on Theoretical
+      Informatics (LATIN), LNCS 1776, 88-94, 2000,
+      doi:10.1007/10719839_9
+ \see A. Blumer, J. Blumer, D. Haussler, A. Ehrenfeucht, M. T. Chen,
+      J. Seiferas, The smallest automaton recognizing the subwords of a
+      text, Theoretical Computer Science 40, 31-55, 1985,
+      doi:10.1016/0304-3975(85)90157-4
+ \see M. A. Bender, M. Farach-Colton, B. C. Kuszmaul, Cache-oblivious
+      string B-trees, Proceedings of PODS 2006, 233-242, 2006,
+      doi:10.1145/1142351.1142385
+ \see G. Manacher, A new linear-time "on-line" algorithm for finding the
+      smallest initial palindrome of a string, Journal of the ACM 22(3),
+      346-351, 1975, doi:10.1145/321892.321896
+ \see M. Rubinchik, A. M. Shur, EERTREE: an efficient data structure for
+      processing palindromes in strings, European Journal of Combinatorics
+      68, 249-265, 2018, doi:10.1016/j.ejc.2017.07.021
+ \see K. T. Chen, R. H. Fox, R. C. Lyndon, Free differential calculus,
+      IV. The quotient groups of the lower central series, Annals of
+      Mathematics 68(1), 81-95, 1958, doi:10.2307/1970044
+ \see J.-P. Duval, Factorizing words over an ordered alphabet, Journal of
+      Algorithms 4(4), 363-381, 1983, doi:10.1016/0196-6774(83)90017-2
+ \see D. E. Knuth, Optimum binary search trees, Acta Informatica 1(1),
+      14-25, 1971, doi:10.1007/BF00264289
+ \see F. F. Yao, Efficient dynamic programming using quadrangle
+      inequalities, Proceedings of the 12th ACM Symposium on Theory of
+      Computing (STOC), 429-435, 1980, doi:10.1145/800141.804691
+ \see D. A. Huffman, A method for the construction of minimum-redundancy
+      codes, Proceedings of the IRE 40(9), 1098-1101, 1952,
+      doi:10.1109/JRPROC.1952.273898
+*/
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File string.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/
