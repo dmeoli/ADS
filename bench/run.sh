@@ -109,6 +109,8 @@ run ordered 100000 1000000
 run arrays 100000 1000000 10000000
 run sets 100000 1000000
 run tries 100000 1000000
+run learned 100000 1000000 10000000
+run stringdicts 100000 1000000
 # the allocators, whose case cross-thread frees in a second thread
 cells "$CORE,${CORE2:-$((CORE + 1))}" allocators 100000 1000000 >> "$out"
 run positions 100000 1000000

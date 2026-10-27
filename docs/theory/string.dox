@@ -548,7 +548,25 @@
  characters, and the anchors cost at most a factor \f$ 1 + 2 / ( c - 2 ) \f$ on
  the space of the front coding, since each anchor is paid by the \f$ c | s_i |
  \f$ characters coded before it, as Bender, Farach-Colton and Kuszmaul prove;
- the time of a decoding thus controls the space. The search by bins of Demaine,
+ the time of a decoding thus controls the space. The rear coding of Ferragina,
+ Grossi, Gupta, Shah and Vitter (`rearCode()` of `RearCoding.h`) writes
+ \f$ r_i = | s_{i-1} | - \ell_i \f$, the characters to take off the end of
+ the string before, in place of \f$ \ell_i \f$: the same information, but a
+ smaller number where the prefixes shared are long, and fewer bytes in a code
+ of variable length. `RearCodedDictionary` is the plain front coding with
+ buckets of Martínez-Prieto, Brisaboa, Cánovas, Claude and Navarro in the rear
+ coding, all in one string of bytes (the first string of a bucket whole, then
+ \f$ r_i \f$, \f$ | \hat s_i | \f$ and the rest \f$ \hat s_i \f$ of each
+ string, the two numbers in the byte-aligned code of `encodeLength()`) with
+ the places of the buckets by Elias-Fano, against the two words per string of
+ the pairs of `FrontCodedDictionary`. Its scan of a bucket compares a string
+ with the pattern \f$ Q \f$ only when it must: with \f$ \lambda \f$ the
+ prefix that the current string shares with \f$ Q \f$ and the current string
+ smaller than \f$ Q \f$, a next string that keeps more than \f$ \lambda \f$
+ characters of it has the same character at the place \f$ \lambda \f$, which
+ is below the one of \f$ Q \f$, and is smaller than \f$ Q \f$ as well; only
+ a string that keeps at most \f$ \lambda \f$ characters is compared, from the
+ place where its rest begins. The search by bins of Demaine,
  Jones and Pătrașcu (`BinnedSearch`) cuts the range of \f$ m \f$ sorted
  integers into \f$ m \f$ bins of equal width; a bin is at most as wide as the
  largest gap, and hence holds at most \f$ \Delta \f$ items, \f$ \Delta \f$ the
@@ -732,6 +750,13 @@
  \see D. A. Huffman, A method for the construction of minimum-redundancy
       codes, Proceedings of the IRE 40(9), 1098-1101, 1952,
       doi:10.1109/JRPROC.1952.273898
+ \see P. Ferragina, R. Grossi, A. Gupta, R. Shah, J. S. Vitter, On
+      searching compressed string collections cache-obliviously,
+      Proceedings of the 27th PODS, 181-190, 2008,
+      doi:10.1145/1376916.1376943
+ \see M. A. Martínez-Prieto, N. R. Brisaboa, R. Cánovas, F. Claude,
+      G. Navarro, Practical compressed string dictionaries, Information
+      Systems 56, 73-108, 2016, doi:10.1016/j.is.2015.08.008
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File string.dox ---------------------------*/

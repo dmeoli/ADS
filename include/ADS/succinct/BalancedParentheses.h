@@ -214,6 +214,24 @@ class BalancedParentheses {
  /// \post the first place after \f$ i \f$ with the excess \f$ E( i ) - 1 \f$
  [[nodiscard]] std::size_t findClose( std::size_t i ) const;
 
+ /// the first \f$ j > i \f$ with \f$ E( j ) - E( i ) = d < 0 \f$, `nil` if
+ /// none: the end of a run of parentheses that goes \f$ -d \f$ levels
+ /// below the one at \f$ i \f$, e.g., of a subtree of the code by the
+ /// degrees in depth [see `SuccinctPatriciaTrie.h`]
+ ///
+ /// In pseudocode (the forward search of Navarro and Sadakane, beyond the
+ /// book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{forwardSearch}( i , d ) \cr
+ /// 2 & \quad \textbf{return}\ \text{the place found by }
+ ///     \mathrm{findClose}( i ) \text{ with the target } d \text{ for } -1
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i < \mathrm{size}() \f$ and \f$ d < 0 \f$
+ [[nodiscard]] std::size_t forwardSearch( std::size_t i ,
+                                          std::int64_t d ) const;
+
  /// the open parenthesis of the closed one at \f$ j \f$
  ///
  /// In pseudocode (the backward search of Navarro and Sadakane, beyond the
@@ -274,11 +292,6 @@ class BalancedParentheses {
  [[nodiscard]] std::size_t scanBackward( std::size_t a , std::size_t b ,
                                          std::int64_t & e ,
                                          std::int64_t d ) const;
-
- /// the first \f$ j > i \f$ with \f$ E( j ) - E( i ) = d < 0 \f$, `nil` if
- /// none
- [[nodiscard]] std::size_t forwardSearch( std::size_t i ,
-                                          std::int64_t d ) const;
 
  /// the last \f$ k < i \f$ with \f$ E( k ) - E( i ) = d \le 0 \f$, plus 1,
  /// counting \f$ E( -1 ) = 0 \f$; `nil` if none

@@ -107,12 +107,16 @@ test: $(BINS)
 # Lemire et al. and CRoaring to sets, ABSL=<prefix>, HTRIE=<dir> (its
 # source) and LIBART=<prefix> Abseil, tsl::htrie_map and libart to tries;
 # SDSL adds the range minima of sdsl-lite to lce, HYPERSCAN=<prefix>
-# Vectorscan (or Hyperscan) to multi
+# Vectorscan (or Hyperscan) to multi; SDSL=<dir> (or OPT=<prefix>) and
+# PGM=<dir> add the sd_vector of sdsl-lite and the PGM-indices of
+# Ferragina and Vinciguerra to learned, HTRIE=<dir> tsl::htrie_map to
+# stringdicts
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
+            learned stringdicts \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -309,6 +313,14 @@ $(BUILD)/bench-sets: bench/sets.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-tries: bench/tries.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(TRIEFLAGS)
+
+$(BUILD)/bench-learned: bench/learned.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(SDSL),-isystem $(SDSL)/include) \
+	       $(if $(PGM),-isystem $(PGM)/include) $(OPTFLAGS)
+
+$(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
+                           | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(HTRIE),-I$(HTRIE)/include)
 
 # the parallel benchmark: OpenMP always (the executor of OpenMP and the
 # parallel mode of libstdc++), TBB=1 (or TBB=<prefix>) oneTBB as executor

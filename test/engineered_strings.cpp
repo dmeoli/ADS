@@ -24,6 +24,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/dictionary/SuccinctPatriciaTrie.h"
 #include "ADS/string/AhoCorasick.h"
 #include "ADS/string/ApproximateMatching.h"
 #include "ADS/string/EditDistance.h"
@@ -31,6 +32,7 @@
 #include "ADS/string/LongestCommonSubsequence.h"
 #include "ADS/string/Lyndon.h"
 #include "ADS/string/MultiSearch.h"
+#include "ADS/string/RearCoding.h"
 #include "ADS/string/Palindromes.h"
 #include "ADS/string/StringMatching.h"
 #include "ADS/string/StringSearch.h"
@@ -806,6 +808,94 @@ ADS_TEST( "eertree" )
  }
 
 }  // end( namespace )
+
+// the dictionaries of strings against the sorted vector: access(), lookup()
+// of every string and of strings absent, lexicographicPosition() and
+// prefixRange() of prefixes of the strings and of random patterns (empty,
+// longer than all, mismatching on an edge or at a node), on the empty
+// dictionary, the empty string alone, few strings, strings on 2, 4 and 256
+// bytes (the bytes from 0x80, which sort as unsigned), strings that are
+// prefixes of others and long runs of one character; the coding of
+// rearCode() decoded back, with the r of a small example, every bucket
+// size from 1 to 9 and the default; an unsorted dictionary, a dictionary
+// with a string twice for the trie, and a pair that takes too many
+// characters break the contracts
+template< class T >
+static void stringDictionaryCheck( const std::vector< std::string > & D ,
+                                   const T & d , std::mt19937_64 & g )
+{
+ CHECK( d.size() == D.size() );
+ for( std::size_t i = 0 ; i < D.size() ; ++i ) {
+  CHECK( d.access( i ) == D[ i ] );
+  CHECK( d.lookup( D[ i ] ) == i );
+  }
+ std::vector< std::string > Q = { "" , std::string( 100 , 'z' ) ,
+                                  std::string( 1 , char( 0 ) ) ,
+                                  std::string( 1 , char( 0xFF ) ) };
+ for( int q = 0 ; q < 400 ; ++q ) {
+  std::string s;
+  if( ! D.empty() && ( q % 2 ) ) {
+   s = D[ g() % D.size() ];
+   s.resize( g() % ( s.size() + 2 ) , char( 'a' + g() % 3 ) );
+   if( ( q % 4 == 1 ) && ! s.empty() ) s.back() = char( g() );
+   }
+  else
+   for( int i = int( g() % 5 ) ; i > 0 ; --i )
+    s.push_back( char( 'a' + g() % 5 ) );
+  Q.push_back( s );
+  }
+ for( const std::string & P : Q ) {
+  const std::size_t l = std::size_t( std::lower_bound( D.begin() , D.end() ,
+                                                       P ) - D.begin() );
+  std::size_t r = l;
+  while( ( r < D.size() ) && ( D[ r ].compare( 0 , P.size() , P ) == 0 ) )
+   ++r;
+  CHECK( d.lexicographicPosition( P ) == l );
+  CHECK( d.prefixRange( P ) == std::make_pair( l , r ) );
+  const bool in = ( l < D.size() ) && ( D[ l ] == P );
+  CHECK( d.lookup( P ) == ( in ? l : D.size() ) );
+  }
+ }
+
+ADS_TEST( "string-dictionaries" )
+{
+ std::mt19937_64 g( 71 );
+ std::vector< std::vector< std::string > > cases = {
+  {} , { "" } , { "a" } , { "" , "a" , "ab" , "abc" , "b" } ,
+  { "abc" , "abd" , "abdz" , "b" , "bcdefghij" , "bcdefghik" } };
+ for( const int sigma : { 2 , 4 , 256 } ) {
+  std::set< std::string > S;
+  while( S.size() < 2000 ) {
+   std::string s;
+   for( int i = int( g() % 14 ) ; i > 0 ; --i )
+    s.push_back( char( sigma == 256 ? g() % 256 : 'a' + g() % sigma ) );
+   if( g() % 9 == 0 )                       // a long run, then the rest
+    s = std::string( g() % 60 , 'x' ) + s;
+   S.insert( s );
+   }
+  cases.emplace_back( S.begin() , S.end() );
+  }
+ for( const auto & D : cases ) {
+  CHECK( rearDecode( rearCode( D ) ) == D );
+  stringDictionaryCheck( D , SuccinctPatriciaTrie( D ) , g );
+  stringDictionaryCheck( D , RearCodedDictionary( D ) , g );
+  for( std::size_t b = 1 ; b < 10 ; ++b )
+   stringDictionaryCheck( D , RearCodedDictionary( D , b ) , g );
+  }
+ const auto R = rearCode( { "abcd" , "abx" , "b" , "bcd" } );
+ CHECK( ( R[ 0 ] == RearPair( 0 , "abcd" ) ) &&
+        ( R[ 1 ] == RearPair( 2 , "x" ) ) &&
+        ( R[ 2 ] == RearPair( 3 , "b" ) ) &&
+        ( R[ 3 ] == RearPair( 0 , "cd" ) ) );
+ const SuccinctPatriciaTrie T( cases[ 4 ] );
+ CHECK( T.nodes() == 9 );                   // the root, ab, b and 6 more
+ CHECK_THROWS( SuccinctPatriciaTrie( { "b" , "a" } ) , contract_violation );
+ CHECK_THROWS( SuccinctPatriciaTrie( { "a" , "a" } ) , contract_violation );
+ CHECK_THROWS( RearCodedDictionary( { "b" , "a" } ) , contract_violation );
+ CHECK_THROWS( RearCodedDictionary( { "a" } , 0 ) , contract_violation );
+ CHECK_THROWS( rearDecode( { RearPair( 1 , "a" ) } ) , contract_violation );
+ CHECK_THROWS( ( void )T.access( 6 ) , contract_violation );
+ }
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- MAIN ------------------------------------*/

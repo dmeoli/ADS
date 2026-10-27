@@ -157,6 +157,7 @@ inline std::size_t BalancedParentheses::scanBackward( std::size_t a ,
 inline std::size_t BalancedParentheses::forwardSearch( std::size_t i ,
                                                        std::int64_t d ) const
 {
+ ADS_PRE( ( i < size() ) && ( d < 0 ) );
  std::int64_t e = 0;                        // E( . ) - E( i )
  std::size_t l = i / kLeaf;
  if( const auto j = scanForward( i + 1 , leafEnd( l ) , e , d ) ; j != nil )

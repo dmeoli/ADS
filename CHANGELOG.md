@@ -37,6 +37,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CLOSED set of states of 32 bytes (-b closed); the priority queues shared
   by threads, the MultiQueue against tbb::concurrent_priority_queue, on
   their fill and drain and on the hold model of a search (-b pq)
+- LAVector (succinct/LAVector.h), the LA-vector of Boffa, Ferragina and
+  Vinciguerra: a non-decreasing sequence of integers of 64 bits as the
+  segments of the optimal piecewise linear approximation of the
+  PGM-index and the corrections of the items, c bits each, a width per
+  segment; access() and select() by a table of the segment of a place,
+  nextGEQ() and rank() by a table on the high bits and the inversion of
+  the line; tuned(), the c of the fewest bits; the test la-vector
+- CompressedPGMIndex (search/CompressedPGMIndex.h), the compressed
+  PGM-index of Ferragina and Vinciguerra: the fewest slopes that serve
+  all the segments, by the stabbing of their intervals, a slope and an
+  intercept in a field of bits per segment, the first keys and the first
+  places by Elias-Fano, whose rank replaces the levels above the last;
+  DynamicPGMIndex (search/DynamicPGMIndex.h), the ordered map of the
+  dynamic PGM-index, by the logarithmic method of Bentley and Saxe: a
+  buffer and sorted levels, a PGM-index on the large ones, tombstones
+  for the removals, lowerBound() and forEach() by the merge of the
+  levels; the tests pgm-compressed and pgm-dynamic
+- rearCode() and rearDecode() (string/RearCoding.h), the rear coding of
+  a sorted dictionary of strings, and RearCodedDictionary, the plain
+  front coding with buckets of Martínez-Prieto et al. in the rear
+  coding, in one string of bytes with the places of the buckets by
+  Elias-Fano: access(), lookup(), lexicographicPosition() and
+  prefixRange(), the scan of a bucket comparing only the strings that
+  can change the outcome; SuccinctPatriciaTrie
+  (dictionary/SuccinctPatriciaTrie.h), the compact trie of a static
+  dictionary in DFUDS (Benoit et al.), the first characters in a byte
+  each and the rests of the labels apart, the strings numbered in
+  lexicographic order: lookup(), access(), lexicographicPosition() and
+  prefixRange(), a range of ranks; the test string-dictionaries
+- the benchmarks learned (the LA-vector against Elias-Fano, the
+  partitioned Elias-Fano and the sd_vector of sdsl-lite; the PGM-index
+  and its compressed form against those of Ferragina and Vinciguerra;
+  the dynamic PGM-index against std::map, BTreeMap and the
+  DynamicPGMIndex of Ferragina and Vinciguerra) and stringdicts (the
+  dictionaries of strings against the front coding, the Patricia trie,
+  the sorted vector and tsl::htrie_map)
 - GrafiteFilter (set/GrafiteFilter.h), the range filter of Costa,
   Ferragina and Vinciguerra: a locality-preserving hash of the keys onto
   a universe of n 2^(B-2) codes kept by Elias-Fano, false positives at
@@ -1067,6 +1103,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   walk the places of the block only down to what they need
 
 ### Changed
+
+- PGMIndex builds its levels faster: the optimal piecewise linear
+  approximation, now a function of its own that the LA-vector and the
+  compressed and dynamic PGM-indices share, adds a point to its hull only
+  when the point lowers the largest slope (or raises the least one), the
+  others staying above (or below) every line left, and drops the points
+  at the start of a hull by moving its start instead of shifting the
+  rest; the segments are the same
+
+- BalancedParentheses::forwardSearch(), the first place after i whose
+  excess is d below that of i, is public, for the end of a subtree of a
+  code by the degrees in depth
 
 - SearchTree: the sentinel leaf is one for all the trees of the type and
   is never written, and balanceDelete() is given the parent of t, which

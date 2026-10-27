@@ -24,6 +24,8 @@
 #include "ADS/dictionary/AdaptiveRadixTree.h"
 #include "ADS/mfset/MFSet.h"
 #include "ADS/mfset/RemUnionFind.h"
+#include "ADS/search/CompressedPGMIndex.h"
+#include "ADS/search/DynamicPGMIndex.h"
 #include "ADS/search/NthElement.h"
 #include "ADS/search/PGMIndex.h"
 #include "ADS/search/StaticSearch.h"
@@ -819,6 +821,216 @@ ADS_TEST( "pgm-index" )
   }
  std::vector< U > W = { 3 , 1 , 2 };
  CHECK_THROWS( PGMIndex< U >( W ) , contract_violation );
+ }
+
+// the compressed PGM-index against std::lower_bound on the cases of the
+// PGM-index: the empty array, one item, two, random keys of 64 bits with
+// the extremes 0 and 2^64 - 1 (the last first key out of the universe of
+// Elias-Fano), consecutive keys, clusters, many repeated keys, signed keys,
+// doubles with the infinities, the errors 1, 8 and 64; one slope for the
+// consecutive keys, at most as many slopes as segments, and fewer bytes
+// than the PGM-index when the segments are many; an unsorted array
+ADS_TEST( "pgm-compressed" )
+{
+ std::mt19937_64 g( 41 );
+ auto check = [ & ]< class I >( const std::vector< typename I::Item > & A ,
+                                const std::vector< typename I::Item > & Q ) {
+  const I P( A );
+  CHECK( P.size() == A.size() );
+  CHECK( P.empty() == A.empty() );
+  CHECK( P.slopes() <= P.segments() + ( A.empty() ? 0 : 1 ) );
+  for( std::size_t i = 0 ; i < A.size() ; i += 97 ) CHECK( P[ i ] == A[ i ] );
+  for( const auto & q : Q ) {
+   const auto r = std::size_t( std::lower_bound( A.begin() , A.end() , q ) -
+                               A.begin() );
+   CHECK( P.lowerBound( q ) == r );
+   CHECK( P.contains( q ) == ( ( r < A.size() ) && !( q < A[ r ] ) ) );
+   }
+  return( P.slopes() );
+  };
+ using U = std::uint64_t;
+ check.operator()< CompressedPGMIndex< U > >( {} , { 0 , 5 } );
+ check.operator()< CompressedPGMIndex< U > >( { 7 } , { 0 , 7 , 8 } );
+ check.operator()< CompressedPGMIndex< U > >( { 7 , 9 } ,
+                                              { 0 , 7 , 8 , 9 , 10 } );
+ check.operator()< CompressedPGMIndex< U > >( { 0 , ~U( 0 ) } ,
+                                              { 0 , 1 , ~U( 0 ) - 1 ,
+                                                ~U( 0 ) } );
+ for( int t = 0 ; t < 3 ; ++t ) {
+  std::vector< U > A( 50000 ) , Q;
+  for( std::size_t i = 0 ; i < A.size() ; ++i )
+   A[ i ] = t == 0 ? g() : t == 1 ? 1000 + i :
+            ( i / 500 ) * 1000000 + g() % 1000;   // clusters
+  A.push_back( 0 );
+  A.push_back( ~U( 0 ) );
+  std::sort( A.begin() , A.end() );
+  for( int q = 0 ; q < 20000 ; ++q )
+   Q.push_back( q % 2 ? A[ g() % A.size() ] + ( q % 4 == 1 ? 0 : 1 ) :
+                g() % ( A[ A.size() - 2 ] + 2 ) );
+  Q.push_back( 0 );
+  Q.push_back( ~U( 0 ) );
+  Q.push_back( ~U( 0 ) - 1 );
+  check.operator()< CompressedPGMIndex< U > >( A , Q );
+  check.operator()< CompressedPGMIndex< U , 1 > >( A , Q );
+  const std::size_t s = check.operator()< CompressedPGMIndex< U , 8 > >( A ,
+                                                                        Q );
+  if( t == 1 ) CHECK( s <= 3 );             // a line, and the extremes
+  }
+ {                                          // many segments: fewer bytes
+  std::vector< U > A( 200000 );
+  for( auto & a : A ) a = g() >> ( 1 + g() % 40 );
+  std::sort( A.begin() , A.end() );
+  const CompressedPGMIndex< U , 8 > C( A );
+  const PGMIndex< U , 8 , 4 > P( A );
+  CHECK( C.segments() == P.segments() );
+  CHECK( 3 * C.bytes() < 2 * P.bytes() );
+  }
+ {                                          // repeated keys
+  std::vector< U > A;
+  for( U k = 0 ; k < 50 ; ++k )
+   A.insert( A.end() , std::size_t( 1 + g() % 3000 ) , 10 * k );
+  std::vector< U > Q;
+  for( U q = 0 ; q < 510 ; ++q ) Q.push_back( q );
+  check.operator()< CompressedPGMIndex< U , 4 > >( A , Q );
+  check.operator()< CompressedPGMIndex< U > >( A , Q );
+  }
+ {                                          // signed and floating keys
+  std::vector< std::int32_t > A( 20000 ) , Q;
+  for( auto & a : A ) a = std::int32_t( g() );
+  std::sort( A.begin() , A.end() );
+  for( int q = 0 ; q < 5000 ; ++q ) Q.push_back( std::int32_t( g() ) );
+  Q.push_back( INT32_MIN );
+  Q.push_back( INT32_MAX );
+  check.operator()< CompressedPGMIndex< std::int32_t , 8 > >( A , Q );
+  const double inf = std::numeric_limits< double >::infinity();
+  std::vector< double > D = { -inf , -3.5 , -0.0 , 0.0 , 1e-300 , 2.25 ,
+                              1e300 , inf };
+  for( int i = 0 ; i < 3000 ; ++i ) D.push_back( double( g() % 100000 ) /
+                                                 7 - 5000 );
+  std::sort( D.begin() , D.end() );
+  check.operator()< CompressedPGMIndex< double , 2 > >( D , { -inf , -1e301 ,
+                    -3.5 , 0.0 , 1.0 , 2.25 , 1e299 , inf , -0.5 } );
+  }
+ std::vector< U > W = { 3 , 1 , 2 };
+ CHECK_THROWS( CompressedPGMIndex< U >( W ) , contract_violation );
+ }
+
+// the dynamic PGM-index against std::map: random insertions, overwrites,
+// removals (of keys present and absent), finds and lower bounds on fewer
+// keys than the buffer holds, on a few more (one level, the tombstones
+// dropped there), on many more (merges of every level) and on keys
+// spread over 64 bits with 0 and 2^64 - 1, with the ratios 2, 4 and 8, the
+// errors 1, 4, 8 and 16, and the PGM-index on every level, on the large
+// ones only and on none; forEach() on random ranges and on all the keys,
+// the map built from sorted pairs, signed and floating keys, the empty
+// map; unsorted pairs break the contracts
+ADS_TEST( "pgm-dynamic" )
+{
+ std::mt19937_64 g( 43 );
+ auto run = [ & ]< class D >( D & P , std::uint64_t mod , int ops ) {
+  std::map< std::uint64_t , int > M;
+  auto key = [ & ]( void ) {
+   const std::uint64_t r = g();
+   return( r % 50 == 0 ? ( r % 100 == 0 ? 0 : ~std::uint64_t( 0 ) )
+                       : mod ? r % mod : r );
+   };
+  for( int it = 0 ; it < ops ; ++it ) {
+   const std::uint64_t k = key();
+   const int op = int( g() % 10 );
+   if( op < 5 ) {
+    P.insert( k , it );
+    M[ k ] = it;
+    }
+   else if( op < 7 ) {
+    P.erase( k );
+    M.erase( k );
+    }
+   else {
+    const int * f = P.find( k );
+    const auto m = M.find( k );
+    CHECK( ( f == nullptr ) == ( m == M.end() ) );
+    CHECK( ( f == nullptr ) || ( *f == m->second ) );
+    CHECK( P.contains( k ) == ( m != M.end() ) );
+    const auto lb = P.lowerBound( k );
+    const auto ml = M.lower_bound( k );
+    CHECK( lb.has_value() == ( ml != M.end() ) );
+    CHECK( ! lb || ( ( lb->first == ml->first ) &&
+                     ( lb->second == ml->second ) ) );
+    }
+   if( it % 997 == 0 ) {                    // a range
+    std::uint64_t a = key() , b = key();
+    if( b < a ) std::swap( a , b );
+    std::vector< std::pair< std::uint64_t , int > > R , E;
+    P.forEach( a , b , [ & ]( std::uint64_t x , int v ) {
+     R.emplace_back( x , v ); } );
+    for( auto i = M.lower_bound( a ) ; ( i != M.end() ) && ( i->first < b ) ;
+         ++i )
+     E.emplace_back( *i );
+    CHECK( R == E );
+    }
+   }
+  std::vector< std::pair< std::uint64_t , int > > R;
+  P.forEach( 0 , ~std::uint64_t( 0 ) , [ & ]( std::uint64_t x , int v ) {
+   R.emplace_back( x , v ); } );
+  const auto f = P.find( ~std::uint64_t( 0 ) );
+  if( f ) R.emplace_back( ~std::uint64_t( 0 ) , *f );
+  const std::vector< std::pair< std::uint64_t , int > > E( M.begin() ,
+                                                          M.end() );
+  CHECK( R == E );
+  CHECK( P.entries() >= M.size() );
+  };
+ {
+  DynamicPGMIndex< std::uint64_t , int > P;
+  CHECK( ! P.find( 5 ) && ! P.lowerBound( 0 ) && ( P.entries() == 0 ) );
+  run( P , 60 , 5000 );                     // all in the buffer
+  CHECK( ( P.levels() == 0 ) && ( P.entries() <= 62 ) );
+  }
+ {
+  DynamicPGMIndex< std::uint64_t , int > P;
+  run( P , 300 , 20000 );                   // one level, and the buffer
+  CHECK( P.levels() >= 1 );
+  }
+ {
+  DynamicPGMIndex< std::uint64_t , int , 1 , 2 > P;
+  run( P , 5000 , 60000 );                  // many merges
+  CHECK( P.levels() >= 3 );
+  }
+ {
+  DynamicPGMIndex< std::uint64_t , int , 16 , 8 > P;
+  run( P , 0 , 60000 );                     // 64 bits
+  }
+ {                                          // every level with an index
+  DynamicPGMIndex< std::uint64_t , int , 4 , 4 , 1 > P;
+  run( P , 20000 , 60000 );
+  }
+ {                                          // levels with and without
+  DynamicPGMIndex< std::uint64_t , int , 8 , 2 , 1000 > P;
+  run( P , 0 , 60000 );
+  }
+ {                                          // from sorted pairs
+  std::vector< std::pair< std::int32_t , double > > S;
+  for( std::int32_t i = -5000 ; i < 5000 ; ++i )
+   S.emplace_back( 3 * i , i / 2.0 );
+  DynamicPGMIndex< std::int32_t , double > P( S );
+  CHECK( P.find( -15 ) && ( *P.find( -15 ) == -2.5 ) && ! P.find( -14 ) );
+  P.erase( -15 );
+  P.insert( -14 , 1.0 );
+  CHECK( ! P.find( -15 ) && ( *P.find( -14 ) == 1.0 ) );
+  CHECK( P.lowerBound( -16 )->first == -14 );
+  CHECK( ! P.lowerBound( 15000 ) );
+  CHECK_THROWS( ( DynamicPGMIndex< std::int32_t , double >(
+                   { { 2 , 0.0 } , { 1 , 0.0 } } ) ) , contract_violation );
+  }
+ {                                          // floating keys
+  DynamicPGMIndex< double , int > P;
+  const double inf = std::numeric_limits< double >::infinity();
+  for( int i = 0 ; i < 1000 ; ++i ) P.insert( double( i ) / 3 , i );
+  P.insert( -inf , -1 );
+  P.insert( inf , -2 );
+  CHECK( ( *P.find( -inf ) == -1 ) && ( *P.find( inf ) == -2 ) );
+  CHECK( P.lowerBound( 1e300 )->second == -2 );
+  CHECK( P.lowerBound( -1e300 )->first == 0.0 );
+  }
  }
 
 // the Roaring bitmap against std::set: the kernels of two arrays of every

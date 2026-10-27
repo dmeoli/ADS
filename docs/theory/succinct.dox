@@ -17,7 +17,7 @@
  \ref theory_succinct_notation), the realizations and the costs of their
  operations (see \ref theory_succinct_repr), and, for each family, the property
  on which its correctness rests and the argument behind its bounds (from
- \ref theory_succinct_rank to \ref theory_succinct_graphs). The pseudocode of
+ \ref theory_succinct_rank to \ref theory_succinct_learned). The pseudocode of
  each algorithm is instead on the page of its header, in the comment of its
  function, together with the chapter of Ferragina's book, or the paper, that it
  follows.
@@ -516,6 +516,74 @@
  \ref theory_succinct_repr), as Brisaboa, Ladra and Navarro prove, and far
  fewer bits when the edges cluster and the empty submatrices are large.
 
+ \section theory_succinct_learned Sequences compressed by a model of lines
+
+ Elias-Fano spends on each item of a sequence the same bits, whatever the
+ regularity of the gaps; the LA-vector of Boffa, Ferragina and Vinciguerra
+ (`LAVector`) spends them on the distance of each item from a line instead.
+ The points \f$ ( i , x_i ) \f$ of a non-decreasing sequence are covered by
+ the fewest segments whose lines are within \f$ \epsilon \f$ of each of
+ their points, the optimal piecewise linear approximation of the PGM-index
+ (see \ref theory_search_memory), and each item is stored as its
+ correction with respect to the line of its segment.
+
+ <em>Lemma 6 (the corrections).</em> Let the segment \f$ j \f$, over the
+ places \f$ [ p_j , p_{j+1} ) \f$, have a line
+ \f$ f( i ) = x_{p_j} + \gamma + \alpha ( i - p_j ) \f$ with
+ \f$ | f( i ) - x_i | \le \epsilon \f$ for each of its places, and let
+ \f$ d_i = x_i - x_{p_j} - \lfloor \alpha ( i - p_j ) \rfloor \f$. Then
+ the \f$ d_i \f$ take at most \f$ 2 \epsilon + 2 \f$ values, and with
+ \f$ \beta_j = x_{p_j} + \min_i d_i \f$
+ \f[
+   x_i = \beta_j + \lfloor \alpha ( i - p_j ) \rfloor + C[ i ] , \quad
+   0 \le C[ i ] < 2^c \text{ for } \epsilon = 2^{c-1} - 1 . \tag{11}
+ \f]
+
+ Indeed, \f$ x_i - x_{p_j} - \alpha ( i - p_j ) \f$ lies in
+ \f$ [ \gamma - \epsilon , \gamma + \epsilon ] \f$, and taking off the
+ integer part of \f$ \alpha ( i - p_j ) \f$ instead of the whole of it
+ adds less than 1; hence the \f$ d_i \f$ are integers in an interval of
+ length less than \f$ 2 \epsilon + 2 \f$, at most \f$ 2 \epsilon + 2 =
+ 2^c \f$ of them, and \f$ C[ i ] = d_i - \min_i d_i \f$ takes \f$ c \f$
+ bits. The slope \f$ \alpha \f$ is kept in a `double`, whose rounding may
+ spread the \f$ d_i \f$ by a few units on items of 64 bits; `LAVector`
+ computes the corrections with the rounded slope and gives each segment the
+ width \f$ w_j \f$ of the range of its own corrections, so that (11) holds
+ exactly, with \f$ w_j \f$ in place of \f$ c \f$ (\f$ c \f$, or one bit
+ more). A segment takes 44 bytes (the base, the slope, the place of its
+ corrections and their width, its first place and its first item), and the
+ two tables that find a segment by a place and by a value take about 4 bytes
+ per segment each; hence the sequence takes
+ \f$ \sum_j w_j ( p_{j+1} - p_j ) + 416 m \f$ bits for \f$ m \f$ segments.
+
+ The access to \f$ x_i \f$ is (11) once the segment of \f$ i \f$ is known,
+ which the table of the segment of every \f$ 2^t \f$-th place gives in
+ \f$ O( 1 ) \f$ expected time for \f$ 2^t \approx n / m \f$. The rank of
+ \f$ x \f$ (the place of the first item \f$ \ge x \f$) first finds the
+ last segment whose first item is below \f$ x \f$, through a table of the
+ first segment of each bucket of the high bits of the items, as the
+ buckets of Elias-Fano; then, since by (11)
+ \f$ \beta_j + \lfloor \alpha ( i - p_j ) \rfloor \le x_i <
+ \beta_j + \lfloor \alpha ( i - p_j ) \rfloor + 2^{w_j} \f$, the answer is
+ among the places where the line goes from \f$ x - 2^{w_j} \f$ to
+ \f$ x + 1 \f$, about \f$ 2^{w_j} / \alpha \f$ of them, which a binary
+ search on the corrections settles in \f$ O( w_j - \log_2 \alpha ) \f$
+ steps (the whole segment when the floating point misplaces the window,
+ which the search checks on the two items at its ends).
+
+ Against Elias-Fano, which takes \f$ 2 + \lceil \log_2( u / n ) \rceil \f$
+ bits per item, the LA-vector wins when the items follow lines closely: on
+ the places of a pattern repeated with some noise, on the keys of a process
+ that grows at a steady rate, on the dense runs of an inverted index, where
+ \f$ m \f$ is small and \f$ c \f$ is the logarithm of the noise rather
+ than of the average gap. On gaps drawn at random no line follows the items
+ better than the average gap does, the corrections need about
+ \f$ \log_2( u / n ) \f$ bits as the low bits of Elias-Fano, and the
+ segments are an overhead; `tuned()` tries the widths up to that of
+ Elias-Fano and keeps the one of the fewest bits, but the LA-vector of the
+ paper goes further and chooses the width segment by segment, by a shortest
+ path over the segments of all the widths, which is not realized here.
+
  \section theory_succinct_refs References
 
  \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
@@ -567,6 +635,12 @@
  \see N. R. Brisaboa, S. Ladra, G. Navarro, Compact representation of Web
       graphs with extended functionality, Information Systems 39, 152-174,
       2014, doi:10.1016/j.is.2013.08.003
+ \see A. Boffa, P. Ferragina, G. Vinciguerra, A "learned" approach to
+      quicken and compress rank/select dictionaries, Proc. 23rd ALENEX,
+      46-59, 2021, doi:10.1137/1.9781611976472.4
+ \see A. Boffa, P. Ferragina, G. Vinciguerra, A learned approach to design
+      compressed rank/select data structures, ACM Transactions on
+      Algorithms 18(3), 1-28, 2022, doi:10.1145/3524060
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File succinct.dox ---------------------------*/

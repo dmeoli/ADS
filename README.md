@@ -506,6 +506,9 @@ standard library, Boost and Eigen; their tests are in
 | r-index: count and locate in space proportional to the runs of the transform (Gagie, Navarro and Prezza) | [`compression/RIndex.h`](include/ADS/compression/RIndex.h) | `engineered_succinct.r-index` |
 | move structure, a permutation of shifted intervals in O(1) a step (Nishimoto and Tabei) | [`succinct/MoveStructure.h`](include/ADS/succinct/MoveStructure.h) | `engineered_succinct.move-structure` |
 | r-index on move structures (Bertram, Fischer and Nalbach) | [`compression/MoveRIndex.h`](include/ADS/compression/MoveRIndex.h) | `engineered_succinct.move-r-index` |
+| LA-vector, a sorted sequence as the segments of an optimal piecewise linear approximation and the corrections of the items, with access, rank and select (Boffa, Ferragina and Vinciguerra) | [`succinct/LAVector.h`](include/ADS/succinct/LAVector.h) | `engineered_succinct.la-vector` |
+| compressed PGM-index, the slopes shared by the stabbing of their intervals and the keys and the places by Elias-Fano, and dynamic PGM-index by the logarithmic method (Ferragina and Vinciguerra) | [`search/CompressedPGMIndex.h`](include/ADS/search/CompressedPGMIndex.h), [`search/DynamicPGMIndex.h`](include/ADS/search/DynamicPGMIndex.h) | `ordered.pgm-compressed`, `ordered.pgm-dynamic` |
+| static dictionaries of strings: the rear coding with buckets in one string of bytes (Martínez-Prieto et al.) and the Patricia trie in DFUDS, the strings numbered in lexicographic order (Benoit et al.) | [`string/RearCoding.h`](include/ADS/string/RearCoding.h), [`dictionary/SuccinctPatriciaTrie.h`](include/ADS/dictionary/SuccinctPatriciaTrie.h) | `engineered_strings.string-dictionaries` |
 
 ## Sorting
 

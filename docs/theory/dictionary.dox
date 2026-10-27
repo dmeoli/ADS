@@ -473,6 +473,48 @@
  compression of the chains and the whole key compared at the leaf, so that a
  search takes \f$ O( |k| ) \f$ with \f$ O( 1 ) \f$ per node.
 
+ The Patricia trie in succinct space (`SuccinctPatriciaTrie.h`) codes the shape
+ of the compact trie of a static dictionary by the degrees of its nodes in
+ depth (DFUDS) of Benoit, Demaine, Munro, Raman, Raman and Rao: the nodes are
+ visited in depth, the children by their first characters, and a node of \f$ d
+ \f$ children is written as \f$ d \f$ open parentheses and a closed one, after
+ an open parenthesis that balances the whole, i.e., \f$ 2 N \f$ bits for \f$ N
+ \le 2 n \f$ nodes; the first character of each edge goes in a byte, in the
+ order of the open parentheses, and the rest of its label in a string apart.
+ The node of rank \f$ v \f$ in the visit begins after the \f$ v \f$-th closed
+ parenthesis, and its \f$ i \f$-th child, for the node at the place \f$ p \f$
+ with \f$ d \f$ children, begins after the closed parenthesis that matches the
+ open one at \f$ p + d - 1 - i \f$ (the last open parenthesis of the node is
+ matched by the closed one that ends it, right after which the first child
+ begins); the characters of the children of a node are consecutive, and the
+ child of a character is found by a binary search on them.
+
+ <em>Lemma 8 (the subtree in DFUDS).</em> The parentheses of the subtree of
+ the node at the place \f$ p \f$ are those from \f$ p \f$ to the first place
+ \f$ e \f$ whose excess is one less than the one at \f$ p - 1 \f$, and the
+ nodes of the subtree are the ranks from \f$ v \f$ to the number of closed
+ parentheses up to \f$ e \f$.
+
+ Indeed, an open parenthesis followed by the code of a subtree is the code of
+ that subtree as a whole tree, which is balanced: its excess comes back to the
+ level before the open parenthesis only at its end. The code of the subtree
+ alone thus goes one level below the excess at \f$ p - 1 \f$ for the first
+ time at its last parenthesis, and the visit in depth writes the nodes of the
+ subtree one after the other, from \f$ v \f$ on. Hence, with a vector of bits
+ that marks the nodes where a string ends, the rank of a string among the
+ marks is its rank in the lexicographic order (a node comes before its
+ subtree, which holds the strings it prefixes, and the subtrees follow the
+ order of their first characters), and the strings with a prefix \f$ P \f$
+ are the marks of the subtree where the walk of \f$ P \f$ ends, a range of
+ ranks found by one forward search; a lookup walks down \f$ O( | Q | ) \f$
+ nodes and the string of a rank walks up by matching the closed parenthesis
+ before each node. The space is \f$ 2 N + o( N ) \f$ bits for the shape,
+ \f$ 8 ( N - 1 ) \f$ for the first characters, \f$ 2 N + o( N ) \f$ for the
+ marks of the ends and of the nodes with a rest, and the rests themselves,
+ with their places by Elias-Fano. The path-decomposed tries of Grossi and
+ Ottaviano and the dictionaries of Martínez-Prieto et al. compress the labels
+ as well (by Re-Pair or by Hu-Tucker codes), which is not done here.
+
  \section theory_dictionary_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 7,
@@ -533,6 +575,15 @@
  \see V. Leis, A. Kemper, T. Neumann, The adaptive radix tree: ARTful
       indexing for main-memory databases, Proceedings of ICDE 2013,
       38-49, 2013, doi:10.1109/ICDE.2013.6544812
+ \see D. Benoit, E. D. Demaine, J. I. Munro, R. Raman, V. Raman,
+      S. S. Rao, Representing trees of higher degree, Algorithmica 43(4),
+      275-292, 2005, doi:10.1007/s00453-004-1146-6
+ \see R. Grossi, G. Ottaviano, Fast compressed tries through path
+      decompositions, ACM Journal of Experimental Algorithmics 19, 2015,
+      doi:10.1145/2656332
+ \see M. A. Martínez-Prieto, N. R. Brisaboa, R. Cánovas, F. Claude,
+      G. Navarro, Practical compressed string dictionaries, Information
+      Systems 56, 73-108, 2016, doi:10.1016/j.is.2015.08.008
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File dictionary.dox -------------------------*/

@@ -17,10 +17,12 @@
  bounds and the invariants of the searches in a sorted vector (see \ref
  theory_search_sorted), the searches laid out for the memory (see \ref
  theory_search_memory), the minimum and the local optima (see \ref
- theory_search_minimum), the selection (see \ref theory_search_select) and the
- range minima (see \ref theory_search_rmq). The pseudocode of each algorithm is
- instead on the page of its header, in the comment of its function, together
- with the section of the book, or the paper, that it follows.
+ theory_search_minimum), the selection (see \ref theory_search_select), the
+ range minima (see \ref theory_search_rmq), and the PGM-index compressed and
+ made dynamic (see \ref theory_search_learned). The pseudocode of each
+ algorithm is instead on the page of its header, in the comment of its
+ function, together with the section of the book, or the paper, that it
+ follows.
 
  \tableofcontents
 
@@ -403,6 +405,86 @@
      <td>Baumstark, Gog, Heuer and Labeit (2017)</td></tr>
  </table>
 
+ \section theory_search_learned The PGM-index compressed and dynamic
+
+ The segments of the PGM-index (see \ref theory_search_memory) take 28 bytes
+ each, a key, two doubles and a place; the compressed PGM-index of
+ Ferragina and Vinciguerra (`CompressedPGMIndex`) shares the slopes among
+ the segments and codes the rest in a few tens of bits. The lines that are
+ within \f$ \epsilon \f$ of the points of a segment, i.e., the pairs
+ \f$ ( \alpha , \beta ) \f$ with
+ \f$ | \beta + \alpha x_i - y_i | \le \epsilon \f$ for each of its
+ points, are the intersection of \f$ 2 k \f$ half-planes, a convex region,
+ and its shadow on the axis of the slopes is the interval
+ \f$ [ \alpha^- , \alpha^+ ] \f$ whose ends are the two extreme lines of the
+ algorithm of O'Rourke; each slope of the interval has an intercept within
+ the error, the middle of
+ \f$ [ \max_i ( y_i - \alpha x_i ) - \epsilon ,
+ \min_i ( y_i - \alpha x_i ) + \epsilon ] \f$. Hence a set of slopes serves
+ all the segments if it hits each of their intervals.
+
+ <em>Lemma 5 (the stabbing of the intervals).</em> Sort the intervals by
+ their left ends, and grow a group while the next interval meets the
+ intersection of the group, opening a new group otherwise; one slope per
+ group, in the intersection, hits all the intervals, and no set of fewer
+ slopes does.
+
+ Indeed, every interval of a group contains the intersection of the group,
+ which is not empty by construction. In each group, let \f$ I_g \f$ be the
+ interval of least right end, which is the right end of the intersection; the
+ first interval of the next group begins after it, and so do all the later
+ ones, since the left ends increase. The intervals \f$ I_g \f$ are then
+ pairwise disjoint, and a slope hits at most one of them: as many slopes as
+ groups are needed.
+
+ Each segment then keeps the index of its slope and its intercept, as a
+ distance from its first place of at most \f$ \epsilon + 1 \f$, and the
+ first keys and the first places of the segments, increasing, are kept by
+ Elias-Fano (see \ref theory_succinct_compressed): with \f$ m \f$ segments,
+ \f$ \sigma \f$ slopes and keys in a universe of size \f$ u \f$,
+ \f[
+   2 + \Big\lceil \log_2 \frac{u}{m} \Big\rceil +
+   2 + \Big\lceil \log_2 \frac{n}{m} \Big\rceil +
+   \lceil \log_2 \sigma \rceil + \lceil \log_2( 2 \epsilon + 3 ) \rceil
+   \tag{11}
+ \f]
+ bits per segment and \f$ 32 \sigma \f$ for the slopes, in single
+ precision. The levels above the last one, which the paper compresses in
+ the same way, are replaced by the rank of Elias-Fano on the first keys, of
+ \f$ O( 1 ) \f$ expected time on keys spread over their universe; a search
+ is then that rank, three selects and the window of the PGM-index. The
+ rounding of a shared slope to a `float` may take a line out of the error;
+ the construction checks each segment and gives its own slope to one whose
+ line misses a point by more than \f$ \epsilon + 1 \f$.
+
+ The dynamic PGM-index (`DynamicPGMIndex`) keeps the pairs in a buffer of
+ \f$ b_0 \f$ pairs and in sorted levels \f$ L_1 , L_2 , \ldots \f$ of
+ capacities \f$ c_t = b_0 B^t \f$, each with its PGM-index when it is large
+ enough for the model to pay (as in the implementation of the paper), by the
+ logarithmic method of Bentley and Saxe: a key may be in several levels, the
+ newest pair counts, a removal inserts a <em>tombstone</em>, and when the
+ buffer is full it is merged, with the levels before it, into the first
+ level \f$ L_t \f$ that has room for them all.
+
+ <em>Lemma 6 (the logarithmic method).</em> An insertion or a removal costs
+ \f$ O( B \log_B( n / b_0 ) ) \f$ amortized time, \f$ n \f$ the pairs
+ inserted, and a lookup searches \f$ O( \log_B( n / b_0 ) ) \f$ levels.
+
+ Indeed, \f$ L_t \f$ is chosen because the pairs of the buffer and of the
+ levels before \f$ L_{t-1} \f$ do not fit in the room left in
+ \f$ L_{t-1} \f$, so that with those of \f$ L_{t-1} \f$ they are more than
+ \f$ c_{t-1} = c_t / B \f$ (more than \f$ b_0 \f$ for \f$ t = 1 \f$, the
+ buffer being full); the merge and the construction of the PGM-index of the
+ result are linear, \f$ O( c_t ) \f$, that is \f$ O( B ) \f$ per pair
+ brought into \f$ L_t \f$. A pair is brought into a level only from the
+ levels before it, hence into each level at most once, and the levels are
+ \f$ O( \log_B( n / b_0 ) ) \f$ since \f$ c_t \f$ grows by \f$ B \f$. A
+ lookup stops at the newest level that has the key; `lowerBound()` and the
+ visit of a range merge the levels from the places of the key, and skip the
+ keys whose newest pair is a tombstone. The tombstones are dropped when the
+ merge lands on the last level, where no older pair is left for them to
+ hide.
+
  \section theory_search_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 1.2, 2.6,
@@ -458,6 +540,9 @@
  \see N. Baumstark, S. Gog, T. Heuer, J. Labeit, Practical range minimum
       queries revisited, Proceedings of SEA 2017, LIPIcs 75, 12:1-12:16,
       2017, doi:10.4230/LIPIcs.SEA.2017.12
+ \see J. L. Bentley, J. B. Saxe, Decomposable searching problems I:
+      static-to-dynamic transformation, Journal of Algorithms 1(4),
+      301-358, 1980, doi:10.1016/0196-6774(80)90015-2
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File search.dox ---------------------------*/

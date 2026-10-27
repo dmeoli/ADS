@@ -548,6 +548,7 @@ engineered_strings  lyndon          fattorizzazione di Lyndon, rotazione minima
 engineered_strings  lyndon-bytes    Lyndon e rotazione minima sui byte da 0x80
 engineered_strings  suffix-automaton  automa dei suffissi
 engineered_strings  eertree         eertree e fattorizzazione palindromica
+engineered_strings  string-dictionaries  rear coding a bucket e Patricia succinto in DFUDS
 # the engineered numerics and geometry, beyond the book
 engineered_numeric  binary-gcd        gcd binario senza divisioni
 engineered_numeric  montgomery        forma di Montgomery a 64 bit
@@ -612,6 +613,8 @@ hashing  dense-hash-map        mappa hash a vettore denso e indice
 ordered  btree-map            B+-albero in memoria, nodi di 512 byte
 ordered  static-search        S+-albero di Slotin, ricerca senza salti
 ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
+ordered  pgm-compressed       PGM compresso, pendenze condivise ed Elias-Fano
+ordered  pgm-dynamic          PGM dinamico, metodo logaritmico e tombstone
 ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
 ordered  word-range-minimum   minimo di un intervallo, pile in una parola
 ordered  vector-intersection  intersezione a blocchi di 8 e a galoppo
@@ -1709,6 +1712,7 @@ engineered_succinct  direct-access-codes  DACs, larghezze ottime per programma d
 engineered_succinct  lz77-linear      LZ77 senza finestra in tempo lineare
 engineered_succinct  stream-vbyte     Stream VByte, controllo a parte
 engineered_succinct  tans-coder       tANS di ordine 0, quattro stati
+engineered_succinct  la-vector        LA-vector, rank e select con le rette appresi
 # the engineered structures of the notes of Ferragina, beyond the book
 engineered_pearls  flat-loser-tree      albero dei perdenti con le chiavi
 engineered_pearls  multiway-merge       fusione a k vie, stabile

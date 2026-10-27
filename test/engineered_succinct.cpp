@@ -37,6 +37,7 @@
 #include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
 #include "ADS/succinct/InterleavedRankSelect.h"
+#include "ADS/succinct/LAVector.h"
 #include "ADS/succinct/MoveStructure.h"
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
@@ -1042,6 +1043,82 @@ ADS_TEST( "stream-vbyte" )
                                           x.size() ) ,
                contract_violation );
  CHECK_THROWS( ( void )streamVByteDecode( c , x.size() - 1 ) ,
+               contract_violation );
+ }
+
+// the LA-vector against the sorted vector: every access and select, and the
+// nextGEQ, rank and contains of each item, of the values next to them, of
+// random values and of 0 and 2^64 - 1, for every width c of the
+// corrections from 0 to 63 and for the tuned one, on the empty sequence, a
+// single item, all items equal, the bounds 0 and 2^64 - 1 together, a line,
+// noisy lines, runs of equal items, clusters, random gaps and random 64-bit
+// items; one segment and at most a bit per item for the line, fewer bits
+// than Elias-Fano on the line and on the clusters, the decoding and the
+// iterators; an unsorted sequence and a width of 64 break the contracts
+ADS_TEST( "la-vector" )
+{
+ std::mt19937_64 g( 61 );
+ using U = std::uint64_t;
+ auto check = [ & ]( const std::vector< U > & x , const LAVector & v ) {
+  CHECK( v.size() == x.size() );
+  CHECK( v.empty() == x.empty() );
+  for( std::size_t i = 0 ; i < x.size() ; ++i ) {
+   CHECK( v.access( i ) == x[ i ] );
+   CHECK( v[ i ] == x[ i ] );
+   CHECK( v.select( i + 1 ) == x[ i ] );
+   }
+  std::vector< U > Q = { 0 , 1 , ~U( 0 ) , ~U( 0 ) - 1 };
+  for( const U a : x ) {
+   Q.push_back( a );
+   Q.push_back( a + 1 );
+   Q.push_back( a - 1 );
+   }
+  for( int q = 0 ; q < 200 ; ++q ) Q.push_back( g() );
+  for( const U q : Q ) {
+   const std::size_t r = std::size_t( std::lower_bound( x.begin() , x.end() ,
+                                                        q ) - x.begin() );
+   CHECK( v.nextGEQ( q ) == r );
+   CHECK( v.rank( q ) == r );
+   CHECK( v.contains( q ) == ( ( r < x.size() ) && ( x[ r ] == q ) ) );
+   }
+  CHECK( v.decode() == x );
+  CHECK( std::vector< U >( v.begin() , v.end() ) == x );
+  };
+ std::vector< std::vector< U > > cases = { {} , { 0 } , { ~U( 0 ) } ,
+                                           { 0 , ~U( 0 ) } ,
+                                           std::vector< U >( 1000 , 42 ) };
+ for( int t = 0 ; t < 6 ; ++t ) {
+  std::vector< U > x( 3000 );
+  for( std::size_t i = 0 ; i < x.size() ; ++i )
+   switch( t ) {
+    case 0: x[ i ] = 7 + 13 * i; break;                    // a line
+    case 1: x[ i ] = 5 * i + g() % 9; break;               // noisy
+    case 2: x[ i ] = ( i / 4 ) * 3; break;                 // runs
+    case 3: x[ i ] = ( i / 300 ) * 1000000 + g() % 1000; break;
+    case 4: x[ i ] = g() % ( 128 * x.size() ); break;      // random gaps
+    default: x[ i ] = g(); break;                          // 64 bits
+    }
+  std::sort( x.begin() , x.end() );
+  cases.push_back( x );
+  }
+ for( const auto & x : cases ) {
+  for( int c = 0 ; c <= 63 ; c += ( c < 12 ? 1 : 17 ) )
+   check( x , LAVector( x , c ) );
+  check( x , LAVector( x , 63 ) );
+  check( x , LAVector::tuned( x ) );
+  }
+ {                                          // a line: one segment
+  const LAVector v( cases[ 5 ] , 2 );
+  CHECK( v.segments() == 1 );
+  CHECK( v.correctionsInBits() <= v.size() );
+  }
+ for( const std::size_t k : { std::size_t( 5 ) , std::size_t( 8 ) } ) {
+  const LAVector v = LAVector::tuned( cases[ k ] );   // a line, clusters
+  CHECK( v.sizeInBits() < EliasFano( cases[ k ] ).sizeInBits() );
+  }
+ CHECK_THROWS( LAVector( std::vector< U >{ 3 , 1 } ) , contract_violation );
+ CHECK_THROWS( LAVector( cases[ 5 ] , 64 ) , contract_violation );
+ CHECK_THROWS( ( void )LAVector( cases[ 5 ] ).access( 3000 ) ,
                contract_violation );
  }
 
