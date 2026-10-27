@@ -1,0 +1,303 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File memory.dox -----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_memory */
+/** \defgroup theory_memory Theory of memory
+ \ingroup area_memory
+
+ \details The headers of `include/ADS/memory` realize, beyond the book, the
+ dynamic storage allocation of section 2.5 of the first volume of Knuth and
+ the allocators of today that descend from it: the boundary tags and the
+ buddy system on a simulated memory, the arenas and the pools of objects of
+ one type, the size classes for one thread and for many, the huge pages,
+ and a heap of cells with a garbage collector. This page collects what the
+ headers take for granted: the vocabulary of blocks, free lists and
+ fragmentation (see \ref theory_memory_notation), the allocators and the
+ cost of their operations (see \ref theory_memory_real), and, for each
+ family, the invariant on which it rests and the argument behind its cost
+ and its waste (from \ref theory_memory_tags to \ref theory_memory_gc). The
+ pseudocode of each operation is instead on the page of its header, in the
+ comment of its function, together with the algorithm of Knuth, or the
+ paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_memory_notation Definitions and notation
+
+ An allocator manages a memory of \f$ N \f$ words (or bytes) and serves two
+ operations: `allocate( n )` gives a <em>block</em> of at least \f$ n \f$
+ contiguous words that no other block overlaps, and `free()` (or
+ `deallocate()`) takes a block back; the blocks not given are
+ <em>free</em>, and an allocator keeps them on one or more <em>free
+ lists</em>, which the free blocks themselves hold, a word of a free block
+ pointing to the next one (the list AVAIL of Knuth). A block may carry a
+ <em>header</em>, words of its own that the allocator reads, e.g., its
+ size; a <em>sized</em> deallocation, as that of `std::allocator`, gives the
+ size back with the block, so that the block needs no header.
+
+ The memory that an allocator holds and does not give for use is its
+ <em>fragmentation</em>. It is <em>internal</em> when a block is larger
+ than its request (the rounding to a class, to a power of 2, the header),
+ and <em>external</em> when free memory exists in pieces too small for a
+ request, so that a request fails, or takes new memory, although the free
+ words would be enough. Merging adjacent free blocks (coalescing) fights the
+ external fragmentation, and giving each request a block of one of a few
+ sizes, a <em>size class</em>, removes it within a class at the price of an
+ internal one; the allocators of the area are points between the two.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ N \f$</td>
+     <td>the words of a simulated memory, \f$ 2^m \f$ for the buddy
+         system</td></tr>
+ <tr><td>\f$ n \f$, \f$ b \f$, \f$ a \f$</td>
+     <td>the words or bytes of a request, and its alignment</td></tr>
+ <tr><td>\f$ s( p ) \f$</td>
+     <td>the words of the block at the address \f$ p \f$, kept in its
+         tags</td></tr>
+ <tr><td>\f$ F \f$, \f$ F_k \f$, \f$ F_c \f$</td>
+     <td>a free list, that of the blocks of \f$ 2^k \f$ words, that of the
+         class \f$ c \f$</td></tr>
+ <tr><td>\f$ g \f$</td>
+     <td>the step of the size classes of the pools, 8 bytes</td></tr>
+ <tr><td>page, segment</td>
+     <td>the \f$ 2^{16} \f$ bytes of the slots of one class, and the
+         \f$ 2^{21} \f$ bytes from which the pages are cut</td></tr>
+ </table>
+
+ \section theory_memory_real The allocators and their costs
+
+ <table>
+ <caption>The allocators of the area and the cost of their
+          operations</caption>
+ <tr><th>Allocator</th><th>Blocks</th><th>Allocate</th><th>Free</th>
+     <th>Waste</th></tr>
+ <tr><td><tt>BoundaryTagAllocator</tt></td><td>any size</td>
+     <td>\f$ O( f ) \f$ for \f$ f \f$ free blocks</td><td>\f$ O( 1 ) \f$,
+     merging both neighbors</td><td>2 words of tags, external
+     fragmentation</td></tr>
+ <tr><td><tt>BuddyAllocator</tt></td><td>powers of 2</td>
+     <td>\f$ O( m ) \f$ splits</td><td>\f$ O( m ) \f$ merges</td>
+     <td>less than half of each block</td></tr>
+ <tr><td><tt>Arena</tt></td><td>objects of one type</td>
+     <td>\f$ O( 1 ) \f$, a pointer bump</td><td>only all at once</td>
+     <td>part of the last block</td></tr>
+ <tr><td><tt>ObjectPool</tt></td><td>objects of one type</td>
+     <td>\f$ O( 1 ) \f$, but for a new block</td><td>\f$ O( 1 ) \f$</td>
+     <td>at most the largest size held, plus a block</td></tr>
+ <tr><td><tt>SizeClassAllocator</tt></td><td>41 classes up to 32768
+     bytes</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$, sized</td>
+     <td>below 20% past 128 bytes</td></tr>
+ <tr><td><tt>PoolResource</tt>, <tt>PageHeap</tt></td><td>classes of
+     8 bytes up to \f$ M \f$</td><td>\f$ O( 1 ) \f$ amortized</td>
+     <td>\f$ O( 1 ) \f$</td><td>below \f$ a \f$ bytes per slot</td></tr>
+ <tr><td><tt>ConcurrentPoolResource</tt></td><td>as above, any
+     thread</td><td>\f$ O( 1 ) \f$ amortized</td><td>\f$ O( 1 ) \f$, a
+     compare-and-swap per 32 frees of other threads</td>
+     <td>as above, and 31 slots per class and thread in transit</td></tr>
+ <tr><td><tt>HugePageAllocator</tt></td><td>any, aligned to 2 MB from
+     2 MB</td><td>that of the system</td><td>that of the system, or kept
+     from 8 MB</td><td>address space up to a huge page</td></tr>
+ <tr><td><tt>CellHeap</tt></td><td>cells of two fields</td>
+     <td>\f$ O( 1 ) \f$, a collection when none is free</td>
+     <td>by the collector</td><td>none</td></tr>
+ </table>
+
+ The general allocators of section 2.5 serve any size and pay for it with a
+ search of the free list and with the external fragmentation; the pools
+ serve one size, or a few, and pay with the internal fragmentation and with
+ memory that a class keeps when another needs it. The second kind is the
+ one of the allocators of today, which add the locality: the blocks made one
+ after another are next to each other, and a block just freed, still in the
+ cache, is the next one given.
+
+ \section theory_memory_tags Boundary tags
+
+ `BoundaryTagAllocator` keeps the free blocks on a doubly linked list and
+ writes the size of each block, and whether it is free, in a tag at both of
+ its ends (Algorithm 2.5C of Knuth).
+
+ <em>Lemma 1 (the boundary tags).</em> After each operation the blocks tile
+ the memory and
+ \f[
+   \text{no two free blocks are adjacent.} \tag{1}
+ \f]
+
+ A freed block reads the tag just below it, which is the upper tag of the
+ block below, and the tag just above it, the lower tag of the block above:
+ two reads tell whether its neighbors are free and how large they are, and
+ since the list is doubly linked each free neighbor leaves the list in
+ \f$ O( 1 ) \f$, and merges; hence (1) is kept by every free in
+ \f$ O( 1 ) \f$ time. An allocation splits a block only if the rest has
+ room for the tags and the two links, and gives the upper part, so that the
+ lower part keeps its place on the list and only its tags change. The search
+ for a block is the cost of the method: the first fit stops at the first
+ block large enough, the best fit reads the whole list, and the next fit
+ starts where the last search stopped, so that the small pieces left by the
+ splits do not gather at the head of the list. Knuth reports, as the
+ fifty-percent rule, that in equilibrium the free blocks are about half as
+ many as the blocks in use, whatever the fit.
+
+ \section theory_memory_buddy The buddy system
+
+ `BuddyAllocator` (Knowlton; Algorithms 2.5R and 2.5S of Knuth) gives
+ blocks of \f$ 2^k \f$ words only, each at an address multiple of its size.
+
+ <em>Lemma 2 (the buddies).</em> The block of \f$ 2^k \f$ words at the
+ address \f$ a \f$, \f$ k < m \f$, was split from the block of
+ \f$ 2^{k+1} \f$ words at \f$ a \wedge \neg 2^k \f$, and its buddy, the other
+ half, is at
+ \f[
+   a \oplus 2^k . \tag{2}
+ \f]
+
+ By induction on the splits: a block of \f$ 2^{k+1} \f$ words at an address
+ multiple of \f$ 2^{k+1} \f$ has the bit \f$ k \f$ of its address 0, and its
+ halves are at \f$ a \f$ and \f$ a + 2^k \f$, which differ in that bit
+ only, and are multiples of \f$ 2^k \f$. A request of \f$ n \f$ words takes
+ \f$ k = \lceil \log_2 n \rceil \f$, and splits the least free block not
+ smaller, by halves, each upper half joining its free list; a freed block
+ finds its buddy by (2) and, if it is free and whole, merges with it and
+ goes on upwards. Both take at most \f$ m \f$ steps, each a search of an
+ ordered set of the free blocks of one size in the code, i.e.,
+ \f$ O( m \log N ) \f$ time; a block is less than twice its request, so
+ that the internal waste is less than half of the block, and no two free
+ buddies are ever both on the lists.
+
+ \section theory_memory_pools Arenas, pools and size classes
+
+ An <em>arena</em> (Hanson) gives the objects of one type from blocks, by a
+ pointer bump, and frees them all at once with the arena; an object costs no
+ header and no search, the objects made one after another are next to each
+ other, and their addresses never change, which the parents of the nodes of
+ a search rely on. A <em>pool</em> (`ObjectPool`) adds the free of one
+ object: its slot goes at the head of a free list, the list AVAIL of
+ section 2.2.3 of Knuth, and the next allocation takes it again, still in
+ the cache. Its blocks double from 1 slot up to \f$ n \f$, so that a pool
+ that has held at most \f$ k \f$ objects at once has at most
+ \f$ 2 k + n \f$ slots, and the allocations of blocks are
+ \f$ O( \log k ) \f$ while the blocks double.
+
+ A <em>size class</em> serves all the requests between two sizes with
+ blocks of the larger one. `SizeClassAllocator` has the class of 8 bytes,
+ the multiples of 16 up to 128, and four classes for each power of 2 above,
+ \f[
+   s = 2^e + j \, 2^{e - 2} , \quad j = 1 , \ldots , 4 , \quad
+   7 \le e \le 14 . \tag{3}
+ \f]
+ A request between two consecutive sizes of (3) wastes less than
+ \f$ 2^{e - 2} \f$ bytes of a block of at least \f$ 5 \cdot 2^{e - 2} \f$,
+ i.e., less than 20% of it; the class is found from the position of the
+ leading bit of \f$ n - 1 \f$ and two more bits below it, with no table and
+ no loop. Each class has its free list and a page whose rest is cut a
+ block at a time, so that both operations take \f$ O( 1 ) \f$ time (the
+ scheme of TLSF and of the allocators of today, by size classes rather than
+ by fits).
+
+ `PoolResource` keeps the classes of 8 bytes up to \f$ M \f$ on the pages of
+ `PageHeap`, with one free list per page instead of one per class (the
+ sharding of mimalloc): a class allocates from its current page, the pop of
+ the list of the page or the bump of its pointer, and moves to another page
+ with free slots only when the current one is exhausted. A slot finds its
+ page by masking the low 16 bits of its address, so that a free is a push on
+ the list of that page. After frees in a scrambled order, a single free list
+ gives the slots back in that order, scattered over all the memory, while
+ the lists by page give them back a page at a time, so that the nodes of a
+ container built again are close to each other. `ConcurrentPoolResource`
+ gives each thread such a heap of its own, and a slot freed by a thread
+ other than its owner goes back to the owner in a batch of up to 32, pushed
+ whole on a stack of returns by one compare-and-swap, which the owner takes
+ whole by an exchange (see the theory of concurrency for the argument that
+ excludes the ABA problem); the frees of one thread to another thus cost one
+ atomic operation per batch (snmalloc).
+
+ \section theory_memory_huge Huge pages
+
+ A structure whose nodes are reached in no useful order, e.g., the trees of
+ a heap or the buckets of a hash table, misses the translation lookaside
+ buffer (TLB) at nearly each step when its memory spans more pages than the
+ TLB has entries: with \f$ E \f$ entries a TLB covers \f$ 4 E \f$ KB of
+ pages of 4 KB, and \f$ 2 E \f$ MB of huge pages of 2 MB, 512 times more.
+ `HugePageAllocator` aligns the blocks of at least 2 MB to 2 MB, rounds them
+ up to whole huge pages and advises them to the kernel for the transparent
+ huge pages (Navarro et al.), at the price of at most one huge page of
+ address space per block, which is never touched; the blocks of 8 MB or
+ more given back are kept by their thread, up to 64 MB, for the next request
+ of the same size, so that a structure that grows and shrinks through the
+ same sizes pays the faults of its pages once.
+
+ \section theory_memory_gc Garbage collection
+
+ In `CellHeap` the cells have two fields, each nil, an atom or the address
+ of a cell, and the cells not reachable from the roots are garbage, which
+ `collect()` finds by marking the reachable cells and sweeping the others
+ onto the free list. A marking by a visit in depth needs a stack as deep as
+ the longest path of cells, which a collector, run when the memory is
+ exhausted, cannot allocate.
+
+ <em>Lemma 3 (Deutsch, Schorr and Waite).</em> During the marking by
+ pointer reversal (Algorithm 2.3.5E of Knuth), with \f$ c \f$ the current
+ cell and \f$ p \f$ the previous one, the field of \f$ p \f$ that the visit
+ followed holds the previous cell of \f$ p \f$, a bit of \f$ p \f$ telling
+ which field it is, so that
+ \f[
+   p , \; \mathrm{back}( p ) , \; \mathrm{back}( \mathrm{back}( p ) ) ,
+   \ldots \tag{4}
+ \f]
+ is the path of the visit from \f$ c \f$ back to the root, in reverse.
+
+ Going down a field, the visit stores \f$ p \f$ in that field of \f$ c \f$
+ and moves on; going back up, it reads the field of \f$ p \f$ that the bit
+ names, restores in it the cell it comes from, and moves to \f$ p \f$. By
+ (4) the path needs no stack, one bit per cell besides the mark, and every
+ field is restored when the visit leaves its cell; each cell reached is
+ entered once and left at most twice, and the marking costs time linear in
+ the cells reached. The sweep reads every cell, and a collection costs
+ \f$ O( n ) \f$ on a heap of \f$ n \f$ cells; a `cons()` costs
+ \f$ O( 1 ) \f$ amortized over the cells freed by the collection that
+ precedes it, when they are a constant fraction of the heap.
+
+ \section theory_memory_refs References
+
+ \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
+      Addison-Wesley, 1997, sections 2.2.3, 2.3.5 and 2.5
+ \see P. R. Wilson, M. S. Johnstone, M. Neely, D. Boles, Dynamic storage
+      allocation: a survey and critical review, Memory Management (IWMM
+      1995), LNCS 986, 1-116, 1995, doi:10.1007/3-540-60368-9_19
+ \see K. C. Knowlton, A fast storage allocator, Communications of the ACM
+      8(10), 623-624, 1965, doi:10.1145/365628.365655
+ \see D. R. Hanson, Fast allocation and deallocation of memory based on
+      object lifetimes, Software: Practice and Experience 20(1), 5-12,
+      1990, doi:10.1002/spe.4380200104
+ \see M. Masmano, I. Ripoll, A. Crespo, J. Real, TLSF: a new dynamic
+      memory allocator for real-time systems, Proceedings of the 16th
+      Euromicro Conference on Real-Time Systems (ECRTS), 79-88, 2004,
+      doi:10.1109/EMRTS.2004.1311009
+ \see E. D. Berger, B. G. Zorn, K. S. McKinley, Reconsidering custom
+      memory allocation, Proceedings of the 17th ACM SIGPLAN Conference on
+      Object-Oriented Programming, Systems, Languages, and Applications
+      (OOPSLA), 1-12, 2002, doi:10.1145/582419.582421
+ \see E. D. Berger, K. S. McKinley, R. D. Blumofe, P. R. Wilson, Hoard: a
+      scalable memory allocator for multithreaded applications, ASPLOS IX,
+      117-128, 2000, doi:10.1145/378993.379232
+ \see D. Leijen, B. Zorn, L. de Moura, Mimalloc: free list sharding in
+      action, Programming Languages and Systems (APLAS 2019), LNCS 11893,
+      244-265, 2019, doi:10.1007/978-3-030-34175-6_13
+ \see P. Lietar, T. Butler, S. Clebsch, S. Drossopoulou, J. Franco, M. J.
+      Parkinson, A. Shamis, C. M. Wintersteiger, D. Chisnall, snmalloc: a
+      message passing allocator, ISMM 2019, 122-135, 2019,
+      doi:10.1145/3315573.3329980
+ \see J. Bonwick, The slab allocator: an object-caching kernel memory
+      allocator, Proceedings of the USENIX Summer 1994 Technical
+      Conference, 1994
+ \see J. Navarro, S. Iyer, P. Druschel, A. Cox, Practical, transparent
+      operating system support for superpages, OSDI 2002, 89-104, 2002,
+      doi:10.1145/844128.844138
+ \see H. Schorr, W. M. Waite, An efficient machine-independent procedure
+      for garbage collection in various list structures, Communications of
+      the ACM 10(8), 501-506, 1967, doi:10.1145/363534.363554
+*/
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File memory.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/

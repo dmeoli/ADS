@@ -3,48 +3,50 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * A standard allocator over pools of size classes, beyond the book, so that
- * the containers of the standard library and std::allocate_shared take
+ * the containers of the standard library and `std::allocate_shared` take
  * their nodes from pages of slots of one size instead of the general
  * allocator.
  *
- * PoolResource< M > keeps the size classes of \f$ g = 8 \f$ bytes up to
- * M: a request of b bytes, \f$ 1 \le b \le M \f$, aligned to \f$ a \le 8
- * \f$, takes a slot of \f$ \lceil b / 8 \rceil 8 \f$ bytes, and one
- * aligned to 16 a slot of \f$ \lceil b / 16 \rceil 16 \f$ bytes, whose
- * class has its slots aligned to 16, so that the internal waste is below
- * a bytes per object and the nodes of the containers, aligned to 8, waste
- * nothing when their size is a multiple of 8; any other request, larger
- * or more aligned, goes to operator new. The slots come from the pages of
- * PageHeap [see PageHeap.h], whose free lists are kept by page: a class
- * allocates from one page at a time, so that the nodes of a container
- * that is emptied in a scrambled order and filled again are given back a
- * page at a time, close to each other, which a single free list (as that
- * of ObjectPool [see ObjectPool.h]) does not do. The memory goes back to
- * the system only with the resource: a structure that shrinks keeps the
- * memory of its largest size, which it takes again at no cost.
+ * `PoolResource< M >` keeps the size classes of \f$ g = 8 \f$ bytes up to
+ * \f$ M \f$: a request of \f$ b \f$ bytes, \f$ 1 \le b \le M \f$, aligned
+ * to \f$ a \le 8 \f$, takes a slot of \f$ 8 \lceil b / 8 \rceil \f$ bytes,
+ * and one aligned to 16 a slot of \f$ 16 \lceil b / 16 \rceil \f$ bytes,
+ * whose class has its slots aligned to 16, so that the internal waste is
+ * below \f$ a \f$ bytes per object and the nodes of the containers,
+ * aligned to 8, waste nothing when their size is a multiple of 8; any other
+ * request, larger or more aligned, goes to `operator new`. The slots come
+ * from the pages of `PageHeap` [see `PageHeap.h`], whose free lists are
+ * kept by page: a class allocates from one page at a time, so that the
+ * nodes of a container that is emptied in a scrambled order and filled
+ * again are given back a page at a time, close to each other, which a
+ * single free list (as that of `ObjectPool` [see `ObjectPool.h`]) does not
+ * do. The memory goes back to the system only with the resource: a
+ * structure that shrinks keeps the memory of its largest size, which it
+ * takes again at no cost.
  *
- * PoolAllocator< T , R > is the allocator of the standard (the
+ * `PoolAllocator< T , R >` is the allocator of the standard (the
  * requirements Allocator of [allocator.requirements]): it holds a pointer
- * to its resource R, the PoolResource above or the ConcurrentPoolResource
- * of the threads [see ConcurrentPool.h], it is rebound to any type by
- * std::allocator_traits (a node of std::list, std::map or
- * std::unordered_map, the control block of std::allocate_shared, which
- * then holds the counts and the object in one slot), and two allocators
- * are equal when they share their resource. A container copies, moves and
- * swaps its allocator with its contents (the three propagate_on_container
- * traits are true), so that a node always goes back to the pool it came
- * from. A request of one object, the case of the node containers, finds
- * its class at compile time and costs the pop of a free list; a request of
- * n objects, e.g., the buckets of std::unordered_map, finds it from n.
+ * to its resource `R`, the `PoolResource` above or the
+ * `ConcurrentPoolResource` of the threads [see `ConcurrentPool.h`], it is
+ * rebound to any type by `std::allocator_traits` (a node of `std::list`,
+ * `std::map` or `std::unordered_map`, the control block of
+ * `std::allocate_shared`, which then holds the counts and the object in one
+ * slot), and two allocators are equal when they share their resource. A
+ * container copies, moves and swaps its allocator with its contents (the
+ * three `propagate_on_container` traits are true), so that a node always
+ * goes back to the pool it came from. A request of one object, the case of
+ * the node containers, finds its class at compile time and costs the pop
+ * of a free list; a request of \f$ n \f$ objects, e.g., the buckets of
+ * `std::unordered_map`, finds it from \f$ n \f$.
  *
  * Neither the resource nor its allocators synchronize: one thread at a
- * time uses a PoolResource, and an object made by one thread and freed by
- * another needs ConcurrentPoolResource. The resource must outlive every
+ * time uses a `PoolResource`, and an object made by one thread and freed by
+ * another needs `ConcurrentPoolResource`. The resource must outlive every
  * object and every allocator made from it.
  *
- * The contracts [see Contract.h]: a pointer freed was given by the same
+ * The contracts [see `Contract.h`]: a pointer freed was given by the same
  * resource, and its deallocation gets the size and the alignment of its
- * allocation. The operations are defined in PoolAllocator.tpp.
+ * allocation. The operations are defined in `PoolAllocator.tpp`.
  *
  * \see D. Leijen, B. Zorn, L. de Moura, Mimalloc: free list sharding in
  *      action, Programming Languages and Systems (APLAS 2019), Lecture
@@ -58,7 +60,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -92,11 +94,12 @@ namespace ADS {
 
 namespace detail {
 
-/// the memory of operator new, aligned to a, for the requests that no
-/// class takes
+/// \f$ b \f$ bytes of `operator new`, aligned to \f$ a \f$, for the
+/// requests that no class takes
 [[nodiscard]] void * poolNew( std::size_t b , std::size_t a );
 
-/// \pre p was given by poolNew( b , a )
+/// the memory \f$ p \f$ of `poolNew( b , a )` given back
+/// \pre \f$ p \f$ was given by `poolNew( b , a )`
 void poolDelete( void * p , std::size_t b , std::size_t a ) noexcept;
 
 }  // end( namespace detail )
@@ -105,7 +108,8 @@ void poolDelete( void * p , std::size_t b , std::size_t a ) noexcept;
 /*--------------------------- CLASS PoolResource ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// pools of the size classes of 8 bytes up to M, for one thread at a time
+/// pools of the size classes of 8 bytes up to \f$ M \f$, for one thread at a
+/// time
 template< std::size_t M = 256 >
 class PoolResource {
 
@@ -120,35 +124,58 @@ class PoolResource {
  static constexpr std::size_t MAX = M;             ///< the largest class
  static constexpr std::size_t CLASSES = M / GRAIN; ///< the classes
 
- /// true if a request of b bytes aligned to a takes a class
+ /// true if a request of \f$ b \f$ bytes aligned to \f$ a \f$ takes a class,
+ /// i.e., if \f$ 1 \le b \le M \f$ and \f$ a \le 16 \f$
  [[nodiscard]] static constexpr bool pooled( std::size_t b ,
                                              std::size_t a ) {
   return( ( b >= 1 ) && ( b <= M ) && ( a <= ALIGN ) );
   }
 
- /// an empty resource
+ /// the empty resource
  PoolResource( void );
 
+ /// no copy, since its objects and allocators point to it
  PoolResource( const PoolResource & ) = delete;
+ /// no copy, since its objects and allocators point to it
  PoolResource & operator=( const PoolResource & ) = delete;
 
  /// frees the blocks; the objects still alive are not destroyed
  ~PoolResource() = default;
 
- /// b bytes aligned to a, b and a known at compile time
+ /// \f$ b \f$ bytes aligned to \f$ a \f$, \f$ b \f$ and \f$ a \f$ known at
+ /// compile time
+ ///
+ /// In pseudocode (the free lists by page of Leijen et al., beyond the
+ /// book), \f$ c \f$ the class of the request:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{allocate}( b , a ) \cr
+ /// 2 & \quad \textbf{if}\ 1 \le b \le M\ \textbf{and}\ a \le 16
+ ///     \ \textbf{then} \cr
+ /// 3 & \qquad c \gets \lceil b / 8 \rceil - 1 \text{, or } 2 \lceil b /
+ ///     16 \rceil - 1 \text{ if } a > 8 \cr
+ /// 4 & \qquad \textbf{return}\ \text{a slot of the current page of } c
+ ///     \quad \triangleright\ \text{see PageHeap} \cr
+ /// 5 & \quad \textbf{return}\ \text{the memory of operator new}
+ /// \end{array}}
+ /// \f]
  template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
  [[nodiscard]] void * allocate( void );
 
- /// \pre p was given by allocate< b , a >()
+ /// the memory \f$ p \f$ of `allocate< b , a >()` given back, to the free
+ /// list of its page
+ /// \pre \f$ p \f$ was given by `allocate< b , a >()`
  template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
  void deallocate( void * p );
 
- /// b bytes aligned to a
+ /// \f$ b \f$ bytes aligned to \f$ a \f$, as `allocate< b , a >()` above
  [[nodiscard]] void * allocate( std::size_t b ,
                                 std::size_t a = alignof( std::max_align_t )
                                 );
 
- /// \pre p was given by allocate( b , a )
+ /// the memory \f$ p \f$ of `allocate( b , a )` given back, to the free
+ /// list of its page
+ /// \pre \f$ p \f$ was given by `allocate( b , a )`
  void deallocate( void * p , std::size_t b ,
                   std::size_t a = alignof( std::max_align_t ) );
 
@@ -187,23 +214,33 @@ class PoolResource {
 /*--------------------------- CLASS PoolAllocator --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the standard allocator of objects of type T over the resource R
+/// the standard allocator of objects of type `T` over the resource `R`
 template< class T , class R = PoolResource<> >
 class PoolAllocator {
 
 /*--------------------------------------------------------------------------*/
  public:
 
+ /// the objects
  using value_type = T;
+ /// a number of objects
  using size_type = std::size_t;
+ /// a distance in objects
  using difference_type = std::ptrdiff_t;
+ /// the allocator copied with the container
  using propagate_on_container_copy_assignment = std::true_type;
+ /// the allocator moved with the container
  using propagate_on_container_move_assignment = std::true_type;
+ /// the allocator swapped with the container
  using propagate_on_container_swap = std::true_type;
+ /// two allocators are equal only if they share their resource
  using is_always_equal = std::false_type;
 
+ /// the allocator of the objects of type `U` over the same resource
  template< class U >
- struct rebind { using other = PoolAllocator< U , R >; };
+ struct rebind {
+  using other = PoolAllocator< U , R >;   ///< the allocator of `U`
+  };
 
  /// the allocator of the resource r
  PoolAllocator( R & r ) noexcept : f_r( &r ) {}
@@ -212,19 +249,24 @@ class PoolAllocator {
  PoolAllocator( void ) noexcept requires requires { R::global(); }
   : f_r( &R::global() ) {}
 
+ /// the allocator of the resource of \f$ o \f$, for objects of type `T`
  template< class U >
  PoolAllocator( const PoolAllocator< U , R > & o ) noexcept
   : f_r( o.resource() ) {}
 
- /// room for n objects
+ /// room for \f$ n \f$ objects, the class found at compile time when
+ /// \f$ n = 1 \f$
  [[nodiscard]] T * allocate( std::size_t n );
 
- /// \pre p was given by allocate( n ) of an allocator equal to this one
+ /// the room \f$ p \f$ of \f$ n \f$ objects given back
+ /// \pre \f$ p \f$ was given by `allocate( n )` of an allocator equal to this
+ ///      one
  void deallocate( T * p , std::size_t n );
 
  /// the resource
  [[nodiscard]] R * resource( void ) const noexcept { return( f_r ); }
 
+ /// whether the two share their resource
  template< class U >
  bool operator==( const PoolAllocator< U , R > & o ) const noexcept {
   return( f_r == o.resource() );

@@ -5,27 +5,29 @@
  * An allocator of small blocks by size classes, beyond the book: the
  * scheme of the allocators of today (mimalloc, jemalloc, tcmalloc), for
  * one thread, the size of a block given back by its owner (sized
- * deallocation, as std::allocator does), so that a block needs no header.
+ * deallocation, as `std::allocator` does), so that a block needs no header.
  *
- * A request of n bytes, \f$ 1 \leq n \leq 32768 \f$, goes to the least
- * class not below it: the multiples of 16 up to 128, then four classes per
- * power of 2 (160, 192, 224, 256, 320, ...), so that the waste is below
- * 25% of a block past 128 bytes (and below 16 bytes up to it), and the
- * class is found by a shift and a count of the leading zeros, with no
- * table and no loop. Each class has a free list of the blocks given back,
- * the last one first (whose memory is still in the cache), and a page of
- * 64 KB (the size of the largest block, if larger) whose rest is cut a
- * block at a time; a request takes the first free block, or the next one
- * of the page, or a new page, in O( 1 ) time, and a release puts the block
- * at the head of the list of its class, in O( 1 ). The pages go back to the
- * system with the allocator (or by release()): memory is not returned
- * while the allocator lives, as with a pool, but the blocks given back
- * serve any later request of their class. A request of more than 32768
- * bytes goes to operator new.
+ * A request of \f$ n \f$ bytes, \f$ 1 \le n \le 32768 \f$, goes to the least
+ * class not below it: 8, the multiples of 16 up to 128, then four classes
+ * per power of 2 (160, 192, 224, 256, 320, ...), i.e., the sizes
+ * \f$ 2^e + j \, 2^{e - 2} \f$ for \f$ j = 1 , \ldots , 4 \f$ and
+ * \f$ 7 \le e \le 14 \f$, so that the waste is below 25% of a block past
+ * 128 bytes (and below 16 bytes up to it), and the class is found by a
+ * shift and a count of the leading zeros, with no table and no loop. Each
+ * class has a free list of the blocks given back, the last one first (whose
+ * memory is still in the cache), and a page of 64 KB (the size of the
+ * largest block, if larger) whose rest is cut a block at a time; a request
+ * takes the first free block, or the next one of the page, or a new page,
+ * in \f$ O( 1 ) \f$ time, and a release puts the block at the head of the
+ * list of its class, in \f$ O( 1 ) \f$. The pages go back to the system with
+ * the allocator (or by `release()`): memory is not returned while the
+ * allocator lives, as with a pool, but the blocks given back serve any
+ * later request of their class. A request of more than 32768 bytes goes to
+ * `operator new`.
  *
- * The contracts [see Contract.h]: a request is of at least one byte, and
- * deallocate() gets a block of this allocator with the size of its
- * request. The operations are defined in SizeClassAllocator.tpp.
+ * The contracts [see `Contract.h`]: a request is of at least one byte, and
+ * `deallocate()` gets a block of this allocator with the size of its
+ * request. The operations are defined in `SizeClassAllocator.tpp`.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
  *      Addison-Wesley, 1997, section 2.5 (the lists of available blocks)
@@ -44,7 +46,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -90,29 +92,68 @@ class SizeClassAllocator {
  /// the bytes of a page
  static constexpr std::size_t PAGE = std::size_t( 1 ) << 16;
 
+ /// the allocator with no page
  SizeClassAllocator( void ) = default;
+ /// no copy, since its blocks are in its pages
  SizeClassAllocator( const SizeClassAllocator & ) = delete;
+ /// no copy, since its blocks are in its pages
  SizeClassAllocator & operator=( const SizeClassAllocator & ) = delete;
 
- /// the pages of other, which is left empty
+ /// the pages of `other`, which is left empty
  SizeClassAllocator( SizeClassAllocator && other ) noexcept;
 
+ /// the pages of `other`, which is left empty, after those of this allocator
+ /// are freed
  SizeClassAllocator & operator=( SizeClassAllocator && other ) noexcept;
 
  /// frees the pages
  ~SizeClassAllocator() { release(); }
 
- /// a block of n bytes at least, aligned to 16 bytes (to the power of 2
- /// that divides its class, 8 for the class of 8 bytes)
- /// \pre n >= 1
+ /// a block of \f$ n \f$ bytes at least, aligned to 16 bytes (8 for the
+ /// class of 8 bytes)
+ ///
+ /// In pseudocode (the lists of available blocks of section 2.5 of TAOCP,
+ /// by size class, beyond the book), \f$ F_c \f$ the blocks given back of
+ /// the class \f$ c \f$ and \f$ [ \mathit{next}_c , \mathit{end}_c ) \f$
+ /// the rest of its page:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{allocate}( n ) \cr
+ /// 2 & \quad \textbf{if}\ n > 32768\ \textbf{then return}\ \text{the}
+ ///     \text{ memory of operator new} \cr
+ /// 3 & \quad c \gets \mathrm{sizeClass}( n );\ s \gets \mathrm{classSize}(
+ ///     c ) \cr
+ /// 4 & \quad \textbf{if}\ F_c \ne \textbf{nil}\ \textbf{then return}
+ ///     \ \text{the pop of } F_c \cr
+ /// 5 & \quad \textbf{if}\ \mathit{end}_c - \mathit{next}_c \ge s
+ ///     \ \textbf{then} \cr
+ /// 6 & \qquad p \gets \mathit{next}_c;\ \mathit{next}_c \gets
+ ///     \mathit{next}_c + s;\ \textbf{return}\ p \cr
+ /// 7 & \quad \text{take a page of } \max( 2^{16} , s + 16 ) \text{ bytes,}
+ ///     \text{ a header of 16 first} \cr
+ /// 8 & \quad \textbf{return}\ \text{its first block, the rest in }
+ ///     [ \mathit{next}_c , \mathit{end}_c )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ n \ge 1 \f$
  [[nodiscard]] void * allocate( std::size_t n );
 
- /// gives back the block p of a request of n bytes
- /// \pre p was given by allocate( n ) of this allocator
+ /// gives back the block \f$ p \f$ of a request of \f$ n \f$ bytes, pushed
+ /// on \f$ F_c \f$ for its class \f$ c \f$
+ /// \pre \f$ p \f$ was given by `allocate( n )` of this allocator
  void deallocate( void * p , std::size_t n ) noexcept;
 
- /// the class of a request of n bytes, and its size
+ /// the class of a request of \f$ n \f$ bytes: 0 for \f$ n \le 8 \f$,
+ /// \f$ \lceil n / 16 \rceil \f$ up to 128, and otherwise, with
+ /// \f$ 2^e < n \le 2^{e + 1} \f$,
+ /// \f$ 9 + 4 ( e - 7 ) + \lceil ( n - 2^e ) / 2^{e - 2} \rceil - 1 \f$
+ /// \pre \f$ 1 \le n \le 32768 \f$
  [[nodiscard]] static unsigned sizeClass( std::size_t n );
+
+ /// the size of the class \f$ c \f$: 8, \f$ 16 c \f$ up to 128, and
+ /// otherwise \f$ 2^e + j \, 2^{e - 2} \f$ with
+ /// \f$ e = 7 + \lfloor ( c - 9 ) / 4 \rfloor \f$ and
+ /// \f$ j = ( c - 9 ) \bmod 4 + 1 \f$
  [[nodiscard]] static std::size_t classSize( unsigned c );
 
  /// the memory of the pages, in bytes
@@ -129,12 +170,15 @@ class SizeClassAllocator {
 
  /// a block given back: the next one of its list
  struct Free {
+  /// the next block of the list
   Free * next;
   };
 
  /// the header of a page, the pages linked for release()
  struct Page {
+  /// the page taken before
   Page * prev;
+  /// the bytes of the page
   std::size_t bytes;
   };
 

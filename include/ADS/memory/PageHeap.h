@@ -2,16 +2,16 @@
 /*---------------------------- File PageHeap.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The heap of pages of size classes under PoolResource [see
- * PoolAllocator.h] and ConcurrentPoolResource [see ConcurrentPool.h],
+ * The heap of pages of size classes under `PoolResource` [see
+ * `PoolAllocator.h`] and `ConcurrentPoolResource` [see `ConcurrentPool.h`],
  * beyond the book: slots of \f$ ( c + 1 ) g \f$ bytes, \f$ g = 8 \f$, for
  * the classes \f$ c = 0 , \dots , C - 1 \f$, with the free lists sharded by
  * page.
  *
  * The heap takes segments of \f$ 2^{21} \f$ bytes, aligned to their size
- * and advised for the huge pages [see HugePageAllocator.h], and cuts them
+ * and advised for the huge pages [see `HugePageAllocator.h`], and cuts them
  * into pages of \f$ 2^{16} \f$ bytes; a page holds the slots of one class
- * after a header of 64 bytes, so that the page of a slot p is
+ * after a header of 64 bytes, so that the page of a slot \f$ p \f$ is
  * \f$ p \wedge \neg ( 2^{16} - 1 ) \f$. Each page has a free list of its
  * own, and the slots never given yet are cut from it in the order of their
  * addresses. A class allocates from its current page, the pop of its free
@@ -19,17 +19,20 @@
  * moves to the next page of its list of the pages with free slots, or to a
  * new page, and the exhausted page leaves the list until a slot of it is
  * freed, which puts it back. A free is the push on the list of the page of
- * the slot, plus the test of a flag.
+ * the slot, plus the test of a flag; both operations cost \f$ O( 1 ) \f$
+ * time, amortized over the slots of a page for the change of page, and a
+ * page of the class \f$ c \f$ wastes less than \f$ ( c + 1 ) g \f$ bytes at
+ * its end besides its header.
  *
  * So the objects made one after another come from one page, even after
- * frees in a scrambled order: a single free list, as that of ObjectPool
- * [see ObjectPool.h], gives back the slots in the order of the frees,
+ * frees in a scrambled order: a single free list, as that of `ObjectPool`
+ * [see `ObjectPool.h`], gives back the slots in the order of the frees,
  * scattered over all the memory, while the lists by page give them back a
  * page at a time, so that the nodes of a container built again are close
  * to each other and the walks over them miss the cache less. The memory
  * goes back to the system only with the heap.
  *
- * The contracts [see Contract.h]: a slot freed belongs to the heap and is
+ * The contracts [see `Contract.h`]: a slot freed belongs to the heap and is
  * freed once. The operations are defined at the end of the header.
  *
  * \see D. Leijen, B. Zorn, L. de Moura, Mimalloc: free list sharding in
@@ -46,7 +49,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -80,7 +83,7 @@ namespace ADS::detail {
 /*---------------------------- CLASS PageHeap ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// pages of C size classes of 8 bytes, a free list per page
+/// pages of \f$ C \f$ size classes of 8 bytes, a free list per page
 template< std::size_t C >
 class alignas( 64 ) PageHeap {
 
@@ -88,7 +91,9 @@ class alignas( 64 ) PageHeap {
  public:
 
  static constexpr std::size_t GRAIN = 8;           ///< the step of a class
+ /// the bytes of a page
  static constexpr std::size_t PAGE = std::size_t( 1 ) << 16;
+ /// the bytes of a segment
  static constexpr std::size_t SEGMENT = std::size_t( 1 ) << 21;
  static constexpr std::size_t HEADER = 64;         ///< the header of a page
 
@@ -97,6 +102,7 @@ class alignas( 64 ) PageHeap {
 
  /// a free slot
  struct Free {
+  /// the next free slot of the page
   Free * next;
   };
 
@@ -113,23 +119,40 @@ class alignas( 64 ) PageHeap {
 
  static_assert( sizeof( Page ) <= HEADER );
 
- /// an empty heap of the given owner
+ /// the empty heap of the owner `owner`
  explicit PageHeap( void * owner = nullptr );
 
+ /// no copy, since its pages name it as their owner
  PageHeap( const PageHeap & ) = delete;
+ /// no copy, since its pages name it as their owner
  PageHeap & operator=( const PageHeap & ) = delete;
 
  /// frees the segments
  ~PageHeap();
 
- /// the page of the slot p
+ /// the page of the slot \f$ p \f$, \f$ p \wedge \neg ( 2^{16} - 1 ) \f$
  [[nodiscard]] static Page * pageOf( void * p ) {
   return( reinterpret_cast< Page * >( reinterpret_cast< std::uintptr_t >(
            p ) & ~std::uintptr_t( PAGE - 1 ) ) );
   }
 
- /// a slot of the class c from its current page, the free list or the
- /// slots never given, nil if the page is exhausted
+ /// a slot of the class \f$ c \f$ from its current page, the free list or
+ /// the slots never given, nil if the page is exhausted
+ ///
+ /// In pseudocode (the free lists by page of Leijen et al., beyond the
+ /// book), \f$ P \f$ the current page of \f$ c \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{local}( c ) \cr
+ /// 2 & \quad \textbf{if}\ P.\mathit{free} \ne \textbf{nil}\ \textbf{then}
+ ///     \ \textbf{return}\ \text{the pop of } P.\mathit{free} \cr
+ /// 3 & \quad \textbf{if}\ P.\mathit{next} \ne P.\mathit{end}
+ ///     \ \textbf{then} \cr
+ /// 4 & \qquad s \gets P.\mathit{next};\ P.\mathit{next} \gets
+ ///     P.\mathit{next} + 8 ( c + 1 );\ \textbf{return}\ s \cr
+ /// 5 & \quad \textbf{return nil}
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] void * local( std::size_t c ) {
   Page * const p = f_class[ c ].current;
   if( Free * const f = p->free ) [[likely]] {
@@ -146,11 +169,38 @@ class alignas( 64 ) PageHeap {
   return( nullptr );
   }
 
- /// a slot of the class c when local() gives nil
+ /// a slot of the class \f$ c \f$ when `local()` gives nil
+ ///
+ /// In pseudocode (the free lists by page of Leijen et al. and the slabs
+ /// partly free of Bonwick, beyond the book), \f$ A_c \f$ the list of the
+ /// pages of \f$ c \f$ with free slots:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{more}( c ) \cr
+ /// 2 & \quad \textbf{loop} \cr
+ /// 3 & \qquad s \gets \mathrm{local}( c );\ \textbf{if}\ s \ne
+ ///     \textbf{nil}\ \textbf{then return}\ s \cr
+ /// 4 & \qquad \text{mark } P \text{ as not listed} \cr
+ /// 5 & \qquad \textbf{if}\ A_c \ne \emptyset\ \textbf{then}\ P \gets
+ ///     \text{the pop of } A_c \cr
+ /// 6 & \qquad \textbf{else}\ P \gets \text{a new page of } c \text{, from}
+ ///     \text{ the segment, a new segment if it is used up}
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] void * more( std::size_t c );
 
- /// frees the slot p of the page g
- /// \pre g is pageOf( p ), a page of the heap
+ /// frees the slot \f$ p \f$ of the page \f$ g \f$
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{give}( g , p ) \cr
+ /// 2 & \quad \text{push } p \text{ on } g.\mathit{free} \cr
+ /// 3 & \quad \textbf{if}\ g \text{ is not listed}\ \textbf{then}
+ ///     \ \text{mark it listed and push it on } A_{g.c}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ g \f$ is `pageOf( p )`, a page of the heap
  void give( Page * g , void * p ) {
   Free * const f = static_cast< Free * >( p );
   f->next = g->free;
@@ -163,7 +213,7 @@ class alignas( 64 ) PageHeap {
    }
   }
 
- /// the slots given and not freed
+ /// the number of the slots given and not freed
  [[nodiscard]] std::size_t live( void ) const { return( f_live ); }
 
  /// the memory of the segments, in bytes
