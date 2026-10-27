@@ -2,13 +2,13 @@
 /*--------------------------- File BinaryTree.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The binary TREE of the book: an ordered tree where each node has at most
- * two children, told apart as the left and the right one, realized with
- * pointers to the parent and to the two children. Moving along the tree,
- * reading, writing and inserting take O( 1 ) time, deleting a subtree time
- * linear in its size. As for Tree, a node and its subtree are the same
- * thing, a tree owns its subtrees (a tree whose insertion is refused stays
- * the caller's), and nil is nullptr.
+ * The binary TREE of the book: an ordered tree where each node has at most two
+ * children, told apart as the left and the right one, realized with pointers
+ * to the parent and to the two children. Moving along the tree, reading,
+ * writing and inserting take \f$ O( 1 ) \f$ time, deleting a subtree time
+ * linear in its size. As for Tree, a node and its subtree are the same thing,
+ * a tree owns its subtrees (a tree whose insertion is refused stays the
+ * caller's), and nil is nullptr.
  *
  * The visit dfs() examines a node before its subtrees (previsit), between
  * them (invisit, or symmetric visit) or after them (postvisit). An ordered
@@ -18,17 +18,17 @@
  * postvisit of T is the invisit of B.
  *
  * detachLeft() and detachRight() cut a subtree off its parent without
- * destroying it, in O( 1 ) time: the subtree becomes a root owned by the
- * caller, ready to be inserted elsewhere, which moves subtrees around (a
+ * destroying it, in \f$ O( 1 ) \f$ time: the subtree becomes a root owned by
+ * the caller, ready to be inserted elsewhere, which moves subtrees around (a
  * mirror, a rotation) with no copy.
  *
  * copy() makes a deep copy of a subtree and join() a new root with the
  * copies of two trees as children, in time linear in their size.
  *
- * The ranges preorder(), inorder() and postorder() walk the nodes of a
- * subtree by the links to the parents, with no stack and no recursion, in
- * O( n ) time overall and O( 1 ) extra space: each node is left at most
- * once from each of its three visits.
+ * The ranges preorder(), inorder() and postorder() walk the nodes of a subtree
+ * by the links to the parents, with no stack and no recursion, in
+ * \f$ O( n ) \f$ time overall and \f$ O( 1 ) \f$ extra space: each node is
+ * left at most once from each of its three visits.
  *
  * to_list() writes a binary tree as a parenthesized list, () for the empty
  * tree and ( v L R ) for the root v with the subtrees L and R, e.g.,
@@ -52,7 +52,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -161,10 +161,10 @@ class BinaryTree {
  BinaryTree * detach( BinaryTree * & child );
 
  /// each child of this node has it as its parent (the links that a
- /// change of the tree touches), O( 1 ) per child
+ /// change of the tree touches), \f$ O( 1 ) \f$ per child
  [[nodiscard]] bool linked( void ) const;
 
- /// the root of the tree of this node, O( depth )
+ /// the root of the tree of this node, \f$ O( \mathit{depth} ) \f$
  [[nodiscard]] const BinaryTree * top( void ) const;
 
  T f_value;                       ///< the value
@@ -221,7 +221,7 @@ std::string to_list( const BinaryTree< T > * t );
 template< class T >
 BinaryTree< T > * from_list( std::string_view s );
 
-/// the binary tree that represents the ordered tree t (Figura 5.9): the left
+/// the binary tree that represents the ordered tree t (figure 5.9): the left
 /// child of a node is its first child in t, the right one its next sibling;
 /// the caller owns the result
 /// \pre t is a node

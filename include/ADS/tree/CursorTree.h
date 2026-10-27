@@ -21,7 +21,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -165,7 +165,7 @@ class CursorTree {
  Node & node( int n );
 
  /// the nodes reached from the root are used, link back to their parent
- /// and are all the nodes, O( n )
+ /// and are all the nodes, \f$ O( n ) \f$
  [[nodiscard]] bool linked( void ) const;
 
  int make( const T & v , int p );

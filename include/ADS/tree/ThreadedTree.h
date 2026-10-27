@@ -3,19 +3,18 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The threaded binary search tree of Perlis and Thornton, beyond the book: a
- * missing left child is replaced by a link (a thread) to the predecessor
- * in symmetric order, and a missing right child by a thread to the
- * successor, a bit of each node telling a child from a thread; the
- * symmetric visit then needs neither a stack nor the recursion, the
- * successor of a node being its right thread or the leftmost node of its
- * right subtree (Algorithm 2.3.1S), in O( 1 ) amortized time each. A head
- * node, whose left child is the root and which is the predecessor of the
- * first node and the successor of the last one, closes the threads, as in
- * the representation of Knuth.
+ * missing left child is replaced by a link (a thread) to the predecessor in
+ * symmetric order, and a missing right child by a thread to the successor, a
+ * bit of each node telling a child from a thread; the symmetric visit then
+ * needs neither a stack nor the recursion, the successor of a node being its
+ * right thread or the leftmost node of its right subtree (Algorithm 2.3.1S),
+ * in \f$ O( 1 ) \f$ amortized time each. A head node, whose left child is the
+ * root and which is the predecessor of the first node and the successor of the
+ * last one, closes the threads, as in the representation of Knuth.
  *
- * The contracts [see Contract.h]: insert() ensures that the key is there;
- * the invariant is that the visit by threads gives the keys in increasing
- * order, size() of them, an O( n ) check at the level 3. The operations are
+ * The contracts [see Contract.h]: insert() ensures that the key is there; the
+ * invariant is that the visit by threads gives the keys in increasing order,
+ * size() of them, an \f$ O( n ) \f$ check at the level 3. The operations are
  * defined in ThreadedTree.tpp.
  *
  * \see A. J. Perlis, C. Thornton, Symbol manipulation by threaded lists,
@@ -26,7 +25,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -161,7 +160,7 @@ class ThreadedTree {
  /// the predecessor of x in symmetric order, the head before the first
  [[nodiscard]] const Node * predecessor( const Node * x ) const;
 
- /// the visit by threads gives size() increasing keys, O( n )
+ /// the visit by threads gives size() increasing keys, \f$ O( n ) \f$
  [[nodiscard]] bool threaded( void ) const;
 
  Node f_head;               ///< left: the root (or itself if empty)

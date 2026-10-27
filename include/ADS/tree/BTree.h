@@ -17,8 +17,8 @@
  * ADT.h], and forEach() visits the pairs by increasing keys.
  *
  * The contracts [see Contract.h]: t >= 2; insert() ensures that the key is
- * there and remove() that it is not; the invariant is the order of the
- * keys, their number in each node and the depth of the leaves, an O( n )
+ * there and remove() that it is not; the invariant is the order of the keys,
+ * their number in each node and the depth of the leaves, an \f$ O( n ) \f$
  * check at the level 3. The operations are defined in BTree.tpp.
  *
  * \see R. Bayer, E. M. McCreight, Organization and maintenance of large
@@ -31,7 +31,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -208,7 +208,7 @@ class BTree {
  template< class F >
  static void visit( const Node * x , F & f );
 
- /// the order, the sizes and the depth of the leaves, O( n )
+ /// the order, the sizes and the depth of the leaves, \f$ O( n ) \f$
  bool valid( const Node * x , const K * lo , const K * hi , int d ,
              int & leafDepth , bool root ) const;
 

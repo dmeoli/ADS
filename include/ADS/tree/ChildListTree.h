@@ -2,15 +2,15 @@
 /*-------------------------- File ChildListTree.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * An ordered tree realized with lists of children, beyond the book: the
- * nodes in a vector, each with its value, the place of its parent and the
- * List [see List.h] of the places of its children, in their order. A node
- * also keeps the position of its own cell in the list of its parent, so
- * that rightSibling() is the next cell and takes O( 1 ) time, as
- * leftmostChild(), insertChild() and insertSibling(); the children of a
- * node are scanned in O( 1 ) time each, which is what this realization is
- * for, and a removed subtree returns its places to a free list. The
- * operations and the visits are those of CursorTree [see CursorTree.h].
+ * An ordered tree realized with lists of children, beyond the book: the nodes
+ * in a vector, each with its value, the place of its parent and the List [see
+ * List.h] of the places of its children, in their order. A node also keeps the
+ * position of its own cell in the list of its parent, so that rightSibling()
+ * is the next cell and takes \f$ O( 1 ) \f$ time, as leftmostChild(),
+ * insertChild() and insertSibling(); the children of a node are scanned in
+ * \f$ O( 1 ) \f$ time each, which is what this realization is for, and a
+ * removed subtree returns its places to a free list. The operations and the
+ * visits are those of CursorTree [see CursorTree.h].
  *
  * The contracts [see Contract.h]: a node is a used place, and a sibling is
  * inserted next to a node that is not the root; the invariant is that the
@@ -26,7 +26,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -145,7 +145,7 @@ class ChildListTree {
  void visit( int n , int i , std::vector< int > & P , int kind ) const;
 
  /// the nodes reached from the root are used, are at their position in
- /// the list of their parent, and are all the nodes, O( n )
+ /// the list of their parent, and are all the nodes, \f$ O( n ) \f$
  [[nodiscard]] bool linked( void ) const;
 
  std::vector< Node > f_N;   ///< the nodes, used or free

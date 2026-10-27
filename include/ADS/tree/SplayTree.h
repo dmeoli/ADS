@@ -14,9 +14,9 @@
  * ADT.h]; lookup() also splays, hence it changes the shape of the tree
  * (but not its keys) and is not const.
  *
- * The contracts [see Contract.h]: insert() ensures that the key is there,
- * at the root, and remove() that it is not; the invariant is the order of
- * the keys, an O( n ) check at the level 3. The operations are defined in
+ * The contracts [see Contract.h]: insert() ensures that the key is there, at
+ * the root, and remove() that it is not; the invariant is the order of the
+ * keys, an \f$ O( n ) \f$ check at the level 3. The operations are defined in
  * SplayTree.tpp.
  *
  * \see D. D. Sleator, R. E. Tarjan, Self-adjusting binary search trees,
@@ -24,7 +24,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */

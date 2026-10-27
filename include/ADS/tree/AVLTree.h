@@ -16,7 +16,7 @@
  *
  * The contracts [see Contract.h]: insert() ensures that the key is there
  * and remove() that it is not; the invariant is the order of the keys, the
- * heights stored and the balance of every node, an O( n ) check at the
+ * heights stored and the balance of every node, an \f$ O( n ) \f$ check at the
  * level 3. The operations are defined in AVLTree.tpp.
  *
  * \see G. M. Adelson-Velsky, E. M. Landis, An algorithm for the
@@ -27,7 +27,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -154,7 +154,7 @@ class AVLTree {
  template< class F >
  static void visit( const Ptr & t , F & f );
 
- /// the order, the heights and the balance of the subtree, O( n )
+ /// the order, the heights and the balance of the subtree, \f$ O( n ) \f$
  static bool valid( const Ptr & t , const K * lo , const K * hi );
 
  Ptr f_root;              ///< the root

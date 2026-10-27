@@ -38,29 +38,29 @@
  * once per node, and the internal nodes of a level are linked in a list,
  * as the leaves are.
 
- * An insertion into a full node splits it in two halves, the largest key
- * of the left one going up into the parent, which may split in turn, up to
- * the root. An insertion past the largest key of the tree, or before the
- * smallest one, splits the node so that the old one stays full and the new
- * one gets the new key alone (the trick of the B-trees of Abseil and of
- * the bulk loaders): the keys inserted in increasing order fill all the
- * nodes, instead of half of them; and a key larger than all the others
- * goes into the last leaf, if it has room, with no descent, since no bound
- * of an internal node lies above the largest key. A removal that leaves a node with fewer
- * than half of its places full either merges it with a sibling, if the
- * two fit in one node, or takes from the sibling half of the difference,
- * so that the two end up balanced; a merge may leave the parent short in
- * turn, and a root with a single child gives way to it. Hence every node
- * but those of the leftmost and of the rightmost paths, and those the
- * removals have not touched since a split, is at least half full, so that,
- * but for the two nodes of each level on those paths, a level of internal
- * nodes has at least \f$ \lceil I / 2 \rceil + 1 \f$ times the nodes of the
- * level above and the leaves hold at least \f$ \lceil L / 2 \rceil \f$
- * pairs each: the height of a tree of n pairs is about \f$ 1 + \log_{\lceil
- * I / 2 \rceil + 1} ( n / \lceil L / 2 \rceil ) \f$ at worst (5 levels for
- * a million pairs of 64 bits, L = I = 32), and all the operations take \f$
- * O( ( L + I ) \log n ) \f$ time, a few lines of cache per level. build()
- * loads a sorted sequence bottom up in O( n ), all the nodes full.
+ * An insertion into a full node splits it in two halves, the largest key of
+ * the left one going up into the parent, which may split in turn, up to the
+ * root. An insertion past the largest key of the tree, or before the smallest
+ * one, splits the node so that the old one stays full and the new one gets the
+ * new key alone (the trick of the B-trees of Abseil and of the bulk loaders):
+ * the keys inserted in increasing order fill all the nodes, instead of half of
+ * them; and a key larger than all the others goes into the last leaf, if it
+ * has room, with no descent, since no bound of an internal node lies above the
+ * largest key. A removal that leaves a node with fewer than half of its places
+ * full either merges it with a sibling, if the two fit in one node, or takes
+ * from the sibling half of the difference, so that the two end up balanced; a
+ * merge may leave the parent short in turn, and a root with a single child
+ * gives way to it. Hence every node but those of the leftmost and of the
+ * rightmost paths, and those the removals have not touched since a split, is
+ * at least half full, so that, but for the two nodes of each level on those
+ * paths, a level of internal nodes has at least
+ * \f$ \lceil I / 2 \rceil + 1 \f$ times the nodes of the level above and the
+ * leaves hold at least \f$ \lceil L / 2 \rceil \f$ pairs each: the height of a
+ * tree of n pairs is about \f$ 1 + \log_{\lceil I / 2 \rceil + 1} ( n / \lceil
+ * L / 2 \rceil ) \f$ at worst (5 levels for a million pairs of 64 bits, L = I
+ * = 32), and all the operations take \f$ O( ( L + I ) \log n ) \f$ time, a few
+ * lines of cache per level. build() loads a sorted sequence bottom up in
+ * \f$ O( n ) \f$, all the nodes full.
  *
  * With R, each internal node keeps the number of the pairs below each of its
  * children, \f$ \mathit{cnt}[ j ] = | \{ \mbox{pairs below } c[ j ] \} |
@@ -83,12 +83,12 @@
  * constructible, the places of a node being built with the node, and a
  * tree that shrinks keeps the memory of its pools until it is cleared.
 
- * The contracts [see Contract.h]: after insert() the key is there and
- * after remove() it is not; build() needs strictly increasing keys, an
- * audit; the invariant is the order of the keys in the tree and their
- * bounds, the depth of the leaves, the list of the leaves, the count and
- * the padding of the unused places, an O( n ) check at the level 3 on the
- * trees of up to 4096 pairs. The operations are defined in BTreeMap.tpp.
+ * The contracts [see Contract.h]: after insert() the key is there and after
+ * remove() it is not; build() needs strictly increasing keys, an audit; the
+ * invariant is the order of the keys in the tree and their bounds, the depth
+ * of the leaves, the list of the leaves, the count and the padding of the
+ * unused places, an \f$ O( n ) \f$ check at the level 3 on the trees of up to
+ * 4096 pairs. The operations are defined in BTreeMap.tpp.
  *
  * \see R. Bayer, E. M. McCreight, Organization and maintenance of large
  *      ordered indexes, Acta Informatica 1(3), 173-189, 1972,
@@ -106,7 +106,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -255,7 +255,7 @@ class BTreeMap {
  /// removes the pair of it, and gives the one after it
  const_iterator erase( const_iterator it );
 
- /// the pairs whose key is smaller than k, O( ( L + I ) log n ) time
+ /// the pairs whose key is smaller than k, \f$ O( ( L + I ) \log n ) \f$ time
  [[nodiscard]] std::size_t rank( const K & k ) const requires R;
 
  /// the pair of rank i (from 0), end() if i >= size()

@@ -5,26 +5,26 @@
  * The binary search tree (ABR) and the Red-Black tree of the book, as a
  * DICTIONARY [see ADT.h] from keys to values.
  *
- * In a binary search tree the keys in the left subtree of a node u are
- * smaller than the key of u, and those in the right subtree larger, so that
- * the invisit examines the keys in increasing order; lookupNode(),
- * insertNode() and removeNode() go down one path and take O( h ) time, h
- * being the height of the tree, which is O( n ) in the worst case.
+ * In a binary search tree the keys in the left subtree of a node u are smaller
+ * than the key of u, and those in the right subtree larger, so that the
+ * invisit examines the keys in increasing order; lookupNode(), insertNode()
+ * and removeNode() go down one path and take \f$ O( h ) \f$ time, h being the
+ * height of the tree, which is \f$ O( n ) \f$ in the worst case.
  *
  * A Red-Black tree is a binary search tree whose nodes are red or black,
  * with the constraints (V1) the root is black, (V2) the leaves are black,
  * (V3) both children of a red node are black, (V4) all the paths from a node
  * to the leaves below it have the same number of black nodes, its black
  * height b( u ). The subtree of u has at least \f$ 2^{b(u)} - 1 \f$
- * internal nodes (Teorema 6.1), no path from the root to a leaf is longer
- * than twice another one (Teorema 6.2), and the height is
+ * internal nodes (Theorem 6.1), no path from the root to a leaf is longer
+ * than twice another one (Theorem 6.2), and the height is
  * \f[
  *   h \leq 2 \log_2( n + 1 )
  * \f]
- * (Teorema 6.3). The procedures are those of the binary search tree, plus
- * balanceInsert() after an insertion and balanceDelete() after the removal
- * of a black node, which restore the constraints with O( log n ) changes of
- * color and at most 3 rotations, in O( log n ) time.
+ * (Theorem 6.3). The procedures are those of the binary search tree, plus
+ * balanceInsert() after an insertion and balanceDelete() after the removal of
+ * a black node, which restore the constraints with \f$ O( \log n ) \f$ changes
+ * of color and at most 3 rotations, in \f$ O( \log n ) \f$ time.
  *
  * The two trees are one class, SearchTree< K , V , RB >, the procedures of
  * the book written once and the two balancing calls under if constexpr( RB )
@@ -56,7 +56,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -123,7 +123,7 @@ class SearchTree {
  /// an empty tree
  SearchTree( void );
 
- /// a copy, node by node with the same shape, in O( n ) time
+ /// a copy, node by node with the same shape, in \f$ O( n ) \f$ time
  SearchTree( const SearchTree & o );
 
  SearchTree( SearchTree && o ) noexcept;
@@ -193,7 +193,7 @@ class SearchTree {
  [[nodiscard]] Link * successorNode( Link * t ) const;
 
  /// the foreach of the book: f( k , v ) on the pairs in increasing order of
- /// the keys, O( n ) time
+ /// the keys, \f$ O( n ) \f$ time
  template< class F >
  void forEach( F && f ) const;
 
@@ -264,7 +264,7 @@ class SearchTree {
  private:
 
  /// the order of the keys, the parents, the number of nodes and, if RB,
- /// the constraints (V1)-(V4), O( n )
+ /// the constraints (V1)-(V4), \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
 
  [[nodiscard]] Link * nil( void ) const;
@@ -302,7 +302,7 @@ class SearchTree {
 /*------------------- THE PROCEDURES OF SECTION 6.2 ------------------------*/
 /*--------------------------------------------------------------------------*/
 
- /// rotateLeft(): the right child y of x goes up, x down (Figura 6.4)
+ /// rotateLeft(): the right child y of x goes up, x down (figure 6.4)
  Link * rotateLeft( Link * x );
 
  /// rotateRight(): rotateLeft() with left and right swapped

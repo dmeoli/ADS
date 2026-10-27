@@ -2,15 +2,15 @@
 /*------------------------- File ArrayBinaryTree.h -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A binary tree in a positional vector, beyond the book: the root in
- * the place 0, the children of the place i in 2 i + 1 and 2 i + 2, its
- * parent in \f$ \lfloor ( i - 1 ) / 2 \rfloor \f$ [see dary_child()], an
- * empty place where no node is. Moving along the tree, reading and writing
- * take O( 1 ) time; the vector grows to the deepest place used, so that a
- * tree of height h takes \f$ O( 2^h ) \f$ space, which suits the trees
- * nearly complete. insertLeft() and insertRight() copy a whole tree under
- * a node and remove() empties a subtree, in time linear in the places of
- * the subtree. A node is a place, NIL if missing.
+ * A binary tree in a positional vector, beyond the book: the root in the place
+ * 0, the children of the place i in 2 i + 1 and 2 i + 2, its parent in
+ * \f$ \lfloor ( i - 1 ) / 2 \rfloor \f$ [see dary_child()], an empty place
+ * where no node is. Moving along the tree, reading and writing take
+ * \f$ O( 1 ) \f$ time; the vector grows to the deepest place used, so that a
+ * tree of height h takes \f$ O( 2^h ) \f$ space, which suits the trees nearly
+ * complete. insertLeft() and insertRight() copy a whole tree under a node and
+ * remove() empties a subtree, in time linear in the places of the subtree. A
+ * node is a place, NIL if missing.
  *
  * The contracts [see Contract.h]: read() and write() need a node,
  * setRoot() an empty tree, and a subtree is inserted under a node where
@@ -22,7 +22,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -153,7 +153,8 @@ class ArrayBinaryTree {
  /// empties the places of the subtree of i
  void clear( long i );
 
- /// each node but the root has its parent, O( size of the vector )
+ /// each node but the root has its parent, \f$ O( \text{the size of the
+ /// vector} ) \f$
  [[nodiscard]] bool rooted( void ) const;
 
  /// the place j of t to the place k of this tree, and so on down
