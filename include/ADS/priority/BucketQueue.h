@@ -29,8 +29,10 @@
  * g >= D into a layer of R runs first turns it dense on all its g: its
  * vector grows up to the largest g, takes the heads of the runs, whose
  * lists stay as they are, and the bound of the scan goes to the largest
- * g; the layer stays dense until it empties, when it frees its vectors
- * and is sparse again. In pseudocode, for a layer l:
+ * g; the layer stays dense until it empties, when it frees its vector and
+ * is sparse again. The vectors of runs are not freed but kept, empty, for
+ * the next layer that needs one, so that a layer that fills again
+ * allocates nothing. In pseudocode, for a layer l:
  *
  *     push( x , g ): if g >= D and l is sparse and | l.runs | = R:
  *                          l.head[ g' ] = h for each run ( g' , h );
@@ -42,7 +44,7 @@
  *                          drop the run if its list is now empty
  *                    else: scan l.topG down to a list with items, take
  *                          from it
- *                    if l is empty: free l.head and l.runs; l is sparse
+ *                    if l is empty: free l.head; l is sparse
  *
  * The order is the same in the two ways: inside a list it is LIFO, the
  * runs and the dense heads are both by g, and the conversion moves the
@@ -69,11 +71,12 @@
  * that push() takes from first, so that a push or a pop costs no call to
  * the allocator once the vector has grown to the largest size of the
  * queue. A layer of g < S costs no allocation, and a layer frees its
- * vectors when it empties, so that the memory follows the band of the
- * keys in the queue: \f$ O( n + F + \sum_f H_f ) \f$ words for n items,
- * F the largest f pushed and \f$ H_f \f$ the size of the layer f while it
- * is in use, at most D + 2 R if it is sparse (the vector of runs at most
- * doubles) and \f$ G_f \f$ if it is dense.
+ * dense heads when it empties, so that the memory follows the band of the
+ * keys in the queue: \f$ O( n + F + \sum_f H_f + R L ) \f$ words for n
+ * items, F the largest f pushed, \f$ H_f \f$ the size of the layer f
+ * while it is in use, at most D if it is sparse and its largest g
+ * \f$ G_f \f$ if it is dense, and L the most layers that had runs at
+ * the same time, each vector of runs holding at most R.
  *
  * There is no decrease-key: as in the lazy deletion of A*, an item whose
  * key improves is pushed again, and the caller skips the stale copies when
@@ -204,13 +207,15 @@ class BucketQueue {
   Index head;
   };
 
+ using Runs = std::vector< Run >;   ///< the runs of a layer, by g
+
  /// the items of one f
  struct Layer {
   Index count = 0;                      ///< the items in the layer
   Index topG = 0;                       ///< no dense list above has items
+  Index runs = NIL;                     ///< its runs in f_runs, if any
   Index small[ S ] = { NIL , NIL , NIL , NIL };   ///< the heads, g < S
   std::vector< Index > big;             ///< the dense heads, g >= S
-  std::vector< Run > runs;              ///< the sparse lists, g >= D
 
   Index & head( std::size_t g ) {
    return( g < S ? small[ g ] : big[ g - S ] );
@@ -222,12 +227,6 @@ class BucketQueue {
   std::size_t lists( void ) const { return( S + big.size() ); }
   /// whether the lists of g >= D are dense too
   bool dense( void ) const { return( big.size() > D - S ); }
-  /// the head of the list of top(), with topG moved to it if no run
-  Index & top( void ) { return( runs.empty() ? head( topG ) :
-                                runs.back().head ); }
-  /// the g of top(), after top()
-  K topKey( void ) const { return( runs.empty() ? K( topG ) :
-                                   runs.back().g ); }
   };
 
  public:
@@ -277,10 +276,10 @@ class BucketQueue {
    const auto & L = f_q->f_layers;
    for( ; f_f < L.size() ; ++f_f , f_g = 0 ) {
     const Layer & l = L[ f_f ];
-    const std::size_t r = l.runs.size();
+    const std::size_t r = l.runs == NIL ? 0 : f_q->f_runs[ l.runs ].size();
     if( l.count )
      for( ; f_g < r + l.lists() ; ++f_g )
-      if( ( f_c = f_g < r ? l.runs[ r - 1 - f_g ].head :
+      if( ( f_c = f_g < r ? f_q->f_runs[ l.runs ][ r - 1 - f_g ].head :
                   l.head( r + l.lists() - 1 - f_g ) ) != NIL ) return;
     }
    f_g = 0;
@@ -314,25 +313,52 @@ class BucketQueue {
  /// it has no run
  Layer & front( void );
 
- /// the head of the list of g >= D in the sparse layer l, a new run if
- /// there is none
- Index & run( Layer & l , K g );
+ /// the head of the list of top() in l, after front()
+ Index & top( Layer & l );
+
+ /// the g of top() in l, after front()
+ [[nodiscard]] K topKey( const Layer & l ) const;
+
+ /// a cell with the item x, its next to be set
+ Index cell( const T & x );
+
+ /// x pushed with g >= D to the runs of the sparse layer l and true, or
+ /// l turned dense and false if it has R runs
+ bool pushRun( Layer & l , const T & x , K g );
+
+ /// the head of the list of g >= D in the runs v, a new run if there is
+ /// none
+ static Index & run( Runs & v , K g );
+
+ /// pop() from the last run of l, the layer of the least f
+ T popRun( Layer & l );
+
+ /// the item of the head h, unlinked and its cell freed
+ T take( Index & h );
+
+ /// one item fewer in l, which frees its dense heads if it empties
+ void taken( Layer & l );
 
  /// l dense on all its g: the heads of the runs moved to the vector
  void densify( Layer & l );
+
+ /// the runs of l, empty, back to the spare ones
+ void release( Layer & l );
 
  /// the counts of the layers add up to size(), \f$ O( F ) \f$
  [[nodiscard]] bool counted( void ) const;
 
  /// the runs of l are at most R, of g >= D, increasing and with items,
  /// and none if l is dense, \f$ O( R ) \f$
- [[nodiscard]] static bool ordered( const Layer & l );
+ [[nodiscard]] bool ordered( const Layer & l ) const;
 
  std::vector< Layer > f_layers;   ///< a layer per f
  std::vector< Cell > f_cells;     ///< the cells of the items
  Index f_free = NIL;              ///< the cells freed, the last first
  std::size_t f_minF = 0;          ///< no layer below it has items
  std::size_t f_size = 0;          ///< the number of items
+ std::vector< Runs > f_runs;      ///< the runs of the layers that have
+ std::vector< Index > f_spare;    ///< the runs of no layer, empty
 
  };  // end( class BucketQueue )
 

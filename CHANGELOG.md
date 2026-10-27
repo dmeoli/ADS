@@ -1514,10 +1514,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keys and few items, as the least layer of a best-first search on a large
   grid whose nodes come in batches, no longer pays the whole range of its
   keys each time: the lists of g >= 256 of a layer are a sorted vector of
-  up to 64 runs (g, head), and the layer turns dense on all its g, moving
-  the heads, only past them; the order of the pops is the same; the test
-  bucket-queue-sparse, and in bench/priority.cpp the best-first searches
-  on a grid and on the 15-puzzle, on 1 and 64 queues
+  up to 64 runs (g, head), kept for the next layer when it empties, and
+  the layer turns dense on all its g, moving the heads, only past them;
+  the order of the pops is the same; the test bucket-queue-sparse, and in
+  bench/priority.cpp the best-first searches on a grid and on the
+  15-puzzle, on 1 and 64 queues
 - the build with MSVC: PGMIndex, the loser tree of the multiway merge,
   prefixKeySort() and the multiple search no longer use __int128 or
   __builtin_bswap64() where the compiler lacks them, but the primitives
