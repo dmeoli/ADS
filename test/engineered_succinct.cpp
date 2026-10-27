@@ -847,6 +847,56 @@ ADS_TEST( "rans-coder" )
  CHECK_THROWS( ( void )ransDecompress( c ) , contract_violation );
  }
 
+// rANS on malformed streams, each in a vector of its own size, so that
+// AddressSanitizer sees a read past it: every cut of the padding, of the
+// words or of the header is rejected; a bit of a state flipped, or a slot
+// moved from the most frequent byte to another (the sum still M), either
+// is rejected or gives n bytes, and reads no byte out of the input
+ADS_TEST( "rans-corrupted" )
+{
+ auto safe = []( const std::vector< std::uint8_t > & c , std::size_t n ) {
+  try {
+   return( ransDecompress( c ).size() == n );
+   }
+  catch( const contract_violation & ) {
+   return( true );
+   }
+  };
+ for( const auto & s : coderInputs() ) {
+  const auto c = ransCompress( s );
+  for( const std::size_t k : { std::size_t( 1 ) , std::size_t( 2 ) ,
+                               std::size_t( 8 ) , std::size_t( 9 ) ,
+                               ( c.size() - 536 ) / 2 , c.size() - 536 ,
+                               c.size() - 535 , c.size() } ) {
+   if( ( k == 0 ) || ( k > c.size() ) ) continue;
+   const std::vector< std::uint8_t > t( c.begin() ,
+                                        c.end() - std::ptrdiff_t( k ) );
+   CHECK_THROWS( ( void )ransDecompress( t ) , contract_violation );
+   }
+  if( s.empty() ) continue;
+  for( std::size_t b = 0 ; b < 128 ; b += 5 ) {   // the four states
+   auto d = c;
+   d[ 8 + 512 + b / 8 ] ^= std::uint8_t( 1u << ( b % 8 ) );
+   CHECK( safe( d , s.size() ) );
+   }
+  std::size_t top = 0;                     // the most frequent byte
+  for( std::size_t x = 1 ; x < 256 ; ++x )
+   if( c[ 8 + 2 * x ] + 256 * c[ 9 + 2 * x ] >
+       c[ 8 + 2 * top ] + 256 * c[ 9 + 2 * top ] )
+    top = x;
+  for( const std::size_t x : { std::size_t( 0 ) , std::size_t( 39 ) ,
+                               std::size_t( 255 ) } ) {
+   if( ( x == top ) || ( c[ 8 + 2 * top ] + 256 * c[ 9 + 2 * top ] < 2 ) )
+    continue;
+   auto d = c;
+   d[ 8 + 2 * top ] = std::uint8_t( d[ 8 + 2 * top ] - 1 );
+   if( d[ 8 + 2 * top ] == 0xFF ) --d[ 9 + 2 * top ];
+   if( ++d[ 8 + 2 * x ] == 0 ) ++d[ 9 + 2 * x ];
+   CHECK( safe( d , s.size() ) );
+   }
+  }
+ }
+
 // tANS of order 0: the round trip, the size within a percent of the
 // entropy (and the header) on the large strings, and the malformed inputs
 ADS_TEST( "tans-coder" )

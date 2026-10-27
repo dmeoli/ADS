@@ -1519,6 +1519,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the order of the pops is the same; the test bucket-queue-sparse, and in
   bench/priority.cpp the best-first searches on a grid and on the
   15-puzzle, on 1 and 64 queues
+- lyndonFactorization() and leastRotation() compare the bytes as
+  unsigned, the order of std::string_view and of isLyndon(): with a byte
+  from 0x80 on, where char is signed, they gave wrong factors and
+  rotations and failed their audits; the test lyndon-bytes
+- ransDecompress() stops a malformed stream before it reads past its 8
+  bytes of padding, by one comparison every four symbols, and rejects it:
+  the precondition at the end came after the reads out of the input; the
+  test rans-corrupted, its cuts and corruptions under AddressSanitizer
+- lcsMemo() runs the recursion of the book on a stack of its own, as it
+  goes m + n calls deep and exhausted the stack of the thread on strings
+  of 10^6 items; the test lcs-long
 - the build with MSVC: PGMIndex, the loser tree of the multiway merge,
   prefixKeySort() and the multiple search no longer use __int128 or
   __builtin_bswap64() where the compiler lacks them, but the primitives

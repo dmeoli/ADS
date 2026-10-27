@@ -538,6 +538,7 @@ engineered_strings  classic-matching  Boyer-Moore, Horspool, Shift-Or, Z
 engineered_strings  aho-corasick    automa di Aho e Corasick
 engineered_strings  multi-search    filtro SIMD a bucket per molti pattern
 engineered_strings  lyndon          fattorizzazione di Lyndon, rotazione minima
+engineered_strings  lyndon-bytes    Lyndon e rotazione minima sui byte da 0x80
 engineered_strings  suffix-automaton  automa dei suffissi
 engineered_strings  eertree         eertree e fattorizzazione palindromica
 # the engineered numerics and geometry, beyond the book
@@ -1653,6 +1654,7 @@ contract_stack        stack-algorithms     algoritmi su pile, oltre il libro
 contract_string       alignment-wordbreak  word break, capitolo 13
 contract_string       huffman              codice di Huffman, capitolo 14
 contract_string       lcs                  LCS, capitolo 13
+contract_string       lcs-long             lcsMemo() su stringhe lunghe
 contract_string       matching             ricerca di stringhe, capitolo 13
 contract_string       other-strings        prefissi, suffissi, parentesi
 
@@ -1686,6 +1688,7 @@ engineered_succinct  rrr-bit-vector   vettore di bit compresso di RRR
 engineered_succinct  wavelet-matrix   wavelet matrix, rank, select, quantili
 engineered_succinct  huffman-coder    Huffman a tabella, quattro flussi
 engineered_succinct  rans-coder       rANS di ordine 0, quattro stati
+engineered_succinct  rans-corrupted   rANS su flussi troncati e corrotti
 engineered_succinct  direct-access-codes  DACs, larghezze ottime per programma dinamico
 engineered_succinct  lz77-linear      LZ77 senza finestra in tempo lineare
 engineered_succinct  stream-vbyte     Stream VByte, controllo a parte

@@ -48,19 +48,35 @@ int lcsMemo( const S & P , const S & T , long * solved )
 {
  std::vector< std::vector< int > > DP(
                    P.size() + 1 , std::vector< int >( T.size() + 1 , -1 ) );
- auto rec = [ & ]( auto & self , std::size_t i , std::size_t j ) -> int {
-  if( ( i == 0 ) || ( j == 0 ) )
-   return( 0 );
-  if( DP[ i ][ j ] < 0 ) {
-   if( solved ) ++*solved;
-   DP[ i ][ j ] = P[ i - 1 ] == T[ j - 1 ] ?
-                  self( self , i - 1 , j - 1 ) + 1 :
-                  std::max( self( self , i - 1 , j ) ,
-                            self( self , i , j - 1 ) );
-   }
-  return( DP[ i ][ j ] );
+ auto at = [ & ]( std::size_t i , std::size_t j ) {
+  return( ( i == 0 ) || ( j == 0 ) ? 0 : DP[ i ][ j ] );
   };
- return( rec( rec , P.size() , T.size() ) );
+ // the recursion on a stack of its own, m + n calls deep: the calls
+ // pending, the top one solved once those that it makes are
+ std::vector< std::pair< std::size_t , std::size_t > > calls;
+ calls.emplace_back( P.size() , T.size() );
+ while( ! calls.empty() ) {
+  const auto [ i , j ] = calls.back();
+  if( at( i , j ) < 0 ) {
+   if( P[ i - 1 ] == T[ j - 1 ] ) {
+    if( at( i - 1 , j - 1 ) < 0 ) {
+     calls.emplace_back( i - 1 , j - 1 );
+     continue;
+     }
+    DP[ i ][ j ] = at( i - 1 , j - 1 ) + 1;
+    }
+   else {
+    const bool up = at( i - 1 , j ) < 0 , left = at( i , j - 1 ) < 0;
+    if( up ) calls.emplace_back( i - 1 , j );
+    if( left ) calls.emplace_back( i , j - 1 );
+    if( up || left ) continue;
+    DP[ i ][ j ] = std::max( at( i - 1 , j ) , at( i , j - 1 ) );
+    }
+   if( solved ) ++*solved;
+   }
+  calls.pop_back();
+  }
+ return( at( P.size() , T.size() ) );
  }
 
 template< class S >

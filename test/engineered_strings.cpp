@@ -540,6 +540,61 @@ ADS_TEST( "lyndon" )
    }
  }
 
+// the Lyndon factorization and the least rotation in the order of
+// std::string_view, i.e., of the bytes as unsigned: a byte of the upper
+// half before and after a letter, one byte repeated (0x00, 0x7F, 0x80 and
+// 0xFF), random strings over the bytes around 0x80, over the upper half
+// and over all the 256 bytes, against the factorization by brute force
+// and all the rotations
+ADS_TEST( "lyndon-bytes" )
+{
+ using F = std::vector< std::size_t >;
+ auto brute = []( std::string_view S ) {   // the longest Lyndon prefix
+  F f;
+  for( std::size_t i = 0 ; i < S.size() ; ) {
+   f.push_back( i );
+   std::size_t l = 1;
+   for( std::size_t k = S.size() - i ; k > 0 ; --k )
+    if( isLyndon( S.substr( i , k ) ) ) {
+     l = k;
+     break;
+     }
+   i += l;
+   }
+  return( f );
+  };
+ auto least = []( const std::string & S ) {     // the first least one
+  std::size_t q = 0;
+  for( std::size_t i = 1 ; i < S.size() ; ++i )
+   if( S.substr( i ) + S.substr( 0 , i ) < S.substr( q ) + S.substr( 0 , q ) )
+    q = i;
+  return( q );
+  };
+ CHECK( lyndonFactorization( "\x80" "a" ) == ( F{ 0 , 1 } ) &&
+        lyndonFactorization( "a\x80" ) == F{ 0 } &&
+        lyndonFactorization( "\xFF\x80\x7F" ) == ( F{ 0 , 1 , 2 } ) &&
+        lyndonFactorization( "\x7F\x80\xFF" ) == F{ 0 } );
+ CHECK( leastRotation( "\xFF" "a" ) == 1 && leastRotation( "a\xFF" ) == 0 &&
+        leastRotation( "\x80\x7F\x80" ) == 1 );
+ CHECK( isLyndon( "a\x80" ) && ! isLyndon( "\x80" "a" ) );
+ for( const char c : { '\x00' , '\x7F' , '\x80' , '\xFF' } )
+  for( std::size_t n : { 1u , 2u , 7u } ) {
+   const std::string S( n , c );
+   F f( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) f[ i ] = i;
+   CHECK( lyndonFactorization( S ) == f && leastRotation( S ) == 0 );
+   }
+ std::mt19937_64 g( 29 );
+ for( const auto & [ sigma , base ] : { std::pair( 4u , 0x7Eu ) ,
+                                        std::pair( 3u , 0xFDu ) ,
+                                        std::pair( 256u , 0u ) } )
+  for( int r = 0 ; r < 300 ; ++r ) {
+   const std::string S = randomString( g , g() % 60 , sigma , base );
+   CHECK( lyndonFactorization( S ) == brute( S ) );
+   CHECK( leastRotation( S ) == least( S ) );
+   }
+ }
+
 // the suffix automaton against the substrings enumerated: the empty
 // string, one byte, a^n (n + 1 states), random strings over 1, 2, 4 and 26
 // letters: at most 2 n - 1 states, contains() and occurrences() on every

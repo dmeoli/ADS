@@ -34,9 +34,11 @@ namespace detail {
 inline std::pair< std::size_t , std::size_t > duvalRun( std::string_view S ,
                                                         std::size_t i )
 {
+ // the bytes unsigned, as std::string_view orders them
+ const auto * s = reinterpret_cast< const unsigned char * >( S.data() );
  std::size_t j = i + 1 , k = i;      // S[ k ] is |w| places before S[ j ]
- while( ( j < S.size() ) && ( S[ k ] <= S[ j ] ) ) {
-  k = S[ k ] < S[ j ] ? i : k + 1;   // a longer Lyndon word, or w' grows
+ while( ( j < S.size() ) && ( s[ k ] <= s[ j ] ) ) {
+  k = s[ k ] < s[ j ] ? i : k + 1;   // a longer Lyndon word, or w' grows
   ++j;
   }
  return( std::pair( j - k , j ) );

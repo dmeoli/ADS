@@ -155,6 +155,25 @@ ADS_TEST( "lcs" )
   }
  }
 
+// lcsMemo() on a string of 10^6 items against one of 1, 2 and 3, a path
+// of the subproblems of about 10^6 levels, which the recursion of the
+// book takes on the stack: the length, and the number of the subproblems
+// solved against the ones that it reaches; then the empty strings
+ADS_TEST( "lcs-long" )
+{
+ const std::string A( 1000000 , 'a' );
+ for( const std::string b : { "b" , "ba" , "bab" } ) {
+  long solved = 0;
+  const int l = int( b.size() / 2 );
+  CHECK( lcsMemo( A , b , &solved ) == l && lcsMemo( b , A ) == l );
+  CHECK( solved >= long( A.size() ) && solved < long( 3 * A.size() ) );
+  }
+ const std::string E;
+ long solved = 0;
+ CHECK( lcsMemo( E , E , &solved ) == 0 && lcsMemo( A , E ) == 0 &&
+        solved == 0 );
+ }
+
 // globalAlignment() of strings of equal length, and the words of
 // wordBreak() joined back; the empty strings, a dictionary with no word
 ADS_TEST( "alignment-wordbreak" )

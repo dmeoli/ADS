@@ -179,11 +179,14 @@ inline std::vector< std::uint8_t > ransDecompress(
   p += 2 * std::size_t( r );
   return( Z[ slot ] );
   };
+ // a round of kRansWays steps from p <= end reads within the 8 bytes of
+ // padding: a malformed stream stops there, at one comparison a round
  std::size_t i = 0;
- for( ; i + kRansWays <= n ; i += kRansWays )
+ for( ; ( i + kRansWays <= n ) && ( p <= end ) ; i += kRansWays )
   for( std::size_t k = 0 ; k < kRansWays ; ++k ) out[ i + k ] = step( x[ k ] );
- for( ; i < n ; ++i ) out[ i ] = step( x[ i % kRansWays ] );
- ADS_PRE( p <= end );
+ for( ; ( i < n ) && ( p <= end ) ; ++i )
+  out[ i ] = step( x[ i % kRansWays ] );
+ ADS_PRE( ( i == n ) && ( p <= end ) );
  return( out );
  }
 
