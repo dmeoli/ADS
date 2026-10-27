@@ -679,6 +679,52 @@ ADS_TEST( "child-list-tree" )
  CHECK( d.size() == 1 && d.isLeaf( d.root() ) );
  }
 
+// the copies of the tree with lists of children: the copy and the
+// assignment of a whole tree own their lists, their next siblings read
+// there and not in the source, changed and then gone; the copies of
+// subtrees, as those of CursorTree, also of the tree into itself; the edge
+// cases: a sibling of the root, places that are not nodes
+ADS_TEST( "child-list-tree-copy" )
+{
+ using CL = ChildListTree< int >;
+ CL t( 0 );
+ const int a = t.insertChild( t.root() , 1 );
+ const int b = t.insertSibling( a , 2 );
+ t.insertChild( a , 3 );
+ t.insertSibling( t.leftmostChild( a ) , 4 );
+ auto values = []( const CL & u ) {
+  Ints v;
+  for( int n : u.previsit() ) v.push_back( u.read( n ) );
+  return( v );
+  };
+ std::unique_ptr< CL > s( new CL( t ) );
+ CL c( *s ) , d;
+ d = *s;
+ s->remove( b );                                // the source changed
+ s.reset();                                     // and gone
+ for( CL * u : { &c , &d } ) {
+  CHECK( ( values( *u ) == Ints( { 0 , 1 , 3 , 4 , 2 } ) ) &&
+         ( u->rightSibling( a ) == b ) && ( u->size() == 5 ) );
+  u->insertSibling( b , 5 );
+  u->insertSibling( a , 6 );
+  CHECK( values( *u ) == Ints( { 0 , 1 , 3 , 4 , 6 , 2 , 5 } ) );
+  }
+ const CL m( std::move( c ) );
+ CHECK( ( values( m ) == values( d ) ) && ( m.size() == 7 ) );
+ CL e( 9 );
+ e.insertChildTree( e.root() , t , a );
+ e.insertSiblingTree( e.leftmostChild( e.root() ) , t , b );
+ CHECK( ( values( e ) == Ints( { 9 , 1 , 3 , 4 , 2 } ) ) &&
+        ( e.size() == 5 ) );
+ CHECK_THROWS( e.insertSiblingTree( e.root() , t , a ) ,
+               contract_violation );
+ CHECK_THROWS( e.insertChildTree( 7 , t , a ) , contract_violation );
+ CHECK_THROWS( e.insertChildTree( e.root() , t , 7 ) , contract_violation );
+ t.insertChildTree( b , t , t.root() );         // a copy of itself
+ CHECK( ( values( t ) == Ints( { 0 , 1 , 3 , 4 , 2 , 0 , 1 , 3 , 4 , 2 } ) ) &&
+        ( t.size() == 10 ) );
+ }
+
 // 5 , 3 , 9 , 2 , 10 come out as 2 , 3 , 5 , 9 , 10,
 // and random sequences against sorting; on both ways of finding the last
 // leaf (by the counter and by the pointer), the edge cases: the empty

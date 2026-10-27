@@ -146,14 +146,16 @@ void CursorBinaryTree< T >::remove( int n )
 template< class T >
 std::vector< int > CursorBinaryTree< T >::preorder( void ) const
 {
- std::vector< int > P;
- auto rec = [ & ]( auto & self , int n ) -> void {
-  if( n == NIL ) return;
+ std::vector< int > P , S;                // S a stack of its own, as the
+ if( f_root != NIL )                      // height may be n
+  S.push_back( f_root );
+ while( ! S.empty() ) {
+  const int n = S.back();
+  S.pop_back();
   P.push_back( n );
-  self( self , f_N[ n ].left );
-  self( self , f_N[ n ].right );
-  };
- rec( rec , f_root );
+  if( f_N[ n ].right != NIL ) S.push_back( f_N[ n ].right );
+  if( f_N[ n ].left != NIL ) S.push_back( f_N[ n ].left );
+  }
  return( P );
  }
 
@@ -173,16 +175,21 @@ auto CursorBinaryTree< T >::node( int n ) -> Node &
 template< class T >
 bool CursorBinaryTree< T >::linked( void ) const
 {
+ // a previsit with a stack of its own, as the height may be n: each node
+ // with the parent it must have; more than n nodes met is a cycle
  int count = 0;
- auto rec = [ & ]( auto & self , int n , int p ) -> bool {
-  if( n == NIL ) return( true );
+ std::vector< std::pair< int , int > > S = { { f_root , NIL } };
+ while( ! S.empty() ) {
+  const auto [ n , p ] = S.back();
+  S.pop_back();
+  if( n == NIL ) continue;
   if( ( n < 0 ) || ( n >= int( f_N.size() ) ) || ! f_N[ n ].used ||
       ( f_N[ n ].parent != p ) || ( ++count > f_size ) )
    return( false );
-  return( self( self , f_N[ n ].left , n ) &&
-          self( self , f_N[ n ].right , n ) );
-  };
- return( rec( rec , f_root , NIL ) && ( count == f_size ) );
+  S.emplace_back( f_N[ n ].right , n );
+  S.emplace_back( f_N[ n ].left , n );
+  }
+ return( count == f_size );
  }
 
 template< class T >
@@ -202,13 +209,24 @@ int CursorBinaryTree< T >::make( const T & v , int p )
 template< class T >
 void CursorBinaryTree< T >::release( int n )
 {
- if( n == NIL ) return;
- release( f_N[ n ].left );
- release( f_N[ n ].right );
- f_N[ n ].used = false;
- f_N[ n ].left = f_free;                // the free list
- f_free = n;
- --f_size;
+ // a postvisit with a stack of its own, as the height may be n: each node
+ // with the number of its subtrees done
+ std::vector< std::pair< int , int > > S;
+ if( n != NIL ) S.emplace_back( n , 0 );
+ while( ! S.empty() ) {
+  const int u = S.back().first;
+  const int k = S.back().second++;
+  if( k < 2 ) {
+   const int c = k == 0 ? f_N[ u ].left : f_N[ u ].right;
+   if( c != NIL ) S.emplace_back( c , 0 );
+   continue;
+   }
+  S.pop_back();
+  f_N[ u ].used = false;
+  f_N[ u ].left = f_free;               // the free list
+  f_free = u;
+  --f_size;
+  }
  }
 
 template< class T >
@@ -216,10 +234,23 @@ int CursorBinaryTree< T >::copy( const CursorBinaryTree & t , int s , int p )
 {
  if( s == NIL ) return( NIL );
  const int n = make( t.node( s ).value , p );
- const int l = copy( t , t.f_N[ s ].left , n );
- const int r = copy( t , t.f_N[ s ].right , n );
- f_N[ n ].left = l;
- f_N[ n ].right = r;
+ // a previsit with a stack of its own, as the height may be n: each node
+ // of t to copy with the copy of its parent and the side, left (0) or
+ // right (1); places only, as make() may move the nodes, and t may be
+ // this tree
+ struct Item { int from , parent , side; };
+ std::vector< Item > S;
+ if( t.f_N[ s ].right != NIL ) S.push_back( Item{ t.f_N[ s ].right , n , 1 } );
+ if( t.f_N[ s ].left != NIL ) S.push_back( Item{ t.f_N[ s ].left , n , 0 } );
+ while( ! S.empty() ) {
+  const Item x = S.back();
+  S.pop_back();
+  const int c = make( t.f_N[ x.from ].value , x.parent );
+  ( x.side == 0 ? f_N[ x.parent ].left : f_N[ x.parent ].right ) = c;
+  const int l = t.f_N[ x.from ].left , r = t.f_N[ x.from ].right;
+  if( r != NIL ) S.push_back( Item{ r , c , 1 } );
+  if( l != NIL ) S.push_back( Item{ l , c , 0 } );
+  }
  return( n );
  }
 

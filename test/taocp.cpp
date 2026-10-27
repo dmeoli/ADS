@@ -63,6 +63,8 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -267,6 +269,33 @@ void stringDictionary( D & T , unsigned seed )
    if( kv.first.compare( 0 , p.size() , p ) == 0 ) want.push_back( kv.first );
   CHECK( T.keysWithPrefix( p ) == want );
   }
+ }
+
+// a splay tree whose values have no default constructor, which none of
+// its operations asks for: the lookups on the empty tree, of a key there
+// and of one missing, the insertions, a value replaced, the removals of a
+// key there and of one missing, the visit and the iterators in order
+ADS_TEST( "splay-tree-values" )
+{
+ struct Tag {
+  explicit Tag( int x ) : v( x ) {}
+  int v;
+  };
+ static_assert( ! std::is_default_constructible_v< Tag > );
+ using Pairs = std::vector< std::pair< int , int > >;
+ SplayTree< int , Tag > S;
+ CHECK( ! S.lookup( 1 ) );
+ for( int k : { 5 , 2 , 8 , 1 , 9 , 3 } ) S.insert( k , Tag( 10 * k ) );
+ CHECK( ( S.lookup( 8 )->v == 80 ) && ( S.root() == 8 ) );
+ CHECK( ! S.lookup( 4 ) && ( S.size() == 6 ) );
+ S.insert( 2 , Tag( 7 ) );
+ S.remove( 5 );
+ S.remove( 6 );
+ Pairs P , Q;
+ S.forEach( [ & ]( int k , const Tag & t ) { P.emplace_back( k , t.v ); } );
+ for( const auto & [ k , t ] : S ) Q.emplace_back( k , t.v );
+ CHECK( ( P == Pairs( { { 1 , 10 } , { 2 , 7 } , { 3 , 30 } , { 8 , 80 } ,
+                        { 9 , 90 } } ) ) && ( Q == P ) && ( S.size() == 5 ) );
  }
 
 // the tries on random words (above), the compact trie of seven long keys,

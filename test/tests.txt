@@ -379,6 +379,7 @@ beyond  cursor-binary-tree  albero binario a cursori
 beyond  cursor-tree         albero ordinato a cursori
 beyond  preorder-array-tree albero ordinato su vettore in preordine
 beyond  child-list-tree     albero con liste di figli
+beyond  child-list-tree-copy  copie dell'albero con liste di figli
 beyond  linked-heap         heap su albero binario a puntatori
 beyond  pointer-graph       grafo a puntatori
 beyond  multistack          k pile in un vettore
@@ -452,6 +453,7 @@ sorting  learned-sort        modello della CDF, ripiego, -0, NaN, code
 # the structures and the algorithms of Knuth's TAOCP, beyond the book
 taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme
 taocp  balanced-trees        AVL, B-tree, skip list, treap, splay
+taocp  splay-tree-values     splay tree di valori senza costruttore
 taocp  tries                 trie e Patricia
 taocp  knuth-hashing         hashing coalescente e di Brent
 taocp  bloom-filter          filtro di Bloom
@@ -699,8 +701,12 @@ lib_trees  is-red-black-tree           verifica di una colorazione Red-Black
 lib_trees  search-tree-range           chiavi di un ABR in un intervallo
 lib_trees  minimum-height-search-tree  ABR di altezza minima da un vettore
 lib_trees  from-preorder-inorder       albero dalla previsita e dall'invisita
+lib_trees  from-preorder-inorder-throwing  un confronto che lancia
 lib_trees  cartesian-binary-tree       albero cartesiano in tempo lineare
 lib_trees  heap-by-insertion           heap costruito per inserimenti
+lib_trees  deep-binary-trees           alberi binari alti un milione di nodi
+lib_trees  deep-ordered-trees          alberi ordinati alti un milione di nodi
+lib_trees  deep-expression-tree        espressioni alte un milione di operatori
 # Ferragina, Pearls of Algorithm Engineering, beyond the book
 pearls_compression  entropy                  entropie empiriche H0 e Hk
 pearls_compression  canonical-huffman-notes  Huffman canonico, figure 12.5-12.9

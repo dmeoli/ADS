@@ -211,36 +211,63 @@ template< std::totally_ordered K , class V , bool RB >
 bool SearchTree< K , V , RB >::valid( void ) const
 {
  std::size_t count = 0;
- // the black height of the subtree of u, -1 if it breaks a constraint
- auto rec = [ & ]( auto & self , const Link * u , const Link * p ,
-                   const K * lo , const K * hi ) -> long {
-  if( u == nil() )
-   return( 0 );
-  if( ( u->parent != p ) || ( ++count > f_size ) ||
-      ( u->size != 1 + u->left->size + u->right->size ) ||
-      ( lo && !( *lo < key( u ) ) ) || ( hi && !( key( u ) < *hi ) ) )
-   return( -1 );                         // the parent and the order
-  const long l = self( self , u->left , u , lo , &key( u ) ) ,
-             r = self( self , u->right , u , &key( u ) , hi );
-  if( ( l < 0 ) || ( r < 0 ) )
-   return( -1 );
-  if constexpr( RB ) {
-   if( l != r )
-    return( -1 );                        // (V4)
-   if( ( u->color == Color::RED ) && ( ( u->left->color == Color::RED ) ||
-                                       ( u->right->color == Color::RED ) ) )
-    return( -1 );                        // (V3)
-   return( l + ( u->color == Color::BLACK ) );
-   }
-  return( 0 );
-  };
  if( RB && ( ( f_root->color != Color::BLACK ) ||
              ( nil()->color != Color::BLACK ) ) )
   return( false );                       // (V1) and (V2)
  if( ( nil()->size != 0 ) || ( f_root->size != f_size ) )
   return( false );
- return( ( rec( rec , f_root , nil() , nullptr , nullptr ) >= 0 ) &&
-         ( count == f_size ) );
+ // a postvisit with a stack of its own, as the height may be n: each node
+ // with the interval of its keys, the subtrees done and the black height of
+ // the left one, h that of the last subtree done; a broken constraint ends
+ // the visit
+ struct Item { const Link * u; const K * lo , * hi; int k; long hl; };
+ std::vector< Item > S;
+ long h = 0;
+ auto enter = [ & ]( const Link * u , const Link * p , const K * lo ,
+                     const K * hi ) {
+  if( u == nil() ) {
+   h = 0;
+   return( true );
+   }
+  if( ( u->parent != p ) || ( ++count > f_size ) ||
+      ( u->size != 1 + u->left->size + u->right->size ) ||
+      ( lo && !( *lo < key( u ) ) ) || ( hi && !( key( u ) < *hi ) ) )
+   return( false );                      // the parent and the order
+  S.push_back( Item{ u , lo , hi , 0 , 0 } );
+  return( true );
+  };
+ if( ! enter( f_root , nil() , nullptr , nullptr ) )
+  return( false );
+ while( ! S.empty() ) {
+  Item & x = S.back();
+  const Link * u = x.u;
+  if( x.k == 0 ) {
+   x.k = 1;
+   if( ! enter( u->left , u , x.lo , &key( u ) ) )
+    return( false );
+   }
+  else if( x.k == 1 ) {
+   x.k = 2;
+   x.hl = h;
+   if( ! enter( u->right , u , &key( u ) , x.hi ) )
+    return( false );
+   }
+  else {
+   const long l = x.hl;
+   S.pop_back();
+   if constexpr( RB ) {
+    if( l != h )
+     return( false );                    // (V4)
+    if( ( u->color == Color::RED ) && ( ( u->left->color == Color::RED ) ||
+                                        ( u->right->color == Color::RED ) ) )
+     return( false );                    // (V3)
+    h = l + ( u->color == Color::BLACK );
+    }
+   else
+    h = 0;
+   }
+  }
+ return( count == f_size );
  }
 
 template< std::totally_ordered K , class V , bool RB >

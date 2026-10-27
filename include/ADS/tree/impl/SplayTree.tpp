@@ -52,8 +52,11 @@ auto SplayTree< K , V >::splay( Node * t , const K & k ) -> Node *
 {
  if( ! t )
   return( t );
- Node N{ k , V() };                         // the heads of the two parts
- Node * l = &N , * r = &N;
+ // the two parts and the links where they grow, the right child of the
+ // largest key of L and the left child of the smallest of R: no head node,
+ // which would need a key and a value
+ Node * L = nullptr , * R = nullptr;
+ Node ** l = &L , ** r = &R;
  for( ; ; ) {
   if( k < t->key ) {
    if( ! t->left ) break;
@@ -64,8 +67,8 @@ auto SplayTree< K , V >::splay( Node * t , const K & k ) -> Node *
     t = y;
     if( ! t->left ) break;
     }
-   r->left = t;                             // link right
-   r = t;
+   *r = t;                                  // link right
+   r = &t->left;
    t = t->left;
    }
   else if( t->key < k ) {
@@ -77,17 +80,17 @@ auto SplayTree< K , V >::splay( Node * t , const K & k ) -> Node *
     t = y;
     if( ! t->right ) break;
     }
-   l->right = t;                            // link left
-   l = t;
+   *l = t;                                  // link left
+   l = &t->right;
    t = t->right;
    }
   else
    break;
   }
- l->right = t->left;                        // assemble
- r->left = t->right;
- t->left = N.right;
- t->right = N.left;
+ *l = t->left;                              // assemble
+ *r = t->right;
+ t->left = L;
+ t->right = R;
  return( t );
  }
 

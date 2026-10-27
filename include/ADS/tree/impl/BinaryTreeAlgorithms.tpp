@@ -42,12 +42,21 @@ template< class N , class K , class Compare >
 bool keysBetween( N t , const K * lower , const K * upper ,
                     Compare & less )
 {
- if( ! t ) return( true );
- const K & k = nodeKey( t );
- if( ( lower && ! less( *lower , k ) ) || ( upper && ! less( k , *upper ) ) )
-  return( false );
- return( keysBetween( nodeLeft( t ) , lower , &k , less ) &&
-         keysBetween( nodeRight( t ) , &k , upper , less ) );
+ // a previsit with a stack of its own, as the height may be n: each
+ // subtree with the interval its ancestors leave to it
+ struct Item { N u; const K * lo , * hi; };
+ std::vector< Item > S = { Item{ t , lower , upper } };
+ while( ! S.empty() ) {
+  const Item x = S.back();
+  S.pop_back();
+  if( ! x.u ) continue;
+  const K & k = nodeKey( x.u );
+  if( ( x.lo && ! less( *x.lo , k ) ) || ( x.hi && ! less( k , *x.hi ) ) )
+   return( false );
+  S.push_back( Item{ nodeRight( x.u ) , &k , x.hi } );
+  S.push_back( Item{ nodeLeft( x.u ) , x.lo , &k } );
+  }
+ return( true );
  }
 
 /// the black height of t, the leaf nil counted, -1 if the subtree breaks
@@ -55,22 +64,60 @@ bool keysBetween( N t , const K * lower , const K * upper ,
 template< class N , class Red >
 long blackHeight( N t , Red & red )
 {
- if( ! t ) return( 1 );
- const bool r = red( t );
- const auto l = nodeLeft( t ) , q = nodeRight( t );
- if( r && ( ( l && red( l ) ) || ( q && red( q ) ) ) ) return( -1 );
- const long hl = blackHeight( l , red ) , hr = blackHeight( q , red );
- if( ( hl < 0 ) || ( hl != hr ) ) return( -1 );
- return( hl + ( r ? 0 : 1 ) );
+ // a postvisit with a stack of its own, as the height may be n: each node
+ // with its color, the subtrees done and the black height of the left one,
+ // h that of the last subtree done; a broken constraint ends the visit, as
+ // its -1 would go up to the root
+ struct Item { N u; bool r; int k; long hl; };
+ std::vector< Item > S;
+ long h = 1;
+ auto enter = [ & ]( N u ) {                // false if u breaks (V3)
+  if( ! u ) {
+   h = 1;
+   return( true );
+   }
+  const bool r = red( u );
+  const auto l = nodeLeft( u ) , q = nodeRight( u );
+  if( r && ( ( l && red( l ) ) || ( q && red( q ) ) ) ) return( false );
+  S.push_back( Item{ u , r , 0 , 0 } );
+  return( true );
+  };
+ if( ! enter( t ) ) return( -1 );
+ while( ! S.empty() ) {
+  Item & x = S.back();
+  if( x.k == 0 ) {
+   x.k = 1;
+   if( ! enter( nodeLeft( x.u ) ) ) return( -1 );
+   }
+  else if( x.k == 1 ) {
+   x.k = 2;
+   x.hl = h;
+   if( ! enter( nodeRight( x.u ) ) ) return( -1 );
+   }
+  else {
+   if( x.hl != h ) return( -1 );
+   h = x.hl + ( x.r ? 0 : 1 );
+   S.pop_back();
+   }
+  }
+ return( h );
  }
 
 /// the height of t, -1 if empty
 template< class N >
 long nodeHeight( N t )
 {
- if( ! t ) return( -1 );
- const long l = nodeHeight( nodeLeft( t ) ) , r = nodeHeight( nodeRight( t ) );
- return( 1 + ( l > r ? l : r ) );
+ long h = -1;                               // by levels, with no recursion
+ for( std::vector< N > L = { t } ; ; ++h ) {
+  std::vector< N > M;
+  for( N u : L )
+   if( u ) {
+    M.push_back( nodeLeft( u ) );
+    M.push_back( nodeRight( u ) );
+    }
+  if( M.empty() ) return( h );
+  L = std::move( M );
+  }
  }
 
 /// the range search below t, the nodes examined added to *seen
@@ -78,20 +125,28 @@ template< class N , class K , class F , class Compare >
 void rangeVisit( N t , const K & lo , const K & hi , F & f , Compare & less ,
                  std::size_t & seen )
 {
- if( ! t ) return;
- ++seen;
- const auto & k = nodeKey( t );
- if( less( k , lo ) ) {                     // all the left subtree too
-  rangeVisit( nodeRight( t ) , lo , hi , f , less , seen );
-  return;
+ // an invisit with a stack of its own, as the height may be n: a node out
+ // of the range is passed by, with its subtree on the far side of the range
+ std::vector< N > S;
+ for( ; ; ) {
+  while( t ) {
+   ++seen;
+   const auto & k = nodeKey( t );
+   if( less( k , lo ) )                     // all the left subtree too
+    t = nodeRight( t );
+   else if( less( hi , k ) )                // all the right subtree too
+    t = nodeLeft( t );
+   else {
+    S.push_back( t );
+    t = nodeLeft( t );
+    }
+   }
+  if( S.empty() ) return;
+  t = S.back();
+  S.pop_back();
+  f( t );
+  t = nodeRight( t );
   }
- if( less( hi , k ) ) {                     // all the right subtree too
-  rangeVisit( nodeLeft( t ) , lo , hi , f , less , seen );
-  return;
-  }
- rangeVisit( nodeLeft( t ) , lo , hi , f , less , seen );
- f( t );
- rangeVisit( nodeRight( t ) , lo , hi , f , less , seen );
  }
 
 /// the search tree of A[ i .. j - 1 ], its lower middle key at the root
@@ -138,10 +193,20 @@ N lowestCommonAncestor( N u , N v )
 template< KeyedBinaryNode N , KeyedBinaryNode M , class Equal >
 bool equalTrees( N t , M s , Equal eq )
 {
- if( ( ! t ) || ( ! s ) ) return( ( ! t ) && ( ! s ) );
- return( eq( detail::nodeKey( t ) , detail::nodeKey( s ) ) &&
-         equalTrees( detail::nodeLeft( t ) , detail::nodeLeft( s ) , eq ) &&
-         equalTrees( detail::nodeRight( t ) , detail::nodeRight( s ) , eq ) );
+ // the two previsits with a stack of their own, as the height may be n
+ std::vector< std::pair< N , M > > S = { { t , s } };
+ while( ! S.empty() ) {
+  const auto [ a , b ] = S.back();
+  S.pop_back();
+  if( ( ! a ) || ( ! b ) ) {
+   if( a || b ) return( false );
+   continue;
+   }
+  if( ! eq( detail::nodeKey( a ) , detail::nodeKey( b ) ) ) return( false );
+  S.emplace_back( detail::nodeRight( a ) , detail::nodeRight( b ) );
+  S.emplace_back( detail::nodeLeft( a ) , detail::nodeLeft( b ) );
+  }
+ return( true );
  }
 
 template< KeyedBinaryNode N , class Compare >
@@ -210,7 +275,8 @@ BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
  std::vector< BinaryTree< T > * > S( 1 , root.get() );   // right subtree open
  std::size_t j = 0;                                      // the next of in
  for( std::size_t i = 1 ; i < pre.size() ; ++i ) {
-  auto * t = new BinaryTree< T >( pre[ i ] );
+  std::unique_ptr< BinaryTree< T > > t(      // freed if a comparison throws
+   new BinaryTree< T >( pre[ i ] ) );
   BinaryTree< T > * last = nullptr;
   while( ( ! S.empty() ) && ( j < in.size() ) &&
          ( S.back()->read() == in[ j ] ) ) {
@@ -218,9 +284,9 @@ BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
    S.pop_back();
    ++j;
    }
-  if( last ) last->insertRight( t );
-  else S.back()->insertLeft( t );
-  S.push_back( t );
+  if( last ) last->insertRight( t.get() );
+  else S.back()->insertLeft( t.get() );
+  S.push_back( t.release() );               // now owned by root
   }
  ADS_PRE( [ & ]() {                         // the invisit is in
   std::size_t k = 0;

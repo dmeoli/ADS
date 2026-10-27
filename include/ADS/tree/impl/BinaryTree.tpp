@@ -200,14 +200,50 @@ void post_visit( BinaryTree< T > * t , F && f )
  dfs( t , none , none , f );
  }
 
+namespace detail {
+
+/// the binary tree of the values of the nodes reached from t, each one
+/// with the images of left( u ) and right( u ) as its children, made in
+/// previsit; a postvisit with a stack of its own, as the height may be n,
+/// each node hung under its parent when its subtrees are done, and freed
+/// if anything throws before
+template< class T , class U , class Left , class Right >
+BinaryTree< T > * binaryImage( const U * t , Left left , Right right )
+{
+ using B = BinaryTree< T >;
+ struct Item { const U * from; std::unique_ptr< B > to; int k; };
+ std::vector< Item > S;
+ std::unique_ptr< B > b( new B( t->read() ) );
+ S.push_back( Item{ t , std::move( b ) , 0 } );
+ for( ; ; ) {
+  Item & x = S.back();
+  if( x.k < 2 ) {                           // the next subtree, if any
+   const U * c = x.k == 0 ? left( x.from ) : right( x.from );
+   ++x.k;
+   if( c ) {
+    std::unique_ptr< B > n( new B( c->read() ) );
+    S.push_back( Item{ c , std::move( n ) , 0 } );
+    }
+   continue;
+   }
+  b = std::move( x.to );                    // done: hung under its parent
+  S.pop_back();
+  if( S.empty() ) return( b.release() );
+  if( S.back().k == 1 ) S.back().to->insertLeft( b.get() );
+  else S.back().to->insertRight( b.get() );
+  b.release();
+  }
+ }
+
+}  // end( namespace detail )
+
 template< class T >
 BinaryTree< T > * copy( const BinaryTree< T > * t )
 {
  if( ! t ) return( nullptr );
- auto b = new BinaryTree< T >( t->read() );
- if( auto l = copy( t->left() ) ) b->insertLeft( l );
- if( auto r = copy( t->right() ) ) b->insertRight( r );
- return( b );
+ return( detail::binaryImage< T >( t ,
+  []( const BinaryTree< T > * u ) { return( u->left() ); } ,
+  []( const BinaryTree< T > * u ) { return( u->right() ); } ) );
  }
 
 template< class T >
@@ -224,12 +260,9 @@ template< class T >
 BinaryTree< T > * to_binary( const Tree< T > * t )
 {
  ADS_PRE( t != nullptr );
- auto b = new BinaryTree< T >( t->read() );
- if( auto c = t->leftmostChild() )
-  b->insertLeft( to_binary( c ) );
- if( auto s = t->rightSibling() )
-  b->insertRight( to_binary( s ) );
- return( b );
+ return( detail::binaryImage< T >( t ,
+  []( const Tree< T > * u ) { return( u->leftmostChild() ); } ,
+  []( const Tree< T > * u ) { return( u->rightSibling() ); } ) );
  }
 
 namespace detail {
@@ -251,23 +284,42 @@ template< class T >
 BinaryTree< T > * readBinary( const std::vector< std::string > & L ,
                               std::size_t & i )
 {
- ADS_PRE( ( i < L.size() ) && ( L[ i ] == "(" ) );
- ++i;
- ADS_PRE( i < L.size() );
- if( L[ i ] == ")" ) {                      // ()
+ // the descent by the grammar with a stack of its own, as the height may
+ // be n: each node open with the number of its subtrees begun, hung under
+ // its parent at its ")"; the nodes freed if a contract throws
+ using B = BinaryTree< T >;
+ struct Item { std::unique_ptr< B > t; int k; };
+ std::vector< Item > S;
+ for( ; ; ) {
+  ADS_PRE( ( i < L.size() ) && ( L[ i ] == "(" ) );    // a subtree
   ++i;
-  return( nullptr );
+  ADS_PRE( i < L.size() );
+  if( L[ i ] == ")" ) {                     // ()
+   ++i;
+   if( S.empty() )
+    return( nullptr );
+   }
+  else {
+   ADS_PRE( ( L[ i ] != "(" ) );             // the value of its root
+   std::unique_ptr< B > t( new B( fromAtom< T >( L[ i++ ] ) ) );
+   S.push_back( Item{ std::move( t ) , 0 } );
+   }
+  for( ; ; ) {                              // the nodes now complete
+   if( S.back().k < 2 ) {                   // its left, then right subtree
+    ++S.back().k;
+    break;
+    }
+   ADS_PRE( ( i < L.size() ) && ( L[ i ] == ")" ) );
+   ++i;
+   std::unique_ptr< B > t = std::move( S.back().t );
+   S.pop_back();
+   if( S.empty() )
+    return( t.release() );
+   if( S.back().k == 1 ) S.back().t->insertLeft( t.get() );
+   else S.back().t->insertRight( t.get() );
+   t.release();
+   }
   }
- ADS_PRE( ( L[ i ] != "(" ) );               // the value of the root
- std::unique_ptr< BinaryTree< T > > t(       // freed if a contract throws
-  new BinaryTree< T >( fromAtom< T >( L[ i++ ] ) ) );
- if( auto * l = readBinary< T >( L , i ) )
-  t->insertLeft( l );
- if( auto * r = readBinary< T >( L , i ) )
-  t->insertRight( r );
- ADS_PRE( ( i < L.size() ) && ( L[ i ] == ")" ) );
- ++i;
- return( t.release() );
  }
 
 }  // end( namespace detail )
@@ -275,11 +327,30 @@ BinaryTree< T > * readBinary( const std::vector< std::string > & L ,
 template< class T >
 std::string to_list( const BinaryTree< T > * t )
 {
- if( ! t )
-  return( "()" );
+ // a previsit with a stack of its own, as the height may be n: each node
+ // with the number of its subtrees written
  std::ostringstream out;
- out << "( " << t->read() << " " << to_list( t->left() ) << " "
-     << to_list( t->right() ) << " )";
+ std::vector< std::pair< const BinaryTree< T > * , int > > S;
+ auto open = [ & ]( const BinaryTree< T > * u ) {
+  if( ! u )
+   out << "()";
+  else {
+   out << "( " << u->read() << " ";
+   S.emplace_back( u , 0 );
+   }
+  };
+ open( t );
+ while( ! S.empty() ) {
+  const auto [ u , k ] = S.back();
+  if( k == 2 ) {
+   S.pop_back();
+   out << " )";
+   continue;
+   }
+  S.back().second = k + 1;
+  if( k == 1 ) out << " ";
+  open( k == 0 ? u->left() : u->right() );
+  }
  return( out.str() );
  }
 

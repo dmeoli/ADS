@@ -94,6 +94,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bench/graphs.cpp: grid-bfs and grid-dijkstra, the visit in breadth and
   Dijkstra's algorithm on GridGraph against the StaticGraph of the same
   grid and the grid_graph of Boost
+- ChildListTree::insertChildTree() and insertSiblingTree(), a copy of a
+  subtree of another tree, or of the tree itself as it was before the
+  call, as first child or next sibling of a node, as in CursorTree; in the
+  test child-list-tree-copy
 - GrafiteFilter (set/GrafiteFilter.h), the range filter of Costa,
   Ferragina and Vinciguerra: a locality-preserving hash of the keys onto
   a universe of n 2^(B-2) codes kept by Elias-Fano, false positives at
@@ -1693,6 +1697,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ConcurrentCuckooTable) read them again from there at each key, which
   made its lookups look slower than they are and scale worse; the count
   is on lines of its own, and the loop copies what it reads
+- the copies, the lists and the visits of the trees run on stacks of
+  their own, as they went as many calls deep as the tree is high and
+  exhausted the stack of the thread on paths of 10^5 nodes: copy(),
+  join(), to_list(), from_list() and to_binary() of BinaryTree, copy(),
+  to_list() and tree_from_list() of Tree, the visits, the copies of
+  subtrees, the removals and the invariants of CursorTree, ChildListTree
+  and CursorBinaryTree, evaluate(), prefixForm() and infixForm() of the
+  expression trees, equalTrees(), isSearchTree(), isRedBlackTree() and
+  searchTreeRange(), and the invariant of SearchTree, with the same
+  results, orders and places as before; copy() and to_binary() of
+  BinaryTree and copy() of Tree free the nodes made so far if a copy of a
+  value throws; the tests deep-binary-trees, deep-ordered-trees and
+  deep-expression-tree, on paths of 10^6 nodes
+- fromPreorderInorder() frees the node just made when a comparison of two
+  values throws before the node is hung; the test
+  from-preorder-inorder-throwing
+- SplayTree no longer asks for a default constructor of its values: the
+  top-down splay keeps where each of its two parts grows, with no head
+  node made of a key and a value; the test splay-tree-values
+- the copy and the assignment of ChildListTree give each node the
+  position of its cell in the lists of the copy: it kept the one in the
+  lists of the source, read after the source changed or was destroyed;
+  the test child-list-tree-copy
 - BucketQueue: a layer that empties and fills again with large second
   keys and few items, as the least layer of a best-first search on a large
   grid whose nodes come in batches, no longer pays the whole range of its

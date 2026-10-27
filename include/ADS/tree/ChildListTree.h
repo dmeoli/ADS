@@ -11,7 +11,8 @@
  * a node are scanned in \f$ O( 1 ) \f$ time each, which is what this
  * realization is for, and a removed subtree returns its places to a free
  * list. The operations and the visits are those of `CursorTree` [see
- * `CursorTree.h`].
+ * `CursorTree.h`], and a copy of the tree gives the nodes the positions of
+ * their cells in its own lists.
  *
  * The contracts [see `Contract.h`]: a node is a used place, and a sibling is
  * inserted next to a node that is not the root; the invariant is that the
@@ -46,6 +47,7 @@
 #include "ADS/Contract.h"
 #include "ADS/sequence/List.h"
 
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -73,6 +75,19 @@ class ChildListTree {
 
  /// a tree of one node of value \f$ v \f$
  explicit ChildListTree( const T & v );
+
+ /// a copy of `o`, whose nodes keep the positions of their cells in the
+ /// new lists, not in those of `o`, in \f$ O( n ) \f$
+ ChildListTree( const ChildListTree & o );
+
+ /// the nodes of `o`, with their lists and cells
+ ChildListTree( ChildListTree && o ) noexcept = default;
+
+ /// a copy of `o`, as the copy constructor
+ ChildListTree & operator=( const ChildListTree & o );
+
+ /// the nodes of `o`, with their lists and cells
+ ChildListTree & operator=( ChildListTree && o ) noexcept = default;
 
  /// true if the tree has no node
  [[nodiscard]] bool empty( void ) const;
@@ -140,6 +155,34 @@ class ChildListTree {
  /// \pre \f$ n \f$ is a node other than the root
  int insertSibling( int n , const T & v );
 
+ /// a copy of the subtree of \f$ t \f$ in \f$ s \f$ as the first child of
+ /// \f$ n \f$, in \f$ O( m ) \f$ for \f$ m \f$ the nodes of the subtree;
+ /// \f$ t \f$ may be this tree, copied as it was before the call
+ ///
+ /// In pseudocode (section 5.3), the copy a previsit, then linked as in
+ /// `insertChild()`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{copy}( t , s , p ) \cr
+ /// 2 & \quad c \gets \text{a new node of value } t.\mathrm{read}( s )
+ ///     \text{ under } p \cr
+ /// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } s \text{ in }
+ ///     t \text{, in order}\ \textbf{do} \cr
+ /// 4 & \qquad x \gets \mathrm{copy}( t , u , c );\ N[ x ].\mathit{where}
+ ///     \gets C_c.\mathrm{insert}( \text{after the last cell} , x ) \cr
+ /// 5 & \quad \textbf{return}\ c
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ n \f$ is a node, \f$ s \f$ a node of \f$ t \f$
+ int insertChildTree( int n , const ChildListTree & t , int s );
+
+ /// a copy of the subtree of \f$ t \f$ in \f$ s \f$ as the next sibling of
+ /// \f$ n \f$, as `insertChildTree()` after the cell of \f$ n \f$;
+ /// \f$ t \f$ may be this tree, copied as it was before the call
+ /// \pre \f$ n \f$ is a node other than the root, \f$ s \f$ a node of
+ ///      \f$ t \f$
+ int insertSiblingTree( int n , const ChildListTree & t , int s );
+
  /// removes the subtree of \f$ n \f$, detached from its parent in
  /// \f$ O( 1 ) \f$ by the position of its cell, its places back to the free
  /// list
@@ -174,6 +217,10 @@ class ChildListTree {
  /// a new node of value \f$ v \f$ under \f$ p \f$, not yet in a list of
  /// children
  int make( const T & v , int p );
+
+ /// a copy of the node \f$ s \f$ of \f$ t \f$, with its children, under
+ /// \f$ p \f$, not yet in a list of children
+ int copy( const ChildListTree & t , int s , int p );
 
  /// frees \f$ n \f$ and its subtree
  void release( int n );

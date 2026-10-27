@@ -71,45 +71,107 @@ inline double evaluate( const BinaryTree< std::string > * t ,
                         const std::map< std::string , double > & env )
 {
  ADS_PRE( t != nullptr );
- const std::string & v = t->read();
- if( ! detail::isBinaryOperator( v ) ) {     // a leaf
-  const std::size_t s = ( ( v[ 0 ] == '-' ) || ( v[ 0 ] == '+' ) ) &&
-                        ( v.size() > 1 ) ? 1 : 0;   // a sign, then a number
-  if( ( ( v[ s ] >= '0' ) && ( v[ s ] <= '9' ) ) || ( v[ s ] == '.' ) )
-   return( std::stod( v ) );
-  const auto it = env.find( v );
-  ADS_PRE( it != env.end() );               // a value for the variable
-  return( it->second );
+ // a postvisit with a stack of its own, as the height may be n: each node
+ // with whether its subtrees are done, whose values are then on V
+ using B = BinaryTree< std::string >;
+ std::vector< std::pair< const B * , bool > > S = { { t , false } };
+ std::vector< double > V;
+ while( ! S.empty() ) {
+  const auto [ u , done ] = S.back();
+  S.pop_back();
+  ADS_PRE( u != nullptr );                  // an operator has two children
+  const std::string & v = u->read();
+  if( ! detail::isBinaryOperator( v ) ) {   // a leaf
+   const std::size_t s = ( ( v[ 0 ] == '-' ) || ( v[ 0 ] == '+' ) ) &&
+                         ( v.size() > 1 ) ? 1 : 0;  // a sign, then a number
+   if( ( ( v[ s ] >= '0' ) && ( v[ s ] <= '9' ) ) || ( v[ s ] == '.' ) )
+    V.push_back( std::stod( v ) );
+   else {
+    const auto it = env.find( v );
+    ADS_PRE( it != env.end() );             // a value for the variable
+    V.push_back( it->second );
+    }
+   continue;
+   }
+  if( ! done ) {                            // the left subtree first
+   S.emplace_back( u , true );
+   S.emplace_back( u->right() , false );
+   S.emplace_back( u->left() , false );
+   continue;
+   }
+  const double b = V.back();
+  V.pop_back();
+  const double a = V.back();
+  V.pop_back();
+  switch( v[ 0 ] ) {
+   case( '+' ): V.push_back( a + b ); break;
+   case( '-' ): V.push_back( a - b ); break;
+   case( '*' ): V.push_back( a * b ); break;
+   case( '^' ): V.push_back( std::pow( a , b ) ); break;
+   default:
+    ADS_PRE( b != 0 );
+    V.push_back( a / b );
+   }
   }
- const double a = evaluate( t->left() , env ) ,
-              b = evaluate( t->right() , env );
- switch( v[ 0 ] ) {
-  case( '+' ): return( a + b );
-  case( '-' ): return( a - b );
-  case( '*' ): return( a * b );
-  case( '^' ): return( std::pow( a , b ) );
-  default:
-   ADS_PRE( b != 0 );
-   return( a / b );
-  }
+ return( V.back() );
  }
 
 inline std::string prefixForm( const BinaryTree< std::string > * t )
 {
  ADS_PRE( t != nullptr );
- std::string s = "(" + t->read();
- if( t->left() ) s += prefixForm( t->left() );
- if( t->right() ) s += prefixForm( t->right() );
- return( s + ")" );
+ // a previsit with a stack of its own, as the height may be n: a node, or
+ // nil for the ")" that closes the subtree below it
+ using B = BinaryTree< std::string >;
+ std::string s;
+ std::vector< const B * > S = { t };
+ while( ! S.empty() ) {
+  const B * u = S.back();
+  S.pop_back();
+  if( ! u ) {
+   s += ")";
+   continue;
+   }
+  s += "(" + u->read();
+  S.push_back( nullptr );
+  if( u->right() ) S.push_back( u->right() );
+  if( u->left() ) S.push_back( u->left() );
+  }
+ return( s );
  }
 
 inline std::string infixForm( const BinaryTree< std::string > * t )
 {
  ADS_PRE( t != nullptr );
- if( ! t->left() )
-  return( t->read() );
- return( "( " + infixForm( t->left() ) + " " + t->read() + " " +
-         infixForm( t->right() ) + " )" );
+ // an invisit with a stack of its own, as the height may be n: each node
+ // with the number of its parts written, "( " and the left subtree, the
+ // operator and the right subtree, " )"
+ using B = BinaryTree< std::string >;
+ std::string s;
+ std::vector< std::pair< const B * , int > > S = { { t , 0 } };
+ while( ! S.empty() ) {
+  const B * u = S.back().first;
+  const int k = S.back().second++;
+  if( k == 0 ) {
+   ADS_PRE( u != nullptr );
+   if( ! u->left() ) {                      // a leaf
+    s += u->read();
+    S.pop_back();
+    }
+   else {
+    s += "( ";
+    S.emplace_back( u->left() , 0 );
+    }
+   }
+  else if( k == 1 ) {
+   s += " " + u->read() + " ";
+   S.emplace_back( u->right() , 0 );
+   }
+  else {
+   s += " )";
+   S.pop_back();
+   }
+  }
+ return( s );
  }
 
 /*--------------------------------------------------------------------------*/

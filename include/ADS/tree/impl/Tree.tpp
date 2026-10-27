@@ -204,16 +204,38 @@ template< class T >
 Tree< T > * copy( const Tree< T > * t )
 {
  ADS_PRE( t != nullptr );
- auto c = new Tree< T >( t->read() );
- Tree< T > * last = nullptr;
- for( auto u = t->leftmostChild() ; u ; u = u->rightSibling() ) {
-  Tree< T > * x = copy( u );
-  if( last ) last->insertSibling( x );
-  else c->insertChild( x );
-  last = x;
+ // a previsit with a stack of its own, as the height may be n: each node
+ // with its copy, its next child to copy and the last child copied; a copy
+ // is hung under its parent when its subtree is done, and the copies not
+ // yet hung are freed if anything throws
+ struct Item {
+  const Tree< T > * from;
+  std::unique_ptr< Tree< T > > to;
+  const Tree< T > * next;
+  Tree< T > * last;
+  };
+ std::vector< Item > S;
+ std::unique_ptr< Tree< T > > c( new Tree< T >( t->read() ) );
+ S.push_back( Item{ t , std::move( c ) , t->leftmostChild() , nullptr } );
+ for( ; ; ) {
+  Item & x = S.back();
+  if( const Tree< T > * u = x.next ) {
+   x.next = u->rightSibling();
+   std::unique_ptr< Tree< T > > y( new Tree< T >( u->read() ) );
+   S.push_back( Item{ u , std::move( y ) , u->leftmostChild() , nullptr } );
+   continue;
+   }
+  c = std::move( x.to );
+  S.pop_back();
+  if( S.empty() )
+   break;
+  Item & p = S.back();
+  if( p.last ) p.last->insertSibling( c.get() );
+  else p.to->insertChild( c.get() );
+  p.last = c.release();
   }
  ADS_POST( c->parent() == nullptr );
- return( c );
+ return( c.release() );
  }
 
 template< class T >
@@ -256,11 +278,22 @@ template< class T >
 std::string to_list( const Tree< T > * t )
 {
  ADS_PRE( t != nullptr );
+ // a previsit with a stack of its own, as the height may be n: the next
+ // child to write of each node open
  std::ostringstream out;
  out << "( " << t->read();
- for( auto * c = t->leftmostChild() ; c ; c = c->rightSibling() )
-  out << " " << to_list( c );
- out << " )";
+ std::vector< const Tree< T > * > S = { t->leftmostChild() };
+ while( ! S.empty() ) {
+  if( const Tree< T > * c = S.back() ) {
+   S.back() = c->rightSibling();
+   out << " ( " << c->read();
+   S.push_back( c->leftmostChild() );
+   }
+  else {
+   S.pop_back();
+   out << " )";
+   }
+  }
  return( out.str() );
  }
 
@@ -270,27 +303,38 @@ namespace detail {
 template< class T >
 Tree< T > * readTree( const std::vector< std::string > & L , std::size_t & i )
 {
- ADS_PRE( ( i + 1 < L.size() ) && ( L[ i ] == "(" ) &&
-          ( L[ i + 1 ] != "(" ) && ( L[ i + 1 ] != ")" ) );
- std::istringstream in( L[ i + 1 ] );
- T v{};
- in >> v;
- ADS_PRE( ! in.fail() &&                     // all the atom, e.g., not 8x
-          ( in.peek() == std::char_traits< char >::eof() ) );
- std::unique_ptr< Tree< T > > t( new Tree< T >( v ) );   // freed if a
- i += 2;                                                  // contract throws
- Tree< T > * last = nullptr;
- while( ( i < L.size() ) && ( L[ i ] == "(" ) ) {
-  auto * c = readTree< T >( L , i );
-  if( last )
-   last->insertSibling( c );
+ // the descent by the grammar with a stack of its own, as the height may
+ // be n: each node open with its last child, hung under its parent at its
+ // ")"; the nodes freed if a contract throws
+ struct Item { std::unique_ptr< Tree< T > > t; Tree< T > * last; };
+ std::vector< Item > S;
+ for( ; ; ) {
+  if( S.empty() || ( ( i < L.size() ) && ( L[ i ] == "(" ) ) ) {
+   ADS_PRE( ( i + 1 < L.size() ) && ( L[ i ] == "(" ) &&
+            ( L[ i + 1 ] != "(" ) && ( L[ i + 1 ] != ")" ) );
+   std::istringstream in( L[ i + 1 ] );
+   T v{};
+   in >> v;
+   ADS_PRE( ! in.fail() &&                  // all the atom, e.g., not 8x
+            ( in.peek() == std::char_traits< char >::eof() ) );
+   std::unique_ptr< Tree< T > > t( new Tree< T >( v ) );
+   S.push_back( Item{ std::move( t ) , nullptr } );
+   i += 2;
+   continue;
+   }
+  ADS_PRE( ( i < L.size() ) && ( L[ i ] == ")" ) );
+  ++i;
+  std::unique_ptr< Tree< T > > c = std::move( S.back().t );
+  S.pop_back();
+  if( S.empty() )
+   return( c.release() );
+  Item & p = S.back();
+  if( p.last )
+   p.last->insertSibling( c.get() );
   else
-   t->insertChild( c );
-  last = c;
+   p.t->insertChild( c.get() );
+  p.last = c.release();
   }
- ADS_PRE( ( i < L.size() ) && ( L[ i ] == ")" ) );
- ++i;
- return( t.release() );
  }
 
 /// the tokens of a parenthesized list: "(", ")" and the atoms between them

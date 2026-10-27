@@ -188,18 +188,25 @@ auto CursorTree< T >::node( int n ) -> Node &
 template< class T >
 bool CursorTree< T >::linked( void ) const
 {
- int count = 0;
- auto rec = [ & ]( auto & self , int n , int p ) -> bool {
-  for( ; n != NIL ; n = f_N[ n ].sibling ) {
-   if( ( n < 0 ) || ( n >= int( f_N.size() ) ) || ! f_N[ n ].used ||
-       ( f_N[ n ].parent != p ) || ( ++count > f_size ) ||
-       ! self( self , f_N[ n ].child , n ) )
+ // a previsit with a stack of its own, as the height may be n: each node
+ // with the parent it must have; more than n nodes met is a cycle
+ int count = 0 , met = 0;
+ std::vector< std::pair< int , int > > S;
+ if( f_root != NIL )                        // the root, not its siblings
+  S.emplace_back( f_root , NIL );
+ while( ! S.empty() ) {
+  const auto [ n , p ] = S.back();
+  S.pop_back();
+  if( ( n < 0 ) || ( n >= int( f_N.size() ) ) || ! f_N[ n ].used ||
+      ( f_N[ n ].parent != p ) || ( ++count > f_size ) )
+   return( false );
+  for( int c = f_N[ n ].child ; c != NIL ; c = f_N[ c ].sibling ) {
+   if( ( c < 0 ) || ( c >= int( f_N.size() ) ) || ( ++met > f_size ) )
     return( false );
-   if( p == NIL ) break;                 // the root has no siblings
+   S.emplace_back( c , n );
    }
-  return( true );
-  };
- return( rec( rec , f_root , NIL ) && ( count == f_size ) );
+  }
+ return( count == f_size );
  }
 
 template< class T >
@@ -228,11 +235,19 @@ void CursorTree< T >::free_node( int n )
 template< class T >
 void CursorTree< T >::release_children( int n )
 {
- for( int u = f_N[ n ].child ; u != NIL ; ) {
-  const int next = f_N[ u ].sibling;
-  release_children( u );
-  free_node( u );
-  u = next;
+ // a postvisit with a stack of its own, as the height may be n: each node
+ // with its next child, read before the place of a child is freed
+ std::vector< std::pair< int , int > > S = { { n , f_N[ n ].child } };
+ while( ! S.empty() ) {
+  const int u = S.back().second;
+  if( u != NIL ) {
+   S.back().second = f_N[ u ].sibling;
+   S.emplace_back( u , f_N[ u ].child );
+   continue;
+   }
+  const int x = S.back().first;
+  S.pop_back();
+  if( x != n ) free_node( x );
   }
  }
 
@@ -240,12 +255,23 @@ template< class T >
 int CursorTree< T >::copy( const CursorTree & t , int s , int p )
 {
  const int n = make( t.node( s ).value , p );
- int last = NIL;
- for( int u = t.f_N[ s ].child ; u != NIL ; u = t.f_N[ u ].sibling ) {
-  const int c = copy( t , u , n );
-  if( last == NIL ) f_N[ n ].child = c;
-  else f_N[ last ].sibling = c;
-  last = c;
+ // a previsit with a stack of its own, as the height may be n: each copy
+ // with the next child of its original and its last child copied; places
+ // only, as make() may move the nodes, and t may be this tree
+ struct Item { int c , u , last; };
+ std::vector< Item > S = { Item{ n , t.f_N[ s ].child , NIL } };
+ while( ! S.empty() ) {
+  const Item x = S.back();
+  if( x.u == NIL ) {
+   S.pop_back();
+   continue;
+   }
+  S.back().u = t.f_N[ x.u ].sibling;
+  const int c = make( t.f_N[ x.u ].value , x.c );
+  if( x.last == NIL ) f_N[ x.c ].child = c;
+  else f_N[ x.last ].sibling = c;
+  S.back().last = c;
+  S.push_back( Item{ c , t.f_N[ x.u ].child , NIL } );
   }
  return( n );
  }
@@ -255,13 +281,26 @@ void CursorTree< T >::visit( int n , int i , std::vector< int > & P ,
                              int kind ) const
 {
  if( n == NIL ) return;
+ // with a stack of its own, as the height may be n: each node with its
+ // next child and the number k of its children entered
+ struct Item { int n , u , k; };
  if( kind == 0 ) P.push_back( n );
- int k = 0;
- for( int u = f_N[ n ].child ; u != NIL ; u = f_N[ u ].sibling , ++k ) {
-  if( ( kind == 2 ) && ( k == i ) ) P.push_back( n );
-  visit( u , i , P , kind );
+ std::vector< Item > S = { Item{ n , f_N[ n ].child , 0 } };
+ while( ! S.empty() ) {
+  Item & x = S.back();
+  if( x.u == NIL ) {
+   if( ( kind == 1 ) || ( ( kind == 2 ) && ( x.k <= i ) ) )
+    P.push_back( x.n );
+   S.pop_back();
+   continue;
+   }
+  if( ( kind == 2 ) && ( x.k == i ) ) P.push_back( x.n );
+  const int u = x.u;
+  x.u = f_N[ u ].sibling;
+  ++x.k;
+  if( kind == 0 ) P.push_back( u );
+  S.push_back( Item{ u , f_N[ u ].child , 0 } );
   }
- if( ( kind == 1 ) || ( ( kind == 2 ) && ( k <= i ) ) ) P.push_back( n );
  }
 
 /*--------------------------------------------------------------------------*/
