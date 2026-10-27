@@ -34,7 +34,7 @@
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  * \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the
- *      ACM 7(6), 347-348, 1964, doi:10.1145/512274.512284
+ *      ACM 7(6), 347-348, 1964, doi:10.1145/512274.3734138
  * \see D. B. Johnson, Priority queues with update and finding minimum
  *      spanning trees, Information Processing Letters 4(3), 53-57, 1975,
  *      doi:10.1016/0020-0190(75)90001-0

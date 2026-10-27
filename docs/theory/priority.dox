@@ -488,7 +488,7 @@
       section 11.5,
       https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the
-      ACM 7(6), 347-348, 1964, doi:10.1145/512274.512284
+      ACM 7(6), 347-348, 1964, doi:10.1145/512274.3734138
  \see R. W. Floyd, Algorithm 245: Treesort, Communications of the ACM
       7(12), 701, 1964, doi:10.1145/355588.365103
  \see D. B. Johnson, Priority queues with update and finding minimum
