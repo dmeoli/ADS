@@ -6,7 +6,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -18,7 +18,7 @@ namespace ADS {
 
 namespace detail {
 
-/// S is strictly increasing and a subsequence of A
+/// \f$ S \f$ is strictly increasing and a subsequence of \f$ A \f$
 template< class T >
 bool increasingSubsequence( const std::vector< T > & S ,
                             const std::vector< T > & A )

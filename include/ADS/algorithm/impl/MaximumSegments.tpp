@@ -6,7 +6,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -18,7 +18,7 @@ namespace ADS {
 
 namespace detail {
 
-/// the sum of the segment is that of its items in D
+/// the sum of the segment is that of its items in \f$ D \f$
 template< class T >
 bool segmentSum( const std::vector< T > & D , const Segment< T > & S )
 {
@@ -28,7 +28,7 @@ bool segmentSum( const std::vector< T > & D , const Segment< T > & S )
  return( s == S.sum );
  }
 
-/// P[ i ] = D[ 0 ] + ... + D[ i - 1 ], P[ 0 ] = 0
+/// \f$ P[ i ] = D[ 0 ] + \cdots + D[ i - 1 ] \f$, \f$ P[ 0 ] = 0 \f$
 template< class T >
 std::vector< T > prefixSums( const std::vector< T > & D )
 {

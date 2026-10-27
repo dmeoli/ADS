@@ -1,0 +1,350 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File algorithm.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_algorithm */
+/** \defgroup theory_algorithm Theory of other algorithms
+ \ingroup area_algorithm
+
+ \details The headers of `include/ADS/algorithm` collect the tools of the
+ analysis of algorithms and a few algorithms that illustrate them: the
+ solution of the recurrences of section 2.9 of the book (`MasterTheorem.h`,
+ `AkraBazzi.h`), the amortized analysis of section 4.2 (`BinaryCounter.h`),
+ the elimination of the recursion of section 4.4 (`Hanoi.h`), the general
+ schemes of the techniques of design of chapters 12 to 16 (`Paradigms.h`),
+ the problems on sequences solved by a scan or by a sort
+ (`MaximumSegments.h`, `Subsequences.h`, `SequenceQueries.h`), and the
+ algorithms of Monte Carlo of chapter 17 (`MonteCarlo.h`). This page collects
+ what the headers take for granted: the notation of the orders of growth (see
+ \ref theory_algorithm_notation), the argument behind each solution of a
+ recurrence (see \ref theory_algorithm_rec), the two forms of the amortized
+ analysis (see \ref theory_algorithm_amort), and, for each family of
+ algorithms, the property on which its correctness rests and the argument
+ behind its bound (from \ref theory_algorithm_paradigms to
+ \ref theory_algorithm_mc). The pseudocode of each algorithm is instead on the
+ page of its header, in the comment of its function, together with the
+ section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_algorithm_notation Definitions and notation
+
+ The cost of an algorithm is a function \f$ T( n ) \f$ of the size \f$ n \f$ of
+ its input, and it is compared with others by its order of growth:
+ \f$ f( n ) = O( g( n ) ) \f$ if \f$ f( n ) \le c \, g( n ) \f$ for some
+ \f$ c > 0 \f$ and every \f$ n \f$ large enough,
+ \f$ f( n ) = \Omega( g( n ) ) \f$ if \f$ g( n ) = O( f( n ) ) \f$, and
+ \f$ f( n ) = \Theta( g( n ) ) \f$ if both hold (chapter 2 of the book). The
+ orders that the recurrences of the headers produce are all of the form
+ \f[
+   c^n \, n^p \, \log^q n \, ( \log \log n )^r , \tag{1}
+ \f]
+ which `Growth` of `MasterTheorem.h` stores as its four exponents, with a flag
+ for a bound that is only an upper one. Two orders (1) compare as their
+ functions do for \f$ n \f$ large, i.e., lexicographically on
+ \f$ ( c , p , q , r ) \f$, since each factor dominates any power of the
+ factors after it; this gives the hierarchy
+ \f$ 1 \prec \log n \prec n \prec n \log n \prec n^2 \prec 2^n \f$, and leaves
+ out the orders, such as \f$ n^{\log n} \f$, that lie between two families.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ T( n ) \f$</td>
+     <td>the cost of an algorithm on an input of size \f$ n \f$, defined by a
+         recurrence</td></tr>
+ <tr><td>\f$ a \f$, \f$ b \f$, \f$ \alpha = \log_b a \f$</td>
+     <td>the number of the subproblems, the factor by which each one is
+         smaller, and the exponent that their number and size give</td></tr>
+ <tr><td>\f$ \beta \f$, \f$ k \f$</td>
+     <td>the exponents of the cost \f$ \Theta( n^\beta \log^k n ) \f$ of the
+         division and of the combination</td></tr>
+ <tr><td>\f$ \Phi \f$</td>
+     <td>a potential, a function of the state of a structure with
+         \f$ \Phi \ge \Phi_0 \f$</td></tr>
+ <tr><td>\f$ D[ 0 .. n - 1 ] \f$, \f$ P[ i ] \f$</td>
+     <td>a sequence of numbers and its prefix sums
+         \f$ P[ i ] = D[ 0 ] + \cdots + D[ i - 1 ] \f$, \f$ P[ 0 ] = 0 \f$,
+         so that the segment \f$ D[ b .. s ] \f$ sums to
+         \f$ P[ s + 1 ] - P[ b ] \f$</td></tr>
+ <tr><td>\f$ K \f$</td>
+     <td>the number of independent runs of an algorithm of Monte
+         Carlo</td></tr>
+ </table>
+
+ \section theory_algorithm_rec Recurrences
+
+ An algorithm of divide et impera that splits an instance of size \f$ n \f$
+ into \f$ a \f$ instances of size \f$ n / b \f$, and spends
+ \f$ g( n ) = \Theta( n^\beta \log^k n ) \f$ to divide and to combine, costs
+ \f[
+   T( n ) = a \, T( n / b ) + g( n ) . \tag{2}
+ \f]
+
+ <em>Theorem 1 (the master theorem).</em> With \f$ a \ge 1 \f$, \f$ b > 1 \f$
+ and \f$ \alpha = \log_b a \f$, the solution of (2) is
+ \f$ \Theta( n^\alpha ) \f$ if \f$ \beta < \alpha \f$,
+ \f$ \Theta( n^\beta \log^k n ) \f$ if \f$ \beta > \alpha \f$, and, if
+ \f$ \beta = \alpha \f$, \f$ \Theta( n^\alpha \log^{k+1} n ) \f$ for
+ \f$ k > -1 \f$, \f$ \Theta( n^\alpha \log \log n ) \f$ for \f$ k = -1 \f$ and
+ \f$ \Theta( n^\alpha ) \f$ for \f$ k < -1 \f$ (Theorems 2.2 and 2.4 of the
+ book).
+
+ Indeed, the tree of the recursion has \f$ \log_b n \f$ levels, and its level
+ \f$ j \f$ has \f$ a^j \f$ nodes of size \f$ n / b^j \f$, which cost in all
+ \f[
+   a^j \, g( n / b^j ) = \Theta\Bigl( n^\beta \bigl( a / b^\beta \bigr)^j
+   \log^k ( n / b^j ) \Bigr) . \tag{3}
+ \f]
+ If \f$ \beta < \alpha \f$, then \f$ a / b^\beta > 1 \f$ and the terms (3)
+ grow geometrically towards the leaves, whose \f$ a^{\log_b n} = n^\alpha \f$
+ nodes dominate; if \f$ \beta > \alpha \f$ they decrease geometrically and the
+ root dominates. If \f$ \beta = \alpha \f$ every level costs
+ \f$ n^\alpha \log^k( n / b^j ) \f$, and the sum over the levels is that of
+ \f$ i^k \f$ for \f$ i \f$ from 1 to \f$ \log_b n \f$, i.e.,
+ \f$ \Theta( \log^{k+1} n ) \f$ for \f$ k > -1 \f$, the harmonic
+ \f$ \Theta( \log \log n ) \f$ for \f$ k = -1 \f$, and a convergent series for
+ \f$ k < -1 \f$. The floors and the ceilings of the sizes change no order.
+ `master()` decides among the five cases, taking as an integer a value of
+ \f$ \log_b a \f$ within \f$ 10^{-12} \f$ of one, so that the rounding of the
+ logarithms does not move a recurrence from the third case to another.
+
+ When the parts have different sizes, as in
+ \f$ T( n ) = T( n / 5 ) + T( 7 n / 10 ) + n \f$ of the selection in linear
+ time, the theorem of Akra and Bazzi replaces \f$ \alpha \f$ by the unique
+ real \f$ p \f$ with
+ \f[
+   \sum_{i=1}^k a_i b_i^p = 1 , \qquad
+   T( n ) = \Theta\Bigl( n^p \Bigl( 1 + \int_1^n
+   \frac{g( u )}{u^{p+1}} \, du \Bigr) \Bigr) , \tag{4}
+ \f]
+ for \f$ T( n ) = \sum_i a_i T( b_i n ) + g( n ) \f$, \f$ a_i > 0 \f$,
+ \f$ 0 < b_i < 1 \f$. The left side of the equation is strictly decreasing in
+ \f$ p \f$, from \f$ + \infty \f$ to 0; hence its root exists and is unique,
+ and `akraBazziExponent()` brackets it by doubling and halves the bracket 200
+ times. With \f$ g( n ) = \Theta( n^\beta \log^k n ) \f$ the integral of (4)
+ gives the five cases of Theorem 1 with \f$ p \f$ for \f$ \alpha \f$
+ (`akraBazzi()`); in the example \f$ ( 1 / 5 )^p + ( 7 / 10 )^p = 1 \f$ has
+ \f$ p < 1 = \beta \f$, and the selection is linear.
+
+ The recurrences that decrease the size by a constant,
+ \f$ T( n ) = \sum_{i=1}^h a_i T( n - i ) + \Theta( n^\beta ) \f$, unfold
+ instead into a tree of depth \f$ \Theta( n ) \f$: with
+ \f$ a = \sum_i a_i = 1 \f$ it is a path of \f$ n \f$ nodes and the solution
+ is \f$ \Theta( n^{\beta + 1} ) \f$, while with \f$ a \ge 2 \f$ the tree has
+ at most \f$ a^n \f$ nodes and the solution is \f$ O( a^n n^\beta ) \f$
+ (Theorem 2.5, `linear()`). The second bound is an upper one only, since the
+ branches of different depths make the tree smaller than a full one: the
+ recurrence of Fibonacci, with \f$ a = 2 \f$, is
+ \f$ \Theta( \phi^n ) \f$, \f$ \phi = ( 1 + \sqrt 5 ) / 2 \f$.
+
+ \section theory_algorithm_amort Amortized analysis
+
+ The amortized cost of an operation is its share of the total cost of any
+ sequence of operations, which may be much less than its cost in the worst
+ case. The binary counter of \f$ k \f$ bits (`add()` of `BinaryCounter.h`)
+ is the example of section 4.2: an increment clears the ones at the bottom
+ and sets the first zero, and it changes \f$ k \f$ bits when the counter is
+ full of ones.
+
+ <em>Lemma 2 (the binary counter).</em> From a counter of zeros,
+ \f$ n \f$ increments change fewer than \f$ 2 n \f$ bits.
+
+ Indeed, by aggregation, the bit \f$ A[ i ] \f$ changes once every
+ \f$ 2^i \f$ increments, i.e., \f$ \lfloor n / 2^i \rfloor \f$ times, and
+ \f[
+   \sum_{i=0}^{k-1} \Bigl\lfloor \frac{n}{2^i} \Bigr\rfloor
+   < n \sum_{i=0}^{\infty} \frac{1}{2^i} = 2 n . \tag{5}
+ \f]
+ The same bound comes from the potential \f$ \Phi \f$, the number of ones of
+ the counter, which starts at 0 and is never negative: an increment that
+ clears \f$ d \f$ bits and sets one costs \f$ d + 1 \f$ and changes
+ \f$ \Phi \f$ by \f$ 1 - d \f$, so that its amortized cost
+ \f$ d + 1 + \Delta \Phi \f$ is 2, and the total cost is at most \f$ 2 n \f$
+ minus the final potential. The method of the potential is the one that the
+ other structures of the library use, e.g., the Fibonacci heap and the splay
+ tree, since it charges each operation by the state it leaves rather than by
+ a count over the whole sequence.
+
+ \section theory_algorithm_paradigms Recursion and the schemes of design
+
+ A recursive procedure runs on the stack of the calls, and it can be made
+ iterative by keeping that stack by hand (section 4.4). The towers of Hanoi
+ (`Hanoi.h`) move \f$ n - 1 \f$ disks to the spare peg, the largest one to
+ its place and the \f$ n - 1 \f$ disks over it, i.e.,
+ \f$ T( n ) = 2 T( n - 1 ) + 1 = 2^n - 1 \f$ moves, which is also a lower
+ bound, since the largest disk moves only once the others are all on one
+ peg. The first iterative version pushes the parameters of the first call
+ and turns the second one, which is the last action of the procedure, into a
+ change of the parameters (the elimination of a tail call); the second one
+ applies the systematic rules, which save with the parameters the label from
+ which the caller resumes, and which apply to any recursion.
+
+ The schemes of `Paradigms.h` write the techniques of chapters 12 to 16 once,
+ in terms of the parts that make them concrete. A problem of search, of
+ decision or of optimization is solved by the enumerative method when its
+ search space \f$ Z \f$, an ordered set of objects of which the admissible ones
+ are the solutions, can be listed (`enumerateSearch()`, `enumerateOptimize()`);
+ backtracking (`backtrack()`, chapter 16) lists it as the leaves of a tree of
+ partial solutions, and the pruning of a node that cannot lead to a solution
+ removes its whole subtree, which is what makes it faster than the enumeration.
+ A greedy algorithm (`greedy()`, chapter 14) fixes one component at each stage
+ and never revises it, and it is correct only for the problems where an
+ exchange argument shows that some optimum agrees with each choice (see \ref
+ theory_optimization_greedy); divide et impera (`divideEtImpera()`, chapter 12)
+ costs a recurrence such as (2). With a measure that is only partially ordered
+ the answer is the set of the maximal solutions, found by `maximal()` in
+ \f$ O( n^2 ) \f$ comparisons.
+
+ \section theory_algorithm_seq Segments and subsequences
+
+ The segment of largest sum of \f$ D \f$ (chapter 2, A Warm-up, of the Pearls
+ of Ferragina, `MaximumSegments.h`) is found by four algorithms that differ in
+ what they reuse. All the pairs \f$ ( b , s ) \f$ with the sum recomputed cost
+ \f$ \Theta( n^3 ) \f$, and with the sum extended from \f$ s - 1 \f$ to
+ \f$ s \f$ cost \f$ \Theta( n^2 ) \f$. The linear scan rests on the following.
+
+ <em>Lemma 3 (the scan of Kadane).</em> An optimal segment has no prefix of
+ negative sum; and if every prefix of \f$ D[ b .. s ] \f$ has a nonnegative
+ sum, then for each segment that starts at some \f$ b' \in ( b , s ] \f$ the
+ one that starts at \f$ b \f$ and ends at the same place has a sum at least
+ as large (two properties proved in that chapter).
+
+ Indeed, removing a prefix of negative sum would increase the sum, and
+ extending a segment that starts at \f$ b' \f$ back to \f$ b \f$
+ adds the prefix \f$ D[ b .. b' - 1 ] \f$, whose sum is not negative. Hence
+ the scan of `maxSumSegment()` keeps the sum of the current segment, restarts
+ it after the place where it becomes negative, and compares it with the best
+ one at each step: \f$ O( n ) \f$ time, one pass over the array, and
+ \f$ \lceil n / B \rceil \f$ transfers in a memory of blocks of \f$ B \f$
+ items, whatever \f$ B \f$. Equivalently, the best segment ending in
+ \f$ s \f$ is \f$ P[ s + 1 ] - \min_{b \le s} P[ b ] \f$, with the minimum
+ carried along the scan (`maxSumSegmentPrefix()`); with the length bounded
+ to \f$ [ L , U ] \f$ the minimum is over a window of starts that slides to
+ the right, which a deque of starts of increasing \f$ P \f$ gives in
+ \f$ O( 1 ) \f$ amortized, since each start enters and leaves it once
+ (`maxSumSegmentLength()`).
+
+ The longest segment of sum at least \f$ t \f$ (`longestSegmentAtLeast()`)
+ walks, for each end \f$ i \f$, only the starts that could lengthen the best
+ segment so far, of length \f$ \ell \f$: they lie left of \f$ i - \ell \f$, and
+ among them only the leftmost minima of \f$ P \f$ count, since a start with a
+ larger \f$ P \f$ to the right of a smaller one is worse in both respects. The
+ chain of those minima, followed from the right, has increasing prefix sums as
+ it moves left; the walk
+ stops at the first start that fails, and each step past the first one
+ lengthens the best segment by one at least. Hence the steps are at most
+ \f$ 2 n \f$ in all. The segment of largest average with a length at least
+ \f$ L \f$ is a question of slopes: the average of \f$ D[ x .. i - 1 ] \f$ is
+ the slope of the segment from \f$ ( x , P[ x ] ) \f$ to
+ \f$ ( i , P[ i ] ) \f$, and the best \f$ x \f$ is the point of tangency from
+ \f$ ( i , P[ i ] ) \f$ to the lower convex hull of the admissible starts, kept
+ by the monotone chain and searched by bisection (`maxDensitySegment()`,
+ \f$ O( n \log n ) \f$).
+
+ The longest increasing subsequence of `Subsequences.h` follows the dynamic
+ programming of chapter 13 in \f$ O( n^2 ) \f$, with \f$ L[ i ] \f$ the
+ longest one that ends in \f$ A[ i ] \f$, and the bound falls to
+ \f$ O( n \log n ) \f$ by the following invariant of `lisLength()`: after
+ each item,
+ \f[
+   \mathit{tails}[ \ell ] = \min\{ \text{the last item of an increasing }
+   \text{subsequence of } \ell + 1 \text{ items} \} , \tag{6}
+ \f]
+ a strictly increasing vector, so that the new item \f$ a \f$ extends the
+ longest subsequence whose last item is below \f$ a \f$, found by binary
+ search, and replaces the next entry. Finally, the questions of
+ `SequenceQueries.h` reduce to a sort: the smaller items on the right of each
+ one are counted by mergesort, since when an item of the left half is output
+ the items of the right half already output are exactly the smaller ones on
+ its right; and two sets of points on a line are matched at least cost in
+ sorted order, since for \f$ h_1 \le h_2 \f$ and \f$ l_1 \le l_2 \f$ one has
+ \f[
+   | h_1 - l_1 | + | h_2 - l_2 | \le | h_1 - l_2 | + | h_2 - l_1 | , \tag{7}
+ \f]
+ and any crossing of an optimal matching can be undone by an exchange.
+
+ \section theory_algorithm_mc Monte Carlo algorithms
+
+ An algorithm of Monte Carlo always ends within its bound, and it may answer
+ wrongly with a probability bounded over its random choices, not over the
+ inputs (chapter 17 of the book). The three algorithms of `MonteCarlo.h` have
+ a one-sided error or an error that \f$ K \f$ runs reduce exponentially.
+
+ <em>Lemma 4 (Schwartz and Zippel).</em> A nonzero polynomial of total degree
+ \f$ d \f$ in \f$ n \f$ variables vanishes at a point drawn uniformly from
+ \f$ S^n \f$ with probability at most \f$ d / |S| \f$.
+
+ Indeed, for one variable a nonzero polynomial of degree \f$ d \f$ has at most
+ \f$ d \f$ roots, and the general case follows by induction on \f$ n \f$,
+ writing the polynomial as one in \f$ x_1 \f$ whose leading coefficient is a
+ polynomial of the other variables. Hence `zeroPolynomial()`, with
+ \f$ S = \{ 1 , \ldots , 2 d \} \f$, errs with probability at most
+ \f$ 1 / 2 \f$ per run, and only when it answers zero; \f$ K \f$ independent
+ runs leave at most \f$ 2^{-K} \f$. The algorithm of Freivalds
+ (`freivalds()`, exercise 17.4) is the same argument for the matrix
+ \f$ M = A B - C \f$: if a row \f$ m \f$ of \f$ M \f$ is not zero, say
+ \f$ m_j \ne 0 \f$, then for each choice of the other signs of \f$ x \f$ at
+ most one of the two signs of \f$ x_j \f$ gives \f$ m \cdot x = 0 \f$, so that
+ \f$ M x = 0 \f$ with probability at most \f$ 1 / 2 \f$, and each run costs
+ three products of a matrix and a vector, \f$ O( n^2 ) \f$, against the
+ product of two matrices. Last, `halfSatisfiable()` (exercise 17.5) estimates
+ the fraction of the satisfying assignments by \f$ K \f$ samples; if it is
+ \f$ 1 / 2 + \epsilon \f$, the bound of Hoeffding gives
+ \f[
+   \Pr\Bigl[ \frac{Y}{K} \le \frac{1}{2} \Bigr] \le e^{-2 K \epsilon^2} ,
+   \tag{8}
+ \f]
+ \f$ Y \f$ the number of the true samples, and symmetrically below; the error
+ is two-sided, and \f$ K \f$ must grow as \f$ 1 / \epsilon^2 \f$.
+
+ <table>
+ <caption>The algorithms of Monte Carlo and their errors</caption>
+ <tr><th>Function</th><th>Error</th><th>Probability of error</th>
+     <th>Time</th></tr>
+ <tr><td><tt>zeroPolynomial()</tt></td><td>one-sided, on zero</td>
+     <td>\f$ 2^{-K} \f$</td><td>\f$ K \f$ evaluations</td></tr>
+ <tr><td><tt>freivalds()</tt></td><td>one-sided, on equal</td>
+     <td>\f$ 2^{-K} \f$</td><td>\f$ O( K n^2 ) \f$</td></tr>
+ <tr><td><tt>halfSatisfiable()</tt></td><td>two-sided</td>
+     <td>\f$ e^{-2 K \epsilon^2} \f$</td><td>\f$ K \f$ evaluations</td></tr>
+ </table>
+
+ \section theory_algorithm_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 2, 4, 12 to
+      17, https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapter 2 (A Warm-up), doi:10.1017/9781009128933
+ \see M. Akra, L. Bazzi, On the solution of linear recurrence equations,
+      Computational Optimization and Applications 10(2), 195-210, 1998,
+      doi:10.1023/A:1018373005182
+ \see T. Leighton, Notes on better master theorems for divide-and-conquer
+      recurrences, MIT, 1996
+ \see J. Bentley, Programming pearls: algorithm design techniques,
+      Communications of the ACM 27(9), 865-873, 1984,
+      doi:10.1145/358234.381162
+ \see Y.-L. Lin, T. Jiang, K.-M. Chao, Efficient algorithms for locating
+      the length-constrained heaviest segments with applications to
+      biomolecular sequence analysis, Journal of Computer and System
+      Sciences 65(3), 570-586, 2002, doi:10.1016/S0022-0000(02)00010-7
+ \see M. H. Goldwasser, M.-Y. Kao, H.-I. Lu, Linear-time algorithms for
+      computing maximum-density sequence segments with bioinformatics
+      applications, Journal of Computer and System Sciences 70(2),
+      128-144, 2005, doi:10.1016/j.jcss.2004.08.001
+ \see M. L. Fredman, On computing the length of longest increasing
+      subsequences, Discrete Mathematics 11(1), 29-35, 1975,
+      doi:10.1016/0012-365X(75)90103-X
+ \see J. T. Schwartz, Fast probabilistic algorithms for verification of
+      polynomial identities, Journal of the ACM 27(4), 701-717, 1980,
+      doi:10.1145/322217.322225
+ \see R. Zippel, Probabilistic algorithms for sparse polynomials,
+      EUROSAM 1979, LNCS 72, 216-226, 1979, doi:10.1007/3-540-09519-5_73
+ \see R. Freivalds, Probabilistic machines can use less running time,
+      IFIP Congress 1977, 839-842
+ \see W. Hoeffding, Probability inequalities for sums of bounded random
+      variables, Journal of the American Statistical Association
+      58(301), 13-30, 1963, doi:10.1080/01621459.1963.10500830
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File algorithm.dox -------------------------*/
+/*--------------------------------------------------------------------------*/

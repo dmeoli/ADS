@@ -7,7 +7,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -19,7 +19,8 @@ namespace ADS {
 
 namespace detail {
 
-/// the length b - a of a <= b, on the unsigned type for the integers
+/// the length \f$ b - a \f$ of \f$ a \le b \f$, on the unsigned type for
+/// the integers
 template< class T >
 auto gapSpan( const T & a , const T & b )
 {
