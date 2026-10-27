@@ -74,7 +74,7 @@ void IntervalTree< T >::remove( const T & a , const T & b )
 template< std::totally_ordered T >
 bool IntervalTree< T >::stabbed( const T & x ) const
 {
- typename MaxEnd::Value m;                 // the prefix with a <= x
+ typename MaxEnd::Value m;          // the prefix with \f$ a \le x \f$
  for( auto u = f_map.root() ; u ; )
   if( x < u->key.first )
    u = u->left;
@@ -93,7 +93,7 @@ void IntervalTree< T >::stab( const T & x , F && f ) const
 {
  using N = typename Map::Node;
  auto visit = [ & ]( auto & self , const N * u ) -> void {
-  if( ( ! u ) || ( *u->aug < x ) )       // no right end reaches x
+  if( ( ! u ) || ( *u->aug < x ) )       // no right end reaches \f$ x \f$
    return;
   self( self , u->left );
   if( x < u->key.first )                 // and neither to the right

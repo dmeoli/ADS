@@ -6,18 +6,22 @@
  \ingroup area_geometry
 
  \details The headers of `include/ADS/geometry` solve two problems on a finite
- set of points of the plane: the convex hull, which section 16.1 of the book
+ set of points of the plane and answer two kinds of queries on sets that
+ change. The problems are the convex hull, which section 16.1 of the book
  treats as an example of backtracking, and the closest pair, which the book
- does not treat and which is solved here by the divide et impera of chapter 12,
- by a sweep and by a randomized grid. This page collects what the headers take
+ does not treat and which is solved here by the divide et impera of chapter
+ 12, by a sweep and by a randomized grid; the queries are those of the
+ intervals that contain a point and of the points in a rectangle, answered by
+ two maps augmented with a summary of each subtree (`IntervalTree.h` and
+ `RangeTree.h`, beyond the book). This page collects what the headers take
  for granted: the notation and the predicate of orientation on which every
- algorithm rests (see \ref theory_geometry_notation), and, for each problem,
- the property on which the correctness of its algorithms rests, the argument
- behind their bounds and the lower bound that they meet (see \ref
- theory_geometry_hull and \ref theory_geometry_closest). The pseudocode of each
- algorithm is instead on the page of its header, in the comment of its
- function, together with the section of the book, or the paper, that it
- follows.
+ algorithm rests (see \ref theory_geometry_notation), and, for each problem
+ and each query, the property on which the correctness of its algorithms
+ rests, the argument behind their bounds and, for the problems, the lower
+ bound that they meet (from \ref theory_geometry_hull to \ref
+ theory_geometry_ranges). The pseudocode of each algorithm is instead on the
+ page of its header, in the comment of its function, together with the
+ section of the book, or the paper, that it follows.
 
  \tableofcontents
 
@@ -213,6 +217,94 @@
      \f$ O( n ) \f$ expected always</td></tr>
  </table>
 
+ \section theory_geometry_ranges Stabbing and range counting on augmented maps
+
+ Both structures are maps balanced by weight whose nodes keep, besides a key
+ and its multiplicity, the value over their subtree of a monoid
+ \f$ ( \mathcal{A} , \oplus , \mathbf{0} ) \f$,
+ \f[
+   \mathit{aug}( u ) = \mathit{aug}( u.\mathit{left} ) \oplus
+   g( \mathit{key}( u ) ) \oplus \mathit{aug}( u.\mathit{right} ) , \tag{6}
+ \f]
+ \f$ g \f$ the summary of one key and \f$ \mathit{aug} = \mathbf{0} \f$ on
+ the empty tree (the augmented maps of Sun and Blelloch, `JoinTree.h`). Every
+ change of the tree passes through its join, which recomputes (6) on the
+ nodes that it creates or rebalances; hence the augmentation costs one
+ evaluation of \f$ \oplus \f$ per node touched, i.e., a constant factor on
+ the bounds of the map when \f$ \oplus \f$ costs \f$ O( 1 ) \f$, and the
+ cost of \f$ \oplus \f$ times the nodes touched otherwise. A range of keys is
+ the disjoint union of \f$ O( \log n ) \f$ whole subtrees and single nodes,
+ those that hang from the two paths to its ends, so that the sum of the
+ augmentation over a range is read in \f$ O( \log n ) \f$ evaluations of
+ \f$ \oplus \f$.
+
+ The interval tree (`IntervalTree`) keeps the closed intervals
+ \f$ [ a , b ] \f$ ordered by \f$ ( a , b ) \f$, with \f$ g( a , b ) = b \f$
+ and \f$ \oplus = \max \f$, the identity being no interval.
+
+ <em>Lemma 3 (the stabbing query).</em> An interval of the tree contains
+ \f$ x \f$ if and only if
+ \f[
+   \max\{ b : ( a , b ) \in T ,\ a \le x \} \ge x . \tag{7}
+ \f]
+
+ Indeed, \f$ [ a , b ] \f$ contains \f$ x \f$ if and only if \f$ a \le x \f$
+ and \f$ b \ge x \f$, and the intervals with \f$ a \le x \f$ form a prefix of
+ the order, the keys up to \f$ ( x , +\infty ) \f$. The prefix is the union of
+ the left subtrees and of the nodes that the path from the root leaves on its
+ left while it searches for \f$ ( x , +\infty ) \f$, and `stabbed()` reads
+ the maximum of (7) on that path in \f$ O( \log n ) \f$. To report the
+ intervals, `stab()` visits the tree in symmetric order but enters a subtree
+ only if its \f$ \mathit{aug} \f$ is at least \f$ x \f$, and never goes right
+ of a node with \f$ a > x \f$; a subtree entered holds an interval with
+ \f$ b \ge x \f$, and either that interval has \f$ a \le x \f$ and is
+ reported, or the visit stops at the first node with \f$ a > x \f$ on the
+ path to it. Each node visited is thus on the path from the root to a
+ reported interval or to the end of the prefix, and the visit costs
+ \f$ O( \min( n , ( k + 1 ) \log n ) ) \f$ for \f$ k \f$ intervals reported,
+ against the \f$ O( \log n + k ) \f$ of the interval tree of Edelsbrunner
+ and of the priority search tree of McCreight, which are structures built
+ for this query rather than ordered maps.
+
+ The range tree (`RangeTree`) keeps the points ordered by \f$ ( x , y ) \f$,
+ with \f$ g( x , y ) \f$ the sequence \f$ ( y ) \f$ and \f$ \oplus \f$ the
+ merge of two sorted sequences, the identity being the empty one; the
+ augmentation of a node is then the sorted ordinates of its subtree, and a
+ point is in the augmentation of each of its \f$ O( \log n ) \f$ ancestors,
+ which gives the \f$ \Theta( n \log n ) \f$ space of the range tree of
+ Bentley. The points of \f$ [ x_1 , x_2 ] \times [ y_1 , y_2 ] \f$ are those
+ of the keys from \f$ ( x_1 , -\infty ) \f$ to \f$ ( x_2 , +\infty ) \f$
+ whose ordinate lies in \f$ [ y_1 , y_2 ] \f$; the range of the keys is
+ covered by \f$ O( \log n ) \f$ pieces, and in each piece two binary searches
+ on its sorted ordinates count the ordinates in \f$ [ y_1 , y_2 ] \f$, so
+ that `count()` costs
+ \f[
+   O( \log n ) \cdot O( \log n ) = O( \log^2 n ) . \tag{8}
+ \f]
+ The fractional cascading of Lueker and of Willard removes one factor
+ \f$ \log n \f$ from (8) with pointers from each sequence into those of the
+ children, which every merge would have to rebuild. The merge is not of
+ constant cost: the construction by joins of balanced halves merges each
+ point once per level, \f$ O( n \log n ) \f$ work in all, while one insertion
+ or deletion merges again the sequences of all the ancestors of its point,
+ the root's of \f$ n \f$ ordinates included, i.e., \f$ O( n ) \f$; the
+ dynamic range tree of Sun and Blelloch keeps \f$ O( \log^2 n ) \f$ per
+ update by sharing the inner trees between persistent versions.
+
+ <table>
+ <caption>The queries of the augmented maps</caption>
+ <tr><th>Structure</th><th>Augmentation</th><th>Query</th><th>Update</th>
+     <th>Space</th></tr>
+ <tr><td><tt>IntervalTree</tt></td><td>the largest right end</td>
+     <td><tt>stabbed()</tt> \f$ O( \log n ) \f$, <tt>stab()</tt>
+     \f$ O( \min( n , ( k + 1 ) \log n ) ) \f$</td>
+     <td>\f$ O( \log n ) \f$</td><td>\f$ \Theta( n ) \f$</td></tr>
+ <tr><td><tt>RangeTree</tt></td><td>the sorted ordinates</td>
+     <td><tt>count()</tt> \f$ O( \log^2 n ) \f$</td>
+     <td>\f$ O( n ) \f$; \f$ O( n \log n ) \f$ to build</td>
+     <td>\f$ \Theta( n \log n ) \f$</td></tr>
+ </table>
+
  \section theory_geometry_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 16.1,
@@ -243,6 +335,23 @@
  \see S. Khuller, Y. Matias, A simple randomized sieve algorithm for the
       closest-pair problem, Information and Computation 118(1), 34-37,
       1995, doi:10.1006/inco.1995.1049
+ \see H. Edelsbrunner, Dynamic data structures for orthogonal
+      intersection queries, Report F59, Institut für
+      Informationsverarbeitung, Technische Universität Graz, 1980
+ \see E. M. McCreight, Priority search trees, SIAM Journal on Computing
+      14(2), 257-276, 1985, doi:10.1137/0214021
+ \see J. L. Bentley, Decomposable searching problems, Information
+      Processing Letters 8(5), 244-251, 1979,
+      doi:10.1016/0020-0190(79)90117-0
+ \see J. L. Bentley, Multidimensional divide-and-conquer, Communications
+      of the ACM 23(4), 214-229, 1980, doi:10.1145/358841.358850
+ \see G. S. Lueker, A data structure for orthogonal range queries, 19th
+      Annual Symposium on Foundations of Computer Science (FOCS), 28-34,
+      1978, doi:10.1109/SFCS.1978.1
+ \see Y. Sun, G. E. Blelloch, Parallel range, segment and rectangle
+      queries with augmented maps, Proceedings of the 21st Workshop on
+      Algorithm Engineering and Experiments (ALENEX), 159-173, 2019,
+      doi:10.1137/1.9781611975499.13
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File geometry.dox --------------------------*/
