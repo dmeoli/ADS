@@ -7,14 +7,15 @@
  * two, the swap of the bytes of a word and the signed integers of 128 bits.
  * Each is the builtin of GCC and Clang where they have it, the intrinsic of
  * MSVC on x64 and ARM64 where it has one, and the arithmetic on halves of
- * 32 bits elsewhere; the signed integer of 128 bits is __int128 where the
- * compiler has it, else a pair of words in two's complement with the same
- * results wherever those of __int128 are defined. They are details of the
- * implementation, out of the documentation.
+ * 32 bits elsewhere; the signed integer of 128 bits is `__int128` where
+ * the compiler has it, else a pair of words in two's complement with the
+ * same results wherever those of `__int128` are defined. They are details of
+ * the implementation, out of the API reference, and their arithmetic is on
+ * the theory page of the area.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -52,7 +53,7 @@ namespace detail {
 
 /*--------------------------------------------------------------------------*/
 
-/// the product of 128 bits of a and b, its high half in hi
+/// the product of 128 bits of `a` and `b`, its high half in `hi`
 constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
                                      std::uint64_t & hi )
 {
@@ -83,7 +84,7 @@ constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
 
 /*--------------------------------------------------------------------------*/
 
-/// the 8 bytes of x in the reverse order
+/// the 8 bytes of `x` in the reverse order
 constexpr std::uint64_t byteSwap( std::uint64_t x )
 {
 #if defined( __GNUC__ ) || defined( __clang__ )
@@ -112,8 +113,8 @@ __extension__ typedef __int128 Int128;
 #else
 
 /// a signed integer of 128 bits in two's complement, with the sums, the
-/// differences, the products and the order of __int128 (those modulo
-/// 2^128, exact when the result fits)
+/// differences, the products and the order of `__int128` (those modulo
+/// \f$ 2^{128} \f$, exact when the result fits)
 struct Int128 {
  std::uint64_t lo = 0;                ///< the low word
  std::uint64_t hi = 0;                ///< the high word, with the sign

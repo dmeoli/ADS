@@ -4,29 +4,28 @@
 /** @file
  * The contracts of ADS: the preconditions, the postconditions and the
  * invariants of the operations, checked at run time by three macros that
- * mirror the contracts of C++26 (pre, post and contract_assert), so that
- * they can be replaced by them when the compilers support them:
+ * mirror the contracts of C++26 (`pre`, `post` and `contract_assert`), so
+ * that they can be replaced by them when the compilers support them:
  *
- * - ADS_PRE( c ), at the start of an operation, what the caller must
- *   ensure (e.g., ! empty() before deleteMin());
- * - ADS_POST( c ), at the end, what the operation ensures, when it costs
+ * - `ADS_PRE( c )`, at the start of an operation, what the caller must
+ *   ensure (e.g., `! empty()` before `deleteMin()`);
+ * - `ADS_POST( c )`, at the end, what the operation ensures, when it costs
  *   no more than the operation itself;
- * - ADS_INVARIANT( c ), at the end of the operations that change a
+ * - `ADS_INVARIANT( c )`, at the end of the operations that change a
  *   structure, its invariant (e.g., the order of a heap), which usually
- *   costs O( n ) and is meant for the tests;
- * - ADS_AUDIT( c ), a precondition or a postcondition that costs more than
- *   the operation (e.g., a sorted vector before a binary search), checked
- *   with the invariants.
+ *   costs \f$ O( n ) \f$ and is meant for the tests;
+ * - `ADS_AUDIT( c )`, a precondition or a postcondition that costs more
+ *   than the operation (e.g., a sorted vector before a binary search),
+ *   checked with the invariants.
  *
- * The level ADS_CONTRACTS chooses which are checked: 0 none, 1 the
- * preconditions (the default, 0 when NDEBUG is defined, as for assert), 2
- * also the postconditions, 3 also the invariants and the audits. A violated
- * contract throws ADS::contract_violation, a std::logic_error whose message
- * names the kind of contract, the condition, the function and the place in
- * the source. The
- * conditions are compiled at every level, so that they stay correct C++, but
- * they are not evaluated above the level chosen; hence they must have no side
- * effects.
+ * The level `ADS_CONTRACTS` chooses which are checked: 0 none, 1 the
+ * preconditions (the default, 0 when `NDEBUG` is defined, as for `assert`),
+ * 2 also the postconditions, 3 also the invariants and the audits. A
+ * violated contract throws `ADS::contract_violation`, a `std::logic_error`
+ * whose message names the kind of contract, the condition, the function and
+ * the place in the source. The conditions are compiled at every level, so
+ * that they stay correct C++, but they are not evaluated above the level
+ * chosen; hence they must have no side effects.
  *
  * \see J. Berne, T. Doumler, A. Krzemienski et al., Contracts for C++,
  *      P2900R14, ISO/IEC JTC1/SC22/WG21, 2025
@@ -35,7 +34,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -63,7 +62,7 @@
 namespace ADS {
 
 /// the level of the contracts checked: 0 none, 1 preconditions,
-/// 2 postconditions, 3 invariants and audits; 1 by default, 0 with NDEBUG
+/// 2 postconditions, 3 invariants and audits; 1 by default, 0 with `NDEBUG`
 #ifndef ADS_CONTRACTS
  #ifdef NDEBUG
   #define ADS_CONTRACTS 0
@@ -91,6 +90,8 @@ namespace detail {
 
 }  // end( namespace detail )
 
+/// the check of the condition `cond`, a contract of the kind `kind`, when
+/// `ADS_CONTRACTS` is at least `level`: `contract_violation` if it is false
 #define ADS_CONTRACT_CHECK( level , kind , cond )                         \
  do {                                                                     \
   if constexpr( ADS_CONTRACTS >= ( level ) )                              \
@@ -118,7 +119,7 @@ namespace detail {
 
 namespace detail {
 
-/// a == b if T has an equality, true otherwise: a postcondition that
+/// `a == b` if `T` has an equality, true otherwise: a postcondition that
 /// compares items does not restrict the types of the items; two items
 /// unequal to themselves (e.g., two NaN) are equal here, so that a NaN can
 /// be stored
@@ -131,7 +132,7 @@ bool equal( const T & a , const T & b )
   return( true );
  }
 
-/// a copy of x for the audits that compare a structure with itself before
+/// a copy of `x` for the audits that compare a structure with itself before
 /// the operation (e.g., the frame of a write), made only at the level 3
 template< class X >
 std::optional< X > snapshot( const X & x )

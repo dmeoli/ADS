@@ -1,0 +1,370 @@
+/*--------------------------------------------------------------------------*/
+/*------------------------------ File ADS.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_ADS */
+/** \defgroup theory_ADS Theory of the foundations
+ \ingroup area_ADS
+
+ \details The headers of `include/ADS` itself hold what the other areas take
+ for granted: the abstract data types of chapters 3 and 4 of the book as
+ concepts of C++20 (`ADT.h`), the preconditions, the postconditions and the
+ invariants that the operations check at run time (`Contract.h`), the
+ iterators that the containers share (`Iterators.h`), and the primitives of
+ the processor in one portable form (`Portable.h`). This page collects the
+ definitions behind them, i.e., what a specification of an abstract data type
+ is and what its axioms say (see \ref theory_ADS_notation and
+ \ref theory_ADS_adt), what a contract is and why each kind of contract is
+ checked at its own level (see \ref theory_ADS_contracts), and the categories
+ of the iterators with the cost of their steps (see \ref theory_ADS_iterators),
+ while the arithmetic of the portable primitives closes the page (see
+ \ref theory_ADS_portable). The algorithms of the iterators have their
+ pseudocode on the page of `Iterators.h`, in the comment of their function.
+
+ \tableofcontents
+
+ \section theory_ADS_notation Definitions and notation
+
+ A <em>specification</em> of an abstract data type is a triple
+ \f$ ( D , F , A ) \f$ (section 3.2 of the book): \f$ D \f$ is a set of
+ domains, one of which is the <em>designated</em> domain, i.e., the type being
+ defined (e.g., the stacks), and the others are the auxiliary ones (e.g., the
+ items and the booleans); \f$ F \f$ is a set of operations, each a function
+ among the domains of \f$ D \f$; \f$ A \f$ is a set of axioms, which give the
+ semantics of \f$ F \f$. The pair \f$ ( D , F ) \f$ is the <em>syntactic</em>
+ specification, which a concept of C++20 states as the names of the
+ operations and the types of their arguments and results, and \f$ A \f$ is the
+ <em>semantic</em> one, which no compiler checks. The semantics may be given
+ in two ways: (i) <em>algebraic</em>, by equations among the operations, those
+ that observe or remove written on those that construct, as in
+ \f$ \mathrm{top}( \mathrm{push}( S , v ) ) = v \f$; (ii)
+ <em>constructive</em>, by the precondition and the postcondition of each
+ operation, written in terms of a type already known (e.g., the finite
+ sequences of items). The library states (i) in the comments of `ADT.h` and
+ checks (ii) in the code, by the macros of `Contract.h`, and its tests check
+ both on every realization.
+
+ The operations are of four kinds: the <em>constructors</em>, which make a
+ value of the type (`create()`, `insert()`, `push()`); the
+ <em>modifiers</em>, which change it; the <em>observers</em>, which return a
+ property of it (`empty()`, `top()`, `read()`); the <em>iterators</em>, which
+ visit its items. A realization meets the requirement of
+ <em>abstraction</em>, i.e., a program that uses the type does not depend on
+ how it is realized, and that of <em>protection</em>, i.e., only the
+ operations of the type act on its values; hence each realization is a class
+ whose data are private, and one realization can replace another under the
+ same concept (Liskov and Zilles, Parnas).
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ ( D , F , A ) \f$</td>
+     <td>a specification: the domains, the operations and the
+         axioms</td></tr>
+ <tr><td>\f$ s_0 , \ldots , s_{n-1} \f$</td>
+     <td>the items of a SEQUENCE of length \f$ n \f$, \f$ s_i \f$ the item
+         of index \f$ i \f$</td></tr>
+ <tr><td>\f$ \mathit{pos}_i \f$</td>
+     <td>the position of \f$ s_i \f$, of the type <tt>Pos</tt> of the
+         realization, for \f$ 0 \le i < n \f$; \f$ \mathit{pos}_{-1} \f$ and
+         \f$ \mathit{pos}_n \f$ are the positions before the first item and
+         after the last one, on which <tt>finished()</tt> is true</td></tr>
+ <tr><td>\f$ \{ P \}\ \mathit{op}\ \{ Q \} \f$</td>
+     <td>a contract: if the precondition \f$ P \f$ holds when the operation
+         \f$ \mathit{op} \f$ starts, the postcondition \f$ Q \f$ holds when it
+         ends</td></tr>
+ <tr><td>\f$ I \f$</td>
+     <td>the invariant of a structure, a property of its representation that
+         holds between any two of its operations</td></tr>
+ <tr><td>\f$ h \f$</td>
+     <td>the height of a binary tree, the length of its longest path from
+         the root</td></tr>
+ <tr><td>\f$ c \f$, \f$ m \f$</td>
+     <td>the capacity of a circular vector, and the number of places of a
+         table</td></tr>
+ </table>
+
+ \section theory_ADS_adt Abstract data types and their axioms
+
+ The concepts of `ADT.h` are the five abstract data types of chapters 3 and 4
+ of the book, and the headers of the areas realize them, each in several
+ ways; the concepts state the syntactic specification, so that a function
+ template written on `Stack` takes any of the stacks of `include/ADS/stack`,
+ and the axioms below are their semantics.
+
+ <table>
+ <caption>The concepts of <tt>ADT.h</tt>, their operations and the areas that
+          realize them</caption>
+ <tr><th>Concept</th><th>Abstract type</th><th>Operations</th>
+     <th>Section of the book</th><th>Area</th></tr>
+ <tr><td><tt>Sequence</tt></td><td>SEQUENCE</td>
+     <td><tt>empty()</tt>, <tt>finished()</tt>, <tt>head()</tt>,
+         <tt>tail()</tt>, <tt>next()</tt>, <tt>prev()</tt>,
+         <tt>insert()</tt>, <tt>remove()</tt>, <tt>read()</tt>,
+         <tt>write()</tt></td><td>3.2.1</td>
+     <td><tt>include/ADS/sequence</tt></td></tr>
+ <tr><td><tt>Set</tt></td><td>SET</td>
+     <td><tt>size()</tt>, <tt>contains()</tt>, <tt>insert()</tt>,
+         <tt>remove()</tt></td><td>3.2.2</td>
+     <td><tt>include/ADS/set</tt></td></tr>
+ <tr><td><tt>Dictionary</tt></td><td>DICTIONARY</td>
+     <td><tt>lookup()</tt>, <tt>insert()</tt>, <tt>remove()</tt></td>
+     <td>3.2.3</td><td><tt>include/ADS/dictionary</tt></td></tr>
+ <tr><td><tt>Stack</tt></td><td>STACK</td>
+     <td><tt>empty()</tt>, <tt>push()</tt>, <tt>pop()</tt>,
+         <tt>top()</tt></td><td>4.3.1</td>
+     <td><tt>include/ADS/stack</tt></td></tr>
+ <tr><td><tt>Queue</tt></td><td>QUEUE</td>
+     <td><tt>empty()</tt>, <tt>enqueue()</tt>, <tt>dequeue()</tt>,
+         <tt>top()</tt></td><td>4.3.1</td>
+     <td><tt>include/ADS/queue</tt></td></tr>
+ </table>
+
+ The axioms of the STACK, with \f$ \mathrm{create} \f$ the empty stack, are
+ \f[
+   \begin{array}{ll}
+   \mathrm{empty}( \mathrm{create} ) = \mathbf{true} , &
+   \mathrm{empty}( \mathrm{push}( S , v ) ) = \mathbf{false} , \cr
+   \mathrm{top}( \mathrm{push}( S , v ) ) = v , &
+   \mathrm{pop}( \mathrm{push}( S , v ) ) = S ,
+   \end{array} \tag{1}
+ \f]
+ while \f$ \mathrm{top}( \mathrm{create} ) \f$ and
+ \f$ \mathrm{pop}( \mathrm{create} ) \f$ are undefined, i.e., `top()` and
+ `pop()` are partial, with the precondition that the stack is not empty. Those
+ of the QUEUE, for \f$ Q \f$ not empty, are
+ \f[
+   \mathrm{top}( \mathrm{enqueue}( Q , v ) ) = \mathrm{top}( Q ) , \qquad
+   \mathrm{dequeue}( \mathrm{enqueue}( Q , v ) ) =
+   \mathrm{enqueue}( \mathrm{dequeue}( Q ) , v ) , \tag{2}
+ \f]
+ with \f$ \mathrm{top}( \mathrm{enqueue}( \mathrm{create} , v ) ) = v \f$ and
+ \f$ \mathrm{dequeue}( \mathrm{enqueue}( \mathrm{create} , v ) ) =
+ \mathrm{create} \f$; the difference between (1) and (2) is the whole
+ difference between the two types, since their syntactic specifications are
+ the same up to the names. Those of the SET and of the DICTIONARY define the
+ observer on each constructor, e.g., for the SET
+ \f[
+   \mathrm{contains}( x , \mathrm{insert}( y , A ) ) =
+   ( x = y ) \lor \mathrm{contains}( x , A ) , \qquad
+   \mathrm{contains}( x , \mathrm{remove}( y , A ) ) =
+   ( x \ne y ) \land \mathrm{contains}( x , A ) , \tag{3}
+ \f]
+ with \f$ \mathrm{contains}( x , \mathrm{create} ) = \mathbf{false} \f$, so
+ that inserting an item already there, or removing one that is not, leaves
+ the set as it is (the library relaxes in this way the preconditions
+ \f$ x \notin A \f$ and \f$ x \in A \f$ that some specifications state).
+
+ <em>Lemma 1 (the normal form of the stacks).</em> By (1), every stack built
+ by \f$ \mathrm{create} \f$, \f$ \mathrm{push} \f$ and \f$ \mathrm{pop} \f$,
+ each \f$ \mathrm{pop} \f$ applied to a stack not empty, is equal to a term
+ \f[
+   \mathrm{push}( \cdots \mathrm{push}( \mathrm{push}( \mathrm{create} ,
+   v_1 ) , v_2 ) \cdots , v_k ) , \quad k \ge 0 , \tag{4}
+ \f]
+ and the observers of a term (4) are known: it is empty if and only if
+ \f$ k = 0 \f$, and its top is \f$ v_k \f$.
+
+ Indeed, by induction on the number of operations of the term, a
+ \f$ \mathrm{push} \f$ applied to a term (4) is a term (4), and a
+ \f$ \mathrm{pop} \f$ applied to a term (4) with \f$ k \ge 1 \f$ is, by the
+ last axiom of (1), the term (4) of \f$ v_1 , \ldots , v_{k-1} \f$. The axioms
+ are therefore <em>sufficiently complete</em>: they decide the value of every
+ observer on every stack, which is what makes them a specification rather
+ than a list of properties (Guttag and Horning). The same holds for the queues
+ by (2), the normal form being made of \f$ \mathrm{enqueue} \f$ alone, and
+ for the sets by (3), the normal form being made of \f$ \mathrm{insert} \f$
+ alone, with distinct items in any order.
+
+ The SEQUENCE is specified in the constructive way, by its positions. As in
+ the book, \f$ \mathrm{insert}( p , v ) \f$ with \f$ p = \mathit{pos}_i \f$
+ puts \f$ v \f$ at the index \f$ i \f$, the old items from the index \f$ i \f$
+ moving one place on, and returns the position of the new item, while
+ \f$ \mathrm{remove}( p ) \f$ with \f$ p = \mathit{pos}_i \f$ removes the item
+ of index \f$ i \f$ and returns the position of the new item of index
+ \f$ i \f$; hence the axioms
+ \f[
+   \mathrm{read}( \mathrm{insert}( p , v ) ) = v , \qquad
+   \mathrm{remove}( \mathrm{insert}( p , v ) ) = s , \qquad
+   \mathrm{read}( \mathrm{write}( p , v ) ) = v , \tag{5}
+ \f]
+ the last with the other items unchanged, and
+ \f$ \mathrm{empty}( s ) = \mathrm{finished}( \mathrm{head}( s ) ) \f$, which
+ makes `empty()` redundant. What a position is depends on the realization
+ (an index, the address of a cell, a cursor, see \ref theory_sequence), and so
+ does the cost of each operation, while (5) holds on all of them.
+
+ \section theory_ADS_contracts Contracts
+
+ A <em>contract</em> of an operation is a pair of a precondition \f$ P \f$
+ and a postcondition \f$ Q \f$, written \f$ \{ P \}\ \mathit{op}\ \{ Q \} \f$
+ after Hoare: the caller ensures \f$ P \f$, and the operation, under
+ \f$ P \f$, ensures \f$ Q \f$; a structure has also an <em>invariant</em>
+ \f$ I \f$, which each operation that changes it may assume at its start and
+ must restore at its end, i.e., \f$ \{ P \land I \}\ \mathit{op}\ \{ Q \land I
+ \} \f$. A violated precondition is a bug of the caller, a violated
+ postcondition or invariant a bug of the operation (Meyer); in either case
+ `Contract.h` throws `contract_violation`, a `std::logic_error` whose message
+ names the kind of contract, the condition, the function and the place in the
+ source.
+
+ Checking a contract costs time, and the costs differ by orders of magnitude:
+ \f$ \mathrm{empty}() \f$ before a \f$ \mathrm{pop}() \f$ costs \f$ O( 1 ) \f$,
+ the order of a heap after an insertion costs \f$ \Theta( n ) \f$, and that a
+ vector is sorted before a binary search costs \f$ \Theta( n ) \f$ against
+ the \f$ O( \log n ) \f$ of the search. A check of cost \f$ g( n ) \f$ added
+ to an operation of cost \f$ t( n ) \f$ makes it cost
+ \f$ O( t( n ) + g( n ) ) \f$, which is the same bound only if
+ \f$ g( n ) = O( t( n ) ) \f$; an invariant of \f$ \Theta( n ) \f$ checked
+ after each of \f$ k \f$ operations of \f$ O( 1 ) \f$ makes them cost
+ \f$ \Theta( k n ) \f$, i.e., a linear algorithm quadratic. The library
+ therefore sorts its checks by their cost with respect to the operation, and
+ the level `ADS_CONTRACTS` chooses which are evaluated.
+
+ <table>
+ <caption>The contracts of <tt>Contract.h</tt> and the level from which each is
+          checked</caption>
+ <tr><th>Macro</th><th>Contract</th><th>Its cost</th><th>Level</th></tr>
+ <tr><td><tt>ADS_PRE</tt></td><td>a precondition</td>
+     <td>at most that of the operation</td><td>1 (the default, 0 with
+     <tt>NDEBUG</tt>)</td></tr>
+ <tr><td><tt>ADS_POST</tt></td><td>a postcondition</td>
+     <td>at most that of the operation</td><td>2</td></tr>
+ <tr><td><tt>ADS_INVARIANT</tt></td><td>the invariant of a structure</td>
+     <td>usually \f$ \Theta( n ) \f$</td><td>3</td></tr>
+ <tr><td><tt>ADS_AUDIT</tt></td><td>a precondition or a postcondition</td>
+     <td>more than the operation</td><td>3</td></tr>
+ </table>
+
+ At the level 1 the bounds of the operations hold as stated, since every
+ precondition checked costs no more than its operation; at the level 3 they
+ do not, and the level is meant for the tests. A condition is compiled at
+ every level, so that it stays correct C++, but it is evaluated only from its
+ own level; hence it must have no side effects, since a program must behave
+ in the same way at every level. The macros mirror the `pre`, `post` and
+ `contract_assert` of the contracts of C++26, by which they can be replaced
+ when the compilers have them.
+
+ \section theory_ADS_iterators Iterators
+
+ An <em>iterator</em> is a position in a container that can be read and moved
+ to the next one, and the standard library sorts the iterators into
+ <em>categories</em> by the moves they allow in \f$ O( 1 ) \f$ time; an
+ algorithm states the category it needs (`std::sort()` a random-access
+ iterator, `std::reverse()` a bidirectional one), and the iterators of
+ `Iterators.h` give the containers of the library the category that their
+ representation allows, so that the range-for, the algorithms of `std` and
+ of `std::ranges`, and those of Boost visit them.
+
+ <table>
+ <caption>The iterators of <tt>Iterators.h</tt> and their categories</caption>
+ <tr><th>Iterator</th><th>Walks</th><th>Category</th>
+     <th>Cost of a step</th></tr>
+ <tr><td><tt>LinkedIterator</tt></td><td>cells linked by pointers</td>
+     <td>forward</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>IndexIterator</tt></td><td>cells of a vector linked by
+     indices</td><td>forward</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>CircularIterator</tt></td><td>a circular vector</td>
+     <td>random access</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>IndirectIterator</tt></td><td>a vector of pointers, read
+     through them</td><td>random access</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>SlotIterator</tt></td><td>the occupied places of a table</td>
+     <td>bidirectional</td><td>\f$ O( m / n ) \f$ amortized over a whole
+     visit</td></tr>
+ <tr><td><tt>KeyIterator</tt></td><td>the keys of what another iterator
+     reads</td><td>that of the other, up to bidirectional</td>
+     <td>that of the other</td></tr>
+ <tr><td><tt>PathIterator</tt></td><td>a binary tree in symmetric order, by
+     the path from the root</td><td>bidirectional</td>
+     <td>\f$ O( 1 ) \f$ amortized, \f$ O( h ) \f$ at most</td></tr>
+ <tr><td><tt>WalkIterator</tt></td><td>the nodes of a tree by a policy</td>
+     <td>forward</td><td>that of the policy</td></tr>
+ </table>
+
+ A circular vector of capacity \f$ c \f$ whose first item is at the place
+ \f$ \mathit{head} \f$ holds its item of index \f$ i \f$, counted from the
+ head, at the place
+ \f[
+   ( \mathit{head} + i ) \bmod c , \quad 0 \le i < n \le c , \tag{6}
+ \f]
+ so that `CircularIterator` keeps the index \f$ i \f$ rather than the place,
+ its moves and its differences are those of the integers, and the order of
+ the items is that of the queue rather than that of the places.
+
+ A table of \f$ m \f$ places of which \f$ n \f$ are occupied is visited by
+ `SlotIterator` in \f$ \Theta( m ) \f$ time, since each place is examined
+ once, i.e., in \f$ O( m / n ) \f$ amortized time per item, which is
+ \f$ O( 1 ) \f$ when the load \f$ n / m \f$ is bounded from below by a
+ constant, as in the hash tables that halve their table when they get too
+ empty; a single step may examine
+ \f$ \Theta( m ) \f$ places.
+
+ <em>Lemma 2 (the visit in symmetric order by the path).</em> Let
+ `PathIterator` keep the path \f$ \pi \f$ from the root to the current node
+ \f$ x \f$. The next node in symmetric order is the leftmost node of the right
+ subtree of \f$ x \f$ if \f$ x \f$ has a right child, and otherwise the lowest
+ ancestor of \f$ x \f$ whose left subtree contains \f$ x \f$; a whole visit of
+ a tree of \f$ n \f$ nodes costs \f$ \Theta( n ) \f$, i.e., \f$ O( 1 ) \f$
+ amortized per step, and a single step costs \f$ O( h ) \f$.
+
+ Indeed, the nodes of the right subtree of \f$ x \f$ come right after
+ \f$ x \f$, the leftmost first; if there is no right subtree, all the nodes
+ below the ancestor \f$ y \f$ described come before \f$ y \f$ and \f$ x \f$
+ is the last of its left subtree, so that \f$ y \f$ follows \f$ x \f$. The
+ path \f$ \pi \f$ gives the ancestors without links to the parents, and a step
+ that goes down pushes the nodes it meets on \f$ \pi \f$, a step that goes up
+ pops them. Each node is pushed once, when the visit first reaches it from its
+ parent, and popped once, when the visit leaves its subtree; hence a whole
+ visit makes \f$ n \f$ pushes and \f$ n \f$ pops, and since a step moves
+ along one path from the root, it makes at most \f$ h \f$ of them. The path
+ takes \f$ O( h ) \f$ space, against the link to the parent in every node
+ that an iterator with no path needs, i.e., \f$ \Theta( n ) \f$ space; on a
+ balanced tree \f$ h = O( \log n ) \f$.
+
+ \section theory_ADS_portable Portable primitives
+
+ The product of two words of 64 bits is a number of 128 bits, which the
+ processors give in one instruction and the languages do not; `Portable.h`
+ takes it from the builtin of the compiler where there is one, and otherwise
+ computes it on the halves of 32 bits of the factors. With
+ \f$ a = a_1 2^{32} + a_0 \f$ and \f$ b = b_1 2^{32} + b_0 \f$,
+ \f$ 0 \le a_0 , a_1 , b_0 , b_1 < 2^{32} \f$, one has
+ \f[
+   a b = a_1 b_1 2^{64} + ( a_0 b_1 + a_1 b_0 ) 2^{32} + a_0 b_0 , \tag{7}
+ \f]
+ four products of 32 bits, each of which fits in 64 bits. The sum of the
+ middle terms with the high half of \f$ a_0 b_0 \f$ is computed on the low
+ halves of the middle products, i.e., as three numbers below \f$ 2^{32} \f$,
+ whose sum is below \f$ 3 \cdot 2^{32} \f$ and fits in a word with no
+ overflow; its high half is the carry into the high word of the product. In
+ the same way, the signed integers of 128 bits, where the compiler has no
+ `__int128`, are two words in two's complement, and the sum carries 1 into
+ the high word exactly when the sum of the low words, modulo \f$ 2^{64} \f$,
+ is smaller than either of them. These are details of the implementation,
+ out of the API reference.
+
+ \section theory_ADS_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 3 and 4,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap03.pdf and
+      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ \see B. Liskov, S. Zilles, Programming with abstract data types, ACM
+      SIGPLAN Notices 9(4), 50-59, 1974, doi:10.1145/942572.807045
+ \see D. L. Parnas, On the criteria to be used in decomposing systems into
+      modules, Communications of the ACM 15(12), 1053-1058, 1972,
+      doi:10.1145/361598.361623
+ \see J. V. Guttag, J. J. Horning, The algebraic specification of abstract
+      data types, Acta Informatica 10(1), 27-52, 1978,
+      doi:10.1007/BF00260922
+ \see C. A. R. Hoare, An axiomatic basis for computer programming,
+      Communications of the ACM 12(10), 576-580, 1969,
+      doi:10.1145/363235.363259
+ \see B. Meyer, Applying "design by contract", Computer 25(10), 40-51,
+      1992, doi:10.1109/2.161279
+ \see J. Berne, T. Doumler, A. Krzemienski et al., Contracts for C++,
+      P2900R14, ISO/IEC JTC1/SC22/WG21, 2025
+ \see B. Stroustrup, The C++ Programming Language, 4th ed., Addison-Wesley,
+      2013, chapter 33 (the iterators)
+*/
+/*--------------------------------------------------------------------------*/
+/*---------------------------- End File ADS.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
