@@ -1,0 +1,134 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File distributed.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_distributed */
+/** \defgroup theory_distributed Theory of distributed algorithms
+ \ingroup area_distributed
+
+ \details The headers of `include/ADS/distributed` realize, beyond the book,
+ the algorithms whose data are spread over the processes of MPI, each with a
+ memory of its own, which exchange them only by messages; the area holds the
+ sort by regular sampling of `DistributedSort.h`, whose processes may also
+ run on the threads of an executor (see \ref theory_parallel). This page
+ collects what the header takes for granted: the model of the cost of the
+ messages and its notation (see \ref theory_distributed_notation), and the
+ property on which the sort rests, with the argument behind its bound (see
+ \ref theory_distributed_sort). The pseudocode of the sort is instead on the
+ page of its header, in the comment of its function, together with the paper
+ that it follows.
+
+ \tableofcontents
+
+ \section theory_distributed_notation Definitions and notation
+
+ A distributed computation runs on \f$ P \f$ processes, numbered by their
+ <em>ranks</em> \f$ 0 , \ldots , P - 1 \f$ in a communicator, each with its
+ own memory and its own part of the input; a process reads the data of
+ another only by receiving a message. A <em>collective</em> operation is one
+ that all the processes of the communicator call, each with its part, e.g.,
+ the gathering of a value of each process in all of them
+ (`MPI_Allgather`) or the exchange in which each process sends a piece of its
+ data to every other one (`MPI_Alltoall`, and `MPI_Alltoallv` for pieces of
+ different sizes). The cost of a message of \f$ b \f$ bytes is taken as
+ \f$ \alpha + \beta b \f$, \f$ \alpha \f$ the latency and \f$ \beta \f$ the
+ time per byte, and the cost of an algorithm is its local work, its number of
+ messages and its volume of communication, all per process, i.e., along its
+ slowest process.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ P \f$</td>
+     <td>the processes of the communicator <tt>comm</tt></td></tr>
+ <tr><td>\f$ n_i \f$, \f$ n \f$</td>
+     <td>the items of the process \f$ i \f$, and \f$ n = \sum_i n_i \f$ the
+         items of all</td></tr>
+ <tr><td>\f$ \alpha \f$, \f$ \beta \f$</td>
+     <td>the latency of a message and the time per byte</td></tr>
+ <tr><td>\f$ s_1 , \ldots , s_{P - 1} \f$</td>
+     <td>the splitters of the sort, which cut the keys into \f$ P \f$
+         intervals, one per process</td></tr>
+ <tr><td>\f$ w \f$</td>
+     <td>the items of a process between two of its samples,
+         \f$ n_i / P \f$</td></tr>
+ </table>
+
+ A sort of the items spread over the processes leaves in the process of rank
+ \f$ j \f$ a sorted vector, whose items are not smaller than those of the
+ ranks before \f$ j \f$, so that the vectors in the order of the ranks are the
+ sorted items of all. Every distributed sort moves most items to another
+ process, since a process holds, before the sort, items of every interval:
+ the volume of communication is at least about \f$ n / P \f$ per process, and
+ the aim is to send each item once, in one exchange, with parts of about
+ \f$ n / P \f$ items at the end.
+
+ \section theory_distributed_sort Sorting by regular sampling
+
+ The sort of Shi and Schaeffer (`sort()` of `DistributedSort.h`) sorts the
+ items of each process, takes from them \f$ P - 1 \f$ samples at the ranks
+ \f$ \lfloor ( j + 1 ) n_i / P \rfloor \f$, i.e., one every \f$ w \f$ items,
+ gathers all the \f$ P ( P - 1 ) \f$ samples in every process and sorts them,
+ and takes as splitters every \f$ ( P - 1 ) \f$-th of them. Each process then
+ cuts its sorted items at the splitters by binary searches, sends to the
+ process \f$ j \f$ its items in \f$ ( s_j , s_{j+1} ] \f$, and merges the
+ \f$ P \f$ sorted pieces that it receives. Since every process cuts at the
+ same splitters, the items received by the process \f$ j \f$ are exactly those
+ of all the processes in its interval, and their merge is sorted; hence the
+ vectors in the order of the ranks are the sorted items.
+
+ <em>Lemma 1 (regular sampling).</em> With \f$ n / P \f$ items in each process
+ and distinct keys, each process receives
+ \f[
+   \text{fewer than } 2 n / P \text{ items.} \tag{1}
+ \f]
+
+ Indeed, the interval of a process holds \f$ P - 1 \f$ samples, those between
+ two consecutive splitters, and let \f$ t_i \f$ be those of the process
+ \f$ i \f$, so that \f$ \sum_i t_i \le P - 1 \f$. The items of the process
+ \f$ i \f$ in the interval lie between its sample before the first of its
+ \f$ t_i \f$ samples and its sample after the last one, i.e., in at most
+ \f$ t_i + 1 \f$ of its gaps of \f$ w = n / P^2 \f$ items; hence the interval
+ holds at most
+ \f$ \sum_i ( t_i + 1 ) w \le ( 2 P - 1 ) n / P^2 < 2 n / P \f$ items, which
+ is (1). The bound is tight up to a constant, and in practice the parts are
+ far closer to \f$ n / P \f$. With repeated keys (1) may fail, since all the
+ items of a key go to one interval; `sort()` therefore cuts the items equal to
+ a run of \f$ k \f$ equal splitters into \f$ k + 1 \f$ parts of the same size,
+ so that a key repeated many times is spread over as many processes as it
+ fills, and the merge keeps the result sorted since the parts are of equal
+ items.
+
+ The cost of the sort is the local sort, \f$ O( ( n / P ) \log( n / P ) ) \f$,
+ the sort of the samples, \f$ O( P^2 \log P ) \f$, the \f$ P - 1 \f$ binary
+ searches, and the merge of \f$ P \f$ pieces of \f$ O( n / P ) \f$ items in
+ all, \f$ O( ( n / P ) \log P ) \f$, i.e., \f$ O( ( n / P ) \log n ) \f$ work
+ per process when \f$ n / P \ge P^2 \f$. The communication is three
+ collective operations: the gathering of the samples, \f$ P^2 \f$ items to
+ each process; the exchange of the sizes of the pieces, one integer for each
+ pair of processes; and the exchange of the pieces, each item sent once,
+ which by (1) costs each process \f$ O( n / P ) \f$ items. With a direct
+ all-to-all, in which each process sends \f$ P - 1 \f$ messages, the time of
+ the communication is therefore
+ \f[
+   O( \alpha P + \beta ( n / P + P^2 ) ) , \tag{2}
+ \f]
+ which is \f$ O( \alpha P + \beta n / P ) \f$ when \f$ n / P \ge P^2 \f$.
+ Beyond some thousands of processes the latency \f$ \alpha P \f$ and the
+ \f$ P^2 \f$ samples dominate (2); the multi-level sorts of Axtmann, Bingmann,
+ Sanders and Schulz then group the processes and exchange the items in
+ \f$ O( \log P ) \f$ levels, each item sent once per level, which trades the
+ \f$ P \f$ messages of each process for \f$ O( P^{1 / \ell} ) \f$ messages per
+ level over \f$ \ell \f$ levels.
+
+ \section theory_distributed_refs References
+
+ \see H. Shi, J. Schaeffer, Parallel sorting by regular sampling, Journal
+      of Parallel and Distributed Computing 14(4), 361-372, 1992,
+      doi:10.1016/0743-7315(92)90075-X
+ \see M. Axtmann, T. Bingmann, P. Sanders, C. Schulz, Practical massively
+      parallel sorting, ACM Symposium on Parallelism in Algorithms and
+      Architectures (SPAA), 13-23, 2015, doi:10.1145/2755573.2755595
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File distributed.dox ------------------------*/
+/*--------------------------------------------------------------------------*/

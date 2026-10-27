@@ -3,53 +3,56 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The sort of the items spread over the processes of MPI, beyond the book,
- * compiled only with ADS_WITH_MPI (the CMake option of the same name, OFF
- * by default) and an implementation of MPI (Open MPI or MPICH): each of
- * the P processes of a communicator holds a vector of items, and after
- * sort( comm , A , less ) each holds a sorted vector, those of the ranks
- * 0 , ... , P - 1 in this order being the sorted items of all; the
- * vectors change their sizes. The items are copied as bytes (trivially
- * copyable). An executor [see Executor.h] may be given as well, and then
- * the work inside each process runs on its threads (MPI between the
- * nodes, threads within each, the hybrid scheme of the clusters of today).
+ * compiled only with `ADS_WITH_MPI` (the CMake option of the same name, OFF
+ * by default) and an implementation of MPI (Open MPI or MPICH): each of the
+ * \f$ P \f$ processes of a communicator holds a vector of items, and after
+ * `sort( comm , A , less )` each holds a sorted vector, those of the ranks
+ * \f$ 0 , \ldots , P - 1 \f$ in this order being the sorted items of all;
+ * the vectors change their sizes. The items are copied as bytes (trivially
+ * copyable). An executor [see `Executor.h`] may be given as well, and then
+ * the work inside each process runs on its threads (MPI between the nodes,
+ * threads within each, the hybrid scheme of the clusters of today).
  *
  * The sort is the parallel sort by regular sampling of Shi and Schaeffer,
- * in one round of communication: each process sorts its n_i items (by
- * sort() of ADS, or its parallel version on the executor), takes P - 1
- * samples at the ranks \f$ \lfloor ( j + 1 ) n_i / P \rfloor \f$, and all
- * the \f$ P ( P - 1 ) \f$ samples, gathered by MPI_Allgather and sorted,
- * give the P - 1 splitters at the ranks \f$ ( j + 1 ) ( P - 1 ) \f$; each
- * process cuts its sorted items at the splitters by binary searches (the
- * items equal to a run of k equal splitters are cut into k + 1 parts of
- * the same size, so that a key repeated many times is spread over as many
- * processes as it fills), sends each piece to its process by one
- * MPI_Alltoallv (after an MPI_Alltoall of the counts), and merges the P
- * sorted pieces it receives by multiwayMerge() [see MultiwayMerge.h and
- * ParallelMerge.h]. With the
+ * in one round of communication: each process sorts its \f$ n_i \f$ items
+ * (by `sort()` of ADS, or its parallel version on the executor), takes
+ * \f$ P - 1 \f$ samples at the ranks \f$ \lfloor ( j + 1 ) n_i / P \rfloor
+ * \f$, and all the \f$ P ( P - 1 ) \f$ samples, gathered by `MPI_Allgather`
+ * and sorted, give the \f$ P - 1 \f$ splitters at the ranks
+ * \f$ ( j + 1 ) ( P - 1 ) \f$; each process cuts its sorted items at the
+ * splitters by binary searches (the items equal to a run of \f$ k \f$ equal
+ * splitters are cut into \f$ k + 1 \f$ parts of the same size, so that a key
+ * repeated many times is spread over as many processes as it fills), sends
+ * each piece to its process by one `MPI_Alltoallv` (after an `MPI_Alltoall`
+ * of the counts), and merges the \f$ P \f$ sorted pieces it receives by
+ * `multiwayMerge()` [see `MultiwayMerge.h` and `ParallelMerge.h`]. With the
  * same number of items in each process, no process receives more than
- * \f$ 2 n / P \f$ items (the bound of regular sampling, for distinct
- * keys); the work is \f$ O( ( n / P ) \log n ) \f$ per process, the
- * volume of communication \f$ O( n / P + P^2 ) \f$ per process in 3
- * collective operations, i.e., \f$ O( \alpha P + \beta n / P ) \f$ time
- * for latency \f$ \alpha \f$ and time \f$ \beta \f$ per byte with a
- * direct all-to-all. Beyond some thousands of processes the \f$ P^2 \f$
- * samples and the \f$ P \f$ messages of each process dominate, and the
- * multi-level sorts of Axtmann, Bingmann, Sanders and Schulz (which group
- * the processes and exchange in \f$ O( \log P ) \f$ levels) take over.
+ * \f$ 2 n / P \f$ items (the bound of regular sampling, for distinct keys);
+ * the work is \f$ O( ( n / P ) \log n ) \f$ per process, the volume of
+ * communication \f$ O( n / P + P^2 ) \f$ per process in 3 collective
+ * operations, i.e., \f$ O( \alpha P + \beta n / P ) \f$ time for latency
+ * \f$ \alpha \f$ and time \f$ \beta \f$ per byte with a direct all-to-all.
+ * Beyond some thousands of processes the \f$ P^2 \f$ samples and the
+ * \f$ P \f$ messages of each process dominate, and the multi-level sorts of
+ * Axtmann, Bingmann, Sanders and Schulz (which group the processes and
+ * exchange in \f$ O( \log P ) \f$ levels) take over.
  *
- * The contracts [see Contract.h]: T is trivially copyable; less is a
- * strict weak order, the same in every process; every process of comm
- * calls sort() (a collective operation); the local result is sorted (an
+ * The contracts [see `Contract.h`]: `T` is trivially copyable; `less` is a
+ * strict weak order, the same in every process; every process of `comm`
+ * calls `sort()` (a collective operation); the local result is sorted (an
  * audit).
+ *
  * \see H. Shi, J. Schaeffer, Parallel sorting by regular sampling, Journal
  *      of Parallel and Distributed Computing 14(4), 361-372, 1992,
  *      doi:10.1016/0743-7315(92)90075-X
  * \see M. Axtmann, T. Bingmann, P. Sanders, C. Schulz, Practical massively
  *      parallel sorting, ACM Symposium on Parallelism in Algorithms and
  *      Architectures (SPAA), 13-23, 2015, doi:10.1145/2755573.2755595
+ *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
+ *
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
@@ -98,17 +101,61 @@
 
 namespace ADS::distributed {
 
-/// the items of A of all the processes of comm sorted by less, the
-/// threads of ex sorting and merging within each process: afterwards A
-/// holds the part of the process, the parts in the order of the ranks; it
-/// throws std::length_error, in every process, if the bytes of a piece or
-/// of the pieces a process receives exceed the counts of MPI (those of int
-/// before MPI 4, whose MPI_Alltoallv_c counts them in 64 bits)
-/// \post A is sorted (an audit)
+/// the items of \f$ A \f$ of all the processes of `comm` sorted by
+/// `less`, the threads of `ex` sorting and merging within each process,
+/// after which \f$ A \f$ holds the part of the process, the parts in the
+/// order of the ranks; it throws `std::length_error`, in every process, if
+/// the bytes of a piece or of the pieces a process receives exceed the
+/// counts of MPI (those of `int` before MPI 4, whose `MPI_Alltoallv_c`
+/// counts them in 64 bits)
+///
+/// In pseudocode (the sort by regular sampling of Shi and Schaeffer, beyond
+/// the book), run by each of the \f$ P \f$ processes:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{sort}( \mathit{ex} , \mathit{comm} , A )
+///     \cr
+/// 2 & \quad \mathrm{sort}( \mathit{ex} , A );\ \textbf{if}\ P = 1
+///     \ \textbf{then return} \cr
+/// 3 & \quad n \gets |A|;\ \textbf{for}\ j \gets 0\ \textbf{to}\ P - 2
+///     \ \textbf{do}\ s[ j ] \gets A[ \lfloor ( j + 1 ) n / P \rfloor ] \cr
+/// 4 & \quad S \gets \text{the samples } s \text{ of the processes with }
+///     n > 0\quad \triangleright\ \text{MPI_Allgather} \cr
+/// 5 & \quad \mathrm{sort}( S );\ \mathit{cut}[ 0 ] \gets 0;\ \mathit{cut}[ P
+///     ] \gets n \cr
+/// 6 & \quad \textbf{for}\ j \gets 1\ \textbf{to}\ P - 1\ \textbf{do} \cr
+/// 7 & \qquad x \gets S[ \min\{ |S| - 1 , \lfloor j |S| / P \rfloor \} ]
+///     \quad \triangleright\ \text{the splitter } j \cr
+/// 8 & \qquad [ \mathit{lo} , \mathit{hi} ) \gets \text{the places of the }
+///     \text{items of } A \text{ equal to } x \text{, by binary searches} \cr
+/// 9 & \qquad [ f , l ) \gets \text{the indices of the splitters equal to }
+///     x \cr
+/// 10 & \qquad \mathit{cut}[ j ] \gets \mathit{lo} + \lfloor ( \mathit{hi} -
+///     \mathit{lo} ) ( j - f + 1 ) / ( l - f + 1 ) \rfloor \cr
+/// 11 & \quad \text{send } A[ \mathit{cut}[ j ] .. \mathit{cut}[ j + 1 ] - 1 ]
+///     \text{ to the process } j \text{, for each } j\quad \triangleright
+///     \ \text{MPI_Alltoallv} \cr
+/// 12 & \quad A \gets \mathrm{multiwayMerge}( \mathit{ex} , \text{the } P
+///     \text{ pieces received} )
+/// \end{array}}
+/// \f]
+/// \pre `T` is trivially copyable, `less` the same strict weak order in
+///      every process, which all call `sort()`
+/// \post \f$ A \f$ is sorted (an audit)
 template< Executor E , class T , class C = std::less<> >
 void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less = C() );
 
-/// the same, each process on one thread
+/// the items of \f$ A \f$ of all the processes of `comm` sorted by `less`
+/// as `sort()` above, each process on one thread
+///
+/// In pseudocode (beyond the book):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{sort}( \mathit{comm} , A ) \cr
+/// 2 & \quad \mathrm{sort}( \text{the executor } \mathrm{Sequential} ,
+///     \mathit{comm} , A )
+/// \end{array}}
+/// \f]
 template< class T , class C = std::less<> >
 void sort( MPI_Comm comm , std::vector< T > & A , C less = C() )
 {
@@ -120,7 +167,7 @@ void sort( MPI_Comm comm , std::vector< T > & A , C less = C() )
 
 namespace detail {
 
-/// throws if MPI did not succeed
+/// throws if MPI did not succeed, naming the call `what`
 inline void check( int code , const char * what )
 {
  if( code != MPI_SUCCESS )
@@ -139,7 +186,7 @@ using Count = int;
 using Displacement = int;
 #endif
 
-/// the type of MPI of Count
+/// the type of MPI of `Count`
 inline MPI_Datatype countType( void )
 {
 #ifdef ADS_MPI_LARGE_COUNTS
@@ -149,8 +196,8 @@ inline MPI_Datatype countType( void )
 #endif
  }
 
-/// b bytes as a count or a displacement of type N of MPI, or 0 and ok
-/// false if they do not fit in it
+/// \f$ b \f$ bytes as a count or a displacement of the type `N` of MPI, or
+/// 0 and `ok` false if they do not fit in it
 template< class N >
 N fits( std::size_t b , bool & ok )
 {
