@@ -1,0 +1,163 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File queue.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_queue */
+/** \defgroup theory_queue Theory of queues
+ \ingroup area_queue
+
+ \details The headers of `include/ADS/queue` realize the QUEUE of section
+ 4.3.1 of the book, with a circular vector (section 4.3.3) and with a singly
+ linked list (exercise 4.10), the DEQUEUE of exercise 4.9, a double ended
+ queue on a circular vector that doubles, a queue with no duplicates, and two
+ algorithms that use a queue through its operations alone. This page
+ collects the definitions and the notation that the headers share (see
+ \ref theory_queue_notation), the realizations with the costs of their
+ operations (see \ref theory_queue_repr), the arithmetic of the circular
+ vectors (see \ref theory_queue_circular), and the queues with no duplicates
+ and the algorithms on a queue (see \ref theory_queue_algo). The pseudocode
+ of each operation is on the page of its header, in the comment of its
+ function, together with the section of the book that it follows.
+
+ \tableofcontents
+
+ \section theory_queue_notation Definitions and notation
+
+ A <em>queue</em> is a sequence of items to which items are added at one end,
+ the <em>back</em>, and from which they are removed at the other, the
+ <em>front</em>: the first item added is the first removed (FIFO, first in
+ first out). The QUEUE of the book has `enqueue()`, which adds an item at the
+ back, `dequeue()`, which removes the item at the front and returns it,
+ `top()`, which reads it, and `empty()`; its axioms are
+ \f$ \mathrm{top}( \mathrm{enqueue}( Q , v ) ) = \mathrm{top}( Q ) \f$ and
+ \f$ \mathrm{dequeue}( \mathrm{enqueue}( Q , v ) ) =
+ \mathrm{enqueue}( \mathrm{dequeue}( Q ) , v ) \f$ for \f$ Q \f$ not empty
+ (see \ref theory_ADS_adt, and the concept `Queue` of `ADT.h`). A queue is
+ what a computation needs when it serves its requests in the order of their
+ arrival, e.g., the visit in breadth of a graph, which examines the nodes by
+ increasing distance from the root because they leave the queue in the order
+ in which they were reached. A <em>double ended queue</em>, or deque, is
+ changed at both ends, and is a stack when used at one end only and a queue
+ when items enter at one end and leave at the other.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$</td><td>the number of items of a queue</td></tr>
+ <tr><td>\f$ m \f$</td><td>the number of places of a circular
+     vector, its capacity</td></tr>
+ <tr><td>\f$ h \f$</td><td>the place of the front in a circular
+     vector</td></tr>
+ <tr><td>\f$ A[ 0 .. m - 1 ] \f$</td><td>a circular vector, the place 0
+     following the place \f$ m - 1 \f$</td></tr>
+ </table>
+
+ \section theory_queue_repr Realizations and their costs
+
+ <table>
+ <caption>The realizations of the QUEUE and of the DEQUEUE and the cost of
+          their operations (section 4.3.3 of the book, exercises 4.9 and
+          4.10)</caption>
+ <tr><th>Realization</th><th>Representation</th><th>Space</th>
+     <th>Operations at the ends</th><th>Capacity</th></tr>
+ <tr><td><tt>ArrayQueue</tt></td><td>a circular vector</td>
+     <td>\f$ \Theta( m ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ m \f$, fixed</td></tr>
+ <tr><td><tt>LinkedQueue</tt></td><td>a singly linked list with pointers to
+     its first and last cells</td><td>\f$ \Theta( n ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>none</td></tr>
+ <tr><td><tt>Dequeue</tt></td><td>a bidirectional list with a
+     sentinel</td><td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$ at both
+     ends</td><td>none</td></tr>
+ <tr><td><tt>RingDeque</tt></td><td>a circular vector of \f$ 2^j \f$ places
+     that doubles</td><td>fewer than \f$ 2 n + 8 \f$ places</td>
+     <td>\f$ O( 1 ) \f$ amortized at both ends, \f$ O( 1 ) \f$ by
+     rank</td><td>none</td></tr>
+ <tr><td><tt>UniqueQueue</tt></td><td>a bidirectional list, with no
+     duplicates</td><td>\f$ \Theta( n ) \f$</td>
+     <td>\f$ O( n ) \f$ to enqueue, \f$ O( 1 ) \f$ to dequeue</td>
+     <td>none</td></tr>
+ </table>
+
+ A singly linked list is a queue when the items enter after its last cell and
+ leave from its first one, since the removal of the first cell and the
+ insertion after the last one need no predecessor (see Lemma 1 of
+ \ref theory_sequence); the list keeps a pointer to each of the two
+ cells, and an empty list has both nil. The deque needs instead the removal
+ of the last cell too, i.e., its predecessor, which a bidirectional list has
+ at hand. Among the vectors, a queue whose items stayed in the places from 0
+ on would move all of them at each `dequeue()`, i.e., \f$ \Theta( n ) \f$; a
+ circular vector lets the front move instead, as follows.
+
+ \section theory_queue_circular Circular vectors
+
+ In a circular vector \f$ A[ 0 .. m - 1 ] \f$ the place 0 follows the place
+ \f$ m - 1 \f$, and a queue of \f$ n \le m \f$ items with its front at the
+ place \f$ h \f$ holds the item of rank \f$ i \f$ from the front, for
+ \f$ 0 \le i < n \f$, at the place
+ \f[
+   ( h + i ) \bmod m , \tag{1}
+ \f]
+ so that its back is at \f$ ( h + n - 1 ) \bmod m \f$ and the next item enters
+ at \f$ ( h + n ) \bmod m \f$. A `dequeue()` advances \f$ h \f$ by one place
+ and an `enqueue()` writes after the back, each in \f$ O( 1 ) \f$; the items
+ run through the vector as a band that wraps around its end, and the
+ vector is full when \f$ n = m \f$, which a vector with the two indices of the
+ front and of the back alone could not tell from the empty one (both have
+ the indices equal), whence the count \f$ n \f$ kept beside \f$ h \f$. Since
+ \f$ h < m \f$ and \f$ n \le m \f$, the sum \f$ h + n \f$ is below
+ \f$ 2 m \f$, and the modulo of (1) is a comparison and a subtraction rather
+ than a division.
+
+ `RingDeque` takes \f$ m = 2^j \f$, so that the modulo is the mask
+ \f$ m - 1 \f$, and keeps the front and the back as counters modulo
+ \f$ 2^{64} \f$ whose difference is \f$ n \f$: an insertion at the back and a
+ removal from the front change one counter each, and the place of a counter
+ \f$ c \f$ is \f$ c \mathbin{\&} ( m - 1 ) \f$. When the vector is full it
+ doubles, and its items are moved in order to the front of the new vector,
+ in at most two contiguous pieces, \f$ A[ h .. m ) \f$ and the part that
+ wrapped around; by the argument of the vectors that double (see
+ \ref theory_sequence_amortized), \f$ n \f$ insertions move fewer than
+ \f$ 2 n \f$ items. An insertion at the front of a full deque puts the new
+ item at the last place of the new vector, and the front there, which (1)
+ makes the place before the place 0. Unlike a deque that only grows at its
+ back, the places freed at one end serve the insertions at the other, so
+ that a deque used as a queue in a steady state never moves its items.
+
+ \section theory_queue_algo Queues with no duplicates and algorithms on a queue
+
+ `UniqueQueue` refuses the duplicates by one of two policies: `IGNORE_NEW`
+ does not enqueue an item already in the queue, so that each item keeps the
+ place of its first arrival, as the visits of a graph want it, and
+ `FORGET_OLD` removes the old copy and enqueues the item at the back, so that
+ it keeps the place of its last arrival, as a cache of the least recently
+ used items wants it. Either way `enqueue()` must find the copy, which on a
+ list costs \f$ O( n ) \f$ comparisons; the invariant is that no item occurs
+ twice, which requires an equality that is an equivalence (an item unequal
+ to itself, e.g., a NaN, would be enqueued again and again).
+
+ The functions of `QueueAlgorithms.h` act on a queue through its operations
+ alone. Moving the positive items of a queue \f$ q \f$ to another one in
+ their order dequeues each item of \f$ q \f$ once, \f$ O( n ) \f$; copying
+ them instead, with \f$ q \f$ left as it was, enqueues each item in an
+ auxiliary queue as it is dequeued and moves the auxiliary queue back,
+ which, by the order FIFO of both, restores the order of \f$ q \f$, i.e.,
+ \f$ O( n ) \f$ time and space. A queue cannot be restored by rotating it
+ alone, i.e., by enqueueing each item again in \f$ q \f$ as it is dequeued,
+ without knowing how many items it holds, which the QUEUE of the book does
+ not say.
+
+ \section theory_queue_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.3.1 and
+      4.3.3, exercises 4.9 and 4.10,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
+      Addison-Wesley, 1997, sections 2.2.1 (stacks, queues and deques) and
+      2.2.2 (the circular queue)
+ \see U. Pape, Implementation and efficiency of Moore-algorithms for the
+      shortest route problem, Mathematical Programming 7(1), 212-222, 1974,
+      doi:10.1007/BF01585517
+*/
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File queue.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/

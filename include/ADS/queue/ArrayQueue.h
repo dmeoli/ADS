@@ -2,25 +2,25 @@
 /*--------------------------- File ArrayQueue.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The QUEUE of the book [see ADT.h] realized with a circular vector of m
- * places, the place 0 following the place m - 1: the queue is in size
- * consecutive places from the one of its front, head, so that its back is
- * in the place \f$ ( head + size - 1 ) \bmod m \f$ and every operation takes
- * O( 1 ) time; the modulo is a comparison and a subtraction, since the sum
- * is below 2 m, instead of a division.
+ * The QUEUE of the book [see `ADT.h`] realized with a circular vector of
+ * \f$ m \f$ places, the place 0 following the place \f$ m - 1 \f$: the queue
+ * is in \f$ n \f$ consecutive places from the one of its front, \f$ h \f$,
+ * so that its back is in the place \f$ ( h + n - 1 ) \bmod m \f$ and every
+ * operation takes \f$ O( 1 ) \f$ time; the modulo is a comparison and a
+ * subtraction, since the sum is below \f$ 2 m \f$, instead of a division.
  *
- * The contracts [see Contract.h] are the preconditions of the book: top()
- * and dequeue() need a queue that is not empty, enqueue() one that is not
- * full; enqueue() ensures one item more, dequeue() one less, and the
- * invariant is \f$ 0 \leq size \leq m \f$ with the front inside the
- * vector. The operations are defined in ArrayQueue.tpp.
+ * The contracts [see `Contract.h`] are the preconditions of the book:
+ * `top()` and `dequeue()` need a queue that is not empty, `enqueue()` one
+ * that is not full; `enqueue()` ensures one item more, `dequeue()` one less,
+ * and the invariant is \f$ 0 \leq n \leq m \f$ with the front inside the
+ * vector. The operations are defined in `ArrayQueue.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -62,32 +62,52 @@ class ArrayQueue {
 
  using Item = T;   ///< the type of the items
 
- /// the empty queue of at most dim items
+ /// the empty queue of at most \f$ \mathit{dim} \f$ items
  explicit ArrayQueue( std::size_t dim );
 
+ /// true if there is no item, i.e., \f$ n = 0 \f$
  [[nodiscard]] bool empty( void ) const;
 
- /// the item at the front
+ /// the item at the front, \f$ A[ h ] \f$
  /// \pre the queue is not empty
  [[nodiscard]] const T & top( void ) const;
 
  /// removes the item at the front and returns it
+ ///
+ /// In pseudocode (section 4.3.3), \f$ A[ 0 .. m - 1 ] \f$ the circular
+ /// vector:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{dequeue}() \cr
+ /// 2 & \quad t \gets A[ h ] \cr
+ /// 3 & \quad h \gets ( h + 1 ) \bmod m;\ n \gets n - 1 \cr
+ /// 4 & \quad \textbf{return}\ t
+ /// \end{array}}
+ /// \f]
  /// \pre the queue is not empty
  /// \post one item less
  T dequeue( void );
 
- /// puts v at the back
+ /// puts \f$ v \f$ at the back
+ ///
+ /// In pseudocode (section 4.3.3):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{enqueue}( v ) \cr
+ /// 2 & \quad A[ ( h + n ) \bmod m ] \gets v;\ n \gets n + 1
+ /// \end{array}}
+ /// \f]
  /// \pre the queue is not full
  /// \post one item more
  void enqueue( const T & v );
 
- /// the number of items
+ /// the number of items, \f$ n \f$
  [[nodiscard]] std::size_t size( void ) const;
 
- /// the maximum number of items
+ /// the maximum number of items, \f$ m \f$
  [[nodiscard]] std::size_t capacity( void ) const;
 
- /// whether v is in the queue, O( n )
+ /// whether \f$ v \f$ is in the queue, \f$ O( n ) \f$
  [[nodiscard]] bool contains( const T & v ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
@@ -95,22 +115,27 @@ class ArrayQueue {
  // a constant view of the items from the front to the back, random
  // access on the circular vector
 
- using value_type = T;
- using size_type = std::size_t;
- using difference_type = std::ptrdiff_t;
- using reference = const T &;
- using const_reference = const T &;
- using iterator = CircularIterator< T >;
- using const_iterator = CircularIterator< T >;
+ using value_type = T;                     ///< the type of the items
+ using size_type = std::size_t;            ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;   ///< the type of the distances
+ using reference = const T &;              ///< a constant reference
+ using const_reference = const T &;        ///< a constant reference
+ using iterator = CircularIterator< T >;   ///< a constant iterator
+ using const_iterator = CircularIterator< T >;   ///< a constant iterator
 
+ /// the iterator on the item at the front
  [[nodiscard]] const_iterator begin( void ) const {
   return( const_iterator( f_A.get() , f_head , f_capacity , 0 ) );
   }
+ /// the iterator past the item at the back
  [[nodiscard]] const_iterator end( void ) const {
   return( const_iterator( f_A.get() , f_head , f_capacity ,
                           std::ptrdiff_t( f_size ) ) );
   }
+ /// as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+
+ /// as `end()`
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
