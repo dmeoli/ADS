@@ -1,0 +1,197 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File stack.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_stack */
+/** \defgroup theory_stack Theory of stacks
+ \ingroup area_stack
+
+ \details The headers of `include/ADS/stack` realize the STACK of section
+ 4.3.1 of the book, i.e., with a vector of a given capacity (section 4.3.2),
+ on the operations of any SEQUENCE, and, as several stacks in one vector,
+ following exercise 4.7; beside them are the algorithms that use a stack
+ through its operations alone, among which the evaluation of the arithmetic
+ expressions in postfix notation and the translation of the infix ones. This
+ page collects the definitions and the notation that the headers share (see
+ \ref theory_stack_notation), the realizations with the costs of their
+ operations (see \ref theory_stack_repr), and, for the algorithms, the
+ property on which each is correct and the argument behind its bound (see
+ \ref theory_stack_expr and \ref theory_stack_algo). The pseudocode of each
+ operation and of each algorithm is on the page of its header, in the comment
+ of its function, together with the section of the book, or the paper, that
+ it follows.
+
+ \tableofcontents
+
+ \section theory_stack_notation Definitions and notation
+
+ A <em>stack</em> is a sequence of items to which items are added, and from
+ which they are removed, at one end only, the <em>top</em>: the last item
+ added is the first removed (LIFO, last in first out). The STACK of the book
+ has `push()`, which adds an item on top, `pop()`, which removes the item on
+ top and returns it, `top()`, which reads it, and `empty()`; its axioms are
+ \f$ \mathrm{top}( \mathrm{push}( S , v ) ) = v \f$ and
+ \f$ \mathrm{pop}( \mathrm{push}( S , v ) ) = S \f$, with `top()` and
+ `pop()` undefined on the empty stack (see \ref theory_ADS_adt, and the
+ concept `Stack` of `ADT.h`). A stack is what a computation needs when it
+ has to come back to a point in the reverse order in which it left it: the
+ calls of a program, whose frames make the stack of the calls, the
+ parentheses of an expression, the moves of a backtracking.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$</td><td>the number of items of a stack, or of tokens
+     of an expression</td></tr>
+ <tr><td>\f$ c \f$</td><td>the capacity of a stack on a vector</td></tr>
+ <tr><td>\f$ k \f$</td><td>the number of stacks that share one vector, or
+     a key of <tt>removeGreater()</tt></td></tr>
+ <tr><td>\f$ S \f$</td><td>a stack, or the stack of the operators of a
+     translation</td></tr>
+ <tr><td>\f$ s \mathbin{\mathrm{op}} t \f$</td><td>a binary operation, with
+     \f$ s \f$ its left operand and \f$ t \f$ its right one</td></tr>
+ </table>
+
+ \section theory_stack_repr Realizations and their costs
+
+ <table>
+ <caption>The realizations of the STACK and the cost of their operations
+          (sections 4.3.1 and 4.3.2 of the book, exercise 4.7)</caption>
+ <tr><th>Realization</th><th>Representation</th><th>Space</th>
+     <th><tt>push()</tt>, <tt>pop()</tt>, <tt>top()</tt></th>
+     <th>Capacity</th></tr>
+ <tr><td><tt>ArrayStack</tt></td><td>a vector, the top in the place
+     \f$ n - 1 \f$</td><td>\f$ \Theta( c ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ c \f$, fixed</td></tr>
+ <tr><td><tt>SequenceStack</tt></td><td>a SEQUENCE, the top its first
+     item</td><td>that of the sequence</td><td>those of
+     <tt>insert()</tt>, <tt>remove()</tt> and <tt>read()</tt> at the head,
+     \f$ O( 1 ) \f$ on a list</td><td>none</td></tr>
+ <tr><td><tt>MultiStack</tt></td><td>\f$ k \f$ stacks of linked cells in one
+     vector, with a free list</td><td>\f$ \Theta( n + k ) \f$</td>
+     <td>\f$ O( 1 ) \f$ amortized</td><td>none, the vector
+     doubles</td></tr>
+ </table>
+
+ On a vector the \f$ n \f$ items are in the places \f$ 0 , \ldots , n - 1 \f$
+ and the top in the place \f$ n - 1 \f$, so that `push()` writes the place
+ \f$ n \f$ and `pop()` reads the place \f$ n - 1 \f$, each in \f$ O( 1 ) \f$,
+ and the precondition of `push()` is that the stack is not full. A
+ SEQUENCE simulates the stack with its top as the first item:
+ \f[
+   \mathrm{top}() = \mathrm{read}( \mathrm{head}() ) , \qquad
+   \mathrm{pop}() = \mathrm{remove}( \mathrm{head}() ) , \qquad
+   \mathrm{push}( v ) = \mathrm{insert}( \mathrm{head}() , v ) , \tag{1}
+ \f]
+ which costs \f$ O( 1 ) \f$ on any list with pointers, even a singly linked
+ one, while on a vector the top would rather be the last item, since an
+ insertion at the head moves all the items.
+
+ Two stacks in one vector of \f$ c \f$ places (exercise 4.7) grow from its
+ two ends toward each other, and neither is full while the vector has a free
+ place. `MultiStack` extends the idea to \f$ k \f$ stacks: each item is a
+ cell of a single vector linked to the cell below it in its stack, and the
+ free cells form one more list. A `push()` takes the first free cell, a
+ `pop()` gives its cell back, each in \f$ O( 1 ) \f$; when no cell is free
+ the vector doubles, which costs \f$ O( 1 ) \f$ amortized per operation (see
+ \ref theory_sequence_amortized). The space is that of the \f$ n \f$ items
+ of all the stacks, plus the \f$ k \f$ tops, against the \f$ k c \f$ places
+ of \f$ k \f$ vectors each large enough for the largest stack.
+
+ \section theory_stack_expr Arithmetic expressions
+
+ An expression in <em>postfix</em> notation (the reverse Polish notation of
+ Łukasiewicz) writes each operator after its two operands, e.g.,
+ `5 9 8 + 4 6 * * 7 + *` for \f$ 5 \cdot ( ( 9 + 8 ) \cdot ( 4 \cdot 6 ) + 7 )
+ \f$; it needs no parentheses and no precedences, since the order of the
+ tokens is that of the evaluation. Formally, an operand is a postfix
+ expression, and so is \f$ E_1 \, E_2 \, \mathrm{op} \f$ when \f$ E_1 \f$ and
+ \f$ E_2 \f$ are.
+
+ <em>Lemma 1 (the evaluation of a postfix expression).</em> Let a scan of the
+ tokens push each operand, and pop, for each operator, the right operand
+ \f$ t \f$ and then the left one \f$ s \f$, and push
+ \f$ s \mathbin{\mathrm{op}} t \f$. Then the scan of a postfix expression
+ \f$ E \f$ that starts with a stack \f$ S \f$ ends with \f$ S \f$ and the
+ value of \f$ E \f$ on top of it; hence the value of a whole expression is
+ the one item left, after \f$ n \f$ steps of \f$ O( 1 ) \f$.
+
+ Indeed, by induction on the structure of \f$ E \f$: an operand is pushed;
+ for \f$ E = E_1 \, E_2 \, \mathrm{op} \f$, the scan of \f$ E_1 \f$ leaves
+ its value \f$ s \f$ on \f$ S \f$, that of \f$ E_2 \f$ leaves its value
+ \f$ t \f$ on \f$ S \f$ and \f$ s \f$, and the operator replaces the two with
+ \f$ s \mathbin{\mathrm{op}} t \f$. A token sequence that is not well formed
+ shows as an operator that finds fewer than two items, or as more than one
+ item left at the end, which are the preconditions of `evalPostfix()`.
+
+ A <em>fully parenthesized</em> infix expression has a pair of parentheses
+ around each operation, e.g., `( 5 * ( ( ( 9 + 8 ) * ( 4 * 6 ) ) + 7 ) )`;
+ its postfix form is obtained by moving each operator to the closed
+ parenthesis of its pair, i.e., by writing the operands as they come,
+ pushing the operators and popping one at each closed parenthesis, since the
+ innermost pair open is the last one opened. With the usual precedences
+ instead (\f$ \cdot \f$ and \f$ / \f$ before \f$ + \f$ and \f$ - \f$) and
+ the associativity to the left, the shunting-yard algorithm of Dijkstra
+ (`toPostfix()`) keeps on the stack the operators whose right operand is
+ not complete yet: an operator \f$ \mathrm{op} \f$ first pops to the output,
+ down to an open parenthesis, every operator of precedence not lower than
+ its own, whose right operand ends where \f$ \mathrm{op} \f$ begins; a closed
+ parenthesis pops them down to the open one. The operators on the stack have
+ therefore precedences that increase strictly from the bottom up between
+ two parentheses, each token is pushed and popped at most once, and the
+ translation costs \f$ O( n ) \f$ (Samelson and Bauer, Dijkstra).
+
+ \section theory_stack_algo Algorithms on a stack
+
+ The functions of `StackAlgorithms.h` act on a stack through `push()`,
+ `pop()`, `top()` and `empty()` alone, so that they run on every
+ realization. A string is a palindrome if and only if the characters pushed
+ in order and popped come out as the string read from its start, since the
+ stack reverses the order; hence \f$ O( n ) \f$ time. Removing the items
+ larger than a key \f$ k \f$ while keeping the order of the others takes an
+ auxiliary stack, which reverses them once when they are moved there and once
+ more when they come back, i.e., \f$ O( n ) \f$ time and space.
+
+ The recursion supplies a second stack, that of the calls. To visit the
+ items from the bottom to the top and leave the stack as it was,
+ `forEachBottomUp()` pops the top, visits the rest by a recursive call,
+ visits the top and pushes it back: the call stack holds the \f$ n \f$ items
+ popped, in \f$ O( n ) \f$ time and space. In the same way `sortStack()` sorts
+ a stack with no other structure: a pass pops two items, pushes back the
+ larger, makes a recursive pass on the rest and pushes the smaller on top.
+
+ <em>Lemma 2 (the sort of a stack by passes).</em> A pass carries the
+ largest item of the stack to its bottom and leaves the others in their
+ order, but for the swaps of the pairs met along the way; hence after the
+ pass \f$ i \f$ the \f$ i \f$ largest items are at the bottom in order, and
+ \f$ n \f$ passes sort the stack, the least item on top, with
+ \f$ O( n^2 ) \f$ operations.
+
+ Indeed, by induction on the size, the larger of the two items popped is
+ pushed back and the recursive pass carries the largest of the rest, which
+ is at least as large, to the bottom, while the smaller of the two is pushed
+ last, one place above where it was; an item of the bottom \f$ i - 1 \f$,
+ already larger than all the others, is never moved above them. Each pass
+ costs \f$ O( n ) \f$ and makes \f$ O( n ) \f$ recursive calls, and the
+ small items rise by one place per pass, as in the bubble sort, of which
+ this is the version on a stack (see \ref theory_sequence_sort).
+
+ \section theory_stack_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.3.1 and
+      4.3.2, exercise 4.7,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
+      Addison-Wesley, 1997, sections 2.2.1 (stacks, queues and deques) and
+      2.2.2 (two stacks in one vector)
+ \see J. Łukasiewicz, Elementy logiki matematycznej, Warszawa, 1929
+ \see K. Samelson, F. L. Bauer, Sequential formula translation,
+      Communications of the ACM 3(2), 76-83, 1960,
+      doi:10.1145/366959.366968
+ \see E. W. Dijkstra, Algol 60 translation, Report MR 34/61, Mathematisch
+      Centrum, Amsterdam, 1961
+ \see R. Sedgewick, Algorithms in C++, Parts 1-4, 3rd ed., Addison-Wesley,
+      1998, section 4.3
+*/
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File stack.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/

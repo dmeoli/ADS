@@ -2,25 +2,26 @@
 /*-------------------------- File SequenceStack.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * SequenceStack is the STACK [see ADT.h] simulated with the operations of
- * any SEQUENCE, the top being its first item:
+ * `SequenceStack` is the STACK [see `ADT.h`] simulated with the operations
+ * of any SEQUENCE, the top being its first item:
  * \f[
- *   top() = read( head() ) \qquad pop() = remove( head() ) \qquad
- *   push( v ) = insert( head() , v ) \; ,
+ *   \mathrm{top}() = \mathrm{read}( \mathrm{head}() ) \qquad
+ *   \mathrm{pop}() = \mathrm{remove}( \mathrm{head}() ) \qquad
+ *   \mathrm{push}( v ) = \mathrm{insert}( \mathrm{head}() , v ) \; ,
  * \f]
- * which takes O( 1 ) time on a list with pointers, even a singly linked one
- * (Esercizio 4.6), and has no capacity.
+ * which takes \f$ O( 1 ) \f$ time on a list with pointers, even a singly
+ * linked one (exercise 4.6), and has no capacity.
  *
- * The contracts [see Contract.h]: top() and pop() need a stack that is not
- * empty, and push() ensures one that is not. The operations are defined in
- * SequenceStack.tpp.
+ * The contracts [see `Contract.h`]: `top()` and `pop()` need a stack that
+ * is not empty, and `push()` ensures one that is not. The operations are
+ * defined in `SequenceStack.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -51,7 +52,7 @@ namespace ADS {
 /*-------------------------- CLASS SequenceStack ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a STACK simulated with the operations of a SEQUENCE S, the top first
+/// a STACK simulated with the operations of a SEQUENCE `S`, the top first
 template< Sequence S >
 class SequenceStack {
 
@@ -60,18 +61,19 @@ class SequenceStack {
 
  using Item = typename S::Item;   ///< the type of the items
 
+ /// true if there is no item, `empty()` of the sequence
  [[nodiscard]] bool empty( void ) const;
 
- /// the item on top, read( head() )
+ /// the item on top, `read( head() )`
  /// \pre the stack is not empty
  [[nodiscard]] const Item & top( void ) const;
 
- /// removes the item on top and returns it, remove( head() )
+ /// removes the item on top and returns it, `remove( head() )`
  /// \pre the stack is not empty
  Item pop( void );
 
- /// puts v on top, insert( head() , v )
- /// \post the stack is not empty, v on top
+ /// puts \f$ v \f$ on top, `insert( head() , v )`
+ /// \post the stack is not empty, \f$ v \f$ on top
  void push( const Item & v );
 
  /// the same items in the same order, those of the sequences
@@ -82,11 +84,13 @@ class SequenceStack {
  // a constant view of the items from the top to the bottom, with the
  // iterators of the sequence, when it has them
 
+ /// the iterator of the sequence on the item on top
  [[nodiscard]] auto begin( void ) const
   requires std::ranges::range< const S > {
   return( std::ranges::cbegin( f_s ) );
   }
 
+ /// the iterator of the sequence past the item at the bottom
  [[nodiscard]] auto end( void ) const
   requires std::ranges::range< const S > {
   return( std::ranges::cend( f_s ) );
