@@ -1,0 +1,542 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File numeric.dox -----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_numeric */
+/** \defgroup theory_numeric Theory of numerical algorithms
+ \ingroup area_numeric
+
+ \details The headers of `include/ADS/numeric` realize the arithmetic of
+ section 2.6 and of section 12.3 of the book (the integers of \f$ n \f$ bits
+ and the polynomials, multiplied by divide et impera), the product of
+ matrices of section 12.4, the recurrences of chapter 13 (the numbers of
+ Fibonacci, the binomial coefficients, the chain of matrices) and the numbers
+ of Catalan of the exercises on dynamic programming,
+ the number theory of chapter 17 (Euclid, the modular powers, the test of
+ Miller and Rabin, RSA), and, beyond the book, the integers and the
+ fractions of any length, the fast Fourier transform, the generators of
+ random numbers with their tests and the samplings, and the sparse matrices.
+ This page collects what the headers take for granted: the notation shared by
+ all of them (see \ref theory_numeric_notation), the representations of the
+ numbers and of the matrices with the costs of their operations (see
+ \ref theory_numeric_repr), and, for each family of algorithms, the property
+ on which its correctness rests and the argument behind its bound (from
+ \ref theory_numeric_dc to \ref theory_numeric_sparse). The pseudocode of
+ each algorithm is instead on the page of its header, in the comment of its
+ function, together with the section of the book, or the paper, that it
+ follows.
+
+ \tableofcontents
+
+ \section theory_numeric_notation Definitions and notation
+
+ An integer is written in a base \f$ \beta \f$ as the digits
+ \f$ x_0 , x_1 , \ldots , x_{n-1} \in [ 0 , \beta ) \f$, the least
+ significant first, i.e., \f$ x = \sum_{i<n} x_i \beta^i \f$; the base is 2
+ for the vectors of bits of `BinaryInteger.h` and \f$ 2^{64} \f$ for the
+ digits (the <em>limbs</em>) of `BigInteger.h`, and the length \f$ n \f$ of
+ the operands is the measure of the costs. A polynomial is the vector of its
+ coefficients from the constant one, so that the product of two integers is
+ the product of their polynomials in \f$ x = \beta \f$ followed by the
+ propagation of the carries. A matrix is \f$ m \times n \f$, and a sparse one
+ has \f$ \mathit{nnz} \f$ nonzero entries, the others being 0 and not
+ stored.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$, \f$ \beta \f$</td>
+     <td>the number of digits (bits, coefficients, rows) of an operand, and
+         the base of the digits</td></tr>
+ <tr><td>\f$ M( n ) \f$</td>
+     <td>the time of the product of two integers of \f$ n \f$ digits, in
+         which the quotients, the roots, the conversions and the gcds are
+         measured</td></tr>
+ <tr><td>\f$ \gcd( a , b ) \f$, \f$ a \bmod m \f$</td>
+     <td>the greatest common divisor, and the remainder in
+         \f$ [ 0 , m ) \f$</td></tr>
+ <tr><td>\f$ \omega_n \f$</td>
+     <td>the root of unity \f$ e^{-2 \pi i / n} \f$ of the discrete Fourier
+         transform \f$ \hat a_k = \sum_{j<n} a_j \omega_n^{j k} \f$</td></tr>
+ <tr><td>\f$ F_n \f$, \f$ C_n \f$, \f$ \binom{n}{k} \f$</td>
+     <td>the numbers of Fibonacci (\f$ F_0 = F_1 = 1 \f$) and of Catalan,
+         and the binomial coefficients</td></tr>
+ <tr><td>\f$ \mathit{nnz} \f$</td>
+     <td>the nonzero entries of a sparse matrix</td></tr>
+ <tr><td>\f$ g \f$, \f$ U \f$</td>
+     <td>a generator of random words, and a real uniform in
+         \f$ [ 0 , 1 ) \f$ or \f$ ( 0 , 1 ) \f$</td></tr>
+ </table>
+
+ \section theory_numeric_repr Representations and their costs
+
+ The numbers and the matrices of the area are kept in several
+ representations, each with the operations that it makes cheap; the table
+ gives the space and the cost of the main ones (the products of the integers
+ of any length depend on their length, see \ref theory_numeric_dc).
+
+ <table>
+ <caption>The representations of the area and the cost of their
+          operations</caption>
+ <tr><th>Representation</th><th>Space</th><th>Main operations</th></tr>
+ <tr><td><tt>Bits</tt> of <tt>BinaryInteger.h</tt></td>
+     <td>\f$ \Theta( n ) \f$</td>
+     <td>sum \f$ \Theta( n ) \f$, product \f$ \Theta( n^2 ) \f$ or
+         \f$ \Theta( n^{\log_2 3} ) \f$</td></tr>
+ <tr><td><tt>BigInteger</tt></td><td>\f$ \Theta( n ) \f$ digits of 64
+     bits</td>
+     <td>sum \f$ \Theta( n ) \f$, product from \f$ \Theta( n^2 ) \f$ to
+         \f$ O( n \log n ) \f$, quotient and root \f$ O( M( n ) ) \f$, gcd
+         \f$ O( M( n ) \log n ) \f$</td></tr>
+ <tr><td><tt>Rational</tt></td><td>two <tt>BigInteger</tt> in lowest
+     terms</td>
+     <td>each operation a few products and gcds of the terms</td></tr>
+ <tr><td><tt>Matrix</tt>, <tt>DenseMatrix</tt></td>
+     <td>\f$ \Theta( m n ) \f$</td>
+     <td>product \f$ \Theta( n^3 ) \f$, or \f$ O( n^{2.81} ) \f$ by
+         Strassen</td></tr>
+ <tr><td><tt>SparseMatrix</tt></td>
+     <td>\f$ \Theta( m + n + \mathit{nnz} ) \f$</td>
+     <td>entry \f$ O( \text{its row} ) \f$, insertion and deletion of an
+         entry \f$ O( \text{its row and column} ) \f$</td></tr>
+ <tr><td><tt>CsrMatrix</tt>, <tt>SellMatrix</tt></td>
+     <td>\f$ \Theta( m + \mathit{nnz} ) \f$, the padding for SELL</td>
+     <td>product by a vector \f$ \Theta( m + \mathit{nnz} ) \f$, transpose
+         \f$ \Theta( m + n + \mathit{nnz} ) \f$</td></tr>
+ <tr><td><tt>DynamicCsr</tt></td>
+     <td>\f$ \Theta( m + \mathit{nnz} ) \f$</td>
+     <td>append of a row linear in its entries, removal of rows in one
+         pass</td></tr>
+ </table>
+
+ The orthogonal lists of `SparseMatrix` are preferable when the pattern of
+ the nonzeros changes, as in the elimination by pivots, whose fill-in enters
+ the lists where it appears; the compressed rows are preferable when the
+ pattern is fixed and the matrix is read, since a product by a vector then
+ streams the values and the columns from memory in one pass. Among the dense
+ representations, the vector of rows of `Matrix` follows the book, while
+ `DenseMatrix` keeps the entries in one block, which lets `gemm()` cut the
+ factors into blocks that fit the levels of the cache.
+
+ \section theory_numeric_dc Divide et impera on the products
+
+ The sum of two integers of \f$ n \f$ digits costs \f$ \Theta( n ) \f$, a
+ bound that cannot be improved since every digit must be read; the product of
+ the school costs \f$ \Theta( n^2 ) \f$, one partial product per digit of a
+ factor. With \f$ a = a_1 \beta^h + a_0 \f$ and \f$ b = b_1 \beta^h + b_0 \f$,
+ \f$ h = \lfloor n / 2 \rfloor \f$, the product is
+ \f[
+   a b = a_1 b_1 \beta^{2h} + ( a_1 b_0 + a_0 b_1 ) \beta^h + a_0 b_0 ,
+   \tag{1}
+ \f]
+ four products of half size and \f$ \Theta( n ) \f$ sums, whence
+ \f$ T( n ) = 4 T( n / 2 ) + \Theta( n ) = \Theta( n^2 ) \f$, no gain
+ (`multiplyFour()` of `Polynomial.h`, the Prodotto4() of section 2.6).
+
+ <em>Lemma 1 (Karatsuba).</em> The middle term of (1) is
+ \f[
+   a_1 b_0 + a_0 b_1 = ( a_1 + a_0 ) ( b_1 + b_0 ) - a_1 b_1 - a_0 b_0 ,
+   \tag{2}
+ \f]
+ so that three products of half size suffice, and
+ \f$ T( n ) = 3 T( n / 2 ) + \Theta( n ) = \Theta( n^{\log_2 3} ) \f$, with
+ \f$ \log_2 3 < 1.59 \f$.
+
+ Indeed, (2) is an identity of the polynomials, and the recursion tree of
+ \f$ T \f$ has \f$ 3^k \f$ calls of size \f$ n / 2^k \f$ at the level
+ \f$ k \f$, whose total work \f$ ( 3 / 2 )^k n \f$ grows geometrically with
+ \f$ k \f$; the leaves, \f$ 3^{\log_2 n} = n^{\log_2 3} \f$ of them,
+ dominate. The same argument gives the bound of every split of this kind: a
+ product cut in \f$ k \f$ pieces and rebuilt from \f$ r \f$ products of the
+ pieces costs \f$ \Theta( n^{\log_k r} ) \f$ when \f$ r > k \f$. Hence
+ Toom-3, five products of a third (the values of the polynomials at
+ \f$ 0 , \pm 1 , 2 , \infty \f$ and an interpolation), costs
+ \f$ \Theta( n^{\log_3 5} ) = O( n^{1.47} ) \f$, and Toom-4, seven of a
+ quarter, \f$ \Theta( n^{\log_4 7} ) = O( n^{1.41} ) \f$; the constants grow
+ with \f$ k \f$, and `BigInteger` passes from one method to the next at
+ thresholds of length measured on a machine (`kKaratsuba`, `kToom3`,
+ `kToom4`, `kFFT`). Beyond them the product is a convolution of the digits,
+ which the Fourier transform computes in \f$ O( n \log n ) \f$ operations
+ (see \ref theory_numeric_fft).
+
+ The matrices obey the same scheme. The product of two \f$ n \times n \f$
+ matrices by the definition costs \f$ \Theta( n^3 ) \f$, and by blocks of
+ \f$ n / 2 \f$ it is eight products of blocks, again \f$ \Theta( n^3 ) \f$;
+ Strassen rebuilds it from seven products and eighteen sums of blocks
+ (Winograd's variant, of `DenseMatrix.h`, from seven and fifteen), whence
+ \f[
+   T( n ) = 7 T( n / 2 ) + \Theta( n^2 ) = \Theta( n^{\log_2 7} ) ,
+   \qquad \log_2 7 < 2.81 . \tag{3}
+ \f]
+ The price is the accuracy in floating point: the bound of the error grows
+ with a power of \f$ n / n_0 \f$, \f$ n_0 \f$ the size at which the recursion
+ stops, instead of with \f$ n \f$ (Higham), which is the reason why
+ `multiplyStrassen()` stops early and leaves the blocks to `gemm()`.
+
+ <table>
+ <caption>The products of the area</caption>
+ <tr><th>Function</th><th>Method</th><th>Time</th></tr>
+ <tr><td><tt>multiplyNaive()</tt>, <tt>multiplyBinarySchool()</tt></td>
+     <td>the school</td><td>\f$ \Theta( n^2 ) \f$</td></tr>
+ <tr><td><tt>multiplyFour()</tt>, <tt>multiplyBinaryFour()</tt></td>
+     <td>(1), four halves</td><td>\f$ \Theta( n^2 ) \f$</td></tr>
+ <tr><td><tt>multiplyKaratsuba()</tt></td><td>(2), three halves</td>
+     <td>\f$ \Theta( n^{\log_2 3} ) \f$</td></tr>
+ <tr><td><tt>BigInteger::operator*()</tt></td>
+     <td>school, Karatsuba, Toom-3, Toom-4, the NTT</td>
+     <td>\f$ O( n \log n ) \f$ for the longest</td></tr>
+ <tr><td><tt>multiplyNaive()</tt> and <tt>strassen()</tt> of
+     <tt>Matrix.h</tt></td>
+     <td>the definition, and (3)</td>
+     <td>\f$ \Theta( n^3 ) \f$, \f$ \Theta( n^{\log_2 7} ) \f$</td></tr>
+ <tr><td><tt>gemm()</tt>, <tt>multiplyStrassen()</tt></td>
+     <td>blocks for the cache, and (3) down to <tt>gemm()</tt></td>
+     <td>\f$ \Theta( m n k ) \f$, \f$ O( n^{\log_2 7} ) \f$</td></tr>
+ </table>
+
+ The quotient, the square root and the conversions between the bases reduce
+ to products. The quotient of Algorithm D of Knuth guesses each digit from the
+ leading digits of the remainder and of the normalized divisor, a guess that
+ exceeds the true digit by at most 2 (by 1 with three digits over two), and
+ costs \f$ O( m n ) \f$ for a quotient of \f$ m \f$ digits; Newton's method on
+ the reciprocal, \f$ x \gets x + x ( 1 - b x ) \f$, doubles the correct
+ digits at each step, so that the reciprocal, and with it the quotient, costs
+ a constant number of products of the final length, \f$ O( M( n ) ) \f$, the
+ steps on the shorter lengths summing to a geometric series. The
+ conversions split the number by a power of the base near its square root,
+ \f$ O( M( n ) \log n ) \f$, and the gcd of Lehmer, which applies to the whole
+ numbers the quotients found on their leading digits, spares all but one
+ long operation per word of quotients (see the comments of `BigInteger.h`).
+
+ \section theory_numeric_rec Recurrences and dynamic programming
+
+ The numbers of Fibonacci, \f$ F_n = F_{n-1} + F_{n-2} \f$, computed by the
+ recurrence as it is written, take a number of calls that satisfies the same
+ recurrence, i.e., \f$ \Theta( \phi^n ) \f$ with
+ \f$ \phi = ( 1 + \sqrt{5} ) / 2 \approx 1.6 \f$; the table of the values
+ already computed, or the last two alone, take \f$ O( n ) \f$ (`fibonacci()`
+ of `Combinatorics.h`). The same holds for the binomial coefficients:
+ \f[
+   \binom{n}{k} = \binom{n-1}{k-1} + \binom{n-1}{k} , \qquad
+   \binom{n}{0} = \binom{n}{n} = 1 , \tag{4}
+ \f]
+ whose recursion makes \f$ 2 \binom{n}{k} - 1 \f$ calls (each leaf returns 1,
+ and a tree with \f$ \ell \f$ leaves whose inner nodes have two children has
+ \f$ 2 \ell - 1 \f$ nodes), against the \f$ \Theta( n^2 ) \f$ of the triangle
+ of Tartaglia (`tartaglia()`), which fills (4) by rows.
+
+ The numbers of Catalan count the binary trees: a tree of \f$ n \f$ nodes has
+ a left subtree of \f$ k \f$ nodes and a right one of \f$ n - 1 - k \f$, and
+ hence
+ \f[
+   C_0 = 1 , \qquad C_n = \sum_{k=0}^{n-1} C_k C_{n-1-k} , \tag{5}
+ \f]
+ filled in \f$ \Theta( n^2 ) \f$ operations by `catalan()`;
+ \f$ C_n = \binom{2n}{n} / ( n + 1 ) \sim 4^n / ( n^{3/2} \sqrt{\pi} ) \f$,
+ so that the parenthesizations of a product of \f$ n \f$ matrices, which are
+ \f$ C_{n-1} \f$, cannot be enumerated. The chain of matrices
+ (`matrixChain()`) has optimal substructure instead: the last product of an
+ optimal order splits the chain at some \f$ k \f$, and both sides are then
+ ordered optimally, whence the recurrence (section 13.3)
+ \f[
+   \mathit{DP}[ i ][ j ] = \min_{i \le k < j} \{ \mathit{DP}[ i ][ k ] +
+   \mathit{DP}[ k + 1 ][ j ] + c_i c_{k+1} c_{j+1} \} , \tag{6}
+ \f]
+ \f$ \Theta( n^2 ) \f$ subproblems of \f$ O( n ) \f$ choices each, i.e.,
+ \f$ O( n^3 ) \f$ time, filled by increasing length so that the two sides are
+ known when a chain is solved.
+
+ \section theory_numeric_nt Number theory
+
+ <em>Lemma 2 (Euclid).</em> For \f$ m > 0 \f$,
+ \f[
+   \gcd( s , m ) = \gcd( m , s \bmod m ) , \tag{7}
+ \f]
+ and the algorithm that applies (7) until \f$ m = 0 \f$ makes
+ \f$ O( \log m ) \f$ steps.
+
+ Indeed, \f$ s \bmod m = s - \lfloor s / m \rfloor m \f$, so that the two pairs
+ have the same common divisors. After two steps the pair \f$ ( s , m ) \f$
+ has become \f$ ( r , m \bmod r ) \f$, \f$ r = s \bmod m \f$, and
+ \f$ r < s / 2 \f$: if \f$ m \le s / 2 \f$, since \f$ r < m \f$, and
+ otherwise since \f$ r = s - m \f$; hence the first number halves every two
+ steps, and the worst case is that of two consecutive numbers of Fibonacci
+ (Lamé).
+ `extendedEuclid()` carries along the coefficients of Bezout: if
+ \f$ m p' + ( s \bmod m ) q' = d \f$, then
+ \f$ s q' + m ( p' - \lfloor s / m \rfloor q' ) = d \f$, and when
+ \f$ d = 1 \f$ the coefficient of \f$ s \f$ is its inverse modulo \f$ m \f$
+ (`modInverse()`). The binary gcd of Stein (`binaryGcd()`) replaces the
+ divisions by shifts and subtractions, since
+ \f$ \gcd( a , b ) = \gcd( \min( a , b ) , | a - b | ) \f$ and the difference
+ of two odd numbers is even; each step halves the larger number at least,
+ and the steps are at most \f$ \log_2 a + \log_2 b + 2 \f$.
+
+ The power \f$ x^v \bmod m \f$ by repeated squaring (`powMod()`, exercise
+ 17.1) reads the bits of \f$ v \f$: with
+ \f$ v = \sum_i v_i 2^i \f$, \f$ x^v = \prod_{i : v_i = 1} x^{2^i} \f$, the
+ factors \f$ x^{2^i} \f$ are squares of one another, and the time is
+ \f$ \lfloor \log_2 v \rfloor + 1 \f$ squarings and at most as many products
+ modulo \f$ m \f$. The products modulo an odd \f$ m \f$ go by the form of
+ Montgomery, \f$ \bar x = x R \bmod m \f$, \f$ R = 2^{64} \f$, in which the
+ reduction of \f$ T = \bar a \bar b < m R \f$ is
+ \f[
+   \mathrm{REDC}( T ) = \frac{T - q m}{R} \equiv T R^{-1} \pmod{m} , \qquad
+   q = T m^{-1} \bmod R , \tag{8}
+ \f]
+ exact since \f$ T - q m \equiv 0 \pmod{R} \f$, and in \f$ ( -m , m ) \f$, so
+ that one addition of \f$ m \f$ at most ends it: two products and no
+ division (`Montgomery64`).
+
+ <em>Theorem 3 (Miller and Rabin).</em> Let \f$ n > 2 \f$ be odd and
+ \f$ n - 1 = 2^v m \f$ with \f$ m \f$ odd. If \f$ n \f$ is prime, every base
+ \f$ b \in [ 1 , n ) \f$ satisfies
+ \f[
+   b^m \equiv 1 \quad \text{or} \quad b^{2^i m} \equiv -1 \pmod{n}
+   \text{ for some } 0 \le i < v , \tag{9}
+ \f]
+ and if \f$ n \f$ is composite at most a quarter of the bases satisfy (9).
+
+ The first part holds since \f$ b^{n-1} \equiv 1 \f$ (Fermat), and modulo a
+ prime the only square roots of 1 are \f$ \pm 1 \f$, so that the sequence
+ \f$ b^m , b^{2m} , \ldots , b^{2^v m} \f$ either starts at 1 or reaches 1
+ right after \f$ -1 \f$; the second is the theorem of Rabin, whose proof
+ counts the bases in the group of the units. A base that violates (9) is a
+ <em>witness</em> (`witness()`), and \f$ K \f$ random bases fail to find one
+ for a composite \f$ n \f$ with probability at most \f$ 4^{-K} \f$
+ (`millerRabin()`); the test errs only by saying prime. For \f$ n \f$ below
+ \f$ 2^{64} \f$ a few fixed bases leave no composite unwitnessed, a fact
+ checked by an exhaustive computation (Jaeschke, Sinclair), which makes
+ `isPrime()` exact.
+
+ RSA rests on Euler's theorem: with \f$ N = x y \f$, \f$ x \f$ and \f$ y \f$
+ distinct primes, and \f$ p s \equiv 1 \pmod{( x - 1 ) ( y - 1 )} \f$, one has
+ \f$ M^{p s} \equiv M \pmod{N} \f$ for every \f$ M < N \f$, since the
+ congruence holds modulo \f$ x \f$ and modulo \f$ y \f$ (by Fermat if the
+ prime does not divide \f$ M \f$, trivially if it does); hence the
+ decryption \f$ C^s \f$ undoes the encryption \f$ M^p \f$ (section 17.3). The
+ sieve of Eratosthenes (`sieve()`) removes the multiples of each prime
+ \f$ p \le \sqrt{n} \f$ from \f$ p^2 \f$ on, the smaller ones being multiples
+ of smaller primes already removed, in
+ \f$ \sum_{p \le n} n / p = O( n \log \log n ) \f$ time by the theorem of
+ Mertens.
+
+ \section theory_numeric_fft The Fourier transform
+
+ The discrete Fourier transform of \f$ a_0 , \ldots , a_{n-1} \f$ evaluates
+ the polynomial \f$ a( x ) = \sum_j a_j x^j \f$ at the \f$ n \f$ roots of
+ unity \f$ \omega_n^k \f$, and the inverse interpolates it, with
+ \f$ \omega_n^{-1} \f$ and a factor \f$ 1 / n \f$, since
+ \f$ \sum_k \omega_n^{j k} = 0 \f$ unless \f$ n \mid j \f$.
+
+ <em>Lemma 4 (the convolution).</em> If \f$ c \f$ is the cyclic convolution
+ of \f$ a \f$ and \f$ b \f$, \f$ c_k = \sum_{j} a_j b_{( k - j ) \bmod n} \f$,
+ then
+ \f[
+   \hat c_k = \hat a_k \hat b_k \quad \forall k . \tag{10}
+ \f]
+
+ Indeed, \f$ c( x ) \equiv a( x ) b( x ) \f$ modulo \f$ x^n - 1 \f$, and each
+ \f$ \omega_n^k \f$ is a root of \f$ x^n - 1 \f$. With \f$ n \f$ at least the
+ number of coefficients of the product, the convolution is the product of the
+ polynomials, and of the integers once the carries are propagated
+ (`convolve()`, and the NTT of `BigInteger.h`, where the roots of unity are
+ those of a prime field and (10) holds exactly).
+
+ The transform is fast because it factors. With \f$ n = r m \f$, the
+ index \f$ j = r i + j' \f$ of the input and \f$ k = k' + m q \f$ of the
+ output, one has
+ \f[
+   \hat a_{k' + m q} = \sum_{j'<r} \omega_r^{j' q} \, \omega_n^{j' k'}
+   \sum_{i<m} a_{r i + j'} \omega_m^{i k'} , \tag{11}
+ \f]
+ i.e., \f$ r \f$ transforms of length \f$ m \f$, \f$ n \f$ products by the
+ twiddles \f$ \omega_n^{j' k'} \f$, and \f$ m \f$ transforms of length
+ \f$ r \f$ (Cooley and Tukey). Applied recursively to
+ \f$ n = 2^K \f$, (11) gives \f$ T( n ) = 2 T( n / 2 ) + \Theta( n ) =
+ \Theta( n \log n ) \f$; `fft()` applies it as the four steps of Bailey, with
+ \f$ r \f$ and \f$ m \f$ near \f$ \sqrt{n} \f$ so that each step works in the
+ cache. A prime \f$ n \f$ has no factorization, and is reduced to a
+ convolution: by the generator of the integers modulo \f$ n \f$, a cyclic one
+ of \f$ n - 1 \f$ points (Rader), or by
+ \f$ j k = ( j^2 + k^2 - ( k - j )^2 ) / 2 \f$, a linear one of any length at
+ least \f$ 2 n - 1 \f$ (Bluestein); both are then computed by (10) on
+ lengths that do factor, so that every \f$ n \f$ costs
+ \f$ O( n \log n ) \f$. A transform of \f$ n \f$ real numbers is one complex
+ transform of \f$ n / 2 \f$ points and a pass that separates the even and the
+ odd items (`rfft()`), and the transforms of the cosines and of the sines are
+ real transforms of the input reordered or extended (`dct()`, `dst()`).
+
+ <table>
+ <caption>The ways of a transform of \f$ n \f$ points</caption>
+ <tr><th>Case</th><th>Method</th><th>Time</th></tr>
+ <tr><td>\f$ n \f$ small</td><td>a codelet, unrolled</td>
+     <td>a fixed sequence of operations</td></tr>
+ <tr><td>\f$ n = r m \f$</td><td>the four steps (11), the rounds of
+     Stockham for the long rows and columns</td>
+     <td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td>\f$ n \f$ prime</td><td>Rader, a cyclic convolution of
+     \f$ n - 1 \f$ points</td><td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td>a large prime factor</td><td>Bluestein, a convolution of
+     \f$ M \ge 2 n - 1 \f$ points</td><td>\f$ O( n \log n ) \f$, a larger
+     constant</td></tr>
+ <tr><td>any \f$ n \f$, <tt>dft()</tt></td><td>the definition</td>
+     <td>\f$ \Theta( n^2 ) \f$</td></tr>
+ </table>
+
+ \section theory_numeric_random Random numbers and samplings
+
+ A linear congruential generator \f$ X_{k+1} = ( a X_k + c ) \bmod m \f$
+ (`LinearCongruential`) has a period at most \f$ m \f$, and exactly
+ \f$ m \f$ if and only if \f$ c \f$ and \f$ m \f$ are coprime, \f$ a - 1 \f$
+ is a multiple of every prime factor of \f$ m \f$, and of 4 if \f$ m \f$ is
+ (Hull and Dobell); its pairs \f$ ( X_k , X_{k+1} ) \f$ lie on lines at the
+ distance \f$ 1 / \nu_2 \f$, and the spectral test (`spectralTest2()`)
+ measures \f$ \nu_2 \f$ by the reduction of a basis of the lattice of the
+ vectors \f$ ( u , v ) \f$ with \f$ u + a v \equiv 0 \pmod{m} \f$; the same
+ generator with \f$ a , c , m \f$ fixed at compile time
+ (`LinearCongruentialT`, of which `MinStd` and `Mmix`) has `min()` and
+ `max()` constant, as the distributions of the standard library require. The
+ generators of `RandomGenerators.h` replace the linear map modulo \f$ m \f$
+ with linear maps over \f$ \mathbb{F}_2 \f$ (xoshiro) or with the rounds of a
+ bijection on a counter (Philox), followed by a nonlinear output. The
+ empirical tests compare the counts \f$ Y_s \f$ of \f$ k \f$ categories of
+ probabilities \f$ p_s \f$ with the expected ones,
+ \f[
+   V = \sum_s \frac{( Y_s - n p_s )^2}{n p_s} , \tag{12}
+ \f]
+ which for large \f$ n \f$ follows the \f$ \chi^2 \f$ distribution with
+ \f$ k - 1 \f$ degrees of freedom (`chiSquare()`, `serialTest()`).
+
+ <em>Lemma 5 (the shuffle).</em> The shuffle of Fisher and Yates, which for
+ \f$ j = n , n - 1 , \ldots , 2 \f$ swaps the item \f$ j - 1 \f$ with one
+ drawn uniformly among the first \f$ j \f$, gives each of the \f$ n! \f$
+ permutations with probability \f$ 1 / n! \f$.
+
+ Indeed, the draws are \f$ n ( n - 1 ) \cdots 2 = n! \f$ equally likely
+ sequences, and they give distinct permutations, since the item put in the
+ place \f$ j - 1 \f$ is never moved again. The uniform draw below \f$ j \f$
+ is exact only if the generator gives it so: `uniformBelow()` takes the high
+ word of \f$ x j \f$ and rejects the low words below \f$ 2^{64} \bmod j \f$,
+ which leaves each result \f$ \lfloor 2^{64} / j \rfloor \f$ words, while a
+ plain \f$ x \bmod j \f$ (as in `shuffle()` and `reservoirSampling()` of
+ `RandomNumbers.h`) is off by at most \f$ j / 2^{64} \f$ for a generator of
+ 64 bits.
+
+ <em>Lemma 6 (the reservoir).</em> If the item \f$ t \f$ of a stream,
+ \f$ t > n \f$ (from 1), replaces a uniform item of a reservoir of \f$ n \f$
+ with probability \f$ n / t \f$, then after \f$ N \f$ items each of them is
+ in the reservoir with probability \f$ n / N \f$.
+
+ By induction on \f$ N \f$: an item in the reservoir after \f$ N - 1 \f$
+ items, with probability \f$ n / ( N - 1 ) \f$, survives the item \f$ N \f$
+ with probability \f$ 1 - ( n / N ) ( 1 / n ) = ( N - 1 ) / N \f$, and the
+ product is \f$ n / N \f$. Algorithm R (`reservoirSampling()`) draws a number
+ per item, while Algorithm L of Li (`reservoirSampleL()`) draws how many items
+ to skip, a geometric number, and only \f$ O( n ( 1 + \log( N / n ) ) ) \f$
+ numbers in all; when \f$ N \f$ is known, the selection of each item with
+ probability \f$ ( n - s ) / ( N - t ) \f$, \f$ s \f$ the items taken among
+ the \f$ t \f$ seen, is uniform for the same reason (Algorithm S), and the
+ method of Vitter draws its gaps (`sampleBySkips()`). The alias method
+ (`AliasTable`) draws from a discrete distribution in \f$ O( 1 ) \f$: each of
+ \f$ n \f$ cells of equal probability holds an item with a share
+ \f$ p_i \le 1 \f$ and an alias for the rest, which the construction of Vose
+ makes possible since the shares below 1 and above 1 always balance.
+
+ \section theory_numeric_sparse Sparse matrices
+
+ The product \f$ y = A x \f$ of a matrix in compressed sparse rows reads each
+ nonzero once with the column that addresses \f$ x \f$, in
+ \f$ \Theta( m + \mathit{nnz} ) \f$ time, and its \f$ 2 \, \mathit{nnz} \f$
+ operations on \f$ 12 \, \mathit{nnz} \f$ bytes make it bound by the
+ bandwidth of the memory rather than by the processor. The transpose is the
+ matrix by columns, built by a counting sort on the columns: the counts give
+ the starts of the rows of the transpose, and the nonzeros, scanned by row,
+ land in each row of the transpose by increasing row, so that it comes out
+ sorted in \f$ \Theta( m + n + \mathit{nnz} ) \f$ (`transpose()` of
+ `CsrMatrix`); the same counting sort, by the major index, assembles the
+ compressed form from triplets in any order (`SparseAssembly.h`). The format
+ SELL-\f$ C \f$-\f$ \sigma \f$ (`SellMatrix`) stores the rows by chunks of
+ \f$ C \f$, column by column, so that the vector lanes compute \f$ C \f$ rows
+ at once; its cost is that of the padding,
+ \f$ \sum_c C \max_{i \in c} r_i - \mathit{nnz} \f$, which the sort of the
+ rows by length within windows of \f$ \sigma \f$ keeps small.
+
+ The pivot step on the orthogonal lists (`pivot()` of `SparseMatrix`) is the
+ elimination by exchange of Knuth: with the pivot \f$ a \f$ in the row
+ \f$ r \f$ and the column \f$ c \f$, every entry \f$ d \f$ with a nonzero
+ \f$ b \f$ in the pivot row and \f$ c' \f$ in the pivot column becomes
+ \f$ d - b c' / a \f$, the pivot row is divided by \f$ a \f$ and the pivot
+ column by \f$ - a \f$, and the pivot becomes \f$ 1 / a \f$; a pivot on each
+ diagonal place in turn inverts a matrix whose pivots are not zero. Only the
+ entries in the rows of the pivot column and in the columns of the pivot row
+ change, and the new nonzeros (the fill-in) enter the lists where they
+ appear.
+
+ \section theory_numeric_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 2.6, 12.3
+      and 12.4 and chapters 13 and 17,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap12.pdf
+ \see D. E. Knuth, The Art of Computer Programming, vol. 2, Seminumerical
+      Algorithms, 3rd ed., Addison-Wesley, 1998, chapters 3 and 4
+ \see A. Karatsuba, Yu. Ofman, Multiplication of multidigit numbers on
+      automata, Soviet Physics Doklady 7, 595-596, 1963
+ \see V. Strassen, Gaussian elimination is not optimal, Numerische
+      Mathematik 13(4), 354-356, 1969, doi:10.1007/BF02165411
+ \see R. P. Brent, P. Zimmermann, Modern Computer Arithmetic, Cambridge
+      University Press, 2010
+ \see N. J. Higham, Accuracy and Stability of Numerical Algorithms, 2nd
+      ed., SIAM, 2002, doi:10.1137/1.9780898718027
+ \see J. W. Cooley, J. W. Tukey, An algorithm for the machine calculation
+      of complex Fourier series, Mathematics of Computation 19(90),
+      297-301, 1965, doi:10.1090/S0025-5718-1965-0178586-1
+ \see D. H. Bailey, FFTs in external or hierarchical memory, The Journal
+      of Supercomputing 4(1), 23-35, 1990, doi:10.1007/BF00162341
+ \see C. M. Rader, Discrete Fourier transforms when the number of data
+      samples is prime, Proceedings of the IEEE 56(6), 1107-1108, 1968,
+      doi:10.1109/PROC.1968.6477
+ \see L. I. Bluestein, A linear filtering approach to the computation of
+      discrete Fourier transform, IEEE Transactions on Audio and
+      Electroacoustics 18(4), 451-455, 1970, doi:10.1109/TAU.1970.1162132
+ \see P. L. Montgomery, Modular multiplication without trial division,
+      Mathematics of Computation 44(170), 519-521, 1985,
+      doi:10.1090/S0025-5718-1985-0777282-X
+ \see G. L. Miller, Riemann's hypothesis and tests for primality, Journal
+      of Computer and System Sciences 13(3), 300-317, 1976,
+      doi:10.1016/S0022-0000(76)80043-8
+ \see M. O. Rabin, Probabilistic algorithm for testing primality, Journal
+      of Number Theory 12(1), 128-138, 1980,
+      doi:10.1016/0022-314X(80)90084-0
+ \see R. L. Rivest, A. Shamir, L. Adleman, A method for obtaining digital
+      signatures and public-key cryptosystems, Communications of the ACM
+      21(2), 120-126, 1978, doi:10.1145/359340.359342
+ \see T. E. Hull, A. R. Dobell, Random number generators, SIAM Review
+      4(3), 230-254, 1962, doi:10.1137/1004061
+ \see D. Blackman, S. Vigna, Scrambled linear pseudorandom number
+      generators, ACM Transactions on Mathematical Software 47(4), 36:1-32,
+      2021, doi:10.1145/3460772
+ \see D. Lemire, Fast random integer generation in an interval, ACM
+      Transactions on Modeling and Computer Simulation 29(1), 3:1-12,
+      2019, doi:10.1145/3230636
+ \see J. S. Vitter, Random sampling with a reservoir, ACM Transactions on
+      Mathematical Software 11(1), 37-57, 1985, doi:10.1145/3147.3165
+ \see K.-H. Li, Reservoir-sampling algorithms of time complexity
+      \f$ O( n ( 1 + \log( N / n ) ) ) \f$, ACM Transactions on Mathematical
+      Software 20(4), 481-493, 1994, doi:10.1145/198429.198435
+ \see M. D. Vose, A linear algorithm for generating random numbers with a
+      given distribution, IEEE Transactions on Software Engineering
+      17(9), 972-975, 1991, doi:10.1109/32.92917
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapter 3 (Random Sampling),
+      doi:10.1017/9781009128933
+ \see Y. Saad, Iterative Methods for Sparse Linear Systems, 2nd ed., SIAM,
+      2003, section 3.4
+ \see M. Kreutzer, G. Hager, G. Wellein, H. Fehske, A. R. Bishop, A
+      unified sparse matrix data format for efficient general sparse
+      matrix-vector multiplication on modern processors with wide SIMD
+      units, SIAM Journal on Scientific Computing 36(5), C401-C423, 2014,
+      doi:10.1137/130930352
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File numeric.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/

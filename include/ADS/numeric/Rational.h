@@ -2,34 +2,34 @@
 /*---------------------------- File Rational.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The exact rational numbers of Knuth (4.5.1), beyond the book: a fraction
- * u / u' of integers of any length [see BigInteger.h] kept in lowest
- * terms, with u' > 0. The sum and the product reduce by the greatest
- * common divisors of the smaller numbers, as Henrici suggested, instead of
- * by that of the result: for u / u' + v / v', with
- * \f$ d_1 = \gcd( u' , v' ) \f$, the numerator is
- * \f$ t = u ( v' / d_1 ) + v ( u' / d_1 ) \f$ and, with
+ * The exact rational numbers of Knuth (section 4.5.1 of The Art of Computer
+ * Programming), beyond the book: a fraction \f$ u / u' \f$ of integers of
+ * any length [see `BigInteger.h`] kept in lowest terms, with \f$ u' > 0 \f$.
+ * The sum and the product reduce by the greatest common divisors of the
+ * smaller numbers, as Henrici suggested, instead of by that of the result:
+ * for \f$ u / u' + v / v' \f$, with \f$ d_1 = \gcd( u' , v' ) \f$, the
+ * numerator is \f$ t = u ( v' / d_1 ) + v ( u' / d_1 ) \f$ and, with
  * \f$ d_2 = \gcd( t , d_1 ) \f$, the result is
  * \f$ ( t / d_2 ) / ( ( u' / d_1 ) ( v' / d_2 ) ) \f$, already in lowest
  * terms; for the product, \f$ d_1 = \gcd( u , v' ) \f$ and
- * \f$ d_2 = \gcd( u' , v ) \f$ cancel crosswise. Since \f$ d_1 = 1 \f$
- * with probability about \f$ 6 / \pi^2 \f$, the second gcd is most often
+ * \f$ d_2 = \gcd( u' , v ) \f$ cancel crosswise. Since \f$ d_1 = 1 \f$ with
+ * probability about \f$ 6 / \pi^2 \f$, the second gcd is most often
  * skipped; a division by a gcd of 1 is skipped too, each quotient is
- * computed once, by the exact division of Hensel when the gcd has one
- * digit [see BigInteger::divExact()], the sum of the two products is made
- * in place, and the gcds are those of Lehmer [see BigInteger.h], one
- * folded remainder when a denominator has one digit.
+ * computed once, by the exact division of Hensel when the gcd has one digit
+ * [see `BigInteger::divExact()`], the sum of the two products is made in
+ * place, and the gcds are those of Lehmer [see `BigInteger.h`], one folded
+ * remainder when a denominator has one digit.
  *
- * The contracts [see Contract.h]: the denominator and a divisor are not 0;
- * the invariant is u' > 0 and \f$ \gcd( u , u' ) = 1 \f$, an audit.
- * The operations are defined in Rational.tpp.
+ * The contracts [see `Contract.h`]: the denominator and a divisor are not
+ * 0; the invariant is \f$ u' > 0 \f$ and \f$ \gcd( u , u' ) = 1 \f$, an
+ * audit. The operations are defined in `Rational.tpp`.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 2, 3rd ed.,
  *      Addison-Wesley, 1998, section 4.5.1
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -68,25 +68,66 @@ class Rational {
 /*--------------------------------------------------------------------------*/
  public:
 
- /// \pre den != 0
+ /// the fraction \f$ \mathit{num} / \mathit{den} \f$, brought to lowest
+ /// terms with a positive denominator by one gcd
+ /// \pre \f$ \mathit{den} \ne 0 \f$
  Rational( BigInteger num = 0 , BigInteger den = 1 );
 
+ /// the numerator \f$ u \f$
  [[nodiscard]] const BigInteger & num( void ) const { return( f_num ); }
+ /// the denominator \f$ u' > 0 \f$
  [[nodiscard]] const BigInteger & den( void ) const { return( f_den ); }
 
- /// "u/u'", or "u" when u' = 1
+ /// the text `u/u'`, or `u` when \f$ u' = 1 \f$
  [[nodiscard]] std::string toString( void ) const;
 
+ /// the sum \f$ a + b \f$, by the gcds of the smaller numbers
+ ///
+ /// In pseudocode (the method of Henrici, section 4.5.1 of Knuth, beyond the
+ /// book), \f$ a = u / u' \f$ and \f$ b = v / v' \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ a + b \cr
+ /// 2 & \quad d_1 \gets \mathrm{gcd}( u' , v' ) \cr
+ /// 3 & \quad \textbf{if}\ d_1 = 1\ \textbf{then return}\ ( u v' + v u' ) /
+ ///     ( u' v' ) \cr
+ /// 4 & \quad t \gets u ( v' / d_1 ) + v ( u' / d_1 ) \cr
+ /// 5 & \quad \textbf{if}\ t = 0\ \textbf{then return}\ 0 \cr
+ /// 6 & \quad d_2 \gets \mathrm{gcd}( t , d_1 ) \cr
+ /// 7 & \quad \textbf{return}\ ( t / d_2 ) / ( ( u' / d_1 ) ( v' / d_2 ) )
+ /// \end{array}}
+ /// \f]
  friend Rational operator+( const Rational & a , const Rational & b );
+ /// the difference \f$ a - b \f$, as \f$ a + ( - b ) \f$
  friend Rational operator-( const Rational & a , const Rational & b );
+ /// the product \f$ a b \f$, by the gcds that cancel crosswise
+ ///
+ /// In pseudocode (section 4.5.1 of Knuth, beyond the book),
+ /// \f$ a = u / u' \f$ and \f$ b = v / v' \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ a \cdot b \cr
+ /// 2 & \quad \textbf{if}\ u = 0\ \textbf{or}\ v = 0\ \textbf{then return}
+ ///     \ 0 \cr
+ /// 3 & \quad d_1 \gets \mathrm{gcd}( u , v' );\ d_2 \gets \mathrm{gcd}( u'
+ ///     , v ) \cr
+ /// 4 & \quad \textbf{return}\ ( ( u / d_1 ) ( v / d_2 ) ) / ( ( u' / d_2 )
+ ///     ( v' / d_1 ) )
+ /// \end{array}}
+ /// \f]
  friend Rational operator*( const Rational & a , const Rational & b );
 
- /// \pre b != 0
+ /// the quotient \f$ a / b \f$, as \f$ a \f$ times the inverse of \f$ b \f$
+ /// \pre \f$ b \ne 0 \f$
  friend Rational operator/( const Rational & a , const Rational & b );
 
+ /// the opposite \f$ - u / u' \f$
  Rational operator-( void ) const;
 
+ /// true if the two fractions are equal, i.e., their terms are
  friend bool operator==( const Rational & a , const Rational & b ) = default;
+ /// the order of \f$ a \f$ and \f$ b \f$, by the signs and then by
+ /// \f$ u v' \f$ against \f$ v u' \f$
  friend std::strong_ordering operator<=>( const Rational & a ,
                                           const Rational & b );
 
@@ -95,11 +136,15 @@ class Rational {
 
  struct Reduced {};         ///< the fraction is already in lowest terms
 
+ /// the fraction \f$ \mathit{num} / \mathit{den} \f$, already in lowest
+ /// terms
  Rational( BigInteger num , BigInteger den , Reduced );
 
+ /// the invariant: \f$ u' > 0 \f$ and \f$ \gcd( u , u' ) = 1 \f$
  [[nodiscard]] bool lowest( void ) const;
 
- BigInteger f_num , f_den;
+ BigInteger f_num ,   ///< the numerator
+            f_den;    ///< the denominator
 
  };  // end( class Rational )
 

@@ -2,174 +2,188 @@
 /*------------------------------- File FFT.h -------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The fast Fourier transforms, beyond the book (4.3.3 and 4.6.4 of Knuth):
- * the discrete transform \f$ \hat a_k = \sum_{j<n} a_j \omega_n^{j k} \f$,
- * \f$ \omega_n = e^{-2 \pi i / n} \f$, of n complex numbers in double or
- * single precision, for every n, in \f$ O( n \log n ) \f$ operations
- * instead of the \f$ n^2 \f$ products of the definition, dft(); its inverse
+ * The fast Fourier transforms, beyond the book (sections 4.3.3 and 4.6.4 of
+ * Knuth): the discrete transform
+ * \f$ \hat a_k = \sum_{j<n} a_j \omega_n^{j k} \f$,
+ * \f$ \omega_n = e^{-2 \pi i / n} \f$, of \f$ n \f$ complex numbers in
+ * double or single precision, for every \f$ n \f$, in
+ * \f$ O( n \log n ) \f$ operations instead of the \f$ n^2 \f$ products of
+ * the definition, `dft()`; its inverse
  * \f$ a_j = n^{-1} \sum_k \hat a_k \omega_n^{-j k} \f$; the transforms of
  * real data, of the cosines and of the sines, many transforms at once and
  * those in more dimensions, and the product of polynomials.
  *
- * <b>The codelets.</b> A transform of N points, N a power of 2 up to 64 or
- * \f$ 2^a 3^b 5^c \f$ up to 25 (only 3 and 5 under ADS_FFT_LEAN), is one
- * codelet, unrolled when compiled with its items in registers and its
- * powers of \f$ \omega_N \f$ the constants of a table: by decimation in
- * time in radix 4 for the powers of 2,
+ * <b>The codelets.</b> A transform of \f$ N \f$ points, \f$ N \f$ a power
+ * of 2 up to 64 or \f$ 2^a 3^b 5^c \f$ up to 25 (only 3 and 5 under
+ * `ADS_FFT_LEAN`), is one codelet, unrolled when compiled with its items in
+ * registers and its powers of \f$ \omega_N \f$ the constants of a table: by
+ * decimation in time in radix 4 for the powers of 2,
  * \f[ \hat a_{k + u N/4} = \sum_{t<4} ( -i )^{t u} \omega_N^{t k}
  *     \hat a^{(t)}_k , \qquad k < N / 4 , \f]
- * \f$ \hat a^{(t)} \f$ the transform of the items \f$ t , t + 4 , \ldots
- * \f$; a size N = A B with A and B coprime (A the power of the smallest
- * prime of N) by the prime-factor algorithm of Good and Thomas, with no
- * power of \f$ \omega \f$ between its two stages: the input \f$ ( a B +
- * b A ) \bmod N \f$ and the output \f$ ( u B ( B^{-1} \bmod A ) + v A (
- * A^{-1} \bmod B ) ) \bmod N \f$ of indices \f$ a , u < A \f$ and \f$ b ,
- * v < B \f$ make the transform one in 2 dimensions,
+ * \f$ \hat a^{(t)} \f$ the transform of the items
+ * \f$ t , t + 4 , \ldots \f$; a size \f$ N = A B \f$ with \f$ A \f$ and
+ * \f$ B \f$ coprime (\f$ A \f$ the power of the smallest prime of
+ * \f$ N \f$) by the prime-factor algorithm of Good and Thomas, with no
+ * power of \f$ \omega \f$ between its two stages: the input
+ * \f$ ( a B + b A ) \bmod N \f$ and the output
+ * \f$ ( u B ( B^{-1} \bmod A ) + v A ( A^{-1} \bmod B ) ) \bmod N \f$ of
+ * indices \f$ a , u < A \f$ and \f$ b , v < B \f$ make the transform one in
+ * 2 dimensions,
  * \f[ \hat a_{k( u , v )} = \sum_{b<B} \omega_B^{b v} \sum_{a<A}
  *     \omega_A^{a u} \, a_{( a B + b A ) \bmod N} , \f]
- * the transforms of length A of B columns and of length B of A rows; the
- * other sizes in the smallest prime radix p of N. A prime p is done
- * by pairs, with \f$ s_j = a_j + a_{p-j} \f$, \f$ d_j = a_j - a_{p-j} \f$
- * and \f$ h = ( p - 1 ) / 2 \f$:
+ * the transforms of length \f$ A \f$ of \f$ B \f$ columns and of length
+ * \f$ B \f$ of \f$ A \f$ rows; the other sizes in the smallest prime radix
+ * \f$ p \f$ of \f$ N \f$. A prime \f$ p \f$ is done by pairs, with
+ * \f$ s_j = a_j + a_{p-j} \f$, \f$ d_j = a_j - a_{p-j} \f$ and
+ * \f$ h = ( p - 1 ) / 2 \f$:
  * \f[ \hat a_{k} , \hat a_{p-k} = a_0 + \sum_{j \le h} s_j \cos \frac{2 \pi
  *     j k}{p} \mp i \sum_{j \le h} d_j \sin \frac{2 \pi j k}{p} , \f]
  * \f$ 2 h^2 \f$ real products by component instead of \f$ ( p - 1 )^2 \f$;
- * the primes 7 , 11 , 13 have such codelets, and every other prime up to
- * 101 the same sums in loops.
+ * the primes 7, 11, 13 have such codelets, and every other prime up to 101
+ * the same sums in loops.
  *
- * <b>The four steps.</b> Above the codelets, n = r m points are the matrix
- * of m rows and r columns, \f$ a_{r i + j} \f$, and, by the factorization
- * of Cooley and Tukey,
+ * <b>The four steps.</b> Above the codelets, \f$ n = r m \f$ points are the
+ * matrix of \f$ m \f$ rows and \f$ r \f$ columns, \f$ a_{r i + j} \f$, and,
+ * by the factorization of Cooley and Tukey,
  * \f[ \hat a_{k + m q} = \sum_{j<r} \omega_r^{j q} \, \omega_n^{j k}
  *     \sum_{i<m} a_{r i + j} \omega_m^{i k} , \qquad k < m , \; q < r :
  *     \f]
- * the transforms of length m of the columns, the products by \f$
- * \omega_n^{j k} \f$, and those of length r of the rows, whose outputs are
- * those of the transform in their order, with no reversal of the digits
- * (the four steps of Bailey, the last one, the transposition, done by the
- * order in which the rows are written). Each step works on W columns, or
- * rows, at a time, one in each lane of a vector of W numbers (4 doubles
- * or 8 floats on AVX, half on SSE2 and NEON), the real and the imaginary
- * parts in separate vectors: a codelet on such items does W transforms
- * with the instructions of one, and the blocks of W by W between the two
- * steps are transposed in registers, as in the short vector codes of
- * Franchetti and Pueschel; the numbers alternated in memory and apart in
- * the registers, as the mixed layout of Popovici, Franchetti and Low. The
- * vectors are those of the extensions of GCC and Clang, the registers of
- * SSE2 and AVX by the intrinsics of x86 with the compilers that have no
- * such extensions (MSVC), or arrays of W numbers elsewhere or with
- * ADS_FFT_SIMD defined as 0. The columns and
- * the rows longer than the codelets go by the rounds of Stockham, each a
- * codelet of radix \f$ R_t \f$ with its powers of \f$ \omega \f$,
+ * the transforms of length \f$ m \f$ of the columns, the products by
+ * \f$ \omega_n^{j k} \f$, and those of length \f$ r \f$ of the rows, whose
+ * outputs are those of the transform in their order, with no reversal of
+ * the digits (the four steps of Bailey, the last one, the transposition,
+ * done by the order in which the rows are written). Each step works on
+ * \f$ W \f$ columns, or rows, at a time, one in each lane of a vector of
+ * \f$ W \f$ numbers (4 doubles or 8 floats on AVX, half on SSE2 and NEON),
+ * the real and the imaginary parts in separate vectors: a codelet on such
+ * items does \f$ W \f$ transforms with the instructions of one, and the
+ * blocks of \f$ W \times W \f$ between the two steps are transposed in
+ * registers, as in the short vector codes of Franchetti and Pueschel; the
+ * numbers alternated in memory and apart in the registers, as the mixed
+ * layout of Popovici, Franchetti and Low. The vectors are those of the
+ * extensions of GCC and Clang, the registers of SSE2 and AVX by the
+ * intrinsics of x86 with the compilers that have no such extensions
+ * (MSVC), or arrays of \f$ W \f$ numbers elsewhere or with `ADS_FFT_SIMD`
+ * defined as 0. The columns and the rows longer than the codelets go by the
+ * rounds of Stockham, each a codelet of radix \f$ R_t \f$ with its powers of
+ * \f$ \omega \f$,
  * \f[ y_{q + s ( R p + j )} = \omega_{m R}^{p j} \sum_{i<R} x_{q + s ( p +
  *     i m )} \, \omega_R^{i j} , \f]
- * as few rounds as the radices of the codelets up to 32 allow, the
- * radices as equal as can be; 4 of them at a time, gathered from lines of
- * the cache brought in some rows ahead. The rows have about 32 points up
- * to \f$ 2^{15} \f$ points, 64 at \f$ 2^{12} \f$ and \f$ 2^{16} \f$ and
- * about \f$ \sqrt n \f$ above: the divisors r of n by their distance from
- * those lengths, those that make r and m multiples of W (otherwise the
- * last block of the lanes is shorter) and whose rows and columns have a
- * codelet first (the sizes \f$ 2^a 3^b 5^c \f$ up to 60 there); up to
- * \f$ 2^{17} \f$ points the first 4 of them are timed when the plan is
- * made and the fastest kept, a choice among a few, as FFTW_MEASURE makes
- * among many (ADS_FFT_TUNE sets the limit, 0 none). Below \f$ 2 W^2 \f$
- * points the lanes are half as wide. Up to 1024 points a power of 2 (2048
- * in single precision), and at 48 and 96, the four steps are unrolled
- * into one function whose columns stay in an array of n / W items, the
- * transform of 16 points in 2 codelets of 4; so are the transforms in 2
- * dimensions of the powers of 2 up to 32 x 32. In double precision on the
- * vectors of AVX the many transforms of 4 to 32 points (those of
- * fftMany(), the rows and the columns of fft2() and fftn()) go two at a
- * time, one in each half of a vector of the numbers alternated, with no
- * transposition (a product by i costs one swap of the parts), and a power
- * of 2 n of 8 or 16 points by the two halves \f$ E \f$ and \f$ O \f$ of the
- * even and the odd points so made, then \f$ \hat a_k = E_k + \omega_n^k
- * O_k \f$, \f$ \hat a_{k + n/2} = E_k - \omega_n^k O_k \f$. The powers
- * of \f$ \omega \f$ are each computed alone, the angle taken to \f$ [ 0 ,
- * \pi / 4 ] \f$ by the symmetries of the circle, in integers, so that
- * each has the error of a sine or a cosine of a small angle; from \f$
- * 2^{16} \f$ points on, those between the steps are the products of two
- * tables of about \f$ n / W \f$ and r items, rather than one of n.
+ * as few rounds as the radices of the codelets up to 32 allow, the radices
+ * as equal as can be; 4 of them at a time, gathered from lines of the cache
+ * brought in some rows ahead. The rows have about 32 points up to
+ * \f$ 2^{15} \f$ points, 64 at \f$ 2^{12} \f$ and \f$ 2^{16} \f$ and about
+ * \f$ \sqrt n \f$ above: the divisors \f$ r \f$ of \f$ n \f$ by their
+ * distance from those lengths, those that make \f$ r \f$ and \f$ m \f$
+ * multiples of \f$ W \f$ (otherwise the last block of the lanes is shorter)
+ * and whose rows and columns have a codelet first (the sizes
+ * \f$ 2^a 3^b 5^c \f$ up to 60 there); up to \f$ 2^{17} \f$ points the first
+ * 4 of them are timed when the plan is made and the fastest kept, a choice
+ * among a few, as `FFTW_MEASURE` makes among many (`ADS_FFT_TUNE` sets the
+ * limit, 0 none). Below \f$ 2 W^2 \f$ points the lanes are half as wide.
+ * Up to 1024 points a power of 2 (2048 in single precision), and at 48 and
+ * 96, the four steps are unrolled into one function whose columns stay in
+ * an array of \f$ n / W \f$ items, the transform of 16 points in 2 codelets
+ * of 4; so are the transforms in 2 dimensions of the powers of 2 up to
+ * \f$ 32 \times 32 \f$. In double precision on the vectors of AVX the many
+ * transforms of 4 to 32 points (those of `fftMany()`, the rows and the
+ * columns of `fft2()` and `fftn()`) go two at a time, one in each half of a
+ * vector of the numbers alternated, with no transposition (a product by
+ * \f$ i \f$ costs one swap of the parts), and a power of 2 \f$ n \f$ of 8 or
+ * 16 points by the two halves \f$ E \f$ and \f$ O \f$ of the even and the
+ * odd points so made, then \f$ \hat a_k = E_k + \omega_n^k O_k \f$,
+ * \f$ \hat a_{k + n/2} = E_k - \omega_n^k O_k \f$. The powers of
+ * \f$ \omega \f$ are each computed alone, the angle taken to
+ * \f$ [ 0 , \pi / 4 ] \f$ by the symmetries of the circle, in integers, so
+ * that each has the error of a sine or a cosine of a small angle; from
+ * \f$ 2^{16} \f$ points on, those between the steps are the products of two
+ * tables of about \f$ n / W \f$ and \f$ r \f$ items, rather than one of
+ * \f$ n \f$.
  *
- * <b>The large primes.</b> A prime n above 13 goes by the algorithm of
- * Rader, the transform of the nonzero indices as a cyclic convolution of
- * n - 1 points: for a generator g of the integers mod n,
+ * <b>The large primes.</b> A prime \f$ n \f$ above 13 goes by the algorithm
+ * of Rader, the transform of the nonzero indices as a cyclic convolution of
+ * \f$ n - 1 \f$ points: for a generator \f$ g \f$ of the integers modulo
+ * \f$ n \f$,
  * \f[ \hat a_{g^{-q}} = a_0 + \sum_{p < n-1} a_{g^p} \, \omega_n^{g^{p -
  *     q}} , \qquad \hat a_0 = \sum_j a_j , \f]
- * by two transforms of n - 1 points (the transform of \f$ \omega_n^{g^{-q}}
- * \f$ made once); a size whose prime above 101 is not n, or a prime whose
- * n - 1 costs more, by that of Bluestein, from \f$ j k = ( j^2 + k^2 - ( k
- * - j )^2 ) / 2 \f$,
+ * by two transforms of \f$ n - 1 \f$ points (the transform of
+ * \f$ \omega_n^{g^{-q}} \f$ made once); a size whose prime above 101 is not
+ * \f$ n \f$, or a prime whose \f$ n - 1 \f$ costs more, by that of
+ * Bluestein, from \f$ j k = ( j^2 + k^2 - ( k - j )^2 ) / 2 \f$,
  * \f[ \hat a_k = w_k \sum_j ( a_j w_j ) \overline{w_{k-j}} , \qquad w_j =
  *     \omega_{2n}^{j^2} , \f]
- * a convolution of \f$ M \ge 2 n - 1 \f$ points of the form \f$ 2^a 3^b
- * 5^c \f$, by two transforms of M (that of \f$ \overline w \f$ made
- * once). The choice among the rounds, Rader and Bluestein is by a cost of
- * about \f$ n \sum_t \log_2 R_t \f$ for the rounds with codelets and \f$ n
- * p / 2 \f$ for a prime radix p in loops. The inverse transforms by Rader
- * and Bluestein are the conjugates of the forward ones of the conjugates.
+ * a convolution of \f$ M \ge 2 n - 1 \f$ points of the form
+ * \f$ 2^a 3^b 5^c \f$, by two transforms of \f$ M \f$ (that of
+ * \f$ \overline w \f$ made once). The choice among the rounds, Rader and
+ * Bluestein is by a cost of about \f$ n \sum_t \log_2 R_t \f$ for the rounds
+ * with codelets and \f$ n p / 2 \f$ for a prime radix \f$ p \f$ in loops.
+ * The inverse transforms by Rader and Bluestein are the conjugates of the
+ * forward ones of the conjugates.
  *
- * <b>Real data, cosines and sines.</b> The transform of n real numbers, n
- * even, is one complex transform of h = n / 2 points, \f$ z_j = x_{2j} + i
- * x_{2j+1} \f$, and a pass: with \f$ E_k = ( Z_k + \overline{Z_{h-k}} ) / 2
- * \f$ and \f$ O_k = ( Z_k - \overline{Z_{h-k}} ) / 2 i \f$ (the transforms
- * of the even and of the odd items), \f$ \hat x_k = E_k + \omega_n^k O_k
- * \f$ and \f$ \hat x_{h-k} = \overline{E_k - \omega_n^k O_k} \f$; the
- * inverse runs the same steps backwards. Up to 16 points the complex
- * transform is one codelet whose outputs stay in registers for the pass;
- * the inverse of 4098 to 131072 points on the four steps does its pass in
- * their first step, the points \f$ Z_K \f$ made from \f$ \hat x_K \f$ and
- * \f$ \hat x_{h-K} \f$ as the columns read them (and convolve() there the
- * products of the two transforms); elsewhere the pass runs on its own on
- * the numbers alternated, VL pairs to a vector with 3 shuffles. The transforms
- * of the cosines and of the sines are those of FFTW (REDFT00, REDFT10,
- * REDFT01, REDFT11 and RODFT00 to RODFT11), with no normalization; the type 2
- * by the algorithm of Makhoul, the real transform V of \f$ v_j = x_{2j} ,
- * v_{n-1-j} = x_{2j+1} \f$ and \f$ y_k = 2 \Re( \omega_{4n}^k V_k ) , y_{n-k}
- * = -2 \Im( \omega_{4n}^k V_k ) \f$; the type 3 by the same steps backwards;
- * the type 4, for n even, by the complex transform of n / 2 points of \f$ (
- * x_{2j} + i x_{n-1-2j} ) \omega_{8n}^{4j+1} \f$ times \f$ \omega_{2n}^k \f$,
- * the outputs 2 k and n - 1 - 2 k its real part and minus its imaginary part,
- * times 2; the type 1 of both by the real transform of the even, or odd,
- * extension of 2 ( n - 1 ), or 2 ( n + 1 ), points; the sines of types 2 to 4
- * by the cosines, the items with the signs alternated or in the reverse order.
- * The type 3 is the inverse of the type 2, and the type 4 of itself, times 2
- * n.
+ * <b>Real data, cosines and sines.</b> The transform of \f$ n \f$ real
+ * numbers, \f$ n \f$ even, is one complex transform of \f$ h = n / 2 \f$
+ * points, \f$ z_j = x_{2j} + i x_{2j+1} \f$, and a pass: with
+ * \f$ E_k = ( Z_k + \overline{Z_{h-k}} ) / 2 \f$ and
+ * \f$ O_k = ( Z_k - \overline{Z_{h-k}} ) / 2 i \f$ (the transforms of the
+ * even and of the odd items), \f$ \hat x_k = E_k + \omega_n^k O_k \f$ and
+ * \f$ \hat x_{h-k} = \overline{E_k - \omega_n^k O_k} \f$; the inverse runs
+ * the same steps backwards. Up to 16 points the complex transform is one
+ * codelet whose outputs stay in registers for the pass; the inverse of 4098
+ * to 131072 points on the four steps does its pass in their first step, the
+ * points \f$ Z_K \f$ made from \f$ \hat x_K \f$ and \f$ \hat x_{h-K} \f$ as
+ * the columns read them (and `convolve()` there the products of the two
+ * transforms); elsewhere the pass runs on its own on the numbers
+ * alternated, \f$ \mathit{VL} \f$ pairs to a vector with 3 shuffles. The
+ * transforms of the cosines and of the sines are those of FFTW (`REDFT00`,
+ * `REDFT10`, `REDFT01`, `REDFT11` and `RODFT00` to `RODFT11`), with no
+ * normalization; the type 2 by the algorithm of Makhoul, the real transform
+ * \f$ V \f$ of \f$ v_j = x_{2j} , v_{n-1-j} = x_{2j+1} \f$ and
+ * \f$ y_k = 2 \Re( \omega_{4n}^k V_k ) \f$,
+ * \f$ y_{n-k} = -2 \Im( \omega_{4n}^k V_k ) \f$; the type 3 by the same
+ * steps backwards; the type 4, for \f$ n \f$ even, by the complex transform
+ * of \f$ n / 2 \f$ points of
+ * \f$ ( x_{2j} + i x_{n-1-2j} ) \omega_{8n}^{4j+1} \f$ times
+ * \f$ \omega_{2n}^k \f$, the outputs \f$ 2 k \f$ and \f$ n - 1 - 2 k \f$ its
+ * real part and minus its imaginary part, times 2; the type 1 of both by the
+ * real transform of the even, or odd, extension of \f$ 2 ( n - 1 ) \f$, or
+ * \f$ 2 ( n + 1 ) \f$, points; the sines of types 2 to 4 by the cosines, the
+ * items with the signs alternated or in the reverse order. The type 3 is the
+ * inverse of the type 2, and the type 4 of itself, times \f$ 2 n \f$.
  *
- * <b>The cost.</b> A transform of \f$ n = 2^K \f$ points does about \f$
- * 4.25 n K \f$ real operations, the radix 4 saving 15% of those of
+ * <b>The cost.</b> A transform of \f$ n = 2^K \f$ points does about
+ * \f$ 4.25 n K \f$ real operations, the radix 4 saving 15% of those of
  * radix 2; its data cross the memory in 2 passes (the columns, the rows)
  * plus one per round of Stockham of the columns or rows longer than a
- * codelet, the four steps keeping a buffer of n + O( \sqrt n ) items per
- * thread. The plans, the tables and the buffers are kept per thread for
+ * codelet, the four steps keeping a buffer of \f$ n + O( \sqrt n ) \f$ items
+ * per thread. The plans, the tables and the buffers are kept per thread for
  * each size met, made at the first transform of a size, in \f$ O( n ) \f$
  * evaluations of sines and cosines (\f$ O( n \log n ) \f$ for Rader and
  * Bluestein, whose plans also hold a transform) and, up to \f$ 2^{17} \f$
  * points, the 12 transforms that time the factorizations.
  *
- * <b>The rounding.</b> With powers of \f$ \omega \f$ computed to a
- * relative error \f$ \mu \f$, a transform by L rounds of radix 2 has
+ * <b>The rounding.</b> With powers of \f$ \omega \f$ computed to a relative
+ * error \f$ \mu \f$, a transform by \f$ L \f$ rounds of radix 2 has
  * \f$ \| \tilde y - y \|_2 / \| y \|_2 \le L \eta / ( 1 - L \eta ) \f$,
- * \f$ \eta = \mu + \gamma_4 ( \sqrt 2 + \mu ) \f$, \f$ \gamma_4 = 4 u / ( 1
- * - 4 u ) \f$ and u the unit roundoff (Higham, Theorem 24.2); with \f$ \mu
- * \f$ near u the bound is about \f$ 6.7 u \log_2 n \f$, while the error of
- * the rounding observed on random data grows as \f$ u \sqrt{ \log n } \f$
- * (Schatzman). Bluestein adds the error of a convolution of M points, a
- * few times larger. The tests check every size up to 300 and the sizes
- * of each plan against the definition in long double.
+ * \f$ \eta = \mu + \gamma_4 ( \sqrt 2 + \mu ) \f$,
+ * \f$ \gamma_4 = 4 u / ( 1 - 4 u ) \f$ and \f$ u \f$ the unit roundoff
+ * (Higham, Theorem 24.2); with \f$ \mu \f$ near \f$ u \f$ the bound is about
+ * \f$ 6.7 u \log_2 n \f$, while the error of the rounding observed on random
+ * data grows as \f$ u \sqrt{ \log n } \f$ (Schatzman). Bluestein adds the
+ * error of a convolution of \f$ M \f$ points, a few times larger. The tests
+ * check every size up to 300 and the sizes of each plan against the
+ * definition in `long double`.
  *
  * The transform turns a convolution into a product item by item;
- * convolve() multiplies two polynomials so, by the real transforms of the
- * smallest even size \f$ 2^a 3^b 5^c \f$ that holds their product, or of
- * the power of 2 if that size is not below 3 / 4 of it, and
- * the product of integers of many digits [see BigInteger.h] is a
- * convolution of their digits followed by the carries.
+ * `convolve()` multiplies two polynomials so, by the real transforms of the
+ * smallest even size \f$ 2^a 3^b 5^c \f$ that holds their product, or of the
+ * power of 2 if that size is not below \f$ 3 / 4 \f$ of it, and the product
+ * of integers of many digits [see `BigInteger.h`] is a convolution of their
+ * digits followed by the carries.
  *
- * The contracts [see Contract.h]: the sizes of the arguments of irfft(),
- * the types of dct() and dst(); the inverse transform of the transform
- * gives the vector back, up to the rounding, which the tests check. The
- * functions are defined in FFT.tpp.
+ * The contracts [see `Contract.h`]: the sizes of the arguments of
+ * `irfft()`, the types of `dct()` and `dst()`; the inverse transform of the
+ * transform gives the vector back, up to the rounding, which the tests
+ * check. The functions are defined in `FFT.tpp`.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 2, 3rd ed.,
  *      Addison-Wesley, 1998, sections 4.3.3 and 4.6.4
@@ -232,7 +246,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -329,88 +343,264 @@
 
 namespace ADS {
 
-using Complex = std::complex< double >;
+using Complex = std::complex< double >;   ///< a complex number in double
 
-/// the discrete Fourier transform by its definition, O( n^2 ); the inverse
-/// one, divided by n, if inverse
+/// the discrete Fourier transform by its definition, \f$ O( n^2 ) \f$; the
+/// inverse one, divided by \f$ n \f$, if `inverse`
+///
+/// In pseudocode (section 4.6.4 of Knuth, beyond the book),
+/// \f$ \sigma = +1 \f$ for the inverse and \f$ -1 \f$ otherwise:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{dft}( a , \mathit{inverse} ) \cr
+/// 2 & \quad \textbf{for}\ k \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
+/// 3 & \qquad \hat a_k \gets \sum_{j<n} a_j e^{\sigma 2 \pi i ( j k \bmod n )
+///     / n} \cr
+/// 4 & \qquad \textbf{if}\ \mathit{inverse}\ \textbf{then}\ \hat a_k \gets
+///     \hat a_k / n \cr
+/// 5 & \quad \textbf{return}\ \hat a
+/// \end{array}}
+/// \f]
 [[nodiscard]] inline std::vector< Complex > dft(
                          const std::vector< Complex > & a , bool inverse );
 
-/// the discrete Fourier transform of the n points of a in place, in
-/// double or single precision, O( n log n ) for every n; the inverse one,
-/// divided by n, if inverse
+/// the discrete Fourier transform of the \f$ n \f$ points of \f$ a \f$ in
+/// place, in double or single precision, \f$ O( n \log n ) \f$ for every
+/// \f$ n \f$; the inverse one, divided by \f$ n \f$, if `inverse`
+///
+/// In pseudocode (Cooley and Tukey, Bailey, Rader and Bluestein, beyond the
+/// book), the choice of the plan made once per size [see the file]:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{fft}( a , n , \mathit{inverse} ) \cr
+/// 2 & \quad \textbf{if}\ n \le 1\ \textbf{then return} \cr
+/// 3 & \quad \textbf{if}\ n \text{ has a codelet}\ \textbf{then}\ \text{run }
+///     \text{it};\ \textbf{return} \cr
+/// 4 & \quad \textbf{if}\ \text{the plan of } n \text{ is the four steps, }
+///     n = r m\ \textbf{then} \cr
+/// 5 & \qquad \text{transform the } r \text{ columns of length } m \cr
+/// 6 & \qquad \text{multiply } a_{r i + j} \text{ by } \omega_n^{j i}
+///     \text{, and transform the } m \text{ rows of length } r \cr
+/// 7 & \quad \textbf{else if}\ \text{it is Rader}\ \textbf{then}\ \text{a }
+///     \text{cyclic convolution of } n - 1 \text{ points} \cr
+/// 8 & \quad \textbf{else if}\ \text{it is Bluestein}\ \textbf{then}
+///     \ \text{a convolution of } M \ge 2 n - 1 \text{ points} \cr
+/// 9 & \quad \textbf{else}\ \text{the rounds of radix } p \text{ in loops}
+/// \end{array}}
+/// \f]
+/// where the inverse of Rader and of Bluestein conjugates the input and the
+/// output and divides by \f$ n \f$.
 template< class T >
 inline void fft( std::complex< T > * a , std::size_t n , bool inverse );
 
+/// the transform of `fft()` above on the whole vector \f$ a \f$
+///
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{fft}( a , \mathit{inverse} ) \cr
+/// 2 & \quad \mathrm{fft}( a , |a| , \mathit{inverse} )
+/// \end{array}}
+/// \f]
 template< class T >
 inline void fft( std::vector< std::complex< T > > & a , bool inverse );
 
-/// the transforms of howmany vectors of n points each, the vector t from a
-/// + t n on, in place
+/// the transforms of \f$ \mathit{howmany} \f$ vectors of \f$ n \f$ points
+/// each, the vector \f$ t \f$ from \f$ a + t n \f$ on, in place
+///
+/// In pseudocode (beyond the book), \f$ W \f$ vectors at a time in the lanes
+/// of the vectors of the processor:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{fftMany}( a , n , \mathit{howmany} ,
+///     \mathit{inverse} ) \cr
+/// 2 & \quad \textbf{for}\ t \gets 0\ \textbf{to}\ \mathit{howmany} - 1
+///     \ \textbf{do}\ \mathrm{fft}( a + t n , n , \mathit{inverse} )
+/// \end{array}}
+/// \f]
 template< class T >
 inline void fftMany( std::complex< T > * a , std::size_t n ,
                      std::size_t howmany , bool inverse );
 
-/// the transform in d = | dims | dimensions of the array a of extents dims,
-/// in the order of the rows (the last index the fastest), in place; the
-/// inverse one divided by the number of points
+/// the transform in \f$ d = |\mathit{dims}| \f$ dimensions of the array
+/// \f$ a \f$ of extents \f$ \mathit{dims} \f$, in the order of the rows (the
+/// last index the fastest), in place; the inverse one divided by the number
+/// of points
+///
+/// In pseudocode (the transform by dimensions, beyond the book), since the
+/// transform in \f$ d \f$ dimensions is the product of those along each:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{fftn}( a , \mathit{dims} ,
+///     \mathit{inverse} ) \cr
+/// 2 & \quad \textbf{for}\ k \gets d - 1\ \textbf{downto}\ 0\ \textbf{do}
+///     \cr
+/// 3 & \qquad \text{transform each line of } a \text{ along the index }
+///     k \text{, of } \mathit{dims}_k \text{ points}
+/// \end{array}}
+/// \f]
 template< class T >
 inline void fftn( std::complex< T > * a ,
                   const std::vector< std::size_t > & dims , bool inverse );
 
-/// the transform in 2 dimensions of the matrix a of rows x cols points, by
-/// rows, in place
+/// the transform in 2 dimensions of the matrix \f$ a \f$ of
+/// \f$ \mathit{rows} \times \mathit{cols} \f$ points, by rows, in place
+///
+/// In pseudocode (beyond the book):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{fft2}( a , \mathit{rows} , \mathit{cols}
+///     , \mathit{inverse} ) \cr
+/// 2 & \quad \textbf{if}\ \text{the size has an unrolled transform}
+///     \ \textbf{then}\ \text{run it};\ \textbf{return} \cr
+/// 3 & \quad \mathrm{fftn}( a , ( \mathit{rows} , \mathit{cols} ) ,
+///     \mathit{inverse} )
+/// \end{array}}
+/// \f]
 template< class T >
 inline void fft2( std::complex< T > * a , std::size_t rows ,
                   std::size_t cols , bool inverse );
 
-/// the transform of the n real numbers x, its n / 2 + 1 outputs X_k , k <=
-/// n / 2 (the others are conj( X_{n-k} )); X may be where x is, if it has
-/// room for n + 2 numbers
+/// the transform of the \f$ n \f$ real numbers \f$ x \f$, its
+/// \f$ n / 2 + 1 \f$ outputs \f$ X_k \f$, \f$ k \le n / 2 \f$ (the others
+/// are \f$ \overline{X_{n-k}} \f$); \f$ X \f$ may be where \f$ x \f$ is, if it
+/// has room for \f$ n + 2 \f$ numbers
+///
+/// In pseudocode (Cooley, Lewis and Welch, beyond the book), for \f$ n \f$
+/// even, \f$ h = n / 2 \f$ and \f$ \overline{Z_h} = Z_0 \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{rfft}( x , n , X ) \cr
+/// 2 & \quad \textbf{if}\ n \text{ is odd}\ \textbf{then}\ X \gets \text{the }
+///     \text{first } \lfloor n / 2 \rfloor + 1 \text{ outputs of }
+///     \mathrm{fft}( x ) ;\ \textbf{return} \cr
+/// 3 & \quad Z \gets \mathrm{fft}( z ) \text{, } z_j = x_{2j} + i x_{2j+1}
+///     \text{, } j < h \cr
+/// 4 & \quad \textbf{for}\ k \gets 0\ \textbf{to}\ h\ \textbf{do} \cr
+/// 5 & \qquad E_k \gets ( Z_k + \overline{Z_{h-k}} ) / 2;\ O_k \gets ( Z_k -
+///     \overline{Z_{h-k}} ) / 2 i \cr
+/// 6 & \qquad X_k \gets E_k + \omega_n^k O_k
+/// \end{array}}
+/// \f]
 template< class T >
 inline void rfft( const T * x , std::size_t n , std::complex< T > * X );
 
+/// the outputs of `rfft()` above as a new vector of
+/// \f$ \lfloor n / 2 \rfloor + 1 \f$ numbers, empty if \f$ x \f$ is
 template< class T >
 [[nodiscard]] inline std::vector< std::complex< T > > rfft(
                                                 const std::vector< T > & x );
 
-/// the n real numbers x whose transform has the outputs X_0 , ... ,
-/// X_{n/2}, i.e., the inverse transform divided by n; x may be where X is
-/// \pre X has n / 2 + 1 items (0 if n is 0)
+/// the \f$ n \f$ real numbers \f$ x \f$ whose transform has the outputs
+/// \f$ X_0 , \ldots , X_{n/2} \f$, i.e., the inverse transform divided by
+/// \f$ n \f$; \f$ x \f$ may be where \f$ X \f$ is
+///
+/// In pseudocode (beyond the book), the steps of `rfft()` backwards, for
+/// \f$ n \f$ even and \f$ h = n / 2 \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{irfft}( X , n , x ) \cr
+/// 2 & \quad \textbf{for}\ k \gets 0\ \textbf{to}\ h - 1\ \textbf{do} \cr
+/// 3 & \qquad E_k \gets ( X_k + \overline{X_{h-k}} ) / 2;\ O_k \gets ( X_k -
+///     \overline{X_{h-k}} ) \omega_n^{-k} / 2 \cr
+/// 4 & \qquad Z_k \gets E_k + i O_k \cr
+/// 5 & \quad z \gets \text{the inverse } \mathrm{fft}( Z ) \cr
+/// 6 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ h - 1\ \textbf{do}
+///     \ x_{2j} \gets \Re z_j;\ x_{2j+1} \gets \Im z_j
+/// \end{array}}
+/// \f]
+/// \pre \f$ X \f$ has \f$ n / 2 + 1 \f$ items (0 if \f$ n \f$ is 0)
 template< class T >
 inline void irfft( const std::complex< T > * X , std::size_t n , T * x );
 
+/// the numbers of `irfft()` above as a new vector of \f$ n \f$ numbers
+/// \pre \f$ X \f$ has \f$ \lfloor n / 2 \rfloor + 1 \f$ items (0 if \f$ n \f$
+///      is 0)
 template< class T >
 [[nodiscard]] inline std::vector< T > irfft(
                                   const std::vector< std::complex< T > > & X ,
                                   std::size_t n );
 
-/// the transform of the cosines of type 1 to 4 of the n real numbers of x
-/// in place, as those of FFTW (REDFT00, REDFT10, REDFT01, REDFT11), with
-/// no normalization: the type 3 is the inverse of the type 2, and the type
-/// 4 of itself, times 2 n (2 ( n - 1 ) for the type 1)
-/// \pre 1 <= type <= 4, and n != 1 for the type 1
+/// the transform of the cosines of type 1 to 4 of the \f$ n \f$ real numbers
+/// of \f$ x \f$ in place, as those of FFTW (`REDFT00`, `REDFT10`, `REDFT01`,
+/// `REDFT11`), with no normalization: the type 3 is the inverse of the type
+/// 2, and the type 4 of itself, times \f$ 2 n \f$ (\f$ 2 ( n - 1 ) \f$ for
+/// the type 1)
+///
+/// In pseudocode (Makhoul, beyond the book), the type 2 by a real transform:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{dct}( x , n , 2 ) \cr
+/// 2 & \quad v_j \gets x_{2j};\ v_{n-1-j} \gets x_{2j+1}\quad
+///     \triangleright\ j < n / 2 \cr
+/// 3 & \quad V \gets \mathrm{rfft}( v ) \cr
+/// 4 & \quad \textbf{for}\ k \gets 0\ \textbf{to}\ \lfloor n / 2 \rfloor
+///     \ \textbf{do} \cr
+/// 5 & \qquad x_k \gets 2 \Re( \omega_{4n}^k V_k );\ x_{n-k} \gets -2 \Im(
+///     \omega_{4n}^k V_k )\quad \triangleright\ \text{the latter for } k > 0
+/// \end{array}}
+/// \f]
+/// and the type 3 runs the same steps backwards, the type 4 is a complex
+/// transform of \f$ n / 2 \f$ points and the type 1 a real transform of the
+/// even extension of \f$ 2 ( n - 1 ) \f$ points [see the file].
+/// \pre \f$ 1 \le \mathit{type} \le 4 \f$, and \f$ n \ne 1 \f$ for the type 1
 template< class T >
 inline void dct( T * x , std::size_t n , unsigned type );
 
+/// the transform of `dct()` above on the whole vector \f$ x \f$
+/// \pre \f$ 1 \le \mathit{type} \le 4 \f$, and \f$ |x| \ne 1 \f$ for the
+///      type 1
 template< class T >
 inline void dct( std::vector< T > & x , unsigned type );
 
-/// the transform of the sines of type 1 to 4 of the n real numbers of x in
-/// place, as those of FFTW (RODFT00, RODFT10, RODFT01, RODFT11)
-/// \pre 1 <= type <= 4
+/// the transform of the sines of type 1 to 4 of the \f$ n \f$ real numbers
+/// of \f$ x \f$ in place, as those of FFTW (`RODFT00`, `RODFT10`, `RODFT01`,
+/// `RODFT11`)
+///
+/// In pseudocode (beyond the book), the types 2 to 4 by the cosines and the
+/// type 1 by the odd extension of \f$ 2 ( n + 1 ) \f$ points:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{dst}( x , n , \mathit{type} ) \cr
+/// 2 & \quad \textbf{if}\ \mathit{type} = 2\ \textbf{then} \cr
+/// 3 & \qquad x_j \gets ( -1 )^j x_j;\ \mathrm{dct}( x , n , 2 );
+///     \ \text{reverse } x \cr
+/// 4 & \quad \textbf{else if}\ \mathit{type} \in \{ 3 , 4 \}\ \textbf{then}
+///     \cr
+/// 5 & \qquad \text{reverse } x;\ \mathrm{dct}( x , n , \mathit{type} );\ x_k
+///     \gets ( -1 )^k x_k \cr
+/// 6 & \quad \textbf{else}\ \text{the real transform of the odd extension}
+/// \end{array}}
+/// \f]
+/// \pre \f$ 1 \le \mathit{type} \le 4 \f$
 template< class T >
 inline void dst( T * x , std::size_t n , unsigned type );
 
+/// the transform of `dst()` above on the whole vector \f$ x \f$
+/// \pre \f$ 1 \le \mathit{type} \le 4 \f$
 template< class T >
 inline void dst( std::vector< T > & x , unsigned type );
 
-/// the coefficients of the product of the polynomials p and q
+/// the coefficients of the product of the polynomials \f$ p \f$ and
+/// \f$ q \f$, by the real transforms
+///
+/// In pseudocode (the convolution theorem, beyond the book):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{convolve}( p , q ) \cr
+/// 2 & \quad m \gets |p| + |q| - 1;\ n \gets \text{the smallest even }
+///     2^a 3^b 5^c \ge m \text{, or a power of 2} \cr
+/// 3 & \quad P \gets \mathrm{rfft}( p \text{ padded to } n );\ Q \gets
+///     \mathrm{rfft}( q \text{ padded to } n ) \cr
+/// 4 & \quad r \gets \mathrm{irfft}( ( P_k Q_k )_{k \le n/2} , n ) \cr
+/// 5 & \quad \textbf{return}\ r_0 , \ldots , r_{m-1}
+/// \end{array}}
+/// \f]
 [[nodiscard]] inline std::vector< double > convolve(
                                           const std::vector< double > & p ,
                                           const std::vector< double > & q );
 
-/// the same in single precision, or double for vectors of doubles
+/// the product of `convolve()` above in single precision, or double for
+/// vectors of doubles
 template< class T >
 [[nodiscard]] inline std::vector< T > convolve( const std::vector< T > & p ,
                                                 const std::vector< T > & q );
