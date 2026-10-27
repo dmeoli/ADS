@@ -127,6 +127,166 @@ ADS_TEST( "bucket-queue" )
  CHECK( U.pop() == 3 && U.pop() == 2 && U.pop() == 1 && U.empty() );
  }
 
+/// a bucket queue of the items 0 , 1 , ... in the order of their pushes,
+/// with the set of ( f , -g , -t , t ) that orders them as it must
+struct BucketReference {
+ BucketQueue< int > q;
+ std::set< std::tuple< int , int , int , int > > s;
+ int t = 0;
+
+ void push( int f , int g ) {
+  q.push( t , f , g );
+  s.emplace( f , -g , -t , t );
+  ++t;
+  }
+ /// one pop, by popEntry() or by top(), topF(), topG() and pop()
+ void pop( bool entry = true ) {
+  const auto [ f , mg , mt , x ] = *s.begin();
+  if( entry ) {
+   const auto e = q.popEntry();
+   CHECK( e.item == x && e.f == f && e.g == -mg );
+   }
+  else {
+   CHECK( q.topF() == f && q.topG() == -mg && q.top() == x );
+   CHECK( q.pop() == x );
+   }
+  s.erase( s.begin() );
+  CHECK( q.size() == s.size() );
+  }
+ /// the view of the standard interface in the order of the set
+ void view( void ) const {
+  auto it = q.begin();
+  for( const auto & e : s ) {
+   CHECK( it != q.end() && *it == std::get< 3 >( e ) );
+   ++it;
+   }
+  CHECK( it == q.end() );
+  }
+ void drain( void ) {
+  view();
+  while( ! s.empty() ) pop( s.size() % 2 );
+  CHECK( q.empty() && q.begin() == q.end() );
+  }
+ };
+
+// the lists of large g of the bucket queue, kept as up to R sparse runs
+// in a layer and then dense: g just below, at and above D, ties of f and g
+// last pushed first in the runs, in the dense lists and across the
+// conversion, the conversion of a layer with items in its runs and in its
+// dense lists (by a new g and by the g of a run), the least f back below a
+// layer freed, a layer emptied and filled again many times, crossing the
+// conversion now and then, g as large as int and as long long in a run,
+// and random operations against a set by least f, largest g and last
+// pushed, with the view of the standard interface; each step is checked
+// at the level 3 of the contracts, whose invariant covers the runs
+ADS_TEST( "bucket-queue-sparse" )
+{
+ constexpr int D = int( BucketQueue< int >::D );
+ constexpr int R = int( BucketQueue< int >::R );
+ static_assert( ( D > 4 ) && ( R > 2 ) );
+ {
+  BucketReference B;                          // empty, then one item
+  CHECK_THROWS( (void) B.q.topG() , contract_violation );
+  B.push( 0 , D + 1000 );
+  B.view();
+  B.pop( false );
+  CHECK_THROWS( B.q.pop() , contract_violation );
+  B.push( 3 , std::numeric_limits< int >::max() );   // no array of g
+  B.push( 3 , 0 );
+  B.push( 3 , std::numeric_limits< int >::max() );
+  B.drain();
+  BucketQueue< int , long long > L;
+  L.push( 1 , 2 , 1LL << 40 );
+  L.push( 2 , 2 , 7 );
+  CHECK( L.topG() == ( 1LL << 40 ) && L.pop() == 1 && L.topG() == 7 );
+  }
+ {
+  BucketReference B;                          // around D, with ties
+  for( int g : { D - 1 , D , D + 1 , D - 1 , D , D + 1 , 0 , D } )
+   B.push( 1 , g );
+  B.view();
+  CHECK( B.q.topG() == D + 1 );
+  B.drain();
+  }
+ for( int how = 0 ; how < 2 ; ++how ) {      // the conversion, items in
+  BucketReference B;
+  std::mt19937 g( 5 + how );
+  for( int x : { 0 , 3 , 4 , D - 1 , 3 , 0 } )
+   B.push( 2 , x );
+  std::vector< int > G;
+  for( int k = 0 ; k < R ; ++k ) G.push_back( D + 2 * k );
+  std::shuffle( G.begin() , G.end() , g );
+  for( int x : G ) {
+   B.push( 2 , x );
+   if( g() % 3 == 0 ) B.push( 2 , x );        // a tie in a run
+   }
+  B.push( 7 , D + 5 );                        // another layer, untouched
+  B.view();
+  B.push( 2 , how ? D + 4 : D + 1 );          // a run of R + 1, or a tie
+  B.view();
+  CHECK( B.q.topF() == 2 && B.q.topG() == D + 2 * ( R - 1 ) );
+  for( int x : { D + 1 , 2 , D + 3 * R , D + 1 , D - 1 , D + 4 } )
+   B.push( 2 , x );                           // into the dense layer
+  B.view();
+  for( int k = 0 ; k < R / 2 ; ++k ) B.pop( k % 2 );
+  B.push( 2 , D + 6 );                        // still dense
+  B.push( 2 , D + 6 );
+  B.drain();
+  }
+ {
+  BucketReference B;                          // the least f back below
+  for( int k = 0 ; k < 5 ; ++k ) B.push( 5 , D + 100 * k );
+  B.push( 9 , D + 3 );
+  for( int k = 0 ; k < 5 ; ++k ) B.pop();     // the layer 5 freed
+  CHECK( B.q.topF() == 9 );
+  B.push( 5 , D + 50 );                       // and filled again
+  B.push( 3 , D + 7 );
+  B.push( 5 , 1 );
+  B.view();
+  CHECK( B.q.topF() == 3 );
+  for( int k = 0 ; k <= R ; ++k ) B.push( 5 , D + 3 * k );   // dense
+  B.pop();
+  while( B.q.topF() == 5 ) B.pop( false );    // freed when dense
+  B.push( 5 , D + 8 );                        // and sparse again
+  B.push( 5 , D + 9 );
+  B.drain();
+  }
+ {
+  BucketReference B;                          // emptied and filled again
+  std::mt19937 g( 9 );
+  B.push( 1 , D + 3 );                        // stays below
+  for( int round = 0 ; round < 3000 ; ++round ) {
+   const int m = ( round % 100 == 99 ) ? R + 10 : 1 + round % 3;
+   for( int k = 0 ; k < m ; ++k )
+    B.push( 0 , int( D + g() % 8000 ) );
+   if( round % 500 == 0 ) B.view();
+   for( int k = 0 ; k < m ; ++k ) B.pop( k % 2 );
+   CHECK( B.q.topF() == 1 );
+   }
+  B.drain();
+  }
+ for( unsigned seed = 1 ; seed <= 4 ; ++seed ) {   // random
+  BucketReference B;
+  std::mt19937 g( seed );
+  const int spread = seed % 2 ? 3000 : 2 * R;
+  for( int step = 0 ; step < 20000 ; ++step ) {
+   const unsigned c = g() % 10;
+   if( B.s.empty() || ( c < 6 ) ) {
+    const unsigned w = g() % 4;
+    const int x = w == 0 ? int( g() % 8 ) :
+                  w == 1 ? int( D - 3 + g() % 7 ) :
+                           int( D + g() % unsigned( spread ) );
+    B.push( int( g() % 10 ) , x );
+    }
+   else
+    B.pop( c % 2 );
+   if( step % 1000 == 0 ) B.view();
+   if( step % 7000 == 6999 ) B.drain();
+   }
+  B.drain();
+  }
+ }
+
 // the d-ary heap of plain items for D = 2 , 3 , 4 , 8 against
 // std::priority_queue, the items carrying f and g, the least f and then the
 // largest g out first; the edge cases: n = 0 , 1 , D , D + 1 items, one

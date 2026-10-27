@@ -22,11 +22,25 @@
  *   weights U( 1 , 1000 ) (dijkstra): the queues with handles lower the
  *   priority of a node by their decrease-key, the others push it again and
  *   skip the stale copies (lazy deletion); all must give the same
- *   distances.
+ *   distances;
+ * - the pushes and pops of best-first searches by the keys f = g + h and
+ *   g, least f first, then largest g, then last pushed, recorded once and
+ *   replayed on the bucket queue and on two heaps, which must pop the same
+ *   items: on a grid of side 2 sqrt( n ) with 20% of its cells blocked, 4
+ *   neighbours, unit costs, h the Manhattan distance to a corner walled
+ *   off, so that the search visits the whole component and g reaches a few
+ *   thousands, with one queue (grid 1 queue) and with 64 queues served in
+ *   turn, each node pushed to the queue of a hash of it, as a parallel
+ *   search sends its nodes to the workers (grid 64 queues: each queue
+ *   holds few items per f, and its least layer empties and fills again
+ *   all the time), and on the 15-puzzle from a random walk of 200 moves,
+ *   up to n pops, h the Manhattan distance, where g stays below 80
+ *   (15-puzzle 1 queue, 15-puzzle 64 queues).
  *
  * Each cell is the median of r runs of a phase, in nanoseconds per
  * operation (a step of the hold is one operation, a node of the graph one
- * of dijkstra); the contracts are off (ADS_CONTRACTS=0).
+ * of dijkstra, a push or a pop one of the searches); the contracts are off
+ * (ADS_CONTRACTS=0).
  *
  *   priority [ -r runs ] [ -s seed ] n1 n2 ...
  *
@@ -78,11 +92,13 @@
 #endif
 
 #include <climits>
+#include <cmath>
 #include <cstdio>
 #include <functional>
 #include <limits>
 #include <queue>
 #include <set>
+#include <unordered_map>
 #include <utility>
 
 using namespace ADS::bench;
@@ -336,6 +352,224 @@ std::uint64_t boostHandles( const Graph & G )
           []( Q & q ) { return( q.empty() ); } ) );
  }
 #endif
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- BEST-FIRST SEARCHES ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a step of a search: x pushed to the queue q with the keys f and g, or
+/// popped from it if g is NONE
+struct Step {
+ unsigned q , x , f , g;
+ };
+
+constexpr unsigned NONE = UINT_MAX;
+
+/// the queue of the node v among P
+unsigned owner( std::uint64_t v , unsigned P )
+{
+ return( unsigned( ( ( v * 0x9E3779B97F4A7C15ull ) >> 32 ) % P ) );
+ }
+
+/// the steps of a best-first search on P queues served in turn, a pop from
+/// each that has items, until the queues empty, the goal comes out or
+/// cap pops: start() gives the first node with its h, expand( v , g ,
+/// out ) calls out( u , h ) for each neighbour u of v, goal( v ) tells
+/// the goal; a node is pushed again when its g improves, and its stale
+/// copies skipped
+template< class Start , class Expand , class Goal >
+std::vector< Step > bestFirst( unsigned P , std::size_t cap , Start && start ,
+                               Expand && expand , Goal && goal )
+{
+ std::vector< ADS::BucketQueue< unsigned , unsigned > > Q( P );
+ std::vector< unsigned > best;
+ std::vector< Step > T;
+ auto push = [ & ]( unsigned u , unsigned g , unsigned h ) {
+  if( u >= best.size() ) best.resize( u + 1 , NONE );
+  if( g >= best[ u ] ) return;
+  best[ u ] = g;
+  const unsigned q = owner( u , P );
+  Q[ q ].push( u , g + h , g );
+  T.push_back( Step{ q , u , g + h , g } );
+  };
+ const auto [ s , h ] = start();
+ push( s , 0 , h );
+ for( std::size_t pops = 0 ; pops < cap ; ) {
+  bool any = false;
+  for( unsigned q = 0 ; q < P ; ++q ) {
+   if( Q[ q ].empty() ) continue;
+   any = true;
+   const auto e = Q[ q ].popEntry();
+   T.push_back( Step{ q , e.item , 0 , NONE } );
+   ++pops;
+   if( e.g > best[ e.item ] ) continue;     // a stale copy
+   if( goal( e.item ) ) return( T );
+   expand( e.item , [ & ]( unsigned u , unsigned h ) {
+    push( u , e.g + 1 , h ); } );
+   }
+  if( ! any ) break;
+  }
+ return( T );
+ }
+
+/// the search on a grid of side c, 20% of the cells blocked, from the
+/// corner 0 to the opposite one, walled off
+std::vector< Step > gridSearch( unsigned c , unsigned P , unsigned seed )
+{
+ std::mt19937_64 g( seed + 11 );
+ const std::size_t N = std::size_t( c ) * c;
+ std::vector< char > blocked( N );
+ for( auto & b : blocked ) b = ( g() % 5 == 0 );
+ blocked[ 0 ] = 0;
+ blocked[ N - 2 ] = blocked[ N - 1 - c ] = 1;   // the goal walled off
+ auto h = [ c ]( std::size_t v ) {
+  return( unsigned( ( c - 1 - v % c ) + ( c - 1 - v / c ) ) ); };
+ return( bestFirst( P , std::size_t( -1 ) ,
+  [ & ](){ return( std::pair< unsigned , unsigned >( 0 , h( 0 ) ) ); } ,
+  [ & ]( unsigned v , auto && out ) {
+   const unsigned x = v % c , y = v / c;
+   if( x > 0 && ! blocked[ v - 1 ] ) out( v - 1 , h( v - 1 ) );
+   if( x + 1 < c && ! blocked[ v + 1 ] ) out( v + 1 , h( v + 1 ) );
+   if( y > 0 && ! blocked[ v - c ] ) out( v - c , h( v - c ) );
+   if( y + 1 < c && ! blocked[ v + c ] ) out( v + c , h( v + c ) ); } ,
+  [ N ]( unsigned v ) { return( v == N - 1 ); } ) );
+ }
+
+/// the search on the 15-puzzle from a random walk of 200 moves from the
+/// goal, up to cap pops; a state is 16 nibbles, the tile of each place
+std::vector< Step > puzzleSearch( std::size_t cap , unsigned P ,
+                                  unsigned seed )
+{
+ using State = std::uint64_t;
+ auto tile = []( State s , int i ) { return( int( ( s >> ( 4 * i ) ) & 15 ) );
+  };
+ auto blank = [ & ]( State s ) {
+  int i = 0;
+  while( tile( s , i ) ) ++i;
+  return( i ); };
+ auto slide = [ & ]( State s , int b , int t ) {    // the tile at t to b
+  const State v = State( tile( s , t ) );
+  return( ( s & ~( State( 15 ) << ( 4 * t ) ) ) | ( v << ( 4 * b ) ) ); };
+ auto h = [ & ]( State s ) {
+  unsigned m = 0;
+  for( int i = 0 ; i < 16 ; ++i )
+   if( const int t = tile( s , i ) - 1 ; t >= 0 )
+    m += unsigned( std::abs( t % 4 - i % 4 ) + std::abs( t / 4 - i / 4 ) );
+  return( m ); };
+ auto moves = []( int b , int * to ) {
+  int k = 0;
+  if( b % 4 ) to[ k++ ] = b - 1;
+  if( b % 4 < 3 ) to[ k++ ] = b + 1;
+  if( b >= 4 ) to[ k++ ] = b - 4;
+  if( b < 12 ) to[ k++ ] = b + 4;
+  return( k ); };
+ State goal = 0;
+ for( int i = 0 ; i < 15 ; ++i ) goal |= State( i + 1 ) << ( 4 * i );
+ std::mt19937_64 g( seed + 13 );
+ State s = goal;
+ for( int i = 0 , last = -1 ; i < 200 ; ++i ) {
+  int to[ 4 ] , t;
+  const int b = blank( s ) , k = moves( b , to );
+  do t = to[ g() % unsigned( k ) ]; while( t == last );
+  last = b;
+  s = slide( s , b , t );
+  }
+ std::unordered_map< State , unsigned > id;
+ std::vector< State > state;
+ auto number = [ & ]( State x ) {
+  const auto [ it , added ] = id.try_emplace( x , unsigned( state.size() ) );
+  if( added ) state.push_back( x );
+  return( it->second ); };
+ return( bestFirst( P , cap ,
+  [ & ](){ return( std::pair< unsigned , unsigned >( number( s ) ,
+                                                      h( s ) ) ); } ,
+  [ & ]( unsigned v , auto && out ) {
+   const State x = state[ v ];
+   int to[ 4 ];
+   const int b = blank( x ) , k = moves( b , to );
+   for( int i = 0 ; i < k ; ++i ) {
+    const State y = slide( x , b , to[ i ] );
+    out( number( y ) , h( y ) );
+    } } ,
+  [ & ]( unsigned v ) { return( state[ v ] == goal ); } ) );
+ }
+
+/// a node of the heaps: its keys, its time of push and itself
+struct Node {
+ unsigned f , g , t , x;
+ };
+
+/// whether a comes out before b: least f, largest g, last pushed
+struct NodeFirst {
+ bool operator()( const Node & a , const Node & b ) const {
+  return( ( a.f < b.f ) || ( ( a.f == b.f ) && ( ( a.g > b.g ) ||
+          ( ( a.g == b.g ) && ( a.t > b.t ) ) ) ) );
+  }
+ };
+
+/// replays the steps T on P queues that make() builds, by push( q , x , f
+/// , g , t ) and pop( q ), which must give the items of the steps
+template< class M , class Push , class Pop >
+void replay( const char * what , const std::string & who , std::size_t n ,
+             const std::vector< Step > & T , unsigned P , int r , M && make ,
+             Push && push , Pop && pop )
+{
+ if( skip( who ) )
+  return;
+ print( "priority" , what , n , who , median( [ & ](){
+         std::vector< decltype( make() ) > Q;
+         for( unsigned q = 0 ; q < P ; ++q ) Q.push_back( make() );
+         return( Q ); } , [ & ]( auto & Q ) {
+          unsigned t = 0;
+          bool same = true;
+          for( const Step & s : T )
+           if( s.g == NONE ) same &= ( pop( Q[ s.q ] ) == s.x );
+           else push( Q[ s.q ] , s.x , s.f , s.g , t++ );
+          if( ! same ) {
+           std::fprintf( stderr , "%s: wrong order\n" , who.c_str() );
+           std::exit( 1 );
+           } } , r , T.size() ) );
+ }
+
+/// the structures of the searches: the bucket queue, its A/A, two heaps
+const char * const searchers[] = { "ADS::BucketQueue" ,
+                                   "ADS::BucketQueue A/A" ,
+                                   "std::priority_queue" ,
+                                   "ADS::DaryHeap d=4" };
+
+/// the searches of the steps that make() records, which it records only if
+/// a structure is to be measured
+template< class M >
+void searches( const char * what , std::size_t n , unsigned P , int r ,
+               M && make )
+{
+ bool any = false;
+ for( const char * who : searchers )
+  any = ! skip( who ) || any;
+ if( ! any )
+  return;
+ const std::vector< Step > T = make();
+ for( const char * who : { searchers[ 0 ] , searchers[ 1 ] } )
+  replay( what , who , n , T , P , r , [](){
+          return( ADS::BucketQueue< unsigned , unsigned >() ); } ,
+          []( auto & q , unsigned x , unsigned f , unsigned g , unsigned ) {
+           q.push( x , f , g ); } ,
+          []( auto & q ) { return( q.pop() ); } );
+ auto push = []( auto & q , unsigned x , unsigned f , unsigned g ,
+                 unsigned t ) { q.push( Node{ f , g , t , x } ); };
+ auto pop = []( auto & q ) {
+  const unsigned x = q.top().x;
+  q.pop();
+  return( x ); };
+ replay( what , searchers[ 2 ] , n , T , P , r , [](){
+         auto later = []( const Node & a , const Node & b ) {
+          return( NodeFirst()( b , a ) ); };
+         return( std::priority_queue< Node , std::vector< Node > ,
+                                      decltype( later ) >( later ) ); } ,
+         push , pop );
+ replay( what , searchers[ 3 ] , n , T , P , r , [](){
+         return( ADS::DaryHeap< Node , NodeFirst , 4 >() ); } , push , pop );
+ }
 
 }  // end( namespace )
 
@@ -595,6 +829,20 @@ int main( int argc , char ** argv )
                   d = int( q.topKey() );
                   v = q.pop(); } ,
                  []( auto & q ) { return( q.empty() ); } ) ); } );
+
+  // the best-first searches
+
+  const unsigned c = unsigned( 2 * std::sqrt( double( n ) ) );
+  for( unsigned P : { 1u , 64u } ) {
+   const std::string grid = "grid " + std::to_string( P ) +
+                            ( P > 1 ? " queues" : " queue" );
+   const std::string puzzle = "15-puzzle " + std::to_string( P ) +
+                              ( P > 1 ? " queues" : " queue" );
+   searches( grid.c_str() , n , P , r , [ & ](){
+             return( gridSearch( c , P , o.seed ) ); } );
+   searches( puzzle.c_str() , n , P , r , [ & ](){
+             return( puzzleSearch( n , P , o.seed ) ); } );
+   }
   }
  return( 0 );
  }

@@ -385,7 +385,8 @@ section 7.2 of the book; [`bench/hashing.cpp`](bench/hashing.cpp) compares
 the hashing with Abseil, unordered_dense, robin-map, libcuckoo, XXH3,
 wyhash, rapidhash, fastfilter_cpp, xor_singleheader, PTHash, BBHash and
 RecSplit; [`bench/priority.cpp`](bench/priority.cpp) compares the heaps
-with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm, and
+with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm and in
+best-first searches on a grid and on the 15-puzzle, and
 [`bench/memory.cpp`](bench/memory.cpp) the arena and the pool with
 `std::pmr`, Boost.Pool, mimalloc and jemalloc;
 [`bench/graphs.cpp`](bench/graphs.cpp) runs the algorithms of the book on
@@ -414,7 +415,7 @@ standard library, Boost and Eigen; their tests are in
 
 | What | Header | Test |
 |---|---|---|
-| two-level bucket queue for integer keys (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue` |
+| two-level bucket queue for integer keys, the large second keys of a layer in sparse runs until they are many (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue`, `engineered.bucket-queue-sparse` |
 | d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
 | d-ary heap of the ids with decrease-key, the places in a vector, a PRIORITYQUEUE whose handles are the ids | [`priority/IndexedDaryHeap.h`](include/ADS/priority/IndexedDaryHeap.h) | `engineered_graph.indexed-dary-heap` |
 | graph in compressed rows, each arc next to its weight, the rows sorted by head; transpose and relabelling | [`graph/StaticGraph.h`](include/ADS/graph/StaticGraph.h) | `engineered_graph.static-graph` |
