@@ -580,8 +580,48 @@
  and Reps for the decreases), in
  \f$ O( ( n_\delta + m_\delta ) \log n_\delta ) \f$ with nonnegative weights,
  \f$ n_\delta \f$ and \f$ m_\delta \f$ the nodes whose distance falls and
- their edges. An increase or the deletion of an edge of \f$ T \f$ is fatal,
- since the distances grow under it and the certificate gives no bound of them.
+ their edges. An increase or the deletion of an edge \f$ ( u , v ) \f$ of
+ \f$ T \f$ is repairable too, at a higher price: the distances of the nodes
+ of the subtree of \f$ T \f$ under \f$ v \f$ may grow, and the certificate
+ gives no bound of them, while those of the other nodes are still the costs
+ of their paths in \f$ T \f$, which no raised edge touches.
+
+ <em>Lemma 8 (the increases).</em> Let \f$ A \f$ be the union of the
+ subtrees of \f$ T \f$ under the heads of the edges of \f$ T \f$ raised or
+ deleted by \f$ P \f$. Set \f$ d[ x ] = \infty \f$ for \f$ x \in A \f$, then
+ \f[
+   d[ x ] = \min_{( u , x ) \in E} \{ d[ u ] + w( u , x ) \} \quad
+   \forall x \in A , \tag{9}
+ \f]
+ on the weights after \f$ P \f$, and run the prototype with \f$ S \f$ made
+ of the nodes of \f$ A \f$ with \f$ d[ x ] < \infty \f$ and of the tails of
+ the edges that violate (4); at the end \f$ d \f$ holds the distances after
+ \f$ P \f$ and \f$ T \f$ is a tree of shortest paths.
+
+ Indeed, a node out of \f$ A \f$ keeps its path in \f$ T \f$, whose edges
+ were not raised, so that \f$ d \f$ stays an upper bound of its distance;
+ the nodes of \f$ A \f$ get \f$ \infty \f$ or, by (9), the cost of a path,
+ again an upper bound. The prototype keeps the upper bounds, and it stops
+ when no edge violates (4): the edges between two nodes out of \f$ A \f$
+ whose weight did not fall satisfied (4) before \f$ P \f$ and still do, the
+ edges that enter \f$ A \f$ satisfy it after (9), the edges out of the nodes
+ whose \f$ d \f$ changes are examined when these leave \f$ S \f$, and the
+ lowered ones are in \f$ S \f$ by their tails. Hence (4) holds with
+ \f$ d[ r ] = 0 \f$, and \f$ d \f$ is at most each distance and at least it.
+
+ The repair costs the scan of the edges that enter \f$ A \f$, which an
+ oriented graph keeps in lists of its own from the first increase on (the
+ graphs of the library give only the edges that leave a node), plus the
+ prototype on the nodes whose distance changes; it is the algorithm of
+ Ramalingam and Reps with the subtree of \f$ T \f$ in place of the graph of
+ all the shortest paths, which is the variant that the experiments of
+ Bauer and Wagner on batches of changes found the most robust, since it
+ needs no count of the tight edges and no order among the nodes of
+ \f$ A \f$. The subtrees are found by lists of the children of \f$ T \f$,
+ updated whenever a parent changes, so that a batch that touches few nodes
+ costs no \f$ \Theta( n ) \f$; when \f$ |A| > n / 2 \f$ the tree is computed
+ from scratch, which then costs about as much. Only the threshold \f$ \rho \f$
+ of the events and a negative cycle are still fatal.
 
  For the minimum spanning forest \f$ F \f$ (`SpanningForestObserver`) the
  certificate is the pair of conditions of optimality of section 14.3, i.e.,
@@ -590,7 +630,7 @@
  \f[
    w( f ) \ge \max_{e \in F( u , v )} w( e ) \quad
    \forall f = [ u , v ] \notin F , \qquad
-   w( e ) \le w( \rho( e ) ) \quad \forall e \in F , \tag{9}
+   w( e ) \le w( \rho( e ) ) \quad \forall e \in F , \tag{10}
  \f]
  \f$ \rho( e ) \f$ the <em>replacement</em> of \f$ e \f$, the lightest edge
  out of \f$ F \f$ whose path holds \f$ e \f$ (the sensitivity analysis of
@@ -606,7 +646,7 @@
  raising an edge \f$ e \f$ of \f$ F \f$ to \f$ w' \le w( \rho( e ) ) \f$ and
  deleting an edge of \f$ F \f$ with no replacement (a bridge) are harmless
  too. The other changes are repairable. When the edges lowered or inserted
- out of \f$ F \f$ are the only changes that fail (9), the new forest is that
+ out of \f$ F \f$ are the only changes that fail (10), the new forest is that
  of Kruskal on \f$ F \f$ and those edges, in
  \f$ O( ( n + k ) \log( n + k ) ) \f$ for \f$ k \f$ of them, since an edge
  out of \f$ F \f$ that did not get lighter is still the heaviest of its cycle;
@@ -636,9 +676,10 @@
  <tr><th>Observer</th><th>Harmless</th><th>Repairable</th><th>Fatal</th></tr>
  <tr><td><tt>ShortestPathsObserver</tt></td><td>off \f$ T \f$ with
      \f$ d[ u ] + w' \ge d[ v ] \f$, \f$ O( 1 ) \f$</td><td>an improving
-     edge, the prototype from its tail</td><td>an edge of \f$ T \f$ raised
-     or deleted</td></tr>
- <tr><td><tt>SpanningForestObserver</tt></td><td>(9) still true,
+     edge, the prototype from its tail; an edge of \f$ T \f$ raised or
+     deleted, (9) on its subtree and the prototype</td><td>a subtree of
+     more than \f$ n / 2 \f$ nodes</td></tr>
+ <tr><td><tt>SpanningForestObserver</tt></td><td>(10) still true,
      \f$ O( \log n ) \f$</td><td>Kruskal on \f$ F \f$ and the edges
      lowered, or a swap</td><td>raises and decreases together</td></tr>
  <tr><td><tt>MaxFlowObserver</tt></td><td>\f$ c' \ge f( u , v ) \f$ off
@@ -701,6 +742,9 @@
  \see G. Ramalingam, T. Reps, An incremental algorithm for a
       generalization of the shortest-path problem, Journal of Algorithms
       21(2), 267-305, 1996, doi:10.1006/jagm.1996.0046
+ \see R. Bauer, D. Wagner, Batch dynamic single-source shortest-path
+      algorithms: an experimental study, Proceedings of SEA, LNCS 5526,
+      51-62, 2009, doi:10.1007/978-3-642-02011-7_7
  \see R. E. Tarjan, Sensitivity analysis of minimum spanning trees and
       shortest path trees, Information Processing Letters 14(1), 30-33,
       1982, doi:10.1016/0020-0190(82)90137-5

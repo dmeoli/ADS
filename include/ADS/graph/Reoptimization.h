@@ -27,7 +27,10 @@
  * each event is tested against the certificate in \f$ O( 1 ) \f$ (in
  * \f$ O( \log n ) \f$ for the forest), and by Lemma 7 of
  * \ref theory_graph_dynamic the events all harmless prove the solution
- * still optimal. The warm start of the maximum flow from the flow there is,
+ * still optimal. The shortest paths are repaired after the raises and the
+ * deletions of the edges of the tree as well as after the decreases, on
+ * the subtrees whose distances are lost (Lemma 8 of
+ * \ref theory_graph_dynamic). The warm start of the maximum flow from the flow there is,
  * when an edge of the minimum cut grows, is one that the maximum flow of
  * OR-Tools leaves to do.
  *
@@ -47,6 +50,9 @@
  * \see G. Ramalingam, T. Reps, An incremental algorithm for a
  *      generalization of the shortest-path problem, Journal of
  *      Algorithms 21(2), 267-305, 1996, doi:10.1006/jagm.1996.0046
+ * \see R. Bauer, D. Wagner, Batch dynamic single-source shortest-path
+ *      algorithms: an experimental study, Proceedings of SEA, LNCS 5526,
+ *      51-62, 2009, doi:10.1007/978-3-642-02011-7_7
  * \see D. Frigioni, A. Marchetti-Spaccamela, U. Nanni, Fully dynamic
  *      algorithms for maintaining shortest paths trees, Journal of
  *      Algorithms 34(2), 251-281, 2000, doi:10.1006/jagm.1999.1048
@@ -256,31 +262,43 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
 
  /// brings the tree up to date
  ///
- /// In pseudocode (the algorithm of Ramalingam and Reps for the decreases,
- /// beyond the book), the tests of the events \f$ P \f$ coalesced, with
- /// \f$ T \f$ the tree and \f$ d \f$ the distances:
+ /// In pseudocode (the algorithms of Ramalingam and Reps for the decreases
+ /// and the increases, in the batch form of Bauer and Wagner, beyond the
+ /// book; it is correct by Lemma 8 of \ref theory_graph_dynamic), the
+ /// events \f$ P \f$ coalesced, \f$ T \f$ the tree and \f$ d \f$ the
+ /// distances before them:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
- /// 2 & \quad S \gets \emptyset \cr
- /// 3 & \quad \textbf{foreach}\ ( u , v ) \text{ from } w \text{ to } w'
- ///     \text{ in } P\ \textbf{do} \cr
- /// 4 & \qquad \textbf{if}\ ( u , v ) \in T \textbf{ and } ( w' = \bot
- ///     \textbf{ or } w' > w )\ \textbf{then}\ \text{from scratch};
+ /// 2 & \quad R \gets \text{the heads } v \text{ of the arcs } ( u , v )
+ ///     \in T \text{ raised or deleted in } P \cr
+ /// 3 & \quad L \gets \text{the arcs lowered or inserted in } P \cr
+ /// 4 & \quad A \gets \text{the nodes of the subtrees of } T \text{ under }
+ ///     R \cr
+ /// 5 & \quad \textbf{if}\ 2 |A| > n\ \textbf{then}\ \text{from scratch};
  ///     \ \textbf{return} \cr
- /// 5 & \qquad \textbf{if}\ ( u , v ) \in T \textbf{ or } d[ u ] + w'
- ///     < d[ v ]\ \textbf{then}\ S \gets S \cup \{ u \} \cr
- /// 6 & \quad \textbf{if}\ S = \emptyset\ \textbf{then}\ \textbf{return}
+ /// 6 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ d[ x ] \gets \infty;
+ ///     \ T[ x ] \gets \textbf{nil} \cr
+ /// 7 & \quad S \gets \emptyset \cr
+ /// 8 & \quad \textbf{foreach}\ x \in A\ \textbf{do} \cr
+ /// 9 & \qquad \textbf{foreach}\ ( u , x ) \in E\ \textbf{with}
+ ///     \ d[ u ] + w( u , x ) < d[ x ]\ \textbf{do}\ d[ x ] \gets d[ u ]
+ ///     + w( u , x );\ T[ x ] \gets u \cr
+ /// 10 & \qquad \textbf{if}\ d[ x ] < \infty\ \textbf{then}\ S \gets S
+ ///     \cup \{ x \} \cr
+ /// 11 & \quad \textbf{foreach}\ ( u , v ) \in L\ \textbf{with}\ d[ u ]
+ ///     + w( u , v ) < d[ v ]\ \textbf{do}\ S \gets S \cup \{ u \} \cr
+ /// 12 & \quad \textbf{if}\ S = \emptyset\ \textbf{then}\ \textbf{return}
  ///     \quad \triangleright\ \text{certified} \cr
- /// 7 & \quad H \gets \text{a priority queue of } S \text{ by } d \cr
- /// 8 & \quad \textbf{while}\ H \ne \emptyset\ \textbf{do} \cr
- /// 9 & \qquad u \gets \mathrm{deleteMin}( H ) \cr
- /// 10 & \qquad \textbf{if}\ u \text{ was extracted more than } n
+ /// 13 & \quad H \gets \text{a priority queue of } S \text{ by } d \cr
+ /// 14 & \quad \textbf{while}\ H \ne \emptyset\ \textbf{do} \cr
+ /// 15 & \qquad u \gets \mathrm{deleteMin}( H ) \cr
+ /// 16 & \qquad \textbf{if}\ u \text{ was extracted more than } n
  ///     \text{ times}\ \textbf{then}\ \text{Bellman-Ford-Moore};
  ///     \ \textbf{return} \cr
- /// 11 & \qquad \textbf{foreach}\ ( u , v ) \in E\ \textbf{with}
+ /// 17 & \qquad \textbf{foreach}\ ( u , v ) \in E\ \textbf{with}
  ///     \ d[ u ] + w( u , v ) < d[ v ]\ \textbf{do} \cr
- /// 12 & \qquad\quad d[ v ] \gets d[ u ] + w( u , v );\ T[ v ] \gets u;
+ /// 18 & \qquad\quad d[ v ] \gets d[ u ] + w( u , v );\ T[ v ] \gets u;
  ///     \ \mathrm{insert}( H , v , d[ v ] )
  /// \end{array}}
  /// \f]
@@ -307,15 +325,51 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
  /// the tree from scratch, by `how`
  void scratch( Frontier how );
 
- /// the prototype from the seeds; false if a node was extracted more than
- /// \f$ n \f$ times (a negative cycle)
- bool repair( const std::vector< int > & seeds );
+ using Event = GraphEvent< Weight >;   ///< the type of the events
+
+ /// the prototype from the seeds \f$ S \f$, which it empties; false if a
+ /// node was extracted more than \f$ n \f$ times (a negative cycle)
+ bool repair( std::vector< int > & S );
+
+ /// the lists of the children of \f$ T \f$, from the parents
+ void buildTree( void );
+
+ /// the vectors of the nodes up to `bound()` of the graph
+ void grow( void );
+
+ /// \f$ x \f$ the first child of \f$ p \f$
+ void link( int x , int p );
+
+ /// \f$ x \f$ out of the children of its parent
+ void unlink( int x );
+
+ /// \f$ u \f$ the parent of \f$ v \f$, `NIL` for none
+ void setParent( int v , int u );
+
+ /// the arcs that enter each node, from the graph
+ void buildIn( void );
+
+ /// the events \f$ P \f$ on the arcs that enter each node
+ void applyIn( std::span< const Event > P );
+
+ /// `f( u , w )` for each arc \f$ ( u , x ) \f$ of weight \f$ w \f$
+ template< class F >
+ void forEachIn( int x , F && f ) const;
 
  const G & f_g;                     ///< the graph
  int f_r;                           ///< the root
  Frontier f_how;                    ///< the algorithm from scratch
  bool f_ready = false;              ///< whether there is a tree
  ShortestPathTree< Weight > f_R;    ///< the tree
+ std::vector< int > f_child;        ///< the first child in \f$ T \f$
+ std::vector< int > f_next;         ///< the next sibling in \f$ T \f$
+ std::vector< int > f_prev;         ///< the previous sibling in \f$ T \f$
+ std::vector< int > f_pops;         ///< the extractions of a repair
+ std::vector< char > f_inA;         ///< the nodes whose distance is lost
+ bool f_inOk = false;               ///< whether `f_in` is up to date
+ /// the arcs \f$ ( u , x ) \f$ that enter each node \f$ x \f$ with their
+ /// weights, kept for an oriented graph from the first increase on
+ std::vector< std::vector< std::pair< int , Weight > > > f_in;
 
  };  // end( class ShortestPathsObserver )
 
@@ -339,7 +393,7 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  /// brings the forest up to date
  ///
  /// In pseudocode (beyond the book), the tests of the events \f$ P \f$
- /// coalesced against (9) of \ref theory_graph_dynamic, with \f$ F \f$ the
+ /// coalesced against (10) of \ref theory_graph_dynamic, with \f$ F \f$ the
  /// forest and \f$ \rho \f$ the replacements:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}

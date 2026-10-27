@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compiled in only when found; the mean and the maximum rank error of the
   relaxed queues in the hold model, from the times at which their
   operations return, replayed in their order (-b rank)
+- ShortestPathsObserver: the raises and the deletions of the edges of the
+  tree repaired too, by (9) of the theory of the graphs on the subtrees
+  whose distances are lost and the prototype from them (the algorithm of
+  Ramalingam and Reps in the batch form of Bauer and Wagner), the arcs
+  that enter each node kept for an oriented graph from the first raise on
+  and the lists of the children of the tree updated with each parent, so
+  that a batch touching few nodes costs no $\Theta( n )$; from scratch only
+  past the threshold of the events, on a negative cycle or when more than
+  half of the tree is lost; the test reopt-shortest-paths-increase
 - MultiQueue (concurrent/MultiQueue.h), the relaxed priority queue of
   Rihani, Sanders and Dementiev for the OPEN of a parallel best-first
   search: n queues under a lock each, a push into a random queue, a pop

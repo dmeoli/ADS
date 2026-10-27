@@ -81,35 +81,156 @@ void ShortestPathsObserver< G >::scratch( Frontier how )
 {
  f_R = shortestPaths( f_g , f_r , how );
  f_ready = true;
+ f_inOk = false;                          // the events not applied to it
+ buildTree();
  }
 
 template< Graph G >
-bool ShortestPathsObserver< G >::repair( const std::vector< int > & seeds )
+void ShortestPathsObserver< G >::buildTree( void )
+{
+ const int n = int( f_R.T.size() );
+ f_child.assign( n , NIL );
+ f_next.assign( n , NIL );
+ f_prev.assign( n , NIL );
+ f_pops.assign( n , 0 );
+ f_inA.assign( n , 0 );
+ for( int v = 0 ; v < n ; ++v )
+  if( f_R.T[ v ] != NIL )
+   link( v , f_R.T[ v ] );
+ }
+
+template< Graph G >
+void ShortestPathsObserver< G >::grow( void )
+{
+ const std::size_t n = std::size_t( f_g.bound() );
+ if( f_R.d.size() >= n )
+  return;
+ f_R.d.resize( n , infinity< Weight >() );
+ f_R.T.resize( n , NIL );
+ f_child.resize( n , NIL );
+ f_next.resize( n , NIL );
+ f_prev.resize( n , NIL );
+ f_pops.resize( n , 0 );
+ f_inA.resize( n , 0 );
+ if( f_inOk )
+  f_in.resize( n );
+ }
+
+template< Graph G >
+void ShortestPathsObserver< G >::link( int x , int p )
+{
+ f_prev[ x ] = NIL;
+ f_next[ x ] = f_child[ p ];
+ if( f_child[ p ] != NIL )
+  f_prev[ f_child[ p ] ] = x;
+ f_child[ p ] = x;
+ }
+
+template< Graph G >
+void ShortestPathsObserver< G >::unlink( int x )
+{
+ const int p = f_R.T[ x ];
+ if( p == NIL )
+  return;
+ if( f_prev[ x ] != NIL )
+  f_next[ f_prev[ x ] ] = f_next[ x ];
+ else
+  f_child[ p ] = f_next[ x ];
+ if( f_next[ x ] != NIL )
+  f_prev[ f_next[ x ] ] = f_prev[ x ];
+ f_prev[ x ] = f_next[ x ] = NIL;
+ }
+
+template< Graph G >
+void ShortestPathsObserver< G >::buildIn( void )
+{
+ f_in.assign( std::size_t( f_g.bound() ) , {} );
+ for( int u : f_g.V() )
+  f_g.forEachEdge( u , [ & ]( int v , const Weight & w ) {
+   f_in[ v ].emplace_back( u , w ); } );
+ f_inOk = true;
+ }
+
+template< Graph G >
+void ShortestPathsObserver< G >::applyIn( std::span< const Event > P )
+{
+ for( const auto & e : P ) {
+  int u , v;
+  std::optional< Weight > w0 , w1;
+  if( ! detail::edgeChange( e , u , v , w0 , w1 ) )
+   continue;
+  auto & L = f_in[ v ];
+  auto it = std::find_if( L.begin() , L.end() , [ & ]( const auto & x ) {
+   return( x.first == u ); } );
+  if( ! w1 ) {                            // deleted
+   if( it != L.end() ) {
+    *it = L.back();
+    L.pop_back();
+    }
+   }
+  else if( it != L.end() )
+   it->second = *w1;
+  else
+   L.emplace_back( u , *w1 );
+  }
+ }
+
+template< Graph G >
+template< class F >
+void ShortestPathsObserver< G >::forEachIn( int x , F && f ) const
+{
+ if( f_g.directed() ) {
+  for( const auto & [ u , w ] : f_in[ x ] )
+   f( u , w );
+  }
+ else if( f_g.hasNode( x ) )              // the edges are symmetric
+  f_g.forEachEdge( x , [ & ]( int u , const Weight & w ) { f( u , w ); } );
+ }
+
+template< Graph G >
+void ShortestPathsObserver< G >::setParent( int v , int u )
+{
+ unlink( v );
+ f_R.T[ v ] = u;
+ if( u != NIL )
+  link( v , u );
+ }
+
+template< Graph G >
+bool ShortestPathsObserver< G >::repair( std::vector< int > & seeds )
 {
  using D = Weight;
  const D INF = infinity< D >();
  const int n = f_g.bound();
- std::vector< int > pops( n , 0 );
  using Item = std::pair< D , int >;
  std::priority_queue< Item , std::vector< Item > , std::greater< Item > > H;
  for( int u : seeds )
   if( f_R.d[ u ] != INF )
    H.push( { f_R.d[ u ] , u } );
+ std::vector< int > & popped = seeds;     // the nodes whose count to reset
+ popped.clear();
+ bool ok = true;
  while( ! H.empty() ) {
   const auto [ du , u ] = H.top();
   H.pop();
   if( du != f_R.d[ u ] )
    continue;                              // a stale entry
-  if( ++pops[ u ] > n )
-   return( false );
+  if( f_pops[ u ]++ == 0 )
+   popped.push_back( u );
+  if( f_pops[ u ] > n ) {
+   ok = false;
+   break;
+   }
   f_g.forEachEdge( u , [ & ]( int v , const D & w ) {
    if( f_R.d[ u ] + w < f_R.d[ v ] ) {
     f_R.d[ v ] = f_R.d[ u ] + w;
-    f_R.T[ v ] = u;
+    setParent( v , u );
     H.push( { f_R.d[ v ] , v } );
     } } );
   }
- return( true );
+ for( int u : popped )
+  f_pops[ u ] = 0;
+ return( ok );
  }
 
 template< Graph G >
@@ -131,24 +252,27 @@ void ShortestPathsObserver< G >::solve( void )
   this->done( Reopt::SCRATCH );
   return;
   }
+ grow();
+ if( f_inOk )
+  applyIn( P );
 
+ // the tests on the tree before P: the heads of the arcs of T raised or
+ // deleted root the subtrees whose distances are lost; the tails of the
+ // arcs that got lighter are the seeds of the decreases
  const Weight INF = infinity< Weight >();
- f_R.d.resize( f_g.bound() , INF );
- f_R.T.resize( f_g.bound() , NIL );
- bool fatal = false;
- std::vector< int > seeds;
- // the test of the arc ( a , b ) from w0 to w1, absent if nothing
+ std::vector< int > roots;
+ struct Arc {
+  int a , b;
+  Weight w;
+  };
+ std::vector< Arc > lighter;
  auto arc = [ & ]( int a , int b , const std::optional< Weight > & w0 ,
                    const std::optional< Weight > & w1 ) {
-  const bool tree = ( f_R.d[ b ] != INF ) && ( f_R.T[ b ] == a );
-  if( tree ) {
-   if( ! w1 || ( *w0 < *w1 ) )
-    fatal = true;                         // d grows under b
-   else if( *w1 < *w0 )
-    seeds.push_back( a );
-   }
-  else if( w1 && ( f_R.d[ a ] != INF ) && ( f_R.d[ a ] + *w1 < f_R.d[ b ] ) )
-   seeds.push_back( a );
+  if( ( f_R.d[ b ] != INF ) && ( f_R.T[ b ] == a ) &&
+      ( ! w1 || ( *w0 < *w1 ) ) )
+   roots.push_back( b );                  // d may grow under b
+  else if( w1 && ( ! w0 || ( *w1 < *w0 ) ) )
+   lighter.push_back( { a , b , *w1 } );
   };
  for( const auto & e : P ) {
   int u , v;
@@ -158,14 +282,66 @@ void ShortestPathsObserver< G >::solve( void )
    if( ! f_g.directed() )
     arc( v , u , w0 , w1 );
    }
-  if( fatal )
-   break;
   }
- if( fatal ) {
+
+ // the subtrees under the roots, taken out of T
+ std::vector< int > A;
+ for( int b : roots ) {
+  if( f_inA[ b ] )
+   continue;
+  unlink( b );
+  f_inA[ b ] = 1;
+  const std::size_t first = A.size();
+  A.push_back( b );
+  for( std::size_t i = first ; i < A.size() ; ++i )
+   for( int c = f_child[ A[ i ] ] ; c != NIL ; c = f_next[ c ] )
+    if( ! f_inA[ c ] ) {
+     f_inA[ c ] = 1;
+     A.push_back( c );
+     }
+  }
+ if( 2 * A.size() > std::size_t( f_g.n() ) ) {
+  for( int x : A )                        // most of the tree is lost
+   f_inA[ x ] = 0;
   scratch( f_how );
   this->done( Reopt::SCRATCH );
+  return;
   }
- else if( ! seeds.empty() ) {
+ for( int x : A ) {
+  f_inA[ x ] = 0;
+  f_R.d[ x ] = INF;
+  f_R.T[ x ] = NIL;
+  f_child[ x ] = f_next[ x ] = f_prev[ x ] = NIL;
+  }
+
+ // each node of A from its best entering arc out of A, then the seeds
+ if( ! A.empty() && f_g.directed() && ! f_inOk )
+  buildIn();
+ std::vector< int > seeds;
+ for( int x : A ) {
+  int best = NIL;
+  forEachIn( x , [ & ]( int u , const Weight & w ) {
+   if( ( f_R.d[ u ] != INF ) && ( f_R.d[ u ] + w < f_R.d[ x ] ) ) {
+    f_R.d[ x ] = f_R.d[ u ] + w;
+    best = u;
+    } } );
+  if( best != NIL ) {
+   setParent( x , best );
+   seeds.push_back( x );
+   }
+  }
+ for( const auto & c : lighter )
+  if( ( f_R.d[ c.a ] != INF ) && ( f_R.d[ c.a ] + c.w < f_R.d[ c.b ] ) )
+   seeds.push_back( c.a );
+ for( const auto & e : P )                // the nodes gone, unreached
+  if( const auto * x = std::get_if< NodeDeleted >( & e ) ) {
+   setParent( x->u , NIL );
+   f_R.d[ x->u ] = INF;
+   }
+
+ if( A.empty() && seeds.empty() )
+  this->done( Reopt::CERTIFIED );
+ else {
   f_R.order.clear();
   if( repair( seeds ) )
    this->done( Reopt::WARM );
@@ -173,14 +349,6 @@ void ShortestPathsObserver< G >::solve( void )
    scratch( Frontier::QUEUE );
    this->done( Reopt::SCRATCH );
    }
-  }
- else {
-  for( const auto & e : P )               // the nodes gone, unreached
-   if( const auto * x = std::get_if< NodeDeleted >( & e ) ) {
-    f_R.d[ x->u ] = INF;
-    f_R.T[ x->u ] = NIL;
-    }
-  this->done( Reopt::CERTIFIED );
   }
  ADS_AUDIT( f_R.negativeCycle || isShortestPathTree( f_g , f_r , f_R ) );
  }

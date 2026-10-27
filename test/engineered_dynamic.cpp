@@ -40,8 +40,10 @@
 #include "ADS/mfset/UnionFind.h"
 
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <span>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -296,9 +298,9 @@ ADS_TEST( "reopt-shortest-paths" )
  og.setWeight( 0 , 2 , 7 );               // off the tree, higher
  sp.solve();
  CHECK( sp.outcome() == Reopt::CERTIFIED );
- og.setWeight( 1 , 2 , 6 );               // a tree edge higher: from scratch
- CHECK( ( sp.distance( 2 ) == 6 ) && ( sp.outcome() == Reopt::SCRATCH ) );
- og.deleteEdge( 0 , 1 );                  // a tree edge deleted
+ og.setWeight( 1 , 2 , 6 );               // a tree edge higher: repaired
+ CHECK( ( sp.distance( 2 ) == 6 ) && ( sp.outcome() == Reopt::WARM ) );
+ og.deleteEdge( 0 , 1 );                  // most of the tree lost
  CHECK( ( sp.distance( 1 ) == infinity< long long >() ) &&
         ( sp.outcome() == Reopt::SCRATCH ) );
  const int x = og.insertNode();           // a new node, unreachable
@@ -357,6 +359,109 @@ ADS_TEST( "reopt-shortest-paths" )
     }
    }
   CHECK( ( seen[ 0 ] > 0 ) && ( seen[ 1 ] > 0 ) && ( seen[ 2 ] > 0 ) );
+  }
+ }
+
+ADS_TEST( "reopt-shortest-paths-increase" )
+{
+ // the increases repaired: a tie that keeps the distance, a subtree that
+ // moves, a node cut off, an oriented graph whose entering arcs are built
+ // at the first increase, after nodes and arcs already inserted
+ {
+  LG g( 5 );
+  g.insertEdge( 0 , 1 , 1 );
+  g.insertEdge( 1 , 2 , 1 );
+  g.insertEdge( 2 , 3 , 1 );
+  g.insertEdge( 0 , 2 , 2 );              // a tie with 0 1 2
+  g.insertEdge( 0 , 4 , 9 );
+  ShortestPathsObserver< LG > sp( g , 0 );
+  sp.setRecomputeRatio( 10 );
+  Observable< LG , ShortestPathsObserver< LG > > og( g , sp );
+  CHECK( sp.distance( 3 ) == 3 );
+  const int x = og.insertNode();          // the arcs to it before the
+  og.insertEdge( 4 , x , 1 );             // entering arcs are built
+  CHECK( ( sp.distance( x ) == 10 ) && ( sp.outcome() == Reopt::WARM ) );
+  const int p2 = sp.tree().T[ 2 ];
+  og.setWeight( p2 , 2 , 5 );             // its tree arc up: the tie holds
+  CHECK( ( sp.distance( 2 ) == 2 ) && ( sp.distance( 3 ) == 3 ) &&
+         ( sp.outcome() == Reopt::WARM ) );
+  og.deleteEdge( sp.tree().T[ 2 ] , 2 );  // the other one gone too
+  CHECK( ( sp.distance( 2 ) == ( p2 == 1 ? 6 : 5 ) ) &&
+         ( sp.outcome() == Reopt::WARM ) );
+  og.setWeight( 0 , 4 , 3 );              // a decrease, then an increase
+  CHECK( ( sp.distance( x ) == 4 ) && ( sp.outcome() == Reopt::WARM ) );
+  og.deleteEdge( 4 , x );                 // x cut off
+  CHECK( ( sp.distance( x ) == infinity< long long >() ) &&
+         ( sp.outcome() == Reopt::WARM ) );
+  og.insertEdge( 3 , x , 0 );             // back, by a zero weight
+  CHECK( sp.distance( x ) == sp.distance( 3 ) );
+  og.deleteNode( 3 );                     // a node with a subtree deleted
+  CHECK( sp.distance( x ) == infinity< long long >() );
+  }
+ // a raise and a decrease in one batch, on an unoriented graph, and a
+ // raise of an arc off the tree, harmless
+ {
+  LG g( 4 , false );
+  g.insertEdge( 0 , 1 , 1 );
+  g.insertEdge( 1 , 2 , 1 );
+  g.insertEdge( 2 , 3 , 1 );
+  g.insertEdge( 0 , 3 , 5 );
+  ShortestPathsObserver< LG > sp( g , 0 );
+  sp.setRecomputeRatio( 10 );
+  Observable< LG , ShortestPathsObserver< LG > > og( g , sp );
+  CHECK( sp.distance( 3 ) == 3 );
+  og.setWeight( 0 , 3 , 6 );
+  CHECK( ( sp.distance( 3 ) == 3 ) && ( sp.outcome() == Reopt::CERTIFIED ) );
+  {
+   auto b = og.batch();
+   og.setWeight( 2 , 3 , 10 );            // 3 lost, then reached from 0
+   og.setWeight( 0 , 3 , 2 );
+   }
+  CHECK( ( sp.distance( 3 ) == 2 ) && ( sp.distance( 2 ) == 2 ) &&
+         ( sp.outcome() == Reopt::WARM ) );
+  }
+ // negative weights, a raise repaired by the prototype
+ {
+  LG g( 4 );
+  g.insertEdge( 0 , 1 , 5 );
+  g.insertEdge( 1 , 2 , -3 );
+  g.insertEdge( 0 , 2 , 4 );
+  g.insertEdge( 2 , 3 , -1 );
+  ShortestPathsObserver< LG > sp( g , 0 , Frontier::QUEUE );
+  sp.setRecomputeRatio( 10 );
+  Observable< LG , ShortestPathsObserver< LG > > og( g , sp );
+  CHECK( sp.distance( 3 ) == 1 );
+  og.setWeight( 1 , 2 , 0 );
+  CHECK( ( sp.distance( 3 ) == 3 ) && ( sp.outcome() == Reopt::WARM ) );
+  }
+ // the weights of a static graph raised and lowered, many ties
+ {
+  std::vector< std::tuple< int , int , long long > > E;
+  std::mt19937 rng( 5 );
+  const int n = 200;
+  for( int i = 0 ; i < 4 * n ; ++i ) {
+   const int u = int( rng() % n ) , v = int( rng() % n );
+   if( u != v )
+    E.emplace_back( u , v , static_cast< long long >( rng() % 3 ) );
+   }
+  ArrayGraph< long long > g( n , E );
+  ShortestPathsObserver< ArrayGraph< long long > > sp( g , 0 );
+  sp.setRecomputeRatio( 1 );
+  Observable< ArrayGraph< long long > ,
+              ShortestPathsObserver< ArrayGraph< long long > > > og( g , sp );
+  long long seen[ 3 ] = { 0 , 0 , 0 };
+  for( int step = 0 ; step < ADS::test::scaled( 2000 , 2000 / 5 ) ;
+       ++step ) {
+   const auto & [ u , v , w ] = E[ rng() % E.size() ];
+   ( void ) w;
+   og.setWeight( u , v , static_cast< long long >( rng() % 4 ) );
+   sp.solve();
+   ++seen[ sp.outcome() ];
+   const auto R = shortestPaths( g , 0 , Frontier::HEAP );
+   for( int y = 0 ; y < n ; ++y )
+    CHECK( sp.distance( y ) == R.d[ y ] );
+   }
+  CHECK( ( seen[ 1 ] > 0 ) && ( seen[ 2 ] > 0 ) );
   }
  }
 
