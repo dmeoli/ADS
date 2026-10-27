@@ -67,9 +67,14 @@ std::vector< int > concatBlocks( E & ex , std::size_t B ,
  for( std::size_t b = 0 ; b < B ; ++b )
   at[ b + 1 ] = at[ b ] + L[ b ].size();
  head.resize( at[ B ] );
- parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
+ // the copies in parallel only when they are many, as the small steps of
+ // a graph of large diameter are
+ auto copy = [ & ]( std::size_t b ) {
   std::copy( L[ b ].begin() , L[ b ].end() ,
-             head.begin() + std::ptrdiff_t( at[ b ] ) ); } , 1 );
+             head.begin() + std::ptrdiff_t( at[ b ] ) ); };
+ if( at[ B ] - at[ 0 ] < ( std::size_t( 1 ) << 16 ) )
+  for( std::size_t b = 0 ; b < B ; ++b ) copy( b );
+ else parallelFor( ex , 0 , B , copy , 1 );
  return( head );
  }
 
@@ -87,7 +92,7 @@ std::vector< typename G::Weight > stepping( E & ex , const G & g , int s ,
  d[ std::size_t( s ) ] = D( 0 );
  in[ std::size_t( s ) ] = 1;
  std::vector< int > A{ s } , F , R;
- constexpr std::size_t kGrain = 1024;      // the nodes of a block
+ constexpr std::size_t kGrain = 8192;      // the nodes of a block
  constexpr std::size_t kArcs = 4096;       // the most arcs of a block
  constexpr std::size_t kFused = 1024;      // the nodes a block relaxes
  const std::size_t p = std::max< std::size_t >( ex.concurrency() , 1 );
@@ -215,7 +220,7 @@ std::vector< typename G::Weight > deltaStepping( E & ex , const G & g , int s ,
     for( std::size_t i = lo ; i < hi ; ++i )
      m = std::min( m , d[ std::size_t( A[ i ] ) ] );
     return( m ); } ,
-   []( D a , D b ) { return( std::min( a , b ) ); } );
+   []( D a , D b ) { return( std::min( a , b ) ); } , 8192 );
   D t;
   if constexpr( std::is_integral_v< D > ) {
    const D r = D( delta - 1 - mu % delta );
