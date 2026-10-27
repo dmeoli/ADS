@@ -1,0 +1,464 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File search.dox -----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_search */
+/** \defgroup theory_search Theory of searching
+ \ingroup area_search
+
+ \details The headers of `include/ADS/search` answer questions on a vector by
+ looking at few of its items: the place of a key in a sorted vector (the binary
+ search of section 1.2 of the book and the search by interpolation of section
+ 12.1), the minimum and the local optima, the item of a given rank (the
+ selection of section 17.1), and the minimum of any range of an array after a
+ preprocessing, together with the engineered versions of these searches that
+ count the misses of the cache and the branches that the processor mispredicts.
+ This page collects what the headers take for granted: the definitions and the
+ notation shared by all of them (see \ref theory_search_notation), the lower
+ bounds and the invariants of the searches in a sorted vector (see \ref
+ theory_search_sorted), the searches laid out for the memory (see \ref
+ theory_search_memory), the minimum and the local optima (see \ref
+ theory_search_minimum), the selection (see \ref theory_search_select) and the
+ range minima (see \ref theory_search_rmq). The pseudocode of each algorithm is
+ instead on the page of its header, in the comment of its function, together
+ with the section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_search_notation Definitions and notation
+
+ The input is a vector \f$ A[ 0 .. n - 1 ] \f$ of items of a totally ordered
+ universe, compared by an order `less()` (the operator \f$ < \f$ unless one is
+ given); \f$ A \f$ is <em>sorted</em> if \f$ A[ i ] \le A[ i + 1 ] \f$ for
+ every \f$ i \f$. A <em>comparison</em> is the evaluation of the order on two
+ items, and the cost of a search is the number of its comparisons, the other
+ operations being proportional to it, unless the comment of a function says
+ otherwise. The <em>rank</em> of an item is its place in the sorted order, from
+ 1 in `Selection.h` as in the book and from 0 in `NthElement.h` and
+ `SortedSearches.h` as in the standard library.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ A[ i .. j ] \f$, \f$ A[ i .. j ) \f$</td>
+     <td>the items of the places from \f$ i \f$ to \f$ j \f$, with
+         \f$ j \f$ and without it</td></tr>
+ <tr><td>\f$ \mathit{lo} \f$, \f$ \mathit{hi} \f$, \f$ m \f$</td>
+     <td>the ends of the part still to examine and its middle place,
+         i.e., \f$ m = \mathit{lo} + \lfloor \Delta / 2 \rfloor \f$ with
+         \f$ \Delta = \mathit{hi} - \mathit{lo} \f$</td></tr>
+ <tr><td>\f$ \mathrm{lowerBound}( v ) \f$</td>
+     <td>the first place of an item not smaller than \f$ v \f$, \f$ n \f$ if
+         none; \f$ \mathrm{upperBound}( v ) \f$ the first place of an item
+         larger than \f$ v \f$</td></tr>
+ <tr><td>\f$ \mathrm{RMQ}( i , j ) \f$</td>
+     <td>the place of the leftmost minimum of \f$ A[ i .. j ] \f$,
+         \f$ i \le j \f$</td></tr>
+ <tr><td>\f$ B \f$</td>
+     <td>the items in a line of cache of 64 bytes, e.g., 16 of 32 bits</td>
+     </tr>
+ <tr><td>\f$ \epsilon \f$, \f$ \epsilon_r \f$</td>
+     <td>the largest error, in places, of the lines of a learned index at
+         its last level and at the others</td></tr>
+ </table>
+
+ A comparison-based search is a <em>decision tree</em> (section 2.7.4): a
+ binary tree whose inner nodes are the comparisons and whose leaves are the
+ answers, a run being the path from the root to a leaf, so that the worst case
+ of the search is the height of its tree (`decisionTree()` of `BinarySearch.h`
+ builds the tree of the binary search).
+
+ \section theory_search_sorted Searches in a sorted vector
+
+ <em>Lemma 1 (the lower bound of the search).</em> Every comparison-based
+ search for the place \f$ \mathrm{lowerBound}( v ) \f$ in a sorted vector of
+ \f$ n \f$ items makes, in the worst case,
+ \f[
+   \lceil \log_2 ( n + 1 ) \rceil \tag{1}
+ \f]
+ comparisons at least.
+
+ Indeed, the answer is one of the \f$ n + 1 \f$ places \f$ 0 , \ldots , n \f$,
+ each of which is the answer for some \f$ v \f$, and its decision tree has
+ therefore \f$ n + 1 \f$ leaves at least; a binary tree of height \f$ h \f$ has
+ at most \f$ 2^h \f$ of them, whence (1).
+
+ The binary search meets (1). `lowerBound()` keeps the invariant
+ \f[
+   A[ \mathit{lo} - 1 ] < v \le A[ \mathit{hi} ] , \tag{2}
+ \f]
+ with \f$ A[ -1 ] = -\infty \f$ and \f$ A[ n ] = +\infty \f$, which holds at
+ the start with \f$ \mathit{lo} = 0 \f$ and \f$ \mathit{hi} = n \f$; a
+ comparison of \f$ v \f$ with \f$ A[ m ] \f$ moves one of the two ends to
+ \f$ m \f$ or to \f$ m + 1 \f$ and keeps (2), and the length
+ \f$ \mathit{hi} - \mathit{lo} \f$ goes from \f$ \ell \f$ to at most
+ \f$ \lfloor \ell / 2 \rfloor \f$; hence the loop ends after
+ \f$ \lceil \log_2 ( n + 1 ) \rceil \f$ comparisons with
+ \f$ \mathit{lo} = \mathit{hi} \f$, which is the answer by (2). The binary
+ search of the book (`binarySearch()`) stops as soon as it meets \f$ v \f$, at
+ the price of two comparisons per step, and its decision tree has all its
+ levels full but the last one, so that its height is
+ \f$ \lfloor \log_2 n \rfloor \f$. The middle is computed as
+ \f$ \mathit{lo} + \lfloor ( \mathit{hi} - \mathit{lo} ) / 2 \rfloor \f$, which
+ never overflows, unlike \f$ ( \mathit{lo} + \mathit{hi} ) / 2 \f$.
+
+ When the answer \f$ h \f$ is near the start, or the length of the vector is
+ not known, the search of Bentley and Yao doubles a bound before the binary
+ search (`gallopSearch()` of `BinarySearch.h`, `exponentialSearch()` and
+ `unboundedSearch()` of `MonotoneSearch.h`): the probes at the places
+ \f$ 0 , 1 , 3 , 7 , \ldots , 2^k - 1 \f$ stop at the first
+ \f$ k = \lceil \log_2 ( h + 1 ) \rceil \f$ with \f$ A[ 2^k - 1 ] \ge v \f$,
+ and a binary search on the last interval, of length \f$ 2^{k-1} \f$, costs
+ \f$ k - 1 \f$ more; in all
+ \f[
+   2 \lceil \log_2 ( h + 1 ) \rceil + O( 1 ) \tag{3}
+ \f]
+ comparisons, which depend on the answer and not on \f$ n \f$. Bentley and Yao
+ also show that applying the same idea to the search of \f$ k \f$ gives
+ \f$ \log_2 h + \log_2 \log_2 h + \cdots \f$, close to the lower bound
+ \f$ \log_2 h \f$. The same scheme searches any monotone predicate on the
+ integers, e.g., the integer square root (`integerSqrt()`).
+
+ The search by interpolation of section 12.1 (`interpolationSearch()` of
+ `InterpolationSearch.h`) probes the place that a linear model of the keys
+ predicts,
+ \f[
+   m = \mathit{lo} + \Big\lfloor ( \mathit{hi} - \mathit{lo} )
+       \frac{v - A[ \mathit{lo} ]}{A[ \mathit{hi} ] - A[ \mathit{lo} ]}
+       \Big\rfloor , \tag{4}
+ \f]
+ instead of the middle one. On keys drawn independently from the uniform
+ distribution the expected number of probes is \f$ \log_2 \log_2 n + O( 1 ) \f$
+ (Perl, Itai and Avni), since the expected error of (4) on a part of length
+ \f$ \ell \f$ is of the order of \f$ \sqrt{\ell} \f$, so that each probe takes,
+ in expectation, the square root of the length; on keys far from uniform (e.g.,
+ growing exponentially) a probe may exclude a single item, and the worst case
+ is \f$ O( n ) \f$. The learned index refines the same idea with a model that
+ has a guaranteed error (see \ref theory_search_memory).
+
+ Two searches of Knuth trade the division of the middle for additions alone:
+ the Fibonacci search (`fibonacciSearch()` of `KnuthSearches.h`) splits a part
+ of length \f$ F_{k+1} - 1 \f$ at its \f$ F_k \f$-th item into parts of lengths
+ \f$ F_k - 1 \f$ and \f$ F_{k-1} - 1 \f$, at most about
+ \f$ \log_\phi n \approx 1.44 \log_2 n \f$ comparisons with \f$ \phi \f$ the
+ golden ratio, and the uniform binary search (`uniformBinarySearch()`) keeps a
+ place and the width of the next step, taken from a table computed once.
+ Finally, the searches of `SortedSearches.h` apply the invariant (2) to other
+ predicates that are false and then true along the vector: the rotation point
+ of a rotated vector, which is the first place with
+ \f$ A[ m ] \le A[ n - 1 ] \f$; the item closest to a value, which is
+ \f$ A[ r ] \f$ or \f$ A[ r - 1 ] \f$ for \f$ r = \mathrm{lowerBound}( x ) \f$;
+ and the item of rank \f$ k \f$ of two sorted vectors, where the number
+ \f$ i \f$ of the \f$ k + 1 \f$ smallest items taken from the shorter vector is
+ the first one with \f$ S[ i ] \ge L[ k - i ] \f$.
+
+ <table>
+ <caption>The searches of a key in a sorted vector</caption>
+ <tr><th>Function</th><th>Comparisons</th><th>Source</th></tr>
+ <tr><td><tt>binarySearch()</tt></td>
+     <td>\f$ 2 ( \lfloor \log_2 n \rfloor + 1 ) \f$ at most</td>
+     <td>section 1.2</td></tr>
+ <tr><td><tt>lowerBound()</tt>, <tt>upperBound()</tt></td>
+     <td>\f$ \lceil \log_2 ( n + 1 ) \rceil \f$, as (1)</td>
+     <td>exercise 12.13</td></tr>
+ <tr><td><tt>gallopSearch()</tt>, <tt>exponentialSearch()</tt></td>
+     <td>\f$ 2 \lceil \log_2 ( h + 1 ) \rceil + O( 1 ) \f$, \f$ h \f$ the
+         answer</td>
+     <td>Bentley and Yao (1976)</td></tr>
+ <tr><td><tt>interpolationSearch()</tt></td>
+     <td>\f$ O( \log \log n ) \f$ expected on uniform keys,
+         \f$ O( n ) \f$ in the worst case</td>
+     <td>section 12.1, Perl, Itai and Avni (1978)</td></tr>
+ <tr><td><tt>fibonacciSearch()</tt></td>
+     <td>about \f$ 1.44 \log_2 n \f$</td>
+     <td>Ferguson (1960), Knuth</td></tr>
+ <tr><td><tt>uniformBinarySearch()</tt></td>
+     <td>\f$ \lfloor \log_2 n \rfloor + 1 \f$ at most</td>
+     <td>Knuth</td></tr>
+ </table>
+
+ \section theory_search_memory Searches laid out for the memory
+
+ On a modern processor the comparisons of a binary search cost less than the
+ two events that surround them: a miss of the cache at each of the first
+ levels, since the places probed are far apart, and a misprediction of the
+ branch that follows each comparison, which on random keys is right half of the
+ times. The headers `StaticSearch.h` and `PGMIndex.h` remove the two costs, one
+ at a time.
+
+ The binary search with no branch of Khuong and Morin
+ (`branchlessLowerBound()`) keeps a base \f$ b \f$ and a length \f$ \ell \f$,
+ and at each step sets \f$ b \gets b + h \f$ if \f$ A[ b + h ] < v \f$, with
+ \f$ h = \lfloor \ell / 2 \rfloor \f$, and \f$ \ell \gets \ell - h \f$ whatever
+ the outcome: the comparison feeds a conditional move rather than a jump, and
+ since the next two places that may be probed are known, both are prefetched,
+ so that the misses of two steps overlap. The S+ tree of Slotin (`SPlusTree`)
+ removes the misses instead: the sorted items, cut into nodes of \f$ B \f$
+ items, are the leaves of a static B+-tree whose inner nodes have \f$ B \f$
+ keys and \f$ B + 1 \f$ children, stored level by level with no pointer, and a
+ search reads one line per level, i.e.,
+ \f[
+   H = 1 + \Big\lceil \log_{B+1} \Big\lceil \frac{n}{B} \Big\rceil
+       \Big\rceil \tag{5}
+ \f]
+ lines, against the \f$ \log_2 n - \log_2 B \f$ misses of the binary search; in
+ a node the child to take is the count of the keys smaller than \f$ v \f$,
+ which the vectors of the processor compute with no branch (`countLess()` of
+ `CountLess.h`).
+
+ The PGM-index of Ferragina and Vinciguerra (`PGMIndex`) replaces the inner
+ nodes by a model of the keys: the points \f$ ( A[ i ] , i ) \f$ are covered by
+ the fewest segments whose lines predict each place within \f$ \epsilon \f$,
+ and the first keys of the segments are covered in turn, with error
+ \f$ \epsilon_r \f$, up to a single segment. The fewest segments are found in
+ one pass by the algorithm of O'Rourke, which keeps the lines that pass between
+ the points moved up and down by \f$ \epsilon \f$ as the region between two
+ convex hulls, each point updating them in amortized \f$ O( 1 ) \f$. Since a
+ horizontal line through the middle of any \f$ 2 \epsilon \f$ consecutive
+ places is within the error, a segment covers at least \f$ 2 \epsilon \f$ keys;
+ hence the last level has \f$ m \le n / ( 2 \epsilon ) \f$ segments, there are
+ \f$ O( \log_{2 \epsilon_r} m ) \f$ levels, and a search, a binary search of
+ \f$ O( \epsilon_r ) \f$ places per level and one of \f$ O( \epsilon ) \f$
+ places at the end, costs
+ \f[
+   O( \log \epsilon_r \cdot \log_{2 \epsilon_r} m + \log \epsilon ) , \tag{6}
+ \f]
+ in a space proportional to \f$ m \f$, which on regular keys is far smaller
+ than \f$ n / ( 2 \epsilon ) \f$.
+
+ <table>
+ <caption>The searches laid out for the memory</caption>
+ <tr><th>Structure</th><th>Lines read</th><th>Space besides
+     \f$ A \f$</th><th>Source</th></tr>
+ <tr><td><tt>branchlessLowerBound()</tt></td>
+     <td>\f$ \lceil \log_2 n \rceil + 1 \f$ probes, misses overlapped</td>
+     <td>none</td><td>Khuong and Morin (2017)</td></tr>
+ <tr><td><tt>SPlusTree</tt></td><td>\f$ H \f$ of (5)</td>
+     <td>\f$ n / B \f$ items</td><td>Slotin (2022)</td></tr>
+ <tr><td><tt>PGMIndex</tt></td>
+     <td>\f$ O( \log_{2 \epsilon_r} m ) \f$ windows,
+         \f$ O( \epsilon / B + 1 ) \f$ lines at the end</td>
+     <td>28 bytes per segment</td>
+     <td>Ferragina and Vinciguerra (2020)</td></tr>
+ </table>
+
+ \section theory_search_minimum The minimum and the local optima
+
+ <em>Lemma 2 (the minimum).</em> Every comparison-based algorithm that finds
+ the minimum of \f$ n \f$ distinct items makes \f$ n - 1 \f$ comparisons at
+ least (section 2.6), and `min()` of `Minimum.h` makes exactly \f$ n - 1 \f$
+ (section 1.2).
+
+ Indeed, an item that has never lost a comparison may still be the minimum, and
+ a comparison makes at most one item lose for the first time; hence
+ \f$ n - 1 \f$ comparisons are needed to leave a single item that never lost.
+ The same argument gives the bound of the minimum and the maximum together
+ (`minMax()`), where an item must lose once to be excluded from being the
+ minimum and win once to be excluded from being the maximum: a comparison of
+ two items never compared gives one loss and one win at once, the others at
+ most one of the two, and pairing the items before comparing them with the
+ current minimum and maximum spends
+ \f[
+   \Big\lceil \frac{3 n}{2} \Big\rceil - 2 \tag{7}
+ \f]
+ comparisons, which is optimal (Pohl, beyond the book); the divide et impera of
+ `minMaxDivide()` reaches (7) when \f$ n \f$ is a power of 2, by the recurrence
+ \f$ T( n ) = 2 T( n / 2 ) + 2 \f$, \f$ T( 2 ) = 1 \f$.
+
+ A local optimum is cheaper than the minimum. A <em>peak</em> of \f$ A \f$ is
+ an item not smaller than its neighbours, the places out of \f$ A \f$ counting
+ as \f$ -\infty \f$, and one always exists, e.g., the maximum. `findPeak()` of
+ `LocalOptima.h` keeps the invariant that
+ \f$ A[ \mathit{lo} .. \mathit{hi} ] \f$ rises into \f$ \mathit{lo} \f$ and
+ falls out of \f$ \mathit{hi} \f$, i.e.,
+ \f$ A[ \mathit{lo} - 1 ] < A[ \mathit{lo} ] \f$ and
+ \f$ A[ \mathit{hi} ] \ge A[ \mathit{hi} + 1 ] \f$: under it the maximum of the
+ part is a peak of \f$ A \f$, and comparing \f$ A[ m ] \f$ with
+ \f$ A[ m + 1 ] \f$ keeps it on one of the two halves. Hence a peak costs
+ \f$ \lceil \log_2 n \rceil \f$ comparisons, against the \f$ n - 1 \f$ of the
+ maximum. On a binary tree the walk down to a smaller child gives a local
+ minimum in \f$ O( h ) \f$, \f$ h \f$ the height; on general graphs no such
+ bound exists, since a local minimum of the hypercube of dimension \f$ d \f$
+ needs about \f$ 2^{d / 2} \f$ evaluations (Aldous).
+
+ \section theory_search_select The selection
+
+ The item of rank \f$ k \f$ can be found without sorting. The selection of
+ Hoare (`selection()` of `Selection.h`, section 17.1) partitions the part
+ around a pivot as quicksort does, and goes on in the side that holds rank
+ \f$ k \f$ only. With the pivot chosen at random its rank is uniform, the side
+ kept is in the worst case the larger one, and the expected number of
+ comparisons satisfies
+ \f[
+   T( n ) \le n - 1 + \frac{2}{n} \sum_{q = \lfloor n / 2 \rfloor}^{n - 1}
+   T( q ) , \tag{8}
+ \f]
+ whose solution, by substitution of \f$ T( q ) \le c q \f$, is
+ \f$ T( n ) \le c n \f$ with \f$ c = 4 \f$; hence the selection is linear in
+ expectation on every input, while a pivot that is always the smallest item
+ gives \f$ \Theta( n^2 ) \f$.
+
+ <em>Lemma 3 (the median of the medians).</em> If the pivot is the median of
+ the medians of the groups of 5 items, at least \f$ 3 n / 10 - O( 1 ) \f$ items
+ lie on each side of it, and the selection makes
+ \f[
+   T( n ) \le T( n / 5 ) + T( 7 n / 10 ) + O( n ) = O( n ) \tag{9}
+ \f]
+ comparisons in the worst case (Blum, Floyd, Pratt, Rivest and Tarjan).
+
+ Indeed, half of the \f$ n / 5 \f$ medians are not larger than the pivot, and
+ each of them has 3 items of its group not larger than it; the same holds on
+ the other side. The pivot costs a selection on \f$ n / 5 \f$ items, the
+ remaining part has at most \f$ 7 n / 10 \f$ of them, and since
+ \f$ 1 / 5 + 7 / 10 < 1 \f$ the work of the levels of the recursion falls
+ geometrically, whence (9) (`medianOfMedians()`).
+
+ The engineered `nthElement()` of `NthElement.h` reaches fewer comparisons than
+ (8) by the sampling of Floyd and Rivest: a sample of about \f$ n^{2/3} \f$
+ items, selected recursively, gives a pivot whose rank is just past \f$ k \f$
+ with high probability, so that one partition leaves the part of rank \f$ k \f$
+ with \f$ o( n ) \f$ items, and the expected number of comparisons is
+ \f$ n + \min( k , n - k ) + o( n ) \f$ (Kiwiel), which is optimal up to the
+ term \f$ o( n ) \f$. It keeps the bound (9) in the worst case by falling back
+ to the median of the medians after too many partitions that cut little.
+
+ <table>
+ <caption>The selection of the item of rank \f$ k \f$</caption>
+ <tr><th>Function</th><th>Pivot</th><th>Comparisons</th></tr>
+ <tr><td><tt>selection()</tt></td><td>at random, or the first item</td>
+     <td>\f$ O( n ) \f$ expected by (8), \f$ \Theta( n^2 ) \f$ in the worst
+         case</td></tr>
+ <tr><td><tt>medianOfMedians()</tt></td><td>the median of the medians of
+     the groups of 5</td><td>\f$ O( n ) \f$ in the worst case, by (9)</td>
+     </tr>
+ <tr><td><tt>nthElement()</tt></td><td>the sample of Floyd and Rivest,
+     the median of three on short parts</td>
+     <td>\f$ n + \min( k , n - k ) + o( n ) \f$ expected,
+         \f$ O( n ) \f$ in the worst case</td></tr>
+ </table>
+
+ \section theory_search_rmq Range minima
+
+ After a preprocessing of \f$ A \f$, the query \f$ \mathrm{RMQ}( i , j ) \f$ is
+ answered without scanning the range. The <em>sparse table</em> (`SparseTable`
+ of `RangeMinimum.h`) stores \f$ \mathrm{RMQ}( i , i + 2^L - 1 ) \f$ for every
+ \f$ i \f$ and \f$ L \f$, each from two entries of the row before, in
+ \f$ O( n \log n ) \f$; a query takes the better of the two entries of length
+ \f$ 2^L \f$, \f$ L = \lfloor \log_2 ( j - i + 1 ) \rfloor \f$, that start at
+ \f$ i \f$ and end at \f$ j \f$, which cover the range, since the minimum does
+ not mind the overlap.
+
+ The linear preprocessing rests on a tree. The <em>Cartesian tree</em> of
+ \f$ A \f$ has the leftmost minimum of \f$ A \f$ as its root, and the Cartesian
+ trees of the parts on its left and on its right as its subtrees
+ (`cartesianTree()`, which builds it in \f$ O( n ) \f$ with a stack holding its
+ right spine, each item pushed and popped once).
+
+ <em>Lemma 4 (Bender and Farach-Colton).</em> \f$ \mathrm{RMQ}( i , j ) \f$ is
+ the lowest common ancestor of \f$ i \f$ and \f$ j \f$ in the Cartesian tree of
+ \f$ A \f$, i.e., the node of least depth among those that the Euler tour of
+ the tree visits between the first visits of \f$ i \f$ and \f$ j \f$.
+
+ Indeed, the lowest common ancestor \f$ a \f$ of \f$ i \f$ and \f$ j \f$ is the
+ first node whose place falls in \f$ [ i , j ] \f$ on the path from the root,
+ so that the range lies in the subtree of \f$ a \f$, whose root is its minimum;
+ between the two first visits the tour does not leave that subtree and returns
+ to \f$ a \f$, the only node of least depth there. The depths along a tour
+ differ by exactly 1 at each step, and the queries on such an array
+ (`PlusMinusOneRangeMinimum`) are answered in \f$ O( 1 ) \f$ after
+ \f$ O( n ) \f$ preprocessing: the array is cut into blocks of
+ \f$ d = \lfloor \log_2 n \rfloor / 2 \f$ items, a sparse table on the
+ \f$ n / d \f$ minima of the blocks costs
+ \f$ O( ( n / d ) \log n ) = O( n ) \f$, and a block is determined, up to an
+ additive constant, by its \f$ d - 1 \f$ steps of \f$ \pm 1 \f$; hence the
+ answers inside all the possible blocks are built once in a table (the trick of
+ the Four Russians) of
+ \f[
+   2^{d - 1} \cdot d^2 \le \sqrt{n} \, \log_2^2 n = o( n ) \tag{10}
+ \f]
+ entries. Thus `RangeMinimum` answers in \f$ O( 1 ) \f$ after \f$ O( n ) \f$
+ preprocessing on any array.
+
+ In practice the constant factors of the reduction are large, and
+ `WordRangeMinimum.h` keeps the decomposition into blocks but answers inside a
+ block of 64 items by the bits of a word: the stack of the minima from the
+ right of the block up to \f$ j \f$, as a mask of 64 bits, has as its lowest
+ bit at or above \f$ i \f$ the leftmost minimum of \f$ A[ i .. j ] \f$, one
+ count of the trailing zeros, and a query makes at most five reads of the
+ memory, independent of one another.
+
+ <table>
+ <caption>The structures of the range minima</caption>
+ <tr><th>Structure</th><th>Preprocessing</th><th>Query</th>
+     <th>Source</th></tr>
+ <tr><td><tt>SparseTable</tt></td><td>\f$ O( n \log n ) \f$ time and
+     space</td><td>\f$ O( 1 ) \f$</td><td>Bender and Farach-Colton
+     (2000)</td></tr>
+ <tr><td><tt>PlusMinusOneRangeMinimum</tt></td><td>\f$ O( n ) \f$</td>
+     <td>\f$ O( 1 ) \f$, on steps of \f$ \pm 1 \f$</td>
+     <td>Bender and Farach-Colton (2000)</td></tr>
+ <tr><td><tt>RangeMinimum</tt></td><td>\f$ O( n ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>Bender and Farach-Colton (2000)</td></tr>
+ <tr><td><tt>WordRangeMinimum</tt></td><td>\f$ O( n ) \f$, about 20 bytes
+     per item of 32 bits</td><td>\f$ O( 1 ) \f$, five reads at most</td>
+     <td>Baumstark, Gog, Heuer and Labeit (2017)</td></tr>
+ </table>
+
+ \section theory_search_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 1.2, 2.6,
+      2.7.1, 2.7.4, 12.1 and 17.1,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap01.pdf, and
+      Esercizi Divide-et-impera, Esercizi Alberi and Esercizi vari, Raccolte
+      da compiti scritti
+ \see D. E. Knuth, The Art of Computer Programming, vol. 3, 2nd ed.,
+      Addison-Wesley, 1998, section 6.2.1
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapter 10 (Searching Strings by Substring),
+      doi:10.1017/9781009128933
+ \see J. L. Bentley, A. C.-C. Yao, An almost optimal algorithm for
+      unbounded searching, Information Processing Letters 5(3), 82-87,
+      1976, doi:10.1016/0020-0190(76)90071-5
+ \see Y. Perl, A. Itai, H. Avni, Interpolation search: a log log N
+      search, Communications of the ACM 21(7), 550-553, 1978,
+      doi:10.1145/359545.359557
+ \see D. E. Ferguson, Fibonaccian searching, Communications of the ACM
+      3(12), 648, 1960, doi:10.1145/367487.367496
+ \see P.-V. Khuong, P. Morin, Array layouts for comparison-based
+      searching, ACM Journal of Experimental Algorithmics 22, 1.3:1-1.3:39,
+      2017, doi:10.1145/3053370
+ \see P. Ferragina, G. Vinciguerra, The PGM-index: a fully-dynamic
+      compressed learned index with provable worst-case bounds, Proceedings
+      of the VLDB Endowment 13(8), 1162-1175, 2020,
+      doi:10.14778/3389133.3389135
+ \see J. O'Rourke, An on-line algorithm for fitting straight lines between
+      data ranges, Communications of the ACM 24(9), 574-578, 1981,
+      doi:10.1145/358746.358758
+ \see D. Aldous, Minimization algorithms and random walk on the d-cube,
+      The Annals of Probability 11(2), 403-413, 1983,
+      doi:10.1214/aop/1176993605
+ \see I. Pohl, A sorting problem and its complexity, Communications of the
+      ACM 15(6), 462-464, 1972, doi:10.1145/361405.361423
+ \see C. A. R. Hoare, Algorithm 65: Find, Communications of the ACM 4(7),
+      321-322, 1961, doi:10.1145/366622.366647
+ \see M. Blum, R. W. Floyd, V. Pratt, R. L. Rivest, R. E. Tarjan, Time
+      bounds for selection, Journal of Computer and System Sciences 7(4),
+      448-461, 1973, doi:10.1016/S0022-0000(73)80033-9
+ \see R. W. Floyd, R. L. Rivest, Expected time bounds for selection,
+      Communications of the ACM 18(3), 165-172, 1975,
+      doi:10.1145/360680.360691
+ \see K. C. Kiwiel, On Floyd and Rivest's SELECT algorithm, Theoretical
+      Computer Science 347(1-2), 214-238, 2005,
+      doi:10.1016/j.tcs.2005.06.032
+ \see M. A. Bender, M. Farach-Colton, The LCA problem revisited,
+      Proceedings of LATIN 2000, LNCS 1776, 88-94, 2000,
+      doi:10.1007/10719839_9
+ \see J. Fischer, V. Heun, Space-efficient preprocessing schemes for range
+      minimum queries on static arrays, SIAM Journal on Computing 40(2),
+      465-492, 2011, doi:10.1137/090779759
+ \see N. Baumstark, S. Gog, T. Heuer, J. Labeit, Practical range minimum
+      queries revisited, Proceedings of SEA 2017, LIPIcs 75, 12:1-12:16,
+      2017, doi:10.4230/LIPIcs.SEA.2017.12
+*/
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File search.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/

@@ -3,13 +3,14 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The count of the items of a short array smaller than a key, the search in
- * a node of the B-trees in main memory [see BTreeMap.h and StaticSearch.h]:
- * on a sorted array of N items it is the place of the key, found with no
- * branch. countLess< N >( a , x ) and countLess< N , true >( a , x ), the
- * items not larger than x, read all the N items, which must be there (the
- * unused places of a node are padded with the largest value).
- * greaterBits< N >( a , x ) gives the items larger than x as the bits of a
- * word, N <= 64 [see WordRangeMinimum.h].
+ * a node of the B-trees in main memory [see `BTreeMap.h` and
+ * `StaticSearch.h`]: on a sorted array of \f$ N \f$ items it is the place of
+ * the key, found with no branch. `countLess< N >( a , x )` and
+ * `countLess< N , true >( a , x )`, the items not larger than \f$ x \f$, read
+ * all the \f$ N \f$ items, which must be there (the unused places of a node
+ * are padded with the largest value). `greaterBits< N >( a , x )` gives the
+ * items larger than \f$ x \f$ as the bits of a word, \f$ N \le 64 \f$ [see
+ * `WordRangeMinimum.h`].
  *
  * On the integers of 32 and 64 bits and on the floating types they are a
  * few comparisons of vectors, each giving a mask of bits that a count of
@@ -22,7 +23,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -53,7 +54,21 @@
 
 namespace ADS::detail {
 
-/// the items of a[ 0 .. N ) smaller than x (not larger, if Up)
+/// the number of the items of \f$ a[ 0 .. N ) \f$ smaller than \f$ x \f$
+/// (not larger, if `Up`)
+///
+/// In pseudocode (the branch-free search in a node, beyond the book), the
+/// comparisons made \f$ W \f$ at a time where the vectors allow it:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{countLess}( a , x ) \cr
+/// 2 & \quad r \gets 0 \cr
+/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ N - 1\ \textbf{do}\ r
+///     \gets r + [ a[ i ] < x ]\quad \triangleright\ [ a[ i ] \le x ]
+///     \text{ if } \mathit{Up} \cr
+/// 4 & \quad \textbf{return}\ r
+/// \end{array}}
+/// \f]
 template< std::size_t N , bool Up = false , class T >
 [[nodiscard]] inline std::size_t countLess( const T * a , const T & x )
 {
@@ -108,7 +123,7 @@ template< std::size_t N , bool Up = false , class T >
      v = _mm256_xor_si256( v , b );
      k = _mm256_xor_si256( k , b );
      }
-    // a < x is x > a, a <= x is not a > x
+    // \f$ a < x \f$ is \f$ x > a \f$, \f$ a \le x \f$ is not \f$ a > x \f$
     const __m256i c = I32 ? ( Up ? _mm256_cmpgt_epi32( v , k ) :
                                    _mm256_cmpgt_epi32( k , v ) ) :
                             ( Up ? _mm256_cmpgt_epi64( v , k ) :
@@ -145,8 +160,20 @@ template< std::size_t N , bool Up = false , class T >
  return( r );
  }
 
-/// the bits of the items of a[ 0 .. N ) larger than x, N <= 64: the bit q
-/// is set if a[ q ] > x
+/// the bits of the items of \f$ a[ 0 .. N ) \f$ larger than \f$ x \f$,
+/// \f$ N \le 64 \f$: the bit \f$ q \f$ is set if \f$ a[ q ] > x \f$
+///
+/// In pseudocode (beyond the book), the comparisons made \f$ W \f$ at a time
+/// where the vectors allow it, as in `countLess()`:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{greaterBits}( a , x ) \cr
+/// 2 & \quad r \gets 0 \cr
+/// 3 & \quad \textbf{for}\ q \gets 0\ \textbf{to}\ N - 1\ \textbf{do}
+///     \ \textbf{if}\ a[ q ] > x\ \textbf{then}\ r \gets r + 2^q \cr
+/// 4 & \quad \textbf{return}\ r
+/// \end{array}}
+/// \f]
 template< std::size_t N , class T >
 [[nodiscard]] inline std::uint64_t greaterBits( const T * a , const T & x )
 {
