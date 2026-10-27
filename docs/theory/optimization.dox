@@ -1,0 +1,306 @@
+/*--------------------------------------------------------------------------*/
+/*------------------------- File optimization.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_optimization */
+/** \defgroup theory_optimization Theory of optimization
+ \ingroup area_optimization
+
+ \details The headers of `include/ADS/optimization` solve problems of
+ optimization by the two techniques of chapters 13 and 14 of the book: the
+ dynamic programming, which solves every subproblem once and combines the
+ solutions of the smaller ones (the knapsack and its relatives, the weighted
+ intervals, the optimal search tree, the partition of a sequence, the games
+ and the problems on rows and grids), and the greedy algorithms, which fix
+ one component of the solution at a time and never revise it (the
+ fractional knapsack, the intervals, the order of the programs, the cover of
+ a segment). This page collects what the headers take for granted: the
+ notation shared by them (see \ref theory_optimization_notation), the
+ principle on which every dynamic programming rests and the argument behind
+ its costs (see \ref theory_optimization_dp and
+ \ref theory_optimization_dp_families), and the exchange arguments that
+ prove a greedy choice optimal, together with the cases where no greedy choice
+ is (see \ref theory_optimization_greedy). The pseudocode of each algorithm
+ is instead on the page of its header, in the comment of its function,
+ together with the section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_optimization_notation Definitions and notation
+
+ A problem of optimization asks, for an instance, a feasible solution of
+ largest (or least) measure; its <em>subproblems</em> are the instances of the
+ same problem on a part of the data (the first \f$ i \f$ objects, the keys from
+ \f$ i \f$ to \f$ j \f$, the capacity \f$ c \f$), and a dynamic programming
+ keeps the optimal value of each subproblem in a <em>table</em>, indexed by the
+ parameters that name it.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$</td>
+     <td>the number of the objects, the items, the intervals or the keys of
+         the instance</td></tr>
+ <tr><td>\f$ p_i \f$, \f$ v_i \f$, \f$ C \f$</td>
+     <td>the profit and the volume of the object \f$ i \f$, and the capacity
+         of the knapsack</td></tr>
+ <tr><td>\f$ \mathit{DP}[ i ][ c ] \f$, \f$ D[ \cdot ] \f$</td>
+     <td>the table of a dynamic programming, the optimal value of the
+         subproblem named by its indices</td></tr>
+ <tr><td>\f$ [ a_i , b_i ) \f$, \f$ w_i \f$</td>
+     <td>an interval of the line, open on the right unless the header says
+         otherwise, and its weight</td></tr>
+ <tr><td>\f$ \mathit{pred}[ i ] \f$</td>
+     <td>the last interval, in the order of the right ends, that ends before
+         the interval \f$ i \f$ starts</td></tr>
+ <tr><td>\f$ t_i \f$, \f$ C_i \f$</td>
+     <td>the duration of the program \f$ i \f$ and its time of
+         completion</td></tr>
+ <tr><td>\f$ W( i , j ) \f$, \f$ R[ i ][ j ] \f$</td>
+     <td>the weight of the keys and of the gaps from \f$ i \f$ to \f$ j \f$
+         of a search tree, and a best root of those keys</td></tr>
+ </table>
+
+ \section theory_optimization_dp Dynamic programming
+
+ The dynamic programming applies when the problem has <em>optimal
+ substructure</em>, as follows.
+
+ <em>Lemma 1 (the principle of optimality).</em> If an optimal solution of an
+ instance is made of a choice and of the solution of a subproblem that the
+ choice leaves, then that solution is optimal for the subproblem.
+
+ Indeed, a better solution of the subproblem, combined with the same choice,
+ would give a better solution of the instance. Hence the optimal value of an
+ instance is the best, over the choices, of the value of the choice combined
+ with the optimal value of what it leaves, a recurrence; for the 0-1 knapsack
+ (`knapsack()` of `Knapsack.h`, section 13.6), the choice is whether to take
+ the last object, and
+ \f[
+   \mathit{DP}[ i ][ c ] = \max\{ \mathit{DP}[ i - 1 ][ c ] ,
+   \mathit{DP}[ i - 1 ][ c - v_i ] + p_i \} , \qquad
+   \mathit{DP}[ 0 ][ c ] = 0 , \tag{1}
+ \f]
+ with \f$ \mathit{DP}[ i - 1 ][ c - v_i ] = -\infty \f$ when
+ \f$ v_i > c \f$. The subproblems of a recurrence such as (1) overlap, i.e.,
+ the same one is reached by many paths of choices, so that the recursion
+ written as it stands takes exponential time; the dynamic programming solves
+ each of them once, either bottom up, filling the table in an order in which
+ every entry comes after those it reads, or top down, by the recursion with
+ a memo of the values already found (`zaino()`, the memoization of the book,
+ which keeps the memo in a hash table and solves only the subproblems that
+ the recursion reaches). The cost is the number of the subproblems times the
+ cost of one recurrence, i.e., \f$ \Theta( n C ) \f$ for (1), and the
+ solution itself is read back from the table by retracing the choices that
+ gave each optimum. The subproblems and their dependences form a DAG, and
+ a dynamic programming is a longest or a shortest path in it, which is how
+ the problems of `HouseProblems.h` read.
+
+ A bound such as \f$ \Theta( n C ) \f$ is <em>pseudopolynomial</em>: it is
+ polynomial in the value \f$ C \f$, but \f$ C \f$ takes only \f$ \log C \f$
+ bits of the input, and the bound is exponential in the size of the input.
+ This is no defect of the algorithm, since the decision version of the 0-1
+ knapsack is NP-complete; the counting versions (`coinChangeWays()`,
+ `subsetSumCount()` of `KnapsackVariants.h`) share the same bound.
+
+ \section theory_optimization_dp_families The families of recurrences
+
+ The recurrences of the headers fall into a few families, which differ in the
+ shape of the subproblems and therefore in the cost.
+
+ <table>
+ <caption>The dynamic programmings of the area</caption>
+ <tr><th>Subproblems</th><th>Functions</th><th>Table</th><th>Time</th></tr>
+ <tr><td>a prefix and a capacity</td><td><tt>knapsack()</tt>,
+     <tt>subsetSumCount()</tt></td><td>\f$ n \times C \f$, or one row</td>
+     <td>\f$ \Theta( n C ) \f$</td></tr>
+ <tr><td>a capacity, items in unlimited supply</td>
+     <td><tt>unboundedKnapsack()</tt>, <tt>rodCutting()</tt>,
+     <tt>coinChangeWays()</tt>, <tt>optimalChange()</tt></td>
+     <td>one row of \f$ C + 1 \f$</td><td>\f$ \Theta( n C ) \f$</td></tr>
+ <tr><td>a prefix of a sequence</td>
+     <td><tt>maxNonAdjacentSum()</tt>, <tt>paintHouses()</tt>,
+     <tt>maxinterval()</tt>, <tt>maxProfit()</tt></td>
+     <td>\f$ n \f$ (times the states)</td>
+     <td>\f$ O( n ) \f$ to \f$ O( n k ) \f$</td></tr>
+ <tr><td>a prefix, the best predecessor among all</td>
+     <td><tt>largestDivisibleSubset()</tt>,
+     <tt>longestChainSubsequence()</tt></td><td>\f$ n \f$</td>
+     <td>\f$ \Theta( n^2 ) \f$</td></tr>
+ <tr><td>a range \f$ [ i , j ) \f$</td>
+     <td><tt>coinsInALine()</tt>, <tt>optimalSearchTree()</tt></td>
+     <td>\f$ n \times n \f$</td><td>\f$ \Theta( n^2 ) \f$ to
+     \f$ O( n^3 ) \f$</td></tr>
+ <tr><td>a prefix and a number of parts</td>
+     <td><tt>linearPartition()</tt></td><td>\f$ k \times n \f$</td>
+     <td>\f$ O( k n^2 ) \f$</td></tr>
+ <tr><td>a cell of a grid</td><td><tt>largestSquare()</tt>,
+     <tt>countLatticePaths()</tt></td><td>one row of \f$ n \f$</td>
+     <td>\f$ \Theta( m n ) \f$</td></tr>
+ </table>
+
+ Two remarks explain the bounds that are better than the size of the table
+ times the number of the choices. First, when the subproblems are the
+ prefixes and the choices a set of predecessors, a structure on the
+ predecessors may answer the best of them faster than the scan: in the
+ weighted intervals of section 13.2 (`maxinterval()` of
+ `WeightedIntervals.h`),
+ \f[
+   \mathit{DP}[ i ] = \max\{ \mathit{DP}[ i - 1 ] ,
+   w_i + \mathit{DP}[ \mathit{pred}[ i ] ] \} , \tag{2}
+ \f]
+ the only compatible predecessor that counts is the last one, which one scan
+ of the sorted ends gives for all the intervals at once; in
+ `maxSumIncreasingSubsequence()` a Fenwick tree of the prefix maxima gives the
+ best smaller value in \f$ O( \log n ) \f$; in `paintHouses()` the two least
+ entries of the row before give the least over the colors but one in
+ \f$ O( 1 ) \f$. Second, the order in which a table is filled decides what it
+ counts: `coinChangeWays()` adds the coins one kind at a time, with the
+ amounts going up, so that each multiset is counted once and in a single
+ order, while `subsetSumCount()` runs the amounts down, so that each item
+ is used at most once, which is the row of (1) kept in place.
+
+ For the ranges, the optimal search tree of `OptimalSearchTree.h` has
+ \f[
+   C[ i ][ j ] = W( i , j ) + \min_{i \le r < j} \bigl( C[ i ][ r ]
+   + C[ r + 1 ][ j ] \bigr) , \tag{3}
+ \f]
+ \f$ O( n ) \f$ choices for each of the \f$ O( n^2 ) \f$ ranges, i.e.,
+ \f$ O( n^3 ) \f$; the bound falls by the following property.
+
+ <em>Theorem 2 (Knuth, Yao).</em> If \f$ W \f$ is monotone on the inclusion
+ of the ranges and satisfies the quadrangle inequality
+ \f$ W( i , j ) + W( i' , j' ) \le W( i' , j ) + W( i , j' ) \f$ for
+ \f$ i \le i' \le j \le j' \f$, then the largest best root of (3) satisfies
+ \f[
+   R[ i ][ j - 1 ] \le R[ i ][ j ] \le R[ i + 1 ][ j ] . \tag{4}
+ \f]
+
+ Hence the roots of the ranges of one length \f$ h \f$ are looked for in
+ consecutive intervals of candidates, whose lengths
+ \f$ R[ i + 1 ][ i + h ] - R[ i ][ i + h - 1 ] + 1 \f$ telescope to
+ \f$ O( n ) \f$ over \f$ i \f$; the \f$ n \f$ lengths cost \f$ O( n^2 ) \f$
+ in all. The weights of the keys and of the gaps satisfy the hypothesis with
+ equality, and the partition of `linearPartition()` would admit the same
+ speedup for items not negative, as its header remarks.
+
+ \section theory_optimization_greedy Greedy algorithms
+
+ A greedy algorithm builds a solution by stages and fixes at each one the
+ component that looks best, with no going back; it is correct when the
+ following property holds.
+
+ <em>Lemma 3 (the greedy choice).</em> If for every instance some optimal
+ solution contains the greedy choice, and the rest of it is an optimal
+ solution of the subproblem that the choice leaves, then the greedy algorithm
+ is optimal.
+
+ Indeed, by induction on the stages, the solution built so far is contained
+ in some optimal solution. The first hypothesis is proved by an
+ <em>exchange argument</em>: an optimal solution without the greedy choice is
+ changed, by swapping one of its components for the greedy one, into another
+ solution that is feasible and no worse. The headers of the area rest on the
+ following exchanges.
+
+ - The intervals (`independentSet()` of `Intervals.h`, section 14.2): the
+   interval that ends first can replace the first interval of any
+   independent set, since it ends no later and the others start after that
+   one ends; hence the greedy by increasing right end is optimal, in
+   \f$ O( n \log n ) \f$ for the sort. The cover of a segment
+   (`minimumIntervalCover()` of `IntervalCover.h`) is its dual: the interval
+   that starts within the covered part and ends farthest can replace the
+   interval of any cover that contains the first uncovered point.
+ - The fractional knapsack (`fractionalKnapsack()`, section 14.1): if an
+   optimal solution has \f$ x_j > 0 \f$ while an object \f$ i \f$ of larger
+   \f$ p_i / v_i \f$ is not whole, moving a volume
+   \f$ \varepsilon \f$ from \f$ j \f$ to \f$ i \f$ changes the profit by
+   \f$ \varepsilon ( p_i / v_i - p_j / v_j ) \ge 0 \f$; hence the objects by
+   decreasing specific profit, the last one in part.
+ - The order of the programs (`ShortestJobFirst.h`, exercise 14.5): swapping
+   two adjacent programs \f$ a \f$ and \f$ b \f$ leaves the times of
+   completion of the others unchanged, and changes the weighted sum by
+   \f[
+     w_a t_b - w_b t_a , \tag{5}
+   \f]
+   which is not negative exactly when \f$ t_a / w_a \le t_b / w_b \f$;
+   hence an order with an adjacent pair against Smith's rule is improved by
+   the swap, and the order by increasing \f$ t_i / w_i \f$ is optimal (by
+   increasing \f$ t_i \f$ for unit weights).
+ - The coloring of the intervals (`intervalColoring()`, exercise 14.6): the
+   greedy reuses a free color whenever one exists, and opens a new one only
+   when all the colors in use are held by intervals over the current point;
+   hence it uses as many colors as the largest number of intervals over a
+   point, a lower bound for any coloring.
+
+ The greedy choice is not optimal for every problem, and the headers show
+ where it fails. For the change with the fewest coins (`CoinChange.h`) the
+ largest coin first is optimal for the coins of 50, 10, 5 and 1, but pays 15
+ with five coins of 11, 1, 1, 1, 1 instead of three of 5, where the dynamic
+ programming of `optimalChange()` is needed; for the 0-1 knapsack no order of
+ the objects is optimal (exercise 14.1); and the sum of four squares of
+ `minimumSquares()` is not found by taking the largest square first,
+ \f$ 18 = 9 + 9 \f$ rather than \f$ 16 + 1 + 1 \f$. The set cover, of which
+ the cover of a segment is the case on the line, is NP-hard in general, and
+ the greedy that takes the set with the most new elements approximates it
+ within a factor \f$ \ln n \f$ (Chvátal).
+
+ <table>
+ <caption>The greedy algorithms of the area and their arguments</caption>
+ <tr><th>Function</th><th>Greedy order</th><th>Argument</th>
+     <th>Time</th></tr>
+ <tr><td><tt>fractionalKnapsack()</tt></td><td>decreasing
+     \f$ p_i / v_i \f$</td><td>exchange of volume</td>
+     <td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td><tt>independentSet()</tt></td><td>increasing right end</td>
+     <td>exchange of the first interval</td>
+     <td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td><tt>minimumIntervalCover()</tt></td><td>the farthest end among
+     those that start in time</td><td>exchange of the interval over the
+     first uncovered point</td><td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td><tt>intervalColoring()</tt></td><td>the ends by position</td>
+     <td>the depth is a lower bound</td><td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td><tt>towers()</tt></td><td>increasing position</td>
+     <td>exchange of the first tower</td><td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td><tt>shortestJobFirst()</tt>, <tt>smithOrder()</tt></td>
+     <td>increasing \f$ t_i / w_i \f$</td><td>exchange of adjacent
+     programs, (5)</td><td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td><tt>greedyChange()</tt></td><td>decreasing coin</td>
+     <td>optimal for some systems of coins only</td>
+     <td>\f$ O( n \log n + c ) \f$</td></tr>
+ </table>
+
+ \section theory_optimization_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 13 and 14,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
+ \see G. B. Dantzig, Discrete-variable extremum problems, Operations
+      Research 5(2), 266-288, 1957, doi:10.1287/opre.5.2.266
+ \see D. E. Knuth, Optimum binary search trees, Acta Informatica 1(1),
+      14-25, 1971, doi:10.1007/BF00264289
+ \see F. F. Yao, Efficient dynamic programming using quadrangle
+      inequalities, Proc. 12th ACM Symposium on Theory of Computing,
+      429-435, 1980, doi:10.1145/800141.804691
+ \see T. C. Hu, A. C. Tucker, Optimal computer search trees and
+      variable-length alphabetical codes, SIAM Journal on Applied
+      Mathematics 21(4), 514-532, 1971, doi:10.1137/0121057
+ \see K. Mehlhorn, Nearly optimal binary search trees, Acta Informatica
+      5(4), 287-295, 1975, doi:10.1007/BF00264563
+ \see W. E. Smith, Various optimizers for single-stage production, Naval
+      Research Logistics Quarterly 3(1-2), 59-66, 1956,
+      doi:10.1002/nav.3800030106
+ \see E. L. Lawler, Sequencing jobs to minimize total weighted completion
+      time subject to precedence constraints, Annals of Discrete
+      Mathematics 2, 75-90, 1978, doi:10.1016/S0167-5060(08)70323-6
+ \see V. Chvátal, A greedy heuristic for the set-covering problem,
+      Mathematics of Operations Research 4(3), 233-235, 1979,
+      doi:10.1287/moor.4.3.233
+ \see G. Jacobson, K.-P. Vo, Heaviest increasing/common subsequence
+      problems, Proc. 3rd Symposium on Combinatorial Pattern Matching,
+      LNCS 644, 52-66, 1992, doi:10.1007/3-540-56024-6_5
+ \see J. Kleinberg, E. Tardos, Algorithm Design, Addison-Wesley, 2005,
+      chapters 4 and 6
+ \see S. Martello, P. Toth, Knapsack Problems: Algorithms and Computer
+      Implementations, Wiley, 1990
+*/
+/*--------------------------------------------------------------------------*/
+/*----------------------- End File optimization.dox ------------------------*/
+/*--------------------------------------------------------------------------*/

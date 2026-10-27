@@ -6,7 +6,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -18,7 +18,7 @@ namespace ADS {
 
 namespace detail {
 
-/// each interval [ a , b ) has a < b
+/// each interval \f$ [ a , b ) \f$ has \f$ a < b \f$
 inline bool proper( const std::vector< std::pair< long , long > > & I )
 {
  return( std::all_of( I.begin() , I.end() , []( const auto & x ) {

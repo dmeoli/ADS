@@ -7,7 +7,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -19,7 +19,8 @@ namespace ADS {
 
 namespace detail {
 
-/// the subtree of the keys i .. j - 1 from the roots R, its root returned
+/// the subtree of the keys \f$ i , \ldots , j - 1 \f$ from the roots
+/// \f$ R \f$, its root returned
 template< class T >
 int buildOptimalSearchTree( const std::vector< std::vector< int > > & R ,
                             int i , int j , OptimalSearchTree< T > & B )
@@ -32,8 +33,8 @@ int buildOptimalSearchTree( const std::vector< std::vector< int > > & R ,
  return( r );
  }
 
-/// the weighted path length of the subtree of u at depth d, and the keys
-/// of its symmetric visit appended to order
+/// the weighted path length of the subtree of \f$ u \f$ at depth \f$ d \f$,
+/// and the keys of its symmetric visit appended to `order`
 template< class T >
 T searchTreeCost( const OptimalSearchTree< T > & B ,
                   const std::vector< T > & p , const std::vector< T > & q ,

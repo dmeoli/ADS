@@ -7,7 +7,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -19,8 +19,9 @@ namespace ADS {
 
 namespace detail {
 
-/// free[ l ] after all the days: the best balance of exactly l closed
-/// transactions, nothing if not reachable, for l = 0 .. k
+/// \f$ \mathit{free}[ l ] \f$ after all the days: the best balance of
+/// exactly \f$ l \f$ closed transactions, nothing if not reachable, for
+/// \f$ l = 0 , \ldots , k \f$
 template< class T >
 std::vector< std::optional< T > > closedTransactions(
                             const std::vector< T > & prices , std::size_t k )

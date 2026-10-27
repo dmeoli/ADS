@@ -6,7 +6,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -18,7 +18,8 @@ namespace ADS {
 
 namespace detail {
 
-/// profits and volumes of the same objects, none negative, and C >= 0
+/// profits and volumes of the same objects, none negative, and
+/// \f$ C \ge 0 \f$
 inline bool knapsackInput( const std::vector< long > & p ,
                            const std::vector< long > & v , long C )
 {

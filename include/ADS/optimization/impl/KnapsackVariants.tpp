@@ -7,7 +7,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -19,7 +19,7 @@ namespace ADS {
 
 namespace detail {
 
-/// whether the integer n >= 0 is a square, without overflow
+/// whether the integer \f$ n \ge 0 \f$ is a square, without overflow
 inline bool isPerfectSquare( std::int64_t n )
 {
  std::int64_t r = 0 , step = std::int64_t( 1 ) << 31;
