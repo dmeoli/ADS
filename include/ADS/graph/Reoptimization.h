@@ -3,177 +3,47 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The solutions that follow the changes of a graph, beyond the book: the
- * observers of an Observable [see Observable.h] that keep the tree of the
- * shortest paths from a node, the minimum spanning forest and the maximum
- * flow between two nodes, each together with a certificate of its
- * optimality, so that after a change they can often prove at once that
- * the solution is still optimal, and otherwise repair it or compute it
- * again by the algorithms of the book [see ShortestPaths.h,
- * MinimumSpanningTree.h, MaxFlow.h].
+ * observers of an `Observable` [see `Observable.h`] that keep the tree of
+ * the shortest paths from a node, the minimum spanning forest and the
+ * maximum flow between two nodes, each together with a certificate of its
+ * optimality, so that after a change they can often prove at once that the
+ * solution is still optimal, and otherwise repair it or compute it again by
+ * the algorithms of the book [see `ShortestPaths.h`,
+ * `MinimumSpanningTree.h`, `MaxFlow.h`]. The certificates, the tests of
+ * the events against them and the reasons of the costs are in
+ * \ref theory_graph_dynamic.
  *
- * An observer R models the concept Reoptimizable: apply( e ) and
- * apply( s ) give it one event or a span of them (notify() is the same,
- * for the Observable), solve() brings the solution up to date, and
- * outcome() tells how the last solve() did it (a solve() with no event
- * queued does nothing and leaves it as it is), i.e.,
- * - Reopt::SCRATCH (0), from scratch, by the algorithm of the book;
- * - Reopt::WARM (1), by repairing the previous solution;
- * - Reopt::CERTIFIED (2), with no computation at all, the certificate of
- *   the previous solution proving it still optimal for the new data.
- * The events are queued and the work is done at the next query, i.e.,
- * solve() or any read of the solution (the lazy flush): the queue Q is
- * first coalesced into its net effect P [see coalesce()], and if
- * \f$ |P| > \rho \max( m , 1 ) \f$ (the ratio \f$ \rho \f$ of
- * setRecomputeRatio(), 1/4 by default) the solution is computed from
- * scratch, since a repair touching a large part of the graph costs as
- * much and is slower by a constant; otherwise each event of P is checked
- * against the certificate in \f$ O( 1 ) \f$ (or \f$ O( \log n ) \f$, see
- * below). The certificate is that of the previous solution, the events
- * all refer to the graph before P, and each test is a condition on a
- * single edge that stays true whatever the other events of P do; so the
- * tests of all the events of P together prove the solution optimal, and
- * then nothing is computed.
- * <pre>
- *   solve()
- *  1  if there is no solution yet then SCRATCH; return
- *  2  P ← coalesce( Q ); Q ← \f$ \emptyset \f$
- *  3  if \f$ |P| > \rho \max( m , 1 ) \f$ then SCRATCH; return
- *  4  for each e ∈ P: test e against the certificate: harmless,
- *     repairable or fatal
- *  5  if some e is fatal then SCRATCH
- *  6  else if some e is repairable then WARM (the repair of the problem)
- *  7  else CERTIFIED (only the bookkeeping of the events)
- * </pre>
+ * An observer models the concept `Reoptimizable`: `apply( e )` and
+ * `apply( s )` give it one event or a span of them (`notify()` is the same,
+ * for the `Observable`), `solve()` brings the solution up to date, and
+ * `outcome()` tells how the last `solve()` with events to apply did it,
+ * i.e., `Reopt::SCRATCH` (0) by the algorithm of the book,
+ * `Reopt::WARM` (1) by repairing the previous solution, and
+ * `Reopt::CERTIFIED` (2) with no computation at all. The events are queued
+ * and the work is done at the next query, i.e., `solve()` or any read of
+ * the solution: the queue is coalesced, and if its net events exceed
+ * \f$ \rho \max( m , 1 ) \f$ (\f$ \rho \f$ of `setRecomputeRatio()`,
+ * \f$ 1 / 4 \f$ by default) the solution is computed from scratch, else
+ * each event is tested against the certificate in \f$ O( 1 ) \f$ (in
+ * \f$ O( \log n ) \f$ for the forest), and by Lemma 6 of
+ * \ref theory_graph_dynamic the events all harmless prove the solution
+ * still optimal. The warm start of the maximum flow from the flow there is,
+ * when an edge of the minimum cut grows, is one that the maximum flow of
+ * OR-Tools leaves to do.
  *
- * ShortestPathsObserver keeps the tree T of the shortest paths from r and
- * the distances d, whose certificate is the theorem of Bellman (Teorema
- * 11.1 of the book): T is optimal if and only if the reduced costs
- * \f[
- *   \bar{w}( u , v ) = d_u + w( u , v ) - d_v
- * \f]
- * are zero on the arcs of T and nonnegative on all the arcs. Hence a
- * change of the weight of an arc ( u , v ), to \f$ w' \f$, is
- * - harmless if ( u , v ) is not in T and \f$ d_u + w' \geq d_v \f$ (or
- *   u is not reached), as the deletion of an arc not in T: the
- *   conditions on all the other arcs are the same, and d does not change;
- * - repairable if \f$ d_u + w' < d_v \f$, or if ( u , v ) is in T and
- *   \f$ w' < w \f$: d is still an upper bound of the distances, given by
- *   real paths (those of T, which are still there and no longer), and the
- *   prototype of section 11.2 started with S = { u } on the seeds of all
- *   the repairable arcs, instead of S = { r }, makes it exact; a priority
- *   queue on ( d , node ), with the negative weights a node extracted
- *   more than once, and a negative cycle (closed by a decrease) found when
- *   a node is extracted more than n times, then solved from scratch by
- *   Bellman-Ford-Moore, which reports it (this is the algorithm of
- *   Ramalingam and Reps for the decreases);
- * - fatal if ( u , v ) is in T and \f$ w' > w \f$ or it is deleted: d
- *   grows on the subtree of v, which the certificate does not bound.
- * <pre>
- *   repair( seeds )
- *  1  H ← the priority queue of the seeds u by \f$ d_u \f$
- *  2  while H ≠ \f$ \emptyset \f$
- *  3   u ← H.deleteMin(); if u was extracted more than n times then
- *      SCRATCH by Bellman-Ford-Moore; return
- *  4   for each ( u , v ) ∈ E with \f$ d_u + w( u , v ) < d_v \f$
- *  5    \f$ d_v \gets d_u + w( u , v ) \f$; \f$ T_v \gets u \f$;
- *       H.insert( v , \f$ d_v \f$ )
- * </pre>
- * Its cost is \f$ O( ( n_\delta + m_\delta ) \log n_\delta ) \f$ with
- * nonnegative weights, \f$ n_\delta \f$ and \f$ m_\delta \f$ the nodes
- * whose distance falls and their arcs, against \f$ O( m \log n ) \f$ from
- * scratch.
- *
- * SpanningForestObserver keeps a minimum spanning forest F of an
- * unoriented graph, whose certificates are the two conditions of
- * optimality of section 14.3 (the Teorema 14.1 and its dual): F is
- * minimum if and only if
- * \f[
- *   w( f ) \geq \max_{e \in F( u , v )} w( e ) \quad
- *   \forall f = [ u , v ] \notin F , \qquad
- *   w( e ) \leq \min_{f \notin F ,\, e \in F( f )} w( f ) \quad
- *   \forall e \in F ,
- * \f]
- * F( u , v ) the path of F between u and v (the cycle condition) and
- * F( f ) that path for f (the cut condition: e is the lightest edge across
- * the cut that its removal leaves). The two sides are kept as data: the
- * maximum on the paths of F by the jumps of the binary lifting, i.e., for
- * each node v its ancestor \f$ a_j( v ) \f$ at \f$ 2^j \f$ steps and the
- * heaviest edge \f$ \mu_j( v ) \f$ on the way, so that
- * \f$ \max_{F( u , v )} \f$ takes \f$ O( \log n ) \f$; and the replacement
- * \f$ \rho( e ) \f$ of each edge e of F, the lightest f out of F whose
- * path holds e (the sensitivity analysis of Tarjan), found by scanning
- * the edges out of F by increasing weight and giving each its path's
- * edges of F still without one, which a union-find on the forest skips,
- * in \f$ O( m \log m ) \f$ in all. Hence a change of a weight is
- * - harmless if it raises an edge out of F or lowers one of F, or deletes
- *   an edge out of F: neither side gets worse;
- * - certified if it lowers (or inserts) an edge f out of F to
- *   \f$ w' \geq \max_{F( f )} \f$, or raises an edge e of F to
- *   \f$ w' \leq w( \rho( e ) ) \f$, or deletes an edge of F with no
- *   replacement (the forest splits there);
- * - repairable otherwise. The edges lowered or inserted, D, are a
- *   superset of the edges that enter the forest when F only gets lighter
- *   (an edge out of F and out of D is still the heaviest of its cycle), so
- *   that the new forest is the one of Kruskal on \f$ F \cup D \f$, in
- *   \f$ O( ( n + |D| ) \log( n + |D| ) ) \f$; an edge of F raised beyond
- *   its replacement, when it is the only edge of F raised, is swapped with
- *   it (the cut condition). Two or more edges of F raised and one of them
- *   beyond its replacement, or raises and decreases together (whose
- *   conditions interact), go from scratch, by Kruskal on the copy of the
- *   edges that the observer keeps.
- * The data of the certificate stay valid, or become conservative (they
- * may reject a change that would be harmless, never accept a wrong one),
- * as long as the forest keeps its edges: the maxima of the paths only
- * fall when edges of F get lighter, and the replacements only rise when
- * edges out of F get heavier or leave. When an edge of F gets heavier the
- * weight of the edge to its parent is updated and the maxima of the jumps
- * are dropped, so that a path is then scanned edge by edge, in
- * \f$ O( \mathit{length} ) \f$, until the next change of the shape of
- * F; when an edge out of F gets lighter the replacements are dropped, and
- * built again at their next use, in \f$ O( m \log m ) \f$, from the copy
- * of the edges.
- * <pre>
- *   certify( P )
- *  1  for each f = [ u , v ] ∉ F lowered or inserted to w' in P
- *  2   if u and v are in two trees of F or \f$ w' < \max_{F( u , v )} \f$
- *      then f is repairable
- *  3  for each e ∈ F raised to w' (deleted: w' = \f$ +\infty \f$) in P
- *  4   if \f$ \rho( e ) \f$ exists and \f$ w( \rho( e ) ) < w' \f$ then e
- *      is repairable
- * </pre>
- *
- * MaxFlowObserver keeps a maximum flow f from s to t, the capacities the
- * weights of the edges (integers, an unoriented edge two arcs), and the
- * side S of a minimum cut, the certificate of the Teorema 15.1: f is
- * maximum if and only if it is feasible and
- * \f[
- *   |f| = c( S , V - S ) = \sum_{u \in S ,\, v \notin S} c( u , v ) .
- * \f]
- * A change of the capacity of ( u , v ) from c to c' is
- * - harmless if \f$ f( u , v ) \leq c' \f$ and ( u , v ) does not go from
- *   S to V - S with \f$ c' > c \f$: f stays feasible, and the capacity of
- *   the cut cannot fall below |f| nor rise (an arc of the cut is
- *   saturated, so that lowering it is caught by the first test);
- * - repairable if ( u , v ) goes from S to V - S and \f$ c' > c \f$: f
- *   stays feasible, and the augmenting paths of the algorithm of Dinic
- *   start from it, not from zero (the warm start that the maximum flow of
- *   OR-Tools leaves as a TODO);
- * - fatal if \f$ c' < f( u , v ) \f$: f is no longer feasible.
- * After a certified change S is still a minimum cut, though perhaps not
- * the set of the nodes that the residual network reaches from s.
- *
- * The contracts [see Contract.h]: the root r, and s and t, stay nodes of
- * the graph; the graph of SpanningForestObserver is unoriented; the
- * capacities are nonnegative integers; the observer reads the graph it was
- * built on, which must be the graph of the Observable that sends it the
- * events (or one changed in the same way). At the level of the audits,
- * each solve() checks the result: the conditions of Bellman by
- * isShortestPathTree(), the forest by isMinimumSpanningForest() on the
- * graphs of at most 2000 edges, and |f| = c( S , V - S ) on the graph. The
- * operations are defined in Reoptimization.tpp.
+ * The contracts [see `Contract.h`]: the root, and the source and the sink,
+ * stay nodes of the graph; the graph of `SpanningForestObserver` is
+ * unoriented; the capacities are nonnegative integers; the observer reads
+ * the graph it was built on, which must be the graph of the `Observable`
+ * that sends it the events (or one changed in the same way). At the level
+ * of the audits each `solve()` checks its result: the conditions of
+ * Bellman by `isShortestPathTree()`, the forest by
+ * `isMinimumSpanningForest()` on the graphs of at most 2000 edges, and
+ * \f$ | f | = c( S , V \setminus S ) \f$ on the graph. The operations are
+ * defined in `Reoptimization.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 11, 14
- *      and 15, https://algoritmicamente.it/materiali/libro/capitoli/
+ *      and 15, https://algoritmicamente.it/materiali/libro/capitoli/cap11.pdf
  * \see G. Ramalingam, T. Reps, An incremental algorithm for a
  *      generalization of the shortest-path problem, Journal of
  *      Algorithms 21(2), 267-305, 1996, doi:10.1006/jagm.1996.0046
@@ -247,14 +117,14 @@ namespace ADS {
 /*-------------------------------- CONCEPTS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// how a solve() brought the solution up to date
+/// how a `solve()` brought the solution up to date
 struct Reopt {
  static constexpr int SCRATCH = 0;     ///< from scratch
  static constexpr int WARM = 1;        ///< by a repair
  static constexpr int CERTIFIED = 2;   ///< by the certificate, no work
  };
 
-/// a solution that follows the events of weights W
+/// a solution that follows the events of weights `W`
 template< class R , class W >
 concept Reoptimizable = GraphObserver< R , W > &&
  requires( R & r , const GraphEvent< W > & e ,
@@ -270,6 +140,27 @@ concept Reoptimizable = GraphObserver< R , W > &&
 /*--------------------------------------------------------------------------*/
 
 /// the queue of the events and the counts that the observers share
+///
+/// In pseudocode (beyond the book; Lemma 6 of \ref theory_graph_dynamic
+/// proves it correct), the query of every observer, with \f$ Q \f$ the
+/// queue and \f$ \rho \f$ the ratio of `setRecomputeRatio()`:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
+/// 2 & \quad \textbf{if}\ \text{there is no solution yet}\ \textbf{then}
+///     \ \text{compute it from scratch};\ \textbf{return} \cr
+/// 3 & \quad P \gets \mathrm{coalesce}( Q );\ Q \gets \emptyset \cr
+/// 4 & \quad \textbf{if}\ |P| > \rho \max( m , 1 )\ \textbf{then}
+///     \ \text{compute from scratch};\ \textbf{return} \cr
+/// 5 & \quad \textbf{foreach}\ e \in P\ \textbf{do}\ \text{test } e
+///     \text{ against the certificate} \cr
+/// 6 & \quad \textbf{if}\ \text{an event is fatal}\ \textbf{then}
+///     \ \text{compute from scratch} \cr
+/// 7 & \quad \textbf{else if}\ \text{an event is repairable}
+///     \ \textbf{then}\ \text{repair the solution} \cr
+/// 8 & \quad \textbf{else}\ \text{keep it, certified}
+/// \end{array}}
+/// \f]
 template< class W >
 class EventQueue {
 
@@ -283,22 +174,24 @@ class EventQueue {
   return( GraphEvents::ALL );
   }
 
- /// queues e
+ /// queues \f$ e \f$
  void apply( const Event & e ) { f_q.push_back( e ); }
 
- /// queues the events of s
+ /// queues the events of \f$ s \f$
  void apply( std::span< const Event > s ) {
   f_q.insert( f_q.end() , s.begin() , s.end() );
   }
 
+ /// `apply( e )`, for the `Observable`
  void notify( const Event & e ) { apply( e ); }
+ /// `apply( s )`, for the `Observable`
  void notify( std::span< const Event > s ) { apply( s ); }
 
  /// the events waiting for the next query
  [[nodiscard]] std::size_t pending( void ) const { return( f_q.size() ); }
 
- /// how the last solve() with events to apply, or with no solution yet,
- /// did it [see Reopt]
+ /// how the last `solve()` with events to apply, or with no solution yet,
+ /// did it [see `Reopt`]
  [[nodiscard]] int outcome( void ) const { return( f_outcome ); }
 
  /// the solves of each outcome so far
@@ -306,8 +199,9 @@ class EventQueue {
   return( f_count[ outcome ] );
   }
 
- /// from scratch when the events coalesced exceed ratio times the edges
- /// \pre ratio >= 0
+ /// from scratch when the events coalesced exceed \f$ \mathit{ratio} \f$
+ /// times the edges
+ /// \pre \f$ \mathit{ratio} \ge 0 \f$
  void setRecomputeRatio( double ratio ) {
   ADS_PRE( ratio >= 0 );
   f_ratio = ratio;
@@ -323,18 +217,19 @@ class EventQueue {
   return( P );
   }
 
- /// whether k events are too many for m edges
+ /// whether \f$ k \f$ events are too many for \f$ m \f$ edges
  [[nodiscard]] bool tooMany( std::size_t k , long long m ) const {
   return( double( k ) > f_ratio * double( m > 1 ? m : 1 ) );
   }
 
+ /// the outcome of a `solve()` recorded
  void done( int outcome ) {
   f_outcome = outcome;
   ++f_count[ outcome ];
   }
 
  std::vector< Event > f_q;              ///< the events queued
- double f_ratio = 0.25;                 ///< the ratio of setRecomputeRatio()
+ double f_ratio = 0.25;                 ///< the ratio of `setRecomputeRatio()`
  int f_outcome = Reopt::SCRATCH;        ///< the last outcome
  long long f_count[ 3 ] = { 0 , 0 , 0 };   ///< the solves by outcome
 
@@ -344,7 +239,7 @@ class EventQueue {
 /*---------------------- CLASS ShortestPathsObserver -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the shortest paths from r in g, kept up to date
+/// the shortest paths from \f$ r \f$ in \f$ g \f$, kept up to date
 template< Graph G >
 class ShortestPathsObserver : public EventQueue< typename G::Weight > {
 
@@ -353,12 +248,42 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
 
  using Weight = typename G::Weight;   ///< the type of the weights
 
- /// the shortest paths from r in g, computed by how at the first query
- /// \pre r is a node of g
+ /// the shortest paths from \f$ r \f$ in \f$ g \f$, computed by `how` at
+ /// the first query
+ /// \pre \f$ r \f$ is a node of \f$ g \f$
  ShortestPathsObserver( const G & g , int r ,
                         Frontier how = Frontier::HEAP );
 
  /// brings the tree up to date
+ ///
+ /// In pseudocode (the algorithm of Ramalingam and Reps for the decreases,
+ /// beyond the book), the tests of the events \f$ P \f$ coalesced, with
+ /// \f$ T \f$ the tree and \f$ d \f$ the distances:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
+ /// 2 & \quad S \gets \emptyset \cr
+ /// 3 & \quad \textbf{foreach}\ ( u , v ) \text{ from } w \text{ to } w'
+ ///     \text{ in } P\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ ( u , v ) \in T \textbf{ and } ( w' = \bot
+ ///     \textbf{ or } w' > w )\ \textbf{then}\ \text{from scratch};
+ ///     \ \textbf{return} \cr
+ /// 5 & \qquad \textbf{if}\ ( u , v ) \in T \textbf{ or } d[ u ] + w'
+ ///     < d[ v ]\ \textbf{then}\ S \gets S \cup \{ u \} \cr
+ /// 6 & \quad \textbf{if}\ S = \emptyset\ \textbf{then}\ \textbf{return}
+ ///     \quad \triangleright\ \text{certified} \cr
+ /// 7 & \quad H \gets \text{a priority queue of } S \text{ by } d \cr
+ /// 8 & \quad \textbf{while}\ H \ne \emptyset\ \textbf{do} \cr
+ /// 9 & \qquad u \gets \mathrm{deleteMin}( H ) \cr
+ /// 10 & \qquad \textbf{if}\ u \text{ was extracted more than } n
+ ///     \text{ times}\ \textbf{then}\ \text{Bellman-Ford-Moore};
+ ///     \ \textbf{return} \cr
+ /// 11 & \qquad \textbf{foreach}\ ( u , v ) \in E\ \textbf{with}
+ ///     \ d[ u ] + w( u , v ) < d[ v ]\ \textbf{do} \cr
+ /// 12 & \qquad\quad d[ v ] \gets d[ u ] + w( u , v );\ T[ v ] \gets u;
+ ///     \ \mathrm{insert}( H , v , d[ v ] )
+ /// \end{array}}
+ /// \f]
  void solve( void );
 
  /// the tree, up to date; its order is that of the last computation from
@@ -368,7 +293,7 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
   return( f_R );
   }
 
- /// the distance of v, infinity() if not reachable
+ /// the distance of \f$ v \f$, `infinity()` if not reachable
  [[nodiscard]] Weight distance( int v ) {
   solve();
   return( f_R.d[ v ] );
@@ -379,10 +304,11 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
 
  using B = EventQueue< Weight >;
 
+ /// the tree from scratch, by `how`
  void scratch( Frontier how );
 
  /// the prototype from the seeds; false if a node was extracted more than
- /// n times (a negative cycle)
+ /// \f$ n \f$ times (a negative cycle)
  bool repair( const std::vector< int > & seeds );
 
  const G & f_g;                     ///< the graph
@@ -397,7 +323,7 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
 /*---------------------- CLASS SpanningForestObserver ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the minimum spanning forest of an unoriented g, kept up to date
+/// the minimum spanning forest of an unoriented \f$ g \f$, kept up to date
 template< Graph G >
 class SpanningForestObserver : public EventQueue< typename G::Weight > {
 
@@ -406,11 +332,42 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
 
  using Weight = typename G::Weight;   ///< the type of the weights
 
- /// the forest of g, computed by Kruskal at the first query
- /// \pre g is unoriented
+ /// the forest of \f$ g \f$, computed by Kruskal at the first query
+ /// \pre \f$ g \f$ is unoriented
  explicit SpanningForestObserver( const G & g );
 
  /// brings the forest up to date
+ ///
+ /// In pseudocode (beyond the book), the tests of the events \f$ P \f$
+ /// coalesced against (8) of \ref theory_graph_dynamic, with \f$ F \f$ the
+ /// forest and \f$ \rho \f$ the replacements:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
+ /// 2 & \quad D \gets \text{the edges out of } F \text{ lowered or}
+ ///     \text{ inserted in } P \cr
+ /// 3 & \quad U \gets \text{the edges of } F \text{ raised or deleted in }
+ ///     P \cr
+ /// 4 & \quad \textbf{if}\ D \ne \emptyset \textbf{ and } U \ne \emptyset
+ ///     \ \textbf{then}\ \text{Kruskal from scratch};\ \textbf{return} \cr
+ /// 5 & \quad \textbf{foreach}\ f = [ u , v ] \in D \text{ of weight } w'
+ ///     \ \textbf{do} \cr
+ /// 6 & \qquad \textbf{if}\ u , v \text{ in two trees of } F
+ ///     \textbf{ or } w' < \max_{F( u , v )} w\ \textbf{then}\ f
+ ///     \text{ repairable} \cr
+ /// 7 & \quad \textbf{foreach}\ e \in U \text{ of weight } w'
+ ///     \ ( \infty \text{ if deleted} )\ \textbf{do} \cr
+ /// 8 & \qquad \textbf{if}\ \rho( e ) \text{ exists}\textbf{ and }
+ ///     w( \rho( e ) ) < w'\ \textbf{then}\ e \text{ repairable} \cr
+ /// 9 & \quad \textbf{if}\ \text{an edge of } D \text{ is repairable}
+ ///     \ \textbf{then}\ F \gets \mathrm{kruskal}( F \cup D ) \cr
+ /// 10 & \quad \textbf{else if}\ U = \{ e \} \text{ repairable}
+ ///     \ \textbf{then}\ F \gets F \setminus \{ e \} \cup \{ \rho( e ) \}
+ ///     \cr
+ /// 11 & \quad \textbf{else if}\ \text{an edge of } U \text{ is repairable}
+ ///     \ \textbf{then}\ \text{Kruskal from scratch}
+ /// \end{array}}
+ /// \f]
  void solve( void );
 
  /// the edges of the forest, up to date, in no given order
@@ -419,7 +376,7 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  /// the total weight of the forest
  [[nodiscard]] Weight weight( void );
 
- /// whether [ u , v ] is in the forest
+ /// whether \f$ [ u , v ] \f$ is in the forest
  [[nodiscard]] bool inForest( int u , int v );
 
 /*--------------------------------------------------------------------------*/
@@ -429,16 +386,18 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
 
  /// an edge of the copy: its weight and whether it is in the forest
  struct Rec {
-  Weight w;
-  bool tree;
+  Weight w;                                      ///< the weight
+  bool tree;                                     ///< whether in \f$ F \f$
   };
 
+ /// the key of \f$ [ u , v ] \f$
  static std::uint64_t key( int u , int v ) {
   if( v < u ) std::swap( u , v );
   return( ( std::uint64_t( std::uint32_t( u ) ) << 32 ) |
           std::uint32_t( v ) );
   }
 
+ /// the ends of the key \f$ k \f$
  static std::pair< int , int > ends( std::uint64_t k ) {
   return( std::pair< int , int >( int( k >> 32 ) ,
                                   int( k & 0xffffffffu ) ) );
@@ -456,23 +415,25 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  /// the replacements of the edges of the forest
  void buildRepl( void );
 
- /// the heaviest edge on the path of the forest between u and v, nothing
- /// if they are in two trees
+ /// the heaviest edge on the path of the forest between \f$ u \f$ and
+ /// \f$ v \f$, nothing if they are in two trees
  [[nodiscard]] std::optional< Weight > maxPath( int u , int v ) const;
 
- /// the lowest common ancestor of u and v, in the same tree
+ /// the lowest common ancestor of \f$ u \f$ and \f$ v \f$, in the same
+ /// tree
  [[nodiscard]] int lca( int u , int v ) const;
 
- /// the lightest edge out of F with one end in the subtree of x, and its
- /// key, by a scan of the edges
+ /// the lightest edge out of \f$ F \f$ with one end in the subtree of
+ /// \f$ x \f$, and its key, by a scan of the edges
  [[nodiscard]] std::optional< std::pair< Weight , std::uint64_t > >
   crossMin( int x ) const;
 
  const G & f_g;                                  ///< the graph
- bool f_ready = false;                           ///< whether there is F
+ bool f_ready = false;                           ///< whether there is
+                                                 ///< \f$ F \f$
  int f_n = 0;                                    ///< the bound of the nodes
  std::unordered_map< std::uint64_t , Rec > f_E;  ///< the copy of the edges
- std::vector< std::uint64_t > f_F;               ///< the edges of F
+ std::vector< std::uint64_t > f_F;               ///< the edges of \f$ F \f$
 
  bool f_shapeOk = false;                         ///< the parents, the
                                                  ///< depths and the
@@ -503,8 +464,8 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
 /*------------------------- CLASS MaxFlowObserver --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the maximum flow from s to t in g, the weights the capacities, kept up
-/// to date
+/// the maximum flow from \f$ s \f$ to \f$ t \f$ in \f$ g \f$, the weights
+/// the capacities, kept up to date
 template< Graph G >
 requires std::is_integral_v< typename G::Weight >
 class MaxFlowObserver : public EventQueue< typename G::Weight > {
@@ -514,12 +475,33 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
 
  using Weight = typename G::Weight;   ///< the type of the weights
 
- /// the flow from s to t in g, computed by how at the first query
- /// \pre s and t are distinct nodes of g
+ /// the flow from \f$ s \f$ to \f$ t \f$ in \f$ g \f$, computed by `how`
+ /// at the first query
+ /// \pre \f$ s \f$ and \f$ t \f$ are distinct nodes of \f$ g \f$
  MaxFlowObserver( const G & g , int s , int t ,
                   Augment how = Augment::DINIC );
 
  /// brings the flow up to date
+ ///
+ /// In pseudocode (beyond the book), the tests of the events \f$ P \f$
+ /// coalesced against the minimum cut \f$ S \f$ (by Theorem 4 of
+ /// \ref theory_graph_flow):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
+ /// 2 & \quad \textbf{foreach}\ ( u , v ) \text{ from } c \text{ to } c'
+ ///     \text{ in } P\ \textbf{do} \cr
+ /// 3 & \qquad \textbf{if}\ c' < f( u , v )\ \textbf{then}
+ ///     \ \text{from scratch};\ \textbf{return} \cr
+ /// 4 & \qquad \textbf{if}\ u \in S \textbf{ and } v \notin S
+ ///     \textbf{ and } c' > c\ \textbf{then}\ \mathit{grow} \gets
+ ///     \textbf{true} \cr
+ /// 5 & \quad \text{set the capacities of } P \cr
+ /// 6 & \quad \textbf{if}\ \mathit{grow}\ \textbf{then}\ | f | \gets | f |
+ ///     + \mathrm{maxFlow}( s , t ) \text{ from } f;
+ ///     \ S \gets \mathrm{minCut}( s )
+ /// \end{array}}
+ /// \f]
  void solve( void );
 
  /// the value of the maximum flow
@@ -528,7 +510,7 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
   return( f_value );
   }
 
- /// the side of s of a minimum cut
+ /// the side of \f$ s \f$ of a minimum cut
  [[nodiscard]] const std::vector< bool > & minCut( void ) {
   solve();
   return( f_S );
@@ -539,24 +521,28 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
 
  using B = EventQueue< Weight >;
 
+ /// the key of \f$ ( u , v ) \f$
  static std::uint64_t key( int u , int v ) {
   return( ( std::uint64_t( std::uint32_t( u ) ) << 32 ) |
           std::uint32_t( v ) );
   }
 
+ /// the flow from scratch
  void scratch( void );
 
- /// the capacity of the cut f_S in the graph
+ /// the capacity of the cut `f_S` in the graph
  [[nodiscard]] long long cutCapacity( void ) const;
 
  const G & f_g;                                 ///< the graph
- int f_s , f_t;                                 ///< the source, the sink
+ int f_s;                                       ///< the source
+ int f_t;                                       ///< the sink
  Augment f_how;                                 ///< the augmenting paths
  bool f_ready = false;                          ///< whether there is f
  FlowNetwork f_net{ 0 };                        ///< the network
- std::unordered_map< std::uint64_t , int > f_arc;   ///< the arc ( u , v )
- long long f_value = 0;                         ///< |f|
- std::vector< bool > f_S;                       ///< the side of s
+ /// the number of the arc \f$ ( u , v ) \f$ in the network
+ std::unordered_map< std::uint64_t , int > f_arc;
+ long long f_value = 0;                         ///< \f$ | f | \f$
+ std::vector< bool > f_S;                       ///< the side of \f$ s \f$
 
  };  // end( class MaxFlowObserver )
 

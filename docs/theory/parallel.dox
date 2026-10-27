@@ -9,15 +9,16 @@
  parallel versions of a few algorithms of the library on the threads of one
  machine with shared memory: the patterns of the loops, of the reductions and
  of the prefix sums, the merge of sorted ranges and the sort, the products of
- matrices, the Fourier transform, the visits of a static graph and the LCP
- array of a text. Each runs on an executor, which is the only part that knows
+ matrices, the Fourier transform, the visits of a static graph, the LCP array
+ of a text, and the greedy algorithms on graphs by deterministic
+ reservations. Each runs on an executor, which is the only part that knows
  the threads, and gives the result of its sequential version. This page
  collects what the headers take for granted: the model of the cost and its
  notation (see \ref theory_parallel_notation), the executors and the way they
  schedule the calls (see \ref theory_parallel_exec), and, for each family of
  algorithms, the property on which its correctness rests and the argument
  behind its bound (from \ref theory_parallel_patterns to
- \ref theory_parallel_graph). The pseudocode of each algorithm is instead on
+ \ref theory_parallel_reserve). The pseudocode of each algorithm is instead on
  the page of its header, in the comment of its function, together with the
  paper that it follows.
 
@@ -366,6 +367,89 @@
  costs at most \f$ \max_i \mathit{PLCP}[ i ] \f$ more per part and leaves the
  result the same.
 
+ \section theory_parallel_reserve Deterministic reservations, greedy algorithms
+
+ A greedy algorithm scans its items in a fixed order and decides each of them
+ on the state that the earlier ones left, e.g., the algorithm of Kruskal keeps
+ an edge if no earlier edge joined its ends (see \ref theory_graph_mst). The
+ <em>deterministic reservations</em> of Blelloch, Fineman, Gibbons and Shun
+ (`speculativeFor()` of `SpeculativeFor.h`) run such a loop of iterations
+ \f$ s , s + 1 , \ldots , e - 1 \f$ on the threads of an executor, each
+ iteration \f$ i \f$ split into two steps: \f$ \mathrm{reserve}( i ) \f$
+ reads the state and either finds that \f$ i \f$ has nothing to do or writes
+ \f$ i \f$ into a <em>reservation</em> of each place of the state that it
+ would change, by a priority write that keeps the least index there; and
+ \f$ \mathrm{commit}( i ) \f$ changes the state if \f$ i \f$ holds all its
+ reservations, and otherwise leaves \f$ i \f$ to the next round. A round runs
+ the reserves of a prefix of \f$ r \f$ iterations not yet done, in parallel,
+ then their commits in parallel, and keeps the failed ones, in their order,
+ at the head of the next prefix.
+
+ <em>Lemma 4 (determinism of the reservations).</em> If each
+ \f$ \mathrm{reserve}( i ) \f$ reserves every place that
+ \f$ \mathrm{commit}( i ) \f$ may change, and reads only places that the
+ iterations before \f$ i \f$ may change, then the least iteration of each
+ round commits, and the state at the end is the one of the sequential loop,
+ whatever the executor and the number of its threads.
+
+ Indeed, the least iteration of a round wins every priority write, hence it
+ holds all its reservations and commits, and each round makes progress. An
+ iteration \f$ i \f$ commits only if no earlier iteration of its round wants
+ one of its places, and every earlier iteration of an earlier round is done;
+ so the state that \f$ i \f$ read in its reserve is the one that the
+ sequential loop leaves before \f$ i \f$ on the places that \f$ i \f$ reads,
+ and its commit writes what the sequential loop would write. The failures
+ depend only on the iterations and on their order, not on the timing of the
+ threads; hence the sequence of the rounds, and the size \f$ r \f$ of their
+ prefixes, which halves when more than a fifth of a round fails and doubles
+ when less than a tenth does, are themselves deterministic.
+
+ With \f$ W \f$ the work of the sequential loop and \f$ R \f$ that of the
+ iterations tried again, the work is \f$ O( W + R ) \f$ and the depth is that
+ of the rounds, each of depth \f$ O( \log r ) \f$ for the pack of the
+ failures. For the maximal independent set and the maximal matching in a
+ random order the iterations that wait for each other form chains of length
+ \f$ O( \log n ) \f$ with high probability (Blelloch, Fineman and Shun gave
+ \f$ O( \log^2 n ) \f$, and Fischer and Noever the tight bound), so that few
+ iterations fail and the rounds are few.
+
+ `ParallelGreedy.h` builds on the reservations the greedy algorithms of the
+ table below, each with the result of its sequential version on the same
+ order. In `parallelKruskal()` the edge \f$ i \f$, in the order of
+ \f$ ( w( e ) , e ) \f$, reserves the roots of its ends in a union-find if
+ they differ, and its commit hangs the root that it holds under the other;
+ the finds run while no link happens, so that the halving of their paths
+ writes values that a concurrent find reads either way. `filterKruskal()`
+ (Osipov, Sanders and Singler) splits the edges by a pivot \f$ p \f$ into the
+ light ones \f$ e < p \f$ and the heavy ones, solves the light ones first,
+ and then drops, by a parallel filter, the heavy edges whose ends the forest
+ already joins, before their recursion; a heavy edge dropped would be refused
+ by Kruskal too, and the light edges come first in the order, so that the
+ forest is the same, while the edges dropped are never sorted. In
+ `maximalIndependentSet()` the reserve of a node looks at its neighbors of
+ earlier places, one in the set leaving it out and one undecided making it
+ wait, and in `maximalMatching()` an edge reserves its two ends if both are
+ free and takes them if it holds both.
+
+ <table>
+ <caption>The greedy algorithms of <tt>ParallelGreedy.h</tt>, on
+ \f$ n \f$ nodes and \f$ m \f$ edges</caption>
+ <tr><th>Function</th><th>Order</th><th>Work</th></tr>
+ <tr><td><tt>parallelKruskal()</tt></td><td>\f$ ( w( e ) , e ) \f$, by
+     the parallel sort</td><td>\f$ O( m \log m ) \f$</td></tr>
+ <tr><td><tt>filterKruskal()</tt></td><td>as above, sorting only the edges
+     not filtered</td><td>\f$ O( m + n \log n \log( m / n ) ) \f$ expected on
+     random weights</td></tr>
+ <tr><td><tt>spanningForest()</tt></td><td>the order of the edges</td>
+     <td>\f$ O( m \, \alpha( m , n ) ) \f$ plus the retries</td></tr>
+ <tr><td><tt>maximalIndependentSet()</tt></td><td>a permutation
+     \f$ \pi \f$ of the nodes</td><td>\f$ O( n + m ) \f$ expected on a
+     random \f$ \pi \f$</td></tr>
+ <tr><td><tt>maximalMatching()</tt></td><td>a permutation \f$ \pi \f$ of
+     the edges</td><td>\f$ O( n + m ) \f$ expected on a random
+     \f$ \pi \f$</td></tr>
+ </table>
+
  \section theory_parallel_refs References
 
  \see R. L. Graham, Bounds on multiprocessing timing anomalies, SIAM
@@ -430,6 +514,18 @@
       longest-common-prefix computation in suffix arrays and its
       applications, Annual Symposium on Combinatorial Pattern Matching
       (CPM), LNCS 2089, 181-192, 2001, doi:10.1007/3-540-48194-X_17
+ \see G. E. Blelloch, J. T. Fineman, P. B. Gibbons, J. Shun, Internally
+      deterministic parallel algorithms can be fast, Proceedings of PPoPP,
+      181-192, 2012, doi:10.1145/2145816.2145840
+ \see G. E. Blelloch, J. T. Fineman, J. Shun, Greedy sequential maximal
+      independent set and matching are parallel on average, Proceedings of
+      SPAA, 308-317, 2012, doi:10.1145/2312005.2312058
+ \see M. Fischer, A. Noever, Tight analysis of parallel randomized greedy
+      MIS, Proceedings of SODA, 2152-2160, 2018,
+      doi:10.1137/1.9781611975031.140
+ \see V. Osipov, P. Sanders, J. Singler, The filter-Kruskal minimum
+      spanning tree algorithm, Proceedings of ALENEX, 52-61, 2009,
+      doi:10.1137/1.9781611972894.5
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File parallel.dox --------------------------*/

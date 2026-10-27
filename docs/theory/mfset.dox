@@ -9,15 +9,17 @@
  10.2 of the book, the union of disjoint sets, on lists (section 10.2.1) and
  on a forest of parents (section 10.2.2) with the union by rank and the
  compression of the paths (sections 10.2.3 and 10.2.4), and, beyond the
- book, two engineered forests: one in a single vector of integers, with the
+ book, two engineered forests (one in a single vector of integers, with the
  union by size and the halving of the paths, and the algorithm of Rem with
- splicing. This page collects the definitions and the notation that the
- headers share (see \ref theory_mfset_notation), the realizations with the
- costs of their operations (see \ref theory_mfset_repr), and the arguments
- behind the bounds of the heuristics (see \ref theory_mfset_union and
- \ref theory_mfset_paths). The pseudocode of each operation is on the page of
- its header, in the comment of its function, together with the section of
- the book, or the paper, that it follows.
+ splicing) and a forest whose merges can be undone, with the connectivity of
+ a graph whose edges come and go. This page collects the definitions and the
+ notation that the headers share (see \ref theory_mfset_notation), the
+ realizations with the costs of their operations (see
+ \ref theory_mfset_repr), and the arguments behind the bounds of the
+ heuristics (see \ref theory_mfset_union and \ref theory_mfset_paths) and
+ of the undo (see \ref theory_mfset_rollback). The pseudocode of each
+ operation is on the page of its header, in the comment of its function,
+ together with the section of the book, or the paper, that it follows.
 
  \tableofcontents
 
@@ -82,6 +84,10 @@
      <td>one interleaved climb</td><td>\f$ O( m \log_{1 + m / n} n ) \f$,
      \f$ O( m \, \alpha( m , n ) ) \f$ expected on a random
      numbering</td></tr>
+ <tr><td><tt>RollbackUnionFind</tt></td><td>a forest by rank, no
+     compression, and a stack of the merges</td><td>\f$ O( \log n ) \f$
+     in the worst case</td><td>that of two finds; <tt>undo()</tt> in
+     \f$ O( 1 ) \f$</td><td>\f$ O( m \log n ) \f$</td></tr>
  </table>
 
  On lists, `find()` reads the head that each element keeps, and `merge()`
@@ -173,6 +179,59 @@
  (Goel, Khanna, Larkin and Tarjan); the experiments of Patwary, Blair and
  Manne found it among the fastest in practice.
 
+ \section theory_mfset_rollback Undo of the merges and offline connectivity
+
+ Beyond the book, `RollbackUnionFind` undoes its merges in the reverse of
+ their order: each `merge()` changes at most two words, the parent of the
+ root that it hangs and the rank of the other root, and pushes them on a
+ stack, from which `undo()` puts them back in \f$ O( 1 ) \f$;
+ `rollback( t )` undoes the merges back to the checkpoint \f$ t \f$, the
+ number of merges done when `checkpoint()` gave it. The forest keeps the
+ union by rank and gives up any change of the paths: a compression would
+ change \f$ \Theta( \log n ) \f$ parents per find, all to be recorded, and
+ its amortized bound (1) does not survive the undo, since a sequence that
+ rolls back the merges and does them again can make the same long find pay
+ each time. With no compression, Lemma 2 bounds every find by
+ \f$ O( \log n ) \f$ in the worst case, not only amortized, and an undo
+ restores exactly the forest before the merge, heights and ranks included;
+ Westbrook and Tarjan show that, with backtracking, this is as good as any
+ of the usual compressions, \f$ \Theta( \log n ) \f$ per operation in the
+ worst case of a sequence.
+
+ The undo makes it possible to answer offline the questions of connectivity
+ on a graph whose edges come and go (`offlineConnectivity()`), when the
+ whole sequence of \f$ k \f$ insertions, deletions and questions is known in
+ advance. Each edge lives on an interval of times \f$ [ s , e ) \f$, from its
+ insertion to its deletion (or to the end), and the \f$ q \f$ questions are
+ the leaves of a segment tree, whose node of range \f$ [ a , b ) \f$ holds
+ the list \f$ L \f$ of the edges that live on all of \f$ [ a , b ) \f$ and
+ not on all of the range of its parent. A visit in depth of the segment tree
+ merges the edges of \f$ L \f$ when it enters a node and rolls them back when
+ it leaves it.
+
+ <em>Lemma 4 (the segment tree over the times).</em> An interval of times
+ is held by at most \f$ 2 \lceil \log_2 q \rceil \f$ nodes of the segment
+ tree, and when the visit reaches the leaf of a question the forest holds
+ exactly the edges alive at its time; hence the answers are those of a
+ union-find built again at each question, and the time is
+ \f[
+   O( k \log q \log n ) = O( k \log k \log n ) . \tag{2}
+ \f]
+
+ Indeed, at each level of the segment tree at most two nodes hold part of
+ the interval without holding all of it, as in the decomposition of a range
+ by a segment tree, so that the interval is split into at most two nodes
+ per level. The edges merged at the leaf are those of its ancestors, i.e.,
+ those whose interval holds a range around the leaf, which are the edges
+ alive at its time, and the rollback when leaving a node restores the
+ forest of its parent. Each edge is merged and undone \f$ O( \log q ) \f$
+ times, at \f$ O( \log n ) \f$ each by Lemma 2, which gives (2), with
+ \f$ O( k \log k ) \f$ space for the lists. The divide and conquer on the
+ times is the one of Eppstein for the dynamic minimum spanning tree; with
+ the contraction of the graph at each level (Eppstein, and Peng, Sandlund
+ and Sleator) the bound falls to \f$ O( k \log n ) \f$, at the price of a
+ far longer code, which the rollback avoids.
+
  \section theory_mfset_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.2,
@@ -197,6 +256,18 @@
  \see A. Goel, S. Khanna, D. H. Larkin, R. E. Tarjan, Disjoint set union
       with randomized linking, Proceedings of SODA 2014, 1005-1017, 2014,
       doi:10.1137/1.9781611973402.75
+ \see H. Mannila, E. Ukkonen, The set union problem with backtracking,
+      Proceedings of ICALP, LNCS 226, 236-243, 1986,
+      doi:10.1007/3-540-16761-7_73
+ \see J. Westbrook, R. E. Tarjan, Amortized analysis of algorithms for set
+      union with backtracking, SIAM Journal on Computing 18(1), 1-11, 1989,
+      doi:10.1137/0218001
+ \see D. Eppstein, Offline algorithms for dynamic minimum spanning tree
+      problems, Journal of Algorithms 17(2), 237-250, 1994,
+      doi:10.1006/jagm.1994.1033
+ \see R. Peng, B. Sandlund, D. D. Sleator, Optimal offline dynamic
+      2,3-edge/vertex connectivity, Proceedings of WADS, LNCS 11646,
+      553-565, 2019, doi:10.1007/978-3-030-24766-9_40
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File mfset.dox ----------------------------*/

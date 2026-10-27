@@ -3,78 +3,35 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The MFSET of section 10.2 with the undo of its merges, beyond the book
- * [see MFSet.h], and on it the connectivity of a graph whose edges come
- * and go, when all the changes and the questions are known in advance.
+ * [see `MFSet.h`], and on it the connectivity of a graph whose edges come
+ * and go, when all the changes and the questions are known in advance (see
+ * \ref theory_mfset_rollback).
  *
- * RollbackUnionFind is the forest of the parents with the union by rank
- * and without any compression of the paths: merge( x , y ) hangs the root
- * of lower rank under the other, so that a tree of rank k has at least
- * \f$ 2^k \f$ nodes and height at most k, and
- * \f[
- *   \mathit{find}( x ) \in O( \log n )
- * \f]
- * in the worst case, not only amortized. Each merge() changes at most two
- * words (the parent of a root, and the rank of the other), which a record
- * on a stack keeps: undo() puts them back in \f$ O( 1 ) \f$, and
- * rollback( t ) undoes the merges back to the checkpoint t, the number of
- * merges done when checkpoint() gave it (a merge of two elements already
- * together leaves a record too, so that the checkpoints count the calls).
- * The compression of the paths would change \f$ \Theta( \log n ) \f$
- * parents per find(), all to be recorded, and its amortized bound does not
- * survive the undo: Westbrook and Tarjan show that with backtracking the
- * union by rank alone, \f$ \Theta( \log n ) \f$ per operation, is as good
- * as any of the usual compressions, and Mannila and Ukkonen gave the first
- * analysis of the problem. The space is \f$ 12 n \f$ bytes and
- * 12 bytes per record.
+ * `RollbackUnionFind` is the forest of the parents with the union by rank
+ * and without any compression of the paths, so that `find()` costs
+ * \f$ O( \log n ) \f$ in the worst case (Lemma 2 of \ref theory_mfset_union);
+ * each `merge()` changes at most two words, which a record on a stack keeps,
+ * `undo()` puts them back in \f$ O( 1 ) \f$, and `rollback( t )` undoes the
+ * merges back to the checkpoint \f$ t \f$, the number of merges done when
+ * `checkpoint()` gave it (a merge of two elements already together leaves a
+ * record too, so that the checkpoints count the calls). The space is
+ * \f$ 12 n \f$ bytes and 12 bytes per record.
  *
- * offlineConnectivity() answers, for a sequence of k operations on n
- * nodes, each the insertion of an edge, its deletion or a question
- * (whether u and v are connected, or how many components there are), the
- * questions in their order. Each edge lives on an interval of times
- * \f$ [ s , e ) \f$, from its insertion to its deletion (or to the end);
- * the times of the q questions are the leaves of a segment tree, whose
- * node of range \f$ [ a , b ) \f$ holds the edges that live on all of it
- * and not on all of its parent's, so that an interval is split into at
- * most \f$ 2 \lceil \log_2 q \rceil \f$ nodes. A visit in depth of the
- * tree merges the edges of a node when it enters it and rolls them back
- * when it leaves: at a leaf the forest holds exactly the edges alive at
- * its time, and the question is a find(). Each edge is merged and undone
- * \f$ O( \log q ) \f$ times, at \f$ O( \log n ) \f$ each, i.e.,
- * \f[
- *   O( k \log k \log n )
- * \f]
- * time and \f$ O( k \log k ) \f$ space in all. The divide and conquer on
- * the times is the one of Eppstein for the dynamic minimum spanning tree;
- * with the contraction of the graph at each level (Eppstein, and Peng,
- * Sandlund and Sleator) the bound falls to \f$ O( k \log n ) \f$, at the
- * cost of a far longer code, which the rollback leaves out.
- * <pre>
- *   offlineConnectivity( n , ops )
- *  1  for each edge e inserted at the time s and deleted at the time e
- *     (or never: e = k), add( 1 , [ 0 , q ) , [ q( s ) , q( e ) ) , e ),
- *     q( t ) the questions before the time t
- *  2  visit( 1 , [ 0 , q ) )
- *   add( x , [ a , b ) , [ s , e ) , e )
- *  1  if \f$ [ s , e ) \cap [ a , b ) = \emptyset \f$ then return
- *  2  if \f$ [ a , b ) \subseteq [ s , e ) \f$ then put e in L( x ); return
- *  3  c ← \f$ \lfloor ( a + b ) / 2 \rfloor \f$; add( 2 x , [ a , c ) , ...
- *     ); add( 2 x + 1 , [ c , b ) , ... )
- *   visit( x , [ a , b ) )
- *  1  t ← checkpoint()
- *  2  for each [ u , v ] ∈ L( x ): merge( u , v )
- *  3  if b - a = 1 then answer the question a by find()
- *  4  else visit( 2 x , [ a , c ) ); visit( 2 x + 1 , [ c , b ) )
- *  5  rollback( t )
- * </pre>
+ * `offlineConnectivity()` answers, for a sequence of \f$ k \f$ operations on
+ * \f$ n \f$ nodes, each the insertion of an edge, its deletion or a question
+ * (whether two nodes are connected, or how many components there are), the
+ * questions in their order, by the segment tree over the times of Lemma 4 of
+ * \ref theory_mfset_rollback, in \f$ O( k \log k \log n ) \f$ time and
+ * \f$ O( k \log k ) \f$ space.
  *
- * The contracts [see Contract.h]: n >= 0, the elements in [ 0 , n ); a
- * rollback goes back to a checkpoint not beyond the merges done, and an
- * undo() needs one; a deletion in offlineConnectivity() needs the edge
- * alive (of parallel edges, the last inserted dies first), and a loop
- * [ u , u ] is allowed and joins nothing. The invariant is that the
- * parents make a forest of count() trees, the rank of each root bounding
- * its height, and that the records undo the merges. The operations are
- * defined in RollbackUnionFind.tpp.
+ * The contracts [see `Contract.h`]: \f$ n \ge 0 \f$, the elements in
+ * \f$ [ 0 , n ) \f$; a rollback goes back to a checkpoint not beyond the
+ * merges done, and an `undo()` needs one; a deletion in
+ * `offlineConnectivity()` needs the edge alive (of parallel edges, the last
+ * inserted dies first), and a loop \f$ [ u , u ] \f$ is allowed and joins
+ * nothing. The invariant is that the parents make a forest of `count()`
+ * trees, the rank of each root bounding its height, and that the records
+ * undo the merges. The operations are defined in `RollbackUnionFind.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
@@ -127,43 +84,74 @@ namespace ADS {
 /*------------------------ CLASS RollbackUnionFind -------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the union of disjoint sets of [ 0 , n ) by rank, with no compression,
-/// whose merges can be undone
+/// the union of disjoint sets of \f$ [ 0 , n ) \f$ by rank, with no
+/// compression, whose merges can be undone
 class RollbackUnionFind {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// the n components {0} , ... , {n - 1}, no merge done
- /// \pre n >= 0
+ /// the \f$ n \f$ components \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$, no
+ /// merge done
+ /// \pre \f$ n \ge 0 \f$
  explicit RollbackUnionFind( int n = 0 );
 
- /// back to the n components, no merge done
- /// \pre n >= 0
+ /// back to the \f$ n \f$ components, no merge done
+ /// \pre \f$ n \ge 0 \f$
  void reset( int n );
 
+ /// the number of elements
  [[nodiscard]] int n( void ) const { return( int( f_p.size() ) ); }
 
  /// the number of components
  [[nodiscard]] int count( void ) const { return( f_count ); }
 
- /// the representative of the component of x, \f$ O( \log n ) \f$
- /// \pre x in [ 0 , n )
+ /// the representative of the component of \f$ x \f$, in
+ /// \f$ O( \log n ) \f$
+ ///
+ /// In pseudocode (section 10.2.2, with no compression):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{find}( x ) \cr
+ /// 2 & \quad \textbf{while}\ p[ x ] \ne x\ \textbf{do}\ x \gets p[ x ] \cr
+ /// 3 & \quad \textbf{return}\ x
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ x \in [ 0 , n ) \f$
  [[nodiscard]] int find( int x ) const;
 
- /// joins the components of x and y, the root of lower rank under the
- /// other, and records it; true if they were distinct
- /// \pre x , y in [ 0 , n )
+ /// joins the components of \f$ x \f$ and \f$ y \f$, the root of lower
+ /// rank under the other, and records it; true if they were distinct
+ ///
+ /// In pseudocode (section 10.2.3, with the record of the undo, beyond the
+ /// book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{merge}( x , y ) \cr
+ /// 2 & \quad x \gets \mathrm{find}( x );\ y \gets \mathrm{find}( y ) \cr
+ /// 3 & \quad \textbf{if}\ x = y\ \textbf{then}\ \mathrm{push}( R ,
+ ///     ( \textbf{nil} , \textbf{nil} , \textbf{false} ) );
+ ///     \ \textbf{return}\ \textbf{false} \cr
+ /// 4 & \quad \textbf{if}\ \mathit{rank}[ x ] > \mathit{rank}[ y ]
+ ///     \ \textbf{then}\ \text{swap } x \text{ and } y \cr
+ /// 5 & \quad p[ x ] \gets y;\ g \gets \mathit{rank}[ x ] =
+ ///     \mathit{rank}[ y ];\ \textbf{if}\ g\ \textbf{then}
+ ///     \ \mathit{rank}[ y ] \gets \mathit{rank}[ y ] + 1 \cr
+ /// 6 & \quad \mathrm{push}( R , ( x , y , g ) );\ \textbf{return}
+ ///     \ \textbf{true}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ x , y \in [ 0 , n ) \f$
  bool merge( int x , int y );
 
- /// whether x and y are in the same component
- /// \pre x , y in [ 0 , n )
+ /// whether \f$ x \f$ and \f$ y \f$ are in the same component
+ /// \pre \f$ x , y \in [ 0 , n ) \f$
  [[nodiscard]] bool same( int x , int y ) const {
   return( find( x ) == find( y ) );
   }
 
- /// the number of elements of the component of x
- /// \pre x in [ 0 , n )
+ /// the number of elements of the component of \f$ x \f$
+ /// \pre \f$ x \in [ 0 , n ) \f$
  [[nodiscard]] int size( int x ) const { return( f_size[ find( x ) ] ); }
 
  /// the merges done and not undone, the time to roll back to
@@ -171,29 +159,44 @@ class RollbackUnionFind {
   return( int( f_stack.size() ) );
   }
 
- /// undoes the last k merges
- /// \pre 0 <= k <= checkpoint()
+ /// undoes the last \f$ k \f$ merges
+ ///
+ /// In pseudocode (beyond the book; each step restores the forest before
+ /// the merge that it undoes):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{undo}( k ) \cr
+ /// 2 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ k\ \textbf{do} \cr
+ /// 3 & \qquad ( x , y , g ) \gets \mathrm{pop}( R ) \cr
+ /// 4 & \qquad \textbf{if}\ x \ne \textbf{nil}\ \textbf{then}
+ ///     \ p[ x ] \gets x;\ \textbf{if}\ g\ \textbf{then}
+ ///     \ \mathit{rank}[ y ] \gets \mathit{rank}[ y ] - 1
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 0 \le k \le \f$ `checkpoint()`
  void undo( int k = 1 );
 
- /// undoes the merges back to the checkpoint t
- /// \pre 0 <= t <= checkpoint()
+ /// undoes the merges back to the checkpoint \f$ t \f$, i.e.,
+ /// `undo( checkpoint() - t )`
+ /// \pre \f$ 0 \le t \le \f$ `checkpoint()`
  void rollback( int t );
 
 /*--------------------------------------------------------------------------*/
  private:
 
- /// a merge: the root hung (-1 if nothing was joined) and whether the
- /// rank of the other grew
+ /// a merge: the root hung (\f$ -1 \f$ if nothing was joined) and whether
+ /// the rank of the other grew
  struct Record {
-  int child , parent;
-  bool grew;
+  int child;                                     ///< the root hung
+  int parent;                                    ///< the other root
+  bool grew;                                     ///< whether its rank grew
   };
 
- /// a forest of count() trees, each of height at most the rank of its
+ /// a forest of `count()` trees, each of height at most the rank of its
  /// root and of the size it holds
  [[nodiscard]] bool forest( void ) const;
 
- std::vector< int > f_p;          ///< the parents, x itself at a root
+ std::vector< int > f_p;          ///< the parents, \f$ x \f$ itself at a root
  std::vector< int > f_rank;       ///< the ranks of the roots
  std::vector< int > f_size;       ///< the sizes of the roots
  std::vector< Record > f_stack;   ///< the merges, to undo
@@ -207,16 +210,58 @@ class RollbackUnionFind {
 
 /// an operation on a graph whose edges come and go
 struct ConnectivityOp {
- /// the insertion or the deletion of the edge [ u , v ], whether u and v
- /// are connected, how many components there are
- enum Kind { INSERT , DELETE , CONNECTED , COMPONENTS };
- Kind kind;
- int u = 0 , v = 0;
+ /// the kinds of operation
+ enum Kind {
+  INSERT ,       ///< the insertion of the edge \f$ [ u , v ] \f$
+  DELETE ,       ///< the deletion of the edge \f$ [ u , v ] \f$
+  CONNECTED ,    ///< whether \f$ u \f$ and \f$ v \f$ are connected
+  COMPONENTS     ///< how many components there are
+  };
+ Kind kind;                                      ///< the kind
+ int u = 0;                                      ///< the first node
+ int v = 0;                                      ///< the second node
  };
 
-/// the answers to the questions of ops on n nodes, in their order: 1 or 0
-/// for CONNECTED, the number of components for COMPONENTS
-/// \pre n >= 0, the nodes in [ 0 , n ), each DELETE of an edge alive
+/// the answers to the questions of `ops` on \f$ n \f$ nodes, in their
+/// order: 1 or 0 for `CONNECTED`, the number of components for
+/// `COMPONENTS`
+///
+/// In pseudocode (the divide and conquer of Eppstein on the times, beyond
+/// the book; it is correct by Lemma 4 of \ref theory_mfset_rollback), with
+/// \f$ q( t ) \f$ the number of the questions before the time \f$ t \f$ and
+/// \f$ L( x ) \f$ the edges of the node \f$ x \f$ of the segment tree:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{offlineConnectivity}( n , \mathit{ops} )
+///     \cr
+/// 2 & \quad \textbf{foreach}\ \text{edge } e \text{ alive on } [ s , t )
+///     \ \textbf{do}\ \mathrm{add}( 1 , [ 0 , q ) , [ q( s ) , q( t ) ) ,
+///     e ) \cr
+/// 3 & \quad \mathrm{visit}( 1 , [ 0 , q ) );\ \textbf{return}
+///     \ \text{the answers} \cr
+/// 4 & \textbf{procedure}\ \mathrm{add}( x , [ a , b ) , [ s , t ) , e )
+///     \cr
+/// 5 & \quad \textbf{if}\ [ s , t ) \cap [ a , b ) = \emptyset
+///     \ \textbf{then}\ \textbf{return} \cr
+/// 6 & \quad \textbf{if}\ [ a , b ) \subseteq [ s , t )\ \textbf{then}
+///     \ L( x ) \gets L( x ) \cup \{ e \};\ \textbf{return} \cr
+/// 7 & \quad c \gets \lfloor ( a + b ) / 2 \rfloor;\ \mathrm{add}( 2 x ,
+///     [ a , c ) , [ s , t ) , e );\ \mathrm{add}( 2 x + 1 , [ c , b ) ,
+///     [ s , t ) , e ) \cr
+/// 8 & \textbf{procedure}\ \mathrm{visit}( x , [ a , b ) ) \cr
+/// 9 & \quad c_0 \gets \mathrm{checkpoint}() \cr
+/// 10 & \quad \textbf{foreach}\ [ u , v ] \in L( x )\ \textbf{do}
+///     \ \mathrm{merge}( u , v ) \cr
+/// 11 & \quad \textbf{if}\ b - a = 1\ \textbf{then}\ \text{answer the}
+///     \text{ question } a \text{ by } \mathrm{find}() \cr
+/// 12 & \quad \textbf{else}\ c \gets \lfloor ( a + b ) / 2 \rfloor;
+///     \ \mathrm{visit}( 2 x , [ a , c ) );\ \mathrm{visit}( 2 x + 1 ,
+///     [ c , b ) ) \cr
+/// 13 & \quad \mathrm{rollback}( c_0 )
+/// \end{array}}
+/// \f]
+/// \pre \f$ n \ge 0 \f$, the nodes in \f$ [ 0 , n ) \f$, each `DELETE` of
+///      an edge alive
 [[nodiscard]] inline std::vector< int > offlineConnectivity(
                           int n , const std::vector< ConnectivityOp > & ops );
 

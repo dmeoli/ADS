@@ -13,7 +13,9 @@
  them (see \ref theory_graph_notation), the representations and the costs of
  their operations (see \ref theory_graph_repr), and, for each family of
  algorithms, the property on which its correctness rests and the argument
- behind its bound (from \ref theory_graph_visits to \ref theory_graph_euler).
+ behind its bound (from \ref theory_graph_visits to \ref theory_graph_euler),
+ and, beyond the book, the solutions kept up to date through the changes of
+ the graph (see \ref theory_graph_dynamic).
  The pseudocode of each algorithm is instead on the page of its header, in the
  comment of its function, together with the section of the book, or the paper,
  that it follows.
@@ -404,6 +406,156 @@
  its end; the backtracking of chapter 16 may instead spend exponential time
  between two cycles.
 
+ \section theory_graph_dynamic Changes of the graph and reoptimization
+
+ Beyond the book, `Observable.h` wraps a graph of any model and turns each of
+ its changes into an <em>event</em>, i.e., the insertion or the deletion of a
+ node, the insertion or the deletion of an edge with its weight, or the change
+ of a weight from \f$ w_0 \f$ to \f$ w_1 \f$, which it sends to the
+ <em>observers</em> attached to it, each of them with a mask \f$ M_o \f$ of
+ the kinds of event that it wants (the pattern Observer of Gamma, Helm,
+ Johnson and Vlissides). With \f$ M = \bigcup_o M_o \f$ the union of the
+ masks, a change of kind \f$ k \notin M \f$ builds no event at all, and costs
+ what it costs on the graph plus one test; a change that is listened to costs
+ \f$ O( 1 ) \f$ per observer that wants it. The changes made inside a
+ <em>batch</em> are collected instead of being sent, and the closing of the
+ batch replaces those on each edge by their net effect: with \f$ s_0 \f$ the
+ state of the edge before its first event and \f$ s_1 \f$ the state after its
+ last one, both either \f$ \bot \f$ (absent) or a weight,
+ \f[
+   ( s_0 , s_1 ) \mapsto \left\{ \begin{array}{ll}
+     \emptyset & \text{if } s_0 = s_1 , \cr
+     \mathrm{EdgeInserted}( s_1 ) & \text{if } s_0 = \bot \ne s_1 , \cr
+     \mathrm{EdgeDeleted}( s_0 ) & \text{if } s_0 \ne \bot = s_1 , \cr
+     \mathrm{WeightChanged}( s_0 , s_1 ) & \text{otherwise} ,
+   \end{array} \right. \tag{7}
+ \f]
+ the weights compared by `==` when their type has it (never equal otherwise),
+ and a node both inserted and deleted within the batch vanishes with all its
+ edges. The batch is sent as one span, made of the nodes inserted, then of the
+ net events of the edges in the order of their first event, then of the nodes
+ deleted.
+
+ <em>Lemma 5 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
+ of a batch on a graph \f$ G \f$, and \f$ C \f$ the sequence that (7) gives.
+ The graph obtained by replaying \f$ C \f$ on \f$ G \f$ is the one obtained by
+ replaying \f$ B \f$, and \f$ |C| \le |B| \f$.
+
+ Indeed, the state of an edge after \f$ B \f$ depends on its last event only,
+ and (7) gives an event that leads from \f$ s_0 \f$ to \f$ s_1 \f$, or none if
+ the two are equal; the nodes inserted come first, so that every edge of
+ \f$ C \f$ finds its ends, and the nodes deleted come last, after the
+ deletions of their edges, which the wrapper sends before the deletion of a
+ node. Each event of \f$ C \f$ stands for at least one of \f$ B \f$; a hash
+ table on the edges builds \f$ C \f$ in \f$ O( |B| ) \f$ expected time
+ (`coalesce()`), and an observer whose mask lacks some kinds of \f$ C \f$ gets
+ a filtered copy, in \f$ O( |C| ) \f$.
+
+ An observer of `Reoptimization.h` keeps the solution of a problem on the
+ graph together with a <em>certificate</em> of its optimality, i.e., data that
+ prove the solution optimal by conditions that each touch a single edge. It
+ queues the events and works at the next query (the lazy flush): the queue
+ \f$ Q \f$ is first coalesced by (7) into \f$ P \f$, and if
+ \f$ |P| > \rho \max( m , 1 ) \f$, \f$ \rho \f$ the ratio of
+ `setRecomputeRatio()` (\f$ 1 / 4 \f$ by default), the solution is computed
+ from scratch, since a repair that touches a large part of the graph costs as
+ much and is slower by a constant. Otherwise each event of \f$ P \f$ is tested
+ against the certificate of the previous solution and found
+ <em>harmless</em>, <em>repairable</em> or <em>fatal</em>; the outcome of the
+ query (`outcome()`) is then from scratch (0) if one event is fatal, by a
+ repair (1) if one is repairable, and by the certificate (2) if all are
+ harmless, in which case nothing is computed.
+
+ <em>Lemma 6 (the batch test).</em> If each condition of the certificate
+ involves the weight of a single edge, and each event of \f$ P \f$ is tested
+ on the certificate of the solution before \f$ P \f$, then the events of
+ \f$ P \f$ found harmless leave the solution optimal all together.
+
+ Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 5, so that
+ each condition of the certificate is touched by at most one of them, and a
+ harmless event keeps true the conditions that it touches; the conditions
+ that no event touches stay as they were.
+
+ For the shortest paths from \f$ r \f$ (`ShortestPathsObserver`) the
+ certificate is the tree \f$ T \f$ with the distances \f$ d \f$, i.e., the
+ reduced costs \f$ \bar{w}( u , v ) = d[ u ] + w( u , v ) - d[ v ] \f$, zero
+ on the edges of \f$ T \f$ and nonnegative on all the edges by (4). A new
+ weight \f$ w' \f$ of an edge \f$ ( u , v ) \notin T \f$ with
+ \f$ d[ u ] + w' \ge d[ v ] \f$, or the deletion of an edge out of \f$ T \f$,
+ is harmless. A new weight with \f$ d[ u ] + w' < d[ v ] \f$, or a decrease
+ of an edge of \f$ T \f$, is repairable: \f$ d \f$ is still the cost of real
+ paths, an upper bound of the distances, and the prototype of section 11.2
+ started with \f$ S = \{ u \} \f$ for the tails \f$ u \f$ of all such edges,
+ instead of \f$ S = \{ r \} \f$, makes it exact (the algorithm of Ramalingam
+ and Reps for the decreases), in
+ \f$ O( ( n_\delta + m_\delta ) \log n_\delta ) \f$ with nonnegative weights,
+ \f$ n_\delta \f$ and \f$ m_\delta \f$ the nodes whose distance falls and
+ their edges. An increase or the deletion of an edge of \f$ T \f$ is fatal,
+ since the distances grow under it and the certificate gives no bound of them.
+
+ For the minimum spanning forest \f$ F \f$ (`SpanningForestObserver`) the
+ certificate is the pair of conditions of optimality of section 14.3, i.e.,
+ with \f$ F( u , v ) \f$ the path of \f$ F \f$ between \f$ u \f$ and
+ \f$ v \f$, the property of the cycles and the property of the cuts (6):
+ \f[
+   w( f ) \ge \max_{e \in F( u , v )} w( e ) \quad
+   \forall f = [ u , v ] \notin F , \qquad
+   w( e ) \le w( \rho( e ) ) \quad \forall e \in F , \tag{8}
+ \f]
+ \f$ \rho( e ) \f$ the <em>replacement</em> of \f$ e \f$, the lightest edge
+ out of \f$ F \f$ whose path holds \f$ e \f$ (the sensitivity analysis of
+ Tarjan). The maxima of the paths come from the jumps of the binary lifting,
+ i.e., the ancestor \f$ a_j( v ) \f$ of each node at \f$ 2^j \f$ steps and
+ the heaviest edge \f$ \mu_j( v ) \f$ on the way, so that a maximum takes
+ \f$ O( \log n ) \f$; the replacements come from a scan of the edges out of
+ \f$ F \f$ by increasing weight, each giving itself to the edges of its path
+ that have none yet, which a union-find on the forest skips, in
+ \f$ O( m \log m ) \f$ in all. Raising an edge out of \f$ F \f$, lowering one
+ of \f$ F \f$ and deleting one out of \f$ F \f$ are harmless; lowering or
+ inserting an edge out of \f$ F \f$ to \f$ w' \ge \max_{F( u , v )} \f$,
+ raising an edge \f$ e \f$ of \f$ F \f$ to \f$ w' \le w( \rho( e ) ) \f$ and
+ deleting an edge of \f$ F \f$ with no replacement (a bridge) are harmless
+ too. The other changes are repairable. When the edges lowered or inserted
+ out of \f$ F \f$ are the only changes that fail (8), the new forest is that
+ of Kruskal on \f$ F \f$ and those edges, in
+ \f$ O( ( n + k ) \log( n + k ) ) \f$ for \f$ k \f$ of them, since an edge
+ out of \f$ F \f$ that did not get lighter is still the heaviest of its cycle;
+ when a single edge of \f$ F \f$ is raised beyond its replacement, the two
+ are swapped, by (6) on the cut that its removal leaves. Raises and decreases
+ together, whose conditions interact, go from scratch. The data of the
+ certificate stay valid, or become conservative (they may reject a harmless
+ change, never accept a wrong one), as long as \f$ F \f$ keeps its edges: the
+ maxima only fall when edges of \f$ F \f$ get lighter, and the replacements
+ only rise when edges out of \f$ F \f$ get heavier or leave.
+
+ For the maximum flow from \f$ s \f$ to \f$ t \f$ (`MaxFlowObserver`) the
+ certificate is the side \f$ S \f$ of a minimum cut with
+ \f$ | f | = c( S , V \setminus S ) \f$, by (iii) of Theorem 4. A new
+ capacity \f$ c' \f$ of \f$ ( u , v ) \f$ with \f$ c' \ge f( u , v ) \f$ is
+ harmless unless \f$ ( u , v ) \f$ leaves \f$ S \f$ and grows: the flow stays
+ feasible, and the capacity of the cut neither falls below \f$ | f | \f$ (an
+ edge of the cut is saturated, so that lowering it below its flow is caught
+ by the first test) nor rises. If \f$ ( u , v ) \f$ crosses the cut and grows,
+ the flow is still feasible and the augmenting paths start from it, not from
+ zero; if \f$ c' < f( u , v ) \f$ the flow is no longer feasible, and it is
+ computed from scratch.
+
+ <table>
+ <caption>The tests of the observers on a change of the edge
+ \f$ ( u , v ) \f$, and the work of each outcome</caption>
+ <tr><th>Observer</th><th>Harmless</th><th>Repairable</th><th>Fatal</th></tr>
+ <tr><td><tt>ShortestPathsObserver</tt></td><td>off \f$ T \f$ with
+     \f$ d[ u ] + w' \ge d[ v ] \f$, \f$ O( 1 ) \f$</td><td>an improving
+     edge, the prototype from its tail</td><td>an edge of \f$ T \f$ raised
+     or deleted</td></tr>
+ <tr><td><tt>SpanningForestObserver</tt></td><td>(8) still true,
+     \f$ O( \log n ) \f$</td><td>Kruskal on \f$ F \f$ and the edges
+     lowered, or a swap</td><td>raises and decreases together</td></tr>
+ <tr><td><tt>MaxFlowObserver</tt></td><td>\f$ c' \ge f( u , v ) \f$ off
+     the cut, \f$ O( 1 ) \f$</td><td>an edge of the cut raised, the
+     augmenting paths from \f$ f \f$</td><td>\f$ c' < f( u , v ) \f$</td></tr>
+ </table>
+
  \section theory_graph_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 9, 11, 13,
@@ -437,6 +589,18 @@
  \see D. B. Johnson, Finding all the elementary circuits of a directed
       graph, SIAM Journal on Computing 4(1), 77-84, 1975,
       doi:10.1137/0204007
+ \see E. Gamma, R. Helm, R. Johnson, J. Vlissides, Design Patterns:
+      Elements of Reusable Object-Oriented Software, Addison-Wesley, 1994,
+      the pattern Observer
+ \see G. Ramalingam, T. Reps, An incremental algorithm for a
+      generalization of the shortest-path problem, Journal of Algorithms
+      21(2), 267-305, 1996, doi:10.1006/jagm.1996.0046
+ \see R. E. Tarjan, Sensitivity analysis of minimum spanning trees and
+      shortest path trees, Information Processing Letters 14(1), 30-33,
+      1982, doi:10.1016/0020-0190(82)90137-5
+ \see K. Hanauer, M. Henzinger, C. Schulz, Recent advances in fully
+      dynamic graph algorithms - a quick reference guide, ACM Journal of
+      Experimental Algorithmics 27, 1-45, 2022, doi:10.1145/3555806
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File graph.dox ----------------------------*/
