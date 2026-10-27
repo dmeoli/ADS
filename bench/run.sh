@@ -32,6 +32,7 @@
 #                           [POCKETFFT=<dir>] [DUCC0=<dir>]                   #
 #                           [TBB=1] [FASTFLOW=<dir>] [PARLAY=<dir>]           #
 #                           [PAM=<dir>] (with PARLAY=<dir>)                   #
+#                           [MULTIQUEUE=<dir>] [KLSM=<dir>] [GROWT=<dir>]     #
 #                           [GAPBS=<dir>] [EIGEN=<dir>] [OPENBLAS=<prefix>]   #
 ###############################################################################
 

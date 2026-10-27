@@ -339,7 +339,9 @@ $(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
 # its examples), SORTING=<dir> the parallel IPS4o and IPS2Ra, TLX=<dir>
 # the parallel merge of tlx, GAPBS=<dir> the GAP benchmark suite, EIGEN=
 # <dir> Eigen, OPENBLAS=<prefix> OpenBLAS, FFTW=<prefix> FFTW with its
-# threads, HASHING=<dir> libcuckoo
+# threads, HASHING=<dir> libcuckoo, MULTIQUEUE=<dir> the MultiQueue of
+# Williams et al., KLSM=<dir> the k-LSM (its source of the threads compiled
+# in), GROWT=<dir> the tables of growt
 TBBFLAGS  = $(if $(TBB),-DADS_HAS_TBB -DADS_WITH_TBB \
             $(if $(filter-out 1,$(TBB)),-I$(TBB)/include -L$(TBB)/lib \
             -Wl$(comma)-rpath$(comma)$(TBB)/lib) -ltbb)
@@ -357,7 +359,12 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
             -lopenblas) \
             $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
             -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3_threads -lfftw3) \
-            $(if $(HASHING),-isystem $(HASHING)/libcuckoo)
+            $(if $(HASHING),-isystem $(HASHING)/libcuckoo) \
+            $(if $(MULTIQUEUE),-isystem $(MULTIQUEUE)/include \
+            -isystem $(MULTIQUEUE)/include/multiqueue/third_party/pcg) \
+            $(if $(KLSM),-DADS_HAS_KLSM -isystem $(KLSM)/src \
+            $(KLSM)/src/util/thread_local_ptr.cpp) \
+            $(if $(GROWT),-isystem $(GROWT))
 
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)

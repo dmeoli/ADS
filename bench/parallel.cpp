@@ -44,7 +44,8 @@
  * - the concurrent hash tables, all driven by the same threads of the pool
  *   (ConcurrentFlatTable, as a map and as a set, and ConcurrentCuckooTable
  *   against tbb::concurrent_hash_map, tbb::concurrent_unordered_map, the
- *   cuckoohash_map of libcuckoo and the hashtable of ParlayLib), per
+ *   cuckoohash_map of libcuckoo, the hashtable of ParlayLib and the
+ *   uaGrow and usGrow tables of growt), per
  *   operation, for 10^6 and 4 10^6 keys (the nodes of 10^7 keys of the
  *   tables of oneTBB take more than a GB): the insertion of distinct keys
  *   into a table made for them and into an empty one that grows, the
@@ -53,9 +54,13 @@
  *   insertions; and the find-or-insert and the lookups of states of 32
  *   bytes, the CLOSED set of a search;
  * - the concurrent priority queues (the MultiQueue of ADS, relaxed and
- *   exact, against tbb::concurrent_priority_queue), per pair, for 10^6
- *   and 4 10^6 pairs: their push and then their pops, and the hold model
- *   of a search, each pop followed by the push of a greater key.
+ *   exact, against tbb::concurrent_priority_queue, the reference
+ *   MultiQueue of Williams, Sanders and Dementiev and the k-LSM of Wimmer
+ *   et al.), per pair, for 10^6 and 4 10^6 pairs: their push and then
+ *   their pops, and the hold model of a search, each pop followed by the
+ *   push of a greater key; and the mean and the maximum rank error of the
+ *   relaxed ones in the hold model of 10^6 pairs (-b rank), from the
+ *   times at which the operations return, replayed in their order.
  * Each structure runs only if ADS_BENCH_WHO names it, or with no such
  * variable, and ADS_BENCH_LIST lists them [see Bench.h], so that run.sh
  * runs each in a process of its own. Each cell is the median of r runs,
@@ -69,7 +74,7 @@
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
  *            [ -b sort|patterns|merge|spmv|gemm|fft|graphs|lcp|hash|
- *                 closed|pq ]
+ *                 closed|pq|rank ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -164,6 +169,30 @@
 #if __has_include( <libcuckoo/cuckoohash_map.hh> )
  #include <libcuckoo/cuckoohash_map.hh>
  #define ADS_HAS_LIBCUCKOO 1
+#endif
+
+#if __has_include( <multiqueue/multiqueue.hpp> )
+ #include <multiqueue/modes/random.hpp>
+ #include <multiqueue/modes/stick_random.hpp>
+ #include <multiqueue/multiqueue.hpp>
+ #define ADS_HAS_MULTIQUEUE 1
+#endif
+
+// the k-LSM needs its source of the threads compiled in (KLSM=<dir> of the
+// makefile), which defines ADS_HAS_KLSM
+#if defined( ADS_HAS_KLSM ) && __has_include( <k_lsm/k_lsm.h> )
+ #include <k_lsm/k_lsm.h>
+ #undef V                                 // a macro of its counters
+#else
+ #undef ADS_HAS_KLSM
+#endif
+
+#if __has_include( <data-structures/table_config.hpp> )
+ #include <allocator/alignedallocator.hpp>
+ #include <data-structures/hash_table_mods.hpp>
+ #include <utils/hash/murmur2_hash.hpp>
+ #include <data-structures/table_config.hpp>
+ #define ADS_HAS_GROWT 1
 #endif
 
 #if __has_include( <Eigen/Sparse> ) && defined( _OPENMP )
@@ -1397,6 +1426,55 @@ struct ParlaySet {
  };
 #endif
 
+#if defined( ADS_HAS_GROWT )
+/// the tables of growt made so far, so that a handle of a thread is never
+/// taken for one of another table
+inline std::atomic< std::uint64_t > growtTables{ 0 };
+
+/// the handle of growt of this thread for the table t, the g-th made,
+/// made at its first use; never destroyed, since the benchmark destroys
+/// the table, which the handle refers to, before the threads end
+template< class T >
+typename T::handle_type & growtHandle( T * t , std::uint64_t g )
+{
+ thread_local std::uint64_t mine = 0;
+ thread_local typename T::handle_type * h = nullptr;
+ if( mine != g ) {
+  h = new typename T::handle_type( *t );
+  mine = g;
+  }
+ return( *h );
+ }
+
+/// a table of growt (Maier, Sanders and Dementiev) with the modifiers
+/// Mods: growable alone is uaGrow, which marks the cells it migrates, and
+/// with sync usGrow, whose growth excludes the updates
+template< hmod ... Mods >
+struct Growt {
+ static constexpr bool grows = true;
+ using M = typename growt::table_config< HK , HK ,
+                                         utils_tm::hash_tm::murmur2_hash ,
+                                         growt::AlignedAllocator<> ,
+                                         Mods ... >::table_type;
+ M * t = nullptr;
+ std::uint64_t g = 0;
+ void make( std::size_t c ) {
+  t = new M( std::max< std::size_t >( c , 64 ) );
+  g = growtTables.fetch_add( 1 ) + 1; }
+ void drop( void ) { delete t; t = nullptr; }
+ typename M::handle_type & h( void ) const { return( growtHandle( t , g ) ); }
+ bool ins( HK k , HK v ) const { return( h().insert( k , v ).second ); }
+ bool has( HK k ) const {
+  auto & x = h();
+  return( x.find( k ) != x.end() ); }
+ // the iterator of a successful insertion holds the place as it was
+ // before it, the value of the pair inserted is v
+ HK foi( HK k , HK v ) const {
+  auto r = h().insert( k , v );
+  return( r.second ? v : HK( ( *r.first ).second ) ); }
+ };
+#endif
+
 /// the works of the hash tables on the table A, for n keys: the insertion
 /// of n distinct keys into a table made for them and into one made empty
 /// (if A grows), the lookups of the n keys and of n absent ones, the
@@ -1509,6 +1587,13 @@ void hashing( const std::vector< std::size_t > & sizes , int r ,
   hashTable< ParlaySet >( "parlay::hashtable (keys only)" , n , r , pool ,
                           keys , absent , twice , mixed );
 #endif
+#if defined( ADS_HAS_GROWT )
+  hashTable< Growt< hmod::growable > >( "growt uaGrow" , n , r , pool ,
+                                        keys , absent , twice , mixed );
+  hashTable< Growt< hmod::growable , hmod::sync > >( "growt usGrow" , n , r ,
+                                                     pool , keys , absent ,
+                                                     twice , mixed );
+#endif
   }
  }
 
@@ -1606,6 +1691,28 @@ struct ClosedLibCuckoo {
  };
 #endif
 
+#if defined( ADS_HAS_GROWT )
+/// the table of growt of states, of arbitrary keys in nodes on the heap
+struct ClosedGrowt {
+ using M = typename growt::table_config< State , std::uint64_t , StateHash ,
+                                         growt::AlignedAllocator<> ,
+                                         hmod::growable >::table_type;
+ M * t = nullptr;
+ std::uint64_t g = 0;
+ void make( std::size_t c ) {
+  t = new M( std::max< std::size_t >( c , 64 ) );
+  g = growtTables.fetch_add( 1 ) + 1; }
+ void drop( void ) { delete t; t = nullptr; }
+ typename M::handle_type & h( void ) const { return( growtHandle( t , g ) ); }
+ bool has( const State & k ) const {
+  auto & x = h();
+  return( x.find( k ) != x.end() ); }
+ std::uint64_t foi( const State & k , std::uint64_t v ) const {
+  auto r = h().insert( k , v );
+  return( r.second ? v : std::uint64_t( ( *r.first ).second ) ); }
+ };
+#endif
+
 /// the CLOSED set of a search, states of 32 bytes: ConcurrentFlatTable
 /// against ConcurrentCuckooTable (which reads them under its locks) and
 /// the tables of oneTBB and libcuckoo
@@ -1638,6 +1745,9 @@ void closed( const std::vector< std::size_t > & sizes , int r ,
 #if defined( ADS_HAS_LIBCUCKOO )
   closedTable< ClosedLibCuckoo >( "libcuckoo::cuckoohash_map" , n , r ,
                                   pool , S , twice );
+#endif
+#if defined( ADS_HAS_GROWT )
+  closedTable< ClosedGrowt >( "growt uaGrow" , n , r , pool , S , twice );
 #endif
   }
  }
@@ -1693,6 +1803,152 @@ struct TbbPQ {
   return( true ); }
  };
 #endif
+
+#if defined( ADS_HAS_MULTIQUEUE )
+/// the reference MultiQueue of Williams, Sanders and Dementiev, 2 queues
+/// per thread, the better of two random queues, with the stickiness S of
+/// its mode StickRandom (S = 0: its mode Random, no stickiness)
+template< int S >
+struct RefMQ {
+ struct Policy {
+  using mode_type = std::conditional_t< S == 0 ,
+                                        multiqueue::mode::Random<> ,
+                                        multiqueue::mode::StickRandom<> >;
+  static constexpr int pop_tries = 1;
+  static constexpr bool scan = true;
+  };
+ // the least first under std::greater, as in std::priority_queue
+ using M = multiqueue::KeyValueMultiQueue< PQK , std::uint64_t ,
+                                           std::greater<> , Policy >;
+ using Hd = typename M::handle_type;
+ M * m = nullptr;
+ void make( std::size_t p ) {
+  typename M::config_type c{};
+  if constexpr( S > 0 ) c.stickiness = S;
+  m = new M( 2 * p , c ); }
+ void drop( void ) { delete m; m = nullptr; }
+ Hd handle( void ) const { return( m->get_handle() ); }
+ static void push( Hd & h , PQK k , std::uint64_t x ) { h.push( { k , x } );
+  }
+ static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
+  const auto e = h.try_pop();
+  if( ! e ) return( false );
+  k = e->first;
+  x = e->second;
+  return( true ); }
+ };
+#endif
+
+#if defined( ADS_HAS_KLSM )
+/// the lock-free k-LSM of Wimmer, Gruber, Traff and Tsigas, relaxed by
+/// R items per thread
+template< int R >
+struct KLsm {
+ using M = kpq::k_lsm< PQK , std::uint64_t , R >;
+ struct Hd { M * m; };
+ M * m = nullptr;
+ void make( std::size_t ) { m = new M(); }
+ void drop( void ) { delete m; m = nullptr; }
+ Hd handle( void ) const { return( Hd{ m } ); }
+ static void push( Hd & h , PQK k , std::uint64_t x ) { h.m->insert( k , x );
+  }
+ // a pop of the k-LSM may fail with items in the local parts of other
+ // threads, which it then spies: 64 tries before an empty answer
+ static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
+  for( int i = 0 ; i < 64 ; ++i )
+   if( h.m->delete_min( k , x ) ) return( true );
+  return( false ); }
+ };
+#endif
+
+/// the rank errors of the relaxed queue A on the threads of the pool, in
+/// the hold model of priorityQueue() below from n pairs: each thread
+/// writes the key and the time of each of its pops and pushes when they
+/// return, and the events, merged by their times, are replayed on a tree of
+/// Fenwick of the keys present, which gives the number of the keys less
+/// than each one popped (the method of the experiments of Williams,
+/// Sanders and Dementiev); the mean and the maximum over the pops
+template< class A >
+void rankErrors( const std::string & who , std::size_t n ,
+                 ADS::ThreadPool & pool , const std::vector< PQK > & K )
+{
+ if( ADS::bench::skip( who ) )
+  return;
+ struct Event {
+  std::int64_t t;   // the time of the return
+  PQK key;
+  bool pop;
+  };
+ A a;
+ a.make( std::size_t( threads ) );
+ const PQK * k = K.data();
+ ADS::parallelForBlocks( pool , 0 , n , [ a , k ]( std::size_t lo ,
+                                                   std::size_t hi ) {
+  auto h = a.handle();
+  for( std::size_t i = lo ; i < hi ; ++i ) A::push( h , k[ i ] , i ); } );
+ const std::size_t blocks = ( n + ADS::kGrain - 1 ) / ADS::kGrain;
+ std::vector< std::vector< Event > > log( blocks );
+ auto now = [] {
+  return( std::chrono::steady_clock::now().time_since_epoch().count() ); };
+ ADS::parallelForBlocks( pool , 0 , n , [ a , k , &log , now ](
+                                         std::size_t lo , std::size_t hi ) {
+  auto h = a.handle();
+  auto & L = log[ lo / ADS::kGrain ];
+  L.reserve( 2 * ( hi - lo ) );
+  PQK key;
+  std::uint64_t x;
+  for( std::size_t i = lo ; i < hi ; ++i )
+   if( A::pop( h , key , x ) ) {
+    L.push_back( { now() , key , true } );
+    const PQK y = key + 1 + ( k[ i ] & 1023 );
+    A::push( h , y , x );
+    L.push_back( { now() , y , false } );
+    } } );
+ a.drop();
+ std::vector< Event > E;
+ for( auto & L : log ) E.insert( E.end() , L.begin() , L.end() );
+ std::stable_sort( E.begin() , E.end() , []( const Event & u ,
+                                             const Event & v ) {
+  return( u.t < v.t ); } );
+ std::vector< PQK > U( K.begin() , K.end() );   // the keys, sorted
+ for( const Event & e : E ) if( ! e.pop ) U.push_back( e.key );
+ std::sort( U.begin() , U.end() );
+ U.erase( std::unique( U.begin() , U.end() ) , U.end() );
+ const std::size_t m = U.size();
+ std::vector< std::int64_t > F( m + 1 , 0 ) , C( m , 0 ) , debt( m , 0 );
+ auto at = [ & ]( PQK x ) {
+  return( std::size_t( std::lower_bound( U.begin() , U.end() , x ) -
+                       U.begin() ) ); };
+ auto add = [ & ]( std::size_t i , std::int64_t d ) {
+  C[ i ] += d;
+  for( ++i ; i <= m ; i += i & ( 0 - i ) ) F[ i ] += d; };
+ auto below = [ & ]( std::size_t i ) {
+  std::int64_t s = 0;
+  for( ; i > 0 ; i -= i & ( 0 - i ) ) s += F[ i ];
+  return( s ); };
+ for( PQK x : K ) add( at( x ) , 1 );
+ double sum = 0;
+ std::int64_t worst = 0;
+ std::size_t pops = 0;
+ for( const Event & e : E ) {
+  const std::size_t i = at( e.key );
+  if( ! e.pop ) {
+   if( debt[ i ] > 0 ) --debt[ i ];       // popped before its push returned
+   else add( i , 1 );
+   continue;
+   }
+  const std::int64_t r = below( i );
+  sum += double( r );
+  worst = std::max( worst , r );
+  ++pops;
+  if( C[ i ] > 0 ) add( i , -1 );
+  else ++debt[ i ];
+  }
+ ADS::bench::print( bench( "pq rank error mean" ).c_str() , "uint64" , n ,
+                    who , pops ? sum / double( pops ) : -1 );
+ ADS::bench::print( bench( "pq rank error max" ).c_str() , "uint64" , n ,
+                    who , double( worst ) );
+ }
 
 /// the works of the priority queue A on the threads of the pool, n pairs:
 /// the push of n pairs of random keys and then their pops, until each
@@ -1779,6 +2035,44 @@ void priority( const std::vector< std::size_t > & sizes , int r ,
   priorityQueue< TbbPQ >( "tbb::concurrent_priority_queue" , n , r , pool ,
                           K );
 #endif
+#if defined( ADS_HAS_MULTIQUEUE )
+  priorityQueue< RefMQ< 16 > >( "multiqueue (Williams et al.)" , n , r ,
+                                pool , K );
+  priorityQueue< RefMQ< 0 > >( "multiqueue (Williams et al.) s=1" , n , r ,
+                               pool , K );
+#endif
+#if defined( ADS_HAS_KLSM )
+  priorityQueue< KLsm< 256 > >( "k-LSM k=256" , n , r , pool , K );
+  priorityQueue< KLsm< 4096 > >( "k-LSM k=4096" , n , r , pool , K );
+#endif
+  }
+ }
+
+/// the rank errors of the relaxed queues in the hold model, per pop
+void ranks( const std::vector< std::size_t > & sizes , unsigned seed ,
+            Executors & X )
+{
+ if( ! runs( "pool" ) )
+  return;
+ for( std::size_t n : sizes ) {
+  std::mt19937_64 g( seed );
+  std::vector< PQK > K( n );
+  for( auto & x : K ) x = g() >> 24;
+  auto & pool = X.pool();
+  rankErrors< AdsMQ< 2 , 16 > >( "ADS::MultiQueue" , n , pool , K );
+  rankErrors< AdsMQ< 2 , 16 > >( "ADS::MultiQueue A/A" , n , pool , K );
+  rankErrors< AdsMQ< 2 , 1 > >( "ADS::MultiQueue s=1" , n , pool , K );
+  rankErrors< AdsMQ< 4 , 64 > >( "ADS::MultiQueue c=4 s=64" , n , pool , K );
+  rankErrors< AdsMQ< 0 , 1 > >( "ADS::MultiQueue exact" , n , pool , K );
+#if defined( ADS_HAS_MULTIQUEUE )
+  rankErrors< RefMQ< 16 > >( "multiqueue (Williams et al.)" , n , pool , K );
+  rankErrors< RefMQ< 0 > >( "multiqueue (Williams et al.) s=1" , n , pool ,
+                            K );
+#endif
+#if defined( ADS_HAS_KLSM )
+  rankErrors< KLsm< 256 > >( "k-LSM k=256" , n , pool , K );
+  rankErrors< KLsm< 4096 > >( "k-LSM k=4096" , n , pool , K );
+#endif
   }
  }
 
@@ -1842,6 +2136,8 @@ int main( int argc , char ** argv )
   closed( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "pq" ) )
   priority( { 1000000 , 4000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "rank" ) )
+  ranks( { 1000000 } , o.seed , X );
  }
 
 /*--------------------------------------------------------------------------*/

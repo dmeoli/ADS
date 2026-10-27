@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its optimal partition (LAVECTOR=<dir>), and the benchmark stringdicts
   marisa-trie (MARISA=<prefix>), the tx-trie (TX=<prefix>) and the
   path-decomposed trie of Grossi and Ottaviano (PDT=<dir>)
+- bench/parallel.cpp: the reference MultiQueue of Williams, Sanders and
+  Dementiev (MULTIQUEUE=<dir>) and the k-LSM of Wimmer et al.
+  (KLSM=<dir>) among the priority queues, the tables uaGrow and usGrow of
+  growt (GROWT=<dir>) among the hash tables and the CLOSED sets, each
+  compiled in only when found; the mean and the maximum rank error of the
+  relaxed queues in the hold model, from the times at which their
+  operations return, replayed in their order (-b rank)
 - MultiQueue (concurrent/MultiQueue.h), the relaxed priority queue of
   Rihani, Sanders and Dementiev for the OPEN of a parallel best-first
   search: n queues under a lock each, a push into a random queue, a pop

@@ -618,8 +618,9 @@ and 8 threads. The competitors are the parallel versions of oneTBB, of
 of OpenMP, of ParlayLib, of IPS4o and IPS2Ra, of FastFlow (its
 `ParallelFor`, `ParallelForReduce` and `ff_DC`), of tlx, of Eigen and
 OpenBLAS, of FFTW and of the GAP benchmark suite; for the hash tables, the
-concurrent tables of oneTBB, libcuckoo and ParlayLib, and for the priority
-queues the concurrent one of oneTBB. Each structure runs
+concurrent tables of oneTBB, libcuckoo, ParlayLib and growt, and for the
+priority queues the concurrent one of oneTBB, the reference MultiQueue of
+Williams, Sanders and Dementiev and the k-LSM. Each structure runs
 in a process of its own, since the threads that a runtime keeps spinning
 between its calls would slow down the next structure. The benchmark was run
 twice on 8 cores of the Xeon Gold 5120 of the table above, with 5 runs per
