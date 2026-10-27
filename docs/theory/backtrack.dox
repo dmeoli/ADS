@@ -1,0 +1,287 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File backtrack.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_backtrack */
+/** \defgroup theory_backtrack Theory of backtracking
+ \ingroup area_backtrack
+
+ \details The headers of `include/ADS/backtrack` realize the backtrack of
+ chapter 16 of the book, i.e., the enumeration of the feasible solutions of a
+ problem by a visit in depth of the tree of its partial choices, with its
+ exercises (the subsets, the permutations, the \f$ n \f$ queens, the tour of
+ the knight, the Sudoku and the anagrams), and beyond the book two families
+ of search that rest on the same scheme: the exact cover of Knuth, on dancing
+ links and on sparse sets, and the satisfiability of a formula in
+ conjunctive normal form, by DPLL and by the learning of clauses. This page
+ collects what the headers take for granted: the definitions and the
+ notation (see \ref theory_backtrack_notation), the scheme of the
+ enumeration with the arguments of its correctness and of its cost (see
+ \ref theory_backtrack_scheme), and the properties on which the puzzles, the
+ exact cover and the satisfiability rest (from \ref theory_backtrack_puzzles
+ to \ref theory_backtrack_sat). The pseudocode of each algorithm is instead
+ on the page of its header, in the comment of its function, together with
+ the section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_backtrack_notation Definitions and notation
+
+ A problem of enumeration asks for all the <em>feasible solutions</em> of an
+ instance, or for one of them, or for their number; a solution is a vector
+ \f$ S[ 0 .. n - 1 ] \f$ whose item \f$ S[ i ] \f$ is taken from a set of
+ <em>choices</em> \f$ C( S , i ) \f$ that depends on the items before it
+ (section 16.2 of the book). The vectors \f$ S[ 0 .. i - 1 ] \f$ are the
+ <em>partial solutions</em>, and they form a tree, the <em>tree of the
+ choices</em>, whose root is the empty vector and whose node
+ \f$ S[ 0 .. i - 1 ] \f$ has a child \f$ S[ 0 .. i ] \f$ for each choice of
+ \f$ C( S , i ) \f$; the feasible solutions are some of its nodes, usually
+ leaves. To <em>prune</em> is to leave a subtree unvisited because a test
+ on its root proves that it holds no feasible solution.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ S[ 0 .. n - 1 ] \f$, \f$ i \f$</td>
+     <td>the vector of a solution and the place being chosen, i.e., the
+         depth in the tree of the choices</td></tr>
+ <tr><td>\f$ C( S , i ) \f$</td>
+     <td>the choices allowed in the place \f$ i \f$ by
+         \f$ S[ 0 .. i - 1 ] \f$</td></tr>
+ <tr><td>\f$ f( S ) \f$, <tt>visit( S )</tt></td>
+     <td>the processing of a solution, which returns true to stop the
+         enumeration</td></tr>
+ <tr><td>\f$ Q[ r ] \f$</td>
+     <td>the column of the queen of the row \f$ r \f$ of the board</td></tr>
+ <tr><td>\f$ \mathit{len}( i ) \f$, \f$ \mathrm{size}( x ) \f$</td>
+     <td>the options of the item of an exact cover still compatible with
+         those chosen</td></tr>
+ <tr><td>\f$ \ell \f$, \f$ \lnot \ell \f$, \f$ \pm ( v + 1 ) \f$</td>
+     <td>a literal, its negation, and the code of the literal of the
+         variable \f$ v \f$ in a clause of the library, positive or
+         negative</td></tr>
+ </table>
+
+ \section theory_backtrack_scheme The scheme of the enumeration
+
+ The backtrack of section 16.2 is the recursive visit of the tree of the
+ choices: at the node \f$ S[ 0 .. i - 1 ] \f$ it tries each choice
+ \f$ c \in C( S , i ) \f$ in turn, sets \f$ S[ i ] \gets c \f$, processes
+ \f$ S \f$ if it is a feasible solution, and goes on from
+ \f$ S[ 0 .. i ] \f$ unless a test prunes it; when the choices of the place
+ \f$ i \f$ are over, it goes back to the place \f$ i - 1 \f$, which is what
+ gives the method its name. The only state is \f$ S \f$ itself, updated in
+ place and restored on the way back, so that the space is that of the
+ deepest path, \f$ O( n ) \f$ items, while the tree may have exponentially
+ many nodes.
+
+ <em>Lemma 1 (the enumeration).</em> If every feasible solution is a node of
+ the tree of the choices and each pruned subtree holds none, the backtrack
+ processes each feasible solution exactly once, in the lexicographic order
+ of the choices when \f$ C( S , i ) \f$ is scanned in increasing order.
+
+ Indeed, two nodes of the tree are distinct vectors, a visit in depth meets
+ each node of the subtrees it enters once, and the subtrees it skips hold no
+ solution by hypothesis. The order follows since the visit in depth of an
+ ordered tree meets its nodes in the lexicographic order of their paths
+ from the root. The cost is the number of nodes visited times the cost of
+ a node, i.e., of building \f$ C( S , i ) \f$ and of the tests: for the
+ \f$ k \f$-subsets of `subsets()` in `Enumeration.h`, where a place is in or
+ out, the tree has fewer than \f$ 2^{n+1} \f$ nodes, and the pruning of the
+ nodes with \f$ k \f$ items in, or with too few items left to reach
+ \f$ k \f$, leaves only the nodes on a path to one of the
+ \f$ \binom{n}{k} \f$ solutions, i.e., at most
+ \f$ ( n + 1 ) \binom{n}{k} \f$; for
+ the permutations of `permutations()` the nodes of the depth \f$ i \f$ are
+ \f$ n! / ( n - i )! \f$, and in all
+ \f[
+   \sum_{i=0}^{n} \frac{n!}{( n - i )!} = n! \sum_{j=0}^{n} \frac{1}{j!}
+   < e \, n! , \tag{1}
+ \f]
+ so that the work per permutation is \f$ O( n ) \f$, the cost of the scan of
+ the items not used at each node. The derangements are the permutations
+ pruned at the place \f$ i \f$ by the item \f$ i \f$, and the subsets of
+ `subsetSum()`, whose items are positive, are pruned as soon as their sum
+ exceeds \f$ k \f$, since no item added later can lower it.
+
+ The recursion is a convenience, not a need: the iterative backtrack of
+ `nQueensIterative()` keeps the place \f$ k \f$ and the choice
+ \f$ V[ k ] \f$ of each place, advances \f$ V[ k ] \f$ to its next feasible
+ value, and moves \f$ k \f$ forward when one is found and backward when the
+ values are over, i.e., the same visit with the stack of the calls replaced
+ by the vector \f$ V \f$ itself.
+
+ \section theory_backtrack_puzzles Queens, tours of the knight and Sudoku
+
+ The \f$ n \f$ queens are placed one per row, since two queens on a row
+ attack each other; a solution is then the vector \f$ Q \f$ of their
+ columns, a permutation, and the tree has at most \f$ e \, n! \f$ nodes by
+ (1), against the \f$ \binom{n^2}{n} \f$ placements of \f$ n \f$ queens on
+ the board. Two queens \f$ ( r , Q[ r ] ) \f$ and \f$ ( r' , Q[ r' ] ) \f$
+ share a diagonal if and only if \f$ | Q[ r ] - Q[ r' ] | = | r - r' | \f$,
+ which is the test of `admissible()` of `NQueens.h`, \f$ O( n^2 ) \f$ on a
+ whole placement. `nQueens()` instead keeps three sets of the columns
+ attacked on the current row, by the columns taken and by the two families
+ of diagonals; moving to the next row shifts the sets of the diagonals by one
+ column, one to the left and one to the right, and the free columns of a row
+ are the complement of their union. As masks of \f$ n \le 32 \f$ bits these
+ are a few operations on a word, and the next free column is its lowest 1
+ bit, so that each node of the tree costs \f$ O( 1 ) \f$.
+
+ The tour of the knight of `KnightTour.h` is a Hamiltonian path in the graph
+ of the moves of the knight, whose nodes are the \f$ n^2 \f$ squares and
+ have degree at most 8; the backtrack extends the path by a move to a square
+ not visited yet, and goes back from the squares with no such move. In the
+ order of the book the tree may be explored for a very long time before a
+ tour is found. The rule of Warnsdorff tries first the moves to the squares
+ with the fewest onward moves, i.e., it visits first the squares that would
+ otherwise become dead ends; it is a heuristic, with no bound on the
+ backtracks it saves, but on the boards of practical size it finds a tour
+ almost without going back, i.e., in time about linear in \f$ n^2 \f$.
+
+ The Sudoku of `Sudoku.h` fills the \f$ n^4 \f$ squares of a grid of side
+ \f$ N = n^2 \f$ in the order of the rows, each with a number that is not on
+ its row, its column or its block (`check()`, \f$ O( N ) \f$), and the
+ given squares are skipped. The tree has depth \f$ n^4 \f$ and at most
+ \f$ N \f$ children per node; the cost is therefore a constant for the
+ classic \f$ n = 3 \f$, a large one, and grows superpolynomially with
+ \f$ n \f$, as the problem is NP-complete on grids of side \f$ n^2 \f$. The
+ anagrams of `Anagrams.h` are the permutations of the multiset of the
+ characters that split into words: choosing each distinct character once
+ per place gives each permutation of the multiset once, and a test of the
+ prefixes of the words prunes a branch as soon as its current word cannot be
+ completed.
+
+ \section theory_backtrack_cover Exact cover
+
+ Given a set of <em>items</em>, some primary and some secondary, and a
+ family of <em>options</em>, each a set of items, an <em>exact cover</em> is
+ a set of options that contains each primary item exactly once and each
+ secondary item at most once. Many puzzles are exact covers: the queens with
+ the rows and the columns as primary items and the diagonals as secondary
+ ones, the Sudoku with the 324 primary items (a square, a row with a
+ number, a column with a number, a block with a number) and the options of
+ the \f$ 9^3 \f$ numbers in the squares. The search (Knuth's Algorithm X)
+ is a backtrack whose place is a primary item not covered yet and whose
+ choices are the options that contain it and none of the items already
+ covered: choosing an option covers its items, and removes from the
+ problem every option that meets one of them.
+
+ <em>Lemma 2 (the dancing links).</em> On a circular doubly linked list
+ with the links \f$ L \f$ and \f$ R \f$, the removal of a node \f$ x \f$ by
+ \f[
+   R[ L[ x ] ] \gets R[ x ] , \quad L[ R[ x ] ] \gets L[ x ] \tag{2}
+ \f]
+ leaves \f$ L[ x ] \f$ and \f$ R[ x ] \f$ as they were; hence the
+ assignments \f$ R[ L[ x ] ] \gets x \f$ and \f$ L[ R[ x ] ] \gets x \f$ put it
+ back, provided that the removals done after that of \f$ x \f$ have been
+ undone, in the reverse order, before.
+
+ Indeed, after the later removals are undone the neighbors of \f$ x \f$
+ are again \f$ L[ x ] \f$ and \f$ R[ x ] \f$, which (2) did not touch. In
+ `ExactCover` of `DancingLinks.h` the items are a list and the nodes of each
+ item, one per option that contains it, a vertical list; covering an item
+ takes it off its list and the other nodes of each of its options off their
+ vertical lists, and uncovering undoes the same steps in the reverse order,
+ so that the links after the search are those before it (an audit of the
+ class). Each removal and each reinsertion costs \f$ O( 1 ) \f$, and the
+ work of a node of the tree is the number of links updated, the measure of
+ `updates()`. The search branches on the primary item with the fewest
+ options left (the MRV heuristic): an item with none ends the branch at
+ once, and an item with one forces its option without branching, which
+ keeps the tree small.
+
+ `FastExactCover` of `FastExactCover.h` solves the exact cover with colors
+ (Algorithm C), where an option may give a color to a secondary item and
+ several options may share the item if they give it the same color. The
+ options of each item are a <em>sparse set</em> of Briggs and Torczon, a
+ segment of an array whose first \f$ \mathrm{size}( x ) \f$ entries are the
+ active options of \f$ x \f$, each node knowing its place: an option leaves
+ the set by a swap with the last active entry and a decrement of the size,
+ in \f$ O( 1 ) \f$. The removed entries stay in the segment, after the
+ active ones; hence restoring a level needs no inverse swap, only the sizes
+ of that level written back, and the sets are again those of the level, in
+ another order. This costs \f$ O( a ) \f$ per level, \f$ a \f$ the active
+ items, against an update per link of the dancing links, and the memory is
+ read by consecutive indices. In both classes the worst case stays
+ exponential, the exact cover being NP-complete.
+
+ \section theory_backtrack_sat Satisfiability
+
+ A formula in conjunctive normal form is a set of <em>clauses</em>, each a
+ disjunction of <em>literals</em>, i.e., of variables and of negated
+ variables; it is satisfiable if some assignment of truth values makes every
+ clause true (a model). A clause of a partial assignment is
+ <em>satisfied</em> if one of its literals is true, <em>conflicting</em> if
+ all are false, and <em>unit</em> if all are false but one, which is free
+ and then must be true in every model that extends the assignment.
+
+ <em>Lemma 3 (the unit propagation).</em> Making true the free literal of a
+ unit clause, until no clause is unit or one is conflicting, loses no model
+ of the formula that extends the assignment; a conflicting clause proves
+ that there is none.
+
+ The procedure of Davis, Putnam, Logemann and Loveland (`dpll()` of
+ `SatSolvers.h`) alternates this propagation with a branch on a free
+ literal, both values tried, and goes back on a conflict; by Lemma 1 and
+ Lemma 3 it is complete, and its tree has at most \f$ 2^n \f$ leaves for
+ \f$ n \f$ variables. Branching on a literal of a shortest open clause makes
+ the propagation of the branch likely to produce more units.
+
+ The learning of clauses of `Cdcl` keeps the literals assigned in a
+ <em>trail</em>, each with its <em>level</em> (the number of decisions before
+ it) and its <em>reason</em> (the clause that forced it, none for a
+ decision). A conflict is analyzed by resolution: the conflicting clause is
+ resolved with the reasons of its literals of the current level, from the
+ last assigned backwards, until a single literal of that level is left, the
+ <em>first unique implication point</em>. The clause \f$ C \f$ so obtained
+ is implied by the formula, since resolution preserves the models; it is
+ false under the trail, and after the levels above the second largest level
+ of its literals are cancelled it is unit, so that it forces the negation of
+ the implication point there (the jump back, possibly over several levels).
+ The same assignment that led to the conflict can then never occur again,
+ and the search is complete, since the number of clauses that can be
+ learned is finite. Each clause <em>watches</em> two of its literals, with
+ the invariant that a clause whose watched literals are both false is
+ conflicting or satisfied; a literal that becomes false thus visits only
+ the clauses that watch it, and the cancelling of levels needs no update
+ of the watches. The decisions take the free variable of largest activity,
+ increased at each conflict for the variables met in the analysis and
+ decayed by raising the increment (VSIDS), with the value it had last (the
+ phase saving); the restarts cancel all the levels after a number of
+ conflicts that follows the sequence of Luby, Sinclair and Zuckerman,
+ \f$ 1 , 1 , 2 , 1 , 1 , 2 , 4 , \ldots \f$ times 100, which keeps the learned
+ clauses and the activities and, for a search whose length is unknown, is
+ within a logarithmic factor of the best strategy of restarts.
+
+ \section theory_backtrack_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 16,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf
+ \see J. Bell, B. Stevens, A survey of known results and research areas
+      for n-queens, Discrete Mathematics 309(1), 1-31, 2009,
+      doi:10.1016/j.disc.2007.12.043
+ \see H. C. von Warnsdorf, Des Roesselsprunges einfachste und
+      allgemeinste Loesung, Schmalkalden, 1823
+ \see D. E. Knuth, The Art of Computer Programming, vol. 4B,
+      Addison-Wesley, 2022, sections 7.2.2.1 and 7.2.2.2
+ \see D. E. Knuth, Dancing links, in Millennial Perspectives in Computer
+      Science, Palgrave, 187-214, 2000, arXiv:cs/0011047
+ \see P. Briggs, L. Torczon, An efficient representation for sparse sets,
+      ACM Letters on Programming Languages and Systems 2(1-4), 59-69,
+      1993, doi:10.1145/176454.176484
+ \see M. Davis, G. Logemann, D. Loveland, A machine program for
+      theorem-proving, Communications of the ACM 5(7), 394-397, 1962,
+      doi:10.1145/368273.368557
+ \see J. P. Marques-Silva, K. A. Sakallah, GRASP: a search algorithm for
+      propositional satisfiability, IEEE Transactions on Computers 48(5),
+      506-521, 1999, doi:10.1109/12.769433
+ \see M. W. Moskewicz, C. F. Madigan, Y. Zhao, L. Zhang, S. Malik,
+      Chaff: engineering an efficient SAT solver, DAC 2001, 530-535,
+      doi:10.1145/378239.379017
+ \see M. Luby, A. Sinclair, D. Zuckerman, Optimal speedup of Las Vegas
+      algorithms, Information Processing Letters 47(4), 173-180, 1993,
+      doi:10.1016/0020-0190(93)90029-9
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File backtrack.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
