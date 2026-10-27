@@ -2,20 +2,23 @@
 /*-------------------------- File PriorityQueue.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The PRIORITYQUEUE of section 10.1, with decreasing priority: insert( x ,
- * p ) gives a handle of x, min() and deleteMin() the item of smallest
- * priority, decrease( y , p ) lowers to p the priority of the item of the
- * handle y. Items of equal priority leave in no given order.
+ * The PRIORITYQUEUE of section 10.1, with decreasing priority:
+ * `insert( x , p )` gives a handle of \f$ x \f$, `min()` and `deleteMin()`
+ * the item of smallest priority, `decrease( y , p )` lowers to \f$ p \f$ the
+ * priority of the item of the handle \f$ y \f$. Items of equal priority
+ * leave in no given order.
  *
- * HeapPriorityQueue realizes it on a d-ary heap, ListPriorityQueue on a
- * sorted or unsorted list, TreePriorityQueue on a Red-Black tree.
+ * `HeapPriorityQueue` realizes it on a \f$ d \f$-ary heap,
+ * `ListPriorityQueue` on a sorted or unsorted list, `TreePriorityQueue` on a
+ * Red-Black tree; `LinkedHeapPriorityQueue`, `FibonacciHeapPriorityQueue`,
+ * `PairingHeap` and `IndexedDaryHeap` are realizations beyond the book.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -48,7 +51,9 @@ namespace ADS {
 /*-------------------------------- CONCEPT ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// PRIORITYQUEUE (section 10.1), with decreasing priority
+/// the PRIORITYQUEUE of section 10.1, with decreasing priority: the types
+/// `Item`, `Priority` and `Handle`, and `empty()`, `min()`, `deleteMin()`,
+/// `insert( x , p )` and `decrease( y , p )`
 template< class Q >
 concept PriorityQueue = requires( Q q , const Q cq ,
                                   const typename Q::Item & x ,

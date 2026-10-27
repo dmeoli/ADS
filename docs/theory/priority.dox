@@ -1,0 +1,557 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File priority.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_priority */
+/** \defgroup theory_priority Theory of priority queues
+ \ingroup area_priority
+
+ \details The headers of `include/ADS/priority` realize the PRIORITYQUEUE of
+ section 10.1 of the book, on the lists, the trees and the heaps that the book
+ compares, and on several structures beyond it: the Fibonacci heap that
+ section 11.5 names for the shortest paths, the pairing heap, the heaps of
+ plain items without handles, the monotone queues of integer keys, the
+ double-ended queues, and the structures that merge \f$ k \f$ sorted
+ sequences, the tree of losers among them, on which the sequence heap of
+ Sanders rests. This page collects what the headers take for granted: the
+ definitions and the notation shared by all of them (see
+ \ref theory_priority_notation), the realizations and the costs of their
+ operations (see \ref theory_priority_repr), and, for each family of
+ structures, the invariant on which its correctness rests and the argument
+ behind its bounds (from \ref theory_priority_heaps to
+ \ref theory_priority_merge). The pseudocode of each operation is instead on
+ the page of its header, in the comment of its function, together with the
+ section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_priority_notation Definitions and notation
+
+ A priority queue holds a multiset of \f$ n \f$ items, each \f$ x \f$ with a
+ priority \f$ p( x ) \f$ taken from a totally ordered set, and offers
+ `insert( x , p )`, which adds an item, `min()`, which reads an item of
+ least priority, and `deleteMin()`, which removes it; the PRIORITYQUEUE of
+ the book (section 10.1, the concept `PriorityQueue` of `PriorityQueue.h`)
+ has also `decrease( y , p )`, which lowers to \f$ p \f$ the priority of the
+ item that the <em>handle</em> \f$ y \f$ names, the handle being what
+ `insert()` gave for it (a cell, a node, an index). The items of equal
+ priority leave in no given order unless a header says otherwise. A queue
+ without handles (`DaryHeap`, `MinMaxHeap`, `SequenceHeap`, the monotone
+ queues) has no `decrease()`: an item whose priority improves is pushed
+ again, and its stale copy is skipped when it comes out (the
+ <em>lazy deletion</em>), which costs \f$ O( m ) \f$ items in the queue
+ instead of \f$ O( n ) \f$ for \f$ m \f$ decreases. Several queues order
+ their items by a predicate `better( a , b )`, true if \f$ a \f$ must come
+ out before \f$ b \f$, with `std::less` giving the least item first.
+
+ A queue is <em>monotone</em> if the priorities pushed are never smaller
+ than the last one extracted, \f$ \ell \f$; Dijkstra's algorithm with
+ nonnegative costs is monotone, since the distance of a node extracted is
+ not smaller than that of the node extracted before it, and so is the
+ simulation of discrete events. The monotone queues of integer keys use
+ this property to find the minimum without comparisons.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$, \f$ p( x ) \f$</td>
+     <td>the number of items in the queue, and the priority (or key) of the
+         item \f$ x \f$</td></tr>
+ <tr><td>\f$ d \f$, \f$ D \f$</td>
+     <td>the arity of a heap, the number of children of each node, 2 for the
+         binary heap of the book</td></tr>
+ <tr><td>\f$ h \f$</td>
+     <td>the height of a heap, the number of its levels less one</td></tr>
+ <tr><td>\f$ \ell \f$</td>
+     <td>the last key extracted from a monotone queue, below which no key is
+         pushed</td></tr>
+ <tr><td>\f$ W \f$, \f$ B \f$, \f$ C \f$</td>
+     <td>the bits of a key of a radix heap (the buckets of the window of the
+         queue of Dial), the bits of one of its digits, and the width of the
+         band \f$ [ \ell , \ell + C ] \f$ of the keys pushed</td></tr>
+ <tr><td>\f$ k \f$</td>
+     <td>the number of sequences merged, or of players of a tree of
+         losers</td></tr>
+ <tr><td>\f$ M \f$, \f$ B \f$</td>
+     <td>in the model of the cache, the items that the cache holds and those
+         of a block, i.e., of a line or of a page</td></tr>
+ <tr><td>\f$ F_k \f$, \f$ \phi \f$</td>
+     <td>the \f$ k \f$-th number of Fibonacci, \f$ F_0 = 0 \f$,
+         \f$ F_1 = 1 \f$, and the golden ratio
+         \f$ \phi = ( 1 + \sqrt{5} ) / 2 \f$</td></tr>
+ </table>
+
+ A cost is <em>amortized</em> when it holds for the average of any sequence of
+ operations from the empty queue, though a single operation may cost more;
+ the bounds of the Fibonacci, pairing and radix heaps, and those of the
+ queues that sort a run of removals, are of this kind, and they are proved
+ by a potential \f$ \Phi \geq 0 \f$, zero on the empty queue, whose increase
+ pays for the cheap operations and whose decrease pays for the dear ones.
+
+ \section theory_priority_repr Realizations and their costs
+
+ The library has three realizations of the PRIORITYQUEUE of the book, which
+ section 10.1 compares, and several beyond it, which differ in the bounds,
+ in the operations, and in the way they use the memory.
+
+ <table>
+ <caption>The realizations of the priority queues and the cost of their
+          operations (\f$ ^* \f$ amortized)</caption>
+ <tr><th>Realization</th><th><tt>min()</tt></th><th><tt>insert()</tt></th>
+     <th><tt>deleteMin()</tt></th><th><tt>decrease()</tt></th></tr>
+ <tr><td><tt>ListPriorityQueue</tt>, sorted</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( n ) \f$</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( n ) \f$</td></tr>
+ <tr><td><tt>ListPriorityQueue</tt>, unsorted</td><td>\f$ O( n ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( n ) \f$</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>TreePriorityQueue</tt></td><td>\f$ O( \log n ) \f$</td>
+     <td>\f$ O( \log n ) \f$</td><td>\f$ O( \log n ) \f$</td>
+     <td>\f$ O( \log n ) \f$</td></tr>
+ <tr><td><tt>HeapPriorityQueue</tt>, <tt>LinkedHeapPriorityQueue</tt>,
+         <tt>IndexedDaryHeap</tt></td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( \log_d n ) \f$</td><td>\f$ O( d \log_d n ) \f$</td>
+     <td>\f$ O( \log_d n ) \f$ (not on the heap with pointers)</td></tr>
+ <tr><td><tt>FibonacciHeapPriorityQueue</tt></td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( \log n )^* \f$</td>
+     <td>\f$ O( 1 )^* \f$</td></tr>
+ <tr><td><tt>PairingHeap</tt></td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 )^* \f$</td><td>\f$ O( \log n )^* \f$</td>
+     <td>\f$ O( 2^{2 \sqrt{\log \log n}} )^* \f$</td></tr>
+ <tr><td><tt>DaryHeap</tt>, <tt>SequenceHeap</tt></td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( \log n ) \f$, \f$ ^* \f$ on the
+     sequence heap</td><td>\f$ O( \log n ) \f$, \f$ ^* \f$ on the sequence
+     heap</td><td>none</td></tr>
+ <tr><td><tt>RadixHeap</tt>, <tt>DialQueue</tt>, <tt>BucketQueue</tt>
+         (monotone, integer keys)</td><td>as <tt>deleteMin()</tt></td>
+     <td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( W / B + 2^B W / ( 64 B ) )^* \f$, \f$ O( 1 + W / 64 ) \f$
+         and \f$ O( 1 )^* \f$ in a band of width \f$ C < W \f$</td>
+     <td>none</td></tr>
+ <tr><td><tt>MinMaxHeap</tt>, <tt>IntervalHeap</tt> (double-ended)</td>
+     <td>\f$ O( 1 ) \f$, and the maximum as well</td>
+     <td>\f$ O( \log n ) \f$</td>
+     <td>\f$ O( \log n )^* \f$, and the maximum as well</td>
+     <td>none</td></tr>
+ </table>
+
+ The list sorted pays at the insertion the scan that finds the place of the
+ item, and the unsorted one pays it at the extraction, which scans for the
+ minimum; the list is usually preferable only for a few items, or when one of
+ the two operations is much rarer than the other. The Red-Black tree keeps
+ the pairs \f$ ( p( x ) , i ) \f$, \f$ i \f$ the number of insertion, which
+ makes the keys distinct, and its height \f$ O( \log n ) \f$ bounds every
+ operation; it is the realization of the book that also visits the items in
+ order. The heap of the book has the same bounds with better constants, and
+ is usually preferable: its items lie in a vector, the minimum is at its
+ root, and only one path from the root is walked by each operation (see
+ \ref theory_priority_heaps). The Fibonacci and the pairing heaps lower the
+ cost of `decrease()`, which matters when the decreases outnumber the
+ extractions, as in Dijkstra's and Prim's algorithms on dense graphs (see
+ \ref theory_priority_amortized). The monotone queues and the merges are
+ described in \ref theory_priority_monotone and \ref theory_priority_merge.
+
+ \section theory_priority_heaps Heaps
+
+ A <em>heap</em> is a tree in which each node has a priority not smaller than
+ that of its parent; hence its root holds a minimum, and `min()` costs
+ \f$ O( 1 ) \f$. The heap of section 10.1.3 (`HeapPriorityQueue.h`) is a
+ \f$ d \f$-ary tree full but for the rightmost leaves of its last level,
+ stored by levels in a vector \f$ H[ 0 .. n - 1 ] \f$, so that the children
+ of the place \f$ i \f$ are \f$ d i + 1 , \ldots , d i + d \f$ and its parent
+ is \f$ \lfloor ( i - 1 ) / d \rfloor \f$, with no pointer stored.
+
+ <em>Lemma 1 (the height of a heap).</em> A \f$ d \f$-ary heap of
+ \f$ n \ge 1 \f$ items has
+ \f[
+   h = \lceil \log_d ( ( d - 1 ) n + 1 ) \rceil - 1 \tag{1}
+ \f]
+ levels below its root.
+
+ Indeed, its first \f$ h \f$ levels are full and hold
+ \f$ 1 + d + \cdots + d^{h-1} = ( d^h - 1 ) / ( d - 1 ) \f$ items, fewer than
+ \f$ n \f$, while the full levels up to the last would hold
+ \f$ ( d^{h+1} - 1 ) / ( d - 1 ) \ge n \f$; taking the logarithms gives (1),
+ i.e., \f$ h = \Theta( \log_d n ) \f$.
+
+ `insert()` puts the new item in the first free place, a leaf, and moves it
+ up while it is smaller than its parent; the heap is violated only between
+ the item and its parent, and each swap moves the violation one level up,
+ so that at most \f$ h \f$ swaps, of one comparison each, restore the order.
+ `decrease()` does the same from the place of the item, which the item keeps
+ up to date at each swap, so that the handle finds it in \f$ O( 1 ) \f$.
+ `deleteMin()` moves the last leaf into the root and down
+ (`minHeapRestore()` of the book), swapping it with its smallest child while
+ that child is smaller; the violation now lies between the item and its
+ children, and each level costs \f$ d \f$ comparisons, i.e.,
+ \f$ O( d \log_d n ) \f$ in all.
+
+ With \f$ m \f$ decreases and \f$ n \f$ extractions, as in Dijkstra's
+ algorithm, a \f$ d \f$-ary heap costs
+ \f[
+   O( m \log_d n + n d \log_d n ) , \tag{2}
+ \f]
+ which is least for \f$ d \f$ near \f$ \max\{ 2 , m / n \} \f$, i.e.,
+ \f$ O( m \log_{2 + m / n} n ) \f$ (Johnson); on the dense graphs this is
+ \f$ O( m ) \f$, as the Fibonacci heap gives. In practice \f$ d = 4 \f$ is
+ usually preferable even when (2) would ask for \f$ d = 2 \f$, since the four
+ children of a node lie in one line of the cache and the heap is half as
+ deep (LaMarca and Ladner; Larkin, Sen and Tarjan): this is the default of
+ `DaryHeap` and of `IndexedDaryHeap`, which keep the keys in the vector
+ itself, so that a comparison never follows a pointer, and replace the
+ handles by plain items (`DaryHeap`) or by the vector of the places of the
+ ids \f$ [ 0 , n ) \f$ (`IndexedDaryHeap`). The walk down of `deleteMin()`
+ compares the item carried down with the best child at each level; the
+ walk from the bottom up of Floyd and Wegener (the `BottomUp` of `DaryHeap`)
+ moves instead the hole of the root down to a leaf by the best children,
+ \f$ d - 1 \f$ comparisons per level, and then the item up from there. The
+ item carried down is the last leaf, which usually belongs near the bottom,
+ so that the climb from the leaf is short and the walk saves about one
+ comparison per level; it loses when the item would stop halfway.
+
+ The heap with pointers of `LinkedHeapPriorityQueue.h` keeps the same shape
+ on nodes linked to their parent and children. The node \f$ k \f$ of the
+ numbering by levels from 1 is reached from the root by the bits of
+ \f$ k \f$ after the leading one, 0 to the left and 1 to the right, since the
+ children of the node \f$ k \f$ are \f$ 2 k \f$ and \f$ 2 k + 1 \f$; thus the
+ place of the next leaf and that of the last one are found in
+ \f$ O( \log n ) \f$, and the bounds are those of the vector, with
+ \f$ d = 2 \f$.
+
+ \section theory_priority_amortized Fibonacci and pairing heaps
+
+ A Fibonacci heap (`FibonacciHeapPriorityQueue.h`) is a collection of heap
+ ordered trees, whose roots lie in a circular list with a pointer to the
+ least of them. `insert()` adds a tree of one node to the list, and
+ `decrease()` cuts the node from its parent if it became smaller than it,
+ making it a root; a node that loses a second child since it became a child
+ is cut in turn (the <em>cascading cut</em>, a <em>mark</em> recording the
+ first loss). `deleteMin()` is the only operation that tidies the heap: it
+ moves the children of the minimum among the roots and then
+ <em>consolidates</em> them, linking two roots of equal degree, the larger
+ under the smaller, until the degrees of the roots differ. With \f$ t \f$ the
+ number of trees and \f$ \mu \f$ the number of marked nodes, the potential
+ \f[
+   \Phi = t + 2 \mu \tag{3}
+ \f]
+ gives the bounds of Fredman and Tarjan. `insert()` raises \f$ \Phi \f$ by 1
+ and costs \f$ O( 1 ) \f$. A `decrease()` that makes \f$ c \f$ cuts costs
+ \f$ O( c ) \f$, adds \f$ c \f$ trees and removes the marks of at least
+ \f$ c - 1 \f$ nodes, marking one more; hence \f$ \Phi \f$ changes by at most
+ \f$ c + 2 ( 2 - c ) = 4 - c \f$, and the amortized cost is \f$ O( 1 ) \f$.
+ The consolidation of \f$ t \f$ roots costs \f$ O( t + D ) \f$, with
+ \f$ D \f$ the largest degree, and leaves at most \f$ D + 1 \f$ trees; hence
+ `deleteMin()` costs \f$ O( D ) \f$ amortized, and the next lemma bounds
+ \f$ D \f$.
+
+ <em>Lemma 2 (the degrees of a Fibonacci heap).</em> A node of degree
+ \f$ k \f$ has at least
+ \f[
+   F_{k+2} \ge \phi^k \tag{4}
+ \f]
+ descendants, itself included; hence \f$ D \le \log_\phi n \f$.
+
+ In fact, take the children of a node \f$ x \f$ in the order in which they
+ were linked to it. When the \f$ i \f$-th child was linked, \f$ x \f$ had
+ at least \f$ i - 1 \f$ children, and the child had the same degree, since
+ only the roots of equal degree are linked; it has lost at most one child
+ since then, or it would have been cut, so that its degree is at least
+ \f$ i - 2 \f$. By induction on the degree, the sizes \f$ s_k \f$ satisfy
+ \f$ s_k \ge 2 + \sum_{i=2}^{k} s_{i-2} \f$, whose solution is
+ \f$ F_{k+2} \f$, and \f$ F_{k+2} \ge \phi^k \f$ by the recurrence of the
+ numbers of Fibonacci. Thus the heap gives
+ \f$ O( m + n \log n ) \f$ for the shortest paths of Dijkstra (see
+ \ref theory_graph_sp), against the \f$ O( m \log n ) \f$ of a binary heap;
+ in practice its constants are larger, and a heap in a vector is usually
+ faster but on large and dense graphs.
+
+ A pairing heap (`PairingHeap.h`) is one heap ordered tree, whose nodes keep
+ their leftmost child and their siblings. Two trees are <em>linked</em> by
+ making the root of larger priority the leftmost child of the other one, in
+ one comparison. `insert()` links a tree of one node with the root, and
+ `decrease()` cuts the subtree of the node and links it with the root;
+ `deleteMin()` removes the root and joins its children by two passes, the
+ first linking them in pairs from the left and the second linking the
+ results from the right. No balance is kept, and the analysis is that of a
+ self-adjusting structure: `deleteMin()` costs \f$ O( \log n ) \f$
+ amortized (Fredman, Sedgewick, Sleator and Tarjan), `insert()`
+ \f$ O( 1 ) \f$ (Iacono) and `decrease()`
+ \f$ O( 2^{2 \sqrt{\log \log n}} ) \f$ (Pettie), and Fredman proved that
+ \f$ \Omega( \log \log n ) \f$ amortized is needed by `decrease()` in this
+ family of heaps, against the \f$ O( 1 ) \f$ of the Fibonacci heap. In the
+ experiments the pairing heap is nevertheless faster than the Fibonacci heap
+ (Stasko and Vitter; Larkin, Sen and Tarjan). The auxiliary two-pass variant
+ of Stasko and Vitter (the `Aux` of `PairingHeap`) keeps the trees of
+ `insert()` and `decrease()` in a list beside the root, which `deleteMin()`
+ joins by the multipass pairing, i.e., linking the trees in pairs from the
+ front of a queue and putting the result at its back, until one tree is
+ left; it pays when the insertions outnumber the extractions.
+
+ \section theory_priority_monotone Monotone queues of integer keys
+
+ On a monotone queue whose keys are integers, the minimum can be found by
+ the position of the keys rather than by comparisons. The queue of Dial
+ (`DialQueue.h`) keeps the items with key \f$ k \f$ in the bucket
+ \f$ k \bmod W \f$ of a circular window of \f$ W \f$ buckets. If every key
+ pushed lies in \f$ [ \ell , \ell + C ] \f$ with \f$ C < W \f$, the keys in
+ the queue lie in \f$ [ \ell , \ell + W ) \f$, and two of them in one bucket
+ are equal; hence the minimum is in the first bucket in use from that of
+ \f$ \ell \f$ around the circle, found by a scan of a bit per bucket, i.e.,
+ of \f$ W / 64 \f$ words. A key beyond the window goes to a radix heap, from
+ which the items move into the window when the window reaches them.
+
+ The radix heap of Ahuja, Mehlhorn, Orlin and Tarjan (`RadixHeap.h`) splits
+ a key \f$ x \f$ of \f$ W \f$ bits into digits of \f$ B \f$ bits and puts it
+ in the bucket of index
+ \f[
+   2^B r + x_r , \qquad r \text{ the digit of the highest bit in which } x
+   \text{ and } \ell \text{ differ} , \tag{5}
+ \f]
+ \f$ x_r \f$ the digit \f$ r \f$ of \f$ x \f$, and \f$ r = 0 \f$ if
+ \f$ x = \ell \f$.
+
+ <em>Lemma 3 (the order of the buckets).</em> With \f$ x , y \ge \ell \f$,
+ if the bucket of \f$ x \f$ has a smaller index than that of \f$ y \f$, then
+ \f$ x < y \f$; and the keys of a bucket of the row \f$ r = 0 \f$ are all
+ equal.
+
+ Indeed, \f$ x \f$ agrees with \f$ \ell \f$ above its digit \f$ r \f$, and
+ its digit \f$ r \f$ is larger than that of \f$ \ell \f$ when \f$ r > 0 \f$,
+ since \f$ x > \ell \f$. If \f$ y \f$ lies in a higher row \f$ r' > r \f$,
+ then \f$ x \f$ agrees with \f$ \ell \f$ on the digit \f$ r' \f$ and above,
+ while \f$ y \f$ agrees with \f$ \ell \f$ above \f$ r' \f$ and exceeds it on
+ the digit \f$ r' \f$; hence \f$ y > x \f$. If \f$ y \f$ lies in the same
+ row, both agree with \f$ \ell \f$ above the digit \f$ r \f$, and the
+ digits \f$ r \f$, i.e., the indices of the buckets, decide. In the row 0,
+ \f$ x \f$ and \f$ \ell \f$ differ only in the last digit, which is the
+ index of the bucket.
+
+ Hence the minimum is in the first bucket in use, which a mask of the
+ buckets finds by its lowest bit. If that bucket lies in a row
+ \f$ r > 0 \f$, its least key becomes the new \f$ \ell \f$, and its items
+ move to the buckets that (5) gives for it, all in rows below \f$ r \f$,
+ while the other buckets keep their items. An item thus only moves to lower
+ rows, at most \f$ \lceil W / B \rceil - 1 \f$ times, and with the potential
+ \f$ \Phi = \sum_x \mathrm{row}( x ) \f$ the extractions cost
+ \f$ O( W / B + 2^B W / ( 64 B ) ) \f$ amortized, the second term the scan of
+ the mask; the keys of a band of width \f$ C \f$ above \f$ \ell \f$ use only
+ the lowest \f$ \lceil \log_2 ( C + 1 ) / B \rceil \f$ rows, and with
+ \f$ B = 1 \f$ an extraction costs \f$ O( \log C ) \f$ amortized.
+
+ The two levels of `BucketQueue.h` apply the scan of Dial to two keys, the
+ first \f$ f \f$ of the order and the second \f$ g \f$ that breaks its ties
+ towards the largest, which is the order of the search A* (least \f$ f \f$,
+ ties towards the deeper nodes). The outer level is a vector of
+ <em>layers</em> indexed by \f$ f \f$, scanned forward from the least
+ \f$ f \f$ in use; the scan only moves forward between two pushes of a smaller
+ \f$ f \f$, and with keys bounded by \f$ C \f$ it costs \f$ O( 1 ) \f$
+ amortized per operation. A layer, the items of one \f$ f \f$, keeps a LIFO
+ list per \f$ g \f$, in one of two ways. The lists of \f$ g < D \f$
+ (\f$ D = 256 \f$) are <em>dense</em>, an array of heads indexed by
+ \f$ g \f$ and scanned backward from a bound that only moves down between two
+ pushes of a larger \f$ g \f$. The lists of \f$ g \ge D \f$ are
+ <em>runs</em> while they are at most \f$ R = 64 \f$: a vector of pairs
+ \f$ ( g , h ) \f$, \f$ h \f$ the head of the list of \f$ g \f$, sorted by
+ increasing \f$ g \f$, whose last pair is the top of the layer. A push of a
+ \f$ g \f$ larger than the last appends a run, a push of the last
+ \f$ g \f$ prepends to its list, and any other push finds its place by a
+ binary search and shifts the larger runs by one place. A push of a new
+ \f$ g \ge D \f$ into a layer of \f$ R \f$ runs turns the layer dense on all
+ its \f$ g \f$: the heads of the runs, not the items, move into an array as
+ long as the largest \f$ g \f$, and the layer stays dense until it empties,
+ when it frees the array and is sparse again.
+
+ <em>Lemma 4 (the cost of a layer).</em> Between two times at which a layer is
+ empty, \f$ m \f$ pushes into it and as many pops cost \f$ O( m + D ) \f$ if
+ its items have at most \f$ R \f$ distinct \f$ g \ge D \f$, and
+ \f$ O( m + D + G ) \f$ otherwise, \f$ G \f$ the largest \f$ g \f$ pushed
+ into it, i.e., \f$ O( 1 + ( D + G ) / R ) \f$ per push in the second case.
+
+ Indeed, a push to the runs costs \f$ O( 1 ) \f$ when its \f$ g \f$ is not
+ below the last, and \f$ O( \log R + R ) = O( 1 ) \f$ otherwise, since
+ \f$ R \f$ is a constant and the shift moves at most \f$ R \f$ runs, while a
+ pop takes the head of the last run in \f$ O( 1 ) \f$; the dense lists of the
+ \f$ g < D \f$ cost at most \f$ D \f$ for their scan between two fillings.
+ Only the conversion and the array that follows it cost \f$ \Theta( G ) \f$,
+ to allocate, to set and to scan down, and the conversion comes only with the
+ \f$ ( R + 1 ) \f$-th distinct \f$ g \ge D \f$, i.e., after more than
+ \f$ R \f$ pushes. A dense array alone would instead cost
+ \f$ \Theta( G ) \f$ at each filling, even of one item, which is the case of
+ the least layer of a search whose nodes come in small batches; a binary heap
+ per layer would cost \f$ O( \log m ) \f$ per operation, more than the dense
+ lists on a layer of many items, and would lose the order of the lists, which
+ the view of the standard interface walks.
+
+ The order is the same in both ways (LIFO inside a list, the lists by
+ \f$ g \f$), since the conversion moves the heads and not the items. The
+ items lie in one vector of cells, each with the index of the next cell of its
+ list, and the cells freed by the pops form a list that the pushes take from
+ first, so that no operation calls the allocator once the vector has grown to
+ the largest size of the queue; the vectors of runs of the layers that empty
+ are kept for the next layers that need one. The memory is
+ \f[
+   O\Bigl( n + F + \sum_f H_f + R L \Bigr) \text{ words,}
+ \f]
+ \f$ F \f$ the largest \f$ f \f$ pushed, \f$ H_f \f$ the heads of the layer
+ \f$ f \f$ while it is in use (at most \f$ D \f$ if it is sparse, its
+ largest \f$ g \f$ if it is dense) and \f$ L \f$ the most layers that had
+ runs at the same time. There is no `decrease()`: as in the lazy deletion of
+ A*, an item whose key improves is pushed again, and the caller skips the
+ stale copies when they come out.
+
+ \section theory_priority_double Double-ended queues
+
+ A double-ended queue has both the best and the worst item at hand
+ (`MinMaxHeap.h`). The min-max heap of Atkinson, Sack, Santoro and
+ Strothotte is a binary heap in a vector whose levels alternate: a node of
+ an even level, the root's, is not worse than any item of its subtree, and
+ one of an odd level is not better. The best item is then the root and the
+ worst the worse of its children. An item pushed is swapped at most once
+ with its parent, to reach a level of the right kind, and then moved up by
+ its grandparents; an item moved down from the root (or from the child of
+ the worst) is compared with the up to 2 children and 4 grandchildren, and
+ swapped with its parent of the other kind when it lands on a grandchild.
+ Both walks cost \f$ O( \log n ) \f$.
+
+ The interval heap of van Leeuwen and Wood keeps the items two by two in the
+ nodes of a complete binary tree, each node an interval
+ \f$ [ \mathit{lo} , \mathit{hi} ] \f$ with
+ \f[
+   \mathit{lo}( q ) \preceq \mathit{lo}( j ) \preceq \mathit{hi}( j )
+   \preceq \mathit{hi}( q ) , \qquad q \text{ the parent of } j , \tag{6}
+ \f]
+ \f$ \preceq \f$ the order of `better()`. Hence the \f$ \mathit{lo} \f$ of
+ the nodes form a heap for the best item and the \f$ \mathit{hi} \f$ a heap
+ for the worst, and a walk of either kind costs two comparisons per level
+ on a tree of half the height of a binary heap, with the two items of a
+ node in one line of the cache. In both heaps, a run of removals with no
+ push, as long as an eighth of the items, sorts the items once in
+ \f$ O( n \log n ) \f$ (or by the radix sort, \f$ O( n ) \f$, on numbers),
+ so that the rest of the run takes them from the two ends of the sorted
+ array in \f$ O( 1 ) \f$ each; the next push rebuilds a heap in
+ \f$ O( n ) \f$. The run pays for both, since it holds
+ \f$ \Omega( n ) \f$ removals, and the amortized cost of a removal stays
+ \f$ O( \log n ) \f$.
+
+ \section theory_priority_merge Merging sequences and the cache
+
+ The merge of \f$ k \f$ sorted sequences extracts at each step the least of
+ their first items; a heap of the \f$ k \f$ first items does it with a
+ `deleteMin()` and an `insert()`, up to \f$ 2 \log_2 k \f$ comparisons. The
+ tree of losers of a tournament (`LoserTree.h`, Knuth 5.4.1) does better:
+ the \f$ k \f$ sequences are the leaves of a complete binary tree, each
+ internal node keeps the loser of the match played there, and the root the
+ overall winner. When the winner takes its next item, only the matches on
+ the path from its leaf to the root change, and each is played against the
+ loser stored there, one comparison per level; hence a merge of \f$ n \f$
+ items costs at most
+ \f[
+   n \lceil \log_2 k \rceil + k \tag{7}
+ \f]
+ comparisons, the term \f$ k \f$ for the construction, which plays the
+ \f$ k - 1 \f$ matches once. Equal keys are won by the lower index, so that
+ the merge is stable. `FlatLoserTree` of `MultiwayMerge.h` keeps the key of
+ each loser in its node, so that a replay reads only the array of the tree,
+ and makes the matches and the swaps by masks, since a branch would be
+ mispredicted half of the time on random keys. The funnel of
+ `multiwayMerge()` (the cache-oblivious \f$ k \f$-merger of Frigo,
+ Leiserson, Prokop and Ramachandran, made of binary mergers as Brodal,
+ Fagerberg and Vinther engineered it) is a tree of binary mergers with a
+ buffer at each node, filled lazily when it runs out; each item climbs
+ \f$ \lceil \log_2 k \rceil \f$ mergers, \f$ O( n \log k ) \f$ in all, and
+ the steps of a merge of two check no end and make no jump.
+
+ In the model of the cache, with \f$ M \f$ items in the cache and \f$ B \f$
+ in a block, a heap of \f$ n \gg M \f$ items misses the cache at almost
+ every level of a walk, i.e., \f$ \Theta( \log ( n / M ) ) \f$ times per
+ operation. The sequence heap of Sanders (`SequenceHeap.h`) keeps instead
+ the items in sorted sequences, merged in large batches: the new items go
+ to an insertion heap of \f$ m = \Theta( M ) \f$ items, which, when full, is
+ sorted into a sequence of the group 1; the group \f$ i \f$ holds up to
+ \f$ k = \Theta( M / B ) \f$ sequences of at most \f$ m k^{i-1} \f$ items,
+ and when it is full its sequences are merged into one of the group
+ \f$ i + 1 \f$; the best items wait in a deletion buffer, refilled by
+ merging the buffers of the groups. Each item is merged once per group, by
+ a tree of losers of \f$ k \f$ sequences, and the sequences are read and
+ written in order; hence the operations cost \f$ O( \log n ) \f$ amortized
+ comparisons, as a binary heap, and
+ \f[
+   O\left( \frac{1}{B} \log_{M / B} \frac{n}{M} \right) \tag{8}
+ \f]
+ amortized misses per item (Sanders, theorem 1), i.e., the bound of the
+ sorting in external memory divided by the items. The pushes into an empty
+ sequence heap go to a bulk in the order of arrival, which the incremental
+ quicksort of Paredes and Navarro sorts only as far as the extractions
+ need, \f$ O( n + k \log k ) \f$ expected for the \f$ k \f$ best items of
+ \f$ n \f$.
+
+ \section theory_priority_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 10 and
+      section 11.5,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
+ \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the
+      ACM 7(6), 347-348, 1964, doi:10.1145/512274.512284
+ \see R. W. Floyd, Algorithm 245: Treesort, Communications of the ACM
+      7(12), 701, 1964, doi:10.1145/355588.365103
+ \see D. B. Johnson, Priority queues with update and finding minimum
+      spanning trees, Information Processing Letters 4(3), 53-57, 1975,
+      doi:10.1016/0020-0190(75)90001-0
+ \see I. Wegener, BOTTOM-UP-HEAPSORT, a new variant of HEAPSORT beating,
+      on an average, QUICKSORT (if n is not very small), Theoretical
+      Computer Science 118(1), 81-98, 1993,
+      doi:10.1016/0304-3975(93)90364-Y
+ \see A. LaMarca, R. E. Ladner, The influence of caches on the performance
+      of heaps, ACM Journal of Experimental Algorithmics 1, article 4,
+      1996, doi:10.1145/235141.235145
+ \see M. L. Fredman, R. E. Tarjan, Fibonacci heaps and their uses in
+      improved network optimization algorithms, Journal of the ACM 34(3),
+      596-615, 1987, doi:10.1145/28869.28874
+ \see M. L. Fredman, R. Sedgewick, D. D. Sleator, R. E. Tarjan, The pairing
+      heap: a new form of self-adjusting heap, Algorithmica 1(1-4),
+      111-129, 1986, doi:10.1007/BF01840439
+ \see J. T. Stasko, J. S. Vitter, Pairing heaps: experiments and analysis,
+      Communications of the ACM 30(3), 234-249, 1987,
+      doi:10.1145/214748.214759
+ \see M. L. Fredman, On the efficiency of pairing heaps and related data
+      structures, Journal of the ACM 46(4), 473-501, 1999,
+      doi:10.1145/320211.320214
+ \see J. Iacono, Improved upper bounds for pairing heaps, Algorithm Theory -
+      SWAT 2000, Lecture Notes in Computer Science 1851, 32-45, 2000,
+      doi:10.1007/3-540-44985-X_5
+ \see S. Pettie, Towards a final analysis of pairing heaps, 46th Annual
+      IEEE Symposium on Foundations of Computer Science (FOCS), 174-183,
+      2005, doi:10.1109/SFCS.2005.75
+ \see D. H. Larkin, S. Sen, R. E. Tarjan, A back-to-basics empirical study
+      of priority queues, Proceedings of the 16th Workshop on Algorithm
+      Engineering and Experiments (ALENEX), 61-72, 2014,
+      doi:10.1137/1.9781611973198.7
+ \see R. B. Dial, Algorithm 360: shortest-path forest with topological
+      ordering, Communications of the ACM 12(11), 632-633, 1969,
+      doi:10.1145/363269.363610
+ \see E. Burns, M. Hatem, M. J. Leighton, W. Ruml, Implementing fast
+      heuristic search code, Proceedings of the 5th Symposium on
+      Combinatorial Search (SoCS), 25-32, 2012
+ \see R. K. Ahuja, K. Mehlhorn, J. Orlin, R. E. Tarjan, Faster algorithms
+      for the shortest path problem, Journal of the ACM 37(2), 213-223,
+      1990, doi:10.1145/77600.77615
+ \see M. D. Atkinson, J.-R. Sack, N. Santoro, T. Strothotte, Min-max heaps
+      and generalized priority queues, Communications of the ACM 29(10),
+      996-1000, 1986, doi:10.1145/6617.6621
+ \see J. van Leeuwen, D. Wood, Interval heaps, The Computer Journal 36(3),
+      209-216, 1993, doi:10.1093/comjnl/36.3.209
+ \see D. E. Knuth, The Art of Computer Programming, vol. 3, 2nd ed.,
+      Addison-Wesley, 1998, section 5.4.1
+ \see M. Frigo, C. E. Leiserson, H. Prokop, S. Ramachandran,
+      Cache-oblivious algorithms, ACM Transactions on Algorithms 8(1),
+      1-22, 2012, doi:10.1145/2071379.2071383
+ \see G. S. Brodal, R. Fagerberg, K. Vinther, Engineering a
+      cache-oblivious sorting algorithm, ACM Journal of Experimental
+      Algorithmics 12, 1-23, 2008, doi:10.1145/1227161.1227164
+ \see P. Sanders, Fast priority queues for cached memory, ACM Journal of
+      Experimental Algorithmics 5, article 7, 2000,
+      doi:10.1145/351827.384249
+ \see R. Paredes, G. Navarro, Optimal incremental sorting, Proceedings of
+      the 8th Workshop on Algorithm Engineering and Experiments (ALENEX),
+      171-182, 2006, doi:10.1137/1.9781611972863.16
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File priority.dox --------------------------*/
+/*--------------------------------------------------------------------------*/

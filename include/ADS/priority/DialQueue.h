@@ -3,39 +3,37 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * A monotone bucket queue with overflow, beyond the book: the queue of
- * Dial on a circular window of W buckets, W a power of 2, the keys out of
- * the window in a radix heap [see RadixHeap.h]. It serves the algorithms
- * whose extracted keys never decrease and whose pushed keys stay close to
- * the last one extracted, \f$ \ell \f$: Dijkstra's algorithm with integer
- * weights at most C < W, where every key pushed is in
+ * Dial on a circular window of \f$ W \f$ buckets, \f$ W \f$ a power of 2,
+ * the keys out of the window in a radix heap [see `RadixHeap.h`]. It serves
+ * the algorithms whose extracted keys never decrease and whose pushed keys
+ * stay close to the last one extracted, \f$ \ell \f$: Dijkstra's algorithm
+ * with integer weights at most \f$ C < W \f$, where every key pushed is in
  * \f$ [ \ell , \ell + C ] \f$, and the event simulations with bounded
  * delays.
  *
- * A key k in \f$ [ \ell , \ell + W ) \f$ goes to the bucket
+ * A key \f$ k \f$ in \f$ [ \ell , \ell + W ) \f$ goes to the bucket
  * \f$ k \bmod W \f$, a vector used as a stack, which holds a single key
- * since the window is W wide; a key beyond it goes to the overflow. A bit
- * per bucket tells whether it has items, so that the next key in use is
- * found by scanning W / 64 words at most, from the bucket of
+ * since the window is \f$ W \f$ wide; a key beyond it goes to the overflow.
+ * A bit per bucket tells whether it has items, so that the next key in use
+ * is found by scanning \f$ W / 64 \f$ words at most, from the bucket of
  * \f$ \ell \f$ around the circle. When the overflow holds a key smaller
- * than the first bucket in use (or the buckets are empty), its items in
- * the window
- * \f$ [ \ell' , \ell' + W ) \f$ of its least key \f$ \ell' \f$ move to
- * the buckets, each once, a bucket of the radix heap at a time [see
- * RadixHeap::extractBelow()]. Hence, with all the keys pushed in
- * \f$ [ \ell , \ell + C ] \f$, C < W, the overflow is never used, push()
- * takes O( 1 ) time and pop() \f$ O( 1 + W / w ) \f$, w = 64, against
- * the \f$ O( 1 + C ) \f$ of the scan of the buckets one by one; a key
- * pushed farther costs its moves in the radix heap and one move into the
- * window. The buckets keep their memory, so that a queue in a steady state
- * calls no allocator, and their items are contiguous.
+ * than the first bucket in use (or the buckets are empty), its items in the
+ * window \f$ [ \ell' , \ell' + W ) \f$ of its least key \f$ \ell' \f$ move
+ * to the buckets, each once, a bucket of the radix heap at a time [see
+ * `RadixHeap::extractBelow()`]. Hence, with all the keys pushed in
+ * \f$ [ \ell , \ell + C ] \f$, \f$ C < W \f$, the overflow is never used,
+ * `push()` takes \f$ O( 1 ) \f$ time and `pop()` \f$ O( 1 + W / w ) \f$,
+ * \f$ w = 64 \f$, against the \f$ O( 1 + C ) \f$ of the scan of the buckets
+ * one by one; a key pushed farther costs its moves in the radix heap and one
+ * move into the window. The buckets keep their memory, so that a queue in a
+ * steady state calls no allocator, and their items are contiguous.
  *
- * The contracts [see Contract.h]: a key pushed is not smaller than the
- * last one extracted (any key before the first and after clear()), top(),
- * topKey() and pop() need a
- * queue that is not empty; the invariant, checked on queues of at most
- * 1024 items, is that the bits tell the buckets in use and that the
- * buckets and the overflow count size() items. The operations are defined
- * in DialQueue.tpp.
+ * The contracts [see `Contract.h`]: a key pushed is not smaller than the
+ * last one extracted (any key before the first and after `clear()`),
+ * `top()`, `topKey()` and `pop()` need a queue that is not empty; the
+ * invariant, checked on queues of at most 1024 items, is that the bits tell
+ * the buckets in use and that the buckets and the overflow count `size()`
+ * items. The operations are defined in `DialQueue.tpp`.
  *
  * \see R. B. Dial, Algorithm 360: shortest-path forest with topological
  *      ordering, Communications of the ACM 12(11), 632-633, 1969,
@@ -49,7 +47,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -87,8 +85,8 @@ namespace ADS {
 /*--------------------------- CLASS DialQueue ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a monotone queue of items with integer keys K on a circular window of
-/// buckets, the keys beyond it in a radix heap
+/// a monotone queue of items with integer keys of the type `K` on a
+/// circular window of buckets, the keys beyond it in a radix heap
 template< class T , std::integral K = std::uint32_t >
 class DialQueue {
 
@@ -98,14 +96,30 @@ class DialQueue {
  using Item = T;   ///< the type of the items
  using Key = K;    ///< the type of the keys
 
- /// an empty queue whose window has room for the keys up to c above the
- /// last one extracted: W, the least power of 2 above c, buckets
- /// \pre c >= 0
+ /// an empty queue whose window has room for the keys up to \f$ c \f$
+ /// above the last one extracted: \f$ W \f$ buckets, the least power of 2
+ /// above \f$ c \f$, and 64 at least
+ /// \pre \f$ c \ge 0 \f$
  explicit DialQueue( std::size_t c = 1023 );
 
- /// pushes x with the key k
- /// \pre k is not smaller than the last key extracted (any key before the
- ///      first extraction and after clear())
+ /// pushes \f$ x \f$ with the key \f$ k \f$, in \f$ O( 1 ) \f$ time if
+ /// \f$ k < \ell + W \f$
+ ///
+ /// In pseudocode (the queue of Dial, beyond the book), \f$ \ell \f$ the
+ /// last key extracted and \f$ \mathit{used} \f$ the bits of the buckets:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{push}( x , k ) \cr
+ /// 2 & \quad \textbf{if}\ k - \ell < W\ \textbf{then}\ \text{push } x
+ ///     \text{ on } B[ k \bmod W ];\ \mathit{used}[ k \bmod W ] \gets
+ ///     \textbf{true} \cr
+ /// 3 & \quad \textbf{else}\ \mathrm{push}( O , x , k )\quad
+ ///     \triangleright\ \text{the radix heap of the overflow} \cr
+ /// 4 & \quad n \gets n + 1
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ k \f$ is not smaller than the last key extracted (any key
+ ///      before the first extraction and after `clear()`)
  void push( const T & x , K k );
 
  /// an item of least key, the last pushed among those of its bucket that
@@ -117,19 +131,46 @@ class DialQueue {
  /// \pre the queue is not empty
  [[nodiscard]] K topKey( void );
 
- /// removes top() and returns it
+ /// removes `top()` and returns it, in \f$ O( 1 + W / 64 ) \f$ time if the
+ /// overflow is not used
+ ///
+ /// In pseudocode (the queue of Dial, beyond the book), the window moved to
+ /// the least key first:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{pop}() \cr
+ /// 2 & \quad \textbf{if}\ B[ \ell \bmod W ] = \emptyset\ \textbf{then} \cr
+ /// 3 & \qquad d \gets \text{the distance from } \ell \bmod W \text{ of}
+ ///     \text{ the next bucket in use, by the words of } \mathit{used}
+ ///     \text{, or } W \text{ if none} \cr
+ /// 4 & \qquad \textbf{if}\ O \ne \emptyset\ \textbf{and}\ ( d = W
+ ///     \ \textbf{or}\ \mathrm{peekKey}( O ) < \ell + d )\ \textbf{then} \cr
+ /// 5 & \qquad\quad \ell \gets \mathrm{peekKey}( O ) \cr
+ /// 6 & \qquad\quad \text{move the items of } O \text{ of keys below }
+ ///     \ell + W \text{ to their buckets} \cr
+ /// 7 & \qquad\quad d \gets \text{the distance of the next bucket in }
+ ///     \text{use, as above} \cr
+ /// 8 & \qquad \ell \gets \ell + d \cr
+ /// 9 & \quad x \gets \text{the item popped from } B[ \ell \bmod W ] \cr
+ /// 10 & \quad \textbf{if}\ B[ \ell \bmod W ] = \emptyset\ \textbf{then}
+ ///     \ \mathit{used}[ \ell \bmod W ] \gets \textbf{false} \cr
+ /// 11 & \quad n \gets n - 1;\ \textbf{return}\ x
+ /// \end{array}}
+ /// \f]
  /// \pre the queue is not empty
  T pop( void );
 
+ /// whether the queue has no item
  [[nodiscard]] bool empty( void ) const { return( f_n == 0 ); }
 
+ /// the number of items, \f$ n \f$
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
 
  /// removes the items, the buckets keeping their memory; any key may be
  /// pushed next
  void clear( void );
 
- /// the number of buckets of the window
+ /// the number of buckets of the window, \f$ W \f$
  [[nodiscard]] std::size_t window( void ) const { return( f_B.size() ); }
 
 /*--------------------------------------------------------------------------*/

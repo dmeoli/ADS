@@ -2,32 +2,30 @@
 /*---------------------------- File OrderKey.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The unsigned key of an item whose order is that of an unsigned word,
- * beyond the book, for the queues that compare and sort many items: a
- * number of at most 8 bytes, or a pair of two numbers of at most 8 bytes
- * in all (the pairs ( priority , item ) of the heaps), ordered by
- * std::less or std::greater. The key of a number is that of the radix sort
- * [see RadixSort.h], i.e., the bits of an unsigned integer, the sign bit
- * flipped for a signed one and, for a floating point number, all the bits
- * flipped if it is negative and the sign bit otherwise; the key of a pair
- * is the key of its first item followed by that of the second, so that
- * the order of the keys is the lexicographic order of the pairs; for
- * std::greater the key is complemented. Two items equal by the order have
- * the same key, but for the floating point zeros, -0 coming before +0,
- * which only breaks a tie; a NaN, which has no place in the order, has
- * one among the keys.
+ * The unsigned key of an item whose order is that of an unsigned word, beyond
+ * the book, for the queues that compare and sort many items: a number of at
+ * most 8 bytes, or a pair of two numbers of at most 8 bytes in all (the pairs
+ * of a priority and an item of the heaps), ordered by `std::less` or
+ * `std::greater`. The key of a number is that of the radix sort [see
+ * `RadixSort.h`], i.e., the bits of an unsigned integer, the sign bit flipped
+ * for a signed one and, for a floating point number, all the bits flipped if
+ * it is negative and the sign bit otherwise; the key of a pair is the key of
+ * its first item followed by that of the second, so that the order of the keys
+ * is the lexicographic order of the pairs; for `std::greater` the key is
+ * complemented. Two items equal by the order have the same key, but for the
+ * floating point zeros, \f$ -0 \f$ coming before \f$ +0 \f$, which only breaks
+ * a tie; a NaN, which has no place in the order, has one among the keys.
  *
- * A comparison of two keys is a comparison of two words, which the
- * compiler makes with no jump (a conditional move or a mask), where the
- * comparison of two pairs takes two, and the keys give the radix sort its
- * digits.
+ * A comparison of two keys is a comparison of two words, which the compiler
+ * makes with no jump (a conditional move or a mask), where the comparison of
+ * two pairs takes two, and the keys give the radix sort its digits.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 3, 2nd ed.,
  *      Addison-Wesley, 1998, section 5.2.5
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */

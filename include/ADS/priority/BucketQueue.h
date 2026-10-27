@@ -4,89 +4,51 @@
 /** @file
  * A priority queue for small nonnegative integer keys, beyond the book: a
  * two-level bucket queue, whose outer level is a vector indexed by the
- * first key f and whose inner one, for each f, a set of LIFO lists, one
- * per second key g. top() is an item of least f and, among those, of
- * largest g, the last one pushed (the order that A* wants: least f, ties
- * broken towards the deeper nodes). The least f is found by a scan that
- * only moves forward between two pushes of a smaller f, so that the outer
- * level costs \f$ O( 1 ) \f$ amortized per operation when the keys are
- * bounded, against the \f$ O( \log n ) \f$ of a heap: the queue of Dial
- * for the shortest paths with integer weights, nested as in the search
- * code of Burns et al.
+ * first key \f$ f \f$ and whose inner one, for each \f$ f \f$, a set of LIFO
+ * lists, one per second key \f$ g \f$. `top()` is an item of least \f$ f \f$
+ * and, among those, of largest \f$ g \f$, the last one pushed (the order that
+ * A* wants: least \f$ f \f$, ties broken towards the deeper nodes). The least
+ * \f$ f \f$ is found by a scan that only moves forward between two pushes of
+ * a smaller \f$ f \f$, so that the outer level costs \f$ O( 1 ) \f$ amortized
+ * per operation when the keys are bounded, against the \f$ O( \log n ) \f$ of
+ * a heap: the queue of Dial for the shortest paths with integer weights,
+ * nested as in the search code of Burns et al.
  *
- * A layer (the items of one f) keeps the heads of its lists in two ways.
- * The lists of g < D (D = 256) are dense: an array indexed by g, the
- * first S = 4 heads in the layer itself and the others in a vector, and
- * the largest g is found by a scan backward from a bound that only moves
- * down between two pushes of a larger g. The lists of g >= D are sparse
- * while they are at most R = 64: a vector of runs ( g , head ), sorted by
- * increasing g, whose last run is the top of the layer. A push of g >= D
- * appends a run when g is the largest (the common case of a search, whose
- * children are deeper than their parent), prepends to the list of the
- * last run when g is equal to it, and otherwise finds its place by a
- * binary search and moves the larger runs up by one; a pop takes the
- * head of the last run and drops the run when its list empties. A push of
- * g >= D into a layer of R runs first turns it dense on all its g: its
- * vector grows up to the largest g, takes the heads of the runs, whose
- * lists stay as they are, and the bound of the scan goes to the largest
- * g; the layer stays dense until it empties, when it frees its vector and
- * is sparse again. The vectors of runs are not freed but kept, empty, for
- * the next layer that needs one, so that a layer that fills again
- * allocates nothing. In pseudocode, for a layer l:
+ * A layer (the items of one \f$ f \f$) keeps the heads of its lists in two
+ * ways. The lists of \f$ g < D \f$ (\f$ D = 256 \f$) are dense: an array
+ * indexed by \f$ g \f$, the first \f$ S = 4 \f$ heads in the layer itself and
+ * the others in a vector, whose largest \f$ g \f$ with items is found by a
+ * scan backward from a bound that only moves down between two pushes of a
+ * larger \f$ g \f$. The lists of \f$ g \ge D \f$ are sparse while they are at
+ * most \f$ R = 64 \f$: a vector of runs \f$ ( g , h ) \f$, sorted by
+ * increasing \f$ g \f$, whose last run is the top of the layer. A push of a
+ * new \f$ g \ge D \f$ into a layer of \f$ R \f$ runs turns it dense on all its
+ * \f$ g \f$, moving the heads of the runs, not the items, into the vector,
+ * and the layer stays dense until it empties, when it frees its vector and is
+ * sparse again; the vectors of runs are kept, empty, for the next layer that
+ * needs one. A filling of a layer with \f$ m \f$ items costs
+ * \f$ O( m + D ) \f$ if they have at most \f$ R \f$ distinct
+ * \f$ g \ge D \f$, and \f$ O( m + G_f ) \f$ otherwise, \f$ G_f \f$ the
+ * largest \f$ g \f$ of the layer \f$ f \f$, paid by more than \f$ R \f$
+ * pushes, where a dense array alone would cost \f$ \Theta( G_f ) \f$ at each
+ * filling, even of one item; the argument and the memory,
+ * \f$ O( n + F + \sum_f H_f + R L ) \f$ words, are in the theory of the area
+ * (see \ref theory_priority_monotone).
  *
- *     push( x , g ): if g >= D and l is sparse and | l.runs | = R:
- *                          l.head[ g' ] = h for each run ( g' , h );
- *                          l.runs = {}; l is dense
- *                    if g < D or l is dense: prepend x to l.head[ g ]
- *                    else: find the run of g in l.runs by binary search,
- *                          or insert it there; prepend x to its list
- *     pop():         if l.runs is not empty: take from the last run, and
- *                          drop the run if its list is now empty
- *                    else: scan l.topG down to a list with items, take
- *                          from it
- *                    if l is empty: free l.head; l is sparse
+ * The items lie in one vector of cells, each with the index of the next cell
+ * of its list, and the cells freed by `pop()` form a list of their own that
+ * `push()` takes from first, so that a push or a pop costs no call to the
+ * allocator once the vector has grown to the largest size of the queue.
+ * There is no decrease-key: as in the lazy deletion of A*, an item whose key
+ * improves is pushed again, and the caller skips the stale copies when they
+ * come out.
  *
- * The order is the same in the two ways: inside a list it is LIFO, the
- * runs and the dense heads are both by g, and the conversion moves the
- * heads, not the items. What changes is the cost of a layer that empties
- * and fills again, as the least layer of a search whose nodes come in
- * small batches, where a g of a few thousands meets a layer of a few
- * items. A dense array costs its whole length at each filling, that is,
- * \f$ \Theta( G_f ) \f$ for the largest g \f$ G_f \f$ of the layer f,
- * to allocate and set its heads to empty and as much to scan it down, even
- * for one item. The runs cost \f$ O( 1 ) \f$ per push of a g not below
- * the largest, \f$ O( \log R + R ) = O( 1 ) \f$ per other push (R is a
- * constant: a push moves at most R runs) and \f$ O( 1 ) \f$ per pop.
- * A filling of m items with at most R distinct g >= D thus costs
- * \f$ O( m + D ) \f$; one with more costs \f$ O( m + G_f ) \f$, but then
- * m > R and the length of the array is paid by more than R pushes,
- * \f$ O( G_f / R ) \f$ each. A binary heap per layer would cost
- * \f$ O( \log m ) \f$ per operation, more than the dense lists on a
- * layer of many items, and would lose the order of the lists, which the
- * view of the standard interface walks; the dense lists of the g < D keep
- * the cost of the keys of a small range as it was.
- *
- * The items lie in one vector of cells, each with the index of the next
- * cell of its list, and the cells freed by pop() form a list of their own
- * that push() takes from first, so that a push or a pop costs no call to
- * the allocator once the vector has grown to the largest size of the
- * queue. A layer of g < S costs no allocation, and a layer frees its
- * dense heads when it empties, so that the memory follows the band of the
- * keys in the queue: \f$ O( n + F + \sum_f H_f + R L ) \f$ words for n
- * items, F the largest f pushed, \f$ H_f \f$ the size of the layer f
- * while it is in use, at most D if it is sparse and its largest g
- * \f$ G_f \f$ if it is dense, and L the most layers that had runs at
- * the same time, each vector of runs holding at most R.
- *
- * There is no decrease-key: as in the lazy deletion of A*, an item whose
- * key improves is pushed again, and the caller skips the stale copies when
- * they come out.
- *
- * The contracts [see Contract.h]: the keys are nonnegative, and top(),
- * topF(), topG() and pop() need a queue that is not empty; the invariant is
- * that the counts of the layers add up to size(), and that the runs of the
- * layer changed are at most R, of g >= D, increasing and with items, and
- * none in a dense layer. The operations are defined in BucketQueue.tpp.
+ * The contracts [see `Contract.h`]: the keys are nonnegative, and `top()`,
+ * `topF()`, `topG()` and `pop()` need a queue that is not empty; the
+ * invariant is that the counts of the layers add up to `size()`, and that the
+ * runs of the layer changed are at most \f$ R \f$, of \f$ g \ge D \f$,
+ * increasing and with items, and none in a dense layer. The operations are
+ * defined in `BucketQueue.tpp`.
  *
  * \see R. B. Dial, Algorithm 360: shortest-path forest with topological
  *      ordering, Communications of the ACM 12(11), 632-633, 1969,
@@ -97,7 +59,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -133,7 +95,8 @@ namespace ADS {
 /*-------------------------- CLASS BucketQueue -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a two-level bucket queue: least f first, then largest g, then LIFO
+/// a two-level bucket queue: least \f$ f \f$ first, then largest \f$ g \f$,
+/// then LIFO
 template< class T , std::integral K = int >
 class BucketQueue {
 
@@ -143,37 +106,111 @@ class BucketQueue {
  using Item = T;   ///< the type of the items
  using Key = K;    ///< the type of the keys
 
- /// pushes x with the keys f and g
- /// \pre f >= 0 and g >= 0
+ /// pushes \f$ x \f$ with the keys \f$ f \f$ and \f$ g \f$
+ ///
+ /// In pseudocode (the bucket queue of Dial nested as in Burns et al.,
+ /// beyond the book), \f$ \ell \f$ the layer of \f$ f \f$ and \f$ v \f$ its
+ /// runs:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{push}( x , f , g ) \cr
+ /// 2 & \quad \ell \gets \text{the layer of } f \cr
+ /// 3 & \quad \textbf{if}\ g \ge D\ \textbf{and}\ \ell \text{ is sparse}
+ ///     \ \textbf{and}\ |v| = R\ \textbf{then}\quad \triangleright\ \text{to}
+ ///     \text{ dense} \cr
+ /// 4 & \qquad \textbf{foreach}\ ( g' , h ) \in v\ \textbf{do}
+ ///     \ \ell.\mathit{head}[ g' ] \gets h \cr
+ /// 5 & \qquad v \gets \emptyset;\ \ell.\mathit{topG} \gets \text{the }
+ ///     \text{largest } g' \cr
+ /// 6 & \quad \textbf{if}\ g < D\ \textbf{or}\ \ell \text{ is dense}
+ ///     \ \textbf{then} \cr
+ /// 7 & \qquad \text{prepend } x \text{ to the list of }
+ ///     \ell.\mathit{head}[ g ];\ \ell.\mathit{topG} \gets \max\{
+ ///     \ell.\mathit{topG} , g \} \cr
+ /// 8 & \quad \textbf{else if}\ v = \emptyset\ \textbf{or}\ g > \text{the }
+ ///     \text{last } g' \text{ of } v\ \textbf{then}\ \text{append the run }
+ ///     ( g , ( x ) ) \text{ to } v \cr
+ /// 9 & \quad \textbf{else}\ \text{find the run of } g \text{ in } v
+ ///     \text{ by binary search, or insert it;}\ \text{prepend } x
+ ///     \text{ to it} \cr
+ /// 10 & \quad \ell.\mathit{count} \gets \ell.\mathit{count} + 1;
+ ///     \ \mathit{minF} \gets \min\{ \mathit{minF} , f \}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ f \ge 0 \f$ and \f$ g \ge 0 \f$
  void push( const T & x , K f , K g );
 
- /// an item of least f and, among those, of largest g, the last pushed
+ /// an item of least \f$ f \f$ and, among those, of largest \f$ g \f$, the
+ /// last pushed
+ ///
+ /// In pseudocode, the two scans moving only forward in \f$ f \f$ and
+ /// backward in \f$ g \f$ between two pushes:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{top}() \cr
+ /// 2 & \quad \textbf{while}\ \text{the layer of } \mathit{minF} \text{ is }
+ ///     \text{empty}\ \textbf{do}\ \mathit{minF} \gets \mathit{minF} + 1 \cr
+ /// 3 & \quad \ell \gets \text{the layer of } \mathit{minF} \cr
+ /// 4 & \quad \textbf{if}\ \ell \text{ has runs}\ \textbf{then return}
+ ///     \ \text{the head of its last run} \cr
+ /// 5 & \quad \textbf{while}\ \ell.\mathit{head}[ \ell.\mathit{topG} ] =
+ ///     \textbf{nil}\ \textbf{do}\ \ell.\mathit{topG} \gets
+ ///     \ell.\mathit{topG} - 1 \cr
+ /// 6 & \quad \textbf{return}\ \text{the item of } \ell.\mathit{head}[
+ ///     \ell.\mathit{topG} ]
+ /// \end{array}}
+ /// \f]
  /// \pre the queue is not empty
  [[nodiscard]] const T & top( void );
 
- /// the f of top()
+ /// the \f$ f \f$ of `top()`, i.e., the least \f$ f \f$ in the queue
  /// \pre the queue is not empty
  [[nodiscard]] K topF( void );
 
- /// the g of top()
+ /// the \f$ g \f$ of `top()`, i.e., the largest \f$ g \f$ of the least
+ /// \f$ f \f$
  /// \pre the queue is not empty
  [[nodiscard]] K topG( void );
 
- /// removes top() and returns it
+ /// removes `top()` and returns it
+ ///
+ /// In pseudocode, \f$ \ell \f$ the layer of `top()` found as there:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{pop}() \cr
+ /// 2 & \quad \ell \gets \text{the layer of } \mathrm{top}() \cr
+ /// 3 & \quad \textbf{if}\ \ell \text{ has runs}\ \textbf{then} \cr
+ /// 4 & \qquad x \gets \text{the item unlinked from the head of the last run}
+ ///     \cr
+ /// 5 & \qquad \textbf{if}\ \text{its list is empty}\ \textbf{then}
+ ///     \ \text{drop the run, and spare the vector if no run is left} \cr
+ /// 6 & \quad \textbf{else}\ x \gets \text{the item unlinked from }
+ ///     \ell.\mathit{head}[ \ell.\mathit{topG} ] \cr
+ /// 7 & \quad \text{its cell to the list of the free cells};
+ ///     \ \ell.\mathit{count} \gets \ell.\mathit{count} - 1 \cr
+ /// 8 & \quad \textbf{if}\ \ell.\mathit{count} = 0\ \textbf{then}
+ ///     \ \text{free the dense heads of } g \ge S;\ \ell.\mathit{topG} \gets 0
+ ///     \cr
+ /// 9 & \quad \textbf{return}\ x
+ /// \end{array}}
+ /// \f]
  /// \pre the queue is not empty
  T pop( void );
 
  /// an item with its keys
  struct Entry {
-  T item;
-  K f , g;
+  T item;   ///< the item
+  K f ,     ///< its first key
+    g;      ///< its second key
   };
 
- /// removes top() and returns it with its keys f and g, finding the top
- /// once instead of three times through topF(), topG() and pop()
+ /// removes `top()` and returns it with its keys \f$ f \f$ and \f$ g \f$,
+ /// finding the top once instead of three times through `topF()`, `topG()`
+ /// and `pop()`
  /// \pre the queue is not empty
  Entry popEntry( void );
 
+ /// whether the queue has no item
  [[nodiscard]] bool empty( void ) const;
 
  /// the number of items, the stale ones included
@@ -182,10 +219,10 @@ class BucketQueue {
  /// removes all the items and frees the layers
  void clear( void );
 
- /// the g below which the lists of a layer are always dense
+ /// the \f$ g \f$ below which the lists of a layer are always dense
  static constexpr std::size_t D = 256;
 
- /// the runs of g >= D that a layer keeps sparse, at most
+ /// the runs of \f$ g \ge D \f$ that a layer keeps sparse, at most
  static constexpr std::size_t R = 64;
 
 /*--------------------------------------------------------------------------*/
@@ -241,19 +278,24 @@ class BucketQueue {
 
  class const_iterator {
   public:
-  using iterator_category = std::forward_iterator_tag;
-  using value_type = T;
-  using difference_type = std::ptrdiff_t;
-  using reference = const T &;
-  using pointer = const T *;
+  using iterator_category = std::forward_iterator_tag;   ///< forward
+  using value_type = T;                ///< the type of the items
+  using difference_type = std::ptrdiff_t;   ///< the distances
+  using reference = const T &;         ///< a constant reference to an item
+  using pointer = const T *;           ///< a constant pointer to an item
 
+  /// the singular iterator
   const_iterator( void ) = default;
+  /// on the first item of the layers from \f$ f \f$ of the queue `q`
   const_iterator( const BucketQueue * q , std::size_t f )
    : f_q( q ) , f_f( f ) { settle(); }
 
+  /// the item
   reference operator*( void ) const { return( f_q->f_cells[ f_c ].item ); }
+  /// the address of the item
   pointer operator->( void ) const { return( &**this ); }
 
+  /// on the next item in the order of the extractions
   const_iterator & operator++( void ) {
    f_c = f_q->f_cells[ f_c ].next;
    if( f_c == NIL ) {
@@ -262,8 +304,10 @@ class BucketQueue {
     }
    return( *this );
    }
+  /// on the next item, returning the iterator before
   const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
 
+  /// whether on the same item, or both at the end
   bool operator==( const const_iterator & o ) const {
    return( ( f_f == o.f_f ) && ( f_g == o.f_g ) && ( f_c == o.f_c ) );
    }
@@ -291,20 +335,24 @@ class BucketQueue {
   Index f_c = NIL;
   };
 
- using value_type = T;
- using size_type = std::size_t;
- using difference_type = std::ptrdiff_t;
- using reference = const T &;
- using const_reference = const T &;
- using iterator = const_iterator;
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the distances of iterators
+ using reference = const T &;             ///< a constant reference
+ using const_reference = const T &;       ///< a constant reference
+ using iterator = const_iterator;         ///< the same as `const_iterator`
 
+ /// on the item of `top()`
  [[nodiscard]] const_iterator begin( void ) const {
   return( const_iterator( this , 0 ) );
   }
+ /// past the last item
  [[nodiscard]] const_iterator end( void ) const {
   return( const_iterator( this , f_layers.size() ) );
   }
+ /// `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ /// `end()`
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
