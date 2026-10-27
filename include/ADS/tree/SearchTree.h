@@ -3,58 +3,64 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The binary search tree (ABR) and the Red-Black tree of the book, as a
- * DICTIONARY [see ADT.h] from keys to values.
+ * DICTIONARY [see `ADT.h`] from keys to values.
  *
- * In a binary search tree the keys in the left subtree of a node u are smaller
- * than the key of u, and those in the right subtree larger, so that the
- * invisit examines the keys in increasing order; lookupNode(), insertNode()
- * and removeNode() go down one path and take \f$ O( h ) \f$ time, h being the
- * height of the tree, which is \f$ O( n ) \f$ in the worst case.
+ * In a binary search tree the keys in the left subtree of a node \f$ u \f$
+ * are smaller than the key of \f$ u \f$, and those in the right subtree
+ * larger, so that the visit in symmetric order examines the keys in
+ * increasing order; `lookupNode()`, `insertNode()` and `removeNode()` go
+ * down one path and take \f$ O( h ) \f$ time, \f$ h \f$ being the height of
+ * the tree, which is \f$ O( n ) \f$ in the worst case.
  *
  * A Red-Black tree is a binary search tree whose nodes are red or black,
  * with the constraints (V1) the root is black, (V2) the leaves are black,
- * (V3) both children of a red node are black, (V4) all the paths from a node
- * to the leaves below it have the same number of black nodes, its black
- * height b( u ). The subtree of u has at least \f$ 2^{b(u)} - 1 \f$
- * internal nodes (Theorem 6.1), no path from the root to a leaf is longer
- * than twice another one (Theorem 6.2), and the height is
+ * (V3) both children of a red node are black, (V4) all the paths from a
+ * node to the leaves below it have the same number of black nodes, its
+ * black height \f$ b( u ) \f$. The subtree of \f$ u \f$ has at least
+ * \f$ 2^{b( u )} - 1 \f$ internal nodes (Theorem 6.1), no path from the
+ * root to a leaf is longer than twice another one (Theorem 6.2), and the
+ * height is
  * \f[
  *   h \leq 2 \log_2( n + 1 )
  * \f]
  * (Theorem 6.3). The procedures are those of the binary search tree, plus
- * balanceInsert() after an insertion and balanceDelete() after the removal of
- * a black node, which restore the constraints with \f$ O( \log n ) \f$ changes
- * of color and at most 3 rotations, in \f$ O( \log n ) \f$ time.
+ * `balanceInsert()` after an insertion and `balanceDelete()` after the
+ * removal of a black node, which restore the constraints with
+ * \f$ O( \log n ) \f$ changes of color and at most 3 rotations, in
+ * \f$ O( \log n ) \f$ time.
  *
- * The two trees are one class, SearchTree< K , V , RB >, the procedures of
- * the book written once and the two balancing calls under if constexpr( RB )
- * where the book "highlights them in black"; BinarySearchTree< K , V > and
- * RedBlackTree< K , V > are its two instances. The leaves are one sentinel
- * node, black, which the book allows, shared by all the trees of the type
- * and never written, so that the trees that a split makes, or that two
- * threads join, may point to it at once. Four points of the pseudocode are
- * mended, each marked in the code: balanceDelete() is given the parent of
- * t, since t may be the sentinel, whose parent the book writes when the
- * removed node had no children; it stops when t is the root rather than
- * when t is the old root T, which a rotation of the case (1) may have
- * moved down; the case (4) climbs to the root instead of reading the old
- * T; and the Red-Black insertNode() returns the root also when the key was
- * there already.
+ * The two trees are one class, `SearchTree< K , V , RB >`, the procedures
+ * of the book written once and the two balancing calls under
+ * `if constexpr( RB )` where the book "highlights them in black";
+ * `BinarySearchTree< K , V >` and `RedBlackTree< K , V >` are its two
+ * instances. The leaves are one sentinel node, black, which the book
+ * allows, shared by all the trees of the type and never written, so that
+ * the trees that a split makes, or that two threads join, may point to it
+ * at once. Four points of the pseudocode of the book are mended, each
+ * marked in the code: `balanceDelete()` is given the parent of \f$ t \f$,
+ * since \f$ t \f$ may be the sentinel, whose parent the book writes when
+ * the removed node had no children; it stops when \f$ t \f$ is the root
+ * rather than when \f$ t \f$ is the old root \f$ T \f$, which a rotation
+ * of the case (1) may have moved down; the case (4) climbs to the root
+ * instead of reading the old \f$ T \f$; and the Red-Black `insertNode()`
+ * returns the root also when the key was there already.
  *
  * Each node keeps also the size of its subtree, which the insertions, the
  * removals and the rotations update, so that the Red-Black tree has the
- * operations based on join [see JoinAlgorithms.h]: split(), join(),
- * join2(), extractRange(), the union, the intersection and the difference
- * with another tree, the batches of insertions and of removals, filter()
- * and mapReduce(), sequential or on the threads of an executor; its join
- * is that of the Red-Black trees of Tarjan, by the black heights. The
- * binary search tree, whose height may be \f$ n \f$, has none of them.
+ * operations based on join [see `JoinAlgorithms.h`]: `split()`, `join()`,
+ * `join2()`, `extractRange()`, the union, the intersection and the
+ * difference with another tree, the batches of insertions and of removals,
+ * `filter()` and `mapReduce()`, sequential or on the threads of an
+ * executor; its join is that of the Red-Black trees of Tarjan, by the
+ * black heights. The binary search tree, whose height may be \f$ n \f$, has
+ * none of them.
  *
- * The contracts [see Contract.h]: after insert() the key is there and
- * after remove() it is not; key(), value(), successorNode() and
- * predecessorNode() need a node; the invariant is the order of the keys,
+ * The contracts [see `Contract.h`]: after `insert()` the key is there and
+ * after `remove()` it is not; `key()`, `value()`, `successorNode()` and
+ * `predecessorNode()` need a node; the invariant is the order of the keys,
  * the parents, the sizes and, for a Red-Black tree, the constraints
- * (V1)-(V4) [see valid()]. The operations are defined in SearchTree.tpp.
+ * (V1)-(V4) [see `valid()`]. The operations are defined in
+ * `SearchTree.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 6.1 and 6.2,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap06.pdf
@@ -114,12 +120,14 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// the color of a node of a Red-Black tree
-enum class Color : unsigned char { RED , BLACK };
+enum class Color : unsigned char { RED ,     ///< a red node
+                                   BLACK     ///< a black node
+                                   };
 
 template< std::totally_ordered K , class V , bool RB >
 class SearchTree;
 
-/// the adaptor of the nodes of a Red-Black tree [see JoinAdaptor]
+/// the adaptor of the nodes of a Red-Black tree [see `JoinAdaptor`]
 template< std::totally_ordered K , class V , bool RB >
 struct SearchTreeNodes;
 
@@ -127,8 +135,8 @@ struct SearchTreeNodes;
 /// based on join, whose recursion would be as deep as the tree
 struct NotJoinable {};
 
-/// a binary search tree, balanced as a Red-Black tree if RB, and then with
-/// the operations based on join [see Joinable]
+/// a binary search tree, balanced as a Red-Black tree if `RB`, and then
+/// with the operations based on join [see `Joinable`]
 template< std::totally_ordered K , class V , bool RB >
 class SearchTree
  : public std::conditional_t< RB ,
@@ -150,7 +158,7 @@ class SearchTree
   Link * parent;                ///< the parent
   Link * left;                  ///< the left child
   Link * right;                 ///< the right child
-  Color color = Color::BLACK;   ///< the color, read only if RB
+  Color color = Color::BLACK;   ///< the color, read only if `RB`
   std::size_t size = 0;         ///< the nodes of the subtree, 0 for nil
   };
 
@@ -166,32 +174,136 @@ class SearchTree
  /// a copy, node by node with the same shape, in \f$ O( n ) \f$ time
  SearchTree( const SearchTree & o );
 
+ /// the nodes of `o`, which is left empty, in \f$ O( 1 ) \f$ time
  SearchTree( SearchTree && o ) noexcept;
 
+ /// the nodes of `o`, by copy and swap
  SearchTree & operator=( SearchTree o ) noexcept;
 
+ /// frees the nodes
  ~SearchTree();
 
+ /// exchanges the nodes with `o`
  void swap( SearchTree & o ) noexcept;
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- DICTIONARY OPERATIONS --------------------------*/
 /*--------------------------------------------------------------------------*/
 
- /// the value of the key k, or nothing
+ /// the value of the key \f$ k \f$, or nothing
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
- /// associates the value v to the key k
+ /// associates the value \f$ v \f$ to the key \f$ k \f$, in \f$ O( h ) \f$
+ /// time
+ ///
+ /// In pseudocode (sections 6.1 and 6.2), the insertion of the binary
+ /// search tree, `balanceInsert()` for a Red-Black tree, and the rotation
+ /// of figure 6.4 (`rotateRight()` its mirror):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{insertNode}( T , x , v ) \cr
+ /// 2 & \quad p \gets \textbf{nil};\ u \gets T \cr
+ /// 3 & \quad \textbf{while}\ u \ne \textbf{nil}\ \textbf{and}\ u.\mathit{key}
+ ///     \ne x\ \textbf{do}\ p \gets u;\ u \gets \text{the child of } u
+ ///     \text{ on the side of } x \cr
+ /// 4 & \quad \textbf{if}\ u \ne \textbf{nil}\ \textbf{then}\ u.\mathit{value}
+ ///     \gets v;\ \textbf{return}\ T \cr
+ /// 5 & \quad n \gets \text{a new node of } ( x , v ) \text{, the child of }
+ ///     p \text{ on the side of } x \cr
+ /// 6 & \quad \textbf{if}\ \mathit{RB}\ \textbf{then}
+ ///     \ \mathrm{balanceInsert}( n );\ \textbf{return}\ \text{the root} \cr
+ /// 7 & \quad \textbf{if}\ p = \textbf{nil}\ \textbf{then return}\ n
+ ///     \ \textbf{else return}\ T \cr
+ /// 8 & \textbf{procedure}\ \mathrm{balanceInsert}( t ) \cr
+ /// 9 & \quad t.\mathit{color} \gets \text{red} \cr
+ /// 10 & \quad \textbf{while}\ t \ne \textbf{nil}\ \textbf{do} \cr
+ /// 11 & \qquad p \gets t.\mathit{parent};\ n \gets p.\mathit{parent};\ z
+ ///     \gets \text{the other child of } n \cr
+ /// 12 & \qquad \textbf{if}\ p = \textbf{nil}\ \textbf{then}
+ ///     \ t.\mathit{color} \gets \text{black};\ t \gets \textbf{nil}\quad
+ ///     \triangleright\ \text{(1)} \cr
+ /// 13 & \qquad \textbf{else if}\ p \text{ is black}\ \textbf{then}\ t
+ ///     \gets \textbf{nil}\quad \triangleright\ \text{(2)} \cr
+ /// 14 & \qquad \textbf{else if}\ z \text{ is red}\ \textbf{then}\quad
+ ///     \triangleright\ \text{(3)} \cr
+ /// 15 & \qquad\quad p.\mathit{color} \gets z.\mathit{color} \gets
+ ///     \text{black};\ n.\mathit{color} \gets \text{red};\ t \gets n \cr
+ /// 16 & \qquad \textbf{else if}\ t = p.\mathit{right}\ \textbf{and}\ p =
+ ///     n.\mathit{left}\ \textbf{then}\ \mathrm{rotateLeft}( p );\ t \gets
+ ///     p\quad \triangleright\ \text{(4a), and (4b) its mirror} \cr
+ /// 17 & \qquad \textbf{else} \cr
+ /// 18 & \qquad\quad \text{rotate } n \text{ away from } t \text{ (right }
+ ///     \text{if } p = n.\mathit{left} \text{)}\quad \triangleright
+ ///     \ \text{(5a), (5b)} \cr
+ /// 19 & \qquad\quad p.\mathit{color} \gets \text{black};
+ ///     \ n.\mathit{color} \gets \text{red};\ t \gets \textbf{nil} \cr
+ /// 20 & \textbf{function}\ \mathrm{rotateLeft}( x ) \cr
+ /// 21 & \quad y \gets x.\mathit{right};\ x.\mathit{right} \gets
+ ///     y.\mathit{left};\ y.\mathit{left} \gets x \cr
+ /// 22 & \quad \text{the parent of } x \text{ takes } y \text{ as its child;}
+ ///     \ \text{update the parents and the sizes of } x \text{ and } y \cr
+ /// 23 & \quad \textbf{return}\ y
+ /// \end{array}}
+ /// \f]
  void insert( const K & k , const V & v );
 
- /// removes the key k, if present
+ /// removes the key \f$ k \f$, if present, in \f$ O( h ) \f$ time
+ ///
+ /// In pseudocode (sections 6.1 and 6.2), the removal of the binary search
+ /// tree and `balanceDelete()` for a Red-Black tree, the cases (1) to (4)
+ /// with \f$ t \f$ a left child of \f$ p \f$ and their mirrors (5) to (8):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{removeNode}( T , x ) \cr
+ /// 2 & \quad u \gets \mathrm{lookupNode}( T , x );\ \textbf{if}\ u =
+ ///     \textbf{nil}\ \textbf{then return}\ T \cr
+ /// 3 & \quad \textbf{if}\ u \text{ has two children}\ \textbf{then}\quad
+ ///     \triangleright\ \text{(3): the successor } s \text{ in its place} \cr
+ /// 4 & \qquad s \gets \mathrm{min}( u.\mathit{right} );\ ( u.\mathit{key} ,
+ ///     u.\mathit{value} ) \gets ( s.\mathit{key} , s.\mathit{value} );\ u
+ ///     \gets s \cr
+ /// 5 & \quad t \gets \text{the only child of } u \text{, or }
+ ///     \textbf{nil}\quad \triangleright\ \text{(1), (2)} \cr
+ /// 6 & \quad \text{hang } t \text{ in the place of } u \text{ under }
+ ///     u.\mathit{parent} \cr
+ /// 7 & \quad \textbf{if}\ \mathit{RB}\ \textbf{and}\ u \text{ is black}
+ ///     \ \textbf{then}\ \mathrm{balanceDelete}( t , u.\mathit{parent} ) \cr
+ /// 8 & \quad \text{free } u;\ \textbf{return}\ \text{the root} \cr
+ /// 9 & \textbf{procedure}\ \mathrm{balanceDelete}( t , p ) \cr
+ /// 10 & \quad \textbf{while}\ p \ne \textbf{nil}\ \textbf{and}\ t \text{ is }
+ ///     \text{black}\ \textbf{do} \cr
+ /// 11 & \qquad f \gets p.\mathit{right};\ ( a , b ) \gets (
+ ///     f.\mathit{left} , f.\mathit{right} )\quad \triangleright
+ ///     \ \text{sibling and nephews} \cr
+ /// 12 & \qquad \textbf{if}\ f \text{ is red}\ \textbf{then}
+ ///     \ p.\mathit{color} \gets \text{red};\ f.\mathit{color} \gets
+ ///     \text{black};\ \mathrm{rotateLeft}( p )\quad \triangleright
+ ///     \ \text{(1)} \cr
+ /// 13 & \qquad \textbf{else if}\ a \text{ and } b \text{ are black}
+ ///     \ \textbf{then}\ f.\mathit{color} \gets \text{red};\ t \gets p;\ p
+ ///     \gets t.\mathit{parent}\quad \triangleright\ \text{(2)} \cr
+ /// 14 & \qquad \textbf{else if}\ b \text{ is black}\ \textbf{then}
+ ///     \ a.\mathit{color} \gets \text{black};\ f.\mathit{color} \gets
+ ///     \text{red};\ \mathrm{rotateRight}( f )\quad \triangleright
+ ///     \ \text{(3)} \cr
+ /// 15 & \qquad \textbf{else}\quad \triangleright\ \text{(4)} \cr
+ /// 16 & \qquad\quad f.\mathit{color} \gets p.\mathit{color};
+ ///     \ p.\mathit{color} \gets b.\mathit{color} \gets \text{black};
+ ///     \ \mathrm{rotateLeft}( p ) \cr
+ /// 17 & \qquad\quad t \gets \text{the root};\ p \gets \textbf{nil} \cr
+ /// 18 & \quad \textbf{if}\ t \ne \textbf{nil}\ \textbf{then}
+ ///     \ t.\mathit{color} \gets \text{black}
+ /// \end{array}}
+ /// \f]
  void remove( const K & k );
 
- /// true if the key k is present
+ /// true if the key \f$ k \f$ is present
  [[nodiscard]] bool contains( const K & k ) const;
 
+ /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
 
+ /// true if there is no key
  [[nodiscard]] bool empty( void ) const;
 
  /// removes all the nodes
@@ -200,46 +312,75 @@ class SearchTree
 /*--------------------------------------------------------------------------*/
 /*---------------------------- NAVIGATION ----------------------------------*/
 /*--------------------------------------------------------------------------*/
-/** The nodes can be walked as in the book: from root(), along the fields
- * parent, left and right of a Link, until the leaf, isNil(). They must not
- * be changed. */
-
+ /// the root, from which the nodes can be walked as in the book, along the
+ /// fields `parent`, `left` and `right` of a `Link`, until the leaf,
+ /// `isNil()`; they must not be changed
  [[nodiscard]] Link * root( void ) const;
 
- /// true if u is the sentinel leaf (or the parent of the root)
+ /// true if \f$ u \f$ is the sentinel leaf (or the parent of the root)
  [[nodiscard]] bool isNil( const Link * u ) const;
 
- /// the key of the node u
- /// \pre u is a node, not the sentinel leaf, which has no key (only nil
- ///      is checked, as a static function cannot know the sentinel)
+ /// the key of the node \f$ u \f$
+ /// \pre \f$ u \f$ is a node, not the sentinel leaf, which has no key
+ ///      (only nil is checked, as a static function cannot know the
+ ///      sentinel)
  [[nodiscard]] static const K & key( const Link * u );
 
- /// the value of the node u
- /// \pre u is a node, not the sentinel leaf
+ /// the value of the node \f$ u \f$
+ /// \pre \f$ u \f$ is a node, not the sentinel leaf
  [[nodiscard]] static const V & value( const Link * u );
 
- /// the node of the key x, nil if absent
+ /// the node of the key \f$ x \f$, nil if absent, in \f$ O( h ) \f$ time
+ ///
+ /// In pseudocode (section 6.1):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{lookupNode}( T , x ) \cr
+ /// 2 & \quad \textbf{while}\ T \ne \textbf{nil}\ \textbf{and}\ T.\mathit{key}
+ ///     \ne x\ \textbf{do} \cr
+ /// 3 & \qquad \textbf{if}\ x < T.\mathit{key}\ \textbf{then}\ T \gets
+ ///     T.\mathit{left}\ \textbf{else}\ T \gets T.\mathit{right} \cr
+ /// 4 & \quad \textbf{return}\ T
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] Link * lookupNode( const K & x ) const;
 
- /// the node of the smallest key, nil if the tree is empty
+ /// the node of the smallest key, nil if the tree is empty, by the left
+ /// path from the root
  [[nodiscard]] Link * min( void ) const;
 
- /// the node of the largest key, nil if the tree is empty
+ /// the node of the largest key, nil if the tree is empty, by the right
+ /// path from the root
  [[nodiscard]] Link * max( void ) const;
 
- /// successorNode(): the node of the next key, nil after the largest one
- /// and from nil
- /// \pre t is not a null pointer
+ /// the node of the next key, nil after the largest one and from nil, in
+ /// \f$ O( h ) \f$ time
+ ///
+ /// In pseudocode (section 6.1), by the links to the parents:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{successorNode}( t ) \cr
+ /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return}\ t \cr
+ /// 3 & \quad \textbf{if}\ t.\mathit{right} \ne \textbf{nil}
+ ///     \ \textbf{then return}\ \mathrm{min}( t.\mathit{right} ) \cr
+ /// 4 & \quad p \gets t.\mathit{parent} \cr
+ /// 5 & \quad \textbf{while}\ p \ne \textbf{nil}\ \textbf{and}\ t =
+ ///     p.\mathit{right}\ \textbf{do}\ t \gets p;\ p \gets p.\mathit{parent}
+ ///     \cr
+ /// 6 & \quad \textbf{return}\ p
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ t \f$ is not a null pointer
  [[nodiscard]] Link * successorNode( Link * t ) const;
 
- /// the foreach of the book: f( k , v ) on the pairs in increasing order of
- /// the keys, \f$ O( n ) \f$ time
+ /// the foreach of the book: `f( k , v )` on the pairs in increasing order
+ /// of the keys, \f$ O( n ) \f$ time, by the visit in symmetric order
  template< class F >
  void forEach( F && f ) const;
 
- /// predecessorNode(): the node of the previous key, nil before the first
- /// one and from nil
- /// \pre t is not a null pointer
+ /// the node of the previous key, nil before the first one and from nil,
+ /// `successorNode()` with left and right swapped
+ /// \pre \f$ t \f$ is not a null pointer
  [[nodiscard]] Link * predecessorNode( Link * t ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
@@ -248,30 +389,44 @@ class SearchTree
  // bidirectional by the links to the parents, the sentinel leaf being the
  // end
 
+ /// the constant iterator on the pairs, by increasing key
  class const_iterator {
   public:
+  /// a pair of references to a key and its value
   using reference = std::pair< const K & , const V & >;
-  using value_type = reference;
-  using difference_type = std::ptrdiff_t;
+  using value_type = reference;             ///< the pairs read
+  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  /// bidirectional for the concepts of C++20
   using iterator_concept = std::bidirectional_iterator_tag;
+  /// input for the older algorithms, since `*it` is a value
   using iterator_category = std::input_iterator_tag;
 
+  /// an iterator on no tree
   const_iterator( void ) = default;
+
+  /// on the node \f$ x \f$ of the tree \f$ t \f$
   const_iterator( const SearchTree * t , Link * x ) : f_t( t ) , f_x( x ) {}
 
+  /// the pair of the node
   reference operator*( void ) const {
    return( reference( f_t->key( f_x ) , f_t->value( f_x ) ) );
    }
+  /// to the next key, `successorNode()`
   const_iterator & operator++( void ) {
    f_x = f_t->successorNode( f_x );
    return( *this );
    }
+  /// to the previous key, from the end to the largest one
   const_iterator & operator--( void ) {
    f_x = f_t->isNil( f_x ) ? f_t->max() : f_t->predecessorNode( f_x );
    return( *this );
    }
+  /// to the next key, returning the iterator before the step
   const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  /// to the previous key, returning the iterator before the step
   const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+
+  /// equal on the same node
   bool operator==( const const_iterator & o ) const {
    return( f_x == o.f_x );
    }
@@ -284,27 +439,32 @@ class SearchTree
   Link * f_x = nullptr;
   };
 
+ /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;
- using difference_type = std::ptrdiff_t;
- using reference = value_type;
- using const_reference = value_type;
- using iterator = const_iterator;
+ using size_type = std::size_t;            ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;   ///< the type of the distances
+ using reference = value_type;             ///< a pair, by value
+ using const_reference = value_type;       ///< a pair, by value
+ using iterator = const_iterator;          ///< the constant iterator
 
+ /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
   return( const_iterator( this , min() ) );
   }
+ /// the iterator past the largest key, the sentinel
  [[nodiscard]] const_iterator end( void ) const {
   return( const_iterator( this , nil() ) );
   }
+ /// as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ /// as `end()`
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:
 
  /// the order of the keys, the parents, the number of nodes, the sizes of
- /// the subtrees and, if RB, the constraints (V1)-(V4), \f$ O( n ) \f$
+ /// the subtrees and, if `RB`, the constraints (V1)-(V4), \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
 
  [[nodiscard]] Link * nil( void ) const;
@@ -315,7 +475,7 @@ class SearchTree
 
  Link * new_node( const K & x , const V & v );
 
- /// the copy of the subtree u of o, hung under p; iterative
+ /// the copy of the subtree \f$ u \f$ of `o`, hung under \f$ p \f$; iterative
  Link * copy( const SearchTree & o , Link * u , Link * p );
 
 /*--------------------------------------------------------------------------*/
@@ -328,8 +488,8 @@ class SearchTree
 
  Link * max( Link * T ) const;
 
- /// link(): u becomes the child of p on the side of x; the sentinel takes
- /// the parent too, as balanceDelete() reads it
+ /// \f$ u \f$ becomes the child of \f$ p \f$ on the side of \f$ x \f$; the
+ /// sentinel takes the parent too, as `balanceDelete()` reads it
  void link( Link * p , Link * u , const K & x );
 
  Link * insertNode( Link * T , const K & x , const V & v );
@@ -340,10 +500,11 @@ class SearchTree
 /*------------------- THE PROCEDURES OF SECTION 6.2 ------------------------*/
 /*--------------------------------------------------------------------------*/
 
- /// rotateLeft(): the right child y of x goes up, x down (figure 6.4)
+ /// the right child \f$ y \f$ of \f$ x \f$ goes up, \f$ x \f$ down (figure
+ /// 6.4)
  Link * rotateLeft( Link * x );
 
- /// rotateRight(): rotateLeft() with left and right swapped
+ /// `rotateLeft()` with left and right swapped
  Link * rotateRight( Link * x );
 
  static constexpr Color RED = Color::RED;
@@ -351,8 +512,8 @@ class SearchTree
 
  void balanceInsert( Link * t );
 
- /// balanceDelete(): the cases (1) to (4) with t a left child of p, and
- /// their mirrors (5) to (8), the same code with left and right swapped
+ /// the cases (1) to (4) with \f$ t \f$ a left child of \f$ p \f$, and their
+ /// mirrors (5) to (8), the same code with left and right swapped
  void balanceDelete( Link * t , Link * p );
 
 /*--------------------------------------------------------------------------*/

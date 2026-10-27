@@ -3,131 +3,111 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The balanced binary search trees whose only balancing operation is join,
- * beyond the book, and the operations on ordered sets and maps built on
- * it, sequential and parallel. join( L , k , R ), for two trees L and R
- * whose keys are smaller and larger than k, returns a balanced tree of the
- * keys of L, k and those of R; it is the one operation that knows the
- * balancing scheme, and split, the removals, the insertions, the union, the
- * intersection, the difference, the batches and the filters are written
- * once, on join alone, for every scheme. Adams wrote the union of the trees
- * balanced by weight in this way; Blelloch, Ferizovic and Sun showed that
- * the joins of four schemes (the AVL trees, the Red-Black trees, the trees
- * balanced by weight and the treaps) are enough for the set operations to
- * take the optimal work, and that the two recursive calls of each of them
- * can run in parallel.
+ * beyond the book, and the operations on ordered sets and maps built on it,
+ * sequential and parallel. `join( L , k , R )`, for two trees \f$ L \f$ and
+ * \f$ R \f$ whose keys are smaller and larger than \f$ k \f$, returns a
+ * balanced tree of the keys of \f$ L \f$, \f$ k \f$ and those of \f$ R \f$;
+ * it is the one operation that knows the balancing scheme, and split, the
+ * removals, the insertions, the union, the intersection, the difference,
+ * the batches and the filters are written once, on join alone, for every
+ * scheme. Adams wrote the union of the trees balanced by weight in this
+ * way; Blelloch, Ferizovic and Sun showed that the joins of four schemes
+ * (the AVL trees, the Red-Black trees, the trees balanced by weight and the
+ * treaps) are enough for the set operations to take the optimal work, and
+ * that the two recursive calls of each of them can run in parallel.
  *
- * \b Ranks. The cost of join is bounded through a rank \f$ r( T ) \f$ of
- * each tree, which is \f$ \Theta( \log n ) \f$ for a tree of n keys: the
- * height h for the AVL trees; the black height \f$ \hat{h} \f$ (the black
+ * The cost of join is bounded through a rank \f$ r( T ) \f$ of each tree,
+ * which is \f$ \Theta( \log n ) \f$ for a tree of \f$ n \f$ keys: the height
+ * \f$ h \f$ for the AVL trees; the black height \f$ \hat{h} \f$ (the black
  * nodes on a path from the root to a leaf, the root excluded if it is
- * black) for the Red-Black trees; \f$ \log_2 w( T ) \f$, w the weight (the
- * keys plus 1), for the trees balanced by weight and, in expectation, for
- * the treaps. Each join below goes down the right spine of the higher
- * tree (the left one of the lower, symmetrically) until it meets a subtree
- * c of the rank of the other tree, hangs k there with c and the other
- * tree as its children, and fixes the balance on the way back by at most
- * a double rotation per level; hence it costs
- * \f$ O( | r( L ) - r( R ) | + 1 ) \f$, and the rank of its result is
- * between \f$ \max( r( L ) , r( R ) ) \f$ and that plus 1. For the AVL
- * trees the subtree met has height \f$ h( R ) \f$ or \f$ h( R ) + 1 \f$,
- * the new node has height at most \f$ h( R ) + 2 \f$, and a rotation at
- * the parent brings the difference back to 1 (Lemma 1 of the paper). For
- * the Red-Black trees the subtree met is black, of black height
- * \f$ \hat{h}( R ) \f$, the new node is red, and the only fault, a red
- * node with a red child, is pushed up by one rotation per level and, at
- * the root, solved by painting it black. For the trees balanced by weight
- * of parameter \f$ \alpha \le 1 - 1 / \sqrt{2} \f$ (here 0.29), each
- * level needs a single or a double rotation, as for the insertions of
- * Nievergelt and Reingold, and the rank is that of the weight. For the
- * treaps, join is the merge of the two spines by the priorities, and k
- * goes down until its priority beats those below: its expected cost is
+ * black) for the Red-Black trees; \f$ \log_2 w( T ) \f$, \f$ w \f$ the
+ * weight (the keys plus 1), for the trees balanced by weight and, in
+ * expectation, for the treaps. Each join below goes down the right spine
+ * of the higher tree (the left one of the lower, symmetrically) until it
+ * meets a subtree \f$ c \f$ of the rank of the other tree, hangs \f$ k \f$
+ * there with \f$ c \f$ and the other tree as its children, and fixes the
+ * balance on the way back by at most a double rotation per level; hence it
+ * costs \f$ O( | r( L ) - r( R ) | + 1 ) \f$, and the rank of its result is
+ * between \f$ \max( r( L ) , r( R ) ) \f$ and that plus 1. The trees
+ * balanced by weight take the parameter
+ * \f$ \alpha \le 1 - 1 / \sqrt{2} \f$, here 0.29; for the treaps, join is
+ * the merge of the two spines by the priorities, and its expected cost is
  * that of an insertion, \f$ O( \log n ) \f$.
  *
- * \b Split. split( T , k ) exposes the root ( L , m , R ) of T, recurs on
- * the side of k and joins the other side with m and the part of the
- * recursion on its side. The joins at the levels of the path have ranks
- * that differ by the ranks of the subtrees left behind, so that their
- * costs telescope to \f$ O( r( T ) ) = O( \log n ) \f$; join2( L , R ),
- * the join with no key in between, takes the last key of L off it by
- * splitLast() and joins it with R, again in \f$ O( \log n ) \f$.
+ * `split( T , k )` exposes the root \f$ ( L , m , R ) \f$ of \f$ T \f$,
+ * recurs on the side of \f$ k \f$ and joins the other side with \f$ m \f$
+ * and the part of the recursion on its side, in \f$ O( \log n ) \f$, since
+ * the costs of its joins telescope; `join2( L , R )`, the join with no key
+ * in between, takes the last key of \f$ L \f$ off it by `splitLast()` and
+ * joins it with \f$ R \f$, again in \f$ O( \log n ) \f$. The union of
+ * \f$ A \f$ and \f$ B \f$ exposes the root of the smaller tree, splits the
+ * larger one at its key, takes the unions of the two left and of the two
+ * right sides, in parallel, and joins them with the key; the intersection
+ * and the difference differ only in whether the key survives, and use
+ * `join2` when it does not. For sizes \f$ m \le n \f$ the work is
+ * \f$ \Theta( m \log( n / m + 1 ) ) \f$, the lower bound of the comparisons
+ * for merging two sorted sequences, and the span \f$ O( \log m \log n ) \f$.
+ * A batch of \f$ m \f$ sorted pairs, `multiInsert()`, is the union with the
+ * tree built from the batch, and `multiRemove()` the difference, both done
+ * without building it: the batch is split by a binary search on the key of
+ * the root, in the same work; `filter()` and `mapReduce()` visit every
+ * node, \f$ O( n ) \f$ work and \f$ O( \log^2 n ) \f$ span. The arguments
+ * are on the theory page of the area.
  *
- * \b Work. union( A , B ) exposes the root ( L , k , R ) of the smaller
- * tree, splits the larger one at k, takes the unions of the two left and
- * of the two right sides, and joins them with k; the intersection and
- * the difference differ only in whether k survives, and use join2 when it
- * does not. For sizes \f$ m \le n \f$, the splits at the level i of the
- * recursion are \f$ 2^i \f$ splits of trees whose sizes sum to n, which
- * cost \f$ O( 2^i \log( n / 2^i + 1 ) ) \f$ by the concavity of the
- * logarithm; summed over the \f$ \log m \f$ levels, and with the joins
- * costing no more than the splits (their rank differences telescope), the
- * work is
- * \f[ W( m , n ) = \Theta\Bigl( m \log\Bigl( \frac{n}{m} + 1 \Bigr) \Bigr)
- * \f]
- * the lower bound of the comparisons for merging two sorted sequences
- * (Hwang and Lin; Brown and Tarjan), which is \f$ \Theta( m + n ) \f$ for
- * \f$ m \approx n \f$ and \f$ \Theta( \log n ) \f$ for \f$ m = 1 \f$. The
- * two recursive calls touch disjoint trees, so that they run in parallel:
- * the span is \f$ O( \log m \log n ) \f$, as each level of the recursion
- * waits for a split and a join. A batch of m sorted pairs, multiInsert(),
- * is the union with the tree built from the batch, and multiRemove() the
- * difference, both done without building it: the batch is split by a
- * binary search on the key of the root, in the same work; filter() and
- * mapReduce() visit every node, \f$ O( n ) \f$ work and
- * \f$ O( \log^2 n ) \f$ span.
+ * A node may keep a value of its subtree, computed from those of its two
+ * children and of its own pair (its size, its height, the sum of the values
+ * of an augmented map [see `JoinTree.h`]); since every node that changes
+ * is passed to `connect()`, which recomputes that value, and the rotations
+ * are two exposes and two connects, join keeps it, and so does every
+ * algorithm above, at the cost of a combination per node that join
+ * touches.
  *
- * \b Augmentation. A node may keep a value of its subtree, computed from
- * those of its two children and of its own pair (its size, its height,
- * the sum of the values of an augmented map [see JoinTree.h]); since every
- * node that changes is passed to connect(), which recomputes that value,
- * and the rotations are two exposes and two connects, join keeps it, and
- * so does every algorithm above, at the cost of a combination per node
- * that join touches.
+ * A tree gives its nodes to the algorithms through an adaptor [see
+ * `JoinAdaptor`]: the joins of the four schemes (`AVLJoin`, `RedBlackJoin`,
+ * `WeightBalancedJoin` and `TreapJoin`) are written on it, `JoinAlgorithms`
+ * writes on it `split()`, `join2()` and the bulk operations, and `Joinable`
+ * gives them to the class of the tree as methods: `AVLTree`, `Treap` and
+ * the Red-Black tree of `SearchTree`, whose nodes keep the sizes of their
+ * subtrees for it, and `JoinTree` [see `JoinTree.h`], whose four schemes
+ * are augmented by a template parameter. All the operations are
+ * destructive: they consume their arguments and reuse their nodes, and a
+ * tree is not shared between versions (the persistent trees of PAM copy
+ * the path that changes, and count the references to the nodes).
  *
- * \b Layout. A tree gives its nodes to the algorithms through an adaptor
- * [see JoinAdaptor]: the joins of the four schemes (AVLJoin, RedBlackJoin,
- * WeightBalancedJoin and TreapJoin) are written on it, JoinAlgorithms
- * writes on it split(), join2() and the bulk operations, and Joinable
- * gives them to the class of the tree as methods: AVLTree, Treap and the
- * Red-Black tree of SearchTree, whose nodes keep the sizes of their
- * subtrees for it, and JoinTree [see JoinTree.h], whose four schemes are
- * augmented by a template parameter. All the operations are destructive:
- * they consume their arguments and reuse their nodes, and a tree is not
- * shared between versions (the persistent trees of PAM copy the path that
- * changes, and count the references to the nodes).
+ * An operation given an executor [see `Executor.h`] runs its two recursive
+ * calls by `parallelInvoke()`, until the two trees have fewer than
+ * `kJoinGrain` keys in all, or the executor one thread, where it goes on
+ * sequentially; the shape of the result does not depend on the executor,
+ * nor on the number of its threads, since join is deterministic and the
+ * priorities of a batch of a treap are drawn by the place of each pair in
+ * the batch. A key is compared, and a node read or written, by one thread
+ * at a time.
  *
- * \b Parallelism. An operation given an executor [see Executor.h] runs
- * its two recursive calls by parallelInvoke(), until the two trees have
- * fewer than kJoinGrain keys in all, or the executor one thread, where it
- * goes on sequentially; the shape of the result does not depend on the
- * executor, nor on the number of its threads, since join is
- * deterministic and the priorities of a batch of a treap are drawn by the
- * place of each pair in the batch. A key is compared, and a node read or
- * written, by one thread at a time.
+ * In the pseudocode of the functions below, a tree is nil or a node
+ * \f$ ( L , k , R ) \f$ of children \f$ L \f$ and \f$ R \f$ and key \f$ k \f$;
+ * \f$ \mathrm{expose}( T ) \f$ gives the three, \f$ \mathrm{node}( L , k ,
+ * R ) \f$ makes a node and recomputes what it keeps (`connect()`), and
+ * \f$ r( T ) \f$ is the rank. Each join is given for the case of the left
+ * tree higher, the other being its mirror.
  *
- * \b Pseudocode. The convention: a tree is nil or a node ( L , k , R ) of
- * children L and R and key k; expose( T ) gives the three, node( L , k ,
- * R ) makes a node and recomputes what it keeps (connect()), r( T ) is the
- * rank, ← the assignment, and the lines are numbered as in the paper.
- * Each join is given for the case of the left tree higher, the other
- * being its mirror; the parallel calls are marked "in parallel".
- *
- * \b State of the art. PAM is the library of the paper on augmented maps,
+ * Among the libraries, PAM is that of the paper on augmented maps,
  * persistent and on ParlayLib; PaC-trees (the library CPAM) keep blocks of
- * up to B keys, possibly compressed, in the leaves of the same trees, and
- * reach the same bounds with less space and fewer cache misses. De Man and
- * Dhulipala give batch-parallel treaps (and link-cut and Euler tour trees)
- * on a join of the same kind. oneTBB (concurrent_map) and folly
- * (ConcurrentSkipList) keep concurrent skip lists, without bulk set
- * operations or split; Boost.Intrusive has AVL, Red-Black, scapegoat,
- * splay and treap trees with no split nor join of trees.
+ * up to \f$ B \f$ keys, possibly compressed, in the leaves of the same
+ * trees, and reach the same bounds with less space and fewer cache misses.
+ * De Man and Dhulipala give batch-parallel treaps (and link-cut and Euler
+ * tour trees) on a join of the same kind. oneTBB (`concurrent_map`) and
+ * folly (`ConcurrentSkipList`) keep concurrent skip lists, without bulk set
+ * operations or split; Boost.Intrusive has AVL, Red-Black, scapegoat, splay
+ * and treap trees with no split nor join of trees.
  *
- * The contracts [see Contract.h]: the preconditions of join() and join2()
- * on the order of the keys, the batches sorted with no repeated key (an
- * audit), and after every operation the invariant of the tree, which the
- * class checks at the level 3: the order of the keys, the sizes, the
- * augmented values and the balance of its scheme (the heights of AVL, the
- * colors and the black heights of Red-Black, the weights, the heap order
- * of the priorities). The operations are defined in JoinAlgorithms.tpp.
+ * The contracts [see `Contract.h`]: the preconditions of `join()` and
+ * `join2()` on the order of the keys, the batches sorted with no repeated
+ * key (an audit), and after every operation the invariant of the tree,
+ * which the class checks at the level 3: the order of the keys, the sizes,
+ * the augmented values and the balance of its scheme (the heights of AVL,
+ * the colors and the black heights of Red-Black, the weights, the heap
+ * order of the priorities). The operations are defined in
+ * `JoinAlgorithms.tpp`.
  *
  * \see S. Adams, Efficient sets: a balancing act, Journal of Functional
  *      Programming 3(4), 553-561, 1993, doi:10.1017/S0956796800000885
@@ -219,15 +199,17 @@ namespace ADS {
 inline constexpr std::size_t kJoinGrain = 2048;
 
 /// the nodes of a binary search tree as the algorithms based on join see
-/// them: nil(), the empty tree; left(), right(), key(), value() and
-/// size(), the reading of a node (size() of nil is 0); expose( t , l , r ),
-/// which takes off the children of t into l and r, so that t is a node
-/// alone; connect( m , l , r ), which hangs l and r under the node alone m
-/// and updates what m keeps of its subtree (its size, its height, its
-/// augmented value, the parents of l and r); dispose( t ), which frees
-/// the subtree t (nothing for nil); rank( t ), the rank of a tree, and
-/// childRank( t , r , c ), that of the child c of t of rank r, in
-/// \f$ O( 1 ) \f$; join( l , rl , m , r , rr ), the join of the balancing
+/// them: `nil()`, the empty tree; `left()`, `right()`, `key()`, `value()`
+/// and `size()`, the reading of a node (`size()` of nil is 0);
+/// `expose( t , l , r )`, which takes off the children of \f$ t \f$ into
+/// \f$ l \f$ and \f$ r \f$, so that \f$ t \f$ is a node alone;
+/// `connect( m , l , r )`, which hangs \f$ l \f$ and \f$ r \f$ under the node
+/// alone \f$ m \f$ and updates what \f$ m \f$ keeps of its subtree (its
+/// size, its height, its augmented value, the parents of \f$ l \f$ and
+/// \f$ r \f$); `dispose( t )`, which frees the subtree \f$ t \f$ (nothing
+/// for nil); `rank( t )`, the rank of a tree, and `childRank( t , r , c )`,
+/// that of the child \f$ c \f$ of \f$ t \f$ of rank \f$ r \f$, in
+/// \f$ O( 1 ) \f$; `join( l , rl , m , r , rr )`, the join of the balancing
 /// scheme, which returns the root and its rank
 template< class A >
 concept JoinAdaptor = requires( typename A::Node * t ,
@@ -254,78 +236,104 @@ concept JoinAdaptor = requires( typename A::Node * t ,
 /*----------------------- THE JOINS OF THE SCHEMES -------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the join of the AVL trees; A gives also height( t ), -1 for nil, which
-/// connect() keeps
+/// the join of the AVL trees; `A` gives also `height( t )`, -1 for nil,
+/// which `connect()` keeps
 template< class A >
 struct AVLJoin {
  using Node = typename A::Node;   ///< the type of the nodes
 
- /// the join of the AVL trees l and r with m between them, in
- /// \f$ O( | h( l ) - h( r ) | + 1 ) \f$ time; joinLeft() is the mirror
- /// of joinRight():
+ /// the join of the AVL trees \f$ l \f$ and \f$ r \f$ with \f$ m \f$ between
+ /// them, in \f$ O( | h( l ) - h( r ) | + 1 ) \f$ time
  ///
- ///     JOIN-AVL( L , k , R )
- ///      1  if h( L ) > h( R ) + 1 then return JOIN-RIGHT-AVL( L , k , R )
- ///      2  if h( R ) > h( L ) + 1 then return JOIN-LEFT-AVL( L , k , R )
- ///      3  return node( L , k , R )
- ///
- ///     JOIN-RIGHT-AVL( L , k , R )
- ///      1  ( l , k' , c ) ← expose( L )
- ///      2  if h( c ) ≤ h( R ) + 1 then
- ///      3     T' ← node( c , k , R )
- ///      4     if h( T' ) ≤ h( l ) + 1 then return node( l , k' , T' )
- ///      5     return rotateLeft( node( l , k' , rotateRight( T' ) ) )
- ///      6  T' ← JOIN-RIGHT-AVL( c , k , R )
- ///      7  T'' ← node( l , k' , T' )
- ///      8  if h( T' ) ≤ h( l ) + 1 then return T''
- ///      9  return rotateLeft( T'' )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book), \f$ h \f$
+ /// the height, and the mirror of `joinRight()` when \f$ R \f$ is higher:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{join}( L , k , R ) \cr
+ /// 2 & \quad \textbf{if}\ h( L ) > h( R ) + 1\ \textbf{then return}
+ ///     \ \mathrm{joinRight}( L , k , R ) \cr
+ /// 3 & \quad \textbf{if}\ h( R ) > h( L ) + 1\ \textbf{then return}
+ ///     \ \mathrm{joinLeft}( L , k , R ) \cr
+ /// 4 & \quad \textbf{return}\ \mathrm{node}( L , k , R ) \cr
+ /// 5 & \textbf{function}\ \mathrm{joinRight}( L , k , R ) \cr
+ /// 6 & \quad ( l , k' , c ) \gets \mathrm{expose}( L ) \cr
+ /// 7 & \quad \textbf{if}\ h( c ) \le h( R ) + 1\ \textbf{then} \cr
+ /// 8 & \qquad T' \gets \mathrm{node}( c , k , R ) \cr
+ /// 9 & \qquad \textbf{if}\ h( T' ) \le h( l ) + 1\ \textbf{then return}
+ ///     \ \mathrm{node}( l , k' , T' ) \cr
+ /// 10 & \qquad \textbf{return}\ \mathrm{rotateLeft}( \mathrm{node}( l , k' ,
+ ///     \mathrm{rotateRight}( T' ) ) ) \cr
+ /// 11 & \quad T' \gets \mathrm{joinRight}( c , k , R );\ T'' \gets
+ ///     \mathrm{node}( l , k' , T' ) \cr
+ /// 12 & \quad \textbf{if}\ h( T' ) \le h( l ) + 1\ \textbf{then return}\ T''
+ ///     \cr
+ /// 13 & \quad \textbf{return}\ \mathrm{rotateLeft}( T'' )
+ /// \end{array}}
+ /// \f]
  static Node * join( Node * l , Node * m , Node * r );
 
- /// the join when l is higher than r by more than 1
+ /// the join when \f$ l \f$ is higher than \f$ r \f$ by more than 1, by the
+ /// right spine of \f$ l \f$
  static Node * joinRight( Node * l , Node * m , Node * r );
 
- /// the join when r is higher than l by more than 1
+ /// the join when \f$ r \f$ is higher than \f$ l \f$ by more than 1, the
+ /// mirror of `joinRight()`
  static Node * joinLeft( Node * l , Node * m , Node * r );
  };
 
-/// the join of the Red-Black trees, whose ranks are the black heights; A
-/// gives also red( t ), false for nil, and paint( t , red )
+/// the join of the Red-Black trees, whose ranks are the black heights; `A`
+/// gives also `red( t )`, false for nil, and `paint( t , red )`
 template< class A >
 struct RedBlackJoin {
  using Node = typename A::Node;   ///< the type of the nodes
 
- /// the join of the Red-Black trees l and r, of black heights bl and br,
- /// with m between them: the root and its black height, in
- /// \f$ O( | b_l - b_r | + 1 ) \f$ time; joinLeft() is the mirror of
- /// joinRight():
+ /// the join of the Red-Black trees \f$ l \f$ and \f$ r \f$, of black heights
+ /// \f$ b_l \f$ and \f$ b_r \f$, with \f$ m \f$ between them: the root and its
+ /// black height, in \f$ O( | b_l - b_r | + 1 ) \f$ time
  ///
- ///     JOIN-RB( L , k , R )
- ///      1  if bh( L ) > bh( R ) then
- ///      2     T' ← JOIN-RIGHT-RB( L , k , R )
- ///      3     if T' and its right child are red then paint T' black
- ///      4     return T'
- ///      5  if bh( R ) > bh( L ) then the mirror of the lines 2 to 4
- ///      6  if L and R are black then return node( L , k red , R )
- ///      7  return node( L , k black , R )
- ///
- ///     JOIN-RIGHT-RB( L , k , R )
- ///      1  if L is black and bh( L ) = bh( R ) then
- ///      2     return node( L , k red , R )
- ///      3  ( l , k' , c ) ← expose( L )
- ///      4  T' ← JOIN-RIGHT-RB( c , k , R )
- ///      5  T'' ← node( l , k' , T' )
- ///      6  if k' is black and T' and its right child are red then
- ///      7     paint the right child of T' black
- ///      8     return rotateLeft( T'' )
- ///      9  return T
+ /// In pseudocode (Tarjan, chapter 4, and Blelloch, Ferizovic and Sun, beyond
+ /// the book), \f$ \hat{h} \f$ the black height, and the mirror of
+ /// `joinRight()` when \f$ R \f$ is higher:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{join}( L , k , R ) \cr
+ /// 2 & \quad \textbf{if}\ \hat{h}( L ) > \hat{h}( R )\ \textbf{then} \cr
+ /// 3 & \qquad T' \gets \mathrm{joinRight}( L , k , R ) \cr
+ /// 4 & \qquad \textbf{if}\ T' \text{ and its right child are red}
+ ///     \ \textbf{then}\ \text{paint } T' \text{ black} \cr
+ /// 5 & \qquad \textbf{return}\ T' \cr
+ /// 6 & \quad \textbf{if}\ \hat{h}( R ) > \hat{h}( L )\ \textbf{then}
+ ///     \ \text{the mirror of the lines 3 to 5} \cr
+ /// 7 & \quad \textbf{if}\ L \text{ and } R \text{ are black}\ \textbf{then}
+ ///     \ \textbf{return}\ \mathrm{node}( L , k , R ) \text{, } k \text{ red}
+ ///     \cr
+ /// 8 & \quad \textbf{return}\ \mathrm{node}( L , k , R ) \text{, } k
+ ///     \text{ black} \cr
+ /// 9 & \textbf{function}\ \mathrm{joinRight}( L , k , R ) \cr
+ /// 10 & \quad \textbf{if}\ L \text{ is black}\ \textbf{and}\ \hat{h}( L ) =
+ ///     \hat{h}( R )\ \textbf{then return}\ \mathrm{node}( L , k , R )
+ ///     \text{, }
+ ///     k \text{ red} \cr
+ /// 11 & \quad ( l , k' , c ) \gets \mathrm{expose}( L ) \cr
+ /// 12 & \quad T' \gets \mathrm{joinRight}( c , k , R );\ T'' \gets
+ ///     \mathrm{node}( l , k' , T' ) \cr
+ /// 13 & \quad \textbf{if}\ k' \text{ is black}\ \textbf{and}\ T' \text{ and }
+ ///     \text{its right child are red}\ \textbf{then} \cr
+ /// 14 & \qquad \text{paint the right child of } T' \text{ black};
+ ///     \ \textbf{return}\ \mathrm{rotateLeft}( T'' ) \cr
+ /// 15 & \quad \textbf{return}\ T''
+ /// \end{array}}
+ /// \f]
  static std::pair< Node * , int > join( Node * l , int bl , Node * m ,
                                         Node * r , int br );
 
- /// the join when the black height bl of l is larger than br
+ /// the join when the black height \f$ b_l \f$ of \f$ l \f$ is larger than
+ /// \f$ b_r \f$, by the right spine of \f$ l \f$
  static Node * joinRight( Node * l , int bl , Node * m , Node * r ,
                           int br );
 
- /// the join when the black height br of r is larger than bl
+ /// the join when the black height \f$ b_r \f$ of \f$ r \f$ is larger than
+ /// \f$ b_l \f$, the mirror of `joinRight()`
  static Node * joinLeft( Node * l , int bl , Node * m , Node * r , int br );
  };
 
@@ -337,58 +345,85 @@ struct WeightBalancedJoin {
  static constexpr std::size_t kAlphaNum = 29;    ///< \f$ \alpha \f$, up
  static constexpr std::size_t kAlphaDen = 100;   ///< and down
 
- /// the join of the trees l and r balanced by weight with m between
- /// them, in \f$ O( | \log w( l ) - \log w( r ) | + 1 ) \f$ time, where
- /// like( a , b ) is \f$ \alpha ( a + b ) \le \min( a , b ) \f$ and
- /// joinLeft() is the mirror of joinRight():
+ /// the join of the trees \f$ l \f$ and \f$ r \f$ balanced by weight with
+ /// \f$ m \f$ between them, in \f$ O( | \log w( l ) - \log w( r ) | + 1 ) \f$
+ /// time
  ///
- ///     JOIN-WB( L , k , R )
- ///      1  if like( w( L ) , w( R ) ) then return node( L , k , R )
- ///      2  if w( L ) > w( R ) then return JOIN-RIGHT-WB( L , k , R )
- ///      3  return JOIN-LEFT-WB( L , k , R )
- ///
- ///     JOIN-RIGHT-WB( L , k , R )
- ///      1  if like( w( L ) , w( R ) ) then return node( L , k , R )
- ///      2  ( l , k' , c ) ← expose( L )
- ///      3  T' ← JOIN-RIGHT-WB( c , k , R )
- ///      4  ( l1 , k1 , r1 ) ← expose( T' ), read only
- ///      5  if like( w( l ) , w( T' ) ) then return node( l , k' , T' )
- ///      6  if like( w( l ) , w( l1 ) ) and
- ///            like( w( l ) + w( l1 ) , w( r1 ) ) then
- ///      7     return rotateLeft( node( l , k' , T' ) )
- ///      8  return rotateLeft( node( l , k' , rotateRight( T' ) ) )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, after Nievergelt and Reingold,
+ /// beyond the book), \f$ w \f$ the weight, \f$ \mathrm{like}( a , b ) \f$
+ /// true if \f$ \alpha ( a + b ) \le \min( a , b ) \f$, and the mirror of
+ /// `joinRight()` when \f$ R \f$ is heavier:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{join}( L , k , R ) \cr
+ /// 2 & \quad \textbf{if}\ \mathrm{like}( w( L ) , w( R ) )\ \textbf{then
+ ///     return}
+ ///     \ \mathrm{node}( L , k , R ) \cr
+ /// 3 & \quad \textbf{if}\ w( L ) > w( R )\ \textbf{then return}
+ ///     \ \mathrm{joinRight}( L , k , R ) \cr
+ /// 4 & \quad \textbf{return}\ \mathrm{joinLeft}( L , k , R ) \cr
+ /// 5 & \textbf{function}\ \mathrm{joinRight}( L , k , R ) \cr
+ /// 6 & \quad \textbf{if}\ \mathrm{like}( w( L ) , w( R ) )\ \textbf{then
+ ///     return}
+ ///     \ \mathrm{node}( L , k , R ) \cr
+ /// 7 & \quad ( l , k' , c ) \gets \mathrm{expose}( L );\ T' \gets
+ ///     \mathrm{joinRight}( c , k , R ) \cr
+ /// 8 & \quad \textbf{if}\ \mathrm{like}( w( l ) , w( T' ) )\ \textbf{then
+ ///     return}
+ ///     \ \mathrm{node}( l , k' , T' ) \cr
+ /// 9 & \quad ( l_1 , r_1 ) \gets \text{the children of } T' \cr
+ /// 10 & \quad \textbf{if}\ \mathrm{like}( w( l ) , w( l_1 ) )\ \textbf{and}
+ ///     \ \mathrm{like}( w( l ) + w( l_1 ) , w( r_1 ) )\ \textbf{then} \cr
+ /// 11 & \qquad \textbf{return}\ \mathrm{rotateLeft}( \mathrm{node}( l , k' ,
+ ///     T' )
+ ///     ) \cr
+ /// 12 & \quad \textbf{return}\ \mathrm{rotateLeft}( \mathrm{node}( l , k' ,
+ ///     \mathrm{rotateRight}( T' ) ) )
+ /// \end{array}}
+ /// \f]
  static Node * join( Node * l , Node * m , Node * r );
 
- /// the join when l is heavier than r beyond the balance
+ /// the join when \f$ l \f$ is heavier than \f$ r \f$ beyond the balance, by
+ /// the right spine of \f$ l \f$
  static Node * joinRight( Node * l , Node * m , Node * r );
 
- /// the join when r is heavier than l beyond the balance
+ /// the join when \f$ r \f$ is heavier than \f$ l \f$ beyond the balance, the
+ /// mirror of `joinRight()`
  static Node * joinLeft( Node * l , Node * m , Node * r );
 
- /// whether the weights a and b may be the two sides of a node:
- /// \f$ \alpha ( a + b ) \le \min( a , b ) \f$
+ /// whether the weights \f$ a \f$ and \f$ b \f$ may be the two sides of a
+ /// node: \f$ \alpha ( a + b ) \le \min( a , b ) \f$
  static bool like( std::size_t a , std::size_t b );
 
- /// the weight of t, its size plus 1
+ /// the weight of \f$ t \f$, its size plus 1
  static std::size_t weight( const Node * t );
  };
 
-/// the join of the treaps; A gives also priority( t ), of a node
+/// the join of the treaps; `A` gives also `priority( t )`, of a node
 template< class A >
 struct TreapJoin {
  using Node = typename A::Node;   ///< the type of the nodes
 
- /// the join of the treaps l and r with m between them, in
- /// \f$ O( \log n ) \f$ expected time, where p( nil ) is \f$ -\infty \f$:
+ /// the join of the treaps \f$ l \f$ and \f$ r \f$ with \f$ m \f$ between
+ /// them, in \f$ O( \log n ) \f$ expected time
  ///
- ///     JOIN-TREAP( L , k , R )
- ///      1  if p( L ) > p( k ) and p( L ) ≥ p( R ) then
- ///      2     ( l , k' , r ) ← expose( L )
- ///      3     return node( l , k' , JOIN-TREAP( r , k , R ) )
- ///      4  if p( R ) > p( k ) then
- ///      5     ( l , k' , r ) ← expose( R )
- ///      6     return node( JOIN-TREAP( L , k , l ) , k' , r )
- ///      7  return node( L , k , R )
+ /// In pseudocode (Blelloch and Reid-Miller, beyond the book), \f$ p \f$ the
+ /// priority, \f$ p( \textbf{nil} ) = -\infty \f$, the root of the result the
+ /// one of highest priority among those of \f$ L \f$ and \f$ R \f$ and
+ /// \f$ k \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{join}( L , k , R ) \cr
+ /// 2 & \quad \textbf{if}\ p( L ) > p( k )\ \textbf{and}\ p( L ) \ge p( R )
+ ///     \ \textbf{then} \cr
+ /// 3 & \qquad ( l , k' , r ) \gets \mathrm{expose}( L );\ \textbf{return}
+ ///     \ \mathrm{node}( l , k' , \mathrm{join}( r , k , R ) ) \cr
+ /// 4 & \quad \textbf{if}\ p( R ) > p( k )\ \textbf{then} \cr
+ /// 5 & \qquad ( l , k' , r ) \gets \mathrm{expose}( R );\ \textbf{return}
+ ///     \ \mathrm{node}( \mathrm{join}( L , k , l ) , k' , r ) \cr
+ /// 6 & \quad \textbf{return}\ \mathrm{node}( L , k , R )
+ /// \end{array}}
+ /// \f]
  static Node * join( Node * l , Node * m , Node * r );
  };
 
@@ -396,8 +431,9 @@ struct TreapJoin {
 /*------------------------- CLASS JoinAlgorithms ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the algorithms on the trees whose only balancing is the join of A; each
-/// of them consumes the trees it is given and returns the trees it makes
+/// the algorithms on the trees whose only balancing is the join of `A`;
+/// each of them consumes the trees it is given and returns the trees it
+/// makes
 template< JoinAdaptor A >
 struct JoinAlgorithms {
 
@@ -422,184 +458,357 @@ struct JoinAlgorithms {
  /// the empty tree
  [[nodiscard]] static Tree empty( void );
 
- /// the tree of root t, its rank computed
+ /// the tree of root \f$ t \f$, its rank computed
  [[nodiscard]] static Tree whole( Node * t );
 
- /// the subtrees and the root of x
- /// \pre x is not empty
+ /// the subtrees and the root of \f$ x \f$
+ /// \pre \f$ x \f$ is not empty
  [[nodiscard]] static Exposed expose( Tree x );
 
- /// the join of the scheme
+ /// the join of the scheme, with the ranks
  [[nodiscard]] static Tree join( Tree l , Node * m , Tree r );
 
- /// the keys of x smaller than k in l, those larger in r, and the node of
- /// k returned, alone (nil if k is not in x), in \f$ O( \log n ) \f$ time:
+ /// the keys of \f$ x \f$ smaller than \f$ k \f$ in \f$ l \f$, those larger in
+ /// \f$ r \f$, and the node of \f$ k \f$ returned, alone (nil if \f$ k \f$ is
+ /// not in \f$ x \f$), in \f$ O( \log n ) \f$ time
  ///
- ///     SPLIT( T , k )
- ///      1  if T = nil then return ( nil , nil , nil )
- ///      2  ( L , m , R ) ← expose( T )
- ///      3  if k < m then
- ///      4     ( L' , b , R' ) ← SPLIT( L , k )
- ///      5     return ( L' , b , JOIN( R' , m , R ) )
- ///      6  if m < k then
- ///      7     ( L' , b , R' ) ← SPLIT( R , k )
- ///      8     return ( JOIN( L , m , L' ) , b , R' )
- ///      9  return ( L , m , R )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book), the costs
+ /// of the joins telescoping along the path:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{split}( T , k ) \cr
+ /// 2 & \quad \textbf{if}\ T = \textbf{nil}\ \textbf{then return}\ (
+ ///     \textbf{nil} , \textbf{nil} , \textbf{nil} ) \cr
+ /// 3 & \quad ( L , m , R ) \gets \mathrm{expose}( T ) \cr
+ /// 4 & \quad \textbf{if}\ k < m\ \textbf{then} \cr
+ /// 5 & \qquad ( L' , b , R' ) \gets \mathrm{split}( L , k );\ \textbf{return}
+ ///     \ ( L' , b , \mathrm{join}( R' , m , R ) ) \cr
+ /// 6 & \quad \textbf{if}\ m < k\ \textbf{then} \cr
+ /// 7 & \qquad ( L' , b , R' ) \gets \mathrm{split}( R , k );\ \textbf{return}
+ ///     \ ( \mathrm{join}( L , m , L' ) , b , R' ) \cr
+ /// 8 & \quad \textbf{return}\ ( L , m , R )
+ /// \end{array}}
+ /// \f]
  static Node * split( Tree x , const Key & k , Tree & l , Tree & r );
 
- /// the node of the largest key of x returned, alone, and the others in
- /// rest, in \f$ O( \log n ) \f$ time
- /// \pre x is not empty
+ /// the node of the largest key of \f$ x \f$ returned, alone, and the others
+ /// in `rest`, in \f$ O( \log n ) \f$ time
  ///
- ///     SPLIT-LAST( T )
- ///      1  ( L , k , R ) ← expose( T )
- ///      2  if R = nil then return ( L , k )
- ///      3  ( T' , k' ) ← SPLIT-LAST( R )
- ///      4  return ( JOIN( L , k , T' ) , k' )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{splitLast}( T ) \cr
+ /// 2 & \quad ( L , k , R ) \gets \mathrm{expose}( T ) \cr
+ /// 3 & \quad \textbf{if}\ R = \textbf{nil}\ \textbf{then return}\ ( L , k )
+ ///     \cr
+ /// 4 & \quad ( T' , k' ) \gets \mathrm{splitLast}( R );\ \textbf{return}\ (
+ ///     \mathrm{join}( L , k , T' ) , k' )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ x \f$ is not empty
  static Node * splitLast( Tree x , Tree & rest );
 
- /// the tree of the keys of l and of r, with no key in between, in
- /// \f$ O( \log n ) \f$ time
- /// \pre the keys of l are smaller than those of r
+ /// the tree of the keys of \f$ l \f$ and of \f$ r \f$, with no key in
+ /// between, in \f$ O( \log n ) \f$ time
  ///
- ///     JOIN2( L , R )
- ///      1  if L = nil then return R
- ///      2  ( L' , k ) ← SPLIT-LAST( L )
- ///      3  return JOIN( L' , k , R )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{join2}( L , R ) \cr
+ /// 2 & \quad \textbf{if}\ L = \textbf{nil}\ \textbf{then return}\ R \cr
+ /// 3 & \quad ( L' , k ) \gets \mathrm{splitLast}( L );\ \textbf{return}
+ ///     \ \mathrm{join}( L' , k , R )
+ /// \end{array}}
+ /// \f]
+ /// \pre the keys of \f$ l \f$ are smaller than those of \f$ r \f$
  [[nodiscard]] static Tree join2( Tree l , Tree r );
 
- /// the node alone n inserted in x, fresh whether its key was not there
- /// (if it was, its value replaces the old one and n is freed), by joins
- /// on the way back, in \f$ O( \log n ) \f$ time
+ /// the node alone \f$ n \f$ inserted in \f$ x \f$, `fresh` whether its key
+ /// was not there (if it was, its value replaces the old one and \f$ n \f$ is
+ /// freed), by joins on the way back, in \f$ O( \log n ) \f$ time
+ ///
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{insert}( T , n ) \cr
+ /// 2 & \quad \textbf{if}\ T = \textbf{nil}\ \textbf{then return}
+ ///     \ \mathrm{join}( \textbf{nil} , n , \textbf{nil} ) \cr
+ /// 3 & \quad ( L , m , R ) \gets \mathrm{expose}( T ) \cr
+ /// 4 & \quad \textbf{if}\ n < m\ \textbf{then return}\ \mathrm{join}(
+ ///     \mathrm{insert}( L , n ) , m , R ) \cr
+ /// 5 & \quad \textbf{if}\ m < n\ \textbf{then return}\ \mathrm{join}( L , m ,
+ ///     \mathrm{insert}( R , n ) ) \cr
+ /// 6 & \quad \text{the value of } m \gets \text{that of } n;\ \text{free } n;
+ ///     \ \textbf{return}\ \mathrm{join}( L , m , R )
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] static Tree insert( Tree x , Node * n , bool & fresh );
 
- /// the key k taken out of x and freed, gone whether it was there, by
- /// joins on the way back and join2 where it was, in \f$ O( \log n ) \f$
- /// time
+ /// the key \f$ k \f$ taken out of \f$ x \f$ and freed, `gone` whether it was
+ /// there, by joins on the way back and `join2` where it was, in
+ /// \f$ O( \log n ) \f$ time
+ ///
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{remove}( T , k ) \cr
+ /// 2 & \quad \textbf{if}\ T = \textbf{nil}\ \textbf{then return}\ T \cr
+ /// 3 & \quad ( L , m , R ) \gets \mathrm{expose}( T ) \cr
+ /// 4 & \quad \textbf{if}\ k < m\ \textbf{then return}\ \mathrm{join}(
+ ///     \mathrm{remove}( L , k ) , m , R ) \cr
+ /// 5 & \quad \textbf{if}\ m < k\ \textbf{then return}\ \mathrm{join}( L , m ,
+ ///     \mathrm{remove}( R , k ) ) \cr
+ /// 6 & \quad \text{free } m;\ \textbf{return}\ \mathrm{join2}( L , R )
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] static Tree remove( Tree x , const Key & k , bool & gone );
 
- /// the union of a and b, on a key of both the value f( of a , of b ),
- /// with \f$ O( m \log( n / m + 1 ) ) \f$ work and
- /// \f$ O( \log m \log n ) \f$ span for sizes \f$ m \le n \f$:
+ /// the union of \f$ a \f$ and \f$ b \f$, on a key of both the value
+ /// \f$ f( \text{of } a , \text{of } b ) \f$, with
+ /// \f$ O( m \log( n / m + 1 ) ) \f$ work and \f$ O( \log m \log n ) \f$ span
+ /// for sizes \f$ m \le n \f$
  ///
- ///     UNION( A , B )
- ///      1  if A = nil then return B
- ///      2  if B = nil then return A
- ///      3  ( L , k , R ) ← expose( the smaller of A and B )
- ///      4  ( L' , b , R' ) ← SPLIT( the larger of A and B , k )
- ///      5  in parallel: T1 ← UNION( L , L' ) and T2 ← UNION( R , R' )
- ///      6  if b ≠ nil then the value of k ← f( of A , of B )
- ///      7  return JOIN( T1 , k , T2 )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{union}( A , B ) \cr
+ /// 2 & \quad \textbf{if}\ A = \textbf{nil}\ \textbf{then return}\ B \cr
+ /// 3 & \quad \textbf{if}\ B = \textbf{nil}\ \textbf{then return}\ A \cr
+ /// 4 & \quad ( L , k , R ) \gets \mathrm{expose}( \text{the smaller of } A
+ ///     \text{ and } B ) \cr
+ /// 5 & \quad ( L' , b , R' ) \gets \mathrm{split}( \text{the larger of } A
+ ///     \text{ and } B , k ) \cr
+ /// 6 & \quad T_1 \gets \mathrm{union}( L , L' ) \text{ and } T_2 \gets
+ ///     \mathrm{union}( R , R' ) \text{, in parallel} \cr
+ /// 7 & \quad \textbf{if}\ b \ne
+ ///     \textbf{nil}\ \textbf{then}\ \text{the value }
+ ///     \text{of } k \gets f( \text{of } A , \text{of } B ) \cr
+ /// 8 & \quad \textbf{return}\ \mathrm{join}( T_1 , k , T_2 )
+ /// \end{array}}
+ /// \f]
  template< Executor E , class F >
  [[nodiscard]] static Tree unite( E & ex , Tree a , Tree b , const F & f );
 
- /// the intersection of a and b, the value f( of a , of b ), with the
- /// work and the span of unite(); the nodes that leave are freed:
+ /// the intersection of \f$ a \f$ and \f$ b \f$, the value
+ /// \f$ f( \text{of } a , \text{of } b ) \f$, with the work and the span of
+ /// `unite()`; the nodes that leave are freed
  ///
- ///     INTERSECT( A , B )
- ///      1  if A = nil or B = nil then return nil
- ///      2  ( L , k , R ) ← expose( the smaller of A and B )
- ///      3  ( L' , b , R' ) ← SPLIT( the larger of A and B , k )
- ///      4  in parallel: T1 ← INTERSECT( L , L' ) and
- ///                      T2 ← INTERSECT( R , R' )
- ///      5  if b = nil then return JOIN2( T1 , T2 )
- ///      6  the value of k ← f( of A , of B )
- ///      7  return JOIN( T1 , k , T2 )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{intersect}( A , B ) \cr
+ /// 2 & \quad \textbf{if}\ A = \textbf{nil}\ \textbf{or}\ B = \textbf{nil}
+ ///     \ \textbf{then return}\ \textbf{nil} \cr
+ /// 3 & \quad ( L , k , R ) \gets \mathrm{expose}( \text{the smaller of } A
+ ///     \text{ and } B ) \cr
+ /// 4 & \quad ( L' , b , R' ) \gets \mathrm{split}( \text{the larger of } A
+ ///     \text{ and } B , k ) \cr
+ /// 5 & \quad T_1 \gets \mathrm{intersect}( L , L' ) \text{ and } T_2 \gets
+ ///     \mathrm{intersect}( R , R' ) \text{, in parallel} \cr
+ /// 6 & \quad \textbf{if}\ b = \textbf{nil}\ \textbf{then return}
+ ///     \ \mathrm{join2}( T_1 , T_2 ) \cr
+ /// 7 & \quad \text{the value of } k \gets f( \text{of } A , \text{of } B );
+ ///     \ \textbf{return}\ \mathrm{join}( T_1 , k , T_2 )
+ /// \end{array}}
+ /// \f]
  template< Executor E , class F >
  [[nodiscard]] static Tree intersect( E & ex , Tree a , Tree b ,
                                       const F & f );
 
- /// the keys of a not in b, with the work and the span of unite(); the
- /// nodes of b and those of a that leave are freed:
+ /// the keys of \f$ a \f$ not in \f$ b \f$, with the work and the span of
+ /// `unite()`; the nodes of \f$ b \f$ and those of \f$ a \f$ that leave are
+ /// freed
  ///
- ///     DIFFERENCE( A , B )
- ///      1  if A = nil or B = nil then return A
- ///      2  if | A | < | B | then
- ///      3     ( L , k , R ) ← expose( A ) ; ( L' , b , R' ) ← SPLIT( B , k )
- ///      4     in parallel: T1 ← DIFFERENCE( L , L' ) and
- ///                         T2 ← DIFFERENCE( R , R' )
- ///      5     if b = nil then return JOIN( T1 , k , T2 )
- ///      6     return JOIN2( T1 , T2 )
- ///      7  ( L , k , R ) ← expose( B ) ; ( L' , b , R' ) ← SPLIT( A , k )
- ///      8  in parallel: T1 ← DIFFERENCE( L' , L ) and
- ///                      T2 ← DIFFERENCE( R' , R )
- ///      9  return JOIN2( T1 , T2 )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book), the split
+ /// always of the larger tree:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{difference}( A , B ) \cr
+ /// 2 & \quad \textbf{if}\ A = \textbf{nil}\ \textbf{or}\ B = \textbf{nil}
+ ///     \ \textbf{then return}\ A \cr
+ /// 3 & \quad \textbf{if}\ |A| < |B|\ \textbf{then} \cr
+ /// 4 & \qquad ( L , k , R ) \gets \mathrm{expose}( A );\ ( L' , b , R' )
+ ///     \gets
+ ///     \mathrm{split}( B , k ) \cr
+ /// 5 & \qquad T_1 \gets \mathrm{difference}( L , L' ) \text{ and } T_2 \gets
+ ///     \mathrm{difference}( R , R' ) \text{, in parallel} \cr
+ /// 6 & \qquad \textbf{if}\ b = \textbf{nil}\ \textbf{then return}
+ ///     \ \mathrm{join}( T_1 , k , T_2 )\ \textbf{else
+ ///     return}\ \mathrm{join2}(
+ ///     T_1 , T_2 ) \cr
+ /// 7 & \quad ( L , k , R ) \gets \mathrm{expose}( B );\ ( L' , b , R' ) \gets
+ ///     \mathrm{split}( A , k ) \cr
+ /// 8 & \quad T_1 \gets \mathrm{difference}( L' , L ) \text{ and } T_2 \gets
+ ///     \mathrm{difference}( R' , R ) \text{, in parallel} \cr
+ /// 9 & \quad \textbf{return}\ \mathrm{join2}( T_1 , T_2 )
+ /// \end{array}}
+ /// \f]
  template< Executor E >
  [[nodiscard]] static Tree subtract( E & ex , Tree a , Tree b );
 
- /// the tree of the n nodes alone of N, whose keys increase: the middle
- /// one joined with the trees of the two halves, built in parallel, with
- /// \f$ O( n ) \f$ work and \f$ O( \log^2 n ) \f$ span
+ /// the tree of the \f$ n \f$ nodes alone of \f$ N \f$, whose keys increase:
+ /// the middle one joined with the trees of the two halves, built in parallel,
+ /// with \f$ O( n ) \f$ work and \f$ O( \log^2 n ) \f$ span
+ ///
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{build}( N[ 0 .. n - 1 ] ) \cr
+ /// 2 & \quad \textbf{if}\ n = 0\ \textbf{then return}\ \textbf{nil} \cr
+ /// 3 & \quad h \gets \lfloor n / 2 \rfloor \cr
+ /// 4 & \quad T_1 \gets \mathrm{build}( N[ 0 .. h - 1 ] ) \text{ and } T_2
+ ///     \gets \mathrm{build}( N[ h + 1 .. n - 1 ] ) \text{, in parallel} \cr
+ /// 5 & \quad \textbf{return}\ \mathrm{join}( T_1 , N[ h ] , T_2 )
+ /// \end{array}}
+ /// \f]
  template< Executor E >
  [[nodiscard]] static Tree build( E & ex , Node * const * N ,
                                   std::size_t n );
 
- /// the n nodes alone of N, whose keys increase, inserted in x; on a key
- /// already there the value f( old , new ), and the node of N freed. It is
- /// UNION( x , the tree of N ) with the split of the batch by a binary
- /// search in place of SPLIT, so that the tree of N is never built:
- /// \f$ O( m \log( n / m + 1 ) ) \f$ work for \f$ m = \min( n , | x | ) \f$
+ /// the \f$ n \f$ nodes alone of \f$ N \f$, whose keys increase, inserted in
+ /// \f$ x \f$; on a key already there the value
+ /// \f$ f( \text{old} , \text{new} ) \f$, and the node of \f$ N \f$ freed. It
+ /// is the union of \f$ x \f$ and of the tree of \f$ N \f$, with the split of
+ /// the batch by a binary search in place of `split()`, so that the tree of
+ /// \f$ N \f$ is never built: \f$ O( m \log( n / m + 1 ) ) \f$ work for
+ /// \f$ m = \min( n , |x| ) \f$
  ///
- ///     MULTI-INSERT( T , N[ 1 .. n ] )
- ///      1  if n = 0 then return T
- ///      2  if T = nil then return BUILD( N )
- ///      3  ( L , k , R ) ← expose( T )
- ///      4  j ← the first index with N[ j ] ≥ k
- ///      5  in parallel: T1 ← MULTI-INSERT( L , N[ 1 .. j - 1 ] ) and
- ///                      T2 ← MULTI-INSERT( R , N[ j' .. n ] ), where
- ///                      j' is j + 1 if N[ j ] = k, j otherwise
- ///      6  return JOIN( T1 , k , T2 )
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{multiInsert}( T , N[ 1 .. n ] ) \cr
+ /// 2 & \quad \textbf{if}\ n = 0\ \textbf{then return}\ T \cr
+ /// 3 & \quad \textbf{if}\ T = \textbf{nil}\ \textbf{then return}
+ ///     \ \mathrm{build}( N ) \cr
+ /// 4 & \quad ( L , k , R ) \gets \mathrm{expose}( T ) \cr
+ /// 5 & \quad j \gets \text{the first index with } N[ j ] \ge k \text{, by a }
+ ///     \text{binary search} \cr
+ /// 6 & \quad j' \gets j + 1 \text{ if } N[ j ] = k \text{, } j
+ ///     \text{ otherwise}
+ ///     \cr
+ /// 7 & \quad T_1 \gets \mathrm{multiInsert}( L , N[ 1 .. j - 1 ] )
+ ///     \text{ and }
+ ///     T_2 \gets \mathrm{multiInsert}( R , N[ j' .. n ] ) \text{, in } \cr
+ /// & \qquad \text{parallel} \cr
+ /// 8 & \quad \textbf{return}\ \mathrm{join}( T_1 , k , T_2 )
+ /// \end{array}}
+ /// \f]
  template< Executor E , class F >
  [[nodiscard]] static Tree multiInsert( E & ex , Tree x , Node * const * N ,
                                         std::size_t n , const F & f );
 
- /// the n keys of K, increasing, taken out of x and freed, gone how
- /// many were there: DIFFERENCE( x , K ) with the split of K by a binary
- /// search, \f$ O( m \log( n / m + 1 ) ) \f$ work
+ /// the \f$ n \f$ keys of \f$ K \f$, increasing, taken out of \f$ x \f$ and
+ /// freed, `gone` how many were there: the difference of \f$ x \f$ and
+ /// \f$ K \f$ with the split of \f$ K \f$ by a binary search,
+ /// \f$ O( m \log( n / m + 1 ) ) \f$ work
+ ///
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{multiRemove}( T , K[ 1 .. n ] ) \cr
+ /// 2 & \quad \textbf{if}\ n = 0\ \textbf{or}\ T = \textbf{nil}\ \textbf{then
+ ///     return}\ T \cr
+ /// 3 & \quad ( L , k , R ) \gets \mathrm{expose}( T );\ j \gets
+ ///     \text{the first }
+ ///     \text{index with } K[ j ] \ge k \cr
+ /// 4 & \quad j' \gets j + 1 \text{ if } K[ j ] = k \text{, } j
+ ///     \text{ otherwise}
+ ///     \cr
+ /// 5 & \quad T_1 \gets \mathrm{multiRemove}( L , K[ 1 .. j - 1 ] )
+ ///     \text{ and }
+ ///     T_2 \gets \mathrm{multiRemove}( R , K[ j' .. n ] ) \text{, in } \cr
+ /// & \qquad \text{parallel} \cr
+ /// 6 & \quad \textbf{if}\ K[ j ] = k\ \textbf{then}\ \text{free } k;
+ ///     \ \textbf{return}\ \mathrm{join2}( T_1 , T_2 ) \cr
+ /// 7 & \quad \textbf{return}\ \mathrm{join}( T_1 , k , T_2 )
+ /// \end{array}}
+ /// \f]
  template< Executor E >
  [[nodiscard]] static Tree multiRemove( E & ex , Tree x , const Key * K ,
                                         std::size_t n , std::size_t & gone );
 
- /// the nodes of x with p( k , v ) kept, the others freed: the two
- /// subtrees filtered in parallel and joined by the root if it stays, by
- /// join2 if it does not; \f$ O( n ) \f$ work and
- /// \f$ O( \log^2 n ) \f$ span
+ /// the nodes of \f$ x \f$ with \f$ p( k , v ) \f$ kept, the others freed:
+ /// \f$ O( n ) \f$ work and \f$ O( \log^2 n ) \f$ span
+ ///
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{filter}( T , p ) \cr
+ /// 2 & \quad \textbf{if}\ T = \textbf{nil}\ \textbf{then return}\ T \cr
+ /// 3 & \quad ( L , k , R ) \gets \mathrm{expose}( T ) \cr
+ /// 4 & \quad T_1 \gets \mathrm{filter}( L , p ) \text{ and } T_2 \gets
+ ///     \mathrm{filter}( R , p ) \text{, in parallel} \cr
+ /// 5 & \quad \textbf{if}\ p( k )\ \textbf{then return}\ \mathrm{join}( T_1 ,
+ ///     k ,
+ ///     T_2 ) \cr
+ /// 6 & \quad \text{free } k;\ \textbf{return}\ \mathrm{join2}( T_1 , T_2 )
+ /// \end{array}}
+ /// \f]
  template< Executor E , class P >
  [[nodiscard]] static Tree filter( E & ex , Tree x , const P & p );
 
- /// reduce( reduce( of the left subtree , map( k , v ) ) , of the right
- /// one ) on the tree of root t, the two subtrees in parallel: the keys
- /// in their order, so that reduce needs to be associative only;
- /// \f$ O( n ) \f$ work and \f$ O( \log n ) \f$ span
+ /// the reduction of the values \f$ \mathrm{map}( k , v ) \f$ of the pairs of
+ /// the tree of root \f$ t \f$, in the order of the keys, so that
+ /// \f$ \mathrm{reduce} \f$ needs to be associative only, of identity
+ /// \f$ \mathit{id} \f$; \f$ O( n ) \f$ work and \f$ O( \log n ) \f$ span
+ ///
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{mapReduce}( T ) \cr
+ /// 2 & \quad \textbf{if}\ T = \textbf{nil}\ \textbf{then return}\ \mathit{id}
+ ///     \cr
+ /// 3 & \quad ( L , k , R ) \gets \text{the children and the pair of } T \cr
+ /// 4 & \quad a \gets \mathrm{mapReduce}( L ) \text{ and } b \gets
+ ///     \mathrm{mapReduce}( R ) \text{, in parallel} \cr
+ /// 5 & \quad \textbf{return}\ \mathrm{reduce}( \mathrm{reduce}( a ,
+ ///     \mathrm{map}( k ) ) , b )
+ /// \end{array}}
+ /// \f]
  template< Executor E , class M , class R , class U >
  [[nodiscard]] static U mapReduce( E & ex , Node * t , const M & map ,
                                    const R & reduce , const U & id );
 
- /// the keys of x in \f$ [ lo , hi ] \f$ taken out into the tree
- /// returned, by two splits, two joins and a join2, in
+ /// the keys of \f$ x \f$ in \f$ [ \mathit{lo} , \mathit{hi} ] \f$ taken out
+ /// into the tree returned, by two splits, two joins and a `join2`, in
  /// \f$ O( \log n ) \f$ time
+ ///
+ /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{extract}( T , \mathit{lo} , \mathit{hi} )
+ ///     \cr
+ /// 2 & \quad ( A , u , B ) \gets \mathrm{split}( T , \mathit{lo} );\ B \gets
+ ///     \mathrm{join}( \textbf{nil} , u , B ) \text{ if } u \ne \textbf{nil}
+ ///     \cr
+ /// 3 & \quad ( C , v , D ) \gets \mathrm{split}( B , \mathit{hi} );\ C \gets
+ ///     \mathrm{join}( C , v , \textbf{nil} ) \text{ if } v \ne \textbf{nil}
+ ///     \cr
+ /// 4 & \quad T \gets \mathrm{join2}( A , D );\ \textbf{return}\ C
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] static Tree extract( Tree & x , const Key & lo ,
                                     const Key & hi );
 
- /// the smallest key of t
- /// \pre t is not nil
+ /// the smallest key of \f$ t \f$
+ /// \pre \f$ t \f$ is not nil
  [[nodiscard]] static const Key & firstKey( Node * t );
 
- /// the largest key of t
- /// \pre t is not nil
+ /// the largest key of \f$ t \f$
+ /// \pre \f$ t \f$ is not nil
  [[nodiscard]] static const Key & lastKey( Node * t );
 
  private:
 
- /// g() and h(), in parallel on ex
+ /// `g()` and `h()`, in parallel on `ex`
  template< Executor E , class G , class H >
  static void fork( E & ex , G && g , H && h );
 
- /// g() and h(), one after the other
+ /// `g()` and `h()`, one after the other
  template< class G , class H >
  static void fork( Sequential & ex , G && g , H && h );
 
- /// whether n items are too few for more than the calling thread
+ /// whether \f$ n \f$ items are too few for more than the calling thread
  template< Executor E >
  [[nodiscard]] static bool small( E & ex , std::size_t n );
 
@@ -611,25 +820,29 @@ struct JoinAlgorithms {
 
 /// the value of the second tree, or of the batch, on a key in both
 struct TakeSecond {
+ /// \f$ b \f$
  template< class V >
  V operator()( const V & , const V & b ) const { return( b ); }
  };
 
 /// the value of the first tree on a key in both
 struct TakeFirst {
+ /// \f$ a \f$
  template< class V >
  V operator()( const V & a , const V & ) const { return( a ); }
  };
 
-/// the operations based on join of the tree T of keys Key and values
-/// Value, whose nodes A adapts [see JoinAdaptor]: a base of T (which makes
-/// A its friend); A is read only in the bodies, as T is incomplete where
-/// its bases are named, and gives take( t ), the root of t
-/// taken out of it, which is left empty; put( t , r ), r the new root of
-/// the empty t, which updates its size; peek( t ), its root; fresh( t ),
-/// an empty tree like t; valid( t ), the invariant of t; salt( t ) and
-/// make( k , v , s , i ), a node alone of the pair ( k , v ), the i-th of
-/// a batch of salt s, which may be called in parallel
+/// the operations based on join of the tree `T` of keys `Key` and values
+/// `Value`, whose nodes `A` adapts [see `JoinAdaptor`], each the function
+/// of `JoinAlgorithms` of the same name: a base of `T` (which makes `A` its
+/// friend); `A` is read only in the bodies, as `T` is incomplete where its
+/// bases are named, and gives `take( t )`, the root of \f$ t \f$ taken out
+/// of it, which is left empty; `put( t , r )`, \f$ r \f$ the new root of the
+/// empty \f$ t \f$, which updates its size; `peek( t )`, its root;
+/// `fresh( t )`, an empty tree like \f$ t \f$; `valid( t )`, the invariant
+/// of \f$ t \f$; `salt( t )` and `make( k , v , s , i )`, a node alone of the
+/// pair \f$ ( k , v ) \f$, the \f$ i \f$-th of a batch of salt \f$ s \f$,
+/// which may be called in parallel
 template< class T , class A , class Key , class Value >
 class Joinable {
 
@@ -640,71 +853,77 @@ class Joinable {
 /*------------------------- SPLITTING AND JOINING --------------------------*/
 /*--------------------------------------------------------------------------*/
 
- /// the keys before k, the value of k (if there), the keys after k; the
- /// tree is consumed, in \f$ O( \log n ) \f$ time
+ /// the keys before \f$ k \f$, the value of \f$ k \f$ (if there), the keys
+ /// after \f$ k \f$, by `JoinAlgorithms::split()`; the tree is consumed, in
+ /// \f$ O( \log n ) \f$ time
  [[nodiscard]] std::tuple< T , std::optional< Value > , T > split(
                                                         const Key & k ) &&;
 
- /// the tree of the keys of l, the pair ( k , v ) and the keys of r; l and
- /// r are consumed, in \f$ O( | \log n_l - \log n_r | + 1 ) \f$ time
- /// \pre the keys of l are smaller than k, those of r larger
+ /// the tree of the keys of \f$ l \f$, the pair \f$ ( k , v ) \f$ and the
+ /// keys of \f$ r \f$, by the join of the scheme; \f$ l \f$ and \f$ r \f$ are
+ /// consumed, in \f$ O( | \log n_l - \log n_r | + 1 ) \f$ time
+ /// \pre the keys of \f$ l \f$ are smaller than \f$ k \f$, those of \f$ r \f$
+ ///      larger
  [[nodiscard]] static T join( T && l , const Key & k , const Value & v ,
                               T && r );
 
- /// the tree of the keys of l and of r, which are consumed, in
- /// \f$ O( \log n ) \f$ time
- /// \pre the keys of l are smaller than those of r
+ /// the tree of the keys of \f$ l \f$ and of \f$ r \f$, which are consumed,
+ /// by `JoinAlgorithms::join2()`, in \f$ O( \log n ) \f$ time
+ /// \pre the keys of \f$ l \f$ are smaller than those of \f$ r \f$
  [[nodiscard]] static T join2( T && l , T && r );
 
- /// the pairs of the keys in \f$ [ lo , hi ] \f$, taken out of the tree,
- /// in \f$ O( \log n ) \f$ time
+ /// the pairs of the keys in \f$ [ \mathit{lo} , \mathit{hi} ] \f$, taken
+ /// out of the tree by `JoinAlgorithms::extract()`, in \f$ O( \log n ) \f$
+ /// time
  [[nodiscard]] T extractRange( const Key & lo , const Key & hi );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- BULK OPERATIONS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- /// the union with o, which is consumed; on a key of both, the value
- /// f( mine , its ), by default its; \f$ O( m \log( n / m + 1 ) ) \f$
- /// work for sizes \f$ m \le n \f$
+ /// the union with `o`, which is consumed, by `JoinAlgorithms::unite()`;
+ /// on a key of both, the value `f( mine , its )`, by default its;
+ /// \f$ O( m \log( n / m + 1 ) ) \f$ work for sizes \f$ m \le n \f$
  template< class F = TakeSecond >
  void unionWith( T && o , F f = F() ) {
   Sequential seq;
   unionWith( seq , std::move( o ) , f );
   }
 
- /// unionWith( o , f ) on the threads of ex
+ /// `unionWith( o , f )` on the threads of `ex`
  template< Executor E , class F = TakeSecond >
  void unionWith( E & ex , T && o , F f = F() );
 
- /// the intersection with o, which is consumed; the value f( mine , its ),
- /// by default mine; the work of unionWith(), plus the freeing of the
- /// nodes that leave
+ /// the intersection with `o`, which is consumed, by
+ /// `JoinAlgorithms::intersect()`; the value `f( mine , its )`, by default
+ /// mine; the work of `unionWith()`, plus the freeing of the nodes that
+ /// leave
  template< class F = TakeFirst >
  void intersectWith( T && o , F f = F() ) {
   Sequential seq;
   intersectWith( seq , std::move( o ) , f );
   }
 
- /// intersectWith( o , f ) on the threads of ex
+ /// `intersectWith( o , f )` on the threads of `ex`
  template< Executor E , class F = TakeFirst >
  void intersectWith( E & ex , T && o , F f = F() );
 
- /// the keys not in o, which is consumed; the work of unionWith(), plus
- /// the freeing of the nodes of o
+ /// the keys not in `o`, which is consumed, by
+ /// `JoinAlgorithms::subtract()`; the work of `unionWith()`, plus the
+ /// freeing of the nodes of `o`
  void differenceWith( T && o ) {
   Sequential seq;
   differenceWith( seq , std::move( o ) );
   }
 
- /// differenceWith( o ) on the threads of ex
+ /// `differenceWith( o )` on the threads of `ex`
  template< Executor E >
  void differenceWith( E & ex , T && o );
 
- /// the pairs of B inserted; on a key already there, the value f( mine ,
- /// new ), by default new; \f$ O( m \log( n / m + 1 ) ) \f$ work for m
- /// pairs
- /// \pre the keys of B increasing (an audit)
+ /// the pairs of \f$ B \f$ inserted, by `JoinAlgorithms::multiInsert()`; on
+ /// a key already there, the value `f( mine , new )`, by default new;
+ /// \f$ O( m \log( n / m + 1 ) ) \f$ work for \f$ m \f$ pairs
+ /// \pre the keys of \f$ B \f$ increasing (an audit)
  template< class F = TakeSecond >
  void multiInsert( std::span< const std::pair< Key , Value > > B ,
                    F f = F() ) {
@@ -712,42 +931,46 @@ class Joinable {
   multiInsert( seq , B , f );
   }
 
- /// multiInsert( B , f ) on the threads of ex
+ /// `multiInsert( B , f )` on the threads of `ex`
  template< Executor E , class F = TakeSecond >
  void multiInsert( E & ex , std::span< const std::pair< Key , Value > > B ,
                    F f = F() );
 
- /// the keys of B removed, \f$ O( m \log( n / m + 1 ) ) \f$ work
- /// \pre the keys of B increasing (an audit)
+ /// the keys of \f$ B \f$ removed, by `JoinAlgorithms::multiRemove()`,
+ /// \f$ O( m \log( n / m + 1 ) ) \f$ work
+ /// \pre the keys of \f$ B \f$ increasing (an audit)
  void multiRemove( std::span< const Key > B ) {
   Sequential seq;
   multiRemove( seq , B );
   }
 
- /// multiRemove( B ) on the threads of ex
+ /// `multiRemove( B )` on the threads of `ex`
  template< Executor E >
  void multiRemove( E & ex , std::span< const Key > B );
 
- /// only the pairs with p( k , v ) kept, \f$ O( n ) \f$ work
+ /// only the pairs with `p( k , v )` kept, by `JoinAlgorithms::filter()`,
+ /// \f$ O( n ) \f$ work
  template< class P >
  void filter( P p ) {
   Sequential seq;
   filter( seq , p );
   }
 
- /// filter( p ) on the threads of ex
+ /// `filter( p )` on the threads of `ex`
  template< Executor E , class P >
  void filter( E & ex , P p );
 
- /// reduce( ... reduce( id , map( k_1 , v_1 ) ) ... , map( k_n , v_n ) )
- /// by an associative reduce of identity id, \f$ O( n ) \f$ work
+ /// \f$ \mathrm{reduce}( \ldots \mathrm{reduce}( \mathit{id} , \mathrm{map}(
+ /// k_1 , v_1 ) ) \ldots , \mathrm{map}( k_n , v_n ) ) \f$ by an associative
+ /// `reduce` of identity `id`, by `JoinAlgorithms::mapReduce()`,
+ /// \f$ O( n ) \f$ work
  template< class M , class R , class U >
  [[nodiscard]] U mapReduce( M map , R reduce , U id ) const {
   Sequential seq;
   return( mapReduce( seq , map , reduce , std::move( id ) ) );
   }
 
- /// mapReduce( map , reduce , id ) on the threads of ex
+ /// `mapReduce( map , reduce , id )` on the threads of `ex`
  template< Executor E , class M , class R , class U >
  [[nodiscard]] U mapReduce( E & ex , M map , R reduce , U id ) const;
 
