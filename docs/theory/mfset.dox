@@ -1,0 +1,203 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File mfset.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_mfset */
+/** \defgroup theory_mfset Theory of merge-find sets
+ \ingroup area_mfset
+
+ \details The headers of `include/ADS/mfset` realize the MFSET of section
+ 10.2 of the book, the union of disjoint sets, on lists (section 10.2.1) and
+ on a forest of parents (section 10.2.2) with the union by rank and the
+ compression of the paths (sections 10.2.3 and 10.2.4), and, beyond the
+ book, two engineered forests: one in a single vector of integers, with the
+ union by size and the halving of the paths, and the algorithm of Rem with
+ splicing. This page collects the definitions and the notation that the
+ headers share (see \ref theory_mfset_notation), the realizations with the
+ costs of their operations (see \ref theory_mfset_repr), and the arguments
+ behind the bounds of the heuristics (see \ref theory_mfset_union and
+ \ref theory_mfset_paths). The pseudocode of each operation is on the page of
+ its header, in the comment of its function, together with the section of
+ the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_mfset_notation Definitions and notation
+
+ An MFSET (merge-find set) is a partition of the elements
+ \f$ \{ 0 , \ldots , n - 1 \} \f$ into disjoint <em>components</em>, which
+ starts with the \f$ n \f$ singletons \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
+ and changes by two operations: \f$ \mathrm{find}( x ) \f$ gives the
+ <em>representative</em> of the component of \f$ x \f$, an element of it that
+ stays the same until the component changes, so that \f$ x \f$ and
+ \f$ y \f$ are in the same component if and only if
+ \f$ \mathrm{find}( x ) = \mathrm{find}( y ) \f$; and
+ \f$ \mathrm{merge}( x , y ) \f$ replaces the components of \f$ x \f$ and of
+ \f$ y \f$ with their union. Components are never split. The MFSET follows
+ the connected components of a graph whose edges arrive one at a time, i.e.,
+ the cycles that the algorithm of Kruskal must refuse (see
+ \ref theory_graph_mst), and the classes of an equivalence relation given by
+ its pairs.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$, \f$ m \f$</td><td>the number of elements, and the
+     number of operations of a sequence of finds and merges</td></tr>
+ <tr><td>\f$ p[ x ] \f$</td><td>the parent of \f$ x \f$ in the forest,
+     \f$ p[ x ] = x \f$ (or a negative number in <tt>UnionFind</tt>) at a
+     root, the representative</td></tr>
+ <tr><td>\f$ \mathit{rank}[ r ] \f$</td><td>the rank of the root
+     \f$ r \f$, an upper bound to the height of its tree</td></tr>
+ <tr><td>\f$ \mathit{size}[ r ] \f$</td><td>the number of nodes of the tree
+     of the root \f$ r \f$</td></tr>
+ <tr><td>\f$ \alpha( m , n ) \f$</td><td>the inverse of the function of
+     Ackermann, at most 4 for any \f$ m \f$ and \f$ n \f$ that fit in a
+     computer</td></tr>
+ </table>
+
+ \section theory_mfset_repr Realizations and their costs
+
+ <table>
+ <caption>The realizations of the MFSET and the cost of their operations
+          (section 10.2 of the book), for \f$ m \ge n \f$ operations</caption>
+ <tr><th>Realization</th><th>Representation</th>
+     <th><tt>find()</tt></th><th><tt>merge()</tt></th>
+     <th>\f$ m \f$ operations</th></tr>
+ <tr><td><tt>ListMFSet</tt></td><td>a list per component, each element
+     with the head of its list</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( n ) \f$, the shorter list relabeled</td>
+     <td>\f$ O( m + n \log n ) \f$</td></tr>
+ <tr><td><tt>MFSet</tt>, union <tt>NONE</tt>, no compression</td>
+     <td>a forest of parents</td><td>\f$ O( n ) \f$</td><td>that of two
+     finds</td><td>\f$ O( m n ) \f$</td></tr>
+ <tr><td><tt>MFSet</tt>, union <tt>RANK</tt> or <tt>SIZE</tt></td>
+     <td>as above</td><td>\f$ O( \log n ) \f$</td><td>that of two finds</td>
+     <td>\f$ O( m \log n ) \f$</td></tr>
+ <tr><td><tt>MFSet</tt> by rank or size with compression,
+     <tt>UnionFind</tt></td><td>as above, or one vector with the sizes at
+     the roots</td><td>\f$ O( \log n ) \f$</td><td>that of two finds</td>
+     <td>\f$ O( m \, \alpha( m , n ) ) \f$</td></tr>
+ <tr><td><tt>RemUnionFind</tt></td><td>a forest with
+     \f$ p[ x ] \ge x \f$, linked by index</td><td>\f$ O( n ) \f$</td>
+     <td>one interleaved climb</td><td>\f$ O( m \log_{1 + m / n} n ) \f$,
+     \f$ O( m \, \alpha( m , n ) ) \f$ expected on a random
+     numbering</td></tr>
+ </table>
+
+ On lists, `find()` reads the head that each element keeps, and `merge()`
+ appends one list to the other and relabels the elements of the appended
+ one; on a forest, `find()` climbs from \f$ x \f$ to the root of its tree,
+ and `merge()` makes one root a child of the other, after the two finds.
+ The two realizations trade one cost for the other, and the heuristics
+ below bring the forest to a cost per operation that is constant in
+ practice.
+
+ \section theory_mfset_union Unions by size and by rank
+
+ <em>Lemma 1 (the relabeling of the shorter list, Hopcroft and Ullman).</em>
+ If `merge()` relabels the elements of the shorter list, an element is
+ relabeled at most \f$ \lfloor \log_2 n \rfloor \f$ times, and any sequence of
+ \f$ m \f$ operations costs \f$ O( m + n \log n ) \f$.
+
+ Indeed, an element is relabeled only when its list is the shorter of the
+ two, and then the list it lands in is at least twice as long as its old
+ one; a list has at most \f$ n \f$ elements, so that this happens at most
+ \f$ \log_2 n \f$ times per element. The finds cost \f$ O( 1 ) \f$ each.
+
+ On a forest with no heuristic, \f$ n - 1 \f$ merges may build a path of
+ \f$ n \f$ nodes, whose deepest node costs \f$ n - 1 \f$ steps to every
+ find. The union by rank keeps for each root \f$ r \f$ a rank, 0 for a
+ singleton, and puts the root of lower rank under the other one, the rank
+ growing by 1 only when the two ranks are equal; the union by size puts the
+ tree with fewer nodes under the other one.
+
+ <em>Lemma 2 (Theorem 10.1 of the book).</em> With the union by rank, a tree
+ whose root has rank \f$ r \f$ has at least \f$ 2^r \f$ nodes and height at
+ most \f$ r \f$; hence \f$ r \le \log_2 n \f$, and `find()` and `merge()`
+ take \f$ O( \log n ) \f$.
+
+ Indeed, by induction on the merges: a singleton has rank 0 and one node;
+ a merge of two roots of different ranks keeps the rank and the height of
+ the higher tree, and adds nodes to it; a merge of two roots of equal rank
+ \f$ r \f$ gives rank \f$ r + 1 \f$ and height at most \f$ r + 1 \f$ to a
+ tree of at least \f$ 2^r + 2^r = 2^{r+1} \f$ nodes. With the union by size
+ the same bound holds by the argument of Lemma 1: a node goes one level
+ down only when its tree joins one at least as large, i.e., when the tree
+ that holds it at least doubles, so that its depth is at most
+ \f$ \log_2 \mathit{size}[ r ] \f$.
+
+ \section theory_mfset_paths Compression, halving and splicing of the paths
+
+ A find that has climbed from \f$ x \f$ to its root \f$ r \f$ may make each
+ node of the path a child of \f$ r \f$ (the <em>compression</em> of section
+ 10.2.4), in a second pass, so that the next finds from those nodes cost one
+ step. The <em>halving</em> makes each node of the path a child of its
+ grandparent instead, in the same pass that climbs, and the
+ <em>splicing</em> of Rem replaces a parent with a larger parent of the
+ other element while two climbs go on together; both shorten every path
+ they walk by about half.
+
+ <em>Theorem 3 (Tarjan, Tarjan and van Leeuwen).</em> With the union by rank
+ or by size, and the compression or the halving of the paths, a sequence of
+ \f$ m \ge n \f$ operations on \f$ n \f$ elements costs
+ \f[
+   O( m \, \alpha( m , n ) ) , \tag{1}
+ \f]
+ and no algorithm on a forest of pointers does better in the worst case.
+
+ The argument, which the book sketches and Tarjan and van Leeuwen give in
+ full, charges each step of a find either to the operation, at most a
+ constant number of steps per operation, or to the node, whose parent then
+ changes to one of much larger rank; since the ranks along a path increase,
+ and a node of rank \f$ r \f$ is one of at most \f$ n / 2^r \f$, the charges
+ to the nodes sum to \f$ O( m \, \alpha( m , n ) ) \f$ over the levels of
+ the inverse of the function of Ackermann. The bound (1) is
+ \f$ O( m ) \f$ in practice, since \f$ \alpha \f$ is at most 4 for every
+ input that fits in a computer; a single find may still cost
+ \f$ \Theta( \log n ) \f$.
+
+ The engineered forests of the area keep (1) and save memory and passes.
+ `UnionFind` keeps the parents and, at each root, minus the size of its tree
+ in one vector of integers, so that a find touches one array, and halves
+ the paths in the single pass of the climb. `RemUnionFind` replaces the
+ union by rank with the <em>link by index</em>: every parent is at least its
+ child, \f$ p[ x ] \ge x \f$, so that a path increases strictly to its root,
+ and `merge()` climbs from \f$ x \f$ and \f$ y \f$ together, always from the
+ node of smaller parent, which, if it is a root, is linked under the parent
+ of the other node; otherwise its parent is replaced by the larger parent of
+ the other one, which keeps \f$ p[ x ] \ge x \f$. The climb stops as soon as
+ the two components are joined, or the two nodes reach the same parent,
+ often well below the roots. The link by index alone gives the worst-case
+ bound \f$ O( m \log_{1 + m / n} n ) \f$ (Tarjan and van Leeuwen), and the
+ bound (1) in expectation when the elements are numbered in a random order
+ (Goel, Khanna, Larkin and Tarjan); the experiments of Patwary, Blair and
+ Manne found it among the fastest in practice.
+
+ \section theory_mfset_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.2,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
+ \see B. A. Galler, M. J. Fischer, An improved equivalence algorithm,
+      Communications of the ACM 7(5), 301-303, 1964,
+      doi:10.1145/364099.364331
+ \see J. E. Hopcroft, J. D. Ullman, Set merging algorithms, SIAM Journal on
+      Computing 2(4), 294-303, 1973, doi:10.1137/0202024
+ \see R. E. Tarjan, Efficiency of a good but not linear set union
+      algorithm, Journal of the ACM 22(2), 215-225, 1975,
+      doi:10.1145/321879.321884
+ \see R. E. Tarjan, J. van Leeuwen, Worst-case analysis of set union
+      algorithms, Journal of the ACM 31(2), 245-281, 1984,
+      doi:10.1145/62.2160
+ \see E. W. Dijkstra, A Discipline of Programming, Prentice-Hall, 1976
+      (the chapter on the algorithm of Rem for the equivalence classes)
+ \see M. M. A. Patwary, J. R. S. Blair, F. Manne, Experiments on union-find
+      algorithms for the disjoint-set data structure, Proceedings of SEA
+      2010, Lecture Notes in Computer Science 6049, 411-423, 2010,
+      doi:10.1007/978-3-642-13193-6_35
+ \see A. Goel, S. Khanna, D. H. Larkin, R. E. Tarjan, Disjoint set union
+      with randomized linking, Proceedings of SODA 2014, 1005-1017, 2014,
+      doi:10.1137/1.9781611973402.75
+*/
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File mfset.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
