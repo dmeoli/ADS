@@ -4,7 +4,12 @@
 # Builds the documentation of ADS and publishes it on the pages of the        #
 # repository at each push to main: the site of Sphinx with the theme of Read  #
 # the Docs, whose pages docs/pages.py writes from the README and the          #
-# CHANGELOG, and whose API reference Exhale builds from the XML of Doxygen.   #
+# CHANGELOG and whose API reference docs/apiref.py writes from the XML of     #
+# Doxygen, and in its folder doxygen the Doxygen site, with the theme of      #
+# doxygen-awesome-css and the same tree of the reference under its Topics.    #
+# On a pull request it only builds them, and leaves the site as an artifact   #
+# of the run. The steps of the build are in docs/build.sh, which fails on     #
+# any warning.                                                                #
 ###############################################################################
 
 name: Docs
@@ -12,6 +17,7 @@ name: Docs
 on:
   push:
     branches: [ main ]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -20,8 +26,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  DOXYGEN_VERSION: '1.17.0'
 
 jobs:
   build:
@@ -31,19 +40,32 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: the site of Sphinx
+      # the Doxygen of the releases, since that of Ubuntu (1.9) has neither
+      # the outline of the pages nor the sidebar that the theme expects
+      - name: Doxygen
         run: |
-          sudo apt-get update
-          sudo apt-get install -y doxygen
+          v=$DOXYGEN_VERSION
+          url=https://github.com/doxygen/doxygen/releases/download
+          curl -sSfL -o doxygen.tar.gz \
+               "$url/Release_${v//./_}/doxygen-$v.linux.bin.tar.gz"
+          tar xzf doxygen.tar.gz
+          echo "$PWD/doxygen-$v/bin" >> "$GITHUB_PATH"
+      - name: the two sites
+        run: |
           pip install -r docs/requirements.txt
-          python3 docs/pages.py
-          sphinx-build -b html docs build-docs/html
-          touch build-docs/html/.nojekyll
-      - uses: actions/upload-pages-artifact@v3
+          bash docs/build.sh
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
         with:
+          path: build-docs/html
+      - if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
           path: build-docs/html
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:

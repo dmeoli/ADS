@@ -1,0 +1,117 @@
+###############################################################################
+#                                   Doxyfile                                  #
+#                                                                             #
+# The configuration of Doxygen for the documentation of ADS, the settings     #
+# that differ from the defaults. It writes the XML that docs/apiref.py and    #
+# Breathe read for the Sphinx site and the HTML of the Doxygen site, with the #
+# theme of doxygen-awesome-css, which the Sphinx site holds in its directory  #
+# doxygen/. docs/build.sh runs it twice from the root of the repository: a    #
+# first time for the XML of the headers and of the theory pages, which the    #
+# headers may \ref, from which docs/pages.py writes the main page, the        #
+# Topics and the input filters that put each header in its group into         #
+# build-docs, and a second time with them for the HTML and for the XML that   #
+# Breathe reads; build the sites with it, never with these runs by hand.      #
+###############################################################################
+
+#------------------------------------------------------------------------------
+# the project
+#------------------------------------------------------------------------------
+
+PROJECT_NAME           = ADS
+PROJECT_BRIEF          = "Algorithms and Data Structures"
+OUTPUT_DIRECTORY       = build-docs
+# the headers named by their path from include/, since two folders have an
+# Anagrams.h each
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = include
+STRIP_FROM_INC_PATH    = include
+# the dots of the comments that end no sentence escaped, so that the brief
+# descriptions are whole sentences
+INPUT_FILTER           = "python3 docs/doxygen/autobrief.py"
+JAVADOC_AUTOBRIEF      = YES
+BUILTIN_STL_SUPPORT    = NO
+TOC_INCLUDE_HEADINGS   = 3
+# the lists of the \pre, \post and \see of the headers would be pages of
+# their own, with an entry for each of the 1000 functions
+GENERATE_TODOLIST      = NO
+GENERATE_TESTLIST      = NO
+GENERATE_BUGLIST       = NO
+GENERATE_DEPRECATEDLIST= NO
+LAYOUT_FILE            = docs/doxygen/DoxygenLayout.xml
+QUIET                  = YES
+
+#------------------------------------------------------------------------------
+# what is read
+#------------------------------------------------------------------------------
+
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+# the main page, which docs/pages.py writes from the README, the headers
+# and the theory pages of the areas
+INPUT                  = build-docs/mainpage.md \
+                         include/ADS \
+                         docs/theory
+USE_MDFILE_AS_MAINPAGE = build-docs/mainpage.md
+FILE_PATTERNS          = *.h \
+                         *.dox
+RECURSIVE              = YES
+# the definitions of the templates, and the helpers that are not part of
+# the interface
+EXCLUDE_PATTERNS       = */impl/*
+EXCLUDE_SYMBOLS        = detail \
+                         detail::* \
+                         ADS::detail \
+                         ADS::detail::*
+# the macros of the attributes of inlining, which would come into the
+# signatures, where Breathe cannot parse them
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+# the optional libraries taken as present, so that what only they enable
+# (the executors of FastFlow, OpenMP and TBB, the sort of MPI) is documented
+# too
+PREDEFINED             = ADS_WITH_FASTFLOW \
+                         ADS_WITH_MPI \
+                         ADS_WITH_TBB \
+                         _OPENMP \
+                         ADS_FLAT_INLINE= \
+                         ADS_FLAT_NOINLINE= \
+                         ADS_RING_INLINE= \
+                         ADS_RING_NOINLINE= \
+                         ADS_RNG_INLINE=
+
+#------------------------------------------------------------------------------
+# the HTML site
+#------------------------------------------------------------------------------
+
+HTML_OUTPUT            = doxygen
+HTML_EXTRA_STYLESHEET  = docs/doxygen/awesome/doxygen-awesome.css
+HTML_EXTRA_STYLESHEET += docs/doxygen/awesome/doxygen-awesome-sidebar-only.css
+HTML_EXTRA_STYLESHEET += docs/doxygen/custom.css
+HTML_COLORSTYLE        = LIGHT
+GENERATE_TREEVIEW      = YES
+FULL_SIDEBAR           = NO
+TREEVIEW_WIDTH         = 335
+# the formulae by MathJax 3, as on the Sphinx site, each typeset when it
+# comes into view [see docs/doxygen/mathjax.js]: a theory page has hundreds
+USE_MATHJAX            = YES
+MATHJAX_VERSION        = MathJax_3
+MATHJAX_FORMAT         = chtml
+# html for the \class{pseudocode} that sets the pseudocode on the left
+# [see docs/doxygen/custom.css]
+MATHJAX_EXTENSIONS     = ams \
+                         html
+MATHJAX_CODEFILE       = docs/doxygen/mathjax.js
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
+
+#------------------------------------------------------------------------------
+# the XML for Sphinx
+#------------------------------------------------------------------------------
+
+GENERATE_XML           = YES
+# the listings of the headers, which Breathe does not show
+XML_PROGRAMLISTING     = NO
+
+###############################################################################
+#                             End of Doxyfile                                 #
+###############################################################################
