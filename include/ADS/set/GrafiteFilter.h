@@ -3,140 +3,102 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The range filters of Costa, Ferragina and Vinciguerra, beyond the book:
- * GrafiteFilter, a static filter of a set S of n keys that tells whether a
- * range \f$ [ a , b ] \f$ of the universe may hold a key of S with a false
- * positive probability that depends only on the length of the range,
- * whatever the keys and the queries (adversarial ones included), and
- * BucketingFilter, the heuristic of the same paper, faster and with no
- * such guarantee. Both answer the queries of a point too, as the range
- * \f$ [ x , x ] \f$.
+ * `GrafiteFilter`, a static filter of a set \f$ S \f$ of \f$ n \f$ keys that
+ * tells whether a range \f$ [ a , b ] \f$ of the universe may hold a key of
+ * \f$ S \f$ with a false positive probability that depends only on the
+ * length of the range, whatever the keys and the queries (adversarial ones
+ * included), and `BucketingFilter`, the heuristic of the same paper, faster
+ * and with no such guarantee. Both answer the queries of a point too, as
+ * the range \f$ [ x , x ] \f$.
  *
- * A range filter answers "maybe" for every range that holds a key of S
- * (no false negatives) and for an empty range of length \f$ \ell = b - a
- * + 1 \f$ with probability \f$ \varepsilon( \ell ) \f$, the false positive
- * probability. The filters of points (Bloom, binary fuse, Ribbon, cuckoo
- * [see BloomFilter.h, BinaryFuseFilter.h, RibbonFilter.h, CuckooFilter.h])
- * answer a range only by asking each of its \f$ \ell \f$ points, which
- * costs \f$ \ell \f$ queries and \f$ \ell \f$ times their false positive
- * probability; the tries of SuRF and the learned models of SNARF and
- * Proteus answer a range in one step, but a query close to a key, which
+ * A range filter answers true for every range that holds a key of
+ * \f$ S \f$ (no false negatives), and for an empty range of length
+ * \f$ \ell = b - a + 1 \f$ with probability \f$ \varepsilon( \ell ) \f$,
+ * the false positive probability. The filters of points (Bloom, binary
+ * fuse, Ribbon, cuckoo [see `BloomFilter.h`, `BinaryFuseFilter.h`,
+ * `RibbonFilter.h`, `CuckooFilter.h`]) answer a range only by asking each
+ * of its \f$ \ell \f$ points, which costs \f$ \ell \f$ queries and
+ * \f$ \ell \f$ times their false positive probability; the tries of SuRF,
+ * the filters of prefixes of Rosetta and the learned models of SNARF and
+ * Proteus answer a range in fewer steps, but a query close to a key, which
  * the workloads of a key-value store often ask (a correlated query), finds
- * them unable to tell the range from the key, and their false positives
- * go to 1 (Oasis, a learned filter of segments, shares the weakness).
- * Grafite is the filter whose guarantee holds for every query, within 2
- * bits per key of the lower bound; the robust filters after it, Memento
- * and Diva, keep a similar guarantee while they take insertions and keys
- * of any length, at the price of more bits and slower queries, so that
- * for a static set of keys of 64 bits Grafite remains the choice.
+ * them unable to tell the range from the key, and their false positives go
+ * to 1 (Oasis, a learned filter of segments, shares the weakness). Grafite
+ * is the filter whose guarantee holds for every query, within 2 bits per
+ * key of the lower bound; the robust filters after it, Memento and Diva,
+ * keep a similar guarantee while they take insertions and keys of any
+ * length, at the price of more bits and slower queries, so that for a
+ * static set of keys of 64 bits Grafite remains the choice.
  *
- * Theory. With B bits per key, Grafite reduces the universe
- * \f$ [ 0 , 2^{64} ) \f$ to \f$ [ 0 , r ) \f$, \f$ r = n \, 2^{B-2} \f$,
- * by the hash
+ * With \f$ B \f$ bits per key, Grafite reduces the universe
+ * \f$ [ 0 , 2^{64} ) \f$ to \f$ [ 0 , r ) \f$, \f$ r = n \, 2^{B-2} \f$, by
+ * the hash
  * \f[
  *   h( x ) = \bigl( q( \lfloor x / r \rfloor ) + x \bigr) \bmod r ,
  * \f]
- * with q a hash of the blocks \f$ \lfloor x / r \rfloor \f$ of r
- * consecutive keys into \f$ [ 0 , r ) \f$, drawn from a pairwise
- * independent family: inside a block, h is the rotation of the keys by
- * q of the block, so that the keys of a range in one block go to a
- * range of \f$ [ 0 , r ) \f$ of the same length, cyclically (the
- * locality), while the blocks are rotated independently of each other.
- * The codes h( S ), sorted and without repetitions, are kept by
- * Elias-Fano [see EliasFano.h] in the universe r, in
+ * with \f$ q \f$ a hash of the blocks \f$ \lfloor x / r \rfloor \f$ of
+ * \f$ r \f$ consecutive keys into \f$ [ 0 , r ) \f$, drawn from a pairwise
+ * independent family: inside a block, \f$ h \f$ is the rotation of the keys
+ * by \f$ q \f$ of the block, so that the keys of a range in one block go to
+ * a range of \f$ [ 0 , r ) \f$ of the same length, cyclically (the
+ * locality), while the blocks are rotated independently of each other. The
+ * codes \f$ h( S ) \f$, sorted and without repetitions, are kept by
+ * Elias-Fano [see `EliasFano.h`] in the universe \f$ r \f$, in
  * \f$ n ( 2 + \lceil \log_2( r / n ) \rceil ) = n B \f$ bits and the
  * directory of select, and a range \f$ [ a , b ] \f$ with \f$ b - a < r \f$
- * meets at most two blocks, whose images are at most two cyclic ranges
- * of \f$ [ 0 , r ) \f$ of \f$ \ell \f$ codes in all: the answer is
- * whether a code lies in them, one nextGEQ() and one access() each, in
- * \f$ O( 1 ) \f$ time for a constant B. A key of S in \f$ [ a , b ] \f$
- * has its
- * code in them, so that there is no false negative. A key x of S out of
- * \f$ [ a , b ] \f$ in a block of the range has its code out of the
- * image of the part of the range in its own block, since h is one to one
- * on a block of r keys; with respect to the other part of the range, and
- * to all of it for a key in another block, the code
- * \f$ ( q( j ) + x ) \bmod r \f$ of x in the block j is uniform on
- * \f$ [ 0 , r ) \f$ given q of the other block, q being pairwise
- * independent, so that x is a false positive with probability at most
- * \f$ \ell / r \f$. By the union bound over the n keys,
+ * meets at most two blocks, whose images are at most two cyclic ranges of
+ * \f$ [ 0 , r ) \f$ of \f$ \ell \f$ codes in all: the answer is whether a
+ * code lies in them, one `nextGEQ()` and one `access()` each, in
+ * \f$ O( 1 ) \f$ time for a constant \f$ B \f$. By the argument on the
+ * theory page of the area (Theorem 3.4 and Corollary 3.5 of the paper,
+ * which generalize the construction of Goswami, Grønlund, Larsen and Pagh),
  * \f[
  *   \varepsilon( \ell ) \le \min\Bigl( 1 , \frac{ n \ell }{ r } \Bigr) =
  *   \min\Bigl( 1 , \frac{ \ell }{ 2^{B-2} } \Bigr) ,
  * \f]
- * whatever S and the range, since the only randomness is that of q
- * (Theorem 3.4 and Corollary 3.5 of the paper, which generalize the
- * construction of Goswami, Grønlund, Larsen and Pagh); the lower bound
- * of the same paper needs \f$ n \log_2( \ell / \varepsilon ) - O( n ) \f$
- * bits, within 2 bits per key of Grafite. A range with \f$ b - a \ge r \f$
- * has \f$ n \ell / r \ge 1 \f$, and the filter answers maybe if S is not
- * empty. The paper gives r as \f$ n L / \varepsilon \f$ for the ranges
- * of length at most L and the probability \f$ \varepsilon \f$: with
- * B bits per key this is \f$ \varepsilon = L / 2^{B-2} \f$, so that L
- * need not be fixed in advance.
+ * whatever \f$ S \f$ and the range, since the only randomness is that of
+ * \f$ q \f$; the lower bound of the same paper needs
+ * \f$ n \log_2( \ell / \varepsilon ) - O( n ) \f$ bits, within 2 bits per
+ * key of Grafite. A range with \f$ b - a \ge r \f$ has
+ * \f$ n \ell / r \ge 1 \f$, and the filter answers true if \f$ S \f$ is not
+ * empty. The paper gives \f$ r \f$ as \f$ n L / \varepsilon \f$ for the
+ * ranges of length at most \f$ L \f$ and the probability
+ * \f$ \varepsilon \f$: with \f$ B \f$ bits per key this is
+ * \f$ \varepsilon = L / 2^{B-2} \f$, so that \f$ L \f$ need not be fixed in
+ * advance.
  *
- * The hash q here is the multiply-add-shift of Dietzfelbinger, on 128
- * bits, \f$ q'( j ) = \lfloor ( \alpha j + \beta ) \bmod 2^{128} /
+ * The hash \f$ q \f$ here is the multiply-add-shift of Dietzfelbinger, on
+ * 128 bits, \f$ q'( j ) = \lfloor ( \alpha j + \beta ) \bmod 2^{128} /
  * 2^{64} \rfloor \f$ with \f$ \alpha , \beta \f$ random words of 128 bits
- * from the seed, pairwise independent from the words of 64 bits to those
- * of 64 bits (the Carter-Wegman hash modulo a prime of the paper needs a
- * prime above the \f$ 2^{64} / r \f$ blocks), mapped onto
- * \f$ [ 0 , r ) \f$ by \f$ q( j ) = \lfloor q'( j ) \, r / 2^{64}
- * \rfloor \f$, whose values have probabilities within
- * \f$ 1 / r \pm 2^{-64} \f$, which adds at most \f$ n \ell 2^{-64} \f$ to
- * \f$ \varepsilon( \ell ) \f$.
+ * from the seed, pairwise independent from the words of 64 bits to those of
+ * 64 bits (the Carter-Wegman hash modulo a prime of the paper needs a prime
+ * above the \f$ 2^{64} / r \f$ blocks), mapped onto \f$ [ 0 , r ) \f$ by
+ * \f$ q( j ) = \lfloor q'( j ) \, r / 2^{64} \rfloor \f$, whose values have
+ * probabilities within \f$ 1 / r \pm 2^{-64} \f$, which adds at most
+ * \f$ n \ell 2^{-64} \f$ to \f$ \varepsilon( \ell ) \f$.
  *
- * In pseudocode (the query of Grafite, beyond the book), with the m
- * codes sorted in C[ 0 .. m - 1 ] and \f$ a \le b \f$:
- * \f[
- * \begin{array}{r@{\quad}l}
- * 1 & \textbf{function}\ \mathrm{mayContain}( a , b ) \\
- * 2 & \quad \textbf{if}\ m = 0\ \textbf{then}\ \textbf{return}\
- *     \textbf{false} \\
- * 3 & \quad \textbf{if}\ b - a \ge r\ \textbf{then}\ \textbf{return}\
- *     \textbf{true}\quad \triangleright\ \text{the bound is } 1 \\
- * 4 & \quad j_a \gets \lfloor a / r \rfloor;\ j_b \gets
- *     \lfloor b / r \rfloor \\
- * 5 & \quad \textbf{if}\ j_a = j_b\ \textbf{then}\ \textbf{return}\
- *     \mathrm{meets}( h( a ) , h( b ) ) \\
- * 6 & \quad c \gets j_b \, r\quad \triangleright\ \text{the first key of
- *     the block of } b \\
- * 7 & \quad \textbf{return}\ \mathrm{meets}( h( a ) , h( c - 1 ) )\
- *     \textbf{or}\ \mathrm{meets}( h( c ) , h( b ) ) \\
- * 8 & \textbf{function}\ \mathrm{meets}( x , y )\quad \triangleright\
- *     \text{a code in the cyclic range from } x \text{ to } y \\
- * 9 & \quad p \gets \mathrm{nextGEQ}( x ) \\
- * 10 & \quad \textbf{if}\ x \le y\ \textbf{then}\ \textbf{return}\
- *     p < m\ \textbf{and}\ C[ p ] \le y \\
- * 11 & \quad \textbf{return}\ p < m\ \textbf{or}\ C[ 0 ] \le y\quad
- *     \triangleright\ \text{the range wraps around } r
- * \end{array}
- * \f]
- * and the build: the n distinct keys, \f$ r \gets n \, 2^{B-2} \f$, the
- * codes \f$ h( x ) \f$ of the keys sorted and once each, and their
- * Elias-Fano in the universe r.
- *
- * BucketingFilter cuts the universe into buckets of s keys,
+ * `BucketingFilter` cuts the universe into buckets of \f$ s \f$ keys,
  * \f$ s = \lceil 2^{64} / ( n \, 2^{B-2} ) \rceil \f$, and keeps by
- * Elias-Fano the buckets \f$ \lfloor x / s \rfloor \f$ that hold a key,
- * in at most B bits per key; \f$ [ a , b ] \f$ may hold a key if a kept
- * bucket is in \f$ [ \lfloor a / s \rfloor , \lfloor b / s \rfloor ]
- * \f$, one nextGEQ() and one access(). A query whose range is out of the
- * buckets of S is answered right, which makes the filter exact on keys
- * and queries drawn independently at random from the universe, and
+ * Elias-Fano the buckets \f$ \lfloor x / s \rfloor \f$ that hold a key, in
+ * at most \f$ B \f$ bits per key; \f$ [ a , b ] \f$ may hold a key if a kept
+ * bucket is in \f$ [ \lfloor a / s \rfloor , \lfloor b / s \rfloor ] \f$,
+ * one `nextGEQ()` and one `access()`. A query whose range is out of the
+ * buckets of \f$ S \f$ is answered right, which makes the filter exact on
+ * keys and queries drawn independently at random from the universe, and
  * faster to build and to query than Grafite (no hash); but a query that
- * falls in the bucket of a key without holding it (a correlated query,
- * at distance below s from the key) is always a false positive: there is
+ * falls in the bucket of a key without holding it (a correlated query, at
+ * distance below \f$ s \f$ from the key) is always a false positive: there is
  * no bound that holds for every query.
  *
- * The keys are of a type T that radixKey() maps in order onto unsigned
- * words [see RadixSort.h]: integers and floating point numbers, whose
- * ranges are those of their order (-0 and +0 are two keys, -0 the
- * smaller, as the total order of IEEE 754 has them).
+ * The keys are of a type `T` that `radixKey()` maps in order onto unsigned
+ * words [see `RadixSort.h`]: integers and floating point numbers, whose
+ * ranges are those of their order (-0 and +0 are two keys, -0 the smaller,
+ * as the total order of IEEE 754 has them).
  *
- * The contracts [see Contract.h]: \f$ 2 \le B \le 40 \f$ and
+ * The contracts [see `Contract.h`]: \f$ 2 \le B \le 40 \f$ and
  * \f$ n \, 2^{B-2} < 2^{63} \f$; a range has \f$ a \le b \f$; after the
- * build every key is maybe there, an audit. The operations are defined in
- * GrafiteFilter.tpp.
+ * build every key may be there, an audit. The operations are defined in
+ * `GrafiteFilter.tpp`.
  *
  * \see M. Costa, P. Ferragina, G. Vinciguerra, Grafite: taming adversarial
  *      queries with optimal range filters, Proceedings of the ACM on
@@ -216,27 +178,67 @@ namespace ADS {
 /*-------------------------- CLASS GrafiteFilter ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a static range filter of the keys of type T, B bits per key, with
-/// false positive probability at most \f$ \ell / 2^{B-2} \f$ for a range
-/// of \f$ \ell \f$ keys, whatever the keys and the range
+/// a static range filter of the keys of type `T`, \f$ B \f$ bits per key, with
+/// false positive probability at most \f$ \ell / 2^{B-2} \f$ for a range of
+/// \f$ \ell \f$ keys, whatever the keys and the range
 template< RadixKey T = std::uint64_t >
 class GrafiteFilter {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// the filter of the keys, which may repeat, in B bits per key
+ /// the filter of the keys, which may repeat, in \f$ B \f$ bits per key
+ ///
+ /// In pseudocode (Costa, Ferragina and Vinciguerra, beyond the book), the
+ /// words \f$ \alpha \f$ and \f$ \beta \f$ of \f$ q \f$ drawn from the
+ /// seed:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{build}( K , B ) \cr
+ /// 2 & \quad n \gets \text{the number of distinct keys of } K;\ r \gets
+ ///     \max( 1 , n \, 2^{B-2} ) \cr
+ /// 3 & \quad C \gets \text{the codes } h( x ) \text{ of the keys } x \in
+ ///     K \text{, sorted and once each} \cr
+ /// 4 & \quad \text{keep } C \text{ by Elias-Fano in the universe } r
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ 2 \le B \le 40 \f$ and \f$ n \, 2^{B-2} < 2^{63} \f$
- /// \post every key is maybe there (an audit)
+ /// \post every key may be there (an audit)
  explicit GrafiteFilter( const std::vector< T > & keys , int B = 16 ,
                          std::uint64_t seed = 1 );
 
  /// true if \f$ [ a , b ] \f$ holds a key, and with probability at most
  /// \f$ ( b - a + 1 ) / 2^{B-2} \f$ otherwise
+ ///
+ /// In pseudocode (Costa, Ferragina and Vinciguerra, beyond the book), the
+ /// \f$ m \f$ codes sorted in \f$ C[ 0 .. m - 1 ] \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{mayContain}( a , b ) \cr
+ /// 2 & \quad \textbf{if}\ m = 0\ \textbf{then return false} \cr
+ /// 3 & \quad \textbf{if}\ b - a \ge r\ \textbf{then return true}\quad
+ ///     \triangleright\ \text{the bound is } 1 \cr
+ /// 4 & \quad j_a \gets \lfloor a / r \rfloor;\ j_b \gets \lfloor b / r
+ ///     \rfloor \cr
+ /// 5 & \quad \textbf{if}\ j_a = j_b\ \textbf{then return}\ \mathrm{meets}(
+ ///     h( a ) , h( b ) ) \cr
+ /// 6 & \quad c \gets j_b \, r\quad \triangleright\ \text{the first key of }
+ ///     \text{the block of } b \cr
+ /// 7 & \quad \textbf{return}\ \mathrm{meets}( h( a ) , h( c - 1 ) )
+ ///     \ \textbf{or}\ \mathrm{meets}( h( c ) , h( b ) ) \cr
+ /// 8 & \textbf{function}\ \mathrm{meets}( x , y )\quad \triangleright
+ ///     \ \text{a code in the cyclic range from } x \text{ to } y \cr
+ /// 9 & \quad p \gets \mathrm{nextGEQ}( x ) \cr
+ /// 10 & \quad \textbf{if}\ x \le y\ \textbf{then return}\ p < m
+ ///     \ \textbf{and}\ C[ p ] \le y \cr
+ /// 11 & \quad \textbf{return}\ p < m\ \textbf{or}\ C[ 0 ] \le y\quad
+ ///     \triangleright\ \text{the range wraps around } r
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ a \le b \f$
  [[nodiscard]] bool mayContain( const T & a , const T & b ) const;
 
- /// mayContain( x , x ): true for a key, and with probability at most
+ /// `mayContain( x , x )`: true for a key, and with probability at most
  /// \f$ 2^{-(B-2)} \f$ otherwise
  [[nodiscard]] bool maybe( const T & x ) const;
 
@@ -247,9 +249,11 @@ class GrafiteFilter {
  /// the keys of the build, the repeated ones once each
  [[nodiscard]] std::size_t size( void ) const;
 
+ /// true if the filter has no key
  [[nodiscard]] bool empty( void ) const;
 
- /// the distinct codes, n less the keys of S that share a code
+ /// the distinct codes, \f$ n \f$ less the keys of \f$ S \f$ that share a
+ /// code
  [[nodiscard]] std::size_t codes( void ) const;
 
  /// the reduced universe \f$ r = n \, 2^{B-2} \f$
@@ -261,19 +265,20 @@ class GrafiteFilter {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the code \f$ h( x ) \f$ of the word x
+ /// the code \f$ h( x ) \f$ of the word \f$ x \f$
  [[nodiscard]] std::uint64_t code( std::uint64_t x ) const;
 
- /// whether a code is in the cyclic range from x to y of \f$ [ 0 , r ) \f$
+ /// whether a code is in the cyclic range from \f$ x \f$ to \f$ y \f$ of
+ /// \f$ [ 0 , r ) \f$
  [[nodiscard]] bool meets( std::uint64_t x , std::uint64_t y ) const;
 
- EliasFano f_codes;
+ EliasFano f_codes;                       ///< the codes
  std::uint64_t f_r = 1;                   ///< the reduced universe
- std::uint64_t f_alo = 0 , f_ahi = 0;     ///< alpha
- std::uint64_t f_blo = 0 , f_bhi = 0;     ///< beta
+ std::uint64_t f_alo = 0 , f_ahi = 0;     ///< \f$ \alpha \f$
+ std::uint64_t f_blo = 0 , f_bhi = 0;     ///< \f$ \beta \f$
  std::uint64_t f_first = 0;               ///< the smallest code
- std::size_t f_n = 0;
- int f_B;
+ std::size_t f_n = 0;                     ///< the distinct keys
+ int f_B;                                 ///< the bits per key
 
  };  // end( class GrafiteFilter )
 
@@ -281,29 +286,52 @@ class GrafiteFilter {
 /*------------------------- CLASS BucketingFilter --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a static range filter of the keys of type T, B bits per key: the
-/// buckets of \f$ 2^{64} / ( n \, 2^{B-2} ) \f$ keys that hold a key of
-/// the set, with no bound on the false positives of the queries near a key
+/// a static range filter of the keys of type `T`, \f$ B \f$ bits per key: the
+/// buckets of \f$ 2^{64} / ( n \, 2^{B-2} ) \f$ keys that hold a key of the
+/// set, with no bound on the false positives of the queries near a key
 template< RadixKey T = std::uint64_t >
 class BucketingFilter {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// the filter of the keys, which may repeat, in at most B bits per key
+ /// the filter of the keys, which may repeat, in at most \f$ B \f$ bits per
+ /// key
+ ///
+ /// In pseudocode (the bucketing of Costa, Ferragina and Vinciguerra,
+ /// beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{build}( K , B ) \cr
+ /// 2 & \quad n \gets \text{the number of distinct keys of } K;\ s \gets
+ ///     \lceil 2^{64} / ( n \, 2^{B-2} ) \rceil \cr
+ /// 3 & \quad \text{keep by Elias-Fano the buckets } \lfloor x / s \rfloor
+ ///     \text{ of the keys } x \in K \text{, sorted and once each}
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ 2 \le B \le 40 \f$ and \f$ n \, 2^{B-2} < 2^{63} \f$
- /// \post every key is maybe there (an audit)
+ /// \post every key may be there (an audit)
  explicit BucketingFilter( const std::vector< T > & keys , int B = 16 );
 
  /// true if \f$ [ a , b ] \f$ holds a key, and if a bucket of a key meets
  /// it
+ ///
+ /// In pseudocode (as the build):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{mayContain}( a , b ) \cr
+ /// 2 & \quad p \gets \mathrm{nextGEQ}( \lfloor a / s \rfloor ) \cr
+ /// 3 & \quad \textbf{return}\ p \text{ is a bucket kept }
+ ///     \ \textbf{and}\ \mathrm{access}( p ) \le \lfloor b / s \rfloor
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ a \le b \f$
  [[nodiscard]] bool mayContain( const T & a , const T & b ) const;
 
- /// mayContain( x , x )
+ /// `mayContain( x , x )`
  [[nodiscard]] bool maybe( const T & x ) const;
 
- /// the keys of a bucket, s
+ /// the keys of a bucket, \f$ s \f$
  [[nodiscard]] std::uint64_t bucketWidth( void ) const;
 
  /// the buckets that hold a key
@@ -315,7 +343,7 @@ class BucketingFilter {
 /*--------------------------------------------------------------------------*/
  private:
 
- EliasFano f_buckets;
+ EliasFano f_buckets;                     ///< the buckets that hold a key
  std::uint64_t f_s = 1;                   ///< the keys of a bucket
 
  };  // end( class BucketingFilter )

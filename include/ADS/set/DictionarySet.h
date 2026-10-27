@@ -3,22 +3,23 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The SET on any DICTIONARY with a foreach (sections 8.4 and 8.5):
- * ChainedHashSet and OpenHashSet on the hash tables, contains(), insert()
- * and remove() in O( 1 ) expected time and forEach() in O( m + n ) and
- * O( m ), m the size of the table; TreeSet on a Red-Black tree, the three
- * in O( log n ) and forEach() in O( n ), in order. Their operations are
- * the generic ones [see SetOperations.h].
+ * `ChainedHashSet` and `OpenHashSet` on the hash tables, `contains()`,
+ * `insert()` and `remove()` in \f$ O( 1 ) \f$ expected time and `forEach()`
+ * in \f$ O( m + n ) \f$ and \f$ O( m ) \f$, \f$ m \f$ the size of the table;
+ * `TreeSet` on a Red-Black tree, the three in \f$ O( \log n ) \f$ and
+ * `forEach()` in \f$ O( n ) \f$, in order. Their operations of two sets are
+ * the generic ones [see `SetOperations.h`].
  *
- * The contracts [see Contract.h]: after insert() the item is there and
- * after remove() it is not; the dictionary keeps its own invariant. The
- * operations are defined in DictionarySet.tpp.
+ * The contracts [see `Contract.h`]: after `insert()` the item is there and
+ * after `remove()` it is not; the dictionary keeps its own invariant. The
+ * operations are defined in `DictionarySet.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 8.4 and 8.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -61,7 +62,8 @@ namespace ADS {
 /*-------------------------- CLASS DictionarySet ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a set on a DICTIONARY D with values bool and a forEach( f( k , v ) )
+/// a set on a DICTIONARY `D` with the values `bool` and a
+/// `forEach( f( k , v ) )`, an item being a key
 template< class D >
 class DictionarySet {
 
@@ -70,24 +72,45 @@ class DictionarySet {
 
  using Item = typename D::Key;   ///< the type of the items
 
- /// the empty set on the dictionary D( a... )
+ /// the empty set on the dictionary `D( a... )`
  template< class... A >
   requires std::constructible_from< D , A... >
  explicit DictionarySet( A &&... a );
 
+ /// the number of items, the keys of the dictionary
  [[nodiscard]] std::size_t size( void ) const;
 
+ /// whether the set has no item
  [[nodiscard]] bool empty( void ) const;
 
+ /// whether \f$ x \f$ is a key of the dictionary
  [[nodiscard]] bool contains( const Item & x ) const;
 
- /// \post x is in the set
+ /// \f$ x \f$ into the set, as the key of the value true
+ ///
+ /// In pseudocode (section 8.4), \f$ D \f$ the dictionary:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{insert}( x ) \cr
+ /// 2 & \quad D.\mathrm{insert}( x , \textbf{true} )
+ /// \end{array}}
+ /// \f]
+ /// \post \f$ x \f$ is in the set
  void insert( const Item & x );
 
- /// \post x is not in the set
+ /// \f$ x \f$ out of the set, the key removed from the dictionary
+ ///
+ /// In pseudocode (section 8.4):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( x ) \cr
+ /// 2 & \quad D.\mathrm{remove}( x )
+ /// \end{array}}
+ /// \f]
+ /// \post \f$ x \f$ is not in the set
  void remove( const Item & x );
 
- /// f( x ) on the items, in the order of the dictionary
+ /// `f( x )` on the items, in the order of the dictionary
  template< class F >
  void forEach( F && f ) const;
 
@@ -99,11 +122,13 @@ class DictionarySet {
  // a constant view of the items, the keys of the dictionary in its order,
  // when the dictionary has iterators
 
+ /// the iterator on the first key of the dictionary
  [[nodiscard]] auto begin( void ) const
   requires std::ranges::forward_range< const D > {
   return( KeyIterator( std::ranges::begin( f_d ) ) );
   }
 
+ /// the iterator past the last key of the dictionary
  [[nodiscard]] auto end( void ) const
   requires std::ranges::forward_range< const D > {
   return( KeyIterator( std::ranges::end( f_d ) ) );

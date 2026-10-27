@@ -1,0 +1,568 @@
+/*--------------------------------------------------------------------------*/
+/*------------------------------ File set.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_set */
+/** \defgroup theory_set Theory of sets
+ \ingroup area_set
+
+ \details The headers of `include/ADS/set` realize the SET of chapter 8 of
+ the book (on a boolean vector, on an unsorted and on a sorted list, on any
+ dictionary) with its operations of two sets, and, beyond the book, three
+ families that the engineering of the sets has added to it: the compressed
+ bitmaps of Roaring, the intersections of sorted sequences of chapter 6,
+ Set Intersection, of the book of Ferragina, and the filters, i.e., the sets
+ that may answer yes for an item they do not hold. This page collects what the
+ headers take for granted: the definitions and the notation (see
+ \ref theory_set_notation), the realizations and the costs of their operations
+ with the reason of each (see \ref theory_set_repr), the lower bounds and the
+ algorithms of the operations of two sets (see \ref theory_set_ops and
+ \ref theory_set_inter), and the analysis of the filters, from the lower bound
+ on their space to the false positives of each of them (see
+ \ref theory_set_filters), and of the filters of ranges (see
+ \ref theory_set_range). The pseudocode of each algorithm is instead on the
+ page of its header, in the comment of its function, together with the section
+ of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_set_notation Definitions and notation
+
+ A set \f$ A \f$ is a finite collection of distinct items of a universe
+ \f$ U \f$; its operations are those of the concept `Set` of `ADT.h`, i.e.,
+ `contains()`, `insert()` and `remove()`, with `forEach()`, which visits the
+ items, and the four operations of two sets, the union \f$ A \cup B \f$, the
+ intersection \f$ A \cap B \f$, the difference \f$ A \setminus B \f$ and the
+ symmetric difference \f$ A \triangle B = ( A \setminus B ) \cup
+ ( B \setminus A ) \f$, called `setUnion()`, `setIntersection()`,
+ `setDifference()` and `setSymmetricDifference()`, since `union` is a keyword
+ of C++ (chapter 8 of the book). A <em>multiset</em> may hold an item more
+ than once, and its <em>multiplicity</em> is the number of its occurrences.
+
+ A <em>filter</em> of a set \f$ S \f$ of \f$ n \f$ keys answers a query
+ \f$ \mathrm{maybe}( x ) \f$ with no <em>false negative</em>, i.e.,
+ \f$ \mathrm{maybe}( x ) \f$ is true for every \f$ x \in S \f$, and with a
+ <em>false positive</em>, i.e., true for an \f$ x \notin S \f$, with a
+ probability \f$ \varepsilon \f$ over the choice of its hash functions, the
+ <em>false positive rate</em>. A filter is <em>static</em> when it is built
+ once from \f$ S \f$, <em>incremental</em> when it takes insertions one at a
+ time, and <em>dynamic</em> when it takes removals too.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$, \f$ m \f$</td>
+     <td>the sizes of the two sets \f$ A \f$ and \f$ B \f$ of an operation,
+         \f$ m \le n \f$ for the intersections; in a filter, \f$ n \f$ is the
+         number of keys and \f$ m \f$ the bits, the places or the rows of its
+         array, and in a hash table \f$ m \f$ is the size of the
+         table</td></tr>
+ <tr><td>\f$ N \f$</td>
+     <td>the dimension of a boolean vector, whose items are the integers of
+         \f$ [ 0 , N ) \f$</td></tr>
+ <tr><td>\f$ \varepsilon \f$</td>
+     <td>the false positive rate of a filter</td></tr>
+ <tr><td>\f$ k \f$, \f$ r \f$</td>
+     <td>the number of hash functions of a filter of Bloom (\f$ k \f$ in
+         <tt>BloomFilter</tt>, \f$ r \f$ in <tt>BloomVariants.h</tt>); in a
+         Ribbon filter, \f$ r \f$ is the bits of a result</td></tr>
+ <tr><td>\f$ f \f$, \f$ b \f$</td>
+     <td>the bits of a fingerprint of a cuckoo filter and of a binary fuse
+         filter</td></tr>
+ <tr><td>\f$ \alpha \f$</td>
+     <td>the load of a table, the fraction of its places that are
+         taken</td></tr>
+ <tr><td>\f$ \Delta_j \f$</td>
+     <td>the gap between the places of two consecutive items of the shorter
+         list in the longer one, in a search by doubling</td></tr>
+ <tr><td>\f$ L \f$</td>
+     <td>the length of a block of the two-level storage, of a bucket, or of
+         a segment of a binary fuse filter</td></tr>
+ </table>
+
+ \section theory_set_repr Realizations and their costs
+
+ The library has six realizations of the SET, which differ in the universe
+ they accept, in the space and in the time of the operations; the bounds of
+ the hash tables are expected, over the choice of the hash function, and
+ those of the operations of two sets are written for \f$ | A | = n \f$ and
+ \f$ | B | = m \f$.
+
+ <table>
+ <caption>The realizations of the SET and the cost of their operations
+          (chapter 8 of the book)</caption>
+ <tr><th>Realization</th><th>Space</th>
+     <th><tt>contains()</tt>, <tt>insert()</tt>, <tt>remove()</tt></th>
+     <th><tt>min()</tt>, <tt>max()</tt></th><th><tt>forEach()</tt></th>
+     <th>operations of two sets</th></tr>
+ <tr><td><tt>BoolSet</tt></td><td>\f$ \Theta( N ) \f$ bits</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( N ) \f$</td><td>\f$ O( N ) \f$</td>
+     <td>\f$ \Theta( N ) \f$, \f$ \lceil N / 64 \rceil \f$ operations on
+         words</td></tr>
+ <tr><td><tt>ListSet</tt></td><td>\f$ \Theta( n ) \f$</td>
+     <td>\f$ O( n ) \f$ (\f$ O( 1 ) \f$ for <tt>insertNew()</tt>)</td>
+     <td>\f$ O( n ) \f$</td><td>\f$ O( n ) \f$</td>
+     <td>\f$ O( n m ) \f$</td></tr>
+ <tr><td><tt>SortedListSet</tt></td><td>\f$ \Theta( n ) \f$</td>
+     <td>\f$ O( n ) \f$</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( n ) \f$</td>
+     <td>\f$ O( n + m ) \f$</td></tr>
+ <tr><td><tt>ChainedHashSet</tt>, <tt>OpenHashSet</tt>,
+         <tt>LinkedHashSet</tt></td>
+     <td>\f$ \Theta( n + m ) \f$</td><td>\f$ O( 1 ) \f$ expected</td>
+     <td>\f$ O( n + m ) \f$</td>
+     <td>\f$ O( n + m ) \f$, \f$ O( m ) \f$, \f$ O( n ) \f$</td>
+     <td>\f$ O( \max( m_A , n_A ) + \max( m_B , n_B ) ) \f$ expected</td></tr>
+ <tr><td><tt>TreeSet</tt></td><td>\f$ \Theta( n ) \f$</td>
+     <td>\f$ O( \log n ) \f$</td><td>\f$ O( \log n ) \f$</td>
+     <td>\f$ O( n ) \f$, in order</td>
+     <td>\f$ O( n + m \log( n + m ) ) \f$</td></tr>
+ <tr><td><tt>RoaringBitmap</tt></td>
+     <td>at most \f$ 2 n \f$ bytes and \f$ | U | / 8 \f$ bytes, about</td>
+     <td>\f$ O( \log c + 4096 ) \f$ for \f$ c \f$ containers</td>
+     <td>\f$ O( 1 ) \f$ to reach</td><td>\f$ O( n + c ) \f$</td>
+     <td>a merge of the containers, each pair in
+         \f$ O( 4096 ) \f$</td></tr>
+ </table>
+
+ The boolean vector is the only realization whose operations do not depend
+ on the items held but on the universe: it is preferable when \f$ N \f$ is
+ not much larger than the sets, and its scans go 64 items at a time, a word
+ per step, which leaves the bounds as they are and divides the time by up
+ to 64. The unsorted list accepts any type with an equality, and its operations
+ of two sets cost \f$ O( n m ) \f$, which is optimal under that only
+ assumption (see \ref theory_set_ops); `insertNew()` costs \f$ O( 1 ) \f$
+ since it skips the search of a duplicate, which the operations of two sets
+ can do whenever the item is known to be new. The sorted list needs a total
+ order, keeps its minimum and maximum at its ends, and merges two sets in
+ \f$ O( n + m ) \f$ time. The hash tables give \f$ O( 1 ) \f$ expected time
+ to the three operations on single items, and pay the size \f$ m \f$ of the
+ table in every scan (all the \f$ m \f$ places are read, plus the
+ \f$ n \f$ cells of the chains with chaining); `LinkedHashSet` threads a list
+ through the items, so that its scans cost \f$ O( n ) \f$ in the order of
+ insertion (exercise 8.9). The Red-Black tree keeps the order, and its
+ operations of two sets insert the items of one set into a copy of the other,
+ \f$ m \f$ insertions of \f$ O( \log( n + m ) ) \f$ (exercise 8.7).
+
+ The Roaring bitmap cuts the universe of the integers of 32 bits into chunks
+ of \f$ 2^{16} \f$ by their top 16 bits, and keeps each chunk that holds an
+ item as a sorted array of the low 16 bits of its items when it holds at most
+ 4096 of them, and as a vector of \f$ 2^{16} \f$ bits otherwise. The two
+ forms cost the same, 8 KB, exactly at 4096 items (\f$ 4096 \cdot 16 = 2^{16}
+ \f$ bits), and the threshold takes the smaller one in either case; hence no
+ container takes more than 8 KB, an item costs at most 2 bytes in an array,
+ and a set takes at most about \f$ \min( 2 n , | U | / 8 ) \f$ bytes, the
+ space of a sorted array on the sparse chunks and that of a boolean vector on
+ the dense ones.
+
+ \section theory_set_ops Operations of two sets
+
+ Each operation of two sets is a scan of one set with a query of the other:
+ the union inserts the items of \f$ B \f$ into a copy of \f$ A \f$, the
+ intersection removes from a copy of the smaller set its items not in the
+ other, the difference removes from a copy of \f$ A \f$ its items in
+ \f$ B \f$, and the symmetric difference adds to \f$ A \setminus B \f$ the
+ items of \f$ B \f$ not in \f$ A \f$ (`SetOperations.h`, on any set with a
+ copy and a `forEach()`). Its cost is that of the copy, of the scan and of
+ \f$ n \f$ or \f$ m \f$ queries, i.e., on a hash table of \f$ m_X \f$ places
+ and \f$ n_X \f$ items, \f$ O( \max( m_A , n_A ) + \max( m_B , n_B ) ) \f$
+ expected (exercise 8.6).
+
+ <em>Lemma 1 (the sets with an equality only).</em> If the items can only be
+ compared for equality, every algorithm that computes \f$ A \cap B \f$ makes
+ \f$ n m \f$ comparisons in the worst case.
+
+ Indeed, let an adversary answer "different" to every comparison. If the
+ algorithm stops without comparing some \f$ a \in A \f$ with some
+ \f$ b \in B \f$, the input in which \f$ a = b \f$, all the other items being
+ distinct, agrees with every answer given, so that the algorithm returns the
+ same result on it, while the intersection of the two inputs differs by
+ \f$ a \f$. The same argument holds for the union, the difference and the
+ symmetric difference; hence the \f$ O( n m ) \f$ of `ListSet` is optimal
+ (exercises 8.1 and 8.2).
+
+ With a total order and the sets sorted, the four operations are merges:
+ the two lists are scanned together, the smaller of their two current items
+ is examined and passed, and an item of \f$ A \f$ only, of \f$ B \f$ only, or
+ of both goes to the result if the operation takes it (`merge()` of
+ `SortedListSet.h`, section 8.3). Each comparison passes at least one item,
+ hence at most \f$ n + m \f$ comparisons; on lists, which give no access but
+ by a scan, this is optimal, and the result is sorted as it is written, each
+ item appended at the end in \f$ O( 1 ) \f$. On sorted arrays the
+ intersection can do better, as \ref theory_set_inter shows.
+
+ \section theory_set_inter Intersections of sorted sequences
+
+ The intersection of two sorted sequences is the core of the answer to a
+ query of several words by an inverted index, each word having the sorted
+ list of the documents that contain it (Ferragina, chapter 6, Set
+ Intersection); there \f$ m \le n \f$ and the two lists may differ in length by
+ orders of magnitude, and `SortedIntersection.h` gives the algorithms of
+ that chapter.
+
+ <em>Lemma 2 (the lower bound of the intersection).</em> An algorithm that
+ intersects a sorted array of \f$ n \f$ items with one of \f$ m \le n \f$
+ items by comparisons makes, in the worst case,
+ \f[
+   \log_2 \binom{n}{m} \ge m \log_2 \frac{n}{m} \tag{1}
+ \f]
+ comparisons.
+
+ Indeed, when \f$ B \subseteq A \f$ the algorithm must tell which of the
+ \f$ \binom{n}{m} \f$ subsets of \f$ A \f$ of \f$ m \f$ items it is, and a
+ tree of binary comparisons with that many leaves has depth at least the
+ logarithm of their number; the inequality is that of
+ \f$ \binom{n}{m} \ge ( n / m )^m \f$. The merge is optimal when \f$ m \f$ and
+ \f$ n \f$ are close, since then (1) is of the order of \f$ n + m \f$, and is
+ far from it when \f$ m \ll n \f$.
+
+ A binary search in \f$ A \f$ of each item of \f$ B \f$ costs
+ \f$ O( m \log n ) \f$, which is better than the merge when
+ \f$ m = o( n / \log n ) \f$. The mutual partition of Baeza-Yates searches
+ the median of the shorter list in the longer one, which splits both lists
+ into two pairs of shorter lists, and recurs on each pair with the roles
+ swapped when the part of the longer list is the shorter; its cost is
+ \f$ O( m ( 1 + \log( n / m ) ) ) \f$, which meets (1). The search by doubling
+ reaches the same bound with no recursion: each item of \f$ B \f$ is searched
+ in \f$ A \f$ from the place of the previous one, by probes at the distances
+ \f$ 1 , 2 , 4 , \ldots \f$ and then a binary search in the last gap (Bentley
+ and Yao), which costs \f$ O( 1 + \log \Delta_j ) \f$ for an item found
+ \f$ \Delta_j \f$ places after the previous one. Since the gaps sum to at
+ most \f$ n \f$ and the logarithm is concave,
+ \f[
+   \sum_{j=1}^m ( 1 + \log_2 \Delta_j ) \le m + m \log_2 \frac{n}{m} ,
+   \tag{2}
+ \f]
+ the sum of the logarithms of \f$ m \f$ numbers of given sum being largest
+ when they are equal. The two-level storage keeps in an array \f$ A' \f$ the
+ first item of each block of \f$ L \f$ items of \f$ A \f$; a merge of
+ \f$ A' \f$ with \f$ B \f$ tells the block where each item of \f$ B \f$ may
+ be, and each block met is merged with its items of \f$ B \f$, in
+ \f$ O( n / L + m L ) \f$ time, which is \f$ O( \sqrt{n m} ) \f$ for
+ \f$ L = \sqrt{n / m} \f$; on the disk, with blocks of \f$ B \f$ items, a
+ block of \f$ A \f$ met costs at most \f$ \lceil L / B \rceil + 1 \f$ reads.
+ Finally, the permuted buckets of Sanders and Transier map the universe
+ \f$ [ 0 , 2^w ) \f$ by the permutation \f$ \pi( x ) = ( a x + c ) \bmod 2^w
+ \f$, \f$ a \f$ odd so that \f$ \pi \f$ is invertible, and split each list by
+ the top \f$ \ell = \lceil \log_2( n / L ) \rceil \f$ bits of the images into
+ buckets of about \f$ L \f$ items; an image of the shorter list is looked
+ for in the bucket of the longer one named by its own top bits, so that a
+ bucket of \f$ A \f$ is read only if \f$ B \f$ has an item in it, at most
+ once, and the time is \f$ O( m + \min\{ n , m L \} ) \f$ expected.
+
+ <table>
+ <caption>The intersections of a sorted list of \f$ n \f$ items and one of
+          \f$ m \le n \f$ items (Ferragina, chapter 6)</caption>
+ <tr><th>Algorithm</th><th>Function</th><th>Time</th>
+     <th>Preferable</th></tr>
+ <tr><td>merge</td><td><tt>intersectMerge()</tt></td>
+     <td>\f$ O( n + m ) \f$</td><td>\f$ m \f$ close to \f$ n \f$</td></tr>
+ <tr><td>binary searches</td><td><tt>intersectBinarySearch()</tt></td>
+     <td>\f$ O( m \log n ) \f$</td>
+     <td>\f$ m = o( n / \log n ) \f$</td></tr>
+ <tr><td>mutual partition</td><td><tt>intersectMutualPartition()</tt></td>
+     <td>\f$ O( m ( 1 + \log( n / m ) ) ) \f$</td>
+     <td>optimal by (1), with the cost of a recursion</td></tr>
+ <tr><td>doubling</td><td><tt>intersectDoubling()</tt></td>
+     <td>\f$ O( m ( 1 + \log( n / m ) ) ) \f$ by (2)</td>
+     <td>optimal, with no recursion</td></tr>
+ <tr><td>two levels</td><td><tt>intersectTwoLevel()</tt></td>
+     <td>\f$ O( n / L + m L ) \f$</td><td>on the disk, few reads</td></tr>
+ <tr><td>permuted buckets</td><td><tt>PermutedBuckets</tt></td>
+     <td>\f$ O( m + \min\{ n , m L \} ) \f$ expected</td>
+     <td>lists of similar length, not sorted beforehand</td></tr>
+ </table>
+
+ The bounds count comparisons, and on a modern processor the branches that
+ the comparisons decide cost more than the comparisons, since those of a
+ merge of two lists that interleave at random are mispredicted half of the
+ time. `VectorIntersection.h` therefore merges with no branch, the indices
+ advanced by the results of the comparisons, or compares a block of 8 items
+ of each list all against all with the vector instructions; on lists of very
+ different lengths it searches by doubling, as above, and on the integers of
+ 32 bits through a window of 64 items, whose moves the processor predicts.
+ The bounds stay those of the table, and the time falls by a constant factor
+ (Schlegel, Willhalm and Lehner; Lemire, Boytsov and Kurz).
+
+ \section theory_set_filters Filters
+
+ A filter trades exactness for space: it does not store the keys, and can
+ therefore take fewer bits than any exact set, but no fewer than the
+ following bound allows.
+
+ <em>Lemma 3 (the space of a filter).</em> A filter of any \f$ n \f$ keys of
+ a universe \f$ U \f$, with \f$ n \ll | U | \f$ and false positive rate
+ \f$ \varepsilon \f$, takes at least
+ \f[
+   n \log_2 \frac{1}{\varepsilon} \tag{3}
+ \f]
+ bits (Carter, Floyd, Gill, Markowsky and Wegman).
+
+ Indeed, a filter of \f$ s \f$ bits has at most \f$ 2^s \f$ states, and a
+ state answers yes on a set of about \f$ n + \varepsilon | U | \f$ keys,
+ which contains at most \f$ \binom{n + \varepsilon | U |}{n} \f$ sets of
+ \f$ n \f$ keys; since each of the \f$ \binom{| U |}{n} \f$ sets of \f$ n \f$
+ keys must be contained in the answers of some state,
+ \f[
+   2^s \ge \binom{| U |}{n} \Big/ \binom{n + \varepsilon | U |}{n} \approx
+   \Bigl( \frac{| U |}{\varepsilon | U |} \Bigr)^n = \varepsilon^{-n}
+ \f]
+ for \f$ n \ll \varepsilon | U | \f$, which is (3). The filters below differ
+ by how close they come to (3), by the operations they take, and by the lines
+ of cache that a query reads.
+
+ <em>Lemma 4 (the filter of Bloom).</em> Let a filter of \f$ m \f$ bits set,
+ for each of \f$ n \f$ keys, the bits of \f$ k \f$ hash functions taken as
+ independent and uniform. A bit is still 0 with probability
+ \f$ p = ( 1 - 1 / m )^{k n} \approx e^{-k n / m} \f$, and the false positive
+ rate is
+ \f[
+   \varepsilon = ( 1 - p )^k \approx \bigl( 1 - e^{-k n / m} \bigr)^k ,
+   \tag{4}
+ \f]
+ least for \f$ k = ( m / n ) \ln 2 \f$, where
+ \f$ \varepsilon = 2^{-k} \approx 0.6185^{m / n} \f$; the filter then takes
+ \f$ m = n \log_2( 1 / \varepsilon ) / \ln 2 \approx 1.44 \, n \log_2( 1 /
+ \varepsilon ) \f$ bits, i.e., 1.44 times (3).
+
+ Indeed, a key out of \f$ S \f$ is a false positive when its \f$ k \f$ bits
+ are all set, each with probability \f$ 1 - p \f$, which gives (4) up to the
+ dependence of the bits, negligible for large \f$ m \f$. With
+ \f$ k = - ( m / n ) \ln p \f$ one has
+ \f$ \ln \varepsilon = - ( m / n ) \ln p \, \ln( 1 - p ) \f$, which is
+ symmetric in \f$ p \f$ and \f$ 1 - p \f$ and hence least at
+ \f$ p = 1 / 2 \f$, i.e., when half of the bits are set; then
+ \f$ \varepsilon = 2^{-k} \f$ with \f$ k = ( m / n ) \ln 2 \f$, and solving
+ for \f$ m \f$ gives the space. For \f$ \varepsilon = 0.01 \f$ the
+ filter takes about 9.6 bits per key. The \f$ k \f$ places of `BloomFilter`
+ are \f$ h_1 + i h_2 \bmod m \f$, \f$ i = 0 , \ldots , k - 1 \f$, of two
+ hashes only, which Kirsch and Mitzenmacher show to leave (4) unchanged
+ asymptotically.
+
+ The variants of `BloomVariants.h` and `BlockedBloomFilter.h` change one
+ assumption at a time. The partitioned filter gives each hash a part of
+ \f$ m / k \f$ bits of its own, so that the \f$ k \f$ bits of a key are
+ distinct: a bit of a part is 0 with probability \f$ ( 1 - k / m )^n \approx
+ e^{-k n / m} \f$, and (4) holds with a slightly smaller variance (Grandi).
+ The spectral filter of Cohen and Matias keeps \f$ m \f$ counters instead of
+ bits, adds the multiplicity of a key to its counters and estimates it by
+ the least of them: each counter of \f$ x \f$ has received all the
+ occurrences of \f$ x \f$, so that the estimate is never below the
+ multiplicity, and it is above it only if every counter of \f$ x \f$ is
+ shared with another key, i.e., with the probability (4); a counter that
+ reaches its largest value sticks there, so that a removal never makes a
+ false negative (the counting filter of Fan, Cao, Almeida and Broder). The
+ compressed filter of Mitzenmacher is sent through a channel compressed by
+ an arithmetic coder, in \f$ m \, H( p ) \f$ bits, \f$ H \f$ the binary
+ entropy; for a given number of bits sent, a larger filter with fewer
+ hashes, whose bits are sparser, gives fewer false positives than the filter
+ of the optimal \f$ k \f$. Two machines intersect \f$ A \f$ and \f$ B \f$ by
+ sending the filter of \f$ A \f$ and receiving back the keys \f$ Q \f$ of
+ \f$ B \f$ that it accepts, \f$ A \cap B \subseteq Q \f$, about
+ \f$ | A \cap B | + \varepsilon | B | \f$ keys instead of the whole of
+ \f$ A \f$ (`bloomIntersection()`).
+
+ The blocked filter of Putze, Sanders and Singler puts the bits of a key in
+ one block of 256 bits, one line of cache, instead of \f$ k \f$ lines
+ anywhere. The blocks then get a Poisson number of keys of mean
+ \f$ \lambda = 256 n / m \f$, and a block of \f$ j \f$ keys, which sets one
+ bit of each of its 8 words of 32 bits per key, answers yes with
+ probability \f$ ( 1 - ( 1 - 1 / 32 )^j )^8 \f$, so that
+ \f[
+   \varepsilon = \sum_{j \ge 0} e^{-\lambda} \frac{\lambda^j}{j!}
+   \Bigl( 1 - \Bigl( 1 - \frac{1}{32} \Bigr)^j \Bigr)^8 ; \tag{5}
+ \f]
+ the crowded blocks answer yes more often than the sparse ones save, and
+ (5) is above (4) with the same bits, e.g., 1.26 per cent against 0.82 at 10
+ bits per key, the price of one miss of the cache per query.
+
+ The filters of fingerprints keep, for each key, a fingerprint of \f$ f \f$
+ bits of its hash, and a key out of \f$ S \f$ is a false positive when its
+ fingerprint equals one of those it is compared with. In the cuckoo filter of
+ Fan, Andersen, Kaminsky and Mitzenmacher a key has two buckets of 4
+ places, the second being the first XOR a hash of the fingerprint, so that
+ a fingerprint can be moved to its other bucket with no key at hand; a
+ query compares at most 8 fingerprints, each equal to that of the key with
+ probability \f$ 1 / ( 2^f - 1 ) \f$, and at the load \f$ \alpha \f$
+ \f[
+   \varepsilon = 1 - \Bigl( 1 - \frac{1}{2^f - 1} \Bigr)^{8 \alpha} \le
+   \frac{8 \alpha}{2^f - 1} , \tag{6}
+ \f]
+ in \f$ f / \alpha \f$ bits per key; insertions by evictions reach a load of
+ about 0.95, and the filter takes removals. The prefix filter of Even, Even
+ and Morrison keeps the smallest 25 fingerprints of each bin of 32 bytes, in
+ a pocket dictionary of Bercea and Even, and sends the others to a small
+ blocked filter, the spare, which a query reads only when its fingerprint is
+ above the largest one of a full bin; with \f$ m \f$ bins at the load
+ \f$ \alpha \f$, the load of a bin is binomial of mean \f$ 25 \alpha \f$, the
+ spare gets at most about \f$ n / \sqrt{2 \pi \cdot 25} \f$, i.e., 8 per
+ cent, of the keys at \f$ \alpha = 1 \f$ (by the bound of Stirling on the
+ binomial at its mean), and a query reads one line of cache in almost every
+ case.
+
+ The static filters solve a linear system. The binary fuse filter of Graf and
+ Lemire gives each key 3 places of an array \f$ F \f$ of fingerprints of
+ \f$ b \f$ bits, in 3 consecutive segments, and asks that
+ \f$ F[ h_0 ] \oplus F[ h_1 ] \oplus F[ h_2 ] = f( h ) \f$; the system is
+ solved by peeling, i.e., by repeatedly taking out a place reached by one key
+ only, which is the last to be assigned for that key, and the peeling
+ succeeds with high probability when the array has about \f$ 1.125 n \f$
+ places for large \f$ n \f$ (\f$ 1.23 n \f$ for 3 places anywhere, as in the
+ xor filters), the spatial coupling of the segments lowering the threshold
+ (Dietzfelbinger and Walzer). The Ribbon filter of Dillinger and Walzer gives
+ each key one equation over \f$ \mathbb{F}_2 \f$ with 64 coefficients from a
+ random start, solved by the Gauss elimination of a banded matrix in the
+ order of the starts, in \f$ r ( 1 + \varepsilon' ) \f$ bits per key for a
+ small overhead \f$ \varepsilon' \f$. In both, a key out of \f$ S \f$ meets
+ its equation when a fixed value equals its fingerprint, which is uniform and
+ independent of it; hence \f$ \varepsilon = 2^{-b} \f$, or \f$ 2^{-r} \f$,
+ and the space is within a factor 1.125, or \f$ 1 + \varepsilon' \f$, of (3).
+
+ <table>
+ <caption>The filters of the library, at about 8 bits of fingerprint, and
+          their space with respect to (3)</caption>
+ <tr><th>Filter</th><th>Operations</th><th>Bits per key</th>
+     <th>Lines of cache per query</th></tr>
+ <tr><td><tt>BloomFilter</tt></td><td>insertions</td>
+     <td>\f$ 1.44 \log_2( 1 / \varepsilon ) \f$</td><td>\f$ k \f$</td></tr>
+ <tr><td><tt>BlockedBloomFilter</tt></td><td>insertions, union</td>
+     <td>above that of <tt>BloomFilter</tt> by (5)</td><td>1</td></tr>
+ <tr><td><tt>SpectralBloomFilter</tt></td>
+     <td>insertions, removals, multiplicities</td>
+     <td>that of <tt>BloomFilter</tt>, a counter per bit</td>
+     <td>\f$ r \f$</td></tr>
+ <tr><td><tt>CuckooFilter</tt></td><td>insertions, removals</td>
+     <td>\f$ f / \alpha \f$, \f$ \varepsilon \f$ by (6)</td><td>2</td></tr>
+ <tr><td><tt>PrefixFilter</tt></td><td>insertions, up to \f$ n \f$ keys</td>
+     <td>about 11.55 for \f$ \varepsilon \approx 0.39 \f$ per cent</td>
+     <td>1, rarely 2</td></tr>
+ <tr><td><tt>BinaryFuseFilter</tt></td><td>static</td>
+     <td>\f$ 1.125 b \f$, \f$ \varepsilon = 2^{-b} \f$</td><td>3</td></tr>
+ <tr><td><tt>RibbonFilter</tt></td><td>static</td>
+     <td>\f$ r ( 1 + \varepsilon' ) \f$, \f$ \varepsilon = 2^{-r} \f$</td>
+     <td>2 for a key out of the set</td></tr>
+ </table>
+
+ \section theory_set_range Range filters
+
+ A <em>range filter</em> of a set \f$ S \f$ of \f$ n \f$ keys of the
+ universe \f$ [ 0 , 2^{64} ) \f$ tells whether a range \f$ [ a , b ] \f$ may
+ hold a key of \f$ S \f$: it answers true for every range that holds one,
+ and for an empty range of length \f$ \ell = b - a + 1 \f$ with probability
+ \f$ \varepsilon( \ell ) \f$. A filter of points answers a range by asking
+ its \f$ \ell \f$ points, i.e., with \f$ \ell \f$ queries and up to
+ \f$ \ell \f$ times their false positives, while the filters of ranges built
+ on tries (SuRF), on filters of prefixes (Rosetta) or on learned models
+ (SNARF, Proteus) answer in fewer steps but fail on the correlated queries,
+ the empty ranges close to a key, where their false positives go to 1.
+ `GrafiteFilter` of `GrafiteFilter.h` has a bound that holds for every set
+ and every query, the only randomness being that of a hash.
+
+ With \f$ B \f$ bits per key, Grafite reduces the universe to
+ \f$ [ 0 , r ) \f$, \f$ r = n \, 2^{B-2} \f$, by the hash
+ \f[
+   h( x ) = \bigl( q( \lfloor x / r \rfloor ) + x \bigr) \bmod r , \tag{7}
+ \f]
+ \f$ q \f$ a pairwise independent hash of the blocks of \f$ r \f$
+ consecutive keys into \f$ [ 0 , r ) \f$, and keeps the codes \f$ h( S ) \f$
+ by Elias-Fano, in \f$ n B \f$ bits. Inside a block, (7) is a rotation, so
+ that a range of \f$ \ell \le r \f$ keys, which meets at most two blocks, has
+ for image at most two cyclic ranges of \f$ [ 0 , r ) \f$ of \f$ \ell \f$
+ codes in all, which a successor query of Elias-Fano answers in
+ \f$ O( 1 ) \f$ each.
+
+ <em>Lemma 5 (the range filter of Grafite, Costa, Ferragina and
+ Vinciguerra).</em> For every set \f$ S \f$ and every range of
+ \f$ \ell \f$ keys,
+ \f[
+   \varepsilon( \ell ) \le \min\Bigl( 1 , \frac{ n \ell }{ r } \Bigr) =
+   \min\Bigl( 1 , \frac{ \ell }{ 2^{B-2} } \Bigr) . \tag{8}
+ \f]
+
+ Indeed, a key of \f$ S \f$ in the range has its code in the image of the
+ range, and there is no false negative. A key \f$ x \f$ of \f$ S \f$ out of
+ the range, in a block that the range meets, has its code out of the image
+ of the part of the range in its block, since (7) is one to one on a block;
+ with respect to the part of the range in the other block, and to all of it
+ when \f$ x \f$ is in a block that the range does not meet, the code of
+ \f$ x \f$ is uniform on \f$ [ 0 , r ) \f$ given \f$ q \f$ of the other
+ block, \f$ q \f$ being pairwise independent, and falls in a stretch of at
+ most \f$ \ell \f$ codes with probability at most \f$ \ell / r \f$. The union
+ bound over the \f$ n \f$ keys gives (8), which generalizes the construction
+ of Goswami, Grønlund, Larsen and Pagh to the ranges of any length; the
+ lower bound of the same paper, \f$ n \log_2( \ell / \varepsilon ) - O( n )
+ \f$ bits, is within 2 bits per key of Grafite.
+
+ `BucketingFilter`, the heuristic of the same paper, keeps instead the
+ buckets of \f$ s = \lceil 2^{64} / ( n \, 2^{B-2} ) \rceil \f$ keys that
+ hold a key of \f$ S \f$, and answers true when a kept bucket meets the
+ range. It needs no hash and is faster, and it is exact on queries drawn at
+ random independently of the keys; but an empty range inside the bucket of
+ a key, at distance below \f$ s \f$ from it, is always a false positive, so
+ that no bound like (8) holds for every query.
+
+ \section theory_set_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 8,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapter 6, Set Intersection, and chapter 8, The
+      Dictionary Problem, doi:10.1017/9781009128933
+ \see R. Baeza-Yates, A fast set intersection algorithm for sorted
+      sequences, Proceedings of the 15th Symposium on Combinatorial Pattern
+      Matching (CPM), Lecture Notes in Computer Science 3109, 400-408, 2004,
+      doi:10.1007/978-3-540-27801-6_30
+ \see J. L. Bentley, A. C.-C. Yao, An almost optimal algorithm for unbounded
+      searching, Information Processing Letters 5(3), 82-87, 1976,
+      doi:10.1016/0020-0190(76)90071-5
+ \see P. Sanders, F. Transier, Intersection in integer inverted indices,
+      Proceedings of the 9th Workshop on Algorithm Engineering and
+      Experiments (ALENEX), 71-83, 2007, doi:10.1137/1.9781611972870.7
+ \see D. Lemire, L. Boytsov, N. Kurz, SIMD compression and the intersection
+      of sorted integers, Software: Practice and Experience 46(6), 723-749,
+      2016, doi:10.1002/spe.2326
+ \see S. Chambi, D. Lemire, O. Kaser, R. Godin, Better bitmap performance
+      with Roaring bitmaps, Software: Practice and Experience 46(5),
+      709-719, 2016, doi:10.1002/spe.2325
+ \see L. Carter, R. Floyd, J. Gill, G. Markowsky, M. Wegman, Exact and
+      approximate membership testers, Proceedings of the 10th ACM Symposium
+      on Theory of Computing (STOC), 59-65, 1978, doi:10.1145/800133.804332
+ \see B. H. Bloom, Space/time trade-offs in hash coding with allowable
+      errors, Communications of the ACM 13(7), 422-426, 1970,
+      doi:10.1145/362686.362692
+ \see A. Kirsch, M. Mitzenmacher, Less hashing, same performance: building a
+      better Bloom filter, Proceedings of ESA 2006, Lecture Notes in Computer
+      Science 4168, 456-467, 2006, doi:10.1007/11841036_42
+ \see F. Putze, P. Sanders, J. Singler, Cache-, hash-, and space-efficient
+      Bloom filters, Journal of Experimental Algorithmics 14, 4.4, 2009,
+      doi:10.1145/1498698.1594230
+ \see S. Cohen, Y. Matias, Spectral Bloom filters, Proceedings of SIGMOD
+      2003, 241-252, 2003, doi:10.1145/872757.872787
+ \see M. Mitzenmacher, Compressed Bloom filters, IEEE/ACM Transactions on
+      Networking 10(5), 604-612, 2002, doi:10.1109/TNET.2002.803864
+ \see F. Grandi, On the analysis of Bloom filters, Information Processing
+      Letters 129, 35-39, 2018, doi:10.1016/j.ipl.2017.09.004
+ \see B. Fan, D. G. Andersen, M. Kaminsky, M. D. Mitzenmacher, Cuckoo
+      filter: practically better than Bloom, Proceedings of CoNEXT 2014,
+      75-88, 2014, doi:10.1145/2674005.2674994
+ \see T. Even, G. Even, A. Morrison, Prefix filter: practically and
+      theoretically better than Bloom, Proceedings of the VLDB Endowment
+      15(7), 1311-1323, 2022, doi:10.14778/3523210.3523211
+ \see T. M. Graf, D. Lemire, Binary fuse filters: fast and smaller than xor
+      filters, ACM Journal of Experimental Algorithmics 27, 1.5, 2022,
+      doi:10.1145/3510449
+ \see M. Dietzfelbinger, S. Walzer, Dense peelable random uniform
+      hypergraphs, Proceedings of ESA 2019, LIPIcs 144, 38:1-38:16, 2019,
+      doi:10.4230/LIPIcs.ESA.2019.38
+ \see P. C. Dillinger, S. Walzer, Ribbon filter: practically smaller than
+      Bloom and Xor, arXiv:2103.02515, 2021,
+      https://arxiv.org/abs/2103.02515
+ \see M. Costa, P. Ferragina, G. Vinciguerra, Grafite: taming adversarial
+      queries with optimal range filters, Proceedings of the ACM on
+      Management of Data 2(1), 1-23, 2024, doi:10.1145/3639258
+ \see M. Goswami, A. Grønlund, K. G. Larsen, R. Pagh, Approximate range
+      emptiness in constant time and optimal space, Proceedings of the
+      26th ACM-SIAM Symposium on Discrete Algorithms (SODA), 769-775, 2015,
+      doi:10.1137/1.9781611973730.52
+*/
+/*--------------------------------------------------------------------------*/
+/*---------------------------- End File set.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/

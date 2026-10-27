@@ -2,56 +2,62 @@
 /*-------------------------- File BloomVariants.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The variants and the analysis of the filter of Bloom [see BloomFilter.h
+ * The variants and the analysis of the filter of Bloom [see `BloomFilter.h`
  * for the standard one], beyond the book:
  *
- * - SpectralBloomFilter, the filter of Cohen and Matias for multisets: m
- *   counters instead of bits, an insertion of x with multiplicity f adds f
- *   to its r counters and a removal subtracts it, and the multiplicity of x
- *   is estimated by the least of its r counters (the minimum selection),
- *   never below the true one and above it only when all r counters of x
+ * - `SpectralBloomFilter`, the filter of Cohen and Matias for multisets:
+ *   \f$ m \f$ counters instead of bits, an insertion of \f$ x \f$ with
+ *   multiplicity \f$ f \f$ adds \f$ f \f$ to its \f$ r \f$ counters and a
+ *   removal subtracts it, and the multiplicity of \f$ x \f$ is estimated by
+ *   the least of its \f$ r \f$ counters (the minimum selection), never below
+ *   the true one and above it only when all \f$ r \f$ counters of \f$ x \f$
  *   are shared, with the probability of a false positive of the filter of
- *   Bloom with the same m, n and r. With counters of a few bits it is the
- *   counting filter of Fan, Cao, Almeida and Broder, which removes keys;
- *   a counter that reaches its largest value sticks there, as they do, so
- *   that a removal never makes a false negative;
- * - PartitionedBloomFilter, whose m bits are cut into r parts of m / r
- *   bits, each hash setting one bit of its own part, so that the r bits of
- *   a key are distinct: the expected bits set and the false positives are
- *   about those of the standard filter, \f$ ( 1 - e^{-r n / m} )^r \f$,
- *   with a slightly smaller variance (Grandi);
- * - the analysis: bloomFalsePositive(), the probability \f$ ( 1 - ( 1 - 1 /
- *   m )^{r n} )^r \approx ( 1 - e^{-r n / m} )^r \f$, least for \f$ r = ( m
- *   / n ) \ln 2 \f$, where a bit is 0 with probability 1 / 2 and the error
- *   is \f$ 0.6185^{m/n} \f$ [see bloomBestHashes()]; bloomLowerBound(), the
+ *   Bloom with the same \f$ m \f$, \f$ n \f$ and \f$ r \f$. With counters of
+ *   a few bits it is the counting filter of Fan, Cao, Almeida and Broder,
+ *   which removes keys; a counter that reaches its largest value sticks
+ *   there, as they do, so that a removal never makes a false negative;
+ * - `PartitionedBloomFilter`, whose \f$ m \f$ bits are cut into \f$ r \f$
+ *   parts of \f$ m / r \f$ bits, each hash setting one bit of its own part,
+ *   so that the \f$ r \f$ bits of a key are distinct: the expected bits set
+ *   and the false positives are about those of the standard filter,
+ *   \f$ ( 1 - e^{-r n / m} )^r \f$, with a slightly smaller variance
+ *   (Grandi);
+ * - the analysis: `bloomFalsePositive()`, the probability
+ *   \f$ ( 1 - ( 1 - 1 / m )^{r n} )^r \approx ( 1 - e^{-r n / m} )^r \f$,
+ *   least for \f$ r = ( m / n ) \ln 2 \f$, where a bit is 0 with probability
+ *   \f$ 1 / 2 \f$ and the error is \f$ 0.6185^{m/n} \f$ [see
+ *   `bloomBestHashes()`]; `bloomLowerBound()`, the
  *   \f$ n \log_2( 1 / \epsilon ) \f$ bits that any structure with false
  *   positives \f$ \epsilon \f$ and no false negative needs, of which a
  *   filter of Bloom uses \f$ \log_2 e \approx 1.44 \f$ times [see
- *   bloomBits()]; compressedBloom(), the trade-off of Mitzenmacher between
- *   the size of a filter and its entropy, by which a larger and sparser
- *   filter, compressed by an arithmetic coder, sends fewer bits for the
- *   same false positives;
- * - bloomIntersection(), the intersection of two sets on two machines by
- *   sending the filter of A and receiving the keys Q of B that it accepts,
- *   \f$ A \cap B \subseteq Q \f$, then \f$ A \cap Q \f$: about \f$ | A
- *   \cap B | + 0.6185^{m_A / | A |} | B | \f$ keys travel back, instead of
- *   the whole A.
+ *   `bloomBits()`]; `compressedBloom()`, the trade-off of Mitzenmacher
+ *   between the size of a filter and its entropy, by which a larger and
+ *   sparser filter, compressed by an arithmetic coder, sends fewer bits for
+ *   the same false positives;
+ * - `bloomIntersection()`, the intersection of two sets on two machines by
+ *   sending the filter of \f$ A \f$ and receiving the keys \f$ Q \f$ of
+ *   \f$ B \f$ that it accepts, \f$ A \cap B \subseteq Q \f$, then
+ *   \f$ A \cap Q \f$: about
+ *   \f$ | A \cap B | + 0.6185^{m_A / | A |} | B | \f$ keys travel back,
+ *   instead of the whole \f$ A \f$.
  *
- * The r hashes of a key are \f$ h_1 + i h_2 \bmod m \f$ of two hashes, as
- * in BloomFilter. Other filters of today, closer to the lower bound for
- * small false positives, are the quotient filters (Bender et al.), the
- * cuckoo filters (Fan et al.) and the xor filters (Graf and Lemire), the
+ * The \f$ r \f$ hashes of a key are \f$ h_1 + i h_2 \bmod m \f$ of two
+ * hashes, as in `BloomFilter`. Other filters of today, closer to the lower
+ * bound for small false positives, are the quotient filters (Bender et al.),
+ * the cuckoo filters (Fan et al.) and the xor filters (Graf and Lemire), the
  * latter with about \f$ 1.23 \log_2( 1 / \epsilon ) \f$ bits per key.
  *
- * The contracts [see Contract.h]: m >= 1 and r >= 1 (m >= r for the
- * partitioned filter); a removal of x with multiplicity f only if the
- * estimate of x is at least f; an item inserted is always maybe there and
- * its estimate is at least its multiplicity, postconditions; for the
- * analysis m >= 1, n >= 0, r >= 1, 0 < epsilon < 1. The functions are
- * defined in BloomVariants.tpp.
+ * The contracts [see `Contract.h`]: \f$ m \ge 1 \f$ and \f$ r \ge 1 \f$
+ * (\f$ m \ge r \f$ for the partitioned filter); a removal of \f$ x \f$ with
+ * multiplicity \f$ f \f$ only if the estimate of \f$ x \f$ is at least
+ * \f$ f \f$; an item inserted is always maybe there and its estimate is at
+ * least its multiplicity, postconditions; for the analysis \f$ m \ge 1 \f$,
+ * \f$ n \ge 0 \f$, \f$ r \ge 1 \f$, \f$ 0 < \epsilon < 1 \f$. The functions
+ * are defined in `BloomVariants.tpp`.
  *
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
- *      Press, 2023, chapter 8 (section 8.7)
+ *      Press, 2023, chapter 8, The Dictionary Problem,
+ *      doi:10.1017/9781009128933
  * \see S. Cohen, Y. Matias, Spectral Bloom filters, Proceedings of SIGMOD
  *      2003, 241-252, 2003, doi:10.1145/872757.872787
  * \see L. Fan, P. Cao, J. Almeida, A. Z. Broder, Summary cache: a scalable
@@ -70,7 +76,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -106,38 +112,84 @@
 
 namespace ADS {
 
-/// the probability ( 1 - ( 1 - 1 / m )^( r n ) )^r of a false positive of a
-/// filter of m bits and r hashes after n insertions
-/// \pre m >= 1 and r >= 1
+/// the probability \f$ ( 1 - ( 1 - 1 / m )^{r n} )^r \f$ of a false
+/// positive of a filter of \f$ m \f$ bits and \f$ r \f$ hashes after
+/// \f$ n \f$ insertions, 0 for \f$ n = 0 \f$
+/// \pre \f$ m \ge 1 \f$, \f$ n \ge 0 \f$ and \f$ r \ge 1 \f$
 [[nodiscard]] inline double bloomFalsePositive( double m , double n ,
                                                 int r );
 
-/// the number of hashes, floor or ceiling of ( m / n ) ln 2, of the least
-/// false positives; past the largest int (m / n above about 3 10^9) the
-/// floor is cut to the largest int less one
-/// \pre m >= 1 and n >= 1
+/// the number of hashes, the floor or the ceiling of
+/// \f$ ( m / n ) \ln 2 \f$, of the least false positives; past the
+/// largest `int` (\f$ m / n \f$ above about \f$ 3 \cdot 10^9 \f$) the
+/// floor is cut to the largest `int` less one
+///
+/// In pseudocode (Bloom), the false positives being convex in \f$ r \f$
+/// near its real optimum:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{bloomBestHashes}( m , n ) \cr
+/// 2 & \quad \ell \gets \max( 1 , \lfloor ( m / n ) \ln 2 \rfloor ) \cr
+/// 3 & \quad \textbf{if}\ \mathrm{bloomFalsePositive}( m , n , \ell + 1 ) <
+///     \mathrm{bloomFalsePositive}( m , n , \ell )\ \textbf{then return}
+///     \ \ell + 1 \cr
+/// 4 & \quad \textbf{return}\ \ell
+/// \end{array}}
+/// \f]
+/// \pre \f$ m \ge 1 \f$ and \f$ n \ge 1 \f$
 [[nodiscard]] inline int bloomBestHashes( double m , double n );
 
-/// n log2( 1 / epsilon ), the bits that any filter of n keys with false
-/// positives epsilon needs
-/// \pre n >= 0 and 0 < epsilon < 1
+/// \f$ n \log_2( 1 / \epsilon ) \f$, the bits that any filter of
+/// \f$ n \f$ keys with false positives \f$ \epsilon \f$ needs
+/// \pre \f$ n \ge 0 \f$ and \f$ 0 < \epsilon < 1 \f$
 [[nodiscard]] inline double bloomLowerBound( double n , double epsilon );
 
-/// n log2( 1 / epsilon ) / ln 2, the bits of a filter of Bloom with the
-/// best number of hashes and false positives epsilon
-/// \pre n >= 0 and 0 < epsilon < 1
+/// \f$ n \log_2( 1 / \epsilon ) / \ln 2 \f$, the bits of a filter of
+/// Bloom with the best number of hashes and false positives
+/// \f$ \epsilon \f$
+/// \pre \f$ n \ge 0 \f$ and \f$ 0 < \epsilon < 1 \f$
 [[nodiscard]] inline double bloomBits( double n , double epsilon );
 
 /// the false positives and the bits per key after an arithmetic coding,
-/// m / n times the entropy of a bit, of a filter of m / n = bitsPerKey
-/// bits per key and r hashes
-/// \pre bitsPerKey > 0 and r >= 1
+/// \f$ m / n \f$ times the entropy of a bit, of a filter of
+/// \f$ m / n = \mathit{bitsPerKey} \f$ bits per key and \f$ r \f$ hashes
+///
+/// In pseudocode (Mitzenmacher), \f$ p \f$ the probability that a bit is 0
+/// and \f$ H \f$ the binary entropy:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{compressedBloom}( \mathit{bitsPerKey} , r )
+///     \cr
+/// 2 & \quad p \gets e^{-r / \mathit{bitsPerKey}} \cr
+/// 3 & \quad H \gets - p \log_2 p - ( 1 - p ) \log_2( 1 - p ) \cr
+/// 4 & \quad \textbf{return}\ ( ( 1 - p )^r , \mathit{bitsPerKey} \cdot H )
+/// \end{array}}
+/// \f]
+/// \pre \f$ \mathit{bitsPerKey} > 0 \f$ and \f$ r \ge 1 \f$
 [[nodiscard]] inline std::pair< double , double > compressedBloom(
                                                    double bitsPerKey , int r );
 
-/// the intersection of A and B by a filter of A of mA bits: the keys Q of
-/// B that the filter accepts, and the keys of A in Q, in the order of B
-/// \pre mA >= 1 and A not empty
+/// the intersection of \f$ A \f$ and \f$ B \f$ by a filter of \f$ A \f$
+/// of \f$ m_A \f$ bits: the keys \f$ Q \f$ of \f$ B \f$ that the filter
+/// accepts, and the keys of \f$ A \f$ in \f$ Q \f$, in the order of
+/// \f$ B \f$
+///
+/// In pseudocode (Broder and Mitzenmacher), the first machine holding
+/// \f$ A \f$ and the second \f$ B \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{bloomIntersection}( A , B , m_A ) \cr
+/// 2 & \quad F \gets \text{a filter of } m_A \text{ bits and the best }
+///     \text{number of hashes} \cr
+/// 3 & \quad \textbf{foreach}\ a \in A\ \textbf{do}\ F.\mathrm{insert}( a )
+///     \quad \triangleright\ \text{the first machine sends } F \cr
+/// 4 & \quad Q \gets ( b \in B : F.\mathrm{maybe}( b ) )\quad
+///     \triangleright\ \text{the second sends } Q \cr
+/// 5 & \quad I \gets ( q \in Q : q \in A ) \cr
+/// 6 & \quad \textbf{return}\ ( Q , I )
+/// \end{array}}
+/// \f]
+/// \pre \f$ m_A \ge 1 \f$ and \f$ A \f$ not empty
 /// \post the second is the exact intersection, within the first
 template< class T , class H = std::hash< T > >
 [[nodiscard]] std::pair< std::vector< T > , std::vector< T > >
@@ -148,47 +200,84 @@ template< class T , class H = std::hash< T > >
 /*----------------------- CLASS SpectralBloomFilter ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a filter of Bloom of m counters C and r hashes, for multisets
+/// a filter of Bloom of \f$ m \f$ counters of the type `C` and \f$ r \f$
+/// hashes, for multisets
 template< class T , class C = std::uint32_t , class H = std::hash< T > >
 class SpectralBloomFilter {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// the empty filter of m counters and r hashes
- /// \pre m >= 1 and r >= 1
+ /// the empty filter of \f$ m \f$ counters and \f$ r \f$ hashes
+ /// \pre \f$ m \ge 1 \f$ and \f$ r \ge 1 \f$
  SpectralBloomFilter( std::size_t m , int r , H h = H() );
 
- /// adds f to the multiplicity of x
- /// \post count( x ) >= f, and maybe( x ) if f > 0
+ /// \f$ f \f$ added to the multiplicity of \f$ x \f$
+ ///
+ /// In pseudocode (Cohen and Matias), \f$ C \f$ the counters and
+ /// \f$ \mathit{top} \f$ the largest value of a counter, at which it
+ /// sticks:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{insert}( x , f ) \cr
+ /// 2 & \quad \textbf{foreach}\ j\ \text{among the } r \text{ places of }
+ ///     x\ \textbf{do} \cr
+ /// 3 & \qquad C[ j ] \gets \min( C[ j ] + f , \mathit{top} )
+ /// \end{array}}
+ /// \f]
+ /// \post `count( x )` \f$ \ge f \f$, and `maybe( x )` if \f$ f > 0 \f$
  void insert( const T & x , C f = 1 );
 
- /// subtracts f from the multiplicity of x; a stuck counter stays
- /// \pre count( x ) >= f
+ /// \f$ f \f$ subtracted from the multiplicity of \f$ x \f$; a stuck
+ /// counter stays
+ ///
+ /// In pseudocode (Cohen and Matias, Fan et al.):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( x , f ) \cr
+ /// 2 & \quad \textbf{foreach}\ j\ \text{among the } r \text{ places of }
+ ///     x\ \textbf{with}\ C[ j ] \ne \mathit{top}\ \textbf{do}\ C[ j ]
+ ///     \gets C[ j ] - f
+ /// \end{array}}
+ /// \f]
+ /// \pre `count( x )` \f$ \ge f \f$
  void remove( const T & x , C f = 1 );
 
- /// the least counter of x: never below its multiplicity
+ /// the least counter of \f$ x \f$ (the minimum selection), never below
+ /// its multiplicity
+ ///
+ /// In pseudocode (Cohen and Matias):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{count}( x ) \cr
+ /// 2 & \quad \textbf{return}\ \min\{ C[ j ] : j \text{ among the } r
+ ///     \text{ places of } x \}
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] C count( const T & x ) const;
 
- /// false only if x is not there
+ /// whether \f$ x \f$ may be there, `count( x )` \f$ > 0 \f$: false only
+ /// if \f$ x \f$ is not there
  [[nodiscard]] bool maybe( const T & x ) const;
 
  /// the counters at their largest value, which no longer move
  [[nodiscard]] std::size_t stuck( void ) const;
 
+ /// the counters \f$ m \f$
  [[nodiscard]] std::size_t counters( void ) const;
 
+ /// the hashes \f$ r \f$
  [[nodiscard]] int hashes( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the places of the r counters of x
+ /// the places of the \f$ r \f$ counters of \f$ x \f$
  [[nodiscard]] std::vector< std::size_t > places( const T & x ) const;
 
- std::vector< C > f_C;
- int f_r;
- H f_h;
+ std::vector< C > f_C;   ///< the counters
+ int f_r;                ///< the hashes
+ H f_h;                  ///< the hash of the items
 
  };  // end( class SpectralBloomFilter )
 
@@ -196,39 +285,53 @@ class SpectralBloomFilter {
 /*---------------------- CLASS PartitionedBloomFilter ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a filter of Bloom of r parts of m / r bits, a hash for each part
+/// a filter of Bloom of \f$ r \f$ parts of \f$ m / r \f$ bits, a hash
+/// for each part
 template< class T , class H = std::hash< T > >
 class PartitionedBloomFilter {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// the empty filter of about m bits in r parts
- /// \pre r >= 1 and m >= r
+ /// the empty filter of about \f$ m \f$ bits in \f$ r \f$ parts
+ /// \pre \f$ r \ge 1 \f$ and \f$ m \ge r \f$
  PartitionedBloomFilter( std::size_t m , int r , H h = H() );
 
- /// \post maybe( x )
+ /// \f$ x \f$ into the filter, one bit in each part
+ ///
+ /// In pseudocode (Grandi), \f$ w = \lfloor m / r \rfloor \f$ the bits of
+ /// a part:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{insert}( x ) \cr
+ /// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ r - 1\ \textbf{do}
+ ///     \ B[ i w + ( h_1 + i h_2 ) \bmod w ] \gets 1
+ /// \end{array}}
+ /// \f]
+ /// \post `maybe( x )`
  void insert( const T & x );
 
- /// false only if x was never inserted
+ /// whether \f$ x \f$ may be in the set, its bit of each part read: false
+ /// only if \f$ x \f$ was never inserted
  [[nodiscard]] bool maybe( const T & x ) const;
 
  /// the bits set
  [[nodiscard]] std::size_t ones( void ) const;
 
- /// the bits, r times those of a part
+ /// the bits, \f$ r \f$ times those of a part
  [[nodiscard]] std::size_t bits( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the places of x in the parts, h_1 + i h_2 mod the bits of a part
+ /// the places of \f$ x \f$ in the parts, \f$ h_1 + i h_2 \f$ modulo the
+ /// bits of a part
  [[nodiscard]] detail::BloomProbe probe( const T & x ) const;
 
- std::vector< bool > f_B;
+ std::vector< bool > f_B;          ///< the bits
  std::size_t f_w;                  ///< the bits of a part
- int f_r;
- H f_h;
+ int f_r;                          ///< the parts, i.e., the hashes
+ H f_h;                            ///< the hash of the items
 
  };  // end( class PartitionedBloomFilter )
 
