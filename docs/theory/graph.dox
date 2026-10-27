@@ -683,29 +683,45 @@
  \f]
  \f$ \rho( e ) \f$ the <em>replacement</em> of \f$ e \f$, the lightest edge
  out of \f$ F \f$ whose path holds \f$ e \f$ (the sensitivity analysis of
- Tarjan). The maxima of the paths come from the jumps of the binary lifting,
- i.e., the ancestor \f$ a_j( v ) \f$ of each node at \f$ 2^j \f$ steps and
- the heaviest edge \f$ \mu_j( v ) \f$ on the way, so that a maximum takes
- \f$ O( \log n ) \f$; the replacements come from a scan of the edges out of
- \f$ F \f$ by increasing weight, each giving itself to the edges of its path
- that have none yet, which a union-find on the forest skips, in
- \f$ O( m \log m ) \f$ in all. Raising an edge out of \f$ F \f$, lowering one
- of \f$ F \f$ and deleting one out of \f$ F \f$ are harmless; lowering or
- inserting an edge out of \f$ F \f$ to \f$ w' \ge \max_{F( u , v )} \f$,
- raising an edge \f$ e \f$ of \f$ F \f$ to \f$ w' \le w( \rho( e ) ) \f$ and
- deleting an edge of \f$ F \f$ with no replacement (a bridge) are harmless
- too. The other changes are repairable. When the edges lowered or inserted
- out of \f$ F \f$ are the only changes that fail (10), the new forest is that
- of Kruskal on \f$ F \f$ and those edges, in
- \f$ O( ( n + k ) \log( n + k ) ) \f$ for \f$ k \f$ of them, since an edge
- out of \f$ F \f$ that did not get lighter is still the heaviest of its cycle;
- when a single edge of \f$ F \f$ is raised beyond its replacement, the two
- are swapped, by (7) on the cut that its removal leaves. Raises and decreases
- together, whose conditions interact, go from scratch. The data of the
- certificate stay valid, or become conservative (they may reject a harmless
- change, never accept a wrong one), as long as \f$ F \f$ keeps its edges: the
- maxima only fall when edges of \f$ F \f$ get lighter, and the replacements
- only rise when edges out of \f$ F \f$ get heavier or leave.
+ Tarjan). The forest is kept by a link-cut tree (see
+ \ref theory_tree_dynamic), with a node in the middle of each of its edges
+ that carries its weight, so that the maximum of (10) on a path, and the
+ edge that attains it, take \f$ O( \log n ) \f$ amortized time, and an edge
+ enters or leaves \f$ F \f$ by two links or two cuts, in the same time. The
+ events of \f$ P \f$ are applied one at a time, each keeping \f$ F \f$
+ minimum for the graph after it. Raising an edge out of \f$ F \f$, lowering
+ one of \f$ F \f$ and deleting one out of \f$ F \f$ keep (10) and change
+ nothing but a weight. Lowering or inserting an edge \f$ f = [ u , v ] \f$
+ out of \f$ F \f$ is harmless if \f$ w( f ) \f$ is at least the maximum on
+ \f$ F( u , v ) \f$; if it is less, the edge of that maximum leaves and
+ \f$ f \f$ enters, by (7) on the cut that the removal of the former leaves;
+ if \f$ u \f$ and \f$ v \f$ are in two trees, \f$ f \f$ enters. Raising or
+ deleting an edge \f$ e \f$ of \f$ F \f$ splits its tree in two, and the
+ lightest edge between the two parts (\f$ e \f$ itself among them, with its
+ new weight, unless deleted) joins them again, by (7); no such edge leaves
+ the forest split (a bridge deleted). That edge is sought by two searches
+ run in turn, a few steps each, the first one that ends giving it: two
+ visits of \f$ F \f$ from the ends of \f$ e \f$, one node of each in turn,
+ which stop when one of them ends and then scan the edges at the nodes of
+ the smaller part, in time proportional to that part and to its edges;
+ and a scan of the edges out of \f$ F \f$ by increasing weight, kept in a
+ balanced tree, the first one whose ends have two distinct roots in the
+ link-cut tree being the answer. With \f$ s \f$ the nodes of the smaller
+ part and \f$ \bar{d} \f$ their mean degree, the first costs about
+ \f$ s \bar{d} \f$, and the second, when the ends of the edges out of
+ \f$ F \f$ are spread at random, about \f$ n / s \f$ edges of
+ \f$ O( \log n ) \f$ each; together, at most twice the cheaper of the two,
+ i.e., about \f$ \sqrt{ n \bar{d} \log n } \f$ in that model, though
+ \f$ \Theta( m ) \f$ in the worst case (two large parts with no edge
+ between them). The structures that answer this
+ too in polylogarithmic time (the levels of Holm, de Lichtenberg and
+ Thorup) keep \f$ O( \log n ) \f$ copies of the forest, and they lose in
+ practice to the simpler scans on the graphs that are not adversarial (the
+ experiments surveyed by Hanauer, Henzinger and Schulz). Every event costs
+ \f$ O( \log n ) \f$ amortized but the raises and the deletions of the edges
+ of \f$ F \f$, with no structure built again; the binary lifting that a
+ static forest would use costs \f$ O( n \log n ) \f$ at each change of its
+ shape.
 
  For the maximum flow from \f$ s \f$ to \f$ t \f$ (`MaxFlowObserver`) the
  certificate is the side \f$ S \f$ of a minimum cut with
@@ -730,8 +746,9 @@
      deleted, (9) on its subtree and the prototype</td><td>a subtree of
      more than \f$ n / 2 \f$ nodes</td></tr>
  <tr><td><tt>SpanningForestObserver</tt></td><td>(10) still true,
-     \f$ O( \log n ) \f$</td><td>Kruskal on \f$ F \f$ and the edges
-     lowered, or a swap</td><td>raises and decreases together</td></tr>
+     \f$ O( \log n ) \f$</td><td>a swap on a cycle, \f$ O( \log n ) \f$;
+     an edge of \f$ F \f$ raised or deleted, the lightest edge out of the
+     smaller part</td><td>more than \f$ \rho m \f$ events</td></tr>
  <tr><td><tt>MaxFlowObserver</tt></td><td>\f$ c' \ge f( u , v ) \f$ off
      the cut, \f$ O( 1 ) \f$</td><td>an edge of the cut raised, the
      maximum from \f$ f \f$; \f$ c' < f( u , v ) \f$, the excess and the
@@ -813,6 +830,13 @@
  \see R. E. Tarjan, Sensitivity analysis of minimum spanning trees and
       shortest path trees, Information Processing Letters 14(1), 30-33,
       1982, doi:10.1016/0020-0190(82)90137-5
+ \see D. D. Sleator, R. E. Tarjan, A data structure for dynamic trees,
+      Journal of Computer and System Sciences 26(3), 362-391, 1983,
+      doi:10.1016/0022-0000(83)90006-5
+ \see J. Holm, K. de Lichtenberg, M. Thorup, Poly-logarithmic
+      deterministic fully-dynamic algorithms for connectivity, minimum
+      spanning tree, 2-edge, and biconnectivity, Journal of the ACM 48(4),
+      723-760, 2001, doi:10.1145/502090.502095
  \see K. Hanauer, M. Henzinger, C. Schulz, Recent advances in fully
       dynamic graph algorithms - a quick reference guide, ACM Journal of
       Experimental Algorithmics 27, 1-45, 2022, doi:10.1145/3555806

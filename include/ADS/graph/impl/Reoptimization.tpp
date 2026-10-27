@@ -365,20 +365,69 @@ SpanningForestObserver< G >::SpanningForestObserver( const G & g )
  }
 
 template< Graph G >
-void SpanningForestObserver< G >::setForest(
-                         const std::vector< WeightedEdge< Weight > > & F )
+void SpanningForestObserver< G >::grow( int n )
 {
- for( const std::uint64_t k : f_F ) {
-  const auto it = f_E.find( k );
-  if( it != f_E.end() )
-   it->second.tree = false;
+ if( n <= f_n )
+  return;
+ f_inc.resize( n );
+ f_adjF.resize( n );
+ f_mark.resize( n , 0 );
+ for( int v = f_n ; v < n ; ++v )
+  f_vid.push_back( f_lct.addNode( Heavy() ) );
+ f_n = n;
+ }
+
+template< Graph G >
+void SpanningForestObserver< G >::addTree( std::uint64_t k )
+{
+ Rec & r = f_E.at( k );
+ const auto [ u , v ] = ends( k );
+ int x;
+ if( f_free.empty() ) {
+  x = f_lct.addNode( Heavy() );
+  f_edgeOf.resize( std::size_t( f_lct.n() ) , 0 );
   }
- f_F.clear();
- for( const auto & e : F ) {
-  f_F.push_back( key( e.u , e.v ) );
-  f_E.at( f_F.back() ).tree = true;
+ else {
+  x = f_free.back();
+  f_free.pop_back();
   }
- f_shapeOk = f_liftOk = f_replOk = false;
+ f_edgeOf[ x ] = k;
+ f_off.erase( std::pair< Weight , std::uint64_t >( r.w , k ) );
+ if constexpr( SUBTRACT )
+  f_total = f_total + r.w;
+ f_lct.setValue( x , Heavy{ true , r.w , x } );
+ f_lct.link( x , f_vid[ u ] );
+ f_lct.link( f_vid[ v ] , x );
+ r.node = x;
+ r.at = int( f_F.size() );
+ f_F.push_back( k );
+ f_adjF[ u ].push_back( v );
+ f_adjF[ v ].push_back( u );
+ }
+
+template< Graph G >
+void SpanningForestObserver< G >::removeTree( std::uint64_t k )
+{
+ Rec & r = f_E.at( k );
+ const auto [ u , v ] = ends( k );
+ f_lct.cut( r.node , f_vid[ u ] );
+ f_lct.cut( r.node , f_vid[ v ] );
+ f_lct.setValue( r.node , Heavy() );
+ f_free.push_back( r.node );
+ f_off.emplace( r.w , k );
+ if constexpr( SUBTRACT )
+  f_total = f_total - r.w;
+ r.node = NIL;
+ f_E.at( f_F.back() ).at = r.at;            // the last one into its place
+ f_F[ r.at ] = f_F.back();
+ f_F.pop_back();
+ r.at = -1;
+ for( auto [ a , b ] : { std::pair< int , int >( u , v ) ,
+                         std::pair< int , int >( v , u ) } ) {
+  auto & L = f_adjF[ a ];
+  *std::find( L.begin() , L.end() , b ) = L.back();
+  L.pop_back();
+  }
  }
 
 template< Graph G >
@@ -386,187 +435,116 @@ void SpanningForestObserver< G >::scratch( bool fromGraph )
 {
  std::vector< WeightedEdge< Weight > > A;
  if( fromGraph ) {
-  f_n = f_g.bound();
   f_E.clear();
+  f_inc.clear();
+  f_adjF.clear();
+  f_mark.clear();
+  f_vid.clear();
+  f_n = 0;
+  grow( f_g.bound() );
   for( int u : f_g.V() )
    f_g.forEachEdge( u , [ & ]( int v , const Weight & w ) {
     if( u < v ) {
-     f_E[ key( u , v ) ] = { w , false };
-     A.push_back( { u , v , w } );
+     f_E[ key( u , v ) ] = Rec{ w , NIL , -1 };
+     f_inc[ u ].push_back( v );
+     f_inc[ v ].push_back( u );
      } } );
   }
- else {
-  A.reserve( f_E.size() );
-  for( const auto & [ k , r ] : f_E ) {
-   const auto [ u , v ] = ends( k );
-   A.push_back( { u , v , r.w } );
-   }
+ A.reserve( f_E.size() );
+ for( auto & [ k , r ] : f_E ) {
+  const auto [ u , v ] = ends( k );
+  A.push_back( { u , v , r.w } );
+  r.node = NIL;
+  r.at = -1;
   }
- setForest( kruskal( f_n , std::move( A ) ) );
+ // the link-cut tree afresh: the nodes of the graph first, as in f_vid
+ f_lct = LinkCutTree< Heavy , Heavier >( f_n , Heavy() );
+ for( int v = 0 ; v < f_n ; ++v )
+  f_vid[ v ] = v;
+ f_edgeOf.assign( std::size_t( f_n ) , 0 );
+ f_free.clear();
+ f_F.clear();
+ f_off.clear();
+ f_total = Weight();
+ for( const auto & [ k , r ] : f_E )
+  f_off.emplace( r.w , k );
+ for( auto & L : f_adjF )
+  L.clear();
+ for( const auto & e : kruskal( f_n , std::move( A ) ) )
+  addTree( key( e.u , e.v ) );
  f_ready = true;
  }
 
 template< Graph G >
-void SpanningForestObserver< G >::buildLift( void )
+bool SpanningForestObserver< G >::replacement( int u , int v ,
+                                               std::uint64_t & best )
 {
- const int n = f_n;
- std::vector< std::vector< std::pair< int , Weight > > > adj( n );
- for( const std::uint64_t k : f_F ) {
-  const auto [ u , v ] = ends( k );
-  const Weight & w = f_E.at( k ).w;
-  adj[ u ].emplace_back( v , w );
-  adj[ v ].emplace_back( u , w );
+ if( ( ++f_stamp == 0 ) || ( 2 * f_stamp < 0 ) ) {   // the stamps wrapped
+  std::fill( f_mark.begin() , f_mark.end() , 0 );
+  f_stamp = 1;
   }
- f_log = 1;
- while( ( 1 << f_log ) < std::max( n , 1 ) )
-  ++f_log;
- f_depth.assign( n , 0 );
- f_tree.assign( n , -1 );
- f_up.assign( f_log + 1 , std::vector< int >( n , -1 ) );
- f_mx.assign( f_log + 1 , std::vector< Weight >( n , Weight() ) );
- f_tin.assign( n , 0 );
- f_size.assign( n , 1 );
- std::vector< int > stack , order;
- order.reserve( n );
- for( int r = 0 ; r < n ; ++r ) {
-  if( f_tree[ r ] >= 0 )
-   continue;
-  f_tree[ r ] = r;
-  f_up[ 0 ][ r ] = r;
-  stack.assign( 1 , r );
-  while( ! stack.empty() ) {              // a visit in depth, iterative:
-   const int u = stack.back();            // the preorder, each subtree
-   stack.pop_back();                      // a run of it
-   f_tin[ u ] = int( order.size() );
-   order.push_back( u );
-   for( const auto & [ v , w ] : adj[ u ] )
-    if( f_tree[ v ] < 0 ) {
-     f_tree[ v ] = r;
-     f_depth[ v ] = f_depth[ u ] + 1;
-     f_up[ 0 ][ v ] = u;
-     f_mx[ 0 ][ v ] = w;
-     stack.push_back( v );
+ const int su = 2 * f_stamp , sv = su + 1;
+ // the visits of the two sides, one node of each in turn
+ std::vector< int > Q[ 2 ] = { { u } , { v } };
+ f_mark[ u ] = su;
+ f_mark[ v ] = sv;
+ std::size_t head[ 2 ] = { 0 , 0 };
+ int side = -1 , turn = 0;
+ // then the edges out of the side that ended: the node, the edge of it
+ std::size_t xi = 0 , yi = 0;
+ bool found = false;
+ Weight bw = Weight();
+ // the edges off F by increasing weight, the first one across the cut
+ auto scan = f_off.begin();
+ const int ru = f_lct.findRoot( f_vid[ u ] );
+ for( ; ; ) {
+  for( int units = 0 ; units < 8 ; ++units ) {
+   if( side < 0 ) {                       // a step of the visits
+    if( head[ turn ] == Q[ turn ].size() ) {
+     side = turn;
+     continue;
      }
-   }
-  }
- for( std::size_t i = order.size() ; i-- > 0 ; )
-  if( f_up[ 0 ][ order[ i ] ] != order[ i ] )
-   f_size[ f_up[ 0 ][ order[ i ] ] ] += f_size[ order[ i ] ];
- for( int j = 1 ; j <= f_log ; ++j )
-  for( int v = 0 ; v < n ; ++v ) {
-   const int a = f_up[ j - 1 ][ v ];
-   f_up[ j ][ v ] = f_up[ j - 1 ][ a ];
-   f_mx[ j ][ v ] = f_depth[ v ] >= ( 1 << ( j - 1 ) ) ?
-                    std::max( f_mx[ j - 1 ][ v ] , f_mx[ j - 1 ][ a ] ) :
-                    f_mx[ j - 1 ][ v ];
-   }
- f_shapeOk = f_liftOk = true;
- }
-
-template< Graph G >
-int SpanningForestObserver< G >::lca( int u , int v ) const
-{
- if( f_depth[ u ] < f_depth[ v ] )
-  std::swap( u , v );
- for( int j = f_log ; j >= 0 ; --j )
-  if( f_depth[ u ] - ( 1 << j ) >= f_depth[ v ] )
-   u = f_up[ j ][ u ];
- if( u == v )
-  return( u );
- for( int j = f_log ; j >= 0 ; --j )
-  if( f_up[ j ][ u ] != f_up[ j ][ v ] ) {
-   u = f_up[ j ][ u ];
-   v = f_up[ j ][ v ];
-   }
- return( f_up[ 0 ][ u ] );
- }
-
-template< Graph G >
-std::optional< std::pair< typename G::Weight , std::uint64_t > >
-SpanningForestObserver< G >::crossMin( int x ) const
-{
- const int n = int( f_tree.size() );
- auto under = [ & ]( int a ) {            // whether a is in the subtree
-  return( ( a < n ) && ( f_tree[ a ] == f_tree[ x ] ) &&
-          ( f_tin[ a ] >= f_tin[ x ] ) &&
-          ( f_tin[ a ] < f_tin[ x ] + f_size[ x ] ) );
-  };
- std::optional< std::pair< Weight , std::uint64_t > > best;
- for( const auto & [ k , r ] : f_E )
-  if( ! r.tree ) {
-   const auto [ a , b ] = ends( k );
-   if( ( under( a ) != under( b ) ) && ( ! best || ( r.w < best->first ) ) )
-    best = std::pair< Weight , std::uint64_t >( r.w , k );
-   }
- return( best );
- }
-
-template< Graph G >
-std::optional< typename G::Weight > SpanningForestObserver< G >::maxPath(
-                                                     int u , int v ) const
-{
- const int n = int( f_tree.size() );
- if( ( u >= n ) || ( v >= n ) || ( f_tree[ u ] != f_tree[ v ] ) )
-  return( std::nullopt );
- std::optional< Weight > m;
- auto climb = [ & ]( int x , int d ) {    // d steps up from x
-  for( int j = f_log ; j >= 0 ; --j )
-   if( d >= ( 1 << j ) ) {
-    m = m ? std::max( *m , f_mx[ j ][ x ] ) : f_mx[ j ][ x ];
-    x = f_up[ j ][ x ];
-    d -= 1 << j;
+    const int x = Q[ turn ][ head[ turn ]++ ];
+    const int mk = turn ? sv : su;
+    for( int y : f_adjF[ x ] )
+     if( f_mark[ y ] != mk ) {
+      f_mark[ y ] = mk;
+      Q[ turn ].push_back( y );
+      }
+    units += int( f_adjF[ x ].size() );
+    turn ^= 1;
+    continue;
     }
-  };
- const int a = lca( u , v );
- if( f_liftOk ) {
-  climb( u , f_depth[ u ] - f_depth[ a ] );
-  climb( v , f_depth[ v ] - f_depth[ a ] );
-  }
- else                                     // the jumps of the maxima stale:
-  for( int x : { u , v } )                // the path, edge by edge
-   for( ; f_depth[ x ] > f_depth[ a ] ; x = f_up[ 0 ][ x ] )
-    m = m ? std::max( *m , f_mx[ 0 ][ x ] ) : f_mx[ 0 ][ x ];
- return( m );
- }
-
-template< Graph G >
-void SpanningForestObserver< G >::buildRepl( void )
-{
- if( ! f_shapeOk )
-  buildLift();
- const int n = f_n;
- f_repl.assign( n , std::nullopt );
- f_replW.assign( n , Weight() );
- std::vector< std::pair< Weight , std::uint64_t > > out;
- for( const auto & [ k , r ] : f_E )
-  if( ! r.tree )
-   out.emplace_back( r.w , k );
- std::sort( out.begin() , out.end() );
- // jump[ x ]: the nearest of x and its ancestors whose edge to the parent
- // has no replacement yet (a root counts as one), found by halving
- std::vector< int > jump( n );
- for( int x = 0 ; x < n ; ++x )
-  jump[ x ] = x;
- auto find = [ & ]( int x ) {
-  while( jump[ x ] != x ) {
-   jump[ x ] = jump[ jump[ x ] ];
-   x = jump[ x ];
-   }
-  return( x );
-  };
- for( const auto & [ w , k ] : out ) {
-  const auto [ u , v ] = ends( k );
-  if( f_tree[ u ] != f_tree[ v ] )
-   continue;
-  const int a = lca( u , v );
-  for( int x : { u , v } )
-   for( x = find( x ) ; f_depth[ x ] > f_depth[ a ] ; x = find( x ) ) {
-    f_repl[ x ] = k;                      // the edge [ x , parent( x ) ]
-    f_replW[ x ] = w;
-    jump[ x ] = f_up[ 0 ][ x ];
+   const int in = side ? sv : su;         // an edge out of the side
+   if( xi == Q[ side ].size() )
+    return( found );
+   const int x = Q[ side ][ xi ];
+   if( yi == f_inc[ x ].size() ) {
+    ++xi;
+    yi = 0;
+    continue;
     }
+   const int y = f_inc[ x ][ yi++ ];
+   if( f_mark[ y ] != in ) {
+    const std::uint64_t k = key( x , y );
+    const Weight & w = f_E.at( k ).w;
+    if( ! found || ( w < bw ) || ( ! ( bw < w ) && ( k < best ) ) ) {
+     found = true;
+     bw = w;
+     best = k;
+     }
+    }
+   }
+  if( scan == f_off.end() )               // no edge across the cut
+   return( false );
+  const auto [ a , b ] = ends( scan->second );
+  if( ( f_lct.findRoot( f_vid[ a ] ) == ru ) !=
+      ( f_lct.findRoot( f_vid[ b ] ) == ru ) ) {
+   best = scan->second;
+   return( true );
+   }
+  ++scan;
   }
- f_replOk = true;
  }
 
 template< Graph G >
@@ -581,171 +559,100 @@ void SpanningForestObserver< G >::solve( void )
  if( this->f_q.empty() )
   return;                                 // nothing to do
  const auto P = this->take();
- int outcome = this->tooMany( P.size() , detail::edgesOf( f_g ) ) ?
-               Reopt::SCRATCH : Reopt::CERTIFIED;
+ const bool many = this->tooMany( P.size() , detail::edgesOf( f_g ) );
+ grow( f_g.bound() );
 
- // the edges lowered or inserted out of F, those of F raised or deleted,
- // each with its new weight (nothing if deleted), and those of F whose
- // weight changes
- struct Change {
-  std::uint64_t k;
-  std::optional< Weight > w;
-  };
- std::vector< Change > down , up , inF;
- for( const auto & e : P ) {
-  int u , v;
-  std::optional< Weight > w0 , w1;
-  if( ( outcome == Reopt::SCRATCH ) ||
-      ! detail::edgeChange( e , u , v , w0 , w1 ) )
-   continue;
-  const std::uint64_t k = key( u , v );
-  const auto it = f_E.find( k );
-  const bool tree = ( it != f_E.end() ) && it->second.tree;
-  if( tree ) {
-   if( ! w1 || ( *w0 < *w1 ) )
-    up.push_back( { k , w1 } );          // lowering it is harmless
-   if( w1 )
-    inF.push_back( { k , w1 } );
-   }
-  else if( w1 && ( ! w0 || ( *w1 < *w0 ) ) )
-   down.push_back( { k , w1 } );
-  }
-
- // the tests, on the data of the certificate before P
- std::vector< std::uint64_t > failed;
- std::uint64_t swapIn = 0;
- if( outcome == Reopt::SCRATCH )
-  ;
- else if( ! down.empty() && ! up.empty() )
-  outcome = Reopt::SCRATCH;               // their conditions interact
- else if( ! down.empty() ) {
-  if( ! f_shapeOk )
-   buildLift();
-  for( const auto & c : down ) {
-   const auto [ u , v ] = ends( c.k );
-   const auto m = maxPath( u , v );
-   if( ! m || ( *c.w < *m ) )
-    outcome = Reopt::WARM;
-   }
-  }
- else if( ! up.empty() ) {
-  // the replacement of each edge raised: from the table, or, if it is
-  // stale and the edges are few, by a scan of the edges across its cut
-  const bool scan = ! f_replOk && ( up.size() <= 2 );
-  if( scan && ! f_shapeOk )
-   buildLift();
-  else if( ! scan && ! f_replOk )
-   buildRepl();
-  std::optional< std::pair< Weight , std::uint64_t > > rho;
-  for( const auto & c : up ) {
-   const auto [ u , v ] = ends( c.k );
-   const int x = f_up[ 0 ][ u ] == v ? u : v;   // the child
-   std::optional< std::pair< Weight , std::uint64_t > > r;
-   if( scan )
-    r = crossMin( x );
-   else if( f_repl[ x ] )
-    r = std::pair< Weight , std::uint64_t >( f_replW[ x ] , *f_repl[ x ] );
-   if( r && ( ! c.w || ( r->first < *c.w ) ) ) {
-    failed.push_back( c.k );
-    rho = r;
-    }
-   }
-  if( ( failed.size() > 1 ) || ( ! failed.empty() && ( up.size() > 1 ) ) )
-   outcome = Reopt::SCRATCH;              // the swaps would interact
-  else if( failed.size() == 1 ) {
-   // the swap with the replacement, if it is as the certificate saw it
-   swapIn = rho->second;
-   const auto it = f_E.find( swapIn );
-   bool same = it != f_E.end();
-   for( const auto & e : P ) {
-    const auto [ a , b ] = endsOf( e );
-    if( ( a >= 0 ) && ( key( a , b ) == swapIn ) )
-     same = false;
-    }
-   if( same && ! ( it->second.w < rho->first ) &&
-       ! ( rho->first < it->second.w ) )
-    outcome = Reopt::WARM;
-   else
-    outcome = Reopt::SCRATCH;
-   }
-  }
-
- // the copy of the edges after P
- bool shape = false;                      // whether F loses an edge
+ // each event in turn: the copy, and the forest unless there are many
+ bool changed = false;                    // another edge entered F
  for( const auto & e : P ) {
   int u , v;
   std::optional< Weight > w0 , w1;
   if( ! detail::edgeChange( e , u , v , w0 , w1 ) )
-   continue;
+   continue;                              // a node: grow() did it
   const std::uint64_t k = key( u , v );
-  if( ! w1 ) {
-   const auto it = f_E.find( k );
-   if( ( it != f_E.end() ) && it->second.tree ) {
-    shape = true;
-    f_F.erase( std::find( f_F.begin() , f_F.end() , k ) );
+  auto it = f_E.find( k );
+  const bool tree = ( it != f_E.end() ) && ( it->second.node != NIL );
+  if( ! w1 ) {                            // deleted
+   if( it == f_E.end() )
+    continue;
+   if( tree && ! many )
+    removeTree( k );                      // into f_off, and out again
+   f_off.erase( std::pair< Weight , std::uint64_t >( it->second.w , k ) );
+   for( auto [ a , b ] : { std::pair< int , int >( u , v ) ,
+                           std::pair< int , int >( v , u ) } ) {
+    auto & L = f_inc[ a ];
+    *std::find( L.begin() , L.end() , b ) = L.back();
+    L.pop_back();
     }
-   f_E.erase( k );
+   f_E.erase( it );
+   if( tree && ! many ) {
+    std::uint64_t f = 0;
+    if( replacement( u , v , f ) ) {
+     addTree( f );
+     changed = true;
+     }
+    }
+   continue;
+   }
+  if( it == f_E.end() ) {                 // inserted
+   it = f_E.emplace( k , Rec{ *w1 , NIL , -1 } ).first;
+   f_inc[ u ].push_back( v );
+   f_inc[ v ].push_back( u );
+   if( ! many )
+    f_off.emplace( *w1 , k );
    }
   else {
-   auto [ it , fresh ] = f_E.try_emplace( k , Rec{ *w1 , false } );
-   if( ! fresh )
-    it->second.w = *w1;
+   if constexpr( SUBTRACT )
+    if( tree )                            // the total follows the weight
+     f_total = f_total - it->second.w + *w1;
+   if( ! tree && ! many ) {
+    f_off.erase( std::pair< Weight , std::uint64_t >( it->second.w , k ) );
+    f_off.emplace( *w1 , k );
+    }
+   it->second.w = *w1;
+   }
+  if( many )
+   continue;
+  if( tree ) {
+   if( ! ( *w0 < *w1 ) ) {                // lowered: harmless
+    f_lct.setValue( it->second.node ,
+                    Heavy{ true , *w1 , it->second.node } );
+    continue;
+    }
+   removeTree( k );                       // raised: its cut decides,
+   std::uint64_t f = k;                   // k kept on a tie
+   if( replacement( u , v , f ) && ! ( f_E.at( f ).w < *w1 ) )
+    f = k;
+   addTree( f );
+   changed = changed || ( f != k );
+   continue;
+   }
+  if( w0 && ! ( *w1 < *w0 ) )
+   continue;                              // raised off F: harmless
+  if( ! f_lct.connected( f_vid[ u ] , f_vid[ v ] ) ) {
+   addTree( k );
+   changed = true;
+   continue;
+   }
+  const Heavy h = f_lct.aggregate( f_vid[ u ] , f_vid[ v ] );
+  if( h.has && ( *w1 < h.w ) ) {          // the heaviest of its cycle out
+   removeTree( f_edgeOf[ h.node ] );
+   addTree( k );
+   changed = true;
    }
   }
- const bool grown = f_g.bound() > f_n;
- f_n = std::max( f_n , f_g.bound() );
-
- if( outcome == Reopt::SCRATCH ) {
+ if( many ) {
   scratch( false );                       // Kruskal on the copy
   this->done( Reopt::SCRATCH );
   }
- else if( outcome == Reopt::WARM ) {
-  if( ! failed.empty() ) {                // the cut condition: a swap
-   const auto it = f_E.find( failed[ 0 ] );
-   if( it != f_E.end() ) {              // raised, not deleted
-    it->second.tree = false;
-    f_F.erase( std::find( f_F.begin() , f_F.end() , failed[ 0 ] ) );
-    }
-   f_E.at( swapIn ).tree = true;
-   f_F.push_back( swapIn );
-   f_shapeOk = f_liftOk = f_replOk = false;
-   }
-  else {                                  // Kruskal on F and D
-   std::vector< WeightedEdge< Weight > > A;
-   for( const std::uint64_t k : f_F ) {
-    const auto [ u , v ] = ends( k );
-    A.push_back( { u , v , f_E.at( k ).w } );
-    }
-   for( const auto & c : down ) {
-    const auto [ u , v ] = ends( c.k );
-    A.push_back( { u , v , f_E.at( c.k ).w } );
-    }
-   setForest( kruskal( f_n , std::move( A ) ) );
-   }
-  this->done( Reopt::WARM );
-  }
- else {
-  // the certificate held: which of its data are still sound
-  if( shape || grown )
-   f_shapeOk = f_liftOk = f_replOk = false;
-  else if( f_shapeOk ) {
-   for( const auto & c : inF ) {          // the edges to the parents
-    const auto [ u , v ] = ends( c.k );
-    f_mx[ 0 ][ f_up[ 0 ][ u ] == v ? u : v ] = *c.w;
-    }
-   if( ! up.empty() )
-    f_liftOk = false;                     // the maxima of the jumps grow
-   }
-  if( ! down.empty() )
-   f_replOk = false;                      // the replacements fall
-  this->done( Reopt::CERTIFIED );
-  }
+ else
+  this->done( changed ? Reopt::WARM : Reopt::CERTIFIED );
  ADS_AUDIT( ( [ & ]( void ) {
   std::vector< WeightedEdge< Weight > > A , F;
   for( const auto & [ k , r ] : f_E ) {
    const auto [ u , v ] = ends( k );
    A.push_back( { u , v , r.w } );
-   if( r.tree )
+   if( r.node != NIL )
     F.push_back( { u , v , r.w } );
    }
   return( ( A.size() > 2000 ) || isMinimumSpanningForest( f_n , A , F ) );
@@ -769,6 +676,10 @@ SpanningForestObserver< G >::forest( void )
 template< Graph G >
 typename G::Weight SpanningForestObserver< G >::weight( void )
 {
+ if constexpr( SUBTRACT ) {
+  solve();
+  return( f_total );
+  }
  Weight s = Weight();
  for( const auto & e : forest() )
   s = s + e.w;
@@ -780,7 +691,7 @@ bool SpanningForestObserver< G >::inForest( int u , int v )
 {
  solve();
  const auto it = f_E.find( key( u , v ) );
- return( ( it != f_E.end() ) && it->second.tree );
+ return( ( it != f_E.end() ) && ( it->second.node != NIL ) );
  }
 
 /*--------------------------------------------------------------------------*/

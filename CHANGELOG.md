@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compiled in only when found; the mean and the maximum rank error of the
   relaxed queues in the hold model, from the times at which their
   operations return, replayed in their order (-b rank)
+- tree/LinkCutTree.h: LinkCutTree< T , Op >, the link-cut trees of Sleator
+  and Tarjan on splay trees in vectors, with link(), cut(), cutParent(),
+  evert(), findRoot(), connected(), lca() and the aggregate of a
+  commutative monoid on a path, $O( \log n )$ amortized; the test
+  link-cut-tree and the cell link-cut of bench/dynamic.cpp
+- SpanningForestObserver on a link-cut tree, an edge kept by a node of its
+  own: each event applied in turn, an edge lowered or inserted swapped
+  with the heaviest of its cycle in $O( \log n )$ amortized, an edge of
+  the forest raised or deleted replaced by the lightest edge between its
+  two sides, sought in turn from the smaller side (two visits of the
+  forest, one node each) and in the edges off the forest by weight; the
+  total weight kept as the edges change, when the weights subtract;
+  the binary lifting, built again in $O( n \log n )$ at each change of the
+  shape of the forest, and the table of the replacements are gone
 - FlowNetwork: Augment::PUSH_RELABEL, the push-relabel of Goldberg and
   Tarjan with the highest label first, the global relabelings and the gaps
   of Cherkassky and Goldberg, on the arcs copied in rows by tail, from the

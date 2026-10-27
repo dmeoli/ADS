@@ -22,6 +22,11 @@
  * batch of m / 100 such changes; in nanoseconds per change, for 64
  * changes (scratch) and 1024 (observer), the building of the graph and
  * the first solution not timed;
+ * - link-cut, 2 n random operations on a forest of n nodes: a link of
+ *   two nodes in two trees, else the maximum of the values on their path
+ *   or the cut of the first from its parent, on LinkCutTree, against a
+ *   vector of parents whose evert reverses the path to the root ("parents"),
+ *   per operation;
  * - rollback, n merges of random pairs and their rollback, on
  *   RollbackUnionFind, against the n merges alone on UnionFind (the union
  *   by size with the paths halved, which cannot undo them), per merge;
@@ -62,6 +67,7 @@
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/mfset/RollbackUnionFind.h"
 #include "ADS/mfset/UnionFind.h"
+#include "ADS/tree/LinkCutTree.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -166,6 +172,91 @@ void reopt( const char * bench , int n , bool directed , int r ,
     ADS::bench::sink = h; } , r , C.size() );
    ADS::bench::print( bench , c , std::size_t( n ) , who , ns );
    }
+  }
+ }
+
+/// the link-cut tree against a vector of parents, on a random forest
+/// that changes: n random links (or cuts, when the two nodes are already
+/// joined) and n maxima of the values on a path, per operation
+void linkCut( int n , int r , unsigned seed )
+{
+ std::mt19937 g( seed );
+ std::vector< std::pair< int , int > > Q( 2 * std::size_t( n ) );
+ for( auto & q : Q )
+  q = { int( g() % unsigned( n ) ) , int( g() % unsigned( n ) ) };
+ std::vector< long long > val( n );
+ for( auto & x : val )
+  x = static_cast< long long >( g() % 1000000 );
+ struct Max {
+  long long operator()( long long a , long long b ) const {
+   return( a < b ? b : a );
+   }
+  };
+ for( const std::string who : { "LinkCutTree" , "LinkCutTree A/A" ,
+                                "parents" } ) {
+  if( ADS::bench::skip( who ) )
+   continue;
+  double ns;
+  if( who != "parents" )
+   ns = ADS::bench::median( [ & ]( void ) {
+    LinkCutTree< long long , Max > T( n , -1 );
+    for( int v = 0 ; v < n ; ++v )
+     T.setValue( v , val[ v ] );
+    return( T ); } , [ & ]( auto & T ) {
+    std::uint64_t h = 0;
+    for( std::size_t i = 0 ; i < Q.size() ; ++i ) {
+     const auto [ u , v ] = Q[ i ];
+     if( u == v )
+      continue;
+     if( T.connected( u , v ) ) {
+      if( i % 2 )
+       h += std::uint64_t( T.aggregate( u , v ) );
+      else
+       T.cutParent( u );
+      }
+     else
+      T.link( u , v );
+     }
+    ADS::bench::sink = h; } , r , Q.size() );
+  else
+   ns = ADS::bench::median( [ & ]( void ) {
+    return( std::vector< int >( n , -1 ) ); } , [ & ]( auto & par ) {
+    // the same operations: the root of u found by its parents, an evert
+    // by the reversal of the path to the root
+    auto root = [ & ]( int x ) {
+     while( par[ x ] >= 0 ) x = par[ x ];
+     return( x ); };
+    auto evert = [ & ]( int x ) {
+     int prev = -1;
+     while( x >= 0 ) {
+      const int up = par[ x ];
+      par[ x ] = prev;
+      prev = x;
+      x = up;
+      } };
+    std::uint64_t h = 0;
+    for( std::size_t i = 0 ; i < Q.size() ; ++i ) {
+     const auto [ u , v ] = Q[ i ];
+     if( u == v )
+      continue;
+     if( root( u ) == root( v ) ) {
+      if( i % 2 ) {
+       long long m = -1;
+       evert( u );
+       for( int x = v ; x >= 0 ; x = par[ x ] )
+        m = std::max( m , val[ x ] );
+       h += std::uint64_t( m );
+       }
+      else
+       par[ u ] = -1;
+      }
+     else {
+      evert( u );
+      par[ u ] = v;
+      }
+     }
+    ADS::bench::sink = h; } , r , Q.size() );
+  ADS::bench::print( "link-cut" , "random" , std::size_t( n ) , who , ns );
   }
  }
 
@@ -299,6 +390,7 @@ int main( int argc , char ** argv )
            g.forEachEdge( u , [ & ]( int v , long long w ) {
             N.addEdge( u , v , w ); } );
           return( N.maxFlow( 0 , n - 1 ) ); } );
+  linkCut( n , o.runs , o.seed );
   rollback( n , o.runs , o.seed );
   offline( n , o.runs , o.seed );
   }

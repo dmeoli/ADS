@@ -38,6 +38,7 @@
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/mfset/RollbackUnionFind.h"
 #include "ADS/mfset/UnionFind.h"
+#include "ADS/tree/LinkCutTree.h"
 
 #include <algorithm>
 #include <cmath>
@@ -511,12 +512,29 @@ ADS_TEST( "reopt-spanning-forest" )
  og.deleteEdge( 0 , 1 );                  // replaced by [ 0 , 2 ]
  CHECK( ( f.weight() == 5 ) && ( f.outcome() == Reopt::WARM ) );
  {
-  auto b = og.batch();                    // two edges of F up: scratch
-  og.setWeight( 0 , 2 , 50 );
+  auto b = og.batch();                    // two edges of F up and one
+  og.setWeight( 0 , 2 , 50 );             // inserted, one at a time
   og.setWeight( 1 , 2 , 50 );
   og.insertEdge( 0 , 1 , 1 );
   }
- CHECK( ( f.weight() == 51 ) && ( f.outcome() == Reopt::SCRATCH ) );
+ CHECK( ( f.weight() == 51 ) && ( f.outcome() == Reopt::WARM ) );
+ og.setWeight( 1 , 2 , 50 );              // the same weight: no event
+ og.setWeight( 0 , 1 , 50 );              // a tie with [ 0 , 2 ]: kept
+ CHECK( ( f.weight() == 100 ) && ( f.outcome() == Reopt::CERTIFIED ) &&
+        f.inForest( 0 , 1 ) );
+ {
+  auto b = og.batch();                    // a tree edge deleted and
+  og.deleteEdge( 0 , 1 );                 // inserted again lighter
+  og.insertEdge( 0 , 1 , 3 );
+  }
+ CHECK( ( f.weight() == 53 ) && f.inForest( 0 , 1 ) );
+ const int y = og.insertNode();           // a new node, joined at once
+ og.insertEdge( y , 3 , 7 );
+ og.insertEdge( y , 0 , 9 );
+ CHECK( ( f.weight() == 69 ) && ( f.outcome() == Reopt::WARM ) &&
+        ( f.forest().size() == 4 ) );
+ og.deleteNode( 0 );                      // its edges and its node out
+ CHECK( ( f.forest().size() == 2 ) && ( f.weight() == 57 ) );
  // random sequences against Kruskal, with ties, batches and nodes
  for( unsigned seed : { 1u , 2u , 3u } ) {
   std::mt19937 rng( seed );
@@ -557,6 +575,40 @@ ADS_TEST( "reopt-spanning-forest" )
    CHECK( ( seen[ 1 ] == 0 ) && ( seen[ 0 ] > 0 ) );
   else
    CHECK( ( seen[ 0 ] > 0 ) && ( seen[ 1 ] > 0 ) && ( seen[ 2 ] > 0 ) );
+  }
+ // a larger graph, beyond the audits, one change at a time against
+ // Kruskal: the link-cut tree on deep forests and the replacements found
+ // from the smaller side
+ {
+  std::mt19937 rng( 4 );
+  const int n = 400;
+  LG h( n , false );
+  for( int i = 0 ; i < 3 * n ; ++i ) {
+   const int u = int( rng() % n ) , v = int( rng() % n );
+   if( u != v )
+    h.insertEdge( u , v , static_cast< long long >( rng() % 1000 ) );
+   }
+  SpanningForestObserver< LG > q( h );
+  Observable< LG > oh( h );
+  oh.attach( q );
+  long long seen[ 3 ] = { 0 , 0 , 0 };
+  for( int step = 0 ; step < ADS::test::scaled( 4000 , 800 ) ; ++step ) {
+   const int u = int( rng() % n ) , v = int( rng() % n );
+   if( u == v )
+    continue;
+   if( rng() % 4 )
+    oh.insertEdge( u , v , static_cast< long long >( rng() % 1000 ) );
+   else
+    oh.deleteEdge( u , v );
+   q.solve();
+   ++seen[ q.outcome() ];
+   if( step % 40 == 0 ) {
+    const auto K = kruskal( h );
+    CHECK( ( q.weight() == total( K ) ) &&
+           ( q.forest().size() == K.size() ) );
+    }
+   }
+  CHECK( ( seen[ 1 ] > 0 ) && ( seen[ 2 ] > 0 ) );
   }
  }
 
@@ -756,6 +808,129 @@ ADS_TEST( "reopt-lazy" )
 /*--------------------------------------------------------------------------*/
 /*----------------------------- THE ROLLBACK -------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+ADS_TEST( "link-cut-tree" )
+{
+ // the empty forest, a single node, a value set alone
+ {
+  LinkCutTree<> T;
+  CHECK( T.n() == 0 );
+  const int a = T.addNode( 5 );
+  CHECK( ( T.findRoot( a ) == a ) && T.connected( a , a ) &&
+         ( T.aggregate( a , a ) == 5 ) && ( T.lca( a , a ) == a ) &&
+         ! T.cutParent( a ) );
+  T.setValue( a , 7 );
+  CHECK( ( T.value( a ) == 7 ) && ( T.aggregate( a , a ) == 7 ) );
+  }
+ // a path 0 - 1 - 2 - 3 and a node 4 apart, the sums of the paths, the
+ // roots after the everts, a cut in the middle, the contracts
+ {
+  LinkCutTree<> T( 5 );
+  for( int v = 0 ; v < 5 ; ++v )
+   T.setValue( v , v + 1 );
+  T.link( 1 , 0 );
+  T.link( 2 , 1 );
+  T.link( 3 , 2 );
+  CHECK( ( T.aggregate( 0 , 3 ) == 10 ) && ( T.aggregate( 2 , 1 ) == 5 ) );
+  T.evert( 0 );
+  CHECK( ( T.findRoot( 3 ) == 0 ) && ( T.lca( 3 , 1 ) == 1 ) );
+  T.evert( 3 );
+  CHECK( ( T.findRoot( 0 ) == 3 ) && ( T.lca( 0 , 1 ) == 1 ) );
+  CHECK( ! T.connected( 0 , 4 ) );
+  CHECK_THROWS( T.link( 0 , 3 ) , contract_violation );   // a cycle
+  CHECK_THROWS( T.cut( 0 , 2 ) , contract_violation );    // no such edge
+  CHECK_THROWS( T.aggregate( 0 , 4 ) , contract_violation );
+  T.cut( 2 , 1 );
+  CHECK( ! T.connected( 0 , 3 ) && ( T.aggregate( 0 , 1 ) == 3 ) &&
+         ( T.aggregate( 2 , 3 ) == 7 ) );
+  T.link( 4 , 3 );
+  T.evert( 2 );
+  CHECK( T.cutParent( 4 ) && ! T.connected( 4 , 2 ) );
+  }
+ // the maxima and their places, and random links, cuts, everts and
+ // queries against a vector of parents, on a forest of 60 nodes
+ using P = std::pair< long long , int >;
+ struct Max {
+  P operator()( const P & a , const P & b ) const {
+   return( a < b ? b : a );
+   }
+  };
+ std::mt19937 rng( 33 );
+ const int n = 60;
+ LinkCutTree< P , Max > T( n , P( -1 , -1 ) );
+ std::vector< int > par( n , -1 );
+ std::vector< long long > val( n );
+ for( int v = 0 ; v < n ; ++v ) {
+  val[ v ] = static_cast< long long >( rng() % 100 );
+  T.setValue( v , P( val[ v ] , v ) );
+  }
+ auto root = [ & ]( int v ) {
+  while( par[ v ] >= 0 )
+   v = par[ v ];
+  return( v );
+  };
+ auto evert = [ & ]( int v ) {             // the parents along the path
+  int prev = -1;                           // to the root reversed
+  while( v >= 0 ) {
+   const int up = par[ v ];
+   par[ v ] = prev;
+   prev = v;
+   v = up;
+   }
+  };
+ auto pathMax = [ & ]( int u , int v ) {   // by the depths, on the parents
+  std::vector< int > A , B;
+  for( int x = u ; x >= 0 ; x = par[ x ] ) A.push_back( x );
+  for( int x = v ; x >= 0 ; x = par[ x ] ) B.push_back( x );
+  while( ( A.size() > 1 ) && ( B.size() > 1 ) &&
+         ( A[ A.size() - 2 ] == B[ B.size() - 2 ] ) ) {
+   A.pop_back();
+   B.pop_back();
+   }
+  P m( -1 , -1 );
+  for( int x : A ) m = std::max( m , P( val[ x ] , x ) );
+  for( int x : B ) m = std::max( m , P( val[ x ] , x ) );
+  return( std::pair< P , int >( m , A.back() ) );
+  };
+ for( int step = 0 ; step < ADS::test::scaled( 20000 , 4000 ) ; ++step ) {
+  const int u = int( rng() % n ) , v = int( rng() % n );
+  const int k = int( rng() % 7 );
+  const bool same = root( u ) == root( v );
+  CHECK( T.connected( u , v ) == same );
+  if( ( k <= 1 ) && ! same ) {
+   T.link( u , v );
+   evert( u );
+   par[ u ] = v;
+   }
+  else if( ( k == 2 ) && ( par[ u ] >= 0 ) ) {
+   if( rng() % 2 ) {
+    const int w = par[ u ];               // cut() everts its first end,
+    T.cut( u , w );                       // then w is a child of u
+    evert( u );
+    par[ w ] = -1;
+    }
+   else {
+    CHECK( T.cutParent( u ) );
+    par[ u ] = -1;
+    }
+   }
+  else if( k == 3 ) {
+   T.evert( u );
+   evert( u );
+   }
+  else if( k == 4 ) {
+   val[ u ] = static_cast< long long >( rng() % 100 );
+   T.setValue( u , P( val[ u ] , u ) );
+   }
+  else if( same ) {
+   const auto [ m , a ] = pathMax( u , v );
+   CHECK( T.lca( u , v ) == a );          // before aggregate() everts u
+   CHECK( T.aggregate( u , v ) == m );
+   evert( u );
+   }
+  CHECK( T.findRoot( u ) == root( u ) );
+  }
+ }
 
 ADS_TEST( "rollback-union-find" )
 {

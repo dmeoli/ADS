@@ -69,6 +69,9 @@
  *      shortest path trees, Information Processing Letters 14(1), 30-33,
  *      1982, doi:10.1016/0020-0190(82)90137-5, and its corrigendum, 23(4),
  *      219, 1986, doi:10.1016/0020-0190(86)90139-0
+ * \see D. D. Sleator, R. E. Tarjan, A data structure for dynamic trees,
+ *      Journal of Computer and System Sciences 26(3), 362-391, 1983,
+ *      doi:10.1016/0022-0000(83)90006-5
  * \see S. Kumar, P. Gupta, An incremental algorithm for the maximum flow
  *      problem, Journal of Mathematical Modelling and Algorithms 2(1),
  *      1-16, 2003, doi:10.1023/A:1023607406540
@@ -105,11 +108,13 @@
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/Observable.h"
 #include "ADS/graph/ShortestPaths.h"
+#include "ADS/tree/LinkCutTree.h"
 
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <set>
 #include <span>
 #include <type_traits>
 #include <unordered_map>
@@ -395,34 +400,33 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
 
  /// brings the forest up to date
  ///
- /// In pseudocode (beyond the book), the tests of the events \f$ P \f$
- /// coalesced against (10) of \ref theory_graph_dynamic, with \f$ F \f$ the
- /// forest and \f$ \rho \f$ the replacements:
+ /// In pseudocode (Sleator and Tarjan for the cycles, beyond the book),
+ /// the events \f$ P \f$ coalesced applied one at a time to the forest
+ /// \f$ F \f$ kept by a link-cut tree [see `LinkCutTree.h`], each by (10)
+ /// of \ref theory_graph_dynamic, as follows:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
- /// 2 & \quad D \gets \text{the edges out of } F \text{ lowered or}
- ///     \text{ inserted in } P \cr
- /// 3 & \quad U \gets \text{the edges of } F \text{ raised or deleted in }
- ///     P \cr
- /// 4 & \quad \textbf{if}\ D \ne \emptyset \textbf{ and } U \ne \emptyset
- ///     \ \textbf{then}\ \text{Kruskal from scratch};\ \textbf{return} \cr
- /// 5 & \quad \textbf{foreach}\ f = [ u , v ] \in D \text{ of weight } w'
- ///     \ \textbf{do} \cr
- /// 6 & \qquad \textbf{if}\ u , v \text{ in two trees of } F
- ///     \textbf{ or } w' < \max_{F( u , v )} w\ \textbf{then}\ f
- ///     \text{ repairable} \cr
- /// 7 & \quad \textbf{foreach}\ e \in U \text{ of weight } w'
- ///     \ ( \infty \text{ if deleted} )\ \textbf{do} \cr
- /// 8 & \qquad \textbf{if}\ \rho( e ) \text{ exists}\textbf{ and }
- ///     w( \rho( e ) ) < w'\ \textbf{then}\ e \text{ repairable} \cr
- /// 9 & \quad \textbf{if}\ \text{an edge of } D \text{ is repairable}
- ///     \ \textbf{then}\ F \gets \mathrm{kruskal}( F \cup D ) \cr
- /// 10 & \quad \textbf{else if}\ U = \{ e \} \text{ repairable}
- ///     \ \textbf{then}\ F \gets F \setminus \{ e \} \cup \{ \rho( e ) \}
- ///     \cr
- /// 11 & \quad \textbf{else if}\ \text{an edge of } U \text{ is repairable}
- ///     \ \textbf{then}\ \text{Kruskal from scratch}
+ /// 2 & \quad \textbf{foreach}\ e = [ u , v ] \text{ from } w \text{ to }
+ ///     w' \text{ in } P\ \textbf{do} \cr
+ /// 3 & \qquad \textbf{if}\ e \in F \textbf{ and } w' \le w\ \textbf{then}
+ ///     \ \text{set its weight in } F \quad \triangleright
+ ///     \ \text{harmless} \cr
+ /// 4 & \qquad \textbf{else if}\ e \in F\ \textbf{then} \cr
+ /// 5 & \qquad\quad \mathrm{cut}( u , v );\ X \gets \text{the smaller of}
+ ///     \text{ the two trees, by two visits of } F \text{ in turn} \cr
+ /// 6 & \qquad\quad f \gets \text{the lightest edge out of } X \text{ ($e$
+ ///     with } w' \text{ among them, unless deleted)} \cr
+ /// 7 & \qquad\quad \textbf{if}\ f \ne \textbf{nil}\ \textbf{then}
+ ///     \ \mathrm{link}( f ) \cr
+ /// 8 & \qquad \textbf{else if}\ w' \ne \bot \textbf{ and } ( w' < w
+ ///     \textbf{ or } w = \bot )\ \textbf{then} \cr
+ /// 9 & \qquad\quad \textbf{if}\ \textbf{not}\ \mathrm{connected}( u , v )
+ ///     \ \textbf{then}\ \mathrm{link}( e ) \cr
+ /// 10 & \qquad\quad \textbf{else}\ f \gets \text{the heaviest edge of }
+ ///     F( u , v ) \text{ by } \mathrm{aggregate}( u , v ) \cr
+ /// 11 & \qquad\qquad \textbf{if}\ w' < w( f )\ \textbf{then}
+ ///     \ \mathrm{cut}( f );\ \mathrm{link}( e )
  /// \end{array}}
  /// \f]
  void solve( void );
@@ -430,7 +434,9 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  /// the edges of the forest, up to date, in no given order
  [[nodiscard]] std::vector< WeightedEdge< Weight > > forest( void );
 
- /// the total weight of the forest
+ /// the total weight of the forest, kept as it changes when the weights
+ /// subtract (up to the rounding of floating weights), \f$ O( 1 ) \f$
+ /// after the query, and summed otherwise
  [[nodiscard]] Weight weight( void );
 
  /// whether \f$ [ u , v ] \f$ is in the forest
@@ -440,11 +446,39 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  private:
 
  using B = EventQueue< Weight >;
+ using Event = GraphEvent< Weight >;   ///< the type of the events
 
- /// an edge of the copy: its weight and whether it is in the forest
+ /// an edge of the copy: its weight, its node in the link-cut tree if it
+ /// is in the forest (`NIL` if not) and its place in `f_F`
  struct Rec {
   Weight w;                                      ///< the weight
-  bool tree;                                     ///< whether in \f$ F \f$
+  int node = NIL;                                ///< its node in `f_lct`
+  int at = -1;                                   ///< its place in `f_F`
+  };
+
+ /// the value of a node of the link-cut tree: the weight of its edge and
+ /// the node, none for the nodes of the graph
+ struct Heavy {
+  bool has = false;                              ///< whether an edge
+  Weight w = Weight();                           ///< its weight
+  int node = NIL;                                ///< its node
+  /// whether the two values are the same
+  bool operator==( const Heavy & h ) const {
+   return( ( has == h.has ) && ( node == h.node ) );
+   }
+  };
+
+ /// the heavier of two values, the maximum of the paths
+ struct Heavier {
+  /// the heavier of \f$ a \f$ and \f$ b \f$, by the weight and then by
+  /// the node
+  Heavy operator()( const Heavy & a , const Heavy & b ) const {
+   if( ! a.has ) return( b );
+   if( ! b.has ) return( a );
+   if( a.w < b.w ) return( b );
+   if( b.w < a.w ) return( a );
+   return( a.node < b.node ? b : a );
+   }
   };
 
  /// the key of \f$ [ u , v ] \f$
@@ -460,60 +494,72 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
                                   int( k & 0xffffffffu ) ) );
   }
 
- /// Kruskal on the edges of the graph, or on those of the copy
+ /// the copy of the edges from the graph, and Kruskal on it
  void scratch( bool fromGraph );
 
- /// the forest as the edges given, the others out of it
- void setForest( const std::vector< WeightedEdge< Weight > > & F );
+ /// the nodes up to \f$ n \f$
+ void grow( int n );
 
- /// the jumps of the binary lifting on the forest
- void buildLift( void );
+ /// the edge \f$ k \f$ into the forest
+ void addTree( std::uint64_t k );
 
- /// the replacements of the edges of the forest
- void buildRepl( void );
+ /// the edge \f$ k \f$ out of the forest
+ void removeTree( std::uint64_t k );
 
- /// the heaviest edge on the path of the forest between \f$ u \f$ and
- /// \f$ v \f$, nothing if they are in two trees
- [[nodiscard]] std::optional< Weight > maxPath( int u , int v ) const;
-
- /// the lowest common ancestor of \f$ u \f$ and \f$ v \f$, in the same
- /// tree
- [[nodiscard]] int lca( int u , int v ) const;
-
- /// the lightest edge out of \f$ F \f$ with one end in the subtree of
- /// \f$ x \f$, and its key, by a scan of the edges
- [[nodiscard]] std::optional< std::pair< Weight , std::uint64_t > >
-  crossMin( int x ) const;
+ /// the lightest edge between the two trees of \f$ u \f$ and \f$ v \f$,
+ /// just split, into `best`; false if none
+ ///
+ /// In pseudocode (beyond the book), \f$ F \f$ the forest, \f$ N( x ) \f$
+ /// the edges of the copy at \f$ x \f$ and \f$ L \f$ the edges out of
+ /// \f$ F \f$ by increasing weight; the two searches run in turn, a few
+ /// steps each, and the first one that ends answers:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{replacement}( u , v ) \cr
+ /// 2 & \quad \text{search 1: visit } F \text{ from } u \text{ and from } v
+ ///     \text{, one node of each in turn, until one visit ends} \cr
+ /// 3 & \qquad X \gets \text{the nodes of the visit that ended} \cr
+ /// 4 & \qquad \textbf{return}\ \text{the lightest } [ x , y ] \in N( x )
+ ///     \text{ with } x \in X ,\ y \notin X \cr
+ /// 5 & \quad \text{search 2: } \textbf{foreach}\ [ a , b ] \in L
+ ///     \text{ in order}\ \textbf{do} \cr
+ /// 6 & \qquad \textbf{if}\ \mathrm{findRoot}( a ) = \mathrm{findRoot}( u )
+ ///     \text{ for one end only}\ \textbf{then}\ \textbf{return}\ [ a , b ]
+ ///     \cr
+ /// 7 & \quad \textbf{return}\ \textbf{nil} \quad \triangleright
+ ///     \ \text{search 2 found no edge across}
+ /// \end{array}}
+ /// \f]
+ bool replacement( int u , int v , std::uint64_t & best );
 
  const G & f_g;                                  ///< the graph
  bool f_ready = false;                           ///< whether there is
                                                  ///< \f$ F \f$
  int f_n = 0;                                    ///< the bound of the nodes
  std::unordered_map< std::uint64_t , Rec > f_E;  ///< the copy of the edges
+ std::vector< std::vector< int > > f_inc;        ///< the ends of the edges
+                                                 ///< of the copy at a node
+ std::vector< std::vector< int > > f_adjF;       ///< those of the forest
  std::vector< std::uint64_t > f_F;               ///< the edges of \f$ F \f$
-
- bool f_shapeOk = false;                         ///< the parents, the
-                                                 ///< depths and the
-                                                 ///< weights to the
-                                                 ///< parents are valid
- bool f_liftOk = false;                          ///< and the maxima of the
-                                                 ///< jumps
- int f_log = 1;                                  ///< the levels of jumps
- std::vector< int > f_depth;                     ///< the depths
- std::vector< int > f_tree;                      ///< the tree of a node
- std::vector< int > f_tin;                       ///< the place in the
-                                                 ///< preorder
- std::vector< int > f_size;                      ///< the size of the
-                                                 ///< subtree
- std::vector< std::vector< int > > f_up;         ///< \f$ a_j( v ) \f$
- std::vector< std::vector< Weight > > f_mx;      ///< \f$ \mu_j( v ) \f$
-
- bool f_replOk = false;                          ///< the replacements are
-                                                 ///< valid
- std::vector< std::optional< std::uint64_t > > f_repl;   ///< \f$ \rho \f$
-                                                 ///< of the edge to the
-                                                 ///< parent of each node
- std::vector< Weight > f_replW;                  ///< and its weight
+ LinkCutTree< Heavy , Heavier > f_lct;           ///< \f$ F \f$, a node per
+                                                 ///< node and per edge
+ std::vector< int > f_vid;                       ///< the node of `f_lct`
+                                                 ///< of each node
+ std::vector< std::uint64_t > f_edgeOf;          ///< the edge of a node
+                                                 ///< of `f_lct`
+ std::vector< int > f_free;                      ///< the nodes of `f_lct`
+                                                 ///< free for the edges
+ std::vector< int > f_mark;                      ///< the visits of
+                                                 ///< `replacement()`
+ /// the edges out of \f$ F \f$ by increasing weight
+ std::set< std::pair< Weight , std::uint64_t > > f_off;
+ /// whether the weights subtract, so that the total is kept as they change
+ static constexpr bool SUBTRACT = requires( Weight a , Weight b ) {
+  { a - b } -> std::convertible_to< Weight >;
+  };
+ Weight f_total = Weight();                      ///< the total weight of
+                                                 ///< \f$ F \f$, if they do
+ int f_stamp = 0;                                ///< the visit of now
 
  };  // end( class SpanningForestObserver )
 

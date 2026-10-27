@@ -1790,6 +1790,7 @@ engineered_dynamic  reopt-spanning-forest  foresta minima, condizioni di ciclo e
 engineered_dynamic  reopt-max-flow         flusso massimo, taglio minimo
 engineered_dynamic  max-flow-warm          push-relabel, capacità sotto il flusso
 engineered_dynamic  reopt-lazy             coda pigra, soglia del ricalcolo
+engineered_dynamic  link-cut-tree          link-cut tree contro un vettore di padri
 engineered_dynamic  rollback-union-find    union-find con rollback
 engineered_dynamic  offline-connectivity   connettività dinamica offline
 

@@ -10,14 +10,16 @@
  children and in vectors, and their visits; the binary search trees of
  chapter 6, plain, balanced by height (AVL), randomized (treaps),
  self-adjusting (splay trees) and threaded; the algorithms that build the
- sets and the maps on these trees by joins; and the B-trees of the external
- memory. This page collects the definitions and the notation that the
+ sets and the maps on these trees by joins; the B-trees of the external
+ memory; and, beyond the book, the link-cut trees of the forests that change.
+ This page collects the definitions and the notation that the
  headers share (see \ref theory_tree_notation), the representations of the
  trees with the costs of their operations (see \ref theory_tree_repr), the
  visits and the problems on binary trees (see \ref theory_tree_visits and
  \ref theory_tree_problems), the search trees and the arguments behind their
  bounds (see \ref theory_tree_search), the algorithms by joins (see
- \ref theory_tree_join) and the B-trees (see \ref theory_tree_btree). The
+ \ref theory_tree_join), the B-trees (see \ref theory_tree_btree) and the
+ dynamic trees (see \ref theory_tree_dynamic). The
  pseudocode of each operation and of each algorithm is on the page of its
  header, in the comment of its function, together with the section of the
  book, or the paper, that it follows.
@@ -534,6 +536,71 @@
      <td>main, a node a few lines of cache</td></tr>
  </table>
 
+ \section theory_tree_dynamic Dynamic trees
+
+ Beyond the book, the link-cut trees of Sleator and Tarjan (`LinkCutTree.h`)
+ keep a forest of rooted trees that changes by the insertion of an edge
+ between two trees (`link()`) and by the removal of an edge (`cut()`), and
+ answer on it whether two nodes are in the same tree, the root of a tree,
+ the lowest common ancestor of two nodes and the aggregate of the values on
+ the path between two nodes, all in \f$ O( \log n ) \f$ amortized time; a
+ forest kept as a vector of parents answers the same in time proportional
+ to the depth, and one kept as the jumps of the binary lifting answers in
+ \f$ O( \log n ) \f$ but must be built again, in \f$ O( n \log n ) \f$, at
+ each change of its shape. Each node marks at most one of its children as
+ <em>preferred</em>, so that the forest is split into <em>preferred
+ paths</em>; each path is kept by a splay tree whose order is that of the
+ depths, its leftmost node the shallowest, and the root of that splay tree
+ points to the parent of the top of the path (a <em>path-parent</em>
+ pointer, which no child pointer matches). The operation
+ \f$ \mathrm{access}( v ) \f$ splays \f$ v \f$ in its splay tree, drops the
+ deeper part of its path, and then climbs: at each path-parent \f$ x \f$ it
+ splays \f$ x \f$ and makes the path below it the one just built, until the
+ path from the root of the tree to \f$ v \f$ is a single splay tree with
+ \f$ v \f$ at its root. The other operations are one or two accesses and a
+ few pointers: `evert( v )` reverses the path from the root to \f$ v \f$
+ after its access, by a flag pushed down lazily, which makes \f$ v \f$ the
+ root; `link( u , v )` everts \f$ u \f$ and hangs it under \f$ v \f$;
+ `cut( u , v )` everts \f$ u \f$ and accesses \f$ v \f$, which leaves
+ \f$ u \f$ alone as the left child of \f$ v \f$; the aggregate of the path
+ between \f$ u \f$ and \f$ v \f$ is the one kept at the root after
+ `evert( u )` and `access( v )`, which is why the operation of the
+ aggregates must be commutative.
+
+ <em>Lemma 8 (the cost of an access, Sleator and Tarjan).</em> With the
+ weight of each node the number of its descendants in the forest plus 1,
+ i.e., with the ranks of (3) on the virtual tree made of the splay trees
+ and of the path-parent pointers, and \f$ k \f$ the number of preferred
+ paths that \f$ \mathrm{access}( v ) \f$ enters, the access costs, amortized,
+ \f[
+   O( \log n ) + k , \qquad \text{and} \qquad
+   \sum k = O( ( m + n ) \log n ) \tag{8}
+ \f]
+ over any sequence of \f$ m \f$ operations.
+
+ Indeed, the splays of an access telescope by (3) along the virtual tree,
+ since the rank of the root of a splay tree is at most that of its
+ path-parent, to \f$ 3 \log_2 n + O( k ) \f$; the \f$ k \f$ changes of the
+ preferred child are bounded by the heavy-light argument, i.e., a change
+ that makes a light child preferred happens at most \f$ \log_2 n \f$ times
+ per access (a light child has at most half the descendants of its
+ parent), and one that makes a heavy child preferred is paid by an earlier
+ change of the other kind or by a link or a cut, each of which turns at
+ most \f$ \log_2 n \f$ edges from heavy to light. The extra rotations of
+ the \f$ k \f$ climbs are absorbed by doubling the constant of (3); hence
+ every operation costs \f$ O( \log n ) \f$ amortized, and a sequence of
+ \f$ m \f$ of them \f$ O( ( m + n ) \log n ) \f$.
+
+ The weights of the edges are kept on nodes of their own, one in the middle
+ of each edge, so that the maximum on the path between \f$ u \f$ and
+ \f$ v \f$ is that of the values of the nodes; this is how the minimum
+ spanning forest of `Reoptimization.h` finds, in \f$ O( \log n ) \f$
+ amortized time, the heaviest edge of the cycle that a new edge closes,
+ and swaps the two (see \ref theory_graph_dynamic). The experiments of
+ Tarjan and Werneck rank the link-cut trees first among the dynamic trees
+ when the operations are mostly links, cuts and queries on paths, the
+ topology trees and the top trees being preferable for queries on subtrees.
+
  \section theory_tree_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 5 and 6,
@@ -612,6 +679,12 @@
       Databases 3(4), 203-402, 2011, doi:10.1561/1900000028
  \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
       to Algorithms, 3rd ed., MIT Press, 2009, chapter 18
+ \see D. D. Sleator, R. E. Tarjan, A data structure for dynamic trees,
+      Journal of Computer and System Sciences 26(3), 362-391, 1983,
+      doi:10.1016/0022-0000(83)90006-5
+ \see R. E. Tarjan, R. F. Werneck, Dynamic trees in practice, ACM Journal
+      of Experimental Algorithmics 14, article 4.5, 2009,
+      doi:10.1145/1498698.1594231
 */
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File tree.dox ----------------------------*/
