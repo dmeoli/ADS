@@ -19,35 +19,35 @@ namespace ADS {
 
 namespace detail {
 
-/// the items that the buckets of learnedSortIf() aim at
+/// the items, \f$ b \f$, that the buckets of `learnedSortIf()` aim at
 inline constexpr std::size_t kLearnedBucket = 4096;
 
-/// the cells of the grid of CdfModel per bucket, as a logarithm, at the
-/// least and at the most
+/// the cells of the grid of `CdfModel` per bucket, as a logarithm, at the
+/// least and at the most: from \f$ 2^2 \f$ to \f$ 2^6 \f$
 inline constexpr int kCellBits = 2 , kCellBitsMax = 6;
 
-/// the splitters of a cell of CdfModel at the most, which the search
-/// compares with no branch
+/// the splitters of a cell of `CdfModel` at the most, \f$ c_{\max} \f$,
+/// which the search compares with no branch
 inline constexpr std::size_t kCellSplitters = 4;
 
-/// the model of the CDF of the keys U of a sample: k - 1 splitters at the
-/// quantiles i / k of the sorted sample, kept once each, and a grid of
-/// cells on the range of the sample, each cell the place of its first
-/// splitter; the bucket of a key is the number of the splitters less than
-/// it, the place of the first splitter of its cell plus the splitters of
-/// the cell less than it, kCellSplitters comparisons with no branch (the
-/// splitters of the cells after it are larger than the key, and the
-/// splitters end with kCellSplitters copies of the largest key); if the
-/// sample repeats a splitter, each splitter has the bucket of the keys
-/// equal to it. The grid is the finest of 4 to 64 cells per bucket that
-/// holds at most kCellSplitters splitters per cell; with none, the model
-/// does not fit
+/// the model of the CDF of the keys `U` of a sample: \f$ k - 1 \f$ splitters
+/// at the quantiles \f$ i / k \f$ of the sorted sample, kept once each, and
+/// a grid of cells on the range of the sample, each cell the place of its
+/// first splitter; the bucket of a key is the number of the splitters less
+/// than it, i.e., the place of the first splitter of its cell plus the
+/// splitters of the cell less than it, \f$ c_{\max} \f$ comparisons with
+/// no branch (the splitters of the cells after it are larger than the key,
+/// and the splitters end with \f$ c_{\max} \f$ copies of the largest key);
+/// if the sample repeats a splitter, each splitter has the bucket of the
+/// keys equal to it. The grid is the finest of \f$ 4 \f$ to \f$ 64 \f$
+/// cells per bucket that holds at most \f$ c_{\max} \f$ splitters per
+/// cell; with none, the model does not fit
 template< class U >
 class CdfModel {
  public:
 
- /// the model of the sorted keys S[ 0 .. s ), s >= 2, for k buckets, k a
- /// power of 2 at least 2
+ /// the model of the sorted keys \f$ S[ 0 .. s ) \f$, \f$ s \ge 2 \f$,
+ /// for \f$ k \f$ buckets, \f$ k \ge 2 \f$ a power of 2
  CdfModel( const U * S , std::size_t s , std::size_t k ) {
   f_sp.reserve( k - 1 + kCellSplitters );
   for( std::size_t i = 1 ; i < k ; ++i ) {
@@ -82,32 +82,35 @@ class CdfModel {
   f_sp.resize( f_ns + kCellSplitters , U( ~U( 0 ) ) );
   }
 
- /// whether the grid holds at most kCellSplitters splitters per cell
+ /// whether the grid holds at most \f$ c_{\max} \f$ splitters per cell
  [[nodiscard]] bool fits( void ) const { return( f_fit ); }
 
- /// the splitters, distinct
+ /// the number of the splitters, distinct
  [[nodiscard]] std::size_t splitters( void ) const { return( f_ns ); }
 
  /// whether the buckets of equality are there
  [[nodiscard]] bool equality( void ) const { return( f_eq ); }
 
+ /// the number of the buckets, \f$ 2 k' + 1 \f$ with the buckets of
+ /// equality and \f$ k' + 1 \f$ without, \f$ k' \f$ the splitters
  [[nodiscard]] std::size_t buckets( void ) const {
   return( f_eq ? 2 * f_ns + 1 : f_ns + 1 );
   }
 
- /// whether the bucket b holds equal keys only
+ /// whether the bucket \f$ b \f$ holds equal keys only
  [[nodiscard]] bool equal( std::size_t b ) const {
   return( f_eq && ( b & 1 ) );
   }
 
- /// the cell of the key u, the keys out of the range of the sample in the
- /// cells at its ends
+ /// the cell of the key \f$ u \f$, i.e.,
+ /// \f$ \lfloor ( u - S_{\min} ) / w \rfloor \f$, the keys out of the
+ /// range of the sample in the cells at its ends
  [[nodiscard]] std::size_t cell( U u ) const {
   const std::size_t c = std::size_t( U( u - f_lo ) >> f_shift );
   return( u < f_lo ? 0 : std::min( c , f_last ) );
   }
 
- /// the bucket of the key u
+ /// the bucket of the key \f$ u \f$
  [[nodiscard]] std::size_t operator()( U u ) const {
   const std::size_t f = f_first[ cell( u ) ];
   const U * const p = f_sp.data() + f;
@@ -123,16 +126,17 @@ class CdfModel {
 
  std::vector< U > f_sp;                    ///< the splitters, padded
  std::vector< std::uint32_t > f_first;     ///< the first splitter of each
- U f_lo = 0;                               ///< cell, and their end
- int f_shift = 0;
- std::size_t f_last = 0;
+                                           ///< cell, and their end
+ U f_lo = 0;                               ///< \f$ S_{\min} \f$
+ int f_shift = 0;                          ///< \f$ \log_2 w \f$
+ std::size_t f_last = 0;                   ///< the last cell
  std::size_t f_ns = 0;                     ///< the splitters, not padded
- bool f_eq = false;
- bool f_fit = false;
+ bool f_eq = false;                        ///< a splitter repeated
+ bool f_fit = false;                       ///< whether the model fits
  };
 
-/// the keys of radixKey() of a sample of s items of A at random places,
-/// sorted
+/// the keys of `radixKey()` of a sample of \f$ s \f$ items of \f$ A \f$ at
+/// random places, sorted
 template< VectorKey T >
 auto learnedSample( const std::vector< T > & A , std::size_t s )
 {

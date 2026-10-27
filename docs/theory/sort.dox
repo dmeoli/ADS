@@ -1,0 +1,543 @@
+/*--------------------------------------------------------------------------*/
+/*----------------------------- File sort.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_sort */
+/** \defgroup theory_sort Theory of sorting
+ \ingroup area_sort
+
+ \details The headers of `include/ADS/sort` realize the sorts of the book,
+ i.e., the elementary ones of section 2.7, Quicksort of section 12.2,
+ heapsort of section 10.1.4 and Shell Sort of section 15.1, and
+ many beyond it, from the internal sorts of Knuth to the quicksorts, the
+ merge sorts and the radix sorts engineered for the memory and for the vector
+ registers of today, of which `sort()` and `stableSort()` of `Sort.h` choose
+ one for each input. This page collects what the headers take for granted:
+ the definitions and the notation shared by all of them (see
+ \ref theory_sort_notation), the lower bound that the sorts by comparisons
+ cannot beat (see \ref theory_sort_lower), and, for each family of
+ algorithms, the property on which its correctness rests and the argument
+ behind its bound (from \ref theory_sort_elementary to
+ \ref theory_sort_other), with a table that compares them all (see
+ \ref theory_sort_table). The pseudocode of each algorithm is instead on the
+ page of its header, in the comment of its function, together with the
+ section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_sort_notation Definitions and notation
+
+ A sort rearranges a vector \f$ A[ 0 .. n - 1 ] \f$ of items so that
+ \f$ A[ i - 1 ] \le A[ i ] \f$ for each \f$ 0 < i < n \f$, where \f$ \le \f$ is
+ a total preorder given by the comparator `less` of the call (the relation
+ \f$ a < b \f$ being `less( a , b )`); two items are <em>equal</em> when
+ neither is smaller than the other, which need not make them the same item. A
+ sort is <em>stable</em> (section 12.5 of the book) if the equal items keep the
+ order that they had, which matters when the items are records sorted by one of
+ their fields, and it is <em>in place</em> if it uses \f$ O( 1 ) \f$ extra
+ items, or \f$ O( \log n ) \f$ extra words for a stack. A sort <em>by
+ comparisons</em> learns about the items only through `less`, and works
+ therefore with any order; the sorts <em>by digits</em> (counting, radix,
+ bucket) read the keys as integers or strings instead, and are not bound by the
+ lower bound of the sorts by comparisons (see \ref theory_sort_lower).
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$, \f$ A[ 0 .. n - 1 ] \f$</td>
+     <td>the number of items and the vector that holds them, with
+         \f$ A[ \mathit{lo} .. \mathit{hi} - 1 ] \f$ a part of it</td></tr>
+ <tr><td>\f$ I( A ) \f$</td>
+     <td>the inversions of \f$ A \f$, the pairs \f$ i < j \f$ with
+         \f$ A[ j ] < A[ i ] \f$; \f$ 0 \le I( A ) \le n ( n - 1 ) / 2 \f$,
+         and \f$ n ( n - 1 ) / 4 \f$ on average over the permutations
+         (<tt>countInversions()</tt>)</td></tr>
+ <tr><td>\f$ r \f$, \f$ \ell_1 , \ldots , \ell_r \f$</td>
+     <td>the runs of \f$ A \f$, its maximal non-decreasing (or strictly
+         decreasing) stretches, and their lengths</td></tr>
+ <tr><td>\f$ H \f$</td>
+     <td>the entropy \f$ \sum_i ( \ell_i / n ) \log_2( n / \ell_i ) \f$ of
+         the lengths of the runs, between 0 (one run) and
+         \f$ \log_2 n \f$ (\f$ n \f$ runs of one item)</td></tr>
+ <tr><td>\f$ k \f$</td>
+     <td>the number of distinct keys, or the range \f$ [ 0 , k ) \f$ of
+         integer keys</td></tr>
+ <tr><td>\f$ w \f$</td>
+     <td>the bytes (or bits) of a key read by a radix sort</td></tr>
+ <tr><td>\f$ D \f$</td>
+     <td>the total length of the distinguishing prefixes of a set of
+         strings, the shortest prefix of each string that tells it from all
+         the others</td></tr>
+ <tr><td>\f$ \sigma \f$</td>
+     <td>the size of the alphabet of the strings, 256 for the bytes</td></tr>
+ <tr><td>\f$ W \f$</td>
+     <td>the lanes of a vector register, 4 to 16 keys</td></tr>
+ </table>
+
+ Each sort ends, at the level of the audits [see `Contract.h`], with the
+ check of `sortedPermutation()` of `Sorted.h`: the output is sorted and holds
+ the items of the input, which a copy sorted by `std::sort` and compared
+ item by item through the equivalence of `less` tells in
+ \f$ O( n \log n ) \f$.
+
+ \section theory_sort_lower The lower bound of the sorts by comparisons
+
+ <em>Theorem 1 (the decision tree, section 2.7.4 of the book).</em> Any
+ sort by comparisons makes, on some input of \f$ n \f$ distinct items, at
+ least
+ \f[
+   \lceil \log_2 n! \rceil \ge n \log_2 n - n \log_2 e
+   \approx n \log_2 n - 1.443 \, n \tag{1}
+ \f]
+ comparisons, and as many, but for a term \f$ O( n ) \f$, on average over the
+ permutations of the input.
+
+ Indeed, the comparisons that a sort makes form a binary tree, each node a
+ comparison and each leaf an output; the \f$ n! \f$ orders of distinct items
+ need \f$ n! \f$ different outputs, and a binary tree with \f$ n! \f$ leaves
+ has height at least \f$ \log_2 n! \f$ and average depth of a leaf at least
+ \f$ \log_2 n! \f$ too. The inequality of (1) follows from
+ \f$ n! \ge ( n / e )^n \f$. Hence merge sort and heapsort, with
+ \f$ O( n \log n ) \f$ comparisons in the worst case, and Quicksort on
+ average, are optimal up to a constant factor; the merge insertion of Ford
+ and Johnson (`mergeInsertionSort()` of `KnuthSorts.h`) is within
+ \f$ 0.03 \, n \f$ comparisons of (1), and for \f$ n \le 11 \f$ it meets it.
+
+ The same argument gives finer bounds when the input is restricted. If the
+ input is known to consist of \f$ r \f$ runs of lengths
+ \f$ \ell_1 , \ldots , \ell_r \f$, the possible outputs are the ways of
+ interleaving them, \f$ n! / ( \ell_1! \cdots \ell_r! ) \f$, and the bound
+ becomes
+ \f[
+   \log_2 \frac{n!}{\ell_1! \cdots \ell_r!} \ge n H - O( n ) , \tag{2}
+ \f]
+ which is 0 on a sorted input and (1) on \f$ n \f$ runs of one item; the
+ merge sorts of `RunSorts.h` meet (2) up to \f$ O( n ) \f$ (see
+ \ref theory_sort_merge). Likewise, with \f$ k \f$ distinct keys, each
+ repeated \f$ n / k \f$ times, the bound is \f$ n \log_2 k - O( n ) \f$,
+ which the partitions by three ways meet (see \ref theory_sort_quick). The
+ sorts by digits escape (1), since a single step of theirs, the address
+ \f$ B[ \mathit{key} ] \f$ of an array of counts, has \f$ k \f$ outcomes
+ instead of 2; they are linear when the keys are short (see
+ \ref theory_sort_digits).
+
+ \section theory_sort_elementary The elementary sorts and the inversions
+
+ The elementary sorts of section 2.7 keep a sorted prefix
+ \f$ A[ 0 .. i - 1 ] \f$ and extend it by one item at each step. Selection
+ Sort (`selectionSort()` of `SelectionSort.h`) appends the minimum of the
+ rest, whatever the input, with \f$ n ( n - 1 ) / 2 \f$ comparisons and at
+ most \f$ n - 1 \f$ swaps. Insertion Sort (`insertionSort()` of
+ `InsertionSort.h`) inserts \f$ A[ i ] \f$ in the prefix, moving right the
+ items larger than it, and its cost depends on the input as follows.
+
+ <em>Lemma 2 (the inversions).</em> Insertion Sort makes exactly
+ \f$ I( A ) \f$ moves and at most \f$ I( A ) + n - 1 \f$ comparisons; any
+ sort that only swaps adjacent items makes at least \f$ I( A ) \f$ swaps, and
+ hence
+ \f[
+   \frac{n ( n - 1 )}{4} \tag{3}
+ \f]
+ on average over the permutations.
+
+ In fact, the item \f$ A[ i ] \f$ moves past exactly the items of the prefix
+ larger than it, i.e., the inversions \f$ ( j , i ) \f$ with \f$ j < i \f$,
+ and each test of the inner loop but the last one is followed by a move. A
+ swap of two adjacent items changes \f$ I( A ) \f$ by exactly one, and a
+ permutation and its reverse together have \f$ n ( n - 1 ) / 2 \f$
+ inversions, which gives (3). Insertion Sort is thus \f$ \Theta( n ) \f$ on
+ an input with \f$ O( n ) \f$ inversions, and with its simple loop it is the
+ fastest on a few items, which makes it the base case of all the hybrid
+ sorts of the area. The sorts by adjacent exchanges of `ExchangeSorts.h`
+ (bubble, cocktail shaker, odd-even transposition, gnome) and the binary and
+ list insertion sorts of `KnuthSorts.h` are all bound by (3) in their moves
+ or swaps.
+
+ Shell Sort (`shellSort()` of `ShellSort.h`, section 15.1) escapes (3) by
+ exchanging far items first: a pass with gap \f$ h \f$ is an insertion sort
+ of the \f$ h \f$ interleaved subsequences, and a swap at distance \f$ h \f$
+ may remove up to \f$ 2 h - 1 \f$ inversions. A vector that is
+ \f$ h \f$-sorted stays \f$ h \f$-sorted after a pass with a smaller gap,
+ which is why the last pass, with gap 1, finds few inversions. The time
+ depends on the gaps, which the header compares: \f$ \Theta( n^2 ) \f$ in the
+ worst case with the gaps \f$ n / 2^j \f$ of Shell, whose common factors
+ leave the odd and the even places apart until the last pass;
+ \f$ O( n^{3/2} ) \f$ with \f$ 2^j - 1 \f$ (Hibbard) and with
+ \f$ ( 3^j - 1 ) / 2 \f$ (the book); \f$ O( n \log^2 n ) \f$ with all the
+ \f$ 2^i 3^j \f$ (Pratt), since a vector that is 2-sorted and 3-sorted needs
+ a single pass of adjacent swaps to be 1-sorted.
+
+ \section theory_sort_merge Merge sorts and runs
+
+ Merge Sort (`mergeSort()` of `MergeSort.h`, section 2.7.3) splits the vector
+ into two halves, sorts them recursively and merges them; the merge of two
+ sorted vectors of \f$ n_1 \f$ and \f$ n_2 \f$ items takes at most
+ \f$ n_1 + n_2 - 1 \f$ comparisons, since each comparison outputs an item,
+ and it is stable if the left item goes first on a tie. Hence, in
+ the worst case,
+ \f[
+   T( n ) = T( \lceil n / 2 \rceil ) + T( \lfloor n / 2 \rfloor ) + n - 1
+   = n \lceil \log_2 n \rceil - 2^{\lceil \log_2 n \rceil} + 1 , \tag{4}
+ \f]
+ within \f$ n \f$ comparisons of (1), at the price of a buffer of
+ \f$ n \f$ items. The bottom-up version (`mergeSortBottomUp()`) merges the
+ runs of lengths \f$ 1 , 2 , 4 , \ldots \f$ with no recursion, and a merge
+ also counts the inversions, since an item taken from the right half
+ overtakes all the items left in the left one (`countInversions()`).
+
+ The natural merge sorts merge the runs that the input already has instead
+ of the halves, and the order of the merges decides the cost: merging two
+ runs costs their total length, so that a sequence of merges is a binary
+ tree over the runs whose cost is the sum of
+ \f$ \ell_i \cdot \mathrm{depth}( i ) \f$, as in the codes of Huffman, and
+ the best tree costs between \f$ n H \f$ and \f$ n H + n \f$. Timsort
+ (`timSort()` of `RunSorts.h`) keeps the runs on a stack whose lengths grow
+ from the top at least as the Fibonacci numbers, merging when the rule
+ fails; the stack has thus \f$ O( \log n ) \f$ runs, and its merges cost
+ \f$ O( n + n H ) \f$ comparisons (Auger, Jugé, Nicaud and Pivoteau).
+ Powersort (`powerSort()`) merges along a tree that is nearly the one of the
+ midpoints: the boundary between two adjacent runs has the power of the
+ first bit where their midpoints, as fractions of \f$ n \f$, differ, and a
+ run on the stack is merged when its boundary has a larger power than the
+ new one; this tree costs at most \f$ n H + 2 n \f$ (Munro and Wild), within
+ \f$ O( n ) \f$ of (2). Both extend the runs shorter than
+ \f$ \mathit{minrun} \f$ (32 to 64 items) by binary insertion, and gallop
+ (an exponential search, then a binary one) when one run keeps winning, so
+ that two runs one after the other merge in \f$ O( \log n ) \f$
+ comparisons. The strand sort of `StrandSort.h` and the patience sort of
+ `PatienceSort.h` build runs of their own, the strands being as many as the
+ items of a longest strictly decreasing subsequence and the piles as many as
+ those of a longest strictly increasing one (Aldous and Diaconis).
+
+ \section theory_sort_quick Quicksort and its variants
+
+ Quicksort (`quickSort()` of `QuickSort.h`, section 12.2) partitions the part
+ around a pivot \f$ x \f$, the smaller items before it and the others after
+ it, and sorts the two sides recursively; the partition costs \f$ n - 1 \f$
+ comparisons, and the sides may be anything from 0 to \f$ n - 1 \f$ items.
+
+ <em>Theorem 3 (Quicksort on average).</em> With the pivot of a part equally
+ likely to be any of its items, e.g., on a random permutation or with a
+ pivot chosen at random, the expected number of comparisons \f$ C( n ) \f$
+ satisfies
+ \f[
+   C( n ) = n - 1 + \frac{2}{n} \sum_{j=0}^{n-1} C( j )
+   = 2 ( n + 1 ) H_n - 4 n \approx 1.386 \, n \log_2 n , \tag{5}
+ \f]
+ \f$ H_n = \sum_{i=1}^{n} 1 / i \f$ the harmonic numbers.
+
+ Indeed, the pivot is the \f$ j + 1 \f$-th smallest with probability
+ \f$ 1 / n \f$, and leaves sides of \f$ j \f$ and \f$ n - 1 - j \f$ items,
+ which are again random; this gives the recurrence. Subtracting the one of
+ \f$ n - 1 \f$ multiplied by \f$ n - 1 \f$ from the one of \f$ n \f$ multiplied
+ by \f$ n \f$ gives \f$ n C( n ) = ( n + 1 ) C( n - 1 ) + 2 ( n - 1 ) \f$, and
+ dividing by \f$ n ( n + 1 ) \f$ telescopes to (5). Equivalently, the items of
+ ranks \f$ i < j \f$ are compared if and only if one of them is the first pivot
+ among the ranks \f$ i , \ldots , j \f$, which happens with probability
+ \f$ 2 / ( j - i + 1 ) \f$, and the sum of these probabilities is (5). In the
+ worst case, a pivot that is always the smallest item (the first item of a
+ sorted vector) gives \f$ n ( n - 1 ) / 2 \f$ comparisons and \f$ n - 1 \f$
+ levels of recursion.
+
+ The variants of the area act on the three weak points of (5): the constant,
+ the worst case and the equal keys. The pivot as the median of three, or of
+ three medians of three (the ninther of Tukey), lowers the constant of (5) to
+ about \f$ 1.188 \f$ and makes the sorted inputs a good case
+ (`quickSortTuned()`, `introSort()`). The introsort of Musser bounds the depth
+ of the recursion by \f$ 2 \lfloor \log_2 n \rfloor \f$ and sorts a part that
+ goes deeper by heapsort, so that the worst case is \f$ O( n \log n ) \f$;
+ recurring on the smaller side and looping on the larger keeps the stack within
+ \f$ \log_2 n \f$ parts, since each recursive call at least halves the part. A
+ partition by three ways keeps the items equal to the pivot apart
+ (`threeWayQuickSort()` of Bentley and McIlroy), or skips a run of them when
+ the pivot equals the item before the part (`pdqSort()` of Peters), so that the
+ keys equal to a pivot are never examined again, and \f$ k \f$ distinct keys
+ cost \f$ O( n \log k ) \f$, the lower bound for them (see \ref
+ theory_sort_lower). Two pivots split the part into three in one pass
+ (`dualPivotQuickSort()` of Yaroslavskiy), with about \f$ 1.9 \, n \ln n \f$
+ comparisons against the \f$ 2 \, n \ln n \f$ of (5) but fewer scans of the
+ memory (Wild and Nebel). Finally, the speed of a partition on a modern
+ processor depends less on its comparisons than on the branches that it
+ mispredicts: the BlockQuicksort of Edelkamp and Weiss (inside `pdqSort()`) and
+ `vectorQuickSort()` of `VectorQuickSort.h`, which compares \f$ W \f$ keys with
+ the pivot in one instruction and writes them with a compressed store, make the
+ partition free of branches on the keys.
+
+ Samplesort (`sampleSort()` of `SampleSort.h`) generalizes the pivot to
+ \f$ k - 1 \f$ splitters drawn from a sample of \f$ \alpha k - 1 \f$ items,
+ and distributes the items into \f$ k \f$ buckets by a search in a tree of
+ the splitters with no branch (Sanders and Winkel), in place by blocks
+ (Axtmann, Witt, Ferizovic and Sanders). With \f$ k = 256 \f$ there are
+ about \f$ \log_{256}( n / 16 ) \f$ levels of distribution, each reading and
+ writing every item twice; the expected comparisons are
+ \f$ n \log_2 n + O( n ) \f$, since each level compares an item with
+ \f$ \log_2 k \f$ splitters, and the sample makes a bucket much larger than
+ \f$ n / k \f$ unlikely.
+
+ The learned sort (`learnedSort()` of `LearnedSort.h`, after Kristo et al.
+ and Ferragina and Odorisio) keeps the splitters of samplesort but replaces
+ the search among them by a model of the cumulative distribution function
+ \f$ F \f$ of the keys, \f$ F( x ) \f$ the fraction of the keys not larger
+ than \f$ x \f$. A distribution into \f$ k \f$ buckets is balanced when the
+ bucket of \f$ x \f$ is \f$ \lfloor k F( x ) \rfloor \f$, and the splitters
+ at the quantiles \f$ i / k \f$ of a sample approximate it within the error
+ of the empirical CDF \f$ F_s \f$ of the sample, which is bounded whatever
+ \f$ F \f$ is.
+
+ <em>Lemma 4 (Dvoretzky, Kiefer and Wolfowitz, with the constant of
+ Massart).</em> For a sample of \f$ s \f$ keys drawn independently from
+ \f$ F \f$, and every \f$ \varepsilon > 0 \f$,
+ \f[
+   \Pr\Bigl[ \sup_x | F_s( x ) - F( x ) | > \varepsilon \Bigr]
+   \le 2 e^{-2 s \varepsilon^2} . \tag{6}
+ \f]
+
+ The proof is in the paper of Massart. With \f$ s = 16 k \f$ and
+ \f$ \varepsilon \f$ a small multiple of \f$ 1 / \sqrt{s} \f$, (6) gives every
+ bucket \f$ n / k \pm 2 \varepsilon n \f$ keys with high probability, as the
+ sample of samplesort does. The model evaluates the number of splitters less
+ than \f$ x \f$ by a grid of cells of equal width \f$ w \f$, a power of 2, on
+ the range of the sample: the cell of \f$ x \f$ is a shift of
+ \f$ x - S_{\min} \f$, each cell keeps the number of splitters before it (a
+ histogram of the sample and its prefix sums), and if no cell holds more than
+ \f$ c_{\max} \f$ splitters the bucket is that count plus \f$ c_{\max} \f$
+ comparisons with no branch, in \f$ O( 1 ) \f$ time instead of the
+ \f$ \log_2 k \f$ dependent loads of a search. The grid fails exactly where the
+ keys are dense with respect to their mean on the range (the laws with a heavy
+ tail, the clusters far apart) or the sample repeats its quantiles (few
+ distinct keys); both are seen on the sample before any key moves, and the sort
+ then falls back to samplesort. When the model fits, the classification and the
+ moves cost \f$ O( n ) \f$ and the sorts of the buckets
+ \f$ O( n \log( n / k ) ) \f$ in expectation.
+
+ \section theory_sort_heap Heaps and selection by trees
+
+ A max-heap on a vector has
+ \f$ A[ \lfloor ( i - 1 ) / 2 \rfloor ] \ge A[ i ] \f$ for each \f$ i > 0 \f$,
+ and its maximum in \f$ A[ 0 ] \f$ (section 10.1.4). `maxHeapRestore()` of
+ `Heapsort.h` moves an item down from a node of height \f$ m \f$ in
+ \f$ O( m ) \f$, and `heapBuild()` calls it on the internal nodes from the last
+ one up; since at most \f$ \lceil n / 2^{m+1} \rceil \f$ nodes have height
+ \f$ m \f$, the build costs
+ \f[
+   \sum_{m \ge 0} \Bigl\lceil \frac{n}{2^{m+1}} \Bigr\rceil O( m )
+   = O\Bigl( n \sum_{m \ge 0} \frac{m}{2^m} \Bigr) = O( n ) , \tag{7}
+ \f]
+ the series being 2. Heapsort then swaps the maximum with the last place of
+ the heap and restores it \f$ n - 1 \f$ times, \f$ O( n \log n ) \f$ in all
+ and in place, with about \f$ 2 n \log_2 n \f$ comparisons; it is the
+ fallback of the introsorts because its bound holds on every input. Smoothsort
+ of Dijkstra (`smoothsort()` of `Smoothsort.h`) keeps a forest of heaps whose
+ sizes are the Leonardo numbers, \f$ L_{k+2} = L_{k+1} + L_k + 1 \f$, laid
+ side by side with increasing roots; it is \f$ O( n \log n ) \f$ as heapsort
+ and \f$ O( n ) \f$ on a sorted input, where no item moves. The orders of the
+ heaps of the forest are kept as the bits of one word of 64 bits, which
+ bounds \f$ n \f$ below \f$ L_{64} = 34335360355129 \f$. The tournament
+ sort of `KnuthSorts.h` plays a knockout on a complete tree of the items and
+ replays only the path of the winner, \f$ \lceil \log_2 n \rceil \f$
+ comparisons for each item, and the tree sort of `TreeSort.h` inserts the
+ items in a search tree and reads them back in symmetric order,
+ \f$ O( n \log n ) \f$ on a balanced tree and \f$ \Theta( n^2 ) \f$ on a
+ sorted input with no balance.
+
+ \section theory_sort_digits Sorts by digits
+
+ Counting Sort (`countingSort()` of `CountingSort.h`, section 2.7.5) counts
+ the occurrences of each integer key in \f$ [ 0 , k ) \f$ and writes them
+ back in order, in \f$ \Theta( n + k ) \f$ time; Pigeonhole Sort
+ (`pigeonholeSort()` of `PigeonholeSort.h`, exercise 4.11) appends each item
+ to the list of its key and concatenates the lists, which carries the
+ values along and is stable. A radix sort applies a stable distribution to
+ each digit of the keys, and its correctness rests on the following.
+
+ <em>Lemma 5 (the least significant digit first).</em> If the keys have
+ \f$ w \f$ digits, and each pass distributes the items stably by one digit,
+ from the least significant to the most, then after the pass on the digit
+ \f$ j \f$ the items are sorted by the number formed by their digits
+ \f$ 0 , \ldots , j \f$.
+
+ Indeed, after the pass on \f$ j \f$ two items with different digits
+ \f$ j \f$ are in the order of those digits, and two with the same digit
+ \f$ j \f$ keep the order that they had, i.e., by induction, the order of
+ their digits \f$ 0 , \ldots , j - 1 \f$. Hence `radixSort()` of
+ `RadixSort.h`, with bytes as digits, takes \f$ O( w ( n + 256 ) ) \f$,
+ linear for keys of a fixed width, and skips the bytes in which no two keys
+ differ; its keys make the order of the numbers that of unsigned integers
+ (the sign bit flipped, and all the bits of a negative floating point
+ number). The sorts from the most significant digit (`americanFlagSort()`,
+ `msdRadixSort()`) distribute by the first digit and recur on each bucket,
+ reading only the digits that tell the keys apart; on strings they read
+ \f$ D \f$ characters, which any sort of strings must read, and spend
+ \f$ O( n \log \sigma ) \f$ beyond them on an alphabet of \f$ \sigma \f$
+ characters. The multikey quicksort of Bentley and Sedgewick
+ (`multikeyQuickSort()`) partitions by three ways on one character at a time,
+ \f$ O( D + n \log n ) \f$ comparisons of characters, and `prefixKeySort()`
+ of `StringSort.h` turns 8 characters at a time into integer keys sorted in
+ the vector registers. Bucket Sort (`bucketSort()`) distributes numbers in
+ \f$ [ 0 , 1 ) \f$ into \f$ n \f$ buckets by their value and sorts each by
+ insertion: if the numbers are drawn uniformly and \f$ N_i \f$ is the size of
+ the bucket \f$ i \f$, then
+ \f[
+   E\Bigl[ \sum_{i} N_i^2 \Bigr] = n \Bigl( 1 + \frac{n - 1}{n} \Bigr)
+   = 2 n - 1 , \tag{8}
+ \f]
+ and the expected time is \f$ O( n ) \f$; with all the numbers in one bucket
+ it is \f$ \Theta( n^2 ) \f$.
+
+ \section theory_sort_other Networks, other measures and external memory
+
+ A sorting network (`SortingNetworks.h`) is a fixed sequence of comparators
+ \f$ ( i , j ) \f$, each putting the smaller of \f$ A[ i ] \f$ and
+ \f$ A[ j ] \f$ in \f$ A[ i ] \f$, whatever the input; the comparators of a
+ round touch disjoint places and run in parallel. Its correctness rests on
+ the 0-1 principle of Knuth: a network sorts every input if and only if it
+ sorts the \f$ 2^n \f$ inputs of zeros and ones, since a comparator commutes
+ with every non-decreasing function of the items, and an input out of order
+ at the end gives, through a threshold, an input of zeros and ones out of
+ order. The bitonic sorter and the merge exchange of Batcher take
+ \f$ O( \log^2 n ) \f$ rounds and \f$ O( n \log^2 n ) \f$ comparators, more
+ than (1), which they pay for with their parallelism; the network of
+ `vectorQuickSort()` sorts \f$ 16 W \f$ keys in the registers in this way.
+
+ Some sorts minimize another operation. The cycle sort of Haddon
+ (`cycleSort()` of `CycleSort.h`) writes each item once into its final
+ place, found by counting the smaller items, and follows the cycle of the
+ item that it displaces; it makes at most \f$ n \f$ writes, the least
+ possible, with \f$ \Theta( n^2 ) \f$ comparisons. The pancake sort
+ (`pancakeSort()`) sorts by reversals of prefixes only, with at most
+ \f$ 2 n - 3 \f$ of them: two reversals bring the largest item of the unsorted
+ prefix to its end, and the last two items need one at most.
+
+ A file larger than the memory is sorted in two phases (`ExternalSort.h`,
+ sections 5.4.1 and 5.4.2 of Knuth). The replacement selection keeps \f$ M \f$
+ items in a heap and outputs the least that can extend the current run; on
+ random input the runs are about \f$ 2 M \f$ long, twice the \f$ M \f$ of
+ sorting one memory load at a time (the snowplow argument of Knuth). The
+ polyphase merge deals the runs on \f$ T - 1 \f$ tapes in a generalized
+ Fibonacci distribution, padded with empty runs, so that each phase merges
+ until one tape is empty and that tape becomes the next output; with three
+ tapes each item takes part in about \f$ \log_\phi r \f$ merges, \f$ \phi \f$
+ the golden ratio, and no tape is ever only copied.
+
+ \section theory_sort_table The sorts compared
+
+ <table>
+ <caption>The sorts of the area: comparisons or time in the worst and in the
+          average case, extra space and stability</caption>
+ <tr><th>Sort</th><th>Worst case</th><th>Average case</th>
+     <th>Extra space</th><th>Stable</th></tr>
+ <tr><td><tt>selectionSort()</tt></td><td>\f$ \Theta( n^2 ) \f$</td>
+     <td>\f$ \Theta( n^2 ) \f$</td><td>\f$ O( 1 ) \f$</td><td>no</td></tr>
+ <tr><td><tt>insertionSort()</tt></td><td>\f$ \Theta( n^2 ) \f$</td>
+     <td>\f$ \Theta( n + I( A ) ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>yes</td></tr>
+ <tr><td><tt>shellSort()</tt></td><td>\f$ O( n^{3/2} ) \f$ (book's
+     gaps)</td><td>depends on the gaps</td><td>\f$ O( 1 ) \f$</td>
+     <td>no</td></tr>
+ <tr><td><tt>mergeSort()</tt></td><td>\f$ \Theta( n \log n ) \f$</td>
+     <td>\f$ \Theta( n \log n ) \f$</td><td>\f$ \Theta( n ) \f$</td>
+     <td>yes</td></tr>
+ <tr><td><tt>timSort()</tt>, <tt>powerSort()</tt></td>
+     <td>\f$ O( n + n H ) \f$</td><td>\f$ O( n + n H ) \f$</td>
+     <td>\f$ O( n ) \f$</td><td>yes</td></tr>
+ <tr><td><tt>quickSort()</tt></td><td>\f$ \Theta( n^2 ) \f$</td>
+     <td>\f$ 1.386 \, n \log_2 n \f$</td><td>\f$ O( n ) \f$ stack</td>
+     <td>no</td></tr>
+ <tr><td><tt>introSort()</tt>, <tt>pdqSort()</tt>,
+     <tt>vectorQuickSort()</tt></td><td>\f$ O( n \log n ) \f$</td>
+     <td>\f$ O( n \log n ) \f$, \f$ O( n \log k ) \f$ for \f$ k \f$
+     keys (<tt>pdqSort()</tt>, <tt>vectorQuickSort()</tt>)</td>
+     <td>\f$ O( \log n ) \f$ stack</td><td>no</td></tr>
+ <tr><td><tt>sampleSort()</tt></td><td>\f$ O( n \log n ) \f$</td>
+     <td>\f$ n \log_2 n + O( n ) \f$</td>
+     <td>\f$ O( k b ) \f$ items, blocks of \f$ b \f$</td><td>no</td></tr>
+ <tr><td><tt>learnedSort()</tt></td><td>\f$ O( n \log n ) \f$, by
+     <tt>sampleSort()</tt> when the model does not fit</td>
+     <td>\f$ O( n \log( n / k ) ) \f$ when it fits</td>
+     <td>\f$ \Theta( n ) \f$</td><td>no</td></tr>
+ <tr><td><tt>heapsort()</tt></td><td>\f$ O( n \log n ) \f$</td>
+     <td>\f$ O( n \log n ) \f$</td><td>\f$ O( 1 ) \f$</td><td>no</td></tr>
+ <tr><td><tt>smoothsort()</tt></td><td>\f$ O( n \log n ) \f$</td>
+     <td>\f$ O( n \log n ) \f$, \f$ O( n ) \f$ if sorted</td>
+     <td>\f$ O( 1 ) \f$</td><td>no</td></tr>
+ <tr><td><tt>countingSort()</tt></td><td>\f$ \Theta( n + k ) \f$</td>
+     <td>\f$ \Theta( n + k ) \f$</td><td>\f$ \Theta( k ) \f$</td>
+     <td>not applicable</td></tr>
+ <tr><td><tt>radixSort()</tt></td><td>\f$ O( w ( n + 256 ) ) \f$</td>
+     <td>\f$ O( w ( n + 256 ) ) \f$</td><td>\f$ \Theta( n ) \f$</td>
+     <td>yes</td></tr>
+ <tr><td><tt>msdRadixSort()</tt></td><td>\f$ O( D + n \log \sigma ) \f$</td>
+     <td>\f$ O( D + n \log \sigma ) \f$</td><td>\f$ \Theta( n ) \f$</td>
+     <td>not applicable</td></tr>
+ <tr><td><tt>bucketSort()</tt></td><td>\f$ \Theta( n^2 ) \f$</td>
+     <td>\f$ O( n ) \f$ on uniform numbers</td><td>\f$ \Theta( n ) \f$</td>
+     <td>yes</td></tr>
+ </table>
+
+ The bounds of the table are in comparisons for the sorts by comparisons and
+ in time for the others; the stability is not applicable where equal items
+ cannot be told apart (integers, strings). A few sorts are kept only as
+ examples: the stooge sort, the slow sort and the bogo sort of
+ `DidacticSorts.h`, with \f$ \Theta( n^{\log_{1.5} 3} ) \f$, a time that is
+ not polynomial and \f$ n! \f$ expected shuffles, illustrate the recurrences
+ and the expected time.
+
+ \section theory_sort_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 2.7, 2.8,
+      6.1, 10.1.4, 12.2, 12.5 and 15.1, exercises 4.11, 6.1, 10.4 and 12.1
+      to 12.5,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap02.pdf and
+      https://algoritmicamente.it/materiali/libro/capitoli/cap12.pdf
+ \see D. E. Knuth, The Art of Computer Programming, vol. 3, Sorting and
+      Searching, 2nd ed., Addison-Wesley, 1998, chapter 5
+ \see C. A. R. Hoare, Quicksort, The Computer Journal 5(1), 10-16, 1962,
+      doi:10.1093/comjnl/5.1.10
+ \see R. Sedgewick, Implementing Quicksort programs, Communications of the
+      ACM 21(10), 847-857, 1978, doi:10.1145/359619.359631
+ \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the ACM
+      7(6), 347-348, 1964, doi:10.1145/512274.3734138
+ \see D. L. Shell, A high-speed sorting procedure, Communications of the
+      ACM 2(7), 30-32, 1959, doi:10.1145/368370.368387
+ \see D. R. Musser, Introspective sorting and selection algorithms,
+      Software: Practice and Experience 27(8), 983-993, 1997,
+      doi:10.1002/(SICI)1097-024X(199708)27:8\<983::AID-SPE117\>3.0.CO;2-\#
+ \see J. L. Bentley, M. D. McIlroy, Engineering a sort function, Software:
+      Practice and Experience 23(11), 1249-1265, 1993,
+      doi:10.1002/spe.4380231105
+ \see S. Wild, M. E. Nebel, Average case analysis of Java 7's dual pivot
+      quicksort, Proceedings of ESA 2012, LNCS 7501, 825-836, 2012,
+      doi:10.1007/978-3-642-33090-2_71
+ \see O. R. L. Peters, Pattern-defeating quicksort, arXiv:2106.05123, 2021
+ \see P. Sanders, S. Winkel, Super scalar sample sort, Proceedings of ESA
+      2004, LNCS 3221, 784-796, 2004, doi:10.1007/978-3-540-30140-0_69
+ \see N. Auger, V. Jugé, C. Nicaud, C. Pivoteau, On the worst-case
+      complexity of TimSort, Proceedings of ESA 2018, LIPIcs 112, 4:1-4:13,
+      2018, doi:10.4230/LIPIcs.ESA.2018.4
+ \see J. I. Munro, S. Wild, Nearly-optimal mergesorts: fast, practical
+      sorting methods that optimally adapt to existing runs, Proceedings of
+      ESA 2018, LIPIcs 112, article 63, 2018, doi:10.4230/LIPIcs.ESA.2018.63
+ \see P. M. McIlroy, K. Bostic, M. D. McIlroy, Engineering radix sort,
+      Computing Systems 6(1), 5-27, 1993
+ \see J. L. Bentley, R. Sedgewick, Fast algorithms for sorting and
+      searching strings, Proceedings of the 8th ACM-SIAM Symposium on
+      Discrete Algorithms (SODA), 360-369, 1997
+ \see K. E. Batcher, Sorting networks and their applications, Proceedings
+      of the AFIPS Spring Joint Computer Conference 32, 307-314, 1968,
+      doi:10.1145/1468075.1468121
+ \see D. Aldous, P. Diaconis, Longest increasing subsequences: from
+      patience sorting to the Baik-Deift-Johansson theorem, Bulletin of the
+      American Mathematical Society 36(4), 413-432, 1999,
+      doi:10.1090/S0273-0979-99-00796-X
+ \see A. Kristo, K. Vaidya, U. Çetintemel, S. Misra, T. Kraska, The case
+      for a learned sorting algorithm, Proceedings of SIGMOD 2020,
+      1001-1016, 2020, doi:10.1145/3318464.3389752
+ \see P. Ferragina, M. Odorisio, Fast, robust, and learned
+      distribution-based sorting, IEEE Access 13, 45198-45214, 2025,
+      doi:10.1109/ACCESS.2025.3549626
+ \see P. Massart, The tight constant in the Dvoretzky-Kiefer-Wolfowitz
+      inequality, The Annals of Probability 18(3), 1269-1283, 1990,
+      doi:10.1214/aop/1176990746
+*/
+/*--------------------------------------------------------------------------*/
+/*--------------------------- End File sort.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
