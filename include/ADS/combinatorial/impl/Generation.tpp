@@ -16,6 +16,22 @@
 
 namespace ADS {
 
+namespace detail {
+
+/// visit( x ), true if it asks to stop; never if it returns void
+template< class F , class X >
+inline bool visitStops( F & visit , X && x )
+{
+ if constexpr( std::is_void_v< std::invoke_result_t< F & , X && > > ) {
+  visit( std::forward< X >( x ) );
+  return( false );
+  }
+ else
+  return( bool( visit( std::forward< X >( x ) ) ) );
+ }
+
+}  // end( namespace detail )
+
 template< class F >
 long mixedRadix( const std::vector< int > & m , F && visit )
 {
@@ -26,7 +42,7 @@ long mixedRadix( const std::vector< int > & m , F && visit )
  long count = 0;
  for( ; ; ) {
   ++count;
-  if( visit( a ) ) return( count );
+  if( detail::visitStops( visit , a ) ) return( count );
   int j = n - 1;                            // M3-M4: add 1 with carries
   while( ( j >= 0 ) && ( a[ j ] == m[ j ] - 1 ) ) a[ j-- ] = 0;
   if( j < 0 ) return( count );
@@ -41,7 +57,7 @@ long grayTuples( const std::vector< int > & m , F && visit )
   return( x >= 2 ); } ) );
  const int n = int( m.size() );
  if( n == 0 ) {                             // the empty tuple alone
-  visit( Tuple() );
+  (void) detail::visitStops( visit , Tuple() );
   return( 1 );
   }
  Tuple a( n , 0 ) , o( n , 1 );             // the digits and directions,
@@ -50,7 +66,7 @@ long grayTuples( const std::vector< int > & m , F && visit )
  long count = 0;
  for( ; ; ) {                               // places from the right: the
   ++count;                                  // place j is a[ n - 1 - j ]
-  if( visit( a ) ) return( count );
+  if( detail::visitStops( visit , a ) ) return( count );
   const int j = f[ 0 ];                     // H3
   f[ 0 ] = 0;
   if( j == n ) return( count );
@@ -72,7 +88,7 @@ long permutationsLex( Tuple a , F && visit )
  const int n = int( a.size() );
  for( ; ; ) {
   ++count;
-  if( visit( a ) ) return( count );
+  if( detail::visitStops( visit , a ) ) return( count );
   int j = n - 2;                            // L2: the last ascent
   while( ( j >= 0 ) && ( a[ j ] >= a[ j + 1 ] ) ) --j;
   if( j < 0 ) return( count );
@@ -92,7 +108,8 @@ long plainChanges( int n , F && visit )
  long count = 0;
  for( ; ; ) {
   ++count;                                  // P2
-  if( visit( Tuple( a.begin() + 1 , a.end() ) ) ) return( count );
+  if( detail::visitStops( visit , Tuple( a.begin() + 1 , a.end() ) ) )
+   return( count );
   int j = n , s = 0;                        // P3
   for( ; ; ) {
    if( j < 1 ) return( count );
@@ -123,12 +140,12 @@ long heapPermutations( int n , F && visit )
  Tuple a( n ) , c( n , 0 );
  for( int i = 0 ; i < n ; ++i ) a[ i ] = i;
  long count = 1;
- if( visit( a ) ) return( count );
+ if( detail::visitStops( visit , a ) ) return( count );
  for( int i = 1 ; i < n ; ) {               // the iterative form of Heap
   if( c[ i ] < i ) {
    std::swap( a[ i % 2 ? c[ i ] : 0 ] , a[ i ] );
    ++count;
-   if( visit( a ) ) return( count );
+   if( detail::visitStops( visit , a ) ) return( count );
    ++c[ i ];
    i = 1;
    }
@@ -147,7 +164,7 @@ long combinationsLex( int n , int t , F && visit )
  long count = 0;
  for( ; ; ) {
   ++count;
-  if( visit( c ) ) return( count );
+  if( detail::visitStops( visit , c ) ) return( count );
   int j = t - 1;                            // the last that can grow
   while( ( j >= 0 ) && ( c[ j ] == n - t + j ) ) --j;
   if( j < 0 ) return( count );
@@ -167,12 +184,12 @@ bool door( int n , int t , bool reversed , Tuple & c , long & count ,
 {
  if( t == 0 ) {
   ++count;
-  return( ! visit( c ) );
+  return( ! visitStops( visit , c ) );
   }
  if( n == t ) {
   for( int j = 0 ; j < t ; ++j ) c[ j ] = j;
   ++count;
-  return( ! visit( c ) );
+  return( ! visitStops( visit , c ) );
   }
  auto withLast = [ & ]( bool rev ) {        // the combinations with n - 1
   c[ t - 1 ] = n - 1;
@@ -205,13 +222,13 @@ long integerPartitions( int n , F && visit )
  long count = 0;
  if( n == 0 ) {
   ++count;
-  visit( Tuple() );
+  (void) detail::visitStops( visit , Tuple() );
   return( count );
   }
  Tuple a = { n };                           // the parts, nonincreasing
  for( ; ; ) {
   ++count;
-  if( visit( a ) ) return( count );
+  if( detail::visitStops( visit , a ) ) return( count );
   int ones = 0;                             // the 1s at the end go away
   while( ! a.empty() && ( a.back() == 1 ) ) {
    a.pop_back();
@@ -235,13 +252,13 @@ long setPartitions( int n , F && visit )
  long count = 0;
  if( n == 0 ) {
   ++count;
-  visit( Tuple() );
+  (void) detail::visitStops( visit , Tuple() );
   return( count );
   }
  Tuple a( n , 0 ) , b( n , 1 );             // b[ j ] = 1 + max( a[ 0 .. j ) )
  for( ; ; ) {
   ++count;
-  if( visit( a ) ) return( count );
+  if( detail::visitStops( visit , a ) ) return( count );
   int j = n - 1;                            // the last that can grow
   while( ( j > 0 ) && ( a[ j ] == b[ j ] ) ) --j;
   if( j == 0 ) return( count );
@@ -262,7 +279,7 @@ long nestedParentheses( int n , F && visit )
  auto rec = [ & ]( auto & self , int i , int open , int close ) -> bool {
   if( i == 2 * n ) {
    ++count;
-   return( ! visit( s ) );
+   return( ! detail::visitStops( visit , s ) );
    }
   if( open < n ) {                          // '(' before ')' : lexicographic
    s[ i ] = '(';

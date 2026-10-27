@@ -43,11 +43,14 @@ if (ADS_WITH_MPI)
     add_executable(engineered_mpi engineered_mpi.cpp)
     target_link_libraries(engineered_mpi PRIVATE ADS::ADS Threads::Threads)
     target_compile_definitions(engineered_mpi PRIVATE ADS_CONTRACTS=3)
-    foreach (np 1 2 3 4)
-        add_test(NAME engineered_mpi.distributed-sort.np${np}
-                 COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${np}
-                         ${MPIEXEC_PREFLAGS} $<TARGET_FILE:engineered_mpi>
-                         ${MPIEXEC_POSTFLAGS} distributed-sort)
+    foreach (t distributed-sort distributed-sort-counts)
+        foreach (np 1 2 3 4)
+            add_test(NAME engineered_mpi.${t}.np${np}
+                     COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG}
+                             ${np} ${MPIEXEC_PREFLAGS}
+                             $<TARGET_FILE:engineered_mpi>
+                             ${MPIEXEC_POSTFLAGS} ${t})
+        endforeach ()
     endforeach ()
 endif ()
 

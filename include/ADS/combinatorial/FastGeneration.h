@@ -77,6 +77,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/combinatorial/Bitwise.h"
+#include "ADS/combinatorial/Generation.h"
 
 #include <algorithm>
 #include <bit>

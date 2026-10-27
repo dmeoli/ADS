@@ -93,7 +93,11 @@ template< class Bits >
 bool subsetSumDP( const std::vector< long > & A , long k ,
                   std::vector< std::vector< bool > > * rows )
 {
- ADS_PRE( ( k >= 0 ) && detail::nonnegative( A ) );
+ ADS_PRE( detail::nonnegative( A ) );
+ if( k < 0 ) {                          // no subset, and no cell
+  if( rows ) rows->resize( rows->size() + A.size() + 1 );
+  return( false );
+  }
  const std::size_t K = std::size_t( k ) + 1;
  Bits M( K );                           // all false
  detail::setBit( M , 0 , true );

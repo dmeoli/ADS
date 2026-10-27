@@ -197,6 +197,9 @@ T MinMaxHeap< T , Better >::popMax( void )
 template< class T , class Better >
 bool MinMaxHeap< T , Better >::ordered( void ) const
 {
+ if( f_sorted && ( f_hi - f_lo > 1024 ) )   // the two ends only
+  return( ! f_better( f_A[ f_lo + 1 ] , f_A[ f_lo ] ) &&
+          ! f_better( f_A[ f_hi - 1 ] , f_A[ f_hi - 2 ] ) );
  if( f_sorted )
   return( std::is_sorted( f_A.begin() + std::ptrdiff_t( f_lo ) ,
                           f_A.begin() + std::ptrdiff_t( f_hi ) , f_better ) );
@@ -412,6 +415,9 @@ T IntervalHeap< T , Better >::popMax( void )
 template< class T , class Better >
 bool IntervalHeap< T , Better >::ordered( void ) const
 {
+ if( f_sorted && ( f_hi - f_lo > 1024 ) )   // the two ends only
+  return( ! f_better( f_A[ f_lo + 1 ] , f_A[ f_lo ] ) &&
+          ! f_better( f_A[ f_hi - 1 ] , f_A[ f_hi - 2 ] ) );
  if( f_sorted )
   return( std::is_sorted( f_A.begin() + std::ptrdiff_t( f_lo ) ,
                           f_A.begin() + std::ptrdiff_t( f_hi ) , f_better ) );

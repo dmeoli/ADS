@@ -1615,3 +1615,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in a long also where long has 32 bits (Windows)
 - the fractional knapsack no longer gives a negative fraction when the
   residual capacity rounds below 0
+- EventCount::notify() raises the copy of the epoch on which the waiters
+  sleep by a compare-and-swap that never lowers it: two notifiers that
+  advanced the epoch could write their copies in the other order, and the
+  later write of the older epoch left a waiter that the newer notifier had
+  withdrawn asleep with nobody to wake it
+- distributed::sort() passes MPI the counts and the displacements of
+  MPI_Alltoallv_c, of 64 bits, with MPI 4, and with an older MPI checks
+  the displacements too, which overflowed silently past 2^31 bytes; a
+  piece too large stops all the processes with std::length_error, where
+  before the one that threw left the others waiting
+- multiwayMerge() into a contiguous output: the funnel beyond 4 sources
+  gave its mergers buffers of 4 KiB / sizeof( T ) items, 0 for items of
+  more than 4 KiB, and lost them; a buffer holds one item at least
+- the invariants of DaryHeap and IndexedDaryHeap, and those of MinMaxHeap
+  and IntervalHeap on their sorted items, check the root and the last item
+  only on more than 1024 items, as the other heaps do, so that the level 3
+  of the contracts is no longer quadratic
+- tsp() requires distances that are not negative (a precondition), with
+  which the pruning of the partial tours longer than k is right
+- knapsackBB() and knapsackGreedy() compare the profits per volume by the
+  products of 128 bits, which those of two longs overflowed
+- subsetSumDP() with k < 0 returns false, with n + 1 empty rows, instead
+  of a precondition checked only with the contracts, without which it
+  allocated SIZE_MAX cells
+- UniqueQueue::enqueue() with FORGET_OLD of an item in the queue by
+  reference, as enqueue( top() ), copied it after remove() had destroyed
+  it
+- the step of the probes of the Bloom filters is 1 where the second hash
+  is a multiple of m, which made all the k probes one place
+- PerfectHashTable draws the first level until sum_j n_j^2 < 4 n, which
+  happens with probability above 2 / 3, as Fredman, Komlós and Szemerédi;
+  below 2 n only 1 / n was guaranteed, and the expected time to build was
+  not linear
+- the generators of Generation.h take a visit that returns void, as those
+  of FastGeneration.h; Arena::make() frees a new block if the vector of
+  the blocks cannot take it; ConcurrentUnionFind.h includes <utility>; a
+  test always true in ExactCover and one repeated in knightTour() removed

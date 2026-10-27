@@ -28,12 +28,15 @@
  *   2^{h-l} \f$ with a odd, for keys of h bits and \f$ m = 2^l \f$:
  *   2-universal (two keys collide with probability at most \f$ 2 / m \f$),
  *   and only a product and a shift, the fastest of the three;
- * - StringHash, the polynomial \f$ \sum_i s_i x^i \bmod p \f$ of the
- *   characters of a string at a random point x, \f$ p = 2^{61} - 1 \f$: two
- *   distinct strings of length at most L collide with probability at most
- *   \f$ L / p \f$, since their difference is a polynomial of degree at most
- *   L with at most L roots; it turns a string into a key for the classes
- *   above.
+ * - `StringHash`, the polynomial \f$ \sum_i ( s_i + 1 ) x^i \bmod p \f$ of
+ *   the characters of a string at a random point \f$ x \f$,
+ *   \f$ p = 2^{61} - 1 \f$, each character counted one more so that the
+ *   character 0 counts too (the strings of zeros of different lengths, or
+ *   a string and the same followed by zeros, would collide otherwise): two
+ *   distinct strings of length at most \f$ L \f$ collide with probability
+ *   at most \f$ L / p \f$, since their difference is a polynomial of degree
+ *   at most \f$ L \f$, not zero, with at most \f$ L \f$ roots; it turns a
+ *   string into a key for the classes above.
  *
  * DLeftHashTable is the d-left hashing of Vöcking on top of them: d tables
  * of m / d lists, each with a function of its own, a key going to the
@@ -201,7 +204,8 @@ class MultiplyShiftHash {
 /*---------------------------- CLASS StringHash ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// h( s ) = sum_i s_i x^i mod 2^61 - 1, at a random point x
+/// \f$ h( s ) = \sum_i ( s_i + 1 ) x^i \bmod ( 2^{61} - 1 ) \f$, at a
+/// random point \f$ x \f$
 class StringHash {
  public:
  explicit StringHash( std::uint64_t seed = 1 );

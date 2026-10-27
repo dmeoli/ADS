@@ -32,7 +32,7 @@ inline ExactCover::ExactCover( int primary , int secondary )
   f_R[ i ] = i + 1;
   }
  f_L[ 0 ] = primary;                        // the primary items circular
- if( primary >= 0 ) f_R[ primary ] = 0;
+ f_R[ primary ] = 0;
  for( int i = primary + 1 ; i <= N ; ++i ) {   // each secondary alone
   f_L[ i ] = i;
   f_R[ i ] = i;

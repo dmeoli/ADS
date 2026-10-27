@@ -497,7 +497,9 @@ O multiwayMerge( const std::vector< std::pair< I , I > > & R , O out ,
   else if( live > 2 ) {                    // the funnel
    constexpr bool ind = false;
    using F = detail::MergeFunnel< T , C , ind >;
-   F f( R , detail::kFunnelBuffer / sizeof( typename F::E ) , less );
+   // one item at least, a buffer of none refilling with nothing
+   F f( R , std::max< std::size_t >( 1 , detail::kFunnelBuffer /
+                                         sizeof( typename F::E ) ) , less );
    T * o = std::to_address( out );
    out += f.run( o , n ) - o;
    }

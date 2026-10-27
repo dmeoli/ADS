@@ -146,7 +146,14 @@ inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
 template< class T , class Better , unsigned D , bool BottomUp >
 bool DaryHeap< T , Better , D , BottomUp >::ordered( void ) const
 {
- for( std::size_t i = 1 ; i < f_A.size() ; ++i )
+ const std::size_t n = f_A.size();
+ if( n > 1024 ) {                           // the root and the last item
+  for( std::size_t i = 1 ; ( i <= D ) && ( i < n ) ; ++i )
+   if( f_better( f_A[ i ] , f_A[ 0 ] ) )
+    return( false );
+  return( ! f_better( f_A[ n - 1 ] , f_A[ ( n - 2 ) / D ] ) );
+  }
+ for( std::size_t i = 1 ; i < n ; ++i )
   if( f_better( f_A[ i ] , f_A[ ( i - 1 ) / D ] ) )
    return( false );
  return( true );

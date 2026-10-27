@@ -23,6 +23,7 @@
 #include "ADS/priority/DaryHeap.h"
 #include "ADS/priority/DialQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
+#include "ADS/priority/IndexedDaryHeap.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
 #include "ADS/priority/MinMaxHeap.h"
 #include "ADS/priority/PairingHeap.h"
@@ -774,6 +775,46 @@ ADS_TEST( "dary-heap-bottom-up" )
  CHECK( E.pop() == 1 && E.empty() );
  for( int i = 0 ; i < 100 ; ++i ) E.push( 5 );
  for( int i = 0 ; i < 100 ; ++i ) CHECK( E.pop() == 5 );
+ }
+
+// the audits of the order at the level 3 of the contracts, which on more
+// than 1024 items look at the ends of the heap only: 2^17 items pushed and
+// popped in DaryHeap, IndexedDaryHeap, MinMaxHeap and IntervalHeap (the
+// latter two from both ends, through their runs of removals on sorted
+// items too), which a check of all of them at each operation would make
+// quadratic
+ADS_TEST( "large-heap-audits" )
+{
+ const int n = 1 << 17;
+ std::mt19937 g( 77 );
+ std::vector< int > x( n );
+ for( auto & v : x ) v = int( g() % 1000000 );
+ DaryHeap< int , std::less< int > , 4 > A;
+ IndexedDaryHeap< int , 4 > B( n );
+ MinMaxHeap< int > C;
+ IntervalHeap< int > E;
+ for( int i = 0 ; i < n ; ++i ) {
+  A.push( x[ i ] );
+  B.push( i , x[ i ] );
+  C.push( x[ i ] );
+  E.push( x[ i ] );
+  }
+ std::vector< int > s = x;
+ std::sort( s.begin() , s.end() );
+ bool ok = true;
+ for( int i = 0 ; i < n ; ++i ) {
+  ok = ok && ( A.pop() == s[ i ] ) && ( B.pop().key == s[ i ] );
+  }
+ for( int i = 0 , lo = 0 , hi = n - 1 ; i < n ; ++i )
+  if( i % 3 != 0 ) {
+   ok = ok && ( C.popMin() == s[ lo ] ) && ( E.popMin() == s[ lo ] );
+   ++lo;
+   }
+  else {
+   ok = ok && ( C.popMax() == s[ hi ] ) && ( E.popMax() == s[ hi ] );
+   --hi;
+   }
+ CHECK( ok && A.empty() && B.empty() && C.empty() && E.empty() );
  }
 
 }  // end( namespace )

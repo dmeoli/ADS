@@ -125,6 +125,18 @@ ADS_TEST( "problems" )
  CHECK_THROWS( tsp( Dr , 5L ) , contract_violation );
  CHECK_THROWS( tspCertificate( Dr , 5L , { 0 , 1 } ) , contract_violation );
  CHECK( tsp( D1 , 0L ) && tspCertificate( D1 , 0L , { 0 } ) );
+ // a negative distance, with which the pruning of the partial tours
+ // longer than k would miss the tour 0 1 2 of length 0, and the same
+ // distances raised by 10, whose tours are 30 longer
+ const std::vector< Longs > Dn = { { 0 , 10 , 10 } , { 0 , 0 , -10 } ,
+                                   { 0 , -10 , 0 } } ,
+                            Dp = { { 10 , 20 , 20 } , { 10 , 10 , 0 } ,
+                                   { 10 , 0 , 10 } };
+ CHECK( tspCertificate( Dn , 0L , { 0 , 1 , 2 } ) );
+ CHECK_THROWS( tsp( Dn , 0L ) , contract_violation );
+ CHECK_THROWS( tsp( std::vector< Longs >{ { -1 } } , 0L ) ,
+               contract_violation );
+ CHECK( tsp( Dp , 30L ) && ! tsp( Dp , 29L ) );
  CHECK_THROWS( hamiltonianCycle( ragged ) , contract_violation );
  CHECK_THROWS( hamiltonianChain( arc ) , contract_violation );
  CHECK_THROWS( hamiltonianPath( ragged , -1 ) , contract_violation );

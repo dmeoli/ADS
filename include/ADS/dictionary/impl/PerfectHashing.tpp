@@ -41,7 +41,7 @@ inline PerfectHashTable::PerfectHashTable(
   for( const auto k : S ) ++c[ f_h( k ) ];
   std::size_t L = 0;
   for( const auto x : c ) L += x * x;
-  if( ( n == 0 ) || ( L < 2 * n ) ) break;
+  if( ( n == 0 ) || ( L < 4 * n ) ) break;   // Markov: p > 2 / 3
   }
  std::vector< std::uint64_t > keys( n );   // the keys by list
  std::vector< std::size_t > start( m + 1 , 0 );
@@ -75,7 +75,7 @@ inline PerfectHashTable::PerfectHashTable(
    }
   }
  f_n = n;
- ADS_POST( ( n == 0 ) || ( f_T.size() < 2 * n ) );
+ ADS_POST( ( n == 0 ) || ( f_T.size() < 4 * n ) );
  ADS_AUDIT( std::all_of( S.begin() , S.end() , [ this ]( std::uint64_t k ) {
   return( contains( k ) ); } ) );
  }

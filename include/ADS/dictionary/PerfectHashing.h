@@ -9,22 +9,27 @@
  * worst case, as the table with direct access [see DirectTable.h], but in
  * O( n ) space instead of the size of the universe.
  *
- * - PerfectHashTable is the two-level scheme of Fredman, Komlós and
- *   Szemerédi: the n keys are hashed into n lists by a function h of the
- *   class of Carter and Wegman [see CarterWegmanHash], drawn again until
- *   \f$ L = \sum_j n_j^2 < 2 n \f$, \f$ n_j \f$ being the keys of the list
- *   j (the expected L is below 2 n, since \f$ \sum_j \binom{n_j}{2} \f$
- *   counts the collisions of h); the list j becomes a table of \f$ n_j^2
- *   \f$ places with a function \f$ h_j \f$ of its own, drawn again until it
- *   has no collision, which happens with probability at least 1 / 2 since
- *   the expected collisions of \f$ n_j \f$ keys in \f$ n_j^2 \f$ places are
- *   below 1 / 2. A search computes h and \f$ h_j \f$ and compares one key:
- *   two accesses in the worst case, \f$ O( n ) \f$ expected time to build,
- *   below 3 n places in all. Its dynamic version, by Dietzfelbinger et al.,
- *   also inserts and removes in O( 1 ) amortized expected time; the
- *   compressed schemes of today (CHD of Belazzougui, Botelho and
- *   Dietzfelbinger, RecSplit of Esposito, Mueller Graf and Vigna) need
- *   about 2 and 1.6 bits per key instead of words.
+ * - `PerfectHashTable` is the two-level scheme of Fredman, Komlós and
+ *   Szemerédi: the \f$ n \f$ keys are hashed into \f$ n \f$ lists by a
+ *   function \f$ h \f$ of the class of Carter and Wegman [see
+ *   `CarterWegmanHash`], drawn again until \f$ L = \sum_j n_j^2 < 4 n \f$,
+ *   \f$ n_j \f$ being the keys of the list \f$ j \f$ (the expected \f$ L \f$
+ *   is below \f$ 2 n \f$, since \f$ \sum_j \binom{n_j}{2} \f$ counts the
+ *   collisions of \f$ h \f$, so that by the inequality of Markov on
+ *   \f$ L - n \ge 0 \f$, of expectation below \f$ n \f$, \f$ L \ge 4 n \f$
+ *   with probability below \f$ 1 / 3 \f$ and \f$ h \f$ is drawn fewer than
+ *   \f$ 3 / 2 \f$ times on average); the list \f$ j \f$ becomes a table of
+ *   \f$ n_j^2 \f$ places with a function \f$ h_j \f$ of its own, drawn again
+ *   until it has no collision, which happens with probability at least
+ *   \f$ 1 / 2 \f$ since the expected collisions of \f$ n_j \f$ keys in
+ *   \f$ n_j^2 \f$ places are below \f$ 1 / 2 \f$. A search computes
+ *   \f$ h \f$ and \f$ h_j \f$ and compares one key: two accesses in the worst
+ *   case, \f$ O( n ) \f$ expected time to build, below \f$ 5 n \f$ places in
+ *   all. Its dynamic version, by Dietzfelbinger et al., also inserts and
+ *   removes in \f$ O( 1 ) \f$ amortized expected time; the compressed
+ *   schemes of today (CHD of Belazzougui, Botelho and Dietzfelbinger,
+ *   RecSplit of Esposito, Mueller Graf and Vigna) need about 2 and 1.6 bits
+ *   per key instead of words.
  * - OrderedMinimalPerfectHash is the scheme of Czech, Havas and Majewski: r
  *   = 2 functions map each key t to the edge \f$ ( h_1( t ) , h_2( t ) )
  *   \f$ of a random graph of \f$ m' = c n \f$ vertices, labelled by the
@@ -132,9 +137,13 @@ class PerfectHashTable {
 
  using Key = std::uint64_t;   ///< the type of the keys
 
- /// the table of the keys of S
+ /// the table of the keys of S; the first level is drawn until
+ /// \f$ \sum_j n_j^2 < 4 n \f$, which by the inequality of Markov on
+ /// \f$ \sum_j n_j^2 - n \ge 0 \f$, of expectation below \f$ n \f$, happens
+ /// with probability above \f$ 2 / 3 \f$ (a threshold of \f$ 2 n \f$ would
+ /// guarantee only \f$ 1 / n \f$)
  /// \pre the keys are distinct (an audit) and below 2^61 - 1
- /// \post each key of S is there (an audit), and sum_j n_j^2 < 2 n
+ /// \post each key of S is there (an audit), and sum_j n_j^2 < 4 n
  explicit PerfectHashTable( const std::vector< std::uint64_t > & S ,
                             std::uint64_t seed = 1 );
 

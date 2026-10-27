@@ -455,6 +455,7 @@ taocp  balanced-trees        AVL, B-tree, skip list, treap, splay
 taocp  tries                 trie e Patricia
 taocp  knuth-hashing         hashing coalescente e di Brent
 taocp  bloom-filter          filtro di Bloom
+taocp  bloom-probes          posizioni di una chiave nel filtro di Bloom
 taocp  knuth-sorts           inserzioni, radix exchange, torneo, Ford-Johnson
 taocp  ford-johnson-chain    Ford-Johnson, la catena in un albero dei ranghi
 taocp  external-sort         replacement selection e merge polifase
@@ -465,6 +466,7 @@ taocp  sparse-matrix         liste ortogonali e passo di pivot
 taocp  sparse-pivot          pivot lungo le liste, Algoritmo 2.2.6S
 taocp  bitwise               trucchi sui bit, volume 4A
 taocp  generation            tuple, permutazioni, combinazioni, partizioni
+taocp  generation-visits     visite che fermano o no la generazione
 taocp  random-numbers        generatori congruenziali e test statistici
 taocp  random-ranges         estrazioni limitate da generatori stretti
 taocp  fft                   trasformata veloce di Fourier
@@ -571,6 +573,7 @@ engineered_queues  book-queues-engineered  code del libro senza divisioni
 engineered_queues  spsc-queue-items        coda fra due thread, elementi propri
 engineered_queues  mpsc-queue              coda di molti produttori a corsie
 engineered_queues  event-count             attese con sonno, mai sveglie perse
+engineered_queues  event-count-notifiers   notifiche concorrenti, mai perse
 engineered_queues  work-stealing-deque     deque di Chase e Lev, furti
 engineered_queues  mpmc-queue              coda limitata, molti a molti
 
@@ -592,6 +595,7 @@ heaps  bucket-queue-cells    coda a bucket sulle celle di un vettore
 heaps  sequence-heap         sequence heap di Sanders
 heaps  double-ended-heaps    heap min-max e heap a intervalli
 heaps  dary-heap-bottom-up   heap d-ario con il pop dal basso
+heaps  large-heap-audits     audit degli heap grandi sui soli estremi
 heaps  dial-queue            coda di Dial su una finestra circolare
 heaps  radix-heap            heap radix monotono a cifre di B bit
 heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool
@@ -1703,6 +1707,7 @@ engineered_succinct  tans-coder       tANS di ordine 0, quattro stati
 # the engineered structures of the notes of Ferragina, beyond the book
 engineered_pearls  flat-loser-tree      albero dei perdenti con le chiavi
 engineered_pearls  multiway-merge       fusione a k vie, stabile
+engineered_pearls  multiway-merge-large fusione a k vie, elementi grandi
 engineered_pearls  book-mergesort-selectors mergesort delle note, selettori
 
 # the engineered structures of the graphs, and the algorithms of the book

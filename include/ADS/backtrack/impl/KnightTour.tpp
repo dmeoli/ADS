@@ -53,7 +53,7 @@ inline std::optional< std::vector< std::vector< int > > > knightTour(
   A[ a ][ b ] = 0;
   return( false );
   };
- if( ( n < 1 ) || ! rec( rec , 0 , x , y ) )
+ if( ! rec( rec , 0 , x , y ) )
   return( std::nullopt );
  ADS_AUDIT( ( [ & ] {                     // k and k + 1 a knight move apart
   std::vector< std::pair< int , int > > at( n * n );

@@ -40,9 +40,10 @@ long stackSize( S & s )
  return( n );
  }
 
-/// a pass: the least item rises to the top
+/// a pass: the largest item sinks to the bottom, the smaller ones rise by
+/// one place
 template< Stack S >
-void risePass( S & s )
+void sinkPass( S & s )
 {
  if( s.empty() ) return;
  auto a = s.pop();
@@ -52,7 +53,7 @@ void risePass( S & s )
   }
  auto b = s.pop();
  s.push( a < b ? b : a );
- risePass( s );
+ sinkPass( s );
  s.push( a < b ? a : b );
  }
 
@@ -80,7 +81,7 @@ template< Stack S >
 void sortStack( S & s )
 {
  const long n = detail::stackSize( s );
- for( long k = n ; k > 0 ; --k ) detail::risePass( s );
+ for( long k = n ; k > 0 ; --k ) detail::sinkPass( s );
  ADS_AUDIT( detail::risingFromTop( detail::stackItems( s ) ) &&
             ( detail::stackSize( s ) == n ) );
  }

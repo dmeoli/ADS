@@ -133,7 +133,10 @@ bool tspCertificate( const std::vector< std::vector< T > > & D , T k ,
 
 /// enTsp(): a tour of length at most k from city 0, the partial tours
 /// longer than k pruned, or nothing
-/// \pre D is square
+/// \pre \f$ D \f$ is square, with no negative distance, which would make
+///      the pruning wrong (a tour may come back below \f$ k \f$); adding
+///      \f$ c \f$ to all the distances and \f$ n c \f$ to \f$ k \f$ keeps
+///      the answer
 /// \post a tour returned passes tspCertificate()
 template< class T >
 std::optional< Nodes > tsp( const std::vector< std::vector< T > > & D , T k );

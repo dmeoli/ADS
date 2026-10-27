@@ -37,6 +37,7 @@
 #include <deque>
 #include <limits>
 #include <random>
+#include <string>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -175,6 +176,17 @@ ADS_TEST( "unique-queue" )
  Z.enqueue( 0.0 );
  Z.enqueue( -0.0 );                       // equal to 0.0
  CHECK( Z.size() == 1 );
+ // the item in the queue enqueued again by reference, a string whose
+ // memory remove() frees before the copy at the back is made from it
+ UniqueQueue< std::string , Duplicate::FORGET_OLD > S;
+ const std::string a( 100 , 'a' ) , b( 100 , 'b' );
+ S.enqueue( a );
+ S.enqueue( b );
+ S.enqueue( S.top() );
+ CHECK( S.size() == 2 && S.dequeue() == b && S.dequeue() == a );
+ S.enqueue( a );
+ S.enqueue( S.top() );                    // the only item
+ CHECK( S.size() == 1 && S.top() == a );
 
  LinkedQueue< int > q , out;
  CHECK_THROWS( extractPositive( q , q ) , contract_violation );

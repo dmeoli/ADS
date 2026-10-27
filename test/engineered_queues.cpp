@@ -476,6 +476,64 @@ ADS_TEST( "event-count" )
   }
  }
 
+// EventCount with one waiter and 8 notifiers at once, which yield between
+// the notifications so that the waiter sleeps often: a notifier late on
+// the copy of the epoch on which the waiter sleeps must not put back the
+// epoch of a waiter that a later notifier withdrew, which would sleep with
+// nobody to wake it, as it is no longer counted, while the others go on
+// notifying; a waiter that makes no progress for 1 s is taken as lost
+// (and woken by a waiter of the test, so that the test ends and fails)
+ADS_TEST( "event-count-notifiers" )
+{
+ EventCount E;
+ std::atomic< long > gen{ 0 } , woken{ 0 };
+ std::atomic< bool > stop{ false } , out{ false };
+ std::thread w( [ & ] {
+  while( ! stop.load() ) {
+   const long seen = gen.load();
+   E.await( [ & ] { return( ( gen.load() > seen ) || stop.load() ); } , 0 );
+   woken.fetch_add( 1 );
+   }
+  out.store( true );
+  } );
+ std::vector< std::thread > T;
+ for( int i = 0 ; i < 8 ; ++i )
+  T.emplace_back( [ & ] {
+   while( ! stop.load() ) {
+    gen.fetch_add( 1 );
+    E.notify();
+    std::this_thread::yield();
+    }
+   } );
+ using Clock = std::chrono::steady_clock;
+ const auto end = Clock::now() + std::chrono::milliseconds( 1500 );
+ auto last = Clock::now();
+ long before = woken.load();
+ bool lost = false;
+ while( ( Clock::now() < end ) && ! lost ) {
+  std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+  const long now = woken.load();
+  if( now != before ) {
+   before = now;
+   last = Clock::now();
+   }
+  else lost = Clock::now() - last > std::chrono::seconds( 1 );
+  }
+ stop.store( true );
+ for( auto & t : T ) t.join();
+ const auto quiet = Clock::now();           // asleep, it must be counted
+ while( ! lost && ! out.load() && ( E.waiters() == 0 ) )
+  lost = Clock::now() - quiet > std::chrono::seconds( 1 );
+ while( ! out.load() ) {                    // a waiter of the test, which
+  const auto k = E.prepareWait();           // the notification withdraws,
+  E.notify();                               // advances the epoch
+  E.cancelWait( k );
+  std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+  }
+ w.join();
+ CHECK( ! lost && E.waiters() == 0 );
+ }
+
 // WorkStealingDeque: the owner alone (LIFO), a thief alone (FIFO), the
 // vector of 2 places doubled many times, the empty deque; 4 thieves that
 // steal while the owner pushes and takes, each item taken exactly once;

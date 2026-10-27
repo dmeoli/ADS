@@ -452,6 +452,9 @@ template< class T >
 std::optional< Nodes > tsp( const std::vector< std::vector< T > > & D , T k )
 {
  ADS_PRE( detail::square( D ) );
+ ADS_PRE( std::all_of( D.begin() , D.end() , []( const auto & r ) {
+  return( std::none_of( r.begin() , r.end() , []( const T & d ) {
+   return( d < T( 0 ) ); } ) ); } ) );
  const auto result = [ & ]( void ) -> std::optional< Nodes > {
   const int n = int( D.size() );
   if( n == 0 )                                      // the empty tour

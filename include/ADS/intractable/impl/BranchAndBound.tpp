@@ -313,6 +313,20 @@ maxWeightClique( const Adjacency & G , const std::vector< long > & w ,
  return( result );
  }
 
+namespace detail {
+
+/// whether the object a has a larger profit per volume than b,
+/// \f$ p_a / v_a > p_b / v_b \f$, by the products \f$ p_a v_b > p_b v_a \f$
+/// on 128 bits, which those of two longs do not overflow
+inline bool denser( const std::vector< long > & p ,
+                    const std::vector< long > & v , int a , int b )
+{
+ return( Int128( p[ a ] ) * Int128( v[ b ] ) >
+         Int128( p[ b ] ) * Int128( v[ a ] ) );
+ }
+
+}  // end( namespace detail )
+
 inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
                                              const std::vector< long > & v ,
                                              long C , long * generated )
@@ -326,7 +340,7 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
   Nodes o( n );
   std::iota( o.begin() , o.end() , 0 );
   std::stable_sort( o.begin() , o.end() , [ & ]( int a , int b ) {
-   return( p[ a ] * v[ b ] > p[ b ] * v[ a ] ); } );
+   return( detail::denser( p , v , a , b ) ); } );
   long best = 0;
   Nodes bestSet , S;
   if( generated ) *generated = 1;
@@ -423,7 +437,7 @@ inline std::pair< long , Nodes > knapsackGreedy(
  Nodes o( n );
  std::iota( o.begin() , o.end() , 0 );
  std::stable_sort( o.begin() , o.end() , [ & ]( int a , int b ) {
-  return( p[ a ] * v[ b ] > p[ b ] * v[ a ] ); } );
+  return( detail::denser( p , v , a , b ) ); } );
  long profit = 0;
  Nodes S;
  for( int i : o )

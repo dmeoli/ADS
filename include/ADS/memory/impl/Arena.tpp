@@ -38,8 +38,14 @@ template< class... Args >
 T * Arena< T , A >::make( Args &&... args )
 {
  if( f_blocks.empty() || ( f_used == f_n ) ) {
-  f_blocks.push_back( std::allocator_traits< A >::allocate( f_alloc ,
-                                                            f_n ) );
+  T * const b = std::allocator_traits< A >::allocate( f_alloc , f_n );
+  try {
+   f_blocks.push_back( b );
+   }
+  catch( ... ) {                            // the block not kept, freed
+   std::allocator_traits< A >::deallocate( f_alloc , b , f_n );
+   throw;
+   }
   f_used = 0;
   }
  T * p = ::new( static_cast< void * >( f_blocks.back() + f_used ) )

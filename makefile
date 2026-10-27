@@ -53,9 +53,10 @@ MPIRUN   ?= mpirun $(if $(shell $(MPICXX) --showme:version 2>/dev/null),\
 test-mpi: | $(BUILD)
 	$(MPICXX) $(CXXFLAGS) $(INC) -DADS_WITH_MPI -o $(BUILD)/engineered_mpi \
 	 test/engineered_mpi.cpp -pthread
-	for np in 1 2 3 4; do \
-	  $(MPIRUN) -np $$np $(BUILD)/engineered_mpi \
-	   distributed-sort || exit 1; \
+	for t in distributed-sort distributed-sort-counts; do \
+	  for np in 1 2 3 4; do \
+	    $(MPIRUN) -np $$np $(BUILD)/engineered_mpi $$t || exit 1; \
+	  done; \
 	done
 
 # each line of tests.txt is a test, and each program must have the tests of

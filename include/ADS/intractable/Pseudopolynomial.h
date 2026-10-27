@@ -75,9 +75,9 @@ namespace ADS {
 /// vector M after each element goes to *rows, if given, the first one
 /// before any; O( n k ) time; M is a vector of Bits, std::vector< bool >
 /// by default, or boost::dynamic_bitset, or BitVector of ADS
-/// [see BitVector.h], with the same cells written
-/// \pre k >= 0 and A is not negative
-/// \post *rows, if given, has n + 1 rows
+/// [see BitVector.h], with the same cells written; false if k < 0
+/// \pre \f$ A \f$ is not negative
+/// \post `*rows`, if given, has \f$ n + 1 \f$ rows (empty if \f$ k < 0 \f$)
 template< class Bits = std::vector< bool > >
 bool subsetSumDP( const std::vector< long > & A , long k ,
                   std::vector< std::vector< bool > > * rows = nullptr );

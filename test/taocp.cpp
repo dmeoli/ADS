@@ -368,6 +368,32 @@ ADS_TEST( "knuth-hashing" )
 
 // the filter of Bloom: no false negative, and false positives near
 // ( 1 - e^( -k n / m ) )^k
+// the places of a key in a filter of Bloom, h_1 + i h_2 mod m: the step
+// of a key with h_2 a multiple of m is not 0, so that on a prime m the
+// k = m places of each key are all distinct and one key sets all the bits
+ADS_TEST( "bloom-probes" )
+{
+ for( std::uint64_t b : { 7 , 21 , 7 * 1000003 } ) {
+  detail::BloomProbe P( 5 , b , 7 );
+  std::vector< bool > seen( 7 , false );
+  for( int i = 0 ; i < 7 ; ++i ) {
+   const std::size_t j = P.next();
+   CHECK( j < 7 && ! seen[ j ] );
+   seen[ j ] = true;
+   }
+  }
+ detail::BloomProbe one( 3 , 5 , 1 );        // a single place
+ CHECK( one.next() == 0 && one.next() == 0 );
+ bool all = true;
+ for( int x = 0 ; x < 300 ; ++x ) {
+  BloomFilter< int > F( 7 , 7 );
+  F.insert( x );
+  for( int y = 1000 ; y < 1020 ; ++y )
+   all = all && F.maybe( y );
+  }
+ CHECK( all );
+ }
+
 ADS_TEST( "bloom-filter" )
 {
  auto F = BloomFilter< int >::forItems( 10000 , 0.01 );
@@ -1045,6 +1071,46 @@ ADS_TEST( "bitwise" )
 // their order, and the Gray property of the Gray orders; a visit that
 // stops at once for each generator, no digit, radices of 1, all equal
 // items or none, and the sizes not allowed
+// the visits of the generators, as in FastGeneration.h: one that returns
+// void visits all the objects, one that returns true stops at the first,
+// also on the single empty object of n = 0 (and of no radices)
+ADS_TEST( "generation-visits" )
+{
+ long seen = 0;
+ auto all = [ & ]( const auto & ) { ++seen; };
+ auto first = [ & ]( const auto & ) { ++seen; return( true ); };
+ const std::vector< int > m = { 2 , 3 } , none;
+ auto both = [ & ]( auto gen , long count ) {
+  seen = 0;
+  CHECK( gen( all ) == count && seen == count );
+  seen = 0;
+  CHECK( gen( first ) == 1 && seen == 1 );
+  };
+ for( int n : { 0 , 1 , 4 } ) {
+  both( [ & ]( auto v ) { return( plainChanges( n , v ) ); } ,
+        n == 4 ? 24 : 1 );
+  both( [ & ]( auto v ) { return( heapPermutations( n , v ) ); } ,
+        n == 4 ? 24 : 1 );
+  both( [ & ]( auto v ) { return( integerPartitions( n , v ) ); } ,
+        n == 4 ? 5 : 1 );
+  both( [ & ]( auto v ) { return( setPartitions( n , v ) ); } ,
+        n == 4 ? 15 : 1 );
+  both( [ & ]( auto v ) { return( nestedParentheses( n , v ) ); } ,
+        n == 4 ? 14 : 1 );
+  both( [ & ]( auto v ) { return( combinationsLex( n , n / 2 , v ) ); } ,
+        n == 4 ? 6 : 1 );
+  both( [ & ]( auto v ) { return( revolvingDoor( n , n / 2 , v ) ); } ,
+        n == 4 ? 6 : 1 );
+  }
+ for( const auto & r : { m , none } ) {
+  const long count = r.empty() ? 1 : 6;
+  both( [ & ]( auto v ) { return( mixedRadix( r , v ) ); } , count );
+  both( [ & ]( auto v ) { return( grayTuples( r , v ) ); } , count );
+  }
+ both( [ & ]( auto v ) { return( permutationsLex( { 1 , 1 , 2 } , v ) ); } ,
+       3 );
+ }
+
 ADS_TEST( "generation" )
 {
  auto collect = []( auto gen ) {

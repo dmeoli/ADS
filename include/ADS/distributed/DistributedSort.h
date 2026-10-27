@@ -84,9 +84,9 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <climits>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -100,7 +100,10 @@ namespace ADS::distributed {
 
 /// the items of A of all the processes of comm sorted by less, the
 /// threads of ex sorting and merging within each process: afterwards A
-/// holds the part of the process, the parts in the order of the ranks
+/// holds the part of the process, the parts in the order of the ranks; it
+/// throws std::length_error, in every process, if the bytes of a piece or
+/// of the pieces a process receives exceed the counts of MPI (those of int
+/// before MPI 4, whose MPI_Alltoallv_c counts them in 64 bits)
 /// \post A is sorted (an audit)
 template< Executor E , class T , class C = std::less<> >
 void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less = C() );
@@ -125,6 +128,38 @@ inline void check( int code , const char * what )
                              what ) );
  }
 
+// the counts and the displacements of the bytes in MPI_Alltoallv: those of
+// MPI_Alltoallv_c, of 64 bits, with MPI 4, else those of int
+#if defined( MPI_VERSION ) && ( MPI_VERSION >= 4 )
+ #define ADS_MPI_LARGE_COUNTS
+using Count = MPI_Count;
+using Displacement = MPI_Aint;
+#else
+using Count = int;
+using Displacement = int;
+#endif
+
+/// the type of MPI of Count
+inline MPI_Datatype countType( void )
+{
+#ifdef ADS_MPI_LARGE_COUNTS
+ return( MPI_COUNT );
+#else
+ return( MPI_INT );
+#endif
+ }
+
+/// b bytes as a count or a displacement of type N of MPI, or 0 and ok
+/// false if they do not fit in it
+template< class N >
+N fits( std::size_t b , bool & ok )
+{
+ if( b <= std::size_t( std::numeric_limits< N >::max() ) )
+  return( N( b ) );
+ ok = false;
+ return( N( 0 ) );
+ }
+
 }  // end( namespace detail )
 
 template< Executor E , class T , class C >
@@ -142,14 +177,18 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
  const std::size_t n = A.size() , p = std::size_t( P );
  // P - 1 regular samples of each process, and a flag for an empty one
  std::vector< T > mine( p - 1 );
- std::vector< int > has( p ) , counts( p ) , got( p );
+ std::vector< int > has( p );
  const int full = n > 0;
  for( std::size_t j = 0 ; j + 1 < p && n ; ++j )
   mine[ j ] = A[ ( j + 1 ) * n / p ];
  check( MPI_Allgather( &full , 1 , MPI_INT , has.data() , 1 , MPI_INT ,
                        comm ) , "MPI_Allgather" );
  std::vector< T > all( p * ( p - 1 ) );
- const int bytes = int( ( p - 1 ) * sizeof( T ) );
+ bool ok = true;                            // all the bytes fit in MPI
+ const int bytes = detail::fits< int >( ( p - 1 ) * sizeof( T ) , ok );
+ if( ! ok )                                 // the same in every process
+  throw( std::length_error( "ADS::distributed::sort: samples of more "
+                            "bytes than MPI counts" ) );
  check( MPI_Allgather( mine.data() , bytes , MPI_BYTE , all.data() , bytes ,
                        MPI_BYTE , comm ) , "MPI_Allgather" );
  std::vector< T > S;                       // the samples of the full ones
@@ -186,34 +225,46 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
   }
  for( std::size_t j = 1 ; j <= p ; ++j )
   cut[ j ] = std::max( cut[ j ] , cut[ j - 1 ] );
- for( std::size_t j = 0 ; j < p ; ++j ) {
-  const std::size_t b = ( cut[ j + 1 ] - cut[ j ] ) * sizeof( T );
-  if( b > std::size_t( INT_MAX ) )
-   throw( std::length_error( "ADS::distributed::sort: a piece of more "
-                             "than 2^31 bytes" ) );
-  counts[ j ] = int( b );
-  }
- check( MPI_Alltoall( counts.data() , 1 , MPI_INT , got.data() , 1 ,
-                      MPI_INT , comm ) , "MPI_Alltoall" );
- std::vector< int > sd( p , 0 ) , rd( p , 0 );
+ using detail::Count;
+ using detail::Displacement;
+ using detail::fits;
+ std::vector< Count > counts( p ) , got( p );
+ for( std::size_t j = 0 ; j < p ; ++j )
+  counts[ j ] = fits< Count >( ( cut[ j + 1 ] - cut[ j ] ) * sizeof( T ) ,
+                               ok );
+ check( MPI_Alltoall( counts.data() , 1 , detail::countType() , got.data() ,
+                      1 , detail::countType() , comm ) , "MPI_Alltoall" );
+ std::vector< Displacement > sd( p , 0 ) , rd( p , 0 );
  std::size_t total = 0;
  for( std::size_t j = 0 ; j < p ; ++j ) {
-  sd[ j ] = int( cut[ j ] * sizeof( T ) );
-  rd[ j ] = int( total );
+  sd[ j ] = fits< Displacement >( cut[ j ] * sizeof( T ) , ok );
+  rd[ j ] = fits< Displacement >( total , ok );
   total += std::size_t( got[ j ] );
-  if( total > std::size_t( INT_MAX ) )
-   throw( std::length_error( "ADS::distributed::sort: more than 2^31 "
-                             "bytes to receive" ) );
   }
+ // a process whose bytes do not fit stops all of them, which would
+ // otherwise wait for it in the exchange
+ int fit = ok;
+ check( MPI_Allreduce( MPI_IN_PLACE , &fit , 1 , MPI_INT , MPI_MIN , comm ) ,
+        "MPI_Allreduce" );
+ if( ! fit )
+  throw( std::length_error( "ADS::distributed::sort: pieces of more bytes "
+                            "than MPI counts" ) );
  std::vector< T > R( total / sizeof( T ) );
+#ifdef ADS_MPI_LARGE_COUNTS
+ check( MPI_Alltoallv_c( A.data() , counts.data() , sd.data() , MPI_BYTE ,
+                         R.data() , got.data() , rd.data() , MPI_BYTE ,
+                         comm ) , "MPI_Alltoallv_c" );
+#else
  check( MPI_Alltoallv( A.data() , counts.data() , sd.data() , MPI_BYTE ,
                        R.data() , got.data() , rd.data() , MPI_BYTE ,
                        comm ) , "MPI_Alltoallv" );
+#endif
  // the P sorted pieces received, merged
  std::vector< std::pair< const T * , const T * > > runs;
  for( std::size_t j = 0 ; j < p ; ++j )
-  runs.emplace_back( R.data() + rd[ j ] / int( sizeof( T ) ) ,
-                     R.data() + ( rd[ j ] + got[ j ] ) / int( sizeof( T ) ) );
+  runs.emplace_back( R.data() + std::size_t( rd[ j ] ) / sizeof( T ) ,
+                     R.data() + ( std::size_t( rd[ j ] ) +
+                                  std::size_t( got[ j ] ) ) / sizeof( T ) );
  A.resize( R.size() );
  ADS::multiwayMerge( ex , runs , A.begin() , less );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() , less ) );

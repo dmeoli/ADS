@@ -69,6 +69,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/complexity/Problems.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/intractable/Approximation.h"

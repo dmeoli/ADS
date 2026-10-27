@@ -182,6 +182,7 @@ ADS_TEST( "universal-classes" )
  const StringHash s( 3 );
  const std::string z( 1 , '\0' ) , az = std::string( "a" ) + z;
  CHECK( s( "" ) != s( z ) && s( "a" ) != s( az ) && s( "ab" ) == s( "ab" ) );
+ CHECK( s( z ) == 1 && s( z + z ) != s( z ) && s( z + z ) != s( z + z + z ) );
  CHECK( s( "" ) == 0 && s( std::string( 1000 , '\xff' ) ) < P );
 
  CHECK( mulMod( 0 , 0 , 1 ) == 0 && mulMod61( 0 , P - 1 ) == 0 &&
@@ -354,12 +355,12 @@ ADS_TEST( "fks-example" )
  CHECK( h( 8 ) == 3 && h3( 8 ) == 2 );          // finds 98, so 8 is not in S
  const PerfectHashTable F( S );
  for( const auto k : S ) CHECK( F.contains( k ) );
- CHECK( ! F.contains( 8 ) && F.size() == 9 && F.space() < 18 );
+ CHECK( ! F.contains( 8 ) && F.size() == 9 && F.space() < 36 );
  }
 
 // the two-level perfect hashing against std::set on random sets, with the
 // extremes of the universe and consecutive keys; its keys by the
-// iterators, and fewer than 2 n places in the second level
+// iterators, and fewer than 4 n places in the second level
 ADS_TEST( "fks-table" )
 {
  std::mt19937_64 g( 5 );
@@ -373,7 +374,7 @@ ADS_TEST( "fks-table" )
   const std::set< std::uint64_t > R( S.begin() , S.end() );
   const PerfectHashTable T( S , n + 3 );
   CHECK( T.size() == R.size() );
-  CHECK( ( n == 0 ) || ( T.space() < 2 * n ) );
+  CHECK( ( n == 0 ) || ( T.space() < 4 * n ) );
   CHECK( T.trials() <= 3 * n + 20 );
   for( const auto k : S ) CHECK( T.contains( k ) );
   for( int i = 0 ; i < 10000 ; ++i ) {

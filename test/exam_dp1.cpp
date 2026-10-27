@@ -1850,7 +1850,7 @@ ADS_TEST( "dp-17" )
  CHECK( subsetSumDP( { 7 } , 7 ) && ! subsetSumDP( { 7 } , 14 ) );
  CHECK( subsetSumDP( { 3 , 34 , 4 , 12 , 5 , 2 } , 60 ) );
  CHECK( ! subsetSumDP( { 3 , 34 , 4 , 12 , 5 , 2 } , 61 ) );
- CHECK_THROWS( subsetSumDP( { 1 } , -1 ) , contract_violation );
+ CHECK( ! subsetSumDP( { 1 } , -1 ) );
  CHECK_THROWS( subsetSumDP( { 2 , -1 } , 1 ) , contract_violation );
  }
 

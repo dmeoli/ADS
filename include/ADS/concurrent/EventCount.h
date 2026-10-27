@@ -206,7 +206,7 @@ class EventCount {
    if( f_state.compare_exchange_weak( v , ( ( v >> 32 ) + 1 ) << 32 ,
                                       std::memory_order_acq_rel ,
                                       std::memory_order_relaxed ) ) {
-    f_epoch.store( Key( ( v >> 32 ) + 1 ) , std::memory_order_release );
+    raiseEpoch( Key( ( v >> 32 ) + 1 ) );
     f_epoch.notify_all();
     return;
     }
@@ -254,6 +254,26 @@ class EventCount {
 #elif defined( __aarch64__ )
   asm volatile( "yield" );
 #endif
+  }
+
+ /// the copy of the epoch raised to e, never lowered: two notifiers that
+ /// advanced the epoch of f_state to e - 1 and e may reach f_epoch in the
+ /// other order, and a store of e - 1 after e would put back the epoch of
+ /// a waiter that the second one withdrew, which would then sleep with
+ /// the condition true and nobody to wake it. The epochs are compared
+ /// modulo \f$ 2^{32} \f$, as the keys are, e being ahead of the copy c
+ /// when \f$ 0 < ( e - c ) \bmod 2^{32} < 2^{31} \f$. Each change is a
+ /// read-modify-write with release: a waiter that reads e with an acquire
+ /// synchronizes with the notifier that wrote it, or with a later one in
+ /// its release sequence, and that notifier read the epochs before e in
+ /// f_state by acquire, after the notifiers that advanced them made their
+ /// conditions true.
+ void raiseEpoch( Key e ) noexcept {
+  Key c = f_epoch.load( std::memory_order_relaxed );
+  while( ( std::int32_t( e - c ) > 0 ) &&
+         ! f_epoch.compare_exchange_weak( c , e ,
+                                          std::memory_order_release ,
+                                          std::memory_order_relaxed ) ) {}
   }
 
  static constexpr std::uint64_t waiterMask = 0xFFFFFFFFu;

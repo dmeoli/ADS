@@ -31,8 +31,11 @@ void UniqueQueue< T , D >::enqueue( const T & v )
    ADS_INVARIANT( unique() );
    return;
    }
-  f_L.remove( p );
-  --f_size;
+  const T w = v;                            // v may be the copy that
+  f_L.remove( p );                          // remove() destroys, as in
+  --f_size;                                 // enqueue( top() )
+  enqueue( w );
+  return;
   }
  f_L.insert( f_L.next( f_L.tail() ) , v );
  ++f_size;

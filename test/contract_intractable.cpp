@@ -31,6 +31,7 @@
 #include "ADS/intractable/Heuristics.h"
 #include "ADS/intractable/Pseudopolynomial.h"
 
+#include <limits>
 #include <random>
 #include <string>
 #include <utility>
@@ -78,7 +79,11 @@ const Matrix skew = { { 0 , 1 } , { 2 , 0 } };
 // subset sum, partition, scheduling, McNaughton and the three thieves
 ADS_TEST( "pseudopolynomial" )
 {
- CHECK_THROWS( subsetSumDP( { 1 , 2 } , -1 ) , contract_violation );
+ std::vector< std::vector< bool > > none;   // no subset sums to k < 0,
+ CHECK( ! subsetSumDP( { 1 , 2 } , -1 , &none ) );   // and no cell for it
+ CHECK( none.size() == 3 && none[ 0 ].empty() && none[ 2 ].empty() );
+ CHECK( ! subsetSumDP( {} , std::numeric_limits< long >::min() ) );
+ CHECK( ! subsetSumSet( { 1 , 2 } , -1 ) );
  CHECK_THROWS( subsetSumDP( { -1 } , 2 ) , contract_violation );
  CHECK_THROWS( subsetSumSet( { -1 } , 2 ) , contract_violation );
  CHECK_THROWS( partitionDP( { -1 , 1 } ) , contract_violation );

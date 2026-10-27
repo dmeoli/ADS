@@ -2,11 +2,12 @@
 /*--------------------------- File Generation.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The generation of the basic combinatorial objects of Knuth (7.2.1),
- * beyond the book [see Enumeration.h for the enumerations by backtrack of
- * chapter 16]: each function calls visit() on every object, in a given
- * order, and returns their number; a visit that returns true stops the
- * generation.
+ * The generation of the basic combinatorial objects of Knuth (section 7.2.1 of
+ * The Art of Computer Programming), beyond the book [see `Enumeration.h` for
+ * the enumerations by backtrack of chapter 16]: each function calls `visit()`
+ * on every object, in a given order, and returns their number; a visit that
+ * returns true stops the generation, and one that returns `void` never does
+ * (as in `FastGeneration.h`).
  *
  * - mixedRadix() (Algorithm 7.2.1.1M) the n-tuples with
  *   \f$ 0 \leq a_j < m_j \f$ in lexicographic order, and grayTuples()
@@ -68,6 +69,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/

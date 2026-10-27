@@ -21,11 +21,16 @@ namespace detail {
 
 /// the places h_1 + i h_2 mod m , i = 0 , 1 , ... of the two hashes a and
 /// b, each from the one before by an addition and a subtraction, with no
-/// remainder past the first two
+/// remainder past the first two; a step h_2 = 0, which would make all the
+/// places one, is 1 instead (b is odd, so that on m a power of 2 the step
+/// is odd and the first m places are distinct)
 class BloomProbe {
  public:
  BloomProbe( std::uint64_t a , std::uint64_t b , std::uint64_t m )
-  : f_j( a % m ) , f_d( b % m ) , f_m( m ) {}
+  : f_j( a % m ) , f_d( b % m ) , f_m( m ) {
+  if( f_d == 0 )
+   f_d = 1;
+  }
 
  /// the place i, then the step to the place i + 1
  std::size_t next( void ) {

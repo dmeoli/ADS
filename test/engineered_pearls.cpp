@@ -222,6 +222,53 @@ ADS_TEST( "multiway-merge" )
                contract_violation );
  }
 
+// multiwayMerge() into a contiguous output, by the funnel of binary
+// mergers beyond 4 sources: items of 8 KiB, more than its buffer of 4 KiB
+// holds, which must hold one at least, and items of 40 bytes, on 5 to 40
+// sources of random lengths, against the stable sort
+ADS_TEST( "multiway-merge-large" )
+{
+ struct Big {
+  std::int64_t key;
+  std::size_t from;
+  char pad[ 8192 - 16 ];
+  };
+ auto less = []( const Big & a , const Big & b ) { return( a.key < b.key ); };
+ std::mt19937_64 g( 13 );
+ for( const std::size_t k : { 5 , 6 , 17 , 40 } ) {
+  std::vector< std::vector< Big > > V( k );
+  for( std::size_t s = 0 ; s < k ; ++s ) {
+   V[ s ].resize( 1 + g() % 9 );
+   for( auto & b : V[ s ] ) b = Big{ std::int64_t( g() % 7 ) , s , {} };
+   std::stable_sort( V[ s ].begin() , V[ s ].end() , less );
+   }
+  std::vector< Big > all;
+  for( const auto & v : V ) all.insert( all.end() , v.begin() , v.end() );
+  std::stable_sort( all.begin() , all.end() , less );
+  std::vector< Big > out( all.size() , Big{ -1 , 0 , {} } );
+  const auto end = multiwayMerge( rangesOf( V ) , out.begin() , less );
+  CHECK( end == out.end() );
+  for( std::size_t i = 0 ; i < all.size() ; ++i )
+   CHECK( ( out[ i ].key == all[ i ].key ) &&
+          ( out[ i ].from == all[ i ].from ) );
+  std::vector< std::vector< Rec > > W( k );
+  for( std::size_t s = 0 ; s < k ; ++s ) {
+   W[ s ].resize( g() % 300 );
+   for( auto & r : W[ s ] ) r = Rec{ std::int64_t( g() % 50 ) , s , {} };
+   std::stable_sort( W[ s ].begin() , W[ s ].end() , RecLess() );
+   }
+  std::vector< Rec > rall;
+  for( const auto & w : W ) rall.insert( rall.end() , w.begin() , w.end() );
+  std::stable_sort( rall.begin() , rall.end() , RecLess() );
+  std::vector< Rec > rout( rall.size() );
+  CHECK( multiwayMerge( rangesOf( W ) , rout.begin() , RecLess() ) ==
+         rout.end() );
+  for( std::size_t i = 0 ; i < rall.size() ; ++i )
+   CHECK( ( rout[ i ].key == rall[ i ].key ) &&
+          ( rout[ i ].from == rall[ i ].from ) );
+  }
+ }
+
 // multiwayMergeSort() of the notes with the selector of its merge given:
 // the tree of losers of the notes and a heap of the standard library give
 // the same output and the same I/Os, on random keys with duplicates and

@@ -150,6 +150,16 @@ inline void IndexedDaryHeap< K , D >::down( std::size_t i , Entry x )
 template< class K , unsigned D >
 bool IndexedDaryHeap< K , D >::ordered( void ) const
 {
+ const std::size_t n = f_A.size();
+ if( n > 1024 ) {                           // the root and the last item
+  for( std::size_t i : { std::size_t( 0 ) , n - 1 } )
+   if( f_pos[ f_A[ i ].id ] != int( i ) )
+    return( false );
+  for( std::size_t i = 1 ; ( i <= D ) && ( i < n ) ; ++i )
+   if( f_A[ i ].key < f_A[ 0 ].key )
+    return( false );
+  return( !( f_A[ n - 1 ].key < f_A[ ( n - 2 ) / D ].key ) );
+  }
  for( std::size_t i = 0 ; i < f_A.size() ; ++i )
   if( ( f_pos[ f_A[ i ].id ] != int( i ) ) ||
       ( ( i > 0 ) && ( f_A[ i ].key < f_A[ ( i - 1 ) / D ].key ) ) )

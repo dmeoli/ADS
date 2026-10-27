@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <vector>
 
@@ -118,6 +119,32 @@ ADS_TEST( "distributed-sort" )
     CHECK( ka == kb );
     }
    }
+ }
+
+// the bytes of a process past the counts of int of MPI: a piece, a
+// displacement or the bytes received beyond INT_MAX do not fit unless the
+// counts are those of 64 bits of MPI 4, and then sort() stops in every
+// process instead of passing MPI a number wrapped around
+ADS_TEST( "distributed-sort-counts" )
+{
+ using distributed::detail::fits;
+ const std::size_t top = std::size_t( std::numeric_limits< int >::max() );
+ bool ok = true;
+ CHECK( fits< int >( 0 , ok ) == 0 && ok );
+ CHECK( fits< int >( top , ok ) == std::numeric_limits< int >::max() && ok );
+ CHECK( fits< int >( top + 1 , ok ) == 0 && ! ok );
+ ok = true;
+ CHECK( fits< int >( std::size_t( 3 ) << 31 , ok ) == 0 && ! ok );
+ ok = true;
+ using Count = distributed::detail::Count;
+ using Displacement = distributed::detail::Displacement;
+ const bool large = sizeof( Count ) >= 8;
+ CHECK( large == ( sizeof( Displacement ) >= 8 ) );
+ const auto c = fits< Count >( top + 1 , ok );
+ const auto d = fits< Displacement >( top + 1 , ok );
+ CHECK( ok == large );
+ CHECK( large ? ( std::size_t( c ) == top + 1 &&
+                  std::size_t( d ) == top + 1 ) : ( c == 0 && d == 0 ) );
  }
 
 /*--------------------------------------------------------------------------*/

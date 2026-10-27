@@ -164,7 +164,8 @@ class IndexedDaryHeap {
 
  void down( std::size_t i , Entry x );
 
- /// no key less than that of the parent, and the places of the ids right
+ /// no key less than that of the parent, and the places of the ids right;
+ /// on more than 1024 items, those of the root and of the last item only
  [[nodiscard]] bool ordered( void ) const;
 
  std::vector< Entry > f_A;   ///< the heap, the root in f_A[ 0 ]

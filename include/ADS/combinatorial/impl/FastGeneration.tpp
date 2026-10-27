@@ -16,22 +16,6 @@
 
 namespace ADS {
 
-namespace detail {
-
-/// visit( x ), true if it asks to stop; never if it returns void
-template< class F , class X >
-inline bool visitStops( F & visit , const X & x )
-{
- if constexpr( std::is_void_v< std::invoke_result_t< F & , const X & > > ) {
-  visit( x );
-  return( false );
-  }
- else
-  return( bool( visit( x ) ) );
- }
-
-}  // end( namespace detail )
-
 template< class T , class F >
 long forEachPermutation( std::vector< T > & a , F && visit )
 {

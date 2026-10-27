@@ -182,7 +182,7 @@ ADS_TEST( "sec19.1.subset-sum" )
  CHECK( *subsetSumSet( { 3 , 3 , 3 } , 9 ) == Nodes( { 0 , 1 , 2 } ) );
  CHECK( ! subsetSumSet( { 3 , 3 , 3 } , 10 ) );
  CHECK( ! subsetSumDP( { 3 , 3 } , 4 ) );
- CHECK_THROWS( subsetSumDP( { 1 } , -1 ) , contract_violation );
+ CHECK( ! subsetSumDP( { 1 } , -1 ) );           // no subset sums below 0
  CHECK_THROWS( subsetSumDP( { -1 } , 1 ) , contract_violation );
  CHECK_THROWS( subsetSumSet( { -1 } , 1 ) , contract_violation );
  std::vector< std::vector< bool > > rows;
