@@ -9,7 +9,8 @@
 # operations of the trees by join under ThreadSanitizer, FlatHashTable on its #
 # broadword fallback and fft() on the lanes of AVX, on arrays of doubles and  #
 # on the intrinsics of x86 that MSVC takes; it measures the coverage of the   #
-# tests and sends it to Coveralls.                                            #
+# tests, run four at a time and with the cases there for their scale alone    #
+# made smaller, and sends it to Coveralls.                                    #
 ###############################################################################
 
 name: CI
@@ -178,15 +179,25 @@ jobs:
           for t in $(./fft -l); do ./fft $t; done
 
   coverage:
+    # the programs built and the tests run four at a time, the longest
+    # tests first (gcov merges the counters of the processes of one program
+    # under a lock), the cases there for their scale alone made smaller by
+    # ADS_TEST_SMALL [see ADSTest.h]; the list against the programs is
+    # checked by the other jobs
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: the tests with the coverage of gcov
         run: |
           sudo apt-get update
           sudo apt-get install -y lcov
-          make test BUILD=build-cov \
-               CXXFLAGS="-std=c++20 -O0 -g --coverage -Wall -Wextra"
+          make -j4 BUILD=build-cov CXXFLAGS="-std=c++20 -O0 -g --coverage \
+               -Wall -Wextra -DADS_TEST_SMALL"
+          awk '/^[a-z]/{print $1, $2}' test/tests.txt > tests
+          grep -E ' (big-integer-(pool|gmp)|.*parallel-sort)$' tests > first
+          { cat first; grep -vxFf first tests; } |
+            xargs -P 4 -n 2 sh -c 'build-cov/$0 $1'
           lcov --capture --directory build-cov --output-file lcov.info \
                --ignore-errors mismatch,inconsistent,unused
           lcov --extract lcov.info "$PWD/include/*" \

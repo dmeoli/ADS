@@ -273,7 +273,9 @@ ADS_TEST( "table19.1.circuits" )
  T.insertEdge( 3 , 0 );                          // cycle of 8 edges
  const auto e8 = eulerianCycle( T );
  CHECK( e8 && e8->size() == 9 && isEulerianCycle( T , *e8 ) );
- const int m = 100000;                           // a cycle of 10^5 nodes
+ // a cycle of 10^5 nodes (10^3 in the build of the coverage: each merge
+ // of MFSet audits the whole forest)
+ const int m = ADS::test::scaled( 100000 , 1000 );
  ListGraph< int > R( m );
  for( int u = 0 ; u < m ; ++u ) R.insertEdge( u , ( u + 1 ) % m );
  const auto er = eulerianCycle( R );

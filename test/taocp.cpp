@@ -1942,6 +1942,18 @@ BigInteger digits( std::size_t n , std::mt19937_64 & g , bool ones = false ,
  return( fromLimbs( d ) );
  }
 
+/// a number of \f$ n \f$ digits as digits() makes it, but by halves joined
+/// by a product, since the audit of the conversion from hexadecimal takes
+/// \f$ \Theta( n^2 ) \f$ time
+BigInteger wideDigits( std::size_t n , std::mt19937_64 & g ,
+                       bool ones = false , std::uint64_t top = 0 )
+{
+ if( n <= 512 ) return( digits( n , g , ones , top ) );
+ const std::size_t h = n / 2;
+ return( wideDigits( n - h , g , ones , top ) * BigInteger::pow( 2 , 64 * h )
+         + wideDigits( h , g , ones , 0 ) );
+ }
+
 /// the product of two numbers given by their digits, the most significant
 /// first, by the rows of the school on words of 128 bits, apart from the
 /// code of BigInteger
@@ -2497,18 +2509,22 @@ ADS_TEST( "big-integer-gcd" )
 // by the thread itself at its end
 ADS_TEST( "big-integer-pool" )
 {
+ // the first round on empty bins, the others on those the previous one
+ // left (2 rounds in the build of the coverage, where the products and
+ // the quotients of 2^16 digits take minutes)
  std::mt19937_64 g( 29 );
- for( int round = 0 ; round < 3 ; ++round )
+ const int rounds = ADS::test::scaled( 3 , 2 );
+ for( int round = 0 ; round < rounds ; ++round )
   for( std::size_t n : { 3 , 4 , 5 , 31 , 32 , 33 , 2047 , 2048 , 2049 ,
                          32767 , 32768 , 32769 , 65536 , 65537 } ) {
    std::vector< BigInteger > v;
-   for( int i = 0 ; i < 12 ; ++i ) v.push_back( digits( n , g ) );
+   for( int i = 0 ; i < 12 ; ++i ) v.push_back( wideDigits( n , g ) );
    const BigInteger s = std::accumulate( v.begin() , v.end() ,
                                          BigInteger( 0 ) );
    BigInteger t = 0;
    for( const BigInteger & x : v ) t -= x;
    v.clear();                               // 12 freed, 8 or 2 kept
-   const BigInteger a = digits( n , g ) , b = digits( n + 1 , g );
+   const BigInteger a = wideDigits( n , g ) , b = wideDigits( n + 1 , g );
    CHECK( s + t == 0 && ( a + b ) - b == a && ( a * b ) / b == a );
    }
  std::vector< BigInteger > out( 4 );
@@ -2561,15 +2577,8 @@ ADS_TEST( "big-integer-gmp" )
   return( v );
   };
  const std::uint64_t clear = std::uint64_t( 1 ) << 62;   // top bit 0
- // a number of n digits as digits() makes it, but by halves joined by a
- // product, since the audit of the conversion from hexadecimal takes
- // quadratic time
- std::function< B( std::size_t , bool , std::uint64_t ) > wide =
-  [ & ]( std::size_t n , bool ones , std::uint64_t top ) {
-  if( n <= 512 ) return( digits( n , g , ones , top ) );
-  const std::size_t h = n / 2;
-  return( wide( n - h , ones , top ) * B::pow( 2 , 64 * h ) +
-          wide( h , ones , 0 ) );
+ auto wide = [ & ]( std::size_t n , bool ones , std::uint64_t top ) {
+  return( wideDigits( n , g , ones , top ) );
   };
  for( std::size_t n : around( { B::kGmpMul , B::kKaratsuba , B::kFFT ,
                                 B::kGmpMulLongTop , B::kGmpMulTop ,

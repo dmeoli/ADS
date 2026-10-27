@@ -1550,13 +1550,15 @@ ADS_TEST( "graph-40" )
  CHECK( ( one.m() == 0 ) && ( none.m() == 4 ) && connected( none ) );
  for( int u = 1 ; u < 5 ; ++u )
   CHECK( none.hasEdge( 0 , u ) );
- // a tree already: nothing added; 10^5 isolated nodes
+ // a tree already: nothing added; 10^5 isolated nodes (10^3 in the build
+ // of the coverage: each edge to 0 is audited on the list of 0)
  auto tree = make( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
  graph::repairTreeInsert( tree );
  CHECK( tree.m() == 2 );
- ListGraph<> many( 100000 , false );
+ const int N = ADS::test::scaled( 100000 , 1000 );
+ ListGraph<> many( N , false );
  graph::repairTreeInsert( many );
- CHECK( ( many.m() == 99999 ) && connected( many ) );
+ CHECK( ( many.m() == N - 1 ) && connected( many ) );
  // the contracts: g unoriented, nodes 0 , ... , n - 1, n > 0
  ListGraph<> o( 2 , true ) , empty( 0 , false );
  CHECK_THROWS( graph::repairTreeInsert( o ) , contract_violation );

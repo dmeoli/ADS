@@ -57,6 +57,21 @@ struct Register {
   }
  };
 
+/// the size of a case that is there for its scale alone: \f$ n \f$, or
+/// small when ADS_TEST_SMALL is defined, as in the build of the coverage,
+/// where a case whose audits take \f$ \Theta( n^2 ) \f$ runs for an hour
+/// at -O0 with the counters of gcov; the same steps, fewer of them, never
+/// a path left out
+template< class T >
+constexpr T scaled( [[maybe_unused]] T n , [[maybe_unused]] T small )
+{
+#ifdef ADS_TEST_SMALL
+ return( small );
+#else
+ return( n );
+#endif
+ }
+
 /// runs the test named argv[ 1 ], or all of them; -l lists them
 inline int main( int argc , char ** argv )
 {
