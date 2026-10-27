@@ -1,0 +1,539 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File dictionary.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_dictionary */
+/** \defgroup theory_dictionary Theory of dictionaries
+ \ingroup area_dictionary
+
+ \details The headers of `include/ADS/dictionary` realize the DICTIONARY of
+ chapter 7 of the book, i.e., the table with direct access, the hash functions
+ of section 7.1 and the hash tables of sections 7.2 to 7.4, and, beyond the
+ book, the engineered hash tables, the universal and the perfect hashing, the
+ skip list and the digital search trees of strings. This page collects what the
+ headers take for granted: the definitions and the notation shared by all of
+ them (see \ref theory_dictionary_notation), the realizations and the costs of
+ their operations (see \ref theory_dictionary_repr), and, for each family, the
+ property on which its correctness rests and the argument behind its bound
+ (from \ref theory_dictionary_hash to \ref theory_dictionary_tries). The
+ pseudocode of each algorithm is instead on the page of its header, in the
+ comment of its function, together with the section of the book, or the paper,
+ that it follows.
+
+ \tableofcontents
+
+ \section theory_dictionary_notation Definitions and notation
+
+ A DICTIONARY is a univocal relation from a set of keys to a set of values
+ (section 3.2.3 of the book), with the operations `lookup()`, `insert()` and
+ `remove()`; the keys are drawn from a universe \f$ U \f$, and the dictionary
+ holds \f$ n \f$ of them at a time. When \f$ U \f$ is a small interval of
+ integers, the table with direct access (`DirectTable.h`) keeps a place for
+ each key of \f$ U \f$; otherwise a <em>hash function</em>
+ \f$ H : U \rightarrow \{ 0 , \ldots , m - 1 \} \f$ maps the keys to the
+ \f$ m \f$ places of a table, and two distinct keys \f$ k \ne k' \f$ with
+ \f$ H( k ) = H( k' ) \f$ make a <em>collision</em>, which the table must
+ resolve, either by lists of overflow (<em>chaining</em>) or by further
+ places of the table itself (<em>open addressing</em>). A function is
+ <em>perfect</em> on a set \f$ S \f$ if it has no collision on \f$ S \f$, and
+ <em>minimal</em> if moreover \f$ m = | S | \f$.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ U \f$, \f$ S \f$</td>
+     <td>the universe of the keys, and the set of the keys in the
+         dictionary</td></tr>
+ <tr><td>\f$ n \f$, \f$ m \f$</td>
+     <td>the number of the keys, and the number of the places (or of the
+         lists) of a table</td></tr>
+ <tr><td>\f$ \alpha = n / m \f$</td>
+     <td>the <em>load factor</em> of a table</td></tr>
+ <tr><td>\f$ h( k ) \f$, \f$ H( k ) \f$</td>
+     <td>the hash of a key, a word of the type <tt>std::size_t</tt> or of 64
+         bits, and its place in a table of \f$ m \f$ places, often
+         \f$ H( k ) = h( k ) \bmod m \f$</td></tr>
+ <tr><td>\f$ H( k , i ) \f$</td>
+     <td>the \f$ i \f$-th place of the <em>inspection</em> of \f$ k \f$ in
+         a table with open addressing, \f$ 0 \le i < m \f$</td></tr>
+ <tr><td>\f$ I( \alpha ) \f$, \f$ S( \alpha ) \f$</td>
+     <td>the expected places examined by an unsuccessful and by a
+         successful search</td></tr>
+ <tr><td>\f$ \mathcal{H} \f$</td>
+     <td>a class of hash functions from which one is drawn at
+         random</td></tr>
+ <tr><td>\f$ \sigma \f$, \f$ |k| \f$</td>
+     <td>the size of the alphabet of the strings, and the length of the
+         key \f$ k \f$</td></tr>
+ </table>
+
+ A function \f$ H \f$ has the <em>simple uniformity</em> if each place
+ receives the same share of the keys, weighted by the probability
+ \f$ P( k ) \f$ that the key \f$ k \f$ is in the dictionary,
+ \f[
+   \sum_{k : H( k ) = i} P( k ) = \frac{1}{m}
+   \quad \forall i \in \{ 0 , \ldots , m - 1 \} , \tag{1}
+ \f]
+ which no fixed function guarantees for every distribution of the keys; the
+ analyses of the tables below assume (1), or, more honestly, a function drawn
+ at random from a class (see \ref theory_dictionary_hash).
+
+ \section theory_dictionary_repr Realizations and their costs
+
+ The realizations differ in the time of the operations, in the space and in
+ what they offer besides the three operations of the DICTIONARY (the keys in
+ order, a search by prefix, a static set).
+
+ <table>
+ <caption>The realizations of the DICTIONARY and the cost of their
+          operations</caption>
+ <tr><th>Realization</th><th><tt>lookup()</tt></th>
+     <th><tt>insert()</tt>, <tt>remove()</tt></th><th>Space</th>
+     <th>Keys in order</th></tr>
+ <tr><td><tt>DirectTable</tt></td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ \Theta( | U | ) \f$</td><td>yes</td></tr>
+ <tr><td><tt>SortedArrayDictionary</tt></td><td>\f$ O( \log n ) \f$</td>
+     <td>\f$ O( n ) \f$</td><td>\f$ \Theta( n ) \f$</td><td>yes</td></tr>
+ <tr><td><tt>SkipList</tt></td><td>\f$ O( \log n ) \f$ expected</td>
+     <td>\f$ O( \log n ) \f$ expected</td><td>\f$ \Theta( n ) \f$
+     expected</td><td>yes</td></tr>
+ <tr><td><tt>ChainedHashTable</tt></td><td>\f$ O( 1 + \alpha ) \f$
+     expected</td><td>\f$ O( 1 + \alpha ) \f$ expected, amortized if it
+     restructures itself</td><td>\f$ \Theta( n + m ) \f$</td><td>no</td></tr>
+ <tr><td><tt>OpenHashTable</tt>, <tt>CoalescedHashTable</tt>,
+         <tt>BrentHashTable</tt></td>
+     <td>\f$ O( 1 / ( 1 - \alpha ) ) \f$ expected, \f$ \alpha < 1 \f$</td>
+     <td>as <tt>lookup()</tt></td><td>\f$ \Theta( m ) \f$</td>
+     <td>no</td></tr>
+ <tr><td><tt>FlatHashTable</tt>, <tt>DenseHashMap</tt></td>
+     <td>\f$ O( 1 ) \f$ expected, \f$ \alpha \le 7 / 8 \f$</td>
+     <td>\f$ O( 1 ) \f$ expected amortized</td><td>\f$ \Theta( m ) \f$</td>
+     <td>no</td></tr>
+ <tr><td><tt>CuckooHashTable</tt>, <tt>BucketCuckooTable</tt></td>
+     <td>\f$ O( 1 ) \f$ in the worst case</td>
+     <td>\f$ O( 1 ) \f$ expected amortized</td><td>\f$ \Theta( m ) \f$</td>
+     <td>no</td></tr>
+ <tr><td><tt>DLeftHashTable</tt></td><td>\f$ O( d \log \log n ) \f$ with high
+     probability</td><td>as <tt>lookup()</tt></td><td>\f$ \Theta( n + m )
+     \f$</td><td>no</td></tr>
+ <tr><td><tt>PerfectHashTable</tt> (static)</td>
+     <td>\f$ O( 1 ) \f$ in the worst case</td><td>none, built in
+     \f$ O( n ) \f$ expected</td><td>\f$ \Theta( n ) \f$</td><td>no</td></tr>
+ <tr><td><tt>Trie</tt>, <tt>RadixTree</tt></td>
+     <td>\f$ O( |k| \log \sigma ) \f$</td><td>\f$ O( |k| \log \sigma ) \f$</td>
+     <td>\f$ O( N ) \f$, \f$ O( n ) \f$ nodes for <tt>RadixTree</tt></td>
+     <td>yes</td></tr>
+ <tr><td><tt>AdaptiveRadixTree</tt></td><td>\f$ O( |k| ) \f$</td>
+     <td>\f$ O( |k| ) \f$</td><td>\f$ O( n ) \f$ nodes and the keys</td>
+     <td>yes</td></tr>
+ </table>
+
+ Here \f$ N \f$ is the total length of the keys. The table with direct
+ access is preferable when \f$ | U | \f$ is of the order of \f$ n \f$; the
+ sorted vector when the lookups far outnumber the changes, or the keys are
+ wanted in order; a hash table in every other case, with the engineered tables
+ (`FlatHashTable`, `DenseHashMap`, `BucketCuckooTable`) when the speed counts,
+ since they compare the fingerprints of a whole group of places at once and
+ touch one or two lines of cache per search, against a pointer per cell of the
+ chaining and a cluster to walk of the linear inspection. The cuckoo tables are
+ preferable when the lookups must be fast in the worst case, the perfect
+ hashing when the set is static, and the tries when the keys are strings to
+ be searched by prefix or kept in order.
+
+ \section theory_dictionary_hash Hash functions and universal hashing
+
+ The functions of section 7.1 (`HashFunctions.h`) read a key as an integer
+ \f$ i \f$ and reduce it to \f$ \{ 0 , \ldots , m - 1 \} \f$: by the
+ <em>division</em>, \f$ i \bmod m \f$, best with \f$ m \f$ a prime far from a
+ power of 2, whose remainder depends on all the bits of \f$ i \f$; by the
+ <em>multiplication</em>, \f$ \lfloor m \, \mathrm{frac}( C i ) \rfloor \f$,
+ which works with any \f$ m \f$ and, for \f$ C = ( \sqrt{5} - 1 ) / 2 \f$,
+ spreads the consecutive keys most evenly, since the points
+ \f$ \mathrm{frac}( C i ) \f$ for \f$ i = 1 , 2 , \ldots \f$ always fall in the
+ largest gap left by the previous ones (section 6.4 of TAOCP); and by the
+ extraction, the XOR and the middle square of blocks of bits. A fixed function,
+ however good, has a set of \f$ n \f$ keys that it sends into one place, when
+ \f$ |U| \ge n m \f$ (by the pigeonhole principle); hence the bounds in the
+ worst case of the input need a function drawn at random after the keys are
+ fixed.
+
+ A class \f$ \mathcal{H} \f$ of functions
+ \f$ U \rightarrow \{ 0 , \ldots , m - 1 \} \f$ is <em>universal</em> if
+ \f[
+   \Pr_{H \in \mathcal{H}}[ H( k ) = H( k' ) ] \le \frac{1}{m}
+   \quad \forall k \ne k' \in U , \tag{2}
+ \f]
+ and <em>\f$ c \f$-universal</em> with \f$ c / m \f$ in place of \f$ 1 / m \f$
+ (`UniversalHashing.h`).
+
+ <em>Lemma 1 (Carter and Wegman).</em> With \f$ p \f$ a prime larger than the
+ keys, the class of the functions
+ \f$ h_{a,b}( k ) = ( ( a k + b ) \bmod p ) \bmod m \f$, \f$ 1 \le a < p \f$
+ and \f$ 0 \le b < p \f$, is universal.
+
+ Indeed, for \f$ k \ne k' \f$ the map from \f$ ( a , b ) \f$ to
+ \f$ ( r , s ) = ( ( a k + b ) \bmod p , ( a k' + b ) \bmod p ) \f$ is a
+ bijection between the \f$ p ( p - 1 ) \f$ pairs with \f$ a \ne 0 \f$ and the
+ pairs with \f$ r \ne s \f$, since \f$ \mathbb{Z}_p \f$ is a field and
+ \f$ r - s = a ( k - k' ) \f$ determines \f$ a \f$. For each \f$ r \f$, at most
+ \f$ \lceil p / m \rceil - 1 \le ( p - 1 ) / m \f$ values \f$ s \ne r \f$ have
+ \f$ s \equiv r \pmod{m} \f$; hence at most \f$ p ( p - 1 ) / m \f$ of the
+ functions make \f$ k \f$ and \f$ k' \f$ collide, which is (2). The same
+ argument on the digits of the keys gives the class of the dot products, and
+ the class of Dietzfelbinger et al.,
+ \f$ ( a k \bmod 2^h ) \operatorname{div} 2^{h - l} \f$ with \f$ a \f$ odd, is
+ 2-universal by an argument on the lowest bit in which \f$ k \f$ and
+ \f$ k' \f$ differ, with a product and a shift instead of a division.
+
+ By (2), the expected number of the other keys in the list of a key \f$ k \f$
+ is \f$ \sum_{k' \ne k} \Pr[ H( k ) = H( k' ) ] \le ( n - 1 ) / m < \alpha \f$,
+ whatever the keys; hence every bound of the chaining below holds in
+ expectation over the function, for every set of keys. The engineered tables
+ use instead the folded product of `FastHash.h`, the two halves of the product
+ of two words XORed, and the simple tabulation of `RandomHashing.h`, the XOR of
+ a random word per byte of the key, which is only 3-independent but gives the
+ linear inspection and the cuckoo hashing the bounds of a fully random function
+ (Pătrașcu and Thorup).
+
+ \section theory_dictionary_chaining Hash tables with lists of overflow
+
+ In the table with lists of overflow (section 7.2.1, `ChainedHashTable.h`)
+ the place \f$ i \f$ holds the list of the keys with \f$ H( k ) = i \f$.
+
+ <em>Lemma 2 (the cost of the chaining).</em> Under (1), or with a function
+ drawn from a universal class, an unsuccessful search examines on average
+ \f[
+   I( \alpha ) = 1 + \alpha , \qquad
+   S( \alpha ) = 1 + \frac{n - 1}{2 m} \approx 1 + \frac{\alpha}{2} \tag{3}
+ \f]
+ cells, the nil that ends the unsuccessful search counted.
+
+ Indeed, an unsuccessful search scans a whole list, of expected length
+ \f$ \alpha \f$, and its end. A successful search of the key inserted
+ \f$ j \f$-th scans the keys inserted after it in its list, since each one was
+ put at the head, i.e., \f$ ( n - j ) / m \f$ of them on average; the mean of
+ \f$ 1 + ( n - j ) / m \f$ over \f$ j = 1 , \ldots , n \f$ is (3). A list that
+ moves the key found to its head (exercise 7.5) keeps the keys looked up often
+ near the head, and a sorted list (exercise 7.10) stops an unsuccessful search
+ at the first larger key, halving its cost on average.
+
+ <em>Lemma 3 (the restructuring).</em> If a table doubles \f$ m \f$ when
+ \f$ \alpha \f$ exceeds a threshold \f$ \alpha_{\max} \f$ and halves it when
+ \f$ \alpha \f$ falls below \f$ \alpha_{\min} \le \alpha_{\max} / 4 \f$, any
+ sequence of operations costs \f$ O( 1 ) \f$ amortized time each, beyond the
+ search of each operation (section 7.4).
+
+ Indeed, a restructuring of a table of \f$ m \f$ places costs
+ \f$ O( n + m ) = O( m ) \f$, and it leaves the load factor at
+ \f$ \alpha_{\max} / 2 \f$ or at \f$ 2 \alpha_{\min} \f$, both between the two
+ thresholds by a factor of at least 2; the next restructuring needs the load to
+ double or to halve, i.e., \f$ \Omega( m ) \f$ insertions or removals, which
+ pay for it. With the thresholds of the example of the book, \f$ 1 / 2 \f$ and
+ \f$ 1 / 4 \f$, a table just doubled sits at the lower threshold, and a
+ sequence that alternates an insertion and a removal pays \f$ O( m ) \f$ per
+ operation; the tables of the library keep the thresholds 4 times apart
+ (`TableSize.h`), and grow to a prime size when the inspection needs one.
+
+ \section theory_dictionary_open Open addressing
+
+ With open addressing (section 7.2.2, `OpenHashTable.h`) the keys lie in the
+ places of the table, each key \f$ k \f$ in the first free place of its
+ inspection \f$ H( k , 0 ) , H( k , 1 ) , \ldots \f$; a removal leaves a
+ <em>deleted</em> place, which does not stop the inspections of the other keys
+ and is reused by the insertions. Hence \f$ \alpha < 1 \f$, and the cost of a
+ search depends on how the inspections of different keys overlap.
+
+ <em>Lemma 4 (uniform hashing).</em> If the inspection of each key is a
+ random permutation of the places, independent of the others, then
+ \f[
+   I( \alpha ) \le \frac{1}{1 - \alpha} , \qquad
+   S( \alpha ) \le \frac{1}{\alpha} \ln \frac{1}{1 - \alpha} . \tag{4}
+ \f]
+
+ Indeed, an unsuccessful search examines more than \f$ i \f$ places only if
+ its first \f$ i \f$ places are full, which has probability at most
+ \f$ \alpha^i \f$; hence \f$ I( \alpha ) \le \sum_{i \ge 0} \alpha^i \f$. A
+ successful search of a key follows the inspection that its insertion
+ followed, which was an unsuccessful search in a table of load
+ \f$ j / m \f$ for the \f$ ( j + 1 ) \f$-th key; the mean over
+ \f$ j = 0 , \ldots , n - 1 \f$ of \f$ m / ( m - j ) \f$ is at most
+ \f$ \frac{1}{\alpha} \int_0^\alpha \frac{dx}{1 - x} \f$, the second bound of
+ (4).
+
+ <table>
+ <caption>The inspections of <tt>OpenHashTable</tt> and how they
+          compare</caption>
+ <tr><th>Inspection</th><th>\f$ H( k , i ) \f$</th><th>Sizes \f$ m \f$</th>
+     <th>Behavior</th></tr>
+ <tr><td>linear</td><td>\f$ ( H_0( k ) + \delta i ) \bmod m \f$</td>
+     <td>\f$ \gcd( \delta , m ) = 1 \f$</td>
+     <td>primary clustering: \f$ I( \alpha ) \approx \frac{1}{2} ( 1 +
+     \frac{1}{( 1 - \alpha )^2} ) \f$, but consecutive places in the
+     cache</td></tr>
+ <tr><td>quadratic</td><td>\f$ ( H_0( k ) + c_1 i + c_2 i^2 ) \bmod m \f$</td>
+     <td>prime</td><td>secondary clustering only; not a permutation, an
+     insertion may fail with free places</td></tr>
+ <tr><td>triangular</td><td>\f$ ( H_0( k ) + i ( i + 1 ) / 2 ) \bmod m \f$</td>
+     <td>a power of 2</td><td>a permutation, secondary clustering
+     only</td></tr>
+ <tr><td>double hashing</td><td>\f$ ( H_0( k ) + H_\delta( k ) i ) \bmod m
+     \f$</td><td>prime or a power of 2</td><td>close to (4)</td></tr>
+ <tr><td>pseudo-random</td><td>\f$ ( H_0( k ) + p_i ) \bmod m \f$</td>
+     <td>any</td><td>no primary clustering</td></tr>
+ </table>
+
+ The linear inspection makes the full places gather in runs, and a key that
+ falls anywhere in a run lengthens it; this is the primary clustering, whose
+ cost Knuth computed exactly (the formula in the table). The quadratic and the
+ triangular inspections spread the keys of different \f$ H_0 \f$, while the
+ keys with the same \f$ H_0 \f$ still share their whole inspection (secondary
+ clustering). The triangular inspection visits all the places when \f$ m \f$ is
+ a power of 2: if \f$ i ( i + 1 ) / 2 \equiv j ( j + 1 ) / 2 \pmod{m} \f$ with
+ \f$ 0 \le j < i < m \f$, then \f$ ( i - j ) ( i + j + 1 ) \equiv 0
+ \pmod{2 m} \f$, where one factor is odd and the other is positive and below
+ \f$ 2 m \f$, a contradiction. The double hashing comes close to uniform
+ hashing, since the inspections of two keys coincide only if both
+ \f$ H_0 \f$ and \f$ H_\delta \f$ do. The improvement of Brent
+ (`BrentHashTable` in `KnuthHashing.h`) moves, at an insertion, a key already
+ placed a few steps further along its own inspection when this shortens the
+ inspection of the new key, and keeps \f$ S( \alpha ) \f$ below 2.5 even in a
+ full table; the coalesced chaining of Algorithm 6.4C (`CoalescedHashTable`)
+ links the keys of a place inside the table, with a cellar beyond the places
+ addressed by the hash.
+
+ The engineered tables (`FlatHashTable.h`, `DenseHashMap.h`) inspect groups of
+ 15 or 12 places in the triangular order of the groups, compare the
+ fingerprints of 8 bits of a whole group with one instruction of SSE2 or NEON,
+ and stop a search at the first group whose byte of overflow lacks the bit of
+ the key. A search for an absent key then reads one group in the common case,
+ since a group was passed by an insertion only if it was full, which at a load
+ of \f$ 7 / 8 \f$ happens to few groups; the removals leave no deleted mark,
+ the bits of overflow staying set until the next rebuild, which Lemma 3 pays
+ for. `PointerTable` keeps the pointers of the closed list of a search with
+ their whole hashes, by the linear inspection.
+
+ \section theory_dictionary_cuckoo Cuckoo hashing
+
+ The cuckoo hashing of Pagh and Rodler (`CuckooHashing.h`) gives each key two
+ places, \f$ h_1( k ) \f$ and \f$ h_2( k ) \f$, and keeps it in one of them;
+ a lookup and a removal examine two places, in the worst case. An insertion
+ puts the key in a free one of its places, or evicts the key in
+ \f$ h_1( k ) \f$, which moves to its other place, possibly evicting another
+ key, and so on. The <em>cuckoo graph</em> has the places as vertices and an
+ edge \f$ \{ h_1( k ) , h_2( k ) \} \f$ per key; a placement is an orientation
+ of the edges in which each vertex receives at most one edge.
+
+ <em>Lemma 5 (the cuckoo graph).</em> The keys can be placed if and only if
+ each connected component of the cuckoo graph has at most one cycle, and the
+ walk of the evictions finds the placement whenever there is one. With
+ \f$ m \ge 2 ( 1 + \varepsilon ) n \f$ places and random functions, two places
+ are joined by a shortest path of length \f$ L \f$ with probability at most
+ \f$ c^{-L} / m \f$, \f$ c = 1 + \varepsilon \f$ (chapter 8 of Ferragina);
+ hence an insertion moves \f$ O( 1 ) \f$ keys in expectation, and a rehash is
+ needed with probability \f$ O( 1 / n ) \f$.
+
+ Indeed, a component of \f$ v \f$ vertices and \f$ e \f$ edges can host its
+ keys only if \f$ e \le v \f$, i.e., if it is a tree or has one cycle; and in
+ such a component the evictions, which follow a path and turn around at most
+ once at the cycle, end at a free vertex. The expected length of the walk is
+ bounded by the expected size of the component of the new key, which the bound
+ on the paths makes \f$ O( 1 ) \f$, while the probability that the final graph
+ has a component with two cycles sums the same bound over the pairs of places.
+ A stash of \f$ s \f$ places (Kirsch, Mitzenmacher and Wieder) keeps the keys
+ whose insertion fails, lowering the probability of a rehash to
+ \f$ O( 1 / n^{s+1} ) \f$. The buckets of 4 places of `BucketCuckooTable.h`
+ accept a load of 95 % and more, with a search in breadth of the shortest
+ path of evictions instead of the random walk; the d-left hashing of
+ `DLeftHashTable` puts a key in the shortest of its \f$ d \f$ lists, which
+ makes the longest list \f$ \ln \ln n / ( d \ln \phi_d ) + O( 1 ) \f$ with high
+ probability instead of \f$ \Theta( \log n / \log \log n ) \f$, the power of
+ two choices (Azar, Broder, Karlin and Upfal; Vöcking).
+
+ \section theory_dictionary_perfect Perfect hashing
+
+ On a static set \f$ S \f$ a perfect function gives lookups in \f$ O( 1 ) \f$
+ time in the worst case (`PerfectHashing.h`).
+
+ <em>Lemma 6 (Fredman, Komlós and Szemerédi).</em> With \f$ h \f$ drawn from a
+ universal class into \f$ n \f$ lists, \f$ n_j \f$ the keys of the list
+ \f$ j \f$,
+ \f[
+   E\Bigl[ \sum_j n_j^2 \Bigr] < 2 n , \tag{5}
+ \f]
+ and a function drawn from a universal class into \f$ n_j^2 \f$ places has no
+ collision on the \f$ n_j \f$ keys with probability more than \f$ 1 / 2 \f$.
+
+ Indeed, \f$ \sum_j n_j^2 = n + 2 C \f$, \f$ C \f$ the number of the pairs of
+ keys that collide, and by (2)
+ \f$ E[ C ] \le \binom{n}{2} / n = ( n - 1 ) / 2 \f$, which gives (5). In the
+ same way, \f$ n_j \f$ keys in \f$ n_j^2 \f$ places collide in
+ \f$ \binom{n_j}{2} / n_j^2 < 1 / 2 \f$ pairs on average, and by the inequality
+ of Markov there is no collision with probability more than \f$ 1 / 2 \f$;
+ hence each table of the second level is found after fewer than 2 trials on
+ average, and the two levels take \f$ O( n ) \f$ places. The first level
+ of `PerfectHashTable` is drawn until \f$ \sum_j n_j^2 < 4 n \f$: since
+ \f$ \sum_j n_j^2 - n = 2 C \ge 0 \f$ has expectation below \f$ n \f$, the
+ inequality of Markov gives \f$ \sum_j n_j^2 \ge 4 n \f$ with probability
+ below \f$ 1 / 3 \f$, so that \f$ h \f$ is drawn fewer than \f$ 3 / 2 \f$
+ times on average and the second level takes fewer than \f$ 4 n \f$ places
+ (a threshold of \f$ 2 n \f$, the mean itself, would be met with a
+ probability that the inequality of Markov does not bound away from 0).
+
+ A minimal perfect function needs at least \f$ n \log_2 e \approx 1.44 n \f$
+ bits: a random function from \f$ U \f$ to \f$ \{ 0 , \ldots , n - 1 \} \f$ is
+ minimal perfect on \f$ S \f$ with probability \f$ n! / n^n \approx e^{-n}
+ \sqrt{2 \pi n} \f$, so that a family that serves every \f$ S \f$ must have
+ about \f$ e^n \f$ members. The schemes of the area approach the bound at
+ different costs.
+
+ <table>
+ <caption>The minimal perfect hash functions of the area</caption>
+ <tr><th>Scheme</th><th>Header</th><th>Bits per key</th>
+     <th>Build</th><th>Evaluation</th></tr>
+ <tr><td>Czech, Havas and Majewski, order preserving</td>
+     <td><tt>PerfectHashing.h</tt></td>
+     <td>\f$ c \lceil \log_2 n \rceil \f$, \f$ c > 2 \f$ or
+         \f$ c > 1.23 \f$</td><td>\f$ O( n ) \f$ expected</td>
+     <td>2 or 3 accesses</td></tr>
+ <tr><td>fingerprinting (BBHash, FMPH)</td>
+     <td><tt>FingerprintPerfectHash.h</tt></td>
+     <td>\f$ \gamma e^{1 / \gamma} \f$, 3.3 for \f$ \gamma = 2 \f$</td>
+     <td>a few passes</td><td>\f$ e^{1 / \gamma} \f$ levels expected</td></tr>
+ <tr><td>pilots (PTHash)</td><td><tt>MinimalPerfectHash.h</tt></td>
+     <td>about 3</td><td>slower</td><td>2 accesses</td></tr>
+ <tr><td>recursive splitting (RecSplit)</td><td><tt>RecSplit.h</tt></td>
+     <td>about 1.8</td><td>slowest, \f$ e^\ell \f$ per leaf</td>
+     <td>\f$ O( \log ( b / \ell ) ) \f$ levels</td></tr>
+ </table>
+
+ The scheme of Czech, Havas and Majewski maps each key to an edge of a random
+ graph of \f$ c n \f$ vertices and asks for the values \f$ g \f$ of the
+ vertices such that \f$ g( u ) + g( v ) \equiv i \pmod{n} \f$ on the edge of
+ the \f$ i \f$-th key: on a forest, a visit from a root with \f$ g = 0 \f$
+ assigns each vertex once, and the equations hold; a random graph is acyclic
+ with probability about \f$ \sqrt{( c - 2 ) / c} \f$ for \f$ c > 2 \f$. With
+ three vertices per key the equations are solved in the reverse order of the
+ <em>peeling</em>, the repeated removal of a vertex of degree 1 with its edge,
+ which succeeds if the hypergraph has no 2-core, i.e., for \f$ c > 1.23 \f$:
+ each vertex removed is assigned after the other vertices of its edge, and no
+ edge assigned later contains it. The fingerprinting keeps, at each level, a
+ bit per place set when exactly one key falls there, and sends the keys that
+ collide to the next level; a key is alone in its place with probability
+ \f$ e^{-1 / \gamma} \f$, which gives the geometric series of its header.
+ PTHash places the buckets of keys from the largest, trying for each one the
+ integers \f$ k_b = 0 , 1 , \ldots \f$ as pilots until its keys fall in free
+ places; RecSplit splits each bucket recursively until its leaves of
+ \f$ \ell \f$ keys can be mapped bijectively by a seed, and writes the seeds
+ by a code of Golomb and Rice, whose total length approaches the bound since
+ the product of the probabilities of the seeds of a tree is \f$ m! / m^m \f$
+ whatever its shape.
+
+ \section theory_dictionary_tries Ordered dictionaries and tries
+
+ The sorted vector (`SortedArrayDictionary.h`) finds a key by the binary
+ search of section 1.2 in \f$ O( \log n ) \f$ and moves the pairs after it at
+ a change. The skip list of Pugh (`SkipList.h`) keeps the keys in a sorted list
+ with express lanes, each node in the levels \f$ 0 , \ldots , \ell - 1 \f$ with
+ \f$ \Pr[ \ell \ge j + 1 ] = 2^{-j} \f$.
+
+ <em>Lemma 7 (the skip list).</em> A search in a skip list of \f$ n \f$ keys
+ examines \f$ O( \log n ) \f$ nodes in expectation, and the list takes
+ \f$ 2 n \f$ links in expectation.
+
+ Indeed, the level \f$ j \f$ holds \f$ n / 2^j \f$ nodes in expectation, so
+ that the levels above \f$ \log_2 n \f$ hold \f$ O( 1 ) \f$ nodes in all and
+ the links are \f$ \sum_j n / 2^j = 2 n \f$. The path of a search, read
+ backwards from the node where it ends, goes up a level at each node with
+ probability \f$ 1 / 2 \f$ (the node has a further level) and left otherwise;
+ hence it makes 2 steps per level in expectation, and \f$ O( \log n ) \f$ in
+ all.
+
+ A <em>trie</em> (`Trie.h`) stands for a set of strings by a tree whose node
+ at depth \f$ d \f$ is a prefix of \f$ d \f$ characters, the children indexed
+ by the next character and the nodes that end a key marked: a search reads one
+ node per character, \f$ O( |k| \log \sigma ) \f$ with the children in a
+ sorted map, whatever \f$ n \f$, and the keys with a given prefix are the
+ marked nodes below the node of the prefix. The compact trie (`RadixTree`)
+ merges each chain of unmarked nodes with one child into an edge labeled by a
+ string; every unmarked node then has at least two children, so that it has at
+ most \f$ n - 1 \f$ unmarked nodes, and \f$ 2 n \f$ nodes in all. The Patricia
+ trie of `PatriciaTrie.h` drops the labels and keeps in each node only the
+ length of its prefix and the first character of each edge: its <em>blind
+ search</em> goes down by the branching characters alone, reads the one string
+ of a leaf below the point reached, and finds from the longest common prefix
+ \f$ \ell \f$ of that string and of the pattern the edge where the pattern
+ leaves the trie. This is correct since the leaf reached shares with the
+ pattern a prefix as long as any other string does: the first \f$ \ell \f$
+ characters of the pattern drive the descent along the path of that prefix, up
+ to the node of depth at most \f$ \ell \f$ where they part. It reads one string
+ instead of a label per edge, \f$ O( p / B ) \f$ transfers of blocks for a
+ pattern of \f$ p \f$ characters (`TwoLevelDictionary.h` puts it over the front
+ coding of the strings). The adaptive radix tree of Leis, Kemper and Neumann
+ (`AdaptiveRadixTree.h`) branches on the bytes, with the layout of each node
+ adapted to the number of its children (4, 16, 48 or 256), the path
+ compression of the chains and the whole key compared at the leaf, so that a
+ search takes \f$ O( |k| ) \f$ with \f$ O( 1 ) \f$ per node.
+
+ \section theory_dictionary_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 7,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
+ \see D. E. Knuth, The Art of Computer Programming, vol. 3, Sorting and
+      Searching, 2nd ed., Addison-Wesley, 1998, sections 6.3 and 6.4
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapter 8, The Dictionary Problem, and chapter 9,
+      Searching Strings by Prefix, doi:10.1017/9781009128933
+ \see W. W. Peterson, Addressing for random-access storage, IBM Journal
+      of Research and Development 1(2), 130-146, 1957,
+      doi:10.1147/rd.12.0130
+ \see J. L. Carter, M. N. Wegman, Universal classes of hash functions,
+      Journal of Computer and System Sciences 18(2), 143-154, 1979,
+      doi:10.1016/0022-0000(79)90044-8
+ \see M. Dietzfelbinger, T. Hagerup, J. Katajainen, M. Penttonen, A
+      reliable randomized algorithm for the closest-pair problem, Journal
+      of Algorithms 25(1), 19-51, 1997, doi:10.1006/jagm.1997.0873
+ \see M. Pătrașcu, M. Thorup, The power of simple tabulation hashing,
+      Journal of the ACM 59(3), article 14, 2012,
+      doi:10.1145/2220357.2220361
+ \see R. P. Brent, Reducing the retrieval time of scatter storage
+      techniques, Communications of the ACM 16(2), 105-109, 1973,
+      doi:10.1145/361952.361964
+ \see R. Pagh, F. F. Rodler, Cuckoo hashing, Journal of Algorithms 51(2),
+      122-144, 2004, doi:10.1016/j.jalgor.2003.12.002
+ \see A. Kirsch, M. Mitzenmacher, U. Wieder, More robust hashing: cuckoo
+      hashing with a stash, SIAM Journal on Computing 39(4), 1543-1561,
+      2009, doi:10.1137/080728743
+ \see Y. Azar, A. Z. Broder, A. R. Karlin, E. Upfal, Balanced
+      allocations, SIAM Journal on Computing 29(1), 180-200, 1999,
+      doi:10.1137/S0097539795288490
+ \see B. Vöcking, How asymmetry helps load balancing, Journal of the ACM
+      50(4), 568-589, 2003, doi:10.1145/792538.792546
+ \see M. L. Fredman, J. Komlós, E. Szemerédi, Storing a sparse table with
+      O(1) worst case access time, Journal of the ACM 31(3), 538-544,
+      1984, doi:10.1145/828.1884
+ \see Z. J. Czech, G. Havas, B. S. Majewski, An optimal algorithm for
+      generating minimal perfect hash functions, Information Processing
+      Letters 43(5), 257-264, 1992, doi:10.1016/0020-0190(92)90220-P
+ \see G. E. Pibiri, R. Trani, PTHash: revisiting FCH minimal perfect
+      hashing, Proceedings of SIGIR 2021, 1339-1348, 2021,
+      doi:10.1145/3404835.3462849
+ \see E. Esposito, T. Mueller Graf, S. Vigna, RecSplit: minimal perfect
+      hashing via recursive splitting, Proceedings of ALENEX 2020,
+      175-185, 2020, doi:10.1137/1.9781611976007.14
+ \see W. Pugh, Skip lists: a probabilistic alternative to balanced trees,
+      Communications of the ACM 33(6), 668-676, 1990,
+      doi:10.1145/78973.78977
+ \see E. Fredkin, Trie memory, Communications of the ACM 3(9), 490-499,
+      1960, doi:10.1145/367390.367400
+ \see D. R. Morrison, PATRICIA: practical algorithm to retrieve
+      information coded in alphanumeric, Journal of the ACM 15(4),
+      514-534, 1968, doi:10.1145/321479.321481
+ \see P. Ferragina, R. Grossi, The string B-tree: a new data structure
+      for string search in external memory and its applications, Journal
+      of the ACM 46(2), 236-280, 1999, doi:10.1145/301970.301973
+ \see V. Leis, A. Kemper, T. Neumann, The adaptive radix tree: ARTful
+      indexing for main-memory databases, Proceedings of ICDE 2013,
+      38-49, 2013, doi:10.1109/ICDE.2013.6544812
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File dictionary.dox -------------------------*/
+/*--------------------------------------------------------------------------*/

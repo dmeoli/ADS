@@ -3,59 +3,61 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The engineered hash functions of ADS, beyond the book [see
- * HashFunctions.h for those of section 7.1 and UniversalHashing.h for the
- * universal classes]: hashes of 64 bits for the tables, the filters and the
- * perfect hash functions, made of the folded product, the product of two
- * words on 128 bits whose two halves are XORed [see foldedProduct()]. Each
+ * `HashFunctions.h` for those of section 7.1 and `UniversalHashing.h` for
+ * the universal classes]: hashes of 64 bits for the tables, the filters and
+ * the perfect hash functions, made of the folded product, the product of two
+ * words on 128 bits whose two halves are XORed [see `foldedProduct()`]. Each
  * bit of the folded product depends on every bit of its factors that the
  * low half of the product does not lose, and a 64-bit processor computes
  * it by one multiplication, so that a word costs one product and a string
  * one product per 16 bytes.
  *
- * - hashWord() is the hash of a word, its folded product with the seed
+ * - `hashWord()` is the hash of a word, its folded product with the seed
  *   XORed with a constant;
- * - hashBytes() is the hash of a string of n bytes, by the length: up to
- *   8 bytes, the string is read as one word, by two loads of 4 bytes at
- *   its ends (overlapping below 8) or by its first, middle and last byte
- *   below 4, and its hash is the folded product of that word XOR the seed
- *   and of a constant XOR n; from 9 to 16 bytes, the product of the two
- *   words that end at its ends; from 17 to 32, the XOR of the products of
- *   its first and its last 16 bytes, two products at once; from 33 to 64,
- *   four products at once, of its first and its last 32 bytes, folded by a
- *   fifth one; these are inline, with no loop. Past 64 bytes, out of line,
- *   up to 256 the blocks of 16 bytes are folded into a state, each by the
- *   product of its two words, one XORed with the state, by 6 independent
- *   states over each 96 bytes, and the last 16 bytes go through a last
- *   product with the state and n; past 256, the string is cut into
- *   stripes of 64 bytes, i.e., 8 lanes of a word, each adding the product
- *   of the two halves of its word XOR a constant, and its word to the
- *   other lane of its pair, scrambled every 16 stripes (the stripes of
- *   XXH3), which vectors of AVX2 or AVX-512 do 4 or 8 lanes at a time with
- *   the same result as the scalar operations, and the 8 lanes are folded
- *   by 4 products and a last one;
- * - FastHash< T > is the hash of the integers, the enumerations, the
- *   pointers, the floating point numbers (+0 and -0 hashing the same) and
- *   the strings (std::string, std::string_view and the C strings), by
- *   hashWord() and hashBytes(); it declares is_avalanching (the
- *   convention of Boost), so that FlatHashTable [see FlatHashTable.h] and
- *   the tables of Boost take its hash as it is; DefaultHash< K > is
- *   FastHash< K > when it is defined and std::hash< K > otherwise, the
- *   default hash of the engineered tables and filters.
+ * - `hashBytes()` is the hash of a string of \f$ n \f$ bytes, by the
+ *   length: up to 8 bytes, the string is read as one word, by two loads of
+ *   4 bytes at its ends (overlapping below 8) or by its first, middle and
+ *   last byte below 4, and its hash is the folded product of that word XOR
+ *   the seed and of a constant XOR \f$ n \f$; from 9 to 16 bytes, the
+ *   product of the two words that end at its ends; from 17 to 32, the XOR
+ *   of the products of its first and its last 16 bytes, two products at
+ *   once; from 33 to 64, four products at once, of its first and its last
+ *   32 bytes, folded by a fifth one; these are inline, with no loop. Past 64
+ *   bytes, out of line, up to 256 the blocks of 16 bytes are folded into a
+ *   state, each by the product of its two words, one XORed with the state,
+ *   by 6 independent states over each 96 bytes, and the last 16 bytes go
+ *   through a last product with the state and \f$ n \f$; past 256, the
+ *   string is cut into stripes of 64 bytes, i.e., 8 lanes of a word, each
+ *   adding the product of the two halves of its word XOR a constant, and
+ *   its word to the other lane of its pair, scrambled every 16 stripes (the
+ *   stripes of XXH3), which vectors of AVX2 or AVX-512 do 4 or 8 lanes at a
+ *   time with the same result as the scalar operations, and the 8 lanes are
+ *   folded by 4 products and a last one;
+ * - `FastHash< T >` is the hash of the integers, the enumerations, the
+ *   pointers, the floating point numbers (\f$ +0 \f$ and \f$ -0 \f$ hashing
+ *   the same) and the strings (`std::string`, `std::string_view` and the C
+ *   strings), by `hashWord()` and `hashBytes()`; it declares
+ *   `is_avalanching` (the convention of Boost), so that `FlatHashTable`
+ *   [see `FlatHashTable.h`] and the tables of Boost take its hash as it is;
+ *   `DefaultHash< K >` is `FastHash< K >` when it is defined and
+ *   `std::hash< K >` otherwise, the default hash of the engineered tables
+ *   and filters.
  *
  * Every bit of a hash depends on every bit of the key, the high half of a
  * product carrying the bits that its low half loses, which is what a hash
  * table needs; a single product does not give the full avalanche that the
  * statistical batteries ask (one bit of a key flips each bit of the hash
- * with probability near 1 / 2, not exactly 1 / 2), as for the hashes of the
- * short strings of Abseil. The functions are not cryptographic: a string
- * chosen to make a factor of a product 0 loses the bits of the other one,
- * and anyone who knows the seed can make collisions; a table that faces
- * adversarial keys must use a seed drawn at random. A word is read in the
- * byte order of the machine, so the hashes differ between little and big
- * endian machines.
+ * with probability near \f$ 1 / 2 \f$, not exactly \f$ 1 / 2 \f$), as for
+ * the hashes of the short strings of Abseil. The functions are not
+ * cryptographic: a string chosen to make a factor of a product 0 loses the
+ * bits of the other one, and anyone who knows the seed can make collisions;
+ * a table that faces adversarial keys must use a seed drawn at random. A
+ * word is read in the byte order of the machine, so the hashes differ
+ * between little and big endian machines.
  *
- * The contracts [see Contract.h]: a string of n bytes from a pointer that
- * is not nil when n > 0. The functions are defined in FastHash.tpp.
+ * The contracts [see `Contract.h`]: a string of \f$ n \f$ bytes from a
+ * pointer that is not nil when \f$ n > 0 \f$. The functions are defined in
+ * `FastHash.tpp`.
  *
  * \see M. Thorup, High speed hashing for integers and strings, 2015,
  *      arXiv:1504.06804 (the multiply-shift hashing and its analysis)
@@ -69,7 +71,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -108,25 +110,55 @@ namespace ADS {
 /*--------------------------- THE HASH FUNCTIONS ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the product a b on 128 bits, its low and its high half
+/// the product \f$ a b \f$ on 128 bits, its low and its high half
 struct Product128 {
- std::uint64_t lo , hi;
+ std::uint64_t lo ,   ///< the low half, \f$ a b \bmod 2^{64} \f$
+               hi;    ///< the high half, \f$ \lfloor a b / 2^{64} \rfloor \f$
  };
 
-/// the product a b on 128 bits
+/// the product \f$ a b \f$ on 128 bits
 [[nodiscard]] constexpr Product128 product128( std::uint64_t a ,
                                                std::uint64_t b );
 
-/// the folded product: the low half of a b on 128 bits XOR its high half
+/// the folded product: the low half of \f$ a b \f$ on 128 bits XOR its
+/// high half,
+/// \f$ ( a b \bmod 2^{64} ) \oplus \lfloor a b / 2^{64} \rfloor \f$
 [[nodiscard]] constexpr std::uint64_t foldedProduct( std::uint64_t a ,
                                                      std::uint64_t b );
 
-/// the hash of the word x under the seed
+/// the hash of the word \f$ x \f$ under the seed, the folded product of
+/// \f$ x \f$ and of the seed XOR a constant
 [[nodiscard]] constexpr std::uint64_t hashWord( std::uint64_t x ,
                                                 std::uint64_t seed = 0 );
 
-/// the hash of the n bytes from p under the seed
-/// \pre p is not nil if n > 0
+/// the hash of the \f$ n \f$ bytes from \f$ p \f$ under the seed
+///
+/// In pseudocode (the folded products of wyhash and the stripes of XXH3,
+/// beyond the book), \f$ g \f$ the folded product, \f$ c_i \f$ constants and
+/// \f$ w( i ) \f$ the word of the 8 bytes from the byte \f$ i \f$; the cases
+/// up to 64 bytes have no loop:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{hashBytes}( p , n , s ) \cr
+/// 2 & \quad \textbf{if}\ n \le 8\ \textbf{then return}\ g( x \oplus s ,
+///     c_1 \oplus n )\quad \triangleright\ x \text{ the bytes as a word} \cr
+/// 3 & \quad \textbf{if}\ n \le 16\ \textbf{then return}\ g \text{ of the }
+///     \text{words } w( 0 ) \text{ and } w( n - 8 ) \cr
+/// 4 & \quad \textbf{if}\ n \le 32\ \textbf{then return}\ \text{the XOR of }
+///     g \text{ on the first and on the last 16 bytes} \cr
+/// 5 & \quad \textbf{if}\ n \le 64\ \textbf{then return}\ g \text{ of the }
+///     \text{four products of the first and the last 32 bytes} \cr
+/// 6 & \quad \textbf{if}\ n \le 256\ \textbf{then} \cr
+/// 7 & \qquad \text{fold the blocks of 16 bytes into 6 states, each}
+///     \ h \gets g( w( i ) \oplus c , w( i + 8 ) \oplus h ) \cr
+/// 8 & \qquad \textbf{return}\ g \text{ of the states, the last 16 bytes }
+///     \text{and } n \cr
+/// 9 & \quad \text{add to 8 lanes the stripes of 64 bytes, each lane }
+///     \text{the product of the halves of its word} \cr
+/// 10 & \quad \textbf{return}\ g \text{ of the lanes folded by 4 products}
+/// \end{array}}
+/// \f]
+/// \pre \f$ p \f$ is not nil if \f$ n > 0 \f$
 [[nodiscard]] std::uint64_t hashBytes( const void * p , std::size_t n ,
                                        std::uint64_t seed = 0 );
 
@@ -134,8 +166,9 @@ struct Product128 {
 /*---------------------------- CLASS FastHash ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the hash of the values of T, for the integers, the enumerations, the
-/// pointers, the floating point numbers and the strings
+/// the hash of the values of `T`, for the integers, the enumerations, the
+/// pointers, the floating point numbers (\f$ +0 \f$ and \f$ -0 \f$ the same)
+/// by `hashWord()`, and the strings by `hashBytes()`
 template< class T >
 struct FastHash;
 
@@ -174,30 +207,32 @@ struct FastHash< T > {
 
 /// \endcond
 
-/// the hash of a string, by its bytes; any string_view, std::string and
-/// C string with the same characters hash the same
+/// the hash of a string, by its bytes; any `std::string_view`,
+/// `std::string` and C string with the same characters hash the same
 template<>
 struct FastHash< std::string_view > {
- using is_avalanching = void;
+ using is_avalanching = void;   ///< the hash needs no further mixing
  using is_transparent = void;   ///< for the lookups by any string
+ std::uint64_t seed = 0;        ///< the seed of `hashBytes()`
 
- std::uint64_t seed = 0;
-
+ /// `hashBytes()` of the characters of \f$ s \f$
  [[nodiscard]] std::size_t operator()( std::string_view s ) const noexcept
  {
   return( std::size_t( hashBytes( s.data() , s.size() , seed ) ) );
   }
  };
 
+/// the hash of a `std::string`, that of its characters
 template<>
 struct FastHash< std::string > : FastHash< std::string_view > {};
 
+/// the hash of a C string, that of its characters
 template<>
 struct FastHash< const char * > : FastHash< std::string_view > {};
 
 namespace detail {
 
-/// std::hash< K >, or FastHash< K > if it is defined
+/// `std::hash< K >`, or `FastHash< K >` if it is defined
 template< class K >
 struct DefaultHashOf {
  using type = std::hash< K >;
@@ -209,7 +244,7 @@ struct DefaultHashOf< K > {
  using type = FastHash< K >;
  };
 
-/// true if the hash of a K reads memory that the K points to, as for the
+/// true if the hash of a `K` reads memory that the `K` points to, as for the
 /// strings: a rebuild of a table then prefetches it some keys ahead
 template< class K >
 inline constexpr bool kIndirectKey = requires( const K & k ) {
@@ -217,8 +252,8 @@ inline constexpr bool kIndirectKey = requires( const K & k ) {
  k.size();
  };
 
-/// brings into the cache the first line of what the key k points to, if
-/// its hash reads it [see kIndirectKey], else nothing
+/// brings into the cache the first line of what the key `k` points to, if
+/// its hash reads it [see `kIndirectKey`], else nothing
 template< class K >
 inline void prefetchKey( const K & k )
 {
@@ -233,9 +268,9 @@ inline void prefetchKey( const K & k )
 
 }  // end( namespace detail )
 
-/// the hash of the engineered tables and filters of ADS: FastHash< K > for
-/// the integers, the enumerations, the pointers, the floating point
-/// numbers and the strings, std::hash< K > for any other K
+/// the hash of the engineered tables and filters of ADS: `FastHash< K >`
+/// for the integers, the enumerations, the pointers, the floating point
+/// numbers and the strings, `std::hash< K >` for any other `K`
 template< class K >
 using DefaultHash = typename detail::DefaultHashOf< K >::type;
 
