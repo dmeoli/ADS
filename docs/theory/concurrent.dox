@@ -8,8 +8,9 @@
  \details The headers of `include/ADS/concurrent` realize, beyond the book,
  the structures that several threads change at once without a lock, or with
  the fewest locks: the queues between producers and consumers, the deque of
- work stealing, the union-find and the hash table shared by threads, and the
- event count on which a thread sleeps until a condition holds. This page
+ work stealing, the union-find and the hash tables shared by threads, the
+ relaxed priority queue, and the event count on which a thread sleeps until
+ a condition holds. This page
  collects what the headers take for granted: the model of the threads and of
  the memory and the meaning of correct and of nonblocking (see
  \ref theory_concurrent_notation), the structures and the cost of their
@@ -139,6 +140,15 @@
          keys and values read atomically</td>
      <td>\f$ O( 1 ) \f$ expected, \f$ O( 1 ) \f$ amortized for the
          doublings</td></tr>
+ <tr><td><tt>ConcurrentFlatTable</tt></td><td>any</td>
+     <td>wait-free lookups but across a growth, insertions blocking only
+         during a growth</td>
+     <td>\f$ O( 1 ) \f$ expected, \f$ O( 1 ) \f$ amortized for the
+         growths; no removals</td></tr>
+ <tr><td><tt>MultiQueue</tt></td><td>any, by a handle each</td>
+     <td>blocking (a lock per queue, taken only at the first try)</td>
+     <td>\f$ O( \log m ) \f$ amortized on a queue of \f$ m \f$ pairs,
+         \f$ c / ( c - 1 ) \f$ draws expected; relaxed</td></tr>
  <tr><td><tt>EventCount</tt></td><td>any</td>
      <td>a waiter sleeps, a notifier never waits</td>
      <td>a fence and a read when nobody waits</td></tr>
@@ -341,6 +351,147 @@
  \f$ O( 1 ) \f$ amortized; with uniform keys two operations contend for a
  lock with probability \f$ 1 / P \f$ for \f$ P \f$ regions.
 
+ \section theory_concurrent_flat Linear probing that grows
+
+ `ConcurrentFlatTable` gives up what `ConcurrentCuckooTable` needs its
+ versions for: a word, once written, never changes nor moves within its
+ vector, since there are no removals and the keys are never displaced. The
+ vector holds \f$ 2^l \f$ atomic words, each 0 or a pair (or the index of
+ the node of a pair), and the key of hash \f$ h \f$ is looked for from the
+ place \f$ \lfloor h / 2^{64 - l} \rfloor \f$ on, cyclically, up to its word
+ or to a word 0; an insertion writes the first word 0 of that sequence by
+ \f$ \mathrm{CAS}( W[ i ] , 0 , w ) \f$, and on a failure reads the word
+ that another thread wrote there before it goes on. This is the folklore
+ table that Maier, Sanders and Dementiev found the fastest of the tables
+ shared by threads, with the growth and the nodes added.
+
+ <em>Lemma 5 (the lookups without locks).</em> Let the words of a vector
+ be written only from 0, once each, and only while it is in use, and let a
+ lookup of \f$ k \f$ in the vector \f$ T \f$ read 0 at the place \f$ j \f$,
+ after words of other keys at the places from that of \f$ k \f$ to
+ \f$ j - 1 \f$, and then find \f$ T \f$ still in use. Then \f$ k \f$ was
+ absent when the lookup read the place \f$ j \f$.
+
+ Indeed, an insertion of \f$ k \f$ writes the first word 0 of the sequence
+ of \f$ k \f$, and a word that the lookup read different from 0 stays so;
+ at the read of \f$ j \f$ the places before it held other keys and
+ \f$ j \f$ held none, so that \f$ k \f$ was not in \f$ T \f$, and it was in
+ no other vector, since none replaced \f$ T \f$ before the final check. A
+ lookup that finds \f$ k \f$ returns a pair that stays, and is linearized
+ at the read of its word; one that finds the vector replaced starts over on
+ the new one, which happens once per growth. The lookups read with
+ acquire, so that the pair of a node, built before the compare-and-swap
+ with release that published its index, is read whole; they write nothing,
+ and \f$ p \f$ threads that only read scale as \f$ p \f$ independent
+ sequential tables.
+
+ <em>Lemma 6 (no insertion into a vector being copied).</em> Let a writer
+ raise its counter and then read the flag \f$ g \f$, and the thread that
+ grows the table raise \f$ g \f$ and then read the counters, all these
+ accesses sequentially consistent, and let a writer that reads \f$ g \f$
+ raised lower its counter and retry after the growth. Then no word of a
+ vector is written once its copy has begun.
+
+ The four accesses lie in the single order \f$ S \f$: if the read of
+ \f$ g \f$ by the writer follows the raise of \f$ g \f$, the writer backs
+ off; otherwise its raise of the counter precedes the read of the counters
+ by the grower, which waits for it to drop, i.e., for the writer to leave
+ the vector (the mutual exclusion of Dekker, which Dijkstra published).
+ The copy reads each word of the old vector once and writes it at the
+ first free place of its sequence in the new one, which nobody else reads
+ yet; the new vector is published, with release, after all its blocks of
+ 4096 words are copied, and the threads that come to insert meanwhile
+ copy blocks instead of waiting. With the load kept at most \f$ 1 / 2 \f$,
+ a lookup reads on average \f$ \frac{1}{2} ( 1 + 1 / ( 1 - \alpha ) )
+ \le 1.5 \f$ words when it succeeds and
+ \f$ \frac{1}{2} ( 1 + 1 / ( 1 - \alpha )^2 ) \le 2.5 \f$ when it fails, at
+ the load \f$ \alpha \f$ and with random hashes (Knuth), most of them on
+ one line of 8 words; the copies of the growths cost \f$ O( 1 ) \f$
+ amortized per insertion, since the sizes double. An insertion is
+ blocking only during a growth, and the lookups never are.
+
+ \section theory_concurrent_mq Relaxed priority queues
+
+ A priority queue shared by \f$ p \f$ threads under one lock serializes
+ them, and even the exact queue with the best combining serves one
+ operation at a time. A <em>relaxed</em> priority queue returns instead a
+ pair that need not be the least: the <em>rank</em> of a popped pair is
+ 1 plus the number of the pairs present with a smaller key, and its
+ <em>rank error</em> the rank less 1, 0 for an exact queue. A search that
+ takes its states from a relaxed OPEN expands a few states that an exact
+ one would not, and in exchange its threads do not wait for one another.
+
+ The MultiQueue keeps \f$ n \f$ sequential queues, each under its own lock:
+ a push puts the pair in a random queue, and a pop takes the least pair of
+ the better of two random queues. With \f$ n = c p \f$ queues, at most
+ \f$ p - 1 \f$ held by other threads, a queue drawn at random is held with
+ probability less than \f$ 1 / c \f$, and a lock is taken at the first try
+ or after a new draw, in at most \f$ c / ( c - 1 ) \f$ draws on average, 2
+ for the default \f$ c = 2 \f$, with no thread that waits for a lock.
+
+ <em>Theorem 7 (Walzer and Williams).</em> Let the pairs be spread over
+ \f$ n \f$ queues uniformly at random, and then popped one at a time, each
+ from the better of two queues drawn uniformly with replacement. The rank
+ error of a pop converges in distribution as the pops go on, and the mean
+ of its limit is
+ \f[
+   E[ R ] = \sum_{i=1}^{n-1} \left( 2 - \frac{i}{n} \right)
+   \left( 1 - \frac{i}{n} \right) = \frac{5}{6} n - 1 + \frac{1}{6 n} ;
+   \tag{3}
+ \f]
+ its maximum over \f$ \mathrm{poly}( n ) \f$ pops is
+ \f$ O( n \log n ) \f$ with high probability.
+
+ The argument is about the queues ordered by their least keys. A pop
+ draws one of the \f$ i \f$ best queues with the probability
+ \f$ \sigma_{\le i} = 1 - ( 1 - i / n )^2 \f$ that one of the two draws
+ falls among them, while those queues hold, of the pairs that come next in
+ the order of the keys, a share \f$ i / n \f$, since the pairs were spread
+ at random. The \f$ i \f$ best queues are thus emptied faster than their
+ share, \f$ \sigma_{\le i} > i / n \f$, and the number of pairs that
+ separate the \f$ i \f$-th least key from the \f$ ( i + 1 ) \f$-th is a
+ geometric variable whose mean depends only on \f$ \sigma_{\le i} \f$ and
+ \f$ i / n \f$; Walzer and Williams prove that the ranks of the least keys
+ of the queues converge to sums of such independent variables, and that
+ the mean of the rank error is
+ \f$ \sum_{i < n} \sigma_{\le i} ( 1 - \sigma_{\le i} ) /
+ ( \sigma_{\le i} - i / n ) \f$, which is (3) for two draws. With one
+ draw, \f$ \sigma_{\le i} = i / n \f$, the best queues are emptied only as
+ fast as they are filled, and the rank error grows without bound. The
+ earlier bounds of Alistarh et al., \f$ O( n ) \f$ for the mean and
+ \f$ O( n \log n ) \f$ for the maximum, hold for pushes and pops mixed as
+ well, but for a comparison and a pop done atomically; as Williams,
+ Sanders and Dementiev, `MultiQueue` reads the least keys of the two queues
+ without their locks, possibly stale, and in a run of many threads its
+ rank errors are measured rather than bounded.
+
+ <em>Lemma 8 (the buffers).</em> In each queue, let the deletion buffer
+ \f$ D \f$ be empty only if the queue is, and let no pair of the insertion
+ buffer \f$ I \f$ or of the heap \f$ H \f$ be less than one of \f$ D \f$.
+ Then the least pair of \f$ D \f$ is the least of the queue, and the push
+ and the pop of `MultiQueue::Handle` keep both properties.
+
+ The first statement is the second property. A push of a pair less than
+ the greatest of \f$ D \f$ puts it into \f$ D \f$, moving the greatest of a
+ full \f$ D \f$ into \f$ I \f$, which is not less than the rest of
+ \f$ D \f$; a greater pair goes into \f$ I \f$, or into \f$ D \f$ when
+ \f$ I \f$ and \f$ H \f$ are empty; and the pairs of a full \f$ I \f$ go
+ into \f$ H \f$, which changes neither property. A pop takes the least of
+ \f$ D \f$ and, if \f$ D \f$ becomes empty, moves \f$ I \f$ into \f$ H \f$
+ and the least pairs of \f$ H \f$ into \f$ D \f$. Each queue is therefore
+ exact, the relaxation is only in the choice of the queue, and Theorem 7
+ applies unchanged; the heap is touched by batches of 16 pairs, which
+ costs \f$ O( \log m ) \f$ amortized per operation on a queue of \f$ m \f$
+ pairs and keeps the lines of \f$ D \f$ and \f$ I \f$ in the cache of the
+ thread. The stickiness of Williams, Sanders and Dementiev, the two queues
+ kept for \f$ s \f$ operations, saves more misses; it has no theory yet,
+ and their measures show rank errors that grow about linearly in
+ \f$ s \f$.
+
+ A pop that finds both queues empty scans all the queues, each under its
+ lock: when no push runs at the same time, a scan that finds nothing
+ proves the structure empty, which a parallel search needs to stop.
+
  \section theory_concurrent_wait Sleeping until a condition holds
 
  A thread that waits for an item could look again and again, which wastes a
@@ -353,7 +504,7 @@
  true, issues a fence, reads the number of the waiters, and only if it is
  positive advances the epoch and wakes them.
 
- <em>Lemma 5 (no lost wake-up).</em> Let the read-modify-write of the
+ <em>Lemma 9 (no lost wake-up).</em> Let the read-modify-write of the
  waiter be followed by a full fence, and the write that makes the condition
  true be followed by a full fence before the notifier reads the waiters.
  Then a waiter does not sleep through a notification of a condition that is
@@ -421,6 +572,31 @@
  \see J. A. Cain, P. Sanders, N. Wormald, The random graph threshold for
       k-orientiability and a fast algorithm for optimal multiple-choice
       allocation, Proceedings of SODA 2007, 469-476, 2007
+ \see T. Maier, P. Sanders, R. Dementiev, Concurrent hash tables: fast
+      and general(?)!, ACM Transactions on Parallel Computing 5(4), 16,
+      2019, doi:10.1145/3309206
+ \see E. W. Dijkstra, Solution of a problem in concurrent programming
+      control, Communications of the ACM 8(9), 569, 1965,
+      doi:10.1145/365559.365617 (the mutual exclusion of Dekker)
+ \see D. E. Knuth, The Art of Computer Programming, Volume 3: Sorting and
+      Searching, 2nd edition, Addison-Wesley, 1998, section 6.4
+ \see H. Rihani, P. Sanders, R. Dementiev, MultiQueues: simple relaxed
+      concurrent priority queues, ACM Symposium on Parallelism in
+      Algorithms and Architectures (SPAA), 80-82, 2015,
+      doi:10.1145/2755573.2755616
+ \see D. Alistarh, J. Kopinsky, J. Li, G. Nadiradze, The power of choice
+      in priority scheduling, ACM Symposium on Principles of Distributed
+      Computing (PODC), 283-292, 2017, doi:10.1145/3087801.3087810
+ \see M. Williams, P. Sanders, R. Dementiev, Engineering MultiQueues: fast
+      relaxed concurrent priority queues, European Symposium on Algorithms
+      (ESA), LIPIcs 204, 81:1-81:17, 2021,
+      doi:10.4230/LIPIcs.ESA.2021.81
+ \see M. Williams, P. Sanders, The MultiQueue: a simple and fast relaxed
+      concurrent priority queue, ACM Transactions on Parallel Computing
+      12(4), 1-39, 2025, doi:10.1145/3771738
+ \see S. Walzer, M. Williams, A simple yet exact analysis of the
+      MultiQueue, European Symposium on Algorithms (ESA), LIPIcs 351,
+      85:1-85:14, 2025, doi:10.4230/LIPIcs.ESA.2025.85
  \see D. P. Reed, R. K. Kanodia, Synchronization with eventcounts and
       sequencers, Communications of the ACM 22(2), 115-123, 1979,
       doi:10.1145/359060.359076

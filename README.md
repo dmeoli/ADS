@@ -491,6 +491,8 @@ standard library, Boost and Eigen; their tests are in
 | merge of k sorted ranges by a lazy funnel of binary mergers (Frigo et al.; Brodal et al.) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.multiway-merge` |
 | cuckoo table shared by threads, buckets of 4 places, locks on 2048 stripes, paths searched in breadth without locks (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
 | cuckoo table shared by threads, buckets of 4 places, one lock per region of buckets, lookups without locks under versions (seqlock), huge pages (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
+| hash table of linear probing shared by threads, lookups with no lock and no store, find-or-insert with the hash given, pairs in the words or in nodes that never move, growth while the threads insert (Maier, Sanders and Dementiev) | [`concurrent/ConcurrentFlatTable.h`](include/ADS/concurrent/ConcurrentFlatTable.h) | `engineered.concurrent-flat-table`, `engineered.concurrent-flat-table-threads` |
+| relaxed priority queue shared by threads, the better of two queues, stickiness and buffers, rank errors of 5 n / 6 (Rihani, Sanders and Dementiev; Williams et al.; Walzer and Williams) | [`concurrent/MultiQueue.h`](include/ADS/concurrent/MultiQueue.h) | `engineered_queues.multi-queue`, `.multi-queue-rank`, `.multi-queue-threads` |
 | lock-free queue of many producers, a lane of recycled blocks each | [`concurrent/MPSCQueue.h`](include/ADS/concurrent/MPSCQueue.h) | `engineered_queues.mpsc-queue` |
 | bounded queue of many producers and many consumers, a sequence in each place (Vyukov) | [`concurrent/MPMCQueue.h`](include/ADS/concurrent/MPMCQueue.h) | `engineered_queues.mpmc-queue` |
 | event count, the sleep of a thread until a condition holds, with asymmetric fences | [`concurrent/EventCount.h`](include/ADS/concurrent/EventCount.h) | `engineered_queues.event-count` |
@@ -609,7 +611,8 @@ and 8 threads. The competitors are the parallel versions of oneTBB, of
 of OpenMP, of ParlayLib, of IPS4o and IPS2Ra, of FastFlow (its
 `ParallelFor`, `ParallelForReduce` and `ff_DC`), of tlx, of Eigen and
 OpenBLAS, of FFTW and of the GAP benchmark suite; for the hash tables, the
-concurrent tables of oneTBB, libcuckoo and ParlayLib. Each structure runs
+concurrent tables of oneTBB, libcuckoo and ParlayLib, and for the priority
+queues the concurrent one of oneTBB. Each structure runs
 in a process of its own, since the threads that a runtime keeps spinning
 between its calls would slow down the next structure. The benchmark was run
 twice on 8 cores of the Xeon Gold 5120 of the table above, with 5 runs per

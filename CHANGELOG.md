@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- MultiQueue (concurrent/MultiQueue.h), the relaxed priority queue of
+  Rihani, Sanders and Dementiev for the OPEN of a parallel best-first
+  search: n queues under a lock each, a push into a random queue, a pop
+  from the better of two, with the stickiness and the buffers of 16 pairs
+  of Williams, Sanders and Dementiev over 8-ary heaps, integer and real
+  keys, a handle per thread, a pop that answers empty only after a scan of
+  all the queues, exact with one queue; its rank errors and the exact mean
+  of Walzer and Williams in the theory of concurrency; the tests
+  multi-queue, multi-queue-rank (the mean rank error against the formula
+  of Walzer and Williams) and multi-queue-threads, the last under
+  ThreadSanitizer in the CI
+- ConcurrentFlatTable (concurrent/ConcurrentFlatTable.h), the hash table of
+  linear probing on atomic words of 64 bits shared by threads, for the
+  CLOSED set of a parallel search: findOrInsert( k , h , v ) with the hash
+  given, returning the pair held and whether it was inserted, lookups with
+  no lock and no store, the pairs in the words when they fit in 8 bytes
+  (a set of keys of 64 bits, or keys and values of 32 bits) and otherwise
+  in nodes that never move, of which each thread reserves 64 at a time, and
+  a growth while the threads work, excluded from the insertions by a
+  protocol of Dekker on 64 counters and copied in blocks by the threads
+  that come to insert; no removals; the tests concurrent-flat-table and
+  concurrent-flat-table-threads, the last under ThreadSanitizer in the CI
+- bench/parallel.cpp: the concurrent hash tables also on the insertion into
+  an empty table that grows, the lookups of absent keys, the find-or-insert
+  of a CLOSED set and a mix of 90% lookups and 10% insertions, and the
+  CLOSED set of states of 32 bytes (-b closed); the priority queues shared
+  by threads, the MultiQueue against tbb::concurrent_priority_queue, on
+  their fill and drain and on the hold model of a search (-b pq)
 - GrafiteFilter (set/GrafiteFilter.h), the range filter of Costa,
   Ferragina and Vinciguerra: a locality-preserving hash of the keys onto
   a universe of n 2^(B-2) codes kept by Elias-Fano, false positives at
@@ -1590,6 +1618,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now searched between ( x1 , -inf ) and ( x2 , +inf ); MaxAugmentation
   starts from -inf when the type has it, so that a map of values -inf has
   the maximum -inf instead of lowest(); the test infinite-bounds
+- bench/parallel.cpp: the lookups of the concurrent hash tables read the
+  keys and the table from a line that the count of the found keys wrote
+  once per block, and a lookup not inlined (that of
+  ConcurrentCuckooTable) read them again from there at each key, which
+  made its lookups look slower than they are and scale worse; the count
+  is on lines of its own, and the loop copies what it reads
 - BucketQueue: a layer that empties and fills again with large second
   keys and few items, as the least layer of a best-first search on a large
   grid whose nodes come in batches, no longer pays the whole range of its

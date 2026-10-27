@@ -41,12 +41,21 @@
  * - the LCP array of texts of 10^6 and 4 10^6 symbols, of 4 letters or of
  *   words of a Zipf law, from a suffix array of 32 bits (lcpArrayPhi
  *   against the one of the examples of ParlayLib), per symbol;
- * - the insertion and the lookup of n distinct keys in the concurrent hash
- *   tables, all driven by the same threads of the pool
- *   (ConcurrentCuckooTable against tbb::concurrent_hash_map,
- *   tbb::concurrent_unordered_map, the cuckoohash_map of libcuckoo and the
- *   hashtable of ParlayLib), per key, for 10^6 and 4 10^6 keys (the nodes
- *   of 10^7 keys of the tables of oneTBB take more than a GB).
+ * - the concurrent hash tables, all driven by the same threads of the pool
+ *   (ConcurrentFlatTable, as a map and as a set, and ConcurrentCuckooTable
+ *   against tbb::concurrent_hash_map, tbb::concurrent_unordered_map, the
+ *   cuckoohash_map of libcuckoo and the hashtable of ParlayLib), per
+ *   operation, for 10^6 and 4 10^6 keys (the nodes of 10^7 keys of the
+ *   tables of oneTBB take more than a GB): the insertion of distinct keys
+ *   into a table made for them and into an empty one that grows, the
+ *   lookups of present and of absent keys, the find-or-insert of a CLOSED
+ *   set of a search (each key twice) and a mix of 90% lookups and 10%
+ *   insertions; and the find-or-insert and the lookups of states of 32
+ *   bytes, the CLOSED set of a search;
+ * - the concurrent priority queues (the MultiQueue of ADS, relaxed and
+ *   exact, against tbb::concurrent_priority_queue), per pair, for 10^6
+ *   and 4 10^6 pairs: their push and then their pops, and the hold model
+ *   of a search, each pop followed by the push of a greater key.
  * Each structure runs only if ADS_BENCH_WHO names it, or with no such
  * variable, and ADS_BENCH_LIST lists them [see Bench.h], so that run.sh
  * runs each in a process of its own. Each cell is the median of r runs,
@@ -59,7 +68,8 @@
  * "A/A".
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
- *            [ -b sort|patterns|merge|spmv|gemm|fft|graphs|lcp|hash ]
+ *            [ -b sort|patterns|merge|spmv|gemm|fft|graphs|lcp|hash|
+ *                 closed|pq ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -81,6 +91,8 @@
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
+#include "ADS/concurrent/ConcurrentFlatTable.h"
+#include "ADS/concurrent/MultiQueue.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
@@ -106,6 +118,7 @@
 
 #if defined( ADS_HAS_TBB )
  #include <tbb/concurrent_hash_map.h>
+ #include <tbb/concurrent_priority_queue.h>
  #include <tbb/concurrent_unordered_map.h>
  #include <tbb/global_control.h>
  #include <tbb/parallel_for.h>
@@ -199,6 +212,7 @@ namespace gapbsSv {
 #endif
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <bit>
 #include <chrono>
@@ -211,6 +225,7 @@ namespace gapbsSv {
 #include <random>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -1245,109 +1260,525 @@ void texts( const std::vector< std::size_t > & sizes , int r ,
 /*--------------------------------- HASHING --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// n distinct keys inserted into concurrent hash tables by the threads of
-/// the pool of ADS (a parallelFor on blocks of 1024), the tables sized
-/// for n keys, then looked up (by contains() where the table has it, as
-/// libcuckoo); the same threads for all the tables, so that only the
-/// tables differ
+/// a counter on lines of its own, so that the lookups of the threads read
+/// nothing from the line it is on
+struct alignas( 128 ) Tally {
+ std::atomic< std::size_t > n{ 0 };
+ };
+
+/// the loop over [ 0 , n ) of the pool by blocks, f( i ) summed into t;
+/// the arguments of f copied into each block, so that the loop reads no
+/// line that another thread writes
+template< class F >
+void blocks( ADS::ThreadPool & pool , std::size_t n , Tally & t , F f )
+{
+ t.n.store( 0 , std::memory_order_relaxed );
+ ADS::parallelForBlocks( pool , 0 , n , [ & t , f ]( std::size_t lo ,
+                                                     std::size_t hi ) {
+  F g = f;
+  std::size_t s = 0;
+  for( std::size_t i = lo ; i < hi ; ++i ) s += g( i );
+  t.n.fetch_add( s , std::memory_order_relaxed ); } );
+ }
+
+/// a concurrent table of the benchmark of the hash tables: make( c ) with
+/// room for c keys, ins( k , v ) true if k was absent, has( k ), foi( k ,
+/// v ) the value held for k after inserting ( k , v ) if absent, and
+/// whether it grows from empty while threads insert
+using HK = std::uint64_t;
+
+struct AdsCuckoo {
+ static constexpr bool grows = true;
+ ADS::ConcurrentCuckooTable< HK , HK > * t = nullptr;
+ void make( std::size_t c ) { t = new ADS::ConcurrentCuckooTable< HK , HK >(
+                               c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool ins( HK k , HK v ) const { return( t->insert( k , v ) ); }
+ bool has( HK k ) const { return( t->contains( k ) ); }
+ HK foi( HK k , HK v ) const {
+  return( t->insert( k , v ) ? v : *t->find( k ) ); }
+ };
+
+struct AdsFlat {
+ static constexpr bool grows = true;
+ ADS::ConcurrentFlatTable< HK , HK > * t = nullptr;
+ void make( std::size_t c ) { t = new ADS::ConcurrentFlatTable< HK , HK >(
+                               c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool ins( HK k , HK v ) const { return( t->insert( k , v ) ); }
+ bool has( HK k ) const { return( t->contains( k ) ); }
+ HK foi( HK k , HK v ) const { return( t->findOrInsert( k , v ).first.value );
+  }
+ };
+
+/// the set of keys of 64 bits, the pairs in the words
+struct AdsFlatSet {
+ static constexpr bool grows = true;
+ ADS::ConcurrentFlatTable< HK , std::monostate > * t = nullptr;
+ void make( std::size_t c ) {
+  t = new ADS::ConcurrentFlatTable< HK , std::monostate >( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool ins( HK k , HK ) const { return( t->insert( k , {} ) ); }
+ bool has( HK k ) const { return( t->contains( k ) ); }
+ HK foi( HK k , HK v ) const {
+  return( t->findOrInsert( k , {} ).second ? v : k ); }
+ };
+
+#if defined( ADS_HAS_TBB )
+struct TbbHash {
+ static constexpr bool grows = true;
+ using M = tbb::concurrent_hash_map< HK , HK >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool ins( HK k , HK v ) const { return( t->insert( { k , v } ) ); }
+ bool has( HK k ) const { M::const_accessor a; return( t->find( a , k ) ); }
+ HK foi( HK k , HK v ) const {
+  M::const_accessor a;
+  t->insert( a , { k , v } );
+  return( a->second ); }
+ };
+
+struct TbbUnordered {
+ static constexpr bool grows = true;
+ using M = tbb::concurrent_unordered_map< HK , HK >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool ins( HK k , HK v ) const { return( t->insert( { k , v } ).second ); }
+ bool has( HK k ) const { return( t->find( k ) != t->end() ); }
+ HK foi( HK k , HK v ) const { return( t->insert( { k , v } ).first->second );
+  }
+ };
+#endif
+
+#if defined( ADS_HAS_LIBCUCKOO )
+struct LibCuckoo {
+ static constexpr bool grows = true;
+ using M = libcuckoo::cuckoohash_map< HK , HK >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool ins( HK k , HK v ) const { return( t->insert( k , v ) ); }
+ bool has( HK k ) const { return( t->contains( k ) ); }
+ HK foi( HK k , HK v ) const {
+  HK r = v;
+  t->upsert( k , [ & r ]( HK & x ) { r = x; } , v );
+  return( r ); }
+ };
+#endif
+
+#if defined( ADS_HAS_PARLAY )
+/// the keys alone, by linear probing; it does not grow
+struct ParlayHashing {
+ using eType = HK;
+ using kType = HK;
+ eType empty( void ) { return( ~HK( 0 ) ); }
+ kType getKey( eType v ) { return( v ); }
+ std::size_t hash( kType v ) {
+  return( std::size_t( ( v * 0x9E3779B97F4A7C15ull ) >> 3 ) ); }
+ int cmp( kType v , kType w ) { return( v > w ? 1 : ( v == w ? 0 : -1 ) ); }
+ bool replaceQ( eType , eType ) { return( false ); }
+ eType update( eType v , eType ) { return( v ); }
+ bool cas( eType * p , eType o , eType nw ) {
+  return( std::atomic_ref< HK >( *p ).compare_exchange_strong( o , nw ) );
+  }
+ };
+
+struct ParlaySet {
+ static constexpr bool grows = false;
+ using M = parlay::hashtable< ParlayHashing >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c , ParlayHashing() ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool ins( HK k , HK ) const { return( t->insert( k ) ); }
+ bool has( HK k ) const { return( t->find( k ) != ~HK( 0 ) ); }
+ HK foi( HK k , HK v ) const { return( t->insert( k ) ? v : k ); }
+ };
+#endif
+
+/// the works of the hash tables on the table A, for n keys: the insertion
+/// of n distinct keys into a table made for them and into one made empty
+/// (if A grows), the lookups of the n keys and of n absent ones, the
+/// find-or-insert of a CLOSED set (each key twice, in random order, into
+/// an empty table made for n keys), and a mix of 90% lookups (half of
+/// present keys) and 10% insertions into a table of n / 2 keys
+template< class A >
+void hashTable( const std::string & who , std::size_t n , int r ,
+                ADS::ThreadPool & pool , const std::vector< HK > & keys ,
+                const std::vector< HK > & absent ,
+                const std::vector< HK > & twice ,
+                const std::vector< HK > & mixed )
+{
+ if( ADS::bench::skip( who ) )
+  return;
+ A a;
+ Tally t;
+ const HK * K = keys.data();
+ const HK * X = absent.data();
+ const HK * D = twice.data();
+ const HK * M = mixed.data();
+ auto cell = [ & ]( const char * what , std::size_t ops , auto && prepare ,
+                    auto && work , auto && ok ) {
+  ADS::bench::print( bench( what ).c_str() , "uint64" , n , who ,
+                     timeRuns( ops , prepare , work , r , ok ) ); };
+ auto fill = [ & ]( std::size_t c , std::size_t m ) {
+  a.drop();
+  a.make( c );
+  blocks( pool , m , t , [ a , K ]( std::size_t i ) {
+   return( a.ins( K[ i ] , HK( i ) ) ); } ); };
+ cell( "hash insert" , n , [ & ] { a.drop(); a.make( n ); } , [ & ] {
+  blocks( pool , n , t , [ a , K ]( std::size_t i ) {
+   return( a.ins( K[ i ] , HK( i ) ) ); } ); } ,
+  [ & ] { return( t.n.load() == n ); } );
+ cell( "hash find" , n , [] {} , [ & ] {
+  blocks( pool , n , t , [ a , K ]( std::size_t i ) {
+   return( a.has( K[ i ] ) ); } ); } ,
+  [ & ] { return( t.n.load() == n ); } );
+ cell( "hash find absent" , n , [] {} , [ & ] {
+  blocks( pool , n , t , [ a , X ]( std::size_t i ) {
+   return( a.has( X[ i ] ) ); } ); } ,
+  [ & ] { return( t.n.load() == 0 ); } );
+ if constexpr( A::grows )
+  cell( "hash insert grow" , n , [ & ] { a.drop(); a.make( 0 ); } , [ & ] {
+   blocks( pool , n , t , [ a , K ]( std::size_t i ) {
+    return( a.ins( K[ i ] , HK( i ) ) ); } ); } ,
+   [ & ] { return( t.n.load() == n ); } );
+ // the value held for each key, the first inserted: the sum of the keys
+ // of the first insertions, whichever thread did them
+ cell( "hash find-or-insert" , 2 * n , [ & ] { a.drop(); a.make( n ); } ,
+  [ & ] {
+   blocks( pool , 2 * n , t , [ a , D ]( std::size_t i ) {
+    return( std::size_t( a.foi( D[ i ] , D[ i ] ) == D[ i ] ) ); } ); } ,
+  [ & ] { return( t.n.load() == 2 * n ); } );
+ // M[ i ]: a key to look up, or to insert if its top bit is set
+ cell( "hash mixed 90/10" , n , [ & ] { fill( n , n / 2 ); } , [ & ] {
+  blocks( pool , n , t , [ a , M ]( std::size_t i ) {
+   const HK k = M[ i ];
+   return( std::size_t( k >> 63 ? a.ins( k & ~( HK( 1 ) << 63 ) , k ) :
+                                  a.has( k ) ) ); } ); } ,
+  [] { return( true ); } );
+ a.drop();
+ }
+
+/// the concurrent hash tables, all driven by the threads of the pool of
+/// ADS (a parallelForBlocks on blocks of 1024), so that only the tables
+/// differ: ConcurrentFlatTable (a map with its pairs in nodes, and a set
+/// with its keys in the words) and ConcurrentCuckooTable against the
+/// tables of oneTBB and libcuckoo, and the set of ParlayLib, which does
+/// not grow
 void hashing( const std::vector< std::size_t > & sizes , int r ,
               unsigned seed , Executors & X )
 {
  if( ! runs( "pool" ) )
   return;
- using K = std::uint64_t;
  for( std::size_t n : sizes ) {
-  const auto keys = ADS::bench::keys( n , seed );
+  auto all = ADS::bench::keys( 2 * n , seed );
+  const std::vector< HK > keys( all.begin() , all.begin() + n ) ,
+                          absent( all.begin() + n , all.end() );
+  std::mt19937_64 g( seed + 1 );
+  std::vector< HK > twice( keys );
+  twice.insert( twice.end() , keys.begin() , keys.end() );
+  std::shuffle( twice.begin() , twice.end() , g );
+  std::vector< HK > mixed( n );
+  for( std::size_t i = 0 , j = n / 2 ; i < n ; ++i )
+   if( ( g() % 10 == 0 ) && ( j < n ) )
+    mixed[ i ] = keys[ j++ ] | ( HK( 1 ) << 63 );
+   else
+    mixed[ i ] = ( g() & 1 ) ? keys[ g() % ( n / 2 ) ] : absent[ g() % n ];
   auto & pool = X.pool();
-  std::atomic< std::size_t > found{ 0 };
-  auto lookups = [ & ]( auto && find ) {
-   found = 0;
-   ADS::parallelForBlocks( pool , 0 , n , [ & ]( std::size_t lo ,
-                                                 std::size_t hi ) {
-    std::size_t f = 0;
-    for( std::size_t i = lo ; i < hi ; ++i ) f += find( keys[ i ] );
-    found.fetch_add( f , std::memory_order_relaxed ); } ); };
-  // each table: a factory, the insertion and the lookups
-  struct Table {
-   std::string name;
-   std::function< void( void ) > make , insert , find , drop;
-   };
-  std::vector< Table > T;
-  std::unique_ptr< ADS::ConcurrentCuckooTable< K , K > > a;
-  T.push_back( { "ADS::ConcurrentCuckooTable" ,
-   [ & ] { a = std::make_unique< ADS::ConcurrentCuckooTable< K , K > >( n );
-    } ,
-   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
-    a->insert( keys[ i ] , K( i ) ); } ); } ,
-   [ & ] { lookups( [ & ]( K k ) { return( a->contains( k ) ); } ); } ,
-   [ & ] { a.reset(); } } );
+  hashTable< AdsFlat >( "ADS::ConcurrentFlatTable" , n , r , pool , keys ,
+                        absent , twice , mixed );
+  hashTable< AdsFlat >( "ADS::ConcurrentFlatTable A/A" , n , r , pool ,
+                        keys , absent , twice , mixed );
+  hashTable< AdsFlatSet >( "ADS::ConcurrentFlatTable (keys only)" , n , r ,
+                           pool , keys , absent , twice , mixed );
+  hashTable< AdsCuckoo >( "ADS::ConcurrentCuckooTable" , n , r , pool ,
+                          keys , absent , twice , mixed );
 #if defined( ADS_HAS_TBB )
-  using HM = tbb::concurrent_hash_map< K , K >;
-  std::unique_ptr< HM > b;
-  T.push_back( { "tbb::concurrent_hash_map" ,
-   [ & ] { b = std::make_unique< HM >( n ); } ,
-   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
-    b->insert( { keys[ i ] , K( i ) } ); } ); } ,
-   [ & ] { lookups( [ & ]( K k ) {
-    HM::const_accessor c;
-    return( b->find( c , k ) ); } ); } , [ & ] { b.reset(); } } );
-  using UM = tbb::concurrent_unordered_map< K , K >;
-  std::unique_ptr< UM > c;
-  T.push_back( { "tbb::concurrent_unordered_map" ,
-   [ & ] { c = std::make_unique< UM >( n ); } ,
-   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
-    c->insert( { keys[ i ] , K( i ) } ); } ); } ,
-   [ & ] { lookups( [ & ]( K k ) { return( c->find( k ) != c->end() ); } );
-    } , [ & ] { c.reset(); } } );
+  hashTable< TbbHash >( "tbb::concurrent_hash_map" , n , r , pool , keys ,
+                        absent , twice , mixed );
+  hashTable< TbbUnordered >( "tbb::concurrent_unordered_map" , n , r , pool ,
+                             keys , absent , twice , mixed );
 #endif
 #if defined( ADS_HAS_LIBCUCKOO )
-  using LC = libcuckoo::cuckoohash_map< K , K >;
-  std::unique_ptr< LC > d;
-  T.push_back( { "libcuckoo::cuckoohash_map" ,
-   [ & ] { d = std::make_unique< LC >( n ); } ,
-   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
-    d->insert( keys[ i ] , K( i ) ); } ); } ,
-   [ & ] { lookups( [ & ]( K k ) { return( d->contains( k ) ); } ); } ,
-   [ & ] { d.reset(); } } );
+  hashTable< LibCuckoo >( "libcuckoo::cuckoohash_map" , n , r , pool , keys ,
+                          absent , twice , mixed );
 #endif
 #if defined( ADS_HAS_PARLAY )
-  struct PH {
-   using eType = K;
-   using kType = K;
-   eType empty( void ) { return( ~K( 0 ) ); }
-   kType getKey( eType v ) { return( v ); }
-   std::size_t hash( kType v ) {
-    return( std::size_t( ( v * 0x9E3779B97F4A7C15ull ) >> 3 ) ); }
-   int cmp( kType v , kType w ) { return( v > w ? 1 : ( v == w ? 0 : -1 ) ); }
-   bool replaceQ( eType , eType ) { return( false ); }
-   eType update( eType v , eType ) { return( v ); }
-   bool cas( eType * p , eType o , eType nw ) {
-    return( std::atomic_ref< K >( *p ).compare_exchange_strong( o , nw ) );
-    }
-   };
-  using PT = parlay::hashtable< PH >;
-  std::unique_ptr< PT > e;
-  T.push_back( { "parlay::hashtable (keys only)" ,
-   [ & ] { e = std::make_unique< PT >( n , PH() ); } ,
-   [ & ] { ADS::parallelFor( pool , 0 , n , [ & ]( std::size_t i ) {
-    e->insert( keys[ i ] ); } ); } ,
-   [ & ] { lookups( [ & ]( K k ) { return( e->find( k ) != ~K( 0 ) ); } );
-    } , [ & ] { e.reset(); } } );
+  hashTable< ParlaySet >( "parlay::hashtable (keys only)" , n , r , pool ,
+                          keys , absent , twice , mixed );
 #endif
-  for( std::size_t i = 0 ; i < T.size() ; ++i )
-   for( int aa = 0 ; aa < ( i == 0 ? 2 : 1 ) ; ++aa ) {
-    const std::string who = T[ i ].name + ( aa ? " A/A" : "" );
-    if( ADS::bench::skip( who ) )
-     continue;
-    ADS::bench::print( bench( "hash insert" ).c_str() , "uint64" , n , who ,
-                       timeRuns( n , [ & ] { T[ i ].drop(); T[ i ].make(); } ,
-                                 T[ i ].insert , r ,
-                                 [] { return( true ); } ) );
-    ADS::bench::print( bench( "hash find" ).c_str() , "uint64" , n , who ,
-                       timeRuns( n , [] {} , T[ i ].find , r ,
-                                 [ & ] { return( found == n ); } ) );
-    T[ i ].drop();
-    }
+  }
+ }
+
+/// a state of a search of 32 bytes, the key of a CLOSED set
+using State = std::array< std::uint64_t , 4 >;
+
+/// the hash of a state, its words folded by hashWord()
+struct StateHash {
+ using is_avalanching = void;
+ std::size_t operator()( const State & s ) const {
+  std::uint64_t h = 0;
+  for( std::uint64_t w : s ) h = ADS::hashWord( h ^ w );
+  return( std::size_t( h ) ); }
+ };
+
+/// the works of the CLOSED set of a search on the table A of states: the
+/// find-or-insert of each of n states twice, in random order, into an
+/// empty table made for n, then the lookups of the n states
+template< class A >
+void closedTable( const std::string & who , std::size_t n , int r ,
+                  ADS::ThreadPool & pool , const std::vector< State > & S ,
+                  const std::vector< std::uint32_t > & twice )
+{
+ if( ADS::bench::skip( who ) )
+  return;
+ A a;
+ Tally t;
+ const State * s = S.data();
+ const std::uint32_t * D = twice.data();
+ ADS::bench::print( bench( "closed find-or-insert" ).c_str() , "state32" ,
+                    n , who , timeRuns( 2 * n , [ & ] {
+  a.drop(); a.make( n ); } , [ & ] {
+  blocks( pool , 2 * n , t , [ a , s , D ]( std::size_t i ) {
+   return( std::size_t( a.foi( s[ D[ i ] ] , D[ i ] ) == D[ i ] ) ); } );
+  } , r , [ & ] { return( t.n.load() == 2 * n ); } ) );
+ ADS::bench::print( bench( "closed find" ).c_str() , "state32" , n , who ,
+                    timeRuns( n , [] {} , [ & ] {
+  blocks( pool , n , t , [ a , s ]( std::size_t i ) {
+   return( a.has( s[ i ] ) ); } ); } , r ,
+  [ & ] { return( t.n.load() == n ); } ) );
+ a.drop();
+ }
+
+struct ClosedFlat {
+ using M = ADS::ConcurrentFlatTable< State , std::uint64_t , StateHash >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool has( const State & k ) const { return( t->contains( k ) ); }
+ std::uint64_t foi( const State & k , std::uint64_t v ) const {
+  return( t->findOrInsert( k , v ).first.value ); }
+ };
+
+struct ClosedCuckoo {
+ using M = ADS::ConcurrentCuckooTable< State , std::uint64_t , StateHash >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool has( const State & k ) const { return( t->contains( k ) ); }
+ std::uint64_t foi( const State & k , std::uint64_t v ) const {
+  return( t->insert( k , v ) ? v : *t->find( k ) ); }
+ };
+
+#if defined( ADS_HAS_TBB )
+struct ClosedTbb {
+ struct HC {
+  std::size_t hash( const State & s ) const { return( StateHash()( s ) ); }
+  bool equal( const State & a , const State & b ) const {
+   return( a == b ); }
+  };
+ using M = tbb::concurrent_hash_map< State , std::uint64_t , HC >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool has( const State & k ) const {
+  M::const_accessor x; return( t->find( x , k ) ); }
+ std::uint64_t foi( const State & k , std::uint64_t v ) const {
+  M::const_accessor x;
+  t->insert( x , { k , v } );
+  return( x->second ); }
+ };
+#endif
+
+#if defined( ADS_HAS_LIBCUCKOO )
+struct ClosedLibCuckoo {
+ using M = libcuckoo::cuckoohash_map< State , std::uint64_t , StateHash >;
+ M * t = nullptr;
+ void make( std::size_t c ) { t = new M( c ); }
+ void drop( void ) { delete t; t = nullptr; }
+ bool has( const State & k ) const { return( t->contains( k ) ); }
+ std::uint64_t foi( const State & k , std::uint64_t v ) const {
+  std::uint64_t r = v;
+  t->upsert( k , [ & r ]( std::uint64_t & x ) { r = x; } , v );
+  return( r ); }
+ };
+#endif
+
+/// the CLOSED set of a search, states of 32 bytes: ConcurrentFlatTable
+/// against ConcurrentCuckooTable (which reads them under its locks) and
+/// the tables of oneTBB and libcuckoo
+void closed( const std::vector< std::size_t > & sizes , int r ,
+             unsigned seed , Executors & X )
+{
+ if( ! runs( "pool" ) )
+  return;
+ for( std::size_t n : sizes ) {
+  const auto keys = ADS::bench::keys( n , seed );
+  std::vector< State > S( n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   S[ i ] = { keys[ i ] , ~keys[ i ] , keys[ i ] * 3 , std::uint64_t( i ) };
+  std::vector< std::uint32_t > twice( 2 * n );
+  for( std::size_t i = 0 ; i < 2 * n ; ++i )
+   twice[ i ] = std::uint32_t( i % n );
+  std::mt19937_64 g( seed + 2 );
+  std::shuffle( twice.begin() , twice.end() , g );
+  auto & pool = X.pool();
+  closedTable< ClosedFlat >( "ADS::ConcurrentFlatTable" , n , r , pool , S ,
+                             twice );
+  closedTable< ClosedFlat >( "ADS::ConcurrentFlatTable A/A" , n , r , pool ,
+                             S , twice );
+  closedTable< ClosedCuckoo >( "ADS::ConcurrentCuckooTable" , n , r , pool ,
+                               S , twice );
+#if defined( ADS_HAS_TBB )
+  closedTable< ClosedTbb >( "tbb::concurrent_hash_map" , n , r , pool , S ,
+                            twice );
+#endif
+#if defined( ADS_HAS_LIBCUCKOO )
+  closedTable< ClosedLibCuckoo >( "libcuckoo::cuckoohash_map" , n , r ,
+                                  pool , S , twice );
+#endif
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- PRIORITY QUEUES -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a concurrent priority queue of the benchmark, of pairs ( key , item ):
+/// make(), per thread a handle h with push( h , k , x ) and pop( h , k ,
+/// x ), true if it took a pair
+using PQK = std::uint64_t;
+
+/// the MultiQueue of ADS with q queues per thread and the stickiness s
+template< std::size_t Q , unsigned S >
+struct AdsMQ {
+ using M = ADS::MultiQueue< PQK , std::uint64_t >;
+ using Hd = M::Handle;
+ M * m = nullptr;
+ void make( std::size_t p ) { m = new M( Q ? Q * p : 1 , S ); }
+ void drop( void ) { delete m; m = nullptr; }
+ Hd handle( void ) const { return( m->handle() ); }
+ static void push( Hd & h , PQK k , std::uint64_t x ) { h.push( k , x ); }
+ static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
+  const auto e = h.tryPop();
+  if( ! e ) return( false );
+  k = e->key;
+  x = e->item;
+  return( true ); }
+ };
+
+#if defined( ADS_HAS_TBB )
+/// the queue of oneTBB, exact, its operations combined by one thread
+struct TbbPQ {
+ using E = std::pair< PQK , std::uint64_t >;
+ struct Later {
+  bool operator()( const E & a , const E & b ) const {
+   return( a.first > b.first ); }
+  };
+ using M = tbb::concurrent_priority_queue< E , Later >;
+ struct Hd { M * m; };
+ M * m = nullptr;
+ void make( std::size_t ) { m = new M(); }
+ void drop( void ) { delete m; m = nullptr; }
+ Hd handle( void ) const { return( Hd{ m } ); }
+ static void push( Hd & h , PQK k , std::uint64_t x ) {
+  h.m->push( E( k , x ) ); }
+ static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
+  E e;
+  if( ! h.m->try_pop( e ) ) return( false );
+  k = e.first;
+  x = e.second;
+  return( true ); }
+ };
+#endif
+
+/// the works of the priority queue A on the threads of the pool, n pairs:
+/// the push of n pairs of random keys and then their pops, until each
+/// thread finds the queue empty, per pair; and the hold model of the
+/// monotone queues of a search (Williams, Sanders and Dementiev), n pairs
+/// in the queue, each pop followed by the push of its key increased by up
+/// to 2^10, n pops and pushes in all, per pair of operations
+template< class A >
+void priorityQueue( const std::string & who , std::size_t n , int r ,
+                    ADS::ThreadPool & pool , const std::vector< PQK > & K )
+{
+ if( ADS::bench::skip( who ) )
+  return;
+ A a;
+ Tally t;
+ const PQK * k = K.data();
+ auto cell = [ & ]( const char * what , auto && prepare , auto && work ,
+                    auto && ok ) {
+  ADS::bench::print( bench( what ).c_str() , "uint64" , n , who ,
+                     timeRuns( n , prepare , work , r , ok ) ); };
+ auto pushAll = [ & ] {
+  t.n.store( 0 , std::memory_order_relaxed );
+  ADS::parallelForBlocks( pool , 0 , n , [ a , k ]( std::size_t lo ,
+                                                    std::size_t hi ) {
+   auto h = a.handle();
+   for( std::size_t i = lo ; i < hi ; ++i ) A::push( h , k[ i ] , i ); } );
+  };
+ auto popAll = [ & ] {
+  t.n.store( 0 , std::memory_order_relaxed );
+  ADS::parallelForBlocks( pool , 0 , std::size_t( threads ) ,
+                          [ a , &t ]( std::size_t lo , std::size_t hi ) {
+   auto h = a.handle();
+   std::size_t c = 0;
+   PQK key;
+   std::uint64_t x;
+   for( std::size_t j = lo ; j < hi ; ++j )
+    while( A::pop( h , key , x ) ) ++c;
+   t.n.fetch_add( c , std::memory_order_relaxed ); } , 1 );
+  };
+ cell( "pq fill-drain" , [ & ] { a.drop(); a.make( std::size_t( threads ) );
+                                 } , [ & ] { pushAll(); popAll(); } ,
+       [ & ] { return( t.n.load() == n ); } );
+ cell( "pq hold" , [ & ] { a.drop(); a.make( std::size_t( threads ) );
+                           pushAll(); } , [ & ] {
+  t.n.store( 0 , std::memory_order_relaxed );
+  ADS::parallelForBlocks( pool , 0 , n , [ a , k , &t ]( std::size_t lo ,
+                                                         std::size_t hi ) {
+   auto h = a.handle();
+   std::size_t c = 0;
+   PQK key;
+   std::uint64_t x;
+   for( std::size_t i = lo ; i < hi ; ++i )
+    if( A::pop( h , key , x ) ) {
+     A::push( h , key + 1 + ( k[ i ] & 1023 ) , x );
+     ++c;
+     }
+   t.n.fetch_add( c , std::memory_order_relaxed ); } ); } ,
+  [ & ] { return( t.n.load() == n ); } );
+ a.drop();
+ }
+
+/// the relaxed MultiQueue of ADS (2 queues per thread, stickiness 16 and
+/// 1, and exact with one queue) against the exact queue of oneTBB
+void priority( const std::vector< std::size_t > & sizes , int r ,
+               unsigned seed , Executors & X )
+{
+ if( ! runs( "pool" ) )
+  return;
+ for( std::size_t n : sizes ) {
+  std::mt19937_64 g( seed );
+  std::vector< PQK > K( n );
+  for( auto & x : K ) x = g() >> 24;
+  auto & pool = X.pool();
+  priorityQueue< AdsMQ< 2 , 16 > >( "ADS::MultiQueue" , n , r , pool , K );
+  priorityQueue< AdsMQ< 2 , 16 > >( "ADS::MultiQueue A/A" , n , r , pool ,
+                                    K );
+  priorityQueue< AdsMQ< 2 , 1 > >( "ADS::MultiQueue s=1" , n , r , pool ,
+                                   K );
+  priorityQueue< AdsMQ< 4 , 64 > >( "ADS::MultiQueue c=4 s=64" , n , r ,
+                                    pool , K );
+  priorityQueue< AdsMQ< 0 , 1 > >( "ADS::MultiQueue exact" , n , r , pool ,
+                                   K );
+#if defined( ADS_HAS_TBB )
+  priorityQueue< TbbPQ >( "tbb::concurrent_priority_queue" , n , r , pool ,
+                          K );
+#endif
   }
  }
 
@@ -1407,6 +1838,10 @@ int main( int argc , char ** argv )
   texts( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "hash" ) )
   hashing( { 1000000 , 4000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "closed" ) )
+  closed( { 1000000 , 4000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "pq" ) )
+  priority( { 1000000 , 4000000 } , o.runs , o.seed , X );
  }
 
 /*--------------------------------------------------------------------------*/

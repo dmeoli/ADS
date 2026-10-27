@@ -504,6 +504,8 @@ engineered  spsc-queue           coda fra un produttore e un consumatore
 engineered  mpsc-inbox           casella di molti produttori
 engineered  concurrent-cuckoo    cuckoo concorrente, su un thread
 engineered  concurrent-cuckoo-threads cuckoo concorrente, su più thread
+engineered  concurrent-flat-table cammino lineare concorrente, un thread
+engineered  concurrent-flat-table-threads cammino lineare, su più thread
 
 # the engineered combinatorial algorithms, beyond the book
 engineered_combinatorial  fast-bitwise     Harley-Seal, pdep, select
@@ -576,6 +578,9 @@ engineered_queues  event-count             attese con sonno, mai sveglie perse
 engineered_queues  event-count-notifiers   notifiche concorrenti, mai perse
 engineered_queues  work-stealing-deque     deque di Chase e Lev, furti
 engineered_queues  mpmc-queue              coda limitata, molti a molti
+engineered_queues  multi-queue             MultiQueue, esatta con una coda
+engineered_queues  multi-queue-rank        errori di rango contro la teoria
+engineered_queues  multi-queue-threads     MultiQueue su più thread
 
 # the engineered memory beyond the arena and the pool
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura

@@ -25,6 +25,7 @@
 #include "ADS/concurrent/MPMCQueue.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
+#include "ADS/concurrent/MultiQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
 #include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/queue/ArrayQueue.h"
@@ -34,13 +35,16 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <deque>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <random>
 #include <ranges>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -670,6 +674,234 @@ ADS_TEST( "mpmc-queue" )
   for( auto & g : got ) once = once && ( g.load() == 1 );
   CHECK( once && ordered.load() && Q.empty() );
   }
+ }
+
+// the MultiQueue on one thread: with one queue it is exact, against a
+// multiset, on random pushes and pops, keys equal and keys that cross the
+// buffers of 16 (16, 17 and 33 pairs, increasing and decreasing); the
+// greatest key, which stands for an empty queue and is popped by the scan
+// (the infinity of a double, the greatest integer, the least one under
+// std::greater); the empty queue, which pops nothing; with 8 queues every
+// pair comes out once and the queue is empty at the end; the
+// preconditions
+ADS_TEST( "multi-queue" )
+{
+ {
+  MultiQueue< std::uint64_t , int > Q( 1 );
+  auto h = Q.handle();
+  CHECK( Q.queues() == 1 && Q.empty() && ! h.tryPop() && Q.consistent() );
+  std::multiset< std::pair< std::uint64_t , int > > R;
+  std::mt19937_64 g( 61 );
+  for( int s = 0 ; s < 20000 ; ++s )
+   if( ( g() % 3 ) || R.empty() ) {
+    const std::uint64_t k = g() % 64;      // many equal keys
+    h.push( k , s );
+    R.insert( { k , s } );
+    }
+   else {
+    const auto e = h.tryPop();
+    CHECK( e && ( e->key == R.begin()->first ) );
+    const auto it = R.find( { e->key , e->item } );
+    CHECK( it != R.end() );
+    R.erase( it );
+    }
+  CHECK( Q.size() == R.size() && Q.consistent() );
+  while( ! R.empty() ) {
+   const auto e = h.tryPop();
+   CHECK( e && ( e->key == R.begin()->first ) );
+   const auto it = R.find( { e->key , e->item } );
+   CHECK( it != R.end() );
+   R.erase( it );
+   }
+  CHECK( ! h.tryPop() && Q.empty() && Q.consistent() );
+  }
+ for( int m : { 16 , 17 , 33 } )
+  for( bool up : { true , false } ) {
+   MultiQueue< int , int > Q( 1 , 3 );
+   auto h = Q.handle();
+   for( int i = 0 ; i < m ; ++i )
+    h.push( up ? i : m - 1 - i , i );
+   CHECK( Q.size() == std::size_t( m ) && Q.consistent() );
+   for( int i = 0 ; i < m ; ++i ) {
+    const auto e = h.tryPop();
+    CHECK( e && e->key == i );
+    }
+   CHECK( ! h.tryPop() && Q.consistent() );
+   }
+ {
+  const double inf = std::numeric_limits< double >::infinity();
+  MultiQueue< double , int > Q( 4 );
+  auto h = Q.handle();
+  h.push( inf , 1 );
+  h.push( -inf , 2 );
+  h.push( -0.5 , 3 );
+  int seen = 0;
+  for( auto e = h.tryPop() ; e ; e = h.tryPop() )
+   seen += e->item;
+  CHECK( seen == 6 && Q.empty() && Q.consistent() );
+  MultiQueue< std::uint32_t , int > U( 1 );
+  auto u = U.handle();
+  u.push( std::numeric_limits< std::uint32_t >::max() , 7 );
+  const auto e = u.tryPop();
+  CHECK( e && e->item == 7 && ! u.tryPop() );
+  }
+ {
+  MultiQueue< int , int , std::greater< int > > Q( 1 );
+  auto h = Q.handle();
+  for( int k : { 3 , -5 , std::numeric_limits< int >::lowest() , 9 , 0 } )
+   h.push( k , k );
+  std::vector< int > out;
+  for( auto e = h.tryPop() ; e ; e = h.tryPop() )
+   out.push_back( e->key );
+  CHECK( ( out == std::vector< int >{ 9 , 3 , 0 , -5 ,
+                                      std::numeric_limits< int >::lowest()
+                                      } ) );
+  }
+ {
+  MultiQueue< std::uint64_t , std::uint64_t > Q( 8 , 4 , 62 );
+  auto h = Q.handle();
+  std::mt19937_64 g( 63 );
+  const std::uint64_t n = 5000;
+  std::vector< int > got( n , 0 );
+  for( std::uint64_t i = 0 ; i < n ; ++i )
+   h.push( g() % 1000 , i );
+  CHECK( Q.size() == n && Q.consistent() );
+  std::uint64_t c = 0;
+  for( auto e = h.tryPop() ; e ; e = h.tryPop() , ++c )
+   ++got[ e->item ];
+  CHECK( c == n && std::all_of( got.begin() , got.end() ,
+                                []( int x ) { return( x == 1 ); } ) );
+  CHECK( Q.empty() && Q.consistent() );
+  }
+ CHECK_THROWS( ( MultiQueue< int , int >( 0 ) ) , contract_violation );
+ CHECK_THROWS( ( MultiQueue< int , int >( 4 , 0 ) ) , contract_violation );
+ }
+
+// the rank errors of the MultiQueue against the theory: on one thread,
+// with stickiness 1, the pairs spread at random over n queues and then
+// popped by the better of two, the mean rank error converges to the sum
+// of ( 2 - i / n ) ( 1 - i / n ) for i < n (Walzer and Williams), about
+// 5 n / 6; with one queue it is 0, and with stickiness 64 it is larger
+ADS_TEST( "multi-queue-rank" )
+{
+ auto mean = []( std::size_t nq , unsigned s ) {
+  const std::size_t N = ADS::test::scaled< std::size_t >( 200000 ,
+                                                          40000 );
+  MultiQueue< std::uint64_t , std::uint32_t > Q( nq , s , 64 );
+  auto h = Q.handle();
+  std::mt19937_64 g( 65 );
+  std::vector< std::uint64_t > K( N );
+  for( auto & k : K )
+   k = g();
+  std::vector< std::uint64_t > S( K );
+  std::sort( S.begin() , S.end() );
+  for( std::size_t i = 0 ; i < N ; ++i )
+   h.push( K[ i ] , std::uint32_t( i ) );
+  std::vector< int > F( N + 1 , 0 );      // a Fenwick tree of the present
+  auto add = [ & ]( std::size_t i , int d ) {
+   for( ++i ; i <= N ; i += i & ( 0 - i ) ) F[ i ] += d; };
+  auto below = [ & ]( std::size_t i ) {
+   int r = 0;
+   for( ; i > 0 ; i -= i & ( 0 - i ) ) r += F[ i ];
+   return( r ); };
+  for( std::size_t i = 0 ; i < N ; ++i )
+   add( i , 1 );
+  double sum = 0;
+  std::size_t c = 0;
+  for( std::size_t t = 0 ; t < N / 2 ; ++t ) {
+   const auto e = h.tryPop();
+   CHECK( e );
+   const std::size_t r = std::size_t( std::lower_bound( S.begin() , S.end() ,
+                                                        e->key ) -
+                                      S.begin() );
+   if( t >= N / 10 ) {                    // past the first pops
+    sum += below( r );
+    ++c;
+    }
+   add( r , -1 );
+   }
+  return( sum / double( c ) );
+  };
+ CHECK( mean( 1 , 1 ) == 0 );
+ for( std::size_t n : { 8 , 32 } ) {
+  double e = 0;
+  for( std::size_t i = 1 ; i < n ; ++i ) {
+   const double x = double( i ) / double( n );
+   e += ( 2 - x ) * ( 1 - x );
+   }
+  const double m = mean( n , 1 );
+  CHECK( std::abs( m - e ) < 0.1 * e );
+  CHECK( mean( n , 64 ) > 1.5 * m );
+  }
+ }
+
+// the MultiQueue on 2, 4 and 8 threads with twice as many queues (and
+// with one queue): first all push, then all pop until nothing, which with
+// no push running means empty, each pair popped once; then pushes and pops
+// at random, each thread its own items, the rest popped at the end, each
+// pair once and the queues consistent
+ADS_TEST( "multi-queue-threads" )
+{
+ for( int p : { 2 , 4 , 8 } )
+  for( std::size_t nq : { std::size_t( 2 * p ) , std::size_t( 1 ) } ) {
+   const std::uint64_t n = 20000;
+   MultiQueue< std::uint64_t , std::uint64_t > Q( nq , 8 , 66 );
+   std::vector< std::atomic< int > > got( n * std::uint64_t( p ) );
+   for( auto & x : got )
+    x = 0;
+   std::atomic< std::uint64_t > taken{ 0 };
+   std::vector< std::thread > T;
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & , t ] {
+     auto h = Q.handle();
+     std::mt19937_64 g( 67 + std::uint64_t( t ) );
+     for( std::uint64_t i = 0 ; i < n ; ++i )
+      h.push( g() % 4096 , std::uint64_t( t ) * n + i );
+     } );
+   for( auto & t : T )
+    t.join();
+   T.clear();
+   CHECK( Q.size() == n * std::uint64_t( p ) && Q.consistent() );
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & ] {
+     auto h = Q.handle();
+     for( auto e = h.tryPop() ; e ; e = h.tryPop() ) {
+      got[ e->item ].fetch_add( 1 );
+      taken.fetch_add( 1 );
+      }
+     } );
+   for( auto & t : T )
+    t.join();
+   T.clear();
+   CHECK( taken == n * std::uint64_t( p ) && Q.empty() );
+   CHECK( std::all_of( got.begin() , got.end() ,
+                       []( const std::atomic< int > & x ) {
+                        return( x.load() == 1 ); } ) );
+   for( auto & x : got )
+    x = 0;
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & , t ] {
+     auto h = Q.handle();
+     std::mt19937_64 g( 68 + std::uint64_t( t ) );
+     std::uint64_t i = 0;
+     while( i < n )
+      if( g() % 3 ) {
+       h.push( g() % 4096 , std::uint64_t( t ) * n + i );
+       ++i;
+       }
+      else if( const auto e = h.tryPop() )
+       got[ e->item ].fetch_add( 1 );
+     } );
+   for( auto & t : T )
+    t.join();
+   auto h = Q.handle();
+   for( auto e = h.tryPop() ; e ; e = h.tryPop() )
+    got[ e->item ].fetch_add( 1 );
+   CHECK( Q.empty() && Q.consistent() );
+   CHECK( std::all_of( got.begin() , got.end() ,
+                       []( const std::atomic< int > & x ) {
+                        return( x.load() == 1 ); } ) );
+   }
  }
 
 }  // end( namespace )
