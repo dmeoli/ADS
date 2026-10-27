@@ -1,0 +1,587 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File compression.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_compression */
+/** \defgroup theory_compression Theory of compression
+ \ingroup area_compression
+
+ \details The headers of `include/ADS/compression` realize the lossless
+ compressors of chapters 11, Integer Coding, 12, Statistical Coding, 13,
+ Dictionary-Based Compressors, and 14, Block-Sorting Compression, of
+ Ferragina's book, beyond the book, which meets them only in the code of
+ Huffman of its section 14.4, and the indexes that search a compressed text:
+ the entropy against which every compressor is measured, the statistical codes
+ (Huffman, arithmetic, asymmetric numeral systems, prediction by partial
+ matching), the codes of the integers, the compressors of Lempel and Ziv, the
+ transform of Burrows and Wheeler and the indexes built on it. This page
+ collects what the headers take for granted: the definitions and the notation
+ shared by all of them (see \ref theory_compression_notation), the limit that
+ no code can beat and the codes that reach it (see
+ \ref theory_compression_stat), the codes of the integers and their costs
+ (see \ref theory_compression_int), and, for the dictionary compressors, the
+ transform and the indexes, the property on which each one rests and the
+ argument behind its bound (from \ref theory_compression_lz to
+ \ref theory_compression_index). The pseudocode of each algorithm is instead
+ on the page of its header, in the comment of its function, together with the
+ chapter of Ferragina's book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_compression_notation Definitions and notation
+
+ A text \f$ s = s[ 0 ] s[ 1 ] \cdots s[ n - 1 ] \f$ is a string of \f$ n \f$
+ symbols of an alphabet \f$ \Sigma \f$ of \f$ \sigma \f$ symbols, ordered,
+ usually the bytes; \f$ s[ i .. j ] \f$ is the substring from \f$ i \f$ to
+ \f$ j \f$, and \f$ s[ i .. ] \f$ the suffix from \f$ i \f$. A
+ <em>code</em> maps each symbol \f$ \sigma \f$ to a binary
+ <em>codeword</em> \f$ c( \sigma ) \f$ of length \f$ \ell( \sigma ) \f$,
+ and a text to the concatenation of the codewords of its symbols; the code
+ is <em>prefix-free</em> if no codeword is a prefix of another one, so that
+ the concatenation is decoded from left to right with no separator, each
+ codeword being recognized when its last bit is read. A compressor is
+ <em>lossless</em> when its decoder gives back the text exactly, which is the
+ audit of every encoder of the area.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n_c \f$, \f$ P[ c ] \f$</td>
+     <td>the occurrences of the symbol \f$ c \f$ in \f$ s \f$, and its
+         probability, \f$ n_c / n \f$ for the empirical one</td></tr>
+ <tr><td>\f$ H_0 \f$, \f$ H_k \f$</td>
+     <td>the entropy of order 0 and of order \f$ k \f$, in bits per symbol
+         (see (1) and (2))</td></tr>
+ <tr><td>\f$ \ell( c ) \f$, \f$ \bar\ell \f$</td>
+     <td>the length of the codeword of \f$ c \f$, and the average
+         \f$ \bar\ell = \sum_c P[ c ] \ell( c ) \f$</td></tr>
+ <tr><td>\f$ B( x ) \f$, \f$ | B( x ) | \f$</td>
+     <td>the binary code of the integer \f$ x \ge 1 \f$, and its length
+         \f$ 1 + \lfloor \log_2 x \rfloor \f$</td></tr>
+ <tr><td>\f$ \mathit{SA} \f$</td>
+     <td>the suffix array of \f$ s \$ \f$, the places of the suffixes in
+         lexicographic order, \f$ \$ \f$ a sentinel smaller than every
+         symbol [see <tt>SuffixArray.h</tt>]</td></tr>
+ <tr><td>\f$ F \f$, \f$ L \f$</td>
+     <td>the first and the last column of the matrix of the sorted
+         rotations of \f$ s \$ \f$; \f$ L \f$ is the transform of Burrows
+         and Wheeler</td></tr>
+ <tr><td>\f$ C[ c ] \f$</td>
+     <td>the number of the symbols of \f$ s \$ \f$ smaller than
+         \f$ c \f$, i.e., the row of \f$ F \f$ where the rows that start
+         with \f$ c \f$ begin</td></tr>
+ <tr><td>\f$ \mathrm{rank}_c( L , i ) \f$</td>
+     <td>the occurrences of \f$ c \f$ in \f$ L[ 0 .. i - 1 ] \f$</td></tr>
+ <tr><td>\f$ r \f$, \f$ z \f$</td>
+     <td>the number of the runs of equal symbols of \f$ L \f$, and the
+         number of the phrases of a parse of Lempel and Ziv</td></tr>
+ <tr><td>\f$ p \f$, \f$ \mathit{occ} \f$</td>
+     <td>the length of a pattern \f$ P \f$, and the number of its
+         occurrences in \f$ s \f$</td></tr>
+ </table>
+
+ The <em>entropy of order 0</em> of a distribution \f$ P \f$ on
+ \f$ \Sigma \f$, and the <em>empirical</em> one of \f$ s \f$, which takes
+ \f$ P[ c ] = n_c / n \f$, are
+ \f[
+   H_0 = \sum_{c \in \Sigma} P[ c ] \log_2 \frac{1}{P[ c ]} , \tag{1}
+ \f]
+ the term of a symbol of probability 0 being 0; \f$ 0 \le H_0 \le \log_2
+ \sigma \f$, with 0 when one symbol has all the probability and
+ \f$ \log_2 \sigma \f$ when they are equally likely. A compressor that codes
+ each symbol alone, whatever comes before it, cannot do better than
+ \f$ n H_0 \f$ bits (see \ref theory_compression_stat), and the compressors
+ that look at the context do better on the texts of a language, where a
+ symbol is often all but fixed by the few before it. With \f$ w_s \f$ the
+ string of the symbols that follow the occurrences of \f$ w \f$ in
+ \f$ s \f$, in their order, the <em>entropy of order \f$ k \f$</em> of
+ \f$ s \f$ is
+ \f[
+   H_k( s ) = \frac{1}{n} \sum_{w \in \Sigma^k} |w_s| \, H_0( w_s ) , \tag{2}
+ \f]
+ the average entropy of the symbols in their contexts of \f$ k \f$ symbols;
+ \f$ H_{k+1} \le H_k \le H_0 \f$, since conditioning on a longer context
+ does not increase the entropy, and \f$ n H_k \f$ is the measure of the
+ compressors of order \f$ k \f$ (`entropy()` of `Entropy.h` computes both).
+
+ \section theory_compression_stat Statistical codes
+
+ <em>Lemma 1 (Kraft and Shannon).</em> The lengths of a prefix-free code
+ satisfy
+ \f[
+   \sum_{c \in \Sigma} 2^{-\ell( c )} \le 1 , \tag{3}
+ \f]
+ conversely any lengths that satisfy (3) are those of a prefix-free code,
+ and the average length of a prefix-free code is at least \f$ H_0 \f$.
+
+ Indeed, a codeword \f$ c( \sigma ) \f$ is a node of the complete binary tree
+ of depth \f$ \max \ell \f$, and since no codeword is the ancestor of another
+ one the \f$ 2^{\max \ell - \ell( \sigma )} \f$ leaves below the codewords are
+ disjoint, which is (3) multiplied by \f$ 2^{\max \ell} \f$. Conversely, the
+ canonical code below gives the codewords of given lengths in order, each
+ the first free node of its level. Finally,
+ \f$ H_0 - \bar\ell = \sum_c P[ c ] \log_2( 2^{-\ell( c )} / P[ c ] ) \le
+ \log_2 \sum_c 2^{-\ell( c )} \le 0 \f$ by the concavity of the logarithm
+ (the inequality of Jensen) and by (3); hence no code of the symbols one by
+ one beats \f$ H_0 \f$ bits per symbol, and a code of lengths
+ \f$ \ell( c ) = \log_2( 1 / P[ c ] ) \f$ would reach it, when these are
+ integers.
+
+ <em>Theorem 2 (Huffman).</em> The code of Huffman has the least average
+ length among the prefix-free codes of the symbols, and
+ \f[
+   H_0 \le \bar\ell_H < H_0 + 1 . \tag{4}
+ \f]
+
+ The code is built by merging the two least probable symbols into one of
+ their total probability, \f$ \sigma - 1 \f$ times, the codewords of the two
+ being those of the merged symbol followed by 0 and by 1 (`huffman()` of
+ `Huffman.h`, by a heap in \f$ O( \sigma \log \sigma ) \f$ time). An optimal
+ code has the two least probable symbols as siblings at its deepest level,
+ since swapping them with the deepest pair does not lengthen it; the merge
+ then turns an optimal code of \f$ \sigma \f$ symbols into one of
+ \f$ \sigma - 1 \f$ symbols whose average is less by the probability of the
+ pair, which does not depend on the code, and by induction the code built
+ is optimal. The lower bound of (4) is Lemma 1, and the upper one holds since
+ the lengths \f$ \lceil \log_2( 1 / P[ c ] ) \rceil \f$ satisfy (3), give an
+ average below \f$ H_0 + 1 \f$, and are no better than the optimum.
+
+ Only the lengths matter: a <em>canonical</em> code assigns to the symbols
+ of each length consecutive codewords, the first of length \f$ l \f$ being
+ \f$ \mathit{fc}[ l ] = \lceil ( \mathit{fc}[ l + 1 ] + \mathit{num}[ l + 1 ]
+ ) / 2 \rceil \f$ on \f$ l \f$ bits, with \f$ \mathit{fc}[ \max ] = 0 \f$
+ (`CanonicalHuffman.h`). The codewords of length \f$ l \f$ are the values from
+ \f$ \mathit{fc}[ l ] \f$ on, and the \f$ l \f$ first bits of a longer one are
+ below \f$ \mathit{fc}[ l ] \f$; hence the decoder reads bits until the value
+ \f$ v \f$ of the \f$ l \f$ bits read reaches \f$ \mathit{fc}[ l ] \f$, and
+ the symbol is the \f$ ( v - \mathit{fc}[ l ] ) \f$-th of length \f$ l \f$,
+ with the lengths alone as preamble. The fast decoders read \f$ W \f$ bits at
+ once and find in a table of \f$ 2^W \f$ entries the symbols whose codewords
+ fit in them, which needs codewords of at most \f$ W \f$ bits: the optimal
+ code of lengths at most \f$ L \f$ is found by the package-merge of Larmore
+ and Hirschberg in \f$ O( \sigma L ) \f$ time (`limitedHuffmanLengths()` of
+ `HuffmanCoder.h`), and more simply, but not optimally, by halving the
+ frequencies until the code of Huffman fits (`limitedLengths()`).
+
+ A code of the symbols one by one loses up to one bit per symbol against
+ \f$ H_0 \f$, which is much on a skewed distribution (\f$ H_0 \f$ near 0
+ costs 1 bit per symbol anyway). The <em>arithmetic code</em> codes the whole
+ text as one number: the symbols narrow an interval of \f$ [ 0 , 1 ) \f$ in
+ turn, each to the part of its probability, and the code is a short binary
+ fraction inside the last interval.
+
+ <em>Theorem 3 (the arithmetic code).</em> With \f$ s_n = \prod_i P[ s[ i ]
+ ] \f$ the size of the last interval \f$ [ l , l + s_n ) \f$, the first
+ \f$ d = \lceil \log_2( 2 / s_n ) \rceil \f$ bits of \f$ l + s_n / 2 \f$ are
+ a prefix-free code of \f$ s \f$ (among the texts of \f$ n \f$ symbols), and
+ with the empirical probabilities
+ \f[
+   d \le 2 + \sum_{i} \log_2 \frac{1}{P[ s[ i ] ]} = 2 + n H_0 . \tag{5}
+ \f]
+
+ Truncating \f$ x = l + s_n / 2 \f$ to \f$ d \f$ bits loses less than
+ \f$ 2^{-d} \le s_n / 2 \f$, so the fraction \f$ x' \f$ written and every
+ fraction that begins with its bits lie in
+ \f$ [ x' , x' + 2^{-d} ) \subseteq [ l , l + s_n ) \f$; since the intervals
+ of two texts of \f$ n \f$ symbols are disjoint, no code is a prefix of
+ another one. The sum in (5) is \f$ \sum_c n_c \log_2( n / n_c ) = n H_0 \f$.
+ Hence the arithmetic code is within 2 bits of \f$ n H_0 \f$ for the whole
+ text, against the \f$ n \f$ bits of (4), and it codes as well the
+ probabilities that change at each symbol, as long as the decoder changes
+ them in the same way (the adaptive model of `ArithmeticCoding.h`, and the
+ contexts of `PPM.h`).
+
+ The exact code needs numbers of \f$ d \f$ bits; the coder of Witten, Neal
+ and Cleary (`RangeEncoder`) keeps the interval on \f$ w \f$ bits,
+ \f$ [ L , H ) \subseteq [ 0 , M ) \f$, \f$ M = 2^w \f$, and emits a bit
+ whenever the interval falls in one half of \f$ [ 0 , M ) \f$, doubling it.
+ The interval of a symbol of counts \f$ [ a , b ) \f$ out of a total
+ \f$ T \f$ is
+ \f[
+   [ L + \lfloor ( H - L ) a / T \rfloor , L + \lfloor ( H - L ) b / T
+   \rfloor ) , \tag{6}
+ \f]
+ and an interval that straddles the middle within
+ \f$ [ M / 4 , 3 M / 4 ) \f$ is doubled around the middle, the bit it owes
+ being emitted after the next one, opposite to it. After these expansions
+ \f$ H - L > M / 4 \f$, and with \f$ T \le M / 4 \f$ every interval of (6) is
+ nonempty, since \f$ ( H - L ) ( b - a ) / T > 1 \f$; the rounding of (6)
+ costs about \f$ 10^{-4} \f$ bits per symbol for \f$ w = 32 \f$.
+
+ The <em>asymmetric numeral systems</em> of Duda reach the same compression
+ with an integer state \f$ x \f$ in place of the interval. With the
+ frequencies \f$ f_c \f$ scaled to a total \f$ M = 2^{12} \f$ and
+ \f$ c_c \f$ their prefix sums, the symbol \f$ c \f$ moves the state to
+ \f[
+   C( c , x ) = M \lfloor x / f_c \rfloor + c_c + x \bmod f_c , \tag{7}
+ \f]
+ a bijection between the pairs \f$ ( c , x ) \f$ and the states, whose
+ inverse reads \f$ c \f$ off \f$ x \bmod M \f$, which lies in
+ \f$ [ c_c , c_c + f_c ) \f$. The state grows by the factor
+ \f$ M / f_c \f$, i.e., by \f$ \log_2( M / f_c ) \f$ bits, the information
+ of \f$ c \f$ under the scaled frequencies; the encoder keeps it in
+ \f$ [ 2^{16} , 2^{32} ) \f$ by moving 16 bits to the stream before
+ \f$ C \f$ whenever \f$ x \ge 2^{20} f_c \f$, so that \f$ C( c , x ) <
+ 2^{32} \f$. The decoder reads the stream backward, and the encoder therefore
+ takes the symbols from the last; `Rans.h` computes (7) with a multiplication,
+ and `Tans.h` tabulates it on \f$ 2^{11} \f$ states, a lookup per symbol.
+
+ <table>
+ <caption>The statistical coders of the area, on a text of \f$ n \f$
+          symbols</caption>
+ <tr><th>Coder</th><th>Bits</th><th>Time per symbol</th>
+     <th>Note</th></tr>
+ <tr><td><tt>CanonicalHuffman</tt></td>
+     <td>\f$ n \bar\ell_H < n ( H_0 + 1 ) \f$</td>
+     <td>\f$ O( \ell( c ) ) \f$ to decode, a bit at a time</td>
+     <td>any alphabet, the preamble the lengths</td></tr>
+ <tr><td><tt>huffmanCompress()</tt></td>
+     <td>as above, lengths at most 11</td>
+     <td>up to 3 symbols per lookup to decode</td>
+     <td>bytes, four streams</td></tr>
+ <tr><td><tt>arithmeticEncode()</tt></td>
+     <td>\f$ \le 2 + n H_0 \f$ (exact), about \f$ 10^{-4} n \f$ more on
+         32 bits</td>
+     <td>\f$ O( \log \sigma ) \f$ adaptive (a tree of Fenwick)</td>
+     <td>models that change at each symbol</td></tr>
+ <tr><td><tt>ransCompress()</tt>, <tt>tansCompress()</tt></td>
+     <td>\f$ n H_0 \f$ plus a fraction of a percent</td>
+     <td>\f$ O( 1 ) \f$, a multiplication or a lookup</td>
+     <td>static model, bytes</td></tr>
+ <tr><td><tt>ppmEncode()</tt></td>
+     <td>approaches \f$ n H_K \f$ plus the escapes</td>
+     <td>\f$ O( K ( K + \sigma_K ) \log n ) \f$</td>
+     <td>contexts of up to \f$ K \f$ symbols</td></tr>
+ </table>
+
+ Prediction by partial matching (`PPM.h`) codes each symbol arithmetically in
+ the longest context of at most \f$ K \f$ symbols that has seen it, escaping
+ to the shorter contexts on the way. With the escape of the version C, a
+ context seen \f$ m \f$ times with \f$ q \f$ distinct symbols gives
+ \f$ c( \sigma ) / ( m + q ) \f$ to the symbol \f$ \sigma \f$ of count
+ \f$ c( \sigma ) \f$ and \f$ q / ( m + q ) \f$ to the escape, and the
+ symbols excluded by the longer contexts are left out of the shorter ones,
+ since the decoder knows that the symbol is none of them. The compression
+ grows with \f$ K \f$ up to 4 or 5 symbols on the texts of a language, beyond
+ which the escapes cost more than the longer contexts gain.
+
+ \section theory_compression_int Codes of the integers
+
+ A code of the positive integers is optimal, by Lemma 1, for the
+ distribution \f$ P[ x ] = 2^{-\ell( x )} \f$, and choosing a code is
+ choosing the distribution of the data: the d-gaps of a sorted list (the
+ differences of consecutive items, `dGaps()`) are small and skewed, and a
+ code with short codewords for the small integers takes few bits on them.
+
+ <table>
+ <caption>The codes of <tt>IntegerCodes.h</tt> (chapter 11, Integer Coding,
+          of Ferragina's book)</caption>
+ <tr><th>Code</th><th>Codeword</th><th>Length</th>
+     <th>Optimal for</th></tr>
+ <tr><td>unary</td><td>\f$ 0^{x-1} 1 \f$</td><td>\f$ x \f$</td>
+     <td>\f$ 2^{-x} \f$</td></tr>
+ <tr><td>\f$ \gamma \f$ (Elias)</td>
+     <td>\f$ 0^{| B( x ) | - 1} B( x ) \f$</td>
+     <td>\f$ 2 \lfloor \log_2 x \rfloor + 1 \f$</td>
+     <td>\f$ 1 / ( 2 x^2 ) \f$</td></tr>
+ <tr><td>\f$ \delta \f$ (Elias)</td>
+     <td>\f$ \gamma( | B( x ) | ) B( x ) \f$</td>
+     <td>\f$ 1 + 2 \lfloor \log_2 | B( x ) | \rfloor + | B( x ) | \f$</td>
+     <td>about \f$ 1 / ( 2 x ( \log_2 x )^2 ) \f$</td></tr>
+ <tr><td>Rice \f$ R_k \f$, Golomb</td>
+     <td>\f$ U( q + 1 ) \f$ and the remainder</td>
+     <td>\f$ \lfloor ( x - 1 ) / 2^k \rfloor + 1 + k \f$ for Rice</td>
+     <td>\f$ ( 1 - p )^{x-1} p \f$, modulus about \f$ \ln 2 / p \f$</td></tr>
+ <tr><td>variable byte</td><td>groups of 7 bits, a flag each</td>
+     <td>\f$ 8 \lceil | B( x ) | / 7 \rceil \f$</td>
+     <td>whole bytes, fast to decode</td></tr>
+ <tr><td>\f$ ( s , c ) \f$-dense</td><td>continuers, then a stopper</td>
+     <td>\f$ k \f$ words for the \f$ s c^{k-1} \f$ integers of that
+         length</td>
+     <td>the \f$ s \f$ of <tt>denseOptimalS()</tt></td></tr>
+ </table>
+
+ Two codes adapt to the data rather than assume a distribution. The
+ <em>interpolative</em> code of Moffat and Stuiver writes the middle item of
+ a strictly increasing sequence in \f$ [ \mathit{low} , \mathit{hi} ] \f$
+ between the bounds that the items around it leave, i.e., with
+ \f$ x[ l .. r ] \f$ the items and \f$ m \f$ the middle one, in
+ \f[
+   \lceil \log_2( \mathit{hi} - \mathit{low} - r + l + 1 ) \rceil \tag{8}
+ \f]
+ bits, and then the two halves recursively; a run of consecutive integers
+ leaves a single value to each item and costs no bit, which is why the code
+ can beat any code of the items one by one on a clustered list. PForDelta
+ codes a block in \f$ b \f$ bits per item, the few that do not fit being
+ exceptions written apart, so that the decoder unpacks the block with no
+ branch per item (`encodePForDelta()`); its engineered forms
+ (`BinaryPacking.h`) pack 128 items in the 4 lanes of a register of 128 bits,
+ 4 items per shift and mask, and the patched one chooses the width of least
+ cost from the counts of the widths of the block. The Stream VByte of
+ Lemire, Kurz and Rupp moves the lengths of the variable-byte code out of the
+ data, 2 bits per integer in control bytes, so that one shuffle of bytes
+ decodes 4 integers (`StreamVByte.h`).
+
+ None of these codes reads the \f$ i \f$-th item without decoding the ones
+ before it. The directly addressable codes of Brisaboa, Ladra and Navarro
+ (`DirectAccessCodes.h`) cut each integer into chunks, the level
+ \f$ \ell \f$ holding the chunk \f$ \ell \f$ of the integers that reach it
+ and a bit telling whether each one continues. The item \f$ i \f$ of a level
+ is the item \f$ \mathrm{rank}_1( B_\ell , i ) \f$ of the next one, so that
+ an access costs \f$ O( 1 ) \f$ per level of its integer; the widths of the
+ levels that minimize the space, with \f$ n_s \f$ the integers of more than
+ \f$ s \f$ bits and \f$ w \f$ the bits of the largest, satisfy
+ \f[
+   C( s ) = \min_{s < t \le w} \big( n_s ( t - s ) + [ t < w ] \, 1.25 \,
+   n_s + C( t ) \big) , \qquad C( w ) = 0 , \tag{9}
+ \f]
+ since a level that starts at \f$ s \f$ costs \f$ t - s \f$ bits for each of
+ the \f$ n_s \f$ integers that reach it, and one more (with a quarter for
+ its rank) unless it is the last; (9) is solved from \f$ s = w - 1 \f$ down
+ in \f$ O( w^2 ) \f$ time. The code of Elias and Fano, which also searches a
+ sorted sequence in place, is in the area of the succinct structures [see
+ `EliasFano.h`].
+
+ \section theory_compression_lz Compressors of Lempel and Ziv
+
+ The compressors of Lempel and Ziv need no model: they replace a substring with
+ a reference to an earlier occurrence of it (`LempelZiv.h`, chapter 13,
+ Dictionary-Based Compressors, of Ferragina's book). LZ77 parses the text into
+ <em>phrases</em>, each the longest prefix of the rest of the text that starts
+ in the window of the last \f$ w \f$ symbols, written as the triple of its
+ distance, its length and the symbol after it; a copy may overlap the phrase
+ itself, which the decoder handles by copying one symbol at a time. LZSS writes
+ a copy or a literal, and finds the copies as gzip does, by chains of the
+ places with the same hash of the next 3 symbols. LZ78 and LZW keep an explicit
+ dictionary of phrases in a trie, each new phrase being an old one extended by
+ one symbol. All of them are universal: on the texts of an ergodic source their
+ bits per symbol tend to its entropy, and the code of the \f$ z \f$ phrases of
+ LZ78 takes at most \f$ n H_k + O( n \log \log n / \log n ) \f$ bits for every
+ fixed \f$ k \f$ (Kosaraju and Manzini), a term that vanishes slowly.
+
+ The search of the window costs \f$ O( w \ell ) \f$ for a phrase of length
+ \f$ \ell \f$, and \f$ O( n w ) \f$ in all; with no window the parse is found
+ in \f$ O( n ) \f$ time (`lz77ParseLinear()` of `LZ77Linear.h`) by the
+ following property.
+
+ <em>Lemma 4 (Kärkkäinen, Kempa and Puglisi).</em> Let \f$ r \f$ be the rank
+ of the suffix \f$ i \f$ in \f$ \mathit{SA} \f$, and \f$ \mathit{PSV}( i ) \f$
+ and \f$ \mathit{NSV}( i ) \f$ the suffixes of the closest ranks before and
+ after \f$ r \f$ that start before \f$ i \f$. The longest prefix of
+ \f$ s[ i .. ] \f$ that starts at an earlier place has the length
+ \f[
+   \ell( i ) = \max\{ \mathrm{lcp}( i , \mathit{PSV}( i ) ) ,
+   \mathrm{lcp}( i , \mathit{NSV}( i ) ) \} . \tag{10}
+ \f]
+
+ Indeed, the longest common prefix of two suffixes is the least of the
+ longest common prefixes of the suffixes adjacent in \f$ \mathit{SA} \f$
+ between them, and it can therefore only decrease as the rank moves away
+ from \f$ r \f$; among the suffixes that start before \f$ i \f$, the closest
+ on each side share the longest prefix with \f$ i \f$. The two values of
+ every \f$ i \f$ come from one scan of \f$ \mathit{SA} \f$ with a stack, each
+ place pushed and popped once, and the lengths of (10) are found by
+ comparing symbols, at most \f$ \ell( i ) + 1 \f$ comparisons per candidate;
+ since the phrases cover the text, these sum to \f$ O( n ) \f$, and the parse
+ costs \f$ O( n ) \f$ with the suffix array of SA-IS.
+
+ \section theory_compression_bwt The transform of Burrows and Wheeler
+
+ The rows of the matrix \f$ M' \f$ are the \f$ n + 1 \f$ rotations of
+ \f$ s \$ \f$ in sorted order, \f$ F \f$ its first column and \f$ L \f$ its
+ last (`bwt()` of `BurrowsWheeler.h`, chapter 14, Block-Sorting Compression, of
+ Ferragina's book). Since \f$ \$ \f$ is the smallest symbol and occurs once,
+ sorting the rotations is sorting the suffixes, and
+ \f[
+   L[ i ] = s[ \mathit{SA}[ i ] - 1 ] , \tag{11}
+ \f]
+ the symbol before the \f$ i \f$-th smallest suffix (\f$ \$ \f$ for the
+ suffix 0); hence the transform costs the \f$ O( n ) \f$ of the suffix array.
+ The rows that start with a string \f$ w \f$ are contiguous, so the symbols
+ that precede the occurrences of \f$ w \f$ are a substring of \f$ L \f$: on
+ a text whose symbols depend on their context, \f$ L \f$ is made of long runs
+ of few distinct symbols, which the move-to-front turns into small integers
+ and the run-length code shortens. Coding \f$ L \f$ in this way takes at most
+ \f$ ( 5 + \epsilon ) n H_k^* \f$ bits plus lower terms (Manzini), with
+ \f$ H_k^* \f$ a variant of (2), and coding the pieces of \f$ L \f$ of each
+ context of \f$ k \f$ symbols by a code of order 0 reaches \f$ n H_k \f$
+ plus lower terms for every \f$ k \f$ at once (the boosting of Ferragina,
+ Giancarlo, Manzini and Sciortino).
+
+ <em>Lemma 5 (the LF-mapping).</em> The \f$ k \f$-th occurrence of a symbol
+ \f$ c \f$ in \f$ L \f$ and the \f$ k \f$-th occurrence of \f$ c \f$ in
+ \f$ F \f$ are the same symbol of \f$ s \f$; hence the row
+ \f[
+   \mathit{LF}( i ) = C[ L[ i ] ] + \mathrm{rank}_{L[ i ]}( L , i ) \tag{12}
+ \f]
+ is the one that starts with the symbol \f$ L[ i ] \f$, i.e., the rotation of
+ the row \f$ i \f$ by one place to the right.
+
+ Indeed, two rows \f$ i < j \f$ with \f$ L[ i ] = L[ j ] = c \f$, rotated by
+ one place to the right, become \f$ c \f$ followed by the row \f$ i \f$ and
+ \f$ c \f$ followed by the row \f$ j \f$, which compare as the rows did;
+ hence the rows that start with \f$ c \f$ are in the order of the
+ occurrences of \f$ c \f$ in \f$ L \f$, and they begin at the row
+ \f$ C[ c ] \f$ of \f$ F \f$. Since \f$ L[ \mathit{LF}( i ) ] \f$ is the
+ symbol before \f$ L[ i ] \f$ in \f$ s \f$, the inverse transform
+ (`inverseBwt()`) starts from the row of \f$ \$ s \f$ and spells \f$ s \f$
+ backward by \f$ n \f$ steps of (12), in \f$ O( n + \sigma ) \f$ time with
+ the counts of \f$ L \f$ taken in one scan.
+
+ \section theory_compression_index Compressed indexes
+
+ The transform is also an index of the substrings of \f$ s \f$, which
+ replaces both the text and its suffix array (Ferragina and Manzini).
+
+ <em>Lemma 6 (the backward search).</em> If the rows prefixed by a string
+ \f$ Q \f$ are \f$ [ \mathit{first} , \mathit{last} ) \f$, those prefixed by
+ \f$ c Q \f$ are
+ \f[
+   [ C[ c ] + \mathrm{rank}_c( L , \mathit{first} ) ,
+   C[ c ] + \mathrm{rank}_c( L , \mathit{last} ) ) . \tag{13}
+ \f]
+
+ In fact, a row is prefixed by \f$ c Q \f$ if and only if it is the image by
+ (12) of a row prefixed by \f$ Q \f$ whose last symbol is \f$ c \f$, and the
+ images of the occurrences of \f$ c \f$ in
+ \f$ L[ \mathit{first} .. \mathit{last} - 1 ] \f$ are consecutive by
+ Lemma 5. Hence `count( P )` applies (13) from the last symbol of \f$ P \f$
+ to the first, \f$ p \f$ steps of two ranks each, and the occurrences are
+ \f$ \mathit{last} - \mathit{first} \f$, with no access to the text. To
+ locate them, the rows of the suffixes that start at a multiple of
+ \f$ \mu \f$ keep their places: from any row, fewer than \f$ \mu \f$ steps
+ of (12) reach a marked row, each step moving one place to the left in
+ \f$ s \f$, and the place is that of the marked row plus the steps. The
+ indexes of the area differ in how they compute the ranks of (13) and where
+ they keep the samples.
+
+ <table>
+ <caption>The indexes of the area on a text of \f$ n \f$ bytes, a pattern
+          of \f$ p \f$ symbols with \f$ \mathit{occ} \f$ occurrences</caption>
+ <tr><th>Index</th><th>Space</th><th><tt>count( P )</tt></th>
+     <th><tt>locate( P )</tt>, beyond the count</th></tr>
+ <tr><td><tt>FMIndex</tt></td>
+     <td>\f$ 8 n + 32 \sigma n / b \f$ bits, and the samples</td>
+     <td>\f$ O( p b ) \f$, a rank a count every \f$ b \f$ places and a
+         scan</td>
+     <td>\f$ O( \mathit{occ} \, \mu b ) \f$</td></tr>
+ <tr><td><tt>HuffmanFMIndex</tt></td>
+     <td>\f$ n ( H_0 + 1 ) ( 1 + o( 1 ) ) \f$ bits, and the samples</td>
+     <td>\f$ O( p ( H_0 + 1 ) ) \f$ on average, a descent of the
+         tree</td>
+     <td>\f$ O( \mathit{occ} \, \mu ( H_0 + 1 ) ) \f$ on average</td></tr>
+ <tr><td><tt>RIndex</tt></td>
+     <td>\f$ O( r ) \f$ words</td>
+     <td>\f$ O( p ) \f$ ranks on the runs, each with a predecessor
+         search</td>
+     <td>\f$ O( \mathit{occ} ) \f$ predecessor searches</td></tr>
+ <tr><td><tt>MoveRIndex</tt></td>
+     <td>\f$ O( r ) \f$ words, a few more per run</td>
+     <td>\f$ O( p ) \f$ steps of \f$ O( 1 ) \f$, plus the ranks of the
+         intervals of another symbol</td>
+     <td>\f$ O( \mathit{occ} ) \f$, each in \f$ O( 1 ) \f$</td></tr>
+ </table>
+
+ The samples every \f$ \mu \f$ places cost \f$ O( ( n / \mu ) \log n ) \f$
+ bits, which is far more than \f$ L \f$ on a repetitive text (the versions
+ of a document, the genomes of a species), where the number \f$ r \f$ of the
+ runs of \f$ L \f$ is far smaller than \f$ n \f$. The r-index of Gagie,
+ Navarro and Prezza keeps instead \f$ O( r ) \f$ words, by two properties.
+ First, along the backward search the place \f$ \mathit{SA}[ e - 1 ] \f$ of
+ the last row of the range (the <em>toehold</em>) is kept: if
+ \f$ L[ e - 1 ] = c \f$ the row moves by (12) and the place decreases by 1,
+ and otherwise the new last row comes from the last \f$ c \f$ before
+ \f$ e - 1 \f$, which ends a run, whose place is sampled. Second, the
+ function \f$ \phi( \mathit{SA}[ i ] ) = \mathit{SA}[ i - 1 ] \f$, which
+ lists the other occurrences from the toehold, shifts alike every stretch of
+ places between two places of the starts of the runs:
+ \f[
+   \phi( x ) = \phi( y ) + ( x - y ) , \qquad
+   y = \max\{ \mathit{SA}[ p_j ] : \mathit{SA}[ p_j ] \le x \} , \tag{14}
+ \f]
+ \f$ p_j \f$ the start of the run \f$ j \f$. Indeed, if the row \f$ i \f$
+ of \f$ x = \mathit{SA}[ i ] \f$ starts no run, then
+ \f$ L[ i - 1 ] = L[ i ] \f$, Lemma 5 maps the rows \f$ i - 1 \f$ and
+ \f$ i \f$ to adjacent rows, those of \f$ \phi( x ) - 1 \f$ and of
+ \f$ x - 1 \f$, and hence \f$ \phi( x - 1 ) = \phi( x ) - 1 \f$; the
+ places \f$ x \f$ whose row starts a run are the \f$ \mathit{SA}[ p_j ] \f$,
+ and (14) follows by induction on \f$ x - y \f$. Hence one
+ predecessor search among the \f$ r \f$ places \f$ \mathit{SA}[ p_j ] \f$ in
+ an Elias-Fano sequence gives each step of \f$ \phi \f$ (`RIndex.h`). Both
+ (12) on the runs and (14) map each interval of a partition alike, and the
+ move structures of Nishimoto and Tabei split the intervals so that the
+ interval of the image is found from that of the argument in \f$ O( 1 ) \f$
+ steps, which removes the predecessor searches at the price of a few words
+ per run (`MoveRIndex.h`, after the move-r of Bertram, Fischer and Nalbach).
+
+ \section theory_compression_refs References
+
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapters 11, Integer Coding, 12, Statistical Coding, 13,
+      Dictionary-Based Compressors, and 14, Block-Sorting Compression,
+      doi:10.1017/9781009128933
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 14.4,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap14.pdf
+ \see C. E. Shannon, A mathematical theory of communication, Bell System
+      Technical Journal 27(3), 379-423, 1948,
+      doi:10.1002/j.1538-7305.1948.tb01338.x
+ \see D. A. Huffman, A method for the construction of minimum-redundancy
+      codes, Proceedings of the IRE 40(9), 1098-1101, 1952,
+      doi:10.1109/JRPROC.1952.273898
+ \see L. L. Larmore, D. S. Hirschberg, A fast algorithm for optimal
+      length-limited Huffman codes, Journal of the ACM 37(3), 464-473,
+      1990, doi:10.1145/79147.79150
+ \see I. H. Witten, R. M. Neal, J. G. Cleary, Arithmetic coding for data
+      compression, Communications of the ACM 30(6), 520-540, 1987,
+      doi:10.1145/214762.214771
+ \see J. Duda, Asymmetric numeral systems: entropy coding combining speed
+      of Huffman coding with compression rate of arithmetic coding,
+      arXiv:1311.2540, 2013
+ \see J. G. Cleary, I. H. Witten, Data compression using adaptive coding
+      and partial string matching, IEEE Transactions on Communications
+      32(4), 396-402, 1984, doi:10.1109/TCOM.1984.1096090
+ \see P. Elias, Universal codeword sets and representations of the
+      integers, IEEE Transactions on Information Theory 21(2), 194-203,
+      1975, doi:10.1109/TIT.1975.1055349
+ \see A. Moffat, L. Stuiver, Binary interpolative coding for effective
+      index compression, Information Retrieval 3(1), 25-47, 2000,
+      doi:10.1023/A:1013002601898
+ \see D. Lemire, L. Boytsov, Decoding billions of integers per second
+      through vectorization, Software: Practice and Experience 45(1),
+      1-29, 2015, doi:10.1002/spe.2203
+ \see N. R. Brisaboa, S. Ladra, G. Navarro, DACs: bringing direct access to
+      variable-length codes, Information Processing and Management 49(1),
+      392-404, 2013, doi:10.1016/j.ipm.2012.08.003
+ \see J. Ziv, A. Lempel, A universal algorithm for sequential data
+      compression, IEEE Transactions on Information Theory 23(3),
+      337-343, 1977, doi:10.1109/TIT.1977.1055714
+ \see S. R. Kosaraju, G. Manzini, Compression of low entropy strings with
+      Lempel-Ziv algorithms, SIAM Journal on Computing 29(3), 893-911,
+      2000, doi:10.1137/S0097539797331105
+ \see J. Kärkkäinen, D. Kempa, S. J. Puglisi, Linear time Lempel-Ziv
+      factorization: simple, fast, small, Proc. 24th CPM, LNCS 7922,
+      189-200, 2013, doi:10.1007/978-3-642-38905-4_19
+ \see M. Burrows, D. J. Wheeler, A block-sorting lossless data compression
+      algorithm, Technical Report 124, Digital Systems Research Center,
+      1994
+ \see G. Manzini, An analysis of the Burrows-Wheeler transform, Journal
+      of the ACM 48(3), 407-430, 2001, doi:10.1145/382780.382782
+ \see P. Ferragina, R. Giancarlo, G. Manzini, M. Sciortino, Boosting
+      textual compression in optimal linear time, Journal of the ACM
+      52(4), 688-713, 2005, doi:10.1145/1082036.1082043
+ \see P. Ferragina, G. Manzini, Indexing compressed text, Journal of the
+      ACM 52(4), 552-581, 2005, doi:10.1145/1082036.1082039
+ \see V. Mäkinen, G. Navarro, Succinct suffix arrays based on run-length
+      encoding, Proc. 16th CPM, LNCS 3537, 45-56, 2005,
+      doi:10.1007/11496656_5
+ \see T. Gagie, G. Navarro, N. Prezza, Fully functional suffix trees and
+      optimal text searching in BWT-runs bounded space, Journal of the ACM
+      67(1), 2, 2020, doi:10.1145/3375890
+ \see T. Nishimoto, Y. Tabei, Optimal-time queries on BWT-runs compressed
+      indexes, Proc. 48th ICALP, LIPIcs 198, 101, 2021,
+      doi:10.4230/LIPIcs.ICALP.2021.101
+ \see N. Bertram, J. Fischer, L. Nalbach, Move-r: optimizing the r-index,
+      Proc. 22nd SEA, LIPIcs 301, 1, 2024, doi:10.4230/LIPIcs.SEA.2024.1
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File compression.dox ------------------------*/
+/*--------------------------------------------------------------------------*/

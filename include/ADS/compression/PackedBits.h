@@ -3,30 +3,32 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The bits of the compressors of this folder, packed in bytes, since their
- * input and their output are streams of bytes: a PackedBitWriter appends
+ * input and their output are streams of bytes: a `PackedBitWriter` appends
  * bits, the first one in the most significant bit of the first byte, and a
- * PackedBitReader reads them back in the same order. A code of k bits goes
- * in with one call, the most significant bit first, so that the value of
- * the bits read so far is the integer whose binary digits they are; this is
- * the order in which the canonical code of Huffman [see
- * CanonicalHuffman.h] and the arithmetic coder [see ArithmeticCoding.h]
+ * `PackedBitReader` reads them back in the same order. A code of \f$ k \f$
+ * bits goes in with one call, the most significant bit first, so that the
+ * value of the bits read so far is the integer whose binary digits they
+ * are; this is the order in which the canonical code of Huffman [see
+ * `CanonicalHuffman.h`] and the arithmetic coder [see `ArithmeticCoding.h`]
  * read their input, one bit at a time, and in which a dyadic fraction
  * \f$ v / 2^k \f$ is written as \f$ 0.b_1 b_2 \ldots b_k \f$. The last
- * byte is padded with zeros, and a PackedBitReader gives zeros past the end
- * of its bytes, which is what the decoder of the arithmetic code expects;
- * the decoders that must not read past the end check it with position().
- * The streams of bits on words of 64 bits, with the fields read a word at
- * a time, are those of the integer codes [see BitStream.h].
+ * byte is padded with zeros, and a `PackedBitReader` gives zeros past the
+ * end of its bytes, which is what the decoder of the arithmetic code
+ * expects; the decoders that must not read past the end check it with
+ * `position()`. The streams of bits on words of 64 bits, with the fields
+ * read a word at a time, are those of the integer codes [see
+ * `BitStream.h`].
  *
- * The contracts [see Contract.h]: a code has at most 64 bits. The
- * operations are defined in PackedBits.tpp.
+ * The contracts [see `Contract.h`]: a code has at most 64 bits. The
+ * operations are defined in `PackedBits.tpp`.
  *
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
- *      Press, 2023, chapter 12
+ *      Press, 2023, chapter 12, Statistical Coding,
+ *      doi:10.1017/9781009128933
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -67,15 +69,15 @@ class PackedBitWriter {
 /*--------------------------------------------------------------------------*/
  public:
 
- /// appends the bit b
+ /// appends the bit \f$ b \f$
  void put( bool b );
 
- /// appends the k low bits of v, the most significant first
- /// \pre 0 <= k <= 64, v < 2^k
+ /// appends the \f$ k \f$ low bits of \f$ v \f$, the most significant first
+ /// \pre \f$ 0 \le k \le 64 \f$, \f$ v < 2^k \f$
  void put( std::uint64_t v , int k );
 
- /// appends the bits of s, a string of '0' and '1'
- /// \pre s has only '0' and '1'
+ /// appends the bits of \f$ s \f$, a string of `'0'` and `'1'`
+ /// \pre \f$ s \f$ has only `'0'` and `'1'`
  void put( const std::string & s );
 
  /// the number of bits written
@@ -99,21 +101,21 @@ class PackedBitWriter {
 /*--------------------------------------------------------------------------*/
 
 /// reads the bits of a sequence of bytes in the order of a
-/// PackedBitWriter, and zeros past its end
+/// `PackedBitWriter`, and zeros past its end
 class PackedBitReader {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// the reader of the bytes b, which must outlive it
+ /// the reader of the bytes \f$ b \f$, which must outlive it
  explicit PackedBitReader( std::span< const std::uint8_t > b )
   : f_bytes( b ) {}
 
  /// the next bit, 0 past the end
  bool get( void );
 
- /// the value of the next k bits, the first the most significant
- /// \pre 0 <= k <= 64
+ /// the value of the next \f$ k \f$ bits, the first the most significant
+ /// \pre \f$ 0 \le k \le 64 \f$
  std::uint64_t get( int k );
 
  /// the number of bits read, past the end too
