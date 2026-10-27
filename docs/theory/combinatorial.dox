@@ -1,0 +1,281 @@
+/*--------------------------------------------------------------------------*/
+/*------------------------ File combinatorial.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_combinatorial */
+/** \defgroup theory_combinatorial Theory of combinatorial algorithms
+ \ingroup area_combinatorial
+
+ \details The headers of `include/ADS/combinatorial` go beyond the book, after
+ volume 4A of The Art of Computer Programming of Knuth: the broadword
+ computation of his section 7.1.3, which works on the 64 bits of a word as on
+ a vector of bits, and the generation of the basic combinatorial objects of
+ his section 7.2.1 (the tuples, the permutations, the combinations, the
+ partitions and the strings of parentheses), each in two versions, one as
+ the text describes it and one engineered for speed. The enumeration by
+ backtrack of chapter 16 of the book is instead in `include/ADS/backtrack`.
+ This page collects what the headers take for granted: the definitions and
+ the notation (see \ref theory_combinatorial_notation), the identities on
+ which the broadword tricks rest (see \ref theory_combinatorial_broadword),
+ the population count of arrays (see \ref theory_combinatorial_popcount),
+ and the orders of the generation with the arguments behind their costs (see
+ \ref theory_combinatorial_generation). The pseudocode of each algorithm is
+ instead on the page of its header, in the comment of its function, together
+ with the source that it follows.
+
+ \tableofcontents
+
+ \section theory_combinatorial_notation Definitions and notation
+
+ A <em>word</em> \f$ x \f$ is an unsigned integer of 64 bits
+ \f$ x = \sum_{k=0}^{63} x_k 2^k \f$, the bit \f$ x_k \f$ in the place
+ \f$ k \f$, and the arithmetic on words is modulo \f$ 2^{64} \f$, so that
+ \f$ -x = \lnot x + 1 \f$ (the complement plus 1). A word is also the set
+ \f$ \{ k : x_k = 1 \} \subseteq \{ 0 , \ldots , 63 \} \f$, and the operations
+ on the bits are those on the sets: \f$ \& \f$ the intersection,
+ \f$ \mid \f$ the union, \f$ \oplus \f$ the symmetric difference.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ \& \f$, \f$ \mid \f$, \f$ \oplus \f$, \f$ \lnot \f$</td>
+     <td>the and, the or, the exclusive or and the complement of the bits,
+         place by place</td></tr>
+ <tr><td>\f$ x \gg s \f$, \f$ x \ll s \f$</td>
+     <td>the shifts by \f$ s \f$ places, i.e., \f$ \lfloor x / 2^s \rfloor \f$
+         and \f$ 2^s x \bmod 2^{64} \f$</td></tr>
+ <tr><td>\f$ \nu( x ) \f$</td>
+     <td>the sideways sum, the number of 1 bits of \f$ x \f$
+         (<tt>sidewaysSum()</tt>)</td></tr>
+ <tr><td>\f$ \rho( x ) \f$, \f$ \lambda( x ) \f$</td>
+     <td>the ruler function, the place of the lowest 1 (the trailing zeros),
+         and the place of the highest 1, \f$ \lfloor \log_2 x \rfloor \f$, of
+         \f$ x \ne 0 \f$</td></tr>
+ <tr><td>\f$ \mathtt{0x5555 \ldots 55} \f$</td>
+     <td>a constant in hexadecimal with its byte repeated in the 8 bytes of
+         the word</td></tr>
+ <tr><td>\f$ \binom{n}{t} \f$, \f$ p( n ) \f$, \f$ \varpi_n \f$,
+         \f$ C_n \f$</td>
+     <td>the binomial coefficient, the partitions of the integer
+         \f$ n \f$, the Bell number (the partitions of a set of \f$ n \f$)
+         and the Catalan number \f$ \binom{2 n}{n} / ( n + 1 ) \f$</td></tr>
+ </table>
+
+ \section theory_combinatorial_broadword Broadword computation
+
+ The tricks of `Bitwise.h` replace a loop over the bits by a few operations
+ on the whole word, each of which acts on all the places at once. Four
+ identities are at their base. The lowest 1 of \f$ x \ne 0 \f$ is in the place
+ \f$ \rho( x ) \f$, and \f$ x - 1 \f$ has the same bits above it, a 0 in it
+ and 1s below it; hence
+ \f[
+   x \,\&\, -x = 2^{\rho( x )} , \quad
+   x \mid ( x - 1 ) = x + 2^{\rho( x )} - 1 , \quad
+   x \oplus ( x - 1 ) = 2^{\rho( x ) + 1} - 1 , \tag{1}
+ \f]
+ i.e., the lowest 1 alone (`rightmostOne()`), the 0s below it set
+ (`smearRight()`), and a run of \f$ \rho( x ) + 1 \f$ ones, whose sideways
+ sum gives `ruler()`.
+
+ The sideways sum adds the bits in parallel: \f$ x - ( ( x \gg 1 ) \,\&\,
+ \mathtt{0x5555 \ldots 55} ) \f$ holds in each field of 2 bits the number of
+ its 1 bits (\f$ 2 a + b - a = a + b \f$), two masked shifts add the fields
+ in pairs into fields of 4 and then of 8 bits, and the product by
+ \f$ \mathtt{0x0101 \ldots 01} \f$ sums the 8 bytes into the top one, no sum
+ exceeding 64 and hence no carry crossing a byte. The same doubling gives
+ `lambda()` by halving the width of the search, `reverseBits()` by swapping
+ the fields of 1, 2, 4, 8 and 16 bits and the two halves, and `interleave()`,
+ whose spread of 32 bits to the even places moves blocks of 16, 8, 4, 2 and
+ 1 bits; each of them costs \f$ O( \log w ) \f$ operations for a word of
+ \f$ w \f$ bits.
+
+ The Gray code \f$ g = x \oplus ( x \gg 1 ) \f$ of `gray()` changes by one
+ bit from \f$ x \f$ to \f$ x + 1 \f$, since the carry flips the run of the
+ lowest 1s of \f$ x \f$ and the bit above it, and the shift cancels all but
+ one of the flips; its inverse is the prefix exclusive or
+ \f$ x_k = \bigoplus_{j \ge k} g_j \f$, which `grayInverse()` computes by
+ doubling the span, \f$ g \gets g \oplus ( g \gg s ) \f$ for
+ \f$ s = 1 , 2 , 4 , \ldots , 32 \f$.
+
+ <em>Lemma 1 (the trick of Gosper).</em> For \f$ x \ne 0 \f$, with
+ \f$ u = x \,\&\, -x \f$ and \f$ v = x + u \f$, the next larger word with as
+ many 1 bits as \f$ x \f$ is
+ \f[
+   v + ( ( ( v \oplus x ) / u ) \gg 2 ) . \tag{2}
+ \f]
+
+ Indeed, let the lowest run of 1s of \f$ x \f$ have \f$ r \f$ bits, from the
+ place \f$ \rho( x ) \f$ up. The next word with as many 1s moves the top
+ bit of that run one place up and the other \f$ r - 1 \f$ bits of the run to
+ the bottom; \f$ v \f$ is \f$ x \f$ with the run cleared and the bit above it
+ set, and \f$ v \oplus x \f$ is a run of \f$ r + 1 \f$ ones from the place
+ \f$ \rho( x ) \f$, which the division by \f$ u \f$ brings to the place 0 and
+ the shift by 2 shortens to \f$ r - 1 \f$ ones. `nextCombination()` of
+ `FastGeneration.h` computes the same word without the division, from
+ \f$ u = x \mid ( x - 1 ) \f$ and the shift by \f$ \rho( x ) + 1 \f$, the
+ trailing zeros given by one instruction of the processor. Finally, the test
+ of a zero byte of `hasZeroByte()` subtracts 1 from each byte: only a byte
+ that is 0 borrows into its own top bit while having it clear in \f$ x \f$,
+ and the lowest such byte is found exactly; a borrow from it may propagate a
+ false 1 into a higher byte, which does not change the answer, since a zero
+ byte exists in that case anyway.
+
+ \section theory_combinatorial_popcount Population counts of arrays
+
+ The 1 bits of an array of \f$ n \f$ words are the sum of their sideways
+ sums, \f$ n \f$ instructions of population count on a processor that has
+ one; `popcount()` of `FastBitwise.h` keeps four independent sums, so that
+ the additions of consecutive words do not wait for one another. On the
+ vectors of AVX2 and AVX-512 the method of Harley and Seal does fewer counts
+ than words. A carry-save adder takes three vectors of bits \f$ a \f$,
+ \f$ b \f$, \f$ c \f$ and gives, place by place,
+ \f[
+   \mathrm{sum} = a \oplus b \oplus c , \quad
+   \mathrm{carry} = \mathrm{maj}( a , b , c ) , \quad
+   a + b + c = \mathrm{sum} + 2 \, \mathrm{carry} , \tag{3}
+ \f]
+ so that a tree of 15 adders reduces a block of 16 vectors and the
+ accumulators of the ones \f$ o \f$, of the twos \f$ t \f$, of the fours
+ \f$ f \f$ and of the eights \f$ e \f$ to new accumulators and a vector
+ \f$ s \f$ of the sixteens, by (3) with the weights of each level. Only the
+ vector of the sixteens is counted, and the accumulators once at the end: the
+ total is \f$ 16 \sum \nu( s ) \f$ over the blocks plus
+ \f$ 8 \nu( e ) + 4 \nu( f ) + 2 \nu( t ) + \nu( o ) \f$, at the cost of one
+ count and of 15 carry-save adders, i.e., a few dozen logical operations, per
+ block of 16 vectors. A vector is counted by the instruction
+ of AVX-512 if there is one, and otherwise by looking up the counts of its
+ 16 nibbles in a shuffle of bytes and adding the bytes of each word by
+ `psadbw`. The rank of a bit, the population count of a prefix, is the base
+ of `select()`, which finds the byte of the 1 of rank \f$ r \f$ by comparing
+ \f$ r \f$ with the 8 prefix sums of the bytes in parallel, as in the
+ zero-byte test, and then the bit inside the byte.
+
+ \section theory_combinatorial_generation Generation of combinatorial objects
+
+ A generator visits all the objects of a kind in a fixed order, each once,
+ and its cost is measured per object, i.e., amortized over the whole
+ sequence; a <em>loopless</em> one also bounds the work between two
+ consecutive objects by a constant. The orders of `Generation.h` and of
+ `FastGeneration.h` are the following.
+
+ <table>
+ <caption>The objects, their number and their order</caption>
+ <tr><th>Objects</th><th>Number</th><th>Functions</th><th>Order</th></tr>
+ <tr><td>\f$ n \f$-tuples with \f$ 0 \le a_j < m_j \f$</td>
+     <td>\f$ \prod_j m_j \f$</td>
+     <td><tt>mixedRadix()</tt>, <tt>grayTuples()</tt></td>
+     <td>lexicographic; reflected Gray, one place changed by 1</td></tr>
+ <tr><td>permutations of a multiset</td>
+     <td>\f$ n! / \prod_v m_v! \f$</td>
+     <td><tt>permutationsLex()</tt>, <tt>forEachPermutationLex()</tt></td>
+     <td>lexicographic</td></tr>
+ <tr><td>permutations of \f$ n \f$ items</td><td>\f$ n! \f$</td>
+     <td><tt>plainChanges()</tt>, <tt>heapPermutations()</tt>,
+         <tt>forEachPermutation()</tt></td>
+     <td>one adjacent swap; one swap</td></tr>
+ <tr><td>\f$ t \f$-combinations of \f$ n \f$</td>
+     <td>\f$ \binom{n}{t} \f$</td>
+     <td><tt>combinationsLex()</tt>, <tt>forEachCombination()</tt>,
+         <tt>forEachCombinationMask()</tt>, <tt>revolvingDoor()</tt></td>
+     <td>lexicographic; increasing as words; one item in and one
+         out</td></tr>
+ <tr><td>partitions of \f$ n \f$</td><td>\f$ p( n ) \f$</td>
+     <td><tt>integerPartitions()</tt></td>
+     <td>reverse lexicographic</td></tr>
+ <tr><td>partitions of a set of \f$ n \f$</td><td>\f$ \varpi_n \f$</td>
+     <td><tt>setPartitions()</tt></td>
+     <td>lexicographic on the restricted growth strings</td></tr>
+ <tr><td>strings of \f$ n \f$ pairs of parentheses</td><td>\f$ C_n \f$</td>
+     <td><tt>nestedParentheses()</tt></td><td>lexicographic</td></tr>
+ </table>
+
+ The lexicographic successor has one scheme: find the last place that can
+ grow, make it grow by the least amount, and set the places after it to
+ their least values. For a permutation (Algorithm L of Narayana Pandita) the
+ places after the last ascent \f$ a_j < a_{j+1} \f$ are nonincreasing, the
+ least larger item of the suffix goes to the place \f$ j \f$, and the suffix
+ is reversed. The scan of a suffix of length \f$ k \f$ happens once every
+ \f$ k! \f$ permutations of distinct items; hence the work per permutation
+ is at most proportional to \f$ \sum_{k \ge 1} k / k! = e \f$, a constant
+ on the average though \f$ \Theta( n ) \f$ in the worst case. The same
+ argument gives \f$ O( 1 ) \f$ amortized for the tuples, where a carry over
+ the last \f$ k \f$ places happens once every
+ \f$ m_{n-1} m_{n-2} \cdots m_{n-k} \ge 2^k \f$ tuples, and for the
+ combinations. The engineered versions of `FastGeneration.h` remove the
+ constant itself from the inner loop: the last place of a combination runs
+ through its values by a loop of its own, the last 3 items of a permutation
+ are written in their 6 orders directly, and the words of
+ `forEachCombinationMask()` move their lowest 1 up by one addition while it
+ can, (2) being needed only once per run.
+
+ <em>Lemma 2 (Heap's method).</em> The iterative method of Heap, with a
+ counter \f$ c_i < i \f$ for each place \f$ i \ge 1 \f$, swaps \f$ a_i \f$
+ with \f$ a_{c_i} \f$ if \f$ i \f$ is odd and with \f$ a_0 \f$ if it is even,
+ and visits the \f$ n! \f$ arrangements, each once, with one swap between
+ two of them.
+
+ Indeed, the counters run as a mixed-radix number with the radices
+ \f$ 2 , 3 , \ldots , n \f$, i.e., through \f$ n! \f$ values, and Heap's
+ choice of the swaps is the one that brings to the place \f$ i \f$ each of
+ the items \f$ a_0 , \ldots , a_i \f$ once while the places below it run
+ through all their arrangements. The place \f$ i \f$ changes once every
+ \f$ i! \f$ arrangements, after the places below it have been reset;
+ hence the work per arrangement of the counters is
+ \f$ \sum_{i \ge 1} 1 / i! = e - 1 \f$, and unrolling the first 3 places,
+ whose 6 arrangements are reached by the fixed swaps of the places 01, 02,
+ 01, 02, 01 (`forEachPermutation()`), leaves the counters a step every 6
+ arrangements.
+
+ The orders with one change between consecutive objects come from
+ reflections. In the reflected Gray order of the tuples the last place runs
+ up and down, and each other place changes when all the places after it are
+ at an end of their range; Algorithm H keeps for each place its direction
+ and a focus pointer to the next place to change, and so it is loopless. The
+ plain changes of Steinhaus, Johnson and Trotter (Algorithm P) move the
+ largest item from one end to the other through the arrangements of the
+ others, recursively, with one adjacent swap per step. The revolving door of
+ the combinations is the order \f$ R( n , t ) \f$ defined by
+ \f[
+   R( n , t ) = R( n - 1 , t ) , \;
+                R( n - 1 , t - 1 )^{\mathrm{rev}} \cup \{ n - 1 \} ,
+   \tag{4}
+ \f]
+ with \f$ R( n , 0 ) \f$ and \f$ R( t , t ) \f$ of one object; the last
+ object of \f$ R( n - 1 , t ) \f$ and the first of the reversed second part
+ differ by the item \f$ n - 1 \f$ in and one item out, and `revolvingDoor()`
+ follows (4) recursively. Finally, the partitions of a set are in bijection
+ with their <em>restricted growth strings</em>, \f$ a_j \f$ the block of the
+ item \f$ j \f$, the blocks numbered in the order of their least items, so
+ that \f$ a_0 = 0 \f$ and \f$ a_j \le 1 + \max( a_0 , \ldots , a_{j-1} ) \f$;
+ and the strings of balanced parentheses, the words with as many opening as
+ closing parentheses and no prefix with more closing than opening ones, are
+ in bijection with the forests and with the binary trees of \f$ n \f$ nodes,
+ which `nestedParentheses()` builds by a backtrack that tries the opening
+ parenthesis first, a node of its tree costing \f$ O( 1 ) \f$ and every leaf
+ of it being a solution.
+
+ \section theory_combinatorial_refs References
+
+ \see D. E. Knuth, The Art of Computer Programming, vol. 4A,
+      Addison-Wesley, 2011, sections 7.1.3 and 7.2.1
+ \see H. S. Warren, Hacker's Delight, 2nd ed., Addison-Wesley, 2012
+ \see M. Beeler, R. W. Gosper, R. Schroeppel, HAKMEM, MIT AI Memo 239,
+      1972, item 175 (the next word with as many 1 bits)
+ \see F. Gray, Pulse code communication, U.S. Patent 2,632,058, 1953
+ \see W. Mula, N. Kurz, D. Lemire, Faster population counts using AVX2
+      instructions, The Computer Journal 61(1), 111-120, 2018,
+      doi:10.1093/comjnl/bxx046
+ \see S. Vigna, Broadword implementation of rank/select queries, WEA
+      2008, LNCS 5038, 154-168, doi:10.1007/978-3-540-68552-4_12
+ \see B. R. Heap, Permutations by interchanges, The Computer Journal 6(3),
+      293-298, 1963, doi:10.1093/comjnl/6.3.293
+ \see R. Sedgewick, Permutation generation methods, ACM Computing Surveys
+      9(2), 137-164, 1977, doi:10.1145/356689.356692
+ \see H. F. Trotter, Algorithm 115: Perm, Communications of the ACM 5(8),
+      434-435, 1962, doi:10.1145/368637.368660
+ \see S. M. Johnson, Generation of permutations by adjacent transposition,
+      Mathematics of Computation 17(83), 282-285, 1963,
+      doi:10.1090/S0025-5718-1963-0159764-2
+*/
+/*--------------------------------------------------------------------------*/
+/*---------------------- End File combinatorial.dox ------------------------*/
+/*--------------------------------------------------------------------------*/
