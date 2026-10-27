@@ -1,0 +1,573 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File succinct.dox -----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_succinct */
+/** \defgroup theory_succinct Theory of succinct structures
+ \ingroup area_succinct
+
+ \details The headers of `include/ADS/succinct` realize the compressed data
+ structures of chapter 15, Compressed Data Structures, of Ferragina's book, and
+ the representation of Elias and Fano of its chapter 11, Integer Coding, beyond
+ the book of Montresor, which does not treat them: the vectors of bits with
+ rank and select, the sequences of integers and of symbols searched in their
+ compressed form, and the trees and the graphs that take a few bits per node or
+ per edge and are navigated without being decoded. This page collects what the
+ headers take for granted: the definitions and the notation shared by all of
+ them, with the lower bounds against which their space is measured (see
+ \ref theory_succinct_notation), the realizations and the costs of their
+ operations (see \ref theory_succinct_repr), and, for each family, the property
+ on which its correctness rests and the argument behind its bounds (from
+ \ref theory_succinct_rank to \ref theory_succinct_graphs). The pseudocode of
+ each algorithm is instead on the page of its header, in the comment of its
+ function, together with the chapter of Ferragina's book, or the paper, that it
+ follows.
+
+ \tableofcontents
+
+ \section theory_succinct_notation Definitions and notation
+
+ A vector of bits \f$ B[ 0 , m ) \f$ with \f$ n \f$ 1s has, for
+ \f$ b \in \{ 0 , 1 \} \f$, the operations
+ \f[
+   \mathrm{rank}_b( i ) = | \{ j < i : B[ j ] = b \} | , \qquad
+   \mathrm{select}_b( k ) = \min\{ i : \mathrm{rank}_b( i + 1 ) = k \} ,
+   \tag{1}
+ \f]
+ i.e., the number of the bits \f$ b \f$ before the place \f$ i \f$ and the
+ place of the \f$ k \f$-th bit \f$ b \f$, with \f$ 1 \le k \f$ up to the
+ number of the bits \f$ b \f$; hence
+ \f$ \mathrm{rank}_b( \mathrm{select}_b( k ) ) = k - 1 \f$, and
+ \f$ \mathrm{rank}_0( i ) = i - \mathrm{rank}_1( i ) \f$. The places count
+ from 0 in the library, while Ferragina's book counts them from 1, so that
+ its \f$ \mathrm{Rank}_1 \f$ and \f$ \mathrm{Select}_1 \f$ are the
+ \f$ \mathrm{rank}_1 \f$ and \f$ \mathrm{select}_1 \f$ here with the places
+ shifted by one. The
+ two operations are the primitives of every other structure of the area:
+ a structure that encodes its objects as bits uses \f$ \mathrm{select} \f$
+ to go from the number of an object to its place in the bits, and
+ \f$ \mathrm{rank} \f$ to go back.
+
+ A representation of the objects of a class of \f$ N \f$ elements needs
+ \f$ Z = \lceil \log_2 N \rceil \f$ bits for some of them, the
+ <em>information-theoretic lower bound</em>; it is <em>succinct</em> if it
+ takes \f$ Z + o( Z ) \f$ bits, <em>compact</em> if it takes \f$ O( Z ) \f$
+ bits, and in both cases it is asked to answer its queries in about the time
+ of the plain representation. The bounds of the area are the following
+ three. The vectors of \f$ m \f$ bits are \f$ 2^m \f$, and those with
+ \f$ n \f$ 1s are \f$ \binom{m}{n} \f$, with
+ \f[
+   \log_2 \binom{m}{n} \le m H_0( B ) , \qquad
+   H_0( B ) = \frac{n}{m} \log_2 \frac{m}{n} + \frac{m - n}{m} \log_2
+   \frac{m}{m - n} , \tag{2}
+ \f]
+ since \f$ \binom{m}{n} p^n ( 1 - p )^{m - n} \le 1 \f$ for
+ \f$ p = n / m \f$; the sets of \f$ n \f$ integers of \f$ [ 0 , u ) \f$
+ are \f$ \binom{u}{n} \f$, i.e., about
+ \f$ n \log_2( u / n ) + n \log_2 e \f$ bits when \f$ n \f$ is much smaller
+ than \f$ u \f$; the ordered trees of \f$ n \f$ nodes (and the binary trees
+ of \f$ n \f$ nodes) are the Catalan number
+ \f$ C_n = \binom{2 n}{n} / ( n + 1 ) \approx 4^n / ( n^{3/2} \sqrt{\pi} ) \f$,
+ i.e., \f$ 2 n - \Theta( \log n ) \f$ bits.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ B \f$, \f$ m \f$, \f$ n \f$</td>
+     <td>a vector of bits, its length and the number of its 1s</td></tr>
+ <tr><td>\f$ \mathrm{rank}_b( i ) \f$, \f$ \mathrm{select}_b( k ) \f$</td>
+     <td>the bits \f$ b \f$ in \f$ B[ 0 , i ) \f$ and the place of the
+         \f$ k \f$-th of them, as in (1); <tt>rank1()</tt>,
+         <tt>select1()</tt>, <tt>rank0()</tt>, <tt>select0()</tt> in the
+         code</td></tr>
+ <tr><td>\f$ H_0 \f$</td>
+     <td>the empirical entropy of order 0 of a vector of bits, as in (2),
+         or of a sequence of symbols of frequencies \f$ f_c \f$,
+         \f$ \sum_c ( f_c / n ) \log_2( n / f_c ) \f$</td></tr>
+ <tr><td>\f$ x_0 , \ldots , x_{n-1} \f$, \f$ u \f$</td>
+     <td>a non-decreasing sequence of integers and the bound of its items,
+         which lie in \f$ [ 0 , u ) \f$</td></tr>
+ <tr><td>\f$ \ell \f$, \f$ L \f$, \f$ H \f$</td>
+     <td>the low bits of an item of Elias-Fano, the vector of the low parts
+         and that of the high parts in unary</td></tr>
+ <tr><td>\f$ \sigma \f$, \f$ w \f$</td>
+     <td>the size of an alphabet of symbols, and the bits of a symbol of a
+         wavelet matrix, \f$ \sigma \le 2^w \f$</td></tr>
+ <tr><td>\f$ E( i ) \f$</td>
+     <td>the excess of a sequence of parentheses at the place \f$ i \f$,
+         the number of <tt>'('</tt> less the number of <tt>')'</tt> in
+         \f$ B[ 0 , i ] \f$</td></tr>
+ <tr><td>\f$ \lvert x \rvert \f$, \f$ \mathrm{popcount}( x ) \f$</td>
+     <td>the number of the 1s of a word of 64 bits, its sideways
+         sum</td></tr>
+ </table>
+
+ The bits are packed in words of 64 bits by `BitVector`, the bit \f$ i \f$
+ in the bit \f$ i \bmod 64 \f$ of the word \f$ \lfloor i / 64 \rfloor \f$,
+ and the analysis is in the model of the word RAM with words of
+ \f$ \Theta( \log m ) \f$ bits, in which the sideways sum of a word and the
+ place of its \f$ k \f$-th 1 cost \f$ O( 1 ) \f$ time (one instruction for
+ the first, a few broadword operations for the second, as
+ \ref theory_succinct_rank shows).
+
+ \section theory_succinct_repr Realizations and their costs
+
+ The vectors of bits with rank and select are five, which trade the space
+ of the directory against the number of accesses to the memory of a query.
+
+ <table>
+ <caption>The vectors of bits with rank and select and their costs, for
+          \f$ m \f$ bits</caption>
+ <tr><th>Realization</th><th>Space beyond \f$ m \f$</th>
+     <th><tt>rank1( i )</tt></th><th><tt>select1( k )</tt></th></tr>
+ <tr><td><tt>RankSelect</tt>, <tt>LazyRankSelect</tt></td>
+     <td>25% for the rank, 9.4% to 18.8% for the select of each
+         value</td>
+     <td>\f$ O( 1 ) \f$, one entry and one word</td>
+     <td>\f$ O( 1 ) \f$ when the bits are spread evenly,
+         \f$ O( \log( m / 256 ) ) \f$ in a sparse group</td></tr>
+ <tr><td><tt>CompactRankSelect</tt></td>
+     <td>3.125%, and less than 0.8% for the select of each value</td>
+     <td>\f$ O( 1 ) \f$, one entry and the 8 words of a line</td>
+     <td>\f$ O( 1 ) \f$ when the bits are spread evenly,
+         \f$ O( \log( m / 4096 ) ) \f$ in the worst case</td></tr>
+ <tr><td><tt>InterleavedRankSelect</tt></td>
+     <td>3.125% inside the lines, and less than 1.2% for the select of
+         each value</td>
+     <td>\f$ O( 1 ) \f$, one line</td>
+     <td>\f$ O( 1 ) \f$ when the bits are spread evenly, the lines between
+         two samples in the worst case</td></tr>
+ <tr><td><tt>RRRBitVector</tt></td>
+     <td>the whole vector in \f$ m H_0( B ) + 0.175 m \f$ bits</td>
+     <td>\f$ O( 32 + b ) \f$, blocks of \f$ b = 63 \f$ bits</td>
+     <td>\f$ O( \log( m / 2016 ) + 32 + b ) \f$</td></tr>
+ </table>
+
+ `RankSelect` is usually preferable when the queries dominate, since its
+ rank reads one entry and one word and its select one sample and a few
+ words; `CompactRankSelect` and `InterleavedRankSelect` cost about seven
+ times fewer bits and a sum of up to 8 words per rank, the second one with
+ the counts in the line of the bits, so that a rank misses the cache once
+ instead of twice; `RRRBitVector` is the one to choose when the 1s (or the
+ 0s) are rare, since its space follows (2) instead of \f$ m \f$, at the
+ price of the decoding of a block at each query. The lazy form of
+ `RankSelect` builds the inventories of the select at the first select of
+ each value, for a structure that may only rank.
+
+ <table>
+ <caption>The sequences and their costs</caption>
+ <tr><th>Realization</th><th>Space in bits</th><th>Access</th>
+     <th>Search</th></tr>
+ <tr><td><tt>EliasFano</tt></td>
+     <td>\f$ n ( 2 + \lceil \log_2( u / n ) \rceil ) \f$, plus the directory
+         of \f$ H \f$</td>
+     <td>\f$ O( 1 ) \f$</td>
+     <td><tt>nextGEQ()</tt> in \f$ O( 1 ) \f$ expected,
+         \f$ O( \log c ) \f$ for a bucket of \f$ c \f$ items</td></tr>
+ <tr><td><tt>PartitionedEliasFano</tt></td>
+     <td>at most that of Elias-Fano on each block of 128 items, plus a
+         record per block</td>
+     <td>a scan of the code of a block</td>
+     <td><tt>nextGEQ()</tt> by a search of the records and the scan of a
+         block</td></tr>
+ <tr><td><tt>WaveletMatrix</tt></td>
+     <td>\f$ n w \f$, plus a directory per level</td>
+     <td>\f$ O( w ) \f$</td>
+     <td>rank, select, quantile and range counts in \f$ O( w ) \f$</td></tr>
+ <tr><td><tt>HuffmanWaveletTree</tt></td>
+     <td>less than \f$ n ( H_0 + 1 ) \f$, plus the directory and
+         \f$ O( \sigma ) \f$ words</td>
+     <td>\f$ O( \ell_c ) \f$, \f$ H_0 + 1 \f$ on average</td>
+     <td>rank and select of \f$ c \f$ in \f$ O( \ell_c ) \f$</td></tr>
+ <tr><td><tt>MoveStructure</tt></td>
+     <td>\f$ O( r ) \f$ words for a permutation of \f$ r \f$ intervals</td>
+     <td>the image of a place and its interval in \f$ O( 1 ) \f$</td>
+     <td>the interval of a place by a binary search</td></tr>
+ </table>
+
+ <table>
+ <caption>The trees and the graphs and their costs, for \f$ n \f$ nodes and
+          \f$ m \f$ edges</caption>
+ <tr><th>Realization</th><th>Space in bits</th><th>Operations</th></tr>
+ <tr><td><tt>JacobsonTree</tt></td>
+     <td>\f$ 2 n + 1 + o( n ) \f$</td>
+     <td>the children and the parent of a binary tree in
+         \f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>LoudsTree</tt></td>
+     <td>\f$ 2 n + 1 + o( n ) \f$</td>
+     <td>the parent, the degree, the \f$ i \f$-th child and the next
+         sibling in \f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>BPTree</tt>, on <tt>BalancedParentheses</tt></td>
+     <td>\f$ 2 n \f$, and 6.25% of them for the blocks of the range min-max
+         tree, at most as much for its groups and 3.5% for a rank
+         directory</td>
+     <td>also the size of a subtree, the depth and the ancestors, by a
+         search of the excess</td></tr>
+ <tr><td><tt>EliasFanoGraph</tt></td>
+     <td>\f$ m ( 2 + \lceil \log_2( n^2 / m ) \rceil ) + n ( 2 + \lceil
+         \log_2( m / n ) \rceil ) \f$</td>
+     <td>the outdegree and the \f$ i \f$-th successor in \f$ O( 1 ) \f$,
+         an edge in \f$ O( 1 ) \f$ expected</td></tr>
+ <tr><td><tt>BVGraph</tt></td>
+     <td>about 3 per edge on the Web graphs</td>
+     <td>a list in \f$ O( R d ) \f$, \f$ R \f$ the longest chain of
+         references</td></tr>
+ <tr><td><tt>K2Tree</tt></td>
+     <td>\f$ k^2 m ( \log_{k^2}( n^2 / m ) + O( 1 ) ) \f$ in the worst
+         case</td>
+     <td>an edge in \f$ O( h ) \f$, the successors and the predecessors of
+         a node</td></tr>
+ </table>
+
+ Among the trees, LOUDS is usually preferable for the navigation from the
+ root down (e.g., in the tries of an index), since its operations are a
+ rank and a select each, while the parentheses answer the size of a subtree,
+ the depth and the ancestors, which the order by levels does not keep, at the
+ price of the searches of the range min-max tree. Among the graphs, the
+ codes of Boldi and Vigna exploit the locality and the similarity of the
+ lists of the Web, the \f$ k^2 \f$-tree the clustering of the adjacency
+ matrix, and give the predecessors too, and Elias-Fano exploits neither and
+ gives the fastest random access.
+
+ \section theory_succinct_rank Rank and select
+
+ <em>Lemma 1 (the directory of Jacobson).</em> With superblocks of
+ \f$ Z \f$ bits, each with the 1s before it in \f$ \log_2 m \f$ bits, and
+ blocks of \f$ z \f$ bits, each with the 1s before it since its superblock
+ in \f$ \log_2 Z \f$ bits, one has
+ \f[
+   \mathrm{rank}_1( i ) = R_S[ \lfloor i / Z \rfloor ] +
+   R_b[ \lfloor i / z \rfloor ] + \mathrm{rank}_1 \text{ of }
+   B[ z \lfloor i / z \rfloor , i ) , \tag{3}
+ \f]
+ and with \f$ Z = \log_2^2 m \f$ and \f$ z = \log_2 m / 2 \f$ the counts take
+ \f$ o( m ) \f$ bits, with the rank in \f$ O( 1 ) \f$ time.
+
+ Indeed, the 1s before \f$ i \f$ are those before its superblock, those of
+ its superblock before its block, and those of its block before \f$ i \f$,
+ which gives (3). The superblocks take
+ \f$ ( m / \log_2^2 m ) \log_2 m = m / \log_2 m \f$ bits and the blocks
+ \f$ ( 2 m / \log_2 m ) \log_2 \log_2^2 m = O( m \log \log m / \log m ) \f$,
+ both \f$ o( m ) \f$; the last term of (3) is read in a table of the
+ \f$ 2^z = \sqrt{m} \f$ blocks of \f$ z \f$ bits and of their
+ \f$ z \f$ prefixes, \f$ O( \sqrt{m} \log m \log \log m ) \f$ bits. The
+ library replaces the table by the sideways sum of a word, an instruction of
+ the processor, which lets \f$ z \f$ be the word itself and \f$ Z \f$ a
+ constant: `RankSelect` keeps one word per 256 bits, the 40 bits of the
+ count of the block and the three counts of its words in 8 bits each, so
+ that (3) is one read of the directory and one of the bits, with 25% of
+ space more instead of \f$ o( m ) \f$, a fraction that is constant but
+ small at every practical size, since \f$ m / \log_2 m \f$ is still 2.5% of
+ \f$ m \f$ for \f$ m = 2^{40} \f$. `CompactRankSelect` keeps one entry of
+ 128 bits per 4096 bits and sums up to 8 words, 3.125%, and
+ `InterleavedRankSelect` writes the count of each line of 512 bits in its
+ first 16 bits, so that (3) reads the line alone.
+
+ The select is not reduced to the rank by a binary search, which costs
+ \f$ O( \log m ) \f$ steps: Clark cuts the 1s in groups of
+ \f$ \log_2^2 m \f$ and writes down the places of all the 1s of a group
+ that spans more than \f$ \log_2^4 m \f$ bits, which take
+ \f$ O( m / \log m ) \f$ bits in all since such groups are at most
+ \f$ m / \log_2^4 m \f$; the other groups are cut again, and the last level
+ is solved by a table, which gives \f$ O( 1 ) \f$ time in \f$ o( m ) \f$
+ bits, as Clark shows. The library follows the
+ inventories of Vigna, with groups of constant size: a group of
+ \f$ 2^\ell \f$ 1s spans 3072 to 6144 bits on average, its first place is
+ written in 64 bits and the places of its 1s of rank multiple of
+ \f$ 2^{\ell - 5} \f$ in 16 bits from it, so that the select reads one
+ place and scans the words from it to the bit asked for. A group that spans
+ \f$ 2^{16} \f$ bits or more has offsets that do not fit in 16 bits, and is
+ searched by a binary search of the directory of rank between its ends
+ instead; a group that spans less is scanned over less than
+ \f$ 2^{16} / 64 = 1024 \f$ words, and over a few words when the 1s are
+ spread evenly. The search ends in a word, where the place of the
+ \f$ k \f$-th 1 is found by the broadword select of Vigna: the sideways
+ sums of the 8 bytes are multiplied by \f$ \sum_{j < 8} 2^{8 j} \f$, which
+ leaves in the byte \f$ j \f$ the 1s of the bytes up to \f$ j \f$; the bytes
+ whose sum exceeds \f$ k \f$ are marked all at once by an addition of
+ \f$ 127 - k \f$ to each, and the first marked byte, found by the trailing
+ zeros, holds the bit, which is found inside it by clearing its lower 1s.
+
+ \section theory_succinct_compressed Compressed vectors and Elias-Fano
+
+ <em>Lemma 2 (the combinatorial number system).</em> The vectors of
+ \f$ b \f$ bits with \f$ c \f$ 1s at the places
+ \f$ p_1 < \cdots < p_c \f$ are numbered from 0 to
+ \f$ \binom{b}{c} - 1 \f$ by
+ \f[
+   o = \sum_{t=1}^{c} \binom{p_t}{t} , \tag{4}
+ \f]
+ their rank in the colexicographic order, and the place \f$ p \f$, scanned
+ from \f$ b - 1 \f$ down, holds the \f$ t \f$-th 1, \f$ t \f$ the 1s not yet
+ met, if and only if \f$ \binom{p}{t} \le o \f$, the remainder of
+ \f$ o \f$ after the 1s above.
+
+ Indeed, the vectors that precede a given one in the colexicographic order
+ are, for each \f$ t \f$, those that agree with it above \f$ p_t \f$ and
+ have their \f$ t \f$ lowest 1s below \f$ p_t \f$, \f$ \binom{p_t}{t} \f$
+ of them; and since
+ \f$ \sum_{t' < t} \binom{p_{t'}}{t'} < \binom{p_t}{t} \f$, the highest term
+ of (4) is the largest \f$ \binom{p}{c} \le o \f$, which gives the decoding.
+ `RRRBitVector` writes each block of \f$ b = 63 \f$ bits as its class
+ \f$ c \f$ and its offset (4) in \f$ \lceil \log_2 \binom{b}{c} \rceil \f$
+ bits. The product of the \f$ \binom{b}{c_j} \f$ of the blocks counts some
+ of the vectors of \f$ m \f$ bits with \f$ n \f$ 1s, and hence by (2) the
+ offsets take at most \f$ m H_0( B ) \f$ bits and one more per block,
+ i.e., \f$ m H_0( B ) + m / 63 \f$; the classes take \f$ 6 m / 63 \f$, and
+ the counts of the superblocks of 32 blocks at most \f$ 128 / 2016 \f$ of
+ the bits, which gives the \f$ m H_0( B ) + 0.175 m \f$ bits of the
+ table (see \ref theory_succinct_repr).
+
+ <em>Theorem 3 (Elias and Fano).</em> A non-decreasing sequence of
+ \f$ n \f$ integers of \f$ [ 0 , u ) \f$, each split into its
+ \f$ \ell = \lceil \log_2( u / n ) \rceil \f$ low bits, written in
+ \f$ L \f$, and its bucket \f$ \lfloor x_i / 2^\ell \rfloor \f$, written by
+ setting the bit
+ \f[
+   H[ \lfloor x_i / 2^\ell \rfloor + i ] = 1 , \tag{5}
+ \f]
+ takes at most \f$ 2 n + n \lceil \log_2( u / n ) \rceil \f$ bits, and
+ \f$ x_i = 2^\ell ( \mathrm{select}_1( H , i + 1 ) - i ) + L[ i ] \f$.
+
+ In fact, the places (5) are strictly increasing, since the buckets do not
+ decrease and \f$ i \f$ grows, and the \f$ i \f$-th 1 of \f$ H \f$ is
+ therefore the one of \f$ x_i \f$, from which its bucket is read back by
+ subtracting \f$ i \f$. The 0s of \f$ H \f$ before that 1 are the bucket
+ itself, so that \f$ H \f$ has \f$ n \f$ 1s and
+ \f$ \lfloor ( u - 1 ) / 2^\ell \rfloor + 1 \le n \f$ 0s, since
+ \f$ 2^\ell \ge u / n \f$, and \f$ L \f$ has \f$ n \ell \f$ bits. Against
+ the \f$ n \log_2( u / n ) + n \log_2 e \f$ bits of the lower bound (see
+ \ref theory_succinct_notation), this is less than 2 bits per item more
+ when \f$ n \f$ is much smaller than \f$ u \f$. The first item
+ \f$ \ge x \f$ (`nextGEQ()`) lies in the bucket
+ \f$ h = \lfloor x / 2^\ell \rfloor \f$ or after it: the items of the bucket
+ start after the \f$ h \f$-th 0 of \f$ H \f$, which
+ \f$ \mathrm{select}_0( H , h ) \f$ finds, and they share the high bits of
+ \f$ x \f$, so that their low bits, which are sorted, decide. A bucket holds
+ \f$ n 2^\ell / u \le 2 \f$ items on average when the items are spread
+ evenly, and the search is \f$ O( 1 ) \f$ expected, and a binary search past
+ 8 items keeps it \f$ O( \log c ) \f$ in a cluster of \f$ c \f$ items.
+
+ Elias-Fano depends on \f$ n \f$ and \f$ u \f$ alone, and ignores the
+ clusters of a sequence. The partitioned form of Ottaviano and Venturini
+ (`PartitionedEliasFano`) codes each block of 128 items relative to the end
+ of the block before, in the universe \f$ u_j \f$ of the block, and in the
+ cheapest of three ways: no bit at all if the block holds every value of
+ its range, a vector of \f$ u_j \f$ bits if it is not longer, Elias-Fano
+ otherwise. The cost of a block is never above that of Elias-Fano on its
+ own universe, and the sum of these costs, about
+ \f$ \sum_j m_j ( 2 + \log_2( u_j / m_j ) ) \f$, is at most the cost of
+ Elias-Fano on the whole sequence, since \f$ \sum_j u_j \le u \f$ and the
+ logarithm is concave (as in (10) below), plus the records of the blocks;
+ it is far smaller on the dense runs of an inverted index.
+
+ \section theory_succinct_trees Trees
+
+ A tree is coded by the shape alone, in about the \f$ 2 n \f$ bits of the
+ lower bound (see \ref theory_succinct_notation), and its nodes are
+ numbered by the places of their bits, so that the data of a node go in a
+ vector indexed by its number.
+
+ <em>Lemma 4 (the binary tree of Jacobson).</em> Complete a binary tree of
+ \f$ n \f$ nodes with a leaf in place of each missing child, and write by
+ levels a 1 for a node and a 0 for a leaf added, in \f$ B[ 1 , 2 n + 1 ] \f$.
+ Then the children of the \f$ x \f$-th node are at the places \f$ 2 x \f$
+ and \f$ 2 x + 1 \f$, and the item at the place \f$ p \f$ is the
+ \f$ \mathrm{Rank}_1( p ) \f$-th node if \f$ B[ p ] = 1 \f$.
+
+ Indeed, the visit by levels lists the root at the place 1 and then the
+ children of the nodes in the order of the nodes, two per node, so that the
+ children of the first \f$ x - 1 \f$ nodes take the places
+ \f$ 2 , \ldots , 2 x - 1 \f$ and those of the \f$ x \f$-th one the next
+ two. With rank and select in \f$ O( 1 ) \f$ time, a child is
+ \f$ \mathrm{Rank}_1( 2 \, \mathrm{Select}_1( x ) ) \f$ and the parent
+ \f$ \mathrm{Rank}_1( \lfloor \mathrm{Select}_1( x ) / 2 \rfloor ) \f$; hence
+ `JacobsonTree` takes \f$ 2 n + 1 + o( n ) \f$ bits, within
+ \f$ O( \log n ) \f$ of the lower bound.
+
+ For a tree of any degree, LOUDS (`LoudsTree`) writes the degree \f$ d \f$
+ of each node by levels as \f$ 0^d 1 \f$, after a dummy root of degree 1:
+ each node is the 0 that its parent writes for it, so that the \f$ k \f$-th
+ 0 is the \f$ k \f$-th node by levels, and the children of the
+ \f$ k \f$-th node are the 0s after the \f$ ( k + 1 ) \f$-th 1. In the
+ notation of Ferragina's book, with the nodes and the places from 1,
+ \f[
+   \mathrm{parent}( x ) = \mathrm{Select}_0( x ) - x , \qquad
+   \mathrm{firstChild}( x ) = \mathrm{Select}_1( x ) + 1 - x , \tag{6}
+ \f]
+ and the degree is the distance of two consecutive 1s less 1, all in
+ \f$ O( 1 ) \f$ time and \f$ 2 n + 1 + o( n ) \f$ bits, since the code has
+ \f$ n \f$ 0s and \f$ n + 1 \f$ 1s.
+ The order by levels keeps the children of a node consecutive, which gives
+ the \f$ i \f$-th child at once, but scatters a subtree.
+
+ The balanced parentheses (`BPTree`) write <tt>'('</tt> when a visit in
+ depth enters a node and <tt>')'</tt> when it leaves it, so that the nodes
+ of a subtree are consecutive in preorder and a node is the pair of its
+ parentheses. With the excess \f$ E \f$ of the notation,
+ \f[
+   \mathrm{findClose}( i ) = \min\{ j > i : E( j ) = E( i ) - 1 \} , \tag{7}
+ \f]
+ since the parentheses strictly inside the pair of \f$ i \f$ are balanced
+ and keep the excess at least \f$ E( i ) \f$; the size of the subtree is
+ half the distance of the pair, the depth is \f$ E( i ) - 1 \f$, and the
+ parent is the pair that encloses \f$ i \f$, the last \f$ k < i \f$ with
+ \f$ E( k ) = E( i ) - 2 \f$, plus 1. Since the excess moves by
+ \f$ \pm 1 \f$, the first place with an excess at most a target has exactly
+ that excess, and every operation is a search for the first place, forward
+ or backward, whose excess reaches a target. The range min-max tree of
+ Navarro and Sadakane (`BalancedParentheses`) keeps, for each block of 512
+ bits, for each group of 16 blocks and for each node of a complete binary
+ tree over the groups, the total excess of its range and its minimum prefix
+ excess; a search scans the block of \f$ i \f$, then climbs to the first
+ range on its side whose minimum reaches the target and goes down to its
+ block, in \f$ O( \log( n / 8192 ) + 16 + 512 / 8 ) \f$ time, since a range
+ whose minimum stays above the target holds no answer and is skipped
+ whole.
+
+ \section theory_succinct_sequences Sequences of symbols and permutations
+
+ <em>Lemma 5 (the wavelet matrix).</em> Let the level \f$ \ell \f$ of a
+ sequence \f$ S \f$ of \f$ w \f$-bit integers hold the bit
+ \f$ w - 1 - \ell \f$ of each item, the items passing to the next level
+ stably sorted by that bit, the \f$ Z_\ell \f$ with a 0 first. Then the item
+ at the place \f$ i \f$ of a level is at the place
+ \f[
+   \mathrm{rank}_0( B_\ell , i ) \text{ if its bit is 0}, \qquad
+   Z_\ell + \mathrm{rank}_1( B_\ell , i ) \text{ if it is 1} , \tag{8}
+ \f]
+ of the next one, and the items equal to \f$ c \f$ end consecutive and in
+ the order of \f$ S \f$ at the last level.
+
+ Indeed, a stable partition by a bit sends the item to the place given by
+ the items with its bit before it, which is (8), and keeps the order among
+ the items with the same bit; by induction on the levels the items that
+ share the first \f$ \ell \f$ bits stay consecutive, in the order of
+ \f$ S \f$, and the place of the range of \f$ c \f$ at the last level
+ depends on the bits of \f$ c \f$ alone. Hence `access()`, `rank()` and
+ `select()` of `WaveletMatrix` follow a place, or the two ends of a range,
+ down the \f$ w \f$ levels by (8) (or up by the select), in
+ \f$ O( w ) \f$ time with rank and select in \f$ O( 1 ) \f$; the
+ \f$ k \f$-th smallest item of a range goes down to the 0s or the 1s
+ according to how many 0s the range holds at each level. The wavelet tree
+ of Grossi, Gupta and Vitter splits the alphabet in halves at each node
+ instead, with the same costs and a pointer per node; shaped by the code of
+ Huffman (`HuffmanWaveletTree`, after Mäkinen and Navarro), the symbol
+ \f$ c \f$ of frequency \f$ f_c \f$ goes down \f$ \ell_c \f$ levels, and
+ the bits of all the nodes are \f$ \sum_c f_c \ell_c < n ( H_0 + 1 ) \f$ by
+ the bound of the code of Huffman.
+
+ The move structure of Nishimoto and Tabei (`MoveStructure`) represents a
+ permutation \f$ \pi \f$ of \f$ [ 0 , n ) \f$ that shifts each of
+ \f$ r \f$ intervals \f$ [ p_i , p_{i+1} ) \f$ by the same amount, such as
+ the LF-mapping of a transform of Burrows and Wheeler on its runs, by the
+ starts \f$ p_i \f$, their images \f$ q_i \f$ and the interval \f$ d_i \f$
+ of each image:
+ \f[
+   \pi( x ) = q_i + ( x - p_i ) , \qquad x \in [ p_i , p_{i+1} ) . \tag{9}
+ \f]
+ The interval of \f$ \pi( x ) \f$ is found from \f$ d_i \f$ forward, past
+ the starts that the image of the interval \f$ i \f$ holds; the structure is
+ balanced when no image holds 4 starts, which the construction obtains by
+ cutting at its third start the interval whose image holds 4, at most
+ doubling the intervals (Nishimoto and Tabei). Hence each step of a walk
+ costs \f$ O( 1 ) \f$ time, in \f$ O( r ) \f$ words instead of the
+ \f$ n \f$ of the permutation written in full.
+
+ \section theory_succinct_graphs Graphs
+
+ A graph of \f$ n \f$ nodes and \f$ m \f$ edges, as sorted adjacency lists,
+ is a set of \f$ m \f$ pairs among \f$ n^2 \f$, i.e., \f$ \log_2
+ \binom{n^2}{m} \approx m \log_2( n^2 / m ) \f$ bits for a graph with no
+ regularity. `EliasFanoGraph` writes the edge \f$ ( u , v ) \f$ as the
+ integer \f$ u n + v \f$, so that the lists are one increasing sequence of
+ \f$ [ 0 , n^2 ) \f$ coded by Theorem 3, plus a second sequence of the
+ prefix sums of the outdegrees that tells where each list starts: the
+ \f$ i \f$-th successor is an access, and an edge a `nextGEQ()`. Coding each
+ list on its own, in its own universe, takes
+ \f[
+   \sum_u d_u \log_2 \frac{n}{d_u} \le m \log_2 \frac{n^2}{m} , \tag{10}
+ \f]
+ by the concavity of the logarithm (the inequality of Jensen on the weights
+ \f$ d_u / m \f$), i.e., fewer bits when the degrees are skewed, at the
+ price of a directory and an offset per list, the form that
+ Ferragina's book describes.
+
+ The graphs of the Web have more structure than (10) sees. With the pages
+ sorted by URL, most links stay in the host (locality) and the pages of a
+ host link to the same pages (similarity): `BVGraph` codes the list of
+ \f$ x \f$ as a copy of the list of one of the previous \f$ W \f$ lists, by
+ a sequence of runs of bits, then as intervals of consecutive successors
+ and as gaps between the rest, in the codes \f$ \gamma \f$ and
+ \f$ \delta \f$, about 3 bits per edge on the Web graphs, as Boldi and
+ Vigna measure. A list is decoded after its reference, and the chains
+ of references are bounded by \f$ R \f$, so that a list of up to \f$ d \f$
+ successors is decoded in \f$ O( R d ) \f$ time. The \f$ k^2 \f$-tree of
+ Brisaboa, Ladra and Navarro (`K2Tree`) splits the adjacency matrix, padded
+ to the side \f$ k^h \ge n \f$, into \f$ k^2 \f$ submatrices recursively,
+ marking with 1 those with an edge, and stores the marks by levels: the
+ children of the mark at the place \f$ p \f$ start at
+ \f$ k^2 \mathrm{rank}_1( p + 1 ) \f$, as in LOUDS, so that an edge is
+ tested on a path of \f$ h \f$ marks, and a row or a column in
+ \f$ O( \sqrt{m} ) \f$ time on average for edges spread uniformly
+ (\f$ O( n ) \f$ in the worst case). Each edge sets at most \f$ k^2 \f$
+ marks per level; below the level where the submatrices outnumber the
+ edges these marks are distinct, which gives the bound
+ \f$ k^2 m ( \log_{k^2}( n^2 / m ) + O( 1 ) ) \f$ in the worst case (see
+ \ref theory_succinct_repr), as Brisaboa, Ladra and Navarro prove, and far
+ fewer bits when the edges cluster and the empty submatrices are large.
+
+ \section theory_succinct_refs References
+
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapters 11, Integer Coding, and 15, Compressed Data
+      Structures, doi:10.1017/9781009128933
+ \see G. Navarro, Compact Data Structures, Cambridge University Press,
+      2016, doi:10.1017/CBO9781316588284
+ \see G. Jacobson, Space-efficient static trees and graphs, Proc. 30th
+      FOCS, 549-554, 1989, doi:10.1109/SFCS.1989.63533
+ \see D. Clark, Compact Pat Trees, PhD thesis, University of Waterloo,
+      1996
+ \see S. Vigna, Broadword implementation of rank/select queries, Proc.
+      WEA 2008, LNCS 5038, 154-168, 2008,
+      doi:10.1007/978-3-540-68552-4_12
+ \see F. Kurpicz, Engineering compact data structures for rank and select
+      queries on bit vectors, Proc. 29th SPIRE, LNCS 13617, 257-272, 2022,
+      doi:10.1007/978-3-031-20643-6_19
+ \see M. D. Laws, J. Bliven, K. Conklin, E. Laalai, S. McCauley,
+      Z. S. Sturdevant, SPIDER: improved succinct rank and select
+      performance, Proc. 22nd SEA, LIPIcs 301, 21, 2024,
+      doi:10.4230/LIPIcs.SEA.2024.21
+ \see R. Raman, V. Raman, S. S. Rao, Succinct indexable dictionaries with
+      applications to encoding k-ary trees, prefix sums and multisets,
+      ACM Transactions on Algorithms 3(4), 43, 2007,
+      doi:10.1145/1290672.1290680
+ \see P. Elias, Efficient storage and retrieval by content and address of
+      static files, Journal of the ACM 21(2), 246-260, 1974,
+      doi:10.1145/321812.321820
+ \see G. Ottaviano, R. Venturini, Partitioned Elias-Fano indexes, Proc.
+      37th SIGIR, 273-282, 2014, doi:10.1145/2600428.2609615
+ \see J. I. Munro, V. Raman, Succinct representation of balanced
+      parentheses and static trees, SIAM Journal on Computing 31(3),
+      762-776, 2001, doi:10.1137/S0097539799364092
+ \see G. Navarro, K. Sadakane, Fully functional static and dynamic
+      succinct trees, ACM Transactions on Algorithms 10(3), 16, 2014,
+      doi:10.1145/2601073
+ \see F. Claude, G. Navarro, A. Ordóñez, The wavelet matrix: an efficient
+      wavelet tree for large alphabets, Information Systems 47, 15-32,
+      2015, doi:10.1016/j.is.2014.06.002
+ \see V. Mäkinen, G. Navarro, Succinct suffix arrays based on run-length
+      encoding, Proc. 16th CPM, LNCS 3537, 45-56, 2005,
+      doi:10.1007/11496656_5
+ \see T. Nishimoto, Y. Tabei, Optimal-time queries on BWT-runs compressed
+      indexes, Proc. 48th ICALP, LIPIcs 198, 101, 2021,
+      doi:10.4230/LIPIcs.ICALP.2021.101
+ \see P. Boldi, S. Vigna, The WebGraph framework I: compression
+      techniques, Proc. 13th WWW, 595-602, 2004,
+      doi:10.1145/988672.988752
+ \see N. R. Brisaboa, S. Ladra, G. Navarro, Compact representation of Web
+      graphs with extended functionality, Information Systems 39, 152-174,
+      2014, doi:10.1016/j.is.2013.08.003
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File succinct.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/

@@ -2,56 +2,61 @@
 /*---------------------------- File RankSelect.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Rank and select on a static vector of bits B of m bits with n 1s (section
- * 15.1.1 of the notes): \f$ rank_b( i ) \f$, the number of the bits b in
- * \f$ B[ 0 , i ) \f$, and \f$ select_b( k ) \f$, the place of the k-th bit
- * b, the primitives on which every succinct structure of ADS is built
- * (Elias-Fano, the trees by levels and by parentheses, the graphs).
+ * Rank and select on a static vector of bits \f$ B \f$ of \f$ m \f$ bits
+ * with \f$ n \f$ 1s (chapter 15, Compressed Data Structures, of Ferragina's
+ * book):
+ * \f$ \mathrm{rank}_b( i ) \f$, the number of the bits \f$ b \f$ in
+ * \f$ B[ 0 , i ) \f$, and \f$ \mathrm{select}_b( k ) \f$, the place of the
+ * \f$ k \f$-th bit \f$ b \f$, the primitives on which every succinct
+ * structure of ADS is built (Elias-Fano, the trees by levels and by
+ * parentheses, the graphs).
  *
- * rank is the two-level directory of Jacobson, with the sizes that suit the
- * words and the caches of today: for each block of Z = 256 bits, one word
- * of 64 bits holds the absolute rank of the block in its 40 high bits and
- * the ranks of its words 1, 2 and 3 relative to the block in 8 bits each,
- * and the 1s of the word up to i are the sideways sum of the masked word,
- * which takes the place of the table of the ranks of all the small blocks
- * of the notes (a table of \f$ 2^z z \log z \f$ bits is affordable only
- * with z = log m / 2, while the sum of 64 bits is one instruction); one
- * access to the directory and one to the bits, no branch, O( 1 ) time, with
- * \f$ 64 / 256 = 25 \% \f$ of m bits more. The notes set
- * \f$ Z = \log^2 m \f$ and \f$ z = \log m / 2 \f$ so that the directory
- * takes o( m ) bits (Theorem 15.1); with constant blocks it takes a
- * constant fraction, the trade of the practical designs: Vigna's rank9
- * and the directory of Gog and Petri take the same 25% with two words per
- * 512 bits, the poppy of Zhou, Andersen and Kaminsky and the flat rank of
- * Kurpicz 3% with a sum of up to 8 words per query [see
- * CompactRankSelect.h]. Above \f$ 2^{40} \f$
- * bits a third level of 64 bits counts every \f$ 2^{40} \f$ bits.
+ * The rank is the two-level directory of Jacobson, with the sizes that suit
+ * the words and the caches of today: for each block of \f$ Z = 256 \f$
+ * bits, one word of 64 bits holds the absolute rank of the block in its 40
+ * high bits and the ranks of its words 1, 2 and 3 relative to the block in
+ * 8 bits each, and the 1s of the word up to \f$ i \f$ are the sideways sum
+ * of the masked word, which takes the place of the table of the ranks of
+ * all the small blocks of the same chapter (a table of
+ * \f$ 2^z z \log z \f$ bits is affordable only with
+ * \f$ z = \log m / 2 \f$, while the sum of 64 bits is one instruction); one
+ * access to the directory and one to the bits, no branch, \f$ O( 1 ) \f$
+ * time, with \f$ 64 / 256 = 25 \% \f$ of \f$ m \f$ bits more. The classical
+ * analysis sets \f$ Z = \log^2 m \f$ and \f$ z = \log m / 2 \f$, so that
+ * the directory takes \f$ o( m ) \f$ bits with the rank in \f$ O( 1 ) \f$
+ * time; with constant blocks it takes a constant fraction, the trade of
+ * the practical designs: the rank9 of Vigna and the directory of Gog and
+ * Petri take the same 25% with two words per 512 bits, the poppy of Zhou,
+ * Andersen and Kaminsky and the flat rank of Kurpicz 3% with a sum of up
+ * to 8 words per query [see `CompactRankSelect.h`]. Above
+ * \f$ 2^{40} \f$ bits a third level of 64 bits counts every
+ * \f$ 2^{40} \f$ bits.
  *
- * select is the inventory of Vigna's simple select, for the 1s and for
- * the 0s: the 1s are cut in groups of \f$ 2^\ell \f$, with
- * \f$ \ell = \lfloor \log_2 ( 1.5 \cdot 4096 \, k / m ) \rfloor \f$ for k
- * of them, so that a group spans between 3072 and 6144 bits; for each the
- * place of its first 1 is kept in 64 bits, and the places of its 1s of rank
- * multiple of \f$ 2^{\ell - 5} \f$ in 16 bits from it, a line of the
- * cache. \f$ select_1( k ) \f$ reads the place of the 1 of rank k rounded
- * down to \f$ 2^{\ell - 5} \f$ and counts the rest of the 1s word by
- * word, by the sideways sums, and ends in the word by the broadword
- * selectInWord() [see BitVector.h]: three accesses to memory and a few
- * words, O( 1 ) time where the 1s are spread evenly, with about
- * \f$ 576 / 6144 \f$ to \f$ 576 / 3072 \f$, 9.4% to 18.8%, of m bits
- * more for each value. A group that
- * spans \f$ 2^{16} \f$ bits or more, whose offsets do not fit, is sparse,
- * and its 1s are found by a binary search on the directory of rank between
- * its ends, \f$ O( \log ( m / 256 ) ) \f$ in the worst case. The notes
- * give the scheme of Clark, which splits the blocks of \f$ \log^2 m \f$
+ * The select is the inventory of the simple select of Vigna, for the 1s and
+ * for the 0s: the 1s are cut in groups of \f$ 2^\ell \f$, with
+ * \f$ \ell = \lfloor \log_2( 1.5 \cdot 4096 \, k / m ) \rfloor \f$ for
+ * \f$ k \f$ of them, so that a group spans between 3072 and 6144 bits on
+ * average; for each the place of its first 1 is kept in 64 bits, and the
+ * places of its 1s of rank multiple of \f$ 2^{\ell - 5} \f$ in 16 bits from
+ * it, a line of the cache. \f$ \mathrm{select}_1( k ) \f$ reads the place
+ * of the 1 of rank \f$ k \f$ rounded down to \f$ 2^{\ell - 5} \f$, counts
+ * the rest of the 1s word by word, by the sideways sums, and ends in the
+ * word by the broadword `selectInWord()` [see `BitVector.h`]: three
+ * accesses to memory and a few words, \f$ O( 1 ) \f$ time where the 1s are
+ * spread evenly, with about \f$ 576 / 6144 \f$ to \f$ 576 / 3072 \f$, 9.4%
+ * to 18.8%, of \f$ m \f$ bits more for each value. A group that spans
+ * \f$ 2^{16} \f$ bits or more, whose offsets do not fit, is sparse, and its
+ * 1s are found by a binary search on the directory of rank between its
+ * ends, \f$ O( \log( m / 256 ) ) \f$ in the worst case. The same chapter
+ * gives the scheme of Clark, which splits the blocks of \f$ \log^2 m \f$
  * 1s into sparse ones, whose places are written down, and dense ones, split
- * again with \f$ ( \log \log m )^2 \f$ 1s and ended by a table: O( 1 )
- * time in the worst case and o( m ) bits (Theorem 15.2), at the price of
- * three levels whose constants are large for the sizes of practice; the
- * inventories with constant groups are what the practical designs use
- * (Vigna; Gog and Petri; the darray of Okanohara and Sadakane). A group
- * of fewer than 32 bits b, below about 1% of them, keeps the place of each
- * one, and select reads no bit at all.
+ * again with \f$ ( \log \log m )^2 \f$ 1s and ended by a table:
+ * \f$ O( 1 ) \f$ time in the worst case and \f$ o( m ) \f$ bits, at the
+ * price of three levels whose constants are large for
+ * the sizes of practice; the inventories with constant groups are what the
+ * practical designs use (Vigna; Gog and Petri; the darray of Okanohara and
+ * Sadakane). A group of fewer than 32 bits \f$ b \f$, below about 1% of
+ * them, keeps the place of each one, and the select reads no bit at all.
  *
  * The directory is built in one pass on the words: the sideways sums
  * \f$ p_0 , \ldots , p_3 \f$ of the words of a block, at most 64 each,
@@ -62,42 +67,47 @@
  * the three relative ranks of the entry; from words in memory the words
  * are copied in the same pass, above \f$ 2^{23} \f$ bits, where reading
  * them twice costs more than a copy in the caches. The inventories of
- * select are built in the constructor (RankSelect, the default), or by
- * the first select of each value (LazyRankSelect), in a pass on the
+ * select are built in the constructor (`RankSelect`, the default), or by
+ * the first select of each value (`LazyRankSelect`), in a pass on the
  * directory, so that a structure that only ranks never pays for them; the
  * first call builds an inventory once, whichever the threads that call it
- * (with std::call_once, and a flag read with acquire semantics before
+ * (with `std::call_once`, and a flag read with acquire semantics before
  * it), and a copy keeps the inventories already built. The lazy form costs
- * select 10 to 15%: the load of the flag with acquire semantics makes the
- * compiler read the fields of the inventory again at each query, which
- * the eager form, with no flag at all (the template parameter Lazy),
+ * the select 10 to 15%: the load of the flag with acquire semantics makes
+ * the compiler read the fields of the inventory again at each query, which
+ * the eager form, with no flag at all (the template parameter `Lazy`),
  * keeps in plain fields.
  *
- * The places count from 0: \f$ rank_1( i ) \f$ here is \f$ Rank_1( i ) \f$
- * of the notes on the places \f$ 1 , \ldots , i \f$, and \f$ select_1( k )
- * \f$ here is \f$ Select_1( k ) - 1 \f$ (in Example 15.1, \f$ rank_1( 6 ) =
- * 2 \f$ and \f$ select_1( 3 ) = 7 \f$).
+ * The places count from 0: \f$ \mathrm{rank}_1( i ) \f$ here is
+ * \f$ \mathrm{Rank}_1( i ) \f$ of Ferragina's book, which counts the places
+ * from 1, on the places \f$ 1 , \ldots , i \f$, and
+ * \f$ \mathrm{select}_1( k ) \f$ here is \f$ \mathrm{Select}_1( k ) - 1 \f$.
  *
- * The contracts [see Contract.h]: \f$ i \le m \f$ for rank and \f$ 1 \le k
- * \f$ up to the number of the bits b for select; the postconditions are
- * that the bit at \f$ select_b( k ) \f$ is b and that its rank is k - 1, and
- * the audit of the construction is that the directory agrees with a scan.
- * The functions are defined in RankSelect.tpp.
+ * The contracts [see `Contract.h`]: \f$ i \le m \f$ for the rank and
+ * \f$ 1 \le k \f$ up to the number of the bits \f$ b \f$ for the select;
+ * the postconditions are that the bit at \f$ \mathrm{select}_b( k ) \f$ is
+ * \f$ b \f$ and that its rank is \f$ k - 1 \f$, and the audit of the
+ * construction is that the directory agrees with a scan. The functions are
+ * defined in `RankSelect.tpp`.
  *
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
- *      Press, 2023, chapter 15
+ *      Press, 2023, chapter 15, Compressed Data Structures,
+ *      doi:10.1017/9781009128933
  * \see G. Jacobson, Space-efficient static trees and graphs, Proc. 30th
  *      FOCS, 549-554, 1989, doi:10.1109/SFCS.1989.63533
  * \see D. Clark, Compact Pat Trees, PhD thesis, University of Waterloo,
  *      1996
- * \see R. Gonzalez, S. Grabowski, V. Makinen, G. Navarro, Practical
+ * \see R. González, S. Grabowski, V. Mäkinen, G. Navarro, Practical
  *      implementation of rank and select queries, Proc. 4th WEA, 27-38,
  *      2005
  * \see S. Vigna, Broadword implementation of rank/select queries, Proc.
  *      WEA 2008, LNCS 5038, 154-168, 2008,
  *      doi:10.1007/978-3-540-68552-4_12
- * \see D. Zhou, D. G. Andersen, M. Kaminsky, Space-efficient, high-
- *      performance rank and select structures on uncompressed bit
+ * \see D. Okanohara, K. Sadakane, Practical entropy-compressed rank/select
+ *      dictionary, Proc. 9th ALENEX, 60-70, 2007,
+ *      doi:10.1137/1.9781611972870.6
+ * \see D. Zhou, D. G. Andersen, M. Kaminsky, Space-efficient,
+ *      high-performance rank and select structures on uncompressed bit
  *      sequences, Proc. SEA 2013, LNCS 7933, 151-163, 2013,
  *      doi:10.1007/978-3-642-38527-8_15
  * \see F. Kurpicz, Engineering compact data structures for rank and select
@@ -109,7 +119,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -154,48 +164,82 @@ namespace ADS {
 /// the values whose select a directory answers: a structure that needs
 /// only rank, or one of the selects, spares the inventories of the others
 struct RankSelectOptions {
- enum class Selects { NONE , ONES , ZEROS , BOTH };
+ /// the selects that a directory answers
+ enum class Selects {
+  NONE ,    ///< no select, the rank only
+  ONES ,    ///< `select1()`
+  ZEROS ,   ///< `select0()`
+  BOTH      ///< `select1()` and `select0()`
+  };
  };
 
-/// a static vector of bits with rank and select in O( 1 ) time, the
-/// inventories of select built in the constructor if not Lazy, and at the
-/// first select of each value if Lazy
+/// a static vector of bits with rank and select in \f$ O( 1 ) \f$ time, the
+/// inventories of select built in the constructor if not `Lazy`, and at the
+/// first select of each value if `Lazy`
 template< bool Lazy >
 class BasicRankSelect : public RankSelectOptions {
 
 /*--------------------------------------------------------------------------*/
  public:
 
+ /// the directory of no bit
  BasicRankSelect( void );
 
- /// the directory of the bits b, which it keeps, with the selects s
+ /// the directory of the bits \f$ b \f$, which it keeps, with the selects
+ /// \f$ s \f$
+ ///
+ /// In pseudocode (the directory of Jacobson, with the blocks of 256 bits,
+ /// beyond the book),
+ /// \f$ D[ t ] \f$ the entry of the block \f$ t \f$ and \f$ W \f$ the words:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{directory}( W ) \cr
+ /// 2 & \quad c \gets 0 \cr
+ /// 3 & \quad \textbf{foreach}\ \text{block } t \text{ of four words}
+ ///     \ W[ 4 t .. 4 t + 3 ]\ \textbf{do} \cr
+ /// 4 & \qquad p_j \gets \mathrm{popcount}( W[ 4 t + j ] )\ \text{for }
+ ///     j = 0 , 1 , 2 , 3 \cr
+ /// 5 & \qquad r \gets ( p_0 + 2^8 p_1 + 2^{16} p_2 ) \cdot ( 1 + 2^8 +
+ ///     2^{16} ) \bmod 2^{24}\quad \triangleright\ \text{the relative ranks}
+ ///     \cr
+ /// 6 & \qquad D[ t ] \gets 2^{24} c + r;\ c \gets c + p_0 + p_1 + p_2 +
+ ///     p_3 \cr
+ /// 7 & \quad \textbf{foreach}\ \text{value } b \text{ of the selects } s
+ ///     \ \textbf{do}\ \text{build the inventory of } b \text{ (if not }
+ ///     \mathit{Lazy} \text{)}
+ /// \end{array}}
+ /// \f]
  explicit BasicRankSelect( BitVector b , Selects s = Selects::BOTH );
 
- /// the directory of the n bits of the words w, copied as they are
- /// counted, with the selects s
- /// \pre w.size() >= ceil( n / 64 )
+ /// the directory of the \f$ n \f$ bits of the words \f$ w \f$, copied as
+ /// they are counted, with the selects \f$ s \f$
+ /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
  BasicRankSelect( std::span< const Word > w , std::size_t n ,
                   Selects s = Selects::BOTH );
 
- /// a copy, with the inventories that o has built
+ /// a copy, with the inventories that \f$ o \f$ has built
  BasicRankSelect( const BasicRankSelect & o );
 
- /// a move, with the inventories that o has built
+ /// a move, with the inventories that \f$ o \f$ has built
  BasicRankSelect( BasicRankSelect && o ) noexcept;
 
+ /// a copy, with the inventories that \f$ o \f$ has built
  BasicRankSelect & operator=( const BasicRankSelect & o );
 
+ /// a move, with the inventories that \f$ o \f$ has built
  BasicRankSelect & operator=( BasicRankSelect && o ) noexcept;
 
+ /// the directory and its bits released
  ~BasicRankSelect( void ) = default;
 
  /// the bits
  [[nodiscard]] const BitVector & bits( void ) const;
 
+ /// the number of bits, \f$ m \f$
  [[nodiscard]] std::size_t size( void ) const;
 
- /// the bit i
- /// \pre i < size()
+ /// the bit \f$ i \f$
+ /// \pre \f$ i < \f$ `size()`
  [[nodiscard]] bool operator[]( std::size_t i ) const;
 
  /// the number of 1s
@@ -204,22 +248,69 @@ class BasicRankSelect : public RankSelectOptions {
  /// the number of 0s
  [[nodiscard]] std::size_t zeros( void ) const;
 
- /// the number of 1s in the places [ 0 , i )
- /// \pre i <= size()
+ /// the number of 1s in the places \f$ [ 0 , i ) \f$
+ ///
+ /// In pseudocode (the directory of Jacobson, with the sideways sum of a
+ /// word in place of the table of the small blocks, beyond the book),
+ /// \f$ D \f$ the entries of the blocks of the constructor above,
+ /// \f$ W \f$ the words and \f$ T \f$ the counts of the top level:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{rank1}( i ) \cr
+ /// 2 & \quad e \gets D[ \lfloor i / 256 \rfloor ];\ q \gets \lfloor i / 64
+ ///     \rfloor \bmod 4 \cr
+ /// 3 & \quad r \gets \lfloor e / 2^{24} \rfloor + \text{the count of the }
+ ///     \text{word } q \text{ in } e\ \text{(0 for } q = 0 \text{)} \cr
+ /// 4 & \quad \textbf{if}\ m > 2^{40}\ \textbf{then}\ r \gets r + T[ \lfloor i
+ ///     / 2^{40} \rfloor ] \cr
+ /// 5 & \quad \textbf{return}\ r + \mathrm{popcount}( W[ \lfloor i / 64
+ ///     \rfloor ] \bmod 2^{i \bmod 64} )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i \le \f$ `size()`
  [[nodiscard]] std::size_t rank1( std::size_t i ) const;
 
- /// the number of 0s in the places [ 0 , i )
- /// \pre i <= size()
+ /// the number of 0s in the places \f$ [ 0 , i ) \f$, i.e.,
+ /// \f$ i - \mathrm{rank}_1( i ) \f$
+ /// \pre \f$ i \le \f$ `size()`
  [[nodiscard]] std::size_t rank0( std::size_t i ) const;
 
- /// the place of the k-th 1
- /// \pre 1 <= k <= ones(), and the selects of the 1s were asked for
- /// \post the bit there is 1 and rank1() of it is k - 1
+ /// the place of the \f$ k \f$-th 1
+ ///
+ /// In pseudocode (the simple select of Vigna, beyond the book), for the
+ /// bits \f$ b = 1 \f$ (and with the words complemented for the 0s), the
+ /// group \f$ j \f$ of \f$ 2^\ell \f$ of them starting at \f$ P[ j ] \f$ and
+ /// its 1s of rank multiple of \f$ 2^g \f$ at the offsets \f$ O \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{select}( k ) \cr
+ /// 2 & \quad r \gets k - 1;\ j \gets \lfloor r / 2^\ell \rfloor \cr
+ /// 3 & \quad \textbf{if}\ \text{the group } j \text{ is sparse }
+ ///     \ \textbf{then} \cr
+ /// 4 & \qquad \textbf{return}\ \text{the place by a binary search of the }
+ ///     \text{blocks of } D \text{ between } P[ j ] \text{ and } P[ j + 1 ]
+ ///     \cr
+ /// 5 & \quad p \gets P[ j ] + O[ \lfloor r / 2^g \rfloor ]\quad
+ ///     \triangleright\ \text{the 1 of rank } 2^g \lfloor r / 2^g \rfloor \cr
+ /// 6 & \quad \textbf{if}\ g = 0\ \textbf{then return}\ p \cr
+ /// 7 & \quad t \gets r \bmod 2^g;\ w \gets \lfloor p / 64 \rfloor;\ x \gets
+ ///     W[ w ] \text{ with the bits before } p \text{ cleared} \cr
+ /// 8 & \quad \textbf{while}\ t \ge \mathrm{popcount}( x )\ \textbf{do}
+ ///     \ t \gets t - \mathrm{popcount}( x );\ w \gets w + 1;\ x \gets W[ w ]
+ ///     \cr
+ /// 9 & \quad \textbf{return}\ 64 w + \mathrm{selectInWord}( x , t )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 1 \le k \le \f$ `ones()`, and the selects of the 1s were asked
+ ///      for
+ /// \post the bit there is 1 and `rank1()` of it is \f$ k - 1 \f$
  [[nodiscard]] std::size_t select1( std::size_t k ) const;
 
- /// the place of the k-th 0
- /// \pre 1 <= k <= zeros(), and the selects of the 0s were asked for
- /// \post the bit there is 0 and rank0() of it is k - 1
+ /// the place of the \f$ k \f$-th 0, by the select of `select1()` above on
+ /// the complemented words
+ /// \pre \f$ 1 \le k \le \f$ `zeros()`, and the selects of the 0s were asked
+ ///      for
+ /// \post the bit there is 0 and `rank0()` of it is \f$ k - 1 \f$
  [[nodiscard]] std::size_t select0( std::size_t k ) const;
 
  /// the bits of the directory, beyond those of the vector, with those of
@@ -228,21 +319,32 @@ class BasicRankSelect : public RankSelectOptions {
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
+ /// the type of an item
  using value_type = bool;
+ /// the type of a size
  using size_type = std::size_t;
+ /// the type of the distance of two places
  using difference_type = std::ptrdiff_t;
+ /// an item, returned by value
  using reference = bool;
+ /// an item, returned by value
  using const_reference = bool;
+ /// the constant iterator, random access
  using const_iterator = SubscriptIterator< BasicRankSelect , bool >;
+ /// the same as `const_iterator`
  using iterator = const_iterator;
 
+ /// the iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const {
   return( const_iterator( this , 0 ) );
   }
+ /// the iterator past the last item
  [[nodiscard]] const_iterator end( void ) const {
   return( const_iterator( this , size() ) );
   }
+ /// the same as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ /// the same as `end()`
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
@@ -280,8 +382,11 @@ class BasicRankSelect : public RankSelectOptions {
  /// place, 2^s = 2^( l - g ) <= 32 of them a group; the last place is the
  /// size of the vector
  struct Inventory {
-  int l = 0 , g = 0 , s = 0;
-  std::vector< std::uint64_t > pos;
+  int l = 0 ,   ///< \f$ l \f$, a group has \f$ 2^l \f$ bits \f$ b \f$
+      g = 0 ,   ///< \f$ g \f$, an offset every \f$ 2^g \f$ of them
+      s = 0;    ///< \f$ s = l - g \f$
+  std::vector< std::uint64_t > pos;   ///< the place where each group starts
+  /// the offsets of the bits \f$ b \f$ of each group from its place
   std::vector< std::uint16_t , detail::LineAllocator< std::uint16_t > > off;
   };
 
@@ -335,7 +440,8 @@ class BasicRankSelect : public RankSelectOptions {
  /// if Lazy, the flags that build each inventory once, and whether it is
  /// built; nothing if not
  struct Once {
-  mutable std::once_flag flag[ 2 ];
+  mutable std::once_flag flag[ 2 ];   ///< the flag of each inventory
+  /// whether each inventory is built
   mutable std::atomic< bool > ready[ 2 ] = { false , false };
   };
  struct None {};

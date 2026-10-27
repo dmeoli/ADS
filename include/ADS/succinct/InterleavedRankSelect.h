@@ -2,41 +2,44 @@
 /*---------------------- File InterleavedRankSelect.h ----------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Rank and select on a static vector of bits B of m bits with the counts
- * inside the lines of the bits, the layout of SPIDER of Laws, Bliven,
- * Conklin, Laalai, McCauley and Sturdevant: a line of the cache of 512
- * bits holds 496 bits of B and, in its first 16 bits, the 1s before it
- * since its superblock of 128 lines (63488 bits, so that the count fits),
- * and a superblock keeps the 1s before it in 64 bits apart. Hence
- * \f[ rank_1( i ) = S[ \lfloor \ell / 128 \rfloor ] + h_\ell +
+ * Rank and select on a static vector of bits \f$ B \f$ of \f$ m \f$ bits
+ * with the counts inside the lines of the bits, the layout of SPIDER of
+ * Laws, Bliven, Conklin, Laalai, McCauley and Sturdevant: a line of the
+ * cache of 512 bits holds 496 bits of \f$ B \f$ and, in its first 16 bits,
+ * the 1s before it since its superblock of 128 lines (63488 bits, so that
+ * the count fits), and a superblock keeps the 1s before it in 64 bits
+ * apart. Hence
+ * \f[ \mathrm{rank}_1( i ) = S[ \lfloor \ell / 128 \rfloor ] + h_\ell +
  *     | B_\ell [ 0 , i \bmod 496 ) | , \qquad \ell = \lfloor i / 496
  *     \rfloor , \f]
- * \f$ h_\ell \f$ the count of the line \f$ \ell \f$ and \f$ B_\ell \f$ its
- * bits, with one access to the memory of the vector, the line, against
- * two of the directories kept apart [see RankSelect.h, CompactRankSelect.h]
- * (the array of the superblocks, 1 word per 63488 bits, stays in the
- * caches); the sum of the line is that of CompactRankSelect, 32 bytes at a
- * time by a table of the nibbles with AVX2. The counts take
- * \f$ 16 / 512 = 3.125 \% \f$ of the line.
+ * \f$ h_\ell \f$ the count of the line \f$ \ell \f$, \f$ B_\ell \f$ its
+ * bits and \f$ | \cdot | \f$ the number of 1s, with one access to the
+ * memory of the vector, the line, against two of the directories kept apart
+ * [see `RankSelect.h`, `CompactRankSelect.h`] (the array of the
+ * superblocks, 1 word per 63488 bits, stays in the caches); the sum of the
+ * line is that of `CompactRankSelect`, 32 bytes at a time by a table of the
+ * nibbles with AVX2. The counts take \f$ 16 / 512 = 3.125 \% \f$ of the
+ * line.
  *
- * select keeps the line of every 8192-th bit b with the bits b before
- * that line (96 bits each, at most \f$ 96 / 8192 < 1.2 \% \f$ of m bits
- * for each value) and guesses the line of the k-th bit b between two
- * samples by interpolation, as SPIDER does,
+ * The select keeps the line of every 8192-th bit \f$ b \f$ with the bits
+ * \f$ b \f$ before that line (96 bits each, at most
+ * \f$ 96 / 8192 < 1.2 \% \f$ of \f$ m \f$ bits for each value) and guesses
+ * the line of the \f$ k \f$-th bit \f$ b \f$ between two samples by
+ * interpolation, as SPIDER does,
  * \f[ \hat\ell = \ell_j + \frac{ ( k - 1 - c_j ) ( \ell_{j+1} - \ell_j ) }
  *     { c_{j+1} - c_j } , \f]
- * \f$ c_j \f$ the bits b before the line \f$ \ell_j \f$, corrects the
- * guess a line at a time by the counts of the lines (a step or two where
- * the bits b are spread evenly, \f$ \ell_{j+1} - \ell_j \f$ in the worst
- * case), and ends in the line by the sums of its words and selectInWord()
- * [see BitVector.h].
+ * \f$ c_j \f$ the bits \f$ b \f$ before the line \f$ \ell_j \f$, corrects
+ * the guess a line at a time by the counts of the lines (a step or two
+ * where the bits \f$ b \f$ are spread evenly, \f$ \ell_{j+1} - \ell_j \f$
+ * in the worst case), and ends in the line by the sums of its words and
+ * `selectInWord()` [see `BitVector.h`].
  *
- * The contracts [see Contract.h]: \f$ i \le m \f$ for rank and
- * \f$ 1 \le k \f$ up to the number of the bits b for select; the
- * postconditions are that the bit at \f$ select_b( k ) \f$ is b and that
- * its rank is k - 1, and the audit of the construction is that the
- * counts agree with a scan. The functions are defined in
- * InterleavedRankSelect.tpp.
+ * The contracts [see `Contract.h`]: \f$ i \le m \f$ for the rank and
+ * \f$ 1 \le k \f$ up to the number of the bits \f$ b \f$ for the select;
+ * the postconditions are that the bit at \f$ \mathrm{select}_b( k ) \f$ is
+ * \f$ b \f$ and that its rank is \f$ k - 1 \f$, and the audit of the
+ * construction is that the counts agree with a scan. The functions are
+ * defined in `InterleavedRankSelect.tpp`.
  *
  * \see M. D. Laws, J. Bliven, K. Conklin, E. Laalai, S. McCauley,
  *      Z. S. Sturdevant, SPIDER: improved succinct rank and select
@@ -51,7 +54,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -98,15 +101,18 @@ class InterleavedRankSelect {
 /*--------------------------------------------------------------------------*/
  public:
 
+ /// the directory of no bit
  InterleavedRankSelect( void ) : InterleavedRankSelect( BitVector() ) {}
 
- /// the directory of the bits b, laid out with them
+ /// the directory of the bits \f$ b \f$, laid out with them
  explicit InterleavedRankSelect( const BitVector & b );
 
- /// the directory of the n bits of the words w, laid out with them
- /// \pre w.size() >= ceil( n / 64 )
+ /// the directory of the \f$ n \f$ bits of the words \f$ w \f$, laid out
+ /// with them
+ /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
  InterleavedRankSelect( std::span< const Word > w , std::size_t n );
 
+ /// the number of bits, \f$ m \f$
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
 
  /// the number of 1s
@@ -115,32 +121,73 @@ class InterleavedRankSelect {
  /// the number of 0s
  [[nodiscard]] std::size_t zeros( void ) const { return( f_n - f_ones ); }
 
- /// the bit i
- /// \pre i < size()
+ /// the bit \f$ i \f$
+ /// \pre \f$ i < \f$ `size()`
  [[nodiscard]] bool operator[]( std::size_t i ) const;
 
- /// the number of 1s in the places [ 0 , i )
- /// \pre i <= size()
+ /// the number of 1s in the places \f$ [ 0 , i ) \f$
+ ///
+ /// In pseudocode (the rank of SPIDER, beyond the book), \f$ L_\ell \f$ the
+ /// line \f$ \ell \f$, its count \f$ h_\ell \f$ in its first 16 bits, and
+ /// \f$ S \f$ the counts of the superblocks:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{rank1}( i ) \cr
+ /// 2 & \quad \ell \gets \lfloor i / 496 \rfloor \cr
+ /// 3 & \quad \textbf{return}\ S[ \lfloor \ell / 128 \rfloor ] + h_\ell +
+ ///     \text{the 1s of } L_\ell \text{ in its bits } [ 16 , 16 + i \bmod
+ ///     496 )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i \le \f$ `size()`
  [[nodiscard]] std::size_t rank1( std::size_t i ) const;
 
- /// the number of 0s in the places [ 0 , i )
- /// \pre i <= size()
+ /// the number of 0s in the places \f$ [ 0 , i ) \f$, i.e.,
+ /// \f$ i - \mathrm{rank}_1( i ) \f$
+ /// \pre \f$ i \le \f$ `size()`
  [[nodiscard]] std::size_t rank0( std::size_t i ) const {
   return( i - rank1( i ) );
   }
 
- /// the place of the k-th 1
- /// \pre 1 <= k <= ones()
- /// \post the bit there is 1 and rank1() of it is k - 1
+ /// the place of the \f$ k \f$-th 1
+ ///
+ /// In pseudocode (the select of SPIDER, beyond the book), for the bits
+ /// \f$ b = 1 \f$ (the words complemented for the 0s), the samples
+ /// \f$ ( \ell_j , c_j ) \f$ and \f$ \mathrm{before}( \ell ) \f$ the bits
+ /// \f$ b \f$ before the line \f$ \ell \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{select}( k ) \cr
+ /// 2 & \quad j \gets \lfloor ( k - 1 ) / 8192 \rfloor \cr
+ /// 3 & \quad \ell \gets \min\{ \ell_{j+1} , \ell_j + \lfloor ( k - 1 - c_j
+ ///     ) ( \ell_{j+1} - \ell_j ) / ( c_{j+1} - c_j ) \rfloor \} \cr
+ /// 4 & \quad \textbf{while}\ \ell > \ell_j\ \textbf{and}\ \mathrm{before}(
+ ///     \ell ) \ge k\ \textbf{do}\ \ell \gets \ell - 1 \cr
+ /// 5 & \quad \textbf{while}\ \ell < \ell_{j+1}\ \textbf{and}
+ ///     \ \mathrm{before}( \ell + 1 ) < k\ \textbf{do}\ \ell \gets \ell + 1
+ ///     \cr
+ /// 6 & \quad r \gets k - \mathrm{before}( \ell ) \cr
+ /// 7 & \quad \textbf{foreach}\ \text{word } x \text{ of } L_\ell \text{,}
+ ///     \text{ its count cleared}\ \textbf{do} \cr
+ /// 8 & \qquad \textbf{if}\ r \le \mathrm{popcount}( x )
+ ///     \ \textbf{then return}\ \text{the place of } x +
+ ///     \mathrm{selectInWord}(
+ ///     x , r - 1 ) \cr
+ /// 9 & \qquad r \gets r - \mathrm{popcount}( x )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 1 \le k \le \f$ `ones()`
+ /// \post the bit there is 1 and `rank1()` of it is \f$ k - 1 \f$
  [[nodiscard]] std::size_t select1( std::size_t k ) const;
 
- /// the place of the k-th 0
- /// \pre 1 <= k <= zeros()
- /// \post the bit there is 0 and rank0() of it is k - 1
+ /// the place of the \f$ k \f$-th 0, by the select of `select1()` above on
+ /// the complemented words
+ /// \pre \f$ 1 \le k \le \f$ `zeros()`
+ /// \post the bit there is 0 and `rank0()` of it is \f$ k - 1 \f$
  [[nodiscard]] std::size_t select0( std::size_t k ) const;
 
  /// the bits of the counts in the lines, of the superblocks and of the
- /// samples, beyond the m bits
+ /// samples, beyond the \f$ m \f$ bits
  [[nodiscard]] std::size_t directoryBits( void ) const;
 
 /*--------------------------------------------------------------------------*/
