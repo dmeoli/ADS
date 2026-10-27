@@ -20,9 +20,10 @@ namespace ADS {
 
 namespace detail {
 
-/// the iterations of I[ 0 , k ) whose flag is set, in their order, into
-/// out; their number. The counts of the blocks, their prefix sums, and the
-/// copies of the blocks in parallel
+/// the iterations of \f$ I[ 0 .. k - 1 ] \f$ whose flag in `keep` is set,
+/// in their order, copied into `out`, and their number: the counts of the
+/// blocks and the copies of the blocks in parallel, the prefix sums of the
+/// counts in between
 template< class E >
 std::size_t packKept( E & ex , const std::vector< std::size_t > & I ,
                       const std::vector< char > & keep , std::size_t k ,

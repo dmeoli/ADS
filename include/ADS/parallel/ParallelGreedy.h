@@ -156,8 +156,16 @@ template< Executor E , class W >
 /// the places in \f$ A \f$ of the edges of the spanning forest of the
 /// greedy algorithm in the order of \f$ A \f$, increasing
 ///
-/// In pseudocode (section 10.2): the steps of `parallelKruskal()` above on
-/// the edges in the order of \f$ A \f$, with no sort.
+/// In pseudocode (section 10.2), the steps of `parallelKruskal()` above on
+/// the edges in the order of \f$ A \f$, with no sort:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{spanningForest}( n , A ) \cr
+/// 2 & \quad \textbf{return}\ \text{the edges that } \mathrm{reserve}
+///     \text{ and } \mathrm{commit} \text{ of } \mathrm{parallelKruskal}
+///     \text{ take on } A \text{ in its order}
+/// \end{array}}
+/// \f]
 /// \pre \f$ n \ge 0 \f$, the ends of the edges in \f$ [ 0 , n ) \f$
 /// \post the forest of the sequential greedy algorithm (audit)
 template< Executor E >

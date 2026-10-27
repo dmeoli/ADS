@@ -16,7 +16,6 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -51,11 +50,14 @@ namespace detail {
 class GreedyUnionFind {
  public:
 
+ /// the \f$ n \f$ singletons \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  explicit GreedyUnionFind( int n ) : f_p( std::size_t( n < 0 ? 0 : n ) ) {
   for( int x = 0 ; x < n ; ++x )
    f_p[ x ] = x;
   }
 
+ /// the root of \f$ x \f$, each node on the way linked to its
+ /// grandparent (the halving of the paths)
  int find( int x ) {
   for( ; ; ) {
    const int y = load( x );
@@ -69,23 +71,25 @@ class GreedyUnionFind {
    }
   }
 
- /// the root r under p
+ /// the root \f$ r \f$ linked under \f$ p \f$
  void link( int r , int p ) {
   std::atomic_ref< int >( f_p[ r ] ).store( p , std::memory_order_relaxed );
   }
 
  private:
 
+ /// the parent of \f$ x \f$
  int load( int x ) {
   return( std::atomic_ref< int >( f_p[ x ] ).load(
                                   std::memory_order_relaxed ) );
   }
 
- std::vector< int > f_p;
+ std::vector< int > f_p;                       ///< the parents
  };
 
-/// the edges A[ ids[ i ] ] in the order of i, by the greedy algorithm on
-/// the union-find U: the ids taken appended to out
+/// the greedy algorithm on the edges \f$ A[ \mathit{ids}[ i ] ] \f$ in the
+/// order of \f$ i \f$, their ends given by `ends`, on the union-find
+/// \f$ U \f$: the places of the edges taken appended to `out`
 template< class X , class GetEnds >
 void greedyForest( X & ex , const std::vector< int > & ids ,
                    GetEnds && ends , GreedyUnionFind & U ,
@@ -153,7 +157,8 @@ void greedyForest( X & ex , const std::vector< int > & ids ,
    out.push_back( ids[ i ] );
  }
 
-/// the items x of ids with keep( x ), in their order, in parallel
+/// the items \f$ x \f$ of `ids` with `keep( x )`, in their order, in
+/// parallel
 template< class X , class P >
 std::vector< int > parallelFilter( X & ex , const std::vector< int > & ids ,
                                    P && keep )
@@ -168,8 +173,8 @@ std::vector< int > parallelFilter( X & ex , const std::vector< int > & ids ,
                                            std::ptrdiff_t( c ) ) );
  }
 
-/// whether the edges taken are those of the sequential greedy algorithm
-/// on the order ids
+/// whether `taken` holds the edges of the sequential greedy algorithm on
+/// the order `ids`
 template< class GetEnds >
 bool sameGreedy( int n , const std::vector< int > & ids , GetEnds && ends ,
                  const std::vector< int > & taken )
@@ -187,7 +192,8 @@ bool sameGreedy( int n , const std::vector< int > & ids , GetEnds && ends ,
  return( seq == taken );
  }
 
-/// the ids of A sorted by ( w , id ), in parallel
+/// the places `ids` of the edges of \f$ A \f$ sorted by the pair
+/// \f$ ( w , \mathit{place} ) \f$, in parallel
 template< class X , class W >
 std::vector< int > byWeight( X & ex ,
                              const std::vector< WeightedEdge< W > > & A ,

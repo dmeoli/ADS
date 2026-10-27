@@ -69,6 +69,7 @@
 #include "ADS/parallel/Executor.h"
 
 #include <atomic>
+#include <concepts>
 #include <cstddef>
 #include <limits>
 #include <vector>
