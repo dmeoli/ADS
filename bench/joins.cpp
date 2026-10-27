@@ -18,10 +18,11 @@
  * keeps the sums, and m sums of the values in ranges of keys by augRange()
  * (by parallelFor() on the pool). If PAM is compiled in (-DADS_HAS_PAM
  * with the headers of PAM and of ParlayLib), pam_map and aug_map on its
- * four schemes (AVL, RB, WB, treap) run the same cells on the threads of
- * ParlayLib (PARLAY_NUM_THREADS = t), their operations taking their
- * arguments by move, as those of ADS do, and the sorted batches inserted
- * by the sorted insertion of PAM, as multi_insert() would sort them first.
+ * four schemes (AVL, RB, WB, treap) run the same cells on t threads of
+ * ParlayLib (PARLAY_NUM_THREADS, set to t if not given), their operations
+ * taking their arguments by move, as those of ADS do, and the sorted
+ * batches inserted by the sorted insertion of PAM, as multi_insert() would
+ * sort them first.
  *
  * Each cell is the median of r runs, in nanoseconds per key of the two
  * trees (per pair of the batch for the insertion and the construction),
@@ -407,6 +408,14 @@ int main( int argc , char ** argv )
    rest.push_back( argv[ i ] );
  const Options o( int( rest.size() ) , rest.data() , { 1000000 } );
  ThreadPool pool( std::size_t( std::max( t , 1 ) ) );
+#if defined( ADS_HAS_PAM )
+ // the workers of ParlayLib, read when its scheduler starts (at the first
+ // cell of PAM): t, as many as those of the pool, unless already given;
+ // left to itself ParlayLib starts one per hardware thread of the machine
+ // whatever the affinity of the process, i.e., hundreds on a few cores
+ setenv( "PARLAY_NUM_THREADS" , std::to_string( std::max( t , 1 ) ).c_str() ,
+         0 );
+#endif
 
  for( const std::size_t n : o.sizes )
   for( const std::size_t m : { n , n / 100 } ) {
