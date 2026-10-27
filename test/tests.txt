@@ -1687,6 +1687,7 @@ contract_tree         b-plus-tree          B+-albero, capitolo 6
 contract_tree         binary-tree          albero binario, capitolo 5
 contract_tree         parent-tree          vettore dei padri, capitolo 5
 contract_tree         search-tree          ABR e Red-Black, capitolo 6
+contract_tree         search-tree-invariant  invariante di ABR e Red-Black, violato
 contract_tree         tree                 albero ordinato, capitolo 5
 contract_tree         tree-realizations    realizzazioni degli alberi
 contract_tree         other-trees          B-albero, espressioni, cursori

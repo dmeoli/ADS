@@ -46,6 +46,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -238,6 +239,64 @@ ADS_TEST( "search-tree" )
  CHECK( S.size() == M.size() && R.size() == M.size() );
  for( const auto & [ k , v ] : M )
   CHECK( S.lookup( k ) == v && R.lookup( k ) == v );
+ }
+
+// the invariant of the search trees, a walk by the links to the parents:
+// true on a Red-Black tree, on a binary search tree and on a path of
+// sorted keys, empty or not; false after each of its conditions is broken
+// and true again when it is mended: a key out of order, a wrong parent, a
+// wrong size, a red child of a red node (V3), a black node more on one path
+// (V4), a red root (V1)
+ADS_TEST( "search-tree-invariant" )
+{
+ using RB = RedBlackTree< int , int >;
+ using BS = BinarySearchTree< int , int >;
+ auto valid = []( const auto & t ) {
+  using T = std::remove_cvref_t< decltype( t ) >;
+  return( SearchTreeNodes< int , int , std::is_same_v< T , RB > >::valid(
+           t ) );
+  };
+ RB r;
+ BS b , p;
+ CHECK( valid( r ) && valid( b ) );
+ for( int k = 0 ; k < 1000 ; ++k ) {
+  r.insert( ( 37 * k ) % 1000 , k );
+  b.insert( ( 37 * k ) % 1000 , k );
+  }
+ for( int k = 0 ; k < 3000 ; ++k ) p.insert( k , k );   // a path
+ CHECK( valid( r ) && valid( b ) && valid( p ) );
+ auto key = []( auto * u ) -> int & {
+  return( static_cast< RB::Node * >( u )->key );
+  };
+ RB::Link * u = r.root()->left;
+ while( ! r.isNil( u->right ) ) u = u->right;   // the largest key on the left
+ const int k = key( u );
+ key( u ) = key( r.root() ) + 1;
+ CHECK( ! valid( r ) );
+ key( u ) = k;
+ RB::Link * c = r.root()->left;
+ RB::Link * const q = c->parent;
+ c->parent = c;
+ CHECK( ! valid( r ) );
+ c->parent = q;
+ ++c->size;
+ CHECK( ! valid( r ) );
+ --c->size;
+ CHECK( valid( r ) );
+ RB::Link * a = r.min();                         // a leaf, then its parent
+ const Color ca = a->color , cp = a->parent->color;
+ a->color = a->parent->color = Color::RED;
+ CHECK( ! valid( r ) );
+ a->parent->color = Color::BLACK;
+ a->color = ca == Color::RED ? Color::BLACK : Color::RED;
+ CHECK( ! valid( r ) );                          // one path changed
+ a->color = ca;
+ a->parent->color = cp;
+ CHECK( valid( r ) );
+ r.root()->color = Color::RED;
+ CHECK( ! valid( r ) );
+ r.root()->color = Color::BLACK;
+ CHECK( valid( r ) );
  }
 
 // B+-tree: the order m > 2, and the shape after each insertion against

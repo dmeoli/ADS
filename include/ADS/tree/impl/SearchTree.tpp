@@ -216,56 +216,64 @@ bool SearchTree< K , V , RB >::valid( void ) const
   return( false );                       // (V1) and (V2)
  if( ( nil()->size != 0 ) || ( f_root->size != f_size ) )
   return( false );
- // a postvisit with a stack of its own, as the height may be n: each node
- // with the interval of its keys, the subtrees done and the black height of
- // the left one, h that of the last subtree done; a broken constraint ends
- // the visit
- struct Item { const Link * u; const K * lo , * hi; int k; long hl; };
- std::vector< Item > S;
- long h = 0;
- auto enter = [ & ]( const Link * u , const Link * p , const K * lo ,
-                     const K * hi ) {
-  if( u == nil() ) {
-   h = 0;
-   return( true );
+ // a walk by the links to the parents, with no stack and no recursion, as
+ // the height may be n: a link to a child is checked when the walk goes
+ // down it, so that the walk up only follows links already checked; the
+ // order by the keys strictly increasing in the invisit, and (V4) by the
+ // black nodes on the path down to each leaf nil, as many as on the first
+ long black = 0 , height = -1;           // the black nodes down to u, and
+ const K * last = nullptr;               // down to the first leaf nil
+ auto down = [ & ]( const Link * c , const Link * p ) {
+  if( ( c->parent != p ) || ( ++count > f_size ) ||
+      ( c->size != 1 + c->left->size + c->right->size ) )
+   return( false );                      // the parent and the sizes
+  if constexpr( RB ) {
+   if( ( p != nil() ) && ( p->color == Color::RED ) &&
+       ( c->color == Color::RED ) )
+    return( false );                     // (V3)
+   black += ( c->color == Color::BLACK );
    }
-  if( ( u->parent != p ) || ( ++count > f_size ) ||
-      ( u->size != 1 + u->left->size + u->right->size ) ||
-      ( lo && !( *lo < key( u ) ) ) || ( hi && !( key( u ) < *hi ) ) )
-   return( false );                      // the parent and the order
-  S.push_back( Item{ u , lo , hi , 0 , 0 } );
   return( true );
   };
- if( ! enter( f_root , nil() , nullptr , nullptr ) )
+ auto leaf = [ & ]( void ) {             // (V4) at a leaf nil
+  if( height < 0 )
+   height = black;
+  return( black == height );
+  };
+ const Link * u = f_root , * from = nil();
+ if( ( u != nil() ) && ! down( u , nil() ) )
   return( false );
- while( ! S.empty() ) {
-  Item & x = S.back();
-  const Link * u = x.u;
-  if( x.k == 0 ) {
-   x.k = 1;
-   if( ! enter( u->left , u , x.lo , &key( u ) ) )
-    return( false );
-   }
-  else if( x.k == 1 ) {
-   x.k = 2;
-   x.hl = h;
-   if( ! enter( u->right , u , &key( u ) , x.hi ) )
-    return( false );
-   }
-  else {
-   const long l = x.hl;
-   S.pop_back();
-   if constexpr( RB ) {
-    if( l != h )
-     return( false );                    // (V4)
-    if( ( u->color == Color::RED ) && ( ( u->left->color == Color::RED ) ||
-                                        ( u->right->color == Color::RED ) ) )
-     return( false );                    // (V3)
-    h = l + ( u->color == Color::BLACK );
+ while( u != nil() ) {
+  if( from == u->parent ) {              // down from the parent
+   if( u->left != nil() ) {
+    if( ! down( u->left , u ) )
+     return( false );
+    from = u;
+    u = u->left;
+    continue;
     }
-   else
-    h = 0;
+   if( RB && ! leaf() )
+    return( false );
+   from = u->left;
    }
+  if( from == u->left ) {                // up from the left subtree
+   if( last && !( *last < key( u ) ) )
+    return( false );                     // the order
+   last = &key( u );
+   if( u->right != nil() ) {
+    if( ! down( u->right , u ) )
+     return( false );
+    from = u;
+    u = u->right;
+    continue;
+    }
+   if( RB && ! leaf() )
+    return( false );
+   }
+  if constexpr( RB )                     // up from the right subtree
+   black -= ( u->color == Color::BLACK );
+  from = u;
+  u = u->parent;
   }
  return( count == f_size );
  }

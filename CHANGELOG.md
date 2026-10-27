@@ -1705,8 +1705,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subtrees, the removals and the invariants of CursorTree, ChildListTree
   and CursorBinaryTree, evaluate(), prefixForm() and infixForm() of the
   expression trees, equalTrees(), isSearchTree(), isRedBlackTree() and
-  searchTreeRange(), and the invariant of SearchTree, with the same
-  results, orders and places as before; copy() and to_binary() of
+  searchTreeRange(), with the same results, orders and places as before,
+  and the invariant of SearchTree by the links to the parents, with no
+  stack (the test search-tree-invariant); copy() and to_binary() of
   BinaryTree and copy() of Tree free the nodes made so far if a copy of a
   value throws; the tests deep-binary-trees, deep-ordered-trees and
   deep-expression-tree, on paths of 10^6 nodes
