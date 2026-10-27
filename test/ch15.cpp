@@ -55,7 +55,7 @@ using Edge = WeightedEdge< long >;
 using Arc = std::tuple< int , int , long >;
 
 const Augment ways[] = { Augment::FORD_FULKERSON , Augment::EDMONDS_KARP ,
-                         Augment::DINIC };
+                         Augment::DINIC , Augment::PUSH_RELABEL };
 
 /// the maximum flow from s to t of the arcs, and the network
 long maxflow( int n , const std::vector< Arc > & A , int s , int t ,

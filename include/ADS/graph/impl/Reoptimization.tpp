@@ -852,21 +852,22 @@ void MaxFlowObserver< G >::solve( void )
   f_S.push_back( false );
   }
 
- // the arcs changed: ( u , v , new capacity ), and the tests
+ // the arcs changed: ( u , v , new capacity ), and the tests; a capacity
+ // below the flow of its arc leaves an excess and a deficit to route
  struct Arc {
   int u , v;
   long long c;
   };
  std::vector< Arc > A;
- bool fatal = false , grow = false;
+ bool warm = false;
  auto test = [ & ]( int a , int b , long long c0 , long long c1 ) {
   ADS_PRE( c1 >= 0 );
   const auto it = f_arc.find( key( a , b ) );
   const long long f = it == f_arc.end() ? 0 : f_net.flow( it->second );
   if( c1 < f )
-   fatal = true;                          // f no longer feasible
+   warm = true;                           // f no longer feasible
   else if( f_S[ a ] && ! f_S[ b ] && ( c1 > c0 ) )
-   grow = true;                           // the cut grows
+   warm = true;                           // the cut grows
   A.push_back( { a , b , c1 } );
   };
  for( const auto & e : P ) {
@@ -879,26 +880,20 @@ void MaxFlowObserver< G >::solve( void )
   if( ! f_g.directed() )
    test( v , u , c0 , c1 );
   }
- if( fatal ) {
-  scratch();
-  this->done( Reopt::SCRATCH );
-  }
- else {
-  for( const auto & a : A ) {
-   const auto it = f_arc.find( key( a.u , a.v ) );
-   if( it == f_arc.end() )
-    f_arc[ key( a.u , a.v ) ] = f_net.addEdge( a.u , a.v , a.c );
-   else
-    f_net.setCapacity( it->second , a.c );
-   }
-  if( grow ) {                            // the paths from the flow there
-   f_value += f_net.maxFlow( f_s , f_t , f_how );
-   f_S = f_net.minCut( f_s );
-   this->done( Reopt::WARM );
-   }
+ for( const auto & a : A ) {
+  const auto it = f_arc.find( key( a.u , a.v ) );
+  if( it == f_arc.end() )
+   f_arc[ key( a.u , a.v ) ] = f_net.addEdge( a.u , a.v , a.c );
   else
-   this->done( Reopt::CERTIFIED );
+   f_net.setCapacity( it->second , a.c );
   }
+ if( warm ) {                             // from the flow there is
+  f_value += f_net.maxFlow( f_s , f_t , f_how );
+  f_S = f_net.minCut( f_s );
+  this->done( Reopt::WARM );
+  }
+ else
+  this->done( Reopt::CERTIFIED );
  ADS_AUDIT( cutCapacity() == f_value );
  }
 

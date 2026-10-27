@@ -21,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compiled in only when found; the mean and the maximum rank error of the
   relaxed queues in the hold model, from the times at which their
   operations return, replayed in their order (-b rank)
+- FlowNetwork: Augment::PUSH_RELABEL, the push-relabel of Goldberg and
+  Tarjan with the highest label first, the global relabelings and the gaps
+  of Cherkassky and Goldberg, on the arcs copied in rows by tail, from the
+  flow there is; setCapacity() below the flow of its edge, which leaves an
+  excess and a deficit that the next maxFlow() routes first (the
+  reparametrization of Kohli and Torr), so that MaxFlowObserver repairs a
+  capacity cut below its flow instead of computing from scratch and takes
+  the way of its maximum flows (PUSH_RELABEL too); maxFlow() gives the
+  change of the value of the flow, negative after such a cut; the test
+  max-flow-warm, PUSH_RELABEL in the tests of chapter 15, of the exams and
+  of the contracts; bench/flows.cpp, against Preflow of LEMON (LEMON=1)
+  and push_relabel_max_flow of Boost, from scratch and after each change
 - ShortestPathsObserver: the raises and the deletions of the edges of the
   tree repaired too, by (9) of the theory of the graphs on the subtrees
   whose distances are lost and the prototype from them (the algorithm of

@@ -459,6 +459,55 @@
  e.g., those of the bipartite matching; in practice the phases are usually far
  fewer than \f$ n \f$.
 
+ The push-relabel of Goldberg and Tarjan (`PUSH_RELABEL`, beyond the book)
+ gives up the conservation while it runs: it keeps a <em>preflow</em>, in
+ which each node but \f$ s \f$ has an excess
+ \f$ e( v ) \ge 0 \f$ of entering flow over leaving flow, and a label
+ \f$ d( v ) \f$ with \f$ d( t ) = 0 \f$ and \f$ d( u ) \le d( v ) + 1 \f$
+ on every edge with \f$ c_f( u , v ) > 0 \f$, so that \f$ d( v ) \f$ is a
+ lower bound of the distance in edges from \f$ v \f$ to \f$ t \f$ in the
+ residual network. It starts by saturating the edges that leave
+ \f$ s \f$, and then a node \f$ u \f$ with an excess either pushes it on an
+ edge with \f$ c_f( u , v ) > 0 \f$ and \f$ d( v ) = d( u ) - 1 \f$, or,
+ if there is none, raises \f$ d( u ) \f$ to the least
+ \f$ d( v ) + 1 \f$ over its residual edges, which keeps the labels valid.
+ A label never decreases and stays below \f$ 2 n \f$, since a node with an
+ excess has a residual path back to \f$ s \f$; hence there are
+ \f$ O( n^2 ) \f$ relabelings and \f$ O( n m ) \f$ pushes that saturate
+ their edge, and taking the node of the highest label bounds the others by
+ \f$ O( n^2 \sqrt{m} ) \f$ (Cheriyan and Maheshwari). When no node with an
+ excess has a label below \f$ n \f$ the preflow is maximum, since a
+ residual path from \f$ s \f$ to \f$ t \f$ would descend from
+ \f$ d( s ) = n \f$ to \f$ 0 \f$ by at most 1 per edge in fewer than
+ \f$ n \f$ edges; the excesses left are then sent back to \f$ s \f$ by the
+ same pushes with the labels of the distances from \f$ s \f$. The bound
+ says little of the speed, which comes from two heuristics of Cherkassky and
+ Goldberg: the <em>global relabeling</em>, a visit in breadth backwards from
+ \f$ t \f$ that sets each label to its distance, every \f$ O( n + m ) \f$
+ work of the relabelings; and the <em>gap</em>, which, when no node is left
+ with some label \f$ k \f$, puts out of the game every node of label
+ above \f$ k \f$, since none of them reaches \f$ t \f$ any longer.
+
+ Every way above starts from the flow there is. When a capacity falls below
+ the flow of its edge \f$ ( u , v ) \f$, `FlowNetwork::setCapacity()` cuts
+ the flow to the new capacity and leaves an excess at \f$ u \f$ and a
+ deficit at \f$ v \f$ of the difference (the reparametrization of the
+ dynamic cuts of Kohli and Torr); the next `maxFlow()` first sends each
+ excess along a residual path to \f$ s \f$, to \f$ t \f$ or to a deficit,
+ and then fills each deficit from \f$ s \f$ or \f$ t \f$, both of which
+ give and take any amount. Such paths exist: the flow before the cut decomposes
+ into paths from \f$ s \f$ to \f$ t \f$ and cycles, and those through
+ \f$ ( u , v ) \f$ give, backwards from \f$ u \f$ and forwards from
+ \f$ v \f$, the residual paths needed. The result is a flow again, from
+ which the maximum is reached by the augmentations or by the push-relabel.
+ The two differ here: the augmenting paths of `DINIC` start from the flow
+ and stop at the first visit that misses \f$ t \f$, so that a change that
+ leaves few paths to find costs a few visits, while the push-relabel
+ saturates again the edges out of \f$ s \f$, sends back to \f$ s \f$ the
+ excess that does not reach \f$ t \f$ and relabels the whole network,
+ i.e., it pays about as much as from scratch; `MaxFlowObserver` therefore
+ takes `DINIC` unless told otherwise.
+
  The flow found is integral when the capacities are (the integrality theorem),
  and this makes three reductions exact. The edge-disjoint paths of
  `edgeDisjointPaths()` of `FlowApplications.h` are as many as the maximum flow
@@ -665,10 +714,11 @@
  harmless unless \f$ ( u , v ) \f$ leaves \f$ S \f$ and grows: the flow stays
  feasible, and the capacity of the cut neither falls below \f$ | f | \f$ (an
  edge of the cut is saturated, so that lowering it below its flow is caught
- by the first test) nor rises. If \f$ ( u , v ) \f$ crosses the cut and grows,
- the flow is still feasible and the augmenting paths start from it, not from
- zero; if \f$ c' < f( u , v ) \f$ the flow is no longer feasible, and it is
- computed from scratch.
+ by the other test) nor rises. If \f$ ( u , v ) \f$ crosses the cut and
+ grows, the flow is still feasible and the maximum is sought from it, not
+ from zero; if \f$ c' < f( u , v ) \f$ the flow is cut to \f$ c' \f$, its
+ excess and its deficit are routed as above, and the maximum is sought from
+ the flow so obtained. Only the threshold of the events is fatal.
 
  <table>
  <caption>The tests of the observers on a change of the edge
@@ -684,7 +734,9 @@
      lowered, or a swap</td><td>raises and decreases together</td></tr>
  <tr><td><tt>MaxFlowObserver</tt></td><td>\f$ c' \ge f( u , v ) \f$ off
      the cut, \f$ O( 1 ) \f$</td><td>an edge of the cut raised, the
-     augmenting paths from \f$ f \f$</td><td>\f$ c' < f( u , v ) \f$</td></tr>
+     maximum from \f$ f \f$; \f$ c' < f( u , v ) \f$, the excess and the
+     deficit routed first</td><td>more than \f$ \rho m \f$
+     events</td></tr>
  </table>
 
  \section theory_graph_refs References
@@ -731,6 +783,19 @@
  \see J. Edmonds, R. M. Karp, Theoretical improvements in algorithmic
       efficiency for network flow problems, Journal of the ACM 19(2),
       248-264, 1972, doi:10.1145/321694.321699
+ \see A. V. Goldberg, R. E. Tarjan, A new approach to the maximum-flow
+      problem, Journal of the ACM 35(4), 921-940, 1988,
+      doi:10.1145/48014.61051
+ \see J. Cheriyan, S. N. Maheshwari, Analysis of preflow push algorithms
+      for maximum network flow, SIAM Journal on Computing 18(6),
+      1057-1086, 1989, doi:10.1137/0218072
+ \see B. V. Cherkassky, A. V. Goldberg, On implementing the push-relabel
+      method for the maximum flow problem, Algorithmica 19(4), 390-410,
+      1997, doi:10.1007/PL00009180
+ \see P. Kohli, P. H. S. Torr, Dynamic graph cuts for efficient inference
+      in Markov random fields, IEEE Transactions on Pattern Analysis and
+      Machine Intelligence 29(12), 2079-2088, 2007,
+      doi:10.1109/TPAMI.2007.1128
  \see S. Even, R. E. Tarjan, Network flow and testing graph connectivity,
       SIAM Journal on Computing 4(4), 507-518, 1975, doi:10.1137/0204043
  \see D. B. Johnson, Finding all the elementary circuits of a directed

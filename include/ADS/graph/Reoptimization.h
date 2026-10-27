@@ -30,9 +30,12 @@
  * still optimal. The shortest paths are repaired after the raises and the
  * deletions of the edges of the tree as well as after the decreases, on
  * the subtrees whose distances are lost (Lemma 8 of
- * \ref theory_graph_dynamic). The warm start of the maximum flow from the flow there is,
- * when an edge of the minimum cut grows, is one that the maximum flow of
- * OR-Tools leaves to do.
+ * \ref theory_graph_dynamic). The maximum flow starts again from the flow
+ * there is when an edge of the minimum cut grows, and when a capacity falls
+ * below the flow of its edge, after its excess and its deficit are routed
+ * [see `FlowNetwork::setCapacity()`], by the augmenting paths or by the
+ * push-relabel: a warm start that the maximum flow of OR-Tools leaves to
+ * do.
  *
  * The contracts [see `Contract.h`]: the root, and the source and the sink,
  * stay nodes of the graph; the graph of `SpanningForestObserver` is
@@ -539,19 +542,22 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
  ///
  /// In pseudocode (beyond the book), the tests of the events \f$ P \f$
  /// coalesced against the minimum cut \f$ S \f$ (by Theorem 5 of
- /// \ref theory_graph_flow):
+ /// \ref theory_graph_flow); a capacity cut below the flow of its edge
+ /// leaves an excess and a deficit that `maxFlow()` routes first [see
+ /// `FlowNetwork::setCapacity()`]:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
- /// 2 & \quad \textbf{foreach}\ ( u , v ) \text{ from } c \text{ to } c'
+ /// 2 & \quad \mathit{warm} \gets \textbf{false} \cr
+ /// 3 & \quad \textbf{foreach}\ ( u , v ) \text{ from } c \text{ to } c'
  ///     \text{ in } P\ \textbf{do} \cr
- /// 3 & \qquad \textbf{if}\ c' < f( u , v )\ \textbf{then}
- ///     \ \text{from scratch};\ \textbf{return} \cr
- /// 4 & \qquad \textbf{if}\ u \in S \textbf{ and } v \notin S
- ///     \textbf{ and } c' > c\ \textbf{then}\ \mathit{grow} \gets
+ /// 4 & \qquad \textbf{if}\ c' < f( u , v )\ \textbf{then}\ \mathit{warm}
+ ///     \gets \textbf{true} \cr
+ /// 5 & \qquad \textbf{if}\ u \in S \textbf{ and } v \notin S
+ ///     \textbf{ and } c' > c\ \textbf{then}\ \mathit{warm} \gets
  ///     \textbf{true} \cr
- /// 5 & \quad \text{set the capacities of } P \cr
- /// 6 & \quad \textbf{if}\ \mathit{grow}\ \textbf{then}\ | f | \gets | f |
+ /// 6 & \quad \text{set the capacities of } P \cr
+ /// 7 & \quad \textbf{if}\ \mathit{warm}\ \textbf{then}\ | f | \gets | f |
  ///     + \mathrm{maxFlow}( s , t ) \text{ from } f;
  ///     \ S \gets \mathrm{minCut}( s )
  /// \end{array}}

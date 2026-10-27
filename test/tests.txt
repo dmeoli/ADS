@@ -1788,6 +1788,7 @@ engineered_dynamic  reopt-shortest-paths   cammini minimi, costi ridotti
 engineered_dynamic  reopt-shortest-paths-increase  aumenti e cancellazioni riparati
 engineered_dynamic  reopt-spanning-forest  foresta minima, condizioni di ciclo e taglio
 engineered_dynamic  reopt-max-flow         flusso massimo, taglio minimo
+engineered_dynamic  max-flow-warm          push-relabel, capacità sotto il flusso
 engineered_dynamic  reopt-lazy             coda pigra, soglia del ricalcolo
 engineered_dynamic  rollback-union-find    union-find con rollback
 engineered_dynamic  offline-connectivity   connettività dinamica offline

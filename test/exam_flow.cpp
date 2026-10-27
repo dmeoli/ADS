@@ -70,7 +70,7 @@ using Matrix = std::vector< Longs >;
 const long INF = std::numeric_limits< int >::max();
 
 const Augment ways[] = { Augment::FORD_FULKERSON , Augment::EDMONDS_KARP ,
-                         Augment::DINIC };
+                         Augment::DINIC , Augment::PUSH_RELABEL };
 
 /// a uniform integer in [ a , b ]
 int rnd( std::mt19937 & g , int a , int b )

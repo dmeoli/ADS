@@ -373,7 +373,7 @@ ADS_TEST( "max-flow" )
    }
   long ref = -1;
   for( Augment a : { Augment::FORD_FULKERSON , Augment::EDMONDS_KARP ,
-                     Augment::DINIC } ) {
+                     Augment::DINIC , Augment::PUSH_RELABEL } ) {
    FlowNetwork F( n );
    std::vector< int > id;
    for( auto [ u , v , c ] : E ) id.push_back( F.addEdge( u , v , c ) );

@@ -119,7 +119,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
-            learned stringdicts \
+            learned stringdicts flows \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -384,6 +384,13 @@ $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< \
 	       $(if $(PARLAY),-isystem $(PARLAY)/include -isystem $(PARLAY)) \
 	       -pthread
+
+# the maximum flows: LEMON=1 (or LEMON=<prefix>) the Preflow of LEMON;
+# the push-relabel of Boost when its headers are found
+LEMONFLAGS = $(if $(LEMON),-DADS_HAS_LEMON $(if $(filter-out 1,$(LEMON)),\
+             -I$(LEMON)/include -L$(LEMON)/lib) -llemon)
+$(BUILD)/bench-flows: bench/flows.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
 
 # the sort over the processes of MPI, by mpicxx (not among BENCHES): make
 # $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi

@@ -41,15 +41,34 @@ inline int FlowNetwork::addEdge( int u , int v , long long c )
 inline int FlowNetwork::addNode( void )
 {
  f_adj.emplace_back();
+ if( ! f_imb.empty() )
+  f_imb.push_back( 0 );
  return( n() - 1 );
  }
 
 inline void FlowNetwork::setCapacity( int e , long long c )
 {
  ADS_PRE( ( e >= 0 ) && ( e < int( f_e.size() ) ) && ( e % 2 == 0 ) &&
-          ( c >= 0 ) && ( c >= f_e[ e ].flow ) );
+          ( c >= 0 ) );
+ if( c < f_e[ e ].flow ) {                     // the flow cut to c: the
+  const long long d = f_e[ e ].flow - c;       // tail keeps the excess,
+  push( e , -d );                              // the head the deficit
+  if( f_imb.empty() )
+   f_imb.assign( n() , 0 );
+  f_imb[ f_e[ e ^ 1 ].to ] += d;
+  f_imb[ f_e[ e ].to ] -= d;
+  f_unbalanced = true;
+  }
  f_e[ e ].cap = c;
  ADS_INVARIANT( skewSymmetric() );
+ }
+
+inline long long FlowNetwork::inflow( int t ) const
+{
+ long long f = 0;
+ for( int e : f_adj[ t ] )
+  f -= f_e[ e ].flow;                          // the twins of those in
+ return( f );
  }
 
 inline long long FlowNetwork::flow( int e ) const
@@ -69,29 +88,34 @@ inline long long FlowNetwork::maxFlow( int s , int t , Augment how ,
 {
  ADS_PRE( ( s >= 0 ) && ( s < n() ) && ( t >= 0 ) && ( t < n() ) &&
           ( s != t ) );
- long long total = 0;
- for( ; ; ) {
-  long long d = 0;
-  if( how == Augment::DINIC ) {
-   if( ! levels( s , t ) )
-    break;
-   f_next.assign( n() , 0 );
-   while( ( d = blocking( s , t , INF ) ) > 0 ) {
-    total += d;
-    if( paths ) ++*paths;
+ // the value before the cuts of setCapacity(), whose excess or deficit
+ // at t is the flow that they took from it or gave it
+ const long long before = inflow( t ) -
+                          ( f_unbalanced ? f_imb[ t ] : 0 );
+ if( f_unbalanced )
+  rebalance( s , t );
+ if( how == Augment::PUSH_RELABEL )
+  pushRelabel( s , t );
+ else
+  for( ; ; ) {
+   long long d = 0;
+   if( how == Augment::DINIC ) {
+    if( ! levels( s , t ) )
+     break;
+    f_next.assign( n() , 0 );
+    while( ( d = blocking( s , t , INF ) ) > 0 )
+     if( paths ) ++*paths;
+    continue;
     }
-   continue;
+   d = how == Augment::EDMONDS_KARP ? bfsAugment( s , t ) :
+                                      dfsAugment( s , t );
+   if( d == 0 )
+    break;
+   if( paths ) ++*paths;
    }
-  d = how == Augment::EDMONDS_KARP ? bfsAugment( s , t ) :
-                                     dfsAugment( s , t );
-  if( d == 0 )
-   break;
-  total += d;
-  if( paths ) ++*paths;
-  }
  ADS_AUDIT( ! minCut( s )[ t ] );
  ADS_INVARIANT( skewSymmetric() );
- return( total );
+ return( inflow( t ) - before );
  }
 
 inline std::vector< bool > FlowNetwork::minCut( int s ) const
@@ -215,6 +239,237 @@ inline long long FlowNetwork::blocking( int u , int t , long long d )
  for( int e : path )
   push( e , d );
  return( d );
+ }
+
+inline void FlowNetwork::rebalance( int s , int t )
+{
+ // each excess to s, to t or to a deficit, then each deficit from s or t,
+ // along paths of the residual network found by visits in breadth
+ const int N = n();
+ std::vector< int > via( N );
+ std::vector< int > Q;
+ std::vector< char > seen( N );
+ for( int dir = 0 ; dir < 2 ; ++dir )
+  for( int x = 0 ; x < N ; ++x )
+   while( ( x != s ) && ( x != t ) &&
+          ( dir == 0 ? f_imb[ x ] > 0 : f_imb[ x ] < 0 ) ) {
+    // dir 0: forward from x to an end; dir 1: backward from x
+    std::fill( seen.begin() , seen.end() , 0 );
+    Q.assign( 1 , x );
+    seen[ x ] = 1;
+    int y = -1;
+    for( std::size_t i = 0 ; ( i < Q.size() ) && ( y < 0 ) ; ++i )
+     for( int e : f_adj[ Q[ i ] ] ) {
+      const int a = dir == 0 ? e : e ^ 1;     // the arc that is pushed
+      const int v = f_e[ e ].to;
+      if( seen[ v ] || ( residual( a ) <= 0 ) )
+       continue;
+      seen[ v ] = 1;
+      via[ v ] = a;
+      Q.push_back( v );
+      if( ( v == s ) || ( v == t ) ||
+          ( dir == 0 ? f_imb[ v ] < 0 : f_imb[ v ] > 0 ) ) {
+       y = v;
+       break;
+       }
+      }
+    ADS_INVARIANT( y >= 0 );                  // one is always there
+    if( y < 0 )
+     return;
+    long long d = dir == 0 ? f_imb[ x ] : -f_imb[ x ];
+    if( ( y != s ) && ( y != t ) )
+     d = std::min( d , dir == 0 ? -f_imb[ y ] : f_imb[ y ] );
+    for( int v = y ; v != x ; ) {
+     const int a = via[ v ];
+     d = std::min( d , residual( a ) );
+     v = dir == 0 ? f_e[ a ^ 1 ].to : f_e[ a ].to;
+     }
+    for( int v = y ; v != x ; ) {
+     const int a = via[ v ];
+     push( a , d );
+     v = dir == 0 ? f_e[ a ^ 1 ].to : f_e[ a ].to;
+     }
+    f_imb[ x ] += dir == 0 ? -d : d;
+    if( ( y != s ) && ( y != t ) )
+     f_imb[ y ] += dir == 0 ? d : -d;
+    }
+ f_imb[ s ] = f_imb[ t ] = 0;
+ f_unbalanced = false;
+ }
+
+inline void FlowNetwork::pushRelabel( int s , int t )
+{
+ // the arcs in rows by tail (the residual capacities, the heads and the
+ // places of the twins), so that a discharge reads its arcs in a row
+ const int N = n();
+ const std::size_t M = f_e.size();
+ std::vector< int > first( N + 1 , 0 ) , pos( M );
+ for( int u = 0 ; u < N ; ++u )
+  first[ u + 1 ] = first[ u ] + int( f_adj[ u ].size() );
+ std::vector< int > head( M ) , twin( M );
+ std::vector< long long > rc( M );
+ for( int u = 0 ; u < N ; ++u )
+  for( std::size_t i = 0 ; i < f_adj[ u ].size() ; ++i )
+   pos[ f_adj[ u ][ i ] ] = first[ u ] + int( i );
+ for( std::size_t e = 0 ; e < M ; ++e ) {
+  head[ pos[ e ] ] = f_e[ e ].to;
+  twin[ pos[ e ] ] = pos[ e ^ 1 ];
+  rc[ pos[ e ] ] = residual( int( e ) );
+  }
+ std::vector< long long > ex( N , 0 );
+ std::vector< int > d( N ) , cur( N );
+ // the active nodes by label, as stacks, and all the nodes by label, as
+ // doubly linked lists for the gaps
+ std::vector< int > aFirst( 2 * N + 1 ) , aNext( N );
+ std::vector< char > queued( N , 0 );
+ std::vector< int > bFirst( 2 * N + 1 ) , bNext( N ) , bPrev( N );
+ int aMax = -1 , bMax = -1;
+ auto aPush = [ & ]( int v ) {
+  if( queued[ v ] )
+   return;
+  queued[ v ] = 1;
+  aNext[ v ] = aFirst[ d[ v ] ];
+  aFirst[ d[ v ] ] = v;
+  aMax = std::max( aMax , d[ v ] );
+  };
+ auto bAdd = [ & ]( int v ) {
+  bPrev[ v ] = -1;
+  bNext[ v ] = bFirst[ d[ v ] ];
+  if( bNext[ v ] >= 0 )
+   bPrev[ bNext[ v ] ] = v;
+  bFirst[ d[ v ] ] = v;
+  bMax = std::max( bMax , d[ v ] );
+  };
+ auto bDel = [ & ]( int v ) {
+  if( bPrev[ v ] >= 0 )
+   bNext[ bPrev[ v ] ] = bNext[ v ];
+  else
+   bFirst[ d[ v ] ] = bNext[ v ];
+  if( bNext[ v ] >= 0 )
+   bPrev[ bNext[ v ] ] = bPrev[ v ];
+  };
+ auto pushArc = [ & ]( int a , long long x ) {
+  rc[ a ] -= x;
+  rc[ twin[ a ] ] += x;
+  };
+
+ // the labels: the distances to the target in the residual network, by
+ // a visit in breadth backwards; the others at the top, out of the game
+ int target = t , top = N;
+ std::vector< int > Q;
+ auto relabelAll = [ & ]( void ) {
+  std::fill( d.begin() , d.end() , top );
+  std::fill( aFirst.begin() , aFirst.end() , -1 );
+  std::fill( queued.begin() , queued.end() , 0 );
+  std::fill( bFirst.begin() , bFirst.end() , -1 );
+  aMax = bMax = -1;
+  d[ target ] = 0;
+  Q.assign( 1 , target );
+  for( std::size_t i = 0 ; i < Q.size() ; ++i ) {
+   const int v = Q[ i ];
+   for( int a = first[ v ] ; a < first[ v + 1 ] ; ++a ) {
+    const int u = head[ a ];
+    if( ( d[ u ] == top ) && ( rc[ twin[ a ] ] > 0 ) &&
+        ( u != s ) && ( u != t ) ) {
+     d[ u ] = d[ v ] + 1;
+     Q.push_back( u );
+     }
+    }
+   }
+  for( int v : Q )
+   if( ( v != s ) && ( v != t ) ) {
+    cur[ v ] = first[ v ];
+    bAdd( v );
+    if( ex[ v ] > 0 )
+     aPush( v );
+    }
+  };
+
+ const long long nm = 6LL * N + static_cast< long long >( M ) / 2;
+ long long work = 0;
+ // the discharges of the highest active nodes, with the gaps and the
+ // global relabelings; a node at the top no longer reaches the target
+ auto run = [ & ]( void ) {
+  relabelAll();
+  while( aMax >= 0 ) {
+   const int u = aFirst[ aMax ];
+   if( u < 0 ) {
+    --aMax;
+    continue;
+    }
+   aFirst[ aMax ] = aNext[ u ];
+   queued[ u ] = 0;
+   if( ( d[ u ] != aMax ) || ( ex[ u ] == 0 ) )
+    continue;                               // a stale entry
+   for( ; ; ) {                             // the discharge of u
+    int a = cur[ u ];
+    for( ; a < first[ u + 1 ] ; ++a )
+     if( ( rc[ a ] > 0 ) && ( d[ head[ a ] ] == d[ u ] - 1 ) ) {
+      const int v = head[ a ];
+      const long long x = std::min( ex[ u ] , rc[ a ] );
+      pushArc( a , x );
+      ex[ u ] -= x;
+      if( ( ex[ v ] == 0 ) && ( v != s ) && ( v != t ) )
+       aPush( v );
+      ex[ v ] += x;
+      if( ex[ u ] == 0 )
+       break;
+      }
+    if( ex[ u ] == 0 ) {
+     cur[ u ] = a;
+     break;
+     }
+    // no admissible arc left: the relabeling of u, or a gap
+    const int old = d[ u ];
+    int nd = top;
+    work += 12 + ( first[ u + 1 ] - first[ u ] );
+    for( int b = first[ u ] ; b < first[ u + 1 ] ; ++b )
+     if( rc[ b ] > 0 )
+      nd = std::min( nd , d[ head[ b ] ] + 1 );
+    bDel( u );
+    if( bFirst[ old ] < 0 ) {               // a gap at old: all above it
+     for( int k = old + 1 ; k <= bMax ; ++k ) {
+      for( int v = bFirst[ k ] ; v >= 0 ; v = bNext[ v ] )
+       d[ v ] = top;
+      bFirst[ k ] = -1;
+      }
+     bMax = old - 1;
+     d[ u ] = top;
+     break;
+     }
+    d[ u ] = std::min( nd , top );
+    if( d[ u ] == top )
+     break;
+    cur[ u ] = first[ u ];
+    bAdd( u );
+    if( 2 * work > nm ) {                   // a global relabeling
+     work = 0;
+     relabelAll();
+     break;
+     }
+    }
+   }
+  };
+
+ // the first phase: a maximum preflow from the flow there is, the arcs
+ // out of s saturated; the second: the excesses left back to s
+ for( int a = first[ s ] ; a < first[ s + 1 ] ; ++a )
+  if( rc[ a ] > 0 ) {
+   ex[ head[ a ] ] += rc[ a ];
+   pushArc( a , rc[ a ] );
+   }
+ run();
+ bool left = false;                         // excesses that missed t
+ for( int v = 0 ; ( v < N ) && ! left ; ++v )
+  left = ( ex[ v ] > 0 ) && ( v != s ) && ( v != t );
+ if( left ) {
+  target = s;
+  top = 2 * N;
+  work = 0;
+  run();
+  }
+ for( std::size_t e = 0 ; e < M ; ++e )
+  f_e[ e ].flow = f_e[ e ].cap - rc[ pos[ e ] ];
  }
 
 inline bool FlowNetwork::skewSymmetric( void ) const

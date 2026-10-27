@@ -39,6 +39,8 @@
 #include "ADS/mfset/RollbackUnionFind.h"
 #include "ADS/mfset/UnionFind.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <random>
@@ -574,8 +576,8 @@ ADS_TEST( "reopt-max-flow" )
  CHECK( ( mf.value() == 3 ) && ( mf.outcome() == Reopt::CERTIFIED ) );
  og.setWeight( 2 , 3 , 1 );               // down to its flow, 1
  CHECK( ( mf.value() == 3 ) && ( mf.outcome() == Reopt::CERTIFIED ) );
- og.setWeight( 1 , 3 , 1 );               // below its flow: scratch
- CHECK( ( mf.value() == 2 ) && ( mf.outcome() == Reopt::SCRATCH ) );
+ og.setWeight( 1 , 3 , 1 );               // below its flow: rerouted
+ CHECK( ( mf.value() == 2 ) && ( mf.outcome() == Reopt::WARM ) );
  const auto S = mf.minCut();
  og.setWeight( 1 , 3 , 9 );               // a cut arc up: augmented
  CHECK( ( mf.value() == 3 ) && ( mf.outcome() == Reopt::WARM ) );
@@ -598,12 +600,14 @@ ADS_TEST( "reopt-max-flow" )
   CHECK( ( q.value() == 0 ) && q.minCut()[ 0 ] && ! q.minCut()[ 1 ] );
   CHECK_THROWS( MaxFlowObserver< LG >( h , 0 , 0 ) , contract_violation );
   }
- // random sequences against a network from scratch, oriented and not
+ // random sequences against a network from scratch, oriented and not,
+ // by the augmenting paths and by the push-relabel
+ for( Augment how : { Augment::DINIC , Augment::PUSH_RELABEL } )
  for( bool directed : { true , false } ) {
   std::mt19937 rng( directed ? 11 : 12 );
   const int n = 12;
   LG h( n , directed );
-  MaxFlowObserver< LG > q( h , 0 , n - 1 );
+  MaxFlowObserver< LG > q( h , 0 , n - 1 , how );
   q.setRecomputeRatio( 0.5 );
   Observable< LG , MaxFlowObserver< LG > > oh( h , q );
   long long seen[ 3 ] = { 0 , 0 , 0 };
@@ -622,6 +626,100 @@ ADS_TEST( "reopt-max-flow" )
     }
    }
   CHECK( ( seen[ 0 ] > 0 ) && ( seen[ 1 ] > 0 ) && ( seen[ 2 ] > 0 ) );
+  }
+ }
+
+ADS_TEST( "max-flow-warm" )
+{
+ // the net flow into each node of N
+ auto net = []( const FlowNetwork & N , const std::vector< std::tuple<
+                int , int , int > > & id ) {
+  std::vector< long long > x( std::size_t( N.n() ) , 0 );
+  for( const auto & [ u , v , e ] : id ) {
+   x[ v ] += N.flow( e );
+   x[ u ] -= N.flow( e );
+   }
+  return( x );
+  };
+ // the push-relabel on the boundaries: no arc, t unreachable, a loop,
+ // capacities near the largest long long / 4, a chain of 3000 nodes
+ {
+  FlowNetwork N( 2 );
+  CHECK( N.maxFlow( 0 , 1 , Augment::PUSH_RELABEL ) == 0 );
+  const int e = N.addEdge( 1 , 0 , 5 );   // only away from t
+  N.addEdge( 0 , 0 , 7 );
+  CHECK( ( N.maxFlow( 0 , 1 , Augment::PUSH_RELABEL ) == 0 ) &&
+         ( N.flow( e ) == 0 ) );
+  const long long big = std::numeric_limits< long long >::max() / 4;
+  FlowNetwork B( 3 );
+  B.addEdge( 0 , 1 , big );
+  B.addEdge( 0 , 1 , big );
+  B.addEdge( 1 , 2 , 2 * big );
+  CHECK( B.maxFlow( 0 , 2 , Augment::PUSH_RELABEL ) == 2 * big );
+  const int n = ADS::test::scaled( 3000 , 600 );
+  FlowNetwork C( n );
+  for( int i = 0 ; i + 1 < n ; ++i )
+   C.addEdge( i , i + 1 , 1 + ( i % 5 ) );
+  CHECK( C.maxFlow( 0 , n - 1 , Augment::PUSH_RELABEL ) == 1 );
+  }
+ // a capacity cut below the flow, by every way: the excess and the
+ // deficit rerouted, through s, through t, or between the two ends
+ for( Augment how : { Augment::FORD_FULKERSON , Augment::EDMONDS_KARP ,
+                      Augment::DINIC , Augment::PUSH_RELABEL } ) {
+  FlowNetwork N( 4 );
+  const int a = N.addEdge( 0 , 1 , 5 ) , b = N.addEdge( 1 , 3 , 5 );
+  N.addEdge( 0 , 2 , 3 );
+  const int c = N.addEdge( 2 , 3 , 3 );
+  N.addEdge( 1 , 2 , 4 );
+  CHECK( N.maxFlow( 0 , 3 , how ) == 8 );
+  N.setCapacity( b , 1 );                 // 1 -> 3 cut by at least 1
+  CHECK( N.maxFlow( 0 , 3 , how ) == -4 );
+  N.setCapacity( b , 0 );                 // 1 -> 3 gone
+  N.setCapacity( c , 0 );                 // and 2 -> 3: nothing reaches t
+  CHECK( N.maxFlow( 0 , 3 , how ) == -4 );
+  CHECK( ( N.flow( a ) == 0 ) && ( N.flow( b ) == 0 ) );
+  N.setCapacity( b , 9 );
+  N.setCapacity( c , 9 );
+  CHECK( N.maxFlow( 0 , 3 , how ) == 8 );
+  N.setCapacity( a , 0 );                 // the first arc, at s
+  CHECK( N.maxFlow( 0 , 3 , how ) == -5 );
+  }
+ // random networks, random changes of the capacities, below the flows
+ // too, each solved from the flow there is and against Dinic from zero;
+ // the flow conserved and within the capacities
+ std::mt19937 rng( 21 );
+ for( int round = 0 ; round < ADS::test::scaled( 200 , 40 ) ; ++round ) {
+  const int n = 2 + int( rng() % 30 ) , m = int( rng() % ( 4 * n ) );
+  const Augment how = round % 2 ? Augment::PUSH_RELABEL : Augment::DINIC;
+  FlowNetwork N( n );
+  std::vector< std::tuple< int , int , int > > id;
+  std::vector< long long > cap;
+  for( int i = 0 ; i < m ; ++i ) {
+   const int u = int( rng() % n ) , v = int( rng() % n );
+   cap.push_back( static_cast< long long >( rng() % 20 ) );
+   id.emplace_back( u , v , N.addEdge( u , v , cap.back() ) );
+   }
+  long long value = N.maxFlow( 0 , n - 1 , how );
+  for( int step = 0 ; step < 20 ; ++step ) {
+   const int k = 1 + int( rng() % 3 );
+   for( int j = 0 ; ( j < k ) && ( m > 0 ) ; ++j ) {
+    const std::size_t i = rng() % std::size_t( m );
+    cap[ i ] = static_cast< long long >( rng() % 20 );
+    N.setCapacity( std::get< 2 >( id[ i ] ) , cap[ i ] );
+    }
+   value += N.maxFlow( 0 , n - 1 , how );
+   FlowNetwork F( n );
+   for( int i = 0 ; i < m ; ++i )
+    F.addEdge( std::get< 0 >( id[ i ] ) , std::get< 1 >( id[ i ] ) ,
+               cap[ i ] );
+   CHECK( value == F.maxFlow( 0 , n - 1 ) );
+   const auto x = net( N , id );
+   for( int v = 1 ; v + 1 < n ; ++v )
+    CHECK( x[ v ] == 0 );
+   CHECK( ( n == 2 ) || ( x[ n - 1 ] == value ) || ( n - 1 == 0 ) );
+   for( int i = 0 ; i < m ; ++i )
+    CHECK( N.flow( std::get< 2 >( id[ i ] ) ) <= cap[ i ] );
+   }
   }
  }
 
