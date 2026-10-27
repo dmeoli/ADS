@@ -79,9 +79,16 @@ std::size_t RangeTree< T >::count( const T & x1 , const T & x2 ,
 {
  if( ( x2 < x1 ) || ( y2 < y1 ) )
   return( 0 );
+ // the smallest and the largest ordinate of the type, the infinities if
+ // it has them, so that no point of abscissa x1 or x2 is left out
  using L = std::numeric_limits< T >;
+ T lo = L::lowest() , hi = L::max();
+ if constexpr( L::has_infinity ) {
+  lo = -L::infinity();
+  hi = L::infinity();
+  }
  std::size_t c = 0;
- f_map.augVisit( Point( x1 , L::lowest() ) , Point( x2 , L::max() ) ,
+ f_map.augVisit( Point( x1 , lo ) , Point( x2 , hi ) ,
                  [ & ]( const std::vector< T > & Y ) {
   c += std::size_t( std::upper_bound( Y.begin() , Y.end() , y2 ) -
                     std::lower_bound( Y.begin() , Y.end() , y1 ) );

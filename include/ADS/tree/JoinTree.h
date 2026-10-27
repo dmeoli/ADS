@@ -155,13 +155,17 @@ struct SumAugmentation {
   }
  };
 
-/// the largest of the values (from the smallest value of the type)
+/// the largest of the values, whose identity is \f$ -\infty \f$ if `V`
+/// has it, its smallest value otherwise
 template< class V >
 struct MaxAugmentation {
  using Value = V;   ///< the maxima, of the type of the values
  /// the smallest value of the type
  static Value identity( void ) {
-  return( std::numeric_limits< V >::lowest() );
+  if constexpr( std::numeric_limits< V >::has_infinity )
+   return( -std::numeric_limits< V >::infinity() );
+  else
+   return( std::numeric_limits< V >::lowest() );
   }
  /// the value \f$ v \f$ of the pair
  template< class K >

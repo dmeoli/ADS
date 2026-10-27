@@ -1584,6 +1584,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- RangeTree::count() counts the points of abscissa x1 or x2 whose ordinate
+  is -inf or +inf: the keys were searched between ( x1 , lowest() ) and
+  ( x2 , max() ), which leave them out when T has the infinities, and are
+  now searched between ( x1 , -inf ) and ( x2 , +inf ); MaxAugmentation
+  starts from -inf when the type has it, so that a map of values -inf has
+  the maximum -inf instead of lowest(); the test infinite-bounds
 - BucketQueue: a layer that empties and fills again with large second
   keys and few items, as the least layer of a best-first search on a large
   grid whose nodes come in batches, no longer pays the whole range of its
