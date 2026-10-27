@@ -256,23 +256,6 @@ bool Observable< G , O... >::setWeight( int u , int v , const Weight & w )
 /*--------------------------- THE OBSERVERS --------------------------------*/
 
 template< Graph G , class ... O >
-template< GraphObserver< typename G::Weight > D >
-int Observable< G , O... >::attach( D & o )
-{
- ADS_PRE( f_depth == 0 );
- Slot s;
- s.o = & o;
- s.mask = unsigned( o.mask() );
- s.one = []( void * p , const Event & e ) {
-  static_cast< D * >( p )->notify( e ); };
- s.many = []( void * p , std::span< const Event > E ) {
-  static_cast< D * >( p )->notify( E ); };
- f_dynamic.push_back( s );
- f_mask |= s.mask;
- return( int( f_dynamic.size() ) - 1 );
- }
-
-template< Graph G , class ... O >
 void Observable< G , O... >::detach( int id )
 {
  ADS_PRE( ( f_depth == 0 ) && ( id >= 0 ) &&

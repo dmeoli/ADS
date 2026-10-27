@@ -357,7 +357,19 @@ class Observable {
  /// attaches the observer o, its mask read now, and gives its number
  /// \pre no channel is open
  template< GraphObserver< Weight > D >
- int attach( D & o );
+ int attach( D & o ) {
+  ADS_PRE( f_depth == 0 );
+  Slot s;
+  s.o = & o;
+  s.mask = unsigned( o.mask() );
+  s.one = []( void * p , const Event & e ) {
+   static_cast< D * >( p )->notify( e ); };
+  s.many = []( void * p , std::span< const Event > E ) {
+   static_cast< D * >( p )->notify( E ); };
+  f_dynamic.push_back( s );
+  f_mask |= s.mask;
+  return( int( f_dynamic.size() ) - 1 );
+  }
 
  /// detaches the observer number id
  /// \pre id was given by attach() and not yet detached, no channel is open
