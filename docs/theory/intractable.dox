@@ -1,0 +1,344 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File intractable.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_intractable */
+/** \defgroup theory_intractable Theory of intractable problems
+ \ingroup area_intractable
+
+ \details The headers of `include/ADS/intractable` realize chapter 19 of the
+ book, i.e., the ways of facing a problem that is NP-hard (see the theory of
+ complexity, `include/ADS/complexity`): the pseudopolynomial algorithms, the
+ approximation algorithms, the branch-&-bound, the heuristics, and the search
+ of the fifteen puzzle. This page collects what the headers take for
+ granted: the notation of the problems of optimization (see
+ \ref theory_intractable_notation) and, for each strategy, the property on
+ which its guarantee rests and the argument behind its bound (from
+ \ref theory_intractable_pseudo to \ref theory_intractable_puzzle). The
+ pseudocode of each algorithm is instead on the page of its header, in the
+ comment of its function, together with the section of the book, or the
+ paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_intractable_notation Definitions and notation
+
+ A problem of optimization asks, for an instance \f$ x \f$, a feasible
+ solution of least cost (or of largest value) among the set \f$ F( x ) \f$
+ of the feasible ones; \f$ x^* \f$ is an optimal solution and
+ \f$ \mathit{OPT} = c( x^* ) \f$ its cost. When the decision version is
+ NP-complete, no algorithm is known that finds \f$ x^* \f$ in polynomial
+ time on every instance, and the strategies of the area give up one of the
+ three: the polynomial time in the size (the pseudopolynomial algorithms and
+ the branch-&-bound), the optimum (the approximations and the heuristics),
+ or every instance (the special cases of the theory of complexity).
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ c( x ) \f$, \f$ x^* \f$, \f$ \mathit{OPT} \f$</td>
+     <td>the cost of a feasible solution, an optimal solution and its
+         cost</td></tr>
+ <tr><td>\f$ d \f$, \f$ \# \f$</td>
+     <td>the size of the instance and its largest integer</td></tr>
+ <tr><td>\f$ e \f$, \f$ \epsilon \f$</td>
+     <td>the relative error of an approximation, a constant of the
+         algorithm or an input of it</td></tr>
+ <tr><td>\f$ \mathit{lb}( S ) \f$, \f$ \mathit{minCost} \f$</td>
+     <td>a lower bound of the costs of the solutions that extend the
+         partial solution \f$ S \f$, and the cost of the best solution found
+         so far</td></tr>
+ <tr><td>\f$ I( \pi ) \f$, \f$ I_k( \pi ) \f$</td>
+     <td>a neighborhood of the solution \f$ \pi \f$, and the circuits that
+         share \f$ n - k \f$ edges with the circuit \f$ \pi \f$</td></tr>
+ <tr><td>\f$ D \f$, \f$ p_i \f$, \f$ v_i \f$, \f$ C \f$</td>
+     <td>the distances of the salesman, and the profits, the volumes and the
+         capacity of the knapsack</td></tr>
+ </table>
+
+ \section theory_intractable_pseudo Pseudopolynomial algorithms
+
+ An algorithm is <em>pseudopolynomial</em> if its time is bounded by a
+ polynomial in \f$ d \f$ and \f$ \# \f$ (section 19.1); since \f$ \# \f$ may
+ be exponential in \f$ d \f$, such an algorithm is polynomial only on the
+ instances whose numbers are small. For SUBSET SUM, with \f$ M[ i ][ j ] \f$
+ true if some of the first \f$ i \f$ elements sum to \f$ j \f$,
+ \f[
+   M[ i ][ j ] = M[ i - 1 ][ j ] \ \text{or}
+   \ ( j \ge A_i \ \text{and} \ M[ i - 1 ][ j - A_i ] ) , \tag{1}
+ \f]
+ since a subset of the first \f$ i \f$ elements either avoids the
+ \f$ i \f$-th or takes it once; `subsetSumDP()` of `Pseudopolynomial.h` fills
+ (1) in \f$ O( n k ) \f$ time, with one row of \f$ k + 1 \f$ bits written
+ from the right, so that \f$ M[ j - A_i ] \f$ is still the value of the row
+ before, and `subsetSumSet()` keeps all the rows to read a subset backwards.
+ The same table with three parts gives `bottino()`, whose
+ \f$ S[ i ][ j ][ h ] \f$ has \f$ O( n m^2 ) \f$ entries, and the vectors of
+ the loads give `schedulingDP()`, with at most \f$ ( d + 1 )^m \f$ vectors
+ after each program.
+
+ A problem is <em>strongly NP-complete</em> if it stays NP-complete on the
+ instances with \f$ \# \f$ bounded by a polynomial in \f$ d \f$ (CLIQUE, whose
+ numbers are bounded by \f$ n \f$, TRAVELING SALESMAN, 3-PARTITION), and
+ <em>weakly</em> otherwise (SUBSET SUM, PARTITION, KNAPSACK).
+
+ <em>Theorem 1.</em> A strongly NP-complete problem has no pseudopolynomial
+ algorithm unless \f$ \mathrm{P} = \mathrm{NP} \f$ (Theorem 19.1 of the
+ book).
+
+ Indeed, on the instances with \f$ \# \le q( d ) \f$, \f$ q \f$ a polynomial,
+ the time of a pseudopolynomial algorithm is a polynomial in \f$ d \f$ and
+ \f$ q( d ) \f$, i.e., in \f$ d \f$; such an algorithm would solve in
+ polynomial time a restriction that is NP-complete.
+
+ When a program may be interrupted and resumed on another processor, the
+ scheduling becomes easy: no schedule is shorter than
+ \f[
+   d = \max\Big\{ \max_i t_i , \ \sum_i t_i / m \Big\} , \tag{2}
+ \f]
+ since each program runs for its time and the \f$ m \f$ processors do at most
+ \f$ m d \f$ work, and the rule of McNaughton (`mcNaughton()`) reaches (2) by
+ filling the processors one after the other up to \f$ d \f$. A program split
+ between the processors \f$ q \f$ and \f$ q + 1 \f$ runs on \f$ q \f$ at the
+ end and on \f$ q + 1 \f$ at the start, and the two pieces do not overlap in
+ time because \f$ t_i \le d \f$. With \f$ t_i = C_i / T_i \f$ and
+ \f$ d = 1 \f$, the same rule schedules a period of the periodic tasks of
+ `realTimeScheduling()`, when \f$ \sum_i C_i / T_i \le m \f$.
+
+ \section theory_intractable_approx Approximation algorithms
+
+ An algorithm is an <em>approximation</em> with relative error \f$ e \f$ if
+ it gives a feasible \f$ x' \f$ with
+ \f[
+   \frac{| c( x' ) - \mathit{OPT} |}{\mathit{OPT}} \le e \tag{3}
+ \f]
+ on every instance, and an <em>approximation scheme</em> if it takes
+ \f$ \epsilon > 0 \f$ in input and satisfies (3) with \f$ e = \epsilon \f$,
+ in a time polynomial in \f$ d \f$ for each fixed \f$ \epsilon \f$ (fully
+ polynomial if also in \f$ 1 / \epsilon \f$). The guarantees of the area rest
+ on a lower bound of \f$ \mathit{OPT} \f$ that the algorithm can compare with
+ its own cost.
+
+ <table>
+ <caption>The approximations of the area (section 19.2 of the book and the
+          exercises 19.6 and 19.8)</caption>
+ <tr><th>Problem</th><th>Function</th><th>Guarantee</th><th>Time</th></tr>
+ <tr><td>BIN PACKING</td><td><tt>firstFit()</tt></td>
+     <td>\f$ N < 2 N^* \f$</td><td>\f$ O( n^2 ) \f$</td></tr>
+ <tr><td>TRAVELING SALESMAN, triangular</td><td><tt>deltaTsp()</tt></td>
+     <td>\f$ c( x' ) \le 2\, \mathit{OPT} \f$</td>
+     <td>\f$ O( n^2 \log n ) \f$</td></tr>
+ <tr><td>SUBSET SUM</td><td><tt>apSubsetSum()</tt></td>
+     <td>\f$ e < 1 / ( h + 1 ) \f$</td><td>\f$ O( h n^{h+1} ) \f$</td></tr>
+ <tr><td>VERTEX COVER</td><td><tt>vertexCoverApprox()</tt></td>
+     <td>\f$ |S| \le 2\, \mathit{OPT} \f$</td><td>\f$ O( n^2 ) \f$</td></tr>
+ <tr><td>KNAPSACK</td><td><tt>knapsackApprox()</tt></td>
+     <td>\f$ c( x' ) \ge ( 1 - \epsilon ) \mathit{OPT} \f$</td>
+     <td>\f$ O( n^3 / \epsilon ) \f$</td></tr>
+ </table>
+
+ For BIN PACKING, the first fit never leaves two boxes whose contents sum to
+ at most \f$ k \f$, since the objects of the later one would have fitted in
+ the earlier one. Summing the contents of the \f$ N \ge 2 \f$ pairs of
+ consecutive boxes (the last with the first) counts each box twice, so that
+ twice the total volume \f$ V \f$ exceeds \f$ N k \f$; since
+ \f$ N^* \ge V / k \f$, one has \f$ N < 2 V / k \le 2 N^* \f$, and the
+ decreasing order of ffd improves the constant (to \f$ 11 / 9 \f$
+ asymptotically, by Johnson et al.). For the triangular salesman, a minimum
+ spanning tree \f$ T \f$ weighs less than any circuit, which is a spanning
+ path plus an edge, and the walk that goes twice along each edge of
+ \f$ T \f$ costs \f$ 2 w( T ) \f$; `deltaTsp()` takes the cities in the order
+ of their first visit, i.e., in preorder, and each shortcut over the cities
+ already visited costs no more than the stretch it replaces, by the triangle
+ inequality. Without the triangle inequality there is no such constant.
+
+ <em>Theorem 2.</em> For no constant \f$ s \ge 1 \f$ does TRAVELING SALESMAN
+ have a polynomial algorithm with \f$ c( x' ) \le s\, \mathit{OPT} \f$,
+ unless \f$ \mathrm{P} = \mathrm{NP} \f$ (Theorem 19.2 of the book).
+
+ Indeed, with the distances of `tspGap()`, 1 on the edges of \f$ G \f$ and
+ \f$ s n \f$ elsewhere, a Hamiltonian circuit of \f$ G \f$ is a tour of cost
+ \f$ n \f$, while any other tour costs more than \f$ s n \f$; an algorithm
+ within \f$ s \f$ would therefore return a tour of cost at most \f$ s n \f$
+ exactly when \f$ G \f$ has a Hamiltonian circuit, and decide HAMILTONIAN
+ CIRCUIT in polynomial time.
+
+ For SUBSET SUM, let \f$ S^* \f$ be optimal, of sum \f$ z^* \le k \f$. If
+ \f$ |S^*| \le h \f$, `apSubsetSum()` tries \f$ S^* \f$ itself; otherwise it
+ tries the \f$ h \f$ largest elements of \f$ S^* \f$, and the greedy
+ completion on the elements in decreasing order either takes all of
+ \f$ S^* \f$, or leaves out an element \f$ a \f$ of \f$ S^* \f$, not larger
+ than those \f$ h \f$, with \f$ z + a > k \ge z^* \f$. Since
+ \f$ ( h + 1 ) a \le z^* \f$, the sum found has
+ \f[
+   z > z^* - a \ge z^* \Big( 1 - \frac{1}{h + 1} \Big) , \tag{4}
+ \f]
+ and the \f$ O( n^h ) \f$ sets of at most \f$ h \f$ elements, each completed
+ in \f$ O( n ) \f$, give the time. For VERTEX COVER the edges taken by
+ `vertexCoverApprox()` share no end, i.e., form a matching \f$ M \f$; a cover
+ has an end of each edge of \f$ M \f$, hence \f$ \mathit{OPT} \ge |M| \f$,
+ while the cover returned has \f$ 2 |M| \f$ nodes. For KNAPSACK, the profits
+ rounded down to multiples of \f$ K = \epsilon p_{\max} / n \f$ lose less
+ than \f$ K \f$ per object, i.e., less than \f$ n K = \epsilon p_{\max} \f$
+ on any set; the set optimal for the rounded profits is therefore within
+ \f$ \epsilon p_{\max} \le \epsilon\, \mathit{OPT} \f$ of the optimum, since
+ each object fits alone. The table of `knapsackApprox()` has a column per
+ rounded profit, at most \f$ n \cdot n / \epsilon \f$ of them, and a row per
+ object, whence \f$ O( n^3 / \epsilon ) \f$, a fully polynomial scheme (that
+ of Ibarra and Kim).
+
+ \section theory_intractable_bb Branch-&-bound
+
+ A branch-&-bound visits the tree of the partial solutions of the
+ enumeration of chapter 16 and skips a subtree when a lower bound of the
+ costs in it is not below the best cost found (section 19.3).
+
+ <em>Lemma 3 (the bound).</em> If \f$ \mathit{lb}( S ) \le c( x ) \f$ for each
+ complete solution \f$ x \f$ that extends \f$ S \f$, then skipping \f$ S \f$
+ when
+ \f[
+   \mathit{lb}( S ) \ge \mathit{minCost} \tag{5}
+ \f]
+ loses no solution better than the best found, and the visit returns an
+ optimum.
+
+ The guarantee holds whatever the order of visit and the bound, and the time
+ in the worst case stays that of the enumeration; what changes is the number
+ of nodes in practice, which `bbTsp()`, `littleTsp()`, `maxWeightClique()`
+ and the knapsacks report in `*generated`. The bounds of the area satisfy
+ the hypothesis of Lemma 3 as follows. In the bound of the text
+ (`TspBound::BOOK` of `tspLowerBound()`), a circuit that starts with the
+ path \f$ S \f$ enters each city out of \f$ S \f$ once and leaves it once,
+ and goes back to \f$ S[ 0 ] \f$ from a city out of \f$ S \f$; the least cost
+ of entering and leaving each city, \f$ D_h \f$, counts each edge of the rest
+ of the circuit at most twice, and half the sum, with \f$ A \f$ and
+ \f$ B \f$, is a lower bound of that rest. In the bound of the 1-tree
+ (`TspBound::ONE_TREE`), the rest of the circuit is a path through the cities
+ out of \f$ S \f$ plus two edges, and a path is a spanning tree; the weight
+ of a minimum spanning tree, plus the least edges \f$ A \f$ and \f$ B \f$,
+ is therefore a lower bound (Held and Karp). In the reduction of
+ `littleTsp()`, subtracting a constant from a row or a column of the matrix
+ lowers the cost of every circuit by that constant, since a circuit uses
+ exactly one entry of each row and of each column; the sum of the constants
+ subtracted is a lower bound, and the entries 0 left are the edges that a
+ circuit of that cost would use. `littleTsp()` visits by least bound, so that
+ the first complete circuit extracted is optimal: any other node has a bound
+ at least as large. `maxWeightClique()` bounds a set by its weight plus that
+ of all its candidates, and `knapsackBB()` by the fractional knapsack of the
+ objects left, which is at least the profit of any set of them within the
+ capacity left, since the fractional greedy by \f$ p_i / v_i \f$ is optimal
+ for the relaxation (chapter 14).
+
+ \section theory_intractable_heur Heuristics
+
+ A heuristic gives a feasible solution with no guarantee on its cost (section
+ 19.4); it is judged by its time and by its results in practice. The
+ constructive heuristics of the area are greedy. `greedyTsp()` keeps the
+ lightest edges that leave every city with at most two of them and close no
+ cycle, as `kruskal()` does with an MFSET, and so ends with a Hamiltonian
+ chain, closed by the edge of its two ends; the sort of the
+ \f$ n ( n - 1 ) / 2 \f$ edges gives \f$ O( n^2 \log n ) \f$.
+ `greedySuperstring()` is the same greedy on the oriented edges weighed by
+ the overlaps, which leaves oriented paths. `minMaxGreedy()` grows the two
+ halves of a bisection in turn, each time with the node out of them that
+ has the fewest edges to the other half; the structure `Buckets` keeps the
+ nodes by their count of edges to each half, with each node at a known place
+ of its bucket and the least and largest bucket not empty, so that a node
+ moves to the next bucket in \f$ O( 1 ) \f$, and the scans of the bounds,
+ which only move forward between two moves back, cost \f$ O( 1 ) \f$
+ amortized. `dsatur()` colors first the node that sees the most colors, which
+ is the most constrained.
+
+ A <em>local search</em> starts from a solution \f$ \pi \f$ and moves to a
+ better solution of its neighborhood \f$ I( \pi ) \f$ while there is one; it
+ ends at a <em>local optimum</em>, since the cost decreases strictly at each
+ step and the solutions are finitely many. For the salesman, the
+ neighborhood \f$ I_2( \pi ) \f$ of `twoOpt()` holds the circuits obtained
+ by removing two edges of \f$ \pi \f$ that do not touch and reconnecting the
+ two paths in the only other way, i.e., by reversing the stretch between
+ them, which gives
+ \f[
+   | I_2( \pi ) | = \frac{n ( n - 1 )}{2} - n , \tag{6}
+ \f]
+ the pairs of edges less the \f$ n \f$ that touch; the change of cost of a
+ move depends on the four edges alone, and a step costs \f$ O( n^2 ) \f$.
+ `kOptNeighbours()` counts \f$ | I_k( \pi ) | \f$ by brute force, which
+ checks (6) for \f$ k = 2 \f$. `partitionLocalSearch()` does the same for
+ PARTITION, with the moves of one element and the swaps of two, each
+ changing the difference of the sums by twice the elements moved.
+
+ \section theory_intractable_puzzle The fifteen puzzle
+
+ `solvePuzzle()` of `FifteenPuzzle.h` visits the configurations by least
+ \f$ f( x ) = g( x ) + h( x ) \f$, \f$ g( x ) \f$ the moves from the start and
+ \f$ h( x ) \f$ the sum of the distances of the tiles from their places
+ (`manhattan()`); this is the branch-&-bound of section 19.5 with the visit
+ by least bound, i.e., the algorithm A* of Hart, Nilsson and Raphael.
+
+ <em>Lemma 4 (A* with a consistent bound).</em> If \f$ h \f$ is 0 at the goal
+ and
+ \f[
+   h( x ) \le 1 + h( y ) \quad \text{for each move from } x \text{ to } y ,
+   \tag{7}
+ \f]
+ then the first goal extracted from the queue is reached in the fewest
+ moves.
+
+ Indeed, a move changes the place of one tile by one square, and so changes
+ \f$ h \f$ by at most 1, which is (7); then \f$ f \f$ never decreases along a
+ path, and \f$ h \f$ never exceeds the moves left. When a goal \f$ x \f$ is
+ extracted, every node of a shorter solution would have
+ \f$ f \le g^* < g( x ) = f( x ) \f$ and would have been extracted before it,
+ with its successors. The map of the least level of each configuration lets
+ a configuration enter the queue again only with fewer moves, and an entry
+ with more moves than the map is stale and skipped; hence each configuration
+ is expanded once. `puzzleBFS()` is the case \f$ h = 0 \f$, which examines far
+ more configurations, and `puzzleDFS()` the backtracking of chapter 16 with
+ a bound on the moves, which finds a solution within the bound if there is
+ one, not necessarily the shortest.
+
+ Half of the configurations cannot reach the goal. A move of the hole along a
+ row leaves the order of the tiles, read by rows, unchanged, and a move along
+ a column moves one tile past \f$ n - 1 \f$ others, which changes the number
+ of inversions by an amount of the parity of \f$ n - 1 \f$; with \f$ n \f$ odd
+ the parity of the inversions is therefore invariant, and with \f$ n \f$ even
+ that of the inversions plus the row of the hole is. `solvable()` compares
+ that parity with the goal (Johnson and Story), which is also sufficient.
+
+ \section theory_intractable_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 19,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap19.pdf
+ \see M. R. Garey, D. S. Johnson, "Strong" NP-completeness results:
+      motivation, examples, and implications, Journal of the ACM 25(3),
+      499-508, 1978, doi:10.1145/322077.322090
+ \see R. McNaughton, Scheduling with deadlines and loss functions,
+      Management Science 6(1), 1-12, 1959, doi:10.1287/mnsc.6.1.1
+ \see D. S. Johnson, A. Demers, J. D. Ullman, M. R. Garey, R. L. Graham,
+      Worst-case performance bounds for simple one-dimensional packing
+      algorithms, SIAM Journal on Computing 3(4), 299-325, 1974,
+      doi:10.1137/0203025
+ \see D. J. Rosenkrantz, R. E. Stearns, P. M. Lewis, An analysis of
+      several heuristics for the traveling salesman problem, SIAM Journal
+      on Computing 6(3), 563-581, 1977, doi:10.1137/0206041
+ \see O. H. Ibarra, C. E. Kim, Fast approximation algorithms for the
+      knapsack and sum of subset problems, Journal of the ACM 22(4),
+      463-468, 1975, doi:10.1145/321906.321909
+ \see J. D. C. Little, K. G. Murty, D. W. Sweeney, C. Karel, An algorithm
+      for the traveling salesman problem, Operations Research 11(6),
+      972-989, 1963, doi:10.1287/opre.11.6.972
+ \see M. Held, R. M. Karp, The traveling-salesman problem and minimum
+      spanning trees: part II, Mathematical Programming 1, 6-25, 1971,
+      doi:10.1007/BF01584070
+ \see S. Lin, Computer solutions of the traveling salesman problem, Bell
+      System Technical Journal 44(10), 2245-2269, 1965,
+      doi:10.1002/j.1538-7305.1965.tb04146.x
+ \see P. E. Hart, N. J. Nilsson, B. Raphael, A formal basis for the
+      heuristic determination of minimum cost paths, IEEE Transactions on
+      Systems Science and Cybernetics 4(2), 100-107, 1968,
+      doi:10.1109/TSSC.1968.300136
+ \see W. W. Johnson, W. E. Story, Notes on the "15" puzzle, American
+      Journal of Mathematics 2(4), 397-404, 1879, doi:10.2307/2369492
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File intractable.dox ------------------------*/
+/*--------------------------------------------------------------------------*/
