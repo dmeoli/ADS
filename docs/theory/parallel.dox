@@ -10,15 +10,15 @@
  machine with shared memory: the patterns of the loops, of the reductions and
  of the prefix sums, the merge of sorted ranges and the sort, the products of
  matrices, the Fourier transform, the visits of a static graph, the LCP array
- of a text, and the greedy algorithms on graphs by deterministic
- reservations. Each runs on an executor, which is the only part that knows
- the threads, and gives the result of its sequential version. This page
+ of a text, the greedy algorithms on graphs by deterministic reservations and
+ the shortest paths. Each runs on an executor, which is the only part that
+ knows the threads, and gives the result of its sequential version. This page
  collects what the headers take for granted: the model of the cost and its
  notation (see \ref theory_parallel_notation), the executors and the way they
  schedule the calls (see \ref theory_parallel_exec), and, for each family of
  algorithms, the property on which its correctness rests and the argument
  behind its bound (from \ref theory_parallel_patterns to
- \ref theory_parallel_reserve). The pseudocode of each algorithm is instead on
+ \ref theory_parallel_sssp). The pseudocode of each algorithm is instead on
  the page of its header, in the comment of its function, together with the
  paper that it follows.
 
@@ -450,6 +450,71 @@
      \f$ \pi \f$</td></tr>
  </table>
 
+ \section theory_parallel_sssp Shortest paths by steps
+
+ The shortest paths from \f$ s \f$ with costs that are not negative (see
+ \ref theory_graph_sp) are the least solution of
+ \f[
+   d( s ) = 0 , \qquad d( u ) = \min\bigl\{ d( u ) , \min_{( v , u ) \in E}
+   d( v ) \oplus w( v , u ) \bigr\} , \tag{9}
+ \f]
+ where \f$ \oplus \f$ is the sum of the computer, which for the integers is
+ the sum and for the floating points is the sum rounded, in both cases
+ monotone, \f$ a \le b \Rightarrow a \oplus w \le b \oplus w \f$, and not
+ decreasing, \f$ a \oplus w \ge a \f$ for \f$ w \ge 0 \f$.
+
+ <em>Lemma 5 (the label-correcting steps).</em> Start from \f$ d( s ) = 0 \f$
+ and \f$ d( v ) = \infty \f$ elsewhere, with \f$ s \f$ active, and repeat, in
+ any order and with any number of threads, steps that take some active nodes,
+ make them not active, and relax their arcs, each relaxation
+ \f$ d( u ) \gets \min\{ d( u ) , d( v ) \oplus w( v , u ) \} \f$ atomic and
+ making \f$ u \f$ active if it lowers \f$ d( u ) \f$. When no node is active,
+ \f$ d \f$ is the least solution of (9), the distances of the algorithm of
+ Dijkstra.
+
+ Indeed, each \f$ d( u ) \f$ is at every moment the value of a path from
+ \f$ s \f$ summed by \f$ \oplus \f$ from \f$ s \f$, and hence at least the
+ least solution, which is the least such value; and when no node is active,
+ every arc was relaxed after the last decrease of its tail, which by the
+ monotonicity left \f$ d( u ) \le d( v ) \oplus w( v , u ) \f$ on it, so that
+ \f$ d \f$ solves (9), and being at least the least solution, it is the
+ least. The algorithm of Dijkstra computes the same solution, since by the
+ two properties of \f$ \oplus \f$ its order of extraction never lowers the
+ distance of a node already extracted. A node made active while it is being
+ relaxed is relaxed again: the flag that says whether it is active is cleared
+ before its distance is read, and a relaxation that lowers the distance reads
+ the flag after it, both sequentially consistent, so that one of the two sees
+ the other.
+
+ The algorithms differ in the nodes that each step takes. The algorithm of
+ Dijkstra takes one, the least, and relaxes each arc once; that of Bellman,
+ Ford and Moore by rounds takes all the active nodes, \f$ O( n ) \f$ steps
+ of large frontiers, and relaxes an arc as many times as its tail improves.
+ The \f$ \Delta \f$-stepping of Meyer and Sanders (`deltaStepping()` of
+ `ParallelShortestPaths.h`) takes the active nodes in the bucket
+ \f$ \lfloor d / \Delta \rfloor \f$ of the least active distance \f$ \mu \f$,
+ again while the bucket is not empty: a node of a later bucket has a
+ distance at least the end of the bucket, and since the costs are not
+ negative it lowers no distance within it, so that the nodes of the bucket
+ are at their final distances when it is empty, and the extra work is that
+ of the nodes of the bucket relaxed before they reached them. For costs
+ independent and uniform in \f$ [ 0 , 1 ] \f$ and \f$ \Delta \f$ of the
+ order of the inverse of the largest degree \f$ d \f$, Meyer and Sanders
+ bound the expected work by \f$ O( n + m + d L ) \f$ and the depth by
+ \f$ O( d L \log n + \log^2 n ) \f$, \f$ L \f$ the largest distance. The
+ \f$ \rho \f$-stepping of Dong, Gu, Sun and Zhang (`rhoStepping()`) takes
+ the \f$ \rho \f$ active nodes of least distance, or all of them when they
+ are no more than \f$ \rho \f$, with the threshold estimated on a sample of
+ 1024 of them, so that the steps have a frontier of the same size whatever
+ the scale of the costs; on a graph whose frontier
+ stays below \f$ \rho \f$, e.g., a grid or a road network, it is the
+ algorithm of Bellman, Ford and Moore by rounds, and a smaller \f$ \rho \f$
+ is needed there. Each step costs \f$ O( \log n ) \f$ depth for the
+ gathering of its frontier, so that the steps should be few; the nodes that
+ a block of arcs makes active within the threshold of its step are relaxed
+ by the same block at once, up to 1024 of them, as in the fusion of the
+ buckets of Zhang et al., which saves the steps of the chains of light arcs.
+
  \section theory_parallel_refs References
 
  \see R. L. Graham, Bounds on multiprocessing timing anomalies, SIAM
@@ -526,6 +591,15 @@
  \see V. Osipov, P. Sanders, J. Singler, The filter-Kruskal minimum
       spanning tree algorithm, Proceedings of ALENEX, 52-61, 2009,
       doi:10.1137/1.9781611972894.5
+ \see U. Meyer, P. Sanders, \f$ \Delta \f$-stepping: a parallelizable
+      shortest path algorithm, Journal of Algorithms 49(1), 114-152, 2003,
+      doi:10.1016/S0196-6774(03)00076-2
+ \see X. Dong, Y. Gu, Y. Sun, Y. Zhang, Efficient stepping algorithms and
+      implementations for parallel shortest paths, Proc. 33rd SPAA,
+      184-197, 2021, doi:10.1145/3409964.3461782
+ \see Y. Zhang, A. Brahmakshatriya, X. Chen, L. Dhulipala, S. Kamil,
+      S. Amarasinghe, J. Shun, Optimizing ordered graph algorithms with
+      GraphIt, Proc. 18th CGO, 158-170, 2020, doi:10.1145/3368826.3377909
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File parallel.dox --------------------------*/

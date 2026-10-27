@@ -110,6 +110,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subtree of another tree, or of the tree itself as it was before the
   call, as first child or next sibling of a node, as in CursorTree; in the
   test child-list-tree-copy
+- the parallel builds of the succinct structures on the threads of an
+  executor, with the structures of the sequential builds on every
+  executor: RankSelect( ex , b ) and CompactRankSelect( ex , b ) (and from
+  words), the entries by the counts of chunks of blocks and their prefix
+  sums, the inventories of select in two passes over the chunks;
+  WaveletMatrix( ex , x , w ), up to 8 levels per pass over the items,
+  each level the stable sort of the first one of the pass by the reversed
+  prefix of the bits, so that the items move once per pass instead of once
+  per level, the slices writing their runs of bits at once with an atomic
+  or only on the words at their borders; HuffmanWaveletTree( ex , x ), the
+  bits of each slice written along the codes into a run per node, with no
+  item moved; the tests parallel-rank-select, parallel-wavelet-matrix,
+  parallel-huffman-wavelet-tree and parallel-rank-select-top, and the
+  builds in bench/parallel.cpp against those of sdsl-lite
+- deltaStepping( ex , g , s , delta ) and rhoStepping( ex , g , s , rho )
+  (parallel/ParallelShortestPaths.h), the shortest paths from a node by the
+  Delta-stepping of Meyer and Sanders and by the rho-stepping of Dong, Gu,
+  Sun and Zhang, on StaticGraph (the arcs of the frontier cut into blocks
+  of equal arcs) and on ArrayGraph: steps of relaxations by atomic minima,
+  each node made active once by a flag, the nodes within the threshold
+  relaxed by the block that reached them (the fusion of the buckets of
+  Zhang et al.), with the distances of the algorithm of Dijkstra on every
+  executor; the test parallel-stepping, also under ThreadSanitizer in the
+  CI, and the cells sssp of bench/parallel.cpp against the Delta-stepping
+  of the GAP benchmark suite and the bucketed algorithm of Dijkstra of
+  ParlayLib
 - GrafiteFilter (set/GrafiteFilter.h), the range filter of Costa,
   Ferragina and Vinciguerra: a locality-preserving hash of the keys onto
   a universe of n 2^(B-2) codes kept by Elias-Fano, false positives at

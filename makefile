@@ -341,7 +341,8 @@ $(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
 # <dir> Eigen, OPENBLAS=<prefix> OpenBLAS, FFTW=<prefix> FFTW with its
 # threads, HASHING=<dir> libcuckoo, MULTIQUEUE=<dir> the MultiQueue of
 # Williams et al., KLSM=<dir> the k-LSM (its source of the threads compiled
-# in), GROWT=<dir> the tables of growt
+# in), GROWT=<dir> the tables of growt, SDSL=<dir> (its sources) the
+# builds of sdsl-lite
 TBBFLAGS  = $(if $(TBB),-DADS_HAS_TBB -DADS_WITH_TBB \
             $(if $(filter-out 1,$(TBB)),-I$(TBB)/include -L$(TBB)/lib \
             -Wl$(comma)-rpath$(comma)$(TBB)/lib) -ltbb)
@@ -364,7 +365,8 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
             -isystem $(MULTIQUEUE)/include/multiqueue/third_party/pcg) \
             $(if $(KLSM),-DADS_HAS_KLSM -isystem $(KLSM)/src \
             $(KLSM)/src/util/thread_local_ptr.cpp) \
-            $(if $(GROWT),-isystem $(GROWT))
+            $(if $(GROWT),-isystem $(GROWT)) \
+            $(if $(SDSL),-DADS_HAS_SDSL -isystem $(SDSL)/include)
 
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)

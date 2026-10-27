@@ -251,6 +251,10 @@ if (ADS_BENCHMARKS)
     if (SDSL_INCLUDE)
         target_compile_definitions(bench-lce PRIVATE ADS_HAS_SDSL)
         target_include_directories(bench-lce SYSTEM PRIVATE ${SDSL_INCLUDE})
+        # the sequential builds of sdsl-lite, against the parallel ones
+        target_compile_definitions(bench-parallel PRIVATE ADS_HAS_SDSL)
+        target_include_directories(bench-parallel SYSTEM
+                                   PRIVATE ${SDSL_INCLUDE})
     endif ()
     if (EDLIB_INCLUDE AND EDLIB_LIB)
         target_compile_definitions(bench-edit PRIVATE ADS_HAS_EDLIB)

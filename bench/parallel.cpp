@@ -38,6 +38,22 @@
  *   the direction-optimizing visit, Afforest and Shiloach-Vishkin of the
  *   GAP benchmark suite, and the visit of the examples of ParlayLib), per
  *   arc;
+ * - the shortest paths from the node of largest degree of the same graphs
+ *   and of a grid of 2^16 and 2^20 nodes (a proxy of a road network), with
+ *   integer costs at random in [ 1 , 255 ] (deltaStepping, Delta = 32 and
+ *   256 on the grid, and rhoStepping, rho = 2^20 and 2^12 on the grid,
+ *   against the Delta-stepping of the GAP benchmark suite, the bucketed
+ *   algorithm of Dijkstra of the examples of ParlayLib and, when t = 1,
+ *   johnson(), the algorithm of Dijkstra of ShortestPaths.h on a binary
+ *   heap), per arc;
+ * - the builds of the succinct structures: the directories of rank and
+ *   select of 64 n random bits (RankSelect and CompactRankSelect against
+ *   rank_support_v5 with select_support_mcl of sdsl-lite, sequential), per
+ *   bit, the wavelet matrix of n random integers of 8, 16 and 32 bits
+ *   (against wm_int of sdsl-lite) and the wavelet tree of Huffman of n
+ *   symbols of 8 bits of a geometric law and of 16 bits at random (against
+ *   wt_huff_int of sdsl-lite), per item, the sequential builds of ADS as
+ *   well when t = 1;
  * - the LCP array of texts of 10^6 and 4 10^6 symbols, of 4 letters or of
  *   words of a Zipf law, from a suffix array of 32 bits (lcpArrayPhi
  *   against the one of the examples of ParlayLib), per symbol;
@@ -73,8 +89,8 @@
  * "A/A".
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
- *            [ -b sort|patterns|merge|spmv|gemm|fft|graphs|lcp|hash|
- *                 closed|pq|rank ]
+ *            [ -b sort|patterns|merge|spmv|gemm|fft|graphs|sssp|succinct|
+ *                 lcp|hash|closed|pq|rank ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -98,6 +114,7 @@
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/MultiQueue.h"
+#include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
@@ -108,11 +125,16 @@
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
+#include "ADS/parallel/ParallelShortestPaths.h"
 #include "ADS/parallel/ParallelSort.h"
 #include "ADS/parallel/ParallelText.h"
 #include "ADS/priority/MultiwayMerge.h"
 #include "ADS/string/SuffixArray.h"
 #include "ADS/string/SuffixSorting.h"
+#include "ADS/succinct/CompactRankSelect.h"
+#include "ADS/succinct/HuffmanWaveletTree.h"
+#include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/WaveletMatrix.h"
 #include "ADS/parallel/TBBExecutor.h"
 #include "ADS/parallel/ThreadPool.h"
 #include "ADS/sort/Sort.h"
@@ -155,6 +177,7 @@
  #define ADS_HAS_PARLAY 1
  #if __has_include( <examples/BFS_ligra.h> )
   #include <examples/BFS_ligra.h>
+  #include <examples/bucketed_dijkstra.h>
   #include <examples/longest_common_prefix.h>
   #define ADS_HAS_PARLAY_EXAMPLES 1
  #endif
@@ -193,6 +216,15 @@
  #include <utils/hash/murmur2_hash.hpp>
  #include <data-structures/table_config.hpp>
  #define ADS_HAS_GROWT 1
+#endif
+
+#if defined( ADS_HAS_SDSL ) && __has_include( <sdsl/wavelet_trees.hpp> )
+ #include <sdsl/bit_vectors.hpp>
+ #include <sdsl/rank_support.hpp>
+ #include <sdsl/select_support.hpp>
+ #include <sdsl/wavelet_trees.hpp>
+#else
+ #undef ADS_HAS_SDSL
 #endif
 
 #if __has_include( <Eigen/Sparse> ) && defined( _OPENMP )
@@ -236,6 +268,9 @@ namespace gapbsCc {
 namespace gapbsSv {
  #include <cc_sv.cc>
 }
+namespace gapbsSssp {
+ #include <sssp.cc>
+}
  #undef main
  #define ADS_HAS_GAPBS 1
 #endif
@@ -252,7 +287,9 @@ namespace gapbsSv {
 #include <memory>
 #include <numeric>
 #include <random>
+#include <span>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -1235,6 +1272,234 @@ void graphs( const std::vector< int > & scales , int r , unsigned seed ,
  }
 
 /*--------------------------------------------------------------------------*/
+/*---------------------------- SHORTEST PATHS ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the edges of a grid of side x side nodes, each joined to the next one in
+/// its row and in its column, the names of the nodes shuffled
+std::vector< std::pair< int , int > > grid( int side , unsigned seed )
+{
+ std::mt19937_64 g( seed );
+ std::vector< int > name( std::size_t( side ) * std::size_t( side ) );
+ std::iota( name.begin() , name.end() , 0 );
+ std::shuffle( name.begin() , name.end() , g );
+ std::vector< std::pair< int , int > > E;
+ for( int i = 0 ; i < side ; ++i )
+  for( int j = 0 ; j < side ; ++j ) {
+   const std::size_t v = std::size_t( i ) * std::size_t( side ) +
+                         std::size_t( j );
+   if( j + 1 < side ) E.emplace_back( name[ v ] , name[ v + 1 ] );
+   if( i + 1 < side )
+    E.emplace_back( name[ v ] , name[ v + std::size_t( side ) ] );
+   }
+ return( E );
+ }
+
+/// the shortest paths from the node of largest degree of the graphs of
+/// 2^scale nodes of graphs() and of a grid, with integer costs in
+/// [ 1 , 255 ], in nanoseconds per arc; ADS_SSSP_DELTA and ADS_SSSP_RHO
+/// set the parameters (default 32 and 2^20, 256 and 2^12 on the grid)
+void sssp( const std::vector< int > & scales , int r , unsigned seed ,
+           Executors & X )
+{
+ using G = ADS::StaticGraph< int >;
+ const char * ed = std::getenv( "ADS_SSSP_DELTA" );
+ const char * er = std::getenv( "ADS_SSSP_RHO" );
+ for( int scale : scales )
+  for( int kind = 0 ; kind < 3 ; ++kind ) {
+   const auto U = kind == 2 ? grid( 1 << ( scale / 2 ) , seed )
+                            : edges( scale , kind == 1 , seed );
+   const int n = kind == 2 ? 1 << ( 2 * ( scale / 2 ) ) : 1 << scale;
+   std::mt19937_64 gw( seed + 1 );
+   std::vector< std::tuple< int , int , int > > E;
+   E.reserve( U.size() );
+   for( const auto & [ a , b ] : U )
+    E.emplace_back( a , b , 1 + int( gw() % 255 ) );
+   const G g( n , E , false );
+   const std::size_t arcs = std::size_t( g.arcs() );
+   int src = 0;
+   for( int v = 0 ; v < n ; ++v )
+    if( g.degree( v ) > g.degree( src ) ) src = v;
+   const int delta = ed ? std::atoi( ed ) : kind == 2 ? 256 : 32;
+   const std::size_t rho = er ? std::size_t( std::atoll( er ) )
+                              : std::size_t( 1 ) << ( kind == 2 ? 12 : 20 );
+   const auto ref = ADS::johnson( g , src ).d;
+   const char * c = kind == 0 ? "uniform" : kind == 1 ? "kronecker" : "grid";
+   std::vector< int > dist;
+#if defined( ADS_HAS_GAPBS )
+   std::unique_ptr< WGraph > gg;
+   if( runs( "openmp" ) && ( ! ADS::bench::skip( "gapbs DeltaStep" ) ||
+                             ! ADS::bench::skip( "gapbs DeltaStep A/A" ) ) ) {
+    WNode * neighs = new WNode[ arcs ];
+    pvector< SGOffset > off( std::size_t( n ) + 1 );
+    for( int v = 0 ; v <= n ; ++v ) off[ std::size_t( v ) ] = g.offsets()[ v ];
+    for( std::size_t k = 0 ; k < arcs ; ++k )
+     neighs[ k ] = WNode( g.arcData()[ k ].to , g.arcData()[ k ].w );
+    gg = std::make_unique< WGraph >( n , WGraph::GenIndex( off , neighs ) ,
+                                     neighs );
+    }
+#endif
+#if defined( ADS_HAS_PARLAY_EXAMPLES )
+   parlay::sequence< parlay::sequence< std::pair< int , int > > > pg;
+   if( runs( "parlay" ) && ! ADS::bench::skip( "parlay bucketed_dijkstra" ) )
+    pg = parlay::tabulate( std::size_t( n ) , [ & ]( std::size_t v ) {
+     return( parlay::map( g.out( int( v ) ) , []( const auto & a ) {
+      return( std::pair< int , int >( a.to , a.w ) ); } ) ); } );
+#endif
+   Works S;
+   onExecutorsW( S , X , "ADS::deltaStepping" , [ & ]( auto & ex ) {
+    dist = ADS::deltaStepping( ex , g , src , delta ); } );
+   onExecutorsW( S , X , "ADS::rhoStepping" , [ & ]( auto & ex ) {
+    dist = ADS::rhoStepping( ex , g , src , rho ); } );
+#if defined( ADS_HAS_GAPBS )
+   addW( S , "openmp" , "gapbs DeltaStep" , [ & ] {
+    const auto p = gapbsSssp::DeltaStep( *gg , src , delta );
+    dist.assign( p.begin() , p.end() );
+    for( auto & x : dist )
+     if( x == gapbsSssp::kDistInf ) x = ADS::infinity< int >(); } );
+#endif
+#if defined( ADS_HAS_PARLAY_EXAMPLES )
+   addW( S , "parlay" , "parlay bucketed_dijkstra" , [ & ] {
+    const auto F = bucketed_dijkstra( src , pg );
+    dist.assign( std::size_t( n ) , ADS::infinity< int >() );
+    for( std::size_t d = 0 ; d < F.size() ; ++d )
+     for( const int v : F[ d ] ) dist[ std::size_t( v ) ] = int( d ); } );
+#endif
+   if( threads == 1 )
+    addW( S , "seq" , "ADS::johnson (sequential)" , [ & ] {
+     dist = ADS::johnson( g , src ).d; } );
+   runWorks( bench( "sssp" ) , c , arcs , S , r , [ & ] { dist.clear(); } ,
+             [ & ] { return( dist == ref ); } );
+   }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- SUCCINCT ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the builds of the directories of rank and select of 64 n random bits,
+/// per bit, of the wavelet matrices of n integers and of the wavelet trees
+/// of Huffman of n symbols, per item
+void succinct( const std::vector< std::size_t > & sizes , int r ,
+               unsigned seed , Executors & X )
+{
+ for( std::size_t n : sizes ) {
+  std::mt19937_64 g( seed );
+  {
+   const std::size_t m = 64 * n;
+   ADS::BitVector b( m );
+   std::vector< ADS::Word > W( n );
+   for( auto & w : W ) w = g();
+   for( std::size_t i = 0 ; i < m ; ++i )
+    if( ( W[ i / 64 ] >> ( i % 64 ) ) & 1 ) b.set( i );
+   const ADS::RankSelect ref( b );
+   std::size_t ones = 0 , check = 0;
+   auto probe = [ & ]( const auto & s ) {
+    ones = s.ones();
+    check = s.select1( ones / 2 + 1 ) + s.select0( s.zeros() / 3 + 1 ) +
+            s.rank1( m / 3 ); };
+   const std::size_t want = ref.select1( ref.ones() / 2 + 1 ) +
+                            ref.select0( ref.zeros() / 3 + 1 ) +
+                            ref.rank1( m / 3 );
+   const std::span< const ADS::Word > ws( W );
+   Works S;
+   onExecutorsW( S , X , "ADS::RankSelect" , [ & ]( auto & ex ) {
+    probe( ADS::RankSelect( ex , ws , m ) ); } );
+   onExecutorsW( S , X , "ADS::CompactRankSelect" , [ & ]( auto & ex ) {
+    probe( ADS::CompactRankSelect( ex , ws , m ) ); } );
+   if( threads == 1 ) {
+    addW( S , "seq" , "ADS::RankSelect (sequential)" , [ & ] {
+     probe( ADS::RankSelect( ws , m ) ); } );
+    addW( S , "seq" , "ADS::CompactRankSelect (sequential)" , [ & ] {
+     probe( ADS::CompactRankSelect( ws , m ) ); } );
+    }
+#if defined( ADS_HAS_SDSL )
+   sdsl::bit_vector sb( m );
+   std::copy( W.begin() , W.end() , sb.data() );
+   addW( S , "sdsl" , "sdsl rank_support_v5+select_support_mcl" , [ & ] {
+    sdsl::bit_vector v( sb );
+    sdsl::rank_support_v5<> rk( &v );
+    sdsl::select_support_mcl< 1 > s1( &v );
+    sdsl::select_support_mcl< 0 > s0( &v );
+    ones = rk( m );
+    check = s1( ones / 2 + 1 ) + s0( ( m - ones ) / 3 + 1 ) + rk( m / 3 );
+    } );
+#endif
+   runWorks( bench( "build rank/select" ) , "50%" , m , S , r ,
+             [ & ] { ones = check = 0; } ,
+             [ & ] { return( ( ones == ref.ones() ) &&
+                             ( check == want ) ); } );
+  }
+  for( int w : { 8 , 16 , 32 } ) {
+   std::vector< std::uint64_t > x( n );
+   for( auto & v : x ) v = g() >> ( 64 - w );
+   const ADS::WaveletMatrix ref( x , w );
+   std::size_t bits = 0;
+   std::uint64_t probe = 0;
+   const std::uint64_t want = ref.access( n / 3 ) + ref.rank( x[ 7 ] , n / 2 );
+   Works S;
+   onExecutorsW( S , X , "ADS::WaveletMatrix" , [ & ]( auto & ex ) {
+    const ADS::WaveletMatrix M( ex , x , w );
+    bits = M.sizeInBits();
+    probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+   if( threads == 1 )
+    addW( S , "seq" , "ADS::WaveletMatrix (sequential)" , [ & ] {
+     const ADS::WaveletMatrix M( x , w );
+     bits = M.sizeInBits();
+     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+#if defined( ADS_HAS_SDSL )
+   sdsl::int_vector<> iv( n , 0 , std::uint8_t( w ) );
+   for( std::size_t i = 0 ; i < n ; ++i ) iv[ i ] = x[ i ];
+   addW( S , "sdsl" , "sdsl::wm_int" , [ & ] {
+    sdsl::wm_int<> M;
+    sdsl::construct_im( M , iv );
+    bits = ref.sizeInBits();
+    probe = M[ n / 3 ] + M.rank( n / 2 , x[ 7 ] ); } );
+#endif
+   runWorks( bench( "build wavelet matrix" ) , std::to_string( w ) + " bits" ,
+             n , S , r , [ & ] { bits = 0; probe = 0; } ,
+             [ & ] { return( ( bits == ref.sizeInBits() ) &&
+                             ( probe == want ) ); } );
+   }
+  for( int kind = 0 ; kind < 2 ; ++kind ) {
+   std::vector< std::uint32_t > x( n );
+   std::geometric_distribution< std::uint32_t > geo( 0.2 );
+   for( auto & v : x )
+    v = kind == 0 ? std::min< std::uint32_t >( geo( g ) , 255 )
+                  : std::uint32_t( g() >> 48 );
+   using T = ADS::HuffmanWaveletTree<>;
+   const T ref( x );
+   std::size_t bits = 0 , probe = 0;
+   const std::size_t want = ref.access( n / 3 ) + ref.rank( x[ 7 ] , n / 2 );
+   Works S;
+   onExecutorsW( S , X , "ADS::HuffmanWaveletTree" , [ & ]( auto & ex ) {
+    const T M( ex , x );
+    bits = M.sizeInBits();
+    probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+   if( threads == 1 )
+    addW( S , "seq" , "ADS::HuffmanWaveletTree (sequential)" , [ & ] {
+     const T M( x );
+     bits = M.sizeInBits();
+     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+#if defined( ADS_HAS_SDSL )
+   sdsl::int_vector<> iv( n , 0 , std::uint8_t( kind == 0 ? 8 : 16 ) );
+   for( std::size_t i = 0 ; i < n ; ++i ) iv[ i ] = x[ i ];
+   addW( S , "sdsl" , "sdsl::wt_huff_int" , [ & ] {
+    sdsl::wt_huff_int<> M;
+    sdsl::construct_im( M , iv );
+    bits = ref.sizeInBits();
+    probe = M[ n / 3 ] + M.rank( n / 2 , x[ 7 ] ); } );
+#endif
+   runWorks( bench( "build huffman wavelet tree" ) ,
+             kind == 0 ? "8 bits skewed" : "16 bits" , n , S , r ,
+             [ & ] { bits = 0; probe = 0; } ,
+             [ & ] { return( ( bits == ref.sizeInBits() ) &&
+                             ( probe == want ) ); } );
+   }
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /*--------------------------------- TEXTS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -2128,6 +2393,10 @@ int main( int argc , char ** argv )
   ffts( o.runs , o.seed , X );
  if( only.empty() || ( only == "graphs" ) )
   graphs( { 16 , 19 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "sssp" ) )
+  sssp( { 16 , 20 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "succinct" ) )
+  succinct( o.sizes , o.runs , o.seed , X );
  if( only.empty() || ( only == "lcp" ) )
   texts( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "hash" ) )

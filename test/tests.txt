@@ -1694,6 +1694,7 @@ contract_tree         other-trees          B-albero, espressioni, cursori
 
 # the paths of rank and select that practical sizes do not take
 succinct_top  rank-select-top   rank e select col livello alto e gruppi radi
+succinct_top  parallel-rank-select-top  costruzione parallela col livello alto
 succinct_top  rank-select-words-top  RankSelect e compatto dalle parole, livello alto
 succinct_top  binary-packing-scalar  SIMD-BP128 e PFor una corsia alla volta
 succinct_top  succinct-top      Elias-Fano e parentesi col livello alto
@@ -1761,6 +1762,10 @@ engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
 engineered_parallel  parallel-fft        trasformata in quattro passi
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
 engineered_parallel  parallel-lcp        array LCP permutato
+engineered_parallel  parallel-rank-select  rank e select costruiti sugli esecutori
+engineered_parallel  parallel-wavelet-matrix  wavelet matrix, 8 livelli a passata
+engineered_parallel  parallel-huffman-wavelet-tree  wavelet tree di Huffman parallelo
+engineered_parallel  parallel-stepping   Delta e rho-stepping contro Dijkstra
 engineered_parallel  concurrent-union-find  union-find concorrente
 
 # the balanced trees based on join and the augmented maps, beyond the book

@@ -21,11 +21,17 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#define ADS_RANKSELECT_CHUNK 2
+#define ADS_COMPACT_CHUNK 1
+#define ADS_WAVELET_SLICE 64
+
 #include "ADSTest.h"
 
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
 #include "ADS/concurrent/ConcurrentUnionFind.h"
+#include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
@@ -36,9 +42,14 @@
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
+#include "ADS/parallel/ParallelShortestPaths.h"
 #include "ADS/parallel/ParallelSort.h"
 #include "ADS/parallel/ParallelText.h"
 #include "ADS/string/SuffixArray.h"
+#include "ADS/succinct/CompactRankSelect.h"
+#include "ADS/succinct/HuffmanWaveletTree.h"
+#include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/WaveletMatrix.h"
 #include "ADS/parallel/TBBExecutor.h"
 #include "ADS/parallel/ThreadPool.h"
 
@@ -49,6 +60,8 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <span>
+#include <tuple>
 #include <limits>
 #include <numeric>
 #include <queue>
@@ -813,6 +826,342 @@ ADS_TEST( "concurrent-union-find" )
    flat = flat && ( uf.parent( x ) == root( x ) );
   CHECK( flat );
   }
+ }
+
+// the directories of rank and select built on each executor against the
+// sequential ones, with chunks of 2 blocks (ADS_RANKSELECT_CHUNK): every
+// rank and every select of both bits, from a vector and from words, on
+// vectors empty, of one bit, of all 0s and all 1s, around the sizes of a
+// word, of a block and of a line, dense and sparse, and with groups of
+// select that span more than 2^16 bits
+ADS_TEST( "parallel-rank-select" )
+{
+ std::mt19937_64 g( 23 );
+ std::vector< std::vector< bool > > V;
+ for( std::size_t n : { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 511 , 512 ,
+                        4095 , 4096 , 4097 , 20000 , 100003 } )
+  for( double p : { 0.0 , 1.0 , 0.5 , 0.02 , 0.98 } ) {
+   std::vector< bool > R( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    R[ i ] = std::uniform_real_distribution<>( 0 , 1 )( g ) < p;
+   V.push_back( R );
+   }
+ {
+  std::vector< bool > R( 400000 , false );   // sparse groups of both bits
+  for( std::size_t i = 0 ; i < R.size() ; i += 70001 ) R[ i ] = true;
+  V.push_back( R );
+  R.flip();
+  V.push_back( R );
+  }
+ auto bitsOf = []( const std::vector< bool > & R ) {
+  BitVector b( R.size() );
+  for( std::size_t i = 0 ; i < R.size() ; ++i )
+   if( R[ i ] ) b.set( i );
+  return( b );
+  };
+ auto same = []( const auto & a , const auto & b ) {
+  bool ok = ( a.size() == b.size() ) && ( a.ones() == b.ones() ) &&
+            ( a.directoryBits() == b.directoryBits() );
+  for( std::size_t i = 0 ; ok && ( i <= a.size() ) ; ++i )
+   ok = a.rank1( i ) == b.rank1( i );
+  for( std::size_t k = 1 ; ok && ( k <= a.ones() ) ; ++k )
+   ok = a.select1( k ) == b.select1( k );
+  for( std::size_t k = 1 ; ok && ( k <= a.zeros() ) ; ++k )
+   ok = a.select0( k ) == b.select0( k );
+  return( ok );
+  };
+ onEach( [ & ]( auto & ex ) {
+  for( const auto & R : V ) {
+   const BitVector b = bitsOf( R );
+   const std::span< const Word > w( b.words().data() ,
+                                    ( R.size() + 63 ) / 64 );
+   const RankSelect ref( b );
+   CHECK( same( RankSelect( ex , b ) , ref ) );
+   CHECK( same( RankSelect( ex , w , R.size() ) , ref ) );
+   CHECK( same( LazyRankSelect( ex , b ) , ref ) );
+   const RankSelect one( ex , b , RankSelect::Selects::ONES );
+   CHECK( one.directoryBits() ==
+          RankSelect( b , RankSelect::Selects::ONES ).directoryBits() );
+   const CompactRankSelect cref( b );
+   CHECK( same( CompactRankSelect( ex , b ) , cref ) );
+   CHECK( same( CompactRankSelect( ex , w , R.size() ) , cref ) );
+   }
+  } );
+ }
+
+// the wavelet matrices built on each executor, by passes of up to 8
+// levels on slices of 64 items (ADS_WAVELET_SLICE): the width, the size
+// and the bits of the sequential ones, every item, and the ranks, selects,
+// quantiles and counts of the values of the sequence and of values out of
+// it against a scan of the sequence, on sequences empty, of one item, of
+// one value, of widths around the passes (1, 7, 8, 9, 16, 17, 31, 32, 33
+// and 64 bits) and of a skewed law
+ADS_TEST( "parallel-wavelet-matrix" )
+{
+ std::mt19937_64 g( 29 );
+ std::vector< std::pair< std::vector< std::uint64_t > , int > > X;
+ X.push_back( { {} , 0 } );
+ X.push_back( { { 5 } , 0 } );
+ X.push_back( { std::vector< std::uint64_t >( 1000 , 77 ) , 0 } );
+ X.push_back( { std::vector< std::uint64_t >( 300 , 0 ) , 3 } );
+ for( int w : { 1 , 7 , 8 , 9 , 16 , 17 , 31 , 32 , 33 , 64 } )
+  for( std::size_t n : { 100 , 5000 } ) {
+   std::vector< std::uint64_t > x( n );
+   for( auto & v : x ) v = w == 64 ? g() : g() & ( ( 1ULL << w ) - 1 );
+   X.push_back( { x , w } );
+   X.push_back( { x , 0 } );
+   }
+ {
+  std::vector< std::uint64_t > x( 20000 );   // a geometric law
+  for( auto & v : x )
+   v = std::uint64_t( std::countr_zero( g() | 1ULL << 40 ) );
+  X.push_back( { x , 0 } );
+  }
+ onEach( [ & ]( auto & ex ) {
+  for( const auto & [ x , w ] : X ) {
+   const WaveletMatrix ref( x , w ) , par( ex , x , w );
+   CHECK( ( par.width() == ref.width() ) && ( par.size() == ref.size() ) &&
+          ( par.sizeInBits() == ref.sizeInBits() ) );
+   CHECK( std::equal( x.begin() , x.end() , par.begin() , par.end() ) );
+   std::vector< std::uint64_t > vals( x.begin() , x.end() );
+   std::sort( vals.begin() , vals.end() );
+   vals.erase( std::unique( vals.begin() , vals.end() ) , vals.end() );
+   if( vals.size() > 20 ) vals.resize( 20 );
+   const int W = ref.width();
+   if( W < 64 ) vals.push_back( std::uint64_t( 1 ) << W );   // out of it
+   const std::size_t n = x.size();
+   // the queries against a scan of x
+   for( const auto c : vals ) {
+    std::vector< std::size_t > at;          // the places of c
+    for( std::size_t i = 0 ; i < n ; ++i )
+     if( x[ i ] == c ) at.push_back( i );
+    for( std::size_t i : { std::size_t( 0 ) , n / 3 , n } )
+     CHECK( par.rank( c , i ) == std::size_t(
+             std::lower_bound( at.begin() , at.end() , i ) - at.begin() ) );
+    for( std::size_t k : { std::size_t( 1 ) , at.size() / 2 + 1 ,
+                           at.size() } )
+     if( ( k >= 1 ) && ( k <= at.size() ) )
+      CHECK( par.select( c , k ) == at[ k - 1 ] );
+    CHECK( par.countLess( n / 4 , n , c ) == std::size_t( std::count_if(
+            x.begin() + std::ptrdiff_t( n / 4 ) , x.end() ,
+            [ c ]( std::uint64_t v ) { return( v < c ); } ) ) );
+    }
+   std::vector< std::uint64_t > sorted( x.begin() , x.end() );
+   std::sort( sorted.begin() , sorted.end() );
+   for( std::size_t k = 0 ; k < n ; k += 1 + n / 7 )
+    CHECK( par.quantile( 0 , n , k ) == sorted[ k ] );
+   }
+  } );
+ }
+
+// the wavelet trees of Huffman built on each executor, on slices of at
+// least 64 items (ADS_WAVELET_SLICE), against the sequential ones, on the
+// two directories, with and without select: the same codes and bits, every
+// item, and the ranks and the selects of each symbol, on sequences empty,
+// of one item, of one symbol, of 2 and 3 symbols, of a Zipf law on 5000
+// and of symbols far apart, with absent symbols between them
+template< class RS >
+void checkParallelHuffman( void )
+{
+ std::mt19937_64 g( 31 );
+ std::vector< std::vector< std::uint32_t > > X;
+ X.push_back( {} );
+ X.push_back( { 9 } );
+ X.push_back( std::vector< std::uint32_t >( 500 , 3 ) );
+ for( std::uint32_t sigma : { 2u , 3u , 256u } ) {
+  std::vector< std::uint32_t > x( 7000 );
+  for( auto & c : x ) c = std::uint32_t( g() % sigma );
+  X.push_back( x );
+  }
+ {
+  std::vector< std::uint32_t > x( 30000 );
+  for( auto & c : x )
+   c = std::uint32_t( std::pow( 5000.0 ,
+                      std::uniform_real_distribution<>( 0 , 1 )( g ) ) ) - 1;
+  X.push_back( x );
+  std::vector< std::uint32_t > y( 3000 );
+  for( auto & c : y ) c = std::uint32_t( ( g() % 4 ) * 1000 );
+  X.push_back( y );
+  }
+ onEach( [ & ]( auto & ex ) {
+  for( const auto & x : X )
+   for( bool sel : { true , false } ) {
+    const HuffmanWaveletTree< RS > ref( x , sel ) , par( ex , x , sel );
+    CHECK( ( par.size() == ref.size() ) && ( par.sigma() == ref.sigma() ) &&
+           ( par.sizeInBits() == ref.sizeInBits() ) );
+    bool ok = true;
+    for( std::size_t i = 0 ; ok && ( i < x.size() ) ; ++i )
+     ok = par[ i ] == x[ i ];
+    CHECK( ok );
+    const std::size_t n = x.size();
+    for( std::uint32_t c = 0 ; c <= ref.sigma() ; c += 1 + c / 3 ) {
+     CHECK( par.codeLength( c ) == ref.codeLength( c ) );
+     for( std::size_t i : { std::size_t( 0 ) , n / 2 , n } )
+      CHECK( par.rank( c , i ) == ref.rank( c , i ) );
+     const std::size_t r = ref.rank( c , n );
+     if( sel && ( r > 0 ) )
+      for( std::size_t k : { std::size_t( 1 ) , ( r + 1 ) / 2 , r } )
+       CHECK( par.select( c , k ) == ref.select( c , k ) );
+     }
+    }
+  } );
+ }
+
+ADS_TEST( "parallel-huffman-wavelet-tree" )
+{
+ checkParallelHuffman< RankSelect >();
+ checkParallelHuffman< CompactRankSelect >();
+ }
+
+namespace {
+
+/// the distances from s by the algorithm of Dijkstra on a heap of the
+/// standard library, the reference of the stepping algorithms
+template< class D >
+std::vector< D > dijkstraReference( const StaticGraph< D > & g , int s )
+{
+ std::vector< D > d( std::size_t( g.n() ) , infinity< D >() );
+ using Q = std::pair< D , int >;
+ std::priority_queue< Q , std::vector< Q > , std::greater< Q > > H;
+ d[ std::size_t( s ) ] = D( 0 );
+ H.push( { D( 0 ) , s } );
+ while( ! H.empty() ) {
+  const auto [ du , u ] = H.top();
+  H.pop();
+  if( du > d[ std::size_t( u ) ] ) continue;
+  for( const auto & a : g.out( u ) )
+   if( D( du + a.w ) < d[ std::size_t( a.to ) ] ) {
+    d[ std::size_t( a.to ) ] = D( du + a.w );
+    H.push( { d[ std::size_t( a.to ) ] , a.to } );
+    }
+  }
+ return( d );
+ }
+
+/// the graphs of the stepping tests with costs of type D from cost( g ):
+/// a node alone, a path, a star, a grid, two random graphs with no arc
+/// between them, and a graph of Kronecker with a few nodes of large degree
+template< class D , class C >
+std::vector< std::pair< int , std::vector< std::tuple< int , int , D > > > >
+ steppingGraphs( std::mt19937_64 & g , C && cost )
+{
+ std::vector< std::pair< int , std::vector< std::tuple< int , int , D > > > >
+  I;
+ I.push_back( { 1 , {} } );
+ {
+  std::vector< std::tuple< int , int , D > > E;
+  const int n = test::scaled( 2000 , 300 );
+  for( int i = 0 ; i + 1 < n ; ++i ) E.emplace_back( i , i + 1 , cost( g ) );
+  I.push_back( { n , E } );
+  }
+ {
+  std::vector< std::tuple< int , int , D > > E;
+  const int n = test::scaled( 5000 , 500 );
+  for( int i = 1 ; i < n ; ++i ) E.emplace_back( 0 , i , cost( g ) );
+  I.push_back( { n , E } );
+  }
+ {
+  const int r = test::scaled( 50 , 15 );    // a grid of r x r nodes
+  std::vector< std::tuple< int , int , D > > E;
+  for( int i = 0 ; i < r ; ++i )
+   for( int j = 0 ; j < r ; ++j ) {
+    if( j + 1 < r ) E.emplace_back( i * r + j , i * r + j + 1 , cost( g ) );
+    if( i + 1 < r ) E.emplace_back( i * r + j , i * r + j + r , cost( g ) );
+    }
+  I.push_back( { r * r , E } );
+  }
+ {
+  const int n = test::scaled( 6000 , 600 ) , h = n / 2;
+  std::vector< std::tuple< int , int , D > > E;
+  for( int e = 0 ; e < 6 * n ; ++e ) {
+   const int b = int( g() % 2 ) , lo = b * h;
+   const int u = lo + int( g() % unsigned( h ) ) ,
+             v = lo + int( g() % unsigned( h ) );
+   if( u != v ) E.emplace_back( u , v , cost( g ) );
+   }
+  I.push_back( { n , E } );
+  }
+ {
+  const int scale = test::scaled( 12 , 9 ) , n = 1 << scale;
+  std::vector< std::tuple< int , int , D > > E;
+  for( int e = 0 ; e < 8 * n ; ++e ) {
+   int a = 0 , b = 0;
+   for( int l = 0 ; l < scale ; ++l ) {
+    const double x = std::uniform_real_distribution<>( 0 , 1 )( g );
+    a = 2 * a + int( x >= 0.76 );
+    b = 2 * b + int( ( ( x >= 0.57 ) && ( x < 0.76 ) ) || ( x >= 0.95 ) );
+    }
+   if( a != b ) E.emplace_back( a , b , cost( g ) );
+   }
+  I.push_back( { n , E } );
+  }
+ return( I );
+ }
+
+/// the stepping algorithms on each executor against the reference, on the
+/// graphs above oriented and not, from three sources, with deltas from the
+/// least cost to more than any distance and rhos from 1 to more than the
+/// nodes; on ArrayGraph against `johnson()` of ShortestPaths.h
+template< class D , class C >
+void checkStepping( C && cost , std::vector< D > deltas )
+{
+ std::mt19937_64 g( 37 );
+ const auto I = steppingGraphs< D >( g , cost );
+ // the graphs, oriented and not, with the distances of the reference
+ // from three sources, and those of johnson() on ArrayGraph from one
+ struct Case {
+  StaticGraph< D > G;
+  ArrayGraph< D > H;
+  std::vector< std::vector< D > > ref;
+  std::vector< D > john;
+  };
+ std::vector< Case > K;
+ for( const auto & [ n , E ] : I )
+  for( bool directed : { true , false } ) {
+   Case c{ StaticGraph< D >( n , E , directed ) ,
+           ArrayGraph< D >( n , E , directed ) , {} , {} };
+   for( int s : { 0 , n / 2 , n - 1 } )
+    c.ref.push_back( dijkstraReference( c.G , s ) );
+   if( n <= 2500 )                          // the audits of johnson(): n m
+    c.john = johnson( c.H , n / 2 ).d;
+   K.push_back( std::move( c ) );
+   }
+ onEach( [ & ]( auto & ex ) {
+  for( const auto & c : K ) {
+   const int n = c.G.n();
+   const int S[ 3 ] = { 0 , n / 2 , n - 1 };
+   for( int j = 0 ; j < 3 ; ++j ) {
+    for( const D delta : deltas )
+     CHECK( deltaStepping( ex , c.G , S[ j ] , delta ) == c.ref[ j ] );
+    // a node a step only from one source, the slowest
+    for( std::size_t rho : { std::size_t( 1 ) , std::size_t( 50 ) ,
+                             std::size_t( 1 ) << 20 } )
+     if( ( rho > 1 ) || ( j == 1 ) )
+      CHECK( rhoStepping( ex , c.G , S[ j ] , rho ) == c.ref[ j ] );
+    }
+   if( ! c.john.empty() ) {
+    CHECK( c.john == c.ref[ 1 ] );
+    CHECK( deltaStepping( ex , c.H , n / 2 , deltas[ 1 ] ) == c.john );
+    CHECK( rhoStepping( ex , c.H , n / 2 , 64 ) == c.john );
+    }
+   }
+  } );
+ }
+
+}  // end( namespace )
+
+ADS_TEST( "parallel-stepping" )
+{
+ // integer costs from 0 (ties and zero arcs), long costs up to 10^12,
+ // and real costs
+ checkStepping< int >( []( std::mt19937_64 & g ) { return( int( g() % 101 ) );
+  } , { 1 , 16 , 1 << 30 } );
+ checkStepping< long long >( []( std::mt19937_64 & g ) {
+  return( ( long long )( g() % 1000000000000ULL ) ); } ,
+  { 1 , 1000000000LL , 1LL << 60 } );
+ checkStepping< double >( []( std::mt19937_64 & g ) {
+  return( std::uniform_real_distribution<>( 0 , 1 )( g ) ); } ,
+  { 1e-9 , 0.1 , 1e300 } );
  }
 
 /*--------------------------------------------------------------------------*/
