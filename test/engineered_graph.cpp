@@ -9,9 +9,12 @@
  * the standard library; the shortest paths, the spanning trees and the
  * visit in breadth of the book on every priority queue, queue, stack,
  * deque and union-find, which must give the same results and the same
- * counts. On random graphs with fixed seeds and on the edge cases (no
- * node, one node, no edge, parallel edges, unreachable nodes, ties, a
- * negative cycle), at the level 3 of the contracts.
+ * counts; the implicit graph of a grid map against the explicit graphs of
+ * the same grid, and the builder of the graphs in compressed rows against
+ * their constructors. On random graphs with fixed seeds and on the edge
+ * cases (no node, one node, no edge, parallel edges, unreachable nodes,
+ * ties, a negative cycle, grids of one row, of no free cell and of
+ * 2^31 - 1 cells), at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -26,6 +29,9 @@
 #include "ADSTest.h"
 
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/GraphBuilder.h"
+#include "ADS/graph/Grid.h"
+#include "ADS/graph/GridGraph.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -44,9 +50,11 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <queue>
 #include <random>
 #include <set>
+#include <sstream>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -441,6 +449,370 @@ ADS_TEST( "book-on-structures" )
  const StaticGraph< int > One( 1 , Edges{} , false );
  HeapPriorityQueue< int , P > h1( 1 );
  CHECK( prim( One , 0 , h1 ) == std::vector< int >{ NIL } );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- THE GRIDS --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a grid of rows x cols cells, a quarter of them blocked, the others of
+/// cost in [ 1 , 9 ]
+std::vector< unsigned char > randomCosts( int rows , int cols ,
+                                          std::mt19937 & g )
+{
+ std::vector< unsigned char > cost( std::size_t( rows ) * cols );
+ for( auto & c : cost )
+  c = ( g() % 4 == 0 ) ? 0 : (unsigned char)( 1 + g() % 9 );
+ return( cost );
+ }
+
+/// the sorted neighbours of u in g, by forEachAdj()
+template< class G >
+std::vector< int > around( const G & g , int u )
+{
+ std::vector< int > out;
+ g.forEachAdj( u , [ & ]( int v ) { out.push_back( v ); } );
+ return( out );
+ }
+
+// the grid on the edge cases: no cell, 1 x 1, 1 x N and N x 1, all the
+// cells blocked, the four and the eight moves of a corner, a side and the
+// middle, the three rules on the corners, the weights of the moves on
+// weighted and on uniform costs, the symmetry of the adjacency, and the
+// contracts on a blocked start, a missing diagonal cost and a vector of
+// the wrong size
+ADS_TEST( "grid-graph" )
+{
+ using V = std::vector< int >;
+ for( auto [ r , c ] : { std::pair( 0 , 0 ) , std::pair( 0 , 5 ) ,
+                         std::pair( 5 , 0 ) } ) {
+  const GridGraph<> Z( r , c );
+  CHECK( Z.n() == 0 && Z.bound() == 0 && Z.V().empty() && ! Z.hasNode( 0 ) );
+  }
+ for( GridMoves mv : { GridMoves::FOUR , GridMoves::EIGHT } ) {
+  const GridGraph< double > One( 1 , 1 , mv );
+  CHECK( One.n() == 1 && One.adj( 0 ).empty() );
+  CHECK( distance( One , 0 ).first == V{ 0 } );
+  CHECK( johnson( One , 0 ).d == std::vector< double >{ 0 } );
+  const GridGraph< double > Row( 1 , 6 , mv ) , Col( 6 , 1 , mv );
+  CHECK( Row.adj( 0 ) == V{ 1 } && Row.adj( 5 ) == V{ 4 } &&
+         Row.adj( 3 ) == ( V{ 2 , 4 } ) );
+  CHECK( Col.adj( 0 ) == V{ 1 } && Col.adj( 5 ) == V{ 4 } &&
+         Col.adj( 3 ) == ( V{ 2 , 4 } ) );
+  CHECK( distance( Row , 0 ).first == ( V{ 0 , 1 , 2 , 3 , 4 , 5 } ) );
+  CHECK( ! Row.directed() );
+  }
+ // all blocked: no node, no visit
+ const GridGraph< int , unsigned char > None( 3 , 4 ,
+                              std::vector< unsigned char >( 12 , 0 ) );
+ CHECK( None.n() == 0 && None.bound() == 12 && None.V().empty() );
+ for( int u = 0 ; u < 12 ; ++u )
+  CHECK( ! None.hasNode( u ) );
+ CHECK( gridDistances( None , {} ) == V( 12 , INF ) );
+ CHECK_THROWS( distance( None , 0 ) , contract_violation );
+ // the moves of a corner, of a side and of the middle of a 3 x 3 grid
+ const GridGraph< int > F4( 3 , 3 );
+ const GridGraph< int > F8( 3 , 3 , GridMoves::EIGHT , Corners::NO_CUT , 2 ,
+                            3 );
+ CHECK( F4.adj( 0 ) == ( V{ 1 , 3 } ) && F4.adj( 4 ) == ( V{ 1 , 3 , 5 , 7 } )
+        && F4.adj( 5 ) == ( V{ 2 , 4 , 8 } ) );
+ CHECK( F8.adj( 0 ) == ( V{ 1 , 3 , 4 } ) &&
+        F8.adj( 4 ) == ( V{ 0 , 1 , 2 , 3 , 5 , 6 , 7 , 8 } ) &&
+        F8.adj( 8 ) == ( V{ 4 , 5 , 7 } ) );
+ std::vector< std::pair< int , int > > e;
+ F8.forEachEdge( 4 , [ & ]( int v , int w ) { e.emplace_back( v , w ); } );
+ CHECK( e == ( std::vector< std::pair< int , int > >{ { 0 , 3 } , { 1 , 2 } ,
+               { 2 , 3 } , { 3 , 2 } , { 5 , 2 } , { 6 , 3 } , { 7 , 2 } ,
+               { 8 , 3 } } ) );
+ CHECK( F8.node( 2 , 1 ) == 7 && F8.cell( 7 ) == GridCell( 2 , 1 ) );
+ // the corners of a 2 x 2 grid with the cells 1 and 2 blocked, then with
+ // the cell 1 alone
+ auto two = [ & ]( std::vector< int > cost , Corners k ) {
+  return( GridGraph< int >( 2 , 2 , std::move( cost ) , GridMoves::EIGHT ,
+                            k , 1 , 1 ) );
+  };
+ CHECK( two( { 1 , 0 , 0 , 1 } , Corners::CUT ).adj( 0 ) == V{ 3 } );
+ CHECK( two( { 1 , 0 , 0 , 1 } , Corners::NO_SQUEEZE ).adj( 0 ).empty() );
+ CHECK( two( { 1 , 0 , 0 , 1 } , Corners::NO_CUT ).adj( 0 ).empty() );
+ CHECK( two( { 1 , 0 , 1 , 1 } , Corners::CUT ).adj( 0 ) == ( V{ 2 , 3 } ) );
+ CHECK( two( { 1 , 0 , 1 , 1 } , Corners::NO_SQUEEZE ).adj( 0 ) ==
+        ( V{ 2 , 3 } ) );
+ CHECK( two( { 1 , 0 , 1 , 1 } , Corners::NO_CUT ).adj( 0 ) == V{ 2 } );
+ CHECK( two( { 1 , 0 , 1 , 1 } , Corners::NO_CUT ).adj( 3 ) == V{ 2 } );
+ // the weights: the cost of the cell entered times that of the move
+ const GridGraph< int > Wt( 1 , 3 , std::vector< int >{ 1 , 5 , 2 } ,
+                            GridMoves::FOUR , Corners::NO_CUT , 10 );
+ CHECK( Wt.directed() && Wt.minCost() == 1 );
+ e.clear();
+ Wt.forEachEdge( 1 , [ & ]( int v , int w ) { e.emplace_back( v , w ); } );
+ CHECK( e == ( std::vector< std::pair< int , int > >{ { 0 , 10 } ,
+                                                      { 2 , 20 } } ) );
+ CHECK( johnson( Wt , 0 ).d == ( V{ 0 , 50 , 70 } ) );
+ const GridGraph< int > Un( 2 , 2 , std::vector< int >{ 3 , 3 , 0 , 3 } );
+ CHECK( ! Un.directed() && Un.n() == 3 && Un.minCost() == 3 );
+ e.clear();
+ Un.forEachEdge( 1 , [ & ]( int v , int w ) { e.emplace_back( v , w ); } );
+ CHECK( e == ( std::vector< std::pair< int , int > >{ { 0 , 3 } ,
+                                                      { 3 , 3 } } ) );
+ // the nodes, V() and nodes() alike, and the adjacency symmetric
+ std::mt19937 g( 7 );
+ for( Corners k : { Corners::CUT , Corners::NO_SQUEEZE , Corners::NO_CUT } )
+  for( GridMoves mv : { GridMoves::FOUR , GridMoves::EIGHT } ) {
+   const GridGraph< int , unsigned char > G( 9 , 11 , randomCosts( 9 , 11 ,
+                                             g ) , mv , k , 2 , 3 );
+   V nodes;
+   for( int u : G.nodes() )
+    nodes.push_back( u );
+   CHECK( nodes == G.V() && int( nodes.size() ) == G.n() );
+   for( int u : G.V() ) {
+    const V a = G.adj( u );
+    CHECK( a == around( G , u ) && std::is_sorted( a.begin() , a.end() ) );
+    for( int v : a ) {
+     const V b = G.adj( v );
+     CHECK( std::find( b.begin() , b.end() , u ) != b.end() );
+     }
+    }
+   }
+ // the contracts
+ const GridGraph< int > Blocked( 1 , 2 , std::vector< int >{ 0 , 1 } );
+ CHECK_THROWS( distance( Blocked , 0 ) , contract_violation );
+ CHECK_THROWS( johnson( Blocked , 0 ) , contract_violation );
+ CHECK_THROWS( (void) Blocked.adj( 0 ) , contract_violation );
+ CHECK_THROWS( gridDistances( Blocked , { 0 } ) , contract_violation );
+ CHECK_THROWS( GridGraph< int >( 2 , 2 , GridMoves::EIGHT ) ,
+               contract_violation );
+ CHECK_THROWS( GridGraph< int >( 2 , 2 , std::vector< int >( 3 , 1 ) ) ,
+               contract_violation );
+ CHECK_THROWS( GridGraph< int >( -1 , 2 ) , contract_violation );
+ CHECK_THROWS( GridGraph< double >( 2 , 2 , GridMoves::FOUR ,
+                                    Corners::NO_CUT , 0.0 ) ,
+               contract_violation );
+ CHECK_THROWS( (void) F4.node( 3 , 0 ) , contract_violation );
+ CHECK_THROWS( (void) F4.cell( 9 ) , contract_violation );
+ }
+
+// the visit in breadth and the shortest paths on random grids against the
+// same on the explicit graphs of the grid (ArrayGraph, StaticGraph), on the
+// four and the eight moves and the three rules on the corners; the visit
+// of the parents too on StaticGraph, whose rows are in the same order;
+// gridDistances() against that of Grid.h on the matrix and floodFill() on
+// the free cells; the heuristics admissible and consistent, exact on a free
+// grid
+ADS_TEST( "grid-graph-paths" )
+{
+ std::mt19937 g( 3 );
+ for( int t = 0 ; t < 6 ; ++t ) {
+  const int R = 1 + int( g() % 23 ) , Cc = 1 + int( g() % 29 );
+  const auto cost = randomCosts( R , Cc , g );
+  for( Corners k : { Corners::CUT , Corners::NO_SQUEEZE , Corners::NO_CUT } )
+   for( GridMoves mv : { GridMoves::FOUR , GridMoves::EIGHT } ) {
+    const GridGraph< int , unsigned char > G( R , Cc , cost , mv , k , 5 ,
+                                              7 );
+    const ArrayGraph< int > A( G );
+    const StaticGraph< int > S( G );
+    CHECK( A.n() == G.bound() && S.n() == G.bound() );
+    CHECK( S.directed() == G.directed() );
+    // a few sources, each against the explicit graphs: the audits of
+    // johnson() run a Bellman-Ford of O( n m ) each
+    const std::vector< int > all = G.V();
+    for( std::size_t i = 0 ; i < all.size() ;
+         i += all.size() / 5 + 1 ) {
+     const int s = all[ i ];
+     const auto dg = distance( G , s );
+     const auto ds = distance( S , s );
+     CHECK( dg == ds );
+     CHECK( dg.first == distance( A , s ).first );
+     CHECK( dg.first == gridDistances( G , { s } ) );
+     const auto jg = johnson( G , s );
+     CHECK( jg.d == johnson( A , s ).d && jg.d == johnson( S , s ).d );
+     CHECK( isShortestPathTree( G , s , jg ) );
+     // the heuristic towards s: no more than the distance, consistent
+     for( int u : G.V() ) {
+      const int h = gridHeuristic( G , u , s );
+      CHECK( ( jg.d[ u ] == infinity< int >() ) || ( h <= jg.d[ u ] ) );
+      G.forEachEdge( u , [ & ]( int v , int w ) {
+       CHECK( h <= w + gridHeuristic( G , v , s ) ); } );
+      }
+     }
+    if( G.n() == 0 )
+     continue;
+    // several sources at once, against Grid.h on the matrix
+    const std::vector< int > Src = { G.V().front() , G.V().back() };
+    const auto D = gridDistances( G , Src );
+    if( ( mv == GridMoves::FOUR ) || ( k == Corners::CUT ) ) {
+     auto free = [ & ]( GridCell x ) {
+      return( cost[ std::size_t( x.first ) * Cc + x.second ] > 0 ); };
+     std::vector< GridCell > X;
+     for( int s : Src )
+      X.push_back( G.cell( s ) );
+     const auto M = mv == GridMoves::FOUR ?
+                    ADS::gridDistances( R , Cc , X , free ) :
+                    ADS::gridDistances( R , Cc , X , free , EIGHT_MOVES );
+     for( int u = 0 ; u < G.bound() ; ++u )
+      CHECK( M[ u / Cc ][ u % Cc ] == D[ u ] );
+     }
+    // the paint bucket on the free cells reaches what the visit reaches
+    if( mv == GridMoves::FOUR ) {
+     std::vector< std::vector< int > > P( R , std::vector< int >( Cc ) );
+     for( int u = 0 ; u < G.bound() ; ++u )
+      P[ u / Cc ][ u % Cc ] = G.hasNode( u ) ? 1 : 0;
+     const GridCell x = G.cell( Src[ 0 ] );
+     const auto d = distance( G , Src[ 0 ] ).first;
+     const std::size_t k1 = floodFill( P , x.first , x.second , 2 );
+     CHECK( k1 == std::size_t( std::count_if( d.begin() , d.end() ,
+                               []( int y ) { return( y != INF ); } ) ) );
+     for( int u = 0 ; u < G.bound() ; ++u )
+      CHECK( ( P[ u / Cc ][ u % Cc ] == 2 ) == ( d[ u ] != INF ) );
+     }
+    }
+  }
+ // on a free grid the octile distance is the distance, with the octile
+ // costs in double and no cut corners
+ const GridGraph< double > F( 13 , 17 , GridMoves::EIGHT );
+ const auto d = johnson( F , F.node( 6 , 8 ) ).d;
+ for( int u = 0 ; u < F.bound() ; ++u )
+  CHECK( std::fabs( d[ u ] - gridHeuristic( F , u , F.node( 6 , 8 ) ) )
+         < 1e-9 );
+ CHECK( manhattan( GridCell( 0 , 0 ) , GridCell( 2 , -3 ) ) == 5 );
+ CHECK( chebyshev( GridCell( 0 , 0 ) , GridCell( 2 , -3 ) , 4 ) == 12 );
+ CHECK( octile( GridCell( 0 , 0 ) , GridCell( 2 , -3 ) , 5 , 7 ) == 19 );
+ CHECK_THROWS( octile( GridCell( 0 , 0 ) , GridCell( 1 , 1 ) , 5 , 11 ) ,
+               contract_violation );
+ }
+
+// the grids of 2^31 - 1 cells and nearly so, with no vector of the costs:
+// the names of the last cells and their moves, none of which overflows an
+// int (the sanitizers would tell), the four corners of the largest square,
+// and the contracts on a grid of 2^31 cells
+ADS_TEST( "grid-graph-huge" )
+{
+ using V = std::vector< int >;
+ const int k = 46340;                       // k ( k + 1 ) < 2^31 - 1
+ const GridGraph< long long > Q( k , k + 1 , GridMoves::EIGHT ,
+                                 Corners::NO_CUT , 1 , 1 );
+ const int last = Q.bound() - 1;
+ CHECK( Q.bound() == k * ( k + 1 ) && Q.n() == Q.bound() );
+ CHECK( Q.node( k - 1 , k ) == last );
+ CHECK( Q.cell( last ) == GridCell( k - 1 , k ) );
+ CHECK( Q.adj( last ) == ( V{ last - k - 2 , last - k - 1 , last - 1 } ) );
+ CHECK( Q.adj( 0 ) == ( V{ 1 , k + 1 , k + 2 } ) );
+ CHECK( Q.adj( k ) == ( V{ k - 1 , 2 * k , 2 * k + 1 } ) );
+ CHECK( Q.adj( last - k ) == ( V{ last - 2 * k - 1 , last - 2 * k ,
+                                  last - k + 1 } ) );
+ CHECK( gridHeuristic( Q , 0 , last ) == k );
+ const GridGraph<> Row( 1 , INT_MAX , GridMoves::EIGHT , Corners::CUT , 1 ,
+                        1 );
+ const GridGraph<> Col( INT_MAX , 1 , GridMoves::EIGHT , Corners::CUT , 1 ,
+                        1 );
+ for( const auto * G : { &Row , &Col } ) {
+  CHECK( G->bound() == INT_MAX && G->hasNode( INT_MAX - 1 ) );
+  CHECK( ! G->hasNode( INT_MAX ) && ! G->hasNode( -1 ) );
+  CHECK( G->adj( INT_MAX - 1 ) == V{ INT_MAX - 2 } );
+  CHECK( G->adj( 0 ) == V{ 1 } );
+  }
+ CHECK( manhattan< long long >( GridCell( 0 , 0 ) ,
+                                GridCell( INT_MAX , INT_MAX ) ) ==
+        2LL * INT_MAX );
+ CHECK( manhattan< long long >( GridCell( INT_MIN , 0 ) ,
+                                GridCell( INT_MAX , 0 ) ) ==
+        1LL * INT_MAX - INT_MIN );
+ CHECK_THROWS( GridGraph<>( 65536 , 32768 ) , contract_violation );
+ CHECK_THROWS( GridGraph<>( k + 1 , k + 1 ) , contract_violation );
+ CHECK_THROWS( GridGraph<>( INT_MAX , 2 ) , contract_violation );
+ }
+
+// a map in the format of the benchmarks of Sturtevant: its free and its
+// blocked characters, the octile distances with no cut corners against
+// the explicit graph, and the contracts on a header and on rows that are
+// not those of the format
+ADS_TEST( "grid-map" )
+{
+ std::istringstream in( "type octile\nheight 4\nwidth 5\nmap\n"
+                        "..@..\n.T.G.\n.S..W\n@@O..\n" );
+ const auto M = readGridMap( in );
+ CHECK( M.rows() == 4 && M.cols() == 5 && M.n() == 14 );
+ CHECK( ! M.hasNode( 2 ) && ! M.hasNode( 6 ) && M.hasNode( 8 ) &&
+        M.hasNode( 11 ) && ! M.hasNode( 14 ) && ! M.hasNode( 17 ) );
+ const auto d = johnson( M , 0 ).d;
+ const ArrayGraph< double > A( M );
+ const auto e = johnson( A , 0 ).d;
+ for( int u = 0 ; u < M.bound() ; ++u )
+  CHECK( ( d[ u ] == e[ u ] ) || ( std::fabs( d[ u ] - e[ u ] ) < 1e-9 ) );
+ // the T at 6 forbids the corners around it: 0 5 10 11 12 in four
+ // moves, then 12 8 across a free corner and 8 9
+ CHECK( std::fabs( d[ 12 ] - 4.0 ) < 1e-9 );
+ CHECK( std::fabs( d[ 9 ] - ( 5.0 + std::sqrt( 2.0 ) ) ) < 1e-9 );
+ std::istringstream empty( "type octile\nheight 0\nwidth 0\nmap\n" );
+ CHECK( readGridMap( empty ).n() == 0 );
+ std::istringstream bad( "type octile\nheight 2\nwidth 3\nmap\n...\n..\n" );
+ CHECK_THROWS( readGridMap( bad ) , contract_violation );
+ std::istringstream nohead( "height 2\nwidth 3\nmap\n...\n...\n" );
+ CHECK_THROWS( readGridMap( nohead ) , contract_violation );
+ }
+
+// the builder: no node, isolated nodes added one at a time, parallel edges
+// kept, the order of insertion kept by ArrayGraph and the rows sorted by
+// StaticGraph, an unoriented edge in both rows at its place, the weights,
+// random graphs against the constructors from the edges, and the contracts
+// on a loop and on a node not there
+ADS_TEST( "graph-builder" )
+{
+ using V = std::vector< int >;
+ const GraphBuilder< int > Z;
+ CHECK( Z.n() == 0 && Z.m() == 0 );
+ CHECK( Z.toStaticGraph().n() == 0 && Z.toArrayGraph().n() == 0 );
+ GraphBuilder<> I;
+ for( int i = 0 ; i < 4 ; ++i )
+  CHECK( I.addNode() == i );
+ I.addEdge( 2 , 0 );
+ const auto IS = I.toStaticGraph();
+ CHECK( IS.n() == 4 && IS.m() == 1 && IS.degree( 1 ) == 0 &&
+        IS.degree( 3 ) == 0 && IS.adj( 2 ) == V{ 0 } );
+ GraphBuilder< int > B( 3 );
+ B.reserve( 4 );
+ B.addEdge( 0 , 2 , 5 );
+ B.addEdge( 0 , 1 , 1 );
+ B.addEdge( 0 , 2 , 3 );                         // parallel
+ B.addEdge( 1 , 0 , 4 );
+ CHECK( B.m() == 4 && B.edges()[ 2 ] == std::make_tuple( 0 , 2 , 3 ) );
+ const auto BA = B.toArrayGraph();
+ const auto BS = B.toStaticGraph();
+ CHECK( BA.adj( 0 ) == ( V{ 2 , 1 , 2 } ) &&
+        BS.adj( 0 ) == ( V{ 1 , 2 , 2 } ) );
+ std::vector< std::pair< int , int > > w;
+ BA.forEachEdge( 0 , [ & ]( int v , int x ) { w.emplace_back( v , x ); } );
+ CHECK( w == ( std::vector< std::pair< int , int > >{ { 2 , 5 } , { 1 , 1 } ,
+               { 2 , 3 } } ) );
+ CHECK( johnson( BS , 0 ).d == ( V{ 0 , 1 , 3 } ) );
+ GraphBuilder< int > U( 4 , false );
+ U.addEdge( 3 , 1 , 1 );
+ U.addEdge( 0 , 3 , 1 );
+ U.addEdge( 3 , 2 , 1 );
+ CHECK( U.toArrayGraph().adj( 3 ) == ( V{ 1 , 0 , 2 } ) );
+ CHECK( U.toStaticGraph().adj( 3 ) == ( V{ 0 , 1 , 2 } ) );
+ CHECK( U.toStaticGraph().m() == 3 && U.toArrayGraph().m() == 3 );
+ std::mt19937 g( 5 );
+ for( bool directed : { true , false } ) {
+  const Edges E = randomEdges( 40 , 200 , 1 , 9 , g );
+  GraphBuilder< int > R( 40 , directed );
+  for( const auto & [ u , v , x ] : E )
+   R.addEdge( u , v , x );
+  const StaticGraph< int > S( 40 , E , directed );
+  const ArrayGraph< int > A( 40 , E , directed );
+  const auto RS = R.toStaticGraph();
+  const auto RA = R.toArrayGraph();
+  for( int u = 0 ; u < 40 ; ++u ) {
+   CHECK( RS.adj( u ) == S.adj( u ) && RA.adj( u ) == A.adj( u ) );
+   std::vector< std::pair< int , int > > x , y;
+   RA.forEachEdge( u , [ & ]( int v , int c ) { x.emplace_back( v , c ); } );
+   A.forEachEdge( u , [ & ]( int v , int c ) { y.emplace_back( v , c ); } );
+   CHECK( x == y );
+   }
+  }
+ CHECK_THROWS( B.addEdge( 1 , 1 , 0 ) , contract_violation );
+ CHECK_THROWS( B.addEdge( 0 , 3 , 0 ) , contract_violation );
+ CHECK_THROWS( B.addEdge( -1 , 0 , 0 ) , contract_violation );
+ CHECK_THROWS( GraphBuilder<>( -1 ) , contract_violation );
  }
 
 }  // end( namespace )

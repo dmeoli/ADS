@@ -407,7 +407,9 @@ best-first searches on a grid and on the 15-puzzle, and
 `std::pmr`, Boost.Pool, mimalloc and jemalloc;
 [`bench/graphs.cpp`](bench/graphs.cpp) runs the algorithms of the book on
 graphs, templates on their structures, on those of the standard library,
-of Boost and of ADS, with the same counts of work on the three.
+of Boost and of ADS, with the same counts of work on the three, and the
+visit in breadth and Dijkstra's algorithm on the implicit grid of
+`GridGraph` against its explicit graph and the `grid_graph` of Boost.
 RecSplit, and the concurrent cuckoo table with libcuckoo,
 `boost::concurrent_flat_map` and a `std::unordered_map` under a
 `std::shared_mutex`.
@@ -435,6 +437,8 @@ standard library, Boost and Eigen; their tests are in
 | d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
 | d-ary heap of the ids with decrease-key, the places in a vector, a PRIORITYQUEUE whose handles are the ids | [`priority/IndexedDaryHeap.h`](include/ADS/priority/IndexedDaryHeap.h) | `engineered_graph.indexed-dary-heap` |
 | graph in compressed rows, each arc next to its weight, the rows sorted by head; transpose and relabelling | [`graph/StaticGraph.h`](include/ADS/graph/StaticGraph.h) | `engineered_graph.static-graph` |
+| graph of a grid map, the cells in one vector of costs and the moves to four or eight neighbours computed, the rules on the corners and the octile costs of the benchmarks, the maps in their format; Manhattan, octile and Chebyshev bounds for best-first search (Sturtevant; Harabor and Grastien) | [`graph/GridGraph.h`](include/ADS/graph/GridGraph.h) | `engineered_graph.grid-graph`, `engineered_graph.grid-graph-paths`, `engineered_graph.grid-graph-huge`, `engineered_graph.grid-map` |
+| builder of a graph one edge at a time, frozen into `StaticGraph` or `ArrayGraph` by counting sort | [`graph/GraphBuilder.h`](include/ADS/graph/GraphBuilder.h) | `engineered_graph.graph-builder` |
 | union-find in one vector, by size or rank, the paths halved or compressed (Tarjan and van Leeuwen) | [`mfset/UnionFind.h`](include/ADS/mfset/UnionFind.h) | `engineered_graph.union-find` |
 | graph that sends its changes as events to observers: masks of interest, no event built when no one listens, batches coalesced into their net effect | [`graph/Observable.h`](include/ADS/graph/Observable.h) | `engineered_dynamic.observable-*` |
 | shortest paths, minimum spanning forest and maximum flow kept up to date through the events, each with a certificate of optimality (reduced costs, conditions of cycle and cut, minimum cut) that proves most changes harmless, repaired or computed from scratch otherwise | [`graph/Reoptimization.h`](include/ADS/graph/Reoptimization.h) | `engineered_dynamic.reopt-*` |

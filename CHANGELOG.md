@@ -73,6 +73,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   DynamicPGMIndex of Ferragina and Vinciguerra) and stringdicts (the
   dictionaries of strings against the front coding, the Patricia trie,
   the sorted vector and tsl::htrie_map)
+- GridGraph (graph/GridGraph.h), the implicit graph of a grid map for
+  best-first search: the costs of the cells in one flat vector (a cell
+  blocked if its cost is not positive), or none for a free map of unit
+  costs, the node r * cols + c, the moves to four or eight neighbours
+  computed from the row and the column with no allocation, the rules on
+  the corners (cut, no squeezing, no cut) and the octile costs; it models
+  Graph, so that the visits and the shortest paths run on it unchanged;
+  gridDistances() on it, manhattan(), octile(), chebyshev() and
+  gridHeuristic(), and readGridMap(), the maps in the format of the
+  benchmarks of Sturtevant; the tests grid-graph, grid-graph-paths,
+  grid-graph-huge and grid-map
+- GraphBuilder (graph/GraphBuilder.h), a graph built one node and one
+  weighted edge at a time and frozen into StaticGraph or ArrayGraph in
+  O( n + m ) by their counting sort, ArrayGraph keeping the order of
+  insertion in each row; the test graph-builder
+- the section Graphs on grid maps of the theory of the graphs: the
+  representation of the maps in the programs of search, the rules on the
+  corners and the octile distance as a consistent lower bound
+- bench/graphs.cpp: grid-bfs and grid-dijkstra, the visit in breadth and
+  Dijkstra's algorithm on GridGraph against the StaticGraph of the same
+  grid and the grid_graph of Boost
 - GrafiteFilter (set/GrafiteFilter.h), the range filter of Costa,
   Ferragina and Vinciguerra: a locality-preserving hash of the keys onto
   a universe of n 2^(B-2) codes kept by Elias-Fano, false positives at

@@ -41,7 +41,16 @@
  * - kruskal, kruskal() on an MFSET, on the unoriented graphs;
  * - scc, scc(), the strongly connected components of the book, on the
  *   oriented graphs of n / 10 nodes;
- * - union-find, n random merges and n finds on each MFSET.
+ * - union-find, n random merges and n finds on each MFSET;
+ * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
+ *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
+ *   of them blocked, the others of cost in [ 1 , 9 ] for grid-dijkstra
+ *   (the cost of the cell entered times 5 for a side and 7 for a corner),
+ *   with four and with eight moves (no cut corners): the implicit
+ *   GridGraph against the StaticGraph of the same grid and, for four moves,
+ *   the grid_graph of the Boost Graph Library, whose cells have no cost
+ *   and no obstacle of their own, the blocked cells skipped as a
+ *   filtered_graph would.
  *
  * The road networks are those of the 9th DIMACS Implementation Challenge
  * (USA-road-d.NY.gr for n up to 300000, USA-road-d.FLA.gr above) when the
@@ -80,6 +89,7 @@
 
 #include "Bench.h"
 
+#include "ADS/graph/GridGraph.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -95,6 +105,7 @@
 #if __has_include( <boost/graph/compressed_sparse_row_graph.hpp> )
  #include <boost/property_map/property_map.hpp>
  #include <boost/graph/compressed_sparse_row_graph.hpp>
+ #include <boost/graph/grid_graph.hpp>
  #include <boost/heap/d_ary_heap.hpp>
  #include <boost/heap/fibonacci_heap.hpp>
  #include <boost/heap/pairing_heap.hpp>
@@ -481,6 +492,47 @@ struct BoostGraph {
   for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ;
        ++a )
    f( int( boost::target( *a , g ) ) , g[ *a ] );
+  }
+ };
+
+/// a GRAPH on the grid_graph of Boost, the cells of cost 0 blocked and
+/// skipped, a move into a cell of cost c of weight 5 c
+struct BoostGrid {
+ using Weight = int;
+ boost::grid_graph< 2 > g;
+ const std::vector< unsigned char > & cost;
+ BoostGrid( int s , const std::vector< unsigned char > & c )
+  : g( boost::array< std::size_t , 2 >{ { std::size_t( s ) ,
+                                          std::size_t( s ) } } ) ,
+    cost( c ) {}
+ int n( void ) const { return( int( num_vertices( g ) ) ); }
+ int bound( void ) const { return( n() ); }
+ bool directed( void ) const { return( true ); }
+ bool hasNode( int u ) const {
+  return( ( u >= 0 ) && ( u < n() ) && cost[ u ] );
+  }
+ std::vector< int > V( void ) const {
+  std::vector< int > R;
+  for( int u = 0 ; u < n() ; ++u ) if( cost[ u ] ) R.push_back( u );
+  return( R );
+  }
+ template< class F >
+ void forEachEdge( int u , F && f ) const {
+  // the free functions of grid_graph are friends, found by ADL only
+  const auto x = vertex( std::size_t( u ) , g );
+  for( auto [ a , b ] = out_edges( x , g ) ; a != b ; ++a ) {
+   const int v = int( get( boost::vertex_index , g , target( *a , g ) ) );
+   if( cost[ v ] ) f( v , 5 * int( cost[ v ] ) );
+   }
+  }
+ template< class F >
+ void forEachAdj( int u , F && f ) const {
+  forEachEdge( u , [ & ]( int v , int ) { f( v ); } );
+  }
+ std::vector< int > adj( int u ) const {
+  std::vector< int > R;
+  forEachAdj( u , [ & ]( int v ) { R.push_back( v ); } );
+  return( R );
   }
  };
 
@@ -933,6 +985,58 @@ void unionFind( int n , int r , unsigned seed )
   return( setsRun< ADS::MFSet >( n , U , F , k ) ); } );
  }
 
+/// the costs of a square map of side s, a fifth of the cells blocked
+/// (cost 0), the others of cost 1 if unit, in [ 1 , 9 ] otherwise
+std::vector< unsigned char > gridMap( int s , bool unit , unsigned seed )
+{
+ std::mt19937_64 g( seed + unsigned( s ) );
+ std::vector< unsigned char > c( std::size_t( s ) * std::size_t( s ) );
+ for( auto & x : c )
+  x = ( g() % 5 == 0 ) ? 0 : unit ? 1 : (unsigned char)( 1 + g() % 9 );
+ return( c );
+ }
+
+/// distance() (grid-bfs) or shortestPaths() on IndexedDaryHeap< P , 4 >
+/// (grid-dijkstra) on the implicit grid and on its explicit graph
+void gridSearch( const char * bench , int n0 , bool eight , int r ,
+                 unsigned seed )
+{
+ const bool sp = std::string( bench ) == "grid-dijkstra";
+ const int s = std::max( 2 , int( std::sqrt( double( n0 ) ) ) );
+ const auto cost = gridMap( s , ! sp , seed );
+ using Grid = ADS::GridGraph< int , unsigned char >;
+ const Grid G( s , s , cost , eight ? ADS::GridMoves::EIGHT :
+               ADS::GridMoves::FOUR , ADS::Corners::NO_CUT , 5 , 7 );
+ // the source: the free cell nearest to the centre
+ int src = G.V().front();
+ for( int d = 0 , c = s / 2 ; d < s ; ++d )
+  if( G.hasNode( c * s + c + d ) ) { src = c * s + c + d; break; }
+ std::size_t arcs = 0;
+ for( int u : G.V() )
+  G.forEachAdj( u , [ & ]( int ) { ++arcs; } );
+ const std::string c = eight ? "8 moves" : "4 moves";
+ Cell C( bench , c , std::size_t( s ) * std::size_t( s ) , arcs , r );
+ auto run = [ & ]( const auto & g , Counts & k ) -> long long {
+  if( ! sp )
+   return( bfsRun( g , src , ADS::ArrayQueue< int >( std::max( g.n() , 1 ) )
+                   , k ) );
+  ADS::IndexedDaryHeap< Priority , 4 > q( std::max( g.bound() , 1 ) );
+  return( spRun( g , src , q , k ) );
+  };
+ for( const char * who : { "ADS GridGraph" , "ADS GridGraph A/A" } )
+  C( who , [ & ]( Counts & k ) { return( run( G , k ) ); } );
+ if( measured( { "ADS StaticGraph" } ) ) {
+  const ADS::StaticGraph< int > S( G );
+  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( run( S , k ) ); } );
+  }
+#ifdef ADS_HAS_BOOST
+ if( ! eight && measured( { "Boost grid_graph" } ) ) {
+  const BoostGrid B( s , cost );
+  C( "Boost grid_graph" , [ & ]( Counts & k ) { return( run( B , k ) ); } );
+  }
+#endif
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/
@@ -970,6 +1074,10 @@ int main( int argc , char ** argv )
     scc( c , n / 10 , r , o.seed );
   if( want( "union-find" ) )
    unionFind( n , r , o.seed );
+  for( const char * b : { "grid-bfs" , "grid-dijkstra" } )
+   if( want( b ) )
+    for( bool eight : { false , true } )
+     gridSearch( b , n , eight , r , o.seed );
   }
  return( 0 );
  }

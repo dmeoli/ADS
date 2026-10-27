@@ -39,6 +39,18 @@
  *   form, computed in \f$ O( 1 ) \f$, which differs from that of a finite
  *   board near its corners.
  *
+ * The functions take the grid as its size and a predicate of the free
+ * cells, and the moves as any range of differences, the knight's too;
+ * `GridGraph` [see `GridGraph.h`] is instead a graph of the library, the
+ * map stored as one vector of costs and the moves those of four or eight
+ * directions, on which the visits of `Visit.h` and the shortest paths of
+ * `ShortestPaths.h` run, and `gridDistances()` has an overload on it. There
+ * is none of `floodFill()`: the paint bucket reads and writes the colours
+ * of the matrix itself, and the region that it paints is the set of the
+ * cells reached by a visit of the grid whose free cells are those of the
+ * colour of the start, which `distance()` of `Visit.h` gives on a
+ * `GridGraph` of that map.
+ *
  * The contracts [see `Contract.h`]: the grid has rows, cols >= 0, the
  * matrices are rectangular, each source or start is a cell of the grid (and
  * free, for the visits); at the level of the audits `gridDistances()` ensures

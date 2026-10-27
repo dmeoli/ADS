@@ -110,6 +110,9 @@
  <tr><td><tt>PointerGraph</tt></td><td>\f$ \Theta( n + m ) \f$</td>
      <td>\f$ O( d( u ) ) \f$</td><td>\f$ \Theta( d( u ) + 1 ) \f$</td>
      <td>\f$ O( d( u ) ) \f$</td></tr>
+ <tr><td><tt>GridGraph</tt></td><td>one cost per cell, or none</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$, at most 8 cells</td>
+     <td>none, the moves are computed</td></tr>
  </table>
 
  A matrix is usually preferable on the dense graphs and when `hasEdge()`
@@ -121,7 +124,11 @@
  node by head, so that a visit reads the memory forward (cf. `StaticGraph.h`);
  both are built from a list of edges by counting sort in
  \f$ \Theta( n + m ) \f$, since the keys are the names of the nodes, i.e.,
- integers in \f$ [ 0 , n ) \f$.
+ integers in \f$ [ 0 , n ) \f$. The counting sort by tail of `ArrayGraph`
+ is stable, and hence its rows keep the order in which the edges were
+ given, while `StaticGraph` sorts them by head with a first pass on the
+ heads; `GraphBuilder` of `GraphBuilder.h` collects the edges of a graph
+ built one at a time and freezes it into either form at that cost.
 
  \section theory_graph_visits Visits
 
@@ -295,6 +302,89 @@
  \f$ d[ u ][ v ] \gets \min\{ d[ u ][ v ] , d[ u ][ a ] + w + d[ b ][ v ] \}
  \f$ costs \f$ O( n^2 ) \f$ (`addEdge()`); a deletion has no such update.
 
+ \section theory_graph_grids Graphs on grid maps
+
+ A grid map of \f$ R \times C \f$ cells, each free or blocked, is the graph
+ whose nodes are the free cells and whose edges are the moves from a cell to
+ the free cells at its four sides or, with eight moves, also at its four
+ corners (the tiles and the octiles in the terms of Yap). The programs of
+ best-first search on such maps do not build this graph. The maps of the
+ benchmarks of Sturtevant are text files, a header with the height and the
+ width followed by one character per cell, and the fast searchers keep them
+ as one flat array of the cells in the order of the rows, one byte or one bit
+ per cell and often with a border of blocked cells, name the cell
+ \f$ ( r , c ) \f$ by its index \f$ r C + c \f$, and compute the neighbours by
+ the offsets \f$ \pm 1 \f$, \f$ \pm C \f$ and \f$ \pm C \pm 1 \f$. Jump point
+ search (Harabor and Grastien) is built on this access: it prunes the
+ neighbours of a cell by the direction of the move that reached it and jumps
+ along the rows and the columns, reading only whether a cell is free, and its
+ improved version reads a word of cells of a row at once from a bitmap of the
+ map (with a transposed copy for the columns), or looks the lengths of the
+ jumps up in tables computed in advance. Lists of adjacency would hold up to
+ \f$ 8 n \f$ arcs that the offsets give for free, and would add a read of
+ memory to each neighbour.
+
+ `GridGraph` of `GridGraph.h` keeps the map as a vector of costs, a cell
+ blocked if its cost is not positive (with one byte per cell for the maps of
+ the benchmarks, and no vector at all for a free map of unit costs), and names
+ the cell \f$ ( r , c ) \f$ by \f$ r C + c \f$ with no border, so that the
+ names are those of the map; the row and the column of a node, one division,
+ replace the border in the tests on the bounds. With \f$ \gamma( v ) \f$ the
+ cost of the cell \f$ v \f$, a move into \f$ v \f$ costs
+ \f$ \gamma( v ) \, a \f$ to a side and \f$ \gamma( v ) \, b \f$ to a corner,
+ \f$ a = 1 \f$ and \f$ b = \sqrt{2} \f$ in the benchmarks (the octile costs),
+ and a move to a corner either may cut it, or needs one of its two sides
+ free, or needs both (the rule of the benchmarks since 2012). All three rules
+ are symmetric in the two ends of a move, and hence the graph is unoriented
+ when the free cells cost the same, oriented otherwise.
+
+ <em>Lemma 4 (the octile distance).</em> On a grid with no blocked cell and
+ eight moves of costs \f$ a \f$ and \f$ b \f$ with \f$ a \le b \le 2 a \f$,
+ let \f$ M \f$ and \f$ \mu \f$ be the larger and the smaller of
+ \f$ | r - r' | \f$ and \f$ | c - c' | \f$; the least cost of a path from
+ \f$ ( r , c ) \f$ to \f$ ( r' , c' ) \f$ is
+ \f[
+   h = a ( M - \mu ) + b \, \mu , \tag{6}
+ \f]
+ and on any grid of the same moves, with costs
+ \f$ \gamma( v ) \ge \gamma_{\mathrm{min}} \f$ of the cells and some of them
+ blocked, \f$ \gamma_{\mathrm{min}} h \f$ is a consistent lower bound on the
+ cost to \f$ ( r' , c' ) \f$.
+
+ Indeed, a path of \f$ x \f$ moves to a side and \f$ y \f$ to a corner has
+ \f$ x + y \ge M \f$, since each move brings the larger gap down by at most
+ 1, and \f$ x + 2 y \ge M + \mu \f$, since a move to a corner brings the sum
+ of the two gaps down by at most 2 and one to a side by at most 1; the
+ least of \f$ a x + b y \f$ on these constraints is at one of the vertices
+ \f$ ( M - \mu , \mu ) \f$, \f$ ( M + \mu , 0 ) \f$ and \f$ ( 0 , M ) \f$,
+ and \f$ a \le b \le 2 a \f$ makes the first one the least, which a path of
+ \f$ \mu \f$ diagonal moves and \f$ M - \mu \f$ straight ones attains. Hence
+ (6) is the distance of a graph, which satisfies the triangle inequality,
+ i.e., \f$ h( u ) \le w_1( u , v ) + h( v ) \f$ for each move of cost
+ \f$ w_1( u , v ) \in \{ a , b \} \f$ on the free grid; since a move of the
+ weighted grid costs
+ \f$ w( u , v ) = \gamma( v ) \, w_1( u , v ) \ge \gamma_{\mathrm{min}} \,
+ w_1( u , v ) \f$ and the blocked cells only remove moves, the bound
+ \f$ \gamma_{\mathrm{min}} h \f$ is consistent, and so admissible, on every
+ such grid. With \f$ b = a \f$ (the moves of the king) (6) is the distance of
+ Chebyshev \f$ a M \f$, and with four moves the same argument with
+ \f$ y = 0 \f$ gives that of Manhattan \f$ a ( M + \mu ) \f$
+ (`gridHeuristic()`, which takes \f$ \min\{ b , 2 a \} \f$ as the cost of a
+ corner). The A* of Hart, Nilsson and Raphael with a consistent bound never
+ takes a node out of its queue twice, and with (6) on a map with few
+ obstacles it usually examines far fewer cells than Dijkstra's algorithm,
+ with the same bound in the worst case.
+
+ The visits of the library run on `GridGraph` as on any other `Graph`, since
+ the free cells are its nodes and the names of the cells its range
+ \f$ [ 0 , R C ) \f$; a visit in breadth gives the distances in moves
+ (Lemma 1), which are the costs of the shortest paths when the free cells
+ cost the same and the moves are four, and Dijkstra's algorithm the
+ distances of (4) otherwise. The node \f$ r C + c \f$ is an int, and hence
+ the grid has at most \f$ 2^{31} - 1 \f$ cells; the neighbours of
+ \f$ u \f$ are computed from its row and its column before any offset is
+ added, so that no sum leaves \f$ [ 0 , R C ) \f$.
+
  \section theory_graph_mst Minimum spanning trees
 
  On an unoriented connected graph a spanning tree has \f$ n - 1 \f$ edges,
@@ -305,7 +395,7 @@
  \f$ ( S , V \setminus S ) \f$, then
  \f[
    A \cup \{ e \} \text{ is contained in a minimum spanning tree, }
-   e \text{ a lightest edge across } ( S , V \setminus S ) . \tag{6}
+   e \text{ a lightest edge across } ( S , V \setminus S ) . \tag{7}
  \f]
  Indeed, in a minimum tree that does not contain \f$ e \f$ the path between
  the ends of \f$ e \f$ crosses the cut on some edge \f$ e' \f$ with
@@ -339,7 +429,7 @@
  opposite direction, with \f$ f( v , u ) = - f( u , v ) \f$, so that the
  residual network, made of the edges with \f$ c_f( u , v ) > 0 \f$, is at hand.
 
- <em>Theorem 4 (maximum flow, minimum cut).</em> The following are equivalent:
+ <em>Theorem 5 (maximum flow, minimum cut).</em> The following are equivalent:
  (i) \f$ f \f$ is a maximum flow; (ii) the residual network has no path from
  \f$ s \f$ to \f$ t \f$ (an augmenting path); (iii)
  \f$ | f | = c( S , V \setminus S ) \f$ for some cut with \f$ s \in S \f$ and
@@ -574,6 +664,22 @@
  \see M. L. Fredman, R. E. Tarjan, Fibonacci heaps and their uses in
       improved network optimization algorithms, Journal of the ACM 34(3),
       596-615, 1987, doi:10.1145/28869.28874
+ \see P. E. Hart, N. J. Nilsson, B. Raphael, A formal basis for the
+      heuristic determination of minimum cost paths, IEEE Transactions on
+      Systems Science and Cybernetics 4(2), 100-107, 1968,
+      doi:10.1109/TSSC.1968.300136
+ \see P. Yap, Grid-based path-finding, Advances in Artificial Intelligence,
+      Lecture Notes in Computer Science 2338, 44-55, 2002,
+      doi:10.1007/3-540-47922-8_4
+ \see N. R. Sturtevant, Benchmarks for grid-based pathfinding, IEEE
+      Transactions on Computational Intelligence and AI in Games 4(2),
+      144-148, 2012, doi:10.1109/TCIAIG.2012.2197681
+ \see D. Harabor, A. Grastien, Online graph pruning for pathfinding on grid
+      maps, Proceedings of the AAAI Conference on Artificial Intelligence
+      25(1), 1114-1119, 2011, doi:10.1609/aaai.v25i1.7994
+ \see D. Harabor, A. Grastien, Improving jump point search, Proceedings of
+      the International Conference on Automated Planning and Scheduling
+      24, 128-135, 2014, doi:10.1609/icaps.v24i1.13633
  \see R. W. Floyd, Algorithm 97: Shortest path, Communications of the ACM
       5(6), 345, 1962, doi:10.1145/367766.368168
  \see J. B. Kruskal, On the shortest spanning subtree of a graph and the

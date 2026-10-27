@@ -1725,6 +1725,11 @@ engineered_graph  static-graph        grafo a righe compresse
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
 engineered_graph  union-find          union-find per dimensione o rango
 engineered_graph  book-on-structures  algoritmi del libro su ogni struttura
+engineered_graph  grid-graph          griglia implicita, casi limite e mosse
+engineered_graph  grid-graph-paths    visite e cammini su griglia contro CSR
+engineered_graph  grid-graph-huge     griglie di 2^31 - 1 celle senza overflow
+engineered_graph  grid-map            mappe nel formato dei benchmark
+engineered_graph  graph-builder       grafo costruito per archi e congelato
 
 # the engineered allocators of the size classes, beyond the book
 engineered_memory  pool-resource              classi di 16 byte su ObjectPool
