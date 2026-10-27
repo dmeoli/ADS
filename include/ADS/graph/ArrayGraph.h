@@ -2,23 +2,23 @@
 /*--------------------------- File ArrayGraph.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The static GRAPH with vectors of adjacency of section 9.4 [see Graph.h]:
- * the adjacent nodes of all the nodes in one vector, the ones of u in the
- * places [ off( u ) , off( u + 1 ) ); no insertion nor deletion,
- * Theta( n + m ) space and no pointer.
+ * The static GRAPH with vectors of adjacency of section 9.4 [see `Graph.h`]:
+ * the adjacent nodes of all the nodes in one vector, the ones of \f$ u \f$ in
+ * the places \f$ [ \mathrm{off}( u ) , \mathrm{off}( u + 1 ) ) \f$; no
+ * insertion nor deletion, \f$ \Theta( n + m ) \f$ space and no pointer.
  *
- * The contracts [see Contract.h]: the graph has n >= 0 nodes and its edges
- * join two distinct nodes; adj(), forEachAdj() and forEachEdge() need a
+ * The contracts [see `Contract.h`]: the graph has n >= 0 nodes and its edges
+ * join two distinct nodes; `adj()`, `forEachAdj()` and `forEachEdge()` need a
  * node; the invariant is that the offsets do not decrease and end at the
  * size of the vector, whose entries are nodes. The operations are defined
- * in ArrayGraph.tpp.
+ * in `ArrayGraph.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -62,9 +62,28 @@ class ArrayGraph {
 
  using Weight = W;   ///< the type of the weights
 
- /// the graph of the nodes 0 , ... , n - 1 and of the given edges; an
- /// unoriented edge [ u , v ] is given once
- /// \pre n >= 0, and each edge joins two distinct nodes
+ /// the graph of the nodes \f$ 0 , \ldots , n - 1 \f$ and of the given edges;
+ /// an unoriented edge \f$ [ u , v ] \f$ is given once
+ ///
+ /// In pseudocode (section 9.4), the offsets by counting:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{build}( n , E ) \cr
+ /// 2 & \quad \textbf{foreach}\ ( u , v ) \in E\ \textbf{do}\ \mathit{off}[ u
+ ///     + 1 ] \gets \mathit{off}[ u + 1 ] + 1\quad \triangleright\ \text{and }
+ ///     \mathit{off}[ v + 1 ] \text{ if unoriented} \cr
+ /// 3 & \quad \textbf{for}\ u \gets 1\ \textbf{to}\ n\ \textbf{do}
+ ///     \ \mathit{off}[ u ] \gets \mathit{off}[ u ] + \mathit{off}[ u - 1 ]
+ ///     \cr
+ /// 4 & \quad \textbf{foreach}\ ( u , v ) \in E\ \textbf{do}\  \text{put } v
+ ///     \text{ in the next free place of } [ \mathit{off}[ u ] , \mathit{off}[
+ ///     u + 1 ] )\quad \triangleright\ \text{and } u \text{ for } v
+ ///     \text{if unoriented} \cr
+ /// 5 & \quad \textbf{return}\ ( \mathit{off} , \text{the vector of the }
+ ///     \text{adjacent nodes} )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ n \ge 0 \f$, and each edge joins two distinct nodes
  ArrayGraph( int n , const std::vector< std::tuple< int , int , W > > & E ,
              bool directed = true );
 
@@ -74,38 +93,44 @@ class ArrayGraph {
  template< Graph G >
  explicit ArrayGraph( const G & g );
 
+ /// whether the graph is oriented
  [[nodiscard]] bool directed( void ) const { return( f_directed ); }
 
+ /// the number of nodes
  [[nodiscard]] int n( void ) const { return( int( f_off.size() ) - 1 ); }
 
+ /// the number of edges, an unoriented one counted once
  [[nodiscard]] int m( void ) const { return( f_m ); }
 
+ /// the names of the nodes, \f$ [ 0 , \mathrm{bound}() ) = [ 0 , n ) \f$
  [[nodiscard]] int bound( void ) const { return( n() ); }
 
+ /// whether \f$ u \f$ is a node
  [[nodiscard]] bool hasNode( int u ) const;
 
+ /// the set of the nodes, in increasing order
  [[nodiscard]] std::vector< int > V( void ) const;
 
- /// \pre u is a node
+ /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::vector< int > adj( int u ) const;
 
- /// \pre u is a node
+ /// \pre \f$ u \f$ is a node
  template< class F >
  void forEachAdj( int u , F && f ) const;
 
- /// \pre u is a node
+ /// \pre \f$ u \f$ is a node
  template< class F >
  void forEachEdge( int u , F && f ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
- /// the nodes, 0 , ... , n - 1, random access
+ /// the nodes, \f$ 0 , \ldots , n - 1 \f$, random access
  [[nodiscard]] auto nodes( void ) const {
   return( std::views::iota( 0 , n() ) );
   }
 
- /// the nodes adjacent to u, contiguous in the array of the edges
- /// \pre u is a node
+ /// the nodes adjacent to \f$ u \f$, contiguous in the array of the edges
+ /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::span< const int > neighbors( int u ) const;
 
 /*--------------------------------------------------------------------------*/

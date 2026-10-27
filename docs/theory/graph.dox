@@ -1,0 +1,443 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File graph.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_graph */
+/** \defgroup theory_graph Theory of graphs
+ \ingroup area_graph
+
+ \details The headers of `include/ADS/graph` realize the GRAPH of chapter 9 of
+ the book and the algorithms of chapters 9, 11, 13, 14 and 15 that work on it,
+ i.e., the visits, the shortest paths, the minimum spanning trees, the maximum
+ flows and a few problems that reduce to them. This page collects what the
+ headers take for granted: the definitions and the notation shared by all of
+ them (see \ref theory_graph_notation), the representations and the costs of
+ their operations (see \ref theory_graph_repr), and, for each family of
+ algorithms, the property on which its correctness rests and the argument
+ behind its bound (from \ref theory_graph_visits to \ref theory_graph_euler).
+ The pseudocode of each algorithm is instead on the page of its header, in the
+ comment of its function, together with the section of the book, or the paper,
+ that it follows.
+
+ \tableofcontents
+
+ \section theory_graph_notation Definitions and notation
+
+ A graph \f$ G = ( V , E ) \f$ has a set \f$ V \f$ of \f$ n \f$ nodes and a set
+ \f$ E \f$ of \f$ m \f$ edges; an edge of an <em>oriented</em> graph is an
+ ordered pair \f$ ( u , v ) \f$, which leaves \f$ u \f$ and enters \f$ v \f$,
+ and an edge of an <em>unoriented</em> graph is an unordered pair
+ \f$ [ u , v ] \f$, which the library stores as the two pairs \f$ ( u , v ) \f$
+ and \f$ ( v , u ) \f$ (section 9.2 of the book). There are no loops
+ \f$ ( u , u ) \f$, and hence \f$ 0 \le m \le n ( n - 1 ) \f$; a graph is said
+ <em>sparse</em> when \f$ m \f$ is of the order of \f$ n \f$ and <em>dense</em>
+ when it is of the order of \f$ n^2 \f$, which is the distinction that decides
+ between the representations (see \ref theory_graph_repr). The nodes are named
+ by the integers in \f$ [ 0 , \mathrm{bound}() ) \f$, a deleted node leaving
+ its name unused, so that the vectors indexed by the nodes have
+ \f$ \mathrm{bound}() \ge n \f$ places.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ \mathrm{adj}( u ) \f$</td>
+     <td>the nodes \f$ v \f$ with \f$ ( u , v ) \in E \f$, the SET of the
+         book; \f$ d( u ) = | \mathrm{adj}( u ) | \f$ is the (out)degree of
+         \f$ u \f$, and \f$ \sum_u d( u ) = m \f$ (\f$ 2 m \f$ for an
+         unoriented graph)</td></tr>
+ <tr><td>\f$ w( u , v ) \f$</td>
+     <td>the weight, or cost, or length, of the edge \f$ ( u , v ) \f$, of
+         the type <tt>W</tt> of the graph</td></tr>
+ <tr><td>\f$ \delta( r , v ) \f$, \f$ d[ v ] \f$</td>
+     <td>the distance from \f$ r \f$ to \f$ v \f$ (the fewest edges, or the
+         least total cost, of a path), and the value that an algorithm
+         keeps for it; \f$ \infty \f$ (<tt>INF</tt>, <tt>infinity()</tt>)
+         when \f$ v \f$ is not reachable</td></tr>
+ <tr><td>\f$ p[ v ] \f$, \f$ T[ v ] \f$</td>
+     <td>the parent of \f$ v \f$ in a tree rooted at the source, as a vector
+         of parents, <tt>NIL</tt> for the root and the nodes not
+         reached</td></tr>
+ <tr><td>\f$ \mathit{dt}[ u ] \f$, \f$ \mathit{ft}[ u ] \f$</td>
+     <td>the discovery and the finish times of \f$ u \f$ in a visit in
+         depth, on one clock that each event advances by 1</td></tr>
+ <tr><td>\f$ c( u , v ) \f$, \f$ f( u , v ) \f$,
+         \f$ c_f( u , v ) \f$</td>
+     <td>the capacity of an edge of a network, the flow on it, and the
+         residual capacity \f$ c( u , v ) - f( u , v ) \f$</td></tr>
+ <tr><td>\f$ ( S , V \setminus S ) \f$</td>
+     <td>a cut, the edges with one end in \f$ S \f$ and the other out of
+         it</td></tr>
+ </table>
+
+ A <em>path</em> from \f$ u \f$ to \f$ v \f$ is a sequence of nodes
+ \f$ u = x_0 , x_1 , \ldots , x_k = v \f$ with
+ \f$ ( x_{i-1} , x_i ) \in E \f$; it is <em>simple</em> if its nodes are
+ distinct, and it is a <em>cycle</em> if \f$ k \ge 1 \f$ and \f$ u = v \f$
+ (\f$ k \ge 3 \f$ for an unoriented graph). A graph with no cycle is
+ <em>acyclic</em> (a DAG if oriented, a forest if not, a free tree if it is
+ also connected). The nodes reachable from one another, the orientation
+ ignored, form the <em>connected components</em>, and those reachable from
+ one another along the orientation the <em>strongly connected
+ components</em>.
+
+ \section theory_graph_repr Representations and their costs
+
+ The library has five realizations of the GRAPH, which differ in the space and
+ in the time of the operations. The algorithms of the area are written on the
+ concept `Graph` of `Graph.h`, i.e., on `V()`, `adj( u )` and
+ `forEachAdj( u , f )`, and their bounds hold on lists or vectors of adjacency,
+ where the scan of \f$ \mathrm{adj}( u ) \f$ costs
+ \f$ \Theta( d( u ) + 1 ) \f$.
+
+ <table>
+ <caption>The realizations of the GRAPH and the cost of their operations
+          (sections 9.3 and 9.4 of the book)</caption>
+ <tr><th>Realization</th><th>Space</th><th><tt>hasEdge( u , v )</tt></th>
+     <th>scan of <tt>adj( u )</tt></th><th>insert or delete an edge</th></tr>
+ <tr><td><tt>MatrixGraph</tt></td><td>\f$ \Theta( n^2 ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ \Theta( n ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>ListGraph</tt></td><td>\f$ \Theta( n + m ) \f$</td>
+     <td>\f$ O( d( u ) ) \f$</td><td>\f$ \Theta( d( u ) + 1 ) \f$</td>
+     <td>\f$ O( d( u ) ) \f$</td></tr>
+ <tr><td><tt>ArrayGraph</tt>, <tt>StaticGraph</tt></td>
+     <td>\f$ \Theta( n + m ) \f$</td>
+     <td>\f$ O( d( u ) ) \f$ (\f$ O( \log d( u ) ) \f$ on <tt>StaticGraph</tt>,
+         whose rows are sorted)</td>
+     <td>\f$ \Theta( d( u ) + 1 ) \f$, one contiguous run</td>
+     <td>none, the graph is static</td></tr>
+ <tr><td><tt>PointerGraph</tt></td><td>\f$ \Theta( n + m ) \f$</td>
+     <td>\f$ O( d( u ) ) \f$</td><td>\f$ \Theta( d( u ) + 1 ) \f$</td>
+     <td>\f$ O( d( u ) ) \f$</td></tr>
+ </table>
+
+ A matrix is usually preferable on the dense graphs and when `hasEdge()`
+ dominates (e.g., `universalSink()` of `Properties.h` reads at most
+ \f$ 3 ( n - 1 ) \f$ entries of it); on a sparse graph a visit costs
+ \f$ \Theta( n^2 ) \f$ on the matrix against \f$ \Theta( n + m ) \f$ on the
+ lists, since each row is read whole. Among the static realizations,
+ `StaticGraph` stores each arc next to its weight and sorts the arcs of each
+ node by head, so that a visit reads the memory forward (cf. `StaticGraph.h`);
+ both are built from a list of edges by counting sort in
+ \f$ \Theta( n + m ) \f$, since the keys are the names of the nodes, i.e.,
+ integers in \f$ [ 0 , n ) \f$.
+
+ \section theory_graph_visits Visits
+
+ The generic visit of section 9.5 (`genericVisit()` of `Visit.h`) keeps the
+ reached nodes \f$ R \f$, the open ones \f$ Q \subseteq R \f$ and a tree
+ \f$ B \f$: at each step it takes a node \f$ j \f$ of \f$ Q \f$ and either
+ reaches a node \f$ k \in \mathrm{adj}( j ) \setminus R \f$, adding
+ \f$ ( j , k ) \f$ to \f$ B \f$, or closes \f$ j \f$. A node enters
+ \f$ R \f$ once, and a cursor in \f$ \mathrm{adj}( j ) \f$ never goes
+ back; hence each node is taken \f$ O( 1 + d( j ) ) \f$ times, each edge is
+ examined once from its tail, and a visit costs \f$ \Theta( n + m ) \f$
+ time on lists. At the end \f$ R \f$ holds the nodes reachable from the
+ root, and \f$ B \f$ is a tree that spans them, with one edge less than
+ \f$ R \f$ (an invariant of the loop, checked at the level of the audits).
+ Taking the oldest node of \f$ Q \f$ gives the visit in breadth, and taking
+ the newest the visit in depth.
+
+ <em>Lemma 1 (the visit in breadth).</em> With \f$ Q \f$ a queue,
+ \f$ d[ v ] = d[ u ] + 1 \f$ set when \f$ v \f$ is reached from \f$ u \f$, and
+ \f$ d[ r ] = 0 \f$, one has at the end
+ \f[
+   d[ v ] = \delta( r , v ) \quad \forall v \in V . \tag{1}
+ \f]
+
+ Indeed, the values of \f$ d \f$ in the queue never decrease from its head to
+ its tail and differ by at most 1. A node at distance \f$ k \f$ is therefore
+ dequeued before any node at distance \f$ k + 1 \f$ is reached, and by
+ induction on \f$ k \f$ a node \f$ v \f$ with \f$ \delta( r , v ) = k + 1 \f$
+ is first reached from a node \f$ u \f$ at distance \f$ k \f$, which gives (1).
+ Hence `distance()` of `Visit.h` gives the shortest paths in edges in
+ \f$ \Theta( n + m ) \f$, and its tree of the parents is a tree of shortest
+ paths. The same argument holds with several sources at distance 0
+ (`multiSourceDistance()` of `Paths.h` and `gridDistances()` of `Grid.h`).
+ Also, `countShortestPaths()` of `Paths.h` adds to the count of \f$ v \f$ that
+ of each \f$ u \f$ with \f$ d[ v ] = d[ u ] + 1 \f$, and by the same order of
+ the levels the count is complete when \f$ v \f$ is dequeued.
+
+ <em>Lemma 2 (the visit in depth).</em> In a visit in depth the intervals
+ \f$ [ \mathit{dt}[ u ] , \mathit{ft}[ u ] ] \f$ of two nodes are either
+ disjoint or nested, and \f$ v \f$ descends from \f$ u \f$ in the forest of
+ the visit if and only if its interval lies in that of \f$ u \f$.
+ Classifying an edge \f$ ( u , v ) \f$ when it is examined, as `DfsSchema` of
+ `Visit.h` does, gives
+ \f[
+   \begin{array}{ll}
+   \text{tree} & \mathit{dt}[ v ] = 0 , \cr
+   \text{back} & \mathit{dt}[ u ] > \mathit{dt}[ v ] \text{ and }
+                 \mathit{ft}[ v ] = 0 , \cr
+   \text{forward} & \mathit{dt}[ u ] < \mathit{dt}[ v ] \text{ and }
+                    \mathit{ft}[ v ] \ne 0 , \cr
+   \text{cross} & \text{otherwise,}
+   \end{array} \tag{2}
+ \f]
+ and an oriented graph has a cycle if and only if a visit finds a back edge.
+
+ In fact, the nesting holds since the visit of \f$ v \f$ either starts and ends
+ while \f$ u \f$ is on the stack, or does not start before \f$ u \f$ is
+ finished. A back edge \f$ ( u , v ) \f$ closes a cycle with the path of the
+ tree from \f$ v \f$ to \f$ u \f$. Conversely, if \f$ v \f$ is the first node
+ of a cycle to be discovered, the other nodes of the cycle are reached before
+ \f$ v \f$ is finished (the path of white nodes of Tarjan); the edge of the
+ cycle that enters \f$ v \f$ is then examined while \f$ v \f$ is on the stack,
+ i.e., it is a back edge. Note that on an unoriented graph each edge, met again
+ from its other end, is a back edge in the sense of (2), and `hasCycle()`
+ returns true as soon as the graph has an edge.
+
+ Next, the finish times give a topological order. If the graph is acyclic,
+ each edge \f$ ( u , v ) \f$ has
+ \f[
+   \mathit{ft}[ v ] < \mathit{ft}[ u ] , \tag{3}
+ \f]
+ since by (2) it is a tree, forward or cross edge, and \f$ v \f$ is finished
+ before \f$ u \f$ in all three cases; hence the nodes by decreasing finish
+ time are in a topological order (`topsort()`). The algorithm of Kahn
+ (`topsortKahn()`) reaches the same goal by removing, at each step, a node with
+ no entering edge, which an acyclic graph always has. With the counts of the
+ entering edges kept in a vector it costs \f$ \Theta( n + m ) \f$, and it
+ stops with fewer than \f$ n \f$ nodes if and only if a cycle remains. The
+ topological order is unique if and only if the set of the sources never
+ holds two nodes (`uniqueTopologicalOrder()` of `Properties.h`), i.e., if and
+ only if consecutive nodes of the order are joined by an edge.
+
+ <em>Lemma 3 (Kosaraju).</em> Let \f$ C \f$ and \f$ C' \f$ be two strongly
+ connected components, and \f$ \mathit{ft}( C ) \f$ the largest finish time of
+ a node of \f$ C \f$ in a visit in depth of \f$ G \f$. If an edge goes from
+ \f$ C \f$ to \f$ C' \f$, then \f$ \mathit{ft}( C ) > \mathit{ft}( C' ) \f$
+ (Theorem 9.1 of the book).
+
+ Therefore, a visit of the transposed graph \f$ G^T \f$ started from the
+ node of largest finish time stays in its component, since an edge that
+ leaves it in \f$ G^T \f$ can only enter a component already visited; the
+ next visit, from the largest finish time left, does the same. Thus, `scc()`
+ of `Visit.h` costs two visits, each \f$ \Theta( n + m ) \f$. The graph of
+ the components is acyclic, and `unilaterallyConnected()` tests whether its
+ topological order is unique.
+
+ \section theory_graph_sp Shortest paths
+
+ With a cost \f$ w( u , v ) \f$ on each edge and a source \f$ r \f$, a tree
+ \f$ T \f$ rooted in \f$ r \f$, with \f$ d[ v ] \f$ the cost of its path from
+ \f$ r \f$ to \f$ v \f$, is a tree of shortest paths if and only if (theorem
+ of Bellman, Theorem 11.1 of the book)
+ \f[
+   d[ v ] = d[ u ] + w( u , v ) \quad \forall ( u , v ) \in T , \qquad
+   d[ u ] + w( u , v ) \ge d[ v ] \quad \forall ( u , v ) \in E , \tag{4}
+ \f]
+ provided that no cycle of negative cost is reachable from \f$ r \f$ (with
+ one, no shortest path exists). The prototype of section 11.2
+ (`shortestPaths()` of `ShortestPaths.h`) starts from \f$ d[ r ] = 0 \f$ and
+ \f$ d[ v ] = \infty \f$ elsewhere and, while an edge violates (4), sets
+ \f$ d[ v ] = d[ u ] + w( u , v ) \f$ and makes \f$ u \f$ the parent of
+ \f$ v \f$; a structure \f$ S \f$ holds the nodes whose edges have to be
+ checked again. Each \f$ d[ v ] \f$ is at all times the cost of some path
+ from \f$ r \f$, and it only decreases; hence, when \f$ S \f$ is empty, (4)
+ holds and \f$ d \f$ is optimal. The kind of \f$ S \f$ decides how many
+ times a node is extracted, and therefore the cost.
+
+ <table>
+ <caption>The structure \f$ S \f$ of the prototype and its cost</caption>
+ <tr><th>\f$ S \f$</th><th>Algorithm</th><th>Time</th>
+     <th>Negative costs</th></tr>
+ <tr><td>priority queue on an unsorted list</td><td>Dijkstra</td>
+     <td>\f$ O( n^2 ) \f$</td><td>correct, a node possibly extracted more
+     than once</td></tr>
+ <tr><td>binary heap</td><td>Johnson</td><td>\f$ O( m \log n ) \f$</td>
+     <td>as above</td></tr>
+ <tr><td>Fibonacci heap</td><td>Fredman and Tarjan</td>
+     <td>\f$ O( m + n \log n ) \f$</td><td>as above</td></tr>
+ <tr><td>queue</td><td>Bellman, Ford and Moore</td>
+     <td>\f$ O( n m ) \f$</td><td>a negative cycle detected</td></tr>
+ <tr><td>stack, deque</td><td>Pape and D'Esopo (deque)</td>
+     <td>exponential in the worst case</td><td>no negative cycle
+     allowed</td></tr>
+ </table>
+
+ With nonnegative costs and \f$ S \f$ a priority queue on \f$ d \f$, the
+ node \f$ u \f$ extracted has \f$ d[ u ] = \delta( r , u ) \f$: any other
+ path to \f$ u \f$ leaves the extracted nodes through a node of \f$ S \f$
+ of priority at least \f$ d[ u ] \f$, and goes on with costs that are not
+ negative. Hence each node is extracted once and each edge is examined once,
+ and the time is that of \f$ n \f$ extractions and of at most \f$ m \f$
+ decreases of a priority, i.e., \f$ n \cdot O( n ) + m \cdot O( 1 ) \f$
+ on the unsorted list, \f$ ( n + m ) \cdot O( \log n ) \f$ on the binary
+ heap and \f$ n \cdot O( \log n ) + m \cdot O( 1 ) \f$ amortized on the
+ Fibonacci heap. With a queue, the nodes extracted in the \f$ k \f$-th
+ round (those that entered \f$ S \f$ in the round before) have their final
+ distance if one of their shortest paths has at most \f$ k \f$ edges. A
+ shortest path has at most \f$ n - 1 \f$ edges; hence each node leaves the
+ queue at most \f$ n \f$ times, the time is \f$ O( n m ) \f$, and a node
+ extracted more than \f$ n \f$ times proves that a negative cycle is
+ reachable (exercise 11.2). On an acyclic graph one can do better, whatever
+ the signs of the costs: the scan of the nodes in topological order relaxes
+ the edges of each node once, after all the edges that enter it, and (4)
+ holds in \f$ O( n + m ) \f$ (`dagShortestPaths()`; the longest paths of
+ `dagLongestPaths()` of `Paths.h` follow the same recurrence with the maximum).
+
+ Between all the pairs of nodes, with \f$ d^k[ u ][ v ] \f$ the least cost
+ of a path from \f$ u \f$ to \f$ v \f$ whose inner nodes are among the first
+ \f$ k \f$, one has (section 13.5)
+ \f[
+   d^k[ u ][ v ] = \min\{ d^{k-1}[ u ][ v ] ,
+                          d^{k-1}[ u ][ k ] + d^{k-1}[ k ][ v ] \} ,
+   \tag{5}
+ \f]
+ since such a path either avoids the node \f$ k \f$ or passes through it
+ once (no cycle being negative); `floydWarshall()` of `AllPairsShortestPaths.h`
+ fills (5) in place, in \f$ \Theta( n^3 ) \f$ time and
+ \f$ \Theta( n^2 ) \f$ space, and a negative cycle shows as
+ \f$ d[ u ][ u ] < 0 \f$. After the insertion of an edge \f$ ( a , b ) \f$
+ a path that improves uses it once, and the update
+ \f$ d[ u ][ v ] \gets \min\{ d[ u ][ v ] , d[ u ][ a ] + w + d[ b ][ v ] \}
+ \f$ costs \f$ O( n^2 ) \f$ (`addEdge()`); a deletion has no such update.
+
+ \section theory_graph_mst Minimum spanning trees
+
+ On an unoriented connected graph a spanning tree has \f$ n - 1 \f$ edges,
+ and a minimum one has the least total weight. Both algorithms of
+ `MinimumSpanningTree.h` rest on the property of the cuts (Theorem 14.1 of the
+ book), which reads as follows: if \f$ A \f$ is contained in a minimum
+ spanning tree and no edge of \f$ A \f$ crosses the cut
+ \f$ ( S , V \setminus S ) \f$, then
+ \f[
+   A \cup \{ e \} \text{ is contained in a minimum spanning tree, }
+   e \text{ a lightest edge across } ( S , V \setminus S ) . \tag{6}
+ \f]
+ Indeed, in a minimum tree that does not contain \f$ e \f$ the path between
+ the ends of \f$ e \f$ crosses the cut on some edge \f$ e' \f$ with
+ \f$ w( e ) \le w( e' ) \f$, and swapping \f$ e' \f$ for \f$ e \f$ gives
+ another spanning tree that is no heavier.
+
+ `kruskal()` takes the edges by increasing weight and keeps one if its ends are
+ in two components of the forest built so far, i.e., if it is a lightest
+ edge across the cut around one of them. The sort costs
+ \f$ O( m \log n ) \f$ (or \f$ O( m + n + k ) \f$ by counting, with integer
+ weights in \f$ [ 0 , k ) \f$), and with an MFSET with the rank and the
+ compression of the paths the rest costs \f$ O( m \, \alpha( m , n ) ) \f$,
+ \f$ \alpha \f$ the inverse of the function of Ackermann, which is at most
+ 4 in practice. `prim()` grows one tree from \f$ r \f$, the cut being the tree
+ itself, and keeps the nodes out of it in a priority queue by the weight of
+ their lightest edge to it; this gives the same three bounds as the shortest
+ paths (\f$ O( n^2 ) \f$, \f$ O( m \log n ) \f$ and
+ \f$ O( m + n \log n ) \f$), the list being usually preferable on the dense
+ graphs. Dually, a spanning forest is minimum if and only if no edge out of
+ it weighs less than the heaviest edge of the path of the forest between its
+ ends (the property of the cycles), and `isMinimumSpanningForest()` checks it
+ in \f$ O( m n ) \f$.
+
+ \section theory_graph_flow Flows, cuts and matchings
+
+ A network has a source \f$ s \f$, a sink \f$ t \f$ and a capacity
+ \f$ c( u , v ) \ge 0 \f$ on each edge; a flow satisfies
+ \f$ 0 \le f( u , v ) \le c( u , v ) \f$ and is conserved at every node but
+ \f$ s \f$ and \f$ t \f$, and its value \f$ | f | \f$ is the net flow out of
+ \f$ s \f$. `FlowNetwork` of `MaxFlow.h` keeps for each edge a twin in the
+ opposite direction, with \f$ f( v , u ) = - f( u , v ) \f$, so that the
+ residual network, made of the edges with \f$ c_f( u , v ) > 0 \f$, is at hand.
+
+ <em>Theorem 4 (maximum flow, minimum cut).</em> The following are equivalent:
+ (i) \f$ f \f$ is a maximum flow; (ii) the residual network has no path from
+ \f$ s \f$ to \f$ t \f$ (an augmenting path); (iii)
+ \f$ | f | = c( S , V \setminus S ) \f$ for some cut with \f$ s \in S \f$ and
+ \f$ t \notin S \f$ (Theorem 15.1 of the book).
+
+ A flow is bounded by the capacity of any cut, and hence (iii) gives (i);
+ (i) gives (ii), since an augmenting path would increase the flow by its
+ least residual capacity. For (ii) to (iii), the nodes \f$ S \f$ reachable
+ from \f$ s \f$ in the residual network give a cut whose edges are
+ saturated and whose reverse edges carry no flow (`minCut()`).
+
+ The algorithms augment along augmenting paths until (ii) holds, and differ in
+ the path chosen. With integer capacities each augmentation adds at least 1;
+ hence any path (`FORD_FULKERSON`, by a visit in depth) gives
+ \f$ O( ( n + m ) | f^* | ) \f$, a bound that depends on the values of the
+ capacities and may be poor when they are large with respect to \f$ n \f$ and
+ \f$ m \f$. A shortest path in edges (`EDMONDS_KARP`, by a visit in breadth)
+ never decreases the distances of the residual network. Each edge is then the
+ critical edge of an augmentation at most \f$ n / 2 \f$ times, since between
+ two such times the distance of its tail grows by 2; there are therefore
+ \f$ O( n m ) \f$ augmentations of \f$ O( m ) \f$ each, i.e.,
+ \f$ O( n m^2 ) \f$. `DINIC` sends at once a blocking flow along all the
+ shortest paths of the levels of a visit in breadth, and each such phase
+ increases the distance of \f$ t \f$. At most \f$ n \f$ phases of
+ \f$ O( n m ) \f$ give \f$ O( n^2 m ) \f$, and the bound falls to
+ \f$ O( m \sqrt{n} ) \f$ on the networks of unit capacities (Even and Tarjan),
+ e.g., those of the bipartite matching; in practice the phases are usually far
+ fewer than \f$ n \f$.
+
+ The flow found is integral when the capacities are (the integrality theorem),
+ and this makes three reductions exact. The edge-disjoint paths of
+ `edgeDisjointPaths()` of `FlowApplications.h` are as many as the maximum flow
+ with unit capacities (the theorem of Menger). The b-matching of
+ `bipartiteBMatching()` of `Matching.h` is a maximum flow from a source joined
+ to the left side to a sink joined from the right one. Finally, a circulation
+ with lower bounds (`feasibleCirculation()`) exists if and only if, after the
+ lower bounds are sent, a maximum flow from a new source to a new sink balances
+ the excess left at each node.
+
+ \section theory_graph_euler Eulerian cycles and other properties
+
+ By the theorem of Euler, an oriented graph has a closed path that uses each
+ edge exactly once if and only if every node has as many entering edges as
+ leaving ones and the edges lie in one component, the orientation ignored.
+ Under these conditions a walk along unused edges can only stop at its
+ start, and the algorithm of Hierholzer (`eulerianCycle()` of
+ `EulerianCycle.h`) splices into the walk the closed walks found from its
+ nodes, with a stack, in \f$ O( n + m ) \f$, since each edge is followed
+ once.
+
+ Several other headers decide properties by the visits above, with the bound of
+ a visit unless their comments say otherwise. A free tree has \f$ m = n - 1 \f$
+ edges and one component (`isTree()`). A graph is bipartite if and only if it
+ has no odd cycle (the theorem of Koenig), i.e., if and only if no edge of a
+ visit in breadth joins two nodes of levels of the same parity
+ (`twoColoring()`). In a free tree the node farthest from any node ends a
+ longest path, and the node farthest from it ends the other (the double sweep
+ of `treeDiameter()`). The triangles are counted in \f$ O( m \sqrt{m} ) \f$ by
+ orienting each edge towards the end of larger degree, which leaves each node
+ with \f$ O( \sqrt{m} ) \f$ out-neighbours (`countTriangles()`). Finally, the
+ algorithm of Johnson lists the simple cycles through a node in
+ \f$ O( ( n + m ) ( c + 1 ) ) \f$ for \f$ c \f$ cycles (`simpleCycles()` of
+ `Paths.h`), since it keeps the search from entering a branch with no cycle at
+ its end; the backtracking of chapter 16 may instead spend exponential time
+ between two cycles.
+
+ \section theory_graph_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 9, 11, 13,
+      14 and 15, https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
+ \see R. E. Tarjan, Depth-first search and linear graph algorithms, SIAM
+      Journal on Computing 1(2), 146-160, 1972, doi:10.1137/0201010
+ \see A. B. Kahn, Topological sorting of large networks, Communications of
+      the ACM 5(11), 558-562, 1962, doi:10.1145/368996.369025
+ \see M. Sharir, A strong-connectivity algorithm and its applications in
+      data flow analysis, Computers & Mathematics with Applications 7(1),
+      67-72, 1981, doi:10.1016/0898-1221(81)90008-0
+ \see R. Bellman, On a routing problem, Quarterly of Applied Mathematics
+      16(1), 87-90, 1958, doi:10.1090/qam/102435
+ \see E. W. Dijkstra, A note on two problems in connexion with graphs,
+      Numerische Mathematik 1, 269-271, 1959, doi:10.1007/BF01386390
+ \see M. L. Fredman, R. E. Tarjan, Fibonacci heaps and their uses in
+      improved network optimization algorithms, Journal of the ACM 34(3),
+      596-615, 1987, doi:10.1145/28869.28874
+ \see R. W. Floyd, Algorithm 97: Shortest path, Communications of the ACM
+      5(6), 345, 1962, doi:10.1145/367766.368168
+ \see J. B. Kruskal, On the shortest spanning subtree of a graph and the
+      traveling salesman problem, Proceedings of the American Mathematical
+      Society 7(1), 48-50, 1956, doi:10.1090/S0002-9939-1956-0078686-7
+ \see L. R. Ford, D. R. Fulkerson, Maximal flow through a network, Canadian
+      Journal of Mathematics 8, 399-404, 1956, doi:10.4153/CJM-1956-045-5
+ \see J. Edmonds, R. M. Karp, Theoretical improvements in algorithmic
+      efficiency for network flow problems, Journal of the ACM 19(2),
+      248-264, 1972, doi:10.1145/321694.321699
+ \see S. Even, R. E. Tarjan, Network flow and testing graph connectivity,
+      SIAM Journal on Computing 4(4), 507-518, 1975, doi:10.1137/0204043
+ \see D. B. Johnson, Finding all the elementary circuits of a directed
+      graph, SIAM Journal on Computing 4(1), 77-84, 1975,
+      doi:10.1137/0204007
+*/
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File graph.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/

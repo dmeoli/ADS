@@ -3,47 +3,48 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The visits of a GRID, the implicit graph whose nodes are the cells
- * ( r , c ) of a rows x cols matrix and whose edges are the moves from a
- * cell to the cells at the given differences ( dr , dc ) that are inside
- * the matrix and free: FOUR_MOVES (the four sides of a cell), EIGHT_MOVES
- * (the sides and the corners, the king) and KNIGHT_MOVES (the knight). The
- * graph is never built: the cells are its nodes and a vector of moves its
- * adjacency, so that each visit takes \f$ \Theta( R C ) \f$ time for k
- * moves per cell treated as a constant, against the \f$ \Theta( R C k ) \f$
- * space of the lists of adjacency that it saves.
+ * \f$ ( r , c ) \f$ of a \f$ \mathit{rows} \times \mathit{cols} \f$ matrix and
+ * whose edges are the moves from a cell to the cells at the given differences
+ * \f$ ( \mathit{dr} , \mathit{dc} ) \f$ that are inside the matrix and free:
+ * FOUR_MOVES (the four sides of a cell), EIGHT_MOVES (the sides and the
+ * corners, the king) and KNIGHT_MOVES (the knight). The graph is never built:
+ * the cells are its nodes and a vector of moves its adjacency, so that each
+ * visit takes \f$ \Theta( R C ) \f$ time for k moves per cell treated as a
+ * constant, against the \f$ \Theta( R C k ) \f$ space of the lists of
+ * adjacency that it saves.
  *
- * - gridDistances(), the visit in breadth of section 9.5 from several
+ * - `gridDistances()`, the visit in breadth of section 9.5 from several
  *   sources at once, all of them at distance 0 in the queue: each cell gets
- *   its distance in moves from the nearest source, INF if none reaches it.
+ *   its distance in moves from the nearest source, `INF` if none reaches it.
  *   It is the algorithm of Lee for the routing on a grid, and with the
  *   sources a whole set it gives the distance transform of an image; with
  *   no obstacles the two raster passes of Rosenfeld and Pfaltz compute the
  *   same distances for FOUR_MOVES and EIGHT_MOVES in the same time without
  *   a queue;
- * - gridDistance(), the distance from one cell to another, the visit
+ * - `gridDistance()`, the distance from one cell to another, the visit
  *   stopping when the target leaves the queue; the A* of Hart, Nilsson and
  *   Raphael, with the distance of Manhattan as its admissible heuristic,
  *   examines fewer cells when the target is far from the obstacles, with
  *   the same bound in the worst case;
- * - floodFill(), the paint bucket: the cell ( r , c ) and every cell joined
+ * - `floodFill()`, the paint bucket: the cell ( r , c ) and every cell joined
  *   to it by moves through cells of its colour get the new colour; the
  *   visit paints a cell when it enters the queue, so that the colour itself
  *   marks the cells reached and no other matrix is needed. The fill by
  *   spans of Smith pushes a run of a row at a time instead of a cell, with
  *   fewer operations on the queue for the same bound;
- * - knightDistance(), the fewest moves of a knight between two squares of
- *   an n x n board, INF if there is no way (only on the boards of 1, 2 and
- *   3 squares a side): a visit in breadth of the graph of the knight moves,
+ * - `knightDistance()`, the fewest moves of a knight between two squares of an
+ *   n x n board, `INF` if there is no way (only on the boards of 1, 2 and 3
+ *   squares a side): a visit in breadth of the graph of the knight moves,
  *   \f$ \Theta( n^2 ) \f$; on the infinite board the distance has a closed
- *   form, computed in O( 1 ), which differs from that of a finite board
- *   near its corners.
+ *   form, computed in \f$ O( 1 ) \f$, which differs from that of a finite
+ *   board near its corners.
  *
- * The contracts [see Contract.h]: the grid has rows, cols >= 0, the
+ * The contracts [see `Contract.h`]: the grid has rows, cols >= 0, the
  * matrices are rectangular, each source or start is a cell of the grid (and
- * free, for the visits); at the level of the audits gridDistances() ensures
+ * free, for the visits); at the level of the audits `gridDistances()` ensures
  * that its distances are those of a breadth first visit (0 on the sources,
  * and each reached cell but a source one move farther than a neighbour).
- * The functions are defined in Grid.tpp.
+ * The functions are defined in `Grid.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
@@ -64,7 +65,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -95,7 +96,8 @@
 
 namespace ADS {
 
-/// a cell ( r , c ) of a grid, or a move as the difference of two cells
+/// a cell \f$ ( r , c ) \f$ of a grid, or a move as the difference of two
+/// cells
 using GridCell = std::pair< int , int >;
 
 /// the moves to the four sides of a cell: up, left, down, right
@@ -122,13 +124,39 @@ using FourMoves = std::remove_cv_t< decltype( FOUR_MOVES ) >;
 /*------------------------------- FUNCTIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// whether ( r , c ) is a cell of a rows x cols grid
+/// whether \f$ ( r , c ) \f$ is a cell of a
+/// \f$ \mathit{rows} \times \mathit{cols} \f$ grid
 inline bool insideGrid( int rows , int cols , GridCell x );
 
-/// gridDistances(): the distance in moves of each cell of the rows x cols
-/// grid from the nearest source, INF if none reaches it, entering only the
-/// cells x with free( x ); D[ r ][ c ] for the cell ( r , c )
-/// \pre rows , cols >= 0, the sources are free cells of the grid
+/// the distance in moves of each cell of the
+/// \f$ \mathit{rows} \times \mathit{cols} \f$ grid from the nearest source,
+/// `INF` if none reaches it, entering only the cells \f$ x \f$ with
+/// \f$ \mathrm{free}( x ) \f$; \f$ D[ r ][ c ] \f$ for the cell
+/// \f$ ( r , c ) \f$
+///
+/// In pseudocode (the visit in breadth of section 9.5, from all the sources at
+/// once):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{gridDistances}( R , C , S , \mathit{free} ,
+///     M ) \cr
+/// 2 & \quad \textbf{foreach}\  \text{cell } x\ \textbf{do}\ D[ x ] \gets
+///     \infty \cr
+/// 3 & \quad Q \gets () \cr
+/// 4 & \quad \textbf{foreach}\ s \in S\ \textbf{do}\ D[ s ] \gets 0;
+///     \ \mathrm{enqueue}( Q , s ) \cr
+/// 5 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
+/// 6 & \qquad x \gets \mathrm{dequeue}( Q ) \cr
+/// 7 & \qquad \textbf{foreach}\ \delta \in M\ \textbf{do} \cr
+/// 8 & \qquad\quad y \gets x + \delta \cr
+/// 9 & \qquad\quad \textbf{if}\ y \text{ is in the grid }\ \textbf{and}
+///     \ \mathit{free}( y )\ \textbf{and}\ D[ y ] = \infty\ \textbf{then} \cr
+/// 10 & \qquad\qquad D[ y ] \gets D[ x ] + 1;\ \mathrm{enqueue}( Q , y ) \cr
+/// 11 & \quad \textbf{return}\ D
+/// \end{array}}
+/// \f]
+/// \pre \f$ \mathit{rows} , \mathit{cols} \ge 0 \f$, the sources are free
+///      cells of the grid
 /// \post 0 on the sources, and each other reached cell one move farther
 ///       than a neighbour from which it can be reached (audit)
 template< class Free , class Moves = FourMoves >
@@ -137,27 +165,79 @@ std::vector< std::vector< int > > gridDistances( int rows , int cols ,
                                     Free && free ,
                                     const Moves & moves = FOUR_MOVES );
 
-/// gridDistance(): the distance in moves from the cell s to the cell t of
-/// the rows x cols grid through the cells x with free( x ), INF if t cannot
-/// be reached; the visit stops when t leaves the queue
-/// \pre rows , cols >= 0, s and t are cells of the grid, s is free
+/// the distance in moves from the cell \f$ s \f$ to the cell
+/// \f$ t \f$ of the \f$ \mathit{rows} \times \mathit{cols} \f$ grid through
+/// the cells \f$ x \f$ with \f$ \mathrm{free}( x ) \f$, `INF` if \f$ t \f$
+/// cannot be reached; the visit stops when \f$ t \f$ leaves the queue
+///
+/// In pseudocode, the visit of `gridDistances()` from s alone, stopped when t
+/// leaves the queue:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{gridDistance}( R , C , s , t , \mathit{free}
+///     , M ) \cr
+/// 2 & \quad \textbf{foreach}\  \text{cell } x\ \textbf{do}\ D[ x ] \gets
+///     \infty \cr
+/// 3 & \quad D[ s ] \gets 0;\ Q \gets ( s ) \cr
+/// 4 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
+/// 5 & \qquad x \gets \mathrm{dequeue}( Q ) \cr
+/// 6 & \qquad \textbf{if}\ x = t\ \textbf{then return}\ D[ t ] \cr
+/// 7 & \qquad \textbf{foreach}\ \delta \in M\ \textbf{with}\ x + \delta
+///     \text{ in the grid, free and } D[ x + \delta ] = \infty\ \textbf{do}
+///     \cr
+/// 8 & \qquad\quad D[ x + \delta ] \gets D[ x ] + 1;\ \mathrm{enqueue}( Q , x
+///     + \delta ) \cr
+/// 9 & \quad \textbf{return}\ \infty
+/// \end{array}}
+/// \f]
+/// \pre \f$ \mathit{rows} , \mathit{cols} \ge 0 \f$, \f$ s \f$ and \f$ t \f$
+///      are cells of the grid, \f$ s \f$ is free
 template< class Free , class Moves = FourMoves >
 int gridDistance( int rows , int cols , GridCell s , GridCell t ,
                   Free && free , const Moves & moves = FOUR_MOVES );
 
-/// floodFill(): the cell ( r , c ) of M and all the cells joined to it by
-/// moves through cells of its colour get the colour color; the number of
-/// cells painted, 0 if color is already the colour of ( r , c )
-/// \pre M is rectangular, ( r , c ) is a cell of it
-/// \post M[ r ][ c ] == color
+/// the cell \f$ ( r , c ) \f$ of \f$ M \f$ and all the cells
+/// joined to it by moves through cells of its colour get the colour
+/// \f$ \mathit{color} \f$; the number of cells painted, 0 if
+/// \f$ \mathit{color} \f$ is already the colour of \f$ ( r , c ) \f$
+///
+/// In pseudocode, the colour itself marking the cells reached:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{floodFill}( M , r , c , \mathit{color} ) \cr
+/// 2 & \quad a \gets M[ r ][ c ] \cr
+/// 3 & \quad \textbf{if}\ a = \mathit{color}\ \textbf{then return}\ 0 \cr
+/// 4 & \quad M[ r ][ c ] \gets \mathit{color};\ Q \gets ( ( r , c ) );\ k
+///     \gets 1 \cr
+/// 5 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
+/// 6 & \qquad x \gets \mathrm{dequeue}( Q ) \cr
+/// 7 & \qquad \textbf{foreach}\ \delta \in M\ \textbf{do} \cr
+/// 8 & \qquad\quad \textbf{if}\ x + \delta \text{ is in } M\ \textbf{and}\ M[
+///     x + \delta ] = a\ \textbf{then} \cr
+/// 9 & \qquad\qquad M[ x + \delta ] \gets \mathit{color};\ \mathrm{enqueue}( Q
+///     , x + \delta );\ k \gets k + 1 \cr
+/// 10 & \quad \textbf{return}\ k
+/// \end{array}}
+/// \f]
+/// \pre \f$ M \f$ is rectangular, \f$ ( r , c ) \f$ is a cell of it
+/// \post \f$ M[ r ][ c ] = \mathit{color} \f$
 template< class T , class Moves = FourMoves >
 std::size_t floodFill( std::vector< std::vector< T > > & M , int r , int c ,
                        const std::type_identity_t< T > & color ,
                        const Moves & moves = FOUR_MOVES );
 
-/// knightDistance(): the fewest moves of a knight from s to t on an n x n
-/// board, INF if it cannot get there
-/// \pre n > 0, s and t are squares of the board
+/// the fewest moves of a knight from \f$ s \f$ to
+/// \f$ t \f$ on an \f$ n \times n \f$ board, `INF` if it cannot get there
+///
+/// In pseudocode:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{knightDistance}( n , s , t ) \cr
+/// 2 & \quad \textbf{return}\ \mathrm{gridDistance}( n , n , s , t ,
+///     \text{every cell free} , \text{the moves of the knight} )
+/// \end{array}}
+/// \f]
+/// \pre \f$ n > 0 \f$, \f$ s \f$ and \f$ t \f$ are squares of the board
 inline int knightDistance( int n , GridCell s , GridCell t );
 
 /*--------------------------------------------------------------------------*/
