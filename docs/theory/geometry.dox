@@ -1,0 +1,249 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File geometry.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_geometry */
+/** \defgroup theory_geometry Theory of geometry
+ \ingroup area_geometry
+
+ \details The headers of `include/ADS/geometry` solve two problems on a finite
+ set of points of the plane: the convex hull, which section 16.1 of the book
+ treats as an example of backtracking, and the closest pair, which the book
+ does not treat and which is solved here by the divide et impera of chapter 12,
+ by a sweep and by a randomized grid. This page collects what the headers take
+ for granted: the notation and the predicate of orientation on which every
+ algorithm rests (see \ref theory_geometry_notation), and, for each problem,
+ the property on which the correctness of its algorithms rests, the argument
+ behind their bounds and the lower bound that they meet (see \ref
+ theory_geometry_hull and \ref theory_geometry_closest). The pseudocode of each
+ algorithm is instead on the page of its header, in the comment of its
+ function, together with the section of the book, or the paper, that it
+ follows.
+
+ \tableofcontents
+
+ \section theory_geometry_notation Definitions and notation
+
+ A point \f$ p = ( x_p , y_p ) \f$ has integer coordinates (`Point` of
+ `ConvexHull.h`), and the input is a set \f$ P \f$ of \f$ n \f$ points,
+ possibly repeated. A set of the plane is <em>convex</em> if it contains the
+ segment between any two of its points, and the <em>convex hull</em> of
+ \f$ P \f$ is the smallest convex set that contains it, a polygon whose
+ <em>vertices</em> are points of \f$ P \f$; the headers give the vertices in
+ counterclockwise order from the lowest point (the rightmost of the lowest
+ ones), with no vertex strictly inside an edge, so that the hull is unique.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ \mathrm{cross}( a , b , c ) \f$</td>
+     <td>the cross product \f$ ( b - a ) \times ( c - a ) \f$, positive if
+         \f$ c \f$ is to the left of the line from \f$ a \f$ to \f$ b \f$,
+         negative if to the right, 0 if on it (<tt>cross()</tt>)</td></tr>
+ <tr><td>\f$ d( p , q ) \f$, \f$ d^2( p , q ) \f$</td>
+     <td>the Euclidean distance of two points and its square
+         (<tt>squaredDistance()</tt>)</td></tr>
+ <tr><td>\f$ \delta \f$</td>
+     <td>the least distance of two points found so far by an algorithm of
+         the closest pair</td></tr>
+ <tr><td>\f$ h \f$, \f$ k \f$</td>
+     <td>the number of vertices of the hull, and the number of points that
+         survive a filter before the hull is built</td></tr>
+ </table>
+
+ The orientation of three points is the sign of
+ \f[
+   \mathrm{cross}( a , b , c ) = ( x_b - x_a ) ( y_c - y_a )
+                               - ( y_b - y_a ) ( x_c - x_a ) , \tag{1}
+ \f]
+ i.e., twice the signed area of the triangle \f$ a b c \f$, which is positive
+ when the turn from \f$ a \f$ through \f$ b \f$ to \f$ c \f$ is to the left.
+ On integer coordinates (1) is exact, which makes every decision of the
+ algorithms below exact too: with \f$ |x| , |y| \le 10^9 \f$ each factor of
+ (1) is below \f$ 2^{31} \f$ in absolute value and the products fit a
+ `long long`, and the same bound keeps the square of a distance within 63
+ bits. Two points \f$ p \f$ and \f$ q \f$ are on the same side of the line
+ through \f$ p_1 \f$ and \f$ p_2 \f$ (`sameSide()`) when the two signs of (1)
+ agree, and the angle of a vector is compared without trigonometry either by
+ (1) or by `pseudoAngle()`, an increasing function of the angle with values
+ in \f$ [ 0 , 4 ) \f$ (exercise 16.1).
+
+ \section theory_geometry_hull The convex hull
+
+ The algorithms of `ConvexHull.h` rest on one characterization of the edges,
+ which is the following.
+
+ <em>Lemma 1 (the edges of the hull).</em> Two points \f$ p , q \in P \f$ are
+ consecutive vertices of the hull in counterclockwise order if and only if
+ \f[
+   \mathrm{cross}( p , q , r ) \ge 0 \quad \forall r \in P , \tag{2}
+ \f]
+ and no point of \f$ P \f$ lies strictly inside the segment \f$ p q \f$.
+
+ Indeed, the line through \f$ p \f$ and \f$ q \f$ leaves all of \f$ P \f$, and
+ hence its hull, in the closed half-plane on its left, so that the segment
+ \f$ p q \f$ is on the boundary of the hull; the second condition makes its
+ ends vertices rather than inner points of a longer edge. Checking (2) for each
+ of the \f$ n ( n - 1 ) \f$ ordered pairs costs \f$ O( n ) \f$ each, i.e.,
+ \f$ O( n^3 ) \f$ in all (`convexHullBrute()`).
+
+ The scan of Graham (`graham()`) avoids the pairs that cannot be edges. The
+ lowest point \f$ o \f$ is a vertex, and the other points sorted by angle
+ around it are scanned with a stack \f$ S \f$ that keeps the following
+ invariant: after the scan of the \f$ i \f$-th point \f$ p_i \f$,
+ \f[
+   S \text{ holds, from its bottom, the vertices of the hull of }
+   \{ o , p_1 , \ldots , p_i \} \text{ in counterclockwise order} . \tag{3}
+ \f]
+ A new point \f$ p_{i+1} \f$ is a vertex of the next hull, since it has the
+ largest angle; a vertex \f$ t \f$ on top of \f$ S \f$, below which lies
+ \f$ s \f$, stays a vertex if and only if the turn from \f$ s \f$ through
+ \f$ t \f$ to \f$ p_{i+1} \f$ is to the left, since otherwise \f$ t \f$ lies in
+ the triangle \f$ o s p_{i+1} \f$. Popping the vertices that make a turn not
+ to the left, a backtrack on the choices made, restores (3). Each point is
+ pushed once and popped at most once; hence the scan costs \f$ O( n ) \f$, and
+ the sort by angle, \f$ O( n \log n ) \f$, dominates. Of the points collinear
+ with \f$ o \f$ only the farthest is kept, and on a tie of the angle the nearer
+ point comes first, so that no vertex is left strictly inside an edge.
+
+ The bound is the best possible for the algorithms that compare: the points
+ \f$ ( a_i , a_i^2 ) \f$ lie on a parabola, each one is a vertex of their
+ hull, and the hull gives them in the order of the \f$ a_i \f$; hence a hull
+ in \f$ o( n \log n ) \f$ would sort \f$ n \f$ numbers in
+ \f$ o( n \log n ) \f$ on the algebraic decision trees, where sorting costs
+ \f$ \Omega( n \log n ) \f$.
+
+ The lower bound concerns the worst case, and `convexHull()` is faster on the
+ usual inputs by two devices. First, the points extreme in the eight
+ directions of the axes and of the diagonals are vertices, and a point
+ strictly inside their octagon is not; the heuristic of Akl and Toussaint
+ drops it with at most 8 evaluations of (1), and for points uniform in a
+ square or in a disk the octagon contains all of them but a vanishing
+ fraction, so that \f$ k = o( n ) \f$ points survive in expectation (Devroye
+ and Toussaint). Second, the survivors are sorted by \f$ x \f$ and then
+ \f$ y \f$ instead of by angle, which allows a radix sort of keys of 64 bits
+ in \f$ O( k ) \f$; the monotone chain of Andrew then builds the lower and the
+ upper chain of the hull by the scan of Graham from the leftmost point to the
+ rightmost and back, with the same invariant (3) on each chain.
+
+ <table>
+ <caption>The algorithms of the convex hull</caption>
+ <tr><th>Function</th><th>Algorithm</th><th>Time</th><th>Source</th></tr>
+ <tr><td><tt>convexHullBrute()</tt></td><td>every segment checked by
+     (2)</td><td>\f$ O( n^3 ) \f$</td><td>section 16.1</td></tr>
+ <tr><td><tt>graham()</tt></td><td>sort by angle and scan with a
+     stack</td><td>\f$ O( n \log n ) \f$</td><td>Graham (1972),
+     section 16.1</td></tr>
+ <tr><td><tt>convexHull()</tt></td><td>octagon filter, radix sort,
+     monotone chain</td><td>\f$ O( n + k ) \f$ after a sort of \f$ k \f$
+     keys in \f$ O( k ) \f$; \f$ O( n ) \f$ expected on uniform
+     points</td><td>Akl and Toussaint (1978), Andrew (1979)</td></tr>
+ </table>
+
+ \section theory_geometry_closest The closest pair
+
+ The closest pair of \f$ P \f$, \f$ n \ge 2 \f$, minimizes \f$ d( p , q ) \f$
+ over the pairs of distinct places, and the comparison of all the pairs costs
+ \f$ \Theta( n^2 ) \f$ (`closestPairBrute()`). The headers compare the squares
+ \f$ d^2 \f$, which are integers, so that no root is ever taken.
+
+ <em>Lemma 2 (the strip).</em> Let the points be split by a vertical line
+ \f$ x = x_m \f$ into two halves whose closest pairs are at distance at least
+ \f$ \delta \f$. A pair closer than \f$ \delta \f$ that crosses the line has
+ both points in the strip \f$ | x - x_m | < \delta \f$, and in the strip sorted
+ by \f$ y \f$ each point has at most 7 others within \f$ \delta \f$ above
+ it.
+
+ Indeed, the points of the strip with ordinate in \f$ [ y , y + \delta ) \f$
+ lie in a \f$ 2 \delta \times \delta \f$ rectangle whose two
+ \f$ \delta \times \delta \f$ squares, one on each side of the line, hold at
+ most 4 points each, since the four \f$ \delta / 2 \f$ squares of each hold at
+ most one point of its half (their diameter is below \f$ \delta \f$).
+
+ The divide et impera of `closestPair()` sorts the points by \f$ x \f$ once,
+ solves the two halves recursively, and scans the strip comparing each point
+ with the next ones until their difference in \f$ y \f$ reaches
+ \f$ \delta \f$, i.e., with \f$ O( 1 ) \f$ of them by Lemma 2. The strip is
+ sorted by \f$ y \f$ in linear time since each recursive call returns its range
+ sorted by \f$ y \f$, and the two ranges are merged as in mergesort; hence
+ \f[
+   T( n ) = 2 T( n / 2 ) + O( n ) = O( n \log n ) . \tag{4}
+ \f]
+ This is optimal on the algebraic decision trees, since \f$ n \f$ numbers are
+ distinct if and only if the closest pair of the points
+ \f$ ( a_i , 0 ) \f$ is at a positive distance, and the distinctness of
+ \f$ n \f$ numbers costs \f$ \Omega( n \log n ) \f$ there.
+
+ The randomized algorithms escape the lower bound by the floor function,
+ which the decision trees do not have. In the grid of Golin, Raman, Schwarz
+ and Smid the points are taken in a random order, and the \f$ i \f$-th one is
+ compared with the points of the 9 cells around its own in a grid of side
+ \f$ \lceil \delta_i \rceil \f$, \f$ \delta_i \f$ the least distance among the
+ points before it; a cell holds \f$ O( 1 ) \f$ of those points, since they are
+ at distance at least \f$ \delta_i \f$ from one another. The grid is rebuilt,
+ in \f$ O( i ) \f$, only when the \f$ i \f$-th point lowers the least distance,
+ i.e., when it belongs to the closest pair of the first \f$ i \f$ points; over
+ the random order this happens with probability at most \f$ 2 / i \f$, since
+ that pair has two points and each of the \f$ i \f$ is the last with the same
+ probability (a backward analysis). The expected time is therefore
+ \f[
+   \sum_{i=2}^{n} \Bigl( O( 1 ) + \frac{2}{i} \, O( i ) \Bigr) = O( n ) ,
+   \tag{5}
+ \f]
+ on any input, the expectation being over the random order only.
+
+ The sweep of `closestPairSweep()` exploits the usual inputs instead: the
+ points sorted by \f$ x \f$ (by radix, in \f$ O( n ) \f$) are scanned from the
+ left, and each one is compared with the ones before it whose difference in
+ \f$ x \f$ is below the current \f$ \delta \f$. On points spread in the plane
+ there are \f$ O( 1 ) \f$ of them, and the sweep is linear; on inputs that
+ crowd the strip with points far apart in \f$ y \f$ it is not, and after
+ \f$ 16 n \f$ comparisons the sweep gives up, tries the other axis and, if
+ that fails too, leaves the problem to the grid, whose bound (5) holds on any
+ input.
+
+ <table>
+ <caption>The algorithms of the closest pair</caption>
+ <tr><th>Function</th><th>Algorithm</th><th>Time</th></tr>
+ <tr><td><tt>closestPairBrute()</tt></td><td>all the pairs</td>
+     <td>\f$ \Theta( n^2 ) \f$</td></tr>
+ <tr><td><tt>closestPair()</tt></td><td>divide et impera, Shamos and
+     Hoey</td><td>\f$ O( n \log n ) \f$</td></tr>
+ <tr><td><tt>closestPairSweep()</tt></td><td>sweep on a radix sort, then
+     the randomized grid</td><td>\f$ O( n ) \f$ when the sweep succeeds,
+     \f$ O( n ) \f$ expected always</td></tr>
+ </table>
+
+ \section theory_geometry_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 16.1,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf, and
+      chapter 12,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap12.pdf
+ \see R. L. Graham, An efficient algorithm for determining the convex
+      hull of a finite planar set, Information Processing Letters 1(4),
+      132-133, 1972, doi:10.1016/0020-0190(72)90045-2
+ \see S. G. Akl, G. T. Toussaint, A fast convex hull algorithm,
+      Information Processing Letters 7(5), 219-222, 1978,
+      doi:10.1016/0020-0190(78)90003-0
+ \see A. M. Andrew, Another efficient algorithm for convex hulls in two
+      dimensions, Information Processing Letters 9(5), 216-219, 1979,
+      doi:10.1016/0020-0190(79)90072-3
+ \see L. Devroye, G. T. Toussaint, A note on linear expected time
+      algorithms for finding convex hulls, Computing 26(4), 361-366,
+      1981, doi:10.1007/BF02237955
+ \see M. I. Shamos, D. Hoey, Closest-point problems, 16th Annual
+      Symposium on Foundations of Computer Science, 151-162, 1975,
+      doi:10.1109/SFCS.1975.8
+ \see K. Hinrichs, J. Nievergelt, P. Schorn, Plane-sweep solves the
+      closest pair problem elegantly, Information Processing Letters
+      26(5), 255-261, 1988, doi:10.1016/0020-0190(88)90150-0
+ \see M. Golin, R. Raman, C. Schwarz, M. Smid, Simple randomized
+      algorithms for closest pair problems, Nordic Journal of Computing
+      2(1), 3-27, 1995
+ \see S. Khuller, Y. Matias, A simple randomized sieve algorithm for the
+      closest-pair problem, Information and Computation 118(1), 34-37,
+      1995, doi:10.1006/inco.1995.1049
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File geometry.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
