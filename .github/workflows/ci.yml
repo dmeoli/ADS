@@ -19,9 +19,12 @@ on:
   workflow_dispatch:
 
 # a new push to a branch cancels the run still going on its previous commit,
-# except on main, where every commit is tested
+# except on main, where every commit is tested: there each commit is a group
+# of its own, since a group keeps one waiting run and cancels the others
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: >-
+    ${{ github.workflow }}-${{ github.ref == 'refs/heads/main'
+    && github.sha || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
