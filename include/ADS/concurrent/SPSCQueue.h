@@ -4,7 +4,7 @@
 /** @file
  * A bounded queue between one producer thread and one consumer thread,
  * lock-free and wait-free, beyond the book: the circular vector of the
- * queue of section 4.3.3 [see ArrayQueue.h], whose head only the consumer
+ * queue of section 4.3.3 [see `ArrayQueue.h`], whose head only the consumer
  * writes and whose tail only the producer writes, so that each index is an
  * atomic with the release and acquire orders and no lock is needed (the
  * queue of Lamport). Each thread keeps a copy of the index of the other
@@ -13,22 +13,23 @@
  * grouped in pairs of lines so that a thread that spins on a full or empty
  * queue, rewriting its copy, does not invalidate the line that the other
  * one writes or reads (false sharing, also through the prefetch of the
- * adjacent line); a consumer that finds the queue empty asks for the line
+ * adjacent line). A consumer that finds the queue empty asks for the line
  * of its next place before it reads the tail again, so that, when the item
  * has come, the two lines travel together and a round trip between the
  * threads costs one miss a side instead of two in a row; a consumer whose
- * last pop took an item and that finds fewer than min( 64 , capacity / 2 )
- * new ones waits 64 pauses of the processor for a batch before it takes
- * them (the backtracking of B-Queue), while after a pop that found nothing
- * it takes at once what comes, so that a single item after a silence
- * costs no wait;
- * the places are raw memory with a line of padding at each end, so that
+ * last pop took an item and that finds fewer than
+ * \f$ \min( 64 , c / 2 ) \f$ new ones, \f$ c \f$ the capacity, waits 64
+ * pauses of the processor for a batch before it takes them (the
+ * backtracking of B-Queue), while after a pop that found nothing it takes
+ * at once what comes, so that a single item after a silence costs no wait.
+ * The places are raw memory with a line of padding at each end, so that
  * the first and the last items share no line with other data. The
- * capacity is a power of 2 and the indices are reduced by a mask.
+ * capacity is a power of 2 and the indices, which only grow, are reduced
+ * by a mask.
  *
- * The contracts [see Contract.h]: the capacity is a power of 2, at least 2;
- * only one thread calls push() and only one calls pop(). The operations are
- * defined in SPSCQueue.tpp.
+ * The contracts [see `Contract.h`]: the capacity is a power of 2, at least
+ * 2; only one thread calls `push()` and only one calls `pop()`. The
+ * operations are defined in `SPSCQueue.tpp`.
  *
  * \see L. Lamport, Specifying concurrent program modules, ACM Transactions
  *      on Programming Languages and Systems 5(2), 190-222, 1983,
@@ -50,7 +51,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -97,45 +98,115 @@ class SPSCQueue {
 
  using Item = T;   ///< the type of the items
 
- /// a queue of the given capacity
- /// \pre capacity >= 2 is a power of 2
+ /// the empty queue of capacity \f$ c \f$
+ /// \pre \f$ c \ge 2 \f$ is a power of 2
  explicit SPSCQueue( std::size_t capacity );
 
+ /// no copy, since the two threads share it by its address
  SPSCQueue( const SPSCQueue & ) = delete;
+ /// no copy, since the two threads share it by its address
  SPSCQueue & operator=( const SPSCQueue & ) = delete;
 
  /// destroys the items left
  ~SPSCQueue();
 
- /// enqueues v, false if the queue is full; only the producer calls it
+ /// enqueues a copy of \f$ v \f$, false if the queue is full; only the
+ /// producer calls it
  bool push( const T & v ) { return( emplace( v ) ); }
+
+ /// enqueues \f$ v \f$, moved, false if the queue is full; only the producer
+ /// calls it
  bool push( T && v ) { return( emplace( std::move( v ) ) ); }
 
- /// enqueues the item built from args, false if the queue is full (and
+ /// enqueues the item built from `args`, false if the queue is full (and
  /// then nothing is built); only the producer calls it
+ ///
+ /// In pseudocode (the queue of Lamport, beyond the book), \f$ t \f$ and
+ /// \f$ h \f$ the tail and the head, which only grow, \f$ c \f$ the
+ /// capacity and \f$ \mathit{seen} \f$ the copy of the head that the
+ /// producer keeps:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{emplace}( x ) \cr
+ /// 2 & \quad t' \gets t\quad \triangleright\ \text{relaxed, only this}
+ ///     \text{ thread writes it} \cr
+ /// 3 & \quad \textbf{if}\ t' - \mathit{seen} = c\ \textbf{then} \cr
+ /// 4 & \qquad \mathit{seen} \gets h\quad \triangleright\ \text{acquire:}
+ ///     \text{ the places freed are seen free} \cr
+ /// 5 & \qquad \textbf{if}\ t' - \mathit{seen} = c\ \textbf{then}
+ ///     \ \textbf{return false} \cr
+ /// 6 & \quad A[ t' \bmod c ] \gets x \cr
+ /// 7 & \quad t \gets t' + 1\quad \triangleright\ \text{release: the item}
+ ///     \text{ is written before the tail} \cr
+ /// 8 & \quad \textbf{return true}
+ /// \end{array}}
+ /// \f]
  template< class ... Args >
  bool emplace( Args && ... args );
 
  /// dequeues an item, nothing if the queue is empty; only the consumer
  /// calls it
+ ///
+ /// It is `tryPop()` below, with the item returned.
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{pop}() \cr
+ /// 2 & \quad \textbf{if}\ \mathrm{tryPop}( x )\ \textbf{then return}\ x
+ ///     \ \textbf{else return nil}
+ /// \end{array}}
+ /// \f]
  std::optional< T > pop( void );
 
- /// dequeues an item into x, false if the queue is empty; only the
+ /// dequeues an item into \f$ x \f$, false if the queue is empty; only the
  /// consumer calls it
+ ///
+ /// In pseudocode (the queue of Lamport with the copies of Lee et al. and
+ /// the wait for a batch of B-Queue, beyond the book), \f$ \mathit{seen} \f$
+ /// the copy of the tail that the consumer keeps and
+ /// \f$ \mathit{streaming} \f$ true if its last pop took an item:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{tryPop}( x ) \cr
+ /// 2 & \quad h' \gets h\quad \triangleright\ \text{relaxed, only this}
+ ///     \text{ thread writes it} \cr
+ /// 3 & \quad \textbf{if}\ h' = \mathit{seen}\ \textbf{then} \cr
+ /// 4 & \qquad \mathrm{prefetch}( A[ h' \bmod c ] );\ \mathit{seen} \gets
+ ///     t\quad \triangleright\ \text{acquire} \cr
+ /// 5 & \qquad \textbf{if}\ \mathit{streaming}\ \textbf{and}\ 0 <
+ ///     \mathit{seen} - h' < \min( 64 , c / 2 )\ \textbf{then} \cr
+ /// 6 & \qquad\quad \text{wait 64 pauses};\ \mathit{seen} \gets t \cr
+ /// 7 & \qquad \textbf{if}\ h' = \mathit{seen}\ \textbf{then}
+ ///     \ \mathit{streaming} \gets \textbf{false};\ \textbf{return false} \cr
+ /// 8 & \quad x \gets A[ h' \bmod c ] \cr
+ /// 9 & \quad h \gets h' + 1\quad \triangleright\ \text{release: the place}
+ ///     \text{ is read before it is freed} \cr
+ /// 10 & \quad \mathit{streaming} \gets \textbf{true};
+ ///     \ \textbf{return true}
+ /// \end{array}}
+ /// \f]
  bool tryPop( T & x );
 
- /// wakes the consumer if it sleeps in waitPop(), after pushes: a fence
+ /// wakes the consumer if it sleeps in `waitPop()`, after pushes: a fence
  /// and the read of a line when it does not; only the producer calls it
  void notify( void ) noexcept { f_wait.notify(); }
 
- /// dequeues an item into x, sleeping until one comes [see
- /// EventCount.h], the producer calling notify() after its pushes; only
+ /// dequeues an item into \f$ x \f$, sleeping until one comes [see
+ /// `EventCount.h`], the producer calling `notify()` after its pushes; only
  /// the consumer calls it
+ ///
+ /// In pseudocode (beyond the book), on the wait of `EventCount`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{waitPop}( x ) \cr
+ /// 2 & \quad \mathrm{await}( \mathrm{tryPop}( x ) )
+ /// \end{array}}
+ /// \f]
  void waitPop( T & x ) { f_wait.await( [ & ] { return( tryPop( x ) ); } ); }
 
- /// the number of items at some moment of the call
+ /// the number of items at some moment of the call, \f$ t - h \f$
  [[nodiscard]] std::size_t size( void ) const;
 
+ /// the capacity \f$ c \f$
  [[nodiscard]] std::size_t capacity( void ) const { return( f_mask + 1 ); }
 
  private:

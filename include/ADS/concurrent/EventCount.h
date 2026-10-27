@@ -8,43 +8,49 @@
  * cost for the threads that make the condition true while nobody waits.
  * It holds an epoch and the number of the waiters, the two halves of one
  * word of 64 bits on a line of its own. A waiter announces itself
- * (prepareWait(), which adds 1 to the waiters and reads the epoch e in the
- * same read-modify-write), looks at the condition once more, and if it is
- * still false sleeps until the epoch is no longer e (commitWait( e ), by
- * std::atomic::wait); otherwise it withdraws (cancelWait( e )). A notifier
- * makes the condition true, then notify() reads the word after a fence
- * and, only if there are waiters, advances the epoch and sets the waiters
- * to 0 in one compare-and-swap, and wakes them (std::atomic::notify_all):
- * the notifications that follow, while the woken threads are still on
- * their way, find nobody to wake and cost no system call. The fences are
- * asymmetric where the system has them (membarrier(2) on Linux): the
- * waiter, which is about to sleep anyway, runs the heavy one, a system
- * call that makes every running thread of the process run a full
+ * (`prepareWait()`, which adds 1 to the waiters and reads the epoch
+ * \f$ e \f$ in the same read-modify-write), looks at the condition once
+ * more, and if it is still false sleeps until the epoch is no longer
+ * \f$ e \f$ (`commitWait( e )`, by `std::atomic::wait`); otherwise it
+ * withdraws (`cancelWait( e )`). A notifier makes the condition true, then
+ * `notify()` reads the word after a fence and, only if there are waiters,
+ * advances the epoch and sets the waiters to 0 in one compare-and-swap, and
+ * wakes them (`std::atomic::notify_all`): the notifications that follow,
+ * while the woken threads are still on their way, find nobody to wake and
+ * cost no system call.
+ *
+ * The fences are asymmetric where the system has them (membarrier(2) on
+ * Linux): the waiter, which is about to sleep anyway, runs the heavy one, a
+ * system call that makes every running thread of the process run a full
  * barrier, and the notifier the light one, which only stops the compiler,
  * so that when nobody waits a notification costs the read of a line that
  * stays shared (a full fence would wait, at each item, for the stores of
  * the item to reach the caches of the other threads); elsewhere both are
  * full fences.
+ *
  * No wake-up is lost: the fence of the notifier and the read-modify-write
- * and fence of the waiter are in the single total order of the sequentially
- * consistent operations (a pair of asymmetric fences orders as a pair of
- * full ones); if the notifier reads 0 waiters, its fence comes before
- * the announcement of the waiter, which then sees the condition made true
- * when it looks again, and if it reads 1 or more it advances the epoch by
- * a release on the same word, which the announcement either precedes (and
- * the wait on e returns at once or is woken) or follows, reading the new
- * epoch with an acquire and seeing the condition made true. A spurious
- * wake-up only makes the waiter look again.
- * await( p ) packs the loop: it returns when p() is true, and p is called
- * by the waiting thread only, so that it may take an item; it first looks
- * again and again for 20 us (a parameter), with a pause of the processor
- * between the looks, since an item that comes within that time costs no
- * sleep and no wake-up (each about the time of a system call and of a
- * switch of threads), and a waiter that does not sleep costs its notifier
- * only the fence.
- * The contracts [see Contract.h]: each prepareWait() is followed by one
- * commitWait() or cancelWait() of the same thread, with the epoch it
+ * and fence of the waiter are in the single total order of the
+ * sequentially consistent operations (a pair of asymmetric fences orders as
+ * a pair of full ones); if the notifier reads 0 waiters, its fence comes
+ * before the announcement of the waiter, which then sees the condition made
+ * true when it looks again, and if it reads 1 or more it advances the epoch
+ * by a release on the same word, which the announcement either precedes
+ * (and the wait on \f$ e \f$ returns at once or is woken) or follows,
+ * reading the new epoch with an acquire and seeing the condition made true.
+ * A spurious wake-up only makes the waiter look again.
+ *
+ * `await( p )` packs the loop: it returns when `p()` is true, and `p` is
+ * called by the waiting thread only, so that it may take an item; it first
+ * looks again and again for 20 \f$ \mu\mathrm{s} \f$ (a parameter), with
+ * a pause of the processor between the looks, since an item that comes
+ * within that time costs no sleep and no wake-up (each about the time of a
+ * system call and of a switch of threads), and a waiter that does not sleep
+ * costs its notifier only the fence.
+ *
+ * The contracts [see `Contract.h`]: each `prepareWait()` is followed by one
+ * `commitWait()` or `cancelWait()` of the same thread, with the epoch it
  * returned.
+ *
  * \see D. P. Reed, R. K. Kanodia, Synchronization with eventcounts and
  *      sequencers, Communications of the ACM 22(2), 115-123, 1979,
  *      doi:10.1145/359060.359076 (the event count)
@@ -60,7 +66,7 @@
  *      (the asymmetric fences)
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
@@ -71,10 +77,10 @@
  #define __ADS_EventCount
                       /* self-identification: #endif constant */
 
-/// under the sanitizer of threads, which does not model the fences, the
-/// notifier reads the waiters by a read-modify-write instead (reading the
-/// last value in the order of the modifications, it either sees the
-/// waiter or is seen by it through the release sequence)
+// under the sanitizer of threads, which does not model the fences, the
+// notifier reads the waiters by a read-modify-write instead (reading the
+// last value in the order of the modifications, it either sees the
+// waiter or is seen by it through the release sequence)
 #if defined( __SANITIZE_THREAD__ )
  #define ADS_EVENTCOUNT_RMW
 #elif defined( __has_feature )
@@ -108,7 +114,7 @@ namespace ADS {
 namespace detail {
 
 /// true if the process may use the asymmetric fences: on Linux, the
-/// expedited private barrier of membarrier(2), registered once
+/// expedited private barrier of `membarrier(2)`, registered once
 inline bool asymmetricFences( void ) noexcept
 {
 #ifdef ADS_EVENTCOUNT_MEMBARRIER
@@ -153,7 +159,7 @@ inline void heavyFence( void ) noexcept
 /*--------------------------- CLASS EventCount -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the sleep of threads until a condition holds, woken by notify()
+/// the sleep of threads until a condition holds, woken by `notify()`
 class EventCount {
 
 /*--------------------------------------------------------------------------*/
@@ -161,12 +167,27 @@ class EventCount {
 
  using Key = std::uint32_t;   ///< the epoch a waiter saw
 
+ /// the event count of epoch 0 and no waiter
  EventCount( void ) = default;
+ /// no copy, since the waiters sleep on its address
  EventCount( const EventCount & ) = delete;
+ /// no copy, since the waiters sleep on its address
  EventCount & operator=( const EventCount & ) = delete;
 
  /// announces a waiter and returns the epoch, before the last look at the
  /// condition
+ ///
+ /// In pseudocode (beyond the book), \f$ ( e , w ) \f$ the word of the
+ /// epoch and of the waiters:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{prepareWait}() \cr
+ /// 2 & \quad ( e' , w' ) \gets \mathrm{fetchAdd}( ( e , w ) , 1 )\quad
+ ///     \triangleright\ \text{sequentially consistent} \cr
+ /// 3 & \quad \text{the heavy fence} \cr
+ /// 4 & \quad \textbf{return}\ e'
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] Key prepareWait( void ) noexcept {
   const std::uint64_t v = f_state.fetch_add( 1 , std::memory_order_seq_cst );
 #ifndef ADS_EVENTCOUNT_RMW
@@ -176,7 +197,17 @@ class EventCount {
   }
 
  /// withdraws the waiter, the condition being true, unless a notifier
- /// already withdrew it (the epoch is no longer k)
+ /// already withdrew it (the epoch is no longer \f$ k \f$)
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{cancelWait}( k ) \cr
+ /// 2 & \quad \textbf{repeat}\ ( e' , w' ) \gets ( e , w )
+ ///     \ \textbf{until}\ e' \ne k\ \textbf{or}\ \mathrm{CAS}( ( e , w ) , (
+ ///     e' , w' ) , ( e' , w' - 1 ) )
+ /// \end{array}}
+ /// \f]
  void cancelWait( Key k ) noexcept {
   std::uint64_t v = f_state.load( std::memory_order_relaxed );
   while( ( Key( v >> 32 ) == k ) &&
@@ -184,8 +215,18 @@ class EventCount {
                                           std::memory_order_relaxed ) ) {}
   }
 
- /// sleeps while the epoch is k; the notifier that advanced it withdrew
- /// the waiter
+ /// sleeps while the epoch is \f$ k \f$; the notifier that advanced it
+ /// withdrew the waiter
+ ///
+ /// In pseudocode (beyond the book), \f$ E \f$ the copy of the epoch on
+ /// which the waiters sleep:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{commitWait}( k ) \cr
+ /// 2 & \quad \textbf{while}\ E = k\ \textbf{do}\ \text{sleep until } E
+ ///     \text{ changes}\quad \triangleright\ \text{acquire}
+ /// \end{array}}
+ /// \f]
  void commitWait( Key k ) noexcept {
   while( f_epoch.load( std::memory_order_acquire ) == k )
    f_epoch.wait( k , std::memory_order_acquire );
@@ -195,6 +236,23 @@ class EventCount {
  /// epoch and withdraws them all at once, so that the notifications that
  /// follow, before they run, find nobody to wake; when nobody waits, a
  /// light fence and a read
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{notify}() \cr
+ /// 2 & \quad \text{the light fence};\ ( e' , w' ) \gets ( e , w ) \cr
+ /// 3 & \quad \textbf{while}\ w' > 0\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ \mathrm{CAS}( ( e , w ) , ( e' , w' ) , ( e'
+ ///     + 1 , 0 ) )\ \textbf{then}\quad \triangleright\ \text{acquire and}
+ ///     \text{ release} \cr
+ /// 5 & \qquad\quad E \gets e' + 1\quad \triangleright\ \text{release};
+ ///     \ \text{wake all the threads asleep on } E \cr
+ /// 6 & \qquad\quad \textbf{return} \cr
+ /// 7 & \qquad ( e' , w' ) \gets ( e , w )\quad \triangleright\ \text{read}
+ ///     \text{ by the failed CAS}
+ /// \end{array}}
+ /// \f]
  void notify( void ) noexcept {
 #ifndef ADS_EVENTCOUNT_RMW
   detail::lightFence();
@@ -212,9 +270,24 @@ class EventCount {
     }
   }
 
- /// returns when p() is true: it looks again and again for up to spin
+ /// returns when `p()` is true: it looks again and again for up to `spin`
  /// nanoseconds, with a pause of the processor between the looks, and then
  /// sleeps between them
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{await}( p , \mathit{spin} ) \cr
+ /// 2 & \quad \textbf{repeat}\ \textbf{if}\ p()\ \textbf{then return};
+ ///     \ \text{a pause}\ \textbf{until}\ \mathit{spin} \text{ ns have}
+ ///     \text{ passed} \cr
+ /// 3 & \quad \textbf{while not}\ p()\ \textbf{do} \cr
+ /// 4 & \qquad k \gets \mathrm{prepareWait}() \cr
+ /// 5 & \qquad \textbf{if}\ p()\ \textbf{then}\ \mathrm{cancelWait}( k );
+ ///     \ \textbf{return} \cr
+ /// 6 & \qquad \mathrm{commitWait}( k )
+ /// \end{array}}
+ /// \f]
  template< class P >
  void await( P && p , std::int64_t spin = 20000 ) {
   if( p() )
@@ -256,18 +329,19 @@ class EventCount {
 #endif
   }
 
- /// the copy of the epoch raised to e, never lowered: two notifiers that
- /// advanced the epoch of f_state to e - 1 and e may reach f_epoch in the
- /// other order, and a store of e - 1 after e would put back the epoch of
- /// a waiter that the second one withdrew, which would then sleep with
- /// the condition true and nobody to wake it. The epochs are compared
- /// modulo \f$ 2^{32} \f$, as the keys are, e being ahead of the copy c
- /// when \f$ 0 < ( e - c ) \bmod 2^{32} < 2^{31} \f$. Each change is a
- /// read-modify-write with release: a waiter that reads e with an acquire
- /// synchronizes with the notifier that wrote it, or with a later one in
- /// its release sequence, and that notifier read the epochs before e in
- /// f_state by acquire, after the notifiers that advanced them made their
- /// conditions true.
+ /// the copy of the epoch raised to \f$ e \f$, never lowered: two notifiers
+ /// that advanced the epoch of `f_state` to \f$ e - 1 \f$ and \f$ e \f$ may
+ /// reach `f_epoch` in the other order, and a store of \f$ e - 1 \f$ after
+ /// \f$ e \f$ would put back the epoch of a waiter that the second one
+ /// withdrew, which would then sleep with the condition true and nobody to
+ /// wake it. The epochs are compared modulo \f$ 2^{32} \f$, as the keys
+ /// are, \f$ e \f$ being ahead of the copy \f$ c \f$ when
+ /// \f$ 0 < ( e - c ) \bmod 2^{32} < 2^{31} \f$. Each change is a
+ /// read-modify-write with release: a waiter that reads \f$ e \f$ with an
+ /// acquire synchronizes with the notifier that wrote it, or with a later
+ /// one in its release sequence, and that notifier read the epochs before
+ /// \f$ e \f$ in `f_state` by acquire, after the notifiers that advanced
+ /// them made their conditions true.
  void raiseEpoch( Key e ) noexcept {
   Key c = f_epoch.load( std::memory_order_relaxed );
   while( ( std::int32_t( e - c ) > 0 ) &&

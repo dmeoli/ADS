@@ -1,0 +1,433 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File concurrent.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_concurrent */
+/** \defgroup theory_concurrent Theory of concurrency
+ \ingroup area_concurrent
+
+ \details The headers of `include/ADS/concurrent` realize, beyond the book,
+ the structures that several threads change at once without a lock, or with
+ the fewest locks: the queues between producers and consumers, the deque of
+ work stealing, the union-find and the hash table shared by threads, and the
+ event count on which a thread sleeps until a condition holds. This page
+ collects what the headers take for granted: the model of the threads and of
+ the memory and the meaning of correct and of nonblocking (see
+ \ref theory_concurrent_notation), the structures and the cost of their
+ operations (see \ref theory_concurrent_real), and, for each family, the
+ property on which its correctness rests and the argument behind its cost
+ (from \ref theory_concurrent_queues to \ref theory_concurrent_wait). The
+ pseudocode of each operation is instead on the page of its header, in the
+ comment of its function, together with the paper that it follows, and with
+ the order of memory of each access to a shared word written as a comment.
+
+ \tableofcontents
+
+ \section theory_concurrent_notation Definitions and notation
+
+ A <em>shared object</em> is a structure whose operations are called by
+ several threads, each a sequence of calls; an operation takes time, from
+ its <em>invocation</em> to its <em>response</em>, and two operations of two
+ threads may overlap. A run of the object is <em>linearizable</em> if each
+ operation seems to take effect at one instant between its invocation and
+ its response, its <em>linearization point</em>, so that the responses are
+ those of the sequential object on the operations taken in the order of
+ their points (Herlihy and Wing); an object is linearizable if its runs
+ are, and then a thread may reason on it as on the sequential structure of
+ the other areas. The headers name the point of each operation, e.g., the
+ compare-and-swap that claims a place, or the store that publishes an
+ item.
+
+ An implementation is <em>blocking</em> if a thread stopped in the middle of
+ an operation (descheduled, or slow) may keep the others from completing
+ theirs, as a thread that holds a lock does. It is <em>lock-free</em> if,
+ whatever the threads that stop, some thread that keeps running completes an
+ operation in a finite number of its own steps, i.e., the system as a whole
+ makes progress, though a single thread may starve; it is
+ <em>wait-free</em> if every thread that keeps running completes each of its
+ operations in a finite number of its own steps (Herlihy). A loop that
+ retries a compare-and-swap is lock-free, since the compare-and-swap of a
+ thread fails only because that of another one succeeded, but it is not
+ wait-free.
+
+ The memory is that of C++, which the headers use through `std::atomic`
+ (Boehm and Adve). A <em>data race</em> is a pair of accesses of two threads
+ to one location, one of them a write, neither atomic and neither ordered
+ before the other; a program with a data race has no defined meaning, and a
+ shared word is therefore always an atomic. Each atomic access carries an
+ <em>order</em>: a <em>relaxed</em> one is atomic and nothing more; a store
+ with <em>release</em> and a load with <em>acquire</em> that reads its value
+ <em>synchronize</em>, so that every write that the storing thread made
+ before the store <em>happens before</em> every read that the loading thread
+ makes after the load; a <em>sequentially consistent</em> access is acquire
+ and release and, moreover, takes a place in a single total order \f$ S \f$
+ of all such accesses, consistent with the order of each thread. The orders
+ between threads come only from these: a relaxed access orders nothing, and
+ two threads that write and then read two different words with release and
+ acquire may both miss the write of the other, which only \f$ S \f$
+ excludes.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ p \f$</td>
+     <td>the number of the threads that use an object</td></tr>
+ <tr><td>\f$ c \f$</td>
+     <td>the capacity of a bounded queue, a power of 2, so that the index
+         \f$ i \f$ is at the place \f$ i \bmod c \f$, a mask</td></tr>
+ <tr><td>\f$ h \f$, \f$ t \f$</td>
+     <td>the head and the tail of a queue, or the top and the bottom
+         \f$ b \f$ of a deque: integers that only grow, the items being
+         those of \f$ [ h , t ) \f$</td></tr>
+ <tr><td>\f$ \mathrm{CAS}( x , e , d ) \f$</td>
+     <td>the compare-and-swap: if \f$ x = e \f$, then \f$ x \gets d \f$ and
+         true, else false (and \f$ e \gets x \f$ in the code), one atomic
+         read-modify-write</td></tr>
+ <tr><td>\f$ S \f$</td>
+     <td>the total order of the sequentially consistent accesses and
+         fences</td></tr>
+ <tr><td>\f$ \mathit{seen} \f$</td>
+     <td>the copy that a thread keeps of an index written by another one,
+         read again only when the structure looks full or empty</td></tr>
+ </table>
+
+ Two more facts of the hardware decide the costs. A write to a line of cache
+ takes it from the caches of the other cores, which then miss on it; two
+ words written by two threads on one line (<em>false sharing</em>) make the
+ line travel at each write, and the headers put each such word on a line of
+ its own, often on a pair of lines, since the processors of x86 fetch the
+ lines two at a time. A read-modify-write, e.g., a compare-and-swap, costs
+ several times a plain access and orders the memory around it; a structure
+ is fast when its common case has none. Finally, the <em>ABA problem</em>
+ of a compare-and-swap on a pointer: a thread reads the top \f$ A \f$ of a
+ stack and its successor \f$ B \f$, another thread pops \f$ A \f$ and
+ \f$ B \f$ and pushes \f$ A \f$ again, and the compare-and-swap of the first
+ thread from \f$ A \f$ to \f$ B \f$ succeeds and puts back on the stack a
+ cell that is no longer there. The headers avoid it by construction rather
+ than by counters: a stack whose cells are only pushed one at a time and
+ taken all at once never compares a pointer read before a pop.
+
+ \section theory_concurrent_real The structures and their costs
+
+ <table>
+ <caption>The structures of the area, the threads they admit and the cost
+          of their operations</caption>
+ <tr><th>Structure</th><th>Threads</th><th>Progress</th>
+     <th>Cost of an operation</th></tr>
+ <tr><td><tt>SPSCQueue</tt></td><td>one producer, one consumer</td>
+     <td>wait-free</td><td>\f$ O( 1 ) \f$, no read-modify-write</td></tr>
+ <tr><td><tt>MPSCQueue</tt></td><td>many producers, one consumer</td>
+     <td>wait-free push but for the allocation of a block, lock-free
+         creation of a producer</td>
+     <td>\f$ O( 1 ) \f$ amortized, no read-modify-write but per block</td>
+     </tr>
+ <tr><td><tt>MPSCInbox</tt></td><td>many producers, one consumer</td>
+     <td>lock-free push, wait-free take</td>
+     <td>one compare-and-swap per push, one exchange per take of
+         \f$ k \f$ messages, plus \f$ O( k ) \f$</td></tr>
+ <tr><td><tt>MPMCQueue</tt></td><td>many producers, many consumers</td>
+     <td>lock-free but for a thread stopped between its claim and its
+         publication</td>
+     <td>one compare-and-swap per operation without contention</td></tr>
+ <tr><td><tt>WorkStealingDeque</tt></td><td>one owner, many thieves</td>
+     <td>wait-free push, lock-free take and steal</td>
+     <td>\f$ O( 1 ) \f$ amortized for the owner, a compare-and-swap only on
+         the last item; one per steal</td></tr>
+ <tr><td><tt>ConcurrentUnionFind</tt></td><td>any</td><td>lock-free</td>
+     <td>\f$ O( \log_{2 + m / n} n ) \f$ amortized on one thread</td></tr>
+ <tr><td><tt>ConcurrentCuckooTable</tt></td><td>any</td>
+     <td>blocking (a lock per region), lookups without locks for the
+         keys and values read atomically</td>
+     <td>\f$ O( 1 ) \f$ expected, \f$ O( 1 ) \f$ amortized for the
+         doublings</td></tr>
+ <tr><td><tt>EventCount</tt></td><td>any</td>
+     <td>a waiter sleeps, a notifier never waits</td>
+     <td>a fence and a read when nobody waits</td></tr>
+ </table>
+
+ The queues of one producer or of one consumer are cheaper than the general
+ one because each index has a single writer: it is written by plain stores
+ with release and read by loads with acquire, and no read-modify-write is
+ needed, while many writers of one index must agree by a compare-and-swap,
+ and contend on its line. The copies of the indices keep the two threads of
+ `SPSCQueue` off each other's lines but when the queue looks full or empty,
+ i.e., once per lap rather than once per item. The many producers of
+ `MPSCQueue` are given one lane each, a queue of one producer and one
+ consumer, so that they never contend, at the price of a consumer that
+ visits the lanes in turn; `MPSCInbox` is the simplest of the three, one
+ stack, and it suits the messages taken in bursts.
+
+ \section theory_concurrent_queues Queues of producers and consumers
+
+ <em>Lemma 1 (the queue of Lamport).</em> Let the producer write the item of
+ the index \f$ t \f$ and then store \f$ t + 1 \f$ in the tail with release,
+ and let the consumer load the tail with acquire, read the items of the
+ indices below it, and then store the new head with release, which the
+ producer loads with acquire before it reuses a place. Then the consumer
+ reads each item whole, after it was written, and the producer never
+ overwrites an item not yet read:
+ \f[
+   \mathrm{write}( A[ i ] ) \to \mathrm{read}( A[ i ] ) \to
+   \mathrm{write}( A[ i + c ] ) \quad \forall i , \tag{1}
+ \f]
+ \f$ \to \f$ being the order of happening before.
+
+ Indeed, the write of \f$ A[ i ] \f$ precedes in the producer the release
+ store of a tail \f$ > i \f$, which the consumer reads by an acquire load
+ before it reads \f$ A[ i ] \f$; the store and the load synchronize, and the
+ first arrow of (1) follows. The second arrow is the same argument on the
+ head, since the producer writes \f$ A[ i + c ] \f$ only after it has read a
+ head \f$ > i \f$, i.e., \f$ t - h < c \f$. The indices only grow and are
+ reduced by the mask, so that the comparisons \f$ t - h = c \f$ (full) and
+ \f$ h = t \f$ (empty) hold also when the integers wrap around. A stale copy
+ \f$ \mathit{seen} \f$ of the index of the other thread is never ahead of
+ it, and therefore only makes the queue look fuller or emptier than it is,
+ never the converse; this is why the copy is read again before the queue is
+ declared full or empty. Each operation runs a constant number of steps,
+ whatever the other thread does, and the queue is wait-free. The
+ linearization point of a push is its store of the tail, and that of a pop
+ its store of the head (or, if it finds the queue empty, its load of the
+ tail).
+
+ `MPSCQueue` applies Lemma 1 to each lane, whose block holds the count of
+ its items in place of the tail; the link to the next block is stored with
+ release after the block is full, and a block goes back to its producer on a
+ stack only after the consumer has read all its items, so that a block is
+ reused only when (1) holds for all its places. In steady state a lane
+ cycles over \f$ \lceil m / B \rceil + 1 \f$ blocks for at most \f$ m \f$
+ items held at once, and an item costs one store of the count. The
+ consumer of `SPSCQueue` and of `MPSCQueue` waits a few pauses when it is
+ right behind a streaming producer and finds only a few items (B-Queue): it
+ then takes a batch at once, and the lines of the count and of the items
+ travel once per batch instead of once per item, which would slow the
+ producer down several times over.
+
+ <em>Lemma 2 (the sequences of Vyukov).</em> In `MPMCQueue` the place of the
+ index \f$ i \f$ holds the sequence \f$ i \f$ when it waits for the push of
+ \f$ i \f$, \f$ i + 1 \f$ when it holds that item, and \f$ i + c \f$ when it
+ waits for the push of \f$ i + c \f$; a producer claims the index \f$ p \f$
+ by \f$ \mathrm{CAS}( t , p , p + 1 ) \f$ only after it has read the
+ sequence \f$ p \f$, and publishes by storing \f$ p + 1 \f$ with release, and
+ a consumer does the same on the head with \f$ q + 1 \f$ and \f$ q + c \f$.
+
+ The compare-and-swap gives each index to one producer and to one consumer,
+ and the sequence, written with release and read with acquire, carries the
+ order (1) from the producer to the consumer and back. A producer that reads
+ a sequence below \f$ p \f$ finds the item of \f$ p - c \f$ not yet taken,
+ i.e., the queue full, and one that reads a sequence above \f$ p \f$ lost the
+ index to another producer, and reads the tail again. A failure of the
+ compare-and-swap means that another thread claimed the index, hence the
+ queue makes progress; but a thread stopped between its compare-and-swap and
+ its publication holds up the threads that come round to its place, and the
+ queue is lock-free only when no thread stops there.
+
+ `MPSCInbox` pushes cells on a stack of Treiber, by a loop of
+ \f$ \mathrm{CAS}( \mathit{top} , \mathit{next} , \mathit{cell} ) \f$, and the
+ consumer takes the whole stack by
+ \f$ \mathrm{exchange}( \mathit{top} , \textbf{nil} ) \f$ and reverses it.
+ The ABA problem needs a compare-and-swap whose expected value was read
+ before the cell it names was popped and pushed again; here the only
+ compare-and-swap is that of a push, whose expected value is the top read by
+ the pusher and whose new cell is its own, and a cell is never popped alone,
+ so that a success always links the new cell above the true top. The same
+ argument holds for the stacks of the lanes of `MPSCQueue` and of the
+ returns of `ConcurrentPoolResource`.
+
+ \section theory_concurrent_steal Work stealing
+
+ The deque of Chase and Lev serves the scheduling by work stealing: each
+ worker pushes and takes its tasks at the bottom of its own deque, as on a
+ stack, which keeps the tasks it made last, and their data, in its cache,
+ and an idle worker steals the oldest task at the top of the deque of
+ another, which is often the root of a large subtree of work. The owner
+ writes the bottom \f$ b \f$ alone; the top \f$ t \f$ only grows, by a
+ compare-and-swap of the thieves or of the owner, and the items are those of
+ \f$ [ t , b ) \f$.
+
+ <em>Lemma 3 (the last item).</em> Let `take()` store \f$ b - 1 \f$ in the
+ bottom and then load the top, and `steal()` load the top and then the
+ bottom, all four accesses sequentially consistent. Then, when one item is
+ left, the owner and a thief do not both take it, and they do not both
+ leave it.
+
+ In fact, the four accesses lie in \f$ S \f$. If the load of the bottom of
+ the thief follows in \f$ S \f$ the store of the owner, the thief sees
+ \f$ t \ge b \f$ and gives up, or both race for the item by a
+ compare-and-swap of \f$ t \f$ from the same value, which only one wins;
+ otherwise the load of the top of the owner follows the load of the thief,
+ and in either case the owner sees a top that tells it whether to race.
+ With release and acquire alone both threads could read the old value of
+ the word written by the other and both take the item; this is the reason
+ of the two fences of Lê et al., written in the code as sequentially
+ consistent accesses, which the sanitizer of threads models. All other
+ items are taken by one side only, since a thief takes \f$ t \f$ and the
+ owner \f$ b - 1 \f$, distinct when more than one item is left.
+
+ A full vector is doubled by the owner, which copies the items of
+ \f$ [ t , b ) \f$ to their indices in a vector of twice the places and
+ publishes it with release; a thief that read the old vector reads from it
+ an item that the copy did not change, and the old vectors are kept until
+ the deque dies, so that no read is ever of freed memory. Their sizes form a
+ geometric series, below the size of the last vector, and the doublings cost
+ \f$ O( 1 ) \f$ amortized per push, as in the vector of section 4.3.
+
+ \section theory_concurrent_uf Union-find
+
+ `ConcurrentUnionFind` keeps a forest of parents, each an atomic word, and
+ changes it only by compare-and-swap (Jayanti and Tarjan).
+
+ <em>Lemma 4 (linking by index).</em> If a root \f$ x \f$ is hooked only
+ under a root \f$ y < x \f$, by \f$ \mathrm{CAS}( p[ x ] , x , y ) \f$, and a
+ parent \f$ p[ x ] \f$ is otherwise only replaced by an ancestor of
+ \f$ x \f$, then at every moment
+ \f[
+   p[ x ] \le x \quad \forall x , \tag{2}
+ \f]
+ the forest has no cycle, and the root of each tree is its least element.
+
+ By induction on the steps: a hook succeeds only if \f$ x \f$ is still a
+ root, and sets \f$ p[ x ] = y < x \f$; the splitting of `find()` replaces
+ \f$ p[ x ] = u \f$ by \f$ p[ u ] \le u \f$, by a compare-and-swap that fails
+ if \f$ p[ x ] \f$ changed meanwhile, so that the new parent is an ancestor
+ and (2) still holds. Along a path the elements decrease strictly, which
+ excludes a cycle and makes the root the least element; hence the label of a
+ set does not depend on the order of the operations. A failed
+ compare-and-swap of a splitting is harmless, since it only leaves a longer
+ path, and a failed hook means that another thread hooked \f$ x \f$ first,
+ which is progress; `unite()` then finds the roots again. The operations are
+ linearizable: `unite()` at its successful hook, `find()` at the read that
+ finds a root, and `sameSet()` at the second `find()` when the root of
+ \f$ x \f$ is still a root then. On one thread the linking by index with the
+ splitting costs \f$ O( \log_{2 + m / n} n ) \f$ amortized per operation on
+ \f$ m \f$ operations and \f$ n \f$ elements (Tarjan and van Leeuwen); the
+ randomized linking of Jayanti and Tarjan has a better bound on
+ \f$ p \f$ threads, at the price of labels that are not the least
+ elements.
+
+ \section theory_concurrent_hash The hash table shared by threads
+
+ `ConcurrentCuckooTable` is the cuckoo hashing of `BucketCuckooTable` (see
+ the theory of dictionaries), with a lock, a counter of versions, per region
+ of buckets; both buckets of a key, and every bucket of the cuckoo path of an
+ insertion, lie in the region of the key, so that an operation on one key
+ takes one lock. Three arguments make it correct.
+
+ First, no deadlock. The operations that take more than one lock (the
+ doubling, `reserve()`, `clear()`, `forEach()`, `consistent()`) take all
+ those in use in increasing order, and a thread that holds the lock
+ \f$ i \f$ and waits for \f$ j \f$ has \f$ i < j \f$; a cycle of waits would
+ give \f$ i_1 < i_2 < \cdots < i_k < i_1 \f$, which is impossible.
+
+ Second, the lookups without locks (a seqlock). A reader loads the version
+ \f$ v \f$ with acquire, gives up if it is odd (a writer holds the lock),
+ reads the tags and the places with relaxed atomic loads, issues an acquire
+ fence and loads the version again: if it is still \f$ v \f$, no writer
+ held the lock in between, and what it read is a state of the region. A
+ writer makes the version odd by a compare-and-swap and issues a release
+ fence before its relaxed stores, so that a reader that reads one of those
+ stores reads, after its fence, the odd version or a later one, and tries
+ again (Boehm). No access is a data race, since all of them are atomic.
+
+ Third, the doubling. A region whose load would pass 0.98, or an insertion
+ that finds no cuckoo path of at most 5 moves among 1024 buckets, doubles
+ the table under all the locks; the tables replaced stay alive while a
+ reader may be on one, and with sizes that double they occupy less than the
+ table in use. With 2 buckets of 4 places, \f$ n \f$ random keys fit with
+ high probability while \f$ n < 0.9803 \cdot 4 B \f$, the threshold of the
+ 4-orientability of the random graphs (Cain, Sanders and Wormald), and a
+ search in breadth over \f$ M \f$ places finds a path of
+ \f$ O( \log_4 M ) \f$ moves, against the \f$ M / 2 \f$ of a search in depth
+ (Li et al.). A lookup touches two buckets, i.e., \f$ O( 1 ) \f$ lines, and
+ an insertion \f$ O( 1 ) \f$ expected moves, the doublings adding
+ \f$ O( 1 ) \f$ amortized; with uniform keys two operations contend for a
+ lock with probability \f$ 1 / P \f$ for \f$ P \f$ regions.
+
+ \section theory_concurrent_wait Sleeping until a condition holds
+
+ A thread that waits for an item could look again and again, which wastes a
+ core, or sleep for fixed lengths, which delays the item. The event count of
+ Reed and Kanodia lets it sleep until another thread signals that the
+ condition may have become true, with no lock and with nearly no cost for
+ the signal when nobody sleeps. A waiter announces itself and reads the
+ epoch \f$ e \f$ in one read-modify-write, looks at the condition once more,
+ and sleeps while the epoch is \f$ e \f$; a notifier makes the condition
+ true, issues a fence, reads the number of the waiters, and only if it is
+ positive advances the epoch and wakes them.
+
+ <em>Lemma 5 (no lost wake-up).</em> Let the read-modify-write of the
+ waiter be followed by a full fence, and the write that makes the condition
+ true be followed by a full fence before the notifier reads the waiters.
+ Then a waiter does not sleep through a notification of a condition that is
+ true.
+
+ Indeed, the two fences lie in \f$ S \f$. If that of the notifier comes
+ first, the waiter, looking at the condition after its own fence, sees it
+ true and does not sleep; if that of the waiter comes first, the notifier
+ reads its announcement and advances the epoch, and the waiter either has
+ not yet compared the epoch, and sees the new one, or sleeps on \f$ e \f$
+ and is woken. On Linux the fence of the notifier is only one of the
+ compiler, and that of the waiter a system call (`membarrier(2)`) that
+ makes every running thread of the process run a full barrier, which orders
+ the two as a pair of full fences (Ladan-Mozes, Lee and Vyukov); the
+ waiter, about to sleep, pays the system call, and a notification with
+ nobody waiting costs the read of a line that stays shared.
+
+ \section theory_concurrent_refs References
+
+ \see M. P. Herlihy, J. M. Wing, Linearizability: a correctness condition
+      for concurrent objects, ACM Transactions on Programming Languages and
+      Systems 12(3), 463-492, 1990, doi:10.1145/78969.78972
+ \see M. Herlihy, Wait-free synchronization, ACM Transactions on
+      Programming Languages and Systems 13(1), 124-149, 1991,
+      doi:10.1145/114005.102808
+ \see M. Herlihy, N. Shavit, The Art of Multiprocessor Programming, Morgan
+      Kaufmann, 2008
+ \see H. Boehm, S. V. Adve, Foundations of the C++ concurrency memory
+      model, ACM SIGPLAN Conference on Programming Language Design and
+      Implementation (PLDI), 68-78, 2008, doi:10.1145/1375581.1375591
+ \see L. Lamport, Specifying concurrent program modules, ACM Transactions
+      on Programming Languages and Systems 5(2), 190-222, 1983,
+      doi:10.1145/69624.357207
+ \see J. Wang, K. Zhang, X. Tang, B. Hua, B-Queue: efficient and practical
+      queuing for fast core-to-core communication, International Journal
+      of Parallel Programming 41(1), 137-159, 2013,
+      doi:10.1007/s10766-012-0213-x
+ \see M. Aldinucci, M. Danelutto, P. Kilpatrick, M. Meneghin, M. Torquati,
+      An efficient unbounded lock-free queue for multi-core systems,
+      Euro-Par 2012, LNCS 7484, 662-673, 2012,
+      doi:10.1007/978-3-642-32820-6_65
+ \see D. Vyukov, Bounded MPMC queue, 2010, the queues of the lock-free
+      algorithms of https://www.1024cores.net
+ \see R. K. Treiber, Systems programming: coping with parallelism,
+      Technical Report RJ 5118, IBM Almaden Research Center, 1986
+ \see D. Chase, Y. Lev, Dynamic circular work-stealing deque, ACM Symposium
+      on Parallelism in Algorithms and Architectures (SPAA), 21-28, 2005,
+      doi:10.1145/1073970.1073974
+ \see N. M. Lê, A. Pop, A. Cohen, F. Zappa Nardelli, Correct and efficient
+      work-stealing for weak memory models, ACM SIGPLAN Symposium on
+      Principles and Practice of Parallel Programming (PPoPP), 69-80, 2013,
+      doi:10.1145/2442516.2442524
+ \see S. V. Jayanti, R. E. Tarjan, Concurrent disjoint set union,
+      Distributed Computing 34(6), 413-436, 2021,
+      doi:10.1007/s00446-020-00388-x
+ \see R. E. Tarjan, J. van Leeuwen, Worst-case analysis of set union
+      algorithms, Journal of the ACM 31(2), 245-281, 1984,
+      doi:10.1145/62.2160
+ \see X. Li, D. G. Andersen, M. Kaminsky, M. J. Freedman, Algorithmic
+      improvements for fast concurrent cuckoo hashing, Proceedings of
+      EuroSys 2014, 27, 2014, doi:10.1145/2592798.2592820
+ \see H.-J. Boehm, Can seqlocks get along with programming language memory
+      models?, Proceedings of MSPC 2012, 12-20, 2012,
+      doi:10.1145/2247684.2247688
+ \see J. A. Cain, P. Sanders, N. Wormald, The random graph threshold for
+      k-orientiability and a fast algorithm for optimal multiple-choice
+      allocation, Proceedings of SODA 2007, 469-476, 2007
+ \see D. P. Reed, R. K. Kanodia, Synchronization with eventcounts and
+      sequencers, Communications of the ACM 22(2), 115-123, 1979,
+      doi:10.1145/359060.359076
+ \see E. Ladan-Mozes, I.-T. A. Lee, D. Vyukov, Location-based memory
+      fences, ACM Symposium on Parallelism in Algorithms and Architectures
+      (SPAA), 75-84, 2011, doi:10.1145/1989493.1989503
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File concurrent.dox -------------------------*/
+/*--------------------------------------------------------------------------*/

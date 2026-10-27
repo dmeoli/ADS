@@ -8,21 +8,22 @@
  * producer pushes a cell on a stack with a compare-and-swap on its top (the
  * stack of Treiber); the consumer takes the whole stack at once by
  * exchanging its top with nil, and reverses it, so that the messages of
- * each producer come out in the order in which it sent them. take() thus
- * costs one atomic operation however many messages there are, and the
- * consumer never competes with the producers on single items; since the
- * consumer only takes the whole stack, the ABA problem of the stack of
- * Treiber cannot occur.
+ * each producer come out in the order in which it sent them. Thus `take()`
+ * costs one atomic operation however many messages there are, plus
+ * \f$ O( k ) \f$ time for the \f$ k \f$ messages taken, and the consumer
+ * never competes with the producers on single items; since the consumer
+ * only takes the whole stack, and never pops a single cell, the ABA problem
+ * of the stack of Treiber cannot occur.
  *
- * The contracts [see Contract.h]: only one thread calls take(). The
- * operations are defined in MPSCInbox.tpp.
+ * The contracts [see `Contract.h`]: only one thread calls `take()`. The
+ * operations are defined in `MPSCInbox.tpp`.
  *
  * \see R. K. Treiber, Systems programming: coping with parallelism,
  *      Technical Report RJ 5118, IBM Almaden Research Center, 1986
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -64,23 +65,51 @@ class MPSCInbox {
 
  using Item = T;   ///< the type of the messages
 
+ /// the empty inbox
  MPSCInbox( void ) = default;
+ /// no copy, since the threads share it by its address
  MPSCInbox( const MPSCInbox & ) = delete;
+ /// no copy, since the threads share it by its address
  MPSCInbox & operator=( const MPSCInbox & ) = delete;
 
  /// frees the messages not taken
  ~MPSCInbox();
 
- /// sends v, and wakes the consumer if it sleeps in waitTake() (a fence
- /// and the read of a line when it does not); any thread may call it
+ /// sends \f$ v \f$, and wakes the consumer if it sleeps in `waitTake()` (a
+ /// fence and the read of a line when it does not); any thread may call it
+ ///
+ /// In pseudocode (the push of Treiber, beyond the book), with
+ /// \f$ \mathit{top} \f$ the top of the stack:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{push}( v ) \cr
+ /// 2 & \quad c \gets \text{a new cell of } v \cr
+ /// 3 & \quad \textbf{repeat}\ c.\mathit{next} \gets \mathit{top}
+ ///     \ \textbf{until}\ \mathrm{CAS}( \mathit{top} , c.\mathit{next} , c
+ ///     )\quad \triangleright\ \text{release} \cr
+ /// 4 & \quad \mathrm{notify}()
+ /// \end{array}}
+ /// \f]
  void push( T v );
 
  /// all the messages sent so far and not yet taken, those of each sender
  /// in the order of sending; only the consumer calls it
+ ///
+ /// In pseudocode (beyond the book), the whole stack taken at once:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{take}() \cr
+ /// 2 & \quad c \gets \mathrm{exchange}( \mathit{top} , \textbf{nil} )\quad
+ ///     \triangleright\ \text{acquire} \cr
+ /// 3 & \quad L \gets \text{the values of the cells from } c \text{, newest}
+ ///     \text{ first} \cr
+ /// 4 & \quad \textbf{return}\ L \text{ reversed}
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] std::vector< T > take( void );
 
- /// as take(), sleeping until at least one message comes [see
- /// EventCount.h]; only the consumer calls it
+ /// the messages of `take()`, sleeping until at least one comes [see
+ /// `EventCount.h`]; only the consumer calls it
  [[nodiscard]] std::vector< T > waitTake( void ) {
   std::vector< T > v;
   f_wait.await( [ & ] { v = take(); return( ! v.empty() ); } );
@@ -95,7 +124,9 @@ class MPSCInbox {
 
  /// a cell of the stack
  struct Cell {
+  /// the message
   T value;
+  /// the cell below on the stack
   Cell * next;
   };
 
