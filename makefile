@@ -119,7 +119,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
-            learned stringdicts flows \
+            learned stringdicts flows assignment \
             $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -385,11 +385,16 @@ $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	       $(if $(PARLAY),-isystem $(PARLAY)/include -isystem $(PARLAY)) \
 	       -pthread
 
-# the maximum flows: LEMON=1 (or LEMON=<prefix>) the Preflow of LEMON;
-# the push-relabel of Boost when its headers are found
+# the maximum flows and the assignment: LEMON=1 (or LEMON=<prefix>) the
+# Preflow and the minimum cost flows of LEMON; the push-relabel and the
+# weighted matching of Boost when their headers are found
 LEMONFLAGS = $(if $(LEMON),-DADS_HAS_LEMON $(if $(filter-out 1,$(LEMON)),\
              -I$(LEMON)/include -L$(LEMON)/lib) -llemon)
 $(BUILD)/bench-flows: bench/flows.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
+
+$(BUILD)/bench-assignment: bench/assignment.cpp bench/Bench.h $(HEADERS) \
+                          | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
 
 # the sort over the processes of MPI, by mpicxx (not among BENCHES): make

@@ -15,7 +15,8 @@
  algorithms, the property on which its correctness rests and the argument
  behind its bound (from \ref theory_graph_visits to \ref theory_graph_euler),
  and, beyond the book, the solutions kept up to date through the changes of
- the graph (see \ref theory_graph_dynamic).
+ the graph (see \ref theory_graph_dynamic) and the assignment problem with
+ its reoptimization (see \ref theory_graph_assign).
  The pseudocode of each algorithm is instead on the page of its header, in the
  comment of its function, together with the section of the book, or the paper,
  that it follows.
@@ -756,6 +757,66 @@
      events</td></tr>
  </table>
 
+ \section theory_graph_assign The assignment and its reoptimization
+
+ Beyond the book, `Assignment.h` solves the assignment problem: \f$ n \f$
+ rows and \f$ n \f$ columns, a cost \f$ c( i , j ) \f$ for each pair (or
+ none, i.e., \f$ \infty \f$), and a perfect matching of the rows to the
+ columns of least total cost. Its dual gives a potential \f$ u_i \f$ to each
+ row and \f$ v_j \f$ to each column, and maximizes
+ \f$ \sum_i u_i + \sum_j v_j \f$ subject to
+ \f[
+   \bar{c}( i , j ) = c( i , j ) - u_i - v_j \ge 0
+   \quad \forall ( i , j ) , \tag{11}
+ \f]
+ the <em>reduced costs</em>; a perfect matching \f$ M \f$ whose pairs have
+ \f$ \bar{c}( i , j ) = 0 \f$ is then optimal, since its cost is
+ \f$ \sum_i u_i + \sum_j v_j \f$, a lower bound of the cost of any perfect
+ matching by (11) (the complementary slackness, as in the Hungarian method
+ of Kuhn). The algorithm of the shortest augmenting paths (Jonker and
+ Volgenant, in the form of Crouse) keeps (11) and the zeros on a partial
+ matching, and adds one row at a time: from a free row \f$ i_0 \f$ it
+ finds, by the algorithm of Dijkstra on the reduced costs of the complete
+ bipartite graph (alternating between a column reached and the row matched
+ to it), a shortest path to a free column, of length \f$ \mu \f$; it then
+ raises \f$ u \f$ and lowers \f$ v \f$ along the tree of the search by
+ \f$ \mu - \delta_j \f$, \f$ \delta_j \f$ the distance of each column
+ \f$ j \f$ scanned, which keeps (11) and makes the edges of the path
+ tight, and flips the pairs along the path. On the dense graph a search
+ costs \f$ O( n^2 ) \f$, with an array in place of the heap, and \f$ n \f$
+ of them give \f$ O( n^3 ) \f$; the potentials start from
+ \f$ u_i = \min_j c( i , j ) \f$ and \f$ v = 0 \f$, which satisfy (11)
+ whatever the signs of the costs.
+
+ <em>Lemma 9 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
+ (11) with the pairs of \f$ M \f$ tight, and let the costs of the row
+ \f$ i \f$ change. Removing the pair of \f$ i \f$ from \f$ M \f$ and setting
+ \f[
+   u_i = \min_j \{ c( i , j ) - v_j \} \tag{12}
+ \f]
+ gives again a triple that satisfies (11) with the pairs tight, with one
+ free row, so that one augmentation, \f$ O( n^2 ) \f$, gives an optimal
+ assignment for the new costs; the same holds for a column \f$ j \f$, with
+ \f$ v_j = \min_i \{ c( i , j ) - u_i \} \f$, and for any set of rows and
+ columns, one augmentation for each pair removed.
+
+ Indeed, (12) makes the reduced costs of the row \f$ i \f$ nonnegative,
+ and those of the other rows did not change; the pairs left in \f$ M \f$
+ are outside the row \f$ i \f$, so that they stay tight. A column \f$ j \f$
+ is the same with the roles exchanged, and when the rows are set first the
+ minimum of the columns sees their new potentials. This is the incremental
+ assignment of Toroslu and Üçoluk (a row and a column added to a solved
+ problem, solved by one augmentation; Volgenant remarks that it is a step
+ of the method of Jonker and Volgenant) and the dynamic Hungarian algorithm
+ of Mills-Tettey, Stentz and Dias for the costs that change, here with the
+ shortest augmenting path in place of the labels of the Hungarian method.
+ A change of a single cost \f$ c( i , j ) \f$ off \f$ M \f$ that leaves
+ \f$ \bar{c}( i , j ) \ge 0 \f$ (a raise, or a fall that the duals allow)
+ changes nothing, in \f$ O( 1 ) \f$; any other frees the row \f$ i \f$. With
+ \f$ k \f$ rows and columns changed, the repair costs \f$ O( k n^2 ) \f$
+ against the \f$ O( n^3 ) \f$ of a solution from scratch, which
+ `Assignment::solve()` chooses when \f$ 2 k > n \f$.
+
  \section theory_graph_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 9, 11, 13,
@@ -813,6 +874,25 @@
       in Markov random fields, IEEE Transactions on Pattern Analysis and
       Machine Intelligence 29(12), 2079-2088, 2007,
       doi:10.1109/TPAMI.2007.1128
+ \see H. W. Kuhn, The Hungarian method for the assignment problem, Naval
+      Research Logistics Quarterly 2(1-2), 83-97, 1955,
+      doi:10.1002/nav.3800020109
+ \see R. Jonker, A. Volgenant, A shortest augmenting path algorithm for
+      dense and sparse linear assignment problems, Computing 38(4),
+      325-340, 1987, doi:10.1007/BF02278710
+ \see D. F. Crouse, On implementing 2D rectangular assignment algorithms,
+      IEEE Transactions on Aerospace and Electronic Systems 52(4),
+      1679-1696, 2016, doi:10.1109/TAES.2016.140952
+ \see I. H. Toroslu, G. Üçoluk, Incremental assignment problem,
+      Information Sciences 177(6), 1523-1529, 2007,
+      doi:10.1016/j.ins.2006.05.004
+ \see A. Volgenant, An addendum on the incremental assignment problem,
+      Information Sciences 178(23), 4583, 2008,
+      doi:10.1016/j.ins.2008.07.020
+ \see G. A. Mills-Tettey, A. Stentz, M. B. Dias, The dynamic Hungarian
+      algorithm for the assignment problem with changing costs, technical
+      report CMU-RI-TR-07-27, Robotics Institute, Carnegie Mellon
+      University, 2007
  \see S. Even, R. E. Tarjan, Network flow and testing graph connectivity,
       SIAM Journal on Computing 4(4), 507-518, 1975, doi:10.1137/0204043
  \see D. B. Johnson, Finding all the elementary circuits of a directed

@@ -28,6 +28,7 @@
 #include "ADSTest.h"
 
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/Assignment.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/MatrixGraph.h"
 #include "ADS/graph/MaxFlow.h"
@@ -808,6 +809,176 @@ ADS_TEST( "reopt-lazy" )
 /*--------------------------------------------------------------------------*/
 /*----------------------------- THE ROLLBACK -------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+namespace {
+
+/// the least total cost of a perfect assignment of the costs C, by the
+/// permutations, infinity() if none
+template< class W >
+W bruteAssignment( int n , const std::vector< W > & C )
+{
+ std::vector< int > p( n );
+ for( int i = 0 ; i < n ; ++i )
+  p[ i ] = i;
+ W best = infinity< W >();
+ do {
+  W s = W();
+  bool ok = true;
+  for( int i = 0 ; ( i < n ) && ok ; ++i ) {
+   const W c = C[ std::size_t( i * n + p[ i ] ) ];
+   ok = c != infinity< W >();
+   s += ok ? c : W();
+   }
+  if( ok && ( s < best ) )
+   best = s;
+  } while( std::next_permutation( p.begin() , p.end() ) );
+ return( best );
+ }
+
+}  // end( namespace )
+
+ADS_TEST( "assignment" )
+{
+ const long long INF = infinity< long long >();
+ // no row; one row; a forbidden pair; no perfect assignment
+ {
+  Assignment<> A( 0 , {} );
+  CHECK( A.perfect() && ( A.total() == 0 ) );
+  Assignment<> B( 1 , { -4 } );
+  CHECK( ( B.column( 0 ) == 0 ) && ( B.total() == -4 ) );
+  Assignment<> C( 2 , { 1 , INF , 5 , 2 } );
+  CHECK( ( C.column( 0 ) == 0 ) && ( C.total() == 3 ) );
+  Assignment<> D( 2 , { 1 , INF , 5 , INF } );
+  CHECK( ! D.perfect() && ( D.column( 0 ) + D.column( 1 ) == -1 ) );
+  D.setCost( 1 , 1 , 7 );                 // now there is one
+  CHECK( D.perfect() && ( D.total() == 8 ) );
+  CHECK_THROWS( Assignment<>( 2 , { 1 , 2 , 3 } ) , contract_violation );
+  }
+ // the outcomes: a cost raised off the assignment is free, one lowered
+ // below the duals frees its row, a row and a column changed whole
+ {
+  std::vector< long long > C = { 4 , 1 , 3 ,
+                                 2 , 0 , 5 ,
+                                 3 , 2 , 2 };
+  Assignment<> A( 3 , C );
+  CHECK( ( A.total() == 5 ) && ( A.outcome() == Reopt::SCRATCH ) );
+  const int j = A.column( 0 ) == 0 ? 1 : 0;   // off the assignment
+  A.setCost( 0 , j , C[ j ] = 9 );
+  CHECK( ( A.total() == 5 ) && ( A.outcome() == Reopt::CERTIFIED ) );
+  A.setCost( 2 , 0 , C[ 6 ] = -10 );
+  CHECK( ( A.total() == bruteAssignment( 3 , C ) ) &&
+         ( A.outcome() == Reopt::WARM ) && ( A.column( 2 ) == 0 ) );
+  A.setRow( 1 , { 1 , 1 , 1 } );
+  C[ 3 ] = C[ 4 ] = C[ 5 ] = 1;
+  CHECK( ( A.total() == bruteAssignment( 3 , C ) ) &&
+         ( A.outcome() == Reopt::WARM ) );
+  A.setColumn( 2 , { 0 , 0 , 0 } );
+  C[ 2 ] = C[ 5 ] = C[ 8 ] = 0;
+  CHECK( ( A.total() == bruteAssignment( 3 , C ) ) &&
+         ( A.outcome() == Reopt::WARM ) );
+  A.setRow( 0 , { 0 , 0 , 0 } );          // two of three changed: scratch
+  A.setRow( 1 , { 0 , 0 , 0 } );
+  CHECK( ( A.total() == -10 ) && ( A.outcome() == Reopt::SCRATCH ) );
+  }
+ // random costs, integer and real, with forbidden pairs, against the
+ // permutations, then random changes of cells, rows and columns against
+ // the permutations and against a solve from scratch
+ std::mt19937 rng( 17 );
+ for( int round = 0 ; round < ADS::test::scaled( 300 , 60 ) ; ++round ) {
+  const int n = 1 + int( rng() % 7 );
+  std::vector< long long > C( std::size_t( n * n ) );
+  auto draw = [ & ]( void ) {
+   return( rng() % 8 == 0 ? INF : static_cast< long long >( rng() % 41 ) -
+                                  20 ); };
+  for( auto & c : C )
+   c = draw();
+  Assignment<> A( n , C );
+  long long seen[ 3 ] = { 0 , 0 , 0 };
+  for( int step = 0 ; step < 12 ; ++step ) {
+   const long long b = bruteAssignment( n , C );
+   CHECK( A.perfect() == ( b != INF ) );
+   if( b != INF )
+    CHECK( A.total() == b );
+   ++seen[ A.outcome() ];
+   const int k = int( rng() % 3 ) , x = int( rng() % n );
+   if( k == 0 ) {
+    const int y = int( rng() % n );
+    C[ std::size_t( x * n + y ) ] = draw();
+    A.setCost( x , y , C[ std::size_t( x * n + y ) ] );
+    }
+   else {
+    std::vector< long long > R( n );
+    for( auto & r : R )
+     r = draw();
+    for( int y = 0 ; y < n ; ++y )
+     C[ std::size_t( k == 1 ? x * n + y : y * n + x ) ] = R[ y ];
+    if( k == 1 )
+     A.setRow( x , R );
+    else
+     A.setColumn( x , R );
+    }
+   }
+  }
+ {
+  std::vector< double > C( 36 );
+  for( auto & c : C )
+   c = double( rng() % 1000 ) / 7.0;
+  Assignment< double > A( 6 , C );
+  const double b = bruteAssignment( 6 , C );
+  CHECK( std::abs( A.total() - b ) < 1e-9 );
+  C[ 7 ] = -3.5;
+  A.setCost( 1 , 1 , -3.5 );
+  CHECK( std::abs( A.total() - bruteAssignment( 6 , C ) ) < 1e-9 );
+  }
+ // a larger one, one row at a time, against a solve from scratch: the
+ // augmentations are one per change
+ {
+  const int n = 120;
+  std::vector< long long > C( std::size_t( n * n ) );
+  for( auto & c : C )
+   c = static_cast< long long >( rng() % 100000 );
+  Assignment<> A( n , C );
+  ( void ) A.total();
+  const long long aug = A.augmentations();
+  for( int step = 0 ; step < 40 ; ++step ) {
+   const int i = int( rng() % n );
+   std::vector< long long > R( n );
+   for( int y = 0 ; y < n ; ++y )
+    C[ std::size_t( i * n + y ) ] = R[ y ] =
+                            static_cast< long long >( rng() % 100000 );
+   A.setRow( i , R );
+   CHECK( A.total() == Assignment<>( n , C ).total() );
+   }
+  CHECK( A.augmentations() == aug + 40 );
+  }
+ }
+
+ADS_TEST( "reopt-assignment" )
+{
+ // 3 rows, the nodes 0 , 1 , 2, and 3 columns, the nodes 3 , 4 , 5
+ LG g( 6 , false );
+ const long long W[ 3 ][ 3 ] = { { 4 , 1 , 3 } , { 2 , 0 , 5 } ,
+                                 { 3 , 2 , 2 } };
+ for( int i = 0 ; i < 3 ; ++i )
+  for( int j = 0 ; j < 3 ; ++j )
+   g.insertEdge( i , 3 + j , W[ i ][ j ] );
+ AssignmentObserver< LG > a( g , 3 );
+ Observable< LG , AssignmentObserver< LG > > og( g , a );
+ CHECK( ( a.total() == 5 ) && ( a.outcome() == Reopt::SCRATCH ) );
+ og.setWeight( 0 , 3 , 40 );              // off the assignment, raised
+ CHECK( ( a.total() == 5 ) && ( a.outcome() == Reopt::CERTIFIED ) );
+ og.deleteEdge( 1 , 3 );                  // the pair of row 1 gone
+ CHECK( ( a.total() == bruteAssignment< long long >( 3 ,
+          { 40 , 1 , 3 , infinity< long long >() , 0 , 5 , 3 , 2 , 2 } ) ) &&
+        ( a.outcome() == Reopt::WARM ) );
+ og.deleteEdge( 0 , 3 );                  // column 3 reached by row 2 only
+ og.deleteEdge( 2 , 3 );                  // and then by none
+ CHECK( ! a.assignment().perfect() && ( a.partner( 1 ) >= 3 ) );
+ og.insertEdge( 1 , 3 , 1 );
+ CHECK( a.assignment().perfect() && ( a.partner( 1 ) == 3 ) );
+ og.insertEdge( 0 , 1 , 1 );               // between two rows: seen at
+ CHECK_THROWS( a.solve() , contract_violation );   // the query
+ }
 
 ADS_TEST( "link-cut-tree" )
 {

@@ -34,7 +34,7 @@
 #                           [PAM=<dir>] (with PARLAY=<dir>)                   #
 #                           [MULTIQUEUE=<dir>] [KLSM=<dir>] [GROWT=<dir>]     #
 #                           [GAPBS=<dir>] [EIGEN=<dir>] [OPENBLAS=<prefix>]   #
-#                           [LEMON=1]                                         #
+#                           [LEMON=1] (flows and assignment)                  #
 ###############################################################################
 
 set -e
@@ -120,6 +120,7 @@ run assembly 100000 1000000
 run fingerprints 100000 1000000
 run dynamic 10000 100000
 run flows 10000 100000
+run assignment 300 1000
 # the parallel algorithms on the cores PCORES (default the core CORE
 # alone), on 1, 2, 4, ... threads up to their number; the GAP benchmark
 # suite prints lines of its own, left out

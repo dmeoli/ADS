@@ -103,6 +103,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/graph/Assignment.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/graph/MaxFlow.h"
 #include "ADS/graph/MinimumSpanningTree.h"
@@ -651,6 +652,77 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
  std::vector< bool > f_S;                       ///< the side of \f$ s \f$
 
  };  // end( class MaxFlowObserver )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ CLASS AssignmentObserver ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the assignment of least cost of the \f$ k \f$ rows \f$ 0 , \ldots ,
+/// k - 1 \f$ of \f$ g \f$ to its \f$ k \f$ columns \f$ k , \ldots ,
+/// 2 k - 1 \f$, the weights of the edges between them the costs, kept up
+/// to date [see `Assignment.h`]
+template< Graph G >
+requires std::is_arithmetic_v< typename G::Weight >
+class AssignmentObserver : public EventQueue< typename G::Weight > {
+
+/*--------------------------------------------------------------------------*/
+ public:
+
+ using Weight = typename G::Weight;   ///< the type of the weights
+
+ /// the assignment of the \f$ k \f$ rows of \f$ g \f$, computed at the
+ /// first query; a pair with no edge is forbidden
+ /// \pre \f$ k \ge 0 \f$, the nodes of \f$ g \f$ are
+ ///      \f$ 0 , \ldots , 2 k - 1 \f$, each edge between a row and a
+ ///      column
+ AssignmentObserver( const G & g , int k );
+
+ /// brings the assignment up to date
+ ///
+ /// In pseudocode (beyond the book), the events \f$ P \f$ coalesced given
+ /// to the `Assignment` [see `Assignment::solve()`]:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
+ /// 2 & \quad \textbf{foreach}\ ( i , k + j ) \text{ from } w \text{ to }
+ ///     w' \text{ in } P\ \textbf{do}\ c( i , j ) \gets w' \text{, or }
+ ///     \infty \text{ if deleted} \cr
+ /// 3 & \quad A.\mathrm{solve}()
+ /// \end{array}}
+ /// \f]
+ void solve( void );
+
+ /// the assignment, up to date
+ [[nodiscard]] Assignment< Weight > & assignment( void ) {
+  solve();
+  return( f_A );
+  }
+
+ /// the column, in \f$ [ k , 2 k ) \f$, of the row \f$ i \f$, \f$ -1 \f$ if
+ /// none
+ /// \pre \f$ i \in [ 0 , k ) \f$
+ [[nodiscard]] int partner( int i ) {
+  solve();
+  const int j = f_A.column( i );
+  return( j < 0 ? -1 : f_k + j );
+  }
+
+ /// the total cost of the assignment
+ [[nodiscard]] Weight total( void ) {
+  solve();
+  return( f_A.total() );
+  }
+
+/*--------------------------------------------------------------------------*/
+ private:
+
+ using B = EventQueue< Weight >;
+
+ const G & f_g;                     ///< the graph
+ int f_k;                           ///< the rows
+ Assignment< Weight > f_A;          ///< the assignment
+
+ };  // end( class AssignmentObserver )
 
 /*--------------------------------------------------------------------------*/
 

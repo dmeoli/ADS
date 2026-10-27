@@ -21,6 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compiled in only when found; the mean and the maximum rank error of the
   relaxed queues in the hold model, from the times at which their
   operations return, replayed in their order (-b rank)
+- graph/Assignment.h: Assignment< W >, the assignment problem by the
+  shortest augmenting paths of Jonker and Volgenant in the form of Crouse,
+  $O( n^3 )$, with the costs that change by setCost(), setRow() and
+  setColumn(): a change of a row or of a column frees one pair, restores
+  the dual by one potential and augments once, $O( n^2 )$ (the incremental
+  assignment of Toroslu and Üçoluk, the dynamic Hungarian algorithm of
+  Mills-Tettey, Stentz and Dias), and a single cost raised off the
+  assignment, or lowered within the duals, costs $O( 1 )$; the observer
+  AssignmentObserver of Reoptimization.h on a bipartite graph; the tests
+  assignment and reopt-assignment; bench/assignment.cpp, against
+  NetworkSimplex of LEMON (LEMON=1) and maximum_weighted_matching of Boost
 - tree/LinkCutTree.h: LinkCutTree< T , Op >, the link-cut trees of Sleator
   and Tarjan on splay trees in vectors, with link(), cut(), cutParent(),
   evert(), findRoot(), connected(), lca() and the aggregate of a

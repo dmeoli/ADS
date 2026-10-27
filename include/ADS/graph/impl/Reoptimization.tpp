@@ -808,6 +808,64 @@ void MaxFlowObserver< G >::solve( void )
  ADS_AUDIT( cutCapacity() == f_value );
  }
 
+/*--------------------------------------------------------------------------*/
+/*------------------------ CLASS AssignmentObserver ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace detail {
+
+/// the costs of the \f$ k \f$ rows of \f$ g \f$ by rows, `infinity()` where
+/// there is no edge
+template< class G >
+std::vector< typename G::Weight > assignmentCosts( const G & g , int k )
+{
+ using W = typename G::Weight;
+ ADS_PRE( ( k >= 0 ) && ( g.bound() == 2 * k ) );
+ std::vector< W > C( std::size_t( k ) * std::size_t( k ) , infinity< W >() );
+ for( int u : g.V() )
+  g.forEachEdge( u , [ & ]( int v , const W & w ) {
+   if( ( u < k ) && ( v >= k ) )
+    C[ std::size_t( u ) * std::size_t( k ) + std::size_t( v - k ) ] = w;
+   else
+    ADS_PRE( ( u >= k ) && ( v < k ) && ! g.directed() ); } );
+ return( C );
+ }
+
+}  // end( namespace detail )
+
+template< Graph G >
+requires std::is_arithmetic_v< typename G::Weight >
+AssignmentObserver< G >::AssignmentObserver( const G & g , int k )
+ : f_g( g ) , f_k( k ) , f_A( k , detail::assignmentCosts( g , k ) )
+{
+ }
+
+template< Graph G >
+requires std::is_arithmetic_v< typename G::Weight >
+void AssignmentObserver< G >::solve( void )
+{
+ const auto P = this->take();
+ for( const auto & e : P ) {
+  int u , v;
+  std::optional< Weight > w0 , w1;
+  const bool edge = detail::edgeChange( e , u , v , w0 , w1 );
+  ADS_PRE( edge );                        // no event on a node
+  if( ! edge )
+   continue;
+  if( u > v )
+   std::swap( u , v );
+  ADS_PRE( ( u < f_k ) && ( v >= f_k ) && ( v < 2 * f_k ) );
+  f_A.setCost( u , v - f_k , w1 ? *w1 : infinity< Weight >() );
+  }
+ const long long before = f_A.count( 0 ) + f_A.count( 1 ) +
+                          f_A.count( 2 );
+ f_A.solve();
+ if( f_A.count( 0 ) + f_A.count( 1 ) + f_A.count( 2 ) > before )
+  this->done( f_A.outcome() );
+ else if( ! P.empty() )
+  this->done( Reopt::CERTIFIED );
+ }
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/
