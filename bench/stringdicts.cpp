@@ -2,21 +2,22 @@
 /*-------------------------- File stringdicts.cpp --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The benchmark of the static dictionaries of strings, which map each
- * string to its rank and back and find the strings with a prefix: the
- * Patricia trie in DFUDS and the rear coding with buckets of 16 strings of
- * ADS against the front coding with buckets of 16 strings and the Patricia
- * trie with pointers of ADS, the sorted vector of std::string with
- * std::lower_bound and, where found, the HAT-trie of tsl::htrie_map (which
- * maps a string to a value, kept here as its rank, and has no access by
- * rank), on the two sets of n distinct keys of the benchmark tries: "urls",
- * whose keys share long prefixes, and "words", which share short ones. The
- * cases are the building from the sorted keys, n lookups of present keys
- * in random order (the rank), n lookups of absent keys, n accesses of
- * random ranks (the string), n / 100 counts of the keys that begin with
- * half of a present key (by the range of their ranks), and the bytes per
- * key of the structure in the group space, the raw bytes of the keys
- * being those of "raw".
+ * The benchmark of the static dictionaries of strings, which map each string
+ * to its rank and back and find the strings with a prefix: the Patricia trie
+ * in DFUDS and the rear coding with buckets of 16 strings of ADS against the
+ * front coding with buckets of 16 strings and the Patricia trie with pointers
+ * of ADS, the sorted vector of std::string with std::lower_bound and, where
+ * found, the HAT-trie of tsl::htrie_map (which maps a string to a value, kept
+ * here as its rank, and has no access by rank), marisa-trie and the tx-trie
+ * (whose ids are their own, not the ranks) and the path-decomposed trie of
+ * Grossi and Ottaviano (with no search by prefix), on the two sets of n
+ * distinct keys of the benchmark tries: "urls", whose keys share long
+ * prefixes, and "words", which share short ones. The cases are the building
+ * from the sorted keys, n lookups of present keys in random order (the rank),
+ * n lookups of absent keys, n accesses of random ranks (the string), n / 100
+ * counts of the keys that begin with half of a present key (by the range of
+ * their ranks), and the bytes per key of the structure in the group space, the
+ * raw bytes of the keys being those of "raw".
  *
  * Each cell is the median of r runs, in nanoseconds per operation; the
  * queries run on a structure built once, and the contracts are off
@@ -50,10 +51,37 @@
  #define ADS_HAS_HTRIE 1
 #endif
 
+#if __has_include( <marisa.h> )
+ #include <marisa.h>
+ #define ADS_HAS_MARISA 1
+#endif
+
+#if __has_include( <tries/path_decomposed_trie.hpp> )
+ #include <succinct/mapper.hpp>
+ #include <tries/path_decomposed_trie.hpp>
+ #include <tries/vbyte_string_pool.hpp>
+ #define ADS_HAS_PDT 1
+#endif
+
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_set>
+
+// the tx-trie last, and its macros of a few letters (L, LL, LLL) dropped
+// after it: they break every header with a template parameter so named
+#if __has_include( <tx/tx.hpp> )
+ #include <tx/tx.hpp>
+ #undef L
+ #undef LL
+ #undef LLL
+ #undef logL
+ #undef logLL
+ #undef logLLL
+ #define ADS_HAS_TX 1
+#endif
+
 
 using namespace ADS::bench;
 
@@ -99,7 +127,8 @@ struct None {};
 
 /// the cells of a dictionary built by make() from the sorted keys D, with
 /// look( d , q ) (the rank, or n), get( d , i ) (the string of rank i, or
-/// None), pre( d , p ) (the number of keys with prefix p) and bytes( d )
+/// None), pre( d , p ) (the number of keys with prefix p, or None) and
+/// bytes( d )
 template< class M , class L , class G , class P , class B >
 void run( const std::string & who , const char * set ,
           const std::vector< std::string > & D ,
@@ -134,11 +163,12 @@ void run( const std::string & who , const char * set ,
            std::uint64_t t = 0;
            for( const auto i : I ) t += get( *d , i ).size();
            sink = sink + t; } , r , I.size() ) );
- print( "stringdicts" , s + " prefix" , n , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          std::uint64_t t = 0;
-          for( const auto & p : R ) t += pre( *d , p );
-          sink = sink + t; } , r , R.size() ) );
+ if constexpr( ! std::is_same_v< std::decay_t< P > , None > )
+  print( "stringdicts" , s + " prefix" , n , who , median(
+          [](){ return( 0 ); } , [ & ]( int ) {
+           std::uint64_t t = 0;
+           for( const auto & p : R ) t += pre( *d , p );
+           sink = sink + t; } , r , R.size() ) );
  print( "space" , s + " stringdicts" , n , who ,
         double( bytes( *d ) ) / double( n ) );
  }
@@ -263,6 +293,93 @@ int main( int argc , char ** argv )
      for( auto it = d.begin() ; it != d.end() ; ++it )
       b += it.key().size() + sizeof( std::uint64_t );
      return( b ); } );
+#endif
+
+#ifdef ADS_HAS_MARISA
+   // the ids of marisa-trie are its own, not the ranks: access() gives
+   // back the key of a random id, the same work
+   run( "marisa::Trie" , name , D , H , Q , I , R , r ,
+    [ & ](){
+     marisa::Keyset ks;
+     for( const auto & k : D ) ks.push_back( k.data() , k.size() );
+     auto d = std::make_unique< marisa::Trie >();
+     d->build( ks );
+     return( d ); } ,
+    [ n ]( const marisa::Trie & d , const std::string & q ) {
+     marisa::Agent a;
+     a.set_query( q.data() , q.size() );
+     return( d.lookup( a ) ? a.key().id() : n ); } ,
+    []( const marisa::Trie & d , std::uint64_t i ) {
+     marisa::Agent a;
+     a.set_query( std::size_t( i ) );
+     d.reverse_lookup( a );
+     return( std::string( a.key().ptr() , a.key().length() ) ); } ,
+    []( const marisa::Trie & d , const std::string & p ) {
+     marisa::Agent a;
+     a.set_query( p.data() , p.size() );
+     std::size_t c = 0;
+     while( d.predictive_search( a ) ) ++c;
+     return( c ); } ,
+    []( const marisa::Trie & d ) { return( d.io_size() ); } );
+#endif
+
+#ifdef ADS_HAS_TX
+   // tx-trie builds into a file, read back into memory; its ids are its
+   // own, and its prefix search returns the keys
+   const std::string file = std::string( "/tmp/ads-bench-tx-" ) + name +
+                            "-" + std::to_string( n );
+   run( "tx_tool::tx" , name , D , H , Q , I , R , r ,
+    [ & ](){
+     std::vector< std::string > W( D );
+     auto d = std::make_unique< tx_tool::tx >();
+     if( ( d->build( W , file.c_str() ) != 0 ) ||
+         ( d->read( file.c_str() ) != 0 ) )
+      d.reset();
+     std::remove( file.c_str() );
+     return( d ); } ,
+    [ n ]( const tx_tool::tx & d , const std::string & q ) {
+     std::size_t len = 0;
+     const auto id = d.prefixSearch( q.data() , q.size() , len );
+     return( ( id != tx_tool::tx::NOTFOUND ) && ( len == q.size() ) ?
+             std::size_t( id ) : n ); } ,
+    []( const tx_tool::tx & d , std::uint64_t i ) {
+     std::string k;
+     d.reverseLookup( unsigned( i ) , k );
+     return( k ); } ,
+    []( const tx_tool::tx & d , const std::string & p ) {
+     std::vector< std::string > K;
+     std::vector< unsigned > id;
+     return( std::size_t( d.predictiveSearch( p.data() , p.size() , K , id ,
+                                              ~0u ) ) ); } ,
+    [ & ]( const tx_tool::tx & ) {
+     // the size of the file of its build, which it reads whole
+     std::vector< std::string > W( D );
+     tx_tool::tx t;
+     std::size_t b = 0;
+     if( t.build( W , file.c_str() ) == 0 )
+      if( std::FILE * f = std::fopen( file.c_str() , "rb" ) ) {
+       std::fseek( f , 0 , SEEK_END );
+       b = std::size_t( std::ftell( f ) );
+       std::fclose( f );
+       }
+     std::remove( file.c_str() );
+     return( b ); } );
+#endif
+
+#ifdef ADS_HAS_PDT
+   // the path-decomposed trie of Grossi and Ottaviano, its ids in the
+   // lexicographic order; it has no search by prefix
+   using PD = succinct::tries::path_decomposed_trie<
+               succinct::tries::vbyte_string_pool , true >;
+   run( "path_decomposed_trie" , name , D , H , Q , I , R , r ,
+    [ & ](){ return( std::make_unique< PD >( D ) ); } ,
+    [ n ]( const PD & d , const std::string & q ) {
+     const std::size_t i = d.index( q );
+     return( i == std::size_t( -1 ) ? n : i ); } ,
+    []( const PD & d , std::uint64_t i ) { return( d[ i ] ); } ,
+    None() ,
+    []( const PD & d ) {
+     return( succinct::mapper::size_of( const_cast< PD & >( d ) ) ); } );
 #endif
    }
  return( 0 );

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the benchmark learned also measures, where found, the la_vector of
+  Boffa, Ferragina and Vinciguerra, with corrections of 7 bits and with
+  its optimal partition (LAVECTOR=<dir>), and the benchmark stringdicts
+  marisa-trie (MARISA=<prefix>), the tx-trie (TX=<prefix>) and the
+  path-decomposed trie of Grossi and Ottaviano (PDT=<dir>)
 - MultiQueue (concurrent/MultiQueue.h), the relaxed priority queue of
   Rihani, Sanders and Dementiev for the OPEN of a parallel best-first
   search: n queues under a lock each, a push into a random queue, a pop
@@ -1128,6 +1133,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   walk the places of the block only down to what they need
 
 ### Changed
+
+- LAVector: a segment takes 28 bytes instead of 44, its first item read
+  as its base plus its first correction, and tuned() tries the widths up
+  to six bits above the logarithm of the average gap (or half the bits of
+  the items), where the widths of Elias-Fano left out the best one on
+  random gaps
 
 - PGMIndex builds its levels faster: the optimal piecewise linear
   approximation, now a function of its own that the LA-vector and the

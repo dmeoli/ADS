@@ -109,8 +109,11 @@ test: $(BINS)
 # SDSL adds the range minima of sdsl-lite to lce, HYPERSCAN=<prefix>
 # Vectorscan (or Hyperscan) to multi; SDSL=<dir> (or OPT=<prefix>) and
 # PGM=<dir> add the sd_vector of sdsl-lite and the PGM-indices of
-# Ferragina and Vinciguerra to learned, HTRIE=<dir> tsl::htrie_map to
-# stringdicts
+# Ferragina and Vinciguerra to learned, LAVECTOR=<dir> (its source, with
+# its sdsl-lite) the la_vector of Boffa et al.; HTRIE=<dir> adds
+# tsl::htrie_map to stringdicts, MARISA=<prefix> marisa-trie, TX=<prefix>
+# the tx-trie (tx/tx.hpp and libtx.a) and PDT=<dir> (its source, with its
+# succinct) the path-decomposed tries of Grossi and Ottaviano
 BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
@@ -315,12 +318,20 @@ $(BUILD)/bench-tries: bench/tries.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(TRIEFLAGS)
 
 $(BUILD)/bench-learned: bench/learned.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(SDSL),-isystem $(SDSL)/include) \
+	$(CXX) $(BENCHFLAGS) -o $@ $< \
+	       $(if $(LAVECTOR),-isystem $(LAVECTOR)/include \
+	       -isystem $(LAVECTOR)/lib/sdsl-lite/include) \
+	       $(if $(SDSL),-isystem $(SDSL)/include) \
 	       $(if $(PGM),-isystem $(PGM)/include) $(OPTFLAGS)
 
 $(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
                            | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(HTRIE),-I$(HTRIE)/include)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(HTRIE),-I$(HTRIE)/include) \
+	       $(if $(MARISA),-isystem $(MARISA)/include -L$(MARISA)/lib \
+	       -Wl$(comma)-rpath$(comma)$(MARISA)/lib -lmarisa) \
+	       $(if $(TX),-isystem $(TX)/include $(TX)/lib/libtx.a) \
+	       $(if $(PDT),-isystem $(PDT) $(PDT)/succinct/bp_vector.cpp \
+	       $(PDT)/succinct/rs_bit_vector.cpp)
 
 # the parallel benchmark: OpenMP always (the executor of OpenMP and the
 # parallel mode of libstdc++), TBB=1 (or TBB=<prefix>) oneTBB as executor

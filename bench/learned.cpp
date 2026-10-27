@@ -6,13 +6,14 @@
  * approximation of the PGM-index:
  *
  * - lavector: access and nextGEQ (the select and the rank of the vector of
- *   bits of the items) and the building of the LA-vector (with
- *   corrections of 7 bits, and with the width of the fewest bits) against
- *   Elias-Fano, the partitioned Elias-Fano and, if found, the sd_vector of
- *   sdsl-lite, on n distinct items: uniform in [ 0 , 128 n ), in
- *   clusters (those of the benchmark succinct), on a line of slope 64 with noise of 6 bits,
- *   and the gaps of a geometric law of mean 100 (the lists of an inverted
- *   index); the bits per item in the group space;
+ *   bits of the items) and the building of the LA-vector (with corrections of
+ *   7 bits, and with the width of the fewest bits) against Elias-Fano, the
+ *   partitioned Elias-Fano and, if found, the sd_vector of sdsl-lite and the
+ *   la_vector of Boffa, Ferragina and Vinciguerra (with corrections of 7 bits,
+ *   and with their optimal partition), on n distinct items: uniform in [ 0 ,
+ *   128 n ), in clusters (those of the benchmark succinct), on a line of slope
+ *   64 with noise of 6 bits, and the gaps of a geometric law of mean 100 (the
+ *   lists of an inverted index); the bits per item in the group space;
  * - pgm: the lower bound of n random queries (each giving the item found)
  *   and the building of the PGM-index and of its compressed form against,
  *   if found, the PGM-index and the CompressedPGMIndex of Ferragina and
@@ -62,6 +63,13 @@
  #define ADS_HAS_SDSL 1
 #endif
 
+// la_vector before the PGM-index: without OpenMP the PGM-index defines
+// omp_get_max_threads() as a macro, which la_vector defines as a function
+#if defined( ADS_HAS_SDSL ) && __has_include( <la_vector.hpp> )
+ #include <la_vector.hpp>
+ #define ADS_HAS_LAVECTOR 1
+#endif
+
 #if __has_include( <pgm/pgm_index.hpp> )
  #include <pgm/pgm_index.hpp>
  #include <pgm/pgm_index_dynamic.hpp>
@@ -103,7 +111,8 @@ void sequence( const std::string & tag ,
                const std::vector< std::uint64_t > & X , std::uint64_t u ,
                const std::vector< std::uint64_t > & I ,
                const std::vector< std::uint64_t > & Q ,
-               const std::string & who , B build , A access , G geq , Z bits , int r )
+               const std::string & who , B build , A access , G geq ,
+               Z bits , int r )
 {
  if( skip( who ) )
   return;
@@ -196,6 +205,26 @@ void laVectors( std::size_t n , int r , unsigned seed )
    sdsl::sd_vector<>::rank_1_type rk;
    sdsl::sd_vector<>::select_1_type sl;
    };
+#ifdef ADS_HAS_LAVECTOR
+  // the LA-vector of its authors, with corrections of 7 bits and with the
+  // optimal partition (la_vector_opt), by select and rank
+  using LV = la_vector< std::uint64_t , 7 >;
+  sequence( t , X , u , I , Q , "la_vector" ,
+   []( const std::vector< std::uint64_t > & X , std::uint64_t ) {
+    return( std::make_unique< LV >( X.begin() , X.end() ) ); } ,
+   []( const LV & s , std::uint64_t i ) { return( s.select( i + 1 ) ); } ,
+   []( const LV & s , std::uint64_t x ) { return( s.rank( x ) ); } ,
+   [ nn ]( const LV & s ) {
+    return( 8 * double( s.size_in_bytes() ) / nn ); } , r );
+  using LO = la_vector_opt< std::uint64_t >;
+  sequence( t , X , u , I , Q , "la_vector_opt" ,
+   []( const std::vector< std::uint64_t > & X , std::uint64_t ) {
+    return( std::make_unique< LO >( X.begin() , X.end() ) ); } ,
+   []( const LO & s , std::uint64_t i ) { return( s.select( i + 1 ) ); } ,
+   []( const LO & s , std::uint64_t x ) { return( s.rank( x ) ); } ,
+   [ nn ]( const LO & s ) {
+    return( 8 * double( s.size_in_bytes() ) / nn ); } , r );
+#endif
   sequence( t , X , u , I , Q , "sdsl::sd_vector" ,
    []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
     auto s = std::make_unique< SD >();

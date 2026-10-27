@@ -550,11 +550,12 @@
  computes the corrections with the rounded slope and gives each segment the
  width \f$ w_j \f$ of the range of its own corrections, so that (11) holds
  exactly, with \f$ w_j \f$ in place of \f$ c \f$ (\f$ c \f$, or one bit
- more). A segment takes 44 bytes (the base, the slope, the place of its
- corrections and their width, its first place and its first item), and the
- two tables that find a segment by a place and by a value take about 4 bytes
- per segment each; hence the sequence takes
- \f$ \sum_j w_j ( p_{j+1} - p_j ) + 416 m \f$ bits for \f$ m \f$ segments.
+ more). A segment takes 28 bytes (the base, the slope, the place of its
+ corrections and their width, and its first place; its first item is its
+ base plus its first correction), and the two tables that find a segment
+ by a place and by a value take about 4 bytes per segment each; hence the
+ sequence takes \f$ \sum_j w_j ( p_{j+1} - p_j ) + 288 m \f$ bits for
+ \f$ m \f$ segments.
 
  The access to \f$ x_i \f$ is (11) once the segment of \f$ i \f$ is known,
  which the table of the segment of every \f$ 2^t \f$-th place gives in
@@ -579,10 +580,18 @@
  than of the average gap. On gaps drawn at random no line follows the items
  better than the average gap does, the corrections need about
  \f$ \log_2( u / n ) \f$ bits as the low bits of Elias-Fano, and the
- segments are an overhead; `tuned()` tries the widths up to that of
- Elias-Fano and keeps the one of the fewest bits, but the LA-vector of the
- paper goes further and chooses the width segment by segment, by a shortest
- path over the segments of all the widths, which is not realized here.
+ segments are an overhead; `tuned()` tries the widths up to six bits above
+ the logarithm of the average gap (or half the bits of the items, if more)
+ and keeps the one of the fewest bits. The LA-vector of the paper chooses
+ the width segment by segment, by a shortest path over the segments of all
+ the widths, a segment of width \f$ c \f$ being an edge of length
+ \f$ c \f$ bits per item plus those of a segment (a prefix and a suffix of
+ a segment within the error are within it, which gives the edges from and
+ to every place); its gain comes from segments of different widths, which
+ the width \f$ w_j \f$ that each segment of `LAVector` takes from its own
+ corrections already gives in part, and on the sequences of the benchmark
+ the shortest path was within a few hundredths of the bits of `tuned()`,
+ with a slower construction, so that it is not kept.
 
  \section theory_succinct_refs References
 

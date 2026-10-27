@@ -22,19 +22,25 @@
  * bit more where the rounding of the line in `double` spreads them); the
  * sequence takes
  * \f[
- *   \sum_j w_j ( p_{j+1} - p_j ) + 416 \, m
+ *   \sum_j w_j ( p_{j+1} - p_j ) + 288 \, m
  * \f]
- * bits for \f$ m \f$ segments of 44 bytes and the two tables of the
- * searches, of about 4 bytes per segment each. On a
- * sequence with long runs of nearly constant gaps (the places of a regular
- * pattern, the keys of a data set produced by a process) \f$ m \f$ is small
- * and \f$ c \f$ bits are well below the \f$ 2 + \log_2( u / n ) \f$ of
- * Elias-Fano [see `EliasFano.h`]; on random gaps the corrections cost
- * about what the low bits of Elias-Fano cost and the segments are pure
- * overhead. `tuned()` picks the \f$ c \f$ of the fewest bits, by building
- * the sequence for each \f$ c \f$ in turn; the LA-vector of the paper goes
- * further and chooses \f$ c \f$ segment by segment, by a shortest path on
- * the segments of all the \f$ c \f$, which is not realized here.
+ * bits for \f$ m \f$ segments of 28 bytes (the base, the slope, the place
+ * and the width of the corrections, the first place) and the two tables of
+ * the searches, of about 4 bytes per segment each; the first item of a
+ * segment is not kept, but read as its base plus its first correction. On
+ * a sequence with long runs of nearly constant gaps (the places of a
+ * regular pattern, the keys of a data set produced by a process) \f$ m \f$
+ * is small and \f$ c \f$ bits are well below the
+ * \f$ 2 + \log_2( u / n ) \f$ of Elias-Fano [see `EliasFano.h`]; on random
+ * gaps the corrections cost about what the low bits of Elias-Fano cost and
+ * the segments are pure overhead. `tuned()` picks the \f$ c \f$ of the
+ * fewest bits, by building the sequence for each \f$ c \f$ in turn. The
+ * LA-vector of the paper chooses \f$ c \f$ segment by segment, by a
+ * shortest path on the segments of all the \f$ c \f$; here the width
+ * \f$ w_j \f$ of each segment adapts to its corrections anyway, and on the
+ * sequences of the benchmark learned the shortest path changed the bits by
+ * a few hundredths of `tuned()`, at the price of a slower construction,
+ * which is why it is not kept.
  *
  * The operations:
  *
@@ -144,15 +150,15 @@ class LAVector {
  explicit LAVector( const std::vector< std::uint64_t > & x , int c = 7 );
 
  /// the sequence \f$ x \f$ with the \f$ c \f$ of the fewest bits, among
- /// the odd ones up to the \f$ \lfloor \log_2( x_{n-1} / n ) \rfloor + 3 \f$
- /// bits of Elias-Fano and the two around the best of them
+ /// the odd ones up to \f$ c_{\mathrm{max}} \f$ of `widest()` and the two
+ /// around the best of them
  ///
  /// In pseudocode (beyond the book):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{tuned}( x ) \cr
- /// 2 & \quad b \gets \mathrm{build}( x , 1 );\ t \gets \min\{ 63 ,
- ///     \lfloor \log_2( x_{n-1} / n ) \rfloor + 3 \} \cr
+ /// 2 & \quad b \gets \mathrm{build}( x , 1 );\ t \gets c_{\mathrm{max}}
+ ///     \cr
  /// 3 & \quad \textbf{for}\ c \gets 3\ \textbf{to}\ t\ \textbf{step}\ 2
  ///     \ \textbf{do} \cr
  /// 4 & \qquad v \gets \mathrm{build}( x , c );\ \textbf{if}\ v \text{ takes}
@@ -278,14 +284,35 @@ class LAVector {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// a segment: the base, the slope, where its corrections begin and their
- /// width
+ /// a segment: the base, the slope, and where its corrections begin
+ /// times 128 plus their width
  struct Segment {
   std::uint64_t base;        ///< \f$ \beta_j \f$
   double slope;              ///< \f$ \alpha_j \f$, not negative
-  std::uint64_t offset;      ///< the first bit of its corrections in C
-  std::uint32_t width;       ///< \f$ w_j \f$
+  std::uint64_t ow;          ///< its first bit in C times 128, plus w_j
   };
+
+ /// the bits of a segment with its share of the tables, \f$ \sigma \f$
+ static constexpr std::uint64_t kSegmentBits = 8 * ( sizeof( Segment ) +
+                                                     4 + 8 );
+
+ /// the widest useful correction of the items \f$ x \f$, \f$ c_{\mathrm{max}}
+ /// = \min\{ 63 , \max\{ \lfloor \log_2 g \rfloor + 6 , \lceil ( \lfloor
+ /// \log_2 x_{n-1} \rfloor + 1 ) / 2 \rceil \} \} \f$, \f$ g \f$ the
+ /// average gap: wider corrections than six bits above those of the
+ /// average gap, or than half the bits of the items, never pay
+ [[nodiscard]] static int widest( const std::vector< std::uint64_t > & x );
+
+ /// the error of the corrections of \f$ c \f$ bits
+ [[nodiscard]] static std::int64_t error( int c );
+
+ /// appends the segment of the places \f$ [ f , l ) \f$ of \f$ x \f$ with
+ /// the slope \f$ a \f$
+ void append( const std::vector< std::uint64_t > & x , std::size_t f ,
+              std::size_t l , double a );
+
+ /// the tables of the searches, once the segments are appended
+ void finish( const std::vector< std::uint64_t > & x );
 
  /// the integer part of \f$ v \f$, 0 below 0 and \f$ 2^{64} - 1 \f$ from
  /// \f$ 2^{64} \f$ on
@@ -302,11 +329,11 @@ class LAVector {
  BitVector f_C;                          ///< the corrections
  std::vector< Segment > f_seg;           ///< the segments
  std::vector< std::uint32_t > f_p;       ///< their first places, and n
- std::vector< std::uint64_t > f_first;   ///< their first items
  std::vector< std::uint32_t > f_J;       ///< the segment of each block
  int f_t = 0;                            ///< the places of a block, log
  std::vector< std::uint32_t > f_V;       ///< the segments before a bucket
  int f_l = 0;                            ///< the low bits of a bucket
+ std::uint64_t f_x0 = 0;                 ///< the first item
  std::uint64_t f_last = 0;               ///< the last item
 
  };  // end( class LAVector )
