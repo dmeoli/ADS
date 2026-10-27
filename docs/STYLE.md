@@ -72,7 +72,9 @@ theory_<folder>_<name> <Title in sentence case>`, are:
    collects, with `\ref` to its sections;
 2. "Definitions and notation": the objects and the symbols shared by the
    headers, with an HTML table of the symbols (`<caption>`, then rows of
-   `<th>` and `<td>`), each symbol in `\f$ ... \f$`;
+   `<th>` and `<td>`), each symbol in `\f$ ... \f$`; a caption may hold
+   formulae and code, which the Sphinx site shows as text, since a caption
+   of Breathe holds text only [see `caption_text()` in `docs/conf.py`];
 3. for an area of data structures, the realizations and the costs of their
    operations, as a table, followed by the reason of each cost that is not
    obvious and by the case in which each realization is preferable;
@@ -342,10 +344,12 @@ backquotes.
    runs of Doxygen written by hand: its first run reads `docs/theory` with
    the headers, and one that does not leaves the `\ref` of the headers
    unresolved. Doxygen must print no warning (but "is not documented",
-   which EXTRACT_ALL silences), and `sphinx-build` no `WARNING`; the script
-   prints them and fails if there is one. A crash of
-   Breathe on the XML (e.g., "missing id attribute") stops the build with a
-   traceback in its log, and is to be fixed, not silenced.
+   which EXTRACT_ALL silences), and `sphinx-build` no `WARNING` and no
+   `ParseWarning` of Breathe (a part of the XML that Breathe does not know,
+   which it leaves out of the Sphinx site); the script prints them and
+   fails if there is one. A crash of Breathe on the XML (e.g., "missing id
+   attribute") stops the build with a traceback in its log, and is to be
+   fixed, not silenced.
 2. Lines of the headers, of the `.dox` and of the scripts within 79
    columns, the boxes aligned (run the box checker of the project, if you
    have it, on every file with a box).

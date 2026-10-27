@@ -69,6 +69,24 @@ highlight_language = 'none'
 
 
 
+def caption_text(xml):
+    """the content of a caption of a table as text, which is all that a
+    caption of Breathe holds: the code as its text, and a formula as its
+    TeX without the dollars, the commands of the fonts and the braces, its
+    relations as their characters (the Doxygen site keeps the formulae)"""
+    def formula(m):
+        t = m.group(1).strip().strip('$').strip()
+        t = re.sub(r'\\math(?:it|rm|bf)\{([^{}]*)\}', r'\1', t)
+        for tex, ch in (('\\le', '\u2264'), ('\\ge', '\u2265'),
+                        ('\\ne', '\u2260'), ('\\cdot', '\u00b7')):
+            t = t.replace(tex, ch)
+        t = t.replace('^*', '*').replace('{', '').replace('}', '')
+        return ' '.join(t.split())
+    xml = re.sub(r'<formula id="\d+">(.*?)</formula>', formula, xml,
+                 flags=re.S)
+    return re.sub(r'</?(computeroutput|ref)\b[^>]*>', '', xml)
+
+
 def mend_xml():
     """the XML of docs/Doxyfile made fit for Breathe, in place (it is a
     product of the build, which is read and never published): the index
@@ -78,7 +96,10 @@ def mend_xml():
     docs/apiref.py names it in the pages; the parts of the concepts, which
     Doxygen 1.17 writes and Breathe does not know, are dropped (Breathe
     shows the concepts from their initializer); the captions of the tables
-    get the id that Breathe requires; the space that Doxygen puts before
+    get the id that Breathe requires, and their formulae and code as text,
+    since a caption of Breathe holds text only [see caption_text()]; the
+    attribute thread_local of the variables, which Doxygen 1.17 writes and
+    Breathe does not know, is dropped; the space that Doxygen puts before
     an inline formula is dropped after an opening bracket, where the text
     of the comment has none, as in "(\\f$ 2 m \\f$ for ...)" """
     xml = breathe_projects['ADS']
@@ -86,6 +107,7 @@ def mend_xml():
         with open(path) as f:
             text = f.read()
         new = re.sub(r'([(\[]) (<formula id="\d+">)', r'\1\2', text)
+        new = re.sub(r' thread_local="(yes|no)"', '', new)
         if os.path.basename(path).startswith('concept'):
             new = re.sub(r'\s*<conceptparts>.*?</conceptparts>', '', new,
                          flags=re.S)
@@ -121,6 +143,9 @@ def mend_xml():
         text = parts[0] + ''.join('<caption id="%s_caption%d">%s'
                                   % (name, k, part)
                                   for k, part in enumerate(parts[1:]))
+        text = re.sub(r'(<caption [^>]*>)(.*?)(</caption>)',
+                      lambda m: m.group(1) + caption_text(m.group(2)) +
+                      m.group(3), text, flags=re.S)
         with open(path, 'w') as f:
             f.write(text)
 
@@ -141,6 +166,28 @@ def sentence_case():
 
 
 sentence_case()
+
+
+def table_captions():
+    """the caption of a table of a comment over the table on the Sphinx
+    site too, as its title: Breathe reads it and then leaves it out"""
+    from docutils import nodes
+    from breathe import parser
+    from breathe.renderer.sphinxrenderer import SphinxRenderer
+    visit = SphinxRenderer.node_handlers[parser.Node_docTableType]
+
+    def visit_doctable(self, node):
+        out = visit(self, node)
+        caption = ''.join(node.caption) if node.caption else ''
+        if caption.strip() and out and isinstance(out[0], nodes.table):
+            out[0].insert(0, nodes.title(caption, caption))
+        return out
+    # the handler is looked up by the type of the node, in the table that
+    # Breathe builds when the class is defined
+    SphinxRenderer.node_handlers[parser.Node_docTableType] = visit_doctable
+
+
+table_captions()
 
 html_theme = 'sphinx_rtd_theme'
 html_title = 'ADS: Algorithms and Data Structures'

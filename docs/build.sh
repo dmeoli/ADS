@@ -67,13 +67,13 @@ mv build-docs/doxygen build-docs/html/doxygen
 touch build-docs/html/.nojekyll
 
 # the warnings of Doxygen, but "is not documented", which EXTRACT_ALL
-# silences, and those of Sphinx (the ParseWarning of Breathe on the parts of
-# the XML it does not know are not warnings of the documentation)
+# silences, and those of Sphinx, the ParseWarning of Breathe included: a
+# part of the XML that Breathe does not know is left out of the Sphinx site
 n=0
 for log in build-docs/doxygen1.log build-docs/doxygen2.log \
            build-docs/sphinx.log; do
  case "$log" in
-  *sphinx*) w='WARNING:' ;;
+  *sphinx*) w='WARNING:\|: ParseWarning:' ;;
   *)        w='warning:' ;;
  esac
  k=$( grep -- "$w" "$log" | grep -vc 'is not documented' || true )
