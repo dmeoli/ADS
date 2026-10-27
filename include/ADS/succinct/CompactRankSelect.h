@@ -85,6 +85,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
@@ -126,6 +127,38 @@ class CompactRankSelect {
  /// they are counted
  /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
  CompactRankSelect( std::span< const Word > w , std::size_t n );
+
+ /// the directory of `CompactRankSelect( b )` above, the same entries and
+ /// samples, built on the threads of the executor `ex` (see
+ /// \ref theory_succinct_parallel)
+ ///
+ /// In pseudocode (the counts of the chunks, their prefix sums and the
+ /// entries and samples of each chunk from its prefix, beyond the book),
+ /// the superblocks cut into chunks \f$ C_0 , \ldots , C_{q-1} \f$, those
+ /// of a top region never in two chunks:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{directory}( \mathit{ex} , W ) \cr
+ /// 2 & \quad \textbf{foreach}\ \text{chunk } C_k\ \textbf{do in parallel}
+ ///     \ a_k \gets \text{the 1s of the words of } C_k \cr
+ /// 3 & \quad c_0 \gets 0;\ c_{k + 1} \gets c_k + a_k \text{ for }
+ ///     k = 0 , \ldots , q - 2 \cr
+ /// 4 & \quad \textbf{foreach}\ \text{chunk } C_k\ \textbf{do in parallel}
+ ///     \cr
+ /// 5 & \qquad \text{the entries of its superblocks from } c = c_k
+ ///     \text{, and its samples from the } \lceil c_k / 4096 \rceil
+ ///     \text{-th} \cr
+ /// 6 & \quad \text{the closing samples, as in } \mathrm{directory}( W )
+ /// \end{array}}
+ /// \f]
+ template< Executor E >
+ CompactRankSelect( E & ex , BitVector b );
+
+ /// the directory of `CompactRankSelect( w , n )` above, the words copied
+ /// by the chunks that count them, on the threads of `ex`
+ /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
+ template< Executor E >
+ CompactRankSelect( E & ex , std::span< const Word > w , std::size_t n );
 
  /// the bits
  [[nodiscard]] const BitVector & bits( void ) const { return( f_b ); }
@@ -277,6 +310,21 @@ class CompactRankSelect {
  /// the directory of the bits, the words first copied from w where w is
  /// not null
  void directory( const Word * w );
+
+ /// the fewest superblocks of a chunk of the parallel construction
+#ifndef ADS_COMPACT_CHUNK
+ static constexpr std::size_t kChunk = 256;
+#else
+ static constexpr std::size_t kChunk = ADS_COMPACT_CHUNK;   // a test
+#endif
+
+ /// the directory of the bits on the threads of ex, the words first copied
+ /// from w where w is not null
+ template< Executor E >
+ void directory( E & ex , const Word * w );
+
+ /// the samples closed by the superblock of the last bit b of each value
+ void closeSamples( void );
 
  /// the bits b before the superblock s
  [[nodiscard]] std::size_t before( std::size_t s , bool b ) const;

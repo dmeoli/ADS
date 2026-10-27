@@ -85,6 +85,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
 #include "ADS/succinct/RankSelect.h"
 
@@ -116,26 +117,69 @@ class WaveletMatrix {
  WaveletMatrix( void ) = default;
 
  /// the sequence \f$ x \f$, its items of \f$ w \f$ bits (0: the bits of the
- /// largest one)
+ /// largest one), built by the passes of up to 8 levels of the constructor
+ /// below on the calling thread, the levels those of a stable partition by
+ /// each bit, from the most significant one (see Lemma 7 of
+ /// \ref theory_succinct_parallel)
  ///
- /// In pseudocode (Claude, Navarro and Ordóñez, beyond the book), a stable
- /// partition by each bit, from the most significant one:
+ /// In pseudocode (Claude, Navarro and Ordóñez, beyond the book):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{build}( x , w ) \cr
- /// 2 & \quad C \gets x \cr
- /// 3 & \quad \textbf{for}\ \ell \gets 0\ \textbf{to}\ w - 1\ \textbf{do} \cr
- /// 4 & \qquad B_\ell[ i ] \gets \text{the bit } w - 1 - \ell \text{ of }
- ///     C[ i ] \text{, for each } i;\ Z_\ell \gets \text{the 0s of }
- ///     B_\ell \cr
- /// 5 & \qquad C \gets \text{the items of } C \text{ with } B_\ell[ i ] = 0
- ///     \text{, then those with } B_\ell[ i ] = 1 \text{, each in order} \cr
- /// 6 & \quad \textbf{return}\ ( B_0 , \ldots , B_{w-1} ) \text{ and } (
- ///     Z_0 , \ldots , Z_{w-1} )
+ /// 2 & \quad \textbf{return}\ \mathrm{build}( \text{the calling thread}
+ ///     , x , w )
  /// \end{array}}
  /// \f]
  /// \pre \f$ 0 \le w \le 64 \f$ and the items are below \f$ 2^w \f$
  explicit WaveletMatrix( std::span< const std::uint64_t > x , int w = 0 );
+
+ /// the matrix of `WaveletMatrix( x , w )` above, the same levels and
+ /// directories, built on the threads of the executor `ex` by up to 8
+ /// levels at a time (see \ref theory_succinct_parallel)
+ ///
+ /// In pseudocode (the stable sorts by the prefixes of the bits, beyond the
+ /// book), \f$ x \f$ cut into slices \f$ X_0 , \ldots , X_{q-1} \f$, the
+ /// levels \f$ [ \ell , \ell + k ) \f$ of a pass, \f$ b_j( c ) \f$ the bit
+ /// \f$ w - 1 - \ell - j \f$ of \f$ c \f$ and
+ /// \f$ \kappa_j( c ) = \sum_{i < j} 2^i b_i( c ) \f$, the key by which
+ /// the level \f$ \ell + j \f$ is the stable sort of the level
+ /// \f$ \ell \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{build}( \mathit{ex} , x , w ) \cr
+ /// 2 & \quad C \gets x;\ \ell \gets 0 \cr
+ /// 3 & \quad \textbf{while}\ \ell < w\ \textbf{do} \cr
+ /// 4 & \qquad k \gets \text{the levels of the pass, at most 8} \cr
+ /// 5 & \qquad \textbf{foreach}\ \text{slice } X_s \text{ of } C
+ ///     \ \textbf{do in parallel}\ h_s[ a ] \gets | \{ c \in X_s :
+ ///     \kappa_k( c ) = a \} | \cr
+ /// 6 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ k\ \textbf{do}
+ ///     \ P_{j , s}[ a ] \gets \text{the items of } C \text{ with }
+ ///     \kappa_j < a \cr
+ /// & \qquad\quad \text{or with } \kappa_j = a \text{ in the slices }
+ ///     \text{before } X_s \text{, by the sums of the } h \cr
+ /// 7 & \qquad Z_{\ell + j} \gets \text{the items with } b_j = 0
+ ///     \text{, for } j < k \cr
+ /// 8 & \qquad \textbf{foreach}\ \text{slice } X_s\ \textbf{do in}
+ ///     \ \textbf{parallel} \cr
+ /// 9 & \qquad\quad \textbf{foreach}\ c \in X_s \text{ in order}
+ ///     \ \textbf{do} \cr
+ /// 10 & \qquad\qquad \textbf{for}\ j \gets 0\ \textbf{to}\ k - 1
+ ///     \ \textbf{do}\ B_{\ell + j}[ P_{j , s}[ \kappa_j( c ) ] ] \gets
+ ///     b_j( c );\ P_{j , s}[ \kappa_j( c ) ] \gets P_{j , s}[ \kappa_j( c )
+ ///     ] + 1 \cr
+ /// 11 & \qquad\qquad C'[ P_{k , s}[ \kappa_k( c ) ] ] \gets c;
+ ///     \ P_{k , s}[ \kappa_k( c ) ] \gets P_{k , s}[ \kappa_k( c ) ] + 1
+ ///     \cr
+ /// 12 & \qquad C \gets C';\ \ell \gets \ell + k \cr
+ /// 13 & \quad \textbf{return}\ \text{the levels } B_\ell \text{ with }
+ ///     \text{their directories, built on } \mathit{ex} \text{, and the }
+ ///     Z_\ell
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 0 \le w \le 64 \f$ and the items are below \f$ 2^w \f$
+ template< Executor E >
+ WaveletMatrix( E & ex , std::span< const std::uint64_t > x , int w = 0 );
 
  /// the number of items
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
@@ -296,6 +340,23 @@ class WaveletMatrix {
 
  /// the place of \f$ c \f$ at the last level, where its items start
  [[nodiscard]] std::size_t start( std::uint64_t c ) const;
+
+ /// the fewest items of a slice of the parallel construction
+#ifndef ADS_WAVELET_SLICE
+ static constexpr std::size_t kSlice = std::size_t( 1 ) << 16;
+#else
+ static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;   // a test
+#endif
+
+ /// the width w (0: the bits of the largest item) and the levels of the
+ /// items x, on the threads of ex
+ template< Executor E >
+ void init( E & ex , std::span< const std::uint64_t > x , int w );
+
+ /// the levels of the items x of w bits on the threads of ex, the items
+ /// moved as T between the passes
+ template< class T , Executor E >
+ void build( E & ex , std::span< const std::uint64_t > x , int w );
 
  std::size_t f_n = 0;                    ///< the number of items
  std::vector< RankSelect > f_lev;        ///< the levels, the top first

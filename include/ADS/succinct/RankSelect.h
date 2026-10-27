@@ -137,6 +137,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/combinatorial/Bitwise.h"
+#include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
@@ -215,6 +216,43 @@ class BasicRankSelect : public RankSelectOptions {
  /// they are counted, with the selects \f$ s \f$
  /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
  BasicRankSelect( std::span< const Word > w , std::size_t n ,
+                  Selects s = Selects::BOTH );
+
+ /// the directory of `BasicRankSelect( b , s )` above, the same entries
+ /// and inventories, built on the threads of the executor `ex` (see
+ /// \ref theory_succinct_parallel); if `Lazy`, the inventories are built
+ /// by the first selects, on the calling thread
+ ///
+ /// In pseudocode (the counts of the chunks, their prefix sums and the
+ /// entries of each chunk from its prefix, beyond the book), the blocks
+ /// cut into chunks \f$ C_0 , \ldots , C_{q-1} \f$ of consecutive blocks,
+ /// those of a top block never in two chunks:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{directory}( \mathit{ex} , W ) \cr
+ /// 2 & \quad \textbf{foreach}\ \text{chunk } C_k\ \textbf{do in parallel}
+ ///     \ a_k \gets \text{the 1s of the words of } C_k \cr
+ /// 3 & \quad c_0 \gets 0;\ c_{k + 1} \gets c_k + a_k \text{ for }
+ ///     k = 0 , \ldots , q - 2\quad \triangleright\ \text{the 1s before}
+ ///     \text{ each chunk} \cr
+ /// 4 & \quad T[ j ] \gets c_k \text{ for the chunk } C_k \text{ that }
+ ///     \text{starts the top block } j \cr
+ /// 5 & \quad \textbf{foreach}\ \text{chunk } C_k\ \textbf{do in parallel}
+ ///     \ \text{the entries of its blocks as in } \mathrm{directory}( W )
+ ///     \text{, from } c = c_k \cr
+ /// 6 & \quad \textbf{foreach}\ \text{value } b \text{ of the selects }
+ ///     s\ \textbf{do}\ \mathrm{inventory}( \mathit{ex} , b ) \text{ (if }
+ ///     \text{not } \mathit{Lazy} \text{)}
+ /// \end{array}}
+ /// \f]
+ template< Executor E >
+ BasicRankSelect( E & ex , BitVector b , Selects s = Selects::BOTH );
+
+ /// the directory of `BasicRankSelect( w , n , s )` above, the words
+ /// copied by the chunks that count them, on the threads of `ex`
+ /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
+ template< Executor E >
+ BasicRankSelect( E & ex , std::span< const Word > w , std::size_t n ,
                   Selects s = Selects::BOTH );
 
  /// a copy, with the inventories that \f$ o \f$ has built
@@ -370,6 +408,13 @@ class BasicRankSelect : public RankSelectOptions {
  static constexpr std::size_t kFuse = ADS_RANKSELECT_FUSE;   // a test
 #endif
 
+ /// the fewest blocks of a chunk of the parallel construction
+#ifndef ADS_RANKSELECT_CHUNK
+ static constexpr std::size_t kChunk = 4096;
+#else
+ static constexpr std::size_t kChunk = ADS_RANKSELECT_CHUNK;   // a test
+#endif
+
  /// the bits of the vector spanned by a group of select, on average,
  /// and the most of its places that its 16 bits offsets can tell apart
  static constexpr std::size_t kGroup = 4096;
@@ -406,6 +451,22 @@ class BasicRankSelect : public RankSelectOptions {
 
  /// the building of the inventory of the bits b
  void build( bool b ) const;
+
+ /// the selects s asked for, and the directory of the bits, the words
+ /// first copied from w where w is not null, on the threads of ex
+ template< Executor E >
+ void directory( E & ex , Selects s , const Word * w );
+
+ /// the building of the inventory of the bits b on the threads of ex: the
+ /// places of the groups, then the offsets from them
+ template< Executor E >
+ void build( E & ex , bool b ) const;
+
+ /// f( c , p ) for each bit b of the blocks [ t0 , t1 ) whose rank c
+ /// (from 0) is a multiple of 2^e, p its place, c below total
+ template< class F >
+ void samples( bool b , std::size_t t0 , std::size_t t1 , int e ,
+               std::size_t total , F && f ) const;
 
  /// the first call of inventory( b ) if Lazy, out of the line of select
  void first( bool b ) const;

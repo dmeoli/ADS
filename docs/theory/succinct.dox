@@ -17,7 +17,9 @@
  \ref theory_succinct_notation), the realizations and the costs of their
  operations (see \ref theory_succinct_repr), and, for each family, the property
  on which its correctness rests and the argument behind its bounds (from
- \ref theory_succinct_rank to \ref theory_succinct_learned). The pseudocode of
+ \ref theory_succinct_rank to \ref theory_succinct_learned), and the parallel
+ construction of the directories and of the wavelet matrix and tree (see
+ \ref theory_succinct_parallel). The pseudocode of
  each algorithm is instead on the page of its header, in the comment of its
  function, together with the chapter of Ferragina's book, or the paper, that it
  follows.
@@ -593,6 +595,84 @@
  the shortest path was within a few hundredths of the bits of `tuned()`,
  with a slower construction, so that it is not kept.
 
+ \section theory_succinct_parallel Parallel construction
+
+ The structures built by a scan of their input are also built on the threads
+ of an executor (see \ref theory_parallel_exec), with the same entries, bits
+ and inventories as the sequential construction, so that a query gives the
+ same answer whichever built it. The directories of rank (`RankSelect`,
+ `CompactRankSelect`) cut their blocks into chunks of consecutive blocks; a
+ first pass counts the 1s of each chunk, the prefix sums of the counts give
+ the 1s before each chunk, \f$ c_k \f$, and a second pass writes the entries
+ of each chunk from \f$ c_k \f$ on, which are those of the sequential scan
+ since the entry of a block depends only on the 1s before it. The counts of
+ the top level are the \f$ c_k \f$ of the chunks that start a top block; the
+ chunks are a power of 2 of blocks below the size of a top block, which then
+ holds whole chunks, or a multiple of it above, so that a top block that
+ does not start a chunk lies in one, which writes its count. The
+ inventories of select are built in two passes over the chunks: the places
+ of the first bit of each group, then the offsets of the sampled bits from
+ the place of their group, each sample found from the entry of its block by
+ a select in a word, as the sequential construction does. The work is
+ \f$ O( m / 64 ) \f$ words, as in the sequential scan, plus the samples, and
+ the depth is that of a chunk and of the prefix sums of the counts.
+
+ <em>Lemma 7 (the levels by the reversed prefixes).</em> In the wavelet
+ matrix of Lemma 5, let \f$ b_j( c ) \f$ be the bit at the level
+ \f$ \ell + j \f$ of the item \f$ c \f$, and
+ \f[
+   \kappa_j( c ) = \sum_{i < j} 2^i \, b_i( c ) , \qquad 0 \le j \le k ,
+   \tag{12}
+ \f]
+ the bits of the levels \f$ \ell , \ldots , \ell + j - 1 \f$ read from the
+ last one. Then the order of the items at the level \f$ \ell + j \f$ is the
+ stable sort of their order at the level \f$ \ell \f$ by \f$ \kappa_j \f$.
+
+ Indeed, the level \f$ \ell + j \f$ is reached by \f$ j \f$ stable partitions
+ by the bits \f$ b_0 , \ldots , b_{j-1} \f$, the last by \f$ b_{j-1} \f$,
+ which is the radix sort of the least significant digit first by the key
+ whose most significant bit is \f$ b_{j-1} \f$, i.e., \f$ \kappa_j \f$; the
+ same key orders the stable sort, and both keep the order of the level
+ \f$ \ell \f$ among the items of equal key. Hence the place of an item
+ \f$ c \f$ at the level \f$ \ell + j \f$ is
+ \f[
+   P_j[ \kappa_j( c ) ] + | \{ c' \text{ before } c \text{ at the level }
+   \ell : \kappa_j( c' ) = \kappa_j( c ) \} | , \tag{13}
+ \f]
+ with \f$ P_j[ a ] \f$ the items whose key is below \f$ a \f$, and
+ \f$ Z_{\ell + j} \f$ is the number of items with \f$ b_j = 0 \f$, both
+ sums of the counts of the \f$ 2^k \f$ values of \f$ \kappa_k \f$, from which
+ each \f$ \kappa_j = \kappa_k \bmod 2^j \f$ follows.
+
+ By Lemma 7 one scan of the items in the order of the level \f$ \ell \f$
+ writes the bits of the \f$ k \f$ levels \f$ \ell , \ldots , \ell + k - 1 \f$
+ at the places (13) and moves the items to their order at the level
+ \f$ \ell + k \f$, where the construction by the partitions of Lemma 5 moves
+ them \f$ k \f$ times, once per level: \f$ \lceil w / 8 \rceil \f$ passes over the items
+ for \f$ k \le 8 \f$ instead of \f$ w \f$, the bits written into
+ \f$ 2^k - 1 \f$ streams, one per value of \f$ \kappa_j \f$ for each
+ \f$ j < k \f$, whose next places are consecutive. This is the sort by the
+ prefixes of the bits of Dinklage, Ellert, Fischer, Kurpicz and Löbel,
+ applied to \f$ k \f$ levels at a time. On \f$ p \f$ threads the items are
+ cut into slices; the counts of the keys of each slice and their sums over
+ the slices before it give each slice its own first place in each stream
+ by (13), so that the slices write their streams at once, each in its
+ range, as in the domain decomposition of Fuentes-Sepúlveda, Elejalde,
+ Ferres and Seco and of Labeit, Shun and Blelloch, here with no merge of
+ the levels of the slices afterwards. Two ranges may share the word at
+ their border: a stream gathers its bits into a word and stores the word
+ when it is full, with a plain store when the word is inside its range and
+ an atomic or when it is at one of its ends (the words are 0 at first, and
+ only the 1s are written). The wavelet tree of Huffman is built the same
+ way: the counts of the symbols of each slice give the place of each slice
+ in each node of the trie of the codes, and each slice writes the bits of
+ its items along their codes into a stream per node, with no item moved.
+ The work is \f$ O( n w ) \f$ bits and \f$ O( n \lceil w / 8 \rceil ) \f$
+ moves of items, or \f$ O( \sum_c f_c \ell_c ) \f$ bits for the tree, plus
+ \f$ O( q 2^k ) \f$ counts for \f$ q \f$ slices (\f$ O( q \sigma ) \f$ for
+ the tree, whose slices therefore hold at least \f$ \sigma \f$ items each),
+ and the depth is that of a slice.
+
  \section theory_succinct_refs References
 
  \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
@@ -650,6 +730,21 @@
  \see A. Boffa, P. Ferragina, G. Vinciguerra, A learned approach to design
       compressed rank/select data structures, ACM Transactions on
       Algorithms 18(3), 1-28, 2022, doi:10.1145/3524060
+ \see L. Fuentes-Sepúlveda, E. Elejalde, L. Ferres, D. Seco, Parallel
+      construction of wavelet trees on multicore architectures, Knowledge
+      and Information Systems 51(3), 1043-1066, 2017,
+      doi:10.1007/s10115-016-1000-6
+ \see J. Shun, Parallel wavelet tree construction, Proc. 25th DCC, 63-72,
+      2015, doi:10.1109/DCC.2015.7
+ \see J. Labeit, J. Shun, G. E. Blelloch, Parallel lightweight wavelet
+      tree, suffix array and FM-index construction, Journal of Discrete
+      Algorithms 43, 2-17, 2017, doi:10.1016/j.jda.2017.04.001
+ \see P. Dinklage, J. Ellert, J. Fischer, F. Kurpicz, M. Löbel, Practical
+      wavelet tree construction, ACM Journal of Experimental Algorithmics
+      26, 1-67, 2021, doi:10.1145/3457197
+ \see P. Dinklage, J. Fischer, F. Kurpicz, J.-P. Tarnowski, Bit-parallel
+      (compressed) wavelet tree construction, Proc. 33rd DCC, 81-90, 2023,
+      doi:10.1109/DCC55655.2023.00016
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File succinct.dox ---------------------------*/

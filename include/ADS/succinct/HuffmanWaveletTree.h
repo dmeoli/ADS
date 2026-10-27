@@ -75,6 +75,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/RankSelect.h"
@@ -143,6 +144,38 @@ class HuffmanWaveletTree {
  /// \pre \f$ |x| < 2^{40} \f$
  explicit HuffmanWaveletTree( std::span< const std::uint32_t > x ,
                               bool withSelect = true );
+
+ /// the tree of `HuffmanWaveletTree( x , withSelect )` above, the same
+ /// codes, nodes and bits, built on the threads of the executor `ex` (see
+ /// \ref theory_succinct_parallel)
+ ///
+ /// In pseudocode (the runs of the slices in the nodes, beyond the book),
+ /// \f$ x \f$ cut into slices \f$ X_0 , \ldots , X_{q-1} \f$ of at least
+ /// \f$ \sigma \f$ items:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{build}( \mathit{ex} , x ) \cr
+ /// 2 & \quad \textbf{foreach}\ \text{slice } X_s\ \textbf{do in parallel}
+ ///     \ h_s[ c ] \gets \text{the occurrences of each } c \text{ in } X_s
+ ///     \cr
+ /// 3 & \quad f_c \gets \sum_s h_s[ c ];\ \text{the codes, the trie and }
+ ///     \text{the places } o_v \text{ as in } \mathrm{build}( x ) \cr
+ /// 4 & \quad \mathit{at}_s[ v ] \gets o_v + \text{the items through } v
+ ///     \text{ in the slices before } X_s \text{, by the } h \cr
+ /// 5 & \quad \textbf{foreach}\ \text{slice } X_s\ \textbf{do in parallel}
+ ///     \cr
+ /// 6 & \qquad \textbf{foreach}\ c \in X_s \text{ in order and node } v
+ ///     \text{ on the code of } c \text{, with its bit } b\ \textbf{do} \cr
+ /// 7 & \qquad\quad B[ \mathit{at}_s[ v ] ] \gets b;\ \mathit{at}_s[ v ]
+ ///     \gets \mathit{at}_s[ v ] + 1 \cr
+ /// 8 & \quad \text{the directory of } B \text{ on } \mathit{ex};\ R_v
+ ///     \gets \mathrm{rank}_1( B , o_v ) \text{ for each node } v
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ |x| < 2^{40} \f$
+ template< Executor E >
+ HuffmanWaveletTree( E & ex , std::span< const std::uint32_t > x ,
+                     bool withSelect = true );
 
  /// the number of items
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
@@ -268,6 +301,31 @@ class HuffmanWaveletTree {
                                            : RankSelect::Selects::NONE ) );
   else return( RS( std::move( b ) ) );
   }
+
+ /// the rank and select of the bits \f$ b \f$ built on the threads of
+ /// `ex`, with select if asked for
+ template< Executor E >
+ [[nodiscard]] static RS directory( E & ex , BitVector b , bool withSelect ) {
+  if constexpr( std::is_same_v< RS , RankSelect > )
+   return( RS( ex , std::move( b ) ,
+               withSelect ? RankSelect::Selects::BOTH
+                          : RankSelect::Selects::NONE ) );
+  else if constexpr( std::is_same_v< RS , CompactRankSelect > )
+   return( RS( ex , std::move( b ) ) );
+  else return( directory( std::move( b ) , withSelect ) );
+  }
+
+ /// the fewest items of a slice of the parallel construction
+#ifndef ADS_WAVELET_SLICE
+ static constexpr std::size_t kSlice = std::size_t( 1 ) << 16;
+#else
+ static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;   // a test
+#endif
+
+ /// the codes of Huffman of the frequencies \f$ f \f$, the trie of the
+ /// codes and the places of its nodes in \f$ B \f$; the bits of \f$ B \f$
+ [[nodiscard]] std::uint64_t layout( const std::vector< std::uint64_t > &
+                                     f );
 
  /// the bit \f$ d \f$ of the code of \f$ c \f$, from the highest
  [[nodiscard]] bool bit( std::uint32_t c , int d ) const {

@@ -121,6 +121,177 @@ inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
  }
 
 template< bool Lazy >
+template< Executor E >
+BasicRankSelect< Lazy >::BasicRankSelect( E & ex , BitVector b , Selects s )
+ : f_b( std::move( b ) )
+{
+ directory( ex , s , nullptr );
+ }
+
+template< bool Lazy >
+template< Executor E >
+BasicRankSelect< Lazy >::BasicRankSelect( E & ex , std::span< const Word > w ,
+                                          std::size_t n , Selects s )
+{
+ ADS_PRE( w.size() >= ( n + 63 ) / 64 );
+ f_b.f_n = n;
+ f_b.f_w.clear();
+ f_b.f_w.resize( BitVector::wordsFor( n ) );   // written by directory()
+ directory( ex , s , w.data() );
+ }
+
+template< bool Lazy >
+template< Executor E >
+void BasicRankSelect< Lazy >::directory( E & ex , Selects s , const Word * w )
+{
+ const std::size_t n = f_b.size();
+ const std::size_t nb = n / kBlock + 1;    // and one more
+ constexpr std::size_t kTopBlocks = ( std::size_t( 1 ) << kTop ) / kBlock;
+ // the chunks of blocks: a power of 2 below a top block, else a multiple
+ // of it, so that a top block either starts a chunk or lies in one
+ std::size_t cs = std::max( kChunk , ( nb + 1 ) / kBlocks + 1 );
+ cs = cs < kTopBlocks ? std::bit_ceil( cs )
+                      : ( cs + kTopBlocks - 1 ) / kTopBlocks * kTopBlocks;
+ const std::size_t q = ( nb + 1 + cs - 1 ) / cs;   // the chunks
+ if( ( ex.concurrency() == 1 ) || ( q == 1 ) ) {
+  directory( s , w );                       // the sequential pass
+  return;
+  }
+ f_has[ 1 ] = ( s == Selects::ONES ) || ( s == Selects::BOTH );
+ f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
+ f_big = ( ( nb * kBlock ) >> kTop ) > 0;   // the last block counts too
+ f_dir.resize( nb + 1 );
+ if( f_big ) f_top.assign( ( n >> kTop ) + 2 , 0 );
+ else f_top.clear();
+ Word * const P = f_b.f_w.data();
+ const std::size_t nw = f_b.f_w.size();     // a multiple of 8
+ const std::size_t sw = ( n + 63 ) / 64;
+ // the 1s of the words of each chunk, copied from w first if given (the
+ // last word cut at n, 0s past it)
+ std::vector< std::uint64_t > c( q + 1 , 0 );
+ parallelFor( ex , 0 , q , [ & ]( std::size_t k ) {
+  const std::size_t w0 = std::min( nw , 4 * k * cs ) ,
+                    w1 = k + 1 == q ? nw
+                                    : std::min( nw , 4 * ( k + 1 ) * cs );
+  if( w ) {
+   for( std::size_t i = w0 ; i < w1 ; ++i ) P[ i ] = i < sw ? w[ i ] : 0;
+   if( ( n % 64 ) && ( n / 64 >= w0 ) && ( n / 64 < w1 ) )
+    P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
+   }
+  std::uint64_t a = 0;
+  for( std::size_t i = w0 ; i < w1 ; ++i )
+   a += std::uint64_t( std::popcount( P[ i ] ) );
+  c[ k + 1 ] = a; } , 1 );
+ for( std::size_t k = 0 ; k < q ; ++k ) c[ k + 1 ] += c[ k ];
+ if( f_big )                                // the top blocks that start one
+  for( std::size_t t = 0 ; t <= nb ; t += kTopBlocks )
+   if( t % cs == 0 ) f_top[ t / kTopBlocks ] = c[ t / cs ];
+ // the entries of each chunk from the 1s before it
+ parallelFor( ex , 0 , q , [ & ]( std::size_t k ) {
+  Word * const D = f_dir.data();
+  std::uint64_t cc = c[ k ];
+  const std::size_t t1 = std::min( nb + 1 , ( k + 1 ) * cs );
+  for( std::size_t t = k * cs ; t < t1 ; ++t ) {
+   if( f_big && ( t % kTopBlocks == 0 ) && ( t % cs != 0 ) )
+    f_top[ t / kTopBlocks ] = cc;           // a top block inside the chunk
+   const std::uint64_t top = f_big ? f_top[ t / kTopBlocks ] : 0;
+   if( 4 * t + 3 >= nw ) {                  // no word: no bit
+    D[ t ] = ( cc - top ) << ( 3 * kRel );
+    continue;
+    }
+   const Word x0 = P[ 4 * t ] , x1 = P[ 4 * t + 1 ] , x2 = P[ 4 * t + 2 ] ,
+              x3 = P[ 4 * t + 3 ];
+   const std::uint64_t r =
+    ( ( std::uint64_t( std::popcount( x0 ) ) |
+        ( std::uint64_t( std::popcount( x1 ) ) << 8 ) |
+        ( std::uint64_t( std::popcount( x2 ) ) << 16 ) ) * 0x010101ULL ) &
+    0xFFFFFF;
+   D[ t ] = ( ( cc - top ) << ( 3 * kRel ) ) | r;
+   cc += ( r >> 16 ) + std::uint64_t( std::popcount( x3 ) );
+   } } , 1 );
+ f_ones = std::size_t( c[ q ] );
+ if constexpr( ! Lazy )                   // the inventories at once
+  for( const bool v : { false , true } )
+   if( f_has[ v ] ) build( ex , v );
+ ADS_INVARIANT( f_b.clean() );
+ ADS_AUDIT( consistent() );
+ }
+
+template< bool Lazy >
+template< class F >
+void BasicRankSelect< Lazy >::samples( bool b , std::size_t t0 ,
+                                       std::size_t t1 , int e ,
+                                       std::size_t total , F && f ) const
+{
+ const auto & W = f_b.words();
+ const std::size_t G = std::size_t( 1 ) << e;
+ std::size_t lo = std::min( before( t0 , b ) , total );
+ std::size_t next = ( lo + G - 1 ) & ~( G - 1 );
+ // the bits b before the block and before its words 1, 2 and 3 once a
+ // block, then the word of each sample by three comparisons and its place
+ // by select
+ for( std::size_t t = t0 ; ( t < t1 ) && ( next < total ) ; ++t ) {
+  const std::size_t hi = std::min( before( t + 1 , b ) , total );
+  if( next >= hi ) {
+   lo = hi;
+   continue;
+   }
+  const std::uint64_t en = f_dir[ t ];
+  std::size_t c1 = std::size_t( en & kRelMask ) ,
+              c2 = std::size_t( ( en >> kRel ) & kRelMask ) ,
+              c3 = std::size_t( ( en >> ( 2 * kRel ) ) & kRelMask );
+  if( ! b ) {
+   c1 = kQuarter - c1;
+   c2 = 2 * kQuarter - c2;
+   c3 = 3 * kQuarter - c3;
+   }
+  for( ; next < hi ; next += G ) {
+   const std::size_t r = next - lo;
+   const std::size_t qq = std::size_t( r >= c1 ) + std::size_t( r >= c2 ) +
+                          std::size_t( r >= c3 );
+   const std::size_t in = qq == 0 ? 0 : qq == 1 ? c1 : qq == 2 ? c2 : c3;
+   const Word x = W[ 4 * t + qq ];
+   f( next , 64 * ( 4 * t + qq ) +
+             std::size_t( selectInWord( b ? x : ~x , int( r - in ) ) ) );
+   }
+  lo = hi;
+  }
+ }
+
+template< bool Lazy >
+template< Executor E >
+void BasicRankSelect< Lazy >::build( E & ex , bool b ) const
+{
+ Inventory & I = f_inv[ b ];
+ const std::size_t total = b ? f_ones : zeros() , n = f_b.size();
+ const std::size_t nb = f_dir.size() - 1;  // the blocks with their entry
+ std::size_t groups;
+ shape( b , I , groups );
+ if( total == 0 ) return;
+ I.pos.assign( groups + 1 , 0 );
+ I.off.assign( groups << I.s , 0 );
+ // the place of the first bit b of each group, then the offsets of the
+ // bits b of rank multiple of 2^g from the place of their group, each
+ // pass on chunks of blocks
+ parallelForBlocks( ex , 0 , nb , [ & ]( std::size_t t0 , std::size_t t1 ) {
+  samples( b , t0 , t1 , I.l , total , [ & ]( std::size_t c ,
+                                              std::size_t p ) {
+   I.pos[ c >> I.l ] = p; } ); } , kChunk );
+ parallelForBlocks( ex , 0 , nb , [ & ]( std::size_t t0 , std::size_t t1 ) {
+  samples( b , t0 , t1 , I.g , total , [ & ]( std::size_t c ,
+                                              std::size_t p ) {
+   I.off[ c >> I.g ] = std::uint16_t( p - I.pos[ c >> I.l ] ); } ); } ,
+  kChunk );
+ I.pos[ groups ] = n;
+ // the sparse groups, marked once all the places are read
+ std::vector< std::uint8_t > sparse( groups , 0 );
+ parallelFor( ex , 0 , groups , [ & ]( std::size_t j ) {
+  sparse[ j ] = I.pos[ j + 1 ] - I.pos[ j ] >= kSparse; } , kChunk );
+ parallelFor( ex , 0 , groups , [ & ]( std::size_t j ) {
+  if( sparse[ j ] ) I.pos[ j ] |= Word( 1 ) << 63; } , kChunk );
+ }
+
+template< bool Lazy >
 inline void BasicRankSelect< Lazy >::adopt( const BasicRankSelect & o ,
                                             bool move )
 {

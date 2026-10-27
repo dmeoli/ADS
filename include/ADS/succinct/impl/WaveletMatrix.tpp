@@ -19,34 +19,138 @@ namespace ADS {
 inline WaveletMatrix::WaveletMatrix( std::span< const std::uint64_t > x ,
                                      int w ) : f_n( x.size() )
 {
+ Sequential s;
+ init( s , x , w );
+ }
+
+template< Executor E >
+WaveletMatrix::WaveletMatrix( E & ex , std::span< const std::uint64_t > x ,
+                              int w ) : f_n( x.size() )
+{
+ init( ex , x , w );
+ }
+
+template< Executor E >
+void WaveletMatrix::init( E & ex , std::span< const std::uint64_t > x ,
+                          int w )
+{
  ADS_PRE( ( w >= 0 ) && ( w <= 64 ) );
  if( w == 0 ) {
-  std::uint64_t m = 0;
-  for( const auto v : x ) m |= v;
+  const std::uint64_t m = parallelReduce( ex , 0 , f_n , std::uint64_t( 0 ) ,
+   [ & ]( std::size_t lo , std::size_t hi ) {
+    std::uint64_t o = 0;
+    for( std::size_t i = lo ; i < hi ; ++i ) o |= x[ i ];
+    return( o ); } , std::bit_or<>() , kSlice );
   w = std::max( 1 , int( std::bit_width( m ) ) );
   }
  ADS_PRE( ( w == 64 ) || std::all_of( x.begin() , x.end() ,
                                       [ w ]( std::uint64_t v ) {
                                        return( ( v >> w ) == 0 ); } ) );
- f_lev.reserve( std::size_t( w ) );
- f_zeros.reserve( std::size_t( w ) );
- std::vector< std::uint64_t > cur( x.begin() , x.end() ) , next( f_n );
- for( int l = 0 ; l < w ; ++l ) {
-  const int sh = w - 1 - l;
-  BitVector B( f_n );
-  std::size_t z = 0;
-  for( std::size_t i = 0 ; i < f_n ; ++i )
-   if( ( cur[ i ] >> sh ) & 1 ) B.set( i );
-   else ++z;
-  // the stable partition: the 0s first, then the 1s
-  std::size_t p0 = 0 , p1 = z;
-  for( std::size_t i = 0 ; i < f_n ; ++i )
-   next[ ( ( cur[ i ] >> sh ) & 1 ) ? p1++ : p0++ ] = cur[ i ];
-  cur.swap( next );
-  f_lev.emplace_back( std::move( B ) );
-  f_zeros.push_back( z );
-  }
+ if( w <= 32 ) build< std::uint32_t >( ex , x , w );
+ else build< std::uint64_t >( ex , x , w );
  ADS_AUDIT( std::equal( x.begin() , x.end() , begin() ) );
+ }
+
+template< class T , Executor E >
+void WaveletMatrix::build( E & ex , std::span< const std::uint64_t > x ,
+                           int w )
+{
+ const std::size_t n = f_n;
+ std::vector< BitVector > B;
+ B.reserve( std::size_t( w ) );
+ for( int l = 0 ; l < w ; ++l ) B.emplace_back( n );
+ f_zeros.assign( std::size_t( w ) , 0 );
+ // the slices: at least kSlice items, about 4 per thread
+ const std::size_t p = std::max< std::size_t >( ex.concurrency() , 1 );
+ const auto cut = blocksOf( 0 , n , std::max( kSlice ,
+                                              ( n + 4 * p - 1 ) /
+                                              ( 4 * p ) ) );
+ const std::size_t S = cut.first , size = cut.second;
+ std::vector< T > C , D;                  // the items of the level, moved
+ const int passes = ( w + 7 ) / 8;
+ for( int pass = 0 , l = 0 ; pass < passes ; ++pass ) {
+  const int k = ( w - l + ( passes - pass ) - 1 ) / ( passes - pass );
+  const int sh = w - l - k;                 // the field of the k bits
+  const std::size_t K = std::size_t( 1 ) << k;
+  const bool last = pass + 1 == passes;
+  // the key of an item: its k bits reversed, the bit of the level l the
+  // lowest, so that the key of the level l + j is the key mod 2^j
+  std::uint8_t rev[ 256 ];
+  for( std::size_t a = 0 ; a < K ; ++a ) {
+   std::size_t r = 0;
+   for( int j = 0 ; j < k ; ++j ) r |= ( ( a >> ( k - 1 - j ) ) & 1 ) << j;
+   rev[ a ] = std::uint8_t( r );
+   }
+  auto item = [ & ]( std::size_t i ) -> T {
+   return( pass == 0 ? T( x[ i ] ) : C[ i ] ); };
+  auto key = [ & ]( T c ) -> std::size_t {
+   return( rev[ std::size_t( ( c >> sh ) & T( K - 1 ) ) ] ); };
+  // the keys of each slice
+  std::vector< std::size_t > h( S * K , 0 );
+  parallelFor( ex , 0 , S , [ & ]( std::size_t s ) {
+   std::size_t * H = h.data() + s * K;
+   const std::size_t i1 = std::min( n , ( s + 1 ) * size );
+   for( std::size_t i = s * size ; i < i1 ; ++i ) ++H[ key( item( i ) ) ];
+   } , 1 );
+  // the first place of each slice in each stream: the stream ( j , a ) of
+  // the level l + j holds the items of key mod 2^j = a, the streams of
+  // smaller a first and, in a stream, the slices in order; the stream
+  // ( k , a ) is the next order of the items
+  const std::size_t R = 2 * K - 1;          // the streams of j = 0 .. k
+  std::vector< std::size_t > first( S * R ) , end( S * R );
+  for( int j = 0 ; j <= k ; ++j ) {
+   const std::size_t J = std::size_t( 1 ) << j , base = J - 1;
+   std::size_t at = 0;
+   for( std::size_t a = 0 ; a < J ; ++a )
+    for( std::size_t s = 0 ; s < S ; ++s ) {
+     std::size_t c = 0;
+     for( std::size_t b = a ; b < K ; b += J ) c += h[ s * K + b ];
+     first[ s * R + base + a ] = at;
+     at += c;
+     end[ s * R + base + a ] = at;
+     }
+   }
+  // the 0s of each level: the items whose bit j is 0
+  for( int j = 0 ; j < k ; ++j ) {
+   std::size_t z = 0;
+   for( std::size_t s = 0 ; s < S ; ++s )
+    for( std::size_t a = 0 ; a < K ; ++a )
+     if( ! ( ( a >> j ) & 1 ) ) z += h[ s * K + a ];
+   f_zeros[ std::size_t( l + j ) ] = z;
+   }
+  if( ! last ) D.resize( n );
+  // the bits of the k levels and the items in their next order, each
+  // slice in its streams
+  parallelFor( ex , 0 , S , [ & ]( std::size_t s ) {
+   std::vector< detail::BitRuns > run;
+   run.reserve( std::size_t( k ) );
+   std::vector< std::size_t > next( K );
+   for( int j = 0 ; j < k ; ++j ) {
+    const std::size_t J = std::size_t( 1 ) << j;
+    run.emplace_back( B[ std::size_t( l + j ) ].f_w.data() , J );
+    for( std::size_t a = 0 ; a < J ; ++a )
+     run.back().open( a , first[ s * R + J - 1 + a ] ,
+                      end[ s * R + J - 1 + a ] );
+    }
+   for( std::size_t a = 0 ; a < K ; ++a )
+    next[ a ] = first[ s * R + K - 1 + a ];
+   const std::size_t i1 = std::min( n , ( s + 1 ) * size );
+   for( std::size_t i = s * size ; i < i1 ; ++i ) {
+    const T c = item( i );
+    const std::size_t a = key( c );
+    for( int j = 0 ; j < k ; ++j )
+     run[ std::size_t( j ) ].push( a & ( ( std::size_t( 1 ) << j ) - 1 ) ,
+                                   ( a >> j ) & 1 );
+    if( ! last ) D[ next[ a ]++ ] = c;
+    }
+   for( auto & r : run ) r.close();
+   } , 1 );
+  C.swap( D );
+  l += k;
+  }
+ f_lev.clear();
+ f_lev.reserve( std::size_t( w ) );
+ for( auto & b : B ) f_lev.emplace_back( ex , std::move( b ) );
  }
 
 inline std::uint64_t WaveletMatrix::access( std::size_t i ) const

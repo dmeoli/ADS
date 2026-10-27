@@ -76,6 +76,7 @@
 #include "ADS/memory/HugePageAllocator.h"
 
 #include <algorithm>
+#include <atomic>
 #include <bit>
 #include <compare>
 #include <cstddef>
@@ -141,6 +142,59 @@ class LineAllocator {
  bool operator==( const LineAllocator< U > & ) const noexcept {
   return( true );
   }
+ };
+
+/// runs \f$ r = 0 , \ldots , R - 1 \f$ of the places
+/// \f$ [ s_r , e_r ) \f$ of the words \f$ W \f$, zero at first, whose bits
+/// one thread writes in order while other threads write the runs around
+/// them: the bits of a run are gathered into a word, written when it is
+/// full or at the end of the run, by a plain store if the run holds the
+/// whole word and by an atomic or if it may share it with another run
+class BitRuns {
+ public:
+
+ /// \f$ R \f$ runs of the words \f$ W \f$, opened by `open()`
+ BitRuns( Word * W , std::size_t R )
+  : f_W( W ) , f_p( R , 0 ) , f_acc( R , 0 ) , f_s( R , 0 ) , f_e( R , 0 ) {}
+
+ /// the run \f$ r \f$ of the places \f$ [ s , e ) \f$
+ void open( std::size_t r , std::size_t s , std::size_t e ) {
+  f_p[ r ] = f_s[ r ] = s;
+  f_e[ r ] = e;
+  f_acc[ r ] = 0;
+  }
+
+ /// the bit \f$ b \f$ at the next place of the run \f$ r \f$
+ void push( std::size_t r , bool b ) {
+  const std::size_t p = f_p[ r ]++;
+  f_acc[ r ] |= Word( b ) << ( p & 63 );
+  if( ( p & 63 ) == 63 ) flush( r , p >> 6 );
+  }
+
+ /// the last word of each run written, if not full
+ void close( void ) {
+  for( std::size_t r = 0 ; r < f_p.size() ; ++r )
+   if( f_p[ r ] & 63 ) flush( r , f_p[ r ] >> 6 );
+  }
+
+ private:
+
+ /// the word \f$ w \f$ of the run \f$ r \f$ written, if it has a 1, and
+ /// its bits cleared
+ void flush( std::size_t r , std::size_t w ) {
+  if( const Word a = f_acc[ r ] ) {
+   if( ( 64 * w >= f_s[ r ] ) && ( 64 * w + 64 <= f_e[ r ] ) ) f_W[ w ] = a;
+   else std::atomic_ref< Word >( f_W[ w ] ).fetch_or(
+                                              a , std::memory_order_relaxed );
+   }
+  f_acc[ r ] = 0;
+  }
+
+ Word * f_W;                        ///< the words
+ std::vector< std::size_t > f_p;    ///< the next place of each run
+ std::vector< Word > f_acc;         ///< the bits of its word
+ std::vector< std::size_t > f_s ,   ///< the first place of each run
+                            f_e;    ///< the place past its last one
  };
 
 }  // end( namespace detail )
@@ -412,6 +466,8 @@ class BitVector {
 
  template< bool > friend class BasicRankSelect;   // which copy the words
  friend class CompactRankSelect;                  // as they count them
+ friend class WaveletMatrix;                      // which write the words
+ template< class > friend class HuffmanWaveletTree;   // by their threads
 
  /// the words for n bits: n / 64 + 2, rounded up to a line of 8
  [[nodiscard]] static std::size_t wordsFor( std::size_t n ) {

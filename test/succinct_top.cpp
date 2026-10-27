@@ -10,7 +10,10 @@
  * at \f$ 2^{13} \f$ (ADS_COMPACT_TOP), and the copy of the words as
  * they are counted, from \f$ 2^{23} \f$ bits and here from 64
  * (ADS_RANKSELECT_FUSE), and the binary packing a lane at a time, as with
- * no SSE2 (ADS_BP_SCALAR); rank and select against a scan, and Elias-Fano
+ * no SSE2 (ADS_BP_SCALAR); the parallel construction of both directories
+ * on chunks of 2 blocks and of 1 superblock (ADS_RANKSELECT_CHUNK and
+ * ADS_COMPACT_CHUNK), so that the top regions start chunks or lie inside
+ * them; rank and select against a scan, and Elias-Fano
  * and the balanced parentheses on top of them, at the level 3 of the
  * contracts.
  *
@@ -28,6 +31,8 @@
 #define ADS_COMPACT_TOP 13
 #define ADS_RANKSELECT_FUSE 64
 #define ADS_BP_SCALAR 1
+#define ADS_RANKSELECT_CHUNK 2
+#define ADS_COMPACT_CHUNK 1
 
 #include "ADSTest.h"
 
@@ -37,6 +42,7 @@
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/RankSelect.h"
+#include "ADS/parallel/ThreadPool.h"
 
 #include <algorithm>
 #include <bit>
@@ -238,6 +244,52 @@ ADS_TEST( "rank-select-top" )
  CHECK_THROWS( ( void )N.select1( 1 ) , contract_violation );
  CHECK_THROWS( ( void )O.select0( 1 ) , contract_violation );
  CHECK_THROWS( ( void )Z.select1( 1 ) , contract_violation );
+ }
+
+// the directories built on pools of 2 and 5 threads against the sequential
+// ones, with the top level every 2^10 bits (every 4 blocks) and every 2^13
+// (every 2 superblocks): chunks of 2 blocks, inside the top blocks, and of
+// up to 8 or more, holding several of them, on vectors from bits and from
+// words with 1s past the size
+ADS_TEST( "parallel-rank-select-top" )
+{
+ std::mt19937_64 g( 41 );
+ for( std::size_t t : { 2 , 5 } ) {
+  ThreadPool pool( t );
+  for( const std::size_t n : { 0 , 1 , 1023 , 1024 , 1025 , 2049 , 8193 ,
+                               40000 , 300001 , 1100000 } )
+   for( const double p : { 0.0 , 0.3 , 1.0 } ) {
+    std::vector< Word > w( ( n + 63 ) / 64 + 3 );
+    std::bernoulli_distribution B( p );
+    for( auto & x : w )
+     for( int i = 0 ; i < 64 ; ++i ) x |= Word( B( g ) ) << i;
+    w.back() = ~Word( 0 );                 // past the size
+    const std::span< const Word > W( w );
+    const BitVector b( W , n );
+    const RankSelect A( b ) , P( pool , b ) , Q( pool , W , n );
+    bool ok = P.bits() == A.bits() && Q.bits() == A.bits() &&
+              P.ones() == A.ones() && Q.ones() == A.ones() &&
+              P.directoryBits() == A.directoryBits();
+    for( std::size_t i = 0 ; ok && i <= n ; ++i )
+     ok = P.rank1( i ) == A.rank1( i ) && Q.rank1( i ) == A.rank1( i );
+    for( std::size_t k = 1 ; ok && k <= A.ones() ; ++k )
+     ok = P.select1( k ) == A.select1( k ) && Q.select1( k ) == A.select1( k );
+    for( std::size_t k = 1 ; ok && k <= A.zeros() ; ++k )
+     ok = P.select0( k ) == A.select0( k ) && Q.select0( k ) == A.select0( k );
+    CHECK( ok );
+    const CompactRankSelect X( b ) , Y( pool , b ) , Z( pool , W , n );
+    ok = Y.bits() == X.bits() && Z.bits() == X.bits() &&
+         Y.directoryBits() == X.directoryBits() &&
+         Z.directoryBits() == X.directoryBits();
+    for( std::size_t i = 0 ; ok && i <= n ; ++i )
+     ok = Y.rank1( i ) == X.rank1( i ) && Z.rank1( i ) == X.rank1( i );
+    for( std::size_t k = 1 ; ok && k <= X.ones() ; ++k )
+     ok = Y.select1( k ) == X.select1( k ) && Z.select1( k ) == X.select1( k );
+    for( std::size_t k = 1 ; ok && k <= X.zeros() ; ++k )
+     ok = Y.select0( k ) == X.select0( k ) && Z.select0( k ) == X.select0( k );
+    CHECK( ok );
+    }
+  }
  }
 
 // Elias-Fano and the balanced parentheses on the directory with the top

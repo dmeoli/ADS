@@ -102,7 +102,15 @@ inline void CompactRankSelect::directory( const Word * w )
   super.template operator()< false >( s , Z.data() );
   }
  f_ones = std::size_t( c );
+ closeSamples();
+ ADS_INVARIANT( f_b.clean() );
+ ADS_AUDIT( consistent() );
+ }
+
+inline void CompactRankSelect::closeSamples( void )
+{
  // the superblock of the last bit b closes the samples
+ const std::size_t ns = f_b.size() / kSuper + 1;
  for( const bool v : { false , true } )
   if( ! f_s[ v ].empty() ) {
    const std::size_t total = v ? f_ones : zeros();
@@ -110,6 +118,107 @@ inline void CompactRankSelect::directory( const Word * w )
    while( ( t + 1 < ns ) && ( before( t + 1 , v ) < total ) ) ++t;
    f_s[ v ].push_back( std::uint32_t( t ) );
    }
+ }
+
+template< Executor E >
+CompactRankSelect::CompactRankSelect( E & ex , BitVector b )
+ : f_b( std::move( b ) )
+{
+ directory( ex , nullptr );
+ }
+
+template< Executor E >
+CompactRankSelect::CompactRankSelect( E & ex , std::span< const Word > w ,
+                                      std::size_t n )
+{
+ ADS_PRE( w.size() >= ( n + 63 ) / 64 );
+ f_b.f_n = n;
+ f_b.f_w.clear();
+ f_b.f_w.resize( BitVector::wordsFor( n ) );   // written by directory()
+ directory( ex , w.data() );
+ }
+
+template< Executor E >
+void CompactRankSelect::directory( E & ex , const Word * w )
+{
+ const std::size_t n = f_b.size() , ns = n / kSuper + 1;   // and one more
+ constexpr std::size_t kTopSupers = ( std::size_t( 1 ) << kTop ) / kSuper;
+ constexpr std::size_t kW = kSuper / 64;    // the words of a superblock
+ // the chunks of superblocks: a power of 2 below a top region, else a
+ // multiple of it, so that a top region either starts a chunk or lies in
+ // one
+ std::size_t cs = std::max( kChunk , ( ns + 1 ) / kBlocks + 1 );
+ cs = cs < kTopSupers ? std::bit_ceil( cs )
+                      : ( cs + kTopSupers - 1 ) / kTopSupers * kTopSupers;
+ const std::size_t q = ( ns + 1 + cs - 1 ) / cs;   // the chunks
+ if( ( ex.concurrency() == 1 ) || ( q == 1 ) ) {
+  directory( w );                           // the sequential pass
+  return;
+  }
+ Word * const P = f_b.f_w.data();
+ const std::size_t nw = f_b.f_w.size();     // a multiple of 8
+ const std::size_t sw = ( n + 63 ) / 64;
+ f_e.resize( ns + 1 );
+ f_top.assign( ( ( ( ns + 1 ) * kSuper ) >> kTop ) + 1 , 0 );
+ // the 1s of the words of each chunk, copied from w first if given (the
+ // last word cut at n, 0s past it)
+ std::vector< std::uint64_t > c( q + 1 , 0 );
+ parallelFor( ex , 0 , q , [ & ]( std::size_t k ) {
+  const std::size_t w0 = std::min( nw , kW * k * cs ) ,
+                    w1 = k + 1 == q ? nw
+                                    : std::min( nw , kW * ( k + 1 ) * cs );
+  if( w ) {
+   for( std::size_t i = w0 ; i < w1 ; ++i ) P[ i ] = i < sw ? w[ i ] : 0;
+   if( ( n % 64 ) && ( n / 64 >= w0 ) && ( n / 64 < w1 ) )
+    P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
+   }
+  std::uint64_t a = 0;
+  for( std::size_t i = w0 ; i < w1 ; ++i )
+   a += std::uint64_t( std::popcount( P[ i ] ) );
+  c[ k + 1 ] = a; } , 1 );
+ for( std::size_t k = 0 ; k < q ; ++k ) c[ k + 1 ] += c[ k ];
+ f_ones = std::size_t( c[ q ] );
+ for( std::size_t t = 0 ; t <= ns ; t += kTopSupers )
+  if( t % cs == 0 ) f_top[ t / kTopSupers ] = c[ t / cs ];
+ // the samples of rank 1 , 1 + kSample , ... of each value
+ const std::size_t z = n - f_ones;
+ f_s[ 1 ].assign( f_ones == 0 ? 0 : ( f_ones - 1 ) / kSample + 1 , 0 );
+ f_s[ 0 ].assign( z == 0 ? 0 : ( z - 1 ) / kSample + 1 , 0 );
+ // the entries and the samples of each chunk from the 1s before it
+ parallelFor( ex , 0 , q , [ & ]( std::size_t k ) {
+  const std::size_t s0 = k * cs , s1 = std::min( ns + 1 , ( k + 1 ) * cs );
+  std::uint64_t cc = c[ k ];
+  const std::size_t z0 = std::min( n , s0 * kSuper ) - std::size_t( cc );
+  std::size_t j1 = cc == 0 ? 0 : ( std::size_t( cc ) - 1 ) / kSample + 1 ,
+              j0 = z0 == 0 ? 0 : ( z0 - 1 ) / kSample + 1;
+  for( std::size_t s = s0 ; s < s1 ; ++s ) {
+   if( ( s % kTopSupers == 0 ) && ( s % cs != 0 ) )
+    f_top[ s / kTopSupers ] = cc;           // a top region inside the chunk
+   const std::uint64_t top = f_top[ s / kTopSupers ];
+   std::uint64_t v[ 9 ];                    // the 1s before each block
+   v[ 0 ] = 0;
+   for( std::size_t b = 0 ; b < 8 ; ++b ) {
+    std::uint64_t in = 0;
+    for( std::size_t j = 0 ; j < 8 ; ++j ) {
+     const std::size_t i = kW * s + 8 * b + j;
+     if( i < nw ) in += std::uint64_t( std::popcount( P[ i ] ) );
+     }
+    v[ b + 1 ] = v[ b ] + in;
+    }
+   f_e[ s ] = Entry{ ( cc - top ) | ( v[ 1 ] << 44 ) | ( v[ 2 ] << 56 ) ,
+                     ( v[ 2 ] >> 8 ) | ( v[ 3 ] << 4 ) | ( v[ 4 ] << 16 ) |
+                     ( v[ 5 ] << 28 ) | ( v[ 6 ] << 40 ) | ( v[ 7 ] << 52 ) };
+   cc += v[ 8 ];
+   if( s < ns ) {
+    const std::size_t end1 = std::size_t( cc ) ,
+                      end0 = std::min( n , ( s + 1 ) * kSuper ) - end1;
+    for( ; 1 + j1 * kSample <= end1 ; ++j1 )
+     f_s[ 1 ][ j1 ] = std::uint32_t( s );
+    for( ; 1 + j0 * kSample <= end0 ; ++j0 )
+     f_s[ 0 ][ j0 ] = std::uint32_t( s );
+    }
+   } } , 1 );
+ closeSamples();
  ADS_INVARIANT( f_b.clean() );
  ADS_AUDIT( consistent() );
  }
