@@ -1,0 +1,355 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File external.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_external */
+/** \defgroup theory_external Theory of external memory
+ \ingroup area_external
+
+ \details The headers of `include/ADS/external` realize, beyond the book,
+ the two-level memory of Aggarwal and Vitter and the algorithms that run in
+ it, after chapters 1, Introduction, 4, List Ranking, and 5, Sorting Atomic
+ Items, of Ferragina's book, i.e., the sorts by merging
+ and by distribution with their lower bounds, the permutations and the
+ ranking of a list. This page collects what the headers take for granted:
+ the model and its notation (see \ref theory_external_notation), the cost of
+ the elementary patterns of access (see \ref theory_external_costs), and,
+ for each family of algorithms, the property on which its correctness rests
+ and the argument behind its bound (from \ref theory_external_sort to
+ \ref theory_external_lists). The pseudocode of each algorithm is instead on
+ the page of its header, in the comment of its function, together with the
+ chapter of Ferragina's book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_external_notation Definitions and notation
+
+ The <em>two-level memory</em> has an internal memory of \f$ M \f$ items and
+ a disk of unbounded size, divided into blocks of \f$ B \f$ consecutive
+ items; an <em>I/O</em> moves one block between the disk and the memory, and
+ the cost of an algorithm is the number of its I/Os, the computation in
+ memory being free. An item is <em>atomic</em>: it is moved and compared
+ whole, and a pair or a triple of the algorithms counts as one item. The
+ model needs \f$ M \ge 2 B \f$, so that a block can be read while another is
+ kept, and the algorithms of the area ask for \f$ M \ge 3 B \f$ (two inputs
+ and an output) or more. `TwoLevelMemory.h` simulates it: every buffer is
+ leased from a memory of \f$ M \f$ items, which a test reads back with its
+ two counters of the I/Os, so that a bound of this page is checked on the
+ run itself.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$, \f$ M \f$, \f$ B \f$</td>
+     <td>the items of the input, of the internal memory and of a block, with
+         \f$ M \ge 2 B \f$ (<tt>memorySize()</tt>,
+         <tt>blockSize()</tt>)</td></tr>
+ <tr><td>\f$ \lceil n / B \rceil \f$</td>
+     <td>the blocks of a file of \f$ n \f$ items, the last one possibly
+         partial (<tt>blocks()</tt>)</td></tr>
+ <tr><td>\f$ \mathrm{scan}( n ) \f$, \f$ \mathrm{sort}( n ) \f$</td>
+     <td>\f$ \Theta( n / B ) \f$ and
+         \f$ \Theta( ( n / B ) \log_{M / B} ( n / M ) ) \f$, the I/Os of a
+         scan and of a sort of \f$ n \f$ items</td></tr>
+ <tr><td>\f$ R \f$, \f$ k \f$</td>
+     <td>the items of a run formed in memory,
+         \f$ R = \lfloor M / B \rfloor B \f$, and the fan-in of a merge or the
+         number of buckets of a distribution</td></tr>
+ <tr><td>\f$ \pi \f$</td>
+     <td>a permutation of \f$ 0 , \ldots , n - 1 \f$, with
+         \f$ \mathit{out}[ i ] = \mathit{in}[ \pi( i ) ] \f$</td></tr>
+ <tr><td>\f$ \mathit{succ}[ i ] \f$, \f$ r[ i ] \f$</td>
+     <td>the successor of the item \f$ i \f$ of a list, the tail \f$ t \f$
+         having \f$ \mathit{succ}[ t ] = t \f$, and its rank, the number of
+         links from \f$ i \f$ to the tail</td></tr>
+ <tr><td>\f$ \tilde O( \cdot ) \f$</td>
+     <td>the bound up to the factor \f$ \log_{M / B} ( n / M ) \f$ of a
+         sort, i.e., \f$ \tilde O( n / B ) = O( \mathrm{sort}( n ) ) \f$
+         </td></tr>
+ </table>
+
+ \section theory_external_costs The patterns of access and their costs
+
+ An algorithm of the internal memory that follows links (a list, a tree of
+ pointers, the edges of a graph) pays up to one I/O per link on the disk,
+ since two consecutive links rarely fall in one block; the algorithms of the
+ area replace such links by scans and sorts, whose blocks are read whole.
+
+ <table>
+ <caption>The patterns of access of the area and their I/Os</caption>
+ <tr><th>Pattern</th><th>I/Os</th><th>Realization</th></tr>
+ <tr><td>scan of \f$ n \f$ items, read or written</td>
+     <td>\f$ \lceil n / B \rceil \f$</td>
+     <td><tt>DiskReader::next()</tt>, <tt>DiskWriter::push()</tt></td></tr>
+ <tr><td>\f$ m \f$ reads at sorted positions</td>
+     <td>\f$ \min\{ m , \lceil n / B \rceil \} \f$</td>
+     <td><tt>DiskReader::at()</tt> with increasing positions</td></tr>
+ <tr><td>sort of \f$ n \f$ items</td>
+     <td>\f$ \Theta( ( n / B ) \log_{M / B} ( n / M ) ) \f$</td>
+     <td><tt>multiwayMergeSort()</tt>, <tt>distributionSort()</tt> (on
+         average)</td></tr>
+ <tr><td>permutation of \f$ n \f$ items</td>
+     <td>\f$ \Theta( \min\{ n , \mathrm{sort}( n ) \} ) \f$</td>
+     <td><tt>permuteDirect()</tt> or <tt>permuteBySorting()</tt></td></tr>
+ <tr><td>ranking of a list of \f$ n \f$ items</td>
+     <td>\f$ \Theta( \mathrm{sort}( n ) ) \f$</td>
+     <td><tt>externalListRank()</tt></td></tr>
+ </table>
+
+ Reads at sorted positions share a block whenever two of them fall in it,
+ since `DiskReader` loads a block only when it is not the one in its buffer;
+ hence the coordinated scans of the algorithms (a sorted file of requests
+ read together with the file that answers them) cost the scans of the two
+ files, and no more.
+
+ \section theory_external_sort Sorting
+
+ <em>Theorem 1 (the lower bound of sorting).</em> A sort by comparisons of
+ \f$ n \f$ atomic items in the two-level memory needs, for some
+ \f$ t \f$ reads,
+ \f[
+   \binom{M}{B}^t ( B! )^{\lceil n / B \rceil} \ge n! , \quad
+   \text{whence} \quad t = \Omega\Bigl( \frac{n}{B} \log_{M / B}
+   \frac{n}{M} \Bigr) , \tag{1}
+ \f]
+ plus the \f$ \lceil n / B \rceil \f$ writes of the output (Aggarwal and
+ Vitter).
+
+ Indeed, consider the tree of the executions, each node a read and its
+ children the outcomes of the read. A read brings \f$ B \f$ items into a
+ memory that holds \f$ M - B \f$ others, and what it can tell is the
+ positions of the new items among the old ones, at most
+ \f$ \binom{M}{B} \f$ outcomes, times the \f$ B! \f$ orders of the new items
+ among themselves when the block is read for the first time, which happens
+ \f$ \lceil n / B \rceil \f$ times. The leaves must tell apart the
+ \f$ n! \f$ orders of the input, which gives (1); taking the logarithms,
+ \f$ t \log \binom{M}{B} \ge n \log ( n / B ) - O( n ) \f$ and
+ \f$ \log \binom{M}{B} = O( B \log ( M / B ) ) \f$, i.e., the bound of (1).
+ `sortingLowerBound()` computes the least \f$ t \f$ with the logarithms of
+ the factorials, so that a test can compare it with the I/Os counted.
+
+ A permutation is no easier, once the writes are counted too: a write
+ can put its block in any of \f$ n + 1 \f$ places of the output, and the
+ condition
+ \f[
+   ( ( n + 1 ) \binom{M}{B} )^t ( B! )^{\lceil n / B \rceil} \ge n! \tag{2}
+ \f]
+ gives \f$ t = \Omega( \min\{ n , \mathrm{sort}( n ) \} ) \f$
+ (`permutingLowerBound()`): the minimum
+ is \f$ n \f$, one read per item, only when \f$ B \f$ is smaller than the
+ logarithm of the sort. Hence on the disk
+ the cost of a sort is that of moving the items, not that of finding their
+ order.
+
+ The mergesort reaches (1). Its first pass forms the runs, reading
+ \f$ R \f$ items at a time and sorting them in memory, which saves the
+ \f$ \log_2 M \f$ lowest levels of the recursion; each further pass merges
+ groups of \f$ k \f$ runs with a block of each in memory and one for the
+ output, and reads and writes every block once. With
+ \f$ \lceil n / R \rceil \f$ runs, the I/Os are
+ \f[
+   2 \lceil n / B \rceil \bigl( 1 + \lceil \log_k \lceil n / R \rceil
+   \rceil \bigr) , \tag{3}
+ \f]
+ the value of `mergeSortIOs()`. With \f$ k = 2 \f$ (`binaryMergeSort()`)
+ this is \f$ O( ( n / B ) \log_2 ( n / M ) ) \f$, and with
+ \f$ k = M / B - 1 \f$ (`multiwayMergeSort()`) it is
+ \f$ O( ( n / B ) \log_{M / B} ( n / M ) ) \f$, i.e., optimal by (1).
+ The choice of the least head among
+ \f$ k \f$ runs costs no I/O, and a tree of losers makes it with
+ \f$ \lceil \log_2 k \rceil \f$ comparisons, one per level on the path of the
+ winner. Replacement selection (the snow plow of Knuth) forms longer runs
+ with a heap of \f$ M - 2 B \f$ items: an item larger than the last one
+ written joins the current run, a smaller one the next run; on a random
+ input the runs have \f$ 2 M \f$ items on average, which saves a pass when
+ the number \f$ \lceil n / R \rceil \f$ of the runs of the other way lies
+ between a power \f$ k^p \f$ and \f$ 2 k^p \f$, and a sorted input is one
+ run.
+
+ <em>Lemma 2 (the sample of the distribution).</em> Let the \f$ k - 1 \f$
+ pivots be the items of ranks \f$ ( a + 1 ) , 2 ( a + 1 ) , \ldots \f$ of a
+ sorted random sample of \f$ ( a + 1 ) k - 1 \f$ items, with
+ \f$ a + 1 = \lceil 12 \ln k \rceil \f$. Then with probability at least
+ \f$ 1 / 2 \f$ every bucket between two consecutive pivots has fewer than
+ \f$ 4 n / k \f$ items.
+
+ Indeed, cut the sorted input into \f$ k / 2 \f$ segments of \f$ 2 n / k \f$
+ items each: a bucket with \f$ 4 n / k \f$ items or more contains a whole
+ segment, and then no more than \f$ a \f$ items of the sample fall in that
+ segment, while \f$ 2 ( a + 1 ) \f$ are expected there; by a bound of
+ Chernoff this has probability at most \f$ e^{- ( a + 1 ) / 6} \le k^{-2} \f$,
+ and the union over the \f$ k / 2 \f$ segments gives at most \f$ 1 / 2 \f$.
+
+ Hence `distributionSort()` draws the sample again when a bucket is too
+ large (at most twice), and with buckets of fewer than \f$ 4 n / k \f$ items
+ the recursion has \f$ O( \log_{k / 4} ( n / M ) ) \f$ levels, each of
+ which reads and writes every item once. The memory holds a block of the
+ input, a block for each of the \f$ k \f$ buckets between the pivots and of
+ the \f$ k - 1 \f$ buckets of the items equal to a pivot (which stop the
+ recursion on repeated keys, as the three-way partition of quicksort does),
+ a block of the output and the pivots; hence
+ \f$ k = \lfloor ( M - B ) / ( 2 B + 1 ) \rfloor \f$, half the fan-in of the
+ merge, and the same \f$ O( \mathrm{sort}( n ) ) \f$ I/Os on average.
+
+ <table>
+ <caption>The sorts of the area</caption>
+ <tr><th>Sort</th><th>Memory</th><th>I/Os</th><th>Remarks</th></tr>
+ <tr><td><tt>binaryMergeSort()</tt></td><td>\f$ M \ge 3 B \f$</td>
+     <td>\f$ O( ( n / B ) \log_2 ( n / M ) ) \f$</td>
+     <td>deterministic, the logarithm in base 2</td></tr>
+ <tr><td><tt>multiwayMergeSort()</tt></td><td>\f$ M \ge 3 B \f$</td>
+     <td>\f$ O( \mathrm{sort}( n ) ) \f$</td>
+     <td>deterministic, optimal; fewer runs with the snow plow</td></tr>
+ <tr><td><tt>distributionSort()</tt></td><td>\f$ M \ge 5 B + 2 \f$</td>
+     <td>\f$ O( \mathrm{sort}( n ) ) \f$ on average</td>
+     <td>randomized, fan-in about half that of the merge</td></tr>
+ </table>
+
+ On \f$ D \f$ disks read in parallel, the striping (the \f$ D \f$ disks as
+ one with blocks of \f$ D B \f$ items) turns either sort into one of
+ \f$ O( ( n / D B ) \log_{M / D B} ( n / M ) ) \f$ I/Os, which loses a
+ factor \f$ 1 - \log_{M / B} D \f$ in the base of the logarithm; Greed Sort of
+ Nodine and Vitter recovers the optimum. The functions of the area simulate
+ one disk.
+
+ \section theory_external_permute Permuting
+
+ `permuteDirect()` reads \f$ \mathit{in}[ \pi( i ) ] \f$ for
+ \f$ i = 0 , 1 , \ldots \f$ and writes the output by a scan: at most
+ \f$ n \f$ reads, fewer when consecutive positions fall in one block.
+ `permuteBySorting()` instead sorts the pairs \f$ \langle i , \pi( i )
+ \rangle \f$ by \f$ \pi( i ) \f$, fills in \f$ \mathit{in}[ \pi( i ) ] \f$
+ by one scan of the input, which is now read in order, and sorts the triples
+ back by \f$ i \f$: two sorts and three scans, \f$ O( \mathrm{sort}( n ) ) \f$;
+ by (2) the better of the two is optimal, the direct one only when
+ \f$ B \f$ is below the logarithm of the sort.
+
+ \section theory_external_lists Ranking a list
+
+ In memory a list is ranked in \f$ O( n ) \f$ time by a walk back from the
+ tail (`listRank()`), which on the disk costs up to one I/O per item. The
+ algorithms of the area avoid the walk in two ways, both from the parallel
+ algorithms.
+
+ <em>Lemma 3 (pointer jumping).</em> Start from \f$ s[ i ] =
+ \mathit{succ}[ i ] \f$, and \f$ r[ i ] = 1 \f$ but at the tail, where it is
+ 0; if each round sets, for all the items at once,
+ \f[
+   r[ i ] \gets r[ i ] + r[ s[ i ] ] , \qquad s[ i ] \gets s[ s[ i ] ] ,
+   \tag{4}
+ \f]
+ then after \f$ j \f$ rounds \f$ r[ i ] \f$ is the number of links from
+ \f$ i \f$ to \f$ s[ i ] \f$, which is \f$ \min\{ 2^j , r( i ) \} \f$ away
+ (Wyllie).
+
+ Indeed, (4) adds the length of the jump of \f$ s[ i ] \f$ to that of
+ \f$ i \f$, and by induction on \f$ j \f$ both are \f$ 2^{j-1} \f$ unless the
+ tail is reached. Hence \f$ \lceil \log_2 n \rceil \f$ rounds rank the list,
+ with \f$ O( n \log n ) \f$ operations (`listRankPointerJumping()`). A round
+ of (4) is a parallel step
+ \f$ A[ a_i ] \gets \mathrm{op}( A[ a_i ] , A[ b_i ] ) \f$, and
+ `parallelStep()` makes it on the disk by sorting the requests by
+ \f$ b_i \f$, answering them by one scan of \f$ A \f$, sorting them back by
+ \f$ a_i \f$ and applying them by a second scan; thus any parallel
+ algorithm of \f$ T \f$ steps on \f$ n \f$ processors costs
+ \f$ \tilde O( ( n / B ) T ) \f$ I/Os, and `externalPointerJumping()`
+ \f$ \tilde O( ( n / B ) \log n ) \f$.
+
+ The logarithm goes away by recursion. If \f$ I \f$ is an
+ <em>independent set</em>, i.e., no item of \f$ I \f$ is the successor of
+ another item of \f$ I \f$ nor the tail, the items whose successor is in
+ \f$ I \f$ can jump over it, adding its rank to their own; the remaining
+ list is ranked recursively, and each item of \f$ I \f$ then gets the rank
+ of its successor plus its own. With \f$ | I | \ge n / 8 \f$ and each level
+ made of a constant number of sorts and scans (the joins of each record
+ with the record of its successor),
+ \f[
+   T( n ) = \tilde O( n / B ) + T( 7 n / 8 ) = \tilde O( n / B ) , \tag{5}
+ \f]
+ since the sizes of the levels decrease geometrically
+ (`externalListRank()`). The independent
+ sets come in two kinds.
+
+ <table>
+ <caption>The independent sets of the area</caption>
+ <tr><th>Set</th><th>Size</th><th>Rounds</th></tr>
+ <tr><td><tt>randomIndependentSet()</tt>: a coin per item, the heads whose
+         successor shows tails</td>
+     <td>\f$ n / 4 \f$ on average, at least \f$ n / 8 \f$ after
+         \f$ O( 1 ) \f$ attempts on average</td>
+     <td>1</td></tr>
+ <tr><td><tt>independentSetOfColors()</tt> on
+         <tt>deterministicCoinTossing()</tt>: the local minima of three
+         colors</td>
+     <td>at least about \f$ n / 4 \f$</td>
+     <td>\f$ O( \log^* n ) \f$</td></tr>
+ </table>
+
+ An item enters the random set with probability \f$ 1 / 4 \f$ (its own coin
+ heads, that of its successor tails), and two items of the set cannot be
+ consecutive, since the successor of one shows tails. The deterministic
+ coin tossing of Cole and Vishkin starts from the colors
+ \f$ c[ i ] = i \f$, which differ on adjacent items, and replaces at each
+ round \f$ c[ i ] \f$ by \f$ 2 \pi + z \f$, with \f$ \pi \f$ the lowest bit
+ in which \f$ c[ i ] \f$ and \f$ c[ \mathit{succ}[ i ] ] \f$ differ and
+ \f$ z \f$ the value of that bit in \f$ c[ i ] \f$.
+
+ <em>Lemma 4 (deterministic coin tossing).</em> If adjacent colors differ
+ before a round, they differ after it, and colors of \f$ b \f$ bits become
+ colors of \f$ \lceil \log_2 b \rceil + 1 \f$ bits.
+
+ Indeed, if \f$ i \f$ and its successor \f$ j \f$ get the same new color,
+ they have the same \f$ \pi \f$ and the same bit \f$ \pi \f$; but
+ \f$ \pi \f$ is a bit in which the old colors of \f$ i \f$ and \f$ j \f$
+ differ, a contradiction. The new color is at most \f$ 2 ( b - 1 ) + 1 \f$,
+ which has \f$ \lceil \log_2 b \rceil + 1 \f$ bits. Hence after
+ \f$ O( \log^* n ) \f$ rounds the colors are in \f$ \{ 0 , \ldots , 5 \} \f$,
+ and the items of colors 5, 4 and 3 in turn take the least color of
+ \f$ \{ 0 , 1 , 2 \} \f$ that neither neighbour has, which keeps the colors
+ proper since the items of one color are not adjacent. The local minima of
+ three colors are independent, and between two consecutive local minima
+ there are at most 3 other items. `listRankIndependentSet()` runs the
+ recursion in memory with either set; on the disk the deterministic sets
+ would repeat the joins of their \f$ O( \log^* n ) \f$ rounds at every
+ level, and the area uses them only in memory. The optimal parallel
+ rankings of Cole and Vishkin and of Anderson and Miller use the same sets
+ to reach \f$ O( n ) \f$ operations in \f$ O( \log n ) \f$ time, and on the
+ disk \f$ \Theta( \mathrm{sort}( n ) ) \f$, the bound of (5), is optimal
+ (Chiang et al.).
+
+ \section theory_external_refs References
+
+ \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+      Press, 2023, chapters 1, Introduction, 4, List Ranking, and 5, Sorting
+      Atomic Items, doi:10.1017/9781009128933
+ \see A. Aggarwal, J. S. Vitter, The input/output complexity of sorting
+      and related problems, Communications of the ACM 31(9), 1116-1127,
+      1988, doi:10.1145/48529.48535
+ \see J. S. Vitter, External memory algorithms and data structures:
+      dealing with massive data, ACM Computing Surveys 33(2), 209-271,
+      2001, doi:10.1145/384192.384193
+ \see D. E. Knuth, The Art of Computer Programming, vol. 3, 2nd ed.,
+      Addison-Wesley, 1998, sections 5.4.1 and 5.4.9
+ \see W. D. Frazer, A. C. McKellar, Samplesort: a sampling approach to
+      minimal storage tree sorting, Journal of the ACM 17(3), 496-507,
+      1970, doi:10.1145/321592.321600
+ \see M. H. Nodine, J. S. Vitter, Greed Sort: optimal deterministic
+      sorting on parallel disks, Journal of the ACM 42(4), 919-933, 1995,
+      doi:10.1145/210332.210343
+ \see R. Dementiev, L. Kettner, P. Sanders, STXXL: standard template
+      library for XXL data sets, Software: Practice and Experience 38(6),
+      589-637, 2008, doi:10.1002/spe.844
+ \see J. C. Wyllie, The complexity of parallel computations, PhD thesis,
+      Cornell University, 1979
+ \see R. Cole, U. Vishkin, Deterministic coin tossing with applications
+      to optimal parallel list ranking, Information and Control 70(1),
+      32-53, 1986, doi:10.1016/S0019-9958(86)80023-7
+ \see R. J. Anderson, G. L. Miller, Deterministic parallel list ranking,
+      Algorithmica 6, 859-868, 1991, doi:10.1007/BF01759076
+ \see Y.-J. Chiang, M. T. Goodrich, E. F. Grove, R. Tamassia, D. E.
+      Vengroff, J. S. Vitter, External-memory graph algorithms,
+      Proceedings of the 6th ACM-SIAM Symposium on Discrete Algorithms
+      (SODA), 139-149, 1995
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File external.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
