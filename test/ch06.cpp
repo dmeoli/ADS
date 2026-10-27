@@ -3,10 +3,10 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of chapter 6, Alberi bilanciati di ricerca: the binary search tree
- * of Figura 6.1 and the three cases of removal of Figura 6.2, the Red-Black
+ * of figure 6.1 and the three cases of removal of figure 6.2, the Red-Black
  * tree against its constraints and the Teoremi 6.1, 6.2 and 6.3, both trees
  * against std::map on random operations, the B+-tree built by the
- * insertions of Figura 6.8 into the one of Figura 6.7, and the exercises
+ * insertions of figure 6.8 into the one of figure 6.7, and the exercises
  * 6.1 to 6.10, each a test named after it.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 6,
@@ -14,7 +14,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -123,7 +123,7 @@ Shape shape( const Tr & t )
    s.ok = false;                                         // (V4)
   const int size = a.size + b.size + 1;
   if( RB && ( size < ( 1 << a.r ) - 1 ) )
-   s.thm61 = false;                                      // Teorema 6.1
+   s.thm61 = false;                                      // Theorem 6.1
   return( R{ a.r + ( u->color == Color::BLACK ) , size } );
   };
  rec( t.root() , 0 );
@@ -180,7 +180,7 @@ BinaryTree< int > * make( const std::shared_ptr< BSpec > & s )
  return( t );
  }
 
-/// Figura 6.1, in the order of a previsit, so that the shape is the same
+/// Figure 6.1, in the order of a previsit, so that the shape is the same
 const Ints fig61 = { 17 , 7 , 1 , 5 , 8 , 13 , 33 , 21 , 27 , 40 , 37 , 42 };
 
 /// the value of k in m, or nothing, as lookup() returns it
@@ -205,7 +205,7 @@ Tr build( const Ints & k )
 /*----------------------- THE BINARY SEARCH TREE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// section 6.1, Figura 6.1: the keys inserted in previsit give back the
+// section 6.1, figure 6.1: the keys inserted in previsit give back the
 // tree, the invisit is increasing, min(), max(), successorNode() and
 // predecessorNode() walk it, an inserted key updates its value. The empty
 // tree and a node alone, the extreme keys of int, nil after the sentinel,
@@ -261,7 +261,7 @@ ADS_TEST( "sec6.1.search-tree" )
  CHECK_THROWS( (void) BST::value( nullptr ) , contract_violation );
  }
 
-// section 6.1, Figura 6.2: the removal of 33, with two children, moves its
+// section 6.1, figure 6.2: the removal of 33, with two children, moves its
 // successor 37 in its place (cases (3) and (1)); the removal of 8, with one
 // child, hangs 13 to 7 (case (2)); both give the last tree of the figure.
 // The removal from the empty tree, of the only key, twice of the same key,
@@ -316,7 +316,7 @@ ADS_TEST( "sec6.1.remove" )
 /*-------------------------- THE RED-BLACK TREE ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// section 6.2, Figura 6.5: the insertion of 1, 2, 3 ends in the case (5b),
+// section 6.2, figure 6.5: the insertion of 1, 2, 3 ends in the case (5b),
 // that of 3, 1, 2 goes through (4a) and (5a); both give 2 black over 1 and
 // 3 red. Then the case (3) recolors and the root stays black. Increasing
 // and decreasing insertions keep the height logarithmic, removals in
@@ -368,7 +368,7 @@ ADS_TEST( "spec.RedBlackTree" )
  CHECK( d.empty() && shape( d ).ok );
  }
 
-// section 6.2, Figura 6.3: the tree of 10 internal nodes and 11 leaves,
+// section 6.2, figure 6.3: the tree of 10 internal nodes and 11 leaves,
 // inserted in previsit, is a Red-Black tree and keeps its shape
 ADS_TEST( "sec6.2.figure" )
 {
@@ -471,8 +471,8 @@ ADS_TEST( "sec6.2.against-map" )
 /*------------------------------ THE B+-TREE -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// section 6.3, Figura 6.8: the insertion of 10, 12, 13, then 15, 8, 11 and
-// 9 in a B+-tree of order 3, and at last of 6, which gives Figura 6.7; the
+// section 6.3, figure 6.8: the insertion of 10, 12, 13, then 15, 8, 11 and
+// 9 in a B+-tree of order 3, and at last of 6, which gives figure 6.7; the
 // search of 12 goes from b3 to b1 to f2. The empty tree (a leaf with no
 // key), a key inserted again (its value changes, the shape does not), the
 // ranges empty, reversed, of one key, below and above
@@ -591,7 +591,7 @@ ADS_TEST( "sec6.3.bplus-random" )
 /*------------------------------- EXERCISES --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// Esercizio 6.1: building a search tree sorts, as the invisit reads the keys
+// Exercise 6.1: building a search tree sorts, as the invisit reads the keys
 // in order: so it costs Omega( n log n ) comparisons, as sorting does; with
 // no key, one key, all equal keys (one is left) and repetitions
 ADS_TEST( "ex6.1" )
@@ -616,7 +616,7 @@ ADS_TEST( "ex6.1" )
 
 namespace {
 
-// Esercizio 6.2: insertNode() recursive, on a binary tree of keys: a new
+// Exercise 6.2: insertNode() recursive, on a binary tree of keys: a new
 // node where the search ends, nothing if the key is there
 BinaryTree< int > * insertRec( BinaryTree< int > * T , int x )
 {
@@ -643,7 +643,7 @@ Ints previsit( BinaryTree< int > * t )
 
 }  // end( namespace )
 
-// Esercizio 6.2: the recursive insertion builds the same tree as the
+// Exercise 6.2: the recursive insertion builds the same tree as the
 // iterative insertNode(), also from no key, from one key, and from
 // increasing and decreasing keys (a chain)
 ADS_TEST( "ex6.2" )
@@ -671,7 +671,7 @@ ADS_TEST( "ex6.2" )
 
 namespace {
 
-// Esercizio 6.3: a binary tree is a search tree if each key is in the
+// Exercise 6.3: a binary tree is a search tree if each key is in the
 // interval that its ancestors leave to it, ( lo , hi ), checked going down
 bool isABR( BinaryTree< int > * t , const int * lo = nullptr ,
             const int * hi = nullptr )
@@ -686,7 +686,7 @@ bool isABR( BinaryTree< int > * t , const int * lo = nullptr ,
 
 }  // end( namespace )
 
-// Esercizio 6.3: the tree of Figura 6.1 is a search tree; 10 with 5 on the
+// Exercise 6.3: the tree of figure 6.1 is a search tree; 10 with 5 on the
 // left and 12 right of 5 is not, though each parent and child agree. The
 // empty tree and a node alone are; a key equal to its parent is not, on
 // either side, nor one equal to a farther ancestor; the extreme keys of int
@@ -724,7 +724,7 @@ ADS_TEST( "ex6.3" )
 
 namespace {
 
-// Soluzione Esercizio 6.4: printNodes(), the invisit that skips the
+// Solution of exercise 6.4: printNodes(), the invisit that skips the
 // subtrees out of [ A , B ], in O( h + k ) time
 void printNodes( BinaryTree< int > * t , int A , int B , Ints & out ,
                  int & seen )
@@ -738,7 +738,7 @@ void printNodes( BinaryTree< int > * t , int A , int B , Ints & out ,
 
 }  // end( namespace )
 
-// Esercizio 6.4: the keys of [ A , B ] in order, visiting few nodes more
+// Exercise 6.4: the keys of [ A , B ] in order, visiting few nodes more
 // than they are; the intervals reversed, below and above all the keys, of
 // one key present or absent, of all the keys, and a node alone
 ADS_TEST( "ex6.4" )
@@ -792,7 +792,7 @@ ADS_TEST( "ex6.4" )
  CHECK( out.empty() );
  }
 
-// Esercizio 6.5: the iterative invisit with min() and successorNode(),
+// Exercise 6.5: the iterative invisit with min() and successorNode(),
 // with no stack, in Theta( n ) time; and backwards with max() and
 // predecessorNode(); on random keys, on no key, one key, and the chains of
 // increasing and decreasing keys
@@ -820,7 +820,7 @@ ADS_TEST( "ex6.5" )
 
 namespace {
 
-// Esercizio 6.6: the concatenation of T1 and T2, the keys of T1 smaller, in
+// Exercise 6.6: the concatenation of T1 and T2, the keys of T1 smaller, in
 // O( h ) time: the largest key of T1 is taken out (it has no right child)
 // and becomes the root, T1 on its left and T2 on its right
 struct N {
@@ -870,7 +870,7 @@ int height( const N * t )
 
 }  // end( namespace )
 
-// Esercizio 6.6: all the keys, in order, and the height grows by one at most
+// Exercise 6.6: all the keys, in order, and the height grows by one at most
 ADS_TEST( "ex6.6" )
 {
  std::mt19937 rng( 606 );
@@ -896,7 +896,7 @@ ADS_TEST( "ex6.6" )
 
 namespace {
 
-// Soluzione Esercizio 6.7: union() and difference() start from a copy of A,
+// Solution of exercise 6.7: union() and difference() start from a copy of A,
 // in O( n_A ) time, and add or remove the keys of B; intersection() starts
 // empty and visits the smaller set
 template< class Tr >
@@ -976,7 +976,7 @@ void sets( unsigned seed )
 
 }  // end( namespace )
 
-// Esercizio 6.7: the three operations on sets as search trees, with empty
+// Exercise 6.7: the three operations on sets as search trees, with empty
 // sets, single keys, a set with itself, with a subset and with a disjoint
 // set
 ADS_TEST( "ex6.7" )
@@ -984,7 +984,7 @@ ADS_TEST( "ex6.7" )
  sets< BST >( 607 );
  }
 
-// Esercizio 6.8: the same code on Red-Black trees, now O( log n ) per key,
+// Exercise 6.8: the same code on Red-Black trees, now O( log n ) per key,
 // whose results are Red-Black trees again
 ADS_TEST( "ex6.8" )
 {
@@ -993,7 +993,7 @@ ADS_TEST( "ex6.8" )
 
 namespace {
 
-// Esercizio 6.9: a binary tree can be colored if the root can be black. For
+// Exercise 6.9: a binary tree can be colored if the root can be black. For
 // each node, the sets of the numbers d of black nodes from it to a leaf
 // (both included) that it can have if black and if red: a nil leaf has d = 1
 // and is black; a black node needs its children, of any color, with the same
@@ -1023,9 +1023,9 @@ bool colorable( BinaryTree< int > * t )
 
 }  // end( namespace )
 
-// Esercizio 6.9: the trees (a), (c) and (d) of Figura 6.9 can be colored;
+// Exercise 6.9: the trees (a), (c) and (d) of figure 6.9 can be colored;
 // (b) cannot, as its root has a leaf at level 2 below 3 and one at level 5
-// below 10, more than twice as deep (Teorema 6.2). The shapes that the
+// below 10, more than twice as deep (Theorem 6.2). The shapes that the
 // Red-Black insertions build can all be colored, a path of 3 cannot; the
 // empty tree, a node alone and a path of 2 can
 ADS_TEST( "ex6.9" )
@@ -1119,11 +1119,11 @@ BinaryTree< int > * perfect_shape( int h )
 
 }  // end( namespace )
 
-// Esercizio 6.10: with black height b, at least 2^b - 1 internal nodes, the
+// Exercise 6.10: with black height b, at least 2^b - 1 internal nodes, the
 // perfect black tree of height b, and at most 2^( 2 b ) - 1, the perfect
 // tree of height 2 b with the levels black and red in turn; the perfect tree
 // of height 2 b + 1 cannot have black height b, whatever the colors (the
-// sets of Esercizio 6.9, where d = b + 1 counts the leaves too); b = 0 is
+// sets of exercise 6.9, where d = b + 1 counts the leaves too); b = 0 is
 // the empty tree, and a node alone cannot have black height 0
 ADS_TEST( "ex6.10" )
 {

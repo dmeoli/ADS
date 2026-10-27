@@ -22,7 +22,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -231,7 +231,7 @@ bool same( const Growth & g , double c , double p , double q = 0 ,
 /// the three cases f = O( n^{alpha - eps} ), f = Theta( n^alpha ) and f =
 /// Omega( n^{alpha + eps} ) with a f( n / b ) <= c f( n ), c < 1, for f(
 /// n ) = n^beta log^k n: the order, or nothing when f falls between the
-/// cases (beta = alpha and k != 0), where only Teorema 2.4 [see
+/// cases (beta = alpha and k != 0), where only Theorem 2.4 [see
 /// MasterTheorem.h] applies
 /// \pre a >= 1 and b > 1
 std::optional< Growth > extendedMaster( double a , double b , double beta ,
@@ -1985,7 +1985,7 @@ ADS_TEST( "complexity-52-4" )
  }
 
 // 52.5, 2021-06-16, Complessita: T( n ) = 16 T( n / 4 ) + n^2 / log n: no
-// case of the extended master theorem applies; Teorema 2.4 gives Theta(
+// case of the extended master theorem applies; Theorem 2.4 gives Theta(
 // n^2 log log n )
 ADS_TEST( "complexity-52-5" )
 {
@@ -1997,7 +1997,7 @@ ADS_TEST( "complexity-52-5" )
  }
 
 // 52.6, 2021-06-16, Complessita: T( n ) = 16 T( n / 4 ) + n^2 log n: no case
-// of the extended master theorem applies; Teorema 2.4 gives Theta( n^2
+// of the extended master theorem applies; Theorem 2.4 gives Theta( n^2
 // log^2 n )
 ADS_TEST( "complexity-52-6" )
 {

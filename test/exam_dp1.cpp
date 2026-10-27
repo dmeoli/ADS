@@ -16,7 +16,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -84,7 +84,7 @@ using Table = std::vector< std::vector< Int > >;
 
 constexpr Int INF = std::numeric_limits< Int >::max() / 4;
 
-/*--- 1, 35, 2011-05-02, 2015-09-01, Sottostringa palindroma piu' lunga ----*/
+/*--- 1, 35, 2011-05-02, 2015-09-01, Sottostringa palindroma più lunga -----*/
 
 // the table P[ i ][ j ] of the text, whether s[ i .. j ] is a palindrome,
 // filled by increasing length, gives the same palindrome as
@@ -1030,7 +1030,7 @@ bool palindrome( const std::string & s )
 
 }  // end( namespace )
 
-// 2011-05-02 and 2015-09-01, Sottostringa palindroma piu' lunga: the
+// 2011-05-02 and 2015-09-01, Sottostringa palindroma più lunga: the
 // examples of both texts, and every string of 1 to 9 characters over 3
 // letters against the longest of all the substrings
 ADS_TEST( "dp-1" )

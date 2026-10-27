@@ -4,8 +4,8 @@
 /** @file
  * Tests of chapter 15, Ricerca locale: the local search of the minimum
  * spanning tree on Figure 15.1 and 15.3, the neighbourhood of a sequence,
- * Shell Sort on Figura 15.4 with four sequences of gaps, the maximum flow
- * on Figura 15.5 with three ways of augmenting and against the minimum
+ * Shell Sort on figure 15.4 with four sequences of gaps, the maximum flow
+ * on figure 15.5 with three ways of augmenting and against the minimum
  * cuts enumerated, and the exercises 15.1 to 15.10, each a test named
  * after it.
  *
@@ -14,7 +14,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -204,7 +204,7 @@ ADS_TEST( "sec15.1.neighbourhood" )
   }
  }
 
-// Figura 15.4: 15 , 14 , ... , 1 with the gaps 13 , 4 , 1; every sequence
+// Figure 15.4: 15 , 14 , ... , 1 with the gaps 13 , 4 , 1; every sequence
 // of gaps against std::sort; the gaps of n = 0 , 1 and 10^6, equal,
 // sorted and reversed items, gaps without 1, and the precondition
 ADS_TEST( "sec15.1.shell-sort" )
@@ -274,7 +274,7 @@ ADS_TEST( "sec15.1.shell-sort" )
                contract_violation );
  }
 
-// Figura 15.5: |f| = 7, the cut S = { 1 } of capacity 7, by every way of
+// Figure 15.5: |f| = 7, the cut S = { 1 } of capacity 7, by every way of
 // augmenting; against the minimum cuts enumerated on random networks; no
 // edge, t unreachable, parallel, null, looping and antiparallel edges, a
 // second maxFlow(), huge capacities, a deep chain, and the preconditions
@@ -352,7 +352,7 @@ ADS_TEST( "sec15.2.max-flow" )
 /*------------------------------ EXERCISES ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// the minimum cuts of Figura 15.5( a ): S = { 1 } and S = { 1 , 2 , 3 },
+// the minimum cuts of figure 15.5( a ): S = { 1 } and S = { 1 , 2 , 3 },
 // capacity 7 (the solution of the book lists cuts of another graph, of
 // six nodes)
 ADS_TEST( "ex15.1" )
@@ -699,7 +699,7 @@ ADS_TEST( "ex15.8" )
  }
 
 // the bipartite matching as a flow with unit capacities, by Dinic in
-// O( m sqrt( n ) ): the example of Figura 15.6 has a matching of 3; no
+// O( m sqrt( n ) ): the example of figure 15.6 has a matching of 3; no
 // edge between the sides, the complete graph, all on one node
 ADS_TEST( "ex15.9" )
 {

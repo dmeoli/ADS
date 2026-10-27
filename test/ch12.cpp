@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of chapter 12, Divide et impera: the search by interpolation on the
- * example of the book, perno() on Figura 12.1, Quicksort on Figure 12.2 and
+ * example of the book, perno() on figure 12.1, Quicksort on Figure 12.2 and
  * 12.3 and on average, the tuned Quicksort and its stack, the products of
  * polynomials and the algorithm of Strassen, and the exercises 12.1 to
  * 12.13, each a test named after it.
@@ -13,7 +13,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -145,7 +145,7 @@ ADS_TEST( "sec12.1.interpolation" )
  CHECK( total / 1000.0 < 6 );                   // log2 log2 n = 4.3
  }
 
-// Figura 12.1: perno() on 9 12 8 18 6 13 11 3 5 10 puts the pivot in j = 4;
+// Figure 12.1: perno() on 9 12 8 18 6 13 11 3 5 10 puts the pivot in j = 4;
 // one item, the pivot the smallest or the largest, all equal, an inner
 // range, and the contracts on the range
 ADS_TEST( "sec12.2.perno" )
@@ -173,7 +173,7 @@ ADS_TEST( "sec12.2.perno" )
  CHECK_THROWS( partition( none , 0 , 0 ) , std::logic_error );
  }
 
-// Figura 12.2 and 12.3: the comparisons are n ( n - 1 ) / 2 on a sorted
+// Figure 12.2 and 12.3: the comparisons are n ( n - 1 ) / 2 on a sorted
 // vector and about 2 n ln n on average, below 2 ( n + 1 ) H_{n+1}; also
 // n ( n - 1 ) / 2 on a reversed one; empty, one, two, the extremes of int,
 // the empty range past the end and the contract on a range past it

@@ -6,7 +6,7 @@
  * their reductions: each precondition violated must throw
  * ADS::contract_violation, and on random instances, at the level 3, each
  * certificate returned by an enumeration, each output of a reduction and
- * each solution of the polynomial twins of Tabella 19.1 is checked by the
+ * each solution of the polynomial twins of table 19.1 is checked by the
  * postconditions.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 18,
@@ -14,7 +14,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -263,7 +263,7 @@ ADS_TEST( "reductions" )
   }
  }
 
-// the polynomial twins of Tabella 19.1: inputs checked, solutions checked
+// the polynomial twins of table 19.1: inputs checked, solutions checked
 ADS_TEST( "easy-cases" )
 {
  CHECK_THROWS( literalNode( 0 ) , contract_violation );

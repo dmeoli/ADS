@@ -5,10 +5,10 @@
  * Tests of chapter 19, Tecniche risolutive per problemi intrattabili: the
  * table of subsetSum(), the boxes of ff and ffd, the circuit of the
  * spanning tree for the triangular salesman and its worst case, the gap of
- * Teorema 19.2, the example of apSubsetSum(), the tree of the choices of
- * bbTsp() on Figura 19.5, greedyTsp() and the local search on the same
+ * Theorem 19.2, the example of apSubsetSum(), the tree of the choices of
+ * bbTsp() on figure 19.5, greedyTsp() and the local search on the same
  * data, min-max-greedy, the configurations of the fifteen puzzle of
- * Figura 19.9, and the exercises 19.1 to 19.19, each a test named after
+ * Figure 19.9, and the exercises 19.1 to 19.19, each a test named after
  * it; the algorithms are checked against the enumerations on random
  * instances.
  *
@@ -17,7 +17,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -58,7 +58,7 @@ namespace {
 using Longs = std::vector< long >;
 using Matrix = std::vector< Longs >;
 
-/// the distances of Figura 19.5, the cities 1 to 5 as 0 to 4
+/// the distances of figure 19.5, the cities 1 to 5 as 0 to 4
 const Matrix fig195 = { { 0 , 3 , 4 , 2 , 7 } , { 3 , 0 , 4 , 6 , 3 } ,
                         { 4 , 4 , 0 , 5 , 8 } , { 2 , 6 , 5 , 0 , 6 } ,
                         { 7 , 3 , 8 , 6 , 0 } };
@@ -250,7 +250,7 @@ ADS_TEST( "sec19.2.bin-packing" )
  }
 
 // the circuit of the spanning tree within twice the optimum on random
-// points of the plane, and the two polygons of Figura 19.3: the optimum
+// points of the plane, and the two polygons of figure 19.3: the optimum
 // x* of 2 n cities is n ( L + L' ) / 2 + n d, and the costs of x' and x*
 // tend to 4 pi and 2 pi; no city, one city, coincident cities (all the
 // distances 0, the ties of the spanning tree), the cost of no circuit and
@@ -309,7 +309,7 @@ ADS_TEST( "sec19.2.delta-tsp" )
  CHECK( std::abs( cx - 4 * pi ) < 1e-4 && std::abs( cs - 2 * pi ) < 1e-4 );
  }
 
-// Teorema 19.2: with the distances 1 and s n, the optimum is n if G has a
+// Theorem 19.2: with the distances 1 and s n, the optimum is n if G has a
 // Hamiltonian circuit and more than s n otherwise; the distances of no
 // node, of one and of two apart, the complete graph (optimum n) and the
 // graph without edges (optimum s n^2), and the preconditions
@@ -376,9 +376,9 @@ ADS_TEST( "sec19.2.ap-subset-sum" )
   }
  }
 
-// Figura 19.5: lb = 18 for S = 1 , 3; from the circuit 0 3 2 1 4 of cost
+// Figure 19.5: lb = 18 for S = 1 , 3; from the circuit 0 3 2 1 4 of cost
 // 21 the tree ends with 1 3 2 5 4 of cost 19, with 25 nodes of the 65
-// possible (23 in Figura 19.6, two of whose bounds, 21 for 1 2 3 and for
+// possible (23 in figure 19.6, two of whose bounds, 21 for 1 2 3 and for
 // 1 5, are 19 and 20 by the formula of the text); on random instances the
 // optimum, with both bounds, from one city; no city, one, two (whose
 // bound of the text summed an infinity before the fix), all the distances
@@ -419,7 +419,7 @@ ADS_TEST( "sec19.3.bb-tsp" )
   }
  }
 
-// greedyTsp() on Figura 19.5: the edges [ 1 , 4 ] , [ 1 , 2 ] , [ 2 , 5 ] ,
+// greedyTsp() on figure 19.5: the edges [ 1 , 4 ] , [ 1 , 2 ] , [ 2 , 5 ] ,
 // [ 3 , 4 ] and [ 3 , 5 ], the circuit 1 4 3 5 2 of cost 21; three
 // cities, the least, all the distances equal (ties), and the
 // preconditions
@@ -452,7 +452,7 @@ ADS_TEST( "sec19.4.greedy-tsp" )
   }
  }
 
-// the local search of Figura 19.8: 1 2 3 4 5 of cost 25, 1 2 3 5 4 of
+// the local search of figure 19.8: 1 2 3 4 5 of cost 25, 1 2 3 5 4 of
 // cost 23 by exchanging [ 1 , 5 ] , [ 3 , 4 ] with [ 1 , 4 ] , [ 3 , 5 ],
 // and 1 3 2 5 4, the optimum 19; twoOpt() stops at a local optimum. The
 // move of the widest stretch, 0 and n - 1; no city and three cities (no
@@ -540,7 +540,7 @@ ADS_TEST( "sec19.4.bisection" )
  CHECK( hit > 50 );
  }
 
-// Figura 19.9: the bounds 8, 9 and 10 of (a), (b) and (c), the three
+// Figure 19.9: the bounds 8, 9 and 10 of (a), (b) and (c), the three
 // children of (a), and the solution of (a); random scrambles of 3 x 3 and
 // 4 x 4 boards against the breadth first search. The board of one square
 // (solved, no move), the goal itself (one configuration, one node
@@ -916,7 +916,7 @@ ADS_TEST( "ex19.9" )
  }
 
 // the minimum 1-tree bounds the optimum, and bbTsp() with it on the data
-// of Figura 19.5 finds 19; the 1-tree of one city (0) and of two (one
+// of figure 19.5 finds 19; the 1-tree of one city (0) and of two (one
 // edge), and the preconditions
 ADS_TEST( "ex19.10" )
 {
@@ -940,7 +940,7 @@ ADS_TEST( "ex19.10" )
   }
  }
 
-// the algorithm of Little on the data of Figura 19.5 and on random
+// the algorithm of Little on the data of figure 19.5 and on random
 // asymmetric distances, from one city; no city, all the distances equal,
 // and the precondition
 ADS_TEST( "ex19.11" )

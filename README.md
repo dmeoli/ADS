@@ -123,25 +123,40 @@ runs.
 ## Layout
 
 Headers are grouped by abstract data type, one header per realization,
-and `include/ADS/ADT.h` has the concepts of the book. The folders of the
-types (`sequence/`, `stack/`, `queue/`, `tree/`, `dictionary/`, `set/`,
-`priority/`, `mfset/` and `graph/`) also hold the algorithms on them, e.g.,
-the operations on sets or the visits of a graph. The other folders group
-the algorithms by technique or by problem:
+and `include/ADS/ADT.h` has the concepts of the book, next to the
+contracts (`Contract.h`), the iterators (`Iterators.h`) and the portable
+intrinsics (`Portable.h`). The folders of the types also hold the
+algorithms on them, e.g., the operations on sets or the visits of a graph:
 
-- `search/` and `sort/`, the searches and the sorts;
+- `sequence/`, the SEQUENCE and the LIST (arrays, linked lists, cursors);
+- `stack/`, the STACK and the algorithms that use it;
+- `queue/`, the QUEUE and the deque;
+- `tree/`, the TREE, the binary trees, the search trees and the B-trees;
+- `dictionary/`, the DICTIONARY (hash tables, perfect hashing, tries);
+- `set/`, the SET, the operations on sets and the filters;
+- `priority/`, the PRIORITY QUEUE (heaps, bucket and radix queues);
+- `mfset/`, the MFSET, i.e., the merge-find sets;
+- `graph/`, the GRAPH, its visits, paths, spanning trees and flows.
+
+The other folders group the algorithms by technique or by problem:
+
+- `search/`, the searches;
+- `sort/`, the sorts;
 - `numeric/`, the products of integers, polynomials and matrices;
 - `string/`, the algorithms on strings;
 - `optimization/`, the problems of optimization (knapsack, intervals);
-- `geometry/`, the convex hull;
+- `geometry/`, the convex hull and the closest pair;
 - `backtrack/`, the enumerations by backtrack;
 - `complexity/`, the problems of NP and their reductions;
 - `intractable/`, the techniques for the intractable problems;
-- `memory/` and `concurrent/`, the allocators, the arena, the queues
-  between threads and the concurrent hash table;
+- `memory/`, the allocators, the pools and the arena;
+- `concurrent/`, the queues between threads, the concurrent hash table
+  and the concurrent union-find;
+- `parallel/`, the executors and the parallel algorithms on threads;
+- `distributed/`, the sort over the processes of MPI;
 - `external/`, the two-level memory and the algorithms on it;
-- `compression/` and `succinct/`, the codes, the compressors and the
-  compressed data structures;
+- `compression/`, the codes, the compressors and the compressed indexes;
+- `succinct/`, the compressed data structures;
 - `combinatorial/`, the broadword tricks and the combinatorial generation;
 - `algorithm/`, the rest.
 
@@ -230,7 +245,7 @@ code cites it instead of reproducing it.
 | [14](https://algoritmicamente.it/materiali/libro/capitoli/cap14.pdf) | 14 | change with coins | [`optimization/CoinChange.h`](include/ADS/optimization/CoinChange.h) | `ch14.sec14.change` |
 | | 14.1 | real knapsack | [`optimization/FractionalKnapsack.h`](include/ADS/optimization/FractionalKnapsack.h) | `ch14.sec14.1.real-knapsack` |
 | | 14.2 | independent set of intervals, coloring, towers | [`optimization/Intervals.h`](include/ADS/optimization/Intervals.h) | `ch14.sec14.2.intervals` |
-| | 14.3 | Kruskal and Prim, Teorema 14.1 | [`graph/MinimumSpanningTree.h`](include/ADS/graph/MinimumSpanningTree.h) | `ch14.sec14.3.*` |
+| | 14.3 | Kruskal and Prim, Theorem 14.1 | [`graph/MinimumSpanningTree.h`](include/ADS/graph/MinimumSpanningTree.h) | `ch14.sec14.3.*` |
 | | 14.4 | code of Huffman | [`string/Huffman.h`](include/ADS/string/Huffman.h) | `ch14.sec14.4.huffman` |
 | | 14.5 | exercises 14.1–14.10, Shortest Job First | [`test/ch14.cpp`](test/ch14.cpp), [`optimization/ShortestJobFirst.h`](include/ADS/optimization/ShortestJobFirst.h) | `ch14.ex14.*` |
 | [15](https://algoritmicamente.it/materiali/libro/capitoli/cap15.pdf) | 15 | local search of the minimum spanning tree | [`test/ch15.cpp`](test/ch15.cpp) | `ch15.sec15.local-search` |
@@ -255,7 +270,7 @@ code cites it instead of reproducing it.
 | | 19.4 | heuristics: greedyTsp, min-max-greedy, local search | [`intractable/Heuristics.h`](include/ADS/intractable/Heuristics.h) | `ch19.sec19.4.*` |
 | | 19.5 | the fifteen puzzle | [`intractable/FifteenPuzzle.h`](include/ADS/intractable/FifteenPuzzle.h) | `ch19.sec19.5.fifteen` |
 | | 19.6 | exercises 19.1–19.19 | [`test/ch19.cpp`](test/ch19.cpp) | `ch19.ex19.*` |
-| Conclusione | Tab. 19.1 | easy twins of NP-hard problems, interval graphs | [`complexity/EasyCases.h`](include/ADS/complexity/EasyCases.h) | `conclusion.*` |
+| Conclusion | Tab. 19.1 | easy twins of NP-hard problems, interval graphs | [`complexity/EasyCases.h`](include/ADS/complexity/EasyCases.h) | `conclusion.*` |
 
 ## Beyond the book
 
@@ -722,10 +737,10 @@ runs one test by name (`build/test/ch04 ex4.4`) and lists its tests
 
 The documentation is at [dmeoli.github.io/ADS](https://dmeoli.github.io/ADS/):
 a site of Sphinx with the theme of Read the Docs, whose pages come from this
-README and whose API reference Exhale and Breathe build from the comments of
-the headers, extracted by Doxygen. Locally, after `pip install -r
-docs/requirements.txt`, `python3 docs/pages.py && sphinx-build -b html docs
-build-docs/html` writes it to `build-docs/html`.
+README and whose API reference Breathe builds from the comments of the
+headers, extracted by Doxygen, with the Doxygen site in its folder `doxygen`.
+Locally, with Doxygen 1.17, `pip install -r docs/requirements.txt && bash
+docs/build.sh` writes both to `build-docs/html`.
 
 ## Use
 

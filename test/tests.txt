@@ -358,14 +358,14 @@ ch19  ex19.11            Esercizio 19.11, riduzione della matrice
 ch19  ex19.12            Esercizio 19.12, zaino branch-and-bound
 ch19  ex19.13            Esercizio 19.13, minima superstringa comune
 ch19  ex19.14            Esercizio 19.14, ottimo locale del TSP
-ch19  ex19.15            Esercizio 19.15, cardinalita' di I_k
+ch19  ex19.15            Esercizio 19.15, cardinalità di I_k
 ch19  ex19.16            Esercizio 19.16, partizione per ricerca locale
 ch19  ex19.17            Esercizio 19.17, cestini di min-max-greedy
 ch19  ex19.18            Esercizio 19.18, allineamento globale multiplo
 ch19  ex19.19            Esercizio 19.19, colorazione
 
 # Conclusione
-conclusion table19.1.sat  Tabella 19.1, 2-soddisfattibilita'
+conclusion table19.1.sat  Tabella 19.1, 2-soddisfattibilità
 conclusion table19.1.coloring Tabella 19.1, 2-colorazione
 conclusion table19.1.matching Tabella 19.1, abbinamento 2-dimensionale
 conclusion table19.1.circuits Tabella 19.1, circuito euleriano
@@ -413,8 +413,8 @@ beyond  kmp-strong          KMP con la funzione di fallimento forte
 beyond  knapsack-heuristics zaino greedy e backtracking
 beyond  nqueens-iterative   n regine, backtracking iterativo
 beyond  slide-sorts         Merge, Shell, Insertion, partizione, minmax
-beyond  classical-instances attivita', Kruskal, partizione
-beyond  eight-puzzle        gioco dell'otto, ampiezza e profondita'
+beyond  classical-instances attività, Kruskal, partizione
+beyond  eight-puzzle        gioco dell'otto, ampiezza e profondità
 beyond  paradigms           schemi generali delle tecniche
 beyond  factorial-fibonacci fattoriale, binomiale, Fibonacci con memoria
 beyond  sequence-range      range-for sulle sequenze
@@ -549,7 +549,7 @@ engineered_strings  eertree         eertree e fattorizzazione palindromica
 # the engineered numerics and geometry, beyond the book
 engineered_numeric  binary-gcd        gcd binario senza divisioni
 engineered_numeric  montgomery        forma di Montgomery a 64 bit
-engineered_numeric  is-prime          primalita' esatta a 64 bit
+engineered_numeric  is-prime          primalità esatta a 64 bit
 engineered_numeric  factorize         fattori primi, rho di Pollard e Brent
 engineered_numeric  generators        xoshiro256++ e wyrand
 engineered_numeric  generator-concepts generatori standard, LinearCongruentialT
@@ -564,7 +564,7 @@ engineered_numeric  dense-gemm        prodotto di matrici dense a blocchi
 engineered_numeric  csr-matrix        matrici sparse per righe compresse
 engineered_numeric  sell-matrix       matrici sparse SELL-C-sigma
 engineered_numeric  convex-hull       inviluppo con ottagono e catena monotona
-engineered_numeric  closest-pair-sweep coppia piu' vicina con la scansione
+engineered_numeric  closest-pair-sweep coppia più vicina con la scansione
 
 # the engineered queues and stacks, beyond the book
 engineered_queues  ring-deque              coda doppia su vettore circolare
@@ -623,8 +623,8 @@ interop  trees                viste di alberi e heap
 interop  nodes-and-graphs     alberi di nodi, grafi, MFSet, matrici, arena
 
 # the classic problems of the exams, promoted to the library
-lib_strings palindromic-substring sottostringa palindroma piu' lunga, Manacher
-lib_strings  palindromic-subsequence  sottosequenza palindroma piu' lunga
+lib_strings palindromic-substring sottostringa palindroma più lunga, Manacher
+lib_strings  palindromic-subsequence  sottosequenza palindroma più lunga
 lib_strings palindromic-partition meno palindromi in cui tagliare una stringa
 lib_strings  interleaving             intreccio (shuffle) di due stringhe
 lib_strings  supersequence            supersequenza comune minima
@@ -660,15 +660,15 @@ lib_search  integer-sqrt        radice quadrata intera e quadrati perfetti
 lib_search  sorted-searches     minimo ruotato, valore vicino, coppia, k-esimo
 lib_search  rearrangements      bandiera olandese, wiggle, k-ordinato, scambi
 lib_search  sequence-queries    minori a destra, finestra, buco, assegnamento
-lib_search  closest-pair        coppia di punti piu' vicini
+lib_search  closest-pair        coppia di punti più vicini
 
-lib_graphs  grid-distances            distanze su griglia da piu' sorgenti
+lib_graphs  grid-distances            distanze su griglia da più sorgenti
 lib_graphs  flood-fill                riempimento di una regione di una matrice
 lib_graphs  knight-distance           mosse minime del cavallo
 lib_graphs  count-shortest-paths      numero di cammini minimi
 lib_graphs  multi-source-distance     distanza da un insieme e fra due insiemi
-lib_graphs  longest-path-layering     strati per cammini piu' lunghi in un DAG
-lib_graphs  dag-longest-paths         cammini piu' lunghi pesati in un DAG
+lib_graphs  longest-path-layering     strati per cammini più lunghi in un DAG
+lib_graphs  dag-longest-paths         cammini più lunghi pesati in un DAG
 lib_graphs  simple-cycles             cicli semplici per un nodo, Johnson
 lib_graphs  refueling-stops           fermate minime per il rifornimento
 lib_graphs trees-and-diameters albero libero e diametri di grafi e alberi
@@ -676,15 +676,15 @@ lib_graphs tree-vertex-cover copertura minima di vertici di una foresta
 lib_graphs  count-triangles           conteggio dei triangoli
 lib_graphs  two-coloring              2-colorazione di un grafo
 lib_graphs  universal-sink            pozzo universale da matrice
-lib_graphs  unique-topological-order  unicita' dell'ordine topologico
+lib_graphs  unique-topological-order  unicità dell'ordine topologico
 lib_graphs  bipartite-b-matching      b-abbinamento bipartito per flusso
 lib_graphs  max-weight-matching       abbinamento di peso massimo esatto
 lib_graphs  edge-disjoint-paths       cammini disgiunti sugli archi, Menger
-lib_graphs  decrease-capacity         flusso massimo dopo una capacita' ridotta
+lib_graphs  decrease-capacity         flusso massimo dopo una capacità ridotta
 
 lib_trees  binarytree-detach           detachLeft/detachRight, specchio in loco
 lib_trees  binarytree-postorder        preorder/inorder/postorder senza pila
-lib_trees  lowest-common-ancestor      antenato comune piu' basso coi padri
+lib_trees  lowest-common-ancestor      antenato comune più basso coi padri
 lib_trees  equal-trees                 uguaglianza di alberi e di forme
 lib_trees  is-search-tree              verifica di un albero binario di ricerca
 lib_trees  is-red-black-tree           verifica di una colorazione Red-Black
@@ -962,7 +962,7 @@ exam_divide  divide-28   2025-01-14, AlternaSort
 exam_divide  divide-29   2025-06-13, Stringhe pareggiate
 exam_divide  divide-30   2026-02-02, Due caratteri
 
-exam_dp1  dp-1     2011-05-02, Sottostringa palindroma piu' lunga
+exam_dp1  dp-1     2011-05-02, Sottostringa palindroma più lunga
 exam_dp1  dp-2-2   2011-05-27, Parentesizzazione
 exam_dp1  dp-2-3   2011-05-27, Parentesizzazione
 exam_dp1  dp-3-1   2011-06-06, Scatole
@@ -1026,7 +1026,7 @@ exam_dp2  dp-53    2018-06-04, Kw constraint
 exam_dp2  dp-54    2018-06-28, Min palindrome
 exam_dp2  dp-55    2018-07-25, Profit
 exam_dp2  dp-56    2018-07-25, Value
-exam_dp2  dp-57    2018-08-21, Piu' che doppio
+exam_dp2  dp-57    2018-08-21, Più che doppio
 exam_dp2  dp-58    2019-02-07, Cross
 exam_dp2  dp-59    2019-02-07, Election
 exam_dp2  dp-60    2019-06-06, Count paths
@@ -1069,7 +1069,7 @@ exam_dp3  dp-97   2024-08-26, Formazione stringhe
 exam_dp3  dp-98   2025-01-14, Quante parentesi
 exam_dp3  dp-99   2025-02-03, Mosse matriciali
 exam_dp3  dp-100  2025-06-13, Dollar word
-exam_dp3  dp-101  2025-07-14, Massima espressivita'
+exam_dp3  dp-101  2025-07-14, Massima espressività
 exam_dp3  dp-102  2025-07-14, Livelli bonus
 exam_dp3  dp-103  2025-08-25, Going nowhere
 exam_dp3  dp-104  2026-01-12, Borsa
@@ -1267,7 +1267,7 @@ exam_compiti  compiti-2012-02-01-A1         2012-02-01, Quattro parti
 exam_compiti  compiti-2012-05-03-A2-i       2012-05-03, Roma (parte i)
 exam_compiti  compiti-2012-05-03-A2-ii      2012-05-03, Roma (parte ii)
 exam_compiti  compiti-2012-06-18-A2         2012-06-18, Merge sort
-exam_compiti compiti-2012-09-10-A1-i 2012-09-10, Sortino sort (complessita')
+exam_compiti compiti-2012-09-10-A1-i 2012-09-10, Sortino sort (complessità)
 exam_compiti compiti-2012-09-10-A1-ii 2012-09-10, Sortino sort (correttezza)
 exam_compiti  compiti-2013-01-07-A1         2013-01-07, Merge
 exam_compiti  compiti-2013-01-07-A2         2013-01-07, Search sum
@@ -1404,7 +1404,7 @@ exam_asdlab asdlab-2026-lab04-ciclo lab 2026-11-19, Individuazione di un ciclo
 exam_asdlab asdlab-2026-lab04-numcammini lab 2026-11-19, Numero di cammini
 exam_asdlab asdlab-2026-lab05-componente lab 2026-11-26, Componente fortemente
 exam_asdlab asdlab-2026-lab05-toporder lab 2026-11-26, Ordinamento topologico
-exam_asdlab asdlab-2026-lab05-camminolungo lab 2026-11-26, Cammino piu' lungo
+exam_asdlab asdlab-2026-lab05-camminolungo lab 2026-11-26, Cammino più lungo
 
 exam_collezionia  collezioni-02-analisi-1-1-1   02-analisi, Trova la costante
 exam_collezionia  collezioni-02-analisi-1-1-2   02-analisi, Trova la costante
@@ -1735,7 +1735,7 @@ engineered_parallel  parallel-executors  esecutori: vuoti, annidati, eccezioni
 engineered_parallel  parallel-patterns   cicli, riduzioni, scansioni
 engineered_parallel  parallel-sort       ordinamenti contro quelli di std
 engineered_parallel  learned-parallel-sort  splitter della CDF sul pool
-engineered_parallel  parallel-merge      fusione a piu' vie, selezione
+engineered_parallel  parallel-merge      fusione a più vie, selezione
 engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
 engineered_parallel  parallel-fft        trasformata in quattro passi
 engineered_parallel  parallel-graph      visita in ampiezza, componenti

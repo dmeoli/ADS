@@ -5,7 +5,7 @@
  * Tests of chapter 14, Greedy: the change with coins, the real knapsack
  * and the counterexamples of the text, the independent set of intervals
  * against the weighted one, Kruskal and Prim on Figure 14.1-14.3 and
- * against all the spanning trees, the Teorema 14.1, the code of Huffman
+ * against all the spanning trees, Theorem 14.1, the code of Huffman
  * on the example of the text, and the exercises 14.1 to 14.10, each a test
  * named after it.
  *
@@ -14,7 +14,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -60,7 +60,7 @@ using Edge = WeightedEdge< long >;
 const Frontier fronts[] = { Frontier::LIST , Frontier::HEAP ,
                             Frontier::FIBONACCI };
 
-/// Figura 14.1, the nodes from 1 (node 0 alone): the edges in the order of
+/// Figure 14.1, the nodes from 1 (node 0 alone): the edges in the order of
 /// the example of Kruskal, by increasing weight
 const std::vector< Edge > fig141 = { { 2 , 4 , 1 } , { 3 , 4 , 2 } ,
  { 5 , 7 , 3 } , { 1 , 3 , 6 } , { 1 , 2 , 9 } , { 2 , 3 , 11 } ,
@@ -276,9 +276,9 @@ ADS_TEST( "sec14.2.intervals" )
  CHECK_THROWS( independentSet( I2( { { 4 , 3 } } ) ) , contract_violation );
  }
 
-// Figura 14.2: Kruskal keeps [ 2 , 4 ], [ 3 , 4 ], [ 5 , 7 ], [ 1 , 3 ],
+// Figure 14.2: Kruskal keeps [ 2 , 4 ], [ 3 , 4 ], [ 5 , 7 ], [ 1 , 3 ],
 // [ 4 , 5 ], [ 3 , 6 ], and leaves [ 1 , 2 ], [ 2 , 3 ], [ 4 , 7 ]: weight
-// 43; Figura 14.3: Prim from 1 gives the same tree; against all the sets
+// 43; figure 14.3: Prim from 1 gives the same tree; against all the sets
 // of n - 1 edges on random graphs; the edges of 0 and 1 node, self-loops,
 // parallel edges, forests, negative and equal weights, and the
 // preconditions
@@ -346,7 +346,7 @@ ADS_TEST( "sec14.3.mst" )
  CHECK_THROWS( prim( gf , 0 , Frontier::QUEUE ) , contract_violation );
  }
 
-// the Teorema 14.1: for a random cut, the lightest edge across it is in a
+// Theorem 14.1: for a random cut, the lightest edge across it is in a
 // minimum spanning tree, i.e., the best tree with that edge weighs the same
 ADS_TEST( "sec14.3.3.cut" )
 {

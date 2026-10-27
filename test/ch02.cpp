@@ -15,7 +15,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -68,7 +68,7 @@ Bits bits( const std::string & s )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// Figura 2.3: 01100110 + 01110011 = 11011001; the edges: empty operands
+// Figure 2.3: 01100110 + 01110011 = 11011001; the edges: empty operands
 // (the value 0), 0 + 0, operands of different lengths, the carry through
 // all the bits (1...1 + 1, 2^64 - 1 + 2^64 - 1, one bit more than 64), and
 // an item that is not a bit (the audit of the precondition)
@@ -94,7 +94,7 @@ ADS_TEST( "sec2.6.binary-add" )
  CHECK_THROWS( (void) binaryAdd( { 1 } , { -1 } ) , contract_violation );
  }
 
-// Figura 2.4: 01100110 x 01110011 = 010110111010010, by the school, by
+// Figure 2.4: 01100110 x 01110011 = 010110111010010, by the school, by
 // four products and by Karatsuba, which on n = 2^k bits make n^2, n^2 and
 // 3^k products of bits; the edges: an empty operand (the product 0), the
 // factors 0 and 1, operands of different lengths, not powers of 2, the
@@ -149,7 +149,7 @@ ADS_TEST( "sec2.6.multiply" )
   }
  }
 
-// Figura 2.8: Selection Sort on 7 4 2 1 8 3 5, the vector after each
+// Figure 2.8: Selection Sort on 7 4 2 1 8 3 5, the vector after each
 // iteration; n ( n - 1 ) / 2 comparisons whatever the order; the edges:
 // empty, one item, two items, all equal (still n ( n - 1 ) / 2), the
 // extremes of int, against std::sort on random vectors with duplicates
@@ -203,7 +203,7 @@ ADS_TEST( "sec2.7.1.selection" )
   }
  }
 
-// Figura 2.9: Insertion Sort on 7 4 2 1 8 3 5; n - 1 comparisons on a
+// Figure 2.9: Insertion Sort on 7 4 2 1 8 3 5; n - 1 comparisons on a
 // sorted vector, n ( n - 1 ) / 2 on a reversed one; stable; the edges:
 // empty, one item, all equal (n - 1 comparisons, nothing moves), the
 // extremes of int, the range version on an empty range, on the whole
@@ -280,7 +280,7 @@ ADS_TEST( "sec2.7.2.insertion" )
   }
  }
 
-// Figura 2.10 and 2.11; against std::stable_sort, with every cutoff, the
+// Figure 2.10 and 2.11; against std::stable_sort, with every cutoff, the
 // bottom-up version and the version on lists; the edges: n = 0, 1, 2, 3,
 // powers of 2 and their neighbours, all equal (stable), sorted (n - 1
 // comparisons with a cutoff > 1) and reverse sorted, a cutoff of 0 (taken
@@ -376,7 +376,7 @@ ADS_TEST( "sec2.7.3.merge-sort" )
   }
  }
 
-// Figura 2.14: the tree of decision of three items, at most 3 comparisons;
+// Figure 2.14: the tree of decision of three items, at most 3 comparisons;
 // any sort by comparisons needs ceil( log2 n! ) of them on some input:
 // Merge Sort on all the permutations of n <= 8, from n = 1 (no comparison),
 // whose worst case is exactly n ceil( log2 n ) - 2^ceil( log2 n ) + 1

@@ -4,7 +4,7 @@
 /** @file
  * Tests of chapter 11, Strutture di dati e progettazione di algoritmi: the
  * Fibonacci heap against a reference, the theorem of Bellman on the graphs
- * of Figura 11.1, the prototype with each of its six structures against
+ * of figure 11.1, the prototype with each of its six structures against
  * Floyd-Warshall and against the acyclic graphs, the orders of extraction
  * of the examples of Bellman-Ford-Moore, of the stack and of Pape-D'Esopo,
  * and the exercises 11.1 to 11.10, each a test named after it.
@@ -14,7 +14,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -74,7 +74,7 @@ ListGraph< W > make( int n ,
  return( g );
  }
 
-/// Figura 11.1 (b) and 11.3 (a), r = 0; Figura 11.1 (a) has the cost 2 on
+/// Figure 11.1 (b) and 11.3 (a), r = 0; figure 11.1 (a) has the cost 2 on
 /// ( 3 , 2 ), and so the negative cycle 1 , 3 , 2 , 1
 const WEdges G2 = { { 0 , 1 , 3 } , { 0 , 2 , 1 } , { 1 , 3 , -2 } ,
                     { 2 , 1 , -1 } , { 3 , 2 , 4 } };
@@ -123,7 +123,7 @@ std::vector< std::vector< long > > floyd( const WG & g )
  return( D );
  }
 
-/// the conditions of Bellman (Teorema 11.1) on the tree of the result
+/// the conditions of Bellman (Theorem 11.1) on the tree of the result
 template< class G , class D >
 bool bellman( const G & g , int r , const ShortestPathTree< D > & R )
 {
@@ -368,7 +368,7 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
  CHECK( Counted::live == 0 );
  }
 
-// Figura 11.1: G2 has the optimal tree T2 of distances 0 , 0 , 1 , -2,
+// Figure 11.1: G2 has the optimal tree T2 of distances 0 , 0 , 1 , -2,
 // which satisfies the conditions of Bellman, while the feasible T1 does
 // not; G1 has a negative cycle; isShortestPathTree() rejects a tree broken
 // in each of its conditions, and an unreachable node with a parent
@@ -515,7 +515,7 @@ ADS_TEST( "sec11.3.dijkstra" )
   }
  }
 
-// Figura 11.3: Bellman-Ford-Moore extracts 0 (pass 0), 1 , 2 (pass 1),
+// Figure 11.3: Bellman-Ford-Moore extracts 0 (pass 0), 1 , 2 (pass 1),
 // 3 , 1 (pass 2), 3 (pass 3)
 ADS_TEST( "sec11.6.bellman-ford-moore" )
 {
@@ -531,7 +531,7 @@ ADS_TEST( "sec11.6.bellman-ford-moore" )
   }
  }
 
-// Figura 11.4: on G_n, ( u , v ) for u < v of cost
+// Figure 11.4: on G_n, ( u , v ) for u < v of cost
 // 2^( n - u - 2 ) - 2^( n - v - 1 ) + v - u, a stack extracts node u
 // 2^( u - 1 ) times, 2^( n - 1 ) extractions in all, while a queue
 // extracts each node once
@@ -558,7 +558,7 @@ ADS_TEST( "sec11.7.stack" )
   }
  }
 
-// Pape-D'Esopo on the graph of Figura 11.3 extracts 0 , 1 , 2 , 1 , 3;
+// Pape-D'Esopo on the graph of figure 11.3 extracts 0 , 1 , 2 , 1 , 3;
 // a node improved after its extraction goes back at the head of S
 ADS_TEST( "sec11.8.pape" )
 {

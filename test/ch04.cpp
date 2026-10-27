@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of chapter 4, Strutture di dati elementari: the realizations of the
- * SEQUENCE (List, ArraySequence and the singly linked list of Esercizio
+ * SEQUENCE (List, ArraySequence and the singly linked list of exercise
  * 4.6) are checked against the same specification, then the STACK and the
  * QUEUE with vectors, the examples of the text (the catalogue of Don
  * Giovanni, the binary counter, the towers of Hanoi) and the exercises 4.1
@@ -15,7 +15,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -313,7 +313,7 @@ ADS_TEST( "sec4.1.pool" )
 // section 4.2, the vector
 ADS_TEST( "spec.ArraySequence" ) { sequence_spec< ArraySequence< int > >(); }
 
-// Esercizio 4.6, the singly linked list with no sentinel
+// Exercise 4.6, the singly linked list with no sentinel
 ADS_TEST( "ex4.6" ) { sequence_spec< SinglyList< int > >(); }
 
 // the singly linked list on its pool: random insertions and removals at
@@ -504,7 +504,7 @@ ADS_TEST( "spec.ArrayStack" )
  }
 
 // section 4.3.1: the stack simulated with a sequence, on the LIST, on the
-// singly linked list of Esercizio 4.6, on the vector and on the cursors,
+// singly linked list of exercise 4.6, on the vector and on the cursors,
 // with no capacity
 template< class S >
 void stack_on_sequence( void )
@@ -638,7 +638,7 @@ ADS_TEST( "sec4.donGiovanni" )
  CHECK( in_L.empty() && left == Names( { "Zerlina" } ) );
  }
 
-// section 4.4, Figura 4.8: the moves for n = 3, and 2^n - 1 moves for each
+// section 4.4, figure 4.8: the moves for n = 3, and 2^n - 1 moves for each
 // n, by the recursive procedure and by the two iterative ones; the edges:
 // n = 1 (one move), every assignment of the three pegs, n = 20 (2^20 - 1
 // moves, the stack of the iterative procedures deep 20), and the
@@ -724,7 +724,7 @@ ADS_TEST( "sec4.4.hanoi" )
 
 namespace {
 
-// Soluzione Esercizio 4.1: firstN()
+// Solution of exercise 4.1: firstN()
 void firstN( int n , List< int > & L , List< int > & M )
 {
  if( n >= 1 ) {
@@ -736,7 +736,7 @@ void firstN( int n , List< int > & L , List< int > & M )
 
 }  // end( namespace )
 
-// Esercizio 4.1: L = 1, ..., n and M = n, ..., 1; the edges: n = 0 and a
+// Exercise 4.1: L = 1, ..., n and M = n, ..., 1; the edges: n = 0 and a
 // negative n (nothing), n = 1, and n = 5000 (the depth of the recursion)
 ADS_TEST( "ex4.1" )
 {
@@ -760,7 +760,7 @@ ADS_TEST( "ex4.1" )
 
 namespace {
 
-// Soluzione Esercizio 4.2: epurazione(), O( n^2 )
+// Solution of exercise 4.2: epurazione(), O( n^2 )
 List< int > epurazione( const List< int > & L )
 {
  List< int > M;
@@ -777,7 +777,7 @@ List< int > epurazione( const List< int > & L )
 
 }  // end( namespace )
 
-// Esercizio 4.2: the items that appear exactly twice go; the edges: empty,
+// Exercise 4.2: the items that appear exactly twice go; the edges: empty,
 // one item, a pair (nothing left), three and four copies (kept), two
 // pairs apart, negative items and 0, against counting on a vector
 ADS_TEST( "ex4.2" )
@@ -807,7 +807,7 @@ ADS_TEST( "ex4.2" )
 
 namespace {
 
-// Esercizio 4.3: the sum of two numbers given as lists of digits, the most
+// Exercise 4.3: the sum of two numbers given as lists of digits, the most
 // significant first; the digits are added from the tails with a carry, so
 // that the sum has the digits of the longer list, its leading zeros kept,
 // plus one for a last carry, and two empty lists give 0
@@ -831,7 +831,7 @@ List< int > sum( const List< int > & A , const List< int > & B )
 
 }  // end( namespace )
 
-// Esercizio 4.3: 190 + 17 = 207, and the cases with carries and zeros; the
+// Exercise 4.3: 190 + 17 = 207, and the cases with carries and zeros; the
 // edges: both lists empty (the number 0), one empty, the shorter list
 // first or second, a carry through every digit and out of the longer
 // list, leading zeros (kept, as many digits as the longer list), against
@@ -872,7 +872,7 @@ ADS_TEST( "ex4.3" )
 
 namespace {
 
-// Soluzione Esercizio 4.4: tangentopoli(), the order of the victims when
+// Solution of exercise 4.4: tangentopoli(), the order of the victims when
 // every k-th person of the circle is killed (the problem of Josephus); k
 // may exceed the people left, the count going round the circle, and k < 1
 // is not a count, std::invalid_argument
@@ -898,7 +898,7 @@ std::vector< std::string > tangentopoli( List< std::string > L , int k )
 
 }  // end( namespace )
 
-// Esercizio 4.4: Caio, Sempronio, Tizio, Tullio and k = 3; the edges: the
+// Exercise 4.4: Caio, Sempronio, Tizio, Tullio and k = 3; the edges: the
 // empty circle, one person, k = 1 (the order of the circle), k = n, k much
 // larger than n, n = 2, and k < 1, against a simulation on a vector
 ADS_TEST( "ex4.4" )
@@ -940,7 +940,7 @@ ADS_TEST( "ex4.4" )
 
 namespace {
 
-// Esercizio 4.5: recursively, the even items go and each odd one is
+// Exercise 4.5: recursively, the even items go and each odd one is
 // replicated as many times as the even ones before it, i.e., that many
 // copies are added to it
 void replicate( List< int > & L , List< int >::Pos p , int evens )
@@ -959,7 +959,7 @@ void replicate( List< int > & L , List< int >::Pos p , int evens )
 
 }  // end( namespace )
 
-// Esercizio 4.5: L = 4, 6, 7, 3, 2, 5 becomes 7, 7, 7, 3, 3, 3, 5, 5, 5, 5;
+// Exercise 4.5: L = 4, 6, 7, 3, 2, 5 becomes 7, 7, 7, 3, 3, 3, 5, 5, 5, 5;
 // the edges: empty, one even and one odd item, an even item last (no
 // copy after it), 0 and negative items (-3 odd, -2 even), against the
 // definition on random lists
@@ -1001,7 +1001,7 @@ ADS_TEST( "ex4.5" )
 
 namespace {
 
-// Esercizio 4.7: two stacks in one vector, one growing from the place 0 and
+// Exercise 4.7: two stacks in one vector, one growing from the place 0 and
 // the other from the place capacity - 1; a third one cannot be created
 class TwoStacks {
  std::vector< int > f_A;
@@ -1044,7 +1044,7 @@ class TwoStacks {
 
 }  // end( namespace )
 
-// Esercizio 4.7: two stacks share the vector until it is full; the edges:
+// Exercise 4.7: two stacks share the vector until it is full; the edges:
 // a vector of 0 places (no push) and of 1 (whichever stack comes first),
 // one stack taking the whole vector, top() and pop() of an empty stack
 // while the other one is full, and the stacks against two std::vector
@@ -1109,7 +1109,7 @@ ADS_TEST( "ex4.7" )
 
 namespace {
 
-// Esercizio 4.8: firstN() made iterative by the rules of section 4.4: the
+// Exercise 4.8: firstN() made iterative by the rules of section 4.4: the
 // recursive call is the last statement, so it needs no label, and the
 // stack only remembers that there is a call to return from
 void firstN_iterative( int n , List< int > & L , List< int > & M )
@@ -1127,7 +1127,7 @@ void firstN_iterative( int n , List< int > & L , List< int > & M )
 
 }  // end( namespace )
 
-// Esercizio 4.8: the same lists as firstN(); the edges: a negative n and
+// Exercise 4.8: the same lists as firstN(); the edges: a negative n and
 // n = 0 (nothing, a stack of one place), n = 1, and n = 5000
 ADS_TEST( "ex4.8" )
 {
@@ -1140,7 +1140,7 @@ ADS_TEST( "ex4.8" )
   }
  }
 
-// Esercizio 4.9: both ends, and a stack and a queue made of a dequeue; the
+// Exercise 4.9: both ends, and a stack and a queue made of a dequeue; the
 // edges: the empty dequeue (the four preconditions), one item (head and
 // tail the same, removed from either end), emptied and used again, and
 // random operations at both ends against std::deque
@@ -1183,7 +1183,7 @@ ADS_TEST( "ex4.9" )
 
 static_assert( Queue< LinkedQueue< int > > );
 
-// Esercizio 4.10: FIFO, also after being emptied; the edges: top() and
+// Exercise 4.10: FIFO, also after being emptied; the edges: top() and
 // dequeue() of the empty queue, one item (the front and the back the same
 // cell) enqueued and dequeued in turn, enqueue() after a dequeue() that
 // empties the queue (the back reset), the copies equal and independent, a
@@ -1221,7 +1221,7 @@ ADS_TEST( "ex4.10" )
  CHECK( Q.top() == 1 && Q.dequeue() == 1 && Q.empty() );
  }
 
-// Esercizio 4.11: sorted by key, the values of a key in their first order;
+// Exercise 4.11: sorted by key, the values of a key in their first order;
 // the edges: empty (also with k = 0), one pair, k = 1 (all the same key,
 // the order kept), the keys 0 and k - 1, sorted and reverse sorted keys,
 // against std::stable_sort, and the preconditions (a key k, a negative

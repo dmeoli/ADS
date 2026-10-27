@@ -3,10 +3,10 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of chapter 13, Programmazione dinamica: the binomial coefficients,
- * the approximate string matching on Figura 13.2 and the edit distance,
+ * the approximate string matching on figure 13.2 and the edit distance,
  * the weighted intervals, the chain of matrices, Fibonacci in constant
- * space, Floyd-Warshall on Figura 13.3, the knapsack by tables and by
- * memoization, the longest common subsequence and diff on Figura 13.4,
+ * space, Floyd-Warshall on figure 13.3, the knapsack by tables and by
+ * memoization, the longest common subsequence and diff on figure 13.4,
  * each against an enumeration, and the exercises 13.1 to 13.13, each a
  * test named after it.
  *
@@ -15,7 +15,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -113,7 +113,7 @@ ADS_TEST( "sec13.binomial" )
  CHECK_THROWS( tartaglia( 68 ) , std::logic_error );
  }
 
-// Figura 13.2: T = ababa, P = bab, an occurrence without errors ends in the
+// Figure 13.2: T = ababa, P = bab, an occurrence without errors ends in the
 // place 3 of T (4 counting from 1, as the text does); the example of the
 // text, an occurrence of "unesempio" with 2 errors from the place 7 of
 // "questoèunoscempio"; the edit distance of google and yahoo is 6; the
@@ -298,7 +298,7 @@ ADS_TEST( "sec13.4.fibonacci" )
  CHECK_THROWS( fibonacciTable( -1 ) , std::logic_error );
  }
 
-// Figura 13.3: the final matrices d and p; in the figure p[ 1 ][ 4 ] is 2
+// Figure 13.3: the final matrices d and p; in the figure p[ 1 ][ 4 ] is 2
 // (counting from 1), but d[ 1 ][ 4 ] = 7 comes from the path 1 , 3 , 4,
 // and so p[ 1 ][ 4 ] = 3, as it is after k = 3; against Johnson from each
 // node, and the negative cycles against Bellman-Ford-Moore; no node, one,
@@ -757,7 +757,7 @@ ADS_TEST( "ex13.9" )
  CHECK( alignmentScore( abc , std::string( "xbz" ) , Alignment::LOCAL ) == 1 );
  }
 
-// diff on the lines of Figura 13.4; empty files, equal files
+// diff on the lines of figure 13.4; empty files, equal files
 ADS_TEST( "ex13.10" )
 {
  const Lines original = { "Questo è il testo originale" ,

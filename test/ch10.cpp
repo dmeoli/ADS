@@ -6,7 +6,7 @@
  * heap, on lists and on a tree against a reference on random operations,
  * the heap of Figure 10.1-10.4, heapBuild() and heapsort(), the MFSET on a
  * forest with and without its two heuristics on the examples of Figure
- * 10.5 and 10.6, the Teorema 10.1, the MFSET on lists, the incremental
+ * 10.5 and 10.6, Theorem 10.1, the MFSET on lists, the incremental
  * components, and the exercises 10.1 to 10.9, each a test named after it.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 10,
@@ -14,7 +14,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -271,8 +271,8 @@ ADS_TEST( "spec.TreePriorityQueue" )
 
 // Figure 10.1 and 10.2: the heap of C = { 5 , 10 , 8 , 11 , 13 , 12 , 9 ,
 // 18 , 3 , 6 }, built by inserting its vector in order (each item is not
-// smaller than its parent, so nothing moves); Figura 10.3, the deletion of
-// the minimum; Figura 10.4, the insertion of 4; a decrease of the root and
+// smaller than its parent, so nothing moves); figure 10.3, the deletion of
+// the minimum; figure 10.4, the insertion of 4; a decrease of the root and
 // one to the same priority, the heap emptied in order
 ADS_TEST( "sec10.1.3.heap" )
 {
@@ -376,7 +376,7 @@ ADS_TEST( "sec10.1.4.heapsort" )
 
 /*--------------------------------------------------------------------------*/
 
-// the example of the MFSET of 4 elements, and the forest of Figura 10.5 by
+// the example of the MFSET of 4 elements, and the forest of figure 10.5 by
 // merge( 0 , 1 ), merge( 0 , 2 ), merge( 4 , 5 ), merge( 5 , 2 ),
 // merge( 3 , 6 ), merge( 2 , 6 ) without the rank (the figure counts the
 // elements from 1); no element, one, merges of an element with itself and
@@ -431,7 +431,7 @@ ADS_TEST( "sec10.2.2.forest" )
  }
 
 // without the rank, merge( 4 , 5 ), merge( 3 , 4 ), ..., merge( 0 , 1 )
-// make a chain of height n - 1; with it, the height is 1; the Teorema
+// make a chain of height n - 1; with it, the height is 1; Theorem
 // 10.1, a tree of root r has at least 2^rank[ r ] nodes; the same with the
 // union by size, height at most log2 size[ r ]
 ADS_TEST( "sec10.2.3.rank" )
@@ -474,7 +474,7 @@ ADS_TEST( "sec10.2.3.rank" )
   }
  }
 
-// Figura 10.6: find( 7 ) makes 7 and 4 children of the root (the figure
+// Figure 10.6: find( 7 ) makes 7 and 4 children of the root (the figure
 // counts the elements from 1 and says "trova( 8 , S )")
 ADS_TEST( "sec10.2.4.compression" )
 {
@@ -595,7 +595,7 @@ ADS_TEST( "sec10.2.1.lists" )
 // the bound also on 1, 2 and 3 items
 ADS_TEST( "ex10.1" )
 {
- // the invisit of the tree of Figura 10.1
+ // the invisit of the tree of figure 10.1
  const Ints H = { 3 , 5 , 9 , 6 , 8 , 13 , 12 , 11 , 18 , 10 };
  Ints in;
  auto rec = [ & ]( auto & self , std::size_t i ) -> void {
@@ -831,7 +831,7 @@ ADS_TEST( "ex10.7" )
    }
  // the extreme trees: a single element (rank and height 0), 64 elements
  // merged in rounds of equal trees (rank and height log2 64 = 6, the bound
- // of the Teorema 10.1 reached), and with the compression after a find of
+ // of Theorem 10.1 reached), and with the compression after a find of
  // each element (height 1, rank still 6)
  MFSet O( 1 , MFSet::Union::RANK , false );
  CHECK( O.rank( 0 ) == 0 && height( O , 0 ) == 0 );

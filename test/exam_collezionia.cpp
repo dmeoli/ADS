@@ -23,7 +23,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -289,7 +289,7 @@ ADS_TEST( "collezioni-02-analisi-1-1-3" )
  }
 
 /*--------------------------------------------------------------------------*/
-/*---------------- 02-analisi, 1.4, Esercizio 2.9 del libro ----------------*/
+/*---------------- 02-analisi, 1.4, exercise 2.9 of the book ---------------*/
 /*--------------------------------------------------------------------------*/
 
 /// whether A has a value twice: A sorted by merge sort, then two equal
@@ -1205,7 +1205,7 @@ ADS_TEST( "collezioni-05-alberi-1-4" )
  }
 
 /*--------------------------------------------------------------------------*/
-/*------- 05-alberi, 1.5 and 1.6, Nodi a profondita' e ad altezza k --------*/
+/*------- 05-alberi, 1.5 and 1.6, Nodi a profondità e ad altezza k ---------*/
 /*--------------------------------------------------------------------------*/
 
 /// countDepthK(): the nodes at depth k, never below it; O( n ) time
@@ -3252,7 +3252,7 @@ ADS_TEST( "collezioni-09-grafi-1-14" )
  }
 
 /*--------------------------------------------------------------------------*/
-/*-------------- 09-grafi, 1.15, Quanto e' grande la foresta? --------------*/
+/*-------------- 09-grafi, 1.15, Quanto è grande la foresta? ---------------*/
 /*--------------------------------------------------------------------------*/
 
 /// treeCount(): the components that are trees, each visited counting its
@@ -4095,7 +4095,7 @@ ADS_TEST( "collezioni-10-heap-1-9" )
  }
 
 /*--------------------------------------------------------------------------*/
-/*------------ 10-heap, 1.10, Verifica della proprieta' di heap ------------*/
+/*------------ 10-heap, 1.10, Verifica della proprietà di heap -------------*/
 /*--------------------------------------------------------------------------*/
 
 // checkMaxHeap() of the text is isMaxHeap() of the library: A[ ( i - 1 ) /

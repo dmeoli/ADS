@@ -5,8 +5,8 @@
  * Tests of chapter 9, Grafi: the three realizations of the GRAPH against a
  * set of edges on random insertions and deletions, the graphs of the
  * figures and their matrices, the orders of the visits bfs and dfs of the
- * example of Figura 9.9, the distances and the paths, the components, the
- * kinds of the edges of Figura 9.10, the acyclic graphs, the topological
+ * example of figure 9.9, the distances and the paths, the components, the
+ * kinds of the edges of figure 9.10, the acyclic graphs, the topological
  * order of the example of tsort and the strongly connected components
  * against the transitive closure, the case of the duke McPollock, and the
  * exercises 9.1 to 9.11, each a test named after it.
@@ -16,7 +16,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -72,14 +72,14 @@ G make( int n , const Edges & E , bool directed )
  return( g );
  }
 
-/// Figura 9.9: the edges in increasing order, so that the lists of
+/// Figure 9.9: the edges in increasing order, so that the lists of
 /// adjacency are sorted
 const Edges fig99 = { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 0 , 5 } ,
                       { 0 , 7 } , { 1 , 3 } , { 1 , 4 } , { 1 , 6 } ,
                       { 1 , 8 } , { 2 , 5 } , { 3 , 4 } , { 6 , 7 } ,
                       { 6 , 8 } };
 
-/// Figura 9.1, oriented, and Figura 9.2, unoriented
+/// Figure 9.1, oriented, and figure 9.2, unoriented
 const Edges fig91 = { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 1 } ,
                       { 3 , 1 } , { 3 , 2 } };
 const Edges fig92 = { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 1 } ,
@@ -439,7 +439,7 @@ ADS_TEST( "sec9.1.mcpollock" )
 
 /*--------------------------------------------------------------------------*/
 
-// the matrices of Figure 9.6 and 9.7 and the vectors of Figura 9.8; the
+// the matrices of Figure 9.6 and 9.7 and the vectors of figure 9.8; the
 // lists read back from the incidences, the graphs with no edge or no node
 ADS_TEST( "sec9.3.matrices" )
 {
@@ -594,7 +594,7 @@ ADS_TEST( "sec9.5.4.dfs" )
                contract_violation );
  }
 
-// the components of a graph like the one of Figura 9.3 (its edges are not
+// the components of a graph like the one of figure 9.3 (its edges are not
 // in the text: these give the order of visit 0, 1, 4, 5, 2, 6, 7, 3 of the
 // example), and the dependence of cc() on the order of the stack in an
 // oriented graph; no node, no edge, a deleted node, an empty stack and one
@@ -643,7 +643,7 @@ ADS_TEST( "sec9.5.5.cc" )
                      []( int x ) { return( x == 1 ); } ) );
  }
 
-// the kinds of the edges of Figura 9.10; in an unoriented graph the first
+// the kinds of the edges of figure 9.10; in an unoriented graph the first
 // examination of each edge is in T or back; the intervals [ dt , ft ] are
 // nested or disjoint; a single node, a circuit of 2, a path of 10^5 nodes,
 // the contracts

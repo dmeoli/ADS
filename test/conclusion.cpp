@@ -2,7 +2,7 @@
 /*-------------------------- File conclusion.cpp ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Tests of the Conclusione: the pairs of Tabella 19.1, a problem solvable
+ * Tests of the conclusion: the pairs of table 19.1, a problem solvable
  * in polynomial time against its NP-hard twin on random instances, and
  * CRICCA, INSIEME INDIPENDENTE and COLORAZIONE on the graphs of intervals,
  * polynomial there, against the enumerations of chapter 18.
@@ -12,7 +12,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -62,8 +62,8 @@ Adjacency random_graph( int n , int p , std::mt19937 & g )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// 2-SODDISFATTIBILITA' by the components of the implications, against the
-// enumeration, and the 3-SODDISFATTIBILITA' of the same variables; no
+// 2-SODDISFATTIBILITÀ by the components of the implications, against the
+// enumeration, and the 3-SODDISFATTIBILITÀ of the same variables; no
 // clause (with no variable or some), a tautology, a repeated literal, the
 // contradictions of one and two variables, a chain of 10^5 implications,
 // and the preconditions (n < 0, the literal 0 or beyond n, clauses of 0

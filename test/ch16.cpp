@@ -12,7 +12,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -133,7 +133,7 @@ ADS_TEST( "sec16.1.hull" )
  CHECK_THROWS( convexHullBrute( out ) , contract_violation );
  }
 
-// the subsets of k = 2 of n = 4 items, the leaves of Figura 16.5, and their
+// the subsets of k = 2 of n = 4 items, the leaves of figure 16.5, and their
 // number C( n , k ) (n! / ( n - k )! in the text counts their orderings);
 // k = 0, k = n, k > n, and the precondition
 ADS_TEST( "sec16.2.subsets" )

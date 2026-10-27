@@ -12,7 +12,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -62,7 +62,7 @@ bool near( double a , double b ) { return( std::abs( a - b ) <= 1e-12 ); }
 /*------------------------- ESERCIZI 3.1 E 3.2 -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// Esercizi 3.1 and 3.2: the complex number, specified by its operations
+/// Exercises 3.1 and 3.2: the complex number, specified by its operations
 /// (real and imaginary part, argument, modulus, construction from the
 /// Cartesian and from the trigonometric form, sum, difference, product,
 /// conjugate, quotient) and realized with a record
@@ -111,7 +111,7 @@ class Complex {
 
 }  // end( namespace )
 
-// Esercizi 3.1 and 3.2: the operations of the complex numbers; the edges:
+// Exercises 3.1 and 3.2: the operations of the complex numbers; the edges:
 // 0 (modulus and argument 0, the division by 0, 0 divided by w), the
 // argument on the four half-axes (pi on the negative reals), rho = 0, the
 // division by a purely imaginary w, by a tiny w (|w|^2 underflows) and by
@@ -162,7 +162,7 @@ ADS_TEST( "ex3.1-3.2" )
  CHECK( c.re() == 7 && c.im() == 0 );
  }
 
-// Soluzione Esercizio 3.3: w[ i , j , h ] of a n x m x k matrix stored by
+// Solution of exercise 3.3: w[ i , j , h ] of a n x m x k matrix stored by
 // columns, the first index varying first, is v[ p ] with p = i + j n + h n m;
 // the edges: the extents of 1 (1 x 1 x 1, a row, a column, a single layer),
 // the first and the last place, and every place hit once
@@ -192,7 +192,7 @@ ADS_TEST( "ex3.3" )
   }
  }
 
-// Esercizio 3.4: w[ i_1 , ... , i_k ] of a matrix with min_j <= i_j <= max_j
+// Exercise 3.4: w[ i_1 , ... , i_k ] of a matrix with min_j <= i_j <= max_j
 // stored by rows, the last index varying first, is v[ p ] with
 // p = sum_j ( i_j - min_j ) prod_{l > j} ( max_l - min_l + 1 ); the edges:
 // k = 1, extents of 1 (min_j = max_j), all the bounds negative, bounds far
@@ -231,7 +231,7 @@ ADS_TEST( "ex3.4" )
 
 namespace {
 
-/// Esercizio 3.5: the polynomial of degree at most k, with its coefficients
+/// Exercise 3.5: the polynomial of degree at most k, with its coefficients
 /// a_0 , ... , a_k, evaluated by the rule of Horner
 class Polynomial {
  std::vector< double > f_a;
@@ -272,7 +272,7 @@ class Polynomial {
 
 }  // end( namespace )
 
-// Esercizio 3.5: ( 1 + x ) ( 1 - x ) = 1 - x^2, and the other operations;
+// Exercise 3.5: ( 1 + x ) ( 1 - x ) = 1 - x^2, and the other operations;
 // the edges: the polynomial 0 (a constant 0 of degree 0), the product by 0
 // and by a constant, operands of different degrees, a difference whose
 // leading coefficients cancel (the degree is a bound, the coefficients 0),
@@ -322,7 +322,7 @@ ADS_TEST( "ex3.5" )
 
 namespace {
 
-// Soluzione Esercizio 3.6: stampaDifferenze(), the items equal to the
+// Solution of exercise 3.6: stampaDifferenze(), the items equal to the
 // difference of the one before and the one after; three positions are
 // moved together along the sequence; a sequence of less than three items
 // prints nothing, and its end is checked before each position is advanced
@@ -347,7 +347,7 @@ std::vector< typename S::Item > stampaDifferenze( const S & L )
  return( out );
  }
 
-// Esercizio 3.7: the odd items before the even ones, each group in its first
+// Exercise 3.7: the odd items before the even ones, each group in its first
 // order, in O( n ) time: the even ones are moved at the end as they come,
 // up to the last item of the original sequence. The positions must not
 // change when items are inserted or removed elsewhere, as in List; on
@@ -372,7 +372,7 @@ void oddBeforeEven( S & L )
   }
  }
 
-// Esercizio 3.8: recursively, each item gets its rank, the sum of its value
+// Exercise 3.8: recursively, each item gets its rank, the sum of its value
 // and of the values of the items after it; O( n ) time
 template< Sequence S >
 typename S::Item rango( S & L , typename S::Pos p )
@@ -386,7 +386,7 @@ typename S::Item rango( S & L , typename S::Pos p )
 
 }  // end( namespace )
 
-// Esercizio 3.6: L = 5, 2, 3, 1, 2 prints 2, 1; the edges: 0, 1 and 2 items
+// Exercise 3.6: L = 5, 2, 3, 1, 2 prints 2, 1; the edges: 0, 1 and 2 items
 // (nothing, the first and the last item have no two neighbours; with one
 // item the list of the book read its sentinel), exactly 3 items, every
 // inner item printed, negative and zero items, against the definition
@@ -424,7 +424,7 @@ ADS_TEST( "ex3.6" )
   }
  }
 
-// Esercizio 3.7: L = 3, 7, 8, 1, 4 becomes 3, 7, 1, 8, 4; the edges: empty,
+// Exercise 3.7: L = 3, 7, 8, 1, 4 becomes 3, 7, 1, 8, 4; the edges: empty,
 // one odd or one even item, all odd, all even, an even item first or last,
 // negative items and 0, duplicates, against std::stable_partition
 ADS_TEST( "ex3.7" )
@@ -452,7 +452,7 @@ ADS_TEST( "ex3.7" )
   }
  }
 
-// Esercizio 3.8: L = 3, 2, 5 becomes 10, 7, 5; the edges: empty (the sum
+// Exercise 3.8: L = 3, 2, 5 becomes 10, 7, 5; the edges: empty (the sum
 // 0), one item, negative items and sums that cross 0, all zeros, and a
 // list of 10^4 items (the depth of the recursion), against suffix sums
 ADS_TEST( "ex3.8" )

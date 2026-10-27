@@ -4,7 +4,7 @@
 /** @file
  * Tests of chapter 7, Tabelle hash: the table with direct access of the
  * examples, the hash functions of section 7.1 on the keys of the book and
- * by the chi-square test, the deleted places of Figura 7.6, every table
+ * by the chi-square test, the deleted places of figure 7.6, every table
  * against std::map on random operations, the expected numbers of accesses
  * of section 7.3, the restructuring of section 7.4, and the exercises 7.1
  * to 7.10, each a test named after it.
@@ -14,7 +14,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -397,7 +397,7 @@ ADS_TEST( "sec7.1.uniformity" )
 
 /*--------------------------------------------------------------------------*/
 
-// Figura 7.6: a deleted place does not stop the inspection, and an
+// Figure 7.6: a deleted place does not stop the inspection, and an
 // insertion reuses it; the edges: the full table (a failed insertion
 // changes nothing), the table of deleted places only, a key updated past
 // a deleted place, the empty table, the table of one place

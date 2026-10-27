@@ -6,7 +6,7 @@
  * problems, the certificates, the nondeterministic algorithms simulated by
  * enumeration, the linear tiling in polynomial time, the reduction of the
  * sorting to the convex hull, the reductions of the square tiling to
- * CRICCA, SODDISFATTIBILITA' and PROGRAMMAZIONE LINEARE 0/1 on Figura 18.8
+ * CRICCA, SODDISFATTIBILITÀ and PROGRAMMAZIONE LINEARE 0/1 on figure 18.8
  * and on random tiles, the other reductions on random instances, and the
  * exercises 18.1 to 18.16, each a test named after it.
  *
@@ -15,7 +15,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -66,7 +66,7 @@ Adjacency random_graph( int n , int p , bool oriented , std::mt19937 & g )
  return( G );
  }
 
-/// the tiles of Figura 18.8: two of a kind never side by side, d0 and d1
+/// the tiles of figure 18.8: two of a kind never side by side, d0 and d1
 /// fit in both orders, as the covering d0 d1 / d1 d0 of the figure needs
 const std::vector< Tile > fig188 = { { 1 , 1 , 0 , 0 } , { 0 , 0 , 1 , 1 } };
 
@@ -318,7 +318,7 @@ ADS_TEST( "sec18.5.hull-sort" )
   }
  }
 
-// Figura 18.8: the covering d0 d1 / d1 d0, the formula that the assignment
+// Figure 18.8: the covering d0 d1 / d1 d0, the formula that the assignment
 // of the text satisfies, the system that its x satisfies, the clique of
 // k = 4; on random tiles the four answers agree. The example of the text
 // lists 19 clauses, two of which, ( not u101 or not u011 ) and ( not u100

@@ -4,9 +4,9 @@
 /** @file
  * Tests of chapter 5, Alberi: the specification of the ordered and of the
  * binary tree, the four visits on the classification of the plants
- * (Figura 5.1) against the orders the book gives, the vector of parents
- * (Figura 5.4), the binary representation of an ordered tree (Figura 5.9),
- * the tree of the choices for sorting three numbers (Figura 5.8), the
+ * (figure 5.1) against the orders the book gives, the vector of parents
+ * (figure 5.4), the binary representation of an ordered tree (figure 5.9),
+ * the tree of the choices for sorting three numbers (figure 5.8), the
  * complete d-ary trees in a vector and the exercises 5.1 to 5.13, each a
  * test named after it.
  *
@@ -15,7 +15,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -160,7 +160,7 @@ BinaryTree< int > * bchain( int n , bool left )
  return( t );
  }
 
-/// Figura 5.1: the classification of the plants
+/// Figure 5.1: the classification of the plants
 Spec< std::string > plants( void )
 {
  using S = Spec< std::string >;
@@ -185,7 +185,7 @@ Spec< std::string > plants( void )
 /*------------------------- THE ORDERED TREE -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// sections 5.1 and 5.3, Figura 5.5: insertChild() puts a subtree first,
+// sections 5.1 and 5.3, figure 5.5: insertChild() puts a subtree first,
 // insertSibling() after a node, deleteChild() destroys the first subtree;
 // a tree that is not a root cannot be inserted, nor a sibling of a root,
 // nor nil, nor the node itself, nor the root of the tree of the node (a
@@ -332,7 +332,7 @@ ADS_TEST( "sec5.2.visits" )
  CHECK_THROWS( in_visit( &one , -1 , none ) , contract_violation );
  }
 
-// section 5.4: the vector of parents of T1 of Figura 5.4, the nodes 1 to 5
+// section 5.4: the vector of parents of T1 of figure 5.4, the nodes 1 to 5
 // being 0 to 4; a node made a root again, the empty forest, and the
 // contracts: nodes out of range, a node its own parent, and a cycle (the
 // parent in the subtree of the node)
@@ -433,7 +433,7 @@ ADS_TEST( "spec.BinaryTree" )
   }
  }
 
-// section 5.5, Figura 5.9: the binary tree of the first children and of the
+// section 5.5, figure 5.9: the binary tree of the first children and of the
 // next siblings has the previsit of the ordered tree, and its invisit is the
 // postvisit of the ordered tree; a node alone is a node alone, a chain a
 // chain of left children, a star a chain of right children; nil violates
@@ -471,7 +471,7 @@ ADS_TEST( "sec5.5.binary-representation" )
                contract_violation );
  }
 
-// section 5.5, Figura 5.8: the tree of the choices sorts three numbers with
+// section 5.5, figure 5.8: the tree of the choices sorts three numbers with
 // at most 3 comparisons, also with ties (all the triples of { 0 , 1 , 2 }),
 // and sorting n numbers needs log2( n! ) >= ( n / 2 ) log2( n / 2 ) of them
 // in the worst case
@@ -560,7 +560,7 @@ ADS_TEST( "sec5.6.dary" )
 
 namespace {
 
-// Soluzione Esercizio 5.1: depth(), the height, by a postvisit
+// Solution of exercise 5.1: depth(), the height, by a postvisit
 template< class T >
 int depth( Tree< T > * t )
 {
@@ -572,7 +572,7 @@ int depth( Tree< T > * t )
 
 }  // end( namespace )
 
-// Esercizio 5.1: the plants have height 3, a node alone 0, a chain of n
+// Exercise 5.1: the plants have height 3, a node alone 0, a chain of n
 // nodes n - 1, a star of n leaves 1
 ADS_TEST( "ex5.1" )
 {
@@ -589,7 +589,7 @@ ADS_TEST( "ex5.1" )
 
 namespace {
 
-// Soluzione Esercizio 5.2: leafK(), the leaves whose path from the root
+// Solution of exercise 5.2: leafK(), the leaves whose path from the root
 // sums to k are deleted, by a previsit that carries the sum; it returns
 // true if t itself is such a leaf, which its caller deletes
 bool leafK( Tree< int > * t , int k , int somma )
@@ -613,7 +613,7 @@ bool leafK( Tree< int > * t , int k , int somma )
 
 }  // end( namespace )
 
-// Esercizio 5.2: with k = 6 the leaves 3 (1 + 2 + 3) and 0 (1 + 5 + 0) go;
+// Exercise 5.2: with k = 6 the leaves 3 (1 + 2 + 3) and 0 (1 + 5 + 0) go;
 // the node 5, a leaf only afterwards, stays. A k no path reaches changes
 // nothing; the first children in a row, the siblings in a row and the last
 // one go; with negative values a sum reaches k twice, only the leaf goes
@@ -650,7 +650,7 @@ ADS_TEST( "ex5.2" )
 
 namespace {
 
-// Esercizio 5.3: the width, the most nodes on a level, by a visit by levels
+// Exercise 5.3: the width, the most nodes on a level, by a visit by levels
 // that counts the nodes of each level
 template< class T >
 int width( Tree< T > * t )
@@ -673,7 +673,7 @@ int width( Tree< T > * t )
 
 }  // end( namespace )
 
-// Esercizio 5.3: the levels of the plants have 1, 2, 4 and 13 nodes; a
+// Exercise 5.3: the levels of the plants have 1, 2, 4 and 13 nodes; a
 // node alone and a chain have width 1, a star of n leaves n, and two levels
 // of the same width give it once
 ADS_TEST( "ex5.3" )
@@ -695,7 +695,7 @@ ADS_TEST( "ex5.3" )
 
 namespace {
 
-// Esercizio 5.4: the binary tree of distinct values given its previsit and
+// Exercise 5.4: the binary tree of distinct values given its previsit and
 // its invisit: the first value of the previsit is the root, which splits the
 // invisit into the left and the right subtree
 BinaryTree< char > * rebuild( const std::string & pre ,
@@ -714,7 +714,7 @@ BinaryTree< char > * rebuild( const std::string & pre ,
 
 }  // end( namespace )
 
-// Esercizio 5.4: the tree of 9 nodes rebuilt from the previsit and the
+// Exercise 5.4: the tree of 9 nodes rebuilt from the previsit and the
 // invisit of the book has the postvisit the book gives; the empty visits
 // give the empty tree, one value a node alone, the chains of left and of
 // right children come back, and so do random trees of up to 90 nodes
@@ -753,7 +753,7 @@ ADS_TEST( "ex5.4" )
 
 namespace {
 
-// Soluzione Esercizio 5.5: count(), the size of each subtree in its root,
+// Solution of exercise 5.5: count(), the size of each subtree in its root,
 // by a postvisit
 int count( BinaryTree< int > * t )
 {
@@ -766,7 +766,7 @@ int count( BinaryTree< int > * t )
 
 }  // end( namespace )
 
-// Esercizio 5.5: each node holds the size of its subtree; a node alone 1,
+// Exercise 5.5: each node holds the size of its subtree; a node alone 1,
 // the empty tree 0, a chain of n nodes n , n - 1 , ... , 1
 ADS_TEST( "ex5.5" )
 {
@@ -789,7 +789,7 @@ ADS_TEST( "ex5.5" )
 
 namespace {
 
-// Soluzione Esercizio 5.6: deleteLeaf(), by a previsit: a left child that
+// Solution of exercise 5.6: deleteLeaf(), by a previsit: a left child that
 // is a leaf with the value of its parent goes
 void deleteLeaf( BinaryTree< int > * t )
 {
@@ -804,7 +804,7 @@ void deleteLeaf( BinaryTree< int > * t )
 
 }  // end( namespace )
 
-// Esercizio 5.6: the left leaves equal to their parent go; a right one and a
+// Exercise 5.6: the left leaves equal to their parent go; a right one and a
 // left one of different value stay. The empty tree and a node alone do not
 // change; in a chain of left children all equal only the last goes, as the
 // previsit has passed its parent when that becomes a leaf
@@ -827,7 +827,7 @@ ADS_TEST( "ex5.6" )
 
 namespace {
 
-// Soluzione Esercizio 5.7: insertLeaf(), by a postvisit: a left child 0 is
+// Solution of exercise 5.7: insertLeaf(), by a postvisit: a left child 0 is
 // added to each leaf
 void insertLeaf( BinaryTree< int > * t )
 {
@@ -841,7 +841,7 @@ void insertLeaf( BinaryTree< int > * t )
 
 }  // end( namespace )
 
-// Esercizio 5.7: each leaf gets a left child 0, and only the leaves; a node
+// Exercise 5.7: each leaf gets a left child 0, and only the leaves; a node
 // alone gets one, a chain only at its end, the empty tree nothing
 ADS_TEST( "ex5.7" )
 {
@@ -863,7 +863,7 @@ ADS_TEST( "ex5.7" )
 
 namespace {
 
-// Esercizio 5.8: the leaves, read from left to right, get first all the 0
+// Exercise 5.8: the leaves, read from left to right, get first all the 0
 // and then all the 1, by two postvisits: one counts the leaves and the 1,
 // the other writes the values in the order of the leaves
 void leaves( BinaryTree< int > * t , int & n , int & ones )
@@ -900,7 +900,7 @@ void group( BinaryTree< int > * t )
 
 }  // end( namespace )
 
-// Esercizio 5.8: the leaves 1, 0, 1, 0 become 0, 0, 1, 1, the inner nodes
+// Exercise 5.8: the leaves 1, 0, 1, 0 become 0, 0, 1, 1, the inner nodes
 // unchanged; all 0, all 1, and a node alone stay as they are
 ADS_TEST( "ex5.8" )
 {
@@ -928,7 +928,7 @@ ADS_TEST( "ex5.8" )
 
 namespace {
 
-// Esercizio 5.9: the mirror tree, the two subtrees of each node swapped
+// Exercise 5.9: the mirror tree, the two subtrees of each node swapped
 BinaryTree< int > * mirror( BinaryTree< int > * t )
 {
  if( ! t )
@@ -941,7 +941,7 @@ BinaryTree< int > * mirror( BinaryTree< int > * t )
 
 }  // end( namespace )
 
-// Esercizio 5.9: the invisit of the mirror is the reverse one, also for the
+// Exercise 5.9: the invisit of the mirror is the reverse one, also for the
 // empty tree, a node alone and the chains, and the mirror of the mirror is
 // the tree
 ADS_TEST( "ex5.9" )
@@ -970,7 +970,7 @@ ADS_TEST( "ex5.9" )
 
 namespace {
 
-// Esercizio 5.10: each leaf gets a child with the sum of its path from the
+// Exercise 5.10: each leaf gets a child with the sum of its path from the
 // root, by a previsit that carries the sum
 void addSums( BinaryTree< int > * t , int somma )
 {
@@ -987,7 +987,7 @@ void addSums( BinaryTree< int > * t , int somma )
 
 }  // end( namespace )
 
-// Esercizio 5.10: the leaves 3 (1 + 2 + 3) and 5 (1 + 5) get 6 and 6; a
+// Exercise 5.10: the leaves 3 (1 + 2 + 3) and 5 (1 + 5) get 6 and 6; a
 // node alone gets its value, negative values sum to 0, the empty tree is
 // left empty
 ADS_TEST( "ex5.10" )
@@ -1006,7 +1006,7 @@ ADS_TEST( "ex5.10" )
  addSums( nullptr , 0 );
  }
 
-// Esercizio 5.11: the leaves are the nodes with two children plus one, on
+// Exercise 5.11: the leaves are the nodes with two children plus one, on
 // random trees and on the chains (one leaf, no node with two children)
 ADS_TEST( "ex5.11" )
 {
@@ -1038,7 +1038,7 @@ BinaryTree< int > * complete( int k )
 
 }  // end( namespace )
 
-// Esercizio 5.12: a complete binary tree of height k has 2^( k + 1 ) - 1
+// Exercise 5.12: a complete binary tree of height k has 2^( k + 1 ) - 1
 // nodes and 2^k leaves
 ADS_TEST( "ex5.12" )
 {
@@ -1056,7 +1056,7 @@ ADS_TEST( "ex5.12" )
 
 namespace {
 
-// Esercizio 5.13: the three visits made iterative with a stack. The
+// Exercise 5.13: the three visits made iterative with a stack. The
 // previsit pushes the right child before the left one; the invisit goes
 // down the left children pushing them, then examines and moves right; the
 // postvisit pushes each node with a flag, examined the second time it is
@@ -1112,7 +1112,7 @@ Ints post_iterative( BinaryTree< int > * t , int n )
 
 }  // end( namespace )
 
-// Esercizio 5.13: the iterative visits give the recursive ones, on random
+// Exercise 5.13: the iterative visits give the recursive ones, on random
 // trees and on the chains of left and of right children, where the stack
 // holds all the nodes (its size, n + 1 and 2 n + 1, is enough)
 ADS_TEST( "ex5.13" )
