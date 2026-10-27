@@ -2381,14 +2381,14 @@ ADS_TEST( "knapsack-heuristics" )
                contract_violation );            // sizes that differ
  CHECK_THROWS( knapsackBB( VL( { -1 , 4 , 7 } ) , v , 5 ) ,
                contract_violation );            // a negative profit
- // profits and volumes whose cross products overflow a long (2.5e19 and
- // 5e19), the denser object first all the same
- const VL bp = { 5000000000L , 10000000000L , 1L } ,
-          bv = { 5000000000L , 5000000000L , 5000000000L };
- for( const auto & r : { knapsackGreedy( bp , bv , 5000000000L ) ,
-                         knapsackBB( bp , bv , 5000000000L ) ,
-                         knapsackBacktrack( bp , bv , 5000000000L ) } )
-  CHECK( r.first == 10000000000L && r.second == Nodes( { 1 } ) );
+ // profits and volumes near a quarter of the largest long, whose cross
+ // products overflow it, the denser object first all the same
+ const long h = std::numeric_limits< long >::max() / 4;
+ const VL bp = { h , 2 * h , 1 } , bv = { h , h , h };
+ for( const auto & r : { knapsackGreedy( bp , bv , h ) ,
+                         knapsackBB( bp , bv , h ) ,
+                         knapsackBacktrack( bp , bv , h ) } )
+  CHECK( r.first == 2 * h && r.second == Nodes( { 1 } ) );
  }
 
 // the iterative backtracking of the n queens, the same numbers of
