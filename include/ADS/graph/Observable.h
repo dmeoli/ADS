@@ -37,7 +37,7 @@
  * gets only the kinds in its mask, also within a batch; (iii) `batch()`
  * opens a channel of RAII, and the events of the channels, which nest, are
  * collected and sent as one span, coalesced into their net effect per edge
- * by (7) of \ref theory_graph_dynamic, when the outermost one closes;
+ * by (8) of \ref theory_graph_dynamic, when the outermost one closes;
  * (iv) an observer may defer its work to the next query, as those of
  * `Reoptimization.h` do. A change sent at once costs \f$ O( 1 ) \f$ per
  * observer that wants it, and a batch of \f$ k \f$ events costs
@@ -195,10 +195,10 @@ template< class W >
 [[nodiscard]] std::pair< int , int > endsOf( const GraphEvent< W > & e );
 
 /// the net effect of the events \f$ E \f$, i.e., the nodes inserted, the
-/// edges in the order of their first event and the nodes deleted, by (7) of
+/// edges in the order of their first event and the nodes deleted, by (8) of
 /// \ref theory_graph_dynamic, in \f$ O( |E| ) \f$ expected time
 ///
-/// In pseudocode (beyond the book; it is correct by Lemma 5 of
+/// In pseudocode (beyond the book; it is correct by Lemma 6 of
 /// \ref theory_graph_dynamic):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
@@ -217,7 +217,7 @@ template< class W >
 /// 7 & \qquad \textbf{else}\ \text{the } s_1 \text{ of } N[ ( u , v ) ]
 ///     \gets \text{the } s_1 \text{ of } e \cr
 /// 8 & \quad \textbf{return}\ \text{the nodes of } I \text{ not gone, the}
-///     \text{ events (7) of } N \text{ on no node gone, in order, then } D
+///     \text{ events (8) of } N \text{ on no node gone, in order, then } D
 /// \end{array}}
 /// \f]
 template< class W >

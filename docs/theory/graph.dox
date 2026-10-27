@@ -518,7 +518,7 @@
      \mathrm{EdgeInserted}( s_1 ) & \text{if } s_0 = \bot \ne s_1 , \cr
      \mathrm{EdgeDeleted}( s_0 ) & \text{if } s_0 \ne \bot = s_1 , \cr
      \mathrm{WeightChanged}( s_0 , s_1 ) & \text{otherwise} ,
-   \end{array} \right. \tag{7}
+   \end{array} \right. \tag{8}
  \f]
  the weights compared by `==` when their type has it (never equal otherwise),
  and a node both inserted and deleted within the batch vanishes with all its
@@ -526,13 +526,13 @@
  net events of the edges in the order of their first event, then of the nodes
  deleted.
 
- <em>Lemma 5 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
- of a batch on a graph \f$ G \f$, and \f$ C \f$ the sequence that (7) gives.
+ <em>Lemma 6 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
+ of a batch on a graph \f$ G \f$, and \f$ C \f$ the sequence that (8) gives.
  The graph obtained by replaying \f$ C \f$ on \f$ G \f$ is the one obtained by
  replaying \f$ B \f$, and \f$ |C| \le |B| \f$.
 
  Indeed, the state of an edge after \f$ B \f$ depends on its last event only,
- and (7) gives an event that leads from \f$ s_0 \f$ to \f$ s_1 \f$, or none if
+ and (8) gives an event that leads from \f$ s_0 \f$ to \f$ s_1 \f$, or none if
  the two are equal; the nodes inserted come first, so that every edge of
  \f$ C \f$ finds its ends, and the nodes deleted come last, after the
  deletions of their edges, which the wrapper sends before the deletion of a
@@ -545,7 +545,7 @@
  graph together with a <em>certificate</em> of its optimality, i.e., data that
  prove the solution optimal by conditions that each touch a single edge. It
  queues the events and works at the next query (the lazy flush): the queue
- \f$ Q \f$ is first coalesced by (7) into \f$ P \f$, and if
+ \f$ Q \f$ is first coalesced by (8) into \f$ P \f$, and if
  \f$ |P| > \rho \max( m , 1 ) \f$, \f$ \rho \f$ the ratio of
  `setRecomputeRatio()` (\f$ 1 / 4 \f$ by default), the solution is computed
  from scratch, since a repair that touches a large part of the graph costs as
@@ -556,12 +556,12 @@
  repair (1) if one is repairable, and by the certificate (2) if all are
  harmless, in which case nothing is computed.
 
- <em>Lemma 6 (the batch test).</em> If each condition of the certificate
+ <em>Lemma 7 (the batch test).</em> If each condition of the certificate
  involves the weight of a single edge, and each event of \f$ P \f$ is tested
  on the certificate of the solution before \f$ P \f$, then the events of
  \f$ P \f$ found harmless leave the solution optimal all together.
 
- Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 5, so that
+ Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 6, so that
  each condition of the certificate is touched by at most one of them, and a
  harmless event keeps true the conditions that it touches; the conditions
  that no event touches stay as they were.
@@ -586,11 +586,11 @@
  For the minimum spanning forest \f$ F \f$ (`SpanningForestObserver`) the
  certificate is the pair of conditions of optimality of section 14.3, i.e.,
  with \f$ F( u , v ) \f$ the path of \f$ F \f$ between \f$ u \f$ and
- \f$ v \f$, the property of the cycles and the property of the cuts (6):
+ \f$ v \f$, the property of the cycles and the property of the cuts (7):
  \f[
    w( f ) \ge \max_{e \in F( u , v )} w( e ) \quad
    \forall f = [ u , v ] \notin F , \qquad
-   w( e ) \le w( \rho( e ) ) \quad \forall e \in F , \tag{8}
+   w( e ) \le w( \rho( e ) ) \quad \forall e \in F , \tag{9}
  \f]
  \f$ \rho( e ) \f$ the <em>replacement</em> of \f$ e \f$, the lightest edge
  out of \f$ F \f$ whose path holds \f$ e \f$ (the sensitivity analysis of
@@ -606,12 +606,12 @@
  raising an edge \f$ e \f$ of \f$ F \f$ to \f$ w' \le w( \rho( e ) ) \f$ and
  deleting an edge of \f$ F \f$ with no replacement (a bridge) are harmless
  too. The other changes are repairable. When the edges lowered or inserted
- out of \f$ F \f$ are the only changes that fail (8), the new forest is that
+ out of \f$ F \f$ are the only changes that fail (9), the new forest is that
  of Kruskal on \f$ F \f$ and those edges, in
  \f$ O( ( n + k ) \log( n + k ) ) \f$ for \f$ k \f$ of them, since an edge
  out of \f$ F \f$ that did not get lighter is still the heaviest of its cycle;
  when a single edge of \f$ F \f$ is raised beyond its replacement, the two
- are swapped, by (6) on the cut that its removal leaves. Raises and decreases
+ are swapped, by (7) on the cut that its removal leaves. Raises and decreases
  together, whose conditions interact, go from scratch. The data of the
  certificate stay valid, or become conservative (they may reject a harmless
  change, never accept a wrong one), as long as \f$ F \f$ keeps its edges: the
@@ -620,7 +620,7 @@
 
  For the maximum flow from \f$ s \f$ to \f$ t \f$ (`MaxFlowObserver`) the
  certificate is the side \f$ S \f$ of a minimum cut with
- \f$ | f | = c( S , V \setminus S ) \f$, by (iii) of Theorem 4. A new
+ \f$ | f | = c( S , V \setminus S ) \f$, by (iii) of Theorem 5. A new
  capacity \f$ c' \f$ of \f$ ( u , v ) \f$ with \f$ c' \ge f( u , v ) \f$ is
  harmless unless \f$ ( u , v ) \f$ leaves \f$ S \f$ and grows: the flow stays
  feasible, and the capacity of the cut neither falls below \f$ | f | \f$ (an
@@ -638,7 +638,7 @@
      \f$ d[ u ] + w' \ge d[ v ] \f$, \f$ O( 1 ) \f$</td><td>an improving
      edge, the prototype from its tail</td><td>an edge of \f$ T \f$ raised
      or deleted</td></tr>
- <tr><td><tt>SpanningForestObserver</tt></td><td>(8) still true,
+ <tr><td><tt>SpanningForestObserver</tt></td><td>(9) still true,
      \f$ O( \log n ) \f$</td><td>Kruskal on \f$ F \f$ and the edges
      lowered, or a swap</td><td>raises and decreases together</td></tr>
  <tr><td><tt>MaxFlowObserver</tt></td><td>\f$ c' \ge f( u , v ) \f$ off

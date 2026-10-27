@@ -25,7 +25,7 @@
  * \f$ \rho \max( m , 1 ) \f$ (\f$ \rho \f$ of `setRecomputeRatio()`,
  * \f$ 1 / 4 \f$ by default) the solution is computed from scratch, else
  * each event is tested against the certificate in \f$ O( 1 ) \f$ (in
- * \f$ O( \log n ) \f$ for the forest), and by Lemma 6 of
+ * \f$ O( \log n ) \f$ for the forest), and by Lemma 7 of
  * \ref theory_graph_dynamic the events all harmless prove the solution
  * still optimal. The warm start of the maximum flow from the flow there is,
  * when an edge of the minimum cut grows, is one that the maximum flow of
@@ -141,7 +141,7 @@ concept Reoptimizable = GraphObserver< R , W > &&
 
 /// the queue of the events and the counts that the observers share
 ///
-/// In pseudocode (beyond the book; Lemma 6 of \ref theory_graph_dynamic
+/// In pseudocode (beyond the book; Lemma 7 of \ref theory_graph_dynamic
 /// proves it correct), the query of every observer, with \f$ Q \f$ the
 /// queue and \f$ \rho \f$ the ratio of `setRecomputeRatio()`:
 /// \f[
@@ -339,7 +339,7 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  /// brings the forest up to date
  ///
  /// In pseudocode (beyond the book), the tests of the events \f$ P \f$
- /// coalesced against (8) of \ref theory_graph_dynamic, with \f$ F \f$ the
+ /// coalesced against (9) of \ref theory_graph_dynamic, with \f$ F \f$ the
  /// forest and \f$ \rho \f$ the replacements:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
@@ -484,7 +484,7 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
  /// brings the flow up to date
  ///
  /// In pseudocode (beyond the book), the tests of the events \f$ P \f$
- /// coalesced against the minimum cut \f$ S \f$ (by Theorem 4 of
+ /// coalesced against the minimum cut \f$ S \f$ (by Theorem 5 of
  /// \ref theory_graph_flow):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
