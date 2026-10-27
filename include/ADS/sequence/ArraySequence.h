@@ -2,40 +2,41 @@
 /*-------------------------- File ArraySequence.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * A SEQUENCE [see ADT.h] realized with a vector: the position of an item
- * is its index, \f$ pos_i = i \f$, with \f$ pos_{-1} = -1 \f$ and
- * \f$ pos_n = n \f$. Moving along the sequence, reading and writing take
- * O( 1 ) time, while insert() and remove() take O( n ) time, since the
- * items after the position move by one place; inserting at the end takes
- * O( 1 ) amortized time, since a full vector is replaced by one of twice
- * its size. If the i-th insertion costs \f$ c_i = i \f$ when it finds the
- * vector full, i.e., when \f$ i = 2^k + 1 \f$, and 1 otherwise, then n
- * insertions cost
+ * A SEQUENCE [see `ADT.h`] realized with a vector: the position of an item is
+ * its index, \f$ \mathit{pos}_i = i \f$, with \f$ \mathit{pos}_{-1} = -1 \f$
+ * and \f$ \mathit{pos}_n = n \f$. Moving along the sequence, reading and
+ * writing take \f$ O( 1 ) \f$ time, while `insert()` and `remove()` take
+ * \f$ O( n ) \f$ time, since the items after the position move by one place;
+ * inserting at the end takes \f$ O( 1 ) \f$ amortized time, since a full
+ * vector is replaced by one of twice its size. If the \f$ i \f$-th insertion
+ * costs \f$ c_i = i \f$ when it finds the vector full, i.e., when
+ * \f$ i = 2^k + 1 \f$, and 1 otherwise, then \f$ n \f$ insertions cost
  * \f[
  *   C( n ) = \sum_{i=1}^n c_i \leq n + \sum_{k=0}^{\lfloor \log_2 n \rfloor}
  *            2^k \leq n + 2^{\lfloor \log_2 n \rfloor + 1} - 1 \leq 3 n \; ,
  * \f]
- * whereas growing the vector by a constant d makes them cost
- * \f$ \Theta( n^2 ) \f$. Symmetrically, a vector that remove() leaves
- * with \f$ n \leq capacity / 4 \f$ is replaced by one of half its size,
- * so that the space stays O( n ) and any sequence of insertions and
- * removals costs O( 1 ) amortized time each: after a resize the vector is
- * half full, and \f$ \Omega( capacity ) \f$ operations must come before
- * the next one. The empty sequence has no vector, also when remove()
- * empties it, the first insertion makes one of one place, and moving a
- * sequence takes its vector in O( 1 ) time, leaving the one moved from
- * empty.
+ * whereas growing the vector by a constant \f$ d \f$ makes them cost
+ * \f$ \Theta( n^2 ) \f$. Symmetrically, a vector that `remove()` leaves with
+ * \f$ n \leq c / 4 \f$, \f$ c \f$ its capacity, is replaced by one of half
+ * its size, so that the space stays \f$ O( n ) \f$ and any sequence of
+ * insertions and removals costs \f$ O( 1 ) \f$ amortized time each: after a
+ * resize the vector is half full, and \f$ \Omega( c ) \f$ operations must
+ * come before the next one. The empty sequence has no vector, also when
+ * `remove()` empties it, the first insertion makes one of one place, and
+ * moving a sequence takes its vector in \f$ O( 1 ) \f$ time, leaving the one
+ * moved from empty.
  *
- * The contracts [see Contract.h]: a position is an index from -1 to n;
- * next() needs one from -1 to n - 1 and prev() one from 0 to n, since
- * there is nothing after \f$ pos_n \f$ nor before \f$ pos_{-1} \f$;
- * insert() needs one from 0 to n, and read(), write() and remove() one
- * that holds an item, from 0 to n - 1. insert() and write() ensure that v
- * is read back in its place, and that the other items are where they were
- * (or one place on, after the insertion), the latter costing O( n ) and
- * therefore an audit; remove() likewise. The invariant is that the n items
- * fit in the vector, \f$ 0 \leq n \leq capacity \f$. The operations are
- * defined in ArraySequence.tpp.
+ * The contracts [see `Contract.h`]: a position is an index from -1 to
+ * \f$ n \f$; `next()` needs one from -1 to \f$ n - 1 \f$ and `prev()` one
+ * from 0 to \f$ n \f$, since there is nothing after \f$ \mathit{pos}_n \f$
+ * nor before \f$ \mathit{pos}_{-1} \f$; `insert()` needs one from 0 to
+ * \f$ n \f$, and `read()`, `write()` and `remove()` one that holds an item,
+ * from 0 to \f$ n - 1 \f$. `insert()` and `write()` ensure that \f$ v \f$ is
+ * read back in its place, and that the other items are where they were (or
+ * one place on, after the insertion), the latter costing \f$ O( n ) \f$ and
+ * therefore an audit; `remove()` likewise. The invariant is that the
+ * \f$ n \f$ items fit in the vector, \f$ 0 \leq n \leq c \f$. The operations
+ * are defined in `ArraySequence.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.2, 4.2.1
  *      and 4.5,
@@ -46,7 +47,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -88,7 +89,7 @@ class ArraySequence {
  public:
 
  using Item = T;   ///< the type of the items
- using Pos = long; ///< a position is an index, from -1 to n
+ using Pos = long; ///< a position is an index, from -1 to \f$ n \f$
 
  /// the empty sequence, with no vector
  ArraySequence( void );
@@ -100,61 +101,101 @@ class ArraySequence {
  template< std::input_iterator I , std::sentinel_for< I > S >
  ArraySequence( I first , S last );
 
+ /// a copy of `other`
  ArraySequence( const ArraySequence & other );
 
- /// the items of other, which is left empty
+ /// the items of `other`, which is left empty
  ArraySequence( ArraySequence && other ) noexcept;
 
+ /// the items of `other`, by copy and swap
  ArraySequence & operator=( ArraySequence other ) noexcept;
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- THE SEQUENCE ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+ /// true if there is no item, i.e., \f$ n = 0 \f$
  [[nodiscard]] bool empty( void ) const;
 
- /// true if p is -1 or n
+ /// true if \f$ p \f$ is -1 or \f$ n \f$
  [[nodiscard]] bool finished( Pos p ) const;
 
+ /// the position of the first item, 0
  [[nodiscard]] Pos head( void ) const;
 
+ /// the position of the last item, \f$ n - 1 \f$
  [[nodiscard]] Pos tail( void ) const;
 
- /// \pre -1 <= p < n
+ /// the position \f$ p + 1 \f$
+ /// \pre \f$ -1 \le p < n \f$
  [[nodiscard]] Pos next( Pos p ) const;
 
- /// \pre 0 <= p <= n
+ /// the position \f$ p - 1 \f$
+ /// \pre \f$ 0 \le p \le n \f$
  [[nodiscard]] Pos prev( Pos p ) const;
 
- /// puts v at index p, the items from index p moving one place on, which
- /// takes O( n - p ) time, O( 1 ) amortized at the end
- /// \pre 0 <= p <= n
- /// \post one item more, v at index p, the others where they were before
- ///       p and one place on from p (an audit)
+ /// puts \f$ v \f$ at the index \f$ p \f$, the items from the index
+ /// \f$ p \f$ moving one place on, which takes \f$ O( n - p ) \f$ time,
+ /// \f$ O( 1 ) \f$ amortized at the end
+ ///
+ /// In pseudocode (sections 4.2 and 4.2.1), \f$ A[ 0 .. c - 1 ] \f$ the
+ /// vector of capacity \f$ c \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{insert}( p , v ) \cr
+ /// 2 & \quad \textbf{if}\ n = c\ \textbf{then}\ \mathrm{resize}( \max( 2 c ,
+ ///     1 ) )\quad \triangleright\ \text{full: twice the size} \cr
+ /// 3 & \quad \textbf{for}\ i \gets n\ \textbf{downto}\ p + 1\ \textbf{do}
+ ///     \ A[ i ] \gets A[ i - 1 ] \cr
+ /// 4 & \quad A[ p ] \gets v;\ n \gets n + 1 \cr
+ /// 5 & \quad \textbf{return}\ p
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 0 \le p \le n \f$
+ /// \post one item more, \f$ v \f$ at the index \f$ p \f$, the others where
+ ///       they were before \f$ p \f$ and one place on from \f$ p \f$ (an
+ ///       audit)
  Pos insert( Pos p , const T & v );
 
- /// removes the item at index p, the following ones moving one place back;
- /// a vector left a quarter full is halved
- /// \pre 0 <= p < n
- /// \post one item less, the others where they were before p and one place
- ///       back after it (an audit)
+ /// removes the item at the index \f$ p \f$, the following ones moving one
+ /// place back; a vector left a quarter full is halved
+ ///
+ /// In pseudocode (sections 4.2 and 4.2.1), the halving at a quarter keeping
+ /// \f$ O( 1 ) \f$ amortized time per operation:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{remove}( p ) \cr
+ /// 2 & \quad \textbf{for}\ i \gets p\ \textbf{to}\ n - 2\ \textbf{do}
+ ///     \ A[ i ] \gets A[ i + 1 ] \cr
+ /// 3 & \quad n \gets n - 1 \cr
+ /// 4 & \quad \textbf{if}\ n \le c / 4\ \textbf{then}\ \mathrm{resize}(
+ ///     c / 2 )\quad \triangleright\ \text{no vector if } n = 0 \cr
+ /// 5 & \quad \textbf{return}\ p
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 0 \le p < n \f$
+ /// \post one item less, the others where they were before \f$ p \f$ and one
+ ///       place back after it (an audit)
  Pos remove( Pos p );
 
- /// \pre 0 <= p < n
+ /// the item at the index \f$ p \f$
+ /// \pre \f$ 0 \le p < n \f$
  [[nodiscard]] const T & read( Pos p ) const;
 
- /// \pre 0 <= p < n
- /// \post read( p ) is v, the other items unchanged (an audit)
+ /// writes \f$ v \f$ at the index \f$ p \f$
+ /// \pre \f$ 0 \le p < n \f$
+ /// \post `read( p )` is \f$ v \f$, the other items unchanged (an audit)
  void write( Pos p , const T & v );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- BEYOND THE BOOK -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
- /// the number of items
+ /// the number of items, \f$ n \f$
  [[nodiscard]] Pos size( void ) const;
 
- /// the size of the vector, which the analysis of the doubling is about
+ /// the size \f$ c \f$ of the vector, which the analysis of the doubling
+ /// is about
  [[nodiscard]] Pos capacity( void ) const;
 
  /// the same items in the same order
@@ -166,47 +207,74 @@ class ArraySequence {
  // algorithm of the standard library and of Boost applies; a change made
  // through them bypasses the audits of write()
 
+ /// the type of the items
  using value_type = T;
+ /// the type of the sizes
  using size_type = std::size_t;
+ /// the type of the distances
  using difference_type = std::ptrdiff_t;
+ /// a reference to an item
  using reference = T &;
+ /// a constant reference to an item
  using const_reference = const T &;
+ /// a pointer to an item
  using pointer = T *;
+ /// a constant pointer to an item
  using const_pointer = const T *;
+ /// the iterator on the items
  using iterator = T *;
+ /// the iterator on the constant items
  using const_iterator = const T *;
+ /// the iterator on the items, backwards
  using reverse_iterator = std::reverse_iterator< iterator >;
+ /// the iterator on the constant items, backwards
  using const_reverse_iterator = std::reverse_iterator< const_iterator >;
 
+ /// the iterator on the first item
  [[nodiscard]] iterator begin( void ) { return( f_A.get() ); }
+ /// the iterator past the last item
  [[nodiscard]] iterator end( void ) { return( f_A.get() + f_size ); }
+ /// the constant iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const { return( f_A.get() ); }
+ /// the constant iterator past the last item
  [[nodiscard]] const_iterator end( void ) const {
   return( f_A.get() + f_size );
   }
+ /// the constant iterator on the first item
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ /// the constant iterator past the last item
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+ /// the iterator on the last item, backwards
  [[nodiscard]] reverse_iterator rbegin( void ) {
   return( reverse_iterator( end() ) );
   }
+ /// the iterator before the first item, backwards
  [[nodiscard]] reverse_iterator rend( void ) {
   return( reverse_iterator( begin() ) );
   }
+ /// the constant iterator on the last item, backwards
  [[nodiscard]] const_reverse_iterator rbegin( void ) const {
   return( const_reverse_iterator( end() ) );
   }
+ /// the constant iterator before the first item, backwards
  [[nodiscard]] const_reverse_iterator rend( void ) const {
   return( const_reverse_iterator( begin() ) );
   }
 
+ /// the vector of the items
  [[nodiscard]] T * data( void ) { return( f_A.get() ); }
+ /// the vector of the items, constant
  [[nodiscard]] const T * data( void ) const { return( f_A.get() ); }
 
- /// \pre 0 <= i < n
+ /// the item at the index \f$ i \f$
+ /// \pre \f$ 0 \le i < n \f$
  [[nodiscard]] T & operator[]( Pos i );
+
+ /// the item at the index \f$ i \f$, constant
+ /// \pre \f$ 0 \le i < n \f$
  [[nodiscard]] const T & operator[]( Pos i ) const;
 
- /// v at the end, for std::back_inserter
+ /// \f$ v \f$ at the end, for `std::back_inserter`
  void push_back( const T & v );
 
 /*--------------------------------------------------------------------------*/
@@ -215,11 +283,12 @@ class ArraySequence {
  /// the items fit in the vector
  [[nodiscard]] bool fits( void ) const;
 
- /// the k items of o from index i are those of this sequence from index j
+ /// the \f$ k \f$ items of `o` from the index \f$ i \f$ are those of this
+ /// sequence from the index \f$ j \f$
  [[nodiscard]] bool same( const ArraySequence & o , Pos i , Pos j ,
                           Pos k ) const;
 
- /// replaces the vector with one of c places
+ /// replaces the vector with one of \f$ c \f$ places
  void resize( Pos c );
 
  std::unique_ptr< T[] > f_A;   ///< the vector

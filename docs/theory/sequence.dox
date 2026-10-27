@@ -1,0 +1,392 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File sequence.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_sequence */
+/** \defgroup theory_sequence Theory of sequences and lists
+ \ingroup area_sequence
+
+ \details The headers of `include/ADS/sequence` realize the SEQUENCE of
+ section 3.2.1 of the book and the LIST of chapter 4, i.e., a vector that
+ doubles and halves (section 4.2), the bidirectional circular list with a
+ sentinel (section 4.1), the singly linked list of exercise 4.6, the lists
+ with cursors in one vector, and, beyond the book, a vector with room for a
+ few items inside itself and the tiered vector of Goodrich and Kloss; next to
+ them are the algorithms that work on a sequence through its positions (the
+ searches, the natural merge sort, the merge) or on a vector in place (the
+ partition into three classes and a few other rearrangements). This page
+ collects the definitions and the notation that the headers share (see
+ \ref theory_sequence_notation), the realizations with the costs of their
+ operations (see \ref theory_sequence_repr), the amortized analysis of the
+ vectors that change their size (see \ref theory_sequence_amortized), and,
+ for the algorithms, the property on which each is correct and the argument
+ behind its bound (see \ref theory_sequence_sort and
+ \ref theory_sequence_rearr). The pseudocode of each operation and of each
+ algorithm is on the page of its header, in the comment of its function,
+ together with the section of the book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_sequence_notation Definitions and notation
+
+ A <em>sequence</em> \f$ s = s_0 , s_1 , \ldots , s_{n-1} \f$ is a finite
+ list of \f$ n \ge 0 \f$ items, possibly repeated, in which the order matters;
+ the SEQUENCE of the book (see \ref theory_ADS_adt, and the concept
+ `Sequence` of `ADT.h`) reaches its items through <em>positions</em>, values
+ of a type `Pos` that the realization chooses, rather than through indices.
+ The position \f$ \mathit{pos}_i \f$ leads to \f$ s_i \f$ for
+ \f$ 0 \le i < n \f$, and two more positions, \f$ \mathit{pos}_{-1} \f$ and
+ \f$ \mathit{pos}_n \f$, stand before the first item and after the last one,
+ so that a scan reads
+ \f[
+   p \gets \mathrm{head}();\ \textbf{while not}\ \mathrm{finished}( p )
+   \ \textbf{do}\ \ldots\ \mathrm{read}( p ) \ldots ;\ p \gets \mathrm{next}( p
+   ) . \tag{1}
+ \f]
+ What a position is decides the cost of each operation: an index costs
+ nothing to move along but makes an insertion shift the items after it,
+ while a pointer to a cell makes an insertion change two links but gives no
+ access by index. A <em>run</em> of a sequence is a maximal stretch of
+ consecutive items in nondecreasing order, and a sequence of \f$ r \f$ runs
+ has \f$ r - 1 \f$ descents, i.e., places with \f$ s_{i+1} < s_i \f$.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$, \f$ s_i \f$</td>
+     <td>the number of items, and the item of index \f$ i \f$,
+         \f$ 0 \le i < n \f$</td></tr>
+ <tr><td>\f$ \mathit{pos}_i \f$</td>
+     <td>the position of \f$ s_i \f$, and \f$ \mathit{pos}_{-1} \f$,
+         \f$ \mathit{pos}_n \f$ those before the first item and after the
+         last one, on which <tt>finished()</tt> is true</td></tr>
+ <tr><td>\f$ c \f$</td>
+     <td>the capacity of a vector, the number of items it has room
+         for</td></tr>
+ <tr><td>\f$ \alpha = n / c \f$</td>
+     <td>the load of a vector</td></tr>
+ <tr><td>\f$ \Phi \f$</td>
+     <td>a potential, a function of the state of a structure that pays for
+         its dear operations</td></tr>
+ <tr><td>\f$ b \f$</td>
+     <td>the number of places of a block of the tiered vector, a power of
+         2</td></tr>
+ <tr><td>\f$ r \f$</td>
+     <td>the number of runs of a sequence</td></tr>
+ <tr><td>\f$ A[ 0 .. n - 1 ] \f$</td>
+     <td>a vector of the C++ code, indexed from 0, and \f$ A[ i .. j ) \f$
+         its places from \f$ i \f$ to \f$ j - 1 \f$</td></tr>
+ </table>
+
+ \section theory_sequence_repr Realizations and their costs
+
+ The library has six realizations of a sequence, four of which have the
+ positions of the book and model `Sequence`, while the other two are vectors
+ with access by index only.
+
+ <table>
+ <caption>The realizations of a sequence and the cost of their operations
+          (sections 4.1 and 4.2 of the book, exercise 4.6)</caption>
+ <tr><th>Realization</th><th>Position</th><th>Space</th>
+     <th><tt>read()</tt>, <tt>next()</tt></th><th><tt>prev()</tt>,
+     <tt>tail()</tt></th><th><tt>insert()</tt>, <tt>remove()</tt></th>
+     <th>access by index</th></tr>
+ <tr><td><tt>ArraySequence</tt></td><td>the index</td>
+     <td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( n - i ) \f$, \f$ O( 1 ) \f$
+     amortized at the end</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>List</tt></td><td>the cell of the item</td>
+     <td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( i ) \f$ by a scan</td></tr>
+ <tr><td><tt>SinglyList</tt></td><td>the cell before the item</td>
+     <td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( n ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( i ) \f$ by a scan</td></tr>
+ <tr><td><tt>CursorList</tt></td><td>the cursor of the cell before the
+     item</td><td>\f$ \Theta( n ) \f$, shared by the lists of a space</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( n ) \f$</td>
+     <td>\f$ O( 1 ) \f$ amortized</td><td>\f$ O( i ) \f$ by a scan</td></tr>
+ <tr><td><tt>SmallVector</tt></td><td>none</td>
+     <td>\f$ O( n + N ) \f$</td><td>none</td><td>none</td>
+     <td>\f$ O( 1 ) \f$ amortized at the end</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>TieredVector</tt></td><td>none</td>
+     <td>\f$ n + O( \sqrt{n} ) \f$</td><td>none</td><td>none</td>
+     <td>\f$ O( \sqrt{n} ) \f$ amortized anywhere</td>
+     <td>\f$ O( 1 ) \f$</td></tr>
+ </table>
+
+ An insertion in a vector at the index \f$ i \f$ moves the \f$ n - i \f$
+ items after it one place on, and a removal moves them back; hence the
+ vector is preferable when the sequence is mostly read, by index or in
+ order, and changed at its end, and its items are contiguous, which makes a
+ scan read the memory forward. A list changes in \f$ O( 1 ) \f$ time at any
+ position it holds, since an insertion allocates a cell and changes the
+ links of its two neighbors, but it has no access by index, and a scan
+ follows pointers that may be scattered in memory; the cells of `List` and
+ of `SinglyList` come therefore from a pool, so that the cells made one
+ after another are next to each other.
+
+ <em>Lemma 1 (the position before the item).</em> In a list whose cells
+ have a link to the next one only, an insertion before \f$ s_i \f$ and the
+ removal of \f$ s_i \f$ change the link of the cell of \f$ s_{i-1} \f$ (or
+ the link to the first cell, for \f$ i = 0 \f$); with
+ \f$ \mathit{pos}_i \f$ the cell of \f$ s_{i-1} \f$, and nil for
+ \f$ i = 0 \f$, both take \f$ O( 1 ) \f$ time, while `prev()` and `tail()`
+ take \f$ \Theta( n ) \f$ in the worst case.
+
+ Indeed, the link to change is the one that points to the cell of
+ \f$ s_i \f$, which is in the cell before it, and no link leads from a cell
+ back to its predecessor; a position that held the cell of \f$ s_i \f$ itself
+ would force a scan from the head to find it, i.e., \f$ \Theta( i ) \f$
+ time. With the position before the item, the scan is needed only to go
+ backwards, i.e., by `prev()` and by `tail()`, which is the convention of the
+ realizations with pointers and with cursors of Aho, Hopcroft and Ullman.
+ `SinglyList` and `CursorList` follow it, with \f$ \mathit{pos}_n \f$ the
+ last cell; after `insert( p , v )` the new item has the position \f$ p \f$,
+ and after `remove( p )` its successor has it. The bidirectional list
+ `List` keeps instead both links in each cell and a sentinel, a cell with no
+ item that is the predecessor of the first cell and the successor of the
+ last one: every cell has then both neighbors, and the insertion and the
+ removal have no special case for the empty list or for the ends, the
+ sentinel being \f$ \mathit{pos}_{-1} \f$ and \f$ \mathit{pos}_n \f$ at once.
+
+ A list with <em>cursors</em> (`CursorList`) keeps its cells in a vector,
+ shared by several lists, the link of a cell being the index of the next one
+ and 0 being nil; the free cells form one more list in the same vector, the
+ free list, from which `take()` removes its first cell and to which `give()`
+ returns a cell, each in \f$ O( 1 ) \f$ time. When the free list is empty the
+ vector doubles, which costs \f$ O( 1 ) \f$ amortized by Lemma 2 below, and
+ the cursors stay valid, since an index does not change when the vector is
+ moved, while a pointer would.
+
+ \section theory_sequence_amortized Vectors that change their size
+
+ A vector of capacity \f$ c \f$ holds \f$ n \le c \f$ items; when an
+ insertion finds it full it is replaced by one of capacity \f$ 2 c \f$, and
+ the \f$ n \f$ items are moved there, which costs \f$ \Theta( n ) \f$. The
+ cost of a single insertion is therefore \f$ \Theta( n ) \f$ in the worst
+ case, but that of a sequence of operations is linear in their number.
+
+ <em>Lemma 2 (the doubling, section 4.2.1).</em> Starting from the empty
+ vector, \f$ n \f$ insertions at the end cost in all
+ \f[
+   C( n ) = \sum_{i=1}^n c_i \le n + \sum_{k=0}^{\lfloor \log_2 n \rfloor}
+            2^k \le n + 2^{\lfloor \log_2 n \rfloor + 1} - 1 \le 3 n ,
+   \tag{2}
+ \f]
+ with \f$ c_i = i \f$ when the \f$ i \f$-th insertion finds the vector full,
+ i.e., when \f$ i - 1 \f$ is a power of 2, and \f$ c_i = 1 \f$ otherwise.
+
+ The bound (2) is the sum of the moves of the doublings, each a power of 2
+ up to \f$ n \f$, and of one write per insertion; hence an insertion at the
+ end costs \f$ O( 1 ) \f$ amortized. Growing the vector by a constant
+ \f$ d \f$ instead of doubling it gives a resize every \f$ d \f$
+ insertions, the \f$ k \f$-th one moving \f$ k d \f$ items, i.e.,
+ \f$ \Theta( n^2 / d ) \f$ in all, which is quadratic.
+
+ A vector that only grows keeps the space of its largest size. To keep the
+ space \f$ O( n ) \f$, `ArraySequence` halves its capacity when a removal
+ leaves it with \f$ n \le c / 4 \f$ items (halving it at \f$ n = c / 2 \f$
+ would make an insertion and a removal around that size each cost
+ \f$ \Theta( n ) \f$, a resize every time).
+
+ <em>Lemma 3 (the doubling and the halving).</em> Any sequence of insertions
+ and removals at the end of a vector that doubles when it is full and halves
+ when it is a quarter full costs \f$ O( 1 ) \f$ amortized time per operation.
+
+ Indeed, let the potential be
+ \f[
+   \Phi = \begin{cases} 2 n - c & \text{if } \alpha \ge 1 / 2 , \cr
+                        c / 2 - n & \text{if } \alpha < 1 / 2 ,
+          \end{cases} \tag{3}
+ \f]
+ which is never negative and is 0 when the vector is half full. An operation
+ that does not resize changes \f$ n \f$ by 1 and \f$ \Phi \f$ by at most 2,
+ i.e., its amortized cost, its cost plus the change of \f$ \Phi \f$, is at
+ most 3. A doubling happens at \f$ n = c \f$, where \f$ \Phi = n \f$, and a
+ halving at \f$ n = c / 4 \f$, where \f$ \Phi = c / 4 = n \f$: in both cases
+ the \f$ n \f$ moves are paid by the potential, which falls to \f$ O( 1 ) \f$
+ (Cormen, Leiserson, Rivest and Stein, section 17.4, after Tarjan).
+ `CursorSpace` grows in the same way, and `SmallVector` doubles once its
+ \f$ N \f$ inner places are full, so that \f$ n \f$ insertions move fewer than
+ \f$ 2 n \f$ items and the space is at most \f$ 2 n + N \f$ items.
+
+ The tiered vector of Goodrich and Kloss trades the access in
+ \f$ O( 1 ) \f$ of a vector for an insertion and a removal at any index in
+ \f$ O( \sqrt{n} ) \f$. Its items are in blocks of \f$ b \f$ places, each a
+ circular buffer with the offset of its first item, all full but the last
+ one; the item of index \f$ i \f$ is the item \f$ i \bmod b \f$ of the block
+ \f$ \lfloor i / b \rfloor \f$, i.e., with \f$ b \f$ a power of 2, a shift
+ and a mask, and inside the block it is at the place
+ \f$ ( \mathit{off} + i ) \bmod b \f$.
+
+ <em>Lemma 4 (the tiered vector).</em> An insertion or a removal at the index
+ \f$ i \f$ moves \f$ O( b + n / b ) \f$ items, i.e., \f$ O( \sqrt{n} ) \f$
+ with \f$ b = \Theta( \sqrt{n} ) \f$, and keeping \f$ b \f$ the least power of
+ 2 not below \f$ \sqrt{n} \f$, by a rebuild in \f$ O( n ) \f$ when \f$ n \f$
+ leaves \f$ [ b^2 / 4 , 4 b^2 ] \f$, costs \f$ O( 1 ) \f$ amortized per
+ operation.
+
+ Indeed, an insertion moves by one place the items of its block after
+ \f$ i \f$, fewer than \f$ b \f$, and then, from the last block back to the
+ block after that of \f$ i \f$, the last item of each block to the front of
+ the next one; the front of a circular buffer moves by decreasing its
+ offset, i.e., in \f$ O( 1 ) \f$, and there are at most \f$ n / b + 1 \f$
+ blocks. A removal does the converse. Right after a rebuild \f$ b \f$ is
+ the least power of 2 with \f$ b^2 \ge n \f$, i.e.,
+ \f$ b^2 / 4 < n \le b^2 \f$, and the rebuilds that \f$ n \f$ crossing a
+ bound triggers leave \f$ n \f$ about \f$ b^2 \f$ for the new \f$ b \f$; the
+ next rebuild needs \f$ n \f$ to grow to \f$ 4 b^2 \f$ or to fall to
+ \f$ b^2 / 4 \f$, i.e., \f$ \Omega( n ) \f$ operations, which pay for its
+ \f$ O( n ) \f$ moves. The space is that of the \f$ n \f$ items and of at
+ most one block not full, i.e., \f$ n + O( \sqrt{n} ) \f$.
+
+ \section theory_sequence_sort Searching, merging and sorting a sequence
+
+ The algorithms of `SequenceAlgorithms.h` use only the operations of the
+ SEQUENCE, so that they run on every realization, with the cost of a scan
+ (1), i.e., \f$ \Theta( n ) \f$ calls of `next()` and `read()`. A search for
+ an item compares it with the items in order, \f$ n \f$ comparisons when it
+ misses; on a sorted sequence it may stop at the first larger item, but
+ the comparisons stay \f$ \Theta( n ) \f$ in the worst case, since the
+ positions give no access in the middle (the binary search of the vectors
+ needs the access by index).
+ The merge of two sorted sequences of lengths \f$ n_1 \f$ and \f$ n_2 \f$
+ appends at each step the smaller of their first items not yet taken, the
+ one of the first sequence among equals, i.e., it is stable and makes at most
+ \f$ n_1 + n_2 - 1 \f$ comparisons.
+
+ <em>Lemma 5 (the natural merge sort).</em> A pass that distributes the
+ runs of a sequence alternately to two sequences and merges them in pairs
+ leaves at most \f$ \lceil r / 2 \rceil \f$ runs; hence the sort of a
+ sequence of \f$ r \f$ runs makes \f$ \lceil \log_2 r \rceil \f$ passes and
+ costs \f$ O( n \log r ) \f$, i.e., \f$ O( n \log n ) \f$ in the worst case
+ and \f$ \Theta( n ) \f$ on a sorted sequence, which one scan finds to be a
+ single run.
+
+ Indeed, the merge of two sorted runs is a sorted stretch, and two runs that
+ go to the same sequence one after another may only join into one; the
+ \f$ j \f$-th pair of the merge therefore covers the runs \f$ 2 j - 1 \f$ and
+ \f$ 2 j \f$ of the pass, and gives one run or part of one. Each pass costs
+ \f$ \Theta( n ) \f$ reads and writes. The bound adapts to the order already
+ present, as \f$ \log r \f$ falls from \f$ \log n \f$ to 0. It is also
+ optimal up to a constant factor in the worst case for a given \f$ r \f$:
+ the permutations whose runs have the lengths
+ \f$ \ell_1 , \ldots , \ell_r \f$ are at most
+ \f$ n! / ( \ell_1! \cdots \ell_r! ) \f$, whose logarithm is at most
+ \f$ n \log_2 r \f$ and is \f$ \Omega( n \log r ) \f$ when the runs are
+ of equal lengths, and a sort by comparisons must tell them apart (McIlroy).
+ The bubble sort, instead, swaps
+ adjacent items out of order until a pass has no swap; each swap removes one
+ inversion, and the passes are at most \f$ n \f$, i.e.,
+ \f$ O( n^2 ) \f$ comparisons and swaps.
+
+ `listSort()` of `ListSort.h` sorts a `List` by relinking its cells, so
+ that no item is copied and the positions stay on their items. It cuts the
+ list into its runs, reversing those strictly decreasing (strictly, so that
+ the sort stays stable), and merges them as a binary counter: the place
+ \f$ k \f$ of an array holds the merge of \f$ 2^k \f$ runs or nothing, and a
+ new run is merged with the places \f$ 0 , 1 , \ldots \f$ while they are
+ full, as a carry propagates. Each run takes part in at most
+ \f$ \lceil \log_2 r \rceil + 1 \f$ merges, which gives
+ \f$ O( n \log r ) \f$ comparisons and \f$ n - 1 \f$ on a sorted or a
+ reversed list, in \f$ O( 1 ) \f$ space beyond the array of 64 places. On
+ the numbers in their natural order it uses instead the radix sort on the
+ pairs (key, cell), in \f$ O( n ) \f$ time and space, since a merge sort
+ walks the scattered cells \f$ \log r \f$ times and misses the cache at each
+ of them.
+
+ \section theory_sequence_rearr Rearrangements in place
+
+ The functions of `Rearrangements.h` reorder a vector \f$ A[ 0 .. n - 1 ] \f$
+ by swaps, or with a buffer much smaller than \f$ n \f$.
+
+ <em>Lemma 6 (the Dutch national flag, Dijkstra).</em> With the indices
+ \f$ i \le j \le k \f$, the invariant
+ \f[
+   A[ 0 .. i ) \text{ of color 0} , \quad A[ i .. j ) \text{ of color 1} ,
+   \quad A[ j .. k ) \text{ not examined} , \quad A[ k .. n )
+   \text{ of color 2} \tag{4}
+ \f]
+ holds at the start with \f$ i = j = 0 \f$ and \f$ k = n \f$ and is kept by
+ a step that examines \f$ A[ j ] \f$; hence the items are partitioned by
+ color after \f$ n \f$ steps, with \f$ n \f$ reads of a color and at most
+ \f$ n \f$ swaps.
+
+ Indeed, an item of color 0 is swapped with \f$ A[ i ] \f$, which is of
+ color 1 (or is \f$ A[ j ] \f$ itself), and both \f$ i \f$ and \f$ j \f$
+ grow; one of color 1 makes \f$ j \f$ grow; one of color 2 is swapped with
+ \f$ A[ k - 1 ] \f$, not examined yet, and \f$ k \f$ falls. Each step makes
+ the stretch not examined one shorter, and swaps at most once. It is the
+ partition of the quicksort with three ways, the keys smaller than, equal to
+ and larger than the pivot being the three colors.
+
+ The alternating order \f$ A[ 0 ] \le A[ 1 ] \ge A[ 2 ] \le A[ 3 ] \ge \cdots
+ \f$ takes one pass of \f$ n - 1 \f$ comparisons (`wiggleSort()`): if
+ \f$ A[ 0 .. i ] \f$ alternates and \f$ A[ i ] \f$ and \f$ A[ i + 1 ] \f$ are
+ in the wrong order, their swap keeps the order of \f$ A[ i - 1 ] \f$ and
+ \f$ A[ i ] \f$, by transitivity (e.g., for an odd \f$ i \f$ with
+ \f$ A[ i - 1 ] \le A[ i ] < A[ i + 1 ] \f$, the swap puts at the place
+ \f$ i \f$ the larger \f$ A[ i + 1 ] \f$, which is still at least
+ \f$ A[ i - 1 ] \f$).
+
+ A vector is \f$ k \f$-<em>sorted</em> when each item is at most \f$ k \f$
+ places away from its place in the sorted order; then the item of the place
+ \f$ i \f$ of the sorted order is the least of those left among
+ \f$ A[ i .. i + k ] \f$, and `sortKSorted()` keeps them in a heap of
+ \f$ k + 1 \f$ items, which gives each item in \f$ O( \log k ) \f$, i.e.,
+ \f$ O( n \log k ) \f$ in all against the \f$ O( n k ) \f$ of the insertion
+ sort. No sort by comparisons does better: the \f$ k \f$-sorted orders of
+ \f$ n \f$ items are at least \f$ ( k! )^{n / k} \f$ (the blocks of \f$ k \f$
+ places permuted independently), and a decision tree with that many leaves
+ has a height of at least
+ \f$ \log_2 ( k! )^{n / k} = \Omega( n \log k ) \f$.
+
+ Finally, the permutation that sorts distinct items splits into cycles, and
+ a swap that puts one item in its place shortens its cycle by one; a cycle
+ of \f$ k > 1 \f$ items needs therefore \f$ k - 1 \f$ swaps, and the fewest
+ swaps that sort the vector are \f$ n \f$ minus the number of cycles
+ (`minimumSwapSort()`). When a swap costs the sum of its two items, a cycle
+ of \f$ k \f$ items of sum \f$ s \f$ and least item \f$ m \f$ is sorted at
+ the least cost
+ \f[
+   \min\{ s + ( k - 2 ) m , \ s + m + ( k + 1 ) M \} , \tag{5}
+ \f]
+ \f$ M \f$ the least item of the vector: either \f$ m \f$ is swapped in turn
+ with each other item of the cycle, which takes part in one swap while
+ \f$ m \f$ takes part in \f$ k - 1 \f$, or \f$ M \f$ enters the cycle by a
+ swap with \f$ m \f$, does the same \f$ k - 1 \f$ swaps, and is swapped back
+ (Knuth, section 1.3.3, on the cycles of a permutation).
+
+ \section theory_sequence_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 3.2.1, 4.1,
+      4.2 and 4.2.1, exercise 4.6,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ \see A. V. Aho, J. E. Hopcroft, J. D. Ullman, Data Structures and
+      Algorithms, Addison-Wesley, 1983, section 2.2 (the realizations with
+      pointers and with cursors)
+ \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
+      to Algorithms, 3rd ed., MIT Press, 2009, section 17.4 (dynamic
+      tables)
+ \see R. E. Tarjan, Amortized computational complexity, SIAM Journal on
+      Algebraic Discrete Methods 6(2), 306-318, 1985, doi:10.1137/0606031
+ \see M. T. Goodrich, J. G. Kloss II, Tiered vectors: efficient dynamic
+      arrays for rank-based sequences, Algorithms and Data Structures
+      (WADS 1999), Lecture Notes in Computer Science 1663, 205-216, 1999,
+      doi:10.1007/3-540-48447-7_21
+ \see P. Bille, A. R. Christiansen, M. B. Ettienne, I. L. Gørtz, Fast
+      dynamic arrays, 25th Annual European Symposium on Algorithms (ESA
+      2017), LIPIcs 87, 16:1-16:13, 2017, doi:10.4230/LIPIcs.ESA.2017.16
+ \see P. M. McIlroy, Optimistic sorting and information theoretic
+      complexity, Proceedings of the 4th ACM-SIAM Symposium on Discrete
+      Algorithms (SODA), 467-474, 1993
+ \see E. W. Dijkstra, A Discipline of Programming, Prentice-Hall, 1976,
+      chapter 14 (the Dutch national flag)
+ \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
+      Addison-Wesley, 1997, sections 1.3.3 (the permutations) and 2.2.3
+      (the available space list)
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File sequence.dox --------------------------*/
+/*--------------------------------------------------------------------------*/
