@@ -4,12 +4,17 @@
 /** @file
  * Random numbers as Knuth treats them (chapter 3), beyond the book:
  *
- * - LinearCongruential, \f$ X_{n+1} = ( a X_n + c ) \bmod m \f$ (3.2.1),
- *   a UniformRandomBitGenerator; with the theorem of Hull and Dobell its
- *   period is m exactly when c and m are coprime, a - 1 is a multiple of
- *   every prime factor of m, and of 4 if m is; minstd() gives the
- *   multiplicative generator of Park and Miller, and mmix() that of Knuth for
- *   MMIX, \f$ m = 2^{64} \f$;
+ * - `LinearCongruential`, \f$ X_{n+1} = ( a X_n + c ) \bmod m \f$ (section
+ *   3.2.1); with the theorem of Hull and Dobell its period is \f$ m \f$
+ *   exactly when \f$ c \f$ and \f$ m \f$ are coprime, \f$ a - 1 \f$ is a
+ *   multiple of every prime factor of \f$ m \f$, and of 4 if \f$ m \f$ is;
+ *   `minstd()` gives the multiplicative generator of Park and Miller, and
+ *   `mmix()` that of Knuth for MMIX, \f$ m = 2^{64} \f$; its parameters are
+ *   values at run time, and so are `min()` and `max()`, which a
+ *   UniformRandomBitGenerator has constant: `LinearCongruentialT` is the
+ *   same generator with \f$ a , c , m \f$ fixed at compile time, which the
+ *   distributions of the standard library take, `MinStd` and `Mmix` those
+ *   of Park and Miller and of Knuth;
  * - chiSquare() and kolmogorovSmirnov() are the two general tests of 3.3.1:
  *   the statistic \f$ V = \sum ( Y_s - n p_s )^2 / ( n p_s ) \f$ of the
  *   counts in k categories, to compare with the \f$ \chi^2 \f$ distribution
@@ -107,7 +112,10 @@ class LinearCongruential {
 
  std::uint64_t operator()( void );
 
- [[nodiscard]] std::uint64_t min( void ) const { return( 0 ); }
+ /// the least number, 1 if \f$ c = 0 \f$ as in
+ /// std::linear_congruential_engine (0 is then a fixed point, which the
+ /// multiplicative generators, as minstd(), never reach), 0 otherwise
+ [[nodiscard]] std::uint64_t min( void ) const { return( f_c == 0 ); }
  [[nodiscard]] std::uint64_t max( void ) const {
   return( f_m ? f_m - 1 : std::numeric_limits< std::uint64_t >::max() );
   }
@@ -119,6 +127,46 @@ class LinearCongruential {
  private:
  std::uint64_t f_a , f_c , f_m , f_x;
  };
+
+/*--------------------------------------------------------------------------*/
+/*----------------------- CLASS LinearCongruentialT ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the generator \f$ X_{n+1} = ( a X_n + c ) \bmod m \f$ of
+/// `LinearCongruential` with \f$ a , c , m \f$ fixed at compile time,
+/// \f$ m = 0 \f$ meaning \f$ 2^{64} \f$: a UniformRandomBitGenerator, as
+/// `min()` and `max()` are constant
+template< std::uint64_t a , std::uint64_t c , std::uint64_t m >
+class LinearCongruentialT {
+ static_assert( ( m == 0 ) || ( ( a < m ) && ( c < m ) ) , "a , c < m" );
+ public:
+ using result_type = std::uint64_t;
+
+ /// \pre \f$ m = 0 \f$ or \f$ \mathit{seed} < m \f$
+ explicit constexpr LinearCongruentialT( std::uint64_t seed = 1 );
+
+ constexpr std::uint64_t operator()( void );
+
+ /// the least number, 1 if \f$ c = 0 \f$, 0 otherwise
+ static constexpr std::uint64_t min( void ) { return( c == 0 ); }
+ /// the largest number, \f$ m - 1 \f$
+ static constexpr std::uint64_t max( void ) {
+  return( m ? m - 1 : std::numeric_limits< std::uint64_t >::max() );
+  }
+
+ bool operator==( const LinearCongruentialT & ) const = default;
+
+ private:
+ std::uint64_t f_x;
+ };
+
+/// the generator of Park and Miller, \f$ a = 16807 \f$, \f$ c = 0 \f$,
+/// \f$ m = 2^{31} - 1 \f$
+using MinStd = LinearCongruentialT< 16807 , 0 , 2147483647 >;
+
+/// the generator of Knuth for MMIX, \f$ m = 2^{64} \f$
+using Mmix = LinearCongruentialT< 6364136223846793005ULL ,
+                                  1442695040888963407ULL , 0 >;
 
 /// the chi-square statistic V of the counts Y against the probabilities p
 /// over n samples

@@ -184,7 +184,8 @@ std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
   std::unordered_map< int , int > count;
   int best = 0;
   for( int k = 0 ; k < 1024 ; ++k ) {
-   const int x = uf.parent( std::int32_t( rng() % unsigned( n ) ) );
+   const int x =
+    uf.parent( std::int32_t( detail::uniformIndex( rng , unsigned( n ) ) ) );
    if( ++count[ x ] > best ) {
     best = count[ x ];
     c = x;

@@ -36,14 +36,23 @@ inline LinearCongruential LinearCongruential::mmix( std::uint64_t seed )
                              1442695040888963407ULL , 0 , seed ) );
  }
 
+namespace detail {
+
+/// ( a x + c ) mod m, m = 0 meaning 2^64
+constexpr std::uint64_t congruentialStep( std::uint64_t a , std::uint64_t c ,
+                                          std::uint64_t m , std::uint64_t x )
+{
+ if( m == 0 )                               // modulo 2^64 by overflow
+  return( a * x + c );
+ x = mulMod( a , x , m );                   // + c without overflow
+ return( x >= m - c ? x - ( m - c ) : x + c );
+ }
+
+}  // end( namespace detail )
+
 inline std::uint64_t LinearCongruential::operator()( void )
 {
- if( f_m == 0 )                             // modulo 2^64 by overflow
-  f_x = f_a * f_x + f_c;
- else {
-  f_x = mulMod( f_a , f_x , f_m );          // + c without overflow
-  f_x = f_x >= f_m - f_c ? f_x - ( f_m - f_c ) : f_x + f_c;
-  }
+ f_x = detail::congruentialStep( f_a , f_c , f_m , f_x );
  return( f_x );
  }
 
@@ -63,6 +72,21 @@ inline std::uint64_t LinearCongruential::period( std::uint64_t limit ) const
   if( lambda > limit ) return( 0 );
   }
  return( lambda );
+ }
+
+template< std::uint64_t a , std::uint64_t c , std::uint64_t m >
+constexpr LinearCongruentialT< a , c , m >::LinearCongruentialT(
+                                                       std::uint64_t seed )
+ : f_x( seed )
+{
+ ADS_PRE( ( m == 0 ) || ( seed < m ) );
+ }
+
+template< std::uint64_t a , std::uint64_t c , std::uint64_t m >
+constexpr std::uint64_t LinearCongruentialT< a , c , m >::operator()( void )
+{
+ f_x = detail::congruentialStep( a , c , m , f_x );
+ return( f_x );
  }
 
 inline double chiSquare( const std::vector< long > & Y ,
@@ -128,11 +152,57 @@ inline double spectralTest2( std::uint64_t a , std::uint64_t m )
  return( double( std::sqrt( norm( u2 , v2 ) ) ) );
  }
 
+namespace detail {
+
+/// an integer uniform in [ 0 , s ) from the generator g of the numbers in
+/// [ g.min() , g.max() ], whatever its range r + 1 = g.max() - g.min() + 1:
+/// on a full word the method of Lemire [see uniformBelow() of
+/// RandomGenerators.h], h of \f$ x s = h 2^{64} + l \f$ with the l below
+/// \f$ 2^{64} \bmod s \f$ rejected; when \f$ s \le r + 1 < 2^{64} \f$,
+/// \f$ \lfloor x / q \rfloor \f$ with \f$ q = \lfloor ( r + 1 ) / s
+/// \rfloor \f$ and the x from \f$ q s \f$ on rejected; when
+/// \f$ s > r + 1 \f$, \f$ ( r + 1 ) y + x \f$ with y uniform below
+/// \f$ \lceil s / ( r + 1 ) \rceil \f$, rejected from s on
+/// \pre s >= 1
+template< class R >
+std::uint64_t uniformIndex( R & g , std::uint64_t s )
+{
+ ADS_PRE( s >= 1 );
+ const std::uint64_t lo = std::uint64_t( g.min() ) ,
+                     r = std::uint64_t( g.max() ) - lo;
+ std::uint64_t x;
+ if( r == std::numeric_limits< std::uint64_t >::max() ) {
+  std::uint64_t l = detail::mul128( std::uint64_t( g() ) - lo , s , x );
+  if( l < s ) {                             // a rejection is possible
+   const std::uint64_t t = ( 0 - s ) % s;   // 2^64 mod s
+   while( l < t )
+    l = detail::mul128( std::uint64_t( g() ) - lo , s , x );
+   }
+  }
+ else if( r >= s - 1 ) {                    // one draw, by rejection
+  const std::uint64_t q = ( r + 1 ) / s , past = q * s;
+  do x = std::uint64_t( g() ) - lo; while( x >= past );
+  x /= q;
+  }
+ else {                                     // several draws
+  const std::uint64_t w = r + 1;
+  std::uint64_t y;
+  do {
+   y = w * uniformIndex( g , ( s - 1 ) / w + 1 );
+   x = y + ( std::uint64_t( g() ) - lo );
+   } while( ( x >= s ) || ( x < y ) );      // past s, or wrapped
+  }
+ ADS_POST( x < s );
+ return( x );
+ }
+
+}  // end( namespace detail )
+
 template< class T , class R >
 void shuffle( std::vector< T > & A , R & g )
 {
  for( std::size_t j = A.size() ; j > 1 ; --j ) {   // P2-P3
-  const std::size_t k = std::size_t( g() % j );
+  const std::size_t k = std::size_t( detail::uniformIndex( g , j ) );
   std::swap( A[ j - 1 ] , A[ k ] );
   }
  }
@@ -161,7 +231,7 @@ std::vector< T > reservoirSampling( const std::vector< T > & S ,
   if( t < n )
    res.push_back( S[ t ] );                 // the first n fill it
   else {
-   const std::size_t M = std::size_t( g() % ( t + 1 ) );
+   const std::size_t M = std::size_t( detail::uniformIndex( g , t + 1 ) );
    if( M < n ) res[ M ] = S[ t ];           // R4: replace with prob. n/t
    }
  return( res );

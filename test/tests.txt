@@ -456,14 +456,17 @@ taocp  tries                 trie e Patricia
 taocp  knuth-hashing         hashing coalescente e di Brent
 taocp  bloom-filter          filtro di Bloom
 taocp  knuth-sorts           inserzioni, radix exchange, torneo, Ford-Johnson
+taocp  ford-johnson-chain    Ford-Johnson, la catena in un albero dei ranghi
 taocp  external-sort         replacement selection e merge polifase
 taocp  threaded-tree         albero infilato
 taocp  allocators            boundary tag e buddy system
 taocp  cell-heap             garbage collector, Deutsch-Schorr-Waite
 taocp  sparse-matrix         liste ortogonali e passo di pivot
+taocp  sparse-pivot          pivot lungo le liste, Algoritmo 2.2.6S
 taocp  bitwise               trucchi sui bit, volume 4A
 taocp  generation            tuple, permutazioni, combinazioni, partizioni
 taocp  random-numbers        generatori congruenziali e test statistici
+taocp  random-ranges         estrazioni limitate da generatori stretti
 taocp  fft                   trasformata veloce di Fourier
 taocp  fft-sizes             FFT da 1 a 1024 punti, contro dft
 taocp  fft-large             FFT da 2^11 a 2^20 punti, contro radix 2
@@ -547,12 +550,14 @@ engineered_numeric  montgomery        forma di Montgomery a 64 bit
 engineered_numeric  is-prime          primalita' esatta a 64 bit
 engineered_numeric  factorize         fattori primi, rho di Pollard e Brent
 engineered_numeric  generators        xoshiro256++ e wyrand
+engineered_numeric  generator-concepts generatori standard, LinearCongruentialT
 engineered_numeric  xoshiro-alias     xoshiro256** e metodo degli alias
 engineered_numeric  philox            generatore a contatore di Philox
 engineered_numeric  ziggurat          normali ed esponenziali a ziggurat
 engineered_numeric  bounded-integers  interi limitati di Lemire
 engineered_numeric  shuffle-fast      mescolamento a gruppi di indici
 engineered_numeric  reservoir-l       campionamento con l'Algoritmo L
+engineered_numeric  reservoir-l-input Algoritmo L su iteratori di input
 engineered_numeric  dense-gemm        prodotto di matrici dense a blocchi
 engineered_numeric  csr-matrix        matrici sparse per righe compresse
 engineered_numeric  sell-matrix       matrici sparse SELL-C-sigma
@@ -1602,6 +1607,7 @@ contract_optimization change               resto, capitolo 14
 contract_optimization fractional-knapsack  zaino frazionario, capitolo 14
 contract_optimization intervals            intervalli, capitoli 13 e 14
 contract_optimization knapsack             zaino, capitolo 13
+contract_optimization table-size           tabelle di C + 1 posti, al limite
 contract_optimization sjf-weighted-intervals intervalli pesati, capitolo 13
 contract_optimization other-optimization   griglie, zaini, partizioni
 
@@ -1643,6 +1649,7 @@ contract_sort         ranges               intervalli, capitoli 2 e 12
 contract_sort         shell-gaps           Shell Sort, capitolo 12
 contract_sort         sorts                ordinamento, capitoli 2 e 12
 contract_sort         other-sorts          altri ordinamenti, casi degeneri
+contract_sort         smoothsort-orders    smoothsort agli ordini dei mucchi
 
 contract_stack        array-stack          STACK su vettore, sezione 4.3.2
 contract_stack        multistack           k pile in un vettore, oltre il libro

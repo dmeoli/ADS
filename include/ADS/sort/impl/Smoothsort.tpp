@@ -23,7 +23,7 @@ inline const std::vector< std::size_t > & leonardo( void )
 {
  static const std::vector< std::size_t > L = [] {
   std::vector< std::size_t > v = { 1 , 1 };
-  while( v.back() <= ( std::size_t( -1 ) - v[ v.size() - 2 ] - 1 ) / 1 &&
+  while( v.back() <= std::size_t( -1 ) - v[ v.size() - 2 ] - 1 &&
          v.size() < 90 )
    v.push_back( v.back() + v[ v.size() - 2 ] + 1 );
   return( v );
@@ -91,6 +91,10 @@ void smoothTrinkle( std::vector< T > & m , std::uint64_t p ,
 template< class T , class C >
 void smoothsort( std::vector< T > & A , C less )
 {
+ // the forest is a word of 64 bits, the orders from pshift up: no heap of
+ // order 64, nor larger
+ ADS_PRE( ( detail::leonardo().size() <= 64 ) ||
+          ( A.size() < detail::leonardo()[ 64 ] ) );
  const auto before = detail::auditCopy( A );
  const std::size_t size = A.size();
  if( size > 1 ) {

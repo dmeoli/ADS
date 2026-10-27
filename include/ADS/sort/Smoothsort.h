@@ -58,6 +58,8 @@
 namespace ADS {
 
 /// smoothsort
+/// \pre \f$ n < L_{64} = 34335360355129 \f$, as the forest is a word of 64
+///      bits [see Smoothsort.tpp]
 /// \post A is sorted, with the same items (an audit)
 template< class T , class C = std::less<> >
 void smoothsort( std::vector< T > & A , C less = C() );

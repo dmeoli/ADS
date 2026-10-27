@@ -77,6 +77,7 @@
 #include "ADS/Contract.h"
 #include "ADS/concurrent/ConcurrentUnionFind.h"
 #include "ADS/graph/StaticGraph.h"
+#include "ADS/numeric/RandomNumbers.h"
 #include "ADS/parallel/Executor.h"
 
 #include <algorithm>

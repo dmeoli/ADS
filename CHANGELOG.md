@@ -1530,6 +1530,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - lcsMemo() runs the recursion of the book on a stack of its own, as it
   goes m + n calls deep and exhausted the stack of the thread on strings
   of 10^6 items; the test lcs-long
+- LinearCongruential has its parameters, and so min() and max(), at run
+  time, which a UniformRandomBitGenerator has constant, so that the
+  distributions of the standard library did not take it:
+  LinearCongruentialT< a , c , m > is the same generator with static
+  constexpr min() and max(), MinStd and Mmix those of Park and Miller and
+  of Knuth; min() is 1 when c = 0, as in std::linear_congruential_engine;
+  the test generator-concepts asserts the concept for every generator
+- shuffle() and reservoirSampling() drew their indices by g() % j, biased
+  and blind to g.min(), so wrong with minstd(), whose numbers go from 1 to
+  2^31 - 2: they draw by Lemire's method on a full word and by rejection
+  on the range of g otherwise, joining draws when the range is narrower;
+  the same draws replace g() % in CarterWegmanHash, DotProductHash,
+  StringHash, the permutation of Probing and the sample of the largest
+  component of the parallel connectedComponents(); the test random-ranges;
+  universal-chaining takes 200 functions of H_{p,m} instead of 20, which
+  passed by their seeds, and bounds the longest list of each by
+  sqrt( 2 n ), as a universal class does, and on average by Theorem 8.3
+- SparseMatrix::pivot() called get() and set() on each of the |R| |C|
+  entries, each walking a row or a column: it walks the rows of the pivot
+  column once each, along with the pivot row, and keeps for each of its
+  columns the node above the current row, as Algorithm 2.2.6S, with the
+  same results bit by bit; the test sparse-pivot
+- reservoirSampleL() skipped by first += k when the sentinel is sized, which
+  an input iterator such as std::counted_iterator over a stream or a list
+  has not: it advances by std::ranges::advance(); the test
+  reservoir-l-input
+- mergeInsertionSort() found the place of each l_j by std::find on the
+  chain and inserted into a vector, O( n^2 ) moves besides the comparisons:
+  the chain is a treap of ranks, the same comparisons in
+  O( n log^2 n ) expected time; the test ford-johnson-chain
+- smoothsort() keeps its forest in a word of 64 bits, which holds no heap
+  of order 64: the precondition n < L_64 = 34335360355129 says it; the
+  test smoothsort-orders
+- optimalChange() and knapsack() computed C + 1 as a long, which
+  overflowed at the largest one: a precondition keeps the C + 1 places
+  within the largest vector; the test table-size
+- the duplicated include of <algorithm> in ConvexHull.h, CoinChange.h,
+  FractionalKnapsack.h, Intervals.h, ShortestJobFirst.h,
+  WeightedIntervals.h and Anagrams.h
 - the build with MSVC: PGMIndex, the loser tree of the multiway merge,
   prefixKeySort() and the multiple search no longer use __int128 or
   __builtin_bswap64() where the compiler lacks them, but the primitives

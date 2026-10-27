@@ -53,6 +53,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -483,6 +484,114 @@ ADS_TEST( "knuth-sorts" )
  CHECK( c <= bound );
  }
 
+/// the places of A in v sorted by merge insertion on a chain in a vector,
+/// as detail::fordJohnson() had it: the reference of its comparisons
+template< class T , class C >
+std::vector< std::size_t > chainFordJohnson( const std::vector< T > & A ,
+                                             std::vector< std::size_t > v ,
+                                             C & less )
+{
+ const std::size_t n = v.size();
+ if( n <= 1 )
+  return( v );
+ std::vector< std::size_t > large , partner( A.size() );
+ for( std::size_t i = 0 ; i + 1 < n ; i += 2 ) {
+  std::size_t a = v[ i ] , b = v[ i + 1 ];
+  if( less( A[ b ] , A[ a ] ) ) std::swap( a , b );
+  large.push_back( b );
+  partner[ b ] = a;
+  }
+ const bool odd = n % 2;
+ large = chainFordJohnson( A , large , less );
+ std::vector< std::size_t > chain;
+ chain.push_back( partner[ large[ 0 ] ] );
+ chain.insert( chain.end() , large.begin() , large.end() );
+ std::vector< std::size_t > pend;
+ for( std::size_t i = 1 ; i < large.size() ; ++i )
+  pend.push_back( partner[ large[ i ] ] );
+ if( odd ) pend.push_back( v.back() );
+ const std::size_t m = pend.size();
+ auto insert = [ & ]( std::size_t i ) {
+  const std::size_t s = pend[ i ];
+  std::size_t hi = chain.size();
+  if( i + 1 < large.size() )
+   hi = std::size_t( std::find( chain.begin() , chain.end() ,
+                                large[ i + 1 ] ) - chain.begin() );
+  std::size_t lo = 0;
+  while( lo < hi ) {
+   const std::size_t md = lo + ( hi - lo ) / 2;
+   if( less( A[ s ] , A[ chain[ md ] ] ) ) hi = md; else lo = md + 1;
+   }
+  chain.insert( chain.begin() + lo , s );
+  };
+ std::size_t prev = 1 , t = 1;
+ for( int k = 1 ; prev < m + 1 ; ++k ) {
+  t = ( ( std::size_t( 1 ) << ( k + 1 ) ) + ( k % 2 ? std::size_t( -1 ) :
+                                               std::size_t( 1 ) ) ) / 3;
+  if( t <= prev ) continue;
+  for( std::size_t j = std::min( t , m + 1 ) ; j > prev ; --j )
+   insert( j - 2 );
+  prev = t;
+  }
+ return( chain );
+ }
+
+// merge insertion with its chain in a tree of ranks against the chain in a
+// vector: the same places and the same comparisons, one by one, on every
+// permutation of up to 8 items (and the least comparisons in the worst
+// case, 0 1 3 5 7 10 13 16) and on random vectors with many equal items,
+// of 0 to 400 items; 2 10^5 items sorted, within the bound of Ford and
+// Johnson
+ADS_TEST( "ford-johnson-chain" )
+{
+ std::vector< std::pair< int , int > > trace , ref;   // the comparisons
+ auto by = [ & ]( std::vector< std::pair< int , int > > & log ) {
+  return( [ & log ]( int u , int w ) {
+   log.emplace_back( u , w );
+   return( u < w ); } );
+  };
+ const long least[] = { 0 , 0 , 1 , 3 , 5 , 7 , 10 , 13 , 16 };
+ for( int n = 0 ; n <= 8 ; ++n ) {
+  std::vector< int > p( n );
+  std::iota( p.begin() , p.end() , 0 );
+  std::vector< std::size_t > v( p.size() );
+  std::iota( v.begin() , v.end() , std::size_t( 0 ) );
+  long worst = 0;
+  do {
+   trace.clear();
+   ref.clear();
+   auto mine = by( trace ) , theirs = by( ref );
+   const auto P = detail::fordJohnson( p , v , mine );
+   CHECK( P == chainFordJohnson( p , v , theirs ) && trace == ref );
+   worst = std::max( worst , long( trace.size() ) );
+   } while( std::next_permutation( p.begin() , p.end() ) );
+  CHECK( worst == least[ n ] );
+  }
+ std::mt19937 g( 21 );
+ for( int t = 0 ; t < 200 ; ++t ) {
+  std::vector< int > A( g() % 401 );
+  const int span = 1 + int( g() % 50 );      // many equal items
+  for( auto & x : A ) x = int( g() % unsigned( span ) );
+  std::vector< std::size_t > v( A.size() );
+  std::iota( v.begin() , v.end() , std::size_t( 0 ) );
+  std::shuffle( v.begin() , v.end() , g );
+  trace.clear();
+  ref.clear();
+  auto mine = by( trace ) , theirs = by( ref );
+  const auto P = detail::fordJohnson( A , v , mine );
+  CHECK( P == chainFordJohnson( A , v , theirs ) && trace == ref );
+  }
+ std::vector< int > B( 200000 );
+ for( auto & x : B ) x = int( g() );
+ auto S = B;
+ long c = 0;
+ mergeInsertionSort( B , [ & ]( int u , int w ) {
+  c += ! checkingContract();
+  return( u < w ); } );
+ std::sort( S.begin() , S.end() );
+ CHECK( B == S && c <= fordJohnsonBound( B.size() ) );
+ }
+
 // the external sort: runs of about 2 M by replacement selection on random
 // input and a single run on a sorted one, the polyphase merge on 3 to 6
 // tapes, fewer phases with more tapes; a decreasing input (runs of M), M
@@ -768,6 +877,107 @@ ADS_TEST( "sparse-matrix" )
  CHECK_THROWS( Z.col( 4 ) , contract_violation );
  }
 
+/// the pivot step by get() and set(), entry by entry, as SparseMatrix had
+/// it: the reference of its results
+void pivotByEntries( SparseMatrix & M , std::size_t r , std::size_t c ,
+                     double eps )
+{
+ const double a = M.get( r , c );
+ const auto R = M.row( r ) , C = M.col( c );
+ for( const auto & [ i , ci ] : C ) {
+  if( i == r ) continue;
+  for( const auto & [ j , bj ] : R ) {
+   if( j == c ) continue;
+   double d = M.get( i , j ) - bj * ci / a;
+   if( std::abs( d ) <= eps ) d = 0;
+   M.set( i , j , d );
+   }
+  }
+ for( const auto & [ j , bj ] : R )
+  if( j != c ) M.set( r , j , bj / a );
+ for( const auto & [ i , ci ] : C )
+  if( i != r ) M.set( i , c , - ci / a );
+ M.set( r , c , 1 / a );
+ }
+
+/// the same entries, bit by bit, and the same lists
+bool sameMatrix( const SparseMatrix & A , const SparseMatrix & B )
+{
+ if( ( A.nonzeros() != B.nonzeros() ) || ( A.rows() != B.rows() ) ||
+     ( A.cols() != B.cols() ) )
+  return( false );
+ for( std::size_t i = 0 ; i < A.rows() ; ++i )
+  if( A.row( i ) != B.row( i ) ) return( false );
+ for( std::size_t j = 0 ; j < A.cols() ; ++j )
+  if( A.col( j ) != B.col( j ) ) return( false );
+ return( true );
+ }
+
+// the pivot step along the lists (Algorithm 2.2.6S) against the one entry
+// by entry, the same results bit by bit: random sparse matrices of 1 to 30
+// rows and columns, with small integers that cancel exactly (the entries
+// removed) and fill in, eps 0 and above some entries (removed too), 6
+// pivots in a row; a pivot row or column with the pivot only, a dense
+// matrix, and the entries of the pivot row and column that underflow to 0
+ADS_TEST( "sparse-pivot" )
+{
+ std::mt19937 g( 23 );
+ for( int t = 0 ; t < 300 ; ++t ) {
+  const std::size_t m = 1 + g() % 30 , n = 1 + g() % 30;
+  const double density = double( 1 + g() % 9 ) / 10;
+  SparseMatrix A( m , n ) , B( m , n );
+  for( std::size_t i = 0 ; i < m ; ++i )
+   for( std::size_t j = 0 ; j < n ; ++j )
+    if( double( g() % 1000 ) < 1000 * density ) {
+     const double x = double( int( g() % 7 ) - 3 );
+     A.set( i , j , x );
+     B.set( i , j , x );
+     }
+  const double eps = t % 3 == 0 ? 0 : t % 3 == 1 ? 0.5 : 1.5;
+  for( int k = 0 ; k < 6 ; ++k ) {
+   if( A.nonzeros() == 0 ) break;
+   std::size_t r , c;
+   do {
+    r = g() % m;
+    c = g() % n;
+    } while( A.get( r , c ) == 0 );
+   A.pivot( r , c , eps );
+   pivotByEntries( B , r , c , eps );
+   CHECK( sameMatrix( A , B ) );
+   }
+  }
+ for( int shape = 0 ; shape < 3 ; ++shape ) {
+  const std::size_t m = 9 , n = 7;
+  SparseMatrix A( m , n ) , B( m , n );
+  for( std::size_t i = 0 ; i < m ; ++i )
+   for( std::size_t j = 0 ; j < n ; ++j ) {
+    const bool on = shape == 2 || ( shape == 0 ? i != 4 || j == 3
+                                               : j != 3 || i == 4 );
+    const double x = 1 + double( ( i * n + j ) % 5 );
+    if( on ) {
+     A.set( i , j , x );
+     B.set( i , j , x );
+     }
+    }
+  A.pivot( 4 , 3 );                          // row 4 or column 3 alone
+  pivotByEntries( B , 4 , 3 , 0 );
+  CHECK( sameMatrix( A , B ) );
+  }
+ SparseMatrix U( 3 , 3 ) , V( 3 , 3 );       // b / a and - c / a below
+ for( SparseMatrix * M : { &U , &V } ) {     // the least double
+  M->set( 1 , 1 , 1e300 );
+  M->set( 1 , 0 , 1e-300 );
+  M->set( 1 , 2 , 2 );
+  M->set( 0 , 1 , -1e-300 );
+  M->set( 2 , 1 , 3 );
+  M->set( 0 , 0 , 1 );
+  }
+ U.pivot( 1 , 1 );
+ pivotByEntries( V , 1 , 1 , 0 );
+ CHECK( sameMatrix( U , V ) && U.get( 1 , 0 ) == 0 && U.get( 0 , 1 ) == 0 &&
+        U.get( 1 , 2 ) == 2 / 1e300 && U.get( 1 , 1 ) == 1 / 1e300 );
+ }
+
 // the broadword tricks against the loops over the bits on random words;
 // the words 0 and all 1s, the extreme bits, the bytes of 0, and the words
 // with no next one of their weight
@@ -1041,6 +1251,92 @@ ADS_TEST( "random-numbers" )
  CHECK_THROWS( serialTest( U , 1 ) , contract_violation );
  CHECK_THROWS( spectralTest2( 0 , 64 ) , contract_violation );
  CHECK_THROWS( spectralTest2( 3 , 1 ) , contract_violation );
+ }
+
+/// a generator of lo , lo + 1 , ... , hi in turn, its range at run time
+struct Cycle {
+ using result_type = std::uint32_t;
+ std::uint32_t lo , hi , x;
+ [[nodiscard]] std::uint32_t min( void ) const { return( lo ); }
+ [[nodiscard]] std::uint32_t max( void ) const { return( hi ); }
+ std::uint32_t operator()( void ) {
+  const std::uint32_t r = x;
+  x = x == hi ? lo : x + 1;
+  return( r );
+  }
+ };
+
+/// a generator of the numbers in [ 10 , 14 ], from a std::mt19937
+struct Narrow {
+ using result_type = unsigned;
+ std::mt19937 g;
+ static constexpr unsigned min( void ) { return( 10 ); }
+ static constexpr unsigned max( void ) { return( 14 ); }
+ unsigned operator()( void ) {
+  return( std::uniform_int_distribution< unsigned >( 10 , 14 )( g ) );
+  }
+ };
+
+// the draws below j of shuffle() and reservoirSampling() on generators of
+// narrow ranges that do not start at 0: on the cycle of 1 , 2 , 3 each
+// index exactly as often as the others (by g() % j the odd one twice as
+// often), the indices below s on every range from 1 to 9 numbers against
+// s = 1 to 9, exactly q times each over a cycle; s above the range, by
+// two or more draws, uniform; s = 1, s = 2^64 - 1, and minstd(), whose
+// numbers go from 1 to 2^31 - 2, in shuffle() and reservoirSampling()
+ADS_TEST( "random-ranges" )
+{
+ Cycle c3{ 1 , 3 , 1 };
+ long swapped = 0;
+ for( int t = 0 ; t < 3000 ; ++t ) {
+  std::vector< int > A = { 0 , 1 };
+  shuffle( A , c3 );
+  swapped += A[ 0 ];
+  }
+ CHECK( swapped == 1500 );
+ for( std::uint32_t w = 1 ; w <= 9 ; ++w )
+  for( std::uint64_t s = 1 ; s <= w ; ++s ) {
+   Cycle C{ 7 , 7 + w - 1 , 7 };
+   const std::uint64_t q = w / s;
+   std::vector< long > Y( s , 0 );
+   for( std::uint64_t k = 0 ; k < q * s ; ++k )
+    ++Y[ detail::uniformIndex( C , s ) ];
+   CHECK( Y == std::vector< long >( s , long( q ) ) );
+   }
+ Narrow N{ std::mt19937( 5 ) };
+ std::vector< long > Z( 23 , 0 );
+ for( int k = 0 ; k < 23000 ; ++k ) ++Z[ detail::uniformIndex( N , 23 ) ];
+ CHECK( chiSquare( Z , std::vector< double >( 23 , 1.0 / 23 ) ) < 48.27 );
+ for( int k = 0 ; k < 100 ; ++k ) {
+  CHECK( detail::uniformIndex( N , 1 ) == 0 );
+  CHECK( detail::uniformIndex( N , ~std::uint64_t( 0 ) ) <
+         ~std::uint64_t( 0 ) );
+  }
+ CHECK_THROWS( detail::uniformIndex( N , 0 ) , contract_violation );
+ auto ms = LinearCongruential::minstd( 3 );
+ CHECK( ms.min() == 1 && ms.max() == 2147483646 &&
+        LinearCongruential::mmix().min() == 0 );
+ std::map< std::vector< int > , long > perm;
+ for( int t = 0 ; t < 24000 ; ++t ) {
+  std::vector< int > A = { 0 , 1 , 2 , 3 };
+  shuffle( A , ms );
+  ++perm[ A ];
+  }
+ std::vector< long > P;
+ for( const auto & [ k , n ] : perm ) P.push_back( n );
+ CHECK( P.size() == 24 &&
+        chiSquare( P , std::vector< double >( 24 , 1.0 / 24 ) ) < 49.73 );
+ std::vector< int > stream( 10 );
+ std::iota( stream.begin() , stream.end() , 0 );
+ std::vector< long > R( 10 , 0 ) , R3( 10 , 0 );
+ Cycle c5{ 2 , 6 , 2 };
+ for( int t = 0 ; t < 10000 ; ++t ) {
+  for( int i : reservoirSampling( stream , 3 , ms ) ) ++R[ i ];
+  for( int i : reservoirSampling( stream , 3 , N ) ) ++R3[ i ];
+  CHECK( reservoirSampling( stream , 3 , c5 ).size() == 3 );
+  }
+ CHECK( chiSquare( R , std::vector< double >( 10 , 0.1 ) ) < 27.88 &&
+        chiSquare( R3 , std::vector< double >( 10 , 0.1 ) ) < 27.88 );
  }
 
 // the FFT against the transform by its definition, the inverse of the

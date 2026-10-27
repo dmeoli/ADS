@@ -24,8 +24,8 @@ inline CarterWegmanHash::CarterWegmanHash( std::uint64_t m ,
 {
  ADS_PRE( m >= 1 );
  SplitMix64 g( seed );
- f_a = 1 + g() % ( f_p - 1 );
- f_b = g() % f_p;
+ f_a = 1 + detail::uniformIndex( g , f_p - 1 );
+ f_b = detail::uniformIndex( g , f_p );
  }
 
 inline CarterWegmanHash::CarterWegmanHash( std::uint64_t p ,
@@ -58,7 +58,7 @@ inline DotProductHash::DotProductHash( std::uint64_t m , int r ,
  SplitMix64 g( seed );
  f_a.resize( std::size_t( r ) );
  for( auto & d : f_a )
-  d = g() % m;
+  d = detail::uniformIndex( g , m );
  }
 
 inline DotProductHash::DotProductHash( std::uint64_t m ,
@@ -127,7 +127,7 @@ inline std::uint64_t MultiplyShiftHash::operator()( std::uint64_t k ) const
 inline StringHash::StringHash( std::uint64_t seed )
 {
  SplitMix64 g( seed );
- f_x = 1 + g() % ( kMersenne61 - 1 );
+ f_x = 1 + detail::uniformIndex( g , kMersenne61 - 1 );
  }
 
 inline std::uint64_t StringHash::operator()( std::string_view s ) const

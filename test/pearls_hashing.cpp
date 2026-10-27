@@ -229,16 +229,22 @@ ADS_TEST( "universal-classes" )
                contract_violation );
  }
 
-// chaining with a function of H_{p,m} on the multiples of m, all in one
+// chaining with 200 functions of H_{p,m} on the multiples of m, all in one
 // list for h( k ) = k mod m: the list of a key holds on average at most
-// 1 + alpha keys (Theorem 8.2) and the longest at most about
-// 3 ln n / ln ln n (Theorem 8.3); a table of one list, a key inserted
-// again, an absent key removed, and the bounds of m and of chain()
+// 1 + alpha keys (Theorem 8.2), the longest at most about
+// 3 ln n / ln ln n (Theorem 8.3) on average over the functions, and each
+// longest list within sqrt( 2 n ), as a list of L keys makes L ( L - 1 ) / 2
+// of the pairs that collide, n ( n - 1 ) / ( 2 m ) expected in a universal
+// class (Theorem 8.3 is about uniform hashing, and a few functions of
+// H_{p,m} are far from it on these keys, whence the many functions); a
+// table of one list, a key inserted again, an absent key removed, and the
+// bounds of m and of chain()
 ADS_TEST( "universal-chaining" )
 {
  const std::uint64_t m = 1024 , n = 1024;
- double sum = 0;
- for( std::uint64_t seed = 1 ; seed <= 20 ; ++seed ) {
+ const std::uint64_t F = 200;
+ double sum = 0 , longest = 0;
+ for( std::uint64_t seed = 1 ; seed <= F ; ++seed ) {
   const CarterWegmanHash h( m , seed );
   ChainedHashTable< std::uint64_t , int , Chain::FRONT , CarterWegmanHash >
    T( m , false , h );
@@ -251,11 +257,13 @@ ADS_TEST( "universal-chaining" )
    CHECK( T.lookup( i * m ) == int( i ) );
    sum += double( len[ h( i * m ) ] );
    }
-  const double ln = std::log( double( n ) );
-  CHECK( double( *std::max_element( len.begin() , len.end() ) ) <=
-         3 * ln / std::log( ln ) );
+  const double L = double( *std::max_element( len.begin() , len.end() ) );
+  CHECK( L <= std::sqrt( 2.0 * double( n ) ) );
+  longest += L;
   }
- CHECK( sum / ( 20.0 * double( n ) ) <= 2.1 );   // 1 + alpha = 2
+ const double ln = std::log( double( n ) );
+ CHECK( longest / double( F ) <= 3 * ln / std::log( ln ) );
+ CHECK( sum / ( double( F ) * double( n ) ) <= 2.1 );   // 1 + alpha = 2
  std::set< std::uint64_t > lists;                // the division
  for( std::uint64_t i = 0 ; i < n ; ++i ) lists.insert( i * m % m );
  CHECK( lists.size() == 1 );

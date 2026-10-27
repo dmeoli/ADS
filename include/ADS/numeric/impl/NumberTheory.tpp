@@ -469,10 +469,6 @@ constexpr SmallPrimes smallPrimes( void )
 
 inline constexpr SmallPrimes kSmallPrimes = smallPrimes();
 
-/// the strong probable primality of the odd n > 2 to the k bases a, in
-/// the arithmetic M modulo n, with n - 1 = 2^s d: the k powers are computed
-/// in lockstep, k independent chains of products that the processor
-/// overlaps, so that k bases cost little more than one
 /// x in [ 0 , n ), x a form of the arithmetic M
 template< class M_ >
 U64 canonical( const M_ & M , U64 x )
@@ -483,6 +479,10 @@ U64 canonical( const M_ & M , U64 x )
   return( x );
  }
 
+/// the strong probable primality of the odd n > 2 to the k bases a, in
+/// the arithmetic M modulo n, with n - 1 = 2^s d: the k powers are computed
+/// in lockstep, k independent chains of products that the processor
+/// overlaps, so that k bases cost little more than one
 template< int k , class M_ >
 bool strongProbablePrimes( const M_ & M , const U64 * a , U64 d , int s )
 {

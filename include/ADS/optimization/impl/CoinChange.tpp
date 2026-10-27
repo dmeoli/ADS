@@ -40,8 +40,9 @@ inline std::optional< long > optimalChange( const std::vector< long > & coins ,
  ADS_PRE( c >= 0 );
  ADS_PRE( std::all_of( coins.begin() , coins.end() ,
                        []( long d ) { return( d > 0 ); } ) );
+ ADS_PRE( std::size_t( c ) < std::vector< long >().max_size() );
  const long INF = std::numeric_limits< long >::max();
- std::vector< long > N( c + 1 , INF );
+ std::vector< long > N( std::size_t( c ) + 1 , INF );
  N[ 0 ] = 0;
  for( long x = 1 ; x <= c ; ++x )
   for( long d : coins )

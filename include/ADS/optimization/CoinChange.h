@@ -35,7 +35,6 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include <algorithm>
 #include "ADS/Contract.h"
 
 #include <algorithm>
@@ -59,7 +58,8 @@ inline std::optional< std::vector< long > > greedyChange(
                                        std::vector< long > coins , long c );
 
 /// the fewest coins that pay c, nothing if none
-/// \pre c >= 0 and the coins positive
+/// \pre \f$ c \ge 0 \f$, the \f$ c + 1 \f$ amounts within the largest
+///      vector, and the coins positive
 inline std::optional< long > optimalChange( const std::vector< long > & coins ,
                                             long c );
 

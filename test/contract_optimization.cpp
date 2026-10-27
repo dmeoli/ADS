@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <utility>
@@ -110,6 +111,23 @@ ADS_TEST( "knapsack" )
   const long C = long( g() % 25 );
   CHECK( knapsack( p , v , C ).first == zaino( p , v , C ) );
   }
+ }
+
+// the tables of C + 1 places of optimalChange() and knapsack(): a
+// capacity whose table would pass the largest vector refused before its
+// size is computed (C + 1 overflowed at the largest long), where long can
+// reach it; the capacity 0, a table of one place
+ADS_TEST( "table-size" )
+{
+ const std::size_t M = std::vector< long >().max_size();
+ if( M <= std::size_t( std::numeric_limits< long >::max() ) ) {
+  for( const long C : { long( M ) , std::numeric_limits< long >::max() } ) {
+   CHECK_THROWS( optimalChange( { 1 } , C ) , contract_violation );
+   CHECK_THROWS( knapsack( { 1 } , { 1 } , C ) , contract_violation );
+   }
+  }
+ CHECK( optimalChange( { 3 } , 0 ) == 0L );
+ CHECK( knapsack( { 4 } , { 0 } , 0 ).first == 4 );
  }
 
 // fractionalKnapsack(): a volume 0 not allowed, and fractions that fill at

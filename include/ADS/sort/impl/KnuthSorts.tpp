@@ -167,7 +167,127 @@ inline long fordJohnsonBound( std::size_t n )
 
 namespace detail {
 
-/// the places of A in v sorted by merge insertion
+/// a sequence of places in a treap ordered by position, each node with
+/// the size of its subtree and its parent: the item at a rank, the rank of
+/// a node and an insertion at a rank in expected \f$ O( \log n ) \f$
+class RankTree {
+ public:
+ explicit RankTree( std::size_t n ) {
+  f_item.reserve( n ); f_l.reserve( n ); f_r.reserve( n );
+  f_p.reserve( n ); f_s.reserve( n );
+  }
+
+ [[nodiscard]] std::size_t size( void ) const { return( sz( f_root ) ); }
+
+ /// the item of rank k
+ [[nodiscard]] std::size_t at( std::size_t k ) const {
+  long v = f_root;
+  for( ; ; ) {
+   const std::size_t l = sz( f_l[ v ] );
+   if( k == l ) return( f_item[ v ] );
+   if( k < l ) v = f_l[ v ];
+   else {
+    k -= l + 1;
+    v = f_r[ v ];
+    }
+   }
+  }
+
+ /// the rank of the node z
+ [[nodiscard]] std::size_t rank( long z ) const {
+  std::size_t k = sz( f_l[ z ] );
+  for( ; f_p[ z ] >= 0 ; z = f_p[ z ] )
+   if( f_r[ f_p[ z ] ] == z ) k += sz( f_l[ f_p[ z ] ] ) + 1;
+  return( k );
+  }
+
+ /// x at the rank k, as a leaf rotated up by its priority; its node
+ long insert( std::size_t k , std::size_t x ) {
+  const long z = long( f_item.size() );
+  f_item.push_back( x ); f_l.push_back( -1 ); f_r.push_back( -1 );
+  f_p.push_back( -1 ); f_s.push_back( 1 );
+  if( f_root < 0 ) {
+   f_root = z;
+   return( z );
+   }
+  for( long v = f_root ; ; ) {              // down to a free place
+   ++f_s[ v ];
+   const std::size_t l = sz( f_l[ v ] );
+   long & next = k <= l ? f_l[ v ] : f_r[ v ];
+   if( k > l ) k -= l + 1;
+   if( next < 0 ) {
+    next = z;
+    f_p[ z ] = v;
+    break;
+    }
+   v = next;
+   }
+  while( ( f_p[ z ] >= 0 ) && ( priority( z ) > priority( f_p[ z ] ) ) )
+   rotateUp( z );
+  return( z );
+  }
+
+ /// the items in order
+ [[nodiscard]] std::vector< std::size_t > items( void ) const {
+  std::vector< std::size_t > out;
+  out.reserve( size() );
+  std::vector< long > stack;
+  for( long v = f_root ; ( v >= 0 ) || ! stack.empty() ; ) {
+   for( ; v >= 0 ; v = f_l[ v ] ) stack.push_back( v );
+   v = stack.back();
+   stack.pop_back();
+   out.push_back( f_item[ v ] );
+   v = f_r[ v ];
+   }
+  return( out );
+  }
+
+ private:
+ [[nodiscard]] std::size_t sz( long v ) const {
+  return( v < 0 ? 0 : f_s[ v ] );
+  }
+
+ /// a fixed pseudorandom priority, a mix of the node (the finalizer of
+ /// MurmurHash3)
+ [[nodiscard]] static unsigned long long priority( long v ) {
+  unsigned long long h = ( unsigned long long )( v ) + 1;
+  h ^= h >> 33;
+  h *= 0xff51afd7ed558ccdULL;
+  h ^= h >> 33;
+  h *= 0xc4ceb9fe1a85ec53ULL;
+  return( h ^ ( h >> 33 ) );
+  }
+
+ /// z above its parent, the sizes of both fixed
+ void rotateUp( long z ) {
+  const long p = f_p[ z ] , g = f_p[ p ];
+  if( f_l[ p ] == z ) {
+   f_l[ p ] = f_r[ z ];
+   if( f_r[ z ] >= 0 ) f_p[ f_r[ z ] ] = p;
+   f_r[ z ] = p;
+   }
+  else {
+   f_r[ p ] = f_l[ z ];
+   if( f_l[ z ] >= 0 ) f_p[ f_l[ z ] ] = p;
+   f_l[ z ] = p;
+   }
+  f_p[ p ] = z;
+  f_p[ z ] = g;
+  if( g < 0 ) f_root = z;
+  else ( f_l[ g ] == p ? f_l[ g ] : f_r[ g ] ) = z;
+  f_s[ p ] = 1 + sz( f_l[ p ] ) + sz( f_r[ p ] );
+  f_s[ z ] = 1 + sz( f_l[ z ] ) + sz( f_r[ z ] );
+  }
+
+ std::vector< std::size_t > f_item , f_s;
+ std::vector< long > f_l , f_r , f_p;
+ long f_root = -1;
+ };
+
+/// the places of A in v sorted by merge insertion; the chain in a RankTree,
+/// so that the place of l_{i+2} and each insertion cost
+/// \f$ O( \log n ) \f$ and a probe of the binary search
+/// \f$ O( \log n ) \f$, instead of a search and a shift of the chain
 template< class T , class C >
 std::vector< std::size_t > fordJohnson( const std::vector< T > & A ,
                                         std::vector< std::size_t > v ,
@@ -185,9 +305,11 @@ std::vector< std::size_t > fordJohnson( const std::vector< T > & A ,
   }
  const bool odd = n % 2;
  large = fordJohnson( A , large , less );   // the larger ones, recursively
- std::vector< std::size_t > chain;
- chain.push_back( partner[ large[ 0 ] ] );  // s_1 before l_1, for free
- chain.insert( chain.end() , large.begin() , large.end() );
+ RankTree chain( n );
+ chain.insert( 0 , partner[ large[ 0 ] ] ); // s_1 before l_1, for free
+ std::vector< long > node( large.size() );  // the node of l_{i+1}
+ for( std::size_t i = 0 ; i < large.size() ; ++i )
+  node[ i ] = chain.insert( i + 1 , large[ i ] );
  std::vector< std::size_t > pend;           // s_2 , ... and the leftover
  for( std::size_t i = 1 ; i < large.size() ; ++i )
   pend.push_back( partner[ large[ i ] ] );
@@ -197,14 +319,13 @@ std::vector< std::size_t > fordJohnson( const std::vector< T > & A ,
   const std::size_t s = pend[ i ];
   std::size_t hi = chain.size();
   if( i + 1 < large.size() )
-   hi = std::size_t( std::find( chain.begin() , chain.end() ,
-                                large[ i + 1 ] ) - chain.begin() );
+   hi = chain.rank( node[ i + 1 ] );
   std::size_t lo = 0;
   while( lo < hi ) {
    const std::size_t md = lo + ( hi - lo ) / 2;
-   if( less( A[ s ] , A[ chain[ md ] ] ) ) hi = md; else lo = md + 1;
+   if( less( A[ s ] , A[ chain.at( md ) ] ) ) hi = md; else lo = md + 1;
    }
-  chain.insert( chain.begin() + lo , s );
+  chain.insert( lo , s );
   };
  std::size_t prev = 1 , t = 1;              // the Jacobsthal numbers t_k
  for( int k = 1 ; prev < m + 1 ; ++k ) {    // insert s_{t_k} , ... , down
@@ -215,7 +336,7 @@ std::vector< std::size_t > fordJohnson( const std::vector< T > & A ,
    insert( j - 2 );                         // s_j is pend[ j - 2 ]
   prev = t;
   }
- return( chain );
+ return( chain.items() );
  }
 
 }  // end( namespace detail )

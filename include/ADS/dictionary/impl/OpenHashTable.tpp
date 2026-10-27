@@ -142,7 +142,7 @@ Probing::permutation( std::size_t m ) const
    f_p[ i ] = i;
   std::mt19937_64 g( f_seed ^ ( 0x9e3779b97f4a7c15ULL * m ) );
   for( std::size_t i = m - 1 ; i > 1 ; --i )
-   std::swap( f_p[ i ] , f_p[ 1 + g() % i ] );
+   std::swap( f_p[ i ] , f_p[ 1 + detail::uniformIndex( g , i ) ] );
   f_m = m;
   }
  return( f_p );

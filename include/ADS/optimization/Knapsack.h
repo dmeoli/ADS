@@ -59,7 +59,8 @@
 namespace ADS {
 
 /// the best profit and a set of objects, by places, of the 0-1 knapsack
-/// \pre |p| = |v|, p , v >= 0, C >= 0
+/// \pre \f$ |p| = |v| \f$, \f$ p_i , v_i \ge 0 \f$, \f$ C \ge 0 \f$, the
+///      \f$ C + 1 \f$ capacities within the largest vector
 /// \post the objects fit and give the profit
 inline std::pair< long , std::vector< std::size_t > > knapsack(
                                             const std::vector< long > & p ,

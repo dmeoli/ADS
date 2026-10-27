@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -45,6 +46,7 @@
 #include <random>
 #include <set>
 #include <sstream>
+#include <string>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -296,6 +298,65 @@ ADS_TEST( "generators" )
  double s = 0;
  for( int i = 0 ; i < 100000 ; ++i ) s += U( X );
  CHECK( std::abs( s / 100000 - 0.5 ) < 0.01 );
+ }
+
+// every generator of ADS a UniformRandomBitGenerator, LinearCongruential
+// excepted (its range is known at run time), and LinearCongruentialT in
+// its place: MinStd with the sequence of std::minstd_rand0 and of minstd(),
+// its value after 10000 steps, a constant expression, Mmix with that of
+// mmix(), and both taken by std::uniform_int_distribution; the draws of
+// shuffle() on a full word the same as uniformBelow()
+ADS_TEST( "generator-concepts" )
+{
+ static_assert( std::uniform_random_bit_generator< SplitMix64 > &&
+                std::uniform_random_bit_generator< Xoshiro256 > &&
+                std::uniform_random_bit_generator< Xoshiro256StarStar > &&
+                std::uniform_random_bit_generator< WyRand > &&
+                std::uniform_random_bit_generator< Philox4x32 > &&
+                std::uniform_random_bit_generator< Philox4x64 > &&
+                std::uniform_random_bit_generator< MinStd > &&
+                std::uniform_random_bit_generator< Mmix > &&
+                std::uniform_random_bit_generator<
+                 LinearCongruentialT< 5 , 3 , 64 > > &&
+                ! std::uniform_random_bit_generator< LinearCongruential > );
+ static_assert( FullWordGenerator< SplitMix64 > && FullWordGenerator< Mmix > &&
+                ! FullWordGenerator< MinStd > );
+ static_assert( ( MinStd::min() == 1 ) && ( MinStd::max() == 2147483646 ) &&
+                ( LinearCongruentialT< 5 , 3 , 64 >::min() == 0 ) &&
+                ( LinearCongruentialT< 5 , 3 , 64 >::max() == 63 ) );
+ static_assert( [] {
+  MinStd g( 1 );
+  g();
+  return( g() ); }() == 282475249 );         // 16807^2
+ MinStd a( 1 );
+ std::minstd_rand0 b( 1 );
+ auto c = LinearCongruential::minstd( 1 );
+ bool same = true;
+ U64 x = 0;
+ for( int i = 0 ; i < 10000 ; ++i ) {
+  x = a();
+  same = same && ( x == b() ) && ( x == c() );
+  }
+ CHECK( same && x == 1043618065 );
+ Mmix m( 7 );
+ auto r = LinearCongruential::mmix( 7 );
+ for( int i = 0 ; i < 1000 ; ++i ) same = same && ( m() == r() );
+ CHECK( same && Mmix( 3 ) == Mmix( 3 ) && !( Mmix( 3 ) == Mmix( 4 ) ) );
+ std::uniform_int_distribution< int > D( 0 , 9 );
+ std::vector< long > Y( 10 , 0 ) , Z( 10 , 0 );
+ for( int i = 0 ; i < 20000 ; ++i ) {
+  ++Y[ std::size_t( D( a ) ) ];
+  ++Z[ std::size_t( D( m ) ) ];
+  }
+ CHECK( chiSquare( Y , std::vector< double >( 10 , 0.1 ) ) < 27.88 &&
+        chiSquare( Z , std::vector< double >( 10 , 0.1 ) ) < 27.88 );
+ Mmix u( 9 );
+ auto w = LinearCongruential::mmix( 9 );
+ for( U64 s = 1 ; s < 3000 ; s += 7 )
+  same = same && ( detail::uniformIndex( w , s ) == uniformBelow( u , s ) );
+ CHECK( same );
+ CHECK_THROWS( ( LinearCongruentialT< 5 , 3 , 64 >( 64 ) ) ,
+               contract_violation );
  }
 
 // xoshiro256** and xoshiro256++ against the reference algorithms of
@@ -615,6 +676,48 @@ ADS_TEST( "reservoir-l" )
    return( x >= 900000 ); } );
   }
  CHECK( std::abs( last - 20000 ) < 800 );   // 10% of the 100 items
+ }
+
+// reservoirSampleL() on input iterators with a sized sentinel, which skip
+// by steps: std::counted_iterator on a stream and on a std::list, the
+// inclusion of each item with probability n / N, a stream as long as the
+// sample and an empty one
+ADS_TEST( "reservoir-l-input" )
+{
+ Xoshiro256 g( 19 );
+ const std::size_t N = 200 , n = 10;
+ std::ostringstream os;
+ for( std::size_t i = 0 ; i < N ; ++i ) os << i << ' ';
+ const std::string text = os.str();
+ std::list< int > L( N );
+ std::iota( L.begin() , L.end() , 0 );
+ auto sample = [ & ]( int kind , std::size_t k , std::size_t size ) {
+  if( kind == 0 ) {
+   std::istringstream is( text );
+   return( reservoirSampleL( std::counted_iterator(
+                              std::istream_iterator< int >( is ) ,
+                              std::iter_difference_t<
+                               std::istream_iterator< int > >( size ) ) ,
+                             std::default_sentinel , k , g ) );
+   }
+  return( reservoirSampleL( std::counted_iterator( L.begin() ,
+                             std::ptrdiff_t( size ) ) ,
+                            std::default_sentinel , k , g ) );
+  };
+ for( int kind = 0 ; kind < 2 ; ++kind ) {
+  std::vector< long > Y( N , 0 );
+  const int T = 20000;
+  for( int t = 0 ; t < T ; ++t ) {
+   const auto R = sample( kind , n , N );
+   std::set< int > D( R.begin() , R.end() );
+   CHECK( R.size() == n && D.size() == n && *D.rbegin() < int( N ) );
+   for( int x : R ) ++Y[ std::size_t( x ) ];
+   }
+  CHECK( chiSquare( Y , std::vector< double >( N , 1.0 / N ) ) < 290 );
+  const auto all = sample( kind , N , N );
+  CHECK( all.size() == N && all.front() == 0 && all.back() == int( N ) - 1 );
+  CHECK( sample( kind , n , 0 ).empty() );
+  }
  }
 
 // convexHull() against graham() of the book: no point, one, two, equal

@@ -119,20 +119,76 @@ inline void SparseMatrix::pivot( std::size_t r , std::size_t c , double eps )
  ADS_PRE( ( r < f_m ) && ( c < f_n ) && ( get( r , c ) != 0 ) );
  const double a = get( r , c );
  const auto R = row( r ) , C = col( c );    // the pivot row and column
+ // Algorithm 2.2.6S: the rows of the pivot column from the top, each
+ // walked once along with the pivot row, and for each column of the pivot
+ // row the node PTR above the current row, moved down the column only
+ std::vector< long > ptr( R.size() );
+ for( std::size_t k = 0 ; k < R.size() ; ++k )
+  ptr[ k ] = long( f_m + R[ k ].first );
  for( const auto & [ i , ci ] : C ) {       // d - b c / a
   if( i == r ) continue;
-  for( const auto & [ j , bj ] : R ) {
+  long p = long( i );                       // the node before column j
+  for( std::size_t k = 0 ; k < R.size() ; ++k ) {
+   const auto [ j , bj ] = R[ k ];
    if( j == c ) continue;
-   double d = get( i , j ) - bj * ci / a;
+   while( f_N[ f_N[ p ].right ].col < j )
+    p = f_N[ p ].right;
+   while( f_N[ f_N[ ptr[ k ] ].down ].row < i )
+    ptr[ k ] = f_N[ ptr[ k ] ].down;
+   const long q = f_N[ p ].right;
+   const bool stored = f_N[ q ].col == j;
+   double d = ( stored ? f_N[ q ].val : 0 ) - bj * ci / a;
    if( std::abs( d ) <= eps ) d = 0;
-   set( i , j , d );
+   if( stored && ( d != 0 ) ) {             // updated
+    f_N[ q ].val = d;
+    p = ptr[ k ] = q;
+    }
+   else if( stored ) {                      // canceled, unlinked
+    f_N[ p ].right = f_N[ q ].right;
+    f_N[ ptr[ k ] ].down = f_N[ q ].down;
+    f_freeNodes.push_back( q );
+    --f_nnz;
+    }
+   else if( d != 0 ) {                      // filled in
+    long x;
+    if( f_freeNodes.empty() ) {
+     x = long( f_N.size() );
+     f_N.push_back( Node{} );
+     }
+    else {
+     x = f_freeNodes.back();
+     f_freeNodes.pop_back();
+     }
+    f_N[ x ] = Node{ i , j , d , q , f_N[ ptr[ k ] ].down };
+    f_N[ p ].right = x;
+    f_N[ ptr[ k ] ].down = x;
+    p = ptr[ k ] = x;
+    ++f_nnz;
+    }
    }
   }
- for( const auto & [ j , bj ] : R )         // b / a
-  if( j != c ) set( r , j , bj / a );
- for( const auto & [ i , ci ] : C )         // - c / a
-  if( i != r ) set( i , c , - ci / a );
+ // the pivot row and column, by their lists; an entry that underflows to
+ // 0 is removed by set()
+ for( long q = f_N[ r ].right ; q != long( r ) ; ) {
+  const long next = f_N[ q ].right;         // b / a
+  if( f_N[ q ].col != c ) {
+   const double v = f_N[ q ].val / a;
+   if( v != 0 ) f_N[ q ].val = v;
+   else set( r , f_N[ q ].col , 0 );
+   }
+  q = next;
+  }
+ for( long q = f_N[ f_m + c ].down ; q != long( f_m + c ) ; ) {
+  const long next = f_N[ q ].down;          // - c / a
+  if( f_N[ q ].row != r ) {
+   const double v = - f_N[ q ].val / a;
+   if( v != 0 ) f_N[ q ].val = v;
+   else set( f_N[ q ].row , c , 0 );
+   }
+  q = next;
+  }
  set( r , c , 1 / a );
+ ADS_AUDIT( linked() );
  }
 
 inline bool SparseMatrix::linked( void ) const

@@ -112,6 +112,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/TableSize.h"
+#include "ADS/numeric/RandomNumbers.h"
 
 #include <algorithm>
 #include <atomic>

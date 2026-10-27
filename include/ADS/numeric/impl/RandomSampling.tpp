@@ -275,7 +275,7 @@ std::vector< std::iter_value_t< I > > reservoirSampleL( I first , S last ,
   if constexpr( std::sized_sentinel_for< S , I > ) {
    if( !( skip < double( last - first ) ) )
     break;
-   first += std::iter_difference_t< I >( skip );
+   std::ranges::advance( first , std::iter_difference_t< I >( skip ) );
    }
   else {
    double k = 0;

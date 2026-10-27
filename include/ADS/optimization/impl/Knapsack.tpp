@@ -36,9 +36,10 @@ inline std::pair< long , std::vector< std::size_t > > knapsack(
                                             long C )
 {
  ADS_PRE( detail::knapsackInput( p , v , C ) );
+ ADS_PRE( std::size_t( C ) < std::vector< long >().max_size() );
  const std::size_t n = p.size();
  std::vector< std::vector< long > > DP( n + 1 ,
-                                       std::vector< long >( C + 1 , 0 ) );
+                          std::vector< long >( std::size_t( C ) + 1 , 0 ) );
  for( std::size_t i = 1 ; i <= n ; ++i )
   for( long c = 0 ; c <= C ; ++c ) {        // c = 0 too: volumes may be 0
    DP[ i ][ c ] = DP[ i - 1 ][ c ];

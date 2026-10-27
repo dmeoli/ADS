@@ -97,6 +97,7 @@
 #include "ADS/Contract.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/numeric/NumberTheory.h"
+#include "ADS/numeric/RandomNumbers.h"
 
 #include <algorithm>
 #include <cstddef>

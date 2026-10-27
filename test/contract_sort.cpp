@@ -420,6 +420,31 @@ ADS_TEST( "checking-contract" )
  CHECK( ! checkingContract() );
  }
 
+// smoothsort() and the forest in a word of 64 bits: the Leonardo numbers
+// of its table by their recurrence, L_64 = 2 F_65 - 1 = 34335360355129 the
+// bound of its precondition (a heap of order 64 would need the bit 64),
+// and the sorts of L_k - 1, L_k and L_k + 1 items, at each order of a
+// single heap and around it
+ADS_TEST( "smoothsort-orders" )
+{
+ const auto & L = detail::leonardo();
+ CHECK( L.size() > 2 && L[ 0 ] == 1 && L[ 1 ] == 1 );
+ for( std::size_t k = 2 ; k < L.size() ; ++k )
+  CHECK( L[ k ] == L[ k - 1 ] + L[ k - 2 ] + 1 );
+ if( L.size() > 64 )
+  CHECK( L[ 64 ] == std::size_t( 34335360355129ULL ) );
+ std::mt19937 g( 29 );
+ for( std::size_t k = 0 ; L[ k ] < 20000 ; ++k )
+  for( std::size_t n : { L[ k ] - 1 , L[ k ] , L[ k ] + 1 } ) {
+   Ints A( n );
+   for( auto & x : A ) x = int( g() % 100 );
+   auto S = A;
+   smoothsort( A );
+   std::sort( S.begin() , S.end() );
+   CHECK( A == S );
+   }
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/
