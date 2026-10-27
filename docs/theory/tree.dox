@@ -1,0 +1,228 @@
+/*--------------------------------------------------------------------------*/
+/*----------------------------- File tree.dox ------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_tree */
+/** \defgroup theory_tree Theory of trees
+ \ingroup area_tree
+
+ \details The headers of `include/ADS/tree` realize the TREE and the binary
+ tree of chapter 5 of the book, with pointers, with cursors, with lists of
+ children and in vectors, and their visits; the binary search trees of
+ chapter 6, plain, balanced by height (AVL), randomized (treaps),
+ self-adjusting (splay trees) and threaded; the algorithms that build the
+ sets and the maps on these trees by joins; and the B-trees of the external
+ memory. This page collects the definitions and the notation that the
+ headers share (see \ref theory_tree_notation), the representations of the
+ trees with the costs of their operations (see \ref theory_tree_repr), the
+ visits and the problems on binary trees (see \ref theory_tree_visits and
+ \ref theory_tree_problems), the search trees and the arguments behind their
+ bounds (see \ref theory_tree_search), the algorithms by joins (see
+ \ref theory_tree_join) and the B-trees (see \ref theory_tree_btree). The
+ pseudocode of each operation and of each algorithm is on the page of its
+ header, in the comment of its function, together with the section of the
+ book, or the paper, that it follows.
+
+ \tableofcontents
+
+ \section theory_tree_notation Definitions and notation
+
+ A <em>rooted tree</em> is a set of \f$ n \f$ nodes, empty or with one node,
+ the <em>root</em>, and a partition of the others into subtrees whose roots
+ are the <em>children</em> of the root; every node but the root has one
+ <em>parent</em>, and the tree is <em>ordered</em> when the children of each
+ node are in an order, the first being the leftmost (section 5.1 of the
+ book). A <em>binary tree</em> is an ordered tree whose nodes have at most
+ two children, told apart as the left and the right one even when only one
+ is there. A node with no child is a <em>leaf</em>, the others are
+ <em>internal</em>; the <em>depth</em> of a node is the number of edges from
+ the root to it, the nodes of depth \f$ l \f$ form the <em>level</em>
+ \f$ l \f$, and the <em>height</em> of a tree is the largest depth of its
+ nodes, \f$ -1 \f$ for the empty tree.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ n \f$</td><td>the number of nodes, or of keys</td></tr>
+ <tr><td>\f$ h \f$</td><td>the height of a tree</td></tr>
+ <tr><td>\f$ T_1 , \ldots , T_k \f$</td><td>the subtrees of the children
+     of a node, in their order</td></tr>
+ <tr><td>\f$ p[ i ] \f$</td><td>the parent of the node \f$ i \f$ in a
+     vector of parents, -1 (<tt>NIL</tt>) at a root</td></tr>
+ <tr><td>\f$ d \f$</td><td>the degree of a complete \f$ d \f$-ary tree, or
+     the number of children of a node</td></tr>
+ <tr><td>\f$ \mathit{bh}( x ) \f$</td><td>the black height of the node
+     \f$ x \f$ of a Red-Black tree, the black nodes on a path from
+     \f$ x \f$ down to a leaf nil</td></tr>
+ </table>
+
+ \section theory_tree_repr Representations and their costs
+
+ <table>
+ <caption>The representations of the ordered and of the binary trees and
+          the cost of their operations (sections 5.2, 5.4 and 5.5 of the
+          book)</caption>
+ <tr><th>Realization</th><th>Representation</th><th>Parent</th>
+     <th>First child, next sibling</th><th>Insert a child</th>
+     <th>Space</th></tr>
+ <tr><td><tt>Tree</tt></td><td>pointers to the parent, the first child and
+     the next sibling</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ \Theta( n ) \f$</td></tr>
+ <tr><td><tt>CursorTree</tt></td><td>the same links as indices in a vector,
+     with a free list</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$ amortized</td><td>\f$ \Theta( n ) \f$</td></tr>
+ <tr><td><tt>ChildListTree</tt></td><td>a list of the children per node,
+     each node with its cell</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$ amortized</td>
+     <td>\f$ \Theta( n ) \f$</td></tr>
+ <tr><td><tt>ParentTree</tt></td><td>a vector of parents</td>
+     <td>\f$ O( 1 ) \f$</td><td>none</td><td>\f$ O( 1 ) \f$, no order among
+     the children</td><td>\f$ \Theta( n ) \f$, one integer per node</td></tr>
+ <tr><td><tt>PreorderArrayTree</tt></td><td>the nodes in a vector in
+     preorder, with their parents</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$ and \f$ O( n ) \f$</td><td>\f$ O( n ) \f$</td>
+     <td>\f$ \Theta( n ) \f$</td></tr>
+ <tr><td><tt>BinaryTree</tt></td><td>pointers to the parent and to the two
+     children</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$ (the left and
+     the right child)</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ \Theta( n ) \f$</td></tr>
+ <tr><td><tt>CursorBinaryTree</tt></td><td>the same links as indices in a
+     vector</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 ) \f$ amortized</td><td>\f$ \Theta( n ) \f$</td></tr>
+ <tr><td><tt>ArrayBinaryTree</tt></td><td>a positional vector, the children
+     of \f$ i \f$ in \f$ 2 i + 1 \f$ and \f$ 2 i + 2 \f$</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 ) \f$</td><td>linear in the subtree
+     copied</td><td>\f$ O( 2^h ) \f$</td></tr>
+ </table>
+
+ The links to the first child and to the next sibling give every ordered
+ tree, whatever the degrees of its nodes, three pointers per node, and
+ they make it a binary tree: the left child of a node is its first child and
+ the right child its next sibling (figure 5.9 of the book, `to_binary()` of
+ `BinaryTree.h`), a correspondence one to one between the ordered forests
+ and the binary trees. The vector of parents (section 5.4) needs one
+ integer per node and answers the parent alone, which is what the trees of
+ the visits of a graph and the forests of the MFSET need; in preorder, the
+ same vector knows the children too, the subtree of a node being the
+ stretch of places that starts with it and ends at the first place whose
+ parent precedes it. A complete \f$ d \f$-ary tree needs no link at all:
+ numbered by levels from 0, the children of the node \f$ i \f$ are
+ \f[
+   d i + 1 , \ldots , d i + d , \qquad \text{its parent}\
+   \lfloor ( i - 1 ) / d \rfloor , \tag{1}
+ \f]
+ which is how a heap is stored (see \ref theory_priority); a
+ binary tree far from complete wastes the places of the missing nodes, up
+ to \f$ 2^{h+1} - 1 \f$ places for \f$ n = h + 1 \f$ nodes. The cursors put
+ the nodes in one vector, so that the tree can be copied, saved or moved as
+ a whole, and the indices stay valid when the vector grows.
+
+ \section theory_tree_visits Visits
+
+ A <em>visit</em> examines each node of a tree once: the
+ <em>previsit</em> examines a node before its subtrees, the
+ <em>postvisit</em> after them, the <em>invisit</em> with index \f$ i \f$
+ after its first \f$ i \f$ subtrees (on a binary tree, with \f$ i = 1 \f$,
+ the <em>symmetric</em> visit), and the visit <em>by levels</em> examines
+ the nodes by increasing depth, by a queue (section 5.3).
+
+ <em>Lemma 1 (the cost of a visit).</em> Each visit of a tree of \f$ n \f$
+ nodes costs \f$ \Theta( n ) \f$ time on the representations with the links
+ to the first child and to the next sibling, or to the two children, and
+ \f$ O( h ) \f$ space for its stack, explicit or of the calls.
+
+ Indeed, each node is examined once, and each link is followed once from
+ the node it leaves: the first child of a node when the node is entered, the
+ next sibling when its subtree is over. The stack holds the nodes of the
+ path from the root to the current node, i.e., at most \f$ h + 1 \f$ of
+ them; the headers keep it explicit, since a tree of height \f$ n - 1 \f$
+ would overflow the stack of the calls.
+
+ The visits need no stack at all when the nodes have the link to their
+ parent: the next node in symmetric order of a binary tree is the leftmost
+ node of the right subtree, if there is one, and otherwise the lowest
+ ancestor reached from a left child (`inorder()` of `BinaryTree.h`, and
+ `PathIterator` of `Iterators.h`, which keeps the path instead of the links
+ to the parents). A whole visit costs \f$ \Theta( n ) \f$ even so, since
+ each edge is walked once down and once up, while a single step costs
+ \f$ O( h ) \f$. The <em>threads</em> of Perlis and Thornton reach the same
+ end with no link to the parent: a missing left child is replaced by a link
+ to the predecessor and a missing right child by a link to the successor,
+ a bit of each node telling a child from a thread, so that the successor is
+ the right thread or the leftmost node of the right subtree (`ThreadedTree`).
+ The \f$ n + 1 \f$ links that a binary tree of \f$ n \f$ nodes leaves nil
+ are exactly the threads.
+
+ \section theory_tree_problems Problems on binary trees
+
+ The functions of `BinaryTreeAlgorithms.h` work on any representation of
+ the nodes with the links to the children, and to the parent where they need
+ it. Two nodes \f$ u \f$ and \f$ v \f$ have their lowest common ancestor at
+ the point where the paths from them to the root meet; once the deeper node
+ has climbed to the depth of the other, the two climb together and meet
+ there, i.e., \f$ O( h ) \f$ time and \f$ O( 1 ) \f$ space. A binary tree
+ is a search tree if and only if each key lies in the open interval that its
+ ancestors leave to it, which a previsit carrying the two ends checks in
+ \f$ O( n ) \f$, while comparing each node with its children only is not
+ enough. A search for the keys in \f$ [ a , b ] \f$ examines, beside the
+ \f$ k \f$ keys reported, only the nodes on the two paths that search for
+ \f$ a \f$ and for \f$ b \f$, i.e., \f$ O( h + k ) \f$ nodes. A sorted
+ vector gives the search tree of least height,
+ \f$ \lceil \log_2( n + 1 ) \rceil - 1 \f$, with the middle key at the root
+ and the two halves below, in \f$ O( n ) \f$ by
+ \f$ T( n ) = 2 T( n / 2 ) + O( 1 ) \f$.
+
+ The previsit and the invisit of a binary tree of distinct values determine
+ it, since the first value of the previsit is the root and splits the
+ invisit into the two subtrees; a stack of the nodes whose right subtree is
+ still open rebuilds it in \f$ O( n ) \f$, each node pushed and popped once.
+ The <em>Cartesian tree</em> of a vector \f$ A \f$ (Vuillemin) has the
+ leftmost minimum of \f$ A \f$ at its root and the Cartesian trees of the
+ parts before and after it as its subtrees: it is the only binary tree whose
+ invisit is \f$ A \f$ and which is a heap, and a stack of its right spine
+ builds it in \f$ O( n ) \f$, since each item is pushed and popped once; the
+ lowest common ancestor of two places in it is the minimum of \f$ A \f$
+ between them, which ties the two problems together (Harel and Tarjan, and
+ the range minimum of `RangeMinimum.h`).
+
+ A heap of \f$ n \f$ items is built either by inserting the items one at a
+ time, each climbing to its place (Williams, `HeapByInsertion.h`), or by
+ sifting down the internal nodes from the last one to the root (Floyd). The
+ insertions cost \f$ \Theta( n \log n ) \f$ in the worst case, an increasing
+ vector, where each item climbs to the root, while the bottom-up
+ construction costs \f$ O( n ) \f$: the \f$ \lceil n / 2^{l+1} \rceil \f$
+ nodes of height \f$ l \f$ go down at most \f$ l \f$ levels each, and
+ \f$ \sum_l l \, n / 2^{l+1} \le n \f$. On a random permutation the
+ insertions cost \f$ O( n ) \f$ on average as well (Hayward and McDiarmid),
+ and they are the method to use when the heap must be valid after each
+ item.
+
+ \section theory_tree_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 5 and 6,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf and
+      https://algoritmicamente.it/materiali/libro/capitoli/cap06.pdf
+ \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
+      Addison-Wesley, 1997, sections 2.3.1 (the traversal of binary trees,
+      the threads) and 2.3.2 (the binary representation of trees)
+ \see A. V. Aho, J. E. Hopcroft, J. D. Ullman, Data Structures and
+      Algorithms, Addison-Wesley, 1983, chapter 3 (the representations of
+      trees)
+ \see A. J. Perlis, C. Thornton, Symbol manipulation by threaded lists,
+      Communications of the ACM 3(4), 195-204, 1960,
+      doi:10.1145/367177.367202
+ \see J. Vuillemin, A unifying look at data structures, Communications of
+      the ACM 23(4), 229-239, 1980, doi:10.1145/358841.358852
+ \see D. Harel, R. E. Tarjan, Fast algorithms for finding nearest common
+      ancestors, SIAM Journal on Computing 13(2), 338-355, 1984,
+      doi:10.1137/0213024
+ \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the ACM
+      7(6), 347-348, 1964, doi:10.1145/512274.3734138
+ \see R. W. Floyd, Algorithm 245: Treesort 3, Communications of the ACM
+      7(12), 701, 1964, doi:10.1145/355588.365103
+ \see R. Hayward, C. McDiarmid, Average case analysis of heap building by
+      repeated insertion, Journal of Algorithms 12(1), 126-153, 1991,
+      doi:10.1016/0196-6774(91)90027-V
+*/
+/*--------------------------------------------------------------------------*/
+/*--------------------------- End File tree.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/

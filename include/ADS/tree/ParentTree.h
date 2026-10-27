@@ -2,16 +2,18 @@
 /*--------------------------- File ParentTree.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The tree as a vector of parents: the nodes are 0 , ... , n - 1, and p[ i ]
- * is the parent of i, or -1 if i is a root. It answers parent() alone, in
- * \f$ O( 1 ) \f$ time and with the least memory, which is all that is needed
- * when a tree is built and walked towards the root, as the trees of the visits
- * of a graph; the order among siblings is lost, unless it is the one of their
- * numbers. Since setParent() may hang any node anywhere, the structure is a
- * forest of n isolated nodes at the start.
+ * The tree as a vector of parents: the nodes are \f$ 0 , \ldots , n - 1 \f$,
+ * and \f$ p[ i ] \f$ is the parent of \f$ i \f$, or -1 if \f$ i \f$ is a
+ * root. It answers `parent()` alone, in \f$ O( 1 ) \f$ time and with the
+ * least memory, which is all that is needed when a tree is built and walked
+ * towards the root, as the trees of the visits of a graph; the order among
+ * siblings is lost, unless it is the one of their numbers. Since
+ * `setParent()` may hang any node anywhere, the structure is a forest of
+ * \f$ n \f$ isolated nodes at the start.
  *
- * The contracts [see Contract.h]: the nodes are in [ 0 , n ), and a node
- * is not its own parent. The operations are defined in ParentTree.tpp.
+ * The contracts [see `Contract.h`]: the nodes are in \f$ [ 0 , n ) \f$, and
+ * a node is not its own parent. The operations are defined in
+ * `ParentTree.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 5.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap05.pdf
@@ -48,22 +50,26 @@ namespace ADS {
 /*-------------------------- CLASS ParentTree ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a tree (a forest) of the nodes 0 , ... , n - 1 as a vector of parents
+/// a tree (a forest) of the nodes \f$ 0 , \ldots , n - 1 \f$ as a vector of
+/// parents
 class ParentTree {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- /// Tree( n ): a forest of n isolated nodes
- /// \pre n >= 0
+ /// a forest of \f$ n \f$ isolated nodes (the `Tree( n )` of the book)
+ /// \pre \f$ n \ge 0 \f$
  explicit ParentTree( int n );
 
- /// the parent of the node i; -1 if i is a root
+ /// the parent of the node \f$ i \f$; -1 if \f$ i \f$ is a root
+ /// \pre \f$ i \f$ is a node
  [[nodiscard]] int parent( int i ) const;
 
- /// makes the node i a child of the node j, or a root if j = -1
- /// \pre i and j are nodes, or j = -1 , and i != j; j is not in the
- ///      subtree of i (which would make a cycle)
+ /// makes the node \f$ i \f$ a child of the node \f$ j \f$, or a root if
+ /// \f$ j = -1 \f$, in \f$ O( 1 ) \f$ (section 5.4, \f$ p[ i ] \gets j \f$)
+ /// \pre \f$ i \f$ and \f$ j \f$ are nodes, or \f$ j = -1 \f$, and
+ ///      \f$ i \ne j \f$; \f$ j \f$ is not in the subtree of \f$ i \f$
+ ///      (which would make a cycle)
  void setParent( int i , int j );
 
  /// the number of nodes
@@ -72,7 +78,7 @@ class ParentTree {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// true if the node j is in the subtree of i,
+ /// true if the node \f$ j \f$ is in the subtree of \f$ i \f$,
  /// \f$ O( \text{the depth of } j ) \f$
  [[nodiscard]] bool below( int j , int i ) const;
 
