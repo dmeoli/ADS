@@ -2,45 +2,51 @@
 /*--------------------------- File ParallelText.h --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The parallel LCP array, beyond the book: lcpArray( ex , T , SA ) is the
- * array of lcpArray( T , SA ) [see SuffixArray.h], the longest common
+ * The parallel LCP array, beyond the book: `lcpArray( ex , T , SA )` is the
+ * array of `lcpArray( T , SA )` [see `SuffixArray.h`], the longest common
  * prefixes of the suffixes adjacent in the suffix array, on the threads of
- * an executor [see Executor.h], by the permuted LCP of Karkkainen, Manzini
- * and Puglisi: \f$ \Phi[ SA[ r ] ] = SA[ r - 1 ] \f$, the suffix before
- * each one in the order of the suffix array, then the permuted array
- * \f$ PLCP[ i ] = lcp( i , \Phi[ i ] ) \f$ in the order of the text, and
- * last \f$ LCP[ r - 1 ] = PLCP[ SA[ r ] ] \f$. The first and the last
- * steps are parallel loops of n scattered moves. The second is the scan of
- * Kasai et al. along the text, which reads T in its order and uses
- * \f$ PLCP[ i ] \geq PLCP[ i - 1 ] - 1 \f$ to resume each comparison where
- * the previous one stopped, \f$ O( n ) \f$ comparisons in all; the text is
- * cut into 4 p parts, and each part starts its scan from h = 0, which
- * costs at most the largest lcp more per part, so that the result is the
- * same and the work \f$ O( n + p \max_i PLCP[ i ] ) \f$ (on a text of
- * one repeated symbol the parts gain nothing, since then the lcp are as
- * long as the text). The scan by the text order reads \f$ \Phi[ i ] \f$
- * and \f$ T[ \Phi[ i ] + h ] \f$ at random once per suffix, where the
- * algorithm of Kasai reads the rank and the suffix array at random.
+ * an executor [see `Executor.h`], by the permuted LCP of Kärkkäinen, Manzini
+ * and Puglisi: \f$ \Phi[ \mathit{SA}[ r ] ] = \mathit{SA}[ r - 1 ] \f$, the
+ * suffix before each one in the order of the suffix array, then the permuted
+ * array \f$ \mathit{PLCP}[ i ] = \mathrm{lcp}( i , \Phi[ i ] ) \f$ in the
+ * order of the text, and last
+ * \f$ \mathit{LCP}[ r - 1 ] = \mathit{PLCP}[ \mathit{SA}[ r ] ] \f$. The
+ * first and the last steps are parallel loops of \f$ n \f$ scattered moves.
+ * The second is the scan of Kasai et al. along the text, which reads
+ * \f$ T \f$ in its order and uses
+ * \f$ \mathit{PLCP}[ i ] \ge \mathit{PLCP}[ i - 1 ] - 1 \f$ to resume each
+ * comparison where the previous one stopped, \f$ O( n ) \f$ comparisons in
+ * all; the text is cut into \f$ 4 p \f$ parts, and each part starts its scan
+ * from \f$ h = 0 \f$, which costs at most the largest lcp more per part, so
+ * that the result is the same and the work
+ * \f$ O( n + p \max_i \mathit{PLCP}[ i ] ) \f$ (on a text of one repeated
+ * symbol the parts gain nothing, since then the lcp are as long as the
+ * text). The scan by the text order reads \f$ \Phi[ i ] \f$ and
+ * \f$ T[ \Phi[ i ] + h ] \f$ at random once per suffix, where the algorithm
+ * of Kasai reads the rank and the suffix array at random.
  *
- * lcpArrayPhi( ex , T , SA ) does the same on a text of bytes and a suffix
- * array of indices of the type I (e.g., 32 bits), the result of
- * lcpArrayPhi( T , SA ) [see SuffixSorting.h]: its scans compare the first
- * 4 symbols one by one and then 8 at a time by a load of 8 bytes, the
- * first different byte found by the trailing zeros of the exclusive or,
- * and fetch the text at \f$ \Phi[ i + 16 ] \f$ ahead of its use.
+ * `lcpArrayPhi( ex , T , SA )` does the same on a text of bytes and a suffix
+ * array of indices of the type `I` (e.g., 32 bits), the result of
+ * `lcpArrayPhi( T , SA )` [see `SuffixSorting.h`]: its scans compare the
+ * first 4 symbols one by one and then 8 at a time by a load of 8 bytes, the
+ * first different byte found by the trailing zeros of the exclusive or, and
+ * fetch the text at \f$ \Phi[ i + 16 ] \f$ ahead of its use.
  *
- * The contracts [see Contract.h]: SA is the suffix array of T (an audit);
- * the result is the LCP array (an audit).
- * \see J. Karkkainen, G. Manzini, S. J. Puglisi, Permuted longest-common-
+ * The contracts [see `Contract.h`]: \f$ \mathit{SA} \f$ is the suffix array
+ * of \f$ T \f$ (an audit); the result is the LCP array (an audit).
+ *
+ * \see J. Kärkkäinen, G. Manzini, S. J. Puglisi, Permuted longest-common-
  *      prefix array, Annual Symposium on Combinatorial Pattern Matching
  *      (CPM), LNCS 5577, 181-192, 2009, doi:10.1007/978-3-642-02441-2_17
  * \see T. Kasai, G. Lee, H. Arimura, S. Arikawa, K. Park, Linear-time
  *      longest-common-prefix computation in suffix arrays and its
  *      applications, Annual Symposium on Combinatorial Pattern Matching
  *      (CPM), LNCS 2089, 181-192, 2001, doi:10.1007/3-540-48194-X_17
+ *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
+ *
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
@@ -75,17 +81,74 @@
 
 namespace ADS {
 
-/// the LCP array of T and its suffix array SA on the threads of ex, n - 1
-/// entries (none if n < 2)
-/// \pre SA is a suffix array of T (an audit)
+/// the LCP array of \f$ T \f$ and of its suffix array \f$ \mathit{SA} \f$
+/// on the threads of `ex`, \f$ n - 1 \f$ entries (none if \f$ n < 2 \f$)
+///
+/// In pseudocode (the permuted LCP of Kärkkäinen, Manzini and Puglisi on
+/// the scan of Kasai et al., beyond the book), \f$ T[ 0 .. n - 1 ] \f$ and
+/// \f$ \mathit{SA}[ 0 .. n - 1 ] \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{lcpArray}( \mathit{ex} , T , \mathit{SA} )
+///     \cr
+/// 2 & \quad \textbf{if}\ p = 1\ \textbf{or}\ n < 2^{15}
+///     \ \textbf{then return}\ \mathrm{lcpArray}( T , \mathit{SA} ) \cr
+/// 3 & \quad \textbf{for}\ r \gets 0\ \textbf{to}\ n - 1
+///     \ \textbf{do in parallel}\ \Phi[ \mathit{SA}[ r ] ] \gets \mathit{SA}[
+///     r
+///     - 1 ]\quad \triangleright\ \textbf{nil}\ \text{for } r = 0 \cr
+/// 4 & \quad B \gets \min\{ n , 4 p \} \cr
+/// 5 & \quad \textbf{for}\ b \gets 0\ \textbf{to}\ B - 1
+///     \ \textbf{do in parallel} \cr
+/// 6 & \qquad h \gets 0 \cr
+/// 7 & \qquad \textbf{for}\ i \gets \lfloor n b / B \rfloor\ \textbf{to}
+///     \ \lfloor n ( b + 1 ) / B \rfloor - 1\ \textbf{do} \cr
+/// 8 & \qquad\quad j \gets \Phi[ i ] \cr
+/// 9 & \qquad\quad \textbf{if}\ j = \textbf{nil}\ \textbf{then}\ h \gets 0;
+///     \ \mathit{PLCP}[ i ] \gets 0;\ \textbf{continue} \cr
+/// 10 & \qquad\quad \textbf{while}\ i + h < n\ \textbf{and}\ j + h < n
+///     \ \textbf{and}\ T[ i + h ] = T[ j + h ]\ \textbf{do}\ h \gets h + 1 \cr
+/// 11 & \qquad\quad \mathit{PLCP}[ i ] \gets h;\ h \gets \max\{ h - 1 , 0
+///     \} \cr
+/// 12 & \quad \textbf{for}\ r \gets 0\ \textbf{to}\ n - 2
+///     \ \textbf{do in parallel}\ \mathit{LCP}[ r ] \gets \mathit{PLCP}[
+///     \mathit{SA}[ r + 1 ] ] \cr
+/// 13 & \quad \textbf{return}\ \mathit{LCP}
+/// \end{array}}
+/// \f]
+/// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$ (an audit)
 template< Executor E , class S >
 [[nodiscard]] std::vector< std::size_t > lcpArray( E & ex , const S & T ,
                                        const std::vector< std::size_t > & SA );
 
-/// the LCP array of the text T of bytes and its suffix array SA, by the
-/// indices I of SA, on the threads of ex: the result of lcpArrayPhi( T ,
-/// SA ) [see SuffixSorting.h]
-/// \pre SA is a suffix array of T
+/// the LCP array of the text \f$ T \f$ of bytes and of its suffix array
+/// \f$ \mathit{SA} \f$ of indices of the type `I`, on the threads of `ex`,
+/// the result of `lcpArrayPhi( T , SA )` [see `SuffixSorting.h`]
+///
+/// In pseudocode (beyond the book), that of `lcpArray()` above with its line
+/// 10 comparing 8 bytes at a time:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 10 & \qquad\quad h \gets \mathrm{lcp}( i , j , h )\quad \triangleright
+///     \ \text{4 bytes one by one, then words of 8 bytes} \cr
+/// 11 & \textbf{function}\ \mathrm{lcp}( i , j , h ) \cr
+/// 12 & \quad \mathit{far} \gets n - \max\{ i , j \} \cr
+/// 13 & \quad \textbf{while}\ h < \min\{ \mathit{far} , h_0 + 4 \}
+///     \ \textbf{and}\ T[ i + h ] = T[ j + h ]\ \textbf{do}\ h \gets h +
+///     1\quad
+///     \triangleright\ h_0 \text{ the } h \text{ given} \cr
+/// 14 & \quad \textbf{if}\ \text{all 4 matched}\ \textbf{then} \cr
+/// 15 & \qquad \textbf{while}\ h + 8 \le \mathit{far}\ \textbf{and}\ T[ i + h
+///     .. i + h + 7 ] = T[ j + h .. j + h + 7 ]\ \textbf{do}\ h \gets h + 8
+///     \cr
+/// 16 & \qquad \textbf{if}\ h + 8 \le \mathit{far}\ \textbf{then}\ h \gets h
+///     + \text{the first byte where they differ} \cr
+/// 17 & \qquad \textbf{else while}\ h < \mathit{far}\ \textbf{and}\ T[ i + h
+///     ] = T[ j + h ]\ \textbf{do}\ h \gets h + 1 \cr
+/// 18 & \quad \textbf{return}\ h
+/// \end{array}}
+/// \f]
+/// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$
 template< Executor E , class I >
 [[nodiscard]] std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
                                             const std::vector< I > & SA );

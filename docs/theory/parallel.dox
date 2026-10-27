@@ -1,0 +1,436 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- File parallel.dox ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_parallel */
+/** \defgroup theory_parallel Theory of parallelism
+ \ingroup area_parallel
+
+ \details The headers of `include/ADS/parallel` realize, beyond the book, the
+ parallel versions of a few algorithms of the library on the threads of one
+ machine with shared memory: the patterns of the loops, of the reductions and
+ of the prefix sums, the merge of sorted ranges and the sort, the products of
+ matrices, the Fourier transform, the visits of a static graph and the LCP
+ array of a text. Each runs on an executor, which is the only part that knows
+ the threads, and gives the result of its sequential version. This page
+ collects what the headers take for granted: the model of the cost and its
+ notation (see \ref theory_parallel_notation), the executors and the way they
+ schedule the calls (see \ref theory_parallel_exec), and, for each family of
+ algorithms, the property on which its correctness rests and the argument
+ behind its bound (from \ref theory_parallel_patterns to
+ \ref theory_parallel_graph). The pseudocode of each algorithm is instead on
+ the page of its header, in the comment of its function, together with the
+ paper that it follows.
+
+ \tableofcontents
+
+ \section theory_parallel_notation Definitions and notation
+
+ A parallel computation is a graph of <em>tasks</em>, oriented and acyclic,
+ with an edge from a task to each task that cannot start before it ends; the
+ fork and join of two calls (`parallelInvoke()` of `Executor.h`) and the loop
+ whose iterations are independent (`parallelFor()`) are the two ways in which
+ the algorithms of the area build it. The <em>work</em> \f$ W \f$ is the time
+ of all the tasks, i.e., the time of the computation on one thread, and the
+ <em>depth</em> (or span) \f$ D \f$ is the time of a longest path of the
+ graph, i.e., the time on infinitely many threads; their ratio
+ \f$ W / D \f$ is the <em>parallelism</em>, the most threads that can be kept
+ busy. An algorithm is <em>work-efficient</em> when its work is, up to a
+ constant factor, the time of the best sequential algorithm: the ones of the
+ area are, save the overheads stated in their headers, so that on one thread
+ they lose only a constant.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ p \f$</td>
+     <td>the threads of an executor, its <tt>concurrency()</tt>, the
+         calling thread included where it works</td></tr>
+ <tr><td>\f$ W \f$, \f$ D \f$</td>
+     <td>the work and the depth of a computation</td></tr>
+ <tr><td>\f$ T_p \f$</td>
+     <td>the time on \f$ p \f$ threads, so that \f$ T_1 = W \f$ and
+         \f$ T_\infty = D \f$</td></tr>
+ <tr><td>\f$ g \f$, \f$ B \f$</td>
+     <td>the grain, i.e., the least number of indices of a block of a loop
+         (<tt>kGrain</tt> by default), and the number of blocks, at most
+         <tt>kBlocks</tt></td></tr>
+ <tr><td>\f$ \oplus \f$</td>
+     <td>an associative operation of a reduction or of a prefix sum, with
+         the identity <tt>id</tt> or the initial value
+         <tt>init</tt></td></tr>
+ <tr><td>\f$ n \f$, \f$ m \f$</td>
+     <td>the items of the input, the nodes and the arcs of a graph</td></tr>
+ </table>
+
+ Two lower bounds hold for any schedule, since \f$ p \f$ threads do at most
+ \f$ p \f$ units of work in a unit of time and the tasks of a path run one
+ after the other:
+ \f[
+   T_p \ge W / p , \qquad T_p \ge D . \tag{1}
+ \f]
+ The <em>speedup</em> is \f$ T_1 / T_p \f$, at most \f$ p \f$ by (1), and it is
+ <em>linear</em> when it is \f$ \Theta( p ) \f$, which needs a parallelism
+ \f$ W / D \f$ larger than \f$ p \f$. The model counts the operations and not
+ the moves of the memory, while several algorithms of the area (the products
+ of a sparse matrix by a vector, the Fourier transform, the distribution of
+ the sort) are bound by the bandwidth of the memory, which the threads of a
+ socket share; their headers state the number of passes over the memory, on
+ which their speedup depends more than on (1).
+
+ \section theory_parallel_exec Executors and schedules
+
+ An executor runs the calls \f$ f( 0 ) , \ldots , f( n - 1 ) \f$ on its
+ threads and returns when all have returned (`bulk( n , f )`, the concept
+ `Executor` of `Executor.h`), and may run two calls in parallel
+ (`invoke( f , g )`); every parallel algorithm of the library takes one as its
+ first argument, so that the same algorithm runs on any of the five.
+
+ <table>
+ <caption>The executors and the way they schedule the calls</caption>
+ <tr><th>Executor</th><th>Threads</th><th><tt>bulk( n , f )</tt></th>
+     <th><tt>invoke( f , g )</tt></th><th>A call nested in a call</th></tr>
+ <tr><td><tt>Sequential</tt></td><td>the caller</td>
+     <td>the calls in order</td><td>\f$ f \f$, then \f$ g \f$</td>
+     <td>in order</td></tr>
+ <tr><td><tt>ThreadPool</tt></td><td>\f$ p - 1 \f$ workers and the
+     caller</td>
+     <td>\f$ \min\{ p - 1 , n - 1 \} \f$ tokens on the deque of the caller,
+         stolen by the others, each claiming calls by a fetch-and-add</td>
+     <td>\f$ g \f$ pushed on the deque, \f$ f \f$ run, \f$ g \f$ taken
+         back unless stolen</td><td>on all the threads, any depth</td></tr>
+ <tr><td><tt>FastFlowExecutor</tt></td><td>\f$ p \f$ workers, the caller
+     waiting</td>
+     <td>a <tt>ParallelFor</tt> of FastFlow, chunks of 1</td>
+     <td>by <tt>bulk()</tt></td><td>in order on its thread</td></tr>
+ <tr><td><tt>OpenMPExecutor</tt></td><td>\f$ p \f$, the caller
+     included</td>
+     <td><tt>omp parallel for</tt>, dynamic chunks of 1</td>
+     <td>by <tt>bulk()</tt> on 2 indices</td>
+     <td>as the runtime nests a region, by default in order</td></tr>
+ <tr><td><tt>TBBExecutor</tt></td><td>an arena of \f$ p \f$, the caller
+     included</td>
+     <td><tt>parallel_for</tt> of oneTBB, a task per index</td>
+     <td><tt>parallel_invoke</tt></td><td>as tasks of the arena</td></tr>
+ </table>
+
+ <em>Lemma 1 (the greedy schedule).</em> A schedule that never leaves a thread
+ idle while a task is ready runs in
+ \f[
+   T_p \le W / p + D , \tag{2}
+ \f]
+ within a factor of 2 of the best, by (1) (Graham, and Brent for the
+ computations of known depth).
+
+ Indeed, at each unit of time either all the \f$ p \f$ threads work, which
+ can happen at most \f$ W / p \f$ times, or some thread is idle; in the second
+ case every ready task runs, and the first task of each longest path among the
+ tasks left is ready, so that the depth of what is left decreases by 1, which
+ can happen at most \f$ D \f$ times. The patterns of `Executor.h` approach the
+ greedy schedule from the side of the data: a loop is cut into \f$ B \f$
+ blocks, which the threads claim one at a time from a counter, so that a
+ thread is idle only when no block is left, and the time is
+ \f$ T_p \le W / p + \max_b w_b \f$ for blocks of work \f$ w_b \f$. With
+ blocks of equal work \f$ W / B \f$ this is \f$ ( W / p ) ( 1 + p / B ) \f$,
+ and the cut into at most `kBlocks` blocks of at least `kGrain` indices
+ trades this loss against the cost of a claim, a fetch-and-add on a shared
+ line.
+
+ The pool of ADS (`ThreadPool`) schedules by work stealing: each thread keeps
+ its tasks on a deque of Chase and Lev, takes them from the bottom, and, when
+ it has none, steals the oldest of a random other thread. With work stealing
+ the expected time is \f$ W / p + O( D ) \f$ (Blumofe and Leiserson): a thief
+ that fails is charged to the depth, since each round of \f$ p \f$ steals
+ makes progress on the critical path with constant probability, and the
+ thread that works is charged to the work; the expected number of steals is
+ \f$ O( p D ) \f$, and since a steal moves the oldest task, which in a fork
+ and join is the largest, the steals are few when the parallelism is large.
+ The job of `bulk()` pushes \f$ \min\{ p - 1 , n - 1 \} \f$ tokens that the
+ thieves take one at a time and that claim the calls from a shared counter,
+ so that its calls are balanced as in the dynamic schedule and no task is
+ allocated; `invoke()` waits for a stolen call by running other tasks (the
+ leapfrogging of Wagner and Calder), so that a thread that waits still works
+ and the bound holds for the nested calls too.
+
+ \section theory_parallel_patterns Loops, reductions and prefix sums
+
+ The blocks of a loop (`blocksOf()` of `Executor.h`) depend only on the number
+ of indices and on the grain: \f$ s = \max\{ g , \lceil n / \mathit{kBlocks}
+ \rceil \} \f$ indices per block and \f$ \lceil n / s \rceil \f$ blocks.
+ `parallelReduce()` reduces each block by a call `f( lo , hi )` into a partial
+ result and combines the partial results by \f$ \oplus \f$ in the order of the
+ blocks, so that its result is
+ \f[
+   \mathit{id} \oplus r_0 \oplus r_1 \oplus \cdots \oplus r_{B - 1} ,
+   \qquad r_b = f( \mathit{lo}_b , \mathit{hi}_b ) , \tag{3}
+ \f]
+ whatever the executor and the number of its threads; (3) is the sum by blocks,
+ which equals the sum from left to right when \f$ \oplus \f$ is associative,
+ and is the same on every executor also when \f$ \oplus \f$ is associative
+ only up to rounding, as the sum of floating point numbers is. The reduction
+ has work \f$ O( n ) \f$ and depth \f$ O( n / B + B ) \f$, the blocks and then
+ their combination.
+
+ The prefix sums \f$ y_i = x_0 \oplus \cdots \oplus x_i \f$ (or up to
+ \f$ x_{i-1} \f$, the exclusive ones) are the pattern of the counting sorts,
+ of the compaction of a vector and of the distribution of the parallel sort.
+ The scan of Blelloch reduces the blocks, scans the \f$ B \f$ partial results
+ and then scans each block from its prefix, i.e., it reads the input twice and
+ writes the output once, \f$ 3 n \f$ moves. `parallelInclusiveScan()` and
+ `parallelExclusiveScan()` do it in one pass by the decoupled look-back of
+ Merrill and Garland: the threads claim the tiles in increasing order, reduce
+ each tile \f$ c \f$ into its aggregate \f$ a_c \f$, publish it, and add on
+ the left the values published by the tiles before it until one has published
+ its inclusive prefix \f$ P_{c'} \f$, so that
+ \f[
+   P_c = P_{c'} \oplus a_{c' + 1} \oplus \cdots \oplus a_{c - 1} \oplus a_c ;
+   \tag{4}
+ \f]
+ then they publish \f$ P_c \f$ and scan the tile from the prefix before it,
+ which is still in the cache: \f$ 2 n \f$ moves.
+
+ <em>Lemma 2 (the look-back ends).</em> The scan by decoupled look-back ends on
+ any executor, and its prefixes are those of the scan from left to right.
+
+ In fact, a thread waits only for a tile before its own, and the tiles are
+ claimed in increasing order: a tile before \f$ c \f$ is held by a thread that
+ runs, since it claimed it before \f$ c \f$ was claimed, and the least tile
+ not done waits for no tile, since all the tiles before it have published
+ their prefix. Hence, by induction on the tiles, each tile is done, also when
+ the threads of the executor are fewer than the tiles or when one runs all of
+ them in order (`Sequential`). The prefixes are right by (4) and the
+ associativity of \f$ \oplus \f$, since the tiles from \f$ c' + 1 \f$ to
+ \f$ c - 1 \f$ added on the left are exactly those after the last prefix met.
+ The look-back reads \f$ O( 1 ) \f$ tiles on average when the threads go at
+ the same pace, since the tile before is then about to publish its prefix, and
+ at most \f$ c \f$ tiles; an exception in a tile publishes it as failed, so
+ that the tiles after it stop instead of waiting.
+
+ \section theory_parallel_sort Merging and sorting
+
+ The merge of \f$ k \f$ sorted ranges of \f$ N \f$ items in all
+ (`multiwayMerge()` of `ParallelMerge.h`) is cut into \f$ B \f$ parts of the
+ output, each merged by the sequential merge on one thread; it rests on the
+ following.
+
+ <em>Lemma 3 (the multisequence selection).</em> Order the items by the
+ triples \f$ ( \mathit{item} , \mathit{range} , \mathit{position} ) \f$.
+ For each rank \f$ r \le N \f$ there is a unique split \f$ s( r ) \f$, with
+ \f[
+   \sum_{i = 1}^{k} s_i( r ) = r , \tag{5}
+ \f]
+ such that the first \f$ s_i( r ) \f$ items of each range \f$ i \f$ are the
+ \f$ r \f$ least items, and the merge writes them, in its order, before the
+ others.
+
+ Indeed, the order of the triples is total and, within a range, it is the
+ order of the positions, since the range is sorted; hence the \f$ r \f$ least
+ triples are a prefix of each range, and the order of the triples is the order
+ of the stable merge, which on equal items takes the range of lower index
+ first. The part \f$ q \f$ of the output is then the merge of the pieces
+ \f$ [ s_i( r_q ) , s_i( r_{q+1} ) ) \f$ of the ranges, written from the rank
+ \f$ r_q \f$, and the parts are independent. `multisequenceSplit()` finds
+ \f$ s( r ) \f$ by narrowing a window on each range: the pivot is the middle
+ of a window, chosen as the median of the middles weighted by the widths, and
+ the binary searches that place it in the other windows tell whether it is
+ among the \f$ r \f$ least. If it is, every window whose middle is not larger
+ loses its left half, and these windows weigh at least half of the total width
+ by the choice of the median; otherwise the same holds on the right. At least
+ a quarter of the total width goes at each step, hence there are
+ \f$ O( \log( k N ) ) \f$ steps, each of \f$ k \f$ binary searches and of a
+ sort of \f$ k \f$ middles, i.e., \f$ O( k \log N \log( k N ) ) \f$
+ comparisons per split, far fewer than the \f$ O( N \log k ) \f$ of the merge.
+ With \f$ B = 4 p \f$ parts the merge takes \f$ O( ( N / p ) \log k ) \f$ time
+ plus the splits, which run in parallel.
+
+ The parallel sorts of `ParallelSort.h` (`sort( ex , A , less )` and
+ `stableSort( ex , A , less )`) first look for the inputs that need no
+ distribution: a reduction by blocks finds whether \f$ A \f$ is sorted or in
+ decreasing order, and a second one whether it is made of a few runs per
+ block, which are merged by the merge above. Otherwise they distribute the
+ items into \f$ k \f$ buckets whose concatenation is sorted, as the samplesort
+ does: \f$ k - 1 \f$ splitters taken from a sorted random sample of
+ \f$ 16 k \f$ items (oversampling, so that every bucket holds
+ \f$ O( n / k ) \f$ items with high probability), or the highest bits of the
+ keys of the numbers in their natural order. The classification is a parallel
+ loop on the blocks, each counting its items per bucket; a prefix sum of the
+ counts in the order (bucket, block) gives each block the place of its items
+ of each bucket, and a second loop moves them there, the blocks in their
+ order, so that the distribution is stable. Last, the buckets are sorted by the
+ sequential sort, claimed from the largest down (the schedule LPT of Graham,
+ within \f$ 4 / 3 \f$ of the best), and a bucket larger than \f$ n / p \f$ is
+ sorted by the parallel sort itself. With \f$ k \f$ buckets the time is
+ \f$ O( n / p + k p ) \f$ for the classification and
+ \f$ O( ( n / p ) \log( n / k ) ) \f$ for the buckets when they are balanced,
+ and each item moves a constant number of times. The learned sorts of the same
+ header (`learnedSort( ex , A )` and `learnedStableSort( ex , A )`) change the
+ classifier only: on numbers of 32 or 64 bits, the bucket of a key is read from
+ a model of the distribution function of a sample (see `LearnedSort.h`), a grid
+ whose cell leaves a few comparisons with no branch instead of the
+ \f$ \log_2 k \f$ dependent steps of the tree, and the sort falls back on the
+ classifiers above when the sample shows a distribution that the model does
+ not fit; the bound is the same, since the model keeps the buckets balanced
+ with high probability by the same argument of the sample.
+
+ \section theory_parallel_numeric Matrix products and the Fourier transform
+
+ The product of a sparse matrix of \f$ m \f$ rows and \f$ \mathit{nnz} \f$
+ nonzeros by a vector (`multiply()` of `ParallelNumeric.h`) costs, for the
+ row \f$ i \f$, its nonzeros plus the store of its sum, i.e., the rows up to
+ \f$ i \f$ cost \f$ i + \mathit{start}( i ) \f$, which grows with \f$ i \f$.
+ Hence the cut of this quantity into \f$ B \f$ equal parts, each found by a
+ binary search, balances the parts (the diagonals of the merge path of
+ Merrill and Garland, applied to whole rows), and each row is summed on one
+ thread in the order of the sequential product, so that the result is the same
+ bit for bit; only a row longer than a part makes the parts unequal. The
+ product moves \f$ 12 \mathit{nnz} + 8 ( m + n ) \f$ bytes for
+ \f$ 2 \mathit{nnz} \f$ operations, i.e., it is bound by the bandwidth of the
+ memory, and its speedup is at most the ratio of the bandwidth of the socket
+ to that of one core. The product of dense matrices (`gemm()`) is instead bound
+ by the operations, \f$ 2 m n k \f$, and runs the loops of the sequential
+ product on blocks that fit the caches, the thread of each range of rows of
+ \f$ C \f$ packing its own blocks of \f$ A \f$ and all of them sharing the
+ packed panel of \f$ B \f$ (Smith et al.).
+
+ The Fourier transform of \f$ n = n_1 n_2 \f$ points (`fft()` of
+ `ParallelFFT.h`) rests on the factorization of Bailey: with the points as a
+ matrix \f$ a_{j_1 j_2} = a[ j_1 n_2 + j_2 ] \f$ and
+ \f$ \omega_N = e^{-2 \pi i / N} \f$,
+ \f[
+   \hat a[ k_1 + n_1 k_2 ] = \sum_{j_2} \omega_{n_2}^{j_2 k_2}
+   \Bigl( \omega_n^{j_2 k_1} \sum_{j_1} \omega_{n_1}^{j_1 k_1}
+   a_{j_1 j_2} \Bigr) , \tag{6}
+ \f]
+ which follows from \f$ \omega_n^{( j_1 n_2 + j_2 ) ( k_1 + n_1 k_2 )} =
+ \omega_{n_1}^{j_1 k_1} \, \omega_n^{j_2 k_1} \, \omega_{n_2}^{j_2 k_2} \f$,
+ since \f$ \omega_n^{n_1 n_2} = 1 \f$. The inner sums of (6) are \f$ n_2 \f$
+ transforms of length \f$ n_1 \f$, the outer ones \f$ n_1 \f$ of length
+ \f$ n_2 \f$, both about \f$ \sqrt n \f$ and hence in the cache of a core, and
+ independent; the work is that of the sequential transform,
+ \f$ O( n \log n ) \f$, plus the twiddles and three transpositions of
+ \f$ n \f$ points, and the depth is that of one transform of length
+ \f$ \sqrt n \f$ and of the transpositions.
+
+ \section theory_parallel_graph Visits of graphs and the LCP array
+
+ The levels of a visit in breadth are
+ \f[
+   L_0 = \{ s \} , \qquad L_{\ell + 1} = \{ v \notin L_0 \cup \cdots \cup
+   L_\ell : ( u , v ) \in E \text{ for some } u \in L_\ell \} , \tag{7}
+ \f]
+ and a node of \f$ L_\ell \f$ is at distance \f$ \ell \f$ from \f$ s \f$ (by
+ Lemma 1, see \ref theory_graph_visits). `bfsDistances()` of `ParallelGraph.h`
+ builds each level by (7) in either direction: from the top down, the nodes of
+ \f$ L_\ell \f$ claim their neighbors not yet reached by a compare-and-swap
+ of the distance, which succeeds for one claimant only and writes the same
+ level whoever wins; from the bottom up, each node not yet reached looks for
+ one neighbor in \f$ L_\ell \f$, and stops at the first. Both give the set
+ (7), and hence the same distances; they differ in the arcs they read, the arcs
+ out of the frontier \f$ m_f \f$ against those into the nodes not yet reached
+ up to their first hit, at most \f$ m_u \f$. The visit goes from the bottom up
+ when \f$ m_f > m_u / \alpha \f$, which happens on the few large levels of the
+ graphs of small diameter, and back when the frontier is small again (Beamer,
+ Asanovic and Patterson). The work is \f$ O( n + m ) \f$, each level costs a
+ depth of \f$ O( \log n ) \f$ to gather its frontier, and the depth is
+ therefore \f$ O( D \log n ) \f$ for diameter \f$ D \f$.
+
+ The connected components (`connectedComponents()`) are those of a concurrent
+ MFSET in which a merge hooks the larger of two roots under the smaller by a
+ compare-and-swap, and tries again from the new roots if another thread moved
+ first. The parent of a node is then never larger than the node, hence the
+ parents form no cycle, the root of a set is its least node, and after the
+ merges of all the arcs the sets are the components, whatever the order of the
+ merges. The sampling of Afforest (Sutton, Ben-Nun and Barak) skips most of
+ the merges: after the merges of the first two arcs of each node, a sample of
+ nodes finds the largest set \f$ c \f$, and the nodes of \f$ c \f$ merge no
+ more. On an unoriented graph this loses no arc between two components, since
+ such an arc has an end out of \f$ c \f$, which merges it; the arcs within the
+ giant component, usually most of them, are never read.
+
+ The LCP array of a text \f$ T \f$ of \f$ n \f$ symbols and of its suffix
+ array \f$ \mathit{SA} \f$ (`lcpArray()` of `ParallelText.h`) is read from the
+ permuted array \f$ \mathit{PLCP}[ i ] = \mathrm{lcp}( i , \Phi[ i ] ) \f$,
+ \f$ \Phi[ i ] \f$ the suffix before \f$ i \f$ in the order of
+ \f$ \mathit{SA} \f$, which has
+ \f[
+   \mathit{PLCP}[ i ] \ge \mathit{PLCP}[ i - 1 ] - 1 . \tag{8}
+ \f]
+ In fact, if the suffixes \f$ i - 1 \f$ and \f$ \Phi[ i - 1 ] \f$ share a
+ prefix of \f$ h > 0 \f$ symbols, the suffix \f$ \Phi[ i - 1 ] + 1 \f$ comes
+ before \f$ i \f$ and shares \f$ h - 1 \f$ symbols with it, and so does every
+ suffix between them in the order, \f$ \Phi[ i ] \f$ included. By (8) a scan
+ of \f$ i \f$ in the order of the text resumes each comparison at
+ \f$ h - 1 \f$, and since \f$ h \f$ grows by at most \f$ n \f$ in all and
+ decreases by 1 per suffix, it makes \f$ O( n ) \f$ comparisons (Kasai et
+ al.). The parallel version cuts the text into \f$ 4 p \f$ parts, each
+ scanned from \f$ h = 0 \f$: (8) is then not used across the borders, which
+ costs at most \f$ \max_i \mathit{PLCP}[ i ] \f$ more per part and leaves the
+ result the same.
+
+ \section theory_parallel_refs References
+
+ \see R. L. Graham, Bounds on multiprocessing timing anomalies, SIAM
+      Journal on Applied Mathematics 17(2), 416-429, 1969,
+      doi:10.1137/0117039
+ \see R. P. Brent, The parallel evaluation of general arithmetic
+      expressions, Journal of the ACM 21(2), 201-206, 1974,
+      doi:10.1145/321812.321815
+ \see R. D. Blumofe, C. E. Leiserson, Scheduling multithreaded
+      computations by work stealing, Journal of the ACM 46(5), 720-748,
+      1999, doi:10.1145/324133.324234
+ \see D. Chase, Y. Lev, Dynamic circular work-stealing deque, ACM
+      Symposium on Parallelism in Algorithms and Architectures (SPAA),
+      21-28, 2005, doi:10.1145/1073970.1073974
+ \see D. B. Wagner, B. G. Calder, Leapfrogging: a portable technique for
+      implementing efficient futures, ACM SIGPLAN Symposium on Principles
+      and Practice of Parallel Programming (PPoPP), 208-217, 1993,
+      doi:10.1145/155332.155354
+ \see G. E. Blelloch, Prefix sums and their applications, Technical
+      Report CMU-CS-90-190, Carnegie Mellon University, 1990
+ \see D. Merrill, M. Garland, Single-pass parallel prefix scan with
+      decoupled look-back, Technical Report NVR-2016-002, NVIDIA, 2016
+ \see P. J. Varman, S. D. Scheufler, B. R. Iyer, G. R. Ricard, Merging
+      multiple lists on hierarchical-memory multiprocessors, Journal of
+      Parallel and Distributed Computing 12(2), 171-177, 1991,
+      doi:10.1016/0743-7315(91)90022-2
+ \see P. Sanders, S. Winkel, Super scalar sample sort, European Symposium
+      on Algorithms (ESA), LNCS 3221, 784-796, 2004,
+      doi:10.1007/978-3-540-30140-0_69
+ \see M. Axtmann, S. Witt, D. Ferizovic, P. Sanders, Engineering in-place
+      (shared-memory) sorting algorithms, ACM Transactions on Parallel
+      Computing 9(1), 1-62, 2022, doi:10.1145/3505286
+ \see A. Kristo, K. Vaidya, U. Çetintemel, S. Misra, T. Kraska, The case for
+      a learned sorting algorithm, Proceedings of SIGMOD 2020, 1001-1016,
+      2020, doi:10.1145/3318464.3389752
+ \see D. Merrill, M. Garland, Merge-based parallel sparse matrix-vector
+      multiplication, International Conference for High Performance
+      Computing, Networking, Storage and Analysis (SC), 678-689, 2016,
+      doi:10.1109/SC.2016.57
+ \see T. M. Smith, R. A. van de Geijn, M. Smelyanskiy, J. R. Hammond,
+      F. G. Van Zee, Anatomy of high-performance many-threaded matrix
+      multiplication, IEEE International Parallel and Distributed
+      Processing Symposium (IPDPS), 1049-1059, 2014,
+      doi:10.1109/IPDPS.2014.110
+ \see D. H. Bailey, FFTs in external or hierarchical memory, The Journal
+      of Supercomputing 4(1), 23-35, 1990, doi:10.1007/BF00162341
+ \see S. Beamer, K. Asanovic, D. Patterson, Direction-optimizing
+      breadth-first search, International Conference for High
+      Performance Computing, Networking, Storage and Analysis (SC), 1-10,
+      2012, doi:10.1109/SC.2012.50
+ \see M. Sutton, T. Ben-Nun, A. Barak, Optimizing parallel graph
+      connectivity computation via subgraph sampling, IEEE International
+      Parallel and Distributed Processing Symposium (IPDPS), 12-21, 2018,
+      doi:10.1109/IPDPS.2018.00012
+ \see Y. Shiloach, U. Vishkin, An \f$ O( \log n ) \f$ parallel connectivity
+      algorithm, Journal of Algorithms 3(1), 57-67, 1982,
+      doi:10.1016/0196-6774(82)90008-6
+ \see J. Kärkkäinen, G. Manzini, S. J. Puglisi, Permuted longest-common-
+      prefix array, Annual Symposium on Combinatorial Pattern Matching
+      (CPM), LNCS 5577, 181-192, 2009, doi:10.1007/978-3-642-02441-2_17
+ \see T. Kasai, G. Lee, H. Arimura, S. Arikawa, K. Park, Linear-time
+      longest-common-prefix computation in suffix arrays and its
+      applications, Annual Symposium on Combinatorial Pattern Matching
+      (CPM), LNCS 2089, 181-192, 2001, doi:10.1007/3-540-48194-X_17
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------- End File parallel.dox --------------------------*/
+/*--------------------------------------------------------------------------*/

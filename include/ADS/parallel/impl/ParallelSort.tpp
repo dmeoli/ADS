@@ -7,7 +7,7 @@
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
  *
  * \copyright &copy; by Donato Meoli
  */
@@ -367,7 +367,7 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
   if( lo >= hi )
    return;
   // the counts on the stack of the thread, not on lines that the
-  // neighbouring blocks share
+  // neighboring blocks share
   std::vector< std::size_t > c( k , 0 );
   if constexpr( keep ) {
    cls.classify( A.data() + lo , hi - lo , id.get() + lo );

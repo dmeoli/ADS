@@ -2,47 +2,51 @@
 /*--------------------------- File ParallelFFT.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The parallel fast Fourier transform, beyond the book: fft( ex , a ,
- * inverse ) is the transform of fft( a , inverse ) [see FFT.h] on the
- * threads of an executor [see Executor.h], by the four steps of Bailey on
- * top of the sequential fft(). The \f$ n = n_1 n_2 \f$ points, \f$ n_1 =
- * 2^{\lfloor k / 2 \rfloor} \f$ for \f$ n = 2^k \f$, are the matrix
- * \f$ a_{j_1 j_2} = a[ j_1 n_2 + j_2 ] \f$ of \f$ n_1 \f$ rows, and with
- * \f$ \omega_N = e^{-2 \pi i / N} \f$
+ * The parallel fast Fourier transform, beyond the book:
+ * `fft( ex , a , inverse )` is the transform of `fft( a , inverse )` [see
+ * `FFT.h`] on the threads of an executor [see `Executor.h`], by the four
+ * steps of Bailey on top of the sequential `fft()`. The \f$ n = n_1 n_2 \f$
+ * points, \f$ n_1 = 2^{\lfloor k / 2 \rfloor} \f$ for \f$ n = 2^k \f$, are
+ * the matrix \f$ a_{j_1 j_2} = a[ j_1 n_2 + j_2 ] \f$ of \f$ n_1 \f$ rows,
+ * and with \f$ \omega_N = e^{-2 \pi i / N} \f$
  * \f[
  *   \hat a[ k_1 + n_1 k_2 ] = \sum_{j_2} \omega_{n_2}^{j_2 k_2}
  *   \Bigl( \omega_n^{j_2 k_1} \sum_{j_1} \omega_{n_1}^{j_1 k_1}
  *   a_{j_1 j_2} \Bigr) ,
  * \f]
- * i.e., the \f$ n_2 \f$ transforms of the columns, the multiplication by
- * the twiddle factors \f$ \omega_n^{j_2 k_1} \f$, the \f$ n_1 \f$
- * transforms of the rows, and the transposition of the result. The
- * transforms of length \f$ n_1 \f$ or \f$ n_2 \f$ (about \f$ \sqrt n \f$,
- * in the cache of each core) are independent, each the sequential fft()
- * of a row copied into a vector of its thread, and they run in parallel
- * loops; the columns become rows, and the rows columns, by three parallel
- * transpositions through a buffer of n points [see Scratch.h], each in
- * tasks of 16 rows by 256 columns and tiles of 16 x 16. A transposition
- * that walks whole columns instead, e.g., gathering 8 columns at a time
- * from the rows, crosses a page at each row (a row of \f$ 2^{11} \f$
- * points is 32 KB) and misses the TLB at each one: on the benchmark,
- * gathering and putting back the columns of \f$ 2^{22} \f$ points takes
- * longer than the whole sequential transform.
+ * i.e., the \f$ n_2 \f$ transforms of the columns, the multiplication by the
+ * twiddle factors \f$ \omega_n^{j_2 k_1} \f$, the \f$ n_1 \f$ transforms of
+ * the rows, and the transposition of the result. The transforms of length
+ * \f$ n_1 \f$ or \f$ n_2 \f$ (about \f$ \sqrt n \f$, in the cache of each
+ * core) are independent, each the sequential `fft()` of a row copied into a
+ * vector of its thread, and they run in parallel loops; the columns become
+ * rows, and the rows columns, by three parallel transpositions through a
+ * buffer of \f$ n \f$ points [see `Scratch.h`], each in tasks of 16 rows by
+ * 256 columns and tiles of \f$ 16 \times 16 \f$. A transposition that walks
+ * whole columns instead, e.g., gathering 8 columns at a time from the rows,
+ * crosses a page at each row (a row of \f$ 2^{11} \f$ points is 32 KB) and
+ * misses the TLB at each one: on the benchmark, gathering and putting back
+ * the columns of \f$ 2^{22} \f$ points takes longer than the whole
+ * sequential transform.
+ *
  * The work is that of the sequential transform plus the twiddles and 4
  * passes of moves (3 transpositions and the copy of the result back),
- * \f$ O( n \log n / p ) \f$ time on p threads, the transform of a row
- * not split.
- * The result equals the sequential one up to the rounding, the error of
- * both being \f$ O( \epsilon \log n ) \f$ relative to the norm.
+ * \f$ O( n \log n / p ) \f$ time on \f$ p \f$ threads, the transform of a
+ * row not split. The result equals the sequential one up to the rounding,
+ * the error of both being \f$ O( \epsilon \log n ) \f$ relative to the norm.
  *
- * The contracts [see Contract.h]: the size of a is a power of 2 (or 0).
+ * The contracts [see `Contract.h`]: the size of \f$ a \f$ is a power of 2
+ * (or 0).
+ *
  * \see D. H. Bailey, FFTs in external or hierarchical memory, The Journal
  *      of Supercomputing 4(1), 23-35, 1990, doi:10.1007/BF00162341
  * \see C. Van Loan, Computational Frameworks for the Fast Fourier
  *      Transform, SIAM, 1992, doi:10.1137/1.9781611970999
+ *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
+ *         Università di Pisa \n
+ *
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
@@ -74,12 +78,44 @@
 
 namespace ADS {
 
-/// the points from which the parallel transform splits its work
+/// the least number of points that the parallel transform splits among the
+/// threads
 inline constexpr std::size_t kParallelFFT = std::size_t( 1 ) << 15;
 
-/// the discrete Fourier transform of a in place on the threads of ex; the
-/// inverse one, divided by n, if inverse
-/// \pre the size of a is a power of 2 (or 0)
+/// the discrete Fourier transform of \f$ a \f$ in place on the threads of
+/// `ex`; the inverse one, divided by \f$ n \f$, if `inverse`
+///
+/// In pseudocode (the four steps of Bailey, beyond the book), \f$ a \f$ the
+/// matrix of \f$ n_1 \f$ rows and \f$ n_2 \f$ columns by rows, and
+/// \f$ \omega_n = e^{\mp 2 \pi i / n} \f$ (the sign \f$ + \f$ for the
+/// inverse transform), whose powers are read from two tables of
+/// \f$ O( \sqrt n ) \f$ entries:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{fft}( \mathit{ex} , a , \mathit{inverse}
+///     ) \cr
+/// 2 & \quad \textbf{if}\ p = 1\ \textbf{or}\ n < 2^{15}\ \textbf{then}
+///     \ \mathrm{fft}( a , \mathit{inverse} );\ \textbf{return} \cr
+/// 3 & \quad k \gets \log_2 n;\ n_1 \gets 2^{\lfloor k / 2 \rfloor};\ n_2
+///     \gets n / n_1 \cr
+/// 4 & \quad b \gets \text{the transpose of } a\quad \triangleright
+///     \ \text{the columns as rows, } n_2 \times n_1 \cr
+/// 5 & \quad \textbf{for}\ j_2 \gets 0\ \textbf{to}\ n_2 - 1
+///     \ \textbf{do in parallel} \cr
+/// 6 & \qquad b[ j_2 ] \gets \mathrm{fft}( b[ j_2 ] , \mathit{inverse} ) \cr
+/// 7 & \qquad \textbf{for}\ k_1 \gets 0\ \textbf{to}\ n_1 - 1\ \textbf{do}
+///     \ b[ j_2 ][ k_1 ] \gets \omega_n^{j_2 k_1} b[ j_2 ][ k_1 ] \cr
+/// 8 & \quad a \gets \text{the transpose of } b\quad \triangleright
+///     \ n_1 \times n_2 \cr
+/// 9 & \quad \textbf{for}\ k_1 \gets 0\ \textbf{to}\ n_1 - 1
+///     \ \textbf{do in parallel}\ a[ k_1 ] \gets \mathrm{fft}( a[ k_1 ] ,
+///     \mathit{inverse} ) \cr
+/// 10 & \quad a \gets \text{the transpose of } a\quad \triangleright
+///     \ \hat a[ k_1 + n_1 k_2 ] \text{ is the entry } k_2 \text{ of the row }
+///     k_1
+/// \end{array}}
+/// \f]
+/// \pre the size of \f$ a \f$ is a power of 2 (or 0)
 template< Executor E >
 void fft( E & ex , std::vector< Complex > & a , bool inverse );
 
@@ -87,10 +123,11 @@ void fft( E & ex , std::vector< Complex > & a , bool inverse );
 
 namespace detail {
 
-/// D = the transpose of the r x c matrix S by rows, in tasks of 16 rows of
-/// S by 256 of its columns, each by tiles of 16 x 16: a task reads 16 rows
-/// and writes 256, so that its pages fit the TLB whatever the distance of
-/// two rows (a column of a large matrix crosses a page at each row)
+/// \f$ D \f$ the transpose of the \f$ r \times c \f$ matrix \f$ S \f$ by
+/// rows, in tasks of 16 rows of \f$ S \f$ by 256 of its columns, each by
+/// tiles of \f$ 16 \times 16 \f$: a task reads 16 rows and writes 256, so
+/// that its pages fit the TLB whatever the distance of two rows (a column of
+/// a large matrix crosses a page at each row)
 template< Executor E >
 void tiledTranspose( E & ex , const Complex * S , Complex * D ,
                      std::size_t r , std::size_t c )
