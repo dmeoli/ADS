@@ -1,0 +1,358 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File complexity.dox ---------------------------*/
+/*--------------------------------------------------------------------------*/
+/** \addtogroup area_complexity */
+/** \defgroup theory_complexity Theory of complexity
+ \ingroup area_complexity
+
+ \details The headers of `include/ADS/complexity` realize chapter 18 of the
+ book and the polynomial cases of its conclusion, i.e., the problems of the
+ class NP with their certificates and their enumerations, the simulation of
+ a nondeterministic algorithm, the polynomial reductions among the problems,
+ and the polynomial algorithms of a few problems close to them. This page
+ collects what the headers take for granted: the definitions of the classes
+ P and NP and the notation (see \ref theory_complexity_notation), the
+ nondeterministic algorithms and the cost of their simulation (see
+ \ref theory_complexity_nd), the size of the trees that the enumerations
+ visit (see \ref theory_complexity_enum), the reductions and the chain of
+ NP-complete problems that the library builds (see
+ \ref theory_complexity_red), and the arguments behind the polynomial cases
+ (see \ref theory_complexity_tiling). The pseudocode of each algorithm is
+ instead on the page of its header, in the comment of its function, together
+ with the section of the book, or the paper, that it follows; the strategies
+ for the problems that are hard are the subject of the theory of intractable
+ problems (`include/ADS/intractable`).
+
+ \tableofcontents
+
+ \section theory_complexity_notation Definitions and notation
+
+ A <em>decision problem</em> \f$ \Pi \f$ is a set of instances, each with the
+ answer YES or NO, and \f$ Y_\Pi \f$ is the set of the instances whose answer
+ is YES; the problems of optimization (the largest clique, the shortest tour)
+ become decision problems by a bound \f$ k \f$ on the value (whether a
+ clique of \f$ k \f$ nodes exists), which is as hard up to a polynomial factor,
+ since a search on \f$ k \f$ finds the optimum with a logarithmic number of
+ questions. The size \f$ |x| \f$ of an instance is the length of a
+ reasonable encoding of it, with the numbers written in binary, so that a
+ number \f$ k \f$ counts \f$ \Theta( \log k ) \f$ and not \f$ k \f$ (the
+ distinction on which the pseudopolynomial algorithms rest). The class
+ <em>P</em> holds the problems decided by an algorithm in time
+ \f$ O( |x|^c ) \f$ for a constant \f$ c \f$; the class <em>NP</em> those
+ that have a polynomial <em>certificate</em>, i.e., a polynomial \f$ p \f$
+ and an algorithm \f$ V \f$ of polynomial time such that
+ \f[
+   x \in Y_\Pi \iff \exists\, y : \ |y| \le p( |x| ) \ \text{and}
+   \ V( x , y ) = \text{YES} . \tag{1}
+ \f]
+ The functions `cliqueCertificate()`, `tspCertificate()`, `satCertificate()`
+ and `legalTiling()`, and the postconditions of the other enumerations of
+ `Problems.h`, are such algorithms \f$ V \f$, each with a certificate of
+ polynomial size (a set of nodes, a tour, an assignment, a covering); hence
+ every problem of the area is in NP, and \f$ \mathrm{P} \subseteq
+ \mathrm{NP} \f$, since a polynomial algorithm is a checker that ignores
+ \f$ y \f$. Whether the inclusion is strict is open.
+
+ <table>
+ <caption>The symbols of the headers of the area</caption>
+ <tr><th>Symbol</th><th>Meaning</th></tr>
+ <tr><td>\f$ x \f$, \f$ |x| \f$</td>
+     <td>an instance and its size, the numbers in binary</td></tr>
+ <tr><td>\f$ y \f$, \f$ V( x , y ) \f$</td>
+     <td>a certificate and its checker, of polynomial size and time</td></tr>
+ <tr><td>\f$ f \f$, \f$ A \propto B \f$</td>
+     <td>a reduction, of polynomial time, with \f$ x \in Y_A \iff
+         f( x ) \in Y_B \f$, and the relation it proves</td></tr>
+ <tr><td>\f$ G \f$, \f$ n \f$, \f$ m \f$</td>
+     <td>a graph as an adjacency matrix (<tt>Adjacency</tt>), its nodes
+         and its edges; its diagonal is ignored</td></tr>
+ <tr><td>\f$ F \f$, \f$ \pm( v + 1 ) \f$</td>
+     <td>a formula in conjunctive normal form (<tt>Cnf</tt>), and the
+         literal of the variable \f$ v \f$ or of its negation</td></tr>
+ <tr><td>\f$ k \f$</td>
+     <td>the bound of a decision problem: the size of a clique or of a
+         cover, the length of a tour, the colors, the profit</td></tr>
+ <tr><td>\f$ D \f$, \f$ d = D[ 0 ] \f$, \f$ u_{hij} \f$</td>
+     <td>the tiles of the tiling, the tile of the corner, and the variable
+         or node of the tile \f$ h \f$ in the square
+         \f$ ( i , j ) \f$ (<tt>tileVar()</tt>)</td></tr>
+ </table>
+
+ \section theory_complexity_nd Nondeterminism
+
+ A <em>nondeterministic</em> algorithm may call `choice( k )`, which returns
+ one of \f$ k \f$ alternatives, and ends with success or failure; it answers
+ YES on \f$ x \f$ if some sequence of choices leads to success, and its time
+ is that of the longest sequence of choices (section 18.2). An algorithm of
+ this kind that runs in polynomial time is a certificate in disguise: the
+ sequence of the choices that leads to success is a \f$ y \f$ of (1), and
+ conversely the algorithm that chooses the bits of \f$ y \f$ one by one and
+ then runs \f$ V( x , y ) \f$ succeeds if and only if (1) holds. Hence NP is
+ also the class of the problems decided in polynomial time by a
+ nondeterministic algorithm, whence its name.
+
+ <em>Lemma 1 (the simulation).</em> A nondeterministic algorithm that makes at
+ most \f$ h \f$ choices of at most \f$ k \f$ alternatives each, in time
+ \f$ t \f$, is simulated by a deterministic one in time
+ \f[
+   O( k^h \, t ) . \tag{2}
+ \f]
+
+ Indeed, the sequences of choices are the paths from the root of a tree of
+ height at most \f$ h \f$ whose nodes have at most \f$ k \f$ children, and the
+ tree has at most \f$ k^h \f$ leaves. `Chooser::run()` of `Nondeterminism.h`
+ replays the algorithm once per leaf, in lexicographic order, each run
+ costing \f$ O( t ) \f$: after a failure it drops the last choices that have
+ no alternative left and advances the one before them, which is the visit in
+ depth of the tree with a backtrack on the last choice still open (section
+ 18.3). With \f$ h \f$ and \f$ t \f$ polynomial in \f$ |x| \f$, (2) is
+ \f$ 2^{O( |x|^c )} \f$; hence \f$ \mathrm{NP} \subseteq \mathrm{EXP} \f$, and
+ no simulation essentially faster than the visit of the tree is known for an
+ NP-complete problem.
+
+ \section theory_complexity_enum Certificates and enumerations
+
+ The enumerations of `Problems.h` and `squareTiling()` of `Domino.h` are (2)
+ specialized to each problem: a backtrack builds the certificate one piece
+ at a time and checks each partial certificate, so that a subtree whose root
+ already fails the check is skipped. The tree of the choices is that of the
+ subsets, of the permutations or of the functions of the problem, and the
+ table gives its size, i.e., the time in the worst case up to the
+ polynomial cost of a node.
+
+ <table>
+ <caption>The enumerations and the trees of their choices</caption>
+ <tr><th>Problem</th><th>Function</th><th>Certificate</th>
+     <th>Leaves of the tree</th></tr>
+ <tr><td>CLIQUE, INDEPENDENT SET</td>
+     <td><tt>clique()</tt>, <tt>independentSet()</tt></td>
+     <td>\f$ k \f$ nodes</td><td>\f$ \binom{n}{k} \f$</td></tr>
+ <tr><td>VERTEX COVER</td><td><tt>vertexCover()</tt></td>
+     <td>at most \f$ k \f$ nodes</td>
+     <td>\f$ \sum_{s \le k} \binom{n}{s} \f$</td></tr>
+ <tr><td>GRAPH COLORABILITY</td><td><tt>coloring()</tt></td>
+     <td>a color per node</td><td>\f$ k^n \f$</td></tr>
+ <tr><td>TRAVELING SALESMAN, the Hamiltonian problems</td>
+     <td><tt>tsp()</tt>, <tt>hamiltonianCircuit()</tt>, ...</td>
+     <td>a permutation</td><td>\f$ ( n - 1 )! \f$ or \f$ n! \f$</td></tr>
+ <tr><td>SATISFIABILITY, 0-1 INTEGER PROGRAMMING</td>
+     <td><tt>satisfiable()</tt>, <tt>lp01()</tt></td>
+     <td>a 0-1 vector</td><td>\f$ 2^n \f$</td></tr>
+ <tr><td>SUBSET SUM, PARTITION, KNAPSACK</td>
+     <td><tt>subsetSumExists()</tt>, <tt>partition()</tt>,
+         <tt>knapsackDecision()</tt></td>
+     <td>a subset</td><td>\f$ 2^n \f$</td></tr>
+ <tr><td>MULTIPROCESSOR SCHEDULING</td>
+     <td><tt>multiprocessorScheduling()</tt></td>
+     <td>a processor per program</td><td>\f$ m^n \f$</td></tr>
+ <tr><td>EXACT COVER BY 3-SETS, 3-DIMENSIONAL MATCHING</td>
+     <td><tt>exactCover3()</tt>, <tt>threeDimensionalMatching()</tt></td>
+     <td>a subset of the sets</td><td>\f$ 2^{|Y|} \f$</td></tr>
+ <tr><td>BOUNDED TILING</td><td><tt>squareTiling()</tt></td>
+     <td>a tile per square</td><td>\f$ m^{n^2 - 1} \f$</td></tr>
+ </table>
+
+ The pruning of the code changes the time in practice, never the bound: a
+ partial tour longer than \f$ k \f$, a partial volume above the capacity or a
+ sum above the target is not extended, and the symmetries are broken by
+ fixing the city 0 at the start of the tours, the node 0 in the first half
+ of a bisection, the colors in the order of their first use, and by trying a
+ program on one empty processor only. A clause of `satisfiable()` is checked
+ as soon as its largest variable is set, which cuts the tree at the first
+ clause made false. Note that the same problems may have polynomial cases:
+ the longest path of an acyclic graph (`longestPathDag()`) is computed by
+ one scan of the nodes in topological order, since a path never comes back
+ to a node already scanned, in \f$ O( n^2 ) \f$ on the matrix, while on a
+ graph with cycles the longest simple path is NP-hard (see
+ \ref theory_complexity_red).
+
+ \section theory_complexity_red Reductions and NP-completeness
+
+ A <em>polynomial reduction</em> of \f$ A \f$ to \f$ B \f$ is a function
+ \f$ f \f$, computable in polynomial time, such that
+ \f[
+   x \in Y_A \iff f( x ) \in Y_B , \tag{3}
+ \f]
+ written \f$ A \propto B \f$. Since \f$ |f( x )| \f$ is at most polynomial in
+ \f$ |x| \f$ (an algorithm of polynomial time writes no more), a polynomial
+ algorithm for \f$ B \f$ composed with \f$ f \f$ is a polynomial algorithm for
+ \f$ A \f$, and two reductions compose into one; hence \f$ \propto \f$ is
+ transitive, and \f$ A \propto B \f$ with \f$ B \in \mathrm{P} \f$ gives
+ \f$ A \in \mathrm{P} \f$. A problem is <em>NP-hard</em> if every problem of
+ NP reduces to it, and <em>NP-complete</em> if it is also in NP; one
+ NP-complete problem in P would give \f$ \mathrm{P} = \mathrm{NP} \f$, and by
+ transitivity a problem of NP to which a known NP-complete problem reduces is
+ NP-complete in its turn.
+
+ <em>Theorem 2 (Cook and Levin).</em> SATISFIABILITY is NP-complete.
+
+ The proof writes, for a nondeterministic algorithm of polynomial time and an
+ input \f$ x \f$, a formula of polynomial size whose variables describe the
+ contents of the memory at each step and whose clauses force each step to
+ follow from the one before it; the formula is satisfiable if and only if a
+ sequence of choices leads to success. The book starts the chain instead from
+ BOUNDED TILING, whose rows of tiles can encode the successive
+ configurations of a computation in the same way (the tiles of Wang), and
+ reduces it to the other problems. The reductions of `Reductions.h` and of
+ the functions that delegate to one another realize the chain below, each in
+ the time needed to write its output.
+
+ <table>
+ <caption>The reductions realized (sections 18.5 and 18.7 of the
+          book)</caption>
+ <tr><th>From</th><th>To</th><th>Where</th><th>Function</th></tr>
+ <tr><td>BOUNDED TILING</td><td>CLIQUE</td><td>Theorem 18.2</td>
+     <td><tt>dominoToClique()</tt></td></tr>
+ <tr><td>BOUNDED TILING</td><td>SATISFIABILITY</td><td>Theorem 18.3</td>
+     <td><tt>dominoToSat()</tt></td></tr>
+ <tr><td>BOUNDED TILING</td><td>0-1 INTEGER PROGRAMMING</td>
+     <td>Theorem 18.4</td><td><tt>dominoToLp01()</tt></td></tr>
+ <tr><td>CLIQUE</td><td>INDEPENDENT SET</td><td>Theorem 18.5</td>
+     <td><tt>complement()</tt></td></tr>
+ <tr><td>INDEPENDENT SET</td><td>VERTEX COVER</td><td>exercise 18.11</td>
+     <td>the complement of the set, \f$ k' = n - k \f$</td></tr>
+ <tr><td>HAMILTONIAN CIRCUIT</td><td>TRAVELING SALESMAN</td>
+     <td>Theorem 18.6</td><td><tt>hamiltonToTsp()</tt></td></tr>
+ <tr><td>PARTITION</td><td>MULTIPROCESSOR SCHEDULING, SUBSET SUM,
+     KNAPSACK</td><td>Theorems 18.7 to 18.9</td>
+     <td><tt>halfSum()</tt></td></tr>
+ <tr><td>DIRECTED HAMILTONIAN CIRCUIT</td>
+     <td>DIRECTED HAMILTONIAN PATH</td><td>exercise 18.13</td>
+     <td><tt>cycleToPath()</tt></td></tr>
+ <tr><td>DIRECTED HAMILTONIAN CIRCUIT</td><td>HAMILTONIAN PATH</td>
+     <td>exercise 18.14</td><td><tt>cycleToChain()</tt></td></tr>
+ <tr><td>DIRECTED HAMILTONIAN PATH</td><td>LONGEST PATH</td>
+     <td>exercise 18.15</td><td>\f$ k = n - 1 \f$</td></tr>
+ <tr><td>HAMILTONIAN PATH</td><td>DEGREE-CONSTRAINED SPANNING TREE</td>
+     <td>exercise 18.16</td><td>\f$ k = 2 \f$</td></tr>
+ <tr><td>3-DIMENSIONAL MATCHING</td><td>EXACT COVER BY 3-SETS</td>
+     <td>chapter 18</td><td><tt>threeDimensionalMatching()</tt></td></tr>
+ </table>
+
+ Each reduction rests on a correspondence between the certificates of the
+ two problems. In `dominoToClique()` the nodes of one square are never
+ joined, so that a clique of \f$ n^2 \f$ nodes takes exactly one tile per
+ square, and two of its tiles in adjacent squares are joined only if they
+ fit; hence the cliques of \f$ n^2 \f$ nodes are the legal coverings, and
+ the graph has \f$ m n^2 \f$ nodes. In `complement()` a set is independent in
+ \f$ G \f$ if and only if it is a clique of the complement, and \f$ S \f$ is
+ independent if and only if \f$ V \setminus S \f$ covers the edges, since an
+ edge left uncovered by \f$ V \setminus S \f$ has both ends in \f$ S \f$. In
+ `hamiltonToTsp()` a tour has \f$ n \f$ edges of length at least 1, and its
+ length is \f$ n \f$ if and only if all its edges are edges of \f$ G \f$. In
+ `halfSum()` a set of numbers of sum \f$ s / 2 \f$ leaves the other half to
+ the second processor, or to the objects left out of the knapsack, whose
+ profits and volumes are the numbers themselves. The cost of each reduction
+ is that of writing its output, e.g., \f$ \Theta( m^2 n^4 ) \f$ for the
+ adjacency matrix of `dominoToClique()`.
+
+ The same tool proves lower bounds within P. Sorting reduces to the convex
+ hull (`sortToHull()`): the points \f$ ( a_i , a_i^2 ) \f$ lie on a parabola,
+ all of them are vertices of the hull, and the hull lists them in the order
+ of the \f$ a_i \f$; hence a hull in \f$ o( n \log n ) \f$ comparisons would
+ sort in \f$ o( n \log n ) \f$, against the lower bound of the sorting by
+ comparisons, and the convex hull costs \f$ \Omega( n \log n ) \f$ (section
+ 18.5).
+
+ \section theory_complexity_tiling Polynomial cases
+
+ The square tiling is NP-complete, while the tiling of a strip
+ \f$ 1 \times n \f$ is in P (section 18.5): a strip is a walk of \f$ n - 1 \f$
+ edges from \f$ d \f$ in the graph \f$ H \f$ whose nodes are the \f$ m \f$
+ tiles and whose edges \f$ ( d_u , d_v ) \f$ join a tile to those that fit at
+ its right.
+
+ <em>Lemma 3 (the linear tiling).</em> A strip of \f$ n \f$ tiles from
+ \f$ d \f$ exists if and only if
+ \f[
+   \text{a cycle of } H \text{ is reachable from } d
+   \quad \text{or} \quad L( d ) \ge n - 1 , \tag{4}
+ \f]
+ \f$ L( d ) \f$ the edges of the longest path from \f$ d \f$.
+
+ Indeed, a walk may go round a reachable cycle as many times as it needs,
+ and so has any length; without a reachable cycle every walk from \f$ d \f$
+ is a path, and its length is at most \f$ L( d ) \f$. `linearTiling()`
+ decides (4) by one visit in depth of \f$ H \f$ from \f$ d \f$, which finds a
+ reachable cycle as a back edge (see the theory of graphs) and computes
+ \f$ L \f$ in the postvisit, in \f$ O( m^2 ) \f$ on the implicit matrix of
+ \f$ H \f$, whatever \f$ n \f$ is; \f$ n \f$ enters the input with
+ \f$ \log n \f$ bits, and an enumeration of the strips would take time
+ exponential in it.
+
+ The conclusion of the book pairs several NP-complete problems with a
+ polynomial one that differs from it in a detail, and `EasyCases.h` realizes
+ the polynomial halves that the other areas do not.
+
+ <table>
+ <caption>The polynomial halves of the pairs (table 19.1 of the
+          book)</caption>
+ <tr><th>NP-complete</th><th>Polynomial</th><th>Where</th></tr>
+ <tr><td>SATISFIABILITY, three literals per clause</td>
+     <td>two literals per clause</td><td><tt>twoSat()</tt></td></tr>
+ <tr><td>3-COLORABILITY</td><td>2-COLORABILITY</td>
+     <td><tt>twoColoring()</tt></td></tr>
+ <tr><td>3-DIMENSIONAL MATCHING</td><td>2-DIMENSIONAL MATCHING</td>
+     <td><tt>bipartiteMatching()</tt></td></tr>
+ <tr><td>CLIQUE</td><td>CLIQUE on an interval graph</td>
+     <td><tt>intervalClique()</tt></td></tr>
+ <tr><td>BOUNDED TILING</td><td>the linear tiling</td>
+     <td><tt>linearTiling()</tt> of <tt>Domino.h</tt></td></tr>
+ <tr><td>HAMILTONIAN CIRCUIT</td><td>the Eulerian cycle</td>
+     <td><tt>eulerianCycle()</tt> of <tt>EulerianCycle.h</tt></td></tr>
+ <tr><td>KNAPSACK</td><td>the fractional knapsack</td>
+     <td><tt>fractionalKnapsack()</tt></td></tr>
+ <tr><td>DEGREE-CONSTRAINED SPANNING TREE</td>
+     <td>the minimum spanning tree</td><td><tt>kruskal()</tt></td></tr>
+ <tr><td>LONGEST PATH</td><td>the shortest path</td>
+     <td><tt>shortestPaths()</tt></td></tr>
+ </table>
+
+ <em>Theorem 4 (Aspvall, Plass and Tarjan).</em> A formula of clauses of at
+ most two literals is satisfiable if and only if no variable \f$ v \f$ lies
+ in the strongly connected component of \f$ \neg v \f$ in the graph of the
+ implications, which has the edges \f$ ( \neg a , b ) \f$ and
+ \f$ ( \neg b , a ) \f$ for each clause \f$ a \vee b \f$.
+
+ In fact, a path of implications from \f$ v \f$ to \f$ \neg v \f$ and one
+ back would force \f$ v \f$ both true and false. Conversely, the assignment
+ that makes \f$ v \f$ true when the component of \f$ v \f$ comes after that
+ of \f$ \neg v \f$ in a topological order of the components, as
+ `twoSat()` does, never sets a literal true with a false one among its
+ consequences, since the graph is symmetric under negation; hence it
+ satisfies each clause, in \f$ O( n + m ) \f$ by the algorithm of Kosaraju.
+ Similarly, a graph is 2-colorable if and only if it has no odd cycle, which
+ the visit in breadth of `twoColoring()` finds as an edge between two nodes of
+ the same color; a bipartite matching is a maximum flow with unit capacities
+ (see the theory of graphs); and on intervals of the line a set that meets
+ pairwise has a common point (the property of Helly in one dimension, the
+ latest left end lying before the earliest right end), so that the largest
+ clique is the largest number of intervals through one point, which a sweep
+ of the sorted ends counts in \f$ O( n \log n ) \f$.
+
+ \section theory_complexity_refs References
+
+ \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 18 and the
+      conclusion,
+      https://algoritmicamente.it/materiali/libro/capitoli/cap18.pdf
+ \see S. A. Cook, The complexity of theorem-proving procedures, Proceedings
+      of the Third Annual ACM Symposium on Theory of Computing, 151-158,
+      1971, doi:10.1145/800157.805047
+ \see L. A. Levin, Universal sequential search problems, Problems of
+      Information Transmission 9(3), 265-266, 1973
+ \see R. M. Karp, Reducibility among combinatorial problems, Complexity of
+      Computer Computations, Plenum Press, 85-103, 1972,
+      doi:10.1007/978-1-4684-2001-2_9
+ \see M. R. Garey, D. S. Johnson, Computers and Intractability: A Guide to
+      the Theory of NP-Completeness, W. H. Freeman, 1979
+ \see H. Wang, Proving theorems by pattern recognition II, Bell System
+      Technical Journal 40(1), 1-41, 1961,
+      doi:10.1002/j.1538-7305.1961.tb03975.x
+ \see B. Aspvall, M. F. Plass, R. E. Tarjan, A linear-time algorithm for
+      testing the truth of certain quantified boolean formulas, Information
+      Processing Letters 8(3), 121-123, 1979,
+      doi:10.1016/0020-0190(79)90002-4
+*/
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File complexity.dox -------------------------*/
+/*--------------------------------------------------------------------------*/
