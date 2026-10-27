@@ -107,8 +107,8 @@
  parent precedes it. A complete \f$ d \f$-ary tree needs no link at all:
  numbered by levels from 0, the children of the node \f$ i \f$ are
  \f[
-   d i + 1 , \ldots , d i + d , \qquad \text{its parent}\
-   \lfloor ( i - 1 ) / d \rfloor , \tag{1}
+   d i + 1 , \ldots , d i + d , \qquad \text{its parent}
+   \ \lfloor ( i - 1 ) / d \rfloor , \tag{1}
  \f]
  which is how a heap is stored (see \ref theory_priority); a
  binary tree far from complete wastes the places of the missing nodes, up
@@ -196,6 +196,344 @@
  and they are the method to use when the heap must be valid after each
  item.
 
+ \section theory_tree_search Binary search trees
+
+ A <em>binary search tree</em> holds a set of keys in the nodes of a binary
+ tree so that, for every node \f$ u \f$, the keys of the left subtree of
+ \f$ u \f$ are smaller than the key of \f$ u \f$ and those of its right
+ subtree larger (section 6.1 of the book); hence the visit in symmetric
+ order gives the keys in increasing order, and a search, an insertion and a
+ removal go down one path from the root, in \f$ O( h ) \f$ time for a tree
+ of height \f$ h \f$. The removal of a node with two children puts in its
+ place its successor, the smallest key of its right subtree, which has no
+ left child and is removed in its turn. Inserted in increasing order,
+ \f$ n \f$ keys make a path, \f$ h = n - 1 \f$; inserted in a random order,
+ the expected depth of a node is \f$ 2 \ln n + O( 1 ) \f$, i.e., about
+ \f$ 1.39 \log_2 n \f$, by the analysis of the quicksort, whose pivots are
+ the roots of the subtrees. A <em>balanced</em> tree keeps
+ \f$ h = O( \log n ) \f$ whatever the order of the operations, by
+ <em>rotations</em>: the right rotation of a node \f$ x \f$ with left child
+ \f$ y \f$ makes \f$ y \f$ the root of the subtree and \f$ x \f$ its right
+ child, the right subtree of \f$ y \f$ becoming the left one of
+ \f$ x \f$, which keeps the order of the keys and changes the depths of the
+ subtrees by \f$ \pm 1 \f$, in \f$ O( 1 ) \f$ (figure 6.4 of the book).
+
+ <table>
+ <caption>The binary search trees of the area and the cost of their
+          operations</caption>
+ <tr><th>Tree</th><th>Balance</th><th>Height</th>
+     <th>Search, insertion, removal</th><th>Rotations per update</th></tr>
+ <tr><td><tt>BinarySearchTree</tt></td><td>none</td>
+     <td>\f$ n - 1 \f$ in the worst case</td><td>\f$ O( h ) \f$</td>
+     <td>none</td></tr>
+ <tr><td><tt>RedBlackTree</tt></td><td>colors, (V1)-(V4)</td>
+     <td>\f$ \le 2 \log_2( n + 1 ) \f$</td>
+     <td>\f$ O( \log n ) \f$</td><td>at most 3</td></tr>
+ <tr><td><tt>AVLTree</tt></td><td>heights of the children differing by at
+     most 1</td><td>\f$ < 1.4405 \log_2( n + 2 ) \f$</td>
+     <td>\f$ O( \log n ) \f$</td><td>\f$ O( \log n ) \f$ on a removal, at
+     most 2 on an insertion</td></tr>
+ <tr><td><tt>Treap</tt></td><td>a heap of random priorities</td>
+     <td>\f$ O( \log n ) \f$ expected</td>
+     <td>\f$ O( \log n ) \f$ expected</td><td>fewer than 2
+     expected</td></tr>
+ <tr><td><tt>SplayTree</tt></td><td>none, each access splayed to the
+     root</td><td>\f$ n - 1 \f$ in the worst case</td>
+     <td>\f$ O( \log n ) \f$ amortized</td><td>\f$ O( \log n ) \f$
+     amortized</td></tr>
+ </table>
+
+ A Red-Black tree colors its nodes red or black, with (V1) the root black,
+ (V2) the leaves black, (V3) the children of a red node black, and (V4) the
+ same number of black nodes on all the paths from a node to the leaves
+ below it, its black height \f$ b( u ) \f$. By induction on the height, the
+ subtree of \f$ u \f$ has at least \f$ 2^{b( u )} - 1 \f$ internal nodes
+ (Theorem 6.1 of the book), and by (V3) at least half the nodes of a path
+ from the root are black; hence \f$ n \ge 2^{h / 2} - 1 \f$, i.e.,
+ \f$ h \le 2 \log_2( n + 1 ) \f$ (Theorem 6.3). An insertion colors the new
+ node red, which may break (V3) only; the fault climbs by recolorings,
+ two levels at a time, and is solved by at most two rotations. A removal of
+ a black node breaks (V4) on one side, which a black token climbing by
+ recolorings, and solved by at most three rotations, restores.
+
+ <em>Lemma 2 (the height of an AVL tree, Adelson-Velsky and Landis).</em>
+ An AVL tree of height \f$ h \f$ has at least \f$ F_{h+3} - 1 \f$ nodes,
+ \f$ F_k \f$ the \f$ k \f$-th number of Fibonacci; hence
+ \f[
+   h < \log_\varphi\bigl( \sqrt{5} ( n + 2 ) \bigr) - 3 <
+   1.4405 \log_2( n + 2 ) , \tag{2}
+ \f]
+ \f$ \varphi = ( 1 + \sqrt{5} ) / 2 \f$ the golden ratio.
+
+ Indeed, let \f$ N_h \f$ be the fewest nodes of an AVL tree of height
+ \f$ h \f$: the root of such a tree has a subtree of height \f$ h - 1 \f$, and
+ the other, at least \f$ h - 2 \f$ high by the balance, is as small as
+ possible; hence \f$ N_h = N_{h-1} + N_{h-2} + 1 \f$ with \f$ N_0 = 1 \f$ and
+ \f$ N_1 = 2 \f$, i.e., \f$ N_h + 1 = F_{h+3} \f$; since
+ \f$ F_k > \varphi^k / \sqrt{5} - 1 \f$ (\f$ F_k \f$ is the integer nearest to
+ \f$ \varphi^k / \sqrt{5} \f$), \f$ n + 1 \ge F_{h+3} \f$ gives
+ \f$ \varphi^{h+3} < \sqrt{5} ( n + 2 ) \f$, i.e., (2). An insertion changes by
+ 1 the heights on its path, and the lowest node left unbalanced, with a
+ difference of 2, is rebalanced by a single rotation, if the higher grandchild
+ is on the outside, or by a double one, which restores the height that the
+ subtree had before the insertion, so that nothing above changes; a removal may
+ shorten the subtree it rebalances, and the rotations may go on up to the root.
+
+ A <em>treap</em> (Seidel and Aragon) gives each key a random priority and
+ keeps the tree a binary search tree on the keys and a heap on the
+ priorities, the root of each subtree of the highest priority in it. Its
+ shape is then unique, that of the binary search tree built by inserting
+ the keys by decreasing priority, i.e., in a random order, whatever the
+ order of the operations: the expected depth of a node is
+ \f$ O( \log n ) \f$, as for a random insertion order. A new key is
+ inserted at a leaf and rotated up while its priority beats its parent's,
+ and each rotation adds one node to the right spine of its left subtree or
+ to the left spine of its right subtree; the rotations are therefore the
+ lengths of those two spines at the end, whose expectation is less than 2
+ (Seidel and Aragon), and a removal makes the same rotations in
+ reverse.
+
+ A <em>splay tree</em> (Sleator and Tarjan) keeps no balance at all: each
+ access moves the node accessed to the root by rotations in pairs, a
+ zig-zig when the node and its parent are both left (or right) children,
+ two rotations from the top, and a zig-zag otherwise; the top-down splay
+ does the same in one pass from the root, setting aside the keys met into a
+ left and a right tree.
+
+ <em>Lemma 3 (the access lemma, Sleator and Tarjan).</em> Let each node
+ \f$ x \f$ have a weight \f$ w( x ) > 0 \f$, \f$ s( x ) \f$ the total weight
+ of its subtree and \f$ r( x ) = \log_2 s( x ) \f$ its rank, and let the
+ potential be \f$ \Phi = \sum_x r( x ) \f$. The splay of a node \f$ x \f$ in
+ a tree of root \f$ t \f$ costs, amortized,
+ \f[
+   1 + 3 ( r( t ) - r( x ) ) = O\Bigl( \log \frac{ s( t ) }{ w( x ) } \Bigr)
+   . \tag{3}
+ \f]
+
+ Indeed, a zig-zig or a zig-zag step that lifts \f$ x \f$ by two levels
+ changes \f$ \Phi \f$ only on the three nodes it rotates, and the concavity
+ of the logarithm bounds its two rotations plus that change by
+ \f$ 3 ( r'( x ) - r( x ) ) \f$, \f$ r' \f$ the rank after the step; the
+ last single rotation, if any, adds 1 more. The terms telescope along the
+ path to \f$ 3 ( r( t ) - r( x ) ) + 1 \f$. With the weights all 1,
+ \f$ r( t ) = \log_2 n \f$ and (3) is \f$ O( \log n ) \f$; since
+ \f$ \Phi \le n \log_2 n \f$ at the start and \f$ \Phi \ge 0 \f$, a sequence
+ of \f$ m \f$ operations costs \f$ O( ( m + n ) \log n ) \f$. With the
+ weights the frequencies of the accesses, (3) gives the static optimality,
+ i.e., a cost within a constant factor of the best static tree for those
+ frequencies, with no knowledge of them.
+
+ \section theory_tree_join Join-based algorithms
+
+ The balanced trees above restore their balance inside each insertion and
+ each removal. Blelloch, Ferizovic and Sun showed that one operation
+ suffices instead, the <em>join</em>: \f$ \mathrm{join}( L , k , R ) \f$,
+ for two balanced trees \f$ L \f$ and \f$ R \f$ whose keys are smaller and
+ larger than \f$ k \f$, returns a balanced tree of all the keys, and every
+ other operation (split, insertion, removal, union, intersection,
+ difference, batches, filters) is written on join alone, once for all the
+ schemes (`JoinAlgorithms.h`). The cost of join is bounded through a
+ <em>rank</em> \f$ r( T ) = \Theta( \log n ) \f$: the height for the AVL
+ trees, the black height for the Red-Black trees, \f$ \log_2 \f$ of the
+ weight (the keys plus 1) for the trees balanced by weight, and the height
+ in expectation for the treaps.
+
+ <em>Lemma 4 (the join).</em> For each of the four schemes,
+ \f$ \mathrm{join}( L , k , R ) \f$ costs \f$ O( | r( L ) - r( R ) | + 1 ) \f$
+ (in expectation for the treaps), and the rank of its result is between
+ \f$ \max( r( L ) , r( R ) ) \f$ and that plus 1.
+
+ Indeed, if \f$ L \f$ is higher, the join goes down the right spine of
+ \f$ L \f$ until it meets a subtree \f$ c \f$ of the rank of \f$ R \f$,
+ makes the node \f$ ( c , k , R ) \f$ there, and fixes the balance on the
+ way back by at most a double rotation per level. For the AVL trees the
+ subtree met has height \f$ h( R ) \f$ or \f$ h( R ) + 1 \f$, the new node
+ at most \f$ h( R ) + 2 \f$, and a single or a double rotation at the
+ parent brings the difference back to 1; for the Red-Black trees the
+ subtree met is black, of the black height of \f$ R \f$, the new node is
+ red, and the only fault, a red node with a red child, climbs by one
+ rotation per level and is solved at the root by painting it black; for
+ the trees balanced by weight, with the parameter
+ \f$ \alpha \le 1 - 1 / \sqrt{2} \f$, each level needs a single or a double
+ rotation; for the treaps, join merges the two spines by the priorities,
+ and \f$ k \f$ goes down until its priority beats those below, as an
+ insertion does. The levels of the spine walked are
+ \f$ | r( L ) - r( R ) | + O( 1 ) \f$.
+
+ A split of \f$ T \f$ at \f$ k \f$ exposes the root \f$ ( L , m , R ) \f$,
+ recurs on the side of \f$ k \f$, and joins the other side with \f$ m \f$
+ and the part of the recursion on its side. The trees joined at the
+ successive levels of the path have ranks that grow by the ranks of the
+ subtrees left behind, so that by Lemma 4 the costs of the joins
+ telescope to \f$ O( r( T ) ) = O( \log n ) \f$; `join2`, the join with no
+ key in between, takes the largest key of \f$ L \f$ off it and joins it
+ with \f$ R \f$, again in \f$ O( \log n ) \f$, and the insertion and the
+ removal are a descent followed by joins on the way back.
+
+ <em>Lemma 5 (the work of the set operations, Blelloch, Ferizovic and
+ Sun).</em> The union, the intersection and the difference of two trees of
+ sizes \f$ m \le n \f$, by expose, split and join, take the work
+ \f[
+   W( m , n ) = \Theta\Bigl( m \log\Bigl( \frac{n}{m} + 1 \Bigr) \Bigr) ,
+   \tag{4}
+ \f]
+ which is optimal among the algorithms by comparisons, and, with the two
+ recursive calls in parallel, the span \f$ O( \log m \log n ) \f$.
+
+ The union exposes the root \f$ ( L , k , R ) \f$ of the smaller tree,
+ splits the larger at \f$ k \f$, takes the unions of the two left and of
+ the two right sides, and joins them with \f$ k \f$; the intersection and
+ the difference differ only in whether \f$ k \f$ survives, and use `join2`
+ when it does not. At the level \f$ i \f$ of the recursion the smaller tree
+ has been cut into at most \f$ 2^i \f$ pieces, and the larger into at most
+ \f$ 2^i \f$ pieces of sizes \f$ n_j \f$ summing to \f$ n \f$; their splits
+ cost \f$ \sum_j \log( n_j + 1 ) \le 2^i \log( n / 2^i + 1 ) \f$ by the
+ concavity of the logarithm. Summed over the \f$ \log_2 m \f$ levels, and
+ with the joins costing no more than the splits (their rank differences
+ telescope as in the split), this gives (4), which matches the lower bound
+ \f$ \log_2 \binom{m + n}{m} \f$ of the comparisons needed to merge two
+ sorted sequences (Hwang and Lin; Brown and Tarjan): it is
+ \f$ \Theta( m + n ) \f$ for \f$ m \approx n \f$ and \f$ \Theta( \log n ) \f$
+ for \f$ m = 1 \f$. The two recursive calls touch disjoint trees, and each
+ level waits for one split and one join, whence the span. A sorted batch of
+ \f$ m \f$ pairs is inserted (or removed) as the union (or the difference)
+ with the tree that the batch would make, without building it, the batch
+ being split by a binary search on the key of the root, in the same work;
+ a filter and a map-reduce visit every node, in \f$ O( n ) \f$ work.
+
+ \subsection theory_tree_augmented Augmented maps
+
+ A node may keep, besides its size, a value of its subtree computed from
+ those of its children and of its own pair, e.g., the sum or the maximum of
+ the values; since every node that changes is rebuilt by
+ \f$ \mathrm{node}( L , k , R ) \f$, which recomputes it, and a rotation is
+ two such rebuilds, join keeps it, and so does every operation above
+ (`JoinTree.h`). An <em>augmented map</em> (Sun, Ferizovic and Blelloch)
+ takes a monoid \f$ ( A , \otimes , e ) \f$ and a map \f$ g \f$ of a pair
+ into \f$ A \f$, and each node \f$ u \f$ keeps
+ \f[
+   \mathit{aug}( u ) = \mathit{aug}( u.\mathit{left} ) \otimes g( u.k , u.v )
+   \otimes \mathit{aug}( u.\mathit{right} ) , \tag{5}
+ \f]
+ the combination of the values of its pairs in the order of the keys,
+ which needs no commutativity. The augmented value of the keys in a range
+ \f$ [ \mathit{lo} , \mathit{hi} ] \f$ is the combination of
+ \f$ O( \log n ) \f$ pieces: from the node where the paths to
+ \f$ \mathit{lo} \f$ and to \f$ \mathit{hi} \f$ part, the pairs of the path
+ to \f$ \mathit{lo} \f$ not below \f$ \mathit{lo} \f$ with the right
+ subtrees they leave behind, the pair of the node, and symmetrically on the
+ path to \f$ \mathit{hi} \f$, at most two pieces per level of a balanced
+ tree; the interval trees and the range trees of the library are augmented
+ maps of this kind (see \ref theory_geometry_ranges).
+
+ \section theory_tree_btree B-trees
+
+ A <em>B-tree</em> of minimum degree \f$ t \ge 2 \f$ (Bayer and McCreight)
+ is a search tree whose nodes hold several keys in increasing order: a node
+ of \f$ j \f$ keys \f$ k_0 < \cdots < k_{j-1} \f$ that is not a leaf has
+ \f$ j + 1 \f$ children, the child \f$ c_i \f$ holding the keys between
+ \f$ k_{i-1} \f$ and \f$ k_i \f$, and the tree keeps the invariants
+ \f[
+   t - 1 \le j \le 2 t - 1 \text{ (the root: } 1 \le j \le 2 t - 1 \text{)} ,
+   \qquad \text{all the leaves at the same depth} . \tag{6}
+ \f]
+ The keys of a node are read in one transfer from the secondary memory, a
+ node filling a block, so that the measure of the cost is the number of the
+ nodes read, the I/Os of the model of the two-level memory (Aggarwal and
+ Vitter), rather than the comparisons, which a node of many keys answers in
+ the main memory.
+
+ <em>Lemma 6 (the height of a B-tree).</em> A B-tree of minimum degree
+ \f$ t \f$ with \f$ n \ge 1 \f$ keys has height
+ \f[
+   h \le \log_t \frac{ n + 1 }{ 2 } , \tag{7}
+ \f]
+ and a search reads \f$ h + 1 = O( \log_t n ) \f$ nodes, with
+ \f$ O( t \log_t n ) \f$ comparisons in all.
+
+ Indeed, by (6) the root has at least 2 children, and every other node that
+ is not a leaf at least \f$ t \f$; hence there are at least \f$ 2 t^{d-1} \f$
+ nodes at the depth \f$ d \ge 1 \f$, each with at least \f$ t - 1 \f$ keys,
+ and
+ \f[
+   n \ge 1 + ( t - 1 ) \sum_{d=1}^{h} 2 t^{d-1} = 2 t^h - 1 ,
+ \f]
+ which gives (7). The search goes down one path, from the root to a leaf at
+ most, and in each node it finds the place of the key among at most
+ \f$ 2 t - 1 \f$ keys. With \f$ t \f$ of the order of the keys of a block,
+ e.g., \f$ t = 128 \f$, three levels index millions of keys, and the root and
+ the level below it stay in the main memory.
+
+ The insertion and the removal keep (6) with two operations on a node and its
+ parent. A <em>split</em> of a full node \f$ y \f$ of \f$ 2 t - 1 \f$ keys,
+ the child \f$ c_i \f$ of \f$ x \f$, moves its median key into \f$ x \f$ at
+ the place \f$ i \f$ and its last \f$ t - 1 \f$ keys, with their children, into
+ a new node, the child \f$ c_{i+1} \f$ of \f$ x \f$: both halves have
+ \f$ t - 1 \f$ keys, and \f$ x \f$ one key more. A <em>merge</em> is its
+ converse: two siblings of \f$ t - 1 \f$ keys each and the key of their
+ parent between them become one node of \f$ 2 t - 1 \f$ keys; a
+ <em>borrowing</em> moves the key of the parent down into a node and a key
+ of a sibling with at least \f$ t \f$ keys up in its place, which keeps the
+ order of the keys.
+
+ <em>Lemma 7 (the operations in one pass).</em> `insert()` and `remove()` of
+ `BTree.h` keep (6), each in one pass from the root down, with
+ \f$ O( \log_t n ) \f$ splits, merges or borrowings of \f$ O( t ) \f$ each,
+ i.e., \f$ O( t \log_t n ) \f$ time and \f$ O( \log_t n ) \f$ I/Os.
+
+ Indeed, the insertion splits every full node it is about to enter, so that
+ the parent of a full node always has room for the median; a full root
+ splits under a new root, which is the only way the height grows, and keeps
+ all the leaves at the same depth. The key goes into the leaf reached, which
+ is not full. The removal enters only nodes with at least \f$ t \f$ keys
+ (the root apart): before going down into a child of \f$ t - 1 \f$ keys it
+ borrows a key from a sibling of \f$ t \f$ keys or more, or merges it with a
+ sibling of \f$ t - 1 \f$, so that a key can always leave the node entered
+ without breaking (6). A key found in an internal node is replaced by its
+ predecessor, or by its successor, which lie in a leaf below a child with
+ at least \f$ t \f$ keys, and is then removed from that leaf; if both
+ children have \f$ t - 1 \f$ keys, they are merged around it, and it goes
+ down with them. A root left with no key gives way to its only child, which
+ is the only way the height falls.
+
+ The B+-tree of section 6.3 of the book (`BPlusTree.h`) keeps the values in
+ the leaves alone, the internal nodes holding the bounds of their children,
+ i.e., the largest key below each child but the last, so that an internal
+ node of a block holds more children and the tree is lower; the leaves are
+ linked in a list in the order of the keys, and the \f$ k \f$ pairs of an
+ interval are read in \f$ O( \log n + k ) \f$ time, by a search of its
+ smallest key and a walk along the leaves, \f$ O( \log_t n + k / t ) \f$ I/Os
+ when the leaves fill blocks. `BTreeMap.h` is a B+-tree in the main memory,
+ where a node is a few lines of cache rather than a block: the place of a
+ key is counted on all the places of a node at once, by comparisons of
+ vectors on padded nodes, the lines of the next node are prefetched on the
+ way down (Chen, Gibbons and Mowry), and the splits on the edges of the tree
+ keep the old node full when the keys arrive in order, so that a sorted
+ sequence fills all the nodes; with the counts of the pairs below each
+ child it answers `rank()` and `select()` along one path, as the
+ order-statistic trees do.
+
+ <table>
+ <caption>The B-trees of the area and the cost of their operations, for
+          \f$ n \f$ keys, \f$ t \f$ the minimum degree, \f$ m \f$ the order
+          and \f$ k \f$ the pairs of an interval</caption>
+ <tr><th>Header</th><th>Values</th><th>Search, insertion</th>
+     <th>Removal</th><th>Interval</th><th>Memory</th></tr>
+ <tr><td><tt>BTree.h</tt></td><td>in every node</td>
+     <td>\f$ O( t \log_t n ) \f$</td><td>\f$ O( t \log_t n ) \f$</td>
+     <td>\f$ O( t \log_t n + k ) \f$, by the iterator</td>
+     <td>secondary, a node a block</td></tr>
+ <tr><td><tt>BPlusTree.h</tt></td><td>in the leaves, linked</td>
+     <td>\f$ O( m \log_m n ) \f$</td><td>none, as in the book</td>
+     <td>\f$ O( m \log_m n + k ) \f$</td>
+     <td>secondary, a node a page</td></tr>
+ <tr><td><tt>BTreeMap.h</tt></td><td>in the leaves, linked</td>
+     <td>\f$ O( ( L + I ) \log n ) \f$</td>
+     <td>\f$ O( ( L + I ) \log n ) \f$</td>
+     <td>\f$ O( ( L + I ) \log n + k ) \f$</td>
+     <td>main, a node a few lines of cache</td></tr>
+ </table>
+
  \section theory_tree_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 5 and 6,
@@ -222,6 +560,58 @@
  \see R. Hayward, C. McDiarmid, Average case analysis of heap building by
       repeated insertion, Journal of Algorithms 12(1), 126-153, 1991,
       doi:10.1016/0196-6774(91)90027-V
+ \see R. Seidel, C. R. Aragon, Randomized search trees, Algorithmica
+      16(4-5), 464-497, 1996, doi:10.1007/BF01940876
+ \see D. D. Sleator, R. E. Tarjan, Self-adjusting binary search trees,
+      Journal of the ACM 32(3), 652-686, 1985, doi:10.1145/3828.3835
+ \see G. M. Adelson-Velsky, E. M. Landis, An algorithm for the
+      organization of information, Soviet Mathematics Doklady 3,
+      1259-1263, 1962
+ \see L. J. Guibas, R. Sedgewick, A dichromatic framework for balanced
+      trees, Proceedings of the 19th FOCS, 8-21, 1978,
+      doi:10.1109/SFCS.1978.3
+ \see G. E. Blelloch, D. Ferizovic, Y. Sun, Just join for parallel ordered
+      sets, Proceedings of the 28th ACM Symposium on Parallelism in
+      Algorithms and Architectures (SPAA), 253-264, 2016,
+      doi:10.1145/2935764.2935768
+ \see G. E. Blelloch, D. Ferizovic, Y. Sun, Joinable parallel balanced
+      binary trees, ACM Transactions on Parallel Computing 9(2), 1-41,
+      2022, doi:10.1145/3512769
+ \see Y. Sun, D. Ferizovic, G. E. Blelloch, PAM: parallel augmented maps,
+      Proceedings of the 23rd ACM SIGPLAN Symposium on Principles and
+      Practice of Parallel Programming (PPoPP), 290-304, 2018,
+      doi:10.1145/3178487.3178509
+ \see G. E. Blelloch, M. Reid-Miller, Fast set operations using treaps,
+      Proceedings of the 10th ACM Symposium on Parallel Algorithms and
+      Architectures (SPAA), 16-26, 1998, doi:10.1145/277651.277660
+ \see S. Adams, Efficient sets: a balancing act, Journal of Functional
+      Programming 3(4), 553-561, 1993, doi:10.1017/S0956796800000885
+ \see J. Nievergelt, E. M. Reingold, Binary search trees of bounded
+      balance, SIAM Journal on Computing 2(1), 33-43, 1973,
+      doi:10.1137/0202005
+ \see F. K. Hwang, S. Lin, A simple algorithm for merging two disjoint
+      linearly ordered sets, SIAM Journal on Computing 1(1), 31-39, 1972,
+      doi:10.1137/0201004
+ \see M. R. Brown, R. E. Tarjan, A fast merging algorithm, Journal of the
+      ACM 26(2), 211-226, 1979, doi:10.1145/322123.322127
+ \see R. E. Tarjan, Data Structures and Network Algorithms, SIAM, 1983,
+      chapter 4 (the join of the Red-Black trees),
+      doi:10.1137/1.9781611970265
+ \see R. Bayer, E. M. McCreight, Organization and maintenance of large
+      ordered indexes, Acta Informatica 1(3), 173-189, 1972,
+      doi:10.1007/BF00288683
+ \see D. Comer, The ubiquitous B-tree, ACM Computing Surveys 11(2),
+      121-137, 1979, doi:10.1145/356770.356776
+ \see A. Aggarwal, J. S. Vitter, The input/output complexity of sorting and
+      related problems, Communications of the ACM 31(9), 1116-1127, 1988,
+      doi:10.1145/48529.48535
+ \see S. Chen, P. B. Gibbons, T. C. Mowry, Improving index performance
+      through prefetching, Proceedings of SIGMOD 2001, 235-246, 2001,
+      doi:10.1145/375663.375688
+ \see G. Graefe, Modern B-tree techniques, Foundations and Trends in
+      Databases 3(4), 203-402, 2011, doi:10.1561/1900000028
+ \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
+      to Algorithms, 3rd ed., MIT Press, 2009, chapter 18
 */
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File tree.dox ----------------------------*/

@@ -227,7 +227,8 @@
    g( \mathit{key}( u ) ) \oplus \mathit{aug}( u.\mathit{right} ) , \tag{6}
  \f]
  \f$ g \f$ the summary of one key and \f$ \mathit{aug} = \mathbf{0} \f$ on
- the empty tree (the augmented maps of Sun and Blelloch, `JoinTree.h`). Every
+ the empty tree (the augmented maps of Sun and Blelloch, `JoinTree.h`, see
+ \ref theory_tree_augmented). Every
  change of the tree passes through its join, which recomputes (6) on the
  nodes that it creates or rebalances; hence the augmentation costs one
  evaluation of \f$ \oplus \f$ per node touched, i.e., a constant factor on
