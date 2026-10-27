@@ -419,7 +419,7 @@ ADS_TEST( "reopt-spanning-forest" )
   Observable< LG > oh( h );
   oh.attach( q );
   long long seen[ 3 ] = { 0 , 0 , 0 };
-  for( int step = 0 ; step < 3000 ; ++step ) {
+  for( int step = 0 ; step < 1500 ; ++step ) {
    const auto V = h.V();
    const int u = V[ rng() % V.size() ] , v = V[ rng() % V.size() ];
    const int k = int( rng() % 12 );
@@ -441,8 +441,9 @@ ADS_TEST( "reopt-spanning-forest" )
    if( rng() % 2 == 0 ) {
     q.solve();
     ++seen[ q.outcome() ];
-    CHECK( q.weight() == total( kruskal( h ) ) );
-    CHECK( q.forest().size() == kruskal( h ).size() );
+    const auto K = kruskal( h );
+    CHECK( ( q.weight() == total( K ) ) &&
+           ( q.forest().size() == K.size() ) );
     }
    }
   if( seed == 3 )

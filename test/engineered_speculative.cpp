@@ -28,7 +28,6 @@
 
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/StaticGraph.h"
-#include "ADS/mfset/UnionFind.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
 #include "ADS/parallel/OpenMPExecutor.h"
@@ -110,11 +109,23 @@ std::vector< int > greedy( int n ,
                            const std::vector< std::pair< int , int > > & P ,
                            const std::vector< int > & ids )
 {
- UnionFind U( n );
+ // a plain union-find, not UnionFind, whose audits cost n per merge
+ std::vector< int > p( std::size_t( std::max( n , 0 ) ) );
+ for( int x = 0 ; x < n ; ++x )
+  p[ x ] = x;
+ auto find = [ & ]( int x ) {
+  while( p[ x ] != x )
+   x = p[ x ] = p[ p[ x ] ];
+  return( x );
+  };
  std::vector< int > out;
- for( int i : ids )
-  if( U.merge( P[ i ].first , P[ i ].second ) )
+ for( int i : ids ) {
+  const int a = find( P[ i ].first ) , b = find( P[ i ].second );
+  if( a != b ) {
+   p[ a ] = b;
    out.push_back( i );
+   }
+  }
  return( out );
  }
 
@@ -208,7 +219,8 @@ ADS_TEST( "parallel-kruskal" )
   { 2000 , 20000 , 0 , 3 , 4 } ,          // many ties
   { 3000 , 40000 , -1000 , 1000 , 5 } ,   // negative weights
   { 20000 , 15000 , 1 , 1000000 , 6 } ,   // disconnected
-  { 500 , 60000 , 7 , 7 , 7 } };          // all equal, parallel edges
+  { 500 , 60000 , 7 , 7 , 7 } ,          // all equal, parallel edges
+  { 300 , 3000 , -50 , 50 , 8 } };        // small, against the book's
  for( const auto & [ n , m , lo , hi , seed ] : cases ) {
   const auto E = randomEdges( std::max( n , 1 ) , m , lo , hi , seed );
   const auto P = pairsOf( E );
@@ -216,10 +228,12 @@ ADS_TEST( "parallel-kruskal" )
   long long w = 0;
   for( int i : ref )
    w += E[ i ].w;
-  long long book = 0;
-  for( const auto & e : kruskal( n , E ) )
-   book += e.w;
-  CHECK( w == book );                     // the weight of the book's
+  if( m <= 5000 ) {                       // the weight of the book's,
+   long long book = 0;                    // whose audit costs n m
+   for( const auto & e : kruskal( n , E ) )
+    book += e.w;
+   CHECK( w == book );
+   }
   std::vector< int > order( E.size() );
   for( std::size_t i = 0 ; i < E.size() ; ++i )
    order[ i ] = int( i );

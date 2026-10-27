@@ -16,7 +16,6 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "ADS/mfset/UnionFind.h"
 
 #include <algorithm>
 #include <atomic>
@@ -175,12 +174,15 @@ template< class GetEnds >
 bool sameGreedy( int n , const std::vector< int > & ids , GetEnds && ends ,
                  const std::vector< int > & taken )
 {
- UnionFind U( n );
- std::vector< int > seq;
+ GreedyUnionFind U( n );                // no audit of its own, unlike
+ std::vector< int > seq;                // UnionFind's, n per merge
  for( int id : ids ) {
   const auto [ u , v ] = ends( id );
-  if( U.merge( u , v ) )
+  const int a = U.find( u ) , b = U.find( v );
+  if( a != b ) {
+   U.link( a , b );
    seq.push_back( id );
+   }
   }
  return( seq == taken );
  }
