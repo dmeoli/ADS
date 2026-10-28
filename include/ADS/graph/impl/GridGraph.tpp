@@ -29,9 +29,11 @@ namespace ADS {
 template< class W , class C >
 GridGraph< W , C >::GridGraph( int rows , int cols , GridMoves moves ,
                                Corners corners , W straight ,
-                               std::optional< W > diagonal )
+                               std::optional< W > diagonal ,
+                               MoveCost model )
  : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
-   f_corners( corners ) , f_straight( straight ) , f_diagonal( straight )
+   f_corners( corners ) , f_model( model ) , f_straight( straight ) ,
+   f_diagonal( straight )
 {
  init( diagonal );
  }
@@ -39,10 +41,11 @@ GridGraph< W , C >::GridGraph( int rows , int cols , GridMoves moves ,
 template< class W , class C >
 GridGraph< W , C >::GridGraph( int rows , int cols , std::vector< C > cost ,
                                GridMoves moves , Corners corners ,
-                               W straight , std::optional< W > diagonal )
+                               W straight , std::optional< W > diagonal ,
+                               MoveCost model )
  : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
-   f_corners( corners ) , f_straight( straight ) , f_diagonal( straight ) ,
-   f_cost( std::move( cost ) )
+   f_corners( corners ) , f_model( model ) , f_straight( straight ) ,
+   f_diagonal( straight ) , f_cost( std::move( cost ) )
 {
  init( diagonal );
  }
@@ -123,13 +126,21 @@ std::vector< int > GridGraph< W , C >::adj( int u ) const
 {
  ADS_PRE( hasNode( u ) );
  std::vector< int > out;
- forEachMove( u , [ & ]( int v , bool ) { out.push_back( v ); } );
+ scan( u , [ & ]( int v , bool ) { out.push_back( v ); } );
  return( out );
  }
 
 template< class W , class C >
+template< class F >
+void GridGraph< W , C >::forEachMove( int u , F && f ) const
+{
+ ADS_PRE( hasNode( u ) );
+ scan( u , f );
+ }
+
+template< class W , class C >
 template< class G >
-void GridGraph< W , C >::forEachMove( int u , G && g ) const
+void GridGraph< W , C >::scan( int u , G && g ) const
 {
  // the row and the column of u, so that no name out of the grid is ever
  // computed: u + cols only when u is not in the last row, and so on
@@ -166,7 +177,7 @@ template< class F >
 void GridGraph< W , C >::forEachAdj( int u , F && f ) const
 {
  ADS_PRE( hasNode( u ) );
- forEachMove( u , [ & ]( int v , bool ) { f( v ); } );
+ scan( u , [ & ]( int v , bool ) { f( v ); } );
  }
 
 template< class W , class C >
@@ -174,14 +185,16 @@ template< class F >
 void GridGraph< W , C >::forEachEdge( int u , F && f ) const
 {
  ADS_PRE( hasNode( u ) );
- if( f_cost.empty() || ! f_directed ) {
-  // one cost for all the free cells: two weights only
-  const W k = f_cost.empty() ? W( 1 ) : W( f_min );
+ if( f_cost.empty() || ! f_directed || ( f_model == MoveCost::LEFT ) ) {
+  // one cost for all the moves out of u (one for all the free cells, or
+  // that of u itself when the cell left pays): two weights only
+  const W k = f_cost.empty() ? W( 1 ) :
+              W( f_model == MoveCost::LEFT ? f_cost[ u ] : f_min );
   const W ws = k * f_straight , wd = k * f_diagonal;
-  forEachMove( u , [ & ]( int v , bool d ) { f( v , d ? wd : ws ); } );
+  scan( u , [ & ]( int v , bool d ) { f( v , d ? wd : ws ); } );
   }
  else
-  forEachMove( u , [ & ]( int v , bool d ) {
+  scan( u , [ & ]( int v , bool d ) {
    f( v , W( f_cost[ v ] ) * ( d ? f_diagonal : f_straight ) ); } );
  }
 

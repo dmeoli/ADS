@@ -985,6 +985,7 @@ export namespace ADS {
  using ADS::Corners;
  using ADS::GridGraph;
  using ADS::GridMoves;
+ using ADS::MoveCost;
  using ADS::chebyshev;
  using ADS::gridHeuristic;
  using ADS::manhattan;

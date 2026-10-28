@@ -1737,6 +1737,7 @@ engineered_graph  book-on-structures  algoritmi del libro su ogni struttura
 engineered_graph  grid-graph          griglia implicita, casi limite e mosse
 engineered_graph  grid-graph-paths    visite e cammini su griglia contro CSR
 engineered_graph  grid-graph-huge     griglie di 2^31 - 1 celle senza overflow
+engineered_graph  grid-graph-cost-models  costo della cella entrata o lasciata
 engineered_graph  grid-map            mappe nel formato dei benchmark
 engineered_graph  graph-builder       grafo costruito per archi e congelato
 

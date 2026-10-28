@@ -331,13 +331,28 @@
  the cell \f$ ( r , c ) \f$ by \f$ r C + c \f$ with no border, so that the
  names are those of the map; the row and the column of a node, one division,
  replace the border in the tests on the bounds. With \f$ \gamma( v ) \f$ the
- cost of the cell \f$ v \f$, a move into \f$ v \f$ costs
- \f$ \gamma( v ) \, a \f$ to a side and \f$ \gamma( v ) \, b \f$ to a corner,
- \f$ a = 1 \f$ and \f$ b = \sqrt{2} \f$ in the benchmarks (the octile costs),
- and a move to a corner either may cut it, or needs one of its two sides
+ cost of the cell \f$ v \f$, a move from \f$ u \f$ into \f$ v \f$ costs
+ \f$ \gamma( v ) \, a \f$ to a side and \f$ \gamma( v ) \, b \f$ to a corner
+ when the cell entered pays (the default of `MoveCost`), and
+ \f$ \gamma( u ) \, a \f$ and \f$ \gamma( u ) \, b \f$ when the cell left
+ pays, \f$ a = 1 \f$ and \f$ b = \sqrt{2} \f$ in the benchmarks (the octile
+ costs); a move to a corner either may cut it, or needs one of its two sides
  free, or needs both (the rule of the benchmarks since 2012). All three rules
- are symmetric in the two ends of a move, and hence the graph is unoriented
- when the free cells cost the same, oriented otherwise.
+ are symmetric in the two ends of a move, and hence, under both models, the
+ graph is unoriented when the free cells cost the same and oriented
+ otherwise. With \f$ w_1( u , v ) \in \{ a , b \} \f$ the cost of a move on
+ a map of unit costs, a path \f$ x_0 , x_1 , \ldots , x_k \f$ costs
+ \f$ \sum_{i = 1}^{k} \gamma( x_i ) \, w_1( x_{i-1} , x_i ) \f$ when the
+ cell entered pays and
+ \f$ \sum_{i = 1}^{k} \gamma( x_{i-1} ) \, w_1( x_{i-1} , x_i ) \f$ when the
+ cell left pays, i.e., as much as the reversed path in the first model; hence
+ the distances from \f$ s \f$ in the second model are the distances to
+ \f$ s \f$ in the first. With four moves every \f$ w_1 \f$ is \f$ a \f$ and
+ the two costs of a path from \f$ s \f$ to \f$ t \f$ differ by
+ \f$ a ( \gamma( s ) - \gamma( t ) ) \f$, the same for all such paths, so
+ that the two models have the same shortest paths; with eight moves the
+ weight \f$ b \f$ of a corner falls on a different cell in the two models,
+ and their shortest paths may differ.
 
  <em>Lemma 4 (the octile distance).</em> On a grid with no blocked cell and
  eight moves of costs \f$ a \f$ and \f$ b \f$ with \f$ a \le b \le 2 a \f$,
@@ -348,9 +363,10 @@
    h = a ( M - \mu ) + b \, \mu , \tag{6}
  \f]
  and on any grid of the same moves, with costs
- \f$ \gamma( v ) \ge \gamma_{\mathrm{min}} \f$ of the cells and some of them
- blocked, \f$ \gamma_{\mathrm{min}} h \f$ is a consistent lower bound on the
- cost to \f$ ( r' , c' ) \f$.
+ \f$ \gamma( v ) \ge \gamma_{\mathrm{min}} \f$ of the cells, some of them
+ blocked and either the cell entered or the cell left paying for a move,
+ \f$ \gamma_{\mathrm{min}} h \f$ is a consistent lower bound on the cost to
+ \f$ ( r' , c' ) \f$.
 
  Indeed, a path of \f$ x \f$ moves to a side and \f$ y \f$ to a corner has
  \f$ x + y \ge M \f$, since each move brings the larger gap down by at most
@@ -364,8 +380,9 @@
  i.e., \f$ h( u ) \le w_1( u , v ) + h( v ) \f$ for each move of cost
  \f$ w_1( u , v ) \in \{ a , b \} \f$ on the free grid; since a move of the
  weighted grid costs
- \f$ w( u , v ) = \gamma( v ) \, w_1( u , v ) \ge \gamma_{\mathrm{min}} \,
- w_1( u , v ) \f$ and the blocked cells only remove moves, the bound
+ \f$ w( u , v ) = \gamma( x ) \, w_1( u , v ) \ge \gamma_{\mathrm{min}} \,
+ w_1( u , v ) \f$, \f$ x \f$ the cell that pays (\f$ v \f$ or \f$ u \f$),
+ and the blocked cells only remove moves, the bound
  \f$ \gamma_{\mathrm{min}} h \f$ is consistent, and so admissible, on every
  such grid. With \f$ b = a \f$ (the moves of the king) (6) is the distance of
  Chebyshev \f$ a M \f$, and with four moves the same argument with

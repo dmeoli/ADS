@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- MoveCost (graph/GridGraph.h): a move of a GridGraph weighed by the
+  cost of the cell entered (ENTERED, the default, as before) or of the
+  cell left (LEFT), chosen at construction, with moveCost(); forEachEdge(),
+  directed() and gridHeuristic() hold under both, and the section Graphs
+  on grid maps of the theory of the graphs states the two models; the test
+  grid-graph-cost-models
 - ConcurrentFlatTable: the places of two words, a key and a value of 8
   bytes each written together by a compare-and-swap of 16 bytes, where the
   processor has one without locks (cmpxchg16b on x86-64, the pairs of
@@ -1231,6 +1237,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   slower, a tie within 5%) in the median cell and over all the cells,
   instead of the bare ratio of the times; bench/__pycache__ no longer in
   the repository
+- GridGraph::forEachMove( u , f ), f( v , d ) with d whether the move is
+  to a corner, is public and documented, so that the flag is not computed
+  again by the caller
 - MultiQueue: the deletion buffer a ring of 16 places, so that the pop of
   its least pair and the eviction of its greatest move no other pair, and
   the pop from the better of two distinct queues, whose mean rank error

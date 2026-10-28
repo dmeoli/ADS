@@ -21,27 +21,30 @@
  * Harabor and Grastien needs exactly what the vector gives, i.e., whether a
  * cell is free in \f$ O( 1 ) \f$, with no list of adjacency.
  *
- * A move into the cell \f$ v \f$ costs \f$ \mathit{cost}( v ) \f$ times the
- * cost of the move on a map of unit costs: \f$ \mathit{straight} \f$ for a
- * side, \f$ \mathit{diagonal} \f$ for a corner, by default 1 and
- * \f$ \sqrt{2} \f$ (the octile costs, which the benchmarks use). A move to a
- * corner may cut it, i.e., pass by a blocked side: `Corners` says whether
- * it may, as in the cutting of corners allowed by the first jump point
- * search, whether at least one of the two sides must be free, or whether
- * both must, as in the benchmarks of Sturtevant since 2012. The graph is
- * oriented when two free cells have different costs, since the cost of
- * \f$ ( u , v ) \f$ is that of \f$ v \f$ and that of \f$ ( v , u ) \f$ the
- * cost of \f$ u \f$; with one cost for all the free cells it is unoriented,
- * the two moves of a pair costing the same, as the rules on the corners
- * are symmetric.
+ * A move from the cell \f$ u \f$ into the cell \f$ v \f$ costs, as
+ * `MoveCost` chooses, \f$ \mathit{cost}( v ) \f$ (the cell entered, the
+ * default) or \f$ \mathit{cost}( u ) \f$ (the cell left) times the cost of
+ * the move on a map of unit costs: \f$ \mathit{straight} \f$ for a side,
+ * \f$ \mathit{diagonal} \f$ for a corner, by default 1 and \f$ \sqrt{2} \f$
+ * (the octile costs, which the benchmarks use). A move to a corner may cut
+ * it, i.e., pass by a blocked side: `Corners` says whether it may, as in the
+ * cutting of corners allowed by the first jump point search, whether at
+ * least one of the two sides must be free, or whether both must, as in the
+ * benchmarks of Sturtevant since 2012. The graph is oriented when two free
+ * cells have different costs, since under either model one of
+ * \f$ ( u , v ) \f$ and \f$ ( v , u ) \f$ is weighed by the cost of \f$ u \f$
+ * and the other by that of \f$ v \f$; with one cost for all the free cells
+ * it is unoriented, the two moves of a pair costing the same, as the rules
+ * on the corners are symmetric.
  *
  * The nodes are the free cells: `hasNode( u )` is whether \f$ u \f$ is a cell
  * and free, `n()` counts the free cells and `bound()` is
  * \f$ \mathit{rows} \cdot \mathit{cols} \f$, so that the visits of `Visit.h`
  * and the shortest paths of `ShortestPaths.h` run on the grid unchanged, with
- * vectors of `bound()` places. `forEachAdj()` and `forEachEdge()` call their
- * function on the neighbours in increasing order of name, as the rows of a
- * `StaticGraph` are sorted, and allocate nothing; `adj()` and `V()` build
+ * vectors of `bound()` places. `forEachAdj()`, `forEachEdge()` and
+ * `forEachMove()` (which also tells whether a move is to a corner) call
+ * their function on the neighbours in increasing order of name, as the rows
+ * of a `StaticGraph` are sorted, and allocate nothing; `adj()` and `V()` build
  * the vectors of the concept `Graph`. `gridDistances()` is the visit in
  * breadth of `Grid.h` from several sources on such a grid, the distances in a
  * vector by node, and `manhattan()`, `octile()` and `chebyshev()` are the
@@ -126,6 +129,12 @@ enum class Corners {
  NO_CUT         ///< if both sides are free
  };
 
+/// which cell of a move of a `GridGraph` weighs it
+enum class MoveCost {
+ ENTERED ,   ///< the cell entered: \f$ ( u , v ) \f$ weighed by \f$ v \f$
+ LEFT        ///< the cell left: \f$ ( u , v ) \f$ weighed by \f$ u \f$
+ };
+
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS GridGraph ----------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -149,17 +158,21 @@ class GridGraph {
  ///      one given if \f$ W \f$ is integral and the moves are eight
  GridGraph( int rows , int cols , GridMoves moves = GridMoves::FOUR ,
             Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
-            std::optional< W > diagonal = std::nullopt );
+            std::optional< W > diagonal = std::nullopt ,
+            MoveCost model = MoveCost::ENTERED );
 
  /// the grid of \f$ \mathit{rows} \times \mathit{cols} \f$ cells of the
  /// given costs, \f$ \mathit{cost}[ r \cdot \mathit{cols} + c ] \f$ that of
- /// the cell \f$ ( r , c ) \f$, a cell blocked if its cost is not positive
+ /// the cell \f$ ( r , c ) \f$, a cell blocked if its cost is not positive,
+ /// each move weighed by the cost of the cell that \f$ \mathit{model} \f$
+ /// names (with no vector, as above, the two models coincide)
  /// \pre as above, and \f$ \mathit{cost} \f$ has
  ///      \f$ \mathit{rows} \cdot \mathit{cols} \f$ places
  GridGraph( int rows , int cols , std::vector< C > cost ,
             GridMoves moves = GridMoves::FOUR ,
             Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
-            std::optional< W > diagonal = std::nullopt );
+            std::optional< W > diagonal = std::nullopt ,
+            MoveCost model = MoveCost::ENTERED );
 
  /// the number of rows
  [[nodiscard]] int rows( void ) const { return( f_rows ); }
@@ -172,6 +185,9 @@ class GridGraph {
 
  /// the rule on the corners
  [[nodiscard]] Corners corners( void ) const { return( f_corners ); }
+
+ /// the cell whose cost weighs a move
+ [[nodiscard]] MoveCost moveCost( void ) const { return( f_model ); }
 
  /// the cost of a move to a side on a map of unit costs
  [[nodiscard]] W straight( void ) const { return( f_straight ); }
@@ -229,6 +245,15 @@ class GridGraph {
  template< class F >
  void forEachEdge( int u , F && f ) const;
 
+ /// \f$ f( v , d ) \f$ on each neighbour \f$ v \f$ of \f$ u \f$, in
+ /// increasing order, \f$ d \f$ whether the move is to a corner, with no
+ /// allocation: the weight of the move is \f$ \mathit{cost}( x ) \f$ times
+ /// `diagonal()` if \f$ d \f$ and `straight()` if not, \f$ x \f$ the cell
+ /// that `moveCost()` names
+ /// \pre \f$ u \f$ is a node
+ template< class F >
+ void forEachMove( int u , F && f ) const;
+
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the nodes in increasing order, a view on the names that skips the
@@ -256,10 +281,9 @@ class GridGraph {
           ( f_corners == Corners::NO_SQUEEZE ? ( a || b ) : ( a && b ) ) );
   }
 
- /// \f$ g( v , d ) \f$ on each neighbour \f$ v \f$ of \f$ u \f$, in
- /// increasing order, \f$ d \f$ whether the move is to a corner
+ /// `forEachMove()` with no check of \f$ u \f$, for the other scans
  template< class G >
- void forEachMove( int u , G && g ) const;
+ void scan( int u , G && g ) const;
 
  /// `n()` counts the free cells
  [[nodiscard]] bool counted( void ) const;
@@ -268,6 +292,7 @@ class GridGraph {
  int f_cols;                ///< the number of columns
  GridMoves f_moves;         ///< the moves
  Corners f_corners;         ///< the rule on the corners
+ MoveCost f_model;          ///< the cell whose cost weighs a move
  W f_straight;              ///< the cost of a move to a side
  W f_diagonal;              ///< the cost of a move to a corner
  std::vector< C > f_cost;   ///< the costs of the cells, or none
@@ -341,7 +366,9 @@ W chebyshev( GridCell a , GridCell b , W straight = W( 1 ) );
 /// cost \f$ \gamma_{\mathrm{min}} \f$ of a cell times `manhattan()` for four
 /// moves and times `octile()` for eight, the latter with
 /// \f$ \min\{ \mathit{diagonal} , 2 \, \mathit{straight} \} \f$ as the cost
-/// of a corner
+/// of a corner; the same bound under both values of `MoveCost`, since a move
+/// weighs at least \f$ \gamma_{\mathrm{min}} \f$ times its unit cost
+/// whichever of its two cells pays (see \ref theory_graph_grids)
 ///
 /// In pseudocode:
 /// \f[

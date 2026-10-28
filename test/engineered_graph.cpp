@@ -721,6 +721,116 @@ ADS_TEST( "grid-graph-huge" )
  CHECK_THROWS( GridGraph<>( INT_MAX , 2 ) , contract_violation );
  }
 
+// the two models of the cost of a move: the cell entered and the cell
+// left; a 2 x 2 map where their shortest paths differ, random maps of four
+// and eight moves under the three rules on the corners against an explicit
+// graph whose weights are computed from the geometry of each move, the
+// flag of a corner of forEachMove(), the shift by a ( cost( s ) - cost( t ) )
+// of the four moves, the distances from s of one model as the distances to
+// s of the other, the heuristic admissible and consistent under both, the
+// orientation the same, and a map with no vector where the two coincide
+ADS_TEST( "grid-graph-cost-models" )
+{
+ using G8 = GridGraph< int , unsigned char >;
+ // 2 x 2, the cells 0 1 / 2 3, costs 1 1 / 1 9, a = 2 and b = 3: entering
+ // 3 costs 27 on the diagonal and 2 + 18 by a side; leaving 0 costs 3 on
+ // the diagonal and 2 + 2 by a side
+ const std::vector< unsigned char > c4 = { 1 , 1 , 1 , 9 };
+ const G8 E( 2 , 2 , c4 , GridMoves::EIGHT , Corners::NO_CUT , 2 , 3 );
+ const G8 L( 2 , 2 , c4 , GridMoves::EIGHT , Corners::NO_CUT , 2 , 3 ,
+             MoveCost::LEFT );
+ CHECK( E.moveCost() == MoveCost::ENTERED && L.moveCost() == MoveCost::LEFT );
+ const auto pe = johnson( E , 0 ) , pl = johnson( L , 0 );
+ CHECK( pe.d[ 3 ] == 20 && pe.T[ 3 ] != 0 );
+ CHECK( pl.d[ 3 ] == 3 && pl.T[ 3 ] == 0 );
+ CHECK( E.directed() && L.directed() );
+ std::vector< std::tuple< int , int , bool > > mv;
+ E.forEachMove( 0 , [ & ]( int v , bool d ) {
+  mv.emplace_back( 0 , v , d ); } );
+ CHECK( mv == ( std::vector< std::tuple< int , int , bool > >{
+               { 0 , 1 , false } , { 0 , 2 , false } , { 0 , 3 , true } } ) );
+ std::mt19937 g( 11 );
+ for( int t = 0 ; t < 5 ; ++t ) {
+  const int R = 1 + int( g() % 13 ) , Cc = 1 + int( g() % 17 );
+  const auto cost = randomCosts( R , Cc , g );
+  for( Corners k : { Corners::CUT , Corners::NO_SQUEEZE , Corners::NO_CUT } )
+   for( GridMoves m : { GridMoves::FOUR , GridMoves::EIGHT } ) {
+    std::vector< std::vector< int > > dist[ 2 ] , to;
+    const std::vector< int > all = G8( R , Cc , cost ).V();
+    for( MoveCost model : { MoveCost::ENTERED , MoveCost::LEFT } ) {
+     const G8 G( R , Cc , cost , m , k , 5 , 7 , model );
+     // the explicit graph: the weight of each move from its geometry and
+     // from the cost of the cell that pays
+     std::vector< std::tuple< int , int , int > > X;
+     for( int u : G.V() )
+      G.forEachMove( u , [ & ]( int v , bool d ) {
+       const GridCell a = G.cell( u ) , b = G.cell( v );
+       const bool diag = ( a.first != b.first ) && ( a.second != b.second );
+       CHECK( d == diag );
+       const int pay = model == MoveCost::LEFT ? cost[ u ] : cost[ v ];
+       X.emplace_back( u , v , pay * ( diag ? 7 : 5 ) );
+       } );
+     const ArrayGraph< int > A( G.bound() , X , true );
+     for( int u : G.V() ) {
+      std::vector< std::pair< int , int > > x , y;
+      G.forEachEdge( u , [ & ]( int v , int w ) { x.emplace_back( v , w ); } );
+      A.forEachEdge( u , [ & ]( int v , int w ) { y.emplace_back( v , w ); } );
+      CHECK( x == y );
+      }
+     CHECK( G.directed() == G8( R , Cc , cost , m , k , 5 , 7 ).directed() );
+     auto & D = dist[ model == MoveCost::LEFT ];
+     for( std::size_t i = 0 ; i < all.size() ; i += all.size() / 4 + 1 ) {
+      const int s = all[ i ];
+      const auto J = johnson( G , s );
+      CHECK( J.d == johnson( A , s ).d );
+      D.push_back( J.d );
+      for( int u : G.V() ) {
+       const int h = gridHeuristic( G , u , s );
+       G.forEachEdge( u , [ & ]( int v , int w ) {
+        CHECK( h <= w + gridHeuristic( G , v , s ) ); } );
+       }
+      // the costs to s, on the transposed graph: the heuristic towards s
+      // is a lower bound on them
+      const auto T = johnson( StaticGraph< int >( A ).transpose() , s ).d;
+      for( int u : G.V() )
+       CHECK( ( T[ u ] == infinity< int >() ) ||
+              ( gridHeuristic( G , u , s ) <= T[ u ] ) );
+      if( model == MoveCost::ENTERED )
+       to.push_back( T );
+      }
+     }
+    // the distances from s leaving are those to s entering, and with four
+    // moves they differ by 5 ( cost( s ) - cost( t ) )
+    std::size_t q = 0;
+    for( std::size_t i = 0 ; i < all.size() ; i += all.size() / 4 + 1 , ++q ) {
+     const int s = all[ i ];
+     for( int t : all ) {
+      const int de = dist[ 0 ][ q ][ t ] , dl = dist[ 1 ][ q ][ t ];
+      CHECK( ( de == infinity< int >() ) == ( dl == infinity< int >() ) );
+      if( de == infinity< int >() )
+       continue;
+      if( m == GridMoves::FOUR )
+       CHECK( dl - de == 5 * ( int( cost[ s ] ) - int( cost[ t ] ) ) );
+      CHECK( dl == to[ q ][ t ] );
+      }
+     }
+    }
+  }
+ // with no vector the two models give the same weights
+ const GridGraph< double > F( 4 , 5 , GridMoves::EIGHT , Corners::CUT , 1.0 ,
+                              std::nullopt , MoveCost::LEFT );
+ const GridGraph< double > H( 4 , 5 , GridMoves::EIGHT , Corners::CUT );
+ for( int u : F.V() ) {
+  std::vector< std::pair< int , double > > x , y;
+  F.forEachEdge( u , [ & ]( int v , double w ) { x.emplace_back( v , w ); } );
+  H.forEachEdge( u , [ & ]( int v , double w ) { y.emplace_back( v , w ); } );
+  CHECK( x == y );
+  }
+ const G8 B( 1 , 2 , std::vector< unsigned char >{ 0 , 1 } );
+ CHECK_THROWS( B.forEachMove( 0 , []( int , bool ) {} ) , contract_violation );
+ CHECK_THROWS( B.forEachMove( 2 , []( int , bool ) {} ) , contract_violation );
+ }
+
 // a map in the format of the benchmarks of Sturtevant: its free and its
 // blocked characters, the octile distances with no cut corners against
 // the explicit graph, and the contracts on a header and on rows that are
