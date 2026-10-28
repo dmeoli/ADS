@@ -13,14 +13,41 @@
 import glob
 import os
 import re
+import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 project = 'ADS'
 author = 'Donato Meoli'
 copyright = '2026, Donato Meoli'
-with open(os.path.join(ROOT, 'CMakeLists.txt')) as f:
-    release = re.search(r'VERSION\s+(\d+\.\d+\.\d+)', f.read()).group(1)
+
+
+def derive_version():
+    """The version as cmake/DeriveVersion.cmake finds it: the last tag of
+    git, else VERSION.txt (filled by git archive), else MODULE.bazel."""
+    try:
+        tag = subprocess.run(['git', 'describe', '--tags', '--abbrev=0'],
+                             cwd=ROOT, capture_output=True, text=True,
+                             check=True).stdout.strip()
+        m = re.match(r'v?(\d+\.\d+\.\d+)', tag)
+        if m:
+            return m.group(1)
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    for name, pattern in (('VERSION.txt', r'^v?(\d+\.\d+\.\d+)'),
+                          ('MODULE.bazel',
+                           r'^\s*version\s*=\s*"(\d+\.\d+\.\d+)"')):
+        try:
+            with open(os.path.join(ROOT, name)) as f:
+                m = re.search(pattern, f.read(), re.M)
+            if m:
+                return m.group(1)
+        except OSError:
+            pass
+    return '0.0.0'
+
+
+release = derive_version()
 version = release
 
 extensions = [
