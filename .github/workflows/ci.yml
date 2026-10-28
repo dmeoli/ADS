@@ -1,21 +1,25 @@
 ###############################################################################
 #                                 ci.yml                                      #
 #                                                                             #
-# Builds and tests ADS with CMake on Linux, macOS and Windows, and with the   #
-# makefile on Linux and macOS; on Linux also with clang, under ASan and       #
-# UBSan, BigInteger with its portable products and on the backend of GMP,     #
-# FastHash and the vector quicksort on AVX2 (and AVX-512 when the runner has  #
-# it), ConcurrentFlatTable on the compare-and-swap of 16 bytes, the queues    #
-# between threads, the event count, the MultiQueue, the concurrent hash       #
-# tables, the parallel operations of the trees by join, the parallel builds   #
-# of the succinct structures and the stepping algorithms of the shortest      #
-# paths under ThreadSanitizer, FlatHashTable on its broadword fallback and    #
-# fft() on the lanes of AVX, on arrays of doubles and on the intrinsics of    #
-# x86 that MSVC takes; it measures the coverage of the tests, run four at a   #
-# time and with the cases there for their scale alone made smaller, and sends #
-# it to Coveralls; it builds the C++20 module ads and runs the test that      #
-# imports it, by CMake and Ninja with Clang and GCC 15 on Linux and the Clang #
-# of LLVM on macOS, and by the makefile with clang++ and g++ 15.              #
+# Builds and tests ADS by CMake and by the makefiles [see lib/makefile-c],    #
+# with g++ and with clang++, on Linux, on macOS (the clang++ of Xcode and the #
+# g++ of Homebrew) and on Windows (the g++ and the clang++ of MinGW-w64 in    #
+# MSYS2, and MSVC by CMake alone), and installs it for a project that finds   #
+# it by find_package and by pkg-config; on Linux it also runs the tests under #
+# ASan and UBSan, BigInteger with its portable products and on the backend of #
+# GMP, the executors of OpenMP, oneTBB and FastFlow by the makefile, FastHash #
+# and the vector quicksort on AVX2 (and AVX-512 when the runner has it),      #
+# ConcurrentFlatTable on the compare-and-swap of 16 bytes, the queues between #
+# threads, the event count, the MultiQueue, the concurrent hash tables, the   #
+# parallel operations of the trees by join, the parallel builds of the        #
+# succinct structures and the stepping algorithms of the shortest paths under #
+# ThreadSanitizer, FlatHashTable on its broadword fallback and fft() on the   #
+# lanes of AVX, on arrays of doubles and on the intrinsics of x86 that MSVC   #
+# takes; it measures the coverage of the tests, run four at a time and with   #
+# the cases there for their scale alone made smaller, and sends it to         #
+# Coveralls; it builds the C++20 module ads and runs the test that imports    #
+# it, by CMake and Ninja with Clang and GCC 15 on Linux and the Clang of LLVM #
+# on macOS, and by the makefile with clang++ and g++ 15.                      #
 ###############################################################################
 
 name: CI
@@ -35,36 +39,68 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  # every program built and every test run by CMake and by the makefiles,
+  # four at a time, and the installed package used through find_package and
+  # pkg-config [see packaging/test]; on Windows, MSVC by CMake alone and the
+  # compilers of MSYS2, whose bash runs the makefiles
   test:
+    name: test (${{ matrix.os }}, ${{ matrix.compiler }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest , macos-latest , windows-latest ]
+        include:
+          - { os: ubuntu-latest , compiler: g++ , cxx: g++ }
+          - { os: ubuntu-latest , compiler: clang++ , cxx: clang++ }
+          - { os: macos-latest , compiler: clang++ , cxx: clang++ }
+          - { os: macos-latest , compiler: g++ , cxx: g++-15 }
+          - { os: windows-latest , compiler: msvc }
+          - { os: windows-latest , compiler: g++ , cxx: g++ ,
+              msystem: UCRT64 , cc: gcc }
+          - { os: windows-latest , compiler: clang++ , cxx: clang++ ,
+              msystem: CLANG64 , cc: clang }
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: ${{ matrix.msystem && 'msys2 {0}' || 'bash' }}
+    env:
+      CXX: ${{ matrix.cxx }}
+      GEN: ${{ matrix.msystem && '-G Ninja' || '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: the compiler, CMake, Ninja and make of MSYS2
+        if: matrix.msystem
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          install: make
+          pacboy: >-
+            ${{ matrix.cc }}:p cmake:p ninja:p pkgconf:p
+      - name: the g++ of Homebrew
+        if: runner.os == 'macOS' && matrix.compiler == 'g++'
+        run: command -v "$CXX" || brew install gcc@15
       - name: CMake
-        shell: bash
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          inst="$PWD/inst"
+          if command -v cygpath > /dev/null; then
+            inst=$(cygpath -m "$inst")
+          fi
+          echo "INST=$inst" >> "$GITHUB_ENV"
+          cmake -S . -B build $GEN -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="$inst"
           cmake --build build --config Release --parallel 4
-          ctest --test-dir build -C Release --output-on-failure
-      - name: install and find_package
-        shell: bash
+          ctest --test-dir build -C Release --parallel 4 --output-on-failure
+      - name: installed, and found by find_package and pkg-config
         run: |
-          cmake --install build --config Release --prefix "$PWD/inst"
-          test -f "$PWD/inst/include/ADS/sequence/List.h"
+          cmake --install build --config Release
+          test -f "$INST/include/ADS/ADSConfig.h"
+          cmake -S packaging/test -B build-use $GEN \
+                -DCMAKE_PREFIX_PATH="$INST"
+          cmake --build build-use --config Release
+          ctest --test-dir build-use -C Release --output-on-failure
       - name: makefile
-        if: runner.os != 'Windows'
-        run: make test
-
-  clang:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: clang
-        run: make test CXX=clang++ BUILD=build-clang
+        if: matrix.compiler != 'msvc'
+        run: make -j4 test
 
   portable:
     runs-on: ubuntu-latest
@@ -117,18 +153,37 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgmp-dev
       - name: the tests with BigInteger on GMP, by the makefile
-        run: make test ADS_WITH_GMP=1 BUILD=build-gmp
+        run: make -j4 test ADS_WITH_GMP=1 BUILD=build-gmp
       - name: the same by CMake, installed and found by find_package
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DADS_WITH_GMP=ON \
                 -DCMAKE_INSTALL_PREFIX="$PWD/inst"
           cmake --build build --parallel 4
-          ctest --test-dir build --output-on-failure
+          ctest --test-dir build --parallel 4 --output-on-failure
           cmake --install build
           cmake -S packaging/test -B build-use \
                 -DCMAKE_PREFIX_PATH="$PWD/inst"
           cmake --build build-use
           ctest --test-dir build-use --output-on-failure
+
+  executors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: oneTBB and FastFlow
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtbb-dev
+          git clone --quiet --depth 1 \
+              https://github.com/fastflow/fastflow.git "$RUNNER_TEMP/ff"
+      - name: the tests of the executors, by the makefile
+        run: |
+          make -j4 BUILD=build-exec ADS_WITH_OPENMP=1 ADS_WITH_TBB=1 \
+               ADS_WITH_FASTFLOW=1 FastFlow_ROOT="$RUNNER_TEMP/ff" \
+               build-exec/engineered_parallel build-exec/engineered_speculative
+          for p in engineered_parallel engineered_speculative; do
+            for t in $(build-exec/$p -l); do build-exec/$p $t; done
+          done
 
   threads:
     runs-on: ubuntu-latest
@@ -251,13 +306,17 @@ jobs:
           fail-on-error: false
 
   sanitizers:
+    # the programs built and run four at a time, the cases there for their
+    # scale alone made smaller by ADS_TEST_SMALL [see ADSTest.h]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: AddressSanitizer and UndefinedBehaviorSanitizer
         env:
           SAN: -fsanitize=address,undefined -fno-omit-frame-pointer
-        run: make test CXXFLAGS="-std=c++20 -O1 -g $SAN -Wall -Wextra"
+        run: |
+          make -j4 test \
+               CXXFLAGS="-std=c++20 -O1 -g $SAN -Wall -Wextra -DADS_TEST_SMALL"
 
   # the module by CMake: a build where it was turned off fails, as does one
   # where ctest finds no test module; GCC 15, which the runners lack, from

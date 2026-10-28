@@ -1,10 +1,10 @@
-###############################################################################
-#                           test/CMakeLists.txt                               #
+# --------------------------------------------------------------------------- #
+#    test/CMakeLists.txt                                                      #
 #                                                                             #
-# One program per chapter of the book, chNN.cpp, and one ctest per test in    #
-# it, read from tests.txt as <program>.<name>; <program>.registry checks      #
-# that tests.txt and the tests in the program are the same.                   #
-###############################################################################
+#    One program per chapter of the book, chNN.cpp, and one ctest per test in #
+#    it, read from tests.txt as <program>.<name>; <program>.registry checks   #
+#    that tests.txt and the tests in the program are the same.                #
+# --------------------------------------------------------------------------- #
 
 find_package(Threads REQUIRED)
 
@@ -24,9 +24,19 @@ foreach (line IN LISTS lines)
                 $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>
                 $<$<CXX_COMPILER_ID:MSVC>:/W3 /bigobj /permissive- /utf-8>)
         # the stack of Linux, 8 MB, for the recursive solutions of the
-        # exercises on chains of 10^4 nodes (1 MB by default on Windows)
+        # exercises on chains of 10^4 nodes (1 MB by default with MSVC, 2 MB
+        # with MinGW)
         target_link_options(${program} PRIVATE
                 $<$<CXX_COMPILER_ID:MSVC>:/STACK:8388608>)
+        if (MINGW)
+            target_link_options(${program} PRIVATE -Wl,--stack,8388608)
+            # the objects of more than 2^16 sections, which the format COFF
+            # takes only in its big variant (Clang switches to it by itself,
+            # the assembler of GCC by -mbig-obj)
+            if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+                target_compile_options(${program} PRIVATE -Wa,-mbig-obj)
+            endif ()
+        endif ()
         add_test(NAME ${program}.registry
                  COMMAND ${CMAKE_COMMAND}
                          -DPROGRAM=$<TARGET_FILE:${program}>
@@ -61,6 +71,4 @@ if (ADS_BUILD_MODULE)
     add_test(NAME module COMMAND module)
 endif ()
 
-###############################################################################
-#                       End of test/CMakeLists.txt                            #
-###############################################################################
+# --------------------------------------------------------------------------- #

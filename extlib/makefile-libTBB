@@ -1,0 +1,31 @@
+###############################################################################
+############################### makefile-libTBB ###############################
+###############################################################################
+#                                                                             #
+#   makefile of libTBB, for the executor of oneTBB [see TBBExecutor.h]        #
+#                                                                             #
+#   Input:  $(TBB_ROOT) = the prefix where oneTBB is installed, empty if      #
+#                         it is where the compiler looks                      #
+#           $(UNAME_S)  = the name of the current OS [see makefile-OS]        #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libTBBINC) = the -I$(include directories) for oneTBB            #
+#           $(libTBBLIB) = external libraries + -L< libdirs > for oneTBB      #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic oneTBB directory without quotes, if any
+libTBBBSCDIR = $(subst $\",,$(TBB_ROOT))
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+libTBBINC = $(if $(libTBBBSCDIR),-I"$(libTBBBSCDIR)/include")
+libTBBLIB = $(if $(libTBBBSCDIR),-L"$(libTBBBSCDIR)/lib" \
+	$(if $(filter Windows,$(UNAME_S)),,\
+		-Wl$(ADScomma)-rpath$(ADScomma)"$(libTBBBSCDIR)/lib")) -ltbb
+
+########################### End of makefile-libTBB ############################

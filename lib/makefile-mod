@@ -1,0 +1,103 @@
+###############################################################################
+################################ makefile-mod #################################
+###############################################################################
+#                                                                             #
+#   makefile of the C++20 module ads                                          #
+#                                                                             #
+#   The module ads, whose interface src/ADS.cppm includes the headers and     #
+#   exports their names, lets a source write "import ads;" in place of the    #
+#   #include. This makefile gives the rule that compiles the interface into   #
+#   the module file and into an object, which goes with the program that      #
+#   imports the module. The module is built only if $(ADSMOD) is not empty    #
+#   nor 0 (e.g., make ADSMOD=1), with clang++ 16 or g++ 15 or later;          #
+#   otherwise, or with another compiler (which is reported by a warning),     #
+#   nothing here does anything. g++ finds the module file by a mapper,        #
+#   clang++ in a directory.                                                   #
+#                                                                             #
+#   The interface is compiled with $(CXXFLAGS), the -I, -D and -U of          #
+#   $(ADSINC) and $(ADSMODFLAGS) and -pthread (the pool of threads), and not  #
+#   with the other options of $(ADSINC) (e.g., -fopenmp, which no header      #
+#   needs), since a module file is only imported with the options it was      #
+#   made with: the importers have to be compiled with the same $(CXXFLAGS)    #
+#   and -pthread, and with $(ADSMODSW). The makefile is included by           #
+#   makefile, after $(ADSH), on which the interface depends.                  #
+#                                                                             #
+#   Input:  $(CXX)         = compiler command                                 #
+#           $(CXXFLAGS)    = compiler options                                 #
+#           $(ADSSDR)      = the directory where the ADS source is            #
+#           $(ADSODR)      = the directory where the module file and its      #
+#                            object are put                                   #
+#           $(ADSH)        = the headers of ADS                               #
+#           $(ADSINC)      = the -I and -D of ADS                             #
+#           $(ADSMOD)      = not empty nor 0 if the module is to be built     #
+#           $(ADSMODFLAGS) = further options of the interface (e.g., the -D   #
+#                            of the contracts), the same for the importers    #
+#           $(ADSCLANG)    = not empty if $(CXX) is clang++ [see makefile-OS] #
+#                                                                             #
+#   Output: $(ADSMODOBJ)   = the object of the module, empty if it is not     #
+#                            built                                            #
+#           $(ADSMODFILE)  = the module file                                  #
+#           $(ADSMODSW)    = the options of whatever imports the module       #
+#                                                                             #
+###############################################################################
+
+# the compiler, and whether it builds the module - - - - - - - - - - - - - -
+
+ifneq ($(filter-out 0,$(ADSMOD)),)
+    ADSMODver := $(firstword $(subst ., ,$(shell $(CXX) -dumpversion)))
+    ifneq ($(ADSCLANG),)
+        ifeq ($(shell test "$(ADSMODver)" -ge 16 2>/dev/null && echo ok),ok)
+            ADSMODkind = clang
+        endif
+    else
+        ifeq ($(shell test "$(ADSMODver)" -ge 15 2>/dev/null && echo ok),ok)
+            ADSMODkind = gcc
+        endif
+    endif
+    ifeq ($(ADSMODkind),)
+        $(warning ADSMOD is turned off: $(CXX) $(ADSMODver) does not \
+	build the modules (clang++ 16 or g++ 15 or later is needed))
+    endif
+endif
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ifeq ($(ADSMODkind),clang)
+    ADSMODOBJ = $(ADSODR)/ads.o
+    ADSMODFILE = $(ADSODR)/ads.pcm
+    ADSMODSW = -fprebuilt-module-path=$(ADSODR)
+endif
+ifeq ($(ADSMODkind),gcc)
+    ADSMODOBJ = $(ADSODR)/ads.o
+    ADSMODFILE = $(ADSODR)/ads.gcm
+    ADSMODSW = -fmodules -fmodule-mapper=$(ADSODR)/ads.map
+endif
+
+# the rule of the module- - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ifeq ($(ADSMODkind),clang)
+$(ADSMODOBJ): $(ADSSDR)/src/ADS.cppm $(ADSH)
+	@mkdir -p $(ADSODR)
+	$(CXX) $(CXXFLAGS) $(filter -I% -D% -U%,$(ADSINC)) $(ADSMODFLAGS) \
+	-x c++-module -c $< -fmodule-output=$(ADSMODFILE) -o $@ -pthread
+endif
+ifeq ($(ADSMODkind),gcc)
+$(ADSMODOBJ): $(ADSSDR)/src/ADS.cppm $(ADSH)
+	@mkdir -p $(ADSODR)
+	echo "ads $(abspath $(ADSMODFILE))" > $(ADSODR)/ads.map
+	$(CXX) $(CXXFLAGS) $(filter -I% -D% -U%,$(ADSINC)) $(ADSMODFLAGS) \
+	$(ADSMODSW) -x c++ -c $< -o $@ -pthread
+endif
+
+ifneq ($(ADSMODOBJ),)
+$(ADSMODFILE): $(ADSMODOBJ) ;
+endif
+
+# clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the module is cleaned also by a make without $(ADSMOD)
+
+clean::
+	rm -f $(ADSODR)/ads.o $(ADSODR)/ads.pcm $(ADSODR)/ads.gcm \
+	$(ADSODR)/ads.map
+
+############################# End of makefile-mod #############################

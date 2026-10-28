@@ -1,0 +1,41 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File ADSConfig.h ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @file
+ * The version of ADS, written by CMake (or by `make install`) from
+ * cmake/ADSConfig.h.in when ADS is configured, with the version derived
+ * from git [see cmake/DeriveVersion.cmake], and installed with the headers;
+ * no header of ADS includes it, so that the headers alone, as they are in
+ * the sources, are the whole library.
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Università di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
+ */
+/*--------------------------------------------------------------------------*/
+/*----------------------------- DEFINITIONS --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#ifndef __ADS_ADSConfig
+ #define __ADS_ADSConfig
+                      /* self-identification: #endif constant */
+
+/// the version of ADS, "X.Y.Z"
+#define ADS_VERSION "@PROJECT_VERSION@"
+
+/// the major version of ADS, X
+#define ADS_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+
+/// the minor version of ADS, Y
+#define ADS_VERSION_MINOR @PROJECT_VERSION_MINOR@
+
+/// the patch version of ADS, Z
+#define ADS_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+#endif  /* ADSConfig.h included */
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File ADSConfig.h --------------------------*/
+/*--------------------------------------------------------------------------*/

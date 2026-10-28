@@ -1,0 +1,63 @@
+###############################################################################
+################################# makefile-OS #################################
+###############################################################################
+#                                                                             #
+#   makefile of the OS-specific settings                                      #
+#                                                                             #
+#   Defines some general values, like UNAME_S, which identify the type of OS  #
+#   and UNAME_P which identify the architecture for which ADS is being        #
+#   compiled, so that other makefiles can rely on these to automatically      #
+#   adapt without a need for the user to manually edit them. It also gives    #
+#   the options that clang++ and g++ spell differently, so that the same      #
+#   switches serve either of them, and those that Windows needs.              #
+#                                                                             #
+#   Input:  $(CXX)      = compiler command, looked at when the options are    #
+#                         first used, i.e., also if it is defined later       #
+#                                                                             #
+#   Output: $(UNAME_S)  = the name of the current operating system (Linux,    #
+#                         Darwin, Windows)                                    #
+#           $(UNAME_P)  = the name of the underlying architecture (x86_64,    #
+#                         arm, ...)                                           #
+#           $(ADSCLANG) = not empty if $(CXX) is clang++                      #
+#           $(ADSSWERR) = the option that stops at the first error            #
+#           $(ADSSWDBG) = the option of the debugging information for the     #
+#                         debugger of the compiler (lldb, gdb)                #
+#           $(ADSSWOS)  = the options that the OS needs to compile ADS: on    #
+#                         Windows the big objects of g++, whose assembler     #
+#                         refuses more than 2^16 sections otherwise (clang++  #
+#                         switches to them by itself)                         #
+#           $(ADSEXE)   = the suffix of the executables (.exe on Windows)     #
+#                                                                             #
+###############################################################################
+
+# define the macros to be exported- - - - - - - - - - - - - - - - - - - - - -
+
+ifeq ($(OS),Windows_NT)
+    UNAME_S := Windows
+    UNAME_P := $(PROCESSOR_ARCHITECTURE)
+else
+    UNAME_S := $(shell uname -s)
+    UNAME_P := $(shell uname -p)
+endif
+
+# the options that clang++ and g++ spell differently - - - - - - - - - - - -
+# whether $(CXX) is clang++ is asked the first time that it is needed, when
+# $(CXX) has its final value, and then remembered
+
+ADSCLANG = $(eval ADSCLANG := $$(findstring clang,$$(shell $$(CXX) \
+	--version 2>/dev/null)))$(ADSCLANG)
+
+ADSSWERR = $(if $(ADSCLANG),-ferror-limit=1,-fmax-errors=1)
+
+ADSSWDBG = $(if $(ADSCLANG),-glldb,-ggdb)
+
+# the options and the suffix of Windows- - - - - - - - - - - - - - - - - - -
+
+ifeq ($(UNAME_S),Windows)
+    ADSSWOS = $(if $(ADSCLANG),,-Wa$(ADScomma)-mbig-obj)
+    ADSEXE = .exe
+endif
+
+ADScomma := ,
+
+############################# End of makefile-OS ##############################

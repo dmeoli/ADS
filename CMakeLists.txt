@@ -1,37 +1,81 @@
-###############################################################################
-#                              CMakeLists.txt                                 #
+# --------------------------------------------------------------------------- #
+#    Main CMake file for ADS                                                  #
 #                                                                             #
-# ADS: the algorithms and the data structures of the book A. Montresor,       #
-# Algoritmi e Strutture Dati, 2025 (https://algoritmicamente.it), as a        #
-# header-only C++20 library, with the exercises of the book as tests.         #
+#    ADS: the algorithms and the data structures of the book A. Montresor,    #
+#    Algoritmi e Strutture Dati, 2025 (https://algoritmicamente.it), as a     #
+#    header-only C++20 library, with the exercises of the book as tests.      #
 #                                                                             #
-# Build and test:                                                             #
-#   cmake -S . -B build && cmake --build build && ctest --test-dir build      #
-# Install, then use from another CMake project with                           #
-#   find_package(ADS) and target_link_libraries(<target> PRIVATE ADS::ADS)    #
+#    This file allows one to build and run the tests using CMake.             #
+#    To do so, you can use the following commands:                            #
 #                                                                             #
-# The makefile does the same without CMake [see makefile].                    #
-###############################################################################
-
+#        $ cmake -S <source-path> -B <build-path>                             #
+#        $ cmake --build <build-path>                                         #
+#        $ ctest --test-dir <build-path>                                      #
+#                                                                             #
+#    The following command also installs the library in the system:           #
+#                                                                             #
+#        $ cmake --install <build-path> [--prefix <dir>]                      #
+#                                                                             #
+#    and another CMake project then uses it with                              #
+#                                                                             #
+#        find_package(ADS)                                                    #
+#        target_link_libraries(<target> PRIVATE ADS::ADS)                     #
+#                                                                             #
+#    The makefile does the same without CMake [see makefile and lib/].        #
+# --------------------------------------------------------------------------- #
 cmake_minimum_required(VERSION 3.21)
+# Derive the version from the most recent git tag (with the fallbacks for a
+# tarball and for a clone without the tags), so that a release is just the
+# tag vX.Y.Z. Must be done before project().
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeriveVersion.cmake)
+ads_derive_version(ADS_VERSION)
+
 project(ADS
-        VERSION 0.1.0
+        VERSION ${ADS_VERSION}
         DESCRIPTION "The algorithms and data structures of the book"
+        HOMEPAGE_URL https://github.com/dmeoli/ADS
         LANGUAGES CXX)
 
-# ----- the library: headers only, the declarations in include/ADS/<area>/ - #
-# ----- and the definitions of the templates in include/ADS/<area>/impl/ ---- #
+# ----- Settings ------------------------------------------------------------ #
+# Sets the default build type (if none was specified); the files of cmake/
+# are included by their path, so that a project that takes ADS as a
+# subproject, and has files of the same name, does not give its own.
+# See: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildType.cmake)
+
+# ----- Library ------------------------------------------------------------- #
+# Headers only: the declarations in include/ADS/<area>/ and the definitions
+# of the templates in include/ADS/<area>/impl/, hence an INTERFACE library.
+# Different INSTALL_INTERFACE and BUILD_INTERFACE paths are used when
+# generating the target import file (ADSTargets.cmake): a target that finds
+# ADS in its build directory looks into the BUILD_INTERFACE path for the
+# headers, one that finds it installed into the INSTALL_INTERFACE path.
 add_library(ADS INTERFACE)
-add_library(ADS::ADS ALIAS ADS)
 target_include_directories(ADS INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 target_compile_features(ADS INTERFACE cxx_std_20)
 
-# ----- BigInteger on GMP where it is faster, off by default ---------------- #
+# This alias is defined so that executables in this same project, and the
+# projects that take ADS as a subproject, can use the library with the same
+# notation as the installed one.
+add_library(ADS::ADS ALIAS ADS)
+
+# ----- Configuration header ------------------------------------------------ #
+# This generates ADS/ADSConfig.h, with the version, in the build directory;
+# it is installed with the headers, none of which includes it.
+configure_file(cmake/ADSConfig.h.in include/ADS/ADSConfig.h @ONLY)
+
+# ----- Requirements -------------------------------------------------------- #
+# The pool of threads of ADS [see include/ADS/parallel].
+find_package(Threads REQUIRED)
+target_link_libraries(ADS INTERFACE Threads::Threads)
+
+# BigInteger on GMP where it is faster, off by default.
 option(ADS_WITH_GMP "BigInteger on the backend of GMP [see BigInteger.h]" OFF)
 if (ADS_WITH_GMP)
-    include(cmake/ADSGMP.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSGMP.cmake)
     if (NOT ADS_GMP_FOUND)
         message(FATAL_ERROR "ADS_WITH_GMP is ON, but GMP was not found: "
                 "install it (libgmp-dev, gmp-devel, gmp) or set "
@@ -41,11 +85,8 @@ if (ADS_WITH_GMP)
     target_link_libraries(ADS INTERFACE ADS::GMP)
 endif ()
 
-# ----- the tests: the exercises of the book -------------------------------- #
-# the executors of the parallel algorithms beyond the pool of ADS [see
-# include/ADS/parallel]: OpenMP, oneTBB and FastFlow, OFF by default
-find_package(Threads REQUIRED)
-target_link_libraries(ADS INTERFACE Threads::Threads)
+# The executors of the parallel algorithms beyond the pool of ADS [see
+# include/ADS/parallel]: OpenMP, oneTBB and FastFlow, OFF by default.
 option(ADS_WITH_OPENMP "the executor of OpenMP [see OpenMPExecutor.h]" OFF)
 if (ADS_WITH_OPENMP)
     find_package(OpenMP REQUIRED)
@@ -76,8 +117,8 @@ if (ADS_WITH_FASTFLOW)
                                $<BUILD_INTERFACE:${FASTFLOW_DIR}>)
 endif ()
 
-# the sort over the processes of MPI [see include/ADS/distributed], OFF by
-# default
+# The sort over the processes of MPI [see include/ADS/distributed], OFF by
+# default.
 option(ADS_WITH_MPI "the distributed sort on MPI [see DistributedSort.h]"
        OFF)
 if (ADS_WITH_MPI)
@@ -86,14 +127,15 @@ if (ADS_WITH_MPI)
     target_link_libraries(ADS INTERFACE MPI::MPI_CXX)
 endif ()
 
-# ----- the C++20 module ads [see src/ADS.cppm], off by default ----------- #
-# the module exports the names of all the headers, so that a translation
-# unit can write "import ads;" in place of including them; it needs CMake
-# 3.28, a generator that scans the module dependencies and a compiler that
-# builds modules, and where one is missing the option is turned off with a
-# warning [see cmake/ADSCheckModule.cmake]
+# ----- C++20 module -------------------------------------------------------- #
+# The module ads (src/ADS.cppm) exports the names of all the headers, so
+# that a translation unit can write "import ads;" in place of including
+# them; it is built when ADS_BUILD_MODULE is ON, which needs CMake 3.28, a
+# generator that scans the module dependencies and a compiler that builds
+# modules. Where one is missing, the option is turned off with a warning
+# [see ADSCheckModule.cmake].
 option(ADS_BUILD_MODULE "build the C++20 module ads [see src/ADS.cppm]" OFF)
-include(cmake/ADSCheckModule.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSCheckModule.cmake)
 ads_check_module()
 if (ADS_BUILD_MODULE)
     # the scan of the module dependencies, which cmake_minimum_required()
@@ -119,6 +161,11 @@ if (ADS_BUILD_MODULE)
     add_library(ADS::ADS_module ALIAS ADS_module)
 endif ()
 
+# ----- Subdirectories ------------------------------------------------------ #
+# The tests, the exercises of the book, built by default only when ADS is
+# the main project; include(CTest) creates the BUILD_TESTING option
+# (default: ON) and enables the testing with the ctest executable.
+# See: https://cmake.org/cmake/help/latest/manual/ctest.1.html
 option(ADS_BUILD_TESTS "build the tests (by default only as the main project)"
        ${PROJECT_IS_TOP_LEVEL})
 if (ADS_BUILD_TESTS)
@@ -128,7 +175,8 @@ if (ADS_BUILD_TESTS)
     endif ()
 endif ()
 
-# ----- the benchmarks, off by default -------------------------------------- #
+# ----- Benchmarks ---------------------------------------------------------- #
+# The benchmarks in bench/, against the libraries found, off by default.
 option(ADS_BENCHMARKS "build the benchmarks in bench/" OFF)
 if (ADS_BENCHMARKS)
     find_package(Boost QUIET)
@@ -367,9 +415,11 @@ if (ADS_BENCHMARKS)
     target_link_libraries(bench-allocators PRIVATE Threads::Threads)
 endif ()
 
-# ----- install and export, for find_package(ADS) and pkg-config ---------- #
-# ----- the CMake and pkg-config files go under share, not lib, since ----- #
-# ----- a library of headers is the same on every architecture ------------ #
+# ----- Install instructions ------------------------------------------------ #
+# The following commands are used when installing the library and its CMake
+# and pkg-config files on the system; they are not required for local
+# builds. The CMake and pkg-config files go under share, not lib, since a
+# library of headers is the same on every architecture.
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -378,19 +428,32 @@ set(ADS_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake/ADS
 set(ADS_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_DATADIR}/pkgconfig
     CACHE STRING "where to install ads.pc")
 
+# Install the library
 install(TARGETS ADS EXPORT ADSTargets)
-# the module, whose interface is compiled again by each importer
+
+# Install the module, whose interface is compiled again by each importer
 if (ADS_BUILD_MODULE)
     install(TARGETS ADS_module EXPORT ADSTargets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             FILE_SET CXX_MODULES
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ADS/modules)
 endif ()
+
+# Install the headers, and the auto-generated configuration header (see
+# above).
 install(DIRECTORY include/ADS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ADS/ADSConfig.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ADS)
+
+# (Generate and) install the target import file, that allows other
+# CMake projects to import the target.
 install(EXPORT ADSTargets
         NAMESPACE ADS::
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
+# Generate the package configuration file, that allows other CMake projects
+# to find the library with find_package(), and the package version file,
+# that allows them to know the version.
 configure_package_config_file(cmake/ADSConfig.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         INSTALL_DESTINATION ${ADS_INSTALL_CMAKEDIR})
@@ -398,19 +461,23 @@ write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
         COMPATIBILITY SameMajorVersion
         ARCH_INDEPENDENT)
+
+# Install the package version and configuration files, with the module of
+# GMP that the configuration file includes.
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
         cmake/ADSGMP.cmake
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
-# the include directory of ads.pc, as ${prefix}/include when it is relative
+# Generate and install ads.pc: its include directory is ${prefix}/include
+# when that is relative, and with GMP it has the define and the library,
+# by gmp.pc.
 if (IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
     set(ADS_PC_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
 else ()
     set(ADS_PC_INCLUDEDIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
 endif ()
-# with GMP, its define and the library, by gmp.pc
 if (ADS_WITH_GMP)
     set(ADS_PC_REQUIRES "gmp")
     set(ADS_PC_CFLAGS " -DADS_WITH_GMP")
@@ -419,6 +486,4 @@ configure_file(cmake/ads.pc.in ${CMAKE_CURRENT_BINARY_DIR}/ads.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc
         DESTINATION ${ADS_INSTALL_PKGCONFIGDIR})
 
-###############################################################################
-#                          End of CMakeLists.txt                              #
-###############################################################################
+# --------------------------------------------------------------------------- #

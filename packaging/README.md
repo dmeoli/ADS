@@ -41,10 +41,12 @@ The recipes refer to the tarball of the release with a placeholder checksum,
 which is filled once the tarball exists, as follows.
 
 1. The section `[Unreleased]` of `CHANGELOG.md` becomes `## [X.Y.Z] -
-   <date>`, the `VERSION` of `CMakeLists.txt` and the `version` of
-   `MODULE.bazel` become `X.Y.Z` (the Bazel Central Registry keeps the
-   `MODULE.bazel` of the tarball, and `bump.sh` refuses one of another
-   version), and the commit is tagged `vX.Y.Z` and pushed; the workflow
+   <date>`, the `version` of `MODULE.bazel` becomes `X.Y.Z` (the Bazel
+   Central Registry keeps the `MODULE.bazel` of the tarball, and `bump.sh`
+   refuses one of another version; CMake takes the version from the tag,
+   and from `MODULE.bazel` where there is none [see
+   `cmake/DeriveVersion.cmake`]), and the commit is tagged `vX.Y.Z` and
+   pushed; the workflow
    `release.yml` publishes the release, with the notes taken from that
    section, and attaches `ADS-X.Y.Z.tar.gz` and `ADS-X.Y.Z.tar.gz.sha256`.
 2. `packaging/bump.sh vX.Y.Z` downloads the tarball and writes its version

@@ -19,3 +19,6 @@ MODULE.bazel.lock
 
 # Python
 __pycache__/
+
+# local paths of the external libraries [see lib/makefile-c]
+extlib/makefile-paths

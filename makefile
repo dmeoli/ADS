@@ -1,20 +1,42 @@
 ###############################################################################
-#                                makefile                                     #
+################################## makefile ###################################
+###############################################################################
 #                                                                             #
-# The same as CMakeLists.txt without CMake: it builds one program per         #
-# chapter in $(BUILD), runs the tests of test/tests.txt and checks that the   #
-# list and the programs agree, and installs the headers.                      #
+#   makefile of the tests and of the benchmarks of ADS                        #
 #                                                                             #
-#   make             builds the tests                                         #
-#   make test        runs them                                                #
-#   make test-mpi    the sort over the processes of MPI, by mpicxx and mpirun #
-#   make test ADS_WITH_GMP=1 [GMP=<prefix>]                                   #
-#                    the same with BigInteger on the backend of GMP           #
-#   make bench       builds the benchmarks in $(BUILD)                        #
-#   bench/run.sh     runs them and writes the tables of the README            #
-#   make install     copies include/ADS into $(PREFIX)/include                #
-#   make test ADSMOD=1                                                        #
-#                    also the C++20 module ads and the test that imports it   #
+#   The same as CMakeLists.txt without CMake: it builds one program per       #
+#   chapter in $(BUILD), runs the tests of test/tests.txt and checks that the #
+#   list and the programs agree, and installs the headers. ADS itself, its    #
+#   headers and the external libraries of its backends, comes from            #
+#   lib/makefile-c, which is what the makefile of another program using ADS   #
+#   includes [see lib/makefile-c].                                            #
+#                                                                             #
+#     make             builds the tests                                       #
+#     make test        runs them (make -j<n> test builds and runs n programs  #
+#                      at a time)                                             #
+#     make test-mpi    the sort over the processes of MPI, by mpicxx and      #
+#                      mpirun                                                 #
+#     make test ADS_WITH_GMP=1 [GMP=<prefix>]                                 #
+#                      the same with BigInteger on the backend of GMP         #
+#     make test ADSMOD=1                                                      #
+#                      also the C++20 module ads and the test that imports it #
+#     make bench       builds the benchmarks in $(BUILD)                      #
+#     bench/run.sh     runs them and writes the tables of the README          #
+#     make install     copies include/ADS into $(PREFIX)/include, with        #
+#                      ADS/ADSConfig.h, the version                           #
+#                                                                             #
+#   Input:  optional: $(CXX)      = the compiler command (g++ if not given)   #
+#           optional: $(CXXFLAGS) = the compiler options (-std=c++20 -O2      #
+#                                   -Wall -Wextra if not given)               #
+#           optional: $(BUILD)    = the directory of the programs (build-make #
+#                                   if not given)                             #
+#           optional: $(PREFIX)   = where make install copies the headers     #
+#                                   (/usr/local if not given)                 #
+#           optional: the macros of the backends, ADS_WITH_GMP=1,             #
+#                     ADS_WITH_OPENMP=1, ADS_WITH_TBB=1, ADS_WITH_FASTFLOW=1, #
+#                     and their *_ROOT [see lib/makefile-c]; ADSMOD=1 [see    #
+#                     lib/makefile-mod]                                       #
+#                                                                             #
 ###############################################################################
 
 CXX      ?= g++
@@ -22,69 +44,47 @@ CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra
 BUILD    ?= build-make
 PREFIX   ?= /usr/local
 
-INC      = -Iinclude -Itest -DADS_CONTRACTS=3
+# define & include the necessary modules- - - - - - - - - - - - - - - - - - -
+# each module outputs some macros to be used here:
+# *OBJ is the final object(s) / library
+# *LIB is the external libraries + -L< libdirs >
+# *H   is the list of all include files
+# *INC is the -I< include directories >
 
-# ADS_WITH_GMP=1: BigInteger on GMP where it is faster [see BigInteger.h],
-# with GMP=<prefix> if GMP is not where the compiler looks
-comma    := ,
-GMPLINK   = $(if $(GMP),-I$(GMP)/include -L$(GMP)/lib \
-            -Wl$(comma)-rpath$(comma)$(GMP)/lib) -lgmp
-ifeq ($(ADS_WITH_GMP),1)
-INC      += -DADS_WITH_GMP
-LIBS     += $(GMPLINK)
-endif
-HEADERS  = $(shell find include/ADS -name '*.h' -o -name '*.tpp') \
-           test/ADSTest.h
+# ADS (complete with the external libraries of the backends turned on); the
+# module, if built, with the contracts of the tests
+ADSSDR = .
+ADSODR = $(BUILD)
+ADSMODFLAGS = -Itest -DADS_CONTRACTS=3
+include $(ADSSDR)/lib/makefile-c
+
+# the tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# all the contracts checked, and the stack of Linux, 8 MB, for the recursive
+# solutions of the exercises on chains of 10^4 nodes (2 MB by default with
+# MinGW)
+
+INC      = $(ADSINC) -Itest -DADS_CONTRACTS=3
+LIBS     = $(ADSLIB) $(if $(filter Windows,$(UNAME_S)),\
+           -Wl$(ADScomma)--stack$(ADScomma)8388608)
+HEADERS  = $(ADSH) test/ADSTest.h
 PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
-BINS     = $(addprefix $(BUILD)/,$(PROGRAMS))
+BINS     = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),$(PROGRAMS)))
 
-# ADSMOD=1: the C++20 module ads [see src/ADS.cppm], compiled into the
-# module file and an object in $(BUILD), and $(BUILD)/module, the test that
-# imports it [see test/module.cpp], by clang++ 16 or g++ 15 or later; with
-# another compiler a warning says so, and the module is not built. The
-# module is compiled with the same $(CXXFLAGS) and $(INC) as the importer,
-# since a module file is imported only with the options it was made with.
+# with the module, $(BUILD)/module, the test that imports it in place of the
+# headers [see test/module.cpp]
 .DEFAULT_GOAL := all
-ifeq ($(ADSMOD),1)
-MODVER   := $(firstword $(subst ., ,$(shell $(CXX) -dumpversion)))
-MODID    := $(shell $(CXX) --version 2>/dev/null | head -n 1)
-ifneq ($(findstring clang,$(MODID)),)
-ifeq ($(shell test "$(MODVER)" -ge 16 2>/dev/null && echo ok),ok)
-MODKIND  = clang
-endif
-else ifeq ($(shell test "$(MODVER)" -ge 15 2>/dev/null && echo ok),ok)
-MODKIND  = gcc
-endif
-ifeq ($(MODKIND),)
-$(warning ADSMOD is turned off: $(CXX) $(MODVER) does not build the \
-          modules (clang++ 16 or g++ 15 or later is needed))
-endif
+ifneq ($(ADSOBJ),)
+MODBIN   = $(BUILD)/module$(ADSEXE)
+$(MODBIN): test/module.cpp $(ADSOBJ) | $(BUILD)
+	$(CXX) $(CXXFLAGS) $(ADSMODSW) -o $@ $< $(ADSOBJ) $(LIBS)
 endif
 
-ifeq ($(MODKIND),clang)
-MODBIN   = $(BUILD)/module
-$(BUILD)/ads.o: src/ADS.cppm $(HEADERS) | $(BUILD)
-	$(CXX) $(CXXFLAGS) $(INC) -x c++-module -c $< \
-	 -fmodule-output=$(BUILD)/ads.pcm -o $@ -pthread
-$(BUILD)/module: test/module.cpp $(BUILD)/ads.o
-	$(CXX) $(CXXFLAGS) -fprebuilt-module-path=$(BUILD) -o $@ $< \
-	 $(BUILD)/ads.o -pthread $(LIBS)
-endif
-# g++ finds the module file by the mapper $(BUILD)/ads.map
-ifeq ($(MODKIND),gcc)
-MODBIN   = $(BUILD)/module
-MODMAP   = -fmodules -fmodule-mapper=$(BUILD)/ads.map
-$(BUILD)/ads.o: src/ADS.cppm $(HEADERS) | $(BUILD)
-	echo "ads $(abspath $(BUILD))/ads.gcm" > $(BUILD)/ads.map
-	$(CXX) $(CXXFLAGS) $(INC) $(MODMAP) -x c++ -c $< -o $@ -pthread
-$(BUILD)/module: test/module.cpp $(BUILD)/ads.o
-	$(CXX) $(CXXFLAGS) $(MODMAP) -o $@ $< $(BUILD)/ads.o -pthread $(LIBS)
-endif
+# default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 all: $(BINS) $(MODBIN)
 
-$(BUILD)/%: test/%.cpp $(HEADERS) | $(BUILD)
-	$(CXX) $(CXXFLAGS) $(INC) -o $@ $< -pthread $(LIBS)
+$(BUILD)/%$(ADSEXE): test/%.cpp $(HEADERS) | $(BUILD)
+	$(CXX) $(CXXFLAGS) $(INC) -o $@ $< $(LIBS)
 
 $(BUILD):
 	mkdir -p $@
@@ -97,29 +97,46 @@ MPIRUN   ?= mpirun $(if $(shell $(MPICXX) --showme:version 2>/dev/null),\
             --oversubscribe)
 test-mpi: | $(BUILD)
 	$(MPICXX) $(CXXFLAGS) $(INC) -DADS_WITH_MPI -o $(BUILD)/engineered_mpi \
-	 test/engineered_mpi.cpp -pthread
+	 test/engineered_mpi.cpp $(LIBS)
 	for t in distributed-sort distributed-sort-counts; do \
 	  for np in 1 2 3 4; do \
 	    $(MPIRUN) -np $$np $(BUILD)/engineered_mpi $$t || exit 1; \
 	  done; \
 	done
 
+# test target - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # each line of tests.txt is a test, and each program must have the tests of
-# the list, no more and no less
-test: $(BINS) $(MODBIN)
-	@failed=0; \
-	for p in $(PROGRAMS); do \
-	  listed=$$(awk -v p=$$p '$$1 == p {print $$2}' test/tests.txt | sort); \
-	  found=$$($(BUILD)/$$p -l | sort); \
-	  if [ "$$listed" != "$$found" ]; then \
-	    echo "FAILED $$p.registry"; failed=$$((failed + 1)); \
-	  else echo "PASSED $$p.registry"; fi; \
+# the list, no more and no less: test-<program> runs those of a program,
+# writes its output in $(BUILD)/<program>.log, printed in one piece when it
+# ends, and the number of its failed tests in $(BUILD)/<program>.failed,
+# which test sums (the end of the lines written by a program of Windows is
+# dropped before the list is compared)
+
+test-%: $(BUILD)/%$(ADSEXE)
+	@listed=$$(awk -v p=$* '$$1 == p {print $$2}' test/tests.txt | sort); \
+	found=$$($< -l | tr -d '\r' | sort); \
+	failed=0; \
+	{ if [ "$$listed" != "$$found" ]; then \
+	    echo "FAILED $*.registry"; failed=$$((failed + 1)); \
+	  else echo "PASSED $*.registry"; fi; \
 	  for t in $$listed; do \
-	    $(BUILD)/$$p $$t || failed=$$((failed + 1)); \
+	    $< $$t || failed=$$((failed + 1)); \
 	  done; \
-	done; \
+	  echo $$failed > $(BUILD)/$*.failed; \
+	} > $(BUILD)/$*.log 2>&1; \
+	cat $(BUILD)/$*.log
+
+test: $(addprefix test-,$(PROGRAMS)) $(MODBIN)
+	@failed=$$(cat $(addprefix $(BUILD)/,$(addsuffix .failed,$(PROGRAMS))) \
+	| awk '{s += $$1} END {print s + 0}'); \
 	$(if $(MODBIN),$(MODBIN) || failed=$$((failed + 1));) \
 	echo "$$failed failed"; test $$failed -eq 0
+
+# bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+comma    := ,
+GMPLINK   = $(if $(GMP),-I$(GMP)/include -L$(GMP)/lib \
+            -Wl$(comma)-rpath$(comma)$(GMP)/lib) -lgmp
 
 # the benchmarks, with the contracts off and the Boost headers if found;
 # GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft (also
@@ -175,7 +192,7 @@ JCCFLAGS := $(shell echo 'int main(){}' | $(CXX) -x c++ -c -o /dev/null \
             -Wa,-mbranches-within-32B-boundaries - 2>/dev/null && \
             echo -Wa,-mbranches-within-32B-boundaries)
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
-             -Iinclude $(JCCFLAGS)
+             -I$(ADSSDR)/include $(JCCFLAGS)
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
             -Wl$(comma)-rpath$(comma)$(GMP)/lib -lgmpxx -lgmp)
 FLINTFLAGS = $(if $(FLINT),-DADS_HAS_FLINT -I$(FLINT)/include \
@@ -451,15 +468,35 @@ $(BUILD)/bench-mpi: bench/mpi.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<
 
+# install target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the headers, and ADS/ADSConfig.h from cmake/ADSConfig.h.in with the version
+# of git as cmake/DeriveVersion.cmake derives it: the tag, if the directory
+# is the top of a clone of ADS with the tags, else the one written by git
+# archive in VERSION.txt, else the one of MODULE.bazel
+
 install:
 	mkdir -p $(DESTDIR)$(PREFIX)/include
-	cp -R include/ADS $(DESTDIR)$(PREFIX)/include/
+	cp -R $(ADSSDR)/include/ADS $(DESTDIR)$(PREFIX)/include/
+	@cd $(ADSSDR); v=; \
+	if c=$$(git rev-parse --show-cdup 2>/dev/null) && [ -z "$$c" ]; then \
+	  v=$$(git describe --tags --abbrev=0 2>/dev/null); fi; \
+	echo "$$v" | grep -q '^v\{0,1\}[0-9]' || v=$$(cat VERSION.txt); \
+	echo "$$v" | grep -q '^v\{0,1\}[0-9]' || v=$$(sed -n \
+	  's/^ *version *= *"\([0-9][^"]*\)".*/\1/p' MODULE.bazel | head -n 1); \
+	set -- $$(echo "$$v" | sed 's/^v//' | \
+	  awk -F. '{print $$1 + 0, $$2 + 0, $$3 + 0}'); \
+	echo "ADS $$1.$$2.$$3"; \
+	sed -e "s/@PROJECT_VERSION@/$$1.$$2.$$3/" \
+	    -e "s/@PROJECT_VERSION_MAJOR@/$$1/" \
+	    -e "s/@PROJECT_VERSION_MINOR@/$$2/" \
+	    -e "s/@PROJECT_VERSION_PATCH@/$$3/" cmake/ADSConfig.h.in \
+	  > $(DESTDIR)$(PREFIX)/include/ADS/ADSConfig.h
 
-clean:
+# clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+clean::
 	rm -rf $(BUILD)
 
 .PHONY: all test test-mpi bench install clean
 
-###############################################################################
-#                             End of makefile                                 #
-###############################################################################
+############################### End of makefile ###############################

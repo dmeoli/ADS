@@ -1,18 +1,27 @@
-###############################################################################
-#                            ADSConfig.cmake.in                               #
+# --------------------------------------------------------------------------- #
+#    Package configuration file                                               #
 #                                                                             #
-# The configuration that find_package(ADS) reads: it defines ADS::ADS,        #
-# ADS::ADS_module when ADS was built with ADS_BUILD_MODULE and ADS::GMP when  #
-# it was built with ADS_WITH_GMP; it finds again the threads, OpenMP and      #
-# oneTBB when ADS was built with their executors, and MPI.                    #
-###############################################################################
-
+#    This file contains instructions on how to generate ADSConfig.cmake,      #
+#    that is, the file that tells CMake how the package should be             #
+#    configured when found by other projects using find_package(ADS): it      #
+#    defines ADS::ADS, ADS::ADS_module when ADS was built with                #
+#    ADS_BUILD_MODULE and ADS::GMP when it was built with ADS_WITH_GMP, and   #
+#    it finds again the threads, OpenMP, oneTBB and MPI when ADS was built    #
+#    with their executors.                                                    #
+#                                                                             #
+#    ADSTargets.cmake (to be found alongside this file) is the target import  #
+#    file that tells where the headers are.                                   #
+# --------------------------------------------------------------------------- #
 @PACKAGE_INIT@
 
+get_filename_component(ADS_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+# ----- Requirements -------------------------------------------------------- #
 # ADS built with ADS_WITH_GMP links GMP, found again here
 set(ADS_WITH_GMP @ADS_WITH_GMP@)
 if (ADS_WITH_GMP)
-    include("${CMAKE_CURRENT_LIST_DIR}/ADSGMP.cmake")
+    include("${ADS_CMAKE_DIR}/ADSGMP.cmake")
     if (NOT ADS_GMP_FOUND)
         set(ADS_FOUND FALSE)
         set(ADS_NOT_FOUND_MESSAGE "ADS was built with GMP, not found")
@@ -21,7 +30,6 @@ if (ADS_WITH_GMP)
 endif ()
 
 # the pool of threads, and the executors ADS was built with
-include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 if (@ADS_WITH_OPENMP@)
     find_dependency(OpenMP)
@@ -33,5 +41,13 @@ if (@ADS_WITH_MPI@)
     find_dependency(MPI COMPONENTS CXX)
 endif ()
 
-include("${CMAKE_CURRENT_LIST_DIR}/ADSTargets.cmake")
+# ----- Import target ------------------------------------------------------- #
+if (NOT TARGET ADS::ADS)
+    include("${ADS_CMAKE_DIR}/ADSTargets.cmake")
+endif ()
+
+set(ADS_LIBRARIES ADS::ADS)
+
 check_required_components(ADS)
+
+# --------------------------------------------------------------------------- #

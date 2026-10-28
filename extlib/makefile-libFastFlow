@@ -1,0 +1,27 @@
+###############################################################################
+############################ makefile-libFastFlow #############################
+###############################################################################
+#                                                                             #
+#   makefile of FastFlow, for its executor [see FastFlowExecutor.h]           #
+#                                                                             #
+#   Input:  $(FastFlow_ROOT) = the directory of the sources of FastFlow, the  #
+#                             one with ff/ (FastFlow is made of headers)      #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libFastFlowINC) = the -I$(include directories) for FastFlow     #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic FastFlow directory without quotes, if any
+libFastFlowBSCDIR = $(subst $\",,$(FastFlow_ROOT))
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# a system directory, whose warnings are not those of ADS
+
+libFastFlowINC = -isystem "$(libFastFlowBSCDIR)"
+
+######################### End of makefile-libFastFlow #########################

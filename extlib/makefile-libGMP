@@ -1,0 +1,31 @@
+###############################################################################
+############################### makefile-libGMP ###############################
+###############################################################################
+#                                                                             #
+#   makefile of libGMP, for BigInteger [see BigInteger.h]                     #
+#                                                                             #
+#   Input:  $(GMP_ROOT) = the prefix where GMP is installed, empty if         #
+#                         it is where the compiler looks                      #
+#           $(UNAME_S)  = the name of the current OS [see makefile-OS]        #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libGMPINC) = the -I$(include directories) for GMP               #
+#           $(libGMPLIB) = external libraries + -L< libdirs > for GMP         #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic GMP directory without quotes, if any
+libGMPBSCDIR = $(subst $\",,$(GMP_ROOT))
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+libGMPINC = $(if $(libGMPBSCDIR),-I"$(libGMPBSCDIR)/include")
+libGMPLIB = $(if $(libGMPBSCDIR),-L"$(libGMPBSCDIR)/lib" \
+	$(if $(filter Windows,$(UNAME_S)),,\
+		-Wl$(ADScomma)-rpath$(ADScomma)"$(libGMPBSCDIR)/lib")) -lgmp
+
+########################### End of makefile-libGMP ############################

@@ -1,22 +1,22 @@
-###############################################################################
-#                           ADSCheckModule.cmake                              #
+# --------------------------------------------------------------------------- #
+#    ADSCheckModule.cmake                                                     #
 #                                                                             #
-# Checks whether the C++20 module ads can be built, and turns                 #
-# ADS_BUILD_MODULE off, with a warning that says why, if it cannot: a build   #
-# that asked for the module then goes on with the headers alone, as when the  #
-# option is OFF, instead of failing halfway. The module needs                 #
-#   - CMake 3.28 or later;                                                    #
-#   - the Ninja generator (Ninja 1.11 or later) or a Visual Studio one;       #
-#   - Clang 16 or later with clang-scan-deps, or GCC 15 or later: GCC 14      #
-#     stops with an internal error on the module, and MSVC discards the       #
-#     operators of the standard library (e.g., those of std::complex) that    #
-#     the templates of the module use only in their instantiations.           #
+#    Checks whether the C++20 module ads can be built, and turns              #
+#    ADS_BUILD_MODULE off, with a warning that says why, if it cannot: a      #
+#    build that asked for the module then goes on with the headers alone, as  #
+#    when the option is OFF, instead of failing halfway. The module needs     #
+#      - CMake 3.28 or later;                                                 #
+#      - the Ninja generator (Ninja 1.11 or later) or a Visual Studio one;    #
+#      - Clang 16 or later with clang-scan-deps, or GCC 15 or later: GCC 14   #
+#        stops with an internal error on the module, and MSVC discards the    #
+#        operators of the standard library (e.g., those of std::complex) that #
+#        the templates of the module use only in their instantiations.        #
 #                                                                             #
-#   include(cmake/ADSCheckModule.cmake)                                       #
-#   ads_check_module()                                                        #
-#   if (ADS_BUILD_MODULE)                                                     #
-#       ...                                                                   #
-###############################################################################
+#      include(cmake/ADSCheckModule.cmake)                                    #
+#      ads_check_module()                                                     #
+#      if (ADS_BUILD_MODULE)                                                  #
+#          ...                                                                #
+# --------------------------------------------------------------------------- #
 
 function(ads_check_module)
     if (NOT ADS_BUILD_MODULE)
@@ -58,6 +58,4 @@ for Clang, is not there (e.g., it is in clang-tools on Debian and Ubuntu)")
     endif ()
 endfunction()
 
-###############################################################################
-#                       End of ADSCheckModule.cmake                           #
-###############################################################################
+# --------------------------------------------------------------------------- #

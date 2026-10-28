@@ -1,12 +1,12 @@
-###############################################################################
-#                              ADSGMP.cmake                                   #
+# --------------------------------------------------------------------------- #
+#    ADSGMP.cmake                                                             #
 #                                                                             #
-# GMP for the backend of BigInteger [see BigInteger.h]: the target ADS::GMP,  #
-# with the headers and the library of GMP found by find_path() and            #
-# find_library() (GMP_INCLUDE_DIR and GMP_LIBRARY in the cache point to       #
-# another GMP), and ADS_GMP_FOUND. CMakeLists.txt and ADSConfig.cmake include #
-# it.                                                                         #
-###############################################################################
+#    GMP for the backend of BigInteger [see BigInteger.h]: the target         #
+#    ADS::GMP, with the headers and the library of GMP found by find_path()   #
+#    and find_library() (GMP_INCLUDE_DIR and GMP_LIBRARY in the cache point   #
+#    to another GMP), and ADS_GMP_FOUND. CMakeLists.txt and ADSConfig.cmake   #
+#    include it.                                                              #
+# --------------------------------------------------------------------------- #
 
 find_path(GMP_INCLUDE_DIR gmp.h)
 find_library(GMP_LIBRARY gmp)
@@ -22,6 +22,4 @@ else ()
     set(ADS_GMP_FOUND FALSE)
 endif ()
 
-###############################################################################
-#                           End of ADSGMP.cmake                               #
-###############################################################################
+# --------------------------------------------------------------------------- #

@@ -1,0 +1,124 @@
+###############################################################################
+################################# makefile-c ##################################
+###############################################################################
+#                                                                             #
+#   complete makefile of ADS                                                  #
+#                                                                             #
+#   The makefile defines internally all the external libraries of the         #
+#   optional backends of ADS, each turned on by its macro, and adds the       #
+#   necessary -I, -D and compiler options to $(ADSINC) and the external       #
+#   libraries + -L< libdirs > to $(ADSLIB), with -pthread for the pool of     #
+#   threads of ADS. The makefiles dealing with the external libraries are     #
+#   in the extlib/ folder of ADS, i.e., in $(ADSSDR)/extlib/, together with   #
+#   the paths where the libraries are to be found.                            #
+#                                                                             #
+#   Input:  $(CXX)               = compiler command                           #
+#           $(CXXFLAGS)          = compiler options                           #
+#           $(ADSSDR)            = the directory where the ADS source is      #
+#           $(ADSODR)            = the directory where the objects have to    #
+#                                  be put                                     #
+#           $(ADS_WITH_GMP)      = 1 for BigInteger on GMP [see               #
+#                                  BigInteger.h]                              #
+#           $(ADS_WITH_OPENMP)   = 1 for the executor of OpenMP [see          #
+#                                  OpenMPExecutor.h]                          #
+#           $(ADS_WITH_TBB)      = 1 for the executor of oneTBB [see          #
+#                                  TBBExecutor.h]                             #
+#           $(ADS_WITH_FASTFLOW) = 1 for the executor of FastFlow [see        #
+#                                  FastFlowExecutor.h]                        #
+#           $(ADS_WITH_MPI)      = 1 for the sort over the processes of MPI   #
+#                                  [see DistributedSort.h]; $(CXX) has then   #
+#                                  to be the compiler of MPI (e.g., mpicxx)   #
+#           $(GMP_ROOT), $(OpenMP_ROOT), $(TBB_ROOT), $(FastFlow_ROOT)        #
+#                                = where the libraries are, see               #
+#                                  extlib/makefile-paths (GMP=<prefix> on     #
+#                                  the command line is the same as            #
+#                                  GMP_ROOT=<prefix>)                         #
+#                                                                             #
+#   Output: $(ADSOBJ)            = the object of the module ads, if built     #
+#           $(ADSH)              = the .h and .tpp files of ADS               #
+#           $(ADSINC)            = all the -I$( include dirs ), -D and        #
+#                                  compiler options of ADS                    #
+#           $(ADSLIB)            = the external libraries + -L< libdirs >     #
+#                                                                             #
+###############################################################################
+
+# OS-specific settings- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# defines some general values, like UNAME_S, which identify the type of OS
+# and UNAME_P which identify the architecture for which ADS is being
+# compiled, so that other makefiles can rely on these to automatically adapt
+# without a need for the user to manually edit them
+include $(ADSSDR)/lib/makefile-OS
+
+# default paths - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# include a makefile that defines all the *_ROOT paths needed by every other
+# makefile (possibly after automatic OS adaptation, see above) relatively to
+# the places where all external libraries are to be found; use the previously
+# defined UNAME_S to load the one of the current OS
+ifeq ($(UNAME_S),Linux)
+    include $(ADSSDR)/extlib/makefile-default-paths-linux
+endif
+ifeq ($(UNAME_S),Darwin)
+    include $(ADSSDR)/extlib/makefile-default-paths-macos
+endif
+ifeq ($(UNAME_S),Windows)
+    include $(ADSSDR)/extlib/makefile-default-paths-win
+endif
+
+# non-default paths - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# optionally (note the "-" in front) include a makefile that defines all the
+# *_ROOT paths needed by every other makefile to cater for external libraries
+# being located in non-standard locations. This file is .gitignore-d, so that
+# its values are not lost when pulling ADS anew or need be manually ignored
+# when pushing changes
+-include $(ADSSDR)/extlib/makefile-paths
+
+# the prefix of GMP given as GMP=<prefix>, as the benchmarks take it
+ifdef GMP
+    GMP_ROOT = $(GMP)
+endif
+
+# define & include the necessary modules- - - - - - - - - - - - - - - - - - -
+# each backend is included only if turned on, and it outputs some macros to
+# be used here:
+# *INC are the -I< include directories > and the options of the compiler
+# *LIB are the external libraries + -L< libdirs >
+
+ADSINC := $(ADSSWOS)
+ADSLIB := -pthread
+
+# GMP, for BigInteger
+ifeq ($(ADS_WITH_GMP),1)
+    include $(ADSSDR)/extlib/makefile-libGMP
+    ADSINC += -DADS_WITH_GMP $(libGMPINC)
+    ADSLIB += $(libGMPLIB)
+endif
+
+# OpenMP, for its executor
+ifeq ($(ADS_WITH_OPENMP),1)
+    include $(ADSSDR)/extlib/makefile-libOpenMP
+    ADSINC += $(libOpenMPINC)
+    ADSLIB += $(libOpenMPLIB)
+endif
+
+# oneTBB, for its executor
+ifeq ($(ADS_WITH_TBB),1)
+    include $(ADSSDR)/extlib/makefile-libTBB
+    ADSINC += -DADS_WITH_TBB $(libTBBINC)
+    ADSLIB += $(libTBBLIB)
+endif
+
+# FastFlow, for its executor
+ifeq ($(ADS_WITH_FASTFLOW),1)
+    include $(ADSSDR)/extlib/makefile-libFastFlow
+    ADSINC += -DADS_WITH_FASTFLOW $(libFastFlowINC)
+endif
+
+# MPI, for the distributed sort, whose compiler finds it
+ifeq ($(ADS_WITH_MPI),1)
+    ADSINC += -DADS_WITH_MPI
+endif
+
+# include the ADS makefile requiring all external modules in input
+include $(ADSSDR)/lib/makefile
+
+############################## End of makefile-c ##############################

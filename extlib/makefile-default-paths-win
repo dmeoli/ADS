@@ -1,0 +1,38 @@
+###############################################################################
+######################### makefile-default-paths-win ##########################
+###############################################################################
+#                                                                             #
+#   makefile with the default locations for dependencies for Windows (MSYS2)  #
+#                                                                             #
+#   Input:  in principle none, as the external libraries usually have some    #
+#           absolute path; however, $(ADSSDR) = the directory where the ADS   #
+#           source is should always be available (this is assumed to be       #
+#           included by $(ADSSDR)/lib/makefile-c), in case some of the        #
+#           external libraries happen to rather be located at a relative path #
+#           from there.                                                       #
+#                                                                             #
+#   Output: the *_ROOT macros required by the external libraries makefiles,   #
+#           to be found in $(ADSSDR)/extlib: an empty one means where the     #
+#           compiler looks by itself.                                         #
+#                                                                             #
+#   The usefulness of packing all these definitions here lies in the fact     #
+#   that one can then copy this file into                                     #
+#                                                                             #
+#        $(ADSSDR)/extlib/makefile-paths                                      #
+#                                                                             #
+#   and change in there any path that is not in the default location that     #
+#   this file specifies. The point is that the makefile-paths file is         #
+#   .gitignore-d, hence it should not be necessary to re-change the           #
+#   makefiles (or stash/restore the changes) each time ADS is pulled, or      #
+#   manually ignore the changes when it is pushed.                            #
+#                                                                             #
+###############################################################################
+
+# define the macros to be exported- - - - - - - - - - - - - - - - - - - - - -
+
+GMP_ROOT =
+OpenMP_ROOT =
+TBB_ROOT =
+FastFlow_ROOT = C:/fastflow
+
+###################### End of makefile-default-paths-win ######################

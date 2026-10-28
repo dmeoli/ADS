@@ -753,15 +753,35 @@ cmake --build build
 ctest --test-dir build
 ```
 
-or with the makefile, which builds and runs the same tests,
+or with the makefile, which builds and runs the same tests (with `-j4`,
+four programs at a time),
 
 ```sh
-make test
+make -j4 test
 ```
 
 A single exercise runs with `ctest -R ch04.ex4.4`, and a test program also
 runs one test by name (`build/test/ch04 ex4.4`) and lists its tests
-(`-l`).
+(`-l`). CMake builds in `Release` when no build type is given, and the
+makefile with `CXXFLAGS` (`-std=c++20 -O2 -Wall -Wextra` by default) and
+`CXX` (`g++`), in `BUILD` (`build-make`); both are tested by the CI with g++
+and clang++ on Linux, macOS (the clang++ of Xcode and the g++ of Homebrew)
+and Windows (those of MinGW-w64 in MSYS2), CMake also with MSVC.
+
+The makefile takes ADS from `lib/makefile-c`, which defines `ADSH` (the
+headers), `ADSINC` (the `-I`, the `-D` and the options of the backends
+turned on) and `ADSLIB` (their libraries, and `-pthread`), and `ADSOBJ`,
+the object of the C++20 module when it is built; `lib/makefile` gives only
+the headers, `lib/makefile-OS` the settings of the operating system and of
+the compiler, `lib/makefile-mod` the module. The optional backends are
+turned on by `ADS_WITH_GMP=1`, `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
+`ADS_WITH_FASTFLOW=1` and `ADS_WITH_MPI=1` (with `CXX=mpicxx`), as the
+CMake options of the same names do, and found where
+`extlib/makefile-default-paths-<os>` says (GMP, oneTBB and libomp in the
+prefix of Homebrew on macOS and where the compiler looks elsewhere,
+FastFlow in `/opt/fastflow`, `/Library/fastflow` or `C:/fastflow`); a copy
+of that file as `extlib/makefile-paths`, which git ignores, points them
+elsewhere.
 
 The documentation is at [dmeoli.github.io/ADS](https://dmeoli.github.io/ADS/):
 a site of Sphinx with the theme of Read the Docs, whose pages come from this
@@ -776,14 +796,29 @@ docs/build.sh` writes both to `build-docs/html`.
 cmake --install build --prefix <dir>     # or: make install PREFIX=<dir>
 ```
 
-then, in another CMake project,
+which also writes `ADS/ADSConfig.h`, whose `ADS_VERSION` (and
+`ADS_VERSION_MAJOR`, `ADS_VERSION_MINOR`, `ADS_VERSION_PATCH`) is the
+version of git, i.e., the last tag `vX.Y.Z` (that of `MODULE.bazel` in a
+clone without the tags); then, in another CMake project,
 
 ```cmake
 find_package(ADS REQUIRED)
 target_link_libraries(<target> PRIVATE ADS::ADS)
 ```
 
-or, with pkg-config, `pkg-config --cflags ads`. The packages of vcpkg
+or, with pkg-config, `pkg-config --cflags ads`. The makefile of a program
+takes ADS from its sources, with the backends asked for on its command
+line,
+
+```make
+ADSSDR = <the directory of ADS>
+ADSODR = <the directory of the objects>
+include $(ADSSDR)/lib/makefile-c
+
+prog: prog.cpp $(ADSH) $(ADSOBJ)
+	$(CXX) $(CXXFLAGS) $(ADSINC) -o $@ prog.cpp $(ADSOBJ) $(ADSLIB)
+```
+ The packages of vcpkg
 (`ads`), conda-forge (`cpp-ads`), Homebrew, Debian and Ubuntu
 (`libads-dev`), Conan, Spack, Nix, the AUR, MSYS2 and xmake install the same
 files, from the recipes of [packaging](packaging/README.md). Without
@@ -850,19 +885,21 @@ target_link_libraries(<target> PRIVATE ADS::ADS_module)
 ```
 
 and, without CMake, `make test ADSMOD=1 CXX=clang++` (or `CXX=g++`) builds
-the module in `build-make` and the test that imports it. AppleClang does
-not build it, while the Clang of LLVM on macOS does; GCC 14 stops on it
-with an internal error, and MSVC discards the operators of the standard
-library (e.g., those of `std::complex`) that the templates of the module
-use only in their instantiations, so that an importer does not compile. The
-macros are not exported by a module, so a file that uses those of the
-contracts (e.g., `ADS_PRE`) still includes `ADS/Contract.h`, and those that
-configure the headers (e.g., `ADS_CONTRACTS`, `ADS_WITH_GMP`) take the
-value they have where the module is compiled; the executors of OpenMP,
-oneTBB and FastFlow and the sort on MPI are in the module only when it is
-compiled with their library. The file of the module is written by
-`cmake/ads_module_exports.py` from the AST of the headers, and it is
-written again when a header gains or loses a name.
+the module in `build-make` and the test that imports it (the makefile of a
+program that imports the module compiles it with `$(ADSMODSW)` and links
+`$(ADSOBJ)` [see `lib/makefile-mod`]). AppleClang does not build it, while
+the Clang of LLVM on macOS does; GCC 14 stops on it with an internal error,
+and MSVC discards the operators of the standard library (e.g., those of
+`std::complex`) that the templates of the module use only in their
+instantiations, so that an importer does not compile. The macros are not
+exported by a module, so a file that uses those of the contracts (e.g.,
+`ADS_PRE`) still includes `ADS/Contract.h`, and those that configure the
+headers (e.g., `ADS_CONTRACTS`, `ADS_WITH_GMP`) take the value they have
+where the module is compiled; the executors of OpenMP, oneTBB and FastFlow
+and the sort on MPI are in the module only when it is compiled with their
+library. The file of the module is written by `cmake/ads_module_exports.py`
+from the AST of the headers, and it is written again when a header gains or
+loses a name.
 
 The gain is small, since the library is made of templates, which an importer
 still instantiates and compiles: on a server with 384 cores and a load of 55

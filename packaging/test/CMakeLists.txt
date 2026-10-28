@@ -1,14 +1,14 @@
-###############################################################################
-#                      packaging/test/CMakeLists.txt                          #
+# --------------------------------------------------------------------------- #
+#    packaging/test/CMakeLists.txt                                            #
 #                                                                             #
-# A project that uses an installed ADS through find_package(ADS), and, when   #
-# pkg-config is there, also through ads.pc, and through the C++20 module ads  #
-# when the package has it: the recipes of packaging/ build it against the     #
-# package they made and run it.                                               #
+#    A project that uses an installed ADS through find_package(ADS), and,     #
+#    when pkg-config is there, also through ads.pc, and through the C++20     #
+#    module ads when the package has it: the recipes of packaging/ build it   #
+#    against the package they made and run it.                                #
 #                                                                             #
-#   cmake -S packaging/test -B build-use -DCMAKE_PREFIX_PATH=<prefix>         #
-#   cmake --build build-use && ctest --test-dir build-use                     #
-###############################################################################
+#      cmake -S packaging/test -B build-use -DCMAKE_PREFIX_PATH=<prefix>      #
+#      cmake --build build-use && ctest --test-dir build-use                  #
+# --------------------------------------------------------------------------- #
 
 cmake_minimum_required(VERSION 3.21)
 project(ADSUse LANGUAGES CXX)
@@ -37,6 +37,4 @@ if (PKG_CONFIG_FOUND)
     add_test(NAME use-pkgconfig COMMAND use-pkgconfig)
 endif ()
 
-###############################################################################
-#                   End of packaging/test/CMakeLists.txt                      #
-###############################################################################
+# --------------------------------------------------------------------------- #

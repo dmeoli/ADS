@@ -1240,6 +1240,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GridGraph::forEachMove( u , f ), f( v , d ) with d whether the move is
   to a corner, is public and documented, so that the flag is not computed
   again by the caller
+- the build in the form of a library that other makefiles include: the
+  makefile of the tests and of the benchmarks takes ADS from
+  lib/makefile-c, which gives ADSH, ADSINC, ADSLIB and ADSOBJ (the object
+  of the module) with the backends turned on by ADS_WITH_GMP=1,
+  ADS_WITH_OPENMP=1, ADS_WITH_TBB=1, ADS_WITH_FASTFLOW=1 and ADS_WITH_MPI=1
+  (as the CMake options of the same names), found where
+  extlib/makefile-default-paths-<os> says or where the ignored
+  extlib/makefile-paths points; lib/makefile gives the headers alone,
+  lib/makefile-OS the settings of the system and of the compiler (the
+  suffix .exe, the big objects of g++ on Windows), lib/makefile-mod the
+  module; make -j<n> test builds and runs n programs at a time, each with
+  its output in one piece; CMake takes its version from the tag of git
+  (VERSION.txt in a tarball, MODULE.bazel without either), builds in
+  Release when no build type is given and installs ADS/ADSConfig.h with
+  the version, which make install writes too; the CI builds and runs the
+  tests by CMake and by the makefiles with g++ and clang++ on Linux, macOS
+  (the clang++ of Xcode, the g++ of Homebrew) and Windows (MinGW-w64 in
+  MSYS2, MSVC by CMake alone), installs the package for each and uses it
+  through find_package and pkg-config, runs the tests of the executors of
+  OpenMP, oneTBB and FastFlow by the makefile, and those under ASan and
+  UBSan four at a time with ADS_TEST_SMALL
+
 - MultiQueue: the deletion buffer a ring of 16 places, so that the pop of
   its least pair and the eviction of its greatest move no other pair, and
   the pop from the better of two distinct queues, whose mean rank error
