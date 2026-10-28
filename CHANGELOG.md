@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   directed() and gridHeuristic() hold under both, and the section Graphs
   on grid maps of the theory of the graphs states the two models; the test
   grid-graph-cost-models
+- FlowNetwork: the push-relabel on the edges in place (no copy of them
+  per call), the head of each edge next to its number in the list of its
+  tail and the residual capacities in an array of their own, so that a
+  visit reads 8 bytes of an edge and none of an edge whose head is
+  already labeled; the labelings stopped after the level of the last node
+  with an excess (the lazy update of HIPR), the first one by conditional
+  writes instead of branches; the second phase on the side of s alone (as
+  the Preflow of LEMON does); from a flow already there, a visit of the
+  side of s first, which ends the call if t is not reached, and the
+  excesses that setCapacity() leaves taken where they are; rebalance()
+  looks only at the nodes that setCapacity() touched
 - ConcurrentFlatTable: the places of two words, a key and a value of 8
   bytes each written together by a compare-and-swap of 16 bytes, where the
   processor has one without locks (cmpxchg16b on x86-64, the pairs of

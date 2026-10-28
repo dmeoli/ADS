@@ -504,7 +504,22 @@
  \f$ t \f$ that sets each label to its distance, every \f$ O( n + m ) \f$
  work of the relabelings; and the <em>gap</em>, which, when no node is left
  with some label \f$ k \f$, puts out of the game every node of label
- above \f$ k \f$, since none of them reaches \f$ t \f$ any longer.
+ above \f$ k \f$, since none of them reaches \f$ t \f$ any longer. Three
+ choices matter as much on the sparse networks, where the work is mostly
+ the first labeling: each labeling stops after the level of the last node
+ with an excess, the nodes not reached getting the next level but one,
+ still a lower bound of their distance (the lazy update of the HIPR of
+ Cherkassky and Goldberg, in its version 4); the second phase labels only
+ the nodes left at the top, the side of \f$ s \f$ of the cut, as the
+ Preflow of LEMON does; and a node scans its edges once, pushing to the
+ lower neighbours and taking the least label of the others, which is its
+ new label if an excess is left. The first labeling takes a node by a
+ conditional write instead of a branch, its tests on the labels and on
+ the residual capacities being hard to predict.
+ `FlowNetwork` adds a layout for the visits: the head of each edge is
+ stored next to its number in the list of its tail, and the residual
+ capacities in an array of their own, so that a visit reads 8 bytes of an
+ edge, and none of an edge whose head it has already labeled.
 
  Every way above starts from the flow there is. When a capacity falls below
  the flow of its edge \f$ ( u , v ) \f$, `FlowNetwork::setCapacity()` cuts
@@ -519,12 +534,15 @@
  \f$ v \f$, the residual paths needed. The result is a flow again, from
  which the maximum is reached by the augmentations or by the push-relabel.
  The two differ here: the augmenting paths of `DINIC` start from the flow
- and stop at the first visit that misses \f$ t \f$, so that a change that
- leaves few paths to find costs a few visits, while the push-relabel
- saturates again the edges out of \f$ s \f$, sends back to \f$ s \f$ the
- excess that does not reach \f$ t \f$ and relabels the whole network,
- i.e., it pays about as much as from scratch; `MaxFlowObserver` therefore
- takes `DINIC` unless told otherwise.
+ and stop at the first visit from \f$ s \f$ that misses \f$ t \f$, which
+ explores the side of \f$ s \f$ alone; the push-relabel first makes the
+ same visit when there is a flow, and stops too if \f$ t \f$ is not
+ reached, but otherwise it labels the network by a visit from \f$ t \f$
+ before it pushes the excesses, which it takes where `setCapacity()` left
+ them. Both repair a
+ change for less than a computation from scratch, and on a large network
+ with few paths to find `DINIC` is usually the cheaper; `MaxFlowObserver`
+ takes it unless told otherwise.
 
  The flow found is integral when the capacities are (the integrality theorem),
  and this makes three reductions exact. The edge-disjoint paths of

@@ -28,11 +28,13 @@
  *   of the highest label discharged first, \f$ O( n^2 \sqrt{m} ) \f$
  *   (Cheriyan and Maheshwari), and the global relabelings and the gaps of
  *   Cherkassky and Goldberg, on which its speed depends in practice (see
- *   \ref theory_graph_flow); from the flow there is it saturates again the
- *   edges out of \f$ s \f$ and relabels the whole network, so that it
- *   pays about a computation from scratch, and a small change of the
- *   capacities is repaired much faster by `DINIC`, whose first visit
- *   finds the few augmenting paths left.
+ *   \ref theory_graph_flow); from the flow there is it first looks for a
+ *   residual path from \f$ s \f$ to \f$ t \f$ in the side of \f$ s \f$,
+ *   and stops if there is none, and it takes the excesses that
+ *   `setCapacity()` left where they are, so that a change of the
+ *   capacities costs less than a computation from scratch; the visits of
+ *   `DINIC`, which explore only the nodes reached from \f$ s \f$, remain
+ *   the cheaper repair when the network is large and the change small.
  *
  * The best bound that the book attributes to Karmarkar (1984),
  * \f$ O( n m \log( n^2 / m ) ) \f$, is the one of the push-relabel of
@@ -229,12 +231,6 @@ class FlowNetwork {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// an edge of the network
- struct Edge {
-  int to;           ///< its head
-  long long cap ,   ///< its capacity
-            flow;   ///< the flow on it
-  };
 
  /// no bound
  static constexpr long long INF = std::numeric_limits< long long >::max();
@@ -249,7 +245,9 @@ class FlowNetwork {
  /// the net flow into \f$ t \f$
  [[nodiscard]] long long inflow( int t ) const;
 
- /// the excesses and the deficits of `setCapacity()` routed, a flow again
+ /// the excesses (if `excesses`) and the deficits of `setCapacity()`
+ /// routed, a flow again if `excesses`, and a preflow otherwise, whose
+ /// excesses the push-relabel takes as they are
  ///
  /// In pseudocode (beyond the book; the reparametrization of the dynamic
  /// cuts of Kohli and Torr, without their terminal edges), with
@@ -259,7 +257,10 @@ class FlowNetwork {
  /// cycles:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{rebalance}( s , t ) \cr
+ /// 1 & \textbf{procedure}\ \mathrm{rebalance}( s , t ,
+ ///     \mathit{excesses} ) \quad
+ ///     \triangleright\ \text{lines 2 to 5 only if } \mathit{excesses}
+ ///     \cr
  /// 2 & \quad \textbf{foreach}\ x \notin \{ s , t \}\ \textbf{with}
  ///     \ e( x ) > 0\ \textbf{do} \cr
  /// 3 & \qquad \textbf{while}\ e( x ) > 0\ \textbf{do} \cr
@@ -272,45 +273,69 @@ class FlowNetwork {
  ///     \ e( x ) < 0\ \textbf{do} \cr
  /// 7 & \qquad \textbf{while}\ e( x ) < 0\ \textbf{do}\ \text{push the}
  ///     \text{ least of } - e( x ) \text{ and } \min_P c_f \text{ along a}
- ///     \text{ path } P \text{ of } c_f > 0 \text{ from } s \text{ or } t
- ///     \text{ to } x
+ ///     \text{ path } P \text{ of } c_f > 0 \text{ from } s \text{, } t
+ ///     \text{ or a } y \text{ with } e( y ) > 0 \text{ to } x
  /// \end{array}}
  /// \f]
- void rebalance( int s , int t );
+ void rebalance( int s , int t , bool excesses = true );
 
  /// the maximum flow from \f$ s \f$ to \f$ t \f$ by the push-relabel of
- /// Goldberg and Tarjan, from the flow there is
+ /// Goldberg and Tarjan, from the flow there is and the excesses left by
+ /// `setCapacity()`
  ///
  /// In pseudocode (beyond the book; the highest label first, with the
- /// global relabelings and the gaps of Cherkassky and Goldberg), with
- /// \f$ e( x ) \f$ the excess of \f$ x \f$ and \f$ d( x ) \f$ its label, a
- /// lower bound of its distance from the target in the residual network,
- /// \f$ D \f$ the label of the nodes out of the game:
+ /// global relabelings and the gaps of Cherkassky and Goldberg, the
+ /// labelings that stop at the last node with an excess of their HIPR,
+ /// and the two phases and the scan of the edges of a node that pushes
+ /// and finds its new label at once of the Preflow of LEMON), with
+ /// \f$ e( x ) \f$
+ /// the excess of \f$ x \f$ and \f$ d( x ) \f$ its label, a lower bound of
+ /// its distance from the target in the residual network, \f$ D \f$ the
+ /// label of the nodes out of the game:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{pushRelabel}( s , t ) \cr
- /// 2 & \quad \textbf{foreach}\ ( s , v )\ \textbf{with}\ c_f( s , v )
+ /// 2 & \quad e \gets \text{the excesses left by } \mathrm{setCapacity}()
+ ///     \cr
+ /// 3 & \quad \textbf{if}\ e = 0 \textbf{ and } | f | > 0 \textbf{ and }
+ ///     t \text{ is not reached from } s \text{ in the residual network}
+ ///     \ \textbf{then}\ \textbf{return} \cr
+ /// 4 & \quad \textbf{foreach}\ ( s , v )\ \textbf{with}\ c_f( s , v )
  ///     > 0\ \textbf{do}\ \text{push } c_f( s , v ) \text{ on it} \cr
- /// 3 & \quad \mathrm{discharge}( t , n );\ \mathrm{discharge}( s , 2 n )
- ///     \quad \triangleright\ \text{a maximum preflow, then a flow} \cr
- /// 4 & \textbf{procedure}\ \mathrm{discharge}( z , D ) \cr
- /// 5 & \quad d \gets \text{the distances from the nodes to } z
- ///     \text{ in the residual network, } D \text{ if none} \cr
- /// 6 & \quad \textbf{while}\ \text{some } u \notin \{ s , t \}
+ /// 5 & \quad d \gets \mathrm{labels}( t ) \cr
+ /// 6 & \quad \mathrm{discharge}( t , n ) \quad \triangleright\ \text{a}
+ ///     \text{ maximum preflow} \cr
+ /// 7 & \quad \textbf{if}\ \text{some } u \text{ of label } n \text{ has }
+ ///     e( u ) > 0\ \textbf{then} \cr
+ /// 8 & \qquad d \gets \mathrm{labels}( s ) \text{ among the nodes of}
+ ///     \text{ label } n;\ \mathrm{discharge}( s , 2 n ) \cr
+ /// 9 & \textbf{procedure}\ \mathrm{discharge}( z , D ) \cr
+ /// 10 & \quad \textbf{while}\ \text{some } u \notin \{ s , t \}
  ///     \text{ has } e( u ) > 0 \text{ and } d( u ) < D\ \textbf{do} \cr
- /// 7 & \qquad u \gets \text{such a node of the highest label} \cr
- /// 8 & \qquad \textbf{foreach}\ ( u , v )\ \textbf{with}\ c_f( u , v )
- ///     > 0 \textbf{ and } d( v ) = d( u ) - 1\ \textbf{do} \cr
- /// 9 & \qquad\quad \text{push } \min( e( u ) , c_f( u , v ) )
- ///     \text{ on } ( u , v ) \cr
- /// 10 & \qquad \textbf{if}\ e( u ) > 0\ \textbf{then} \cr
- /// 11 & \qquad\quad \textbf{if}\ u \text{ is the only node of label }
+ /// 11 & \qquad u \gets \text{such a node of the highest label};
+ ///     \ \lambda \gets D \cr
+ /// 12 & \qquad \textbf{foreach}\ ( u , v )\ \textbf{with}\ c_f( u , v )
+ ///     > 0\ \textbf{while}\ e( u ) > 0\ \textbf{do} \cr
+ /// 13 & \qquad\quad \textbf{if}\ d( v ) < d( u )\ \textbf{then}
+ ///     \ \text{push } \min( e( u ) , c_f( u , v ) ) \text{ on } ( u , v )
+ ///     \ \textbf{else}\ \lambda \gets \min( \lambda , d( v ) ) \cr
+ /// 14 & \qquad \textbf{if}\ e( u ) > 0\ \textbf{then} \cr
+ /// 15 & \qquad\quad \textbf{if}\ u \text{ is the only node of label }
  ///     d( u )\ \textbf{then}\ d( x ) \gets D \text{ for } u \text{ and}
  ///     \text{ each } x \text{ with } d( x ) > d( u ) \cr
- /// 12 & \qquad\quad \textbf{else}\ d( u ) \gets \min( D ,
- ///     \min_{c_f( u , v ) > 0} d( v ) + 1 ) \cr
- /// 13 & \qquad \textbf{if}\ \text{the relabelings since line 5 cost}
- ///     \text{ more than } 6 n + m\ \textbf{then}\ \text{go to line 5}
+ /// 16 & \qquad\quad \textbf{else}\ d( u ) \gets \min( D , \lambda + 1 )
+ ///     \cr
+ /// 17 & \qquad \textbf{if}\ \text{the relabelings cost more than }
+ ///     6 n + m \text{ since the last labels}\ \textbf{then}\ d \gets
+ ///     \mathrm{labels}( z ) \cr
+ /// 18 & \textbf{function}\ \mathrm{labels}( z ) \cr
+ /// 19 & \quad \text{visit in breadth backwards from } z \text{, level by}
+ ///     \text{ level, } d( u ) \text{ the level of } u \cr
+ /// 20 & \quad \text{stop after the level } k \text{ that labels the last}
+ ///     \text{ node with an excess} \cr
+ /// 21 & \quad \textbf{return}\ d \text{, and } k + 2 \text{ for the}
+ ///     \text{ nodes not reached} \quad \triangleright\ \text{a lower}
+ ///     \text{ bound}
  /// \end{array}}
  /// \f]
  void pushRelabel( int s , int t );
@@ -332,13 +357,27 @@ class FlowNetwork {
  /// each edge and its twin carry opposite flows within their capacities
  [[nodiscard]] bool skewSymmetric( void ) const;
 
- std::vector< std::vector< int > > f_adj;   ///< the edges out of each node
- std::vector< Edge > f_e;                   ///< the edges, each and its twin
+ /// an edge out of a node: its number and its head, kept together so
+ /// that a visit reads the edge only when its head is of use
+ struct Incidence {
+  int e;            ///< the number of the edge
+  int to;           ///< its head
+  };
+
+ std::vector< std::vector< Incidence > > f_adj;   ///< the edges out of
+                                                  ///< each node
+ std::vector< int > f_to;                   ///< the head of each edge,
+                                            ///< each and its twin
+ std::vector< long long > f_cap;            ///< the capacities
+ std::vector< long long > f_res;            ///< the residual capacities,
+                                            ///< apart, so that a visit
+                                            ///< reads 8 bytes per edge
  std::vector< int > f_level;                ///< the levels of Dinic
  std::vector< std::size_t > f_next;         ///< the next edge of Dinic
  std::vector< long long > f_imb;            ///< the excesses left by
                                             ///< `setCapacity()`
  bool f_unbalanced = false;                 ///< whether there are some
+ std::vector< int > f_imbNodes;             ///< the nodes that have them
 
  };  // end( class FlowNetwork )
 
