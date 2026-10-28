@@ -49,11 +49,13 @@
  * - the builds of the succinct structures: the directories of rank and
  *   select of 64 n random bits (RankSelect and CompactRankSelect against
  *   rank_support_v5 with select_support_mcl of sdsl-lite, sequential), per
- *   bit, the wavelet matrix of n random integers of 8, 16 and 32 bits
- *   (against wm_int of sdsl-lite) and the wavelet tree of Huffman of n
- *   symbols of 8 bits of a geometric law and of 16 bits at random (against
- *   wt_huff_int of sdsl-lite), per item, the sequential builds of ADS as
- *   well when t = 1;
+ *   bit, the wavelet matrix of n random integers of 8, 16 and 32 bits,
+ *   given as integers of 64 bits and as integers of their width
+ *   ("narrow"), against wm_int of sdsl-lite, and the wavelet tree of
+ *   Huffman of n symbols of 8 bits of a geometric law and of 16 bits at
+ *   random, against wt_huff_int of sdsl-lite, per item, the sequential
+ *   builds of ADS as well when t = 1 (pwm runs on the sequences that
+ *   ADS_WAVELET_DUMP writes);
  * - the LCP array of texts of 10^6 and 4 10^6 symbols, of 4 letters or of
  *   words of a Zipf law, from a suffix array of 32 bits (lcpArrayPhi
  *   against the one of the examples of ParlayLib), per symbol;
@@ -1308,7 +1310,8 @@ std::vector< std::pair< int , int > > grid( int side , unsigned seed )
 /// the shortest paths from the node of largest degree of the graphs of
 /// 2^scale nodes of graphs() and of a grid, with integer costs in
 /// [ 1 , 255 ], in nanoseconds per arc; ADS_SSSP_DELTA and ADS_SSSP_RHO
-/// set the parameters (default 32 and 2^20, 256 and 2^12 on the grid)
+/// set the parameters (default 32 and 2^20, 256 and 2^12 on the grid), and
+/// ADS_SSSP_CASE one graph alone (e.g., kronecker20)
 void sssp( const std::vector< int > & scales , int r , unsigned seed ,
            Executors & X )
 {
@@ -1317,6 +1320,11 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
  const char * er = std::getenv( "ADS_SSSP_RHO" );
  for( int scale : scales )
   for( int kind = 0 ; kind < 3 ; ++kind ) {
+   const std::string name = std::string( kind == 0 ? "uniform" : kind == 1
+                                         ? "kronecker" : "grid" ) +
+                            std::to_string( scale );
+   if( const char * only = std::getenv( "ADS_SSSP_CASE" ) )
+    if( name != only ) continue;
    const auto U = kind == 2 ? grid( 1 << ( scale / 2 ) , seed )
                             : edges( scale , kind == 1 , seed );
    const int n = kind == 2 ? 1 << ( 2 * ( scale / 2 ) ) : 1 << scale;
@@ -1334,6 +1342,25 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
    const std::size_t rho = er ? std::size_t( std::atoll( er ) )
                               : std::size_t( 1 ) << ( kind == 2 ? 12 : 20 );
    const auto ref = ADS::johnson( g , src ).d;
+   // the graph in the format of the weighted adjacency graphs of GBBS, for
+   // its programs, if ADS_SSSP_DUMP names a directory
+   if( const char * dump = std::getenv( "ADS_SSSP_DUMP" ) ) {
+    const std::string f = std::string( dump ) + "/" +
+                          ( kind == 0 ? "uniform" : kind == 1 ? "kronecker"
+                                                              : "grid" ) +
+                          std::to_string( scale ) + ".adj";
+    if( std::FILE * o = std::fopen( f.c_str() , "w" ) ) {
+     std::fprintf( o , "WeightedAdjacencyGraph\n%d\n%zu\n" , n , arcs );
+     for( int v = 0 ; v < n ; ++v )
+      std::fprintf( o , "%d\n" , g.offsets()[ v ] );
+     for( std::size_t k = 0 ; k < arcs ; ++k )
+      std::fprintf( o , "%d\n" , g.arcData()[ k ].to );
+     for( std::size_t k = 0 ; k < arcs ; ++k )
+      std::fprintf( o , "%d\n" , g.arcData()[ k ].w );
+     std::fclose( o );
+     std::printf( "# dump\t%s\t%d\t%d\n" , f.c_str() , src , delta );
+     }
+    }
    const char * c = kind == 0 ? "uniform" : kind == 1 ? "kronecker" : "grid";
    std::vector< int > dist;
 #if defined( ADS_HAS_GAPBS )
@@ -1386,6 +1413,24 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
 /*--------------------------------------------------------------------------*/
 /*------------------------------- SUCCINCT ---------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+/// the items x, of b bytes each, into the file ADS_WAVELET_DUMP/name, for
+/// the programs of pwm, if ADS_WAVELET_DUMP names a directory
+template< class V >
+void dumpItems( const V & x , int b , const std::string & name )
+{
+ const char * dir = std::getenv( "ADS_WAVELET_DUMP" );
+ if( ! dir ) return;
+ const std::string f = std::string( dir ) + "/" + name;
+ if( std::FILE * o = std::fopen( f.c_str() , "wb" ) ) {
+  for( const auto v : x ) {
+   const std::uint64_t u = std::uint64_t( v );
+   std::fwrite( &u , std::size_t( b ) , 1 , o );   // little endian
+   }
+  std::fclose( o );
+  std::printf( "# dump\t%s\n" , f.c_str() );
+  }
+ }
 
 /// the builds of the directories of rank and select of 64 n random bits,
 /// per bit, of the wavelet matrices of n integers and of the wavelet trees
@@ -1443,15 +1488,31 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
   for( int w : { 8 , 16 , 32 } ) {
    std::vector< std::uint64_t > x( n );
    for( auto & v : x ) v = g() >> ( 64 - w );
+   dumpItems( x , w / 8 , "wm" + std::to_string( w ) + ".bin" );
    const ADS::WaveletMatrix ref( x , w );
    std::size_t bits = 0;
    std::uint64_t probe = 0;
    const std::uint64_t want = ref.access( n / 3 ) + ref.rank( x[ 7 ] , n / 2 );
+   // the items also in the type of their width, read as they are
+   const std::vector< std::uint8_t > x8( x.begin() , x.end() );
+   const std::vector< std::uint16_t > x16( x.begin() , x.end() );
+   const std::vector< std::uint32_t > x32( x.begin() , x.end() );
+   auto narrow = [ & ]( auto && make ) {
+    return( w == 8 ? make( std::span< const std::uint8_t >( x8 ) )
+            : w == 16 ? make( std::span< const std::uint16_t >( x16 ) )
+                      : make( std::span< const std::uint32_t >( x32 ) ) );
+    };
    Works S;
    onExecutorsW( S , X , "ADS::WaveletMatrix" , [ & ]( auto & ex ) {
     const ADS::WaveletMatrix M( ex , x , w );
     bits = M.sizeInBits();
     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+   onExecutorsW( S , X , "ADS::WaveletMatrix narrow" , [ & ]( auto & ex ) {
+    narrow( [ & ]( auto y ) {
+     const ADS::WaveletMatrix M( ex , y , w );
+     bits = M.sizeInBits();
+     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 );
+     return( 0 ); } ); } );
    if( threads == 1 )
     addW( S , "seq" , "ADS::WaveletMatrix (sequential)" , [ & ] {
      const ADS::WaveletMatrix M( x , w );
@@ -1477,6 +1538,8 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
    for( auto & v : x )
     v = kind == 0 ? std::min< std::uint32_t >( geo( g ) , 255 )
                   : std::uint32_t( g() >> 48 );
+   dumpItems( x , kind == 0 ? 1 : 2 , kind == 0 ? "huff8.bin"
+                                                 : "huff16.bin" );
    using T = ADS::HuffmanWaveletTree<>;
    const T ref( x );
    std::size_t bits = 0 , probe = 0;

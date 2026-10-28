@@ -40,6 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the last walk from a node kept for its evert, turned into splay trees
   in O( n ) once the recent mean of the walks exceeds a bound, and
   useSplay() and splayed()
+- WaveletMatrix from items of 8, 16 or 32 bits (spans of std::uint8_t,
+  std::uint16_t and std::uint32_t, sequential and on an executor), read as
+  they are; the test parallel-wavelet-matrix builds every sequence that
+  fits from them too
+- bench/parallel.cpp: ADS_SSSP_CASE, one graph of the shortest paths
+  alone, ADS_SSSP_DUMP and ADS_WAVELET_DUMP, the graphs and the sequences
+  of the benchmark in the formats of GBBS and pwm
 - ConcurrentFlatTable: the places of two words, a key and a value of 8
   bytes each written together by a compare-and-swap of 16 bytes, where the
   processor has one without locks (cmpxchg16b on x86-64, the pairs of
@@ -1370,6 +1377,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ADS_BENCH_OWN (bench-bignum-own, bench-matrix-own, made when the
   backends are on), on the code of ADS alone, in place of bench-bignum-gmp;
   bignum also times the sum and the product of two fractions of n digits
+- deltaStepping() on buckets of each thread, as the Delta-stepping of the
+  GAP benchmark suite: the threads of one bulk() of the executor run the
+  whole computation, meeting at two barriers a step (a thread that starts
+  late joins at a barrier, which never waits for a call not started); a
+  step relaxes the shared frontier of the bucket, 64 nodes at a time,
+  then each thread its own bucket while it holds fewer than 1000 nodes;
+  the buckets of a thread are a window of 1024 and an overflow past it,
+  spread when the window moves (the open buckets of Julienne); the
+  distance at which each node was last relaxed kept, and an entry at that
+  distance skipped, from the step where the entries put back into the
+  bucket of the step outnumber a quarter of those relaxed; the counters
+  and the barrier on lines of their own
+- the construction of WaveletMatrix, sequential and parallel: each slice,
+  of at most 2^18 items, writes the levels of its items into words of its
+  own, the bits of the first level 64 at a time, the others by an or at
+  the next place of their stream, with the number of the levels of a pass
+  a constant of the loop, and each block of words of a level gathers the
+  runs of the slices by copies of bits; the keys of a slice counted in
+  four tables
+- HuffmanWaveletTree( ex , x ) on one thread is the sequential
+  construction
 - MultiQueue: the deletion buffer a ring of 16 places, so that the pop of
   its least pair and the eviction of its greatest move no other pair, and
   the pop from the better of two distinct queues, whose mean rank error

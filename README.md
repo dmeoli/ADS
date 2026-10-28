@@ -582,7 +582,7 @@ matrices, up to the rounding for the transform).
 | products of `CsrMatrix`, `SellMatrix` and `gemm()` | [`parallel/ParallelNumeric.h`](include/ADS/parallel/ParallelNumeric.h) |
 | `fft()` by the four steps of Bailey | [`parallel/ParallelFFT.h`](include/ADS/parallel/ParallelFFT.h) |
 | visit in breadth that optimizes its direction, connected components by Afforest | [`parallel/ParallelGraph.h`](include/ADS/parallel/ParallelGraph.h) |
-| shortest paths by the Delta-stepping of Meyer and Sanders and the rho-stepping of Dong, Gu, Sun and Zhang, with the fusion of the buckets | [`parallel/ParallelShortestPaths.h`](include/ADS/parallel/ParallelShortestPaths.h) |
+| shortest paths by the Delta-stepping of Meyer and Sanders, on buckets of each thread and two barriers a step, and by the rho-stepping of Dong, Gu, Sun and Zhang, with the fusion of the buckets | [`parallel/ParallelShortestPaths.h`](include/ADS/parallel/ParallelShortestPaths.h) |
 | builds of the directories of rank and select, of the wavelet matrix (up to 8 levels per pass, by the reversed prefixes of the bits) and of the wavelet tree of Huffman | [`succinct/RankSelect.h`](include/ADS/succinct/RankSelect.h), [`succinct/CompactRankSelect.h`](include/ADS/succinct/CompactRankSelect.h), [`succinct/WaveletMatrix.h`](include/ADS/succinct/WaveletMatrix.h), [`succinct/HuffmanWaveletTree.h`](include/ADS/succinct/HuffmanWaveletTree.h) |
 | LCP array by the permuted LCP | [`parallel/ParallelText.h`](include/ADS/parallel/ParallelText.h) |
 | union-find with no lock, for many threads | [`concurrent/ConcurrentUnionFind.h`](include/ADS/concurrent/ConcurrentUnionFind.h) |

@@ -932,6 +932,22 @@ ADS_TEST( "parallel-wavelet-matrix" )
    const WaveletMatrix ref( x , w ) , par( ex , x , w );
    CHECK( ( par.width() == ref.width() ) && ( par.size() == ref.size() ) &&
           ( par.sizeInBits() == ref.sizeInBits() ) );
+   // the same from the items of 8, 16 and 32 bits, where they fit
+   auto narrow = [ & ]< class U >( U * ) {
+    if( std::any_of( x.begin() , x.end() , []( std::uint64_t v ) {
+         return( v >> ( 8 * sizeof( U ) ) ); } ) ) return;
+    const std::vector< U > y( x.begin() , x.end() );
+    const WaveletMatrix a( std::span< const U >( y ) , w ) ,
+                        b( ex , std::span< const U >( y ) , w );
+    CHECK( ( a.width() == ref.width() ) && ( b.width() == ref.width() ) &&
+           ( a.sizeInBits() == ref.sizeInBits() ) &&
+           ( b.sizeInBits() == ref.sizeInBits() ) );
+    CHECK( std::equal( x.begin() , x.end() , a.begin() , a.end() ) );
+    CHECK( std::equal( x.begin() , x.end() , b.begin() , b.end() ) );
+    };
+   narrow( ( std::uint8_t * )nullptr );
+   narrow( ( std::uint16_t * )nullptr );
+   narrow( ( std::uint32_t * )nullptr );
    CHECK( std::equal( x.begin() , x.end() , par.begin() , par.end() ) );
    std::vector< std::uint64_t > vals( x.begin() , x.end() );
    std::sort( vals.begin() , vals.end() );
@@ -1162,16 +1178,22 @@ void checkStepping( C && cost , std::vector< D > deltas )
 
 ADS_TEST( "parallel-stepping" )
 {
- // integer costs from 0 (ties and zero arcs), long costs up to 10^12,
- // and real costs
- checkStepping< int >( []( std::mt19937_64 & g ) { return( int( g() % 101 ) );
-  } , { 1 , 16 , 1 << 30 } );
- checkStepping< long long >( []( std::mt19937_64 & g ) {
-  return( ( long long )( g() % 1000000000000ULL ) ); } ,
-  { 1 , 1000000000LL , 1LL << 60 } );
- checkStepping< double >( []( std::mt19937_64 & g ) {
-  return( std::uniform_real_distribution<>( 0 , 1 )( g ) ); } ,
-  { 1e-9 , 0.1 , 1e300 } );
+ // with the distances last relaxed kept from the decision of the steps
+ // (some thousand entries), then from the start, on the same graphs
+ for( const std::size_t from : { std::size_t( 4096 ) , std::size_t( 0 ) } ) {
+  detail::keepFrom = from;
+  // integer costs from 0 (ties and zero arcs), long costs up to 10^12,
+  // and real costs
+  checkStepping< int >( []( std::mt19937_64 & g ) {
+   return( int( g() % 101 ) ); } , { 1 , 16 , 1 << 30 } );
+  checkStepping< long long >( []( std::mt19937_64 & g ) {
+   return( ( long long )( g() % 1000000000000ULL ) ); } ,
+   { 1 , 1000000000LL , 1LL << 60 } );
+  checkStepping< double >( []( std::mt19937_64 & g ) {
+   return( std::uniform_real_distribution<>( 0 , 1 )( g ) ); } ,
+   { 1e-9 , 0.1 , 1e300 } );
+  }
+ detail::keepFrom = 4096;
  }
 
 /*--------------------------------------------------------------------------*/
