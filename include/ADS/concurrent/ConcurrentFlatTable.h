@@ -33,8 +33,10 @@
  *   zero bytes is kept apart in one place of two words. The choice is made
  *   when compiling: GCC and Clang declare
  *   `__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16` where such an instruction may be
- *   used (e.g., with `-mcx16` or `-march=native` on x86-64), and
- *   `ADS_FLAT_CAS16` defined to 0 turns it off.
+ *   used (e.g., with `-mcx16` or `-march=native` on x86-64), but for the
+ *   GCC of macOS on AArch64, whose assembler refuses the pairs of
+ *   registers it gives the instruction, and `ADS_FLAT_CAS16` defined to 0
+ *   turns it off.
  * - Otherwise the word holds the index of a node, where the pair lies
  *   with its hash, and 24 bits of the hash, so that a lookup follows the
  *   index only when those bits match (once in \f$ 2^{24} \f$ for another
@@ -149,12 +151,16 @@
 #include <vector>
 
 // the compare-and-swap of 16 bytes without locks, on little-endian x86-64
-// and AArch64, unless turned off
+// and AArch64, unless turned off; not with the GCC of macOS on AArch64 (the
+// port of Homebrew), which gives its caspal a pair of registers that does
+// not start at an even one, and the assembler refuses it
 #ifndef ADS_FLAT_CAS16
  #if defined( __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16 ) && \
      ( defined( __x86_64__ ) || defined( __aarch64__ ) ) && \
      defined( __BYTE_ORDER__ ) && \
-     ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ )
+     ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ ) && \
+     ! ( defined( __APPLE__ ) && defined( __aarch64__ ) && \
+         ! defined( __clang__ ) )
   #define ADS_FLAT_CAS16 1
  #else
   #define ADS_FLAT_CAS16 0

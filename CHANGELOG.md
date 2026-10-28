@@ -1260,7 +1260,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   MSYS2, MSVC by CMake alone), installs the package for each and uses it
   through find_package and pkg-config, runs the tests of the executors of
   OpenMP, oneTBB and FastFlow by the makefile, and those under ASan and
-  UBSan four at a time with ADS_TEST_SMALL
+  UBSan four at a time with ADS_TEST_SMALL; ConcurrentFlatTable leaves out
+  the compare-and-swap of 16 bytes with the GCC of macOS on AArch64, whose
+  caspal the assembler refuses (a pair of registers from an odd one)
 
 - MultiQueue: the deletion buffer a ring of 16 places, so that the pop of
   its least pair and the eviction of its greatest move no other pair, and
