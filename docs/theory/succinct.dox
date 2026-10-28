@@ -649,28 +649,37 @@
  By Lemma 7 one scan of the items in the order of the level \f$ \ell \f$
  writes the bits of the \f$ k \f$ levels \f$ \ell , \ldots , \ell + k - 1 \f$
  at the places (13) and moves the items to their order at the level
- \f$ \ell + k \f$, where the construction by the partitions of Lemma 5 moves
- them \f$ k \f$ times, once per level: \f$ \lceil w / 8 \rceil \f$ passes over
- the items for \f$ k \le 8 \f$ instead of \f$ w \f$, the bits written into
- \f$ 2^k - 1 \f$ streams, one per value of \f$ \kappa_j \f$ for each
- \f$ j < k \f$, whose next places are consecutive. This is the sort by the
- prefixes of the bits of Dinklage, Ellert, Fischer, Kurpicz and Löbel,
- applied to \f$ k \f$ levels at a time. On \f$ p \f$ threads the items are
- cut into slices; the counts of the keys of each slice and their sums over
- the slices before it give each slice its own first place in each stream
- by (13), so that the slices write their streams at once, each in its
- range, as in the domain decomposition of Fuentes-Sepúlveda, Elejalde,
- Ferres and Seco and of Labeit, Shun and Blelloch, here with no merge of
- the levels of the slices afterwards. Two ranges may share the word at
- their border: a stream gathers its bits into a word and stores the word
- when it is full, with a plain store when the word is inside its range and
- an atomic or when it is at one of its ends (the words are 0 at first, and
- only the 1s are written). The wavelet tree of Huffman is built the same
- way: the counts of the symbols of each slice give the place of each slice
- in each node of the trie of the codes, and each slice writes the bits of
- its items along their codes into a stream per node, with no item moved.
- The work is \f$ O( n w ) \f$ bits and \f$ O( n \lceil w / 8 \rceil ) \f$
- moves of items, or \f$ O( \sum_c f_c \ell_c ) \f$ bits for the tree, plus
+ \f$ \ell + k \f$, where the construction by the partitions of Lemma 5
+ moves them \f$ k \f$ times, once per level: \f$ \lceil w / 8 \rceil \f$
+ passes over the items for \f$ k \le 8 \f$ instead of \f$ w \f$, the bits
+ written into \f$ 2^k - 1 \f$ streams, one per value of \f$ \kappa_j \f$
+ for each \f$ j < k \f$, whose next places are consecutive (the bits of the
+ level \f$ \ell \f$ itself, in the order of the items, 64 at a time in a
+ word). This is the sort by the prefixes of the bits of Dinklage, Ellert,
+ Fischer, Kurpicz and Löbel, applied to \f$ k \f$ levels at a time. The
+ items are cut into slices of at most \f$ 2^{18} \f$ items, about four per
+ thread, whose \f$ k \f$ levels, of 256 KB at most, stay in the second
+ level of the cache while the slice writes them: each slice writes the
+ levels of its own items, at the places that the counts of its keys give
+ by (13) within the slice, and the levels are then gathered from the
+ slices, each block of words of a level copying the runs of bits of the
+ slices that fall in it, in the order (13) of the runs, so that no two
+ threads write a word (the domain decomposition of Fuentes-Sepúlveda,
+ Elejalde, Ferres and Seco and of Labeit, Shun and Blelloch, with the
+ merge of Dinklage et al.). The items move to the places (13) of the
+ level \f$ \ell + k \f$ directly, since those of two slices never meet.
+ The wavelet tree of Huffman is built in slices too: the counts of the
+ symbols of each slice give the place of each slice in each node of the
+ trie of the codes, and each slice writes the bits of its items along
+ their codes into a stream per node, with no item moved; a stream gathers
+ its bits into a word and stores the word when it is full, with a plain
+ store when the word is inside its range and an atomic or when it is at
+ one of its ends, which it may share with the stream of another slice (the
+ words are 0 at first, and only the 1s are written). On one thread the
+ tree is built by the sequential scan, which writes each bit at its place.
+ The work is \f$ O( n w ) \f$ bits, \f$ O( n w / 64 ) \f$ words copied
+ and \f$ O( n \lceil w / 8 \rceil ) \f$ moves of items, or
+ \f$ O( \sum_c f_c \ell_c ) \f$ bits for the tree, plus
  \f$ O( q 2^k ) \f$ counts for \f$ q \f$ slices (\f$ O( q \sigma ) \f$ for
  the tree, whose slices therefore hold at least \f$ \sigma \f$ items each),
  and the depth is that of a slice.

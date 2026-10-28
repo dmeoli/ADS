@@ -93,7 +93,10 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <span>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -162,17 +165,24 @@ class WaveletMatrix {
  ///     \text{, for } j < k \cr
  /// 8 & \qquad \textbf{foreach}\ \text{slice } X_s\ \textbf{do in}
  ///     \ \textbf{parallel} \cr
- /// 9 & \qquad\quad \textbf{foreach}\ c \in X_s \text{ in order}
+ /// 9 & \qquad\quad Q_{j , s}[ a ] \gets \text{the items of } X_s
+ ///     \text{ with } \kappa_j < a\quad \triangleright\ \text{places in}
+ ///     \text{ the slice} \cr
+ /// 10 & \qquad\quad \textbf{foreach}\ c \in X_s \text{ in order}
  ///     \ \textbf{do} \cr
- /// 10 & \qquad\qquad \textbf{for}\ j \gets 0\ \textbf{to}\ k - 1
- ///     \ \textbf{do}\ B_{\ell + j}[ P_{j , s}[ \kappa_j( c ) ] ] \gets
- ///     b_j( c );\ P_{j , s}[ \kappa_j( c ) ] \gets P_{j , s}[ \kappa_j( c )
+ /// 11 & \qquad\qquad \textbf{for}\ j \gets 0\ \textbf{to}\ k - 1
+ ///     \ \textbf{do}\ L_{s , j}[ Q_{j , s}[ \kappa_j( c ) ] ] \gets
+ ///     b_j( c );\ Q_{j , s}[ \kappa_j( c ) ] \gets Q_{j , s}[ \kappa_j( c )
  ///     ] + 1 \cr
- /// 11 & \qquad\qquad C'[ P_{k , s}[ \kappa_k( c ) ] ] \gets c;
+ /// 12 & \qquad\qquad C'[ P_{k , s}[ \kappa_k( c ) ] ] \gets c;
  ///     \ P_{k , s}[ \kappa_k( c ) ] \gets P_{k , s}[ \kappa_k( c ) ] + 1
  ///     \cr
- /// 12 & \qquad C \gets C';\ \ell \gets \ell + k \cr
- /// 13 & \quad \textbf{return}\ \text{the levels } B_\ell \text{ with }
+ /// 13 & \qquad \textbf{foreach}\ \text{block of words of each }
+ ///     B_{\ell + j}\ \textbf{do in parallel} \cr
+ /// 14 & \qquad\quad \text{copy into it the runs of the } L_{s , j}
+ ///     \text{ that fall in it, each at its place } P_{j , s} \cr
+ /// 15 & \qquad C \gets C';\ \ell \gets \ell + k \cr
+ /// 16 & \quad \textbf{return}\ \text{the levels } B_\ell \text{ with }
  ///     \text{their directories, built on } \mathit{ex} \text{, and the }
  ///     Z_\ell
  /// \end{array}}
@@ -180,6 +190,22 @@ class WaveletMatrix {
  /// \pre \f$ 0 \le w \le 64 \f$ and the items are below \f$ 2^w \f$
  template< Executor E >
  WaveletMatrix( E & ex , std::span< const std::uint64_t > x , int w = 0 );
+
+ /// the sequence \f$ x \f$ of items of 8, 16 or 32 bits, which the
+ /// construction reads as they are, as `WaveletMatrix( x , w )` above
+ template< class U >
+ requires( std::is_same_v< U , std::uint8_t > ||
+           std::is_same_v< U , std::uint16_t > ||
+           std::is_same_v< U , std::uint32_t > )
+ explicit WaveletMatrix( std::span< const U > x , int w = 0 );
+
+ /// the sequence \f$ x \f$ of items of 8, 16 or 32 bits on the threads of
+ /// `ex`, as `WaveletMatrix( ex , x , w )` above
+ template< Executor E , class U >
+ requires( std::is_same_v< U , std::uint8_t > ||
+           std::is_same_v< U , std::uint16_t > ||
+           std::is_same_v< U , std::uint32_t > )
+ WaveletMatrix( E & ex , std::span< const U > x , int w = 0 );
 
  /// the number of items
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
@@ -348,15 +374,22 @@ class WaveletMatrix {
  static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;   // a test
 #endif
 
+ /// the most items of a slice, whose 8 levels take 256 KB
+#ifndef ADS_WAVELET_SLICE_MAX
+ static constexpr std::size_t kSliceMax = std::size_t( 1 ) << 18;
+#else
+ static constexpr std::size_t kSliceMax = ADS_WAVELET_SLICE_MAX;   // a test
+#endif
+
  /// the width w (0: the bits of the largest item) and the levels of the
  /// items x, on the threads of ex
- template< Executor E >
- void init( E & ex , std::span< const std::uint64_t > x , int w );
+ template< class U , Executor E >
+ void init( E & ex , std::span< const U > x , int w );
 
  /// the levels of the items x of w bits on the threads of ex, the items
  /// moved as T between the passes
- template< class T , Executor E >
- void build( E & ex , std::span< const std::uint64_t > x , int w );
+ template< class T , class U , Executor E >
+ void build( E & ex , std::span< const U > x , int w );
 
  std::size_t f_n = 0;                    ///< the number of items
  std::vector< RankSelect > f_lev;        ///< the levels, the top first

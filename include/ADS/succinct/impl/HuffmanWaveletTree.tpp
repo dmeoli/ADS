@@ -21,6 +21,13 @@ HuffmanWaveletTree< RS >::HuffmanWaveletTree(
                           std::span< const std::uint32_t > x ,
                           bool withSelect ) : f_n( x.size() )
 {
+ sequential( x , withSelect );
+ }
+
+template< class RS >
+void HuffmanWaveletTree< RS >::sequential( std::span< const std::uint32_t > x ,
+                                           bool withSelect )
+{
  // a depth of the code of Huffman d needs a frequency of Fibonacci( d + 2 )
  ADS_PRE( std::uint64_t( f_n ) < ( std::uint64_t( 1 ) << 40 ) );
  if( f_n == 0 ) return;
@@ -54,6 +61,10 @@ HuffmanWaveletTree< RS >::HuffmanWaveletTree(
                           bool withSelect ) : f_n( x.size() )
 {
  ADS_PRE( std::uint64_t( f_n ) < ( std::uint64_t( 1 ) << 40 ) );
+ if( ex.concurrency() == 1 ) {               // the sequential pass, faster
+  sequential( x , withSelect );
+  return;
+  }
  if( f_n == 0 ) return;
  const std::uint32_t top = parallelReduce( ex , 0 , f_n , std::uint32_t( 0 ) ,
   [ & ]( std::size_t lo , std::size_t hi ) {

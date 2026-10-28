@@ -322,6 +322,10 @@ class HuffmanWaveletTree {
  static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;   // a test
 #endif
 
+ /// the tree of the items \f$ x \f$ built on the calling thread, with
+ /// select if asked for
+ void sequential( std::span< const std::uint32_t > x , bool withSelect );
+
  /// the codes of Huffman of the frequencies \f$ f \f$, the trie of the
  /// codes and the places of its nodes in \f$ B \f$; the bits of \f$ B \f$
  [[nodiscard]] std::uint64_t layout( const std::vector< std::uint64_t > &

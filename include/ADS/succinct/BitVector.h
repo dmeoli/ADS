@@ -154,48 +154,70 @@ class BitRuns {
  public:
 
  /// \f$ R \f$ runs of the words \f$ W \f$, opened by `open()`
- BitRuns( Word * W , std::size_t R )
-  : f_W( W ) , f_p( R , 0 ) , f_acc( R , 0 ) , f_s( R , 0 ) , f_e( R , 0 ) {}
+ BitRuns( Word * W , std::size_t R ) : f_W( W ) , f_run( R ) {}
 
  /// the run \f$ r \f$ of the places \f$ [ s , e ) \f$
  void open( std::size_t r , std::size_t s , std::size_t e ) {
-  f_p[ r ] = f_s[ r ] = s;
-  f_e[ r ] = e;
-  f_acc[ r ] = 0;
+  f_run[ r ] = Run{ s , 0 , s , e };
   }
 
  /// the bit \f$ b \f$ at the next place of the run \f$ r \f$
  void push( std::size_t r , bool b ) {
-  const std::size_t p = f_p[ r ]++;
-  f_acc[ r ] |= Word( b ) << ( p & 63 );
-  if( ( p & 63 ) == 63 ) flush( r , p >> 6 );
+  Run & R = f_run[ r ];
+  R.acc |= Word( b ) << ( R.p & 63 );
+  if( ( ++R.p & 63 ) == 0 ) flush( R , ( R.p >> 6 ) - 1 );
   }
 
  /// the last word of each run written, if not full
  void close( void ) {
-  for( std::size_t r = 0 ; r < f_p.size() ; ++r )
-   if( f_p[ r ] & 63 ) flush( r , f_p[ r ] >> 6 );
+  for( Run & R : f_run )
+   if( R.p & 63 ) flush( R , R.p >> 6 );
   }
 
  private:
 
- /// the word \f$ w \f$ of the run \f$ r \f$ written, if it has a 1, and
+ /// a run: its next place, the bits of its word, and its places
+ struct Run {
+  std::size_t p;    ///< the place of the next bit
+  Word acc;         ///< the bits of the word of the place p
+  std::size_t s ,   ///< the first place of the run
+              e;    ///< the place past its last one
+  };
+
+ /// the word \f$ w \f$ of the run \f$ R \f$ written, if it has a 1, and
  /// its bits cleared
- void flush( std::size_t r , std::size_t w ) {
-  if( const Word a = f_acc[ r ] ) {
-   if( ( 64 * w >= f_s[ r ] ) && ( 64 * w + 64 <= f_e[ r ] ) ) f_W[ w ] = a;
+ void flush( Run & R , std::size_t w ) {
+  if( const Word a = R.acc ) {
+   if( ( 64 * w >= R.s ) && ( 64 * w + 64 <= R.e ) ) f_W[ w ] = a;
    else std::atomic_ref< Word >( f_W[ w ] ).fetch_or(
                                               a , std::memory_order_relaxed );
    }
-  f_acc[ r ] = 0;
+  R.acc = 0;
   }
 
- Word * f_W;                        ///< the words
- std::vector< std::size_t > f_p;    ///< the next place of each run
- std::vector< Word > f_acc;         ///< the bits of its word
- std::vector< std::size_t > f_s ,   ///< the first place of each run
-                            f_e;    ///< the place past its last one
+ Word * f_W;                  ///< the words
+ std::vector< Run > f_run;    ///< the runs
  };
+
+/// the \f$ \ell \f$ bits of the words \f$ S \f$ from the place \f$ s \f$
+/// ored into the words \f$ D \f$ from the place \f$ d \f$, the word after
+/// the last bit read of \f$ S \f$ readable
+inline void copyBits( Word * D , std::size_t d , const Word * S ,
+                      std::size_t s , std::size_t len )
+{
+ while( len > 0 ) {
+  const std::size_t o = d & 63 , take = std::min< std::size_t >( len ,
+                                                                64 - o );
+  const std::size_t q = s >> 6 , r = s & 63;
+  Word x = S[ q ] >> r;
+  if( r + take > 64 ) x |= S[ q + 1 ] << ( 64 - r );
+  if( take < 64 ) x &= ( Word( 1 ) << take ) - 1;
+  D[ d >> 6 ] |= x << o;
+  d += take;
+  s += take;
+  len -= take;
+  }
+ }
 
 }  // end( namespace detail )
 
