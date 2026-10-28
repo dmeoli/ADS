@@ -1794,6 +1794,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the audit of the sorts that compares the items before and after the
+  sort (samePermutation() of sort/Sorted.h) copies and sorts nothing on an
+  empty range: g++ 13 with -march=native, inlining the std::sort() of the
+  empty copy into a comparator that counts its calls, warned of a
+  -Wfree-nonheap-object in ch02 (insertionSort() and selectionSort()),
+  on a path that first == last and a nonzero size make impossible
 - RangeTree::count() counts the points of abscissa x1 or x2 whose ordinate
   is -inf or +inf: the keys were searched between ( x1 , lowest() ) and
   ( x2 , max() ), which leave them out when T has the infinities, and are

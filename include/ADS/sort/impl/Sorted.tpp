@@ -64,6 +64,11 @@ bool samePermutation( const std::vector< T > & A ,
   hi = std::min( hi , A.size() );
   if( before.size() != hi - lo )
    return( false );
+  // an empty range holds the items of an empty copy, and no empty copy is
+  // sorted: g++, inlining std::sort(), took on the path first == last the
+  // end of the copy for its start and warned of a deletion at an offset
+  if( hi == lo )
+   return( true );
   std::vector< T > after( A.begin() + lo , A.begin() + hi );
   std::sort( before.begin() , before.end() , less );
   std::sort( after.begin() , after.end() , less );
