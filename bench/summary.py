@@ -4,11 +4,11 @@
 #                                                                             #
 # Turns two files of results/, written by two runs of bench/run.sh on the     #
 # same machine, into the summary table at the top of the README: for each     #
-# structure of ADS and each library it is compared with, the ratio of the     #
-# time of the library to that of ADS (above 1 when ADS is faster), as the     #
-# median and the range over the cases and the sizes of its benchmark, each    #
-# cell the mean of the two runs. The noise is the relative difference of      #
-# every cell between the two runs, the same code measured twice (A/A).        #
+# structure of ADS and each library it is compared with, how many times ADS   #
+# is faster or slower than the library (a tie within 5%), in the median cell  #
+# and over all the cases and the sizes of its benchmark, each cell the mean   #
+# of the two runs. The noise is the relative difference of every cell between #
+# the two runs, the same code measured twice (A/A).                           #
 #                                                                             #
 #   python3 bench/summary.py results/<run 1>.tsv results/<run 2>.tsv          #
 ###############################################################################
@@ -599,8 +599,23 @@ def read(path):
             cell[(b, case, int(n), who)] = float(ns)
     return head, cell
 
-def ratio(x):
-    return '%.2f' % x if x < 9.95 else '%.0f' % x
+def times(x):
+    x += 1e-9                   # 1.95 is 2.0, not the 1.9 of its float
+    return '%.1f&times;' % x if x < 9.95 else '%.0f&times;' % x
+
+# a ratio x (time of the library over that of ADS) said in words: ADS so
+# many times faster or slower, a tie within the noise of the A/A
+def verdict(x):
+    if 0.95 <= x <= 1.05:
+        return 'tie'
+    return times(x) + ' faster' if x > 1 else times(1 / x) + ' slower'
+
+def span(lo, hi):
+    if lo > 1.05:
+        return '%s to %s faster' % (times(lo), times(hi))
+    if hi < 0.95:
+        return '%s to %s slower' % (times(1 / hi), times(1 / lo))
+    return '%s to %s' % (verdict(lo), verdict(hi))
 
 def main(p1, p2):
     h1, c1 = read(p1)
@@ -634,14 +649,15 @@ def main(p1, p2):
             if R:
                 rows.setdefault(b, {}).setdefault(ads, []).append(
                     '<td>%s</td><td align="right">%d</td><td align="right">'
-                    '%s</td><td align="right">%s to %s</td>' %
-                    (lib, len(R), ratio(statistics.median(R)),
-                     ratio(min(R)), ratio(max(R))))
+                    '%s</td><td align="right">%s</td>' %
+                    (lib, len(R), verdict(statistics.median(R)),
+                     span(min(R), max(R))))
     # an HTML table, which GitHub renders, so that a benchmark and a
     # structure span their rows
     print('<table>')
     print('<tr><th>benchmark</th><th>ADS</th><th>against</th>'
-          '<th>cells</th><th>median</th><th>range</th></tr>')
+          '<th>cells</th><th>ADS, median cell</th><th>ADS, all cells</th>'
+          '</tr>')
     for b, S in rows.items():
         first = '<td rowspan="%d">%s</td>' % (sum(map(len, S.values())), b)
         for ads, R in S.items():
