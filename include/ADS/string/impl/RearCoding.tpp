@@ -373,8 +373,10 @@ inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
  if( B > 0 ) {
   for( std::size_t n = B ; n > 1 ; ) {
    const std::size_t half = n / 2;
+#if defined( __GNUC__ ) || defined( __clang__ )
    __builtin_prefetch( f_head.data() + W * ( lo + half / 2 ) );
    __builtin_prefetch( f_head.data() + W * ( lo + half + half / 2 ) );
+#endif
    lo = before( lo + half ) ? lo + half : lo;
    n -= half;
    }

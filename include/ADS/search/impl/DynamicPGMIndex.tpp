@@ -126,45 +126,34 @@ void ADS_DPGM::merge( const Run & M , const Level & L , Run & T )
  K * tk = T.key.data();
  V * tv = T.val.data();
  std::size_t i = 0 , j = 0 , o = 0;
- if( M.dead.empty() && L.dead.empty() )
-  // the older pair when its key is smaller, the newer one otherwise, and
-  // the older one skipped when the keys are equal; with branches, which
-  // the merges of a short run into a long one, the most, predict well
-  while( ( i < a ) && ( j < b ) )
-   if( lk[ j ] < mk[ i ] ) {
-    tk[ o ] = lk[ j ];
-    tv[ o++ ] = lv[ j++ ];
-    }
-   else {
-    if( !( mk[ i ] < lk[ j ] ) ) ++j;
-    tk[ o ] = mk[ i ];
-    tv[ o++ ] = mv[ i++ ];
-    }
- else {
-  // the same, with the tombstones of each run followed along, sorted
-  std::size_t p = 0 , q = 0;
-  while( ( i < a ) && ( j < b ) ) {
-   const K x = mk[ i ] , y = lk[ j ];
-   if( y < x ) {
-    while( ( q < L.dead.size() ) && ( L.dead[ q ] < y ) ) ++q;
-    if( ( q < L.dead.size() ) && !( y < L.dead[ q ] ) )
-     T.dead.push_back( L.dead[ q++ ] );
-    tk[ o ] = y;
-    tv[ o++ ] = lv[ j++ ];
-    continue;
-    }
-   if( !( x < y ) ) ++j;
-   while( ( p < M.dead.size() ) && ( M.dead[ p ] < x ) ) ++p;
-   if( ( p < M.dead.size() ) && !( x < M.dead[ p ] ) )
-    T.dead.push_back( M.dead[ p++ ] );
-   tk[ o ] = x;
+ // the older pair when its key is smaller, the newer one otherwise, and
+ // the older one skipped when the keys are equal; with branches, which
+ // the merges of a short run into a long one, the most, predict well
+ while( ( i < a ) && ( j < b ) )
+  if( lk[ j ] < mk[ i ] ) {
+   tk[ o ] = lk[ j ];
+   tv[ o++ ] = lv[ j++ ];
+   }
+  else {
+   if( !( mk[ i ] < lk[ j ] ) ) ++j;
+   tk[ o ] = mk[ i ];
    tv[ o++ ] = mv[ i++ ];
    }
-  // those of the tail, of the keys from the place reached on
-  for( ; ( i < a ) && ( p < M.dead.size() ) ; ++p )
-   if( !( M.dead[ p ] < mk[ i ] ) ) T.dead.push_back( M.dead[ p ] );
-  for( ; ( j < b ) && ( q < L.dead.size() ) ; ++q )
-   if( !( L.dead[ q ] < lk[ j ] ) ) T.dead.push_back( L.dead[ q ] );
+ // the tombstones apart, as they are keys of their runs: those of M, and
+ // those of L whose key M does not have (a key of M is newer)
+ if( ! ( M.dead.empty() && L.dead.empty() ) ) {
+  const std::size_t c = M.dead.size() , d = L.dead.size();
+  const K * e = mk;                         // where the keys of M are left
+  std::size_t p = 0 , q = 0;
+  while( ( p < c ) || ( q < d ) )
+   if( ( q == d ) || ( ( p < c ) && ( M.dead[ p ] < L.dead[ q ] ) ) )
+    T.dead.push_back( M.dead[ p++ ] );
+   else {
+    const K y = L.dead[ q++ ];
+    e = std::lower_bound( e , mk + a , y );
+    if( ( e == mk + a ) || ( y < *e ) )
+     T.dead.push_back( y );
+    }
   }
  std::copy( mk + i , mk + a , tk + o );   // the tails, as blocks
  std::copy( mv + i , mv + a , tv + o );
@@ -355,11 +344,37 @@ ADS_DPGM_T
 auto ADS_DPGM::lowerBound( const K & k ) const
  -> std::optional< std::pair< K , V > >
 {
- std::optional< std::pair< K , V > > r;
+ // the least key >= k of each run, the newest run winning a tie, with no
+ // allocation; only if its pair is a tombstone the runs are scanned on
+ const K * best = nullptr;
+ const V * val = nullptr;
+ bool dead = false;
+ const std::size_t r = bufferBound( k );
+ if( r < f_buf.key.size() ) {
+  best = &f_buf.key[ r ];
+  val = &f_buf.val[ r ];
+  dead = ! f_buf.dead.empty() &&
+         std::binary_search( f_buf.dead.begin() , f_buf.dead.end() , *best );
+  }
+ for( const Level & L : f_lev ) {
+  const std::size_t p = L.size() > 0 ? L.lowerBound( k ) : 0;
+  if( ( p < L.size() ) && ( ( best == nullptr ) || ( L.at( p ) < *best ) ) ) {
+   best = &L.at( p );
+   val = &L.val[ p ];
+   dead = L.isDead( *best );
+   }
+  }
+ std::optional< std::pair< K , V > > o;
+ if( best == nullptr )
+  return( o );
+ if( ! dead ) {
+  o.emplace( *best , *val );
+  return( o );
+  }
  scan( k , [ & ]( const K & a , const V & v ) {
-  r.emplace( a , v );
+  o.emplace( a , v );
   return( false ); } );
- return( r );
+ return( o );
  }
 
 ADS_DPGM_T

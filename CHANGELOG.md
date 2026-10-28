@@ -1286,7 +1286,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which a search skips the level when the key is not there, and a level
   gets its PGMIndex only when its capacity, not its size, reaches I (by
   default 2^24 instead of 2^20); the buffer of 128 pairs is searched
-  without branches, and a merge with no deletions takes a path of its own
+  without branches, and a merge follows the deletions apart from the keys
 - PGMIndex: the optimal piecewise linear approximation of its last level
   computed in one pass over the keys, a hull updated only when a point
   tightens its line; the constructor takes the keys by const reference

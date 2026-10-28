@@ -27,7 +27,9 @@
  *   stops at the first one that has the key;
  * - `lowerBound()` and `forEach()` merge the levels from their places of
  *   the key, the newest pair of each key deciding, and skip the keys whose
- *   newest pair is a tombstone.
+ *   newest pair is a tombstone; `lowerBound()` keeps no list of places
+ *   for the first round of the merge, and goes on to the next rounds only
+ *   when the least key is a tombstone.
  *
  * The layout, which decides the constants:
  *
@@ -302,8 +304,9 @@ class DynamicPGMIndex {
  void put( const K & k , const V & v , bool dead );
 
  /// the merge of the run \f$ M \f$ with the older level \f$ L \f$ into
- /// \f$ T \f$, the pair of \f$ M \f$ winning a tie, with no branch but
- /// that of the loop
+ /// \f$ T \f$, the pair of \f$ M \f$ winning a tie; the tombstones of
+ /// \f$ T \f$ are those of \f$ M \f$ and those of \f$ L \f$ whose key
+ /// \f$ M \f$ does not have, merged apart
  static void merge( const Run & M , const Level & L , Run & T );
 
  /// the hash of the key \f$ k \f$ for the filters, the same for the keys
