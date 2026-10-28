@@ -16,33 +16,48 @@
  * coding on which Ferragina, Grossi, Gupta, Shah and Vitter build their
  * compressed dictionaries of strings for the external memory.
  *
- * `RearCodedDictionary` is the plain front coding with buckets of the
- * practical compressed string dictionaries of Martínez-Prieto, Brisaboa,
- * Cánovas, Claude and Navarro, in the rear coding: one string of bytes in
- * which each bucket of \f$ b \f$ strings begins with its first string whole
- * (its length, then its characters) and goes on with a triple
- * \f$ ( r_i , | \hat s_i | , \hat s_i ) \f$ per string, the two numbers in
- * the byte-aligned code of chapter 9, Searching Strings by Prefix, of
- * Ferragina's book [see `encodeLength()`], and the places of the buckets in
- * the string by Elias-Fano [see `EliasFano.h`]. With \f$ \mathit{RC}( D ) \f$
- * the bytes of the coding, the dictionary takes
+ * `RearCodedDictionary` is the front coding with buckets of the practical
+ * compressed string dictionaries of Martínez-Prieto, Brisaboa, Cánovas,
+ * Claude and Navarro, in the rear coding and with its characters
+ * entropy-coded as in their HTFC, by a code of Huffman instead of their
+ * code of Hu and Tucker (whose order the search here does not need, since
+ * it decodes the strings it compares): one string of bits in which each
+ * bucket of \f$ b \f$ strings begins with its first string (its length, then
+ * its characters past the prefix that all the strings share and past the 16
+ * bytes after it, which are kept apart in two words) and goes on with a triple
+ * \f$ ( r_i , | \hat s_i | , \hat s_i ) \f$ per string, the characters in a
+ * canonical code of Huffman of their frequencies, the rears and the lengths in
+ * two more, of their own frequencies (255 escaping the larger values, written
+ * in 30 bits), all the codewords of at most 11 bits [see
+ * `limitedHuffmanLengths()`], so that a
+ * table of \f$ 2^{11} \f$ entries decodes a symbol by one read of 11 bits,
+ * and one of \f$ 2^{12} \f$ entries up to 3 characters by one of 12;
+ * the places of the buckets in the string are kept by Elias-Fano [see
+ * `EliasFano.h`]. With \f$ \mathit{RC}_H( D ) \f$ the bits of the coding,
+ * within one bit per symbol of the entropy of each of the three streams,
+ * the dictionary takes
  * \f[
- *   \mathit{RC}( D ) + \frac{n}{b} \Big( 2 + \Big\lceil \log_2
- *   \frac{b \, \mathit{RC}( D )}{n} \Big\rceil \Big) \text{ bits}
+ *   \mathit{RC}_H( D ) + \frac{n}{b} \Big( 130 + \Big\lceil \log_2
+ *   \frac{b \, \mathit{RC}_H( D )}{n} \Big\rceil \Big) \text{ bits}
  * \f]
- * besides the directory of Elias-Fano, against the two words per string of
- * the pairs of `FrontCodedDictionary`.
+ * besides the directory of Elias-Fano and the three tables of decoding,
+ * the 128 bits being those of the sample of each bucket below.
  *
- * A search is a binary search on the first strings of the buckets, read in
- * place, and the scan of one bucket, in which the string is rebuilt from the
- * one before (its first \f$ | s_{i-1} | - r_i \f$ characters kept) and the
- * comparison with the pattern \f$ Q \f$ resumes from where it stopped: with
+ * A search is a binary search on the first strings of the buckets and the
+ * scan of one bucket. The binary search reads, for each bucket, the 16
+ * bytes of its first string kept apart, and decodes the rest of the first
+ * string only when those bytes do not decide, and then only up to the
+ * first character where it differs from the pattern. In the scan no string
+ * is rebuilt: each one keeps the first \f$ | s_{i-1} | - r_i \f$
+ * characters of the one before, its rest is decoded while it is compared
+ * with the pattern \f$ Q \f$, and the comparison resumes from where it
+ * stopped: with
  * \f$ \lambda \f$ the prefix that the current string shares with \f$ Q \f$,
- * a next string that keeps more than \f$ \lambda \f$ characters has the same
- * character as the current one where it differs from \f$ Q \f$, hence the
- * same order with respect to \f$ Q \f$, and is passed with no comparison;
- * one that keeps fewer is compared from its rest. A search costs
- * \f$ O( | Q | \log( n / b ) ) \f$ for the binary search and
+ * a next string that keeps more than \f$ \lambda \f$ characters has the
+ * same character as the current one where it differs from \f$ Q \f$, hence
+ * the same order with respect to \f$ Q \f$, and is passed with no
+ * comparison; one that keeps fewer is compared from its rest. A search
+ * costs \f$ O( | Q | \log( n / b ) ) \f$ for the binary search and
  * \f$ O( | Q | + \sum_i | \hat s_i | ) \f$ for the bucket.
  *
  * The contracts [see `Contract.h`]: the dictionary sorted, an audit, the
@@ -59,8 +74,8 @@
  *      G. Navarro, Practical compressed string dictionaries, Information
  *      Systems 56, 73-108, 2016, doi:10.1016/j.is.2015.08.008
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
- *      Press, 2023, chapter 9, Searching Strings by Prefix,
- *      doi:10.1017/9781009128933
+ *      Press, 2023, chapter 9, Searching Strings by Prefix, and chapter 12,
+ *      Statistical Coding, doi:10.1017/9781009128933
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -81,9 +96,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/compression/HuffmanCoder.h"
 #include "ADS/string/FrontCoding.h"
+#include "ADS/succinct/BitVector.h"
 #include "ADS/succinct/EliasFano.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -156,22 +174,26 @@ class RearCodedDictionary {
  /// the rear coding of \f$ D \f$ in buckets of \f$ b \f$ strings
  ///
  /// In pseudocode (Martínez-Prieto et al. in the rear coding, beyond the
- /// book), \f$ \mathrm{code}( v ) \f$ the byte-aligned code of
- /// \f$ v \f$:
+ /// book), \f$ \mathrm{code}( v ) \f$ the codeword of \f$ v \f$ in its code
+ /// of Huffman, built first on the frequencies of the characters, of the
+ /// rears and of the lengths:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{build}( D , b ) \cr
  /// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
  /// 3 & \qquad \textbf{if}\ i \bmod b = 0\ \textbf{then} \cr
  /// 4 & \qquad\quad \text{append the length of } C \text{ to } P;
- ///     \ \text{append } \mathrm{code}( | s_i | ) \cdot s_i \text{ to } C \cr
+ ///     \ \text{append } \mathrm{code}( | s_i | ) \cdot \mathrm{code}( s_i[
+ ///     g + 16 .. | s_i | - 1 ] ) \text{ to } C \text{, with } g
+ ///     \text{ the prefix that all the strings share} \cr
  /// 5 & \qquad \textbf{else} \cr
  /// 6 & \qquad\quad \ell \gets \mathrm{commonPrefixLength}( s_{i-1} , s_i )
  ///     \cr
  /// 7 & \qquad\quad \text{append } \mathrm{code}( | s_{i-1} | - \ell ) \cdot
- ///     \mathrm{code}( | s_i | - \ell ) \cdot s_i[ \ell .. | s_i | - 1 ]
- ///     \text{ to } C \cr
- /// 8 & \quad \text{keep } P \text{ by Elias-Fano}
+ ///     \mathrm{code}( | s_i | - \ell ) \cdot \mathrm{code}( s_i[ \ell ..
+ ///     | s_i | - 1 ] ) \text{ to } C \cr
+ /// 8 & \quad \text{keep } P \text{ by Elias-Fano, and the 16 bytes after }
+ ///     \text{the common prefix of each first string}
  /// \end{array}}
  /// \f]
  /// \pre \f$ D \f$ is sorted (audit), its strings shorter than
@@ -251,20 +273,85 @@ class RearCodedDictionary {
  [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
                                                    std::string_view P ) const;
 
- /// the bytes of the coding, \f$ \mathit{RC}( D ) \f$ with the first
+ /// the bytes of the coding, \f$ \mathit{RC}_H( D ) \f$ with the first
  /// strings and the lengths
  [[nodiscard]] std::size_t codeBytes( void ) const;
 
- /// all the bytes: the coding and the places of the buckets
+ /// all the bytes: the coding, the places and the samples of the
+ /// buckets, and the codes with their tables
  [[nodiscard]] std::size_t bytes( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the first string of the bucket \f$ k \f$, in place, and where the
- /// coding of the next string begins
- [[nodiscard]] std::string_view head( std::size_t k , std::size_t & pos )
+ /// the longest codeword, \f$ 2^{11} \f$ entries in a table of decoding
+ static constexpr int kMax = 11;
+
+ /// the bits of a window of the table that decodes up to 3 symbols
+ static constexpr int kWide = 12;
+
+ /// the bytes of the first string of a bucket, after the prefix that all
+ /// the strings share, kept apart in kHead / 8 words
+ static constexpr std::size_t kHead = 16;
+
+ /// a canonical code of Huffman on the 256 bytes, of codewords of at most
+ /// `kMax` bits written with their first bit in the lowest place, and its
+ /// table of decoding by the next `kMax` bits
+ struct Code {
+  std::array< std::uint8_t , 256 > len{};     ///< the lengths, 0 if unused
+  std::array< std::uint32_t , 256 > word{};   ///< the codewords, turned
+  std::vector< std::uint16_t > table;         ///< a byte and its length
+  /// the bytes of up to 3 codewords whole in a window of kWide bits, their
+  /// number and their bits, from the bit 24 and 26
+  std::vector< std::uint32_t > multi;
+
+  /// the code of the frequencies \f$ f \f$, by the lengths of
+  /// `limitedHuffmanLengths()`
+  void build( const std::array< std::uint64_t , 256 > & f );
+  };
+
+ /// the byte of the code \f$ c \f$ at the bit `pos`, moved past it
+ /// the next 56 bits of the coding at the bit `pos` at least, the first
+ /// one the lowest, by one load of 8 bytes
+ [[nodiscard]] std::uint64_t peek( std::size_t pos ) const;
+
+ [[nodiscard]] unsigned decode( const Code & c , std::size_t & pos ) const;
+
+ /// the length of the code \f$ c \f$ at the bit `pos`, 255 followed by 30
+ /// bits for one of 255 or more, moved past it
+ [[nodiscard]] std::size_t getLength( const Code & c ,
+                                      std::size_t & pos ) const;
+
+ /// appends the length \f$ v \f$ in the code \f$ c \f$
+ void putLength( const Code & c , std::size_t v );
+
+ /// the first 8 bytes of \f$ s \f$, the first one the highest, 0 past its
+ /// end
+ [[nodiscard]] static std::uint64_t prefix8( std::string_view s );
+
+ /// the byte \f$ j \f$ of those kept apart of the first string of the
+ /// bucket \f$ k \f$, 0 past its end
+ [[nodiscard]] unsigned byte( std::size_t k , std::size_t j ) const;
+
+ /// appends to \f$ s \f$ the \f$ \mathit{len} \f$ characters at the bit
+ /// `pos`, moved past them
+ void readRest( std::string & s , std::size_t len , std::size_t & pos )
   const;
+
+ /// moves `pos` past the \f$ n \f$ characters at it, which stand at the
+ /// places from \f$ a \f$ of a string that shares its first \f$ l \f$
+ /// characters with \f$ Q \f$; if \f$ l = a \f$, \f$ l \f$ grows over the
+ /// characters equal to those of \f$ Q \f$, and the result is the first
+ /// one that differs (256 if none does before one of the two ends), past
+ /// which `pos` stops if not `S`
+ template< bool S >
+ [[nodiscard]] unsigned follow( std::string_view Q , std::size_t & l ,
+                                std::size_t a , std::size_t n ,
+                                std::size_t & pos ) const;
+
+ /// the first string of the bucket \f$ k \f$, and where the coding of the
+ /// next string begins
+ [[nodiscard]] std::string head( std::size_t k , std::size_t & pos ) const;
 
  /// the number of strings smaller than \f$ Q \f$, or than \f$ Q\# \f$ if
  /// `upper`, and in `*eq`, if given, whether the string of that rank is
@@ -274,8 +361,13 @@ class RearCodedDictionary {
 
  std::size_t f_n = 0;           ///< the strings
  std::size_t f_b = 16;          ///< the strings of a bucket
- std::string f_C;               ///< the coding
- EliasFano f_P;                 ///< the places of the buckets in f_C
+ BitVector f_C;                 ///< the coding
+ EliasFano f_P;                 ///< the bits where the buckets begin
+ std::string f_common;          ///< the prefix of all the strings
+ std::vector< std::uint64_t > f_head;   ///< kHead bytes of each first
+ Code f_char;                   ///< the code of the characters
+ Code f_rear;                   ///< the code of the rears
+ Code f_size;                   ///< the code of the lengths of the rests
 
  };  // end( class RearCodedDictionary )
 

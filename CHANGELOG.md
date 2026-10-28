@@ -1280,7 +1280,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   UBSan four at a time with ADS_TEST_SMALL; ConcurrentFlatTable leaves out
   the compare-and-swap of 16 bytes with the GCC of macOS on AArch64, whose
   caspal the assembler refuses (a pair of registers from an odd one)
-
+- DynamicPGMIndex< K , V , E , B , I >: the levels keep their keys and
+  their values in two arrays and their deletions as a sorted array of
+  keys, a level from 2^12 pairs a blocked Bloom filter of its keys, by
+  which a search skips the level when the key is not there, and a level
+  gets its PGMIndex only when its capacity, not its size, reaches I (by
+  default 2^24 instead of 2^20); the buffer of 128 pairs is searched
+  without branches, and a merge with no deletions takes a path of its own
+- PGMIndex: the optimal piecewise linear approximation of its last level
+  computed in one pass over the keys, a hull updated only when a point
+  tightens its line; the constructor takes the keys by const reference
+- CompressedPGMIndex: the first keys of the segments in a PGMIndex of
+  their own and the first places by Elias-Fano
+- LAVector: the tables of the segments packed in the bits of their
+  largest values, and nextGEQ() narrows the items of a segment by the
+  inverse of its line before a search without branches
+- RearCodedDictionary: the characters, the rears and the lengths in three
+  canonical codes of Huffman of codewords of at most 11 bits (as the HTFC
+  of Martínez-Prieto et al.), decoded by tables up to 3 characters at a
+  time; the prefix common to all the strings kept once and the 16 bytes
+  after it of the first string of each bucket in two words, so that the
+  binary search, which prefetches its next probes, decodes a first string
+  only when they do not decide; the scan of a bucket compares while it
+  decodes and rebuilds no string
+- SuccinctPatriciaTrie: access() finds the start of a node by the zero
+  before it instead of a select0
 - MultiQueue: the deletion buffer a ring of 16 places, so that the pop of
   its least pair and the eviction of its greatest move no other pair, and
   the pop from the better of two distinct queues, whose mean rank error

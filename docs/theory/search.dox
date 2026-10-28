@@ -438,29 +438,32 @@
  groups are needed.
 
  Each segment then keeps the index of its slope and its intercept, as a
- distance from its first place of at most \f$ \epsilon + 1 \f$, and the
- first keys and the first places of the segments, increasing, are kept by
- Elias-Fano (see \ref theory_succinct_compressed): with \f$ m \f$ segments,
- \f$ \sigma \f$ slopes and keys in a universe of size \f$ u \f$,
+ distance from its first place of at most \f$ \epsilon + 1 \f$; the first
+ places of the segments, increasing, are kept by Elias-Fano (see \ref
+ theory_succinct_compressed), and their first keys whole, searched by a
+ PGM-index of their own in place of the levels above: with \f$ m \f$
+ segments and \f$ \sigma \f$ slopes,
  \f[
-   2 + \Big\lceil \log_2 \frac{u}{m} \Big\rceil +
-   2 + \Big\lceil \log_2 \frac{n}{m} \Big\rceil +
+   64 + 2 + \Big\lceil \log_2 \frac{n}{m} \Big\rceil +
    \lceil \log_2 \sigma \rceil + \lceil \log_2( 2 \epsilon + 3 ) \rceil
    \tag{11}
  \f]
  bits per segment and \f$ 32 \sigma \f$ for the slopes, in single
- precision. The levels above the last one, which the paper compresses in
- the same way, are replaced by the rank of Elias-Fano on the first keys, of
- \f$ O( 1 ) \f$ expected time on keys spread over their universe; a search
- is then that rank, three selects and the window of the PGM-index. The
- rounding of a shared slope to a `float` may take a line out of the error;
- the construction checks each segment and gives its own slope to one whose
- line misses a point by more than \f$ \epsilon + 1 \f$.
+ precision. Elias-Fano on the first keys would save some ten bits a
+ segment, but its rank scans the bucket of the key, and on skewed keys most
+ of the first keys crowd into a few buckets; the PGM-index of the keys
+ finds the segment in the time of the levels of the plain PGM-index, and a
+ search adds to that two selects and a field of bits. The rounding of a
+ shared slope to a `float` may take a line out of the error; the
+ construction checks each segment and gives its own slope to one whose line
+ misses a point by more than \f$ \epsilon + 1 \f$.
 
  The dynamic PGM-index (`DynamicPGMIndex`) keeps the pairs in a buffer of
  \f$ b_0 \f$ pairs and in sorted levels \f$ L_1 , L_2 , \ldots \f$ of
  capacities \f$ c_t = b_0 B^t \f$, each with its PGM-index when it is large
- enough for the model to pay (as in the implementation of the paper), by the
+ enough for the model to pay (as in the implementation of the paper) and
+ with a blocked filter of Bloom of its keys, as the levels of the stores by
+ log-structured merge have (see Dayan, Athanassoulis and Idreos), by the
  logarithmic method of Bentley and Saxe: a key may be in several levels, the
  newest pair counts, a removal inserts a <em>tombstone</em>, and when the
  buffer is full it is merged, with the levels before it, into the first
@@ -483,7 +486,12 @@
  visit of a range merge the levels from the places of the key, and skip the
  keys whose newest pair is a tombstone. The tombstones are dropped when the
  merge lands on the last level, where no older pair is left for them to
- hide.
+ hide. With the filters, a lookup of a key that is not there reads one line
+ of cache per level instead of searching each, and one that is there reads
+ a line per newer level and searches its own; the filter of a level takes
+ the keys that a merge brings in, and is built again only when the keys
+ have doubled, so that the filters add a constant number of insertions
+ into a filter per key and level to the cost of Lemma 6.
 
  \section theory_search_refs References
 
@@ -543,6 +551,9 @@
  \see J. L. Bentley, J. B. Saxe, Decomposable searching problems I:
       static-to-dynamic transformation, Journal of Algorithms 1(4),
       301-358, 1980, doi:10.1016/0196-6774(80)90015-2
+ \see N. Dayan, M. Athanassoulis, S. Idreos, Monkey: optimal navigable
+      key-value store, Proceedings of SIGMOD 2017, 79-94, 2017,
+      doi:10.1145/3035918.3064054
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File search.dox ---------------------------*/

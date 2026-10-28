@@ -552,12 +552,14 @@
  computes the corrections with the rounded slope and gives each segment the
  width \f$ w_j \f$ of the range of its own corrections, so that (11) holds
  exactly, with \f$ w_j \f$ in place of \f$ c \f$ (\f$ c \f$, or one bit
- more). A segment takes 28 bytes (the base, the slope, the place of its
- corrections and their width, and its first place; its first item is its
- base plus its first correction), and the two tables that find a segment
- by a place and by a value take about 4 bytes per segment each; hence the
- sequence takes \f$ \sum_j w_j ( p_{j+1} - p_j ) + 288 m \f$ bits for
- \f$ m \f$ segments.
+ more). A segment takes 24 bytes (the base, the slope, the place of its
+ corrections and their width; its first item is its base plus its first
+ correction), its first place a field of \f$ \lceil \log_2 n \rceil \f$
+ bits, and the two tables that find a segment by a place and by a value
+ about two fields of \f$ \lceil \log_2 m \rceil \f$ bits per segment;
+ hence the sequence takes about
+ \f$ \sum_j w_j ( p_{j+1} - p_j ) + m ( 192 + \lceil \log_2 n \rceil +
+ 2 \lceil \log_2 m \rceil ) \f$ bits for \f$ m \f$ segments.
 
  The access to \f$ x_i \f$ is (11) once the segment of \f$ i \f$ is known,
  which the table of the segment of every \f$ 2^t \f$-th place gives in
@@ -648,8 +650,8 @@
  writes the bits of the \f$ k \f$ levels \f$ \ell , \ldots , \ell + k - 1 \f$
  at the places (13) and moves the items to their order at the level
  \f$ \ell + k \f$, where the construction by the partitions of Lemma 5 moves
- them \f$ k \f$ times, once per level: \f$ \lceil w / 8 \rceil \f$ passes over the items
- for \f$ k \le 8 \f$ instead of \f$ w \f$, the bits written into
+ them \f$ k \f$ times, once per level: \f$ \lceil w / 8 \rceil \f$ passes over
+ the items for \f$ k \le 8 \f$ instead of \f$ w \f$, the bits written into
  \f$ 2^k - 1 \f$ streams, one per value of \f$ \kappa_j \f$ for each
  \f$ j < k \f$, whose next places are consecutive. This is the sort by the
  prefixes of the bits of Dinklage, Ellert, Fischer, Kurpicz and Löbel,

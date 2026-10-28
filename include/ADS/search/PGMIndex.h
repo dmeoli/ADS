@@ -160,7 +160,7 @@ class PGMIndex {
  /// where closing a segment keeps the line through the crossing of the two
  /// extreme lines with the average of their slopes, not negative.
  /// \pre \f$ A \f$ is sorted (audit), \f$ n < 2^{32} \f$
- explicit PGMIndex( std::vector< K > A );
+ explicit PGMIndex( const std::vector< K > & A );
 
  /// the first place of an item not smaller than \f$ v \f$, `size()` if
  /// none

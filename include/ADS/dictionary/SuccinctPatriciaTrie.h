@@ -244,6 +244,11 @@ class SuccinctPatriciaTrie {
  /// first 0 from \f$ p \f$ on, found by the words of the parentheses
  [[nodiscard]] std::size_t close( std::size_t p ) const;
 
+ /// the place where the node begins whose description holds the open
+ /// parenthesis at \f$ q \f$: after the closed parenthesis before \f$ q \f$,
+ /// found by the leading zeros of the words down from it
+ [[nodiscard]] std::size_t start( std::size_t q ) const;
+
  /// the place where the child \f$ i \f$ begins, for the node whose closed
  /// parenthesis is at \f$ c \f$: after \f$ c \f$ for the first child,
  /// after the closed parenthesis that matches the open one at

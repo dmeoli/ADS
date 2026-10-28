@@ -142,6 +142,20 @@ inline std::size_t SuccinctPatriciaTrie::close( std::size_t p ) const
  return( 64 * w + std::size_t( std::countr_zero( x ) ) );
  }
 
+inline std::size_t SuccinctPatriciaTrie::start( std::size_t q ) const
+{
+ const auto & W = f_bp.bits().bits().words();
+ std::size_t w = q / 64;
+ const int o = int( q % 64 );
+ std::uint64_t x = o == 0 ? 0 : ~W[ w ] & ( ( std::uint64_t( 1 ) << o ) - 1 );
+ while( ! x ) {
+  if( w == 0 )
+   return( 1 );                             // no closed one: the root
+  x = ~W[ --w ];
+  }
+ return( 64 * w + std::size_t( 63 - std::countl_zero( x ) ) + 1 );
+ }
+
 inline std::size_t SuccinctPatriciaTrie::child( std::size_t c ,
                                                 std::size_t i ) const
 {
@@ -195,11 +209,13 @@ inline std::string SuccinctPatriciaTrie::access( std::size_t i ) const
  while( v > 0 ) {
   const std::string_view r = rest( v );
   s.append( r.rbegin() , r.rend() );
-  const std::size_t q = f_bp.findOpen( p - 1 );   // in the parent
-  const std::size_t u = node( q ) , pu = place( u );
-  const std::size_t c = close( pu );
-  s.push_back( f_first[ f_bp.bits().rank1( pu ) - 1 + ( c - 1 - q ) ] );
-  v = u;
+  // the open parenthesis of v in its parent, whose node begins after the
+  // closed parenthesis before it and ends at the first one after it
+  const std::size_t q = f_bp.findOpen( p - 1 );
+  const std::size_t pu = start( q ) , c = close( q );
+  const std::size_t r1 = f_bp.bits().rank1( pu );
+  s.push_back( f_first[ r1 - 1 + ( c - 1 - q ) ] );
+  v = pu - r1;
   p = pu;
   }
  std::reverse( s.begin() , s.end() );

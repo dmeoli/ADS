@@ -28,10 +28,12 @@ namespace ADS {
 
 namespace detail {
 
-/// a point of the plane with coordinates of 128 bits, so that the products
-/// of the hulls are exact
+/// a point of the plane, its ordinate of 128 bits and its abscissa of 64,
+/// so that the products of the hulls, of the differences of the ordinates
+/// by those of the abscissae (never negative, the abscissae increasing),
+/// are exact
 struct PlaPoint {
- Int128 x;
+ std::uint64_t x;
  Int128 y;
  };
 
@@ -39,7 +41,8 @@ struct PlaPoint {
 inline Int128 plaCross( const PlaPoint & a , const PlaPoint & b ,
                         const PlaPoint & c )
 {
- return( ( b.x - a.x ) * ( c.y - a.y ) - ( b.y - a.y ) * ( c.x - a.x ) );
+ return( Int128( b.x - a.x ) * ( c.y - a.y ) -
+         ( b.y - a.y ) * Int128( c.x - a.x ) );
  }
 
 /// whether the slope of a -> b is smaller than that of c -> d, b and d on
@@ -47,7 +50,8 @@ inline Int128 plaCross( const PlaPoint & a , const PlaPoint & b ,
 inline bool plaLess( const PlaPoint & a , const PlaPoint & b ,
                      const PlaPoint & c , const PlaPoint & d )
 {
- return( ( b.y - a.y ) * ( d.x - c.x ) < ( d.y - c.y ) * ( b.x - a.x ) );
+ return( ( b.y - a.y ) * Int128( d.x - c.x ) <
+         ( d.y - c.y ) * Int128( b.x - a.x ) );
  }
 
 /// the first place in [ lo , hi ) of an item not smaller than v, with no
@@ -81,89 +85,50 @@ struct PlaSegment {
  long double icpt;         ///< the line at x( first ), less y( first )
  };
 
-/// the segments of the optimal approximation with error e of the points
-/// ( x( i ) , y( i ) ), i < n, x increasing, passed to out( segment ) from
-/// the left: the algorithm of O'Rourke as engineered by Xie et al. [see
+/// the optimal approximation with error e of a stream of points, x
+/// increasing: the algorithm of O'Rourke as engineered by Xie et al. [see
 /// PGMIndex.h], each point updating the two convex hulls and the two
-/// extreme lines in amortized O( 1 ); a segment ends when the next point
-/// leaves no line. The coordinates are integers of at most 64 bits, kept
-/// in 128 bits so that the products are exact, and the line is computed
-/// in long double relative to the first point of its segment
-template< class X , class Y , class F >
-void optimalPla( std::size_t n , X && x , Y && y , std::int64_t e ,
-                 F && out )
-{
- using P = PlaPoint;
- // the hulls, up and down, from the places u0 and d0 on: their points
- // before them are dropped by moving the place, not by shifting the rest
- std::vector< P > U , D;
- std::size_t u0 = 0 , d0 = 0;
- P r0{} , r1{} , r2{} , r3{};               // the two extreme lines
- std::size_t first = 0 , count = 0;
- P o{};                                     // the first point
- auto close = [ & ]( void ) {               // the segment from first
-  PlaSegment g{ first , count , 0 , HUGE_VALL , 0 , 0 };
-  if( count == 1 ) {
-   out( g );
-   return;
-   }
-  // the extreme lines, relative to the first point
-  const long double a0 = (long double)( r0.x - o.x );
-  const long double b0 = (long double)( r0.y - o.y );
-  const long double a1 = (long double)( r1.x - o.x );
-  const long double b1 = (long double)( r1.y - o.y );
-  const long double s1 = (long double)( r2.y - r0.y ) /
-                         (long double)( r2.x - r0.x );   // the least
-  const long double s2 = (long double)( r3.y - r1.y ) /
-                         (long double)( r3.x - r1.x );   // the largest
-  long double s , c;                        // the slope, at x( first )
-  if( s1 >= s2 ) {                          // parallel: between them
-   s = std::max( s1 , (long double) 0 );
-   c = ( ( b0 - s * a0 ) + ( b1 - s * a1 ) ) / 2;
-   }
-  else {                                    // through their crossing
-   const long double xi = ( b1 - b0 + s1 * a0 - s2 * a1 ) / ( s1 - s2 );
-   const long double yi = b0 + s1 * ( xi - a0 );
-   s = std::max( ( s1 + s2 ) / 2 , std::max( s1 , (long double) 0 ) );
-   c = yi - s * xi;
-   }
-  g.lo = std::max( s1 , (long double) 0 );
-  g.hi = std::max( s2 , g.lo );             // s is in [ lo , hi ]
-  g.slope = s;
-  g.icpt = c;
-  out( g );
-  };
- for( std::size_t i = 0 ; i < n ; ++i ) {
-  const Int128 xi( x( i ) ) , yi( y( i ) );
-  const P pu{ xi , yi + e };
-  const P pd{ xi , yi - e };
-  if( count >= 2 && ( plaLess( r2 , pu , r0 , r2 ) ||
-                      plaLess( r1 , r3 , r3 , pd ) ) ) {
-   close();                                 // no line is left
-   count = 0;
-   }
-  if( count == 0 ) {
+/// extreme lines in amortized O( 1 ), and refused when it leaves no line;
+/// the abscissae are integers of 64 bits and the ordinates of 128, so that
+/// the products are exact [see `PlaPoint`], and the line is computed in
+/// long double relative to the first point
+class PlaStream {
+
+ public:
+
+ /// a stream with the error e and no point
+ explicit PlaStream( std::int64_t e ) : f_e( e ) { }
+
+ /// adds the point ( x , y ), true if a line within the error of all the
+ /// points added is left, false (and the point not added) if not
+ bool add( std::uint64_t x , Int128 y ) {
+  using P = PlaPoint;
+  const P pu{ x , y + f_e };
+  const P pd{ x , y - f_e };
+  if( f_n == 0 ) {
    U.assign( 1 , pu );
    D.assign( 1 , pd );
    u0 = d0 = 0;
-   first = i;
-   o = P{ xi , yi };
-   count = 1;
-   continue;
+   o = P{ x , y };
+   f_n = 1;
+   return( true );
    }
-  if( count == 1 ) {
+  if( f_n == 1 ) {
    r0 = U[ 0 ];
    r1 = D[ 0 ];
    r2 = pd;
    r3 = pu;
    U.push_back( pu );
    D.push_back( pd );
-   count = 2;
-   continue;
+   f_n = 2;
+   return( true );
    }
+  if( plaLess( r2 , pu , r0 , r2 ) || plaLess( r1 , r3 , r3 , pd ) )
+   return( false );                         // no line is left
   // a point up that does not lower the largest slope is above every line
-  // left, and stays so as the lines only decrease: it never bounds a line,
-  // and it is not added to the hull (and so for a point down)
+  // left, and stays so as the lines only decrease: it never bounds a
+  // line, and it is not added to the hull (and so for a point down); the
+  // points at the start of a hull are dropped by moving its start
   if( plaLess( r1 , pu , r1 , r3 ) ) {      // the largest slope down
    std::size_t j = d0;
    while( ( j + 1 < D.size() ) &&
@@ -188,10 +153,81 @@ void optimalPla( std::size_t n , X && x , Y && y , std::int64_t e ,
     D.pop_back();
    D.push_back( pd );
    }
-  ++count;
+  ++f_n;
+  return( true );
   }
- if( count > 0 )
-  close();
+
+ /// forgets the points, keeping the memory of the hulls
+ void restart( void ) { f_n = 0; }
+
+ /// the number of points added since the last restart
+ [[nodiscard]] std::size_t count( void ) const { return( f_n ); }
+
+ /// the segment of the points added, the first one being the point first
+ /// of the input
+ [[nodiscard]] PlaSegment segment( std::size_t first ) const {
+  PlaSegment g{ first , f_n , 0 , HUGE_VALL , 0 , 0 };
+  if( f_n <= 1 )
+   return( g );
+  // the extreme lines, relative to the first point
+  const long double a0 = (long double)( r0.x - o.x );
+  const long double b0 = (long double)( r0.y - o.y );
+  const long double a1 = (long double)( r1.x - o.x );
+  const long double b1 = (long double)( r1.y - o.y );
+  const long double s1 = (long double)( r2.y - r0.y ) /
+                         (long double)( r2.x - r0.x );   // the least
+  const long double s2 = (long double)( r3.y - r1.y ) /
+                         (long double)( r3.x - r1.x );   // the largest
+  long double s , c;                        // the slope, at the first x
+  if( s1 >= s2 ) {                          // parallel: between them
+   s = std::max( s1 , (long double) 0 );
+   c = ( ( b0 - s * a0 ) + ( b1 - s * a1 ) ) / 2;
+   }
+  else {                                    // through their crossing
+   const long double xi = ( b1 - b0 + s1 * a0 - s2 * a1 ) / ( s1 - s2 );
+   const long double yi = b0 + s1 * ( xi - a0 );
+   s = std::max( ( s1 + s2 ) / 2 , std::max( s1 , (long double) 0 ) );
+   c = yi - s * xi;
+   }
+  g.lo = std::max( s1 , (long double) 0 );
+  g.hi = std::max( s2 , g.lo );             // s is in [ lo , hi ]
+  g.slope = s;
+  g.icpt = c;
+  return( g );
+  }
+
+ private:
+
+ std::int64_t f_e;                          ///< the error
+ std::size_t f_n = 0;                       ///< the points
+ std::vector< PlaPoint > U , D;             ///< the hulls, up and down
+ std::size_t u0 = 0 , d0 = 0;               ///< where the hulls begin
+ PlaPoint r0{} , r1{} , r2{} , r3{};        ///< the two extreme lines
+ PlaPoint o{};                              ///< the first point
+
+ };
+
+/// the segments of the optimal approximation with error e of the points
+/// ( x( i ) , y( i ) ), i < n, x increasing, passed to out( segment ) from
+/// the left, by a `PlaStream` restarted at each point that it refuses
+template< class X , class Y , class F >
+void optimalPla( std::size_t n , X && x , Y && y , std::int64_t e ,
+                 F && out )
+{
+ PlaStream S( e );
+ std::size_t first = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  const std::uint64_t xi = x( i );
+  const Int128 yi( y( i ) );
+  if( ! S.add( xi , yi ) ) {
+   out( S.segment( first ) );
+   S.restart();
+   ( void ) S.add( xi , yi );
+   first = i;
+   }
+  }
+ if( S.count() > 0 )
+  out( S.segment( first ) );
  }
 
 /// the first place of an item of a[ 0 .. n ) not smaller than v, from the
@@ -269,22 +305,49 @@ auto ADS_PGM::approximate( const std::vector< std::uint64_t > & x ,
  }
 
 ADS_PGM_T
-ADS_PGM::PGMIndex( std::vector< K > A ) : f_A( A.begin() , A.end() )
+ADS_PGM::PGMIndex( const std::vector< K > & A ) : f_A( A.begin() , A.end() )
 {
  ADS_PRE( f_A.size() < ( std::size_t( 1 ) << 32 ) );
  ADS_AUDIT( std::is_sorted( f_A.begin() , f_A.end() ) );
  if( f_A.empty() )
   return;
- std::vector< std::uint64_t > x;            // the distinct keys
- std::vector< std::uint32_t > y;            // and their first places
- for( std::size_t i = 0 ; i < f_A.size() ; ++i ) {
-  const std::uint64_t k = ord( f_A[ i ] );
-  if( x.empty() || ( k != x.back() ) ) {
-   x.push_back( k );
-   y.push_back( std::uint32_t( i ) );
+ // the last level, by a stream of the distinct keys and their first
+ // places, read off the items with no copy of them
+ {
+  Level L;
+  detail::PlaStream S{ std::int64_t( E ) };
+  std::uint64_t k0 = 0 , prev = 0;
+  std::uint32_t p0 = 0;
+  auto close = [ & ]( void ) {
+   const detail::PlaSegment g = S.segment( 0 );
+   L.key.push_back( k0 );
+   L.start.push_back( p0 );
+   L.line.push_back( Line{ double( (long double) p0 + g.icpt ) ,
+                           double( g.slope ) } );
+   };
+  for( std::size_t i = 0 ; i < f_A.size() ; ++i ) {
+   const std::uint64_t k = ord( f_A[ i ] );
+   if( ( i > 0 ) && ( k == prev ) )
+    continue;                               // the first place only
+   prev = k;
+   const std::uint64_t xi = k;
+   const detail::Int128 yi{ std::uint32_t( i ) };
+   if( ! S.add( xi , yi ) ) {
+    close();
+    S.restart();
+    ( void ) S.add( xi , yi );
+    k0 = k;
+    p0 = std::uint32_t( i );
+    }
+   else if( S.count() == 1 ) {
+    k0 = k;
+    p0 = std::uint32_t( i );
+    }
    }
+  close();
+  L.start.push_back( std::uint32_t( f_A.size() ) );
+  f_L.push_back( std::move( L ) );
   }
- f_L.push_back( approximate( x , y , std::int64_t( E ) , f_A.size() ) );
  while( f_L.back().key.size() > 1 ) {       // the levels above
   const std::vector< std::uint64_t > k = f_L.back().key;
   std::vector< std::uint32_t > p( k.size() );

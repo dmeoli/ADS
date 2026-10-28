@@ -220,7 +220,8 @@ std::uint32_t AdaptiveRadixTree< V >::mismatch( const Node * n ,
  const std::uint32_t m = std::min< std::uint32_t >( n->plen , MAXP );
  std::uint32_t i = 0;
  for( ; i < m ; ++i )
-  if( ( d + i >= k.size() ) || ( n->prefix[ i ] != (unsigned char) k[ d + i ] ) )
+  if( ( d + i >= k.size() ) ||
+      ( n->prefix[ i ] != (unsigned char) k[ d + i ] ) )
    return( i );
  if( n->plen > MAXP ) {                     // the rest from a leaf below
   const char * full = minimum( n )->key();

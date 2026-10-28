@@ -66,7 +66,7 @@ inline void LAVector::append( const std::vector< std::uint64_t > & x ,
  const std::uint64_t w = r == 0 ? 0 : std::uint64_t( lambda( r ) + 1 );
  f_seg.push_back( Segment{ y0 + std::uint64_t( lo ) , a ,
                            ( f_C.size() << 7 ) | w } );
- f_p.push_back( std::uint32_t( f ) );
+ f_first.push_back( f );
  if( w > 0 )
   for( std::size_t k = 0 ; k < l - f ; ++k ) {
    const std::int64_t d = std::int64_t( x[ f + k ] - y0 -
@@ -77,17 +77,19 @@ inline void LAVector::append( const std::vector< std::uint64_t > & x ,
 
 inline void LAVector::finish( const std::vector< std::uint64_t > & x )
 {
- f_p.push_back( std::uint32_t( f_n ) );
- f_last = x.back();
  const std::size_t m = f_seg.size();
+ f_first.push_back( f_n );
+ f_p.pack( f_first );
+ f_last = x.back();
 
  // the segment of every 2^t-th place, 2^t about n / m
  f_t = f_n / m <= 1 ? 0 : lambda( f_n / m );
- f_J.resize( ( ( f_n - 1 ) >> f_t ) + 1 );
- for( std::size_t b = 0 , j = 0 ; b < f_J.size() ; ++b ) {
-  while( f_p[ j + 1 ] <= ( b << f_t ) ) ++j;
-  f_J[ b ] = std::uint32_t( j );
+ std::vector< std::uint64_t > T( ( ( f_n - 1 ) >> f_t ) + 1 );
+ for( std::size_t b = 0 , j = 0 ; b < T.size() ; ++b ) {
+  while( f_first[ j + 1 ] <= ( b << f_t ) ) ++j;
+  T[ b ] = j;
   }
+ f_J.pack( T );
 
  // the segments whose first item is in a bucket before h, about m buckets
  // of the items less x_0 by their high bits
@@ -96,12 +98,14 @@ inline void LAVector::finish( const std::vector< std::uint64_t > & x )
  f_l = 0;
  while( ( f_l < 64 ) && ( ( R >> f_l ) >= m ) ) ++f_l;
  const std::size_t H = std::size_t( f_l >= 64 ? 0 : R >> f_l ) + 1;
- f_V.assign( H + 1 , 0 );
+ T.assign( H + 1 , 0 );
  for( std::size_t j = 0 ; j < m ; ++j ) {
-  const std::uint64_t d = x[ f_p[ j ] ] - f_x0;
-  ++f_V[ std::size_t( f_l >= 64 ? 0 : d >> f_l ) + 1 ];
+  const std::uint64_t d = x[ f_first[ j ] ] - f_x0;
+  ++T[ std::size_t( f_l >= 64 ? 0 : d >> f_l ) + 1 ];
   }
- for( std::size_t h = 1 ; h <= H ; ++h ) f_V[ h ] += f_V[ h - 1 ];
+ for( std::size_t h = 1 ; h <= H ; ++h ) T[ h ] += T[ h - 1 ];
+ f_V.pack( T );
+ f_first = std::vector< std::uint64_t >();
  ADS_AUDIT( decode() == x );
  }
 
@@ -163,17 +167,23 @@ inline std::size_t LAVector::segments( void ) const
  return( f_seg.size() );
  }
 
-inline std::size_t LAVector::segmentOf( std::size_t i ) const
+inline std::size_t LAVector::segmentOf( std::size_t i ,
+                                        std::size_t & p ) const
 {
  std::size_t j = f_J[ i >> f_t ];
- while( f_p[ j + 1 ] <= i ) ++j;
+ auto [ a , b ] = f_p.pair( j );
+ while( b <= i ) {
+  ++j;
+  a = b;
+  b = f_p[ j + 1 ];
+  }
+ p = a;
  return( j );
  }
 
-inline std::uint64_t LAVector::item( std::size_t j , std::size_t i ) const
+inline std::uint64_t LAVector::item( std::size_t j , std::size_t d ) const
 {
  const Segment & s = f_seg[ j ];
- const std::size_t d = i - f_p[ j ];
  const std::size_t w = std::size_t( s.ow & 127 );
  return( s.base + whole( s.slope * double( d ) ) +
          f_C.get( std::size_t( s.ow >> 7 ) + d * w , int( w ) ) );
@@ -182,7 +192,9 @@ inline std::uint64_t LAVector::item( std::size_t j , std::size_t i ) const
 inline std::uint64_t LAVector::access( std::size_t i ) const
 {
  ADS_PRE( i < f_n );
- return( item( segmentOf( i ) , i ) );
+ std::size_t p;
+ const std::size_t j = segmentOf( i , p );
+ return( item( j , i - p ) );
  }
 
 inline std::uint64_t LAVector::operator[]( std::size_t i ) const
@@ -209,34 +221,75 @@ inline std::size_t LAVector::nextGEQ( std::uint64_t x ) const
  std::size_t s0 = f_V[ h ] , s1 = f_V[ h + 1 ];   // the first item >= x
  while( s0 < s1 ) {
   const std::size_t mid = s0 + ( s1 - s0 ) / 2;
-  if( item( mid , f_p[ mid ] ) < x ) s0 = mid + 1;
+  if( item( mid , 0 ) < x ) s0 = mid + 1;
   else s1 = mid;
   }
  const std::size_t j = s0 - 1;
  const std::size_t p = f_p[ j ] , q = f_p[ j + 1 ];
  const Segment & s = f_seg[ j ];
- std::size_t a = p , b = q;                 // the answer is in [ a , b ]
- if( s.slope > 0 ) {
-  // the line inverted: f( i ) <= x_i < f( i ) + 2^w, x above the base
-  const double dx = double( x - s.base );
-  const double lo = ( dx - std::ldexp( 1.0 , int( s.ow & 127 ) ) ) /
-                   s.slope - 1;
-  const double hi = ( dx + 1 ) / s.slope + 2;
-  const double len = double( q - p );
-  const std::size_t aa = p + ( lo <= 0 ? 0 : lo >= len ? q - p :
-                               std::size_t( lo ) );
-  const std::size_t bb = p + ( hi >= len ? q - p : std::size_t( hi ) );
-  if( ( aa <= bb ) && ( ( aa == p ) || ( item( j , aa - 1 ) < x ) ) &&
-      ( ( bb == q ) || ( item( j , bb ) >= x ) ) ) {
-   a = aa;
-   b = bb;
+ const std::size_t len = q - p;
+ const std::size_t w = std::size_t( s.ow & 127 );
+ // the line of the segment, not decreasing in e: f( e ) <= x_{p+e} <
+ // f( e ) + 2^w with f( e ) = base + g( e ), g( e ) the integer part of
+ // the slope times e; the answer is between the first e with f( e ) above
+ // x - 2^w and the first with f( e ) >= x, found by the line alone. The
+ // base may be below 0 (a negative least correction, kept modulo 2^64),
+ // and x - base above 2^64, and so the targets of g are computed apart
+ auto g = [ & ]( std::size_t e ) { return( whole( s.slope * double( e ) ) ); };
+ // the first e with g( e ) >= u, len if none
+ auto reach = [ & ]( std::uint64_t u ) -> std::size_t {
+  if( u == 0 )
+   return( 0 );
+  std::size_t e = len - 1;                  // the line inverted, a guess
+  if( s.slope > 0 ) {
+   const double c = double( u ) / s.slope;
+   e = c >= double( len - 1 ) ? len - 1 : std::size_t( c );
    }
+  std::size_t a , b;                        // g( a - 1 ) < u <= g( b )
+  if( g( e ) >= u ) {                       // gallop down from the guess
+   b = e;
+   for( std::size_t h = 1 ; ; h *= 2 ) {
+    if( b < h ) { a = 0; break; }
+    if( g( b - h ) < u ) { a = b - h + 1; break; }
+    b -= h;
+    }
+   }
+  else {                                    // or up
+   a = e + 1;
+   for( std::size_t h = 1 ; ; h *= 2 ) {
+    if( a + h - 1 >= len ) { b = len; break; }
+    if( g( a + h - 1 ) >= u ) { b = a + h - 1; break; }
+    a += h;
+    }
+   }
+  while( a < b ) {
+   const std::size_t m = a + ( b - a ) / 2;
+   if( g( m ) < u ) a = m + 1;
+   else b = m;
+   }
+  return( a );
+  };
+ // x less the base, from the first item, which is above the base by its
+ // correction c0 and below x: dx + c0, len if it is 2^64 or more
+ const std::uint64_t M = ~std::uint64_t( 0 );
+ const std::uint64_t c0 = f_C.get( std::size_t( s.ow >> 7 ) , int( w ) );
+ const std::uint64_t dx = x - ( s.base + c0 );
+ const std::uint64_t span = w >= 64 ? M : ( std::uint64_t( 1 ) << w ) - 1;
+ const std::size_t up = dx > M - c0 ? len : reach( dx + c0 );
+ std::size_t lo;                            // dx + c0 - span, if above 0
+ if( span >= c0 )
+  lo = dx > span - c0 ? reach( dx - ( span - c0 ) ) : 0;
+ else
+  lo = dx > M - ( c0 - span ) ? len : reach( dx + ( c0 - span ) );
+ std::size_t a = lo , n = up - lo;
+ // the first item >= x in [ p + a , p + a + n ], with no branch
+ while( n > 0 ) {
+  const std::size_t h = n / 2;
+  const bool less = item( j , a + h ) < x;
+  a = less ? a + h + 1 : a;
+  n = less ? n - h - 1 : h;
   }
- while( a < b ) {
-  const std::size_t mid = a + ( b - a ) / 2;
-  if( item( j , mid ) < x ) a = mid + 1;
-  else b = mid;
-  }
+ a += p;
  ADS_POST( ( a == f_n ) || ( access( a ) >= x ) );
  ADS_POST( ( a == 0 ) || ( access( a - 1 ) < x ) );
  return( a );
@@ -260,10 +313,8 @@ inline std::size_t LAVector::correctionsInBits( void ) const
 
 inline std::size_t LAVector::sizeInBits( void ) const
 {
- return( f_C.size() + 8 * ( f_seg.size() * sizeof( Segment ) +
-                            f_p.size() * sizeof( std::uint32_t ) +
-                            f_J.size() * sizeof( std::uint32_t ) +
-                            f_V.size() * sizeof( std::uint32_t ) ) );
+ return( f_C.size() + 8 * f_seg.size() * sizeof( Segment ) +
+         f_p.bits + f_J.bits + f_V.bits );
  }
 
 inline std::vector< std::uint64_t > LAVector::decode( void ) const

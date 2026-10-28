@@ -22,12 +22,15 @@
  * bit more where the rounding of the line in `double` spreads them); the
  * sequence takes
  * \f[
- *   \sum_j w_j ( p_{j+1} - p_j ) + 288 \, m
+ *   \sum_j w_j ( p_{j+1} - p_j ) + m \, ( 192 + \lceil \log_2 n \rceil
+ *   + 2 \lceil \log_2 m \rceil )
  * \f]
- * bits for \f$ m \f$ segments of 28 bytes (the base, the slope, the place
- * and the width of the corrections, the first place) and the two tables of
- * the searches, of about 4 bytes per segment each; the first item of a
- * segment is not kept, but read as its base plus its first correction. On
+ * bits about for \f$ m \f$ segments: 24 bytes for the base, the slope and
+ * the place and the width of the corrections, the first place in a field
+ * of \f$ \lceil \log_2 n \rceil \f$ bits, and the two tables of the
+ * searches, about a segment number each, in fields of
+ * \f$ \lceil \log_2 m \rceil \f$ bits; the first item of a segment is not
+ * kept, but read as its base plus its first correction. On
  * a sequence with long runs of nearly constant gaps (the places of a
  * regular pattern, the keys of a data set produced by a process) \f$ m \f$
  * is small and \f$ c \f$ bits are well below the
@@ -96,11 +99,15 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/combinatorial/Bitwise.h"
 #include "ADS/search/PGMIndex.h"
 #include "ADS/succinct/BitVector.h"
 
+#include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -292,9 +299,63 @@ class LAVector {
   std::uint64_t ow;          ///< its first bit in C times 128, plus w_j
   };
 
- /// the bits of a segment with its share of the tables, \f$ \sigma \f$
- static constexpr std::uint64_t kSegmentBits = 8 * ( sizeof( Segment ) +
-                                                     4 + 8 );
+ /// integers of a fixed number of bits, the least that holds them all,
+ /// one after the other in words with one more at the end, so that an
+ /// integer is read by one load of 8 bytes from its first byte
+ struct Packed {
+  std::vector< std::uint64_t > words;   ///< the bits, from the lowest
+  int width = 0;                        ///< the bits of an integer
+  std::uint64_t mask = 0;               ///< their mask
+  std::size_t bits = 0;                 ///< the bits of the integers
+
+  /// the integers of \f$ v \f$
+  void pack( const std::vector< std::uint64_t > & v ) {
+   std::uint64_t top = 0;
+   for( const auto x : v ) top = std::max( top , x );
+   width = top == 0 ? 0 : lambda( top ) + 1;
+   ADS_PRE( width <= 56 );
+   mask = ( std::uint64_t( 1 ) << width ) - 1;
+   bits = v.size() * std::size_t( width );
+   words.assign( bits / 64 + 2 , 0 );
+   for( std::size_t i = 0 , b = 0 ; i < v.size() ; ++i , b += width ) {
+    words[ b / 64 ] |= v[ i ] << ( b % 64 );
+    if( b % 64 + std::size_t( width ) > 64 )
+     words[ b / 64 + 1 ] |= v[ i ] >> ( 64 - b % 64 );
+    }
+   }
+  /// the integers \f$ i \f$ and \f$ i + 1 \f$, by one load when they
+  /// fit in it
+  [[nodiscard]] std::pair< std::size_t , std::size_t > pair(
+                                                   std::size_t i ) const {
+   if constexpr( std::endian::native == std::endian::little )
+    if( width <= 28 ) {
+     const std::size_t b = i * std::size_t( width );
+     std::uint64_t x;
+     std::memcpy( &x , reinterpret_cast< const unsigned char * >(
+                         words.data() ) + b / 8 , 8 );
+     x >>= b % 8;
+     return( std::make_pair( std::size_t( x & mask ) ,
+                             std::size_t( ( x >> width ) & mask ) ) );
+     }
+   return( std::make_pair( ( *this )[ i ] , ( *this )[ i + 1 ] ) );
+   }
+  /// the integer \f$ i \f$
+  [[nodiscard]] std::size_t operator[]( std::size_t i ) const {
+   const std::size_t b = i * std::size_t( width );
+   if constexpr( std::endian::native == std::endian::little ) {
+    std::uint64_t x;
+    std::memcpy( &x , reinterpret_cast< const unsigned char * >(
+                        words.data() ) + b / 8 , 8 );
+    return( std::size_t( ( x >> ( b % 8 ) ) & mask ) );
+    }
+   else {
+    const std::size_t o = b % 64;
+    return( std::size_t( ( ( words[ b / 64 ] >> o ) |
+                           ( ( words[ b / 64 + 1 ] << 1 ) << ( 63 - o ) ) )
+                         & mask ) );
+    }
+   }
+  };
 
  /// the widest useful correction of the items \f$ x \f$, \f$ c_{\mathrm{max}}
  /// = \min\{ 63 , \max\{ \lfloor \log_2 g \rfloor + 6 , \lceil ( \lfloor
@@ -318,20 +379,22 @@ class LAVector {
  /// \f$ 2^{64} \f$ on
  [[nodiscard]] static std::uint64_t whole( double v );
 
- /// the segment of the place \f$ i \f$
- [[nodiscard]] std::size_t segmentOf( std::size_t i ) const;
+ /// the segment of the place \f$ i \f$, and in \f$ p \f$ its first place
+ [[nodiscard]] std::size_t segmentOf( std::size_t i , std::size_t & p )
+  const;
 
- /// the item \f$ i \f$ of the segment \f$ j \f$
- [[nodiscard]] std::uint64_t item( std::size_t j , std::size_t i ) const;
+ /// the item \f$ d \f$ places after the first of the segment \f$ j \f$
+ [[nodiscard]] std::uint64_t item( std::size_t j , std::size_t d ) const;
 
  std::size_t f_n = 0;                    ///< the items
  int f_c = 0;                            ///< the bits asked for
  BitVector f_C;                          ///< the corrections
  std::vector< Segment > f_seg;           ///< the segments
- std::vector< std::uint32_t > f_p;       ///< their first places, and n
- std::vector< std::uint32_t > f_J;       ///< the segment of each block
+ Packed f_p;                             ///< their first places, and n
+ std::vector< std::uint64_t > f_first;   ///< the same, while building
+ Packed f_J;                             ///< the segment of each block
  int f_t = 0;                            ///< the places of a block, log
- std::vector< std::uint32_t > f_V;       ///< the segments before a bucket
+ Packed f_V;                             ///< the segments before a bucket
  int f_l = 0;                            ///< the low bits of a bucket
  std::uint64_t f_x0 = 0;                 ///< the first item
  std::uint64_t f_last = 0;               ///< the last item

@@ -874,7 +874,23 @@ ADS_TEST( "string-dictionaries" )
    S.insert( s );
    }
   cases.emplace_back( S.begin() , S.end() );
+  std::vector< std::string > P;             // all behind a common prefix
+  for( const std::string & s : S )
+   P.push_back( "https://www." + s );
+  cases.push_back( P );
   }
+ // a common prefix, then the bytes 0 and 'a' up to 10 of them: the bytes
+ // after the prefix that the buckets keep apart, on and past their end
+ std::vector< std::string > Z;
+ for( std::size_t len = 0 ; len <= 10 ; ++len )
+  for( std::size_t m = 0 ; m < ( std::size_t( 1 ) << len ) ; ++m ) {
+   std::string s = "pre";
+   for( std::size_t k = len ; k-- > 0 ; )
+    s.push_back( ( m >> k ) & 1 ? 'a' : char( 0 ) );
+   Z.push_back( s );
+   }
+ std::sort( Z.begin() , Z.end() );
+ cases.push_back( Z );
  for( const auto & D : cases ) {
   CHECK( rearDecode( rearCode( D ) ) == D );
   stringDictionaryCheck( D , SuccinctPatriciaTrie( D ) , g );

@@ -52,8 +52,14 @@ ADS_DPGM::DynamicPGMIndex( const std::vector< std::pair< K , V > > & P )
   k.push_back( p.first );
   L.val.push_back( p.second );
   }
- L.dead.assign( P.size() , 0 );
- if( P.size() >= kIndexed ) {
+ if( capacity( t ) >= kFiltered ) {
+  L.room = std::min( capacity( t ) , 2 * P.size() + kBuffer );
+  BlockedBloomFilter< std::uint64_t > F( L.room );
+  for( const K & x : k ) F.insertHash( hashOf( x ) );
+  L.filter = std::move( F );
+  L.filtered = true;
+  }
+ if( capacity( t ) >= kIndexed ) {
   L.idx = PGMIndex< K , E , 4 >( std::move( k ) );
   L.indexed = true;
   }
@@ -83,131 +89,218 @@ std::size_t ADS_DPGM::Level::lowerBound( const K & k ) const
  }
 
 ADS_DPGM_T
+inline std::uint64_t ADS_DPGM::hashOf( const K & k )
+{
+ if constexpr( std::is_floating_point_v< K > )
+  if( k == K( 0 ) )                         // -0 and +0 alike
+   return( hashWord( detail::pgmOrd( K( 0 ) ) ) );
+ return( hashWord( detail::pgmOrd( k ) ) );
+ }
+
+ADS_DPGM_T
+inline std::size_t ADS_DPGM::bufferBound( const K & k ) const
+{
+ std::size_t n = f_buf.key.size();
+ if( n == 0 )
+  return( 0 );
+ const K * base = f_buf.key.data();
+ while( n > 1 ) {                           // a conditional move a step
+  const std::size_t h = n / 2;
+  base = base[ h ] < k ? base + h : base;
+  n -= h;
+  }
+ return( std::size_t( base - f_buf.key.data() ) + ( *base < k ? 1 : 0 ) );
+ }
+
+ADS_DPGM_T
 void ADS_DPGM::merge( const Run & M , const Level & L , Run & T )
 {
  const std::size_t a = M.key.size() , b = L.size();
  T.key.resize( a + b );
  T.val.resize( a + b );
- T.dead.resize( a + b );
+ T.dead.clear();
+ // the arrays by their pointers, so that the compiler keeps them in
+ // registers through the stores
  const K * mk = M.key.data() , * lk = L.keys();
+ const V * mv = M.val.data() , * lv = L.val.data();
+ K * tk = T.key.data();
+ V * tv = T.val.data();
  std::size_t i = 0 , j = 0 , o = 0;
- while( ( i < a ) && ( j < b ) ) {
-  if( lk[ j ] < mk[ i ] ) {                 // the older pair
-   T.key[ o ] = lk[ j ];
-   T.val[ o ] = L.val[ j ];
-   T.dead[ o++ ] = L.dead[ j++ ];
-   continue;
+ if( M.dead.empty() && L.dead.empty() )
+  // the older pair when its key is smaller, the newer one otherwise, and
+  // the older one skipped when the keys are equal; with branches, which
+  // the merges of a short run into a long one, the most, predict well
+  while( ( i < a ) && ( j < b ) )
+   if( lk[ j ] < mk[ i ] ) {
+    tk[ o ] = lk[ j ];
+    tv[ o++ ] = lv[ j++ ];
+    }
+   else {
+    if( !( mk[ i ] < lk[ j ] ) ) ++j;
+    tk[ o ] = mk[ i ];
+    tv[ o++ ] = mv[ i++ ];
+    }
+ else {
+  // the same, with the tombstones of each run followed along, sorted
+  std::size_t p = 0 , q = 0;
+  while( ( i < a ) && ( j < b ) ) {
+   const K x = mk[ i ] , y = lk[ j ];
+   if( y < x ) {
+    while( ( q < L.dead.size() ) && ( L.dead[ q ] < y ) ) ++q;
+    if( ( q < L.dead.size() ) && !( y < L.dead[ q ] ) )
+     T.dead.push_back( L.dead[ q++ ] );
+    tk[ o ] = y;
+    tv[ o++ ] = lv[ j++ ];
+    continue;
+    }
+   if( !( x < y ) ) ++j;
+   while( ( p < M.dead.size() ) && ( M.dead[ p ] < x ) ) ++p;
+   if( ( p < M.dead.size() ) && !( x < M.dead[ p ] ) )
+    T.dead.push_back( M.dead[ p++ ] );
+   tk[ o ] = x;
+   tv[ o++ ] = mv[ i++ ];
    }
-  if( !( mk[ i ] < lk[ j ] ) ) ++j;         // the same key: the newer
-  T.key[ o ] = mk[ i ];
-  T.val[ o ] = M.val[ i ];
-  T.dead[ o++ ] = M.dead[ i++ ];
+  // those of the tail, of the keys from the place reached on
+  for( ; ( i < a ) && ( p < M.dead.size() ) ; ++p )
+   if( !( M.dead[ p ] < mk[ i ] ) ) T.dead.push_back( M.dead[ p ] );
+  for( ; ( j < b ) && ( q < L.dead.size() ) ; ++q )
+   if( !( L.dead[ q ] < lk[ j ] ) ) T.dead.push_back( L.dead[ q ] );
   }
- for( ; i < a ; ++i , ++o ) {
-  T.key[ o ] = mk[ i ];
-  T.val[ o ] = M.val[ i ];
-  T.dead[ o ] = M.dead[ i ];
-  }
- for( ; j < b ; ++j , ++o ) {
-  T.key[ o ] = lk[ j ];
-  T.val[ o ] = L.val[ j ];
-  T.dead[ o ] = L.dead[ j ];
-  }
+ std::copy( mk + i , mk + a , tk + o );   // the tails, as blocks
+ std::copy( mv + i , mv + a , tv + o );
+ o += a - i;
+ std::copy( lk + j , lk + b , tk + o );
+ std::copy( lv + j , lv + b , tv + o );
+ o += b - j;
  T.key.resize( o );
  T.val.resize( o );
- T.dead.resize( o );
  }
 
 ADS_DPGM_T
-void ADS_DPGM::put( const Entry & e )
+void ADS_DPGM::put( const K & k , const V & v , bool dead )
 {
- auto it = std::lower_bound( f_buf.begin() , f_buf.end() , e.key ,
-                             []( const Entry & a , const K & k ) {
-                              return( a.key < k ); } );
- if( ( it != f_buf.end() ) && !( e.key < it->key ) ) {
-  *it = e;                                  // already in the buffer
+ const std::size_t r = bufferBound( k );
+ Run & U = f_buf;
+ // the tombstones of the buffer, sorted, few: k joins them or leaves them
+ auto mark = [ & ]( void ) {
+  const auto d = std::lower_bound( U.dead.begin() , U.dead.end() , k );
+  const bool there = ( d != U.dead.end() ) && !( k < *d );
+  if( dead && ! there ) U.dead.insert( d , k );
+  else if( ! dead && there ) U.dead.erase( d );
+  };
+ if( ( r < U.key.size() ) && !( k < U.key[ r ] ) ) {
+  U.val[ r ] = v;                           // already in the buffer
+  if( dead || ! U.dead.empty() ) mark();
   return;
   }
- f_buf.insert( it , e );
- if( f_buf.size() <= kBuffer )
+ U.key.insert( U.key.begin() + std::ptrdiff_t( r ) , k );
+ U.val.insert( U.val.begin() + std::ptrdiff_t( r ) , v );
+ if( dead || ! U.dead.empty() ) mark();
+ if( U.key.size() <= kBuffer )
   return;
 
  // the first level with room for the buffer and the levels before it
- std::size_t s = f_buf.size() , t = 0;
+ std::size_t s = f_buf.key.size() , t = 0;
  while( ( t < f_lev.size() ) && ( s > capacity( t ) - f_lev[ t ].size() ) ) {
   s += f_lev[ t ].size();
   ++t;
   }
  if( t == f_lev.size() )
   f_lev.emplace_back();
- Run M , T;
- M.key.reserve( s );
- M.val.reserve( s );
- M.dead.reserve( s );
- for( Entry & a : f_buf ) {
-  M.key.push_back( a.key );
-  M.val.push_back( std::move( a.val ) );
-  M.dead.push_back( a.dead ? 1 : 0 );
-  }
- f_buf.clear();
- for( std::size_t i = 0 ; i <= t ; ++i ) {
+ // the buffer is the first run, and an empty run the next buffer
+ Run * M = &f_run[ 0 ] , * T = &f_run[ 1 ];
+ std::swap( *M , f_buf );
+ f_buf.key.clear();
+ f_buf.val.clear();
+ f_buf.dead.clear();
+ for( std::size_t i = 0 ; i < t ; ++i ) {
   if( f_lev[ i ].size() > 0 ) {
-   merge( M , f_lev[ i ] , T );
+   merge( *M , f_lev[ i ] , *T );
    std::swap( M , T );
    }
   f_lev[ i ] = Level();
   }
+ // the keys that come into L_t go into its filter, if it has room for
+ // them (the keys that they replace stay there, a few false positives
+ // more); else the filter is built again below, for twice the keys
+ Level & L = f_lev[ t ];
+ bool kept = false;
+ if( L.filtered && ( L.size() > 0 ) &&
+     ( L.filter.size() + M->key.size() <= L.room ) ) {
+  for( const K & k : M->key ) L.filter.insertHash( hashOf( k ) );
+  kept = true;
+  }
+ if( L.size() > 0 ) {
+  merge( *M , L , *T );
+  std::swap( M , T );
+  }
  bool last = true;                          // no older pair to hide
  for( std::size_t i = t + 1 ; i < f_lev.size() ; ++i )
   if( f_lev[ i ].size() > 0 ) last = false;
- if( last ) {
-  std::size_t w = 0;
-  for( std::size_t i = 0 ; i < M.key.size() ; ++i )
-   if( ! M.dead[ i ] ) {
-    M.key[ w ] = M.key[ i ];
-    M.val[ w ] = std::move( M.val[ i ] );
-    M.dead[ w ] = 0;
-    ++w;
-    }
-  M.key.resize( w );
-  M.val.resize( w );
-  M.dead.resize( w );
+ if( last && ! M->dead.empty() ) {          // the tombstones dropped
+  std::size_t w = 0 , p = 0;
+  for( std::size_t i = 0 ; i < M->key.size() ; ++i ) {
+   while( ( p < M->dead.size() ) && ( M->dead[ p ] < M->key[ i ] ) ) ++p;
+   if( ( p < M->dead.size() ) && !( M->key[ i ] < M->dead[ p ] ) )
+    continue;
+   M->key[ w ] = M->key[ i ];
+   M->val[ w ] = std::move( M->val[ i ] );
+   ++w;
+   }
+  M->key.resize( w );
+  M->val.resize( w );
+  M->dead.clear();
   }
- Level & L = f_lev[ t ];
- L.val = std::move( M.val );
- L.dead = std::move( M.dead );
- if( M.key.size() >= kIndexed ) {
-  L.idx = PGMIndex< K , E , 4 >( std::move( M.key ) );
+ // the run becomes the level, whose old arrays are kept as a run
+ if( ! kept && ( capacity( t ) >= kFiltered ) ) {
+  L.room = std::min( capacity( t ) , 2 * M->key.size() + kBuffer );
+  BlockedBloomFilter< std::uint64_t > F( L.room );
+  for( const K & k : M->key ) F.insertHash( hashOf( k ) );
+  L.filter = std::move( F );
+  L.filtered = true;
+  }
+ std::swap( L.val , M->val );
+ std::swap( L.dead , M->dead );
+ if( capacity( t ) >= kIndexed ) {
+  L.idx = PGMIndex< K , E , 4 >( std::move( M->key ) );
   L.indexed = true;
+  L.key.clear();
+  M->key.clear();
   }
- else
-  L.key = std::move( M.key );
+ else {
+  L.idx = PGMIndex< K , E , 4 >();
+  L.indexed = false;
+  std::swap( L.key , M->key );
+  }
  }
 
 ADS_DPGM_T
 void ADS_DPGM::insert( const K & k , const V & v )
 {
- put( Entry{ k , v , false } );
+ put( k , v , false );
  }
 
 ADS_DPGM_T
 void ADS_DPGM::erase( const K & k )
 {
- put( Entry{ k , V() , true } );
+ put( k , V() , true );
  }
 
 ADS_DPGM_T
 const V * ADS_DPGM::find( const K & k ) const
 {
- const auto it = std::lower_bound( f_buf.begin() , f_buf.end() , k ,
-                                   []( const Entry & a , const K & q ) {
-                                    return( a.key < q ); } );
- if( ( it != f_buf.end() ) && !( k < it->key ) )
-  return( it->dead ? nullptr : &it->val );
+ const std::size_t r = bufferBound( k );
+ if( ( r < f_buf.key.size() ) && !( k < f_buf.key[ r ] ) )
+  return( ( ! f_buf.dead.empty() &&
+            std::binary_search( f_buf.dead.begin() , f_buf.dead.end() ,
+                                k ) ) ? nullptr : &f_buf.val[ r ] );
+ const std::uint64_t h = hashOf( k );
  for( const Level & L : f_lev ) {
+  if( ( L.size() == 0 ) || ( L.filtered && ! L.filter.maybeHash( h ) ) )
+   continue;
   const std::size_t r = L.lowerBound( k );
   if( ( r < L.size() ) && !( k < L.at( r ) ) )
-   return( L.dead[ r ] ? nullptr : &L.val[ r ] );
+   return( L.isDead( k ) ? nullptr : &L.val[ r ] );
   }
  return( nullptr );
  }
@@ -225,16 +318,14 @@ void ADS_DPGM::scan( const K & lo , F && f ) const
  // the place of each run, the buffer as the run 0
  const std::size_t R = f_lev.size() + 1;
  std::vector< std::size_t > pos( R ) , end( R );
- pos[ 0 ] = std::size_t( std::lower_bound( f_buf.begin() , f_buf.end() , lo ,
-                          []( const Entry & a , const K & q ) {
-                           return( a.key < q ); } ) - f_buf.begin() );
- end[ 0 ] = f_buf.size();
+ pos[ 0 ] = bufferBound( lo );
+ end[ 0 ] = f_buf.key.size();
  for( std::size_t i = 1 ; i < R ; ++i ) {
   pos[ i ] = f_lev[ i - 1 ].lowerBound( lo );
   end[ i ] = f_lev[ i - 1 ].size();
   }
  auto keyAt = [ & ]( std::size_t i ) -> const K & {
-  return( i == 0 ? f_buf[ pos[ 0 ] ].key : f_lev[ i - 1 ].at( pos[ i ] ) );
+  return( i == 0 ? f_buf.key[ pos[ 0 ] ] : f_lev[ i - 1 ].at( pos[ i ] ) );
   };
  for( ; ; ) {
   std::size_t j = R;                        // the newest run of the least key
@@ -245,10 +336,12 @@ void ADS_DPGM::scan( const K & lo , F && f ) const
   if( j == R )
    return;
   const K k = keyAt( j );
-  const bool dead = j == 0 ? f_buf[ pos[ 0 ] ].dead
-                           : bool( f_lev[ j - 1 ].dead[ pos[ j ] ] );
+  const bool dead = j == 0 ? ( ! f_buf.dead.empty() &&
+                               std::binary_search( f_buf.dead.begin() ,
+                                                   f_buf.dead.end() , k ) )
+                           : f_lev[ j - 1 ].isDead( k );
   if( ! dead ) {
-   const V & v = j == 0 ? f_buf[ pos[ 0 ] ].val
+   const V & v = j == 0 ? f_buf.val[ pos[ 0 ] ]
                         : f_lev[ j - 1 ].val[ pos[ j ] ];
    if( ! f( k , v ) )
     return;
@@ -283,7 +376,7 @@ void ADS_DPGM::forEach( const K & lo , const K & hi , F && f ) const
 ADS_DPGM_T
 std::size_t ADS_DPGM::entries( void ) const
 {
- std::size_t c = f_buf.size();
+ std::size_t c = f_buf.key.size();
  for( const Level & L : f_lev ) c += L.size();
  return( c );
  }

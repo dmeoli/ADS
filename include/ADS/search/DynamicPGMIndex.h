@@ -9,38 +9,54 @@
  *
  * The pairs lie in a buffer of \f$ b_0 = 128 \f$ pairs, sorted, and in
  * levels \f$ L_1 , L_2 , \ldots \f$, the level \f$ L_i \f$ a sorted array of
- * at most \f$ b_0 B^i \f$ pairs with a PGM-index on its keys, each key at
- * most once per level; a key may be in several levels, and its pair in the
- * newest one, the buffer first and then by increasing \f$ i \f$, is the one
- * that counts. A removal is the insertion of a <em>tombstone</em>, a pair
- * that marks the key as absent. An insertion that finds the buffer full
- * merges it, with the new pair, into the first level \f$ L_t \f$ that has
- * room for it and for the levels before it, merging those too (the newest
- * pair of each key kept), and rebuilds the PGM-index of \f$ L_t \f$; the
- * tombstones are dropped when \f$ L_t \f$ is the last level, since no older
- * pair is left for them to hide. Hence:
+ * at most \f$ b_0 B^i \f$ pairs, each key at most once per level; a key may
+ * be in several levels, and its pair in the newest one, the buffer first
+ * and then by increasing \f$ i \f$, is the one that counts. A removal is
+ * the insertion of a <em>tombstone</em>, a pair that marks the key as
+ * absent. An insertion that finds the buffer full merges it, with the new
+ * pair, into the first level \f$ L_t \f$ that has room for it and for the
+ * levels before it, merging those too (the newest pair of each key kept);
+ * the tombstones are dropped when \f$ L_t \f$ is the last level, since no
+ * older pair is left for them to hide. Hence:
  *
  * - a pair is merged into a level at most once per level, \f$ B \f$ times
  *   at most before the level overflows into the next one, and the merge and
  *   the construction of a PGM-index are linear: an insertion or a removal
  *   costs \f$ O( B \log_B( n / b_0 ) ) \f$ amortized time;
- * - a lookup searches the buffer and then the levels from the newest, each
- *   by its PGM-index, and stops at the first one that has the key:
- *   \f$ O( \log_B( n / b_0 ) ) \f$ searches of
- *   \f$ O( \log \epsilon ) \f$ time each, besides the levels of the
- *   PGM-indices;
+ * - a lookup searches the buffer and then the levels from the newest, and
+ *   stops at the first one that has the key;
  * - `lowerBound()` and `forEach()` merge the levels from their places of
  *   the key, the newest pair of each key deciding, and skip the keys whose
  *   newest pair is a tombstone.
  *
- * As in the implementation of the paper, the levels too small for a model
- * to pay (by default below \f$ 2^{20} \f$ pairs, \f$ 2^{24} \f$ there) have no
- * PGM-index and are searched by a binary search with no branch; the keys of
- * a level with an index are those of its PGM-index, with no other copy, and
- * the keys, the values and the tombstones of a level are three arrays, so
- * that a search reads the keys alone. The number of distinct keys is not
- * kept: it would cost a lookup per insertion; `entries()` counts the pairs
- * stored, tombstones and older pairs included.
+ * The layout, which decides the constants:
+ *
+ * - as in the implementation of the paper, only the levels of capacity at
+ *   least \f$ I \f$ (\f$ 2^{24} \f$ by default) have a PGM-index, whose keys
+ *   are those of the level with no other copy; the smaller ones, where a
+ *   model does not pay for its building at each merge, are searched by a
+ *   binary search with no branch that prefetches the next two probes;
+ * - the keys and the values of a level, and of the buffer, are two arrays,
+ *   so that a search reads the keys alone, and the tombstones are the
+ *   sorted list of their keys apart (they are few), so that the merges and
+ *   the shifts of the buffer move the keys and the values only;
+ * - a level of capacity at least \f$ 2^{12} \f$ has a blocked filter of
+ *   Bloom of its keys [see `BlockedBloomFilter.h`], 10 bits per key, as the
+ *   levels of the stores by log-structured merge have, so that a lookup
+ *   reads one line of cache of a level that does not have the key instead
+ *   of searching it: a miss costs a probe per level, and a hit a probe per
+ *   newer level and one search. The keys that a merge brings into a level
+ *   go into its filter, made for twice the keys it had, until it is full,
+ *   and only then is it built again: a key enters the filter of a level a
+ *   constant number of times, instead of at each merge into it;
+ * - a merge copies the pair of the smaller key with a branch, which the
+ *   merges of a short run into a long one, the most, predict well, and the
+ *   tails as blocks; its two runs are kept for the next merge, so that it
+ *   allocates no memory once the levels have grown.
+ *
+ * The number of distinct keys is not kept: it would cost a lookup per
+ * insertion; `entries()` counts the pairs stored, tombstones and older
+ * pairs included.
  *
  * The contracts [see `Contract.h`]: \f$ B \ge 2 \f$, the pairs of the
  * constructor sorted by key with no key twice (an audit). The functions are
@@ -53,6 +69,12 @@
  * \see J. L. Bentley, J. B. Saxe, Decomposable searching problems I:
  *      static-to-dynamic transformation, Journal of Algorithms 1(4),
  *      301-358, 1980, doi:10.1016/0196-6774(80)90015-2
+ * \see P. O'Neil, E. Cheng, D. Gawlick, E. O'Neil, The log-structured
+ *      merge-tree (LSM-tree), Acta Informatica 33(4), 351-385, 1996,
+ *      doi:10.1007/s002360050048
+ * \see N. Dayan, M. Athanassoulis, S. Idreos, Monkey: optimal navigable
+ *      key-value store, Proceedings of SIGMOD 2017, 79-94, 2017,
+ *      doi:10.1145/3035918.3064054 (the filters of the levels)
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -73,8 +95,11 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/dictionary/FastHash.h"
 #include "ADS/search/PGMIndex.h"
+#include "ADS/set/BlockedBloomFilter.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -94,10 +119,10 @@ namespace ADS {
 
 /// the ordered map from the arithmetic keys `K` to the values `V` of the
 /// dynamic PGM-index, with the error \f$ \epsilon = E \f$ in the levels,
-/// the ratio \f$ B \f$ of the sizes of two levels and the least size
+/// the ratio \f$ B \f$ of the sizes of two levels and the least capacity
 /// \f$ I \f$ of a level with a PGM-index
 template< class K , class V , std::size_t E = 16 , std::size_t B = 8 ,
-          std::size_t I = ( std::size_t( 1 ) << 20 ) >
+          std::size_t I = ( std::size_t( 1 ) << 24 ) >
  requires std::is_arithmetic_v< K >
 class DynamicPGMIndex {
 
@@ -112,9 +137,12 @@ class DynamicPGMIndex {
  /// the pairs in the buffer, \f$ b_0 \f$
  static constexpr std::size_t kBuffer = 128;
 
- /// the least size of a level with a PGM-index, \f$ I \f$, the smaller
- /// ones being searched by a binary search with no branch
+ /// the least capacity of a level with a PGM-index, \f$ I \f$, the
+ /// smaller ones being searched by a binary search with no branch
  static constexpr std::size_t kIndexed = I;
+
+ /// the least capacity of a level with a filter of its keys
+ static constexpr std::size_t kFiltered = std::size_t( 1 ) << 12;
 
  /// an empty map
  DynamicPGMIndex( void ) = default;
@@ -145,7 +173,7 @@ class DynamicPGMIndex {
  /// 8 & \quad \textbf{if}\ L_t \text{ is the last level}\ \textbf{then}
  ///     \ \text{drop the tombstones of } M \cr
  /// 9 & \quad L_0 , \ldots , L_{t-1} \gets \emptyset;\ L_t \gets M
- ///     \text{, with a PGM-index on its keys if } \| M \| \ge I
+ ///     \text{, with a PGM-index on its keys if } c_t \ge I
  /// \end{array}}
  /// \f]
  void insert( const K & k , const V & v );
@@ -163,13 +191,15 @@ class DynamicPGMIndex {
  /// 1 & \textbf{function}\ \mathrm{find}( k ) \cr
  /// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ \text{the last level}
  ///     \ \textbf{do}\quad \triangleright\ \text{the newest first} \cr
- /// 3 & \qquad r \gets \mathrm{lowerBound}( L_i , k )\quad \triangleright
+ /// 3 & \qquad \textbf{if}\ L_i \text{ has a filter that rules out } k
+ ///     \ \textbf{then continue} \cr
+ /// 4 & \qquad r \gets \mathrm{lowerBound}( L_i , k )\quad \triangleright
  ///     \ \text{by the PGM-index of } L_i \text{, if it has one} \cr
- /// 4 & \qquad \textbf{if}\ L_i[ r ] \text{ has the key } k\ \textbf{then}
+ /// 5 & \qquad \textbf{if}\ L_i[ r ] \text{ has the key } k\ \textbf{then}
  ///     \cr
- /// 5 & \qquad\quad \textbf{return}\ \textbf{nil}\ \text{if it is a }
+ /// 6 & \qquad\quad \textbf{return}\ \textbf{nil}\ \text{if it is a }
  ///     \text{tombstone, else its value} \cr
- /// 6 & \quad \textbf{return}\ \textbf{nil}
+ /// 7 & \quad \textbf{return}\ \textbf{nil}
  /// \end{array}}
  /// \f]
  [[nodiscard]] const V * find( const K & k ) const;
@@ -215,12 +245,6 @@ class DynamicPGMIndex {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// a pair, or a tombstone
- struct Entry {
-  K key;          ///< the key
-  V val;          ///< the value
-  bool dead;      ///< whether it is a tombstone
-  };
 
  /// a level: its keys, in the PGM-index if it has one, the values and the
  /// tombstones
@@ -229,7 +253,10 @@ class DynamicPGMIndex {
   PGMIndex< K , E , 4 > idx;   ///< the keys, with their index
   bool indexed = false;        ///< whether the keys are in idx
   std::vector< V > val;        ///< the values
-  std::vector< std::uint8_t > dead;   ///< the tombstones, 1 for each
+  std::vector< K > dead;       ///< the keys of the tombstones, sorted
+  BlockedBloomFilter< std::uint64_t > filter{ 1 };   ///< its keys, hashed
+  bool filtered = false;       ///< whether the filter is there
+  std::size_t room = 0;        ///< the keys the filter was made for
 
   /// the number of pairs
   [[nodiscard]] std::size_t size( void ) const {
@@ -243,36 +270,54 @@ class DynamicPGMIndex {
   [[nodiscard]] const K * keys( void ) const {
    return( indexed ? ( idx.empty() ? nullptr : &idx[ 0 ] ) : key.data() );
    }
+  /// whether the pair of the key \f$ k \f$, which is in the level, is a
+  /// tombstone, by a binary search on the tombstones, if any
+  [[nodiscard]] bool isDead( const K & k ) const {
+   return( ! dead.empty() &&
+           std::binary_search( dead.begin() , dead.end() , k ) );
+   }
   /// the place of the first key \f$ \ge k \f$, by the PGM-index or by
   /// the binary search with no branch that prefetches the two places the
   /// next step may probe [see `branchlessLowerBound()`]
   [[nodiscard]] std::size_t lowerBound( const K & k ) const;
   };
 
- /// the sorted run of a merge, a key at a place of each vector
+ /// the sorted run of a merge, or the buffer: a key at a place of each
+ /// vector, and the tombstones apart, since they are few
  struct Run {
   std::vector< K > key;        ///< the keys
   std::vector< V > val;        ///< the values
-  std::vector< std::uint8_t > dead;   ///< the tombstones, 1 for each
+  std::vector< K > dead;       ///< the keys of the tombstones, sorted
   };
 
  /// the capacity of the level \f$ i + 1 \f$, \f$ b_0 B^{i+1} \f$
  [[nodiscard]] static std::size_t capacity( std::size_t i );
 
- /// inserts the pair \f$ e \f$, the body of `insert()` and `erase()`
- void put( const Entry & e );
+ /// the place in the buffer of the first key \f$ \ge k \f$, by a binary
+ /// search with no branch
+ [[nodiscard]] std::size_t bufferBound( const K & k ) const;
+
+ /// inserts the pair \f$ ( k , v ) \f$, a tombstone if `dead`, the body
+ /// of `insert()` and `erase()`
+ void put( const K & k , const V & v , bool dead );
 
  /// the merge of the run \f$ M \f$ with the older level \f$ L \f$ into
- /// \f$ T \f$, the pair of \f$ M \f$ winning a tie
+ /// \f$ T \f$, the pair of \f$ M \f$ winning a tie, with no branch but
+ /// that of the loop
  static void merge( const Run & M , const Level & L , Run & T );
+
+ /// the hash of the key \f$ k \f$ for the filters, the same for the keys
+ /// that compare equal (the two zeros of a floating type)
+ [[nodiscard]] static std::uint64_t hashOf( const K & k );
 
  /// calls \f$ f( k , v ) \f$, while it returns true, on the pairs from the
  /// least key \f$ \ge lo \f$ on
  template< class F >
  void scan( const K & lo , F && f ) const;
 
- std::vector< Entry > f_buf;      ///< the buffer, sorted
+ Run f_buf;                       ///< the buffer, sorted
  std::vector< Level > f_lev;      ///< the levels, the newest first
+ Run f_run[ 2 ];                  ///< the runs of a merge, kept for reuse
 
  };  // end( class DynamicPGMIndex )
 

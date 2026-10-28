@@ -130,28 +130,15 @@ ADS_CPGM::CompressedPGMIndex( std::vector< K > A )
                   ( std::uint64_t( delta[ s ] - f_dmin ) << f_ws ) ,
                   f_ws + f_wd );
 
- // the first keys less the first one, the last left out if it is 2^64 - 1
- // above it (beyond the universe of Elias-Fano), and the first places
- f_k0 = x[ 0 ];
+ // the first keys, by a PGM-index of their own, and the first places
  std::vector< std::uint64_t > ks , ps;
  for( std::size_t s = 0 ; s < f_m ; ++s ) {
-  ks.push_back( x[ G[ s ].first ] - f_k0 );
+  ks.push_back( x[ G[ s ].first ] );
   ps.push_back( y[ G[ s ].first ] );
   }
  ps.push_back( n );
- if( ks.back() == ~std::uint64_t( 0 ) ) {
-  f_top = true;
-  ks.pop_back();
-  }
- f_key = EliasFano( ks );
  f_start = EliasFano( ps , n + 1 );
- }
-
-ADS_CPGM_T
-inline std::uint64_t ADS_CPGM::key( std::size_t s ) const
-{
- return( f_top && ( s + 1 == f_m ) ? f_k0 + ~std::uint64_t( 0 )
-                                   : f_k0 + f_key.access( s ) );
+ f_key = PGMIndex< std::uint64_t , 4 , 4 >( ks );
  }
 
 ADS_CPGM_T
@@ -161,12 +148,11 @@ inline std::size_t ADS_CPGM::lowerBound( const K & v ) const
  if( n == 0 )
   return( 0 );
  const std::uint64_t x = detail::pgmOrd( v );
- if( x < f_k0 )                             // before all the keys
+ if( x < f_key[ 0 ] )                       // before all the keys
   return( 0 );
- // the last first key not larger than x, by the rank of Elias-Fano
- const std::uint64_t rel = x - f_k0;
- const std::size_t s = rel == ~std::uint64_t( 0 ) ? f_m - 1 :
-                       f_key.nextGEQ( rel + 1 ) - 1;
+ // the last first key not larger than x, by the PGM-index of the keys
+ std::size_t s = f_key.lowerBound( x );
+ if( ( s == f_m ) || ( f_key[ s ] != x ) ) --s;
  const std::size_t p0 = std::size_t( f_start.access( s ) );
  const std::size_t p1 = std::size_t( f_start.access( s + 1 ) );
  const std::uint64_t c = f_code.get( s * std::size_t( f_ws + f_wd ) ,
@@ -174,7 +160,7 @@ inline std::size_t ADS_CPGM::lowerBound( const K & v ) const
  const std::size_t si = std::size_t( c & detail::lowMask( f_ws ) );
  const std::int64_t d = f_dmin + std::int64_t( f_ws >= 64 ? 0 : c >> f_ws );
  const double q = double( std::int64_t( p0 ) + d ) +
-                  double( f_slope[ si ] ) * double( x - key( s ) );
+                  double( f_slope[ si ] ) * double( x - f_key[ s ] );
  const std::size_t p = q < double( p0 ) ? p0 :
                        q > double( p1 ) ? p1 : std::size_t( q );
  const std::size_t r = detail::pgmLastMile( f_A.data() , n , p , E , v );
@@ -224,7 +210,8 @@ std::size_t ADS_CPGM::slopes( void ) const
 ADS_CPGM_T
 std::size_t ADS_CPGM::bytes( void ) const
 {
- return( ( f_key.sizeInBits() + f_start.sizeInBits() + f_code.size() + 7 ) /
+ return( f_key.size() * sizeof( std::uint64_t ) + f_key.bytes() +
+         ( f_start.sizeInBits() + f_code.size() + 7 ) /
          8 + f_slope.size() * sizeof( float ) );
  }
 

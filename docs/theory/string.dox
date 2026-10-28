@@ -553,25 +553,29 @@
  \f$ r_i = | s_{i-1} | - \ell_i \f$, the characters to take off the end of
  the string before, in place of \f$ \ell_i \f$: the same information, but a
  smaller number where the prefixes shared are long, and fewer bytes in a code
- of variable length. `RearCodedDictionary` is the plain front coding with
- buckets of Martínez-Prieto, Brisaboa, Cánovas, Claude and Navarro in the rear
- coding, all in one string of bytes (the first string of a bucket whole, then
- \f$ r_i \f$, \f$ | \hat s_i | \f$ and the rest \f$ \hat s_i \f$ of each
- string, the two numbers in the byte-aligned code of `encodeLength()`) with
- the places of the buckets by Elias-Fano, against the two words per string of
- the pairs of `FrontCodedDictionary`. Its scan of a bucket compares a string
- with the pattern \f$ Q \f$ only when it must: with \f$ \lambda \f$ the
- prefix that the current string shares with \f$ Q \f$ and the current string
- smaller than \f$ Q \f$, a next string that keeps more than \f$ \lambda \f$
- characters of it has the same character at the place \f$ \lambda \f$, which
- is below the one of \f$ Q \f$, and is smaller than \f$ Q \f$ as well; only
- a string that keeps at most \f$ \lambda \f$ characters is compared, from the
- place where its rest begins. The search by bins of Demaine,
- Jones and Pătrașcu (`BinnedSearch`) cuts the range of \f$ m \f$ sorted
- integers into \f$ m \f$ bins of equal width; a bin is at most as wide as the
- largest gap, and hence holds at most \f$ \Delta \f$ items, \f$ \Delta \f$ the
- ratio of the largest gap to the smallest, which bounds a search by \f$ O( \log
- \min( \Delta , m ) ) \f$.
+ of variable length. `RearCodedDictionary` is the front coding with buckets
+ of Martínez-Prieto, Brisaboa, Cánovas, Claude and Navarro in the rear coding,
+ entropy-coded as their HTFC: one string of bits (the first string of a bucket
+ past its 16 bytes below, then \f$ r_i \f$, \f$ | \hat s_i | \f$ and the rest
+ \f$ \hat s_i \f$ of each string), the characters, the rears and the lengths
+ each in a canonical code of Huffman of its own frequencies, of codewords of at
+ most 11 bits decoded by a table (and up to 3 characters at a time by a second
+ one), the places of the buckets by Elias-Fano, and the 16 bytes after the
+ prefix common to all the strings of the first string of each bucket kept in
+ two words, so that the binary search decodes a first string only when those
+ bytes do not decide. Its scan of a bucket compares a string with the pattern
+ \f$ Q \f$ only when it must: with \f$ \lambda \f$ the prefix that the current
+ string shares with \f$ Q \f$ and the current string smaller than \f$ Q \f$, a
+ next string that keeps more than \f$ \lambda \f$ characters of it has the same
+ character at the place \f$ \lambda \f$, which is below the one of \f$ Q \f$,
+ and is smaller than \f$ Q \f$ as well; only a string that keeps at most
+ \f$ \lambda \f$ characters is compared, from the place where its rest begins,
+ while that rest is decoded, and no string is rebuilt. The search by bins of
+ Demaine, Jones and Pătrașcu (`BinnedSearch`) cuts the range of \f$ m \f$
+ sorted integers into \f$ m \f$ bins of equal width; a bin is at most as wide
+ as the largest gap, and hence holds at most \f$ \Delta \f$ items,
+ \f$ \Delta \f$ the ratio of the largest gap to the smallest, which bounds a
+ search by \f$ O( \log \min( \Delta , m ) ) \f$.
 
  \section theory_string_combin Palindromes, Lyndon words and parentheses
 

@@ -22,26 +22,27 @@
  * segment then keeps the index of its slope in a table and, with that
  * slope, the intercept in the middle of its interval of feasible
  * intercepts, as its distance from the first place of the segment, which
- * is at most \f$ \epsilon + 1 \f$; the first keys and the first places of
- * the segments, increasing, are kept by Elias-Fano [see `EliasFano.h`]:
+ * is at most \f$ \epsilon + 1 \f$; the first places of the segments,
+ * increasing, are kept by Elias-Fano [see `EliasFano.h`], and their first
+ * keys whole, with a PGM-index of their own (of error 4) in place of the
+ * levels above, as the levels of the paper:
  * \f[
- *   2 + \Big\lceil \log_2 \frac{u}{m} \Big\rceil +
- *   2 + \Big\lceil \log_2 \frac{n}{m} \Big\rceil +
+ *   64 + 2 + \Big\lceil \log_2 \frac{n}{m} \Big\rceil +
  *   \lceil \log_2 \sigma \rceil + \lceil \log_2( 2 \epsilon + 3 ) \rceil
  * \f]
- * bits per segment for \f$ m \f$ segments, \f$ \sigma \f$ slopes and keys
- * in a universe of size \f$ u \f$, plus the directories of Elias-Fano and the
- * table of the slopes, in single precision as in the implementation of the
- * paper, \f$ 32 \sigma \f$ bits.
- *
- * The paper keeps the recursive levels, each compressed in the same way;
- * here the levels above the last one are replaced by the rank of Elias-Fano
- * on the first keys, `nextGEQ()`, in expected \f$ O( 1 ) \f$ time on keys
- * spread over their universe [see `EliasFano.h`], so that a search costs a
- * rank, three selects, a field of bits and the window of
- * \f$ 2 \epsilon + 5 \f$ places of the PGM-index. A segment whose points
- * the line of the shared slope, rounded, leaves out by more than
- * \f$ \epsilon + 1 \f$ (an effect of the floating point, which the
+ * bits per segment for \f$ m \f$ segments and \f$ \sigma \f$ slopes, plus
+ * the segments of the PGM-index of the keys, the directory of Elias-Fano
+ * and the table of the slopes, in single precision as in the
+ * implementation of the paper, \f$ 32 \sigma \f$ bits. The first keys
+ * could be kept by Elias-Fano too, saving \f$ 62 - \log_2( u / m ) \f$ bits
+ * a segment for keys in a universe of size \f$ u \f$; but its rank, the
+ * search of a segment, scans a bucket where the keys crowd (on skewed
+ * keys, most of them), and the PGM-index of the keys finds the segment in
+ * the time of the levels of the PGM-index, so that a search costs that,
+ * two selects for the first places of the segment and of the next one, a
+ * field of bits and the window of \f$ 2 \epsilon + 5 \f$ places. A segment
+ * whose points the line of the shared slope, rounded, leaves out by more
+ * than \f$ \epsilon + 1 \f$ (an effect of the floating point, which the
  * construction checks) keeps a slope of its own, appended to the table,
  * with the intercept in the middle of those of that slope.
  *
@@ -145,8 +146,8 @@ class CompressedPGMIndex {
  ///     \ \text{give } g \text{ its own slope} \cr
  /// 12 & \qquad \text{write } g.\sigma \text{ and } \beta \text{ less its }
  ///     \text{first place in a field of bits} \cr
- /// 13 & \quad \text{the first keys and the first places of } G
- ///     \text{ by Elias-Fano}
+ /// 13 & \quad \text{the first places of } G \text{ by Elias-Fano, the }
+ ///     \text{first keys with a PGM-index}
  /// \end{array}}
  /// \f]
  /// \pre \f$ A \f$ is sorted (audit), \f$ n < 2^{32} \f$
@@ -163,9 +164,8 @@ class CompressedPGMIndex {
  /// 1 & \textbf{function}\ \mathrm{lowerBound}( v ) \cr
  /// 2 & \quad \textbf{if}\ n = 0 \text{ or } v < A[ 0 ]
  ///     \ \textbf{then return}\ 0 \cr
- /// 3 & \quad s \gets \mathrm{nextGEQ}( \text{the first keys} , v + 1 ) - 1
- ///     \quad \triangleright\ \text{the last first key not larger than } v
- ///     \cr
+ /// 3 & \quad s \gets \text{the last first key not larger than } v
+ ///     \text{, by their PGM-index} \cr
  /// 4 & \quad p \gets p_s + \delta_s + S[ \sigma_s ] ( v - k_s )
  ///     \text{, clamped to } [ p_s , p_{s+1} ] \cr
  /// 5 & \quad \textbf{return}\ \mathrm{lowerBound}( A , v , p - \epsilon - 2
@@ -201,15 +201,11 @@ class CompressedPGMIndex {
 /*--------------------------------------------------------------------------*/
  private:
 
- /// the first key of the segment \f$ s \f$, in the order of `pgmOrd()`
- [[nodiscard]] std::uint64_t key( std::size_t s ) const;
 
  std::vector< K , HugePageAllocator< K > > f_A;   ///< the items
  std::size_t f_m = 0;              ///< the segments
- std::uint64_t f_k0 = 0;           ///< the first key
- bool f_top = false;               ///< the last first key, f_k0 + 2^64 - 1
- EliasFano f_key;                  ///< the first keys less f_k0
- EliasFano f_start;                ///< the first places, and n
+ PGMIndex< std::uint64_t , 4 , 4 > f_key;   ///< the first keys, by pgmOrd()
+ EliasFano f_start;                         ///< the first places, and n
  std::vector< float > f_slope;     ///< the table of the slopes
  BitVector f_code;                 ///< the slope and the intercept of each
  int f_ws = 0;                     ///< the bits of the index of a slope
