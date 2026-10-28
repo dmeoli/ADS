@@ -1232,11 +1232,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- the summary table of the README and bench/summary.py say how many times
-  ADS is faster or slower than each library (2.0&times; faster, 1.6&times;
-  slower, a tie within 5%) in the median cell and over all the cells,
-  instead of the bare ratio of the times; bench/__pycache__ no longer in
-  the repository
 - GridGraph::forEachMove( u , f ), f( v , d ) with d whether the move is
   to a corner, is public and documented, so that the flag is not computed
   again by the caller
