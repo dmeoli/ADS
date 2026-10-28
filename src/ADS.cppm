@@ -1250,6 +1250,8 @@ export namespace ADS {
  // ADS/numeric/DenseMatrix.h
  using ADS::DenseMatrix;
  using ADS::gemm;
+ using ADS::kGemmBlasSmall;
+ using ADS::kGemmBlasThin;
  using ADS::multiplyStrassen;
 
  // ADS/numeric/DynamicCsr.h

@@ -37,6 +37,8 @@ ADSBREW = $(or $(HOMEBREW_PREFIX),$(if $(filter arm%,$(UNAME_P)),\
 # define the macros to be exported- - - - - - - - - - - - - - - - - - - - - -
 
 GMP_ROOT = $(ADSBREW)
+BLAS_ROOT =
+BLAS_LIB =
 OpenMP_ROOT = $(ADSBREW)/opt/libomp
 TBB_ROOT = $(ADSBREW)
 FastFlow_ROOT = /Library/fastflow

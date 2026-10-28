@@ -20,7 +20,9 @@
  numbers and of the matrices with the costs of their operations (see
  \ref theory_numeric_repr), and, for each family of algorithms, the property
  on which its correctness rests and the argument behind its bound (from
- \ref theory_numeric_dc to \ref theory_numeric_sparse). The pseudocode of
+ \ref theory_numeric_dc to \ref theory_numeric_sparse), and the backends of
+ GMP and of a CBLAS on which some of them run (see
+ \ref theory_numeric_backends). The pseudocode of
  each algorithm is instead on the page of its header, in the comment of its
  function, together with the section of the book, or the paper, that it
  follows.
@@ -472,6 +474,67 @@
  change, and the new nonzeros (the fill-in) enter the lists where they
  appear.
 
+ \section theory_numeric_backends The backends of GMP and of a CBLAS
+
+ Where a mature library computes the same function faster, the headers of
+ the area hand the operation to it instead of tuning their own code further:
+ `BigInteger` and `Rational` run on GMP when `ADS_WITH_GMP` is defined, and
+ `gemm()` of `double` and `float` on a CBLAS (OpenBLAS, the reference CBLAS,
+ Accelerate) when `ADS_WITH_BLAS` is; CMake and the makefile define each
+ macro whenever the library is found, and leave it undefined otherwise, so
+ that the code of ADS is both the portable fallback and the reference that
+ the backend is tested against. The choice is made per operation, by the
+ lengths of the operands, against thresholds measured on one processor (the
+ constants `kGmp...` of `BigInteger` and of `Rational`,
+ `kGemmBlasSmall` and `kGemmBlasThin`): an operation goes to the library in
+ the ranges where the library was the faster, and stays on the code of ADS
+ where that was as fast or faster.
+
+ <em>Lemma 7 (the backends change no result).</em> For every operation of
+ `BigInteger` and `Rational`, the result on the backend equals that of the
+ code of ADS; for `gemm()`, both compute \f$ \alpha A B + \beta C \f$ by the
+ classical product, each entry a sum of \f$ k \f$ products in some order,
+ so that both satisfy
+ \f[
+   | \hat C - ( \alpha A B + \beta C ) | \le \gamma_{k + 2} \, ( | \alpha |
+   | A | | B | + | \beta | | C | ) , \qquad \gamma_j = \frac{j u}{1 - j u} ,
+   \tag{13}
+ \f]
+ with \f$ u \f$ the unit roundoff, though the two results may differ in the
+ last bits.
+
+ Indeed, the integers and the fractions of GMP are exact, as are those of
+ ADS, and a fraction in lowest terms with a positive denominator is unique,
+ so that the two routes return the same digits; the views of GMP on the
+ digits of a `BigInteger` (`mpz_roinit_n()`) read them in place, both being
+ sequences of words of 64 bits from the least significant, and the results
+ are written into the digits of the result, or copied into them from a
+ number of GMP, in \f$ O( n ) \f$ time, below the cost of the operation
+ itself (the copy is the price of the representation).
+ For the matrices, (13) is the bound of the classical product whatever the
+ order of the sums (Higham, section 3.5), which differs between the
+ micro-kernels of ADS and those of the CBLAS, and between the calls of the
+ parallel `gemm()` on ranges of rows and one call on the whole; hence the
+ tests compare the products on small integers, which both compute exactly,
+ and the others within (13).
+
+ The thresholds follow from the cost of each route, since both run algorithms
+ of the same order: GMP wins, by its loops in assembly, on the square root at
+ every length, on the quotients by divisors of 4 to 2047 digits, on the
+ conversions of 1 to 3 and of 24 to 4095 digits, on the gcd of 2 digits and on
+ the operations of `Rational` on terms of 2 and 3 digits; ADS keeps the
+ products by its number-theoretic transform from 704 to 1920 digits (by the
+ shape of the factors), the gcd of Lehmer on two digits between 3 and 2047
+ digits, where its steps on one digit with no division were the faster, and
+ hence `Rational` on the longer terms, and the quotients and the conversions
+ of the longer numbers, by Newton's reciprocal and the scaled remainder tree.
+ The CBLAS wins on the small products and on the thin ones, whose few rows or
+ columns fill only part of the micro-tiles of `gemm()`; on the larger ones the
+ micro-kernels of ADS were as fast or faster on the processor of the
+ thresholds, whose single unit of fused products of 512 bits makes the vectors
+ of 256 bits of ADS run at a higher clock. The thresholds are those of that
+ processor, and another one may move them.
+
  \section theory_numeric_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 2.6, 12.3
@@ -529,6 +592,14 @@
  \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
       Press, 2023, chapter 3 (Random Sampling),
       doi:10.1017/9781009128933
+ \see T. Granlund and the GMP development team, GNU MP: The GNU Multiple
+      Precision Arithmetic Library, version 6.3.0, 2023,
+      https://gmplib.org/gmp-man-6.3.0.pdf
+ \see L. S. Blackford, J. Demmel, J. Dongarra, I. Duff, S. Hammarling,
+      G. Henry, M. Heroux, L. Kaufman, A. Lumsdaine, A. Petitet, R. Pozo,
+      K. Remington, R. C. Whaley, An updated set of basic linear algebra
+      subprograms (BLAS), ACM Transactions on Mathematical Software 28(2),
+      135-151, 2002, doi:10.1145/567806.567807
  \see Y. Saad, Iterative Methods for Sparse Linear Systems, 2nd ed., SIAM,
       2003, section 3.4
  \see M. Kreutzer, G. Hager, G. Wellein, H. Fehske, A. R. Bishop, A

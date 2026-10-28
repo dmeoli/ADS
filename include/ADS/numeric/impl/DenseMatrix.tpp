@@ -301,6 +301,39 @@ T * gemmBuffer( std::size_t n , int which )
  return( b.p );
  }
 
+#if ADS_GEMM_BLAS
+/// true if the product goes to the CBLAS: T is double or float, the
+/// product is small or thin [see kGemmBlasSmall and kGemmBlasThin], and
+/// the sizes fit the int of the CBLAS
+template< class T >
+bool gemmCblasWins( std::size_t m , std::size_t n , std::size_t k ,
+                    std::size_t lda , std::size_t ldb , std::size_t ldc )
+{
+ constexpr std::size_t top = std::size_t( INT_MAX );
+ return( ( std::is_same_v< T , double > || std::is_same_v< T , float > ) &&
+         ( ( m * n * k < kGemmBlasSmall ) ||
+           ( std::min( { m , n , k } ) < kGemmBlasThin ) ) &&
+         ( std::max( { m , n , k , lda , ldb , ldc } ) <= top ) );
+ }
+
+/// C <- alpha A B + beta C by cblas_dgemm() or cblas_sgemm(), all by rows
+/// [see gemmCblasWins()]
+template< class T >
+void gemmCblas( std::size_t m , std::size_t n , std::size_t k , T alpha ,
+                const T * A , std::size_t lda , const T * B ,
+                std::size_t ldb , T beta , T * C , std::size_t ldc )
+{
+ if constexpr( std::is_same_v< T , double > )
+  cblas_dgemm( CblasRowMajor , CblasNoTrans , CblasNoTrans , int( m ) ,
+               int( n ) , int( k ) , alpha , A , int( lda ) , B ,
+               int( ldb ) , beta , C , int( ldc ) );
+ else if constexpr( std::is_same_v< T , float > )
+  cblas_sgemm( CblasRowMajor , CblasNoTrans , CblasNoTrans , int( m ) ,
+               int( n ) , int( k ) , alpha , A , int( lda ) , B ,
+               int( ldb ) , beta , C , int( ldc ) );
+ }
+#endif
+
 }  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
@@ -330,6 +363,13 @@ void gemm( std::size_t m , std::size_t n , std::size_t k , T alpha ,
     }
   return;
   }
+#if ADS_GEMM_BLAS
+ if( detail::gemmCblasWins< T >( m , n , k , lda , ldb , ldc ) ) {
+  detail::gemmCblas( m , n , k , alpha , A , lda , B , ldb , beta , C ,
+                     ldc );
+  return;
+  }
+#endif
  const std::size_t np = ( n + NR - 1 ) / NR * NR;   // n padded
  if( ( m * n * k <= std::size_t( 1 ) << 21 ) &&
      ( k * np <= std::size_t( 1 ) << 18 ) ) {

@@ -135,6 +135,20 @@ void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k , T alpha ,
   gemm( m , n , k , alpha , A , lda , B , ldb , beta , C , ldc );
   return;
   }
+#if ADS_GEMM_BLAS
+ // on the CBLAS, a range of rows of C per thread, as evenly as they go,
+ // each multiplied by one call [see DenseMatrix.h]
+ if( detail::gemmCblasWins< T >( m , n , k , lda , ldb , ldc ) ) {
+  const std::size_t t = std::min( p , m );
+  ex.bulk( t , [ & ]( std::size_t u ) {
+   const std::size_t r0 = m * u / t , r1 = m * ( u + 1 ) / t;
+   if( r1 > r0 )
+    detail::gemmCblas( r1 - r0 , n , k , alpha , A + r0 * lda , lda , B ,
+                       ldb , beta , C + r0 * ldc , ldc );
+   } );
+  return;
+  }
+#endif
  // the rows of each thread: whole micro-panels, as evenly as they go
  const std::size_t panels = ( m + MR - 1 ) / MR ,
                    q = std::min( p , panels );

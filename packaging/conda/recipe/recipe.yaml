@@ -15,6 +15,7 @@ build:
   noarch: generic
   script:
     - cmake -S . -B build -G Ninja ${CMAKE_ARGS} -DADS_BUILD_TESTS=OFF
+        -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF
         -DCMAKE_INSTALL_PREFIX=${PREFIX}
     - cmake --install build
 

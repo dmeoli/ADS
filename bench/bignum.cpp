@@ -7,15 +7,17 @@
  * boost::rational and, if GMP is found (ADS_HAS_GMP), against mpz_class and
  * mpq_class, the reference of the field, and, if FLINT is found
  * (ADS_HAS_FLINT), against its fmpz_t and fmpq_t. The cases are the
- * product of two numbers of n digits of 32 bits (ADS by Algorithm M, by
- * Karatsuba and by the FFT), the square of one, the quotient of 2n digits
- * by n, the conversion of n digits to decimal, the greatest common
+ * product of two numbers of n digits of 32 bits (ADS also by Algorithm M,
+ * by Karatsuba and by the FFT), the square of one, the quotient of 2n
+ * digits by n, the conversion of n digits to decimal, the greatest common
  * divisor of two numbers of n digits with a common factor of 3, the
- * integer square root of 2n digits, and the harmonic number \f$ H_n \f$
- * summed as a rational. Built with
- * ADS_WITH_GMP, it times BigInteger and Rational alone, on the backend of
- * GMP [see BigInteger.h], as "ADS::BigInteger GMP" and "ADS::Rational GMP",
- * the others coming from the build without it.
+ * integer square root of 2n digits, the sum and the product of two
+ * fractions whose terms have n digits, and the harmonic number
+ * \f$ H_n \f$ summed as a rational. BigInteger and Rational are those of
+ * the build, on the backend of GMP when ADS_WITH_GMP is defined [see
+ * BigInteger.h and Rational.h], as they are used; built with
+ * ADS_BENCH_OWN instead, the benchmark times them alone, on the code of ADS,
+ * as "ADS::BigInteger own" and "ADS::Rational own".
  *
  * Each cell is the median of r runs, in nanoseconds per operation (one
  * product, one quotient, one conversion, one sum of n fractions), a run
@@ -58,11 +60,11 @@
  #include <flint/fmpz.h>
 #endif
 
-#ifdef ADS_WITH_GMP                         // the backend alone
+#ifdef ADS_BENCH_OWN                        // the code of ADS alone
  #undef ADS_HAS_BOOST
  #undef ADS_HAS_GMP
  #undef ADS_HAS_FLINT
- #define ADS_WHO " GMP"
+ #define ADS_WHO " own"
 #else
  #define ADS_WHO ""
 #endif
@@ -167,6 +169,29 @@ struct Fmpq {
  };
 #endif
 
+/// the sum and the product of two fractions of the type R whose terms of n
+/// digits are written in hexadecimal in a / b and c / d, made by
+/// frac( a , b ), each run repeating the operation k times, k n about 2^12
+template< class R , class Make >
+void fractions( const std::string & who , std::size_t n , int r ,
+                const std::string & a , const std::string & b ,
+                const std::string & c , const std::string & d , Make && frac )
+{
+ if( skip( who ) )
+  return;
+ const R x = frac( a , b ) , y = frac( c , d ) , z = frac( "0" , "1" );
+ const std::size_t k = std::max< std::size_t >( 1 , 4096 / n );
+ auto cell = [ & ]( const char * name , auto && op ) {
+  print( "bignum" , name , n , who , median( [](){ return( 0 ); } ,
+          [ & ]( int ) {
+           for( std::size_t i = 0 ; i < k ; ++i ) op(); } , r , k ) );
+  };
+ cell( "fraction sum" , [ & ] { const R s = x + y;
+                                sink = sink + ( s != z ); } );
+ cell( "fraction product" , [ & ] { const R p = x * y;
+                                    sink = sink + ( p != z ); } );
+ }
+
 /// the harmonic number H_n summed as a fraction of the type R
 template< class R , class Make >
 void harmonic( const std::string & who , std::size_t n , int r ,
@@ -203,7 +228,7 @@ int main( int argc , char ** argv )
                      adsMake , adsDec , adsMul , true , adsGcd , adsRoot );
   run< BigInteger >( "ADS::BigInteger" ADS_WHO " A/A" , n , a , b , c , r ,
                      adsMake , adsDec , adsMul , true , adsGcd , adsRoot );
-#ifndef ADS_WITH_GMP
+#ifndef ADS_BENCH_OWN
   run< BigInteger >( "ADS::BigInteger school" , n , a , b , c , r , adsMake ,
                      adsDec , []( const auto & x , const auto & y ) {
                       return( BigInteger::multiplySchool( x , y ) ); } ,
@@ -226,7 +251,8 @@ int main( int argc , char ** argv )
                   []( const auto & x , const auto & y ) {
                    return( cpp_int( x * y ) ); } , true ,
                   []( const auto & x , const auto & y ) {
-                   return( cpp_int( boost::multiprecision::gcd( x , y ) ) ); } ,
+                   return( cpp_int( boost::multiprecision::gcd( x , y ) ) );
+                   } ,
                   []( const auto & x ) {
                    return( cpp_int( boost::multiprecision::sqrt( x ) ) ); } );
 #endif
@@ -262,6 +288,33 @@ int main( int argc , char ** argv )
                 Fmpz s;
                 fmpz_sqrt( s.v , x.v );
                 return( s ); } );
+#endif
+  // the fractions: the terms of n digits, the denominators odd
+  std::string fd = hex( n , g ) , fb = hex( n , g );
+  fd.back() = fb.back() = '7';
+  const std::string fa = hex( n , g ) , fc = hex( n , g );
+  fractions< ADS::Rational >( "ADS::Rational" ADS_WHO , n , r , fa , fb , fc ,
+                              fd , []( const std::string & p ,
+                                       const std::string & q ) {
+                               return( ADS::Rational( BigInteger( p , 16 ) ,
+                                                      BigInteger( q , 16 ) ) );
+                               } );
+#ifdef ADS_HAS_BOOST
+  fractions< boost::rational< cpp_int > >( "boost::rational<cpp_int>" , n ,
+                                           r , fa , fb , fc , fd , [](
+                                            const std::string & p ,
+                                            const std::string & q ) {
+                                            return( boost::rational< cpp_int >(
+                                             cpp_int( "0x" + p ) ,
+                                             cpp_int( "0x" + q ) ) ); } );
+#endif
+#ifdef ADS_HAS_GMP
+  fractions< mpq_class >( "GMP mpq_class" , n , r , fa , fb , fc , fd , [](
+                           const std::string & p , const std::string & q ) {
+                           mpq_class x( mpz_class( p , 16 ) ,
+                                        mpz_class( q , 16 ) );
+                           x.canonicalize();
+                           return( x ); } );
 #endif
   const std::size_t h = 64 * n;             // the terms of H_n
   if( h > 300000 ) continue;

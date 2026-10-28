@@ -36,7 +36,13 @@
  *   whose cores have private second levels). Each entry of \f$ C \f$ sees the
  *   same slices and the same micro-kernel as in `gemm()`; the small
  *   products, which `gemm()` computes by another path, go to it on one
- *   thread.
+ *   thread. With the backend of a CBLAS [see `DenseMatrix.h`], the thin
+ *   products that go to it give each thread a range of the rows of
+ *   \f$ C \f$ instead, as evenly as they go, which it
+ *   multiplies by one call of the CBLAS, the panel of \f$ B \f$ packed by
+ *   each call; the CBLAS is then expected to run on one thread (e.g.,
+ *   OpenBLAS with `OPENBLAS_NUM_THREADS=1`), or its threads multiply those
+ *   of the executor.
  *
  * The products by a vector move \f$ 12 \mathit{nnz} + 8 ( m + n ) \f$ bytes
  * and are bound by the bandwidth of the memory, so that \f$ p \f$ threads
@@ -200,24 +206,30 @@ template< Executor E , std::size_t C >
 ///     \text{degenerate, or } m < 2 M_R\ \textbf{then} \cr
 /// 3 & \qquad \mathrm{gemm}( m , n , k , \alpha , A , B , \beta , C );
 ///     \ \textbf{return} \cr
-/// 4 & \quad t \gets \min\{ p , \lceil m / M_R \rceil \}\quad
+/// 4 & \quad \textbf{if}\ \text{a CBLAS is the backend and the product is}
+///     \text{ thin}\ \textbf{then} \cr
+/// 5 & \qquad \textbf{for}\ u \gets 0\ \textbf{to}\ \min\{ p , m \} - 1
+///     \ \textbf{do in parallel}\ \text{the } u\text{-th range of rows of }
+///     C \text{ by the CBLAS} \cr
+/// 6 & \qquad \textbf{return} \cr
+/// 7 & \quad t \gets \min\{ p , \lceil m / M_R \rceil \}\quad
 ///     \triangleright\ \text{the threads, a range of micro-panels each} \cr
-/// 5 & \quad \textbf{for}\ j_c \gets 0\ \textbf{to}\ n - 1\ \textbf{step}
+/// 8 & \quad \textbf{for}\ j_c \gets 0\ \textbf{to}\ n - 1\ \textbf{step}
 ///     \ N_C\ \textbf{do} \cr
-/// 6 & \qquad \textbf{for}\ p_c \gets 0\ \textbf{to}\ k - 1\ \textbf{step}
+/// 9 & \qquad \textbf{for}\ p_c \gets 0\ \textbf{to}\ k - 1\ \textbf{step}
 ///     \ K_C\ \textbf{do} \cr
-/// 7 & \qquad\quad b \gets \beta\ \textbf{if}\ p_c = 0\ \textbf{else}\ 1 \cr
-/// 8 & \qquad\quad \text{pack the panel } B[ p_c .. , j_c .. ] \text{ in }
+/// 10 & \qquad\quad b \gets \beta\ \textbf{if}\ p_c = 0\ \textbf{else}\ 1 \cr
+/// 11 & \qquad\quad \text{pack the panel } B[ p_c .. , j_c .. ] \text{ in }
 ///     \text{parallel, a range of micro-panels per thread} \cr
-/// 9 & \qquad\quad \textbf{for}\ u \gets 0\ \textbf{to}\ t - 1
+/// 12 & \qquad\quad \textbf{for}\ u \gets 0\ \textbf{to}\ t - 1
 ///     \ \textbf{do in parallel} \cr
-/// 10 & \qquad\qquad \textbf{foreach}\ \text{block of } M_C \text{ rows }
+/// 13 & \qquad\qquad \textbf{foreach}\ \text{block of } M_C \text{ rows }
 ///     i_c \text{ in the range of } u\ \textbf{do} \cr
-/// 11 & \qquad\qquad\quad \text{pack } A[ i_c .. , p_c .. ] \text{ in the }
+/// 14 & \qquad\qquad\quad \text{pack } A[ i_c .. , p_c .. ] \text{ in the }
 ///     \text{buffer of the thread} \cr
-/// 12 & \qquad\qquad\quad \textbf{foreach}\ \text{micro-panel } j_r
+/// 15 & \qquad\qquad\quad \textbf{foreach}\ \text{micro-panel } j_r
 ///     \text{ of } B\ \textbf{and}\ i_r \text{ of } A\ \textbf{do} \cr
-/// 13 & \qquad\qquad\qquad C[ i_c + i_r .. , j_c + j_r .. ] \gets \alpha \,
+/// 16 & \qquad\qquad\qquad C[ i_c + i_r .. , j_c + j_r .. ] \gets \alpha \,
 ///     A_{i_r} B_{j_r} + b \, C[ i_c + i_r .. , j_c + j_r .. ]
 /// \end{array}}
 /// \f]

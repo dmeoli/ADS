@@ -5,9 +5,9 @@
 #    that is, the file that tells CMake how the package should be             #
 #    configured when found by other projects using find_package(ADS): it      #
 #    defines ADS::ADS, ADS::ADS_module when ADS was built with                #
-#    ADS_BUILD_MODULE and ADS::GMP when it was built with ADS_WITH_GMP, and   #
-#    it finds again the threads, OpenMP, oneTBB and MPI when ADS was built    #
-#    with their executors.                                                    #
+#    ADS_BUILD_MODULE, and ADS::GMP and ADS::BLAS when it was built on GMP    #
+#    and on a CBLAS, and it finds again the threads, OpenMP, oneTBB and MPI   #
+#    when ADS was built with their executors.                                 #
 #                                                                             #
 #    ADSTargets.cmake (to be found alongside this file) is the target import  #
 #    file that tells where the headers are.                                   #
@@ -18,13 +18,25 @@ get_filename_component(ADS_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include(CMakeFindDependencyMacro)
 
 # ----- Requirements -------------------------------------------------------- #
-# ADS built with ADS_WITH_GMP links GMP, found again here
-set(ADS_WITH_GMP @ADS_WITH_GMP@)
+# ADS built on GMP and on a CBLAS links them, found again here, first where
+# they were found when ADS was built
+set(ADS_WITH_GMP @ADS_USE_GMP@)
 if (ADS_WITH_GMP)
+    set(ADS_GMP_HINTS "@ADS_GMP_HINTS@")
     include("${ADS_CMAKE_DIR}/ADSGMP.cmake")
     if (NOT ADS_GMP_FOUND)
         set(ADS_FOUND FALSE)
         set(ADS_NOT_FOUND_MESSAGE "ADS was built with GMP, not found")
+        return()
+    endif ()
+endif ()
+set(ADS_WITH_BLAS @ADS_USE_BLAS@)
+if (ADS_WITH_BLAS)
+    set(ADS_BLAS_HINTS "@ADS_BLAS_HINTS@")
+    include("${ADS_CMAKE_DIR}/ADSBLAS.cmake")
+    if (NOT ADS_BLAS_FOUND)
+        set(ADS_FOUND FALSE)
+        set(ADS_NOT_FOUND_MESSAGE "ADS was built with a CBLAS, not found")
         return()
     endif ()
 endif ()

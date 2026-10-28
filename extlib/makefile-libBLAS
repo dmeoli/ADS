@@ -1,0 +1,64 @@
+###############################################################################
+############################## makefile-libBLAS ###############################
+###############################################################################
+#                                                                             #
+#   makefile of a CBLAS, for gemm() [see DenseMatrix.h]                       #
+#                                                                             #
+#   Input:  $(BLAS_ROOT) = the prefix where the CBLAS is installed, empty if  #
+#                          it is where the compiler looks (on macOS, where    #
+#                          it is empty, the CBLAS of Accelerate)              #
+#           $(BLAS_LIB)  = the name of its library, empty for the first of    #
+#                          openblas, cblas and blas that links                #
+#           $(UNAME_S)   = the name of the current OS [see makefile-OS]       #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libBLASINC)   = the -I$(include directories) and the -D for the #
+#                             CBLAS                                           #
+#           $(libBLASLIB)   = external libraries + -L< libdirs > for the      #
+#                             CBLAS                                           #
+#           $(libBLASFOUND) = 1 if a program that calls cblas_dgemm()         #
+#                             compiles and links with them, empty otherwise   #
+#                             (evaluated once, when first used)               #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic CBLAS directory without quotes, if any
+libBLASBSCDIR = $(subst $\",,$(BLAS_ROOT))
+
+# Accelerate on macOS when no prefix is given, by the CBLAS of vecLib alone
+libBLASACC = $(if $(filter Darwin,$(UNAME_S)),$(if $(libBLASBSCDIR),,1))
+
+libBLASDIRS = $(if $(libBLASBSCDIR),-L"$(libBLASBSCDIR)/lib" \
+	$(if $(filter Windows,$(UNAME_S)),,\
+		-Wl$(ADScomma)-rpath$(ADScomma)"$(libBLASBSCDIR)/lib"))
+
+# whether a program with cblas_dgemm() from the header $(1) compiles and
+# links with the flags $(2)
+libBLASTRY = $(shell printf '$(ADShash)include <$(1)>\nint main(){double \
+	a=2,c=0;cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,1,1,1,\
+	1.0,&a,1,&a,1,0.0,&c,1);return int(c)-4;}\n' | $(CXX) -x c++ - \
+	-o $(ADSNULL) $(2) 2>/dev/null && echo 1)
+
+# the name of the library, the first of openblas, cblas and blas that
+# links, found once
+libBLASNAME = $(eval libBLASNAME := $$(or $$(BLAS_LIB),$$(firstword \
+	$$(foreach l,openblas cblas blas,$$(if $$(call libBLASTRY,cblas.h,\
+	$$(libBLASINC) $$(libBLASDIRS) -l$$(l)),$$(l))))))$(libBLASNAME)
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+libBLASINC = $(if $(libBLASACC),-DADS_BLAS_ACCELERATE,\
+	$(if $(libBLASBSCDIR),-I"$(libBLASBSCDIR)/include"))
+libBLASLIB = $(if $(libBLASACC),-framework Accelerate,\
+	$(libBLASDIRS) $(if $(libBLASNAME),-l$(libBLASNAME)))
+
+libBLASFOUND = $(eval libBLASFOUND := $$(if $$(libBLASACC),\
+	$$(call libBLASTRY,vecLib/cblas.h,-framework Accelerate),\
+	$$(if $$(libBLASNAME),$$(call libBLASTRY,cblas.h,$$(libBLASINC) \
+	$$(libBLASLIB)))))$(libBLASFOUND)
+
+########################### End of makefile-libBLAS ###########################

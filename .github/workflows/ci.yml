@@ -5,21 +5,24 @@
 # with g++ and with clang++, on Linux, on macOS (the clang++ of Xcode and the #
 # g++ of Homebrew) and on Windows (the g++ and the clang++ of MinGW-w64 in    #
 # MSYS2, and MSVC by CMake alone), and installs it for a project that finds   #
-# it by find_package and by pkg-config; on Linux it also runs the tests under #
-# ASan and UBSan, BigInteger with its portable products and on the backend of #
-# GMP, the executors of OpenMP, oneTBB and FastFlow by the makefile, FastHash #
-# and the vector quicksort on AVX2 (and AVX-512 when the runner has it),      #
-# ConcurrentFlatTable on the compare-and-swap of 16 bytes, the queues between #
-# threads, the event count, the MultiQueue, the concurrent hash tables, the   #
-# parallel operations of the trees by join, the parallel builds of the        #
-# succinct structures and the stepping algorithms of the shortest paths under #
-# ThreadSanitizer, FlatHashTable on its broadword fallback and fft() on the   #
-# lanes of AVX, on arrays of doubles and on the intrinsics of x86 that MSVC   #
-# takes; it measures the coverage of the tests, run four at a time and with   #
-# the cases there for their scale alone made smaller, and sends it to         #
-# Coveralls; it builds the C++20 module ads and runs the test that imports    #
-# it, by CMake and Ninja with Clang and GCC 15 on Linux and the Clang of LLVM #
-# on macOS, and by the makefile with clang++ and g++ 15.                      #
+# it by find_package and by pkg-config, everywhere both on the backends of    #
+# GMP and of a CBLAS found (OpenBLAS, Accelerate) and on the code of ADS      #
+# alone; on Linux it also runs the tests under ASan and UBSan, BigInteger     #
+# with its portable products, the backends required, with the parallel gemm() #
+# on OpenBLAS under ThreadSanitizer, the executors of OpenMP, oneTBB and      #
+# FastFlow by the makefile, FastHash and the vector quicksort on AVX2 (and    #
+# AVX-512 when the runner has it), ConcurrentFlatTable on the                 #
+# compare-and-swap of 16 bytes, the queues between threads, the event count,  #
+# the MultiQueue, the concurrent hash tables, the parallel operations of the  #
+# trees by join, the parallel builds of the succinct structures and the       #
+# stepping algorithms of the shortest paths under ThreadSanitizer,            #
+# FlatHashTable on its broadword fallback and fft() on the lanes of AVX, on   #
+# arrays of doubles and on the intrinsics of x86 that MSVC takes; it measures #
+# the coverage of the tests, run four at a time and with the cases there for  #
+# their scale alone made smaller, and sends it to Coveralls; it builds the    #
+# C++20 module ads and runs the test that imports it, by CMake and Ninja with #
+# Clang and GCC 15 on Linux and the Clang of LLVM on macOS, and by the        #
+# makefile with clang++ and g++ 15.                                           #
 ###############################################################################
 
 name: CI
@@ -42,7 +45,10 @@ jobs:
   # every program built and every test run by CMake and by the makefiles,
   # four at a time, and the installed package used through find_package and
   # pkg-config [see packaging/test]; on Windows, MSVC by CMake alone and the
-  # compilers of MSYS2, whose bash runs the makefiles
+  # compilers of MSYS2, whose bash runs the makefiles; GMP and a CBLAS are
+  # installed where the runner lacks them, the default builds must find
+  # them (but the CBLAS on MSYS2 and with the g++ of macOS, and both with
+  # MSVC), and the makefiles run the tests again with both off
   test:
     name: test (${{ matrix.os }}, ${{ matrix.compiler }})
     strategy:
@@ -75,10 +81,18 @@ jobs:
           msystem: ${{ matrix.msystem }}
           install: make
           pacboy: >-
-            ${{ matrix.cc }}:p cmake:p ninja:p pkgconf:p
+            ${{ matrix.cc }}:p cmake:p ninja:p pkgconf:p gmp:p
       - name: the g++ of Homebrew
         if: runner.os == 'macOS' && matrix.compiler == 'g++'
         run: command -v "$CXX" || brew install gcc@15
+      - name: GMP and OpenBLAS
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgmp-dev libopenblas-dev
+      - name: GMP of Homebrew
+        if: runner.os == 'macOS'
+        run: brew list gmp > /dev/null 2>&1 || brew install gmp
       - name: CMake
         run: |
           inst="$PWD/inst"
@@ -86,8 +100,17 @@ jobs:
             inst=$(cygpath -m "$inst")
           fi
           echo "INST=$inst" >> "$GITHUB_ENV"
+          set -o pipefail
           cmake -S . -B build $GEN -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX="$inst"
+                -DCMAKE_INSTALL_PREFIX="$inst" | tee cmake.log
+          if [ "${{ matrix.compiler }}" != msvc ]; then
+            grep -q 'ADS: GMP ON' cmake.log
+          fi
+          if [ -z "${{ matrix.msystem }}" ] &&
+             [ "${{ matrix.compiler }}" != msvc ] &&
+             [ "$RUNNER_OS-${{ matrix.compiler }}" != macOS-g++ ]; then
+            grep -q 'CBLAS ON' cmake.log
+          fi
           cmake --build build --config Release --parallel 4
           ctest --test-dir build -C Release --parallel 4 --output-on-failure
       - name: installed, and found by find_package and pkg-config
@@ -98,9 +121,14 @@ jobs:
                 -DCMAKE_PREFIX_PATH="$INST"
           cmake --build build-use --config Release
           ctest --test-dir build-use -C Release --output-on-failure
-      - name: makefile
+      - name: makefile, on the backends found and with both off
         if: matrix.compiler != 'msvc'
-        run: make -j4 test
+        env:
+          OPENBLAS_NUM_THREADS: 2
+        run: |
+          make backends
+          make -j4 test
+          make -j4 test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 BUILD=build-off
 
   portable:
     runs-on: ubuntu-latest
@@ -144,20 +172,27 @@ jobs:
             done
           done
 
-  gmp:
+  # the backends required, by the makefile and by CMake, the installed
+  # package found again, and the parallel gemm() on OpenBLAS under
+  # ThreadSanitizer
+  backends:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: GMP
+      - name: GMP and OpenBLAS
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgmp-dev
-      - name: the tests with BigInteger on GMP, by the makefile
-        run: make -j4 test ADS_WITH_GMP=1 BUILD=build-gmp
+          sudo apt-get install -y libgmp-dev libopenblas-dev
+      - name: the tests on GMP and OpenBLAS, by the makefile
+        env:
+          OPENBLAS_NUM_THREADS: 2
+        run: make -j4 test ADS_WITH_GMP=1 ADS_WITH_BLAS=1 BUILD=build-on
       - name: the same by CMake, installed and found by find_package
+        env:
+          OPENBLAS_NUM_THREADS: 2
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DADS_WITH_GMP=ON \
-                -DCMAKE_INSTALL_PREFIX="$PWD/inst"
+                -DADS_WITH_BLAS=ON -DCMAKE_INSTALL_PREFIX="$PWD/inst"
           cmake --build build --parallel 4
           ctest --test-dir build --parallel 4 --output-on-failure
           cmake --install build
@@ -165,6 +200,23 @@ jobs:
                 -DCMAKE_PREFIX_PATH="$PWD/inst"
           cmake --build build-use
           ctest --test-dir build-use --output-on-failure
+      - name: the parallel gemm() on OpenBLAS under ThreadSanitizer
+        env:
+          OPENBLAS_NUM_THREADS: 1
+        run: |
+          sudo sysctl vm.mmap_rnd_bits=28
+          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_CONTRACTS=3 -DADS_WITH_BLAS -o tsan-blas \
+              test/engineered_parallel.cpp -pthread -lopenblas
+          ./tsan-blas parallel-numeric
+      - name: CMake with both off
+        run: |
+          set -o pipefail
+          cmake -S . -B build-off -DCMAKE_BUILD_TYPE=Release \
+                -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF | tee cmake.log
+          grep -q 'ADS: GMP OFF, CBLAS OFF' cmake.log
+          cmake --build build-off --parallel 4
+          ctest --test-dir build-off --parallel 4 --output-on-failure
 
   executors:
     runs-on: ubuntu-latest
@@ -283,7 +335,7 @@ jobs:
     # ADS_TEST_SMALL [see ADSTest.h]; the list against the programs is
     # checked by the other jobs
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - name: the tests with the coverage of gcov

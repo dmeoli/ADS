@@ -240,34 +240,51 @@
  *   remainder by \f$ e \f$, or below `kHensel` digits by Hensel's division,
  *   whose \f$ a b^{-n} \f$ modulo \f$ e \f$ has the same gcd with \f$ e \f$;
  *   `gcdEuclid()` is the algorithm of Euclid.
- * - With `ADS_WITH_GMP` defined (by hand, or by the option of CMake of the
- *   same name), the products, the quotients, the conversions in the bases that
- *   are not powers of 2 and the greatest common divisor go to the mpn and mpz
- *   layers of GMP (`mpn_mul()`, `mpn_sqr()`, `mpn_tdiv_qr()`, `mpz_tdiv_q()`,
- *   `mpz_divexact()`, `mpz_get_str()`, `mpn_set_str()`, `mpz_gcd()`) in the
+ * - With `ADS_WITH_GMP` defined (by the option of CMake of the same name,
+ *   which defines it whenever GMP is found, by the makefile, which does the
+ *   same, or by hand), the products, the quotients, the square roots, the
+ *   conversions in the bases that are not powers of 2 and the greatest
+ *   common divisor go to the mpn and mpz layers of GMP (`mpn_mul()`,
+ *   `mpn_sqr()`, `mpn_tdiv_qr()`, `mpz_tdiv_q()`, `mpz_divexact()`,
+ *   `mpn_sqrtrem()`, `mpz_get_str()`, `mpn_set_str()`, `mpz_gcd()`) in the
  *   ranges of lengths where GMP was the faster on a Xeon Gold 5120 (the
  *   thresholds `kGmp...`), on the digits of `BigInteger` as they are, read in
- *   place: for factors of \f$ n_a \ge n_b \f$ digits, the product when
+ *   place and written in place where GMP allows it, else into a number of
+ *   GMP kept by the thread (whose digits grow with the results and stay, up
+ *   to `kGmpKeep`) and copied from it: for factors of
+ *   \f$ n_a \ge n_b \f$ digits, the product when
  *   \f$ k_{mul} \le n_b < k_{top} \f$, with \f$ k_{top} \f$ `kGmpMulTop` if
  *   \f$ n_a < 2 n_b \f$ and `kGmpMulLongTop` otherwise, the square of
- *   \f$ n \f$ digits when \f$ n < \f$ `kGmpSqrTop`; for a divisor of \f$ n \f$
- *   digits and a quotient of \f$ m \f$ or \f$ m + 1 \f$, the division with the
- *   remainder when \f$ n < \f$ `kGmpDivTop` or \f$ m < \f$ `kGmpShort`, the
- *   quotient alone when \f$ m > n \f$ and \f$ n < \f$ `kGmpDivTop`, or when
- *   \f$ m \le n \f$, \f$ n \ge \f$ `kGmpQuot` and either \f$ n < \f$
- *   `kGmpQuotTop` or \f$ 2 m \le n \f$; the exact quotient (by Jebelean's
- *   algorithm, from the low digits) when \f$ n < \f$ `kGmpExactTop`; the
- *   conversion of \f$ n \f$ digits to a base not a power of 2 when `kConvert`
- *   \f$ \le n < \f$ `kGmpToStringTop`, and from one always; the gcd (by the
- *   subquadratic algorithm of Moeller) when the shorter argument has `kGmpGcd`
- *   digits or more. Elsewhere, and in the methods asked by name
+ *   \f$ n \f$ digits when \f$ n < \f$ `kGmpSqrTop`; for a divisor of
+ *   \f$ n \f$ digits and a quotient of \f$ m \f$ or \f$ m + 1 \f$, the
+ *   division with the remainder, out of the short ones of Algorithm D on
+ *   the stack (\f$ n < \f$ `kDivShort` and \f$ m + n < 2 \f$ `kDivShort`),
+ *   when \f$ n < \f$ `kGmpDivTop` or \f$ m < \f$ `kGmpShort`, the quotient
+ *   alone from \f$ n = \f$ `kGmpDiv` when \f$ m > n \f$ and \f$ n < \f$
+ *   `kGmpDivTop`, or when \f$ m \le n \f$ and either \f$ n < \f$
+ *   `kGmpQuotTop` or \f$ 2 m \le n \f$; the exact quotient
+ *   (by Jebelean's algorithm, from the low digits) when \f$ n < \f$
+ *   `kGmpExactTop`; the square root and its remainder at any length; the
+ *   conversion of \f$ n \f$ digits to a base not a power of 2 when
+ *   \f$ n < \f$ `kGmpToStringLow` or `kConvert` \f$ \le n < \f$
+ *   `kGmpToStringTop`, and from one always; the gcd (by the algorithm of
+ *   Lehmer, or by the subquadratic one of Moeller) when the shorter argument
+ *   has `kGmpGcd` digits or more, or from `kGmpGcdShort` digits below
+ *   `kGmpGcdShortTop`. Elsewhere, and in the methods asked by name
  *   (`multiplySchool()`, `multiplyKaratsuba()`, `multiplyFFT()`,
  *   `divModSchool()`, `toStringSchool()`, `fromStringSchool()`,
- *   `gcdEuclid()`), `BigInteger` keeps its own code, which is all of it
- *   without the macro, when `<gmp.h>` is not even included; the same where a
- *   limb of GMP is not a word of 64 bits. GMP is free software under the LGPL
- *   v3 (or the GPL v2), as ADS is under the LGPL v3; note that GMP aborts
- *   where it cannot allocate, while `BigInteger` throws `std::bad_alloc`.
+ *   `sqrtNewton()`, `gcdEuclid()`), `BigInteger` keeps its own code, which
+ *   is all of it without the macro, when `<gmp.h>` is not even included; the
+ *   same where a limb of GMP is not a word of 64 bits, and with
+ *   `ADS_BIGINT_GMP` defined to 0. The ranges left to the code of ADS are
+ *   those where it was as fast as GMP or faster in the same timings: the
+ *   products and the squares by the NTT, the gcd of Lehmer on two digits
+ *   from `kGmpGcdShortTop` digits below `kGmpGcd`, and the short divisions
+ *   with the remainder by Algorithm D on the stack.
+ *   GMP is free software under the LGPL v3 (or the GPL v2), as ADS is under
+ *   the LGPL v3; note that GMP aborts where it cannot allocate, while
+ *   `BigInteger` throws `std::bad_alloc`. Why the backend changes no result,
+ *   and where the thresholds come from, is in \ref theory_numeric_backends.
  *
  * The contracts [see `Contract.h`]: the divisor is not 0, the base is in
  * \f$ [ 2 , 36 ] \f$ and the string a number in it; the invariant is the
@@ -699,26 +716,32 @@ class BigInteger {
  // with ADS_WITH_GMP, the lengths in digits that go to GMP, where it was
  // faster in the timings of the same benchmark: the products whose shorter
  // factor has [ kGmpMul , kGmpMulTop ) digits, [ kGmpMul , kGmpMulLongTop )
- // when the longer one is twice as long or more, the squares below
- // kGmpSqrTop; the quotients with the remainder whose divisor is below
- // kGmpDivTop or whose quotient is below kGmpShort, the quotients alone
- // longer than the divisor as those, the others from kGmpQuot digits of
- // divisor below kGmpQuotTop, or at most half as long as the divisor; the
- // exact quotients below kGmpExactTop, the conversions to a base not a
- // power of 2 from kConvert digits below kGmpToStringTop, from one at any
- // length; the greatest common divisors whose shorter argument has
- // kGmpGcd digits or more
+ // when the longer one is twice as long or more, the squares below kGmpSqrTop;
+ // the divisions with the remainder, but the short ones of divShort(), whose
+ // divisor is below kGmpDivTop or whose quotient is below kGmpShort, the
+ // quotients alone by kGmpDiv digits or more longer than the divisor as those,
+ // the others below kGmpQuotTop digits of divisor, or at most half as long as
+ // the divisor; the exact quotients below kGmpExactTop, the conversions to a
+ // base not a power of 2 below kGmpToStringLow digits and from kConvert below
+ // kGmpToStringTop, from one at any length; the greatest common divisors whose
+ // shorter argument has kGmpGcd digits or more, or [ kGmpGcdShort ,
+ // kGmpGcdShortTop ); the square roots at any length; the digits of a result
+ // of GMP kept by the thread for the next one, at most kGmpKeep
  static constexpr std::size_t kGmpMul = 5;          ///< limbs, mpn_mul
  static constexpr std::size_t kGmpMulTop = 1536;      ///< the products
  static constexpr std::size_t kGmpMulLongTop = 704;   ///< the same, long
  static constexpr std::size_t kGmpSqrTop = 1920;    ///< limbs, mpn_sqr
+ static constexpr std::size_t kGmpDiv = 4;          ///< limbs, divisor
  static constexpr std::size_t kGmpDivTop = 3584;    ///< mpn_tdiv_qr
  static constexpr std::size_t kGmpShort = 512;      ///< quotient limbs
- static constexpr std::size_t kGmpQuot = 8;         ///< mpz_tdiv_q
- static constexpr std::size_t kGmpQuotTop = 49152;    ///< the quotients
+ static constexpr std::size_t kGmpQuotTop = 2048;     ///< mpz_tdiv_q
  static constexpr std::size_t kGmpExactTop = 262144;   ///< mpz_divexact
- static constexpr std::size_t kGmpToStringTop = 49152; ///< mpz_get_str
+ static constexpr std::size_t kGmpToStringLow = 4;     ///< mpz_get_str
+ static constexpr std::size_t kGmpToStringTop = 4096;  ///< the same
  static constexpr std::size_t kGmpGcd = 2048;       ///< limbs, mpz_gcd
+ static constexpr std::size_t kGmpGcdShort = 2;     ///< the same, short
+ static constexpr std::size_t kGmpGcdShortTop = 3;  ///< the same, top
+ static constexpr std::size_t kGmpKeep = 8192;      ///< limbs, kept
 
  /// the number \f$ v \f$
  BigInteger( long long v = 0 );
@@ -1470,7 +1493,24 @@ class BigInteger {
  /// true if the quotient of \f$ u \f$ digits by \f$ v \ge 2 \f$ digits goes
  /// to GMP, with its remainder if `rem`
  static bool gmpDivides( std::size_t u , std::size_t v , bool rem );
+
+ /// \f$ z \f$ as the read-only view of \f$ x \f$, with its sign
+ static mpz_srcptr gmpView( mpz_t z , const BigInteger & x );
+
+ /// the number of GMP that receives the results, kept by the thread
+ static mpz_ptr gmpScratch( void );
+
+ /// the digits of the magnitude of \f$ z \f$ of `gmpScratch()`, whose own
+ /// are freed if they are more than `kGmpKeep`
+ static Mag gmpTake( mpz_ptr z );
+
+ /// the number \f$ z \f$
+ static BigInteger gmpNumber( mpz_srcptr z );
 #endif
+
+ /// the backend of `Rational` on GMP reads and makes the numbers by
+ /// `gmpView()` and `gmpNumber()` [see `Rational.h`]
+ friend class Rational;
 
  [[nodiscard]] bool normal( void ) const;
 

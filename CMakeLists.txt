@@ -72,18 +72,55 @@ configure_file(cmake/ADSConfig.h.in include/ADS/ADSConfig.h @ONLY)
 find_package(Threads REQUIRED)
 target_link_libraries(ADS INTERFACE Threads::Threads)
 
-# BigInteger on GMP where it is faster, off by default.
-option(ADS_WITH_GMP "BigInteger on the backend of GMP [see BigInteger.h]" OFF)
-if (ADS_WITH_GMP)
+# BigInteger and Rational on GMP [see BigInteger.h and Rational.h], gemm()
+# on a CBLAS [see DenseMatrix.h]: AUTO, the default, turns each on when a
+# program that calls the library compiles and links, ON requires it (an
+# error at configure time if it is not found), OFF leaves the code of ADS.
+set(ADS_WITH_GMP AUTO CACHE STRING
+    "BigInteger and Rational on GMP: AUTO (if found), ON or OFF")
+set_property(CACHE ADS_WITH_GMP PROPERTY STRINGS AUTO ON OFF)
+set(ADS_WITH_BLAS AUTO CACHE STRING
+    "gemm() on a CBLAS: AUTO (if found), ON or OFF")
+set_property(CACHE ADS_WITH_BLAS PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${ADS_WITH_GMP}" ADS_GMP_MODE)
+string(TOUPPER "${ADS_WITH_BLAS}" ADS_BLAS_MODE)
+set(ADS_USE_GMP OFF)
+if (ADS_GMP_MODE STREQUAL "AUTO" OR ADS_WITH_GMP)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSGMP.cmake)
-    if (NOT ADS_GMP_FOUND)
+    if (ADS_GMP_FOUND)
+        set(ADS_USE_GMP ON)
+    elseif (NOT ADS_GMP_MODE STREQUAL "AUTO")
         message(FATAL_ERROR "ADS_WITH_GMP is ON, but GMP was not found: "
                 "install it (libgmp-dev, gmp-devel, gmp) or set "
                 "GMP_INCLUDE_DIR and GMP_LIBRARY")
     endif ()
+endif ()
+# The directories where the libraries were found, where ADSConfig.cmake
+# looks first.
+if (ADS_USE_GMP)
     target_compile_definitions(ADS INTERFACE ADS_WITH_GMP)
     target_link_libraries(ADS INTERFACE ADS::GMP)
+    get_filename_component(ADS_GMP_LIBDIR "${GMP_LIBRARY}" DIRECTORY)
+    set(ADS_GMP_HINTS "${GMP_INCLUDE_DIR};${ADS_GMP_LIBDIR}")
 endif ()
+set(ADS_USE_BLAS OFF)
+if (ADS_BLAS_MODE STREQUAL "AUTO" OR ADS_WITH_BLAS)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSBLAS.cmake)
+    if (ADS_BLAS_FOUND)
+        set(ADS_USE_BLAS ON)
+    elseif (NOT ADS_BLAS_MODE STREQUAL "AUTO")
+        message(FATAL_ERROR "ADS_WITH_BLAS is ON, but no CBLAS was found: "
+                "install one (libopenblas-dev, openblas-devel, openblas) "
+                "or set CBLAS_INCLUDE_DIR and CBLAS_LIBRARY")
+    endif ()
+endif ()
+if (ADS_USE_BLAS)
+    target_compile_definitions(ADS INTERFACE ADS_WITH_BLAS)
+    target_link_libraries(ADS INTERFACE ADS::BLAS)
+    get_filename_component(ADS_BLAS_LIBDIR "${CBLAS_LIBRARY}" DIRECTORY)
+    set(ADS_BLAS_HINTS "${CBLAS_INCLUDE_DIR};${ADS_BLAS_LIBDIR}")
+endif ()
+message(STATUS "ADS: GMP ${ADS_USE_GMP}, CBLAS ${ADS_USE_BLAS}")
 
 # The executors of the parallel algorithms beyond the pool of ADS [see
 # include/ADS/parallel]: OpenMP, oneTBB and FastFlow, OFF by default.
@@ -211,6 +248,20 @@ if (ADS_BENCHMARKS)
                                        PRIVATE ${Boost_INCLUDE_DIRS})
         endif ()
     endforeach ()
+    # bignum and matrix on the code of ADS alone, when ADS::ADS runs on the
+    # backends
+    if (ADS_USE_GMP)
+        add_executable(bench-bignum-own bench/bignum.cpp)
+        target_link_libraries(bench-bignum-own PRIVATE ADS::ADS)
+        target_compile_definitions(bench-bignum-own PRIVATE ADS_CONTRACTS=0
+                ADS_BENCH_OWN ADS_BIGINT_GMP=0 ADS_RATIONAL_GMP=0)
+    endif ()
+    if (ADS_USE_BLAS)
+        add_executable(bench-matrix-own bench/matrix.cpp)
+        target_link_libraries(bench-matrix-own PRIVATE ADS::ADS)
+        target_compile_definitions(bench-matrix-own PRIVATE ADS_CONTRACTS=0
+                ADS_BENCH_OWN ADS_GEMM_BLAS=0)
+    endif ()
     if (GMPXX_INCLUDE AND GMPXX_LIB AND GMP_LIB)
         target_compile_definitions(bench-bignum PRIVATE ADS_HAS_GMP)
         target_include_directories(bench-bignum PRIVATE ${GMPXX_INCLUDE})
@@ -468,19 +519,24 @@ install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
         cmake/ADSGMP.cmake
+        cmake/ADSBLAS.cmake
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
 # Generate and install ads.pc: its include directory is ${prefix}/include
-# when that is relative, and with GMP it has the define and the library,
-# by gmp.pc.
+# when that is relative; with GMP it has the define and the library, by
+# gmp.pc, and with a CBLAS its define, its headers and its library.
 if (IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
     set(ADS_PC_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
 else ()
     set(ADS_PC_INCLUDEDIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
 endif ()
-if (ADS_WITH_GMP)
+if (ADS_USE_GMP)
     set(ADS_PC_REQUIRES "gmp")
-    set(ADS_PC_CFLAGS " -DADS_WITH_GMP")
+    string(APPEND ADS_PC_CFLAGS " -DADS_WITH_GMP")
+endif ()
+if (ADS_USE_BLAS)
+    string(APPEND ADS_PC_CFLAGS " -DADS_WITH_BLAS ${ADS_BLAS_PC_CFLAGS}")
+    set(ADS_PC_LIBS "${ADS_BLAS_PC_LIBS}")
 endif ()
 configure_file(cmake/ads.pc.in ${CMAKE_CURRENT_BINARY_DIR}/ads.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc

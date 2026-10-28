@@ -20,7 +20,7 @@
 #                           [HASHING=<dir>] [ABSL=<prefix>]                   #
 #                           [LIBSAIS=<prefix>] [DIVSUFSORT=<prefix>]          #
 #                           [EDLIB=<prefix>] [RAPIDFUZZ=<prefix>]             #
-#                           (with GMP also bignum-gmp, BigInteger on GMP)     #
+#                           (with the backends also bignum-own, matrix-own)   #
 #                           [FLINT=<prefix>]                                  #
 #                           [PRIORITY=<dir>] [MIMALLOC=<prefix>]              #
 #                           [JEMALLOC=<prefix>] [OPT=<prefix>]                #
@@ -84,7 +84,7 @@ run priority 100000 1000000
 run sequences 100000 10000000
 run memory 100000 1000000
 run bignum 16 256 1024 4096 32768
-[ -x "$BUILD/bench-bignum-gmp" ] && run bignum-gmp 16 256 1024 4096 32768
+[ -x "$BUILD/bench-bignum-own" ] && run bignum-own 16 256 1024 4096 32768
 run fft 64 1000 1024 16384 100000 131072 1048576
 run hashing 100000 1000000
 run search 100000 1000000 10000000
@@ -96,6 +96,7 @@ run numeric 100000 1000000
 run queues 100000 1000000
 run geometry 100000 1000000
 run matrix 64 256 1024 2048 4096
+[ -x "$BUILD/bench-matrix-own" ] && run matrix-own 64 256 1024 2048 4096
 run sparse 100000 1000000
 run graphs 100000 1000000
 # the queues between threads on the core and the next one allowed

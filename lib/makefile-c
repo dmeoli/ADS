@@ -17,8 +17,12 @@
 #           $(ADSSDR)            = the directory where the ADS source is      #
 #           $(ADSODR)            = the directory where the objects have to    #
 #                                  be put                                     #
-#           $(ADS_WITH_GMP)      = 1 for BigInteger on GMP [see               #
-#                                  BigInteger.h]                              #
+#           $(ADS_WITH_GMP)      = 1 for BigInteger and Rational on GMP [see  #
+#                                  BigInteger.h and Rational.h], 0 for their  #
+#                                  own code, auto (the default) for GMP when  #
+#                                  a program that calls it compiles and links #
+#           $(ADS_WITH_BLAS)     = the same for gemm() on a CBLAS [see        #
+#                                  DenseMatrix.h]                             #
 #           $(ADS_WITH_OPENMP)   = 1 for the executor of OpenMP [see          #
 #                                  OpenMPExecutor.h]                          #
 #           $(ADS_WITH_TBB)      = 1 for the executor of oneTBB [see          #
@@ -28,17 +32,21 @@
 #           $(ADS_WITH_MPI)      = 1 for the sort over the processes of MPI   #
 #                                  [see DistributedSort.h]; $(CXX) has then   #
 #                                  to be the compiler of MPI (e.g., mpicxx)   #
-#           $(GMP_ROOT), $(OpenMP_ROOT), $(TBB_ROOT), $(FastFlow_ROOT)        #
-#                                = where the libraries are, see               #
-#                                  extlib/makefile-paths (GMP=<prefix> on     #
-#                                  the command line is the same as            #
-#                                  GMP_ROOT=<prefix>)                         #
+#           $(GMP_ROOT), $(BLAS_ROOT), $(OpenMP_ROOT), $(TBB_ROOT),           #
+#           $(FastFlow_ROOT)     = where the libraries are, see               #
+#                                  extlib/makefile-paths (GMP=<prefix> and    #
+#                                  BLAS=<prefix> on the command line are the  #
+#                                  same as GMP_ROOT=<prefix> and              #
+#                                  BLAS_ROOT=<prefix>), $(BLAS_LIB) the name  #
+#                                  of the CBLAS [see extlib/makefile-libBLAS] #
 #                                                                             #
 #   Output: $(ADSOBJ)            = the object of the module ads, if built     #
 #           $(ADSH)              = the .h and .tpp files of ADS               #
 #           $(ADSINC)            = all the -I$( include dirs ), -D and        #
 #                                  compiler options of ADS                    #
 #           $(ADSLIB)            = the external libraries + -L< libdirs >     #
+#           $(ADSGMPON), $(ADSBLASON) = 1 if the backend of GMP, of the       #
+#                                  CBLAS, is on                               #
 #                                                                             #
 ###############################################################################
 
@@ -72,9 +80,13 @@ endif
 # when pushing changes
 -include $(ADSSDR)/extlib/makefile-paths
 
-# the prefix of GMP given as GMP=<prefix>, as the benchmarks take it
+# the prefixes of GMP and of the CBLAS given as GMP=<prefix> and
+# BLAS=<prefix>, as the benchmarks take them
 ifdef GMP
     GMP_ROOT = $(GMP)
+endif
+ifdef BLAS
+    BLAS_ROOT = $(BLAS)
 endif
 
 # define & include the necessary modules- - - - - - - - - - - - - - - - - - -
@@ -86,11 +98,27 @@ endif
 ADSINC := $(ADSSWOS)
 ADSLIB := -pthread
 
-# GMP, for BigInteger
-ifeq ($(ADS_WITH_GMP),1)
+# GMP, for BigInteger and Rational, and a CBLAS, for gemm(): on where they
+# are found unless turned off, auto by default
+ADS_WITH_GMP ?= auto
+ADS_WITH_BLAS ?= auto
+ifneq ($(ADS_WITH_GMP),0)
     include $(ADSSDR)/extlib/makefile-libGMP
+    ADSGMPON := $(strip $(if $(filter auto,$(ADS_WITH_GMP)),\
+	$(libGMPFOUND),$(filter 1,$(ADS_WITH_GMP))))
+endif
+ifeq ($(ADSGMPON),1)
     ADSINC += -DADS_WITH_GMP $(libGMPINC)
     ADSLIB += $(libGMPLIB)
+endif
+ifneq ($(ADS_WITH_BLAS),0)
+    include $(ADSSDR)/extlib/makefile-libBLAS
+    ADSBLASON := $(strip $(if $(filter auto,$(ADS_WITH_BLAS)),\
+	$(libBLASFOUND),$(filter 1,$(ADS_WITH_BLAS))))
+endif
+ifeq ($(ADSBLASON),1)
+    ADSINC += -DADS_WITH_BLAS $(libBLASINC)
+    ADSLIB += $(libBLASLIB)
 endif
 
 # OpenMP, for its executor

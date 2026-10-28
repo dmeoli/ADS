@@ -14,6 +14,8 @@ vcpkg_cmake_configure(
     OPTIONS
         -DADS_BUILD_TESTS=OFF
         -DADS_BENCHMARKS=OFF
+        -DADS_WITH_GMP=OFF
+        -DADS_WITH_BLAS=OFF
 )
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup(PACKAGE_NAME ads CONFIG_PATH share/cmake/ADS)

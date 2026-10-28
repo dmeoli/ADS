@@ -27,6 +27,10 @@
 #                         refuses more than 2^16 sections otherwise (clang++  #
 #                         switches to them by itself)                         #
 #           $(ADSEXE)   = the suffix of the executables (.exe on Windows)     #
+#           $(ADSNULL)  = the file that discards what is written to it, for   #
+#                         the programs that only try whether a library links  #
+#           $(ADScomma), $(ADShash) = a comma and a hash, for the arguments   #
+#                         of the functions and the text of the shell          #
 #                                                                             #
 ###############################################################################
 
@@ -56,8 +60,12 @@ ADSSWDBG = $(if $(ADSCLANG),-glldb,-ggdb)
 ifeq ($(UNAME_S),Windows)
     ADSSWOS = $(if $(ADSCLANG),,-Wa$(ADScomma)-mbig-obj)
     ADSEXE = .exe
+    ADSNULL = nul
+else
+    ADSNULL = /dev/null
 endif
 
 ADScomma := ,
+ADShash := \#
 
 ############################# End of makefile-OS ##############################

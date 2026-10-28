@@ -35,6 +35,7 @@
 #include "ADS/numeric/SellMatrix.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <concepts>
 #include <cstdint>
@@ -845,8 +846,11 @@ ADS_TEST( "closest-pair-sweep" )
 // gemm() against the naive product on every shape from 0 to beyond the
 // blocks, with leading dimensions larger than the columns, alpha and beta,
 // beta = 0 on a C of NaN (which must not be read), k = 0 and alpha = 0;
-// on doubles, floats and integers (the portable kernel); multiply() and
-// transpose() of DenseMatrix against the book's Matrix
+// on doubles, floats and integers (the portable kernel); the edges of the
+// ranges that go to the CBLAS under ADS_WITH_BLAS, the same products on
+// gemm() alone without it: m n k just below, at and above kGemmBlasSmall,
+// each dimension just below and at kGemmBlasThin with the others long;
+// multiply() and transpose() of DenseMatrix against the book's Matrix
 ADS_TEST( "dense-gemm" )
 {
  std::mt19937_64 g( 31 );
@@ -886,6 +890,25 @@ ADS_TEST( "dense-gemm" )
     CHECK( run( 1.0f , m , n , k , 1.0f , 0.0f , true ) );
     CHECK( run( 1L , m , n , k , 3L , 2L , false ) );
     }
+ // the edges of the CBLAS
+#ifdef ADS_WITH_BLAS
+ CHECK( ADS_GEMM_BLAS == 1 );
+#endif
+ for( const auto & [ m , n , k ] : std::vector< std::array< std::size_t ,
+                                                           3 > >{
+       { 16 , 32 , 31 } , { 16 , 32 , 32 } , { 17 , 32 , 31 } } ) {
+  CHECK( run( 1.0 , m , n , k , 1.0 , 0.0 , true ) );
+  CHECK( run( 1.0f , m , n , k , -2.0f , 3.0f , false ) );
+  }
+ for( std::size_t t : { kGemmBlasThin - 1 , kGemmBlasThin } )
+  for( int s = 0 ; s < 3 ; ++s ) {
+   const std::size_t m = s == 0 ? t : 130 , n = s == 1 ? t : 140 ,
+                     k = s == 2 ? t : 150;
+   CHECK( run( 1.0 , m , n , k , 1.0 , 0.0 , true ) );
+   CHECK( run( 1.0 , m , n , k , 0.5 , -1.0 , false ) );
+   CHECK( run( 1.0f , m , n , k , 2.0f , 0.0f , true ) );
+   CHECK( run( 1.0f , m , n , k , -1.0f , 2.0f , false ) );
+   }
  // beyond the blocks KC , MC and the panels, and alpha = 0
  CHECK( run( 1.0 , 250 , 70 , 300 , 1.0 , 1.0 , false ) );
  CHECK( run( 1.0 , 260 , 33 , 520 , -1.0 , 0.0 , true ) );

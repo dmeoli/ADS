@@ -2580,6 +2580,11 @@ ADS_TEST( "big-integer-pool" )
 
 // the edges of the ranges that go to GMP under ADS_WITH_GMP [see
 // BigInteger.h], and the same cases on BigInteger alone without it: the
+// square roots of 0 to 3 digits, of the squares, of their neighbours and
+// of 2^{64 n - 1}, against Newton's method; the quotients by divisors
+// around kGmpDiv and kDivShort; the conversions around kGmpToStringLow;
+// the gcd around kGmpGcdShort and kGmpGcdShortTop; the operations with
+// the result in an operand (a = a * a and the like); then the
 // products balanced, with the longer factor just below and at twice the
 // shorter and much longer, the squares, by the NTT, which never goes to
 // GMP; the quotients built as q v + r, with the divisors at the edges and
@@ -2598,6 +2603,60 @@ ADS_TEST( "big-integer-gmp" )
 #endif
  using B = BigInteger;
  std::mt19937_64 g( 27 );
+ CHECK( B::sqrt( 0 ) == 0 && B::sqrtRem( 0 ).second == 0 &&
+        B::sqrt( 1 ) == 1 && B::sqrt( 2 ) == 1 && B::sqrt( 3 ) == 1 &&
+        B::sqrt( 4 ) == 2 && B::sqrtRem( 8 ).second == 4 );
+ for( std::size_t n : { 1 , 2 , 3 , 4 , 7 , 40 } ) {   // the square roots
+  const B x = digits( n , g ) , x2 = x * x , top = B::pow( 2 , 64 * n - 1 );
+  for( const B & a : { x2 - 1 , x2 , x2 + 1 , x2 + 2 * x , x , top ,
+                       top - 1 } ) {
+   const auto [ s , r ] = B::sqrtRem( a );
+   CHECK( s == B::sqrt( a ) && s == B::sqrtNewton( a ) &&
+          s * s + r == a && r <= 2 * s );
+   }
+  CHECK( B::sqrt( x2 ) == x && B::sqrtRem( x2 ).second == 0 &&
+         B::sqrt( x2 - 1 ) == x - 1 );
+  }
+ CHECK_THROWS( B::sqrt( -1 ) , contract_violation );
+ for( std::size_t n : { 1 , 2 , 3 , 4 , 5 , 15 , 16 , 17 } )   // quotients
+  for( std::size_t m : { 1 , 2 , 3 , 15 , 16 , 17 } ) {
+   const B v = digits( n , g ) , q = digits( m , g ) , r = v - 1 ,
+           u = q * v + r;
+   CHECK( u / v == q && u % v == r && ( -u ) / v == -q &&
+          ( -u ) % v == -r && u / -v == -q && ( u - r ) / v == q &&
+          B::divMod( u , v ).first == q );
+   }
+ for( std::size_t n : { 1 , 2 , 3 , 4 , 5 } )   // conversions
+  for( int base : { 3 , 10 , 36 } ) {
+   const B x = digits( n , g ) , y = -x;
+   CHECK( x.toString( base ) == x.toStringSchool( base ) &&
+          y.toString( base ) == y.toStringSchool( base ) &&
+          B( y.toString( base ) , base ) == y );
+   }
+ for( std::size_t n : { 1 , 2 , 3 , 4 } ) {   // gcd
+  const B a = digits( n , g ) , b = digits( n , g ) , c = digits( 1 , g );
+  CHECK( B::gcd( a * c , b * c ) == B::gcdEuclid( a * c , b * c ) &&
+         B::gcd( -a , b ) == B::gcdEuclid( a , b ) && B::gcd( a , a ) == a &&
+         B::gcd( a , 0 ) == a && B::gcd( 0 , -a ) == a &&
+         B::gcd( 0 , 0 ) == 0 );
+  }
+ for( std::size_t n : { 1 , 3 , 9 , 50 } ) {   // the result in an operand
+  B a = digits( n , g );
+  const B a0 = a , sq = a0 * a0;
+  a = a * a;
+  CHECK( a == sq );
+  a *= a;
+  CHECK( a == sq * sq );
+  a = a / a;
+  CHECK( a == 1 );
+  a = sq;
+  a = B::sqrt( a );
+  CHECK( a == a0 );
+  a = B::gcd( a , a );
+  CHECK( a == a0 );
+  a = a % a;
+  CHECK( a == 0 );
+  }
  auto around = []( std::initializer_list< std::size_t > t ) {
   std::vector< std::size_t > v;
   for( std::size_t x : t )
@@ -2630,7 +2689,8 @@ ADS_TEST( "big-integer-gmp" )
  // the signs and all the remainders on the short divisors only, since
  // the audits of the long ones take Algorithm D
  const std::size_t S = B::kGmpShort , Q = B::kGmpQuotTop;
- for( std::size_t n : around( { 2 , B::kGmpQuot , B::kGmpDivTop , Q } ) ) {
+ for( std::size_t n : around( { 2 , B::kGmpDiv , B::kDivShort , B::kGmpDivTop ,
+                                Q } ) ) {
   const bool small = n < 100;
   std::vector< std::size_t > ms = { 1 , 2 , S - 1 , S , S + 1 };
   if( n < Q - 1 ) {
@@ -2702,9 +2762,52 @@ ADS_TEST( "big-integer-gmp" )
 
 // the rationals: the harmonic number H_30 as written, the sums and the
 // products in lowest terms (the audit), and the order; the sums by each
-// way of reducing, and H_400 in two orders
+// way of reducing, and H_400 in two orders; the operations on terms
+// around kGmp and kGmpTop digits, the edges of the range that goes to GMP
+// under ADS_WITH_GMP, against a fraction as long and one of one digit,
+// with zero results, signs, huge terms and the result in an operand,
+// against the definitions on BigInteger
 ADS_TEST( "rational" )
 {
+#ifdef ADS_WITH_GMP
+ CHECK( ADS_RATIONAL_GMP == ADS_BIGINT_GMP );
+#endif
+ {
+  std::mt19937_64 h( 41 );
+  using B = BigInteger;
+  for( std::size_t n : { std::size_t( 1 ) , Rational::kGmp - 1 ,
+                         Rational::kGmp , Rational::kGmpTop - 1 ,
+                         Rational::kGmpTop , std::size_t( 90 ) } )
+   for( std::size_t e : { n , std::size_t( 1 ) } ) {
+    const B a = digits( n , h ) , b = digits( n , h ) + 1 ,
+            c = -digits( e , h ) , d = digits( e , h ) + 2;
+    const Rational x( a , b ) , y( c , d );
+    // the definitions: ( a d + c b ) / b d and a c / b d, reduced
+    CHECK( x + y == Rational( a * d + c * b , b * d ) &&
+           x - y == Rational( a * d - c * b , b * d ) &&
+           x * y == Rational( a * c , b * d ) &&
+           x / y == Rational( a * d , b * c ) &&
+           ( x < y ) == ( a * d < c * b ) && ( y < x ) && x == x &&
+           x - x == Rational() && x * Rational() == Rational() &&
+           Rational() / x == Rational() && ( -x ) * ( -x ) == x * x &&
+           ( x - x ).den() == B( 1 ) && ( x / x ) == Rational( 1 ) );
+    Rational z = x;
+    z = z + z;
+    CHECK( z == x * Rational( 2 ) );
+    z = z * z;
+    CHECK( z == Rational( 4 ) * x * x );
+    z = z / z;
+    CHECK( z == Rational( 1 ) );
+    z = x;
+    z = z - z;
+    CHECK( z == Rational() && z.den() == B( 1 ) );
+    }
+  const B p = B::pow( 2 , 6000 ) , q = B::pow( 3 , 4000 );
+  const Rational u( p , q ) , v( q - 1 , p + 1 );
+  CHECK( u * v == Rational( p * ( q - 1 ) , q * ( p + 1 ) ) &&
+         u + v == Rational( p * ( p + 1 ) + ( q - 1 ) * q , q * ( p + 1 ) ) &&
+         ( u / u ) == Rational( 1 ) && u < v && -u > -v );
+ }
  Rational H;
  for( int i = 1 ; i <= 30 ; ++i ) H = H + Rational( 1 , i );
  CHECK( H.toString() == "9304682830147/2329089562800" );

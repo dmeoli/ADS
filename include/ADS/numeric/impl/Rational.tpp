@@ -2,7 +2,8 @@
 /*--------------------------- File Rational.tpp ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The operations of Rational [see Rational.h], with their contracts.
+ * The operations of Rational [see Rational.h], with their contracts, and
+ * the backend of GMP.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -25,7 +26,63 @@ inline bool isOne( const BigInteger & x )
  return( ( x.limbs() == 1 ) && ( x == one ) );
  }
 
+#if ADS_RATIONAL_GMP
+/// the fraction of GMP that receives the results of `Rational`, kept by
+/// the thread, so that its digits are allocated once
+struct RationalScratch {
+ mpq_t q;
+ RationalScratch( void ) { mpq_init( q ); }
+ RationalScratch( const RationalScratch & ) = delete;
+ RationalScratch & operator=( const RationalScratch & ) = delete;
+ ~RationalScratch( void ) { mpq_clear( q ); }
+ };
+
+/// the fraction of `RationalScratch` of the calling thread
+inline mpq_ptr rationalScratch( void )
+{
+ thread_local RationalScratch s;
+ return( s.q );
+ }
+#endif
+
 }  // end( namespace detail )
+
+#if ADS_RATIONAL_GMP
+
+inline bool Rational::gmp( const Rational & a , const Rational & b )
+{
+ const std::size_t n = std::max( std::max( a.f_num.limbs() ,
+                                           a.f_den.limbs() ) ,
+                                 std::max( b.f_num.limbs() ,
+                                           b.f_den.limbs() ) );
+ return( ( n >= kGmp ) && ( n < kGmpTop ) );
+ }
+
+inline mpq_srcptr Rational::gmpView( mpq_t q , const Rational & a )
+{
+ BigInteger::gmpView( mpq_numref( q ) , a.f_num );
+ BigInteger::gmpView( mpq_denref( q ) , a.f_den );
+ return( q );
+ }
+
+inline Rational Rational::gmpApply( const Rational & a , const Rational & b ,
+                                    void ( *op )( mpq_ptr , mpq_srcptr ,
+                                                  mpq_srcptr ) )
+{
+ mpq_t A , B;
+ const mpq_ptr r = detail::rationalScratch();
+ op( r , gmpView( A , a ) , gmpView( B , b ) );
+ return( Rational( BigInteger::gmpNumber( mpq_numref( r ) ) ,
+                   BigInteger::gmpNumber( mpq_denref( r ) ) , Reduced() ) );
+ }
+
+inline int Rational::gmpCompare( const Rational & a , const Rational & b )
+{
+ mpq_t A , B;
+ return( mpq_cmp( gmpView( A , a ) , gmpView( B , b ) ) );
+ }
+
+#endif
 
 inline Rational::Rational( BigInteger num , BigInteger den )
 {
@@ -62,6 +119,9 @@ inline std::string Rational::toString( void ) const
 
 inline Rational operator+( const Rational & a , const Rational & b )
 {
+#if ADS_RATIONAL_GMP
+ if( Rational::gmp( a , b ) ) return( Rational::gmpApply( a , b , mpq_add ) );
+#endif
  const BigInteger d1 = BigInteger::gcd( a.f_den , b.f_den );
  if( detail::isOne( d1 ) ) {
   BigInteger t = a.f_num * b.f_den;         // in place
@@ -89,12 +149,18 @@ inline Rational Rational::operator-( void ) const
 
 inline Rational operator-( const Rational & a , const Rational & b )
 {
+#if ADS_RATIONAL_GMP
+ if( Rational::gmp( a , b ) ) return( Rational::gmpApply( a , b , mpq_sub ) );
+#endif
  return( a + ( -b ) );
  }
 
 inline Rational operator*( const Rational & a , const Rational & b )
 {
  if( ( a.f_num.sign() == 0 ) || ( b.f_num.sign() == 0 ) ) return( Rational() );
+#if ADS_RATIONAL_GMP
+ if( Rational::gmp( a , b ) ) return( Rational::gmpApply( a , b , mpq_mul ) );
+#endif
  const BigInteger d1 = BigInteger::gcd( a.f_num , b.f_den ) ,
                   d2 = BigInteger::gcd( a.f_den , b.f_num );
  const bool o1 = detail::isOne( d1 ) , o2 = detail::isOne( d2 );
@@ -109,6 +175,10 @@ inline Rational operator*( const Rational & a , const Rational & b )
 inline Rational operator/( const Rational & a , const Rational & b )
 {
  ADS_PRE( b.f_num.sign() != 0 );
+#if ADS_RATIONAL_GMP
+ if( ( a.f_num.sign() != 0 ) && Rational::gmp( a , b ) )
+  return( Rational::gmpApply( a , b , mpq_div ) );
+#endif
  const Rational inv = b.f_num.sign() > 0
                       ? Rational( b.f_den , b.f_num , Rational::Reduced() )
                       : Rational( -b.f_den , -b.f_num , Rational::Reduced() );
@@ -120,6 +190,9 @@ inline std::strong_ordering operator<=>( const Rational & a ,
 {
  if( a.f_num.sign() != b.f_num.sign() )
   return( a.f_num.sign() <=> b.f_num.sign() );
+#if ADS_RATIONAL_GMP
+ if( Rational::gmp( a , b ) ) return( Rational::gmpCompare( a , b ) <=> 0 );
+#endif
  return( a.f_num * b.f_den <=> b.f_num * a.f_den );   // denominators > 0
  }
 

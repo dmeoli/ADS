@@ -16,10 +16,13 @@
 #                      at a time)                                             #
 #     make test-mpi    the sort over the processes of MPI, by mpicxx and      #
 #                      mpirun                                                 #
-#     make test ADS_WITH_GMP=1 [GMP=<prefix>]                                 #
-#                      the same with BigInteger on the backend of GMP         #
+#     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0                                #
+#                      the same without the backends of GMP and of a CBLAS,   #
+#                      on by default where they are found [GMP=<prefix>]      #
+#                      [BLAS=<prefix>]                                        #
 #     make test ADSMOD=1                                                      #
 #                      also the C++20 module ads and the test that imports it #
+#     make backends    tells whether GMP and a CBLAS were found               #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
 #     make install     copies include/ADS into $(PREFIX)/include, with        #
@@ -32,7 +35,8 @@
 #                                   if not given)                             #
 #           optional: $(PREFIX)   = where make install copies the headers     #
 #                                   (/usr/local if not given)                 #
-#           optional: the macros of the backends, ADS_WITH_GMP=1,             #
+#           optional: the macros of the backends, ADS_WITH_GMP and            #
+#                     ADS_WITH_BLAS (auto by default, 0 or 1),                #
 #                     ADS_WITH_OPENMP=1, ADS_WITH_TBB=1, ADS_WITH_FASTFLOW=1, #
 #                     and their *_ROOT [see lib/makefile-c]; ADSMOD=1 [see    #
 #                     lib/makefile-mod]                                       #
@@ -132,16 +136,26 @@ test: $(addprefix test-,$(PROGRAMS)) $(MODBIN)
 	$(if $(MODBIN),$(MODBIN) || failed=$$((failed + 1));) \
 	echo "$$failed failed"; test $$failed -eq 0
 
+# the backends found, as the tests are built [see lib/makefile-c] - - - - - -
+
+backends:
+	@echo "ADS: GMP $(if $(filter 1,$(ADSGMPON)),ON,OFF)," \
+	      "CBLAS $(if $(filter 1,$(ADSBLASON)),ON,OFF)"
+
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 comma    := ,
-GMPLINK   = $(if $(GMP),-I$(GMP)/include -L$(GMP)/lib \
-            -Wl$(comma)-rpath$(comma)$(GMP)/lib) -lgmp
+# the backends as the tests have them [see lib/makefile-c]
+GMPON     = $(if $(filter 1,$(ADSGMPON)),-DADS_WITH_GMP $(libGMPINC) \
+            $(libGMPLIB))
+BLASON    = $(if $(filter 1,$(ADSBLASON)),-DADS_WITH_BLAS $(libBLASINC) \
+            $(libBLASLIB))
 
 # the benchmarks, with the contracts off and the Boost headers if found;
+# bignum, matrix and parallel on the backends found as the tests are, and
+# with them on, bignum-own and matrix-own on the code of ADS alone;
 # GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft (also
-# in single precision, if FFTW has libfftw3f), and GMP=<prefix> or
-# ADS_WITH_GMP=1 bignum-gmp, BigInteger on GMP; FLINT=<prefix> adds FLINT
+# in single precision, if FFTW has libfftw3f); FLINT=<prefix> adds FLINT
 # to bignum (with GMP and MPFR in the same prefix); POCKETFFT=<dir> and
 # DUCC0=<dir> add to fft pocketfft (the directory of pocketfft_hdronly.h)
 # and ducc0 (the directory src of its sources);
@@ -183,7 +197,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
             learned stringdicts flows assignment \
-            $(if $(GMP)$(filter 1,$(ADS_WITH_GMP)),bignum-gmp)
+            $(if $(GMPON),bignum-own) $(if $(BLASON),matrix-own)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
 # the same for ADS and for the libraries it is compared with, so that a
@@ -282,11 +296,11 @@ TRIEFLAGS = $(ABSLFLAGS) $(if $(HTRIE),-I$(HTRIE)/include) \
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
 $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(GMPFLAGS) $(FLINTFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(GMPON) $(GMPFLAGS) $(FLINTFLAGS)
 
-$(BUILD)/bench-bignum-gmp: bench/bignum.cpp bench/Bench.h $(HEADERS) \
+$(BUILD)/bench-bignum-own: bench/bignum.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -DADS_WITH_GMP -o $@ $< $(GMPLINK)
+	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $<
 
 $(BUILD)/bench-fft: bench/fft.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(FFTWFLAGS)
@@ -323,7 +337,11 @@ $(BUILD)/bench-geometry: bench/geometry.cpp bench/Bench.h $(HEADERS) \
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(CGALFLAGS)
 
 $(BUILD)/bench-matrix: bench/matrix.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS) $(OPENBLASFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BLASON) $(EIGENFLAGS) $(OPENBLASFLAGS)
+
+$(BUILD)/bench-matrix-own: bench/matrix.cpp bench/Bench.h $(HEADERS) \
+                          | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $<
 
 $(BUILD)/bench-sparse: bench/sparse.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS)
@@ -433,7 +451,7 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
 
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(PARFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BLASON) $(PARFLAGS)
 
 # the bulk operations of the trees based on join: PAM=<dir> (its sources)
 # with PARLAY=<dir> (those of ParlayLib) adds pam_map
@@ -497,6 +515,6 @@ install:
 clean::
 	rm -rf $(BUILD)
 
-.PHONY: all test test-mpi bench install clean
+.PHONY: all test test-mpi bench install clean backends
 
 ############################### End of makefile ###############################

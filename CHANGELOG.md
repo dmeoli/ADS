@@ -1305,6 +1305,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decodes and rebuilds no string
 - SuccinctPatriciaTrie: access() finds the start of a node by the zero
   before it instead of a select0
+- the backends are on by default wherever their library is found: CMake
+  takes ADS_WITH_GMP and the new ADS_WITH_BLAS as AUTO (on when a program
+  that calls the library compiles and links, ON an error if it does not,
+  OFF the code of ADS alone), and lib/makefile-c does the same
+  (ADS_WITH_GMP and ADS_WITH_BLAS auto, 1 or 0, GMP=<prefix>,
+  BLAS=<prefix> and BLAS_LIB, the CBLAS by extlib/makefile-libBLAS, the
+  probe of GMP in extlib/makefile-libGMP, Accelerate on macOS; make
+  backends tells what was found);
+  cmake/ADSBLAS.cmake finds the CBLAS, and ADSConfig.cmake and ads.pc carry
+  the backends ADS was built with; the recipes of packaging/ build with
+  both off, so that the packages depend on nothing
+- BigInteger on GMP, its ranges measured again against mpz_class on
+  every case of bench/bignum.cpp: GMP also takes the square root
+  (mpn_sqrtrem(), at any length), the quotients alone by divisors of 4
+  digits or more (kGmpDiv, in place of kGmpQuot; mpz_tdiv_q() straight
+  into the result, the short ones included), the conversions of 1 to 3
+  digits (kGmpToStringLow) and the gcd of 2 digits (kGmpGcdShort,
+  kGmpGcdShortTop), where it was the faster, while the quotients of
+  divisors of 2048 digits or more (kGmpQuotTop, 49152 before) and the
+  conversions of 4096 digits or more (kGmpToStringTop, 49152 before) are
+  back on the code of ADS, now the faster there; the results of
+  mpz_tdiv_q(), mpz_divexact() and mpz_gcd() go to a number of GMP kept
+  by the thread, freed beyond kGmpKeep digits, instead of one allocated
+  per call
+- Rational on GMP: the sums, differences, products, quotients and
+  comparisons go to mpq_add(), mpq_sub(), mpq_mul(), mpq_div() and
+  mpq_cmp() on the terms read in place, when the longest term has 2 or 3
+  digits (kGmp, kGmpTop), the result in a fraction of GMP kept by the
+  thread; on the longer terms the gcds of BigInteger are the faster, and
+  Rational keeps its code (ADS_RATIONAL_GMP=0 turns the backend off)
+- gemm() of double and float on a CBLAS (ADS_WITH_BLAS: OpenBLAS, the
+  reference CBLAS, Accelerate with ADS_BLAS_ACCELERATE) for the small
+  products (m n k < kGemmBlasSmall) and the thin ones (a dimension below
+  kGemmBlasThin), where OpenBLAS was the faster, the parallel gemm() a range
+  of rows per thread by one call each; the larger products stay on the
+  micro-kernels of ADS (ADS_GEMM_BLAS=0 turns the backend off); the tests
+  dense-gemm, rational and big-integer-gmp check the edges of all these
+  ranges, with and without the backends, and the CI runs both on every
+  system and compiler of its matrix, and the job backends with both
+  required
+- bench/bignum.cpp and bench/matrix.cpp measure BigInteger, Rational and
+  gemm() as they are built (on the backends when found), and, built with
+  ADS_BENCH_OWN (bench-bignum-own, bench-matrix-own, made when the
+  backends are on), on the code of ADS alone, in place of bench-bignum-gmp;
+  bignum also times the sum and the product of two fractions of n digits
 - MultiQueue: the deletion buffer a ring of 16 places, so that the pop of
   its least pair and the eviction of its greatest move no other pair, and
   the pop from the better of two distinct queues, whose mean rank error

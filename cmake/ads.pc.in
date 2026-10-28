@@ -7,3 +7,4 @@ URL: https://github.com/dmeoli/ADS
 Version: @PROJECT_VERSION@
 Requires: @ADS_PC_REQUIRES@
 Cflags: -I${includedir}@ADS_PC_CFLAGS@
+Libs:@ADS_PC_LIBS@

@@ -42,6 +42,29 @@
  *   (\f$ m n k \le 2^{21} \f$) packs \f$ B \f$ alone and reads \f$ A \f$
  *   where it is, the tiles of its last rows and columns by kernels of their
  *   shape.
+ * - With `ADS_WITH_BLAS` defined (by the option of CMake of the same name,
+ *   which defines it whenever a CBLAS is found, by the makefile, which does
+ *   the same, or by hand, with `cblas.h` and the library of the CBLAS, or
+ *   with `ADS_BLAS_ACCELERATE` the framework Accelerate of macOS), `gemm()`
+ *   of `double` and of `float` goes to `cblas_dgemm()` and `cblas_sgemm()`
+ *   when \f$ m n k < \f$ `kGemmBlasSmall` or
+ *   \f$ \min\{ m , n , k \} < \f$ `kGemmBlasThin`, the ranges where OpenBLAS
+ *   was the faster on a Xeon Gold 5120 (the small products and the thin
+ *   ones, whose few rows or columns leave the micro-tiles above mostly
+ *   empty), and when the sizes fit the `int` of the CBLAS; the parallel
+ *   `gemm()` [see `ParallelNumeric.h`] does the same, a range of rows of
+ *   \f$ C \f$ to each thread, which multiplies it by the CBLAS. On the larger
+ *   products the micro-kernels of `gemm()` were as fast as those of
+ *   OpenBLAS or faster on that processor, which has one unit of fused
+ *   products of 512 bits per core, and they stay.
+ *   The CBLAS runs on the threads it is built or set for, e.g., those of
+ *   `OPENBLAS_NUM_THREADS` for OpenBLAS: one for a product on one thread, as
+ *   the parallel `gemm()` expects of it. Elsewhere, and for the other
+ *   types, `gemm()` keeps the code above, which is all of it without the
+ *   macro (or with `ADS_GEMM_BLAS` defined to 0), when nothing of the CBLAS
+ *   is included. On other processors the ranges differ, and the thresholds
+ *   are to be measured again there; the bound of the error that both routes
+ *   satisfy is in \ref theory_numeric_backends.
  * - `transpose()` moves blocks of \f$ 32 \times 32 \f$ entries, which stay
  *   in the cache of first level both read by columns and written by rows,
  *   instead of running through whole columns: \f$ \Theta( m n ) \f$ time and
@@ -99,6 +122,12 @@
  *      algorithm reloaded, SC16: International Conference for High
  *      Performance Computing, Networking, Storage and Analysis, 690-701,
  *      2016, doi:10.1109/SC.2016.58
+ * \see L. S. Blackford, J. Demmel, J. Dongarra, I. Duff, S. Hammarling,
+ *      G. Henry, M. Heroux, L. Kaufman, A. Lumsdaine, A. Petitet, R. Pozo,
+ *      K. Remington, R. C. Whaley, An updated set of basic linear algebra
+ *      subprograms (BLAS), ACM Transactions on Mathematical Software 28(2),
+ *      135-151, 2002, doi:10.1145/567806.567807, the C interface of the
+ *      backend
  * \see M. Frigo, C. E. Leiserson, H. Prokop, S. Ramachandran,
  *      Cache-oblivious algorithms, ACM Transactions on Algorithms 8(1),
  *      4:1-22, 2012, doi:10.1145/2071379.2071383
@@ -135,6 +164,26 @@
 
 #if defined( __AVX512F__ ) || ( defined( __AVX2__ ) && defined( __FMA__ ) )
  #include <immintrin.h>
+#endif
+
+// the backend of a CBLAS, with ADS_WITH_BLAS: the small and the thin
+// products of double and float go to its cblas_dgemm() and cblas_sgemm(),
+// with ADS_BLAS_ACCELERATE from the header of the CBLAS of vecLib alone,
+// since that of the whole Accelerate brings the names of the old types of
+// macOS (e.g., Point) into the global namespace
+#if defined( ADS_WITH_BLAS ) && ! defined( ADS_GEMM_BLAS )
+ #define ADS_GEMM_BLAS 1
+#endif
+#ifndef ADS_GEMM_BLAS
+ #define ADS_GEMM_BLAS 0
+#endif
+#if ADS_GEMM_BLAS
+ #include <climits>
+ #if defined( ADS_BLAS_ACCELERATE )
+  #include <vecLib/cblas.h>
+ #else
+  #include <cblas.h>
+ #endif
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -240,6 +289,16 @@ class DenseMatrix {
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// with `ADS_WITH_BLAS`, the operations \f$ m n k \f$ of a product below
+/// which `gemm()` of `double` and `float` goes to the CBLAS, from the
+/// timings of `cblas_dgemm()` and `cblas_sgemm()` of OpenBLAS on a Xeon
+/// Gold 5120
+inline constexpr std::size_t kGemmBlasSmall = std::size_t( 1 ) << 14;
+/// with `ADS_WITH_BLAS`, the rows or columns of \f$ A \f$ or \f$ B \f$
+/// below which `gemm()` of `double` and `float` goes to the CBLAS, from the
+/// same timings
+inline constexpr std::size_t kGemmBlasThin = 12;
+
 /// the product \f$ C \gets \alpha A B + \beta C \f$, \f$ A \f$
 /// \f$ m \times k \f$, \f$ B \f$ \f$ k \times n \f$ and \f$ C \f$
 /// \f$ m \times n \f$ by rows, with the leading dimensions `lda`, `ldb`,
@@ -254,21 +313,24 @@ class DenseMatrix {
 ///     \beta , C ) \cr
 /// 2 & \quad \textbf{if}\ k = 0\ \textbf{or}\ \alpha = 0\ \textbf{then}\ C
 ///     \gets \beta C;\ \textbf{return} \cr
-/// 3 & \quad \textbf{for}\ j_c \gets 0 , N_C , 2 N_C , \ldots < n
+/// 3 & \quad \textbf{if}\ \text{a CBLAS is the backend and the product is}
+///     \text{ small or thin}\ \textbf{then}\ C \gets \alpha A B + \beta C
+///     \text{ by it};\ \textbf{return} \cr
+/// 4 & \quad \textbf{for}\ j_c \gets 0 , N_C , 2 N_C , \ldots < n
 ///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ p_c \gets 0 , K_C , 2 K_C , \ldots < k
+/// 5 & \qquad \textbf{for}\ p_c \gets 0 , K_C , 2 K_C , \ldots < k
 ///     \ \textbf{do} \cr
-/// 5 & \qquad\quad \tilde B \gets \text{the block } K_C \times N_C \text{ of }
+/// 6 & \qquad\quad \tilde B \gets \text{the block } K_C \times N_C \text{ of }
 ///     B \text{, packed by micro-panels of } N_R \cr
-/// 6 & \qquad\quad \textbf{for}\ i_c \gets 0 , M_C , 2 M_C , \ldots < m
+/// 7 & \qquad\quad \textbf{for}\ i_c \gets 0 , M_C , 2 M_C , \ldots < m
 ///     \ \textbf{do} \cr
-/// 7 & \qquad\qquad \tilde A \gets \text{the block } M_C \times K_C
+/// 8 & \qquad\qquad \tilde A \gets \text{the block } M_C \times K_C
 ///     \text{ of } A \text{, packed by micro-panels of } M_R \cr
-/// 8 & \qquad\qquad \textbf{foreach}\ \text{micro-tile } M_R \times N_R
+/// 9 & \qquad\qquad \textbf{foreach}\ \text{micro-tile } M_R \times N_R
 ///     \text{ of the block of } C\ \textbf{do} \cr
-/// 9 & \qquad\qquad\quad \text{add } \alpha \text{ times its } K_C
+/// 10 & \qquad\qquad\quad \text{add } \alpha \text{ times its } K_C
 ///     \text{ rank-one products, in registers} \cr
-/// 10 & \qquad\qquad\quad \text{(times } \beta \text{ the old tile on the }
+/// 11 & \qquad\qquad\quad \text{(times } \beta \text{ the old tile on the }
 ///     \text{first slice, } p_c = 0 \text{)}
 /// \end{array}}
 /// \f]

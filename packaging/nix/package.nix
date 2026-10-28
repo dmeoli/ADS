@@ -17,7 +17,11 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [ cmake ];
 
-  cmakeFlags = [ (lib.cmakeBool "ADS_BUILD_TESTS" finalAttrs.doCheck) ];
+  cmakeFlags = [
+    (lib.cmakeBool "ADS_BUILD_TESTS" finalAttrs.doCheck)
+    (lib.cmakeFeature "ADS_WITH_GMP" "OFF")
+    (lib.cmakeFeature "ADS_WITH_BLAS" "OFF")
+  ];
 
   doCheck = true;
 

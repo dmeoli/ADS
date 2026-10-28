@@ -567,7 +567,10 @@ ADS_TEST( "parallel-merge" )
 // bit for bit: an empty matrix, a single row, rows of very different
 // lengths (one row with half the nonzeros, empty rows), a square random
 // matrix; the products of dense matrices below and above the threshold
-// of the small products, by rows and by columns, with alpha and beta
+// of the small products, by rows and by columns, with alpha and beta,
+// and the thin ones, which go to the CBLAS under ADS_WITH_BLAS, where the
+// order of its sums may depend on the rows of a call, and the dense
+// products are then compared within the rounding
 ADS_TEST( "parallel-numeric" )
 {
  std::mt19937_64 g( 5 );
@@ -590,7 +593,8 @@ ADS_TEST( "parallel-numeric" )
  std::vector< DenseMatrix< double > > DA , DB;
  for( const auto & d : std::vector< std::array< std::size_t , 3 > >{
        { 5 , 7 , 3 } , { 100 , 120 , 90 } , { 600 , 500 , 400 } ,
-       { 70 , 900 , 300 } , { 1000 , 64 , 300 } } ) {
+       { 70 , 900 , 300 } , { 1000 , 64 , 300 } , { 900 , 700 , 5 } ,
+       { 3 , 800 , 600 } } ) {
   DenseMatrix< double > A( d[ 0 ] , d[ 2 ] ) , B( d[ 2 ] , d[ 1 ] );
   for( std::size_t i = 0 ; i < d[ 0 ] ; ++i )
    for( std::size_t j = 0 ; j < d[ 2 ] ; ++j ) A( i , j ) = value();
@@ -612,10 +616,16 @@ ADS_TEST( "parallel-numeric" )
   for( std::size_t t = 0 ; t < DA.size() ; ++t ) {
    const auto C = multiply( ex , DA[ t ] , DB[ t ] ) ,
               D = multiply( DA[ t ] , DB[ t ] );
+   // equal, or within the rounding of the sums of k terms on the CBLAS
+   auto near = [ & ]( double x , double y ) {
+    return( ADS_GEMM_BLAS ? std::abs( x - y ) <= 1e-9 * double(
+                             DA[ t ].cols() ) * ( 1 + std::abs( y ) )
+                          : x == y );
+    };
    bool same = true;
    for( std::size_t i = 0 ; i < C.rows() ; ++i )
     for( std::size_t j = 0 ; j < C.cols() ; ++j )
-     same = same && ( C( i , j ) == D( i , j ) );
+     same = same && near( C( i , j ) , D( i , j ) );
    CHECK( same );
    // alpha and beta on a C already there
    auto X = D , Y = D;
@@ -625,7 +635,7 @@ ADS_TEST( "parallel-numeric" )
          -2.0 , X.data() , n );
    gemm( m , n , k , 0.5 , DA[ t ].data() , k , DB[ t ].data() , n , -2.0 ,
          Y.data() , n );
-   CHECK( std::equal( X.data() , X.data() + m * n , Y.data() ) );
+   CHECK( std::equal( X.data() , X.data() + m * n , Y.data() , near ) );
    }
   } );
  }

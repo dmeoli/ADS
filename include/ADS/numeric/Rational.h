@@ -20,12 +20,30 @@
  * place, and the gcds are those of Lehmer [see `BigInteger.h`], one folded
  * remainder when a denominator has one digit.
  *
+ * With `ADS_WITH_GMP` [see `BigInteger.h`], the sums, the differences, the
+ * products, the quotients and the comparisons of two fractions whose longest
+ * term has \f$ n \f$ digits go to `mpq_add()`, `mpq_sub()`, `mpq_mul()`,
+ * `mpq_div()` and `mpq_cmp()` of GMP, which follow the same method of Henrici,
+ * when `kGmp` \f$ \le n < \f$ `kGmpTop`, the range where GMP was the faster;
+ * on the longer terms the gcds of `BigInteger` are faster than those of GMP,
+ * and on the terms of one digit the code of `Rational` needs no allocation,
+ * and `Rational` keeps its own code there. GMP reads the terms as they are, in
+ * place, the result made in a fraction of GMP kept by the thread (whose digits
+ * are allocated once, for terms that short) and copied into the terms of the
+ * result; the reductions of the constructor go to GMP through the gcd and the
+ * exact quotient of `BigInteger`. Elsewhere, and without the macro, `Rational`
+ * keeps its own code, as with `ADS_RATIONAL_GMP` defined to 0
+ * [see \ref theory_numeric_backends].
+ *
  * The contracts [see `Contract.h`]: the denominator and a divisor are not
  * 0; the invariant is \f$ u' > 0 \f$ and \f$ \gcd( u , u' ) = 1 \f$, an
  * audit. The operations are defined in `Rational.tpp`.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 2, 3rd ed.,
  *      Addison-Wesley, 1998, section 4.5.1
+ * \see T. Granlund and the GMP development team, GNU MP: The GNU Multiple
+ *      Precision Arithmetic Library, version 6.3.0, 2023,
+ *      https://gmplib.org/gmp-man-6.3.0.pdf, the layer mpq of the backend
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -49,8 +67,15 @@
 #include "ADS/numeric/BigInteger.h"
 
 #include <compare>
+#include <cstddef>
 #include <string>
 #include <utility>
+
+// the backend of GMP, with ADS_WITH_GMP: the operations on the long terms
+// go to the mpq layer of GMP, wherever BigInteger is on GMP
+#ifndef ADS_RATIONAL_GMP
+ #define ADS_RATIONAL_GMP ADS_BIGINT_GMP
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -67,6 +92,12 @@ class Rational {
 
 /*--------------------------------------------------------------------------*/
  public:
+
+ // with ADS_WITH_GMP, the digits of the longest term of the two fractions
+ // with which an operation goes to GMP, [ kGmp , kGmpTop ), from the
+ // timings of bench/bignum.cpp on a Xeon Gold 5120
+ static constexpr std::size_t kGmp = 2;            ///< limbs, mpq
+ static constexpr std::size_t kGmpTop = 4;         ///< the same, top
 
  /// the fraction \f$ \mathit{num} / \mathit{den} \f$, brought to lowest
  /// terms with a positive denominator by one gcd
@@ -142,6 +173,23 @@ class Rational {
 
  /// the invariant: \f$ u' > 0 \f$ and \f$ \gcd( u , u' ) = 1 \f$
  [[nodiscard]] bool lowest( void ) const;
+
+#if ADS_RATIONAL_GMP
+ /// true if the operation on \f$ a \f$ and \f$ b \f$ goes to GMP
+ static bool gmp( const Rational & a , const Rational & b );
+
+ /// \f$ q \f$ as the read-only view of \f$ a \f$, its terms in place
+ static mpq_srcptr gmpView( mpq_t q , const Rational & a );
+
+ /// \f$ \mathit{op}( a , b ) \f$, a function of the mpq layer of GMP,
+ /// on the terms in place
+ static Rational gmpApply( const Rational & a , const Rational & b ,
+                           void ( *op )( mpq_ptr , mpq_srcptr ,
+                                         mpq_srcptr ) );
+
+ /// the comparison of \f$ a \f$ and \f$ b \f$ by `mpq_cmp()`, in place
+ static int gmpCompare( const Rational & a , const Rational & b );
+#endif
 
  BigInteger f_num ,   ///< the numerator
             f_den;    ///< the denominator

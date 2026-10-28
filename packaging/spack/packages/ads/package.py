@@ -29,4 +29,6 @@ class Ads(CMakePackage):
         return [
             self.define("ADS_BUILD_TESTS", self.run_tests),
             self.define("BUILD_TESTING", self.run_tests),
+            self.define("ADS_WITH_GMP", False),
+            self.define("ADS_WITH_BLAS", False),
         ]

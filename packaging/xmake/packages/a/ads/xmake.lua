@@ -12,7 +12,8 @@ package("ads")
 
     on_install(function (package)
         import("package.tools.cmake").install(package,
-            {"-DADS_BUILD_TESTS=OFF"})
+            {"-DADS_BUILD_TESTS=OFF", "-DADS_WITH_GMP=OFF",
+             "-DADS_WITH_BLAS=OFF"})
     end)
 
     on_test(function (package)

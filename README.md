@@ -31,10 +31,15 @@ it.
 The table below compares the engineered structures of ADS with those of
 the standard library (libstdc++), of Boost 1.83, of GMP 6.3.0, of FFTW
 3.3.10 and of pocketfft and ducc0, as measured by the benchmarks in
-[`bench/`](bench/) (`make bench`). These were run twice on an otherwise
-idle Intel Xeon Gold 5120 at 2.2 GHz, on one core pinned by `taskset`,
-with g++ 13.3 at `-O3 -march=native`; GMP was configured for that
-processor, and FFTW was built with SSE2, AVX, AVX2 and AVX-512. Each cell
+[`bench/`](bench/) (`make bench`). `BigInteger` and `Rational` run on GMP,
+and `gemm()` on a CBLAS, wherever the library is found and in the ranges
+of lengths where it is the faster (see the section Use), and the
+benchmarks measure them as they are built, i.e., on the backends; the
+rows marked `own` measure the code of ADS alone (`bench-bignum-own` and
+`bench-matrix-own`, built when the backends are on). These were run twice
+on an otherwise idle Intel Xeon Gold 5120 at 2.2 GHz, on one core pinned
+by `taskset`, with g++ 13.3 at `-O3 -march=native`; GMP was configured for
+that processor, and FFTW was built with SSE2, AVX, AVX2 and AVX-512. Each cell
 of a benchmark is the median of 11 runs, and the clock does not include
 the building of the input nor the planning of FFTW and of ADS (measured
 apart in the row "fft plan"). A row gives the time of the library divided
@@ -80,9 +85,9 @@ of the clock. Hence, a ratio between 0.95 and 1.05 is usually a tie.
 <tr><td rowspan="3">sequences</td><td rowspan="1"><code>ADS::ArraySequence</code></td><td>std</td><td align="right">6</td><td align="right">1.05</td><td align="right">1.00 to 1.12</td></tr>
 <tr><td rowspan="1"><code>ADS::List</code></td><td>std</td><td align="right">6</td><td align="right">1.02</td><td align="right">0.99 to 1.10</td></tr>
 <tr><td rowspan="1"><code>ADS::SinglyList</code></td><td>std</td><td align="right">6</td><td align="right">0.98</td><td align="right">0.86 to 1.03</td></tr>
-<tr><td rowspan="4">bignum</td><td rowspan="2"><code>ADS::BigInteger</code></td><td>Boost</td><td align="right">12</td><td align="right">4.04</td><td align="right">1.00 to 91</td></tr>
+<tr><td rowspan="4">bignum</td><td rowspan="2"><code>ADS::BigInteger own</code></td><td>Boost</td><td align="right">12</td><td align="right">4.04</td><td align="right">1.00 to 91</td></tr>
 <tr><td>GMP</td><td align="right">12</td><td align="right">0.33</td><td align="right">0.20 to 1.25</td></tr>
-<tr><td rowspan="2"><code>ADS::Rational</code></td><td>Boost</td><td align="right">3</td><td align="right">4.74</td><td align="right">1.93 to 6.03</td></tr>
+<tr><td rowspan="2"><code>ADS::Rational own</code></td><td>Boost</td><td align="right">3</td><td align="right">4.74</td><td align="right">1.93 to 6.03</td></tr>
 <tr><td>GMP</td><td align="right">3</td><td align="right">0.42</td><td align="right">0.40 to 0.46</td></tr>
 <tr><td rowspan="3">fft</td><td rowspan="3"><code>ADS::fft</code></td><td>FFTW</td><td align="right">44</td><td align="right">1.11</td><td align="right">0.84 to 2.41</td></tr>
 <tr><td>pocketfft</td><td align="right">44</td><td align="right">3.18</td><td align="right">1.44 to 21</td></tr>
@@ -101,10 +106,11 @@ is on a par with `boost::unordered_flat_map` on the lookups, but for the
 misses among $10^5$ keys (where Boost is 1.15 times faster). Boost is also
 1.3 times faster on the insertions and the visits of $10^5$ keys, and 1.16
 times slower on the insertions of $10^6$. It is fair to remark that the
-libraries built on hand-written kernels stay ahead. GMP is 2 to 5 times
-faster than `BigInteger` on products, quotients and decimal conversion
-(twice as fast already at 16 limbs, where both use the schoolbook
-algorithms), and `mpq_class` is 2.2 to 2.5 times faster than `Rational`;
+libraries built on hand-written kernels stay ahead. On its own code, GMP
+is 2 to 5 times faster than `BigInteger` on products, quotients and
+decimal conversion (twice as fast already at 16 limbs, where both use the
+schoolbook algorithms), and `mpq_class` is 2.2 to 2.5 times faster than
+`Rational`, which is why both run on GMP by default where it is found;
 `ADS::fft` (complex, real and single precision data, the cosines of type
 2, many transforms, 2 dimensions and convolutions, on powers of 2 and on
 other sizes) is faster than the faster plan of FFTW in the median cell, by
@@ -772,15 +778,18 @@ headers), `ADSINC` (the `-I`, the `-D` and the options of the backends
 turned on) and `ADSLIB` (their libraries, and `-pthread`), and `ADSOBJ`,
 the object of the C++20 module when it is built; `lib/makefile` gives only
 the headers, `lib/makefile-OS` the settings of the operating system and of
-the compiler, `lib/makefile-mod` the module. The optional backends are
-turned on by `ADS_WITH_GMP=1`, `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
+the compiler, `lib/makefile-mod` the module. GMP and a CBLAS are used
+wherever a program that calls them compiles and links (`ADS_WITH_GMP` and
+`ADS_WITH_BLAS` are `auto`, `0` turns them off, `1` requires them, and
+`make backends` tells what was found), and the other optional backends
+are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
 `ADS_WITH_FASTFLOW=1` and `ADS_WITH_MPI=1` (with `CXX=mpicxx`), as the
-CMake options of the same names do, and found where
+CMake options of the same names do; they are found where
 `extlib/makefile-default-paths-<os>` says (GMP, oneTBB and libomp in the
-prefix of Homebrew on macOS and where the compiler looks elsewhere,
-FastFlow in `/opt/fastflow`, `/Library/fastflow` or `C:/fastflow`); a copy
-of that file as `extlib/makefile-paths`, which git ignores, points them
-elsewhere.
+prefix of Homebrew on macOS and where the compiler looks elsewhere, the
+CBLAS of Accelerate on macOS, FastFlow in `/opt/fastflow`,
+`/Library/fastflow` or `C:/fastflow`); a copy of that file as
+`extlib/makefile-paths`, which git ignores, points them elsewhere.
 
 The documentation is at [dmeoli.github.io/ADS](https://dmeoli.github.io/ADS/):
 a site of Sphinx with the theme of Read the Docs, whose pages come from this
@@ -846,16 +855,31 @@ Bazel, `bazel_dep(name = "ads", version = "0.1.0")` in `MODULE.bazel` and
 install ads` and `dependency('ads')`, from WrapDB; in both, the targets
 compile in C++20.
 
-`BigInteger` (and through it `Rational`) can run on the backend of
-[GMP](https://gmplib.org), which takes the products, the quotients, the
-conversions and the greatest common divisor in the ranges of lengths where
-GMP is the faster, and leaves the others to the code of ADS: with CMake,
-`-DADS_WITH_GMP=ON` (off by default, and an error at configure time if GMP
-is not found) defines `ADS_WITH_GMP` on `ADS::ADS` and links GMP, also for
-the projects that find the installed ADS; without CMake, `-DADS_WITH_GMP`
-and `-lgmp`, as `make test ADS_WITH_GMP=1 [GMP=<prefix>]` does. GMP is
-under the LGPL v3 (or the GPL v2), compatible with the LGPL v3 of ADS;
-without the macro nothing of GMP is included.
+`BigInteger` and `Rational` run on the backend of
+[GMP](https://gmplib.org), and `gemm()` of `double` and `float` on that of a
+CBLAS (OpenBLAS, the reference CBLAS, or Accelerate on macOS), whenever the
+library is found: GMP takes the products, the quotients, the square roots,
+the conversions, the greatest common divisors and the operations on short
+fractions in the ranges of lengths where it is the faster, and the CBLAS
+the small and the thin products, while the others stay on the code of ADS,
+which is also the whole library where neither is found (e.g., with MSVC).
+With CMake, `ADS_WITH_GMP` and `ADS_WITH_BLAS` are `AUTO` by default (on
+when a program that calls the library compiles and links), `ON` to require
+the library (an error at configure time if it is not found) and `OFF` to
+leave it out; when on, they define the macro of the same name on
+`ADS::ADS` and link the library, also for the projects that find the
+installed ADS (`ads.pc` carries them too). The makefile does the same,
+with `make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0` for the code of ADS alone
+and `GMP=<prefix>` and `BLAS=<prefix>` where the libraries are not where
+the compiler looks; by hand, `-DADS_WITH_GMP` with `-lgmp`, and
+`-DADS_WITH_BLAS` with the CBLAS (e.g., `-lopenblas`, or
+`-DADS_BLAS_ACCELERATE -framework Accelerate`). The packages are built with
+both off, so that they depend on nothing, and a project that has the
+libraries defines the macros itself. A CBLAS that runs threads of its own
+(e.g., OpenBLAS, unless `OPENBLAS_NUM_THREADS=1`) runs them in `gemm()`,
+and multiplies those of the executor in the parallel `gemm()`. GMP is under
+the LGPL v3 (or the GPL v2), compatible with the LGPL v3 of ADS; without
+the macros nothing of either library is included.
 
 ```cpp
 #include "ADS/sequence/List.h"

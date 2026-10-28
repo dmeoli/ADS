@@ -16,6 +16,12 @@
  * - "transpose", a new matrix B = A^T: ADS::transpose() on DenseMatrix
  *   against Eigen, and the book's transpose() on Matrix; ns per entry.
  *
+ * ADS::gemm() and ADS::multiplyStrassen() are those of the build, on the
+ * backend of a CBLAS when ADS_WITH_BLAS is defined [see DenseMatrix.h], as
+ * they are used; built with ADS_BENCH_OWN instead, the benchmark times them
+ * alone, on the code of ADS, as "ADS::gemm own" and
+ * "ADS::multiplyStrassen own".
+ *
  * Eigen and OpenBLAS are vectorized for the processor as ADS is
  * (-march=native), on one thread. Up to n = 512 each run of a product
  * follows an untimed product of the same library, which leaves the
@@ -55,6 +61,14 @@
 
 #ifdef ADS_HAS_OPENBLAS
  #include <cblas.h>
+#endif
+
+#ifdef ADS_BENCH_OWN                        // the code of ADS alone
+ #undef ADS_HAS_EIGEN
+ #undef ADS_HAS_OPENBLAS
+ #define ADS_WHO " own"
+#else
+ #define ADS_WHO ""
 #endif
 
 #include <initializer_list>
@@ -125,7 +139,7 @@ int main( int argc , char ** argv )
 #endif
 #ifndef ADS_BENCH_OLD
   ADS::DenseMatrix< double > DA , DB , DC;
-  if( wanted( { "ADS::gemm" , "ADS::multiplyStrassen" ,
+  if( wanted( { "ADS::gemm" ADS_WHO , "ADS::multiplyStrassen" ADS_WHO ,
                 "ADS::transpose" } ) ) {
    DA = ADS::DenseMatrix< double >( A );
    DB = ADS::DenseMatrix< double >( B );
@@ -155,21 +169,27 @@ int main( int argc , char ** argv )
   auto ads = [ & ]( int ) {
    ADS::gemm( n , n , n , 1.0 , DA.data() , n , DB.data() , n , 0.0 ,
               DC.data() , n ); };
-  if( ! skip( "ADS::gemm" ) ) {
+  if( ! skip( "ADS::gemm" ADS_WHO ) ) {
    settle();
-   print( "gemm" , "double" , n , "ADS::gemm" , median( warm( ads ) ,
+   print( "gemm" , "double" , n , "ADS::gemm" ADS_WHO , median( warm( ads ) ,
            [ & ]( int ) {
             ads( 0 );
             sink = sink + ( DC( 0 , 0 ) > 0 ); } , r , ops ) );
    }
-  if( ( n >= 4096 ) && ! skip( "ADS::multiplyStrassen" ) ) {
+  if( ( n >= 4096 ) && ! skip( "ADS::multiplyStrassen" ADS_WHO ) ) {
    settle();
-   print( "gemm" , "double" , n , "ADS::multiplyStrassen" , median( none ,
+   print( "gemm" , "double" , n , "ADS::multiplyStrassen" ADS_WHO ,
+          median( none ,
            [ & ]( int ) {
             sink = sink + ( ADS::multiplyStrassen( DA , DB )( 0 , 0 ) > 0 );
             } , r , ops ) );
    }
 #endif
+#ifdef ADS_BENCH_OWN
+  }
+ return( 0 );
+ }
+#else
   if( n <= 512 ) {
    if( ! skip( "ADS::multiplyNaive" ) )
     print( "gemm" , "double" , n , "ADS::multiplyNaive" , median( none ,
@@ -207,6 +227,7 @@ int main( int argc , char ** argv )
   }
  return( 0 );
  }
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File matrix.cpp ---------------------------*/

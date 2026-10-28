@@ -31,6 +31,8 @@
 # define the macros to be exported- - - - - - - - - - - - - - - - - - - - - -
 
 GMP_ROOT =
+BLAS_ROOT =
+BLAS_LIB =
 OpenMP_ROOT =
 TBB_ROOT =
 FastFlow_ROOT = C:/fastflow
