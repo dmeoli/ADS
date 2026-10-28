@@ -110,16 +110,16 @@ algorithms), and `mpq_class` is 2.2 to 2.5 times faster than `Rational`;
 2, many transforms, 2 dimensions and convolutions, on powers of 2 and on
 other sizes) is faster than the faster plan of FFTW in the median cell, by
 1.11, and 1.4 to 3 times faster than pocketfft and ducc0; FFTW stays ahead
-by 1.15 to 1.2 times on the real transform of $2^{14}$ points, by 1.1
-on the transform of 32 x 32 points and by 1.06 to 1.23 on the real one of
-$2^{20}$, the other cells below 1 (0.94 to 0.99 in one of the two runs,
-at least 1 in the other) being ties. The plans of ADS, which time 4 factorizations up to $2^{17}$ points,
-cost up to 0.4 µs per point, against up to 900 µs of `FFTW_MEASURE` and 3
-µs of `FFTW_ESTIMATE`. Also, the Fibonacci heap of Boost is 1.2 to 1.9
-times faster than that of ADS, which follows the pseudocode of the book.
-The tables of all the structures, those of the book included, are in
-[`results/`](results/README.md) together with the raw files of the two
-runs.
+by 1.15 to 1.2 times on the real transform of $2^{14}$ points, by 1.1 on
+the transform of 32 x 32 points and by 1.06 to 1.23 on the real one of
+$2^{20}$, the other cells below 1 (0.94 to 0.99 in one of the two runs, at
+least 1 in the other) being ties. The plans of ADS, which time 4
+factorizations up to $2^{17}$ points, cost up to 0.4 µs per point, against
+up to 900 µs of `FFTW_MEASURE` and 3 µs of `FFTW_ESTIMATE`. Also, the
+Fibonacci heap of Boost is 1.2 to 1.9 times faster than that of ADS, which
+follows the pseudocode of the book. The tables of all the structures,
+those of the book included, are in [`results/`](results/README.md)
+together with the raw files of the two runs.
 
 ## Layout
 
@@ -386,17 +386,18 @@ and the date of its exam.
 ## Engineered structures
 
 Beside the classes of the book, which follow its pseudocode, a few
-structures are written for speed, for the programs that need it, and
-tested in [`test/engineered.cpp`](test/engineered.cpp), the heaps in
+structures are written for speed, for the programs that need it, and tested
+in [`test/engineered.cpp`](test/engineered.cpp), the heaps in
 [`test/heaps.cpp`](test/heaps.cpp), the vectors in
 [`test/sequences.cpp`](test/sequences.cpp) and, the hashing, in
-[`test/hashing.cpp`](test/hashing.cpp), the concurrent ones also on
-real threads under ThreadSanitizer. `FlatHashTable` is the hash
-tested in [`test/engineered.cpp`](test/engineered.cpp) and, the hashing,
-in [`test/hashing.cpp`](test/hashing.cpp) and, those of the notes of
+[`test/hashing.cpp`](test/hashing.cpp), the concurrent ones also on real
+threads under ThreadSanitizer. `FlatHashTable` is the hash tested in
+[`test/engineered.cpp`](test/engineered.cpp) and, the hashing, in
+[`test/hashing.cpp`](test/hashing.cpp) and, those of the notes of
 Ferragina, in [`test/engineered_pearls.cpp`](test/engineered_pearls.cpp),
-the concurrent ones also on real threads under ThreadSanitizer. `FlatHashTable` is the hash
-table that [`bench/dictionaries.cpp`](bench/dictionaries.cpp) compares with
+the concurrent ones also on real threads under ThreadSanitizer.
+`FlatHashTable` is the hash table that
+[`bench/dictionaries.cpp`](bench/dictionaries.cpp) compares with
 `boost::unordered_flat_map`, while `OpenHashTable` stays the table of
 section 7.2 of the book; [`bench/hashing.cpp`](bench/hashing.cpp) compares
 the hashing with Abseil, unordered_dense, robin-map, libcuckoo, XXH3,
@@ -407,19 +408,17 @@ best-first searches on a grid and on the 15-puzzle, and
 [`bench/memory.cpp`](bench/memory.cpp) the arena and the pool with
 `std::pmr`, Boost.Pool, mimalloc and jemalloc;
 [`bench/graphs.cpp`](bench/graphs.cpp) runs the algorithms of the book on
-graphs, templates on their structures, on those of the standard library,
-of Boost and of ADS, with the same counts of work on the three, and the
-visit in breadth and Dijkstra's algorithm on the implicit grid of
-`GridGraph` against its explicit graph and the `grid_graph` of Boost.
-RecSplit, and the concurrent cuckoo table with libcuckoo,
-`boost::concurrent_flat_map` and a `std::unordered_map` under a
-`std::shared_mutex`.
-RecSplit. The combinatorial ones are tested in
+graphs, templates on their structures, on those of the standard library, of
+Boost and of ADS, with the same counts of work on the three, and the visit
+in breadth and Dijkstra's algorithm on the implicit grid of `GridGraph`
+against its explicit graph and the `grid_graph` of Boost. RecSplit, and the
+concurrent cuckoo table with libcuckoo, `boost::concurrent_flat_map` and a
+`std::unordered_map` under a `std::shared_mutex`. RecSplit. The
+combinatorial ones are tested in
 [`test/engineered_combinatorial.cpp`](test/engineered_combinatorial.cpp)
-and compared by [`bench/combinatorial.cpp`](bench/combinatorial.cpp)
-and [`bench/backtrack.cpp`](bench/backtrack.cpp) with libpopcnt,
-libmorton, Hinnant's combinations and the programs DLX1, DLX2 and SSXCC
-of Knuth.
+and compared by [`bench/combinatorial.cpp`](bench/combinatorial.cpp) and
+[`bench/backtrack.cpp`](bench/backtrack.cpp) with libpopcnt, libmorton,
+Hinnant's combinations and the programs DLX1, DLX2 and SSXCC of Knuth.
 `std::pmr`, Boost.Pool, mimalloc and jemalloc, and
 [`bench/allocators.cpp`](bench/allocators.cpp) the standard allocators in
 the node containers, in `std::allocate_shared` and across two threads;
@@ -427,8 +426,8 @@ the node containers, in `std::allocate_shared` and across two threads;
 [`bench/assembly.cpp`](bench/assembly.cpp) and
 [`bench/fingerprints.cpp`](bench/fingerprints.cpp) measure the structures
 of the rows of a model (the index of their positions, their assembly for
-the solvers of linear programs and their fingerprints) against the
-standard library, Boost and Eigen; their tests are in
+the solvers of linear programs and their fingerprints) against the standard
+library, Boost and Eigen; their tests are in
 [`test/engineered_memory.cpp`](test/engineered_memory.cpp) and
 [`test/engineered_sparse.cpp`](test/engineered_sparse.cpp).
 
@@ -667,21 +666,20 @@ working while its idle workers spin.
 ## Design by contract
 
 ADS follows the design by contract of B. Meyer: each operation checks its
-specification as a contract ([`Contract.h`](include/ADS/Contract.h)) of
-one of four kinds, i.e.,
-`ADS_PRE` for the preconditions of the book, `ADS_POST` for the
-postconditions, `ADS_INVARIANT` for the invariant of a structure, and
-`ADS_AUDIT` for a condition that costs more than the operation (e.g., that
-a vector is sorted before a binary search, or that a write left the other
-items as they were). The macro `ADS_CONTRACTS` chooses which of them are
-evaluated (0 none, 1 the preconditions, which is the default, 2 also the
-postconditions, 3 also the invariants and the audits); with `NDEBUG`
-defined, as in a release build, the default is 0, as for `assert`. A violated contract
-throws `ADS::contract_violation`, a `std::logic_error` naming the
-condition, the function and the place. Tests are built at the level 3;
-furthermore, the axioms of each abstract data type are checked on all its
-realizations (`contract_*.*-axioms`), e.g., `top( push( S , v ) ) = v` and
-`pop( push( S , v ) ) = S` for a stack.
+specification as a contract ([`Contract.h`](include/ADS/Contract.h)) of one
+of four kinds, i.e., `ADS_PRE` for the preconditions of the book,
+`ADS_POST` for the postconditions, `ADS_INVARIANT` for the invariant of a
+structure, and `ADS_AUDIT` for a condition that costs more than the
+operation (e.g., that a vector is sorted before a binary search, or that a
+write left the other items as they were). The macro `ADS_CONTRACTS` chooses
+which of them are evaluated (0 none, 1 the preconditions, which is the
+default, 2 also the postconditions, 3 also the invariants and the audits);
+with `NDEBUG` defined, as in a release build, the default is 0, as for
+`assert`. A violated contract throws `ADS::contract_violation`, a
+`std::logic_error` naming the condition, the function and the place. Tests
+are built at the level 3; furthermore, the axioms of each abstract data
+type are checked on all its realizations (`contract_*.*-axioms`), e.g.,
+`top( push( S , v ) ) = v` and `pop( push( S , v ) ) = S` for a stack.
 
 ## The standard interface
 
@@ -851,19 +849,20 @@ find_package(ADS REQUIRED)
 target_link_libraries(<target> PRIVATE ADS::ADS_module)
 ```
 
-and, without CMake, `make test ADSMOD=1 CXX=clang++` (or `CXX=g++`) builds the
-module in `build-make` and the test that imports it. AppleClang does not
-build it, while the Clang of LLVM on macOS does; GCC 14 stops on it with an
-internal error, and MSVC discards the operators of the standard library
-(e.g., those of `std::complex`) that the templates of the module use only
-in their instantiations, so that an importer does not compile. The macros are not exported
-by a module, so a file that uses those of the contracts (e.g., `ADS_PRE`)
-still includes `ADS/Contract.h`, and those that configure the headers (e.g.,
-`ADS_CONTRACTS`, `ADS_WITH_GMP`) take the value they have where the module is
-compiled; the executors of OpenMP, oneTBB and FastFlow and the sort on MPI
-are in the module only when it is compiled with their library. The file of
-the module is written by `cmake/ads_module_exports.py` from the AST of the
-headers, and it is written again when a header gains or loses a name.
+and, without CMake, `make test ADSMOD=1 CXX=clang++` (or `CXX=g++`) builds
+the module in `build-make` and the test that imports it. AppleClang does
+not build it, while the Clang of LLVM on macOS does; GCC 14 stops on it
+with an internal error, and MSVC discards the operators of the standard
+library (e.g., those of `std::complex`) that the templates of the module
+use only in their instantiations, so that an importer does not compile. The
+macros are not exported by a module, so a file that uses those of the
+contracts (e.g., `ADS_PRE`) still includes `ADS/Contract.h`, and those that
+configure the headers (e.g., `ADS_CONTRACTS`, `ADS_WITH_GMP`) take the
+value they have where the module is compiled; the executors of OpenMP,
+oneTBB and FastFlow and the sort on MPI are in the module only when it is
+compiled with their library. The file of the module is written by
+`cmake/ads_module_exports.py` from the AST of the headers, and it is
+written again when a header gains or loses a name.
 
 The gain is small, since the library is made of templates, which an importer
 still instantiates and compiles: on a server with 384 cores and a load of 55
