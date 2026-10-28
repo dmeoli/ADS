@@ -49,15 +49,29 @@
  *   which the table is made, or reserved, are faulted in at once.
  *
  * The place of a key with the hash \f$ h \f$ in a vector of \f$ 2^l \f$
- * words is the top \f$ l \f$ bits of \f$ h \f$, and a lookup reads the
- * words from there on, cyclically, until it finds the key or a free place.
- * Its reads are atomic loads with acquire: no lock, no read-modify-write,
- * no store, and no check of versions, since a word, once written, stays.
- * A lookup that ends on a free place reads the vector in use again, and
- * starts over on the new one if the table grew meanwhile; otherwise the
- * key was absent at the moment it read that free place, since the places
- * before it held other keys and a key is inserted at the first free place
- * of its sequence. A lookup is thus wait-free when the table does not grow.
+ * words is the top \f$ l \f$ bits of \f$ h \f$. When the pairs lie in
+ * the words (`packed` or `inlined`), each place has also a tag of a byte,
+ * 0 or 7 bits of the hash of its key with the high bit set, kept apart
+ * from the words, 8 to an atomic word (the metadata of the tables of Swiss
+ * and F14 kind, a byte per place). A lookup reads the tags from the place
+ * on, 8 at a time, compares them all with its own in one step, reads only
+ * the words of the places whose tag matches, and stops at the first tag
+ * 0: an absent key costs a line of the tags (\f$ 1/8 \f$ of the words, or
+ * less, which the cache keeps) and one branch, so that the misses of
+ * consecutive lookups overlap, while the line of the words of the place,
+ * fetched ahead as the tags are read, makes a key that is there cost
+ * about one miss. The pairs in nodes have no tags: their lookups read the
+ * words from the place on, up to the key or a word 0, since a tag would
+ * add a miss to the two of a key found. Its reads are atomic loads with
+ * acquire: no lock, no
+ * read-modify-write, no store, and no check of versions, since a word or a
+ * tag, once written, stays. A tag is written after the word it tags, by
+ * the insertion or by any thread that passes the place while inserting,
+ * with the same value: a lookup that stops at a tag 0 stops before every
+ * key whose insertion has taken effect, and a lookup that ends there reads
+ * the vector in use again, and starts over on the new one if the table
+ * grew meanwhile (see \ref theory_concurrent_flat). A lookup is thus
+ * wait-free when the table does not grow.
  *
  * The insertions (and `update()`) exclude a growth, and the growth
  * excludes them, by a protocol of Dekker over 64 counters on lines of
@@ -421,6 +435,10 @@ class ConcurrentFlatTable {
   int lg;
   /// the words
   std::atomic< std::uint64_t > * W;
+  /// the tags of the places, a byte each, 8 to a word: 0 for a place
+  /// free or whose pair is not yet inserted, 7 bits of its hash with the
+  /// high bit set otherwise; the byte j of the word g is the place 8 g + j
+  std::atomic< std::uint64_t > * G;
   /// the vector it is being copied into, or nil
   std::atomic< Table * > next{ nullptr };
   /// the blocks claimed and those copied
@@ -436,6 +454,13 @@ class ConcurrentFlatTable {
   /// the number of the places
   [[nodiscard]] std::size_t places( void ) const {
    return( std::size_t( 1 ) << lg );
+   }
+  /// the number of the words of the tags
+  [[nodiscard]] std::size_t groups( void ) const { return( places() >> 3 ); }
+  /// the tag of the place i
+  [[nodiscard]] std::uint8_t tagAt( std::size_t i ) const {
+   return( std::uint8_t( G[ i >> 3 ].load( std::memory_order_acquire ) >>
+                         ( 8 * ( i & 7 ) ) ) );
    }
   /// the number of the blocks copied by the growth
   [[nodiscard]] std::size_t blocks( void ) const {
@@ -454,6 +479,11 @@ class ConcurrentFlatTable {
  /// the bytes of x as a word, the rest 0
  template< class X >
  [[nodiscard]] static std::uint64_t bits( const X & x , std::size_t at );
+
+ /// whether the places have tags: if the pairs lie in the words; the
+ /// pairs in nodes cost a second miss anyway, and a third for the tags
+ /// would slow down the lookups that find their key
+ static constexpr bool kTagged = packed || inlined;
 
  /// the words of a place: 2 if inlined, 1 otherwise
  static constexpr std::size_t kWords = inlined ? 2 : 1;
@@ -494,6 +524,12 @@ class ConcurrentFlatTable {
 
  /// the place of the hash h in T
  [[nodiscard]] static std::size_t home( std::uint64_t h , const Table & T );
+
+ /// the tag of the hash h, never 0
+ [[nodiscard]] static std::uint8_t tag( std::uint64_t h );
+
+ /// the tag of the place i of T, holding the word w, set if not yet
+ void tagged( Table & T , std::size_t i , std::uint64_t w ) const;
 
  /// the 24 bits of the hash h in a word that is not packed
  [[nodiscard]] static std::uint64_t print( std::uint64_t h );

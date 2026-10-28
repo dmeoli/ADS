@@ -423,7 +423,8 @@ $(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
 # threads, HASHING=<dir> libcuckoo, MULTIQUEUE=<dir> the MultiQueue of
 # Williams et al., KLSM=<dir> the k-LSM (its source of the threads compiled
 # in), GROWT=<dir> the tables of growt, SDSL=<dir> (its sources) the
-# builds of sdsl-lite
+# builds of sdsl-lite, SPRAYLIST=<lib> the SprayList built with the wrapper
+# of the k-LSM (with KLSM=<dir>, and GSL=<prefix> of its GSL)
 TBBFLAGS  = $(if $(TBB),-DADS_HAS_TBB -DADS_WITH_TBB \
             $(if $(filter-out 1,$(TBB)),-I$(TBB)/include -L$(TBB)/lib \
             -Wl$(comma)-rpath$(comma)$(TBB)/lib) -ltbb)
@@ -447,7 +448,10 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
             $(if $(KLSM),-DADS_HAS_KLSM -isystem $(KLSM)/src \
             $(KLSM)/src/util/thread_local_ptr.cpp) \
             $(if $(GROWT),-isystem $(GROWT)) \
-            $(if $(SDSL),-DADS_HAS_SDSL -isystem $(SDSL)/include)
+            $(if $(SDSL),-DADS_HAS_SDSL -isystem $(SDSL)/include) \
+            $(if $(SPRAYLIST),-DADS_HAS_SPRAYLIST \
+            -isystem $(KLSM)/src/bench/pqs $(SPRAYLIST) \
+            $(if $(GSL),-L$(GSL)/lib) -lgsl -lgslcblas)
 
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)

@@ -69,14 +69,14 @@
  *   set of a search (each key twice) and a mix of 90% lookups and 10%
  *   insertions; and the find-or-insert and the lookups of states of 32
  *   bytes, the CLOSED set of a search;
- * - the concurrent priority queues (the MultiQueue of ADS, relaxed and
- *   exact, against tbb::concurrent_priority_queue, the reference
- *   MultiQueue of Williams, Sanders and Dementiev and the k-LSM of Wimmer
- *   et al.), per pair, for 10^6 and 4 10^6 pairs: their push and then
- *   their pops, and the hold model of a search, each pop followed by the
- *   push of a greater key; and the mean and the maximum rank error of the
- *   relaxed ones in the hold model of 10^6 pairs (-b rank), from the
- *   times at which the operations return, replayed in their order.
+ * - the concurrent priority queues (the MultiQueue of ADS, relaxed and exact,
+ *   against tbb::concurrent_priority_queue, the reference MultiQueue of
+ *   Williams, Sanders and Dementiev, the k-LSM of Wimmer et al. and the
+ *   SprayList of Alistarh et al.), per pair, for 10^6 and 4 10^6 pairs: their
+ *   push and then their pops, and the hold model of a search, each pop
+ *   followed by the push of a greater key; and the mean and the maximum rank
+ *   error of the relaxed ones in the hold model of 10^6 pairs (-b rank), from
+ *   the times at which the operations return, replayed in their order.
  * Each structure runs only if ADS_BENCH_WHO names it, or with no such
  * variable, and ADS_BENCH_LIST lists them [see Bench.h], so that run.sh
  * runs each in a process of its own. Each cell is the median of r runs,
@@ -208,6 +208,16 @@
  #undef V                                 // a macro of its counters
 #else
  #undef ADS_HAS_KLSM
+#endif
+
+// the SprayList of Alistarh et al., through the wrapper of the k-LSM
+// (SPRAYLIST=<lib> of the makefile, which defines ADS_HAS_SPRAYLIST); its
+// header needs <cstdint> before it
+#if defined( ADS_HAS_SPRAYLIST ) && __has_include( <spraylist.h> )
+ #include <cstdint>
+ #include <spraylist.h>
+#else
+ #undef ADS_HAS_SPRAYLIST
 #endif
 
 #if __has_include( <data-structures/table_config.hpp> )
@@ -2131,6 +2141,38 @@ struct KLsm {
  };
 #endif
 
+#if defined( ADS_HAS_SPRAYLIST )
+/// the SprayList of Alistarh, Kopinsky, Li and Shavit, its threads made
+/// known to it at their first handle; never destroyed, since its wrapper
+/// frees on destruction the data of one thread that the others keep using.
+/// The first call of init_thread() of a thread sizes its arenas, which are
+/// never freed, as a share of 10 GB per thread count: a count of 1 gives
+/// each thread the whole 10 GB (of virtual memory), and the second call
+/// sets the true count of the threads, which the sprays use
+struct Spray {
+ using M = kpqbench::spraylist;
+ struct Hd { M * m; };
+ M * m = nullptr;
+ void make( std::size_t ) {
+  m = new M( 1 );
+  m->init_thread( std::size_t( threads ) ); }
+ void drop( void ) { m = nullptr; }
+ Hd handle( void ) const {
+  m->init_thread( 1 );
+  m->init_thread( std::size_t( threads ) );
+  return( Hd{ m } ); }
+ static void push( Hd & h , PQK k , std::uint64_t x ) {
+  const std::size_t a = k , b = x;
+  h.m->insert( a , b ); }
+ static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
+  std::size_t a , b;
+  if( ! h.m->delete_min( a , b ) ) return( false );
+  k = a;
+  x = b;
+  return( true ); }
+ };
+#endif
+
 /// the rank errors of the relaxed queue A on the threads of the pool, in
 /// the hold model of priorityQueue() below from n pairs: each thread
 /// writes the key and the time of each of its pops and pushes when they
@@ -2311,6 +2353,9 @@ void priority( const std::vector< std::size_t > & sizes , int r ,
   priorityQueue< RefMQ< 0 > >( "multiqueue (Williams et al.) s=1" , n , r ,
                                pool , K );
 #endif
+#if defined( ADS_HAS_SPRAYLIST )
+  priorityQueue< Spray >( "SprayList" , n , r , pool , K );
+#endif
 #if defined( ADS_HAS_KLSM )
   priorityQueue< KLsm< 256 > >( "k-LSM k=256" , n , r , pool , K );
   priorityQueue< KLsm< 4096 > >( "k-LSM k=4096" , n , r , pool , K );
@@ -2338,6 +2383,9 @@ void ranks( const std::vector< std::size_t > & sizes , unsigned seed ,
   rankErrors< RefMQ< 16 > >( "multiqueue (Williams et al.)" , n , pool , K );
   rankErrors< RefMQ< 0 > >( "multiqueue (Williams et al.) s=1" , n , pool ,
                             K );
+#endif
+#if defined( ADS_HAS_SPRAYLIST )
+  rankErrors< Spray >( "SprayList" , n , pool , K );
 #endif
 #if defined( ADS_HAS_KLSM )
   rankErrors< KLsm< 256 > >( "k-LSM k=256" , n , pool , K );

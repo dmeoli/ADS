@@ -33,6 +33,7 @@
 #                           [TBB=1] [FASTFLOW=<dir>] [PARLAY=<dir>]           #
 #                           [PAM=<dir>] (with PARLAY=<dir>)                   #
 #                           [MULTIQUEUE=<dir>] [KLSM=<dir>] [GROWT=<dir>]     #
+#                           [SPRAYLIST=<lib> GSL=<prefix>] (with KLSM=<dir>)  #
 #                           [GAPBS=<dir>] [EIGEN=<dir>] [OPENBLAS=<prefix>]   #
 #                           [LEMON=1] (flows and assignment)                  #
 ###############################################################################

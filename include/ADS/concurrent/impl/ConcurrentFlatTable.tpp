@@ -32,6 +32,14 @@ namespace ADS {
 
 namespace detail {
 
+/// the mask of the bytes equal to 0 in the word w, their bits 7 set,
+/// exactly (no false byte after a borrow)
+[[nodiscard]] constexpr std::uint64_t zeroBytes64( std::uint64_t w )
+{
+ const std::uint64_t m = 0x7F7F7F7F7F7F7F7FULL;
+ return( ~( ( ( w & m ) + m ) | w | m ) );
+ }
+
 /// the identities of the tables, never reused, so that a reservation of
 /// nodes kept by a thread is never taken for one of another table
 inline std::atomic< std::uint64_t > flatTableIds{ 0 };
@@ -147,6 +155,31 @@ std::size_t ConcurrentFlatTable< K , V , H , Eq >::home( std::uint64_t h ,
  }
 
 template< class K , class V , class H , class Eq >
+std::uint8_t ConcurrentFlatTable< K , V , H , Eq >::tag( std::uint64_t h )
+{
+ // bits other than the top ones, which give the place
+ return( std::uint8_t( 0x80 | ( ( h >> 24 ) & 0x7F ) ) );
+ }
+
+template< class K , class V , class H , class Eq >
+void ConcurrentFlatTable< K , V , H , Eq >::tagged( Table & T ,
+                                                    std::size_t i ,
+                                                    std::uint64_t w ) const
+{
+ // the same value whoever writes it, after the word, with release: a
+ // tag read with acquire shows the word it tags
+ if constexpr( ! kTagged ) {
+  (void) T; (void) i; (void) w;
+  return;
+  }
+ const unsigned sh = 8 * unsigned( i & 7 );
+ if( ( ( T.G[ i >> 3 ].load( std::memory_order_relaxed ) >> sh ) & 0xFF ) ==
+     0 )
+  T.G[ i >> 3 ].fetch_or( std::uint64_t( tag( hashOf( w ) ) ) << sh ,
+                          std::memory_order_release );
+ }
+
+template< class K , class V , class H , class Eq >
 std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::print( std::uint64_t h )
 {
  // the low bits, independent of the top ones that give the place
@@ -197,15 +230,30 @@ template< class K , class V , class H , class Eq >
 ConcurrentFlatTable< K , V , H , Eq >::Table::Table( int l )
  : lg( l ) ,
    W( HugePageAllocator< std::atomic< std::uint64_t > >().allocate(
-       kWords << l ) )
+       kWords << l ) ) ,
+   G( nullptr )
 {
  // on huge pages when large, so that a lookup misses the TLB once per 2 MB
  std::uninitialized_value_construct_n( W , kWords * places() );
+ try {
+  G = HugePageAllocator< std::atomic< std::uint64_t > >().allocate(
+       groups() );
+  std::uninitialized_value_construct_n( G , groups() );
+  }
+ catch( ... ) {
+  std::destroy_n( W , kWords * places() );
+  HugePageAllocator< std::atomic< std::uint64_t > >().deallocate(
+                                                  W , kWords * places() );
+  throw;
+  }
  }
 
 template< class K , class V , class H , class Eq >
 ConcurrentFlatTable< K , V , H , Eq >::Table::~Table()
 {
+ std::destroy_n( G , groups() );
+ HugePageAllocator< std::atomic< std::uint64_t > >().deallocate( G ,
+                                                                 groups() );
  std::destroy_n( W , kWords * places() );
  HugePageAllocator< std::atomic< std::uint64_t > >().deallocate(
                                                  W , kWords * places() );
@@ -370,12 +418,16 @@ void ConcurrentFlatTable< K , V , H , Eq >::copy( Table & T , Table & N )
     if constexpr( inlined ) {
      std::uint64_t y = 0;
      if( cas16( N.W + 2 * j , x , y , w ,
-                T.W[ 2 * i + 1 ].load( std::memory_order_acquire ) ) )
+                T.W[ 2 * i + 1 ].load( std::memory_order_acquire ) ) ) {
+      tagged( N , j , w );
       break;
+      }
      }
     else if( N.W[ j ].compare_exchange_strong( x , w ,
-                                               std::memory_order_relaxed ) )
+                                               std::memory_order_relaxed ) ) {
+     tagged( N , j , w );
      break;
+     }
     }
    }
   T.copied.fetch_add( 1 , std::memory_order_release );
@@ -475,15 +527,49 @@ auto ConcurrentFlatTable< K , V , H , Eq >::locate( const K & k ,
   }
  for( ; ; ) {
   const Table * T = f_table.load( std::memory_order_acquire );
-  const std::size_t m = T->places() - 1;
-  for( std::size_t i = home( h , *T ) , r = 0 ; r <= m ;
-       i = ( i + 1 ) & m , ++r ) {
-   const std::uint64_t w = T->W[ kWords * i ].load(
-                            std::memory_order_acquire );
-   if( w == 0 )
+  if constexpr( ! kTagged ) {
+   // the words from the place on, up to the key or a free place
+   const std::size_t m = T->places() - 1;
+   for( std::size_t i = home( h , *T ) , r = 0 ; r <= m ;
+        i = ( i + 1 ) & m , ++r ) {
+    const std::uint64_t w = T->W[ i ].load( std::memory_order_acquire );
+    if( w == 0 )
+     break;
+    if( holds( w , k , h ) )
+     return( T->W + i );
+    }
+   if( f_table.load( std::memory_order_acquire ) == T )
+    return( nullptr );
+   continue;
+   }
+  // the tags of 8 places in one load, compared all at once, so that an
+  // absent key costs one line of the tags and one branch, and the loads
+  // of consecutive lookups overlap
+  const std::uint64_t ones = 0x0101010101010101ULL;
+  const std::uint64_t t = ones * tag( h );
+  const std::size_t i0 = home( h , *T ) , q = T->groups() - 1;
+  std::uint64_t below = ~std::uint64_t( 0 ) << ( 8 * ( i0 & 7 ) );
+  // the line of the word of the place fetched while the tags are read, so
+  // that a key there costs about one miss, the tags being in the cache
+  detail::prefetch( T->W + kWords * i0 );
+  for( std::size_t gi = i0 >> 3 , r = 0 ; r <= q ; gi = ( gi + 1 ) & q ,
+       ++r ) {
+   const std::uint64_t w8 = T->G[ gi ].load( std::memory_order_acquire );
+   std::uint64_t stop = detail::zeroBytes64( w8 ) & below;
+   std::uint64_t hit = detail::zeroBytes64( w8 ^ t ) & below;
+   if( stop )                             // the places before the free one
+    hit &= stop ^ ( stop - 1 );
+   for( ; hit ; hit &= hit - 1 ) {
+    const std::size_t i = 8 * gi + std::size_t( std::countr_zero( hit ) >>
+                                                3 );
+    const std::uint64_t w = T->W[ kWords * i ].load(
+                             std::memory_order_acquire );
+    if( holds( w , k , h ) )
+     return( T->W + kWords * i );
+    }
+   if( stop )
     break;
-   if( holds( w , k , h ) )
-    return( T->W + kWords * i );
+   below = ~std::uint64_t( 0 );
    }
   // absent at the free place read, unless the table grew meanwhile
   if( f_table.load( std::memory_order_acquire ) == T )
@@ -607,6 +693,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
                                            std::memory_order_acquire ) ) {
      if constexpr( ! packed )
       consume( idx );
+     tagged( *T , i , w );                // the insertion takes effect
      ADS_INVARIANT( reached( *T , i ) );
      const std::uint64_t c = s.w.fetch_add( ( std::uint64_t( 1 ) << 16 ) -
                                             1 , std::memory_order_release );
@@ -616,6 +703,9 @@ auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
      return( std::pair< Ref , bool >( ref( w ) , true ) );
      }
     }
+   // the tags of the places passed, as their insertions might not have
+   // written them yet: a lookup that reads a tag 0 stops there
+   tagged( *T , i , x );
    if( holds( x , k , h ) ) {             // there, or just inserted
     s.w.fetch_sub( 1 , std::memory_order_release );
     if constexpr( ! packed )
@@ -664,6 +754,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::placeInline( const K & k ,
    if( x == 0 ) {
     std::uint64_t y = 0;
     if( cas16( p , x , y , kb , vb ) ) {
+     tagged( *T , i , kb );               // the insertion takes effect
      ADS_INVARIANT( reached( *T , i ) );
      const std::uint64_t c = s.w.fetch_add( ( std::uint64_t( 1 ) << 16 ) -
                                             1 , std::memory_order_release );
@@ -673,6 +764,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::placeInline( const K & k ,
      return( std::pair< Ref , bool >( v , true ) );
      }
     }
+   tagged( *T , i , x );                  // as in findOrInsert()
    if( holds( x , k , h ) ) {             // there, or just inserted
     const V w = inValue( p[ 1 ].load( std::memory_order_acquire ) );
     s.w.fetch_sub( 1 , std::memory_order_release );
@@ -818,6 +910,8 @@ void ConcurrentFlatTable< K , V , H , Eq >::clear( void )
    for( std::size_t j = 0 ; j < kWords ; ++j )
     T.W[ kWords * i + j ].store( 0 , std::memory_order_relaxed );
    }
+ for( std::size_t g = 0 ; g < T.groups() ; ++g )
+  T.G[ g ].store( 0 , std::memory_order_relaxed );
  f_zero[ 0 ].store( 0 , std::memory_order_relaxed );
  f_zero[ 1 ].store( 0 , std::memory_order_relaxed );
  for( int i = 0 ; i < kStripes ; ++i )
@@ -891,12 +985,19 @@ bool ConcurrentFlatTable< K , V , H , Eq >::consistent( void ) const
  if( ( &T != f_cur.get() ) || f_grow.load( std::memory_order_acquire ) )
   return( false );
  std::size_t n = f_zero[ 0 ].load( std::memory_order_acquire ) ? 1 : 0;
- for( std::size_t i = 0 ; i < T.places() ; ++i )
-  if( T.W[ kWords * i ].load( std::memory_order_acquire ) ) {
+ for( std::size_t i = 0 ; i < T.places() ; ++i ) {
+  const std::uint64_t w = T.W[ kWords * i ].load(
+                           std::memory_order_acquire );
+  const std::uint8_t g = T.tagAt( i );
+  if constexpr( kTagged )
+   if( w == 0 ? ( g != 0 ) : ( g != tag( hashOf( w ) ) ) )
+    return( false );                      // the tag of every place
+  if( w ) {
    ++n;
    if( ! reached( T , i ) )
     return( false );
    }
+  }
  for( int i = 0 ; i < kStripes ; ++i )    // no thread inside
   if( f_S[ i ].w.load( std::memory_order_acquire ) & 0xFFFF )
    return( false );

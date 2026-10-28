@@ -365,25 +365,44 @@
  table that Maier, Sanders and Dementiev found the fastest of the tables
  shared by threads, with the growth and the nodes added.
 
- <em>Lemma 5 (the lookups without locks).</em> Let the words of a vector
- be written only from 0, once each, and only while it is in use, and let a
- lookup of \f$ k \f$ in the vector \f$ T \f$ read 0 at the place \f$ j \f$,
- after words of other keys at the places from that of \f$ k \f$ to
- \f$ j - 1 \f$, and then find \f$ T \f$ still in use. Then \f$ k \f$ was
- absent when the lookup read the place \f$ j \f$.
+ When the pairs lie in the words, each place has besides a tag, 0 or 7
+ bits of the hash of its key with the high bit set, in a vector of bytes
+ apart (the pairs in nodes have none, as a tag would add a miss to the two
+ of a key found in a node), so that a lookup reads the
+ tags of 8 places in one word and compares them with its own at once,
+ reading the word of a place only when its tag matches; a key that is
+ absent costs one line of the tags, \f$ 1/8 \f$ of the words or less, as
+ in the tables with metadata of Swiss and F14 kind. A tag is written, with
+ release, after the word it tags, and always with the same value, by the
+ insertion that wrote the word or by any insertion that passes the place
+ while it looks for its own; an insertion takes effect when the tag of its
+ word is written.
+
+ <em>Lemma 5 (the lookups without locks).</em> Let the words and the tags of
+ a vector be written only from 0, once each, and only while it is in use,
+ let an insertion write the tags of the places it passes before it writes
+ its own, and let a lookup of \f$ k \f$ in the vector \f$ T \f$ read the tag
+ 0 at the place \f$ j \f$, after tags at the places from that of \f$ k \f$
+ to \f$ j - 1 \f$ whose words hold other keys, and then find \f$ T \f$
+ still in use. Then no insertion of \f$ k \f$ had taken effect when the
+ lookup read the tag of \f$ j \f$.
 
  Indeed, an insertion of \f$ k \f$ writes the first word 0 of the sequence
- of \f$ k \f$, and a word that the lookup read different from 0 stays so;
- at the read of \f$ j \f$ the places before it held other keys and
- \f$ j \f$ held none, so that \f$ k \f$ was not in \f$ T \f$, and it was in
- no other vector, since none replaced \f$ T \f$ before the final check. A
- lookup that finds \f$ k \f$ returns a pair that stays, and is linearized
- at the read of its word; one that finds the vector replaced starts over on
- the new one, which happens once per growth. The lookups read with
- acquire, so that the pair of a node, built before the compare-and-swap
- with release that published its index, is read whole; they write nothing,
- and \f$ p \f$ threads that only read scale as \f$ p \f$ independent
- sequential tables.
+ of \f$ k \f$, and before its own tag the tags of all the places it passed;
+ had it taken effect, the place \f$ j \f$, which comes before its word or
+ is its word, would have had its tag when the lookup read it, since a tag
+ written stays. A lookup that finds \f$ k \f$ returns a pair that stays,
+ and is linearized at the read of its word; one that finds the vector
+ replaced starts over on the new one, which happens once per growth. The
+ lookups read with acquire, so that the word of a tag read, and the pair
+ of a node, built before the compare-and-swap with release that published
+ its index, are read whole; they write nothing, and \f$ p \f$ threads that
+ only read scale as \f$ p \f$ independent sequential tables. An insertion
+ that finds \f$ k \f$ in a word whose tag is still 0 writes the tag before
+ it answers, so that its answer, the key there, comes after the insertion
+ has taken effect. For the pairs in nodes, which have no tags, the lemma
+ holds with the words in place of the tags, an insertion taking effect at
+ its compare-and-swap.
 
  <em>Lemma 6 (no insertion into a vector being copied).</em> Let a writer
  raise its counter and then read the flag \f$ g \f$, and the thread that

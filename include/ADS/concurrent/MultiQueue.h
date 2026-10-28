@@ -42,9 +42,7 @@
  * held; a push goes to one of the two at random, a pop to the better one.
  * Each queue is an 8-ary heap [see `DaryHeap.h`] behind two buffers of 16
  * pairs: a deletion buffer \f$ D \f$, sorted, holding the least pairs of
- * the queue, from which a pop takes its pair (a ring of 16 places, so that
- * neither the pop of its least pair nor the eviction of its greatest
- * moves the others), and an insertion buffer
+ * the queue, from which a pop takes its pair, and an insertion buffer
  * \f$ I \f$, unsorted, which a push fills and which goes into the heap
  * only when full or when \f$ D \f$ runs out; a pair with a key less than
  * the greatest of \f$ D \f$ goes into \f$ D \f$, whose greatest pair goes
@@ -186,22 +184,22 @@ class MultiQueue {
  /// the operations a thread keeps its two queues for
  [[nodiscard]] unsigned stickiness( void ) const { return( f_s ); }
 
- /// the number of the pairs, the sum of the counters of the queues, exact
+ /// the number of the pairs, counted in each queue under its lock, exact
  /// when no operation runs
  [[nodiscard]] std::size_t size( void ) const;
 
  /// whether `size()` is 0
  [[nodiscard]] bool empty( void ) const { return( size() == 0 ); }
 
- /// the buffers of each queue ordered and holding its least pairs, the
- /// atomic minima equal to them, and the counters to the pairs; under
- /// each lock in turn, with no operation running
+ /// the buffers of each queue ordered and holding its least pairs, and
+ /// the atomic minima equal to them; under each lock in turn, with no
+ /// operation running
  [[nodiscard]] bool consistent( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
 
- static constexpr int kBuf = 16;          ///< the pairs of a buffer
+ static constexpr std::size_t kBuf = 16;  ///< the pairs of a buffer
 
  /// a before b, by the keys
  struct ByKey {
@@ -211,34 +209,28 @@ class MultiQueue {
    }
   };
 
- /// a queue: its lock, its minimum, its counter, its two buffers and its
+ /// a queue: its lock, its minimum, its two buffers and its
  /// heap, on lines of cache of its own
  struct alignas( 64 ) Queue {
   /// held while true
   std::atomic< bool > lock{ false };
-  /// the first place of the deletion buffer in the ring D and its pairs,
-  /// and the pairs of I
-  std::uint8_t lo = 0 , nd = 0 , ni = 0;
+  /// the pairs of D and of I
+  std::uint8_t nd = 0 , ni = 0;
   /// the key of the least pair, or the greatest key if empty
   std::atomic< K > top;
-  /// the pairs, for size()
-  std::atomic< std::size_t > count{ 0 };
-  /// the rest of the pairs, its header on the line of the lock
-  DaryHeap< Entry , ByKey , 8 > heap;
-  /// the deletion buffer, a ring of D[ lo ] , D[ lo + 1 ] , ... modulo
-  /// 16, sorted by decreasing keys: the greatest first, which leaves by
-  /// lo, and the least last, which leaves by the end, so that neither
-  /// moves the others
-  alignas( 64 ) Entry D[ kBuf ];
+  /// the deletion buffer, sorted by decreasing keys: the greatest first,
+  /// on the line of the lock, which a push compares, and the least last,
+  /// which a pop takes without moving the others
+  Entry D[ kBuf ];
   /// the insertion buffer, unsorted
   Entry I[ kBuf ];
+  /// the rest of the pairs
+  DaryHeap< Entry , ByKey , 8 > heap;
   /// the empty queue, ordered by less
   explicit Queue( const ByKey & less , K none )
    : top( none ) , heap( less ) {}
-  /// the place of the k-th pair of the deletion buffer, 0 the greatest
-  [[nodiscard]] int at( int k ) const { return( ( lo + k ) & ( kBuf - 1 ) );
-   }
   };
+
 
  /// the greatest key under less, the minimum of an empty queue
  [[nodiscard]] static K none( const Less & less );
@@ -255,10 +247,13 @@ class MultiQueue {
  /// the pair e put into the locked queue q
  void put( Queue & q , Entry && e ) const;
 
+ /// the pairs of I of the locked queue q pushed into its heap
+ void flush( Queue & q ) const;
+
  /// the least pair taken from the locked queue q, not empty
  Entry take( Queue & q ) const;
 
- /// the atomic minimum and the counter of the locked queue q set again
+ /// the atomic minimum of the locked queue q set again
  void publish( Queue & q ) const;
 
  /// the buffers of the locked queue q as the invariant wants them
@@ -306,19 +301,22 @@ class MultiQueue< K , T , Less >::Handle {
  /// 5 & \qquad \textbf{if}\ \mathrm{tryLock}( j )\ \textbf{then break} \cr
  /// 6 & \qquad \mathrm{draw}()\quad \triangleright\ \text{two random}
  ///     \text{ queues, used } 0 \text{ times} \cr
- /// 7 & \quad \textbf{if}\ D_j \ne \emptyset\ \textbf{and}\ k < \max D_j
+ /// 7 & \quad \textbf{if}\ D_j \ne \emptyset\ \textbf{and}\ k \le \max D_j
  ///     \ \textbf{then} \cr
- /// 8 & \qquad \textbf{if}\ |D_j| = b\ \textbf{then}\ \text{move } \max D_j
- ///     \text{ into } I_j \cr
+ /// 8 & \qquad \textbf{if}\ |D_j| = b\ \textbf{then}\ \mathrm{add}( j ,
+ ///     \max D_j )\text{, removed from } D_j \cr
  /// 9 & \qquad \text{insert } ( k , x ) \text{ into } D_j \text{, sorted} \cr
- /// 10 & \quad \textbf{else if}\ D_j = \emptyset \ \textbf{or}\ ( |D_j| < b
- ///     \ \textbf{and}\ I_j = \emptyset\ \textbf{and}\ H_j = \emptyset )
- ///     \ \textbf{then}\ \text{append } ( k , x ) \text{ to } D_j \cr
- /// 11 & \quad \textbf{else}\ \text{add } ( k , x ) \text{ to } I_j \cr
- /// 12 & \quad \textbf{if}\ |I_j| = b\ \textbf{then}\ \text{push the pairs}
- ///     \text{ of } I_j \text{ into } H_j;\ I_j \gets \emptyset \cr
- /// 13 & \quad \mathit{top}_j \gets \text{the key of } \min D_j;
- ///     \ \mathrm{unlock}( j )\quad \triangleright\ \text{release}
+ /// 10 & \quad \textbf{else if}\ |D_j| < b\ \textbf{and}\ I_j = \emptyset
+ ///     \ \textbf{and}\ H_j = \emptyset\ \textbf{then}\ \text{insert }
+ ///     ( k , x ) \text{ as the greatest of } D_j \cr
+ /// 11 & \quad \textbf{else}\ \mathrm{add}( j , ( k , x ) ) \cr
+ /// 12 & \quad \mathit{top}_j \gets \text{the key of } \min D_j;
+ ///     \ \mathrm{unlock}( j )\quad \triangleright\ \text{release} \cr
+ /// 13 & \textbf{procedure}\ \mathrm{add}( j , e ) \cr
+ /// 14 & \quad \textbf{if}\ |I_j| < b\ \textbf{then}\ \text{add } e
+ ///     \text{ to } I_j \cr
+ /// 15 & \quad \textbf{else}\ \text{push the pairs of } I_j \text{ and } e
+ ///     \text{ into } H_j;\ I_j \gets \emptyset
  /// \end{array}}
  /// \f]
  void push( const K & k , T x );
@@ -374,6 +372,9 @@ class MultiQueue< K , T , Less >::Handle {
  /// a random number of 64 bits (the splitmix64 of Steele et al.)
  std::uint64_t next( void );
 
+ /// a random bit, from a word of 64 drawn once per 64 bits
+ std::size_t bit( void );
+
  /// a random queue
  std::size_t any( void );
 
@@ -385,8 +386,10 @@ class MultiQueue< K , T , Less >::Handle {
 
  MultiQueue * f_m;                        ///< the structure
  std::uint64_t f_x;                       ///< the state of the generator
- std::size_t f_a = 0 , f_b = 0;           ///< the two queues kept
+ std::size_t f_k[ 2 ] = { 0 , 0 };        ///< the two queues kept
  unsigned f_used = ~0u;                   ///< their uses so far
+ std::uint64_t f_bits = 0;                ///< random bits not yet used
+ int f_nbits = 0;                         ///< their number
 
  };  // end( class MultiQueue::Handle )
 

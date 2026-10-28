@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- bench/parallel.cpp: the SprayList of Alistarh et al. among the priority
+  queues (SPRAYLIST=<lib>, the SprayList built with the wrapper of the
+  k-LSM, with KLSM=<dir> and GSL=<prefix>), compiled in only when given
 - MoveCost (graph/GridGraph.h): a move of a GridGraph weighed by the
   cost of the cell entered (ENTERED, the default, as before) or of the
   cell left (LEFT), chosen at construction, with moveCost(); forEachEdge(),
@@ -1254,6 +1257,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- ConcurrentFlatTable: when the pairs lie in the words, a tag of a byte
+  per place, 7 bits of the hash of its key, 8 tags to an atomic word apart
+  from the words, written after the word by the insertion or by the
+  insertions that pass the place; a lookup compares 8 tags at once and
+  stops at the first tag 0, reading only the words whose tag matches, so
+  that an absent key costs one line of the tags and one branch, and
+  fetches the line of the words of its place ahead; the pairs in nodes
+  keep their lookups without tags
+- MultiQueue: the deletion buffer sorted in place, its greatest pairs on
+  the line of the lock, the number of the pairs counted by size() under
+  each lock instead of at each operation, and the two queues of a pop and
+  of a push chosen by indices rather than by branches, with the random bits
+  of a push taken 64 at a time
 - GridGraph::forEachMove( u , f ), f( v , d ) with d whether the move is
   to a corner, is public and documented, so that the flag is not computed
   again by the caller
