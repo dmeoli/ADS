@@ -8,46 +8,60 @@
  * active nodes whose distance is below a threshold, with the distances of
  * the algorithm of Dijkstra [see `ShortestPaths.h`], value for value.
  *
- * A node is active when its tentative distance \f$ d( v ) \f$ fell since
- * its arcs were last relaxed; a step takes a threshold \f$ \theta \f$,
- * extracts the active nodes with \f$ d( v ) \le \theta \f$ and relaxes
- * their arcs, each improvement of a head by an atomic minimum
- * (\f$ d( u ) \gets \min\{ d( u ) , d( v ) + w( v , u ) \} \f$ by a
- * compare-and-swap) and each head improved made active once, by a flag;
- * the steps end when no node is active. The rule of the threshold gives the
- * algorithm (Dong, Gu, Sun and Zhang):
+ * Both relax the arcs of nodes in parallel, each improvement of a head by
+ * an atomic minimum (\f$ d( u ) \gets \min\{ d( u ) , d( v ) + w( v , u )
+ * \} \f$ by a compare-and-swap), and differ in the nodes that a step
+ * relaxes:
  *
  * - `deltaStepping( ex , g , s , delta )`, the buckets of width
- *   \f$ \Delta \f$ of Meyer and Sanders: \f$ \theta \f$ closes the bucket
- *   \f$ \lfloor \mu / \Delta \rfloor \f$ of the least active distance
- *   \f$ \mu \f$, so that a bucket is relaxed again while its nodes improve
- *   each other and the next one opens when it is empty; \f$ \Delta \f$ at
- *   the least cost gives the algorithm of Dijkstra in rounds, \f$ \Delta =
- *   \infty \f$ the one of Bellman, Ford and Moore by rounds;
+ *   \f$ \Delta \f$ of Meyer and Sanders, a step relaxing the bucket of the
+ *   least distance not yet relaxed. It runs as the Delta-stepping of the GAP
+ *   benchmark suite (Beamer and Zhang): each thread keeps the nodes that it
+ *   improves in buckets of its own, a step relaxes the shared frontier of
+ *   the bucket \f$ c \f$ (the threads claim 64 nodes at a time) and then
+ *   each thread relaxes at once its own bucket \f$ c \f$ while it holds
+ *   fewer than 1000 nodes (the fusion of the buckets of Zhang et al.); the
+ *   threads vote the next bucket, copy their part of it into the frontier,
+ *   each at a place of its own, and two barriers end the step. The buckets
+ *   of a thread are a window of 1024 buckets and an overflow past it,
+ *   spread over the next window when it opens (the bucketing of Julienne,
+ *   of Dhulipala, Blelloch and Shun), so that a small \f$ \Delta \f$ takes
+ *   no more memory. A node is in a bucket once per improvement, and
+ *   skipped when its distance has fallen below the bucket; from the step
+ *   where the entries put back into the bucket of the step are more than a
+ *   quarter of those relaxed (a bucket wider than the least costs, where a
+ *   node improves many times), the distance at which each node was last
+ *   relaxed is kept, and an entry met again at the same distance relaxes
+ *   nothing.
+ *   \f$ \Delta \f$ at the least cost gives the algorithm of Dijkstra by
+ *   buckets, the least work and the most steps;
  * - `rhoStepping( ex , g , s , rho )`, the \f$ \rho \f$-stepping of Dong
- *   et al.: \f$ \theta \f$ is the \f$ \rho \f$-th least distance of the
- *   active nodes, estimated on a sample of them, so that each step relaxes
- *   about \f$ \rho \f$ nodes whatever the costs, with no parameter that
- *   depends on their scale.
+ *   et al.: a node is active when its distance fell since its arcs were
+ *   last relaxed, made active once by a flag, and a step relaxes the
+ *   active nodes up to the \f$ \rho \f$-th least distance among them,
+ *   estimated on a sample, so that each step relaxes about \f$ \rho \f$
+ *   nodes whatever the costs, with no parameter that depends on their
+ *   scale; the arcs of a step are cut into blocks of equal numbers of arcs
+ *   by the prefix sums of the degrees, and the nodes that a block makes
+ *   active within the threshold are relaxed by the same block, up to 1024
+ *   of them.
  *
- * The arcs of the extracted nodes are cut into blocks of equal numbers of
- * arcs, by the prefix sums of their degrees, so that a node of large degree
- * is relaxed by several threads (a `StaticGraph`; on the other graphs each
- * node goes whole to one block), and the nodes that a block makes active
- * within the threshold of its step are relaxed by the same block at once,
- * up to 1024 of them (the fusion of the buckets of Zhang et al.), which
- * saves the steps of the chains of light arcs. The distances do not depend
- * on the executor nor on the order of the relaxations: they are the least
- * fixed point of \f$ d( u ) = \min_{( v , u )} d( v ) + w( v , u ) \f$
- * with \f$ d( s ) = 0 \f$, where each sum is the one of the computer (for the
+ * The threads of `deltaStepping()` meet at barriers for the whole run, which
+ * a thread joins when the executor starts its call: the barrier counts it
+ * at its next release and never waits for a call not started, so that the
+ * run ends on any executor, one that runs the calls one after the other
+ * included. The distances do not depend on the executor nor on the order
+ * of the relaxations: they are the least fixed point of
+ * \f$ d( u ) = \min_{( v , u )} d( v ) + w( v , u ) \f$ with
+ * \f$ d( s ) = 0 \f$, where each sum is the one of the computer (for the
  * floating points too, since a sum with a cost that is not negative does
  * not decrease, the property on which the algorithm of Dijkstra rests; see
  * Lemma 5 of \ref theory_parallel_sssp).
  *
- * Each step costs work proportional to the arcs of its nodes, plus
- * \f$ O( |A| ) \f$ for the active set \f$ A \f$, and depth
- * \f$ O( \log n ) \f$; a node is extracted once with Dijkstra, more often
- * here, as many times as its distance falls after it was extracted, which a
+ * Each step costs work proportional to the arcs of its nodes and depth
+ * proportional to the arcs of one node, a chunk of the frontier and the
+ * fusion of one thread; a node is relaxed once with Dijkstra, more often
+ * here, as many times as its distance falls after it was relaxed, which a
  * smaller \f$ \Delta \f$ or \f$ \rho \f$ makes rarer at the price of more
  * steps (the trade of the stepping algorithms; see \ref
  * theory_parallel_sssp).
@@ -67,6 +81,11 @@
  * \see Y. Zhang, A. Brahmakshatriya, X. Chen, L. Dhulipala, S. Kamil,
  *      S. Amarasinghe, J. Shun, Optimizing ordered graph algorithms with
  *      GraphIt, Proc. 18th CGO, 158-170, 2020, doi:10.1145/3368826.3377909
+ * \see S. Beamer, K. Asanović, D. Patterson, The GAP benchmark suite,
+ *      arXiv:1508.03619, 2015
+ * \see L. Dhulipala, G. E. Blelloch, J. Shun, Julienne: a framework for
+ *      parallel graph algorithms using work-efficient bucketing, Proc. 29th
+ *      SPAA, 293-304, 2017, doi:10.1145/3087556.3087580
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -107,26 +126,38 @@ namespace ADS {
 /// the distances from \f$ s \f$ by the \f$ \Delta \f$-stepping of Meyer and
 /// Sanders, `infinity()` for the nodes not reached
 ///
-/// In pseudocode (Meyer and Sanders, with the steps of Dong, Gu, Sun and
-/// Zhang, beyond the book), \f$ A \f$ the active nodes:
+/// In pseudocode (Meyer and Sanders, on the buckets of each thread of the
+/// GAP benchmark suite, beyond the book), \f$ B_k[ b ] \f$ the bucket
+/// \f$ b \f$ of the thread \f$ k \f$ and \f$ \beta( x ) = \lfloor x /
+/// \Delta \rfloor \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{deltaStepping}( \mathit{ex} , G , s ,
 ///     \Delta ) \cr
 /// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ d[ v ] \gets \infty \cr
-/// 3 & \quad d[ s ] \gets 0;\ A \gets \{ s \} \cr
-/// 4 & \quad \textbf{while}\ A \ne \emptyset\ \textbf{do} \cr
-/// 5 & \qquad \mu \gets \min_{v \in A} d[ v ]\quad \triangleright\ \text{a}
-///     \text{ parallel reduction} \cr
-/// 6 & \qquad \mathrm{step}( \{ v \in A : \lfloor d[ v ] / \Delta \rfloor
-///     \le \lfloor \mu / \Delta \rfloor \} ) \cr
-/// 7 & \quad \textbf{return}\ d \cr
-/// 8 & \textbf{procedure}\ \mathrm{step}( F ) \cr
-/// 9 & \quad A \gets A \setminus F \cr
-/// 10 & \quad \textbf{foreach}\ v \in F , ( v , u ) \in E\ \textbf{do in}
-///     \ \textbf{parallel} \cr
-/// 11 & \qquad \textbf{if}\ \mathrm{writeMin}( d[ u ] , d[ v ] + w( v , u ) )
-///     \ \textbf{and}\ u \notin A\ \textbf{then}\ A \gets A \cup \{ u \}
+/// 3 & \quad d[ s ] \gets 0;\ F \gets ( s );\ c \gets 0 \cr
+/// 4 & \quad \text{on each thread } k \text{ of } \mathit{ex} \text{, from}
+///     \text{ the barrier where it joins,}\ \textbf{loop} \cr
+/// 5 & \qquad \textbf{foreach}\ v \in F\ \textbf{with}\ \beta( d[ v ] )
+///     \ge c\ \textbf{do in parallel}\ \mathrm{relax}( k , v )\quad
+///     \triangleright\ \text{64 at a time} \cr
+/// 6 & \qquad \textbf{while}\ 0 < | B_k[ c ] | < 1000\ \textbf{do}
+///     \ \textbf{foreach}\ v\ \text{taken from } B_k[ c ]\ \textbf{do}
+///     \ \mathrm{relax}( k , v ) \cr
+/// 7 & \qquad \text{barrier: } c \gets \min_k \min\{ b \ge c : B_k[ b ]
+///     \ne \emptyset \};\ \textbf{if}\ \text{there is none}\ \textbf{then}
+///     \ \textbf{return}\ d \cr
+/// 8 & \qquad F \gets \text{the } B_k[ c ] \text{ of all the threads, each}
+///     \text{ at a place of its own};\ B_k[ c ] \gets \emptyset \cr
+/// 9 & \qquad \text{barrier} \cr
+/// 10 & \textbf{procedure}\ \mathrm{relax}( k , v ) \cr
+/// 11 & \quad \textbf{if}\ \text{the distances are kept}\ \textbf{then} \cr
+/// 12 & \qquad \textbf{if}\ \mathit{last}[ v ] = d[ v ]\ \textbf{then}
+///     \ \textbf{return};\ \mathit{last}[ v ] \gets d[ v ] \cr
+/// 13 & \quad \textbf{foreach}\ ( v , u ) \in E\ \textbf{do} \cr
+/// 14 & \qquad \textbf{if}\ \mathrm{writeMin}( d[ u ] , d[ v ] + w( v , u )
+///     )\ \textbf{then}\ \text{append } u \text{ to } B_k[ \beta( d[ v ] + w(
+///     v , u ) ) ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ s \f$ is a node, the costs are not negative, \f$ \Delta > 0 \f$
@@ -138,8 +169,8 @@ template< Executor E , Graph G >
 /// the distances from \f$ s \f$ by the \f$ \rho \f$-stepping of Dong, Gu,
 /// Sun and Zhang, `infinity()` for the nodes not reached
 ///
-/// In pseudocode (Dong, Gu, Sun and Zhang, beyond the book), with
-/// \f$ \mathrm{step}() \f$ that of `deltaStepping()`:
+/// In pseudocode (Dong, Gu, Sun and Zhang, beyond the book), \f$ A \f$
+/// the active nodes:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{rhoStepping}( \mathit{ex} , G , s , \rho )
@@ -152,8 +183,14 @@ template< Executor E , Graph G >
 /// 6 & \qquad \textbf{else}\ \theta \gets \text{the } \lceil 1024 \rho / |A|
 ///     \rceil \text{-th least of the distances of } 1024 \text{ nodes of } A
 ///     \cr
-/// 7 & \qquad \mathrm{step}( \{ v \in A : d[ v ] \le \theta \} ) \cr
-/// 8 & \quad \textbf{return}\ d
+/// 7 & \qquad F \gets \{ v \in A : d[ v ] \le \theta \};\ A \gets A
+///     \setminus F \cr
+/// 8 & \qquad \textbf{foreach}\ v \in F , ( v , u ) \in E\ \textbf{do in}
+///     \ \textbf{parallel} \cr
+/// 9 & \qquad\quad \textbf{if}\ \mathrm{writeMin}( d[ u ] , d[ v ] + w( v ,
+///     u ) )\ \textbf{and}\ u \notin A\ \textbf{then}\ A \gets A \cup \{
+///     u \} \cr
+/// 10 & \quad \textbf{return}\ d
 /// \end{array}}
 /// \f]
 /// \pre \f$ s \f$ is a node, the costs are not negative, \f$ \rho \ge 1 \f$

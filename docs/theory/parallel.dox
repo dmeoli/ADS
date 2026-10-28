@@ -468,7 +468,8 @@
  any order and with any number of threads, steps that take some active nodes,
  make them not active, and relax their arcs, each relaxation
  \f$ d( u ) \gets \min\{ d( u ) , d( v ) \oplus w( v , u ) \} \f$ atomic and
- making \f$ u \f$ active if it lowers \f$ d( u ) \f$. When no node is active,
+ making \f$ u \f$ active (adding it to a bucket, or setting its flag) if it
+ lowers \f$ d( u ) \f$. When no node is active,
  \f$ d \f$ is the least solution of (9), the distances of the algorithm of
  Dijkstra.
 
@@ -501,16 +502,53 @@
  independent and uniform in \f$ [ 0 , 1 ] \f$ and \f$ \Delta \f$ of the
  order of the inverse of the largest degree \f$ d \f$, Meyer and Sanders
  bound the expected work by \f$ O( n + m + d L ) \f$ and the depth by
- \f$ O( d L \log n + \log^2 n ) \f$, \f$ L \f$ the largest distance. The
- \f$ \rho \f$-stepping of Dong, Gu, Sun and Zhang (`rhoStepping()`) takes
+ \f$ O( d L \log n + \log^2 n ) \f$, \f$ L \f$ the largest distance.
+
+ The steps of `deltaStepping()` are those of the GAP benchmark suite
+ (Beamer, Asanović and Patterson; the code of Beamer and Zhang): each
+ thread appends the nodes that it improves to buckets of its own, with no
+ flag, so that a node is in a bucket once per improvement and is skipped,
+ when its bucket comes, if its distance has meanwhile fallen below it
+ (it was then relaxed in an earlier bucket, by Lemma 5 at its last
+ distance); a step relaxes the frontier of the bucket \f$ c \f$, then each
+ thread its own bucket \f$ c \f$ while it is small, and the threads meet at
+ a barrier, vote the next bucket, copy their parts of it into the
+ frontier, each at the places that the counts of the others give it, and
+ meet at a second barrier. Two barriers a step, against the seven passes
+ of a step that gathers its frontier by blocks, is what makes the steps of
+ a graph of large diameter cheap, where most steps hold a few hundred
+ nodes. The threads are those of the calls of one `bulk()` of the
+ executor, which run the whole computation; a call that starts late joins
+ it at a barrier, which counts the threads that joined at its release.
+ Hence a barrier waits only for calls that are running, each of which
+ reaches it, and the computation ends on any executor, also on one that
+ runs the calls one after the other, where the first call does all the
+ work and the others find it over. The buckets of a thread are a window
+ of 1024 buckets from a base and an overflow past it, which the threads
+ spread over the next window when the least bucket voted is past the
+ current one (the open buckets of Julienne, of Dhulipala, Blelloch and
+ Shun), so that the memory does not grow with \f$ L / \Delta \f$. With
+ \f$ \Delta \f$ above the least costs a node improves many times within
+ its bucket and is put back into it each time, and its entries would
+ relax its arcs again at a distance already relaxed: from the step where
+ the entries put back into the bucket of the step outnumber a quarter of
+ those relaxed, each node keeps the distance at which it was last
+ relaxed, and an entry that finds its node at that distance relaxes
+ nothing. This is safe whatever the threads, since the arcs of a node at
+ a distance are relaxed by whoever stored it, before the barrier that
+ ends the step, and it costs a read and a write per entry, which is why
+ it starts only when the entries put back show that it pays.
+
+ The \f$ \rho \f$-stepping of Dong, Gu, Sun and Zhang (`rhoStepping()`) takes
  the \f$ \rho \f$ active nodes of least distance, or all of them when they
  are no more than \f$ \rho \f$, with the threshold estimated on a sample of
  1024 of them, so that the steps have a frontier of the same size whatever
  the scale of the costs; on a graph whose frontier
  stays below \f$ \rho \f$, e.g., a grid or a road network, it is the
  algorithm of Bellman, Ford and Moore by rounds, and a smaller \f$ \rho \f$
- is needed there. Each step costs \f$ O( \log n ) \f$ depth for the
- gathering of its frontier, so that the steps should be few; the nodes that
+ is needed there. Each of its steps costs \f$ O( \log n ) \f$ depth for
+ the gathering of its frontier, so that the steps should be few; the nodes
+ that
  a block of arcs makes active within the threshold of its step are relaxed
  by the same block at once, up to 1024 of them, as in the fusion of the
  buckets of Zhang et al., which saves the steps of the chains of light arcs.
@@ -600,6 +638,11 @@
  \see Y. Zhang, A. Brahmakshatriya, X. Chen, L. Dhulipala, S. Kamil,
       S. Amarasinghe, J. Shun, Optimizing ordered graph algorithms with
       GraphIt, Proc. 18th CGO, 158-170, 2020, doi:10.1145/3368826.3377909
+ \see S. Beamer, K. Asanović, D. Patterson, The GAP benchmark suite,
+      arXiv:1508.03619, 2015
+ \see L. Dhulipala, G. E. Blelloch, J. Shun, Julienne: a framework for
+      parallel graph algorithms using work-efficient bucketing, Proc. 29th
+      SPAA, 293-304, 2017, doi:10.1145/3087556.3087580
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File parallel.dox --------------------------*/
