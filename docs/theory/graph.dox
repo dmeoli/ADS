@@ -749,7 +749,22 @@
  \f$ O( \log n ) \f$ each; together, at most twice the cheaper of the two,
  i.e., about \f$ \sqrt{ n \bar{d} \log n } \f$ in that model, though
  \f$ \Theta( m ) \f$ in the worst case (two large parts with no edge
- between them). The structures that answer this
+ between them). A batch with many cuts is joined again at once, instead: the
+ edges raised or deleted leave \f$ F \f$, the edges lowered or inserted
+ off \f$ F \f$ are set aside, and the trees left are joined by the
+ algorithm of Kruskal on the trees contracted, whose edges are those
+ between two trees, found in the lists of the edges at the nodes out of
+ the largest tree and taken by blocks of the lightest ones (the
+ filter-Kruskal of Osipov, Sanders and Singler); the edges set aside are
+ then taken one at a time, by the cycles. This is correct since the
+ forest so joined is minimum for the graph without the edges set aside
+ (the remaining edges of \f$ F \f$ are lightest across the cuts that
+ their removal leaves, as they were), and each edge taken by its cycle
+ afterwards keeps it minimum; the batch costs \f$ O( n ) \f$ plus the
+ edges between two trees, against \f$ O( m \log m ) \f$ for Kruskal from
+ scratch, and the observer takes it when the cuts times the mean work of
+ its replacements so far exceed \f$ n \f$ plus the edges off
+ \f$ F \f$. The structures that answer this
  too in polylogarithmic time (the levels of Holm, de Lichtenberg and
  Thorup) keep \f$ O( \log n ) \f$ copies of the forest, and they lose in
  practice to the simpler scans on the graphs that are not adversarial (the
@@ -948,6 +963,9 @@
  \see D. D. Sleator, R. E. Tarjan, A data structure for dynamic trees,
       Journal of Computer and System Sciences 26(3), 362-391, 1983,
       doi:10.1016/0022-0000(83)90006-5
+ \see V. Osipov, P. Sanders, J. Singler, The filter-Kruskal minimum
+      spanning tree algorithm, Proceedings of ALENEX, 52-61, 2009,
+      doi:10.1137/1.9781611972894.5
  \see J. Holm, K. de Lichtenberg, M. Thorup, Poly-logarithmic
       deterministic fully-dynamic algorithms for connectivity, minimum
       spanning tree, 2-edge, and biconnectivity, Journal of the ACM 48(4),

@@ -577,6 +577,51 @@ ADS_TEST( "reopt-spanning-forest" )
   else
    CHECK( ( seen[ 0 ] > 0 ) && ( seen[ 1 ] > 0 ) && ( seen[ 2 ] > 0 ) );
   }
+ // batches of many cuts, after single changes that teach the observer
+ // the cost of a replacement: the cuts joined again all together, then
+ // the cycles of the edges lowered, against Kruskal
+ {
+  std::mt19937 rng( 9 );
+  const int n = 300;
+  LG h( n , false );
+  std::vector< std::pair< int , int > > E;
+  for( int i = 0 ; i < 4 * n ; ++i ) {
+   const int u = int( rng() % n ) , v = int( rng() % n );
+   if( ( u != v ) && ! h.hasEdge( u , v ) ) {
+    h.insertEdge( u , v , static_cast< long long >( rng() % 1000 ) );
+    E.emplace_back( u , v );
+    }
+   }
+  SpanningForestObserver< LG > q( h );
+  q.setRecomputeRatio( 1 );
+  Observable< LG > oh( h );
+  oh.attach( q );
+  for( int step = 0 ; step < ADS::test::scaled( 300 , 60 ) ; ++step ) {
+   const auto [ u , v ] = E[ rng() % E.size() ];
+   oh.setWeight( u , v , static_cast< long long >( rng() % 1000 ) );
+   q.solve();
+   }
+  for( int round = 0 ; round < ADS::test::scaled( 30 , 6 ) ; ++round ) {
+   {
+    auto b = oh.batch();
+    for( int j = 0 ; j < 60 ; ++j ) {
+     const auto [ u , v ] = E[ rng() % E.size() ];
+     const int k = int( rng() % 4 );
+     if( ! h.hasEdge( u , v ) )
+      oh.insertEdge( u , v , static_cast< long long >( rng() % 1000 ) );
+     else if( k == 0 )
+      oh.deleteEdge( u , v );
+     else if( k == 1 )
+      oh.setWeight( u , v , 2000 + static_cast< long long >( rng() % 100 ) );
+     else
+      oh.setWeight( u , v , static_cast< long long >( rng() % 1000 ) );
+     }
+    }
+   const auto K = kruskal( h );
+   CHECK( ( q.weight() == total( K ) ) &&
+          ( q.forest().size() == K.size() ) );
+   }
+  }
  // a larger graph, beyond the audits, one change at a time against
  // Kruskal: the link-cut tree on deep forests and the replacements found
  // from the smaller side

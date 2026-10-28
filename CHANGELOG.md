@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   side of s first, which ends the call if t is not reached, and the
   excesses that setCapacity() leaves taken where they are; rebalance()
   looks only at the nodes that setCapacity() touched
+- SpanningForestObserver: a batch with many cuts joined again at once, by
+  Kruskal on the trees contracted on the edges between two trees, found
+  at the nodes out of the largest tree, by blocks of the lightest ones
+  (filter-Kruskal), the edges lowered off the forest taken after by their
+  cycles; the observer takes it when the cuts times the mean work of its
+  replacements exceed n plus the edges off the forest
 - LinkCutTree: the nodes in one array of structures; connected() by two
   accesses; a vector of parents while the paths are short, the path of
   the last walk from a node kept for its evert, turned into splay trees

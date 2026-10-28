@@ -365,6 +365,15 @@ SpanningForestObserver< G >::SpanningForestObserver( const G & g )
  }
 
 template< Graph G >
+typename SpanningForestObserver< G >::Inc &
+SpanningForestObserver< G >::inc( int a , int b )
+{
+ auto & L = f_inc[ a ];
+ return( *std::find_if( L.begin() , L.end() , [ b ]( const Inc & c ) {
+  return( c.y == b ); } ) );
+ }
+
+template< Graph G >
 void SpanningForestObserver< G >::grow( int n )
 {
  if( n <= f_n )
@@ -446,8 +455,8 @@ void SpanningForestObserver< G >::scratch( bool fromGraph )
    f_g.forEachEdge( u , [ & ]( int v , const Weight & w ) {
     if( u < v ) {
      f_E[ key( u , v ) ] = Rec{ w , NIL , -1 };
-     f_inc[ u ].push_back( v );
-     f_inc[ v ].push_back( u );
+     f_inc[ u ].push_back( Inc{ v , false , w } );
+     f_inc[ v ].push_back( Inc{ u , false , w } );
      } } );
   }
  A.reserve( f_E.size() );
@@ -497,8 +506,14 @@ bool SpanningForestObserver< G >::replacement( int u , int v ,
  // the edges off F by increasing weight, the first one across the cut
  auto scan = f_off.begin();
  const int ru = f_lct.findRoot( f_vid[ u ] );
- for( ; ; ) {
-  for( int units = 0 ; units < 8 ; ++units ) {
+ // the work, in the units of the visits, for the choice of solve()
+ double steps = 0;
+ auto done = [ & ]( bool r ) {
+  f_replAvg = 0.875 * f_replAvg + 0.125 * steps;
+  return( r );
+  };
+ for( ; ; steps += 16 ) {
+  for( int units = 0 ; units < 8 ; ++units , ++steps ) {
    if( side < 0 ) {                       // a step of the visits
     if( head[ turn ] == Q[ turn ].size() ) {
      side = turn;
@@ -512,22 +527,24 @@ bool SpanningForestObserver< G >::replacement( int u , int v ,
       Q[ turn ].push_back( y );
       }
     units += int( f_adjF[ x ].size() );
+    steps += double( f_adjF[ x ].size() );
     turn ^= 1;
     continue;
     }
    const int in = side ? sv : su;         // an edge out of the side
    if( xi == Q[ side ].size() )
-    return( found );
+    return( done( found ) );
    const int x = Q[ side ][ xi ];
    if( yi == f_inc[ x ].size() ) {
     ++xi;
     yi = 0;
     continue;
     }
-   const int y = f_inc[ x ][ yi++ ];
+   const Inc & c = f_inc[ x ][ yi++ ];
+   const int y = c.y;
    if( f_mark[ y ] != in ) {
     const std::uint64_t k = key( x , y );
-    const Weight & w = f_E.at( k ).w;
+    const Weight & w = c.w;
     if( ! found || ( w < bw ) || ( ! ( bw < w ) && ( k < best ) ) ) {
      found = true;
      bw = w;
@@ -536,14 +553,67 @@ bool SpanningForestObserver< G >::replacement( int u , int v ,
     }
    }
   if( scan == f_off.end() )               // no edge across the cut
-   return( false );
+   return( done( false ) );
   const auto [ a , b ] = ends( scan->second );
   if( ( f_lct.findRoot( f_vid[ a ] ) == ru ) !=
       ( f_lct.findRoot( f_vid[ b ] ) == ru ) ) {
    best = scan->second;
-   return( true );
+   return( done( true ) );
    }
   ++scan;
+  }
+ }
+
+template< Graph G >
+void SpanningForestObserver< G >::join( void )
+{
+ // the trees of F, by a union-find on its edges, which are in a row
+ UnionFind T( f_n );
+ for( const std::uint64_t k : f_F ) {
+  const auto [ u , v ] = ends( k );
+  T.merge( u , v );
+  }
+ std::vector< int > tree( static_cast< std::size_t >( f_n ) );
+ std::vector< int > size( static_cast< std::size_t >( f_n ) , 0 );
+ for( int x = 0 ; x < f_n ; ++x )
+  ++size[ tree[ x ] = T.find( x ) ];
+ // the edges between two trees: each has an end out of the largest one,
+ // whose nodes are not scanned
+ const int big = int( std::max_element( size.begin() , size.end() ) -
+                      size.begin() );
+ std::vector< std::pair< Weight , std::uint64_t > > X;
+ for( int x = 0 ; x < f_n ; ++x )
+  if( tree[ x ] != big )
+   for( const Inc & c : f_inc[ x ] ) {
+    const int y = c.y;
+    if( ( tree[ x ] != tree[ y ] ) && ( ( tree[ y ] == big ) || ( x < y ) ) &&
+        ! c.held )                        // a lowered one, after
+     X.emplace_back( c.w , key( x , y ) );
+    }
+ // Kruskal on the trees by blocks of the lightest edges (filter-Kruskal):
+ // a block sorted and scanned, then the edges left inside a tree dropped
+ UnionFind U( f_n );
+ std::size_t lo = 0 , block = 256;
+ while( lo < X.size() ) {
+  const std::size_t hi = std::min( X.size() , lo + block );
+  std::nth_element( X.begin() + std::ptrdiff_t( lo ) ,
+                    X.begin() + std::ptrdiff_t( hi - 1 ) , X.end() );
+  std::sort( X.begin() + std::ptrdiff_t( lo ) ,
+             X.begin() + std::ptrdiff_t( hi ) );
+  for( std::size_t i = lo ; i < hi ; ++i ) {
+   const auto [ u , v ] = ends( X[ i ].second );
+   if( U.merge( tree[ u ] , tree[ v ] ) )
+    addTree( X[ i ].second );
+   }
+  std::size_t keep = hi;
+  for( std::size_t i = hi ; i < X.size() ; ++i ) {
+   const auto [ u , v ] = ends( X[ i ].second );
+   if( ! U.same( tree[ u ] , tree[ v ] ) )
+    X[ keep++ ] = X[ i ];
+   }
+  X.resize( keep );
+  lo = hi;
+  block *= 2;
   }
  }
 
@@ -561,6 +631,25 @@ void SpanningForestObserver< G >::solve( void )
  const auto P = this->take();
  const bool many = this->tooMany( P.size() , detail::edgesOf( f_g ) );
  grow( f_g.bound() );
+
+ // the edges of F raised or deleted, each a cut to join again: one at a
+ // time by replacement(), or all together by a scan of the edges off F
+ // when that costs less, as the work of the replacements so far tells
+ std::size_t cuts = 0;
+ if( ! many )
+  for( const auto & e : P ) {
+   int u , v;
+   std::optional< Weight > w0 , w1;
+   if( ! detail::edgeChange( e , u , v , w0 , w1 ) )
+    continue;
+   const auto it = f_E.find( key( u , v ) );
+   if( ( it != f_E.end() ) && ( it->second.node != NIL ) &&
+       ( ! w1 || ( *w0 < *w1 ) ) )
+    ++cuts;
+   }
+ const bool batch = ( cuts > 1 ) && ( double( cuts ) * f_replAvg >
+                                      double( f_n ) + double( f_off.size() ) );
+ std::vector< std::uint64_t > lowered;    // those of a batch, off F
 
  // each event in turn: the copy, and the forest unless there are many
  bool changed = false;                    // another edge entered F
@@ -581,11 +670,11 @@ void SpanningForestObserver< G >::solve( void )
    for( auto [ a , b ] : { std::pair< int , int >( u , v ) ,
                            std::pair< int , int >( v , u ) } ) {
     auto & L = f_inc[ a ];
-    *std::find( L.begin() , L.end() , b ) = L.back();
+    inc( a , b ) = L.back();
     L.pop_back();
     }
    f_E.erase( it );
-   if( tree && ! many ) {
+   if( tree && ! many && ! batch ) {
     std::uint64_t f = 0;
     if( replacement( u , v , f ) ) {
      addTree( f );
@@ -596,8 +685,8 @@ void SpanningForestObserver< G >::solve( void )
    }
   if( it == f_E.end() ) {                 // inserted
    it = f_E.emplace( k , Rec{ *w1 , NIL , -1 } ).first;
-   f_inc[ u ].push_back( v );
-   f_inc[ v ].push_back( u );
+   f_inc[ u ].push_back( Inc{ v , false , *w1 } );
+   f_inc[ v ].push_back( Inc{ u , false , *w1 } );
    if( ! many )
     f_off.emplace( *w1 , k );
    }
@@ -610,6 +699,7 @@ void SpanningForestObserver< G >::solve( void )
     f_off.emplace( *w1 , k );
     }
    it->second.w = *w1;
+   inc( u , v ).w = inc( v , u ).w = *w1;
    }
   if( many )
    continue;
@@ -620,6 +710,8 @@ void SpanningForestObserver< G >::solve( void )
     continue;
     }
    removeTree( k );                       // raised: its cut decides,
+   if( batch )
+    continue;
    std::uint64_t f = k;                   // k kept on a tie
    if( replacement( u , v , f ) && ! ( f_E.at( f ).w < *w1 ) )
     f = k;
@@ -629,6 +721,13 @@ void SpanningForestObserver< G >::solve( void )
    }
   if( w0 && ! ( *w1 < *w0 ) )
    continue;                              // raised off F: harmless
+  if( batch ) {                           // out of f_off until joined,
+   f_off.erase( std::pair< Weight , std::uint64_t >( *w1 , k ) );
+   it->second.held = true;
+   inc( u , v ).held = inc( v , u ).held = true;
+   lowered.push_back( k );                // then one at a time
+   continue;
+   }
   if( ! f_lct.connected( f_vid[ u ] , f_vid[ v ] ) ) {
    addTree( k );
    changed = true;
@@ -640,6 +739,26 @@ void SpanningForestObserver< G >::solve( void )
    addTree( k );
    changed = true;
    }
+  }
+ if( batch ) {
+  join();                                 // the cuts joined again
+  for( const std::uint64_t k : lowered ) {  // then the cycles of these
+   Rec & r = f_E.at( k );
+   r.held = false;
+   f_off.emplace( r.w , k );
+   const auto [ u , v ] = ends( k );
+   inc( u , v ).held = inc( v , u ).held = false;
+   if( ! f_lct.connected( f_vid[ u ] , f_vid[ v ] ) ) {
+    addTree( k );
+    continue;
+    }
+   const Heavy h = f_lct.aggregate( f_vid[ u ] , f_vid[ v ] );
+   if( h.has && ( r.w < h.w ) ) {
+    removeTree( f_edgeOf[ h.node ] );
+    addTree( k );
+    }
+   }
+  changed = true;
   }
  if( many ) {
   scratch( false );                       // Kruskal on the copy

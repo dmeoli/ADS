@@ -430,6 +430,12 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  ///     \ \mathrm{cut}( f );\ \mathrm{link}( e )
  /// \end{array}}
  /// \f]
+ /// When the cuts of \f$ P \f$ (the edges of \f$ F \f$ raised or deleted)
+ /// are many, i.e., when their number times the mean work of the
+ /// replacements so far exceeds \f$ n \f$ plus the edges off \f$ F \f$,
+ /// the lines 5 to 7 only cut, the edges of the lines 8 to 11 wait, and
+ /// `join()` joins the trees again before those edges are taken one at a
+ /// time.
  void solve( void );
 
  /// the edges of the forest, up to date, in no given order
@@ -455,6 +461,8 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
   Weight w;                                      ///< the weight
   int node = NIL;                                ///< its node in `f_lct`
   int at = -1;                                   ///< its place in `f_F`
+  bool held = false;                             ///< lowered in a batch,
+                                                 ///< left to after `join()`
   };
 
  /// the value of a node of the link-cut tree: the weight of its edge and
@@ -533,13 +541,43 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  /// \f]
  bool replacement( int u , int v , std::uint64_t & best );
 
+ /// the trees of \f$ F \f$ joined by the lightest edges off \f$ F \f$,
+ /// after the cuts of a batch
+ ///
+ /// In pseudocode (Kruskal on the trees of \f$ F \f$ contracted, beyond
+ /// the book), \f$ L \f$ the edges between two trees of \f$ F \f$ by
+ /// increasing weight, found in the lists of the edges at the nodes:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{join}() \cr
+ /// 2 & \quad \tau( x ) \gets \text{the tree of } F \text{ of } x
+ ///     \text{, by a union-find on the edges of } F \cr
+ /// 3 & \quad \textbf{foreach}\ [ u , v ] \in L\ \textbf{do}
+ ///     \ \textbf{if}\ \mathrm{merge}( \tau( u ) , \tau( v ) )\ \textbf{then}
+ ///     \ F \gets F \cup \{ [ u , v ] \}
+ /// \end{array}}
+ /// \f]
+ void join( void );
+
  const G & f_g;                                  ///< the graph
  bool f_ready = false;                           ///< whether there is
                                                  ///< \f$ F \f$
  int f_n = 0;                                    ///< the bound of the nodes
  std::unordered_map< std::uint64_t , Rec > f_E;  ///< the copy of the edges
- std::vector< std::vector< int > > f_inc;        ///< the ends of the edges
-                                                 ///< of the copy at a node
+ /// an edge of the copy at a node: its other end, its weight and whether
+ /// it is set aside by a batch, so that the scans of `replacement()` and
+ /// of `join()` read no table
+ struct Inc {
+  int y;                                         ///< the other end
+  bool held;                                     ///< set aside
+  Weight w;                                      ///< the weight
+  };
+
+ /// the edge \f$ [ a , b ] \f$ in the list of \f$ a \f$
+ Inc & inc( int a , int b );
+
+ std::vector< std::vector< Inc > > f_inc;        ///< the edges of the copy
+                                                 ///< at each node
  std::vector< std::vector< int > > f_adjF;       ///< those of the forest
  std::vector< std::uint64_t > f_F;               ///< the edges of \f$ F \f$
  LinkCutTree< Heavy , Heavier > f_lct;           ///< \f$ F \f$, a node per
@@ -558,6 +596,8 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  static constexpr bool SUBTRACT = requires( Weight a , Weight b ) {
   { a - b } -> std::convertible_to< Weight >;
   };
+ double f_replAvg = 0;                           ///< the mean work of
+                                                 ///< `replacement()`
  Weight f_total = Weight();                      ///< the total weight of
                                                  ///< \f$ F \f$, if they do
  int f_stamp = 0;                                ///< the visit of now
