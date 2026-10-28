@@ -17,6 +17,16 @@
  * with a flag pushed down lazily, so that the trees are unrooted for
  * `link()`, `cut()` and `aggregate()`.
  *
+ * As long as the paths are short the forest is kept as a vector of
+ * parents instead, on which an operation walks the path (and an evert
+ * reverses it), the path of the last walk from a node kept for an evert
+ * of that node that follows; the experiments of Tarjan and Werneck find
+ * such walks the fastest on shallow trees. The mean steps of the recent
+ * walks are counted, and once they exceed a bound (about where an
+ * operation on the splay trees costs as much) the vector becomes splay
+ * trees in \f$ O( n ) \f$, each tree a path-parent pointer per node, and
+ * stays so; `useSplay()` makes the change at once.
+ *
  * The values are of the type `T`, combined by the operation `Op`, which
  * must be associative and commutative with the identity given to the
  * constructor (e.g., the maximum, the minimum or the sum): commutative,
@@ -99,7 +109,7 @@ class LinkCutTree {
  explicit LinkCutTree( int n = 0 , const T & id = T() , Op op = Op() );
 
  /// the number of nodes
- [[nodiscard]] int n( void ) const { return( int( f_par.size() ) ); }
+ [[nodiscard]] int n( void ) const { return( int( f_t.size() ) ); }
 
  /// a new node of value \f$ x \f$, alone, and its number
  int addNode( const T & x );
@@ -146,11 +156,28 @@ class LinkCutTree {
  /// \pre \f$ v \f$ is a node
  [[nodiscard]] int findRoot( int v );
 
+ /// the splay trees from now on, whatever the lengths of the paths, in
+ /// \f$ O( n ) \f$ time
+ void useSplay( void );
+
+ /// whether the splay trees are in use
+ [[nodiscard]] bool splayed( void ) const { return( f_splay ); }
+
  /// whether \f$ u \f$ and \f$ v \f$ are in the same tree, in
  /// \f$ O( \log n ) \f$ amortized time
  ///
- /// In pseudocode (beyond the book): \f$ \mathrm{findRoot}( u ) =
- /// \mathrm{findRoot}( v ) \f$.
+ /// In pseudocode (beyond the book): after \f$ \mathrm{access}( u ) \f$
+ /// the node \f$ u \f$ roots the splay tree of the path from the root of
+ /// its tree, with no parent, and \f$ \mathrm{access}( v ) \f$ gives it
+ /// one if and only if it climbs into that path:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{connected}( u , v ) \cr
+ /// 2 & \quad \textbf{if}\ u = v\ \textbf{then return true} \cr
+ /// 3 & \quad \mathrm{access}( u );\ \mathrm{access}( v );
+ ///     \ \textbf{return}\ \mathit{par}[ u ] \ne \textbf{nil}
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ u \f$ and \f$ v \f$ are nodes
  [[nodiscard]] bool connected( int u , int v );
 
@@ -289,17 +316,60 @@ class LinkCutTree {
  /// \f]
  int access( int v );
 
+ /// the root of the tree of \f$ v \f$ in the vector of parents; its
+ /// path kept if `keep`, for `reverseUp( v )`
+ int rootOf( int v , bool keep = false );
+
+ /// the parents on the path from \f$ v \f$ to its root reversed, which
+ /// makes \f$ v \f$ the root
+ void reverseUp( int v );
+
+ /// an operation on the vector of parents counted, and every 16 of
+ /// them `recount()`
+ void count( void ) {
+  if( ( ++f_ops & 15 ) == 0 )
+   recount();
+  }
+
+ /// the recent mean of the steps of the walks updated, and the splay
+ /// trees taken once it is long
+ void recount( void );
+
  /// whether the splay trees are sound: the parents of the children, and
  /// the aggregates, up to the reversals still to push (audit)
  [[nodiscard]] bool wellFormed( void ) const;
 
- std::vector< int > f_par;           ///< the parent in the splay tree, or
-                                     ///< the path-parent of its root
- std::vector< int > f_left;          ///< the left child (shallower)
- std::vector< int > f_right;         ///< the right child (deeper)
- std::vector< char > f_rev;          ///< whether the subtree is reversed
- std::vector< T > f_val;             ///< the values
- std::vector< T > f_agg;             ///< the aggregates of the subtrees
+ /// a node: its two children in the splay tree, the left one shallower,
+ /// its parent there (or the path-parent of the root of a splay tree),
+ /// the flag of a reversal still to push, its value and the aggregate of
+ /// its subtree, together, so that a rotation reads one place per node
+ struct Node {
+  int ch[ 2 ];                       ///< the left and the right child
+  int par;                           ///< the parent, or the path-parent
+  char rev;                          ///< whether the subtree is reversed
+  T val;                             ///< the value
+  T agg;                             ///< the aggregate of the subtree
+  };
+
+ std::vector< Node > f_t;            ///< the nodes
+ std::vector< int > f_p;             ///< the parents, before the splay
+                                     ///< trees
+ std::vector< T > f_pv;              ///< and the values, apart from the
+                                     ///< nodes
+ std::vector< int > f_path;          ///< the path of a walk kept
+ int f_pathOf = NONE;                ///< where it starts
+ long long f_pathAt = -1;            ///< the version it was taken at
+ long long f_version = 0;            ///< the changes of the parents
+ bool f_splay = false;               ///< whether the splay trees are in use
+ long long f_ops = 0;                ///< the operations on the parents
+ long long f_steps = 0;              ///< the steps of the walks of the
+                                     ///< group of 16 operations of now
+ double f_mean = 0;                  ///< their recent mean, by operation
+ /// the mean steps beyond which the splay trees are taken: about where an
+ /// operation on them, \f$ O( \log n ) \f$ amortized with its constant,
+ /// costs as much as the walks on the vector (a few nanoseconds a step,
+ /// while the vector stays in the caches of the core), as measured
+ static constexpr double f_limit = 512;
  std::vector< int > f_stack;         ///< the path of a splay
  T f_id;                             ///< the identity of `Op`
  Op f_op;                            ///< the operation

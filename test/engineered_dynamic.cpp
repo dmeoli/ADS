@@ -1026,9 +1026,14 @@ ADS_TEST( "link-cut-tree" )
    return( a < b ? b : a );
    }
   };
- std::mt19937 rng( 33 );
+ // on the vector of parents, on the splay trees from the start, and on
+ // both, the splay trees taken halfway
+ for( int mode = 0 ; mode < 3 ; ++mode ) {
+ std::mt19937 rng( 33 + mode );
  const int n = 60;
  LinkCutTree< P , Max > T( n , P( -1 , -1 ) );
+ if( mode == 1 )
+  T.useSplay();
  std::vector< int > par( n , -1 );
  std::vector< long long > val( n );
  for( int v = 0 ; v < n ; ++v ) {
@@ -1063,7 +1068,12 @@ ADS_TEST( "link-cut-tree" )
   for( int x : B ) m = std::max( m , P( val[ x ] , x ) );
   return( std::pair< P , int >( m , A.back() ) );
   };
- for( int step = 0 ; step < ADS::test::scaled( 20000 , 4000 ) ; ++step ) {
+ const int steps = ADS::test::scaled( 20000 , 4000 );
+ for( int step = 0 ; step < steps ; ++step ) {
+  if( ( mode == 2 ) && ( step == steps / 2 ) ) {
+   CHECK( ! T.splayed() );
+   T.useSplay();
+   }
   const int u = int( rng() % n ) , v = int( rng() % n );
   const int k = int( rng() % 7 );
   const bool same = root( u ) == root( v );
@@ -1100,6 +1110,22 @@ ADS_TEST( "link-cut-tree" )
    evert( u );
    }
   CHECK( T.findRoot( u ) == root( u ) );
+  }
+ CHECK( T.splayed() == ( mode > 0 ) );
+ }
+ // a path of 3000 nodes: the walks on the vector long, the splay trees
+ // taken by themselves, the answers the same
+ {
+  const int n = ADS::test::scaled( 3000 , 1000 );
+  LinkCutTree<> T( n );
+  for( int v = 0 ; v < n ; ++v )
+   T.setValue( v , 1 );
+  for( int v = 1 ; v < n ; ++v )
+   T.link( v , v - 1 );                   // v under v - 1: a path
+  for( int i = 0 ; i < 200 ; ++i )
+   CHECK( T.connected( n - 1 , i % 7 ) );
+  CHECK( T.splayed() && ( T.findRoot( n - 1 ) == 0 ) &&
+         ( T.aggregate( 0 , n - 1 ) == n ) && ( T.lca( 5 , n - 1 ) == 5 ) );
   }
  }
 

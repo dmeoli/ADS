@@ -599,7 +599,17 @@
  and swaps the two (see \ref theory_graph_dynamic). The experiments of
  Tarjan and Werneck rank the link-cut trees first among the dynamic trees
  when the operations are mostly links, cuts and queries on paths, the
- topology trees and the top trees being preferable for queries on subtrees.
+ topology trees and the top trees being preferable for queries on subtrees. On
+ shallow trees, however, they find the plain vector of the parents the
+ fastest of all, an evert being the reversal of a short path: so
+ `LinkCutTree` starts as that vector, keeps the path of its last walk from
+ a node for an evert of that node that follows (no load of a parent then
+ waits for the one before), and counts the steps of its walks; once their
+ recent mean exceeds a bound, about where the constant of the splay trees
+ is paid back, it turns into splay trees in \f$ O( n ) \f$, every node a
+ splay tree of its own whose path-parent is its parent, and stays so. The
+ costs of the operations are then \f$ O( d ) \f$ for a depth \f$ d \f$
+ below the bound and \f$ O( \log n ) \f$ amortized after it.
 
  \section theory_tree_refs References
 

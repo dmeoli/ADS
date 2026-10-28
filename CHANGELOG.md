@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   side of s first, which ends the call if t is not reached, and the
   excesses that setCapacity() leaves taken where they are; rebalance()
   looks only at the nodes that setCapacity() touched
+- LinkCutTree: the nodes in one array of structures; connected() by two
+  accesses; a vector of parents while the paths are short, the path of
+  the last walk from a node kept for its evert, turned into splay trees
+  in O( n ) once the recent mean of the walks exceeds a bound, and
+  useSplay() and splayed()
 - ConcurrentFlatTable: the places of two words, a key and a value of 8
   bytes each written together by a compare-and-swap of 16 bytes, where the
   processor has one without locks (cmpxchg16b on x86-64, the pairs of
