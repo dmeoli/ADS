@@ -1648,30 +1648,32 @@ ADS_TEST( "concurrent-flat-table" )
          S.consistent() );
   }
  {
-  ConcurrentFlatTable< std::uint64_t , std::uint64_t > T;
-  static_assert( ! decltype( T )::packed );
+  using P = std::pair< std::uint64_t , std::uint64_t >;
+  ConcurrentFlatTable< std::uint64_t , P > T;
+  static_assert( ! decltype( T )::packed && ! decltype( T )::inlined );
   std::vector< std::pair< std::uint64_t ,
                           decltype( T )::Entry * > > E;
   for( std::uint64_t i = 0 ; i < 20000 ; ++i ) {
    const std::uint64_t k = i * 0x9E3779B97F4A7C15ULL;
-   auto r = T.findOrInsert( k , T.hash( k ) , i );
-   CHECK( r.second && r.first.key == k && r.first.value == i );
+   auto r = T.findOrInsert( k , T.hash( k ) , P( i , k ) );
+   CHECK( r.second && r.first.key == k && r.first.value == P( i , k ) );
    E.push_back( { k , &r.first } );
    }
   CHECK( T.rehashes() >= 9 && T.consistent() );
   for( std::uint64_t i = 0 ; i < E.size() ; ++i ) {
    const auto [ k , p ] = E[ i ];
-   CHECK( T.entry( k , T.hash( k ) ) == p && p->value == i );
-   auto r = T.findOrInsert( k , 0 );
+   CHECK( T.entry( k , T.hash( k ) ) == p && p->value.first == i );
+   auto r = T.findOrInsert( k , P( 0 , 0 ) );
    CHECK( ! r.second && &r.first == p );
    }
-  CHECK( ! T.entry( 3 , T.hash( 3 ) ) && T.find( E[ 5 ].first ) == 5u );
+  CHECK( ! T.entry( 3 , T.hash( 3 ) ) &&
+         T.find( E[ 5 ].first )->first == 5u );
   CHECK_THROWS( (void) T.find( 1 , T.hash( 1 ) + 1 ) , contract_violation );
   T.clear();
   CHECK( T.empty() && ! T.contains( E[ 0 ].first ) && T.consistent() );
   for( std::uint64_t i = 0 ; i < 100 ; ++i )      // the nodes reused
-   CHECK( T.insert( i , i ) );
-  CHECK( T.size() == 100 && T.find( 99 ) == 99u && T.consistent() );
+   CHECK( T.insert( i , P( i , i ) ) );
+  CHECK( T.size() == 100 && T.find( 99 )->first == 99u && T.consistent() );
   }
  {
   ConcurrentFlatTable< std::string , std::string > T;
@@ -1721,7 +1723,8 @@ ADS_TEST( "concurrent-flat-table-threads" )
  auto key = []( std::uint64_t i ) { return( i * 0x9E3779B97F4A7C15ULL ); };
  for( int p : { 2 , 4 , 8 } ) {
   const std::uint64_t n = 30000;
-  ConcurrentFlatTable< std::uint64_t , std::uint64_t > T;
+  using P = std::pair< std::uint64_t , std::uint64_t >;
+  ConcurrentFlatTable< std::uint64_t , P > T;
   ConcurrentFlatTable< std::uint32_t , std::uint32_t > U;
   std::vector< std::atomic< int > > won( n ) , wonU( n );
   std::vector< std::atomic< const void * > > at( n );
@@ -1739,13 +1742,13 @@ ADS_TEST( "concurrent-flat-table-threads" )
    W.emplace_back( [ & , t ] {
     for( std::uint64_t j = 0 ; j < n ; ++j ) {
      const std::uint64_t i = ( j * std::uint64_t( 2 * t + 1 ) ) % n;
-     const auto r = T.findOrInsert( key( i ) , i );
+     const auto r = T.findOrInsert( key( i ) , P( i , 0 ) );
      won[ i ] += r.second;
      const void * e = nullptr;
      if( ! at[ i ].compare_exchange_strong( e , &r.first ) &&
          ( e != &r.first ) )
       ++bad;
-     if( r.first.value != i )
+     if( r.first.value.first != i )
       ++bad;
      const auto u = U.findOrInsert( std::uint32_t( i * 2654435761u ) ,
                                    std::uint32_t( t ) );
@@ -1762,7 +1765,7 @@ ADS_TEST( "concurrent-flat-table-threads" )
    while( ! done.load() ) {
     const std::uint64_t i = g() % n;
     const auto o = T.find( key( i ) );
-    if( o ? ( *o != i ) : ( seen[ i ] != 0 ) )
+    if( o ? ( o->first != i ) : ( seen[ i ] != 0 ) )
      ++bad;
     seen[ i ] = o.has_value();
     }
@@ -1798,6 +1801,104 @@ ADS_TEST( "concurrent-flat-table-threads" )
   for( std::uint32_t i = 0 ; i < m ; ++i )
    CHECK( C.find( i ) == std::uint32_t( p ) * rounds );
   CHECK( C.size() == m + 4000 && C.consistent() );
+  }
+ }
+
+// the concurrent flat table of keys and values of 64 bits, in places of
+// two words written by a compare-and-swap of 16 bytes where the processor
+// has one (inlined), in nodes elsewhere, against std::unordered_map on
+// random operations from an empty table that grows many times; the key 0
+// with the value 0, kept apart, and update() of it and of the others when
+// inlined; then 2, 4 and 8 threads that insert the same keys at once, each
+// key inserted by one of them only and all of them given the same value,
+// and that update the values of other keys while the table grows, none
+// lost
+ADS_TEST( "concurrent-flat-table-words" )
+{
+ using Table = ConcurrentFlatTable< std::uint64_t , std::uint64_t >;
+ // the value of a pair returned, and update(), which an inlined table
+ // has, through templates whose branches need not compile for both
+ auto value = []( const auto & r ) -> std::uint64_t {
+  if constexpr( std::is_same_v< std::decay_t< decltype( r ) > ,
+                                std::uint64_t > ) return( r );
+  else return( r.value ); };
+ auto update = []( auto & t , std::uint64_t k , auto f ) {
+  if constexpr( std::decay_t< decltype( t ) >::inlined )
+   return( t.update( k , f ) );
+  else return( false ); };
+ {
+  Table T;
+  CHECK( T.insert( 0 , 0 ) && ! T.insert( 0 , 5 ) && T.find( 0 ) == 0u );
+  CHECK( value( T.findOrInsert( 0 , 7 ).first ) == 0u && T.size() == 1 );
+  if constexpr( Table::inlined ) {
+   CHECK( update( T , 0 , []( std::uint64_t v ) { return( v + 3 ); } ) );
+   CHECK( T.find( 0 ) == 3u );
+   CHECK( ! update( T , 9 , []( std::uint64_t v ) { return( v ); } ) );
+   }
+  std::unordered_map< std::uint64_t , std::uint64_t > R{
+   { 0 , *T.find( 0 ) } };
+  std::mt19937_64 g( 74 );
+  for( int s = 0 ; s < 200000 ; ++s ) {
+   const std::uint64_t k = ( g() % 60000 ) * 0x9E3779B97F4A7C15ULL;
+   const std::uint64_t v = g();
+   if( g() % 3 == 0 ) {
+    const auto o = T.find( k );
+    const auto it = R.find( k );
+    CHECK( it == R.end() ? ! o : ( o && *o == it->second ) );
+    continue;
+    }
+   const auto x = T.findOrInsert( k , T.hash( k ) , v );
+   const bool in = R.emplace( k , v ).second;
+   CHECK( x.second == in && value( x.first ) == R[ k ] );
+   }
+  CHECK( T.size() == R.size() && T.rehashes() >= 8 && T.consistent() );
+  std::size_t c = 0;
+  T.forEach( [ & ]( std::uint64_t k , std::uint64_t v ) {
+   c += ( R.at( k ) == v ); } );
+  CHECK( c == R.size() );
+  T.clear();
+  CHECK( T.empty() && ! T.contains( 0 ) && T.consistent() );
+  }
+ for( int p : { 2 , 4 , 8 } ) {
+  const std::uint64_t n = 30000;
+  Table T;
+  std::vector< std::atomic< int > > won( n );
+  std::vector< std::atomic< std::uint64_t > > val( n );
+  for( std::uint64_t i = 0 ; i < n ; ++i ) {
+   won[ i ] = 0;
+   val[ i ] = ~std::uint64_t( 0 );
+   }
+  std::atomic< int > bad{ 0 };
+  std::vector< std::thread > W;
+  for( int t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    for( std::uint64_t j = 0 ; j < n ; ++j ) {
+     const std::uint64_t i = ( j * std::uint64_t( 2 * t + 1 ) ) % n;
+     const auto r = T.findOrInsert( i * 0x9E3779B97F4A7C15ULL ,
+                                    std::uint64_t( t ) );
+     won[ i ] += r.second;
+     std::uint64_t x = ~std::uint64_t( 0 );
+     if( ! val[ i ].compare_exchange_strong( x , value( r.first ) ) &&
+         ( x != value( r.first ) ) )
+      ++bad;
+     if constexpr( Table::inlined )
+      if( j % 4 == 0 )                    // keys inserted, under growths
+       update( T , ( n + std::uint64_t( t ) ) * 0x9E3779B97F4A7C15ULL ,
+               []( std::uint64_t v ) { return( v + 1 ); } );
+     if( j == 0 )
+      T.insert( ( n + std::uint64_t( t ) ) * 0x9E3779B97F4A7C15ULL , 0 );
+     }
+    } );
+  for( auto & w : W )
+   w.join();
+  CHECK( bad == 0 && T.size() == n + std::uint64_t( p ) && T.consistent() );
+  CHECK( std::all_of( won.begin() , won.end() ,
+                      []( const std::atomic< int > & x ) {
+                       return( x.load() == 1 ); } ) );
+  if constexpr( Table::inlined )
+   for( int t = 0 ; t < p ; ++t )
+    CHECK( T.find( ( n + std::uint64_t( t ) ) * 0x9E3779B97F4A7C15ULL ) ==
+           ( n - 1 ) / 4 );
   }
  }
 

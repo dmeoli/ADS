@@ -779,9 +779,11 @@ ADS_TEST( "multi-queue" )
 
 // the rank errors of the MultiQueue against the theory: on one thread,
 // with stickiness 1, the pairs spread at random over n queues and then
-// popped by the better of two, the mean rank error converges to the sum
-// of ( 2 - i / n ) ( 1 - i / n ) for i < n (Walzer and Williams), about
-// 5 n / 6; with one queue it is 0, and with stickiness 64 it is larger
+// popped by the better of two distinct queues, the mean rank error
+// converges to the sum for i < n of s_i ( n - i - 1 ) / i, s_i =
+// 1 - ( n - i ) ( n - i - 1 ) / ( n ( n - 1 ) ) (Walzer and Williams),
+// about 5 n / 6 - 1; with one queue it is 0, and with stickiness 64 it is
+// larger
 ADS_TEST( "multi-queue-rank" )
 {
  auto mean = []( std::size_t nq , unsigned s ) {
@@ -826,8 +828,8 @@ ADS_TEST( "multi-queue-rank" )
  for( std::size_t n : { 8 , 32 } ) {
   double e = 0;
   for( std::size_t i = 1 ; i < n ; ++i ) {
-   const double x = double( i ) / double( n );
-   e += ( 2 - x ) * ( 1 - x );
+   const double a = double( n - i ) , m1 = double( n ) * double( n - 1 );
+   e += ( 1 - a * ( a - 1 ) / m1 ) * ( a - 1 ) / double( i );
    }
   const double m = mean( n , 1 );
   CHECK( std::abs( m - e ) < 0.1 * e );

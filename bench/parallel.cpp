@@ -1601,8 +1601,13 @@ struct AdsFlat {
  void drop( void ) { delete t; t = nullptr; }
  bool ins( HK k , HK v ) const { return( t->insert( k , v ) ); }
  bool has( HK k ) const { return( t->contains( k ) ); }
- HK foi( HK k , HK v ) const { return( t->findOrInsert( k , v ).first.value );
-  }
+ // the value held, a copy (inlined) or in the pair of a node
+ template< class R >
+ static HK held( const R & r ) {
+  if constexpr( std::is_same_v< R , HK > ) return( r );
+  else return( r.value ); }
+ HK foi( HK k , HK v ) const {
+  return( held( t->findOrInsert( k , v ).first ) ); }
  };
 
 /// the set of keys of 64 bits, the pairs in the words

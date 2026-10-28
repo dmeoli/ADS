@@ -13,16 +13,20 @@
  * its own and with the key of its minimum kept apart in an atomic word,
  * which the other threads read without the lock. A push puts the pair in
  * a random queue whose lock it takes at the first try, and draws another
- * one when the lock is held. A pop reads the minima of two random queues,
- * locks the queue with the smaller one, if free (draws two other queues
- * otherwise), and takes its minimum. The pop therefore returns an item
- * that is not always the least of all: its <em>rank error</em> is the
+ * one when the lock is held. A pop reads the minima of two distinct random
+ * queues, locks the queue with the smaller one, if free (draws two other
+ * queues otherwise), and takes its minimum. The pop therefore returns an
+ * item that is not always the least of all: its <em>rank error</em> is the
  * number of the pairs present with a smaller key. With \f$ n \f$ queues in
  * the sequential model (the pairs spread at random over the queues, then
- * removed by the best of two queues drawn with replacement), the expected
- * rank error converges to
- * \f[ \frac{5}{6} n - 1 + \frac{1}{6 n} \f]
- * and its maximum over \f$ \mathrm{poly}( n ) \f$ pops is
+ * removed by the better of two distinct queues drawn at random), the
+ * expected rank error converges to
+ * \f[ \sum_{i=1}^{n-1} \sigma_{\le i} \, \frac{n - i - 1}{i} ,
+ *     \qquad \sigma_{\le i} = 1 - \frac{( n - i ) ( n - i - 1 )}
+ *     {n ( n - 1 )} , \f]
+ * a little less than the \f$ \frac{5}{6} n - 1 + \frac{1}{6 n} \f$ of two
+ * draws with replacement, and its maximum over \f$ \mathrm{poly}( n ) \f$
+ * pops is
  * \f$ O( n \log n ) \f$ with high probability (Walzer and Williams; the
  * bounds \f$ O( n ) \f$ and \f$ O( n \log n ) \f$ are those of Alistarh et
  * al.), while a pop from a single random queue makes it grow without bound
@@ -38,7 +42,9 @@
  * held; a push goes to one of the two at random, a pop to the better one.
  * Each queue is an 8-ary heap [see `DaryHeap.h`] behind two buffers of 16
  * pairs: a deletion buffer \f$ D \f$, sorted, holding the least pairs of
- * the queue, from which a pop takes its pair, and an insertion buffer
+ * the queue, from which a pop takes its pair (a ring of 16 places, so that
+ * neither the pop of its least pair nor the eviction of its greatest
+ * moves the others), and an insertion buffer
  * \f$ I \f$, unsorted, which a push fills and which goes into the heap
  * only when full or when \f$ D \f$ runs out; a pair with a key less than
  * the greatest of \f$ D \f$ goes into \f$ D \f$, whose greatest pair goes
@@ -210,21 +216,28 @@ class MultiQueue {
  struct alignas( 64 ) Queue {
   /// held while true
   std::atomic< bool > lock{ false };
+  /// the first place of the deletion buffer in the ring D and its pairs,
+  /// and the pairs of I
+  std::uint8_t lo = 0 , nd = 0 , ni = 0;
   /// the key of the least pair, or the greatest key if empty
   std::atomic< K > top;
   /// the pairs, for size()
   std::atomic< std::size_t > count{ 0 };
-  /// the deletion buffer, sorted by decreasing keys: the least is the last
-  Entry D[ kBuf ];
+  /// the rest of the pairs, its header on the line of the lock
+  DaryHeap< Entry , ByKey , 8 > heap;
+  /// the deletion buffer, a ring of D[ lo ] , D[ lo + 1 ] , ... modulo
+  /// 16, sorted by decreasing keys: the greatest first, which leaves by
+  /// lo, and the least last, which leaves by the end, so that neither
+  /// moves the others
+  alignas( 64 ) Entry D[ kBuf ];
   /// the insertion buffer, unsorted
   Entry I[ kBuf ];
-  /// the pairs of D and of I
-  int nd = 0 , ni = 0;
-  /// the rest of the pairs
-  DaryHeap< Entry , ByKey , 8 > heap;
   /// the empty queue, ordered by less
   explicit Queue( const ByKey & less , K none )
    : top( none ) , heap( less ) {}
+  /// the place of the k-th pair of the deletion buffer, 0 the greatest
+  [[nodiscard]] int at( int k ) const { return( ( lo + k ) & ( kBuf - 1 ) );
+   }
   };
 
  /// the greatest key under less, the minimum of an empty queue

@@ -15,8 +15,8 @@
  *
  * A word of the vector is 0 when its place is free, and is written once,
  * by a compare-and-swap from 0, never changed afterwards but by
- * `update()`: there are no removals. The pairs are kept in one of two
- * ways, chosen by their types.
+ * `update()`: there are no removals. The pairs are kept in one of three
+ * ways, chosen by their types and by the processor.
  * - When the key and the value are trivially copyable and fit in 8 bytes
  *   together (e.g., a key of 32 bits with a value of 32 bits, or a key of
  *   64 bits with an empty value, a set), the word is the pair itself
@@ -24,6 +24,17 @@
  *   the keys in the words and returns a copy of the value. The pairs whose
  *   key is made of zero bytes, whose word could be 0, are kept apart in
  *   one atomic word.
+ * - When they do not, but each fits in 8 bytes (e.g., keys and values of
+ *   64 bits), and the processor has a compare-and-swap of 16 bytes without
+ *   locks (`cmpxchg16b` on x86-64, the pairs of AArch64; `inlined` is then
+ *   true), a place is two words, the key and the value, written together
+ *   by that compare-and-swap: a lookup reads the key, and the value after
+ *   it, from the same line, and returns a copy of the value; the key of
+ *   zero bytes is kept apart in one place of two words. The choice is made
+ *   when compiling: GCC and Clang declare
+ *   `__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16` where such an instruction may be
+ *   used (e.g., with `-mcx16` or `-march=native` on x86-64), and
+ *   `ADS_FLAT_CAS16` defined to 0 turns it off.
  * - Otherwise the word holds the index of a node, where the pair lies
  *   with its hash, and 24 bits of the hash, so that a lookup follows the
  *   index only when those bits match (once in \f$ 2^{24} \f$ for another
@@ -137,6 +148,19 @@
 #include <utility>
 #include <vector>
 
+// the compare-and-swap of 16 bytes without locks, on little-endian x86-64
+// and AArch64, unless turned off
+#ifndef ADS_FLAT_CAS16
+ #if defined( __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16 ) && \
+     ( defined( __x86_64__ ) || defined( __aarch64__ ) ) && \
+     defined( __BYTE_ORDER__ ) && \
+     ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ )
+  #define ADS_FLAT_CAS16 1
+ #else
+  #define ADS_FLAT_CAS16 0
+ #endif
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -177,15 +201,26 @@ class ConcurrentFlatTable {
                                 plainKey() &&
                                 ( sizeof( K ) + valueBytes() <= 8 );
 
- /// a pair of a table that is not `packed`, in a node that never moves
+ /// true if the pairs lie in places of two words written by one
+ /// compare-and-swap of 16 bytes: not `packed`, the key and the value
+ /// trivially copyable, 8 bytes at most each, the bytes of the key all
+ /// significant, and the instruction there
+ static constexpr bool inlined = ( ADS_FLAT_CAS16 != 0 ) && ! packed &&
+                                 std::is_trivially_copyable_v< K > &&
+                                 std::is_trivially_copyable_v< V > &&
+                                 plainKey() && ( sizeof( K ) <= 8 ) &&
+                                 ( sizeof( V ) <= 8 );
+
+ /// a pair of a table neither `packed` nor `inlined`, in a node that never
+ /// moves
  struct Entry {
   const K key;   ///< the key
   V value;       ///< the value, the caller's to synchronize
   };
 
  /// what an operation returns of the pair held: a copy of the value if
- /// `packed`, the pair itself otherwise
- using Ref = std::conditional_t< packed , V , Entry & >;
+ /// `packed` or `inlined`, the pair itself otherwise
+ using Ref = std::conditional_t< packed || inlined , V , Entry & >;
 
  /// the empty table, with room for \f$ n \f$ pairs (and their nodes)
  /// before it grows, the hash `h` and the equality `eq`
@@ -303,16 +338,16 @@ class ConcurrentFlatTable {
  [[nodiscard]] bool contains( const K & k ) const;
 
  /// the pair of the key \f$ k \f$ of hash \f$ h \f$, or nil, as `find()`;
- /// for a table that is not `packed`
+ /// for a table neither `packed` nor `inlined`
  /// \pre `hash( k )` is \f$ h \f$ (audit)
  [[nodiscard]] Entry * entry( const K & k , std::uint64_t h ) const
-  requires( ! packed );
+  requires( ! packed && ! inlined );
 
  /// sets the value \f$ x \f$ of the key \f$ k \f$ to `f( x )`, by a
- /// compare-and-swap of its word, for a `packed` table; true if \f$ k \f$
- /// is there
+ /// compare-and-swap of its word (of its place), for a `packed` (an
+ /// `inlined`) table; true if \f$ k \f$ is there
  template< class F >
- bool update( const K & k , F && f ) requires( packed );
+ bool update( const K & k , F && f ) requires( packed || inlined );
 
  /// the number of the pairs, the sum of the counters, exact when no
  /// operation runs
@@ -414,6 +449,28 @@ class ConcurrentFlatTable {
  template< class X >
  [[nodiscard]] static std::uint64_t bits( const X & x , std::size_t at );
 
+ /// the words of a place: 2 if inlined, 1 otherwise
+ static constexpr std::size_t kWords = inlined ? 2 : 1;
+
+ /// the value in the word w of a place of an inlined table
+ [[nodiscard]] static V inValue( std::uint64_t w );
+
+ /// the place of two words at p set from ( k0 , v0 ) to ( k1 , v1 ) by a
+ /// compare-and-swap of 16 bytes; false and ( k0 , v0 ) the place found
+ /// if it was not ( k0 , v0 )
+ static bool cas16( std::atomic< std::uint64_t > * p , std::uint64_t & k0 ,
+                    std::uint64_t & v0 , std::uint64_t k1 ,
+                    std::uint64_t v1 );
+
+ /// findOrInsert() of an inlined table
+ std::pair< Ref , bool > placeInline( const K & k , std::uint64_t h ,
+                                      const V & v );
+
+ /// the place of the key k of hash h in the vector in use, its first word,
+ /// or nil
+ [[nodiscard]] const std::atomic< std::uint64_t > * locate(
+                                   const K & k , std::uint64_t h ) const;
+
  /// the word of the pair ( k , v ) of a packed table
  [[nodiscard]] static std::uint64_t pack( const K & k , const V & v );
 
@@ -497,8 +554,9 @@ class ConcurrentFlatTable {
  std::atomic< Table * > f_table{ nullptr };   ///< the vector in use
  std::vector< std::unique_ptr< Table > > f_old;  ///< the vectors replaced
  std::unique_ptr< Table > f_cur;          ///< the vector in use, owned
- std::atomic< std::uint64_t > f_zero{ 0 };   ///< the pair of the key of
-                                          ///< zero bytes, if packed
+ /// the pair of the key of zero bytes: in the first word if packed, in
+ /// both with 1 in the first if inlined
+ alignas( 16 ) std::atomic< std::uint64_t > f_zero[ 2 ];
  std::atomic< Node * > f_seg[ kSegs ];    ///< the segments of the nodes
  std::atomic< std::uint64_t > f_nodes{ 0 };   ///< the nodes reserved
  std::atomic< std::uint64_t > f_id;       ///< the identity of the nodes

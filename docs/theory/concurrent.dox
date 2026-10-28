@@ -410,6 +410,18 @@
  amortized per insertion, since the sizes double. An insertion is
  blocking only during a growth, and the lookups never are.
 
+ A key and a value of 8 bytes each do not fit one word, and the pair of a
+ node costs a second miss of the cache on each lookup that finds its key.
+ Where the processor writes 16 bytes by one compare-and-swap without
+ locks, a place is instead two words, the key and the value, written from
+ \f$ ( 0 , 0 ) \f$ by that instruction (the folklore table of Maier et
+ al.), and Lemma 5 holds unchanged for the key: a lookup that reads the key
+ with acquire and then the value reads a value written with that key, or
+ a later one of `update()`, which changes the value by the same
+ instruction and never the key. The copy of a growth moves the two words
+ at once, and the places of a vector are twice as many words, all on the
+ line of their key.
+
  \section theory_concurrent_mq Relaxed priority queues
 
  A priority queue shared by \f$ p \f$ threads under one lock serializes
@@ -431,33 +443,49 @@
 
  <em>Theorem 7 (Walzer and Williams).</em> Let the pairs be spread over
  \f$ n \f$ queues uniformly at random, and then popped one at a time, each
- from the better of two queues drawn uniformly with replacement. The rank
- error of a pop converges in distribution as the pops go on, and the mean
- of its limit is
+ from the queue whose least key is the \f$ j \f$-th of the \f$ n \f$ with
+ a probability \f$ \sigma_j \f$, where the sums
+ \f$ \sigma_{\le i} = \sigma_1 + \cdots + \sigma_i \f$ satisfy
+ \f$ \sigma_{\le i} > i / n \f$ for \f$ i < n \f$. The rank error of a
+ pop converges in distribution as the pops go on, and the mean of its
+ limit is
+ \f[
+   E[ R ] = \sum_{i=1}^{n-1} \frac{\sigma_{\le i} ( 1 - \sigma_{\le i} )}
+   {\sigma_{\le i} - i / n} ; \tag{3}
+ \f]
+ for the better of two queues drawn with replacement,
+ \f$ \sigma_{\le i} = 1 - ( 1 - i / n )^2 \f$ and
  \f[
    E[ R ] = \sum_{i=1}^{n-1} \left( 2 - \frac{i}{n} \right)
-   \left( 1 - \frac{i}{n} \right) = \frac{5}{6} n - 1 + \frac{1}{6 n} ;
-   \tag{3}
+   \left( 1 - \frac{i}{n} \right) = \frac{5}{6} n - 1 + \frac{1}{6 n} ,
+   \tag{4}
  \f]
- its maximum over \f$ \mathrm{poly}( n ) \f$ pops is
+ and the maximum over \f$ \mathrm{poly}( n ) \f$ pops is
  \f$ O( n \log n ) \f$ with high probability.
 
- The argument is about the queues ordered by their least keys. A pop
- draws one of the \f$ i \f$ best queues with the probability
- \f$ \sigma_{\le i} = 1 - ( 1 - i / n )^2 \f$ that one of the two draws
- falls among them, while those queues hold, of the pairs that come next in
- the order of the keys, a share \f$ i / n \f$, since the pairs were spread
- at random. The \f$ i \f$ best queues are thus emptied faster than their
- share, \f$ \sigma_{\le i} > i / n \f$, and the number of pairs that
- separate the \f$ i \f$-th least key from the \f$ ( i + 1 ) \f$-th is a
- geometric variable whose mean depends only on \f$ \sigma_{\le i} \f$ and
- \f$ i / n \f$; Walzer and Williams prove that the ranks of the least keys
- of the queues converge to sums of such independent variables, and that
- the mean of the rank error is
- \f$ \sum_{i < n} \sigma_{\le i} ( 1 - \sigma_{\le i} ) /
- ( \sigma_{\le i} - i / n ) \f$, which is (3) for two draws. With one
- draw, \f$ \sigma_{\le i} = i / n \f$, the best queues are emptied only as
- fast as they are filled, and the rank error grows without bound. The
+ The argument is about the queues ordered by their least keys. The
+ \f$ i \f$ best queues hold, of the pairs that come next in the order of
+ the keys, a share \f$ i / n \f$, since the pairs were spread at random,
+ and a pop takes from them with the probability \f$ \sigma_{\le i} \f$;
+ when \f$ \sigma_{\le i} > i / n \f$ they are emptied faster than their
+ share, and the number of pairs that separate the \f$ i \f$-th least key
+ from the \f$ ( i + 1 ) \f$-th is a geometric variable whose mean depends
+ only on \f$ \sigma_{\le i} \f$ and \f$ i / n \f$; Walzer and Williams
+ prove that the ranks of the least keys of the queues converge to sums of
+ such independent variables, whence (3). With one draw,
+ \f$ \sigma_{\le i} = i / n \f$, the best queues are emptied only as fast
+ as they are filled, and the rank error grows without bound; two draws
+ that fall on the same queue are such a draw, and `MultiQueue` draws two
+ distinct queues instead, for which
+ \f$ \sigma_{\le i} = 1 - ( n - i ) ( n - i - 1 ) / ( n ( n - 1 ) ) \f$ and
+ \f$ \sigma_{\le i} - i / n = i ( n - i ) / ( n ( n - 1 ) ) \f$, so that (3)
+ becomes
+ \f[
+   E[ R ] = \sum_{i=1}^{n-1} \sigma_{\le i} \, \frac{n - i - 1}{i} ,
+   \tag{5}
+ \f]
+ a little less than (4): 4.63 against 5.69 for \f$ n = 8 \f$, 24.53
+ against 25.67 for \f$ n = 32 \f$. The
  earlier bounds of Alistarh et al., \f$ O( n ) \f$ for the mean and
  \f$ O( n \log n ) \f$ for the maximum, hold for pushes and pops mixed as
  well, but for a comparison and a pop done atomically; as Williams,

@@ -5,14 +5,15 @@
 # makefile on Linux and macOS; on Linux also with clang, under ASan and       #
 # UBSan, BigInteger with its portable products and on the backend of GMP,     #
 # FastHash and the vector quicksort on AVX2 (and AVX-512 when the runner has  #
-# it), the queues between threads, the event count, the MultiQueue, the       #
-# concurrent hash tables, the parallel operations of the trees by join, the   #
-# parallel builds of the succinct structures and the stepping algorithms of   #
-# the shortest paths under ThreadSanitizer, FlatHashTable on its broadword    #
-# fallback and fft() on the lanes of AVX, on arrays of doubles and on the     #
-# intrinsics of x86 that MSVC takes; it measures the coverage of the tests,   #
-# run four at a time and with the cases there for their scale alone made      #
-# smaller, and sends it to Coveralls.                                         #
+# it), ConcurrentFlatTable on the compare-and-swap of 16 bytes, the queues    #
+# between threads, the event count, the MultiQueue, the concurrent hash       #
+# tables, the parallel operations of the trees by join, the parallel builds   #
+# of the succinct structures and the stepping algorithms of the shortest      #
+# paths under ThreadSanitizer, FlatHashTable on its broadword fallback and    #
+# fft() on the lanes of AVX, on arrays of doubles and on the intrinsics of    #
+# x86 that MSVC takes; it measures the coverage of the tests, run four at a   #
+# time and with the cases there for their scale alone made smaller, and sends #
+# it to Coveralls.                                                            #
 ###############################################################################
 
 name: CI
@@ -80,6 +81,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: ConcurrentFlatTable on the compare-and-swap of 16 bytes
+        run: |
+          g++ -std=c++20 -O2 -mcx16 -Iinclude -Itest -DADS_CONTRACTS=3 \
+              -o cas16 test/engineered.cpp -pthread
+          for t in concurrent-flat-table concurrent-flat-table-threads \
+                   concurrent-flat-table-words; do
+            ./cas16 $t
+          done
       - name: FastHash on the stripes of AVX2, the same hashes as without
         run: |
           g++ -std=c++20 -O2 -march=x86-64-v3 -Iinclude -Itest \
@@ -147,6 +156,9 @@ jobs:
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan concurrent-flat-table-threads
           ./tsan concurrent-cuckoo-threads
+          g++ -std=c++20 -O1 -g -fsanitize=thread -mcx16 -Iinclude -Itest \
+              -DADS_CONTRACTS=3 -o tsan16 test/engineered.cpp -pthread
+          ./tsan16 concurrent-flat-table-words
       - name: ThreadSanitizer on the bulk operations of the trees by join
         run: |
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \

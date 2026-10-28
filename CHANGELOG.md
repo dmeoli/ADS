@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ConcurrentFlatTable: the places of two words, a key and a value of 8
+  bytes each written together by a compare-and-swap of 16 bytes, where the
+  processor has one without locks (cmpxchg16b on x86-64, the pairs of
+  AArch64, chosen when compiling, ADS_FLAT_CAS16=0 to turn it off), the
+  nodes elsewhere; update() on them; the test concurrent-flat-table-words
 - the benchmark learned also measures, where found, the la_vector of
   Boffa, Ferragina and Vinciguerra, with corrections of 7 bits and with
   its optimal partition (LAVECTOR=<dir>), and the benchmark stringdicts
@@ -1213,6 +1218,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- MultiQueue: the deletion buffer a ring of 16 places, so that the pop of
+  its least pair and the eviction of its greatest move no other pair, and
+  the pop from the better of two distinct queues, whose mean rank error
+  the test multi-queue-rank checks against the formula of Walzer and
+  Williams for that draw; the same pair drawn twice was a pop from one
+  random queue
 - LAVector: a segment takes 28 bytes instead of 44, its first item read
   as its base plus its first correction, and tuned() tries the widths up
   to six bits above the logarithm of the average gap (or half the bits of

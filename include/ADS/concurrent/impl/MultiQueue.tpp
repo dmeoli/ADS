@@ -102,7 +102,7 @@ void MultiQueue< K , T , Less >::unlock( Queue & q )
 template< class K , class T , class Less >
 void MultiQueue< K , T , Less >::publish( Queue & q ) const
 {
- q.top.store( q.nd ? q.D[ q.nd - 1 ].key : f_none ,
+ q.top.store( q.nd ? q.D[ q.at( q.nd - 1 ) ].key : f_none ,
               std::memory_order_relaxed );
  q.count.store( std::size_t( q.nd + q.ni ) + q.heap.size() ,
                 std::memory_order_relaxed );
@@ -111,27 +111,26 @@ void MultiQueue< K , T , Less >::publish( Queue & q ) const
 template< class K , class T , class Less >
 void MultiQueue< K , T , Less >::put( Queue & q , Entry && e ) const
 {
- // D sorted by decreasing keys, so that its least pair is the last one
- // and a pop takes it without moving the others
- if( q.nd && f_less( e , q.D[ 0 ] ) ) {
+ // D a ring sorted by decreasing keys from lo: the least pair is the last
+ // one, and the greatest the first, so that a pop and an eviction move no
+ // other pair, and an insertion only the pairs less than the new one
+ if( q.nd && f_less( e , q.D[ q.lo ] ) ) {
   if( q.nd == kBuf ) {                    // the greatest of D into I
-   q.I[ q.ni++ ] = std::move( q.D[ 0 ] );
-   for( int i = 1 ; i < q.nd ; ++i )
-    q.D[ i - 1 ] = std::move( q.D[ i ] );
+   q.I[ q.ni++ ] = std::move( q.D[ q.lo ] );
+   q.lo = std::uint8_t( q.at( 1 ) );
    --q.nd;
    }
-  int i = q.nd;                           // sorted, from the least end
-  for( ; ( i > 0 ) && f_less( q.D[ i - 1 ] , e ) ; --i )
-   q.D[ i ] = std::move( q.D[ i - 1 ] );
-  q.D[ i ] = std::move( e );
+  int k = q.nd;                           // sorted, from the least end
+  for( ; ( k > 0 ) && f_less( q.D[ q.at( k - 1 ) ] , e ) ; --k )
+   q.D[ q.at( k ) ] = std::move( q.D[ q.at( k - 1 ) ] );
+  q.D[ q.at( k ) ] = std::move( e );
   ++q.nd;
   }
  else if( ( q.nd == 0 ) ||
           ( ( q.nd < kBuf ) && ( q.ni == 0 ) && q.heap.empty() ) ) {
   // not less than any pair of D, which holds them all: the new greatest
-  for( int i = q.nd ; i > 0 ; --i )
-   q.D[ i ] = std::move( q.D[ i - 1 ] );
-  q.D[ 0 ] = std::move( e );
+  q.lo = std::uint8_t( q.at( kBuf - 1 ) );
+  q.D[ q.lo ] = std::move( e );
   ++q.nd;
   }
  else
@@ -146,7 +145,7 @@ void MultiQueue< K , T , Less >::put( Queue & q , Entry && e ) const
 template< class K , class T , class Less >
 auto MultiQueue< K , T , Less >::take( Queue & q ) const -> Entry
 {
- Entry e = std::move( q.D[ --q.nd ] );
+ Entry e = std::move( q.D[ q.at( --q.nd ) ] );
  if( q.nd == 0 ) {                        // D again with the least pairs
   for( int i = 0 ; i < q.ni ; ++i )
    q.heap.push( std::move( q.I[ i ] ) );
@@ -154,7 +153,8 @@ auto MultiQueue< K , T , Less >::take( Queue & q ) const -> Entry
   const int m = int( std::min< std::size_t >( kBuf , q.heap.size() ) );
   for( int i = m ; i-- > 0 ; )
    q.D[ i ] = q.heap.pop();
-  q.nd = m;
+  q.lo = 0;
+  q.nd = std::uint8_t( m );
   }
  return( e );
  }
@@ -162,15 +162,19 @@ auto MultiQueue< K , T , Less >::take( Queue & q ) const -> Entry
 template< class K , class T , class Less >
 bool MultiQueue< K , T , Less >::ordered( const Queue & q ) const
 {
+ if( ( q.lo >= kBuf ) || ( q.nd > kBuf ) || ( q.ni >= kBuf ) )
+  return( false );
  if( ( q.nd == 0 ) && ( ( q.ni > 0 ) || ! q.heap.empty() ) )
   return( false );
- for( int i = 1 ; i < q.nd ; ++i )
-  if( f_less( q.D[ i - 1 ] , q.D[ i ] ) )
+ for( int k = 1 ; k < q.nd ; ++k )
+  if( f_less( q.D[ q.at( k - 1 ) ] , q.D[ q.at( k ) ] ) )
    return( false );
+ if( q.nd == 0 )
+  return( true );
  for( int i = 0 ; i < q.ni ; ++i )
-  if( f_less( q.I[ i ] , q.D[ 0 ] ) )
+  if( f_less( q.I[ i ] , q.D[ q.lo ] ) )
    return( false );
- return( q.heap.empty() || ! f_less( q.heap.top() , q.D[ 0 ] ) );
+ return( q.heap.empty() || ! f_less( q.heap.top() , q.D[ q.lo ] ) );
  }
 
 template< class K , class T , class Less >
@@ -211,7 +215,7 @@ bool MultiQueue< K , T , Less >::consistent( void ) const
   lock( q );
   const bool ok = ordered( q ) &&
    ( q.top.load( std::memory_order_relaxed ) ==
-     ( q.nd ? q.D[ q.nd - 1 ].key : f_none ) ) &&
+     ( q.nd ? q.D[ q.at( q.nd - 1 ) ].key : f_none ) ) &&
    ( q.count.load( std::memory_order_relaxed ) ==
      std::size_t( q.nd + q.ni ) + q.heap.size() );
   unlock( q );
@@ -244,9 +248,13 @@ std::size_t MultiQueue< K , T , Less >::Handle::any( void )
 template< class K , class T , class Less >
 void MultiQueue< K , T , Less >::Handle::draw( void )
 {
- // with replacement, as in the analysis of Walzer and Williams
+ // two distinct queues, unless there is one: the same queue twice would
+ // be a pop from a single random queue, whose rank errors grow without
+ // bound
  f_a = any();
  f_b = any();
+ while( ( f_b == f_a ) && ( f_m->f_n > 1 ) )
+  f_b = any();
  f_used = 0;
  }
 
