@@ -661,8 +661,11 @@ template< class T >
 void bucket_of( unsigned seed )
 {
  std::mt19937_64 g( seed );
- std::uniform_real_distribution< T > u( 0 , 1 );
+ std::uniform_real_distribution< T > d( 0 , 1 );
  const T below = std::nextafter( T( 1 ) , T( 0 ) );
+ auto u = [ & ]( std::mt19937_64 & r ) {   // some libraries round the
+  const T x = d( r );                       // floats of the distribution
+  return( x < T( 1 ) ? x : below ); };      // up to 1
  const std::size_t c = ( std::size_t( 1 ) << 20 ) / sizeof( T );
  for( std::size_t n : { c - 1 , c , c + 1 , 3 * c + 777 } ) {
   std::vector< std::vector< T > > X( 5 , std::vector< T >( n ) );
@@ -688,8 +691,8 @@ ADS_TEST( "bucket-sort" )
  bucket_of< float >( 2 );
  std::vector< float > F( ( std::size_t( 1 ) << 24 ) + 3 );
  std::mt19937 g( 3 );
- std::uniform_real_distribution< float > u( 0 , 1 );
- for( auto & x : F ) x = u( g );
+ for( auto & x : F )                       // 24 random bits: in [ 0 , 1 )
+  x = float( g() >> 8 ) * 0x1.0p-24f;
  auto E = F;
  std::sort( E.begin() , E.end() );
  bucketSort( F );
