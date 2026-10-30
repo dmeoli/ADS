@@ -1281,6 +1281,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   data that the other threads of its parallel loop read; the seeds of the
   handles are a counter mixed as by splitmix64, instead of seeds apart by
   its increment, whose sequences were one sequence shifted by a draw
+- vectorQuickSort(), and sort() and stableSort() through it: on the
+  processors of AMD (read once when the program starts, as Highway does
+  for its target Zen 4) a side of a partition on AVX-512 is compressed
+  into a register and written by a masked store, since the compression
+  into the memory is microcoded there, far slower; the processors of
+  Intel keep it, faster for them; the scan of sort() and stableSort() for
+  a single run prefetches no more on the processors of AMD, whose
+  hardware prefetchers keep up with it, so that the prefetch only slowed
+  it
 - GridGraph::forEachMove( u , f ), f( v , d ) with d whether the move is
   to a corner, is public and documented, so that the flag is not computed
   again by the caller
@@ -1966,6 +1975,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- bench/sort.cpp: fluxsort, quadsort and crumsort compiled with no strict
+  aliasing, since their generic entries read the items of 8 bytes as long
+  long and give them to the comparison as doubles, which g++ at -O3
+  reorders: they left vectors of doubles and of records out of order (-1
+  in their cells)
 - the sizes given to the constructors and to reset() are no longer
   clamped by n < 0 ? 0 : n, but taken as they are after the precondition
   n >= 0: g++ 16 at -O2 with LTO, specializing a callee for all its calls

@@ -88,10 +88,20 @@
  #include <cstring>
  #include <stdalign.h>
  #define restrict __restrict
+ // their generic entries read the items of 8 bytes as long long and pass
+ // them to the comparison as doubles, which the strict aliasing of g++ at
+ // -O3 reorders: a vector of doubles left out of order
+ #if defined( __GNUC__ ) && ! defined( __clang__ )
+  #pragma GCC push_options
+  #pragma GCC optimize( "no-strict-aliasing" )
+ #endif
 namespace scandum {
  #include <fluxsort.h>
  #include <crumsort.h>
 }
+ #if defined( __GNUC__ ) && ! defined( __clang__ )
+  #pragma GCC pop_options
+ #endif
  #undef restrict
  #define ADS_HAS_SCANDUM 1
 #endif

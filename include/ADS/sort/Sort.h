@@ -34,9 +34,11 @@
  *   is out of order), one read and one write of each item instead of a scan
  *   and then a reversal; otherwise it is scanned for an item smaller than the
  *   one before it, 64 items at a time with the block 4 blocks ahead
- *   prefetched, by quarters in step if its items have at most 8 bytes and fill
- *   more than the cache of the second level (four streams of reads), and the
- *   scan of the first run goes on from where that stopped.
+ *   prefetched (but on the processors of AMD, whose hardware prefetchers keep
+ *   up with the scan, so that a prefetch by software only slows it), by
+ *   quarters in step if its items have at most 8 bytes and fill more than the
+ *   cache of the second level (four streams of reads), and the scan of the
+ *   first run goes on from where that stopped.
  * - With the natural order on the other integers and floating point numbers,
  *   or with no vector registers, a short vector goes to `pdqSort()` and a long
  *   one in few runs to `powerSort()` in the same way; `sort()` sends to

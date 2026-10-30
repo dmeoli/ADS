@@ -45,7 +45,11 @@
  *   least \f$ U W \f$: no write overtakes a key not yet read, and the
  *   partition is in place with no branch on the keys (the choice of the end is
  *   one branch per \f$ U \f$ blocks). On AVX-512 the two pieces are compressed
- *   into the memory (`vpcompress`); on AVX2 a table of \f$ 2^W \f$
+ *   into the memory (`vpcompress`), or, on the processors of AMD, where that
+ *   instruction is microcoded and about ten times slower, into a register
+ *   that a masked store writes (the slower way on those of Intel, which is
+ *   why the processor is read when the program starts, as the target Zen 4
+ *   of Highway does); on AVX2 a table of \f$ 2^W \f$
  *   permutations puts the lanes of \f$ m \f$ first and the others after them
  *   in one register, which is written whole at the left end and whole at the
  *   right one, as in the quicksort of Gueron and Krasnov; on AVX-512 the keys

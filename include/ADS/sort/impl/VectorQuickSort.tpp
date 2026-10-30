@@ -20,6 +20,28 @@
 
 namespace ADS {
 
+namespace detail {
+
+/// true on an x86 processor of AMD (the cores Zen), false elsewhere and
+/// with compilers other than GCC and Clang, read once when the program
+/// starts: a compression into the memory (vpcompress) is microcoded there,
+/// about ten times slower than one into a register followed by a masked
+/// store, which on the cores of Intel is the slower of the two; and its
+/// hardware prefetchers keep up with a sequential scan, so that a prefetch
+/// by software only takes the slots of the loads, while on the cores of
+/// Intel it nearly halves the time of a scan out of the cache
+inline const bool kZen = []() {
+#if ( defined( __GNUC__ ) || defined( __clang__ ) ) && \
+    ( defined( __x86_64__ ) || defined( __i386__ ) )
+ __builtin_cpu_init();
+ return( __builtin_cpu_is( "amd" ) != 0 );
+#else
+ return( false );
+#endif
+ }();
+
+}  // end( namespace detail )
+
 namespace detail::vqs {
 
 /// a function inlined whatever its size, so that the registers of a
@@ -177,10 +199,13 @@ struct PartTable8 {
 inline constexpr PartTable8 kPart8{};
 
 /// a register of AVX-512 of 16 keys of 32 bits or 8 of 64, signed or not,
-/// K the type of a key
-template< class Key >
+/// K the type of a key; with Z the compressions go through a register, as
+/// the cores of AMD want [see kZen]
+template< class Key , bool Z = false >
 struct Avx512 {
  using K = Key;
+ /// the same register with the compressions through a register
+ using Zen = Avx512< Key , true >;
  static constexpr bool W32 = sizeof( K ) == 4;
  static constexpr bool S = std::is_signed_v< K >;
  static constexpr unsigned N = 64 / sizeof( K );
@@ -294,9 +319,17 @@ struct Avx512 {
    idx[ 6 ] , idx[ 7 ] , idx[ 8 ] , idx[ 9 ] , idx[ 10 ] , idx[ 11 ] ,
    idx[ 12 ] , idx[ 13 ] , idx[ 14 ] , idx[ 15 ] ) , a ) );
   }
- /// the keys of a in the lanes m at l
+ /// the keys of a in the lanes m at l: compressed into the memory, or with
+ /// Z into a register and stored by a mask
  static void compress( K * l , Mask m , R a ) {
-  if constexpr( W32 ) _mm512_mask_compressstoreu_epi32( l , m , a );
+  if constexpr( Z ) {                       // into a register, then a
+   const Mask f = first( std::size_t( std::popcount( unsigned( m ) ) ) );
+   if constexpr( W32 )                      // masked store
+    _mm512_mask_storeu_epi32( l , f , _mm512_maskz_compress_epi32( m , a ) );
+   else
+    _mm512_mask_storeu_epi64( l , f , _mm512_maskz_compress_epi64( m , a ) );
+   }
+  else if constexpr( W32 ) _mm512_mask_compressstoreu_epi32( l , m , a );
   else _mm512_mask_compressstoreu_epi64( l , m , a );
   }
  /// part() of the first c < N keys at q
@@ -1069,13 +1102,21 @@ std::size_t partitionU( typename V::K * a , std::size_t n , typename V::K p ,
  }
 
 /// partitionU() with the most vectors kept aside that a[ 0 .. n ) allows,
-/// n >= 2 N
+/// n >= 2 N; on the cores of AMD [see kZen] with the register V::Zen,
+/// whose compressions go through a register, if V has one, so that the
+/// loop of the partition holds one kind of compression and no test
 template< class V , bool Track = false , bool Three = false >
 std::size_t partition( typename V::K * a , std::size_t n , typename V::K p ,
                        typename V::K * lo = nullptr ,
                        typename V::K * hi = nullptr ,
                        std::size_t * gt = nullptr , bool * single = nullptr )
 {
+ if constexpr( requires { typename V::Zen; } )
+  if constexpr( ! std::is_same_v< V , typename V::Zen > )
+   if( kZen )
+    return( partition< typename V::Zen , Track , Three >( a , n , p , lo ,
+                                                          hi , gt ,
+                                                          single ) );
  constexpr std::size_t N = V::N , U = kUnroll< V >;
  if( n >= 2 * U * N )
   return( partitionU< V , Track , Three , U >( a , n , p , lo , hi , gt ,

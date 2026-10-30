@@ -48,10 +48,10 @@ inline constexpr std::size_t kAhead = 4;
 
 /// true if no less( a[ k ] , a[ k - 1 ] ) for k in [ 1 , n ), n >= 128:
 /// S stretches scanned in step, 64 items each at a time with no branch,
-/// so that S streams of reads are in flight, each prefetching the block
-/// kAhead blocks ahead into the first level, and the first block out of
-/// order in any of them stops all
-template< std::size_t S , class T , class C >
+/// so that S streams of reads are in flight, each prefetching, if P, the
+/// block kAhead blocks ahead into the first level, and the first block out
+/// of order in any of them stops all
+template< std::size_t S , bool P , class T , class C >
 std::size_t ascendingIn( const T * a , std::size_t n , C & less )
 {
  constexpr std::size_t B = 64;
@@ -65,10 +65,11 @@ std::size_t ascendingIn( const T * a , std::size_t n , C & less )
  for( ; t + B <= q ; t += B ) {
   unsigned stop = 0;
 #if defined( __GNUC__ ) || defined( __clang__ )
-  for( std::size_t j = 0 ; j < S ; ++j )     // the block kAhead on
-   for( std::size_t c = 0 ; c < B * sizeof( T ) ; c += 64 )
-    __builtin_prefetch( reinterpret_cast< const char * >( b[ j ] + t ) +
-                        kAhead * B * sizeof( T ) + c );
+  if constexpr( P )
+   for( std::size_t j = 0 ; j < S ; ++j )   // the block kAhead on
+    for( std::size_t c = 0 ; c < B * sizeof( T ) ; c += 64 )
+     __builtin_prefetch( reinterpret_cast< const char * >( b[ j ] + t ) +
+                         kAhead * B * sizeof( T ) + c );
 #endif
   for( std::size_t j = 0 ; j < S ; ++j )
    for( std::size_t k = t ; k < t + B ; ++k )
@@ -93,15 +94,19 @@ inline constexpr std::size_t kStreamBytes = std::size_t( 1 ) << 20;
 /// ascendingIn() with one stream, or four on more than kStreamBytes of
 /// items of at most 8 bytes, whose comparisons vectorize and outrun one
 /// stream (larger items are compared one by one, and four streams only
-/// take more of the cache): n if
+/// take more of the cache), prefetching but on the cores of AMD, whose
+/// hardware prefetchers keep up [see kZen]: n if
 /// a[ 0 .. n ) is non-decreasing, otherwise a place p >= 1 such that
 /// a[ 0 .. p ) is, from which the scan of the first run may go on
 template< class T , class C >
 std::size_t ascending( const T * a , std::size_t n , C & less )
 {
- return( ( sizeof( T ) <= 8 ) && ( n * sizeof( T ) > kStreamBytes ) ?
-         ascendingIn< 4 >( a , n , less ) :
-         ascendingIn< 1 >( a , n , less ) );
+ const bool four = ( sizeof( T ) <= 8 ) && ( n * sizeof( T ) > kStreamBytes );
+ if( kZen )
+  return( four ? ascendingIn< 4 , false >( a , n , less ) :
+                 ascendingIn< 1 , false >( a , n , less ) );
+ return( four ? ascendingIn< 4 , true >( a , n , less ) :
+                ascendingIn< 1 , true >( a , n , less ) );
  }
 
 /// true if less( a[ k ] , a[ k - 1 ] ) for every k in [ 1 , n ), n >= 128,
