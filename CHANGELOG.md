@@ -1269,7 +1269,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the line of the lock, the number of the pairs counted by size() under
   each lock instead of at each operation, and the two queues of a pop and
   of a push chosen by indices rather than by branches, with the random bits
-  of a push taken 64 at a time
+  of a push taken 64 at a time; Handle::push() takes its key by value, so
+  that the caller does not write it on its stack at each call, next to the
+  data that the other threads of its parallel loop read; the seeds of the
+  handles are a counter mixed as by splitmix64, instead of seeds apart by
+  its increment, whose sequences were one sequence shifted by a draw
 - GridGraph::forEachMove( u , f ), f( v , d ) with d whether the move is
   to a corner, is public and documented, so that the flag is not computed
   again by the caller

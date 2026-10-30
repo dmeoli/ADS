@@ -69,10 +69,15 @@ MultiQueue< K , T , Less >::~MultiQueue()
 template< class K , class T , class Less >
 auto MultiQueue< K , T , Less >::handle( void ) -> Handle
 {
- // the seeds of the handles apart by the odd constant of splitmix64, so
- // that their sequences are the stretches of one sequence far apart
- return( Handle( *this , f_seed.fetch_add( 0x9E3779B97F4A7C15ULL ,
-                                           std::memory_order_relaxed ) ) );
+ // the seed of a handle is a counter mixed as by splitmix64, a point at
+ // random of its sequence: seeds apart by its increment would give one
+ // sequence shifted by a draw, and the handles taken one after the other
+ // would choose the same queues one operation apart
+ std::uint64_t z = f_seed.fetch_add( 0x9E3779B97F4A7C15ULL ,
+                                     std::memory_order_relaxed );
+ z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9ULL;
+ z = ( z ^ ( z >> 27 ) ) * 0x94D049BB133111EBULL;
+ return( Handle( *this , z ^ ( z >> 31 ) ) );
  }
 
 template< class K , class T , class Less >
@@ -292,7 +297,7 @@ void MultiQueue< K , T , Less >::Handle::use( void )
  }
 
 template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::Handle::push( const K & k , T x )
+void MultiQueue< K , T , Less >::Handle::push( K k , T x )
 {
  MultiQueue & m = *f_m;
  for( ; ; ) {
@@ -301,7 +306,7 @@ void MultiQueue< K , T , Less >::Handle::push( const K & k , T x )
   // outcome would be mispredicted half of the times
   Queue & q = m.f_q[ f_k[ bit() ] ];
   if( tryLock( q ) ) {
-   m.put( q , Entry{ k , std::move( x ) } );
+   m.put( q , Entry{ std::move( k ) , std::move( x ) } );
    m.publish( q );
    ADS_INVARIANT( m.ordered( q ) );
    unlock( q );

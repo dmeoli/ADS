@@ -285,7 +285,10 @@ class MultiQueue< K , T , Less >::Handle {
  public:
 
  /// puts the pair \f$ ( k , x ) \f$ into one of the two queues kept, or
- /// into the first free one of other draws
+ /// into the first free one of other draws; the key by value, as the
+ /// item, since a key by reference makes the caller write it on its
+ /// stack at each call, where it may share a line of cache with the data
+ /// that the other threads of a parallel loop read at each operation
  ///
  /// In pseudocode (Rihani, Sanders and Dementiev, with the stickiness and
  /// the buffers of Williams, Sanders and Dementiev, beyond the book),
@@ -319,7 +322,7 @@ class MultiQueue< K , T , Less >::Handle {
  ///     \text{ into } H_j;\ I_j \gets \emptyset
  /// \end{array}}
  /// \f]
- void push( const K & k , T x );
+ void push( K k , T x );
 
  /// the least pair of the better of the two queues kept, or of the first
  /// draw of two queues whose better one is free; nothing if a scan of all
