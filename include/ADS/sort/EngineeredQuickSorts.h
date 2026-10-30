@@ -5,24 +5,25 @@
  * The quicksorts engineered for speed, beyond the book [see `QuickSort.h` for
  * the one of the book and its improvements of section 12.2]:
  *
- * - `introSort()` of Musser: the quicksort with the median of three, whose
- *   depth of recursion is bounded by \f$ 2 \lfloor \log_2 n \rfloor \f$, past
- *   which the part is sorted by heapsort, so that the worst case is
- *   \f$ O( n \log n ) \f$; the small parts are sorted by insertion (the
- *   `std::sort` of the C++ libraries);
- * - `pdqSort()`, the pattern-defeating quicksort of Peters: the introsort with
- *   the pivot by the median of three, or by the ninther of Tukey on large
- *   parts, and three defences against the patterns: a partition that moved
- *   nothing is checked by an insertion sort that gives up after 8 moves, so
- *   that a sorted or reversed run takes \f$ O( n ) \f$; a pivot equal to the
- *   item before the part, i.e., a run of equal keys, gets a partition that
- *   puts the equals on its left and skips them, so that \f$ k \f$ distinct
- *   keys take \f$ O( n \log k ) \f$; a partition too unbalanced (one side
- *   below \f$ n / 8 \f$) swaps a few items to break the pattern, and too many
- *   of them fall back to heapsort. On the arithmetic types with their natural
+ * - `pdqSort()`, the pattern-defeating quicksort of Peters: the introsort of
+ *   Musser, i.e., the quicksort whose depth of recursion is bounded by
+ *   \f$ 2 \lfloor \log_2 n \rfloor \f$, past which the part is sorted by
+ *   heapsort, so that the worst case is \f$ O( n \log n ) \f$, with the
+ *   pivot by the median of three, or by the ninther of Tukey on large parts,
+ *   and three defences against the patterns: a partition that moved nothing
+ *   is checked by an insertion sort that gives up after 8 moves, so that a
+ *   sorted or reversed run takes \f$ O( n ) \f$; a pivot equal to the item
+ *   before the part, i.e., a run of equal keys, gets a partition that puts
+ *   the equals on its left and skips them, so that \f$ k \f$ distinct keys
+ *   take \f$ O( n \log k ) \f$; a partition too unbalanced (one side below
+ *   \f$ n / 8 \f$) swaps a few items to break the pattern, and too many of
+ *   them fall back to heapsort. On the arithmetic types with their natural
  *   order the partition goes by blocks, as in the BlockQuicksort of Edelkamp
  *   and Weiss: the items to swap are first collected, 64 at a time, as offsets
- *   by an increment with no branch, and then moved along a cycle, so that no
+ *   by an increment with no branch, and then moved along a cycle, or swapped
+ *   in pairs when the two blocks have as many (the first with the last, so
+ *   that a part in reverse order leaves both its sides sorted, which the
+ *   insertion sort above then finds in \f$ O( n ) \f$), so that no
  *   comparison causes a mispredicted branch;
  * - `dualPivotQuickSort()` of Yaroslavskiy (the sort of the primitive types of
  *   Java 7): two pivots \f$ p \le q \f$, the 2nd and the 4th of five equally
@@ -98,32 +99,6 @@
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
-
-/// the introsort
-///
-/// In pseudocode (Musser, beyond the book), the depth starting from
-/// \f$ 2 \lfloor \log_2 n \rfloor \f$:
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{intro}( A , \mathit{lo} , \mathit{hi} ,
-///     \mathit{depth} ) \cr
-/// 2 & \quad \textbf{while}\ \mathit{hi} - \mathit{lo} > 16\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ \mathit{depth} = 0\ \textbf{then}\ \text{heapsort }
-///     A[ \mathit{lo} .. \mathit{hi} - 1 ];\ \textbf{return} \cr
-/// 4 & \qquad \mathit{depth} \gets \mathit{depth} - 1 \cr
-/// 5 & \qquad \text{the median of } A[ \mathit{lo} ] , A[ \mathit{mid} ] , A[
-///     \mathit{hi} - 1 ] \text{ to } A[ \mathit{lo} ] \cr
-/// 6 & \qquad j \gets \text{the place of the pivot after the partition of }
-///     \text{Hoare} \cr
-/// 7 & \qquad \mathrm{intro}( \text{the smaller of } [ \mathit{lo} , j )
-///     \text{ and } [ j + 1 , \mathit{hi} ) , \mathit{depth} ) \cr
-/// 8 & \qquad [ \mathit{lo} , \mathit{hi} ) \gets \text{the larger one} \cr
-/// 9 & \quad \mathrm{insertionSort}( A , \mathit{lo} , \mathit{hi} )
-/// \end{array}}
-/// \f]
-/// \post \f$ A \f$ is sorted, with the same items (audit)
-template< class T , class C = std::less<> >
-void introSort( std::vector< T > & A , C less = C() );
 
 /// the pattern-defeating quicksort
 ///

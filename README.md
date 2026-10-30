@@ -528,8 +528,8 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 | bubble, cocktail shaker, odd-even transposition, comb and gnome sort | [`sort/ExchangeSorts.h`](include/ADS/sort/ExchangeSorts.h) |
 | tree sort, strand sort | [`sort/TreeSort.h`](include/ADS/sort/TreeSort.h), [`sort/StrandSort.h`](include/ADS/sort/StrandSort.h) |
 | sorting networks of Batcher (merge exchange, bitonic) | [`sort/SortingNetworks.h`](include/ADS/sort/SortingNetworks.h) |
-| introsort, pdqsort, dual-pivot and three-way quicksort | [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) |
-| Timsort and Powersort | [`sort/RunSorts.h`](include/ADS/sort/RunSorts.h) |
+| pdqsort, dual-pivot and three-way quicksort | [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) |
+| Powersort | [`sort/RunSorts.h`](include/ADS/sort/RunSorts.h) |
 | LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings, bucket sort | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |
 | multikey quicksort of strings | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) |
 | sort of strings by integer keys of 8 characters, sorted in the vector registers | [`sort/StringSort.h`](include/ADS/sort/StringSort.h) |

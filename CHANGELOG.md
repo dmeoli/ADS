@@ -1370,6 +1370,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocks with their rank and the place of their offsets at their widths,
   in at most m H0 + 0.175 m bits, with access, rank and select, which
   walk the places of the block only down to what they need
+- the tests american-flag and bucket-sort: americanFlagSort() around
+  kFlagSmall, on keys that differ in one byte, in the top one or in two
+  bytes far apart, sorted, non-increasing and strictly decreasing, and on
+  the floating point numbers with -0, +0, the infinities, the denormals and
+  the NaN of both signs, bit by bit against std::sort by radixKey();
+  bucketSort() on both sides of the cache, on numbers crowded into a few
+  buckets, all equal, and on more than 2^24 floats
+- bench/sort.cpp: the doubles also uniform in [ 0 , 1 ) (the pattern
+  unit), with the cell bucketSort
 
 ### Changed
 
@@ -2109,6 +2118,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RankSelect answers select straight from the inventory, with no access
   to the bits, when every bit b of a group has its offset (a value of
   density below about 1%); BitVector copies the words of a span once
+- americanFlagSort(): a first sweep finds a vector already sorted, or in
+  reverse order (reversed), and the bytes in which the keys differ, one
+  alone counted and written back as by radixSort(); the items go to their
+  buckets in place by rounds of swaps of each item to the next free place
+  of its bucket (as the ska_sort of Skarupke does), whose loads do not wait
+  for each other as along the cycles of the permutation, a bucket with a
+  single byte value goes on with the next byte, and the buckets of fewer
+  than kFlagSmall items (a constant of the namespace, 8192 on the vector
+  registers and 256 without) go to vectorQuickSort(), whose order on the
+  floating point numbers is that of the keys, or to pdqSort()
+- bucketSort(): the buckets counted instead of kept in vectors, the items
+  scattered into one buffer in the order of the buckets and sorted by one
+  insertion sort over the whole vector, first by groups of 1024 buckets on
+  a vector larger than the cache; a bucket of more than 32 items goes to
+  pdqSort(), so that the worst case is O( n log n ) instead of O( n^2 ),
+  and the sort is no more stable
+- pdqSort(), and sort() through it: the blocks of a partition with as many
+  items to move on both sides are swapped in pairs, the first with the
+  last, as in the pdqsort of Peters, instead of along a cycle, so that a
+  part in reverse order leaves both its sides sorted and takes O( n )
+- multikeyQuickSort() cited as the one of chapter 7, Sorting Strings, of
+  Ferragina's book
+
+### Removed
+
+- introSort() of sort/EngineeredQuickSorts.h and timSort() of
+  sort/RunSorts.h, which the benchmark found no faster than std::sort,
+  itself an introsort, and than spinsort of Boost, with their tests, their
+  cells of bench/sort.cpp and their text in the theory of sorting;
+  pdqSort() and powerSort(), the same algorithms engineered further, stay
 
 ### Removed
 

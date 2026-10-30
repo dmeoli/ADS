@@ -189,18 +189,18 @@
  runs costs their total length, so that a sequence of merges is a binary
  tree over the runs whose cost is the sum of
  \f$ \ell_i \cdot \mathrm{depth}( i ) \f$, as in the codes of Huffman, and
- the best tree costs between \f$ n H \f$ and \f$ n H + n \f$. Timsort
- (`timSort()` of `RunSorts.h`) keeps the runs on a stack whose lengths grow
- from the top at least as the Fibonacci numbers, merging when the rule
- fails; the stack has thus \f$ O( \log n ) \f$ runs, and its merges cost
- \f$ O( n + n H ) \f$ comparisons (Auger, Jugé, Nicaud and Pivoteau).
- Powersort (`powerSort()`) merges along a tree that is nearly the one of the
+ the best tree costs between \f$ n H \f$ and \f$ n H + n \f$. Timsort keeps
+ the runs on a stack whose lengths grow from the top at least as the
+ Fibonacci numbers, merging when the rule fails; the stack has thus
+ \f$ O( \log n ) \f$ runs, and its merges cost \f$ O( n + n H ) \f$
+ comparisons (Auger, Jugé, Nicaud and Pivoteau). Powersort (`powerSort()`
+ of `RunSorts.h`) merges along a tree that is nearly the one of the
  midpoints: the boundary between two adjacent runs has the power of the
  first bit where their midpoints, as fractions of \f$ n \f$, differ, and a
  run on the stack is merged when its boundary has a larger power than the
  new one; this tree costs at most \f$ n H + 2 n \f$ (Munro and Wild), within
- \f$ O( n ) \f$ of (2). Both extend the runs shorter than
- \f$ \mathit{minrun} \f$ (32 to 64 items) by binary insertion, and gallop
+ \f$ O( n ) \f$ of (2). It extends the runs shorter than
+ \f$ \mathit{minrun} \f$ (24 items) by binary insertion, and gallops
  (an exponential search, then a binary one) when one run keeps winning, so
  that two runs one after the other merge in \f$ O( \log n ) \f$
  comparisons. The strand sort of `StrandSort.h` builds runs of its own,
@@ -241,9 +241,10 @@
  the worst case and the equal keys. The pivot as the median of three, or of
  three medians of three (the ninther of Tukey), lowers the constant of (5) to
  about \f$ 1.188 \f$ and makes the sorted inputs a good case
- (`quickSortTuned()`, `introSort()`). The introsort of Musser bounds the depth
- of the recursion by \f$ 2 \lfloor \log_2 n \rfloor \f$ and sorts a part that
- goes deeper by heapsort, so that the worst case is \f$ O( n \log n ) \f$;
+ (`quickSortTuned()`, `pdqSort()`). The introsort of Musser (inside
+ `pdqSort()`) bounds the depth of the recursion by
+ \f$ 2 \lfloor \log_2 n \rfloor \f$ and sorts a part that goes deeper by
+ heapsort, so that the worst case is \f$ O( n \log n ) \f$;
  recurring on the smaller side and looping on the larger keeps the stack within
  \f$ \log_2 n \f$ parts, since each recursive call at least halves the part. A
  partition by three ways keeps the items equal to the pivot apart
@@ -361,20 +362,31 @@
  reading only the digits that tell the keys apart; on strings they read
  \f$ D \f$ characters, which any sort of strings must read, and spend
  \f$ O( n \log \sigma ) \f$ beyond them on an alphabet of \f$ \sigma \f$
- characters. The multikey quicksort of Bentley and Sedgewick
- (`multikeyQuickSort()`) partitions by three ways on one character at a time,
+ characters. `americanFlagSort()` permutes the items in place, not along the
+ cycles of the permutation, whose every step waits for the load of the one
+ before, but by rounds in which each item of a bucket is swapped to the next
+ free place of its own, so that the loads of a round are independent, and
+ leaves the buckets of fewer than `kFlagSmall` items to a quicksort, whose
+ partitions in the vector registers cost less than the passes by a byte that
+ they replace. The multikey quicksort of Bentley and Sedgewick
+ (`multikeyQuickSort()`, of chapter 7, Sorting Strings, of Ferragina's book)
+ partitions by three ways on one character at a time,
  \f$ O( D + n \log n ) \f$ comparisons of characters, and `prefixKeySort()`
  of `StringSort.h` turns 8 characters at a time into integer keys sorted in
- the vector registers. Bucket Sort (`bucketSort()`) distributes numbers in
- \f$ [ 0 , 1 ) \f$ into \f$ n \f$ buckets by their value and sorts each by
- insertion: if the numbers are drawn uniformly and \f$ N_i \f$ is the size of
- the bucket \f$ i \f$, then
+ the vector registers. Bucket Sort
+ (`bucketSort()`) distributes numbers in \f$ [ 0 , 1 ) \f$ into \f$ n \f$
+ buckets by their value and sorts each by insertion: if the numbers are drawn
+ uniformly and \f$ N_i \f$ is the size of the bucket \f$ i \f$, then
  \f[
    E\Bigl[ \sum_{i} N_i^2 \Bigr] = n \Bigl( 1 + \frac{n - 1}{n} \Bigr)
    = 2 n - 1 , \tag{8}
  \f]
  and the expected time is \f$ O( n ) \f$; with all the numbers in one bucket
- it is \f$ \Theta( n^2 ) \f$.
+ the insertion sorts take \f$ \Theta( n^2 ) \f$, which `bucketSort()` avoids
+ by sorting a bucket of more than 32 items with `pdqSort()`, so that its worst
+ case is \f$ O( n \log n ) \f$. Its buckets are no lists but the places of
+ the items counted by bucket, and one insertion sort over the whole vector
+ sorts all of them, since no item has to leave its bucket.
 
  \section theory_sort_other Networks, other measures and external memory
 
@@ -420,14 +432,14 @@
  <tr><td><tt>mergeSort()</tt></td><td>\f$ \Theta( n \log n ) \f$</td>
      <td>\f$ \Theta( n \log n ) \f$</td><td>\f$ \Theta( n ) \f$</td>
      <td>yes</td></tr>
- <tr><td><tt>timSort()</tt>, <tt>powerSort()</tt></td>
+ <tr><td><tt>powerSort()</tt></td>
      <td>\f$ O( n + n H ) \f$</td><td>\f$ O( n + n H ) \f$</td>
      <td>\f$ O( n ) \f$</td><td>yes</td></tr>
  <tr><td><tt>quickSort()</tt></td><td>\f$ \Theta( n^2 ) \f$</td>
      <td>\f$ 1.386 \, n \log_2 n \f$</td><td>\f$ O( n ) \f$ stack</td>
      <td>no</td></tr>
- <tr><td><tt>introSort()</tt>, <tt>pdqSort()</tt>,
-     <tt>vectorQuickSort()</tt></td><td>\f$ O( n \log n ) \f$</td>
+ <tr><td><tt>pdqSort()</tt>, <tt>vectorQuickSort()</tt></td>
+     <td>\f$ O( n \log n ) \f$</td>
      <td>\f$ O( n \log n ) \f$, \f$ O( n \log k ) \f$ for \f$ k \f$
      keys (<tt>pdqSort()</tt>, <tt>vectorQuickSort()</tt>)</td>
      <td>\f$ O( \log n ) \f$ stack</td><td>no</td></tr>
@@ -449,9 +461,9 @@
  <tr><td><tt>msdRadixSort()</tt></td><td>\f$ O( D + n \log \sigma ) \f$</td>
      <td>\f$ O( D + n \log \sigma ) \f$</td><td>\f$ \Theta( n ) \f$</td>
      <td>not applicable</td></tr>
- <tr><td><tt>bucketSort()</tt></td><td>\f$ \Theta( n^2 ) \f$</td>
+ <tr><td><tt>bucketSort()</tt></td><td>\f$ O( n \log n ) \f$</td>
      <td>\f$ O( n ) \f$ on uniform numbers</td><td>\f$ \Theta( n ) \f$</td>
-     <td>yes</td></tr>
+     <td>no</td></tr>
  </table>
 
  The bounds of the table are in comparisons for the sorts by comparisons and

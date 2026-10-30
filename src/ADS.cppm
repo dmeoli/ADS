@@ -1793,7 +1793,6 @@ export namespace ADS {
 
  // ADS/sort/EngineeredQuickSorts.h
  using ADS::dualPivotQuickSort;
- using ADS::introSort;
  using ADS::pdqSort;
  using ADS::threeWayQuickSort;
 
@@ -1852,6 +1851,7 @@ export namespace ADS {
  using ADS::RadixKey;
  using ADS::americanFlagSort;
  using ADS::bucketSort;
+ using ADS::kFlagSmall;
  using ADS::msdRadixSort;
  using ADS::radixKey;
  using ADS::radixSort;
@@ -1859,7 +1859,6 @@ export namespace ADS {
 
  // ADS/sort/RunSorts.h
  using ADS::powerSort;
- using ADS::timSort;
 
  // ADS/sort/SampleSort.h
  using ADS::sampleSort;

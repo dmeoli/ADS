@@ -2,7 +2,7 @@
 /*--------------------------- File RunSorts.tpp ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The sorts of RunSorts.h, with their contracts.
+ * The sort of RunSorts.h, with its contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -18,7 +18,7 @@ namespace ADS {
 
 namespace detail {
 
-/// the runs and their merges, shared by Timsort and Powersort
+/// the runs and their merges of Powersort
 template< class T , class C >
 class RunMerger {
 
@@ -312,18 +312,6 @@ class RunMerger {
 
  };  // end( class RunMerger )
 
-/// the minrun of Timsort: n / 2^k in [ 32 , 64 ], rounded up if any bit
-/// was shifted out
-inline std::size_t minrun( std::size_t n )
-{
- std::size_t r = 0;
- while( n >= 64 ) {
-  r |= n & 1;
-  n >>= 1;
-  }
- return( n + r );
- }
-
 /// the power of the boundary between A[ s1 .. s2 ) and A[ s2 .. e2 ) in a
 /// vector of n items: the first bit where the midpoints, as fractions of n,
 /// differ
@@ -381,45 +369,6 @@ std::size_t powerMerges( RunMerger< T , C > & M , std::size_t n , N next )
  }
 
 }  // end( namespace detail )
-
-template< class T , class C >
-void timSort( std::vector< T > & A , C less , std::size_t * runs )
-{
- const auto before = detail::auditCopy( A );
- const std::size_t n = A.size() , m = detail::minrun( n );
- detail::RunMerger< T , C > M( A , less );
- struct Run { std::size_t start , len; bool disorder; };
- std::vector< Run > S;
- std::size_t count = 0;
- auto mergeAt = [ & ]( std::size_t i ) {    // S[ i ] and S[ i + 1 ]
-  S[ i ].disorder = S[ i ].disorder && S[ i + 1 ].disorder;
-  M.merge( S[ i ].start , S[ i + 1 ].start ,
-           S[ i + 1 ].start + S[ i + 1 ].len , S[ i ].disorder );
-  S[ i ].len += S[ i + 1 ].len;
-  S.erase( S.begin() + i + 1 );
-  };
- for( std::size_t lo = 0 ; lo < n ; ++count ) {
-  const std::size_t hi = M.nextRun( lo , m );
-  S.push_back( { lo , hi - lo , M.extended() } );
-  lo = hi;
-  while( S.size() > 1 ) {                   // the invariants of the stack
-   std::size_t i = S.size() - 2;
-   if( ( ( i > 0 ) && ( S[ i - 1 ].len <= S[ i ].len + S[ i + 1 ].len ) ) ||
-       ( ( i > 1 ) && ( S[ i - 2 ].len <= S[ i - 1 ].len + S[ i ].len ) ) ) {
-    if( S[ i - 1 ].len < S[ i + 1 ].len ) --i;
-    mergeAt( i );
-    }
-   else if( S[ i ].len <= S[ i + 1 ].len )
-    mergeAt( i );
-   else
-    break;
-   }
-  }
- while( S.size() > 1 )
-  mergeAt( S.size() - 2 );
- if( runs ) *runs = count;
- ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
- }
 
 template< class T , class C >
 void powerSort( std::vector< T > & A , C less , std::size_t * runs )

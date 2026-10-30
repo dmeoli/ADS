@@ -27,11 +27,22 @@
  * - `radixSortBy()` is the same on any items, by an unsigned key that a
  *   function gives, stable, e.g., the records by one field;
  * - `americanFlagSort()` is the radix sort from the most significant byte
- *   (MSD), in place: the items are permuted into their 256 buckets by
- *   following the cycles of the permutation, as the flag of the name divides
- *   into stripes, and each bucket is sorted recursively by the next byte, the
- *   small ones by insertion; \f$ O( 1 ) \f$ extra space per level of the
- *   recursion and no buffer of the items, not stable;
+ *   (MSD), in place: a first sweep finds a vector already sorted or in
+ *   reverse order (reversed), and the bytes in which some keys differ (one
+ *   alone: the counting sort of `radixSort()`); then the items are permuted
+ *   into the 256 buckets of the first byte that differs, as the flag of the
+ *   name divides into stripes, and each bucket is sorted in the same way by
+ *   the next one. The permutation does not follow its cycles, whose every
+ *   step waits for the load of the step before: each item of the part of a
+ *   bucket not yet in place is swapped to the next free place of its own
+ *   bucket, and the buckets are taken in turn until all are full, so that
+ *   the loads of a round are independent (Skarupke). A bucket of fewer than
+ *   `kFlagSmall` items is left to `vectorQuickSort()` [see
+ *   `VectorQuickSort.h`], whose order on the floating point numbers is the
+ *   one of the keys, or, without the vector registers, to `pdqSort()` [see
+ *   `EngineeredQuickSorts.h`]: \f$ O( w n ) \f$ for keys of \f$ w \f$
+ *   bytes, \f$ O( 1 ) \f$ extra space per level of the recursion and no
+ *   buffer of the items, not stable;
  * - `msdRadixSort()` sorts strings by their characters from the first one, the
  *   end of a string before every character: the first pass permutes them into
  *   their buckets in place, as the American flag sort does, and then each
@@ -47,7 +58,15 @@
  *   comparison instead of one pass per character;
  * - `bucketSort()` sorts numbers in \f$ [ 0 , 1 ) \f$ into \f$ n \f$ buckets
  *   by their value, each sorted by insertion: \f$ O( n ) \f$ expected time on
- *   numbers drawn uniformly, \f$ O( n^2 ) \f$ in the worst case.
+ *   numbers drawn uniformly. The buckets are no lists: the items are counted
+ *   by their bucket and scattered into a buffer in the order of the buckets,
+ *   and one insertion sort over the whole vector sorts them, since no item
+ *   has to leave its bucket; a vector larger than the cache is first
+ *   scattered by groups of 1024 consecutive buckets, so that the counts and
+ *   the scatter of each group stay in the cache, and a bucket of more than 32
+ *   items goes to `pdqSort()`, so that the worst case is
+ *   \f$ O( n \log n ) \f$ instead of the \f$ \Theta( n^2 ) \f$ of the
+ *   classical one.
  *
  * The contracts [see `Contract.h`]: each sort ends with the same items sorted,
  * an audit; `bucketSort()` needs numbers in \f$ [ 0 , 1 ) \f$. The functions
@@ -62,6 +81,9 @@
  *      to Algorithms, 3rd ed., MIT Press, 2009, sections 8.3 and 8.4
  * \see M. Herf, Radix tricks, 2001, http://stereopsis.com/radix.html (the
  *      key of a floating point number, the histograms in one sweep)
+ * \see M. Skarupke, I wrote a faster sorting algorithm, 2016,
+ *      (the permutation by rounds of independent swaps),
+ *   https://probablydance.com/2016/12/27/i-wrote-a-faster-sorting-algorithm/
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -82,8 +104,10 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/InsertionSort.h"
 #include "ADS/sort/Sorted.h"
+#include "ADS/sort/VectorQuickSort.h"
 
 #include <algorithm>
 #include <array>
@@ -92,6 +116,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -157,38 +182,56 @@ void radixSort( std::vector< T > & A );
 template< class T , class K >
 void radixSortBy( std::vector< T > & A , K key );
 
+/// the groups that americanFlagSort() leaves to a sort by comparisons are
+/// those of fewer items than this: many with the vector registers, whose
+/// quicksort beats the radix passes that it replaces, few otherwise
+inline constexpr std::size_t kFlagSmall = kVectorSort ? 8192 : 256;
+
 /// the MSD radix sort of numbers in place
 ///
-/// In pseudocode (McIlroy, Bostic and McIlroy, beyond the book),
-/// \f$ b_d( x ) \f$ the byte \f$ d \f$ of the key of \f$ x \f$ and \f$ w \f$
-/// the bytes of a key:
+/// In pseudocode (McIlroy, Bostic and McIlroy, and Skarupke, beyond the book),
+/// \f$ b_d( x ) \f$ the byte \f$ d \f$ of the key of \f$ x \f$, \f$ D \f$ the
+/// bytes in which some keys differ, the most significant first, and
+/// \f$ \mathrm{small} \f$ the sort of `vectorQuickSort()` or `pdqSort()`:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{flag}( A , \mathit{lo} , \mathit{hi} , d )
+/// 1 & \textbf{procedure}\ \mathrm{flag}( A , \mathit{lo} , \mathit{hi} , D )
 ///     \cr
-/// 2 & \quad \textbf{if}\ \mathit{hi} - \mathit{lo} \le 32\ \textbf{then}
-///     \ \mathrm{insertionSort}( A , \mathit{lo} , \mathit{hi} );
-///     \ \textbf{return} \cr
-/// 3 & \quad c[ b ] \gets \text{the items of } A[ \mathit{lo} .. \mathit{hi} -
-///     1 ] \text{ with byte } b \cr
-/// 4 & \quad s[ b ] \gets \mathit{lo} + \textstyle\sum_{b' < b} c[ b' ];
-///     \ \mathit{next}[ b ] \gets s[ b ] \cr
-/// 5 & \quad \textbf{for}\ b \gets 0\ \textbf{to}\ 255\ \textbf{do} \cr
-/// 6 & \qquad \textbf{while}\ \mathit{next}[ b ] < s[ b ] + c[ b ]
-///     \ \textbf{do} \cr
-/// 7 & \qquad\quad \textbf{while}\ b_d( A[ \mathit{next}[ b ] ] ) = e \ne b
-///     \ \textbf{do} \cr
-/// 8 & \qquad\qquad A[ \mathit{next}[ b ] ] \leftrightarrow A[ \mathit{next}[
-///     e ] ];\ \mathit{next}[ e ] \gets \mathit{next}[ e ] + 1 \cr
-/// 9 & \qquad\quad \mathit{next}[ b ] \gets \mathit{next}[ b ] + 1 \cr
-/// 10 & \quad \textbf{if}\ d > 0\ \textbf{then foreach}\ b \text{ with } c[ b
-///     ] > 1\ \textbf{do} \cr
-/// 11 & \qquad \mathrm{flag}( A , s[ b ] , s[ b ] + c[ b ] , d - 1 ) \cr
-/// 12 & \textbf{procedure}\ \mathrm{americanFlagSort}( A , n ) \cr
-/// 13 & \quad \textbf{if}\ n > 1\ \textbf{then}\ \mathrm{flag}( A , 0 , n , w
-///     - 1 )
+/// 2 & \quad d \gets \text{the first of } D;\ c[ b ] \gets \text{the items }
+///     \text{of } A[ \mathit{lo} .. \mathit{hi} - 1 ] \text{ with } b_d = b
+///     \cr
+/// 3 & \quad \textbf{if}\ \text{one } c[ b ] \text{ is all of them}
+///     \ \textbf{then}\ \mathrm{flag}( A , \mathit{lo} , \mathit{hi} , D
+///     \setminus d );\ \textbf{return} \cr
+/// 4 & \quad \mathit{next}[ b ] \gets \mathit{lo} + \textstyle\sum_{b' < b}
+///     c[ b' ];\ \mathit{end}[ b ] \gets \mathit{next}[ b ] + c[ b ] \cr
+/// 5 & \quad \textbf{while}\ \text{two buckets have } \mathit{next}[ b ] <
+///     \mathit{end}[ b ]\ \textbf{do} \cr
+/// 6 & \qquad \textbf{foreach}\ b \text{ with } \mathit{next}[ b ] <
+///     \mathit{end}[ b ]\ \textbf{do} \cr
+/// 7 & \qquad\quad \textbf{for}\ i \gets \mathit{next}[ b ]\ \textbf{to}
+///     \ \mathit{end}[ b ] - 1\ \textbf{do} \cr
+/// 8 & \qquad\qquad e \gets b_d( A[ i ] );\ A[ i ] \leftrightarrow A[
+///     \mathit{next}[ e ] ];\ \mathit{next}[ e ] \gets \mathit{next}[ e ] + 1
+///     \cr
+/// 9 & \quad \textbf{if}\ D \ne \{ d \}\ \textbf{then foreach}\ b
+///     \text{ with } c[ b ] > 1\ \textbf{do} \cr
+/// 10 & \qquad \textbf{if}\ c[ b ] \ge \mathtt{kFlagSmall}\ \textbf{then}
+///     \ \mathrm{flag}( \text{the bucket } b , D \setminus d )
+///     \ \textbf{else}\ \mathrm{small}( \text{the bucket } b ) \cr
+/// 11 & \textbf{procedure}\ \mathrm{americanFlagSort}( A , n ) \cr
+/// 12 & \quad \textbf{if}\ A \text{ is sorted}\ \textbf{then return} \cr
+/// 13 & \quad \textbf{if}\ A \text{ is non-increasing}\ \textbf{then}
+///     \ \text{reverse } A;\ \textbf{return} \cr
+/// 14 & \quad \textbf{if}\ | D | = 1\ \textbf{then}\ \text{count the keys}
+///     \text{ and write them back};\ \textbf{return} \cr
+/// 15 & \quad \textbf{if}\ n < \mathtt{kFlagSmall}\ \textbf{then}
+///     \ \mathrm{small}( A )\ \textbf{else}\ \mathrm{flag}( A , 0 , n , D )
 /// \end{array}}
 /// \f]
+/// where the loop of the step 7 runs over the part of the bucket that was
+/// not in place when the round started, and the order of the keys is the one
+/// of `radixKey()`: \f$ -0 \f$ before \f$ +0 \f$, the NaN at the ends.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< RadixKey T >
 void americanFlagSort( std::vector< T > & A );
@@ -226,18 +269,25 @@ inline void msdRadixSort( std::vector< std::string > & A );
 /// the bucket sort of numbers in \f$ [ 0 , 1 ) \f$
 ///
 /// In pseudocode (Cormen, Leiserson, Rivest and Stein, section 8.4, beyond the
-/// book):
+/// book, with the buckets counted instead of listed), \f$ B \f$ a buffer of
+/// \f$ n \f$ items and \f$ \beta( x ) = \min\{ \lfloor n x \rfloor , n - 1
+/// \} \f$ the bucket of \f$ x \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{bucketSort}( A , n ) \cr
-/// 2 & \quad B[ 0 .. n - 1 ] \gets n \text{ empty buckets} \cr
-/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ \text{append } x \text{ }
-///     \text{to } B[ \lfloor n x \rfloor ] \cr
-/// 4 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do}
-///     \ \mathrm{insertionSort}( B[ i ] ) \cr
-/// 5 & \quad A \gets B[ 0 ] \cdot B[ 1 ] \cdots B[ n - 1 ]
+/// 2 & \quad c[ j ] \gets \text{the number of the items } x \text{ with }
+///     \beta( x ) < j ,\ \text{for } j = 0 , \ldots , n - 1 \cr
+/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ B[ c[ \beta( x ) ] ]
+///     \gets x;\ c[ \beta( x ) ] \gets c[ \beta( x ) ] + 1 \cr
+/// 4 & \quad \textbf{foreach}\ \text{bucket of more than 32 items}
+///     \ \textbf{do}\ \mathrm{pdqSort}( \text{its part of } B ) \cr
+/// 5 & \quad A \gets B;\ \mathrm{insertionSort}( A )
 /// \end{array}}
 /// \f]
+/// where the insertion sort moves no item out of its bucket, since
+/// \f$ \beta \f$ does not decrease; a vector larger than the cache runs the
+/// steps 2 and 3 first on the groups of 1024 consecutive buckets, and then on
+/// the buckets of each group, which fit in the cache.
 /// \pre each number is in \f$ [ 0 , 1 ) \f$
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< std::floating_point T >

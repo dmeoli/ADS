@@ -39,41 +39,6 @@ void sort3( std::vector< T > & A , std::size_t a , std::size_t b ,
   }
  }
 
-/// ---------------------------------------------------------------- intro
-
-template< class T , class C >
-void intro( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-            int depth , C & less )
-{
- while( hi - lo > 16 ) {
-  if( depth-- == 0 ) {                      // too deep: heapsort
-   heapRange( A , lo , hi , less );
-   return;
-   }
-  const std::size_t mid = lo + ( hi - lo ) / 2;
-  sort3( A , lo , mid , hi - 1 , less );    // A[ hi - 1 ] >= the median
-  std::swap( A[ lo ] , A[ mid ] );          // the median in A[ lo ]
-  std::size_t i = lo , j = hi;
-  for( ; ; ) {                              // Hoare, with sentinels
-   do ++i; while( less( A[ i ] , A[ lo ] ) );
-   do --j; while( less( A[ lo ] , A[ j ] ) );
-   if( i >= j )
-    break;
-   std::swap( A[ i ] , A[ j ] );
-   }
-  std::swap( A[ lo ] , A[ j ] );            // the pivot in its place j
-  if( j - lo < hi - j - 1 ) {
-   intro( A , lo , j , depth , less );
-   lo = j + 1;
-   }
-  else {
-   intro( A , j + 1 , hi , depth , less );
-   hi = j;
-   }
-  }
- insertionSort( A , lo , hi , less );
- }
-
 /// ---------------------------------------------------------------- pdq
 
 /// insertion sort of A[ lo .. hi ) that gives up after 8 moves; true if
@@ -158,7 +123,14 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
   std::ptrdiff_t numL = 0 , numR = 0 , startL = 0 , startR = 0;
   auto swaps = [ & ]( void ) {             // a cycle: 2 num + 1 moves
    const std::ptrdiff_t num = std::min( numL , numR );
-   if( num > 0 ) {                          // through two pointers, each
+   if( ( num > 0 ) && ( numL == numR ) ) {  // as many on both sides: in
+    T * const bL = a + l , * const bR = a + r;   // pairs, so that a part
+    const unsigned char * const oL = offL + startL , * const oR =
+     offR + startR;                         // in reverse ends with both
+    for( std::ptrdiff_t k = 0 ; k < num ; ++k )  // its sides sorted
+     std::swap( bL[ oL[ k ] ] , bR[ - std::ptrdiff_t( oR[ k ] ) ] );
+    }
+   else if( num > 0 ) {                     // through two pointers, each
     T * const bL = a + l , * const bR = a + r;   // place found once
     const unsigned char * const oL = offL + startL , * const oR =
      offR + startR;
@@ -454,16 +426,6 @@ void threeWay( std::vector< T > & A , std::size_t lo , std::size_t hi ,
  }
 
 }  // end( namespace detail )
-
-template< class T , class C >
-void introSort( std::vector< T > & A , C less )
-{
- const auto before = detail::auditCopy( A );
- if( A.size() > 1 )
-  detail::intro( A , 0 , A.size() , 2 * int( std::bit_width( A.size() ) - 1 ) ,
-                 less );
- ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
- }
 
 template< class T , class C >
 void pdqSort( std::vector< T > & A , C less )

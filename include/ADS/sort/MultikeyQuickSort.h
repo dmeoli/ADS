@@ -2,11 +2,12 @@
 /*------------------------ File MultikeyQuickSort.h ------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The multikey quicksort of Bentley and Sedgewick, beyond the book: the
- * quicksort of strings by one character at a time, a partition into three
- * parts, the strings whose character \f$ d \f$ is smaller, equal and larger
- * than that of the pivot, the equal part going on with the character
- * \f$ d + 1 \f$ and the others with \f$ d \f$. It is the sort that corresponds
+ * The multikey quicksort of Bentley and Sedgewick, as chapter 7, Sorting
+ * Strings, of Ferragina's book presents it: the quicksort of strings by one
+ * character at a time, a partition into three parts, the strings whose
+ * character \f$ d \f$ is smaller, equal and larger than that of the pivot,
+ * the equal part going on with the character \f$ d + 1 \f$ and the others
+ * with \f$ d \f$. It is the sort that corresponds
  * to the ternary search tree of the same paper, and makes
  * \f$ O( D + n \log n ) \f$ comparisons of characters for \f$ D \f$ the total
  * length of the distinguishing prefixes, against the \f$ O( n \log n ) \f$
@@ -16,6 +17,8 @@
  * The contracts [see `Contract.h`]: the vector ends with the same strings
  * sorted, an audit. The function is defined in `MultikeyQuickSort.tpp`.
  *
+ * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+ *      Press, 2023, chapter 7, Sorting Strings, doi:10.1017/9781009128933
  * \see J. L. Bentley, R. Sedgewick, Fast algorithms for sorting and
  *      searching strings, Proceedings of the 8th ACM-SIAM Symposium on
  *      Discrete Algorithms (SODA), 360-369, 1997
@@ -55,8 +58,9 @@ namespace ADS {
 
 /// the multikey quicksort of strings
 ///
-/// In pseudocode (Bentley and Sedgewick, beyond the book), \f$ s[ d ] \f$ the
-/// character \f$ d \f$ of \f$ s \f$, \f$ -1 \f$ past its end:
+/// In pseudocode (chapter 7, Sorting Strings, of Ferragina's book, with the
+/// middle string as the pivot), \f$ s[ d ] \f$ the character \f$ d \f$ of
+/// \f$ s \f$, \f$ -1 \f$ past its end:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{mkqs}( A , \mathit{lo} , \mathit{hi} , d )

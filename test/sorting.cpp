@@ -39,6 +39,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -299,14 +300,13 @@ ADS_TEST( "sorting-networks" )
 
 // the engineered quicksorts on the battery, and on inputs against the
 // classical quicksort: a killer of the median of three would make them
-// quadratic, but the depth bound of introsort and pdqsort keeps them
-// O( n log n ), also against the adversary of McIlroy that makes every
-// pivot a smallest item; pdqsort takes O( n ) comparisons on a sorted
-// vector
+// quadratic, but the depth bound of pdqsort keeps it O( n log n ), also
+// against the adversary of McIlroy that makes every pivot a smallest item;
+// pdqsort takes O( n ) comparisons on a sorted vector and on a reversed
+// one, whose first partition by blocks swaps the items in pairs and leaves
+// both sides sorted
 ADS_TEST( "engineered-quicksorts" )
 {
- battery( []( auto & A , auto less ) { introSort( A , less ); } , 4096 ,
-          false );
  battery( []( auto & A , auto less ) { pdqSort( A , less ); } , 4096 ,
           false );
  battery( []( auto & A , auto less ) { dualPivotQuickSort( A , less ); } ,
@@ -321,11 +321,15 @@ ADS_TEST( "engineered-quicksorts" )
  std::iota( S.begin() , S.end() , 0 );
  pdqSort( S , count );
  CHECK( c < 3 * 100000 );
+ Ints R( 100000 );
+ std::iota( R.rbegin() , R.rend() , 0 );
+ c = 0;
+ pdqSort( R , count );
+ CHECK( std::is_sorted( R.begin() , R.end() ) && c < 4 * 100000 );
  Ints K( 100000 );                               // few distinct keys
  std::mt19937 g( 11 );
  for( auto & x : K ) x = int( g() % 3 );
- for( auto sort : { introSort< int , decltype( count ) > ,
-                    pdqSort< int , decltype( count ) > ,
+ for( auto sort : { pdqSort< int , decltype( count ) > ,
                     dualPivotQuickSort< int , decltype( count ) > ,
                     threeWayQuickSort< int , decltype( count ) > } ) {
   Ints A = K;
@@ -334,7 +338,7 @@ ADS_TEST( "engineered-quicksorts" )
   CHECK( std::is_sorted( A.begin() , A.end() ) && c < 40 * 100000 );
   }
  const int n = 20000;                 // the adversary of McIlroy: the keys
- for( int k = 0 ; k < 2 ; ++k ) {     // fixed only when compared, so that
+ {                                    // fixed only when compared, so that
   std::vector< int > val( n , n );    // each pivot is a smallest item
   int solid = 0 , cand = -1;
   long cmp = 0;
@@ -349,21 +353,19 @@ ADS_TEST( "engineered-quicksorts" )
    return( val[ x ] < val[ y ] ); };
   Ints A( n );
   std::iota( A.begin() , A.end() , 0 );
-  if( k == 0 ) introSort( A , adv ); else pdqSort( A , adv );
+  pdqSort( A , adv );
   CHECK( std::is_sorted( A.begin() , A.end() , [ & ]( int x , int y ) {
           return( val[ x ] < val[ y ] ); } ) );
   CHECK( cmp < 6L * n * 15 );         // n log n, not n^2 / 4
   }
  }
 
-// Timsort and Powersort on the battery, stable; the runs found on vectors
+// Powersort on the battery, stable; the runs found on vectors
 // made of r sorted runs, and O( n ) comparisons on a sorted vector and on
 // two runs one after the other; no run on an empty vector, one on a
 // strictly decreasing vector (reversed) and on all equal items
 ADS_TEST( "run-sorts" )
 {
- battery( []( auto & A , auto less ) { timSort( A , less ); } , 4096 ,
-          true );
  battery( []( auto & A , auto less ) { powerSort( A , less ); } , 4096 ,
           true );
  long c = 0;
@@ -380,34 +382,29 @@ ADS_TEST( "run-sorts" )
   T[ i ] = 2 * i;
   T[ 50000 + i ] = 2 * i + 1;
   }
- for( auto sort : { timSort< int , decltype( count ) > ,
-                    powerSort< int , decltype( count ) > } ) {
+ {
   Ints A = T;
   c = 0;
-  sort( A , count , &runs );
+  powerSort( A , count , &runs );
   CHECK( std::is_sorted( A.begin() , A.end() ) && runs == 2 &&
          c <= 2 * 100000 + 64 );   // n - 1 to find the runs, n - 1 to merge
   }
  Ints U( 100000 );                               // two runs, one after
  for( int i = 0 ; i < 100000 ; ++i ) U[ i ] = ( i + 50000 ) % 100000;
  c = 0;
- timSort( U , count );
+ powerSort( U , count );
  CHECK( std::is_sorted( U.begin() , U.end() ) && c < 100000 + 200 );
  Ints E , D( 100000 ) , Q( 100000 , 3 );
  std::iota( D.rbegin() , D.rend() , 0 );        // strictly decreasing
- for( auto sort : { timSort< int , decltype( count ) > ,
-                    powerSort< int , decltype( count ) > } ) {
-  sort( E , count , &runs );
-  CHECK( runs == 0 && E.empty() );
-  Ints A = D , B = Q;
-  c = 0;
-  sort( A , count , &runs );                     // one run, reversed
-  CHECK( runs == 1 && std::is_sorted( A.begin() , A.end() ) &&
-         c < 100000 );
-  c = 0;
-  sort( B , count , &runs );                     // equals: one run
-  CHECK( runs == 1 && B == Q && c < 100000 );
-  }
+ powerSort( E , count , &runs );
+ CHECK( runs == 0 && E.empty() );
+ Ints A = D , B = Q;
+ c = 0;
+ powerSort( A , count , &runs );                 // one run, reversed
+ CHECK( runs == 1 && std::is_sorted( A.begin() , A.end() ) && c < 100000 );
+ c = 0;
+ powerSort( B , count , &runs );                 // equals: one run
+ CHECK( runs == 1 && B == Q && c < 100000 );
  }
 
 // the radix sorts: integers of every width and sign, of 0, 1, 2 items,
@@ -554,6 +551,149 @@ ADS_TEST( "radix-sorts" )
   std::vector< double > V = { 0.25 , x };
   CHECK_THROWS( bucketSort( V ) , contract_violation );
   }
+ }
+
+// the American flag sort against std::sort by radixKey(), bit by bit:
+// sizes around kFlagSmall, where the groups leave the radix passes, and a
+// group of exactly kFlagSmall items; a vector sorted, non-increasing with
+// equal keys (reversed whole) and strictly decreasing; keys that differ in
+// one byte alone (counted), in the top byte alone, in two bytes far apart
+// (a single bucket skipped between them) and only below a shared top byte;
+// all equal; and for the floating point numbers -0 and +0, the infinities,
+// the denormals and the NaN of both signs spread over a large vector, whose
+// groups the vector quicksort or pdqsort must put in the order of the keys
+template< class T >
+void flag_of( unsigned seed )
+{
+ using U = decltype( radixKey( T() ) );
+ constexpr int W = int( sizeof( U ) );
+ std::mt19937_64 g( seed );
+ auto bits = []( const std::vector< T > & A ) {
+  std::vector< U > K( A.size() );
+  for( std::size_t i = 0 ; i < A.size() ; ++i ) K[ i ] = radixKey( A[ i ] );
+  return( K ); };
+ auto check = [ & ]( std::vector< T > A ) {
+  auto R = bits( A );
+  std::sort( R.begin() , R.end() );
+  americanFlagSort( A );
+  CHECK( bits( A ) == R );
+  };
+ auto of = [ & ]( U k ) {                   // the number of key k
+  if constexpr( std::is_floating_point_v< T > ) {
+   constexpr U sign = U( U( 1 ) << ( 8 * W - 1 ) );
+   return( std::bit_cast< T >( U( ( k & sign ) ? ( k ^ sign ) : ~k ) ) );
+   }
+  else
+   return( T( k ^ ( std::is_signed_v< T > ? U( U( 1 ) << ( 8 * W - 1 ) )
+                                          : U( 0 ) ) ) );
+  };
+ const std::size_t f = kFlagSmall;
+ for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) , f - 1 , f ,
+                        f + 1 , 3 * f + 5 } ) {
+  std::vector< std::vector< U > > K( 9 , std::vector< U >( n ) );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   const U r = U( g() );
+   K[ 0 ][ i ] = r;                                    // random
+   K[ 1 ][ i ] = U( i );                               // sorted
+   K[ 2 ][ i ] = U( ( n - i ) / 3 );                   // non-increasing
+   K[ 3 ][ i ] = W > 2 ? U( ( U( n - i ) << ( 8 * W - 16 ) ) | ( n - i ) )
+                       : U( n - i );           // strictly decreasing
+   K[ 4 ][ i ] = U( U( r & 0xFF ) << ( 8 * ( W - 1 ) ) );   // one byte
+   K[ 5 ][ i ] = U( r & 0x0F );                        // the low byte
+   K[ 6 ][ i ] = W > 1 ? U( ( r & 0x3 ) | ( U( r >> 8 & 0x3 ) <<
+                                            ( 8 * ( W - 1 ) ) ) )
+                       : U( r );                       // bytes far apart
+   K[ 7 ][ i ] = W > 1 ? U( ( U( 0x5A ) << ( 8 * ( W - 1 ) ) ) |
+                            ( r >> 8 ) ) : U( 7 );     // the top shared
+   K[ 8 ][ i ] = U( 42 );                              // all equal
+   }
+  if( f + 1 == n ) {                         // a bucket of kFlagSmall
+   for( std::size_t i = 0 ; i < n ; ++i )
+    K[ 0 ][ i ] = W > 1 ? U( ( U( i == 0 ) << ( 8 * ( W - 1 ) ) ) |
+                             ( U( g() ) & U( 0xFFFF ) ) ) : U( g() );
+   }
+  for( const auto & k : K ) {
+   std::vector< T > A( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = of( k[ i ] );
+   check( A );
+   }
+  }
+ if constexpr( std::is_floating_point_v< T > ) {
+  constexpr T inf = std::numeric_limits< T >::infinity() ,
+              nan = std::numeric_limits< T >::quiet_NaN() ,
+              den = std::numeric_limits< T >::denorm_min();
+  const T odd[] = { -T( 0 ) , T( 0 ) , inf , -inf , den , -den , nan ,
+                    std::copysign( nan , T( -1 ) ) ,
+                    std::numeric_limits< T >::max() ,
+                    std::numeric_limits< T >::lowest() };
+  for( std::size_t n : { f / 2 , 3 * f } ) {
+   std::vector< T > A( n );
+   std::uniform_real_distribution< T > u( -2 , 2 );
+   for( auto & x : A ) x = u( g );
+   for( std::size_t i = 0 ; i < n ; i += 7 ) A[ i ] = odd[ g() % 10 ];
+   check( A );
+   std::vector< T > B( n );                  // a shared top byte, and
+   for( auto & x : B ) x = odd[ g() % 3 ];   // the zeros and inf alone
+   check( B );
+   }
+  }
+ }
+
+ADS_TEST( "american-flag" )
+{
+ flag_of< std::uint8_t >( 1 );
+ flag_of< std::int16_t >( 2 );
+ flag_of< std::uint32_t >( 3 );
+ flag_of< int >( 4 );
+ flag_of< long long >( 5 );
+ flag_of< std::uint64_t >( 6 );
+ flag_of< float >( 7 );
+ flag_of< double >( 8 );
+ }
+
+// the bucket sort on both sides of the cache (1 MiB of items, one group of
+// buckets below and groups of 1024 above), with n not a multiple of 1024:
+// uniform numbers, numbers crowded into a few buckets (more than 32 items
+// each, sorted by pdqsort) and into the last group alone, all equal, -0
+// with +0, the largest number below 1, and floats past 2^24 items, whose
+// products by n round; all against std::sort
+template< class T >
+void bucket_of( unsigned seed )
+{
+ std::mt19937_64 g( seed );
+ std::uniform_real_distribution< T > u( 0 , 1 );
+ const T below = std::nextafter( T( 1 ) , T( 0 ) );
+ const std::size_t c = ( std::size_t( 1 ) << 20 ) / sizeof( T );
+ for( std::size_t n : { c - 1 , c , c + 1 , 3 * c + 777 } ) {
+  std::vector< std::vector< T > > X( 5 , std::vector< T >( n ) );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   X[ 0 ][ i ] = u( g );                                  // uniform
+   X[ 1 ][ i ] = T( g() % 7 ) / T( 7 );                   // 7 crowds
+   X[ 2 ][ i ] = below - T( g() % 1000 ) * T( 1e-7 );     // the top
+   X[ 3 ][ i ] = T( 0.5 );                                // all equal
+   X[ 4 ][ i ] = i % 3 ? u( g ) : ( i % 2 ? T( 0 ) : -T( 0 ) );
+   }
+  for( auto & A : X ) {
+   auto E = A;
+   std::sort( E.begin() , E.end() );
+   bucketSort( A );
+   CHECK( A == E );
+   }
+  }
+ }
+
+ADS_TEST( "bucket-sort" )
+{
+ bucket_of< double >( 1 );
+ bucket_of< float >( 2 );
+ std::vector< float > F( ( std::size_t( 1 ) << 24 ) + 3 );
+ std::mt19937 g( 3 );
+ std::uniform_real_distribution< float > u( 0 , 1 );
+ for( auto & x : F ) x = u( g );
+ auto E = F;
+ std::sort( E.begin() , E.end() );
+ bucketSort( F );
+ CHECK( F == E );
  }
 
 // the sort that chooses: numbers short and long, strings, records with an
@@ -747,11 +887,10 @@ ADS_TEST( "merge-paths" )
    L.insert( L.end() , run.begin() , run.end() );
    }
   for( const D & Y : { X , L } ) {
-   D A = Y , B = Y , C = Y;
-   timSort( A );
+   D B = Y , C = Y;
    powerSort( B );
    stableSort( C );
-   CHECK( stableAs( A , Y ) && stableAs( B , Y ) && stableAs( C , Y ) );
+   CHECK( stableAs( B , Y ) && stableAs( C , Y ) );
    }
   }
  using R = std::pair< int , std::size_t >;
@@ -785,12 +924,11 @@ ADS_TEST( "merge-paths" )
      }
     Q[ i ] = { k , i };
     }
-   auto A = Q , B = Q , C = Q , E = Q;
-   timSort( A , byKey );
+   auto B = Q , C = Q , E = Q;
    powerSort( B , byKey );
    stableSort( C , byKey );
    std::stable_sort( E.begin() , E.end() , byKey );
-   CHECK( A == E && B == E && C == E );
+   CHECK( B == E && C == E );
    }
  for( int t = 0 ; t < 200 ; ++t ) {             // randomized
   const std::size_t n = g() % 3000;
@@ -799,11 +937,10 @@ ADS_TEST( "merge-paths" )
   for( std::size_t i = 0 ; i < n ; ++i ) Q[ i ] = { int( g() % keys ) , i };
   if( t % 3 == 1 )                              // partly presorted
    std::sort( Q.begin() , Q.begin() + n / 2 , byKey );
-  auto A = Q , B = Q , E = Q;
+  auto A = Q , E = Q;
   powerSort( A , byKey );
-  timSort( B , byKey );
   std::stable_sort( E.begin() , E.end() , byKey );
-  CHECK( A == E && B == E );
+  CHECK( A == E );
   }
  }
 
@@ -1553,15 +1690,13 @@ ADS_TEST( "fast-paths" )
   std::stable_sort( P.begin() + a , P.end() , first );
   std::sort( I.begin() , I.begin() + a );
   std::sort( I.begin() + a , I.end() );
-  auto P2 = P , P3 = P;
-  auto I2 = I , I3 = I;
+  auto P2 = P;
+  auto I2 = I;
   powerSort( P2 , first );
-  timSort( P3 , first );
   powerSort( I2 );
-  timSort( I3 );
   std::stable_sort( P.begin() , P.end() , first );
   std::sort( I.begin() , I.end() );
-  CHECK( P2 == P && P3 == P && I2 == I && I3 == I );
+  CHECK( P2 == P && I2 == I );
   }
  const std::size_t c64 = ( std::size_t( 1 ) << 20 ) / 8;   // the cache
  for( std::size_t n : { c64 - 1 , c64 , c64 + 1 , 3 * c64 } )

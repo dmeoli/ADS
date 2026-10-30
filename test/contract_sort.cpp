@@ -254,7 +254,6 @@ ADS_TEST( "other-sorts" )
    sort( B );
    CHECK( B == S );
    };
-  check( []( Ints & B ) { introSort( B ); } );
   check( []( Ints & B ) { pdqSort( B ); } );
   check( []( Ints & B ) { dualPivotQuickSort( B ); } );
   check( []( Ints & B ) { threeWayQuickSort( B ); } );
@@ -272,7 +271,6 @@ ADS_TEST( "other-sorts" )
   check( []( Ints & B ) { mergeInsertionSort( B ); } );
   check( []( Ints & B ) { radixSort( B ); } );
   check( []( Ints & B ) { americanFlagSort( B ); } );
-  check( []( Ints & B ) { timSort( B ); } );
   check( []( Ints & B ) { powerSort( B ); } );
   check( []( Ints & B ) { treeSort( B ); } );
   check( []( Ints & B ) { treeSort( B , false ); } );

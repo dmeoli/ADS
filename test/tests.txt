@@ -432,11 +432,13 @@ sorting  exchange-sorts      bubble, shaker, odd-even, comb, gnome
 sorting  tree-sort           tree sort su Red-Black e su albero sbilanciato
 sorting  strand-sort         strand sort su liste
 sorting  sorting-networks    reti di Batcher, merge exchange e bitonica
-sorting  engineered-quicksorts introsort, pdqsort, dual-pivot, 3-way
-sorting  run-sorts           Timsort e Powersort
+sorting  engineered-quicksorts pdqsort, dual-pivot, 3-way
+sorting  run-sorts           Powersort
 sorting  pdq-edges           pdqsort, soglie e casi limite
-sorting  merge-paths         Timsort e Powersort, i due merge
+sorting  merge-paths         Powersort, i due merge
 sorting  radix-sorts         radix LSD, MSD, American flag, bucket
+sorting  american-flag       American flag sort, gruppi e casi limite
+sorting  bucket-sort         bucket sort, gruppi, cache e casi limite
 sorting  dispatch            sort() e stableSort() che scelgono
 sorting  dispatch-edges      le scelte di sort() ai loro limiti
 sorting  fast-paths          i percorsi veloci di sort() e stableSort()

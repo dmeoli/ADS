@@ -205,38 +205,87 @@ void lsd( std::vector< T > & A , K & key )
   }
  }
 
-/// the MSD sort in place of A[ lo .. hi ) by the byte d of radixKey(),
-/// counted from the least significant
+/// the sort of A[ lo .. lo + n ) by radixKey() with no further radix pass:
+/// vectorQuickSort(), whose order on the floating point numbers is that of
+/// IEEE 754 extended to a total order, the order of radixKey(), if the
+/// registers are there; else pdqSort(), with the natural order on the
+/// integers and by radixKey() on the floating point numbers
 template< RadixKey T >
-void flag( std::vector< T > & A , std::size_t lo , std::size_t hi , int d )
+void flagGroup( std::vector< T > & A , std::size_t lo , std::size_t n )
 {
- if( hi - lo <= 32 ) {
-  insertionSort( A , lo , hi , []( T a , T b ) {
-   return( radixKey( a ) < radixKey( b ) ); } );
+ if constexpr( kVectorSort && VectorKey< T > )
+  vectorQuickSort( A.data() + lo , n );
+ else if constexpr( std::is_integral_v< T > ) {
+  std::less<> less;
+  pdq( A , lo , lo + n , int( std::bit_width( n ) ) , true , less );
+  }
+ else {
+  auto less = []( T a , T b ) { return( radixKey( a ) < radixKey( b ) ); };
+  pdq( A , lo , lo + n , int( std::bit_width( n ) ) , true , less );
+  }
+ }
+
+/// the MSD sort in place of A[ lo .. lo + n ) by the bytes D[ 0 .. m ) of
+/// radixKey(), the most significant first: the counts of the byte, and a
+/// single bucket goes on with the next byte; otherwise each item of the
+/// unfinished part of a bucket is swapped to the next free place of its
+/// own, the buckets in turn until all are full, so that the loads of a
+/// round do not wait for each other as along a cycle; then the buckets of
+/// at least kFlagSmall items go on with the next byte, the others to
+/// flagGroup()
+template< RadixKey T >
+void flag( std::vector< T > & A , std::size_t lo , std::size_t n ,
+           const int * D , int m )
+{
+ T * const a = A.data() + lo;
+ for( ; ; ) {
+  const int sh = 8 * D[ 0 ];
+  auto byte = [ sh ]( T x ) {
+   return( std::size_t( ( radixKey( x ) >> sh ) & 0xFF ) ); };
+  std::array< std::size_t , 256 > count{} , next , end;
+  for( std::size_t i = 0 ; i < n ; ++i )
+   ++count[ byte( a[ i ] ) ];
+  std::array< unsigned char , 256 > full , todo;   // the non empty ones
+  int k = 0;
+  std::size_t sum = 0;
+  for( std::size_t b = 0 ; b < 256 ; ++b ) {
+   next[ b ] = sum;
+   sum += count[ b ];
+   end[ b ] = sum;
+   if( count[ b ] )
+    full[ k++ ] = static_cast< unsigned char >( b );
+   }
+  if( k == 1 ) {                            // one bucket: the next byte
+   if( m == 1 )
+    return;
+   ++D;
+   --m;
+   continue;
+   }
+  std::copy( full.begin() , full.begin() + k , todo.begin() );
+  for( int left = k ; left > 1 ; ) {        // the rounds
+   int w = 0;
+   for( int t = 0 ; t < left ; ++t ) {
+    const std::size_t b = todo[ t ];
+    T * x = a + next[ b ];
+    for( std::size_t c = end[ b ] - next[ b ] ; c > 0 ; --c , ++x )
+     std::swap( *x , a[ next[ byte( *x ) ]++ ] );
+    if( next[ b ] != end[ b ] )
+     todo[ w++ ] = static_cast< unsigned char >( b );
+    }
+   left = w;
+   }
+  if( m == 1 )
+   return;
+  for( int t = 0 ; t < k ; ++t ) {
+   const std::size_t c = count[ full[ t ] ] , start = end[ full[ t ] ] - c;
+   if( c >= kFlagSmall )
+    flag( A , lo + start , c , D + 1 , m - 1 );
+   else if( c > 1 )
+    flagGroup( A , lo + start , c );
+   }
   return;
   }
- auto byte = [ d ]( T x ) {
-  return( std::size_t( ( radixKey( x ) >> ( 8 * d ) ) & 0xFF ) ); };
- std::array< std::size_t , 256 > count{} , start , next;
- for( std::size_t i = lo ; i < hi ; ++i ) ++count[ byte( A[ i ] ) ];
- std::size_t sum = lo;
- for( std::size_t b = 0 ; b < 256 ; ++b ) {
-  start[ b ] = next[ b ] = sum;
-  sum += count[ b ];
-  }
- for( std::size_t b = 0 ; b < 256 ; ++b )   // the cycles into the stripes
-  while( next[ b ] < start[ b ] + count[ b ] ) {
-   std::size_t c = byte( A[ next[ b ] ] );
-   while( c != b ) {
-    std::swap( A[ next[ b ] ] , A[ next[ c ]++ ] );
-    c = byte( A[ next[ b ] ] );
-    }
-   ++next[ b ];
-   }
- if( d > 0 )
-  for( std::size_t b = 0 ; b < 256 ; ++b )
-   if( count[ b ] > 1 )
-    flag( A , start[ b ] , start[ b ] + count[ b ] , d - 1 );
  }
 
 /// the character d of s, 0 at its end, then the characters plus 1
@@ -371,6 +420,92 @@ inline void msdInPlace( std::string * s , std::uint16_t * k ,
   }
  }
 
+/// the buckets of bucketSort() that a group of its first pass gathers
+inline constexpr std::size_t kBucketGroup = 1024;
+
+/// the items of s[ 0 .. k ), whose buckets are bucket( x ) - base in
+/// [ 0 , L ), counted by their bucket in C[ 0 .. L ], scattered to A[ lo ..
+/// lo + k ) in the order of their buckets and sorted there by insertion,
+/// each within its bucket; a bucket of more than 32 items first by pdqSort(),
+/// so that no bucket costs more than \f$ O( k \log k ) \f$
+template< class N , class T , class K >
+void bucketGroup( std::vector< T > & A , std::size_t lo , const T * s ,
+                  std::size_t k , std::size_t base , std::size_t L , N * C ,
+                  K & bucket )
+{
+ std::fill_n( C , L + 1 , N( 0 ) );
+ for( std::size_t i = 0 ; i < k ; ++i )
+  ++C[ bucket( s[ i ] ) - base + 1 ];
+ bool big = false;
+ for( std::size_t j = 1 ; j <= L ; ++j ) {
+  big |= C[ j ] > 32;
+  C[ j ] = N( C[ j ] + C[ j - 1 ] );
+  }
+ T * const d = A.data() + lo;
+ for( std::size_t i = 0 ; i < k ; ++i ) {   // C[ j ] ends as the end of j
+  const T x = s[ i ];
+  d[ C[ bucket( x ) - base ]++ ] = x;
+  }
+ if( big ) {
+  std::less<> less;
+  for( std::size_t j = 0 , b = 0 ; j < L ; b = C[ j++ ] )
+   if( C[ j ] - b > 32 )
+    pdq( A , lo + b , lo + C[ j ] , int( std::bit_width( C[ j ] - b ) ) ,
+         true , less );
+  }
+ for( std::size_t i = 1 ; i < k ; ++i ) {   // no item leaves its bucket
+  const T x = d[ i ];
+  std::size_t j = i;
+  for( ; ( j > 0 ) && ( x < d[ j - 1 ] ) ; --j )
+   d[ j ] = d[ j - 1 ];
+  d[ j ] = x;
+  }
+ }
+
+/// the n buckets of bucketSort() on A, with B as the room of n items: a
+/// vector that fits in the cache (1 MiB) is copied to B and sorted back as
+/// one group; a larger one first goes into B by groups of kBucketGroup
+/// consecutive buckets, so that the passes over the buckets of a group stay
+/// in the cache, and each group is sorted back to A
+template< class N , class T >
+void buckets( std::vector< T > & A , T * B )
+{
+ const std::size_t n = A.size();
+ const T scale = T( n );
+ auto bucket = [ n , scale ]( T x ) {      // x n , rounding kept below n
+  const std::size_t b = std::size_t( x * scale );
+  return( b < n ? b : n - 1 ); };
+ const T * const a = A.data();
+ if( n * sizeof( T ) <= ( std::size_t( 1 ) << 20 ) ) {
+  std::copy( a , a + n , B );
+  const auto C = std::make_unique_for_overwrite< N[] >( n + 1 );
+  bucketGroup( A , 0 , B , n , 0 , n , C.get() , bucket );
+  return;
+  }
+ const std::size_t G = ( n - 1 ) / kBucketGroup + 1;
+ const auto S = std::make_unique< N[] >( G + 1 );
+ for( std::size_t i = 0 ; i < n ; ++i )
+  ++S[ bucket( a[ i ] ) / kBucketGroup + 1 ];
+ for( std::size_t g = 1 ; g <= G ; ++g )
+  S[ g ] = N( S[ g ] + S[ g - 1 ] );
+ {
+  const auto P = std::make_unique_for_overwrite< N[] >( G );
+  std::copy( S.get() , S.get() + G , P.get() );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   const T x = a[ i ];
+   B[ P[ bucket( x ) / kBucketGroup ]++ ] = x;
+   }
+  }
+ std::array< N , kBucketGroup + 1 > C;
+ for( std::size_t g = 0 ; g < G ; ++g ) {
+  const std::size_t lo = S[ g ] , k = S[ g + 1 ] - lo;
+  if( k > 0 )
+   bucketGroup( A , lo , B + lo , k , g * kBucketGroup ,
+                std::min( kBucketGroup , n - g * kBucketGroup ) , C.data() ,
+                bucket );
+  }
+ }
+
 }  // end( namespace detail )
 
 template< RadixKey T >
@@ -399,9 +534,49 @@ void radixSortBy( std::vector< T > & A , K key )
 template< RadixKey T >
 void americanFlagSort( std::vector< T > & A )
 {
+ using U = decltype( radixKey( T() ) );
+ constexpr int W = int( sizeof( U ) );
  const auto before = detail::auditCopy( A );
- if( A.size() > 1 )
-  detail::flag( A , 0 , A.size() , int( sizeof( T ) ) - 1 );
+ const std::size_t n = A.size();
+ U any = 0 , all = U( ~U( 0 ) );            // the bits set in some key, in
+ std::size_t up = 0 , down = 0;             // all, and the steps up and
+ if( n > 0 ) {                              // down from one key to the next
+  U prev = radixKey( A[ 0 ] );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   const U k = radixKey( A[ i ] );
+   any |= k;
+   all &= k;
+   up += k > prev;
+   down += k < prev;
+   prev = k;
+   }
+  }
+ std::array< int , W > D;                   // the bytes that differ, the
+ int m = 0;                                 // most significant first
+ for( int d = W - 1 ; d >= 0 ; --d )
+  if( ( ( any ^ all ) >> ( 8 * d ) ) & 0xFF )
+   D[ m++ ] = d;
+ if( ( n < 2 ) || ( down == 0 ) )
+  ;                                         // sorted already
+ else if( up == 0 )
+  std::reverse( A.begin() , A.end() );      // in reverse order
+ else if( m == 1 ) {                        // one byte: the key tells the
+  const int s = 8 * D[ 0 ];                 // number, counted and written
+  std::array< std::size_t , 256 > h{};      // back from one of each value
+  std::array< T , 256 > R{};
+  for( const T x : A ) {
+   const std::size_t c = std::size_t( ( radixKey( x ) >> s ) & 0xFF );
+   ++h[ c ];
+   R[ c ] = x;
+   }
+  T * p = A.data();
+  for( std::size_t c = 0 ; c < 256 ; ++c )
+   p = std::fill_n( p , h[ c ] , R[ c ] );
+  }
+ else if( n < kFlagSmall )
+  detail::flagGroup( A , 0 , n );
+ else
+  detail::flag( A , 0 , n , D.data() , m );
  ADS_AUDIT( detail::sortedPermutation( A , before , []( T a , T b ) {
   return( radixKey( a ) < radixKey( b ) ); } ) );
  }
@@ -424,13 +599,12 @@ void bucketSort( std::vector< T > & A )
   return( ( x >= 0 ) && ( x < 1 ) ); } ) );
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
- std::vector< std::vector< T > > B( n );
- for( T x : A )
-  B[ std::size_t( x * T( n ) ) ].push_back( x );
- std::size_t i = 0;
- for( auto & b : B ) {
-  insertionSort( b );
-  for( T x : b ) A[ i++ ] = x;
+ if( n > 1 ) {
+  const auto B = std::make_unique_for_overwrite< T[] >( n );
+  if( n < ( std::size_t( 1 ) << 32 ) )
+   detail::buckets< std::uint32_t >( A , B.get() );
+  else
+   detail::buckets< std::size_t >( A , B.get() );
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
  }
