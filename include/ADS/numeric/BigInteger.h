@@ -197,10 +197,11 @@ class BigInteger {
  using Limb = std::uint64_t;   ///< a digit, in base \f$ 2^{64} \f$
 
  // the lengths, in digits of the shorter factor, from which the code of
- // the book multiplies by Karatsuba and by the NTT: round numbers, not
- // measured, the backend of GMP being the fast route
+ // the book multiplies by Karatsuba and by the NTT: round numbers near
+ // where each method overtakes the one before, not tuned to a processor,
+ // the backend of GMP being the fast route
  static constexpr std::size_t kKaratsuba = 32;   ///< limbs for Karatsuba
- static constexpr std::size_t kFFT = 1024;       ///< limbs for the NTT
+ static constexpr std::size_t kFFT = 4096;       ///< limbs for the NTT
 
  /// the number \f$ v \f$
  BigInteger( long long v = 0 );

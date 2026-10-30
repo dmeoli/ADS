@@ -363,8 +363,9 @@
  twiddles \f$ \omega_n^{j' k'} \f$, and \f$ m \f$ transforms of length
  \f$ r \f$ (Cooley and Tukey). Applied recursively to \f$ n = 2^K \f$ with
  \f$ r = 2 \f$, the rounds of butterflies of `BigInteger.h`, (11) gives
- \f$ T( n ) = 2 T( n / 2 ) + \Theta( n ) = \Theta( n \log n ) \f$, against the \f$ \Theta( n^2 ) \f$ products of the
- definition (sections 4.3.3 and 4.6.4 of Knuth).
+ \f$ T( n ) = 2 T( n / 2 ) + \Theta( n ) = \Theta( n \log n ) \f$, against
+ the \f$ \Theta( n^2 ) \f$ products of the definition (sections 4.3.3 and
+ 4.6.4 of Knuth).
 
  \section theory_numeric_random Random numbers and samplings
 

@@ -16,7 +16,10 @@
  *   goes to `cblas_dgemm()` and `cblas_sgemm()` at every size that fits the
  *   `int` of the CBLAS, which chooses its own kernels and blocks for the
  *   processor and runs on the threads it is built or set for (e.g., those
- *   of `OPENBLAS_NUM_THREADS` for OpenBLAS). Without the macro (or with
+ *   of `OPENBLAS_NUM_THREADS` for OpenBLAS); the product with
+ *   \f$ k = 0 \f$, a mere \f$ C \gets \beta C \f$ whose \f$ A \f$ may have
+ *   the leading dimension 0, which a CBLAS may refuse, stays on the loops
+ *   below. Without the macro (or with
  *   `ADS_GEMM_BLAS` defined to 0), and for the other types, it is the
  *   product of the definition, \f$ c_{ij} = \sum_p a_{ip} b_{pj} \f$,
  *   \f$ 2 m n k \f$ operations in \f$ \Theta( m n k ) \f$ time, by the

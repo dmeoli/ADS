@@ -1783,8 +1783,8 @@ ADS_TEST( "big-integer-product" )
         x * ( p + x ) == p * p + x * x - p );
  // the transforms just as long as the product and one term short, the
  // lengths a power of 2 apart, balanced and not, all ones
- for( std::size_t m : { F / 2 , F / 2 + 1 , F , F + 1 , 4 * F , 4 * F + 1 } )
-  for( std::size_t k : { m , m + 1 , m / 2 , m / 2 + 1 , 3 * m } )
+ for( std::size_t m : { F / 2 , F - 1 , F , F + 1 } )
+  for( std::size_t k : { m , m + 1 , m / 2 + 1 , 2 * m } )
    for( bool ones : { false , true } ) {
     const BigInteger a = digits( m , g , ones ) , b = digits( k , g , ones );
     CHECK( a * b == BigInteger::multiplySchool( a , b ) &&

@@ -283,7 +283,8 @@ inline BigInteger::Limb BigInteger::addN( Limb * r , const Limb * a ,
  Limb c = 0;
  std::size_t i = 0;
  for( ; i < nb ; ++i ) r[ i ] = detail::addCarry( a[ i ] , b[ i ] , c );
- for( ; i < na ; ++i ) r[ i ] = detail::addCarry( a[ i ] , 0 , c );
+ for( ; c && ( i < na ) ; ++i ) c = ( ( r[ i ] = a[ i ] + 1 ) == 0 );
+ if( r != a ) std::copy( a + i , a + na , r + i );   // else in place
  return( c );
  }
 
@@ -294,7 +295,8 @@ inline BigInteger::Limb BigInteger::subN( Limb * r , const Limb * a ,
  Limb c = 0;
  std::size_t i = 0;
  for( ; i < nb ; ++i ) r[ i ] = detail::subBorrow( a[ i ] , b[ i ] , c );
- for( ; i < na ; ++i ) r[ i ] = detail::subBorrow( a[ i ] , 0 , c );
+ for( ; c && ( i < na ) ; ++i ) c = ( ( r[ i ] = a[ i ] - 1 ) == ~Limb( 0 ) );
+ if( r != a ) std::copy( a + i , a + na , r + i );
  return( c );
  }
 

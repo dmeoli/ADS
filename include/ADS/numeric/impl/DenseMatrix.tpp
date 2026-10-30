@@ -41,14 +41,17 @@ Matrix< T > DenseMatrix< T >::toMatrix( void ) const
 namespace detail {
 
 #if ADS_GEMM_BLAS
-/// true if the product goes to the CBLAS: T is double or float and the
-/// sizes fit the int of the CBLAS
+/// true if the product goes to the CBLAS: T is double or float, the
+/// sizes fit the int of the CBLAS, and k > 0, since a CBLAS may refuse a
+/// leading dimension 0 of A (that of Accelerate does), which an empty
+/// common dimension allows
 template< class T >
 bool gemmOnCblas( std::size_t m , std::size_t n , std::size_t k ,
                   std::size_t lda , std::size_t ldb , std::size_t ldc )
 {
  constexpr std::size_t top = std::size_t( INT_MAX );
  return( ( std::is_same_v< T , double > || std::is_same_v< T , float > ) &&
+         ( k > 0 ) &&
          ( std::max( { m , n , k , lda , ldb , ldc } ) <= top ) );
  }
 
