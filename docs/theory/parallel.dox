@@ -11,16 +11,19 @@
  of the prefix sums, the merge of sorted ranges and the sort, the products of
  matrices, the Fourier transform, the visits of a static graph, the LCP array
  of a text, the greedy algorithms on graphs by deterministic reservations and
- the shortest paths. Each runs on an executor, which is the only part that
- knows the threads, and gives the result of its sequential version. This page
- collects what the headers take for granted: the model of the cost and its
- notation (see \ref theory_parallel_notation), the executors and the way they
- schedule the calls (see \ref theory_parallel_exec), and, for each family of
- algorithms, the property on which its correctness rests and the argument
+ the shortest paths, and the runtime of the long-lived workers that talk by
+ messages (their channels, the farm with feedback and the mailbox with the
+ detection of the termination). Each runs on an executor, which is the only
+ part that knows the threads, and gives the result of its sequential version.
+ This page collects what the headers take for granted: the model of the cost
+ and its notation (see \ref theory_parallel_notation), the executors and the
+ way they schedule the calls (see \ref theory_parallel_exec), for each family
+ of algorithms the property on which its correctness rests and the argument
  behind its bound (from \ref theory_parallel_patterns to
- \ref theory_parallel_sssp). The pseudocode of each algorithm is instead on
- the page of its header, in the comment of its function, together with the
- paper that it follows.
+ \ref theory_parallel_sssp), and the runtime of the workers (from
+ \ref theory_parallel_workers to \ref theory_parallel_quiescence). The
+ pseudocode of each algorithm is instead on the page of its header, in the
+ comment of its function, together with the paper that it follows.
 
  \tableofcontents
 
@@ -553,6 +556,234 @@
  by the same block at once, up to 1024 of them, as in the fusion of the
  buckets of Zhang et al., which saves the steps of the chains of light arcs.
 
+ \section theory_parallel_workers Long-lived workers and their locks
+
+ The calls of `bulk( n , f )` are tasks: an executor may run several of them
+ on one thread, one after the other, and a call starts only when a thread is
+ free to take it, so that a call that waits for another one (at a barrier,
+ or for a message) may wait forever for a call that no thread will start
+ before it returns. A computation of <em>workers</em>, each a loop that
+ lives as long as the computation and talks to the others (the workers of a
+ parallel search, each with its own queue of nodes and its inbox, or the
+ master and the workers of a farm), needs instead that its \f$ p \f$ calls
+ run at the same time on \f$ p \f$ distinct threads; `run( p , f )` of the
+ executors with workers (the concept `WorkerExecutor` of `Executor.h`) gives
+ this, together with `lock_type`, the mutex that the executor prefers for the
+ short sections that the workers share.
+
+ <table>
+ <caption>How each executor runs the \f$ p \f$ calls of <tt>run( p , f )
+ </tt>, and its lock</caption>
+ <tr><th>Executor</th><th>The calls</th><th>Why they run together</th>
+     <th><tt>lock_type</tt></th></tr>
+ <tr><td><tt>Sequential</tt></td><td>\f$ f( 0 ) \f$ on the caller,
+     \f$ p \le 1 \f$</td><td>one worker</td>
+     <td><tt>std::mutex</tt></td></tr>
+ <tr><td><tt>ThreadPool</tt></td><td>\f$ f( 0 ) \f$ on the caller, the
+     others claimed one each under a mutex by the workers idle in their
+     loop</td><td>a thread that waits inside a call never claims one</td>
+     <td><tt>std::mutex</tt></td></tr>
+ <tr><td><tt>OpenMPExecutor</tt></td><td>a region <tt>omp parallel</tt> of
+     \f$ p \f$ threads, \f$ f( i ) \f$ on its thread \f$ i \f$</td>
+     <td>the team has \f$ p \f$ threads, or nothing runs and
+     <tt>run()</tt> throws</td><td><tt>OpenMPLock</tt>, i.e.,
+     <tt>omp_lock_t</tt></td></tr>
+ <tr><td><tt>TBBExecutor</tt></td><td>a <tt>parallel_for</tt> of the arena,
+     a task per call, each call inside <tt>isolate()</tt></td>
+     <td>a thread that waits inside a call takes only the tasks of the jobs
+     nested in it</td><td><tt>tbb::spin_mutex</tt></td></tr>
+ <tr><td><tt>FastFlowExecutor</tt></td><td>a <tt>parallel_for</tt> of its
+     <tt>ParallelFor</tt> on \f$ p \f$ workers, chunks of 1</td>
+     <td>each worker is given its own index first</td>
+     <td><tt>FastFlowLock</tt>, i.e., <tt>ff::lock_t</tt></td></tr>
+ </table>
+
+ <em>Lemma 6 (the calls of a run meet).</em> Let a pool of `ThreadPool` have
+ \f$ p - 1 \f$ workers idle in their loop besides the thread that calls
+ `run( p , f )`. Then the \f$ p \f$ calls run at the same time, each on its
+ own thread, whatever the calls do, nested jobs included.
+
+ Indeed, the caller makes \f$ f( 0 ) \f$, and the other calls are claimed
+ one at a time from a counter under a mutex, only by a worker that is in its
+ loop, i.e., that holds no call of any job; a worker that has claimed a call
+ makes it and goes back to its loop only after it has returned, so that no
+ thread holds two calls of the run. A thread that waits inside a call, for a
+ job nested in it or for the end of the run, steals and runs only tasks,
+ never a call of the run: were it to run one, it would hold it below its own
+ call, which might wait for it forever. Hence the \f$ p - 1 \f$ idle workers
+ claim the \f$ p - 1 \f$ calls, one each, as soon as they wake (the run wakes
+ the sleeping ones through the event count of the pool), and all the calls
+ run together. On the other executors the same property rests on the
+ runtime: the team of a region of OpenMP has its \f$ p \f$ threads from the
+ start; a thread of oneTBB inside `isolate()` takes only the tasks spawned
+ within it, and the arena has \f$ p \f$ threads when the threads of oneTBB
+ are not fewer, i.e., for \f$ p \f$ not larger than the hardware threads;
+ the `ParallelFor` of FastFlow cuts \f$ [ 0 , p ) \f$ into \f$ p \f$ chunks of
+ 1, one per worker, and a worker looks at the chunks of the others only
+ after its own, so that a worker takes the call of another only when its own
+ has returned, which leaves the calls that wait for each other on distinct
+ workers.
+
+ \section theory_parallel_channels Channels between workers
+
+ Each of \f$ p \f$ workers has an <em>inbox</em>, into which the others
+ push batches of messages and which only its owner drains; the messages of
+ a sender to a receiver come out in the order in which they were pushed,
+ while those of different senders interleave in any order. A batch of
+ \f$ k \f$ messages is pushed by one operation of the channel, so that the
+ cost of the synchronization (an atomic operation, a lock, a line of cache
+ that moves between two cores) is paid once per batch and not per message;
+ the four families of `Channels.h` differ in what they pay and when.
+
+ <table>
+ <caption>The families of channels: the cost of a push of a batch of
+ \f$ k \f$ messages, of a drain of \f$ k \f$ messages, whether a push may
+ refuse messages, and the memory for \f$ p \f$ workers</caption>
+ <tr><th>Family</th><th>Push</th><th>Drain</th><th>Bounded</th>
+     <th>Memory</th></tr>
+ <tr><td><tt>LockedChannels</tt></td><td>a lock, \f$ k \f$ copies, a store
+     of the size</td><td>a load of the size; if not 0, a lock and a swap of
+     two vectors, then \f$ k \f$ calls</td><td>no</td>
+     <td>the messages</td></tr>
+ <tr><td><tt>InboxChannels</tt></td><td>a vector of \f$ k \f$ copies, a
+     cell, one compare-and-swap</td><td>one exchange, the list of the
+     \f$ b \f$ batches reversed, \f$ k \f$ calls</td><td>no</td>
+     <td>the messages, a cell and a vector per batch</td></tr>
+ <tr><td><tt>LaneChannels</tt></td><td>\f$ k \f$ stores with a release,
+     no read-modify-write</td><td>the \f$ p \f$ lanes in turn, a read of
+     the count per block, \f$ k \f$ calls</td><td>no</td>
+     <td>\f$ p^2 \f$ lanes of blocks</td></tr>
+ <tr><td><tt>MeshChannels</tt></td><td>\f$ k \f$ copies, one store of a
+     tail</td><td>the \f$ p \f$ queues of the worker, a load of a tail and a
+     store of a head each, \f$ k \f$ calls</td><td>yes, \f$ c \f$ per
+     pair</td><td>\f$ p^2 c \f$ places</td></tr>
+ </table>
+
+ The inboxes under a lock are the baseline that every executor can build
+ with its own lock, and the only family whose memory does not depend on the
+ pairs of workers; a sender and the owner meet on the lock, and senders meet
+ among themselves. The stack of Treiber of `InboxChannels` makes the push of
+ a batch lock-free, one compare-and-swap whatever \f$ k \f$, and the drain
+ one exchange whatever the number of senders, at the price of an allocation
+ per batch. The lanes of `LaneChannels` and the mesh of `MeshChannels` give
+ each ordered pair of workers a queue of its own, so that two senders never
+ touch the same line and a push needs no read-modify-write, the queues of
+ the farms and of the all-to-all of FastFlow; a drain then scans the
+ \f$ p \f$ queues of its worker, \f$ O( p ) \f$ loads even when they are
+ empty, and the memory grows as \f$ p^2 \f$, which on the threads of one
+ machine (tens of workers) is cheap. The mesh is bounded: a push that finds
+ its queue full pushes what fits and returns the number, and the mailbox
+ keeps the rest in its outbox (see \ref theory_parallel_quiescence), so
+ that a worker is never blocked by a receiver that does not drain.
+ On the benchmark (`bench/runtime.cpp`, 4 and 8 workers on the pool, on
+ OpenMP and on FastFlow, one per core, messages of 8 bytes) the mesh is the
+ fastest family whenever the workers exchange batches: with batches of 64
+ messages it takes 1.4 to 2.5 times less per message than the inboxes under
+ a lock (whichever lock), 3 to 4.5 times less than the stacks of batches and
+ the lanes, and 1.9 to 2.7 times less than the mesh of the queues of FastFlow,
+ which pass a pointer per message with a store of a flag each; with batches
+ of 1 message it takes 2 to 5 times less than the inboxes under a lock,
+ while the mesh of FastFlow is then within 0.7 to 1.8 times of it. A round
+ trip of one message between two workers costs the mesh 1.1 to 1.7 times
+ less than the inboxes under a lock, and the lanes pay there the wait of
+ their consumer for a batch; the exploration of a tree spread over the
+ workers, whose work per message dominates, is a tie among the families
+ within the noise of the machine, the lanes and the stacks last. Hence
+ `DefaultChannels` is the mesh on every executor, the inboxes under the lock
+ of the executor stay the portable choice whose memory does not grow with
+ \f$ p^2 \f$, and the lanes and the stacks of batches remain for the
+ senders that cannot bound what they push.
+
+ \section theory_parallel_farm The farm with feedback
+
+ A farm with feedback has a <em>master</em>, which emits tasks, and \f$ w \f$
+ workers, which turn each task into a result that goes back to the master;
+ the master may emit more tasks from each result, and decides when the farm
+ ends. It is the master and workers of FastFlow (a farm whose emitter
+ receives the results of its workers on the channel of feedback), and
+ `feedbackFarm()` of `Farm.h` runs it on a farm of FastFlow on
+ `FastFlowExecutor`, and on `run( w + 1 , f )` of the other executors, the
+ master being the call 0. The tasks go to the workers on demand, i.e., a
+ task waits in a queue of many consumers [see `MPMCQueue.h`] until a worker
+ is free, which balances tasks of different costs; the results come back on
+ a queue with a lane per worker [see `MPSCQueue.h`].
+
+ <em>Lemma 7 (the farm ends).</em> If `work()` returns on every task and the
+ master emits finitely many tasks, the farm ends, and when it ends because no
+ task is left the master has seen the result of every task it emitted.
+
+ Indeed, the master counts in \f$ m \f$ the tasks emitted and not yet back:
+ it adds 1 at each emission and subtracts 1 at each result, and a worker
+ that takes a task always sends back a result (empty if the farm was stopped
+ or the work threw), so that \f$ m \f$ is the number of the tasks in the
+ queue, in the hands of a worker, or of their results in the queue back.
+ While \f$ m > 0 \f$ some task or result exists, and since the free workers
+ take the tasks and `work()` returns, the master receives a result in
+ finite time; it emits finitely many tasks, so that \f$ m \f$ reaches 0, and
+ then nothing is left to receive. When the master stops the farm instead,
+ the workers end after the task they hold, whose result is dropped.
+
+ \section theory_parallel_quiescence The detection of the termination
+
+ In a computation by messages a worker is <em>active</em> while it has work,
+ and <em>passive</em> otherwise; a passive worker becomes active only by
+ receiving a message, and only an active worker sends. The computation has
+ <em>terminated</em> when every worker is passive and no message is on its
+ way, a state that lasts forever once reached (no worker can become active
+ again), but that no worker sees by itself: a worker that has no work does
+ not know whether a message for it is still on its way, or whether another
+ worker is about to send one. The detection of the termination is the
+ problem of Dijkstra and Scholten, who solved it for a computation that
+ starts from one process with an acknowledgment of every message and a tree
+ of the active processes, and of Mattern, who counted the messages sent and
+ received with waves that read the counters of all the processes (see
+ \ref theory_distributed_messages for the processes of MPI).
+
+ In shared memory the counters can be one: the mailbox of `Mailbox.h` keeps
+ a counter \f$ C \f$ of the activities and of the messages, which starts at
+ \f$ p \f$ (every worker active). A worker adds \f$ k \f$ to \f$ C \f$
+ before it pushes a batch of \f$ k \f$ messages (and subtracts the messages
+ that a bounded channel refused); a passive worker that drains messages adds
+ 1 before it handles the first of them, and becomes active; a worker
+ subtracts the \f$ k \f$ messages it drained once it has handled them; a
+ worker that has no work and has pushed all its outboxes becomes passive and
+ subtracts 1. The messages still in an outbox are not counted, but their
+ sender is active, and it becomes passive only after it has pushed them.
+
+ <em>Lemma 8 (the deficit counter).</em> At any time
+ \f[
+   C \ge A + M , \tag{10}
+ \f]
+ \f$ A \f$ the number of the active workers and \f$ M \f$ that of the
+ messages pushed and not yet handled; and \f$ C = 0 \f$ if and only if the
+ computation has terminated and every worker has seen it, i.e., has
+ subtracted its activity.
+
+ Indeed, every change of \f$ A + M \f$ is preceded by the change of \f$ C \f$
+ that covers it: a batch is added before it is pushed, an activity is added
+ before the messages that bring it are handled, and the messages and the
+ activities are subtracted only after they have ended; the operations on
+ \f$ C \f$ are atomic, so that they follow each other in one order, and
+ (10) holds after each of them. If \f$ C = 0 \f$, (10) gives \f$ A = 0 \f$
+ and \f$ M = 0 \f$, and no outbox holds a message, since its owner would be
+ active: the computation has terminated, and since every increase of
+ \f$ C \f$ is made by an active worker or for a message, \f$ C \f$ stays at
+ 0. Conversely, once the computation has terminated every message has been
+ handled and subtracted, and each worker, finding no work, pushes its empty
+ outboxes and subtracts its activity, which brings \f$ C \f$ to 0. A worker
+ that sees \f$ C = 0 \f$ therefore knows that the computation is over, and
+ a passive worker learns it by a load of \f$ C \f$; the detection costs one
+ atomic addition per batch at its sender, one per drain at its receiver, and
+ one per change of activity, so that the counter, which all the workers
+ share, is touched once per batch and not per message. It is the deficit
+ counting of Dijkstra and Scholten with the deficits of all the workers
+ summed in one place, which the shared memory allows; across processes the
+ sums need the waves of \ref theory_distributed_messages. The recovery of
+ credits of Mattern, which splits a unit of weight among the messages and
+ detects the end when the weight is back whole, also needs no wave, but
+ pays an arithmetic of fractions per message where the counter pays one
+ addition per batch.
+
  \section theory_parallel_refs References
 
  \see R. L. Graham, Bounds on multiprocessing timing anomalies, SIAM
@@ -643,6 +874,24 @@
  \see L. Dhulipala, G. E. Blelloch, J. Shun, Julienne: a framework for
       parallel graph algorithms using work-efficient bucketing, Proc. 29th
       SPAA, 293-304, 2017, doi:10.1145/3087556.3087580
+ \see R. K. Treiber, Systems programming: coping with parallelism,
+      Technical Report RJ 5118, IBM Almaden Research Center, 1986
+ \see M. Aldinucci, M. Danelutto, P. Kilpatrick, M. Meneghin, M. Torquati,
+      An efficient unbounded lock-free queue for multi-core systems,
+      Euro-Par 2012, LNCS 7484, 662-673, 2012,
+      doi:10.1007/978-3-642-32820-6_65
+ \see M. Aldinucci, M. Danelutto, P. Kilpatrick, M. Torquati, FastFlow:
+      high-level and efficient streaming on multicore, in S. Pllana,
+      F. Xhafa (eds.), Programming Multi-core and Many-core Computing
+      Systems, Wiley, 261-280, 2017, doi:10.1002/9781119332015.ch13
+ \see E. W. Dijkstra, C. S. Scholten, Termination detection for diffusing
+      computations, Information Processing Letters 11(1), 1-4, 1980,
+      doi:10.1016/0020-0190(80)90021-6
+ \see F. Mattern, Algorithms for distributed termination detection,
+      Distributed Computing 2(3), 161-175, 1987, doi:10.1007/BF01782776
+ \see F. Mattern, Global quiescence detection based on credit
+      distribution and recovery, Information Processing Letters 30(4),
+      195-200, 1989, doi:10.1016/0020-0190(89)90212-3
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File parallel.dox --------------------------*/

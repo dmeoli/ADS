@@ -14,15 +14,15 @@
 #     make             builds the tests                                       #
 #     make test        runs them (make -j<n> test builds and runs n programs  #
 #                      at a time)                                             #
-#     make test-mpi    the sort over the processes of MPI, by mpicxx and      #
-#                      mpirun                                                 #
+#     make test-mpi    the sort and the runtime over the processes of MPI,    #
+#                      by mpirun                                              #
 #     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0                                #
 #                      the same without the backends of GMP and of a CBLAS,   #
 #                      on by default where they are found [GMP=<prefix>]      #
 #                      [BLAS=<prefix>]                                        #
 #     make test ADSMOD=1                                                      #
 #                      also the C++20 module ads and the test that imports it #
-#     make backends    tells whether GMP and a CBLAS were found               #
+#     make backends    tells whether GMP, a CBLAS and MPI were found          #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
 #     make install     copies include/ADS into $(PREFIX)/include, with        #
@@ -35,8 +35,9 @@
 #                                   if not given)                             #
 #           optional: $(PREFIX)   = where make install copies the headers     #
 #                                   (/usr/local if not given)                 #
-#           optional: the macros of the backends, ADS_WITH_GMP and            #
-#                     ADS_WITH_BLAS (auto by default, 0 or 1),                #
+#           optional: the macros of the backends, ADS_WITH_GMP,               #
+#                     ADS_WITH_BLAS and ADS_WITH_MPI (auto by default, 0 or   #
+#                     1),                                                     #
 #                     ADS_WITH_OPENMP=1, ADS_WITH_TBB=1, ADS_WITH_FASTFLOW=1, #
 #                     and their *_ROOT [see lib/makefile-c]; ADSMOD=1 [see    #
 #                     lib/makefile-mod]                                       #
@@ -93,16 +94,20 @@ $(BUILD)/%$(ADSEXE): test/%.cpp $(HEADERS) | $(BUILD)
 $(BUILD):
 	mkdir -p $@
 
-# the sort over the processes of MPI, not in tests.txt: make test-mpi
-# [MPICXX=mpicxx] [MPIRUN=mpirun], on 1 to 4 processes (Open MPI is told
-# that they may outnumber the cores)
+# the sort and the runtime over the processes of MPI, not in tests.txt:
+# make test-mpi [MPICXX=mpicxx] [MPIRUN=mpirun], on 1 to 4 processes, with
+# the options of MPI that MPICXX tells (Open MPI is told that the processes
+# may outnumber the cores)
 MPICXX   ?= mpicxx
 MPIRUN   ?= mpirun $(if $(shell $(MPICXX) --showme:version 2>/dev/null),\
             --oversubscribe)
 test-mpi: | $(BUILD)
-	$(MPICXX) $(CXXFLAGS) $(INC) -DADS_WITH_MPI -o $(BUILD)/engineered_mpi \
+	$(if $(filter 1,$(ADSMPION)),,$(error MPI was not found [see \
+	 extlib/makefile-libMPI]))
+	$(CXX) $(CXXFLAGS) $(INC) -o $(BUILD)/engineered_mpi \
 	 test/engineered_mpi.cpp $(LIBS)
-	for t in distributed-sort distributed-sort-counts; do \
+	for t in distributed-sort distributed-sort-counts mpi-executor \
+	         mpi-mailbox mpi-termination mpi-min; do \
 	  for np in 1 2 3 4; do \
 	    $(MPIRUN) -np $$np $(BUILD)/engineered_mpi $$t || exit 1; \
 	  done; \
@@ -141,6 +146,7 @@ test: $(addprefix test-,$(PROGRAMS)) $(MODBIN)
 backends:
 	@echo "ADS: GMP $(if $(filter 1,$(ADSGMPON)),ON,OFF)," \
 	      "CBLAS $(if $(filter 1,$(ADSBLASON)),ON,OFF)"
+	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -196,7 +202,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
-            learned stringdicts flows assignment \
+            learned stringdicts flows assignment runtime \
             $(if $(GMPON),bignum-own) $(if $(BLASON),matrix-own)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -464,6 +470,12 @@ JOINFLAGS = $(if $(PAM),-DADS_HAS_PAM -isystem $(PAM)/include \
 $(BUILD)/bench-joins: bench/joins.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(JOINFLAGS)
 
+# the runtime of the workers: OpenMP always, TBB=1 (or TBB=<prefix>)
+# oneTBB, FASTFLOW=<dir> FastFlow and the mesh of its queues
+$(BUILD)/bench-runtime: bench/runtime.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< -fopenmp -pthread $(TBBFLAGS) \
+	       $(if $(FASTFLOW),-DADS_WITH_FASTFLOW -isystem $(FASTFLOW))
+
 # the parallel greedy algorithms: PARLAY=<dir> the examples of ParlayLib
 $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< \
@@ -482,8 +494,9 @@ $(BUILD)/bench-assignment: bench/assignment.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
 
-# the sort over the processes of MPI, by mpicxx (not among BENCHES): make
-# $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi
+# the sort and the mailbox over the processes of MPI, by mpicxx (not among
+# BENCHES): make $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi
+# [-m]
 $(BUILD)/bench-mpi: bench/mpi.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(MPICXX) $(BENCHFLAGS) -DADS_WITH_MPI -o $@ $< -pthread
 

@@ -47,13 +47,14 @@ foreach (line IN LISTS lines)
     add_test(NAME ${program}.${name} COMMAND ${program} ${name})
 endforeach ()
 
-# the sort over the processes of MPI, not in tests.txt: on 1 to 4
-# processes
-if (ADS_WITH_MPI)
+# the sort and the runtime over the processes of MPI, not in tests.txt:
+# on 1 to 4 processes
+if (ADS_USE_MPI)
     add_executable(engineered_mpi engineered_mpi.cpp)
     target_link_libraries(engineered_mpi PRIVATE ADS::ADS Threads::Threads)
     target_compile_definitions(engineered_mpi PRIVATE ADS_CONTRACTS=3)
-    foreach (t distributed-sort distributed-sort-counts)
+    foreach (t distributed-sort distributed-sort-counts mpi-executor
+               mpi-mailbox mpi-termination mpi-min)
         foreach (np 1 2 3 4)
             add_test(NAME engineered_mpi.${t}.np${np}
                      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG}

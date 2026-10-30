@@ -10,10 +10,20 @@
  * patterns of ADS already give it blocks), and `invoke( f , g )` is
  * `parallel_invoke`, both run in the arena, so that the parallel algorithms
  * of ADS run on the scheduler of oneTBB unchanged, and nest as its tasks do.
- * The thread that calls joins the arena and works.
+ * The thread that calls joins the arena and works. `run( p , f )` is the
+ * same `parallel_for` on the \f$ p \f$ calls of long-lived workers, each
+ * made inside `this_task_arena::isolate()`, so that a thread that waits
+ * inside a call (for a job nested in it) takes only the tasks of that job,
+ * never the call of another worker, which it would hold under its own; the
+ * \f$ p \f$ calls then run at the same time as soon as the arena has
+ * \f$ p \f$ threads, i.e., when the threads of oneTBB are not fewer, which
+ * \f$ p \f$ not larger than the hardware threads ensures. Its lock is the
+ * spin mutex of oneTBB (`tbb::spin_mutex`), for the short sections of the
+ * workers.
  *
  * The contracts [see `Contract.h`]: \f$ p \ge 1 \f$; an exception thrown by
- * \f$ f \f$ is thrown again by `bulk()`, as oneTBB does.
+ * \f$ f \f$ is thrown again by `bulk()`, as oneTBB does, and by `run()`
+ * once all the calls have returned.
  *
  * \see J. Reinders, Intel Threading Building Blocks: Outfitting C++ for
  *      Multi-core Processor Parallelism, O'Reilly, 2007
@@ -48,6 +58,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_invoke.h>
 #include <tbb/partitioner.h>
+#include <tbb/spin_mutex.h>
 #include <tbb/task_arena.h>
 
 #include <algorithm>
@@ -122,6 +133,53 @@ class TBBExecutor {
    return;
    }
   f_arena.execute( [ & ] { tbb::parallel_invoke( f , g ); } );
+  }
+
+ /// the lock of the data shared by the workers of `run()`
+ using lock_type = tbb::spin_mutex;
+
+ /// the calls \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ of long-lived workers,
+ /// at the same time on \f$ p \f$ threads of the arena
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{run}( p , f ) \cr
+ /// 2 & \quad \textbf{if}\ p \le 1\ \textbf{then}\ \textbf{for}\ i \gets 0
+ ///     \ \textbf{to}\ p - 1\ \textbf{do}\ f( i );\ \textbf{return} \cr
+ /// 3 & \quad \text{in the arena, the } \mathrm{parallel\_for} \text{ of }
+ ///     \text{oneTBB on } [ 0 , p ) \text{, a task per index } i
+ ///     \text{ making } f( i ) \cr
+ /// & \qquad \text{inside } \mathrm{isolate}() \cr
+ /// 4 & \quad \text{throw again the first exception of the calls, if any}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ p \le \f$ `concurrency()`, and not more than the hardware
+ ///       threads
+ template< class F >
+ void run( std::size_t p , F && f ) {
+  ADS_PRE( p <= f_p );
+  if( p <= 1 ) {
+   if( p == 1 )
+    f( 0 );
+   return;
+   }
+  detail::FirstError error;
+  f_arena.execute( [ & ] {
+   tbb::parallel_for( tbb::blocked_range< std::size_t >( 0 , p , 1 ) ,
+                      [ & ]( const tbb::blocked_range< std::size_t > & r ) {
+                       for( std::size_t i = r.begin() ; i < r.end() ; ++i )
+                        tbb::this_task_arena::isolate( [ & ] {
+                         try {
+                          f( i );
+                          }
+                         catch( ... ) {
+                          error.keep();
+                          }
+                         } );
+                       } , tbb::simple_partitioner() );
+   } );
+  error.rethrow();
   }
 
 /*--------------------------------------------------------------------------*/

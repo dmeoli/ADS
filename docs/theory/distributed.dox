@@ -9,13 +9,17 @@
  the algorithms whose data are spread over the processes of MPI, each with a
  memory of its own, which exchange them only by messages; the area holds the
  sort by regular sampling of `DistributedSort.h`, whose processes may also
- run on the threads of an executor (see \ref theory_parallel). This page
- collects what the header takes for granted: the model of the cost of the
- messages and its notation (see \ref theory_distributed_notation), and the
- property on which the sort rests, with the argument behind its bound (see
- \ref theory_distributed_sort). The pseudocode of the sort is instead on the
- page of its header, in the comment of its function, together with the paper
- that it follows.
+ run on the threads of an executor (see \ref theory_parallel), and the
+ runtime of the processes as workers: their executor, their mailbox with
+ the detection of the termination, and the minimum of a value over them
+ (`MPIExecutor.h` and `MPIMailbox.h`). This page collects what the headers
+ take for granted: the model of the cost of the messages and its notation
+ (see \ref theory_distributed_notation), the property on which the sort
+ rests, with the argument behind its bound (see
+ \ref theory_distributed_sort), and the detection of the termination by the
+ four counters of Mattern (see \ref theory_distributed_messages). The
+ pseudocode of each algorithm is instead on the page of its header, in the
+ comment of its function, together with the paper that it follows.
 
  \tableofcontents
 
@@ -51,6 +55,12 @@
  <tr><td>\f$ w \f$</td>
      <td>the items of a process between two of its samples,
          \f$ n_i / P \f$</td></tr>
+ <tr><td>\f$ s_i \f$, \f$ r_i \f$</td>
+     <td>the messages sent and received by the process \f$ i \f$ in a
+         computation of the mailbox</td></tr>
+ <tr><td>\f$ S_k \f$, \f$ R_k \f$</td>
+     <td>the sums of \f$ s_i \f$ and of \f$ r_i \f$ read by the wave
+         \f$ k \f$</td></tr>
  </table>
 
  A sort of the items spread over the processes leaves in the process of rank
@@ -120,6 +130,86 @@
  \f$ P \f$ messages of each process for \f$ O( P^{1 / \ell} ) \f$ messages per
  level over \f$ \ell \f$ levels.
 
+ \section theory_distributed_messages Messages, owners and termination
+
+ The processes of a communicator are the workers of a distributed
+ computation (`MPIExecutor` of `MPIExecutor.h`, whose `run( f )` makes the
+ call `f( rank )` in each process): each owns a part of the data, the items
+ whose keys hash to its rank (`ownerOf( k , P )` of `Mailbox.h`, the hash of
+ \f$ k \f$ modulo \f$ P \f$), and sends to the owner what concerns them, e.g.,
+ the nodes of a search that the other processes generate. The mailbox of
+ `MPIMailbox.h` gathers the messages of a process for each rank into an
+ outbox and sends it as one message of MPI when it holds a batch, by
+ `MPI_Isend`, which does not block: the buffer stays in a list of the sends
+ in flight until MPI has completed it, which `MPI_Testsome` finds at each
+ poll, so that a process never waits for a receiver; the batches that have
+ come are found by `MPI_Iprobe` from any source and received by `MPI_Recv`.
+ The batches trade the latency \f$ \alpha \f$ of a message for its volume:
+ \f$ k \f$ messages of \f$ b \f$ bytes cost \f$ \alpha + \beta k b \f$
+ instead of \f$ k ( \alpha + \beta b ) \f$, and the latency of a single
+ message grows by the time its batch takes to fill, which `flush()` cuts.
+ This is the asynchronous mailbox of the library YGM of Priest, Steil,
+ Sanders and Pearce; the exchange of NBX of Hoefler, Siebert and Lumsdaine
+ solves instead a single round of sparse messages, by synchronous sends and
+ a barrier that does not block.
+
+ A process is <em>active</em> while it has work and <em>passive</em>
+ otherwise, becomes active only by receiving, and sends only while active;
+ the computation has terminated when all the processes are passive and no
+ message is on its way. Each process counts the messages it has sent,
+ \f$ s_i \f$, and those it has received, \f$ r_i \f$, both of which only
+ grow. A <em>wave</em> reads the counters of all the processes and sums
+ them, \f$ S = \sum_i s_i \f$ and \f$ R = \sum_i r_i \f$; here it is a
+ reduction that does not block (`MPI_Iallreduce`), to which each process
+ contributes the pair \f$ ( s_i , r_i ) \f$ copied when it is passive, i.e.,
+ from `quiescent()`, while it keeps receiving and working until the wave
+ completes, and a process starts a wave only after the previous one has
+ completed in it, which happens only after all the processes have
+ contributed to it.
+
+ <em>Lemma 2 (Mattern's four counters).</em> Let the wave \f$ k - 1 \f$
+ read the receipts \f$ R_{k - 1} \f$ and the next wave \f$ k \f$ the sends
+ \f$ S_k \f$. If
+ \f[
+   S_k = R_{k - 1} , \tag{3}
+ \f]
+ the computation had terminated when the last process contributed to the
+ wave \f$ k - 1 \f$.
+
+ Indeed, let \f$ T \f$ be the moment of the last contribution to the wave
+ \f$ k - 1 \f$, which precedes every contribution to the wave \f$ k \f$, and
+ \f$ S( T ) \f$, \f$ R( T ) \f$ the messages sent and received by all at
+ \f$ T \f$. The counters only grow, the receipts of the wave \f$ k - 1 \f$
+ were read at or before \f$ T \f$ and the sends of the wave \f$ k \f$ at or
+ after it, and a message is received after it is sent; hence
+ \f[
+   R_{k - 1} \le R( T ) \le S( T ) \le S_k ,
+ \f]
+ and (3) makes them all equal. Thus at \f$ T \f$ no message was on its way
+ (\f$ R( T ) = S( T ) \f$), and no process had received a message after it
+ contributed to the wave \f$ k - 1 \f$ (\f$ R_{k - 1} = R( T ) \f$): each
+ process was passive when it contributed, and a passive process becomes
+ active only by receiving, so that all were passive at \f$ T \f$, which is
+ the termination. Conversely, once the computation has terminated, every
+ process eventually finds no work and contributes to every wave, the
+ counters stop growing, and two waves after the termination
+ \f$ S_k = R_{k - 1} \f$ holds; since every process gets the same sums, all
+ the processes stop at the same wave. A wave costs a reduction of two
+ integers, \f$ O( \alpha \log P ) \f$ time, so that the termination is known
+ \f$ O( \alpha \log P ) \f$ after it happens, with no message per message
+ sent (the acknowledgments of Dijkstra and Scholten) and no process that
+ coordinates the waves.
+
+ The bound of a search that every process improves (the value of the best
+ solution found so far) is shared the same way: `DistributedMin` starts a
+ reduction of the minimum that does not block and tests it while the process
+ works, so that a process learns the bounds of the others at most one
+ reduction late, without a message for each improvement.
+
+ The sort of \ref theory_distributed_sort runs on the processes themselves
+ (the communicator of an `MPIExecutor`, `comm()`), each with the threads of
+ an executor of its own inside: no part of it simulates the processes.
+
  \section theory_distributed_refs References
 
  \see H. Shi, J. Schaeffer, Parallel sorting by regular sampling, Journal
@@ -128,6 +218,23 @@
  \see M. Axtmann, T. Bingmann, P. Sanders, C. Schulz, Practical massively
       parallel sorting, ACM Symposium on Parallelism in Algorithms and
       Architectures (SPAA), 13-23, 2015, doi:10.1145/2755573.2755595
+ \see E. W. Dijkstra, C. S. Scholten, Termination detection for diffusing
+      computations, Information Processing Letters 11(1), 1-4, 1980,
+      doi:10.1016/0020-0190(80)90021-6
+ \see F. Mattern, Algorithms for distributed termination detection,
+      Distributed Computing 2(3), 161-175, 1987, doi:10.1007/BF01782776
+ \see T. Hoefler, A. Lumsdaine, W. Rehm, Implementation and performance
+      analysis of non-blocking collective operations for MPI, ACM/IEEE
+      Conference on Supercomputing (SC), 1-10, 2007,
+      doi:10.1145/1362622.1362692
+ \see T. Hoefler, C. Siebert, A. Lumsdaine, Scalable communication
+      protocols for dynamic sparse data exchange, ACM SIGPLAN Symposium on
+      Principles and Practice of Parallel Programming (PPoPP), 159-168,
+      2010, doi:10.1145/1693453.1693476
+ \see B. Priest, T. Steil, G. Sanders, R. Pearce, You've Got Mail (YGM):
+      building missing asynchronous communication primitives, IEEE
+      International Parallel and Distributed Processing Symposium
+      Workshops (IPDPSW), 221-230, 2019, doi:10.1109/IPDPSW.2019.00045
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File distributed.dox ------------------------*/

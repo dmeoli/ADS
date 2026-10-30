@@ -154,15 +154,29 @@ if (ADS_WITH_FASTFLOW)
                                $<BUILD_INTERFACE:${FASTFLOW_DIR}>)
 endif ()
 
-# The sort over the processes of MPI [see include/ADS/distributed], OFF by
-# default.
-option(ADS_WITH_MPI "the distributed sort on MPI [see DistributedSort.h]"
-       OFF)
-if (ADS_WITH_MPI)
-    find_package(MPI REQUIRED COMPONENTS CXX)
+# The sort and the runtime over the processes of MPI [see
+# include/ADS/distributed]: AUTO, the default, turns them on when FindMPI
+# finds an MPI for C++ (Open MPI, MPICH), ON requires it, OFF leaves them
+# out.
+set(ADS_WITH_MPI AUTO CACHE STRING
+    "the distributed sort and runtime on MPI: AUTO (if found), ON or OFF")
+set_property(CACHE ADS_WITH_MPI PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${ADS_WITH_MPI}" ADS_MPI_MODE)
+set(ADS_USE_MPI OFF)
+if (ADS_MPI_MODE STREQUAL "AUTO" OR ADS_WITH_MPI)
+    find_package(MPI QUIET COMPONENTS CXX)
+    if (MPI_CXX_FOUND)
+        set(ADS_USE_MPI ON)
+    elseif (NOT ADS_MPI_MODE STREQUAL "AUTO")
+        message(FATAL_ERROR "ADS_WITH_MPI is ON, but no MPI was found: "
+                "install Open MPI or MPICH, or set MPI_HOME")
+    endif ()
+endif ()
+if (ADS_USE_MPI)
     target_compile_definitions(ADS INTERFACE ADS_WITH_MPI)
     target_link_libraries(ADS INTERFACE MPI::MPI_CXX)
 endif ()
+message(STATUS "ADS: MPI ${ADS_USE_MPI}")
 
 # ----- C++20 module -------------------------------------------------------- #
 # The module ads (src/ADS.cppm) exports the names of all the headers, so
@@ -239,7 +253,7 @@ if (ADS_BENCHMARKS)
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries allocators positions assembly fingerprints multi lce
                parallel joins dynamic greedy learned stringdicts flows
-               assignment)
+               assignment runtime)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -294,6 +308,10 @@ if (ADS_BENCHMARKS)
                                            ${ADS_PARLAY})
     endif ()
     target_link_libraries(bench-parallel PRIVATE Threads::Threads)
+    target_link_libraries(bench-runtime PRIVATE Threads::Threads)
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(bench-runtime PRIVATE OpenMP::OpenMP_CXX)
+    endif ()
     # the competitor of bench-joins: PAM from the directory of its sources
     # ADS_PAM, on ParlayLib from ADS_PARLAY
     set(ADS_PAM "" CACHE PATH "the sources of PAM")

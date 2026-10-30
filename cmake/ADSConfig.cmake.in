@@ -49,7 +49,7 @@ endif ()
 if (@ADS_WITH_TBB@)
     find_dependency(TBB)
 endif ()
-if (@ADS_WITH_MPI@)
+if (@ADS_USE_MPI@)
     find_dependency(MPI COMPONENTS CXX)
 endif ()
 

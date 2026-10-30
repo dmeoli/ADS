@@ -23,7 +23,8 @@ build() {
     cmake -S "ADS-${pkgver}" -B "build-${MSYSTEM}" -G Ninja \
       -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
       -DCMAKE_BUILD_TYPE=Release \
-      -DADS_BUILD_TESTS=OFF -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF
+      -DADS_BUILD_TESTS=OFF -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF \
+      -DADS_WITH_MPI=OFF
   cmake --build "build-${MSYSTEM}"
 }
 

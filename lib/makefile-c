@@ -29,11 +29,13 @@
 #                                  TBBExecutor.h]                             #
 #           $(ADS_WITH_FASTFLOW) = 1 for the executor of FastFlow [see        #
 #                                  FastFlowExecutor.h]                        #
-#           $(ADS_WITH_MPI)      = 1 for the sort over the processes of MPI   #
-#                                  [see DistributedSort.h]; $(CXX) has then   #
-#                                  to be the compiler of MPI (e.g., mpicxx)   #
+#           $(ADS_WITH_MPI)      = the same as $(ADS_WITH_GMP) for the sort   #
+#                                  and the runtime over the processes of MPI  #
+#                                  [see include/ADS/distributed], the         #
+#                                  options of MPI asked to $(MPICXX)          #
 #           $(GMP_ROOT), $(BLAS_ROOT), $(OpenMP_ROOT), $(TBB_ROOT),           #
-#           $(FastFlow_ROOT)     = where the libraries are, see               #
+#           $(FastFlow_ROOT),                                                 #
+#           $(MPI_ROOT)          = where the libraries are, see               #
 #                                  extlib/makefile-paths (GMP=<prefix> and    #
 #                                  BLAS=<prefix> on the command line are the  #
 #                                  same as GMP_ROOT=<prefix> and              #
@@ -45,8 +47,8 @@
 #           $(ADSINC)            = all the -I$( include dirs ), -D and        #
 #                                  compiler options of ADS                    #
 #           $(ADSLIB)            = the external libraries + -L< libdirs >     #
-#           $(ADSGMPON), $(ADSBLASON) = 1 if the backend of GMP, of the       #
-#                                  CBLAS, is on                               #
+#           $(ADSGMPON), $(ADSBLASON), $(ADSMPION) = 1 if the backend of      #
+#                                  GMP, of the CBLAS, of MPI is on            #
 #                                                                             #
 ###############################################################################
 
@@ -141,9 +143,17 @@ ifeq ($(ADS_WITH_FASTFLOW),1)
     ADSINC += -DADS_WITH_FASTFLOW $(libFastFlowINC)
 endif
 
-# MPI, for the distributed sort, whose compiler finds it
-ifeq ($(ADS_WITH_MPI),1)
-    ADSINC += -DADS_WITH_MPI
+# MPI, for the sort and the runtime over its processes: on where it is
+# found unless turned off, auto by default
+ADS_WITH_MPI ?= auto
+ifneq ($(ADS_WITH_MPI),0)
+    include $(ADSSDR)/extlib/makefile-libMPI
+    ADSMPION := $(strip $(if $(filter auto,$(ADS_WITH_MPI)),\
+	$(libMPIFOUND),$(filter 1,$(ADS_WITH_MPI))))
+endif
+ifeq ($(ADSMPION),1)
+    ADSINC += -DADS_WITH_MPI $(libMPIINC)
+    ADSLIB += $(libMPILIB)
 endif
 
 # include the ADS makefile requiring all external modules in input

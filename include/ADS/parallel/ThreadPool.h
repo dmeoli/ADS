@@ -44,6 +44,17 @@
  * a thread outside the pool takes the place of the \f$ p \f$-th, one at a
  * time (the others wait for it on a mutex).
  *
+ * `run( p , f )` runs the \f$ p \f$ calls of long-lived workers at the
+ * same time on \f$ p \f$ distinct threads (see
+ * \ref theory_parallel_workers): the caller runs \f$ f( 0 ) \f$, and the
+ * other calls are claimed one each, under a mutex, by the workers that are
+ * idle in their loop, never by a thread that waits inside a call and steals
+ * (a worker that waited for a nested job and took a call of a worker would
+ * hold it under its own, which may wait for it forever). A run is the only
+ * one of the pool for its time; while it lasts the workers that are not
+ * among its \f$ p - 1 \f$ keep running the tasks, the nested jobs of the
+ * calls among them.
+ *
  * With work \f$ W \f$ and depth \f$ D \f$, the work stealing runs in
  * expected time \f$ W / p + O( D ) \f$ (Blumofe and Leiserson), and a job of
  * `bulk()` of \f$ n \f$ calls of equal cost \f$ c \f$ in
@@ -54,7 +65,10 @@
  * The contracts [see `Contract.h`]: \f$ p \ge 1 \f$; the pool outlives the
  * calls; an exception thrown by \f$ f \f$ in `bulk()` stops the claims and
  * is thrown again by `bulk()` once the calls already started have returned,
- * the same for \f$ f \f$ and \f$ g \f$ in `invoke()`. The operations are
+ * the same for \f$ f \f$ and \f$ g \f$ in `invoke()`; `run( p , f )` needs
+ * \f$ p - 1 \f$ workers idle besides the caller (all of them if it is called
+ * from outside the pool with \f$ p \f$ its threads), and throws again the
+ * first exception of its calls once all have returned. The operations are
  * defined in `ThreadPool.tpp`.
  *
  * \see D. Chase, Y. Lev, Dynamic circular work-stealing deque, ACM
@@ -200,6 +214,39 @@ class ThreadPool {
  template< class F , class G >
  void invoke( F && f , G && g );
 
+ /// the lock of the data shared by the workers of `run()`
+ using lock_type = std::mutex;
+
+ /// the calls \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ of long-lived workers,
+ /// at the same time on \f$ p \f$ distinct threads of the pool, returning
+ /// when all have returned
+ ///
+ /// In pseudocode (beyond the book), \f$ c \f$ the next call to claim and
+ /// \f$ d \f$ the calls of the workers returned:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{run}( p , f ) \cr
+ /// 2 & \quad \textbf{if}\ p \le 1\ \textbf{then}\ \textbf{for}\ i \gets 0
+ ///     \ \textbf{to}\ p - 1\ \textbf{do}\ f( i );\ \textbf{return} \cr
+ /// 3 & \quad \text{under the mutex of the runs: } c \gets 1;\ d \gets 0;
+ ///     \ \text{open the run};\ \text{wake the threads that sleep} \cr
+ /// 4 & \quad f( 0 ) \cr
+ /// 5 & \quad \textbf{while}\ d \ne p - 1\ \textbf{do}\ \text{steal a task}
+ ///     \text{ and run it, or pause} \cr
+ /// 6 & \quad \text{throw again the first exception of the calls, if any}
+ ///     \cr
+ /// 7 & \textbf{procedure}\ \mathrm{claim}()\quad \triangleright
+ ///     \ \text{by an idle worker, in its loop only} \cr
+ /// 8 & \quad \text{under the mutex: } \textbf{if}\ \text{the run is }
+ ///     \text{open}\ \textbf{then}\ i \gets c;\ c \gets c + 1;
+ ///     \ \text{close it if } c = p \cr
+ /// 9 & \quad f( i );\ \mathrm{fetchAndAdd}( d , 1 )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ p \le \f$ `concurrency()`, with \f$ p - 1 \f$ workers idle
+ template< class F >
+ void run( std::size_t p , F && f );
+
 /*--------------------------------------------------------------------------*/
  private:
 
@@ -236,6 +283,9 @@ class ThreadPool {
  /// steals a task for the thread s and runs it; false if none was found
  bool help( std::size_t s );
 
+ /// claims a call of the open run and makes it; false if none was left
+ bool claim( void );
+
  /// the pool and the slot of the running thread
  static inline thread_local Self tl_self{ nullptr , 0 };
 
@@ -245,6 +295,14 @@ class ThreadPool {
  std::atomic< bool > f_stop{ false };      ///< set by the destructor
  std::mutex f_master;                      ///< the slot of the caller
  std::int64_t f_spin;                      ///< ns of looking before sleep
+ std::mutex f_runOne;                      ///< one run at a time
+ std::mutex f_runLock;                     ///< the claims of the calls
+ std::atomic< bool > f_runOpen{ false };   ///< calls left to claim
+ std::size_t f_runNext = 0;                ///< the next call to claim
+ std::size_t f_runN = 0;                   ///< the calls of the run
+ void ( * f_runCall )( void * , std::size_t ) = nullptr;   ///< makes one
+ void * f_runCtx = nullptr;                ///< its function
+ std::atomic< std::size_t > f_runDone{ 0 };   ///< the calls returned
  };  // end( class ThreadPool )
 
 /*--------------------------------------------------------------------------*/

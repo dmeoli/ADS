@@ -120,6 +120,12 @@ module;
 #if defined( ADS_WITH_MPI )
  #include "ADS/distributed/DistributedSort.h"
 #endif
+#if defined( ADS_WITH_MPI )
+ #include "ADS/distributed/MPIExecutor.h"
+#endif
+#if defined( ADS_WITH_MPI )
+ #include "ADS/distributed/MPIMailbox.h"
+#endif
 #include "ADS/external/ExternalSorting.h"
 #include "ADS/external/ListRanking.h"
 #include "ADS/external/TwoLevelMemory.h"
@@ -203,10 +209,13 @@ module;
 #include "ADS/optimization/ShortestJobFirst.h"
 #include "ADS/optimization/StockTrading.h"
 #include "ADS/optimization/WeightedIntervals.h"
+#include "ADS/parallel/Channels.h"
 #include "ADS/parallel/Executor.h"
+#include "ADS/parallel/Farm.h"
 #if defined( ADS_WITH_FASTFLOW )
  #include "ADS/parallel/FastFlowExecutor.h"
 #endif
+#include "ADS/parallel/Mailbox.h"
 #if defined( _OPENMP )
  #include "ADS/parallel/OpenMPExecutor.h"
 #endif
@@ -889,6 +898,18 @@ export namespace ADS {
  using ADS::MultiplyShiftHash;
  using ADS::StringHash;
 
+ // ADS/distributed/MPIExecutor.h
+#if defined( ADS_WITH_MPI )
+ using ADS::DistributedMin;
+ using ADS::MPIEnvironment;
+ using ADS::MPIExecutor;
+#endif
+
+ // ADS/distributed/MPIMailbox.h
+#if defined( ADS_WITH_MPI )
+ using ADS::MPIMailbox;
+#endif
+
  // ADS/external/ExternalSorting.h
  using ADS::binaryMergeSort;
  using ADS::distributionSort;
@@ -1430,9 +1451,20 @@ export namespace ADS {
  using ADS::WeightedInterval;
  using ADS::maxinterval;
 
+ // ADS/parallel/Channels.h
+ using ADS::ChannelFamily;
+ using ADS::ChannelPort;
+ using ADS::ChannelsOf;
+ using ADS::DefaultChannels;
+ using ADS::InboxChannels;
+ using ADS::LaneChannels;
+ using ADS::LockedChannels;
+ using ADS::MeshChannels;
+
  // ADS/parallel/Executor.h
  using ADS::Executor;
  using ADS::Sequential;
+ using ADS::WorkerExecutor;
  using ADS::blocksOf;
  using ADS::kBlocks;
  using ADS::kGrain;
@@ -1443,14 +1475,23 @@ export namespace ADS {
  using ADS::parallelInvoke;
  using ADS::parallelReduce;
 
+ // ADS/parallel/Farm.h
+ using ADS::feedbackFarm;
+
  // ADS/parallel/FastFlowExecutor.h
 #if defined( ADS_WITH_FASTFLOW )
  using ADS::FastFlowExecutor;
+ using ADS::FastFlowLock;
 #endif
+
+ // ADS/parallel/Mailbox.h
+ using ADS::Mailbox;
+ using ADS::ownerOf;
 
  // ADS/parallel/OpenMPExecutor.h
 #if defined( _OPENMP )
  using ADS::OpenMPExecutor;
+ using ADS::OpenMPLock;
 #endif
 
  // ADS/parallel/ParallelFFT.h

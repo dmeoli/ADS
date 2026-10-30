@@ -17,6 +17,19 @@
  * also have `invoke( f , g )`, which runs \f$ f \f$ and \f$ g \f$ in
  * parallel; the others get it from `bulk()`.
  *
+ * The calls of `bulk()` are tasks: a thread may run several of them, one
+ * after the other, so that a call that waits for another one may never see
+ * it start. A program of long-lived workers that talk to each other (the
+ * workers of a parallel search, each with its own queue and its inbox)
+ * needs instead `run( p , f )`, whose \f$ p \f$ calls
+ * \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ run at the same time on
+ * \f$ p \f$ distinct threads of the executor, and a lock for the data that
+ * they share, `lock_type` (the concept `WorkerExecutor`): `Sequential` runs
+ * one worker, the others as many as they have threads (see
+ * \ref theory_parallel_workers). The channels between the workers, the farm
+ * with feedback and the mailbox with the detection of the termination are
+ * built on these [see `Channels.h`, `Farm.h` and `Mailbox.h`].
+ *
  * On these the header builds the patterns that the algorithms share, each a
  * function of the executor:
  *
@@ -144,6 +157,19 @@ concept Executor = requires( E & e , std::size_t n ,
  e.bulk( n , f );
  };
 
+/// the executors that also run long-lived workers: `run( p , f )` runs
+/// \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ at the same time on \f$ p \f$
+/// distinct threads and returns when they have returned, and `lock_type`
+/// is a mutex of the executor (`lock()` and `unlock()`)
+template< class E >
+concept WorkerExecutor = Executor< E > &&
+ requires( E & e , std::size_t p , void ( & f )( std::size_t ) ,
+           typename E::lock_type & l ) {
+  e.run( p , f );
+  l.lock();
+  l.unlock();
+  };
+
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS Sequential ----------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -171,6 +197,19 @@ class Sequential {
  static void invoke( F && f , G && g ) {
   f();
   g();
+  }
+
+ /// the lock of the data shared by the workers
+ using lock_type = std::mutex;
+
+ /// the call \f$ f( 0 ) \f$ on the calling thread, the only worker, if
+ /// \f$ p = 1 \f$ (none if \f$ p = 0 \f$)
+ /// \pre \f$ p \le 1 \f$
+ template< class F >
+ static void run( std::size_t p , F && f ) {
+  ADS_PRE( p <= 1 );
+  if( p == 1 )
+   f( 0 );
   }
  };  // end( class Sequential )
 

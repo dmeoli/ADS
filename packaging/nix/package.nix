@@ -21,6 +21,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeBool "ADS_BUILD_TESTS" finalAttrs.doCheck)
     (lib.cmakeFeature "ADS_WITH_GMP" "OFF")
     (lib.cmakeFeature "ADS_WITH_BLAS" "OFF")
+    (lib.cmakeFeature "ADS_WITH_MPI" "OFF")
   ];
 
   doCheck = true;

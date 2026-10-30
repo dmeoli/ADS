@@ -38,7 +38,9 @@ EXPORTED = { "CXXRecordDecl", "ClassTemplateDecl", "ConceptDecl",
 OPTIONAL = { "ADS/parallel/OpenMPExecutor.h": "_OPENMP",
              "ADS/parallel/TBBExecutor.h": "ADS_WITH_TBB",
              "ADS/parallel/FastFlowExecutor.h": "ADS_WITH_FASTFLOW",
-             "ADS/distributed/DistributedSort.h": "ADS_WITH_MPI" }
+             "ADS/distributed/DistributedSort.h": "ADS_WITH_MPI",
+             "ADS/distributed/MPIExecutor.h": "ADS_WITH_MPI",
+             "ADS/distributed/MPIMailbox.h": "ADS_WITH_MPI" }
 
 
 def dump_ast( clang , inc , headers , flags ):

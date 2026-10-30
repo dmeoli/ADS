@@ -10,12 +10,14 @@
 # alone; on Linux it also runs the tests under ASan and UBSan, BigInteger     #
 # with its portable products, the backends required, with the parallel gemm() #
 # on OpenBLAS under ThreadSanitizer, the executors of OpenMP, oneTBB and      #
-# FastFlow by the makefile, FastHash and the vector quicksort on AVX2 (and    #
-# AVX-512 when the runner has it), ConcurrentFlatTable on the                 #
-# compare-and-swap of 16 bytes, the queues between threads, the event count,  #
-# the MultiQueue, the concurrent hash tables, the parallel operations of the  #
-# trees by join, the parallel builds of the succinct structures and the       #
-# stepping algorithms of the shortest paths under ThreadSanitizer,            #
+# FastFlow by the makefile, with the long-lived workers, their channels, the  #
+# farm and the mailbox, the sort and the runtime over the processes of Open   #
+# MPI and of MPICH, FastHash and the vector quicksort on AVX2 (and AVX-512    #
+# when the runner has it), ConcurrentFlatTable on the compare-and-swap of 16  #
+# bytes, the queues between threads, the event count, the MultiQueue, the     #
+# concurrent hash tables, the parallel operations of the trees by join, the   #
+# parallel builds of the succinct structures, the stepping algorithms of the  #
+# shortest paths and the runtime of the workers under ThreadSanitizer,        #
 # FlatHashTable on its broadword fallback and fft() on the lanes of AVX, on   #
 # arrays of doubles and on the intrinsics of x86 that MSVC takes; it measures #
 # the coverage of the tests, run four at a time and with the cases there for  #
@@ -232,8 +234,10 @@ jobs:
         run: |
           make -j4 BUILD=build-exec ADS_WITH_OPENMP=1 ADS_WITH_TBB=1 \
                ADS_WITH_FASTFLOW=1 FastFlow_ROOT="$RUNNER_TEMP/ff" \
-               build-exec/engineered_parallel build-exec/engineered_speculative
-          for p in engineered_parallel engineered_speculative; do
+               build-exec/engineered_parallel \
+               build-exec/engineered_speculative build-exec/engineered_runtime
+          for p in engineered_parallel engineered_speculative \
+                   engineered_runtime; do
             for t in $(build-exec/$p -l); do build-exec/$p $t; done
           done
 
@@ -292,6 +296,46 @@ jobs:
           ./tsan-par parallel-wavelet-matrix
           ./tsan-par parallel-huffman-wavelet-tree
           ./tsan-par parallel-stepping
+      - name: ThreadSanitizer on the workers, the channels and the mailbox
+        run: |
+          sudo sysctl vm.mmap_rnd_bits=28
+          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_CONTRACTS=3 -o tsan-rt test/engineered_runtime.cpp \
+              -pthread
+          for t in $(./tsan-rt -l); do ./tsan-rt $t; done
+
+  # the sort and the runtime over the processes of MPI on 1 to 4 processes,
+  # by the makefile and by CMake, on Open MPI and on MPICH; the other jobs
+  # find no MPI, and build ADS without it
+  mpi:
+    name: mpi (${{ matrix.mpi }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mpi: openmpi , packages: libopenmpi-dev openmpi-bin ,
+              preflags: --oversubscribe }
+          - { mpi: mpich , packages: libmpich-dev mpich , preflags: "" }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ${{ matrix.mpi }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.packages }}
+      - name: the tests over MPI, by the makefile
+        run: |
+          make backends | tee backends.log
+          grep -q 'ADS: MPI ON' backends.log
+          make test-mpi BUILD=build-mpi
+      - name: the same by CMake, MPI required
+        run: |
+          set -o pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DADS_WITH_MPI=ON \
+                -DMPIEXEC_PREFLAGS="${{ matrix.preflags }}" | tee cmake.log
+          grep -q 'ADS: MPI ON' cmake.log
+          cmake --build build --parallel 4 --target engineered_mpi
+          ctest --test-dir build -R '^engineered_mpi[.]' --output-on-failure
 
   broadword:
     runs-on: ubuntu-latest

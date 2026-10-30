@@ -159,8 +159,9 @@ The other folders group the algorithms by technique or by problem:
 - `memory/`, the allocators, the pools and the arena;
 - `concurrent/`, the queues between threads, the concurrent hash table
   and the concurrent union-find;
-- `parallel/`, the executors and the parallel algorithms on threads;
-- `distributed/`, the sort over the processes of MPI;
+- `parallel/`, the executors, the parallel algorithms on threads and the
+  runtime of the long-lived workers;
+- `distributed/`, the sort and the runtime over the processes of MPI;
 - `external/`, the two-level memory and the algorithms on it;
 - `compression/`, the codes, the compressors and the compressed indexes;
 - `succinct/`, the compressed data structures;
@@ -589,7 +590,9 @@ matrices, up to the rounding for the transform).
 | balanced trees whose only balancing is join (AVL, Red-Black, by weight, treap): split, join, union, intersection and difference with the optimal work, batches of insertions and removals, filter, map and reduce, augmented maps with the sums of ranges, the interval tree and the 2D range tree | [`tree/JoinAlgorithms.h`](include/ADS/tree/JoinAlgorithms.h), [`tree/JoinTree.h`](include/ADS/tree/JoinTree.h), [`geometry/IntervalTree.h`](include/ADS/geometry/IntervalTree.h), [`geometry/RangeTree.h`](include/ADS/geometry/RangeTree.h) |
 | deterministic reservations, `speculativeFor()` | [`parallel/SpeculativeFor.h`](include/ADS/parallel/SpeculativeFor.h) |
 | Kruskal and filter-Kruskal, spanning forest, maximal independent set and maximal matching, the results of the sequential greedy algorithms | [`parallel/ParallelGreedy.h`](include/ADS/parallel/ParallelGreedy.h) |
+| long-lived workers on every executor (`run()`, `lock_type`), the channels between them (inboxes under a lock, stacks of batches, lanes, the mesh of the pairs), the farm with feedback, and the mailbox that detects the termination | [`parallel/Executor.h`](include/ADS/parallel/Executor.h), [`parallel/Channels.h`](include/ADS/parallel/Channels.h), [`parallel/Farm.h`](include/ADS/parallel/Farm.h), [`parallel/Mailbox.h`](include/ADS/parallel/Mailbox.h) |
 | sort over the processes of MPI by regular sampling | [`distributed/DistributedSort.h`](include/ADS/distributed/DistributedSort.h) |
+| the processes of MPI as workers: their executor, the mailbox of batches sent without blocking with the four counters of Mattern for the termination, the minimum of a bound by reductions that do not block | [`distributed/MPIExecutor.h`](include/ADS/distributed/MPIExecutor.h), [`distributed/MPIMailbox.h`](include/ADS/distributed/MPIMailbox.h) |
 
 ```cpp
 #include "ADS/parallel/ParallelSort.h"
@@ -608,10 +611,29 @@ from its repository; without CMake, `-fopenmp`,
 `-DADS_WITH_TBB -ltbb` and `-DADS_WITH_FASTFLOW -I<fastflow>`. The header
 of FastFlow defines `NO_DEFAULT_MAPPING` (unless `ADS_FASTFLOW_MAPPING` is
 defined), since FastFlow otherwise pins its threads to the first cores of
-the machine whatever the affinity of the process. The sort over the
-processes of MPI, `ADS::distributed::sort()`, is a layer of its own, on
-`-DADS_WITH_MPI=ON` (Open MPI or MPICH found by CMake), tested on 1 to 4
-processes by `ctest` or by `make test-mpi`.
+the machine whatever the affinity of the process.
+
+The calls of `bulk()` are tasks, which a thread may run one after the
+other; a computation of workers that live as long as it does and talk to
+each other (a parallel search, a master and its workers) runs instead on
+`run( p , f )`, whose `p` calls run at the same time on `p` threads
+of any executor, each executor with its own lock (`lock_type`:
+`std::mutex`, `omp_lock_t`, `tbb::spin_mutex`, the spin lock of FastFlow).
+On it, the channels of [`parallel/Channels.h`](include/ADS/parallel/Channels.h)
+give each worker an inbox for batches of messages, in four families with
+one interface; `feedbackFarm()` is the farm with feedback of FastFlow, a
+farm of FastFlow on its executor and emulated on the others; and the
+`Mailbox` adds outboxes of batches and tells each worker when the whole
+computation has ended, by a counter of the activities and of the messages
+touched once per batch. The processes of MPI are workers too, by
+`MPIExecutor` and `MPIMailbox`, whose batches are sent without blocking and
+whose termination is found by the four counters of Mattern on reductions
+that do not block. MPI is a backend like GMP: with CMake `ADS_WITH_MPI` is
+`AUTO` by default (on when FindMPI finds Open MPI or MPICH), `ON` to require
+it and `OFF` to leave it out; the makefile asks `mpicxx` for its options
+(`ADS_WITH_MPI=0` turns it off). The sort over the processes,
+`ADS::distributed::sort()`, and the runtime are tested on 1 to 4 processes
+by `ctest` or by `make test-mpi`.
 
 The operations of the trees based on join are also methods of `AVLTree`,
 `Treap` and `RedBlackTree`, and are tested, with their edge cases, against
@@ -782,9 +804,10 @@ the compiler, `lib/makefile-mod` the module. GMP and a CBLAS are used
 wherever a program that calls them compiles and links (`ADS_WITH_GMP` and
 `ADS_WITH_BLAS` are `auto`, `0` turns them off, `1` requires them, and
 `make backends` tells what was found), and the other optional backends
-are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
-`ADS_WITH_FASTFLOW=1` and `ADS_WITH_MPI=1` (with `CXX=mpicxx`), as the
-CMake options of the same names do; they are found where
+are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1` and
+`ADS_WITH_FASTFLOW=1`, as the CMake options of the same names do, while
+MPI is `auto` as GMP is (`ADS_WITH_MPI`, its options asked to `mpicxx`, or
+to `MPICXX`); they are found where
 `extlib/makefile-default-paths-<os>` says (GMP, oneTBB and libomp in the
 prefix of Homebrew on macOS and where the compiler looks elsewhere, the
 CBLAS of Accelerate on macOS, FastFlow in `/opt/fastflow`,

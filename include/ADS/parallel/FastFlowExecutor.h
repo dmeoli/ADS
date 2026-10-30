@@ -14,7 +14,13 @@
  * (the default of the executor, not of FastFlow), or sleeping otherwise; the
  * thread that calls `bulk()` waits for them and does not work. A call of
  * `bulk()` from a call of `bulk()` runs its calls in order on that thread,
- * since a `ParallelFor` does not nest.
+ * since a `ParallelFor` does not nest. `run( p , f )` is the same
+ * `parallel_for` on the \f$ p \f$ calls of long-lived workers: FastFlow
+ * gives each of its first \f$ p \f$ workers its own index before any
+ * worker looks at the indices of the others, so that the calls run at the
+ * same time, one per worker. Its lock is the spin lock of FastFlow
+ * (`ff::lock_t`, `FastFlowLock`), the one its runtime takes; the farm with
+ * feedback runs on a farm of FastFlow [see `Farm.h`].
  *
  * Unless `ADS_FASTFLOW_MAPPING` is defined, the header defines
  * `NO_DEFAULT_MAPPING` before it includes FastFlow: by default FastFlow pins
@@ -64,6 +70,7 @@
 
 #include <ff/ff.hpp>
 #include <ff/parallel_for.hpp>
+#include <ff/spin-lock.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -76,6 +83,31 @@
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- CLASS FastFlowLock ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the spin lock of FastFlow, `ff::lock_t`, as a mutex of the standard
+class FastFlowLock {
+ public:
+
+ /// an unlocked lock
+ FastFlowLock( void ) { ff::init_unlocked( f_lock ); }
+ /// no copy, as a mutex
+ FastFlowLock( const FastFlowLock & ) = delete;
+ /// no copy, as a mutex
+ FastFlowLock & operator=( const FastFlowLock & ) = delete;
+
+ /// takes the lock, spinning until it is free
+ void lock( void ) { ff::spin_lock( f_lock ); }
+ /// gives the lock back
+ void unlock( void ) { ff::spin_unlock( f_lock ); }
+
+ private:
+
+ ff::lock_t f_lock;                        ///< the lock of FastFlow
+ };  // end( class FastFlowLock )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS FastFlowExecutor -------------------------*/
@@ -138,6 +170,50 @@ class FastFlowExecutor {
     }
    tl_inside = false;
    } , long( std::min( f_p , n ) ) );
+  error.rethrow();
+  }
+
+ /// the lock of the data shared by the workers of `run()`
+ using lock_type = FastFlowLock;
+
+ /// the calls \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ of long-lived workers,
+ /// at the same time on \f$ p \f$ workers of FastFlow
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{run}( p , f ) \cr
+ /// 2 & \quad \textbf{if}\ p \le 1\ \textbf{or}\ \text{inside a call of }
+ ///     f\ \textbf{then}\ \textbf{for}\ i \gets 0\ \textbf{to}\ p - 1
+ ///     \ \textbf{do}\ f( i );\ \textbf{return} \cr
+ /// 3 & \quad \text{the } \mathrm{parallel\_for} \text{ of FastFlow on }
+ ///     [ 0 , p ) \text{ in chunks of 1, on } p \text{ workers, the worker }
+ ///     i \text{ first given } i \cr
+ /// 4 & \quad \text{throw again the first exception of the calls, if any}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ p \le \f$ `concurrency()`; \f$ p \le 1 \f$ inside a call
+ template< class F >
+ void run( std::size_t p , F && f ) {
+  ADS_PRE( p <= f_p );
+  ADS_PRE( ( p <= 1 ) || ! tl_inside );
+  if( p <= 1 ) {
+   if( p == 1 )
+    f( 0 );
+   return;
+   }
+  std::lock_guard< std::mutex > g( f_lock );
+  detail::FirstError error;
+  f_for.parallel_for( 0 , long( p ) , 1 , 1 , [ & ]( const long i ) {
+   tl_inside = true;
+   try {
+    f( std::size_t( i ) );
+    }
+   catch( ... ) {
+    error.keep();
+    }
+   tl_inside = false;
+   } , long( p ) );
   error.rethrow();
   }
 

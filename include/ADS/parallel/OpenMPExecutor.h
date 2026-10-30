@@ -12,7 +12,13 @@
  * (the libgomp of GCC, the libomp of LLVM) unchanged. The thread that calls
  * is one of the \f$ p \f$, as in every region of OpenMP. A call nested in
  * another runs on as many threads as the runtime gives a nested region (by
- * default 1, i.e., in order on that thread).
+ * default 1, i.e., in order on that thread). `run( p , f )` is a region
+ * `omp parallel` of \f$ p \f$ threads, the thread \f$ i \f$ of the team
+ * making the call \f$ f( i ) \f$ of a long-lived worker, and its lock is
+ * the lock of OpenMP (`omp_lock_t`, `OpenMPLock`); a runtime that gives the
+ * region fewer threads (a run nested in a region, or a limit of the
+ * threads) makes no call and throws, since the workers could not all run at
+ * the same time.
  *
  * The contracts [see `Contract.h`]: \f$ p \ge 1 \f$; an exception thrown by
  * \f$ f \f$ stops the claims and is thrown again by `bulk()` (an exception
@@ -48,12 +54,42 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <stdexcept>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- CLASS OpenMPLock ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the lock of OpenMP, `omp_lock_t`, as a mutex of the standard
+class OpenMPLock {
+ public:
+
+ /// an unlocked lock
+ OpenMPLock( void ) { omp_init_lock( &f_lock ); }
+ /// no copy, as a mutex
+ OpenMPLock( const OpenMPLock & ) = delete;
+ /// no copy, as a mutex
+ OpenMPLock & operator=( const OpenMPLock & ) = delete;
+ /// destroys the lock, which nobody holds
+ ~OpenMPLock() { omp_destroy_lock( &f_lock ); }
+
+ /// takes the lock, waiting for it
+ void lock( void ) { omp_set_lock( &f_lock ); }
+ /// gives the lock back
+ void unlock( void ) { omp_unset_lock( &f_lock ); }
+ /// takes the lock if it is free, and tells whether it did
+ bool try_lock( void ) { return( omp_test_lock( &f_lock ) != 0 ); }
+
+ private:
+
+ omp_lock_t f_lock;                        ///< the lock of OpenMP
+ };  // end( class OpenMPLock )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS OpenMPExecutor --------------------------*/
@@ -117,6 +153,57 @@ class OpenMPExecutor {
  template< class F , class G >
  void invoke( F && f , G && g ) {
   bulk( 2 , [ & ]( std::size_t i ) { if( i == 0 ) f(); else g(); } );
+  }
+
+ /// the lock of the data shared by the workers of `run()`
+ using lock_type = OpenMPLock;
+
+ /// the calls \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ of long-lived workers,
+ /// at the same time on the \f$ p \f$ threads of a region of OpenMP
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{run}( p , f ) \cr
+ /// 2 & \quad \textbf{if}\ p \le 1\ \textbf{then}\ \textbf{for}\ i \gets 0
+ ///     \ \textbf{to}\ p - 1\ \textbf{do}\ f( i );\ \textbf{return} \cr
+ /// 3 & \quad \text{a region } \mathrm{omp\ parallel} \text{ of } p
+ ///     \text{ threads, in which} \cr
+ /// 4 & \qquad \textbf{if}\ \text{the team has } p \text{ threads}
+ ///     \ \textbf{then}\ f( \text{the number of the thread} ) \cr
+ /// 5 & \quad \text{throw if the team was smaller, else throw again the }
+ ///     \text{first exception of the calls, if any}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ p \le \f$ `concurrency()`
+ template< class F >
+ void run( std::size_t p , F && f ) {
+  ADS_PRE( p <= f_p );
+  if( p <= 1 ) {
+   if( p == 1 )
+    f( 0 );
+   return;
+   }
+  detail::FirstError error;
+  bool smaller = false;
+  #pragma omp parallel num_threads( int( p ) )
+  {
+   if( omp_get_num_threads() != int( p ) ) {
+    #pragma omp single
+    smaller = true;
+    }
+   else
+    try {
+     f( std::size_t( omp_get_thread_num() ) );
+     }
+    catch( ... ) {
+     error.keep();
+     }
+  }
+  if( smaller )
+   throw( std::runtime_error( "OpenMPExecutor::run: a team smaller than "
+                              "the workers" ) );
+  error.rethrow();
   }
 
 /*--------------------------------------------------------------------------*/

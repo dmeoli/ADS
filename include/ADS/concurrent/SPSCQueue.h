@@ -186,6 +186,52 @@ class SPSCQueue {
  /// \f]
  bool tryPop( T & x );
 
+ /// enqueues the first of the \f$ n \f$ items from `first` that fit, and
+ /// returns how many, publishing them all by one store of the tail; only
+ /// the producer calls it
+ ///
+ /// In pseudocode (the queue of Lamport for a batch, beyond the book), as
+ /// `emplace()`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{pushMany}( x_0 , \ldots , x_{n - 1} )
+ ///     \cr
+ /// 2 & \quad t' \gets t;\ \textbf{if}\ t' - \mathit{seen} < n
+ ///     \ \textbf{then}\ \mathit{seen} \gets h\quad \triangleright
+ ///     \ \text{acquire} \cr
+ /// 3 & \quad k \gets \min\{ n , c - ( t' - \mathit{seen} ) \} \cr
+ /// 4 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ k - 1\ \textbf{do}
+ ///     \ A[ ( t' + j ) \bmod c ] \gets x_j \cr
+ /// 5 & \quad t \gets t' + k\quad \triangleright\ \text{release};
+ ///     \ \textbf{return}\ k
+ /// \end{array}}
+ /// \f]
+ template< class It >
+ std::size_t pushMany( It first , std::size_t n );
+
+ /// the calls `f( x )` on the items \f$ x \f$ in the queue, at most
+ /// \f$ n \f$, each dequeued after its call, which may move it, with no
+ /// wait for a batch; how many, all freed by one store of the head; only
+ /// the consumer calls it
+ ///
+ /// In pseudocode (the queue of Lamport for a batch, beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{consume}( f , n ) \cr
+ /// 2 & \quad h' \gets h;\ \textbf{if}\ h' = \mathit{seen}\ \textbf{then}
+ ///     \ \mathit{seen} \gets t\quad \triangleright\ \text{acquire} \cr
+ /// 3 & \quad k \gets \min\{ n , \mathit{seen} - h' \} \cr
+ /// 4 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ k - 1\ \textbf{do}
+ ///     \ f( A[ ( h' + j ) \bmod c ] ) \cr
+ /// 5 & \quad h \gets h' + k\quad \triangleright\ \text{release};
+ ///     \ \textbf{return}\ k
+ /// \end{array}}
+ /// \f]
+ /// If a call throws, the items before it and its own are dequeued.
+ template< class F >
+ std::size_t consume( F && f ,
+                      std::size_t n = std::size_t( -1 ) );
+
  /// wakes the consumer if it sleeps in `waitPop()`, after pushes: a fence
  /// and the read of a line when it does not; only the producer calls it
  void notify( void ) noexcept { f_wait.notify(); }

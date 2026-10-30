@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- run( p , f ) and lock_type on every executor (the concept
+  WorkerExecutor of Executor.h): the p calls of long-lived workers at the
+  same time on p threads, on the pool by its idle workers alone (a thread
+  that waits inside a call never takes one), on OpenMP by a team of p
+  threads (an error if the runtime gives fewer), on oneTBB inside
+  isolate(), on FastFlow by its ParallelFor; OpenMPLock and FastFlowLock,
+  the locks of OpenMP and of FastFlow as mutexes of the standard; the test
+  program engineered_runtime
+- Channels.h: the channels between the workers behind one interface
+  (ChannelFamily, tryPush() of a batch and drain() of an inbox, ports per
+  worker), in four families: LockedChannels (vectors under the lock of the
+  executor), InboxChannels (stacks of Treiber of batches), LaneChannels
+  (a lane per sender) and MeshChannels (an SPSCQueue per pair, as the
+  farms of FastFlow); DefaultChannels, the family of each executor, chosen
+  by bench/runtime.cpp; SPSCQueue: pushMany() and consume(), a batch
+  published by one store of the tail or of the head
+- Farm.h: feedbackFarm(), the farm with feedback of a master and its
+  workers, a farm of FastFlow with wrap_around() on FastFlowExecutor and
+  emulated on run() of the other executors, the tasks on demand
+- Mailbox.h: the mailbox of the workers on any family of channels, with
+  outboxes of batches and the detection of the termination by a counter of
+  the activities and of the messages, touched once per batch; ownerOf()
+- MPIExecutor.h and MPIMailbox.h: the processes of MPI as workers
+  (MPIExecutor, MPIEnvironment), their mailbox of batches sent by
+  MPI_Isend and received by MPI_Iprobe, with the termination found by the
+  four counters of Mattern on waves of MPI_Iallreduce, and DistributedMin,
+  the minimum of a bound over the processes by reductions that do not
+  block; MPI is a backend as GMP: ADS_WITH_MPI is AUTO in CMake (FindMPI)
+  and auto in the makefiles (extlib/makefile-libMPI asks mpicxx for its
+  options), the packages built with it off; the job mpi of the CI on Open
+  MPI and on MPICH
+- the theory of the long-lived workers, of the channels, of the farm and
+  of the termination (parallel.dox), and of the four counters of Mattern
+  (distributed.dox); bench/runtime.cpp, the channels, the round trips, the
+  trees spread over the workers and the latency of the termination on
+  every executor, against the mesh of FastFlow; bench/mpi.cpp -m, the same
+  for the mailbox of the processes
 - bench/parallel.cpp: the SprayList of Alistarh et al. among the priority
   queues (SPRAYLIST=<lib>, the SprayList built with the wrapper of the
   k-LSM, with KLSM=<dir> and GSL=<prefix>), compiled in only when given

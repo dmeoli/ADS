@@ -183,15 +183,44 @@ inline bool ThreadPool::help( std::size_t s )
  return( false );
  }
 
+inline bool ThreadPool::claim( void )
+{
+ std::size_t i;
+ void ( * call )( void * , std::size_t );
+ void * ctx;
+ {
+  std::lock_guard< std::mutex > g( f_runLock );
+  if( ( ! f_runOpen.load( std::memory_order_relaxed ) ) ||
+      ( f_runNext >= f_runN ) )
+   return( false );
+  i = f_runNext++;
+  if( f_runNext == f_runN )
+   f_runOpen.store( false , std::memory_order_relaxed );
+  call = f_runCall;
+  ctx = f_runCtx;
+  }
+ call( ctx , i );
+ f_runDone.fetch_add( 1 , std::memory_order_release );
+ return( true );
+ }
+
 inline void ThreadPool::loop( std::size_t s )
 {
  tl_self = Self{ this , s };
  for( ;; ) {
   Task * t = nullptr;
+  bool open = false;
   f_event.await( [ & ] {
+   // a call of a run first: only an idle worker takes one
+   if( ( open = f_runOpen.load( std::memory_order_acquire ) ) )
+    return( true );
    t = find( s );
    return( ( t != nullptr ) || f_stop.load( std::memory_order_acquire ) );
    } , f_spin );
+  if( open ) {
+   claim();
+   continue;
+   }
   if( ! t )
    return;
   t->run( t );
@@ -289,6 +318,49 @@ void ThreadPool::invoke( F && f , G && g )
   std::rethrow_exception( ef );
  if( k.error )
   std::rethrow_exception( k.error );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< class F >
+void ThreadPool::run( std::size_t p , F && f )
+{
+ ADS_PRE( p <= f_slot.size() );
+ if( p <= 1 ) {
+  if( p == 1 )
+   f( 0 );
+  return;
+  }
+ std::lock_guard< std::mutex > one( f_runOne );
+ Enter e( *this );
+ detail::FirstError error;
+ auto call = [ & ]( std::size_t i ) noexcept {
+  try {
+   f( i );
+   }
+  catch( ... ) {
+   error.keep();
+   }
+  };
+ using C = decltype( call );
+ {
+  std::lock_guard< std::mutex > g( f_runLock );
+  f_runCall = []( void * c , std::size_t i ) {
+   ( *static_cast< C * >( c ) )( i );
+   };
+  f_runCtx = &call;
+  f_runNext = 1;
+  f_runN = p;
+  f_runDone.store( 0 , std::memory_order_relaxed );
+  f_runOpen.store( true , std::memory_order_release );
+  }
+ f_event.notify();
+ call( 0 );
+ unsigned k = 0;
+ while( f_runDone.load( std::memory_order_acquire ) != p - 1 )
+  if( ! help( e.slot() ) )
+   detail::spinPause( k );
+ error.rethrow();
  }
 
 /*--------------------------------------------------------------------------*/

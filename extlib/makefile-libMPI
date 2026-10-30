@@ -1,0 +1,62 @@
+###############################################################################
+############################### makefile-libMPI ###############################
+###############################################################################
+#                                                                             #
+#   makefile of MPI, for the sort and the runtime over its processes [see     #
+#   include/ADS/distributed]                                                  #
+#                                                                             #
+#   Input:  $(MPI_ROOT) = the prefix where MPI is installed (its libmpi),     #
+#                         empty to ask the compiler of MPI                    #
+#           $(MPICXX)   = the compiler of MPI that is asked for the options   #
+#                         (mpicxx if not given): --showme of Open MPI,        #
+#                         -compile_info and -link_info of MPICH               #
+#           $(UNAME_S)  = the name of the current OS [see makefile-OS]        #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libMPIINC)   = the -I$(include directories) and the options of  #
+#                            the compiler for MPI                             #
+#           $(libMPILIB)   = external libraries + -L< libdirs > for MPI       #
+#           $(libMPIFOUND) = 1 if a program that calls the functions of MPI 3 #
+#                            that the runtime uses (the reductions that do    #
+#                            not block) compiles and links with them, empty   #
+#                            otherwise (evaluated once, when first used)      #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic MPI directory without quotes, if any
+libMPIBSCDIR = $(subst $\",,$(MPI_ROOT))
+
+# the compiler of MPI that tells its options
+MPICXX ?= mpicxx
+
+# the options of the compiler of MPI, asked once: those of Open MPI, else
+# those of MPICH (its whole lines of compiling and of linking)
+libMPISHOW = $(eval libMPISHOW := $$(shell \
+	$$(MPICXX) --showme:compile 2>$$(ADSNULL) && \
+	$$(MPICXX) --showme:link 2>$$(ADSNULL) || \
+	{ $$(MPICXX) -compile_info && $$(MPICXX) -link_info ; } \
+	2>$$(ADSNULL)))$(libMPISHOW)
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+libMPIINC = $(if $(libMPIBSCDIR),-I"$(libMPIBSCDIR)/include",\
+	$(sort $(filter -I% -D% -pthread,$(libMPISHOW))))
+libMPILIB = $(if $(libMPIBSCDIR),-L"$(libMPIBSCDIR)/lib" \
+	$(if $(filter Windows,$(UNAME_S)),,\
+		-Wl$(ADScomma)-rpath$(ADScomma)"$(libMPIBSCDIR)/lib") -lmpi,\
+	$(filter -L% -l% -Wl% -pthread,$(libMPISHOW)))
+
+# a program with MPI_Comm_dup() and MPI_Iallreduce(), compiled and linked
+# once
+libMPIFOUND = $(eval libMPIFOUND := $$(shell printf '$$(ADShash)include \
+	<mpi.h>\nint main(){MPI_Comm c;MPI_Request r;int a=0,b=0;\
+	if(0){MPI_Comm_dup(MPI_COMM_WORLD,&c);MPI_Iallreduce(&a,&b,1,MPI_INT,\
+	MPI_SUM,c,&r);}return 0;}\n' | \
+	$$(CXX) -x c++ - -o $$(ADSNULL) $$(libMPIINC) $$(libMPILIB) \
+	2>/dev/null && echo 1))$(libMPIFOUND)
+
+########################### End of makefile-libMPI ############################

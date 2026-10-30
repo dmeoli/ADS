@@ -1770,6 +1770,14 @@ engineered_parallel  parallel-huffman-wavelet-tree  wavelet tree di Huffman para
 engineered_parallel  parallel-stepping   Delta e rho-stepping contro Dijkstra
 engineered_parallel  concurrent-union-find  union-find concorrente
 
+# the runtime of the long-lived workers, beyond the book
+engineered_runtime  worker-run           lavoratori insieme, annidati, eccezioni
+engineered_runtime  worker-locks         il lock di ogni esecutore
+engineered_runtime  channels             canali fra lavoratori, ogni famiglia
+engineered_runtime  feedback-farm        farm con retroazione, arresto
+engineered_runtime  mailbox-termination  terminazione su alberi a caso
+engineered_runtime  owner-of             proprietario di una chiave
+
 # the balanced trees based on join and the augmented maps, beyond the book
 join_trees  split-join-edges      split e join ai bordi, lati vuoti, altezze
 join_trees  split-join-random     split e join a caso contro std::map

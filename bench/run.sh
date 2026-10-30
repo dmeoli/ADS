@@ -123,9 +123,9 @@ run fingerprints 100000 1000000
 run dynamic 10000 100000
 run flows 10000 100000
 run assignment 300 1000
-# the parallel algorithms on the cores PCORES (default the core CORE
-# alone), on 1, 2, 4, ... threads up to their number; the GAP benchmark
-# suite prints lines of its own, left out
+# the parallel algorithms and the runtime of the workers on the cores
+# PCORES (default the core CORE alone), on 1, 2, 4, ... threads up to their
+# number; the GAP benchmark suite prints lines of its own, left out
 PCORES=${PCORES:-$CORE}
 np=$(taskset -c "$PCORES" nproc)
 for t in 1 2 4 8 16 32 64 128; do
@@ -134,6 +134,7 @@ for t in 1 2 4 8 16 32 64 128; do
   >> "$out" || true
  cells "$PCORES" joins -t "$t" 1000000 >> "$out"
  cells "$PCORES" greedy -t "$t" 1000000 10000000 >> "$out"
+ cells "$PCORES" runtime -t "$t" 1000000 >> "$out"
 done
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"
