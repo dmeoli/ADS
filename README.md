@@ -348,8 +348,9 @@ I/Os that those chapters prove.
 | maximum sub-array sum, with lengths in a range and maximum density (2) | [`algorithm/MaximumSegments.h`](include/ADS/algorithm/MaximumSegments.h) | `pearls_io.ch2.*` |
 | random sampling, on disk and on streams, Vitter's skips (3) | [`numeric/RandomSampling.h`](include/ADS/numeric/RandomSampling.h) | `pearls_io.ch3.*` |
 | list ranking by pointer jumping and independent sets, in memory and on disk (4) | [`external/ListRanking.h`](include/ADS/external/ListRanking.h) | `pearls_io.ch4.*` |
-| two-level memory, binary and multiway mergesort, distribution sort, loser tree, I/O lower bounds (5) | [`external/`](include/ADS/external), [`priority/LoserTree.h`](include/ADS/priority/LoserTree.h) | `pearls_io.ch5.*` |
+| two-level memory, binary and multiway mergesort, distribution sort, loser tree, I/O lower bounds, the quicksort with the three-way partition, the dual-pivot quicksort (5) | [`external/`](include/ADS/external), [`priority/LoserTree.h`](include/ADS/priority/LoserTree.h), [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) | `pearls_io.ch5.*`, `sorting.engineered-quicksorts` |
 | sorted set intersection: merge, binary search, mutual partition, doubling, two-level (6) | [`set/SortedIntersection.h`](include/ADS/set/SortedIntersection.h) | `pearls_io.ch6.*` |
+| multikey quicksort of strings (7) | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) | `sorting.radix-sorts` |
 | universal hashing, d-left, FKS, minimal ordered perfect hashing, cuckoo hashing, Bloom filter and its variants (8) | [`dictionary/`](include/ADS/dictionary), [`set/BloomFilter.h`](include/ADS/set/BloomFilter.h), [`set/BloomVariants.h`](include/ADS/set/BloomVariants.h) | `pearls_hashing.*`, `taocp.bloom-filter` |
 | prefix search, front coding, Patricia trie, two-level dictionary (9) | [`string/PrefixSearch.h`](include/ADS/string/PrefixSearch.h), [`string/FrontCoding.h`](include/ADS/string/FrontCoding.h), [`dictionary/PatriciaTrie.h`](include/ADS/dictionary/PatriciaTrie.h) | `pearls_hashing.*` |
 | suffix arrays (six constructions), LCP, range minimum queries, suffix trees and their applications (10) | [`string/SuffixArray.h`](include/ADS/string/SuffixArray.h), [`string/SuffixTree.h`](include/ADS/string/SuffixTree.h), [`search/RangeMinimum.h`](include/ADS/search/RangeMinimum.h) | `pearls_suffix.*` |
@@ -530,7 +531,7 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 | sorting networks of Batcher (merge exchange, bitonic) | [`sort/SortingNetworks.h`](include/ADS/sort/SortingNetworks.h) |
 | pdqsort, dual-pivot and three-way quicksort | [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) |
 | Powersort | [`sort/RunSorts.h`](include/ADS/sort/RunSorts.h) |
-| LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings, bucket sort | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |
+| LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |
 | multikey quicksort of strings | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) |
 | sort of strings by integer keys of 8 characters, sorted in the vector registers | [`sort/StringSort.h`](include/ADS/sort/StringSort.h) |
 | learned sort of numbers, buckets by a model of the CDF of a sample, sequential and on the threads of an executor (Kristo et al.; Ferragina and Odorisio) | [`sort/LearnedSort.h`](include/ADS/sort/LearnedSort.h), [`parallel/ParallelSort.h`](include/ADS/parallel/ParallelSort.h) |

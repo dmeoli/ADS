@@ -375,51 +375,52 @@ void dual( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 
 /// ---------------------------------------------------------------- 3-way
 
+/// the three-way partition of A[ lo .. hi ) around the pivot P = A[ lo ]
+/// (Algorithm 5.4 of Ferragina's book): c scans rightward, with
+/// A[ lo .. l ) < P, A[ l .. r ) = P and A[ r .. c ) > P; an item equal to
+/// P is swapped with A[ r ], a smaller one with A[ l ] and then with
+/// A[ r ]; the bounds [ l , r ) of the items equal to P
+template< class T , class C >
+std::pair< std::size_t , std::size_t > partitionThreeWay(
+ std::vector< T > & A , std::size_t lo , std::size_t hi , C & less )
+{
+ const T P = A[ lo ];
+ std::size_t l = lo , r = lo + 1;
+ for( std::size_t c = r ; c < hi ; ++c )
+  if( less( A[ c ] , P ) ) {                // smaller: to the left part
+   std::swap( A[ c ] , A[ l ] );
+   std::swap( A[ c ] , A[ r ] );
+   ++r;
+   ++l;
+   }
+  else if( ! less( P , A[ c ] ) ) {         // equal: to the middle part
+   std::swap( A[ c ] , A[ r ] );
+   ++r;
+   }
+ return( std::pair( l , r ) );
+ }
+
+/// the quicksort with bounded recursive depth of the book (Algorithm 5.6)
+/// on the partition above, the pivot drawn at random by a splitmix64 of
+/// fixed seed, so that the sort is the same on every run and platform
 template< class T , class C >
 void threeWay( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-               C & less )
+               C & less , std::uint64_t & seed )
 {
- auto eq = [ & ]( const T & a , const T & b ) {
-  return( ! less( a , b ) && ! less( b , a ) ); };
- while( hi - lo > 10 ) {                    // A[ lo .. hi )
-  const std::size_t n = hi - lo , m = lo + n / 2;
-  if( n > 40 ) {                            // the ninther
-   const std::size_t e = n / 8;
-   sort3( A , lo , lo + e , lo + 2 * e , less );
-   sort3( A , m - e , m , m + e , less );
-   sort3( A , hi - 1 - 2 * e , hi - 1 - e , hi - 1 , less );
-   sort3( A , lo + e , m , hi - 1 - e , less );
-   }
-  else
-   sort3( A , lo , m , hi - 1 , less );
-  std::swap( A[ lo ] , A[ m ] );
-  std::size_t i = lo , j = hi , p = lo , q = hi;   // = [ lo , p ] , ( q , hi )
-  for( ; ; ) {
-   while( less( A[ ++i ] , A[ lo ] ) )
-    if( i == hi - 1 ) break;
-   while( less( A[ lo ] , A[ --j ] ) )
-    if( j == lo ) break;
-   if( ( i == j ) && eq( A[ i ] , A[ lo ] ) )
-    std::swap( A[ ++p ] , A[ i ] );
-   if( i >= j )
-    break;
-   std::swap( A[ i ] , A[ j ] );
-   if( eq( A[ i ] , A[ lo ] ) ) std::swap( A[ ++p ] , A[ i ] );
-   if( eq( A[ j ] , A[ lo ] ) ) std::swap( A[ --q ] , A[ j ] );
-   }
-  i = j + 1;                                // the equals to the middle
-  for( std::size_t k = lo ; k <= p ; ++k )
-   std::swap( A[ k ] , A[ j-- ] );
-  for( std::size_t k = hi - 1 ; k >= q ; --k )
-   std::swap( A[ k ] , A[ i++ ] );
-  const std::size_t lhi = j + 1 , rlo = i;  // A[ lo .. lhi ) , [ rlo , hi )
-  if( lhi - lo < hi - rlo ) {
-   threeWay( A , lo , lhi , less );
-   lo = rlo;
+ while( hi - lo > 16 ) {                    // A[ lo .. hi )
+  std::uint64_t z = ( seed += 0x9E3779B97F4A7C15ULL );
+  z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9ULL;
+  z = ( z ^ ( z >> 27 ) ) * 0x94D049BB133111EBULL;
+  z ^= z >> 31;
+  std::swap( A[ lo ] , A[ lo + std::size_t( z % ( hi - lo ) ) ] );
+  const auto [ l , r ] = partitionThreeWay( A , lo , hi , less );
+  if( l - lo <= hi - r ) {                  // the smaller part recursively,
+   threeWay( A , lo , l , less , seed );    // the larger by the loop
+   lo = r;
    }
   else {
-   threeWay( A , rlo , hi , less );
-   hi = lhi;
+   threeWay( A , r , hi , less , seed );
+   hi = l;
    }
   }
  insertionSort( A , lo , hi , less );
@@ -449,7 +450,8 @@ template< class T , class C >
 void threeWayQuickSort( std::vector< T > & A , C less )
 {
  const auto before = detail::auditCopy( A );
- detail::threeWay( A , 0 , A.size() , less );
+ std::uint64_t seed = 0;
+ detail::threeWay( A , 0 , A.size() , less , seed );
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 

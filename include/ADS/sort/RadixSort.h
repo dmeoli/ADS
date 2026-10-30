@@ -56,22 +56,10 @@
  *   strings of a group share is first skipped by comparing them with one of
  *   them (one `memcmp()` for a string that keeps the whole prefix), so that a
  *   group of equal strings, or of strings with a long common prefix, costs one
- *   comparison instead of one pass per character;
- * - `bucketSort()` sorts numbers in \f$ [ 0 , 1 ) \f$ into \f$ n \f$ buckets
- *   by their value, each sorted by insertion: \f$ O( n ) \f$ expected time on
- *   numbers drawn uniformly. The buckets are no lists: the items are counted
- *   by their bucket and scattered into a buffer in the order of the buckets,
- *   and one insertion sort over the whole vector sorts them, since no item
- *   has to leave its bucket; a vector larger than the cache is first
- *   scattered by groups of 1024 consecutive buckets, so that the counts and
- *   the scatter of each group stay in the cache, and a bucket of more than 32
- *   items goes to `pdqSort()`, so that the worst case is
- *   \f$ O( n \log n ) \f$ instead of the \f$ \Theta( n^2 ) \f$ of the
- *   classical one.
+ *   comparison instead of one pass per character.
  *
  * The contracts [see `Contract.h`]: each sort ends with the same items sorted,
- * an audit; `bucketSort()` needs numbers in \f$ [ 0 , 1 ) \f$. The functions
- * are defined in `RadixSort.tpp`.
+ * an audit. The functions are defined in `RadixSort.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 2.7.5
  *      (Counting Sort) and exercise 4.11 (Pigeonhole Sort),
@@ -79,7 +67,7 @@
  * \see P. M. McIlroy, K. Bostic, M. D. McIlroy, Engineering radix sort,
  *      Computing Systems 6(1), 5-27, 1993
  * \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
- *      to Algorithms, 3rd ed., MIT Press, 2009, sections 8.3 and 8.4
+ *      to Algorithms, 3rd ed., MIT Press, 2009, section 8.3
  * \see M. Herf, Radix tricks, 2001, http://stereopsis.com/radix.html (the
  *      key of a floating point number, the histograms in one sweep)
  * \see M. Skarupke, I wrote a faster sorting algorithm, 2016,
@@ -113,7 +101,6 @@
 #include <algorithm>
 #include <array>
 #include <bit>
-#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -266,33 +253,6 @@ void americanFlagSort( std::vector< T > & A );
 /// and a buffer.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 inline void msdRadixSort( std::vector< std::string > & A );
-
-/// the bucket sort of numbers in \f$ [ 0 , 1 ) \f$
-///
-/// In pseudocode (Cormen, Leiserson, Rivest and Stein, section 8.4, beyond the
-/// book, with the buckets counted instead of listed), \f$ B \f$ a buffer of
-/// \f$ n \f$ items and \f$ \beta( x ) = \min\{ \lfloor n x \rfloor , n - 1
-/// \} \f$ the bucket of \f$ x \f$:
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{bucketSort}( A , n ) \cr
-/// 2 & \quad c[ j ] \gets \text{the number of the items } x \text{ with }
-///     \beta( x ) < j ,\ \text{for } j = 0 , \ldots , n - 1 \cr
-/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ B[ c[ \beta( x ) ] ]
-///     \gets x;\ c[ \beta( x ) ] \gets c[ \beta( x ) ] + 1 \cr
-/// 4 & \quad \textbf{foreach}\ \text{bucket of more than 32 items}
-///     \ \textbf{do}\ \mathrm{pdqSort}( \text{its part of } B ) \cr
-/// 5 & \quad A \gets B;\ \mathrm{insertionSort}( A )
-/// \end{array}}
-/// \f]
-/// where the insertion sort moves no item out of its bucket, since
-/// \f$ \beta \f$ does not decrease; a vector larger than the cache runs the
-/// steps 2 and 3 first on the groups of 1024 consecutive buckets, and then on
-/// the buckets of each group, which fit in the cache.
-/// \pre each number is in \f$ [ 0 , 1 ) \f$
-/// \post \f$ A \f$ is sorted, with the same items (audit)
-template< std::floating_point T >
-void bucketSort( std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
 

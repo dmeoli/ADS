@@ -10,8 +10,7 @@
  * defined (it needs its library); on integers of 32 and 64 bits,
  * doubles, strings and records with an order of their own, each in the
  * patterns random, sorted, reversed, few distinct keys, organ pipe and 16
- * sorted runs, and the doubles also uniform in [ 0 , 1 ) (unit), the only
- * pattern of bucketSort(), for the sizes given on the command line.
+ * sorted runs, for the sizes given on the command line.
  *
  * Each cell is the median of r runs of the time to sort a fresh copy of the
  * same input, in nanoseconds per item, the copy excluded; the contracts are
@@ -140,14 +139,14 @@ struct ByKey {
  };
 
 const char * patterns[] = { "random" , "sorted" , "reversed" , "few" ,
-                            "organ" , "runs16" , "unit" };
+                            "organ" , "runs16" };
 
 /// the key of rank i of n in the pattern p, from the generator g
 std::uint64_t rank( int p , std::size_t i , std::size_t n ,
                     std::mt19937_64 & g )
 {
  switch( p ) {
-  case( 0 ): case( 6 ): return( g() );
+  case( 0 ): return( g() );
   case( 1 ): return( i );
   case( 2 ): return( n - i );
   case( 3 ): return( g() % 16 );
@@ -350,8 +349,6 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
   S.emplace_back( "radixSort" , []( V & A ) { ADS::radixSort( A ); } );
   S.emplace_back( "americanFlagSort" , []( V & A ) {
    ADS::americanFlagSort( A ); } );
-  if constexpr( std::is_floating_point_v< T > )
-   S.emplace_back( "bucketSort" , []( V & A ) { ADS::bucketSort( A ); } );
 #ifdef ADS_HAS_BOOST_SORT
   if constexpr( std::is_integral_v< T > )
    S.emplace_back( "boost::spreadsort" , []( V & A ) {
@@ -372,23 +369,15 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
    boost::sort::spreadsort::string_sort( A.begin() , A.end() ); } );
 #endif
   }
- constexpr int P = std::is_floating_point_v< T > ? 7 : 6;
  for( std::size_t n : sizes )
-  for( int p = 0 ; p < P ; ++p ) {          // the last, of the floating
-   std::mt19937_64 g( seed );               // point numbers alone, uniform
-   V A( n );                                // in [ 0 , 1 )
-   for( std::size_t i = 0 ; i < n ; ++i ) {
-    const std::uint64_t k = rank( p , i , n , g );
-    if constexpr( std::is_floating_point_v< T > )
-     A[ i ] = p == 6 ? T( k >> 11 ) * T( 0x1.0p-53 ) : make< T >( k );
-    else
-     A[ i ] = make< T >( k );
-    }
+  for( int p = 0 ; p < 6 ; ++p ) {
+   std::mt19937_64 g( seed );
+   V A( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    A[ i ] = make< T >( rank( p , i , n , g ) );
    for( auto & [ name , sort ] : S ) {
     if( ( n > 200000 ) && ( name == "shellSort" ) )
      continue;                              // too slow to matter
-    if( ( name == "bucketSort" ) && ( p != 6 ) )
-     continue;                              // only on its numbers
     if( ADS::bench::skip( name ) )
      continue;
     header();

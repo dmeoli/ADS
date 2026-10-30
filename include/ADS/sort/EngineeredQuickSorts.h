@@ -2,8 +2,9 @@
 /*---------------------- File EngineeredQuickSorts.h -----------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The quicksorts engineered for speed, beyond the book [see `QuickSort.h` for
- * the one of the book and its improvements of section 12.2]:
+ * The quicksorts beyond the quicksort of Montresor's book [see `QuickSort.h`
+ * for it and its improvements of section 12.2]: one engineered for speed, and
+ * two of chapter 5, Sorting Atomic Items, of Ferragina's book:
  *
  * - `pdqSort()`, the pattern-defeating quicksort of Peters: the introsort of
  *   Musser, i.e., the quicksort whose depth of recursion is bounded by
@@ -26,15 +27,24 @@
  *   insertion sort above then finds in \f$ O( n ) \f$), so that no
  *   comparison causes a mispredicted branch;
  * - `dualPivotQuickSort()` of Yaroslavskiy (the sort of the primitive types of
- *   Java 7): two pivots \f$ p \le q \f$, the 2nd and the 4th of five equally
- *   spaced items, split the part into three, smaller than \f$ p \f$, between
- *   and larger than \f$ q \f$, in one pass; it makes 5% fewer comparisons and
- *   20% more swaps than the classical one on average, as Wild and Nebel
- *   computed, and fewer scans of the memory, which is what makes it faster;
- * - `threeWayQuickSort()` with the partition of Bentley and McIlroy: the keys
- *   equal to the pivot are kept at the two ends during the partition and
- *   swapped to the middle at its end, so that they are never sorted again,
- *   with the ninther on large parts.
+ *   Java 7), as section 5.3.5 of Ferragina's book presents it: two pivots
+ *   \f$ p \le q \f$, the 2nd and the 4th of five equally spaced items, split
+ *   the part into three, smaller than \f$ p \f$, between and larger than
+ *   \f$ q \f$, in one pass; it makes 5% fewer comparisons and 20% more swaps
+ *   than the classical one on average, as Wild and Nebel computed, and fewer
+ *   scans of the memory, which is what makes it faster;
+ * - `threeWayQuickSort()`, the quicksort of section 5.3 of Ferragina's book
+ *   with the three-way partition of its Algorithm 5.4 (section 5.3.1): three
+ *   pointers move rightward, and the items equal to the pivot gather in a
+ *   middle part that no later call sorts again, so that \f$ k \f$ distinct
+ *   keys cost \f$ O( n \log k ) \f$ on average; the pivot is drawn at random,
+ *   as section 5.3.2 suggests, by a generator of fixed seed (the same sort on
+ *   every run), and the recursion is bounded as in its Algorithm 5.6. It
+ *   makes \f$ 2 n \ln n \f$ comparisons on average (Theorem 5.5 of the
+ *   book), at most two per item and partition, but \f$ \Theta( n^2 ) \f$ in
+ *   the worst case, when the pivots drawn are the smallest or the largest
+ *   items of their parts, which happens with a probability that vanishes with
+ *   \f$ n \f$ on every input, there being no fallback to heapsort.
  *
  * All sort in place and are not stable; the recursion goes into the smaller
  * part and loops on the larger, so that the stack stays \f$ O( \log n ) \f$.
@@ -56,13 +66,13 @@
  * \see S. Edelkamp, A. Weiss, BlockQuicksort: avoiding branch
  *      mispredictions in quicksort, ACM Journal of Experimental
  *      Algorithmics 24, article 1.4, 2019, doi:10.1145/3274660
+ * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+ *      Press, 2023, chapter 5, Sorting Atomic Items,
+ *      doi:10.1017/9781009128933
  * \see V. Yaroslavskiy, Dual-pivot quicksort, 2009
  * \see S. Wild, M. E. Nebel, Average case analysis of Java 7's dual pivot
  *      quicksort, Proceedings of ESA 2012, LNCS 7501, 825-836, 2012,
  *      doi:10.1007/978-3-642-33090-2_71
- * \see J. L. Bentley, M. D. McIlroy, Engineering a sort function,
- *      Software: Practice and Experience 23(11), 1249-1265, 1993,
- *      doi:10.1002/spe.4380231105
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -89,6 +99,7 @@
 #include <algorithm>
 #include <bit>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <type_traits>
 #include <utility>
@@ -141,7 +152,8 @@ void pdqSort( std::vector< T > & A , C less = C() );
 
 /// the dual-pivot quicksort
 ///
-/// In pseudocode (Yaroslavskiy, beyond the book),
+/// In pseudocode (section 5.3.5 of Ferragina's book, Yaroslavskiy, with the
+/// pivots of Java 7),
 /// \f$ A[ \mathit{lo} + 1 .. l - 1 ] < p \f$,
 /// \f$ A[ g + 1 .. \mathit{hi} - 2 ] > q \f$ and the items between in
 /// \f$ [ p , q ] \f$ at all times:
@@ -175,40 +187,43 @@ void pdqSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void dualPivotQuickSort( std::vector< T > & A , C less = C() );
 
-/// the three-way quicksort of Bentley and McIlroy
+/// the quicksort with the three-way partition of Ferragina's book
 ///
-/// In pseudocode (Bentley and McIlroy, beyond the book), the pivot \f$ x \f$
-/// in \f$ A[ \mathit{lo} ] \f$ and its equals gathered in
-/// \f$ A[ \mathit{lo} .. p ] \f$ and \f$ A[ q .. \mathit{hi} - 1 ] \f$:
+/// In pseudocode (Algorithms 5.4 and 5.6 of chapter 5, Sorting Atomic Items,
+/// of Ferragina's book, with \f$ n_0 = 16 \f$), the pivot \f$ P \f$ in
+/// \f$ A[ \mathit{lo} ] \f$ and, while \f$ c \f$ scans,
+/// \f$ A[ \mathit{lo} .. l - 1 ] < P \f$, \f$ A[ l .. r - 1 ] = P \f$ and
+/// \f$ A[ r .. c - 1 ] > P \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{threeWay}( A , \mathit{lo} , \mathit{hi} )
+/// 1 & \textbf{procedure}\ \mathrm{partition}( A , \mathit{lo} , \mathit{hi} )
 ///     \cr
-/// 2 & \quad \textbf{if}\ \mathit{hi} - \mathit{lo} \le 10\ \textbf{then}
-///     \ \mathrm{insertionSort}( A , \mathit{lo} , \mathit{hi} );
-///     \ \textbf{return} \cr
-/// 3 & \quad x \gets \text{the median of three, or the ninther, to } A[
-///     \mathit{lo} ] \cr
-/// 4 & \quad i \gets \mathit{lo};\ j \gets \mathit{hi};\ p \gets
-///     \mathit{lo};\ q \gets \mathit{hi} \cr
-/// 5 & \quad \textbf{loop} \cr
-/// 6 & \qquad \textbf{repeat}\ i \gets i + 1\ \textbf{until}\ A[ i ] \ge x
-///     \text{ or } i = \mathit{hi} - 1 \cr
-/// 7 & \qquad \textbf{repeat}\ j \gets j - 1\ \textbf{until}\ A[ j ] \le x
-///     \text{ or } j = \mathit{lo} \cr
-/// 8 & \qquad \textbf{if}\ i \ge j\ \textbf{then}\ \textbf{break} \cr
-/// 9 & \qquad A[ i ] \leftrightarrow A[ j ] \cr
-/// 10 & \qquad \textbf{if}\ A[ i ] = x\ \textbf{then}\ p \gets p + 1;\ A[ p ]
-///     \leftrightarrow A[ i ] \cr
-/// 11 & \qquad \textbf{if}\ A[ j ] = x\ \textbf{then}\ q \gets q - 1;\ A[ q ]
-///     \leftrightarrow A[ j ] \cr
-/// 12 & \quad \text{swap the equals at the two ends to the middle} \cr
-/// 13 & \quad \mathrm{threeWay}( \text{the smaller of the two other parts} );
-///     \ \text{loop on the larger}
+/// 2 & \quad P \gets A[ \mathit{lo} ];\ l \gets \mathit{lo};\ r \gets
+///     \mathit{lo} + 1 \cr
+/// 3 & \quad \textbf{for}\ c \gets r\ \textbf{to}\ \mathit{hi} - 1
+///     \ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ A[ c ] = P\ \textbf{then}\ A[ c ] \leftrightarrow
+///     A[ r ];\ r \gets r + 1 \cr
+/// 5 & \qquad \textbf{else if}\ A[ c ] < P\ \textbf{then}\ A[ c ]
+///     \leftrightarrow A[ l ];\ A[ c ] \leftrightarrow A[ r ];\ r \gets r +
+///     1;\ l \gets l + 1 \cr
+/// 6 & \quad \textbf{return}\ ( l , r ) \cr
+/// 7 & \textbf{procedure}\ \mathrm{threeWay}( A , \mathit{lo} , \mathit{hi} )
+///     \cr
+/// 8 & \quad \textbf{while}\ \mathit{hi} - \mathit{lo} > n_0\ \textbf{do} \cr
+/// 9 & \qquad A[ \mathit{lo} ] \leftrightarrow A[ x ] \text{ for } x \text{ }
+///     \text{drawn at random in } [ \mathit{lo} , \mathit{hi} ) \cr
+/// 10 & \qquad ( l , r ) \gets \mathrm{partition}( A , \mathit{lo} ,
+///     \mathit{hi} ) \cr
+/// 11 & \qquad \textbf{if}\ l - \mathit{lo} \le \mathit{hi} - r\ \textbf{then}
+///     \ \mathrm{threeWay}( A , \mathit{lo} , l );\ \mathit{lo} \gets r \cr
+/// 12 & \qquad \textbf{else}\ \mathrm{threeWay}( A , r , \mathit{hi} );
+///     \ \mathit{hi} \gets l \cr
+/// 13 & \quad \mathrm{insertionSort}( A , \mathit{lo} , \mathit{hi} )
 /// \end{array}}
 /// \f]
-/// where an item at \f$ i = j \f$ equal to \f$ x \f$ joins the left equals
-/// before the loop stops.
+/// where \f$ A[ c ] = P \f$ means that neither is smaller than the other;
+/// \f$ \Theta( n^2 ) \f$ comparisons in the worst case.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< class T , class C = std::less<> >
 void threeWayQuickSort( std::vector< T > & A , C less = C() );

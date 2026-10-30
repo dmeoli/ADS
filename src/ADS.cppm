@@ -1850,7 +1850,6 @@ export namespace ADS {
  // ADS/sort/RadixSort.h
  using ADS::RadixKey;
  using ADS::americanFlagSort;
- using ADS::bucketSort;
  using ADS::kFlagSmall;
  using ADS::msdRadixSort;
  using ADS::radixKey;

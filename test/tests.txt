@@ -438,7 +438,6 @@ sorting  pdq-edges           pdqsort, soglie e casi limite
 sorting  merge-paths         Powersort, i due merge
 sorting  radix-sorts         radix LSD, MSD, American flag, bucket
 sorting  american-flag       American flag sort, gruppi e casi limite
-sorting  bucket-sort         bucket sort, gruppi, cache e casi limite
 sorting  dispatch            sort() e stableSort() che scelgono
 sorting  dispatch-edges      le scelte di sort() ai loro limiti
 sorting  fast-paths          i percorsi veloci di sort() e stableSort()

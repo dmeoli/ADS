@@ -233,8 +233,8 @@ ADS_TEST( "shell-gaps" )
 // polyphaseMerge() with 3 and 2 tapes and an unsorted
 // run, partitionByValue() on a range of one item and out of the vector,
 // bitonicNetwork() on 0 , 1 , 2 and 3, applyNetwork() with a comparator
-// on n - 1 and on n, bucketSort() on 0, the largest double below 1, 1, a
-// negative number and NaN, a key just inside and just outside [ 0 , k )
+// on n - 1 and on n, countingSort() with a key just inside and just
+// outside [ 0 , k )
 ADS_TEST( "other-sorts" )
 {
  const int lo = std::numeric_limits< int >::min() ,
@@ -357,15 +357,6 @@ ADS_TEST( "other-sorts" )
  Ints E0;
  applyNetwork( E0 , {} );
  CHECK_THROWS( applyNetwork( E0 , { { 0 , 0 } } ) , contract_violation );
- std::vector< double > U = { 0.0 , std::nextafter( 1.0 , 0.0 ) , 0.5 , 0.0 };
- bucketSort( U );
- CHECK( U[ 0 ] == 0 && U[ 3 ] == std::nextafter( 1.0 , 0.0 ) );
- std::vector< double > U0;
- bucketSort( U0 );
- for( double bad : { 1.0 , -0.1 , std::nan( "" ) , inf } ) {
-  std::vector< double > X = { 0.5 , bad };
-  CHECK_THROWS( bucketSort( X ) , contract_violation );
-  }
  Ints K = { 4 , 0 , 4 };
  countingSort( K , 5 );                       // the key k - 1 just inside
  CHECK( K == Ints( { 0 , 4 , 4 } ) );

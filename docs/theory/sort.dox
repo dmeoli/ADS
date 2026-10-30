@@ -36,9 +36,10 @@
  their fields, and it is <em>in place</em> if it uses \f$ O( 1 ) \f$ extra
  items, or \f$ O( \log n ) \f$ extra words for a stack. A sort <em>by
  comparisons</em> learns about the items only through `less`, and works
- therefore with any order; the sorts <em>by digits</em> (counting, radix,
- bucket) read the keys as integers or strings instead, and are not bound by the
- lower bound of the sorts by comparisons (see \ref theory_sort_lower).
+ therefore with any order; the sorts <em>by digits</em> (counting,
+ pigeonhole, radix) read the keys as integers or strings instead, and are not
+ bound by the lower bound of the sorts by comparisons (see \ref
+ theory_sort_lower).
 
  <table>
  <caption>The symbols of the headers of the area</caption>
@@ -248,12 +249,14 @@
  recurring on the smaller side and looping on the larger keeps the stack within
  \f$ \log_2 n \f$ parts, since each recursive call at least halves the part. A
  partition by three ways keeps the items equal to the pivot apart
- (`threeWayQuickSort()` of Bentley and McIlroy), or skips a run of them when
+ (`threeWayQuickSort()`, Algorithm 5.4 of chapter 5, Sorting Atomic Items,
+ of Ferragina's book, with a random pivot), or skips a run of them when
  the pivot equals the item before the part (`pdqSort()` of Peters), so that the
  keys equal to a pivot are never examined again, and \f$ k \f$ distinct keys
  cost \f$ O( n \log k ) \f$, the lower bound for them (see \ref
  theory_sort_lower). Two pivots split the part into three in one pass
- (`dualPivotQuickSort()` of Yaroslavskiy), with about \f$ 1.9 \, n \ln n \f$
+ (`dualPivotQuickSort()` of Yaroslavskiy, section 5.3.5 of the same
+ chapter), with about \f$ 1.9 \, n \ln n \f$
  comparisons against the \f$ 2 \, n \ln n \f$ of (5) but fewer scans of the
  memory (Wild and Nebel). Finally, the speed of a partition on a modern
  processor depends less on its comparisons than on the branches that it
@@ -373,20 +376,7 @@
  partitions by three ways on one character at a time,
  \f$ O( D + n \log n ) \f$ comparisons of characters, and `prefixKeySort()`
  of `StringSort.h` turns 8 characters at a time into integer keys sorted in
- the vector registers. Bucket Sort
- (`bucketSort()`) distributes numbers in \f$ [ 0 , 1 ) \f$ into \f$ n \f$
- buckets by their value and sorts each by insertion: if the numbers are drawn
- uniformly and \f$ N_i \f$ is the size of the bucket \f$ i \f$, then
- \f[
-   E\Bigl[ \sum_{i} N_i^2 \Bigr] = n \Bigl( 1 + \frac{n - 1}{n} \Bigr)
-   = 2 n - 1 , \tag{8}
- \f]
- and the expected time is \f$ O( n ) \f$; with all the numbers in one bucket
- the insertion sorts take \f$ \Theta( n^2 ) \f$, which `bucketSort()` avoids
- by sorting a bucket of more than 32 items with `pdqSort()`, so that its worst
- case is \f$ O( n \log n ) \f$. Its buckets are no lists but the places of
- the items counted by bucket, and one insertion sort over the whole vector
- sorts all of them, since no item has to leave its bucket.
+ the vector registers.
 
  \section theory_sort_other Networks, other measures and external memory
 
@@ -461,9 +451,6 @@
  <tr><td><tt>msdRadixSort()</tt></td><td>\f$ O( D + n \log \sigma ) \f$</td>
      <td>\f$ O( D + n \log \sigma ) \f$</td><td>\f$ \Theta( n ) \f$</td>
      <td>not applicable</td></tr>
- <tr><td><tt>bucketSort()</tt></td><td>\f$ O( n \log n ) \f$</td>
-     <td>\f$ O( n ) \f$ on uniform numbers</td><td>\f$ \Theta( n ) \f$</td>
-     <td>no</td></tr>
  </table>
 
  The bounds of the table are in comparisons for the sorts by comparisons and

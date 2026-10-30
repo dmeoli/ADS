@@ -58,9 +58,9 @@ namespace ADS {
 
 /// the multikey quicksort of strings
 ///
-/// In pseudocode (chapter 7, Sorting Strings, of Ferragina's book, with the
-/// middle string as the pivot), \f$ s[ d ] \f$ the character \f$ d \f$ of
-/// \f$ s \f$, \f$ -1 \f$ past its end:
+/// In pseudocode (Algorithm 7.1 of chapter 7, Sorting Strings, of Ferragina's
+/// book, with the middle string as the pivot), \f$ s[ d ] \f$ the character
+/// \f$ d \f$ of \f$ s \f$, \f$ -1 \f$ past its end:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{mkqs}( A , \mathit{lo} , \mathit{hi} , d )

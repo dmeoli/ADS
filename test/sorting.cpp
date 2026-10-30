@@ -304,7 +304,9 @@ ADS_TEST( "sorting-networks" )
 // against the adversary of McIlroy that makes every pivot a smallest item;
 // pdqsort takes O( n ) comparisons on a sorted vector and on a reversed
 // one, whose first partition by blocks swaps the items in pairs and leaves
-// both sides sorted
+// both sides sorted; the three-way quicksort of the book makes one
+// partition of all equal items, and its random pivots keep the organ pipe,
+// the sorted and the reversed vectors near its average
 ADS_TEST( "engineered-quicksorts" )
 {
  battery( []( auto & A , auto less ) { pdqSort( A , less ); } , 4096 ,
@@ -336,6 +338,22 @@ ADS_TEST( "engineered-quicksorts" )
   c = 0;
   sort( A , count );
   CHECK( std::is_sorted( A.begin() , A.end() ) && c < 40 * 100000 );
+  }
+ Ints Q( 100000 , 7 );                           // the three-way partition
+ c = 0;                                          // of the book: all equal
+ threeWayQuickSort( Q , count );                 // in one partition, at
+ CHECK( Q == Ints( 100000 , 7 ) && c <= 2 * 100000 );   // most 2 per item
+ Ints O( 100000 ) , D( 100000 );                 // organ pipe, sorted and
+ for( int i = 0 ; i < 100000 ; ++i ) {           // reversed: the random
+  O[ i ] = std::min( i , 99999 - i );            // pivots keep them near
+  D[ i ] = 99999 - i;                            // 2 n ln n on average
+  }
+ for( const Ints & X : { O , S , D } ) {
+  Ints A = X , E = X;
+  c = 0;
+  threeWayQuickSort( A , count );
+  std::sort( E.begin() , E.end() );
+  CHECK( A == E && c < 4 * 100000 * 17 );
   }
  const int n = 20000;                 // the adversary of McIlroy: the keys
  {                                    // fixed only when compared, so that
@@ -413,8 +431,7 @@ ADS_TEST( "run-sorts" )
 // -0 before +0, the infinities and the denormals in their places, the NaN
 // at the ends by their sign; the stable sort by a key, with the largest
 // key; the MSD sort of strings against std::sort, with prefixes, '\0'
-// inside, equal long strings; the bucket sort of numbers in [ 0 , 1 ), the
-// largest double below 1 included, NaN and negatives refused
+// inside, equal long strings
 template< class T >
 void radix_of( unsigned seed )
 {
@@ -524,33 +541,6 @@ ADS_TEST( "radix-sorts" )
   std::sort( Y3.begin() , Y3.end() );
   CHECK( Y == Y3 && Y2 == Y3 );
   }
- std::vector< double > U( 4000 );
- std::uniform_real_distribution< double > z( 0 , 1 );
- for( auto & x : U ) x = z( g );
- auto Z = U;
- bucketSort( U );
- std::sort( Z.begin() , Z.end() );
- CHECK( U == Z );
- std::vector< double > bad = { 0.5 , 1.0 };
- CHECK_THROWS( bucketSort( bad ) , contract_violation );
- const double below = std::nextafter( 1.0 , 0.0 );
- for( std::size_t n : { 1u , 2u , 3u , 1000u , 4097u } ) {
-  std::vector< double > V( n , below );          // the last bucket
-  V[ 0 ] = 0.0;
-  if( n > 2 ) V[ 1 ] = -0.0;
-  bucketSort( V );
-  CHECK( std::is_sorted( V.begin() , V.end() ) && V[ 0 ] == 0.0 &&
-         ( n == 1 || V.back() == below ) );
-  }
- std::vector< float > Fb( 5 , std::nextafter( 1.0f , 0.0f ) ) , Ne;
- bucketSort( Fb );
- bucketSort( Ne );
- CHECK( Fb == std::vector< float >( 5 , std::nextafter( 1.0f , 0.0f ) ) &&
-        Ne.empty() );
- for( double x : { -1e-300 , nan , inf , -0.5 } ) {
-  std::vector< double > V = { 0.25 , x };
-  CHECK_THROWS( bucketSort( V ) , contract_violation );
-  }
  }
 
 // the American flag sort against std::sort by radixKey(), bit by bit:
@@ -649,54 +639,6 @@ ADS_TEST( "american-flag" )
  flag_of< std::uint64_t >( 6 );
  flag_of< float >( 7 );
  flag_of< double >( 8 );
- }
-
-// the bucket sort on both sides of the cache (1 MiB of items, one group of
-// buckets below and groups of 1024 above), with n not a multiple of 1024:
-// uniform numbers, numbers crowded into a few buckets (more than 32 items
-// each, sorted by pdqsort) and into the last group alone, all equal, -0
-// with +0, the largest number below 1, and floats past 2^24 items, whose
-// products by n round; all against std::sort
-template< class T >
-void bucket_of( unsigned seed )
-{
- std::mt19937_64 g( seed );
- std::uniform_real_distribution< T > d( 0 , 1 );
- const T below = std::nextafter( T( 1 ) , T( 0 ) );
- auto u = [ & ]( std::mt19937_64 & r ) {   // some libraries round the
-  const T x = d( r );                       // floats of the distribution
-  return( x < T( 1 ) ? x : below ); };      // up to 1
- const std::size_t c = ( std::size_t( 1 ) << 20 ) / sizeof( T );
- for( std::size_t n : { c - 1 , c , c + 1 , 3 * c + 777 } ) {
-  std::vector< std::vector< T > > X( 5 , std::vector< T >( n ) );
-  for( std::size_t i = 0 ; i < n ; ++i ) {
-   X[ 0 ][ i ] = u( g );                                  // uniform
-   X[ 1 ][ i ] = T( g() % 7 ) / T( 7 );                   // 7 crowds
-   X[ 2 ][ i ] = below - T( g() % 1000 ) * T( 1e-7 );     // the top
-   X[ 3 ][ i ] = T( 0.5 );                                // all equal
-   X[ 4 ][ i ] = i % 3 ? u( g ) : ( i % 2 ? T( 0 ) : -T( 0 ) );
-   }
-  for( auto & A : X ) {
-   auto E = A;
-   std::sort( E.begin() , E.end() );
-   bucketSort( A );
-   CHECK( A == E );
-   }
-  }
- }
-
-ADS_TEST( "bucket-sort" )
-{
- bucket_of< double >( 1 );
- bucket_of< float >( 2 );
- std::vector< float > F( ( std::size_t( 1 ) << 24 ) + 3 );
- std::mt19937 g( 3 );
- for( auto & x : F )                       // 24 random bits: in [ 0 , 1 )
-  x = float( g() >> 8 ) * 0x1.0p-24f;
- auto E = F;
- std::sort( E.begin() , E.end() );
- bucketSort( F );
- CHECK( F == E );
  }
 
 // the sort that chooses: numbers short and long, strings, records with an

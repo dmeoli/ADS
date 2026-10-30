@@ -460,92 +460,6 @@ inline void msdInPlace( std::string * s , std::uint16_t * k ,
   }
  }
 
-/// the buckets of bucketSort() that a group of its first pass gathers
-inline constexpr std::size_t kBucketGroup = 1024;
-
-/// the items of s[ 0 .. k ), whose buckets are bucket( x ) - base in
-/// [ 0 , L ), counted by their bucket in C[ 0 .. L ], scattered to A[ lo ..
-/// lo + k ) in the order of their buckets and sorted there by insertion,
-/// each within its bucket; a bucket of more than 32 items first by pdqSort(),
-/// so that no bucket costs more than \f$ O( k \log k ) \f$
-template< class N , class T , class K >
-void bucketGroup( std::vector< T > & A , std::size_t lo , const T * s ,
-                  std::size_t k , std::size_t base , std::size_t L , N * C ,
-                  K & bucket )
-{
- std::fill_n( C , L + 1 , N( 0 ) );
- for( std::size_t i = 0 ; i < k ; ++i )
-  ++C[ bucket( s[ i ] ) - base + 1 ];
- bool big = false;
- for( std::size_t j = 1 ; j <= L ; ++j ) {
-  big |= C[ j ] > 32;
-  C[ j ] = N( C[ j ] + C[ j - 1 ] );
-  }
- T * const d = A.data() + lo;
- for( std::size_t i = 0 ; i < k ; ++i ) {   // C[ j ] ends as the end of j
-  const T x = s[ i ];
-  d[ C[ bucket( x ) - base ]++ ] = x;
-  }
- if( big ) {
-  std::less<> less;
-  for( std::size_t j = 0 , b = 0 ; j < L ; b = C[ j++ ] )
-   if( C[ j ] - b > 32 )
-    pdq( A , lo + b , lo + C[ j ] , int( std::bit_width( C[ j ] - b ) ) ,
-         true , less );
-  }
- for( std::size_t i = 1 ; i < k ; ++i ) {   // no item leaves its bucket
-  const T x = d[ i ];
-  std::size_t j = i;
-  for( ; ( j > 0 ) && ( x < d[ j - 1 ] ) ; --j )
-   d[ j ] = d[ j - 1 ];
-  d[ j ] = x;
-  }
- }
-
-/// the n buckets of bucketSort() on A, with B as the room of n items: a
-/// vector that fits in the cache (1 MiB) is copied to B and sorted back as
-/// one group; a larger one first goes into B by groups of kBucketGroup
-/// consecutive buckets, so that the passes over the buckets of a group stay
-/// in the cache, and each group is sorted back to A
-template< class N , class T >
-void buckets( std::vector< T > & A , T * B )
-{
- const std::size_t n = A.size();
- const T scale = T( n );
- auto bucket = [ n , scale ]( T x ) {      // x n , rounding kept below n
-  const std::size_t b = std::size_t( x * scale );
-  return( b < n ? b : n - 1 ); };
- const T * const a = A.data();
- if( n * sizeof( T ) <= ( std::size_t( 1 ) << 20 ) ) {
-  std::copy( a , a + n , B );
-  const auto C = std::make_unique_for_overwrite< N[] >( n + 1 );
-  bucketGroup( A , 0 , B , n , 0 , n , C.get() , bucket );
-  return;
-  }
- const std::size_t G = ( n - 1 ) / kBucketGroup + 1;
- const auto S = std::make_unique< N[] >( G + 1 );
- for( std::size_t i = 0 ; i < n ; ++i )
-  ++S[ bucket( a[ i ] ) / kBucketGroup + 1 ];
- for( std::size_t g = 1 ; g <= G ; ++g )
-  S[ g ] = N( S[ g ] + S[ g - 1 ] );
- {
-  const auto P = std::make_unique_for_overwrite< N[] >( G );
-  std::copy( S.get() , S.get() + G , P.get() );
-  for( std::size_t i = 0 ; i < n ; ++i ) {
-   const T x = a[ i ];
-   B[ P[ bucket( x ) / kBucketGroup ]++ ] = x;
-   }
-  }
- std::array< N , kBucketGroup + 1 > C;
- for( std::size_t g = 0 ; g < G ; ++g ) {
-  const std::size_t lo = S[ g ] , k = S[ g + 1 ] - lo;
-  if( k > 0 )
-   bucketGroup( A , lo , B + lo , k , g * kBucketGroup ,
-                std::min( kBucketGroup , n - g * kBucketGroup ) , C.data() ,
-                bucket );
-  }
- }
-
 }  // end( namespace detail )
 
 template< RadixKey T >
@@ -602,23 +516,6 @@ inline void msdRadixSort( std::vector< std::string > & A )
  if( n > 1 ) {
   const auto K = std::make_unique_for_overwrite< std::uint16_t[] >( n );
   detail::msdInPlace( A.data() , K.get() , n );
-  }
- ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
- }
-
-template< std::floating_point T >
-void bucketSort( std::vector< T > & A )
-{
- ADS_PRE( std::all_of( A.begin() , A.end() , []( T x ) {
-  return( ( x >= 0 ) && ( x < 1 ) ); } ) );
- const auto before = detail::auditCopy( A );
- const std::size_t n = A.size();
- if( n > 1 ) {
-  const auto B = std::make_unique_for_overwrite< T[] >( n );
-  if( n < ( std::size_t( 1 ) << 32 ) )
-   detail::buckets< std::uint32_t >( A , B.get() );
-  else
-   detail::buckets< std::size_t >( A , B.get() );
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
  }

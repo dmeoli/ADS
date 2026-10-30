@@ -1370,15 +1370,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocks with their rank and the place of their offsets at their widths,
   in at most m H0 + 0.175 m bits, with access, rank and select, which
   walk the places of the block only down to what they need
-- the tests american-flag and bucket-sort: americanFlagSort() around
-  kFlagSmall, on keys that differ in one byte, in the top one or in two
-  bytes far apart, sorted, non-increasing and strictly decreasing, and on
-  the floating point numbers with -0, +0, the infinities, the denormals and
-  the NaN of both signs, bit by bit against std::sort by radixKey();
-  bucketSort() on both sides of the cache, on numbers crowded into a few
-  buckets, all equal, and on more than 2^24 floats
-- bench/sort.cpp: the doubles also uniform in [ 0 , 1 ) (the pattern
-  unit), with the cell bucketSort
+- the test american-flag: americanFlagSort() around kFlagSmall, on keys
+  that differ in one byte, in the top one or in two bytes far apart,
+  sorted, non-increasing and strictly decreasing, and on the floating
+  point numbers with -0, +0, the infinities, the denormals and the NaN of
+  both signs, bit by bit against std::sort by radixKey()
 
 ### Changed
 
@@ -2129,18 +2125,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   than kFlagSmall items (a constant of the namespace, 8192 on the vector
   registers and 256 without) go to vectorQuickSort(), whose order on the
   floating point numbers is that of the keys, or to pdqSort()
-- bucketSort(): the buckets counted instead of kept in vectors, the items
-  scattered into one buffer in the order of the buckets and sorted by one
-  insertion sort over the whole vector, first by groups of 1024 buckets on
-  a vector larger than the cache; a bucket of more than 32 items goes to
-  pdqSort(), so that the worst case is O( n log n ) instead of O( n^2 ),
-  and the sort is no more stable
 - pdqSort(), and sort() through it: the blocks of a partition with as many
   items to move on both sides are swapped in pairs, the first with the
   last, as in the pdqsort of Peters, instead of along a cycle, so that a
   part in reverse order leaves both its sides sorted and takes O( n )
-- multikeyQuickSort() cited as the one of chapter 7, Sorting Strings, of
-  Ferragina's book
+- threeWayQuickSort() is the quicksort of chapter 5, Sorting Atomic Items,
+  of Ferragina's book with the three-way partition of its Algorithm 5.4,
+  the pivot drawn at random by a generator of fixed seed and the recursion
+  bounded as in its Algorithm 5.6, instead of the partition of Bentley and
+  McIlroy: Theta( n^2 ) in the worst case, with no fallback
+- dualPivotQuickSort() cited as the one of section 5.3.5 of Ferragina's
+  book, multikeyQuickSort() as Algorithm 7.1 of its chapter 7, Sorting
+  Strings, and both listed in the table of the book in the README
 
 ### Removed
 
@@ -2149,8 +2145,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   itself an introsort, and than spinsort of Boost, with their tests, their
   cells of bench/sort.cpp and their text in the theory of sorting;
   pdqSort() and powerSort(), the same algorithms engineered further, stay
-
-### Removed
+- bucketSort() of sort/RadixSort.h, a sort of none of the three books that
+  the library follows which does not beat the libraries on its own input,
+  with its tests and its text in the theory of sorting
 
 - sort/CycleSort.h (cycleSort(), pancakeSort()), sort/DidacticSorts.h
   (stoogeSort(), slowSort(), bogoSort()), sort/PatienceSort.h
