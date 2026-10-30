@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bench/parallel.cpp: the SprayList of Alistarh et al. among the priority
   queues (SPRAYLIST=<lib>, the SprayList built with the wrapper of the
   k-LSM, with KLSM=<dir> and GSL=<prefix>), compiled in only when given
+- FlatHashTable: find() and lookup() run the whole inspection in line, with
+  no call out of line after the first group, as boost::unordered_flat_map
+  does, so that the compiler keeps the values of the loop of the caller in
+  registers and lets a search for an absent key fall through to the top of
+  that loop; the bit of overflow of a key taken from the low 3 bits of its
+  mixed hash, with no shift; the places and the groups of control bytes of a
+  table of up to 4096 groups in one block of memory, one call to the
+  allocator per rebuild; the rebuild with no other call to the allocator
+  (the counts of up to 256 groups on the stack, the prefetch of the memory
+  of the keys by a ring of 8 places on the stack instead of a list of the
+  places), and a pair that moves with no exception, of a key whose hash
+  throws none, destroyed as soon as it is moved
+- solvePuzzle(): the level of a configuration set by one search on the
+  tables of ADS, whose insert() replaces the value of a key already there,
+  instead of a find() and then an insert()
 - MoveCost (graph/GridGraph.h): a move of a GridGraph weighed by the
   cost of the cell entered (ENTERED, the default, as before) or of the
   cell left (LEFT), chosen at construction, with moveCost(); forEachEdge(),
