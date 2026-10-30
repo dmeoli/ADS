@@ -23,26 +23,16 @@
  *   matrix with a few rows holding most of the nonzeros is unbalanced.
  * - `multiply( ex , A , x , y )` for a `SellMatrix` cuts its chunks of
  *   \f$ C \f$ rows in the same way by their places, padding included.
- * - `gemm( ex , ... )` runs the loops of the sequential `gemm()` on the
- *   panels of \f$ N_C \f$ columns of \f$ B \f$ and on the slices of
- *   \f$ K_C \f$ of the common dimension, and parallelizes within them as
- *   BLIS does: the panel \f$ K_C \times N_C \f$ of \f$ B \f$ is packed once,
- *   its micro-panels shared among the threads, and each thread takes a range
- *   of the rows of \f$ C \f$ (whole micro-panels of \f$ M_R \f$ rows, as
- *   many to each thread as they go), packs its blocks of \f$ M_C \f$ rows of
- *   \f$ A \f$ in its own buffer and runs the micro-kernels on them and on the
- *   shared panel of \f$ B \f$ (the loop of the blocks of \f$ A \f$ in
- *   parallel, which Smith et al. found the one that scales on the processors
- *   whose cores have private second levels). Each entry of \f$ C \f$ sees the
- *   same slices and the same micro-kernel as in `gemm()`; the small
- *   products, which `gemm()` computes by another path, go to it on one
- *   thread. With the backend of a CBLAS [see `DenseMatrix.h`], the thin
- *   products that go to it give each thread a range of the rows of
- *   \f$ C \f$ instead, as evenly as they go, which it
- *   multiplies by one call of the CBLAS, the panel of \f$ B \f$ packed by
- *   each call; the CBLAS is then expected to run on one thread (e.g.,
- *   OpenBLAS with `OPENBLAS_NUM_THREADS=1`), or its threads multiply those
- *   of the executor.
+ * - `gemm( ex , ... )` with the backend of a CBLAS [see `DenseMatrix.h`]
+ *   is one call of the CBLAS from the calling thread, as the sequential
+ *   `gemm()`: the CBLAS runs on its own threads (e.g., those of
+ *   `OPENBLAS_NUM_THREADS` for OpenBLAS), and the executor runs nothing,
+ *   since the threads of both would multiply each other; the result is that
+ *   of the sequential `gemm()`, bit for bit, as it is the same call. Without
+ *   it, each of \f$ t = \min\{ p , m \} \f$ threads takes a range of
+ *   the rows of \f$ C \f$, as evenly as they go, and computes them by the
+ *   loops of the sequential `gemm()`, whose sums of each entry run in the
+ *   order of the common index on every split of the rows.
  *
  * The products by a vector move \f$ 12 \mathit{nnz} + 8 ( m + n ) \f$ bytes
  * and are bound by the bandwidth of the memory, so that \f$ p \f$ threads
@@ -55,11 +45,6 @@
  *      multiplication, International Conference for High Performance
  *      Computing, Networking, Storage and Analysis (SC), 678-689, 2016,
  *      doi:10.1109/SC.2016.57
- * \see T. M. Smith, R. A. van de Geijn, M. Smelyanskiy, J. R. Hammond,
- *      F. G. Van Zee, Anatomy of high-performance many-threaded matrix
- *      multiplication, IEEE International Parallel and Distributed
- *      Processing Symposium (IPDPS), 1049-1059, 2014,
- *      doi:10.1109/IPDPS.2014.110
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -194,43 +179,19 @@ template< Executor E , std::size_t C >
 /// \f$ A \f$ of \f$ m \times k \f$, \f$ B \f$ of \f$ k \times n \f$ and
 /// \f$ C \f$ of \f$ m \times n \f$ by rows, as `gemm()`
 ///
-/// In pseudocode (the loops of BLIS of Smith et al., beyond the book), with
-/// the blocks \f$ K_C = 384 \f$, \f$ M_C \f$ and \f$ N_C \f$ and the
-/// micro-panels of \f$ M_R \f$ rows and \f$ N_R \f$ columns of the
-/// sequential `gemm()`:
+/// In pseudocode (beyond the book):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{gemm}( \mathit{ex} , m , n , k , \alpha ,
 ///     A , B , \beta , C ) \cr
-/// 2 & \quad \textbf{if}\ p = 1\ \textbf{or}\ \text{the product is small or }
-///     \text{degenerate, or } m < 2 M_R\ \textbf{then} \cr
-/// 3 & \qquad \mathrm{gemm}( m , n , k , \alpha , A , B , \beta , C );
-///     \ \textbf{return} \cr
-/// 4 & \quad \textbf{if}\ \text{a CBLAS is the backend and the product is}
-///     \text{ thin}\ \textbf{then} \cr
-/// 5 & \qquad \textbf{for}\ u \gets 0\ \textbf{to}\ \min\{ p , m \} - 1
-///     \ \textbf{do in parallel}\ \text{the } u\text{-th range of rows of }
-///     C \text{ by the CBLAS} \cr
-/// 6 & \qquad \textbf{return} \cr
-/// 7 & \quad t \gets \min\{ p , \lceil m / M_R \rceil \}\quad
-///     \triangleright\ \text{the threads, a range of micro-panels each} \cr
-/// 8 & \quad \textbf{for}\ j_c \gets 0\ \textbf{to}\ n - 1\ \textbf{step}
-///     \ N_C\ \textbf{do} \cr
-/// 9 & \qquad \textbf{for}\ p_c \gets 0\ \textbf{to}\ k - 1\ \textbf{step}
-///     \ K_C\ \textbf{do} \cr
-/// 10 & \qquad\quad b \gets \beta\ \textbf{if}\ p_c = 0\ \textbf{else}\ 1 \cr
-/// 11 & \qquad\quad \text{pack the panel } B[ p_c .. , j_c .. ] \text{ in }
-///     \text{parallel, a range of micro-panels per thread} \cr
-/// 12 & \qquad\quad \textbf{for}\ u \gets 0\ \textbf{to}\ t - 1
-///     \ \textbf{do in parallel} \cr
-/// 13 & \qquad\qquad \textbf{foreach}\ \text{block of } M_C \text{ rows }
-///     i_c \text{ in the range of } u\ \textbf{do} \cr
-/// 14 & \qquad\qquad\quad \text{pack } A[ i_c .. , p_c .. ] \text{ in the }
-///     \text{buffer of the thread} \cr
-/// 15 & \qquad\qquad\quad \textbf{foreach}\ \text{micro-panel } j_r
-///     \text{ of } B\ \textbf{and}\ i_r \text{ of } A\ \textbf{do} \cr
-/// 16 & \qquad\qquad\qquad C[ i_c + i_r .. , j_c + j_r .. ] \gets \alpha \,
-///     A_{i_r} B_{j_r} + b \, C[ i_c + i_r .. , j_c + j_r .. ]
+/// 2 & \quad \textbf{if}\ \text{a CBLAS is the backend}\ \textbf{then}
+///     \ C \gets \alpha A B + \beta C \text{ by one call};\ \textbf{return}
+///     \cr
+/// 3 & \quad t \gets \min\{ p , m \} \cr
+/// 4 & \quad \textbf{for}\ u \gets 0\ \textbf{to}\ t - 1\ \textbf{do in}
+///     \ \textbf{parallel} \cr
+/// 5 & \qquad \mathrm{gemm}( \text{the rows } [ m u / t , m ( u + 1 ) / t )
+///     \text{ of } A \text{ and } C )
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{lda} \ge k \f$, \f$ \mathit{ldb} \ge n \f$,

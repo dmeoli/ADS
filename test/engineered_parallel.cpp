@@ -566,11 +566,11 @@ ADS_TEST( "parallel-merge" )
 // the products of sparse and dense matrices against the sequential ones,
 // bit for bit: an empty matrix, a single row, rows of very different
 // lengths (one row with half the nonzeros, empty rows), a square random
-// matrix; the products of dense matrices below and above the threshold
-// of the small products, by rows and by columns, with alpha and beta,
-// and the thin ones, which go to the CBLAS under ADS_WITH_BLAS, where the
-// order of its sums may depend on the rows of a call, and the dense
-// products are then compared within the rounding
+// matrix; the products of dense matrices, small, square, thin and flat,
+// with alpha and beta, by the rows of each thread, bit for bit, and by
+// one call of the CBLAS under ADS_WITH_BLAS, whose threads may change the
+// order of its sums from a call to the next, so that the dense products
+// are then compared within the rounding
 ADS_TEST( "parallel-numeric" )
 {
  std::mt19937_64 g( 5 );

@@ -16,8 +16,9 @@
  * \f$ H_n \f$ summed as a rational. BigInteger and Rational are those of
  * the build, on the backend of GMP when ADS_WITH_GMP is defined [see
  * BigInteger.h and Rational.h], as they are used; built with
- * ADS_BENCH_OWN instead, the benchmark times them alone, on the code of ADS,
- * as "ADS::BigInteger own" and "ADS::Rational own".
+ * ADS_BENCH_OWN instead, the benchmark times them alone, on the code of the
+ * book that runs without the backend, as "ADS::BigInteger own" and
+ * "ADS::Rational own".
  *
  * Each cell is the median of r runs, in nanoseconds per operation (one
  * product, one quotient, one conversion, one sum of n fractions), a run

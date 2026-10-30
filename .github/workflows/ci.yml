@@ -398,7 +398,7 @@ jobs:
           make -j4 BUILD=build-cov CXXFLAGS="-std=c++20 -O0 -g --coverage \
                -Wall -Wextra -DADS_TEST_SMALL"
           awk '/^[a-z]/{print $1, $2}' test/tests.txt > tests
-          grep -E ' (big-integer-(pool|gmp)|.*parallel-sort)$' tests > first
+          grep -E ' (big-integer-gmp|.*parallel-sort)$' tests > first
           { cat first; grep -vxFf first tests; } |
             xargs -P 4 -n 2 sh -c 'build-cov/$0 $1'
           lcov --capture --directory build-cov --output-file lcov.info \

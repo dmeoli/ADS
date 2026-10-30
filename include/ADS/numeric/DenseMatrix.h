@@ -2,69 +2,31 @@
 /*--------------------------- File DenseMatrix.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The engineered dense matrices, beyond the book: `DenseMatrix` keeps the
+ * The dense matrices by rows, beyond the book: `DenseMatrix` keeps the
  * \f$ m \times n \f$ entries by rows in one contiguous vector, instead of
- * the vector of rows of `Matrix.h` [see `Matrix.h`], and the product and the
- * transposition run on it at the speed of the processor.
+ * the vector of rows of `Matrix.h` [see `Matrix.h`], and the product, on a
+ * CBLAS when there is one, and the transposition run on it.
  *
  * - `gemm()` is \f$ C \leftarrow \alpha A B + \beta C \f$ on matrices by
- *   rows with leading dimensions, organized as the GotoBLAS and BLIS
- *   libraries do: the loop on the panels of \f$ N_C \f$ columns of
- *   \f$ B \f$, the one on the slices of \f$ K_C \f$ of the common dimension,
- *   whose panel of \f$ B \f$ is packed in micro-panels of \f$ N_R \f$
- *   columns (\f$ K_C \times N_C \f$ in the last level cache), the one on the
- *   blocks of \f$ M_C \f$ rows of \f$ A \f$, packed in micro-panels of
- *   \f$ M_R \f$ rows (\f$ M_C \times K_C \f$ in the second level), and two
- *   loops of micro-tiles \f$ M_R \times N_R \f$ of \f$ C \f$, each the sum of
- *   \f$ K_C \f$ products of a column of \f$ M_R \f$ entries of \f$ A \f$ by a
- *   row of \f$ N_R \f$ entries of \f$ B \f$, held in registers:
- *   \f$ M_R N_R / w \f$ vector accumulators, \f$ w \f$ the entries of a
- *   vector, each step loading \f$ N_R / w \f$ vectors of \f$ B \f$ and
- *   broadcasting \f$ M_R \f$ entries of \f$ A \f$ into fused products and
- *   sums. The micro-kernel is written with the intrinsics of AVX2 for
- *   `double` (\f$ 6 \times 16 \f$, 24 accumulators of 4) and `float`, and in
- *   portable C++ otherwise, where the compiler vectorizes what it can;
- *   `ADS_GEMM_AVX512` selects a kernel of AVX-512 (\f$ 12 \times 16 \f$, 24
- *   accumulators of 8) for the processors with two units of fused products
- *   of 512 bits, since on those with one (e.g., the Xeon Gold 5120) both
- *   widths make 16 operations a cycle and the vectors of 256 bits run at a
- *   higher clock. \f$ K_C = 384 \f$, \f$ M_C = 480 \f$ and
- *   \f$ N_C = 4096 \f$ came from a search on the same processor. The product
- *   makes \f$ 2 m n k \f$ operations in \f$ \Theta( m n k ) \f$ time; a step
- *   of the micro-kernel makes \f$ M_R N_R \f$ fused operations on
- *   \f$ M_R + N_R \f$ entries loaded from the first level (\f$ 96 / 22 \f$
- *   for \f$ 6 \times 16 \f$), the packing moves
- *   \f$ m k \lceil n / N_C \rceil + k n \f$ entries, a fraction
- *   \f$ O( 1 / M_C + 1 / N_C ) \f$ of the work, and the buffers take
- *   \f$ K_C ( M_C + N_C ) \f$ entries, kept by the thread between the calls.
- *   The partial tiles at the borders are packed with zeros, and only their
- *   entries inside \f$ C \f$ are written. A small product
- *   (\f$ m n k \le 2^{21} \f$) packs \f$ B \f$ alone and reads \f$ A \f$
- *   where it is, the tiles of its last rows and columns by kernels of their
- *   shape.
- * - With `ADS_WITH_BLAS` defined (by the option of CMake of the same name,
- *   which defines it whenever a CBLAS is found, by the makefile, which does
- *   the same, or by hand, with `cblas.h` and the library of the CBLAS, or
- *   with `ADS_BLAS_ACCELERATE` the framework Accelerate of macOS), `gemm()`
- *   of `double` and of `float` goes to `cblas_dgemm()` and `cblas_sgemm()`
- *   when \f$ m n k < \f$ `kGemmBlasSmall` or
- *   \f$ \min\{ m , n , k \} < \f$ `kGemmBlasThin`, the ranges where OpenBLAS
- *   was the faster on a Xeon Gold 5120 (the small products and the thin
- *   ones, whose few rows or columns leave the micro-tiles above mostly
- *   empty), and when the sizes fit the `int` of the CBLAS; the parallel
- *   `gemm()` [see `ParallelNumeric.h`] does the same, a range of rows of
- *   \f$ C \f$ to each thread, which multiplies it by the CBLAS. On the larger
- *   products the micro-kernels of `gemm()` were as fast as those of
- *   OpenBLAS or faster on that processor, which has one unit of fused
- *   products of 512 bits per core, and they stay.
- *   The CBLAS runs on the threads it is built or set for, e.g., those of
- *   `OPENBLAS_NUM_THREADS` for OpenBLAS: one for a product on one thread, as
- *   the parallel `gemm()` expects of it. Elsewhere, and for the other
- *   types, `gemm()` keeps the code above, which is all of it without the
- *   macro (or with `ADS_GEMM_BLAS` defined to 0), when nothing of the CBLAS
- *   is included. On other processors the ranges differ, and the thresholds
- *   are to be measured again there; the bound of the error that both routes
- *   satisfy is in \ref theory_numeric_backends.
+ *   rows with leading dimensions. With `ADS_WITH_BLAS` defined (by the
+ *   option of CMake of the same name, which defines it whenever a CBLAS is
+ *   found, by the makefile, which does the same, or by hand, with
+ *   `cblas.h` and the library of the CBLAS, or with `ADS_BLAS_ACCELERATE`
+ *   the framework Accelerate of macOS), `gemm()` of `double` and of `float`
+ *   goes to `cblas_dgemm()` and `cblas_sgemm()` at every size that fits the
+ *   `int` of the CBLAS, which chooses its own kernels and blocks for the
+ *   processor and runs on the threads it is built or set for (e.g., those
+ *   of `OPENBLAS_NUM_THREADS` for OpenBLAS). Without the macro (or with
+ *   `ADS_GEMM_BLAS` defined to 0), and for the other types, it is the
+ *   product of the definition, \f$ c_{ij} = \sum_p a_{ip} b_{pj} \f$,
+ *   \f$ 2 m n k \f$ operations in \f$ \Theta( m n k ) \f$ time, by the
+ *   loops in the order \f$ i , p , j \f$, whose innermost one runs along a
+ *   row of \f$ B \f$ and of \f$ C \f$ and which the compiler may
+ *   vectorize, blocked on \f$ j \f$ and on \f$ p \f$ by `kGemmBlock` so
+ *   that the block of \f$ B \f$ stays in the cache while the rows of
+ *   \f$ C \f$ run over it: each entry is the sum of its terms in the
+ *   order of \f$ p \f$, the same on every split of the rows. The bound of
+ *   the error that both routes satisfy is in \ref theory_numeric_backends.
  * - `transpose()` moves blocks of \f$ 32 \times 32 \f$ entries, which stay
  *   in the cache of first level both read by columns and written by rows,
  *   instead of running through whole columns: \f$ \Theta( m n ) \f$ time and
@@ -93,23 +55,16 @@
  *   \f$ ( n / n_0 )^{\log_2 18} n_0^2 u \| A \| \| B \| \f$ for the cutoff
  *   \f$ n_0 \f$ and the unit roundoff \f$ u \f$, against the
  *   \f$ n u | A | | B | \f$ of the classical product (Higham), which is the
- *   price of the fewer products: with the cutoff 3072, found on the
- *   benchmark, one level spares \f$ 1 / 8 \f$ of the operations of a product
+ *   price of the fewer products: with the cutoff 3072, the default, one
+ *   level spares \f$ 1 / 8 \f$ of the operations of a product
  *   of 4096; the schedule of the sums needs three temporaries of a quadrant.
  *
  * The contracts [see `Contract.h`]: the sizes of the factors agree, the
  * entries read are inside the matrices; `gemm()` needs leading dimensions at
  * least the columns. The functions are defined in `DenseMatrix.tpp`.
  *
- * \see K. Goto, R. A. van de Geijn, Anatomy of high-performance matrix
- *      multiplication, ACM Transactions on Mathematical Software 34(3),
- *      12:1-25, 2008, doi:10.1145/1356052.1356053
- * \see F. G. Van Zee, R. A. van de Geijn, BLIS: a framework for rapidly
- *      instantiating BLAS functionality, ACM Transactions on Mathematical
- *      Software 41(3), 14:1-33, 2015, doi:10.1145/2764454
- * \see T. M. Low, F. D. Igual, T. M. Smith, E. S. Quintana-Orti, Analytical
- *      modeling is enough for high-performance BLIS, ACM Transactions on
- *      Mathematical Software 43(2), 12:1-18, 2016, doi:10.1145/2925987
+ * \see D. E. Knuth, The Art of Computer Programming, vol. 2, 3rd ed.,
+ *      Addison-Wesley, 1998, section 4.6.4, the product of matrices
  * \see V. Strassen, Gaussian elimination is not optimal, Numerische
  *      Mathematik 13(4), 354-356, 1969, doi:10.1007/BF02165411
  * \see S. Winograd, On multiplication of 2 x 2 matrices, Linear Algebra
@@ -162,12 +117,8 @@
 #include <utility>
 #include <vector>
 
-#if defined( __AVX512F__ ) || ( defined( __AVX2__ ) && defined( __FMA__ ) )
- #include <immintrin.h>
-#endif
-
-// the backend of a CBLAS, with ADS_WITH_BLAS: the small and the thin
-// products of double and float go to its cblas_dgemm() and cblas_sgemm(),
+// the backend of a CBLAS, with ADS_WITH_BLAS: the products of double and
+// float go to its cblas_dgemm() and cblas_sgemm(),
 // with ADS_BLAS_ACCELERATE from the header of the CBLAS of vecLib alone,
 // since that of the whole Accelerate brings the names of the old types of
 // macOS (e.g., Point) into the global namespace
@@ -289,15 +240,9 @@ class DenseMatrix {
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// with `ADS_WITH_BLAS`, the operations \f$ m n k \f$ of a product below
-/// which `gemm()` of `double` and `float` goes to the CBLAS, from the
-/// timings of `cblas_dgemm()` and `cblas_sgemm()` of OpenBLAS on a Xeon
-/// Gold 5120
-inline constexpr std::size_t kGemmBlasSmall = std::size_t( 1 ) << 14;
-/// with `ADS_WITH_BLAS`, the rows or columns of \f$ A \f$ or \f$ B \f$
-/// below which `gemm()` of `double` and `float` goes to the CBLAS, from the
-/// same timings
-inline constexpr std::size_t kGemmBlasThin = 12;
+/// the columns and the rows of \f$ B \f$ of a block of the product of the
+/// definition, without the CBLAS: a round number, not measured
+inline constexpr std::size_t kGemmBlock = 256;
 
 /// the product \f$ C \gets \alpha A B + \beta C \f$, \f$ A \f$
 /// \f$ m \times k \f$, \f$ B \f$ \f$ k \times n \f$ and \f$ C \f$
@@ -305,33 +250,25 @@ inline constexpr std::size_t kGemmBlasThin = 12;
 /// `ldc` (the distance of two rows); \f$ C \f$ is not read when
 /// \f$ \beta = 0 \f$
 ///
-/// In pseudocode (Goto and van de Geijn, beyond the book), the blocks fitted
-/// to the levels of the cache:
+/// In pseudocode (the product of the definition, section 4.6.4 of Knuth),
+/// by blocks of \f$ L \f$ = `kGemmBlock` columns and rows of \f$ B \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{gemm}( m , n , k , \alpha , A , B ,
 ///     \beta , C ) \cr
-/// 2 & \quad \textbf{if}\ k = 0\ \textbf{or}\ \alpha = 0\ \textbf{then}\ C
-///     \gets \beta C;\ \textbf{return} \cr
-/// 3 & \quad \textbf{if}\ \text{a CBLAS is the backend and the product is}
-///     \text{ small or thin}\ \textbf{then}\ C \gets \alpha A B + \beta C
-///     \text{ by it};\ \textbf{return} \cr
-/// 4 & \quad \textbf{for}\ j_c \gets 0 , N_C , 2 N_C , \ldots < n
+/// 2 & \quad \textbf{if}\ \text{a CBLAS is the backend}\ \textbf{then}
+///     \ C \gets \alpha A B + \beta C \text{ by it};\ \textbf{return}
+///     \cr
+/// 3 & \quad C \gets \beta C \cr
+/// 4 & \quad \textbf{for}\ j_c \gets 0\ \textbf{to}\ n - 1\ \textbf{step}
+///     \ L\ \textbf{do} \cr
+/// 5 & \qquad \textbf{for}\ p_c \gets 0\ \textbf{to}\ k - 1
+///     \ \textbf{step}\ L\ \textbf{do} \cr
+/// 6 & \qquad\quad \textbf{for}\ i \gets 0\ \textbf{to}\ m - 1
 ///     \ \textbf{do} \cr
-/// 5 & \qquad \textbf{for}\ p_c \gets 0 , K_C , 2 K_C , \ldots < k
-///     \ \textbf{do} \cr
-/// 6 & \qquad\quad \tilde B \gets \text{the block } K_C \times N_C \text{ of }
-///     B \text{, packed by micro-panels of } N_R \cr
-/// 7 & \qquad\quad \textbf{for}\ i_c \gets 0 , M_C , 2 M_C , \ldots < m
-///     \ \textbf{do} \cr
-/// 8 & \qquad\qquad \tilde A \gets \text{the block } M_C \times K_C
-///     \text{ of } A \text{, packed by micro-panels of } M_R \cr
-/// 9 & \qquad\qquad \textbf{foreach}\ \text{micro-tile } M_R \times N_R
-///     \text{ of the block of } C\ \textbf{do} \cr
-/// 10 & \qquad\qquad\quad \text{add } \alpha \text{ times its } K_C
-///     \text{ rank-one products, in registers} \cr
-/// 11 & \qquad\qquad\quad \text{(times } \beta \text{ the old tile on the }
-///     \text{first slice, } p_c = 0 \text{)}
+/// 7 & \qquad\qquad \textbf{foreach}\ p \in [ p_c , p_c + L ) , j \in
+///     [ j_c , j_c + L )\ \textbf{do}\ c_{ij} \gets c_{ij} + \alpha a_{ip}
+///     b_{pj}
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{lda} \ge k \f$, \f$ \mathit{ldb} \ge n \f$,

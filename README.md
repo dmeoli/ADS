@@ -32,11 +32,11 @@ The table below compares the engineered structures of ADS with those of
 the standard library (libstdc++), of Boost 1.83, of GMP 6.3.0, of FFTW
 3.3.10 and of pocketfft and ducc0, as measured by the benchmarks in
 [`bench/`](bench/) (`make bench`). `BigInteger` and `Rational` run on GMP,
-and `gemm()` on a CBLAS, wherever the library is found and in the ranges
-of lengths where it is the faster (see the section Use), and the
-benchmarks measure them as they are built, i.e., on the backends; the
-rows marked `own` measure the code of ADS alone (`bench-bignum-own` and
-`bench-matrix-own`, built when the backends are on). These were run twice
+and `gemm()` on a CBLAS, wherever the library is found, at every size (see
+the section Use), and the benchmarks measure them as they are built, i.e.,
+on the backends; the rows marked `own` measure the code of the book that
+runs without them (`bench-bignum-own` and `bench-matrix-own`, built when
+the backends are on). These were run twice
 on an otherwise idle Intel Xeon Gold 5120 at 2.2 GHz, on one core pinned
 by `taskset`, with g++ 13.3 at `-O3 -march=native`; GMP was configured for
 that processor, and FFTW was built with SSE2, AVX, AVX2 and AVX-512. Each cell
@@ -341,7 +341,7 @@ and against the counts and the bounds of their analysis.
 | tuples, permutations, combinations, partitions, nested parentheses, with the Gray orders (7.2.1) | [`combinatorial/Generation.h`](include/ADS/combinatorial/Generation.h) | `taocp.generation` |
 | linear congruential generators, chi-square, Kolmogorov-Smirnov, serial and spectral tests, shuffling and sampling (3.2-3.4) | [`numeric/RandomNumbers.h`](include/ADS/numeric/RandomNumbers.h) | `taocp.random-numbers` |
 | fast Fourier transform (4.3.3, 4.6.4) | [`numeric/FFT.h`](include/ADS/numeric/FFT.h) | `taocp.fft` |
-| integers of any length: Karatsuba, Toom-3, Toom-4, Toom-3/2 and 4/2 and the NTT, Algorithm D and the recursive division, the conversions by halves, the square root of Zimmermann, the gcd of Lehmer on two digits and the half gcd (4.3, 4.4, 4.5.2) | [`numeric/BigInteger.h`](include/ADS/numeric/BigInteger.h) | `taocp.big-integer*` |
+| integers of any length: Algorithms A, S, M and D, Karatsuba and the NTT, the conversions of 4.4, the gcd of Lehmer, or GMP where it is found (4.3, 4.4, 4.5.2) | [`numeric/BigInteger.h`](include/ADS/numeric/BigInteger.h) | `taocp.big-integer*` |
 | exact rationals (4.5.1) | [`numeric/Rational.h`](include/ADS/numeric/Rational.h) | `taocp.rational` |
 | exact cover by dancing links, Algorithm X (7.2.2.1) | [`backtrack/DancingLinks.h`](include/ADS/backtrack/DancingLinks.h) | `taocp.dancing-links` |
 | SAT by DPLL and by conflict-driven clause learning (7.2.2.2) | [`backtrack/SatSolvers.h`](include/ADS/backtrack/SatSolvers.h) | `taocp.sat-solvers` |
@@ -891,18 +891,18 @@ compile in C++20.
 `BigInteger` and `Rational` run on the backend of
 [GMP](https://gmplib.org), and `gemm()` of `double` and `float` on that of a
 CBLAS (OpenBLAS, the reference CBLAS, or Accelerate on macOS), whenever the
-library is found: GMP takes the products, the quotients, the square roots,
-the conversions, the greatest common divisors and the operations on short
-fractions in the ranges of lengths where it is the faster, and the CBLAS
-the small and the thin products, while the others stay on the code of ADS,
-which is also the whole library where neither is found (e.g., with MSVC).
+library is found: GMP takes every operation of both at every length, and
+the CBLAS every product of `double` and `float`, with the algorithms and
+the kernels it chooses for the processor; where neither is found (e.g.,
+with MSVC), the headers run the algorithms of the book, written to be
+portable and readable rather than tuned.
 With CMake, `ADS_WITH_GMP` and `ADS_WITH_BLAS` are `AUTO` by default (on
 when a program that calls the library compiles and links), `ON` to require
 the library (an error at configure time if it is not found) and `OFF` to
 leave it out; when on, they define the macro of the same name on
 `ADS::ADS` and link the library, also for the projects that find the
 installed ADS (`ads.pc` carries them too). The makefile does the same,
-with `make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0` for the code of ADS alone
+with `make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0` for the code of the book
 and `GMP=<prefix>` and `BLAS=<prefix>` where the libraries are not where
 the compiler looks; by hand, `-DADS_WITH_GMP` with `-lgmp`, and
 `-DADS_WITH_BLAS` with the CBLAS (e.g., `-lopenblas`, or
@@ -910,7 +910,8 @@ the compiler looks; by hand, `-DADS_WITH_GMP` with `-lgmp`, and
 both off, so that they depend on nothing, and a project that has the
 libraries defines the macros itself. A CBLAS that runs threads of its own
 (e.g., OpenBLAS, unless `OPENBLAS_NUM_THREADS=1`) runs them in `gemm()`,
-and multiplies those of the executor in the parallel `gemm()`. GMP is under
+and the parallel `gemm()` hands it the whole product in one call, leaving
+the threads to it. GMP is under
 the LGPL v3 (or the GPL v2), compatible with the LGPL v3 of ADS; without
 the macros nothing of either library is included.
 

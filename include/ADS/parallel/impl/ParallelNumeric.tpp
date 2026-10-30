@@ -118,82 +118,25 @@ void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k , T alpha ,
            T beta , T * C , std::size_t ldc )
 {
  ADS_PRE( ( lda >= k ) && ( ldb >= n ) && ( ldc >= n ) );
- using K = detail::GemmKernel< T >;
- constexpr std::size_t MR = K::MR , NR = K::NR;
- // the blocks of the sequential gemm(), whose loops these are
- constexpr std::size_t KC = 384 , MC = MR * ( 480 / MR ) ,
-                       NC = NR * ( 4096 / NR );
- const std::size_t p = ex.concurrency();
- const std::size_t np = ( n + NR - 1 ) / NR * NR;
- // the small products and the degenerate ones go to the sequential
- // gemm(), as do the products too short in rows to give each thread a
- // micro-panel of A
- if( ( p == 1 ) || ( m == 0 ) || ( n == 0 ) || ( k == 0 ) ||
-     ( alpha == T( 0 ) ) ||
-     ( ( m * n * k <= std::size_t( 1 ) << 21 ) &&
-       ( k * np <= std::size_t( 1 ) << 18 ) ) || ( m < 2 * MR ) ) {
-  gemm( m , n , k , alpha , A , lda , B , ldb , beta , C , ldc );
+ if( ( m == 0 ) || ( n == 0 ) )
   return;
-  }
 #if ADS_GEMM_BLAS
- // on the CBLAS, a range of rows of C per thread, as evenly as they go,
- // each multiplied by one call [see DenseMatrix.h]
- if( detail::gemmCblasWins< T >( m , n , k , lda , ldb , ldc ) ) {
-  const std::size_t t = std::min( p , m );
-  ex.bulk( t , [ & ]( std::size_t u ) {
-   const std::size_t r0 = m * u / t , r1 = m * ( u + 1 ) / t;
-   if( r1 > r0 )
-    detail::gemmCblas( r1 - r0 , n , k , alpha , A + r0 * lda , lda , B ,
-                       ldb , beta , C + r0 * ldc , ldc );
-   } );
+ // one call of the CBLAS, which runs on its own threads [see
+ // DenseMatrix.h]
+ if( detail::gemmOnCblas< T >( m , n , k , lda , ldb , ldc ) ) {
+  detail::gemmCblas( m , n , k , alpha , A , lda , B , ldb , beta , C ,
+                     ldc );
   return;
   }
 #endif
- // the rows of each thread: whole micro-panels, as evenly as they go
- const std::size_t panels = ( m + MR - 1 ) / MR ,
-                   q = std::min( p , panels );
- const std::size_t nb = std::min( n , NC ) , kb = std::min( k , KC );
- // the panel of B in the buffer of the caller, aligned for the kernels
- // (the threads pack their blocks of A in the other buffer of each)
- T * const Bp = detail::gemmBuffer< T >( kb * ( ( nb + NR - 1 ) / NR * NR ) ,
-                                         0 );
- for( std::size_t jc = 0 ; jc < n ; jc += NC ) {
-  const std::size_t nc = std::min( NC , n - jc );
-  for( std::size_t pc = 0 ; pc < k ; pc += KC ) {
-   const std::size_t kc = std::min( KC , k - pc );
-   const T b = pc == 0 ? beta : T( 1 );    // the later slices add
-   // the panel of B packed once, by all the threads, each a range of
-   // its micro-panels of NR columns
-   const std::size_t cp = ( nc + NR - 1 ) / NR;
-   parallelForBlocks( ex , 0 , cp , [ & ]( std::size_t c0 , std::size_t c1 ) {
-    detail::gemmPackB< T , NR >( kc , std::min( nc , c1 * NR ) - c0 * NR ,
-                                 B + pc * ldb + jc + c0 * NR , ldb ,
-                                 Bp + c0 * NR * kc );
-    } , 1 );
-   // the rows of C, a range per thread, by blocks of MC rows whose A is
-   // packed in the buffer of the thread
-   ex.bulk( q , [ & ]( std::size_t t ) {
-    const std::size_t r0 = panels * t / q * MR ,
-                      r1 = std::min( m , panels * ( t + 1 ) / q * MR );
-    for( std::size_t ic = r0 ; ic < r1 ; ic += MC ) {
-     const std::size_t mc = std::min( MC , r1 - ic );
-     T * Ap = detail::gemmBuffer< T >( kc * ( ( mc + MR - 1 ) / MR * MR ) ,
-                                       1 );
-     detail::gemmPackA< T , MR >( mc , kc , A + ic * lda + pc , lda , Ap );
-     for( std::size_t jr = 0 ; jr < nc ; jr += NR ) {
-      const std::size_t c = std::min< std::size_t >( NR , nc - jr );
-      for( std::size_t ir = 0 ; ir < mc ; ir += MR ) {
-       const std::size_t r = std::min< std::size_t >( MR , mc - ir );
-       detail::gemmTile< T , true >( r , c , kc , Ap + ir * kc ,
-                                     Bp + jr * kc ,
-                                     C + ( ic + ir ) * ldc + jc + jr , ldc ,
-                                     alpha , b , 0 );
-       }
-      }
-     }
-    } );
-   }
-  }
+ // a range of rows of C per thread, as evenly as they go
+ const std::size_t t = std::min( ex.concurrency() , m );
+ ex.bulk( t , [ & ]( std::size_t u ) {
+  const std::size_t r0 = m * u / t , r1 = m * ( u + 1 ) / t;
+  if( r1 > r0 )
+   detail::gemmBlocked( r1 - r0 , n , k , alpha , A + r0 * lda , lda , B ,
+                        ldb , beta , C + r0 * ldc , ldc );
+  } );
  }
 
 template< Executor E , class T >

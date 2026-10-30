@@ -87,8 +87,9 @@
  <tr><td><tt>BigInteger</tt></td><td>\f$ \Theta( n ) \f$ digits of 64
      bits</td>
      <td>sum \f$ \Theta( n ) \f$, product from \f$ \Theta( n^2 ) \f$ to
-         \f$ O( n \log n ) \f$, quotient and root \f$ O( M( n ) ) \f$, gcd
-         \f$ O( M( n ) \log n ) \f$</td></tr>
+         \f$ O( n \log n ) \f$, quotient, conversion and gcd
+         \f$ O( n^2 ) \f$ by the code of the book, those of GMP on its
+         backend</td></tr>
  <tr><td><tt>Rational</tt></td><td>two <tt>BigInteger</tt> in lowest
      terms</td>
      <td>each operation a few products and gcds of the terms</td></tr>
@@ -116,8 +117,8 @@
  pattern is fixed and the matrix is read, since a product by a vector then
  streams the values and the columns from memory in one pass. Among the dense
  representations, the vector of rows of `Matrix` follows the book, while
- `DenseMatrix` keeps the entries in one block, which lets `gemm()` cut the
- factors into blocks that fit the levels of the cache.
+ `DenseMatrix` keeps the entries in one block, the layout by rows of the
+ CBLAS, to which `gemm()` hands its products when there is one.
 
  \section theory_numeric_dc Divide et impera on the products
 
@@ -153,11 +154,13 @@
  Toom-3, five products of a third (the values of the polynomials at
  \f$ 0 , \pm 1 , 2 , \infty \f$ and an interpolation), costs
  \f$ \Theta( n^{\log_3 5} ) = O( n^{1.47} ) \f$, and Toom-4, seven of a
- quarter, \f$ \Theta( n^{\log_4 7} ) = O( n^{1.41} ) \f$; the constants grow
- with \f$ k \f$, and `BigInteger` passes from one method to the next at
- thresholds of length measured on a machine (`kKaratsuba`, `kToom3`,
- `kToom4`, `kFFT`). Beyond them the product is a convolution of the digits,
- which the Fourier transform computes in \f$ O( n \log n ) \f$ operations
+ quarter, \f$ \Theta( n^{\log_4 7} ) = O( n^{1.41} ) \f$, with constants that
+ grow with \f$ k \f$. The code of the book in `BigInteger` passes from the
+ school to Karatsuba at `kKaratsuba` digits and to a convolution of the
+ digits at `kFFT`, round lengths that no processor tuned, while GMP, its
+ backend, adds the methods of Toom and chooses its own thresholds; the
+ convolution is computed by the Fourier transform in \f$ O( n \log n ) \f$
+ operations
  (see \ref theory_numeric_fft).
 
  The matrices obey the same scheme. The product of two \f$ n \times n \f$
@@ -184,14 +187,15 @@
  <tr><td><tt>multiplyKaratsuba()</tt></td><td>(2), three halves</td>
      <td>\f$ \Theta( n^{\log_2 3} ) \f$</td></tr>
  <tr><td><tt>BigInteger::operator*()</tt></td>
-     <td>school, Karatsuba, Toom-3, Toom-4, the NTT</td>
+     <td>school, Karatsuba, the NTT, or GMP</td>
      <td>\f$ O( n \log n ) \f$ for the longest</td></tr>
  <tr><td><tt>multiplyNaive()</tt> and <tt>strassen()</tt> of
      <tt>Matrix.h</tt></td>
      <td>the definition, and (3)</td>
      <td>\f$ \Theta( n^3 ) \f$, \f$ \Theta( n^{\log_2 7} ) \f$</td></tr>
  <tr><td><tt>gemm()</tt>, <tt>multiplyStrassen()</tt></td>
-     <td>blocks for the cache, and (3) down to <tt>gemm()</tt></td>
+     <td>the definition by blocks, or the CBLAS, and (3) down to
+         <tt>gemm()</tt></td>
      <td>\f$ \Theta( m n k ) \f$, \f$ O( n^{\log_2 7} ) \f$</td></tr>
  </table>
 
@@ -199,15 +203,18 @@
  to products. The quotient of Algorithm D of Knuth guesses each digit from the
  leading digits of the remainder and of the normalized divisor, a guess that
  exceeds the true digit by at most 2 (by 1 with three digits over two), and
- costs \f$ O( m n ) \f$ for a quotient of \f$ m \f$ digits; Newton's method on
- the reciprocal, \f$ x \gets x + x ( 1 - b x ) \f$, doubles the correct
- digits at each step, so that the reciprocal, and with it the quotient, costs
- a constant number of products of the final length, \f$ O( M( n ) ) \f$, the
- steps on the shorter lengths summing to a geometric series. The
- conversions split the number by a power of the base near its square root,
- \f$ O( M( n ) \log n ) \f$, and the gcd of Lehmer, which applies to the whole
- numbers the quotients found on their leading digits, spares all but one
- long operation per word of quotients (see the comments of `BigInteger.h`).
+ costs \f$ O( m n ) \f$ for a quotient of \f$ m \f$ digits, the method of the
+ code of the book; Newton's method on the reciprocal,
+ \f$ x \gets x + x ( 1 - b x ) \f$, doubles the correct digits at each step,
+ so that the reciprocal, and with it the quotient, costs a constant number
+ of products of the final length, \f$ O( M( n ) ) \f$, the steps on the
+ shorter lengths summing to a geometric series, and the conversions that
+ split the number by a power of the base near its square root cost
+ \f$ O( M( n ) \log n ) \f$: these are the methods of GMP, while the code of
+ the book converts by one short division per word, \f$ O( n^2 ) \f$. The gcd
+ of Lehmer, which applies to the whole numbers the quotients found on their
+ leading digits, spares all but one long operation per word of quotients
+ (see the comments of `BigInteger.h`).
 
  \section theory_numeric_rec Recurrences and dynamic programming
 
@@ -476,19 +483,23 @@
 
  \section theory_numeric_backends The backends of GMP and of a CBLAS
 
- Where a mature library computes the same function faster, the headers of
- the area hand the operation to it instead of tuning their own code further:
- `BigInteger` and `Rational` run on GMP when `ADS_WITH_GMP` is defined, and
- `gemm()` of `double` and `float` on a CBLAS (OpenBLAS, the reference CBLAS,
- Accelerate) when `ADS_WITH_BLAS` is; CMake and the makefile define each
- macro whenever the library is found, and leave it undefined otherwise, so
- that the code of ADS is both the portable fallback and the reference that
- the backend is tested against. The choice is made per operation, by the
- lengths of the operands, against thresholds measured on one processor (the
- constants `kGmp...` of `BigInteger` and of `Rational`,
- `kGemmBlasSmall` and `kGemmBlasThin`): an operation goes to the library in
- the ranges where the library was the faster, and stays on the code of ADS
- where that was as fast or faster.
+ Where a mature library computes the same function, the headers of the area
+ hand the operation to it, at every size, instead of keeping kernels of
+ their own that each processor and each version of the library would call
+ to be tuned again: `BigInteger` and `Rational` run on GMP when
+ `ADS_WITH_GMP` is defined, and `gemm()` of `double` and `float` on a CBLAS
+ (OpenBLAS, the reference CBLAS, Accelerate) when `ADS_WITH_BLAS` is; CMake
+ and the makefile define each macro whenever the library is found, and
+ leave it undefined otherwise. The dispatch is therefore the presence of the
+ backend alone, with no threshold of length: the library chooses its own
+ algorithms for the processor it was built for. Without the backend, as on
+ a compiler for which none is installed, the headers run the algorithms of
+ the book, written for clarity and portability with no assembly, no vector
+ instructions and no constant measured on a processor: Algorithms A, S, M
+ and D of Knuth, Karatsuba and the number theoretic transform for the long
+ products, the conversions of section 4.4 and the gcd of Lehmer for the
+ integers, and the product of the definition by blocks for the matrices;
+ the same code is the reference that the tests compare the backend with.
 
  <em>Lemma 7 (the backends change no result).</em> For every operation of
  `BigInteger` and `Rational`, the result on the backend equals that of the
@@ -512,28 +523,9 @@
  number of GMP, in \f$ O( n ) \f$ time, below the cost of the operation
  itself (the copy is the price of the representation).
  For the matrices, (13) is the bound of the classical product whatever the
- order of the sums (Higham, section 3.5), which differs between the
- micro-kernels of ADS and those of the CBLAS, and between the calls of the
- parallel `gemm()` on ranges of rows and one call on the whole; hence the
- tests compare the products on small integers, which both compute exactly,
- and the others within (13).
-
- The thresholds follow from the cost of each route, since both run algorithms
- of the same order: GMP wins, by its loops in assembly, on the square root at
- every length, on the quotients by divisors of 4 to 2047 digits, on the
- conversions of 1 to 3 and of 24 to 4095 digits, on the gcd of 2 digits and on
- the operations of `Rational` on terms of 2 and 3 digits; ADS keeps the
- products by its number-theoretic transform from 704 to 1920 digits (by the
- shape of the factors), the gcd of Lehmer on two digits between 3 and 2047
- digits, where its steps on one digit with no division were the faster, and
- hence `Rational` on the longer terms, and the quotients and the conversions
- of the longer numbers, by Newton's reciprocal and the scaled remainder tree.
- The CBLAS wins on the small products and on the thin ones, whose few rows or
- columns fill only part of the micro-tiles of `gemm()`; on the larger ones the
- micro-kernels of ADS were as fast or faster on the processor of the
- thresholds, whose single unit of fused products of 512 bits makes the vectors
- of 256 bits of ADS run at a higher clock. The thresholds are those of that
- processor, and another one may move them.
+ order of the sums (Higham, section 3.5), which differs between the loops of
+ ADS and the kernels of the CBLAS; hence the tests compare the products on
+ small integers, which both compute exactly, and the others within (13).
 
  \section theory_numeric_refs References
 

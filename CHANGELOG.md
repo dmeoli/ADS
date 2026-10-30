@@ -1373,6 +1373,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- BigInteger and Rational: with ADS_WITH_GMP every operation goes to GMP,
+  at every length, with no threshold of length: the sum, the difference,
+  the order, the product, the quotient with the remainder, the square
+  root and the conversion from a string to the mpn layer on the digits in
+  place, the quotient alone, the exact quotient, the gcd, the power and the
+  conversion to a string to the mpz layer on views of the digits, and the
+  operations of Rational to the mpq layer; the digits are a std::vector of
+  words of 64 bits
+- BigInteger without GMP: the algorithms of the book, written to be
+  portable and readable, with no assembly, no vector instructions and no
+  threshold measured on a processor: Algorithms 4.3.1A, S, M and D, the
+  short division of exercise 16, Karatsuba from kKaratsuba digits and the
+  NTT modulo three primes from kFFT digits (round lengths), the
+  conversions of section 4.4 by one short division or product per word,
+  the gcd of Lehmer (4.5.2L) on the leading 60 bits with the binary gcd of
+  the last word, the square root by Newton's method; the quotient, the
+  conversions and the gcd are now quadratic without the backend
+- gemm(): with ADS_WITH_BLAS every product of double and float goes to
+  cblas_dgemm() and cblas_sgemm(), at every size that fits their int;
+  without it, and for the other types, the product of the definition by
+  blocks of kGemmBlock, the loops in the order i, p, j; the parallel gemm()
+  makes one call of the CBLAS, which runs on its own threads, and without
+  it gives each thread a range of the rows of C
+
 - ConcurrentFlatTable: when the pairs lie in the words, a tag of a byte
   per place, 7 bits of the hash of its key, 8 tags to an atomic word apart
   from the words, written after the word by the insertion or by the
@@ -2091,6 +2115,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   other libraries, with their tests, the cell smoothsort of
   bench/sort.cpp and their sections of the theory of sorting; the test
   tree-patience is now tree-sort
+- BigInteger: the loops in assembly of x86-64 (MULX, ADCX, ADOX) and
+  ADS_BIGINT_ASM, ADS_BIGINT_NOASM, the NTT on the lanes of AVX2 and on
+  doubles (ADS_BIGINT_SIMD, ADS_BIGINT_FNTT), Toom-3, Toom-4, Toom-3/2 and
+  4/2, the squares by their own paths, the division by blocks of 4 and 6
+  digits, the recursive division of Burnikel and Ziegler, the division by
+  Newton's reciprocal, the folded remainders, the exact division of
+  Hensel and of Krandick and Jebelean, the division by the reciprocal of
+  Moeller and Granlund, the conversions by halves and by the scaled
+  remainder tree, the square root of Zimmermann, the half gcd, the pool of
+  the blocks of digits kept per thread (DigitPool), the digits in place,
+  and the thresholds kToom3, kToom4, kToom32, kSqrKaratsuba, kSqrToom3,
+  kSqrToom4, kSqrFFT, kDivide, kConvert, kConvertF, kFracLeaf,
+  kFracLevel, kFracCyclic, kModFold, kHensel, kNewton, kNewtonKept,
+  kRecip, kDivCut, kDivShort, kDivBlock, kDivBlock6, kDivExact2, kHgcd,
+  kGcdDC, npos and the ranges of GMP kGmpMul, kGmpMulTop, kGmpMulLongTop,
+  kGmpSqrTop, kGmpDiv, kGmpDivTop, kGmpShort, kGmpQuotTop, kGmpExactTop,
+  kGmpToStringLow, kGmpToStringTop, kGmpGcd, kGmpGcdShort, kGmpGcdShortTop,
+  kGmpKeep; the tests big-integer-newton and big-integer-pool
+- Rational: the range of GMP kGmp and kGmpTop
+- gemm(): the micro-kernels of AVX2 and AVX-512 (ADS_GEMM_AVX512), the
+  packing of the blocks of BLIS and the blocks KC, MC and NC, the path of
+  the small products, and the ranges of the CBLAS kGemmBlasSmall and
+  kGemmBlasThin
 
 ### Fixed
 

@@ -19,8 +19,8 @@
  * ADS::gemm() and ADS::multiplyStrassen() are those of the build, on the
  * backend of a CBLAS when ADS_WITH_BLAS is defined [see DenseMatrix.h], as
  * they are used; built with ADS_BENCH_OWN instead, the benchmark times them
- * alone, on the code of ADS, as "ADS::gemm own" and
- * "ADS::multiplyStrassen own".
+ * alone, on the product of the definition by blocks that runs without the
+ * backend, as "ADS::gemm own" and "ADS::multiplyStrassen own".
  *
  * Eigen and OpenBLAS are vectorized for the processor as ADS is
  * (-march=native), on one thread. Up to n = 512 each run of a product

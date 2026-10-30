@@ -14,26 +14,18 @@
  * terms; for the product, \f$ d_1 = \gcd( u , v' ) \f$ and
  * \f$ d_2 = \gcd( u' , v ) \f$ cancel crosswise. Since \f$ d_1 = 1 \f$ with
  * probability about \f$ 6 / \pi^2 \f$, the second gcd is most often
- * skipped; a division by a gcd of 1 is skipped too, each quotient is
- * computed once, by the exact division of Hensel when the gcd has one digit
- * [see `BigInteger::divExact()`], the sum of the two products is made in
- * place, and the gcds are those of Lehmer [see `BigInteger.h`], one folded
- * remainder when a denominator has one digit.
+ * skipped, as is a division by a gcd of 1.
  *
- * With `ADS_WITH_GMP` [see `BigInteger.h`], the sums, the differences, the
- * products, the quotients and the comparisons of two fractions whose longest
- * term has \f$ n \f$ digits go to `mpq_add()`, `mpq_sub()`, `mpq_mul()`,
- * `mpq_div()` and `mpq_cmp()` of GMP, which follow the same method of Henrici,
- * when `kGmp` \f$ \le n < \f$ `kGmpTop`, the range where GMP was the faster;
- * on the longer terms the gcds of `BigInteger` are faster than those of GMP,
- * and on the terms of one digit the code of `Rational` needs no allocation,
- * and `Rational` keeps its own code there. GMP reads the terms as they are, in
- * place, the result made in a fraction of GMP kept by the thread (whose digits
- * are allocated once, for terms that short) and copied into the terms of the
- * result; the reductions of the constructor go to GMP through the gcd and the
- * exact quotient of `BigInteger`. Elsewhere, and without the macro, `Rational`
- * keeps its own code, as with `ADS_RATIONAL_GMP` defined to 0
- * [see \ref theory_numeric_backends].
+ * With `ADS_WITH_GMP` [see `BigInteger.h`], every operation of two
+ * fractions, the sum, the difference, the product, the quotient and the
+ * comparison, goes to `mpq_add()`, `mpq_sub()`, `mpq_mul()`, `mpq_div()`
+ * and `mpq_cmp()` of GMP, which follow the same method of Henrici, at
+ * every length: GMP reads the terms as they are, in place, and the terms
+ * of the result are copied from the fraction of GMP that receives it; the
+ * reductions of the constructor go to GMP through the gcd and the exact
+ * quotient of `BigInteger`. Without the macro, and with `ADS_RATIONAL_GMP`
+ * defined to 0, `Rational` keeps the code of the book above on the
+ * operations of `BigInteger` [see \ref theory_numeric_backends].
  *
  * The contracts [see `Contract.h`]: the denominator and a divisor are not
  * 0; the invariant is \f$ u' > 0 \f$ and \f$ \gcd( u , u' ) = 1 \f$, an
@@ -71,8 +63,8 @@
 #include <string>
 #include <utility>
 
-// the backend of GMP, with ADS_WITH_GMP: the operations on the long terms
-// go to the mpq layer of GMP, wherever BigInteger is on GMP
+// the backend of GMP, with ADS_WITH_GMP: the operations go to the mpq
+// layer of GMP, wherever BigInteger is on GMP
 #ifndef ADS_RATIONAL_GMP
  #define ADS_RATIONAL_GMP ADS_BIGINT_GMP
 #endif
@@ -92,12 +84,6 @@ class Rational {
 
 /*--------------------------------------------------------------------------*/
  public:
-
- // with ADS_WITH_GMP, the digits of the longest term of the two fractions
- // with which an operation goes to GMP, [ kGmp , kGmpTop ), from the
- // timings of bench/bignum.cpp on a Xeon Gold 5120
- static constexpr std::size_t kGmp = 2;            ///< limbs, mpq
- static constexpr std::size_t kGmpTop = 4;         ///< the same, top
 
  /// the fraction \f$ \mathit{num} / \mathit{den} \f$, brought to lowest
  /// terms with a positive denominator by one gcd
@@ -175,9 +161,6 @@ class Rational {
  [[nodiscard]] bool lowest( void ) const;
 
 #if ADS_RATIONAL_GMP
- /// true if the operation on \f$ a \f$ and \f$ b \f$ goes to GMP
- static bool gmp( const Rational & a , const Rational & b );
-
  /// \f$ q \f$ as the read-only view of \f$ a \f$, its terms in place
  static mpq_srcptr gmpView( mpq_t q , const Rational & a );
 

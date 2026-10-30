@@ -476,14 +476,12 @@ taocp  fft-offsets           FFT a ogni allineamento dei punti
 taocp  convolve-real         convoluzione per FFT reali
 taocp  big-integer-words     parole di 64 bit: prodotti, riporti, 128/64
 taocp  big-integer           interi di lunghezza qualsiasi, Algorithm D
-taocp  big-integer-product   prodotti alle soglie, quadrati, NTT esatta
-taocp  big-integer-division  divisione ricorsiva contro Algorithm D
-taocp  big-integer-newton    divisione col reciproco di Newton, ai bordi
-taocp  big-integer-radix     conversioni divide et impera, 10^k e 10^k - 1
-taocp  big-integer-sqrt      radice quadrata di Zimmermann contro Newton
-taocp  big-integer-gcd       gcd di Lehmer e hgcd, Fibonacci, nulli
-taocp  big-integer-pool      blocchi di cifre tenuti per thread, ai bordi
-taocp  big-integer-gmp       backend di GMP: ai bordi dei suoi intervalli
+taocp  big-integer-product   Algorithm M, Karatsuba, NTT esatta, ai bordi
+taocp  big-integer-division  Algorithm D, divisione per una cifra, esatta
+taocp  big-integer-radix     conversioni della sezione 4.4, 10^k e 10^k - 1
+taocp  big-integer-sqrt      radice quadrata contro il metodo di Newton
+taocp  big-integer-gcd       gcd di Lehmer, Fibonacci, nulli
+taocp  big-integer-gmp       backend di GMP: operandi nulli, risultato in loco
 taocp  rational              razionali con le riduzioni di Henrici
 taocp  dancing-links         exact cover, Algorithm X
 taocp  sat-solvers           DPLL e CDCL

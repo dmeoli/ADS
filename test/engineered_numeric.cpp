@@ -846,10 +846,9 @@ ADS_TEST( "closest-pair-sweep" )
 // gemm() against the naive product on every shape from 0 to beyond the
 // blocks, with leading dimensions larger than the columns, alpha and beta,
 // beta = 0 on a C of NaN (which must not be read), k = 0 and alpha = 0;
-// on doubles, floats and integers (the portable kernel); the edges of the
-// ranges that go to the CBLAS under ADS_WITH_BLAS, the same products on
-// gemm() alone without it: m n k just below, at and above kGemmBlasSmall,
-// each dimension just below and at kGemmBlasThin with the others long;
+// on doubles and floats (on the CBLAS under ADS_WITH_BLAS) and on
+// integers (always by the loops); each dimension just below, at and above
+// kGemmBlock, where the loops cut their blocks;
 // multiply() and transpose() of DenseMatrix against the book's Matrix
 ADS_TEST( "dense-gemm" )
 {
@@ -890,26 +889,21 @@ ADS_TEST( "dense-gemm" )
     CHECK( run( 1.0f , m , n , k , 1.0f , 0.0f , true ) );
     CHECK( run( 1L , m , n , k , 3L , 2L , false ) );
     }
- // the edges of the CBLAS
+ // the backend, which takes every product of double and float under
+ // ADS_WITH_BLAS, and the edges of the blocks of the loops without it
 #ifdef ADS_WITH_BLAS
  CHECK( ADS_GEMM_BLAS == 1 );
 #endif
- for( const auto & [ m , n , k ] : std::vector< std::array< std::size_t ,
-                                                           3 > >{
-       { 16 , 32 , 31 } , { 16 , 32 , 32 } , { 17 , 32 , 31 } } ) {
-  CHECK( run( 1.0 , m , n , k , 1.0 , 0.0 , true ) );
-  CHECK( run( 1.0f , m , n , k , -2.0f , 3.0f , false ) );
-  }
- for( std::size_t t : { kGemmBlasThin - 1 , kGemmBlasThin } )
+ for( std::size_t t : { kGemmBlock - 1 , kGemmBlock , kGemmBlock + 1 } )
   for( int s = 0 ; s < 3 ; ++s ) {
-   const std::size_t m = s == 0 ? t : 130 , n = s == 1 ? t : 140 ,
-                     k = s == 2 ? t : 150;
+   const std::size_t m = s == 0 ? t : 13 , n = s == 1 ? t : 14 ,
+                     k = s == 2 ? t : 15;
    CHECK( run( 1.0 , m , n , k , 1.0 , 0.0 , true ) );
    CHECK( run( 1.0 , m , n , k , 0.5 , -1.0 , false ) );
    CHECK( run( 1.0f , m , n , k , 2.0f , 0.0f , true ) );
-   CHECK( run( 1.0f , m , n , k , -1.0f , 2.0f , false ) );
+   CHECK( run( 1L , m , n , k , -1L , 2L , false ) );
    }
- // beyond the blocks KC , MC and the panels, and alpha = 0
+ // beyond two blocks in every dimension, and alpha = 0
  CHECK( run( 1.0 , 250 , 70 , 300 , 1.0 , 1.0 , false ) );
  CHECK( run( 1.0 , 260 , 33 , 520 , -1.0 , 0.0 , true ) );
  CHECK( run( 1.0f , 37 , 4100 , 3 , 1.0f , 0.0f , false ) );
