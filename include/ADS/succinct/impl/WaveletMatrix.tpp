@@ -208,7 +208,7 @@ void WaveletMatrix::build( E & ex , std::span< const U > x , int w )
    // the others by an or at the next place of their stream; the levels
    // a constant, so that their loop unrolls, and the items read from x or
    // from C, out of the loop
-   auto scan = [ & ]< int KK , bool FROM_X , bool MOVE >() {
+   auto scan = [ & ]< int KK , bool FROM_X >( bool move ) {
     const T * const Cp = C.data();
     for( std::size_t i = i0 ; i < i1 ; i += 64 ) {
      const std::size_t e = std::min( i1 , i + 64 );
@@ -217,27 +217,19 @@ void WaveletMatrix::build( E & ex , std::span< const U > x , int w )
       const T c = FROM_X ? T( x[ t ] ) : Cp[ t ];
       const std::size_t a = rev[ std::size_t( ( c >> sh ) & T( K - 1 ) ) ];
       w0 |= Word( a & 1 ) << ( t - i );
-      [ & ]< std::size_t... J >( std::index_sequence< J... > ) {
-       ( [ & ]() {
-        constexpr std::size_t j = J + 1;
-        const std::size_t at = cur[ ( std::size_t( 1 ) << j ) - 1 +
-                                    ( a & ( ( std::size_t( 1 ) << j ) -
-                                            1 ) ) ]++;
-        Wl[ j ][ at >> 6 ] |= Word( ( a >> j ) & 1 ) << ( at & 63 );
-        }() , ... );
-       }( std::make_index_sequence< KK - 1 >() );
-      if constexpr( MOVE ) D[ next[ a ]++ ] = c;
+      for( std::size_t j = 1 ; j < std::size_t( KK ) ; ++j ) {
+       const std::size_t m = ( std::size_t( 1 ) << j ) - 1;
+       const std::size_t at = cur[ m + ( a & m ) ]++;
+       Wl[ j ][ at >> 6 ] |= Word( ( a >> j ) & 1 ) << ( at & 63 );
+       }
+      if( move ) D[ next[ a ]++ ] = c;
       }
      Wl[ 0 ][ ( i - ( S > 1 ? i0 : 0 ) ) >> 6 ] = w0;
      }
     };
    auto levels = [ & ]< int KK >() {
-    if( pass == 0 ) {
-     if( last ) scan.template operator()< KK , true , false >();
-     else scan.template operator()< KK , true , true >();
-     }
-    else if( last ) scan.template operator()< KK , false , false >();
-    else scan.template operator()< KK , false , true >();
+    if( pass == 0 ) scan.template operator()< KK , true >( ! last );
+    else scan.template operator()< KK , false >( ! last );
     };
    switch( k ) {
     case( 1 ): levels.template operator()< 1 >(); break;
