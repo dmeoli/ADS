@@ -1918,6 +1918,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the sizes given to the constructors and to reset() are no longer
+  clamped by n < 0 ? 0 : n, but taken as they are after the precondition
+  n >= 0: g++ 16 at -O2 with LTO, specializing a callee for all its calls
+  by IPA-CP, takes an argument max( n , 0 ) as the constant 0 when one of
+  the calls has n = 0, so that LinkCutTree( 5 ) in a program that also
+  builds LinkCutTree() had no node (the test link-cut-tree failed in the
+  package for Arch Linux); the same in RollbackUnionFind, DisjointSets,
+  PriorityFrontier, FlowNetwork, Assignment, GreedyUnionFind,
+  randomOrder() of ParallelGreedy.h and IndexedDaryHeap, and
+  PriorityFrontier and GreedyUnionFind check the precondition
 - the audit of the sorts that compares the items before and after the
   sort (samePermutation() of sort/Sorted.h) copies and sorts nothing on an
   empty range: g++ 13 with -march=native, inlining the std::sort() of the
