@@ -440,7 +440,8 @@ library, Boost and Eigen; their tests are in
 |---|---|---|
 | two-level bucket queue for integer keys, the large second keys of a layer in sparse runs until they are many (Dial; Burns et al.) | [`priority/BucketQueue.h`](include/ADS/priority/BucketQueue.h) | `engineered.bucket-queue`, `engineered.bucket-queue-sparse` |
 | d-ary heap of plain items, no handles | [`priority/DaryHeap.h`](include/ADS/priority/DaryHeap.h) | `engineered.dary-heap` |
-| d-ary heap of the ids with decrease-key, the places in a vector, a PRIORITYQUEUE whose handles are the ids | [`priority/IndexedDaryHeap.h`](include/ADS/priority/IndexedDaryHeap.h) | `engineered_graph.indexed-dary-heap` |
+| d-ary heap of the ids with decrease-key, increase-key and erase anywhere, the places in a vector, a PRIORITYQUEUE whose handles are the ids | [`priority/IndexedDaryHeap.h`](include/ADS/priority/IndexedDaryHeap.h) | `engineered_graph.indexed-dary-heap`, `engineered_search.indexed-heap-erase` |
+| the ids in two indexed heaps, by a key of selection and by a bound, the least of each in O( 1 ) (the frontier of the bounded suboptimal searches and of the branch and bound by best estimate) | [`priority/IndexedHeapPair.h`](include/ADS/priority/IndexedHeapPair.h) | `engineered_search.indexed-heap-pair` |
 | graph in compressed rows, each arc next to its weight, the rows sorted by head; transpose and relabelling | [`graph/StaticGraph.h`](include/ADS/graph/StaticGraph.h) | `engineered_graph.static-graph` |
 | graph of a grid map, the cells in one vector of costs and the moves to four or eight neighbours computed, the rules on the corners and the octile costs of the benchmarks, each move weighed by the cell entered or by the cell left, the maps in their format; Manhattan, octile and Chebyshev bounds for best-first search (Sturtevant; Harabor and Grastien) | [`graph/GridGraph.h`](include/ADS/graph/GridGraph.h) | `engineered_graph.grid-graph`, `engineered_graph.grid-graph-paths`, `engineered_graph.grid-graph-huge`, `engineered_graph.grid-map` |
 | builder of a graph one edge at a time, frozen into `StaticGraph` or `ArrayGraph` by counting sort | [`graph/GraphBuilder.h`](include/ADS/graph/GraphBuilder.h) | `engineered_graph.graph-builder` |
@@ -454,12 +455,12 @@ library, Boost and Eigen; their tests are in
 | double-ended queues: min-max heap (Atkinson et al.) and interval heap (van Leeuwen and Wood) | [`priority/MinMaxHeap.h`](include/ADS/priority/MinMaxHeap.h) | `heaps.double-ended-heaps` |
 | monotone bucket queue on a circular window, overflow to a radix heap (Dial) | [`priority/DialQueue.h`](include/ADS/priority/DialQueue.h) | `heaps.dial-queue` |
 | sequence heap, sorted sequences merged in batches by trees of losers (Sanders) | [`priority/SequenceHeap.h`](include/ADS/priority/SequenceHeap.h) | `heaps.sequence-heap` |
-| pairing heap with decrease-key, two-pass or auxiliary two-pass (Fredman et al.; Stasko and Vitter) | [`priority/PairingHeap.h`](include/ADS/priority/PairingHeap.h) | `heaps.pairing-heap` |
+| pairing heap with decrease-key, increase-key and erase by handle, two-pass or auxiliary two-pass (Fredman et al.; Stasko and Vitter) | [`priority/PairingHeap.h`](include/ADS/priority/PairingHeap.h) | `heaps.pairing-heap`, `engineered_search.pairing-heap-erase` |
 | sort of a List by relinking its cells: radix sort of ( key , cell ) or merge of the natural runs | [`sequence/ListSort.h`](include/ADS/sequence/ListSort.h) | `sequences.list-sort` |
 | tiered vector: access in O( 1 ), insertion and removal anywhere in O( sqrt n ) (Goodrich and Kloss) | [`sequence/TieredVector.h`](include/ADS/sequence/TieredVector.h) | `sequences.tiered-vector` |
 | vector with room for N items inside itself | [`sequence/SmallVector.h`](include/ADS/sequence/SmallVector.h) | `sequences.small-vector` |
 | hash table with control bytes in groups of 15 matched by SSE2, NEON or SWAR, the hash mixed on 128 bits, at most 7/8 full (Swiss tables; Boost's `unordered_flat_map`) | [`dictionary/FlatHashTable.h`](include/ADS/dictionary/FlatHashTable.h) | `engineered.flat-hash-table` |
-| hash table of pointers, linear probing, Fibonacci hashing | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table` |
+| hash table of pointers, linear probing, Fibonacci hashing of a hash given, sized in advance by `slotsFor()`, the places from any allocator | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table`, `engineered_search.pointer-table-presize` |
 | arena of objects in blocks, stable addresses | [`memory/Arena.h`](include/ADS/memory/Arena.h) | `engineered.arena` |
 | pool of objects in doubling blocks, the slot freed last made first | [`memory/ObjectPool.h`](include/ADS/memory/ObjectPool.h) | `engineered.pool` |
 | allocator of small blocks by size classes, a free list and a page of 64 KB per class (mimalloc, TLSF) | [`memory/SizeClassAllocator.h`](include/ADS/memory/SizeClassAllocator.h) | `memory.size-class-allocator` |
@@ -495,6 +496,7 @@ library, Boost and Eigen; their tests are in
 | rank and select in about 3.9% of the bits, one 128-bit entry per 4096 bits (Kurpicz; Zhou, Andersen and Kaminsky) | [`succinct/CompactRankSelect.h`](include/ADS/succinct/CompactRankSelect.h) | `engineered_succinct.compact-rank-select` |
 | rank and select with the counts inside the lines of the bits, rank in one access (SPIDER, Laws et al.) | [`succinct/InterleavedRankSelect.h`](include/ADS/succinct/InterleavedRankSelect.h) | `engineered_succinct.interleaved-rank-select` |
 | compressed vector of bits in m H0 + 0.175 m bits with rank and select (Raman, Raman and Rao; Claude and Navarro) | [`succinct/RRRBitVector.h`](include/ADS/succinct/RRRBitVector.h) | `engineered_succinct.rrr-bit-vector` |
+| arrays of fields of 1 to 32 bits packed in words, saturated if asked, and of trits five to a byte (Breyer and Korf), built on an executor | [`succinct/PackedArray.h`](include/ADS/succinct/PackedArray.h) | `engineered_search.packed-array`, `engineered_search.trit-array` |
 | tANS of order 0 with 2^11 states, two halves of four states each (Duda) | [`compression/Tans.h`](include/ADS/compression/Tans.h) | `engineered_succinct.tans-coder` |
 | directly addressable codes with the optimal widths (Brisaboa, Ladra and Navarro) | [`compression/DirectAccessCodes.h`](include/ADS/compression/DirectAccessCodes.h) | `engineered_succinct.direct-access-codes` |
 | parse of LZ77 with no window in O(n) time (Karkkainen, Kempa and Puglisi) | [`compression/LZ77Linear.h`](include/ADS/compression/LZ77Linear.h) | `engineered_succinct.lz77-linear` |
@@ -507,6 +509,7 @@ library, Boost and Eigen; their tests are in
 | lock-free queue of many producers, a lane of recycled blocks each | [`concurrent/MPSCQueue.h`](include/ADS/concurrent/MPSCQueue.h) | `engineered_queues.mpsc-queue` |
 | bounded queue of many producers and many consumers, a sequence in each place (Vyukov) | [`concurrent/MPMCQueue.h`](include/ADS/concurrent/MPMCQueue.h) | `engineered_queues.mpmc-queue` |
 | event count, the sleep of a thread until a condition holds, with asymmetric fences | [`concurrent/EventCount.h`](include/ADS/concurrent/EventCount.h) | `engineered_queues.event-count` |
+| exponential backoff of a waiting thread, pauses then yields (Anderson) | [`concurrent/Backoff.h`](include/ADS/concurrent/Backoff.h) | `engineered_search.backoff-threads` |
 | sparse matrices in compressed rows and in SELL-C-sigma (Kreutzer et al.) | [`numeric/CsrMatrix.h`](include/ADS/numeric/CsrMatrix.h), [`numeric/SellMatrix.h`](include/ADS/numeric/SellMatrix.h) | `engineered_numeric.csr-matrix`, `.sell-matrix` |
 | generators xoshiro256++, xoshiro256**, wyrand and the counter-based Philox4x32 and Philox4x64 (Salmon et al.), the alias method, normal and exponential deviates by ziggurats (Marsaglia and Tsang) | [`numeric/RandomGenerators.h`](include/ADS/numeric/RandomGenerators.h) | `engineered_numeric.generators`, `.philox`, `.ziggurat` |
 | work-stealing deque (Chase and Lev; Lê et al.) | [`concurrent/WorkStealingDeque.h`](include/ADS/concurrent/WorkStealingDeque.h) | `engineered_queues.work-stealing-deque` |
@@ -575,6 +578,7 @@ matrices, up to the rounding for the transform).
 |---|---|
 | executors: the pool of ADS, OpenMP, oneTBB, FastFlow | [`parallel/ThreadPool.h`](include/ADS/parallel/ThreadPool.h), [`parallel/OpenMPExecutor.h`](include/ADS/parallel/OpenMPExecutor.h), [`parallel/TBBExecutor.h`](include/ADS/parallel/TBBExecutor.h), [`parallel/FastFlowExecutor.h`](include/ADS/parallel/FastFlowExecutor.h) |
 | parallel loops, reductions and prefix sums, fork and join | [`parallel/Executor.h`](include/ADS/parallel/Executor.h) |
+| the processors of the process and the pinning of a thread to one of them | [`parallel/Affinity.h`](include/ADS/parallel/Affinity.h) |
 | `sort()` and `stableSort()` by distribution (radix classifier for the numbers, tree of splitters with buckets of equality for the rest) | [`parallel/ParallelSort.h`](include/ADS/parallel/ParallelSort.h) |
 | `multiwayMerge()` by exact multisequence selection | [`parallel/ParallelMerge.h`](include/ADS/parallel/ParallelMerge.h) |
 | products of `CsrMatrix`, `SellMatrix` and `gemm()` | [`parallel/ParallelNumeric.h`](include/ADS/parallel/ParallelNumeric.h) |

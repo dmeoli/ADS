@@ -48,13 +48,15 @@ inline std::uint64_t ZobristTable::operator()( std::size_t f ,
  return( f_R[ f * f_m + v ] );
  }
 
-template< class V >
-std::uint64_t ZobristTable::hash( const std::vector< V > & S ) const
+template< std::ranges::random_access_range S >
+ requires std::ranges::sized_range< S >
+std::uint64_t ZobristTable::hash( const S & s ) const
 {
- ADS_PRE( S.size() == f_n );
+ ADS_PRE( std::size_t( std::ranges::size( s ) ) == f_n );
  std::uint64_t h = 0;
+ auto it = std::ranges::begin( s );
  for( std::size_t f = 0 ; f < f_n ; ++f )
-  h ^= ( *this )( f , std::size_t( S[ f ] ) );
+  h ^= ( *this )( f , std::size_t( it[ std::ptrdiff_t( f ) ] ) );
  return( h );
  }
 

@@ -123,6 +123,7 @@ run fingerprints 100000 1000000
 run dynamic 10000 100000
 run flows 10000 100000
 run assignment 300 1000
+run bestfirst 100000 1000000 10000000
 # the parallel algorithms and the runtime of the workers on the cores
 # PCORES (default the core CORE alone), on 1, 2, 4, ... threads up to their
 # number; the GAP benchmark suite prints lines of its own, left out

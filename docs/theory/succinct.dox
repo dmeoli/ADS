@@ -17,9 +17,10 @@
  \ref theory_succinct_notation), the realizations and the costs of their
  operations (see \ref theory_succinct_repr), and, for each family, the property
  on which its correctness rests and the argument behind its bounds (from
- \ref theory_succinct_rank to \ref theory_succinct_learned), and the parallel
- construction of the directories and of the wavelet matrix and tree (see
- \ref theory_succinct_parallel). The pseudocode of
+ \ref theory_succinct_rank to \ref theory_succinct_learned), the arrays of
+ small fields packed in words and in bytes (see \ref theory_succinct_packed),
+ and the parallel construction of the directories and of the wavelet matrix
+ and tree (see \ref theory_succinct_parallel). The pseudocode of
  each algorithm is instead on the page of its header, in the comment of its
  function, together with the chapter of Ferragina's book, or the paper, that it
  follows.
@@ -597,6 +598,53 @@
  the shortest path was within a few hundredths of the bits of `tuned()`,
  with a slower construction, so that it is not kept.
 
+ \section theory_succinct_packed Arrays of packed fields
+
+ An array of \f$ n \f$ values below \f$ 2^B \f$ takes \f$ n B \f$ bits
+ when its fields are packed in words, against the \f$ 8 n \f$ of a byte
+ per value; the tables of the searches in large spaces of states, e.g.,
+ the pattern databases of the heuristic search, have \f$ 10^9 \f$ entries
+ and more, and fit in the memory only so packed (Felner, Korf and Hanan).
+ `PackedArray< B >` (`PackedArray.h`) takes the widths that divide 64,
+ \f$ B \in \{ 1 , 2 , 4 , 8 , 16 , 32 \} \f$: then a word holds
+ \f$ 64 / B \f$ whole fields, the field \f$ i \f$ is the bits
+ \f$ ( i \bmod 64 / B ) B \f$ on of the word \f$ \lfloor i B / 64
+ \rfloor \f$, and a read is one load, one shift and one mask, with no test
+ of a field that crosses two words, which `BitVector::get( i , len )` pays
+ for the other widths. A write clears the field by a mask and puts the
+ value by an or, in the same word. The <em>saturated</em> array stores a
+ value above \f$ 2^B - 1 \f$ as \f$ 2^B - 1 \f$: when the values are
+ lower bounds, e.g., the distances of a pattern database, a value cut down
+ is still a lower bound, and \f$ B \f$ is chosen for the most of the
+ values rather than for the largest one.
+
+ A value of three states takes \f$ \log_2 3 \approx 1.585 \f$ bits of
+ information, but 2 bits in a field of `PackedArray< 2 >`. Five such values
+ (<em>trits</em>) \f$ t_0 , \ldots , t_4 \f$ fit in one byte as the
+ number
+ \f[
+   y = \sum_{j = 0}^{4} t_j 3^j \le 3^5 - 1 = 242 , \tag{12}
+ \f]
+ i.e., \f$ 1.6 \f$ bits per value, \f$ 0.015 \f$ above the entropy, and
+ one fifth less than the fields of 2 bits (Breyer and Korf, whose tables
+ keep the distances modulo 3, from which the distance of a state is
+ recovered along a path to the goal). `TritArray` reads the digit
+ \f$ j = i \bmod 5 \f$ of the byte \f$ \lfloor i / 5 \rfloor \f$ from a
+ table of the five digits of each of the 243 bytes (1215 bytes, in the
+ cache of the first level), and writes it by adding
+ \f$ ( v - t_j ) 3^j \f$ to the byte, which by (12) changes that digit
+ alone. Six values would need \f$ 3^6 = 729 > 256 \f$ codes, and
+ \f$ 3^{40} < 2^{64} < 3^{41} \f$ would put 40 values in a word, 1.6 bits
+ each again, at the price of a division by a power of 3 per read; the byte
+ is the unit with the same density and a read by a table.
+
+ Both arrays are built from a function \f$ f \f$ of the place by blocks of
+ whole words (of whole bytes for the trits) on the threads of an executor
+ (see \ref theory_parallel_patterns): a word is written by the one thread
+ that owns its block, so that no write needs an atomic and the array is
+ the same as the sequential one, and the work is \f$ O( n ) \f$ calls of
+ \f$ f \f$ with the depth of one block.
+
  \section theory_succinct_parallel Parallel construction
 
  The structures built by a scan of their input are also built on the threads
@@ -624,7 +672,7 @@
  \f$ \ell + j \f$ of the item \f$ c \f$, and
  \f[
    \kappa_j( c ) = \sum_{i < j} 2^i \, b_i( c ) , \qquad 0 \le j \le k ,
-   \tag{12}
+   \tag{13}
  \f]
  the bits of the levels \f$ \ell , \ldots , \ell + j - 1 \f$ read from the
  last one. Then the order of the items at the level \f$ \ell + j \f$ is the
@@ -639,7 +687,7 @@
  \f$ c \f$ at the level \f$ \ell + j \f$ is
  \f[
    P_j[ \kappa_j( c ) ] + | \{ c' \text{ before } c \text{ at the level }
-   \ell : \kappa_j( c' ) = \kappa_j( c ) \} | , \tag{13}
+   \ell : \kappa_j( c' ) = \kappa_j( c ) \} | , \tag{14}
  \f]
  with \f$ P_j[ a ] \f$ the items whose key is below \f$ a \f$, and
  \f$ Z_{\ell + j} \f$ is the number of items with \f$ b_j = 0 \f$, both
@@ -648,7 +696,7 @@
 
  By Lemma 7 one scan of the items in the order of the level \f$ \ell \f$
  writes the bits of the \f$ k \f$ levels \f$ \ell , \ldots , \ell + k - 1 \f$
- at the places (13) and moves the items to their order at the level
+ at the places (14) and moves the items to their order at the level
  \f$ \ell + k \f$, where the construction by the partitions of Lemma 5
  moves them \f$ k \f$ times, once per level: \f$ \lceil w / 8 \rceil \f$
  passes over the items for \f$ k \le 8 \f$ instead of \f$ w \f$, the bits
@@ -661,12 +709,12 @@
  thread, whose \f$ k \f$ levels, of 256 KB at most, stay in the second
  level of the cache while the slice writes them: each slice writes the
  levels of its own items, at the places that the counts of its keys give
- by (13) within the slice, and the levels are then gathered from the
+ by (14) within the slice, and the levels are then gathered from the
  slices, each block of words of a level copying the runs of bits of the
- slices that fall in it, in the order (13) of the runs, so that no two
+ slices that fall in it, in the order (14) of the runs, so that no two
  threads write a word (the domain decomposition of Fuentes-Sepúlveda,
  Elejalde, Ferres and Seco and of Labeit, Shun and Blelloch, with the
- merge of Dinklage et al.). The items move to the places (13) of the
+ merge of Dinklage et al.). The items move to the places (14) of the
  level \f$ \ell + k \f$ directly, since those of two slices never meet.
  The wavelet tree of Huffman is built in slices too: the counts of the
  symbols of each slice give the place of each slice in each node of the
@@ -691,6 +739,12 @@
       Structures, doi:10.1017/9781009128933
  \see G. Navarro, Compact Data Structures, Cambridge University Press,
       2016, doi:10.1017/CBO9781316588284
+ \see A. Felner, R. E. Korf, S. Hanan, Additive pattern database
+      heuristics, Journal of Artificial Intelligence Research 22, 279-318,
+      2004, doi:10.1613/jair.1480
+ \see T. M. Breyer, R. E. Korf, 1.6-bit pattern databases, Proceedings of
+      the 24th AAAI Conference on Artificial Intelligence, 39-44, 2010,
+      doi:10.1609/aaai.v24i1.7558
  \see G. Jacobson, Space-efficient static trees and graphs, Proc. 30th
       FOCS, 549-554, 1989, doi:10.1109/SFCS.1989.63533
  \see D. Clark, Compact Pat Trees, PhD thesis, University of Waterloo,

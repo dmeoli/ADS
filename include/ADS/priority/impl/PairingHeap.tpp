@@ -67,18 +67,7 @@ inline typename PairingHeap< T , P , Aux >::Handle
 PairingHeap< T , P , Aux >::insert( const T & x , const P & p )
 {
  Node * z = f_pool.make( p , x );
- if( ! f_root )
-  f_root = f_min = z;
- else if constexpr( Aux ) {                 // after the root, in the list
-  z->next = f_root->next;
-  if( z->next ) z->next->prev = z;
-  z->prev = f_root;
-  f_root->next = z;
-  if( p < f_min->priority )
-   f_min = z;
-  }
- else
-  f_root = f_min = link( f_root , z );
+ attach( z );
  ++f_n;
  ADS_POST( ! empty() && !( p < f_min->priority ) );
  ADS_INVARIANT( isHeap() );
@@ -91,25 +80,7 @@ inline T PairingHeap< T , P , Aux >::deleteMin( void )
  ADS_PRE( ! empty() );
  Node * z = f_min;
  const P q = z->priority;
- if constexpr( Aux ) {                      // the root, the children of z
-  if( z != f_root )                         // and the list joined
-   cut( z );
-  Node * l = f_root->next;
-  if( l ) {
-   f_root->next = nullptr;
-   l->prev = nullptr;
-   l = multiPass( l );
-   }
-  Node * r = z != f_root ? f_root : nullptr;
-  for( Node * t : { twoPass( z->child ) , l } )
-   if( t )
-    r = r ? link( r , t ) : t;
-  if( r )
-   r->prev = r->next = nullptr;
-  f_root = f_min = r;
-  }
- else
-  f_root = f_min = twoPass( z->child );
+ unlinkMin();
  --f_n;
  T v = std::move( z->value );
  f_pool.free( z );
@@ -145,6 +116,126 @@ inline void PairingHeap< T , P , Aux >::decrease( Handle x , const P & p )
   f_min = f_root;
  ADS_POST( x->priority == p );
  ADS_INVARIANT( isHeap() );
+ }
+
+template< class T , std::totally_ordered P , bool Aux >
+T PairingHeap< T , P , Aux >::erase( Handle x )
+{
+ ADS_PRE( ( x != nullptr ) && ! empty() );
+ detach( x );
+ --f_n;
+ T v = std::move( x->value );
+ f_pool.free( x );
+ ADS_INVARIANT( isHeap() );
+ return( v );
+ }
+
+template< class T , std::totally_ordered P , bool Aux >
+void PairingHeap< T , P , Aux >::increase( Handle x , const P & p )
+{
+ ADS_PRE( ( x != nullptr ) && !( p < x->priority ) );
+ detach( x );
+ x->priority = p;
+ attach( x );
+ ADS_POST( x->priority == p );
+ ADS_INVARIANT( isHeap() );
+ }
+
+template< class T , std::totally_ordered P , bool Aux >
+void PairingHeap< T , P , Aux >::update( Handle x , const P & p )
+{
+ ADS_PRE( x != nullptr );
+ if( p < x->priority )
+  decrease( x , p );
+ else
+  increase( x , p );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- THE STRUCTURE -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< class T , std::totally_ordered P , bool Aux >
+inline void PairingHeap< T , P , Aux >::attach( Node * z )
+{
+ if( ! f_root )
+  f_root = f_min = z;
+ else if constexpr( Aux ) {                 // after the root, in the list
+  z->next = f_root->next;
+  if( z->next ) z->next->prev = z;
+  z->prev = f_root;
+  f_root->next = z;
+  if( z->priority < f_min->priority )
+   f_min = z;
+  }
+ else
+  f_root = f_min = link( f_root , z );
+ }
+
+template< class T , std::totally_ordered P , bool Aux >
+inline void PairingHeap< T , P , Aux >::unlinkMin( void )
+{
+ Node * z = f_min;
+ if constexpr( Aux ) {                      // the root, the children of z
+  if( z != f_root )                         // and the list joined
+   cut( z );
+  Node * l = f_root->next;
+  if( l ) {
+   f_root->next = nullptr;
+   l->prev = nullptr;
+   l = multiPass( l );
+   }
+  Node * r = z != f_root ? f_root : nullptr;
+  for( Node * t : { twoPass( z->child ) , l } )
+   if( t )
+    r = r ? link( r , t ) : t;
+  if( r )
+   r->prev = r->next = nullptr;
+  f_root = f_min = r;
+  }
+ else
+  f_root = f_min = twoPass( z->child );
+ z->child = z->next = z->prev = nullptr;
+ }
+
+template< class T , std::totally_ordered P , bool Aux >
+void PairingHeap< T , P , Aux >::detach( Node * x )
+{
+ if( x == f_min ) {
+  unlinkMin();
+  return;
+  }
+ Node * t = twoPass( x->child );            // x is not the least: neither
+ x->child = nullptr;                        // is t, nor the least changes
+ if constexpr( Aux ) {
+  if( x == f_root ) {                       // the list goes on from t, or
+   Node * l = x->next;                      // from its first tree, which
+   if( t ) {                                // exists since the least is
+    t->next = l;                            // in it
+    if( l ) l->prev = t;
+    f_root = t;
+    }
+   else {
+    l->prev = nullptr;
+    f_root = l;
+    }
+   }
+  else {
+   cut( x );
+   if( t ) {                                // after the root, in the list
+    t->next = f_root->next;
+    if( t->next ) t->next->prev = t;
+    t->prev = f_root;
+    f_root->next = t;
+    }
+   }
+  }
+ else {
+  cut( x );                                 // x is not the root
+  if( t )
+   f_root = f_min = link( f_root , t );
+  }
+ x->next = x->prev = nullptr;
  }
 
 /*--------------------------------------------------------------------------*/

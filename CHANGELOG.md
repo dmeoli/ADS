@@ -46,6 +46,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   trees spread over the workers and the latency of the termination on
   every executor, against the mesh of FastFlow; bench/mpi.cpp -m, the same
   for the mailbox of the processes
+- IndexedDaryHeap: increase(), update() and erase() of an id anywhere,
+  the last item moved into the hole and then up or down; PairingHeap:
+  erase(), increase() and update() by handle, the node taken out with its
+  children joined by two passes, and inserted again alone by increase(),
+  its handle kept
+- IndexedHeapPair (priority/IndexedHeapPair.h): the ids in two indexed
+  heaps, by a key of selection and by a bound, the least of each in O( 1 ),
+  push, update, erase, pop by the key and by the bound
+- PackedArray< B , Saturate > and TritArray (succinct/PackedArray.h):
+  fields of 1, 2, 4, 8, 16 or 32 bits packed in words, the values above
+  2^B - 1 clamped and counted if saturated, and five trits to a byte in
+  base 3, both with get, set and push_back and built from a function by
+  blocks of whole words (bytes) on an executor
+- Backoff (concurrent/Backoff.h), the exponential backoff of a waiting
+  thread, 2^k pauses up to a bound and then yields; affinityCpus(),
+  availableCpus(), pinThread() and currentCpu() (parallel/Affinity.h),
+  the processors of the process and the pinning of a thread to the i-th
+- PointerTable::slotsFor( n ), the places that n objects take with no
+  growth; ZobristTable::hash() of any sized range with access by index (an
+  array, a span), not only of a vector
+- the test program engineered_search, with ThreadSanitizer on its tests
+  of threads in the CI, and bench/bestfirst.cpp: the closed set of a
+  search, the addressable heaps and their pair, the ordered frontier and
+  the packed arrays, against Boost and the standard library
 - bench/parallel.cpp: the SprayList of Alistarh et al. among the priority
   queues (SPRAYLIST=<lib>, the SprayList built with the wrapper of the
   k-LSM, with KLSM=<dir> and GSL=<prefix>), compiled in only when given

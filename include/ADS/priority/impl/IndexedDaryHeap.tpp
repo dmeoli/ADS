@@ -63,6 +63,42 @@ inline void IndexedDaryHeap< K , D >::decrease( int id , const K & k )
  }
 
 template< class K , unsigned D >
+inline void IndexedDaryHeap< K , D >::increase( int id , const K & k )
+{
+ ADS_PRE( contains( id ) && !( k < f_A[ f_pos[ id ] ].key ) );
+ down( std::size_t( f_pos[ id ] ) , Entry{ k , id } );
+ ADS_INVARIANT( ordered() );
+ }
+
+template< class K , unsigned D >
+inline void IndexedDaryHeap< K , D >::update( int id , const K & k )
+{
+ ADS_PRE( contains( id ) );
+ if( k < f_A[ f_pos[ id ] ].key )
+  decrease( id , k );
+ else
+  increase( id , k );
+ }
+
+template< class K , unsigned D >
+inline void IndexedDaryHeap< K , D >::erase( int id )
+{
+ ADS_PRE( contains( id ) );
+ const std::size_t i = std::size_t( f_pos[ id ] );
+ f_pos[ id ] = -1;
+ const Entry x = f_A.back();
+ f_A.pop_back();
+ if( i < f_A.size() ) {                    // the last item into the hole
+  if( ( i > 0 ) && ( x.key < f_A[ ( i - 1 ) / D ].key ) )
+   up( i , x );
+  else
+   down( i , x );
+  }
+ ADS_POST( ! contains( id ) );
+ ADS_INVARIANT( ordered() );
+ }
+
+template< class K , unsigned D >
 inline bool IndexedDaryHeap< K , D >::pushOrDecrease( int id , const K & k )
 {
  ADS_PRE( ( id >= 0 ) && ( id < ids() ) );

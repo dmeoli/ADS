@@ -109,6 +109,10 @@
          <tt>IndexedDaryHeap</tt></td><td>\f$ O( 1 ) \f$</td>
      <td>\f$ O( \log_d n ) \f$</td><td>\f$ O( d \log_d n ) \f$</td>
      <td>\f$ O( \log_d n ) \f$ (not on the heap with pointers)</td></tr>
+ <tr><td><tt>IndexedHeapPair</tt> (the least key and the least bound)
+         </td><td>\f$ O( 1 ) \f$, both</td><td>\f$ O( \log_d n ) \f$</td>
+     <td>\f$ O( d \log_d n ) \f$</td><td>\f$ O( d \log_d n ) \f$, with
+         the bound</td></tr>
  <tr><td><tt>FibonacciHeapPriorityQueue</tt></td><td>\f$ O( 1 ) \f$</td>
      <td>\f$ O( 1 ) \f$</td><td>\f$ O( \log n )^* \f$</td>
      <td>\f$ O( 1 )^* \f$</td></tr>
@@ -206,6 +210,54 @@
  so that the climb from the leaf is short and the walk saves about one
  comparison per level; it loses when the item would stop halfway.
 
+ A search that prunes or reorders its frontier needs more than
+ `decrease()`: the removal of any item and the raise of its key.
+ `IndexedDaryHeap` raises the key of an id by the walk down of `pop()` from
+ its place, and removes an id by moving the last item into its place and
+ then up or down.
+
+ <em>Lemma 2 (the hole of a removal).</em> Let the item at the place
+ \f$ i \f$ of a heap be removed and the last item \f$ x \f$ be put in its
+ place. If \f$ x \f$ is smaller than the parent of \f$ i \f$, the walk up
+ from \f$ i \f$ restores the heap, and otherwise the walk down does; one
+ walk alone is needed, and the removal costs \f$ O( d \log_d n ) \f$.
+
+ Indeed, the items below \f$ i \f$ are not smaller than the item removed,
+ which is not smaller than the parent of \f$ i \f$; if \f$ x \f$ is
+ smaller than that parent, it is smaller than all of them, and the heap is
+ violated only between \f$ x \f$ and its ancestors, which the walk up
+ mends as in `insert()`. Otherwise \f$ x \f$ is not smaller than its
+ parent, the heap is violated only between \f$ x \f$ and its children
+ (\f$ x \f$ may come from another subtree, where it was larger than the
+ items below \f$ i \f$), and the walk down mends it as in `deleteMin()`.
+
+ The searches that select a node by one key and must know the least of a
+ second one over the whole frontier (a bounded suboptimal search, which
+ expands by an inflated cost or by the distance to the goal and stops by
+ the least lower bound \f$ f_{\mathrm{min}} \f$; a branch and bound by
+ best estimate, which prunes by the least bound of the open nodes) keep
+ the ids in two such heaps, by the key and by the bound
+ (`IndexedHeapPair`): the two minima are read in \f$ O( 1 ) \f$, and a
+ `pop()` by the key removes the id from the heap of the bounds by
+ Lemma 2, so that every operation costs two walks,
+ \f$ O( d \log_d n ) \f$. A heap of the bounds with lazy deletion, in
+ which the ids popped stay until they reach its top, saves the second walk
+ of `pop()` but keeps up to \f$ O( m ) \f$ stale entries for \f$ m \f$
+ operations and needs a stamp per entry to tell the copies of an id
+ pushed again; the pair keeps exactly \f$ n \f$ entries in each heap and
+ changes the bound of an id where it is.
+
+ An ordered frontier, read in order from its least item and changed
+ anywhere (a parallel search that looks among the first items for one it
+ may expand, or a list of free blocks kept by their least key), is not a
+ heap but an ordered dictionary with iterators: of the trees of ADS,
+ `BTreeMap` has the iteration from the least key and the removal by an
+ iterator, `erase( it )`, which gives the item after it, besides
+ `lowerBound()`, along \f$ O( \log n ) \f$ nodes of a few lines of cache (see
+ \ref theory_tree_btree), while `SkipList`, `BTree` and `AVLTree`
+ remove by the key alone. A frontier that is only popped is better kept
+ in a heap, whose items need no order beyond the minimum.
+
  The heap with pointers of `LinkedHeapPriorityQueue.h` keeps the same shape
  on nodes linked to their parent and children. The node \f$ k \f$ of the
  numbering by levels from 1 is reached from the root by the bits of
@@ -241,7 +293,7 @@
  `deleteMin()` costs \f$ O( D ) \f$ amortized, and the next lemma bounds
  \f$ D \f$.
 
- <em>Lemma 2 (the degrees of a Fibonacci heap).</em> A node of degree
+ <em>Lemma 3 (the degrees of a Fibonacci heap).</em> A node of degree
  \f$ k \f$ has at least
  \f[
    F_{k+2} \ge \phi^k \tag{4}
@@ -284,6 +336,18 @@
  front of a queue and putting the result at its back, until one tree is
  left; it pays when the insertions outnumber the extractions.
 
+ The pairing heap removes any node by the delete of Fredman et al.: the
+ node is cut from its siblings, its children are joined by the two passes
+ of `deleteMin()`, and the tree that results is linked with the root (or
+ put in the list beside it with `Aux`), so that `erase()` costs as a
+ `deleteMin()` on the subtree of the node, \f$ O( \log n ) \f$
+ amortized, the potential of the analysis counting the trees joined there
+ as it counts those of the root. A raise of the priority cannot leave the
+ node where it is, since its children may now be smaller than it: the
+ node is taken out in the same way, its children joined in its place, and
+ inserted again alone, with the same handle (`increase()`), at the same
+ cost.
+
  \section theory_priority_monotone Monotone queues of integer keys
 
  On a monotone queue whose keys are integers, the minimum can be found by
@@ -307,7 +371,7 @@
  \f$ x_r \f$ the digit \f$ r \f$ of \f$ x \f$, and \f$ r = 0 \f$ if
  \f$ x = \ell \f$.
 
- <em>Lemma 3 (the order of the buckets).</em> With \f$ x , y \ge \ell \f$,
+ <em>Lemma 4 (the order of the buckets).</em> With \f$ x , y \ge \ell \f$,
  if the bucket of \f$ x \f$ has a smaller index than that of \f$ y \f$, then
  \f$ x < y \f$; and the keys of a bucket of the row \f$ r = 0 \f$ are all
  equal.
@@ -358,7 +422,7 @@
  long as the largest \f$ g \f$, and the layer stays dense until it empties,
  when it frees the array and is sparse again.
 
- <em>Lemma 4 (the cost of a layer).</em> Between two times at which a layer is
+ <em>Lemma 5 (the cost of a layer).</em> Between two times at which a layer is
  empty, \f$ m \f$ pushes into it and as many pops cost \f$ O( m + D ) \f$ if
  its items have at most \f$ R \f$ distinct \f$ g \ge D \f$, and
  \f$ O( m + D + G ) \f$ otherwise, \f$ G \f$ the largest \f$ g \f$ pushed
@@ -523,6 +587,13 @@
       of priority queues, Proceedings of the 16th Workshop on Algorithm
       Engineering and Experiments (ALENEX), 61-72, 2014,
       doi:10.1137/1.9781611973198.7
+ \see J. Pearl, J. H. Kim, Studies in semi-admissible heuristics, IEEE
+      Transactions on Pattern Analysis and Machine Intelligence 4(4),
+      392-399, 1982, doi:10.1109/TPAMI.1982.4767270
+ \see J. T. Thayer, W. Ruml, Bounded suboptimal search: a direct approach
+      using inadmissible estimates, Proceedings of the 22nd International
+      Joint Conference on Artificial Intelligence (IJCAI), 674-679, 2011,
+      doi:10.5591/978-1-57735-516-8/IJCAI11-119
  \see R. B. Dial, Algorithm 360: shortest-path forest with topological
       ordering, Communications of the ACM 12(11), 632-633, 1969,
       doi:10.1145/363269.363610

@@ -80,6 +80,7 @@ module;
 #include "ADS/compression/Rans.h"
 #include "ADS/compression/StreamVByte.h"
 #include "ADS/compression/Tans.h"
+#include "ADS/concurrent/Backoff.h"
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/ConcurrentUnionFind.h"
@@ -209,6 +210,7 @@ module;
 #include "ADS/optimization/ShortestJobFirst.h"
 #include "ADS/optimization/StockTrading.h"
 #include "ADS/optimization/WeightedIntervals.h"
+#include "ADS/parallel/Affinity.h"
 #include "ADS/parallel/Channels.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/Farm.h"
@@ -239,6 +241,7 @@ module;
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/IndexedDaryHeap.h"
+#include "ADS/priority/IndexedHeapPair.h"
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
 #include "ADS/priority/ListPriorityQueue.h"
 #include "ADS/priority/LoserTree.h"
@@ -370,6 +373,7 @@ module;
 #include "ADS/succinct/LAVector.h"
 #include "ADS/succinct/LoudsTree.h"
 #include "ADS/succinct/MoveStructure.h"
+#include "ADS/succinct/PackedArray.h"
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/RankSelect.h"
@@ -751,6 +755,9 @@ export namespace ADS {
  // ADS/compression/Tans.h
  using ADS::tansCompress;
  using ADS::tansDecompress;
+
+ // ADS/concurrent/Backoff.h
+ using ADS::Backoff;
 
  // ADS/concurrent/ConcurrentCuckooTable.h
  using ADS::ConcurrentCuckooTable;
@@ -1447,6 +1454,12 @@ export namespace ADS {
  using ADS::WeightedInterval;
  using ADS::maxinterval;
 
+ // ADS/parallel/Affinity.h
+ using ADS::affinityCpus;
+ using ADS::availableCpus;
+ using ADS::currentCpu;
+ using ADS::pinThread;
+
  // ADS/parallel/Channels.h
  using ADS::ChannelFamily;
  using ADS::ChannelPort;
@@ -1548,6 +1561,9 @@ export namespace ADS {
 
  // ADS/priority/IndexedDaryHeap.h
  using ADS::IndexedDaryHeap;
+
+ // ADS/priority/IndexedHeapPair.h
+ using ADS::IndexedHeapPair;
 
  // ADS/priority/LinkedHeapPriorityQueue.h
  using ADS::LinkedHeapPriorityQueue;
@@ -2124,6 +2140,10 @@ export namespace ADS {
 
  // ADS/succinct/MoveStructure.h
  using ADS::MoveStructure;
+
+ // ADS/succinct/PackedArray.h
+ using ADS::PackedArray;
+ using ADS::TritArray;
 
  // ADS/succinct/PartitionedEliasFano.h
  using ADS::PartitionedEliasFano;

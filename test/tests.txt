@@ -1806,3 +1806,15 @@ engineered_dynamic  offline-connectivity   connettività dinamica offline
 engineered_speculative  speculative-for        prenotazioni deterministiche
 engineered_speculative  parallel-kruskal       Kruskal, filter-Kruskal, foresta
 engineered_speculative  parallel-mis-matching  insieme indipendente, abbinamento
+
+# the structures of the searches in large spaces of states, beyond the book
+engineered_search  pointer-table-presize  tabella presizzata, pagine enormi
+engineered_search  indexed-heap-erase     heap indicizzato: increase, erase
+engineered_search  pairing-heap-erase     pairing heap: erase, increase, update
+engineered_search  indexed-heap-pair      coppia di heap, chiave e limite
+engineered_search  ordered-frontier       B+-albero come frontiera ordinata
+engineered_search  packed-array           campi di B bit, saturati, paralleli
+engineered_search  trit-array             cinque valori ternari per byte
+engineered_search  zobrist-ranges         Zobrist su array e span
+engineered_search  backoff-threads        attesa con backoff esponenziale
+engineered_search  affinity               thread fissati ai processori

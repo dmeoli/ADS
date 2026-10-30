@@ -66,9 +66,7 @@ void PointerTable< T , Eq , A >::clear( void )
 template< class T , class Eq , class A >
 void PointerTable< T , Eq , A >::reserve( std::size_t n )
 {
- std::size_t m = f_S.empty() ? 16 : f_S.size();
- while( n * 10 > m * 7 )
-  m *= 2;
+ const std::size_t m = std::max( slotsFor( n ) , f_S.size() );
  if( m == f_S.size() )
   return;
  std::vector< Slot , SA > old( std::move( f_S ) );

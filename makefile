@@ -202,7 +202,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
-            learned stringdicts flows assignment runtime \
+            learned stringdicts flows assignment runtime bestfirst \
             $(if $(GMPON),bignum-own) $(if $(BLASON),matrix-own)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):

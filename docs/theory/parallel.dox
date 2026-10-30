@@ -155,6 +155,17 @@
  leapfrogging of Wagner and Calder), so that a thread that waits still works
  and the bound holds for the nested calls too.
 
+ The bounds above count the units of work, not where they run: a thread
+ that the system moves to another processor finds there cold caches, and on
+ a machine of several sockets the memory it touched first stays on the
+ node of the old one. `Affinity.h` gives the processors that the process
+ may use, as `taskset` or `numactl` left them, and pins the calling thread
+ to the \f$ i \f$-th of them (modulo their number), so that the workers of
+ a pool that pin themselves at their start fill those processors in order
+ and keep them; the executors do not pin their threads by themselves,
+ since two programs pinned to the same processors would slow each other
+ down, and the choice is left to the caller.
+
  \section theory_parallel_patterns Loops, reductions and prefix sums
 
  The blocks of a loop (`blocksOf()` of `Executor.h`) depend only on the number
@@ -786,6 +797,9 @@
 
  \section theory_parallel_refs References
 
+ \see U. Drepper, What every programmer should know about memory, Red
+      Hat, Inc., 2007, section 6.4 (the placement of the threads and of
+      the memory)
  \see R. L. Graham, Bounds on multiprocessing timing anomalies, SIAM
       Journal on Applied Mathematics 17(2), 416-429, 1969,
       doi:10.1137/0117039

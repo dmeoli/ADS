@@ -28,9 +28,19 @@
  * book that take a priority queue run on it [see `ShortestPaths.h`,
  * `MinimumSpanningTree.h`].
  *
+ * Beyond the PRIORITYQUEUE, the heap is addressable in full: `increase()`
+ * raises the key of an id, moving it down as `pop()` moves the last item,
+ * \f$ O( D \log_D s ) \f$, `update()` sets it either way, and `erase()`
+ * removes an id from anywhere, the last item taking its place and moving
+ * up or down from there, \f$ O( D \log_D s ) \f$; these are what a search
+ * needs to take a node out of its frontier or to make it worse, e.g., when
+ * a bound prunes it (see \ref theory_priority_heaps).
+ *
  * The contracts [see `Contract.h`]: the ids are in \f$ [ 0 , n ) \f$,
  * `push()` needs an id not in the heap, `decrease()` one in the heap and a
- * key not greater than its own, `top()` and `pop()` a heap that is not
+ * key not greater than its own, `increase()` one in the heap and a key not
+ * less than its own, `update()` and `erase()` one in the heap, `top()` and
+ * `pop()` a heap that is not
  * empty; the invariant is the order of the heap, no key less than that of
  * the parent, with the places of the ids in their vector. The operations are
  * defined in `IndexedDaryHeap.tpp`.
@@ -156,6 +166,47 @@ class IndexedDaryHeap {
  /// \f]
  /// \pre the id is in the heap, \f$ k \f$ not greater than its key
  void decrease( int id , const K & k );
+
+ /// raises the key of the id to \f$ k \f$, in \f$ O( D \log_D s ) \f$
+ /// time
+ ///
+ /// In pseudocode (beyond the book), with \f$ \mathrm{down}() \f$ of
+ /// `pop()`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{increase}( \mathit{id} , k ) \cr
+ /// 2 & \quad \mathrm{down}( \mathit{pos}[ \mathit{id} ] , ( k ,
+ ///     \mathit{id} ) )
+ /// \end{array}}
+ /// \f]
+ /// \pre the id is in the heap, \f$ k \f$ not less than its key
+ void increase( int id , const K & k );
+
+ /// sets the key of the id to \f$ k \f$, by `decrease()` or by
+ /// `increase()`
+ /// \pre the id is in the heap
+ void update( int id , const K & k );
+
+ /// removes the id from the heap, in \f$ O( D \log_D s ) \f$ time
+ ///
+ /// In pseudocode (beyond the book): the last item takes the place of the
+ /// id, and moves up or down from there, since it may be less than the
+ /// parent of the place, if it came from another subtree, or greater than
+ /// a child:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{erase}( \mathit{id} ) \cr
+ /// 2 & \quad i \gets \mathit{pos}[ \mathit{id} ];\ \mathit{pos}[
+ ///     \mathit{id} ] \gets -1;\ s \gets s - 1;\ x \gets A[ s ] \cr
+ /// 3 & \quad \textbf{if}\ i = s\ \textbf{then return} \cr
+ /// 4 & \quad \textbf{if}\ i > 0\ \textbf{and}\ x.\mathit{key} < A[
+ ///     \lfloor ( i - 1 ) / D \rfloor ].\mathit{key}\ \textbf{then}
+ ///     \ \mathrm{up}( i , x ) \cr
+ /// 5 & \quad \textbf{else}\ \mathrm{down}( i , x )
+ /// \end{array}}
+ /// \f]
+ /// \pre the id is in the heap
+ void erase( int id );
 
  /// `push( id , k )` if the id is not in the heap, `decrease( id , k )` if
  /// \f$ k \f$ is less than its key, nothing otherwise; true if the key

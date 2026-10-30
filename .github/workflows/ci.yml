@@ -272,6 +272,15 @@ jobs:
           g++ -std=c++20 -O1 -g -fsanitize=thread -mcx16 -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o tsan16 test/engineered.cpp -pthread
           ./tsan16 concurrent-flat-table-words
+      - name: ThreadSanitizer on the backoff and the packed arrays
+        run: |
+          sudo sysctl vm.mmap_rnd_bits=28
+          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_CONTRACTS=3 -DADS_TEST_SMALL -o tsan-search \
+              test/engineered_search.cpp -pthread
+          for t in backoff-threads packed-array trit-array affinity; do
+            ./tsan-search $t
+          done
       - name: ThreadSanitizer on the bulk operations of the trees by join
         run: |
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \

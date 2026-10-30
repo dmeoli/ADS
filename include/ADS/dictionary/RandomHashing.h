@@ -67,6 +67,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <ranges>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -159,7 +160,8 @@ class ZobristTable {
                                          std::size_t v ) const;
 
  /// the hash of a state, the value of each feature by its place in
- /// \f$ S \f$
+ /// \f$ S \f$, any range with a size and access by index (a vector, an
+ /// array, a span of the state)
  ///
  /// In pseudocode (Zobrist, beyond the book):
  /// \f[
@@ -172,8 +174,9 @@ class ZobristTable {
  /// \end{array}}
  /// \f]
  /// \pre \f$ S \f$ has \f$ n \f$ values, each below \f$ m \f$
- template< class V >
- [[nodiscard]] std::uint64_t hash( const std::vector< V > & S ) const;
+ template< std::ranges::random_access_range S >
+  requires std::ranges::sized_range< S >
+ [[nodiscard]] std::uint64_t hash( const S & s ) const;
 
  /// the hash \f$ h \f$ of a state after the feature \f$ f \f$ changes from
  /// \f$ a \f$ to \f$ b \f$, \f$ h \oplus R[ f ][ a ] \oplus R[ f ][ b ] \f$,

@@ -39,9 +39,19 @@
  * call to the allocator. The two passes run in place on the sibling
  * pointers, with no stack and no vector.
  *
+ * Beyond the PRIORITYQUEUE, `erase()` removes the item of any handle,
+ * joining the children of its node by two passes in its place, and
+ * `increase()` raises a priority by taking the node out in the same way
+ * and inserting it again, alone, so that its handle stays valid; both
+ * cost as a `deleteMin()` on the subtree of the node, \f$ O( \log n ) \f$
+ * amortized, and `update()` takes `decrease()` or `increase()` as the new
+ * priority asks.
+ *
  * The contracts [see `Contract.h`]: `min()`, `minPriority()` and `deleteMin()`
  * need a heap that is not empty, `decrease()` a handle of a node of this
- * heap and a priority not larger than its own; the invariant, checked on
+ * heap and a priority not larger than its own, `increase()` one not
+ * smaller, `erase()` and `update()` a handle of this heap; the invariant,
+ * checked on
  * heaps of at most 1024 nodes, is the order of the heap, the links back
  * and `size()` counting the nodes. The operations are defined in
  * `PairingHeap.tpp`.
@@ -255,6 +265,64 @@ class PairingHeap {
  /// \post \f$ x \f$ has the priority \f$ p \f$
  void decrease( Handle x , const P & p );
 
+ /// removes the item of the node \f$ x \f$, wherever it is, and returns
+ /// it: the subtrees of its children joined by two passes take its place;
+ /// the handle is no longer valid
+ ///
+ /// In pseudocode (the delete of Fredman, Sedgewick, Sleator and Tarjan,
+ /// beyond the book), \f$ \mathrm{twoPass}() \f$ that of `deleteMin()`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{erase}( x ) \cr
+ /// 2 & \quad \textbf{if}\ x = \mathit{min}\ \textbf{then return}
+ ///     \ \mathrm{deleteMin}() \cr
+ /// 3 & \quad t \gets \mathrm{twoPass}( \text{the children of } x );
+ ///     \ n \gets n - 1 \cr
+ /// 4 & \quad \textbf{if}\ x = \mathit{root}\ \textbf{then}
+ ///     \ \mathit{root} \gets t \text{, or the first tree of the list}
+ ///     \text{ if } t = \textbf{nil}\quad \triangleright\ \text{only if }
+ ///     \mathit{Aux} \cr
+ /// 5 & \quad \textbf{else} \cr
+ /// 6 & \qquad \text{cut } x \text{ from its list of siblings} \cr
+ /// 7 & \qquad \textbf{if}\ t \ne \textbf{nil}\ \textbf{and}
+ ///     \ \mathit{Aux}\ \textbf{then}\ \text{put } t \text{ in the list }
+ ///     \text{after } \mathit{root} \cr
+ /// 8 & \qquad \textbf{else if}\ t \ne \textbf{nil}\ \textbf{then}
+ ///     \ \mathit{root} \gets \mathrm{link}( \mathit{root} , t );
+ ///     \ \mathit{min} \gets \mathit{root} \cr
+ /// 9 & \quad \textbf{return}\ x.\mathit{value}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ x \f$ is a node of this heap
+ /// \post one item less
+ T erase( Handle x );
+
+ /// raises to \f$ p \f$ the priority of the node \f$ x \f$, which keeps
+ /// its handle: the node leaves the heap as in `erase()` and comes back as
+ /// in `insert()`, alone, since its children may now be smaller than it
+ ///
+ /// In pseudocode (beyond the book), \f$ \mathrm{detach}( x ) \f$ the
+ /// steps 2 to 8 of `erase()` that leave the node out and keep it:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{increase}( x , p ) \cr
+ /// 2 & \quad \mathrm{detach}( x );\ x.\mathit{priority} \gets p \cr
+ /// 3 & \quad \text{link } x \text{ with } \mathit{root} \text{, or put}
+ ///     \text{ it in the list if } \mathit{Aux} \text{, as }
+ ///     \mathrm{insert}() \text{ does}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ x \f$ is a node of this heap and \f$ p \f$ is not smaller than
+ ///      its priority
+ /// \post \f$ x \f$ has the priority \f$ p \f$
+ void increase( Handle x , const P & p );
+
+ /// sets the priority of the node \f$ x \f$ to \f$ p \f$, by `decrease()`
+ /// or by `increase()`
+ /// \pre \f$ x \f$ is a node of this heap
+ /// \post \f$ x \f$ has the priority \f$ p \f$
+ void update( Handle x , const P & p );
+
 /*--------------------------------------------------------------------------*/
  private:
 
@@ -269,6 +337,16 @@ class PairingHeap {
 
  /// x, not the root, leaves its list
  static void cut( Node * x );
+
+ /// f_min out of the heap, the children joined, the size unchanged
+ void unlinkMin( void );
+
+ /// x out of the heap, the trees of its children joined in its place,
+ /// the size unchanged; x left with no link
+ void detach( Node * x );
+
+ /// x, with no link, into the heap as insert() puts a node
+ void attach( Node * x );
 
  /// the subtree of x heap ordered with consistent links, its nodes counted
  /// in n

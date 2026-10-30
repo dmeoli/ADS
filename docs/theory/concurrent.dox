@@ -569,8 +569,28 @@
  waiter, about to sleep, pays the system call, and a notification with
  nobody waiting costs the read of a line that stays shared.
 
+ Before it sleeps, a waiter may spin for a while, since a condition that
+ becomes true within a few microseconds costs no system call then; the
+ spinning itself is not free, as the loads and the failed compare-and-swaps
+ of the threads that spin on one line keep moving it between their caches.
+ The exponential backoff of Anderson (`Backoff.h`) runs \f$ 2^k \f$ pauses
+ of the processor before the look \f$ k + 1 \f$, up to a bound \f$ S \f$,
+ and from then on yields the processor to the system at each look: after
+ \f$ k \f$ looks a waiter has spun \f$ 2^{k+1} - 1 \f$ pauses, so that
+ the looks of \f$ p \f$ threads at one line thin out geometrically while
+ the delay added to a wait of length \f$ t \f$ is less than \f$ t \f$
+ (the last doubling at most doubles it), and a wait longer than
+ \f$ 2^{S+1} \f$ pauses gives the processor back. `spinning()` tells when
+ the spinning is over, which is the time to move to the event count above.
+
  \section theory_concurrent_refs References
 
+ \see T. E. Anderson, The performance of spin lock alternatives for
+      shared-memory multiprocessors, IEEE Transactions on Parallel and
+      Distributed Systems 1(1), 6-16, 1990, doi:10.1109/71.80120
+ \see J. M. Mellor-Crummey, M. L. Scott, Algorithms for scalable
+      synchronization on shared-memory multiprocessors, ACM Transactions
+      on Computer Systems 9(1), 21-65, 1991, doi:10.1145/103727.103729
  \see M. P. Herlihy, J. M. Wing, Linearizability: a correctness condition
       for concurrent objects, ACM Transactions on Programming Languages and
       Systems 12(3), 463-492, 1990, doi:10.1145/78969.78972

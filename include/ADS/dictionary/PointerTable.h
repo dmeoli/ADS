@@ -20,7 +20,10 @@
  * the object that `make()` returns only if the key is not there, with one
  * inspection; `prefetch( hash )` asks for the first place of a hash, so
  * that the misses of the lookups of all the successors of a node overlap.
- * The places come from the allocator `A`, which may give, e.g., huge pages.
+ * The places come from the allocator `A`, which may give, e.g., huge pages
+ * [see `HugePageAllocator.h`], and `slotsFor( n )` tells how many places
+ * \f$ n \f$ objects take, so that a table built with them, or reserved by
+ * `reserve( n )`, never grows on the way.
  *
  * Two keys are equal by `eq( p , key )`, with `p` a pointer of the table;
  * by default `p->state == key`, the canonical node of a state of a search.
@@ -60,6 +63,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 
+#include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
@@ -114,8 +118,19 @@ class PointerTable {
  /// no object, the places kept; the objects are not touched
  void clear( void );
 
- /// room for \f$ n \f$ objects with no growth
+ /// room for \f$ n \f$ objects with no growth, i.e., at least
+ /// `slotsFor( n )` places
  void reserve( std::size_t n );
+
+ /// the places that \f$ n \f$ objects need with no growth: the least
+ /// power of 2, at least 16, above \f$ 10 n / 7 \f$, so that a table
+ /// built with it, or reserved for \f$ n \f$, takes them all
+ [[nodiscard]] static constexpr std::size_t slotsFor( std::size_t n ) {
+  std::size_t m = 16;
+  while( n * 10 > m * 7 )
+   m *= 2;
+  return( m );
+  }
 
  /// the object of the key, whose hash is `hash`, and false; if there is
  /// none, the object that `make()` returns, now in the table, and true
