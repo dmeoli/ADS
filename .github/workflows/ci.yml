@@ -325,6 +325,10 @@ jobs:
               preflags: --oversubscribe }
           - { mpi: mpich , packages: libmpich-dev mpich , preflags: "" }
     runs-on: ubuntu-latest
+    # the runners have no InfiniBand: UCX on its shared memory and TCP alone,
+    # since its probe of the verbs makes MPI_Init fail on some of them
+    env:
+      UCX_TLS: self,sm,tcp
     steps:
       - uses: actions/checkout@v4
       - name: ${{ matrix.mpi }}
