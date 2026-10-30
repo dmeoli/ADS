@@ -14,7 +14,8 @@
  * another runs on as many threads as the runtime gives a nested region (by
  * default 1, i.e., in order on that thread). `run( p , f )` is a region
  * `omp parallel` of \f$ p \f$ threads, the thread \f$ i \f$ of the team
- * making the call \f$ f( i ) \f$ of a long-lived worker, and its lock is
+ * making the call \f$ f( i ) \f$ of a long-lived worker (the caller is the
+ * thread 0, so that `isRunCaller()` holds in \f$ f( 0 ) \f$), and its lock is
  * the lock of OpenMP (`omp_lock_t`, `OpenMPLock`); a runtime that gives the
  * region fewer threads (a run nested in a region, or a limit of the
  * threads) makes no call and throws, since the workers could not all run at
@@ -179,6 +180,7 @@ class OpenMPExecutor {
  template< class F >
  void run( std::size_t p , F && f ) {
   ADS_PRE( p <= f_p );
+  detail::RunCaller caller;
   if( p <= 1 ) {
    if( p == 1 )
     f( 0 );

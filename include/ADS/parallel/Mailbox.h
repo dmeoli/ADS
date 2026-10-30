@@ -17,6 +17,29 @@
  * whole computation has ended. `ownerOf( k , p )` is the worker that owns
  * the key \f$ k \f$ when the keys are spread by hashing.
  *
+ * No operation waits for another worker. A bounded family (the mesh) may
+ * take only part of a batch, or none of it, when the queue of the pair is
+ * full: the rest stays in the outbox, `send()` tries it again only when a
+ * batch more has come for that destination (so that a full queue costs a
+ * push per batch and not per message), and `flush()` tries all the outboxes
+ * and returns false while something is left in them; `sent()` counts the
+ * messages pushed and `batches()` the pushes that the channels took. A
+ * worker whose `quiescent()` returns false must keep polling its inbox,
+ * which empties the queues that the others are waiting to push into.
+ *
+ * `stop()`, from any thread, ends the computation at once, whatever the
+ * messages on their way (a limit on the work, or a bound that closes the
+ * search): from then on `quiescent()` and `terminated()` are true for every
+ * worker, `poll()` drains nothing, `send()` only appends to the outbox and
+ * `flush()` pushes nothing. Once the workers have returned from `run()`,
+ * `leftovers( me , f )` hands to \f$ f \f$ the messages left to `me`, those
+ * of its outboxes and those of its inbox, and `leftovers( f )` those of
+ * all; every message sent is then handed to a function exactly once, by a
+ * `poll()` or by `leftovers()`, also when `stop()` races with the sends
+ * (see \ref theory_parallel_quiescence), so that the nodes of a search
+ * stopped by a limit can go back to its frontier, where they bound the
+ * optimum.
+ *
  * The termination is detected by counting: a counter \f$ C \f$ shared by the
  * workers holds the number of the workers <em>active</em> (all of them at
  * the start) plus the number of the messages pushed and not yet drained. A
@@ -38,8 +61,9 @@
  * only the worker `me` calls the operations with `me`; a worker sends only
  * while active, i.e., before its first `quiescent()` or after a `poll()` that
  * found messages, and becomes active only by receiving (its own work comes
- * from the messages, or it was there from the start); `f` does not throw; a
- * mailbox serves one computation.
+ * from the messages, or it was there from the start), or after `stop()`;
+ * `leftovers()` is called when no worker calls the mailbox any more; `f`
+ * does not throw; a mailbox serves one computation.
  *
  * \see E. W. Dijkstra, C. S. Scholten, Termination detection for diffusing
  *      computations, Information Processing Letters 11(1), 1-4, 1980,
@@ -103,7 +127,8 @@ template< class K , class H = std::hash< K > >
 
 /// the mailbox of \f$ p \f$ workers on the channels `Ch` (by default the
 /// mesh, the family that `DefaultChannels` gives every executor), with
-/// outboxes of batches and the detection of the termination
+/// outboxes of batches, the detection of the termination, the stop and the
+/// recovery of the messages left
 template< class Msg , ChannelFamily Ch = MeshChannels< Msg > >
 class Mailbox {
 
@@ -124,6 +149,8 @@ class Mailbox {
   for( auto & w : f_worker ) {
    w = std::make_unique< Worker >();
    w->out.resize( p );
+   w->next.assign( p , batch );
+   w->listed.assign( p , 0 );
    }
   f_count.value.store( std::int64_t( p ) , std::memory_order_relaxed );
   }
@@ -132,39 +159,47 @@ class Mailbox {
  [[nodiscard]] std::size_t size( void ) const { return( f_worker.size() ); }
 
  /// \f$ x \f$ appended to the outbox of `me` for `to`, which is pushed when
- /// it holds a batch
+ /// it holds a batch more than a push left in it; never waits, and after
+ /// `stop()` only appends
  ///
- /// In pseudocode (beyond the book), \f$ O_{\mathit{to}} \f$ the outbox:
+ /// In pseudocode (beyond the book), \f$ O_{\mathit{to}} \f$ the outbox and
+ /// \f$ N_{\mathit{to}} \f$ its threshold, at first \f$ \mathit{batch} \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{send}( \mathit{me} , \mathit{to} , x )
  ///     \cr
  /// 2 & \quad \text{append } x \text{ to } O_{\mathit{to}} \cr
- /// 3 & \quad \textbf{if}\ |O_{\mathit{to}}| \ge \mathit{batch}\ \textbf{then}
- ///     \ \mathrm{push}( \mathit{me} , \mathit{to} )
+ /// 3 & \quad \textbf{if}\ |O_{\mathit{to}}| \ge N_{\mathit{to}}
+ ///     \ \textbf{and not stopped then}\ \mathrm{push}( \mathit{me} ,
+ ///     \mathit{to} )
  /// \end{array}}
  /// \f]
- /// \pre `me` and `to` are workers, `me` is active
+ /// \pre `me` and `to` are workers, `me` is active or the mailbox stopped
  void send( std::size_t me , std::size_t to , Msg x ) {
   ADS_PRE( ( me < size() ) && ( to < size() ) );
   Worker & w = *f_worker[ me ];
-  ADS_PRE( w.active );
+  ADS_PRE( w.active || stopped() );
   auto & o = w.out[ to ];
-  if( o.empty() )
+  if( ! w.listed[ to ] ) {
+   w.listed[ to ] = 1;
    w.dirty.push_back( to );
+   }
   o.push_back( std::move( x ) );
-  if( o.size() >= f_batch )
+  if( ( o.size() >= w.next[ to ] ) && ! stopped() )
    push( me , to );
   }
 
- /// the outboxes of `me` pushed, true if all of them are empty after it
- /// (a bounded family may refuse some messages, which stay)
+ /// the outboxes of `me` pushed, true if all of them are empty after it:
+ /// a bounded family may refuse some messages, which stay in their outbox
+ /// for a later push, and the call never waits; after `stop()` nothing is
+ /// pushed
  ///
  /// In pseudocode (beyond the book), \f$ C \f$ the shared counter:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{flush}( \mathit{me} ) \cr
- /// 2 & \quad \textbf{foreach}\ \mathit{to} \text{ with } O_{\mathit{to}}
+ /// 2 & \quad \textbf{if}\ \textbf{not}\ \text{stopped}\ \textbf{then}
+ ///     \ \textbf{foreach}\ \mathit{to} \text{ with } O_{\mathit{to}}
  ///     \ne \emptyset\ \textbf{do}\ \mathrm{push}( \mathit{me} ,
  ///     \mathit{to} ) \cr
  /// 3 & \quad \textbf{return}\ \text{all the outboxes are empty} \cr
@@ -174,18 +209,23 @@ class Mailbox {
  /// 6 & \quad j \gets \mathrm{tryPush}( \mathit{me} , \mathit{to} ,
  ///     O_{\mathit{to}} );\ C \gets C - ( k - j ) \cr
  /// 7 & \quad \text{remove the first } j \text{ messages of }
- ///     O_{\mathit{to}}
+ ///     O_{\mathit{to}};\ N_{\mathit{to}} \gets |O_{\mathit{to}}| +
+ ///     \mathit{batch}
  /// \end{array}}
  /// \f]
  /// \pre `me` is a worker
  bool flush( std::size_t me ) {
   ADS_PRE( me < size() );
   Worker & w = *f_worker[ me ];
+  const bool go = ! stopped();
   std::size_t keep = 0;
   for( std::size_t i = 0 ; i < w.dirty.size() ; ++i ) {
    const std::size_t to = w.dirty[ i ];
-   push( me , to );
-   if( ! w.out[ to ].empty() )
+   if( go )
+    push( me , to );
+   if( w.out[ to ].empty() )
+    w.listed[ to ] = 0;
+   else
     w.dirty[ keep++ ] = to;
    }
   w.dirty.resize( keep );
@@ -193,24 +233,28 @@ class Mailbox {
   }
 
  /// the calls `f( x )` on the messages of the inbox of `me`, and their
- /// number; a passive worker that finds messages becomes active
+ /// number; a passive worker that finds messages becomes active; after
+ /// `stop()` nothing is drained, and the messages stay for `leftovers()`
  ///
  /// In pseudocode (beyond the book):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{poll}( \mathit{me} , f ) \cr
- /// 2 & \quad k \gets \mathrm{drain}( \mathit{me} , x \mapsto \textbf{if}
+ /// 2 & \quad \textbf{if}\ \text{stopped}\ \textbf{then return}\ 0 \cr
+ /// 3 & \quad k \gets \mathrm{drain}( \mathit{me} , x \mapsto \textbf{if}
  ///     \ \textbf{not}\ \mathit{active}\ \textbf{then}\ C \gets C + 1;
  ///     \ \mathit{active} \gets \textbf{true}; \cr
  /// & \qquad f( x ) ) \cr
- /// 3 & \quad \textbf{if}\ k > 0\ \textbf{then}\ C \gets C - k \cr
- /// 4 & \quad \textbf{return}\ k
+ /// 4 & \quad \textbf{if}\ k > 0\ \textbf{then}\ C \gets C - k \cr
+ /// 5 & \quad \textbf{return}\ k
  /// \end{array}}
  /// \f]
  /// \pre `me` is a worker
  template< class F >
  std::size_t poll( std::size_t me , F && f ) {
   ADS_PRE( me < size() );
+  if( stopped() )
+   return( 0 );
   Worker & w = *f_worker[ me ];
   const std::size_t k = f_ch.drain( me , [ & ]( Msg && x ) {
    if( ! w.active ) {                        // back to work, counted
@@ -226,25 +270,29 @@ class Mailbox {
   return( k );
   }
 
- /// true if the computation has ended; called by `me` with no work left,
- /// it first pushes its outboxes and, if they are all empty, becomes
- /// passive
+ /// true if the computation has ended or the mailbox has stopped; called
+ /// by `me` with no work left, it first pushes its outboxes and, if they
+ /// are all empty, becomes passive; while it returns false, `me` must keep
+ /// polling its inbox, which lets the others push what they retain
  ///
  /// In pseudocode (the deficit counting of Dijkstra and Scholten on a
  /// shared counter, beyond the book):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{quiescent}( \mathit{me} ) \cr
- /// 2 & \quad \textbf{if}\ \mathit{active}\ \textbf{then} \cr
- /// 3 & \qquad \textbf{if}\ \textbf{not}\ \mathrm{flush}( \mathit{me} )
+ /// 2 & \quad \textbf{if}\ \text{stopped}\ \textbf{then return true} \cr
+ /// 3 & \quad \textbf{if}\ \mathit{active}\ \textbf{then} \cr
+ /// 4 & \qquad \textbf{if}\ \textbf{not}\ \mathrm{flush}( \mathit{me} )
  ///     \ \textbf{then}\ \textbf{return false} \cr
- /// 4 & \qquad \mathit{active} \gets \textbf{false};\ C \gets C - 1 \cr
- /// 5 & \quad \textbf{return}\ C = 0
+ /// 5 & \qquad \mathit{active} \gets \textbf{false};\ C \gets C - 1 \cr
+ /// 6 & \quad \textbf{return}\ C = 0
  /// \end{array}}
  /// \f]
  /// \pre `me` is a worker
  bool quiescent( std::size_t me ) {
   ADS_PRE( me < size() );
+  if( stopped() )
+   return( true );
   Worker & w = *f_worker[ me ];
   if( w.active ) {
    if( ! flush( me ) )
@@ -256,9 +304,74 @@ class Mailbox {
   return( f_count.value.load( std::memory_order_acquire ) == 0 );
   }
 
- /// true once the computation has ended (any thread may ask)
+ /// true once the computation has ended or the mailbox has stopped (any
+ /// thread may ask)
  [[nodiscard]] bool terminated( void ) const {
-  return( f_count.value.load( std::memory_order_acquire ) == 0 );
+  return( stopped() ||
+          ( f_count.value.load( std::memory_order_acquire ) == 0 ) );
+  }
+
+ /// ends the computation at once, whatever the messages on their way: from
+ /// then on `quiescent()` and `terminated()` are true for every worker,
+ /// `poll()` drains nothing and `send()` and `flush()` push nothing, so
+ /// that each message sent is either handed to \f$ f \f$ by a `poll()` or
+ /// left for `leftovers()`, once; any thread may call it, any number of
+ /// times (see \ref theory_parallel_quiescence)
+ void stop( void ) { f_stop.value.store( true , std::memory_order_release ); }
+
+ /// true once `stop()` has been called
+ [[nodiscard]] bool stopped( void ) const {
+  return( f_stop.value.load( std::memory_order_acquire ) );
+  }
+
+ /// the calls `f( x )` on the messages left to `me`: those of its outboxes,
+ /// for each destination in the order of their sends, then those of its
+ /// inbox; their number. Called after the workers have returned from
+ /// `run()` (or have all stopped calling the mailbox), by any thread, it
+ /// empties both, so that with `stop()` every message sent has been handed
+ /// to \f$ f \f$ exactly once, by a `poll()` or here; after a termination
+ /// detected by `quiescent()` there is none
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{leftovers}( \mathit{me} , f ) \cr
+ /// 2 & \quad \textbf{foreach}\ \mathit{to} \text{ with } O_{\mathit{to}}
+ ///     \ne \emptyset\ \textbf{do}\ \textbf{foreach}\ x \in O_{\mathit{to}}
+ ///     \ \textbf{do}\ f( x );\ O_{\mathit{to}} \gets \emptyset \cr
+ /// 3 & \quad \textbf{return}\ \text{those and}\ \mathrm{drain}(
+ ///     \mathit{me} , f )
+ /// \end{array}}
+ /// \f]
+ /// \pre `me` is a worker; no worker calls the mailbox meanwhile
+ template< class F >
+ std::size_t leftovers( std::size_t me , F && f ) {
+  ADS_PRE( me < size() );
+  Worker & w = *f_worker[ me ];
+  std::size_t n = 0;
+  for( const std::size_t to : w.dirty ) {
+   auto & o = w.out[ to ];
+   n += o.size();
+   for( auto & x : o )
+    f( std::move( x ) );
+   o.clear();
+   w.listed[ to ] = 0;
+   w.next[ to ] = f_batch;
+   }
+  w.dirty.clear();
+  return( n + f_ch.drain( me , [ & ]( Msg && x ) { f( std::move( x ) ); } )
+          );
+  }
+
+ /// `leftovers( me , f )` of every worker, in the order of the workers,
+ /// and the number of all the messages
+ /// \pre no worker calls the mailbox meanwhile
+ template< class F >
+ std::size_t leftovers( F && f ) {
+  std::size_t n = 0;
+  for( std::size_t me = 0 ; me < size() ; ++me )
+   n += leftovers( me , f );
+  return( n );
   }
 
  /// the messages that `me` has pushed so far
@@ -267,7 +380,14 @@ class Mailbox {
   return( f_worker[ me ]->sent );
   }
 
- /// the messages that `me` has drained so far
+ /// the batches that `me` has pushed so far, i.e., the pushes that the
+ /// channels took at least one message of
+ [[nodiscard]] std::uint64_t batches( std::size_t me ) const {
+  ADS_PRE( me < size() );
+  return( f_worker[ me ]->batches );
+  }
+
+ /// the messages that `me` has drained so far by `poll()`
  [[nodiscard]] std::uint64_t received( std::size_t me ) const {
   ADS_PRE( me < size() );
   return( f_worker[ me ]->received );
@@ -282,9 +402,12 @@ class Mailbox {
  /// the state of a worker, which only the worker touches
  struct alignas( 128 ) Worker {
   std::vector< std::vector< Msg > > out;   ///< the outboxes
-  std::vector< std::size_t > dirty;        ///< those not empty
+  std::vector< std::size_t > next;         ///< the size of the next push
+  std::vector< char > listed;              ///< whether in dirty
+  std::vector< std::size_t > dirty;        ///< those that may not be empty
   bool active = true;                      ///< holds an activity of C
   std::uint64_t sent = 0;                  ///< the messages pushed
+  std::uint64_t batches = 0;               ///< the pushes taken
   std::uint64_t received = 0;              ///< the messages drained
   };
 
@@ -293,8 +416,13 @@ class Mailbox {
   std::atomic< std::int64_t > value{ 0 };   ///< activities and messages
   };
 
+ /// the flag of the stop, on lines of its own, read at each send
+ struct alignas( 128 ) Flag {
+  std::atomic< bool > value{ false };      ///< set by stop()
+  };
+
  /// the outbox of `me` for `to` pushed, as many messages as the channel
- /// takes
+ /// takes; the next push when a batch more has come
  void push( std::size_t me , std::size_t to ) {
   Worker & w = *f_worker[ me ];
   auto & o = w.out[ to ];
@@ -307,14 +435,19 @@ class Mailbox {
   if( j < k )
    f_count.value.fetch_sub( std::int64_t( k - j ) ,
                             std::memory_order_acq_rel );
-  w.sent += j;
-  o.erase( o.begin() , o.begin() + std::ptrdiff_t( j ) );
+  if( j > 0 ) {
+   w.sent += j;
+   ++w.batches;
+   o.erase( o.begin() , o.begin() + std::ptrdiff_t( j ) );
+   }
+  w.next[ to ] = o.size() + f_batch;
   }
 
  Ch f_ch;                                  ///< the channels
  std::vector< std::unique_ptr< Worker > > f_worker;   ///< one per worker
  std::size_t f_batch;                      ///< the messages of a batch
  Counter f_count;                          ///< the shared counter
+ Flag f_stop;                              ///< the stop
  };  // end( class Mailbox )
 
 /*--------------------------------------------------------------------------*/

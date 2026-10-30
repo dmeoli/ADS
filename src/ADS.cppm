@@ -910,6 +910,8 @@ export namespace ADS {
 
  // ADS/distributed/MPIMailbox.h
 #if defined( ADS_WITH_MPI )
+ using ADS::MPIByteMailbox;
+ using ADS::MPICodec;
  using ADS::MPIMailbox;
 #endif
 
@@ -1475,6 +1477,7 @@ export namespace ADS {
  using ADS::Sequential;
  using ADS::WorkerExecutor;
  using ADS::blocksOf;
+ using ADS::isRunCaller;
  using ADS::kBlocks;
  using ADS::kGrain;
  using ADS::parallelExclusiveScan;

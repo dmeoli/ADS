@@ -16,7 +16,11 @@
  * messages of a process to itself; the termination of random trees spread
  * over the processes by hashing, against their sequential count, with no
  * process seeing the end before the last node, and with no work at all;
- * the distributed minimum, in rounds and while the processes poll.
+ * the distributed minimum, in rounds and while the processes poll; the
+ * messages of bytes with tags (empty, longer than a batch), those of a
+ * codec (strings, vectors) and two kinds in a variant; the stop by one
+ * process, by all, by the last one and by none, every message handed once
+ * by a poll or by leftovers().
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -36,10 +40,14 @@
 #include "ADS/parallel/ThreadPool.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <optional>
 #include <random>
+#include <span>
+#include <string>
+#include <variant>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -314,6 +322,251 @@ ADS_TEST( "mpi-termination" )
   for( std::uint64_t seed : { 1 , 2 , 3 } )
    CHECK( mailboxTree( b , 12 , seed , true ) );
   }
+ }
+
+namespace {
+
+/// the bytes of the message k of the process q: its length and its content
+std::vector< std::byte > bytesOf( std::size_t q , std::uint64_t k )
+{
+ const std::size_t n = ( k % 50 == 7 ) ? 100000 : std::size_t( k * 7 % 40 );
+ std::vector< std::byte > b( n );
+ for( std::size_t i = 0 ; i < n ; ++i )
+  b[ i ] = std::byte( ( q * 31 + k + i ) & 0xFF );
+ return( b );
+ }
+
+/// a checksum of the bytes of a message of tag t
+std::uint64_t sumOf( std::uint32_t t , std::span< const std::byte > b )
+{
+ std::uint64_t s = 1469598103934665603ull ^ t;
+ for( const std::byte x : b )
+  s = ( s ^ std::uint64_t( x ) ) * 1099511628211ull;
+ return( s ^ ( std::uint64_t( b.size() ) << 40 ) );
+ }
+
+}  // end( namespace )
+
+// messages of bytes with three tags among the processes, each to a random
+// process (itself included): empty messages, messages longer than a batch,
+// batches of 64 bytes and of 64 KB; the counts and the checksums of each
+// tag known in advance
+ADS_TEST( "mpi-bytes" )
+{
+ MPIExecutor ex;
+ const std::size_t P = ex.size() , me = ex.rank();
+ for( std::size_t b : { 64 , 65536 } ) {
+  const std::uint64_t N = 700;
+  std::uint64_t expect[ 3 ] = { 0 , 0 , 0 } , sumExpect[ 3 ] = { 0 , 0 , 0 };
+  for( std::size_t q = 0 ; q < P ; ++q ) {
+   std::mt19937_64 g( 13 * q + b );
+   for( std::uint64_t k = 0 ; k < N ; ++k )
+    if( g() % P == me ) {
+     const auto t = std::uint32_t( k % 3 );
+     ++expect[ t ];
+     sumExpect[ t ] += sumOf( t , bytesOf( q , k ) );
+     }
+   }
+  MPIByteMailbox mb( ex.comm() , b );
+  std::uint64_t got[ 3 ] = { 0 , 0 , 0 } , sum[ 3 ] = { 0 , 0 , 0 };
+  bool bad = false;
+  auto take = [ & ]( std::uint32_t t , std::span< const std::byte > x ) {
+   if( t >= 3 ) {
+    bad = true;
+    return;
+    }
+   ++got[ t ];
+   sum[ t ] += sumOf( t , x );
+   };
+  std::mt19937_64 g( 13 * me + b );
+  for( std::uint64_t k = 0 ; k < N ; ++k ) {
+   mb.send( std::size_t( g() % P ) , std::uint32_t( k % 3 ) ,
+            bytesOf( me , k ) );
+   if( k % 37 == 0 )
+    mb.poll( take );
+   }
+  while( ! mb.quiescent() )
+   mb.poll( take );
+  CHECK( ! bad );
+  for( int t = 0 ; t < 3 ; ++t ) {
+   CHECK( got[ t ] == expect[ t ] );
+   CHECK( sum[ t ] == sumExpect[ t ] );
+   }
+  CHECK( mb.sent() == N );
+  CHECK( mb.received() == expect[ 0 ] + expect[ 1 ] + expect[ 2 ] );
+  CHECK( mb.leftovers( take ) == 0 );
+  }
+ }
+
+namespace {
+
+/// two kinds of trivially copyable messages
+struct Ping {
+ std::uint64_t id;
+ };
+struct Pair {
+ std::uint32_t a , b;
+ };
+
+}  // end( namespace )
+
+// messages that are not trivially copyable, by MPICodec: strings (some
+// empty) and vectors of integers; two kinds in a variant on the typed path
+ADS_TEST( "mpi-codec" )
+{
+ MPIExecutor ex;
+ const std::size_t P = ex.size() , me = ex.rank();
+ const std::uint64_t N = 500;
+ auto text = []( std::size_t q , std::uint64_t k ) {
+  return( std::string( std::size_t( k % 9 ) , char( 'a' + ( q + k ) % 26 ) )
+          + std::to_string( q * 1000 + k ) );
+  };
+ std::uint64_t expect = 0 , lenExpect = 0;
+ for( std::size_t q = 0 ; q < P ; ++q )
+  for( std::uint64_t k = 0 ; k < N ; ++k )
+   if( ( q + k ) % P == me ) {
+    ++expect;
+    lenExpect += text( q , k ).size();
+    }
+ {
+  MPIMailbox< std::string > mb( ex.comm() , 128 );
+  std::uint64_t got = 0 , len = 0;
+  bool bad = false;
+  auto take = [ & ]( std::string && s ) {
+   ++got;
+   len += s.size();
+   // the number at the end names the sender and the message
+   const std::size_t at = s.find_first_of( "0123456789" );
+   const std::uint64_t id = std::stoull( s.substr( at ) );
+   if( s != text( id / 1000 , id % 1000 ) )
+    bad = true;
+   };
+  for( std::uint64_t k = 0 ; k < N ; ++k ) {
+   mb.send( ( me + k ) % P , text( me , k ) );
+   if( k % 11 == 0 )
+    mb.poll( take );
+   }
+  while( ! mb.quiescent() )
+   mb.poll( take );
+  CHECK( ! bad );
+  CHECK( ( got == expect ) && ( len == lenExpect ) );
+  CHECK( mb.leftovers( take ) == 0 );
+  }
+ {
+  MPIMailbox< std::vector< std::uint32_t > > mb( ex.comm() , 256 );
+  std::uint64_t got = 0 , sum = 0 , sumExpect = 0;
+  for( std::size_t q = 0 ; q < P ; ++q )
+   for( std::uint64_t k = 0 ; k < N ; ++k )
+    if( ( q + k ) % P == me )
+     sumExpect += ( k % 5 ) * ( q + k );
+  auto take = [ & ]( std::vector< std::uint32_t > && v ) {
+   ++got;
+   for( auto x : v )
+    sum += x;
+   };
+  for( std::uint64_t k = 0 ; k < N ; ++k )
+   mb.send( ( me + k ) % P ,
+            std::vector< std::uint32_t >( k % 5 , std::uint32_t( me + k ) ) );
+  while( ! mb.quiescent() )
+   mb.poll( take );
+  CHECK( ( got == expect ) && ( sum == sumExpect ) );
+  }
+ {
+  using Kind = std::variant< Ping , Pair >;
+  MPIMailbox< Kind > mb( ex.comm() , 16 );
+  std::uint64_t pings = 0 , pairs = 0 , sum = 0 , sumExpect = 0;
+  for( std::size_t q = 0 ; q < P ; ++q )
+   for( std::uint64_t k = 0 ; k < N ; ++k )
+    if( ( q + k ) % P == me )
+     sumExpect += ( k % 2 ) ? k : ( q + 2 * k );
+  for( std::uint64_t k = 0 ; k < N ; ++k )
+   if( k % 2 )
+    mb.send( ( me + k ) % P , Kind( Ping{ k } ) );
+   else
+    mb.send( ( me + k ) % P , Kind( Pair{ std::uint32_t( me ) ,
+                                           std::uint32_t( 2 * k ) } ) );
+  auto take = [ & ]( const Kind & x ) {
+   if( const auto * p = std::get_if< Ping >( &x ) ) {
+    ++pings;
+    sum += p->id;
+    }
+   else {
+    ++pairs;
+    sum += std::get< Pair >( x ).a + std::get< Pair >( x ).b;
+    }
+   };
+  while( ! mb.quiescent() )
+   mb.poll( take );
+  CHECK( ( pings + pairs == expect ) && ( sum == sumExpect ) );
+  }
+ }
+
+namespace {
+
+/// the traffic of N random messages per process over a mailbox M of
+/// batches of b, stopped by the processes of the mask `who` (bit q for the
+/// rank q) after `after` sends of theirs; every message sent is handed once,
+/// by a poll or by leftovers(), as the counts and the sums over all the
+/// processes tell
+template< class M , class Make , class Key >
+bool stopRun( std::size_t b , std::uint64_t who , std::uint64_t after ,
+              Make make , Key key )
+{
+ MPIExecutor ex;
+ const std::size_t P = ex.size() , me = ex.rank();
+ const std::uint64_t N = 3000;
+ M mb( ex.comm() , b );
+ std::uint64_t sends = 0 , sendSum = 0 , got = 0 , gotSum = 0;
+ auto take = [ & ]( const auto & x ) {
+  ++got;
+  gotSum += key( x );
+  };
+ const bool stopper = ( me < 64 ) && ( ( who >> me ) & 1 );
+ std::mt19937_64 g( 17 * me + b );
+ for( std::uint64_t k = 0 ; ( k < N ) && ! mb.stopped() ; ++k ) {
+  const std::uint64_t id = me * N + k;
+  mb.send( std::size_t( g() % P ) , make( id ) );
+  ++sends;
+  sendSum += id;
+  if( stopper && ( sends == after ) )
+   mb.stop();
+  if( k % 13 == 0 )
+   mb.poll( take );
+  }
+ while( ! mb.quiescent() )
+  mb.poll( take );
+ const bool stopped = mb.stopped();
+ const std::uint64_t polled = got;
+ const std::size_t left = mb.leftovers( take );
+ const bool ok = ( left == got - polled ) && ( mb.terminated() ) &&
+                 ( sumAll( sends ) == sumAll( got ) ) &&
+                 ( sumAll( sendSum ) == sumAll( gotSum ) ) &&
+                 ( ( who == 0 ) ? ( ( left == 0 ) && ! stopped ) : true ) &&
+                 ( stopped || ! ( stopper && ( sends >= after ) ) );
+ return( sumAll( ok ? 0 : 1 ) == 0 );
+ }
+
+}  // end( namespace )
+
+// the stop: by the process 0 after few and many sends, by all at once, by
+// the last one, and no stop; on the typed path, on the bytes and on a codec
+ADS_TEST( "mpi-stop" )
+{
+ MPIExecutor ex;
+ const std::uint64_t last = std::uint64_t( 1 ) << ( ex.size() - 1 );
+ for( std::size_t b : { 1 , 64 } )
+  for( auto [ who , after ] : { std::pair< std::uint64_t ,
+                                           std::uint64_t >( 1 , 1 ) ,
+                                { 1 , 500 } , { ~0ull , 100 } ,
+                                { last , 2000 } , { 0 , 0 } } ) {
+   CHECK( ( stopRun< MPIMailbox< std::uint64_t > >( b , who , after ,
+             []( std::uint64_t id ) { return( id ); } ,
+             []( std::uint64_t x ) { return( x ); } ) ) );
+   CHECK( ( stopRun< MPIMailbox< std::string > >( b * 16 , who , after ,
+             []( std::uint64_t id ) { return( std::to_string( id ) ); } ,
+             []( const std::string & s ) {
+              return( std::uint64_t( std::stoull( s ) ) ); } ) ) );
+   }
  }
 
 // the distributed minimum: rounds of wait(), a round tested while the

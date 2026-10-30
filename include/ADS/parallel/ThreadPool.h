@@ -46,9 +46,10 @@
  *
  * `run( p , f )` runs the \f$ p \f$ calls of long-lived workers at the
  * same time on \f$ p \f$ distinct threads (see
- * \ref theory_parallel_workers): the caller runs \f$ f( 0 ) \f$, and the
- * other calls are claimed one each, under a mutex, by the workers that are
- * idle in their loop, never by a thread that waits inside a call and steals
+ * \ref theory_parallel_workers): the caller runs \f$ f( 0 ) \f$ (the call
+ * in which `isRunCaller()` holds), and the other calls are claimed one
+ * each, under a mutex, by the workers that are idle in their loop, never
+ * by a thread that waits inside a call and steals
  * (a worker that waited for a nested job and took a call of a worker would
  * hold it under its own, which may wait for it forever). A run is the only
  * one of the pool for its time; while it lasts the workers that are not

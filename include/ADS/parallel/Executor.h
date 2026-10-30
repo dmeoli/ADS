@@ -24,11 +24,14 @@
  * needs instead `run( p , f )`, whose \f$ p \f$ calls
  * \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ run at the same time on
  * \f$ p \f$ distinct threads of the executor, and a lock for the data that
- * they share, `lock_type` (the concept `WorkerExecutor`): `Sequential` runs
- * one worker, the others as many as they have threads (see
- * \ref theory_parallel_workers). The channels between the workers, the farm
- * with feedback and the mailbox with the detection of the termination are
- * built on these [see `Channels.h`, `Farm.h` and `Mailbox.h`].
+ * they share, `lock_type` (the concept `WorkerExecutor`), which is Lockable
+ * (`try_lock()` as well, for a worker that skips a busy section):
+ * `Sequential` runs one worker, the others as many as they have threads,
+ * and `isRunCaller()` tells a worker whether it runs on the thread that
+ * called `run()` (see \ref theory_parallel_workers). The channels between
+ * the workers, the farm with feedback and the mailbox with the detection of
+ * the termination are built on these [see `Channels.h`, `Farm.h` and
+ * `Mailbox.h`].
  *
  * On these the header builds the patterns that the algorithms share, each a
  * function of the executor:
@@ -160,7 +163,9 @@ concept Executor = requires( E & e , std::size_t n ,
 /// the executors that also run long-lived workers: `run( p , f )` runs
 /// \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ at the same time on \f$ p \f$
 /// distinct threads and returns when they have returned, and `lock_type`
-/// is a mutex of the executor (`lock()` and `unlock()`)
+/// is a mutex of the executor with the semantics of the named requirement
+/// Lockable of the standard (`lock()`, `unlock()`, and `try_lock()`, which
+/// takes the lock only if it is free and never waits)
 template< class E >
 concept WorkerExecutor = Executor< E > &&
  requires( E & e , std::size_t p , void ( & f )( std::size_t ) ,
@@ -168,7 +173,43 @@ concept WorkerExecutor = Executor< E > &&
   e.run( p , f );
   l.lock();
   l.unlock();
+  { l.try_lock() } -> std::convertible_to< bool >;
   };
+
+namespace detail {
+
+/// whether the running thread is the caller of a run that has not returned
+inline thread_local bool tl_runCaller = false;
+
+/// marks the running thread as the caller of a run for its scope
+class RunCaller {
+ public:
+ /// the mark set, the previous one kept
+ RunCaller( void ) : f_old( tl_runCaller ) { tl_runCaller = true; }
+ /// no copy
+ RunCaller( const RunCaller & ) = delete;
+ /// no copy
+ RunCaller & operator=( const RunCaller & ) = delete;
+ /// the previous mark back
+ ~RunCaller() { tl_runCaller = f_old; }
+ private:
+ bool f_old;                               ///< the mark before
+ };
+
+}  // end( namespace detail )
+
+/// true if the running thread is the thread that called a `run()` of an
+/// executor (or a `feedbackFarm()` [see `Farm.h`]) which has not returned
+/// yet: asked in the call \f$ f( i ) \f$ of a worker, it tells whether that
+/// worker runs on the caller, e.g., \f$ f( 0 ) \f$ on `ThreadPool`,
+/// `OpenMPExecutor` and `Sequential`, any index or none on `TBBExecutor`,
+/// none on `FastFlowExecutor` with \f$ p > 1 \f$ (see
+/// \ref theory_parallel_workers), so that a worker that pins itself to a
+/// processor can leave the caller as it found it
+[[nodiscard]] inline bool isRunCaller( void )
+{
+ return( detail::tl_runCaller );
+ }
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS Sequential ----------------------------*/
@@ -208,6 +249,7 @@ class Sequential {
  template< class F >
  static void run( std::size_t p , F && f ) {
   ADS_PRE( p <= 1 );
+  detail::RunCaller caller;
   if( p == 1 )
    f( 0 );
   }

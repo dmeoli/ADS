@@ -54,7 +54,8 @@ if (ADS_USE_MPI)
     target_link_libraries(engineered_mpi PRIVATE ADS::ADS Threads::Threads)
     target_compile_definitions(engineered_mpi PRIVATE ADS_CONTRACTS=3)
     foreach (t distributed-sort distributed-sort-counts mpi-executor
-               mpi-mailbox mpi-termination mpi-min)
+               mpi-mailbox mpi-termination mpi-min mpi-bytes mpi-codec
+               mpi-stop)
         foreach (np 1 2 3 4)
             add_test(NAME engineered_mpi.${t}.np${np}
                      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG}

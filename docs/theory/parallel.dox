@@ -580,7 +580,12 @@
  run at the same time on \f$ p \f$ distinct threads; `run( p , f )` of the
  executors with workers (the concept `WorkerExecutor` of `Executor.h`) gives
  this, together with `lock_type`, the mutex that the executor prefers for the
- short sections that the workers share.
+ short sections that the workers share. Every `lock_type` is Lockable in the
+ sense of the standard, i.e., it has `try_lock()` besides `lock()` and
+ `unlock()`, which takes the lock only if it is free and never waits: a
+ worker that finds a shared section busy (the update of a common bound, the
+ publication of a part of its work) may then skip it and come back later,
+ instead of queueing behind the holder.
 
  <table>
  <caption>How each executor runs the \f$ p \f$ calls of <tt>run( p , f )
@@ -608,6 +613,19 @@
      <td>each worker is given its own index first</td>
      <td><tt>FastFlowLock</tt>, i.e., <tt>ff::lock_t</tt></td></tr>
  </table>
+
+ A worker that binds itself to a processor (to keep its caches, and its
+ memory on its node) must not bind the thread of the caller, which goes on
+ after the run with the placement the program gave it; `isRunCaller()` of
+ `Executor.h` tells a call whether it runs on that thread. The caller makes
+ \f$ f( 0 ) \f$ on `Sequential`, `ThreadPool` and `OpenMPExecutor` (the
+ thread 0 of a region of OpenMP is the thread that opens it), none of the
+ calls on `FastFlowExecutor` with \f$ p > 1 \f$, where it only waits, and
+ on `TBBExecutor` any one of them or none, since it joins the arena as one
+ more thread; since the calls run at the same time on distinct threads, the
+ caller holds at most one of them, and the mark is a variable of the
+ thread set for the time of the run, so that a worker that asks costs a
+ load.
 
  <em>Lemma 6 (the calls of a run meet).</em> Let a pool of `ThreadPool` have
  \f$ p - 1 \f$ workers idle in their loop besides the thread that calls
@@ -719,6 +737,33 @@
  is free, which balances tasks of different costs; the results come back on
  a queue with a lane per worker [see `MPSCQueue.h`].
 
+ The workers have the indices \f$ 0 , \ldots , w - 1 \f$ and the master
+ the index \f$ w \f$, which `work( t , i )` and `start( emit , w )` receive
+ when they take them, so that each may keep a state of its own (an
+ evaluator, a buffer, the processor to which it binds itself) in a vector of
+ \f$ w + 1 \f$ places without a lock. An index stays on one thread for the
+ whole farm, and distinct indices on distinct threads: on FastFlow the
+ master is the emitter and the worker \f$ i \f$ the \f$ i \f$-th node of the
+ farm, each a thread of FastFlow; on the other executors the master is the
+ call 0 of `run( w + 1 , f )` and the worker \f$ i \f$ the call
+ \f$ i + 1 \f$, which Lemma 6 keeps on distinct threads for the whole run.
+
+ <table>
+ <caption>The thread of each index of the farm</caption>
+ <tr><th>Executor</th><th>Master, index \f$ w \f$</th>
+     <th>Worker \f$ i \f$</th></tr>
+ <tr><td><tt>FastFlowExecutor</tt></td><td>the emitter, a thread of
+     FastFlow</td><td>the node \f$ i \f$, a thread of FastFlow</td></tr>
+ <tr><td><tt>ThreadPool</tt>, <tt>OpenMPExecutor</tt></td><td>the
+     caller</td><td>the call \f$ i + 1 \f$ of the run, a thread of the
+     executor</td></tr>
+ <tr><td><tt>TBBExecutor</tt></td><td colspan="2">the calls \f$ 0 \f$ and
+     \f$ i + 1 \f$ of the run, on threads of the arena, the caller among
+     them or not</td></tr>
+ <tr><td>any, \f$ w = 0 \f$</td><td colspan="2">the caller, which is the
+     master and the worker 0</td></tr>
+ </table>
+
  <em>Lemma 7 (the farm ends).</em> If `work()` returns on every task and the
  master emits finitely many tasks, the farm ends, and when it ends because no
  task is left the master has seen the result of every task it emitted.
@@ -794,6 +839,60 @@
  detects the end when the weight is back whole, also needs no wave, but
  pays an arithmetic of fractions per message where the counter pays one
  addition per batch.
+
+ No operation of the mailbox waits for another worker. A bounded family
+ (the mesh) may take only part of a batch, when the queue of the pair is
+ full: the rest stays in the outbox, counted by nobody, while its owner
+ stays active; `send()` tries it again only when a batch more has come for
+ that destination, so that a full queue costs the sender one push, i.e.,
+ two atomic additions on \f$ C \f$, per batch and not per message, and
+ `flush()` tries every outbox and returns false while one is not empty.
+
+ <em>Lemma 9 (the batches retained).</em> Let each worker whose
+ `quiescent()` returns false poll its inbox before it calls `quiescent()`
+ again. Then every message retained in an outbox is pushed in finite time,
+ and Lemma 8 holds as it is.
+
+ Indeed, a worker with a message in an outbox fails its `flush()`, stays
+ active and holds its activity in \f$ C \f$, so that (10) and the argument
+ of Lemma 8 do not change: the retained messages are not in \f$ M \f$, but
+ their sender is in \f$ A \f$. A queue is full only of messages pushed and
+ not yet drained, and its receiver drains all its queues at each poll; since
+ every worker polls between two calls of `quiescent()`, each full queue is
+ emptied in finite time, and the next `flush()` of the sender pushes into
+ it. A cycle of workers each waiting to push into the queue of the next
+ one cannot block, since none of them waits: each polls, which empties the
+ queue that its predecessor waits for.
+
+ A computation may also end before its termination, when one of its
+ workers, or another thread, knows that the rest of the work is useless:
+ a limit on the work done, or a bound that closes the search. `stop()` sets
+ a flag that every operation reads: from then on `quiescent()` and
+ `terminated()` return true, `poll()` drains nothing, `send()` only appends
+ to its outbox and `flush()` pushes nothing. The messages on their way are
+ not lost: once the workers have returned from `run()`, `leftovers()` hands
+ to a function those of the outboxes and those of the inboxes, which a
+ search puts back into its frontier, where they bound the optimum of what
+ was not explored.
+
+ <em>Lemma 10 (each message once).</em> Whatever the moment of `stop()`,
+ also during the sends and the polls of the workers, each message given to
+ `send()` is handed to a function exactly once, by a `poll()` before the
+ stop or by `leftovers()` after the run.
+
+ Indeed, a message is at any time in exactly one of three places: an
+ outbox, which only its sender touches; a channel, between a push and a
+ drain; or handed to a function. It moves from the first to the second only
+ by a push of its sender, which copies it into the channel and removes it
+ from the outbox in the same operation of that thread, and from the second
+ to the third only by a drain of its receiver, which moves it out of the
+ queue and calls the function on it; a push or a drain started before the
+ flag is set runs to its end, and none starts after the flag is seen. Hence
+ when the workers have returned no message is moving, each is in an outbox,
+ in a channel or already handed, and `leftovers()`, which empties the
+ outboxes and drains the channels on the thread that called `run()` (which
+ the end of the run orders after every operation of the workers), hands
+ each of the first two kinds once.
 
  \section theory_parallel_refs References
 

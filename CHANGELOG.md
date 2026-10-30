@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- WorkerExecutor requires a Lockable lock_type: FastFlowLock::try_lock(),
+  one test-and-set of the flag of ff::lock_t; isRunCaller(), true in the
+  call of a worker that runs on the thread that called run() (f( 0 ) on
+  Sequential, the pool and OpenMP, none on FastFlow, at most one on
+  oneTBB), so that a worker that binds itself to a processor leaves the
+  caller alone
+- feedbackFarm(): work( t , i ) with the index i in [ 0 , w ) of the worker
+  and start( emit , w ) with the index of the master, detected by
+  invocability (work( t ) and start( emit ) stay), each index on one thread
+  for the whole farm
+- Mailbox: stop() ends the computation at once from any thread, whatever
+  the messages on their way; leftovers( me , f ) and leftovers( f ) hand
+  back, after the run, the messages of the outboxes and of the inboxes,
+  every message sent handed once by a poll or by them; batches(), the
+  pushes taken; the part of a batch that a full queue refuses stays in the
+  outbox and is pushed again a batch later, never waiting
+- MPIMailbox: the same stop, by notes to the other processes and a third
+  sum in the waves, and leftovers(), a collective operation that receives
+  the messages still on their way by the counts of one
+  MPI_Reduce_scatter_block; MPIByteMailbox, messages of bytes with a tag
+  of 32 bits in batches of records; MPIMailbox of a type that is not
+  trivially copyable through the customization point MPICodec (given for
+  std::string and for the vectors of trivially copyable items); the tests
+  mpi-bytes, mpi-codec and mpi-stop
+
 - run( p , f ) and lock_type on every executor (the concept
   WorkerExecutor of Executor.h): the p calls of long-lived workers at the
   same time on p threads, on the pool by its idle workers alone (a thread

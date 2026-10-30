@@ -17,6 +17,23 @@
  * the first worker that is free, and the master runs on its own thread
  * (see \ref theory_parallel_farm).
  *
+ * The workers have indices \f$ 0 , \ldots , w - 1 \f$, and the master the
+ * index \f$ w \f$: a `work` callable as `work( t , i )` is called so, with
+ * \f$ i \f$ the index of the worker, and a `start` callable as
+ * `start( emit , m )` is called so, with \f$ m = w \f$, so that each of them
+ * may keep a state of its own in a vector of \f$ w + 1 \f$ places (an
+ * evaluator per worker, the processor to which it pins itself); the forms
+ * `work( t )` and `start( emit )` stay. During a farm each index runs on
+ * one thread, the same for all its calls, and distinct indices on distinct
+ * threads; with \f$ w = 0 \f$ the master is also the worker 0, both on the
+ * calling thread. Which thread an index is depends on the executor: on
+ * FastFlow the master and each worker are nodes of the farm, each with a
+ * thread of FastFlow of its own, none of them the caller, which waits; on
+ * the others the master is the call 0 of `run()`, i.e., the caller on
+ * `ThreadPool` and on `OpenMPExecutor`, and the worker \f$ i \f$ the call
+ * \f$ i + 1 \f$; `isRunCaller()` [see `Executor.h`] tells each of them
+ * whether it is the caller.
+ *
  * On `FastFlowExecutor` the farm is a farm of FastFlow (`ff_Farm`) with an
  * emitter, \f$ w \f$ workers, no collector, the scheduling on demand and the
  * channel of feedback (`wrap_around()`), the tasks and the results passed as
@@ -81,8 +98,9 @@
 
 namespace ADS {
 
-/// the farm of a master and \f$ w \f$ workers with feedback: `start( emit )`,
-/// then `onResult( r , emit )` on each result of `work( t )`, until it
+/// the farm of a master and \f$ w \f$ workers with feedback: `start( emit )`
+/// (or `start( emit , w )`), then `onResult( r , emit )` on each result of
+/// `work( t )` (or `work( t , i )` on the worker \f$ i \f$), until it
 /// returns false or no task is left
 ///
 /// In pseudocode (the farm with feedback of FastFlow, beyond the book),
@@ -92,12 +110,12 @@ namespace ADS {
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{feedbackFarm}( \mathit{ex} , w ,
 ///     \mathit{start} , \mathit{onResult} , \mathit{work} ) \cr
-/// 2 & \quad \mathit{ex}.\mathrm{run}( w + 1 , i \mapsto \textbf{if}\ i = 0
-///     \ \textbf{then}\ \mathrm{master}()\ \textbf{else}\ \mathrm{worker}()
-///     ) \cr
+/// 2 & \quad \mathit{ex}.\mathrm{run}( w + 1 , j \mapsto \textbf{if}\ j = 0
+///     \ \textbf{then}\ \mathrm{master}()\ \textbf{else}\ \mathrm{worker}(
+///     j - 1 ) ) \cr
 /// 3 & \textbf{procedure}\ \mathrm{master}() \cr
 /// 4 & \quad \mathit{start}( t \mapsto \mathrm{enqueue}( Q , t );\ m \gets
-///     m + 1 ) \cr
+///     m + 1 , w ) \cr
 /// 5 & \quad \textbf{while}\ m > 0\ \textbf{do} \cr
 /// 6 & \qquad \textbf{foreach}\ r \text{ dequeued from } P\ \textbf{do} \cr
 /// 7 & \qquad\quad m \gets m - 1 \cr
@@ -105,10 +123,10 @@ namespace ADS {
 ///     \mapsto \mathrm{enqueue}( Q , t );\ m \gets m + 1 )\ \textbf{then}
 ///     \ m \gets 0;\ \textbf{break} \cr
 /// 9 & \quad \text{tell the workers to end} \cr
-/// 10 & \textbf{procedure}\ \mathrm{worker}() \cr
+/// 10 & \textbf{procedure}\ \mathrm{worker}( i ) \cr
 /// 11 & \quad \textbf{while}\ \text{not told to end}\ \textbf{do}
 ///     \ \textbf{if}\ t \text{ dequeued from } Q\ \textbf{then}
-///     \ \mathrm{enqueue}( P , \mathit{work}( t ) )
+///     \ \mathrm{enqueue}( P , \mathit{work}( t , i ) )
 /// \end{array}}
 /// \f]
 /// \pre \f$ w + 1 \le \f$ `concurrency()`, or \f$ w = 0 \f$

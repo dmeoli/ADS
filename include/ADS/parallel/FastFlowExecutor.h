@@ -18,8 +18,10 @@
  * `parallel_for` on the \f$ p \f$ calls of long-lived workers: FastFlow
  * gives each of its first \f$ p \f$ workers its own index before any
  * worker looks at the indices of the others, so that the calls run at the
- * same time, one per worker. Its lock is the spin lock of FastFlow
- * (`ff::lock_t`, `FastFlowLock`), the one its runtime takes; the farm with
+ * same time, one per worker, and the caller only waits for them (no call
+ * runs on it, `isRunCaller()` is false in each). Its lock is the spin lock
+ * of FastFlow (`ff::lock_t`, `FastFlowLock`), the one its runtime takes,
+ * whose `try_lock()` is one test-and-set of its flag; the farm with
  * feedback runs on a farm of FastFlow [see `Farm.h`].
  *
  * Unless `ADS_FASTFLOW_MAPPING` is defined, the header defines
@@ -73,6 +75,7 @@
 #include <ff/spin-lock.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <exception>
 #include <mutex>
@@ -103,6 +106,11 @@ class FastFlowLock {
  void lock( void ) { ff::spin_lock( f_lock ); }
  /// gives the lock back
  void unlock( void ) { ff::spin_unlock( f_lock ); }
+ /// takes the lock if it is free, by one test-and-set of its flag (that of
+ /// `spin_lock()`), and tells whether it did
+ bool try_lock( void ) {
+  return( ! f_lock->test_and_set( std::memory_order_acquire ) );
+  }
 
  private:
 
@@ -197,6 +205,7 @@ class FastFlowExecutor {
  void run( std::size_t p , F && f ) {
   ADS_PRE( p <= f_p );
   ADS_PRE( ( p <= 1 ) || ! tl_inside );
+  detail::RunCaller caller;
   if( p <= 1 ) {
    if( p == 1 )
     f( 0 );

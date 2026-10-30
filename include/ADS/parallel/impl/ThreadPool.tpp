@@ -326,6 +326,7 @@ template< class F >
 void ThreadPool::run( std::size_t p , F && f )
 {
  ADS_PRE( p <= f_slot.size() );
+ detail::RunCaller caller;
  if( p <= 1 ) {
   if( p == 1 )
    f( 0 );

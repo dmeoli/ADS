@@ -153,6 +153,17 @@
  solves instead a single round of sparse messages, by synchronous sends and
  a barrier that does not block.
 
+ A batch is an array of messages when they are trivially copyable, which
+ MPI then copies as bytes (several kinds of them travel as one
+ `std::variant`, itself trivially copyable). Messages of other kinds, or of
+ lengths that vary (the nodes of a search with a state of variable size),
+ are records of `MPIByteMailbox`: each a tag of 32 bits, a length and the
+ bytes, padded to 8, packed into a batch until it holds `batch` bytes, and
+ `MPIMailbox` of a type that is not trivially copyable is such a mailbox
+ whose bytes are those of `MPICodec`, the customization point that encodes
+ and decodes a message. Whatever their kind, the messages are counted one by
+ one, so that the waves below see all of them.
+
  A process is <em>active</em> while it has work and <em>passive</em>
  otherwise, becomes active only by receiving, and sends only while active;
  the computation has terminated when all the processes are passive and no
@@ -199,6 +210,65 @@
  \f$ O( \alpha \log P ) \f$ after it happens, with no message per message
  sent (the acknowledgments of Dijkstra and Scholten) and no process that
  coordinates the waves.
+
+ A process may also stop the whole computation before its termination
+ (a limit on the work, a bound that closes the search), by `stop()`: it
+ sends a <em>note</em>, an empty batch, to each other process, and from
+ then on posts and receives nothing; a process whose poll finds a note
+ stops in the same way, and leaves its work for `quiescent()`. A stopped
+ process contributes to the waves the triple \f$ ( s_i , r_i , 1 ) \f$, the
+ others \f$ ( s_i , r_i , 0 ) \f$, and the third sum \f$ \Sigma \f$ of a wave
+ counts the processes stopped when they contributed to it.
+
+ <em>Lemma 3 (the stop).</em> If a process calls `stop()`, every process
+ sees the end at the same wave, at most two waves after the last one has
+ received the note; if \f$ \Sigma_k = P \f$ for the wave \f$ k \f$, all the
+ processes had stopped when they contributed to it.
+
+ Indeed, the notes are messages of MPI, which delivers them; a process that
+ does not stop by itself polls while it works, or in `quiescent()` while it
+ waits, and stops when it receives its note. Once stopped, a process stays
+ stopped, and since it receives nothing more its work does not grow, so
+ that it calls `quiescent()` until the end; the first wave started by all
+ after the last of them has stopped has \f$ \Sigma = P \f$, and every
+ process, which has the same sums, sees the end at that wave. The waves are
+ started by each process only after the previous one has completed, so that
+ they are the same collective operations in the same order on all the
+ processes, also when the end comes from (3) instead of from
+ \f$ \Sigma = P \f$: a computation whose processes have all stopped can also
+ meet (3), if nothing is on its way, and it is then over in both senses.
+
+ After the end, `leftovers( f )` hands to \f$ f \f$ the messages that no poll
+ has handed: those still on their way to the process, those to itself and
+ those of its outboxes. The first are known by counting: each process keeps
+ the messages \f$ m_{i , q} \f$ and the notes \f$ n_{i , q} \f$ that it has
+ sent by MPI to each process \f$ q \f$, and one reduction that scatters its
+ sums (`MPI_Reduce_scatter_block`) gives each process \f$ q \f$ the totals
+ \f[
+   M_q = \sum_i m_{i , q} , \qquad N_q = \sum_i n_{i , q} \tag{4}
+ \f]
+ of what was sent to it; the process then receives, by blocking calls,
+ until it has received \f$ M_q \f$ messages and \f$ N_q \f$ notes in all, and
+ waits for its own sends, which its receivers are receiving in the same
+ way.
+
+ <em>Lemma 4 (each message once).</em> After `leftovers()` on every
+ process, each message given to `send()` on any process has been handed to
+ a function exactly once, by a `poll()` or by `leftovers()`.
+
+ Indeed, a message given to `send()` is in an outbox until its batch is
+ posted, then either among the messages of the process to itself or on its
+ way by MPI, and finally handed by the poll that receives it. A stopped
+ process posts nothing, so that what it holds in its outboxes or for itself
+ is handed by its `leftovers()`; what was posted by MPI to \f$ q \f$ is
+ counted in \f$ M_q \f$ of (4), and \f$ q \f$ receives until it has
+ received \f$ M_q \f$ messages, those of its polls included, which are
+ exactly those of the batches posted to it, since MPI delivers each message
+ once. The cost is one reduction of \f$ 2 P \f$ integers and the messages
+ left, i.e., \f$ O( \alpha \log P + \beta P ) \f$ time besides them, paid
+ once at the end, and nothing during the computation but a load of a flag
+ per send; the destructor makes the same exchange, dropping the messages,
+ if `leftovers()` was not called, so that no send stays in flight.
 
  The bound of a search that every process improves (the value of the best
  solution found so far) is shared the same way: `DistributedMin` starts a

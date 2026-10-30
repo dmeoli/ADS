@@ -626,10 +626,19 @@ one interface; `feedbackFarm()` is the farm with feedback of FastFlow, a
 farm of FastFlow on its executor and emulated on the others; and the
 `Mailbox` adds outboxes of batches and tells each worker when the whole
 computation has ended, by a counter of the activities and of the messages
-touched once per batch. The processes of MPI are workers too, by
-`MPIExecutor` and `MPIMailbox`, whose batches are sent without blocking and
-whose termination is found by the four counters of Mattern on reductions
-that do not block. MPI is a backend like GMP: with CMake `ADS_WITH_MPI` is
+touched once per batch. No send waits: what a full queue refuses stays in
+its outbox for a later push. `stop()` ends the computation at once, and
+`leftovers()` then hands back every message that no poll has handed, each
+exactly once, e.g., the nodes that a search stopped by a limit puts back
+into its frontier. The locks are Lockable (`try_lock()` included), the
+farm gives each worker and the master an index for a state of its own, and
+`isRunCaller()` tells a worker whether it runs on the thread that called
+`run()`. The processes of MPI are workers too, by `MPIExecutor` and
+`MPIMailbox`, whose batches are sent without blocking and whose termination
+is found by the four counters of Mattern on reductions that do not block,
+with the same stop and the same `leftovers()`; messages that are not
+trivially copyable go through `MPICodec`, and messages of bytes with a tag
+through `MPIByteMailbox`. MPI is a backend like GMP: with CMake `ADS_WITH_MPI` is
 `AUTO` by default (on when FindMPI finds Open MPI or MPICH), `ON` to require
 it and `OFF` to leave it out; the makefile asks `mpicxx` for its options
 (`ADS_WITH_MPI=0` turns it off). The sort over the processes,

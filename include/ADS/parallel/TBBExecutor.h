@@ -17,9 +17,11 @@
  * never the call of another worker, which it would hold under its own; the
  * \f$ p \f$ calls then run at the same time as soon as the arena has
  * \f$ p \f$ threads, i.e., when the threads of oneTBB are not fewer, which
- * \f$ p \f$ not larger than the hardware threads ensures. Its lock is the
- * spin mutex of oneTBB (`tbb::spin_mutex`), for the short sections of the
- * workers.
+ * \f$ p \f$ not larger than the hardware threads ensures. The caller joins
+ * the arena and may make any of the calls or none of them, so that
+ * `isRunCaller()` holds in at most one call, whose index is not known in
+ * advance. Its lock is the spin mutex of oneTBB (`tbb::spin_mutex`), for
+ * the short sections of the workers.
  *
  * The contracts [see `Contract.h`]: \f$ p \ge 1 \f$; an exception thrown by
  * \f$ f \f$ is thrown again by `bulk()`, as oneTBB does, and by `run()`
@@ -159,6 +161,7 @@ class TBBExecutor {
  template< class F >
  void run( std::size_t p , F && f ) {
   ADS_PRE( p <= f_p );
+  detail::RunCaller caller;
   if( p <= 1 ) {
    if( p == 1 )
     f( 0 );

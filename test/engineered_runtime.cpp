@@ -14,7 +14,12 @@
  * worker, an exception of a worker), and the mailbox with the detection of
  * the termination on every family and batch (no work at all, all the work
  * on one worker, random trees spread by hashing, against their sequential
- * count, checking that no worker sees the end before the last node).
+ * count, checking that no worker sees the end before the last node); the
+ * try_lock() of every lock, isRunCaller() on every executor, the indices
+ * of the workers and of the master of the farm; the stop of the mailbox by
+ * a worker and by another thread racing with the sends, every message
+ * handed once by a poll or by leftovers(), and the sends that never wait
+ * on full queues.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -219,23 +224,103 @@ ADS_TEST( "worker-run" )
  }
 
 // the lock of each executor: increments of a shared counter by all the
-// workers, none lost
+// workers, none lost; try_lock() refused while another thread holds the
+// lock and taken once it is free; workers that skip the section when it
+// is busy, each success counted once
 ADS_TEST( "worker-locks" )
 {
  onEach( []( auto & ex ) {
   using E = std::remove_reference_t< decltype( ex ) >;
-  typename E::lock_type lock;
+  using L = typename E::lock_type;
+  L lock;
   const std::size_t p = workersOf( ex );
   long counter = 0;
   ex.run( p , [ & ]( std::size_t ) {
    for( int k = 0 ; k < 20000 ; ++k ) {
-    std::lock_guard< typename E::lock_type > g( lock );
+    std::lock_guard< L > g( lock );
     ++counter;
     }
    } );
   CHECK( counter == 20000L * long( p ) );
+  // held by this thread: refused to another one
+  lock.lock();
+  bool other = true;
+  std::thread( [ & ] { other = lock.try_lock(); } ).join();
+  CHECK( ! other );
+  lock.unlock();
+  std::thread( [ & ] {
+   other = lock.try_lock();
+   if( other )
+    lock.unlock();
+   } ).join();
+  CHECK( other );
+  CHECK( lock.try_lock() );
+  lock.unlock();
+  // the scheme that skips a busy section
+  long inside = 0;
+  std::atomic< long > taken{ 0 } , skipped{ 0 };
+  ex.run( p , [ & ]( std::size_t ) {
+   for( int k = 0 ; k < 20000 ; ++k )
+    if( lock.try_lock() ) {
+     ++inside;
+     taken.fetch_add( 1 , std::memory_order_relaxed );
+     lock.unlock();
+     }
+    else
+     skipped.fetch_add( 1 , std::memory_order_relaxed );
+   } );
+  CHECK( inside == taken.load() );
+  CHECK( taken.load() + skipped.load() == 20000L * long( p ) );
+  CHECK( ( p > 1 ) || ( skipped.load() == 0 ) );
   } );
 }
+
+// isRunCaller(): false outside a run; true in the calls that run on the
+// caller, i.e., f( 0 ) on Sequential, the pool and OpenMP, none on
+// FastFlow with more than one worker, at most one on oneTBB; true again in
+// a run nested in a worker, and false once it has returned
+ADS_TEST( "run-caller" )
+{
+ CHECK( ! isRunCaller() );
+ onEach( []( auto & ex ) {
+  using E = std::remove_reference_t< decltype( ex ) >;
+  const std::size_t P = workersOf( ex );
+  for( std::size_t p : { P , std::size_t( 1 ) } ) {
+   std::vector< char > caller( p , 0 );
+   std::vector< char > nested( p , 0 ) , after( p , 1 );
+   Meet meet( p );
+   ex.run( p , [ & ]( std::size_t i ) {
+    meet.wait();                           // all at the same time
+    caller[ i ] = isRunCaller() ? 1 : 0;
+    const bool before = isRunCaller();
+    Sequential s;
+    s.run( 1 , [ & ]( std::size_t ) { nested[ i ] = isRunCaller(); } );
+    after[ i ] = ( isRunCaller() == before ) ? 1 : 0;
+    } );
+   CHECK( ! isRunCaller() );
+   std::size_t n = 0;
+   for( std::size_t i = 0 ; i < p ; ++i ) {
+    n += std::size_t( caller[ i ] );
+    CHECK( nested[ i ] );
+    CHECK( after[ i ] );
+    }
+#if defined( ADS_WITH_FASTFLOW )
+   if constexpr( std::is_same_v< E , FastFlowExecutor > ) {
+    CHECK( n == ( p == 1 ? 1u : 0u ) );
+    continue;
+    }
+#endif
+#if defined( ADS_WITH_TBB )
+   if constexpr( std::is_same_v< E , TBBExecutor > ) {
+    CHECK( n <= 1 );
+    continue;
+    }
+#endif
+   CHECK( ( n == 1 ) && caller[ 0 ] );
+   }
+  } );
+ CHECK( ! isRunCaller() );
+ }
 
 namespace {
 
@@ -440,6 +525,84 @@ ADS_TEST( "feedback-farm" )
   } );
  }
 
+// the indices of the farm: work( t , i ) with i in [ 0 , w ), each index on
+// one thread for the whole farm and distinct indices on distinct threads;
+// start( emit , m ) with m = w, the master on a thread of its own, the
+// caller on the emulations of the pool, of OpenMP and of Sequential; the
+// tree of tasks still summed right
+ADS_TEST( "farm-indices" )
+{
+ onEach( []( auto & ex ) {
+  using E = std::remove_reference_t< decltype( ex ) >;
+#if defined( ADS_WITH_FASTFLOW )
+  constexpr bool ff = std::is_same_v< E , FastFlowExecutor >;
+#else
+  constexpr bool ff = false;
+#endif
+#if defined( ADS_WITH_TBB )
+  constexpr bool tbb = std::is_same_v< E , TBBExecutor >;
+#else
+  constexpr bool tbb = false;
+#endif
+  const std::size_t P = ex.concurrency();
+  for( std::size_t w : { std::size_t( 0 ) , ff ? P : P - 1 } ) {
+   const std::size_t slots = std::max< std::size_t >( w , 1 );
+   std::mutex m;
+   std::vector< std::set< std::thread::id > > who( slots );
+   std::thread::id master;
+   std::size_t index = 99;
+   bool masterCaller = false;
+   std::atomic< bool > bad{ false };
+   const long L = 3000;
+   long sum = 0;
+   feedbackFarm< long , long >( ex , w ,
+    [ & ]( auto emit , std::size_t i ) {
+     index = i;
+     master = std::this_thread::get_id();
+     masterCaller = isRunCaller();
+     emit( 1L ); } ,
+    [ & ]( long r , auto emit ) {
+     sum += r;
+     if( 2 * r <= L )
+      emit( 2 * r );
+     if( 2 * r + 1 <= L )
+      emit( 2 * r + 1 );
+     return( true ); } ,
+    [ & ]( long t , std::size_t i ) {
+     if( i >= slots )
+      bad.store( true );
+     else {
+      std::lock_guard< std::mutex > g( m );
+      who[ i ].insert( std::this_thread::get_id() );
+      }
+     return( t ); } );
+   CHECK( ! bad.load() );
+   CHECK( sum == L * ( L + 1 ) / 2 );
+   CHECK( index == w );
+   std::set< std::thread::id > all;
+   std::size_t used = 0;
+   for( const auto & s : who ) {
+    CHECK( s.size() <= 1 );
+    used += s.size();
+    all.insert( s.begin() , s.end() );
+    }
+   CHECK( all.size() == used );
+   if( w == 0 ) {
+    CHECK( masterCaller );
+    CHECK( ( used == 1 ) &&
+           ( *who[ 0 ].begin() == std::this_thread::get_id() ) );
+    }
+   else {
+    CHECK( all.count( master ) == 0 );
+    if( ff )
+     CHECK( ! masterCaller );
+    else if( ! tbb )
+     CHECK( masterCaller && ( master == std::this_thread::get_id() ) );
+    }
+   }
+  } );
+ }
+
 namespace {
 
 /// the random tree of the seed explored by the p workers of ex over the
@@ -491,8 +654,112 @@ void mailboxTree( E & ex , std::size_t p , std::size_t b , std::uint32_t d ,
  for( std::size_t i = 0 ; i < p ; ++i ) {
   sent += mb.sent( i );
   received += mb.received( i );
+  CHECK( mb.batches( i ) <= mb.sent( i ) );
+  CHECK( ( mb.sent( i ) == 0 ) || ( mb.batches( i ) >= 1 ) );
   }
  CHECK( sent == received );
+ // nothing is left after a termination
+ CHECK( mb.leftovers( []( Node && ) {} ) == 0 );
+ }
+
+/// the random tree of the seed explored by the p workers of a pool over the
+/// mailbox of the channels C with batches of b messages, stopped by the
+/// worker 0 after it has explored `limit` nodes, or by another thread
+/// after `delay` microseconds, racing with the sends; every message sent
+/// is handed once, by a poll or by leftovers(), as the counts and the sums
+/// of the keys of the sends tell
+template< class C , class ... A >
+void mailboxStop( std::size_t p , std::size_t b , std::uint64_t seed ,
+                  long limit , long delay , A ... args )
+{
+ const std::uint32_t d = 14;
+ Mailbox< Node , C > mb( p , b , args... );
+ std::atomic< std::uint64_t > sends{ 0 } , sendSum{ 0 } , polls{ 0 } ,
+                              pollSum{ 0 };
+ ThreadPool pool( p );
+ std::thread stopper;
+ if( delay >= 0 )
+  stopper = std::thread( [ & ] {
+   std::this_thread::sleep_for( std::chrono::microseconds( delay ) );
+   mb.stop();
+   } );
+ pool.run( p , [ & ]( std::size_t me ) {
+  std::vector< Node > stack;
+  if( ownerOf( seed , p ) == me )
+   stack.push_back( Node{ seed , 0 } );
+  std::uint64_t n = 0 , s = 0 , k = 0 , ks = 0;
+  long done = 0;
+  unsigned spin = 0;
+  auto take = [ & ]( Node && v ) {
+   ++k;
+   ks += mix( v.key );
+   stack.push_back( v );
+   };
+  while( ! mb.stopped() ) {
+   mb.poll( me , take );
+   if( ! stack.empty() ) {
+    for( int j = 0 ; ( j < 16 ) && ! stack.empty() ; ++j ) {
+     const Node v = stack.back();
+     stack.pop_back();
+     if( ( me == 0 ) && ( ++done == limit ) )
+      mb.stop();
+     children( v , d , seed , [ & ]( Node c ) {
+      const std::size_t o = ownerOf( c.key , p );
+      if( o == me )
+       stack.push_back( c );
+      else {
+       ++n;
+       s += mix( c.key );
+       mb.send( me , o , c );
+       }
+      } );
+     }
+    spin = 0;
+    continue;
+    }
+   if( mb.quiescent( me ) )
+    break;
+   detail::spinPause( spin );
+   }
+  sends.fetch_add( n );
+  sendSum.fetch_add( s );
+  polls.fetch_add( k );
+  pollSum.fetch_add( ks );
+  } );
+ if( stopper.joinable() )
+  stopper.join();
+ CHECK( mb.terminated() );
+ for( std::size_t i = 0 ; i < p ; ++i )
+  CHECK( mb.quiescent( i ) || ! mb.stopped() );
+ std::uint64_t left = 0 , leftSum = 0;
+ const std::size_t got = mb.leftovers( [ & ]( Node && v ) {
+  ++left;
+  leftSum += mix( v.key ); } );
+ CHECK( got == left );
+ CHECK( sends.load() == polls.load() + left );
+ CHECK( sendSum.load() == pollSum.load() + leftSum );
+ CHECK( mb.leftovers( []( Node && ) {} ) == 0 );
+ std::uint64_t pushed = 0 , received = 0;
+ for( std::size_t i = 0 ; i < p ; ++i ) {
+  pushed += mb.sent( i );
+  received += mb.received( i );
+  }
+ CHECK( received == polls.load() );
+ CHECK( pushed <= sends.load() );
+ }
+
+/// the stops of a family on 1, 2 and 4 workers, batches of 1 and 16, by a
+/// worker after few and many nodes, at once, and by another thread
+template< class C , class ... A >
+void stopFamily( A ... args )
+{
+ for( std::size_t p : { 1 , 2 , 4 } )
+  for( std::size_t b : { 1 , 16 } ) {
+   for( long limit : { 1L , 50L , 5000L } )
+    mailboxStop< C >( p , b , 3 + limit , limit , -1 , args... );
+   for( long delay : { 0L , 200L , 2000L } )
+    mailboxStop< C >( p , b , 7 + delay , -1 , delay , args... );
+   }
  }
 
 /// the trees of a family on pools of 1, 2 and 4 workers, batches of 1, 7
@@ -527,6 +794,70 @@ ADS_TEST( "mailbox-termination" )
   mailboxTree< DefaultChannels< Node , E > >( ex , p , 8 , 12 , 9 , true );
   mailboxTree< DefaultChannels< Node , E > >( ex , p , 8 , 12 , 9 , false );
   } );
+ }
+
+// the stop on every family, the mesh also of capacity 2, whose full queues
+// leave messages in the outboxes when the stop comes
+ADS_TEST( "mailbox-stop" )
+{
+ stopFamily< LockedChannels< Node > >();
+ stopFamily< InboxChannels< Node > >();
+ stopFamily< LaneChannels< Node > >();
+ stopFamily< MeshChannels< Node > >( std::size_t( 2 ) );
+ stopFamily< MeshChannels< Node > >( std::size_t( 1024 ) );
+ // a stop before any work, and one called twice
+ Mailbox< Node > mb( 3 , 4 );
+ mb.stop();
+ mb.stop();
+ CHECK( mb.stopped() && mb.terminated() );
+ for( std::size_t i = 0 ; i < 3 ; ++i ) {
+  CHECK( mb.quiescent( i ) );
+  mb.send( i , ( i + 1 ) % 3 , Node{ i , 0 } );
+  CHECK( mb.poll( i , []( Node && ) {} ) == 0 );
+  CHECK( ! mb.flush( i ) );
+  CHECK( mb.sent( i ) == 0 );
+  }
+ std::uint64_t keys = 0;
+ CHECK( mb.leftovers( [ & ]( Node && v ) { keys += v.key + 1; } ) == 3 );
+ CHECK( keys == 6 );
+ }
+
+// the sends never wait: a mesh of capacity 2 between two workers, batches
+// of 4, driven by one thread; the part of a batch that does not fit stays
+// in the outbox, send() tries it again only a batch later, flush() and
+// quiescent() say false while something is left, and the messages come in
+// their order, each once
+ADS_TEST( "mailbox-full" )
+{
+ Mailbox< std::uint64_t > mb( 2 , 4 , std::size_t( 2 ) );
+ std::vector< std::uint64_t > got;
+ auto take = [ & ]( std::uint64_t && x ) { got.push_back( x ); };
+ for( std::uint64_t k = 0 ; k < 4 ; ++k )
+  mb.send( 0 , 1 , k );
+ CHECK( ( mb.sent( 0 ) == 2 ) && ( mb.batches( 0 ) == 1 ) );
+ for( std::uint64_t k = 4 ; k < 8 ; ++k )
+  mb.send( 0 , 1 , k );                    // a push at 6 left, refused
+ CHECK( ( mb.sent( 0 ) == 2 ) && ( mb.batches( 0 ) == 1 ) );
+ CHECK( ! mb.flush( 0 ) );
+ CHECK( ! mb.quiescent( 0 ) );
+ CHECK( ! mb.terminated() );
+ CHECK( mb.poll( 1 , take ) == 2 );
+ int rounds = 0;
+ while( ! mb.flush( 0 ) ) {
+  CHECK( mb.poll( 1 , take ) == 2 );
+  ++rounds;
+  }
+ CHECK( rounds == 2 );
+ CHECK( ( mb.sent( 0 ) == 8 ) && ( mb.batches( 0 ) == 4 ) );
+ CHECK( ! mb.quiescent( 0 ) );             // passive, two on their way
+ CHECK( ! mb.terminated() );
+ CHECK( mb.poll( 1 , take ) == 2 );
+ CHECK( mb.quiescent( 1 ) && mb.quiescent( 0 ) && mb.terminated() );
+ CHECK( got.size() == 8 );
+ for( std::size_t i = 0 ; i < got.size() ; ++i )
+  CHECK( got[ i ] == i );
+ CHECK( mb.received( 1 ) == 8 );
+ CHECK( mb.leftovers( []( std::uint64_t && ) {} ) == 0 );
  }
 
 // the owners of the keys: in range, all of them used, one worker

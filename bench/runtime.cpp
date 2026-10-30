@@ -23,7 +23,15 @@
  * - case "end": the time of a run of t workers that start with no work
  *   and call quiescent() until they see the termination, in ns, and case
  *   "run", the time of a run of t workers that return at once, which the
- *   first includes.
+ *   first includes;
+ * - case "full": n messages per worker through a Mailbox with batches of
+ *   64, each to the others in turn, the worker 0 polling every 4096 sends
+ *   and the others every 64, so that the queues to the worker 0 fill and
+ *   the sends to it are refused and tried again, per message ("mesh-c64",
+ *   the mesh of 64 places per pair, fills at once);
+ * - case "stop": the tree of the case "tree" stopped by the worker that
+ *   explores its node n / 4, the time from stop() to the return of the
+ *   run, in ns.
  * Each cell is the median of r runs, after a run not timed; the first
  * structure of each case runs again as "A/A". The benchmark of a cell is
  * "runtime t<t>".
@@ -299,6 +307,108 @@ void endLatency( E & ex , const std::string & who , int r )
    } , r , 1 ) );
  }
 
+/// the all-to-all of n messages per worker through a mailbox of batches of
+/// 64 on the channels C built from args, the message k of a worker to the
+/// (k mod (p - 1))-th of the others; the workers poll every 64 sends but
+/// the worker 0, which polls every 4096, so that the queues to it fill and
+/// the sends to it are refused and retried; per message
+template< class C , class E , class ... A >
+void mailboxFull( E & ex , const std::string & who , std::size_t n , int r ,
+                  A ... args )
+{
+ if( skip( who ) )
+  return;
+ const std::size_t p = std::size_t( threads );
+ print( bname.c_str() , "full" , n , who , median(
+  [ & ] { return( std::make_unique< Mailbox< std::uint64_t , C > >( p , 64 ,
+                                                                 args... ) );
+          } ,
+  [ & ]( auto & mb ) {
+   ex.run( p , [ & ]( std::size_t me ) {
+    std::uint64_t sum = 0;
+    auto take = [ & ]( std::uint64_t && x ) { sum += x; };
+    const std::size_t every = ( me == 0 ) ? 4096 : 64;
+    for( std::size_t k = 0 ; k < n ; ++k ) {
+     const std::size_t to = ( p == 1 ) ? me : ( me + 1 + k % ( p - 1 ) ) % p;
+     mb->send( me , to , k );
+     if( k % every == every - 1 )
+      mb->poll( me , take );
+     }
+    while( ! mb->quiescent( me ) )
+     mb->poll( me , take );
+    sink = sink + sum;
+    } );
+   } , r , n * p ) );
+ }
+
+/// the latency of a stop: the random tree of about n nodes explored by the
+/// workers of ex over a mailbox of batches of 64 on the channels C, stopped
+/// by the worker that explores the node n / 4; the time from stop() to the
+/// return of run(), in ns (the workers leave after the 64 nodes they hold
+/// at most)
+template< class C , class E >
+void stopLatency( E & ex , const std::string & who , std::size_t n , int r ,
+                  unsigned seed )
+{
+ if( skip( who ) )
+  return;
+ const std::size_t p = std::size_t( threads );
+ const std::uint32_t d = depthOf( n );
+ auto children = [ d ]( const Node & v , auto && f ) {
+  if( v.depth >= d )
+   return;
+  const std::uint64_t h = mix( v.key );
+  const unsigned c = 2 + unsigned( h % 3 );
+  for( unsigned k = 0 ; k < c ; ++k )
+   f( Node{ mix( h + k ) , v.depth + 1 } );
+  };
+ std::vector< double > t;
+ for( int i = 0 ; i < r ; ++i ) {
+  Mailbox< Node , C > mb( p , 64 );
+  std::atomic< std::uint64_t > explored{ 0 };
+  std::chrono::steady_clock::time_point at;
+  ex.run( p , [ & ]( std::size_t me ) {
+   std::vector< Node > stack;
+   if( ownerOf( std::uint64_t( seed ) , p ) == me )
+    stack.push_back( Node{ seed , 0 } );
+   while( ! mb.stopped() ) {
+    mb.poll( me , [ & ]( Node && v ) { stack.push_back( v ); } );
+    if( ! stack.empty() ) {
+     for( int j = 0 ; ( j < 64 ) && ! stack.empty() ; ++j ) {
+      const Node v = stack.back();
+      stack.pop_back();
+      if( explored.fetch_add( 1 , std::memory_order_relaxed ) == n / 4 ) {
+       at = std::chrono::steady_clock::now();
+       mb.stop();
+       }
+      children( v , [ & ]( Node w ) {
+       const std::size_t o = ownerOf( w.key , p );
+       if( o == me )
+        stack.push_back( w );
+       else
+        mb.send( me , o , w );
+       } );
+      }
+     continue;
+     }
+    if( mb.quiescent( me ) )
+     break;
+    }
+   } );
+  const auto end = std::chrono::steady_clock::now();
+  if( mb.stopped() )
+   t.push_back( std::chrono::duration< double , std::nano >( end - at )
+                .count() );
+  std::uint64_t left = 0;
+  mb.leftovers( [ & ]( Node && ) { ++left; } );
+  sink = sink + left;
+  }
+ if( t.empty() )
+  return;
+ std::nth_element( t.begin() , t.begin() + t.size() / 2 , t.end() );
+ print( bname.c_str() , "stop" , n , who , t[ t.size() / 2 ] );
+ }
+
 /// the families of channels, for any type of messages
 template< class L >
 struct LockedOf {
@@ -325,6 +435,9 @@ void cases( E & ex , const std::string & who , std::size_t n , int r ,
  roundTrip< C >( ex , who , std::min< std::size_t >( n , 100000 ) , r );
  tree< typename F::template type< Node > >( ex , who , n , r , seed );
  endLatency< C >( ex , who , r );
+ mailboxFull< C >( ex , who , n , r );
+ stopLatency< typename F::template type< Node > >( ex , who , n , r ,
+                                                   seed );
  }
 
 /// the families on the executor ex, the first one again as "A/A" when
@@ -341,6 +454,8 @@ void families( E & ex , const std::string & name , std::size_t n , int r ,
  cases< InboxOf >( ex , name + " inbox" , n , r , seed );
  cases< LanesOf >( ex , name + " lanes" , n , r , seed );
  cases< MeshOf >( ex , name + " mesh" , n , r , seed );
+ mailboxFull< MeshChannels< std::uint64_t > >( ex , name + " mesh-c64" , n ,
+                                               r , std::size_t( 64 ) );
 #if defined( ADS_WITH_FASTFLOW )
  for( std::size_t b : { 1 , 64 } )
   allToAll< FFMesh >( ex , name + " ff-mesh" , n , b , r );
