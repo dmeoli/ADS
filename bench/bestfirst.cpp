@@ -562,21 +562,23 @@ void orderedCases( std::size_t n , const Options & o )
 /*-------------------------------- PACKED ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the three cases of an array of m fields of the values below v: reads
+/// the three cases of an array of m fields of the values below V: reads
 /// at the places P, writes of the values X at the places P, and the
 /// construction from f( i ), by get( a , i ), set( a , i , x ) and
 /// build( m , f )
-template< class G , class S , class B >
+template< unsigned V , class G , class S , class B >
 void packed( const std::string & what , std::size_t m ,
              const std::string & who ,
              const std::vector< std::uint32_t > & P ,
              const std::vector< std::uint8_t > & X , int r ,
-             unsigned v , G && get , S && set , B && build )
+             G && get , S && set , B && build )
 {
  if( skip( who ) )
   return;
- auto f = [ v ]( std::size_t i ) {
-  return( unsigned( ADS::splitmix64( i ) % v ) ); };
+ // V a constant, so that the modulus is the same cheap code wherever
+ // f is inlined
+ auto f = []( std::size_t i ) {
+  return( unsigned( ADS::splitmix64( i ) % V ) ); };
  print( "bestfirst" , ( what + " build" ).c_str() , m , who , median(
          [](){ return( 0 ); } , [ & ]( int ) {
           auto a = build( m , f );
@@ -599,7 +601,7 @@ void packedBits( std::size_t m , const std::vector< std::uint32_t > & P ,
                  const std::vector< std::uint8_t > & X0 , int r )
 {
  const std::string what = "packed " + std::to_string( Bits ) + "b";
- const unsigned v = 1u << Bits;
+ constexpr unsigned v = 1u << Bits;
  std::vector< std::uint8_t > X( X0 );
  for( auto & x : X ) x = std::uint8_t( x % v );
  auto ag = []( const auto & a , std::size_t i ) {
@@ -608,13 +610,13 @@ void packedBits( std::size_t m , const std::vector< std::uint32_t > & P ,
   a.set( i , x ); };
  ADS::Sequential seq;
  for( const char * who : { "ADS::PackedArray" , "ADS::PackedArray A/A" } )
-  packed( what , m , who , P , X , r , v , ag , as ,
+  packed< v >( what , m , who , P , X , r , ag , as ,
           [ & ]( std::size_t k , auto f ) {
            return( ADS::PackedArray< Bits >( seq , k , f ) ); } );
- packed( what , m , "ADS::PackedArray saturated" , P , X , r , v , ag , as ,
+ packed< v >( what , m , "ADS::PackedArray saturated" , P , X , r , ag , as ,
          [ & ]( std::size_t k , auto f ) {
           return( ADS::PackedArray< Bits , true >( seq , k , f ) ); } );
- packed( what , m , "std::vector<uint8_t>" , P , X , r , v ,
+ packed< v >( what , m , "std::vector<uint8_t>" , P , X , r ,
          []( const auto & a , std::size_t i ) {
           return( std::uint64_t( a[ i ] ) ); } ,
          []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x; } ,
@@ -624,7 +626,7 @@ void packedBits( std::size_t m , const std::vector< std::uint32_t > & P ,
            a[ i ] = std::uint8_t( f( i ) );
           return( a ); } );
  if constexpr( Bits == 1 ) {
-  packed( what , m , "std::vector<bool>" , P , X , r , v ,
+  packed< v >( what , m , "std::vector<bool>" , P , X , r ,
           []( const auto & a , std::size_t i ) {
            return( std::uint64_t( a[ i ] ) ); } ,
           []( auto & a , std::size_t i , std::uint8_t x ) {
@@ -634,7 +636,7 @@ void packedBits( std::size_t m , const std::vector< std::uint32_t > & P ,
            for( std::size_t i = 0 ; i < k ; ++i ) a[ i ] = f( i ) != 0;
            return( a ); } );
 #ifdef ADS_HAS_BOOST
-  packed( what , m , "boost::dynamic_bitset" , P , X , r , v ,
+  packed< v >( what , m , "boost::dynamic_bitset" , P , X , r ,
           []( const auto & a , std::size_t i ) {
            return( std::uint64_t( a[ i ] ) ); } ,
           []( auto & a , std::size_t i , std::uint8_t x ) {
@@ -668,13 +670,13 @@ void packedCases( std::size_t n , const Options & o )
  auto as = []( auto & a , std::size_t i , std::uint8_t x ) {
   a.set( i , x ); };
  for( const char * who : { "ADS::TritArray" , "ADS::TritArray A/A" } )
-  packed( "trits" , m , who , P , T , o.runs , 3 , ag , as ,
+  packed< 3 >( "trits" , m , who , P , T , o.runs , ag , as ,
           [ & ]( std::size_t k , auto f ) {
            return( ADS::TritArray( seq , k , f ) ); } );
- packed( "trits" , m , "ADS::PackedArray 2b" , P , T , o.runs , 3 , ag , as ,
+ packed< 3 >( "trits" , m , "ADS::PackedArray 2b" , P , T , o.runs , ag , as ,
          [ & ]( std::size_t k , auto f ) {
           return( ADS::PackedArray< 2 >( seq , k , f ) ); } );
- packed( "trits" , m , "std::vector<uint8_t>" , P , T , o.runs , 3 ,
+ packed< 3 >( "trits" , m , "std::vector<uint8_t>" , P , T , o.runs ,
          []( const auto & a , std::size_t i ) {
           return( std::uint64_t( a[ i ] ) ); } ,
          []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x; } ,
