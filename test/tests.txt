@@ -1770,6 +1770,7 @@ engineered_parallel  concurrent-union-find  union-find concorrente
 engineered_runtime  worker-run           lavoratori insieme, annidati, eccezioni
 engineered_runtime  worker-locks         il lock di ogni esecutore, try_lock
 engineered_runtime  run-caller           il lavoratore che gira sul chiamante
+engineered_runtime  fastflow-loops       i due loop di FastFlow, bulk e run
 engineered_runtime  channels             canali fra lavoratori, ogni famiglia
 engineered_runtime  feedback-farm        farm con retroazione, arresto
 engineered_runtime  farm-indices         indici dei lavoratori e del master

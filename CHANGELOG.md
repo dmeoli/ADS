@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Sequential, the pool and OpenMP, none on FastFlow, at most one on
   oneTBB), so that a worker that binds itself to a processor leaves the
   caller alone
+- FastFlowExecutor: NUM_CORES and NUM_REAL_CORES defined, unless given,
+  as functions of ADS that count the processors and the physical cores
+  once, since FastFlow ran a shell per processor at the construction of
+  each ParallelFor (most of a second on a machine of hundreds of
+  processors); the ParallelFor of bulk() and that of run(), whose threads
+  sleep between the calls, each built at its first call, the spinning
+  threads of bulk() put to sleep before a run, so that a run never waits a
+  quantum of the scheduler behind a thread that spins
 - feedbackFarm(): work( t , i ) with the index i in [ 0 , w ) of the worker
   and start( emit , w ) with the index of the master, detected by
   invocability (work( t ) and start( emit ) stay), each index on one thread

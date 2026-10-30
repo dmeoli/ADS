@@ -275,6 +275,38 @@ ADS_TEST( "worker-locks" )
   } );
 }
 
+// the two loops of FastFlowExecutor, each built at its first call: bulk()
+// and run() in turn on an executor that spins, the spinning threads put to
+// sleep before each run; an executor of one worker builds none of them
+ADS_TEST( "fastflow-loops" )
+{
+#if defined( ADS_WITH_FASTFLOW )
+ for( bool spin : { true , false } ) {
+  FastFlowExecutor ex( 3 , spin );
+  for( int round = 0 ; round < 4 ; ++round ) {
+   std::vector< long > v( 1000 , 0 );
+   ex.bulk( v.size() , [ & ]( std::size_t i ) { v[ i ] = long( i ); } );
+   long s = 0;
+   for( long x : v )
+    s += x;
+   CHECK( s == 999L * 1000L / 2 );
+   Meet meet( 3 );
+   std::vector< int > calls( 3 , 0 );
+   ex.run( 3 , [ & ]( std::size_t i ) {
+    meet.wait();
+    ++calls[ i ];
+    } );
+   CHECK( ( calls[ 0 ] == 1 ) && ( calls[ 1 ] == 1 ) && ( calls[ 2 ] == 1 ) );
+   }
+  }
+ FastFlowExecutor one( 1 );
+ int k = 0;
+ one.run( 1 , [ & ]( std::size_t ) { ++k; } );
+ one.bulk( 5 , [ & ]( std::size_t ) { ++k; } );
+ CHECK( k == 6 );
+#endif
+ }
+
 // isRunCaller(): false outside a run; true in the calls that run on the
 // caller, i.e., f( 0 ) on Sequential, the pool and OpenMP, none on
 // FastFlow with more than one worker, at most one on oneTBB; true again in
