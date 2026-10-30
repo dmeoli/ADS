@@ -84,11 +84,9 @@ FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
  if( o.f_cap == 0 )
   return;
  const std::size_t G = o.f_mask + 1;
- std::unique_ptr< Group , Free > ctrl( control( G ) );
- std::unique_ptr< Slot , Free > block( allocate( G ) );
- Slot * const slot = block.get();
- std::memcpy( static_cast< void * >( ctrl.get() ) , o.f_ctrl ,
-              G * sizeof( Group ) );
+ Group * ctrl;
+ Slot * const slot = allocate( G , ctrl );
+ std::memcpy( static_cast< void * >( ctrl ) , o.f_ctrl , G * sizeof( Group ) );
  std::size_t n = 0;                         // the pairs copied so far
  try {                                      // the same places, copied
   o.each( [ & ]( std::size_t i ) {
@@ -103,10 +101,11 @@ FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
     --n;
     }
    } );
+  deallocate( slot , ctrl , G );
   throw;
   }
- f_ctrl = ctrl.release();
- f_slot = block.release();
+ f_ctrl = ctrl;
+ f_slot = slot;
  f_cap = o.f_cap;
  f_mask = o.f_mask;
  f_shift = o.f_shift;
@@ -415,7 +414,7 @@ template< class K , class V , class H , class Eq >
 ADS_FLAT_INLINE std::uint8_t
 FlatHashTable< K , V , H , Eq >::bit( std::uint64_t x )
 {
- return( std::uint8_t( 1 << ( ( x >> 8 ) & 7 ) ) );
+ return( std::uint8_t( 1 << ( x & 7 ) ) );
  }
 
 template< class K , class V , class H , class Eq >
@@ -566,40 +565,46 @@ FlatHashTable< K , V , H , Eq >::slot( std::size_t i ) const
  }
 
 template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::Group *
-FlatHashTable< K , V , H , Eq >::control( std::size_t G )
+std::size_t FlatHashTable< K , V , H , Eq >::offset( std::size_t G )
 {
- // implicit-lifetime bytes, no cookie before the array
- auto * c = static_cast< Group * >( ::operator new(
-  ( G + 1 ) * sizeof( Group ) , std::align_val_t( ALIGN ) ) );
- std::memset( static_cast< void * >( c ) , 0 , ( G + 1 ) * sizeof( Group ) );
- c[ G ].c[ 0 ] = 1;                         // the sentinel, full
- return( c );
+ return( ( G * SLOTS * sizeof( Slot ) + ALIGN - 1 ) / ALIGN * ALIGN );
  }
 
 template< class K , class V , class H , class Eq >
 typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::allocate( std::size_t G )
+FlatHashTable< K , V , H , Eq >::allocate( std::size_t G , Group * & c )
 {
- // no cookie before the array, unlike new Slot[ n ] with a destructor
- auto * s = static_cast< Slot * >( ::operator new( G * SLOTS * sizeof( Slot ) ,
-                                   std::align_val_t( ALIGN ) ) );
+ // no cookie before the array, unlike new Slot[ n ] with a destructor; the
+ // groups are implicit-lifetime bytes
+ const std::size_t at = offset( G ) , bytes = ( G + 1 ) * sizeof( Group );
+ const bool join = G <= JOIN;
+ void * const b = ::operator new( join ? at + bytes : at ,
+                                  std::align_val_t( ALIGN ) );
+ if( join )
+  c = reinterpret_cast< Group * >( static_cast< unsigned char * >( b ) + at );
+ else
+  try {
+   c = static_cast< Group * >( ::operator new( bytes ,
+                                               std::align_val_t( ALIGN ) ) );
+   }
+  catch( ... ) {
+   ::operator delete( b , std::align_val_t( ALIGN ) );
+   throw;
+   }
+ auto * s = static_cast< Slot * >( b );
  for( std::size_t i = 0 ; i < G * SLOTS ; ++i )
   ::new( static_cast< void * >( s + i ) ) Slot;
+ std::memset( static_cast< void * >( c ) , 0 , bytes );
+ c[ G ].c[ 0 ] = 1;                         // the sentinel, full
  return( s );
  }
 
 template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::Free::operator()( Group * c ) const
- noexcept
+void FlatHashTable< K , V , H , Eq >::deallocate( Slot * s , Group * c ,
+                                                 std::size_t G ) noexcept
 {
- ::operator delete( static_cast< void * >( c ) , std::align_val_t( ALIGN ) );
- }
-
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::Free::operator()( Slot * s ) const
- noexcept
-{
+ if( G > JOIN )
+  ::operator delete( static_cast< void * >( c ) , std::align_val_t( ALIGN ) );
  ::operator delete( static_cast< void * >( s ) , std::align_val_t( ALIGN ) );
  }
 
@@ -628,15 +633,23 @@ ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Slot *
 FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x ,
                                          const K & k ) const
 {
- // the first group alone, the common case; the others out of line
- const std::size_t g = home( x );
- const Group & c = f_ctrl[ g ];
- if( const Mask m = match( c , tag( x ) ) ) [[likely]]   // a hit falls
-  if( Slot * p = scan( g , m , k ) ) [[likely]]           // through
-   return( p );
- if( ! ( c.c[ OVER ] & bit( x ) ) ) [[likely]]
-  return( nullptr );                        // no key of x went past g
- return( further( x , g , k ) );
+ // the whole inspection in line, with no call: a call would take the
+ // registers that the loop of the caller keeps its values in, and the
+ // compiler would no longer place the search for an absent key, which
+ // stops at the first group, on the way back to the top of that loop
+ std::size_t g = home( x );
+ const std::uint32_t t = tag( x );
+ for( std::size_t i = 0 ; ; ) {
+  const Group & c = f_ctrl[ g ];
+  if( const Mask m = match( c , t ) )
+   if( Slot * p = scan( g , m , k ) ) [[likely]]
+    return( p );
+  if( ! ( c.c[ OVER ] & bit( x ) ) ) [[likely]]
+   return( nullptr );                       // no key of x went past g
+  if( ++i > f_mask ) [[unlikely]]
+   return( nullptr );                       // all the groups seen
+  g = ( g + i ) & f_mask;
+  }
  }
 
 template< class K , class V , class H , class Eq >
@@ -765,9 +778,7 @@ template< class F >
 void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
 {
  FlatHashTable o( 0 , f_h , f_eq );         // the new places, in o
- std::unique_ptr< Group , Free > ctrl( control( G ) );
- o.f_slot = allocate( G );
- o.f_ctrl = ctrl.release();
+ o.f_slot = allocate( G , o.f_ctrl );
  o.f_cap = G * SLOTS;
  o.f_mask = G - 1;
  o.f_shift = 64 - std::countr_zero( G );
@@ -775,8 +786,14 @@ void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
  // the places of the new table are only filled, in the order of each
  // group: the first empty place of the group g is its place n[ g ], and the
  // control bytes are written and never read, where reading them would wait
- // for the byte just written in the same group
- std::unique_ptr< std::uint8_t[] > n( new std::uint8_t[ G ]() );
+ // for the byte just written in the same group; the counts of up to 256
+ // groups on the stack, with no call to the allocator
+ constexpr std::size_t SMALL = 256;
+ std::uint8_t local[ SMALL ];
+ std::unique_ptr< std::uint8_t[] > big( G > SMALL ? new std::uint8_t[ G ]
+                                                  : nullptr );
+ std::uint8_t * const n = big ? big.get() : local;
+ std::memset( n , 0 , G );
  auto place = [ & ]( std::uint64_t x ) {   // claim( x ) on o, by n
   std::size_t g = o.home( x );
   for( std::size_t r = 1 ; n[ g ] == SLOTS ; ++r ) {
@@ -786,32 +803,45 @@ void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
   return( g * GROUP + n[ g ]++ );
   };
  first( o , place );
- // the full places, group by group; a copy that throws leaves this table
- // as it was
+ // the full places, group by group; a copy or a hash that throws leaves
+ // this table as it was, and a pair that moves with no exception, of a key
+ // whose hash throws none, is destroyed at once, while its memory is in
+ // the cache, instead of by a walk of the old places after
+ constexpr bool MOVED =
+  std::is_nothrow_move_constructible_v< std::pair< K , V > > &&
+  noexcept( std::declval< const H & >()( std::declval< const K & >() ) );
  auto move = [ & ]( std::size_t i ) {
   auto & kv = this->slot( i )->kv;
   const std::uint64_t x = mix( kv.first );
   const std::size_t j = place( x );
   std::construct_at( &o.slot( j )->kv , std::move_if_noexcept( kv ) );
+  if constexpr( MOVED )
+   std::destroy_at( &kv );
   o.ctrl( j ) = std::uint8_t( tag( x ) );
   ++o.f_size;
   };
  if constexpr( detail::kIndirectKey< K > ) {
   // the hash of a key reads memory at a random place, a miss per key in
-  // the order of the places: the places are listed and the memory of the
-  // key AHEAD places later is prefetched, so that the misses overlap
+  // the order of the places: the memory of a key is prefetched when the
+  // walk of the places reaches it, and the key is moved AHEAD places later,
+  // from a ring of the places in between on the stack, so that the misses
+  // overlap with no list of the places
   constexpr std::size_t AHEAD = 8;
-  std::vector< std::size_t > at;
-  at.reserve( f_size );
-  each( [ & ]( std::size_t i ) { at.push_back( i ); } );
-  for( std::size_t r = 0 ; r < at.size() ; ++r ) {
-   if( r + AHEAD < at.size() )
-    detail::prefetchKey( slot( at[ r + AHEAD ] )->kv.first );
-   move( at[ r ] );
-   }
+  std::size_t ring[ AHEAD ];
+  std::size_t r = 0;
+  each( [ & ]( std::size_t i ) {
+   detail::prefetchKey( slot( i )->kv.first );
+   if( r >= AHEAD )
+    move( ring[ r % AHEAD ] );
+   ring[ r++ % AHEAD ] = i;
+   } );
+  for( std::size_t q = r > AHEAD ? r - AHEAD : 0 ; q < r ; ++q )
+   move( ring[ q % AHEAD ] );
   }
  else
   each( move );
+ if constexpr( MOVED )
+  release( false );                         // the old places alone
  swap( o );
  }
 
@@ -844,14 +874,14 @@ void FlatHashTable< K , V , H , Eq >::each( F && f ) const
  }
 
 template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::release( void ) noexcept
+void FlatHashTable< K , V , H , Eq >::release( bool pairs ) noexcept
 {
  if( f_cap == 0 )
   return;
  if constexpr( ! std::is_trivially_destructible_v< std::pair< K , V > > )
-  each( [ & ]( std::size_t i ) { std::destroy_at( &slot( i )->kv ); } );
- Free()( f_ctrl );
- Free()( f_slot );
+  if( pairs )
+   each( [ & ]( std::size_t i ) { std::destroy_at( &slot( i )->kv ); } );
+ deallocate( f_slot , f_ctrl , f_mask + 1 );
  f_ctrl = s_none;
  f_slot = nullptr;
  f_cap = f_mask = f_max = f_size = f_deleted = 0;

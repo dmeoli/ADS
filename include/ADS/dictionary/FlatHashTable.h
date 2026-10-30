@@ -32,9 +32,10 @@
  * as the default one, `DefaultHash< K >` [see `FastHash.h`], is for the
  * integers and the strings, whose hash by `FastHash` costs one product per
  * 16 bytes. The top bits of the mixed hash give the first group of the key,
- * its low 8 bits the fingerprint (1 in place of 0) and its bits 8 to 10 the
- * bit of the key in the bytes of overflow. The number of groups is a power
- * of 2 and the groups are inspected in the triangular order
+ * its low 8 bits the fingerprint (1 in place of 0) and its low 3 bits the
+ * bit of the key in the bytes of overflow, as in Boost, which costs no
+ * shift. The number of groups is a power of 2 and the groups are inspected
+ * in the triangular order
  * \f$ g_i = ( g_0 + i ( i + 1 ) / 2 ) \bmod G \f$, a permutation of the
  * \f$ G \f$ groups.
  *
@@ -67,16 +68,24 @@
  * insertion; the new pair is built in the new places before the old pairs
  * move, so that a key or a value that lives in the table is still there to
  * copy. When the hash of a key reads memory that the key points to, as for
- * the strings, the rebuild lists the full places and prefetches the memory
- * of the key 8 places ahead, so that the misses of the keys overlap instead
- * of coming one at a time. The rebuild only fills the new places, each
- * group in the order of its places, so that it keeps the count of the full
- * places of each group in a byte apart and never reads the control bytes it
- * has just written (a load of a group right after the store of one of its
- * bytes waits for the store). So some place is always empty, and each
- * inspection ends, since it visits each group at most once. The search of
- * an insertion is the one of `find()`, whose first group gives the place of
- * a new key when it has an empty one, the common case; the groups after the
+ * the strings, the rebuild prefetches the memory of each key when its walk
+ * of the places reaches it and moves the key 8 places later, from a ring
+ * on the stack, so that the misses of the keys overlap instead of coming
+ * one at a time. The rebuild only fills the new places, each group in the
+ * order of its places, so that it keeps the count of the full places of
+ * each group in a byte apart (on the stack up to 256 groups) and never
+ * reads the control bytes it has just written (a load of a group right
+ * after the store of one of its bytes waits for the store); a small table,
+ * rebuilt often as it grows, then calls the allocator only for its new
+ * places. So some place is always empty, and each
+ * inspection ends, since it visits each group at most once. `find()` runs
+ * the whole inspection in line, as Boost does: a call out of line would
+ * take the registers of the loop of the caller, and the compiler would no
+ * longer let a search for an absent key, which stops at the first group,
+ * fall through to the top of that loop (on a Xeon Gold 5120, 5.4 ns against
+ * 5.9 ns per absent key among \f$ 10^5 \f$). The search of an insertion is
+ * the one of `find()` on the first group, which gives the place of a new
+ * key when it has an empty one, the common case; the groups after the
  * first, and the rebuild, are out of line.
  *
  * The iterators visit the pairs in the order of the places, as constant
@@ -437,22 +446,27 @@ class FlatHashTable {
  static constexpr std::size_t ALIGN = alignof( Slot ) > 64 ? alignof( Slot )
                                                            : 64;
 
- /// the \f$ G + 1 \f$ groups of a table of \f$ G \f$ groups, aligned to
- /// `ALIGN`, all empty with their overflow 0 but the last, the sentinel [see
- /// `const_iterator`]
- [[nodiscard]] static Group * control( std::size_t G );
+ /// the most groups whose control bytes share the block of memory of the
+ /// slots: a small table, rebuilt often as it grows, then calls the
+ /// allocator once per rebuild, as Boost does, while a large one keeps its
+ /// slots in a block of their own, a size that the allocator recycles
+ static constexpr std::size_t JOIN = 4096;
+
+ /// the bytes of the \f$ 15 G \f$ slots of \f$ G \f$ groups, rounded up to
+ /// `ALIGN`, where their groups of control bytes begin if \f$ G \le \f$
+ /// `JOIN`
+ [[nodiscard]] static std::size_t offset( std::size_t G );
 
  /// the \f$ 15 G \f$ slots of \f$ G \f$ groups, aligned to `ALIGN`, no pair
-/// built
- [[nodiscard]] static Slot * allocate( std::size_t G );
+ /// built, and in \f$ c \f$ their \f$ G + 1 \f$ groups, aligned to `ALIGN`,
+ /// all empty with their overflow 0 but the last, the sentinel [see
+ /// `const_iterator`]: after the slots in the same block of memory if
+ /// \f$ G \le \f$ `JOIN`, in a block of their own otherwise
+ [[nodiscard]] static Slot * allocate( std::size_t G , Group * & c );
 
- /// frees the groups of `control()` and the slots of `allocate()`
- struct Free {
-  /// frees the groups \f$ c \f$
-  void operator()( Group * c ) const noexcept;
-  /// frees the slots \f$ s \f$
-  void operator()( Slot * s ) const noexcept;
-  };
+ /// frees the slots \f$ s \f$ and the groups \f$ c \f$ of
+ /// `allocate( G , c )`
+ static void deallocate( Slot * s , Group * c , std::size_t G ) noexcept;
 
  /// the hash taken as it is, if it declares `is_avalanching` on 64 bits
  static constexpr bool AVALANCHING = ( sizeof( std::size_t ) >= 8 ) &&
@@ -569,8 +583,9 @@ class FlatHashTable {
  template< class F >
  void each( F && f ) const;
 
- /// destroys the pairs and frees the places
- void release( void ) noexcept;
+ /// destroys the pairs, unless `pairs` is false (they were destroyed
+ /// already), and frees the places
+ void release( bool pairs = true ) noexcept;
 
  /// each pair found by the inspection of its key, the count right and at
  /// most \f$ 7 / 8 \f$ of the places full or deleted; on more than 1024
