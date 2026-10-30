@@ -2134,6 +2134,97 @@ ADS_TEST( "big-integer-gmp" )
   }
  }
 
+// the digits of BigInteger, two in place and the others on the heap [see
+// detail::Limbs]: 0 to 3 digits and their growth and shrink across the
+// two in place, by a push, a resize and the sums and products that carry
+// into a third digit and borrow back, the signs, the results in an
+// operand, the copies and the moves between an object in place and one on
+// the heap both ways, to itself and by swap, and a request of room past the
+// largest block, which throws and leaves the digits as they were
+ADS_TEST( "big-integer-limbs" )
+{
+ using L = detail::Limbs;
+ using U = std::uint64_t;
+ const U M = ~U( 0 );
+ L a;
+ CHECK( a.empty() && a.size() == 0 && a == L() );
+ for( U i = 1 ; i <= 5 ; ++i ) {            // across the place for two
+  a.push_back( i );
+  CHECK( a.size() == i && a.back() == i && a[ 0 ] == 1 );
+  }
+ for( std::size_t n = 5 ; n-- > 0 ; ) {
+  a.pop_back();
+  CHECK( a.size() == n && ( n == 0 || a.back() == U( n ) ) );
+  }
+ L b( 3 , 7 );                              // on the heap, then back
+ CHECK( b.size() == 3 && b[ 2 ] == 7 );
+ b.resize( 1 );
+ b.resize( 2 );
+ CHECK( b.size() == 2 && b[ 0 ] == 7 && b[ 1 ] == 0 );
+ b.assign( 4 , 9 );
+ CHECK( b == L( { 9 , 9 , 9 , 9 } ) );
+ const L in{ 1 , 2 } , heap{ 1 , 2 , 3 , 4 , 5 };
+ for( const L * x : { &in , &heap } )       // copies and moves, both ways
+  for( const L * y : { &in , &heap } ) {
+   L c = *x , d = *y;
+   c = d;
+   CHECK( c == *y && d == *y );
+   c = *x;
+   d = std::move( c );
+   CHECK( d == *x && c.empty() );
+   c = std::move( d );
+   CHECK( c == *x && d.empty() );
+   L e( std::move( c ) );
+   CHECK( e == *x && c.empty() );
+   L & r = e;                               // to itself
+   e = r;
+   CHECK( e == *x );
+   e = std::move( r );
+   CHECK( e == *x );
+   L f = *y;
+   std::swap( e , f );
+   CHECK( e == *y && f == *x );
+   c.push_back( 4 );                        // a moved-from object is usable
+   CHECK( c == L{ 4 } );
+   }
+ L g{ M , M };                              // the room past the largest
+ CHECK_THROWS( g.reserve( std::size_t( -1 ) / 4 ) , std::bad_alloc );
+ CHECK( g == L( { M , M } ) );
+ L h = heap;
+ CHECK_THROWS( h.reserve( std::size_t( -1 ) / 4 ) , std::bad_alloc );
+ CHECK( h == heap );
+ // the numbers: 0 to 3 digits, the carry into the third and back, signs
+ const BigInteger two64 = BigInteger::pow( 2 , 64 ) ,
+                  m2 = two64 * two64 - 1 ;  // 2 digits all ones
+ CHECK( BigInteger().limbs() == 0 && BigInteger( 5 ).limbs() == 1 &&
+        two64.limbs() == 2 && m2.limbs() == 2 && ( m2 + 1 ).limbs() == 3 &&
+        ( m2 + 1 - 1 ) == m2 && ( m2 + 1 - 1 ).limbs() == 2 &&
+        ( -m2 - 1 ).limbs() == 3 && ( -m2 - 1 + 1 ) == -m2 &&
+        ( m2 * m2 ).limbs() == 4 && ( m2 * m2 ) / m2 == m2 &&
+        ( m2 * m2 ) % m2 == 0 && ( m2 * m2 - m2 * m2 ).limbs() == 0 );
+ BigInteger x = m2 , y = BigInteger( -3 ) , z = m2 + 1;
+ x = x * x;                                 // 2 to 4 digits in place
+ CHECK( x == m2 * m2 && x.limbs() == 4 );
+ x = x / m2 / m2;                           // and back to 1
+ CHECK( x == 1 && x.limbs() == 1 );
+ y = y * y * y;
+ CHECK( y == -27 );
+ y = z;                                     // in place from the heap
+ CHECK( y == m2 + 1 && y.limbs() == 3 );
+ z = BigInteger( 7 );                       // on the heap from in place
+ CHECK( z == 7 && z.limbs() == 1 );
+ BigInteger w = std::move( y );
+ CHECK( w == m2 + 1 );
+ y = std::move( z );
+ CHECK( y == 7 );
+ for( long long v : { 0LL , 1LL , -1LL ,
+                      std::numeric_limits< long long >::min() } ) {
+  const BigInteger p( v );
+  CHECK( p * p * p * p == BigInteger::pow( p , 4 ) &&
+         BigInteger( p.toString() ) == p && ( p - p ).sign() == 0 );
+  }
+ }
+
 // the rationals: the harmonic number H_30 as written, the sums and the
 // products in lowest terms (the audit), and the order; the sums by each
 // way of reducing, and H_400 in two orders; the operations on terms of 1

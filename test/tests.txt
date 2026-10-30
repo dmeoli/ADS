@@ -476,6 +476,7 @@ taocp  big-integer-radix     conversioni della sezione 4.4, 10^k e 10^k - 1
 taocp  big-integer-sqrt      radice quadrata contro il metodo di Newton
 taocp  big-integer-gcd       gcd di Lehmer, Fibonacci, nulli
 taocp  big-integer-gmp       backend di GMP: operandi nulli, risultato in loco
+taocp  big-integer-limbs     cifre in loco e sullo heap, ai bordi
 taocp  rational              razionali con le riduzioni di Henrici
 taocp  dancing-links         exact cover, Algorithm X
 taocp  sat-solvers           DPLL e CDCL

@@ -540,47 +540,55 @@ inline void BigInteger::mulRec( Limb * r , const Limb * a , std::size_t na ,
  addN( r + l , r + l , n - l , z1 , std::min( 2 * ( l + 1 ) , n - l ) );
  }
 
-inline BigInteger::Mag BigInteger::mulMag( const Mag & a , const Mag & b ,
-                                           Method how )
+inline void BigInteger::mulMag( Mag & r , const Mag & a , const Mag & b ,
+                                Method how )
 {
- if( a.empty() || b.empty() ) return( Mag() );
+ if( a.empty() || b.empty() ) {
+  r.resize( 0 );
+  return;
+  }
+ r.resize( a.size() + b.size() );
 #if ADS_BIGINT_GMP
  if( how == Method::AUTO ) {                // mpn_mul() or mpn_sqr()
-  Mag r( a.size() + b.size() );
   mp_limb_t * const p = reinterpret_cast< mp_limb_t * >( r.data() );
   const mp_limb_t * const x = reinterpret_cast< const mp_limb_t * >(
                                                                  a.data() ) ,
                   * const y = reinterpret_cast< const mp_limb_t * >(
                                                                  b.data() );
-  if( ( &a == &b ) || ( a == b ) ) mpn_sqr( p , x , mp_size_t( a.size() ) );
+  if( &a == &b ) mpn_sqr( p , x , mp_size_t( a.size() ) );
   else if( a.size() >= b.size() )
    mpn_mul( p , x , mp_size_t( a.size() ) , y , mp_size_t( b.size() ) );
   else mpn_mul( p , y , mp_size_t( b.size() ) , x , mp_size_t( a.size() ) );
   trim( r );
-  return( r );
+  return;
   }
 #endif
  // the scratch space of Karatsuba allocated once, for all its levels
- Mag r( a.size() + b.size() ) ,
-     w( mulScratch( std::max( a.size() , b.size() ) ) );
+ Mag w( mulScratch( std::max( a.size() , b.size() ) ) );
  mulRec( r.data() , a.data() , a.size() , b.data() , b.size() , how ,
          w.data() );
  trim( r );
- return( r );
+ }
+
+inline BigInteger BigInteger::product( const BigInteger & a ,
+                                       const BigInteger & b , Method how )
+{
+ BigInteger p;                              // its digits written in place
+ mulMag( p.f_d , a.f_d , b.f_d , how );
+ p.f_neg = ( a.f_neg != b.f_neg ) && ! p.f_d.empty();
+ return( p );
  }
 
 inline BigInteger BigInteger::multiplySchool( const BigInteger & a ,
                                               const BigInteger & b )
 {
- return( BigInteger( a.f_neg != b.f_neg ,
-                     mulMag( a.f_d , b.f_d , Method::SCHOOL ) ) );
+ return( product( a , b , Method::SCHOOL ) );
  }
 
 inline BigInteger BigInteger::multiplyKaratsuba( const BigInteger & a ,
                                                  const BigInteger & b )
 {
- BigInteger p( a.f_neg != b.f_neg ,
-               mulMag( a.f_d , b.f_d , Method::KARATSUBA ) );
+ BigInteger p = product( a , b , Method::KARATSUBA );
  ADS_AUDIT( p == multiplySchool( a , b ) );
  return( p );
  }
@@ -588,15 +596,14 @@ inline BigInteger BigInteger::multiplyKaratsuba( const BigInteger & a ,
 inline BigInteger BigInteger::multiplyFFT( const BigInteger & a ,
                                            const BigInteger & b )
 {
- BigInteger p( a.f_neg != b.f_neg , mulMag( a.f_d , b.f_d , Method::FFT ) );
+ BigInteger p = product( a , b , Method::FFT );
  ADS_AUDIT( p == multiplySchool( a , b ) );
  return( p );
  }
 
 inline BigInteger operator*( const BigInteger & a , const BigInteger & b )
 {
- return( BigInteger( a.f_neg != b.f_neg ,
-                     BigInteger::mulMag( a.f_d , b.f_d ) ) );
+ return( BigInteger::product( a , b , BigInteger::Method::AUTO ) );
  }
 
 inline BigInteger & BigInteger::operator*=( const BigInteger & b )
@@ -770,10 +777,31 @@ inline BigInteger operator/( const BigInteger & a , const BigInteger & b )
 {
  ADS_PRE( b.sign() != 0 );
 #if ADS_BIGINT_GMP
- mpz_t A , B , Q;                           // mpz_tdiv_q(), no remainder
- mpz_init( Q );
- mpz_tdiv_q( Q , BigInteger::gmpView( A , a ) , BigInteger::gmpView( B , b ) );
- BigInteger q = BigInteger::gmpTake( Q );
+ BigInteger q;
+ const std::size_t na = a.f_d.size() , nb = b.f_d.size();
+ if( nb <= 2 ) {
+  // a divisor in place: mpn_tdiv_qr(), the quotient in its digits and
+  // the remainder, discarded, in place too, with no number of GMP
+  if( na >= nb ) {
+   BigInteger::Limb r[ 2 ];
+   q.f_d.resize( na - nb + 1 );
+   mpn_tdiv_qr( reinterpret_cast< mp_limb_t * >( q.f_d.data() ) ,
+                reinterpret_cast< mp_limb_t * >( r ) , 0 ,
+                reinterpret_cast< const mp_limb_t * >( a.f_d.data() ) ,
+                mp_size_t( na ) ,
+                reinterpret_cast< const mp_limb_t * >( b.f_d.data() ) ,
+                mp_size_t( nb ) );
+   BigInteger::trim( q.f_d );
+   q.f_neg = ( a.f_neg != b.f_neg ) && ! q.f_d.empty();
+   }
+  }
+ else {
+  mpz_t A , B , Q;                          // mpz_tdiv_q(), no remainder
+  mpz_init( Q );
+  mpz_tdiv_q( Q , BigInteger::gmpView( A , a ) ,
+              BigInteger::gmpView( B , b ) );
+  q = BigInteger::gmpTake( Q );
+  }
 #else
  BigInteger q = BigInteger::divMod( a , b ).first;
 #endif
@@ -1094,11 +1122,20 @@ inline BigInteger BigInteger::gcd( const BigInteger & a ,
                                    const BigInteger & b )
 {
 #if ADS_BIGINT_GMP
- mpz_t A , B , G;                           // mpz_gcd()
- mpz_init( G );
- mpz_gcd( G , gmpView( A , a.f_d.data() , a.f_d.size() ) ,
-          gmpView( B , b.f_d.data() , b.f_d.size() ) );
- BigInteger g = gmpTake( G );
+ BigInteger g;
+ const Mag & x = a.f_d.size() >= b.f_d.size() ? a.f_d : b.f_d ,
+           & y = a.f_d.size() >= b.f_d.size() ? b.f_d : a.f_d;
+ if( y.size() == 1 )                        // mpn_gcd_1(), in place
+  g.f_d = { Limb( mpn_gcd_1( reinterpret_cast< const mp_limb_t * >(
+                                                              x.data() ) ,
+                             mp_size_t( x.size() ) , y[ 0 ] ) ) };
+ else {
+  mpz_t A , B , G;                          // mpz_gcd()
+  mpz_init( G );
+  mpz_gcd( G , gmpView( A , x.data() , x.size() ) ,
+           gmpView( B , y.data() , y.size() ) );
+  g = gmpTake( G );
+  }
 #else
  BigInteger g( false , gcdLehmer( a.f_d , b.f_d ) );
 #endif

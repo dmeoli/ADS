@@ -4,7 +4,10 @@
 /** @file
  * The integers of any length of Knuth (4.3.1): a sign and the magnitude as
  * a vector of digits (limbs) in base \f$ b = 2^{64} \f$, the least
- * significant first, with no leading zero.
+ * significant first, with no leading zero, the first two in place in the
+ * number, so that the numbers of one or two digits are made with no
+ * allocation, and the longer ones in a block of the heap that grows by
+ * doubling (`detail::Limbs`).
  *
  * With `ADS_WITH_GMP` defined (by the option of CMake of the same name,
  * which defines it whenever GMP is found, by the makefile, which does the
@@ -19,13 +22,16 @@
  * (`mpz_tdiv_q()`, `mpz_divexact()`, `mpz_gcd()`, `mpz_pow_ui()`,
  * `mpz_get_str()`) on views of the digits in place (`mpz_roinit_n()`), the
  * digits of the result copied from it in \f$ O( n ) \f$, against the
- * superlinear cost of the operation. GMP chooses its own algorithms and
- * thresholds for the processor it was built for. All this holds where a
- * limb of GMP is a word of 64 bits, all of it number; elsewhere, and with
- * `ADS_BIGINT_GMP` defined to 0, `BigInteger` keeps the code of the book
- * below. GMP is free software under the LGPL v3 (or the GPL v2), as ADS is
- * under the LGPL v3; note that GMP aborts where it cannot allocate, while
- * the code of the book throws `std::bad_alloc` [see
+ * superlinear cost of the operation. Where the result fits the digits in
+ * place, the number of GMP is spared: the quotient by a divisor of one or
+ * two digits goes to `mpn_tdiv_qr()`, its remainder kept in place, and the
+ * gcd with a number of one digit to `mpn_gcd_1()`. GMP chooses its own
+ * algorithms and thresholds for the processor it was built for. All this
+ * holds where a limb of GMP is a word of 64 bits, all of it number;
+ * elsewhere, and with `ADS_BIGINT_GMP` defined to 0, `BigInteger` keeps the
+ * code of the book below. GMP is free software under the LGPL v3 (or the
+ * GPL v2), as ADS is under the LGPL v3; note that GMP aborts where it cannot
+ * allocate, while the code of the book throws `std::bad_alloc` [see
  * \ref theory_numeric_backends].
  *
  * Without the backend, and in the methods asked by name
@@ -140,6 +146,8 @@
 #include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -183,6 +191,163 @@
 /*--------------------------------------------------------------------------*/
 
 namespace ADS {
+
+namespace detail {
+
+/*--------------------------------------------------------------------------*/
+/*----------------------------- CLASS Limbs --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the digits of a number, as a vector of words of 64 bits whose first two
+/// are kept in place: the numbers of one or two digits, and the results
+/// that fit there, are made with no allocation, the longer ones in a block
+/// of the heap whose capacity at least doubles when it grows, freed when the
+/// object is; the digits added by `resize()` are set to the value given, 0
+/// by default
+class Limbs {
+
+ public:
+
+ using T = std::uint64_t;   ///< a digit
+
+ /// no digit
+ Limbs( void ) noexcept {}
+ /// \f$ n \f$ digits 0
+ explicit Limbs( std::size_t n ) { resize( n ); }
+ /// \f$ n \f$ digits \f$ v \f$
+ Limbs( std::size_t n , T v ) { resize( n , v ); }
+ /// the digits of \f$ [ b , e ) \f$
+ Limbs( const T * b , const T * e ) {
+  reserve( std::size_t( e - b ) );
+  std::copy( b , e , f_p );
+  f_n = std::size_t( e - b );
+  }
+ /// the digits of the list
+ Limbs( std::initializer_list< T > l ) : Limbs( l.begin() , l.end() ) {}
+ /// a copy of the digits of \f$ o \f$
+ Limbs( const Limbs & o ) : Limbs( o.f_p , o.f_p + o.f_n ) {}
+ /// the digits of \f$ o \f$, taken from it, which is left empty
+ Limbs( Limbs && o ) noexcept { take( o ); }
+ /// a copy of the digits of \f$ o \f$; unchanged if the allocation throws
+ Limbs & operator=( const Limbs & o ) {
+  if( this != &o ) {
+   if( o.f_n > f_cap ) {                    // the new block first
+    T * q = std::allocator< T >().allocate( o.f_n );
+    release();
+    f_p = q;
+    f_cap = o.f_n;
+    }
+   std::copy( o.f_p , o.f_p + o.f_n , f_p );
+   f_n = o.f_n;
+   }
+  return( *this );
+  }
+ /// the digits of \f$ o \f$, taken from it, which is left empty
+ Limbs & operator=( Limbs && o ) noexcept {
+  if( this != &o ) {
+   release();
+   take( o );
+   }
+  return( *this );
+  }
+ ~Limbs( void ) { release(); }
+
+ /// the number of digits
+ [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
+ /// true if there is no digit
+ [[nodiscard]] bool empty( void ) const { return( f_n == 0 ); }
+ /// the digits
+ T * data( void ) { return( f_p ); }
+ /// the digits of a constant object
+ const T * data( void ) const { return( f_p ); }
+ /// the first digit
+ T * begin( void ) { return( f_p ); }
+ /// past the last digit
+ T * end( void ) { return( f_p + f_n ); }
+ /// the first digit of a constant object
+ const T * begin( void ) const { return( f_p ); }
+ /// past the last digit of a constant object
+ const T * end( void ) const { return( f_p + f_n ); }
+ /// the digit \f$ i \f$
+ T & operator[]( std::size_t i ) { return( f_p[ i ] ); }
+ /// the digit \f$ i \f$ of a constant object
+ const T & operator[]( std::size_t i ) const { return( f_p[ i ] ); }
+ /// the last digit
+ T & back( void ) { return( f_p[ f_n - 1 ] ); }
+ /// the last digit of a constant object
+ const T & back( void ) const { return( f_p[ f_n - 1 ] ); }
+
+ /// room for \f$ n \f$ digits; unchanged if the allocation throws
+ void reserve( std::size_t n ) {
+  if( n > f_cap ) regrow( std::max( n , 2 * f_cap ) );
+  }
+ /// \f$ n \f$ digits, those added set to \f$ v \f$
+ void resize( std::size_t n , T v = 0 ) {
+  reserve( n );
+  if( n > f_n ) std::fill( f_p + f_n , f_p + n , v );
+  f_n = n;
+  }
+ /// \f$ n \f$ digits \f$ v \f$
+ void assign( std::size_t n , T v ) {
+  f_n = 0;
+  resize( n , v );
+  }
+ /// the digit \f$ v \f$ appended
+ void push_back( T v ) {
+  reserve( f_n + 1 );
+  f_p[ f_n++ ] = v;
+  }
+ /// the last digit removed
+ void pop_back( void ) { --f_n; }
+
+ /// true if the two have the same digits
+ friend bool operator==( const Limbs & a , const Limbs & b ) {
+  return( ( a.f_n == b.f_n ) && std::equal( a.f_p , a.f_p + a.f_n , b.f_p ) );
+  }
+
+ private:
+
+ static constexpr std::size_t kIn = 2;      ///< the digits in place
+
+ /// the digits moved to a block of \f$ c \f$ digits of the heap
+ void regrow( std::size_t c ) {
+  T * q = std::allocator< T >().allocate( c );
+  std::copy( f_p , f_p + f_n , q );
+  release();
+  f_p = q;
+  f_cap = c;
+  }
+ /// the block of the heap freed, if any, the digits back in place
+ void release( void ) noexcept {
+  if( f_p != f_in ) {
+   std::allocator< T >().deallocate( f_p , f_cap );
+   f_p = f_in;
+   f_cap = kIn;
+   }
+  }
+ /// the digits of \f$ o \f$ taken, its block if on the heap, and \f$ o \f$
+ /// left empty, in place
+ void take( Limbs & o ) noexcept {
+  f_n = o.f_n;
+  f_cap = o.f_cap;
+  if( o.f_p != o.f_in ) f_p = o.f_p;
+  else {
+   std::copy( o.f_in , o.f_in + o.f_n , f_in );
+   f_p = f_in;
+   }
+  o.f_p = o.f_in;
+  o.f_n = 0;
+  o.f_cap = kIn;
+  }
+
+ T * f_p = f_in;                            ///< `f_in` or on the heap
+ std::size_t f_n = 0 ,                      ///< the digits
+             f_cap = kIn;                   ///< the room for them
+ T f_in[ kIn ] = {};                        ///< the digits in place
+
+ };  // end( class Limbs )
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS BigInteger -----------------------------*/
@@ -510,7 +675,7 @@ class BigInteger {
 /*--------------------------------------------------------------------------*/
  private:
 
- using Mag = std::vector< Limb >;   ///< a magnitude, no leading zero
+ using Mag = detail::Limbs;   ///< a magnitude, no leading zero
 
  /// the digits of the two factors of the longest convolution of the NTT,
  /// \f$ 2^{26} \f$ pieces of 32 bits, which stays exact
@@ -554,10 +719,14 @@ class BigInteger {
  static BigInteger addSigned( const BigInteger & a , const BigInteger & b ,
                               bool bneg );
 
- /// the product of two magnitudes by the method asked, by the backend if
- /// `AUTO`
- static Mag mulMag( const Mag & a , const Mag & b ,
-                    Method how = Method::AUTO );
+ /// \f$ r \gets a b \f$ of two magnitudes by the method asked, by the
+ /// backend if `AUTO`, \f$ r \f$ distinct from \f$ a \f$ and \f$ b \f$
+ static void mulMag( Mag & r , const Mag & a , const Mag & b ,
+                     Method how = Method::AUTO );
+ /// the product \f$ a b \f$ by the method asked, its digits written in
+ /// place by `mulMag()`
+ static BigInteger product( const BigInteger & a , const BigInteger & b ,
+                            Method how );
  /// the product of Algorithm M, \f$ r \f$ of \f$ n_a + n_b \f$ digits
  static void mulSchool( Limb * r , const Limb * a , std::size_t na ,
                         const Limb * b , std::size_t nb );

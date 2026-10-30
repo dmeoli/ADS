@@ -1379,8 +1379,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root and the conversion from a string to the mpn layer on the digits in
   place, the quotient alone, the exact quotient, the gcd, the power and the
   conversion to a string to the mpz layer on views of the digits, and the
-  operations of Rational to the mpq layer; the digits are a std::vector of
-  words of 64 bits
+  operations of Rational to the mpq layer; the digits are a detail::Limbs,
+  the first two in place in the number, so that the numbers of one or two
+  digits are made with no allocation, and the others in a block of the heap
+  whose capacity at least doubles (the test big-integer-limbs); the
+  quotient by a divisor of one or two digits goes to mpn_tdiv_qr() and the
+  gcd with a number of one digit to mpn_gcd_1(), with no number of GMP
 - BigInteger without GMP: the algorithms of the book, written to be
   portable and readable, with no assembly, no vector instructions and no
   threshold measured on a processor: Algorithms 4.3.1A, S, M and D, the
@@ -2124,8 +2128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Hensel and of Krandick and Jebelean, the division by the reciprocal of
   Moeller and Granlund, the conversions by halves and by the scaled
   remainder tree, the square root of Zimmermann, the half gcd, the pool of
-  the blocks of digits kept per thread (DigitPool), the digits in place,
-  and the thresholds kToom3, kToom4, kToom32, kSqrKaratsuba, kSqrToom3,
+  the blocks of digits kept per thread (DigitPool), and the thresholds kToom3, kToom4, kToom32, kSqrKaratsuba, kSqrToom3,
   kSqrToom4, kSqrFFT, kDivide, kConvert, kConvertF, kFracLeaf,
   kFracLevel, kFracCyclic, kModFold, kHensel, kNewton, kNewtonKept,
   kRecip, kDivCut, kDivShort, kDivBlock, kDivBlock6, kDivExact2, kHgcd,
