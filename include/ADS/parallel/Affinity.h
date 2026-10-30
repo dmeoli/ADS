@@ -15,14 +15,18 @@
  * \f$ 0 , 1 , \ldots \f$ of a pool, each pinning itself at its start, fill
  * the processors given to the process in their order. The executors do not
  * pin their threads [see `ThreadPool.h`]: whoever wants it calls
- * `pinThread()` from the work of each thread (see
- * \ref theory_parallel_exec).
+ * `pinThread( i )` from the body of the worker \f$ i \f$, never from the
+ * thread that hands out the work, which would then stay pinned after the
+ * parallel part (an executor that runs one of the calls on the calling
+ * thread tells which one it is), and the function knows nothing of the
+ * executors (see \ref theory_parallel_exec).
  *
  * The placement exists on Linux (`sched_getaffinity()`,
  * `pthread_setaffinity_np()`), where the processors are the bits of the
  * mask of the process; elsewhere `affinityCpus()` is empty,
  * `availableCpus()` is `std::thread::hardware_concurrency()`, and
- * `pinThread()` does nothing and returns false.
+ * `pinThread()` does nothing and returns false (on macOS and Windows,
+ * among others).
  *
  * The contracts [see `Contract.h`]: `affinityCpus()` is called first
  * before any thread of the process is pinned, or it finds the mask of a
