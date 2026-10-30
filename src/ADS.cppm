@@ -182,7 +182,6 @@ module;
 #include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
 #include "ADS/numeric/DynamicCsr.h"
-#include "ADS/numeric/FFT.h"
 #include "ADS/numeric/Matrix.h"
 #include "ADS/numeric/MatrixChain.h"
 #include "ADS/numeric/NumberTheory.h"
@@ -221,7 +220,6 @@ module;
 #if defined( _OPENMP )
  #include "ADS/parallel/OpenMPExecutor.h"
 #endif
-#include "ADS/parallel/ParallelFFT.h"
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelGreedy.h"
 #include "ADS/parallel/ParallelMerge.h"
@@ -1283,19 +1281,6 @@ export namespace ADS {
  using ADS::DynamicCsc;
  using ADS::DynamicCsr;
 
- // ADS/numeric/FFT.h
- using ADS::Complex;
- using ADS::convolve;
- using ADS::dct;
- using ADS::dft;
- using ADS::dst;
- using ADS::fft;
- using ADS::fft2;
- using ADS::fftMany;
- using ADS::fftn;
- using ADS::irfft;
- using ADS::rfft;
-
  // ADS/numeric/Matrix.h
  using ADS::Matrix;
  using ADS::multiply;
@@ -1504,9 +1489,6 @@ export namespace ADS {
  using ADS::OpenMPExecutor;
  using ADS::OpenMPLock;
 #endif
-
- // ADS/parallel/ParallelFFT.h
- using ADS::kParallelFFT;
 
  // ADS/parallel/ParallelGraph.h
  using ADS::bfsDistances;

@@ -30,8 +30,6 @@
  *   ParlayLib and the product of Eigen on OpenMP), per nonzero;
  * - the products of dense matrices of 1024 and 2048 (gemm against
  *   OpenBLAS and Eigen on OpenMP), per multiplication;
- * - the transforms of 2^20 and 2^22 points (fft against FFTW with its
- *   threads, planned with FFTW_MEASURE, the plan not timed), per point;
  * - the visit in breadth from the node of largest degree and the connected
  *   components of graphs of 2^16 and 2^19 nodes and 16 edges per node, at
  *   random or of Kronecker (bfsDistances and connectedComponents against
@@ -91,8 +89,8 @@
  * "A/A".
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
- *            [ -b sort|patterns|merge|spmv|gemm|fft|graphs|sssp|succinct|
- *                 lcp|hash|closed|pq|rank ]
+ *            [ -b sort|patterns|merge|spmv|gemm|graphs|sssp|succinct|lcp|
+ *                 hash|closed|pq|rank ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -120,10 +118,8 @@
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
-#include "ADS/numeric/FFT.h"
 #include "ADS/numeric/SellMatrix.h"
 #include "ADS/parallel/OpenMPExecutor.h"
-#include "ADS/parallel/ParallelFFT.h"
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
@@ -248,10 +244,6 @@
 #if defined( ADS_HAS_OPENBLAS )
  #include <cblas.h>
 extern "C" void openblas_set_num_threads( int );
-#endif
-
-#if defined( ADS_HAS_FFTW )
- #include <fftw3.h>
 #endif
 
 // the kernels of the GAP benchmark suite, each in a namespace of its own
@@ -1079,68 +1071,6 @@ void dense( int r , unsigned seed , Executors & X )
               if( std::abs( C.data()[ i ] - ref.data()[ i ] ) > 1e-9 )
                return( false );
              return( true ); } );
-  }
- }
-
-#if defined( ADS_HAS_FFTW )
-/// the allocator of FFTW, so that every array of the benchmark has the
-/// alignment of the one its plan was made on
-template< class T >
-struct FftwAllocator {
- using value_type = T;
- FftwAllocator( void ) = default;
- template< class U > FftwAllocator( const FftwAllocator< U > & ) {}
- T * allocate( std::size_t n ) {
-  return( static_cast< T * >( fftw_malloc( n * sizeof( T ) ) ) );
-  }
- void deallocate( T * p , std::size_t ) { fftw_free( p ); }
- template< class U > bool operator==( const FftwAllocator< U > & ) const {
-  return( true );
-  }
- };
-#endif
-
-/// the transforms of n = 2^20 and 2^22 complex points, in nanoseconds per
-/// point; FFTW planned with FFTW_MEASURE (the plan not timed)
-void ffts( int r , unsigned seed , Executors & X )
-{
- for( std::size_t n : { std::size_t( 1 ) << 20 , std::size_t( 1 ) << 22 } ) {
-  std::mt19937_64 g( seed );
-  std::uniform_real_distribution< double > u( -1 , 1 );
-  std::vector< ADS::Complex > A( n );
-  for( auto & z : A ) z = ADS::Complex( u( g ) , u( g ) );
-  std::vector< ADS::Complex > ref = A;
-  ADS::fft( ref , false );
-  auto close = [ & ]( const auto & B ) {
-   for( std::size_t i = 0 ; i < n ; ++i )
-    if( std::abs( B[ i ] - ref[ i ] ) > 1e-8 ) return( false );
-   return( true ); };
-  using V = std::vector< ADS::Complex >;
-  Battery< V > S;
-  onExecutors( S , X , "ADS::fft" , []( auto & ex , V & B ) {
-   ADS::fft( ex , B , false ); } );
-  if( threads == 1 )
-   add( S , "seq" , "ADS::fft (sequential)" , []( V & B ) {
-    ADS::fft( B , false ); } );
-  runBattery( bench( "fft" ) , "complex" , A , S , r , close );
-#if defined( ADS_HAS_FFTW )
-  if( runs( "fftw" ) && ! ADS::bench::skip( "FFTW" ) ) {
-   using FV = std::vector< ADS::Complex , FftwAllocator< ADS::Complex > >;
-   FV F( A.begin() , A.end() );
-   fftw_init_threads();
-   fftw_plan_with_nthreads( threads );
-   FV P( n );
-   auto * pp = reinterpret_cast< fftw_complex * >( P.data() );
-   fftw_plan plan = fftw_plan_dft_1d( int( n ) , pp , pp , FFTW_FORWARD ,
-                                      FFTW_MEASURE );
-   Battery< FV > W;
-   W.emplace_back( "FFTW" , [ & ]( FV & B ) {
-    auto * b = reinterpret_cast< fftw_complex * >( B.data() );
-    fftw_execute_dft( plan , b , b ); } );
-   runBattery( bench( "fft" ) , "complex" , F , W , r , close );
-   fftw_destroy_plan( plan );
-   }
-#endif
   }
  }
 
@@ -2505,8 +2435,6 @@ int main( int argc , char ** argv )
   sparse( { 100000 , 1000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "gemm" ) )
   dense( o.runs , o.seed , X );
- if( only.empty() || ( only == "fft" ) )
-  ffts( o.runs , o.seed , X );
  if( only.empty() || ( only == "graphs" ) )
   graphs( { 16 , 19 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "sssp" ) )

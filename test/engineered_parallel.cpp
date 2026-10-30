@@ -35,10 +35,8 @@
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
-#include "ADS/numeric/FFT.h"
 #include "ADS/numeric/SellMatrix.h"
 #include "ADS/parallel/OpenMPExecutor.h"
-#include "ADS/parallel/ParallelFFT.h"
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
@@ -636,45 +634,6 @@ ADS_TEST( "parallel-numeric" )
    gemm( m , n , k , 0.5 , DA[ t ].data() , k , DB[ t ].data() , n , -2.0 ,
          Y.data() , n );
    CHECK( std::equal( X.data() , X.data() + m * n , Y.data() , near ) );
-   }
-  } );
- }
-
-// the parallel transform against the sequential one and the definition:
-// sizes below and above the threshold, odd and even powers of 2, the
-// inverse giving back the input, an impulse (all ones out)
-ADS_TEST( "parallel-fft" )
-{
- std::mt19937_64 g( 13 );
- std::uniform_real_distribution< double > u( -1 , 1 );
- onEach( [ & ]( auto & ex ) {
-  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                         std::size_t( 8 ) , kParallelFFT / 2 ,
-                         kParallelFFT , 2 * kParallelFFT ,
-                         std::size_t( 1 ) << 18 } ) {
-   std::vector< Complex > a( n );
-   for( auto & z : a ) z = Complex( u( g ) , u( g ) );
-   std::vector< Complex > b = a , c = a;
-   fft( ex , b , false );
-   fft( c , false );
-   double err = 0 , norm = 0;
-   for( std::size_t i = 0 ; i < n ; ++i ) {
-    err = std::max( err , std::abs( b[ i ] - c[ i ] ) );
-    norm = std::max( norm , std::abs( c[ i ] ) );
-    }
-   CHECK( err <= 1e-12 * std::max( norm , 1.0 ) );
-   fft( ex , b , true );
-   err = 0;
-   for( std::size_t i = 0 ; i < n ; ++i )
-    err = std::max( err , std::abs( b[ i ] - a[ i ] ) );
-   CHECK( err <= 1e-12 );
-   if( n > 0 ) {
-    std::vector< Complex > d( n );
-    d[ 0 ] = 1;
-    fft( ex , d , false );
-    CHECK( std::all_of( d.begin() , d.end() , []( Complex z ) {
-     return( std::abs( z - Complex( 1 ) ) < 1e-12 ); } ) );
-    }
    }
   } );
  }

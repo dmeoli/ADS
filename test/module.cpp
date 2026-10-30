@@ -8,10 +8,10 @@
  * The program includes no header of ADS: it imports the module, and with
  * what that exports it runs an algorithm of each of several areas (a List
  * sorted by mergeSort(), a ChainedHashTable, Dijkstra's algorithm on a
- * ListGraph, kmp(), the product of two polynomials by convolve() and of two
- * BigInteger) and checks their results. Each names a different part of the
- * library, so a name that the module fails to export stops the build, and
- * a wrong result the run.
+ * ListGraph, kmp(), the product of two polynomials by multiplyKaratsuba()
+ * and of two BigInteger) and checks their results. Each names a different
+ * part of the library, so a name that the module fails to export stops the
+ * build, and a wrong result the run.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -23,7 +23,6 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <optional>
@@ -82,12 +81,10 @@ int main()
  check( kmp( "abracadabra" , "abra" ) ==
         std::vector< std::size_t >( { 0 , 7 } ) , "kmp" );
 
- // numeric: ( 1 + 2 x ) ( 3 + x ) = 3 + 7 x + 2 x^2 by the FFT
- const auto c = convolve( std::vector< double >( { 1 , 2 } ) ,
-                          std::vector< double >( { 3 , 1 } ) );
- check( c.size() == 3 && std::abs( c[ 0 ] - 3 ) < 1e-9 &&
-        std::abs( c[ 1 ] - 7 ) < 1e-9 && std::abs( c[ 2 ] - 2 ) < 1e-9 ,
-        "convolve" );
+ // numeric: ( 1 + 2 x ) ( 3 + x ) = 3 + 7 x + 2 x^2 by Karatsuba
+ const auto c = multiplyKaratsuba( std::vector< long >( { 1 , 2 } ) ,
+                                   std::vector< long >( { 3 , 1 } ) );
+ check( c == std::vector< long >( { 3 , 7 , 2 } ) , "multiplyKaratsuba" );
 
  // numeric: a product of BigInteger beyond 64 bits
  const BigInteger a( "123456789012345678901234567890" );

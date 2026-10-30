@@ -117,9 +117,6 @@ PAIRS = [
     ('bignum', 'ADS::Rational', 'GMP', ['GMP mpq_class']),
     ('bignum', 'ADS::BigInteger own', 'GMP', ['GMP mpz_class']),
     ('bignum', 'ADS::Rational own', 'GMP', ['GMP mpq_class']),
-    ('fft', 'ADS::fft', 'FFTW', ['FFTW estimate', 'FFTW measure']),
-    ('fft', 'ADS::fft', 'pocketfft', ['pocketfft']),
-    ('fft', 'ADS::fft', 'ducc0', ['ducc0']),
     ('hash functions', 'ADS::FastHash', 'std', ['std::hash']),
     ('hash functions', 'ADS::FastHash', 'Boost', ['boost::hash']),
     ('hash functions', 'ADS::FastHash', 'Abseil', ['absl::Hash']),
@@ -555,7 +552,6 @@ PARALLEL = [
     ('gemm', 'ADS::gemm', [
         ('OpenBLAS', ['OpenBLAS dgemm']),
         ('Eigen', ['Eigen::Matrix'])]),
-    ('fft', 'ADS::fft', [('FFTW', ['FFTW'])]),
     ('bfs', 'ADS::bfsDistances', [
         ('GAPBS', ['gapbs DOBFS']),
         ('ParlayLib', ['parlay BFS_ligra'])]),

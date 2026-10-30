@@ -13,8 +13,8 @@
  of Catalan of the exercises on dynamic programming,
  the number theory of chapter 17 (Euclid, the modular powers, the test of
  Miller and Rabin, RSA), and, beyond the book, the integers and the
- fractions of any length, the fast Fourier transform, the generators of
- random numbers with their tests and the samplings, and the sparse matrices.
+ fractions of any length, the generators of random numbers with their tests
+ and the samplings, and the sparse matrices.
  This page collects what the headers take for granted: the notation shared by
  all of them (see \ref theory_numeric_notation), the representations of the
  numbers and of the matrices with the costs of their operations (see
@@ -57,7 +57,7 @@
      <td>the greatest common divisor, and the remainder in
          \f$ [ 0 , m ) \f$</td></tr>
  <tr><td>\f$ \omega_n \f$</td>
-     <td>the root of unity \f$ e^{-2 \pi i / n} \f$ of the discrete Fourier
+     <td>a root of unity of order \f$ n \f$ modulo a prime, that of the
          transform \f$ \hat a_k = \sum_{j<n} a_j \omega_n^{j k} \f$</td></tr>
  <tr><td>\f$ F_n \f$, \f$ C_n \f$, \f$ \binom{n}{k} \f$</td>
      <td>the numbers of Fibonacci (\f$ F_0 = F_1 = 1 \f$) and of Catalan,
@@ -159,9 +159,8 @@
  school to Karatsuba at `kKaratsuba` digits and to a convolution of the
  digits at `kFFT`, round lengths that no processor tuned, while GMP, its
  backend, adds the methods of Toom and chooses its own thresholds; the
- convolution is computed by the Fourier transform in \f$ O( n \log n ) \f$
- operations
- (see \ref theory_numeric_fft).
+ convolution is computed by the number theoretic transform in
+ \f$ O( n \log n ) \f$ operations (see \ref theory_numeric_ntt).
 
  The matrices obey the same scheme. The product of two \f$ n \times n \f$
  matrices by the definition costs \f$ \Theta( n^3 ) \f$, and by blocks of
@@ -329,13 +328,15 @@
  \f$ \sum_{p \le n} n / p = O( n \log \log n ) \f$ time by the theorem of
  Mertens.
 
- \section theory_numeric_fft The Fourier transform
+ \section theory_numeric_ntt The number theoretic transform
 
- The discrete Fourier transform of \f$ a_0 , \ldots , a_{n-1} \f$ evaluates
- the polynomial \f$ a( x ) = \sum_j a_j x^j \f$ at the \f$ n \f$ roots of
- unity \f$ \omega_n^k \f$, and the inverse interpolates it, with
- \f$ \omega_n^{-1} \f$ and a factor \f$ 1 / n \f$, since
- \f$ \sum_k \omega_n^{j k} = 0 \f$ unless \f$ n \mid j \f$.
+ Let \f$ p \f$ be a prime with \f$ n \mid p - 1 \f$, and \f$ \omega_n \f$ an
+ element of order \f$ n \f$ modulo \f$ p \f$. The transform of
+ \f$ a_0 , \ldots , a_{n-1} \f$, \f$ \hat a_k = \sum_j a_j \omega_n^{j k}
+ \bmod p \f$, evaluates the polynomial \f$ a( x ) = \sum_j a_j x^j \f$ at the
+ \f$ n \f$ roots of unity \f$ \omega_n^k \f$, and the inverse interpolates
+ it, with \f$ \omega_n^{-1} \f$ and a factor \f$ n^{-1} \bmod p \f$, since
+ \f$ \sum_k \omega_n^{j k} \equiv 0 \f$ unless \f$ n \mid j \f$.
 
  <em>Lemma 4 (the convolution).</em> If \f$ c \f$ is the cyclic convolution
  of \f$ a \f$ and \f$ b \f$, \f$ c_k = \sum_{j} a_j b_{( k - j ) \bmod n} \f$,
@@ -346,10 +347,10 @@
 
  Indeed, \f$ c( x ) \equiv a( x ) b( x ) \f$ modulo \f$ x^n - 1 \f$, and each
  \f$ \omega_n^k \f$ is a root of \f$ x^n - 1 \f$. With \f$ n \f$ at least the
- number of coefficients of the product, the convolution is the product of the
- polynomials, and of the integers once the carries are propagated
- (`convolve()`, and the NTT of `BigInteger.h`, where the roots of unity are
- those of a prime field and (10) holds exactly).
+ number of coefficients of the product, and \f$ p \f$ (or the product of the
+ primes, by the Chinese remainder theorem) above its largest coefficient, the
+ convolution is the product of the polynomials exactly, and that of the
+ integers once the carries are propagated (the NTT of `BigInteger.h`).
 
  The transform is fast because it factors. With \f$ n = r m \f$, the
  index \f$ j = r i + j' \f$ of the input and \f$ k = k' + m q \f$ of the
@@ -360,37 +361,10 @@
  \f]
  i.e., \f$ r \f$ transforms of length \f$ m \f$, \f$ n \f$ products by the
  twiddles \f$ \omega_n^{j' k'} \f$, and \f$ m \f$ transforms of length
- \f$ r \f$ (Cooley and Tukey). Applied recursively to
- \f$ n = 2^K \f$, (11) gives \f$ T( n ) = 2 T( n / 2 ) + \Theta( n ) =
- \Theta( n \log n ) \f$; `fft()` applies it as the four steps of Bailey, with
- \f$ r \f$ and \f$ m \f$ near \f$ \sqrt{n} \f$ so that each step works in the
- cache. A prime \f$ n \f$ has no factorization, and is reduced to a
- convolution: by the generator of the integers modulo \f$ n \f$, a cyclic one
- of \f$ n - 1 \f$ points (Rader), or by
- \f$ j k = ( j^2 + k^2 - ( k - j )^2 ) / 2 \f$, a linear one of any length at
- least \f$ 2 n - 1 \f$ (Bluestein); both are then computed by (10) on
- lengths that do factor, so that every \f$ n \f$ costs
- \f$ O( n \log n ) \f$. A transform of \f$ n \f$ real numbers is one complex
- transform of \f$ n / 2 \f$ points and a pass that separates the even and the
- odd items (`rfft()`), and the transforms of the cosines and of the sines are
- real transforms of the input reordered or extended (`dct()`, `dst()`).
-
- <table>
- <caption>The ways of a transform of \f$ n \f$ points</caption>
- <tr><th>Case</th><th>Method</th><th>Time</th></tr>
- <tr><td>\f$ n \f$ small</td><td>a codelet, unrolled</td>
-     <td>a fixed sequence of operations</td></tr>
- <tr><td>\f$ n = r m \f$</td><td>the four steps (11), the rounds of
-     Stockham for the long rows and columns</td>
-     <td>\f$ O( n \log n ) \f$</td></tr>
- <tr><td>\f$ n \f$ prime</td><td>Rader, a cyclic convolution of
-     \f$ n - 1 \f$ points</td><td>\f$ O( n \log n ) \f$</td></tr>
- <tr><td>a large prime factor</td><td>Bluestein, a convolution of
-     \f$ M \ge 2 n - 1 \f$ points</td><td>\f$ O( n \log n ) \f$, a larger
-     constant</td></tr>
- <tr><td>any \f$ n \f$, <tt>dft()</tt></td><td>the definition</td>
-     <td>\f$ \Theta( n^2 ) \f$</td></tr>
- </table>
+ \f$ r \f$ (Cooley and Tukey). Applied recursively to \f$ n = 2^K \f$ with
+ \f$ r = 2 \f$, the rounds of butterflies of `BigInteger.h`, (11) gives
+ \f$ T( n ) = 2 T( n / 2 ) + \Theta( n ) = \Theta( n \log n ) \f$, against the \f$ \Theta( n^2 ) \f$ products of the
+ definition (sections 4.3.3 and 4.6.4 of Knuth).
 
  \section theory_numeric_random Random numbers and samplings
 
@@ -545,14 +519,6 @@
  \see J. W. Cooley, J. W. Tukey, An algorithm for the machine calculation
       of complex Fourier series, Mathematics of Computation 19(90),
       297-301, 1965, doi:10.1090/S0025-5718-1965-0178586-1
- \see D. H. Bailey, FFTs in external or hierarchical memory, The Journal
-      of Supercomputing 4(1), 23-35, 1990, doi:10.1007/BF00162341
- \see C. M. Rader, Discrete Fourier transforms when the number of data
-      samples is prime, Proceedings of the IEEE 56(6), 1107-1108, 1968,
-      doi:10.1109/PROC.1968.6477
- \see L. I. Bluestein, A linear filtering approach to the computation of
-      discrete Fourier transform, IEEE Transactions on Audio and
-      Electroacoustics 18(4), 451-455, 1970, doi:10.1109/TAU.1970.1162132
  \see P. L. Montgomery, Modular multiplication without trial division,
       Mathematics of Computation 44(170), 519-521, 1985,
       doi:10.1090/S0025-5718-1985-0777282-X

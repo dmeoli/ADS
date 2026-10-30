@@ -2138,6 +2138,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   packing of the blocks of BLIS and the blocks KC, MC and NC, the path of
   the small products, and the ranges of the CBLAS kGemmBlasSmall and
   kGemmBlasThin
+- numeric/FFT.h (fft(), fftMany(), fftn(), fft2(), rfft(), irfft(), dct(),
+  dst(), dft(), convolve() and the type Complex) and parallel/ParallelFFT.h
+  (the parallel fft() and kParallelFFT), with their tests (test/fft.cpp,
+  the tests fft, fft-sizes, fft-large, fft-lanes, fft-offsets and
+  convolve-real of taocp, parallel-fft of engineered_parallel), the
+  benchmark bench/fft.cpp and the transforms of bench/parallel.cpp with
+  their competitors (FFTW, pocketfft, ducc0: FFTW, POCKETFFT and DUCC0 in
+  the makefile, ADS_POCKETFFT and ADS_DUCC0 in CMake), the job fft of the
+  CI and the section of the theory on the Fourier transform, which now
+  states the number theoretic transform of BigInteger: a fast Fourier
+  transform is better taken from FFTW directly; the test of the module
+  multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
 

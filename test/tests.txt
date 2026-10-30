@@ -468,12 +468,6 @@ taocp  generation            tuple, permutazioni, combinazioni, partizioni
 taocp  generation-visits     visite che fermano o no la generazione
 taocp  random-numbers        generatori congruenziali e test statistici
 taocp  random-ranges         estrazioni limitate da generatori stretti
-taocp  fft                   trasformata veloce di Fourier
-taocp  fft-sizes             FFT da 1 a 1024 punti, contro dft
-taocp  fft-large             FFT da 2^11 a 2^20 punti, contro radix 2
-taocp  fft-lanes             FFT su ogni larghezza dei vettori
-taocp  fft-offsets           FFT a ogni allineamento dei punti
-taocp  convolve-real         convoluzione per FFT reali
 taocp  big-integer-words     parole di 64 bit: prodotti, riporti, 128/64
 taocp  big-integer           interi di lunghezza qualsiasi, Algorithm D
 taocp  big-integer-product   Algorithm M, Karatsuba, NTT esatta, ai bordi
@@ -510,16 +504,6 @@ engineered_combinatorial  fast-bitwise     Harley-Seal, pdep, select
 engineered_combinatorial  fast-generation  permutazioni e combinazioni veloci
 engineered_combinatorial  fast-exact-cover copertura esatta, celle danzanti
 engineered_combinatorial  book-structures  il libro su strutture std, Boost, ADS
-
-# the fast Fourier transforms of every size and kind, beyond the book
-fft  fft-any-size          FFT di ogni lunghezza da 0 a 300
-fft  fft-plans             piani: radici miste, Rader, Bluestein
-fft  fft-factorizations    quattro passi su ogni fattorizzazione
-fft  fft-float             FFT in precisione singola
-fft  rfft                  trasformate di dati reali
-fft  dct-dst               trasformate dei coseni e dei seni, tipi 1-4
-fft  fft-many-nd           molte trasformate, 2 e 3 dimensioni
-fft  convolve-float        convoluzione in precisione singola
 
 # the engineered hashing, beyond the book
 hashing  fast-hash             funzioni hash per prodotti ripiegati
@@ -1615,7 +1599,7 @@ contract_numeric      matrix-chain         catena di matrici, capitolo 13
 contract_numeric      number-theory        teoria dei numeri, capitolo 17
 contract_numeric      polynomial           polinomi, capitolo 12
 contract_numeric      rsa                  RSA, capitolo 17
-contract_numeric      other-numeric        interi grandi, FFT, generatori
+contract_numeric      other-numeric        interi grandi, generatori
 
 contract_optimization change               resto, capitolo 14
 contract_optimization fractional-knapsack  zaino frazionario, capitolo 14
@@ -1755,7 +1739,6 @@ engineered_parallel  parallel-sort       ordinamenti contro quelli di std
 engineered_parallel  learned-parallel-sort  splitter della CDF sul pool
 engineered_parallel  parallel-merge      fusione a più vie, selezione
 engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
-engineered_parallel  parallel-fft        trasformata in quattro passi
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
 engineered_parallel  parallel-lcp        array LCP permutato
 engineered_parallel  parallel-rank-select  rank e select costruiti sugli esecutori

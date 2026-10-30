@@ -17,14 +17,13 @@
 # bytes, the queues between threads, the event count, the MultiQueue, the     #
 # concurrent hash tables, the parallel operations of the trees by join, the   #
 # parallel builds of the succinct structures, the stepping algorithms of the  #
-# shortest paths and the runtime of the workers under ThreadSanitizer,        #
-# FlatHashTable on its broadword fallback and fft() on the lanes of AVX, on   #
-# arrays of doubles and on the intrinsics of x86 that MSVC takes; it measures #
-# the coverage of the tests, run four at a time and with the cases there for  #
-# their scale alone made smaller, and sends it to Coveralls; it builds the    #
-# C++20 module ads and runs the test that imports it, by CMake and Ninja with #
-# Clang and GCC 15 on Linux and the Clang of LLVM on macOS, and by the        #
-# makefile with clang++ and g++ 15.                                           #
+# shortest paths and the runtime of the workers under ThreadSanitizer, and    #
+# FlatHashTable on its broadword fallback; it measures the coverage of the    #
+# tests, run four at a time and with the cases there for their scale alone    #
+# made smaller, and sends it to Coveralls; it builds the C++20 module ads and #
+# runs the test that imports it, by CMake and Ninja with Clang and GCC 15 on  #
+# Linux and the Clang of LLVM on macOS, and by the makefile with clang++ and  #
+# g++ 15.                                                                     #
 ###############################################################################
 
 name: CI
@@ -356,30 +355,6 @@ jobs:
               -Iinclude -Itest -DADS_CONTRACTS=3 -DADS_FLAT_SIMD=0 \
               -o swar test/engineered.cpp -pthread
           ./swar flat-hash-table
-
-  fft:
-    # the paths of fft() at -O2 with the contracts and without the
-    # sanitizers, whose instrumentation of the unrolled codelets needs more
-    # memory than the runner has on these lanes (the default ones are under
-    # ASan and UBSan in sanitizers)
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        flags: [ -DADS_FFT_SIMD=0 , -mavx2 , -DADS_FFT_INTRINSICS=1 ,
-                 -mavx2 -DADS_FFT_INTRINSICS=1 , -mavx2 -DADS_FFT_LEAN=1 ]
-    steps:
-      - uses: actions/checkout@v4
-      - name: fft() and the transforms of fft.cpp on ${{ matrix.flags }}
-        run: |
-          for f in taocp fft; do
-            g++ -std=c++20 -O2 -Iinclude -Itest -DADS_CONTRACTS=3 \
-                ${{ matrix.flags }} -o $f test/$f.cpp -pthread
-          done
-          for t in fft fft-sizes fft-large fft-lanes convolve-real; do
-            ./taocp $t
-          done
-          for t in $(./fft -l); do ./fft $t; done
 
   coverage:
     # the programs built and the tests run four at a time, the longest

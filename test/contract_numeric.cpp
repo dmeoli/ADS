@@ -33,7 +33,6 @@
 #include "ADS/numeric/BinaryInteger.h"
 #include "ADS/numeric/Catalan.h"
 #include "ADS/numeric/Combinatorics.h"
-#include "ADS/numeric/FFT.h"
 #include "ADS/numeric/Matrix.h"
 #include "ADS/numeric/MatrixChain.h"
 #include "ADS/numeric/NumberTheory.h"
@@ -47,7 +46,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <numbers>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -238,10 +236,9 @@ ADS_TEST( "rsa" )
 // combinatorics at their largest n, Catalan up to the last one in 64
 // bits, the radix of BigInteger at 2 , 36 , 1 , 37, a string with a sign
 // only or a digit beyond the radix, the division and the fraction by 0,
-// the FFT of 0 , 1 , 3 points, the generators and the statistical tests on
-// their degenerate inputs, n = N and n = N + 1 samples, the sparse matrix
-// at row m and column n, a pivot on a 0, the recursive product of two
-// empty or unequal polynomials
+// the generators and the statistical tests on their degenerate inputs,
+// n = N and n = N + 1 samples, the sparse matrix at row m and column n, a
+// pivot on a 0, the recursive product of two empty or unequal polynomials
 ADS_TEST( "other-numeric" )
 {
  // binomial() recurs in 2^n calls: n = 67 with k near 0 and n only
@@ -293,23 +290,6 @@ ADS_TEST( "other-numeric" )
                contract_violation );
  CHECK( Rational( 0 , -5 ) == Rational( 0 ) &&
         Rational( 2 , -4 ) == Rational( -1 , 2 ) );
-
- std::vector< Complex > a0 , a1 = { 2.0 } , a3( 3 ) , a4( 4 , 1.0 );
- fft( a0 , false );
- fft( a1 , false );
- fft( a4 , false );
- CHECK( a0.empty() && a1[ 0 ] == 2.0 && std::abs( a4[ 0 ] - 4.0 ) < 1e-12 );
- a3[ 1 ] = 3.0;                                       // any size
- fft( a3 , false );
- CHECK( std::abs( a3[ 0 ] - 3.0 ) < 1e-12 &&
-        std::abs( a3[ 1 ] - 3.0 * std::polar( 1.0 , -2 * std::numbers::pi /
-                                               3 ) ) < 1e-12 );
- CHECK_THROWS( (void) irfft( std::vector< Complex >( 2 ) , 5 ) ,
-               contract_violation );
- std::vector< double > d1( 1 );
- CHECK_THROWS( dct( d1 , 1 ) , contract_violation );
- CHECK( convolve( {} , { 1.0 } ).empty() || convolve( {} , { 1.0 } ).size()
-        <= 1 );
 
  CHECK_THROWS( LinearCongruential( 5 , 1 , 5 , 0 ) , contract_violation );
  CHECK_THROWS( LinearCongruential( 2 , 5 , 5 , 0 ) , contract_violation );

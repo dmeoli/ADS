@@ -161,11 +161,8 @@ BLASON    = $(if $(filter 1,$(ADSBLASON)),-DADS_WITH_BLAS $(libBLASINC) \
 # the benchmarks, with the contracts off and the Boost headers if found;
 # bignum, matrix and parallel on the backends found as the tests are, and
 # with them on, bignum-own and matrix-own on the code of ADS alone;
-# GMP=<prefix> and FFTW=<prefix> add GMP to bignum and FFTW to fft (also
-# in single precision, if FFTW has libfftw3f); FLINT=<prefix> adds FLINT
-# to bignum (with GMP and MPFR in the same prefix); POCKETFFT=<dir> and
-# DUCC0=<dir> add to fft pocketfft (the directory of pocketfft_hdronly.h)
-# and ducc0 (the directory src of its sources);
+# GMP=<prefix> adds GMP to bignum; FLINT=<prefix> adds FLINT to bignum
+# (with GMP and MPFR in the same prefix);
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
 # fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
@@ -198,7 +195,7 @@ BLASON    = $(if $(filter 1,$(ADSBLASON)),-DADS_WITH_BLAS $(libBLASINC) \
 # tsl::htrie_map to stringdicts, MARISA=<prefix> marisa-trie, TX=<prefix>
 # the tx-trie (tx/tx.hpp and libtx.a) and PDT=<dir> (its source, with its
 # succinct) the path-decomposed tries of Grossi and Ottaviano
-BENCHES   = sort dictionaries priority sequences memory bignum fft hashing \
+BENCHES   = sort dictionaries priority sequences memory bignum hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
@@ -219,12 +216,6 @@ GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
 FLINTFLAGS = $(if $(FLINT),-DADS_HAS_FLINT -I$(FLINT)/include \
              -L$(FLINT)/lib -Wl$(comma)-rpath$(comma)$(FLINT)/lib -lflint \
              -lmpfr -lgmp)
-FFTWFLAGS = $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
-            -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3 \
-            $(if $(wildcard $(FFTW)/lib/libfftw3f.*),-DADS_HAS_FFTWF \
-            -lfftw3f)) \
-            $(if $(POCKETFFT),-DADS_HAS_POCKETFFT -isystem $(POCKETFFT)) \
-            $(if $(DUCC0),-DADS_HAS_DUCC0 -isystem $(DUCC0)) -pthread
 SAISFLAGS = $(if $(LIBSAIS),-DADS_HAS_LIBSAIS -I$(LIBSAIS)/include \
             -L$(LIBSAIS)/lib -lsais) \
             $(if $(DIVSUFSORT),-DADS_HAS_DIVSUFSORT -I$(DIVSUFSORT)/include \
@@ -308,9 +299,6 @@ $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 $(BUILD)/bench-bignum-own: bench/bignum.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $<
-
-$(BUILD)/bench-fft: bench/fft.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(FFTWFLAGS)
 
 $(BUILD)/bench-hashing: bench/hashing.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(HASHFLAGS)
@@ -426,12 +414,12 @@ $(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
 # and competitor, FASTFLOW=<dir> FastFlow, PARLAY=<dir> ParlayLib (with
 # its examples), SORTING=<dir> the parallel IPS4o and IPS2Ra, TLX=<dir>
 # the parallel merge of tlx, GAPBS=<dir> the GAP benchmark suite, EIGEN=
-# <dir> Eigen, OPENBLAS=<prefix> OpenBLAS, FFTW=<prefix> FFTW with its
-# threads, HASHING=<dir> libcuckoo, MULTIQUEUE=<dir> the MultiQueue of
-# Williams et al., KLSM=<dir> the k-LSM (its source of the threads compiled
-# in), GROWT=<dir> the tables of growt, SDSL=<dir> (its sources) the
-# builds of sdsl-lite, SPRAYLIST=<lib> the SprayList built with the wrapper
-# of the k-LSM (with KLSM=<dir>, and GSL=<prefix> of its GSL)
+# <dir> Eigen, OPENBLAS=<prefix> OpenBLAS, HASHING=<dir> libcuckoo,
+# MULTIQUEUE=<dir> the MultiQueue of Williams et al., KLSM=<dir> the k-LSM
+# (its source of the threads compiled in), GROWT=<dir> the tables of growt,
+# SDSL=<dir> (its sources) the builds of sdsl-lite, SPRAYLIST=<lib> the
+# SprayList built with the wrapper of the k-LSM (with KLSM=<dir>, and
+# GSL=<prefix> of its GSL)
 TBBFLAGS  = $(if $(TBB),-DADS_HAS_TBB -DADS_WITH_TBB \
             $(if $(filter-out 1,$(TBB)),-I$(TBB)/include -L$(TBB)/lib \
             -Wl$(comma)-rpath$(comma)$(TBB)/lib) -ltbb)
@@ -447,8 +435,6 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
             $(if $(OPENBLAS),-DADS_HAS_OPENBLAS -I$(OPENBLAS)/include \
             -L$(OPENBLAS)/lib -Wl$(comma)-rpath$(comma)$(OPENBLAS)/lib \
             -lopenblas) \
-            $(if $(FFTW),-DADS_HAS_FFTW -I$(FFTW)/include -L$(FFTW)/lib \
-            -Wl$(comma)-rpath$(comma)$(FFTW)/lib -lfftw3_threads -lfftw3) \
             $(if $(HASHING),-isystem $(HASHING)/libcuckoo) \
             $(if $(MULTIQUEUE),-isystem $(MULTIQUEUE)/include \
             -isystem $(MULTIQUEUE)/include/multiqueue/third_party/pcg) \

@@ -16,7 +16,7 @@
 # of the compressors from ADS_BENCH_TEXT (a file, repeated up to each size),  #
 # the cores of the parallel algorithms from PCORES (default CORE).            #
 #                                                                             #
-#   bench/run.sh            after: make bench [GMP=<prefix>] [FFTW=<prefix>]  #
+#   bench/run.sh            after: make bench [GMP=<prefix>]                  #
 #                           [HASHING=<dir>] [ABSL=<prefix>]                   #
 #                           [LIBSAIS=<prefix>] [DIVSUFSORT=<prefix>]          #
 #                           [EDLIB=<prefix>] [RAPIDFUZZ=<prefix>]             #
@@ -29,7 +29,6 @@
 #                           [PGM=<dir>] [LEMIRE=<prefix>] [ROARING=<prefix>]  #
 #                           [HTRIE=<dir>] [LIBART=<prefix>]                   #
 #                           [HYPERSCAN=<prefix>]                              #
-#                           [POCKETFFT=<dir>] [DUCC0=<dir>]                   #
 #                           [TBB=1] [FASTFLOW=<dir>] [PARLAY=<dir>]           #
 #                           [PAM=<dir>] (with PARLAY=<dir>)                   #
 #                           [MULTIQUEUE=<dir>] [KLSM=<dir>] [GROWT=<dir>]     #
@@ -86,7 +85,6 @@ run sequences 100000 10000000
 run memory 100000 1000000
 run bignum 16 256 1024 4096 32768
 [ -x "$BUILD/bench-bignum-own" ] && run bignum-own 16 256 1024 4096 32768
-run fft 64 1000 1024 16384 100000 131072 1048576
 run hashing 100000 1000000
 run search 100000 1000000 10000000
 run multi 1000000 10000000

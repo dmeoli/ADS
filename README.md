@@ -29,8 +29,8 @@ it.
 ## Performance
 
 The table below compares the engineered structures of ADS with those of
-the standard library (libstdc++), of Boost 1.83, of GMP 6.3.0, of FFTW
-3.3.10 and of pocketfft and ducc0, as measured by the benchmarks in
+the standard library (libstdc++), of Boost 1.83 and of GMP 6.3.0, as
+measured by the benchmarks in
 [`bench/`](bench/) (`make bench`). `BigInteger` and `Rational` run on GMP,
 and `gemm()` on a CBLAS, wherever the library is found, at every size (see
 the section Use), and the benchmarks measure them as they are built, i.e.,
@@ -39,10 +39,9 @@ runs without them (`bench-bignum-own` and `bench-matrix-own`, built when
 the backends are on). These were run twice
 on an otherwise idle Intel Xeon Gold 5120 at 2.2 GHz, on one core pinned
 by `taskset`, with g++ 13.3 at `-O3 -march=native`; GMP was configured for
-that processor, and FFTW was built with SSE2, AVX, AVX2 and AVX-512. Each cell
+that processor. Each cell
 of a benchmark is the median of 11 runs, and the clock does not include
-the building of the input nor the planning of FFTW and of ADS (measured
-apart in the row "fft plan"). A row gives the time of the library divided
+the building of the input. A row gives the time of the library divided
 by that of ADS (above 1 when ADS is faster), as the median and the range
 over the cells of the benchmark, i.e., its cases (e.g., random, sorted or
 few distinct keys for the sorts) and its sizes ($10^5$ and $10^6$ items
@@ -89,10 +88,6 @@ of the clock. Hence, a ratio between 0.95 and 1.05 is usually a tie.
 <tr><td>GMP</td><td align="right">12</td><td align="right">0.33</td><td align="right">0.20 to 1.25</td></tr>
 <tr><td rowspan="2"><code>ADS::Rational own</code></td><td>Boost</td><td align="right">3</td><td align="right">4.74</td><td align="right">1.93 to 6.03</td></tr>
 <tr><td>GMP</td><td align="right">3</td><td align="right">0.42</td><td align="right">0.40 to 0.46</td></tr>
-<tr><td rowspan="3">fft</td><td rowspan="3"><code>ADS::fft</code></td><td>FFTW</td><td align="right">44</td><td align="right">1.11</td><td align="right">0.84 to 2.41</td></tr>
-<tr><td>pocketfft</td><td align="right">44</td><td align="right">3.18</td><td align="right">1.44 to 21</td></tr>
-<tr><td>ducc0</td><td align="right">37</td><td align="right">1.97</td><td align="right">1.09 to 17</td></tr>
-<tr><td rowspan="1">fft plan</td><td rowspan="1"><code>ADS::fft</code></td><td>FFTW</td><td align="right">7</td><td align="right">0.22</td><td align="right">0.07 to 1290</td></tr>
 </table>
 
 `ADS::sort()` and `ADS::stableSort()` are faster than the standard library
@@ -110,21 +105,11 @@ libraries built on hand-written kernels stay ahead. On its own code, GMP
 is 2 to 5 times faster than `BigInteger` on products, quotients and
 decimal conversion (twice as fast already at 16 limbs, where both use the
 schoolbook algorithms), and `mpq_class` is 2.2 to 2.5 times faster than
-`Rational`, which is why both run on GMP by default where it is found;
-`ADS::fft` (complex, real and single precision data, the cosines of type
-2, many transforms, 2 dimensions and convolutions, on powers of 2 and on
-other sizes) is faster than the faster plan of FFTW in the median cell, by
-1.11, and 1.4 to 3 times faster than pocketfft and ducc0; FFTW stays ahead
-by 1.15 to 1.2 times on the real transform of $2^{14}$ points, by 1.1 on
-the transform of 32 x 32 points and by 1.06 to 1.23 on the real one of
-$2^{20}$, the other cells below 1 (0.94 to 0.99 in one of the two runs, at
-least 1 in the other) being ties. The plans of ADS, which time 4
-factorizations up to $2^{17}$ points, cost up to 0.4 µs per point, against
-up to 900 µs of `FFTW_MEASURE` and 3 µs of `FFTW_ESTIMATE`. Also, the
-Fibonacci heap of Boost is 1.2 to 1.9 times faster than that of ADS, which
-follows the pseudocode of the book. The tables of all the structures,
-those of the book included, are in [`results/`](results/README.md)
-together with the raw files of the two runs.
+`Rational`, which is why both run on GMP by default where it is found.
+Also, the Fibonacci heap of Boost is 1.2 to 1.9 times faster than that of
+ADS, which follows the pseudocode of the book. The tables of all the
+structures, those of the book included, are in
+[`results/`](results/README.md) together with the raw files of the two runs.
 
 ## Layout
 
@@ -340,7 +325,6 @@ and against the counts and the bounds of their analysis.
 | broadword tricks: sideways sum, ruler, Gray code, Gosper, Morton code (7.1.3) | [`combinatorial/Bitwise.h`](include/ADS/combinatorial/Bitwise.h) | `taocp.bitwise` |
 | tuples, permutations, combinations, partitions, nested parentheses, with the Gray orders (7.2.1) | [`combinatorial/Generation.h`](include/ADS/combinatorial/Generation.h) | `taocp.generation` |
 | linear congruential generators, chi-square, Kolmogorov-Smirnov, serial and spectral tests, shuffling and sampling (3.2-3.4) | [`numeric/RandomNumbers.h`](include/ADS/numeric/RandomNumbers.h) | `taocp.random-numbers` |
-| fast Fourier transform (4.3.3, 4.6.4) | [`numeric/FFT.h`](include/ADS/numeric/FFT.h) | `taocp.fft` |
 | integers of any length: Algorithms A, S, M and D, Karatsuba and the NTT, the conversions of 4.4, the gcd of Lehmer, or GMP where it is found (4.3, 4.4, 4.5.2) | [`numeric/BigInteger.h`](include/ADS/numeric/BigInteger.h) | `taocp.big-integer*` |
 | exact rationals (4.5.1) | [`numeric/Rational.h`](include/ADS/numeric/Rational.h) | `taocp.rational` |
 | exact cover by dancing links, Algorithm X (7.2.2.1) | [`backtrack/DancingLinks.h`](include/ADS/backtrack/DancingLinks.h) | `taocp.dancing-links` |
@@ -582,7 +566,6 @@ matrices, up to the rounding for the transform).
 | `sort()` and `stableSort()` by distribution (radix classifier for the numbers, tree of splitters with buckets of equality for the rest) | [`parallel/ParallelSort.h`](include/ADS/parallel/ParallelSort.h) |
 | `multiwayMerge()` by exact multisequence selection | [`parallel/ParallelMerge.h`](include/ADS/parallel/ParallelMerge.h) |
 | products of `CsrMatrix`, `SellMatrix` and `gemm()` | [`parallel/ParallelNumeric.h`](include/ADS/parallel/ParallelNumeric.h) |
-| `fft()` by the four steps of Bailey | [`parallel/ParallelFFT.h`](include/ADS/parallel/ParallelFFT.h) |
 | visit in breadth that optimizes its direction, connected components by Afforest | [`parallel/ParallelGraph.h`](include/ADS/parallel/ParallelGraph.h) |
 | shortest paths by the Delta-stepping of Meyer and Sanders, on buckets of each thread and two barriers a step, and by the rho-stepping of Dong, Gu, Sun and Zhang, with the fusion of the buckets | [`parallel/ParallelShortestPaths.h`](include/ADS/parallel/ParallelShortestPaths.h) |
 | builds of the directories of rank and select, of the wavelet matrix (up to 8 levels per pass, by the reversed prefixes of the bits) and of the wavelet tree of Huffman | [`succinct/RankSelect.h`](include/ADS/succinct/RankSelect.h), [`succinct/CompactRankSelect.h`](include/ADS/succinct/CompactRankSelect.h), [`succinct/WaveletMatrix.h`](include/ADS/succinct/WaveletMatrix.h), [`succinct/HuffmanWaveletTree.h`](include/ADS/succinct/HuffmanWaveletTree.h) |
@@ -658,7 +641,7 @@ and 8 threads. The competitors are the parallel versions of oneTBB, of
 `std::execution` (libstdc++ on oneTBB), of the parallel mode of libstdc++,
 of OpenMP, of ParlayLib, of IPS4o and IPS2Ra, of FastFlow (its
 `ParallelFor`, `ParallelForReduce` and `ff_DC`), of tlx, of Eigen and
-OpenBLAS, of FFTW and of the GAP benchmark suite; for the hash tables, the
+OpenBLAS and of the GAP benchmark suite; for the hash tables, the
 concurrent tables of oneTBB, libcuckoo, ParlayLib and growt, and for the
 priority queues the concurrent one of oneTBB, the reference MultiQueue of
 Williams, Sanders and Dementiev and the k-LSM. Each structure runs
@@ -685,11 +668,9 @@ libstdc++ and tlx, and 7.4 times faster than its sequential version;
 on one thread. The connected components are 2.3 times faster than Afforest
 of the GAP benchmark suite, and the prefix sums 1.3 to 1.6 times faster
 than those of OpenMP, ParlayLib and oneTBB, since they read the input once.
-It is fair to remark, however, that FFTW with its threads is faster than
-the parallel `fft()` (by 8% on 8 threads, and by 1.4 to 1.6 times on 2 and
-4, where the three transpositions of the four steps cost more than they
-save). Also, the visit in breadth of the GAP benchmark suite, which follows
-the same algorithm, is 4% faster than `bfsDistances()`, and the product of
+It is fair to remark, however, that the visit in breadth of the GAP
+benchmark suite, which follows the same algorithm, is 4% faster than
+`bfsDistances()`, and the product of
 sparse matrices by rows of oneTBB is 7% faster than that of `CsrMatrix`.
 The tables of libcuckoo and ParlayLib (the latter open addressing on keys
 alone) find keys 2 and 5 times faster than `ConcurrentCuckooTable` on 8
@@ -962,11 +943,8 @@ The gain is small, since the library is made of templates, which an importer
 still instantiates and compiles: on a server with 384 cores and a load of 55
 to 73 (hence the times are indicative), Clang 18 at `-O2` compiles a program
 with Dijkstra's algorithm on a `ListGraph` in 1.0 to 1.2 s with `import`
-against 1.3 to 1.5 s with the headers, one with `convolve()` in 20 to 23 s
-against 22 to 26 s, and the test of the module, which takes 6 areas, in 23 to
-25 s against 24 to 27 s, the module itself taking 9 s once; the peak memory
-grows instead, from 160 to 265 MB, from 690 to 775 MB and from 710 to 800 MB,
-since the importer loads the module of the whole library (90 MB).
+against 1.3 to 1.5 s with the headers; the peak memory grows instead, from
+160 to 265 MB, since the importer loads the module of the whole library.
 
 ## License
 

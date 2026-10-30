@@ -9,11 +9,11 @@
  parallel versions of a few algorithms of the library on the threads of one
  machine with shared memory: the patterns of the loops, of the reductions and
  of the prefix sums, the merge of sorted ranges and the sort, the products of
- matrices, the Fourier transform, the visits of a static graph, the LCP array
- of a text, the greedy algorithms on graphs by deterministic reservations and
- the shortest paths, and the runtime of the long-lived workers that talk by
- messages (their channels, the farm with feedback and the mailbox with the
- detection of the termination). Each runs on an executor, which is the only
+ matrices, the visits of a static graph, the LCP array of a text, the greedy
+ algorithms on graphs by deterministic reservations and the shortest paths,
+ and the runtime of the long-lived workers that talk by messages (their
+ channels, the farm with feedback and the mailbox with the detection of the
+ termination). Each runs on an executor, which is the only
  part that knows the threads, and gives the result of its sequential version.
  This page collects what the headers take for granted: the model of the cost
  and its notation (see \ref theory_parallel_notation), the executors and the
@@ -76,10 +76,10 @@
  <em>linear</em> when it is \f$ \Theta( p ) \f$, which needs a parallelism
  \f$ W / D \f$ larger than \f$ p \f$. The model counts the operations and not
  the moves of the memory, while several algorithms of the area (the products
- of a sparse matrix by a vector, the Fourier transform, the distribution of
- the sort) are bound by the bandwidth of the memory, which the threads of a
- socket share; their headers state the number of passes over the memory, on
- which their speedup depends more than on (1).
+ of a sparse matrix by a vector, the distribution of the sort) are bound by
+ the bandwidth of the memory, which the threads of a socket share; their
+ headers state the number of passes over the memory, on which their speedup
+ depends more than on (1).
 
  \section theory_parallel_exec Executors and schedules
 
@@ -286,7 +286,7 @@
  not fit; the bound is the same, since the model keeps the buckets balanced
  with high probability by the same argument of the sample.
 
- \section theory_parallel_numeric Matrix products and the Fourier transform
+ \section theory_parallel_numeric Matrix products
 
  The product of a sparse matrix of \f$ m \f$ rows and \f$ \mathit{nnz} \f$
  nonzeros by a vector (`multiply()` of `ParallelNumeric.h`) costs, for the
@@ -306,40 +306,21 @@
  \f$ C \f$ packing its own blocks of \f$ A \f$ and all of them sharing the
  packed panel of \f$ B \f$ (Smith et al.).
 
- The Fourier transform of \f$ n = n_1 n_2 \f$ points (`fft()` of
- `ParallelFFT.h`) rests on the factorization of Bailey: with the points as a
- matrix \f$ a_{j_1 j_2} = a[ j_1 n_2 + j_2 ] \f$ and
- \f$ \omega_N = e^{-2 \pi i / N} \f$,
- \f[
-   \hat a[ k_1 + n_1 k_2 ] = \sum_{j_2} \omega_{n_2}^{j_2 k_2}
-   \Bigl( \omega_n^{j_2 k_1} \sum_{j_1} \omega_{n_1}^{j_1 k_1}
-   a_{j_1 j_2} \Bigr) , \tag{6}
- \f]
- which follows from \f$ \omega_n^{( j_1 n_2 + j_2 ) ( k_1 + n_1 k_2 )} =
- \omega_{n_1}^{j_1 k_1} \, \omega_n^{j_2 k_1} \, \omega_{n_2}^{j_2 k_2} \f$,
- since \f$ \omega_n^{n_1 n_2} = 1 \f$. The inner sums of (6) are \f$ n_2 \f$
- transforms of length \f$ n_1 \f$, the outer ones \f$ n_1 \f$ of length
- \f$ n_2 \f$, both about \f$ \sqrt n \f$ and hence in the cache of a core, and
- independent; the work is that of the sequential transform,
- \f$ O( n \log n ) \f$, plus the twiddles and three transpositions of
- \f$ n \f$ points, and the depth is that of one transform of length
- \f$ \sqrt n \f$ and of the transpositions.
-
  \section theory_parallel_graph Visits of graphs and the LCP array
 
  The levels of a visit in breadth are
  \f[
    L_0 = \{ s \} , \qquad L_{\ell + 1} = \{ v \notin L_0 \cup \cdots \cup
-   L_\ell : ( u , v ) \in E \text{ for some } u \in L_\ell \} , \tag{7}
+   L_\ell : ( u , v ) \in E \text{ for some } u \in L_\ell \} , \tag{6}
  \f]
  and a node of \f$ L_\ell \f$ is at distance \f$ \ell \f$ from \f$ s \f$ (by
  Lemma 1, see \ref theory_graph_visits). `bfsDistances()` of `ParallelGraph.h`
- builds each level by (7) in either direction: from the top down, the nodes of
+ builds each level by (6) in either direction: from the top down, the nodes of
  \f$ L_\ell \f$ claim their neighbors not yet reached by a compare-and-swap
  of the distance, which succeeds for one claimant only and writes the same
  level whoever wins; from the bottom up, each node not yet reached looks for
  one neighbor in \f$ L_\ell \f$, and stops at the first. Both give the set
- (7), and hence the same distances; they differ in the arcs they read, the arcs
+ (6), and hence the same distances; they differ in the arcs they read, the arcs
  out of the frontier \f$ m_f \f$ against those into the nodes not yet reached
  up to their first hit, at most \f$ m_u \f$. The visit goes from the bottom up
  when \f$ m_f > m_u / \alpha \f$, which happens on the few large levels of the
@@ -367,17 +348,17 @@
  \f$ \Phi[ i ] \f$ the suffix before \f$ i \f$ in the order of
  \f$ \mathit{SA} \f$, which has
  \f[
-   \mathit{PLCP}[ i ] \ge \mathit{PLCP}[ i - 1 ] - 1 . \tag{8}
+   \mathit{PLCP}[ i ] \ge \mathit{PLCP}[ i - 1 ] - 1 . \tag{7}
  \f]
  In fact, if the suffixes \f$ i - 1 \f$ and \f$ \Phi[ i - 1 ] \f$ share a
  prefix of \f$ h > 0 \f$ symbols, the suffix \f$ \Phi[ i - 1 ] + 1 \f$ comes
  before \f$ i \f$ and shares \f$ h - 1 \f$ symbols with it, and so does every
- suffix between them in the order, \f$ \Phi[ i ] \f$ included. By (8) a scan
+ suffix between them in the order, \f$ \Phi[ i ] \f$ included. By (7) a scan
  of \f$ i \f$ in the order of the text resumes each comparison at
  \f$ h - 1 \f$, and since \f$ h \f$ grows by at most \f$ n \f$ in all and
  decreases by 1 per suffix, it makes \f$ O( n ) \f$ comparisons (Kasai et
  al.). The parallel version cuts the text into \f$ 4 p \f$ parts, each
- scanned from \f$ h = 0 \f$: (8) is then not used across the borders, which
+ scanned from \f$ h = 0 \f$: (7) is then not used across the borders, which
  costs at most \f$ \max_i \mathit{PLCP}[ i ] \f$ more per part and leaves the
  result the same.
 
@@ -470,7 +451,7 @@
  \ref theory_graph_sp) are the least solution of
  \f[
    d( s ) = 0 , \qquad d( u ) = \min\bigl\{ d( u ) , \min_{( v , u ) \in E}
-   d( v ) \oplus w( v , u ) \bigr\} , \tag{9}
+   d( v ) \oplus w( v , u ) \bigr\} , \tag{8}
  \f]
  where \f$ \oplus \f$ is the sum of the computer, which for the integers is
  the sum and for the floating points is the sum rounded, in both cases
@@ -484,7 +465,7 @@
  \f$ d( u ) \gets \min\{ d( u ) , d( v ) \oplus w( v , u ) \} \f$ atomic and
  making \f$ u \f$ active (adding it to a bucket, or setting its flag) if it
  lowers \f$ d( u ) \f$. When no node is active,
- \f$ d \f$ is the least solution of (9), the distances of the algorithm of
+ \f$ d \f$ is the least solution of (8), the distances of the algorithm of
  Dijkstra.
 
  Indeed, each \f$ d( u ) \f$ is at every moment the value of a path from
@@ -492,7 +473,7 @@
  least solution, which is the least such value; and when no node is active,
  every arc was relaxed after the last decrease of its tail, which by the
  monotonicity left \f$ d( u ) \le d( v ) \oplus w( v , u ) \f$ on it, so that
- \f$ d \f$ solves (9), and being at least the least solution, it is the
+ \f$ d \f$ solves (8), and being at least the least solution, it is the
  least. The algorithm of Dijkstra computes the same solution, since by the
  two properties of \f$ \oplus \f$ its order of extraction never lowers the
  distance of a node already extracted. A node made active while it is being
@@ -941,8 +922,6 @@
       multiplication, IEEE International Parallel and Distributed
       Processing Symposium (IPDPS), 1049-1059, 2014,
       doi:10.1109/IPDPS.2014.110
- \see D. H. Bailey, FFTs in external or hierarchical memory, The Journal
-      of Supercomputing 4(1), 23-35, 1990, doi:10.1007/BF00162341
  \see S. Beamer, K. Asanovic, D. Patterson, Direction-optimizing
       breadth-first search, International Conference for High
       Performance Computing, Networking, Storage and Analysis (SC), 1-10,
