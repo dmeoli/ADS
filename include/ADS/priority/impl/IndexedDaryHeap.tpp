@@ -28,7 +28,7 @@ void IndexedDaryHeap< K , D >::reset( int n )
 {
  ADS_PRE( n >= 0 );
  f_A.clear();
- f_pos.assign( std::size_t( n < 0 ? 0 : n ) , -1 );
+ f_pos.assign( std::size_t( n ) , -1 );
  }
 
 template< class K , unsigned D >

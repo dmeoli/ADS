@@ -18,13 +18,16 @@ namespace ADS {
 
 template< class T , class Op >
 LinkCutTree< T , Op >::LinkCutTree( int n , const T & id , Op op )
- : f_t( std::size_t( n < 0 ? 0 : n ) , Node{ { NONE , NONE } , NONE , 0 , id ,
-                                             id } ) ,
-   f_p( std::size_t( n < 0 ? 0 : n ) , NONE ) ,
-   f_pv( std::size_t( n < 0 ? 0 : n ) , id ) ,
-   f_id( id ) , f_op( std::move( op ) )
+ : f_id( id ) , f_op( std::move( op ) )
 {
+ // the sizes after the check, with no clamp of n: g++ 16 at -O2 with LTO
+ // takes an argument max( n , 0 ) as 0 in every call if one call has
+ // n = 0
  ADS_PRE( n >= 0 );
+ const std::size_t m = std::size_t( n );
+ f_t.assign( m , Node{ { NONE , NONE } , NONE , 0 , id , id } );
+ f_p.assign( m , NONE );
+ f_pv.assign( m , id );
  }
 
 template< class T , class Op >

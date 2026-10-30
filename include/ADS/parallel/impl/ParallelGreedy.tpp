@@ -27,7 +27,7 @@ namespace ADS {
 inline std::vector< int > randomOrder( int n , unsigned long long seed )
 {
  ADS_PRE( n >= 0 );
- std::vector< int > p( std::size_t( n < 0 ? 0 : n ) );
+ std::vector< int > p( static_cast< std::size_t >( n ) );
  for( int i = 0 ; i < n ; ++i )
   p[ i ] = i;
  std::uint64_t x = seed;
@@ -51,7 +51,9 @@ class GreedyUnionFind {
  public:
 
  /// the \f$ n \f$ singletons \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
- explicit GreedyUnionFind( int n ) : f_p( std::size_t( n < 0 ? 0 : n ) ) {
+ explicit GreedyUnionFind( int n ) {
+  ADS_PRE( n >= 0 );
+  f_p.resize( std::size_t( n ) );
   for( int x = 0 ; x < n ; ++x )
    f_p[ x ] = x;
   }

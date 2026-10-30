@@ -21,9 +21,10 @@ namespace ADS {
 /*--------------------------- CLASS FlowNetwork ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-inline FlowNetwork::FlowNetwork( int n ) : f_adj( n < 0 ? 0 : n )
+inline FlowNetwork::FlowNetwork( int n )
 {
  ADS_PRE( n >= 0 );
+ f_adj.resize( std::size_t( n ) );
  }
 
 inline int FlowNetwork::addEdge( int u , int v , long long c )

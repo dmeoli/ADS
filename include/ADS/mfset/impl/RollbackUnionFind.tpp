@@ -34,7 +34,7 @@ inline RollbackUnionFind::RollbackUnionFind( int n )
 inline void RollbackUnionFind::reset( int n )
 {
  ADS_PRE( n >= 0 );
- const std::size_t m = std::size_t( n < 0 ? 0 : n );
+ const std::size_t m = std::size_t( n );
  f_p.resize( m );
  for( std::size_t x = 0 ; x < m ; ++x )
   f_p[ x ] = int( x );

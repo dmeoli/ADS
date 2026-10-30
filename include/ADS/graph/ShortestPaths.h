@@ -189,8 +189,10 @@ class PriorityFrontier {
 
  /// \f$ S \f$ on the queue \f$ q \f$, empty, for the nodes \f$ [ 0 , n ) \f$
  /// \pre \f$ q \f$ is empty, \f$ n \ge 0 \f$
- PriorityFrontier( Q & q , int n ) : f_q( q ) ,
-                                     f_h( std::size_t( n < 0 ? 0 : n ) ) {}
+ PriorityFrontier( Q & q , int n ) : f_q( q ) {
+  ADS_PRE( n >= 0 );
+  f_h.resize( std::size_t( n ) );
+  }
 
  /// \f$ v \f$ into \f$ S \f$ at the distance \f$ d \f$
  template< class D >

@@ -26,8 +26,8 @@ template< Union L , Compression C >
 inline void DisjointSets< L , C >::reset( int n )
 {
  ADS_PRE( n >= 0 );
- f_p.assign( std::size_t( n < 0 ? 0 : n ) , -1 );
- f_count = n < 0 ? 0 : n;
+ f_p.assign( std::size_t( n ) , -1 );
+ f_count = n;
  }
 
 template< Union L , Compression C >

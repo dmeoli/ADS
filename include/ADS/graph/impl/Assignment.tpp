@@ -21,7 +21,7 @@ namespace ADS {
 template< class W >
 requires std::is_arithmetic_v< W >
 Assignment< W >::Assignment( int n , std::vector< W > C )
- : f_n( n < 0 ? 0 : n ) , f_C( std::move( C ) )
+ : f_n( n ) , f_C( std::move( C ) )
 {
  ADS_PRE( ( n >= 0 ) &&
           ( f_C.size() == std::size_t( f_n ) * std::size_t( f_n ) ) );
