@@ -2025,6 +2025,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to the bits, when every bit b of a group has its offset (a value of
   density below about 1%); BitVector copies the words of a span once
 
+### Removed
+
+- sort/CycleSort.h (cycleSort(), pancakeSort()), sort/DidacticSorts.h
+  (stoogeSort(), slowSort(), bogoSort()), sort/PatienceSort.h
+  (patienceSort()) and sort/Smoothsort.h (smoothsort()), since the
+  library keeps the algorithms of its three books and what beats the
+  other libraries, with their tests, the cell smoothsort of
+  bench/sort.cpp and their sections of the theory of sorting; the test
+  tree-patience is now tree-sort
+
 ### Fixed
 
 - bench/sort.cpp: fluxsort, quadsort and crumsort compiled with no strict

@@ -331,7 +331,6 @@ and against the counts and the bounds of their analysis.
 | skip list, treap, splay tree | [`dictionary/SkipList.h`](include/ADS/dictionary/SkipList.h), [`tree/Treap.h`](include/ADS/tree/Treap.h), [`tree/SplayTree.h`](include/ADS/tree/SplayTree.h) | `taocp.balanced-trees` |
 | trie and compact trie (Patricia) (6.3) | [`dictionary/Trie.h`](include/ADS/dictionary/Trie.h) | `taocp.tries` |
 | coalesced hashing with a cellar and Brent's double hashing (6.4) | [`dictionary/KnuthHashing.h`](include/ADS/dictionary/KnuthHashing.h) | `taocp.knuth-hashing` |
-| Bloom filter | [`set/BloomFilter.h`](include/ADS/set/BloomFilter.h) | `taocp.bloom-filter` |
 | binary and list insertion, address calculation, radix exchange, tournament sort, Ford-Johnson merge insertion (5.2, 5.3.1) | [`sort/KnuthSorts.h`](include/ADS/sort/KnuthSorts.h) | `taocp.knuth-sorts` |
 | replacement selection and polyphase merge (5.4) | [`sort/ExternalSort.h`](include/ADS/sort/ExternalSort.h) | `taocp.external-sort` |
 | threaded binary tree (2.3.1) | [`tree/ThreadedTree.h`](include/ADS/tree/ThreadedTree.h) | `taocp.threaded-tree` |
@@ -367,7 +366,7 @@ I/Os that those chapters prove.
 | list ranking by pointer jumping and independent sets, in memory and on disk (4) | [`external/ListRanking.h`](include/ADS/external/ListRanking.h) | `pearls_io.ch4.*` |
 | two-level memory, binary and multiway mergesort, distribution sort, loser tree, I/O lower bounds (5) | [`external/`](include/ADS/external), [`priority/LoserTree.h`](include/ADS/priority/LoserTree.h) | `pearls_io.ch5.*` |
 | sorted set intersection: merge, binary search, mutual partition, doubling, two-level (6) | [`set/SortedIntersection.h`](include/ADS/set/SortedIntersection.h) | `pearls_io.ch6.*` |
-| universal hashing, d-left, FKS, minimal ordered perfect hashing, cuckoo hashing, Bloom variants (8) | [`dictionary/`](include/ADS/dictionary), [`set/BloomVariants.h`](include/ADS/set/BloomVariants.h) | `pearls_hashing.*` |
+| universal hashing, d-left, FKS, minimal ordered perfect hashing, cuckoo hashing, Bloom filter and its variants (8) | [`dictionary/`](include/ADS/dictionary), [`set/BloomFilter.h`](include/ADS/set/BloomFilter.h), [`set/BloomVariants.h`](include/ADS/set/BloomVariants.h) | `pearls_hashing.*`, `taocp.bloom-filter` |
 | prefix search, front coding, Patricia trie, two-level dictionary (9) | [`string/PrefixSearch.h`](include/ADS/string/PrefixSearch.h), [`string/FrontCoding.h`](include/ADS/string/FrontCoding.h), [`dictionary/PatriciaTrie.h`](include/ADS/dictionary/PatriciaTrie.h) | `pearls_hashing.*` |
 | suffix arrays (six constructions), LCP, range minimum queries, suffix trees and their applications (10) | [`string/SuffixArray.h`](include/ADS/string/SuffixArray.h), [`string/SuffixTree.h`](include/ADS/string/SuffixTree.h), [`search/RangeMinimum.h`](include/ADS/search/RangeMinimum.h) | `pearls_suffix.*` |
 | integer codes: gamma, delta, Rice, Golomb, PForDelta, variable-byte, (s,c)-dense, interpolative, Elias-Fano (11) | [`compression/IntegerCodes.h`](include/ADS/compression/IntegerCodes.h), [`succinct/EliasFano.h`](include/ADS/succinct/EliasFano.h) | `pearls_succinct.*` |
@@ -540,10 +539,8 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 | What | Header |
 |---|---|
 | bubble, cocktail shaker, odd-even transposition, comb and gnome sort | [`sort/ExchangeSorts.h`](include/ADS/sort/ExchangeSorts.h) |
-| cycle sort (fewest writes) and pancake sort (prefix reversals) | [`sort/CycleSort.h`](include/ADS/sort/CycleSort.h) |
-| tree sort, patience sort, smoothsort, strand sort | [`sort/TreeSort.h`](include/ADS/sort/TreeSort.h), [`sort/PatienceSort.h`](include/ADS/sort/PatienceSort.h), [`sort/Smoothsort.h`](include/ADS/sort/Smoothsort.h), [`sort/StrandSort.h`](include/ADS/sort/StrandSort.h) |
+| tree sort, strand sort | [`sort/TreeSort.h`](include/ADS/sort/TreeSort.h), [`sort/StrandSort.h`](include/ADS/sort/StrandSort.h) |
 | sorting networks of Batcher (merge exchange, bitonic) | [`sort/SortingNetworks.h`](include/ADS/sort/SortingNetworks.h) |
-| stooge sort, slow sort, bogo sort | [`sort/DidacticSorts.h`](include/ADS/sort/DidacticSorts.h) |
 | introsort, pdqsort, dual-pivot and three-way quicksort | [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) |
 | Timsort and Powersort | [`sort/RunSorts.h`](include/ADS/sort/RunSorts.h) |
 | LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings, bucket sort | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |

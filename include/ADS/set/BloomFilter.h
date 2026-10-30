@@ -18,6 +18,9 @@
  * item inserted is always maybe there. The operations are defined in
  * `BloomFilter.tpp`.
  *
+ * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
+ *      Press, 2023, chapter 8, The Dictionary Problem,
+ *      doi:10.1017/9781009128933
  * \see B. H. Bloom, Space/time trade-offs in hash coding with allowable
  *      errors, Communications of the ACM 13(7), 422-426, 1970,
  *      doi:10.1145/362686.362692

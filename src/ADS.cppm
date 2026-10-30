@@ -301,8 +301,6 @@ module;
 #include "ADS/set/SortedListSet.h"
 #include "ADS/set/VectorIntersection.h"
 #include "ADS/sort/CountingSort.h"
-#include "ADS/sort/CycleSort.h"
-#include "ADS/sort/DidacticSorts.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/ExchangeSorts.h"
 #include "ADS/sort/ExternalSort.h"
@@ -312,7 +310,6 @@ module;
 #include "ADS/sort/LearnedSort.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/sort/MultikeyQuickSort.h"
-#include "ADS/sort/PatienceSort.h"
 #include "ADS/sort/PigeonholeSort.h"
 #include "ADS/sort/QuickSort.h"
 #include "ADS/sort/RadixSort.h"
@@ -320,7 +317,6 @@ module;
 #include "ADS/sort/SampleSort.h"
 #include "ADS/sort/SelectionSort.h"
 #include "ADS/sort/ShellSort.h"
-#include "ADS/sort/Smoothsort.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/Sorted.h"
 #include "ADS/sort/SortingNetworks.h"
@@ -1795,15 +1791,6 @@ export namespace ADS {
  // ADS/sort/CountingSort.h
  using ADS::countingSort;
 
- // ADS/sort/CycleSort.h
- using ADS::cycleSort;
- using ADS::pancakeSort;
-
- // ADS/sort/DidacticSorts.h
- using ADS::bogoSort;
- using ADS::slowSort;
- using ADS::stoogeSort;
-
  // ADS/sort/EngineeredQuickSorts.h
  using ADS::dualPivotQuickSort;
  using ADS::introSort;
@@ -1853,9 +1840,6 @@ export namespace ADS {
  // ADS/sort/MultikeyQuickSort.h
  using ADS::multikeyQuickSort;
 
- // ADS/sort/PatienceSort.h
- using ADS::patienceSort;
-
  // ADS/sort/PigeonholeSort.h
  using ADS::pigeonholeSort;
 
@@ -1890,9 +1874,6 @@ export namespace ADS {
  using ADS::prattGaps;
  using ADS::shellGaps;
  using ADS::shellSort;
-
- // ADS/sort/Smoothsort.h
- using ADS::smoothsort;
 
  // ADS/sort/Sort.h
  using ADS::kRadix;

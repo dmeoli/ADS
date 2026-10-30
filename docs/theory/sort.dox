@@ -203,10 +203,9 @@
  \f$ \mathit{minrun} \f$ (32 to 64 items) by binary insertion, and gallop
  (an exponential search, then a binary one) when one run keeps winning, so
  that two runs one after the other merge in \f$ O( \log n ) \f$
- comparisons. The strand sort of `StrandSort.h` and the patience sort of
- `PatienceSort.h` build runs of their own, the strands being as many as the
- items of a longest strictly decreasing subsequence and the piles as many as
- those of a longest strictly increasing one (Aldous and Diaconis).
+ comparisons. The strand sort of `StrandSort.h` builds runs of its own,
+ the strands being as many as the items of a longest strictly decreasing
+ subsequence.
 
  \section theory_sort_quick Quicksort and its variants
 
@@ -325,19 +324,13 @@
  the series being 2. Heapsort then swaps the maximum with the last place of
  the heap and restores it \f$ n - 1 \f$ times, \f$ O( n \log n ) \f$ in all
  and in place, with about \f$ 2 n \log_2 n \f$ comparisons; it is the
- fallback of the introsorts because its bound holds on every input. Smoothsort
- of Dijkstra (`smoothsort()` of `Smoothsort.h`) keeps a forest of heaps whose
- sizes are the Leonardo numbers, \f$ L_{k+2} = L_{k+1} + L_k + 1 \f$, laid
- side by side with increasing roots; it is \f$ O( n \log n ) \f$ as heapsort
- and \f$ O( n ) \f$ on a sorted input, where no item moves. The orders of the
- heaps of the forest are kept as the bits of one word of 64 bits, which
- bounds \f$ n \f$ below \f$ L_{64} = 34335360355129 \f$. The tournament
- sort of `KnuthSorts.h` plays a knockout on a complete tree of the items and
- replays only the path of the winner, \f$ \lceil \log_2 n \rceil \f$
- comparisons for each item, and the tree sort of `TreeSort.h` inserts the
- items in a search tree and reads them back in symmetric order,
- \f$ O( n \log n ) \f$ on a balanced tree and \f$ \Theta( n^2 ) \f$ on a
- sorted input with no balance.
+ fallback of the introsorts because its bound holds on every input. The
+ tournament sort of `KnuthSorts.h` plays a knockout on a complete tree of
+ the items and replays only the path of the winner,
+ \f$ \lceil \log_2 n \rceil \f$ comparisons for each item, and the tree
+ sort of `TreeSort.h` inserts the items in a search tree and reads them
+ back in symmetric order, \f$ O( n \log n ) \f$ on a balanced tree and
+ \f$ \Theta( n^2 ) \f$ on a sorted input with no balance.
 
  \section theory_sort_digits Sorts by digits
 
@@ -398,15 +391,6 @@
  than (1), which they pay for with their parallelism; the network of
  `vectorQuickSort()` sorts \f$ 16 W \f$ keys in the registers in this way.
 
- Some sorts minimize another operation. The cycle sort of Haddon
- (`cycleSort()` of `CycleSort.h`) writes each item once into its final
- place, found by counting the smaller items, and follows the cycle of the
- item that it displaces; it makes at most \f$ n \f$ writes, the least
- possible, with \f$ \Theta( n^2 ) \f$ comparisons. The pancake sort
- (`pancakeSort()`) sorts by reversals of prefixes only, with at most
- \f$ 2 n - 3 \f$ of them: two reversals bring the largest item of the unsorted
- prefix to its end, and the last two items need one at most.
-
  A file larger than the memory is sorted in two phases (`ExternalSort.h`,
  sections 5.4.1 and 5.4.2 of Knuth). The replacement selection keeps \f$ M \f$
  items in a heap and outputs the least that can extend the current run; on
@@ -456,9 +440,6 @@
      <td>\f$ \Theta( n ) \f$</td><td>no</td></tr>
  <tr><td><tt>heapsort()</tt></td><td>\f$ O( n \log n ) \f$</td>
      <td>\f$ O( n \log n ) \f$</td><td>\f$ O( 1 ) \f$</td><td>no</td></tr>
- <tr><td><tt>smoothsort()</tt></td><td>\f$ O( n \log n ) \f$</td>
-     <td>\f$ O( n \log n ) \f$, \f$ O( n ) \f$ if sorted</td>
-     <td>\f$ O( 1 ) \f$</td><td>no</td></tr>
  <tr><td><tt>countingSort()</tt></td><td>\f$ \Theta( n + k ) \f$</td>
      <td>\f$ \Theta( n + k ) \f$</td><td>\f$ \Theta( k ) \f$</td>
      <td>not applicable</td></tr>
@@ -475,11 +456,7 @@
 
  The bounds of the table are in comparisons for the sorts by comparisons and
  in time for the others; the stability is not applicable where equal items
- cannot be told apart (integers, strings). A few sorts are kept only as
- examples: the stooge sort, the slow sort and the bogo sort of
- `DidacticSorts.h`, with \f$ \Theta( n^{\log_{1.5} 3} ) \f$, a time that is
- not polynomial and \f$ n! \f$ expected shuffles, illustrate the recurrences
- and the expected time.
+ cannot be told apart (integers, strings).
 
  \section theory_sort_refs References
 
@@ -524,10 +501,6 @@
  \see K. E. Batcher, Sorting networks and their applications, Proceedings
       of the AFIPS Spring Joint Computer Conference 32, 307-314, 1968,
       doi:10.1145/1468075.1468121
- \see D. Aldous, P. Diaconis, Longest increasing subsequences: from
-      patience sorting to the Baik-Deift-Johansson theorem, Bulletin of the
-      American Mathematical Society 36(4), 413-432, 1999,
-      doi:10.1090/S0273-0979-99-00796-X
  \see A. Kristo, K. Vaidya, U. Çetintemel, S. Misra, T. Kraska, The case
       for a learned sorting algorithm, Proceedings of SIGMOD 2020,
       1001-1016, 2020, doi:10.1145/3318464.3389752

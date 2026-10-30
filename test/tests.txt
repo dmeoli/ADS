@@ -429,12 +429,9 @@ beyond  sorted-array-dictionary dizionario su vettore ordinato
 
 # the sorts beyond the book
 sorting  exchange-sorts      bubble, shaker, odd-even, comb, gnome
-sorting  cycle-pancake       cycle sort e pancake sort
-sorting  tree-patience       tree sort e patience sort
-sorting  smoothsort          smoothsort di Dijkstra
+sorting  tree-sort           tree sort su Red-Black e su albero sbilanciato
 sorting  strand-sort         strand sort su liste
 sorting  sorting-networks    reti di Batcher, merge exchange e bitonica
-sorting  didactic-sorts      stooge, slow sort e bogo sort
 sorting  engineered-quicksorts introsort, pdqsort, dual-pivot, 3-way
 sorting  run-sorts           Timsort e Powersort
 sorting  pdq-edges           pdqsort, soglie e casi limite
@@ -1668,7 +1665,6 @@ contract_sort         ranges               intervalli, capitoli 2 e 12
 contract_sort         shell-gaps           Shell Sort, capitolo 12
 contract_sort         sorts                ordinamento, capitoli 2 e 12
 contract_sort         other-sorts          altri ordinamenti, casi degeneri
-contract_sort         smoothsort-orders    smoothsort agli ordini dei mucchi
 
 contract_stack        array-stack          STACK su vettore, sezione 4.3.2
 contract_stack        multistack           k pile in un vettore, oltre il libro

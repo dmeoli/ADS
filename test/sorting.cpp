@@ -23,17 +23,13 @@
 #include "ADSTest.h"
 
 #include "ADS/sequence/List.h"
-#include "ADS/sort/CycleSort.h"
-#include "ADS/sort/DidacticSorts.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/ExchangeSorts.h"
 #include "ADS/sort/LearnedSort.h"
 #include "ADS/sort/MultikeyQuickSort.h"
-#include "ADS/sort/PatienceSort.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
 #include "ADS/sort/SampleSort.h"
-#include "ADS/sort/Smoothsort.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/SortingNetworks.h"
 #include "ADS/sort/StrandSort.h"
@@ -175,40 +171,10 @@ ADS_TEST( "exchange-sorts" )
  CHECK( r == 2 && D == Ints( { 0 , 1 } ) );
  }
 
-// the cycle sort with at most n writes, n - ( fixed points ) on distinct
-// keys and the items out of place with duplicates, and the pancake sort
-// with at most 2 n - 3 flips; no write and no flip on an empty, single,
-// all equal vector
-ADS_TEST( "cycle-pancake" )
-{
- battery( []( auto & A , auto less ) { cycleSort( A , less ); } , 1000 ,
-          false );
- battery( []( auto & A , auto less ) { pancakeSort( A , less ); } , 1000 ,
-          false );
- Ints A = { 3 , 0 , 1 , 2 , 4 };                 // one cycle of 4 , 4 fixed
- CHECK( cycleSort( A ) == 4 && A == Ints( { 0 , 1 , 2 , 3 , 4 } ) );
- Ints S = { 0 , 1 , 2 };
- CHECK( cycleSort( S ) == 0 && pancakeSort( S ) == 0 );
- Ints P = { 2 , 0 , 3 , 1 };
- CHECK( pancakeSort( P ) <= 5 && P == Ints( { 0 , 1 , 2 , 3 } ) );
- Ints E , O = { 7 } , Q( 9 , 3 );                // nothing to write or flip
- CHECK( cycleSort( E ) == 0 && pancakeSort( E ) == 0 );
- CHECK( cycleSort( O ) == 0 && pancakeSort( O ) == 0 );
- CHECK( cycleSort( Q ) == 0 && pancakeSort( Q ) == 0 );
- Ints T = { 0 , 1 , 1 , 2 , 2 };                 // sorted, with equals
- CHECK( cycleSort( T ) == 0 && pancakeSort( T ) == 0 );
- Ints U = { 1 , 1 , 0 };                         // 2 items out of place
- CHECK( cycleSort( U ) == 2 && U == Ints( { 0 , 1 , 1 } ) );
- Ints V = { 1 , 0 };                             // 2 n - 3 = 1 flip
- CHECK( pancakeSort( V ) == 1 && V == Ints( { 0 , 1 } ) );
- }
-
 // the tree sort on a Red-Black tree and on an unbalanced tree, the repeated
 // items kept, empty, all equal, and the unbalanced tree as a chain of 20000
-// nodes on a reversed input; the patience sort with as many piles as a
-// longest strictly increasing subsequence: 0 on an empty vector, 1 on equal
-// or decreasing items, n on sorted ones
-ADS_TEST( "tree-patience" )
+// nodes on a reversed input
+ADS_TEST( "tree-sort" )
 {
  battery( []( auto & A , auto ) {
   if constexpr( std::is_same_v< typename std::decay_t< decltype( A ) >::
@@ -222,24 +188,7 @@ ADS_TEST( "tree-patience" )
  Ints U = { 5 , 1 , 5 , 3 , 1 };
  treeSort( U , false );
  CHECK( U == Ints( { 1 , 1 , 3 , 5 , 5 } ) );
- battery( []( auto & A , auto less ) { patienceSort( A , less ); } , 4096 ,
-          false );
- Ints L = { 3 , 1 , 4 , 1 , 5 , 9 , 2 , 6 };     // 1 4 5 9 or 1 4 5 6
- std::size_t piles = 0;
- patienceSort( L , std::less<>() , &piles );
- CHECK( piles == 4 );
- Ints D( 100 );
- std::iota( D.rbegin() , D.rend() , 0 );
- patienceSort( D , std::less<>() , &piles );
- CHECK( piles == 1 );
- Ints E , Q( 50 , 2 );                           // equals on one pile: the
- patienceSort( E , std::less<>() , &piles );     // increase is strict
- CHECK( piles == 0 && E.empty() );
- patienceSort( Q , std::less<>() , &piles );
- CHECK( piles == 1 && Q == Ints( 50 , 2 ) );
- std::iota( D.begin() , D.end() , 0 );           // sorted: n piles
- patienceSort( D , std::less<>() , &piles );
- CHECK( piles == 100 );
+ Ints E , Q( 50 , 2 );
  treeSort( E );
  treeSort( Q , false );
  CHECK( E.empty() && Q == Ints( 50 , 2 ) );
@@ -249,26 +198,6 @@ ADS_TEST( "tree-patience" )
  Ints R( C.rbegin() , C.rend() );
  treeSort( R , false );
  CHECK( R == C );
- }
-
-// smoothsort, and its O( n ) comparisons on a sorted vector against the
-// n log n of a random one
-ADS_TEST( "smoothsort" )
-{
- battery( []( auto & A , auto less ) { smoothsort( A , less ); } , 4096 ,
-          false );
- long c = 0;
- auto count = [ & ]( int a , int b ) {
-  c += ! checkingContract();
-  return( a < b ); };
- Ints S( 4096 );
- std::iota( S.begin() , S.end() , 0 );
- smoothsort( S , count );
- const long sorted = c;
- std::shuffle( S.begin() , S.end() , std::mt19937( 8 ) );
- c = 0;
- smoothsort( S , count );
- CHECK( sorted < 4 * 4096 && c > 5 * sorted );
  }
 
 // the strand sort of a list, stable on pairs compared by their keys, one
@@ -366,28 +295,6 @@ ADS_TEST( "sorting-networks" )
                contract_violation );
  applyNetwork( Z , mergeExchangeNetwork( 2 ) );
  CHECK( Z == Ints( { 0 , 1 } ) );
- }
-
-// the slow sorts on small vectors, the bogo sort only up to 10 items, with
-// no shuffle on a sorted, empty or all equal vector
-ADS_TEST( "didactic-sorts" )
-{
- battery( []( auto & A , auto less ) { stoogeSort( A , less ); } , 100 ,
-          false );
- battery( []( auto & A , auto less ) {
-  if( A.size() <= 30 ) slowSort( A , less );
-  else std::sort( A.begin() , A.end() , less ); } , 100 , false );
- std::mt19937 g( 10 );
- Ints A = { 3 , 1 , 2 , 0 , 4 };
- CHECK( bogoSort( A , g ) >= 0 && A == Ints( { 0 , 1 , 2 , 3 , 4 } ) );
- Ints L( 11 );
- CHECK_THROWS( bogoSort( L , g ) , contract_violation );
- Ints E , T( 10 ) , Q( 10 , 4 );                 // sorted: no shuffle, also
- std::iota( T.begin() , T.end() , 0 );           // at the bound n = 10
- CHECK( bogoSort( E , g ) == 0 && bogoSort( T , g ) == 0 &&
-        bogoSort( Q , g ) == 0 );
- Ints D = { 1 , 0 };
- CHECK( bogoSort( D , g ) >= 1 && D == Ints( { 0 , 1 } ) );
  }
 
 // the engineered quicksorts on the battery, and on inputs against the

@@ -30,8 +30,6 @@
 
 #include "ADS/sequence/List.h"
 #include "ADS/sort/CountingSort.h"
-#include "ADS/sort/CycleSort.h"
-#include "ADS/sort/DidacticSorts.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/ExchangeSorts.h"
 #include "ADS/sort/ExternalSort.h"
@@ -40,14 +38,12 @@
 #include "ADS/sort/KnuthSorts.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/sort/MultikeyQuickSort.h"
-#include "ADS/sort/PatienceSort.h"
 #include "ADS/sort/PigeonholeSort.h"
 #include "ADS/sort/QuickSort.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
 #include "ADS/sort/SelectionSort.h"
 #include "ADS/sort/ShellSort.h"
-#include "ADS/sort/Smoothsort.h"
 #include "ADS/sort/Sorted.h"
 #include "ADS/sort/SortingNetworks.h"
 #include "ADS/sort/StrandSort.h"
@@ -233,8 +229,8 @@ ADS_TEST( "shell-gaps" )
 // the sorts of the other headers on the degenerate vectors (empty, one
 // item, two, all equal, sorted, reversed, the extremes of the type), each
 // checking its audit, against std::sort; their preconditions just inside
-// and just outside: bogoSort() on 10 and 11 items, replacementSelection()
-// with M = 1 and 0, polyphaseMerge() with 3 and 2 tapes and an unsorted
+// and just outside: replacementSelection() with M = 1 and 0,
+// polyphaseMerge() with 3 and 2 tapes and an unsorted
 // run, partitionByValue() on a range of one item and out of the vector,
 // bitonicNetwork() on 0 , 1 , 2 and 3, applyNetwork() with a comparator
 // on n - 1 and on n, bucketSort() on 0, the largest double below 1, 1, a
@@ -258,12 +254,6 @@ ADS_TEST( "other-sorts" )
    sort( B );
    CHECK( B == S );
    };
-  check( []( Ints & B ) { (void) cycleSort( B ); } );
-  check( []( Ints & B ) { (void) pancakeSort( B ); } );
-  if( A.size() <= 30 ) {
-   check( []( Ints & B ) { stoogeSort( B ); } );
-   if( A.size() <= 12 ) check( []( Ints & B ) { slowSort( B ); } );
-   }
   check( []( Ints & B ) { introSort( B ); } );
   check( []( Ints & B ) { pdqSort( B ); } );
   check( []( Ints & B ) { dualPivotQuickSort( B ); } );
@@ -280,12 +270,10 @@ ADS_TEST( "other-sorts" )
   check( []( Ints & B ) { radixExchangeSort( B ); } );
   check( []( Ints & B ) { tournamentSort( B ); } );
   check( []( Ints & B ) { mergeInsertionSort( B ); } );
-  check( []( Ints & B ) { patienceSort( B ); } );
   check( []( Ints & B ) { radixSort( B ); } );
   check( []( Ints & B ) { americanFlagSort( B ); } );
   check( []( Ints & B ) { timSort( B ); } );
   check( []( Ints & B ) { powerSort( B ); } );
-  check( []( Ints & B ) { smoothsort( B ); } );
   check( []( Ints & B ) { treeSort( B ); } );
   check( []( Ints & B ) { treeSort( B , false ); } );
   check( []( Ints & B ) { heapsort( B ); } );
@@ -337,12 +325,6 @@ ADS_TEST( "other-sorts" )
  CHECK( W0.empty() );
 
  // the preconditions
- Ints T10 = { 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 } , T11 = T10;
- T11.push_back( 10 );
- CHECK( bogoSort( T10 , g ) == 0 );
- Ints T2 = { 2 , 1 };
- CHECK( bogoSort( T2 , g ) >= 1 && T2 == Ints( { 1 , 2 } ) );
- CHECK_THROWS( (void) bogoSort( T11 , g ) , contract_violation );
  const Ints In = { 5 , 1 , 4 , 2 , 3 };
  CHECK( replacementSelection( In , 1 ).size() == 3 );
  CHECK( replacementSelection( Ints() , 1 ).empty() );
@@ -418,31 +400,6 @@ ADS_TEST( "checking-contract" )
   CHECK( all >= c && ( n < 2 || all > c ) );
   }
  CHECK( ! checkingContract() );
- }
-
-// smoothsort() and the forest in a word of 64 bits: the Leonardo numbers
-// of its table by their recurrence, L_64 = 2 F_65 - 1 = 34335360355129 the
-// bound of its precondition (a heap of order 64 would need the bit 64),
-// and the sorts of L_k - 1, L_k and L_k + 1 items, at each order of a
-// single heap and around it
-ADS_TEST( "smoothsort-orders" )
-{
- const auto & L = detail::leonardo();
- CHECK( L.size() > 2 && L[ 0 ] == 1 && L[ 1 ] == 1 );
- for( std::size_t k = 2 ; k < L.size() ; ++k )
-  CHECK( L[ k ] == L[ k - 1 ] + L[ k - 2 ] + 1 );
- if( L.size() > 64 )
-  CHECK( L[ 64 ] == std::size_t( 34335360355129ULL ) );
- std::mt19937 g( 29 );
- for( std::size_t k = 0 ; L[ k ] < 20000 ; ++k )
-  for( std::size_t n : { L[ k ] - 1 , L[ k ] , L[ k ] + 1 } ) {
-   Ints A( n );
-   for( auto & x : A ) x = int( g() % 100 );
-   auto S = A;
-   smoothsort( A );
-   std::sort( S.begin() , S.end() );
-   CHECK( A == S );
-   }
  }
 
 }  // end( namespace )

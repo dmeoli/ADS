@@ -44,13 +44,11 @@
 #include "ADS/sort/LearnedSort.h"
 #include "ADS/sort/MergeSort.h"
 #include "ADS/sort/MultikeyQuickSort.h"
-#include "ADS/sort/PatienceSort.h"
 #include "ADS/sort/QuickSort.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
 #include "ADS/sort/SampleSort.h"
 #include "ADS/sort/ShellSort.h"
-#include "ADS/sort/Smoothsort.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/sort/StringSort.h"
 #include "ADS/sort/VectorQuickSort.h"
@@ -272,7 +270,6 @@ void run( const char * type , const std::vector< std::size_t > & sizes ,
   { "timSort" , [ & ]( V & A ) { ADS::timSort( A , less ); } } ,
   { "mergeSort" , [ & ]( V & A ) { ADS::mergeSort( A , 16 , less ); } } ,
   { "heapsort" , [ & ]( V & A ) { ADS::heapsort( A , less ); } } ,
-  { "smoothsort" , [ & ]( V & A ) { ADS::smoothsort( A , less ); } } ,
   { "shellSort" , [ & ]( V & A ) {
    ADS::shellSort( A , ADS::ciuraGaps( A.size() ) , less ); } } ,
 #ifdef ADS_HAS_BOOST_SORT
