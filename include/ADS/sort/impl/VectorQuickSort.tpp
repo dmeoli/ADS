@@ -22,15 +22,10 @@ namespace ADS {
 
 namespace detail {
 
-/// true on an x86 processor of AMD (the cores Zen), false elsewhere and
-/// with compilers other than GCC and Clang, read once when the program
-/// starts: a compression into the memory (vpcompress) is microcoded there,
-/// about ten times slower than one into a register followed by a masked
-/// store, which on the cores of Intel is the slower of the two; and its
-/// hardware prefetchers keep up with a sequential scan, so that a prefetch
-/// by software only takes the slots of the loads, while on the cores of
-/// Intel it nearly halves the time of a scan out of the cache
-inline const bool kZen = []() {
+/// true if the program runs on an x86 processor of AMD, false elsewhere
+/// and with compilers other than GCC and Clang
+inline bool amdProcessor( void )
+{
 #if ( defined( __GNUC__ ) || defined( __clang__ ) ) && \
     ( defined( __x86_64__ ) || defined( __i386__ ) )
  __builtin_cpu_init();
@@ -38,7 +33,16 @@ inline const bool kZen = []() {
 #else
  return( false );
 #endif
- }();
+ }
+
+/// amdProcessor(), read once when the program starts (the cores Zen): a
+/// compression into the memory (vpcompress) is microcoded there, about ten
+/// times slower than one into a register followed by a masked store, which
+/// on the cores of Intel is the slower of the two; and their hardware
+/// prefetchers keep up with a sequential scan, so that a prefetch by
+/// software only takes the slots of the loads, while on the cores of Intel
+/// it nearly halves the time of a scan out of the cache
+inline const bool kZen = amdProcessor();
 
 }  // end( namespace detail )
 
