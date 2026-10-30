@@ -27,9 +27,10 @@
  * - `radixSortBy()` is the same on any items, by an unsigned key that a
  *   function gives, stable, e.g., the records by one field;
  * - `americanFlagSort()` is the radix sort from the most significant byte
- *   (MSD), in place: a first sweep finds a vector already sorted or in
- *   reverse order (reversed), and the bytes in which some keys differ (one
- *   alone: the counting sort of `radixSort()`); then the items are permuted
+ *   (MSD), in place: two scans that stop at the first pair of keys out of
+ *   their order find a vector already sorted or in reverse order
+ *   (reversed), and a sweep the bytes in which some keys differ (one alone:
+ *   the counting sort of `radixSort()`); then the items are permuted
  *   into the 256 buckets of the first byte that differs, as the flag of the
  *   name divides into stripes, and each bucket is sorted in the same way by
  *   the next one. The permutation does not follow its cycles, whose every

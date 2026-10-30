@@ -288,6 +288,46 @@ void flag( std::vector< T > & A , std::size_t lo , std::size_t n ,
   }
  }
 
+/// americanFlagSort() on A in disorder: a sweep finds the bytes in which
+/// some keys differ; one alone, the key tells the number, and the numbers
+/// are counted and written back from one of each value; otherwise A goes to
+/// flagGroup() if smaller than kFlagSmall, and to flag() by those bytes
+template< RadixKey T >
+void flagSort( std::vector< T > & A )
+{
+ using U = decltype( radixKey( T() ) );
+ constexpr int W = int( sizeof( U ) );
+ const std::size_t n = A.size();
+ U any = 0 , all = U( ~U( 0 ) );            // the bits set in some key and
+ for( const T x : A ) {                     // in all
+  const U k = radixKey( x );
+  any |= k;
+  all &= k;
+  }
+ std::array< int , W > D{};                 // the bytes that differ, the
+ int m = 0;                                 // most significant first
+ for( int d = W - 1 ; d >= 0 ; --d )
+  if( ( ( any ^ all ) >> ( 8 * d ) ) & 0xFF )
+   D[ m++ ] = d;
+ if( m <= 1 ) {
+  const int s = 8 * D[ 0 ];
+  std::array< std::size_t , 256 > h{};
+  std::array< T , 256 > R{};
+  for( const T x : A ) {
+   const std::size_t c = std::size_t( ( radixKey( x ) >> s ) & 0xFF );
+   ++h[ c ];
+   R[ c ] = x;
+   }
+  T * p = A.data();
+  for( std::size_t c = 0 ; c < 256 ; ++c )
+   p = std::fill_n( p , h[ c ] , R[ c ] );
+  }
+ else if( n < kFlagSmall )
+  flagGroup( A , 0 , n );
+ else
+  flag( A , 0 , n , D.data() , m );
+ }
+
 /// the character d of s, 0 at its end, then the characters plus 1
 inline std::uint16_t charAt( const std::string & s , std::size_t d )
 {
@@ -534,49 +574,23 @@ void radixSortBy( std::vector< T > & A , K key )
 template< RadixKey T >
 void americanFlagSort( std::vector< T > & A )
 {
- using U = decltype( radixKey( T() ) );
- constexpr int W = int( sizeof( U ) );
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
- U any = 0 , all = U( ~U( 0 ) );            // the bits set in some key, in
- std::size_t up = 0 , down = 0;             // all, and the steps up and
- if( n > 0 ) {                              // down from one key to the next
-  U prev = radixKey( A[ 0 ] );
-  for( std::size_t i = 0 ; i < n ; ++i ) {
-   const U k = radixKey( A[ i ] );
-   any |= k;
-   all &= k;
-   up += k > prev;
-   down += k < prev;
-   prev = k;
+ auto step = [ & ]( auto rel ) {            // whether two keys in a row
+  auto k = radixKey( A[ 0 ] );              // step by rel: a scan that
+  for( std::size_t i = 1 ; i < n ; ++i ) {  // stops there, at once on keys
+   const auto l = radixKey( A[ i ] );       // in disorder
+   if( rel( l , k ) )
+    return( true );
+   k = l;
    }
-  }
- std::array< int , W > D;                   // the bytes that differ, the
- int m = 0;                                 // most significant first
- for( int d = W - 1 ; d >= 0 ; --d )
-  if( ( ( any ^ all ) >> ( 8 * d ) ) & 0xFF )
-   D[ m++ ] = d;
- if( ( n < 2 ) || ( down == 0 ) )
+  return( false ); };
+ if( ( n < 2 ) || ! step( std::less<>() ) )
   ;                                         // sorted already
- else if( up == 0 )
+ else if( ! step( std::greater<>() ) )
   std::reverse( A.begin() , A.end() );      // in reverse order
- else if( m == 1 ) {                        // one byte: the key tells the
-  const int s = 8 * D[ 0 ];                 // number, counted and written
-  std::array< std::size_t , 256 > h{};      // back from one of each value
-  std::array< T , 256 > R{};
-  for( const T x : A ) {
-   const std::size_t c = std::size_t( ( radixKey( x ) >> s ) & 0xFF );
-   ++h[ c ];
-   R[ c ] = x;
-   }
-  T * p = A.data();
-  for( std::size_t c = 0 ; c < 256 ; ++c )
-   p = std::fill_n( p , h[ c ] , R[ c ] );
-  }
- else if( n < kFlagSmall )
-  detail::flagGroup( A , 0 , n );
  else
-  detail::flag( A , 0 , n , D.data() , m );
+  detail::flagSort( A );
  ADS_AUDIT( detail::sortedPermutation( A , before , []( T a , T b ) {
   return( radixKey( a ) < radixKey( b ) ); } ) );
  }

@@ -2118,9 +2118,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RankSelect answers select straight from the inventory, with no access
   to the bits, when every bit b of a group has its offset (a value of
   density below about 1%); BitVector copies the words of a span once
-- americanFlagSort(): a first sweep finds a vector already sorted, or in
-  reverse order (reversed), and the bytes in which the keys differ, one
-  alone counted and written back as by radixSort(); the items go to their
+- americanFlagSort(): two scans that stop at the first pair of keys out
+  of their order find a vector already sorted, or in reverse order
+  (reversed), and a sweep the bytes in which the keys differ, one alone
+  counted and written back as by radixSort(); the items go to their
   buckets in place by rounds of swaps of each item to the next free place
   of its bucket (as the ska_sort of Skarupke does), whose loads do not wait
   for each other as along the cycles of the permutation, a bucket with a
