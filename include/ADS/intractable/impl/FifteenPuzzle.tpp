@@ -124,14 +124,14 @@ int * levelOf( M & m , const K & k )
   }
  }
 
-/// the value of k in m set to v
+/// the value of k in m set to v, by one search: the insert() of the
+/// tables of ADS replaces the value of a key already there, as the
+/// insert_or_assign() of the maps of std and Boost
 template< class M , class K >
 void setLevel( M & m , const K & k , int v )
 {
- if constexpr( std::is_pointer_v< decltype( m.find( k ) ) > ) {
-  if( int * p = m.find( k ) ) *p = v;
-  else m.insert( k , v );
-  }
+ if constexpr( std::is_pointer_v< decltype( m.find( k ) ) > )
+  m.insert( k , v );
  else
   m.insert_or_assign( k , v );
  }
