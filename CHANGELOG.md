@@ -2229,6 +2229,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- OpenMPLock on the runtime of LLVM is a test-and-set lock
+  (omp_init_lock_with_hint with omp_sync_hint_uncontended): its default
+  lock queues the threads and hands over in their order, and with more
+  threads than cores the next one was often descheduled while the others
+  waited behind it, so that a search of seconds took minutes
+- ads.pc takes its prefix from where it is (${pcfiledir} and one .. per
+  directory of ADS_INSTALL_PKGCONFIGDIR) when that is relative, instead of
+  the prefix of the configuration: an install with --prefix elsewhere gave
+  the include directory of the default prefix
 - bench/sort.cpp: fluxsort, quadsort and crumsort compiled with no strict
   aliasing, since their generic entries read the items of 8 bytes as long
   long and give them to the comparison as doubles, which g++ at -O3

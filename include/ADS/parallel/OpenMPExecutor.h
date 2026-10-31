@@ -71,8 +71,17 @@ namespace ADS {
 class OpenMPLock {
  public:
 
- /// an unlocked lock
- OpenMPLock( void ) { omp_init_lock( &f_lock ); }
+ /// an unlocked lock; on the runtime of LLVM a test-and-set one, since its
+ /// default lock queues the threads and hands over in their order, so that
+ /// with more threads than cores the next one is often descheduled and the
+ /// others wait behind it (libgomp ignores the hint)
+ OpenMPLock( void ) {
+#if defined( KMP_VERSION_MAJOR )
+  omp_init_lock_with_hint( &f_lock , omp_sync_hint_uncontended );
+#else
+  omp_init_lock( &f_lock );
+#endif
+  }
  /// no copy, as a mutex
  OpenMPLock( const OpenMPLock & ) = delete;
  /// no copy, as a mutex

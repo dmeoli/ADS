@@ -514,9 +514,23 @@ install(FILES
         cmake/ADSBLAS.cmake
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
-# Generate and install ads.pc: its include directory is ${prefix}/include
+# Generate and install ads.pc: its prefix is found from where the file is
+# (${pcfiledir} and one .. per directory of ADS_INSTALL_PKGCONFIGDIR) when
+# that is relative, so that an install with --prefix moved elsewhere still
+# points to its own headers; its include directory is ${prefix}/include
 # when that is relative; with GMP it has the define and the library, by
 # gmp.pc, and with a CBLAS its define, its headers and its library.
+if (IS_ABSOLUTE "${ADS_INSTALL_PKGCONFIGDIR}")
+    set(ADS_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
+else ()
+    set(ADS_PC_PREFIX "\${pcfiledir}")
+    string(REPLACE "/" ";" ADS_PC_DIRS "${ADS_INSTALL_PKGCONFIGDIR}")
+    foreach (ADS_PC_DIR IN LISTS ADS_PC_DIRS)
+        if (NOT ADS_PC_DIR STREQUAL "" AND NOT ADS_PC_DIR STREQUAL ".")
+            string(APPEND ADS_PC_PREFIX "/..")
+        endif ()
+    endforeach ()
+endif ()
 if (IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
     set(ADS_PC_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
 else ()
