@@ -81,12 +81,14 @@
  *   2^18 - 1 and 2^21 - 1 nodes (-b bnb), the bound of a child that of its
  *   parent plus 1 to 1024 (bnb), or minus 1 or 2 (bnb-dive, a search that
  *   dives, its frontier small), with no evaluation of a node and with 256
- *   rounds of mixing (about a microsecond), per node: the stealing
- *   frontier of ADS, a queue per worker of which a thief takes about half,
- *   against a std::priority_queue under a lock per worker, of which a
- *   thief takes the back half of the heap under the lock, and against
- *   tbb::concurrent_priority_queue and the MultiQueue of ADS shared by
- *   all, which stop at the count of the nodes known in advance.
+ *   rounds of mixing (about a microsecond), per node: the stealing frontier
+ *   of ADS, a queue per worker of which a thief takes about half (also with a
+ *   bound per node, the key in bnb and at random in bnb-dive, and its least
+ *   bound asked after each pop, "bounds"), against a std::priority_queue
+ *   under a lock per worker, of which a thief takes the back half of the heap
+ *   under the lock, and against tbb::concurrent_priority_queue and the
+ *   MultiQueue of ADS shared by all, which stop at the count of the nodes
+ *   known in advance.
  * Each structure runs only if ADS_BENCH_WHO names it, or with no such
  * variable, and ADS_BENCH_LIST lists them [see Bench.h], so that run.sh
  * runs each in a process of its own. Each cell is the median of r runs,
@@ -2468,6 +2470,43 @@ struct BnbAds {
   }
  };
 
+/// the frontier of ADS with a bound per node, its key when the bounds grow
+/// (best first, the bound the key) and at random in [ 0 , 2^20 ) when they
+/// dive (the key a depth, the bound apart), and the least bound of the
+/// queue of the worker asked after each pop, as a branch-and-bound that
+/// dives or prunes by it does
+struct BnbAdsBound {
+ using F = ADS::StealingFrontier< std::uint64_t , BnbNode ,
+                                  std::less< std::uint64_t > ,
+                                  std::uint64_t >;
+ std::unique_ptr< F > f;
+ std::atomic< std::uint64_t > probe{ 0 };
+ bool dive = false;
+ void make( std::size_t p , std::uint64_t k0 ) {
+  f = std::make_unique< F >( p , 5 );
+  dive = ( k0 != 0 );                       // the root of a dive
+  f->push( 0 , k0 , 0 , BnbNode{ 0 , 0 } );
+  }
+ template< class W >
+ void run( ADS::ThreadPool & pool , std::size_t p , W && work ) {
+  pool.run( p , [ & ]( std::size_t i ) {
+   std::uint64_t acc = 0;
+   auto pop = [ & ]( std::uint64_t & k , BnbNode & v ) {
+    auto e = f->pop( i );
+    if( ! e ) return( false );
+    k = e->key;
+    v = e->item;
+    if( const auto m = f->minBound( i ) )
+     acc += *m;
+    return( true ); };
+   auto push = [ & ]( std::uint64_t k , BnbNode v ) {
+    f->push( i , k , dive ? bnbMix( v.id ^ 0x5BD1E995u ) & 0xFFFFF : k ,
+             v ); };
+   work( pop , push );
+   probe.fetch_add( acc , std::memory_order_relaxed ); } );
+  }
+ };
+
 /// a std::priority_queue under a lock per worker, as a heap on a vector:
 /// a thief that finds its queue empty locks a random victim of two pairs
 /// at least and moves the back half of its heap, itself a heap, into its
@@ -2666,6 +2705,12 @@ void bnb( const std::vector< std::uint32_t > & depths , int r ,
      BnbAds s;
      bnbRun( "ADS::StealingFrontier" , D , w , dive , r , pool , s );
      bnbRun( "ADS::StealingFrontier A/A" , D , w , dive , r , pool , s );
+    }
+    {
+     BnbAdsBound s;
+     bnbRun( "ADS::StealingFrontier bounds" , D , w , dive , r , pool , s );
+     bnbRun( "ADS::StealingFrontier bounds A/A" , D , w , dive , r , pool ,
+             s );
     }
     {
      BnbLocked s;

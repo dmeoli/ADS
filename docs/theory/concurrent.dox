@@ -697,6 +697,74 @@
  construction of Floyd. A pair is copied only by a deal; the pairs of an
  offer move with their heap, by its pointer.
 
+ <em>The bounds.</em> A branch-and-bound selects its nodes by one key
+ (the bound itself for best first, the depth for depth first, an estimate
+ for best estimate, with the order of the pushes as the tie) and prunes by
+ another one, the bound: when the least bound \f$ \beta \f$ of the nodes
+ that a worker holds cannot improve the incumbent beyond the tolerance,
+ the whole queue is dropped, and the choice to dive compares the children
+ with \f$ \beta \f$. With a type of bounds, each pair of the queue carries
+ its bound, and `minBound()` gives \f$ \beta \f$ over the pairs of the
+ owner, as `IndexedHeapPair` does for the ids of one thread. Each heap
+ keeps its least bound as long as no pop takes a pair of that bound (a push
+ lowers it, if its bound is less), and finds it again by a scan of its
+ pairs when one does. With bounds independent of the keys, a pop takes the
+ least of \f$ m \f$ bounds with probability about \f$ 1 / m \f$, and the
+ scans cost \f$ O( 1 ) \f$ expected per pop; with bounds that go with the
+ keys, as in a search by best first, each pop takes it, and the scans
+ \f$ \Theta( m ) \f$ each. When the pairs scanned exceed 16 times the pops
+ and the pairs held, plus \f$ 2^{16} \f$ for the start, on a heap of 64
+ pairs at least, the heap keeps instead, in a vector apart, the least bound
+ \f$ \mu( i ) \f$ of the pairs of the subtree of each node \f$ i \f$:
+ \f[
+   \mu( i ) = \min\{ b( i ) , \mu( 4 i + 1 ) , \ldots , \mu( 4 i + 4 ) \} ,
+   \tag{6}
+ \f]
+ \f$ b( i ) \f$ the bound of the pair of \f$ i \f$ and the children that do
+ not exist left out, so that the least bound of the heap is
+ \f$ \mu( 0 ) \f$. A push moves the hole of a new leaf up to the place
+ \f$ i \f$ of the new pair: the nodes passed by the hole took the pair of
+ their parent, and get (6) again from their children, the leaf up; the
+ subtree of \f$ i \f$ and of each node above it gained the new bound
+ \f$ b \f$ alone, and \f$ \mu \f$ is lowered to \f$ b \f$ from \f$ i \f$ up
+ as long as \f$ b \f$ is less, since \f$ \mu \f$ does not increase towards
+ the root. A pop moves the last pair \f$ z \f$ down from the root along a
+ path \f$ P \f$; a node off \f$ P \f$ on the path of the old last leaf lost
+ \f$ z \f$ alone, and keeps its \f$ \mu \f$, as all those above it off
+ \f$ P \f$, if \f$ \mu \f$ is less than the bound of \f$ z \f$; the rest of
+ that path, and then \f$ P \f$ from its end up, get (6) again. The cost is
+ \f$ O( \log m ) \f$ per operation and \f$ O( 1 ) \f$ for \f$ \mu( 0 ) \f$.
+ The two alternatives cost more on both kinds of bounds: the bounds of the
+ pushes and those of the pops in two multisets, the least bound being the
+ least of the first once their equal tops are taken out, add a push into
+ one of them per operation, on heaps that grow with the pops until they
+ are made again, and a heap by the bounds indexed by the places of the
+ pairs adds a second sift per operation and an update of the index at each
+ move of a pair.
+
+ <em>Lemma 12 (the least bound of the owner).</em> Let the owner keep, when
+ it makes an offer, the least bound \f$ b_O \f$ of the heap that it moves
+ into the offer, and let `minBound()` return the least of the least bounds
+ of its heaps that are not empty and, if the offer that it made is still
+ there at an acquire load of the pointer, of \f$ b_O \f$. Then the value
+ returned is the least bound of the pairs that the owner holds at the
+ moment of that load.
+
+ Indeed, the heaps of the owner change only by its own operations, and the
+ least bound of each is exact: the one known stays the least while no pop
+ takes a pair of that bound and a push lowers it when its bound is less, a
+ scan computes it, and by (6) \f$ \mu( 0 ) \f$ is it. The pairs of
+ an offer are fixed from its publication until an exchange takes it, and
+ \f$ b_O \f$ is their least bound; at the load, the offer is either still
+ there, and then its pairs are of the owner (Lemma 10: a thief that claims
+ it afterwards takes pairs that the owner held at the load), or claimed,
+ and then its pairs belong to the thief from its exchange on, and are not
+ the owner's any more. The pairs stolen keep their keys and their bounds,
+ since the thief adopts the heap as it is and deals its pairs to two heaps
+ of its own, rebuilding (6) on them; `drain()` takes the offer back first,
+ if no thief has claimed it, and empties both heaps, so that a queue
+ pruned by its \f$ \beta \f$ holds nothing afterwards.
+
  \section theory_concurrent_refs References
 
  \see T. E. Anderson, The performance of spin lock alternatives for

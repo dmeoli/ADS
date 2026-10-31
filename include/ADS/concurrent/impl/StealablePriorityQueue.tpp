@@ -27,21 +27,24 @@ namespace ADS {
 /*---------------------- StealablePriorityQueue ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , class T , class Less >
-StealablePriorityQueue< K , T , Less >::StealablePriorityQueue( Less less )
- : f_h{ Heap( ByKey{ less } ) , Heap( ByKey{ less } ) } ,
-   f_less{ std::move( less ) }
+template< class K , class T , class Less , class Bd , class BdLess >
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::
+ StealablePriorityQueue( Less less ,
+                                                             BdLess bl )
+ : f_h{ Heap( ByKey{ less } , bl ) , Heap( ByKey{ less } , bl ) } ,
+   f_less{ std::move( less ) } , f_bl( std::move( bl ) )
 {
  }
 
-template< class K , class T , class Less >
-StealablePriorityQueue< K , T , Less >::~StealablePriorityQueue()
+template< class K , class T , class Less , class Bd , class BdLess >
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::~StealablePriorityQueue()
 {
  delete f_offer.exchange( nullptr , std::memory_order_acq_rel );
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_INLINE int StealablePriorityQueue< K , T , Less >::best( void ) const
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_INLINE int
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::best( void ) const
 {
  if( f_n[ 1 ] == 0 )
   return( 0 );
@@ -50,16 +53,18 @@ ADS_SPQ_INLINE int StealablePriorityQueue< K , T , Less >::best( void ) const
  return( f_less( f_h[ 1 ].top() , f_h[ 0 ].top() ) ? 1 : 0 );
  }
 
-template< class K , class T , class Less >
-inline void StealablePriorityQueue< K , T , Less >::recount( void )
+template< class K , class T , class Less , class Bd , class BdLess >
+inline void
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::recount( void )
 {
  f_n[ 0 ] = f_h[ 0 ].size();
  f_n[ 1 ] = f_h[ 1 ].size();
  hint();
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_INLINE void StealablePriorityQueue< K , T , Less >::hint( void )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_INLINE void
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::hint( void )
 {
  const bool can = f_n[ 0 ] + f_n[ 1 ] >= 2;
  if( can != f_can ) {
@@ -68,36 +73,40 @@ ADS_SPQ_INLINE void StealablePriorityQueue< K , T , Less >::hint( void )
   }
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_INLINE void StealablePriorityQueue< K , T , Less >::push( K k , T x )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_INLINE void
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::place( Entry && e )
 {
  int j;
  if( f_n[ 0 ] != f_n[ 1 ] )
   j = f_n[ 0 ] < f_n[ 1 ] ? 0 : 1;
  else
   j = f_turn ^= 1;
- f_h[ j ].push( Entry{ std::move( k ) , std::move( x ) } );
+ f_h[ j ].push( e );
  if( ++f_n[ j ] + f_n[ 1 - j ] == 2 )      // from one pair to two
   hint();
  serve();
  ADS_INVARIANT( hinted() );
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_INLINE void StealablePriorityQueue< K , T , Less >::serve( void )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_INLINE void
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::serve( void )
 {
  if( f_hungry.load( std::memory_order_relaxed ) )
   answer();
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_NOINLINE void StealablePriorityQueue< K , T , Less >::answer( void )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_NOINLINE void
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::answer( void )
 {
  if( f_offered ) {
   if( f_offer.load( std::memory_order_acquire ) != nullptr )
    return;                                  // one offer at a time
   f_offered = false;                        // claimed by a thief
   f_offerKey.reset();
+  f_offerBound.reset();
   }
  f_hungry.store( false , std::memory_order_relaxed );
  const std::size_t m = f_n[ 0 ] + f_n[ 1 ];
@@ -112,14 +121,16 @@ ADS_SPQ_NOINLINE void StealablePriorityQueue< K , T , Less >::answer( void )
  auto g = std::make_unique< Heap >( std::move( f_h[ j ] ) );
  f_h[ j ].clear();
  f_offerKey.emplace( g->top().key );
+ if constexpr( bounded )
+  f_offerBound.emplace( g->minBound() );
  f_offerSize = g->size();
  f_offered = true;
  f_offer.store( g.release() , std::memory_order_release );
  recount();
  }
 
-template< class K , class T , class Less >
-void StealablePriorityQueue< K , T , Less >::deal( void )
+template< class K , class T , class Less , class Bd , class BdLess >
+void StealablePriorityQueue< K , T , Less , Bd , BdLess >::deal( void )
 {
  std::vector< Entry > A[ 2 ];
  const std::size_t m = f_h[ 0 ].size() + f_h[ 1 ].size();
@@ -129,7 +140,7 @@ void StealablePriorityQueue< K , T , Less >::deal( void )
  for( const Heap & h : f_h )
   for( const Entry & e : h )
    A[ ( t++ ) & 1 ].push_back( e );
- Heap H[ 2 ] = { Heap( f_less ) , Heap( f_less ) };
+ Heap H[ 2 ] = { Heap( f_less , f_bl ) , Heap( f_less , f_bl ) };
  H[ 0 ].assign( A[ 0 ].begin() , A[ 0 ].end() );
  H[ 1 ].assign( A[ 1 ].begin() , A[ 1 ].end() );
  f_h[ 0 ] = std::move( H[ 0 ] );            // no copy from here on
@@ -137,22 +148,23 @@ void StealablePriorityQueue< K , T , Less >::deal( void )
  recount();
  }
 
-template< class K , class T , class Less >
-void StealablePriorityQueue< K , T , Less >::merge( Heap & g )
+template< class K , class T , class Less , class Bd , class BdLess >
+void StealablePriorityQueue< K , T , Less , Bd , BdLess >::merge( Heap & g )
 {
  const int j = f_h[ 0 ].size() <= f_h[ 1 ].size() ? 0 : 1;
  std::vector< Entry > A;
  A.reserve( g.size() + f_h[ j ].size() );
  A.insert( A.end() , g.begin() , g.end() );
  A.insert( A.end() , f_h[ j ].begin() , f_h[ j ].end() );
- Heap H( f_less );
+ Heap H( f_less , f_bl );
  H.assign( A.begin() , A.end() );
  f_h[ j ] = std::move( H );
  recount();
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_NOINLINE void StealablePriorityQueue< K , T , Less >::settle( void )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_NOINLINE void
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::settle( void )
 {
  if( ! f_offered )
   return;
@@ -162,6 +174,8 @@ ADS_SPQ_NOINLINE void StealablePriorityQueue< K , T , Less >::settle( void )
  Heap * g = f_offer.exchange( nullptr , std::memory_order_acq_rel );
  f_offered = false;
  f_offerKey.reset();
+ std::optional< Bound > ob = std::move( f_offerBound );
+ f_offerBound.reset();
  if( g == nullptr )                         // claimed by a thief
   return;
  std::unique_ptr< Heap > own( g );
@@ -170,14 +184,16 @@ ADS_SPQ_NOINLINE void StealablePriorityQueue< K , T , Less >::settle( void )
   }
  catch( ... ) {                             // the offer stays as it was
   f_offerKey.emplace( own->top().key );
+  f_offerBound = std::move( ob );
   f_offered = true;
   f_offer.store( own.release() , std::memory_order_release );
   throw;
   }
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_INLINE auto StealablePriorityQueue< K , T , Less >::pop( void )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_INLINE auto
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::pop( void )
  -> std::optional< Entry >
 {
  if( f_offered || f_hungry.load( std::memory_order_relaxed ) ) {
@@ -194,16 +210,18 @@ ADS_SPQ_INLINE auto StealablePriorityQueue< K , T , Less >::pop( void )
  return( e );
  }
 
-template< class K , class T , class Less >
-auto StealablePriorityQueue< K , T , Less >::top( void ) -> const Entry &
+template< class K , class T , class Less , class Bd , class BdLess >
+auto
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::
+ top( void ) -> const Entry &
 {
  settle();
  ADS_PRE( f_n[ 0 ] + f_n[ 1 ] > 0 );
  return( f_h[ best() ].top() );
  }
 
-template< class K , class T , class Less >
-std::size_t StealablePriorityQueue< K , T , Less >::steal(
+template< class K , class T , class Less , class Bd , class BdLess >
+std::size_t StealablePriorityQueue< K , T , Less , Bd , BdLess >::steal(
                                                  StealablePriorityQueue & v )
 {
  ADS_PRE( &v != this );
@@ -235,8 +253,26 @@ std::size_t StealablePriorityQueue< K , T , Less >::steal(
  return( s );
  }
 
-template< class K , class T , class Less >
-std::size_t StealablePriorityQueue< K , T , Less >::size( void ) const
+template< class K , class T , class Less , class Bd , class BdLess >
+auto StealablePriorityQueue< K , T , Less , Bd , BdLess >::minBound( void )
+ const -> std::optional< Bound > requires bounded
+{
+ std::optional< Bound > b;
+ for( int j = 0 ; j < 2 ; ++j )
+  if( f_n[ j ] > 0 ) {
+   const Bound c = f_h[ j ].minBound();
+   if( ! b || f_bl( c , *b ) )
+    b.emplace( c );
+   }
+ if( f_offered && ( f_offer.load( std::memory_order_acquire ) != nullptr ) &&
+     ( ! b || f_bl( *f_offerBound , *b ) ) )
+  b = f_offerBound;
+ return( b );
+ }
+
+template< class K , class T , class Less , class Bd , class BdLess >
+std::size_t
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::size( void ) const
 {
  std::size_t m = f_n[ 0 ] + f_n[ 1 ];
  if( f_offered && ( f_offer.load( std::memory_order_acquire ) != nullptr ) )
@@ -244,41 +280,50 @@ std::size_t StealablePriorityQueue< K , T , Less >::size( void ) const
  return( m );
  }
 
-template< class K , class T , class Less >
-bool StealablePriorityQueue< K , T , Less >::offering( void ) const
+template< class K , class T , class Less , class Bd , class BdLess >
+bool
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::offering( void ) const
 {
  return( f_offered &&
          ( f_offer.load( std::memory_order_acquire ) != nullptr ) );
  }
 
-template< class K , class T , class Less >
-inline bool StealablePriorityQueue< K , T , Less >::hinted( void ) const
+template< class K , class T , class Less , class Bd , class BdLess >
+inline bool
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::hinted( void ) const
 {
  return( ( f_n[ 0 ] == f_h[ 0 ].size() ) && ( f_n[ 1 ] == f_h[ 1 ].size() ) &&
          ( f_can == ( f_n[ 0 ] + f_n[ 1 ] >= 2 ) ) );
  }
 
-template< class K , class T , class Less >
-bool StealablePriorityQueue< K , T , Less >::consistent( void ) const
+template< class K , class T , class Less , class Bd , class BdLess >
+bool
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::consistent( void ) const
 {
  for( const Heap & h : f_h ) {
-  const std::size_t n = h.size();
-  const Entry * A = h.begin();
-  for( std::size_t i = 1 ; i < n ; ++i )
-   if( f_less( A[ i ] , A[ ( i - 1 ) / 4 ] ) )
-    return( false );
+  if( ! h.consistent() )
+   return( false );
+  if constexpr( ! bounded ) {               // the order, for the plain heap
+   const std::size_t n = h.size();
+   const Entry * A = h.begin();
+   for( std::size_t i = 1 ; i < n ; ++i )
+    if( f_less( A[ i ] , A[ ( i - 1 ) / 4 ] ) )
+     return( false );
+   }
   }
  return( hinted() );
  }
 
-template< class K , class T , class Less >
+template< class K , class T , class Less , class Bd , class BdLess >
 template< class F >
-std::size_t StealablePriorityQueue< K , T , Less >::drain( F && f )
+std::size_t
+StealablePriorityQueue< K , T , Less , Bd , BdLess >::drain( F && f )
 {
  if( f_offered ) {
   Heap * g = f_offer.exchange( nullptr , std::memory_order_acq_rel );
   f_offered = false;
   f_offerKey.reset();
+  f_offerBound.reset();
   if( g != nullptr ) {
    std::unique_ptr< Heap > own( g );
    merge( *own );
@@ -300,10 +345,10 @@ std::size_t StealablePriorityQueue< K , T , Less >::drain( F && f )
 /*--------------------------- StealingFrontier -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , class T , class Less >
-StealingFrontier< K , T , Less >::StealingFrontier( std::size_t p ,
-                                                    std::uint64_t seed ,
-                                                    Less less )
+template< class K , class T , class Less , class Bd , class BdLess >
+StealingFrontier< K , T , Less , Bd , BdLess >::StealingFrontier(
+                     std::size_t p , std::uint64_t seed , Less less ,
+                     BdLess bl )
  : f_p( p ) , f_w( nullptr ) , f_active( std::int64_t( p ) )
 {
  ADS_PRE( p >= 1 );
@@ -313,7 +358,8 @@ StealingFrontier< K , T , Less >::StealingFrontier( std::size_t p ,
  std::size_t i = 0;
  try {
   for( ; i < p ; ++i )
-   new( w + i ) Worker( less , seed + 0x9E3779B97F4A7C15ull * ( i + 1 ) );
+   new( w + i ) Worker( less , bl ,
+                        seed + 0x9E3779B97F4A7C15ull * ( i + 1 ) );
   }
  catch( ... ) {
   while( i > 0 )
@@ -324,16 +370,17 @@ StealingFrontier< K , T , Less >::StealingFrontier( std::size_t p ,
  f_w = w;
  }
 
-template< class K , class T , class Less >
-StealingFrontier< K , T , Less >::~StealingFrontier()
+template< class K , class T , class Less , class Bd , class BdLess >
+StealingFrontier< K , T , Less , Bd , BdLess >::~StealingFrontier()
 {
  for( std::size_t i = f_p ; i > 0 ; )
   f_w[ --i ].~Worker();
  ::operator delete( f_w , std::align_val_t( alignof( Worker ) ) );
  }
 
-template< class K , class T , class Less >
-std::uint64_t StealingFrontier< K , T , Less >::next( Worker & w )
+template< class K , class T , class Less , class Bd , class BdLess >
+std::uint64_t
+StealingFrontier< K , T , Less , Bd , BdLess >::next( Worker & w )
 {
  std::uint64_t z = ( w.x += 0x9E3779B97F4A7C15ull );
  z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9ull;
@@ -341,8 +388,9 @@ std::uint64_t StealingFrontier< K , T , Less >::next( Worker & w )
  return( z ^ ( z >> 31 ) );
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_INLINE auto StealingFrontier< K , T , Less >::pop( std::size_t i )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_INLINE auto
+StealingFrontier< K , T , Less , Bd , BdLess >::pop( std::size_t i )
  -> std::optional< Entry >
 {
  ADS_PRE( i < workers() );
@@ -354,8 +402,9 @@ ADS_SPQ_INLINE auto StealingFrontier< K , T , Less >::pop( std::size_t i )
  return( idle( i ) );
  }
 
-template< class K , class T , class Less >
-ADS_SPQ_NOINLINE auto StealingFrontier< K , T , Less >::idle( std::size_t i )
+template< class K , class T , class Less , class Bd , class BdLess >
+ADS_SPQ_NOINLINE auto
+StealingFrontier< K , T , Less , Bd , BdLess >::idle( std::size_t i )
  -> std::optional< Entry >
 {
  Worker & w = f_w[ i ];
@@ -391,8 +440,9 @@ ADS_SPQ_NOINLINE auto StealingFrontier< K , T , Less >::idle( std::size_t i )
   }
  }
 
-template< class K , class T , class Less >
-std::size_t StealingFrontier< K , T , Less >::steals( void ) const
+template< class K , class T , class Less , class Bd , class BdLess >
+std::size_t
+StealingFrontier< K , T , Less , Bd , BdLess >::steals( void ) const
 {
  std::size_t s = 0;
  for( std::size_t i = 0 ; i < f_p ; ++i )
@@ -400,9 +450,9 @@ std::size_t StealingFrontier< K , T , Less >::steals( void ) const
  return( s );
  }
 
-template< class K , class T , class Less >
+template< class K , class T , class Less , class Bd , class BdLess >
 template< class E , class F >
-void StealingFrontier< K , T , Less >::run( E & ex , F && f )
+void StealingFrontier< K , T , Less , Bd , BdLess >::run( E & ex , F && f )
 {
  ex.run( workers() , [ this , &f ]( std::size_t i ) {
   try {
@@ -415,9 +465,9 @@ void StealingFrontier< K , T , Less >::run( E & ex , F && f )
   } );
  }
 
-template< class K , class T , class Less >
+template< class K , class T , class Less , class Bd , class BdLess >
 template< class F >
-std::size_t StealingFrontier< K , T , Less >::leftovers( F && f )
+std::size_t StealingFrontier< K , T , Less , Bd , BdLess >::leftovers( F && f )
 {
  std::size_t n = 0;
  for( std::size_t i = 0 ; i < f_p ; ++i )

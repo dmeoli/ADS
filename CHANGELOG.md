@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- StealablePriorityQueue and StealingFrontier with a second key, the bound
+  Bd of each pair (none by default), and minBound(), the least bound of the
+  pairs that the owner holds, exact also while an offer waits, since the
+  offer carries the least bound of its pairs: each heap keeps its least
+  bound until a pop takes a pair of that bound, finds it again by a scan,
+  and once the scans cost more than 16 times the pops (bounds that go with
+  the keys) keeps in each node the least bound of its subtree, lowered by
+  a push on its way up and computed again by a pop on the paths it changes;
+  push( k , b , x ), StealingFrontier::minBound( i ) and
+  drain( i , f ), which drops the queue of a worker whole (a queue pruned
+  by its least bound); the lemma of the least bound in the theory, the
+  tests of the bounds against a multiset and under ThreadSanitizer, and
+  the cells bounds of the battery bnb of bench/parallel.cpp
 - StealablePriorityQueue, the exact priority queue of one worker of which
   an idle worker steals about half of the pairs: two 4-ary heaps of the
   owner alone, the pairs pushed dealt to them in turn so that each holds

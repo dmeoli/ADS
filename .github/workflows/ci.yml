@@ -268,6 +268,8 @@ jobs:
           ./tsanq multi-queue-threads
           ./tsanq stealable-pq
           ./tsanq stealable-pq-threads
+          ./tsanq stealable-pq-bound
+          ./tsanq stealable-pq-bound-threads
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan concurrent-flat-table-threads

@@ -1238,6 +1238,228 @@ ADS_TEST( "stealable-pq-threads" )
   }
  }
 
+// StealablePriorityQueue with bounds, on one thread: the least bound of the
+// pairs that the owner holds against a multiset at each step, under pushes,
+// pops by a key of selection with the order of the pushes as a tie (LIFO),
+// offers made and taken back, steals (the pairs of the thief keep their keys
+// and bounds), the pairs dealt again and drains; bounds of few values, so
+// that equal tops are taken out of the two multisets, and a least bound that
+// stays while many others are popped, which makes the bounds again; nothing
+// from minBound() on an empty queue
+ADS_TEST( "stealable-pq-bound" )
+{
+ using Key = std::pair< std::uint64_t , std::uint64_t >;
+ using Q = StealablePriorityQueue< Key , std::uint64_t , std::less< Key > ,
+                                   double >;
+ struct Ref {
+  Key key;
+  double bound;
+  std::uint64_t item;
+  bool operator<( const Ref & o ) const { return( key < o.key ); }
+  };
+ {
+  Q a;
+  CHECK( ! a.minBound() );
+  a.push( Key( 1 , 0 ) , 2.5 , 7 );
+  CHECK( a.minBound() == 2.5 && a.consistent() );
+  const auto e = a.pop();
+  CHECK( e && e->bound == 2.5 && e->item == 7 && a.empty() );
+  CHECK( ! a.minBound() );
+  }
+ std::mt19937_64 g( 83 );
+ Q a , b;
+ std::multiset< Ref > R;
+ std::uint64_t next = 0 , stolen = 0 , drained = 0 , pending = 0;
+ bool exact = true , bounds = true , kept = true , order = true;
+ auto least = [ & ] {
+  double m = R.begin()->bound;
+  for( const Ref & r : R )
+   m = std::min( m , r.bound );
+  return( m );
+  };
+ for( int r = 0 ; r < 60000 ; ++r ) {
+  const unsigned c = unsigned( g() % 32 );
+  if( c < 16 ) {
+   // LIFO among equal keys: the later push first, by a decreasing stamp
+   const Key k( g() % 64 , ~next );
+   const double bd = double( g() % 10 );
+   a.push( k , bd , next );
+   R.insert( { k , bd , next++ } );
+   }
+  else if( c < 29 ) {
+   const auto e = a.pop();
+   if( R.empty() ) {
+    exact = exact && ! e;
+    continue;
+    }
+   exact = exact && e && ( e->key == R.begin()->key );
+   if( e ) {
+    const auto it = R.find( Ref{ e->key , 0 , 0 } );
+    exact = exact && ( it != R.end() ) && ( it->bound == e->bound ) &&
+            ( it->item == e->item );
+    if( it != R.end() )
+     R.erase( it );
+    }
+   }
+  else if( c < 31 ) {
+   if( b.steal( a ) == 0 ) {               // a request, or an old offer
+    a.serve();
+    pending += a.offering();
+    if( ! R.empty() )                      // the offer still counted
+     bounds = bounds && ( a.minBound() == least() );
+    if( g() & 1 )
+     b.steal( a );
+    }
+   b.drain( [ & ]( Q::Entry && e ) {
+    const auto it = R.find( Ref{ e.key , 0 , 0 } );
+    kept = kept && ( it != R.end() ) && ( it->bound == e.bound ) &&
+           ( it->item == e.item );
+    if( it != R.end() )
+     R.erase( it );
+    ++stolen;
+    } );
+   }
+  else if( g() % 8 == 0 ) {                // the whole queue pruned
+   Key last( 0 , 0 );
+   bool first = true;
+   drained += a.drain( [ & ]( Q::Entry && e ) {
+    order = order && ( first || ! ( e.key < last ) );
+    first = false;
+    last = e.key;
+    R.erase( R.find( Ref{ e.key , 0 , 0 } ) );
+    } );
+   exact = exact && R.empty() && a.empty() && ! a.offering();
+   }
+  if( ! R.empty() )
+   bounds = bounds && ( a.minBound() == least() );
+  }
+ CHECK( exact );
+ CHECK( bounds );
+ CHECK( kept );
+ CHECK( order );
+ CHECK( a.consistent() );
+ CHECK( ( stolen > 1000 ) && ( drained > 0 ) && ( pending > 100 ) );
+ {
+  Q c , d;                                 // a least bound that stays
+  c.push( Key( 1u << 30 , 0 ) , -1.0 , 0 );
+  bool stays = true;
+  for( std::uint64_t i = 1 ; i <= 20000 ; ++i ) {
+   c.push( Key( i % 97 , i ) , double( i % 13 ) , i );
+   if( i % 3 )
+    c.pop();
+   stays = stays && ( c.minBound() == -1.0 );
+   }
+  CHECK( stays && c.consistent() );
+  CHECK( d.steal( c ) == 0 );
+  c.serve();                               // the offer keeps its bound
+  CHECK( c.offering() && ( c.minBound() == -1.0 ) );
+  const std::size_t m = c.size() , s = d.steal( c );
+  CHECK( ( s > 0 ) && ( s + c.size() == m ) && d.consistent() );
+  const double dm = *d.minBound() , cm = *c.minBound();
+  CHECK( std::min( dm , cm ) == -1.0 && ( dm != cm ) );
+  }
+ {
+  // a heap whose bounds go with its keys: each pop takes the least bound,
+  // the scans grow, and the heap moves to the least bounds of the
+  // subtrees; against a multiset, with assign() and clear() after it
+  struct E {
+   std::uint64_t key;
+   std::uint64_t bound;
+   std::uint64_t item;
+   };
+  struct By {
+   bool operator()( const E & a , const E & b ) const {
+    return( a.key < b.key ); }
+   };
+  detail::SpqHalf< E , By , std::uint64_t , std::less<> > h( By{} ,
+                                                         std::less<>{} );
+  std::multiset< std::uint64_t > B;
+  std::mt19937_64 gg( 97 );
+  bool right = true;
+  for( std::uint64_t i = 0 ; i < 4000 ; ++i ) {
+   const std::uint64_t k = gg() % 100000;
+   h.push( E{ k , k / 2 , i } );
+   B.insert( k / 2 );
+   }
+  for( int r = 0 ; r < 40000 ; ++r ) {
+   right = right && ( h.minBound() == *B.begin() );
+   if( gg() % 3 ) {
+    const E e = h.pop();
+    B.erase( B.find( e.bound ) );
+    }
+   const std::uint64_t k = gg() % 100000;
+   const std::uint64_t b = ( gg() % 8 ) ? k / 2 : gg() % 50000;
+   h.push( E{ k , b , 0 } );
+   B.insert( b );
+   }
+  CHECK( right && h.subtrees() && h.consistent() );
+  std::vector< E > V( h.begin() , h.end() );
+  for( E & e : V )
+   e.bound += 1;
+  h.assign( V.begin() , V.end() );
+  std::uint64_t least = ~std::uint64_t( 0 );
+  for( const E & e : V )
+   least = std::min( least , e.bound );
+  CHECK( h.subtrees() && h.consistent() && ( h.minBound() == least ) );
+  h.clear();
+  CHECK( h.empty() && h.consistent() );
+  h.push( E{ 1 , 5 , 0 } );
+  CHECK( h.minBound() == 5 && h.consistent() );
+  }
+ }
+
+// StealablePriorityQueue with bounds on threads: an owner that only pops,
+// whose minBound() before each pop is never greater than the bound of the
+// pair popped, while 3 thieves steal, and nothing only when it holds no
+// pair; every pair taken once, with its bound
+ADS_TEST( "stealable-pq-bound-threads" )
+{
+ using Q = StealablePriorityQueue< std::uint64_t , std::uint64_t ,
+                                   std::less<> , std::uint64_t >;
+ const std::uint64_t n = 60000;
+ Q a;
+ std::mt19937_64 g( 89 );
+ for( std::uint64_t i = 0 ; i < n ; ++i )
+  a.push( g() , i * 7 % n , i );           // the bound of i, 7 i mod n
+ std::vector< std::atomic< int > > got( n );
+ for( auto & x : got )
+  x = 0;
+ std::atomic< bool > done{ false } , right{ true };
+ std::vector< std::thread > T;
+ for( int t = 0 ; t < 3 ; ++t )
+  T.emplace_back( [ & ] {
+   Q mine;
+   while( ! done.load() )
+    if( mine.steal( a ) > 0 ) {
+     if( ! mine.consistent() )
+      right = false;
+     mine.drain( [ & ]( Q::Entry && e ) {
+      if( e.bound != e.item * 7 % n )
+       right = false;
+      got[ e.item ].fetch_add( 1 ); } );
+     }
+    else
+     std::this_thread::yield();
+   } );
+ bool below = true;
+ for( ; ; ) {
+  const auto m = a.minBound();
+  const auto e = a.pop();
+  if( ! e )
+   break;
+  below = below && m && ( *m <= e->bound ) &&
+          ( e->bound == e->item * 7 % n );
+  got[ e->item ].fetch_add( 1 );
+  }
+ done = true;
+ for( auto & t : T )
+  t.join();
+ CHECK( below && right.load() && a.empty() && a.consistent() );
+ CHECK( std::all_of( got.begin() , got.end() ,
+                     []( const std::atomic< int > & x ) {
+                      return( x.load() == 1 ); } ) );
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/

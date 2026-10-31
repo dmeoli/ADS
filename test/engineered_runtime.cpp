@@ -1042,6 +1042,55 @@ ADS_TEST( "stealing-frontier-stop" )
   } );
  }
 
+// the stealing frontier with bounds on every executor, a branch-and-bound
+// of the random tree: the key of a child its depth, deepest first with the
+// order of the pushes as a tie, its bound its parent's plus 1 to 64; a
+// worker that finds the least bound of its queue above a cutoff drops the
+// whole queue by drain(), each pair drained with a bound not below it and
+// none left: every node pushed is popped or drained, once, and the search
+// ends
+ADS_TEST( "stealing-frontier-bound" )
+{
+ using Key = std::pair< std::int64_t , std::uint64_t >;
+ using F = StealingFrontier< Key , Node , std::less< Key > , std::uint64_t >;
+ onEach( []( auto & ex ) {
+  const std::size_t p = workersOf( ex );
+  for( std::uint64_t cutoff : { std::uint64_t( 40 ) , std::uint64_t( 400 ) ,
+                                ~std::uint64_t( 0 ) } ) {
+   F f( p , 11 );
+   std::atomic< std::uint64_t > pushed{ 1 } , popped{ 0 } , drained{ 0 } ,
+                                stamp{ 0 };
+   std::atomic< bool > right{ true };
+   f.push( 0 , Key( 0 , 0 ) , 0 , Node{ 5 , 0 } );
+   f.run( ex , [ & ]( std::size_t i ) {
+    while( auto e = f.pop( i ) ) {
+     popped.fetch_add( 1 );
+     const std::uint64_t b = e->bound;
+     children( e->item , 14 , 5 , [ & ]( Node v ) {
+      const std::uint64_t s = stamp.fetch_add( 1 );
+      f.push( i , Key( -std::int64_t( v.depth ) , ~s ) ,
+              b + 1 + ( v.key & 63 ) , v );
+      pushed.fetch_add( 1 );
+      } );
+     const auto m = f.minBound( i );
+     if( m && ( *m > cutoff ) ) {
+      drained.fetch_add( f.drain( i , [ & ]( F::Entry && d ) {
+       if( d.bound < *m )                   // below the least bound
+        right = false; } ) );
+      if( f.minBound( i ) || ! f.queue( i ).empty() )
+       right = false;                       // the drain left a pair
+      }
+     }
+    } );
+   CHECK( f.terminated() && right.load() );
+   CHECK( pushed.load() == popped.load() + drained.load() );
+   CHECK( ( cutoff != ~std::uint64_t( 0 ) ) ||
+          ( popped.load() == treeSize( 14 , 5 ) ) );
+   CHECK( f.leftovers( []( F::Entry && ) {} ) == 0 );
+   }
+  } );
+ }
+
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- MAIN ------------------------------------*/
 /*--------------------------------------------------------------------------*/
