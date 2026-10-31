@@ -558,6 +558,16 @@ PARALLEL = [
     ('cc', 'ADS::connectedComponents', [
         ('GAPBS', ['gapbs Afforest', 'gapbs ShiloachVishkin'])]),
     ('lcp', 'ADS::lcpArrayPhi', [('ParlayLib', ['parlay lcp'])]),
+    ('sssp', 'ADS::deltaStepping', [
+        ('GAPBS', ['gapbs DeltaStep']),
+        ('GBBS', ['gbbs DeltaStepping', 'gbbs wBFS']),
+        ('ParlayLib', ['parlay bucketed_dijkstra'])]),
+    ('build wavelet matrix', 'ADS::WaveletMatrix', [
+        ('sdsl', ['sdsl::wm_int']),
+        ('pwm', ['pwm wm_pc', 'pwm wm_ppc', 'pwm wm_dd_pc'])]),
+    ('build huffman wavelet tree', 'ADS::HuffmanWaveletTree', [
+        ('sdsl', ['sdsl::wt_huff_int']),
+        ('pwm', ['pwm wt_huff_pc', 'pwm wt_huff_dd_pc'])]),
     ('hash insert', 'ADS::ConcurrentCuckooTable', [
         ('oneTBB', ['tbb::concurrent_hash_map',
                     'tbb::concurrent_unordered_map']),
