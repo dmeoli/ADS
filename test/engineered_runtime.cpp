@@ -33,6 +33,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/parallel/Channels.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
@@ -315,7 +316,7 @@ ADS_TEST( "run-caller" )
 {
  CHECK( ! isRunCaller() );
  onEach( []( auto & ex ) {
-  using E = std::remove_reference_t< decltype( ex ) >;
+  using E [[maybe_unused]] = std::remove_reference_t< decltype( ex ) >;
   const std::size_t P = workersOf( ex );
   for( std::size_t p : { P , std::size_t( 1 ) } ) {
    std::vector< char > caller( p , 0 );
@@ -565,7 +566,7 @@ ADS_TEST( "feedback-farm" )
 ADS_TEST( "farm-indices" )
 {
  onEach( []( auto & ex ) {
-  using E = std::remove_reference_t< decltype( ex ) >;
+  using E [[maybe_unused]] = std::remove_reference_t< decltype( ex ) >;
 #if defined( ADS_WITH_FASTFLOW )
   constexpr bool ff = std::is_same_v< E , FastFlowExecutor >;
 #else
@@ -905,6 +906,140 @@ ADS_TEST( "owner-of" )
  CHECK( used.size() == 7 );
  CHECK( ownerOf( 10 , 4 , []( int k ) { return( std::size_t( k * 3 ) ); } )
         == 2 );
+ }
+
+namespace {
+
+/// the frontier of a best-first search of the nodes of the random tree
+using Frontier = StealingFrontier< std::uint64_t , Node >;
+
+/// the counts of a search on a frontier
+struct Counts {
+ std::atomic< std::uint64_t > pushed{ 0 } , popped{ 0 } , sum{ 0 } ,
+                              seen{ 0 };
+ std::atomic< bool > up{ true };            // the keys of each worker
+ };
+
+/// the best-first search of the random tree of depth d on the frontier F
+/// run by ex, the key of a child its parent's plus 1 to 64; the worker
+/// that pops the node `limit` of all stops the search there, or throws if
+/// `boom`
+template< class E >
+void search( E & ex , Frontier & F , std::uint32_t d , std::uint64_t seed ,
+             bool root , Counts & c , long limit = -1 , bool boom = false )
+{
+ if( root ) {
+  F.push( 0 , 0 , Node{ seed , 0 } );
+  c.pushed.fetch_add( 1 );
+  }
+ F.run( ex , [ & ]( std::size_t i ) {
+  std::uint64_t last = 0 , n = 0 , s = 0 , pushed = 0;
+  bool up = true;
+  while( auto e = F.pop( i ) ) {
+   ++n;
+   s += mix( e->item.key );
+   if( long( c.seen.fetch_add( 1 ) + 1 ) == limit ) {
+    c.popped.fetch_add( n );
+    c.sum.fetch_add( s );
+    c.pushed.fetch_add( pushed );
+    n = s = pushed = 0;
+    if( boom )
+     throw( std::runtime_error( "a node that throws" ) );
+    F.stop();
+    }
+   up = up && ( e->key >= last );
+   last = e->key;
+   children( e->item , d , seed , [ & ]( Node v ) {
+    F.push( i , e->key + 1 + ( v.key & 63 ) , v );
+    ++pushed;
+    } );
+   }
+  c.popped.fetch_add( n );
+  c.sum.fetch_add( s );
+  c.pushed.fetch_add( pushed );
+  if( ! up )
+   c.up = false;
+  } );
+ }
+
+/// the sum of the mixed keys of the nodes of the random tree, on one thread
+std::uint64_t treeSum( std::uint32_t d , std::uint64_t seed )
+{
+ std::vector< Node > stack{ Node{ seed , 0 } };
+ std::uint64_t s = 0;
+ while( ! stack.empty() ) {
+  const Node v = stack.back();
+  stack.pop_back();
+  s += mix( v.key );
+  children( v , d , seed , [ & ]( Node c ) { stack.push_back( c ); } );
+  }
+ return( s );
+ }
+
+}  // end( namespace )
+
+// the best-first search on the stealing frontier on every executor: every
+// node of the tree once, all of them pushed by the worker that holds the
+// root, so that the others start by stealing from one victim; a search
+// with no root, which ends at once; on one worker, the order of the keys
+// never decreases, the exact order of a sequential search
+ADS_TEST( "stealing-frontier" )
+{
+ onEach( []( auto & ex ) {
+  const std::size_t p = workersOf( ex );
+  for( std::uint64_t seed : { 1 , 2 } ) {
+   const std::uint32_t d = 14;
+   Frontier F( p , seed );
+   Counts c;
+   search( ex , F , d , seed , true , c );
+   CHECK( F.terminated() && ! F.stopped() );
+   CHECK( c.popped.load() == treeSize( d , seed ) );
+   CHECK( c.pushed.load() == c.popped.load() );
+   CHECK( c.sum.load() == treeSum( d , seed ) );
+   CHECK( ( p > 1 ) || c.up.load() );
+   CHECK( F.leftovers( []( Frontier::Entry && ) {} ) == 0 );
+   CHECK( ( p > 1 ) || ( F.steals() == 0 ) );
+   }
+  Frontier E( p );
+  Counts c;
+  search( ex , E , 5 , 3 , false , c );
+  CHECK( E.terminated() && ( c.popped.load() == 0 ) );
+  } );
+ CHECK_THROWS( Frontier( 0 ) , contract_violation );
+ Frontier F( 2 );
+ CHECK_THROWS( F.push( 2 , 0 , Node{ 0 , 0 } ) , contract_violation );
+ CHECK_THROWS( F.pop( 2 ) , contract_violation );
+ }
+
+// the stop of the search by a worker after 1, 50 and 3000 nodes, and an
+// exception thrown there, which run() throws again once the others have
+// stopped: every node pushed is either popped or handed to leftovers(),
+// once
+ADS_TEST( "stealing-frontier-stop" )
+{
+ onEach( []( auto & ex ) {
+  const std::size_t p = workersOf( ex );
+  for( bool boom : { false , true } )
+   for( long limit : { 1L , 50L , 3000L } ) {
+    Frontier F( p , 7 + limit );
+    Counts c;
+    bool threw = false;
+    try {
+     search( ex , F , 14 , 5 , true , c , limit , boom );
+     }
+    catch( const std::runtime_error & ) {
+     threw = true;
+     }
+    CHECK( threw == boom );
+    CHECK( F.stopped() );
+    std::uint64_t left = 0;
+    const std::size_t got = F.leftovers( [ & ]( Frontier::Entry && ) {
+     ++left; } );
+    CHECK( got == left );
+    CHECK( c.pushed.load() == c.popped.load() + left );
+    CHECK( F.leftovers( []( Frontier::Entry && ) {} ) == 0 );
+    }
+  } );
  }
 
 /*--------------------------------------------------------------------------*/

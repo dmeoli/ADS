@@ -11,19 +11,20 @@
 # with its portable products, the backends required, with the parallel gemm() #
 # on OpenBLAS under ThreadSanitizer, the executors of OpenMP, oneTBB and      #
 # FastFlow by the makefile, with the long-lived workers, their channels, the  #
-# farm and the mailbox, the sort and the runtime over the processes of Open   #
-# MPI and of MPICH, FastHash and the vector quicksort on AVX2 (and AVX-512    #
-# when the runner has it), ConcurrentFlatTable on the compare-and-swap of 16  #
-# bytes, the queues between threads, the event count, the MultiQueue, the     #
-# concurrent hash tables, the parallel operations of the trees by join, the   #
-# parallel builds of the succinct structures, the stepping algorithms of the  #
-# shortest paths and the runtime of the workers under ThreadSanitizer, and    #
-# FlatHashTable on its broadword fallback; it measures the coverage of the    #
-# tests, run four at a time and with the cases there for their scale alone    #
-# made smaller, and sends it to Coveralls; it builds the C++20 module ads and #
-# runs the test that imports it, by CMake and Ninja with Clang and GCC 15 on  #
-# Linux and the Clang of LLVM on macOS, and by the makefile with clang++ and  #
-# g++ 15.                                                                     #
+# farm and the mailbox, and the order of the includes of FastFlowExecutor.h,  #
+# the sort and the runtime over the processes of Open MPI and of MPICH,       #
+# FastHash and the vector quicksort on AVX2 (and AVX-512 when the runner has  #
+# it), ConcurrentFlatTable on the compare-and-swap of 16 bytes, the queues    #
+# between threads, the event count, the MultiQueue, the stealable priority    #
+# queue, the concurrent hash tables, the parallel operations of the trees by  #
+# join, the parallel builds of the succinct structures, the stepping          #
+# algorithms of the shortest paths and the runtime of the workers under       #
+# ThreadSanitizer, and FlatHashTable on its broadword fallback; it measures   #
+# the coverage of the tests, run four at a time and with the cases there for  #
+# their scale alone made smaller, and sends it to Coveralls; it builds the    #
+# C++20 module ads and runs the test that imports it, by CMake and Ninja with #
+# Clang and GCC 15 on Linux and the Clang of LLVM on macOS, and by the        #
+# makefile with clang++ and g++ 15.                                           #
 ###############################################################################
 
 name: CI
@@ -234,7 +235,8 @@ jobs:
           make -j4 BUILD=build-exec ADS_WITH_OPENMP=1 ADS_WITH_TBB=1 \
                ADS_WITH_FASTFLOW=1 FastFlow_ROOT="$RUNNER_TEMP/ff" \
                build-exec/engineered_parallel \
-               build-exec/engineered_speculative build-exec/engineered_runtime
+               build-exec/engineered_speculative \
+               build-exec/engineered_runtime test-fastflow-order
           for p in engineered_parallel engineered_speculative \
                    engineered_runtime; do
             for t in $(build-exec/$p -l); do build-exec/$p $t; done
@@ -264,6 +266,8 @@ jobs:
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o tsanq test/engineered_queues.cpp -pthread
           ./tsanq multi-queue-threads
+          ./tsanq stealable-pq
+          ./tsanq stealable-pq-threads
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan concurrent-flat-table-threads

@@ -110,6 +110,23 @@ void DaryHeap< T , Better , D , BottomUp >::clear( void )
  }
 
 template< class T , class Better , unsigned D , bool BottomUp >
+template< std::input_iterator I , std::sentinel_for< I > S >
+void DaryHeap< T , Better , D , BottomUp >::assign( I first , S last )
+{
+ std::vector< T , HugePageAllocator< T > > A( f_A.get_allocator() );
+ for( ; first != last ; ++first )
+  A.push_back( *first );
+ f_A.swap( A );                             // nothing thrown from here on
+ const std::size_t n = f_A.size();
+ if( n > 1 )
+  for( std::size_t i = ( n - 2 ) / D + 1 ; i-- > 0 ; ) {
+   T x = std::move( f_A[ i ] );
+   down( i , std::move( x ) );
+   }
+ ADS_INVARIANT( ordered() );
+ }
+
+template< class T , class Better , unsigned D , bool BottomUp >
 inline void DaryHeap< T , Better , D , BottomUp >::up( std::size_t i , T x )
 {
  while( i > 0 ) {

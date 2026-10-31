@@ -76,7 +76,17 @@
  *   push and then their pops, and the hold model of a search, each pop
  *   followed by the push of a greater key; and the mean and the maximum rank
  *   error of the relaxed ones in the hold model of 10^6 pairs (-b rank), from
- *   the times at which the operations return, replayed in their order.
+ *   the times at which the operations return, replayed in their order;
+ * - the branch-and-bound by best first of the complete binary trees of
+ *   2^18 - 1 and 2^21 - 1 nodes (-b bnb), the bound of a child that of its
+ *   parent plus 1 to 1024 (bnb), or minus 1 or 2 (bnb-dive, a search that
+ *   dives, its frontier small), with no evaluation of a node and with 256
+ *   rounds of mixing (about a microsecond), per node: the stealing
+ *   frontier of ADS, a queue per worker of which a thief takes about half,
+ *   against a std::priority_queue under a lock per worker, of which a
+ *   thief takes the back half of the heap under the lock, and against
+ *   tbb::concurrent_priority_queue and the MultiQueue of ADS shared by
+ *   all, which stop at the count of the nodes known in advance.
  * Each structure runs only if ADS_BENCH_WHO names it, or with no such
  * variable, and ADS_BENCH_LIST lists them [see Bench.h], so that run.sh
  * runs each in a process of its own. Each cell is the median of r runs,
@@ -90,7 +100,7 @@
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
  *            [ -b sort|patterns|merge|spmv|gemm|graphs|sssp|succinct|lcp|
- *                 hash|closed|pq|rank ]
+ *                 hash|closed|pq|rank|bnb ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -114,6 +124,7 @@
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/MultiQueue.h"
+#include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
@@ -289,6 +300,7 @@ namespace gapbsSssp {
 #include <cstdlib>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <numeric>
 #include <random>
 #include <span>
@@ -2387,6 +2399,293 @@ void ranks( const std::vector< std::size_t > & sizes , unsigned seed ,
   }
  }
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------- BRANCH-AND-BOUND ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a node of the tree of a branch-and-bound: its bound, the least first,
+/// its index in the complete binary tree and its depth
+struct BnbNode {
+ std::uint64_t id;
+ std::uint32_t depth;
+ };
+
+/// the mixing of SplitMix64
+inline std::uint64_t bnbMix( std::uint64_t x )
+{
+ x += 0x9E3779B97F4A7C15ull;
+ x = ( x ^ ( x >> 30 ) ) * 0xBF58476D1CE4E5B9ull;
+ x = ( x ^ ( x >> 27 ) ) * 0x94D049BB133111EBull;
+ return( x ^ ( x >> 31 ) );
+ }
+
+/// the evaluation of a node, w rounds of mixing, and its 2 children above
+/// the depth D, each with the bound of its parent plus 1 to 1024, or, if
+/// dive, minus 1 or 2 (a search that dives, its frontier small)
+template< class F >
+inline std::uint64_t bnbExpand( std::uint64_t key , const BnbNode & v ,
+                                std::uint32_t D , unsigned w , bool dive ,
+                                F && push )
+{
+ std::uint64_t h = v.id;
+ for( unsigned j = 0 ; j < w ; ++j )
+  h = bnbMix( h );
+ if( v.depth < D )
+  for( std::uint64_t j = 1 ; j <= 2 ; ++j ) {
+   const std::uint64_t c = 2 * v.id + j;
+   push( dive ? key - 1 - ( bnbMix( c ) & 1 )
+              : key + 1 + ( bnbMix( c ) & 1023 ) ,
+         BnbNode{ c , v.depth + 1 } );
+   }
+ return( h );
+ }
+
+/// the counts of a run of the benchmark, on lines of their own
+struct alignas( 128 ) BnbTally {
+ std::atomic< std::uint64_t > nodes{ 0 } , ids{ 0 } , sink{ 0 };
+ };
+
+/// the frontier of ADS, a stealable queue per worker
+struct BnbAds {
+ using F = ADS::StealingFrontier< std::uint64_t , BnbNode >;
+ std::unique_ptr< F > f;
+ void make( std::size_t p , std::uint64_t k0 ) {
+  f = std::make_unique< F >( p , 5 );
+  f->push( 0 , k0 , BnbNode{ 0 , 0 } );
+  }
+ template< class W >
+ void run( ADS::ThreadPool & pool , std::size_t p , W && work ) {
+  pool.run( p , [ & ]( std::size_t i ) {
+   auto pop = [ & ]( std::uint64_t & k , BnbNode & v ) {
+    auto e = f->pop( i );
+    if( ! e ) return( false );
+    k = e->key;
+    v = e->item;
+    return( true ); };
+   auto push = [ & ]( std::uint64_t k , BnbNode v ) { f->push( i , k , v );
+    };
+   work( pop , push ); } );
+  }
+ };
+
+/// a std::priority_queue under a lock per worker, as a heap on a vector:
+/// a thief that finds its queue empty locks a random victim of two pairs
+/// at least and moves the back half of its heap, itself a heap, into its
+/// own; the end by the counter of the workers at work, as in ADS
+struct BnbLocked {
+ using E = std::pair< std::uint64_t , BnbNode >;
+ struct Later {
+  bool operator()( const E & a , const E & b ) const {
+   return( a.first > b.first ); }
+  };
+ struct alignas( 128 ) Q {
+  std::mutex m;
+  std::vector< E > h;
+  std::atomic< std::size_t > n{ 0 };
+  std::uint64_t x = 0;
+  };
+ std::vector< std::unique_ptr< Q > > q;
+ alignas( 128 ) std::atomic< std::int64_t > active{ 0 };
+ void make( std::size_t p , std::uint64_t k0 ) {
+  q.clear();
+  for( std::size_t i = 0 ; i < p ; ++i ) {
+   q.push_back( std::make_unique< Q >() );
+   q.back()->x = 5 + i;
+   }
+  q[ 0 ]->h.push_back( E( k0 , BnbNode{ 0 , 0 } ) );
+  q[ 0 ]->n = 1;
+  active = std::int64_t( p );
+  }
+ bool steal( std::size_t i ) {
+  const std::size_t p = q.size();
+  ADS::Backoff b;
+  for( ; ; ) {
+   if( active.load( std::memory_order_acquire ) == 0 )
+    return( false );
+   if( p > 1 ) {
+    std::size_t v = std::size_t( bnbMix( q[ i ]->x++ ) % ( p - 1 ) );
+    v += ( v >= i );
+    Q & V = *q[ v ];
+    if( V.n.load( std::memory_order_relaxed ) >= 2 ) {
+     active.fetch_add( 1 , std::memory_order_acq_rel );
+     std::vector< E > got;
+     {
+      std::lock_guard< std::mutex > l( V.m );
+      const std::size_t m = V.h.size();
+      if( m >= 2 ) {
+       got.assign( V.h.begin() + std::ptrdiff_t( m / 2 ) , V.h.end() );
+       V.h.resize( m / 2 );
+       V.n.store( V.h.size() , std::memory_order_relaxed );
+       }
+      }
+     if( ! got.empty() ) {
+      std::make_heap( got.begin() , got.end() , Later() );
+      std::lock_guard< std::mutex > l( q[ i ]->m );
+      q[ i ]->h.swap( got );
+      q[ i ]->n.store( q[ i ]->h.size() , std::memory_order_relaxed );
+      return( true );
+      }
+     active.fetch_sub( 1 , std::memory_order_acq_rel );
+     }
+    }
+   b.pause();
+   }
+  }
+ template< class W >
+ void run( ADS::ThreadPool & pool , std::size_t p , W && work ) {
+  pool.run( p , [ & ]( std::size_t i ) {
+   Q & Me = *q[ i ];
+   auto pop = [ & ]( std::uint64_t & k , BnbNode & v ) {
+    for( ; ; ) {
+     {
+      std::lock_guard< std::mutex > l( Me.m );
+      if( ! Me.h.empty() ) {
+       std::pop_heap( Me.h.begin() , Me.h.end() , Later() );
+       k = Me.h.back().first;
+       v = Me.h.back().second;
+       Me.h.pop_back();
+       Me.n.store( Me.h.size() , std::memory_order_relaxed );
+       return( true );
+       }
+      }
+     active.fetch_sub( 1 , std::memory_order_acq_rel );
+     if( ! steal( i ) )
+      return( false );
+     } };
+   auto push = [ & ]( std::uint64_t k , BnbNode v ) {
+    std::lock_guard< std::mutex > l( Me.m );
+    Me.h.emplace_back( k , v );
+    std::push_heap( Me.h.begin() , Me.h.end() , Later() );
+    Me.n.store( Me.h.size() , std::memory_order_relaxed ); };
+   work( pop , push ); } );
+  }
+ };
+
+/// a queue shared by all the workers, A of the priority queues above: a
+/// worker that finds it empty stops when all the N nodes are done, which it
+/// knows from the counts of the others (the end known in advance, which
+/// favours the shared queues)
+template< class A >
+struct BnbShared {
+ A a;
+ std::uint64_t N = 0;
+ alignas( 128 ) std::atomic< std::uint64_t > done{ 0 };
+ void make( std::size_t p , std::uint64_t k0 ) {
+  a.drop();
+  a.make( p );
+  auto h = a.handle();
+  A::push( h , k0 , 0 );
+  done = 0;
+  }
+ ~BnbShared() { a.drop(); }
+ template< class W >
+ void run( ADS::ThreadPool & pool , std::size_t p , W && work ) {
+  pool.run( p , [ & ]( std::size_t ) {
+   auto h = a.handle();
+   std::uint64_t mine = 0;
+   auto pop = [ & ]( std::uint64_t & k , BnbNode & v ) {
+    ADS::Backoff b;
+    for( ; ; ) {
+     std::uint64_t x;
+     if( A::pop( h , k , x ) ) {
+      v = BnbNode{ x , std::uint32_t( std::bit_width( x + 1 ) - 1 ) };
+      if( ++mine == 64 ) {
+       done.fetch_add( mine , std::memory_order_relaxed );
+       mine = 0;
+       }
+      return( true );
+      }
+     if( mine > 0 ) {
+      done.fetch_add( mine , std::memory_order_relaxed );
+      mine = 0;
+      }
+     if( done.load( std::memory_order_relaxed ) == N )
+      return( false );
+     b.pause();
+     } };
+   auto push = [ & ]( std::uint64_t k , BnbNode v ) {
+    A::push( h , k , v.id ); };
+   work( pop , push ); } );
+  }
+ };
+
+/// the branch-and-bound of the complete binary tree of depth D, N nodes,
+/// on the structure S, with w rounds of evaluation per node, diving or not,
+/// per node
+template< class S >
+void bnbRun( const std::string & who , std::uint32_t D , unsigned w ,
+             bool dive , int r , ADS::ThreadPool & pool , S & s )
+{
+ if( ADS::bench::skip( who ) )
+  return;
+ const std::uint64_t N = ( std::uint64_t( 1 ) << ( D + 1 ) ) - 1;
+ if constexpr( requires { s.N; } )
+  s.N = N;
+ BnbTally t;
+ const std::size_t p = std::size_t( threads );
+ auto work = [ & ]( auto & pop , auto & push ) {
+  std::uint64_t k , n = 0 , ids = 0 , sink = 0;
+  BnbNode v;
+  while( pop( k , v ) ) {
+   ++n;
+   ids += v.id;
+   sink += bnbExpand( k , v , D , w , dive , push );
+   }
+  t.nodes.fetch_add( n , std::memory_order_relaxed );
+  t.ids.fetch_add( ids , std::memory_order_relaxed );
+  t.sink.fetch_add( sink , std::memory_order_relaxed );
+  };
+ ADS::bench::print( bench( std::string( dive ? "bnb-dive w" : "bnb w" ) +
+                           std::to_string( w ) ).c_str() ,
+                    "uint64" , std::size_t( N ) , who ,
+                    timeRuns( std::size_t( N ) , [ & ] {
+                     s.make( p , dive ? std::uint64_t( 1 ) << 62 : 0 );
+                     t.nodes = 0;
+                     t.ids = 0; } ,
+                     [ & ] { s.run( pool , p , work ); } , r ,
+                     [ & ] { return( ( t.nodes.load() == N ) &&
+                                     ( t.ids.load() == N * ( N - 1 ) / 2 ) );
+                      } ) );
+ }
+
+/// the branch-and-bound of trees of 2^(D+1) - 1 nodes by best first with
+/// the stealing frontier of ADS against a locked priority queue per worker
+/// with half stealing, the queue of oneTBB and the MultiQueue of ADS, both
+/// shared; with no evaluation and with 256 rounds of mixing per node, and
+/// with the bounds that grow or that dive
+void bnb( const std::vector< std::uint32_t > & depths , int r ,
+          Executors & X )
+{
+ if( ! runs( "pool" ) )
+  return;
+ auto & pool = X.pool();
+ for( bool dive : { false , true } )
+  for( std::uint32_t D : depths )
+   for( unsigned w : { 0u , 256u } ) {
+    {
+     BnbAds s;
+     bnbRun( "ADS::StealingFrontier" , D , w , dive , r , pool , s );
+     bnbRun( "ADS::StealingFrontier A/A" , D , w , dive , r , pool , s );
+    }
+    {
+     BnbLocked s;
+     bnbRun( "std::priority_queue locked, half stolen" , D , w , dive , r ,
+             pool , s );
+    }
+#if defined( ADS_HAS_TBB )
+    {
+     BnbShared< TbbPQ > s;
+     bnbRun( "tbb::concurrent_priority_queue" , D , w , dive , r , pool ,
+             s );
+    }
+#endif
+    {
+     BnbShared< AdsMQ< 2 , 16 > > s;
+     bnbRun( "ADS::MultiQueue" , D , w , dive , r , pool , s );
+    }
+    }
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/
@@ -2451,6 +2750,8 @@ int main( int argc , char ** argv )
   priority( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "rank" ) )
   ranks( { 1000000 } , o.seed , X );
+ if( only.empty() || ( only == "bnb" ) )
+  bnb( { 17 , 20 } , o.runs , X );
  }
 
 /*--------------------------------------------------------------------------*/

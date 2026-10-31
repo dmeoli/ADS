@@ -42,7 +42,12 @@
  * `popen()` of `cat` on its siblings in `/sys`) at the construction of
  * each `ParallelFor`, i.e., of each executor, which takes most of a second
  * on a machine of hundreds of processors, while the executor is otherwise
- * built in about a millisecond.
+ * built in about a millisecond. These macros reach FastFlow only if the
+ * header comes before every header of FastFlow, which reads them when its
+ * `ff/config.hpp` is first included: a program that includes a header of
+ * FastFlow first does not compile, and the error of the preprocessor
+ * says why, unless it has defined `NUM_CORES`, `NUM_REAL_CORES` and
+ * `NO_DEFAULT_MAPPING` (or `ADS_FASTFLOW_MAPPING`) itself before them.
  *
  * The contracts [see `Contract.h`]: \f$ p \ge 1 \f$; one thread at a time
  * calls the executor (the others wait on a mutex); an exception thrown by
@@ -72,6 +77,20 @@
                       /* self-identification: #endif constant */
 
 #if defined( ADS_WITH_FASTFLOW )
+
+// the macros below reach FastFlow only if none of its headers came first:
+// ff/config.hpp reads NUM_CORES and NUM_REAL_CORES at its first inclusion,
+// and the headers that read NO_DEFAULT_MAPPING include it before; with
+// FF_CONFIG_HPP defined they are read already, and the executor would pin
+// its threads and count the cores by a shell at each ParallelFor
+#if defined( FF_CONFIG_HPP ) && ( ! defined( NUM_CORES ) || \
+    ! defined( NUM_REAL_CORES ) || \
+    ( ! defined( ADS_FASTFLOW_MAPPING ) && ! defined( NO_DEFAULT_MAPPING ) ) )
+ #error "ADS/parallel/FastFlowExecutor.h included after a header of \
+FastFlow: include it before any <ff/...> header (or define NUM_CORES, \
+NUM_REAL_CORES and NO_DEFAULT_MAPPING before them), since FastFlow reads \
+these macros when its ff/config.hpp is first included"
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/

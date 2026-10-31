@@ -27,6 +27,7 @@
 #include "ADS/concurrent/MPSCQueue.h"
 #include "ADS/concurrent/MultiQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
+#include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/queue/LinkedQueue.h"
@@ -38,6 +39,7 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -45,6 +47,7 @@
 #include <random>
 #include <ranges>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -904,6 +907,335 @@ ADS_TEST( "multi-queue-threads" )
                        []( const std::atomic< int > & x ) {
                         return( x.load() == 1 ); } ) );
    }
+ }
+
+/// an item whose copies throw once the fuse, if lit, burns down
+struct Fused {
+ static inline int fuse = -1;               // copies left, -1 never
+ std::uint64_t v = 0;
+ Fused( void ) = default;
+ explicit Fused( std::uint64_t x ) : v( x ) {}
+ Fused( Fused && ) noexcept = default;
+ Fused & operator=( Fused && ) noexcept = default;
+ Fused( const Fused & o ) : v( o.v ) { burn(); }
+ Fused & operator=( const Fused & o ) {
+  burn();
+  v = o.v;
+  return( *this );
+  }
+ static void burn( void ) {
+  if( fuse == 0 )
+   throw( std::runtime_error( "fused" ) );
+  if( fuse > 0 )
+   --fuse;
+  }
+ };
+
+// StealablePriorityQueue on one thread: the empty queue and the queue of
+// one pair, which give nothing; the contracts; the exact order against a
+// multiset under pushes, pops, offers taken back and steals; the half
+// stolen, interleaved in the keys, and the pairs dealt again when the two
+// heaps differ too much; copies that throw while an offer is taken back and
+// while a steal deals the pairs, with no pair lost
+ADS_TEST( "stealable-pq" )
+{
+ using Q = StealablePriorityQueue< std::uint64_t , std::uint64_t >;
+ {
+  Q a , b;
+  CHECK( a.empty() && ! a.pop() && a.consistent() && ! a.stealable() );
+  CHECK_THROWS( a.top() , contract_violation );
+  CHECK_THROWS( a.steal( a ) , contract_violation );
+  CHECK( b.steal( a ) == 0 );
+  a.push( 5 , 0 );
+  CHECK( ! a.stealable() && ( b.steal( a ) == 0 ) );
+  a.serve();
+  CHECK( ! a.offering() && ( a.size() == 1 ) );
+  CHECK_THROWS( a.steal( b ) , contract_violation );
+  CHECK( ( a.top().key == 5 ) && ( a.pop()->key == 5 ) && a.empty() );
+  }
+ {
+  std::mt19937_64 g( 71 );
+  Q a , b;
+  std::multiset< std::pair< std::uint64_t , std::uint64_t > > R;
+  std::uint64_t next = 0 , stolen = 0;
+  bool exact = true , found = true , half = true , sorted = true;
+  for( int r = 0 ; r < 200000 ; ++r ) {
+   const unsigned c = unsigned( g() % 16 );
+   if( c < 8 ) {
+    const std::uint64_t k = g() % 1000;
+    a.push( k , next );
+    R.insert( { k , next++ } );
+    }
+   else if( c < 15 ) {
+    const auto e = a.pop();
+    if( R.empty() ) {
+     exact = exact && ! e;
+     continue;
+     }
+    exact = exact && e && ( e->key == R.begin()->first );
+    const auto it = e ? R.find( { e->key , e->item } ) : R.end();
+    found = found && ( it != R.end() );
+    if( it != R.end() )
+     R.erase( it );
+    }
+   else {
+    const std::size_t m = a.size();
+    if( b.steal( a ) == 0 ) {              // an old offer, or a request
+     a.serve();
+     const std::size_t s = ( g() & 1 ) ? b.steal( a ) : 0;
+     stolen += ( s > 0 );
+     if( s > 0 )                           // claimed, or taken back later
+      half = half && ( 5 * s >= m ) && ( 5 * s <= 4 * m ) &&
+             ( s + a.size() == m );
+     }
+    std::uint64_t last = 0;
+    b.drain( [ & ]( Q::Entry && e ) {
+     sorted = sorted && ( e.key >= last );
+     last = e.key;
+     const auto it = R.find( { e.key , e.item } );
+     found = found && ( it != R.end() );
+     if( it != R.end() )
+      R.erase( it );
+     } );
+    }
+   }
+  CHECK( exact && found && half && sorted && a.consistent() );
+  CHECK( stolen > 1000 );
+  CHECK( a.size() == R.size() );
+  }
+ {
+  Q a , b;
+  for( std::uint64_t k = 0 ; k < 1000 ; ++k )
+   a.push( k , k );
+  CHECK( a.halves() == std::make_pair( std::size_t( 500 ) ,
+                                       std::size_t( 500 ) ) );
+  CHECK( a.stealable() && ( b.steal( a ) == 0 ) );
+  a.serve();
+  CHECK( a.offering() && ( a.size() == 1000 ) && a.stealable() );
+  CHECK( a.top().key == 0 );               // the least pair stays
+  CHECK( b.steal( a ) == 500 );
+  CHECK( ( a.size() == 500 ) && ( b.size() == 500 ) && ! a.offering() );
+  std::size_t low = 0;                     // the least 100 keys, shared
+  for( std::uint64_t k = 0 ; k < 100 ; ++k )
+   low += ( b.top().key == k ) ? ( b.pop() , 1 ) : 0;
+  CHECK( ( low >= 30 ) && ( low <= 70 ) && b.consistent() );
+  Q c;                                     // a holds one heap: dealt again
+  CHECK( a.halves().second == 0 || a.halves().first == 0 );
+  CHECK( c.steal( a ) == 0 );
+  a.serve();
+  CHECK( c.steal( a ) == 250 && ( a.size() == 250 ) );
+  std::vector< std::uint64_t > keys;
+  while( auto e = a.pop() )
+   keys.push_back( e->key );
+  CHECK( std::adjacent_find( keys.begin() , keys.end() ,
+                             std::greater_equal<>() ) == keys.end() );
+  CHECK( ( keys.size() == 250 ) && a.empty() && ! a.stealable() );
+  }
+ {
+  Q a , b;                                 // the offer taken back
+  for( std::uint64_t k = 0 ; k < 10 ; ++k )
+   a.push( 9 - k , k );
+  CHECK( b.steal( a ) == 0 );
+  a.serve();
+  CHECK( a.offering() );
+  bool order = true;
+  for( std::uint64_t k = 0 ; k < 10 ; ++k ) {
+   const auto e = a.pop();
+   order = order && e && ( e->key == k );
+   }
+  CHECK( order && ! a.pop() && ! a.offering() && ( b.steal( a ) == 0 ) );
+  }
+ {
+  using F = StealablePriorityQueue< std::uint64_t , Fused >;
+  F a , b;
+  for( std::uint64_t k = 0 ; k < 64 ; ++k )
+   a.push( k , Fused( k ) );
+  CHECK( b.steal( a ) == 0 );
+  a.serve();
+  CHECK( a.offering() && ( a.size() == 64 ) );
+  bool threw = false;
+  std::uint64_t sum = 0 , n = 0;
+  Fused::fuse = 3;                         // a copy of the take-back throws
+  try {
+   for( ; ; ) {
+    auto e = a.pop();
+    if( ! e )
+     break;
+    sum += e->key;
+    ++n;
+    }
+   }
+  catch( const std::runtime_error & ) {
+   threw = true;
+   }
+  Fused::fuse = -1;
+  CHECK( threw && a.offering() && ( a.size() + n == 64 ) );
+  CHECK( a.consistent() );
+  for( std::uint64_t k = 0 ; k < 64 ; ++k )
+   a.push( 64 + k , Fused( 64 + k ) );
+  CHECK( b.steal( a ) > 0 );               // the offer still there
+  const std::size_t s = b.size();
+  F c;
+  b.serve();                               // nothing asked: no offer
+  CHECK( ! b.offering() && ( c.steal( b ) == 0 ) );
+  Fused::fuse = 1;                         // the deal of the steal throws
+  b.serve();
+  bool dealt = true;
+  try {
+   c.steal( b );
+   }
+  catch( const std::runtime_error & ) {
+   dealt = false;
+   }
+  Fused::fuse = -1;
+  CHECK( ! dealt && ( b.size() + c.size() == s ) && c.consistent() );
+  auto take = [ & ]( F::Entry && e ) {
+   sum += e.key;
+   ++n;
+   CHECK( e.item.v == e.key );
+   };
+  a.drain( take );
+  b.drain( take );
+  c.drain( take );
+  CHECK( ( n == 128 ) && ( sum == 127 * 128 / 2 ) );
+  }
+ }
+
+// StealablePriorityQueue on threads: an owner that only pops, in strictly
+// increasing order while thieves steal; owners that pop and push children
+// of greater keys, their order never decreasing, with 1, 3 and 7 thieves on
+// the one victim; a race of the owner and a thief for the last pair of an
+// offer, many times: every pair taken once
+ADS_TEST( "stealable-pq-threads" )
+{
+ using Q = StealablePriorityQueue< std::uint64_t , std::uint64_t >;
+ for( int P : { 1 , 3 , 7 } ) {
+  const std::uint64_t n = 100000;
+  Q a;
+  std::vector< std::uint64_t > K( n );
+  std::iota( K.begin() , K.end() , std::uint64_t( 0 ) );
+  std::mt19937_64 g( 73 + std::uint64_t( P ) );
+  std::shuffle( K.begin() , K.end() , g );
+  for( std::uint64_t k : K )
+   a.push( k , k );
+  std::vector< std::atomic< int > > got( n );
+  for( auto & x : got )
+   x = 0;
+  std::atomic< bool > done{ false } , sorted{ true };
+  std::vector< std::thread > T;
+  for( int t = 0 ; t < P ; ++t )
+   T.emplace_back( [ & ] {
+    Q mine;
+    while( ! done.load() ) {
+     if( mine.steal( a ) == 0 ) {
+      std::this_thread::yield();
+      continue;
+      }
+     std::uint64_t last = 0;
+     bool first = true;
+     mine.drain( [ & ]( Q::Entry && e ) {
+      if( ! first && ( e.key <= last ) )
+       sorted = false;
+      first = false;
+      last = e.key;
+      got[ e.item ].fetch_add( 1 ); } );
+     }
+    } );
+  bool up = true;
+  std::uint64_t last = 0;
+  bool first = true;
+  while( auto e = a.pop() ) {
+   up = up && ( first || ( e->key > last ) );
+   first = false;
+   last = e->key;
+   got[ e->item ].fetch_add( 1 );
+   }
+  done = true;
+  for( auto & t : T )
+   t.join();
+  CHECK( up && sorted.load() && a.empty() );
+  CHECK( std::all_of( got.begin() , got.end() ,
+                      []( const std::atomic< int > & x ) {
+                       return( x.load() == 1 ); } ) );
+  }
+ for( int P : { 1 , 3 , 7 } ) {
+  const std::uint64_t n = 60000;           // pairs pushed in all
+  Q a;
+  std::vector< std::atomic< int > > got( n );
+  for( auto & x : got )
+   x = 0;
+  std::atomic< bool > done{ false };
+  std::vector< std::thread > T;
+  for( int t = 0 ; t < P ; ++t )
+   T.emplace_back( [ & ] {
+    Q mine;
+    while( ! done.load() )
+     if( mine.steal( a ) > 0 )
+      mine.drain( [ & ]( Q::Entry && e ) {
+       got[ e.item ].fetch_add( 1 ); } );
+     else
+      std::this_thread::yield();
+    } );
+  std::mt19937_64 g( 79 + std::uint64_t( P ) );
+  std::uint64_t pushed = 0 , last = 0;
+  bool up = true;
+  a.push( 0 , pushed++ );
+  while( pushed < n ) {
+   const auto e = a.pop();
+   if( ! e ) {                             // all stolen: a new root
+    a.push( last , pushed++ );
+    continue;
+    }
+   up = up && ( e->key >= last );
+   last = e->key;
+   got[ e->item ].fetch_add( 1 );
+   for( int j = 0 ; ( j < 2 ) && ( pushed < n ) ; ++j )
+    a.push( e->key + 1 + g() % 64 , pushed++ );
+   }
+  while( auto e = a.pop() ) {
+   up = up && ( e->key >= last );
+   last = e->key;
+   got[ e->item ].fetch_add( 1 );
+   }
+  done = true;
+  for( auto & t : T )
+   t.join();
+  CHECK( up && a.empty() );
+  CHECK( std::all_of( got.begin() , got.end() ,
+                      []( const std::atomic< int > & x ) {
+                       return( x.load() == 1 ); } ) );
+  }
+ {
+  Q a;
+  const int rounds = 20000;
+  std::atomic< int > round{ -1 } , acked{ -1 } , stolen{ 0 };
+  std::thread t( [ & ] {
+   Q mine;
+   for( int r = 0 ; r < rounds ; ++r ) {
+    while( round.load() < r ) {}
+    std::size_t s = 0;
+    for( int i = 0 ; ( i < 64 ) && ( s == 0 ) && a.stealable() ; ++i )
+     s = mine.steal( a );
+    stolen.fetch_add( int( s ) );
+    mine.drain( []( Q::Entry && ) {} );
+    acked.store( r );
+    }
+   } );
+  int taken = 0;
+  for( int r = 0 ; r < rounds ; ++r ) {
+   a.push( 2 * std::uint64_t( r ) , 0 );
+   a.push( 2 * std::uint64_t( r ) + 1 , 1 );
+   round.store( r );
+   while( a.pop() )
+    ++taken;
+   while( acked.load() < r ) {}
+   while( a.pop() )                        // an offer made after the pops
+    ++taken;
+   }
+  t.join();
+  CHECK( taken + stolen.load() == 2 * rounds );
+  CHECK( a.empty() && ! a.offering() );
+  }
  }
 
 }  // end( namespace )

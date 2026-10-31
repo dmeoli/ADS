@@ -566,6 +566,8 @@ engineered_queues  mpmc-queue              coda limitata, molti a molti
 engineered_queues  multi-queue             MultiQueue, esatta con una coda
 engineered_queues  multi-queue-rank        errori di rango contro la teoria
 engineered_queues  multi-queue-threads     MultiQueue su più thread
+engineered_queues  stealable-pq            coda di priorità da cui si ruba metà
+engineered_queues  stealable-pq-threads    furti, ordine esatto e ultima coppia
 
 # the engineered memory beyond the arena and the pool
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura
@@ -1760,6 +1762,8 @@ engineered_runtime  farm-indices         indici dei lavoratori e del master
 engineered_runtime  mailbox-termination  terminazione su alberi a caso
 engineered_runtime  mailbox-stop         arresto e messaggi rimasti, una volta
 engineered_runtime  mailbox-full         invii che non aspettano, code piene
+engineered_runtime  stealing-frontier    ricerca best-first con i furti
+engineered_runtime  stealing-frontier-stop arresto, eccezioni e coppie rimaste
 engineered_runtime  owner-of             proprietario di una chiave
 
 # the balanced trees based on join and the augmented maps, beyond the book

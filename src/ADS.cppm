@@ -90,6 +90,7 @@ module;
 #include "ADS/concurrent/MPSCQueue.h"
 #include "ADS/concurrent/MultiQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
+#include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/dictionary/AdaptiveRadixTree.h"
 #include "ADS/dictionary/BucketCuckooTable.h"
@@ -783,6 +784,10 @@ export namespace ADS {
 
  // ADS/concurrent/SPSCQueue.h
  using ADS::SPSCQueue;
+
+ // ADS/concurrent/StealablePriorityQueue.h
+ using ADS::StealablePriorityQueue;
+ using ADS::StealingFrontier;
 
  // ADS/concurrent/WorkStealingDeque.h
  using ADS::WorkStealingDeque;

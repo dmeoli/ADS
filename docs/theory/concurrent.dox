@@ -9,14 +9,15 @@
  the structures that several threads change at once without a lock, or with
  the fewest locks: the queues between producers and consumers, the deque of
  work stealing, the union-find and the hash tables shared by threads, the
- relaxed priority queue, and the event count on which a thread sleeps until
- a condition holds. This page
+ relaxed priority queue, the event count on which a thread sleeps until a
+ condition holds, and the priority queues of the workers of a search that
+ the idle workers steal from. This page
  collects what the headers take for granted: the model of the threads and of
  the memory and the meaning of correct and of nonblocking (see
  \ref theory_concurrent_notation), the structures and the cost of their
  operations (see \ref theory_concurrent_real), and, for each family, the
  property on which its correctness rests and the argument behind its cost
- (from \ref theory_concurrent_queues to \ref theory_concurrent_wait). The
+ (from \ref theory_concurrent_queues to \ref theory_concurrent_spq). The
  pseudocode of each operation is instead on the page of its header, in the
  comment of its function, together with the paper that it follows, and with
  the order of memory of each access to a shared word written as a comment.
@@ -149,6 +150,13 @@
      <td>blocking (a lock per queue, taken only at the first try)</td>
      <td>\f$ O( \log m ) \f$ amortized on a queue of \f$ m \f$ pairs,
          \f$ c / ( c - 1 ) \f$ draws expected; relaxed</td></tr>
+ <tr><td><tt>StealablePriorityQueue</tt></td><td>one owner, many
+     thieves</td>
+     <td>wait-free for the owner, lock-free steal that waits a bounded time
+         for an answer</td>
+     <td>\f$ O( \log m ) \f$ for the owner, no read-modify-write; two
+         exchanges per steal, \f$ O( 1 ) \f$ or \f$ O( m ) \f$ for the
+         answer of the owner</td></tr>
  <tr><td><tt>EventCount</tt></td><td>any</td>
      <td>a waiter sleeps, a notifier never waits</td>
      <td>a fence and a read when nobody waits</td></tr>
@@ -583,6 +591,112 @@
  \f$ 2^{S+1} \f$ pauses gives the processor back. `spinning()` tells when
  the spinning is over, which is the time to move to the event count above.
 
+ \section theory_concurrent_spq Priority queues that are stolen
+
+ A best-first search on \f$ p \f$ workers (a branch-and-bound by bounds, an
+ A* search) may keep its OPEN in one queue shared by all, exact under a
+ lock or relaxed as the MultiQueue (see \ref theory_concurrent_mq), or in a
+ queue per worker, from which the idle workers steal. The second keeps the
+ order of each worker exact, which a search needs when it counts the nodes
+ of each worker against a limit, or when it wants the same run from the
+ same steals; it loses the global order, and a worker may expand a node
+ worse than the best of another, a loss that the steals keep small when
+ they move good nodes. `StealablePriorityQueue` is such a queue, and
+ `StealingFrontier` the \f$ p \f$ of them with the termination; the choices
+ are three: how many pairs a thief takes, which ones, and at what price for
+ the owner.
+
+ <em>How many.</em> Half of them, as in the queues of Hendler and Shavit
+ and in the priority queues stolen by Wimmer et al.: a steal of one pair
+ sends the thief back at once, while a steal of half spreads the pairs made
+ by one worker over \f$ p \f$ workers in about \f$ \log_2 p \f$ rounds of
+ steals. The Stealing Multi-Queue of Postnikova et al. steals instead a
+ batch of a few of the best tasks, which its owner sets apart in a buffer
+ and skips in the meantime, so that the order of its owner is relaxed by
+ that buffer.
+
+ <em>Which ones.</em> The better half sends the victim, which made those
+ pairs, to worse ones, and the next steal brings the good pairs back the
+ other way; the worse half gives the thief the pairs that a best-first
+ search expands last, and that a bound improved in the meantime is likely to
+ prune. An interleaved half gives each worker a share of the best pairs as
+ of the others: the balancing of Tschöke, Lüling and Monien is best when
+ each of the \f$ p \f$ processors holds one of the \f$ p \f$ subproblems
+ of least bound, and so balances the least bounds of the heaps besides
+ their sizes, Karp and Zhang send each child to a random processor, and
+ the randomized priority queue of Sanders spreads its items at random over
+ the processors, for the same reason. The queue deals its pairs to two
+ heaps \f$ H_0 \f$ and \f$ H_1 \f$ (a push into the smaller one, into each
+ in turn when they are as large), so that the pairs pushed one after the
+ other, e.g., the children of a node, go to both, and either heap holds,
+ for every range of keys, about half of the pairs in it; a thief takes the
+ heap whose least pair is not the least of the queue, so that the owner
+ keeps its best pair and its next pop.
+
+ <em>At what price.</em> A queue whose pairs a thief may take at any time
+ makes its owner race the thieves at each pop, and by the laws of order of
+ Attiya et al. a linearizable pop of such an object needs a
+ read-modify-write or a fence, as the `take()` of the deque of Chase and Lev
+ (Lemma 3). The heaps of `StealablePriorityQueue` are instead read by their
+ owner alone: a thief raises the flag `hungry` of the queue, which the owner
+ reads with no order at its next push or pop (or at `serve()`), and the
+ owner answers by moving a heap into the <em>offer</em>, an atomic pointer
+ published with release, which a thief claims by an exchange with null, the
+ receiver-initiated steals of the private deques of Acar, Charguéraud and
+ Rainey. The common case of the owner costs so no read-modify-write and no
+ fence, and a thief waits for the next operation of the owner, a few
+ microseconds of spinning at most before it tries another victim.
+
+ <em>Lemma 10 (the order of the owner).</em> Let the owner take the offer
+ back, by an exchange with null, before a pop whose two heaps are empty or
+ whose least key is greater than the least key \f$ k_O \f$ of the offer.
+ Then each pop of the owner returns a pair of least key among those that
+ the owner holds at the moment of the pop, the pairs of an offer not yet
+ claimed included.
+
+ Indeed, the heaps of the owner change only by its own operations, and the
+ offer, once published, does not change until one exchange takes it: a
+ thief or the owner, never both, since the exchanges on one word are
+ totally ordered and only the first finds the pointer. If the least local
+ key is not greater than \f$ k_O \f$, the local pair is a least pair of
+ all, whether a thief claims the offer before the pop or not; otherwise the
+ owner exchanges, and either it gets the offer back and pops from the pairs
+ joined, or a thief had claimed it before, and the pairs were no longer of
+ the owner when it popped. Each pop is thus exact at the moment of its
+ exchange, or of its last change of the heaps; the only pairs that leave
+ the owner otherwise are those of an offer, which is a choice of the owner
+ that keeps its least pair.
+
+ <em>Lemma 11 (the end of the search).</em> In `StealingFrontier`, let the
+ counter \f$ C \f$ start at \f$ p \f$, let a worker subtract 1 when its pop
+ finds its heaps and its offer empty, and a thief add 1 before the exchange
+ that claims an offer and subtract 1 if the exchange fails, and let only a
+ worker that holds a pair (or the program before the run) push. Then no
+ pair exists when \f$ C = 0 \f$, and none exists afterwards.
+
+ Every pair is in the heaps or in the offer of a worker that has not left
+ \f$ C \f$, since a worker leaves only with nothing, or in the offer claimed
+ by a thief, which entered \f$ C \f$ before its exchange. The victim that
+ finds its offer claimed has read the null of the exchange of the thief, an
+ exchange with release read by one with acquire, so that the entry of the
+ thief happens before the exit of the victim, and \f$ C \f$, totally ordered
+ by its modifications, cannot reach 0 in between; a pair in transit is
+ therefore always counted. When \f$ C = 0 \f$ no pair exists, and no pair
+ can be created, since only a worker that holds one pushes; the thieves
+ that still try enter and leave \f$ C \f$ with nothing to find, and see
+ \f$ C = 0 \f$ again.
+
+ The costs, for \f$ m \f$ pairs: a push and a pop \f$ O( \log m ) \f$ on a
+ 4-ary heap of about \f$ m / 2 \f$ pairs, half as deep in levels of the
+ binary heap, plus a load of the flag; the answer to a thief
+ \f$ O( 1 ) \f$, the store of a pointer, unless the two heaps differ by more
+ than a factor of 4 (the heap left after a steal, before the pushes refill
+ the other), when the owner deals all its pairs again to two heaps in
+ \f$ O( m ) \f$; the steal two exchanges for the thief and the deal of the
+ \f$ s \f$ pairs taken to its own two heaps, \f$ O( s ) \f$, by the heap
+ construction of Floyd. A pair is copied only by a deal; the pairs of an
+ offer move with their heap, by its pointer.
+
  \section theory_concurrent_refs References
 
  \see T. E. Anderson, The performance of spin lock alternatives for
@@ -670,6 +784,36 @@
  \see E. Ladan-Mozes, I.-T. A. Lee, D. Vyukov, Location-based memory
       fences, ACM Symposium on Parallelism in Algorithms and Architectures
       (SPAA), 75-84, 2011, doi:10.1145/1989493.1989503
+ \see D. Hendler, N. Shavit, Non-blocking steal-half work queues, ACM
+      Symposium on Principles of Distributed Computing (PODC), 280-289,
+      2002, doi:10.1145/571825.571876
+ \see U. A. Acar, A. Charguéraud, M. Rainey, Scheduling parallel programs
+      by work stealing with private deques, ACM SIGPLAN Symposium on
+      Principles and Practice of Parallel Programming (PPoPP), 219-228,
+      2013, doi:10.1145/2442516.2442538
+ \see H. Attiya, R. Guerraoui, D. Hendler, P. Kuznetsov, M. M. Michael,
+      M. Vechev, Laws of order: expensive synchronization in concurrent
+      algorithms cannot be eliminated, ACM SIGPLAN-SIGACT Symposium on
+      Principles of Programming Languages (POPL), 487-498, 2011,
+      doi:10.1145/1926385.1926442
+ \see M. Wimmer, F. Versaci, J. L. Träff, D. Cederman, P. Tsigas, Data
+      structures for task-based priority scheduling, ACM SIGPLAN Symposium
+      on Principles and Practice of Parallel Programming (PPoPP), 379-380,
+      2014, doi:10.1145/2555243.2555278
+ \see A. Postnikova, N. Koval, G. Nadiradze, D. Alistarh, Multi-queues can
+      be state-of-the-art priority schedulers, ACM SIGPLAN Symposium on
+      Principles and Practice of Parallel Programming (PPoPP), 353-367,
+      2022, doi:10.1145/3503221.3508432
+ \see S. Tschöke, R. Lüling, B. Monien, Solving the traveling salesman
+      problem with a distributed branch-and-bound algorithm on a 1024
+      processor network, International Parallel Processing Symposium
+      (IPPS), 182-189, 1995, doi:10.1109/IPPS.1995.395930
+ \see R. M. Karp, Y. Zhang, Randomized parallel algorithms for backtrack
+      search and branch-and-bound computation, Journal of the ACM 40(3),
+      765-789, 1993, doi:10.1145/174130.174145
+ \see P. Sanders, Randomized priority queues for fast parallel access,
+      Journal of Parallel and Distributed Computing 49(1), 86-97, 1998,
+      doi:10.1006/jpdc.1998.1429
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File concurrent.dox -------------------------*/

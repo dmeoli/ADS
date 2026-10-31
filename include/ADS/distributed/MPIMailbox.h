@@ -736,6 +736,19 @@ class MPIMailbox : public detail::MPIMailboxCore< Msg > {
  /// the calls `f( x )` on the messages received, and their number; nothing
  /// after the stop
  ///
+ /// Each message is passed as `const Msg &`, where `Mailbox::poll()` of the
+ /// workers in the shared memory [see `Mailbox.h`] passes `Msg &&`: there a
+ /// message is an object that the channel moves out of its queue, which may
+ /// own memory (a vector, the state of a node), and \f$ f \f$ takes it over
+ /// with no copy; here the messages of a batch are the bytes that
+ /// `MPI_Recv` wrote into a vector of `Msg` of the mailbox (and those to
+ /// itself are in another one), read in place: a move of a trivially
+ /// copyable message would only copy it, and the vector is used again by
+ /// the next batch, hence \f$ f \f$ copies what it keeps. The mailbox of
+ /// the messages that are not trivially copyable passes instead the
+ /// message rebuilt by `MPICodec< Msg >::decode()`, a temporary that
+ /// \f$ f \f$ may take by value or as `Msg &&`.
+ ///
  /// In pseudocode (beyond the book), \f$ r \f$ the messages received:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}

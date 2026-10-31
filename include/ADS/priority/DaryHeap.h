@@ -71,6 +71,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <iterator>
 #include <utility>
 #include <vector>
 
@@ -163,6 +164,26 @@ class DaryHeap {
 
  /// removes all the items
  void clear( void );
+
+ /// the items of \f$ [ \mathit{first} , \mathit{last} ) \f$ in place of
+ /// those of the heap, arranged by the construction of Floyd in
+ /// \f$ O( n ) \f$ time for \f$ n \f$ items; the heap is unchanged if a
+ /// copy throws
+ ///
+ /// In pseudocode (the `heapBuild()` of section 10.1.4 with \f$ D \f$
+ /// children, beyond the book), the leaves being heaps already:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{assign}( \mathit{first} ,
+ ///     \mathit{last} ) \cr
+ /// 2 & \quad A \gets \text{a copy of the items};\ n \gets |A| \cr
+ /// 3 & \quad \textbf{for}\ i \gets \lfloor ( n - 2 ) / D \rfloor
+ ///     \ \textbf{downto}\ 0\ \textbf{do}\ \text{move } A[ i ]
+ ///     \text{ down as in } \mathrm{pop}
+ /// \end{array}}
+ /// \f]
+ template< std::input_iterator I , std::sentinel_for< I > S >
+ void assign( I first , S last );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

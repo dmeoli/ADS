@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- StealablePriorityQueue, the exact priority queue of one worker of which
+  an idle worker steals about half of the pairs: two 4-ary heaps of the
+  owner alone, the pairs pushed dealt to them in turn so that each holds
+  an interleaved half, the heap without the least pair moved into an
+  offer at the next operation of the owner after a thief asks, and the
+  offer claimed by an exchange, by the thief or by the owner when it may
+  hold the least pair, so that the owner pops in the exact order of its
+  pairs with no read-modify-write in the common case; StealingFrontier,
+  the queues of p workers of run() with the steals from random victims,
+  the end of the search by a counter of the workers at work and of the
+  thieves trying, stop(), leftovers() and run(), which stops the others at
+  the first exception and throws it again; the theory, the tests under
+  ThreadSanitizer and the battery bnb of bench/parallel.cpp
+- DaryHeap::assign(), the items of a range arranged by the construction of
+  Floyd in O( n )
+- FastFlowExecutor.h fails to compile, with an #error that explains the
+  order of the includes, when a header of FastFlow came before it without
+  NUM_CORES, NUM_REAL_CORES and NO_DEFAULT_MAPPING, which FastFlow would
+  then have read already; the test fastflow-order of CMake and of the
+  makefile checks that the error fires
 - WorkerExecutor requires a Lockable lock_type: FastFlowLock::try_lock(),
   one test-and-set of the flag of ff::lock_t; isRunCaller(), true in the
   call of a worker that runs on the thread that called run() (f( 0 ) on
@@ -1378,6 +1398,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- MPIMailbox::poll() documents why it passes const Msg & where the
+  Mailbox of the shared memory passes Msg &&: the messages of a batch are
+  read in place in a vector of the mailbox that the next batch reuses
 - BigInteger and Rational: with ADS_WITH_GMP every operation goes to GMP,
   at every length, with no threshold of length: the sum, the difference,
   the order, the product, the quotient with the remainder, the square

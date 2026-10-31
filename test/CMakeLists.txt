@@ -66,6 +66,17 @@ if (ADS_USE_MPI)
     endforeach ()
 endif ()
 
+# the order of the includes of FastFlowExecutor.h, a test of the compiler
+# [see fastflow_order.cpp]: the build of a program that includes a header of
+# FastFlow first must fail with the error of the header
+add_executable(fastflow_order EXCLUDE_FROM_ALL fastflow_order.cpp)
+target_link_libraries(fastflow_order PRIVATE ADS::ADS)
+add_test(NAME fastflow-order
+         COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
+                 --target fastflow_order --config $<CONFIG>)
+set_tests_properties(fastflow-order PROPERTIES
+        PASS_REGULAR_EXPRESSION "included after a header of FastFlow")
+
 # the module ads, imported in place of the headers [see module.cpp]
 if (ADS_BUILD_MODULE)
     add_executable(module module.cpp)

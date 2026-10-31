@@ -136,7 +136,21 @@ test-%: $(BUILD)/%$(ADSEXE)
 	} > $(BUILD)/$*.log 2>&1; \
 	cat $(BUILD)/$*.log
 
-test: $(addprefix test-,$(PROGRAMS)) $(MODBIN)
+# the order of the includes of FastFlowExecutor.h, a test of the compiler
+# [see test/fastflow_order.cpp]: a program that includes a header of
+# FastFlow first must not compile, with the error of the header, and with
+# FastFlow one that defines the macros of the header itself must
+test-fastflow-order: | $(BUILD)
+	@if $(CXX) $(CXXFLAGS) $(INC) -fsyntax-only test/fastflow_order.cpp \
+	    > $(BUILD)/fastflow_order.log 2>&1 || ! grep -q \
+	    'included after a header of FastFlow' $(BUILD)/fastflow_order.log; \
+	then echo "FAILED fastflow-order"; cat $(BUILD)/fastflow_order.log; \
+	     exit 1; fi
+	$(if $(filter 1,$(ADS_WITH_FASTFLOW)),@$(CXX) $(CXXFLAGS) $(INC) \
+	 -DADS_FASTFLOW_DEFINED_FIRST -fsyntax-only test/fastflow_order.cpp)
+	@echo "PASSED fastflow-order"
+
+test: $(addprefix test-,$(PROGRAMS)) $(MODBIN) test-fastflow-order
 	@failed=$$(cat $(addprefix $(BUILD)/,$(addsuffix .failed,$(PROGRAMS))) \
 	| awk '{s += $$1} END {print s + 0}'); \
 	$(if $(MODBIN),$(MODBIN) || failed=$$((failed + 1));) \

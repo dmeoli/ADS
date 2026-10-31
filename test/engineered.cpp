@@ -332,31 +332,42 @@ void dary( unsigned seed )
  CHECK( H.size() == R.size() );
  }
 
-/// the heap of arity D on n = 0 , 1 , D , D + 1 items, distinct and all
-/// equal, against std::priority_queue; the ties come out by better()
+/// the heap of arity D on n = 0 , 1 , D , D + 1 , D^2 + 2 items, distinct
+/// and all equal, built by pushes and by assign() over items already there,
+/// against std::priority_queue; the ties come out by better()
 template< unsigned D >
 void dary_edges( void )
 {
  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                        std::size_t( D ) , std::size_t( D + 1 ) } )
-  for( int same = 0 ; same < 2 ; ++same ) {
-   DaryHeap< std::pair< int , int > , std::less<> , D > H;
-   std::priority_queue< std::pair< int , int > ,
-                        std::vector< std::pair< int , int > > ,
-                        std::greater<> > R;
-   for( std::size_t i = 0 ; i < n ; ++i ) {   // reversed: all move up
-    const std::pair< int , int > x( same ? 7 : int( n - i ) ,
-                                    same ? 0 : int( i ) );
-    H.push( x );
-    R.push( x );
+                        std::size_t( D ) , std::size_t( D + 1 ) ,
+                        std::size_t( D * D + 2 ) } )
+  for( int same = 0 ; same < 2 ; ++same )
+   for( int built = 0 ; built < 2 ; ++built ) {
+    DaryHeap< std::pair< int , int > , std::less<> , D > H;
+    std::priority_queue< std::pair< int , int > ,
+                         std::vector< std::pair< int , int > > ,
+                         std::greater<> > R;
+    std::vector< std::pair< int , int > > X;
+    for( std::size_t i = 0 ; i < n ; ++i ) {  // reversed: all move up
+     const std::pair< int , int > x( same ? 7 : int( n - i ) ,
+                                     same ? 0 : int( i ) );
+     X.push_back( x );
+     R.push( x );
+     }
+    if( built ) {
+     H.push( { -1 , -1 } );                 // replaced by assign()
+     H.assign( X.begin() , X.end() );
+     }
+    else
+     for( const auto & x : X )
+      H.push( x );
+    CHECK( H.size() == n && std::size_t( H.end() - H.begin() ) == n );
+    while( ! R.empty() ) {
+     CHECK( H.top() == R.top() && H.pop() == R.top() );
+     R.pop();
+     }
+    CHECK( H.empty() );
     }
-   CHECK( H.size() == n && std::size_t( H.end() - H.begin() ) == n );
-   while( ! R.empty() ) {
-    CHECK( H.top() == R.top() && H.pop() == R.top() );
-    R.pop();
-    }
-   CHECK( H.empty() );
-   }
  }
 
 ADS_TEST( "dary-heap" )
