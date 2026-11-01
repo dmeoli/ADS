@@ -25,6 +25,9 @@
 # C++20 module ads and runs the test that imports it, by CMake and Ninja with #
 # Clang and GCC 15 on Linux and the Clang of LLVM on macOS, and by the        #
 # makefile with clang++ and g++ 15.                                           #
+# On a pull request, the lines that it changes are checked in the style of    #
+# the repository code-style, whose action posts the changes that put them     #
+# there as suggestions on them.                                               #
 ###############################################################################
 
 name: CI
@@ -44,6 +47,20 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  # the lines that a pull request changes, in the style of the repository
+  # code-style, with the changes that put them there posted as suggestions
+  style:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dmeoli/code-style@v1
+
   # every program built and every test run by CMake and by the makefiles,
   # four at a time, and the installed package used through find_package and
   # pkg-config [see packaging/test]; on Windows, MSVC by CMake alone and the

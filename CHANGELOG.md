@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the continuous integration checks, on a pull request, the lines that it
+  changes in the style of the repository code-style, whose action posts the
+  changes that put them there as suggestions; the README says how to run
+  its formatter before a commit
+
 - StealablePriorityQueue and StealingFrontier with a second key, the bound
   Bd of each pair (none by default), and minBound(), the least bound of the
   pairs that the owner holds, exact also while an offer waits, since the
