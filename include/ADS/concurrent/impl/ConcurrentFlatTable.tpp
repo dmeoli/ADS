@@ -586,6 +586,16 @@ std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::lookup(
  }
 
 template< class K , class V , class H , class Eq >
+void ConcurrentFlatTable< K , V , H , Eq >::prefetch( std::uint64_t h ) const
+{
+ const Table * T = f_table.load( std::memory_order_acquire );
+ const std::size_t i = home( h , *T );
+ if constexpr( kTagged )
+  detail::prefetch( T->G + ( i >> 3 ) );
+ detail::prefetch( T->W + kWords * i );
+ }
+
+template< class K , class V , class H , class Eq >
 std::optional< V > ConcurrentFlatTable< K , V , H , Eq >::find(
                                      const K & k , std::uint64_t h ) const
 {

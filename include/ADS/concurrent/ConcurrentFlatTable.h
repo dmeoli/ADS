@@ -370,6 +370,12 @@ class ConcurrentFlatTable {
  /// `contains()` above, with the hash computed
  [[nodiscard]] bool contains( const K & k ) const;
 
+ /// the lines that a lookup of the hash \f$ h \f$ reads first (its tags
+ /// and its word) fetched into the cache, with no wait: a thread about to
+ /// look up or insert several keys prefetches them all first, so that
+ /// their misses overlap
+ void prefetch( std::uint64_t h ) const;
+
  /// the pair of the key \f$ k \f$ of hash \f$ h \f$, or nil, as `find()`;
  /// for a table neither `packed` nor `inlined`
  /// \pre `hash( k )` is \f$ h \f$ (audit)

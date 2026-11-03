@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the nodes of a parallel search, 8 bytes for each, in which the threads
   that reach equal objects at once agree on one pointer; the test with 8
   threads inserting their own copies of the same objects
+- ConcurrentFlatTable::prefetch( h ), the tags and the word that a lookup
+  of the hash h reads first fetched with no wait, so that the misses of the
+  keys that a thread is about to insert overlap
+- MultiQueue::Handle::pushAll( first , last ), the pairs of a range put
+  into one of the two queues kept under one lock, as push() does with one
+  pair; the tests on one queue against a multiset, with batches across the
+  size of the buffers, and from 8 threads
 
 - RecordFile, RecordWriter and TempDirectory (external/RecordFile.h):
   files of records of a trivially copyable type on the disk of the

@@ -324,6 +324,15 @@ class MultiQueue< K , T , Less >::Handle {
  /// \f]
  void push( K k , T x );
 
+ /// puts the pairs of \f$ [ \mathit{first} , \mathit{last} ) \f$, which
+ /// convert to `Entry`, all into one of the two queues kept, under one lock,
+ /// as `push()` does with one pair: a thread that makes several pairs at
+ /// once (e.g., the successors of a node in a parallel search) takes one
+ /// lock instead of one per pair, and the rank of a pop is relaxed as by a
+ /// stickiness of the number of the pairs
+ template< class It >
+ void pushAll( It first , It last );
+
  /// the least pair of the better of the two queues kept, or of the first
  /// draw of two queues whose better one is free; nothing if a scan of all
  /// the queues found them empty

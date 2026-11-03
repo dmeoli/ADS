@@ -685,8 +685,9 @@ ADS_TEST( "mpmc-queue" )
 // greatest key, which stands for an empty queue and is popped by the scan
 // (the infinity of a double, the greatest integer, the least one under
 // std::greater); the empty queue, which pops nothing; with 8 queues every
-// pair comes out once and the queue is empty at the end; the
-// preconditions
+// pair comes out once and the queue is empty at the end; pushAll(), exact
+// on one queue with batches of 0 to 39 pairs, and from 8 threads into 16
+// queues with every pair out once; the preconditions
 ADS_TEST( "multi-queue" )
 {
  {
@@ -775,6 +776,62 @@ ADS_TEST( "multi-queue" )
   CHECK( c == n && std::all_of( got.begin() , got.end() ,
                                 []( int x ) { return( x == 1 ); } ) );
   CHECK( Q.empty() && Q.consistent() );
+  }
+ {  // pushAll(): batches across the size of the buffers, exact on 1 queue
+  using Q1 = MultiQueue< std::uint64_t , int >;
+  Q1 Q( 1 );
+  auto h = Q.handle();
+  std::multiset< std::pair< std::uint64_t , int > > R;
+  std::mt19937_64 g( 64 );
+  std::vector< Q1::Entry > b;
+  int s = 0;
+  for( int r = 0 ; r < 2000 ; ++r )
+   if( ( g() % 3 ) || R.empty() ) {
+    b.clear();
+    for( std::size_t i = g() % 40 ; i-- > 0 ; ++s ) {
+     b.push_back( Q1::Entry{ g() % 64 , s } );
+     R.insert( { b.back().key , s } );
+     }
+    h.pushAll( b.begin() , b.end() );
+    }
+   else {
+    const auto e = h.tryPop();
+    CHECK( e && ( e->key == R.begin()->first ) );
+    R.erase( R.find( { e->key , e->item } ) );
+    }
+  CHECK( Q.size() == R.size() && Q.consistent() );
+  for( auto e = h.tryPop() ; e ; e = h.tryPop() ) {
+   CHECK( e->key == R.begin()->first );
+   R.erase( R.find( { e->key , e->item } ) );
+   }
+  CHECK( R.empty() && Q.empty() && Q.consistent() );
+  }
+ {  // pushAll() from 8 threads into 16 queues: every pair out once
+  using Q8 = MultiQueue< std::uint64_t , std::uint64_t >;
+  Q8 Q( 16 , 4 , 65 );
+  const std::uint64_t per = 4000;
+  std::vector< std::thread > W;
+  for( std::uint64_t t = 0 ; t < 8 ; ++t )
+   W.emplace_back( [ & , t ] {
+    auto h = Q.handle();
+    std::mt19937_64 g( 66 + t );
+    std::vector< Q8::Entry > b;
+    for( std::uint64_t i = 0 ; i < per ; ) {
+     b.clear();
+     for( std::size_t j = g() % 9 ; j-- > 0 && i < per ; ++i )
+      b.push_back( Q8::Entry{ g() % 1000 , t * per + i } );
+     h.pushAll( b.begin() , b.end() );
+     }
+    } );
+  for( auto & w : W )
+   w.join();
+  CHECK( Q.size() == 8 * per && Q.consistent() );
+  std::vector< int > got( 8 * per , 0 );
+  auto h = Q.handle();
+  for( auto e = h.tryPop() ; e ; e = h.tryPop() )
+   ++got[ e->item ];
+  CHECK( std::all_of( got.begin() , got.end() ,
+                      []( int x ) { return( x == 1 ); } ) && Q.empty() );
   }
  CHECK_THROWS( ( MultiQueue< int , int >( 0 ) ) , contract_violation );
  CHECK_THROWS( ( MultiQueue< int , int >( 4 , 0 ) ) , contract_violation );

@@ -1687,6 +1687,7 @@ ADS_TEST( "concurrent-flat-table" )
     for( std::uint64_t i = 0 ; i < n ; ++i ) {
      const std::uint64_t j = ( i * ( 2 * t + 1 ) ) % n;
      O[ t ][ j ] = j * 0x9E3779B97F4A7C15ULL;
+     T.prefetch( T.hash( &O[ t ][ ( j + 1 ) % n ] ) );   // not yet there
      const auto [ q , in ] = T.findOrInsertKey( &O[ t ][ j ] ,
                                                 T.hash( &O[ t ][ j ] ) );
      CHECK( *q == O[ t ][ j ] && ( ! in || q == &O[ t ][ j ] ) );

@@ -317,6 +317,28 @@ void MultiQueue< K , T , Less >::Handle::push( K k , T x )
  }
 
 template< class K , class T , class Less >
+template< class It >
+void MultiQueue< K , T , Less >::Handle::pushAll( It first , It last )
+{
+ if( first == last )
+  return;
+ MultiQueue & m = *f_m;
+ for( ; ; ) {
+  use();
+  Queue & q = m.f_q[ f_k[ bit() ] ];
+  if( tryLock( q ) ) {
+   for( ; first != last ; ++first )
+    m.put( q , Entry( *first ) );
+   m.publish( q );
+   ADS_INVARIANT( m.ordered( q ) );
+   unlock( q );
+   return;
+   }
+  draw();
+  }
+ }
+
+template< class K , class T , class Less >
 auto MultiQueue< K , T , Less >::Handle::tryPop( void )
  -> std::optional< Entry >
 {
