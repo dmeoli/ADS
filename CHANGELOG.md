@@ -2242,6 +2242,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- BTreeMap::build() fills the children of an internal node and then its
+  bounds in two loops, since with the bound under a test of the index in
+  the same loop the code of the loop vectorizer of g++ 15 at -O3 built
+  nodes that fail the invariant (the test ordered.btree-map, red on
+  ubuntu-latest since its g++ became 15)
+
 - OpenMPLock on the runtime of LLVM is a test-and-set lock
   (omp_init_lock_with_hint with omp_sync_hint_uncontended): its default
   lock queues the threads and hands over in their order, and with more

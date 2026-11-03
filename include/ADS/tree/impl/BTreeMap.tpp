@@ -835,11 +835,13 @@ void ADS_BTM::build( It first , It last )
   for( std::size_t j = 0 , s = 0 ; j < g ; ++j ) {
    const std::size_t c = m / g + ( j < m % g ? 1 : 0 );   // children
    Inner * u = make< Inner >();
-   for( std::size_t q = 0 ; q < c ; ++q ) {
+   // the children, and then the c - 1 bounds between them, in two loops:
+   // with the bound under a test of q in the same loop, the code that the
+   // loop vectorizer of g++ 15 makes at -O3 built nodes that fail valid()
+   for( std::size_t q = 0 ; q < c ; ++q )
     u->c[ q ] = level[ s + q ];
-    if( q + 1 < c )
-     u->k[ q ] = top[ s + q ];
-    }
+   for( std::size_t q = 0 ; q + 1 < c ; ++q )
+    u->k[ q ] = top[ s + q ];
    u->n = std::uint32_t( c - 1 );
    recount( u , f_height + 1 );
    if( ! up.empty() ) {
