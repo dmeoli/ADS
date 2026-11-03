@@ -1658,6 +1658,60 @@ ADS_TEST( "concurrent-flat-table" )
   CHECK( S.empty() && ! S.contains( 0 ) && S.capacity() == 2048 &&
          S.consistent() );
   }
+ {  // a set of pointers compared by the objects: the key held is returned
+  struct ByValue {
+   std::uint64_t operator()( const std::uint64_t * p ) const {
+    return( *p );
+    }
+   };
+  struct SameValue {
+   bool operator()( const std::uint64_t * a ,
+                    const std::uint64_t * b ) const {
+    return( *a == *b );
+    }
+   };
+  using S = ConcurrentFlatTable< const std::uint64_t * , std::monostate ,
+                                 ByValue , SameValue >;
+  static_assert( S::packed );
+  constexpr std::uint64_t n = 1 << 15;    // the odd steps permute it
+  constexpr unsigned p = 8;
+  S T;
+  std::vector< std::vector< std::uint64_t > > O( p ,
+                                       std::vector< std::uint64_t >( n ) );
+  std::vector< std::vector< const std::uint64_t * > > got( p ,
+                               std::vector< const std::uint64_t * >( n ) );
+  std::vector< std::atomic< unsigned > > ins( n );
+  std::vector< std::thread > W;
+  for( unsigned t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    for( std::uint64_t i = 0 ; i < n ; ++i ) {
+     const std::uint64_t j = ( i * ( 2 * t + 1 ) ) % n;
+     O[ t ][ j ] = j * 0x9E3779B97F4A7C15ULL;
+     const auto [ q , in ] = T.findOrInsertKey( &O[ t ][ j ] ,
+                                                T.hash( &O[ t ][ j ] ) );
+     CHECK( *q == O[ t ][ j ] && ( ! in || q == &O[ t ][ j ] ) );
+     got[ t ][ j ] = q;
+     ins[ j ] += in;
+     }
+    } );
+  for( auto & w : W )
+   w.join();
+  std::size_t bad = 0;
+  for( std::uint64_t j = 0 ; j < n ; ++j ) {
+   bad += ( ins[ j ] != 1 );
+   for( unsigned t = 1 ; t < p ; ++t )
+    bad += ( got[ t ][ j ] != got[ 0 ][ j ] );
+   }
+  CHECK( bad == 0 && T.size() == n && T.rehashes() >= 9 && T.consistent() );
+  const std::uint64_t zero = 0 , other = 0;
+  ConcurrentFlatTable< std::uint64_t , std::monostate > Z;
+  CHECK( Z.findOrInsertKey( 0 , Z.hash( 0 ) ) == std::make_pair(
+          std::uint64_t( 0 ) , true ) &&
+         Z.findOrInsertKey( 0 , Z.hash( 0 ) ) == std::make_pair(
+          std::uint64_t( 0 ) , false ) );
+  const auto r = T.findOrInsertKey( &other , T.hash( &other ) );
+  CHECK( ! r.second && r.first != &other && *r.first == zero );
+  }
  {
   using P = std::pair< std::uint64_t , std::uint64_t >;
   ConcurrentFlatTable< std::uint64_t , P > T;

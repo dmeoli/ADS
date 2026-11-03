@@ -645,18 +645,36 @@ auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
                                                           const V & v )
  -> std::pair< Ref , bool >
 {
- ADS_AUDIT( hash( k ) == h );
- Stripe & s = stripe();
- auto ref = [ & ]( std::uint64_t w ) -> Ref {
-  if constexpr( packed )
-   return( valueOf( w ) );
-  else if constexpr( inlined )
-   return( inValue( w ) );                // not reached: placeInline()
-  else
-   return( node( ( w & ( ( std::uint64_t( 1 ) << kFp ) - 1 ) ) - 1 )->e );
-  };
  if constexpr( inlined )
   return( placeInline( k , h , v ) );
+ else {
+  const auto [ w , in ] = placeWord( k , h , v );
+  if constexpr( packed )
+   return( std::pair< Ref , bool >( valueOf( w ) , in ) );
+  else
+   return( std::pair< Ref , bool >(
+            node( ( w & ( ( std::uint64_t( 1 ) << kFp ) - 1 ) ) - 1 )->e ,
+            in ) );
+  }
+ }
+
+template< class K , class V , class H , class Eq >
+std::pair< K , bool > ConcurrentFlatTable< K , V , H , Eq >::findOrInsertKey(
+                                        const K & k , std::uint64_t h )
+ requires( packed && ( valueBytes() == 0 ) )
+{
+ const auto [ w , in ] = placeWord( k , h , V{} );
+ if( zeroKey( k ) )                       // its word has the mark
+  return( std::pair< K , bool >( k , in ) );
+ return( std::pair< K , bool >( keyOf( w ) , in ) );
+ }
+
+template< class K , class V , class H , class Eq >
+std::pair< std::uint64_t , bool > ConcurrentFlatTable< K , V , H , Eq >::
+ placeWord( const K & k , std::uint64_t h , const V & v )
+{
+ ADS_AUDIT( hash( k ) == h );
+ Stripe & s = stripe();
  if constexpr( packed )
   if( zeroKey( k ) ) {                    // kept apart, with a mark
    const std::uint64_t w = pack( k , v ) | mark();
@@ -664,9 +682,9 @@ auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
    if( f_zero[ 0 ].compare_exchange_strong( x , w ,
                                        std::memory_order_acq_rel ) ) {
     s.w.fetch_add( std::uint64_t( 1 ) << 16 , std::memory_order_relaxed );
-    return( std::pair< Ref , bool >( valueOf( w ) , true ) );
+    return( std::pair< std::uint64_t , bool >( w , true ) );
     }
-   return( std::pair< Ref , bool >( valueOf( x ) , false ) );
+   return( std::pair< std::uint64_t , bool >( x , false ) );
    }
  Node * nd = nullptr;                     // the node made, if any
  std::uint64_t idx = 0;
@@ -700,7 +718,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
      if( ( ( ( c >> 16 ) + 1 ) & ( period( T->lg ) - 1 ) ) == 0 &&
          ( 2 * counted() > T->places() ) )
       grow( T , T->lg + 1 );
-     return( std::pair< Ref , bool >( ref( w ) , true ) );
+     return( std::pair< std::uint64_t , bool >( w , true ) );
      }
     }
    // the tags of the places passed, as their insertions might not have
@@ -711,7 +729,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
     if constexpr( ! packed )
      if( nd )
       nd->~Node();
-    return( std::pair< Ref , bool >( ref( x ) , false ) );
+    return( std::pair< std::uint64_t , bool >( x , false ) );
     }
    if( ++r == T->places() ) {             // full
     crowded = true;

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ConcurrentFlatTable::findOrInsertKey( k , h ), for a set kept in the
+  words (`packed`, an empty value): the key held equal to k by the
+  equality of the table, k itself if it was absent, so that a set of
+  pointers compared by the objects they point to is the intrusive set of
+  the nodes of a parallel search, 8 bytes for each, in which the threads
+  that reach equal objects at once agree on one pointer; the test with 8
+  threads inserting their own copies of the same objects
+
 - RecordFile, RecordWriter and TempDirectory (external/RecordFile.h):
   files of records of a trivially copyable type on the disk of the
   machine, appended at their end and scanned in order through a buffer of

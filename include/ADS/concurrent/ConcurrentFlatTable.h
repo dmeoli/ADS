@@ -319,6 +319,19 @@ class ConcurrentFlatTable {
  /// `findOrInsert()` above, with the hash computed
  std::pair< Ref , bool > findOrInsert( const K & k , const V & v );
 
+ /// the key held equal to \f$ k \f$, of hash \f$ h \f$, which is
+ /// \f$ k \f$ itself if absent and then inserted; true if it was inserted,
+ /// for a `packed` set (an empty value)
+ ///
+ /// The key held is equal to \f$ k \f$ by `Eq`, not by its bytes: in a set
+ /// of pointers to objects compared by `Eq` as the objects themselves, the
+ /// threads that insert at once pointers to equal objects all get the
+ /// pointer of the one that inserted it, the intrusive set that a parallel
+ /// search keeps of its nodes, a word of 8 bytes for each.
+ /// \pre `hash( k )` is \f$ h \f$ (audit)
+ std::pair< K , bool > findOrInsertKey( const K & k , std::uint64_t h )
+  requires( packed && ( valueBytes() == 0 ) );
+
  /// inserts the pair \f$ ( k , v ) \f$ if \f$ k \f$ is absent; true if it
  /// was, as `findOrInsert()`
  bool insert( const K & k , const V & v );
@@ -499,6 +512,11 @@ class ConcurrentFlatTable {
                     std::uint64_t v1 );
 
  /// findOrInsert() of an inlined table
+ // the insertion of findOrInsert() into a table not `inlined`: the word
+ // that holds the key, and true if it was inserted
+ std::pair< std::uint64_t , bool > placeWord( const K & k , std::uint64_t h ,
+                                              const V & v );
+
  std::pair< Ref , bool > placeInline( const K & k , std::uint64_t h ,
                                       const V & v );
 
