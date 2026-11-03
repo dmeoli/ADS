@@ -15,7 +15,9 @@
  the elementary patterns of access (see \ref theory_external_costs), and,
  for each family of algorithms, the property on which its correctness rests
  and the argument behind its bound (from \ref theory_external_sort to
- \ref theory_external_lists). The pseudocode of each algorithm is instead on
+ \ref theory_external_lists), and the files of records on the disk of the
+ machine, on which the model meets the real one (see
+ \ref theory_external_files). The pseudocode of each algorithm is instead on
  the page of its header, in the comment of its function, together with the
  chapter of Ferragina's book, or the paper, that it follows.
 
@@ -316,6 +318,34 @@
  disk \f$ \Theta( \mathrm{sort}( n ) ) \f$, the bound of (5), is optimal
  (Chiang et al.).
 
+ \section theory_external_files Files on the disk of the machine
+
+ The structures of the model keep their blocks in memory and count the
+ I/Os, which is what the bounds of the area are stated in; an algorithm
+ whose data do not fit in the memory of the machine needs instead files on
+ its disk, and `RecordFile.h` gives the least of them that the scans and the
+ sorts of this page need: a `RecordFile` of records of a trivially copyable
+ type, written as their bytes, appended at its end and read in order, a
+ `RecordWriter` that appends through a buffer of records, and a
+ `TempDirectory` that holds the files of a run and is removed with them.
+ With buffers of \f$ b \f$ records a scan of \f$ n \f$ records makes
+ \f$ \lceil n / b \rceil \f$ reads of the system, so that \f$ b \f$ plays
+ the part of \f$ B \f$ in the model; since a disk (and, to a lesser
+ extent, an SSD) moves a large contiguous piece of a file much faster than
+ as many small ones, the default buffer is of 1 MB, i.e., some hundreds of
+ the blocks of the file system. A writer opens its file only to write a
+ full buffer, and closes it after, so that a program may keep one writer
+ for each of thousands of files (e.g., the buckets of a search with
+ delayed duplicate detection, in which the successors of a bucket are
+ distributed among the files of the buckets they belong to, as in the
+ hash-based search of Korf), at the price of an opening of the file per
+ buffer, which is small against the transfer of 1 MB. Unlike STXXL (Dementiev,
+ Kettner and Sanders) the files have neither their own blocks nor
+ asynchronous I/O, which leaves the caching to the operating system: the
+ algorithms that use them read and write each file by long sequential
+ scans, the pattern on which the cache and the read-ahead of the system are
+ at their best.
+
  \section theory_external_refs References
 
  \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
@@ -338,6 +368,8 @@
  \see R. Dementiev, L. Kettner, P. Sanders, STXXL: standard template
       library for XXL data sets, Software: Practice and Experience 38(6),
       589-637, 2008, doi:10.1002/spe.844
+ \see R. E. Korf, Linear-time disk-based implicit graph search, Journal
+      of the ACM 55(6), 26:1-26:40, 2008, doi:10.1145/1455248.1455250
  \see J. C. Wyllie, The complexity of parallel computations, PhD thesis,
       Cornell University, 1979
  \see R. Cole, U. Vishkin, Deterministic coin tossing with applications

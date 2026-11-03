@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- RecordFile, RecordWriter and TempDirectory (external/RecordFile.h):
+  files of records of a trivially copyable type on the disk of the
+  machine, appended at their end and scanned in order through a buffer of
+  1 MB by default, a writer that opens its file only to write a full
+  buffer (so that a program keeps thousands of them at once), and a
+  directory of its own removed with its files; the section on them in the
+  theory of the external memory, and the tests at their limits
+
 - the continuous integration checks, on a pull request, the lines that it
   changes in the style of the repository code-style, whose action posts the
   changes that put them there as suggestions; the README says how to run

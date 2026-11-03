@@ -130,6 +130,7 @@ module;
 #endif
 #include "ADS/external/ExternalSorting.h"
 #include "ADS/external/ListRanking.h"
+#include "ADS/external/RecordFile.h"
 #include "ADS/external/TwoLevelMemory.h"
 #include "ADS/geometry/ClosestPair.h"
 #include "ADS/geometry/ConvexHull.h"
@@ -939,6 +940,11 @@ export namespace ADS {
  using ADS::listRankPointerJumping;
  using ADS::parallelStep;
  using ADS::randomIndependentSet;
+
+ // ADS/external/RecordFile.h
+ using ADS::RecordFile;
+ using ADS::RecordWriter;
+ using ADS::TempDirectory;
 
  // ADS/external/TwoLevelMemory.h
  using ADS::DiskFile;

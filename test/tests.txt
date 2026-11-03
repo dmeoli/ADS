@@ -1725,6 +1725,15 @@ engineered_graph  grid-graph-cost-models  costo della cella entrata o lasciata
 engineered_graph  grid-map            mappe nel formato dei benchmark
 engineered_graph  graph-builder       grafo costruito per archi e congelato
 
+# the files of records on the disk, beyond the book
+engineered_external  record-file-empty          file assente, vuoto, tolto
+engineered_external  record-file-append         accodati a pezzi, letti a buffer
+engineered_external  record-writer              buffer di un record e spostato
+engineered_external  record-writer-many-files   3000 scrittori aperti insieme
+engineered_external  record-file-large-records  record più grandi del buffer
+engineered_external  temp-directory             cartella tolta con i suoi file
+engineered_external  record-file-errors         percorsi che non si scrivono
+
 # the engineered allocators of the size classes, beyond the book
 engineered_memory  pool-resource              classi di 16 byte su ObjectPool
 engineered_memory  pool-allocator-containers  allocatore standard nei contenitori
