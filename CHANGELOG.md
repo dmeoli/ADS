@@ -2262,6 +2262,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the products of 128 bits of FastHash, of the mixed hash of FlatHashTable,
+  of NumberTheory and of the keys of FlatLoserTree name unsigned __int128
+  through a typedef under __extension__, as Portable.h does, so that a
+  build with -Wpedantic that includes them gets no warning
+
 - BTreeMap::build() fills the children of an internal node and then its
   bounds in two loops, since with the bound under a test of the index in
   the same loop the code of the loop vectorizer of g++ 15 at -O3 built

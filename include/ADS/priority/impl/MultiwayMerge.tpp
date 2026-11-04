@@ -62,8 +62,9 @@ bool FlatLoserTree< T , C >::beats( const Node & a , const Node & b ) const
 {
 #if defined( __SIZEOF_INT128__ )
  if constexpr( kInteger ) {                 // ( key , source ) on 128 bits
-  using W = std::conditional_t< std::is_signed_v< T > , __int128 ,
-                                unsigned __int128 >;
+  __extension__ typedef __int128 S;
+  __extension__ typedef unsigned __int128 U;
+  using W = std::conditional_t< std::is_signed_v< T > , S , U >;
   const W ka = W( a.key ) , kb = W( b.key );
   if constexpr( kUp )
    return( ( ( ka << 64 ) | W( a.src ) ) < ( ( kb << 64 ) | W( b.src ) ) );

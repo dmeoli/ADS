@@ -66,7 +66,8 @@ namespace detail {
 constexpr U64 mul128( U64 a , U64 b , U64 & hi )
 {
 #ifdef __SIZEOF_INT128__
- const unsigned __int128 p = ( unsigned __int128 )( a ) * b;
+ __extension__ typedef unsigned __int128 U;
+ const U p = U( a ) * b;
  hi = U64( p >> 64 );
  return( U64( p ) );
 #else
@@ -93,7 +94,8 @@ constexpr U64 mod128( U64 hi , U64 lo , U64 m )
   }
 #endif
 #ifdef __SIZEOF_INT128__
- return( U64( ( ( unsigned __int128 )( hi ) << 64 | lo ) % m ) );
+ __extension__ typedef unsigned __int128 U;
+ return( U64( ( U( hi ) << 64 | lo ) % m ) );
 #else
  for( int i = 0 ; i < 64 ; ++i ) {          // the bits of lo one by one
   const bool over = hi >> 63;

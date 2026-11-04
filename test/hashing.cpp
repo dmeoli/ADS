@@ -132,7 +132,8 @@ ADS_TEST( "fast-hash" )
    const Product128 q = product128( a , b );
    CHECK( q.lo == a * b && foldedProduct( a , b ) == ( q.lo ^ q.hi ) );
 #if defined( __SIZEOF_INT128__ )
-   const unsigned __int128 p = static_cast< unsigned __int128 >( a ) * b;
+   __extension__ typedef unsigned __int128 U;
+   const U p = U( a ) * b;
    CHECK( q.hi == std::uint64_t( p >> 64 ) );
 #endif
    }

@@ -24,7 +24,8 @@ namespace ADS {
 inline std::uint64_t detail::mulx( std::uint64_t a , std::uint64_t b )
 {
 #if defined( __SIZEOF_INT128__ )
- const unsigned __int128 p = static_cast< unsigned __int128 >( a ) * b;
+ __extension__ typedef unsigned __int128 U;
+ const U p = U( a ) * b;
  return( std::uint64_t( p ) ^ std::uint64_t( p >> 64 ) );
 #elif defined( _MSC_VER ) && defined( _M_X64 )
  std::uint64_t h;
