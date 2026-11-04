@@ -1439,6 +1439,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- ConcurrentFlatTable::findOrInsert() and findOrInsertKey() compare the
+  tag of a place they pass with the one of the key before the key, as a
+  lookup does, so that in a set of pointers compared by their objects an
+  insertion follows only the pointers whose tag is the one of its key
+
 - MPIMailbox::poll() documents why it passes const Msg & where the
   Mailbox of the shared memory passes Msg &&: the messages of a batch are
   read in place in a vector of the mailbox that the next batch reuses

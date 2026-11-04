@@ -552,8 +552,9 @@ class ConcurrentFlatTable {
  /// the tag of the hash h, never 0
  [[nodiscard]] static std::uint8_t tag( std::uint64_t h );
 
- /// the tag of the place i of T, holding the word w, set if not yet
- void tagged( Table & T , std::size_t i , std::uint64_t w ) const;
+ /// the tag of the place i of T, holding the word w, set if not yet; 0
+ /// if the places have no tags
+ std::uint8_t tagged( Table & T , std::size_t i , std::uint64_t w ) const;
 
  /// the 24 bits of the hash h in a word that is not packed
  [[nodiscard]] static std::uint64_t print( std::uint64_t h );

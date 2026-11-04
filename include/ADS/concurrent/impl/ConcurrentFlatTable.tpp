@@ -162,21 +162,26 @@ std::uint8_t ConcurrentFlatTable< K , V , H , Eq >::tag( std::uint64_t h )
  }
 
 template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::tagged( Table & T ,
-                                                    std::size_t i ,
-                                                    std::uint64_t w ) const
+std::uint8_t ConcurrentFlatTable< K , V , H , Eq >::tagged( Table & T ,
+                                                            std::size_t i ,
+                                                            std::uint64_t w )
+ const
 {
  // the same value whoever writes it, after the word, with release: a
  // tag read with acquire shows the word it tags
  if constexpr( ! kTagged ) {
   (void) T; (void) i; (void) w;
-  return;
+  return( 0 );
   }
  const unsigned sh = 8 * unsigned( i & 7 );
- if( ( ( T.G[ i >> 3 ].load( std::memory_order_relaxed ) >> sh ) & 0xFF ) ==
-     0 )
-  T.G[ i >> 3 ].fetch_or( std::uint64_t( tag( hashOf( w ) ) ) << sh ,
-                          std::memory_order_release );
+ const auto t = std::uint8_t( T.G[ i >> 3 ].load(
+                               std::memory_order_relaxed ) >> sh );
+ if( t != 0 )
+  return( t );
+ const std::uint8_t u = tag( hashOf( w ) );
+ T.G[ i >> 3 ].fetch_or( std::uint64_t( u ) << sh ,
+                         std::memory_order_release );
+ return( u );
  }
 
 template< class K , class V , class H , class Eq >
@@ -732,9 +737,11 @@ std::pair< std::uint64_t , bool > ConcurrentFlatTable< K , V , H , Eq >::
      }
     }
    // the tags of the places passed, as their insertions might not have
-   // written them yet: a lookup that reads a tag 0 stops there
-   tagged( *T , i , x );
-   if( holds( x , k , h ) ) {             // there, or just inserted
+   // written them yet (a lookup that reads a tag 0 stops there), and a
+   // key of another tag not compared, so that a place passed costs no read
+   // of the pair that it holds when the pair is in a node
+   if( ( ! kTagged || ( tagged( *T , i , x ) == tag( h ) ) ) &&
+       holds( x , k , h ) ) {             // there, or just inserted
     s.w.fetch_sub( 1 , std::memory_order_release );
     if constexpr( ! packed )
      if( nd )
@@ -792,8 +799,8 @@ auto ConcurrentFlatTable< K , V , H , Eq >::placeInline( const K & k ,
      return( std::pair< Ref , bool >( v , true ) );
      }
     }
-   tagged( *T , i , x );                  // as in findOrInsert()
-   if( holds( x , k , h ) ) {             // there, or just inserted
+   if( ( tagged( *T , i , x ) == tag( h ) ) &&   // as in findOrInsert()
+       holds( x , k , h ) ) {             // there, or just inserted
     const V w = inValue( p[ 1 ].load( std::memory_order_acquire ) );
     s.w.fetch_sub( 1 , std::memory_order_release );
     return( std::pair< Ref , bool >( w , false ) );
