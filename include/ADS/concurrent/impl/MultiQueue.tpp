@@ -27,8 +27,9 @@ namespace ADS {
 
 /*------------------------------- THE QUEUES -------------------------------*/
 
-template< class K , class T , class Less >
-K MultiQueue< K , T , Less >::none( const Less & less )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+K MultiQueue< K , T , Less , H >::none( const Less & less )
 {
  using L = std::numeric_limits< K >;
  const K hi = L::has_infinity ? L::infinity() : L::max();
@@ -36,8 +37,9 @@ K MultiQueue< K , T , Less >::none( const Less & less )
  return( less( lo , hi ) ? hi : lo );
  }
 
-template< class K , class T , class Less >
-MultiQueue< K , T , Less >::MultiQueue( std::size_t n , unsigned s ,
+template< class K , class T , class Less ,
+          template< class , class > class H >
+MultiQueue< K , T , Less , H >::MultiQueue( std::size_t n , unsigned s ,
                                         std::uint64_t seed , Less less )
  : f_n( n ) , f_s( s ) , f_less{ less } , f_none( none( less ) ) ,
    f_q( nullptr ) , f_seed( seed )
@@ -58,16 +60,18 @@ MultiQueue< K , T , Less >::MultiQueue( std::size_t n , unsigned s ,
   }
  }
 
-template< class K , class T , class Less >
-MultiQueue< K , T , Less >::~MultiQueue()
+template< class K , class T , class Less ,
+          template< class , class > class H >
+MultiQueue< K , T , Less , H >::~MultiQueue()
 {
  for( std::size_t i = f_n ; i-- > 0 ; )
   f_q[ i ].~Queue();
  ::operator delete( f_q , std::align_val_t( alignof( Queue ) ) );
  }
 
-template< class K , class T , class Less >
-auto MultiQueue< K , T , Less >::handle( void ) -> Handle
+template< class K , class T , class Less ,
+          template< class , class > class H >
+auto MultiQueue< K , T , Less , H >::handle( void ) -> Handle
 {
  // the seed of a handle is a counter mixed as by splitmix64, a point at
  // random of its sequence: seeds apart by its increment would give one
@@ -80,16 +84,18 @@ auto MultiQueue< K , T , Less >::handle( void ) -> Handle
  return( Handle( *this , z ^ ( z >> 31 ) ) );
  }
 
-template< class K , class T , class Less >
-bool MultiQueue< K , T , Less >::tryLock( Queue & q )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+bool MultiQueue< K , T , Less , H >::tryLock( Queue & q )
 {
  // a plain read first, so that a held lock costs no write to its line
  return( ! q.lock.load( std::memory_order_relaxed ) &&
          ! q.lock.exchange( true , std::memory_order_acquire ) );
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::lock( Queue & q )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::lock( Queue & q )
 {
  for( int n = 0 ; ! tryLock( q ) ; )
   if( ++n < 64 )
@@ -98,28 +104,32 @@ void MultiQueue< K , T , Less >::lock( Queue & q )
    std::this_thread::yield();
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::unlock( Queue & q )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::unlock( Queue & q )
 {
  q.lock.store( false , std::memory_order_release );
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::publish( Queue & q ) const
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::publish( Queue & q ) const
 {
  q.top.store( q.nd ? q.D[ q.nd - 1 ].key : f_none ,
               std::memory_order_relaxed );
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::flush( Queue & q ) const
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::flush( Queue & q ) const
 {
  for( ; q.ni ; --q.ni )
   q.heap.push( std::move( q.I[ q.ni - 1 ] ) );
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::put( Queue & q , Entry && e ) const
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::put( Queue & q , Entry && e ) const
 {
  // D[ 0 .. nd - 1 ] sorted by decreasing keys: the greatest pair first,
  // the least last; a pair not greater than the greatest of D goes into D,
@@ -160,8 +170,9 @@ void MultiQueue< K , T , Less >::put( Queue & q , Entry && e ) const
   q.I[ q.ni++ ] = std::move( e );
  }
 
-template< class K , class T , class Less >
-auto MultiQueue< K , T , Less >::take( Queue & q ) const -> Entry
+template< class K , class T , class Less ,
+          template< class , class > class H >
+auto MultiQueue< K , T , Less , H >::take( Queue & q ) const -> Entry
 {
  Entry e = std::move( q.D[ --q.nd ] );
  if( q.nd == 0 ) {                        // D again with the least pairs
@@ -174,8 +185,9 @@ auto MultiQueue< K , T , Less >::take( Queue & q ) const -> Entry
  return( e );
  }
 
-template< class K , class T , class Less >
-bool MultiQueue< K , T , Less >::ordered( const Queue & q ) const
+template< class K , class T , class Less ,
+          template< class , class > class H >
+bool MultiQueue< K , T , Less , H >::ordered( const Queue & q ) const
 {
  if( ( q.nd > kBuf ) || ( q.ni > kBuf ) )
   return( false );
@@ -192,8 +204,9 @@ bool MultiQueue< K , T , Less >::ordered( const Queue & q ) const
  return( q.heap.empty() || ! f_less( q.heap.top() , q.D[ 0 ] ) );
  }
 
-template< class K , class T , class Less >
-auto MultiQueue< K , T , Less >::scan( std::size_t r )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+auto MultiQueue< K , T , Less , H >::scan( std::size_t r )
  -> std::optional< Entry >
 {
  // each queue locked in turn, also those whose minimum reads empty: when
@@ -213,8 +226,9 @@ auto MultiQueue< K , T , Less >::scan( std::size_t r )
  return( std::nullopt );
  }
 
-template< class K , class T , class Less >
-std::size_t MultiQueue< K , T , Less >::size( void ) const
+template< class K , class T , class Less ,
+          template< class , class > class H >
+std::size_t MultiQueue< K , T , Less , H >::size( void ) const
 {
  std::size_t n = 0;
  for( std::size_t i = 0 ; i < f_n ; ++i ) {
@@ -226,8 +240,9 @@ std::size_t MultiQueue< K , T , Less >::size( void ) const
  return( n );
  }
 
-template< class K , class T , class Less >
-bool MultiQueue< K , T , Less >::consistent( void ) const
+template< class K , class T , class Less ,
+          template< class , class > class H >
+bool MultiQueue< K , T , Less , H >::consistent( void ) const
 {
  for( std::size_t i = 0 ; i < f_n ; ++i ) {
   Queue & q = f_q[ i ];
@@ -244,8 +259,9 @@ bool MultiQueue< K , T , Less >::consistent( void ) const
 
 /*------------------------------- THE HANDLES ------------------------------*/
 
-template< class K , class T , class Less >
-std::uint64_t MultiQueue< K , T , Less >::Handle::next( void )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+std::uint64_t MultiQueue< K , T , Less , H >::Handle::next( void )
 {
  std::uint64_t z = ( f_x += 0x9E3779B97F4A7C15ULL );
  z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9ULL;
@@ -253,8 +269,9 @@ std::uint64_t MultiQueue< K , T , Less >::Handle::next( void )
  return( z ^ ( z >> 31 ) );
  }
 
-template< class K , class T , class Less >
-std::size_t MultiQueue< K , T , Less >::Handle::bit( void )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+std::size_t MultiQueue< K , T , Less , H >::Handle::bit( void )
 {
  if( f_nbits == 0 ) {
   f_bits = next();
@@ -266,8 +283,9 @@ std::size_t MultiQueue< K , T , Less >::Handle::bit( void )
  return( b );
  }
 
-template< class K , class T , class Less >
-std::size_t MultiQueue< K , T , Less >::Handle::any( void )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+std::size_t MultiQueue< K , T , Less , H >::Handle::any( void )
 {
  // the top 32 bits times n, the multiply-shift of Lemire, which needs no
  // division
@@ -275,8 +293,9 @@ std::size_t MultiQueue< K , T , Less >::Handle::any( void )
                       >> 32 ) );
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::Handle::draw( void )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::Handle::draw( void )
 {
  // two distinct queues, unless there is one: the same queue twice would
  // be a pop from a single random queue, whose rank errors grow without
@@ -288,16 +307,18 @@ void MultiQueue< K , T , Less >::Handle::draw( void )
  f_used = 0;
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::Handle::use( void )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::Handle::use( void )
 {
  if( f_used >= f_m->f_s )
   draw();
  ++f_used;
  }
 
-template< class K , class T , class Less >
-void MultiQueue< K , T , Less >::Handle::push( K k , T x )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+void MultiQueue< K , T , Less , H >::Handle::push( K k , T x )
 {
  MultiQueue & m = *f_m;
  for( ; ; ) {
@@ -316,9 +337,10 @@ void MultiQueue< K , T , Less >::Handle::push( K k , T x )
   }
  }
 
-template< class K , class T , class Less >
+template< class K , class T , class Less ,
+          template< class , class > class H >
 template< class It >
-void MultiQueue< K , T , Less >::Handle::pushAll( It first , It last )
+void MultiQueue< K , T , Less , H >::Handle::pushAll( It first , It last )
 {
  if( first == last )
   return;
@@ -338,8 +360,9 @@ void MultiQueue< K , T , Less >::Handle::pushAll( It first , It last )
   }
  }
 
-template< class K , class T , class Less >
-auto MultiQueue< K , T , Less >::Handle::tryPop( void )
+template< class K , class T , class Less ,
+          template< class , class > class H >
+auto MultiQueue< K , T , Less , H >::Handle::tryPop( void )
  -> std::optional< Entry >
 {
  MultiQueue & m = *f_m;

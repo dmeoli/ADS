@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- BucketHeap, a BucketQueue behind the interface of a heap of pairs whose
+  key of 64 bits packs f and the complement of g (packFG(), keyF(),
+  keyG()), so that the keys under std::less come by least f and then
+  largest g; MultiQueue takes its inner queue as the template H, the 8-ary
+  heap by default (MultiQueueHeap), and on BucketHeap its pushes and pops
+  take O(1) amortized time with bounded keys instead of O(log n); the test
+  engineered_queues.multi-queue-buckets
+
 - ConcurrentFlatTable::findOrInsertKey( k , h ), for a set kept in the
   words (`packed`, an empty value): the key held equal to k by the
   equality of the table, k itself if it was absent, so that a set of

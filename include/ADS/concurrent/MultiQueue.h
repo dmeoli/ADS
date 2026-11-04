@@ -50,6 +50,14 @@
  * if the queue is, and that no pair of \f$ I \f$ or of the heap is less than
  * one of \f$ D \f$: each queue stays exact, the least of its pairs being the
  * least of \f$ D \f$, and the heap is touched once per 16 operations or so.
+ * The heap is the template H, given the type of the pairs and their order:
+ * by default the 8-ary heap, and for the keys of `packFG()`, the pairs
+ * \f$ ( f , g ) \f$ of a best-first search with integer costs, the
+ * BucketHeap of `BucketQueue.h`, whose pushes and pops take \f$ O( 1 ) \f$
+ * amortized time against the \f$ O( \log n ) \f$ of the heap (cf. the
+ * MultiQueue of bucket queues of Zhang, Posluns and Jeffrey, whose buckets
+ * are shared by the threads, where here each queue has its own under its
+ * lock).
  * The stickiness has no theory yet: the measures of Williams, Sanders and
  * Dementiev show rank errors that grow about linearly in \f$ s \f$, which
  * is why \f$ s \f$ is a parameter, 1 for the bounds above.
@@ -94,6 +102,10 @@
  * \see S. Walzer, M. Williams, A simple yet exact analysis of the
  *      MultiQueue, European Symposium on Algorithms (ESA), LIPIcs 351,
  *      85:1-85:14, 2025, doi:10.4230/LIPIcs.ESA.2025.85
+ * \see G. Zhang, G. Posluns, M. C. Jeffrey, Multi bucket queues: efficient
+ *      concurrent priority scheduling, ACM Symposium on Parallelism in
+ *      Algorithms and Architectures (SPAA), 2024,
+ *      doi:10.1145/3626183.3659962
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -136,9 +148,14 @@ namespace ADS {
 /*--------------------------- CLASS MultiQueue -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the inner queue of a MultiQueue by default, the 8-ary heap
+template< class E , class C >
+using MultiQueueHeap = DaryHeap< E , C , 8 >;
+
 /// a relaxed PRIORITY QUEUE shared by threads: \f$ n \f$ queues under locks,
-/// the pop from the better of two
-template< class K , class T , class Less = std::less< K > >
+/// the pop from the better of two, each queue an H behind two buffers
+template< class K , class T , class Less = std::less< K > ,
+          template< class , class > class H = MultiQueueHeap >
 class MultiQueue {
 
  static_assert( std::numeric_limits< K >::is_specialized ,
@@ -225,7 +242,7 @@ class MultiQueue {
   /// the insertion buffer, unsorted
   Entry I[ kBuf ];
   /// the rest of the pairs
-  DaryHeap< Entry , ByKey , 8 > heap;
+  H< Entry , ByKey > heap;
   /// the empty queue, ordered by less
   explicit Queue( const ByKey & less , K none )
    : top( none ) , heap( less ) {}
@@ -278,8 +295,9 @@ class MultiQueue {
 
 /// the access of one thread to a `MultiQueue`: its draws and the two
 /// queues it keeps
-template< class K , class T , class Less >
-class MultiQueue< K , T , Less >::Handle {
+template< class K , class T , class Less ,
+          template< class , class > class H >
+class MultiQueue< K , T , Less , H >::Handle {
 
 /*--------------------------------------------------------------------------*/
  public:

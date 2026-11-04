@@ -543,6 +543,16 @@
  and their measures show rank errors that grow about linearly in
  \f$ s \f$.
 
+ The lemma asks of \f$ H \f$ only an exact queue, and `MultiQueue` takes it
+ as a template: with the keys of `packFG()`, the pairs \f$ ( f , g ) \f$ of
+ a best-first search with integer costs, \f$ H \f$ can be the bucket queue
+ of `BucketHeap`, whose pushes and pops take \f$ O( 1 ) \f$ amortized time
+ with bounded keys, so that the cost of an operation no longer grows with
+ \f$ m \f$. The Multi Bucket Queue of Zhang, Posluns and Jeffrey shares
+ the buckets among the threads, each bucket a MultiQueue of its own; here
+ each queue keeps its buckets under its lock, and the choice of the queue
+ is the one of Theorem 7.
+
  A pop that finds both queues empty scans all the queues, each under its
  lock: when no push runs at the same time, a scan that finds nothing
  proves the structure empty, which a parallel search needs to stop.
@@ -846,6 +856,10 @@
  \see S. Walzer, M. Williams, A simple yet exact analysis of the
       MultiQueue, European Symposium on Algorithms (ESA), LIPIcs 351,
       85:1-85:14, 2025, doi:10.4230/LIPIcs.ESA.2025.85
+ \see G. Zhang, G. Posluns, M. C. Jeffrey, Multi bucket queues: efficient
+      concurrent priority scheduling, ACM Symposium on Parallelism in
+      Algorithms and Architectures (SPAA), 2024,
+      doi:10.1145/3626183.3659962
  \see D. P. Reed, R. K. Kanodia, Synchronization with eventcounts and
       sequencers, Communications of the ACM 22(2), 115-123, 1979,
       doi:10.1145/359060.359076

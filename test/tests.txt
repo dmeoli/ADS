@@ -564,6 +564,7 @@ engineered_queues  event-count-notifiers   notifiche concorrenti, mai perse
 engineered_queues  work-stealing-deque     deque di Chase e Lev, furti
 engineered_queues  mpmc-queue              coda limitata, molti a molti
 engineered_queues  multi-queue             MultiQueue, esatta con una coda
+engineered_queues  multi-queue-buckets     MultiQueue su BucketHeap, per f e g
 engineered_queues  multi-queue-rank        errori di rango contro la teoria
 engineered_queues  multi-queue-threads     MultiQueue su più thread
 engineered_queues  stealable-pq            coda di priorità da cui si ruba metà

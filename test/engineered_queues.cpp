@@ -29,6 +29,7 @@
 #include "ADS/concurrent/SPSCQueue.h"
 #include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/concurrent/WorkStealingDeque.h"
+#include "ADS/priority/BucketQueue.h"
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/queue/LinkedQueue.h"
 #include "ADS/queue/RingDeque.h"
@@ -835,6 +836,71 @@ ADS_TEST( "multi-queue" )
   }
  CHECK_THROWS( ( MultiQueue< int , int >( 0 ) ) , contract_violation );
  CHECK_THROWS( ( MultiQueue< int , int >( 4 , 0 ) ) , contract_violation );
+ }
+
+// the MultiQueue on BucketHeap, the keys of packFG(): on one queue, pushes
+// and pops mixed at random and then the rest popped, each pop the least
+// pair by f and then by largest g; from 8 threads into 16 queues, every
+// pair out once and the queue empty at the end
+ADS_TEST( "multi-queue-buckets" )
+{
+ using Q = MultiQueue< std::uint64_t , int , std::less< std::uint64_t > ,
+                       BucketHeap >;
+ CHECK( keyF( packFG( 7 , 300 ) ) == 7 && keyG( packFG( 7 , 300 ) ) == 300 &&
+        packFG( 3 , 9 ) < packFG( 3 , 8 ) &&
+        packFG( 3 , 0 ) < packFG( 4 , 9 ) );
+ {
+  Q M( 1 );
+  auto h = M.handle();
+  std::multiset< std::pair< std::uint64_t , int > > R;
+  std::mt19937_64 g( 67 );
+  const auto pop = [ & ] {
+   const auto e = h.tryPop();
+   CHECK( e && ( e->key == R.begin()->first ) );
+   const auto it = R.find( { e->key , e->item } );
+   CHECK( it != R.end() );
+   R.erase( it );
+   };
+  for( int s = 0 ; s < 20000 ; ++s )
+   if( ( g() % 3 ) || R.empty() ) {
+    const std::uint64_t k = packFG( std::uint32_t( g() % 40 ) ,
+                                    std::uint32_t( g() % 300 ) );
+    h.push( k , s );
+    R.insert( { k , s } );
+    }
+   else
+    pop();
+  CHECK( M.size() == R.size() && M.consistent() );
+  while( ! R.empty() )
+   pop();
+  CHECK( ! h.tryPop() && M.empty() && M.consistent() );
+  }
+ {
+  Q M( 16 );
+  constexpr int P = 8 , N = 20000;
+  std::vector< std::atomic< int > > seen( P * N );
+  std::vector< std::thread > w;
+  for( int t = 0 ; t < P ; ++t )
+   w.emplace_back( [ & , t ] {
+    auto h = M.handle();
+    std::mt19937_64 g( 71 + t );
+    for( int i = 0 ; i < N ; ++i ) {
+     h.push( packFG( std::uint32_t( g() % 50 ) , std::uint32_t( g() % 50 ) ) ,
+             t * N + i );
+     if( i % 2 )
+      if( const auto e = h.tryPop() )
+       ++seen[ e->item ];
+     }
+    } );
+  for( auto & x : w )
+   x.join();
+  auto h = M.handle();
+  while( const auto e = h.tryPop() )
+   ++seen[ e->item ];
+  CHECK( std::all_of( seen.begin() , seen.end() ,
+                      []( const std::atomic< int > & x ) {
+                       return( x.load() == 1 ); } ) && M.empty() );
+  }
  }
 
 // the rank errors of the MultiQueue against the theory: on one thread,

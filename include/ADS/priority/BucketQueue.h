@@ -411,6 +411,87 @@ class BucketQueue {
  };  // end( class BucketQueue )
 
 /*--------------------------------------------------------------------------*/
+/*-------------------------------- FUNCTIONS -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the key of 64 bits of the pair \f$ ( f , g ) \f$, \f$ f \f$ in the high
+/// half and the complement of \f$ g \f$ in the low one, so that the keys
+/// under `std::less` come by least \f$ f \f$ and then largest \f$ g \f$, the
+/// order of a BucketQueue
+[[nodiscard]] constexpr std::uint64_t packFG( std::uint32_t f ,
+                                             std::uint32_t g ) noexcept
+{
+ return( ( std::uint64_t( f ) << 32 ) | std::uint32_t( ~g ) );
+ }
+
+/// the \f$ f \f$ of a key of `packFG()`
+[[nodiscard]] constexpr std::uint32_t keyF( std::uint64_t k ) noexcept
+{
+ return( std::uint32_t( k >> 32 ) );
+ }
+
+/// the \f$ g \f$ of a key of `packFG()`
+[[nodiscard]] constexpr std::uint32_t keyG( std::uint64_t k ) noexcept
+{
+ return( ~std::uint32_t( k ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- CLASS BucketHeap -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a BucketQueue behind the interface of a heap of pairs \f$ ( k , x ) \f$,
+/// the key \f$ k \f$ of `packFG()`: the inner queue of a MultiQueue over
+/// such keys [see `MultiQueue.h`], whose pushes and pops take \f$ O( 1 ) \f$
+/// amortized time with bounded keys where those of a heap take
+/// \f$ O( \log n ) \f$. The queue keeps the items and their \f$ f \f$ and
+/// \f$ g \f$, the pair is made again when it comes out; E is an aggregate of
+/// a key and an item, in this order, and the order C, which a heap is given,
+/// must be the one of `std::less` on the keys, the one of the queue
+template< class E , class C >
+class BucketHeap {
+
+ using Item = decltype( E::item );
+
+/*--------------------------------------------------------------------------*/
+ public:
+
+ /// the empty queue
+ explicit BucketHeap( const C & = C() ) {}
+
+ /// pushes e
+ void push( E && e ) {
+  f_q.push( std::move( e.item ) , keyF( e.key ) , keyG( e.key ) );
+  }
+
+ /// the least pair
+ /// \pre the queue is not empty
+ [[nodiscard]] E top( void ) const {
+  return( E{ packFG( f_q.topF() , f_q.topG() ) , f_q.top() } );
+  }
+
+ /// removes the least pair and returns it
+ /// \pre the queue is not empty
+ E pop( void ) {
+  auto e = f_q.popEntry();
+  return( E{ packFG( e.f , e.g ) , std::move( e.item ) } );
+  }
+
+ /// whether the queue has no pair
+ [[nodiscard]] bool empty( void ) const { return( f_q.empty() ); }
+
+ /// the number of the pairs
+ [[nodiscard]] std::size_t size( void ) const { return( f_q.size() ); }
+
+/*--------------------------------------------------------------------------*/
+ private:
+
+ /// the queue, whose top moves its bounds forward when read
+ mutable BucketQueue< Item , std::uint32_t > f_q;
+
+ };  // end( class BucketHeap )
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
