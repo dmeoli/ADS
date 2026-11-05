@@ -77,6 +77,16 @@
 
 namespace ADS {
 
+/// a function inlined even where the compiler would not, so that a search
+/// that calls it from two places pays no call for each successor
+#if defined( __GNUC__ ) || defined( __clang__ )
+ #define ADS_PT_INLINE inline __attribute__(( always_inline ))
+#elif defined( _MSC_VER )
+ #define ADS_PT_INLINE __forceinline
+#else
+ #define ADS_PT_INLINE inline
+#endif
+
 /// the default equality of `PointerTable`: `p->state == key`
 struct StateEqual {
  /// whether the state of the object \f$ p \f$ is `key`

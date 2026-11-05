@@ -1439,6 +1439,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- PointerTable::find_or_insert() is always inlined: a search that calls
+  it from two places, as HDA* does from its own successors and from those
+  of its messages, lost about 58 instructions an expansion on the call
+  (1318 to 1260 on instance 1 of Korf with one thread)
 - ConcurrentFlatTable::findOrInsert() and findOrInsertKey() compare the
   tag of a place they pass with the one of the key before the key, as a
   lookup does, so that in a set of pointers compared by their objects an

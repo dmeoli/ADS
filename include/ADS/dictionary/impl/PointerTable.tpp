@@ -91,7 +91,8 @@ void PointerTable< T , Eq , A >::reset( std::size_t m )
 
 template< class T , class Eq , class A >
 template< class K , class Make >
-std::pair< T * , bool > PointerTable< T , Eq , A >::find_or_insert(
+ADS_PT_INLINE std::pair< T * , bool >
+PointerTable< T , Eq , A >::find_or_insert(
                          const K & key , std::uint64_t hash , Make && make )
 {
  if( f_S.empty() )                          // moved from
