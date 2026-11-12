@@ -2262,6 +2262,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- FastFlowExecutor::bulk() gives each call all the workers and at least
+  one index per worker, those from n doing nothing: with fewer indices
+  than workers FastFlow wakes up only the workers given one, while its
+  barrier waits for all of them, and when the number of workers changes it
+  resets the barrier also while a worker of the previous call is still
+  spinning in it, so that a shortest path by rhoStepping on a grid, whose
+  steps make many small calls, hung; the test engineered_runtime
+  fastflow-bulk-sizes
+
 - BTreeMap::build() fills the children of an internal node and then its
   bounds in two loops, since with the bound under a test of the index in
   the same loop the code of the loop vectorizer of g++ 15 at -O3 built

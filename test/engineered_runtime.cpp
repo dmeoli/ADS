@@ -308,6 +308,28 @@ ADS_TEST( "fastflow-loops" )
 #endif
  }
 
+// many calls of bulk() of sizes from 2 to beyond the workers, on an executor
+// that spins, each of which must wake up all the workers that its barrier
+// waits for, and must not change their number
+ADS_TEST( "fastflow-bulk-sizes" )
+{
+#if defined( ADS_WITH_FASTFLOW )
+ constexpr std::size_t p = 4;
+ FastFlowExecutor ex( p , true );
+ std::vector< long > v( 2 * p );
+ long s = 0 , expected = 0;
+ for( long call = 0 ; call < 200000 ; ++call ) {
+  const std::size_t n = 2 + std::size_t( call ) % ( 2 * p - 1 );
+  ex.bulk( n , [ & ]( std::size_t i ) { v[ i ] = long( i ) + call; } );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   s += v[ i ];
+   expected += long( i ) + call;
+   }
+  }
+ CHECK( s == expected );
+#endif
+ }
+
 // isRunCaller(): false outside a run; true in the calls that run on the
 // caller, i.e., f( 0 ) on Sequential, the pool and OpenMP, none on
 // FastFlow with more than one worker, at most one on oneTBB; true again in

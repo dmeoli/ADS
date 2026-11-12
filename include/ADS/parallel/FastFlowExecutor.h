@@ -2,33 +2,38 @@
 /*------------------------ File FastFlowExecutor.h -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The executor [see `Executor.h`] on the threads of FastFlow, beyond the
- * book, compiled only with `ADS_WITH_FASTFLOW` (the CMake option of the same
- * name, OFF by default) and the headers of FastFlow on the path:
- * `bulk( n , f )` is a `parallel_for` of a `ParallelFor` of FastFlow on
- * \f$ n \f$ indices in chunks of 1, scheduled dynamically by the workers
- * themselves (the scheduler thread is disabled, since the pool already has
- * as many workers as threads), so that the parallel algorithms of ADS run on
- * FastFlow unchanged. The `ParallelFor` is built at the first call of
- * `bulk()` that needs it and kept with the executor, and its \f$ p \f$
- * workers wait between the calls by spinning if `spin` is true (the default
- * of the executor, not of FastFlow), or sleeping otherwise; the thread that
- * calls `bulk()` waits for them and does not work. A call of `bulk()` from a
- * call of `bulk()` runs its calls in order on that thread, since a
- * `ParallelFor` does not nest. `run( p , f )` is a `parallel_for` of
- * another `ParallelFor`, also built at its first call, whose workers sleep
- * between the calls (those of `bulk()` are put to sleep before a run): the
- * workers of a run are long-lived, gain nothing by spinning between runs,
- * and threads that spin unpinned may share a core with the thread that a
- * run waits for, which then waits a quantum of the scheduler of the system
- * (milliseconds). On the \f$ p \f$ calls of long-lived workers FastFlow
- * gives each of its first \f$ p \f$ workers its own index before any
- * worker looks at the indices of the others, so that the calls run at the
- * same time, one per worker, and the caller only waits for them (no call
- * runs on it, `isRunCaller()` is false in each). Its lock is the spin lock
- * of FastFlow (`ff::lock_t`, `FastFlowLock`), the one its runtime takes,
- * whose `try_lock()` is one test-and-set of its flag; the farm with
- * feedback runs on a farm of FastFlow [see `Farm.h`].
+ * The executor [see `Executor.h`] on the threads of FastFlow, beyond the book,
+ * compiled only with `ADS_WITH_FASTFLOW` (the CMake option of the same name,
+ * OFF by default) and the headers of FastFlow on the path: `bulk( n , f )` is
+ * a `parallel_for` of a `ParallelFor` of FastFlow on \f$ n \f$ indices in
+ * chunks of 1, scheduled dynamically by the workers themselves (the scheduler
+ * thread is disabled, since the pool already has as many workers as threads),
+ * so that the parallel algorithms of ADS run on FastFlow unchanged. Each call
+ * is given all the \f$ p \f$ workers and at least \f$ p \f$ indices, those
+ * from \f$ n \f$ on doing nothing: the spinning workers of FastFlow meet at a
+ * barrier of all the workers of the call, but only those given an index are
+ * woken up, and FastFlow resets the barrier whenever the number of workers
+ * changes from a call to the next, also while a worker of the previous call
+ * may still be spinning in it; either way the barrier is never passed. The
+ * `ParallelFor` is built at the first call of `bulk()` that needs it and kept
+ * with the executor, and its \f$ p \f$ workers wait between the calls by
+ * spinning if `spin` is true (the default of the executor, not of FastFlow),
+ * or sleeping otherwise; the thread that calls `bulk()` waits for them and
+ * does not work. A call of `bulk()` from a call of `bulk()` runs its calls in
+ * order on that thread, since a `ParallelFor` does not nest. `run( p , f )` is
+ * a `parallel_for` of another `ParallelFor`, also built at its first call,
+ * whose workers sleep between the calls (those of `bulk()` are put to sleep
+ * before a run): the workers of a run are long-lived, gain nothing by spinning
+ * between runs, and threads that spin unpinned may share a core with the
+ * thread that a run waits for, which then waits a quantum of the scheduler of
+ * the system (milliseconds). On the \f$ p \f$ calls of long-lived workers
+ * FastFlow gives each of its first \f$ p \f$ workers its own index before any
+ * worker looks at the indices of the others, so that the calls run at the same
+ * time, one per worker, and the caller only waits for them (no call runs on
+ * it, `isRunCaller()` is false in each). Its lock is the spin lock of FastFlow
+ * (`ff::lock_t`, `FastFlowLock`), the one its runtime takes, whose
+ * `try_lock()` is one test-and-set of its flag; the farm with feedback runs on
+ * a farm of FastFlow [see `Farm.h`].
  *
  * Unless `ADS_FASTFLOW_MAPPING` is defined, the header defines
  * `NO_DEFAULT_MAPPING` before it includes FastFlow: by default FastFlow pins
@@ -247,8 +252,9 @@ class FastFlowExecutor {
  /// 3 & \qquad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do}
  ///     \ f( i ) \cr
  /// 4 & \quad \textbf{else}\ \text{the } \mathrm{parallel\_for} \text{ of }
- ///     \text{FastFlow on } [ 0 , n ) \text{ in chunks of 1, on }
- ///     \min\{ p , n \} \text{ workers}
+ ///     \text{FastFlow on } [ 0 , \max\{ n , p \} ) \text{ in chunks of 1,}
+ ///     \text{ on all the } p \text{ workers, the indices from } n
+ ///     \text{ doing nothing}
  /// \end{array}}
  /// \f]
  template< class F >
@@ -260,8 +266,10 @@ class FastFlowExecutor {
    }
   std::lock_guard< std::mutex > g( f_lock );
   detail::FirstError error;
-  loop().parallel_for( 0 , long( n ) , 1 , 1 , [ & ]( const long i ) {
-   if( error.failed() )
+  // at least one index per worker, those from n doing nothing
+  const long m = long( std::max( n , f_p ) );
+  loop().parallel_for( 0 , m , 1 , 1 , [ & ]( const long i ) {
+   if( ( std::size_t( i ) >= n ) || error.failed() )
     return;
    tl_inside = true;
    try {
@@ -271,7 +279,7 @@ class FastFlowExecutor {
     error.keep();
     }
    tl_inside = false;
-   } , long( std::min( f_p , n ) ) );
+   } , long( f_p ) );
   error.rethrow();
   }
 
