@@ -1823,3 +1823,13 @@ engineered_search  trit-array             cinque valori ternari per byte
 engineered_search  zobrist-ranges         Zobrist su array e span
 engineered_search  backoff-threads        attesa con backoff esponenziale
 engineered_search  affinity               thread fissati ai processori
+
+# P. Morin, Open Data Structures (in C++), chapters 5, 10, 11, 12, 13 and
+# 14, beyond the book
+ods_ints  ods13.1.binary-trie            Morin 13.1, trie binario
+ods_ints  ods.ex13.1.simple-binary-trie  Morin es. 13.1, trie senza salti
+ods_ints  ods13.2.x-fast-trie            Morin 13.2, x-fast trie
+ods_ints  ods.ex13.2.list-x-fast-trie    Morin es. 13.2, x-fast trie su lista
+ods_ints  ods.ex13.4.find-near           Morin es. 13.4, ricerca vicina
+ods_ints  ods13.3.y-fast-trie            Morin 13.3, y-fast trie
+ods_ints  ods.ex13.3.bitmap-trie         Morin es. 13.3, trie di stringhe
