@@ -40,7 +40,29 @@
  *   distinct strings of length at most \f$ L \f$ collide with probability
  *   at most \f$ L / p \f$, since their difference is a polynomial of degree
  *   at most \f$ L \f$, not zero, with at most \f$ L \f$ roots; it turns a
- *   string into a key for the classes above.
+ *   string into a key for the classes above;
+ * - `MultiplicativeHash`, the multiplicative hashing of section 5.1.1 of
+ *   Morin's book, the class above with \f$ h = 64 \f$ and \f$ l \f$ chosen
+ *   by the table: its `place( k , 2^d )` takes the \f$ d \f$ high bits of
+ *   \f$ z x \bmod 2^{64} \f$, so that a table of \f$ 2^d \f$ places that
+ *   grows and shrinks keeps one function [see `PlaceHash` in
+ *   `TableSize.h`];
+ * - `CompoundHash`, the hash code of an object of \f$ r \f$ parts of
+ *   section 5.3.2 of Morin's book, a sum of products by random words
+ *   reduced by a multiplicative hash of 128 bits, two distinct tuples
+ *   colliding with probability at most \f$ 3 / 2^{64} \f$;
+ * - `SequenceHash`, the hash code of the arrays and of the strings of
+ *   section 5.3.3 of Morin's book, the polynomial of `StringHash` with the
+ *   end marker \f$ p - 1 \f$ in place of the shift of each character by
+ *   one, so that it takes the words of 64 bits, reduced to 60 bits, and
+ *   not only the bytes.
+ *
+ * Against the code of Morin's book: the words are of 64 bits, where the
+ * book has \f$ w = 32 \f$, and the prime of `SequenceHash` is
+ * \f$ 2^{61} - 1 \f$, whose products are reduced by shifts and masks
+ * [see `mulMod61()`], where the book uses \f$ 2^{32} - 5 \f$ and a
+ * division; the collision bounds are \f$ 2^{32} \f$ times smaller for the
+ * same work per word.
  *
  * `DLeftHashTable` is the d-left hashing of Vöcking on top of them:
  * \f$ d \f$ tables of \f$ m / d \f$ lists, each with a function of its own,
@@ -73,6 +95,8 @@
  * \see J. L. Carter, M. N. Wegman, Universal classes of hash functions,
  *      Journal of Computer and System Sciences 18(2), 143-154, 1979,
  *      doi:10.1016/0022-0000(79)90044-8
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, sections 5.1.1 and 5.3
  * \see M. Dietzfelbinger, T. Hagerup, J. Katajainen, M. Penttonen, A
  *      reliable randomized algorithm for the closest-pair problem, Journal
  *      of Algorithms 25(1), 19-51, 1997, doi:10.1006/jagm.1997.0873
@@ -104,16 +128,19 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/numeric/NumberTheory.h"
 #include "ADS/numeric/RandomNumbers.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iterator>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -267,6 +294,141 @@ class StringHash {
 
  private:
  std::uint64_t f_x;   ///< the point, in \f$ [ 1 , p ) \f$
+ };
+
+/*--------------------------------------------------------------------------*/
+/*----------------------- CLASS MultiplicativeHash -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the multiplicative hashing of section 5.1.1 of Morin's book,
+/// \f$ \mathrm{hash}( x ) = ( z x \bmod 2^w ) \operatorname{div} 2^{w-d} \f$
+/// on a table of \f$ 2^d \f$ places, \f$ z \f$ a random odd word and
+/// \f$ x \f$ the hash code `Code( k )` of the key
+template< class K = std::uint64_t , class Code = std::hash< K > >
+class MultiplicativeHash {
+ public:
+ /// a function with a random odd \f$ z \f$ of 64 bits, from the seed
+ explicit MultiplicativeHash( std::uint64_t seed = 1 , Code code = Code() );
+
+ /// the function of the multiplier \f$ z \f$
+ /// \pre \f$ z \f$ odd
+ [[nodiscard]] static MultiplicativeHash ofMultiplier( std::uint64_t z ,
+                                                       Code code = Code() );
+
+ /// the product \f$ z x \bmod 2^{64} \f$, whose high bits are the hash
+ [[nodiscard]] std::uint64_t operator()( const K & k ) const;
+
+ /// the place of \f$ k \f$ in a table of \f$ m = 2^d \f$ places, the
+ /// \f$ d \f$ high bits of \f$ z x \bmod 2^{64} \f$ [see `PlaceHash` in
+ /// `TableSize.h`]; two distinct codes collide with probability at most
+ /// \f$ 2 / 2^d \f$ (Lemma 5.1 of Morin's book)
+ ///
+ /// In pseudocode (section 5.1.1 of Morin's book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{place}( k , 2^d ) \cr
+ /// 2 & \quad \textbf{return}\ ( z \cdot \mathrm{code}( k ) \bmod 2^w )
+ ///     \operatorname{div} 2^{w-d}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ m \f$ is a power of two
+ /// \post the result is below \f$ m \f$
+ [[nodiscard]] std::size_t place( const K & k , std::size_t m ) const;
+
+ /// the multiplier \f$ z \f$
+ [[nodiscard]] std::uint64_t multiplier( void ) const { return( f_z ); }
+
+ private:
+ std::uint64_t f_z;                ///< the odd multiplier
+ [[no_unique_address]] Code f_code;   ///< the hash code of the keys
+ };
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CLASS CompoundHash ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the hash code of an object of \f$ r \f$ parts of section 5.3.2 of Morin's
+/// book, \f$ h( x_0 , \ldots , x_{r-1} ) = ( ( z \sum_i z_i x_i ) \bmod
+/// 2^{2w} ) \operatorname{div} 2^w \f$ with \f$ w = 64 \f$, the
+/// \f$ z_i \f$ random words and \f$ z \f$ a random odd integer of
+/// \f$ 2 w \f$ bits: two distinct tuples collide with probability at most
+/// \f$ 3 / 2^w \f$ (Theorem 5.3 of Morin's book), where the XOR or the sum
+/// of the parts make large sets of tuples collide (exercises 5.7 to 5.9)
+class CompoundHash {
+ public:
+ /// a function of tuples of \f$ r \f$ words, its multipliers from the seed
+ /// \pre \f$ r \ge 1 \f$
+ explicit CompoundHash( std::size_t r , std::uint64_t seed = 1 );
+
+ /// \f$ h( x_0 , \ldots , x_{r-1} ) \f$, in \f$ O( r ) \f$ time
+ ///
+ /// In pseudocode (section 5.3.2 of Morin's book), on integers of
+ /// \f$ 2 w \f$ bits:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ h( x_0 , \ldots , x_{r-1} ) \cr
+ /// 2 & \quad s \gets 0 \cr
+ /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ r - 1\ \textbf{do}
+ ///     \ s \gets ( s + z_i x_i ) \bmod 2^{2w} \cr
+ /// 4 & \quad \textbf{return}\ ( z s \bmod 2^{2w} ) \operatorname{div} 2^w
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ x \f$ has \f$ r \f$ words
+ [[nodiscard]] std::uint64_t operator()( std::span< const std::uint64_t > x )
+  const;
+
+ /// the number \f$ r \f$ of parts
+ [[nodiscard]] std::size_t parts( void ) const { return( f_Z.size() ); }
+
+ private:
+ std::vector< std::uint64_t > f_Z;   ///< the multipliers \f$ z_i \f$
+ std::uint64_t f_lo , f_hi;          ///< the halves of \f$ z \f$, odd
+ };
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CLASS SequenceHash ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the hash code of the arrays and of the strings of section 5.3.3 of
+/// Morin's book, a polynomial over the prime field of
+/// \f$ p = 2^{61} - 1 \f$ with an end marker,
+/// \f$ h( x_0 , \ldots , x_{r-1} ) = ( \sum_i x_i z^i + ( p - 1 ) z^r )
+/// \bmod p \f$
+class SequenceHash {
+ public:
+ /// a function with a random point \f$ z \f$ and a random odd multiplier
+ /// for the reduction of the words, from the seed
+ explicit SequenceHash( std::uint64_t seed = 1 );
+
+ /// \f$ h \f$ of an array of words, each reduced first to 60 bits by the
+ /// multiplicative hashing [see `MultiplicativeHash`], so that it lies in
+ /// \f$ \{ 0 , \ldots , p - 2 \} \f$ and \f$ p - 1 \f$ marks the end: two
+ /// distinct arrays, the longer of \f$ r \f$ words, collide with
+ /// probability at most \f$ 2 / 2^{60} + r / p \f$
+ ///
+ /// In pseudocode (section 5.3.3 of Morin's book), by the rule of Horner
+ /// from the end marker:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ h( x_0 , \ldots , x_{r-1} ) \cr
+ /// 2 & \quad h \gets p - 1 \cr
+ /// 3 & \quad \textbf{for}\ i \gets r - 1\ \textbf{downto}\ 0\ \textbf{do}
+ ///     \ h \gets ( h z + \lfloor ( a x_i \bmod 2^{64} ) / 2^4 \rfloor )
+ ///     \bmod p \cr
+ /// 4 & \quad \textbf{return}\ h
+ /// \end{array}}
+ /// \f]
+ [[nodiscard]] std::uint64_t operator()( std::span< const std::uint64_t > x )
+  const;
+
+ /// \f$ h \f$ of a string, its bytes \f$ x_i < p - 1 \f$ taken as they
+ /// are: two distinct strings, the longer of \f$ r \f$ bytes, collide with
+ /// probability at most \f$ r / p \f$ (Theorem 5.5 of Morin's book)
+ [[nodiscard]] std::uint64_t operator()( std::string_view s ) const;
+
+ private:
+ std::uint64_t f_z;   ///< the point, in \f$ [ 1 , p ) \f$
+ std::uint64_t f_a;   ///< the odd multiplier of the reduction
  };
 
 /*--------------------------------------------------------------------------*/

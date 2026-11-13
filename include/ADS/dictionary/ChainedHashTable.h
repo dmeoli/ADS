@@ -19,7 +19,14 @@
  * \f$ \alpha > 2 \f$ and halving it, down to the initial size, when
  * \f$ \alpha < 1 / 2 \f$: the two thresholds are 4 times apart, so that
  * between two restructurings there are at least \f$ m / 4 \f$ operations and
- * the cost stays \f$ O( 1 ) \f$ amortized [see `TableSize.h`].
+ * the cost stays \f$ O( 1 ) \f$ amortized [see `TableSize.h`]; any other
+ * two loads \f$ g > 2 s \f$ may be given, e.g., the 1 and \f$ 1 / 3 \f$ of
+ * the `ChainedHashTable` of section 5.1 of Morin's book. A hash that is a
+ * `PlaceHash` [see `TableSize.h`], e.g., the multiplicative hashing of
+ * Morin's book [see `MultiplicativeHash` in `UniversalHashing.h`], gives
+ * the place itself on a table of \f$ 2^d \f$ lists, which with
+ * \f$ g = 1 \f$ and \f$ s = 1 / 3 \f$ is the table of the book, its
+ * lists in the `List` of ADS instead of an array each.
  *
  * The contracts [see `Contract.h`]: \f$ m > 0 \f$ and a list that exists for
  * `chain()`; after `insert()` the key is in the table and after `remove()`
@@ -33,6 +40,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 7.2-7.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap07.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, section 5.1
  * \see W. W. Peterson, Addressing for random-access storage, IBM Journal
  *      of Research and Development 1(2), 130-146, 1957,
  *      doi:10.1147/rd.12.0130
@@ -96,10 +105,22 @@ class ChainedHashTable {
  using Key = K;     ///< the type of the keys
  using Value = V;   ///< the type of the values
 
- /// the empty table of \f$ m \f$ lists, which restructures itself or not
- /// \pre \f$ m > 0 \f$
+ /// the empty table of \f$ m \f$ lists, which restructures itself or not,
+ /// at the loads 2 and \f$ 1 / 2 \f$
+ /// \pre \f$ m > 0 \f$, a power of two if \f$ H \f$ is a `PlaceHash`
  explicit ChainedHashTable( std::size_t m , bool restructure = false ,
                             H h = H() );
+
+ /// the empty table of \f$ m \f$ lists, which doubles when its load
+ /// exceeds \f$ g \f$ and halves, down to \f$ m \f$, when it falls below
+ /// \f$ s \f$; \f$ g = 1 \f$ and \f$ s = 1 / 3 \f$ are the rules of the
+ /// `ChainedHashTable` of section 5.1 of Morin's book, which keep the
+ /// lists shorter, \f$ 1 + \alpha \le 2 \f$ cells per unsuccessful
+ /// search, at the price of a table up to twice as large
+ /// \pre \f$ m > 0 \f$, a power of two if \f$ H \f$ is a `PlaceHash`;
+ ///      \f$ g > 2 s \ge 0 \f$, so that a table just doubled or halved is
+ ///      within the two loads
+ ChainedHashTable( std::size_t m , double g , double s , H h = H() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -125,7 +146,7 @@ class ChainedHashTable {
  /// associates the value \f$ v \f$ to the key \f$ k \f$
  ///
  /// In pseudocode (sections 7.2.1 and 7.4), the table doubling past the load
- /// 2 if it restructures itself [see `resized()`]:
+ /// \f$ g \f$, 2 by default, if it restructures itself [see `resized()`]:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( k , v ) \cr
@@ -135,7 +156,7 @@ class ChainedHashTable {
  /// 4 & \quad \text{put } ( k , v ) \text{ at the head of } L \text{, or in}
  ///     \text{ order if } L \text{ is sorted} \cr
  /// 5 & \quad n \gets n + 1 \cr
- /// 6 & \quad \textbf{if}\ n > 2 m\ \textbf{then}\ \text{move every pair }
+ /// 6 & \quad \textbf{if}\ n > g m\ \textbf{then}\ \text{move every pair }
  ///     \text{to a table of } \mathrm{resized}( m ) \text{ lists}
  /// \end{array}}
  /// \f]
@@ -143,8 +164,8 @@ class ChainedHashTable {
  void insert( const K & k , const V & v );
 
  /// removes the key \f$ k \f$, if it is there, from its list; the table, if
- /// it restructures itself, halves below the load \f$ 1 / 2 \f$, down to its
- /// initial size
+ /// it restructures itself, halves below the load \f$ s \f$,
+ /// \f$ 1 / 2 \f$ by default, down to its initial size
  /// \post \f$ k \f$ is not in the table
  void remove( const K & k );
 
@@ -286,7 +307,8 @@ class ChainedHashTable {
 
  private:
 
- /// the list of \f$ k \f$, \f$ H( k ) = h( k ) \bmod m \f$
+ /// the list of \f$ k \f$, \f$ H( k ) = h( k ) \bmod m \f$, or
+ /// `h.place( k , m )` for a `PlaceHash`
 [[nodiscard]] std::size_t place( const K & k ) const;
 
  /// the cell of \f$ k \f$, or where the search stopped: the end of the list,
@@ -312,6 +334,8 @@ void rebuild( std::size_t m );
  mutable std::vector< Bucket > f_T;       ///< the lists
  std::size_t f_m0;                         ///< the initial size
  bool f_restructure;                       ///< whether it restructures
+ double f_grow = 2;                        ///< the load that doubles it
+ double f_shrink = 0.5;                    ///< the load that halves it
  H f_h;                                    ///< the hash of the keys
  std::size_t f_size = 0;                   ///< the number of keys
  mutable std::size_t f_probes = 0;         ///< see `probes()`

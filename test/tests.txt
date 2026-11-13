@@ -1839,3 +1839,7 @@ ods_ints  ods.ex10.5.dary-heap           Morin es. 10.5, heap d-ario
 ods_ints  ods10.2.meldable-heap          Morin 10.2 ed es. 10.6-10.9, heap fondibile
 ods_ints  ods.ex10.10.k-smallest         Morin es. 10.10, i k minimi
 ods_ints  ods.ex10.11.k-way-merge        Morin es. 10.11, fusione di k liste
+ods_ints  ods5.1.chained-hash-table      Morin 5.1, liste di trabocco e regole di Morin
+ods_ints  ods5.1.multiplicative-hash     Morin 5.1.1 ed es. 5.2-5.3, hash moltiplicativo
+ods_ints  ods5.2.linear-hash-table       Morin 5.2, ispezione lineare e tabulazione
+ods_ints  ods5.3.hash-codes              Morin 5.3 ed es. 5.6-5.10, codici hash

@@ -83,6 +83,17 @@ inline std::uint64_t TabulationHash::operator()( std::uint64_t x ) const
  return( h );
  }
 
+inline std::size_t TabulationHash::place( std::uint64_t x ,
+                                          std::size_t m ) const
+{
+ ADS_PRE( ( m > 0 ) && ( ( m & ( m - 1 ) ) == 0 ) );
+ const int d = std::countr_zero( std::uint64_t( m ) );
+ const std::size_t r = d == 0 ? 0 :
+                       std::size_t( ( *this )( x ) >> ( 64 - d ) );
+ ADS_POST( r < m );
+ return( r );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

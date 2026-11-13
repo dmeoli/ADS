@@ -22,6 +22,10 @@
 #include "ADSTest.h"
 
 #include "ADS/dictionary/BinaryTrie.h"
+#include "ADS/dictionary/ChainedHashTable.h"
+#include "ADS/dictionary/OpenHashTable.h"
+#include "ADS/dictionary/RandomHashing.h"
+#include "ADS/dictionary/UniversalHashing.h"
 #include "ADS/dictionary/BitmapTrie.h"
 #include "ADS/dictionary/XFastTrie.h"
 #include "ADS/dictionary/YFastTrie.h"
@@ -31,6 +35,9 @@
 #include "ADS/priority/MultiwayMerge.h"
 
 #include <algorithm>
+#include <bit>
+#include <cmath>
+#include <span>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -703,6 +710,228 @@ ADS_TEST( "ods.ex10.11.k-way-merge" )
  std::vector< int > E( n );
  ADS::multiwayMerge( R , E.data() );
  CHECK( M.size() == n && M == E );
+ }
+
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CHAPTER 5, HASHING ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a differential test of a dictionary against a std::map, with the load
+/// of the table checked after each operation by `check( t )`
+template< class T , class F >
+void tableAgainstMap( T & t , int ops , std::uint64_t universe ,
+                      std::uint64_t seed , F && check )
+{
+ std::map< std::uint64_t , int > m;
+ std::mt19937_64 g( seed );
+ for( int i = 0 ; i < ops ; ++i ) {
+  const std::uint64_t k = g() % universe;
+  // a growing phase, a shrinking one, and a mixed one
+  const int phase = 3 * i / ops;
+  const auto c = g() % 10;
+  if( ( phase == 0 && c < 8 ) || ( phase == 2 && c < 5 ) ) {
+   t.insert( k , i );
+   m[ k ] = i;
+   }
+  else {
+   t.remove( k );
+   m.erase( k );
+   }
+  CHECK( t.size() == m.size() );
+  CHECK( t.contains( k ) == ( m.count( k ) == 1 ) );
+  check( t );
+  }
+ for( const auto & [ k , v ] : m )
+  CHECK( t.lookup( k ) == v );
+ }
+
+// ods 5.1: the table of the lists with the multiplicative hashing on
+// 2^d lists and the rules of Morin's book, a load at most 1 and, above the
+// initial size, at least 1/3, against a std::map; the places taken from the
+// high bits, the same for any table size
+ADS_TEST( "ods5.1.chained-hash-table" )
+{
+ using H = ADS::MultiplicativeHash< std::uint64_t >;
+ ADS::ChainedHashTable< std::uint64_t , int , ADS::Chain::FRONT , H >
+  t( 4 , 1.0 , 1.0 / 3 , H( 7 ) );
+ tableAgainstMap( t , 60000 , 1u << 14 , 1 , [ & ]( const auto & T ) {
+  CHECK( ADS::is_pow2( T.capacity() ) && T.size() <= T.capacity() );
+  CHECK( T.capacity() == 4 || 3 * T.size() >= T.capacity() - 3 );
+  } );
+ CHECK( t.restructures() > 10 );
+ // the keys that differ in their low bits only spread over the table,
+ // while h( k ) mod m would put them in one list
+ ADS::ChainedHashTable< std::uint64_t , int , ADS::Chain::FRONT , H >
+  u( 1024 , false , H( 3 ) );
+ for( std::uint64_t k = 0 ; k < 1024 ; ++k )
+  u.insert( k << 20 , 0 );
+ std::size_t longest = 0;
+ for( std::size_t i = 0 ; i < 1024 ; ++i )
+  longest = std::max( longest , u.chain( i ).size() );
+ CHECK( longest <= 8 );
+ const H h( 5 );
+ for( std::uint64_t k = 1 ; k < 1000 ; k += 7 )
+  for( std::size_t m = 1 ; m <= ( std::size_t( 1 ) << 20 ) ; m <<= 1 )
+   CHECK( h.place( k , m ) == ( m == 1 ? 0 : h( k ) >> ( 64 -
+                                std::countr_zero( std::uint64_t( m ) ) ) ) );
+ }
+
+/// the modular inverse of an odd \f$ z \f$ modulo \f$ 2^{64} \f$, by the
+/// iteration of Newton, each step doubling the bits that are right
+std::uint64_t inverse64( std::uint64_t z )
+{
+ std::uint64_t y = z;   // right on 3 bits, z z = 1 mod 8
+ for( int i = 0 ; i < 5 ; ++i )
+  y *= 2 - z * y;
+ return( y );
+ }
+
+// ods 5.1.1, ods ex 5.2 and ex 5.3: two distinct keys collide under the
+// multiplicative hashing with probability at most 2 / 2^d (Lemma 5.1), and
+// exactly 2 / 2^d for x = 2^( w - d - 2 ) and y = 3 x (exercise 5.3), over
+// 2^17 random multipliers; for a given z, the n = 2^d keys z^-1 j, j < n,
+// all have the hash 0 when d <= w / 2 (exercise 5.2)
+ADS_TEST( "ods5.1.multiplicative-hash" )
+{
+ const int d = 4;
+ const std::size_t m = std::size_t( 1 ) << d;
+ const int N = 1 << 17;
+ const std::uint64_t x = std::uint64_t( 1 ) << ( 64 - d - 2 ) , y = 3 * x;
+ int same = 0 , random = 0;
+ std::mt19937_64 g( 11 );
+ for( int i = 0 ; i < N ; ++i ) {
+  const auto h = ADS::MultiplicativeHash<>::ofMultiplier( g() | 1 );
+  same += h.place( x , m ) == h.place( y , m );
+  const std::uint64_t a = g() , b = g();
+  random += h.place( a , m ) == h.place( b , m );
+  }
+ // the binomial of mean N / 8 and of mean at most N / 8, within 5 sigma
+ const double mean = N * 2.0 / m , sigma = std::sqrt( mean );
+ CHECK( std::abs( same - mean ) < 5 * sigma );
+ CHECK( random < mean + 5 * sigma );
+ for( std::uint64_t z : { 1ULL , 3ULL , 0x9e3779b97f4a7c15ULL , ~0ULL } ) {
+  const auto h = ADS::MultiplicativeHash<>::ofMultiplier( z );
+  const std::uint64_t zi = inverse64( z );
+  CHECK( z * zi == 1 );
+  const std::size_t n = std::size_t( 1 ) << 20;   // d = 20 <= w / 2
+  for( std::uint64_t j = 0 ; j < n ; j += 997 )
+   CHECK( h.place( zi * j , n ) == 0 );
+  }
+ }
+
+// ods 5.2: the table of the linear inspection with the tabulation hashing
+// on 2^d places and the rules of Morin's book, against a std::map: the
+// full and deleted places at most half, the keys above an eighth past the
+// initial size; a table emptied by removals and refilled with other keys
+// is rebuilt at its size instead of doubling for ever
+ADS_TEST( "ods5.2.linear-hash-table" )
+{
+ ADS::OpenHashTable< std::uint64_t , int , ADS::TabulationHash >
+  t( 8 , ADS::Probing::linear( 1 ) , true , ADS::TabulationHash( 3 ) );
+ tableAgainstMap( t , 60000 , 1u << 13 , 2 , [ & ]( const auto & T ) {
+  CHECK( ADS::is_pow2( T.capacity() ) );
+  CHECK( 2 * T.size() <= T.capacity() );
+  } );
+ ADS::OpenHashTable< std::uint64_t , int , ADS::TabulationHash >
+  u( 8 , ADS::Probing::linear( 1 ) , true , ADS::TabulationHash( 4 ) );
+ std::uint64_t next = 0;
+ for( int round = 0 ; round < 200 ; ++round ) {
+  for( int i = 0 ; i < 100 ; ++i )
+   u.insert( next + std::uint64_t( i ) , i );
+  for( int i = 0 ; i < 100 ; ++i )
+   u.remove( next + std::uint64_t( i ) );
+  next += 100;
+  }
+ CHECK( u.empty() && u.capacity() <= 512 );
+ const ADS::TabulationHash h( 9 );
+ for( std::uint64_t k = 0 ; k < 1000 ; k += 13 )
+  CHECK( h.place( k , 1 ) == 0 && h.place( k , 1024 ) == ( h( k ) >> 54 ) );
+ }
+
+/// the hash code of exercise 5.6, the early String.hashCode() of Java on
+/// the characters of even place only, s_0 31^( k - 1 ) + s_2 31^( k - 2 )
+/// + ... modulo 2^32
+std::uint32_t evenCharacters( const std::string & s )
+{
+ std::uint32_t h = 0;
+ for( std::size_t i = 0 ; i < s.size() ; i += 2 )
+  h = 31 * h + static_cast< unsigned char >( s[ i ] );
+ return( h );
+ }
+
+// ods 5.3 and ods ex 5.6 to ex 5.10: the hash codes of the compound objects
+// and of the sequences tell apart the large sets of objects on which the XOR
+// of two words (all ( x , x ) give 0, exercise 5.7), their sum (all
+// ( x , c - x ) give c, exercise 5.8) and the hash of the even characters
+// (all the strings that differ in the odd places, exercise 5.6) collide;
+// any function of two words into one has a value of at least 2^w pairs
+// (exercise 5.9, on words of 8 bits); the prefixes of an array and the
+// arrays of zeros of different lengths differ; and x mod ( 2^w - 1 ) by the
+// sums of the halves (exercise 5.10)
+ADS_TEST( "ods5.3.hash-codes" )
+{
+ const ADS::CompoundHash c( 2 , 5 );
+ std::set< std::uint64_t > H;
+ for( std::uint64_t x = 0 ; x < 20000 ; ++x ) {
+  CHECK( ( x ^ x ) == 0 && ( x + ( 12345 - x ) ) == 12345 );
+  const std::uint64_t a[ 2 ] = { x , x } , b[ 2 ] = { x , 12345 - x };
+  H.insert( c( a ) );
+  H.insert( c( b ) );
+  }
+ CHECK( H.size() >= 39999 );   // ( 6172 , 6173 ) is in both sets
+ const ADS::CompoundHash c3( 3 , 6 );
+ const std::uint64_t p[ 3 ] = { 1 , 2 , 3 } , q[ 3 ] = { 1 , 2 , 4 };
+ CHECK( c3( p ) != c3( q ) );
+
+ // exercise 5.6: 2^10 strings of 20 characters with one even-place hash
+ const ADS::SequenceHash s( 7 );
+ std::set< std::uint32_t > E;
+ std::set< std::uint64_t > S;
+ for( unsigned v = 0 ; v < 1024 ; ++v ) {
+  std::string w( 20 , 'a' );
+  for( int i = 0 ; i < 10 ; ++i )
+   w[ 2 * std::size_t( i ) + 1 ] = ( v >> i ) & 1 ? 'b' : 'a';
+  E.insert( evenCharacters( w ) );
+  S.insert( s( w ) );
+  }
+ CHECK( E.size() == 1 && S.size() == 1024 );
+
+ // the arrays of zeros of lengths 0 to 999, and the prefixes of an array
+ std::set< std::uint64_t > Z , P;
+ std::vector< std::uint64_t > zeros , pre;
+ std::mt19937_64 g( 12 );
+ for( int i = 0 ; i < 1000 ; ++i ) {
+  Z.insert( s( std::span< const std::uint64_t >( zeros ) ) );
+  P.insert( s( std::span< const std::uint64_t >( pre ) ) );
+  zeros.push_back( 0 );
+  pre.push_back( g() );
+  }
+ CHECK( Z.size() == 1000 && P.size() == 1000 );
+ std::set< std::uint64_t > T;
+ for( int i = 0 ; i < 300 ; ++i )
+  T.insert( s( std::string( std::size_t( i ) , '\0' ) ) );
+ CHECK( T.size() == 300 );
+
+ // exercise 5.9: a function of two bytes into one byte, here the folded
+ // multiplicative hash, has a value taken by at least 2^8 pairs
+ std::vector< int > count( 256 , 0 );
+ for( unsigned x = 0 ; x < 256 ; ++x )
+  for( unsigned y = 0 ; y < 256 ; ++y )
+   ++count[ ( ( x * 0x9Du + y * 0x3Bu ) >> 3 ) & 0xFF ];
+ CHECK( *std::max_element( count.begin() , count.end() ) >= 256 );
+
+ // exercise 5.10: ( x mod 2^w ) + ( x div 2^w ) = x mod ( 2^w - 1 )
+ for( int w : { 7 , 31 , 32 , 61 } ) {
+  const std::uint64_t M = ( std::uint64_t( 1 ) << w ) - 1;
+  for( int i = 0 ; i < 10000 ; ++i ) {
+   std::uint64_t x = g() >> 1;   // so that the sums do not overflow
+   const std::uint64_t r = x % M;
+   while( x > M )
+    x = ( x & M ) + ( x >> w );
+   CHECK( ( x == M ? 0 : x ) == r );
+   }
+  }
  }
 
 }  // end( namespace )

@@ -68,7 +68,24 @@
  * `TableSize.h`]. A new size that the inspection does not work with, a
  * prime that divides the step of a linear one, is replaced by the next
  * prime that it works with. Since only a removal halves \f$ m \f$, a table
- * emptied may stay above its initial size.
+ * emptied may stay above its initial size. When the places are more than
+ * \f$ m / 2 \f$ because of the deleted ones, with at most \f$ m / 4 \f$
+ * keys, the table is rebuilt at the same size instead, as the
+ * `LinearHashTable` of section 5.2 of Morin's book does by sizing the new
+ * table on the keys alone (the smallest \f$ 2^d \ge 3 n \f$): the deleted
+ * places go away, and at least \f$ m / 4 \f$ insertions come before the
+ * next rebuild, so that the cost stays \f$ O( 1 ) \f$ amortized without
+ * the doubling that a table emptied by removals and refilled with other
+ * keys would otherwise repeat.
+ *
+ * A hash that is a `PlaceHash` [see `TableSize.h`] gives
+ * \f$ H_0( k ) \f$ itself on a table of \f$ 2^d \f$ places, e.g., the
+ * tabulation hashing of section 5.2.3 of Morin's book [see `TabulationHash`
+ * in `RandomHashing.h`], with which the table with the linear inspection
+ * and the restructuring is the `LinearHashTable` of the book; the other
+ * places of the inspection come from \f$ H_0( k ) \f$ alone, so that the
+ * double hashing degenerates into the linear inspection with such a
+ * hash.
  *
  * The contracts [see `Contract.h`]: \f$ m > 0 \f$ and an inspection that
  * works with \f$ m \f$ (a linear step coprime with \f$ m \f$, a prime
@@ -421,6 +438,9 @@ class OpenHashTable {
  /// inspection stopped (nil, or the last after m inspections); for an
  /// insertion of a key that is not there, the first deleted place met
  std::size_t scan( const K & k , bool insert ) const;
+
+ /// the hash \f$ h( k ) \f$, or `h.place( k , m )` for a `PlaceHash`
+ [[nodiscard]] std::size_t hashOf( const K & k ) const;
 
  /// the first place of the inspection of \f$ k \f$ that holds it, with no
  /// nil before it, or `capacity()`; `probes()` does not change
