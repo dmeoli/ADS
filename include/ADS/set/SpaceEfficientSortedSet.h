@@ -32,7 +32,7 @@
  * spread or a gather costs \f$ O( b^2 ) \f$ and leaves the \f$ b \f$ blocks
  * \f$ \Omega( b ) \f$ operations away from the next one, hence an insertion
  * or a removal costs \f$ O( \log n + b ) \f$ amortized time, the argument
- * of Lemma 3.3 of Morin.
+ * of Lemma 3.1 of Morin.
  *
  * Morin gives no code for it; what the benchmarks are to check is the
  * space, \f$ n + O( n / b + b ) \f$ items against the \f$ 3 n \f$ words of

@@ -14,12 +14,12 @@
  *
  * For the analysis of the treap to hold the priorities must behave as random
  * and independent of the keys, which a fixed function of the addresses does
- * not guarantee; what Lemma 7.2 of Morin needs is that, among any \f$ k \f$
- * nodes, each has the largest priority with probability \f$ O( 1 / k ) \f$
- * (the min-wise independence of the discussion of section 7.3 of Morin), and
- * the simple tabulation hashing of words of 8 characters, its tables drawn
- * from the seed, gives each of \f$ k \f$ addresses the extreme hash with
- * probability \f$ ( 1 \pm \epsilon ) / k \f$,
+ * not guarantee; the proof of Lemma 7.1 of Morin needs that, among any
+ * \f$ k \f$ nodes, each has the largest priority with probability
+ * \f$ O( 1 / k ) \f$ (the min-wise independence of the discussion of
+ * section 7.3 of Morin), and the simple tabulation hashing of words of 8
+ * characters, its tables drawn from the seed, gives each of \f$ k \f$
+ * addresses the extreme hash with probability \f$ ( 1 \pm \epsilon ) / k \f$,
  * \f$ \epsilon = O( \log^2 k / k^{1/8} ) \f$ (Theorem 3 of Pătraşcu and
  * Thorup, for the minimum, and the maximum is the minimum of the
  * complements), i.e., \f$ O( 1 / k ) \f$; hence the expected depth

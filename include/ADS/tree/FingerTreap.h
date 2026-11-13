@@ -12,7 +12,7 @@
  * \f$ r \f$ the keys between \f$ k \f$ and the key of \f$ u \f$: the lowest
  * common ancestor of the two nodes in a treap is the node of largest priority
  * among the \f$ r + 1 \f$ keys between them, and the expected depth of a node
- * below it, within that range, is \f$ O( \log r ) \f$ (Lemma 7.2 of Morin
+ * below it, within that range, is \f$ O( \log r ) \f$ (Lemma 7.1 of Morin
  * applied to the range), which is the argument of Seidel and Aragon for their
  * finger searches. `fingerLookup()` keeps the node of the last search as the
  * finger (part 3 of the exercise), so that a sequence of searches of keys

@@ -80,7 +80,8 @@ template< class D >
 std::vector< std::pair< int , int > > pairs( const D & d )
 {
  std::vector< std::pair< int , int > > P;
- d.forEach( [ & ]( const int & k , const int & v ) { P.emplace_back( k , v ); } );
+ d.forEach( [ & ]( const int & k , const int & v ) {
+  P.emplace_back( k , v ); } );
  return( P );
  }
 
