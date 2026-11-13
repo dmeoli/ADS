@@ -195,6 +195,36 @@ std::pair< std::size_t , W > minimumSwapSort( const std::vector< T > & A )
  return( std::pair( swaps , cost ) );
  }
 
+template< class G >
+std::uint64_t uniformBelow( G & g , std::uint64_t m )
+{
+ ADS_PRE( m > 0 );
+ //! [below]
+ std::uint64_t h;
+ std::uint64_t l = detail::wideProduct( std::uint64_t( g() ) , m , h );
+ if( l < m ) {                              // the rare case: reject the
+  const std::uint64_t t = ( 0 - m ) % m;    // 2^64 mod m low values
+  while( l < t ) l = detail::wideProduct( std::uint64_t( g() ) , m , h );
+  }
+ return( h );
+ //! [below]
+ }
+
+template< class T , class G >
+void permute( std::vector< T > & A , G & g )
+{
+ [[maybe_unused]] const std::vector< T > before =
+  ADS_CONTRACTS >= 3 ? A : std::vector< T >();
+ //! [permute]
+ for( std::size_t i = A.size() ; i > 1 ; --i ) {
+  using std::swap;
+  swap( A[ i - 1 ] , A[ uniformBelow( g , i ) ] );
+  }
+ //! [permute]
+ ADS_AUDIT( std::is_permutation( A.begin() , A.end() , before.begin() ,
+                                 before.end() ) );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

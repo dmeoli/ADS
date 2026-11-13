@@ -18,23 +18,37 @@
  */
 /*--------------------------------------------------------------------------*/
 /*------------------------------ #include "ADS/dictionary/IndexedSkipList.h"
+#include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/SkipList.h"
+#include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SkipListSequence.h"
+#include "ADS/sequence/TreapList.h"
 #include "ADS/set/SpaceEfficientSortedSet.h"
 #include "ADS/tree/BinaryTree.h"
 #include "ADS/tree/BinaryTreeAlgorithms.h"
-#include "ADS/tree/MeasuredSearchTree.h" ----------------------------------*/
+#include "ADS/tree/FingerTreap.h"
+#include "ADS/tree/HashedTreap.h"
+#include "ADS/tree/MeasuredSearchTree.h"
+#include "ADS/tree/RandomizedSearchTree.h"
+#include "ADS/tree/Treap.h" ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 #include "ADSTest.h"
 
 #include "ADS/dictionary/IndexedSkipList.h"
+#include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/SkipList.h"
+#include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SkipListSequence.h"
+#include "ADS/sequence/TreapList.h"
 #include "ADS/set/SpaceEfficientSortedSet.h"
 #include "ADS/tree/BinaryTree.h"
 #include "ADS/tree/BinaryTreeAlgorithms.h"
+#include "ADS/tree/FingerTreap.h"
+#include "ADS/tree/HashedTreap.h"
 #include "ADS/tree/MeasuredSearchTree.h"
+#include "ADS/tree/RandomizedSearchTree.h"
+#include "ADS/tree/Treap.h"
 
 #include <algorithm>
 #include <array>
@@ -572,6 +586,207 @@ ADS_TEST( "ods-ex6.19.size-depth-height" )
    } while( std::next_permutation( P.begin() , P.end() ) );
   CHECK( count == ( 1 << ( n - 1 ) ) );
   }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*----------------------------- CHAPTER 7 ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// random and sorted insertions, the height within c log2 n
+template< class D >
+void shallow( D & d , int n , double c )
+{
+ for( int i = 0 ; i < n ; ++i ) d.insert( i , i );
+ CHECK( double( d.height() ) <= c * std::log2( double( n ) ) );
+ }
+
+ADS_TEST( "ods-ex7.4.permute" )
+{
+ // the 24 orders of 4 items, 24000 draws: chi-square with 23 degrees of
+ // freedom below 49.7, its 99.9% quantile
+ SplitMix64 g( 3 );
+ std::map< std::vector< int > , int > count;
+ for( int s = 0 ; s < 24000 ; ++s ) {
+  std::vector< int > A = { 0 , 1 , 2 , 3 };
+  permute( A , g );
+  ++count[ A ];
+  }
+ CHECK( count.size() == 24 );
+ double chi = 0;
+ for( const auto & [ p , c ] : count ) chi += ( c - 1000.0 ) * ( c - 1000.0 )
+                                              / 1000.0;
+ CHECK( chi < 49.7 );
+ for( std::uint64_t m : { 1ull , 2ull , 3ull , 7ull , 1000000007ull ,
+                          ( 1ull << 63 ) + 5 } )
+  for( int s = 0 ; s < 100 ; ++s ) CHECK( uniformBelow( g , m ) < m );
+ std::vector< int > E;
+ permute( E , g );
+ CHECK( E.empty() );
+ }
+
+ADS_TEST( "ods-ex7.3.count-sequences" )
+{
+ // f( h ) = C( 2^{h+1} - 2 , 2^h - 1 ) f( h - 1 )^2 orders build the
+ // complete tree of height h: 80 for h = 2, counted, and 21964800 for h = 3
+ auto binom = []( std::uint64_t n , std::uint64_t k ) {
+  std::uint64_t r = 1;
+  for( std::uint64_t i = 1 ; i <= k ; ++i ) r = r * ( n - k + i ) / i;
+  return( r );
+  };
+ std::uint64_t f = 1;
+ for( int h = 1 ; h <= 3 ; ++h ) {
+  f = binom( ( 2ull << h ) - 2 , ( 1ull << h ) - 1 ) * f * f;
+  if( h == 2 ) CHECK( f == 80 );
+  }
+ CHECK( f == 21964800 );
+ std::vector< int > P = { 1 , 2 , 3 , 4 , 5 , 6 , 7 };
+ int c = 0;
+ do {
+  MeasuredSearchTree< int , int > S;
+  for( int x : P ) S.insert( x , x );
+  c += ( S.height() == 2 );
+  } while( std::next_permutation( P.begin() , P.end() ) );
+ CHECK( c == 80 );
+ }
+
+ADS_TEST( "ods7.2.treap-exercises" )
+{
+ Treap< int , int > T( 5 );
+ differential( T , 8000 , 400 , 21 );
+ std::set< int > ref;
+ for( const auto & [ k , v ] : T ) ref.insert( k );
+ std::size_t r = 0;
+ for( int k : ref ) {                       // exercise 7.10
+  CHECK( T.select( r ).first == k );
+  CHECK( T.rank( k ) == r++ );
+  }
+ for( int x = -2 ; x < 405 ; ++x ) {
+  const auto it = ref.lower_bound( x );
+  const auto lb = T.lowerBound( x );
+  CHECK( ( it == ref.end() ) ? ! lb : ( lb && ( lb->first == *it ) ) );
+  }
+ CHECK_THROWS( ( void ) T.select( T.size() ) , contract_violation );
+ // exercise 7.8: the same tree as the insertions in order, in O( n )
+ std::vector< std::pair< int , int > > A;
+ for( int i = 0 ; i < 5000 ; ++i ) A.emplace_back( 3 * i , i );
+ Treap< int , int > B = Treap< int , int >::fromSorted( A , 77 ) , C( 77 );
+ for( const auto & [ k , v ] : A ) C.insert( k , v );
+ using TN = TreapNodes< int , int >;
+ std::vector< std::pair< const void * , const void * > > S = {
+  { TN::peek( B ) , TN::peek( C ) } };
+ while( ! S.empty() ) {                     // the same shape and keys
+  const auto [ p , q ] = S.back();
+  S.pop_back();
+  auto * u = static_cast< const TN::Node * >( p );
+  auto * w = static_cast< const TN::Node * >( q );
+  CHECK( ( u == nullptr ) == ( w == nullptr ) );
+  if( ! u ) continue;
+  CHECK( ( TN::key( u ) == TN::key( w ) ) &&
+         ( TN::size( u ) == TN::size( w ) ) );
+  S.push_back( { TN::left( u ) , TN::left( w ) } );
+  S.push_back( { TN::right( u ) , TN::right( w ) } );
+  }
+ CHECK( B.size() == 5000 );
+ // exercises 7.12 and 7.13: split( x ) and absorb( t2 )
+ auto [ L , m , R ] = std::move( B ).split( 3000 );
+ CHECK( m && ( *m == 1000 ) && ( L.size() == 1000 ) && ( R.size() == 3999 ) );
+ Treap< int , int > J = Treap< int , int >::join2( std::move( L ) ,
+                                                   std::move( R ) );
+ CHECK( ( J.size() == 4999 ) && ! J.contains( 3000 ) && J.contains( 2997 ) );
+ const std::vector< std::pair< int , int > > U = { { 2 , 0 } , { 1 , 0 } };
+ using TI = Treap< int , int >;
+ CHECK_THROWS( ( void ) TI::fromSorted( U ) , contract_violation );
+ }
+
+ADS_TEST( "ods-ex7.6.hashed-treap" )
+{
+ HashedTreap< int , int > T( 9 );
+ differential( T , 20000 , 1000 , 23 );
+ HashedTreap< int , int > S( 4 );
+ shallow( S , 1 << 14 , 4.0 );              // sorted keys, random shape
+ const auto lb = S.lowerBound( 100 );
+ CHECK( lb && ( lb->first == 100 ) );
+ }
+
+ADS_TEST( "ods-ex7.9.finger-treap" )
+{
+ FingerTreap< int , int > T( 2 );
+ differential( T , 20000 , 800 , 29 );
+ FingerTreap< int , int > F( 6 );
+ shallow( F , 1 << 14 , 4.0 );
+ for( int s = 0 ; s < 40000 ; ++s ) {       // near the previous key
+  const int x = ( s * 7 ) % ( 1 << 14 ) + ( s % 3 ) - 1;
+  const auto v = F.fingerLookup( x );
+  CHECK( ( x >= 0 ) && ( x < ( 1 << 14 ) ) ? ( v && ( *v == x ) )
+                                           : ! v.has_value() );
+  }
+ const auto f = F.finger( 5000 );
+ for( int x = 4900 ; x < 5100 ; ++x ) CHECK( F.lookupFrom( x , f ) == x );
+ CHECK( ! F.lookupFrom( -3 , f ) && ( F.lookupFrom( 0 , {} ) == 0 ) );
+ for( std::size_t i = 0 ; i < F.size() ; i += 97 )
+  CHECK( ( F.select( i ).first == int( i ) ) &&
+         ( F.rank( int( i ) ) == i ) );
+ F.remove( 5000 );                          // the finger back to the root
+ CHECK( ! F.fingerLookup( 5000 ) && ( F.fingerLookup( 5001 ) == 5001 ) );
+ }
+
+ADS_TEST( "ods-ex7.11.treap-list" )
+{
+ TreapList< int > L( 5 );
+ std::vector< int > ref;
+ std::mt19937 g( 12 );
+ for( int s = 0 ; s < 20000 ; ++s ) {
+  const int op = int( g() % 4 );
+  if( ( op <= 1 ) || ref.empty() ) {
+   const std::size_t i = g() % ( ref.size() + 1 );
+   L.add( i , s );
+   ref.insert( ref.begin() + std::ptrdiff_t( i ) , s );
+   }
+  else if( op == 2 ) {
+   const std::size_t i = g() % ref.size();
+   CHECK( L.remove( i ) == ref[ i ] );
+   ref.erase( ref.begin() + std::ptrdiff_t( i ) );
+   }
+  else {
+   const std::size_t i = g() % ref.size();
+   CHECK( L.get( i ) == ref[ i ] );
+   L.set( i , -s );
+   ref[ i ] = -s;
+   }
+  CHECK( L.size() == ref.size() );
+  }
+ CHECK( std::vector< int >( L.begin() , L.end() ) == ref );
+ for( int c = 0 ; c < 50 ; ++c ) {          // cut and glue
+  const std::size_t i = g() % ( ref.size() + 1 );
+  TreapList< int > R = L.truncate( i );
+  CHECK( ( L.size() == i ) && ( R.size() == ref.size() - i ) );
+  CHECK( ( R.empty() || ( R.get( 0 ) == ref[ i ] ) ) );
+  L.absorb( R );
+  CHECK( R.empty() );
+  }
+ CHECK( std::vector< int >( L.begin() , L.end() ) == ref );
+ CHECK_THROWS( L.add( ref.size() + 1 , 0 ) , contract_violation );
+ }
+
+ADS_TEST( "ods-ex7.14.randomized-bst" )
+{
+ RandomizedSearchTree< int , int > T( 3 );
+ differential( T , 20000 , 900 , 31 );
+ RandomizedSearchTree< int , int > S( 8 );
+ shallow( S , 1 << 14 , 4.0 );
+ for( std::size_t i = 0 ; i < S.size() ; i += 101 )
+  CHECK( ( S.select( i ).first == int( i ) ) && ( S.rank( int( i ) ) == i ) );
+ // still a random tree after a removal and an insertion: a path, of
+ // height 4, has probability 2^4 / 5! as for a random order
+ int roots = 0;
+ for( int s = 0 ; s < 10000 ; ++s ) {
+  RandomizedSearchTree< int , int > R( std::uint64_t( s ) + 100 );
+  for( int i = 1 ; i <= 5 ; ++i ) R.insert( i , i );
+  R.remove( 1 );
+  R.insert( 1 , 1 );                        // still random after both
+  roots += ( R.height() == 4 );
+  }
+ CHECK( std::abs( roots / 10000.0 - 16.0 / 120.0 ) < 0.02 );
  }
 
 }  // end( namespace )

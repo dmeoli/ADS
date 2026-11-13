@@ -22,6 +22,18 @@
  * sequential or on the threads of an executor; its join merges the two
  * spines by the priorities, in \f$ O( \log n ) \f$ expected time.
  *
+ * It is also the `Treap` of Morin (section 7.2) and has the operations of
+ * his exercises: `lowerBound()` is the `find(x)` of an SSet, `select()`
+ * and `rank()` the access by rank of exercise 7.10, by the sizes,
+ * `fromSorted()` the construction from sorted keys in \f$ O( n ) \f$ of
+ * exercise 7.8, and `split()` and `join2()` the `split(x)` and the
+ * `absorb(t)` of exercises 7.12 and 7.13. Where it is meant to be faster
+ * than his code, for the benchmarks to check: the priorities come from
+ * `SplitMix64` instead of `rand()`, an insertion goes down and rotates on
+ * the way back up with no link to the parent (his nodes have three
+ * links, and his insertion walks the parents up), and the sizes cost one
+ * addition per level of a rotation.
+ *
  * The contracts [see `Contract.h`]: `insert()` ensures that the key is
  * there and `remove()` that it is not; the invariant is the order of the
  * keys, the sizes and the heap order of the priorities, an \f$ O( n ) \f$
@@ -35,6 +47,11 @@
  * \see G. E. Blelloch, M. Reid-Miller, Fast set operations using treaps,
  *      Proceedings of the 10th ACM Symposium on Parallel Algorithms and
  *      Architectures (SPAA), 16-26, 1998, doi:10.1145/277651.277660
+ * \see J. Vuillemin, A unifying look at data structures, Communications of
+ *      the ACM 23(4), 229-239, 1980, doi:10.1145/358841.358852
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, section 7.2 and exercises 7.8, 7.10, 7.12 and 7.13,
+ *      doi:10.15215/aupress/9781927356388.01
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -66,6 +83,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -166,6 +184,66 @@ class Treap
  /// `f( k , v )` on the pairs by increasing keys
  template< class F >
  void forEach( F && f ) const;
+
+/*-------------------------- THE EXERCISES OF MORIN ------------------------*/
+
+ /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
+ /// (the `find(x)` of an SSet of Morin), in \f$ O( \log n ) \f$ expected
+ /// time
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+  const K & k ) const;
+
+ /// the pair of rank \f$ i \f$, i.e., with \f$ i \f$ smaller keys, in
+ /// \f$ O( \log n ) \f$ expected time (exercise 7.10 of Morin)
+ ///
+ /// In pseudocode (exercise 7.10 of Morin), \f$ s \f$ the sizes:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{select}( t , i ) \cr
+ /// 2 & \quad \textbf{loop} \cr
+ /// 3 & \qquad \textbf{if}\ i < s( t.\mathit{left} )\ \textbf{then}\ t
+ ///     \gets t.\mathit{left} \cr
+ /// 4 & \qquad \textbf{else if}\ i = s( t.\mathit{left} )\ \textbf{then
+ ///     return}\ t \cr
+ /// 5 & \qquad \textbf{else}\ i \gets i - s( t.\mathit{left} ) - 1;\ t
+ ///     \gets t.\mathit{right}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i < n \f$
+ [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
+
+ /// the number of keys smaller than \f$ k \f$, the sizes of the left
+ /// subtrees passed on the right along the search of \f$ k \f$, in
+ /// \f$ O( \log n ) \f$ expected time
+ [[nodiscard]] std::size_t rank( const K & k ) const;
+
+ /// the treap of the pairs of \f$ A \f$, by increasing keys, in
+ /// \f$ O( n ) \f$ time (exercise 7.8 of Morin): the same tree that the
+ /// insertions of \f$ A \f$ in order into `Treap( seed )` build, since the
+ /// priorities are drawn in the same order, and a heap on them built by
+ /// the stack of the right spine
+ ///
+ /// In pseudocode (Vuillemin's Cartesian tree, exercise 7.8 of Morin),
+ /// \f$ S \f$ the right spine of the tree of the pairs read so far:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{fromSorted}( A ) \cr
+ /// 2 & \quad \textbf{foreach}\ ( k , v ) \in A\ \textbf{do} \cr
+ /// 3 & \qquad u \gets \text{a node of } ( k , v ) \text{ and a random}
+ ///     \text{ priority};\ \ell \gets \textbf{nil} \cr
+ /// 4 & \qquad \textbf{while}\ S \ne \emptyset\ \textbf{and}\ p(
+ ///     \mathrm{top}( S ) ) < p( u )\ \textbf{do}\ \ell \gets \mathrm{pop}(
+ ///     S ) \cr
+ /// 5 & \qquad u.\mathit{left} \gets \ell;\ \textbf{if}\ S \ne
+ ///     \emptyset\ \textbf{then}\ \mathrm{top}( S ).\mathit{right} \gets u
+ ///     \cr
+ /// 6 & \qquad \mathrm{push}( S , u ) \cr
+ /// 7 & \quad \textbf{return}\ \text{the bottom of } S
+ /// \end{array}}
+ /// \f]
+ /// \pre the keys of \f$ A \f$ strictly increasing
+ [[nodiscard]] static Treap fromSorted(
+  const std::vector< std::pair< K , V > > & A , std::uint64_t seed = 1 );
 
 /*--------------------------------------------------------------------------*/
  private:
