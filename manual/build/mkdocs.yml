@@ -1,0 +1,78 @@
+# MkDocs configuration for the web build of the ADS manual.
+# Usage (from the manual/build/ directory, after `make snippets figures`):
+#     mkdocs serve -f mkdocs.yml      # local preview at http://127.0.0.1:8000
+#     mkdocs build -f mkdocs.yml      # static site into ../../manual-site/
+#
+# docs_dir points at the manual root so that index.md, chapters/, and
+# figures/ are all visible; relative image links (../figures/NAME.svg)
+# resolve correctly from the chapter files.
+
+site_name: ADS — A User Manual
+site_description: A user manual for ADS 0.1.0, algorithms and data structures in C++20.
+site_author: Donato Meoli
+docs_dir: ..
+# site_dir must live OUTSIDE docs_dir (which is the manual root); write the
+# generated static site as a sibling of manual/.
+site_dir: ../../manual-site
+use_directory_urls: false
+
+# docs_dir is the manual root, which also holds files that are not manual
+# pages; keep them out of the generated site. NOTE: build/katex-init.js IS
+# needed at runtime (math rendering), so exclude build/ selectively rather
+# than wholesale. generated/ holds the snippets that the chapters include.
+exclude_docs: |
+  build/Makefile
+  build/*.yml
+  build/*.yaml
+  build/*.lua
+  build/*.tex
+  build/*.py
+  generated/
+  figures/*.tex
+  OUTLINE.md
+  MAINTENANCE.md
+  ADS-manual.pdf
+  .DS_Store
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+  # the code and the pseudocode of the headers, extracted by snarf.py
+  - pymdownx.snippets:
+      base_path: [".."]
+      check_paths: true
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js
+  - build/katex-init.js
+
+extra_css:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css
+
+nav:
+  - Front matter: index.md
+  - Part I — Foundations:
+      - 3. Stacks: chapters/03-stack.md
+  - Back matter:
+      - Bibliography: chapters/Z-bibliography.md

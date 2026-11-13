@@ -6,7 +6,8 @@
 # the Docs, whose pages docs/pages.py writes from the README and the          #
 # CHANGELOG and whose API reference docs/apiref.py writes from the XML of     #
 # Doxygen, and in its folder doxygen the Doxygen site, with the theme of      #
-# doxygen-awesome-css and the same tree of the reference under its Topics.    #
+# doxygen-awesome-css and the same tree of the reference under its Topics,    #
+# and in its folder manual the site of the manual (MkDocs, manual/build).     #
 # On a pull request it only builds them, and leaves the site as an artifact   #
 # of the run. The steps of the build are in docs/build.sh, which fails on     #
 # any warning.                                                                #
@@ -54,6 +55,14 @@ jobs:
         run: |
           pip install -r docs/requirements.txt
           bash docs/build.sh
+      # the code and the pseudocode of the headers that the chapters include,
+      # then the site of the manual, as manual/build/Makefile makes it
+      - name: the manual
+        run: |
+          pip install mkdocs-material pymdown-extensions
+          python3 manual/build/snarf.py include manual/generated
+          mkdocs build -f manual/build/mkdocs.yml \
+                 -d "$PWD/build-docs/html/manual"
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:

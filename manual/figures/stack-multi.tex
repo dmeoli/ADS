@@ -1,0 +1,25 @@
+% Source for the figure of MultiStack (sec. 3.4): two stacks and the free
+% list in one vector of cells, each cell with its item (upper row) and the
+% index of the cell below it in its stack, or of the next free cell (lower
+% row). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {value};
+  \node[var,anchor=east] at (-4mm,-7mm) {below};
+  \cells{V}{0,0}{x1/cell,y1/cell,/free,x2/cell,y2/cell,/free,x3/cell,/free}
+  \cells{B}{0,-7mm}{-1/cell,-1/cell,5/free,0/cell,1/cell,7/free,3/cell,-1/free}
+  \indices{B}{8}
+  \node[var] (t0) at ($(V-6)+(0,13mm)$) {$\mathit{top}[0]$};
+  \node[var] (t1) at ($(V-4)+(0,13mm)$) {$\mathit{top}[1]$};
+  \node[var] (fr) at ($(V-2)+(0,13mm)$) {$\mathit{free}$};
+  \draw[ptr] (t0) -- (V-6.north);
+  \draw[ptr] (t1) -- (V-4.north);
+  \draw[ptr] (fr) -- (V-2.north);
+\end{tikzpicture}
+\end{document}

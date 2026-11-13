@@ -4,7 +4,7 @@
 # At each tag vX.Y.Z, publishes the GitHub release of that version with its   #
 # section of the CHANGELOG as the notes, and attaches the source tarball      #
 # ADS-X.Y.Z.tar.gz with its sha256, the source of the recipes of packaging/   #
-# [see packaging/README.md].                                                  #
+# [see packaging/README.md], and the PDF of the manual [see manual/].         #
 ###############################################################################
 
 name: Release
@@ -41,4 +41,5 @@ jobs:
           test -s notes.md
           gh release create "$GITHUB_REF_NAME" --title "ADS $v" \
              --notes-file notes.md \
-             "ADS-$v.tar.gz" "ADS-$v.tar.gz.sha256"
+             "ADS-$v.tar.gz" "ADS-$v.tar.gz.sha256" \
+             manual/ADS-manual.pdf

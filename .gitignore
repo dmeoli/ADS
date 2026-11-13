@@ -1,5 +1,7 @@
 # builds
 build/
+!manual/build/
+manual-site/
 build-make/
 cmake-build-*/
 build-docs/

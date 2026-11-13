@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the manual (manual/), one chapter for each area of include/ADS on the
+  plan of manual/OUTLINE.md, in Markdown built by Pandoc into
+  manual/ADS-manual.pdf and by MkDocs into the folder manual of the site,
+  with the pipeline and the conventions of the user manual of SMS++; the
+  pseudocode and the code of a chapter are not copied but extracted from
+  the comments and from the //! [name] markers of the headers by
+  manual/build/snarf.py, so that the manual and the API reference show the
+  same text; the chapter on the stacks, with the figures of the memory,
+  the analysis of the costs and the exercises tied to the tests; the
+  workflow of the documentation publishes the site, and that of the
+  releases attaches the PDF
+
 - ConcurrentFlatTable::findOrInsertKey( k , h ), for a set kept in the
   words (`packed`, an empty value): the key held equal to k by the
   equality of the table, k itself if it was absent, so that a set of
@@ -2261,6 +2273,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- the comments of MultiStack said that its vector doubles, while it is a
+  std::vector, which grows by a factor that the standard library fixes
+  (2 in those of GCC and LLVM, 3/2 in that of Microsoft); the header, its
+  pseudocode and the theory page now say that it grows by a constant
+  factor, which is what the amortized bound needs
 
 - FastFlowExecutor::bulk() gives each call all the workers and at least
   one index per worker, those from n doing nothing: with fewer indices
