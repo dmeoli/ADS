@@ -322,6 +322,235 @@ BinaryTree< T > * cartesianBinaryTree( const std::vector< T > & A ,
 
 /*--------------------------------------------------------------------------*/
 
+template< ParentBinaryNode N >
+N nextPreorder( N u )
+{
+ if( detail::nodeLeft( u ) ) return( detail::nodeLeft( u ) );
+ if( detail::nodeRight( u ) ) return( detail::nodeRight( u ) );
+ for( N p ; ( p = detail::nodeParent( u ) ) ; u = p )
+  if( ( u == detail::nodeLeft( p ) ) && detail::nodeRight( p ) )
+   return( detail::nodeRight( p ) );
+ return( nullptr );
+ }
+
+template< BinaryNode N >
+N firstInorder( N u )
+{
+ ADS_PRE( u != nullptr );
+ while( detail::nodeLeft( u ) ) u = detail::nodeLeft( u );
+ return( u );
+ }
+
+template< ParentBinaryNode N >
+N nextInorder( N u )
+{
+ if( detail::nodeRight( u ) )
+  return( firstInorder( N( detail::nodeRight( u ) ) ) );
+ for( N p ; ( p = detail::nodeParent( u ) ) ; u = p )
+  if( u == detail::nodeLeft( p ) ) return( p );
+ return( nullptr );
+ }
+
+template< BinaryNode N >
+N firstPostorder( N u )
+{
+ ADS_PRE( u != nullptr );
+ for( ; ; ) {
+  if( detail::nodeLeft( u ) ) u = detail::nodeLeft( u );
+  else if( detail::nodeRight( u ) ) u = detail::nodeRight( u );
+  else return( u );
+  }
+ }
+
+template< ParentBinaryNode N >
+N nextPostorder( N u )
+{
+ const N p = detail::nodeParent( u );
+ if( ! p || ( u == detail::nodeRight( p ) ) || ! detail::nodeRight( p ) )
+  return( p );
+ return( firstPostorder( N( detail::nodeRight( p ) ) ) );
+ }
+
+namespace detail {
+
+/// the walk of section 6.1.2 of Morin on the subtree of r: g( u , d ) on
+/// each node u at the depth d below r, in the previsit
+template< class N , class G >
+void walkSubtree( N r , G && g )
+{
+ if( ! r ) return;
+ const N top = nodeParent( r );
+ N u = r , prev = top;
+ long d = 0;
+ while( u != top ) {
+  N next;
+  if( prev == nodeParent( u ) ) {           // down into u
+   g( u , d );
+   if( nodeLeft( u ) ) { next = nodeLeft( u ); ++d; }
+   else if( nodeRight( u ) ) { next = nodeRight( u ); ++d; }
+   else { next = nodeParent( u ); --d; }
+   }
+  else if( prev == nodeLeft( u ) ) {        // up from the left
+   if( nodeRight( u ) ) { next = nodeRight( u ); ++d; }
+   else { next = nodeParent( u ); --d; }
+   }
+  else { next = nodeParent( u ); --d; }     // up from the right
+  prev = u;
+  u = next;
+  }
+ }
+
+}  // end( namespace detail )
+
+template< ParentBinaryNode N >
+std::size_t subtreeSize( N u )
+{
+ std::size_t s = 0;
+ detail::walkSubtree( u , [ & ]( N , long ) { ++s; } );
+ return( s );
+ }
+
+template< ParentBinaryNode N >
+long subtreeHeight( N u )
+{
+ long h = -1;
+ detail::walkSubtree( u , [ & ]( N , long d ) { h = std::max( h , d ); } );
+ return( h );
+ }
+
+template< BinaryNode N >
+bool isSizeBalanced( N t )
+{
+ // a postvisit with a stack of its own: each node with the step it is at
+ // and the size of its left subtree, s the size of the last one done
+ struct Item { N u; int k; std::size_t a; };
+ std::vector< Item > S;
+ std::size_t s = 0;
+ auto enter = [ & ]( N u ) {
+  if( u ) S.push_back( Item{ u , 0 , 0 } );
+  else s = 0;
+  };
+ enter( t );
+ while( ! S.empty() ) {
+  Item & x = S.back();
+  if( x.k == 0 ) { x.k = 1; enter( detail::nodeLeft( x.u ) ); }
+  else if( x.k == 1 ) {
+   x.k = 2;
+   x.a = s;
+   enter( detail::nodeRight( x.u ) );
+   }
+  else {
+   if( ( x.a > s + 1 ) || ( s > x.a + 1 ) ) return( false );
+   s += x.a + 1;
+   S.pop_back();
+   }
+  }
+ return( true );
+ }
+
+template< BinaryNode N , class F >
+void orderNumbers( N t , F && f )
+{
+ struct Item { N u; int k; std::size_t pre , in; };
+ std::vector< Item > S;
+ std::size_t a = 0 , b = 0 , c = 0;
+ if( t ) S.push_back( Item{ t , 0 , a++ , 0 } );
+ while( ! S.empty() ) {
+  Item & x = S.back();
+  if( x.k == 0 ) {
+   x.k = 1;
+   if( N l = detail::nodeLeft( x.u ) ) S.push_back( Item{ l , 0 , a++ , 0 } );
+   }
+  else if( x.k == 1 ) {
+   x.k = 2;
+   x.in = b++;
+   if( N r = detail::nodeRight( x.u ) )
+    S.push_back( Item{ r , 0 , a++ , 0 } );
+   }
+  else {
+   const Item y = x;
+   S.pop_back();
+   f( y.u , y.pre , y.in , c++ );
+   }
+  }
+ }
+
+template< BinaryNode N >
+std::vector< bool > shapeCode( N t )
+{
+ std::vector< bool > c;
+ std::vector< N > S;                        // a previsit by a stack
+ if( t ) S.push_back( t );
+ while( ! S.empty() ) {
+  const N u = S.back();
+  S.pop_back();
+  c.push_back( detail::nodeLeft( u ) != nullptr );
+  c.push_back( detail::nodeRight( u ) != nullptr );
+  if( detail::nodeRight( u ) ) S.push_back( detail::nodeRight( u ) );
+  if( detail::nodeLeft( u ) ) S.push_back( detail::nodeLeft( u ) );
+  }
+ if( ! c.empty() ) c.resize( c.size() - 2 );   // the last one is a leaf
+ return( c );
+ }
+
+inline BinaryTree< std::size_t > * fromShapeCode(
+ const std::vector< bool > & c , std::size_t n )
+{
+ ADS_PRE( c.size() == ( n ? 2 * ( n - 1 ) : 0 ) );
+ if( n == 0 ) return( nullptr );
+ using B = BinaryTree< std::size_t >;
+ std::unique_ptr< B > root( new B( 0 ) );   // freed if the code is wrong
+ std::vector< B * > S;                      // the right children due
+ B * u = root.get();
+ for( std::size_t i = 0 ; ; ) {
+  const bool l = ( i + 1 < n ) && c[ 2 * i ] ,
+             r = ( i + 1 < n ) && c[ 2 * i + 1 ];
+  if( r ) S.push_back( u );
+  if( ++i == n ) break;
+  ADS_PRE( l || ! S.empty() );              // a right child is due
+  B * v = new B( i );
+  if( l ) u->insertLeft( v );
+  else {
+   S.back()->insertRight( v );
+   S.pop_back();
+   }
+  u = v;
+  }
+ ADS_PRE( S.empty() );
+ return( root.release() );
+ }
+
+template< KeyedBinaryNode N , class K , class F , class Compare >
+std::size_t lessOrEqual( N t , const K & x , F && f , Compare less )
+{
+ std::size_t m = 0;
+ std::vector< N > S;
+ auto invisit = [ & ]( N v ) {              // a whole subtree, in order
+  for( ; ; ) {
+   for( ; v ; v = detail::nodeLeft( v ) ) S.push_back( v );
+   if( S.empty() ) return;
+   v = S.back();
+   S.pop_back();
+   f( v );
+   ++m;
+   v = detail::nodeRight( v );
+   }
+  };
+ while( t ) {
+  if( ! less( x , detail::nodeKey( t ) ) ) {
+   invisit( N( detail::nodeLeft( t ) ) );
+   f( t );
+   ++m;
+   t = detail::nodeRight( t );
+   }
+  else
+   t = detail::nodeLeft( t );
+  }
+ return( m );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/
