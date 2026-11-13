@@ -1833,3 +1833,9 @@ ods_ints  ods.ex13.2.list-x-fast-trie    Morin es. 13.2, x-fast trie su lista
 ods_ints  ods.ex13.4.find-near           Morin es. 13.4, ricerca vicina
 ods_ints  ods13.3.y-fast-trie            Morin 13.3, y-fast trie
 ods_ints  ods.ex13.3.bitmap-trie         Morin es. 13.3, trie di stringhe
+ods_ints  ods10.1.binary-heap            Morin 10.1 ed es. 10.1-10.2, heap binario
+ods_ints  ods.ex10.3.remove-place        Morin es. 10.3-10.4, rimozione di un posto
+ods_ints  ods.ex10.5.dary-heap           Morin es. 10.5, heap d-ario
+ods_ints  ods10.2.meldable-heap          Morin 10.2 ed es. 10.6-10.9, heap fondibile
+ods_ints  ods.ex10.10.k-smallest         Morin es. 10.10, i k minimi
+ods_ints  ods.ex10.11.k-way-merge        Morin es. 10.11, fusione di k liste

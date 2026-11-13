@@ -25,6 +25,10 @@
 #include "ADS/dictionary/BitmapTrie.h"
 #include "ADS/dictionary/XFastTrie.h"
 #include "ADS/dictionary/YFastTrie.h"
+#include "ADS/memory/PoolAllocator.h"
+#include "ADS/priority/DaryHeap.h"
+#include "ADS/priority/MeldableHeap.h"
+#include "ADS/priority/MultiwayMerge.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -410,6 +414,295 @@ ADS_TEST( "ods.ex13.3.bitmap-trie" )
  for( const auto & [ w , v ] : s )
   CHECK( t.remove( w ) );
  CHECK( t.empty() && t.nodes() == 1 && ! t.find( "" ) );
+ }
+
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- CHAPTER 10, HEAPS ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the binary heap of figures 10.2 and 10.3 of Morin's book, after the
+/// insertion of 6: pushed in the order of its array, which is a heap, no
+/// item moves
+ADS::DaryHeap< int , std::less< int > , 2 > figureHeap( void )
+{
+ ADS::DaryHeap< int , std::less< int > , 2 > h;
+ for( int x : { 4 , 9 , 8 , 17 , 26 , 50 , 16 , 19 , 69 , 32 , 93 , 55 } )
+  h.push( x );
+ return( h );
+ }
+
+/// the array of a heap
+template< class H >
+std::vector< int > arrayOf( const H & h )
+{
+ return( std::vector< int >( h.begin() , h.end() ) );
+ }
+
+// ods 10.1 and ods ex 10.1, ex 10.2: the binary heap of figure 10.2, the
+// insertion of 6 of the figure, then those of 7 and 3 (exercise 10.1); the
+// removal of 4 of figure 10.3, then those of 6 and 8 (exercise 10.2), each
+// array as the book computes it
+ADS_TEST( "ods10.1.binary-heap" )
+{
+ auto h = figureHeap();
+ h.push( 6 );
+ CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 , 16 ,
+                                              19 , 69 , 32 , 93 , 55 , 50 } ) );
+ auto r = h;
+ h.push( 7 );
+ CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 , 7 ,
+                                              19 , 69 , 32 , 93 , 55 , 50 ,
+                                              16 } ) );
+ h.push( 3 );
+ CHECK( arrayOf( h ) == ( std::vector< int >{ 3 , 9 , 4 , 17 , 26 , 8 , 6 ,
+                                              19 , 69 , 32 , 93 , 55 , 50 ,
+                                              16 , 7 } ) );
+ CHECK( r.pop() == 4 );
+ CHECK( arrayOf( r ) == ( std::vector< int >{ 6 , 9 , 8 , 17 , 26 , 50 , 16 ,
+                                              19 , 69 , 32 , 93 , 55 } ) );
+ CHECK( r.pop() == 6 );
+ CHECK( arrayOf( r ) == ( std::vector< int >{ 8 , 9 , 16 , 17 , 26 , 50 , 55 ,
+                                              19 , 69 , 32 , 93 } ) );
+ CHECK( r.pop() == 8 );
+ CHECK( arrayOf( r ) == ( std::vector< int >{ 9 , 17 , 16 , 19 , 26 , 50 , 55 ,
+                                              93 , 69 , 32 } ) );
+ }
+
+/// a differential test of a heap against a std::multiset, `erase( i )` of
+/// a random place included
+template< class H >
+void heapAgainstMultiset( H & h , int ops , std::uint64_t seed )
+{
+ std::multiset< int > s;
+ std::mt19937_64 g( seed );
+ for( int i = 0 ; i < ops ; ++i ) {
+  const auto c = g() % 8;
+  if( ( c < 4 ) || s.empty() ) {
+   const int x = int( g() % 1000 );
+   h.push( x );
+   s.insert( x );
+   }
+  else if( c < 6 ) {
+   CHECK( h.pop() == *s.begin() );
+   s.erase( s.begin() );
+   }
+  else {
+   const std::size_t j = g() % h.size();
+   const int x = h.erase( j );
+   CHECK( s.count( x ) > 0 );
+   s.erase( s.find( x ) );
+   }
+  CHECK( h.size() == s.size() );
+  if( ! s.empty() )
+   CHECK( h.top() == *s.begin() );
+  if( s.size() >= 2 )
+   CHECK( *h.secondTop() == *std::next( s.begin() ) );
+  else
+   CHECK( h.secondTop() == nullptr );
+  }
+ }
+
+// ods ex 10.3: the removal of the item in a place, against a
+// std::multiset, for 2, 3 and 4 children; the places of the parent and of
+// the children of the general layout of Eytzinger (exercise 10.4) are
+// inverse to each other
+ADS_TEST( "ods.ex10.3.remove-place" )
+{
+ ADS::DaryHeap< int , std::less< int > , 2 > h2;
+ ADS::DaryHeap< int , std::less< int > , 3 > h3;
+ ADS::DaryHeap< int , std::less< int > , 4 , true > h4;
+ heapAgainstMultiset( h2 , 20000 , 1 );
+ heapAgainstMultiset( h3 , 20000 , 2 );
+ heapAgainstMultiset( h4 , 20000 , 3 );
+ using H5 = ADS::DaryHeap< int , std::less< int > , 5 >;
+ for( std::size_t i = 0 ; i < 1000 ; ++i )
+  for( std::size_t j = 0 ; j < 5 ; ++j )
+   CHECK( H5::parent( H5::child( i , j ) ) == i &&
+          H5::child( i , j ) == 5 * i + j + 1 );
+ }
+
+// ods ex 10.4 and ex 10.5: the d-ary heap sorts as the binary one for
+// d = 2 to 8, and its depth is that of the complete d-ary tree,
+// ceil( log_d( ( d - 1 ) n + 1 ) ) levels
+template< unsigned D >
+void dary( void )
+{
+ ADS::DaryHeap< int , std::less< int > , D > h;
+ std::mt19937 g( D );
+ std::vector< int > v( 5000 );
+ for( auto & x : v )
+  x = int( g() % 100000 );
+ h.assign( v.begin() , v.end() );
+ std::sort( v.begin() , v.end() );
+ for( const int x : v )
+  CHECK( h.pop() == x );
+ // n = 1 + D + ... + D^( k - 1 ) items fill k levels exactly
+ std::size_t n = 0 , level = 1 , k = 0;
+ for( ; n + level <= 5000 ; n += level , level *= D )
+  ++k;
+ std::size_t last = n - 1;   // the last place, at depth k - 1
+ std::size_t d = 0;
+ for( ; last > 0 ; last = h.parent( last ) )
+  ++d;
+ CHECK( d + 1 == k );
+ }
+
+ADS_TEST( "ods.ex10.5.dary-heap" )
+{
+ dary< 2 >();
+ dary< 3 >();
+ dary< 4 >();
+ dary< 5 >();
+ dary< 8 >();
+ }
+
+/// a differential test of the meldable heap against a std::multiset, with
+/// pushes, pops, removals by handle and melds
+template< class H >
+void meldableAgainstMultiset( H & h , H & o , int ops , std::uint64_t seed )
+{
+ std::multiset< int > s , t;
+ std::vector< typename H::Handle > handles;
+ std::mt19937_64 g( seed );
+ for( int i = 0 ; i < ops ; ++i ) {
+  const auto c = g() % 10;
+  if( ( c < 4 ) || s.empty() ) {
+   const int x = int( g() % 1000 );
+   handles.push_back( h.push( x ) );
+   s.insert( x );
+   }
+  else if( c < 6 ) {
+   CHECK( h.pop() == *s.begin() );
+   s.erase( s.begin() );
+   handles.clear();   // the handles may be stale
+   }
+  else if( c < 8 ) {
+   if( ! handles.empty() ) {
+    const int x = h.erase( handles.back() );
+    handles.pop_back();
+    CHECK( s.count( x ) > 0 );
+    s.erase( s.find( x ) );
+    }
+   }
+  else if( c < 9 ) {
+   const int x = int( g() % 1000 );
+   o.push( x );
+   t.insert( x );
+   }
+  else {
+   h.meld( o );
+   s.insert( t.begin() , t.end() );
+   t.clear();
+   CHECK( o.empty() );
+   }
+  CHECK( h.size() == s.size() );
+  if( ! s.empty() )
+   CHECK( h.top() == *s.begin() );
+  if( s.size() >= 2 )
+   CHECK( *h.secondTop() == *std::next( s.begin() ) );
+  }
+ }
+
+// ods 10.2, ods ex 10.8 and ex 10.9: the randomized meldable heap against a
+// std::multiset, with the removal by handle (exercise 10.8) and the second
+// smallest item (exercise 10.9), on the default allocator and on a pool;
+// the keys of figure 10.5 with the operations of exercises 10.6 and 10.7
+ADS_TEST( "ods10.2.meldable-heap" )
+{
+ {
+  ADS::MeldableHeap< int > h , o;
+  meldableAgainstMultiset( h , o , 30000 , 1 );
+  }
+ {
+  ADS::PoolResource<> R;
+  using PA = ADS::PoolAllocator< int >;
+  ADS::MeldableHeap< int , std::less< int > , PA > h( {} , 1 , PA( R ) ) ,
+                                                    o( {} , 2 , PA( R ) );
+  meldableAgainstMultiset( h , o , 30000 , 2 );
+  }
+ ADS::MeldableHeap< int > h;
+ for( int x : { 19 , 17 , 9 , 26 , 4 , 55 , 16 , 25 , 32 , 28 , 93 , 19 , 99 ,
+                89 , 20 , 50 , 8 } )
+  h.push( x );
+ h.push( 17 );   // exercise 10.6
+ h.push( 82 );
+ CHECK( h.pop() == 4 && h.pop() == 8 );   // exercise 10.7
+ CHECK( h.top() == 9 && *h.secondTop() == 16 && h.size() == 17 );
+ // a heap of 10^6 items in increasing order: the expected depth stays
+ // logarithmic, the destructor and clear() with no recursion
+ ADS::MeldableHeap< int > big;
+ for( int x = 0 ; x < 1000000 ; ++x )
+  big.push( x );
+ CHECK( big.pop() == 0 && big.size() == 999999 );
+ big.clear();
+ CHECK( big.empty() );
+ }
+
+// ods ex 10.10: the k smallest items in O( k log k ), from the binary, the
+// 4-ary and the meldable heap, against the sorted items
+ADS_TEST( "ods.ex10.10.k-smallest" )
+{
+ std::mt19937 g( 9 );
+ std::vector< int > v( 3000 );
+ for( auto & x : v )
+  x = int( g() % 500 );
+ ADS::DaryHeap< int , std::less< int > , 2 > b;
+ ADS::DaryHeap< int , std::less< int > , 4 > d;
+ ADS::MeldableHeap< int > m;
+ for( const int x : v ) {
+  b.push( x );
+  d.push( x );
+  m.push( x );
+  }
+ std::vector< int > w = v;
+ std::sort( w.begin() , w.end() );
+ for( std::size_t k : { 0 , 1 , 2 , 7 , 100 , 2999 , 3000 , 5000 } ) {
+  const std::vector< int > e( w.begin() ,
+                              w.begin() + std::ptrdiff_t( std::min( k ,
+                                                          w.size() ) ) );
+  CHECK( b.smallest( k ) == e && d.smallest( k ) == e &&
+         m.smallest( k ) == e );
+  }
+ CHECK( b.size() == 3000 );   // unchanged
+ }
+
+// ods ex 10.11: k sorted lists merged by a heap of their heads, the head of
+// the smallest list replaced by its next item, O( n log k ), equal to the
+// merge of multiwayMerge()
+ADS_TEST( "ods.ex10.11.k-way-merge" )
+{
+ std::mt19937 g( 10 );
+ const std::size_t k = 37;
+ std::vector< std::vector< int > > L( k );
+ std::size_t n = 0;
+ for( auto & l : L ) {
+  l.resize( g() % 200 );
+  for( auto & x : l )
+   x = int( g() % 10000 );
+  std::sort( l.begin() , l.end() );
+  n += l.size();
+  }
+ // the heap of the pairs ( head , list ), the smallest head on top
+ ADS::DaryHeap< std::pair< int , std::size_t > ,
+                std::less< std::pair< int , std::size_t > > , 2 > h;
+ std::vector< std::size_t > next( k , 0 );
+ for( std::size_t i = 0 ; i < k ; ++i )
+  if( ! L[ i ].empty() )
+   h.push( { L[ i ][ next[ i ]++ ] , i } );
+ std::vector< int > M;
+ while( ! h.empty() ) {
+  const auto [ x , i ] = h.pop();
+  M.push_back( x );
+  if( next[ i ] < L[ i ].size() )
+   h.push( { L[ i ][ next[ i ]++ ] , i } );
+  }
+ std::vector< std::pair< const int * , const int * > > R;
+ for( const auto & l : L )
+  R.emplace_back( l.data() , l.data() + l.size() );
+ std::vector< int > E( n );
+ ADS::multiwayMerge( R , E.data() );
+ CHECK( M.size() == n && M == E );
  }
 
 }  // end( namespace )

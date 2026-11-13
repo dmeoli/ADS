@@ -28,13 +28,38 @@
  * grows, is faulted in 2 MB at a time. `HeapPriorityQueue` [see
  * `HeapPriorityQueue.h`] is the realization with handles of the book.
  *
+ * With \f$ D = 2 \f$ it is the `BinaryHeap` of section 10.1 of Morin's
+ * book, whose array in the order of Eytzinger is the general one of its
+ * exercise 10.4 [see `parent()` and `child()`], and for any \f$ D \f$ it is
+ * the `DaryHeap` of its exercise 10.5: a push moves up
+ * \f$ \log_D n \f$ levels with one comparison each, a pop moves down as
+ * many with \f$ D \f$ comparisons each, so that \f$ D = 4 \f$ halves the
+ * levels of both and costs twice the comparisons of a pop, which is the
+ * better trade on the machines with caches. Beyond the book, `erase( i )`
+ * removes the item in a place (exercise 10.3), `secondTop()` gives the
+ * second best item (exercise 10.9) and `smallest( k )` the \f$ k \f$ best
+ * (exercise 10.10). Against the code of Morin's book: the hole moves
+ * instead of the item being swapped at each level, one write per level
+ * instead of the three of a swap, and the walk down compares the children
+ * with each other and the best with the item, \f$ D \f$ comparisons per
+ * level as in the book (where it is meant to be faster); the vector is
+ * not shrunk when it is a third full, as the book does, so that a heap
+ * keeps the memory of its largest size and never copies its items for it;
+ * and the vector of a large heap is on huge pages.
+ *
  * The contracts [see `Contract.h`]: \f$ D \ge 2 \f$, `top()` and `pop()`
  * need a heap that is not empty; the invariant is the order of the heap, no
- * item better than its parent. The operations are defined in
+ * item better than its parent; `erase( i )` needs \f$ i < n \f$. The
+ * operations are defined in
  * `DaryHeap.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, section 10.1 and
+ *      exercises 10.3 to 10.5, 10.9 and 10.10
+ * \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the
+ *      ACM 7(6), 347-348, 1964, doi:10.1145/512274.512284
  * \see D. B. Johnson, Priority queues with update and finding minimum
  *      spanning trees, Information Processing Letters 4(3), 53-57, 1975,
  *      doi:10.1016/0020-0190(75)90001-0
@@ -69,6 +94,7 @@
 #include "ADS/Contract.h"
 #include "ADS/memory/HugePageAllocator.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <iterator>
@@ -151,6 +177,69 @@ class DaryHeap {
  /// \f]
  /// \pre the heap is not empty
  T pop( void );
+
+ /// removes the item in the place \f$ i \f$ of the view and returns it, in
+ /// \f$ O( D \log_D n ) \f$ time: the last item takes its place and moves
+ /// up or down (exercise 10.3 of Morin's book)
+ ///
+ /// In pseudocode (exercise 10.3 of Morin's book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{erase}( i ) \cr
+ /// 2 & \quad r \gets A[ i ];\ n \gets n - 1;\ x \gets A[ n ] \cr
+ /// 3 & \quad \textbf{if}\ i = n\ \textbf{then return}\ r \cr
+ /// 4 & \quad \textbf{if}\ i > 0\ \textbf{and}\ \mathrm{better}( x ,
+ ///     A[ \mathrm{parent}( i ) ] )\ \textbf{then}\ \text{move } x
+ ///     \text{ up from } i \cr
+ /// 5 & \quad \textbf{else}\ \text{move } x \text{ down from } i \cr
+ /// 6 & \quad \textbf{return}\ r
+ /// \end{array}}
+ /// \f]
+ /// The places of the items change at each operation and the heap gives no
+ /// handle to follow them, so that a caller must find \f$ i \f$ first, in
+ /// \f$ O( n ) \f$ time: this is why the exercise calls it of little use
+ /// [see `IndexedDaryHeap.h` for the heap whose items know their place].
+ /// \pre \f$ i < n \f$
+ T erase( std::size_t i );
+
+ /// the second best item, the best of the children of the root, or nil if
+ /// there are fewer than two items, in \f$ O( D ) \f$ time (exercise 10.9
+ /// of Morin's book)
+ [[nodiscard]] const T * secondTop( void ) const;
+
+ /// the \f$ k \f$ best items in order, or all of them if fewer, in
+ /// \f$ O( k D \log k ) \f$ time (exercise 10.10 of Morin's book)
+ ///
+ /// In pseudocode (exercise 10.10 of Morin's book), \f$ Q \f$ a heap of
+ /// places by their items, each place entering it after its parent:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{smallest}( k ) \cr
+ /// 2 & \quad Q \gets \{ 0 \};\ S \gets () \cr
+ /// 3 & \quad \textbf{while}\ |S| < k\ \textbf{and}\ Q \ne \emptyset
+ ///     \ \textbf{do} \cr
+ /// 4 & \qquad i \gets \mathrm{deleteMin}( Q );\ S \gets S \cdot
+ ///     ( A[ i ] ) \cr
+ /// 5 & \qquad \text{put the children of } i \text{ in } Q \cr
+ /// 6 & \quad \textbf{return}\ S
+ /// \end{array}}
+ /// \f]
+ /// where \f$ Q \f$ holds at most \f$ k ( D - 1 ) + 1 \f$ places.
+ [[nodiscard]] std::vector< T > smallest( std::size_t k ) const;
+
+ /// the parent of the place \f$ i > 0 \f$, \f$ \lfloor ( i - 1 ) / D
+ /// \rfloor \f$ (the layout of Eytzinger with \f$ D \f$ children,
+ /// exercise 10.4 of Morin's book)
+ [[nodiscard]] static constexpr std::size_t parent( std::size_t i ) {
+  return( ( i - 1 ) / D );
+  }
+
+ /// the child \f$ j \in \{ 0 , \ldots , D - 1 \} \f$ of the place
+ /// \f$ i \f$, \f$ D i + j + 1 \f$ (exercise 10.4 of Morin's book)
+ [[nodiscard]] static constexpr std::size_t child( std::size_t i ,
+                                                   std::size_t j ) {
+  return( D * i + j + 1 );
+  }
 
  /// whether the heap has no item
  [[nodiscard]] bool empty( void ) const;
