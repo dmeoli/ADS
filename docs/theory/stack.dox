@@ -69,7 +69,7 @@
  <tr><td><tt>MultiStack</tt></td><td>\f$ k \f$ stacks of linked cells in one
      vector, with a free list</td><td>\f$ \Theta( n + k ) \f$</td>
      <td>\f$ O( 1 ) \f$ amortized</td><td>none, the vector
-     doubles</td></tr>
+     grows</td></tr>
  </table>
 
  On a vector the \f$ n \f$ items are in the places \f$ 0 , \ldots , n - 1 \f$
@@ -92,8 +92,8 @@
  cell of a single vector linked to the cell below it in its stack, and the
  free cells form one more list. A `push()` takes the first free cell, a
  `pop()` gives its cell back, each in \f$ O( 1 ) \f$; when no cell is free
- the vector doubles, which costs \f$ O( 1 ) \f$ amortized per operation (see
- \ref theory_sequence_amortized). The space is that of the \f$ n \f$ items
+ the vector grows by a constant factor, which costs \f$ O( 1 ) \f$ amortized
+ per operation (see \ref theory_sequence_amortized). The space is that of the \f$ n \f$ items
  of all the stacks, plus the \f$ k \f$ tops, against the \f$ k c \f$ places
  of \f$ k \f$ vectors each large enough for the largest stack.
 

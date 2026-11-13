@@ -67,6 +67,7 @@ const T & ArrayStack< T >::top( void ) const
  return( f_A[ f_size - 1 ] );
  }
 
+//! [pop]
 template< class T >
 T ArrayStack< T >::pop( void )
 {
@@ -76,7 +77,9 @@ T ArrayStack< T >::pop( void )
  ADS_POST( f_size == n - 1 );   // and v the old top, by construction
  return( v );
  }
+//! [pop]
 
+//! [push]
 template< class T >
 void ArrayStack< T >::push( const T & v )
 {
@@ -86,6 +89,7 @@ void ArrayStack< T >::push( const T & v )
  ADS_POST( ( f_size == n + 1 ) && ( f_size <= f_capacity ) &&
            detail::equal( top() , v ) );
  }
+//! [push]
 
 template< class T >
 std::size_t ArrayStack< T >::size( void ) const

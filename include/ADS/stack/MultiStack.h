@@ -6,10 +6,10 @@
  * items of all the stacks are cells of a single vector, each linked to the
  * cell below it in its stack, and the free cells form a further list, so
  * that the stacks share the space and none is full while the others have
- * room (the vector doubles when all the cells are used). `push()`, `pop()`
- * and `top()` on the stack \f$ i \f$ take \f$ O( 1 ) \f$ amortized time; the
- * stacks are numbered from 0. It generalizes the two stacks in one vector of
- * exercise 4.7.
+ * room (the vector, a `std::vector`, grows by a constant factor when all
+ * the cells are used). `push()`, `pop()` and `top()` on the stack
+ * \f$ i \f$ take \f$ O( 1 ) \f$ amortized time; the stacks are numbered
+ * from 0. It generalizes the two stacks in one vector of exercise 4.7.
  *
  * The contracts [see `Contract.h`]: \f$ k > 0 \f$, a stack \f$ i \f$ in
  * \f$ [ 0 , k ) \f$, and a stack that is not empty for `top()` and `pop()`;
@@ -94,7 +94,7 @@ class MultiStack {
  /// 1 & \textbf{procedure}\ \mathrm{push}( i , v ) \cr
  /// 2 & \quad \textbf{if}\ \mathit{free} = -1\ \textbf{then}\ c \gets
  ///     \text{a new cell at the end of } C\quad \triangleright
- ///     \ \text{doubling } C \cr
+ ///     \ \text{enlarging } C \text{ if full} \cr
  /// 3 & \quad \textbf{else}\ c \gets \mathit{free};\ \mathit{free} \gets
  ///     C[ c ].\mathit{below} \cr
  /// 4 & \quad C[ c ] \gets ( v , \mathit{top}[ i ] );\ \mathit{top}[ i ]
