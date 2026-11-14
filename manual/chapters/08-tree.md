@@ -44,7 +44,8 @@ maps, in [§8.12](08-tree.md#sec-8-12), and the dynamic trees of Sleator and
 Tarjan in [§8.13](08-tree.md#sec-8-13). Finally,
 [§8.14](08-tree.md#sec-8-14) shows how every search tree of the area is a
 sorted set of Morin, and compares them all in
-[Table 8.10](08-tree.md#tab-8-10).
+[Table 8.10](08-tree.md#tab-8-10); the declarations of all the classes and
+functions of the area are collected in [§8.16](08-tree.md#sec-8-16).
 
 ## 8.1 Definitions and the interfaces {#sec-8-1}
 
@@ -5034,57 +5035,118 @@ recursive calls go to `fork()`, with the sequential switch of
 [§8.12.5](08-tree.md#sec-8-12-5), and the value of a common key is
 computed in the order of the arguments.
 
-<span id="lem-8-55"></span>**Lemma 8.55.** *([Blelloch,
-Ferizovic and Sun 2016](Z-bibliography.md#ref-blelloch2016)) The union,
-the intersection and the difference of two trees of sizes $m \le n$
-balanced by any of the four schemes take the work*
+<span id="lem-8-55"></span>**Lemma 8.55.** *Let the union, the
+intersection and the difference of `JoinAlgorithms` be called on two trees
+of sizes $m \le n$, balanced by any of the four schemes, and let $D$ be the
+depth of their recursion. Then $D = O( \log n )$ (in expectation for the
+treaps), and the work is*
 
 $$
-W( m , n ) = \Theta\Bigl( m \log\Bigl( \frac{ n }{ m } + 1 \Bigr) \Bigr) ,
+W( m , n ) = O\Bigl( m \log\Bigl( \frac{ n }{ m } + 1 \Bigr) + m \log
+( D + 1 ) \Bigr) = O\Bigl( m \log\Bigl( \frac{ n }{ m } + 1 \Bigr) + m
+\log \log ( n + 2 ) \Bigr) ,
 \tag{8.11}
 $$
 
-*in expectation for the treaps, and, with the two recursive calls in
-parallel, the span $O( \log m \log n )$. No algorithm by comparisons can
-take less work in the worst case.*
+*in expectation for the treaps; with the two recursive calls in parallel,
+the span is $O( D \log n ) = O( \log^2 n )$. No algorithm by comparisons
+can take less than $\Omega( m \log( n / m + 1 ) )$ work in the worst
+case.*
 
-*Proof.* We prove the lower bound, and the upper bounds up to two facts
-that we take from [Blelloch, Ferizovic and Sun
-2016](Z-bibliography.md#ref-blelloch2016) and state below. The union of
-two sets of sizes $m$ and $n$ must distinguish the $\binom{ m + n }{ m }$
-ways of interleaving them, and a decision tree of comparisons that does so
-has depth at least $\log_2 \binom{ m + n }{ m } = \Theta( m \log( n / m +
-1 ) )$ ([Hwang and Lin 1972](Z-bibliography.md#ref-hwang1972); [Brown and
-Tarjan 1979](Z-bibliography.md#ref-brown1979)). On disjoint sets, the
+*Proof.* The lower bound first. The union of two sets of sizes $m$ and $n$
+must distinguish the $\binom{ m + n }{ m }$ ways of interleaving them, and
+a decision tree of comparisons that does so has depth at least $\log_2
+\binom{ m + n }{ m } = \Theta( m \log( n / m + 1 ) )$ ([Hwang and Lin
+1972](Z-bibliography.md#ref-hwang1972); [Brown and Tarjan
+1979](Z-bibliography.md#ref-brown1979)). On disjoint sets, the
 intersection and the difference must also certify that no key is in both,
-and hence compare each two keys adjacent in the merged order that come from
-different sets (otherwise the two could be equal); these comparisons
-determine the interleaving, and the same bound follows. For the upper bound, each call exposes one node of the smaller
-of its two trees and splits the other, and the calls at the depth $i$ of
-the recursion work on disjoint pieces: at most $\min( 2^i , m )$ of them,
-each exposing a distinct key, with sizes $n_j$ of the split pieces such that
-$\sum_j n_j \le n$. By [Lemma 8.54](08-tree.md#lem-8-54) and the concavity
-of $x \mapsto x \log( n / x + 1 )$, the splits at the depth $i$ cost
-$\sum_j O( \log( n_j + 1 ) ) = O( 2^i \log( n / 2^i + 1 ) )$, and over the
-depths $i \le \log_2 m$ these terms grow geometrically, and sum to $O( m
-\log( n / m + 1 ) )$. The intersection and the difference add a `join2()`
-per call, of the cost of the split of the same call. The first fact we
-assume is that the depths beyond $\log_2 m$ (up to $2 \log_2 m$ in a
-Red-Black tree, for instance) add no more than a constant factor, and that
-the recursion has depth $O( \log m )$; the second, that the join of a call
-costs no more than its split, since the ranks of the trees it joins differ
-by no more than those that the split separated. Both are proved in the
-paper for the algorithm that always exposes the same argument, while the
-code exposes the smaller tree at each call, and we have not checked that
-the proof carries over. Given them, (8.11) follows, and, the two calls
-touching disjoint trees, each of the $O( \log m )$ levels of the recursion
-waits for one split and one join of $O( \log n )$, whence the span.
-$\square$
+and hence compare each two keys adjacent in the merged order that come
+from different sets (otherwise the two could be equal); these comparisons
+determine the interleaving, and the same bound follows.
 
-We remark that the bound is $\Theta( m + n )$ for sizes of the same order,
-as for the merge of two sorted sequences, and $\Theta( \log n )$ for
-$m = 1$, as for an insertion. In between, it is better than both the
-merge, $O( m + n )$, and $m$ insertions, $O( m \log n )$.
+For the upper bound, we call a call of the recursion *internal* if both
+its trees are not empty; the others return at once, and there are at most
+twice as many of them, plus one, as internal calls. We first count the
+internal calls. An internal call on trees of sizes $a \le b$ exposes the
+smaller one, of $a$ keys, and its two recursive calls receive the two
+subtrees of the exposed root, of $a_1 + a_2 = a - 1$ keys, and the two
+pieces of the split of the other tree; hence the smaller sizes of the two
+calls add up to at most $a - 1$. By induction on $a$, the internal calls
+below (and including) a call whose smaller tree has $a$ keys are at most
+$a$: there is none for $a = 0$, and one plus at most $\min( a_1 , \cdot ) +
+\min( a_2 , \cdot ) \le a - 1$ for $a \ge 1$. Thus the recursion makes at
+most $m$ internal calls.
+
+Next, the cost of an internal call on trees of sizes $a \le b$. Its
+expose costs $O( 1 )$, its split $O( \log ( b + 1 ) )$ by [Lemma
+8.54](08-tree.md#lem-8-54), and its join (or `join2()`) of two trees of at
+most $a + b \le 2 b$ keys costs $O( \log ( b + 1 ) )$ by [Lemma
+8.53](08-tree.md#lem-8-53), since the ranks of [Table
+8.7](08-tree.md#tab-8-7) are $O( \log )$ of the sizes (in expectation for
+the treaps). The calls at the same depth of the recursion work on disjoint
+sets of keys, and the larger sizes $b_c$ of the $k_i$ internal calls $c$ at
+the depth $i$ add up to at most $N = m + n$; also, $k_i \le 2^i$ and $k_i
+\le m$. Since $x \mapsto \log_2( x + 2 )$ is concave, Jensen's inequality
+gives for the depth $i$
+
+$$
+\sum_c \log_2( b_c + 2 ) \le k_i \log_2\Bigl( \frac{ N }{ k_i } + 2
+\Bigr) = \phi( k_i ) ,
+$$
+
+where $\phi( k ) = k \log_2( N / k + 2 )$ is increasing and concave in $k$
+(it is $k$ times a concave function of $N / k$, and its derivative
+$\log_2( x + 2 ) - x / ( ( x + 2 ) \ln 2 )$, $x = N / k$, is at least 1).
+Let $\ell = \lfloor \log_2 m \rfloor$, so that $m / 2 < 2^\ell \le m$. The
+depths $i \le \ell$ give, with $i = \ell - j$ and $\log_2( 2^j y + 2 ) \le
+j + \log_2( y + 2 )$,
+
+$$
+\sum_{i \le \ell} \phi( 2^i ) \le \sum_{j \ge 0} 2^{\ell - j} \Bigl( j +
+\log_2\Bigl( \frac{ N }{ 2^\ell } + 2 \Bigr) \Bigr) \le 2 m \Bigl( 1 +
+\log_2\Bigl( \frac{ 2 N }{ m } + 2 \Bigr) \Bigr) = O\Bigl( m \log\Bigl(
+\frac{ n }{ m } + 1 \Bigr) \Bigr) ,
+$$
+
+the last step since $2 N / m + 2 \le 4 ( n / m + 1 )$ and $\log_2( n / m +
+1 ) \ge 1$. The deeper levels are at most $D$, and their internal calls are
+at most $m$ in all; by the concavity of $\phi$ their terms add up to at most
+$D \phi( m / D ) = m \log_2( N D / m + 2 ) \le m \bigl( \log_2( N / m + 2 )
++ \log_2( D + 1 ) \bigr)$. With the $O( 1 )$ of each call, this gives
+(8.11) up to the bound on $D$.
+
+As for $D$, we use the rank $\rho$ of [Blelloch, Ferizovic and Sun 2016,
+§3](Z-bibliography.md#ref-blelloch2016): the height for the AVL trees and
+the treaps, $\log_2 w$ for the trees balanced by weight, and $2 ( \hat{h} -
+1 )$ or $2 \hat{h} - 1$ for a Red-Black tree with a black or a red root.
+Each child of a root has rank at most $\rho - \delta$, with $\delta = 1$ but
+for the weights, where $\delta = \log_2( 1 / ( 1 - \alpha ) )$ by their
+invariant (for a Red-Black tree, a black root of rank $2 \hat{h} - 2$ has
+children of black height $\hat{h} - 1$, of rank $2 \hat{h} - 3$ at most,
+and a red root of rank $2 \hat{h} - 1$ has black children of rank $2
+\hat{h} - 2$). Also, the two trees of a split of $T$ have rank at most $\rho(
+T )$ ([Blelloch, Ferizovic and Sun 2016, Theorem
+2](Z-bibliography.md#ref-blelloch2016), whose proof ends on this fact; for
+the treaps, the two pieces are treaps of subsets of the keys, no higher than
+$T$). Hence the sum of the ranks of the two trees of a call falls by
+$\delta$ at least from a call to each of its recursive calls, whichever tree
+is exposed, and $D \le ( \rho( A ) + \rho( B ) ) / \delta + 1 = O( \log n
+)$; for the treaps $\mathrm{E}[ \log( D + 1 ) ] \le \log( \mathrm{E}[ D ] +
+1 )$ by Jensen. Finally, the two calls of each internal call touch disjoint
+trees, and a level of the recursion waits for one split and one join of
+$O( \log n )$, whence the span. $\square$
+
+The bound (8.11) is that of [Blelloch, Ferizovic and Sun
+2016](Z-bibliography.md#ref-blelloch2016) but for the term $m \log
+\log n$, which is of lower order when $n / m \ge \log n$. Their algorithm
+always exposes the root of the same argument, so that the recursion follows
+the levels of that tree, its depth is $O( \log m )$ when that tree is the
+smaller one, and their analysis gives $O( m \log( n / m + 1 ) )$ work and
+$O( \log m \log n )$ span; the code exposes the smaller tree at each call,
+and we do not claim their bounds for it. For sizes of the same order, (8.11)
+is thus $O( n \log \log n )$, against $\Theta( n )$ for the merge of two
+sorted sequences, and for $m = 1$ it is $O( \log n )$, as for an insertion;
+in between it is never worse than $m$ insertions, $O( m \log n )$.
 
 A batch of $m$ pairs sorted by strictly increasing keys is inserted by
 `multiInsert()`, the union of the tree with the tree that the batch would
@@ -5120,15 +5182,70 @@ costs $O( 1 )$, `build()` takes $O( n )$ work, and a span of
 $O( \log^2 n )$ at most. With one `join2()` of $O( \log n )$ per level of a
 balanced tree, `filter()` takes $O( n )$ work and $O( \log^2 n )$ span.
 Its companion `mapReduce()` takes $O( n )$ work and a span of the height
-of the tree, $O( \log n )$. Each batch takes the work (8.11), with
-$m$ the smaller of the size of the batch and that of the tree. [Table
-8.8](08-tree.md#tab-8-8) collects the operations with their
-costs.
+of the tree, $O( \log n )$. The batches expose at each call the root of
+the tree, never a pair of the batch, and their cost is that of [Lemma
+8.56](08-tree.md#lem-8-56). [Table 8.8](08-tree.md#tab-8-8) collects
+the operations with their costs.
+
+<span id="lem-8-56"></span>**Lemma 8.56.** *Let a sorted batch of $b$
+pairs (or keys) go into (or out of) a tree of $t$ keys balanced by any of
+the four schemes, and let $m = \min( b , t )$ and $n = \max( b , t )$.
+Then `multiInsert()` takes the work $O( m \log( n / m + 1 ) + b )$ and the
+span $O( \log m \log n )$, and `multiRemove()` the work $O( m \log^2( n /
+m + 1 ) )$ and the span $O( \log^2 n )$ (in expectation for the treaps).*
+
+*Proof.* `multiInsert()` is the union of [Blelloch, Ferizovic and Sun 2016,
+figure 1](Z-bibliography.md#ref-blelloch2016) with the tree as the pivot
+tree, whose root is exposed at each call, and the batch as the decomposed
+tree, whose split by the key of that root is a binary search of $O( \log(
+b_c + 1 ) )$ on the $b_c$ pairs of the call, the bound of their split; the
+only other difference is the base case of an empty tree, which builds the
+rest of the batch in $O( b_c )$ work, on pieces of the batch that are
+disjoint, i.e., $O( b )$ in all. Their Theorems 5 to 8, whose proof is
+stated for either tree being the larger (their section 5), give the rest.
+For `multiRemove()` we argue directly. Its recursion follows the tree from
+the root, each call holding a subtree $T_v$ of a node $v$ and the keys of
+the batch that fall in it, and it stops where either is empty; hence the
+calls that do work are at the nodes $v$ of the union $P$ of the search paths
+of the $b$ keys, at most $\min( 2^i , b )$ at the depth $i$. Such a call
+makes a binary search of $O( \log( b_c + 2 ) )$ and a `join()` or a
+`join2()` of two trees no larger than the subtrees of the children of $v$,
+whose ranks the removals do not increase (a join adds at most 1 to the
+larger rank of its arguments, [Lemma 8.53](08-tree.md#lem-8-53), and the
+ranks of the children of $v$ are at least 1 below that of $v$, or below by
+the constant $\log_2( 1 / ( 1 - \alpha ) )$ for the weights), i.e., $O(
+\rho( T_v ) + 1 )$ by [Lemma 8.53](08-tree.md#lem-8-53) and
+[Table 8.7](08-tree.md#tab-8-7). The binary searches at the depth $i$ add
+up, by the concavity of the logarithm, to $O( k_i \log( b / k_i + 2 ) )$
+with $k_i \le \min( 2^i , b , t )$, and over the $O( \log t )$ depths to
+$O( m \log( n / m + 1 ) + m )$, by the computation of [Lemma
+8.55](08-tree.md#lem-8-55). For the joins, the nodes of rank between $r$
+and $r + 1$ are at most $c \, t \, \gamma^{-r}$ for constants $c$ and
+$\gamma > 1$ of the scheme, since their subtrees hold at least $\gamma^r$
+keys each (by [Lemma 8.29](08-tree.md#lem-8-29) for the heights of the AVL
+trees, by the black height for the Red-Black trees, by the weight itself
+for the trees balanced by weight) and at most a constant number of them lie
+on one path from the root. Hence, with $R = \log_\gamma( t / m + 1 )$,
+the joins cost $O( \sum_{r \le R} ( r + 1 ) m + \sum_{r > R} ( r + 1 ) c
+\, t \, \gamma^{-r} ) = O( m R^2 + m R + m )$, which is $O( m \log^2( n
+/ m + 1 ) )$ for $b \le t$; for $b > t$ the same sum over all the $t$ nodes
+is $O( t )$. The recursion has the depth of the tree, $O( \log t )$, and
+each level waits for one binary search and one join of $O( \log n )$,
+whence the span. For the treaps, the subtrees of height $r$ have in expectation
+at least $\gamma^r$ keys for a constant $\gamma > 1$, and the same sums
+hold in expectation. $\square$
+
+The bound of `multiRemove()` is a factor $\log( n / m + 1 )$ above that of
+`multiInsert()`, since the removals may lower the ranks below a node, and
+the join that restores the balance may then cost the rank of the node; we
+expect the true cost to be lower, as that of a removal after another, which
+amortizes, but we have not proved it.
 
 <span id="tab-8-8"></span>**Table 8.8.** The operations of
 `JoinAlgorithms` and their methods in `Joinable`, for trees of $n$ keys
-(sizes $m \le n$ for two trees, $m$ the smaller of the batch and the tree
-for a batch); the work in expectation for the treaps.
+(sizes $m \le n$ for two trees, $m$ and $n$ the smaller and the larger of
+the size $b$ of the batch and of the tree for a batch); the work in
+expectation for the treaps.
 
 | Operation | Method of `Joinable` | Work | Span |
 |---|---|---|---|
@@ -5137,8 +5254,9 @@ for a batch); the work in expectation for the treaps.
 | `join2()` | `join2( l , r )` | $O( \log n )$ | the same |
 | `extract()` | `extractRange( lo , hi )` | $O( \log n )$ | the same |
 | `insert()`, `remove()` | through `insert()` and `remove()` of the class | $O( \log n )$ | the same |
-| `unite()`, `intersect()`, `subtract()` | `unionWith()`, `intersectWith()`, `differenceWith()` | $O( m \log( n / m + 1 ) )$ | $O( \log m \log n )$ |
-| `multiInsert()`, `multiRemove()` | `multiInsert( B )`, `multiRemove( B )` | $O( m \log( n / m + 1 ) )$ | $O( \log m \log n )$ |
+| `unite()`, `intersect()`, `subtract()` | `unionWith()`, `intersectWith()`, `differenceWith()` | (8.11) | $O( \log^2 n )$ |
+| `multiInsert()` | `multiInsert( B )` | $O( m \log( n / m + 1 ) + b )$ | $O( \log m \log n )$ |
+| `multiRemove()` | `multiRemove( B )` | $O( m \log^2( n / m + 1 ) )$ | $O( \log^2 n )$ |
 | `build()` | (through `multiInsert()` on an empty tree) | $O( n )$ | $O( \log^2 n )$ |
 | `filter()` | `filter( p )` | $O( n )$ | $O( \log^2 n )$ |
 | `mapReduce()` | `mapReduce( map , reduce , id )` | $O( n )$ | $O( \log n )$ |
@@ -5279,7 +5397,7 @@ Since the path to $\mathit{lo}$ is walked from $t$ downward, i.e., from the
 larger keys to the smaller ones, the code keeps its pieces in a vector, to
 give them to `f` in increasing order.
 
-<span id="lem-8-56"></span>**Lemma 8.56.** *Each operation
+<span id="lem-8-57"></span>**Lemma 8.57.** *Each operation
 of `JoinTree` and of `Joinable` keeps (8.12) at all the nodes, at
 the cost of one evaluation of $\mathrm{from}$ and two of $\otimes$ per
 node that it passes to `connect()`. On a tree of height $h$, `augVisit()`
@@ -5491,7 +5609,7 @@ An access costs its splays plus the changes of the preferred children that it
 makes, and the analysis bounds the two parts separately, on the potential of
 the access lemma of [§8.8](08-tree.md#sec-8-8) taken over the virtual tree.
 
-<span id="lem-8-57"></span>**Lemma 8.57.** *([Sleator and
+<span id="lem-8-58"></span>**Lemma 8.58.** *([Sleator and
 Tarjan 1983](Z-bibliography.md#ref-sleator1983); [Tarjan 1983, chapter
 5](Z-bibliography.md#ref-tarjan1983).) Let the weight of each node be the
 number of its descendants in the forest plus 1, i.e., the size of its subtree
@@ -5879,7 +5997,9 @@ trees in [Tarjan 1983, chapter 4](Z-bibliography.md#ref-tarjan1983), and
 the set operations on treaps, with their parallel analysis, in [Blelloch
 and Reid-Miller 1998](Z-bibliography.md#ref-blelloch1998). [Blelloch,
 Ferizovic and Sun 2016](Z-bibliography.md#ref-blelloch2016) proved that the
-joins of four schemes give the work (8.11), with polylogarithmic span,
+joins of four schemes give the work $O( m \log( n / m + 1 ) )$, with
+polylogarithmic span, when the root of the same argument is exposed at
+each call,
 which matches the lower bound of the merge ([Hwang and Lin
 1972](Z-bibliography.md#ref-hwang1972); [Brown and Tarjan
 1979](Z-bibliography.md#ref-brown1979)). In [Blelloch, Ferizovic and Sun
@@ -5900,7 +6020,996 @@ library. Among the other libraries, oneTBB (`concurrent_map`) and folly
 operations nor split, and Boost.Intrusive has AVL, Red-Black, scapegoat,
 splay and treap trees, without the split and the join of trees.
 
-## 8.16 Exercises {#sec-8-16}
+## 8.16 The declarations of the area {#sec-8-16}
+
+We collect here, header by header and in the order of the chapter, the
+declarations of the public classes, functions, aliases and concepts of the
+area, i.e., what a user calls (the comments, the deleted copies, the
+destructors and the member types of the ranges left out); the sections
+above describe each of them, and the comments of the headers state their
+contracts. The blocks are written from the headers, and each class has been
+compiled with all its members.
+
+```cpp
+// ADS/tree/Tree.h
+template< class T > class Tree {
+ public:
+  using Item = T;
+  explicit Tree( const T & v );
+  [[nodiscard]] const T & read( void ) const;
+  void write( const T & v );
+  [[nodiscard]] Tree * parent( void ) const;
+  [[nodiscard]] Tree * leftmostChild( void ) const;
+  [[nodiscard]] Tree * rightSibling( void ) const;
+  void insertChild( Tree * t );
+  void insertSibling( Tree * t );
+  [[nodiscard]] bool isLeaf( void ) const;
+  [[nodiscard]] bool isLastSibling( void ) const;
+  void deleteChild( void );
+  void deleteSibling( void );
+ };
+template< class T , class Pre , class Post > void dfs( Tree< T > * t ,
+    Pre && pre , Post && post );
+template< class T , class F > void pre_visit( Tree< T > * t , F && f );
+template< class T , class F > void post_visit( Tree< T > * t , F && f );
+template< class T , class F > void in_visit( Tree< T > * t , int i , F && f );
+template< class T > Tree< T > * copy( const Tree< T > * t );
+template< class T , class F > void bfs( Tree< T > * t , F && f );
+template< class T > int maxWeightLevel( Tree< T > * t );
+template< class T > std::string to_list( const Tree< T > * t );
+template< class T > Tree< T > * tree_from_list( std::string_view s );
+template< class T > auto children( Tree< T > * t );
+template< class T > auto preorder( Tree< T > * t );
+```
+
+```cpp
+// ADS/tree/CursorTree.h
+template< class T > class CursorTree {
+ public:
+  using Item = T;
+  static constexpr int NIL = -1;
+  CursorTree( void ) = default;
+  explicit CursorTree( const T & v );
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] int root( void ) const;
+  [[nodiscard]] int parent( int n ) const;
+  [[nodiscard]] int leftmostChild( int n ) const;
+  [[nodiscard]] int rightSibling( int n ) const;
+  [[nodiscard]] bool isLeaf( int n ) const;
+  [[nodiscard]] bool isLastSibling( int n ) const;
+  [[nodiscard]] const T & read( int n ) const;
+  void write( int n , const T & v );
+  [[nodiscard]] int size( void ) const;
+  int insertChild( int n , const T & v );
+  int insertSibling( int n , const T & v );
+  int insertChildTree( int n , const CursorTree & t , int s );
+  int insertSiblingTree( int n , const CursorTree & t , int s );
+  void remove( int n );
+  [[nodiscard]] std::vector< int > previsit( void ) const;
+  [[nodiscard]] std::vector< int > postvisit( void ) const;
+  [[nodiscard]] std::vector< int > invisit( int i ) const;
+  [[nodiscard]] auto nodes( void ) const;
+  [[nodiscard]] auto children( int n ) const;
+ };
+```
+
+```cpp
+// ADS/tree/ChildListTree.h
+template< class T > class ChildListTree {
+ public:
+  using Item = T;
+  static constexpr int NIL = -1;
+  ChildListTree( void ) = default;
+  explicit ChildListTree( const T & v );
+  ChildListTree( const ChildListTree & o );
+  ChildListTree( ChildListTree && o ) noexcept = default;
+  ChildListTree & operator=( const ChildListTree & o );
+  ChildListTree & operator=( ChildListTree && o ) noexcept = default;
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] int root( void ) const;
+  [[nodiscard]] int parent( int n ) const;
+  [[nodiscard]] int leftmostChild( int n ) const;
+  [[nodiscard]] int rightSibling( int n ) const;
+  [[nodiscard]] bool isLeaf( int n ) const;
+  [[nodiscard]] bool isLastSibling( int n ) const;
+  [[nodiscard]] const List< int > & children( int n ) const;
+  [[nodiscard]] const T & read( int n ) const;
+  void write( int n , const T & v );
+  [[nodiscard]] int size( void ) const;
+  int insertChild( int n , const T & v );
+  int insertSibling( int n , const T & v );
+  int insertChildTree( int n , const ChildListTree & t , int s );
+  int insertSiblingTree( int n , const ChildListTree & t , int s );
+  void remove( int n );
+  [[nodiscard]] std::vector< int > previsit( void ) const;
+  [[nodiscard]] std::vector< int > postvisit( void ) const;
+  [[nodiscard]] std::vector< int > invisit( int i ) const;
+ };
+```
+
+```cpp
+// ADS/tree/ParentTree.h
+class ParentTree {
+ public:
+  explicit ParentTree( int n );
+  [[nodiscard]] int parent( int i ) const;
+  void setParent( int i , int j );
+  [[nodiscard]] int size( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/PreorderArrayTree.h
+template< class T > class PreorderArrayTree {
+ public:
+  using Item = T;
+  static constexpr int NIL = -1;
+  PreorderArrayTree( void ) = default;
+  explicit PreorderArrayTree( const T & v );
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] int size( void ) const;
+  [[nodiscard]] int root( void ) const;
+  [[nodiscard]] int parent( int i ) const;
+  [[nodiscard]] const T & read( int i ) const;
+  void write( int i , const T & v );
+  [[nodiscard]] int leftmostChild( int i ) const;
+  [[nodiscard]] int rightSibling( int i ) const;
+  [[nodiscard]] bool isLeaf( int i ) const;
+  [[nodiscard]] int subtreeEnd( int i ) const;
+  void insertChild( int i , const PreorderArrayTree & t );
+  void insertSibling( int i , const PreorderArrayTree & t );
+  void remove( int i );
+  [[nodiscard]] auto values( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/BinaryTree.h
+template< class T > class BinaryTree {
+ public:
+  using Item = T;
+  explicit BinaryTree( const T & v );
+  [[nodiscard]] const T & read( void ) const;
+  void write( const T & v );
+  [[nodiscard]] BinaryTree * parent( void ) const;
+  [[nodiscard]] BinaryTree * left( void ) const;
+  [[nodiscard]] BinaryTree * right( void ) const;
+  void insertLeft( BinaryTree * t );
+  void insertRight( BinaryTree * t );
+  void deleteLeft( void );
+  void deleteRight( void );
+  [[nodiscard]] BinaryTree * detachLeft( void );
+  [[nodiscard]] BinaryTree * detachRight( void );
+ };
+template< class T , class Pre , class In , class Post > void dfs(
+    BinaryTree< T > * t , Pre && pre , In && in , Post && post );
+template< class T , class F > void pre_visit( BinaryTree< T > * t , F && f );
+template< class T , class F > void in_visit( BinaryTree< T > * t , F && f );
+template< class T , class F > void post_visit( BinaryTree< T > * t , F && f );
+template< class T > BinaryTree< T > * copy( const BinaryTree< T > * t );
+template< class T > BinaryTree< T > * join( const T & v ,
+    const BinaryTree< T > * l , const BinaryTree< T > * r );
+template< class T > std::string to_list( const BinaryTree< T > * t );
+template< class T > BinaryTree< T > * from_list( std::string_view s );
+template< class T > BinaryTree< T > * to_binary( const Tree< T > * t );
+inline long dary_child( long i , long d , long j );
+inline long dary_parent( long i , long d );
+template< class T > auto preorder( BinaryTree< T > * t );
+template< class T > auto inorder( BinaryTree< T > * t );
+template< class T > auto postorder( BinaryTree< T > * t );
+```
+
+```cpp
+// ADS/tree/CursorBinaryTree.h
+template< class T > class CursorBinaryTree {
+ public:
+  using Item = T;
+  static constexpr int NIL = -1;
+  CursorBinaryTree( void ) = default;
+  explicit CursorBinaryTree( const T & v );
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] int root( void ) const;
+  [[nodiscard]] int parent( int n ) const;
+  [[nodiscard]] int left( int n ) const;
+  [[nodiscard]] int right( int n ) const;
+  [[nodiscard]] bool isLeaf( int n ) const;
+  [[nodiscard]] const T & read( int n ) const;
+  void write( int n , const T & v );
+  [[nodiscard]] int size( void ) const;
+  int setRoot( const T & v );
+  int insertLeft( int n , const T & v );
+  int insertRight( int n , const T & v );
+  int insertLeft( int n , const CursorBinaryTree & t , int s );
+  int insertRight( int n , const CursorBinaryTree & t , int s );
+  void remove( int n );
+  [[nodiscard]] std::vector< int > preorder( void ) const;
+  [[nodiscard]] auto nodes( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/ArrayBinaryTree.h
+template< class T > class ArrayBinaryTree {
+ public:
+  using Item = T;
+  static constexpr long NIL = -1;
+  ArrayBinaryTree( void ) = default;
+  explicit ArrayBinaryTree( const T & v );
+  ArrayBinaryTree( const T & v , const ArrayBinaryTree & l ,
+      const ArrayBinaryTree & r );
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] long root( void ) const;
+  [[nodiscard]] long parent( long i ) const;
+  [[nodiscard]] long left( long i ) const;
+  [[nodiscard]] long right( long i ) const;
+  [[nodiscard]] bool isLeaf( long i ) const;
+  [[nodiscard]] const T & read( long i ) const;
+  void write( long i , const T & v );
+  void setRoot( const T & v );
+  void insertLeft( long i , const ArrayBinaryTree & t );
+  void insertRight( long i , const ArrayBinaryTree & t );
+  void remove( long i );
+  [[nodiscard]] std::vector< long > preorder( void ) const;
+  [[nodiscard]] auto nodes( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/ThreadedTree.h
+template< std::totally_ordered K > class ThreadedTree {
+ public:
+  ThreadedTree( void );
+  void insert( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  template< class F > void forEach( F && f ) const;
+  [[nodiscard]] std::vector< K > reversed( void ) const;
+  using value_type = K;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/ExpressionTree.h
+BinaryTree< std::string > * expressionTree( std::string_view e );
+double evaluate( const BinaryTree< std::string > * t ,
+    const std::map< std::string , double > & env = {} );
+std::string prefixForm( const BinaryTree< std::string > * t );
+std::string infixForm( const BinaryTree< std::string > * t );
+```
+
+```cpp
+// ADS/tree/HeapByInsertion.h
+template< class T , class C = std::less<> > void maxHeapSiftUp(
+    std::vector< T > & A , std::size_t i , C less = C() );
+template< class T , class C = std::less<> > void heapBuildByInsertion(
+    std::vector< T > & A , C less = C() );
+```
+
+```cpp
+// ADS/tree/BinaryTreeAlgorithms.h
+template< class N > concept BinaryNode = std::is_pointer_v< N > && requires(
+    N n ) { ... };
+template< class N > concept ParentBinaryNode = BinaryNode< N > && requires(
+    N n ) { ... };
+template< class N > concept KeyedBinaryNode = BinaryNode< N > && requires(
+    N n ) { ... };
+template< ParentBinaryNode N > N lowestCommonAncestor( N u , N v );
+template< KeyedBinaryNode N , KeyedBinaryNode M ,
+    class Equal = std::equal_to<> > [[nodiscard]] bool equalTrees( N t , M s ,
+    Equal eq = {} );
+template< KeyedBinaryNode N , class Compare = std::less<> >
+    [[nodiscard]] bool isSearchTree( N t , Compare less = {} );
+template< BinaryNode N , class Red > [[nodiscard]] bool isRedBlackTree( N t ,
+    Red red );
+template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
+    std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
+    Compare less = {} );
+template< ParentBinaryNode N > [[nodiscard]] N nextPreorder( N u );
+template< ParentBinaryNode N > [[nodiscard]] N nextInorder( N u );
+template< ParentBinaryNode N > [[nodiscard]] N nextPostorder( N u );
+template< BinaryNode N > [[nodiscard]] N firstInorder( N u );
+template< BinaryNode N > [[nodiscard]] N firstPostorder( N u );
+template< ParentBinaryNode N > [[nodiscard]] std::size_t subtreeSize( N u );
+template< ParentBinaryNode N > [[nodiscard]] long subtreeHeight( N u );
+template< BinaryNode N > [[nodiscard]] bool isSizeBalanced( N t );
+template< BinaryNode N , class F > void orderNumbers( N t , F && f );
+template< BinaryNode N > [[nodiscard]] std::vector< bool > shapeCode( N t );
+inline BinaryTree< std::size_t > * fromShapeCode(
+    const std::vector< bool > & c , std::size_t n );
+template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
+    std::size_t lessOrEqual( N t , const K & x , F && f , Compare less = {} );
+template< class T , class Make , class Compare = std::less<> >
+    auto minimumHeightSearchTree( const std::vector< T > & A , Make make ,
+    Compare less = {} ) -> std::invoke_result_t< Make & , const T & ,
+    std::nullptr_t , std::nullptr_t >;
+template< class T , class Compare = std::less<> >
+    requires std::predicate< Compare & , const T & , const T & >
+    BinaryTree< T > * minimumHeightSearchTree( const std::vector< T > & A ,
+    Compare less = {} );
+template< class T > BinaryTree< T > * fromPreorderInorder(
+    const std::vector< T > & pre , const std::vector< T > & in );
+template< class T , class Compare = std::less< T > >
+    BinaryTree< T > * cartesianBinaryTree( const std::vector< T > & A ,
+    Compare less = {} );
+```
+
+```cpp
+// ADS/tree/SearchTree.h
+enum class Color : unsigned char { RED , BLACK };
+struct NotJoinable {
+ public:
+ };
+template< std::totally_ordered K , class V , bool RB >
+    class SearchTree : public std::conditional_t< RB ,
+    Joinable< SearchTree< K , V , RB > , SearchTreeNodes< K , V , RB > , K ,
+    V > , NotJoinable > {
+ public:
+  using Key = K;
+  using Value = V;
+  SearchTree( void );
+  SearchTree( const SearchTree & o );
+  SearchTree( SearchTree && o ) noexcept;
+  SearchTree & operator=( SearchTree o ) noexcept;
+  void swap( SearchTree & o ) noexcept;
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] bool empty( void ) const;
+  void clear( void );
+  [[nodiscard]] Link * root( void ) const;
+  [[nodiscard]] bool isNil( const Link * u ) const;
+  [[nodiscard]] static const K & key( const Link * u );
+  [[nodiscard]] static const V & value( const Link * u );
+  [[nodiscard]] Link * lookupNode( const K & x ) const;
+  [[nodiscard]] Link * lowerBoundNode( const K & x ) const;
+  [[nodiscard]] Link * min( void ) const;
+  [[nodiscard]] Link * max( void ) const;
+  [[nodiscard]] Link * successorNode( Link * t ) const;
+  template< class F > void forEach( F && f ) const;
+  [[nodiscard]] Link * predecessorNode( Link * t ) const;
+  using value_type = std::pair< const K & , const V & >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+template< std::totally_ordered K , class V >
+    using BinarySearchTree = SearchTree< K , V , false >;
+template< std::totally_ordered K , class V >
+    using RedBlackTree = SearchTree< K , V , true >;
+```
+
+```cpp
+// ADS/tree/MeasuredSearchTree.h
+template< std::totally_ordered K , class V > class MeasuredSearchTree {
+ public:
+  using Key = K;
+  using Value = V;
+  MeasuredSearchTree( void ) = default;
+  MeasuredSearchTree( MeasuredSearchTree && other ) noexcept : f_root(
+      other.f_root ) , f_size( other.f_size );
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] long height( void ) const;
+  [[nodiscard]] std::optional< Measures > measures( const K & k ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::vector< std::pair< K , V > > getLE( const K & x ) const;
+  template< class F > void forEach( F && f ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< MeasuredSearchTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/Treap.h
+template< std::totally_ordered K , class V >
+    class Treap : public Joinable< Treap< K , V > , TreapNodes< K , V > , K ,
+    V > {
+ public:
+  using Key = K;
+  using Value = V;
+  explicit Treap( std::uint64_t seed = 1 );
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] int height( void ) const;
+  template< class F > void forEach( F && f ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
+  [[nodiscard]] std::size_t rank( const K & k ) const;
+  [[nodiscard]] static Treap fromSorted( const std::vector< std::pair< K ,
+      V > > & A , std::uint64_t seed = 1 );
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< Treap , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/HashedTreap.h
+template< std::totally_ordered K , class V > class HashedTreap {
+ public:
+  using Key = K;
+  using Value = V;
+  explicit HashedTreap( std::uint64_t seed = 1 ) : f_h( seed );
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] int height( void ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  template< class F > void forEach( F && f ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< HashedTreap , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/FingerTreap.h
+template< std::totally_ordered K , class V > class FingerTreap {
+ public:
+  using Key = K;
+  using Value = V;
+  explicit FingerTreap( std::uint64_t seed = 1 ) : f_g( seed );
+  FingerTreap( FingerTreap && other ) noexcept : f_root( other.f_root ) ,
+      f_size( other.f_size ) , f_g( other.f_g );
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  [[nodiscard]] std::optional< V > fingerLookup( const K & k );
+  [[nodiscard]] std::optional< V > lookupFrom( const K & k , Finger f ) const;
+  [[nodiscard]] Finger finger( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] int height( void ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
+  [[nodiscard]] std::size_t rank( const K & k ) const;
+  template< class F > void forEach( F && f ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< FingerTreap , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/RandomizedSearchTree.h
+template< std::totally_ordered K , class V > class RandomizedSearchTree {
+ public:
+  using Key = K;
+  using Value = V;
+  explicit RandomizedSearchTree( std::uint64_t seed = 1 ) : f_g( seed );
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] int height( void ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
+  [[nodiscard]] std::size_t rank( const K & k ) const;
+  template< class F > void forEach( F && f ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< RandomizedSearchTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/AVLTree.h
+template< std::totally_ordered K , class V >
+    class AVLTree : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > ,
+    K , V > {
+ public:
+  using Key = K;
+  using Value = V;
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] int height( void ) const;
+  template< class F > void forEach( F && f ) const;
+  [[nodiscard]] std::pair< std::size_t , std::size_t > rebalancings(
+      void ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< AVLTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/SplayTree.h
+template< std::totally_ordered K , class V > class SplayTree {
+ public:
+  using Key = K;
+  using Value = V;
+  SplayTree( void ) = default;
+  SplayTree( SplayTree && other ) noexcept;
+  [[nodiscard]] std::optional< V > lookup( const K & k );
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k );
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound( const K & k );
+  [[nodiscard]] const K * findKey( const K & k );
+  [[nodiscard]] const K * lowerBoundKey( const K & k );
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] std::optional< K > root( void ) const;
+  template< class F > void forEach( F && f ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< SplayTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/ScapegoatTree.h
+template< std::totally_ordered K , class V , bool StoredSizes = false >
+    class ScapegoatTree {
+ public:
+  using Key = K;
+  using Value = V;
+  enum class Sizes { RECOMPUTE , REUSE };
+  enum class Scapegoats { HEIGHT , WEIGHT };
+  enum class Rebuilds { ARRAY , LIST };
+  explicit ScapegoatTree( double b = 1.5 , Sizes sizes = Sizes::REUSE ,
+      Rebuilds rebuilds = Rebuilds::ARRAY ,
+      Scapegoats scapegoats = Scapegoats::HEIGHT );
+  ScapegoatTree( ScapegoatTree && other ) noexcept;
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] long height( void ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  template< class F > void forEach( F && f ) const;
+  [[nodiscard]] std::size_t rebuilds( void ) const;
+  [[nodiscard]] std::size_t rebuiltNodes( void ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< ScapegoatTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/PartialRebuildingTree.h
+enum class RebuildPolicy { WEIGHT , COUNTDOWN , DYNAMITE };
+template< std::totally_ordered K , class V , RebuildPolicy P >
+    class PartialRebuildingTree {
+ public:
+  using Key = K;
+  using Value = V;
+  explicit PartialRebuildingTree( std::uint64_t seed = 1 ) : f_g( seed );
+  PartialRebuildingTree( PartialRebuildingTree && other ) noexcept;
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] long height( void ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  template< class F > void forEach( F && f ) const;
+  [[nodiscard]] std::size_t rebuilds( void ) const;
+  [[nodiscard]] std::size_t rebuiltNodes( void ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< PartialRebuildingTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+template< std::totally_ordered K , class V >
+    using WeightRebuildTree = PartialRebuildingTree< K , V ,
+    RebuildPolicy::WEIGHT >;
+template< std::totally_ordered K , class V >
+    using CountdownTree = PartialRebuildingTree< K , V ,
+    RebuildPolicy::COUNTDOWN >;
+template< std::totally_ordered K , class V >
+    using DynamiteTree = PartialRebuildingTree< K , V ,
+    RebuildPolicy::DYNAMITE >;
+```
+
+```cpp
+// ADS/tree/LeftLeaningRedBlackTree.h
+template< std::totally_ordered K , class V > class LeftLeaningRedBlackTree {
+ public:
+  using Key = K;
+  using Value = V;
+  LeftLeaningRedBlackTree( void ) = default;
+  LeftLeaningRedBlackTree(
+      LeftLeaningRedBlackTree && other ) noexcept : f_root( other.f_root ) ,
+      f_n( other.f_n );
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] long height( void ) const;
+  [[nodiscard]] long blackHeight( void ) const;
+  [[nodiscard]] std::array< std::size_t , 3 > twoFourDegrees( void ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  void absorb( LeftLeaningRedBlackTree & t );
+  template< class F > void forEach( F && f ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< LeftLeaningRedBlackTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/BTree.h
+template< std::totally_ordered K , class V > class BTree {
+ public:
+  using Key = K;
+  using Value = V;
+  explicit BTree( int t = 3 );
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] int height( void ) const;
+  template< class F > void forEach( F && f ) const;
+  using value_type = std::pair< const K & , const V & >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/BPlusTree.h
+template< std::totally_ordered K , class V > class BPlusTree {
+ public:
+  using Key = K;
+  using Value = V;
+  explicit BPlusTree( int m );
+  [[nodiscard]] std::optional< V > lookup( const K & x ) const;
+  void insert( const K & x , const V & v );
+  void remove( const K & x );
+  [[nodiscard]] bool contains( const K & x ) const;
+  [[nodiscard]] const K * lowerBound( const K & x ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::vector< std::pair< K , V > > findRange( const K & x ,
+      const K & y ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] int order( void ) const;
+  [[nodiscard]] std::vector< std::pair< K , V > > range( const K & A ,
+      const K & B ) const;
+  [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels(
+      void ) const;
+  void check( void ) const;
+  using value_type = std::pair< const K & , const V & >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+```
+
+```cpp
+// ADS/tree/BTreeMap.h
+template< class K , class V , class Less = std::less< K > ,
+    std::size_t B = 512 , bool R = false >
+    requires std::default_initializable< K > && std::default_initializable< V >
+    class BTreeMap {
+ public:
+  using Key = K;
+  using Value = V;
+  static constexpr std::size_t L = std::clamp< std::size_t >( B / ( sizeof(
+      K ) + sizeof( V ) ) , 4 , 255 );
+  static constexpr std::size_t I = std::clamp< std::size_t >( B / ( sizeof(
+      K ) + sizeof( void * ) ) , 4 , 255 );
+  explicit BTreeMap( Less less = Less() );
+  BTreeMap( const BTreeMap & o );
+  BTreeMap( BTreeMap && o ) noexcept;
+  BTreeMap & operator=( BTreeMap o ) noexcept;
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  [[nodiscard]] const V * find( const K & k ) const;
+  [[nodiscard]] V * find( const K & k );
+  bool insert( const K & k , const V & v );
+  bool remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] bool empty( void ) const;
+  [[nodiscard]] int height( void ) const;
+  void clear( void );
+  template< std::input_iterator It > void build( It first , It last );
+  template< class F > void forEach( F && f ) const;
+  template< class F > void forRange( const K & lo , const K & hi ,
+      F && f ) const;
+  void swap( BTreeMap & o ) noexcept;
+  class const_iterator;
+  using value_type = std::pair< const K & , const V & >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+  [[nodiscard]] const_iterator lowerBound( const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] const_iterator upperBound( const K & k ) const;
+  const_iterator erase( const_iterator it );
+  [[nodiscard]] std::size_t rank( const K & k ) const requires R;
+  [[nodiscard]] const_iterator select( std::size_t i ) const requires R;
+ };
+```
+
+```cpp
+// ADS/tree/JoinAlgorithms.h
+inline constexpr std::size_t kJoinGrain = 2048;
+template< class A > concept JoinAdaptor = requires( typename A::Node * t ,
+    typename A::Node * & l , const typename A::Key & k ,
+    typename A::Rank r ) { ... };
+template< class A > struct AVLJoin {
+ public:
+  using Node = typename A::Node;
+  static Node * join( Node * l , Node * m , Node * r );
+  static Node * joinRight( Node * l , Node * m , Node * r );
+  static Node * joinLeft( Node * l , Node * m , Node * r );
+ };
+template< class A > struct RedBlackJoin {
+ public:
+  using Node = typename A::Node;
+  static std::pair< Node * , int > join( Node * l , int bl , Node * m ,
+      Node * r , int br );
+  static Node * joinRight( Node * l , int bl , Node * m , Node * r , int br );
+  static Node * joinLeft( Node * l , int bl , Node * m , Node * r , int br );
+ };
+template< class A > struct WeightBalancedJoin {
+ public:
+  using Node = typename A::Node;
+  static constexpr std::size_t kAlphaNum = 29;
+  static constexpr std::size_t kAlphaDen = 100;
+  static Node * join( Node * l , Node * m , Node * r );
+  static Node * joinRight( Node * l , Node * m , Node * r );
+  static Node * joinLeft( Node * l , Node * m , Node * r );
+  static bool like( std::size_t a , std::size_t b );
+  static std::size_t weight( const Node * t );
+ };
+template< class A > struct TreapJoin {
+ public:
+  using Node = typename A::Node;
+  static Node * join( Node * l , Node * m , Node * r );
+ };
+template< JoinAdaptor A > struct JoinAlgorithms {
+ public:
+  using Node = typename A::Node;
+  using Key = typename A::Key;
+  using Value = typename A::Value;
+  using Rank = typename A::Rank;
+  [[nodiscard]] static Tree empty( void );
+  [[nodiscard]] static Tree whole( Node * t );
+  [[nodiscard]] static Exposed expose( Tree x );
+  [[nodiscard]] static Tree join( Tree l , Node * m , Tree r );
+  static Node * split( Tree x , const Key & k , Tree & l , Tree & r );
+  static Node * splitLast( Tree x , Tree & rest );
+  [[nodiscard]] static Tree join2( Tree l , Tree r );
+  [[nodiscard]] static Tree insert( Tree x , Node * n , bool & fresh );
+  [[nodiscard]] static Tree remove( Tree x , const Key & k , bool & gone );
+  template< Executor E , class F > [[nodiscard]] static Tree unite( E & ex ,
+      Tree a , Tree b , const F & f );
+  template< Executor E , class F > [[nodiscard]] static Tree intersect(
+      E & ex , Tree a , Tree b , const F & f );
+  template< Executor E > [[nodiscard]] static Tree subtract( E & ex , Tree a ,
+      Tree b );
+  template< Executor E > [[nodiscard]] static Tree build( E & ex ,
+      Node * const * N , std::size_t n );
+  template< Executor E , class F > [[nodiscard]] static Tree multiInsert(
+      E & ex , Tree x , Node * const * N , std::size_t n , const F & f );
+  template< Executor E > [[nodiscard]] static Tree multiRemove( E & ex ,
+      Tree x , const Key * K , std::size_t n , std::size_t & gone );
+  template< Executor E , class P > [[nodiscard]] static Tree filter( E & ex ,
+      Tree x , const P & p );
+  template< Executor E , class M , class R , class U >
+      [[nodiscard]] static U mapReduce( E & ex , Node * t , const M & map ,
+      const R & reduce , const U & id );
+  [[nodiscard]] static Tree extract( Tree & x , const Key & lo ,
+      const Key & hi );
+  [[nodiscard]] static const Key & firstKey( Node * t );
+  [[nodiscard]] static const Key & lastKey( Node * t );
+ };
+struct TakeSecond {
+ public:
+  template< class V > V operator()( const V & , const V & b ) const;
+ };
+struct TakeFirst {
+ public:
+  template< class V > V operator()( const V & a , const V & ) const;
+ };
+template< class T , class A , class Key , class Value > class Joinable {
+ public:
+  [[nodiscard]] std::tuple< T , std::optional< Value > , T > split(
+      const Key & k ) &&;
+  [[nodiscard]] static T join( T && l , const Key & k , const Value & v ,
+      T && r );
+  [[nodiscard]] static T join2( T && l , T && r );
+  [[nodiscard]] T extractRange( const Key & lo , const Key & hi );
+  template< class F = TakeSecond > void unionWith( T && o , F f = F() );
+  template< Executor E , class F = TakeSecond > void unionWith( E & ex ,
+      T && o , F f = F() );
+  template< class F = TakeFirst > void intersectWith( T && o , F f = F() );
+  template< Executor E , class F = TakeFirst > void intersectWith( E & ex ,
+      T && o , F f = F() );
+  void differenceWith( T && o );
+  template< Executor E > void differenceWith( E & ex , T && o );
+  template< class F = TakeSecond > void multiInsert(
+      std::span< const std::pair< Key , Value > > B , F f = F() );
+  template< Executor E , class F = TakeSecond > void multiInsert( E & ex ,
+      std::span< const std::pair< Key , Value > > B , F f = F() );
+  void multiRemove( std::span< const Key > B );
+  template< Executor E > void multiRemove( E & ex , std::span< const Key > B );
+  template< class P > void filter( P p );
+  template< Executor E , class P > void filter( E & ex , P p );
+  template< class M , class R , class U > [[nodiscard]] U mapReduce( M map ,
+      R reduce , U id ) const;
+  template< Executor E , class M , class R , class U >
+      [[nodiscard]] U mapReduce( E & ex , M map , R reduce , U id ) const;
+ };
+```
+
+```cpp
+// ADS/tree/JoinTree.h
+struct AVLBalance {
+ public:
+ };
+struct RedBlackBalance {
+ public:
+ };
+struct WeightBalance {
+ public:
+ };
+struct TreapBalance {
+ public:
+ };
+template< class G , class K , class V > concept Augmentation = requires(
+    const K & k , const V & v , const typename G::Value & a ) { ... };
+struct NoAugmentation {
+ public:
+  static Value identity( void );
+  template< class K , class V > static Value from( const K & , const V & );
+  static Value combine( const Value & , const Value & );
+ };
+template< class V > struct SumAugmentation {
+ public:
+  using Value = V;
+  static Value identity( void );
+  template< class K > static Value from( const K & , const V & v );
+  static Value combine( const Value & a , const Value & b );
+ };
+template< class V > struct MaxAugmentation {
+ public:
+  using Value = V;
+  static Value identity( void );
+  template< class K > static Value from( const K & , const V & v );
+  static Value combine( const Value & a , const Value & b );
+ };
+template< std::totally_ordered K , class V , class B , class G >
+    requires Augmentation< G , K , V >
+    class JoinTree : public Joinable< JoinTree< K , V , B , G > ,
+    JoinTreeNodes< K , V , B , G > , K , V > {
+ public:
+  using Key = K;
+  using Value = V;
+  using AugValue = typename G::Value;
+  using Augmented = G;
+  explicit JoinTree( std::uint64_t seed = 1 );
+  JoinTree( const JoinTree & o );
+  JoinTree( JoinTree && o ) noexcept;
+  JoinTree & operator=( JoinTree o ) noexcept;
+  void swap( JoinTree & o ) noexcept;
+  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+  void insert( const K & k , const V & v );
+  void remove( const K & k );
+  [[nodiscard]] bool contains( const K & k ) const;
+  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+      const K & k ) const;
+  [[nodiscard]] const K * findKey( const K & k ) const;
+  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+  [[nodiscard]] std::size_t size( void ) const;
+  [[nodiscard]] bool empty( void ) const;
+  void clear( void );
+  [[nodiscard]] int height( void ) const;
+  template< class F > void forEach( F && f ) const;
+  [[nodiscard]] AugValue augValue( void ) const;
+  [[nodiscard]] AugValue augRange( const K & lo , const K & hi ) const;
+  [[nodiscard]] AugValue augPrefix( const K & k ) const;
+  template< class F > void augVisit( const K & lo , const K & hi ,
+      F && f ) const;
+  [[nodiscard]] const Node * root( void ) const;
+  using value_type = std::pair< const K & , const V & >;
+  using const_iterator = PathIterator< JoinTree , Shape >;
+  [[nodiscard]] const_iterator begin( void ) const;
+  [[nodiscard]] const_iterator end( void ) const;
+ };
+template< std::totally_ordered K , class V , class G = NoAugmentation >
+    using JoinAVLTree = JoinTree< K , V , AVLBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation >
+    using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation >
+    using WeightBalancedTree = JoinTree< K , V , WeightBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation >
+    using JoinTreap = JoinTree< K , V , TreapBalance , G >;
+template< std::totally_ordered K , class V , class G >
+    using AugmentedMap = JoinTree< K , V , WeightBalance , G >;
+```
+
+```cpp
+// ADS/tree/LinkCutTree.h
+template< class T = long long , class Op = std::plus< T > > class LinkCutTree {
+ public:
+  using Value = T;
+  explicit LinkCutTree( int n = 0 , const T & id = T() , Op op = Op() );
+  [[nodiscard]] int n( void ) const;
+  int addNode( const T & x );
+  [[nodiscard]] const T & value( int v ) const;
+  void setValue( int v , const T & x );
+  void evert( int v );
+  [[nodiscard]] int findRoot( int v );
+  void useSplay( void );
+  [[nodiscard]] bool splayed( void ) const;
+  [[nodiscard]] bool connected( int u , int v );
+  void link( int u , int v );
+  void cut( int u , int v );
+  bool cutParent( int v );
+  [[nodiscard]] int lca( int u , int v );
+  [[nodiscard]] T aggregate( int u , int v );
+ };
+```
+
+## 8.17 Exercises {#sec-8-17}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`). The exercises of chapters 6 to 9 of [Morin
@@ -6466,8 +7575,11 @@ a proof by the lemmas cited.
      `std::map`, on trees of very different sizes and on empty trees
      ([Lemma 8.55](08-tree.md#lem-8-55)). Test:
      `join_trees.set-operations`.
-103. Insert and remove a sorted batch of $m$ pairs in $O( m \log( n / m + 1
-     ) )$ work without building the tree of the batch, and keep only the
+103. Insert a sorted batch of $b$ pairs in $O( m \log( n / m + 1 ) + b )$
+     work and remove one in $O( m \log^2( n / m + 1 ) )$ work, $m$ and $n$
+     the smaller and the larger of $b$ and of the size of the tree
+     ([Lemma 8.56](08-tree.md#lem-8-56)), without building the tree of
+     the batch, and keep only the
      pairs that satisfy a predicate ([§8.12.4](08-tree.md#sec-8-12-4)).
      Test: `join_trees.batches`.
 104. Take the keys of a range $[ \mathit{lo} , \mathit{hi} ]$ out of a tree
@@ -6480,7 +7592,7 @@ a proof by the lemmas cited.
 106. Keep in each node the sum, or the maximum, of the values of its
      subtree through each join. Answer the aggregate of a range and of a
      prefix in $O( \log n )$ combinations ([Lemma
-     8.56](08-tree.md#lem-8-56)); check them against brute
+     8.57](08-tree.md#lem-8-57)); check them against brute
      force on the four schemes, also with the infinite values of the
      floating types. Tests: `join_trees.augmented-maps` and
      `join_trees.infinite-bounds`.
