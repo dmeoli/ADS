@@ -213,6 +213,7 @@ inline void sais( const Symbols & s , std::size_t K ,
 
  // the LMS-suffixes at the ends of their buckets, in the order of L, then
  // the L-suffixes from left to right and the S-suffixes from right to left
+//! [induce]
  auto induce = [ & ]( const std::vector< std::size_t > & L ) {
   std::fill( SA.begin() , SA.end() , saEmpty );
   buckets();
@@ -231,6 +232,7 @@ inline void sais( const Symbols & s , std::size_t K ,
     SA[ --tail[ s[ v ] ] ] = v;
     }
   };
+//! [induce]
 
  // the LMS-substrings sorted by one induction
  std::vector< std::size_t > L1;
@@ -313,6 +315,7 @@ inline std::vector< std::size_t > suffixArrayDoubling( const Symbols & T )
  R[ SA[ 0 ] ] = 0;
  for( std::size_t r = 1 ; r < n ; ++r )
   R[ SA[ r ] ] = R[ SA[ r - 1 ] ] + ( T[ SA[ r ] ] != T[ SA[ r - 1 ] ] );
+//! [doubling]
  for( std::size_t k = 1 ; ( R[ SA[ n - 1 ] ] < n - 1 ) && ( k < n ) ;
       k *= 2 ) {
   // the rank of the prefix of 2 k symbols, as the pair of two of k
@@ -327,6 +330,7 @@ inline std::vector< std::size_t > suffixArrayDoubling( const Symbols & T )
                     ( key( SA[ r ] ) != key( SA[ r - 1 ] ) );
   R.swap( tmp );
   }
+//! [doubling]
  ADS_AUDIT( detail::isSuffixArray( T , SA ) );
  return( SA );
  }
@@ -510,6 +514,7 @@ inline std::vector< std::size_t > lcpArray(
  const std::size_t n = T.size();
  std::vector< std::size_t > LCP( n < 2 ? 0 : n - 1 );
  const std::vector< std::size_t > R = inversePermutation( SA );
+//! [kasai]
  for( std::size_t i = 0 , h = 0 ; i < n ; ++i ) {
   const std::size_t q = R[ i ];
   if( q == 0 ) {
@@ -522,6 +527,7 @@ inline std::vector< std::size_t > lcpArray(
   LCP[ q - 1 ] = h;
   if( h > 0 ) --h;
   }
+//! [kasai]
  ADS_AUDIT( detail::isLcpArray( T , SA , LCP ) );
  return( LCP );
  }
@@ -607,6 +613,7 @@ inline std::size_t SuffixArray::boundLcp( const Symbols & P , bool upper ,
 {
  // P is greater than the suffix L and not greater than the suffix R, and
  // shares l and r symbols with them; -1 and n are virtual ends
+//! [boundlcp]
  long L = -1 , R = long( f_SA.size() );
  std::size_t l = 0 , r = 0;
  while( R - L > 1 ) {
@@ -646,6 +653,7 @@ inline std::size_t SuffixArray::boundLcp( const Symbols & P , bool upper ,
    r = m;
    }
   }
+//! [boundlcp]
  return( std::size_t( R ) );
  }
 

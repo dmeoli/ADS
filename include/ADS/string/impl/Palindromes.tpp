@@ -57,6 +57,7 @@ std::pair< std::size_t , std::size_t > longestPalindrome( const S & s )
    bestLength = length;
    }
   };
+//! [manacher]
  // d1[ i ]: the radius of the longest odd palindrome centred at i, the
  // centre included; [ l , r ) the rightmost palindrome found so far
  std::vector< std::size_t > d1( n ) , d2( n );
@@ -71,6 +72,7 @@ std::pair< std::size_t , std::size_t > longestPalindrome( const S & s )
    }
   keep( i + 1 - k , 2 * k - 1 );
   }
+//! [manacher]
  // d2[ i ]: the half length of the longest even palindrome whose right
  // half starts at i
  for( std::size_t i = 0 , l = 0 , r = 0 ; i < n ; ++i ) {

@@ -1,0 +1,62 @@
+% Source for the figure of huffman() (sec. 15.8): the forest of the
+% characters a:5, b:9, c:12, d:13, e:16, f:45 before and after the first
+% merge (the two least frequent shaded), and the final tree, the left
+% edges 0 and the right ones 1, each leaf with its code. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  lf/.style={node,minimum width=9mm},
+  lt/.style={node-touched,minimum width=9mm},
+  vn/.style={vertex,minimum size=7.5mm},
+  vt/.style={vertex-added,minimum size=7.5mm},
+  bit/.style={font=\scriptsize\ttfamily,text=adsInk,fill=white,inner sep=1pt},
+  code/.style={index}
+}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before the first merge
+  \node[var,anchor=west] at (-6mm,8mm) {before};
+  \foreach \c/\f/\x/\s in {a/5/0/lt,b/9/11/lt,c/12/22/lf,d/13/33/lf,
+                           e/16/44/lf,f/45/55/lf}
+    \node[\s] at (\x mm,0) {\c:\f};
+  % after it
+  \node[var,anchor=west] at (72mm,8mm) {after};
+  \node[vt] (m) at (84mm,0) {14};
+  \node[lf] (ma) at (78mm,-11mm) {a:5};
+  \node[lf] (mb) at (90mm,-11mm) {b:9};
+  \draw[edge] (m) -- (ma); \draw[edge] (m) -- (mb);
+  \foreach \c/\f/\x in {c/12/101,d/13/112,e/16/123,f/45/134}
+    \node[lf] at (\x mm,0) {\c:\f};
+  % the final tree
+  \begin{scope}[yshift=-26mm,xshift=10mm]
+  \node[vn] (r) at (60mm,0) {100};
+  \node[lf] (f) at (35mm,-12mm) {f:45};
+  \node[vn] (n55) at (85mm,-12mm) {55};
+  \node[vn] (n25) at (65mm,-24mm) {25};
+  \node[vn] (n30) at (105mm,-24mm) {30};
+  \node[lf] (c) at (55mm,-36mm) {c:12};
+  \node[lf] (d) at (75mm,-36mm) {d:13};
+  \node[vn] (n14) at (95mm,-36mm) {14};
+  \node[lf] (e) at (115mm,-36mm) {e:16};
+  \node[lf] (a) at (85mm,-48mm) {a:5};
+  \node[lf] (b) at (105mm,-48mm) {b:9};
+  \draw[edge] (r) -- node[bit] {0} (f);
+  \draw[edge] (r) -- node[bit] {1} (n55);
+  \draw[edge] (n55) -- node[bit] {0} (n25);
+  \draw[edge] (n55) -- node[bit] {1} (n30);
+  \draw[edge] (n25) -- node[bit] {0} (c);
+  \draw[edge] (n25) -- node[bit] {1} (d);
+  \draw[edge] (n30) -- node[bit] {0} (n14);
+  \draw[edge] (n30) -- node[bit] {1} (e);
+  \draw[edge] (n14) -- node[bit] {0} (a);
+  \draw[edge] (n14) -- node[bit] {1} (b);
+  \foreach \x/\cd in {f/0,c/100,d/101,e/111,a/1100,b/1101}
+    \node[code,below=1mm of \x] {\cd};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

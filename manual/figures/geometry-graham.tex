@@ -1,0 +1,54 @@
+% Source for the figure of the scan of Graham (sec. 16.2): the points
+% sorted by angle around the lowest one, o, and the stack of the hull
+% before and after the scan of p4, which pops p3 and p2. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  pt/.style={vertex-touched,minimum size=2.8mm},
+  new/.style={vertex-added,minimum size=2.8mm},
+  gone/.style={vertex,minimum size=2.8mm},
+  todo/.style={vertex,minimum size=2.8mm},
+  chain/.style={edge-touched},
+  lbl/.style={font=\small,text=adsInk}
+}
+% \panel{x shift}{style of p2}{style of p3}{style of p4}
+\newcommand{\pts}[4]{%
+  \begin{scope}[xshift=#1,x=5.5mm,y=5.5mm]
+    \node[pt]   (o)  at (4,0) {};
+    \node[pt]   (p1) at (8,1) {};
+    \node[#2]   (p2) at (6,3) {};
+    \node[#3]   (p3) at (5,2) {};
+    \node[#4]   (p4) at (6,6) {};
+    \node[todo] (p5) at (2,4) {};
+    \node[todo] (p6) at (1,1) {};
+    \node[lbl,below=1.2mm of o] {$o$};
+    \node[lbl,right=1.2mm of p1] {$p_1$};
+    \node[lbl,right=1.2mm of p2] {$p_2$};
+    \node[lbl,below left=0.6mm and 0.6mm of p3] {$p_3$};
+    \node[lbl,above=1.2mm of p4] {$p_4$};
+    \node[lbl,left=1.2mm of p5] {$p_5$};
+    \node[lbl,left=1.2mm of p6] {$p_6$};
+  \end{scope}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before: the stack o p1 p2 p3, and p4 to be scanned
+  \pts{0mm}{pt}{pt}{todo}
+  \draw[chain] (o) -- (p1) -- (p2) -- (p3);
+  \draw[edge,dashed] (p3) -- (p4);
+  \node[var] at (24mm,-9mm) {before the scan of $p_4$};
+  \cells{a}{10mm,-17mm}{o/cell,p1/cell,p2/cell,p3/cell}
+  \node[index,anchor=east] at (5mm,-17mm) {bottom};
+  \node[index,anchor=west] at (36mm,-17mm) {top};
+  % after: p3 and p2 popped, p4 pushed
+  \pts{62mm}{gone}{gone}{new}
+  \draw[chain] (o) -- (p1) -- (p4);
+  \node[var] at (86mm,-9mm) {after it};
+  \cells{b}{72mm,-17mm}{o/cell,p1/cell,p4/added,/free}
+  \node[index,anchor=east] at (67mm,-17mm) {bottom};
+\end{tikzpicture}
+\end{document}

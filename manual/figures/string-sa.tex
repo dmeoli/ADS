@@ -1,0 +1,29 @@
+% Source for the figure of SuffixArray (sec. 15.5): the suffix array, the
+% LCP array and the suffixes of banana, in rank order, with the range of
+% the pattern an (shaded) that range() finds by two binary searches.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (0,7mm) {$r$};
+  \node[var] at (10mm,7mm) {$\mathit{SA}$};
+  \node[var] at (17mm,7mm) {$\mathit{LCP}$};
+  \node[var,anchor=west] at (24mm,7mm) {suffix $T[ \mathit{SA}[ r ] .. ]$};
+  \foreach \r/\sa/\lcp/\suf/\st in {0/5/1/a/cell,1/3/3/ana/touched,
+      2/1/0/anana/touched,3/0/0/banana/cell,4/4/2/na/cell,5/2//nana/cell} {
+    \node[index] at (0,-\r*7mm) {\r};
+    \node[\st] at (10mm,-\r*7mm) {\sa};
+    \node[cell] at (17mm,-\r*7mm) {\lcp};
+    \node[font=\small\ttfamily,text=adsInk,anchor=west] at (24mm,-\r*7mm) {\suf};
+  }
+  \node[free] at (17mm,-35mm) {};
+  \draw[edge,decorate,decoration={brace,amplitude=4pt}]
+    (44mm,-4mm) -- node[right=2mm,var] {$P = \texttt{an}$} (44mm,-17mm);
+\end{tikzpicture}
+\end{document}

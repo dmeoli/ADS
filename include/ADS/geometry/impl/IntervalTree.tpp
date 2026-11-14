@@ -71,6 +71,7 @@ void IntervalTree< T >::remove( const T & a , const T & b )
  --f_n;
  }
 
+//! [stabbed]
 template< std::totally_ordered T >
 bool IntervalTree< T >::stabbed( const T & x ) const
 {
@@ -86,7 +87,9 @@ bool IntervalTree< T >::stabbed( const T & x ) const
    }
  return( m && !( *m < x ) );
  }
+//! [stabbed]
 
+//! [stab]
 template< std::totally_ordered T >
 template< class F >
 void IntervalTree< T >::stab( const T & x , F && f ) const
@@ -105,6 +108,7 @@ void IntervalTree< T >::stab( const T & x , F && f ) const
   };
  visit( visit , f_map.root() );
  }
+//! [stab]
 
 template< std::totally_ordered T >
 std::size_t IntervalTree< T >::count( const T & x ) const

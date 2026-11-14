@@ -98,6 +98,7 @@ struct Carry {
 inline void myersBlock( std::uint64_t & Pv , std::uint64_t & Mv ,
                         std::uint64_t Eq , Carry & c )
 {
+//! [myers]
  const std::uint64_t Xv = Eq | Mv;
  Eq |= c.n;
  const std::uint64_t Xh = ( ( ( Eq & Pv ) + Pv ) ^ Pv ) | Eq;
@@ -108,6 +109,7 @@ inline void myersBlock( std::uint64_t & Pv , std::uint64_t & Mv ,
  Pv = Mh | ~( Xv | Ph );
  Mv = Ph & Xv;
  c = out;
+//! [myers]
  }
 
 /// the edit distance of a pattern P of at most 64 bytes and a text T
@@ -504,6 +506,7 @@ inline std::size_t levenshteinDiagonal( std::string_view a ,
  F[ std::size_t( o ) ] = slide( 0 , 0 );
  *guess = e + 1;
  if( ( goal == 0 ) && ( F[ std::size_t( o ) ] == m ) ) return( 0 );
+//! [diagonals]
  for( std::ptrdiff_t h = 1 ; h <= E ; ++h ) {
   const std::ptrdiff_t lo = std::max( -h , -m ) , hi = std::min( h , n );
   for( std::ptrdiff_t k = lo ; k <= hi ; ++k ) {
@@ -529,6 +532,7 @@ inline std::size_t levenshteinDiagonal( std::string_view a ,
    if( *guess > far ) return( e + 1 );
    }
   }
+//! [diagonals]
  return( e + 1 );
  }
 

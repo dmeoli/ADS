@@ -38,6 +38,7 @@ struct StringBreakingTables {
   w[ n + 1 ] = length;
   D.assign( n + 2 , std::vector< I >( n + 2 , I( 0 ) ) );
   K.assign( n + 2 , std::vector< std::size_t >( n + 2 , 0 ) );
+//! [knuth]
   for( std::size_t i = 0 ; i + 1 < n + 2 ; ++i )
    K[ i ][ i + 1 ] = i + 1;
   for( std::size_t d = 2 ; d < n + 2 ; ++d )
@@ -52,6 +53,7 @@ struct StringBreakingTables {
     D[ i ][ j ] = D[ i ][ best ] + D[ best ][ j ] + ( w[ j ] - w[ i ] );
     K[ i ][ j ] = best;
     }
+//! [knuth]
   }
  };
 

@@ -1,0 +1,40 @@
+% Source for the figure of the front and the rear coding (sec. 15.6): a
+% sorted dictionary of eight strings, its front coding (l_i and the rest),
+% its rear coding (r_i and the same rest), and the front coding with
+% buckets of b = 4, whose anchors (shaded) are stored whole. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  wc/.style={cell,minimum width=22mm,anchor=west},
+  wt/.style={touched,minimum width=22mm,anchor=west},
+  st/.style={font=\small\ttfamily,text=adsInk,anchor=west}
+}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (0,7mm) {$i$};
+  \node[var,anchor=west] at (4mm,7mm) {$s_i$};
+  \node[var] at (34mm,7mm) {$\ell_i$};
+  \node[var,anchor=west] at (38mm,7mm) {$\hat s_i$};
+  \node[var] at (67mm,7mm) {$r_i$};
+  \node[var] at (79mm,7mm) {$\ell_i$};
+  \node[var,anchor=west] at (83mm,7mm) {$b = 4$};
+  \foreach \i/\s/\l/\r/\rr/\bl/\bs/\st in {
+      0/algebra/0/algebra/0/0/algebra/wt,1/algo/3/o/4/3/o/wc,
+      2/algorithm/4/rithm/0/4/rithm/wc,3/algorithms/9/s/0/9/s/wc,
+      4/align/2/ign/8/0/align/wt,5/alpha/2/pha/3/2/pha/wc,
+      6/alphabet/5/bet/0/5/bet/wc,7/beta/0/beta/8/0/beta/wc} {
+    \node[index] at (0,-\i*7mm) {\i};
+    \node[st] at (4mm,-\i*7mm) {\s};
+    \node[cell] at (34mm,-\i*7mm) {\l};
+    \node[wc] at (37.5mm,-\i*7mm) {\r};
+    \node[cell] at (67mm,-\i*7mm) {\rr};
+    \node[cell] at (79mm,-\i*7mm) {\bl};
+    \node[\st] at (82.5mm,-\i*7mm) {\bs};
+  }
+\end{tikzpicture}
+\end{document}

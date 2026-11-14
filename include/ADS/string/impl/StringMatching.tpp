@@ -33,6 +33,7 @@ inline std::vector< std::size_t > naiveMatching( std::string_view T ,
 
 inline std::vector< long > failure( std::string_view P )
 {
+//! [failure]
  std::vector< long > F( P.size() + 1 );
  F[ 0 ] = -1;
  long k = -1;
@@ -42,6 +43,7 @@ inline std::vector< long > failure( std::string_view P )
   ADS_POST( F[ q + 1 ] <= long( q ) );    // a proper border
   }
  return( F );
+//! [failure]
  }
 
 namespace detail {
@@ -60,6 +62,7 @@ inline std::vector< std::size_t > kmpSearch( std::string_view T ,
   for( std::size_t i = 0 ; i <= T.size() ; ++i ) R.push_back( i );
   return( R );
   }
+//! [kmp]
  for( std::size_t i = 0 ; i < T.size() ; ++i ) {
   for( ; ; ) {
    if( comparisons ) ++*comparisons;
@@ -72,6 +75,7 @@ inline std::vector< std::size_t > kmpSearch( std::string_view T ,
    q = F[ m ];
    }
   }
+//! [kmp]
  ADS_AUDIT( R == naiveMatching( T , P ) );
  return( R );
  }
@@ -297,6 +301,7 @@ inline std::vector< std::size_t > shiftOr( std::string_view T ,
  const std::size_t n = T.size() , m = P.size();
  ADS_PRE( m <= 64 );
  if( m == 0 ) return( detail::everyPlace( n ) );
+//! [shiftor]
  // B[ c ] has the bit i clear if P[ i ] is c; the bit i of D is clear if
  // P[ 0 .. i ] ends at the current byte of T
  std::array< std::uint64_t , 256 > B;
@@ -310,6 +315,7 @@ inline std::vector< std::size_t > shiftOr( std::string_view T ,
   D = ( D << 1 ) | B[ static_cast< unsigned char >( T[ j ] ) ];
   if( ! ( D & top ) ) R.push_back( j + 1 - m );
   }
+//! [shiftor]
  ADS_AUDIT( R == naiveMatching( T , P ) );
  return( R );
  }
@@ -319,6 +325,7 @@ inline std::vector< std::size_t > zFunction( std::string_view S )
  const std::size_t n = S.size();
  std::vector< std::size_t > Z( n , 0 );
  if( n == 0 ) return( Z );
+//! [zfunction]
  Z[ 0 ] = n;
  // [ l , r ) is the Z-box that reaches farthest: S[ l .. r ) = S[ 0 .. r - l )
  for( std::size_t i = 1 , l = 0 , r = 0 ; i < n ; ++i ) {
@@ -331,6 +338,7 @@ inline std::vector< std::size_t > zFunction( std::string_view S )
    }
   ADS_POST( Z[ i ] <= n - i );
   }
+//! [zfunction]
  return( Z );
  }
 

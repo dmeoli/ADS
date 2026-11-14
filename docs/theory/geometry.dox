@@ -81,7 +81,8 @@
  \f[
    \mathrm{cross}( p , q , r ) \ge 0 \quad \forall r \in P , \tag{2}
  \f]
- and no point of \f$ P \f$ lies strictly inside the segment \f$ p q \f$.
+ and no point of \f$ P \f$ lies on the line through \f$ p \f$ and \f$ q \f$
+ out of the segment \f$ p q \f$.
 
  Indeed, the line through \f$ p \f$ and \f$ q \f$ leaves all of \f$ P \f$, and
  hence its hull, in the closed half-plane on its left, so that the segment
