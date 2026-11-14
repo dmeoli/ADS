@@ -577,7 +577,7 @@ states share one stream of words of 16 bits. In the encoder the division of
 ([Granlund and Montgomery 1994](Z-bibliography.md#ref-granlund1994)),
 exact on the states below $2^{32}$. Its decoder is a table of the $M$ slots, which gives for each slot $j$ its symbol, $f_c$ and $j - c_c$. We may thus write a step of it as a mask, a lookup, a multiplication and an addition, and the
 word of 16 bits is read with no branch, the pointer into the stream moving
-by 2 times the bit that tells whether the state fell below $2^{16}$.
+by twice the bit that is 1 when the state fell below $2^{16}$.
 
 The tabled variant of `Tans.h` (tANS, the entropy coder of order 0 of
 Zstandard) makes the transitions of the state lookups, with no
@@ -655,7 +655,7 @@ in a context seen $m$ times has the probability $c( \sigma ) / ( m + q )$,
 and the escape $q / ( m + q )$. After $K + 1$ escapes the context of order
 $-1$ gives the same probability to the symbols not yet excluded.
 
-By the principle of *exclusion*, a context that escapes tells the decoder
+By the principle of *exclusion*, a context that escapes informs the decoder
 that the symbol is none of those it predicts, and the shorter contexts
 leave them out of their counts. Note that the escape keeps its count $q$, as in the
 example of chapter 12 of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023);

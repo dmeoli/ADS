@@ -168,7 +168,7 @@ moves forward, both in $O( 1 )$ time per field of up to 64 bits
 zeros up to the 1 a word at a time, by the trailing zeros of the word, in
 $O( 1 + q / 64 )$ time. A single bit is moved by `writeBit()` and
 `readBit()`; `seek( p )` moves the reader to the place $p$, `atEnd()`
-tells whether all the bits have been read, and `release()` hands the bits
+is true when all the bits have been read, and `release()` hands the bits
 written over to the caller, leaving the writer empty. In the literature the fast decoders write the codes into words rather than bytes, e.g., the streams of the WebGraph framework of [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004). Indeed, a codeword of up to 64 bits spans at most two words, and the unary part is
 decoded by one instruction per word.
 
