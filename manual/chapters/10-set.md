@@ -680,7 +680,7 @@ number of chunks is not a power of 2, and the following lemma shows that
 the search is still exact.
 
 <span id="lem-10-7"></span>**Lemma 10.7.** *On a sorted array $K$ of
-$c \ge 1$ chunks, `find(κ)` returns the first place of $K$ whose chunk is
+$c \ge 1$ chunks, `find()` of $\kappa$ returns the first place of $K$ whose chunk is
 not smaller than $\kappa$ ($c$ if there is none), after
 $\lceil \log_2 c \rceil$ iterations.*
 
