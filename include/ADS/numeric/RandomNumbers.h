@@ -277,14 +277,19 @@ inline double serialTest( const std::vector< double > & U , int d );
 inline double spectralTest2( std::uint64_t a , std::uint64_t m );
 
 /// the vector \f$ A \f$ shuffled by \f$ g \f$, every permutation equally
-/// likely up to the bias of \f$ g() \bmod j \f$
+/// likely if \f$ g \f$ is uniform on its range
 ///
-/// In pseudocode (Algorithm 3.4.2P of Knuth, beyond the book):
+/// In pseudocode (Algorithm 3.4.2P of Knuth, beyond the book), each
+/// \f$ k \f$ uniform in \f$ [ 0 , j ) \f$ by the method of Lemire on a
+/// full word [see `uniformBelow()` of `RandomGenerators.h`] and by
+/// rejection on a narrower range of \f$ g \f$, never by
+/// \f$ g() \bmod j \f$, which favors the small residues:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{shuffle}( A , g ) \cr
 /// 2 & \quad \textbf{for}\ j \gets |A|\ \textbf{downto}\ 2\ \textbf{do} \cr
-/// 3 & \qquad k \gets g() \bmod j;\ \mathrm{swap}( A[ j - 1 ] , A[ k ] )
+/// 3 & \qquad k \gets \text{an integer uniform in } [ 0 , j );
+///     \ \mathrm{swap}( A[ j - 1 ] , A[ k ] )
 /// \end{array}}
 /// \f]
 template< class T , class R >

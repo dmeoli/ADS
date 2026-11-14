@@ -796,8 +796,10 @@
  that would bias it (Lemire), which needs a division only when the low
  word is below \f$ m \f$, with probability \f$ m / 2^{64} \f$, and
  `shuffleFast()` draws several indices from one word when their product
- fits; the `shuffle()` of `RandomNumbers.h`, Algorithm 3.4.2P of Knuth with
- \f$ g() \bmod j \f$, carries the bias of the remainder.
+ fits; the `shuffle()` of `RandomNumbers.h`, Algorithm 3.4.2P of Knuth,
+ draws by the same method on a generator of 64 bits and by rejection on a
+ narrower one, never by \f$ g() \bmod j \f$, which carries the bias of the
+ remainder.
 
  \section theory_sequence_refs References
 

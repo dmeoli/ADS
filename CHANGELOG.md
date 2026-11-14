@@ -2412,6 +2412,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the comment of shuffle() and the theories of the numerics and of the
+  sequences still said that it draws by g() % j, biased, while it draws by
+  Lemire's method on a full word and by rejection on a narrower range
+  (the fix of g() % j below); the pseudocode draws an integer uniform in
+  [ 0 , j )
+
 - the comments of MultiStack said that its vector doubles, while it is a
   std::vector, which grows by a factor that the standard library fixes
   (2 in those of GCC and LLVM, 3/2 in that of Microsoft); the header, its
