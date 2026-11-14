@@ -22,27 +22,36 @@
  * unoriented graph the ends of an edge in an event are in increasing order,
  * \f$ u < v \f$.
  *
- * An observer is any object with `mask()`, the set of the kinds of event
- * that it wants as a mask of bits (see `GraphEvents`), and with
+ The wrapper is `ObservedGraph< G , Policy >`, whose subject is a policy
+ * of `Modification.h` (`NoObservers` by default, so that a change compiles
+ * to the code of the graph), and whose events are the list
+ * `GraphModifications< W >`; an observer of it is any object with an
+ * `on( e )` for one of the five events (see `Modification.h` for the
+ * optional parts). `Observable< G , O... >` is the wrapper of the
+ * observers of the first form, which have `mask()`, the set of the kinds of
+ * event that they want as a mask of bits (see `GraphEvents`), and
  * `notify( e )` for one event and `notify( s )` for a `std::span` of them
- * (the concept `GraphObserver`). Those given to the constructor are static,
+ * (the concept `GraphObserver`): it is `ObservedGraph` with the policy
+ * `Both< Static< O... > , Dynamic<> >`, the observers of the first form
+ * called through an adapter. Those given to the constructor are static,
  * kept in a `std::tuple` and called directly, with no indirection; those
- * attached later by `attach()` are dynamic, kept as a pointer and two
- * pointers to functions that restore their type (the erasure of the type
- * with no allocation), and they can leave by `detach()`. The design follows
- * four rules: (i) no event is built when no one listens, since the union
- * \f$ M \f$ of the masks is kept and a change of kind \f$ k \f$ tests
- * \f$ k \in M \f$ before it reads anything that only the event needs (the
- * old weight of an edge, the edges of a node to delete); (ii) each observer
- * gets only the kinds in its mask, also within a batch; (iii) `batch()`
- * opens a channel of RAII, and the events of the channels, which nest, are
- * collected and sent as one span, coalesced into their net effect per edge
- * by (8) of \ref theory_graph_dynamic, when the outermost one closes;
- * (iv) an observer may defer its work to the next query, as those of
- * `Reoptimization.h` do. A change sent at once costs \f$ O( 1 ) \f$ per
- * observer that wants it, and a batch of \f$ k \f$ events costs
- * \f$ O( k ) \f$ expected time to coalesce, plus \f$ O( k ) \f$ for each
- * observer that does not want all its kinds (a filtered copy).
+ * attached later by `attach()` are dynamic, kept as a pointer and pointers
+ * to functions that restore their type (the erasure of the type with no
+ * allocation), and they can leave by `detach()`. The design follows four
+ * rules: (i) no event is built when no one listens, since a change of kind
+ * \f$ k \f$ tests whether someone wants \f$ k \f$ (at compile time, then in
+ * the union \f$ M \f$ of the masks) before it reads anything that only the
+ * event needs (the old weight of an edge, the edges of a node to delete);
+ * (ii) each observer gets only the kinds in its mask, also within a batch;
+ * (iii) `batch()` opens a channel of RAII, and the events of the channels,
+ * which nest, are collected and sent as one span, coalesced into their net
+ * effect per edge by (8) of \ref theory_graph_dynamic, when the outermost
+ * one closes; (iv) an observer may defer its work to the next query, as
+ * those of `Reoptimization.h` do. A change sent at once costs
+ * \f$ O( 1 ) \f$ per observer that wants it, and a batch of \f$ k \f$
+ * events costs \f$ O( k ) \f$ expected time to coalesce, plus
+ * \f$ O( k ) \f$ for each observer that does not want all its kinds (a
+ * filtered copy).
  *
  * The dynamic algorithms of the literature take a sequence of updates (see
  * the survey of Hanauer, Henzinger and Schulz), and a library that has them
@@ -98,6 +107,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
+#include "ADS/Portable.h"
 #include "ADS/graph/Graph.h"
 
 #include <concepts>
@@ -122,6 +133,7 @@ namespace ADS {
 
 /// a node inserted
 struct NodeInserted {
+ static constexpr unsigned effects = mod::effect::grows;   ///< it grows
  int u;                                          ///< the node
  /// whether the two events are the same
  bool operator==( const NodeInserted & ) const = default;
@@ -129,6 +141,7 @@ struct NodeInserted {
 
 /// a node deleted, after the deletion of its edges
 struct NodeDeleted {
+ static constexpr unsigned effects = mod::effect::shrinks;   ///< it shrinks
  int u;                                          ///< the node
  /// whether the two events are the same
  bool operator==( const NodeDeleted & ) const = default;
@@ -138,6 +151,7 @@ struct NodeDeleted {
 /// inserted with the weight \f$ w \f$
 template< class W >
 struct EdgeInserted {
+ static constexpr unsigned effects = mod::effect::grows;   ///< it grows
  int u;                                          ///< the tail
  int v;                                          ///< the head
  W w;                                            ///< the weight
@@ -148,6 +162,7 @@ struct EdgeInserted {
 /// an edge deleted, \f$ w \f$ the weight that it had
 template< class W >
 struct EdgeDeleted {
+ static constexpr unsigned effects = mod::effect::shrinks;   ///< it shrinks
  int u;                                          ///< the tail
  int v;                                          ///< the head
  W w;                                            ///< the weight it had
@@ -158,6 +173,7 @@ struct EdgeDeleted {
 /// the weight of an edge changed from `from` to `to`
 template< class W >
 struct WeightChanged {
+ static constexpr unsigned effects = mod::effect::up | mod::effect::down;
  int u;                                          ///< the tail
  int v;                                          ///< the head
  W from;                                         ///< the weight before
@@ -166,7 +182,14 @@ struct WeightChanged {
  bool operator==( const WeightChanged & ) const = default;
  };
 
-/// an event, whose kind is its index in the variant
+/// the events of a graph of weights `W`, in the order of their kinds
+template< class W >
+using GraphModifications = mod::list< NodeInserted , NodeDeleted ,
+                                      EdgeInserted< W > , EdgeDeleted< W > ,
+                                      WeightChanged< W > >;
+
+/// an event, whose kind is its index in the variant, the variant of
+/// `GraphModifications< W >`
 template< class W >
 using GraphEvent = std::variant< NodeInserted , NodeDeleted ,
                                  EdgeInserted< W > , EdgeDeleted< W > ,
@@ -235,88 +258,108 @@ concept GraphObserver = requires( O & o , const GraphEvent< W > & e ,
  };
 
 /*--------------------------------------------------------------------------*/
-/*--------------------------- CLASS Observable -----------------------------*/
+/*---------------------------- THE COALESCING ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the graph \f$ g \f$, whose changes are sent to the static observers
-/// `O...` and to those attached later
-template< Graph G , class ... O >
-class Observable {
+namespace mod {
+
+/// the net effect of a batch of a graph, by coalesce() [see Observable.h]
+template< class W >
+struct coalesce_traits< GraphModifications< W > > {
+ /// `coalesce( B )`
+ static std::vector< GraphEvent< W > > coalesce(
+                                      std::span< const GraphEvent< W > > B ) {
+  return( ADS::coalesce< W >( B ) );
+  }
+ };
+
+}  // end( namespace mod )
+
+/// \cond
+namespace detail {
+
+/// the adapter of an observer of the first form, with `mask()` and
+/// `notify()` [see GraphObserver]
+template< class W >
+struct GraphNotify {
+ /// `o.notify( e )`
+ template< class O , class E >
+  requires( mod::contains_v< E , GraphModifications< W > > &&
+            requires( O & o , const GraphEvent< W > & e ) { o.notify( e ); } )
+ static void one( O & o , const E & e ) {
+  const GraphEvent< W > x( e );
+  o.notify( x );
+  }
+ /// `o.notify( s )`
+ template< class O >
+  requires requires( O & o , std::span< const GraphEvent< W > > s ) {
+   o.notify( s ); }
+ static void many( O & o , std::span< const GraphEvent< W > > s ) {
+  o.notify( s );
+  }
+ /// `o.mask()`
+ template< class O >
+ static std::uint64_t mask( const O & o ) {
+  return( std::uint64_t( unsigned( o.mask() ) ) );
+  }
+ };
+
+}  // end( namespace detail )
+/// \endcond
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CLASS ObservedGraph ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the graph \f$ g \f$, whose changes are sent through the subject policy
+/// `Policy` [see Modification.h]
+template< Graph G , class Policy = NoObservers >
+class ObservedGraph {
 
 /*--------------------------------------------------------------------------*/
  public:
 
  using Weight = typename G::Weight;    ///< the type of the weights
  using Event = GraphEvent< Weight >;   ///< the type of the events
-
+ /// the events
+ using modifications = GraphModifications< Weight >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications , G >;
  /// the channel of a batch, open while it lives [see batch()]
- class Batch {
-  public:
-
-  /// the channel of \f$ b \f$, which no longer has it
-  Batch( Batch && b ) noexcept : f_o( std::exchange( b.f_o , nullptr ) ) {}
-  /// not copied
-  Batch( const Batch & ) = delete;
-  /// not assigned
-  Batch & operator=( const Batch & ) = delete;
-  /// not assigned
-  Batch & operator=( Batch && ) = delete;
-  /// closes the channel, if still open
-  ~Batch() { close(); }
-
-  /// closes the channel: the outermost one sends the batch, coalesced
-  ///
-  /// In pseudocode (beyond the book), with \f$ d \f$ the depth of the
-  /// channels, \f$ B \f$ the events collected and \f$ M_o \f$ the mask of
-  /// the observer \f$ o \f$:
-  /// \f[
-  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-  /// 1 & \textbf{procedure}\ \mathrm{close}() \cr
-  /// 2 & \quad d \gets d - 1;\ \textbf{if}\ d > 0\ \textbf{then}
-  ///     \ \textbf{return} \cr
-  /// 3 & \quad C \gets \mathrm{coalesce}( B );\ B \gets \emptyset \cr
-  /// 4 & \quad \textbf{foreach}\ \text{observer } o\ \textbf{do} \cr
-  /// 5 & \qquad C_o \gets \text{the events of } C \text{ whose kind is in }
-  ///     M_o \cr
-  /// 6 & \qquad \textbf{if}\ C_o \ne \emptyset\ \textbf{then}
-  ///     \ o.\mathrm{notify}( C_o )
-  /// \end{array}}
-  /// \f]
-  void close( void ) {
-   if( f_o )
-    std::exchange( f_o , nullptr )->closeBatch();
-   }
-
-  private:
-
-  friend class Observable;
-  /// the channel of \f$ o \f$
-  explicit Batch( Observable * o ) : f_o( o ) {}
-  Observable * f_o;                              ///< the wrapper, if open
-  };
+ using Batch = ADS::Batch< ObservedGraph >;
 
  /// the wrapper of \f$ g \f$, the static observers `o...`; \f$ g \f$
  /// must stay alive, and change only through the wrapper
- explicit Observable( G & g , O & ... o );
+ template< class ... O >
+ explicit ObservedGraph( G & g , O & ... o ) : f_g( g ) , f_sub( o... ) {}
 
  /// not copied
- Observable( const Observable & ) = delete;
+ ObservedGraph( const ObservedGraph & ) = delete;
  /// not assigned
- Observable & operator=( const Observable & ) = delete;
+ ObservedGraph & operator=( const ObservedGraph & ) = delete;
 
  /// the graph
  [[nodiscard]] const G & graph( void ) const { return( f_g ); }
 
  /// the union of the masks of the observers
- [[nodiscard]] unsigned mask( void ) const { return( f_mask ); }
+ [[nodiscard]] unsigned mask( void ) const {
+  return( unsigned( f_sub.mask() ) );
+  }
 
  /// whether anyone listens to one of the kinds \f$ k \f$
  [[nodiscard]] bool listening( unsigned k = GraphEvents::ALL ) const {
-  return( ( f_mask & k ) != 0 );
+  return( ( mask() & k ) != 0 );
   }
 
  /// the events built so far, sent or collected (none when no one listens)
- [[nodiscard]] std::size_t built( void ) const { return( f_built ); }
+ [[nodiscard]] std::size_t built( void ) const { return( f_sub.built() ); }
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+ /// what the audits of the observers read: the graph
+ [[nodiscard]] const G & observed( void ) const { return( f_g ); }
 
 /*---------------------------- THE GRAPH -----------------------------------*/
 
@@ -352,17 +395,45 @@ class Observable {
 /*---------------------------- THE CHANGES ---------------------------------*/
 
  /// `insertNode()` of the graph, and `NodeInserted`
- int insertNode( void ) requires DynamicGraph< G >;
+ int insertNode( void ) requires DynamicGraph< G > {
+  const int u = f_g.insertNode();
+  if constexpr( Subject::template listened< NodeInserted > )
+   if( f_sub.template live< NodeInserted >() ) [[unlikely]]
+    tell( NodeInserted{ u } );
+  return( u );
+  }
 
  /// `insertEdge()` of the graph, and `EdgeInserted`, or `WeightChanged` if
  /// the edge was there
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes
  void insertEdge( int u , int v , const Weight & w = Weight() )
-  requires DynamicGraph< G >;
+  requires DynamicGraph< G > {
+  if constexpr( Subject::template listened< EdgeInserted< Weight > > ||
+                Subject::template listened< WeightChanged< Weight > > )
+   if( f_sub.template live< EdgeInserted< Weight > >() ||
+       f_sub.template live< WeightChanged< Weight > >() ) [[unlikely]] {
+    if constexpr( Subject::dynamic )
+     insertEdgeCold( u , v , w );
+    else
+     insertEdgeTold( u , v , w );
+    return;
+    }
+  f_g.insertEdge( u , v , w );
+  }
 
  /// `deleteEdge()` of the graph, and `EdgeDeleted` if the edge was there
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes
- void deleteEdge( int u , int v ) requires DynamicGraph< G >;
+ void deleteEdge( int u , int v ) requires DynamicGraph< G > {
+  if constexpr( Subject::template listened< EdgeDeleted< Weight > > )
+   if( f_sub.template live< EdgeDeleted< Weight > >() ) [[unlikely]] {
+    if constexpr( Subject::dynamic )
+     deleteEdgeCold( u , v );
+    else
+     deleteEdgeTold( u , v );
+    return;
+    }
+  f_g.deleteEdge( u , v );
+  }
 
  /// `EdgeDeleted` for each edge of \f$ u \f$, `deleteNode()` of the graph,
  /// and `NodeDeleted`
@@ -389,84 +460,111 @@ class Observable {
  ///     \ k \in M_o\ \textbf{do}\ o.\mathrm{notify}( e )
  /// \end{array}}
  /// \f]
+ /// The test of line 2 is false at compile time when nobody may listen
+ /// (`NoObservers`, or static observers that do not want \f$ k \f$), and
+ /// the change is then the code of the graph.
  /// \pre \f$ u \f$ and \f$ v \f$ are nodes
- bool setWeight( int u , int v , const Weight & w );
+ bool setWeight( int u , int v , const Weight & w ) {
+  ADS_PRE( f_g.hasNode( u ) && f_g.hasNode( v ) );
+  if constexpr( Subject::template listened< WeightChanged< Weight > > )
+   if( f_sub.template live< WeightChanged< Weight > >() ) [[unlikely]] {
+    if constexpr( Subject::dynamic )
+     return( setWeightCold( u , v , w ) );
+    else
+     return( setWeightTold( u , v , w ) );
+    }
+  if constexpr( requires { f_g.setWeight( u , v , w ); } )
+   return( f_g.setWeight( u , v , w ) );
+  else {
+   if( ! f_g.weight( u , v ) )
+    return( false );
+   f_g.insertEdge( u , v , w );         // only the weight changes
+   return( true );
+   }
+  }
 
 /*--------------------------- THE OBSERVERS --------------------------------*/
 
- /// attaches the observer \f$ o \f$, its mask read now, and gives its
- /// number
+ /// attaches the observer \f$ o \f$, of either form, its mask read now,
+ /// and gives its number
  /// \pre no channel is open
- template< GraphObserver< Weight > D >
- int attach( D & o ) {
-  ADS_PRE( f_depth == 0 );
-  Slot s;
-  s.o = & o;
-  s.mask = unsigned( o.mask() );
-  s.one = []( void * p , const Event & e ) {
-   static_cast< D * >( p )->notify( e ); };
-  s.many = []( void * p , std::span< const Event > E ) {
-   static_cast< D * >( p )->notify( E ); };
-  f_dynamic.push_back( s );
-  f_mask |= s.mask;
-  return( int( f_dynamic.size() ) - 1 );
+ template< class D >
+ int attach( D & o ) requires( Subject::dynamic ) {
+  if constexpr( mod::observer_of< D , modifications > )
+   return( f_sub.attach( o ) );
+  else {
+   static_assert( GraphObserver< D , Weight > ,
+                  "ADS: neither an observer of the events of the graph nor "
+                  "one with mask() and notify()" );
+   return( f_sub.template attachVia< detail::GraphNotify< Weight > >( o ) );
+   }
   }
 
  /// detaches the observer number \f$ \mathit{id} \f$
  /// \pre \f$ \mathit{id} \f$ was given by `attach()` and not yet
  ///      detached, no channel is open
- void detach( int id );
+ void detach( int id ) requires( Subject::dynamic ) { f_sub.detach( id ); }
 
  /// opens a channel: the events are collected until it is closed
- [[nodiscard]] Batch batch( void ) {
-  ++f_depth;
-  return( Batch( this ) );
-  }
+ [[nodiscard]] Batch batch( void ) { return( Batch( *this ) ); }
 
  /// the depth of the channels open, \f$ 0 \f$ if none
- [[nodiscard]] int depth( void ) const { return( f_depth ); }
+ [[nodiscard]] int depth( void ) const { return( f_sub.depth() ); }
 
 /*--------------------------------------------------------------------------*/
  private:
 
- /// a dynamic observer, its type erased
- struct Slot {
-  void * o = nullptr;                            ///< the observer
-  unsigned mask = 0;                             ///< its mask
-  /// its `notify( e )`
-  void ( * one )( void * , const Event & ) = nullptr;
-  /// its `notify( s )`
-  void ( * many )( void * , std::span< const Event > ) = nullptr;
-  };
-
  /// the key of an edge, its ends in order if unoriented
- [[nodiscard]] std::pair< int , int > key( int u , int v ) const;
+ [[nodiscard]] std::pair< int , int > key( int u , int v ) const {
+  if( ! f_g.directed() && ( v < u ) )
+   return( std::pair< int , int >( v , u ) );
+  return( std::pair< int , int >( u , v ) );
+  }
 
- /// sends \f$ e \f$, or collects it in a batch
- void emit( Event && e );
+ /// sends \f$ e \f$, or collects it in a batch, then the audits
+ template< class E >
+ void tell( const E & e ) {
+  f_sub.emit( e );
+  f_sub.audit( f_g );
+  }
 
- /// the closing of the outermost channel sends the batch
- void closeBatch( void );
+ /// insertEdge() when someone listens
+ void insertEdgeTold( int u , int v , const Weight & w );
+ /// insertEdge() when someone listens, out of the hot code
+ ADS_COLD_PATH void insertEdgeCold( int u , int v , const Weight & w ) {
+  insertEdgeTold( u , v , w );
+  }
 
- /// the events of \f$ E \f$ whose kind is in \f$ m \f$, by `send()`,
- /// \f$ E \f$ itself if \f$ m \f$ has all the kinds of \f$ E \f$ and a
- /// filtered copy in `tmp` if not
- template< class F >
- static void deliver( F && send , unsigned m , std::span< const Event > E ,
-                      unsigned kinds , std::vector< Event > & tmp );
+ /// deleteEdge() when someone listens
+ void deleteEdgeTold( int u , int v );
+ /// deleteEdge() when someone listens, out of the hot code
+ ADS_COLD_PATH void deleteEdgeCold( int u , int v ) {
+  deleteEdgeTold( u , v );
+  }
 
- /// the union of the masks
- void remask( void );
+ /// setWeight() when someone listens
+ bool setWeightTold( int u , int v , const Weight & w );
+ /// setWeight() when someone listens, out of the hot code
+ ADS_COLD_PATH bool setWeightCold( int u , int v , const Weight & w ) {
+  return( setWeightTold( u , v , w ) );
+  }
 
- G & f_g;                          ///< the graph
- std::tuple< O & ... > f_static;   ///< the static observers
- std::vector< Slot > f_dynamic;    ///< the dynamic ones, `o` null if gone
- unsigned f_mask = 0;              ///< the union of the masks
- int f_depth = 0;                  ///< the channels open
- std::vector< Event > f_batch;     ///< the events collected
- std::size_t f_built = 0;          ///< the events built
+ G & f_g;                                  ///< the graph
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;      ///< the observers
 
- };  // end( class Observable )
+ };  // end( class ObservedGraph )
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- CLASS Observable -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the graph \f$ g \f$, whose changes are sent to the static observers
+/// `O...` of the first form [see GraphObserver] and to those attached
+/// later, of either form
+template< Graph G , class ... O >
+using Observable = ObservedGraph< G , Both< Static< mod::Via< O ,
+                    detail::GraphNotify< typename G::Weight > >... > ,
+                                            Dynamic<> > >;
 
 /*--------------------------------------------------------------------------*/
 

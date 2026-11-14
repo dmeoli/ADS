@@ -69,7 +69,11 @@ def build( cxx , out , policies ):
     obj = os.path.join( out , "zerocost_asm-" + tag + ".o" )
     run( [ cxx ] + flags + [ os.path.join( ROOT , "bench" , "zerocost.cpp" ) ,
                               "-o" , exe ] )
-    run( [ cxx ] + flags + [ "-c" ,
+    # the stack protector, on by default in some distributions, is chosen
+    # before the optimization from the locals of a function, and the
+    # wrapper built in a function of zerocost_asm.cpp would get a canary
+    # that a wrapper living outside the function does not
+    run( [ cxx ] + flags + [ "-fno-stack-protector" , "-c" ,
                               os.path.join( ROOT , "bench" ,
                                             "zerocost_asm.cpp" ) ,
                               "-o" , obj ] )

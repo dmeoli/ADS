@@ -1835,6 +1835,7 @@ engineered_modification  mod-quiet           silenzi, Rebuilt e no_rebuild
 engineered_modification  mod-revisions       revisioni per tipo, versioni
 engineered_modification  mod-audit           audit e conteggi per osservatore
 engineered_modification  mod-shadow          Shadow contro il ricalcolo
+engineered_modification  mod-observed-graph  grafo osservato, osservatori nuovi
 
 # the deterministic reservations and the parallel greedy algorithms
 engineered_speculative  speculative-for        prenotazioni deterministiche

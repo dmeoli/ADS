@@ -14,8 +14,9 @@
  * replacements, the relocations as boundaries, the copies of the bulk
  * events, the handles with no hash); the strong guarantee by the inverse
  * events, the refusals, the batches that exit by an exception, UndoLog;
- * the mutes; the revisions; the audits and the counts; Shadow. At the
- * level 3 of the contracts.
+ * the mutes; the revisions; the audits and the counts; Shadow; and the
+ * graph wrapper with the observers of the new form. At the level 3 of the
+ * contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -30,6 +31,8 @@
 #include "ADSTest.h"
 
 #include "ADS/Modification.h"
+#include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Observable.h"
 
 #include <cstddef>
 #include <optional>
@@ -1156,6 +1159,70 @@ ADS_TEST( "mod-shadow" )
  CHECK( sd.audit( s ) );
  s.clear();
  CHECK( & sd.incremental() == & inc && & sd.scratch() == & scr );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE GRAPH OF THE NEW FORM ----------------------*/
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "mod-observed-graph" )
+{
+ using LG = ListGraph< long long >;
+ using W = WeightChanged< long long >;
+ struct Lower {
+  int n = 0;
+  void on( const W & e ) { n += ( e.to < e.from ) ? 1 : 0; }
+  };
+ struct Nodes {
+  int n = 0;
+  void on( const NodeInserted & ) { ++n; }
+  };
+ // static, of the new form: only the kinds it wants are built
+ LG g( 3 );
+ Lower lo;
+ ObservedGraph< LG , Static< Lower > > og( g , lo );
+ og.insertEdge( 0 , 1 , 5 );
+ og.insertEdge( 0 , 1 , 3 );              // a lower weight
+ og.setWeight( 0 , 1 , 4 );
+ og.insertNode();
+ CHECK( lo.n == 1 && og.built() == 2 );
+ // nobody: the plain graph, and batch() and quiet() still compile
+ ObservedGraph< LG > none( g );
+ none.setWeight( 0 , 1 , 1 );
+ {
+  auto b = ADS::batch( none );
+  auto q = ADS::quiet( none , no_rebuild );
+  none.insertEdge( 1 , 2 , 1 );
+  }
+ CHECK( none.built() == 0 && none.mask() == 0 && ! none.listening() );
+ CHECK( g.weight( 0 , 1 ) == 1 );
+ // dynamic, both forms attached
+ struct Old {
+  int n = 0;
+  [[nodiscard]] unsigned mask( void ) const { return( GraphEvents::ALL ); }
+  void notify( const GraphEvent< long long > & ) { ++n; }
+  void notify( std::span< const GraphEvent< long long > > s ) {
+   n += int( s.size() );
+   }
+  };
+ Old old;
+ Nodes nd;
+ ObservedGraph< LG , Dynamic<> > dg( g );
+ dg.attach( old );
+ dg.attach( nd );
+ dg.insertNode();
+ {
+  auto b = dg.batch();
+  dg.insertNode();
+  dg.deleteEdge( 1 , 2 );
+  }
+ CHECK( old.n == 3 && nd.n == 2 );
+ // an observer of the new form attached to the old alias
+ Observable< LG > ob( g );
+ Nodes n2;
+ ob.attach( n2 );
+ ob.insertNode();
+ CHECK( n2.n == 1 );
  }
 
 /*--------------------------------------------------------------------------*/
