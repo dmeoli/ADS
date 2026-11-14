@@ -105,12 +105,11 @@ all its levels are full but the last one.*
 *Proof.* If $v$ occurs, it occurs in $A[ i .. j ]$: this holds at the
 start, and a step that finds $A[ m ] < v$ (or $v < A[ m ]$) leaves out
 $A[ i .. m ]$ (or $A[ m .. j ]$), whose items are all smaller (or larger)
-than $v$, since $A$ is sorted. The steps visit the nodes of a path of the
+than $v$, since $A$ is sorted. Its steps visit the nodes of a path of the
 decision tree from its root, since the tree of $A[ i .. j ]$ has the root
 $A[ m ]$ and the subtrees of $A[ i .. m - 1 ]$ and $A[ m + 1 .. j ]$;
 each step makes at most two comparisons, and the path has at most as
-many nodes as the height plus one. The invisit of the tree of $A[ i .. j
-]$ is the invisit of the left subtree, $A[ m ]$ and that of the right
+many nodes as the height plus one. In the tree of $A[ i .. j ]$, the invisit is that of the left subtree, $A[ m ]$ and that of the right
 one, i.e., $A[ i .. j ]$ by induction, and a tree whose invisit is sorted
 is a search tree. On $n \ge 2$ items the subtrees have $\lfloor ( n - 1 )
 / 2 \rfloor$ and $\lceil ( n - 1 ) / 2 \rceil = \lfloor n / 2 \rfloor$
@@ -134,8 +133,7 @@ $$
 
 *comparisons.*
 
-*Proof.* The answer is one of the $n + 1$ places $0 , \ldots , n$, each of
-which is the answer for some $v$; the decision tree of the search has
+*Proof.* Each of the $n + 1$ places $0 , \ldots , n$ is the answer for some $v$, and the decision tree of the search has
 therefore at least $n + 1$ leaves. A binary tree of height $h$ has at most
 $2^h$ leaves, whence (6.1). $\square$
 
@@ -179,8 +177,7 @@ When the answer $h$ is near the start, or the length of the vector is not
 known, the search of [Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976)
 doubles a bound before the binary search (`gallopSearch()`, exercise 12.9
 of [Montresor 2025](Z-bibliography.md#ref-montresor2025), and
-`exponentialSearch()` and `unboundedSearch()` of `MonotoneSearch.h`). The
-probes at the places $0 , 1 , 3 , 7 , \ldots , 2^k - 1$ stop at the first
+`exponentialSearch()` and `unboundedSearch()` of `MonotoneSearch.h`). Its probes at the places $0 , 1 , 3 , 7 , \ldots , 2^k - 1$ stop at the first
 $k$ with $A[ 2^k - 1 ] \ge v$, i.e., $k = \lceil \log_2 ( h + 1 ) \rceil$,
 after $k + 1$ comparisons. In `gallopSearch()` the binary search that
 follows runs on the places $2^{k-1}$ to $2^k - 2$, $2^{k-1} - 1$ of them,
@@ -224,8 +221,7 @@ and the middle of its binary search is computed on the unsigned
 distance. `unboundedSearch()` applies it to a
 sequence read one item at a time, whose function `get(i)` gives an optional
 item, empty past the end; the typical case is the count of the items
-smaller than a value in a sorted sequence of unknown length. The same scheme
-searches any monotone predicate on the integers, e.g., the integer square
+smaller than a value in a sorted sequence of unknown length. In the same way one searches any monotone predicate on the integers, e.g., the integer square
 root (`integerSqrt()`, [Algorithm 6.4](06-search.md#alg-6-4)), and
 `isPerfectSquare()` compares the square of that root with $n$. (Newton's
 iteration $x \gets \lfloor ( x + \lfloor n / x \rfloor ) / 2 \rfloor$
@@ -240,15 +236,14 @@ and true from $i$ on, `exponentialSearch( p , lo )` returns $i$ after at
 most $2 \lceil \log_2 ( i - \mathit{lo} + 1 ) \rceil + 1$ evaluations of
 $p$.*
 
-*Proof.* The probes of `gallopSearch()` are at the places $2^j - 1$, $j =
+*Proof.* In `gallopSearch()` the probes are at the places $2^j - 1$, $j =
 0 , 1 , \ldots$, as long as they are below $n$ and the item there is
 smaller than $v$. If the loop stops at a probe $2^k - 1 < n$ with $A[ 2^k
 - 1 ] \ge v$, it has made $k + 1$ comparisons, and $2^{k-1} - 1 < h \le
-2^k - 1$, i.e., $k = \lceil \log_2 ( h + 1 ) \rceil$; the binary search on
+2^k - 1$, i.e., $k = \lceil \log_2 ( h + 1 ) \rceil$. Then the binary search on
 the $2^{k-1} - 1$ places $2^{k-1} , \ldots , 2^k - 2$ (none for $k = 0$),
 which hold $h$ unless $h = 2^k - 1$, makes at most $\lceil \log_2 2^{k-1}
-\rceil = k - 1$ comparisons by [Lemma 6.3](06-search.md#lem-6-3), and it
-returns the place $2^k - 1$ when all the items it reads are smaller than
+\rceil = k - 1$ comparisons by [Lemma 6.3](06-search.md#lem-6-3); it returns the place $2^k - 1$ when all the items it reads are smaller than
 $v$. Otherwise the loop stops at $2^k - 1 \ge n$, after the $k$ probes $2^j
 - 1 < n$, $j < k$, all smaller than $v$; then $h \ge 2^{k-1}$, i.e., $k \le
 \lceil \log_2 ( h + 1 ) \rceil$, and the binary search on the at most
@@ -269,13 +264,12 @@ binary search with no overflow (Esercizi Divide-et-impera of [Montresor
 2$ bits, $w$ even, `integerSqrt( n )` returns $\lfloor \sqrt{n} \rfloor$
 after exactly $w / 2$ steps, with no overflow.*
 
-*Proof.* The loop keeps $\mathit{lo}^2 \le n < \mathit{hi}^2$, which
+*Proof.* The loop of the integer square root keeps $\mathit{lo}^2 \le n < \mathit{hi}^2$, which
 holds at the start with $\mathit{lo} = 0$ and $\mathit{hi} = 2^{w/2}$,
 since $n < 2^w$. For $m \ge 1$ and integers, $m \le \lfloor n / m
 \rfloor$ if and only if $m \le n / m$, i.e., $m^2 \le n$; the test thus
 moves $\mathit{lo}$ or $\mathit{hi}$ to $m$ keeping the invariant, and
-$m > \mathit{lo} \ge 0$ while $\mathit{hi} - \mathit{lo} > 1$. The
-difference $\mathit{hi} - \mathit{lo}$ is a power of 2, halved at each
+$m > \mathit{lo} \ge 0$ while $\mathit{hi} - \mathit{lo} > 1$. Since $\mathit{hi} - \mathit{lo}$ is a power of 2, halved at each
 step, and the loop ends when it is 1, after $w / 2$ steps, with
 $\mathit{lo}^2 \le n < ( \mathit{lo} + 1 )^2$. Every value computed is at
 most $2^{w/2} < 2^w$. $\square$
@@ -319,12 +313,10 @@ number of probes is $\log_2 \log_2 n + O( 1 )$ ([Perl et al.
 
 *Proof.* As in [Lemma 6.1](06-search.md#lem-6-1), if $v$ occurs it occurs
 in $A[ i .. j ]$, and the loop stops when $v$ is out of $[ A[ i ] , A[ j ]
-]$, in which case it does not occur. The probe $m$ is clamped to $[ i , j
+]$, in which case it does not occur. Each probe $m$ is clamped to $[ i , j
 ]$ (or is the middle of the part, when (6.4) is undefined), and each probe
 that does not find $v$ leaves out at least the place $m$; hence at most $n$
-probes. The expected bound is the theorem of Perl, Itai and Avni, whose
-search is (6.4) on the part still to examine, with the same endpoints; its
-hypotheses are the independence and the uniformity of the keys, and the
+probes. As for the expected bound, it is the theorem of Perl, Itai and Avni, whose search is (6.4) on the part still to examine, with the same endpoints. Its hypotheses are the independence and the uniformity of the keys, and the
 exact arithmetic of (6.4), which the code approximates in `double`. $\square$
 
 On keys far from uniform (e.g., growing exponentially), however, each
@@ -362,7 +354,7 @@ uniform binary search ([Knuth 1998, Algorithms 6.2.1F, 6.2.1U and
 
 <span id="lem-6-7"></span>**Lemma 6.7.** *On a sorted vector of $n \ge
 1$ items, `fibonacciSearch()` and `uniformBinarySearch()` return a place of
-$v$ if $v$ occurs and $-1$ otherwise. The first makes at most $k - 1$
+$v$ if $v$ occurs and $-1$ otherwise. The former makes at most $k - 1$
 probes, where $F_k$ is the least Fibonacci number not below $n$ ($F_1 =
 F_2 = 1$), i.e., fewer than $2 + \log_\phi n$; the second makes at most
 $\lfloor \log_2 n \rfloor + 1$ probes. A probe compares $v$ with one item,
@@ -375,10 +367,9 @@ occurs, which holds at the start since $F_k \ge n$. A probe at
 $\mathit{offset} + f_2$ (or at $n - 1$, if that is past the end) leaves
 the $f_1$ places after it when the item is smaller than $v$, with $j$
 decreased by 1, and the $f_2$ places from $\mathit{offset} + 1$ on
-otherwise, with $j$ decreased by 2; in both cases the places left out
+otherwise, with $j$ decreased by 2. In both cases the places left out
 hold items smaller (or larger) than $v$, since $A$ is sorted, and the new
-part thus still holds $v$ if it occurs. The loop runs
-while $f \ge 2 = F_3$, i.e., at most $k - 2$ times, and leaves at most one
+part thus still holds $v$ if it occurs. Its loop runs while $f \ge 2 = F_3$, i.e., at most $k - 2$ times, and leaves at most one
 place, which the last test reads. Since $F_j \ge \phi^{j-2}$, $F_{k-1} <
 n$ gives $k - 3 < \log_\phi n$. As for `uniformBinarySearch()`, it is
 Algorithm C of [Knuth 1998, §6.2.1](Z-bibliography.md#ref-knuth1998v3)
@@ -450,14 +441,13 @@ two places it never read are both consistent with its answers. In
 $A[ i ] + A[ j ] < x$, then $A[ i ] + A[ j' ] < x$ for every $j' \le j$,
 and $i$ is in no pair; symmetrically for $j$. Each step moves $i$ or $j$,
 and there are at most $n - 1$ of them. In `kthOfTwoSorted()`, let the
-shorter vector be $S$, and let $i$ items of $S$ and $j = k + 1 - i$ of $L$
-be taken; the predicate $S[ i ] < L[ j - 1 ] = L[ k - i ]$ is true and
+shorter vector be $S$, and let $i$ items of $S$ and $j = k + 1 - i$ of $L$ be taken. The predicate $S[ i ] < L[ j - 1 ] = L[ k - i ]$ is true and
 then false as $i$ grows over the feasible range $\max( 0 , k + 1 - n ) \le
 i \le \min( k + 1 , m )$, which has at most $\min( m , n ) + 1$ values,
 since $S[ i ]$ grows and $L[ k - i ]$ does not. Let $i$ be the first value
 for which it is false (or the end of the range), and $j = k + 1 - i$. Then
 $L[ j - 1 ] \le S[ i ]$, and, by the truth at $i - 1$, $S[ i - 1 ] < L[ j
-]$ (where the items out of a vector do not count); hence each of $S[ 0 ..
+]$ (where the items out of a vector do not count). Hence each of $S[ 0 ..
 i - 1 ]$ and $L[ 0 .. j - 1 ]$ is not larger than each item left out, and
 these $k + 1$ items are the smallest, whose largest, the larger of $S[ i -
 1 ]$ and $L[ j - 1 ]$, has the rank $k$. The binary search on the range
@@ -568,13 +558,13 @@ when its condition holds and 0 otherwise.
 items, `branchlessLowerBound()` returns $\mathrm{lowerBound}( v )$ after
 $\lceil \log_2 n \rceil + 1$ comparisons, whatever $v$.*
 
-*Proof.* The invariant is that the answer is in $[ b , b + \ell ]$, that
+*Proof.* We keep the invariant that the answer is in $[ b , b + \ell ]$, that
 the items before $b$ are smaller than $v$, and that $b + \ell \le n$; it
 holds at the start, with $b = 0$ and $\ell = n$. If $A[ b + h ] < v$, the
 answer is past $b + h$, and the new range $[ b + h , b + \ell ]$ holds it;
 otherwise the answer is at most $b + h$, which is within the new range
 $[ b , b + \ell - h ]$ since $h \le \ell - h$. In both cases $b + \ell$
-does not grow. The length goes from $\ell$ to $\lceil \ell / 2 \rceil$,
+does not grow. Each step takes the length from $\ell$ to $\lceil \ell / 2 \rceil$,
 and reaches 1 after $\lceil \log_2 n \rceil$ steps; then the answer is
 $b$ or $b + 1$, with $b < n$, and the last comparison decides between
 them. $\square$
@@ -653,16 +643,15 @@ since $\lceil \lceil x \rceil / ( B + 1 ) \rceil = \lceil x / ( B + 1 )
 \log_{B+1} s \rceil$, which gives (6.5). Since $\lceil x \rceil < x + 1$,
 the nodes are fewer than $\sum_{d = 0}^{H - 1} ( s / ( B + 1 )^d + 1 ) < s
 ( B + 1 ) / B + H$, and the places, $B$ per node, fewer than $( B + 1 ) s +
-B H \le ( B + 1 ) ( n / B + H )$, since $s < n / B + 1$. The leaves are a
-copy of the items, written once. A key of a node at the distance $d \ge 1$
-from the leaves is found by $d - 1$ multiplications, and the keys at the
+B H \le ( B + 1 ) ( n / B + H )$, since $s < n / B + 1$. The leaves, a copy of the items, are written once. A key of a node at the distance $d \ge 1$
+from the leaves is found by $d - 1$ multiplications, while the keys at the
 distance $d$ are at most $B \lceil s / ( B + 1 )^d \rceil$; the
 construction thus costs $O( n + B \sum_{d \ge 1} d ( s / ( B + 1 )^d + 1 )
 )$, i.e., $O( n + B H^2 )$, since $\sum_{d \ge 1} d x^d = x / ( 1 - x
 )^2$ for $x < 1$, which is $O( n )$ for a fixed $B$. The nodes start at
 multiples of $B$ items in a vector aligned to 64 bytes. As for the search,
-the key $j$ of a node is the first item under its child $j + 1$, so that
-the count of the keys smaller than $v$ is the child that holds
+the key $j$ of a node is the first item under its child $j + 1$. Hence the
+count of the keys smaller than $v$ is the child that holds
 $\mathrm{lowerBound}( v )$ (the places past the last item counting as
 $+\infty$), and in the leaf the count gives the place itself. $\square$
 
@@ -780,9 +769,7 @@ arithmetic.*
 abscissa $x$, a line through the crossing $P$ of the two extreme lines with
 a slope between theirs takes a value between their values, on either side
 of $P$; both extreme lines take values in $[ y - \epsilon , y + \epsilon ]$
-at each point $( x , y )$ of the segment, and so does such a line. The
-slope 0 is feasible too: if a line $f$ of slope $a < 0$ is within the
-error, the horizontal line at the height $f( x_k )$, with $x_k$ the last
+at each point $( x , y )$ of the segment, and so does such a line. The slope 0 is feasible too. If a line $f$ of slope $a < 0$ is within the error, then the horizontal line at the height $f( x_k )$, with $x_k$ the last
 abscissa, is within it as well, since $y_i - \epsilon \le y_k - \epsilon
 \le f( x_k ) \le f( x_i ) \le y_i + \epsilon$, the places $y_i$ not
 decreasing; the feasible slopes are an interval, and $\alpha^+ \ge 0$.
@@ -797,15 +784,13 @@ first place $y$. Each later point whose first place is at most
 $y + 2 \epsilon$ is within $\epsilon$ of the horizontal line through
 $y + \epsilon$; the segment is thus not closed before a point of first
 place larger than $y + 2 \epsilon$, which gives the first claim and the
-bound on $m$. The points of a level above are the first keys of the level
+bound on $m$. At a level above, the points are the first keys of the level
 below with the places $0 , 1 , 2 , \ldots$, which are distinct, and the
 same argument with $\epsilon_r$ divides the segments by at least
 $2 \epsilon_r + 1$ per level. As for the search, let
-$k_s \le v < k_{s+1}$ for two first keys of the level below. The line does
-not decrease, and it is within $\epsilon_r$ of $s$ at $k_s$ and of $s + 1$
+$k_s \le v < k_{s+1}$ for two first keys of the level below. Since the line does not decrease, and it is within $\epsilon_r$ of $s$ at $k_s$ and of $s + 1$
 at $k_{s+1}$; hence its prediction at $v$, truncated to an integer $p$,
-satisfies $p - \epsilon_r - 1 \le s \le p + \epsilon_r + 1$. The code
-searches the $\epsilon_r + 2$ places on each side of $p$, one more for the
+satisfies $p - \epsilon_r - 1 \le s \le p + \epsilon_r + 1$. Our code searches the $\epsilon_r + 2$ places on each side of $p$, one more for the
 rounding of the line in `double`, by a binary search of $O( \log \epsilon_r )$
 comparisons. At the last level, on distinct keys, the same argument puts the
 answer within $\epsilon + 1$ places of the prediction, in a window of
@@ -990,15 +975,13 @@ add $O( 1 )$ amortized insertions into a filter per pair and level.*
 *Proof.* $L_t$ is chosen because the pairs of the buffer and of the levels
 before $L_{t-1}$ do not fit in the room left in $L_{t-1}$; with those of
 $L_{t-1}$, they are thus more than $c_{t-1} = c_t / B$ (more than $b_0$
-for $t = 1$, since the buffer holds $b_0 + 1$ pairs with the new one). The
-merge and the construction of the PGM-index of the result are linear,
+for $t = 1$, since the buffer holds $b_0 + 1$ pairs with the new one). Merging and building the PGM-index of the result are linear,
 $O( c_t )$, i.e., $O( B )$ per pair brought into $L_t$. A pair is brought
 into a level only from the levels before it, hence into each level at most
 once. Finally, a level $L_t$ is created only when more than $c_{t-1}$
 pairs exist, and therefore $t < 1 + \log_B( n / b_0 )$. A filter receives
-each pair that a merge brings into its level once, and it is built again,
-for twice the keys, only when it is full, i.e., after as many insertions as
-the keys it held; the insertions of a rebuilding are thus paid by those
+each pair that a merge brings into its level once. It is built again, for twice the keys, only when it is full, i.e., after as many insertions as
+the keys it held, and the insertions of a rebuilding are thus paid by those
 that filled it. $\square$
 
 A lookup (`find()`, which gives a pointer to the value, nil if the key is
@@ -1025,8 +1008,7 @@ and one that is there reads a line per newer level and searches only its
 (false positives aside). The filter of a level takes the keys that a merge
 brings in, and is built again, for twice the keys, only when it is full;
 the filters thus add a constant number of insertions into a filter per key
-and level to the cost (cf. [Lemma 6.13](06-search.md#lem-6-13)). The number of
-distinct keys is not kept, since it would cost a lookup per insertion.
+and level to the cost (cf. [Lemma 6.13](06-search.md#lem-6-13)). We do not keep the number of the distinct keys, since it would cost a lookup per insertion.
 Instead, `entries()` counts the pairs stored, tombstones and older pairs included,
 and `levels()` the levels below the buffer, empty or not.
 
@@ -1225,9 +1207,9 @@ $$
 *and $T( n ) \le 4 n$; with the first item as the pivot, an increasing
 vector and $k = n$ cost $n ( n - 1 ) / 2$ comparisons.*
 
-*Proof.* The partition of a part of $n$ items compares the pivot with the
+*Proof.* A partition of a part of $n$ items compares the pivot with the
 other $n - 1$, and the pivot has the rank $q$ with probability $1 / n$,
-each $q$ in $1 , \ldots , n$; the part kept has $q - 1$ or $n - q$ items,
+each $q$ in $1 , \ldots , n$. The part kept has $q - 1$ or $n - q$ items,
 at most $\max\{ q - 1 , n - q \}$, and each value $q' \ge \lfloor n / 2
 \rfloor$ of this maximum comes from at most two values of $q$. With $T$
 taken not decreasing (it is a maximum over the ranks, and a longer part
@@ -1267,8 +1249,7 @@ and the pivot is the median of rank $\lceil M / 2 \rceil$ of their medians.
 At least $\lceil M / 2 \rceil$ medians are not larger than the pivot, each
 with 3 items of its group not larger than it, and the same holds on the
 other side; hence each of the parts smaller and larger than the pivot has at
-most $n - 3 ( n - 4 ) / 10 \le 7 n / 10 + 2$ items. The groups cost at most
-10 comparisons of insertion each, and the partition in three ways at most 2
+most $n - 3 ( n - 4 ) / 10 \le 7 n / 10 + 2$ items. Each group costs at most 10 comparisons of insertion each, and the partition in three ways at most 2
 per item, so that, with $T$ taken not decreasing, $T( n ) \le T( n / 5 ) +
 T( 7 n / 10 + 2 ) + a n$ for $n > 10$ and a constant $a$. For $n \ge 80$
 one has $7 n / 10 + 2 \le 3 n / 4$, and by induction
@@ -1323,7 +1304,7 @@ place, and the end advances by the outcome of the comparison, an addition
 instead of a jump ([Edelkamp and Weiß
 2016](Z-bibliography.md#ref-edelkamp2016) apply the same idea to
 quicksort), while the partition of Hoare mispredicts half of its
-comparisons on random items. The loop is unrolled by 4, so that it does not
+comparisons on random items. We unroll the loop by 4, so that it does not
 depend on the alignment of one jump.
 
 <span id="lem-6-19"></span>**Lemma 6.19.** *`selectLomuto()` makes $n -
@@ -1367,27 +1348,23 @@ pivot the median of the medians, as the selection of [Musser
 `nthElement()` takes $O( n )$ time in the worst case.*
 
 *Proof.* Let $S( n )$ be the worst-case time of `select()` on a part of $n$
-items, which has its own budget of $4 n$. The rounds of a call act on
-nested parts, each smaller than the one before, since the pivot is left
-out. The rounds charged to the budget partition at most $4 n$ items in all.
+items, which has its own budget of $4 n$. In a call, the rounds act on nested parts, each smaller than the one before, since the pivot is left
+out. Those charged to the budget partition at most $4 n$ items in all.
 A round with $m > 600$ selects recursively a sample of $\mathit{hi} -
 \mathit{lo} + 1 \le s + | d | + 2$ items, with $s = m^{2/3} / 2$ and $| d
 | \le \sqrt{s \ln m} / 2$; the three ratios to $m$ decrease for $m \ge
 601$, and there they sum to less than $0.0592 + 0.0126 + 0.0034 < 0.076$,
 so that the samples hold fewer than $0.076 \cdot 4 n < 0.31 n$ items in all.
-The rounds of the median of the medians, on the parts $m_1 > m_2 > \cdots$
-(all above 24), select recursively the $\lfloor m_j / 5 \rfloor$ medians of
-the groups, and on distinct items the part kept after such a round has at
+As for the rounds of the median of the medians, on the parts $m_1 > m_2 > \cdots$
+(all above 24), select recursively the $\lfloor m_j / 5 \rfloor$ medians of the groups. On distinct items the part kept after such a round has at
 most $7 m_j / 10 + 2$ items, by the argument of
 [Lemma 6.18](06-search.md#lem-6-18); hence $m_{j+1} + 20 / 3 \le 0.7 (
 m_j + 20 / 3 )$, $\sum_j m_j \le ( n + 20 / 3 ) / 0.3$, and the medians
 hold at most $( n + 20 / 3 ) / 1.5 < 0.67 n + 5$ items in all. Besides the
 recursive calls, a call spends $O( 1 )$ per round (at most $n$ rounds) and
 $O( m )$ per partition, per sort of the groups and per test of an order
-in a round on $m$ items, i.e., at most $a n + a'$ for two constants. The
-recursive calls are on fewer than $0.98 n + 5$ items in all, and by
-induction $S( n ) \le a n + a' + c ( 0.98 n + 5 ) \le c n$ for $n \ge
-n_0$, with $c$ large enough for $n < n_0$ as well; the scan of
+in a round on $m$ items, i.e., at most $a n + a'$ for two constants. The recursive calls are on fewer than $0.98 n + 5$ items in all. By induction, therefore, $S( n ) \le a n + a' + c ( 0.98 n + 5 ) \le c n$ for $n \ge
+n_0$, with $c$ large enough for $n < n_0$ as well. The scan of
 `nthElement()` for a range in order adds $O( n )$. $\square$
 
 On repeated items the rounds of the median of the medians are not covered
@@ -1461,10 +1438,10 @@ $\mathrm{RMQ}( i , j )$ in $O( 1 )$ time.*
 of length $2^L$ from $i$ and from $i + 2^L$, and the leftmost minimum of a
 union of two ranges, the first before the second, is the better of their
 leftmost minima, the left one on a tie; by induction on $L$, each entry is
-right. The rows are $\lfloor \log_2 n \rfloor + 1$, of at most $n$ entries,
+right. There are $\lfloor \log_2 n \rfloor + 1$ rows of at most $n$ entries,
 each computed in $O( 1 )$ time. For a query, $2^L \le j - i + 1 < 2^{L+1}$,
 so that the ranges $[ i , i + 2^L - 1 ]$ and $[ j - 2^L + 1 , j ]$ lie in
-$[ i , j ]$ and cover it; the leftmost minimum of $[ i , j ]$ is in one of
+$[ i , j ]$ and cover it. The leftmost minimum of $[ i , j ]$ is in one of
 them, and the better of their two answers, the left one on a tie, is it,
 since an item of the overlap that is a minimum is reached first from the
 left range. $L$ is the position of the leading bit of $j - i + 1$, one
@@ -1491,12 +1468,10 @@ ancestor lies in its right subtree, in $O( n )$ time and space.*
 *Proof.* We show by induction on $i$ that after the step $i$ the parents
 computed for $A[ 0 .. i ]$ are those of the Cartesian tree of $A[ 0 .. i
 ]$, and $S$ holds its right spine, i.e., the path from the root along the
-right children, from the bottom up. The new item $A[ i ]$ is the last of
-the invisit, hence on the right spine, and its ancestors are the items of
+right children, from the bottom up. Being the last of the invisit, the new item $A[ i ]$ is on the right spine, and its ancestors are the items of
 the old spine not larger than it (the minimum of a range that ends at $i$,
 the leftmost on ties, is the first item of the spine from the root that is
-not larger than $A[ i ]$, or $A[ i ]$ itself). The step pops the items of
-the spine larger than $A[ i ]$, which become its left subtree (the last
+not larger than $A[ i ]$, or $A[ i ]$ itself). Our step pops the items of the spine larger than $A[ i ]$, which become its left subtree (the last
 popped is its left child), and makes $A[ i ]$ the right child of the new
 top, or the root if the stack is empty; this is the tree of $A[ 0 .. i ]$.
 Each place is pushed once and popped at most once. $\square$
@@ -1560,16 +1535,12 @@ table (6.13), and so does `RangeMinimum` on any array of $n$ items.*
 *Proof.* With $d \approx \log_2 n / 2$, the blocks are $\lceil n / d \rceil$,
 and the sparse table on their minima takes $O( ( n / d ) \log n ) = O( n
 )$ by [Lemma 6.21](06-search.md#lem-6-21). A block $D[ b .. b + d - 1 ]$
-equals $D[ b ]$ plus the prefix sums of its $d - 1$ steps, so that its
-leftmost minima are those of the block of the same steps starting at 0;
-there are $2^{d-1}$ such patterns, each with $d^2$ answers, and $2^{d-1}
+equals $D[ b ]$ plus the prefix sums of its $d - 1$ steps, so that its leftmost minima are those of the block of the same steps starting at 0. There are $2^{d-1}$ such patterns, each with $d^2$ answers, and $2^{d-1}
 d^2 \le 2^{\log_2 n / 2 - 1} ( \log_2 n / 2 )^2 \le \sqrt{n} \log_2^2 n$,
 which the table holds after $O( \sqrt{n} \log_2^2 n ) = o( n )$ time. A
 query in one block reads the table, and one across blocks takes the better
 of the suffix of the first block, of the prefix of the last and of the
-sparse table on the blocks between, $O( 1 )$ reads. For `RangeMinimum`,
-the Cartesian tree ([Lemma 6.22](06-search.md#lem-6-22)) and its Euler tour,
-whose consecutive depths differ by 1, take $O( n )$ time, and by
+sparse table on the blocks between, $O( 1 )$ reads. For `RangeMinimum`, the Cartesian tree ([Lemma 6.22](06-search.md#lem-6-22)) and its Euler tour, whose consecutive depths differ by 1, take $O( n )$ time. By
 [Lemma 6.23](06-search.md#lem-6-23) a query is a query on the depths
 between the first visits of $i$ and $j$, mapped back to its node. $\square$
 
@@ -1617,8 +1588,7 @@ $A[ t ] > A[ t^* ]$, since $t^*$ is the leftmost minimum, and its bit is
 not set, by (6.14) with $u = t^*$. The lowest set bit at or above $i$ is
 thus the bit of $t^*$. As for the update, a place $t < j$ is in the set
 (6.14) of $j$ if and only if it is in that of $j - 1$ and $A[ t ] \le A[ j
-]$, i.e., its bit is not in $G_j$, and the place $j$ always is. A query
-reads $\mathit{mask}[ j ]$, the records of the places $i$ and $j$ (the
+]$, i.e., its bit is not in $G_j$, and the place $j$ always is. Finally, a query reads $\mathit{mask}[ j ]$, the records of the places $i$ and $j$ (the
 minima of the suffix and of the prefix, with their offsets) and, across
 more than two blocks, two entries of the table. $\square$
 
@@ -1737,7 +1707,7 @@ class WordRangeMinimum {
 The searches of the textbooks (`binarySearch()`, `lowerBound()`,
 `interpolationSearch()`, the searches of Knuth, `selection()`,
 `SparseTable` and `RangeMinimum`) are meant to show the methods and to
-check their bounds. The engineered ones are meant to be compared with the
+check their bounds. Instead, the engineered ones are meant to be compared with the
 best implementations available, i.e., `std::lower_bound` for
 `branchlessLowerBound()` and `SPlusTree`, the implementation of the paper
 for the three PGM-indexes, `std::nth_element` for `nthElement()`, and the
