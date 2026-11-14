@@ -77,6 +77,7 @@ void gemmCblas( std::size_t m , std::size_t n , std::size_t k , T alpha ,
 /// one at a time, the terms of each entry summed in the order of the
 /// common index, by blocks of kGemmBlock columns of B and of kGemmBlock
 /// rows of B, which stay in the cache while a row of C runs over them
+//! [gemmBlocked]
 template< class T >
 void gemmBlocked( std::size_t m , std::size_t n , std::size_t k , T alpha ,
                   const T * A , std::size_t lda , const T * B ,
@@ -104,6 +105,7 @@ void gemmBlocked( std::size_t m , std::size_t n , std::size_t k , T alpha ,
    }
   }
  }
+//! [gemmBlocked]
 
 }  // end( namespace detail )
 

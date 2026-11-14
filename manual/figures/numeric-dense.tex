@@ -1,0 +1,30 @@
+% Source for the figure of the dense matrices (sec. 17.6): a Matrix as a
+% vector of rows, and a DenseMatrix by rows in one block, with the view of
+% its quadrant A22 (its first entry and the leading dimension 4).
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\usetikzlibrary{decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {\texttt{Matrix}};
+  \cells{v}{0,0}{/cell,/cell,/cell,/cell}
+  \foreach \j in {0,...,3} {
+    \fill (v-\j) circle (0.8pt);
+    \cells{r\j}{34mm+\j*7mm,-12mm-\j*9mm}{/cell,/cell,/cell,/cell}
+    \draw[ptr] (v-\j.south) |- (r\j-0.west);
+  }
+  \node[var,anchor=east] at (-6mm,-62mm) {\texttt{DenseMatrix}};
+  \cells{d}{0,-62mm}{/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/touched,/touched,/cell,/cell,/touched,/touched}
+  \indices{d}{16}
+  \node[var] (q) at ($(d-10)+(0,13mm)$) {$A_{22}$, $\mathit{ld} = 4$};
+  \draw[ptr] (q) -- (d-10.north);
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror}]
+    ($(d-0.south west)+(0,-6mm)$) -- ($(d-3.south east)+(0,-6mm)$)
+    node[midway,below=2mm,var] {row 0};
+\end{tikzpicture}
+\end{document}

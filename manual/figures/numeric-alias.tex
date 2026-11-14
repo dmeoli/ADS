@@ -1,0 +1,27 @@
+% Source for the figure of AliasTable (sec. 17.9): the four cells built by
+% the construction of Vose for the weights (1, 2, 4, 1); each cell has
+% probability 1/4, its lower part its own item and its upper part the alias.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \i/\k/\a in {0/0.5/2,1/1/1,2/1/2,3/0.5/2} {
+    \draw (\i*14mm,0) rectangle (\i*14mm+10mm,\k*24mm);
+    \node[font=\small\ttfamily] at (\i*14mm+5mm,\k*12mm) {\i};
+    \ifdim\k pt<1pt
+      \draw[fill=adsTouched] (\i*14mm,\k*24mm) rectangle (\i*14mm+10mm,24mm);
+      \node[font=\small\ttfamily] at (\i*14mm+5mm,\k*12mm+12mm) {\a};
+    \fi
+    \node[index] at (\i*14mm+5mm,-3mm) {cell \i};
+  }
+  \draw (-4mm,0) -- (-4mm,24mm);
+  \foreach \y/\t in {0/0,12/{1/2},24/1} {
+    \draw (-5mm,\y mm) -- (-4mm,\y mm);
+    \node[index,anchor=east] at (-6mm,\y mm) {$\t$}; }
+\end{tikzpicture}
+\end{document}

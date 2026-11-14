@@ -1,0 +1,25 @@
+% Source for the figure of BigInteger (sec. 17.3): the digits of a number
+% kept in place in the object while they are at most two, and in a block of
+% the heap after a third digit. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \l [count=\i from 0] in {neg,p,n,cap,in[0],in[1]}
+    \node[index] at (\i*7mm,6mm) {\l};
+  \node[var,anchor=east] at (-6mm,0) {two digits};
+  \cells{a}{0,0}{0/cell,/cell,2/cell,2/cell,$x_0$/cell,$x_1$/cell}
+  \fill (a-1) circle (0.8pt);
+  \draw[ptr] (a-1.center) to[out=-60,in=-120] (a-4.south);
+  \node[var,anchor=east] at (-6mm,-20mm) {three digits};
+  \cells{b}{0,-20mm}{0/cell,/touched,3/touched,4/touched,/free,/free}
+  \fill (b-1) circle (0.8pt);
+  \cells{h}{14mm,-36mm}{$x_0$/touched,$x_1$/touched,$x_2$/touched,/free}
+  \node[var,anchor=west] at (46mm,-36mm) {on the heap};
+  \draw[ptr] (b-1.center) -- (b-1.center |- h-0.north);
+\end{tikzpicture}
+\end{document}
