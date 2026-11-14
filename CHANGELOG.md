@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Modification.h, the typed modifications by which a structure tells the
+  observers attached to it what changed: the event templates of ADS::mod
+  (Inserted, Erased, Changed with the aliases Assigned and KeyChanged,
+  Relocated, Permuted, BulkInserted, BulkErased, Shifted, Replaced,
+  Cleared, Rebuilt), each carrying the old and the new state, with static
+  effects and roles, direction() and inverse(); the observer, any object
+  with an on() for one of the events of the structure, whose optional
+  parts (spans of one kind or of the variant, group hooks with the
+  versions, prepare(), audit(), mask(), Keep, requires_modifications,
+  depends_on) are found at compile time, a wrong attachment failing to
+  compile; the subject policies NoObservers, Static, Dynamic and Both, with
+  which a mutator tests at compile time and then at run time whether
+  someone wants an event before it builds it, the path that sends it out
+  of line and cold for a dynamic subject; batch() with nested batches
+  coalesced into their net effect per handle by coalesce_traits, with the
+  reductions last, min, max and sum per attribute; a revision per kind of
+  event and version(); quiet() and quiet( s , no_rebuild ); emit( e , undo
+  ), the strong guarantee by the inverse events and the undo of the
+  structure, Refused from prepare(), Batch::rollback() and the batches left
+  by an exception; UndoLog, which makes any structure with apply()
+  undoable; Shadow, the audit of an incremental observer against one from
+  scratch; the audits and the counts of each observer at the level 3 of
+  the contracts; the coalescing and its lemma in the theory of the
+  foundations, section 1.13 of the manual, the test engineered_modification
+  (11 cases) and the compile-time checks modification-attach.1 to 4
+- ADS_NO_UNIQUE_ADDRESS and ADS_COLD_PATH in Portable.h
+- bench/zerocost.py, the check of zero cost by counts and by code: the
+  instructions of one change counted by callgrind and the code of the
+  changes compared byte for byte by objdump, with g++ and clang++, for the
+  plain structure and for each subject policy
+
 - maxWeightMatching() in graph/Matching.h is now the primal-dual algorithm
   of Edmonds on the blossoms in O( n^3 ) (Gabow and Lawler, in the form of
   Galil's survey), with integer arithmetic for integer weights and, with
@@ -1677,6 +1708,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   both signs, bit by bit against std::sort by radixKey()
 
 ### Changed
+
+- Observable.h is ObservedGraph< G , Policy >, the graph wrapper on the
+  subject policies of Modification.h (NoObservers by default, so that a
+  change compiles to the code of the graph), and Observable< G , O... > is
+  its alias with Both< Static< O... > , Dynamic<> >, the observers with
+  mask() and notify() called through an adapter: the observers of
+  Reoptimization.h and the tests of engineered_dynamic are unchanged, an
+  observer with on() can be static or attached, and a change with nobody
+  attached costs the test of the mask instead of the call of the
+  operation out of line
 
 - the balance of DualArrayDeque is done in place, for a vector as for a
   RootishArrayStack (exercise 2.9): the t < n / 2 items at the bottom of

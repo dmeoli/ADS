@@ -16,8 +16,10 @@
  \ref theory_ADS_adt), what a contract is and why each kind of contract is
  checked at its own level (see \ref theory_ADS_contracts), and the categories
  of the iterators with the cost of their steps (see \ref theory_ADS_iterators),
- while the arithmetic of the portable primitives closes the page (see
- \ref theory_ADS_portable). The algorithms of the iterators have their
+ while the arithmetic of the portable primitives (see
+ \ref theory_ADS_portable) and the typed modifications by which a structure
+ tells its observers what changed (see \ref theory_ADS_modifications) close
+ the page. The algorithms of the iterators have their
  pseudocode on the page of `Iterators.h`, in the comment of their function.
 
  \tableofcontents
@@ -356,6 +358,127 @@
  \f$ 2^{64} \f$, is smaller than either of them. These are details of the
  implementation, out of the API reference.
 
+ \section theory_ADS_modifications Typed modifications
+
+ A structure whose items have stable handles is, for the observers, a
+ partial map \f$ \sigma \f$ from the handles to the states of the items,
+ where the state of an item is the tuple of its attributes (its key, its
+ value, and any other attribute \f$ A \f$, e.g., the cost of an arc), and
+ \f$ \sigma( h ) = \bot \f$ when no item has the handle \f$ h \f$. An event of
+ an item is a step of \f$ \sigma \f$ at one handle that carries both its
+ ends: \f$ \mathrm{Inserted}( h , s ) \f$ takes \f$ \sigma( h ) \f$ from
+ \f$ \bot \f$ to \f$ s \f$, \f$ \mathrm{Erased}( h , s ) \f$ from \f$ s \f$ to
+ \f$ \bot \f$, and \f$ \mathrm{Changed}_A( h , a , b ) \f$ changes the
+ attribute \f$ A \f$ of \f$ \sigma( h ) \f$ from \f$ a \f$ to \f$ b \f$; the
+ events of the whole structure (\f$ \mathrm{Cleared} \f$, which makes
+ \f$ \sigma \f$ empty, \f$ \mathrm{Rebuilt} \f$, after which any \f$ \sigma \f$
+ is possible, \f$ \mathrm{Shifted}_A( \delta ) \f$, which adds \f$ \delta \f$
+ to the attribute \f$ A \f$ of every item, \f$ \mathrm{Replaced}_A \f$ and
+ the relocations) are not of one item. A sequence of events is a
+ <em>history</em> of \f$ \sigma_0 \f$ when each event starts from the state
+ that the previous ones leave. Since an event carries the old state as well
+ as the new one, an observer that reads the events only, and not the
+ structure, is correct whatever happened after them, and every event of an
+ item has an inverse, the step back, which `inverse()` gives.
+
+ The <em>net effect</em> of a batch \f$ B \f$ is a sequence \f$ C \f$ that
+ leads from \f$ \sigma_0 \f$ to the state to which \f$ B \f$ leads. The
+ coalescing of `Modification.h` builds it in three steps: (i) everything
+ before the last \f$ \mathrm{Cleared} \f$ or \f$ \mathrm{Rebuilt} \f$ is
+ dropped, since the state after them does not depend on it; (ii) the events
+ that are not of one item split what remains into runs, and they are kept in
+ place, consecutive shifts of one attribute added into one (dropped if the
+ sum is zero) and consecutive replacements of one attribute made one; (iii)
+ within a run the events of each handle are reduced, in the order of their
+ first event, by pushing them one by one on a list \f$ N \f$ of net events of
+ the handle with the rules
+ \f[
+ \begin{array}{rcl}
+ N \cdot \mathrm{Inserted}( h , s ) \cdot \mathrm{Erased}( h , s ) & \to &
+   N , \\
+ \mathrm{Inserted}( h , s ) \cdot \mathrm{Changed}_A( h , a , b ) & \to &
+   \mathrm{Inserted}( h , s[ A := b ] ) \quad A \in \{ \mathrm{Key} ,
+   \mathrm{Value} \} , \\
+ \mathrm{Changed}_A( h , a , b ) \cdot \mathrm{Changed}_A( h , b , c ) &
+   \to & \mathrm{Changed}_A( h , a , c ) , \ \text{or nothing if } a = c ,
+   \\
+ \mathrm{Changed}_A( h , a , b ) \cdot \mathrm{Erased}( h , s ) & \to &
+   \mathrm{Erased}( h , s[ A := a ] ) , \\
+ \mathrm{Erased}( h , s ) \cdot \mathrm{Inserted}( h , t ) & \to &
+   \prod_{A : s_A \ne t_A} \mathrm{Changed}_A( h , s_A , t_A ) ,
+ \end{array} \tag{8}
+ \f]
+ where a change of an attribute moves past the changes of the other
+ attributes of the handle (they commute, since they write disjoint parts of
+ the state), a change with \f$ a = b \f$ (a touch) is dropped, and the last
+ rule applies only when the structure emits the changes that it needs (a
+ structure with no \f$ \mathrm{KeyChanged} \f$ keeps the erasure and the
+ insertion of an item whose key differs). In the third rule
+ \f$ c \f$ is the value of the reduction of \f$ A \f$: the last value by
+ default, the least or the largest of \f$ b \f$ and \f$ c \f$ for an
+ attribute whose changes are merged by a minimum or a maximum (the absolute
+ values of a relaxation, which need not be a history), and
+ \f$ b + ( c - b' ) \f$ for one whose changes add up, \f$ b' \f$ being the
+ old value of the second change.
+
+ <b>Lemma 1.</b> <em>Let \f$ B \f$ be a history of \f$ \sigma_0 \f$ whose
+ attributes have the reduction `last`, and \f$ C \f$ its net effect by (i),
+ (ii) and (iii). Then \f$ C \f$ is a history of \f$ \sigma_0 \f$ that leads
+ to the state to which \f$ B \f$ leads, \f$ |C| \le |B| \f$, and \f$ C \f$ is
+ built in \f$ O( |B| ) \f$ expected time when the number of kinds of event is
+ a constant.</em>
+
+ <em>Proof.</em> Step (i) is correct because \f$ \mathrm{Cleared} \f$ and
+ \f$ \mathrm{Rebuilt} \f$ start from any state. The events of different
+ handles within a run commute, since each reads and writes the state of its
+ own handle only; hence a run can be replayed handle by handle, and it
+ suffices that each rule of (8) replaces two steps at one handle by steps
+ that lead from the same state to the same state. The first rule takes
+ \f$ \bot \f$ to \f$ s \f$ and back; the second inserts directly the state
+ after the change; the third composes two changes of one attribute, and
+ vanishes when the attribute returns to its value; the fourth erases from
+ the state before the change, which is the state that the erasure of the
+ history takes away, the attribute restored; the fifth goes from \f$ s \f$ to
+ \f$ t \f$ by one change per attribute that differs. Each rule leaves at most
+ as many events as it takes, so that \f$ |C| \le |B| \f$, and a list
+ \f$ N \f$ holds at most one insertion or erasure and one change per
+ attribute (plus an erasure and an insertion when the changes are missing),
+ a constant; a hash table on the handles finds the list of each event in
+ \f$ O( 1 ) \f$ expected time. \f$ \square \f$
+
+ The global events cannot be moved past the events of the items, since an
+ item inserted with an absolute key after a shift would be shifted twice;
+ they bound the runs instead of going last. A relocation and a permutation
+ change the meaning of the handles, and bound the runs for the same
+ reason.
+
+ A mutator tests two predicates before it builds an event of the kind
+ \f$ E \f$: `listened< E >`, a constant of the subject, false for
+ `NoObservers` and for static observers with no `on()` of \f$ E \f$, in which
+ case the event, the read of the old state and the test vanish at compile
+ time; and `live< E >()`, true when some observer wants \f$ E \f$ now (a
+ constant for a static observer with no mask, a test of the bit of
+ \f$ E \f$ in the union of the masks for the dynamic ones). The path that
+ builds and sends the event is a cold function out of line when the subject
+ is dynamic, so that the change with nobody attached costs the load and the
+ test of the mask; `bench/zerocost.py` checks both claims by the
+ instructions that callgrind counts and by the code of the changes, which
+ with `NoObservers` is that of the plain structure byte for byte, and with a
+ static observer that does not want the kind that of `NoObservers`.
+
+ Outside a batch an insertion and a change are told after the change, an
+ erasure before it; `on()` of the erasures and of the global events that
+ lose information must not throw. When an `on()` of an insertion or a change
+ throws, the observers already told get the inverse event in the reverse
+ order, the structure undoes its own change and the exception goes on; this
+ is the strong guarantee of Abrahams whenever the undo of the structure does
+ not throw, and `prepare()` gives it with no undo, since it refuses before
+ anything changes. A batch tells nothing before its close, so that a batch
+ left by an exception is discarded: the structure goes back to its
+ checkpoint if it has one, and the observers get \f$ \mathrm{Rebuilt} \f$
+ otherwise. `UndoLog` keeps the events of a history, from which the inverses
+ in the reverse order give a history back to any of its checkpoints.
+
  \section theory_ADS_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 3 and 4,
@@ -378,6 +501,14 @@
       P2900R14, ISO/IEC JTC1/SC22/WG21, 2025
  \see B. Stroustrup, The C++ Programming Language, 4th ed., Addison-Wesley,
       2013, chapter 33 (the iterators)
+ \see D. Abrahams, Exception-safety in generic components, Generic
+      Programming, LNCS 1766, 69-79, 2000, doi:10.1007/3-540-39953-4_6
+ \see U. A. Acar, G. E. Blelloch, R. Harper, Adaptive functional
+      programming, Proceedings of POPL, 247-259, 2002,
+      doi:10.1145/503272.503296
+ \see T. A. Davis, Algorithm 1000: SuiteSparse:GraphBLAS: graph algorithms
+      in the language of sparse linear algebra, ACM Transactions on
+      Mathematical Software 45(4), 1-25, 2019, doi:10.1145/3322125
 */
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File ADS.dox ----------------------------*/

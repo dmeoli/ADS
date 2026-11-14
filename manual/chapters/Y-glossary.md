@@ -2276,6 +2276,11 @@ symbols in their order, not necessarily contiguous
 **Substring.** A string of consecutive symbols of a string, $T[ i .. j ]$
 ([§15.1](15-string.md#sec-15-1)).
 
+**Subject policy.** The parameter of the type of a structure that decides
+who listens to its typed modifications, and at what cost: nobody, static
+observers called directly, observers attached at run time, or both
+([§1.13](01-introduction.md#sec-1-13)).
+
 **Subtree.** The tree rooted at a node that holds all its descendants
 ([§8.1](08-tree.md#sec-8-1)).
 
@@ -2432,6 +2437,11 @@ sequence, and searches only the blocks that may hold an item
 **Two-Way search.** The search of a pattern of Crochemore and Perrin at a
 critical factorization, in linear time and $O( 1 )$ extra space
 ([§15.2.1](15-string.md#sec-15-2-1)).
+
+**Typed modification.** A small value that tells the observers of a
+structure what changed, with the state before the change and the state
+after it, of a kind that the structure declares; a batch of them is sent as
+its net effect ([§1.13](01-introduction.md#sec-1-13)).
 
 **Uniform hashing.** The model of the analysis of open addressing, in which
 the inspection of each key is a random permutation of the places,

@@ -116,8 +116,9 @@ structures, those of the book included, are in
 
 Headers are grouped by abstract data type, one header per realization,
 and `include/ADS/ADT.h` has the concepts of the book, next to the
-contracts (`Contract.h`), the iterators (`Iterators.h`) and the portable
-intrinsics (`Portable.h`). The folders of the types also hold the
+contracts (`Contract.h`), the iterators (`Iterators.h`), the portable
+intrinsics (`Portable.h`) and the typed modifications by which a structure
+tells its observers what changed (`Modification.h`). The folders of the types also hold the
 algorithms on them, e.g., the operations on sets or the visits of a graph:
 
 - `sequence/`, the SEQUENCE and the LIST (arrays, linked lists, cursors);
@@ -432,7 +433,8 @@ library, Boost and Eigen; their tests are in
 | graph of a grid map, the cells in one vector of costs and the moves to four or eight neighbours computed, the rules on the corners and the octile costs of the benchmarks, each move weighed by the cell entered or by the cell left, the maps in their format; Manhattan, octile and Chebyshev bounds for best-first search (Sturtevant; Harabor and Grastien) | [`graph/GridGraph.h`](include/ADS/graph/GridGraph.h) | `engineered_graph.grid-graph`, `engineered_graph.grid-graph-paths`, `engineered_graph.grid-graph-huge`, `engineered_graph.grid-map` |
 | builder of a graph one edge at a time, frozen into `StaticGraph` or `ArrayGraph` by counting sort | [`graph/GraphBuilder.h`](include/ADS/graph/GraphBuilder.h) | `engineered_graph.graph-builder` |
 | union-find in one vector, by size or rank, the paths halved or compressed (Tarjan and van Leeuwen) | [`mfset/UnionFind.h`](include/ADS/mfset/UnionFind.h) | `engineered_graph.union-find` |
-| graph that sends its changes as events to observers: masks of interest, no event built when no one listens, batches coalesced into their net effect | [`graph/Observable.h`](include/ADS/graph/Observable.h) | `engineered_dynamic.observable-*` |
+| typed modifications: events with the old and the new state, observers whose optional parts are found at compile time, subject policies with no code when nobody listens, nested batches coalesced per handle, revisions, mutes, the strong guarantee by inverse events, an undo log and a shadow audit | [`Modification.h`](include/ADS/Modification.h) | `engineered_modification.mod-*` |
+| graph that sends its changes as events to observers, through a subject policy: masks of interest, no event built when no one listens, batches coalesced into their net effect | [`graph/Observable.h`](include/ADS/graph/Observable.h) | `engineered_dynamic.observable-*`, `engineered_modification.mod-observed-graph` |
 | shortest paths, minimum spanning forest and maximum flow kept up to date through the events, each with a certificate of optimality (reduced costs, conditions of cycle and cut, minimum cut) that proves most changes harmless, repaired or computed from scratch otherwise; the shortest paths repaired after the raises too (Ramalingam and Reps, in the batch form of Bauer and Wagner), the flow after any change of the capacities, below the flow too (Kohli and Torr); the minimum spanning forest on a link-cut tree, each change in $O( \log n )$ amortized but the raises and the deletions of its edges, whose replacement is sought from the smaller side and by weight at once; the assignment, a row changed in $O( n^2 )$ | [`graph/Reoptimization.h`](include/ADS/graph/Reoptimization.h) | `engineered_dynamic.reopt-*` |
 | union-find by rank with the undo of its merges, and the offline dynamic connectivity on it (a segment tree over the times) | [`mfset/RollbackUnionFind.h`](include/ADS/mfset/RollbackUnionFind.h) | `engineered_dynamic.rollback-union-find`, `engineered_dynamic.offline-connectivity` |
 | link-cut trees (Sleator and Tarjan): link, cut, evert, root, lowest common ancestor and the aggregates of a commutative monoid on the paths, in $O( \log n )$ amortized | [`tree/LinkCutTree.h`](include/ADS/tree/LinkCutTree.h) | `engineered_dynamic.link-cut-tree` |

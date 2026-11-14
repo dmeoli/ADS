@@ -1,6 +1,7 @@
 # 1. Introduction {#ch-1}
 
 [Source: `include/ADS/ADT.h`, `Contract.h`, `Iterators.h`, `Portable.h`,
+`Modification.h`,
 `ADS/sequence/IndexedList.h`, `ADS/set/SetInterfaces.h`, `ADS/set/Bag.h`]
 
 We are concerned in this manual with ADS, a header-only library of C++20 that
@@ -22,8 +23,10 @@ correctness ([§1.7](01-introduction.md#sec-1-7)). In the last sections we
 describe the iterators ([§1.8](01-introduction.md#sec-1-8)), the two levels
 of the library and its conventions ([§1.9](01-introduction.md#sec-1-9)), how
 to build, test and use it ([§1.10](01-introduction.md#sec-1-10)), how this
-manual is organized ([§1.11](01-introduction.md#sec-1-11)), and the map of
-all the classes of the library ([§1.12](01-introduction.md#sec-1-12)).
+manual is organized ([§1.11](01-introduction.md#sec-1-11)), the map of
+all the classes of the library ([§1.12](01-introduction.md#sec-1-12)), and
+the typed modifications by which a structure tells its observers what
+changed ([§1.13](01-introduction.md#sec-1-13)).
 
 ## 1.1 The need for efficiency {#sec-1-1}
 
@@ -1384,6 +1387,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | Header | Classes | Chapter |
 |-----------------|-------------------------------|-----|
 | `Contract.h` | `contract_violation` | [1](01-introduction.md#ch-1) |
+| `Modification.h` | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged` | [1](01-introduction.md#ch-1) |
 | `Iterators.h` | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | `Bag` | [1](01-introduction.md#ch-1) |
 | `set/SetInterfaces.h` | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
@@ -1543,7 +1547,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `graph/MatrixGraph.h` | `MatrixGraph` | [14](14-graph.md#ch-14) |
 | `graph/MaxFlow.h` | `FlowNetwork`, `BoundedEdge` | [14](14-graph.md#ch-14) |
 | `graph/MinimumSpanningTree.h` | `WeightedEdge`, `MergeCounts` | [14](14-graph.md#ch-14) |
-| `graph/Observable.h` | `NodeInserted`, `NodeDeleted`, `EdgeInserted`, `EdgeDeleted`, `WeightChanged`, `GraphEvents`, `Observable` | [14](14-graph.md#ch-14) |
+| `graph/Observable.h` | `NodeInserted`, `NodeDeleted`, `EdgeInserted`, `EdgeDeleted`, `WeightChanged`, `GraphEvents`, `coalesce_traits`, `ObservedGraph`, `Observable` | [14](14-graph.md#ch-14) |
 | `graph/PointerGraph.h` | `PointerGraph` | [14](14-graph.md#ch-14) |
 | `graph/Reoptimization.h` | `Reopt`, `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
 | `graph/ShortestPaths.h` | `ShortestPathTree`, `FrontierCounts`, `PriorityFrontier`, `QueueFrontier`, `StackFrontier`, `DequeFrontier` | [14](14-graph.md#ch-14) |
@@ -1672,7 +1676,165 @@ only, by chapter.
 | [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |
 | [26](26-distributed.md#ch-26) | `distributed/DistributedSort.h` |
 
-## 1.13 Discussion and references {#sec-1-13}
+## 1.13 Typed modifications {#sec-1-13}
+
+A structure often has dependents, i.e., objects derived from it that must
+follow its changes, e.g., an index of its items, an aggregate of their
+values or a certificate that a solution computed on it is still optimal. The
+pattern Observer ([Gamma et al. 1994](Z-bibliography.md#ref-gamma1994)) lets
+the structure inform them, and `Modification.h` (beyond the book) gives the
+form in which a structure of ADS does it, at no cost when nobody listens. We
+call *event* the value by which a change is sent, an aggregate of one of the
+templates of the namespace `ADS::mod`; it carries the state before the change
+as well as the state after it, so that an observer that reads the events
+only, and not the structure, stays correct whatever happens to the structure
+later. The events of the item of handle $h$ are `Inserted<H, K, V>` and
+`Erased<H, K, V>`, with its key and its value (none when `V` is `void`), and
+`Changed<A, H, V>`, a change of its attribute `A` from `from` to `to`; the
+aliases `Assigned` and `KeyChanged` stand for the attributes `Value` and
+`Key`, while `Cost`, `Upper`, `Lower`, `Supply` or any other tag name the
+others. The events of the whole structure are `Relocated`, `Permuted`,
+`BulkInserted`, `BulkErased`, `Shifted<A, D>` (each value of `A` moved by
+`delta`), `Replaced<A>`, `Cleared` and `Rebuilt`, the last meaning that
+anything may have changed. Each template has a static mask `effects`, a
+subset of `effect::grows`, `shrinks`, `up` and `down` in which a bit not set
+is a guarantee (e.g., an insertion makes no value decrease). The changes
+and the shifts also have `direction()`, and `inverse(e)` gives the event
+that undoes $e$. A structure declares the events it emits as a list, `using
+modifications = mod::list<...>`.
+
+An observer of a structure is any object with an `on(e)` for at least one of
+its events. Its other parts are optional, and the subject finds them at
+compile time, by the design by introspection of Alexandrescu. They are
+`on(s)` for a `std::span` of one kind, or of the variant of all the kinds,
+which a batch prefers to the events one by one; `group_begin()`, possibly
+with the versions before and after the batch, and `group_end()`;
+`prepare(e)`, which may refuse a change before it is made; `audit(s)`, a
+check of the observer against the structure $s$; `mask()`, a filter of the
+kinds at run time; and the lists `requires_modifications`, of the events
+without which the observer cannot work, and `depends_on`, of the static
+observers that must precede it. An `on()` may also return `Keep::Detach` to
+leave with no exception. We remark that a wrong attachment does not compile:
+an object with an `on()` for none of the events, one that requires an event
+the structure never emits, and one whose `on()` of an erasure, a clearing,
+a rebuilding or a replacement may throw, since an observer left half updated
+by these could not be repaired.
+
+The observers that listen are a parameter of the type of the structure, its
+*subject policy* ([Alexandrescu
+2001](Z-bibliography.md#ref-alexandrescu2001)). There are four of them:
+`NoObservers`, the default, an empty member; `Static<O...>`, references to
+the observers, called directly in the order of the arguments; `Dynamic<>`,
+observers attached at run time by `attach()`, each kept as a pointer and the
+pointers to the functions that restore its type; and `Both<Static<O...>,
+Dynamic<>>`, the static ones first. A mutator tests `listened<E>`, a constant
+of the subject, and then `live<E>()`, whether someone wants $E$ now, before
+it builds the event or reads the old state that only the event needs. With
+`NoObservers`, and with static observers that do not want $E$, the first
+test is false at compile time, and the change is the code of the plain
+structure. With `Dynamic<>` and nobody attached it costs a load and a test
+of the union of the masks, since the path that sends the event is a cold
+function out of line. The script `bench/zerocost.py` checks both claims, by
+the instructions that callgrind counts and by the code of the changes,
+compared byte for byte. A structure whose code cannot change (e.g., one of
+another library) is wrapped instead, as `ObservedGraph` wraps the graphs
+([§14.13.1](14-graph.md#sec-14-13-1)).
+
+`batch(s)` opens a group of RAII on the structure $s$. Its events are
+collected until the outermost group closes, the nested ones only counting
+the depth, and then they are sent coalesced into their *net effect*, as one
+span per observer of the kinds that it wants, between its group hooks. We
+model the structure as a partial map $\sigma$ from the handles to the states
+of the items; the net effect of a batch $B$ is then a sequence that leads
+from the state before $B$ to the state after it. The coalescing drops
+everything before the last `Cleared` or `Rebuilt`, and keeps the events of
+the whole structure in place, consecutive shifts added up and consecutive
+replacements merged. Between them, it reduces the events of each handle by
+pushing them on a list $N$ of the handle, with the rules
+
+$$
+\begin{array}{rcl}
+N \cdot \mathrm{Inserted}( h , s ) \cdot \mathrm{Erased}( h , s ) & \to & N , \cr
+\mathrm{Inserted}( h , s ) \cdot \mathrm{Changed}_A( h , a , b ) & \to & \mathrm{Inserted}( h , s[ A := b ] ) , \cr
+\mathrm{Changed}_A( h , a , b ) \cdot \mathrm{Changed}_A( h , b , c ) & \to & \mathrm{Changed}_A( h , a , c ) , \cr
+\mathrm{Changed}_A( h , a , b ) \cdot \mathrm{Erased}( h , s ) & \to & \mathrm{Erased}( h , s[ A := a ] ) , \cr
+\mathrm{Erased}( h , s ) \cdot \mathrm{Inserted}( h , t ) & \to & \textstyle\prod_{A : s_A \ne t_A} \mathrm{Changed}_A( h , s_A , t_A ) ,
+\end{array} \tag{1.15}
+$$
+
+where the second rule holds for the key and the value, the third vanishes
+when $a = c$, and a change with $a = b$ (a touch) is dropped. The changes of
+different attributes of one handle commute, and the last rule applies only
+when the structure emits the changes that it needs; otherwise the erasure
+and the insertion stay. In the third rule $c$ is the value of the
+*reduction* of the attribute: the last value by default, and the least, the
+largest or the sum of the differences for an attribute that declares
+`reduce::min`, `reduce::max` or `reduce::sum`. These are the reductions of
+the parallel Boost Graph Library ([Gregor and Lumsdaine
+2005](Z-bibliography.md#ref-gregor2005)) and the duplicate operator of
+GraphBLAS ([Davis 2019](Z-bibliography.md#ref-davis2019)). A structure with a
+rule of its own specializes `coalesce_traits`, as the graphs do.
+
+<span id="lem-1-10"></span>**Lemma 1.10.** *Let $B$ be a history of a
+structure (a sequence of events each of which starts from the state that
+the previous ones leave) whose attributes have the reduction `last`, and $C$
+its net effect by (1.15). Then $C$ is a history that leads from the state
+before $B$ to the state after it, $\lvert C \rvert \le \lvert B \rvert$,
+and $C$ is built in $O( \lvert B \rvert )$ expected time when the number of
+kinds of event is a constant.*
+
+*Proof.* The events after the last `Cleared` or `Rebuilt` start from any
+state, so the part before it does not change the state after $B$. Between
+two events of the whole structure, the events of different handles commute,
+since each reads and writes the state of its own handle only; hence it
+suffices that each rule of (1.15) replace two steps at one handle by steps
+from the same state to the same state, which one checks rule by rule: the
+first goes from $\bot$ to $s$ and back, the second inserts the state after
+the change, the third composes two changes of one attribute, the fourth
+erases from the state before the change, the attribute restored, and the
+fifth goes from $s$ to $t$ by one change per attribute that differs. No rule
+leaves more events than it takes. A list $N$ holds at most one insertion or
+erasure and one change per attribute, plus an erasure and an insertion when
+the changes are missing, i.e., a constant, and a hash table on the handles
+finds the list of each event in $O( 1 )$ expected time. $\square$
+
+The events of the whole structure stay in place rather than going last,
+since an item inserted with an absolute key after a shift would otherwise be
+shifted twice; for the same reason, a relocation and a permutation, which
+change the meaning of the handles, bound the runs. The bulk events carry
+spans, which a batch copies, so that the caller may reuse its arrays.
+
+The events have three further uses. (i) Exceptions. Outside a batch an
+insertion and a change are sent after they are made, an erasure before it.
+If an `on()` throws, `emit(e, undo)` sends `inverse(e)` to the observers
+already informed, in the reverse order, calls the undo of the structure and
+lets the exception go on; this is the strong guarantee of [Abrahams
+2000](Z-bibliography.md#ref-abrahams2000) whenever that undo does not throw.
+`prepare()` gives the same guarantee with no undo, since it refuses (by
+`Refused`) before anything changes, as the indices of Boost.MultiIndex do.
+A batch sends nothing before its close; hence a batch left by an exception
+is discarded, the structure goes back to its checkpoint if it has
+`checkpoint()` and `rollback()` (also called by `Batch::rollback()`), and
+otherwise the observers get `Rebuilt`. `UndoLog<L>` records the events,
+which carry the old states, and brings any structure with `apply()` back to
+one of its checkpoints by the inverses in the reverse order, in one batch.
+(ii) Suppression. `quiet(s)` suspends the events while it lives and sends
+`Rebuilt` at its end, while `quiet(s, no_rebuild)` is the promise that
+nobody needs to know, checked by the audits of the observers at its end;
+inside a batch, the events collected before a mute are replaced by
+`Rebuilt`. (iii) Versions and audits. The subject keeps a revision per kind
+of event (the events of that kind sent to someone) and `version()`, their
+sum, so that a lazy observer, which queues the events and works at its next
+query, can tell by one comparison whether anything it depends on changed. At
+the level 3 of the contracts the subject calls `audit()` of each observer
+after each event outside a batch and after each batch, and it counts the
+events, the batches and the rebuildings that each observer receives.
+Finally, `Shadow<Inc, Scratch>` sends every event to an incremental observer
+and to one that computes from scratch, and compares their answers at each
+query, i.e., the audit by recomputation of [Frangioni and Manca
+2006](Z-bibliography.md#ref-frangioni2006).
+
+## 1.14 Discussion and references {#sec-1-14}
 
 The abstract data types go back to [Liskov and Zilles
 1974](Z-bibliography.md#ref-liskov1974), after the principle
@@ -1711,12 +1873,23 @@ and its algorithms, the amortized analysis is that of [Tarjan
 1985](Z-bibliography.md#ref-tarjan1985), and the models of
 the memory hierarchy are those of [Aggarwal and Vitter
 1988](Z-bibliography.md#ref-aggarwal1988) and [Frigo et al.
-2012](Z-bibliography.md#ref-frigo2012). Finally, the
+2012](Z-bibliography.md#ref-frigo2012). The
 iterators and their categories are those of the standard
 library ([Stroustrup 2013, ch.
-33](Z-bibliography.md#ref-stroustrup2013)).
+33](Z-bibliography.md#ref-stroustrup2013)). Finally, the
+typed modifications carry the old values in the events, as the
+change propagation of [Acar et al.
+2002](Z-bibliography.md#ref-acar2002) does with its traces;
+their exception protocol is that of the notifier of LEMON
+([Dezső et al. 2011](Z-bibliography.md#ref-dezso2011)), with the
+rollback of an observer that throws; the counts of each observer
+follow the measures of the kinetic data structures of [Basch et
+al. 1999](Z-bibliography.md#ref-basch1999); and the dispatch on
+a closed set of events by its index replaces the cascade of casts
+whose cost [Solodkyy et al. 2012](Z-bibliography.md#ref-solodkyy2012)
+measured.
 
-## 1.14 Exercises {#sec-1-14}
+## 1.15 Exercises {#sec-1-15}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -1777,3 +1950,11 @@ Each exercise names the test of the library that solves it (run it with
     category of each iterator at compile time. Tests: `interop.sequences`,
     `interop.restricted`, `interop.dictionaries`, `interop.trees` and
     `interop.nodes-and-graphs`.
+11. Write a structure of items with a key, a value and a cost that tells its
+    changes through a subject policy, and check that a batch delivers the
+    net effect of (1.15), that an observer that throws leaves the structure
+    and the observers already told as they were, and that `UndoLog` brings
+    it back to a checkpoint ([Lemma 1.10](01-introduction.md#lem-1-10)).
+    Tests: `engineered_modification.mod-coalesce`,
+    `engineered_modification.mod-rollback` and
+    `engineered_modification.mod-batch`.

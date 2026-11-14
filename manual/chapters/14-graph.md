@@ -2308,19 +2308,30 @@ its index in the variant, and `kindOf(e)` gives it as a bit of the masks of
 ends of the edge of an event, $( -1 , -1 )$ for an event on a node, and
 the wrapper names the type of its events `Event`.
 
-An observer is any object with `mask()`, the set of the kinds that it wants,
-and with `notify(e)` for one event and `notify(s)` for a `std::span` of them
-(the concept `GraphObserver`). Those given to the constructor are static,
-kept in a `std::tuple` and called directly, with no indirection. Those
-attached later by `attach()` are dynamic, kept as a pointer and two pointers
-to functions that restore their type (an erasure of the type with no
-allocation), and they can leave by `detach()`. Its design follows four
-rules. (i) No event is built when no one listens: the union $M$ of the masks
-is kept (`mask()`, `listening(k)`), and a change of kind $k$ tests $k \in M$
-before it reads any datum that only the event needs (the old weight of an
-edge, the edges of a node to delete). (ii) Each observer gets only the kinds
-in its mask, within a batch too. (iii) `batch()` opens a channel (a `Batch`,
-closed by its destructor or by `close()`); the events of the channels, which
+The wrapper is `ObservedGraph<G, Policy>`, whose events are the list
+`GraphModifications<W>` of the typed modifications of
+[§1.13](01-introduction.md#sec-1-13) and whose subject is one of their
+policies, `NoObservers` by default, so that a change through
+`ObservedGraph<G>` compiles to the code of the change on the graph; an
+observer of it is any object with an `on(e)` for one of the five events.
+`Observable<G, O...>` is `ObservedGraph` with the policy
+`Both<Static<O...>, Dynamic<>>`, for the observers of the first form of
+the library, i.e., any object with `mask()`, the set of the kinds that it
+wants, and with `notify(e)` for one event and `notify(s)` for a
+`std::span` of them (the concept `GraphObserver`), which the subject calls
+through an adapter. Those given to the constructor are static, kept in a
+`std::tuple` and called directly, with no indirection. Those attached
+later by `attach()`, of either form, are dynamic, kept as a pointer and
+pointers to functions that restore their type (an erasure of the type with
+no allocation), and they can leave by `detach()`. Its design follows four
+rules. (i) No event is built when no one listens: a change of kind $k$
+tests whether someone wants $k$, at compile time and then in the union $M$
+of the masks (`mask()`, `listening(k)`), before it reads any datum that
+only the event needs (the old weight of an edge, the edges of a node to
+delete). (ii) Each observer gets only the kinds
+in its mask, within a batch too. (iii) `batch()` opens a channel (a `Batch`, the
+batch of [§1.13](01-introduction.md#sec-1-13), closed by its destructor or by
+`close()`); the events of the channels, which
 nest (`depth()`), are collected and sent as one span, coalesced into their
 net effect per edge, when the outermost one closes. (iv) An observer may
 defer its work to the next query, as those of
@@ -2330,9 +2341,9 @@ and the other functions of the wrapper (`graph()`, `n()`, `bound()`, `V()`,
 `hasNode()`) read the graph. We remark that a change made on the graph
 directly, not through the wrapper, is not seen.
 
---8<-- "generated/Observable-setWeight.pseudo.md"
+--8<-- "generated/Observable-ObservedGraph-setWeight.pseudo.md"
 
---8<-- "generated/Observable-close.pseudo.md"
+--8<-- "generated/Modification-Batch-close.pseudo.md"
 
 The net effect of a batch on an edge depends on its state $s_0$ before its
 first event and $s_1$ after its last one, both either $\bot$ (absent) or a
@@ -2378,7 +2389,11 @@ $O( k )$ for each observer that does not want all its kinds (which gets a
 filtered copy). The coalescing of the batches is that of the parallel
 batch-dynamic algorithms of [Acar et al. 2019](Z-bibliography.md#ref-acar2019)
 and of [Tseng, Dhulipala and Shun 2022](Z-bibliography.md#ref-tseng2022),
-and the masks are the sets of interest of an event service.
+and the masks are the sets of interest of an event service. The
+graph uses the coalescing (14.11) of its own, specialized in
+`coalesce_traits`, in place of the general rule of
+[§1.13](01-introduction.md#sec-1-13), since the events of the edges of a node
+deleted must vanish with it.
 
 ### 14.13.2 Solutions with a certificate {#sec-14-13-2}
 
