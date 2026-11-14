@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the policy of clear() of concurrent/ConcurrentFlatTable.h, its fifth
+  template parameter: ZeroingClear, the default, writes every place as
+  before (the same code), and EpochClear< S > makes clear() O( 1 )
+  amortized for a table cleared often and filled little in between (the
+  restarts of an incremental search): a stamp of S per group of 8 places
+  (32 bits by default), the group in use only if its stamp is the epoch
+  that clear() raises, the lookups taking a group out of use as free and
+  an insertion renewing it by a compare-and-swap of its stamp, the growths
+  copying only the groups in use, and the whole vector written once per
+  2^|S| - 2 clears, when the epoch wraps; keys and values trivially
+  destructible; epoch(), the concept FlatClear, the test engineered
+  concurrent-flat-table-epochs (rounds of insertions and clears against a
+  map in the three layouts and as a set, stamps of 8 bits that wrap, and
+  2 to 8 threads that race to renew the same groups while a reader checks
+  that no key of the round before is found), a paragraph of the theory of
+  the concurrent structures and section 24.8 of the manual
+
 - the policy of the ties of priority/BucketQueue.h, its third template
   parameter: LargestSecondKey, the default, the least f and then the
   largest g first as before (the same code, function by function), and

@@ -509,6 +509,7 @@ engineered  concurrent-cuckoo-threads cuckoo concorrente, su più thread
 engineered  concurrent-flat-table cammino lineare concorrente, un thread
 engineered  concurrent-flat-table-threads cammino lineare, su più thread
 engineered  concurrent-flat-table-words parole di 64 bit, CAS di 16 byte
+engineered  concurrent-flat-table-epochs clear() in O(1) per epoche, più thread
 
 # the engineered combinatorial algorithms, beyond the book
 engineered_combinatorial  fast-bitwise     Harley-Seal, pdep, select

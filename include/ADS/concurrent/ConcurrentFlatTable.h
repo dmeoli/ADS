@@ -105,6 +105,31 @@
  * read on to its first free place instead (see
  * \ref theory_concurrent_flat).
  *
+ * `clear()` writes 0 to every place, in \f$ O( 2^l ) \f$ time, unless the
+ * policy `C` of the table is `EpochClear< S >`, which makes it
+ * \f$ O( 1 ) \f$ for a table cleared often and filled little in between
+ * (the restarts of an incremental search): each group of 8 places has a
+ * stamp of the type \f$ S \f$ (32 bits by default, half a byte per place),
+ * and the group is in use only if its stamp is the epoch of the table,
+ * which `clear()` raises, so that all the groups fall out of use at once.
+ * A lookup reads a group of the tags, or a word of a table without tags,
+ * only if its stamp is the epoch (a group out of use is free: the lookup
+ * stops there), and an insertion that reaches a group out of use first
+ * renews it: it takes the group by a compare-and-swap of its stamp to a
+ * mark, writes 0 to its words and to its tags, and stores the epoch with
+ * release; the other insertions that reach the group meanwhile wait for
+ * the store, a few words long, and the lookups see the group free until
+ * then, which is right, since no insertion of the new epoch has taken
+ * effect in it. A growth copies only the groups in use, into a vector whose
+ * groups all have the epoch. When the epoch would reach the mark, the
+ * largest value of \f$ S \f$, `clear()` writes 0 to the whole vector and
+ * starts again from the epoch 1, once per \f$ 2^{|S|} - 2 \f$ clears, so
+ * that no stamp left from an old epoch can equal a new one. The epochs need
+ * keys and values trivially destructible, since the pairs of a table
+ * neither `packed` nor `inlined` are dropped with their nodes, which the
+ * insertions of the next epoch reuse, with no destructor called; with the
+ * default policy, `ZeroingClear`, the table is the same as without it.
+ *
  * Each operation of a key is linearizable: a lookup at the read of the
  * word that holds the key or of the free place (of its tag, when the
  * places have tags), an insertion that adds its key at the write of the
@@ -157,9 +182,11 @@
 #include "ADS/memory/HugePageAllocator.h"
 
 #include <atomic>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <type_traits>
@@ -190,14 +217,59 @@
 namespace ADS {
 
 /*--------------------------------------------------------------------------*/
+/*------------------------ THE POLICIES OF clear() -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the `clear()` of `ConcurrentFlatTable` that writes 0 to every place, in
+/// time linear in its capacity; the default
+struct ZeroingClear {};
+
+/// the `clear()` of `ConcurrentFlatTable` in \f$ O( 1 ) \f$ by epochs: a
+/// stamp of the unsigned type \f$ S \f$ per group of 8 places, the group in
+/// use only if its stamp is the epoch that `clear()` raises
+template< std::unsigned_integral S = std::uint32_t >
+ requires( ! std::same_as< S , bool > )
+struct EpochClear {
+ using Stamp = S;   ///< the type of the stamps and of the epoch
+ };
+
+namespace detail {
+
+/// the type of the stamps of the policy C of clear(), and whether it has
+/// epochs
+template< class C >
+struct ClearStamps {
+ using Stamp = std::uint8_t;
+ static constexpr bool epochs = false;
+ };
+
+template< class S >
+ requires( ! std::same_as< S , bool > )
+struct ClearStamps< EpochClear< S > > {
+ using Stamp = S;
+ static constexpr bool epochs = true;
+ };
+
+}  // end( namespace detail )
+
+/// a policy of `clear()` of `ConcurrentFlatTable`
+template< class C >
+concept FlatClear = std::same_as< C , ZeroingClear > ||
+                    detail::ClearStamps< C >::epochs;
+
+/*--------------------------------------------------------------------------*/
 /*----------------------- CLASS ConcurrentFlatTable ------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a DICTIONARY shared by threads, by linear probing on atomic words, that
-/// grows while they work and never removes
+/// grows while they work and never removes; cleared in \f$ O( 1 ) \f$ by
+/// the policy `EpochClear`
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
+          class Eq = std::equal_to< K > , class C = ZeroingClear >
 class ConcurrentFlatTable {
+
+ static_assert( FlatClear< C > ,
+                "the policy of clear() is ZeroingClear or EpochClear" );
 
  /// the bytes of the value in a word, none if it is empty
  static constexpr std::size_t valueBytes( void ) {
@@ -215,6 +287,14 @@ class ConcurrentFlatTable {
 
  using Key = K;     ///< the type of the keys
  using Value = V;   ///< the type of the values
+ using Clear = C;   ///< the policy of `clear()`
+
+ /// true if `clear()` is \f$ O( 1 ) \f$, by the epochs of `EpochClear`
+ static constexpr bool epochs = detail::ClearStamps< C >::epochs;
+
+ static_assert( ! epochs || ( std::is_trivially_destructible_v< K > &&
+                              std::is_trivially_destructible_v< V > ) ,
+                "the epochs drop the pairs with no destructor" );
 
  /// true if the pairs lie in the words: the key and the value trivially
  /// copyable, the bytes of the key all significant, 8 bytes at most
@@ -409,8 +489,15 @@ class ConcurrentFlatTable {
  void reserve( std::size_t n );
 
  /// removes every pair, keeping the capacity; with no other operation
- /// running
+ /// running. Linear in the capacity by default, \f$ O( 1 ) \f$ amortized
+ /// with `EpochClear` (the vectors replaced by the growths are freed in
+ /// both, and once per \f$ 2^{|S|} - 2 \f$ clears the vector is written
+ /// whole)
  void clear( void );
+
+ /// the epoch of the table, raised by each `clear()` and back to 1 after
+ /// the largest; always 1 without `EpochClear`
+ [[nodiscard]] std::uint64_t epoch( void ) const { return( now() ); }
 
  /// applies `f( const K & , const V & )` to every pair; with no insertion
  /// running
@@ -434,6 +521,23 @@ class ConcurrentFlatTable {
  static constexpr int kLgSeg = 12;        ///< log2 of the first segment
  static constexpr int kSegs = 29;         ///< the segments, at most
  static constexpr int kFp = 40;           ///< the bits of a node index
+
+ using Stamp = typename detail::ClearStamps< C >::Stamp;   ///< of a group
+
+ /// the stamp of a group being renewed, never an epoch
+ static constexpr Stamp kBusy = std::numeric_limits< Stamp >::max();
+
+ /// what takes the place of the stamps and of the epoch without EpochClear
+ struct NoStamps {};
+
+ /// the stamps of the groups of a vector
+ using Stamps = std::conditional_t< epochs , std::atomic< Stamp > * ,
+                                    NoStamps >;
+
+ /// the epoch now, 1 without EpochClear
+ [[nodiscard]] Stamp now( void ) const {
+  if constexpr( epochs ) return( f_epoch ); else return( 1 );
+  }
 
  /// a node: the pair with its hash
  struct Node {
@@ -460,12 +564,15 @@ class ConcurrentFlatTable {
   /// free or whose pair is not yet inserted, 7 bits of its hash with the
   /// high bit set otherwise; the byte j of the word g is the place 8 g + j
   std::atomic< std::uint64_t > * G;
+  /// the stamps of the groups of 8 places, with EpochClear; nothing
+  /// otherwise
+  [[no_unique_address]] Stamps E{};
   /// the vector it is being copied into, or nil
   std::atomic< Table * > next{ nullptr };
   /// the blocks claimed and those copied
   std::atomic< std::size_t > claimed{ 0 } , copied{ 0 };
-  /// the vector of 2^l words 0
-  explicit Table( int l );
+  /// the vector of 2^l words 0, its groups stamped e with EpochClear
+  Table( int l , Stamp e );
   /// no copy, since it owns its words
   Table( const Table & ) = delete;
   /// no copy, since it owns its words
@@ -614,6 +721,20 @@ class ConcurrentFlatTable {
  /// the sum of the pairs of the counters
  [[nodiscard]] std::size_t counted( void ) const;
 
+ /// whether the group g of T is in use: its stamp is the epoch, always
+ /// without EpochClear
+ [[nodiscard]] bool live( const Table & T , std::size_t g ) const;
+
+ /// the group g of T in use, renewed by this thread or by another, which
+ /// this one waits for, if its stamp is older; within the critical section
+ /// of an insertion
+ void renew( Table & T , std::size_t g ) const;
+
+ /// the first word of the place i of T, read with acquire, 0 if its group
+ /// is not in use
+ [[nodiscard]] std::uint64_t wordAt( const Table & T ,
+                                     std::size_t i ) const;
+
  /// whether the word w is reached from its place in T without a free
  /// place in between
  [[nodiscard]] bool reached( const Table & T , std::size_t i ) const;
@@ -630,6 +751,9 @@ class ConcurrentFlatTable {
  std::atomic< std::uint64_t > f_nodes{ 0 };   ///< the nodes reserved
  std::atomic< std::uint64_t > f_id;       ///< the identity of the nodes
  std::atomic< std::size_t > f_rehashes{ 0 };  ///< the growths
+ /// the epoch, with EpochClear
+ [[no_unique_address]] std::conditional_t< epochs , Stamp , NoStamps >
+  f_epoch{};
  H f_h;
  Eq f_eq;
 

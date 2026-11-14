@@ -1953,6 +1953,194 @@ ADS_TEST( "concurrent-flat-table" )
   }
  }
 
+/// the value of a pair returned by findOrInsert(): the copy, or that of
+/// the node
+template< class R >
+std::uint64_t flatValue( const R & r )
+{
+ if constexpr( std::is_integral_v< R > )
+  return( std::uint64_t( r ) );
+ else if constexpr( requires { r.value.first; } )
+  return( r.value.first );
+ else
+  return( std::uint64_t( r.value ) );
+ }
+
+/// the value of the key k in the round e of flatEpochs(), of the type V
+template< class V >
+V flatEpochValue( std::uint64_t k , std::uint64_t e )
+{
+ if constexpr( std::is_same_v< V , std::pair< std::uint64_t ,
+                                              std::uint64_t > > )
+  return( V( k + e , e ) );
+ else
+  return( V( k + e ) );
+ }
+
+/// rounds of the table T, its policy of clear() of epochs, against a map:
+/// in the round e the keys of a random prefix of a sequence, those of the
+/// round before half overlapping, each found after its insertion with its
+/// value and the others not, the key 0 included in some rounds, then a
+/// clear(); the counts grow now and then, so that the table grows in a
+/// later round over groups out of use, and the epochs wrap if the stamps
+/// are small
+template< class T >
+void flatEpochs( int rounds , std::uint64_t most , unsigned seed )
+{
+ using K = typename T::Key;
+ using V = typename T::Value;
+ static_assert( T::epochs );
+ T t;
+ std::mt19937_64 g( seed );
+ std::uint64_t e0 = t.epoch() , wraps = 0;
+ for( int e = 0 ; e < rounds ; ++e ) {
+  const std::uint64_t n = 1 + g() % ( e % 50 == 49 ? 4 * most : most );
+  const std::uint64_t off = ( e % 2 ) * n / 2;
+  std::unordered_map< K , std::uint64_t > R;
+  for( std::uint64_t i = 0 ; i < n ; ++i ) {
+   const auto k = K( ( off + i ) * 0x9E3779B97F4A7C15ULL +
+                     ( e % 3 == 0 ? 0 : 1 ) );
+   const V v = flatEpochValue< V >( k , e );
+   const auto x = t.findOrInsert( k , v );
+   const bool in = R.emplace( k , flatValue( x.first ) ).second;
+   std::uint64_t w;
+   if constexpr( std::is_integral_v< V > ) w = v; else w = v.first;
+   CHECK( x.second == in && flatValue( x.first ) == w );
+   }
+  for( std::uint64_t i = 0 ; i < n + 50 ; ++i ) {
+   const auto k = K( ( off + i ) * 0x9E3779B97F4A7C15ULL +
+                     ( e % 3 == 0 ? 0 : 1 ) );
+   const auto o = t.find( k );
+   CHECK( ( i < n ) == o.has_value() );
+   const auto k2 = K( ( off + i ) * 0x9E3779B97F4A7C15ULL +
+                      ( e % 3 == 0 ? 1 : 0 ) );
+   CHECK( ! t.contains( k2 ) );        // of the other rounds
+   }
+  CHECK( t.size() == R.size() && t.consistent() );
+  std::size_t c = 0;
+  t.forEach( [ & ]( const K & k , const V & ) { c += R.count( k ); } );
+  CHECK( c == R.size() );
+  const std::size_t cap = t.capacity();
+  t.clear();
+  CHECK( t.empty() && t.consistent() && t.capacity() == cap );
+  wraps += ( t.epoch() < e0 );
+  e0 = t.epoch();
+  }
+ CHECK( ( rounds < 300 ) || ( sizeof( typename T::Clear::Stamp ) > 1 ) ||
+        ( wraps >= 1 ) );
+ }
+
+// the concurrent flat table cleared in O( 1 ) by epochs (EpochClear): the
+// pairs in the words, in places of two words or in nodes, and a set, over
+// many rounds of insertions and clears against a map, with stamps of 32
+// and of 8 bits, whose epochs wrap every 254 clears and the vector is then
+// written whole; the key 0 kept apart and update() across a clear; then 2,
+// 4 and 8 threads that insert the same keys at once in each round, so that
+// they race to renew the same groups, while a reader checks that no key of
+// the round before is found and that a key found stays found with its
+// value; the table grows within the rounds over groups out of use
+ADS_TEST( "concurrent-flat-table-epochs" )
+{
+ using P = std::pair< std::uint64_t , std::uint64_t >;
+ using E8 = EpochClear< std::uint8_t >;
+ using Hu32 = DefaultHash< std::uint32_t >;
+ using Hu64 = DefaultHash< std::uint64_t >;
+ using T32 = ConcurrentFlatTable< std::uint32_t , std::uint32_t , Hu32 ,
+                                  std::equal_to< std::uint32_t > ,
+                                  EpochClear<> >;
+ using T64 = ConcurrentFlatTable< std::uint64_t , std::uint64_t , Hu64 ,
+                                  std::equal_to< std::uint64_t > ,
+                                  EpochClear<> >;
+ using TP = ConcurrentFlatTable< std::uint64_t , P , Hu64 ,
+                                 std::equal_to< std::uint64_t > , E8 >;
+ static_assert( T32::packed && ! TP::packed && ! TP::inlined &&
+                ! ConcurrentFlatTable< std::uint64_t , P >::epochs );
+ flatEpochs< T32 >( 300 , 3000 , 1 );
+ flatEpochs< T64 >( 300 , 3000 , 2 );
+ flatEpochs< TP >( 300 , 3000 , 3 );
+ flatEpochs< ConcurrentFlatTable< std::uint32_t , std::uint32_t , Hu32 ,
+                                  std::equal_to< std::uint32_t > , E8 > >(
+             700 , 200 , 4 );
+ {
+  ConcurrentFlatTable< std::uint64_t , std::monostate , Hu64 ,
+                       std::equal_to< std::uint64_t > , E8 > S;
+  for( int e = 0 ; e < 600 ; ++e ) {
+   for( std::uint64_t k = 0 ; k < 100 ; ++k )
+    CHECK( S.insert( k * 7 + std::uint64_t( e % 2 ) , {} ) );
+   CHECK( S.size() == 100 && S.contains( 7 + std::uint64_t( e % 2 ) ) &&
+          ! S.contains( 7 + std::uint64_t( 1 - e % 2 ) ) );
+   CHECK( S.contains( 0 ) == ( e % 2 == 0 ) );   // the key 0, apart
+   S.clear();
+   CHECK( S.empty() && ! S.contains( 0 ) && S.consistent() );
+   }
+  }
+ {
+  T32 U;                                       // update() across a clear
+  CHECK( U.insert( 5 , 1 ) && U.insert( 0 , 2 ) );
+  U.clear();
+  CHECK( ! U.update( 5 , []( std::uint32_t v ) { return( v + 1 ); } ) &&
+         ! U.update( 0 , []( std::uint32_t v ) { return( v + 1 ); } ) );
+  CHECK( U.insert( 5 , 10 ) && U.update( 5 , []( std::uint32_t v ) {
+   return( v + 1 ); } ) && U.find( 5 ) == 11u && U.size() == 1 );
+  }
+ auto key = []( std::uint64_t i , std::uint64_t e ) {
+  return( ( 2 * i + ( e & 1 ) ) * 0x9E3779B97F4A7C15ULL ); };
+ for( int p : { 2 , 4 , 8 } ) {
+  T64 T;
+  TP N;
+  for( std::uint64_t e = 0 ; e < 5 ; ++e ) {
+   const std::uint64_t n = 4000 * ( e + 1 );   // growing over old groups
+   std::vector< std::atomic< int > > won( n ) , wonN( n );
+   for( std::uint64_t i = 0 ; i < n ; ++i )
+    won[ i ] = wonN[ i ] = 0;
+   std::atomic< bool > done{ false };
+   std::atomic< int > bad{ 0 };
+   std::vector< std::thread > W;
+   for( int t = 0 ; t < p ; ++t )
+    W.emplace_back( [ & , t ] {
+     for( std::uint64_t j = 0 ; j < n ; ++j ) {
+      const std::uint64_t i = ( j * std::uint64_t( 2 * t + 1 ) ) % n;
+      const auto r = T.findOrInsert( key( i , e ) , i + e );
+      won[ i ] += r.second;
+      bad += ( flatValue( r.first ) != i + e );
+      const auto q = N.findOrInsert( key( i , e ) , P( i , e ) );
+      wonN[ i ] += q.second;
+      bad += ( q.first.value.first != i ) || ( q.first.value.second != e );
+      }
+     } );
+   std::thread reader( [ & ] {
+    std::mt19937_64 g( 75 + e );
+    std::vector< char > seen( n , 0 );
+    while( ! done.load() ) {
+     const std::uint64_t i = g() % n;
+     const auto o = T.find( key( i , e ) );
+     bad += o ? ( *o != i + e ) : ( seen[ i ] != 0 );
+     seen[ i ] = o.has_value();
+     bad += T.contains( key( i , e + 1 ) );    // of the round before
+     const auto f = N.entry( key( i , e ) , N.hash( key( i , e ) ) );
+     bad += f && ( f->value.first != i );
+     }
+    } );
+   for( auto & w : W )
+    w.join();
+   done = true;
+   reader.join();
+   CHECK( bad == 0 && T.size() == n && N.size() == n );
+   CHECK( T.consistent() && N.consistent() );
+   CHECK( std::all_of( won.begin() , won.end() ,
+                       []( const std::atomic< int > & x ) {
+                        return( x.load() == 1 ); } ) );
+   CHECK( std::all_of( wonN.begin() , wonN.end() ,
+                       []( const std::atomic< int > & x ) {
+                        return( x.load() == 1 ); } ) );
+   T.clear();
+   N.clear();
+   CHECK( T.empty() && N.empty() && ! T.contains( key( 0 , e ) ) );
+   }
+  CHECK( T.rehashes() >= 5 );
+  }
+ }
+
 // the concurrent flat table on 2, 4 and 8 threads, from the least vector:
 // all the threads insert the same keys at once, each key inserted by one
 // of them only and all of them given the same pair (the same node, or the

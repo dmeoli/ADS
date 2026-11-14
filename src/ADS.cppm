@@ -802,6 +802,9 @@ export namespace ADS {
 
  // ADS/concurrent/ConcurrentFlatTable.h
  using ADS::ConcurrentFlatTable;
+ using ADS::EpochClear;
+ using ADS::FlatClear;
+ using ADS::ZeroingClear;
 
  // ADS/concurrent/ConcurrentUnionFind.h
  using ADS::ConcurrentUnionFind;
