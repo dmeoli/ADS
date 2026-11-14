@@ -471,12 +471,14 @@
  item at most, and an operation changes \f$ |F| - |B| \f$ by one, while the
  next balance needs \f$ \max \ge 3 \min \f$, i.e.,
  \f$ | |F| - |B| | \ge ( n' - 2 ) / 2 \f$ for its \f$ n' \f$ items: at least
- \f$ n' / 2 - 2 \f$ operations, which pay for its \f$ O( n' ) \f$. Between
- two balances \f$ |F| \ge n / 4 \f$ and \f$ |B| \ge n / 4 \f$, so that a
- rank \f$ i < |F| \f$ is at \f$ |F| - i \le 3 i + 3 \f$ places from the top
- of \f$ F \f$ when \f$ i \le n / 4 \f$, and at
- \f$ |F| - i \le n \le 4 ( n - i ) \f$ otherwise, and the same for
- \f$ B \f$.
+ \f$ n' / 2 - 2 \f$ operations, which pay for its \f$ O( n' ) \f$. An
+ operation at the rank \f$ i < |F| \f$ shifts the \f$ i \f$ items above
+ it in \f$ F \f$, and one at \f$ i \ge |F| \f$ the \f$ n - i \f$ items
+ above it in \f$ B \f$; before it the stacks are balanced (or
+ \f$ n < 2 \f$), so that \f$ |F| \le 3 |B| \f$ gives
+ \f$ |F| \le 3 n / 4 \f$, hence \f$ i < 3 n / 4 \f$ and
+ \f$ i < 3 ( n - i ) \f$, i.e., \f$ i \le 3 \min\{ i , n - i \} \f$,
+ and the same for \f$ B \f$.
 
  The `Treque` of exercise 2.3 splits the items in the middle instead, into
  two circular deques \f$ L \f$ and \f$ R \f$ whose sizes differ by one at
@@ -545,16 +547,17 @@
  A `DualArrayDeque` whose two stacks are `RootishArrayStack` (exercise
  2.9) wastes \f$ O( \sqrt{n} ) \f$ places in each stack, and shifts
  \f$ O( 1 + \min\{ i , n - i \} ) \f$ items by Lemma 7. Its balance is done
- in place, for either kind of stack: the larger stack \f$ G \f$ gives its
- \f$ t = |G| - \lfloor n / 2 \rfloor < n / 2 \f$ bottom items to the bottom
- of the other one \f$ S \f$, which grows by \f$ t \f$ places and moves its
- items \f$ t \f$ places up from its top down, so that no item is
- overwritten before it is read; then \f$ G \f$ moves its other items
- \f$ t \f$ places down and gives back its \f$ t \f$ top places. Each item
- moves once, \f$ n \f$ moves in all, and the peak is the places of
- \f$ n + t < 3 n / 2 \f$ items, plus the \f$ O( \sqrt{n} ) \f$ of the blocks
- of the two `RootishArrayStack`, where building two new stacks held the
- places of \f$ 2 n \f$ items. The peak cannot drop to
+ in place, for either kind of stack: the larger stack \f$ G \f$ gives its \f$ t
+ = \bigl| |F| - \lfloor n / 2 \rfloor \bigr| \le \lceil n / 2 \rceil \f$ bottom
+ items (fewer than \f$ n / 2 \f$ unless the other is empty) to the bottom of
+ the other one \f$ S \f$, which grows by \f$ t \f$ places and moves its items
+ \f$ t \f$ places up from its top down, so that no item is overwritten before
+ it is read; then \f$ G \f$ moves its other items \f$ t \f$ places down and
+ gives back its \f$ t \f$ top places. Each item moves once, \f$ n \f$ moves in
+ all, and the peak is the places of \f$ n + t \le \lceil 3 n / 2 \rceil \f$
+ items, plus the \f$ O( \sqrt{n} ) \f$ of the blocks of the two
+ `RootishArrayStack`, where building two new stacks held the places of \f$ 2 n
+ \f$ items. The peak cannot drop to
  \f$ n + O( \sqrt{n} ) \f$ by moving the \f$ t \f$ items in rounds: a
  round of \f$ k \f$ items shifts both stacks, \f$ \Theta( n ) \f$ moves, and
  \f$ t / k \f$ rounds cost \f$ \Theta( n t / k ) \f$, i.e.,
@@ -705,10 +708,11 @@
  neighbors, so that it makes at most one block tight, and raises
  \f$ \Phi \f$ by \f$ b \f$ at most; a spread is called on \f$ b \f$ blocks of
  \f$ b + 1 \f$ items and leaves \f$ b + 1 \f$ blocks of \f$ b \f$ items, and a
- gather on \f$ b \f$ blocks of \f$ b - 1 \f$ items (one of \f$ b - 2 \f$)
- and leaves \f$ b - 1 \f$ blocks of \f$ b \f$ items (two of \f$ b - 1 \f$ at
- most), so that each lowers \f$ \Phi \f$ by \f$ b ( b - 2 ) \f$ at least
- and pays its \f$ O( b^2 ) \f$.
+ gather on \f$ b \f$ blocks of \f$ b - 1 \f$ items (the first of
+ \f$ b - 2 \f$) and leaves \f$ b - 1 \f$ blocks, all of \f$ b \f$ items but
+ the last, of \f$ b - 1 \f$, so that each lowers \f$ \Phi \f$ by
+ \f$ b ( b - 2 ) \ge b^2 / 3 \f$ at least (\f$ b \ge 3 \f$) and pays its
+ \f$ O( b^2 ) \f$.
 
  Unlike Morin's, the first and the last block of `SEList` hold from 1 to
  \f$ b + 1 \f$ items: an operation at an end adds a block when its block is

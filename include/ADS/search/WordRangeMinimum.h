@@ -44,16 +44,18 @@
  * exactly those of it larger than \f$ A[ j ] \f$), with no branch. The space
  * is
  * \f[
- *   n \big( 8 + 2 \, \mathit{sizeof}( T ) + 2 \big) +
- *   \Big\lceil \frac{n}{64} \Big\rceil \Big\lceil \log_2
- *   \Big\lceil \frac{n}{64} \Big\rceil \Big\rceil
- *   \big( \mathit{sizeof}( T ) + 4 \big)
+ *   n ( 8 + p ) + \Big\lceil \frac{n}{64} \Big\rceil \Big( \Big\lfloor
+ *   \log_2 \Big\lceil \frac{n}{64} \Big\rceil \Big\rfloor + 1 \Big) q
  * \f]
  * bytes besides the array (the masks, the minima of the suffixes and of the
- * prefixes with their offsets, and the table), on huge pages [see
- * `HugePageAllocator.h`]: about 20 bytes per item of 32 bits, against the
- * \f$ 4 \lceil \log_2 n \rceil \f$ bytes of a sparse table on all the
- * items (80 for a million).
+ * prefixes with their offsets, and the table), \f$ p \f$ and \f$ q \f$ the
+ * sizes of `Place` and of `Min`, i.e., \f$ 2 \, \mathit{sizeof}( T ) + 2 \f$
+ * and \f$ \mathit{sizeof}( T ) + 4 \f$ rounded up to their alignment (12
+ * and 8 for the items of 32 bits), on huge pages [see
+ * `HugePageAllocator.h`]: about 22 bytes per item of 32 bits for a million
+ * items, against the \f$ 8 ( \lfloor \log_2 n \rfloor + 1 ) \f$ bytes of
+ * the places of 64 bits of a `SparseTable` on all the items (160 for a
+ * million).
  *
  * Compared with the literature: the masks are the in-word stacks of the
  * practical solutions that came after the succinct one of Fischer and Heun

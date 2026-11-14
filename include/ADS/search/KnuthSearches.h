@@ -8,8 +8,10 @@
  * - `fibonacciSearch()` (Algorithm 6.2.1F) splits the part still to examine
  *   at a Fibonacci number instead of the middle, so that the next part is
  *   found by subtractions alone, with no division: the part has length
- *   \f$ F_{k+1} - 1 \f$, the item compared is the \f$ F_k \f$-th, and the
- *   two parts left have lengths \f$ F_k - 1 \f$ and \f$ F_{k-1} - 1 \f$;
+ *   \f$ F_{k+1} - 1 \f$, the item compared is the \f$ F_{k-1} \f$-th, and
+ *   the two parts left have lengths \f$ F_{k-1} - 1 \f$ on the left and
+ *   \f$ F_k - 1 \f$ on the right (the mirror image of Algorithm F, which
+ *   compares the \f$ F_k \f$-th item);
  *   at most about \f$ 1.44 \log_2 n \f$ comparisons, a little more than
  *   the binary search, for an average cost per step that was lower on the
  *   machines of the time (and may still be, where division is dear);

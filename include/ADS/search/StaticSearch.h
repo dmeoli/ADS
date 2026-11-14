@@ -35,7 +35,7 @@
  *     H = 1 + \Big\lceil \log_{B+1} \Big\lceil \frac{n}{B}
  *     \Big\rceil \Big\rceil
  *   \f]
- *   levels, and a search reads one line per level, \f$ H \f$ in all (3 for
+ *   levels, and a search reads one line per level, \f$ H \f$ in all (5 for
  *   a million keys of 32 bits, against the 20 probes of the binary search,
  *   of which the last 4 share a line). In a node the search counts the keys
  *   smaller than the key looked for, which is the child to take: on the

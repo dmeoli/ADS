@@ -91,10 +91,12 @@
      <td>below 20% past 128 bytes</td></tr>
  <tr><td><tt>PoolResource</tt>, <tt>PageHeap</tt></td><td>classes of
      8 bytes up to \f$ M \f$</td><td>\f$ O( 1 ) \f$ amortized</td>
-     <td>\f$ O( 1 ) \f$</td><td>below \f$ a \f$ bytes per slot</td></tr>
+     <td>\f$ O( 1 ) \f$</td><td>below \f$ \max( a , g ) \f$ bytes per
+     slot</td></tr>
  <tr><td><tt>ConcurrentPoolResource</tt></td><td>as above, any
      thread</td><td>\f$ O( 1 ) \f$ amortized</td><td>\f$ O( 1 ) \f$, a
-     compare-and-swap per 32 frees of other threads</td>
+     compare-and-swap per batch of at most 32 frees of other
+     threads</td>
      <td>as above, and 31 slots per class and thread in transit</td></tr>
  <tr><td><tt>HugePageAllocator</tt></td><td>any, aligned to 2 MB from
      2 MB</td><td>that of the system</td><td>that of the system, or kept

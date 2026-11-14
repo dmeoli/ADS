@@ -8,21 +8,20 @@
  * allocator.
  *
  * `PoolResource< M >` keeps the size classes of \f$ g = 8 \f$ bytes up to
- * \f$ M \f$: a request of \f$ b \f$ bytes, \f$ 1 \le b \le M \f$, aligned
- * to \f$ a \le 8 \f$, takes a slot of \f$ 8 \lceil b / 8 \rceil \f$ bytes,
- * and one aligned to 16 a slot of \f$ 16 \lceil b / 16 \rceil \f$ bytes,
- * whose class has its slots aligned to 16, so that the internal waste is
- * below \f$ a \f$ bytes per object and the nodes of the containers,
+ * \f$ M \f$: a request of \f$ b \f$ bytes, \f$ 1 \le b \le M \f$, aligned to
+ * \f$ a \le 8 \f$, takes a slot of \f$ 8 \lceil b / 8 \rceil \f$ bytes, and
+ * one aligned to 16 a slot of \f$ 16 \lceil b / 16 \rceil \f$ bytes, whose
+ * class has its slots aligned to 16, so that the internal waste is below
+ * \f$ \max( a , 8 ) \f$ bytes per object and the nodes of the containers,
  * aligned to 8, waste nothing when their size is a multiple of 8; any other
  * request, larger or more aligned, goes to `operator new`. The slots come
- * from the pages of `PageHeap` [see `PageHeap.h`], whose free lists are
- * kept by page: a class allocates from one page at a time, so that the
- * nodes of a container that is emptied in a scrambled order and filled
- * again are given back a page at a time, close to each other, which a
- * single free list (as that of `ObjectPool` [see `ObjectPool.h`]) does not
- * do. The memory goes back to the system only with the resource: a
- * structure that shrinks keeps the memory of its largest size, which it
- * takes again at no cost.
+ * from the pages of `PageHeap` [see `PageHeap.h`], whose free lists are kept
+ * by page: a class allocates from one page at a time, so that the nodes of a
+ * container that is emptied in a scrambled order and filled again are given
+ * back a page at a time, close to each other, which a single free list (as
+ * that of `ObjectPool` [see `ObjectPool.h`]) does not do. The memory goes
+ * back to the system only with the resource: a structure that shrinks keeps
+ * the memory of its largest size, which it takes again at no cost.
  *
  * `PoolAllocator< T , R >` is the allocator of the standard (the
  * requirements Allocator of [allocator.requirements]): it holds a pointer

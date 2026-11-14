@@ -110,9 +110,10 @@
  \f$ 0 , 1 , 3 , 7 , \ldots , 2^k - 1 \f$ stop at the first
  \f$ k = \lceil \log_2 ( h + 1 ) \rceil \f$ with \f$ A[ 2^k - 1 ] \ge v \f$,
  and a binary search on the last interval, of length \f$ 2^{k-1} \f$, costs
- \f$ k - 1 \f$ more; in all
+ \f$ k \f$ more (\f$ k - 1 \f$ in `exponentialSearch()`, which leaves out
+ the place \f$ 2^k - 1 \f$ already compared); in all
  \f[
-   2 \lceil \log_2 ( h + 1 ) \rceil + O( 1 ) \tag{3}
+   2 \lceil \log_2 ( h + 1 ) \rceil + 1 \tag{3}
  \f]
  comparisons, which depend on the answer and not on \f$ n \f$. Bentley and Yao
  also show that applying the same idea to the search of \f$ k \f$ gives
@@ -139,8 +140,8 @@
 
  Two searches of Knuth trade the division of the middle for additions alone:
  the Fibonacci search (`fibonacciSearch()` of `KnuthSearches.h`) splits a part
- of length \f$ F_{k+1} - 1 \f$ at its \f$ F_k \f$-th item into parts of lengths
- \f$ F_k - 1 \f$ and \f$ F_{k-1} - 1 \f$, at most about
+ of length \f$ F_{k+1} - 1 \f$ at its \f$ F_{k-1} \f$-th item into parts of
+ lengths \f$ F_{k-1} - 1 \f$ and \f$ F_k - 1 \f$, at most about
  \f$ \log_\phi n \approx 1.44 \log_2 n \f$ comparisons with \f$ \phi \f$ the
  golden ratio, and the uniform binary search (`uniformBinarySearch()`) keeps a
  place and the width of the next step, taken from a table computed once.
@@ -215,9 +216,10 @@
  one pass by the algorithm of O'Rourke, which keeps the lines that pass between
  the points moved up and down by \f$ \epsilon \f$ as the region between two
  convex hulls, each point updating them in amortized \f$ O( 1 ) \f$. Since a
- horizontal line through the middle of any \f$ 2 \epsilon \f$ consecutive
- places is within the error, a segment covers at least \f$ 2 \epsilon \f$ keys;
- hence the last level has \f$ m \le n / ( 2 \epsilon ) \f$ segments, there are
+ horizontal line through the middle of any \f$ 2 \epsilon + 1 \f$ consecutive
+ places is within the error, a segment (but the last) covers keys whose first
+ places span at least \f$ 2 \epsilon + 1 \f$ places; hence the last level has
+ \f$ m \le \lceil n / ( 2 \epsilon + 1 ) \rceil \f$ segments, there are
  \f$ O( \log_{2 \epsilon_r} m ) \f$ levels, and a search, a binary search of
  \f$ O( \epsilon_r ) \f$ places per level and one of \f$ O( \epsilon ) \f$
  places at the end, costs
@@ -320,8 +322,10 @@
  with high probability, so that one partition leaves the part of rank \f$ k \f$
  with \f$ o( n ) \f$ items, and the expected number of comparisons is
  \f$ n + \min( k , n - k ) + o( n ) \f$ (Kiwiel), which is optimal up to the
- term \f$ o( n ) \f$. It keeps the bound (9) in the worst case by falling back
- to the median of the medians after too many partitions that cut little.
+ term \f$ o( n ) \f$. After \f$ 2 \lceil \log_2 ( n + 1 ) \rceil \f$
+ partitions that cut little it falls back to the median of the medians, whose
+ rounds cost (9); the partitions before it cost \f$ O( n ) \f$ each, and the
+ worst case is therefore \f$ O( n \log n ) \f$.
 
  <table>
  <caption>The selection of the item of rank \f$ k \f$</caption>
@@ -335,7 +339,7 @@
  <tr><td><tt>nthElement()</tt></td><td>the sample of Floyd and Rivest,
      the median of three on short parts</td>
      <td>\f$ n + \min( k , n - k ) + o( n ) \f$ expected,
-         \f$ O( n ) \f$ in the worst case</td></tr>
+         \f$ O( n \log n ) \f$ in the worst case</td></tr>
  </table>
 
  \section theory_search_rmq Range minima
@@ -400,7 +404,7 @@
      <td>Bender and Farach-Colton (2000)</td></tr>
  <tr><td><tt>RangeMinimum</tt></td><td>\f$ O( n ) \f$</td>
      <td>\f$ O( 1 ) \f$</td><td>Bender and Farach-Colton (2000)</td></tr>
- <tr><td><tt>WordRangeMinimum</tt></td><td>\f$ O( n ) \f$, about 20 bytes
+ <tr><td><tt>WordRangeMinimum</tt></td><td>\f$ O( n ) \f$, about 22 bytes
      per item of 32 bits</td><td>\f$ O( 1 ) \f$, five reads at most</td>
      <td>Baumstark, Gog, Heuer and Labeit (2017)</td></tr>
  </table>
@@ -449,8 +453,9 @@
    \tag{11}
  \f]
  bits per segment and \f$ 32 \sigma \f$ for the slopes, in single
- precision. Elias-Fano on the first keys would save some ten bits a
- segment, but its rank scans the bucket of the key, and on skewed keys most
+ precision. Elias-Fano on the first keys would save
+ \f$ 62 - \log_2( u / m ) \f$ bits a segment for keys in a universe of size
+ \f$ u \f$, but its rank scans the bucket of the key, and on skewed keys most
  of the first keys crowd into a few buckets; the PGM-index of the keys
  finds the segment in the time of the levels of the plain PGM-index, and a
  search adds to that two selects and a field of bits. The rounding of a

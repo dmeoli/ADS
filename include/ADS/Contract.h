@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The contracts of ADS: the preconditions, the postconditions and the
- * invariants of the operations, checked at run time by three macros that
+ * invariants of the operations, checked at run time by four macros that
  * mirror the contracts of C++26 (`pre`, `post` and `contract_assert`), so
  * that they can be replaced by them when the compilers support them:
  *
@@ -136,6 +136,7 @@ bool equal( const T & a , const T & b )
 
 /// a copy of `x` for the audits that compare a structure with itself before
 /// the operation (e.g., the frame of a write), made only at the level 3
+/// (`std::nullopt` below it)
 template< class X >
 std::optional< X > snapshot( const X & x )
 {

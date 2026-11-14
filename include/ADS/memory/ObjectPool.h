@@ -106,10 +106,12 @@ class ObjectPool {
  /// the blocks of `other` taken by this pool, with the objects alive in
  /// them, `other` left empty: the objects made by `other` become objects of
  /// this pool, to be freed by it, so that a linked structure takes the
- /// nodes of another one with no copy (the `absorb()` of `List`); the
- /// block chain of `other` goes under the first block of this pool, in
- /// \f$ O( \log n ) \f$ time for the walk to it, and the free slots of
- /// `other` and those it never used are no longer given, until the pool dies
+ /// nodes of another one with no copy (the `absorb()` of `List`); if this
+ /// pool has no block, it is `swap( other )`, else the block chain of
+ /// `other` goes under the first block of this pool, in time linear in the
+ /// blocks of this pool for the walk to it, the largest block becomes the
+ /// larger of the two, and the free slots of `other` and those it never
+ /// used are no longer given, until the pool dies
  /// \pre the two allocators are equal
  void adopt( ObjectPool & other ) noexcept;
 

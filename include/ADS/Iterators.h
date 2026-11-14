@@ -24,9 +24,9 @@
  *   whose rank is a computation (a rootish, a dual or a cubish array), whose
  *   iterator is the rank and the container.
  *
- * - `IndirectIterator` reads through an iterator on pointers (smart or
- *   not), with its category: a random-access view of a vector of pointers to
- *   the items, as the heaps of handles keep them.
+ * - `IndirectIterator` reads through a random-access iterator on pointers
+ *   (smart or not): a random-access view of a vector of pointers to the
+ *   items, as the heaps of handles keep them.
  *
  * - `SlotIterator` walks the places \f$ 0 , \ldots , m - 1 \f$ of a table,
  *   skipping those that a policy `P` declares empty (or deleted, for the
@@ -44,8 +44,8 @@
  *   from the root to the current node, so that it needs no link to the
  *   parent and goes both ways; a policy `P` gives the root, the children and
  *   the reading of a node, as for `SlotIterator`. A step costs
- *   \f$ O( 1 ) \f$ amortized and \f$ O( h ) \f$ at most, the path
- *   \f$ O( h ) \f$ space.
+ *   \f$ O( 1 ) \f$ amortized over a whole visit and \f$ O( h ) \f$ at
+ *   most, the path \f$ O( h ) \f$ space.
  *
  * - `WalkIterator` follows the nodes of a tree (pointers or indices) by a
  *   policy `P` whose `next( o , n , root )`, `o` a pointer to the owner (nil
@@ -441,8 +441,8 @@ class RankIterator {
 /*------------------------ CLASS IndirectIterator --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the iterator `I` on pointers read through them, `*it` being `**base`,
-/// with the category of `I` (at most random access); the items are constant
+/// the random-access iterator `I` on pointers read through them, `*it`
+/// being `**base`; the items are constant
 template< std::random_access_iterator I >
 class IndirectIterator {
  public:

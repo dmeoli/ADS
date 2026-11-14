@@ -21,9 +21,9 @@ many ([§5.8](05-memory.md#sec-5-8)), and the huge pages
 program never gives a block back, since a garbage collector finds the
 cells it no longer reaches; [§5.11](05-memory.md#sec-5-11) compares the
 allocators on what each one is meant for. All the allocators but the
-first two give real memory, and most of them serve the structures of the
-other chapters (e.g., the nodes of the lists, of the search trees and of
-the hash tables).
+first two and the last one give real memory (those three give indices of a
+vector). Most of them serve the structures of the other chapters (e.g.,
+the nodes of the lists, of the search trees and of the hash tables).
 
 ## 5.1 Definitions and notation {#sec-5-1}
 
@@ -61,14 +61,14 @@ the logarithm of the memory of the buddy system, $k$ the largest number of
 objects that a pool has held at once.
 
 | Allocator | Blocks | Allocate | Free | Waste |
-|---|---|---|---|---|
+|---------------------------|---------------|-------------|----------------|-------------------|
 | `BoundaryTagAllocator` | any size | $O( f )$ | $O( 1 )$, merging both neighbors | 2 words of tags, external fragmentation |
 | `BuddyAllocator` | powers of 2 | $O( m )$ splits | $O( m )$ merges | less than half of each block |
 | `Arena` | objects of one type | $O( 1 )$, a pointer bump | only all at once | part of the last block |
 | `ObjectPool` | objects of one type | $O( 1 )$, but for a new block | $O( 1 )$ | at most $2 k + n$ slots |
 | `SizeClassAllocator` | 41 classes up to 32768 bytes | $O( 1 )$ | $O( 1 )$, sized | below 20% of a block past 128 bytes |
-| `PoolResource` | classes of 8 bytes up to $M$ | $O( 1 )$ | $O( 1 )$ | below $a$ bytes per slot |
-| `ConcurrentPoolResource` | as above, any thread | $O( 1 )$ amortized | $O( 1 )$, one CAS per 32 remote frees | as above, and 31 slots per class and thread in transit |
+| `PoolResource` | classes of 8 bytes up to $M$ | $O( 1 )$ | $O( 1 )$ | below $\max( a , g )$ bytes a slot |
+| `ConcurrentPoolResource` | as above, any thread | $O( 1 )$ amortized | $O( 1 )$, a CAS per batch of remote frees | as above, and 31 slots per class and thread in transit |
 | `HugePageAllocator` | any, aligned to 2 MB from 2 MB | that of the system | that of the system, or kept from 8 MB | address space below a huge page |
 | `CellHeap` | cells of two fields | $O( 1 )$, a collection when none is free | by the collector | none |
 
@@ -78,7 +78,7 @@ with a search of the free list and with the external fragmentation. The
 pools serve one size, or a few; they pay with the internal fragmentation
 and with the memory that a class keeps while another one needs it. The
 allocators of today are of the second kind, and they also care about the
-locality of the blocks: the blocks given one after another are usually
+locality of the blocks. In fact, the blocks given one after another are usually
 next to each other in memory, and a block just freed (hopefully still in
 the cache) is the next one given ([Wilson et al.
 1995](Z-bibliography.md#ref-wilson1995)).
@@ -102,10 +102,13 @@ fit* stops at the first block large enough (Algorithm 2.5A), and the
 *best fit* reads all the list and takes the smallest such block. The
 *next fit* starts where the last search stopped (the roving pointer of
 Knuth), in order that the small pieces left by the splits do not gather
-at the head of the list. When the rest of the block chosen has room for a
-free block (4 words at least), the block is split and the request gets its
-*upper* part; hence, the lower part keeps its place on the list, and only
-its tags change.
+at the head of the list. We choose the rule by the argument `fit` of the constructor, one of `Fit::FIRST` (the default), `Fit::BEST` and
+`Fit::NEXT`. When the rest of the block chosen has room for a free block (4
+words at least), the block is split and the request gets its *upper* part;
+hence, the lower part keeps its place on the list, and only its tags
+change, while the rover moves to the block after it on the list. A request
+that no free block can serve returns $-1$, and so does at once a request of
+more than $N$ words, for which $n + 2$ might not even fit in a `long`.
 
 ![Figure 5.1. A `BoundaryTagAllocator` of 24 words with the blocks at 0 and at 12 free (6 and 8 words) and those at 6 and at 20 in use (6 and 4 words), before and after `free(7)`; the tags hold $+s$ for a free block and $-s$ for a block in use, `nx` and `pv` are the links of a free block, the violet block is the one freed, those in the faintest tint are free.](../figures/memory-tags.svg){#fig-5-1}
 
@@ -146,12 +149,13 @@ the rover to its end, then from its head to the rover. $\square$
 
 The audit `tiled()` checks the three properties of
 [Lemma 5.1](05-memory.md#lem-5-1) after each operation, in $O( N )$ time,
-when the contracts are at their highest level. The class also keeps the
-set of the blocks in use, for the precondition that `free()` receives an
+when the contracts are at their highest level. Besides, the class keeps the set of the blocks in use, for the precondition that `free()` receives an
 address given by `allocate()` and still in use. This set costs
 $O( \log u )$ time per operation for $u$ blocks in use; it is the price
-of the contract, since the method itself does not need it. Apart from the
-contracts, the code of `free()` follows
+of the contract, since the method itself does not need it. Two queries,
+`freeWords()` and `freeBlocks()`, give the words in free blocks (tags
+included) and the number of the free blocks, by a walk of the free list in
+$O( f )$ time. Apart from the contracts, the code of `free()` follows
 [Algorithm 5.1](05-memory.md#alg-5-1) line by line.
 
 ```cpp
@@ -164,7 +168,7 @@ first fit was at least as good as the best fit. He also shows, as the
 *fifty-percent rule*, that under some assumptions of equilibrium the free
 blocks are about half as many as the blocks in use, whatever the fit. In practice, the
 best fit leaves the smallest pieces, which are often (but not always) "too
-small" for any later request; the next fit spreads the splits over the list, at the
+small" for any later request. On the other hand, the next fit spreads the splits over the list, at the
 price of a (possibly much) worse locality ([Wilson et al.
 1995](Z-bibliography.md#ref-wilson1995)).
 
@@ -214,7 +218,8 @@ blocks of $2^k$ words.
 <span id="lem-5-3"></span>**Lemma 5.3.** *In `BuddyAllocator` no two
 free buddies are ever both on the free lists, and a block given is less
 than twice its request, i.e., its internal waste is less than half of the
-block. `allocate()` and `free()` make at most $m$ steps each, and cost
+block. `allocate()` reads at most $m + 1$ free lists and splits at most
+$m$ times, `free()` merges at most $m$ times, and each one costs
 $O( m \log N )$ time in all.*
 
 *Proof.* A split puts on $F_j$ only an upper half whose lower half is
@@ -222,9 +227,12 @@ split further or given, and a free merges the block with its buddy for as
 long as the buddy is free; hence, after each operation no free block has
 a free buddy. Since $2^{k-1} < n \le 2^k$, the block of $2^k$ words is
 smaller than $2 n$, and the waste $2^k - n$ is less than $2^{k-1}$. A
-request looks at the sets $F_k , \ldots , F_m$ and splits at most $m$
-times, and a free merges at most $m$ times. Each step is an operation on
-an ordered set of at most $N$ addresses, in $O( \log N )$ time. $\square$
+request looks at the sets $F_k , \ldots , F_m$, i.e., at most $m + 1$
+of them, after computing $k \le m$ by at most $m$ doublings, and splits
+$j - k \le m$ times; a free merges at most $m - k$ times, since each merge
+raises $k$ by one and stops at $m$. Each step is an operation on an
+ordered set of at most $N$ addresses (or on the map of the blocks in use),
+in $O( \log N )$ time. $\square$
 
 In the code, the merge loop of `free()` is that of
 [Algorithm 5.2](05-memory.md#alg-5-2), with the buddy computed by an
@@ -238,9 +246,14 @@ The buddy system has no external fragmentation in the sense of the
 boundary tags, since a free block of $2^k$ words serves any request up to
 $2^k$. Yet, two free blocks of $2^k$ words that are not buddies cannot
 merge, and a request may therefore fail with enough free memory in total.
-The audit `merged()` checks that the free blocks are aligned to their
+Its audit `merged()` checks that the free blocks are aligned to their
 sizes, that no two free buddies exist, and that the free blocks and the
-blocks in use tile the memory.
+blocks in use tile the memory, in $O( N \log N )$ time. As for the
+boundary tags, a request returns $-1$ when no block fits (at once if
+$n > 2^m$), and two queries read the state: `freeWords()`, the words in
+free blocks, and `blockSize(a)`, the size $2^k$ of the block in use at
+$a$. Finally, the constructor requires $0 \le m \le 40$, and that $2^m$ fits in a
+`long` (i.e., $m \le 30$ where a `long` has 32 bits).
 
 ## 5.4 Arenas {#sec-5-4}
 
@@ -248,13 +261,14 @@ An *arena* (also called a *region*) gives the objects of one type from
 large blocks by the bump of a pointer, and frees them all at once with
 the arena ([Hanson 1990](Z-bibliography.md#ref-hanson1990)). `Arena<T,
 A>` keeps the vector of its blocks, each of $n$ places for objects of type
-`T` taken from the allocator `A`, and the number $\mathit{used}$ of the
-places used in the last block. Then `make(args)` builds the object in the
+`T` taken from the allocator `A` (by default $n = 2^{12}$ and `A` is
+`std::allocator<T>`), and the number $\mathit{used}$ of the places used in
+the last block. Then `make(args)` builds the object in the
 next place, after appending a new block when the last one is full
 ([Algorithm 5.3](05-memory.md#alg-5-3) and
 [Figure 5.3](05-memory.md#fig-5-3)).
 
-![Figure 5.3. An `Arena` of blocks of $n = 4$ objects: the vector of the blocks, the first block full and the second one with $\mathit{used} = 2$, after `make(g)`; the orange place is the one built.](../figures/memory-arena.svg){#fig-5-3}
+![Figure 5.3. An `Arena` of blocks of $n = 4$ objects: the vector of the blocks, the first block full and the second one with $\mathit{used} = 2$ before `make(g)` and $\mathit{used} = 3$ after it; the orange place is the one built.](../figures/memory-arena.svg){#fig-5-3}
 
 <span id="alg-5-3"></span>**Algorithm 5.3.** The construction of an object
 in an `Arena` ([Hanson 1990](Z-bibliography.md#ref-hanson1990)).
@@ -262,16 +276,30 @@ in an `Arena` ([Hanson 1990](Z-bibliography.md#ref-hanson1990)).
 --8<-- "generated/Arena-make.pseudo.md"
 
 <span id="lem-5-4"></span>**Lemma 5.4.** *After $z \ge 1$ calls of
-`make()`, an `Arena` of blocks of $n$ objects holds
-$\lceil z / n \rceil$ blocks, i.e., fewer than $n$ places not used, and
-each object keeps the address that `make()` returned until the arena is
-destroyed. Each `make()` costs $O( 1 )$ time, but for the allocation of
-a block and the amortized append to the vector of the blocks.*
+`make()` that return an object, and none that throws, an `Arena` of blocks
+of $n$ objects holds $\lceil z / n \rceil$ blocks, i.e., fewer than $n$
+places not used, and each object keeps the address that `make()` returned
+until the arena is destroyed. Each `make()` costs $O( 1 )$ time, but for
+the allocation of a block and the amortized append to the vector of the
+blocks.*
 
 *Proof.* A block is appended only when the last one is full (or there is
-none), and only the last block may thus have places not used. The vector
+none), and only the last block may thus have places not used; since each
+call fills one place, the blocks are $\lceil z / n \rceil$. The vector
 holds pointers to the blocks; hence, no block is moved or freed while the
-arena lives. $\square$
+arena lives, although the vector itself may be moved by an append. Besides the allocation and the append, the work of `make()` is a placement
+`new` and two increments. $\square$
+
+If the constructor of an object throws, the object is not counted, and
+$\mathit{used}$ does not change. A block appended by that call stays, with
+no object in it, and the next call of `make()` uses it; this is why the
+lemma excludes the calls that throw, each one of which may leave a block
+more. If instead the allocation of the block, or its append, throws, the
+block is given back to `A` and the arena is as it was. In all cases the
+destructor destroys exactly the objects built, $n$ in each block but the
+last one and $\mathit{used}$ in the last one, the invariant checked after
+each `make()` being that `size()` equals $( \#\mathit{blocks} - 1 ) n +
+\mathit{used}$.
 
 An object of an arena costs no header and no search, and the objects made
 one after another are next to each other. Their addresses never change,
@@ -280,9 +308,20 @@ nodes of a search, which keep a pointer to the node they come from). The
 arena also gives a random access iterator over the objects in the order
 in which they were made: the object of index $j$ is in the place
 $j \bmod n$ of the block $\lfloor j / n \rfloor$, and a new object only
-moves the end of the sequence, which leaves the iterators valid. The price
-is that an object cannot be freed by itself: the destructor of the arena
-destroys all the objects and frees the blocks.
+moves the end of the sequence. The iterators, however, read the vector of
+the blocks through its first element; hence, they stay valid only as long
+as no `make()` appends a block, since an append may move that vector, whereas the pointers that `make()` returns
+stay valid for the whole life of the arena. As a container in the sense of
+the standard library, the arena has the types `value_type`,
+`size_type`, `difference_type`, `reference`, `const_reference`, `iterator`
+and `const_iterator` (the second a random access iterator over constant
+objects, built also from the first), and the functions `begin()`, `end()`,
+`cbegin()` and `cend()`. Besides, `size()` is the number of the objects made, and
+`bytes()` the memory of the blocks, $\#\mathit{blocks} \cdot n \cdot
+\mathrm{sizeof}( T )$. An arena can be neither copied nor moved, since
+its objects are reached by their addresses. The price of all this is that
+an object cannot be freed by itself: the destructor of the arena destroys
+all the objects and frees the blocks.
 
 ## 5.5 Pools of objects {#sec-5-5}
 
@@ -294,18 +333,24 @@ takes it again. The last slot freed is thus the first one used again, and
 its memory is likely still in the cache. A slot is a union of the room of
 an object and of the pointer to the next free slot; it needs no header,
 and takes $\max( \mathrm{sizeof}( T ) , \mathrm{sizeof}( \mathrm{void} * )
-)$ bytes (rounded to the alignment of `T`). The slots never used are cut
+)$ bytes, rounded up to a multiple of the larger of the alignments of `T`
+and of a pointer. The slots never used are cut
 from the last block, from its place $\mathit{next}$ to its end
 ([Algorithm 5.4](05-memory.md#alg-5-4)).
 
 The blocks are taken from the allocator `A`; the first block has one slot,
 and each next one has twice the slots of the last, up to $n$ (by default
-$2^{24}$). A block begins with a header, which holds its size and the
-address of the block before it; the pool reaches all its blocks from the
-last one, and needs no vector for them. In fact, the pool is six words
-(the free list, the place $\mathit{next}$ and the end of the last block,
-the last block, $n$ and the number of objects alive), and allocates
-only its blocks ([Figure 5.4](05-memory.md#fig-5-4)).
+$2^{24}$). A block begins with a header, which holds its size in slots
+and the address of the block before it. It takes the first
+$H = \lceil 2 \, \mathrm{sizeof}( \mathrm{void} * ) / \mathrm{sizeof}(
+\mathit{slot} ) \rceil$ slots of the block (on a machine of 64 bits, two
+slots of 8 bytes, or one of 16 or more); the pool reaches all its blocks
+from the last one, and needs no vector for them. In fact, the pool is six
+words (the free list, the place $\mathit{next}$ and the end of the last
+block, the last block, $n$ and the number of objects alive), besides its
+allocator, which takes no room when it has no state (as
+`HugePageAllocator`); it allocates only its blocks
+([Figure 5.4](05-memory.md#fig-5-4)).
 
 ![Figure 5.4. An `ObjectPool` with blocks of 1, 2 and 4 slots, each one after its header `H` (linked to the header of the block before), before and after `free(e)`; the slots are numbered below the cells, a free slot holds the number of the next free slot (`-` for nil), and the last block has its place $\mathit{next}$ at the slot 6.](../figures/memory-pool.svg){#fig-5-4}
 
@@ -332,8 +377,9 @@ $F$ before passing the exception on, and the pool is then as it was, but
 for the order of its free list.
 
 <span id="lem-5-5"></span>**Lemma 5.5.** *An `ObjectPool` with blocks of
-at most $n$ slots that has held at most $k \ge 1$ objects at once has at
-most $\max( 2 k - 1 , k + n - 1 ) \le 2 k + n$ slots, in
+at most $n$ slots that has held at most $k \ge 1$ objects at once (raw
+slots of `allocate()` included) has at most
+$\max( 2 k - 1 , k + n - 1 ) \le 2 k + n$ slots besides the headers, in
 $O( \log \min( k , n ) + k / n )$ blocks. Each operation costs $O( 1 )$
 time, but for the allocation of a block.*
 
@@ -346,7 +392,15 @@ blocks have reached $n$ slots, the last block was taken with all the
 slots before it in use. Then $k$ is at least the number of these slots
 plus one, and the slots are at most $k - 1 + n$. The blocks double
 $O( \log \min( k , n ) )$ times, and those of $n$ slots are at most
-$k / n + 1$. $\square$
+$k / n + 1$. Each operation is a pop or a push of $F$, or the bump of
+$\mathit{next}$, besides the construction or the destruction of the
+object. $\square$
+
+The bound counts as held the object of a `make()` whose constructor
+throws, whose slot was taken before the exception; with this convention it
+also holds for a pool whose operations throw. It does not hold, instead,
+for a pool that has adopted the blocks of another one (see below), which
+keeps those blocks whatever it holds.
 
 We remark that the slots of a pool go back to `A` only with the pool; a structure that
 shrinks thus keeps the memory of its largest size. This is the price of a
@@ -358,9 +412,25 @@ trivial), as the containers of the library do with their nodes. By
 default, the blocks come from `HugePageAllocator`
 ([§5.9](05-memory.md#sec-5-9)), which puts those of 2 MB or more on huge
 pages, where the nodes of a "large" linked structure, reached in no
-useful order, miss the translation lookaside buffer less often. Unlike the `Arena`, the pool may be moved
-and swapped (the objects stay where they are), and two pools exchange
-their slots in $O( 1 )$ time.
+useful order, miss the translation lookaside buffer less often.
+
+Unlike the `Arena`, the pool may be moved and swapped (the objects stay
+where they are): the move constructor leaves the other pool empty, the
+move assignment frees the blocks of the pool before taking those of the
+other one, and `swap()` exchanges the slots of two pools in $O( 1 )$ time.
+Furthermore, `adopt(other)` takes the blocks of `other` with the objects
+alive in them, which become objects of this pool, to be freed by it, and
+leaves `other` empty; the lists of the library use it to take the nodes of
+another list with no copy (`absorb()` in [§2.10](02-sequence.md#sec-2-10)). If this
+pool has no block, it is a `swap()`, which brings here also the limit $n$
+of `other`, and the free slots of `other` stay free here. Otherwise, the chain of the blocks of `other` is hung under the
+first block of this pool, which is found by a walk of the chain, in time
+linear in the number of the blocks of this pool (cf.
+[Lemma 5.5](05-memory.md#lem-5-5)); the largest block becomes the larger
+of the two limits, and the free slots of `other`, and those it never used,
+are no longer given until the pool dies. In `adopt()` the two allocators must be equal, since the blocks of `other` go back to `A` with this pool. Finally,
+`size()` is the number of the objects alive, and `bytes()` the memory of
+the blocks, headers included, computed by a walk of the chain.
 
 ## 5.6 Size classes {#sec-5-6}
 
@@ -375,20 +445,23 @@ s = 2^e + j \, 2^{e - 2} , \qquad j = 1 , \ldots , 4 , \quad
 7 \le e \le 14 , \tag{5.2}
 $$
 
-i.e., 160, 192, 224, 256, 320, 384, and so on up to 32768. A request of
-more than 32768 bytes goes to `operator new`. The deallocation is sized,
+i.e., 160, 192, 224, 256, 320, 384, and so on up to 32768 (the constant
+`LARGEST`). A request of more than 32768 bytes goes to `operator new`. The deallocation is sized,
 since the caller gives back the size of the request (as `std::allocator`
 does), and a block thus needs no header.
 
 Each class $c$ has a free list $F_c$ of the blocks given back, the last
 one first, and a page whose rest $[ \mathit{next}_c , \mathit{end}_c )$ is
 cut a block at a time. A request takes the first block of $F_c$, or the
-next one of the page, or a new page of $\max( 2^{16} , s + 16 )$ bytes,
-whose first 16 bytes link it to the pages taken before
-([Algorithm 5.5](05-memory.md#alg-5-5) and
-[Figure 5.5](05-memory.md#fig-5-5)). A deallocation pushes the block on
-$F_c$. The blocks are aligned to 16 bytes, but for those of the class of 8
-bytes, which are aligned to 8.
+next one of the page, or a new page of $\max( 2^{16} , s + 16 )$ bytes
+from `operator new`. The first 16 bytes of a page hold its size and link
+it to the pages taken before ([Algorithm 5.5](05-memory.md#alg-5-5) and
+[Figure 5.5](05-memory.md#fig-5-5)); since $s \le 2^{15}$, every page has
+in fact $2^{16}$ bytes (the constant `PAGE`). A deallocation pushes the
+block on $F_c$. The blocks are aligned to 16 bytes, but for those of the
+class of 8 bytes, which are aligned to 8, as long as `operator new` aligns
+its memory to 16 bytes (as it does on the usual platforms of 64 bits),
+since the header and the sizes of the other classes are multiples of 16.
 
 <span id="alg-5-5"></span>**Algorithm 5.5.** A request to
 `SizeClassAllocator` (the lists of available blocks of [Knuth 1997,
@@ -419,7 +492,10 @@ $n - 1$, which the processor gives in one instruction (through
 `std::bit_width`), and $j$ is a shift. Each operation is then the pop or
 the push of a list, or the bump of a pointer. $\square$
 
-Indeed, the code follows the proof step by step.
+Indeed, the code follows the proof step by step. Conversely,
+`classSize(c)` gives 8 for $c = 0$, $16 c$ for $1 \le c \le 8$, and
+$2^e + j \, 2^{e-2}$ with $e = 7 + \lfloor ( c - 9 ) / 4 \rfloor$ and
+$j = ( c - 9 ) \bmod 4 + 1$ for $9 \le c \le 40$.
 
 ```cpp
 --8<-- "generated/SizeClassAllocator-sizeClass.cpp"
@@ -428,7 +504,11 @@ Indeed, the code follows the proof step by step.
 When the rest of the current page of a class is shorter than a block, the
 class takes a new page and the rest is lost (less than one block a page).
 The pages go back to the system only with the allocator, or by
-`release()`, which invalidates all the blocks given. While the allocator
+`release()`, which invalidates all the blocks given; `bytes()` is the
+memory of the pages taken. This allocator cannot be copied, since its
+blocks are in its pages, but it can be moved: the move leaves the other
+allocator with no page, and the move assignment releases the pages of the
+allocator before taking those of the other one. While the allocator
 lives, its memory is thus not returned, as in a pool; however, the blocks
 given back serve any later request of their class. This is the scheme of
 TLSF ([Masmano et al. 2004](Z-bibliography.md#ref-masmano2004)) and of
@@ -462,7 +542,12 @@ $$
 \mathrm{pageOf}( p ) = p \wedge \neg ( 2^{16} - 1 ) , \tag{5.3}
 $$
 
-and a free needs neither a header in the slot nor its size.
+and a free needs neither a header in the slot nor its size. In the class, the constants `GRAIN`, `PAGE`, `SEGMENT` and `HEADER` are $g = 8$,
+$2^{16}$, $2^{21}$ and 64, the static function `pageOf(p)` is (5.3), and
+two queries give the slots given but not yet freed (`live()`) and the memory
+of the segments (`bytes()`). Each heap takes as argument an *owner*, which
+it writes in the header of each of its pages, and it can be neither copied
+nor moved, since its pages name it.
 
 ![Figure 5.6. A `PageHeap`: a segment cut into pages of one class each, the current page P3 of the class 1 and its list $A_1$ of the pages with free slots, before and after the free of a slot of the exhausted page P1, which puts P1 back on $A_1$; below, a page with its header, the slot $p$ finding its page by (5.3).](../figures/memory-pageheap.svg){#fig-5-6}
 
@@ -496,8 +581,9 @@ class $c$ and $A_c$ the list of its other pages with free slots.
 <span id="lem-5-7"></span>**Lemma 5.7.** *A page on the list $A_c$ has at
 least one free slot. Hence `more()` makes at most two rounds, and each
 operation of `PageHeap` costs $O( 1 )$ time in the worst case, but for
-the allocation of a segment (one every 32 pages); a page of the class $c$
-wastes its header and less than $( c + 1 ) g$ bytes at its end.*
+the allocation of a segment (one every 32 pages), which also appends it to the
+vector of the segments; a page of the class $c$ wastes its header and less
+than $( c + 1 ) g$ bytes at its end.*
 
 *Proof.* A page enters $A_c$ only in `give()`, when a slot is pushed on
 its free list while the page is not listed. A page is not listed only
@@ -506,20 +592,44 @@ no slot of it is given until it is popped from $A_c$ and becomes current
 again, while the frees only add to its list. A new page has at least 8
 slots, since the classes are at most $( 2^{16} - 64 ) / 8$ bytes (a static
 assertion checks it). Therefore, the round of `more()` after a page was
-popped from $A_c$, or cut new, finds a slot. A page has
-$\lfloor ( 2^{16} - 64 ) / b \rfloor$ slots of $b$ bytes, and the rest is
-less than $b$. $\square$
+popped from $A_c$, or cut new, finds a slot. (At the start, every class
+has as current page a sentinel with no slot, which the first round leaves
+at once.) A page enters $A_c$ only when it is not listed, and is listed
+from then on; hence, no page is twice on $A_c$, nor on $A_c$ while it is
+current, and each operation on $A_c$ is the pop or the push of a stack.
+A page has $\lfloor ( 2^{16} - 64 ) / b \rfloor$ slots of $b$ bytes, and
+the rest is less than $b$. $\square$
+
+The vector of the segments grows by one place at a time, and the append of
+the $s$-th segment may thus copy the $s - 1$ addresses before it; this cost
+belongs to the allocation of a segment (cf. [Lemma 5.7](05-memory.md#lem-5-7)), and is
+negligible next to the 32 pages that each segment serves.
 
 `PoolResource<M>` serves the requests of $1 \le b \le M$ bytes aligned to
-$a \le 16$ from a `PageHeap` of $M / 8$ classes, where $M$ is a multiple
-of 16 between 16 and 4096 (256 by default). A request aligned to at most
+$a \le 16$ (the test `pooled(b, a)`) from a `PageHeap` of $M / 8$
+classes, where $M$ is a multiple of 16 between 16 and 4096 (256 by
+default); the constants `GRAIN`, `ALIGN`, `MAX` and `CLASSES` are $g = 8$,
+16, $M$ and $M / 8$. A request aligned to at most
 8 bytes takes a slot of $8 \lceil b / 8 \rceil$ bytes, and one aligned to
 16 takes a slot of $16 \lceil b / 16 \rceil$ bytes, whose class has its
 slots aligned to 16 (the header has 64 bytes, and the pages are aligned to
 $2^{16}$). Any other request, larger or more aligned, goes to `operator
-new` ([Algorithm 5.7](05-memory.md#alg-5-7)). The internal waste is thus
-less than $a$ bytes a slot, and the nodes of the containers, aligned to 8,
-waste no byte when their size is a multiple of 8. The heap is kept apart
+new` ([Algorithm 5.7](05-memory.md#alg-5-7)), with the alignment $a$ when
+it exceeds that of a plain `operator new`. The internal waste is thus less
+than 8 bytes a slot for $a \le 8$ and less than 16 for $a = 16$, i.e., less
+than $\max( a , g )$, and the nodes of the containers, aligned to 8, waste
+no byte when their size is a multiple of 8. A request takes one of two
+forms: `allocate<b, a>()` and `deallocate<b, a>(p)`, whose size and
+alignment are known at compile time, so that the test and the class are
+computed by the compiler, and `allocate(b, a)` and `deallocate(p, b, a)`,
+which compute them at each call. In both, $a$ is by default the alignment
+of `std::max_align_t`, i.e., 16 on the usual platforms of 64 bits, and a
+request that does not give it thus takes the classes of 16 bytes. As a precondition, the deallocation checks that the page of $p$ belongs to
+the resource and has the class of the request. Two queries give the
+objects alive in the classes (`size()`) and the memory of the segments
+(`bytes()`); the resource cannot be copied (nor moved), since its objects
+and its allocators point to it, and it frees its segments when it dies,
+without destroying the objects still alive. The heap is kept apart
 from the resource, behind a pointer: its state, read and written at each
 operation, then never shares a line of cache with the variables around
 the resource (e.g., on a stack).
@@ -531,8 +641,12 @@ the resource (e.g., on a stack).
 
 `PoolAllocator<T, R>` is the allocator of the standard library over the
 resource `R`, which is `PoolResource` or the `ConcurrentPoolResource` of
-[§5.8](05-memory.md#sec-5-8). It holds a pointer to its resource, and
-two allocators are equal when they share their resource. It is rebound to
+[§5.8](05-memory.md#sec-5-8). It holds a pointer to its resource, never
+nil, given to the constructor `PoolAllocator(r)`, or taken from `R::global()`
+by the default constructor, which exists only when `R` has that function
+(i.e., for `ConcurrentPoolResource`); `resource()` returns it. Two
+allocators, also of different types, are equal when they share their
+resource, and `is_always_equal` is therefore false. It is rebound to
 any type by `std::allocator_traits`, e.g., to a node of `std::list`,
 `std::map` or `std::unordered_map`, or to the control block of
 `std::allocate_shared` (which then holds the counts and the object in one
@@ -542,7 +656,12 @@ node therefore always goes back to the pool it came from. A request of
 one object (the case of the node containers) finds its class at compile
 time, the size and the alignment of `T` being constants, and costs the pop
 of a free list; a request of $n$ objects (e.g., the buckets of
-`std::unordered_map`) finds it from $n$. Neither the resource nor its
+`std::unordered_map`) finds it from $n$. Such a request throws
+`std::bad_array_new_length` if $n \, \mathrm{sizeof}( T )$ would overflow a
+`std::size_t` (a request of no object goes to `operator new`, as any
+request out of the classes). An allocator of a type `U` is built from that
+of `T` over the same resource, as `rebind` and `std::allocator_traits`
+require. Neither the resource nor its
 allocators synchronize: one thread at a time uses a `PoolResource`, which
 must outlive the objects and the allocators made from it.
 
@@ -571,7 +690,8 @@ slots of one owner only. The batch goes back to its owner by one CAS,
 which links it on the top of the stack of the returns of that class (a
 stack of [Treiber 1986](Z-bibliography.md#ref-treiber1986)). This happens
 when the batch has 32 slots, when a slot of another owner arrives, or when
-the calling thread needs a new page of the class or calls `collect()`
+the current page of the class of the calling thread is exhausted or that
+thread calls `collect()`
 ([Algorithm 5.8](05-memory.md#alg-5-8) and
 [Figure 5.7](05-memory.md#fig-5-7)). When the current page of a class is
 exhausted, the owner takes all the stack at once, by exchanging its top
@@ -611,7 +731,10 @@ with the order *acquire*.
 frees by the other threads make one successful CAS per batch; (ii) each
 thread holds at most 31 slots per class that it has freed and that are
 not yet back to their owner; (iii) the stacks of the returns are free of
-the ABA problem; (iv) an allocation costs $O( 1 )$ amortized time.*
+the ABA problem; (iv) an allocation costs $O( 1 )$ amortized time. In
+(iv), we leave out the allocation of a segment and the search of the heap
+on the list, which a thread makes at its first call and after each call to
+another resource of the same $M$.*
 
 *Proof.* (i) and (ii): a batch is sent when it reaches 32 slots, and
 otherwise holds at most 31. (iii): a CAS of a sender replaces the top $t$
@@ -620,9 +743,22 @@ the batch to $t$. If the top is $t$ again at the time of the CAS (possibly
 after the owner has taken the stack and other senders have pushed), the
 link to $t$ is still correct, since the new value does not depend on the
 next field of $t$; the only removal is that of all the stack by an
-exchange, which reads no link. (iv): the slots taken from a stack are
-pushed on the lists of their pages in time linear in their number, and
-each slot is taken from a stack at most once per free. $\square$
+exchange, which reads no link. (iv): when the cache of the thread holds the
+resource, the heap is found by one comparison. The slots taken from a
+stack are pushed on the lists of their pages in time linear in their
+number, and each slot is taken from a stack at most once per free; we
+thus charge this work to the frees. Apart from this, there remain a send in $O( 1 )$ time and
+at most one call of `more()`, which costs $O( 1 )$ time but for a segment
+by [Lemma 5.7](05-memory.md#lem-5-7). $\square$
+
+The memory orders complete (iii). A sender writes the links of its batch
+with plain stores, before its CAS with the order *release*; a CAS that
+fails reads the top with the order *relaxed*, and the loop writes the link
+of the tail again before the next attempt. In turn, the successful CAS of the senders are read-modify-write operations on the same top, and they form a
+release sequence; hence, the exchange of the owner, with the order
+*acquire*, synchronizes with every sender whose batch it takes, and sees
+all the links of the stack. The list of the heaps grows in the same way,
+by a CAS with the order *release*, and is read with the order *acquire*.
 
 A heap is never destroyed before the resource. A thread that ends leaves
 its heap, whose returns keep coming, to the next thread that has the same
@@ -633,9 +769,21 @@ storage holds one resource for each value of $M$. A thread that
 alternates between two resources of the same $M$ walks the list of the
 heaps at each change, in time linear in the number of heaps. Since the
 identities of the resources come from a counter and are never reused, the
-cache never points to the heap of a resource that has died. Finally,
-`global()` gives a resource that lives as long as the program, the default
-one of `PoolAllocator<T, ConcurrentPoolResource<>>`.
+cache never points to the heap of a resource that has died. A thread that
+ends also leaves in its batches up to 31 slots per class, which go back to
+their owners only when the next thread with the same identity sends
+them. Finally, `global()` gives a resource that lives as long as the
+program (it is allocated once and never destroyed), the default one of
+`PoolAllocator<T, ConcurrentPoolResource<>>`.
+
+Like `PoolResource`, this resource has the constants, the test `pooled()` and the two forms of `allocate()` and
+`deallocate()`, and also `SEGMENT`, the $2^{21}$ bytes of a segment of
+its heaps. Its query `heaps()` is the number of its heaps, i.e., of
+the identities of the threads that have used it, and `bytes()` the memory
+of their segments, both read by a walk of the list of the heaps while no
+other thread uses the resource. It cannot be copied, and its destructor
+frees the heaps and their segments, without destroying the objects still
+alive.
 
 ## 5.9 Huge pages {#sec-5-9}
 
@@ -653,7 +801,10 @@ pages and advised for the huge pages; a smaller request goes to
 `std::allocator` ([Algorithm 5.9](05-memory.md#alg-5-9) and
 [Figure 5.8](05-memory.md#fig-5-8)). Elsewhere than on Linux, the large
 requests are only aligned; in any case, the allocators have no state, and
-are all equal.
+are all equal, also when they are of different types, the allocator of
+`T` being built from that of any `U`. Its constant `PAGE` is $P$, and a
+request of $n$ objects throws `std::bad_array_new_length` when its
+rounding to whole huge pages would overflow a `std::size_t`.
 
 <span id="alg-5-9"></span>**Algorithm 5.9.** A request to
 `HugePageAllocator` ([Navarro et al.
@@ -708,6 +859,18 @@ fields `car`, and calls `collect()` when the list is empty. In turn,
 `collect()` marks the cells reachable from the roots and sweeps the
 others onto the free list ([Algorithm 5.10](05-memory.md#alg-5-10)).
 
+A field is of the type `CellHeap::Value` (a `long`); the constant `nil` is
+$-1$, `atom(k)` gives the atom $k \ge 0$ and `isCell(v)` is true when $v$ is the address of a cell. We read the fields of a cell in use by `car(c)`
+and `cdr(c)`, and write them by `setCar(c, v)` and `setCdr(c, v)`, whose
+precondition is that $c$ is a cell of the heap in use; `addRoot(c)`
+adds one more occurrence of the cell $c$ to the roots, and `removeRoot(c)`
+removes one of them, if there is one (and does nothing otherwise).
+Finally, `freeCells()` is the number of the free cells, and `collect()`
+returns the number of the cells that it frees, i.e., of the cells in use before it that are unreachable. The heap relies on the program for what it
+does not check: the fields of the cells in use and the roots hold only nil,
+atoms and cells in use (a free cell named by a root, for instance, would
+bring the free list into the marking).
+
 A marking by a visit in depth needs a stack as deep as the longest path of
 cells, which a collector (run when the memory is exhausted) cannot
 allocate. The marking of Deutsch, Schorr and Waite ([Schorr and Waite
@@ -718,7 +881,7 @@ follows and restores it on the way back, with one bit per cell
 ($\mathit{side}$) for the field that holds the reversed pointer
 ([Figure 5.9](05-memory.md#fig-5-9)).
 
-![Figure 5.9. Three cells $a$, $b$, $c$ reachable from a root, and the same cells during the marking by pointer reversal, when the visit has gone down the `car` of $a$ and of $b$ and stands at the atom 1 ($c$) with $b$ as the previous cell ($p$); the dashed violet arrows are the reversed pointers, i.e., the path back to the root, and the violet cells are marked.](../figures/memory-cellheap.svg){#fig-5-9}
+![Figure 5.9. Three cells $a$, $b$, $d$ reachable from a root, and the same cells during the marking by pointer reversal, when the visit has gone down the `car` of $a$ and of $b$ and stands at the atom 1 (the current value $c$) with $b$ as the previous cell ($p$); the dashed violet arrows are the reversed pointers, i.e., the path back to the root, and the violet cells are marked.](../figures/memory-cellheap.svg){#fig-5-9}
 
 <span id="alg-5-10"></span>**Algorithm 5.10.** The operations of
 `CellHeap` ([Knuth 1997, §2.3.5 and Algorithm
@@ -740,9 +903,11 @@ p , \; \mathrm{back}( p ) , \; \mathrm{back}( \mathrm{back}( p ) ) ,
 $$
 
 *ends with nil and is, in reverse, the path of the visit from the root to
-the current cell $c$. Each cell $x$ of the path held, before the visit,
-the next cell of the path (or $c$) in its field $\mathrm{back}( x )$, and
-the other fields of the cells hold their values before the visit.*
+$p$, the cell whose field holds the current value $c$ (a cell, an atom or
+nil). Each cell $x$ of the path held, before the visit, the next cell of
+the path (or $c$, for $x = p$) in its field $\mathrm{back}( x )$, and the
+other fields of the cells of the path, and all the fields of the other
+cells, hold their values before the visit.*
 
 *Proof.* By induction on the three moves of the marking (cf.
 [Algorithm 5.10](05-memory.md#alg-5-10)). Going down the `car` (line
@@ -754,22 +919,34 @@ $\mathrm{back}( p )$; the path loses its last cell, whose fields are now
 both restored. Moving from the `car` to the `cdr` of $p$ (line 17), the
 visit restores the `car` of $p$, puts $\mathrm{back}( p )$ in its `cdr`
 and sets $\mathit{side}( p )$. The path is then the same, and the field
-that holds the next cell is now the `cdr`. $\square$
+that holds the next cell is now the `cdr`. Initially, $p$ is nil and $c$ is
+the root, so that the sequence (5.4) is empty and the statement holds. Finally, the three moves are the only writes of the marking, and each one changes only
+the fields named above, which proves the last part. $\square$
 
 <span id="thm-5-11"></span>**Theorem 5.11.** *`collect()` marks exactly
 the cells reachable from the roots, leaves their fields as they were, and
 frees the others. The marking takes time linear in the cells reached,
 with no space besides one mark bit and one side bit per cell, and a
-collection costs $O( n )$ time on a heap of $n$ cells.*
+collection costs $O( n + r )$ time on a heap of $n$ cells with $r$
+occurrences of roots.*
 
-*Proof.* By [Lemma 5.10](05-memory.md#lem-5-10), the visit returns to
-the root with all the fields restored. A cell is marked when the visit
-enters it, and a marked cell is never entered again. A cell reached is
-entered once, left towards its `cdr` once and left upwards once, and each
-move costs $O( 1 )$ time. Since the marking follows the two fields of
-each marked cell, each cell reachable from a root is marked. Finally, the
-sweep reads the $n$ cells, unmarks the marked ones and pushes the others on the
-free list. $\square$
+*Proof.* By [Lemma 5.10](05-memory.md#lem-5-10), the marking of a root
+ends when $p$ is nil, i.e., with an empty path, and hence with all the
+fields restored. A cell is marked when the visit enters it, and a marked
+cell is never entered again; hence, only reachable cells are marked, since
+the visit only follows fields. A cell entered is left towards its `cdr`
+once and left upwards once (the side bit distinguishes the second time from the first), and each move costs $O( 1 )$ time; the marking thus takes time
+linear in the cells marked, besides one step for each root. Conversely,
+the visit leaves a cell upwards only after it has followed both its
+fields, the `car` by the first loop and the `cdr` by the move of line 17;
+hence, when it ends, each field of a marked cell holds nil, an atom or a
+marked cell. By induction on the length of a shortest path from a root,
+each cell reachable from a root is thus marked (by this marking or by that
+of an earlier root). Finally, the sweep reads the $n$ cells, unmarks the
+marked ones and pushes the others on the free list, from the last cell to
+the first, so that the free list is in the order of the addresses. A
+collection thus costs $O( n + r )$ time for $r$ occurrences of roots,
+i.e., $O( n )$ when the roots are $O( n )$. $\square$
 
 The code of the marking is made of three loops, one for each move of the
 induction.
@@ -799,7 +976,7 @@ the fifty-percent rule, the buddies) more than for serving a program; the
 the garbage collection. Among the others, the choice depends on how the
 objects die. If they die all together, an `Arena` costs no header and no work per
 free. If they die one at a time and are all of one type, an
-`ObjectPool` costs six words and one pointer per free slot. If they are of
+`ObjectPool` costs six words, with no header in its slots. If they are of
 a few sizes and die one at a time in the thread that made them,
 `SizeClassAllocator` serves them, and `PoolResource` (through
 `PoolAllocator`) serves the containers of the standard library, giving the

@@ -189,8 +189,10 @@ concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
 /// QUEUE (section 4.3.1): items are added at the back and removed from the
 /// front (FIFO); `top()` reads the front. As axioms,
 /// \f$ \mathrm{empty}( \mathrm{create} ) = \mathbf{true} \f$,
+/// \f$ \mathrm{empty}( \mathrm{enqueue}( Q , v ) ) = \mathbf{false} \f$,
 /// \f$ \mathrm{top}( \mathrm{enqueue}( \mathrm{create} , v ) ) = v \f$,
-/// and for \f$ Q \f$ not empty
+/// \f$ \mathrm{dequeue}( \mathrm{enqueue}( \mathrm{create} , v ) ) =
+/// \mathrm{create} \f$, and for \f$ Q \f$ not empty
 /// \f$ \mathrm{top}( \mathrm{enqueue}( Q , v ) ) = \mathrm{top}( Q ) \f$
 /// and \f$ \mathrm{dequeue}( \mathrm{enqueue}( Q , v ) ) =
 /// \mathrm{enqueue}( \mathrm{dequeue}( Q ) , v ) \f$, while `top()` and
