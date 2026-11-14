@@ -253,6 +253,7 @@ class EventCount {
  ///     \text{ by the failed CAS}
  /// \end{array}}
  /// \f]
+ //! [notify]
  void notify( void ) noexcept {
 #ifndef ADS_EVENTCOUNT_RMW
   detail::lightFence();
@@ -269,6 +270,7 @@ class EventCount {
     return;
     }
   }
+ //! [notify]
 
  /// returns when `p()` is true: it looks again and again for up to `spin`
  /// nanoseconds, with a pause of the processor between the looks, and then

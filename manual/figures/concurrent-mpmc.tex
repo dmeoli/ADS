@@ -1,0 +1,32 @@
+% Source for the figure of MPMCQueue (sec. 24.4): the places of a queue of
+% capacity 4, each with its item (upper row) and its sequence (lower row),
+% before and after a push that claims the index 7. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {item};
+  \node[var,anchor=east] at (-4mm,-7mm) {sequence};
+  \cells{A}{0,0}{/free,x/cell,y/cell,/free}
+  \cells{S}{0,-7mm}{8/free,6/cell,7/cell,7/free}
+  \node[var] (h1) at ($(A-1)+(0,11mm)$) {$h = 5$};
+  \node[var] (t1) at ($(A-3)+(0,11mm)$) {$t = 7$};
+  \draw[ptr] (h1) -- (A-1.north);
+  \draw[ptr] (t1) -- (A-3.north);
+  \indices{S}{4}
+  \draw[ptr] (33mm,-3.5mm) -- node[above=1.5mm,font=\small\ttfamily]
+    {push(z)} (52mm,-3.5mm);
+  \cells{B}{58mm,0}{/free,x/cell,y/cell,z/touched}
+  \cells{T}{58mm,-7mm}{8/free,6/cell,7/cell,8/touched}
+  \node[var] (h2) at ($(B-1)+(0,11mm)$) {$h = 5$};
+  \node[var] (t2) at ($(B-3)+(0,11mm)$) {$t = 8$};
+  \draw[ptr] (h2) -- (B-1.north);
+  \draw[ptr] (t2) -- (B-3.north);
+  \indices{T}{4}
+\end{tikzpicture}
+\end{document}

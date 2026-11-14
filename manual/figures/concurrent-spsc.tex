@@ -1,0 +1,30 @@
+% Source for the figure of SPSCQueue (sec. 24.3): the circular vector of
+% capacity 8 before and after push(e), with the head, the tail and the
+% copies that the two threads keep. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{/free,/free,b/cell,c/cell,d/cell,/free,/free,/free}
+  \node[var,anchor=west] at (60mm,2.5mm) {$h = 2$, $t = 5$};
+  \node[var,anchor=west] at (60mm,-2.5mm) {$\mathit{seen}_P = 0$, $\mathit{seen}_C = 4$};
+  \node[var] (h1) at ($(a-2)+(0,11mm)$) {$h$};
+  \node[var] (t1) at ($(a-5)+(0,11mm)$) {$t$};
+  \draw[ptr] (h1) -- (a-2.north);
+  \draw[ptr] (t1) -- (a-5.north);
+  \node[var,anchor=east] at (-6mm,-22mm) {\texttt{push(e)}};
+  \cells{b}{0,-22mm}{/free,/free,b/cell,c/cell,d/cell,e/touched,/free,/free}
+  \node[var,anchor=west] at (60mm,-19.5mm) {$h = 2$, $t = 6$};
+  \node[var,anchor=west] at (60mm,-24.5mm) {$\mathit{seen}_P = 0$, $\mathit{seen}_C = 4$};
+  \node[var] (h2) at ($(b-2)+(0,11mm)$) {$h$};
+  \node[var] (t2) at ($(b-6)+(0,11mm)$) {$t$};
+  \draw[ptr] (h2) -- (b-2.north);
+  \draw[ptr] (t2) -- (b-6.north);
+  \indices{b}{8}
+\end{tikzpicture}
+\end{document}

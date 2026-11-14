@@ -173,9 +173,9 @@ class MPSCQueue {
   /// 2 & \quad p \gets b.f\quad \triangleright\ \text{relaxed, only this}
   ///     \text{ thread writes it} \cr
   /// 3 & \quad \textbf{if}\ p = B\ \textbf{then} \cr
-  /// 4 & \qquad n \gets \text{a block of the spare stack, else of the}
-  ///     \text{ stack given back, taken whole by an exchange, else a new}
-  ///     \text{ block} \cr
+  /// 4 & \qquad n \gets \text{a spare block, else one of the blocks}
+  ///     \text{ given back (all taken by an exchange), else a new one}
+  ///     \cr
   /// 5 & \qquad n.f \gets 0;\ b.\mathit{next} \gets n\quad \triangleright
   ///     \ \text{release};\ b \gets n;\ p \gets 0 \cr
   /// 6 & \quad b[ p ] \gets x \cr

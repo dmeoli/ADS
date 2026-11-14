@@ -1,0 +1,35 @@
+% Source for the figure of StealablePriorityQueue (sec. 24.11): the two
+% heaps of an owner that pushed the keys 1 to 8, in the order of a 4-ary
+% heap; serve() moves into the offer the heap whose least key is not the
+% least, and a thief claims it by an exchange and deals its pairs to two
+% heaps of its own. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {owner $H_0$};
+  \cells{a}{0,0}{1/cell,4/cell,5/cell,8/cell}
+  \node[var,anchor=east] at (-4mm,-8mm) {$H_1$};
+  \cells{b}{0,-8mm}{2/cell,3/cell,6/cell,7/cell}
+  \node[var,anchor=west] at (34mm,-4mm) {offer: nil};
+  \node[var,anchor=west] at (80mm,-4mm) {before};
+  \node[var,anchor=east] at (-4mm,-22mm) {owner $H_0$};
+  \cells{c}{0,-22mm}{1/cell,4/cell,5/cell,8/cell}
+  \node[var,anchor=east] at (-4mm,-30mm) {$H_1$};
+  \cells{d}{0,-30mm}{/free,/free,/free,/free}
+  \node[var,anchor=west,inner sep=1.5pt] (of) at (34mm,-26mm) {offer};
+  \cells{e}{50mm,-26mm}{2/touched,3/touched,6/touched,7/touched}
+  \draw[ptr] (of) -- (e-0.west);
+  \node[var,anchor=west] at (80mm,-30mm) {after \texttt{serve()}, $k_O = 2$};
+  \node[var,anchor=east] at (-4mm,-44mm) {thief $H_0$};
+  \cells{f}{0,-44mm}{2/touched,6/touched}
+  \node[var,anchor=east] at (-4mm,-52mm) {$H_1$};
+  \cells{g}{0,-52mm}{3/touched,7/touched}
+  \node[var,anchor=west] at (34mm,-48mm) {offer of the owner: nil};
+  \node[var,anchor=west] at (80mm,-52mm) {after \texttt{steal()}};
+\end{tikzpicture}
+\end{document}

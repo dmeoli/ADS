@@ -1,0 +1,26 @@
+% Source for the figure of MultiQueue (sec. 24.9): four queues, each with
+% its minimum read without locks and its deletion buffer D (the least pair
+% on the right); a pop draws the queues 1 and 3 and takes the least pair of
+% the better one, the key 4, of rank error 2. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \j/\t/\y in {0/2/0,1/4/-9,2/3/-18,3/7/-27} {
+    \node[var,anchor=east] at (-4mm,\y mm) {queue \j};
+    \node[var,anchor=west] at (2mm,\y mm) {$\mathit{top} = \t$};
+  }
+  \cells{Q0}{30mm,0}{9/cell,5/cell,2/cell}
+  \cells{Q1}{30mm,-9mm}{8/cell,6/cell,4/touched}
+  \cells{Q2}{30mm,-18mm}{7/cell,3/cell}
+  \cells{Q3}{30mm,-27mm}{11/cell,7/cell}
+  \node[var,anchor=west] at (60mm,-9mm) {drawn, the better: pops 4};
+  \node[var,anchor=west] at (60mm,-27mm) {drawn};
+  \node[var] at (37mm,7mm) {$D$};
+\end{tikzpicture}
+\end{document}

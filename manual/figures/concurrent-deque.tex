@@ -1,0 +1,24 @@
+% Source for the figure of WorkStealingDeque (sec. 24.5): the circular
+% vector of 8 places with the top t and the bottom b, before, after take()
+% of the owner and after steal() of a thief. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{/free,/free,a/cell,b/cell,c/cell,/free,/free,/free}
+  \node[var,anchor=west] at (60mm,0) {$t = 2$, $b = 5$};
+  \node[var,anchor=east] at (-6mm,-13mm) {\texttt{take()}};
+  \cells{b}{0,-13mm}{/free,/free,a/cell,b/cell,/touched,/free,/free,/free}
+  \node[var,anchor=west] at (60mm,-13mm) {$t = 2$, $b = 4$, returns \texttt{c}};
+  \node[var,anchor=east] at (-6mm,-26mm) {\texttt{steal()}};
+  \cells{c}{0,-26mm}{/free,/free,/touched,b/cell,/free,/free,/free,/free}
+  \node[var,anchor=west] at (60mm,-26mm) {$t = 3$, $b = 4$, returns \texttt{a}};
+  \indices{c}{8}
+\end{tikzpicture}
+\end{document}

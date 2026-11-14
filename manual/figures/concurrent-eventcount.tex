@@ -1,0 +1,31 @@
+% Source for the figure of EventCount (sec. 24.10): the word of the epoch e
+% and of the waiters w, and the copy E of the epoch on which the waiters
+% sleep, after prepareWait() of a waiter and after notify(). Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,wide/.style={cell,minimum width=12mm}]
+  \node[index] at (6mm,7mm) {$e$};
+  \node[index] at (18mm,7mm) {$w$};
+  \node[index] at (40mm,7mm) {$E$};
+  \node[var,anchor=east] at (-4mm,0) {start};
+  \node[wide] at (6mm,0) {5};
+  \node[wide] at (18mm,0) {0};
+  \node[wide] at (40mm,0) {5};
+  \node[var,anchor=east] at (-4mm,-11mm) {\texttt{prepareWait()}};
+  \node[wide] at (6mm,-11mm) {5};
+  \node[wide,fill=adsTouched] at (18mm,-11mm) {1};
+  \node[wide] at (40mm,-11mm) {5};
+  \node[var,anchor=west] at (52mm,-11mm) {the waiter sleeps while $E = 5$};
+  \node[var,anchor=east] at (-4mm,-22mm) {\texttt{notify()}};
+  \node[wide,fill=adsTouched] at (6mm,-22mm) {6};
+  \node[wide,fill=adsTouched] at (18mm,-22mm) {0};
+  \node[wide,fill=adsTouched] at (40mm,-22mm) {6};
+  \node[var,anchor=west] at (52mm,-22mm) {the waiter is woken};
+\end{tikzpicture}
+\end{document}
