@@ -246,7 +246,6 @@ template< class T , std::totally_ordered P , bool Aux >
 inline typename PairingHeap< T , P , Aux >::Node *
 PairingHeap< T , P , Aux >::link( Node * a , Node * b )
 {
-//! [PairingHeap-link]
  if( b->priority < a->priority )
   std::swap( a , b );
  b->next = a->child;                        // b the leftmost child of a
@@ -254,7 +253,6 @@ PairingHeap< T , P , Aux >::link( Node * a , Node * b )
  b->prev = a;
  a->child = b;
  return( a );
-//! [PairingHeap-link]
  }
 
 template< class T , std::totally_ordered P , bool Aux >

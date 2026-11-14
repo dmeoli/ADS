@@ -21,7 +21,6 @@ void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
                      C less )
 {
  ADS_PRE( ( i < dim ) && ( dim <= A.size() ) );
-//! [maxHeapRestore]
  for( ; ; ) {
   std::size_t max = i;
   const std::size_t l = 2 * i + 1 , r = 2 * i + 2;
@@ -32,7 +31,6 @@ void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
   std::swap( A[ i ] , A[ max ] );
   i = max;
   }
-//! [maxHeapRestore]
  }
 
 template< class T , class C >

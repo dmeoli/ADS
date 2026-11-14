@@ -79,7 +79,6 @@ std::size_t RangeTree< T >::count( const T & x1 , const T & x2 ,
 {
  if( ( x2 < x1 ) || ( y2 < y1 ) )
   return( 0 );
-//! [count]
  // the smallest and the largest ordinate of the type, the infinities if
  // it has them, so that no point of abscissa x1 or x2 is left out
  using L = std::numeric_limits< T >;
@@ -94,7 +93,6 @@ std::size_t RangeTree< T >::count( const T & x1 , const T & x2 ,
   c += std::size_t( std::upper_bound( Y.begin() , Y.end() , y2 ) -
                     std::lower_bound( Y.begin() , Y.end() , y1 ) );
   } );
-//! [count]
  return( c );
  }
 

@@ -17,7 +17,6 @@
 namespace ADS {
 
 template< RadixKey T >
-//! [radixKey]
 auto radixKey( T x )
 {
  using U = std::conditional_t< sizeof( T ) == 1 , std::uint8_t ,
@@ -34,7 +33,6 @@ auto radixKey( T x )
  else
   return( U( x ) );
  }
-//! [radixKey]
 
 namespace detail {
 
@@ -68,7 +66,6 @@ template< class T , class K , class N >
 void scatter( T * s , T * d , std::size_t n , K & key , int sh ,
               const N * H , std::size_t * S = nullptr )
 {
-//! [scatter]
  std::array< N , 256 > P;                   // the next place in each
  N sum = 0;
  for( std::size_t c = 0 ; c < 256 ; ++c ) {
@@ -81,7 +78,6 @@ void scatter( T * s , T * d , std::size_t n , K & key , int sh ,
   return( std::size_t( ( key( x ) >> sh ) & 0xFF ) ); };
  for( std::size_t i = 0 ; i < n ; ++i )
   d[ P[ byte( s[ i ] ) ]++ ] = std::move( s[ i ] );
-//! [scatter]
  }
 
 /// the LSD sort of s[ 0 .. n ) by the bytes D[ 0 .. m ) of the unsigned

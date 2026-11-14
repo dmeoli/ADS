@@ -89,7 +89,6 @@ template< class T , class Better , unsigned D , bool BottomUp >
 T DaryHeap< T , Better , D , BottomUp >::erase( std::size_t i )
 {
  ADS_PRE( i < f_A.size() );
-//! [DaryHeap-erase]
  T r = std::move( f_A[ i ] );
  T x = std::move( f_A.back() );
  f_A.pop_back();
@@ -99,7 +98,6 @@ T DaryHeap< T , Better , D , BottomUp >::erase( std::size_t i )
   else
    down( i , std::move( x ) );
   }
-//! [DaryHeap-erase]
  ADS_INVARIANT( ordered() );
  return( r );
  }
@@ -130,7 +128,6 @@ std::vector< T > DaryHeap< T , Better , D , BottomUp >::smallest(
  const auto worse = [ this ]( std::size_t a , std::size_t b ) {
   return( f_better( f_A[ b ] , f_A[ a ] ) );
   };
-//! [DaryHeap-smallest]
  std::vector< std::size_t > Q{ 0 };
  while( ( S.size() < k ) && ! Q.empty() ) {
   std::pop_heap( Q.begin() , Q.end() , worse );
@@ -142,7 +139,6 @@ std::vector< T > DaryHeap< T , Better , D , BottomUp >::smallest(
    std::push_heap( Q.begin() , Q.end() , worse );
    }
   }
-//! [DaryHeap-smallest]
  return( S );
  }
 
@@ -203,7 +199,6 @@ inline void DaryHeap< T , Better , D , BottomUp >::up( std::size_t i , T x )
 template< class T , class Better , unsigned D , bool BottomUp >
 inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
 {
-//! [DaryHeap-down]
  const std::size_t n = f_A.size();
  for( ; ; ) {
   const std::size_t c = D * i + 1;
@@ -220,7 +215,6 @@ inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
   i = b;
   }
  f_A[ i ] = std::move( x );
-//! [DaryHeap-down]
  }
 
 template< class T , class Better , unsigned D , bool BottomUp >

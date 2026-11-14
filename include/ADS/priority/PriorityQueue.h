@@ -240,7 +240,6 @@ concept queue_keys = ( requires { typename Q::Priority; } &&
 /// with the keys of the order of the queue (a `Priority`, one or two
 /// `Key`s, or none), `queue_min()` and `queue_deleteMin()`, the item of
 /// smallest priority read and removed
-//! [PriorityQueue]
 template< class Q >
 concept PriorityQueue = requires( Q & q , const Q & cq ) {
  typename queue_item_t< Q >;
@@ -248,13 +247,11 @@ concept PriorityQueue = requires( Q & q , const Q & cq ) {
  { ADS::queue_min( q ) } -> std::convertible_to< queue_item_t< Q > >;
  { ADS::queue_deleteMin( q ) } -> std::convertible_to< queue_item_t< Q > >;
  } && detail::queue_keys< Q >;
-//! [PriorityQueue]
 
 /// the PRIORITYQUEUE of section 10.1 with handles and decreasing priority:
 /// the types `Item`, `Priority` and `Handle`, and `empty()`, `min()`,
 /// `deleteMin()`, `insert( x , p )`, which gives the handle of \f$ x \f$,
 /// and `decrease( y , p )`
-//! [AddressablePriorityQueue]
 template< class Q >
 concept AddressablePriorityQueue = PriorityQueue< Q > &&
                                    requires( Q q , const Q cq ,
@@ -267,7 +264,6 @@ concept AddressablePriorityQueue = PriorityQueue< Q > &&
  { q.insert( x , p ) } -> std::same_as< typename Q::Handle >;
  q.decrease( y , p );
  };
-//! [AddressablePriorityQueue]
 
 }  // end( namespace ADS )
 

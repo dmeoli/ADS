@@ -187,12 +187,10 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
  std::size_t i = 0;
  for( ; i + kUnroll <= n ; i += kUnroll ) {
   std::size_t j[ kUnroll ];
-//! [classify]
   for( std::size_t u = 0 ; u < kUnroll ; ++u ) j[ u ] = 1;
   for( int l = 0 ; l < logk ; ++l )
    for( std::size_t u = 0 ; u < kUnroll ; ++u )
     j[ u ] = 2 * j[ u ] + ! less( a[ i + u ] , tree[ j[ u ] ] );
-//! [classify]
   if( equal )
    for( std::size_t u = 0 ; u < kUnroll ; ++u ) {
     const std::size_t h = j[ u ] - k;

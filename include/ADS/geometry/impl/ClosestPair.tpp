@@ -68,7 +68,6 @@ inline void closestRec( const std::vector< Point > & P ,
              B.begin() + std::ptrdiff_t( lo ) , byY );
  std::copy( B.begin() + std::ptrdiff_t( lo ) ,
             B.begin() + std::ptrdiff_t( hi ) , it + std::ptrdiff_t( lo ) );
-//! [strip]
  std::size_t s = lo;                        // the strip in B[ lo .. s )
  for( std::size_t u = lo ; u < hi ; ++u ) {
   const std::int64_t dx = P[ I[ u ] ].x - xm;
@@ -82,7 +81,6 @@ inline void closestRec( const std::vector< Point > & P ,
     break;                                  // the next ones farther
    b.offer( P , B[ u ] , B[ v ] );
    }
-//! [strip]
  }
 
 }  // end( namespace detail )
@@ -130,7 +128,6 @@ sweep( const std::vector< Point > & P , std::vector< std::uint64_t > & K ,
  sort( K );
  auto X = [ & ]( std::size_t u ) { return( I( K[ u ] >> 32 ) ); };
  auto Y = [ & ]( std::size_t u ) { return( I( K[ u ] & 0xFFFFFFFFULL ) ); };
-//! [sweep]
  I best = std::numeric_limits< I >::max();
  std::size_t a = 0 , b = 1;
  for( std::size_t u = 1 , column = 0 ; ( u < n ) && ( best > 0 ) ; ++u ) {
@@ -154,7 +151,6 @@ sweep( const std::vector< Point > & P , std::vector< std::uint64_t > & K ,
     return( std::nullopt );
    }
   }
-//! [sweep]
  return( std::tuple( best , K[ a ] , K[ b ] ) );
  }
 
@@ -208,7 +204,6 @@ closestGrid( const std::vector< Point > & P )
   };
  if( b.d > 0 ) {
   rebuild( 2 );
-//! [grid]
   for( std::size_t r = 2 ; r < n ; ++r ) {
    const std::uint32_t u = I[ r ];
    const std::int64_t d0 = b.d;
@@ -229,7 +224,6 @@ closestGrid( const std::vector< Point > & P )
    else
     insert( r );
    }
-//! [grid]
   }
  return( std::pair( std::pair( b.i , b.j ) , b.d ) );
  }

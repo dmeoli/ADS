@@ -61,7 +61,6 @@ std::vector< T > lis( const std::vector< T > & A )
  }
 
 template< class T >
-//! [lisLength]
 std::size_t lisLength( const std::vector< T > & A )
 {
  std::vector< T > tails;                 // tails[ l ]: the least end of l + 1
@@ -74,7 +73,6 @@ std::size_t lisLength( const std::vector< T > & A )
   }
  return( tails.size() );
  }
-//! [lisLength]
 
 template< class T >
 T maxSubarraySum( const std::vector< T > & A )

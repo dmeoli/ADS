@@ -105,7 +105,6 @@ inline void ExactCover::unhide( int p )
   }
  }
 
-//! [cover]
 inline void ExactCover::cover( int i )
 {
  for( int p = f_D[ i ] ; p != i ; p = f_D[ p ] ) hide( p );
@@ -119,7 +118,6 @@ inline void ExactCover::uncover( int i )
  f_L[ f_R[ i ] ] = i;
  for( int p = f_U[ i ] ; p != i ; p = f_U[ p ] ) unhide( p );
  }
-//! [cover]
 
 inline bool ExactCover::exact( const std::vector< int > & options ) const
 {
