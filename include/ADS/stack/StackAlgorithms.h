@@ -36,10 +36,11 @@
  *   in that order they leave the old top at the bottom, \f$ O( n ) \f$.
  *
  * The contracts [see `Contract.h`]: `sortStack()` ensures a sorted stack
- * with the same number of items, and `removeGreater()` a stack with no item
- * larger than \f$ k \f$, and `forEachBottomUp()` the stack as it was; all
- * are audits, checked by popping the stack and pushing it back. The
- * algorithms are defined in `StackAlgorithms.tpp`.
+ * with the same number of items, `removeGreater()` a stack with no item
+ * larger than \f$ k \f$, `forEachBottomUp()` the stack as it was, and
+ * `reverseWithQueue()` the items in the reverse order; all are audits,
+ * checked by popping the stack and pushing it back. The algorithms are
+ * defined in `StackAlgorithms.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -119,8 +120,8 @@ inline bool isPalindrome( const std::string & s );
 ///     \ \mathrm{pass}( s )
 /// \end{array}}
 /// \f]
-/// \post \f$ s \f$ is sorted, the least on top, with the same items (an
-///       audit)
+/// \post \f$ s \f$ is sorted, the least on top, with the same number of
+///       items (an audit)
 template< Stack S >
 void sortStack( S & s );
 
