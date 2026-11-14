@@ -222,7 +222,6 @@ inline bool FlowNetwork::levels( int s , int t )
 
 inline long long FlowNetwork::blocking( int u , int t , long long d )
 {
-//! [blocking]
  // iterative, the levels may be as deep as n: the edges of the path go
  // on a stack, and an edge into a dead end is passed by f_next[ tail ]
  std::vector< int > path;
@@ -248,7 +247,6 @@ inline long long FlowNetwork::blocking( int u , int t , long long d )
  for( int e : path )
   push( e , d );
  return( d );
-//! [blocking]
  }
 
 inline void FlowNetwork::rebalance( int s , int t , bool excesses )

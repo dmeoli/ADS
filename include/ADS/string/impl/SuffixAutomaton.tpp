@@ -40,7 +40,6 @@ inline std::uint32_t SuffixAutomaton::next( std::uint32_t v ,
 inline void SuffixAutomaton::extend( unsigned char c )
 {
  f_count.clear();
-//! [extend]
  const std::uint32_t cur = std::uint32_t( f_len.size() );
  f_len.push_back( f_len[ f_last ] + 1 );
  f_link.push_back( 0 );
@@ -65,7 +64,6 @@ inline void SuffixAutomaton::extend( unsigned char c )
    }
   }
  f_last = cur;
-//! [extend]
  ++f_n;
  ADS_INVARIANT( f_len.size() <= 2 * f_n );
  }

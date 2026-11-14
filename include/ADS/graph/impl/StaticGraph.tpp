@@ -29,7 +29,6 @@ void StaticGraph< W >::build( int n , const Edges & E , Get && get )
  ADS_PRE( n >= 0 );
  const std::size_t na = ( f_directed ? 1 : 2 ) * E.size();
  ADS_PRE( na < std::size_t( INT_MAX ) );
-//! [build]
  // the arcs by head, then stably by tail: the rows come out sorted
  std::vector< int > cnt( std::size_t( n ) + 1 , 0 );
  for( const auto & e : E ) {
@@ -63,7 +62,6 @@ void StaticGraph< W >::build( int n , const Edges & E , Get && get )
  for( const auto & [ u , a ] : byHead )
   f_arc[ next[ u ]++ ] = a;
  f_m = int( E.size() );
-//! [build]
  ADS_INVARIANT( consistent() );
  }
 

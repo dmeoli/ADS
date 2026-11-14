@@ -40,7 +40,6 @@ template< class W , class T >
 void ListGraph< W , T >::insertEdge( int u , int v , const W & w )
 {
  B::edge( u , v );
-//! [insertEdge]
  if( ! set( u , v , w ) ) {
   f_adj[ u ].insert( f_adj[ u ].next( f_adj[ u ].tail() ) , { v , w } );
   if( ! B::f_directed )
@@ -49,7 +48,6 @@ void ListGraph< W , T >::insertEdge( int u , int v , const W & w )
   }
  else if( ! B::f_directed )
   set( v , u , w );
-//! [insertEdge]
  ADS_POST( hasEdge( u , v ) );
  ADS_INVARIANT( consistentAt( u , v ) && consistentAt( v , u ) );
  }

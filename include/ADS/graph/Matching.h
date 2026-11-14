@@ -217,7 +217,26 @@ inline std::vector< std::pair< int , int > > bipartiteBMatching(
 /// \f$ P( a ) \f$ from \f$ v \f$ back to \f$ a \f$ followed by
 /// \f$ P( b ) \f$ for a node that was odd, with the edge \f$ ( a , b ) \f$;
 /// the augmentation rematches it with a stack of the pairs (node, new
-/// mate), stopping each part where a node has a new mate already.
+/// mate), stopping each part where a node has a new mate already:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{augment}( x , y ) \cr
+/// 2 & \quad M( y ) \gets x;\ K \gets ( ( x , y ) ) \cr
+/// 3 & \quad \textbf{while}\ K \ne ()\ \textbf{do} \cr
+/// 4 & \qquad ( v , w ) \gets \text{pop } K \cr
+/// 5 & \qquad \textbf{loop} \cr
+/// 6 & \qquad\quad o \gets M( v );\ M( v ) \gets w \cr
+/// 7 & \qquad\quad \textbf{if}\ o = \textbf{nil}\ \textbf{or}
+///     \ M( o ) \ne v\ \textbf{then break}\quad \triangleright
+///     \ \text{the root, or a part done} \cr
+/// 8 & \qquad\quad \textbf{if}\ v \text{ is even from the start}
+///     \ \textbf{then}\ M( o ) \gets p[ o ];\ w \gets o;
+///     \ v \gets p[ o ] \cr
+/// 9 & \qquad\quad \textbf{else}\ ( a , b ) \gets \text{the edge that}
+///     \text{ made } v \text{ even, } a \text{ on its side};
+///     \ \text{push } ( b , a ) \text{ on } K;\ w \gets b;\ v \gets a
+/// \end{array}}
+/// \f]
 /// \pre the graph is unoriented
 /// \post the mates are symmetric and joined by edges (audit)
 template< Graph G >

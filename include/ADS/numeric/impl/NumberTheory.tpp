@@ -109,7 +109,6 @@ constexpr U64 mod128( U64 hi , U64 lo , U64 m )
 
 }  // end( namespace detail )
 
-//! [montgomery]
 constexpr Montgomery64::Montgomery64( U64 n )
  : f_n( n ) , f_inv( 0 ) , f_one( 0 ) , f_r2( 0 )
 {
@@ -132,7 +131,6 @@ constexpr U64 Montgomery64::reduce( U64 hi , U64 lo ) const
  const U64 r = hi - qnHi;
  return( hi < qnHi ? r + f_n : r );
  }
-//! [montgomery]
 
 constexpr U64 Montgomery64::mul( U64 a , U64 b ) const
 {

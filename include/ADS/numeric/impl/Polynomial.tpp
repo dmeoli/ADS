@@ -44,7 +44,6 @@ void addShifted( std::vector< T > & r , const std::vector< T > & a ,
   r[ i + s ] += sign * a[ i ];
  }
 
-//! [multiplyRec]
 template< class T >
 std::vector< T > multiplyRec( const std::vector< T > & p ,
                               const std::vector< T > & q , bool three ,
@@ -89,7 +88,6 @@ std::vector< T > multiplyRec( const std::vector< T > & p ,
  r.resize( 2 * n - 1 );
  return( r );
  }
-//! [multiplyRec]
 
 template< class T >
 std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,

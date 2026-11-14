@@ -133,7 +133,6 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
  ADS_PRE( g.hasNode( r ) && S.empty() );
  std::vector< int > d( g.bound() , INF ) , p( g.bound() , NIL );
  VisitCounts k;
-//! [distance]
  S.enqueue( r );
  d[ r ] = 0;
  while( ! S.empty() ) {
@@ -148,7 +147,6 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
     }
    } );
   }
-//! [distance]
  if( c ) *c = k;
  ADS_AUDIT( detail::bfsTree( g , r , d , p ) );
  return( std::pair( std::move( d ) , std::move( p ) ) );
@@ -190,7 +188,6 @@ void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
 {
  ADS_PRE( g.hasNode( u ) && ( int( visited.size() ) >= g.bound() ) &&
           ! visited[ u ] );
-//! [dfs]
  std::vector< detail::DfsFrame > S;                  // the recursion
  auto discover = [ & ]( int v ) {
   visited[ v ] = true;
@@ -211,7 +208,6 @@ void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
   if( ! visited[ v ] )                                // the call
    discover( v );
   }
-//! [dfs]
  }
 
 template< Graph G >
@@ -442,7 +438,6 @@ std::vector< int > sccTarjan( const G & g )
   S.push_back( v );
   R.emplace_back( v , A.first( v ) );
   };
-//! [sccTarjan-loop]
  for( int r = 0 ; r < n ; ++r ) {
   if( ( dt[ r ] != 0 ) || ! g.hasNode( r ) )
    continue;
@@ -471,7 +466,6 @@ std::vector< int > sccTarjan( const G & g )
     low[ R.back().first ] = std::min( low[ R.back().first ] , low[ u ] );
    }
   }
-//! [sccTarjan-loop]
  for( int & c : id )                     // the components close in reverse
   if( c != 0 )                           // topological order
    c = k + 1 - c;
@@ -498,7 +492,6 @@ std::vector< int > sccPearce( const G & g )
  // the numbers of discovery in use are below i, the i - 1 open nodes are
  // at most the c + 1 names not closed, and a closed node is numbered above
  // c: its number is never below that of an open node
-//! [sccPearce-loop]
  for( int r = 0 ; r < n ; ++r ) {
   if( ( rindex[ r ] != 0 ) || ! g.hasNode( r ) )
    continue;
@@ -533,7 +526,6 @@ std::vector< int > sccPearce( const G & g )
     }
    }
   }
-//! [sccPearce-loop]
  for( int u = 0 ; u < n ; ++u )          // the components close in reverse
   if( g.hasNode( u ) )                   // topological order, from n - 1
    rindex[ u ] -= c;                     // down to c + 1
