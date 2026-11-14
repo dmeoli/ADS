@@ -94,6 +94,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/priority/PriorityQueue.h"
@@ -361,6 +362,12 @@ class PairingHeap {
  ObjectPool< Node > f_pool;   ///< the nodes
 
  };  // end( class PairingHeap )
+
+/// the items of a pairing heap stay in their nodes, which the handles point
+/// to [see `Capabilities.h`]
+template< class T , std::totally_ordered P , bool Aux >
+inline constexpr bool enable_stable_references< PairingHeap< T , P , Aux > > =
+ true;
 
 /*--------------------------------------------------------------------------*/
 

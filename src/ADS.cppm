@@ -32,6 +32,7 @@
 module;
 
 #include "ADS/ADT.h"
+#include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/Modification.h"
@@ -453,6 +454,58 @@ export namespace ADS {
  using ADS::Sequence;
  using ADS::Set;
  using ADS::Stack;
+
+ // ADS/Capabilities.h
+ using ADS::addressable;
+ using ADS::augmented_by;
+ using ADS::batch_extract;
+ using ADS::batch_updatable;
+ using ADS::bulk_erasable;
+ using ADS::bulk_insertable;
+ using ADS::complexity;
+ using ADS::declares_monotone;
+ using ADS::decrease_key_kind;
+ using ADS::decrease_key_of;
+ using ADS::enable_stable_references;
+ using ADS::epoch_clearable;
+ using ADS::erasable;
+ using ADS::event_set;
+ using ADS::event_set_t;
+ using ADS::forwarding_query;
+ using ADS::forwarding_query_tag;
+ using ADS::in_arcs;
+ using ADS::insert_bulk;
+ using ADS::joinable;
+ using ADS::key_type_t;
+ using ADS::meetable_query;
+ using ADS::modifications_of;
+ using ADS::monotone_extract;
+ using ADS::monotone_of;
+ using ADS::nonmonotone_values;
+ using ADS::observes_values;
+ using ADS::prefetch;
+ using ADS::prefetchable;
+ using ADS::priority_t;
+ using ADS::query;
+ using ADS::query_meet_v;
+ using ADS::query_v;
+ using ADS::range_actionable;
+ using ADS::rank_complexity;
+ using ADS::rank_complexity_t;
+ using ADS::rankable;
+ using ADS::rekeyable;
+ using ADS::reservable;
+ using ADS::reserve;
+ using ADS::selectable;
+ using ADS::shiftable_keys;
+ using ADS::snapshotable;
+ using ADS::splittable;
+ using ADS::stable_edge_ids;
+ using ADS::stable_references;
+ using ADS::stable_references_t;
+ using ADS::thread_safe_reads;
+ using ADS::thread_safe_reads_t;
+ using ADS::undoable;
 
  // ADS/Contract.h
  using ADS::contract_violation;
@@ -1689,7 +1742,12 @@ export namespace ADS {
  using ADS::PairingHeap;
 
  // ADS/priority/PriorityQueue.h
+ using ADS::AddressablePriorityQueue;
  using ADS::PriorityQueue;
+ using ADS::queue_deleteMin;
+ using ADS::queue_insert;
+ using ADS::queue_item_t;
+ using ADS::queue_min;
 
  // ADS/priority/RadixHeap.h
  using ADS::RadixHeap;

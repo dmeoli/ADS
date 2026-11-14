@@ -19,6 +19,18 @@ namespace ADS {
 
 namespace detail {
 
+/// the handle of a node of Prim's algorithm on the queue Q, nothing if Q
+/// is lazy
+template< class Q , bool Native >
+struct PrimHandle {
+ using type = char;
+ };
+
+template< class Q >
+struct PrimHandle< Q , true > {
+ using type = typename Q::Handle;
+ };
+
 /// p is a minimum spanning tree of the component of r: the nodes with a
 /// parent and r are those reached from r, and the edges to the parents a
 /// minimum spanning forest of the edges inside it
@@ -120,24 +132,36 @@ auto kruskal( const G & g , long k )
  }
 
 template< Graph G , PriorityQueue Q >
+ requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
+           requires { typename Q::Priority; } )
 std::vector< int > prim( const G & g , int r , Q & q , FrontierCounts * c )
 {
  ADS_PRE( ! g.directed() && g.hasNode( r ) && q.empty() );
  using W = typename G::Weight;
  using F = PriorityFrontier< Q >;
+ constexpr bool native =
+  ( decrease_key_of< Q >() == decrease_key_kind::native );
  const int n = g.bound();
  std::vector< int > p( n , NIL );
  std::vector< bool > in( n , false );                 // in the tree
  std::vector< W > key( n , infinity< W >() );
- std::vector< typename Q::Handle > pos( n );
+ std::vector< typename detail::PrimHandle< Q , native >::type > pos(
+                                                          native ? n : 0 );
  FrontierCounts k;
  for( int u : g.V() ) {
-  pos[ u ] = q.insert( u , F::key( u , u == r ? W( 0 ) : infinity< W >() ) );
+  if constexpr( native )
+   pos[ u ] = q.insert( u , F::key( u , u == r ? W( 0 ) :
+                                               infinity< W >() ) );
+  else
+   q.insert( u , F::key( u , u == r ? W( 0 ) : infinity< W >() ) );
   ++k.adds;
   }
  key[ r ] = W( 0 );
  while( ! q.empty() ) {
   const int u = q.deleteMin();
+  if constexpr( ! native )
+   if( in[ u ] )                                    // a stale copy
+    continue;
   ++k.extracts;
   in[ u ] = true;
   if( key[ u ] == infinity< W >() )                 // another component
@@ -146,7 +170,10 @@ std::vector< int > prim( const G & g , int r , Q & q , FrontierCounts * c )
    ++k.edges;
    if( ! in[ v ] && ( w < key[ v ] ) ) {
     key[ v ] = w;
-    q.decrease( pos[ v ] , F::key( v , w ) );
+    if constexpr( native )
+     q.decrease( pos[ v ] , F::key( v , w ) );
+    else
+     q.insert( v , F::key( v , w ) );
     ++k.decreases;
     p[ v ] = u;
     }

@@ -59,6 +59,14 @@ static_assert( PriorityQueue< HeapPriorityQueue< int , double , 4 > > );
 static_assert( PriorityQueue< ListPriorityQueue< int , int , true > > );
 static_assert( PriorityQueue< ListPriorityQueue< int , int , false > > );
 static_assert( PriorityQueue< TreePriorityQueue< int > > );
+static_assert( AddressablePriorityQueue< HeapPriorityQueue< int > > );
+static_assert(
+ AddressablePriorityQueue< HeapPriorityQueue< int , double , 4 > > );
+static_assert(
+ AddressablePriorityQueue< ListPriorityQueue< int , int , true > > );
+static_assert(
+ AddressablePriorityQueue< ListPriorityQueue< int , int , false > > );
+static_assert( AddressablePriorityQueue< TreePriorityQueue< int > > );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- HELPERS ----------------------------------*/

@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Capabilities.h, the vocabulary by which an algorithm asks a structure
+  what it can do: the syntactic capabilities as concepts on members
+  (bulk_insertable, bulk_erasable, splittable, joinable, rankable,
+  selectable, prefetchable, reservable, augmented_by, range_actionable,
+  addressable, observes_values, batch_extract, shiftable_keys,
+  monotone_extract, rekeyable, erasable, epoch_clearable, undoable, moved
+  from Modification.h, snapshotable, in_arcs, stable_edge_ids,
+  batch_updatable), the semantic opt-ins enable_stable_references,
+  nonmonotone_values and the static monotone read by monotone_of(), the
+  forwarded queries stable_references_t, thread_safe_reads_t,
+  rank_complexity_t and event_set_t with query_v, query_meet_v and the
+  customization point query(), decrease_key_kind and decrease_key_of()
+  with the opt-in decrease_key, and the customization points reserve(),
+  prefetch() and insert_bulk() for the types that ADS does not own, each
+  with a default; ObservedGraph forwards the queries to its graph and
+  answers the events itself, Shadow answers them by the meet of its two
+  observers; PairingHeap and FibonacciHeapPriorityQueue opt in to the
+  stable references, MultiQueue declares itself lazy and JoinTree names its
+  augmentation Augmented; the theory of the capabilities with the lemma of
+  the lazy frontier, section 1.14 of the manual and the test
+  engineered_capabilities (4 cases)
+
 - Modification.h, the typed modifications by which a structure tells the
   observers attached to it what changed: the event templates of ADS::mod
   (Inserted, Erased, Changed with the aliases Assigned and KeyChanged,
@@ -1794,6 +1816,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   both signs, bit by bit against std::sort by radixKey()
 
 ### Changed
+
+- The concept PriorityQueue of PriorityQueue.h is the queue without
+  handles, read through the customization points queue_insert(),
+  queue_min() and queue_deleteMin(), which take the members of the book
+  first and the spelling of the standard library last, so that
+  LinkedHeapPriorityQueue, DaryHeap, BucketQueue, DialQueue, RadixHeap and
+  std::priority_queue model it; the former concept, with handles and
+  decrease(), is AddressablePriorityQueue, which every queue that modelled
+  it still models
+- PriorityFrontier of ShortestPaths.h and prim() of MinimumSpanningTree.h
+  take any PriorityQueue with priorities and choose by decrease_key_of():
+  decrease() on the handles of a native queue as before, a new insertion
+  and the stale copies skipped on a lazy one, with the same distances,
+  trees, order of extraction and counts; the code on a native queue is
+  unchanged
 
 - Observable.h is ObservedGraph< G , Policy >, the graph wrapper on the
   subject policies of Modification.h (NoObservers by default, so that a

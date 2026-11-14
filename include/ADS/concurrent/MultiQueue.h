@@ -113,6 +113,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/priority/DaryHeap.h"
 
@@ -151,6 +152,10 @@ class MultiQueue {
 
  using Key = K;     ///< the type of the keys
  using Item = T;    ///< the type of the items
+
+ /// a relaxed queue with no handles, on which a search lowers a key by a
+ /// new insertion [see `decrease_key_of()` of `Capabilities.h`]
+ static constexpr decrease_key_kind decrease_key = decrease_key_kind::lazy;
 
  /// a pair of the queue, its key and its item
  struct Entry {

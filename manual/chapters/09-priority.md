@@ -63,13 +63,19 @@ $( x , p )$ under the precondition $p \le p( x )$; `min()` and
 `deleteMin()` are undefined on the empty queue. Items of equal priority
 leave in no given order unless a realization fixes one (only the
 merges of [§9.11](09-priority.md#sec-9-11) and the bucket queue of
-[§9.9](09-priority.md#sec-9-9) fix one). In `ADS/priority/PriorityQueue.h`, the concept `PriorityQueue` requires these operations and the
-three types `Item`, `Priority` and `Handle`, and the algorithms that take a
-priority queue (the shortest paths and the minimum spanning trees of
-[chapter 14](14-graph.md#ch-14)) are written once for all its models:
+[§9.9](09-priority.md#sec-9-9) fix one). In `ADS/priority/PriorityQueue.h`,
+the concept `AddressablePriorityQueue` requires these operations and the
+three types `Item`, `Priority` and `Handle`, and its models are
 `ListPriorityQueue`, `TreePriorityQueue`, `HeapPriorityQueue`,
-`IndexedDaryHeap`, `FibonacciHeapPriorityQueue` and `PairingHeap`
-but not `LinkedHeapPriorityQueue`, which has no handles. The *priority `Queue`* of [Morin 2013,
+`IndexedDaryHeap`, `FibonacciHeapPriorityQueue` and `PairingHeap`. The
+concept `PriorityQueue` drops the handles and `decrease()`, and reads the
+queue through customization points that also take the spelling of the
+standard library ([§1.14](01-introduction.md#sec-1-14)); hence
+`LinkedHeapPriorityQueue`, `DaryHeap`, `BucketQueue`, `DialQueue`,
+`RadixHeap` and `std::priority_queue` model it as well. The algorithms that
+take a priority queue (the shortest paths and the minimum spanning trees of
+[chapter 14](14-graph.md#ch-14)) are written once for both kinds, a
+decrease being a new insertion on a queue without handles. The *priority `Queue`* of [Morin 2013,
 §10](Z-bibliography.md#ref-morin-cpp) is the same type without handles and
 without `decrease()`: `add(x)` and `remove()`, which the heaps of plain
 items in this chapter call `push(x)` and `pop()`, with `top()` for the

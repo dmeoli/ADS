@@ -1,7 +1,7 @@
 # 1. Introduction {#ch-1}
 
 [Source: `include/ADS/ADT.h`, `Contract.h`, `Iterators.h`, `Portable.h`,
-`Modification.h`,
+`Modification.h`, `Capabilities.h`,
 `ADS/sequence/IndexedList.h`, `ADS/set/SetInterfaces.h`, `ADS/set/Bag.h`]
 
 We are concerned in this manual with ADS, a header-only library of C++20 that
@@ -24,9 +24,10 @@ describe the iterators ([§1.8](01-introduction.md#sec-1-8)), the two levels
 of the library and its conventions ([§1.9](01-introduction.md#sec-1-9)), how
 to build, test and use it ([§1.10](01-introduction.md#sec-1-10)), how this
 manual is organized ([§1.11](01-introduction.md#sec-1-11)), the map of
-all the classes of the library ([§1.12](01-introduction.md#sec-1-12)), and
-the typed modifications by which a structure tells its observers what
-changed ([§1.13](01-introduction.md#sec-1-13)).
+all the classes of the library ([§1.12](01-introduction.md#sec-1-12)), the
+typed modifications by which a structure tells its observers what changed
+([§1.13](01-introduction.md#sec-1-13)), and the capabilities that an
+algorithm may ask of a structure ([§1.14](01-introduction.md#sec-1-14)).
 
 ## 1.1 The need for efficiency {#sec-1-1}
 
@@ -1386,6 +1387,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 
 | Header | Classes | Chapter |
 |-----------------|-------------------------------|-----|
+| `Capabilities.h` | `forwarding_query`, `stable_references_t`, `thread_safe_reads_t`, `rank_complexity_t`, `event_set_t` | [1](01-introduction.md#ch-1) |
 | `Contract.h` | `contract_violation` | [1](01-introduction.md#ch-1) |
 | `Modification.h` | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged` | [1](01-introduction.md#ch-1) |
 | `Iterators.h` | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
@@ -1839,7 +1841,107 @@ incremental observer and to one that computes from scratch, and compares their
 answers at each query, i.e., the audit by recomputation of [Frangioni and Manca
 2006](Z-bibliography.md#ref-frangioni2006).
 
-## 1.14 Discussion and references {#sec-1-14}
+## 1.14 Capabilities {#sec-1-14}
+
+An algorithm that takes a structure as a parameter of its type may choose
+its faster path at compile time from what the structure offers, and
+`Capabilities.h` (beyond the book) gives the vocabulary of these choices,
+shared by all the areas. A concept of C++20 decides a matter of syntax but
+not one of meaning, since a `rank()` that scans the items satisfies the same
+concept as one that reads a counter. Hence we distinguish three kinds of
+capability. A *syntactic* capability is a concept on members, e.g.,
+`splittable<S>` and `joinable<S>` for `split()` and `join2()` of the trees
+of [§8.12](08-tree.md#sec-8-12), `undoable<S>` for the `checkpoint()` and
+`rollback(t)` that the batches of [§1.13](01-introduction.md#sec-1-13) use,
+and `addressable<Q>` for the handles of a priority queue with `decrease()`,
+`increase()` and `erase()`. The others of this kind are the bulk
+operations, `rank()` and `select()`, `prefetch()`, the operations of the
+node tables of a search (`erasable<T>`, `epoch_clearable<T>`) and those of
+the graphs (`in_arcs<G>`, `batch_updatable<G>`). A *semantic* capability,
+which the syntax cannot show, is an explicit opt-in of the structure, as
+`std::ranges::enable_borrowed_range` is in the standard library. It is a
+variable template that the structure specializes, such as
+`enable_stable_references<S>` (the items keep their addresses, a handle may
+be a pointer and the structure never emits `Relocated`) and
+`nonmonotone_values<T>`, or a static member that it declares, such as
+`S::monotone`, the only direction in which its values move, by which an
+observer compiles out the path of the other direction. A structure that
+declares none of them gets the conservative answer. We remark that a
+concept whose members no structure of ADS has yet (e.g.,
+`shiftable_keys<Q>` or `batch_extract<Q>`) is defined all the same, since
+it is the name under which the next structure will be found.
+
+A third kind is a property that a wrapper must pass on without knowing
+it, because a wrapper written today cannot list the properties of the
+structures of tomorrow. We call it a *query*, `s.query(tag)`, after the
+environments of P2300 ([Dominiak et al.
+2024](Z-bibliography.md#ref-dominiak2024)). Its tag derives from
+`forwarding_query` (`stable_references_t`, `thread_safe_reads_t`,
+`rank_complexity_t` or `event_set_t`), the structure answers it by a static
+member `query(tag)` if it has one, the tag gives the default otherwise, and
+`query_v<S, Tag>` reads the answer at compile time. `ObservedGraph`
+forwards every query to the graph it wraps, except the events, which are
+those of the wrapper. In turn, `Shadow` composes the answers of its two
+observers by the meet of the tag, i.e., the conjunction for the stable
+references and for the reads that may run with writes, and the worse of
+the two classes of time for `rank()`. The customization point objects in
+the form of [Niebler 2015](Z-bibliography.md#ref-niebler2015) serve only
+the operations that a type which ADS does not own may lack, each with a
+default (e.g., `reserve(s, n)` does not act on a `std::list`, and
+`insert_bulk(s, r)` inserts the items one by one). Each of them calls the
+member if there is one, then a free function found by argument-dependent
+lookup, and then the default.
+
+Accordingly, we split the PRIORITY QUEUE of [chapter 9](09-priority.md#ch-9)
+into two concepts. `PriorityQueue` requires the items,
+`empty()`, the item of least priority read and removed, and an insertion
+with the keys of the order of the queue (a priority, one or two keys, or
+none for items ordered by themselves). It reads them through the
+customization points `queue_min()`, `queue_deleteMin()` and
+`queue_insert()`, which try the members of the book first and the spelling
+of the standard library last; hence `DaryHeap`, `BucketQueue`, `RadixHeap`
+and `std::priority_queue` model it as they are. `AddressablePriorityQueue`
+adds the handles of the book and `decrease()`, and it is the former
+concept, with the same meaning for the queues with handles. How a queue
+lowers a key is then a capability in its turn, which `decrease_key_of<Q>()`
+returns: `native` with `decrease()` on the handles, `lazy` for a
+`PriorityQueue` without them, and `none` otherwise. On a lazy queue the
+item is inserted again with the lower key, and its stale copies are
+skipped when they come out. An opt-in `Q::decrease_key` wins over the
+inference, and `MultiQueue`, a relaxed queue with no exact `min()`,
+declares by it that it is lazy.
+
+```cpp
+--8<-- "generated/Capabilities-decrease_key_of.cpp"
+```
+
+Neither form is better in general. A lazy queue needs no handles and no
+table of positions, at the price of one copy per decrease instead of one
+per item, and on sparse graphs it is often the faster of the two ([Chen et
+al. 2007](Z-bibliography.md#ref-chen2007)). Hence the frontier of the
+shortest paths ([§14.8](14-graph.md#sec-14-8)) and Prim's algorithm take
+either form; in the lazy one they keep, for each node, whether it is in
+the frontier, and they skip a copy of a node that is not.
+
+<span id="lem-1-11"></span>**Lemma 1.11.** *Let the priorities of the
+copies be the pairs $( d , v )$ of a distance and a node, where a copy of
+$v$ is inserted at each fall of its distance. Then the lazy frontier extracts
+the same nodes, in the same order and with the same counts, as a native
+one.*
+
+*Proof.* The distance of a node only falls, and therefore the copy of $v$
+inserted last has the least priority among the copies of $v$ in the queue;
+while $v$ is in the frontier, that copy carries the priority $( d_v , v )$
+which the native queue holds. When $v$ leaves the frontier, its other
+copies have larger priorities and are skipped, and if $v$ enters it again
+(with negative weights) its new copy is again the least of its copies.
+Hence, at each extraction, the least copy of a node in the frontier is the
+least entry of the native queue (the pairs are distinct), and the stale
+copies before it are skipped and not counted; the additions and the
+decreases are the calls of the prototype, which are the same in both.
+$\square$
+
+## 1.15 Discussion and references {#sec-1-15}
 
 The abstract data types go back to [Liskov and Zilles
 1974](Z-bibliography.md#ref-liskov1974), after the principle
@@ -1892,9 +1994,13 @@ follow the measures of the kinetic data structures of [Basch et
 al. 1999](Z-bibliography.md#ref-basch1999); and the dispatch on
 a closed set of events by its index replaces the cascade of casts
 whose cost [Solodkyy et al. 2012](Z-bibliography.md#ref-solodkyy2012)
-measured.
+measured. The capabilities follow the customization points of [Niebler
+2015](Z-bibliography.md#ref-niebler2015) and the forwarded queries of
+[Dominiak et al. 2024](Z-bibliography.md#ref-dominiak2024), and the lazy
+decrease of a key is compared with the native one in [Chen et al.
+2007](Z-bibliography.md#ref-chen2007).
 
-## 1.15 Exercises {#sec-1-15}
+## 1.16 Exercises {#sec-1-16}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -1963,3 +2069,13 @@ Each exercise names the test of the library that solves it (run it with
     Tests: `engineered_modification.mod-coalesce`,
     `engineered_modification.mod-rollback` and
     `engineered_modification.mod-batch`.
+12. Run the shortest paths and Prim's algorithm on a priority queue without
+    handles, which lowers a key by a new insertion, and check that they
+    give the distances, the trees, the order of extraction and the counts
+    of a queue with handles, also with negative weights ([Lemma
+    1.11](01-introduction.md#lem-1-11)); then check the capability concepts,
+    the opt-ins and the queries on the structures of the library, and the
+    forwarding of the queries by `ObservedGraph` and by `Shadow`. Tests:
+    `engineered_capabilities.cap-lazy-frontier`,
+    `engineered_capabilities.cap-queries` and
+    `engineered_capabilities.cap-queue-points`.
