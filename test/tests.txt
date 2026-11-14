@@ -46,6 +46,7 @@ ch04  sec4.2.1.counter   sezione 4.2.1, contatore binario
 ch04  sec4.3.1.stack-on-list  sezione 4.3.1, pila simulata con una lista
 ch04  spec.ArrayStack    sezione 4.3.2, pila con vettore
 ch04  spec.ArrayQueue    sezione 4.3.3, coda con vettore circolare
+ch04  spec.ArrayQueue-moves  sezione 4.3.3, copie e spostamenti
 ch04  sec4.donGiovanni   inizio del capitolo 4, il catalogo
 ch04  sec4.4.hanoi       sezione 4.4 e Figura 4.8, torri di Hanoi
 ch04  ex4.1              Esercizio 4.1, i primi n interi

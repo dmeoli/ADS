@@ -13,7 +13,9 @@
  * `top()` and `dequeue()` need a queue that is not empty, `enqueue()` one
  * that is not full; `enqueue()` ensures one item more, `dequeue()` one less,
  * and the invariant is \f$ 0 \leq n \leq m \f$ with the front inside the
- * vector. The operations are defined in `ArrayQueue.tpp`.
+ * vector. A queue is copied item by item and moved in \f$ O( 1 ) \f$ time,
+ * the queue moved from left empty with no capacity, as an `ArrayStack`
+ * [see `ArrayStack.h`]. The operations are defined in `ArrayQueue.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
@@ -64,6 +66,19 @@ class ArrayQueue {
 
  /// the empty queue of at most \f$ \mathit{dim} \f$ items
  explicit ArrayQueue( std::size_t dim );
+
+ /// a copy of `other`, item by item, from the place 0 of a vector of the
+ /// same capacity
+ ArrayQueue( const ArrayQueue & other );
+
+ /// the items of `other`, which is left empty with no capacity
+ ArrayQueue( ArrayQueue && other ) noexcept;
+
+ /// the items of `other`, by copy and swap
+ ArrayQueue & operator=( ArrayQueue other ) noexcept;
+
+ /// exchanges the items and the capacities with `other`
+ void swap( ArrayQueue & other ) noexcept;
 
  /// true if there is no item, i.e., \f$ n = 0 \f$
  [[nodiscard]] bool empty( void ) const;

@@ -2555,6 +2555,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- ArrayQueue had the implicit move constructor and assignment of its
+  members, so that a queue moved from kept its size and its capacity with no
+  vector, empty() false and dequeue() and top() reading through a null
+  pointer; it now has the copy and move constructors, the assignment by copy
+  and swap and swap() of ArrayStack, the queue moved from left empty with no
+  capacity, as the header, the theory of the queues and chapter 4 of the
+  manual say; the test ch04 spec.ArrayQueue-moves
+
 - the pseudocode of RingDeque::insert() and erase() tested i < n / 2 where
   the code divides integers; it now writes floor( n / 2 ), as the code and
   chapter 4 of the manual do
