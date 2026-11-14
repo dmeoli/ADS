@@ -74,6 +74,7 @@ inline bool RollbackUnionFind::merge( int x , int y )
  return( true );
  }
 
+//! [undo]
 inline void RollbackUnionFind::undo( int k )
 {
  ADS_PRE( ( k >= 0 ) && ( k <= checkpoint() ) );
@@ -90,6 +91,7 @@ inline void RollbackUnionFind::undo( int k )
   }
  ADS_INVARIANT( forest() );
  }
+//! [undo]
 
 inline void RollbackUnionFind::rollback( int t )
 {

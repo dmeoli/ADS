@@ -1,0 +1,29 @@
+% Source for the figure of offlineConnectivity (sec. 11.5): the segment
+% tree over q = 4 questions, and the nodes that hold an edge alive from the
+% question 1 to the end, i.e., on the times [1, 4): the leaf [1, 2) and
+% the node [2, 4). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\tikzset{s/.style={draw,rounded corners=1pt,minimum width=14mm,
+  minimum height=6mm,font=\small}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[s] (r) at (0,0) {$[ 0 , 4 )$};
+  \node[s] (l) at (-24mm,-12mm) {$[ 0 , 2 )$};
+  \node[s,fill=adsTouched] (h) at (24mm,-12mm) {$[ 2 , 4 )$};
+  \node[s] (l0) at (-36mm,-24mm) {$[ 0 , 1 )$};
+  \node[s,fill=adsTouched] (l1) at (-12mm,-24mm) {$[ 1 , 2 )$};
+  \node[s] (h0) at (12mm,-24mm) {$[ 2 , 3 )$};
+  \node[s] (h1) at (36mm,-24mm) {$[ 3 , 4 )$};
+  \draw (r) -- (l); \draw (r) -- (h);
+  \draw (l) -- (l0); \draw (l) -- (l1); \draw (h) -- (h0); \draw (h) -- (h1);
+  \node[var,anchor=west] at (34mm,-12mm) {$L = ( e )$};
+  \node[var,anchor=north] at (-12mm,-28.5mm) {$L = ( e )$};
+  \foreach \n/\i in {l0/0,l1/1,h0/2,h1/3}
+    \node[index,anchor=north] at ($(\n.south)+(0,-6.5mm)$) {question \i};
+\end{tikzpicture}
+\end{document}

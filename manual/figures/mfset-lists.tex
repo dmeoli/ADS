@@ -1,0 +1,24 @@
+% Source for the figure of ListMFSet (sec. 11.2): the vector of the heads and
+% the lists of the heads 0 and 1, before and after merge(3, 4), which
+% relabels the elements of the shorter list. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {$\mathit{head}$};
+  \cells{a}{0,0}{0/cell,1/cell,2/cell,0/cell,1/cell,1/cell}
+  \indices{a}{6}
+  \node[var,anchor=west] at (46mm,0) {$L[ 0 ] = ( 0 , 3 )$, $L[ 1 ] = ( 1 , 4 , 5 )$};
+  \node[var,anchor=west] at (46mm,-6mm) {before};
+  \node[var,anchor=east] at (-6mm,-18mm) {$\mathit{head}$};
+  \cells{b}{0,-18mm}{1/touched,1/cell,2/cell,1/touched,1/cell,1/cell}
+  \indices{b}{6}
+  \node[var,anchor=west] at (46mm,-18mm) {$L[ 0 ] = ( )$, $L[ 1 ] = ( 1 , 4 , 5 , 0 , 3 )$};
+  \node[var,anchor=west] at (46mm,-24mm) {after \texttt{merge(3, 4)}};
+\end{tikzpicture}
+\end{document}
