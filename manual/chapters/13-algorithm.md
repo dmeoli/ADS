@@ -53,8 +53,9 @@ exponents $c$, $p$, $q$ and $r$, together with a flag `upper` for a bound
 that is only an upper one ($O$ instead of $\Theta$). Two orders (13.1)
 compare as their functions do for $n$ large, i.e., lexicographically on
 $( c , p , q , r )$, since each factor dominates any power of the factors
-after it; this is the comparison `operator<=>` of `Growth`, which ignores
-`upper`, and it gives the hierarchy $1 \prec \log n \prec n \prec n \log n
+after it; this is the comparison `operator<=>` of `Growth` (with the `operator==` that
+follows from it), which ignores `upper`, while `at( n )` evaluates the function
+(13.1) at $n$; the comparison gives the hierarchy $1 \prec \log n \prec n \prec n \log n
 \prec n^2 \prec n^3 \prec 2^n$. Note that $2^{\log_2 n} = n$ is a
 polynomial, and that the orders that lie between two families, such as
 $n^{\log n}$ (which grows faster than every polynomial and slower than
@@ -91,8 +92,9 @@ root dominates. If $\beta = \alpha$, the level $j$ costs $\Theta( n^\alpha
 \log^k ( n / b^j ) )$, and the sum over the levels is, up to a constant,
 that of $i^k$ for $i$ from 1 to $\log_b n$, i.e., $\Theta( \log^{k+1} n )$
 for $k > -1$, the harmonic sum $\Theta( \log \log n )$ for $k = -1$, and a
-convergent series for $k < -1$. One can check that the floors and the ceilings of the sizes
-change no order. $\square$
+convergent series for $k < -1$. That the floors and the ceilings of the sizes
+change no order is the result of [Leighton 1996](Z-bibliography.md#ref-leighton1996)
+quoted below for (13.4), of which (13.2) is the case of one term, $a_1 = a$ and $b_1 = 1 / b$. $\square$
 
 ![Figure 13.1. The tree of the recursion of (13.2), drawn for $a = 2$ in its first levels: each node is labelled with the cost of dividing and combining its instance, and the cost of a level is written on its right.](../figures/algorithm-recursion.svg){#fig-13-1}
 
@@ -137,9 +139,9 @@ for $g( n ) = \Theta( n^\beta \log^k n )$ the order (13.4) is that of
 *Proof.* Each term $a_i b_i^p$ is strictly decreasing in $p$, since $0 <
 b_i < 1$, and it goes from $+\infty$ to 0; hence so does $f$, and its root
 is unique. With $g( u ) = u^\beta \log^k u$ the integrand of (13.4) is
-$u^{\beta - p - 1} \log^k u$, whose integral from 1 to $n$ is $\Theta( 1 )$
+$u^{\beta - p - 1} \log^k u$ (for $k < 0$, $g$ is defined only for $u > 1$, and we start the integral at $u = 2$, which changes it by a constant), whose integral up to $n$ is $\Theta( 1 )$
 for $\beta < p$ and $\Theta( n^{\beta - p} \log^k n )$ for $\beta > p$,
-while for $\beta = p$ it is $\int_1^n \log^k u \, du / u$, i.e., $\Theta(
+while for $\beta = p$ it is $\int_2^n \log^k u \, du / u$, i.e., $\Theta(
 \log^{k+1} n )$, $\Theta( \log \log n )$ or $\Theta( 1 )$ as $k$ is
 larger than, equal to or smaller than $-1$. $\square$
 
@@ -168,7 +170,7 @@ Recurrences that decrease the size by a constant, $T( n ) =
 tree of depth $\Theta( n )$.
 
 <span id="thm-13-3"></span>**Theorem 13.3.** *Let $a = \sum_{i=1}^h a_i$,
-with the $a_i$ integers not negative. If $a = 1$, then $T( n ) = \Theta(
+with the $a_i$ integers not negative, and $\beta \ge 0$. If $a = 1$, then $T( n ) = \Theta(
 n^{\beta + 1} )$; if $a \ge 2$, then $T( n ) = O( a^n n^\beta )$.*
 
 *Proof.* With $a = 1$ the recurrence is $T( n ) = T( n - i ) + \Theta(
@@ -252,7 +254,7 @@ bits and sets none, and its amortized cost is $k - k = 0$. Hence the total
 cost is at most $2 n$ minus the final potential. $\square$
 
 We remark that the method of the potential is the one that the other structures of the
-library typically use (we will meet it often), e.g., the Fibonacci heap and the splay tree (cf. chapters 8 and 9), since it charges
+library typically use, e.g., the splay tree ([§8.8](08-tree.md#sec-8-8)) and the Fibonacci heap ([§9.7](09-priority.md#sec-9-7)), since it charges
 each operation by the state that it leaves instead of by a count over the
 sequence. Also, the contracts of `add()` check, as an audit, that the items of
 $A$ are bits, and that at most $k$ of them change.
@@ -265,7 +267,7 @@ iterative by keeping that stack by hand ([Montresor 2025,
 are the example: $n$ disks of different sizes lie on the peg
 `source`, and they must be moved to the peg `dest`, one at a time and never
 on a smaller disk, with the peg `middle` as a spare. Its recursive
-procedure ([Algorithm 13.5](13-algorithm.md#alg-13-5)) moves the $n - 1$
+procedure (`hanoi_recursive()`, [Algorithm 13.5](13-algorithm.md#alg-13-5)) moves the $n - 1$
 smaller disks on `middle` (the call (1)), the largest one on `dest`, and
 the $n - 1$ disks on `dest` (the call (2)). Each of the three functions of
 the header hands each move to a function `f( from , to )` given by the
@@ -280,11 +282,17 @@ recursion ([Montresor 2025, §4.4](Z-bibliography.md#ref-montresor2025)).
 $T( n ) = 2 T( n - 1 ) + 1 = 2^n - 1$ moves, and no procedure makes fewer.*
 
 *Proof.* The recurrence, with $T( 1 ) = 1$, gives $2^n - 1$ by induction.
-For the lower bound, the largest disk can move only when the other $n - 1$
-disks are all on the third peg, and it must move at least once; before its
-first move the $n - 1$ disks have been moved off it to one peg, and after
-its last move they have been moved onto it, which takes at least $2 T( n -
-1 )$ moves by induction. $\square$
+For the lower bound, let $M( n )$ be the fewest moves of $n$ disks from a
+peg to another; we show $M( n ) \ge 2^n - 1$ by induction, $M( 1 ) = 1$
+being clear. The largest disk must move at least once, and it can move
+only when the other $n - 1$ disks are all on the peg that is neither its
+origin nor its destination, since none of them may lie under it or on the
+peg that receives it. Before its first move, the $n - 1$ smaller disks have
+therefore been moved from the peg `source` to one other peg, which takes at
+least $M( n - 1 )$ moves (the largest disk, which stays at the bottom, does
+not constrain them); after its last move, which ends on `dest`, they are
+moved from one peg onto `dest`, at least $M( n - 1 )$ moves more. Hence
+$M( n ) \ge 2 M( n - 1 ) + 1 \ge 2 ( 2^{n-1} - 1 ) + 1 = 2^n - 1$. $\square$
 
 A first iterative procedure (`hanoi_iterative()`,
 [Algorithm 13.6](13-algorithm.md#alg-13-6)) pushes the parameters of each
@@ -293,7 +301,7 @@ when it pops a frame, it resumes the call left open, moves its disk, and
 simulates the call (2) by changing the parameters once more instead of
 pushing them. This is the elimination of a tail call: since the call (2)
 is the last action of the procedure, nothing of its caller needs to be
-saved. Instead, the second procedure (`hanoi_iterative_labels()`,
+saved. The second procedure (`hanoi_iterative_labels()`,
 [Algorithm 13.7](13-algorithm.md#alg-13-7)) applies instead the systematic
 rules, which apply to any recursion: a call pushes the parameters together
 with the label from which the caller resumes (`AFTER1` after the call (1),
@@ -383,7 +391,7 @@ empty one, and a node at the level $j$ has a child for each way of adding
 the component $j + 1$. A node that `prune()` rejects is not visited, and its
 subtree with it; hence, backtracking is (possibly much) faster than the
 enumeration when the rejections come "early"; each leaf goes to `visit()`,
-which returns true to stop the visit. Chapter 19 is devoted to its uses.
+which returns true to stop the visit. [Chapter 19](19-backtrack.md#ch-19) is devoted to its uses.
 A greedy algorithm (`greedy()`, [Algorithm 13.11](13-algorithm.md#alg-13-11))
 builds a solution by $k$ stages, appending at each one the best of the
 values that `candidates()` declares admissible after the partial solution
@@ -587,7 +595,7 @@ sum $P[ i ] - P[ C_j ]$ stays at least $t$
 ([Algorithm 13.17](13-algorithm.md#alg-13-17) and
 [Figure 13.4](13-algorithm.md#fig-13-4)).
 
-![Figure 13.4. The prefix sums of $D = ( -1 , 3 , -4 , 2 , -3 , 1 , 4 , -1 , 2 , 1 )$ and the walk of `longestSegmentAtLeast()` with $t = 3$ at the end $i = 7$, when the best length so far is $\ell = 1$: the chain $5 , 3 , 1$ stays below the dashed line $P[ i ] - t$, the next start 0 does not, and the best segment becomes $D[ 1 .. 6 ]$, of sum 3.](../figures/algorithm-lmin.svg){#fig-13-4}
+![Figure 13.4. The prefix sums of $D = ( -1 , 3 , -4 , 2 , -3 , 1 , 4 , -1 , 2 , 1 )$ and the walk of `longestSegmentAtLeast()` with $t = 3$ at the end $i = 7$, when the best length so far is $\ell = 1$: the chain $5 , 3 , 1$ stays on or below the dashed line $P[ i ] - t$, the next start 0 does not, and the best segment becomes $D[ 1 .. 6 ]$, of sum 3.](../figures/algorithm-lmin.svg){#fig-13-4}
 
 <span id="alg-13-17"></span>**Algorithm 13.17.** The longest segment of
 sum at least $t$.
@@ -710,7 +718,7 @@ respect to it. There are $\lceil \log n \rceil$ widths, each costing $O( n
 )$. $\square$
 
 Note that the sum of the counts is the number of the inversions of $A$, which the
-contracts check as an audit against `countInversions()` of chapter 12;
+contracts check as an audit against `countInversions()` of [§12.4](12-sort.md#sec-12-4);
 equal items do not count. A Fenwick tree on the ranks of the items gives
 the same counts in $O( n \log n )$ by a scan from the right ([Fenwick
 1994](Z-bibliography.md#ref-fenwick1994)), with a tree of $n$ counters in
@@ -848,7 +856,7 @@ up ([Montresor 2025, §13.6](Z-bibliography.md#ref-montresor2025)).
 `zaino()` is the memoization of the book ([Algorithm 13.24](13-algorithm.md#alg-13-24)),
 which solves only the subproblems that the recursion from $( n , C )$
 reaches. Its memo is a hash table per object (a `ChainedHashTable` of
-chapter 7, of key $c$) instead of a table of $( n + 1 ) ( C + 1 )$ places,
+[§7.4](07-dictionary.md#sec-7-4), of key $c$) instead of a table of $( n + 1 ) ( C + 1 )$ places,
 whose initialization alone would cost $\Theta( n C )$; hence any capacity
 up to the largest `long` is allowed, which `knapsack()` cannot do. One
 table per object, instead of one table of key $i ( C + 1 ) + c$, avoids the
@@ -1034,7 +1042,8 @@ $$
 
 since an optimal set either leaves the interval $i$ out, or contains it
 together with an optimal set of the intervals that end before it starts,
-which are the first $\mathit{pred}[ i ]$ ones. `maxinterval()` computes all
+which are the first $\mathit{pred}[ i ]$ ones. `maxinterval()` takes the
+intervals as `WeightedInterval`s, of fields `a`, `b` and `w`, and computes all
 the predecessors by one scan of the $2 n$ ends sorted, a right end coming
 before a left one equal to it (the intervals are open on the right, and an
 interval that ends at $x$ is compatible with one that starts at $x$): a
@@ -1308,7 +1317,7 @@ length is the cost found. In the literature, [Hu and Tucker
 optimal alphabetic tree, where only the $q_j$ count (the keys in the
 leaves); a tree within a constant of the optimum comes in $O( n )$ from the
 weight-balancing rule of [Mehlhorn 1975](Z-bibliography.md#ref-mehlhorn1975);
-and the splay trees of chapter 8 are within a constant of the optimal
+and the splay trees of [§8.8](08-tree.md#sec-8-8) are within a constant of the optimal
 static tree without knowing the weights.
 
 **Partitions of a sequence.** The linear partition problem (also the
@@ -1366,7 +1375,7 @@ rows and $n$ columns, each cell from its neighbours above and to the
 left, and keep one row of the table ([Algorithm 13.37](13-algorithm.md#alg-13-37);
 [Skiena and Revilla 2003](Z-bibliography.md#ref-skiena2003)).
 `largestSquare()` (exercise B3 of 10/09/2012) finds the largest square of
-nonzero cells of a 0/1 matrix: with $S[ i ][ j ]$ the side of the largest
+nonzero cells of a 0/1 matrix, returned as a `GridSquare` (its side, 0 for none, and the row and the column of its upper left cell): with $S[ i ][ j ]$ the side of the largest
 one with its lower right corner in $( i , j )$, $S[ i ][ j ] = 0$ on a zero
 cell and otherwise 1 plus the least of $S[ i - 1 ][ j ]$, $S[ i - 1 ][ j -
 1 ]$ and $S[ i ][ j - 1 ]$, since the three squares cover the square of
@@ -1464,7 +1473,7 @@ and the others start after that one ends; hence the greedy is optimal, in
 $O( n \log n )$ time for the sort. It is (13.11) with all the weights
 equal, where the dynamic programming is not needed.
 
-![Figure 13.7. Seven intervals: the violet ones are those that `independentSet()` takes (by increasing right end, those that start at or after the end of the last one taken), and each one carries the color that `intervalColoring()` gives it; three colors are needed, since the point 2.5 lies in three intervals.](../figures/optimization-intervals.svg){#fig-13-7}
+![Figure 13.7. Seven intervals: the violet ones are those that `independentSet()` takes (by increasing right end, those that start at or after the end of the last one taken), and each one carries the color that `intervalColoring()` gives it; three colors are needed, since the point 2.5 lies in three intervals, and since the free colors are kept on a stack, the color freed last is taken first, so that $[ 8 , 11 )$ takes the color 2 that $[ 2 , 8 )$ gives back at 8, and $[ 9 , 12 )$ the color 1 that $[ 6 , 9 )$ gives back at 9.](../figures/optimization-intervals.svg){#fig-13-7}
 
 <span id="alg-13-39"></span>**Algorithm 13.39.** The greedy algorithms
 on intervals and on points of a line ([Montresor 2025, §14.2 and
@@ -1530,8 +1539,9 @@ by the fewest intervals.
 **Scheduling.** `shortestJobFirst()` orders $n$ programs of durations
 $t_i$, run one after the other, in the order of least average time of
 completion ([Montresor 2025, exercise 14.5](Z-bibliography.md#ref-montresor2025)):
-by increasing duration, since moving the shortest program to the front of
-any order does not increase any time of completion. With the weights $w_i$
+by increasing duration, since swapping two adjacent programs of which the
+longer runs first does not increase the sum of the times of completion
+([Lemma 13.17](13-algorithm.md#lem-13-17) below, with unit weights). With the weights $w_i$
 of the programs (e.g., the probabilities of the files on a tape, which are
 read, in fact, at the times of completion), the order of least weighted sum $\sum_i
 w_i C_i$ of the times of completion $C_i$ is the rule of [Smith
@@ -1648,8 +1658,9 @@ $d$ roots. For $n$ variables, write the polynomial as one in $x_1$ of
 degree $e$, whose leading coefficient is a nonzero polynomial of total
 degree at most $d - e$ in the other variables: by induction, the
 coefficient vanishes with probability at most $( d - e ) / \lvert S
-\rvert$, and if it does not, the polynomial in $x_1$ vanishes with
-probability at most $e / \lvert S \rvert$. $\square$
+\rvert$, and if it does not, the polynomial in $x_1$, of degree $e$ once the other
+variables are fixed, vanishes with probability at most $e / \lvert S
+\rvert$ over $x_1$; the two bounds add up to $d / \lvert S \rvert$. $\square$
 
 Hence `zeroPolynomial()`, which evaluates a polynomial $p$ of total degree
 $d$, given as a function of its $n$ variables, at $K$ points drawn from
@@ -1768,9 +1779,12 @@ Each exercise names the test of the library that solves it (run it with
 4. Make the towers of Hanoi iterative, once by eliminating the tail call
    and once by the systematic rules, and check that the three procedures
    make the same $2^n - 1$ moves. Test: `ch04.sec4.4.hanoi`.
-5. Write the 0-1 knapsack through the schemes of the enumeration, of
-   backtracking, of the greedy choice and of divide et impera, and compare
-   their answers. Test: `beyond.paradigms`.
+5. Instantiate each general scheme: the linear search, the sort and the
+   0-1 knapsack by the enumeration (the knapsack checked against
+   `knapsack()`), the $n$ queens by backtracking, the minimum and the
+   maximum by divide et impera, the change by the greedy scheme, and the
+   maximal elements of a list for three partial orders. Test:
+   `beyond.paradigms`.
 6. Find a segment of largest sum by the four algorithms of the cubic,
    quadratic and linear time, and check that they agree on random arrays.
    Test: `pearls_io.ch2.max-sum-random`.
