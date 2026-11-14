@@ -56,10 +56,10 @@
  *   \log_2 ( 1 - p ) } \Bigr\rceil \Bigr\} , \qquad
  *   \varphi = \frac{ 1 + \sqrt{ 5 } }{ 2 } ,
  * \f]
- * a function of \f$ m \f$ alone, so that the code of a seed takes
- * \f$ c + \log_2 ( 1 / p ) \f$ bits in expectation with
- * \f$ 1.56 \le c < 2.56 \f$, and a tree of \f$ m \f$ keys with \f$ t \f$
- * nodes \f$ c t + m \log_2 e + O( \log m ) \f$ bits. The \f$ r( p ) \f$ low
+ * a function of \f$ m \f$ alone, so that the code of a seed takes fewer
+ * than \f$ \log_2 ( 1 / p ) + 1.563 \f$ bits in expectation, and a tree of
+ * \f$ m \f$ keys with \f$ t \f$ nodes at most
+ * \f$ 1.563 t + m \log_2 e \f$ bits. The \f$ r( p ) \f$ low
  * bits of all the seeds of a bucket come first, then all their unary parts;
  * a table of the sizes \f$ m < 4096 \f$, computed once for each \f$ \ell \f$,
  * gives \f$ r \f$, the low bits of a subtree and its number of nodes, so

@@ -23,9 +23,10 @@
  * - `Node256` keeps the 256 pointers, the byte of the key being the place.
  *
  * A node grows to the next layout when it is full and shrinks to the
- * previous one when it holds fewer than a quarter of its places (3 in a
- * `Node16`, 12 in a `Node48`, 37 in a `Node256`), with a slack against the
- * repeated changes of layout on an insertion and a removal. A chain of
+ * previous one when it holds at most 3 children (a `Node16`), 12 (a
+ * `Node48`) or 37 (a `Node256`), so that the smaller layout keeps about a
+ * quarter of its places free, a slack against the repeated changes of
+ * layout on an insertion and a removal. A chain of
  * nodes with a single child is compressed into the prefix of the first
  * node that branches (the path compression): the prefix is the length of
  * the chain and its first 8 bytes, a search skipping the bytes past 8
@@ -212,9 +213,9 @@ AdaptiveRadixTree( void ) = default;
  /// \f]
  bool insert( std::string_view k , const V & v );
 
- /// removes \f$ k \f$, shrinking its node to the previous layout below a
- /// quarter of its places and merging a node left with a single child into
- /// its prefix; true if it was there
+ /// removes \f$ k \f$, shrinking its node to the previous layout when that
+ /// keeps about a quarter of its places free and merging a node left with a
+ /// single child into its prefix; true if it was there
  bool remove( std::string_view k );
 
  /// true if \f$ k \f$ is there

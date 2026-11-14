@@ -195,7 +195,9 @@ each view is given with its queue.
 
 <span id="tab-9-1"></span>**Table 9.1.** The realizations of the priority
 queues in `ADS/priority` and the costs of their operations ($^*$
-amortized, $^\dagger$ expected); $n$ is the number of items, $d$ the
+amortized, $^\dagger$ expected, $^\ddagger$ amortized when each layer is
+filled and then emptied and the first keys are monotone, by Lemmas
+[9.15](09-priority.md#lem-9-15) and [9.16](09-priority.md#lem-9-16)); $n$ is the number of items, $d$ the
 arity of a heap, $W$ the bits of an integer key, $B$ those of a digit and
 $N$ the buckets of the window of `DialQueue`.
 
@@ -213,7 +215,7 @@ $N$ the buckets of the window of `DialQueue`.
 | `PairingHeap` | $O( 1 )$ | $O( 1 )^*$ | $O( \log n )^*$ | $O( 2^{2 \sqrt{\log \log n}} )^*$ |
 | `RadixHeap` (monotone) | as `pop()` | $O( 1 )$ | $O( W / B + 2^B W / ( 64 B ) )^*$ | none |
 | `DialQueue` (monotone, band $C < N$) | as `pop()` | $O( 1 )$ | $O( 1 + N / 64 )$ | none |
-| `BucketQueue` (two small keys) | $O( 1 )^*$ | $O( 1 )^*$ | $O( 1 )^*$ | none |
+| `BucketQueue` (two small keys) | $O( 1 )^\ddagger$ | $O( 1 )$ | $O( 1 )^\ddagger$ | none |
 | `MinMaxHeap`, `IntervalHeap` | $O( 1 )$, and the max | $O( \log n )$ | $O( \log n )^*$, and the max | none |
 | `SequenceHeap` | $O( 1 )$ | $O( \log n )^*$ | $O( \log n )^*$ | none |
 
@@ -412,9 +414,9 @@ $h$ swaps of $d$ comparisons each; hence they cost $O( \log_d n )$,
 $O( \log_d n )$ and $O( d \log_d n )$ time.*
 
 *Proof.* During the walk up from the place $i$, (9.2) holds everywhere but
-possibly between $A[ i ]$ and its parent, and also between the parent of
-$i$ and the children of $i$, since the item at $i$ only decreased with
-respect to what was there. A swap of $A[ i ]$ with its larger parent moves
+possibly between $A[ i ]$ and its parent; moreover, the parent of $i$ is
+not larger than the children of $i$, since the item at $i$ is the only one
+that changed and it only decreased. A swap of $A[ i ]$ with its larger parent moves
 the only violation one level up, and the walk stops at the root or where
 the parent is not larger. In the walk down, (9.2) holds everywhere but
 possibly between $A[ i ]$ and its children; the smaller child, moved up,
@@ -731,7 +733,9 @@ template< class K , unsigned D = 4 > class IndexedDaryHeap {
 ![Figure 9.9. An `IndexedDaryHeap` drawn with $D = 2$ for brevity: the vector $A$ of the pairs key:id and the vector $\mathit{pos}$ of the places of the ids 0 to 7, $-1$ for the ids not in the heap; `decrease(2,1)` reads the place 5 of the id 2 and moves it up past 3:7 and 2:5 (violet), updating the places of the three ids it moves (orange the new place of the id 2).](../figures/prio-indexed.svg){#fig-9-9}
 
 Its space is that of the $s$ entries and of the $n$ places, i.e.,
-$( 4 + k ) s + 4 n$ bytes for keys of $k$ bytes and ids of 4 bytes. With
+$e s + 4 n$ bytes for entries of $e$ bytes and ids of 4 bytes: $e = 8$
+for keys of 4 bytes and $e = 16$ for keys of 8, the entry being padded to
+the alignment of its key. With
 32-bit keys and $D = 4$, the four children of a node take half a line of
 the cache. `pushOrDecrease(id,k)` pushes an id that is not in the heap and
 lowers the key of one that is (the relaxation of an edge in the algorithm
@@ -950,8 +954,9 @@ and $n_2$ nodes takes $O( \log n_1 + \log n_2 )$ expected time, whatever
 their shapes ([Morin 2013, Lemma 10.2](Z-bibliography.md#ref-morin-cpp)).*
 
 *Proof.* Each step of the merge takes one step of a random walk in one of
-the two heaps, the one whose root is not on top, and the merge ends as soon
-as one of the two walks leaves its tree. Since the coins of the two walks are
+the two heaps, the one whose root is on top, from that root to one of its
+children, and the merge ends as soon as one of the two walks leaves its
+tree. Since the coins of the two walks are
 independent of the shapes, the expected number of steps is
 at most $\log_2( n_1 + 1 ) + \log_2( n_2 + 1 )$ by
 [Lemma 9.9](09-priority.md#lem-9-9). $\square$
@@ -1518,6 +1523,33 @@ both keys as an `Entry`, finding the top once instead of three times (tests
 `engineered.bucket-queue`, `engineered.bucket-queue-sparse` and
 `heaps.bucket-queue-cells`).
 
+The outer level adds the scan for the least $f$, which a bound of the same
+kind covers. Let $\varphi$ be the least $f$ known to the queue: a push sets
+it to its $f$ when the queue is empty or when $f < \varphi$, and `top()`
+and `pop()` move it forward to the first layer in use.
+
+<span id="lem-9-16"></span>**Lemma 9.16.** *Over any sequence of
+operations, the scans of the outer level make at most
+$F + \sum ( \varphi - f )$ steps, $F$ the largest $f$ pushed and the sum
+over the pushes of an $f < \varphi$; hence
+at most $2 F$ steps in all when no push has an $f$ smaller than the last
+$f$ popped.*
+
+*Proof.* A step of a scan raises $\varphi$ by 1, a push lowers it by
+$\varphi - f$ when $f < \varphi$ and otherwise leaves it or, into an empty
+queue, raises it, and $\varphi$ stays between 0 and $F$, since a scan stops
+at a layer in use. The steps are thus at most $F$ plus the total of the
+lowerings. A pop leaves $\varphi$ at the $f$ that it
+popped, and pushes only lower it; hence, when no push has an $f$ smaller
+than the last $f$ popped, no push after the first pop lowers $\varphi$,
+and those before it lower it by at most $F$ in all, from the $f$ of the
+first push down to the least $f$ pushed. $\square$
+
+In the search A* with a consistent estimate, whose pops come by
+nondecreasing $f$ and whose pushes are not below the $f$ of the node
+expanded, the outer level thus costs $O( F )$ in all, i.e., $O( 1 )$
+amortized per operation when the operations are $\Omega( F )$.
+
 ## 9.10 Double-ended queues {#sec-9-10}
 
 A double-ended priority queue has both the best and the worst item at hand,
@@ -1608,7 +1640,7 @@ template< class T , class Better = std::less< T > > class IntervalHeap {
 
 ![Figure 9.18. The same 13 items in a min-max heap (top), whose levels alternate between the order for the least item and that for the greatest, the least 2 at the root and the greatest 70 among its children, and in an interval heap (bottom), whose nodes are intervals contained in the interval of their parent.](../figures/prio-minmax.svg){#fig-9-18}
 
-<span id="lem-9-16"></span>**Lemma 9.16.** *In a min-max heap the best item
+<span id="lem-9-17"></span>**Lemma 9.17.** *In a min-max heap the best item
 is the root and the worst is the worse of the children of the root; in an
 interval heap both are in the root. A push makes $O( \log n )$
 comparisons in either heap, and so does a removal of either end.*
@@ -1631,7 +1663,7 @@ heap again in $O( n )$ time: an interval heap straight from the sorted
 items, the node $j$ holding the $j$-th best and the $j$-th worst, and a
 min-max heap by the construction from the bottom up of the paper.
 
-<span id="lem-9-17"></span>**Lemma 9.17.** *With the sort of the runs of
+<span id="lem-9-18"></span>**Lemma 9.18.** *With the sort of the runs of
 removals, each removal of a min-max heap or of an interval heap costs
 $O( \log n )$ amortized.*
 
@@ -1666,7 +1698,9 @@ a NaN, which has no place in the order, has one among the keys.
 
 The merge of $k$ sorted sequences extracts at each step the least of
 their first items. A heap of the $k$ first items does it with a `pop()` and
-a `push()`, up to $2 \log_2 k$ comparisons, as in [Morin 2013, exercise
+a `push()`, up to $3 \lfloor \log_2 k \rfloor$ comparisons, or with a
+replacement of its top in one walk down, up to
+$2 \lfloor \log_2 k \rfloor$, as in [Morin 2013, exercise
 10.11](Z-bibliography.md#ref-morin-cpp) ([§9.4](09-priority.md#sec-9-4)).
 The *tree of losers* of a tournament ([Knuth 1998,
 §5.4.1](Z-bibliography.md#ref-knuth1998v3)) does it with half as many.
@@ -1704,7 +1738,7 @@ stored there.
 
 ![Figure 9.19. A tree of losers of 8 players: the internal nodes hold the losers of their matches (player:key), the node above the root the winner p1. `replace(11)` gives p1 the key 11 and replays the three matches of its path: p1 beats p0 (12), loses to p3 (9), which in turn loses to p5 (7), the new winner (violet the path, orange the new key and the new winner).](../figures/prio-loser.svg){#fig-9-19}
 
-<span id="lem-9-18"></span>**Lemma 9.18.** *A replay makes
+<span id="lem-9-19"></span>**Lemma 9.19.** *A replay makes
 $\lfloor \log_2 k \rfloor$ or $\lceil \log_2 k \rceil$ comparisons, and the
 merge of $n$ items in all through `kWayMerge()` makes at most*
 
@@ -1861,33 +1895,32 @@ however, it joins the group with no merge. The best item is then the
 better of the top of the insertion heap and of the first item of the
 deletion buffer.
 
-<span id="lem-9-19"></span>**Lemma 9.19.** *With $R = \lceil \log_k( n / m )
-\rceil$ groups, `push()` and `pop()` make $O( \log m + R \log k ) =
-O( \log n )$ amortized comparisons, and with $m = \Theta( M )$ and
+<span id="thm-9-4"></span>**Theorem 9.4.** *([Sanders 2000, Theorem
+1](Z-bibliography.md#ref-sanders2000).) Let a sequence heap have an
+insertion heap of $m$ items, groups of at most $k$ sequences, the group $i$
+with sequences of at most $m k^{i - 1}$ items, and the two invariants
+above, and let its merges be made by trees of losers that read and write
+their sequences in order. With $R = \lceil \log_k( n / m ) \rceil$ groups,
+`push()` and `pop()` then make $O( \log m + R \log k ) = O( \log n )$
+amortized comparisons, and with $m = \Theta( M )$ and
 $k = \Theta( M / B )$ they cause*
 
 $$
 O\Bigl( \frac{1}{B} \log_{M / B} \frac{n}{M} \Bigr) \tag{9.10}
 $$
 
-*amortized misses of the cache per item ([Sanders 2000, Theorem
-1](Z-bibliography.md#ref-sanders2000)).*
+*amortized misses of the cache per item.*
 
-*Proof (sketch).* An item is pushed into $I$ and sorted once, $O( \log m )$
-comparisons, and then merged once per group it goes through, at most $R$
-groups, each merge of $k$ sequences costing $O( \log k )$ comparisons per
-item through a tree of losers; the refills of the buffers move each item
-once more per group. Our merges read and write their sequences in order,
-$O( 1 / B )$ misses per item and group as long as a block of each of the
-$k$ sequences fits in the cache, which $k = \Theta( M / B )$ ensures, and
-there are $O( \log_{M / B}( n / M ) )$ groups. The sketch assumes
-without proof the amortization of [Sanders 2000, Theorem
-1](Z-bibliography.md#ref-sanders2000) over the merges of the full groups,
-which charges to each item the merges of the groups that it crosses. The
-theorem is stated for the scheme of the paper, and covers neither the compaction of a full group that is half empty, for
-which we give no bound, nor the bulk of the pushes into an empty
-heap, which the code adds and whose incremental quicksort has the bound of
-Navarro and Paredes given below. $\square$
+We do not reproduce the proof, whose amortization over the merges of the
+full groups charges to each item the merges of the groups that it crosses
+and the refills of their buffers. The hypotheses hold for the code as far
+as the scheme of the paper goes: the sizes of the groups and the two
+invariants are those above, and the merges are those of the trees of
+losers of [§9.11](09-priority.md#sec-9-11), which read and write in order.
+However, the theorem covers neither the compaction of a full group that is
+half empty, which the code adds and for which we give no bound, nor the
+bulk of the pushes into an empty heap, whose incremental quicksort has the
+bound of Navarro and Paredes given below.
 
 The bound (9.10) is that of the sorting in external memory divided by the
 items. In the code $m = 4096$ (the public constant `M`), and the insertion heap of pairs of two
@@ -1925,7 +1958,7 @@ computation needs, and only then on their constants. A queue that is only
 pushed and popped, with "small" items that carry their keys, is typically
 best served by `DaryHeap` with $D = 4$ ([Lemma 9.5](09-priority.md#lem-9-5)),
 or, when it holds many more items than the cache, by `SequenceHeap`
-([Lemma 9.19](09-priority.md#lem-9-19)); the lazy deletion makes either one
+([Theorem 9.4](09-priority.md#thm-9-4)); the lazy deletion makes either one
 serve the algorithms that would decrease a key. When the items are the
 nodes of a graph and the decreases are real, `IndexedDaryHeap` keeps the
 keys in the heap and the places in a vector, and is usually preferable to
@@ -2122,12 +2155,12 @@ Each exercise names the test of the library that solves it (run it with
     `engineered.bucket-queue`, `engineered.bucket-queue-sparse`,
     `heaps.bucket-queue-cells`, `contract_priority.bucket-dary-loser`.
 27. Realize the min-max heap and the interval heap, with the sort of the
-    runs of removals ([Lemma 9.17](09-priority.md#lem-9-17)), and audit the
+    runs of removals ([Lemma 9.18](09-priority.md#lem-9-18)), and audit the
     order of large heaps in linear total time. Tests:
     `heaps.double-ended-heaps`, `heaps.large-heap-audits`.
 28. Merge $k$ sorted runs through a tree of losers with
     $\lceil \log_2 k \rceil$ comparisons per item, stably
-    ([Lemma 9.18](09-priority.md#lem-9-18)), and through the tree with the
+    ([Lemma 9.19](09-priority.md#lem-9-19)), and through the tree with the
     keys in its nodes and the funnel of binary mergers. Tests:
     `pearls_io.ch5.loser-tree`, `engineered_pearls.flat-loser-tree`,
     `engineered_pearls.multiway-merge`,

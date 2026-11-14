@@ -65,8 +65,10 @@
  * value, an audit; a labeling satisfies every edge, a postcondition. A
  * build that draws 1000 functions of the first level, or 1000 graphs, with
  * no success throws `std::runtime_error`, which for distinct keys has a
- * probability below \f$ 2^{-100} \f$. The functions are defined in
- * `PerfectHashing.tpp`.
+ * probability below \f$ 3^{-1000} \f$ for the first level and, for
+ * \f$ r = 2 \f$ and \f$ c = 3 \f$, one that tends to
+ * \f$ ( 1 - 1 / \sqrt{3} )^{1000} \f$ for the graphs. The functions are
+ * defined in `PerfectHashing.tpp`.
  *
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
  *      Press, 2023, chapter 8, The Dictionary Problem,
