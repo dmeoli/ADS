@@ -112,7 +112,7 @@ line 10 sends the single item equal to the splitter $j$ (if any) to the
 piece $j$; hence the process $j$ receives the items $x$ with
 $s_j \le x < s_{j + 1}$, where $s_0 = - \infty$ and $s_P = + \infty$.
 Since $s_j$ and $s_{j + 1}$ are the samples of the places $j ( P - 1 )$
-and $( j + 1 ) ( P - 1 )$ of $S$, the interval holds exactly $P - 1$
+and $( j + 1 ) ( P - 1 )$ of $S$, the interval holds $P - 1$
 samples. Let $t_i$ be those of the process $i$, so that
 $\sum_i t_i = P - 1$. The samples of the process $i$ are its items of the
 places $w , 2 w , \ldots , ( P - 1 ) w$, with $w = n / P^2$, and the
@@ -187,7 +187,7 @@ messages per level over $\ell$ levels; ADS does not realize them.
 `MPI_Init_thread()` at the funneled level unless it is already started,
 and ends it by `MPI_Finalize()` if it started it; the funneled level (only
 the thread that started MPI calls it) suffices for the mailbox, and another
-level may be asked by the third argument of the constructor, `level()`
+level may be requested by the third argument of the constructor, `level()`
 giving the one that MPI provides (or `MPI_THREAD_SINGLE`, if the object did
 not start MPI). The object cannot be copied, since MPI ends once.
 `MPIExecutor` holds a communicator (`MPI_COMM_WORLD` by default, given back
@@ -363,7 +363,7 @@ packed into a batch until it holds `batch` bytes (65536 by default),
 of a type that is not trivially copyable is an `MPIByteMailbox` whose
 bytes are those of `MPICodec<Msg>`, the customization point that encodes
 a message (`encode( x , out )` appends its bytes to `out`) and decodes it
-(`decode( b )` rebuilds it from exactly those bytes), given for `std::string` and for the vectors of
+(`decode( b )` rebuilds it from those bytes), given for `std::string` and for the vectors of
 trivially copyable items. A record carries at most $2^{32} - 1$ bytes. The bytes $b$ that `poll(f)`
 of `MPIByteMailbox` passes to `f(t, b)` are valid during the call, at an
 offset multiple of 8 of a buffer that `new` allocated (hence aligned for
