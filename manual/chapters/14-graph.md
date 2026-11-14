@@ -168,16 +168,18 @@ column. Also `forEachAdj()`, `forEachEdge()` and the iterator `neighbors(u)`
 adds a row and a column, i.e., $\Theta( n )$ time, and `deleteNode(u)`
 empties both before it marks the name unused, again in $\Theta( n )$.
 
-<span id="lem-14-1"></span>**Theorem 14.1.** *`MatrixGraph` realizes the
-GRAPH in $\Theta( n^2 )$ space, with `insertEdge()`, `deleteEdge()`,
-`hasEdge()` and `weight()` in $O( 1 )$ time, `adj()` and `inAdj()` in
-$\Theta( n )$ time, and `insertNode()` and `deleteNode()` in $\Theta( n )$
-time.*
+<span id="lem-14-1"></span>**Theorem 14.1.** *Let $N = \mathrm{bound}()$,
+which is $n$ when no node has been deleted. `MatrixGraph` realizes the
+GRAPH in $\Theta( N^2 )$ space, with `insertEdge()`, `deleteEdge()`,
+`hasEdge()` and `weight()` in $O( 1 )$ time, `adj()`, `inAdj()` and
+`deleteNode()` in $\Theta( N )$ time, and `insertNode()` in $\Theta( N )$
+amortized time.*
 
-*Proof.* The matrix has $\mathrm{bound}()^2$ places, one optional weight
-each; the costs follow from the number of entries that each operation
-reads or writes, as described above (a new row is $n + 1$ places, and a
-new column one place in each of the $n$ rows). $\square$
+*Proof.* The matrix has $N^2$ places, one optional weight each; the costs
+follow from the number of entries that each operation reads or writes, as
+described above. A new node appends a row of $N + 1$ places and one place
+to each of the $N$ rows, each append amortized $O( 1 )$ since the rows
+are vectors that double. $\square$
 
 Its main defect is the space: $n^2$ places for any number of edges, i.e.,
 $n^2$ optional weights (at least $n^2$ bytes even without weights), where
@@ -253,17 +255,17 @@ leads from them to their head. Thus `inAdj(u)` of an oriented graph scans
 all the lists ([Algorithm 14.2](14-graph.md#alg-14-2)); in an unoriented one
 they are the edges that leave $u$, which the list of $u$ gives in $O( d( u )
 )$. For the same reason `deleteNode(u)` removes $u$ from the list of each
-node before it empties the list of $u$, in $O( n + m )$ time.
+node before it empties the list of $u$, in $O( \mathrm{bound}() + m )$ time.
 
 --8<-- "generated/ListGraph-deleteNode.pseudo.md"
 
-<span id="lem-14-2"></span>**Theorem 14.2.** *`ListGraph` realizes the
-GRAPH in $\Theta( n + m )$ space, with `insertNode()` in $O( 1 )$
+<span id="lem-14-2"></span>**Theorem 14.2.** *With $N = \mathrm{bound}()$,
+`ListGraph` realizes the GRAPH in $\Theta( N + m )$ space, with `insertNode()` in $O( 1 )$
 amortized time, `insertEdge(u,v)`, `deleteEdge(u,v)`, `hasEdge(u,v)` and
 `weight(u,v)` in $O( d( u ) )$ time ($O( d( u ) + d( v ) )$ for the first
 two if the graph is unoriented), `adj(u)` in $\Theta( d( u ) + 1 )$ time,
-`inAdj(u)` in $O( n + m )$ time ($O( d( u ) \log d( u ) )$ if unoriented,
-since the result is sorted), and `deleteNode()` in $O( n + m )$ time.*
+`inAdj(u)` in $O( N + m )$ time ($O( d( u ) \log d( u ) )$ if unoriented,
+since the result is sorted), and `deleteNode()` in $O( N + m )$ time.*
 
 *Proof.* Each list has a node per adjacent node, i.e., $m$ list nodes (or
 $2 m$) besides the vector of the $\mathrm{bound}()$ heads. The insertion,
@@ -325,8 +327,10 @@ of `ArrayGraph` by a counting sort on the tails
 the arcs many times. First, each arc of a weighted graph is a `WeightedArc`,
 i.e., its head next to its weight; hence the scan of the arcs of $u$ reads
 one run of pairs instead of two parallel runs. In all, the graph takes $4 (
-n + 1 ) + ( 4 + s ) a$ bytes, $s$ the size of a weight (0 if unweighted,
-when an arc is an `int`, as the alias `Arc` and the flag `weighted` state).
+n + 1 ) + b a$ bytes, $b$ the size of an arc: 4 if unweighted, when an arc
+is an `int` (as the alias `Arc` and the flag `weighted` state), and
+otherwise 4 plus the size of a weight rounded up to the alignment of the
+weight, e.g., 8 for an `int` or a `float` and 16 for a `double`.
 Second, the arcs of each node are sorted by head. This makes the reads of a
 visit that follows them go forward in memory, and lets `weight(u,v)` and
 `setWeight()` find an arc by a binary search, in $O( \log d( u ) )$. The
@@ -995,8 +999,9 @@ matrix is needed. The fill by spans of [Smith
 instead of a cell, with fewer operations on the queue for the same bound.
 Finally, `knightDistance(n, s, t)` gives the fewest moves of a knight
 between two squares of an $n \times n$ board by a visit of the graph of the
-knight moves, in $\Theta( n^2 )$. It returns `INF` when there is no way
-(only on the boards of 1, 2 and 3 squares a side). On the infinite board
+knight moves, in $\Theta( n^2 )$. It returns `INF` when there is no way,
+which happens only on the boards of 2 and 3 squares a side (on a board of
+one square the two squares are the same). On the infinite board
 the distance has a closed form computable in $O( 1 )$, which differs from
 that of a finite board near its corners.
 
@@ -1031,8 +1036,9 @@ border, and hence the names are those of the map (`node(r, c)` and `cell(u)`
 convert, `cost(u)` and `minCost()` read the costs). The neighbours of $u$
 come from its row and its column, one division, and from at most 8 reads of
 the vector. Thus the graph takes $s \, R \, C$ bytes ($s$ the size of a
-cost, 0 without the vector), against the $4 ( n + 1 ) + ( 4 + s' ) a$ bytes
-of a `StaticGraph` of the same grid with $a \le 8 n$ arcs.
+cost, 0 without the vector), against the $4 ( n + 1 ) + b a$ bytes of a
+`StaticGraph` of the same grid ([§14.4.1](14-graph.md#sec-14-4-1)) with
+$a \le 8 n$ arcs.
 
 A move from $u$ into $v$ costs, with $\gamma( x )$ the cost of the cell $x$,
 either $\gamma( v )$ (the cell entered pays, `MoveCost::ENTERED`, the
