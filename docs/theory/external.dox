@@ -164,8 +164,8 @@
  written joins the current run, a smaller one the next run; on a random
  input the runs have \f$ 2 ( M - 2 B ) \f$ items on average, which saves a
  pass when the number \f$ \lceil n / R \rceil \f$ of the runs of the other
- way lies roughly between a power \f$ k^p \f$ and \f$ 2 k^p \f$, and a sorted input is one
- run.
+ way lies roughly between a power \f$ k^p \f$ and \f$ 2 k^p \f$, and a
+ sorted input is one run.
 
  <em>Lemma 2 (the sample of the distribution).</em> Let the \f$ k - 1 \f$
  pivots be the items of ranks \f$ ( a + 1 ) , 2 ( a + 1 ) , \ldots \f$ of a
