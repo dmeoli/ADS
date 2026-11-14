@@ -17,7 +17,7 @@ its sequential version, in most cases bit for bit (cf. [Lemma
 round does not depend on the threads. Only the executor knows the threads;
 hence, one algorithm runs on the pool of the library, on FastFlow, on
 OpenMP, on oneTBB and on the calling thread alone. We first fix the model of
-the costs ([§25.1](25-parallel.md#sec-25-1)), then describes the executors
+the costs ([§25.1](25-parallel.md#sec-25-1)), then describe the executors
 ([§25.2](25-parallel.md#sec-25-2) to [§25.5](25-parallel.md#sec-25-5)) and
 the patterns that the algorithms share ([§25.6](25-parallel.md#sec-25-6)).
 Next come the algorithms: the merge and the sorts
@@ -170,12 +170,16 @@ which it finds in a variable of the thread. Each of the $p$ places, a
 [§24.5](24-concurrent.md#sec-24-5)) together with the state of a generator
 of random numbers, on separate lines of the cache. A thread pushes on its
 deque the tasks that the others may take, takes them back from the bottom,
-and lets the others steal them from the top. This is the work-first
-principle of Cilk ([Frigo, Leiserson and Randall
-1998](Z-bibliography.md#ref-frigo1998)), which leaves to the thieves the
-oldest tasks, usually the largest ones. A worker that finds its deque empty
+and lets the others steal them from the top. This is the scheduling by work stealing of Cilk
+([Frigo, Leiserson and Randall 1998](Z-bibliography.md#ref-frigo1998)),
+which leaves to the thieves the oldest tasks, usually the largest ones;
+unlike the work-first principle of Cilk, however, the deques hold the
+tasks of the calls not yet started (`g` of `invoke()`, the tokens of
+`bulk()`) rather than the continuations of the caller. A worker that finds its deque empty
 tries the deques of the others, from a random one and then in turn. If all
-are empty, it looks again for 2 ms (a parameter of the pool) and then sleeps
+are empty, it looks again for 2 ms (the parameter `spin` of the
+constructor, in nanoseconds; the number of threads $p$ is the other, the
+hardware threads by default) and then sleeps
 on an event count ([§24.10](24-concurrent.md#sec-24-10)); the event count
 wakes it when a task is pushed, and costs the pusher a light fence and the
 read of a line when nobody sleeps. These 2 ms are those of the runtimes of
@@ -203,9 +207,10 @@ threads that wait for them.
 ![Figure 25.1. The deques of a `ThreadPool` of
 $p = 4$ threads after the caller (slot 0) has pushed the $h = 3$ tokens of a
 job $J$ of `bulk()` (violet), and after two thieves have stolen one token
-each from the top; the caller and the two thieves then claim the calls of
-$J$ from its counter $\mathit{next}$, and the token left is taken back by
-the caller.](../figures/parallel-pool.svg){#fig-25-1}
+each from the top; a stolen token leaves the deques, and the two thieves
+run it with their own deques empty. The caller and the two thieves then
+claim the calls of $J$ from its counter $\mathit{next}$, and the token
+left is taken back by the caller.](../figures/parallel-pool.svg){#fig-25-1}
 
 <span id="alg-25-2"></span>**Algorithm 25.2.** The `bulk()` of `ThreadPool`:
 a job of tokens on the deques of Chase and Lev.
@@ -244,8 +249,8 @@ keeps $\mathit{out}$ above 0 until it is given back, and `bulk()` returns
 only when $\mathit{out} = 0$, i.e., after the last access of each thread to
 $J$. $\square$
 
-<span id="lem-25-4"></span>**Lemma 25.4.** *Let the $n$ calls of a job cost
-$c$ each, and let the thread $k$ of the pool start claiming them at the
+<span id="lem-25-4"></span>**Lemma 25.4.** *Let the $n \ge p$ calls of a
+job cost $c$ each, and let the thread $k$ of the pool start claiming them at the
 instant $s_k$ after the push of the tokens ($s_0 = 0$ for the caller). Then
 the job ends by $n c / p + c + \frac{1}{p} \sum_k s_k$; if the steals of the
 tokens follow one another at intervals of $\sigma$, this is at most $n c /
@@ -305,9 +310,11 @@ suffice in expectation, and the time is $( W + O( p D ) ) / p$. $\square$
 
 A steal moves the oldest task, which in a fork and join is the largest.
 Hence, the steals are few when the parallelism is large, and most tasks run
-on the thread that made them, with their data in its cache. Theorem 25.1
-holds for `invoke()` nested to any depth, since a thread that waits keeps
-stealing. The jobs of `bulk()`, instead, are flat loops on top of it,
+on the thread that made them, with their data in its cache. We expect Theorem 25.1 to
+hold for `invoke()` nested to any depth, since a thread that waits keeps
+stealing; we remark, however, that its proof assumes the scheduler of
+Blumofe and Leiserson, and we have not proved it for a waiting thread that
+runs any task it steals, as the leapfrogging does. The jobs of `bulk()`, instead, are flat loops on top of it,
 balanced as in [Lemma 25.4](25-parallel.md#lem-25-4).
 
 ## 25.4 The executors of FastFlow, OpenMP and oneTBB {#sec-25-4}
@@ -355,8 +362,9 @@ with the dynamic schedule of chunks of 1 on $\min\{ p , n \}$ threads, the
 caller being one of them, as in all the regions of OpenMP ([OpenMP ARB
 2021](Z-bibliography.md#ref-openmp2021)). Its `invoke()` is `bulk()` on 2
 indices, and a call nested in another runs on as many threads as the runtime
-gives a nested region (by default 1). Its lock is `omp_lock_t`, with the
-hint of a test-and-set lock. In fact, the default lock of the runtime of
+gives a nested region (by default 1). Its lock is `omp_lock_t` (the class `OpenMPLock`), built on the
+runtime of LLVM with the hint `omp_sync_hint_uncontended`, which that
+runtime realizes as a test-and-set lock. In fact, the default lock of the runtime of
 LLVM queues the threads and hands over in their order; with more threads
 than cores the next owner is often descheduled, and the others wait behind
 it (libgomp ignores the hint). `TBBExecutor` holds a `task_arena` of $p$
@@ -469,7 +477,9 @@ workers $0 , 1 , \ldots$ of a pool that call it at their start thus fill
 those processors in order. Placement exists on Linux, where the processors
 are the bits of the mask of the process; elsewhere `affinityCpus()` is
 empty, `availableCpus()` falls back on
-`std::thread::hardware_concurrency()`, and `pinThread()` returns false. No
+`std::thread::hardware_concurrency()`, and `pinThread()` returns false. Also,
+`currentCpu()` gives the processor on which the calling thread runs now
+(by `sched_getcpu()` on Linux, $-1$ elsewhere). No
 executor pins its threads, since two programs pinned to the same processors
 would slow each other down, and the choice is left to the caller.
 
@@ -572,15 +582,16 @@ $$
 then it publishes $P_c$ and writes the prefixes of its tile, reading it
 again from the cache ([Algorithm 25.10](25-parallel.md#alg-25-10), [Figure
 25.2](25-parallel.md#fig-25-2)). In all, the input is read from the memory
-once and the output written once, $2 n$ moves.
+once and the output written once, $2 n$ moves. On one thread, or when the
+input fits one tile, the scan is a single sequential pass.
 
 ![Figure 25.2. The scan by decoupled look-back
 on six tiles, each with its flag (0 nothing, 1 the aggregate $a_c$, 2 the
 inclusive prefix $P_c$): the thread of the tile 4 (violet) adds on the left
 the aggregates of the tiles 3, 2 and 1 and stops at the prefix of the tile
-0; then it publishes $P_4$. Meanwhile the tile 3 has published its prefix,
-at which the look-back of the tile 5 will stop at
-once.](../figures/parallel-scan.svg){#fig-25-2}
+0; then it publishes $P_4$. Meanwhile the tile 3 has published its prefix
+too, and the look-back of the tile 5 will stop at once, at the prefix
+$P_4$.](../figures/parallel-scan.svg){#fig-25-2}
 
 <span id="alg-25-10"></span>**Algorithm 25.10.** The inclusive and the
 exclusive scans by decoupled look-back ([Merrill and Garland
@@ -754,7 +765,8 @@ point numbers of a few exponents, or of the integers of a law with a heavy
 tail. If a bucket gets more than 4 times its share of the sample (and 32
 more), the numbers go to the other classifier. When the sample shows at most
 32 distinct values that the bits do not separate, the numbers are counted
-instead. Each is found among those values by counting the keys less than its
+instead (but by the stable sort of floating point numbers, whose $-0$ and
+$+0$ are equal and yet differ). Each is found among those values by counting the keys less than its
 key (32 comparisons in vectors), and $A$ is filled with them in order, in 2
 passes over $A$; an item of another value sends $A$ to the other classifier.
 Any other item is classified by $k - 1$ splitters taken from a sorted random
@@ -763,8 +775,9 @@ small factor of $n / k$ with high probability. These splitters lie in an
 implicit binary tree, which a search descends with no branch. If the sample
 repeats a splitter, the items equal to each splitter go to a bucket that
 needs no sort (the buckets of equality of IPS4o), and therefore $k$ distinct
-keys cost $O( n \log k )$. In both cases $k$ is 256, or $4 p$ rounded up to
-a power of 2 when $n$ is small.
+keys cost $O( n \log k )$. In both cases $k$ is 256 for $n \ge 2^{20}$, and otherwise the larger of
+$4 p$ rounded up to a power of 2 and $n / 4096$ rounded down to one (at
+most 256 for the comparisons).
 
 The distribution is a parallel loop on $B$ blocks of $A$, each counting its
 items per bucket; when the classifier compares, the bucket of each item is
@@ -879,12 +892,16 @@ matrix by chunks of $C$ rows.
 `CsrMatrix` costs less than $( m + \mathit{nnz} ) / B + 1 + \ell$, where
 $\ell$ is the largest number of nonzeros of a row.*
 
-*Proof.* Let $\phi( i ) = i + \mathit{start}( i )$, and let the part $q$ be
-the rows $[ r_0 , r_1 )$. By the binary searches, $\phi( r_0 ) \ge q ( m +
-\mathit{nnz} ) / B$ and $\phi( r_1 - 1 ) < ( q + 1 ) ( m + \mathit{nnz} ) /
-B$. The cost of the part is $\phi( r_1 ) - \phi( r_0 )$, where $\phi( r_1 )
-= \phi( r_1 - 1 ) + 1 + \ell_{r_1 - 1}$, $\ell_i$ the nonzeros of the row
-$i$. $\square$
+*Proof.* Let $\phi( i ) = i + \mathit{start}( i )$, $T = m +
+\mathit{nnz}$ and $t_q = \lfloor q T / B \rfloor$, and let the part $q$
+be the rows $[ r_0 , r_1 )$, nonempty (an empty part costs nothing). The
+binary searches give the first rows with $\phi \ge t_q$ and
+$\phi \ge t_{q + 1}$, whence $\phi( r_0 ) \ge t_q$ and $\phi( r_1 - 1 )
+\le t_{q + 1} - 1$, the values being integers. The cost of the part is
+$\phi( r_1 ) - \phi( r_0 )$, where $\phi( r_1 ) = \phi( r_1 - 1 ) + 1 +
+\ell_{r_1 - 1}$, $\ell_i$ the nonzeros of the row $i$; hence it is at
+most $t_{q + 1} - t_q + \ell \le \lceil T / B \rceil + \ell < T / B + 1
++ \ell$. $\square$
 
 A row is never split among threads, which would change the order of its
 sums; a row longer than a part thus forms a part with no other row, and usually only a
@@ -973,9 +990,15 @@ during the step. $\square$
 
 The two directions differ in the arcs they read: from the top down the arcs
 out of the frontier, and from the bottom up those into the nodes not yet
-reached, up to their first hit. The work is $O( n + m )$. Each level costs a
-depth of $O( \log n )$ to gather its frontier, and the depth is therefore
-$O( D \log n )$ for a graph of diameter $D$.
+reached, up to their first hit. From the top down alone the work is $O( n + m )$,
+since each arc is read from its tail once. A step from the bottom up,
+instead, scans all the nodes and may read again the arcs into a node not
+yet reached; with $k$ such steps the work is therefore
+$O( ( n + m ) ( 1 + k ) )$ in the worst case, and the thresholds $\alpha$
+and $\beta$ keep $k$ to the few large levels where these steps read fewer
+arcs than the top down would. Each level costs a depth of $O( \log n )$ to
+gather its frontier, and the depth is therefore $O( D \log n )$ for a
+graph of diameter $D$.
 
 **The connected components.** `connectedComponents( ex , g )` labels each
 node with the least node of its component, on the concurrent union-find of
@@ -1085,7 +1108,10 @@ reservations* of [Blelloch, Fineman, Gibbons and Shun
 of an object `step`. The step $\mathrm{reserve}( i )$ reads the state, and
 either finds that $i$ has no work (it returns false, and $i$ is done) or
 writes $i$ into a `Reservation` of each place that it would change, by a
-priority write that keeps the least index there. The step $\mathrm{commit}(
+priority write that keeps the least index there (`reserve( i )`, a
+compare-and-swap; `check( i )` tells whether $i$ holds the place,
+`reserved()` whether some iteration does, `reset()` frees it, and
+`checkReset( i )` frees it only if $i$ holds it). The step $\mathrm{commit}(
 i )$ changes the state and returns true if $i$ holds all its reservations,
 or returns false to be tried in the next round; the holder of a reservation
 frees it, and at the end of a round all of them are free. A round runs in
@@ -1104,27 +1130,59 @@ e - s ) / g \rfloor + 1$ for the grain $g$, 50 by default.
 --8<-- "generated/SpeculativeFor-rounds.cpp"
 ```
 
-<span id="lem-25-15"></span>**Lemma 25.15.** *If each $\mathrm{reserve}( i
-)$ reserves all the places that $\mathrm{commit}( i )$ may change, and reads
-only places that the iterations before $i$ may change, then the least
-iteration of each round commits, and the state at the end is the one of the
-sequential loop, whatever the executor and the number of its threads.*
+<span id="lem-25-15"></span>**Lemma 25.15.** *Assume that (i) each
+$\mathrm{reserve}( i )$ reserves every place that $\mathrm{commit}( i )$
+may change, but for the places that no other iteration changes or
+reserves; (ii) for each place
+$p$ that $i$ reads and each other iteration $j$ that may change $p$, either
+$i$ reserves $p$, or $j < i$; (iii) $\mathrm{commit}( i )$ changes the
+state and returns true if $i$ holds all its reservations and every
+iteration $j < i$ of the second case of (ii) was done before the round of
+$i$, and otherwise it changes nothing and returns false. Then the least
+iteration of each round commits, and the state at the end is the one of
+the sequential loop, whatever the executor and the number of its
+threads.*
 
-*Proof.* The least iteration of a round wins all its priority writes; hence,
-it holds all its reservations and commits, and each round makes progress. An
-iteration $i$ commits only if no earlier iteration of its round wants one of
-its places, while the earlier iterations of the earlier rounds are done.
-Thus, the state that $i$ read in its reserve is the one that the sequential
-loop leaves before $i$ on the places that $i$ reads, and its commit writes
-what the sequential loop would write. The failures depend only on the
-iterations and on their order, not on the timing of the threads, and
-therefore the rounds and the sizes $r$ of their prefixes are deterministic
-too. $\square$
+*Proof.* A round takes the iterations not yet done in their order, the
+failed ones first; hence every iteration before the least one of a round
+is done before it, and an iteration $j > i$ is in a round only if $i$ is
+done or in the same round. The least iteration of a round wins all its
+priority writes, and therefore holds all its reservations; by (iii) it
+commits, and each round makes progress. Now let $i$ commit in its round,
+and let $p$ be a place that $i$ reads or changes and $j \ne i$ an
+iteration that may change $p$. If $i$ reserves $p$, then $j$ reserves $p$
+too whenever it is in a round, by (i); an iteration $j < i$ in the round of $i$
+would then hold $p$ in place of $i$, and hence all the $j < i$ that may
+change $p$ are done before the round of $i$, while a $j > i$ in a round
+with $i$ (this round or an earlier one) never holds $p$ and changes
+nothing. If instead $i$ does not reserve $p$, then $i$ does
+not change $p$ (by (i), since $j$ changes it), and hence $i$ reads it; by
+(ii) $j < i$, and by (iii) $j$ was done before the round of $i$. In both cases,
+when $i$ reads $p$ (in its reserve or in its commit), $p$ holds the value
+that the iterations before $i$ left and no later one has touched, i.e.,
+the value of the sequential loop before $i$; hence the commit of $i$
+writes what the sequential loop would write. Finally, the outcome of each
+step depends only on the state and on the least index written in each
+reservation, not on the timing of the threads; by induction on the rounds,
+the failures, the rounds and the sizes $r$ of their prefixes are
+deterministic too. $\square$
+
+The maximal matching of [§25.11](25-parallel.md#sec-25-11) meets the
+hypotheses with the first case of (ii) (an edge reserves the two ends that
+it reads and changes), and the maximal independent set with the second (a
+node reads only the states of its neighbors of earlier places, and waits
+while one is undecided); the forests of Kruskal need a lemma of their own
+([Lemma 25.16](25-parallel.md#lem-25-16)).
 
 The size $r$ of a prefix starts at $r_{\mathrm{max}}$. It halves when more
-than a fifth of a round fails, and it doubles, up to $r_{\mathrm{max}}$,
-when less than a tenth does; a round of fewer than 256 iterations runs on
-the calling thread. With $W$ the work of the sequential loop and $R$ that of
+than a fifth of a round fails, but not below $r_{\mathrm{max}} / 64 + 1$
+nor below the failed iterations, and it doubles, up to
+$r_{\mathrm{max}}$, when less than a tenth does; a round of fewer than 256
+iterations runs on the calling thread. The loop takes `step` as a model of
+the concept `SpeculativeStep` (the two members `reserve(i)` and
+`commit(i)`, each returning a value convertible to `bool`), and, given a
+pointer to a `SpeculativeCounts`, it adds there its rounds and the
+iterations tried, the failed ones counted again. With $W$ the work of the sequential loop and $R$ that of
 the iterations tried again, the work is $O( W + R )$, and the depth is that
 of the rounds, each of depth $O( \log r )$ for the pack of the failures. A
 violated precondition (a round in which the least iteration fails) would
@@ -1424,7 +1482,8 @@ interface, the concept `ChannelFamily`. `tryPush( from , to , m )` pushes
 the messages of the span $m$ and returns how many it pushed (all of them,
 but in a bounded family); `drain( me , f )` calls $f$ on the messages of the
 inbox of `me`, moved, and returns how many; and `port( i )` binds both to
-the worker $i$. [Table 25.6](25-parallel.md#tab-25-6) compares the four
+the worker $i$, as a `ChannelPort` whose `tryPush( to , m )` and
+`drain( f )` pass $i$ by themselves and whose `index()` gives it back. [Table 25.6](25-parallel.md#tab-25-6) compares the four
 families.
 
 <span id="tab-25-6"></span>**Table 25.6.** The families of channels: the
@@ -1680,7 +1739,11 @@ rest stays in the outbox, not counted, while its owner stays active.
 destination, since the threshold $N_{\mathit{to}}$ becomes the size of the
 outbox plus a batch. A full queue thus costs the sender one push, i.e., two
 atomic additions on $C$, per batch. Also, `flush()` tries all the outboxes,
-and returns false while one is not empty.
+and returns false while one is not empty. The constructor takes $p$, the
+batch and the arguments of the channels it builds (`channels()` gives them
+back), `size()` gives $p$, and `sent( me )`, `batches( me )` and
+`received( me )` count the messages that `me` pushed, the pushes that the
+channels took at least one message of, and the messages it drained.
 
 <span id="lem-25-21"></span>**Lemma 25.21.** *Let each worker whose
 `quiescent()` returns false poll its inbox before it calls `quiescent()`
@@ -1705,7 +1768,8 @@ all the operations read. From then on `quiescent()` and `terminated()`
 return true, `poll()` drains no message, `send()` only appends to its outbox
 and `flush()` pushes no batch. The messages on their way are not lost. Once
 the workers have returned from `run()`, `leftovers()` hands to a function
-those of the outboxes and those of the inboxes, which a search puts back
+those of the outboxes and those of the inboxes (`leftovers( me , f )`
+those left to the worker `me`, `leftovers( f )` those of all), which a search puts back
 into its frontier, where they bound the optimum of what was not explored.
 
 <span id="lem-25-22"></span>**Lemma 25.22.** *Whatever the moment of

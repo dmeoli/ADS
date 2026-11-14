@@ -23,10 +23,10 @@
  * splitters by binary searches, the piece \f$ j \f$ taking its items
  * strictly between the splitters \f$ j \f$ and \f$ j + 1 \f$ (the items
  * equal to a run of \f$ k \f$ equal splitters are cut into \f$ k + 1 \f$
- * parts of the same size, the remainder of the division to the highest of
- * them, so that a key repeated many times is spread over as many processes
- * as it fills and a single item equal to a splitter goes to the piece above
- * it), sends
+ * parts whose sizes differ by at most one, the lowest part the smallest and
+ * the highest the largest, so that a key repeated many times is spread over
+ * as many processes as it fills and a single item equal to a splitter goes
+ * to the piece above it), sends
  * each piece to its process by one `MPI_Alltoallv` (after an `MPI_Alltoall`
  * of the counts), and merges the \f$ P \f$ sorted pieces it receives by
  * `multiwayMerge()` [see `MultiwayMerge.h` and `ParallelMerge.h`]. With the
@@ -253,8 +253,9 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
  // the splitters j and j + 1 (none below the first piece, none above the
  // last), and the items equal to a run of k equal splitters are cut into
  // k + 1 parts by the floor of their size times 1 / ( k + 1 ), 2 / ( k + 1 ),
- // ..., so that the remainder goes to the highest part, and a single item
- // equal to a splitter goes to the piece above it
+ // ..., so that the sizes of the parts differ by at most one (the lowest
+ // the smallest, the highest the largest), and a single item equal to a
+ // splitter goes to the piece above it
  std::vector< std::size_t > cut( p + 1 , 0 );
  cut[ p ] = n;
  for( std::size_t j = 1 ; j < p ; ++j ) {

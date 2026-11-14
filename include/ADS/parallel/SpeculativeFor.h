@@ -158,8 +158,9 @@ concept SpeculativeStep = requires( S & s , std::size_t i ) {
 ///     \ d \gets s \cr
 /// 3 & \quad \textbf{while}\ I \ne \emptyset \textbf{ or } d < e
 ///     \ \textbf{do} \cr
-/// 4 & \qquad \text{append } d , d + 1 , \ldots \text{ to } I \text{ up to }
-///     \min( r , |I| + e - d ) \text{ iterations};\ \text{advance } d \cr
+/// 4 & \qquad m \gets \min( r , |I| + e - d );\ \text{append } d , d + 1 ,
+///     \ldots \text{ to } I \text{ up to } m \text{ iterations};
+///     \ \text{advance } d \cr
 /// 5 & \qquad \textbf{foreach}\ i \in I \text{ in parallel}\ \textbf{do}
 ///     \ k_i \gets \mathit{step}.\mathrm{reserve}( i ) \cr
 /// 6 & \qquad \textbf{foreach}\ i \in I \text{ with } k_i \text{ in parallel}
@@ -167,9 +168,9 @@ concept SpeculativeStep = requires( S & s , std::size_t i ) {
 ///     i ) \cr
 /// 7 & \qquad I \gets \text{the } i \in I \text{ with } k_i \text{, in their}
 ///     \text{ order (a parallel pack)} \cr
-/// 8 & \qquad \textbf{if}\ |I| > r / 5\ \textbf{then}\ r \gets \max( r / 2 ,
+/// 8 & \qquad \textbf{if}\ |I| > m / 5\ \textbf{then}\ r \gets \max( r / 2 ,
 ///     r_{\mathrm{max}} / 64 + 1 , |I| ) \cr
-/// 9 & \qquad \textbf{else if}\ |I| < r / 10\ \textbf{then}\ r \gets
+/// 9 & \qquad \textbf{else if}\ |I| < m / 10\ \textbf{then}\ r \gets
 ///     \min( 2 r , r_{\mathrm{max}} )
 /// \end{array}}
 /// \f]
