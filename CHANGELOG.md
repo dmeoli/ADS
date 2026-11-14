@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- rearm() and rearm( active ) in parallel/Mailbox.h, which make one
+  mailbox serve a sequence of computations separated by barriers (the
+  phases of an episode of an incremental search, or its episodes): called
+  by one thread at the barrier, once the computation before has ended, or
+  has been stopped and emptied by leftovers(), they set the workers active
+  (all of them, or those for which active( me ) is true), the deficit
+  counter to their number and the stop off, and keep the channels and the
+  outboxes, so that a phase costs O( p ) instead of the construction of
+  the p^2 queues of the mesh; the precondition is checked (the outboxes
+  empty, the counter at 0 or the mailbox stopped) and, at the level of the
+  audits, the inboxes empty; Lemma 11 of the theory of the parallel
+  algorithms, section 25.15 of the manual, and the test engineered_runtime
+  mailbox-rearm (phases on every family separated by a std::barrier whose
+  completion rearms the mailbox, some with only the owner of the root
+  active and some stopped, and the refusals of the precondition)
+
 - maxWeightMatching() in graph/Matching.h is now the primal-dual algorithm
   of Edmonds on the blossoms in O( n^3 ) (Gabow and Lawler, in the form of
   Galil's survey), with integer arithmetic for integer weights and, with
