@@ -70,8 +70,7 @@ places of $\mathit{head}$ ([Algorithm 11.1](11-mfset.md#alg-11-1) and
 the list of a head being empty once the head has been merged into another
 list.
 
-<span id="fig-11-1"></span>
-![Figure 11.1. A `ListMFSet` of 6 elements with the components $\{ 0 , 3 \}$, $\{ 1 , 4 , 5 \}$ and $\{ 2 \}$, before and after `merge(3, 4)`, which appends the shorter list to the longer and relabels its elements (shaded).](../figures/mfset-lists.svg)
+![Figure 11.1. A `ListMFSet` of 6 elements with the components $\{ 0 , 3 \}$, $\{ 1 , 4 , 5 \}$ and $\{ 2 \}$, before and after `merge(3, 4)`, which appends the shorter list to the longer and relabels its elements (shaded).](../figures/mfset-lists.svg){#fig-11-1}
 
 <span id="alg-11-1"></span>**Algorithm 11.1.** The merge of `ListMFSet`
 ([Montresor 2025, §10.2.1](Z-bibliography.md#ref-montresor2025));
@@ -123,8 +122,7 @@ argument `Union` of the constructor).
   whose size grows by that of the smaller tree (on a tie, the root of $y$
   goes under that of $x$).
 
-<span id="fig-11-2"></span>
-![Figure 11.2. Two trees of an `MFSet` of 7 elements with the union by rank (the element 1 is a tree of its own), before and after `merge(0, 4)`: the root 2, of rank 1, goes under the root 5, of rank 2, whose rank does not change; below, the vector of the parents after the merge, the shaded place being the one written.](../figures/mfset-forest.svg)
+![Figure 11.2. Two trees of an `MFSet` of 7 elements with the union by rank (the element 1 is a tree of its own), before and after `merge(0, 4)`: the root 2, of rank 1, goes under the root 5, of rank 2, whose rank does not change; below, the vector of the parents after the merge, the shaded place being the one written.](../figures/mfset-forest.svg){#fig-11-2}
 
 <span id="alg-11-2"></span>**Algorithm 11.2.** The operations of `MFSet`
 ([Montresor 2025, §10.2.2, §10.2.3 and
@@ -163,8 +161,7 @@ and no stack:
 --8<-- "generated/MFSet-find.cpp"
 ```
 
-<span id="fig-11-3"></span>
-![Figure 11.3. A path from 0 to its root 5, and the same nodes after `find(0)` with the compression (each node of the path a child of the root) and with the halving of [§11.4](11-mfset.md#sec-11-4) (each node of the way a child of its grandparent); the shaded nodes are those whose parent changed.](../figures/mfset-paths.svg)
+![Figure 11.3. A path from 0 to its root 5, and the same nodes after `find(0)` with the compression (each node of the path a child of the root) and with the halving of [§11.4](11-mfset.md#sec-11-4) (each node of the way a child of its grandparent); the shaded nodes are those whose parent changed.](../figures/mfset-paths.svg){#fig-11-3}
 
 With the compression a rank is no longer the height of its tree, but only
 an upper bound to it (exercise 10.7 of [Montresor
@@ -342,8 +339,7 @@ $t$, the number of merges done when `checkpoint()` gave it
 together pushes an empty record, and the checkpoints thus count the calls.
 The space is $12 n$ bytes, and 12 bytes per record.
 
-<span id="fig-11-4"></span>
-![Figure 11.4. A `RollbackUnionFind` with two roots of rank 0 and the stack $R$ of the records, before `merge(0, 1)`, after it (0 under 1, whose rank grew, and the record pushed) and after `undo()`, which pops the record and restores the forest.](../figures/mfset-rollback.svg)
+![Figure 11.4. A `RollbackUnionFind` with two roots of rank 0 and the stack $R$ of the records, before `merge(0, 1)`, after it (0 under 1, whose rank grew, and the record pushed) and after `undo()`, which pops the record and restores the forest.](../figures/mfset-rollback.svg){#fig-11-4}
 
 <span id="alg-11-6"></span>**Algorithm 11.6.** The operations of
 `RollbackUnionFind` (the union by rank with no compression, and the stack
@@ -401,8 +397,7 @@ leaves the node ([Algorithm 11.7](11-mfset.md#alg-11-7)). Of parallel
 edges, the last one inserted dies first, and a loop $[ u , u ]$ is
 allowed and joins no component.
 
-<span id="fig-11-5"></span>
-![Figure 11.5. The segment tree over $q = 4$ questions, and the nodes (shaded) whose list $L$ holds an edge $e$ alive from the question 1 to the end, i.e., on the times from 1 to 4.](../figures/mfset-segtree.svg)
+![Figure 11.5. The segment tree over $q = 4$ questions, and the nodes (shaded) whose list $L$ holds an edge $e$ alive from the question 1 to the end, i.e., on the times from 1 to 4.](../figures/mfset-segtree.svg){#fig-11-5}
 
 <span id="alg-11-7"></span>**Algorithm 11.7.** The offline connectivity
 by the divide and conquer of [Eppstein

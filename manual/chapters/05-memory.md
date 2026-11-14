@@ -107,8 +107,7 @@ free block (4 words at least), the block is split and the request gets its
 *upper* part; hence, the lower part keeps its place on the list, and only
 its tags change.
 
-<span id="fig-5-1"></span>
-![Figure 5.1. A `BoundaryTagAllocator` of 24 words with the blocks at 0 and at 12 free (6 and 8 words) and those at 6 and at 20 in use (6 and 4 words), before and after `free(7)`; the tags hold $+s$ for a free block and $-s$ for a block in use, `nx` and `pv` are the links of a free block, the shaded block is the one freed, the grey ones are free.](../figures/memory-tags.svg)
+![Figure 5.1. A `BoundaryTagAllocator` of 24 words with the blocks at 0 and at 12 free (6 and 8 words) and those at 6 and at 20 in use (6 and 4 words), before and after `free(7)`; the tags hold $+s$ for a free block and $-s$ for a block in use, `nx` and `pv` are the links of a free block, the shaded block is the one freed, the grey ones are free.](../figures/memory-tags.svg){#fig-5-1}
 
 A freed block reads the tag just below it, which is the upper tag of the
 block below, and the tag just above it, which is the lower tag of the
@@ -210,8 +209,7 @@ blocks of $2^k$ words.
 
 --8<-- "generated/Allocators-BuddyAllocator-free.pseudo.md"
 
-<span id="fig-5-2"></span>
-![Figure 5.2. A `BuddyAllocator` of $2^4$ words before and after `free(0)`: the freed block of $2^2$ words merges with its buddy at $0 \oplus 2^2 = 4$, which is free, and stops at the buddy $0 \oplus 2^3 = 8$ of the merged block, which is in use; the addresses are written in binary below the blocks.](../figures/memory-buddy.svg)
+![Figure 5.2. A `BuddyAllocator` of $2^4$ words before and after `free(0)`: the freed block of $2^2$ words merges with its buddy at $0 \oplus 2^2 = 4$, which is free, and stops at the buddy $0 \oplus 2^3 = 8$ of the merged block, which is in use; the addresses are written in binary below the blocks.](../figures/memory-buddy.svg){#fig-5-2}
 
 <span id="lem-5-3"></span>**Lemma 5.3.** *In `BuddyAllocator` no two
 free buddies are ever both on the free lists, and a block given is less
@@ -256,8 +254,7 @@ next place, after appending a new block when the last one is full
 ([Algorithm 5.3](05-memory.md#alg-5-3) and
 [Figure 5.3](05-memory.md#fig-5-3)).
 
-<span id="fig-5-3"></span>
-![Figure 5.3. An `Arena` of blocks of $n = 4$ objects: the vector of the blocks, the first block full and the second one with $\mathit{used} = 2$, after `make(g)`; the shaded place is the one built.](../figures/memory-arena.svg)
+![Figure 5.3. An `Arena` of blocks of $n = 4$ objects: the vector of the blocks, the first block full and the second one with $\mathit{used} = 2$, after `make(g)`; the shaded place is the one built.](../figures/memory-arena.svg){#fig-5-3}
 
 <span id="alg-5-3"></span>**Algorithm 5.3.** The construction of an object
 in an `Arena` ([Hanson 1990](Z-bibliography.md#ref-hanson1990)).
@@ -310,8 +307,7 @@ last one, and needs no vector for them. In fact, the pool is six words
 the last block, $n$ and the number of objects alive), and allocates
 only its blocks ([Figure 5.4](05-memory.md#fig-5-4)).
 
-<span id="fig-5-4"></span>
-![Figure 5.4. An `ObjectPool` with blocks of 1, 2 and 4 slots, each one after its header `H` (linked to the header of the block before), before and after `free(e)`; the slots are numbered below the cells, a free slot holds the number of the next free slot (`-` for nil), and the last block has its place $\mathit{next}$ at the slot 6.](../figures/memory-pool.svg)
+![Figure 5.4. An `ObjectPool` with blocks of 1, 2 and 4 slots, each one after its header `H` (linked to the header of the block before), before and after `free(e)`; the slots are numbered below the cells, a free slot holds the number of the next free slot (`-` for nil), and the last block has its place $\mathit{next}$ at the slot 6.](../figures/memory-pool.svg){#fig-5-4}
 
 <span id="alg-5-4"></span>**Algorithm 5.4.** The operations of
 `ObjectPool` (the list AVAIL of [Knuth 1997,
@@ -402,8 +398,7 @@ blocks given back of the class $c$ and $[ \mathit{next}_c ,
 
 --8<-- "generated/SizeClassAllocator-allocate.pseudo.md"
 
-<span id="fig-5-5"></span>
-![Figure 5.5. The page of the class 2 (blocks of 32 bytes) of a `SizeClassAllocator`, after its header: before, the block 1 is on $F_2$ and the blocks from 3 on were never given; `allocate(20)` pops the block 1, and `allocate(25)` cuts the block 3 from the page. The shaded cell is the block given, the grey ones are free.](../figures/memory-sizeclass.svg)
+![Figure 5.5. The page of the class 2 (blocks of 32 bytes) of a `SizeClassAllocator`, after its header: before, the block 1 is on $F_2$ and the blocks from 3 on were never given; `allocate(20)` pops the block 1, and `allocate(25)` cuts the block 3 from the page. The shaded cell is the block given, the grey ones are free.](../figures/memory-sizeclass.svg){#fig-5-5}
 
 <span id="lem-5-6"></span>**Lemma 5.6.** *A request of $n > 128$ bytes
 to `SizeClassAllocator` wastes less than 20% of its block, and less than
@@ -469,8 +464,7 @@ $$
 
 and a free needs neither a header in the slot nor its size.
 
-<span id="fig-5-6"></span>
-![Figure 5.6. A `PageHeap`: a segment cut into pages of one class each, the current page P3 of the class 1 and its list $A_1$ of the pages with free slots, before and after the free of a slot of the exhausted page P1, which puts P1 back on $A_1$; below, a page with its header, the slot $p$ finding its page by (5.3).](../figures/memory-pageheap.svg)
+![Figure 5.6. A `PageHeap`: a segment cut into pages of one class each, the current page P3 of the class 1 and its list $A_1$ of the pages with free slots, before and after the free of a slot of the exhausted page P1, which puts P1 back on $A_1$; below, a page with its header, the slot $p$ finding its page by (5.3).](../figures/memory-pageheap.svg){#fig-5-6}
 
 A class allocates from its current page, by the pop of the free list of
 the page or by the bump of its pointer. When the page is exhausted, it is
@@ -586,8 +580,7 @@ batches of snmalloc ([Lietar et al.
 2019](Z-bibliography.md#ref-lietar2019)), on the free lists by page of
 mimalloc ([Leijen et al. 2019](Z-bibliography.md#ref-leijen2019)).
 
-<span id="fig-5-7"></span>
-![Figure 5.7. The batch of the thread B for the class $c$, with two slots of the heap of A, and the stack of the returns of A for $c$, before and after `send()`, which links the batch on the top of the stack by one CAS (the shaded slots).](../figures/memory-concurrent.svg)
+![Figure 5.7. The batch of the thread B for the class $c$, with two slots of the heap of A, and the stack of the returns of A for $c$, before and after `send()`, which links the batch on the top of the stack by one CAS (the shaded slots).](../figures/memory-concurrent.svg){#fig-5-7}
 
 <span id="alg-5-8"></span>**Algorithm 5.8.** The operations of
 `ConcurrentPoolResource` (the heaps of the threads of [Berger et al.
@@ -669,8 +662,7 @@ huge page in bytes.
 
 --8<-- "generated/HugePageAllocator-allocate.pseudo.md"
 
-<span id="fig-5-8"></span>
-![Figure 5.8. A request of $b = 5$ MB to `HugePageAllocator`: the block is aligned to a huge page of $P = 2$ MB and rounded up to $r = 6$ MB, whose last MB of address space is never touched.](../figures/memory-hugepage.svg)
+![Figure 5.8. A request of $b = 5$ MB to `HugePageAllocator`: the block is aligned to a huge page of $P = 2$ MB and rounded up to $r = 6$ MB, whose last MB of address space is never touched.](../figures/memory-hugepage.svg){#fig-5-8}
 
 A block of 8 MB or more given back is kept by its thread, up to 16 blocks
 and 64 MB in all, and is given again to the next request of the same
@@ -726,8 +718,7 @@ follows and restores it on the way back, with one bit per cell
 ($\mathit{side}$) for the field that holds the reversed pointer
 ([Figure 5.9](05-memory.md#fig-5-9)).
 
-<span id="fig-5-9"></span>
-![Figure 5.9. Three cells $a$, $b$, $c$ reachable from a root, and the same cells during the marking by pointer reversal, when the visit has gone down the `car` of $a$ and of $b$ and stands at the atom 1 ($c$) with $b$ as the previous cell ($p$); the dashed fields hold the reversed pointers, i.e., the path back to the root, and the shaded cells are marked.](../figures/memory-cellheap.svg)
+![Figure 5.9. Three cells $a$, $b$, $c$ reachable from a root, and the same cells during the marking by pointer reversal, when the visit has gone down the `car` of $a$ and of $b$ and stands at the atom 1 ($c$) with $b$ as the previous cell ($p$); the dashed fields hold the reversed pointers, i.e., the path back to the root, and the shaded cells are marked.](../figures/memory-cellheap.svg){#fig-5-9}
 
 <span id="alg-5-10"></span>**Algorithm 5.10.** The operations of
 `CellHeap` ([Knuth 1997, §2.3.5 and Algorithm
