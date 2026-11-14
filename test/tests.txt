@@ -598,6 +598,7 @@ heaps  dary-heap-bottom-up   heap d-ario con il pop dal basso
 heaps  large-heap-audits     audit degli heap grandi sui soli estremi
 heaps  dial-queue            coda di Dial su una finestra circolare
 heaps  radix-heap            heap radix monotono a cifre di B bit
+heaps  radix-heap-floor      push dopo extractBelow: non sotto le chiavi estratte
 heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool
 heaps  linked-heap-pool      heap con puntatori, nodi in un pool
 heaps  pairing-heap          pairing heap a due passate e ausiliario

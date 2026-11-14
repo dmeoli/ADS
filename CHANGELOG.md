@@ -2555,6 +2555,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the precondition of RadixHeap::push(), a key not smaller than any key
+  extracted or read, was checked only against the base of the buckets, which
+  extractBelow() does not raise to the keys that it extracts, so that a key
+  below those keys was accepted; the heap now keeps the largest key
+  extracted or read and checks the key pushed against it, as the header, the
+  theory of the priority queues and the chapter of the manual say; the test
+  heaps radix-heap-floor
+
 - the policy THREE of BlockBTree fell back to the rules of the book at a
   root that splits and at the children of a root of two children, so that a
   tree of at most two leaves still ran the cycle of Lemma 14.1 of Morin's

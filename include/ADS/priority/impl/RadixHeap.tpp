@@ -22,7 +22,7 @@ template< class T , std::integral K , unsigned B >
 inline void RadixHeap< T , K , B >::push( const T & x , K k )
 {
  const U u = encode( k );
- ADS_PRE( u >= f_last );
+ ADS_PRE( ( u >= f_floor ) && ( u >= f_last ) );
  place( bucket( u ) , Entry{ u , x } );
  ++f_size;
  ADS_INVARIANT( bucketed() );
@@ -48,6 +48,7 @@ inline void RadixHeap< T , K , B >::pull( void )
  else                                       // the keys of a bucket of the
   f_last = ( f_last & ~U( R - 1 ) ) | U( i );   // row 0 are equal
  f_cur = i;
+ if( f_last > f_floor ) f_floor = f_last;   // the key read or extracted
  }
 
 template< class T , std::integral K , unsigned B >
@@ -99,8 +100,10 @@ void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
   if( f_min[ i ] >= u )                     // nothing below the limit
    break;
   if( ceiling( i ) < u ) {                  // all of them, as they are
-   for( Entry & e : b )
+   for( Entry & e : b ) {
+    if( e.key > f_floor ) f_floor = e.key;
     f( std::move( e.item ) , decode( e.key ) );
+    }
    f_size -= b.size();
    b.clear();
    f_min[ i ] = std::numeric_limits< U >::max();
@@ -119,8 +122,10 @@ void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
   std::size_t k = 0;                        // those below, and the rest
   U m = std::numeric_limits< U >::max();    // kept in the bucket
   for( std::size_t j = 0 ; j < b.size() ; ++j )
-   if( b[ j ].key < u )
+   if( b[ j ].key < u ) {
+    if( b[ j ].key > f_floor ) f_floor = b[ j ].key;
     f( std::move( b[ j ].item ) , decode( b[ j ].key ) );
+    }
    else {
     m = b[ j ].key < m ? b[ j ].key : m;
     if( k != j )
@@ -147,6 +152,7 @@ void RadixHeap< T , K , B >::clear( void )
  f_min = fill_max();
  f_mask = {};
  f_last = 0;
+ f_floor = 0;
  f_cur = 0;
  f_size = 0;
  }

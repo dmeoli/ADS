@@ -43,13 +43,15 @@
  * state calls no allocator, and the items of a bucket come out last pushed
  * first.
  *
- * The contracts [see `Contract.h`]: a key pushed is not smaller than the
- * last one extracted or read by `top()` and `topKey()` (any key before the
- * first of them and after `clear()`), and `top()`, `topKey()`, `peekKey()`
- * and `pop()` need a queue that is not empty; the invariant, checked on
- * queues of at most 1024 items, is that each item is in its bucket and that
- * the mask and the least keys of the buckets are right. The operations are
- * defined in `RadixHeap.tpp`.
+ * The contracts [see `Contract.h`]: a key pushed is not smaller than any
+ * key extracted, by `pop()` or by `extractBelow()`, or read by `top()` and
+ * `topKey()` (any key before the first of them and after `clear()`), which
+ * is checked against the largest of those keys, kept apart from
+ * \f$ \ell \f$ since `extractBelow()` may extract keys above it, and
+ * `top()`, `topKey()`, `peekKey()` and `pop()` need a queue that is not
+ * empty; the invariant, checked on queues of at most 1024 items, is that
+ * each item is in its bucket and that the mask and the least keys of the
+ * buckets are right. The operations are defined in `RadixHeap.tpp`.
  *
  * \see R. K. Ahuja, K. Mehlhorn, J. Orlin, R. E. Tarjan, Faster algorithms
  *      for the shortest path problem, Journal of the ACM 37(2), 213-223,
@@ -128,9 +130,9 @@ class RadixHeap {
  /// 6 & \quad \textbf{return}\ 2^B r + \text{the digit } r \text{ of } k
  /// \end{array}}
  /// \f]
- /// \pre \f$ k \f$ is not smaller than the last key extracted or read by
- ///      `top()` and `topKey()` (any key before the first of them and after
- ///      `clear()`)
+ /// \pre \f$ k \f$ is not smaller than any key extracted, by `pop()` or
+ ///      `extractBelow()`, or read by `top()` and `topKey()` (any key
+ ///      before the first of them and after `clear()`)
  void push( const T & x , K k );
 
  /// an item of least key, the last pushed among those
@@ -291,7 +293,8 @@ class RadixHeap {
  std::array< std::vector< Entry > , NB > f_B;   ///< the buckets
  std::array< U , NB > f_min = fill_max();       ///< their least keys
  std::array< std::uint64_t , NW > f_mask = {};  ///< the buckets in use
- U f_last = 0;                ///< the last key extracted
+ U f_last = 0;                ///< the base of the buckets, see bucket()
+ U f_floor = 0;               ///< the largest key extracted or read
  unsigned f_cur = 0;          ///< the bucket of the top, if pulled
  std::size_t f_size = 0;      ///< the number of items
 
