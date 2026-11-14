@@ -401,7 +401,7 @@ decoding. $\square$
 
 ![Figure 22.4. A block of $b = 8$ bits (63 in the library) with its 1s at the places 1, 4 and 6: its class 3 and its offset 27 by (22.8), in 6 bits. Below, the classes of four blocks and their offsets of variable width; the blocks of class 0 and 8 take no bit of offset.](../figures/succinct-rrr.svg){#fig-22-4}
 
-<span id="thm-22-5"></span>**Theorem 22.5.** *`RRRBitVector` takes at most
+<span id="thm-22-1"></span>**Theorem 22.1.** *`RRRBitVector` takes at most
 $m H_0( B ) + 0.175 m$ bits, with the rank in $O( 32 + b )$ time and the
 select in $O( \log( m / 2016 ) + 32 + b )$ time.*
 
@@ -441,7 +441,7 @@ Fano (chapters 11 and 15 of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023
 $x_0 \le \cdots \le x_{n-1}$ of integers of $[ 0 , u )$ in about the bits
 of the lower bound, and searches it in place.
 
-<span id="thm-22-6"></span>**Theorem 22.6 (Elias and Fano).** *Let each
+<span id="thm-22-2"></span>**Theorem 22.2 (Elias and Fano).** *Let each
 $x_i$ be split into its $\ell = \lceil \log_2( u / n ) \rceil$ low bits,
 written in $L$, and its bucket $\lfloor x_i / 2^\ell \rfloor$, written by
 setting the bit*
@@ -482,7 +482,7 @@ access and the search of Elias-Fano.
 `nextGEQ( x )` gives the place of the first item $\ge x$, which is the
 rank of $x$ (the items $< x$) and gives the predecessor and the successor.
 
-<span id="lem-22-7"></span>**Lemma 22.7.** *Let $h = \lfloor x / 2^\ell
+<span id="lem-22-5"></span>**Lemma 22.5.** *Let $h = \lfloor x / 2^\ell
 \rfloor$. The first item $\ge x$ is either in the bucket $h$, whose items
 start after the $h$-th 0 of $H$, or it is the first item of a later
 bucket; and among the items of the bucket $h$ the low bits decide, since
@@ -528,10 +528,10 @@ counts the blocks of each of the three codes, and `contains( x )` is a
 
 ![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (violet) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; each block has a record with its last item and the place of its code.](../figures/succinct-pef.svg){#fig-22-6}
 
-<span id="lem-22-8"></span>**Lemma 22.8.** *A block of $m$ items with
+<span id="lem-22-6"></span>**Lemma 22.6.** *A block of $m$ items with
 $u > m$ costs at most $\min\{ u , \, 2 m + m \lceil \log_2( u / m ) \rceil \}$
 bits, i.e., never more than Elias-Fano with the $\ell$ of
-[Theorem 22.6](22-succinct.md#thm-22-6) on its universe (with equality for
+[Theorem 22.2](22-succinct.md#thm-22-2) on its universe (with equality for
 $u = m 2^\ell$); hence the codes of all the blocks take at most*
 
 $$
@@ -539,7 +539,7 @@ $$
 \le n \Bigl( 3 + \log_2 \frac{u}{n} \Bigr) \tag{22.10}
 $$
 
-*bits, at most one bit per item above the bound of Theorem 22.6 with the
+*bits, at most one bit per item above the bound of Theorem 22.2 with the
 logarithm not rounded up.*
 
 *Proof.* Let $\ell = \lfloor \log_2( u / m ) \rfloor$, the width of the
@@ -562,7 +562,7 @@ We remark that the extra bit per item of (22.10) comes from the rounding
 of the logarithm in each block, and it can be reached: on two blocks with
 $u_1 / m = 1.5$ and $u_2 / m = 2.5$ the ceilings sum to 3 per item, while
 the whole sequence, with $u / n = 2$, has 1. A program that compares the
-Elias-Fano form of the code with the formula of Theorem 22.6 for all
+Elias-Fano form of the code with the formula of Theorem 22.2 for all
 $m < 300$ and $m < u < 50 m$ finds it never above, and equal on the
 powers of 2.
 
@@ -595,7 +595,7 @@ respect to the line of its segment ([Figure 22.7](22-succinct.md#fig-22-7)).
 
 ![Figure 22.7. The points $( i , x_i )$ of a sequence of 16 items covered by two segments, each line with its band of half-width $\epsilon = 2$; the item 5 (violet) is stored as its correction $C[ 5 ]$, its distance from the line of its segment.](../figures/succinct-lavector.svg){#fig-22-7}
 
-<span id="lem-22-9"></span>**Lemma 22.9 (the corrections).** *Let the
+<span id="lem-22-7"></span>**Lemma 22.7 (the corrections).** *Let the
 segment $j$, over the places $[ p_j , p_{j+1} )$, have a line
 $f( i ) = x_{p_j} + \gamma + \alpha ( i - p_j )$ with
 $| f( i ) - x_i | \le \epsilon$ for each of its places, and let
@@ -729,7 +729,7 @@ numbered by the places of their bits; the data of a node go in a vector
 indexed by its number. We give three codes, which differ in the operations
 that they answer in constant time.
 
-<span id="lem-22-10"></span>**Lemma 22.10 (the binary tree of
+<span id="lem-22-8"></span>**Lemma 22.8 (the binary tree of
 Jacobson).** *Complete a binary tree of $n$ nodes with a leaf in place of
 each missing child, and write by levels a 1 for a node and a 0 for a leaf
 added, in $B[ 1 , 2 n + 1 ]$. Then the children of the $x$-th node are at
@@ -773,7 +773,7 @@ writes the degree $d$ of each node, by levels, as $0^d 1$. Hence the code has $n
 one per node and the dummy root, i.e., $2 n + 1$ bits
 ([Figure 22.10](22-succinct.md#fig-22-10)).
 
-<span id="lem-22-11"></span>**Lemma 22.11.** *In the code of LOUDS, the
+<span id="lem-22-9"></span>**Lemma 22.9.** *In the code of LOUDS, the
 $k$-th 0 is the $k$-th node by levels, and the children of the $k$-th node
 are the 0s after the $( k + 1 )$-th 1. Hence, with the nodes numbered from
 0 and the places from 0,*
@@ -922,7 +922,7 @@ Our wavelet matrix, that of [Claude, Navarro and Ordóñez 2015](Z-bibliography.
 $w$ bits in $n w$ bits plus the directories of rank and select, with the
 access, the rank and the select of any symbol in $O( w )$ time.
 
-<span id="lem-22-12"></span>**Lemma 22.12 (the wavelet matrix).** *Let the
+<span id="lem-22-10"></span>**Lemma 22.10 (the wavelet matrix).** *Let the
 level $\ell$ of $S$ hold the bit $w - 1 - \ell$ of each item, the items
 passing to the next level stably sorted by that bit, the $Z_\ell$ with a 0
 first. Then the item at the place $i$ of a level is at the place*
@@ -998,7 +998,7 @@ $k' = \mathrm{select}_b( B , \mathrm{rank}_b( B , o_v ) + k ) - o_v + 1$
 
 ![Figure 22.12. The wavelet tree of abracadabra shaped by the canonical code a 0, b 100, c 101, d 110, r 111 of its frequencies: each internal node keeps a bit for each item that reaches it (the items above the bits), and the bits of all the nodes are one vector, the nodes laid by levels.](../figures/succinct-huffmanwt.svg){#fig-22-12}
 
-<span id="lem-22-13"></span>**Lemma 22.13.** *The bits of the nodes of
+<span id="lem-22-11"></span>**Lemma 22.11.** *The bits of the nodes of
 `HuffmanWaveletTree` are $\sum_c f_c \ell_c < n ( H_0 + 1 )$, for the
 frequencies $f_c$ of the symbols.*
 
@@ -1083,7 +1083,7 @@ of [Nishimoto and Tabei 2021](Z-bibliography.md#ref-nishimoto2021).
 A graph of $n$ nodes and $m$ edges, as sorted adjacency lists, is a set of
 $m$ pairs among $n^2$, i.e., $\log_2 \binom{n^2}{m} \approx
 m \log_2( n^2 / m )$ bits for a graph with no regularity.
-`EliasFanoGraph` writes the edge $( u , v )$ as the integer $u n + v$. Its lists, each one sorted, are then one increasing sequence of $[ 0 , n^2 )$ coded by [Theorem 22.6](22-succinct.md#thm-22-6), and a second sequence of the prefix sums of the outdegrees gives where each list starts ([Figure 22.14](22-succinct.md#fig-22-14)). This is the
+`EliasFanoGraph` writes the edge $( u , v )$ as the integer $u n + v$. Its lists, each one sorted, are then one increasing sequence of $[ 0 , n^2 )$ coded by [Theorem 22.2](22-succinct.md#thm-22-2), and a second sequence of the prefix sums of the outdegrees gives where each list starts ([Figure 22.14](22-succinct.md#fig-22-14)). This is the
 representation of the adjacency lists of large graphs in Unicorn
 ([Curtiss et al. 2013](Z-bibliography.md#ref-curtiss2013)) and in the
 quasi-succinct indices of [Vigna 2013](Z-bibliography.md#ref-vigna2013).
@@ -1098,7 +1098,7 @@ graph in Elias-Fano.
 
 --8<-- "generated/EliasFanoGraph-build.pseudo.md"
 
-<span id="lem-22-14"></span>**Lemma 22.14.** *Coding each list apart, in the universe of the list, takes*
+<span id="lem-22-12"></span>**Lemma 22.12.** *Coding each list apart, in the universe of the list, takes*
 
 $$
 \sum_u d_u \log_2 \frac{n}{d_u} \le m \log_2 \frac{n^2}{m} \tag{22.19}
@@ -1154,7 +1154,7 @@ The $k^2$-tree of [Brisaboa, Ladra and Navarro 2014](Z-bibliography.md#ref-brisa
 the levels but the last, and $L$ those of the cells
 ([Figure 22.15](22-succinct.md#fig-22-15)).
 
-<span id="lem-22-15"></span>**Lemma 22.15.** *The children of the node
+<span id="lem-22-13"></span>**Lemma 22.13.** *The children of the node
 marked at the place $p$ of $T$ start at the place
 $k^2 \, \mathrm{rank}_1( T , p + 1 )$ of $T$ followed by $L$.*
 
@@ -1218,8 +1218,8 @@ of the directories of `RankSelect` and of `CompactRankSelect`.
 We build the wavelet matrix faster, also on one thread, by a property of
 its levels that lets one pass over the items write several levels.
 
-<span id="lem-22-16"></span>**Lemma 22.16 (the levels by the reversed
-prefixes).** *In the wavelet matrix of [Lemma 22.12](22-succinct.md#lem-22-12),
+<span id="lem-22-14"></span>**Lemma 22.14 (the levels by the reversed
+prefixes).** *In the wavelet matrix of [Lemma 22.10](22-succinct.md#lem-22-10),
 let $b_j( c )$ be the bit at the level $\ell + j$ of the item $c$, and*
 
 $$
@@ -1246,7 +1246,7 @@ $$
 with $P_j[ a ]$ the items whose key is below $a$, and $Z_{\ell + j}$ is the
 number of the items with $b_j = 0$; both are sums of the counts of the $2^k$
 values of $\kappa_k$, from which each $\kappa_j = \kappa_k \bmod 2^j$
-follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.21), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.12](22-succinct.md#lem-22-12)
+follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.21), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.10](22-succinct.md#lem-22-10)
 moves them $k$ times, once per level. With $k \le 8$ this is $\lceil w / 8 \rceil$ passes over the items instead of $w$, the bits being written into $2^k - 1$ streams, one per value of $\kappa_j$ for each $j < k$. We recognize here the sort by the prefixes of the bits of
 [Dinklage, Ellert, Fischer, Kurpicz and Löbel 2021](Z-bibliography.md#ref-dinklage2021),
 applied to $k$ levels at a time ([Algorithm 22.24](22-succinct.md#alg-22-24)).
@@ -1340,11 +1340,11 @@ Each exercise names the test of the library that solves it (run it with
    `engineered_succinct.compact-rank-select`,
    `engineered_succinct.interleaved-rank-select`.
 6. Realize the compressed vector of
-   [Theorem 22.5](22-succinct.md#thm-22-5), with the offsets of the
+   [Theorem 22.1](22-succinct.md#thm-22-1), with the offsets of the
    combinatorial number system. Test:
    `engineered_succinct.rrr-bit-vector`.
 7. Realize Elias-Fano with `access()` and `nextGEQ()`
-   ([Lemma 22.7](22-succinct.md#lem-22-7)), its partitioned form, and the
+   ([Lemma 22.5](22-succinct.md#lem-22-5)), its partitioned form, and the
    LA-vector. Tests: `pearls_succinct.elias-fano`,
    `engineered_succinct.partitioned-elias-fano`,
    `engineered_succinct.la-vector`.
@@ -1352,7 +1352,7 @@ Each exercise names the test of the library that solves it (run it with
    arrays of trits five to a byte, built on several threads. Tests:
    `engineered_search.packed-array`, `engineered_search.trit-array`.
 9. Realize the binary tree of Jacobson, the tree of LOUDS
-   ([Lemma 22.11](22-succinct.md#lem-22-11)), the balanced parentheses with
+   ([Lemma 22.9](22-succinct.md#lem-22-9)), the balanced parentheses with
    the range min-max tree and the tree on them. Tests:
    `pearls_succinct.jacobson-tree`, `pearls_succinct.louds-tree`,
    `pearls_succinct.balanced-parentheses`, `pearls_succinct.bp-tree`.

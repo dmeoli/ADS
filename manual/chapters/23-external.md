@@ -243,7 +243,7 @@ the internal one, not pointed to.
 
 ![Figure 23.3. A B-tree with $B = 2$ (the data of figure 14.2 of Morin 2013): the nodes and the edges that `lowerBound(4)` reads, and those that `lowerBound(16.5)` reads, which ends at a leaf and returns 17, the last key $\ge 16.5$ met on the way.](../figures/external-btree.svg){#fig-23-3}
 
-<span id="lem-23-2"></span>**Theorem 23.2.** *`lowerBound()` reads
+<span id="thm-23-1"></span>**Theorem 23.1.** *`lowerBound()` reads
 $O( \log_B n )$ blocks, and takes $O( \log n )$ time in the word-RAM
 model.*
 
@@ -382,10 +382,10 @@ it frees the blocks of the children it drops, or places the new ones.
 `splits()`, `merges()`, `borrows()` and their sum `restructures()` count
 the restructurings so far.
 
-<span id="lem-23-3"></span>**Theorem 23.3.** *`insert()` and `remove()`
+<span id="thm-23-2"></span>**Theorem 23.2.** *`insert()` and `remove()`
 read and write $O( \log_B n )$ blocks; in the word-RAM model they take
 $O( B \log_B n )$ time, i.e., $O( B \log n / \log B )$, and $O( B + \log n )$
-amortized time by [Lemma 23.4](23-external.md#lem-23-4) when a read gives
+amortized time by [Lemma 23.2](23-external.md#lem-23-2) when a read gives
 access to a node in place (the copies of `BlockStore` cost $O( B )$ more
 per level).*
 
@@ -395,7 +395,7 @@ the way up costs $O( \log_B n )$ I/Os; the replacement of a removed key
 costs at most one more read and write. In the word-RAM model each node
 costs a binary search on the way down, and each restructuring, as well as
 the insertion or the removal of a key in a leaf, moves $O( B )$ keys and
-indices. By [Lemma 23.4](23-external.md#lem-23-4) the restructurings are
+indices. By [Lemma 23.2](23-external.md#lem-23-2) the restructurings are
 $O( 1 )$ per operation, amortized. $\square$
 
 ### 23.3.5 The amortized number of restructurings {#sec-23-3-5}
@@ -403,7 +403,7 @@ $O( 1 )$ per operation, amortized. $\square$
 A single insertion may split a node at each level, but such cascades are
 rare.
 
-<span id="lem-23-4"></span>**Lemma 23.4.** *From the empty tree, $m$
+<span id="lem-23-2"></span>**Lemma 23.2.** *From the empty tree, $m$
 insertions and removals make at most $3 m / 2$ splits, merges and borrows
 ([Morin 2013, Lemma 14.1](Z-bibliography.md#ref-morin-cpp)). Also, a
 sequence of two insertions and two removals at a leaf of $2 B - 2$ keys
@@ -445,7 +445,7 @@ it leaves.
 
 ### 23.3.6 Nodes far from their bounds {#sec-23-3-6}
 
-The cycle of [Lemma 23.4](23-external.md#lem-23-4) costs a restructuring
+The cycle of [Lemma 23.2](23-external.md#lem-23-2) costs a restructuring
 per operation because each restructuring leaves its nodes at one key from a
 bound. The enumeration `BTreePolicy` names the rules of the book (`STANDARD`,
 the default) and two variants that leave each
@@ -466,7 +466,7 @@ between about $7 B / 6$ and $7 B / 4$ keys, as in the B*-trees of [Knuth
 1998, §6.2.4](Z-bibliography.md#ref-knuth1998v3), whose overflow is shared
 with a sibling.
 
-<span id="lem-23-5"></span>**Lemma 23.5.** *If every node that a
+<span id="lem-23-3"></span>**Lemma 23.3.** *If every node that a
 restructuring writes has at least $\alpha B$ keys more than its lower bound
 and fewer than its upper bound, for a constant $\alpha > 0$, then $m$
 operations make $O( m / B )$ restructurings.*
@@ -486,7 +486,7 @@ $\square$
 
 Both policies meet the condition, with $\alpha = 1 / 4$ for `WIDE` and
 $\alpha = 1 / 8$ for `THREE` when $B \ge 8$, and the cycle of
-[Lemma 23.4](23-external.md#lem-23-4) costs them nothing after its first
+[Lemma 23.2](23-external.md#lem-23-2) costs them nothing after its first
 round. The moves of `THREE` need a sibling for an overflow and two for an
 underflow, which a tree of two leaves lacks; there the leaves may hold down
 to $\lambda = \max( 1 , \lfloor B / 2 \rfloor )$ keys, and a leaf below
@@ -507,7 +507,7 @@ $3 B - 1$ keys, and so needs a larger block for the same $B$.
 
 ### 23.3.7 Internal nodes and internal memory {#sec-23-3-7}
 
-<span id="lem-23-6"></span>**Lemma 23.6.** *A B-tree of $n$ keys whose
+<span id="lem-23-4"></span>**Lemma 23.4.** *A B-tree of $n$ keys whose
 root is not a leaf has at most $( ( n + 1 ) / B + B - 3 ) / ( B - 1 )$
 internal nodes, i.e., $O( n / B^2 )$ ([Morin 2013, exercise
 14.3](Z-bibliography.md#ref-morin-cpp)).*
@@ -536,7 +536,7 @@ pairs of indices, $O( \log_B n )$ words, and at most five nodes counted in
 memory at once: the node, its parent and the at most three children whose
 keys a restructuring gathers (the node among them). A parent is read again
 on the way up only when a restructuring or the successor of a removed key
-reaches it, which [Lemma 23.4](23-external.md#lem-23-4) keeps at $O( 1 )$
+reaches it, which [Lemma 23.2](23-external.md#lem-23-2) keeps at $O( 1 )$
 reads per operation, amortized, beyond the descent. `peakNodes()` gives the
 most nodes held at once, and `peakPath()` the longest path kept, in pairs
 of indices. Finally, the other functions read the tree with no I/O, for the tests:
@@ -554,7 +554,7 @@ The functions of `ExternalSorting.h` sort $n$ atomic items of a
 Sorting Atomic Items, of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023).
 Both ways are optimal, by a bound that we state first.
 
-<span id="lem-23-7"></span>**Theorem 23.7.** *A sort by comparisons of
+<span id="thm-23-3"></span>**Theorem 23.3.** *A sort by comparisons of
 $n$ atomic items in the two-level memory needs, for some $t$ reads,*
 
 $$
@@ -603,7 +603,7 @@ pass merges groups of $k$ runs, with a block of each in memory and one for
 the output, and reads and writes each block once
 ([Figure 23.9](23-external.md#fig-23-9)).
 
-<span id="lem-23-8"></span>**Lemma 23.8.** *A mergesort of fan-in at most
+<span id="lem-23-5"></span>**Lemma 23.5.** *A mergesort of fan-in at most
 $k$ makes at most*
 
 $$
@@ -612,7 +612,7 @@ $$
 $$
 
 *I/Os; with $k = M / B - 1$ this is $O( \mathrm{sort}( n ) )$, optimal by
-[Theorem 23.7](23-external.md#lem-23-7).*
+[Theorem 23.3](23-external.md#thm-23-3).*
 
 *Proof.* The first pass makes $\lceil n / R \rceil$ runs, and each pass of
 merges divides their number by $k$, rounded up; each pass reads and
@@ -670,7 +670,7 @@ partition of quicksort, so that equal keys stop the recursion). Then it
 sorts the buckets in turn, in memory once they fit
 ([Algorithm 23.8](23-external.md#alg-23-8)).
 
-<span id="lem-23-9"></span>**Lemma 23.9.** *Let the $k - 1$ pivots be the
+<span id="lem-23-6"></span>**Lemma 23.6.** *Let the $k - 1$ pivots be the
 items of ranks $a + 1 , 2 ( a + 1 ) , \ldots$ of a sorted random sample of
 $( a + 1 ) k - 1$ items, with $a + 1 = \lceil 12 \ln k \rceil$. Then with
 probability at least $1 / 2$ every bucket between two consecutive pivots
@@ -697,7 +697,7 @@ for each of the $k$ buckets between the pivots and of the $k - 1$ buckets
 of the items equal to a pivot, a block of the output and the pivots. Hence
 $k = \lfloor ( M - B ) / ( 2 B + 1 ) \rfloor$, half the fan-in of the
 merge, and the sort needs $M \ge 5 B + 2$; the I/Os are
-$O( \mathrm{sort}( n ) )$ on average (cf. [Lemma 23.9](23-external.md#lem-23-9)). Its sample has
+$O( \mathrm{sort}( n ) )$ on average (cf. [Lemma 23.6](23-external.md#lem-23-6)). Its sample has
 $s = \min\{ \lceil 12 \ln k \rceil k - 1 , ( M - 2 B ) / 2 , n \}$ items.
 
 <span id="alg-23-8"></span>**Algorithm 23.8.** The distribution sort
@@ -760,7 +760,7 @@ two ways, both taken from the parallel algorithms.
 
 --8<-- "generated/ListRanking-listRank.pseudo.md"
 
-<span id="lem-23-10"></span>**Lemma 23.10.** *Start from
+<span id="lem-23-7"></span>**Lemma 23.7.** *Start from
 $s[ i ] = \mathit{succ}[ i ]$, and $r[ i ] = 1$ but at the tail, where it
 is 0. If each round sets, for all the items at once,*
 
@@ -820,7 +820,7 @@ the items whose successor is in $I$ can jump over it, adding its rank to
 theirs. Then the remaining list is ranked recursively, and each item of $I$
 then gets the rank of its successor plus the rank of the item.
 
-<span id="lem-23-11"></span>**Lemma 23.11.** *If each level removes an
+<span id="lem-23-8"></span>**Lemma 23.8.** *If each level removes an
 independent set of at least $n / 8$ items, with a constant number of sorts
 and scans, then*
 
@@ -843,7 +843,7 @@ round $c[ i ]$ by $2 \pi + z$, with $\pi$ the lowest bit in which $c[ i ]$
 and $c[ \mathit{succ}[ i ] ]$ differ and $z$ the value of that bit in
 $c[ i ]$ (the tail compares with its bit 0).
 
-<span id="lem-23-12"></span>**Lemma 23.12.** *If adjacent colors differ
+<span id="lem-23-9"></span>**Lemma 23.9.** *If adjacent colors differ
 before a round, they differ after it, and colors of $b$ bits become colors
 of $\lceil \log_2 b \rceil + 1$ bits.*
 
@@ -1016,14 +1016,14 @@ Each exercise names the test of the library that solves it (run it with
    the solution. Test: `ods_ints.ods.ex14.1.figure`.
 4. Find the largest number of internal nodes of a B-tree of $n$ keys
    ([Morin 2013, exercise 14.3](Z-bibliography.md#ref-morin-cpp);
-   [Lemma 23.6](23-external.md#lem-23-6)). Test:
+   [Lemma 23.4](23-external.md#lem-23-4)). Test:
    `ods_ints.ods.ex14.3.internal-nodes`.
 5. Show that the recursive insertion and removal hold
    $\Theta( B \log_B n )$ words of internal memory, and reduce it to
    $O( B + \log_B n )$ ([Morin 2013, exercise
    14.4](Z-bibliography.md#ref-morin-cpp); [§23.3.7](23-external.md#sec-23-3-7)).
    Test: `ods_ints.ods.ex14.4.memory`.
-6. Draw the credits of the proof of [Lemma 23.4](23-external.md#lem-23-4)
+6. Draw the credits of the proof of [Lemma 23.2](23-external.md#lem-23-2)
    on the trees of an insertion and of a removal, and check that three new
    credits per operation pay the splits, the merges and the borrows
    ([Morin 2013, exercise 14.5](Z-bibliography.md#ref-morin-cpp));
@@ -1034,7 +1034,7 @@ Each exercise names the test of the library that solves it (run it with
    with up to three nodes, and show that they make $O( m / B )$
    restructurings in $m$ operations, while the rules of the book make
    $\Theta( m )$ ([Morin 2013, exercises 14.6 and
-   14.7](Z-bibliography.md#ref-morin-cpp); [Lemma 23.5](23-external.md#lem-23-5)).
+   14.7](Z-bibliography.md#ref-morin-cpp); [Lemma 23.3](23-external.md#lem-23-3)).
    Test: `ods_ints.ods.ex14.6.restructures`.
 8. Realize a B+-tree, with its removal, the search of the smallest key
    $\ge x$ and the report of the keys in $( x , y ]$, and explain why its

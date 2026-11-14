@@ -1090,7 +1090,7 @@ popped one at a time, each from the queue whose least key is the $j$-th of
 the $n$ with a probability $\sigma_j$; we write $\sigma_{\le i} = \sigma_1
 + \cdots + \sigma_i$.
 
-<span id="thm-24-15"></span>**Theorem 24.15.** *([Walzer and Williams
+<span id="thm-24-1"></span>**Theorem 24.1.** *([Walzer and Williams
 2025](Z-bibliography.md#ref-walzer2025).) If $\sigma_{\le i} > i / n$ for
 $i < n$, the rank error of a pop converges in distribution as the pops go
 on, and the mean of its limit is*
@@ -1165,7 +1165,7 @@ takes its pair from its end without moving the others. The insertion buffer
 $I$ is unsorted; a push fills it, and it goes into the heap only when it is
 full or when $D$ runs out.
 
-<span id="lem-24-16"></span>**Lemma 24.16.** *In each queue, let $D$ be
+<span id="lem-24-15"></span>**Lemma 24.15.** *In each queue, let $D$ be
 empty only if the queue is, and let no pair of $I$ or of the heap $H$ be
 less than a pair of $D$. Then the least pair of $D$ is the least of the
 queue, and the push and the pop of [Algorithm 24.9](24-concurrent.md#alg-24-9) keep both properties.*
@@ -1181,7 +1181,7 @@ are not greater than the rest of $H$; $D$ is then empty only if $H$
 is. $\square$
 
 Each queue is therefore exact, the relaxation is only in the choice of the
-queue, and [Theorem 24.15](24-concurrent.md#thm-24-15) applies unchanged. Its heap is touched by batches
+queue, and [Theorem 24.1](24-concurrent.md#thm-24-1) applies unchanged. Its heap is touched by batches
 of 16 pairs, at a cost of $O( \log m )$ amortized per operation on a queue
 of $m$ pairs, and the lines of $D$ and $I$ usually stay in the cache of the
 thread.
@@ -1253,7 +1253,7 @@ costs the read of a line that stays shared. A full fence, instead, would
 wait at each item for the stores of the item to reach the caches of the
 other threads. Elsewhere both fences are full ones.
 
-<span id="lem-24-17"></span>**Lemma 24.17.** *Let the read-modify-write of
+<span id="lem-24-16"></span>**Lemma 24.16.** *Let the read-modify-write of
 the waiter be followed by a full fence, and the write that makes the
 condition true be followed by a full fence before the notifier reads the
 waiters. Then a waiter does not sleep through a notification of a
@@ -1314,7 +1314,7 @@ to $S + 1$).
 
 --8<-- "generated/Backoff-pause.pseudo.md"
 
-<span id="lem-24-18"></span>**Lemma 24.18.** *A thread that looks at a
+<span id="lem-24-17"></span>**Lemma 24.17.** *A thread that looks at a
 condition before each call of `pause()` and once after the last one, from
 a `reset()`, makes its look $j \ge 1$ after $2^{j - 1} - 1$ pauses, for
 $j \le S + 2$; hence a condition that becomes true after
@@ -1421,7 +1421,7 @@ whose least local key is greater than $k_O$ (or whose heaps are empty)
 takes the offer back by the same exchange, and whoever of the two threads
 exchanges first gets all of it.
 
-<span id="lem-24-19"></span>**Lemma 24.19.** *Let the owner take the offer
+<span id="lem-24-18"></span>**Lemma 24.18.** *Let the owner take the offer
 back, by an exchange with null, before a pop whose two heaps are empty or
 whose least key is greater than $k_O$. Then each pop of the owner returns a
 pair of least key among those that the owner holds at the moment of the
@@ -1467,7 +1467,7 @@ thieves trying, $p$ at the start.
 
 --8<-- "generated/StealablePriorityQueue-StealingFrontier-pop.pseudo.md"
 
-<span id="lem-24-20"></span>**Lemma 24.20.** *In `StealingFrontier`, let
+<span id="lem-24-19"></span>**Lemma 24.19.** *In `StealingFrontier`, let
 the counter $C$ start at $p$, and let a worker subtract 1 when its pop finds
 its heaps and its offer empty. Let a thief add 1 before the exchange that
 claims an offer and subtract 1 if the exchange fails, and let only a worker
@@ -1531,7 +1531,7 @@ and an update of the index at each move of a pair.
 
 --8<-- "generated/StealablePriorityQueue-minBound.pseudo.md"
 
-<span id="lem-24-21"></span>**Lemma 24.21.** *Let the owner keep, when it
+<span id="lem-24-20"></span>**Lemma 24.20.** *Let the owner keep, when it
 makes an offer, the least bound $b_O$ of the heap that it moves into the
 offer. Let `minBound()` return the least of the least bounds of its heaps
 that are not empty and, if the offer that it made is still there at an
@@ -1544,7 +1544,7 @@ no pop takes a pair of that bound, a push lowers it when its bound is less,
 a scan computes it, and $\mu( 0 )$ is it by (24.9). The pairs of an offer
 are fixed from its publication until an exchange takes it, and $b_O$ is
 their least bound. At the load, the offer is either still there, and then
-its pairs are of the owner (cf. [Lemma 24.19](24-concurrent.md#lem-24-19): a thief that claims it later
+its pairs are of the owner (cf. [Lemma 24.18](24-concurrent.md#lem-24-18): a thief that claims it later
 takes pairs that the owner held at the load), or claimed, and then its
 pairs belong to the thief from its exchange on. $\square$
 

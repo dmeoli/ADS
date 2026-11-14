@@ -27,7 +27,9 @@ the two read as one family.
   `build/preamble.tex`. Number new sections by hand, without gaps.
 - **Labelled items** carry an anchor, `<span id="..."></span>`, before
   their bold label, and are numbered by chapter: `lem-3-1` (Lemma 3.1),
-  `alg-3-1`, `tab-3-1`, `rem-3-1`. A figure instead takes its id on the
+  `alg-3-1`, `tab-3-1`, `rem-3-1`. Lemmas and theorems have separate
+  counters, as in Morin's book (Lemma 3.1 and Theorem 3.1 can both exist),
+  with the ids `lem-N-k` and `thm-N-k`. A figure instead takes its id on the
   image, in a paragraph of its own, `![Figure 3.1. caption](../figures/x.svg){#fig-3-1}`:
   a span in the same paragraph would stop Pandoc from making a figure, and
   the PDF would lose the caption. Equations are numbered with

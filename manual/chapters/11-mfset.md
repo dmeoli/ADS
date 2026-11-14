@@ -173,7 +173,7 @@ an upper bound to it (exercise 10.7 of [Montresor
 the trees and never changes a rank. The two heuristics together give an
 amortized cost per operation that is constant for any practical purpose.
 
-<span id="thm-11-3"></span>**Theorem 11.3.** *With the union by rank or by
+<span id="thm-11-1"></span>**Theorem 11.1.** *With the union by rank or by
 size, and the compression or the halving of the paths, a sequence of
 $m \ge n$ operations on $n$ elements costs*
 
@@ -197,7 +197,7 @@ $T( 0 ) = 1$ and $T( g + 1 ) = 2^{T( g )}$, so that $T( 1 ) = 2$,
 $T( 2 ) = 4$, $T( 3 ) = 16$ and $T( 4 ) = 65536$, and let $\log^* n$ be
 the least $g$ with $T( g ) \ge n$.
 
-<span id="lem-11-4"></span>**Lemma 11.4.** *With the union by rank and
+<span id="lem-11-3"></span>**Lemma 11.3.** *With the union by rank and
 the compression of the paths, a sequence of $m$ finds and merges on $n$
 elements costs $O( ( m + n ) \log^* n )$ time.*
 
@@ -236,7 +236,7 @@ The same proof holds with the union by size, once the rank of a node is
 taken as $\lfloor \log_2 s \rfloor$, $s$ the size of its tree when it was
 hung (the current size for a root): a node is hung only under a root of at
 least twice its size, which gives (ii) and (iii). Since $\log^* n \le 5$
-for $n \le 2^{65536}$, [Lemma 11.4](11-mfset.md#lem-11-4) already makes
+for $n \le 2^{65536}$, [Lemma 11.3](11-mfset.md#lem-11-3) already makes
 the amortized cost constant for any practical purpose, and (11.2) improves
 it only in theory. We remark that both bounds are amortized: a single find
 may still cost $\Theta( \log n )$ time.
@@ -355,7 +355,7 @@ splicing, and `merge(2, 0)` then finds them together after one more.
 | `merge(2, 0)` | 2, 0 | 3, 4 | splice: $p[ 2 ] \gets 4$, $a \gets 3$ | $( 4 , 4 , 4 , 4 , 5 , 5 )$ |
 | | 3, 0 | 4, 4 | the same parent: false | $( 4 , 4 , 4 , 4 , 5 , 5 )$ |
 
-<span id="lem-11-5"></span>**Lemma 11.5.** *Each operation of
+<span id="lem-11-4"></span>**Lemma 11.4.** *Each operation of
 `RemUnionFind` keeps (11.3), and `merge(x, y)` joins the sets of $x$ and
 $y$ and returns true if they were distinct, and returns false otherwise,
 after at most $2 n$ steps.*
@@ -433,7 +433,7 @@ recorded, and its amortized bound (11.2) does not survive the undo: a
 sequence that rolls back the merges and does them again can make the same
 long find pay each time.
 
-<span id="lem-11-6"></span>**Lemma 11.6.** *In `RollbackUnionFind`,
+<span id="lem-11-5"></span>**Lemma 11.5.** *In `RollbackUnionFind`,
 `undo()` restores the forest, the ranks and the sizes as they were before
 the merge that it undoes, and each `find()` costs $O( \log n )$ time in
 the worst case.*
@@ -494,7 +494,7 @@ edges of the node $x$ of the segment tree.
 
 --8<-- "generated/RollbackUnionFind-offlineConnectivity.pseudo.md"
 
-<span id="lem-11-7"></span>**Lemma 11.7.** *An interval of times is held
+<span id="lem-11-6"></span>**Lemma 11.6.** *An interval of times is held
 by at most $\max( 1 , 2 \lceil \log_2 q \rceil )$ nodes of the segment
 tree, and when the visit reaches the leaf of a question, the forest holds
 exactly the edges alive at its time. Hence the answers are those of a
@@ -523,7 +523,7 @@ and none otherwise; an edge is alive at the question $a$ exactly when
 $s \le a < e$, since $s$ and $e$ are the numbers of the questions before
 its insertion and before its deletion. The visit merges at a node the edges
 of its list and rolls back to its checkpoint when it leaves it, which by
-[Lemma 11.6](11-mfset.md#lem-11-6) restores the forest of the parent;
+[Lemma 11.5](11-mfset.md#lem-11-5) restores the forest of the parent;
 hence at the leaf $a$ the forest holds the edges of the lists of its
 ancestors, i.e., those alive at $a$, each merged once. Each edge is thus
 merged and undone at most $\max( 1 , 2 \lceil \log_2 q \rceil )$
@@ -543,7 +543,7 @@ at the price of a far longer code; the rollback avoids it.
 heuristics that can be switched off, and they are meant to study the
 bounds of [Lemma 11.1](11-mfset.md#lem-11-1),
 [Lemma 11.2](11-mfset.md#lem-11-2) and
-[Theorem 11.3](11-mfset.md#thm-11-3) on the counters `relabels()` and
+[Theorem 11.1](11-mfset.md#thm-11-1) on the counters `relabels()` and
 `steps()`; `ListMFSet` is also the one that lists the members of a
 component. Among the engineered forests, `UnionFind` keeps the worst-case
 bound (11.2) in the least memory ($4 n$ bytes), and is the union-find of

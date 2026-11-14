@@ -168,7 +168,7 @@ column. Also `forEachAdj()`, `forEachEdge()` and the iterator `neighbors(u)`
 adds a row and a column, i.e., $\Theta( n )$ time, and `deleteNode(u)`
 empties both before it marks the name unused, again in $\Theta( n )$.
 
-<span id="lem-14-1"></span>**Theorem 14.1.** *Let $N = \mathrm{bound}()$,
+<span id="thm-14-1"></span>**Theorem 14.1.** *Let $N = \mathrm{bound}()$,
 which is $n$ when no node has been deleted. `MatrixGraph` realizes the
 GRAPH in $\Theta( N^2 )$ space, with `insertEdge()`, `deleteEdge()`,
 `hasEdge()` and `weight()` in $O( 1 )$ time, `adj()`, `inAdj()` and
@@ -188,7 +188,7 @@ a matrix of bits would take $n^2 / w$ words of $w$ bits
 this is no waste, and a matrix is usually preferable whenever `hasEdge()`
 dominates; e.g., the universal sink of [§14.7](14-graph.md#sec-14-7) is
 found by at most $3 ( n - 1 )$ entries read out of the $n^2$
-([Lemma 14.13](14-graph.md#lem-14-13)). On a sparse graph, instead, a
+([Lemma 14.11](14-graph.md#lem-14-11)). On a sparse graph, instead, a
 visit on the matrix costs $\Theta( n^2 )$ against the $\Theta( n + m )$
 of the lists, since each row is read whole. A further use of the matrix is
 algebraic. If the entries are taken as integers, 1 for an edge and 0
@@ -259,7 +259,7 @@ node before it empties the list of $u$, in $O( \mathrm{bound}() + m )$ time.
 
 --8<-- "generated/ListGraph-deleteNode.pseudo.md"
 
-<span id="lem-14-2"></span>**Theorem 14.2.** *With $N = \mathrm{bound}()$,
+<span id="thm-14-2"></span>**Theorem 14.2.** *With $N = \mathrm{bound}()$,
 `ListGraph` realizes the GRAPH in $\Theta( N + m )$ space, with `insertNode()` in $O( 1 )$
 amortized time, `insertEdge(u,v)`, `deleteEdge(u,v)`, `hasEdge(u,v)` and
 `weight(u,v)` in $O( d( u ) )$ time ($O( d( u ) + d( v ) )$ for the first
@@ -529,7 +529,7 @@ examined once from its tail.
 
 --8<-- "generated/Visit-genericVisit.pseudo.md"
 
-<span id="lem-14-3"></span>**Lemma 14.3.** *At the end of the generic
+<span id="lem-14-1"></span>**Lemma 14.1.** *At the end of the generic
 visit from $r$, $R$ is the set of the nodes reachable from $r$ and $B$ is a
 tree rooted in $r$ that spans them, with $\lvert B \rvert = \lvert R
 \rvert - 1$; on lists or vectors of adjacency the visit costs
@@ -551,7 +551,7 @@ We remark that the functions of `Visit.h` allocate their vectors of
 $\mathrm{bound}()$ places (the marks, the distances, the parents) before
 they start. Hence the bound of a call is $\Theta( n + n_r + m_r )$, i.e.,
 $\Theta( n + m )$ in the worst case. Instead, the finer bound of [Lemma
-14.3](14-graph.md#lem-14-3), which [Morin 2013,
+14.3](14-graph.md#lem-14-1), which [Morin 2013,
 §12.4](Z-bibliography.md#ref-morin-cpp) states for his visits as $O( n_r +
 m_r )$, holds for the loop of the visit. It is the one that matters when a
 sequence of visits shares its marks, as `cc()` and the other functions that
@@ -572,7 +572,7 @@ of $r$, then the neighbours of the neighbours, and so on, i.e., in the
 order of the distances from $r$. For each node $v$ reached from $u$,
 `distance(g, r)` records the distance $d[ v ] = d[ u ] + 1$ and the
 parent $p[ v ] = u$; the tree of the parents is then a tree of shortest
-paths ([Lemma 14.4](14-graph.md#lem-14-4)). [Figure 14.7](14-graph.md#fig-14-7)
+paths ([Lemma 14.2](14-graph.md#lem-14-2)). [Figure 14.7](14-graph.md#fig-14-7)
 shows it on the graph of [Figure 14.1](14-graph.md#fig-14-1), with the
 lists of [Figure 14.3](14-graph.md#fig-14-3), which fix the order in which
 the neighbours of a node enter the queue.
@@ -591,7 +591,7 @@ the distances and the parents of `distance()`
 
 ![Figure 14.7. The visit in breadth from 0 of the graph of Figure 14.1, with the lists of Figure 14.3: the edges of the tree of the parents of `distance()` in violet and, by each node, its rank in the order of the visit and its distance from 0.](../figures/graph-bfs.svg){#fig-14-7}
 
-<span id="lem-14-4"></span>**Lemma 14.4.** *At the end of `distance(g,
+<span id="lem-14-2"></span>**Lemma 14.2.** *At the end of `distance(g,
 r)`,*
 
 $$
@@ -611,7 +611,7 @@ each node at distance $k$ leaves the queue before any node at distance $k +
 queue before any node with value $k + 1$. Thus $v$ is first reached from
 such a $u$ or from another node with value $k$, and hence $d[ v ] = k + 1$.
 Finally, the nodes not reachable keep $\infty$ by [Lemma
-14.3](14-graph.md#lem-14-3). A source set at distance 0 changes only the
+14.3](14-graph.md#lem-14-1). A source set at distance 0 changes only the
 base of the induction. $\square$
 
 In `distance()` the queue is an `ArrayQueue` of [chapter
@@ -683,7 +683,7 @@ times and the kinds of the edges
 
 --8<-- "generated/Visit-DfsSchema-visit.pseudo.md"
 
-<span id="lem-14-5"></span>**Lemma 14.5.** *In a visit in depth the
+<span id="lem-14-3"></span>**Lemma 14.3.** *In a visit in depth the
 intervals $[ \mathit{dt}[ u ] , \mathit{ft}[ u ] ]$ of two nodes are
 either disjoint or nested, and $v$ descends from $u$ in the forest of the
 visit if and only if its interval lies in that of $u$. Hence an edge
@@ -715,7 +715,7 @@ an ancestor of $u$; if it was discovered after $u$ and is finished it is a
 descendant; otherwise its interval ended before that of $u$ began.
 $\square$
 
-<span id="lem-14-6"></span>**Lemma 14.6.** *If, when a node $i$ is
+<span id="lem-14-4"></span>**Lemma 14.4.** *If, when a node $i$ is
 discovered, a path of nodes not yet discovered leads from $i$ to $j$, then
 $j$ is discovered and finished before $i$ is finished (the white path of
 [Tarjan 1972](Z-bibliography.md#ref-tarjan1972)). Hence an oriented graph
@@ -753,7 +753,7 @@ visits started from a node not yet reached, each visit numbering the nodes
 it reaches. In fact, `cc(g, S)` starts its visits from the nodes in the
 order in which they leave the stack $S$ (its last item first), and `cc(g)`
 from the nodes in increasing order. Components are numbered from 1, and the
-whole costs $\Theta( n + m )$ by [Lemma 14.3](14-graph.md#lem-14-3), since
+whole costs $\Theta( n + m )$ by [Lemma 14.1](14-graph.md#lem-14-1), since
 the visits share their marks. Note that the order of $S$ matters for the
 strongly connected components below.
 
@@ -768,7 +768,7 @@ node once and puts the tail of each edge before its head.
 
 --8<-- "generated/Visit-isTopologicalOrder.pseudo.md"
 
-<span id="lem-14-7"></span>**Lemma 14.7.** *If an oriented graph is
+<span id="lem-14-5"></span>**Lemma 14.5.** *If an oriented graph is
 acyclic, every edge $( u , v )$ has*
 
 $$
@@ -782,7 +782,7 @@ with no entering edge, finds a topological order in $\Theta( n + m )$ time
 if the graph is acyclic, and stops with fewer than $n$ nodes if and only if
 it has a cycle.*
 
-*Proof.* By [Lemma 14.6](14-graph.md#lem-14-6) there is no back edge, and
+*Proof.* By [Lemma 14.4](14-graph.md#lem-14-4) there is no back edge, and
 by (14.3) a tree edge and a forward edge go to a descendant, finished
 before $u$, while a cross edge goes to a node already finished. An
 acyclic graph always has a node with no entering edge (otherwise a walk
@@ -823,7 +823,7 @@ the strongly connected components (Kosaraju's algorithm).
 
 --8<-- "generated/Visit-scc.pseudo.md"
 
-<span id="lem-14-8"></span>**Lemma 14.8.** *Let $\mathit{ft}( C )$ be the
+<span id="lem-14-6"></span>**Lemma 14.6.** *Let $\mathit{ft}( C )$ be the
 largest finish time of a node of the component $C$ in a visit in depth of
 $G$. If an edge goes from the component $C$ to the component $C'$, then
 $\mathit{ft}( C ) > \mathit{ft}( C' )$ ([Montresor 2025, Theorem
@@ -832,7 +832,7 @@ strongly connected components in $\Theta( n + m )$ time.*
 
 *Proof.* If the visit reaches $C$ first, at a node $x$, all of $C$ and $C'$
 is reachable from $x$ through nodes not discovered, and by
-[Lemma 14.6](14-graph.md#lem-14-6) it is finished before $x$; hence
+[Lemma 14.4](14-graph.md#lem-14-4) it is finished before $x$; hence
 $\mathit{ft}( C ) = \mathit{ft}[ x ] > \mathit{ft}( C' )$. If it reaches
 $C'$ first, it cannot reach $C$ from $C'$ (the graph of the components is
 acyclic), and so all of $C'$ is finished before any node of $C$ is
@@ -856,14 +856,14 @@ having two sources at once.
 One visit in depth suffices, if the components are recognized as the visit
 finishes them ([Tarjan 1972](Z-bibliography.md#ref-tarjan1972); beyond the
 book). The *root* of a component $C$ is its node $r_C$ discovered first. By
-[Lemma 14.6](14-graph.md#lem-14-6) each node of $C$ descends from $r_C$,
+[Lemma 14.4](14-graph.md#lem-14-4) each node of $C$ descends from $r_C$,
 since all of them are undiscovered when $r_C$ is discovered and reachable
 from it. The visit of `sccTarjan(g)` pushes each node it discovers on a
 stack $S$, and keeps $\mathit{low}[ u ]$, the least $\mathit{dt}$ of a node
 of $S$ that the subtree of $u$ reaches by its tree edges and one more edge
 ($\mathit{dt}[ u ]$ itself included).
 
-<span id="lem-14-9"></span>**Lemma 14.9.** *When $u$ finishes, $u$ is a
+<span id="lem-14-7"></span>**Lemma 14.7.** *When $u$ finishes, $u$ is a
 root if and only if $\mathit{low}[ u ] = \mathit{dt}[ u ]$; the nodes above
 $u$ on $S$ are then exactly the nodes of its component.*
 
@@ -921,10 +921,10 @@ closes its component, the nodes of the component take its number $c$,
 which counts down from $N - 1$ ($N$ the `bound()`), and the counter $i$
 of the discoveries goes back by one per node closed.
 
-<span id="lem-14-10"></span>**Lemma 14.10.** *In the visit of
+<span id="lem-14-8"></span>**Lemma 14.8.** *In the visit of
 `sccPearce()` the numbers of the open nodes are at most $c + 1$, and those
 of the closed nodes at least $c + 1$; hence a comparison of the numbers
-alone makes the choices of [Lemma 14.9](14-graph.md#lem-14-9).*
+alone makes the choices of [Lemma 14.7](14-graph.md#lem-14-7).*
 
 *Proof.* An open node has a number below $i$, and $i - 1$ counts the open
 nodes, which are at most the $c + 1$ names of the $N$ not closed, the
@@ -932,7 +932,7 @@ closed ones being $N - 1 - c$; the closed nodes have the numbers
 $c + 1 , \ldots , N - 1$ of their components. The two ranges meet at most
 in $c + 1$, and the test $\mathit{rindex}[ v ] < \mathit{rindex}[ u ]$ is
 strict; thus a closed node never lowers an open one, as the test $y \in S$ of
-[Lemma 14.9](14-graph.md#lem-14-9) ensures, and a node of $S$ belongs to
+[Lemma 14.7](14-graph.md#lem-14-7) ensures, and a node of $S$ belongs to
 the component of the root $u$ if and only if its number is at least
 $\mathit{rindex}[ u ]$. $\square$
 
@@ -1092,7 +1092,7 @@ between two cells that the A* takes as heuristics, and `gridHeuristic(g,
 u, t)` is the one of the moves and of the costs of a grid
 ([Yap 2002](Z-bibliography.md#ref-yap2002)).
 
-<span id="lem-14-11"></span>**Lemma 14.11.** *On a grid with no blocked
+<span id="lem-14-9"></span>**Lemma 14.9.** *On a grid with no blocked
 cell and eight moves of costs $a$ and $b$ with $a \le b \le 2 a$, let $M$
 and $\mu$ be the larger and the smaller of $\lvert r - r' \rvert$ and
 $\lvert c - c' \rvert$; the least cost of a path from $( r , c )$ to
@@ -1126,7 +1126,7 @@ consistent, and so admissible. $\square$
 With $b = a$ (the king) (14.5) is the distance of Chebyshev $a M$, and with
 four moves the same argument with $y = 0$ gives that of Manhattan
 $a ( M + \mu )$. `gridHeuristic()` takes $\min\{ b , 2 a \}$ as the cost
-of a corner; hence the condition of [Lemma 14.11](14-graph.md#lem-14-11)
+of a corner; hence the condition of [Lemma 14.9](14-graph.md#lem-14-9)
 holds for any diagonal cost at least $a$. An A* with a consistent bound
 never takes a node out of its queue twice, and with (14.5) on a map with
 few obstacles it usually examines far fewer cells than the algorithm of
@@ -1147,7 +1147,7 @@ distinct shortest paths in edges from $s$ to each node by a visit in
 breadth. In this visit the count of a node $v$ is the sum of the counts of
 the nodes $u$ with an edge $( u , v )$ and $d[ u ] + 1 = d[ v ]$. It is
 complete when $v$ leaves the queue, since each node at distance $d[ v ] - 1$
-leaves the queue before $v$ ([Lemma 14.4](14-graph.md#lem-14-4)). These
+leaves the queue before $v$ ([Lemma 14.2](14-graph.md#lem-14-2)). These
 counts grow as $2^{n/3}$ on a chain of diamonds, and are given modulo
 $2^{64}$. They are the first pass of the algorithm of [Brandes
 2001](Z-bibliography.md#ref-brandes2001) for the betweenness centrality,
@@ -1239,7 +1239,7 @@ graphs with few visits.
 
 --8<-- "generated/Properties-diameter.pseudo.md"
 
-<span id="lem-14-12"></span>**Lemma 14.12.** *In a free tree, the node
+<span id="lem-14-10"></span>**Lemma 14.10.** *In a free tree, the node
 $a$ farthest from any node is an end of a longest path, and the node $b$
 farthest from $a$ is its other end; hence two visits give the diameter of a
 free tree in $O( n )$ time (the double sweep, proved by [Bulterman et al.
@@ -1307,7 +1307,7 @@ and who knows no one). Computing the in-degrees and the out-degrees takes
 $\Theta( n^2 )$ on the matrix, but the entries can rule out the candidates
 one at a time ([King and Smith-Thomas 1982](Z-bibliography.md#ref-king1982)).
 
-<span id="lem-14-13"></span>**Lemma 14.13.** *A universal sink is found,
+<span id="lem-14-11"></span>**Lemma 14.11.** *A universal sink is found,
 or shown not to exist, with at most $3 ( n - 1 )$ calls of `hasEdge()`,
 i.e., $O( n )$ time on the adjacency matrix ([Morin 2013, exercise
 12.10](Z-bibliography.md#ref-morin-cpp)).*
@@ -1351,7 +1351,7 @@ from $r$ to any node costs less than its path in $T$
 a cycle of negative cost reachable from $r$ no shortest path exists, since
 the cycle can be repeated; without one, optimality is a local condition.
 
-<span id="lem-14-14"></span>**Theorem 14.14.** *If no cycle of negative
+<span id="thm-14-3"></span>**Theorem 14.3.** *If no cycle of negative
 cost is reachable from $r$, a tree $T$ rooted in $r$ is a tree of shortest
 paths if and only if*
 
@@ -1378,7 +1378,7 @@ $d[ v ] = d[ u ] + w( u , v )$ and makes $u$ the parent of $v$; a
 structure $S$, the *frontier*, holds the nodes whose edges have to be
 checked again ([Algorithm 14.13](14-graph.md#alg-14-13)). Each $d[ v ]$ is
 at all times the cost of some path from $r$, and it only decreases. Hence,
-when $S$ is empty, (14.6) holds, and by [Theorem 14.14](14-graph.md#lem-14-14)
+when $S$ is empty, (14.6) holds, and by [Theorem 14.3](14-graph.md#thm-14-3)
 $d$ is optimal. The kind of $S$ decides how many times a node is
 extracted, and therefore the cost ([Table 14.3](14-graph.md#tab-14-3)).
 
@@ -1434,7 +1434,7 @@ prototype and its cost ([Montresor 2025, §11.3 to
 | stack | `STACK` | | exponential in the worst case | no negative cycle allowed |
 | deque | `DEQUE` | Pape and D'Esopo ([Pape 1974](Z-bibliography.md#ref-pape1974)) | exponential in the worst case | no negative cycle allowed |
 
-<span id="lem-14-15"></span>**Lemma 14.15.** *With nonnegative costs and
+<span id="lem-14-12"></span>**Lemma 14.12.** *With nonnegative costs and
 $S$ a priority queue on $d$, each node extracted has
 $d[ u ] = \delta( r , u )$, and so it is extracted once; the prototype then
 costs $n$ extractions and at most $m$ decreases, i.e., $O( n^2 )$ on the
@@ -1451,7 +1451,7 @@ choice of $u$ as a node of least priority; and $d[ u ] \ge \delta( r , u )$
 always. Finally, the costs of the operations are those of the three queues
 ([chapter 9](09-priority.md#ch-9)). $\square$
 
-<span id="lem-14-16"></span>**Lemma 14.16.** *With $S$ a queue and no
+<span id="lem-14-13"></span>**Lemma 14.13.** *With $S$ a queue and no
 negative cycle reachable from $r$, the nodes extracted in the $k$-th round
 (those that entered $S$ in the round before) have their final distance if
 one of their shortest paths has at most $k$ edges; hence each node leaves
@@ -1507,7 +1507,7 @@ $k$-bound if no node of $\{ v_k , \ldots , v_{n-1} \}$ is on it but its
 ends, and $d^k[ u ][ v ]$ is the least cost of a $k$-bound path from $u$
 to $v$ ([Montresor 2025, §13.5](Z-bibliography.md#ref-montresor2025)).
 
-<span id="lem-14-17"></span>**Lemma 14.17.** *If no cycle is negative,
+<span id="lem-14-14"></span>**Lemma 14.14.** *If no cycle is negative,
 $d^0[ u ][ v ]$ is the cost of the edge $( u , v )$ (0 if $u = v$,
 $\infty$ if there is no edge) and*
 
@@ -1556,7 +1556,7 @@ that is not connected the same holds for a spanning forest, one tree per
 component. Both algorithms of `MinimumSpanningTree.h` are greedy, and rest
 on one property.
 
-<span id="lem-14-18"></span>**Lemma 14.18.** *If $A$ is contained in a
+<span id="lem-14-15"></span>**Lemma 14.15.** *If $A$ is contained in a
 minimum spanning tree and no edge of $A$ crosses the cut
 $( S , V \setminus S )$, then*
 
@@ -1644,7 +1644,7 @@ the arrays.
 
 ![Figure 14.12. A maximum flow of value 5 in a `FlowNetwork`, each edge with its flow and its capacity: the side $S = \{ s , a , b \}$ of the minimum cut (in violet), the nodes reached from $s$ in the residual network, and the two saturated edges that cross it; on the right the head and the residual capacity of each arc, the edge $e$ and its twin $e \oplus 1$ side by side.](../figures/graph-flow.svg){#fig-14-12}
 
-<span id="lem-14-19"></span>**Theorem 14.19.** *The following are
+<span id="thm-14-4"></span>**Theorem 14.4.** *The following are
 equivalent: (i) $f$ is a maximum flow; (ii) the residual network has no
 path from $s$ to $t$ (an augmenting path); (iii)
 $\lvert f \rvert = c( S , V \setminus S )$ for some cut with $s \in S$ and
@@ -1674,7 +1674,7 @@ minimum cut.
 
 --8<-- "generated/MaxFlow-FlowNetwork-minCut.pseudo.md"
 
-<span id="lem-14-20"></span>**Lemma 14.20.** *With integer capacities,
+<span id="lem-14-16"></span>**Lemma 14.16.** *With integer capacities,
 `FORD_FULKERSON` (any augmenting path, by a visit in depth) takes
 $O( ( n + m ) \lvert f^* \rvert )$ time; `EDMONDS_KARP` (a shortest path,
 by a visit in breadth) $O( n m^2 )$; `DINIC` (a blocking flow on the levels
@@ -1727,7 +1727,7 @@ either pushes it on an edge with $c_f( u , v ) > 0$ and $d( v ) = d( u ) -
 residual edges, which keeps the labels valid ([Algorithm
 14.15](14-graph.md#alg-14-15)).
 
-<span id="lem-14-21"></span>**Lemma 14.21.** *A label never decreases and
+<span id="lem-14-17"></span>**Lemma 14.17.** *A label never decreases and
 stays below $2 n$; hence there are $O( n^2 )$ relabelings and $O( n m )$
 pushes that saturate their edge, and taking the node of the highest label
 bounds the other pushes by $O( n^2 \sqrt{m} )$. When no node with an excess
@@ -1788,7 +1788,7 @@ excesses and of the deficits left by `setCapacity()` (beyond the book).
 
 --8<-- "generated/MaxFlow-FlowNetwork-rebalance.pseudo.md"
 
-<span id="lem-14-22"></span>**Lemma 14.22.** *The paths that
+<span id="lem-14-18"></span>**Lemma 14.18.** *The paths that
 [Algorithm 14.16](14-graph.md#alg-14-16) needs always exist, and at its
 end the network carries a flow again.*
 
@@ -1894,7 +1894,7 @@ matching. A node is *free* if no edge of $M$ touches it, and a path is
 *augmenting* if it is alternating and joins two free nodes; its symmetric
 difference with $M$ is then a matching with one edge more.
 
-<span id="lem-14-23"></span>**Lemma 14.23.** *A matching is of largest
+<span id="lem-14-19"></span>**Lemma 14.19.** *A matching is of largest
 size if and only if no path augments it ([Berge
 1957](Z-bibliography.md#ref-berge1957)).*
 
@@ -1916,7 +1916,7 @@ between two even nodes, instead, closes an odd cycle, a *blossom*, whose
 node nearest to $r$, its *base*, is even and is the only node of the cycle
 matched outside it, if at all ([Figure 14.13](14-graph.md#fig-14-13)).
 
-<span id="lem-14-24"></span>**Lemma 14.24.** *Let $G / C$ be the graph in
+<span id="lem-14-20"></span>**Lemma 14.20.** *Let $G / C$ be the graph in
 which the blossom $C$ is shrunk to one node, and $M / C$ the matching
 left. Then $M$ has an augmenting path in $G$ if and only if $M / C$ has one
 in $G / C$ ([Edmonds 1965](Z-bibliography.md#ref-edmonds1965b)).*
@@ -1929,13 +1929,13 @@ alternating path of the tree from $r$ to the base, be exchanged with the
 matching in $G$ and in $G / C$: this gives matchings $M'$ and $M' / C$ of
 the same sizes as $M$ and $M / C$, and in them the base and the shrunk node
 are free. If $M$ has an augmenting path, it is not of largest size, and by
-[Lemma 14.23](14-graph.md#lem-14-23) neither is $M'$, which then has an
+[Lemma 14.19](14-graph.md#lem-14-19) neither is $M'$, which then has an
 augmenting path $P$. At most one end of $P$ lies in $C$, whose only free
 node is now the base; if $P$ misses $C$ it augments $M' / C$ as it is,
 and otherwise its part from an end out of $C$ to its first node in $C$
 ends, in $G / C$, at the free shrunk node, and augments $M' / C$. Thus
 $M' / C$, and with it $M / C$, is not of largest size in $G / C$, and
-[Lemma 14.23](14-graph.md#lem-14-23) gives an augmenting path of
+[Lemma 14.19](14-graph.md#lem-14-19) gives an augmenting path of
 $M / C$. $\square$
 
 ![Figure 14.13. A blossom shrunk by `maxCardinalityMatching()`: the tree of the search from the free node $r$, the matched edges in violet, and the edge $[ d , e ]$ between two even nodes, which closes the odd cycle $b , c , d , e , f$ of base $b$ (in violet); the cycle becomes the node $B$ (in orange), and the edge $[ B , g ]$ to the free node $g$ ends an augmenting path, which lifts to $r , a , b , c , d , g$, the even way from $d$ to the base $b$ around the cycle starting with the matched edge $[ d , c ]$.](../figures/graph-blossom.svg){#fig-14-13}
@@ -2003,7 +2003,7 @@ $$
 
 with the duals doubled, so that integer weights keep them integer.
 
-<span id="lem-14-25"></span>**Theorem 14.25.** *A matching $M$ is of
+<span id="thm-14-5"></span>**Theorem 14.5.** *A matching $M$ is of
 largest weight if there are duals as above such that (i) $\pi( e ) = 0$
 on each edge of $M$, (ii) $y_v = 0$ at each free node, and (iii) each odd
 set with $z_B > 0$ holds $( \lvert B \rvert - 1 ) / 2$ edges of $M$
@@ -2047,7 +2047,7 @@ the book).
 --8<-- "generated/Matching-maxWeightMatching-delta.cpp"
 ```
 
-<span id="lem-14-26"></span>**Lemma 14.26.** *A stage, which ends at the
+<span id="lem-14-21"></span>**Lemma 14.21.** *A stage, which ends at the
 first augmentation, makes $O( n )$ changes of the duals, and costs
 $O( n^2 + m )$; hence `maxWeightMatching()` takes $O( n^3 )$ time.*
 
@@ -2060,7 +2060,7 @@ at most $n / 2$ augmentations. $\square$
 
 With integer weights the slack between two outer nodes is even, so that
 $\delta$ stays integer, and all the arithmetic is on integers; at the end
-the duals certify the optimum by [Theorem 14.25](14-graph.md#lem-14-25),
+the duals certify the optimum by [Theorem 14.5](14-graph.md#thm-14-5),
 which the audits check. With `maxCardinality` the first term of $\delta$
 is left out, and a stage that finds no augmenting path ends the search,
 which gives the largest weight among the matchings of largest size (e.g.,
@@ -2130,7 +2130,7 @@ the query that brings the assignment up to date (beyond the book).
 
 --8<-- "generated/Assignment-solve.pseudo.md"
 
-<span id="lem-14-27"></span>**Lemma 14.27.** *Let $( u , v , M )$ satisfy
+<span id="lem-14-22"></span>**Lemma 14.22.** *Let $( u , v , M )$ satisfy
 (14.9) with the pairs of $M$ tight, and let the costs of the row $i$
 change. Removing the pair of $i$ from $M$ and setting*
 
@@ -2188,7 +2188,7 @@ graph be the number of the edges leaving it minus that of the edges
 entering it, and call a node of an unoriented graph odd when its degree
 is.
 
-<span id="lem-14-28"></span>**Lemma 14.28.** *Let the edges of $G$ lie in
+<span id="lem-14-23"></span>**Lemma 14.23.** *Let the edges of $G$ lie in
 one component, the orientation ignored. An oriented $G$ has an Eulerian
 cycle if and only if $x( u ) = 0$ at each node, and an open trail if and
 only if one node $s$ has $x( s ) = 1$, one node $t$ has $x( t ) = - 1$ and
@@ -2222,14 +2222,14 @@ both its ends with one mark of use, the two arcs of the adjacency paired in
 their order (so that parallel edges are distinct edges), and the cursor
 skips the edges used from the other end; thus the walk costs $O( n + m )$.
 
-<span id="lem-14-29"></span>**Lemma 14.29.** *Under the conditions of
-[Lemma 14.28](14-graph.md#lem-14-28) on the excesses (or on the odd
+<span id="lem-14-24"></span>**Lemma 14.24.** *Under the conditions of
+[Lemma 14.23](14-graph.md#lem-14-23) on the excesses (or on the odd
 nodes), the walk from the start of the trail uses all the edges if and only
 if they lie in one component; hence a walk of fewer than $m$ edges proves
 that there is no trail, and the connection needs no other visit.*
 
 *Proof.* The walk uses each edge reachable from its start, by the splicing
-argument of [Lemma 14.28](14-graph.md#lem-14-28). A component in which each
+argument of [Lemma 14.23](14-graph.md#lem-14-23). A component in which each
 node is balanced is strongly connected (with the edge $( t , s )$ added in
 the open case): if an edge $( u , v )$ had $u$ not reachable from $v$, the
 set $R$ of the nodes reachable from $v$ would have the edge $( u , v )$
@@ -2355,7 +2355,7 @@ first event, then of the nodes deleted ([Figure 14.16](14-graph.md#fig-14-16)).
 
 ![Figure 14.16. The events $B$ of a batch (`ins` an insertion, `del` a deletion and `w` a change of weight, each with its edge and weights) and their net effect $C$ by (14.11): the insertion of $( 0 , 1 )$ and the change of its weight become one insertion of weight 7, the insertion and the deletion of $( 2 , 3 )$ cancel, and the deletion and the insertion of $( 1 , 4 )$ become a change of weight.](../figures/graph-observable.svg){#fig-14-16}
 
-<span id="lem-14-30"></span>**Lemma 14.30.** *Let $B$ be the sequence of
+<span id="lem-14-25"></span>**Lemma 14.25.** *Let $B$ be the sequence of
 the events of a batch on a graph $G$, and $C$ the sequence that (14.11)
 gives. Replaying $C$ on $G$ gives the graph that replaying $B$ gives, and
 $\lvert C \rvert \le \lvert B \rvert$; `coalesce()` builds $C$ in
@@ -2411,13 +2411,13 @@ observer (beyond the book).
 
 --8<-- "generated/Reoptimization-EventQueue-solve.pseudo.md"
 
-<span id="lem-14-31"></span>**Lemma 14.31.** *If each condition of the
+<span id="lem-14-26"></span>**Lemma 14.26.** *If each condition of the
 certificate involves the weight of a single edge, and each event of $P$ is
 tested on the certificate of the solution before $P$, then the events of
 $P$ found harmless leave the solution optimal all together.*
 
 *Proof.* The events of $P$ are on distinct edges by
-[Lemma 14.30](14-graph.md#lem-14-30); hence each condition is touched by
+[Lemma 14.25](14-graph.md#lem-14-25); hence each condition is touched by
 at most one of them. A harmless event keeps true the conditions that it
 touches, and the conditions that no event touches stay as they were.
 $\square$
@@ -2441,7 +2441,7 @@ of the subtree of $T$ under $v$ may grow, and the certificate gives no bound
 of them; those of the other nodes are still the costs of their paths in $T$,
 which no raised edge touches.
 
-<span id="lem-14-32"></span>**Lemma 14.32.** *Let $A$ be the union of the
+<span id="lem-14-27"></span>**Lemma 14.27.** *Let $A$ be the union of the
 subtrees of $T$ under the heads of the edges of $T$ raised or deleted by
 $P$. Set $d[ x ] = \infty$ for $x \in A$, then*
 
@@ -2464,7 +2464,7 @@ not fall satisfied (14.6) before $P$ and still do, and the edges that
 enter $A$ satisfy it after (14.12). Also, the edges out of the nodes whose
 $d$ changes are examined when these leave $S$, and the lowered ones are in
 $S$ by their tails. Hence (14.6) holds with $d[ r ] = 0$, and by
-[Theorem 14.14](14-graph.md#lem-14-14) $d$ is at most each distance and
+[Theorem 14.3](14-graph.md#thm-14-3) $d$ is at most each distance and
 at least it. $\square$
 
 <span id="alg-14-22"></span>**Algorithm 14.22.** The repair of the
@@ -2577,7 +2577,7 @@ For the maximum flow from $s$ to $t$ (`MaxFlowObserver(g, s, t, how)`, with
 `value()` and `minCut()`, on a graph whose integral weights are the
 capacities) the certificate is the side $S$ of a minimum cut with
 $\lvert f \rvert = c( S , V \setminus S )$, by (iii) of
-[Theorem 14.19](14-graph.md#lem-14-19). A new capacity $c'$ of
+[Theorem 14.4](14-graph.md#thm-14-4). A new capacity $c'$ of
 $( u , v )$ with $c' \ge f( u , v )$ is harmless unless $( u , v )$ leaves
 $S$ and grows. Indeed, the flow stays feasible, and the capacity of the
 cut neither falls below $\lvert f \rvert$ nor rises (an edge of the cut is
@@ -2759,7 +2759,7 @@ Each exercise names the test of the library that solves it (run it with
    `ods_ints.ods.ex12.4.components`.
 5. Compute the length of the shortest path from $r$ to every node
    ([Morin 2013, exercise 12.8](Z-bibliography.md#ref-morin-cpp);
-   [Lemma 14.4](14-graph.md#lem-14-4)). Test: `ods_ints.ods12.3.visits`.
+   [Lemma 14.2](14-graph.md#lem-14-2)). Test: `ods_ints.ods12.3.visits`.
 6. Give a graph on which the visit in depth by recursion and the visit by
    a stack of nodes visit the nodes in different orders, and write the
    second so that it visits them in the order of the first ([Morin 2013,
@@ -2767,7 +2767,7 @@ Each exercise names the test of the library that solves it (run it with
    [§14.5.3](14-graph.md#sec-14-5-3)). Test: `ods_ints.ods12.3.visits`.
 7. Decide in $O( n )$ time whether a graph on an adjacency matrix has a
    universal sink ([Morin 2013, exercise 12.10](Z-bibliography.md#ref-morin-cpp);
-   [Lemma 14.13](14-graph.md#lem-14-13)). Tests:
+   [Lemma 14.11](14-graph.md#lem-14-11)). Tests:
    `ods_ints.ods.ex12.10.universal-sink`, `lib_graphs.universal-sink`.
 8. Compare the memory of the adjacency matrix and of the lists with $d$
    bits per pointer and per integer, and find the number of edges below
@@ -2799,7 +2799,7 @@ Each exercise names the test of the library that solves it (run it with
     is wrong with negative costs, while the prototype stays correct, and
     detect a negative cycle reachable from $r$ in $O( n m )$
     ([Montresor 2025, exercises 11.1 and 11.2](Z-bibliography.md#ref-montresor2025);
-    [Lemma 14.16](14-graph.md#lem-14-16)). Tests: `ch11.ex11.1`,
+    [Lemma 14.13](14-graph.md#lem-14-13)). Tests: `ch11.ex11.1`,
     `ch11.ex11.2`.
 16. Find the most reliable path, i.e., the largest product of the
     reliabilities of its edges, as a shortest path with the costs
@@ -2841,18 +2841,18 @@ Each exercise names the test of the library that solves it (run it with
     `ch14.ex14.10`.
 24. Check the property of the cuts (14.8) on random cuts, and the
     minimum spanning trees of the algorithms of Kruskal and Prim against
-    all the sets of $n - 1$ edges ([Lemma 14.18](14-graph.md#lem-14-18)).
+    all the sets of $n - 1$ edges ([Lemma 14.15](14-graph.md#lem-14-15)).
     Tests: `ch14.sec14.3.3.cut`, `ch14.sec14.3.mst`.
 25. Find all the minimum cuts of a network, and its maximum flow by every
     way of augmenting ([Montresor 2025, exercise 15.1](Z-bibliography.md#ref-montresor2025);
-    [Theorem 14.19](14-graph.md#lem-14-19)). Tests: `ch15.ex15.1`,
+    [Theorem 14.4](14-graph.md#thm-14-4)). Tests: `ch15.ex15.1`,
     `ch15.sec15.2.max-flow`.
 26. Find an Eulerian cycle of an oriented graph, or show that there is
     none ([Montresor 2025, exercise 15.3](Z-bibliography.md#ref-montresor2025);
-    [Lemma 14.28](14-graph.md#lem-14-28)). Test: `ch15.ex15.3`.
+    [Lemma 14.23](14-graph.md#lem-14-23)). Test: `ch15.ex15.3`.
     Then find an Eulerian trail, open or closed, of an oriented or an
     unoriented graph, telling a disconnected graph by the length of the
-    walk ([Lemma 14.29](14-graph.md#lem-14-29)). Test:
+    walk ([Lemma 14.24](14-graph.md#lem-14-24)). Test:
     `engineered_graph.euler-trails`.
 27. Fill a matrix with given sums of its rows and of its columns, and a
     matrix within given bounds, by a maximum flow and by a circulation

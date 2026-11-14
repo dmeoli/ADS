@@ -122,7 +122,7 @@ $\ell( c )$ of the complete binary tree of depth
 $\ell_{\max} = \max_c \ell( c )$. Since no codeword is an ancestor of
 another one, the $2^{\ell_{\max} - \ell( c )}$ leaves below the codewords
 are disjoint, which is (21.3) multiplied by $2^{\ell_{\max}}$. Conversely,
-the canonical code below ([Lemma 21.3](21-compression.md#lem-21-3)) gives
+the canonical code below ([Lemma 21.2](21-compression.md#lem-21-2)) gives
 prefix-free codewords of any lengths that satisfy (21.3). Finally, by the
 concavity of the logarithm (the inequality of Jensen) and by (21.3),
 
@@ -139,7 +139,7 @@ those of the merged symbol followed by 0 and by 1. In ADS we make the merges by 
 $O( \sigma \log \sigma )$ time, and `huffmanLengths()` of
 `CanonicalHuffman.h` reads the lengths off its codewords.
 
-<span id="thm-21-2"></span>**Theorem 21.2 (Huffman).** *The code of Huffman
+<span id="thm-21-1"></span>**Theorem 21.1 (Huffman).** *The code of Huffman
 has the least average length among the prefix-free codes of the symbols,
 and*
 
@@ -191,7 +191,7 @@ lengths, and the decoding of a codeword
 
 --8<-- "generated/CanonicalHuffman-decode.pseudo.md"
 
-<span id="lem-21-3"></span>**Lemma 21.3.** *If the lengths satisfy (21.3),
+<span id="lem-21-2"></span>**Lemma 21.2.** *If the lengths satisfy (21.3),
 the codewords of (21.5) fit in their lengths, the code is prefix-free, and
 the decoding of [Algorithm 21.2](21-compression.md#alg-21-2) returns the
 symbol whose codeword is next in the input.*
@@ -254,7 +254,7 @@ table. `limitedLengths()` bounds them to a given $L$ by halving the
 frequencies, rounding up, until the code of Huffman of the halved ones has
 no length above $L$.
 
-<span id="lem-21-4"></span>**Lemma 21.4.** *If $2^L \ge \sigma$, the loop
+<span id="lem-21-3"></span>**Lemma 21.3.** *If $2^L \ge \sigma$, the loop
 of `limitedLengths()` ends after at most
 $\lceil \log_2 f_{\max} \rceil + 1$ codes of Huffman, $f_{\max}$ being the
 largest frequency.*
@@ -370,7 +370,7 @@ $$
 and the code is a short binary fraction inside the last interval
 ([Figure 21.3](21-compression.md#fig-21-3)).
 
-<span id="thm-21-5"></span>**Theorem 21.5 (the arithmetic code).** *With
+<span id="thm-21-2"></span>**Theorem 21.2 (the arithmetic code).** *With
 $s_n = \prod_i P[ s[ i ] ]$ the size of the last interval
 $[ l_n , l_n + s_n )$, the first $d = \lceil \log_2( 2 / s_n ) \rceil$
 bits of $l_n + s_n / 2$ are a prefix-free code of $s$ among the texts of
@@ -437,7 +437,7 @@ $p$ is the number of the underflows pending, and $v$ the $w$ bits read.
 
 --8<-- "generated/ArithmeticCoding-RangeDecoder-consume.pseudo.md"
 
-<span id="lem-21-6"></span>**Lemma 21.6.** *After the expansions of
+<span id="lem-21-4"></span>**Lemma 21.4.** *After the expansions of
 `RangeEncoder::encode()`, $H - L > M / 4$; hence, with a total
 $T \le M / 4$ (the `maxTotal()` of the encoder and of the decoder), the interval (21.8) of a symbol of positive count is
 nonempty.*
@@ -463,7 +463,7 @@ same expansions to $v$, reading zeros past the end of the code. With $w = 32$ th
 against the exact code, as Witten, Neal and Cleary measured.
 `arithmeticEncode()` and `arithmeticDecode()` code a text with a static
 model of counts, whose total must not exceed $M / 4 = 2^{w-2}$ by
-[Lemma 21.6](21-compression.md#lem-21-6)
+[Lemma 21.4](21-compression.md#lem-21-4)
 ([Algorithm 21.8](21-compression.md#alg-21-8)).
 
 <span id="alg-21-8"></span>**Algorithm 21.8.** The arithmetic code with a
@@ -511,7 +511,7 @@ undoes the last symbol first, the encoder of `Rans.h` takes the symbols from
 the last to the first; the decoder, which reads the stream backward, then
 meets them in their order.
 
-<span id="lem-21-7"></span>**Lemma 21.7.** *(i) For each $c$, the map
+<span id="lem-21-5"></span>**Lemma 21.5.** *(i) For each $c$, the map
 $x \mapsto C( c , x )$ is a bijection of the naturals onto the naturals
 $y$ with $y \bmod M \in [ c_c , c_c + f_c )$, whose inverse is*
 
@@ -860,7 +860,7 @@ range that $x[ m ]$ leaves it ([Algorithm 21.15](21-compression.md#alg-21-15)).
 
 --8<-- "generated/IntegerCodes-interpolative.pseudo.md"
 
-<span id="lem-21-8"></span>**Lemma 21.8.** *The middle item of
+<span id="lem-21-6"></span>**Lemma 21.6.** *The middle item of
 $x[ l .. r - 1 ]$ lies in $[ \mathit{low} + m - l , \mathit{hi} - ( r - 1 -
 m ) ]$, and is written in*
 
@@ -1019,7 +1019,7 @@ $$
 \mathcal{C}( w ) = 0 . \tag{21.17}
 $$
 
-<span id="lem-21-9"></span>**Lemma 21.9.** *$\mathcal{C}( 0 )$ is the least
+<span id="lem-21-7"></span>**Lemma 21.7.** *$\mathcal{C}( 0 )$ is the least
 number of bits, counted as above, of the levels of a cut of the bits
 $[ 0 , w )$, and the dynamic program of `DirectAccessCodes` finds a cut
 that attains it in $O( w^2 )$ time from the counts $n_s$.*
@@ -1148,7 +1148,7 @@ $O( n )$ time from the suffix array of the text (`lz77ParseLinear()` of
 which [Kärkkäinen, Kempa and Puglisi 2013](Z-bibliography.md#ref-karkkainen2013)
 exploit.
 
-<span id="lem-21-10"></span>**Lemma 21.10.** *Let $r$ be the rank of the
+<span id="lem-21-8"></span>**Lemma 21.8.** *Let $r$ be the rank of the
 suffix $i$ in $\mathit{SA}$, and let*
 
 $$
@@ -1182,12 +1182,12 @@ its previous smaller value; each place is pushed and popped once.
 --8<-- "generated/LZ77Linear-psvNsv.cpp"
 ```
 
-<span id="thm-21-11"></span>**Theorem 21.11.** *`lz77ParseLinear()` gives
+<span id="thm-21-3"></span>**Theorem 21.3.** *`lz77ParseLinear()` gives
 the phrases of LZ77 with no window, with the lengths of `lz77Parse()`, in
 $O( n )$ time and two arrays of $n$ integers of 32 bits besides the text
 and the suffix array.*
 
-*Proof.* By [Lemma 21.10](21-compression.md#lem-21-10) the length of each
+*Proof.* By [Lemma 21.8](21-compression.md#lem-21-8) the length of each
 phrase is that of the longest earlier copy. Also, the scan costs $O( n )$, and so does the suffix array of SA-IS
 ([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)), which is
 freed before the parse. At the start $i$ of a phrase of length $\ell$ the
@@ -1244,7 +1244,7 @@ LF-mapping and the inverse transform
 
 The transform can be inverted, by a property that links its two columns.
 
-<span id="lem-21-12"></span>**Lemma 21.12 (the LF-mapping).** *The $k$-th
+<span id="lem-21-9"></span>**Lemma 21.9 (the LF-mapping).** *The $k$-th
 occurrence of a symbol $c$ in $L$ and the $k$-th occurrence of $c$ in $F$
 are the same symbol of $s$; hence the row*
 
@@ -1291,7 +1291,7 @@ small integers (on the alphabet abcno, bananacocco becomes
 1 1 3 1 1 1 3 4 1 0 1), in $O( \sigma )$ time per symbol here
 ([Algorithm 21.24](21-compression.md#alg-21-24)).
 
-<span id="lem-21-13"></span>**Lemma 21.13.** *Writing the place $p$ of each
+<span id="lem-21-10"></span>**Lemma 21.10.** *Writing the place $p$ of each
 symbol in the move-to-front of $s$ as $\gamma( p + 1 )$ takes at most
 $n ( 2 H_0 + 1 ) + O( \sigma \log \sigma )$ bits.*
 
@@ -1349,7 +1349,7 @@ space by `sizeInBits()`)
 ([Ferragina and Manzini 2005](Z-bibliography.md#ref-ferragina2005a)). Indeed, the occurrences of a pattern $P$ are the rows of $M'$ prefixed by $P$, a range
 of rows, and the range can be found from $L$ with no access to the text.
 
-<span id="lem-21-14"></span>**Lemma 21.14 (the backward search).** *If the
+<span id="lem-21-11"></span>**Lemma 21.11 (the backward search).** *If the
 rows prefixed by a string $Q$ are $[ \mathit{first} , \mathit{last} )$,
 those prefixed by $c Q$ are*
 
@@ -1363,7 +1363,7 @@ $$
 of $c$ in $L[ \mathit{first} .. \mathit{last} - 1 ]$ are those of ranks
 $\mathrm{rank}_c( L , \mathit{first} )$ to
 $\mathrm{rank}_c( L , \mathit{last} ) - 1$ among the occurrences of $c$ in
-$L$, and by [Lemma 21.12](21-compression.md#lem-21-12) their images are the
+$L$, and by [Lemma 21.9](21-compression.md#lem-21-9) their images are the
 consecutive rows that (21.21) gives. $\square$
 
 Hence `count( P )` of `FMIndex.h` applies (21.21) from the last symbol of
@@ -1482,7 +1482,7 @@ LF-mapping of their first rows, onto which each run is shifted alike.
 To locate the occurrences, two properties of the suffix array on the runs
 replace the samples every $\mu$ places.
 
-<span id="lem-21-15"></span>**Lemma 21.15 (the toehold).** *Let
+<span id="lem-21-12"></span>**Lemma 21.12 (the toehold).** *Let
 $[ \mathit{first} , \mathit{last} )$ be the rows prefixed by $Q$, and
 $v = \mathit{SA}[ \mathit{last} - 1 ]$. If $L[ \mathit{last} - 1 ] = c$,
 the last row prefixed by $c Q$ is $\mathit{LF}( \mathit{last} - 1 )$, of
@@ -1491,7 +1491,7 @@ last occurrence of $c$ in $L[ \mathit{first} .. \mathit{last} - 2 ]$,
 which ends a run, and its suffix is the sample at the end of that run less
 1.*
 
-*Proof.* By [Lemma 21.14](21-compression.md#lem-21-14), the last row
+*Proof.* By [Lemma 21.11](21-compression.md#lem-21-11), the last row
 prefixed by $c Q$ is the image of the last row $k$ of the range with
 $L[ k ] = c$. Since the LF-mapping moves one place to the left in $s$, the
 suffix of the image is $\mathit{SA}[ k ] - 1$. If
@@ -1506,7 +1506,7 @@ the ranks. All the other occurrences follow from the function
 $\phi( \mathit{SA}[ i ] ) = \mathit{SA}[ i - 1 ]$, which lists the suffixes
 of the range from the last row up.
 
-<span id="lem-21-16"></span>**Lemma 21.16 (the function $\phi$).** *With
+<span id="lem-21-13"></span>**Lemma 21.13 (the function $\phi$).** *With
 $p_j$ the first row of the run $j$,*
 
 $$
@@ -1518,7 +1518,7 @@ $$
 the end of the run $j - 1$.*
 
 *Proof.* If the row $i$ of $x = \mathit{SA}[ i ]$ starts no run, then
-$L[ i - 1 ] = L[ i ]$, and [Lemma 21.12](21-compression.md#lem-21-12) maps
+$L[ i - 1 ] = L[ i ]$, and [Lemma 21.9](21-compression.md#lem-21-9) maps
 the rows $i - 1$ and $i$ to adjacent rows, those of the suffixes
 $\phi( x ) - 1$ and $x - 1$. Hence $\phi( x - 1 ) = \phi( x ) - 1$, i.e.,
 $\phi$ shifts $x - 1$ and $x$ alike. Now, the places $x$ whose row starts
@@ -1660,7 +1660,7 @@ Each exercise names the test of the library that solves it (run it with
    `pearls_compression.canonical-huffman`.
 3. Bound the lengths of a code of Huffman by the iterative halving of the
    frequencies, and prove that it ends
-   ([Lemma 21.4](21-compression.md#lem-21-4)). Test:
+   ([Lemma 21.3](21-compression.md#lem-21-3)). Test:
    `pearls_compression.limited-lengths`.
 4. Code a string of bytes with the optimal lengths of at most 11 bits found
    by package-merge, and decode it by a table of up to 3 symbols a lookup
@@ -1670,13 +1670,13 @@ Each exercise names the test of the library that solves it (run it with
    is within 2 bits of $n H_0$ on random texts. Test:
    `pearls_compression.arithmetic-exact`.
 6. Realize the integer arithmetic coder with the underflows, prove
-   [Lemma 21.6](21-compression.md#lem-21-6), and code a text with a static
+   [Lemma 21.4](21-compression.md#lem-21-4), and code a text with a static
    model and with the adaptive model on a tree of Fenwick. Tests:
    `pearls_compression.range-coder-notes`,
    `pearls_compression.arithmetic-static`,
    `pearls_compression.arithmetic-adaptive`.
 7. Realize rANS with four interleaved states and the renormalization of
-   [Lemma 21.7](21-compression.md#lem-21-7), and make the decoder stop on
+   [Lemma 21.5](21-compression.md#lem-21-5), and make the decoder stop on
    a corrupted input instead of reading out of bounds. Tests:
    `engineered_succinct.rans-coder`, `engineered_succinct.rans-corrupted`.
 8. Realize tANS with the spread of the states by the step
@@ -1711,7 +1711,7 @@ Each exercise names the test of the library that solves it (run it with
     `pearls_compression.lzw`.
 15. Compute the parse of LZ77 with no window in $O( n )$ time by the
     previous and the next smaller values of the suffix array
-    ([Theorem 21.11](21-compression.md#thm-21-11)). Test:
+    ([Theorem 21.3](21-compression.md#thm-21-3)). Test:
     `engineered_succinct.lz77-linear`.
 16. Compute the transform of Burrows and Wheeler and invert it by the
     LF-mapping; chain the move-to-front, RLE0 and a canonical code of
@@ -1725,7 +1725,7 @@ Each exercise names the test of the library that solves it (run it with
     LF-mapping of a step of `locate()` in one descent. Test:
     `engineered_succinct.huffman-fm-index`.
 19. Realize the r-index, with the rank on the runs (21.22), the toehold
-    and the function $\phi$ ([Lemma 21.15](21-compression.md#lem-21-15)
-    and [Lemma 21.16](21-compression.md#lem-21-16)), and then replace its
+    and the function $\phi$ ([Lemma 21.12](21-compression.md#lem-21-12)
+    and [Lemma 21.13](21-compression.md#lem-21-13)), and then replace its
     predecessor searches with move structures. Tests:
     `engineered_succinct.r-index`, `engineered_succinct.move-r-index`.

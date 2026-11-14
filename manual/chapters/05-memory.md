@@ -927,7 +927,7 @@ that holds the next cell is now the `cdr`. Initially, $p$ is nil and $c$ is
 the root, so that the sequence (5.4) is empty and the statement holds. Finally, the three moves are the only writes of the marking, and each one changes only
 the fields named above, which proves the last part. $\square$
 
-<span id="thm-5-11"></span>**Theorem 5.11.** *`collect()` marks exactly
+<span id="thm-5-1"></span>**Theorem 5.1.** *`collect()` marks exactly
 the cells reachable from the roots, leaves their fields as they were, and
 frees the others. The marking takes time linear in the cells reached,
 with no space besides one mark bit and one side bit per cell, and a
