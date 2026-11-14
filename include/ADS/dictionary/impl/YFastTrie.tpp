@@ -168,7 +168,9 @@ bool YFastTrie< U , V , W >::consistent( void ) const
   return( true );
  std::size_t n = 0;
  std::optional< U > prev;   // the previous representative
- for( const auto & [ r , T ] : f_x ) {
+ for( const auto & e : f_x ) {
+  const U & r = e.first;   // a lambda may not capture a structured binding
+  const auto & T = e.second;   // under OpenMP in clang
   bool ok = true;
   T->forEach( [ & ]( const U & k , const V & ) {
    ok = ok && ( k <= r ) && ( ! prev || ( k > *prev ) );
