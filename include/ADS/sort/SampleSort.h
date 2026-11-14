@@ -27,8 +27,7 @@
  *   (rounded up) if at most 16, so that two levels split alike, and 8
  *   otherwise. If the sample has equal splitters, they are kept once and each
  *   bucket \f$ i > 0 \f$ is split into the items equal to \f$ s_i \f$, which
- *   are done, and the others, so that \f$ k \f$ distinct keys take
- *   \f$ O( n \log k ) \f$.
+ *   are done, and the others.
  * - The classification in place: the items are read in order, and each goes
  *   into a buffer of \f$ b \f$ items of its bucket; a full buffer is written
  *   back to the front of the part as a block, which never overtakes the

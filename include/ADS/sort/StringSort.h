@@ -35,9 +35,9 @@
  * moved. A step that leaves a group of more than \f$ 3 / 4 \f$ of its strings
  * counts against a budget of \f$ 2 \log_2 n \f$ such steps, past which a group
  * is sorted by `std::stable_sort()` on the characters from \f$ d \f$: so the
- * steps are \f$ O( \log n ) \f$ deep and their work \f$ O( n \log n ) \f$
- * beyond the reads of the characters, which are \f$ O( D + n \log n ) \f$ for
- * \f$ D \f$ the total length of the distinguishing prefixes. The sort is
+ * steps are \f$ O( \log n ) \f$ deep and they take
+ * \f$ O( D + n \log^2 n ) \f$ time, \f$ D \f$ the total length of the
+ * distinguishing prefixes, besides those sorts. The sort is
  * stable, and takes \f$ n \f$ keys of 64 bits and the room of \f$ n \f$
  * strings besides the vector.
  *

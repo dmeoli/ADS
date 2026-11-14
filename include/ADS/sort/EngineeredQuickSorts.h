@@ -31,11 +31,11 @@
  *   Java 7), as section 5.3.5 of Ferragina's book presents it: two pivots
  *   \f$ p \le q \f$, the 2nd and the 4th of five equally spaced items, split
  *   the part into three, smaller than \f$ p \f$, between and larger than
- *   \f$ q \f$, in one pass; it makes 5% fewer comparisons and 80% more swaps
- *   than the classical one on average (\f$ 1.9 n \ln n \f$ and
- *   \f$ 0.6 n \ln n \f$, against \f$ 2 n \ln n \f$ and
- *   \f$ n \ln n / 3 \f$), as Wild and Nebel computed, and fewer scans of the
- *   memory, which is what makes it faster;
+ *   \f$ q \f$, in one pass; with two random items as pivots it makes 5%
+ *   fewer comparisons and 80% more swaps than the classical one on average
+ *   (\f$ 1.9 n \ln n \f$ and \f$ 0.6 n \ln n \f$, against
+ *   \f$ 2 n \ln n \f$ and \f$ n \ln n / 3 \f$), as Wild and Nebel
+ *   computed, and fewer scans of the memory;
  * - `threeWayQuickSort()`, the quicksort of section 5.3 of Ferragina's book
  *   with the three-way partition of its Algorithm 5.4 (section 5.3.1): three
  *   pointers move rightward, and the items equal to the pivot gather in a

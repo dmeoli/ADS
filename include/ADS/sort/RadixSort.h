@@ -51,7 +51,7 @@
  *   between which and the vector the strings go back and forth, one move per
  *   pass, the character of each string read once per pass and kept aside, and
  *   the small groups sorted by insertion, so that it reads only the
- *   distinguishing prefixes of the strings: \f$ O( D + n \log 256 ) \f$ for
+ *   distinguishing prefixes of the strings: \f$ O( D + n ) \f$ time for
  *   \f$ D \f$ the total length of those prefixes; the prefix that all the
  *   strings of a group share is first skipped by comparing them with one of
  *   them (one `memcmp()` for a string that keeps the whole prefix), so that a

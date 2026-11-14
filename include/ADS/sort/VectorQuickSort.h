@@ -30,8 +30,7 @@
  *   registers the nibbles are added into bytes, every 17 of those the bytes
  *   into the counts, and the largest offset is checked, a key out of the
  *   window giving up the counting for the quicksort. A second pass writes the
- *   keys, whole registers at a time: \f$ O( n ) \f$ against the
- *   \f$ O( n \log k ) \f$ of the partitions by three ways.
+ *   keys, whole registers at a time, in \f$ O( n ) \f$ time.
  * - The partition of a part \f$ a[ 0 .. n - 1 ] \f$ by a pivot \f$ p \f$, as
  *   in the quicksort of Bramas: the first and the last \f$ U W \f$ keys
  *   (\f$ U = 8 \f$) are loaded aside, which leaves \f$ U W \f$ free places at
@@ -70,8 +69,7 @@
  *   done; elsewhere the partition keeps the minimum and the maximum of the
  *   part and a second pass puts the keys equal to \f$ p \f$ apart. A pivot
  *   that is the minimum of the part, so that no key is below it, also gets
- *   that second pass. Hence \f$ k \f$ distinct keys take
- *   \f$ O( n \log k ) \f$.
+ *   that second pass.
  * - The smaller side recurs and the larger one loops, with a stack of
  *   \f$ O( \log n ) \f$; past \f$ 2 \lfloor \log_2 n \rfloor \f$ levels a part
  *   is sorted by heapsort, as in the introsort of Musser, so that the worst

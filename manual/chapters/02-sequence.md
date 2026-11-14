@@ -2557,7 +2557,7 @@ $i$, which the step writes at the place $i$, while the item of the place $i
 k + 2 ) )$ time. As for the insertion sort, an inversion $A[ i ] > A[ j ]$
 with $i < j$ needs the rank of $A[ i ]$, at most $i + k$, to exceed that of
 $A[ j ]$, at least $j - k$; hence $j - i < 2 k$, the inversions are fewer
-than $2 k n$, and [Lemma 12.4](12-sort.md#lem-12-4) gives the time.
+than $2 k n$, and [Lemma 12.6](12-sort.md#lem-12-6) gives the time.
 $\square$
 
 <span id="lem-2-36"></span>**Lemma 2.36.** *Any sort by comparisons of the

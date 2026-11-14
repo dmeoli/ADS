@@ -8,11 +8,14 @@
  * character \f$ d \f$ is smaller, equal and larger than that of the pivot,
  * the equal part going on with the character \f$ d + 1 \f$ and the others
  * with \f$ d \f$. It is the sort that corresponds
- * to the ternary search tree of the same paper, and makes
- * \f$ O( D + n \log n ) \f$ comparisons of characters for \f$ D \f$ the total
- * length of the distinguishing prefixes, against the \f$ O( n \log n ) \f$
- * comparisons of whole strings of a quicksort, each as long as their common
- * prefix. It sorts in place, not stable.
+ * to the ternary search tree of the same paper; its pivot is the first
+ * string of the part. It makes at most \f$ ( \sigma + 2 ) ( D + n ) \f$
+ * comparisons of characters, \f$ D \f$ the total length of the
+ * distinguishing prefixes and \f$ \sigma \f$ the size of the alphabet, and
+ * \f$ O( D + n \log n ) \f$ in expectation on a random order of distinct
+ * strings, against the \f$ O( n \log n ) \f$ comparisons of whole strings
+ * of a quicksort, each as long as their common prefix. It sorts in place,
+ * not stable.
  *
  * The contracts [see `Contract.h`]: the vector ends with the same strings
  * sorted, an audit. The function is defined in `MultikeyQuickSort.tpp`.
