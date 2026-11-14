@@ -177,6 +177,22 @@ class SkipList {
  /// removes the key \f$ k \f$, if it is there, unlinking its node from each
  /// of its levels after `before( k )` and dropping the levels left empty, in
  /// \f$ O( \log n ) \f$ expected time
+ ///
+ /// In pseudocode (Pugh, beyond the book), \f$ y.h \f$ the levels of the
+ /// node \f$ y \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( k ) \cr
+ /// 2 & \quad ( y , U ) \gets \mathrm{before}( k ) \cr
+ /// 3 & \quad \textbf{if}\ y = \textbf{nil}\ \textbf{or}\ y.\mathit{key}
+ ///     \ne k\ \textbf{then return} \cr
+ /// 4 & \quad \textbf{for}\ l \gets 0\ \textbf{to}\ y.h - 1\ \textbf{do}
+ ///     \ U[ l ].\mathit{next}[ l ] \gets y.\mathit{next}[ l ] \cr
+ /// 5 & \quad \text{free } y \cr
+ /// 6 & \quad \textbf{while}\ L > 0\ \textbf{and}\ \mathit{head}.\mathit{next}
+ ///     [ L - 1 ] = \textbf{nil}\ \textbf{do}\ L \gets L - 1
+ /// \end{array}}
+ /// \f]
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 

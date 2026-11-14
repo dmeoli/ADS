@@ -56,7 +56,7 @@ $$
 $$
 
 together with the two axioms which say that `insert(k, v)` and `remove(k)`
-leave the value of each other key as it was. The realizations check the
+leave the value of each other key as it was. Realizations check the
 first two as postconditions of their contracts, and the concept
 `Dictionary` of `ADS/ADT.h` requires the three operations. Most
 realizations also have `contains(k)`, `size()` and the iterators of the
@@ -89,11 +89,11 @@ whose items lie in places (`DirectTable`, `OpenHashTable`,
 `SlotIterator` of `ADS/Iterators.h` ([Chapter 1](01-introduction.md#ch-1))
 makes the iterator that skips the empty places. Their `capacity()` is the
 number of places (of lists in `ChainedHashTable`, the stash excluded in
-`CuckooHashTable`, 4 per bucket in `BucketCuckooTable`). The hash tables
+`CuckooHashTable`, 4 per bucket in `BucketCuckooTable`). Hash tables
 take the hash as a template parameter `H` (`std::hash` for those of the
 textbooks, `DefaultHash` for the engineered ones,
 [§7.3.6](07-dictionary.md#sec-7-3-6)), and the engineered ones also an
-equality `Eq`, `std::equal_to` by default. The contracts follow
+equality `Eq`, `std::equal_to` by default. Contracts follow
 `ADS/Contract.h`: the postconditions of (7.1) and the invariant of each
 structure are checked at the levels stated in each section. An invariant
 that costs a scan of the structure is checked in full only on small
@@ -193,6 +193,24 @@ increasing order.
 
 --8<-- "generated/DirectTable-lookup.pseudo.md"
 
+Below are the declarations of `DirectTable`, in the namespace `ADS` as all those of the chapter.
+
+```cpp
+template< class V >
+class DirectTable {
+ public:
+ using Key = long;
+ using Value = V;
+ DirectTable( long a , long b );
+ std::optional< V > lookup( long k ) const;
+ void insert( long k , const V & v );
+ void remove( long k );
+ std::size_t size() const;
+ std::size_t capacity() const;
+ class const_iterator;
+ };
+```
+
 `SortedArrayDictionary` keeps the $n$ pairs in a vector sorted by key, an
 invariant (the keys strictly increasing) that its contracts check. A lookup
 is the binary search of [Montresor 2025,
@@ -216,6 +234,28 @@ insertion of `SortedArrayDictionary`.
 --8<-- "generated/SortedArrayDictionary-lookup.pseudo.md"
 
 --8<-- "generated/SortedArrayDictionary-insert.pseudo.md"
+
+We declare `SortedArrayDictionary` as follows.
+
+```cpp
+template< std::totally_ordered K , class V >
+class SortedArrayDictionary {
+ public:
+ using Key = K;
+ using Value = V;
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool contains( const K & k ) const;
+ std::optional< std::pair< K , V > > lowerBound( const K & k ) const;
+ const K * findKey( const K & k ) const;
+ const K * lowerBoundKey( const K & k ) const;
+ bool empty() const;
+ std::size_t size() const;
+ const std::vector< std::pair< K , V > > & pairs() const;
+ using const_iterator = const std::pair< K , V > *;
+ };
+```
 
 ## 7.3 Hash functions {#sec-7-3}
 
@@ -292,6 +332,23 @@ bits in the middle of the 64 least significant bits of $i^2$.
 --8<-- "generated/HashFunctions-fibonacci.pseudo.md"
 
 --8<-- "generated/HashFunctions-midsquare.pseudo.md"
+
+In C++, the functions of `HashFunctions.h` are declared as follows.
+
+```cpp
+unsigned bin_bit( std::string_view k , std::size_t j );
+std::uint64_t int_bin( std::string_view k );
+std::uint64_t hash_extraction( std::string_view k , int p ,
+                               std::size_t s );
+std::uint64_t hash_xor( std::string_view k , int p );
+std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
+                             std::uint64_t base = 256 ,
+                             std::uint64_t seed = 0 );
+std::uint64_t hash_multiplication( std::uint64_t i , std::uint64_t m ,
+                                   long double C = ( std::sqrt( 5.0L ) - 1 ) / 2 );
+std::uint64_t hash_fibonacci( std::uint64_t i , int p );
+std::uint64_t hash_midsquare( std::uint64_t i , int p );
+```
 
 Each of these functions is fixed, and a fixed function, however good, has
 a set of keys on which it fails. If $| U | > ( n - 1 ) m$, some place
@@ -376,6 +433,41 @@ classes and check the three bounds exactly.
 
 --8<-- "generated/UniversalHashing-StringHash-operator.pseudo.md"
 
+Below are the declarations of the four universal classes.
+
+```cpp
+class CarterWegmanHash {
+ public:
+ explicit CarterWegmanHash( std::uint64_t m , std::uint64_t seed = 1 );
+ CarterWegmanHash( std::uint64_t p , std::uint64_t a , std::uint64_t b ,
+                   std::uint64_t m );
+ std::uint64_t operator()( std::uint64_t k ) const;
+ std::uint64_t p() const;
+ std::uint64_t a() const;
+ std::uint64_t b() const;
+ std::uint64_t m() const;
+ };
+class DotProductHash {
+ public:
+ DotProductHash( std::uint64_t m , int r , std::uint64_t seed = 1 );
+ DotProductHash( std::uint64_t m , std::vector< std::uint64_t > a );
+ std::uint64_t operator()( std::uint64_t k ) const;
+ std::uint64_t universe() const;
+ };
+class MultiplyShiftHash {
+ public:
+ MultiplyShiftHash( int h , int l , std::uint64_t seed = 1 );
+ static MultiplyShiftHash ofMultiplier( int h , int l ,
+                                        std::uint64_t a );
+ std::uint64_t operator()( std::uint64_t k ) const;
+ };
+class StringHash {
+ public:
+ explicit StringHash( std::uint64_t seed = 1 );
+ std::uint64_t operator()( std::string_view s ) const;
+ };
+```
+
 ### 7.3.3 Multiplicative hashing on $2^d$ places {#sec-7-3-3}
 
 The tables of [Morin 2013, chapter 5](Z-bibliography.md#ref-morin-cpp)
@@ -406,8 +498,20 @@ A table that grows and shrinks keeps the same $z$, and only $d$ changes.
 
 --8<-- "generated/UniversalHashing-MultiplicativeHash-place.pseudo.md"
 
+We declare `MultiplicativeHash` as follows.
+
 ```cpp
---8<-- "generated/UniversalHashing-MultiplicativeHash-place.cpp"
+template< class K = std::uint64_t , class Code = std::hash< K > >
+class MultiplicativeHash {
+ public:
+ explicit MultiplicativeHash( std::uint64_t seed = 1 ,
+                              Code code = Code() );
+ static MultiplicativeHash ofMultiplier( std::uint64_t z ,
+                                         Code code = Code() );
+ std::uint64_t operator()( const K & k ) const;
+ std::size_t place( const K & k , std::size_t m ) const;
+ std::uint64_t multiplier() const;
+ };
 ```
 
 Its analysis rests on a fact of number theory, by which the
@@ -453,8 +557,7 @@ of a random function, and it cannot be improved ([Morin 2013, exercise
 = 3 x$, the products $z x \bmod 2^w$ and $3 z x \bmod 2^w$ depend only on
 the $d + 2$ lowest bits $z'$ of $z$. Then the two hashes are $\lfloor z' / 4
 \rfloor$ and $\lfloor ( 3 z' \bmod 2^{d+2} ) / 4 \rfloor$, and since $3 z'
-= z' + 2 z'$ they agree for exactly 2 in $2^d$ of the odd $z'$. The test
-`ods_ints.ods5.1.multiplicative-hash` counts the collisions of this pair on
+= z' + 2 z'$ they agree for exactly 2 in $2^d$ of the odd $z'$. In the test `ods_ints.ods5.1.multiplicative-hash` we count the collisions of this pair on
 $2^{17}$ random multipliers. For a fixed $z$ and $n = 2^d$ with $d \le w /
 2$, on the other hand, $n$ keys share a hash already by the pigeonhole
 principle, $2^w$ keys going to $2^d$ places ([Morin 2013, exercise
@@ -486,8 +589,15 @@ it a `PlaceHash` too.
 
 --8<-- "generated/RandomHashing-TabulationHash-tabulation.pseudo.md"
 
+In C++, `TabulationHash` is declared as follows.
+
 ```cpp
---8<-- "generated/RandomHashing-tabulation.cpp"
+class TabulationHash {
+ public:
+ explicit TabulationHash( std::uint64_t seed = 1 );
+ std::uint64_t operator()( std::uint64_t x ) const;
+ std::size_t place( std::uint64_t x , std::size_t m ) const;
+ };
 ```
 
 With it, the hash of any key is uniform, since the word of one of its characters
@@ -533,6 +643,30 @@ in a table of positions already seen (cf. [Chapter 19](19-backtrack.md#ch-19)).
 
 --8<-- "generated/RandomHashing-ZobristTable-hash.pseudo.md"
 
+Below are the declarations of the other tools of `RandomHashing.h`.
+
+```cpp
+class SplitMix64 {
+ public:
+ using result_type = std::uint64_t;
+ explicit constexpr SplitMix64( std::uint64_t seed = 0 );
+ constexpr std::uint64_t operator()();
+ static constexpr std::uint64_t min();
+ static constexpr std::uint64_t max();
+ };
+class ZobristTable {
+ public:
+ ZobristTable( std::size_t n , std::size_t m , std::uint64_t seed = 1 );
+ std::uint64_t operator()( std::size_t f , std::size_t v ) const;
+ template< std::ranges::random_access_range S >
+ requires std::ranges::sized_range< S > std::uint64_t hash( const S & s ) const;
+ std::uint64_t update( std::uint64_t h , std::size_t f , std::size_t a ,
+                       std::size_t b ) const;
+ };
+constexpr std::uint64_t splitmix64( std::uint64_t x );
+constexpr std::uint64_t fibonacciPlace( std::uint64_t h , int b );
+```
+
 ### 7.3.5 Hash codes {#sec-7-3-5}
 
 Our tables work on keys of $w$ bits, and a key that is not an integer (a
@@ -561,11 +695,7 @@ $2 w$ bits, all from a seed (`parts()` gives $r$).
 
 --8<-- "generated/UniversalHashing-CompoundHash-operator.pseudo.md"
 
-```cpp
---8<-- "generated/UniversalHashing-CompoundHash-hash.cpp"
-```
-
-The sum is kept on 128 bits, as two words with the carry, while only the
+We keep the sum on 128 bits, as two words with the carry, while only the
 high half of $z s \bmod 2^{128}$ is wanted. This half the low halves of $z$
 and $s$ give on 128 bits and the two crossed products only on their low 64
 bits; hence, (7.5) costs $r + 3$ products of words.
@@ -650,16 +780,30 @@ $2^{32}$ times smaller for the same work per word.
 
 --8<-- "generated/UniversalHashing-SequenceHash-operator.pseudo.md"
 
+We declare the two hash codes as follows.
+
 ```cpp
---8<-- "generated/UniversalHashing-SequenceHash-hash.cpp"
+class CompoundHash {
+ public:
+ explicit CompoundHash( std::size_t r , std::uint64_t seed = 1 );
+ std::uint64_t operator()( std::span< const std::uint64_t > x ) const;
+ std::size_t parts() const;
+ };
+class SequenceHash {
+ public:
+ explicit SequenceHash( std::uint64_t seed = 1 );
+ std::uint64_t operator()( std::span< const std::uint64_t > x ) const;
+ std::uint64_t operator()( std::string_view s ) const;
+ };
 ```
 
-The reduction modulo a Mersenne prime is the identity of [Morin 2013,
+Reducing modulo a Mersenne prime is the identity of [Morin 2013,
 exercise 5.10](Z-bibliography.md#ref-morin-cpp): with $x = a 2^w + b$ and
 $2^w \equiv 1 \pmod{2^w - 1}$, one has $x \equiv a + b$, and $a + b < x$
 while $x \ge 2^w$. Hence $x \bmod ( 2^w - 1 )$ is the fixed point of
 $x \gets ( x \bmod 2^w ) + ( x \operatorname{div} 2^w )$, taken to 0 if it
-is $2^w - 1$, the two lines after the product in the code above. The other
+is $2^w - 1$, which is how `mulMod61()` reduces each product modulo $p$
+in line 3 of the pseudocode above. Other
 exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin-cpp) on the
 hash codes are about why the easy combinations fail, and the answers are short.
 A code that reads only the characters of even place, as the early
@@ -676,7 +820,7 @@ array have distinct codes.
 
 ### 7.3.6 The engineered hash functions {#sec-7-3-6}
 
-The engineered tables, filters and perfect hash functions of the library
+Engineered tables, filters and perfect hash functions of the library
 use the hashes of 64 bits of `FastHash.h`, made of the *folded product*,
 the product $a b$ of two words on 128 bits whose two halves are XORed,
 $( a b \bmod 2^{64} ) \oplus \lfloor a b / 2^{64} \rfloor$
@@ -705,6 +849,22 @@ process 4 or 8 lanes at a time with the same result as the scalar code.
 
 --8<-- "generated/FastHash-hashBytes.pseudo.md"
 
+In C++, the hashes of `FastHash.h` are declared as follows.
+
+```cpp
+struct Product128 { std::uint64_t lo , hi; };
+constexpr Product128 product128( std::uint64_t a , std::uint64_t b );
+constexpr std::uint64_t foldedProduct( std::uint64_t a , std::uint64_t b );
+constexpr std::uint64_t hashWord( std::uint64_t x , std::uint64_t seed = 0 );
+std::uint64_t hashBytes( const void * p , std::size_t n ,
+                         std::uint64_t seed = 0 );
+template< class T >
+struct FastHash;   // integers, enumerations, pointers, floating point
+                   // numbers and strings: std::size_t operator()( x )
+template< class K >
+using DefaultHash = typename detail::DefaultHashOf< K >::type;
+```
+
 `FastHash<T>` is the hash of the integers, the enumerations, the pointers,
 the floating point numbers ($+0$ and $-0$ hashing the same, since they are
 equal) and the strings (`std::string`, `std::string_view` and the C
@@ -732,8 +892,7 @@ AVX2 and AVX-512.
 `RowFingerprint.h` gives the fingerprints of 64 bits of the rows of
 doubles, dense or sparse (the indices and the values in their order), for
 finding the rows already seen, e.g., a cut generated twice, in a table of
-the fingerprints ([Rabin 1981](Z-bibliography.md#ref-rabin1981)). The
-values are compared as numbers, not as bit patterns: `canonicalWord()`
+the fingerprints ([Rabin 1981](Z-bibliography.md#ref-rabin1981)). Values are compared as numbers, not as bit patterns: `canonicalWord()`
 maps $+0$ and $-0$ to 0 and each NaN to one quiet NaN ([IEEE
 2019](Z-bibliography.md#ref-ieee2019)), and `rowFingerprint()` hashes the
 canonical words a block of 64 at a time by `hashBytes()`. Each block is
@@ -750,6 +909,23 @@ the values as numbers.
 --8<-- "generated/RowFingerprint-rowFingerprint.pseudo.md"
 
 --8<-- "generated/RowFingerprint-sameRow.pseudo.md"
+
+Below are the declarations of the functions of `RowFingerprint.h`.
+
+```cpp
+std::uint64_t canonicalWord( double x );
+std::uint64_t rowFingerprint( std::span< const double > x ,
+                              std::uint64_t seed = 0 );
+template< class I >
+std::uint64_t rowFingerprint( std::size_t n , const I * ind ,
+                              const double * val ,
+                              std::uint64_t seed = 0 );
+bool sameRow( std::span< const double > a ,
+              std::span< const double > b );
+template< class I >
+bool sameRow( std::size_t na , const I * ia , const double * va ,
+              std::size_t nb , const I * ib , const double * vb );
+```
 
 ## 7.4 Hash tables with lists of overflow {#sec-7-4}
 
@@ -785,14 +961,49 @@ are the lists, and $g$ is the load past which the table doubles.
 
 --8<-- "generated/ChainedHashTable-insert.pseudo.md"
 
-Each scan of a list counts the cells it examines, the nil that ends an
-unsuccessful search included, which `probes()` returns for the last
-operation. Its code is the same for the three kinds of lists,
-but for the test that stops a sorted list at the first larger key:
+We declare `ChainedHashTable` as follows, followed by an example of use.
 
 ```cpp
---8<-- "generated/ChainedHashTable-find.cpp"
+template< class K , class V , Chain C = Chain::FRONT ,
+    class H = std::hash< K > >
+requires( C != Chain::SORTED || std::totally_ordered< K > )
+class ChainedHashTable {
+ public:
+ class const_iterator;
+ using Key = K;
+ using Value = V;
+ explicit ChainedHashTable( std::size_t m , bool restructure = false ,
+                            H h = H() );
+ ChainedHashTable( std::size_t m , double g , double s , H h = H() );
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool contains( const K & k ) const;
+ const K * findKey( const K & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t capacity() const;
+ double load() const;
+ template< class F > void forEach( F && f ) const;
+ std::vector< K > chain( std::size_t i ) const;
+ std::size_t probes() const;
+ std::size_t restructures() const;
+ std::size_t moved() const;
+ };
 ```
+
+```cpp
+ADS::ChainedHashTable< std::string , int > T( 8 );   // 8 lists
+T.insert( "one" , 1 );
+T.insert( "two" , 2 );
+const std::optional< int > v = T.lookup( "two" );    // 2
+T.remove( "one" );
+```
+
+Each scan of a list counts the cells it examines, the nil that ends an
+unsuccessful search included, which `probes()` returns for the last
+operation. Its code is the same for the three kinds of lists, but for the
+test that stops a sorted list at the first larger key.
 
 `chain(i)` gives the keys of the list $i$ from its head, `forEach()` visits
 the pairs list after list in $O( m + n )$ time (the foreach of the book),
@@ -840,7 +1051,7 @@ whose expectation is at most $2 / m$ by [Lemma 7.3](07-dictionary.md#lem-7-3). T
 of $x$ is $n_x + \sum_{y \in S} I_y$, of expectation at most
 $n_x + ( n - n_x ) \, 2 / m \le n_x + 2$, since $m \ge n$. $\square$
 
-The table may restructure itself ([Montresor 2025,
+A table may restructure itself ([Montresor 2025,
 §7.4](Z-bibliography.md#ref-montresor2025)): `ChainedHashTable( m , true )`
 doubles $m$ when $\alpha$ exceeds $g = 2$ and halves it, down to the
 initial size, when $\alpha$ falls below $s = 1 / 2$, while
@@ -855,6 +1066,15 @@ new size is therefore less than twice the one asked. `is_pow2()`
 distinguishes the two cases.
 
 --8<-- "generated/TableSize-resized.pseudo.md"
+
+In C++, the functions of `TableSize.h` are declared as follows.
+
+```cpp
+bool is_prime( std::size_t n );
+std::size_t next_prime( std::size_t n );
+bool is_pow2( std::size_t n );
+std::size_t resized( std::size_t m , bool grow , std::size_t m0 );
+```
 
 <span id="lem-7-7"></span>**Lemma 7.7.** *Let a table double its size
 when its load exceeds $g$ and halve it, down to its initial size, when its
@@ -898,8 +1118,7 @@ The bound of [Lemma 7.5](07-dictionary.md#lem-7-5) is on the average list.
 Yet, the longest list of a table with $m = \Theta( n )$ lists has $\Theta( \log
 n / \log \log n )$ keys with high probability for a random function, and
 $O( \log n / \log \log n )$ in expectation for a universal class
-([Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023)). The
-test `pearls_hashing.universal-chaining` measures both bounds on the
+([Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023)). In the test `pearls_hashing.universal-chaining` we measure both bounds on the
 multiples of $m$, which $h( k ) = k \bmod m$ would put in one list.
 
 `DLeftHashTable` in `UniversalHashing.h` shortens the longest list by
@@ -928,6 +1147,27 @@ once, is checked on the key of the operation only past 1024 keys.
 `DLeftHashTable` ([Vöcking 2003](Z-bibliography.md#ref-vocking2003)).
 
 --8<-- "generated/UniversalHashing-DLeftHashTable-insert.pseudo.md"
+
+Below are the declarations of `DLeftHashTable`.
+
+```cpp
+template< class K , class V , class H = std::hash< K > >
+class DLeftHashTable {
+ public:
+ class const_iterator;
+ using Key = K;
+ using Value = V;
+ DLeftHashTable( std::size_t m , int d , std::uint64_t seed = 1 ,
+                 H h = H() );
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool contains( const K & k ) const;
+ std::size_t size() const;
+ std::size_t maxLoad() const;
+ int tables() const;
+ };
+```
 
 ## 7.5 Open addressing {#sec-7-5}
 
@@ -959,23 +1199,48 @@ are the places.
 
 --8<-- "generated/OpenHashTable-insert.pseudo.md"
 
+We declare `OpenHashTable` as follows.
+
+```cpp
+template< class K , class V , class H = std::hash< K > >
+class OpenHashTable {
+ public:
+ using Key = K;
+ using Value = V;
+ enum class Slot { NIL , FULL , DELETED };
+ OpenHashTable( std::size_t m , Probing probe ,
+                bool restructure = false , H h = H() );
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool contains( const K & k ) const;
+ const K * findKey( const K & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t capacity() const;
+ double load() const;
+ template< class F > void forEach( F && f ) const;
+ Slot slot( std::size_t i ) const;
+ const K & keyAt( std::size_t i ) const;
+ std::size_t probes() const;
+ std::size_t restructures() const;
+ std::size_t moved() const;
+ class const_iterator;
+ };
+```
+
 Our code of the scan adds a constant stride to the place when the
 inspection has one (the linear inspection and the double hashing), instead
 of computing $H( k , i )$ from scratch, and it records the places examined
 for `probes()`. This count is atomic, and hence the lookups of a constant
 table from several threads at once do not race
-(`engineered.open-hash-readers`):
-
-```cpp
---8<-- "generated/OpenHashTable-scan.cpp"
-```
+(`engineered.open-hash-readers`).
 
 An insertion whose inspection finds no place, which the quadratic
 inspection allows while some place is free, is not a fault of the caller
 and throws `std::overflow_error`. `slot(i)` and `keyAt(i)` read the state
 and the key of a place, `forEach()` visits the pairs place after place in
-$O( m )$ time, and the iterators skip the places that are not full. The
-invariant, checked at the contract level 3, is that the first place of the
+$O( m )$ time, and the iterators skip the places that are not full. Its invariant, checked at the contract level 3, is that the first place of the
 inspection of each key that holds it is its own place with no nil before
 it, and that `size()` and the deleted places are counted right. On a table
 of more than 1024 places it is checked on the inspection of the key of the
@@ -1028,7 +1293,7 @@ $\frac{n}{m} \cdot \frac{n - 1}{m - 1} \cdots \le \alpha^i$; hence
 $I( \alpha ) = \sum_{i \ge 0} \Pr[ \text{more than } i ] \le
 \sum_{i \ge 0} \alpha^i$. A successful search of a key follows the
 inspection of its insertion, which was an unsuccessful search in a table
-of load $j / m$ for the $( j + 1 )$-th key. The mean over
+of load $j / m$ for the $( j + 1 )$-th key. Here the mean over
 $j = 0 , \ldots , n - 1$ of $m / ( m - j )$ is at most
 $\frac{1}{\alpha} \int_0^\alpha \frac{dx}{1 - x}$, the second bound of
 (7.8). $\square$
@@ -1040,7 +1305,7 @@ exactly for random places, $I( \alpha ) \approx \frac{1}{2} ( 1 + 1 / ( 1 -
 \alpha )^2 )$ and $S( \alpha ) \approx \frac{1}{2} ( 1 + 1 / ( 1 - \alpha )
 )$, against the $1 / ( 1 - \alpha )$ and $- \ln( 1 - \alpha ) / \alpha$ of
 the double hashing. Yet, its places are consecutive in memory, and at a
-moderate load it is usually the fastest in practice. The quadratic and the
+moderate load it is usually the fastest in practice. Both the quadratic and the
 triangular inspections spread the keys of different $H_0$, while the keys
 with the same $H_0$ still share their entire inspection (*secondary
 clustering*). In contrast, the double hashing comes close to (7.8), since
@@ -1057,12 +1322,12 @@ places $i ( i + 1 ) / 2 \bmod m$, $0 \le i < m$, are distinct.*
 
 *Proof.* If $i ( i + 1 ) / 2 \equiv j ( j + 1 ) / 2 \pmod{m}$ with
 $0 \le j < i < m$, then $( i - j ) ( i + j + 1 ) \equiv 0 \pmod{2 m}$.
-The two factors add up to $2 i + 1$, which is odd, and therefore one of
+These two factors add up to $2 i + 1$, which is odd, and therefore one of
 them is odd. Its companion is positive and below $2 m$, and their product,
 whose factors 2 all come from the even one, cannot be a multiple of the
 power of 2 $2 m$, a contradiction. $\square$
 
-The table may restructure itself ([Montresor 2025,
+A table may restructure itself ([Montresor 2025,
 §7.4](Z-bibliography.md#ref-montresor2025)). It doubles $m$ when the full
 and deleted places are more than $m / 2$, so that $\alpha \le 1 / 2$ and
 the deleted places go away, and halves it, down to the initial size, when
@@ -1110,7 +1375,7 @@ $$
 places in $\{ i , \ldots , i + k - 1 \}$, which has probability at most
 $\binom{q}{k} ( k / m )^k ( 1 - k / m )^{q - k}$ (the condition on the
 places $i - 1$ and $i + k$ dropped), largest for the least $m$, i.e., for
-$m = 2 q$. The formula of Stirling,
+$m = 2 q$. Then the formula of Stirling,
 $\sqrt{2 \pi n} ( n / e )^n \le n! \le \sqrt{2 \pi n} ( n / e )^n
 e^{1 / ( 12 n )}$, bounds the binomial by
 $\sqrt{ q / ( 2 \pi k ( q - k ) ) } \, e^{1 / ( 12 q )} \,
@@ -1170,8 +1435,7 @@ Two tables of [Knuth 1998, §6.4](Z-bibliography.md#ref-knuth1998v3) in
 1982](Z-bibliography.md#ref-vitter1982)) keeps the lists of overflow in
 the table itself. A key that collides is put in the empty place of largest
 index, found by a pointer $r$ that only goes down, and linked at the end
-of the list of its place; hence, the lists may merge (*coalesce*). The
-first places taken are those of a *cellar* beyond the $m$ places addressed
+of the list of its place; hence, the lists may merge (*coalesce*). First, the places taken are those of a *cellar* beyond the $m$ places addressed
 by the hash. With a cellar of about 14 % of the table the searches are
 nearly as fast as with separate lists, with no memory out of the table
 ([Algorithm 7.6](07-dictionary.md#alg-7-6), [Figure
@@ -1212,14 +1476,39 @@ the index of the key $y$ in its own inspection.
 
 --8<-- "generated/KnuthHashing-BrentHashTable-insert.pseudo.md"
 
+In C++, the two tables of Knuth are declared as follows.
+
+```cpp
+template< class K , class V , class H = std::hash< K > >
+class CoalescedHashTable {
+ public:
+ explicit CoalescedHashTable( std::size_t m , std::size_t cellar = 0 ,
+                              H h = H() );
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ std::size_t size() const;
+ std::size_t probes() const;
+ class const_iterator;
+ };
+template< class K , class V , class H = std::hash< K > >
+class BrentHashTable {
+ public:
+ explicit BrentHashTable( std::size_t m , H h = H() );
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ std::size_t size() const;
+ std::size_t probes() const;
+ class const_iterator;
+ };
+```
+
 ## 7.6 Engineered hash tables {#sec-7-6}
 
 The tables of [§7.4](07-dictionary.md#sec-7-4) and
 [§7.5](07-dictionary.md#sec-7-5) follow the textbooks, and their costs are
 dominated by the misses of the cache rather than by the operations they
 count. A list costs a pointer, i.e., a miss, per cell, and the linear
-inspection compares entire keys along its run. The tables of this section
-are engineered on the layout of the Swiss tables of [Kulukundis
+inspection compares entire keys along its run. Tables of this section are engineered on the layout of the Swiss tables of [Kulukundis
 2017](Z-bibliography.md#ref-kulukundis2017) and of
 `boost::unordered_flat_map` ([Lopez Munoz
 2022](Z-bibliography.md#ref-lopezmunoz2022)). Their places come in groups,
@@ -1241,7 +1530,7 @@ broadword operations on two words of 64 bits ([Knuth 2011,
 §7.1.3](Z-bibliography.md#ref-knuth2011)). A macro, `ADS_FLAT_SIMD`,
 defined as 0 before the header, selects the broadword operations on any
 machine. A false match typically costs a comparison of keys and little
-else. The hash $h( k )$ is mixed as in Boost, by the folded product
+else. Here the hash $h( k )$ is mixed as in Boost, by the folded product
 (`mulx()`, or `mulxPortable()` by products of 32 bits) of $h( k )$ and
 $\lfloor 2^{64} / \phi \rfloor$. Hence, each bit of the result depends
 on each bit of $h( k )$ and even the identity hash of the integers of
@@ -1297,8 +1586,7 @@ group full, and a place of a group with some bit set can become empty only
 by a removal, after which it is counted. Hence each empty place that is
 not counted lies in a group whose overflow is 0. The full places and those
 counted are at most $n + d \le 7 m / 8 < m$, so that some place is empty
-and not counted, and its group has an empty place and its overflow 0. The
-triangular order visits all the $G$ groups ([Lemma 7.9](07-dictionary.md#lem-7-9)), and a search stops
+and not counted, and its group has an empty place and its overflow 0. Thus the triangular order visits all the $G$ groups ([Lemma 7.9](07-dictionary.md#lem-7-9)), and a search stops
 at that group at the latest, an insertion at its empty place. $\square$
 
 With a hash that behaves as random and a load at most $7 / 8$, the expected
@@ -1322,7 +1610,7 @@ table is still there to copy. `find()` runs the entire inspection in line,
 as Boost does, while the groups after the first and the rebuild are out of
 line.
 
-The iterators visit the pairs in the order of the places, a group at a time
+Its iterators visit the pairs in the order of the places, a group at a time
 by the mask of its full places, and skip the empty groups whole up to a
 sentinel group after the last. Hence, a step tests no bound ([Algorithm
 7.9](07-dictionary.md#alg-7-9)). `erase(it)` removes a pair and returns the
@@ -1345,6 +1633,52 @@ the current one on, its lowest bit the current place.
 
 --8<-- "generated/FlatHashTable-next.pseudo.md"
 
+Below are the declarations of `FlatHashTable`, followed by an example of use.
+
+```cpp
+template< class K , class V , class H = DefaultHash< K > ,
+    class Eq = std::equal_to< K > >
+class FlatHashTable {
+ public:
+ using Key = K;
+ using Value = V;
+ explicit FlatHashTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
+ FlatHashTable( const FlatHashTable & o );
+ FlatHashTable( FlatHashTable && o ) noexcept;
+ ~FlatHashTable();
+ std::optional< V > lookup( const K & k ) const;
+ const V * find( const K & k ) const;
+ V * find( const K & k );
+ bool insert( const K & k , const V & v );
+ bool insert( K && k , V && v );
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( const K & k , A && ... a );
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( K && k , A && ... a );
+ bool remove( const K & k );
+ bool contains( const K & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t capacity() const;
+ double load() const;
+ std::size_t deleted() const;
+ void reserve( std::size_t n );
+ void clear();
+ template< class F > void forEach( F && f ) const;
+ template< class F > void forEach( F && f );
+ void swap( FlatHashTable & o ) noexcept;
+ class const_iterator;
+ const_iterator erase( const_iterator it );
+ };
+```
+
+```cpp
+ADS::FlatHashTable< std::uint64_t , double > F;
+F.insert( 7 , 0.5 );
+if( double * p = F.find( 7 ) ) *p += 1;              // 1.5, in place
+const bool there = F.contains( 8 );                  // false
+```
+
 `DenseHashMap` separates the pairs from the index ([Hettinger
 2012](Z-bibliography.md#ref-hettinger2012) describes the same layout of the
 dictionaries of CPython). The pairs are the items $0 , \ldots , n - 1$ of a
@@ -1365,7 +1699,7 @@ of its key comparing the positions rather than the keys, takes the new
 position ([Algorithm 7.10](07-dictionary.md#alg-7-10), [Figure
 7.10](07-dictionary.md#fig-7-10)). As for the places counted, the recount
 and the rebuilds follow the rules of `FlatHashTable` (with $m / 16$ and $7
-m / 8$). The space is $16 n$ bytes for pairs of 16 bytes plus 64 bytes per
+m / 8$). Its space is $16 n$ bytes for pairs of 16 bytes plus 64 bytes per
 12 places of the index, about 5.3 bytes per place, at a load between $7 /
 16$ and $7 / 8$ after the first growth. There are fewer than $2^{32}$
 pairs.
@@ -1382,12 +1716,50 @@ $g.\mathit{at}[ j ]$ the position of the place $j$ of the group $g$.
 
 --8<-- "generated/DenseHashMap-remove.pseudo.md"
 
+We declare `DenseHashMap` as follows.
+
+```cpp
+template< class K , class V , class H = DefaultHash< K > ,
+    class Eq = std::equal_to< K > >
+class DenseHashMap {
+ public:
+ using Key = K;
+ using Value = V;
+ explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
+ DenseHashMap( const DenseHashMap & o );
+ DenseHashMap( DenseHashMap && o ) noexcept;
+ ~DenseHashMap() = default;
+ std::optional< V > lookup( const K & k ) const;
+ const V * find( const K & k ) const;
+ V * find( const K & k );
+ bool insert( const K & k , const V & v );
+ bool insert( K && k , V && v );
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( const K & k , A && ... a );
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( K && k , A && ... a );
+ bool remove( const K & k );
+ bool contains( const K & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t capacity() const;
+ double load() const;
+ std::size_t deleted() const;
+ void reserve( std::size_t n );
+ void clear();
+ template< class F > void forEach( F && f ) const;
+ const std::pair< K , V > * data() const;
+ void swap( DenseHashMap & o ) noexcept;
+ using const_iterator = typename std::vector< std::pair< K ,
+     V > >::const_iterator;
+ };
+```
+
 `PointerTable` is the closed list of a search, i.e., the set of the objects
 already met (e.g., the nodes of the states of a search), each found from
 its key. A place holds the pointer and the full hash of 64 bits of the key
 of its object; hence, a probe compares two keys only when their hashes are
-equal and a growth moves the places without touching the objects. The
-inspection is linear, along consecutive places and lines of cache, which
+equal and a growth moves the places without touching the objects. Its inspection is linear, along consecutive places and lines of cache, which
 usually beats the lists of overflow when the table does not fit in the
 cache ([Burns et al. 2012](Z-bibliography.md#ref-burns2012)). The first
 place of a hash is `fibonacciPlace()`, so that the hashes whose low bits
@@ -1416,6 +1788,35 @@ of `PointerTable` (the linear inspection of [Knuth 1998,
 places, $m$ a power of 2.
 
 --8<-- "generated/PointerTable-findOrInsert.pseudo.md"
+
+In C++, `PointerTable` is declared as follows.
+
+```cpp
+template< class T , class Eq = StateEqual ,
+    class A = std::allocator< std::byte > >
+class PointerTable {
+ public:
+ explicit PointerTable( std::size_t capacity = 16 , Eq eq = Eq() ,
+                        const A & alloc = A() );
+ PointerTable( const PointerTable & ) = default;
+ PointerTable( PointerTable && o ) noexcept;
+ void clear();
+ void reserve( std::size_t n );
+ static constexpr std::size_t slotsFor( std::size_t n );
+ template< class K , class Make >
+ std::pair< T * , bool > find_or_insert( const K & key ,
+                                         std::uint64_t hash ,
+                                         Make && make );
+ template< class K >
+ T * find( const K & key , std::uint64_t hash ) const;
+ void prefetch( std::uint64_t hash ) const;
+ std::size_t size() const;
+ std::size_t capacity() const;
+ std::size_t bytes() const;
+ template< class F > void forEach( F && f ) const;
+ class const_iterator;
+ };
+```
 
 `PositionIndex` maps the address of an object to its position, of 32 bits
 (the type `Position`), in a vector that holds it, e.g., the constraints or
@@ -1450,6 +1851,32 @@ $m = | E |$.
 
 --8<-- "generated/PositionIndex-renumber.pseudo.md"
 
+Below are the declarations of `PositionIndex`.
+
+```cpp
+template< class T , class H = FastHash< const T * > >
+class PositionIndex {
+ public:
+ using Position = std::uint32_t;
+ static constexpr Position NONE = std::numeric_limits< Position >::max();
+ explicit PositionIndex( std::size_t n = 0 , H h = H() );
+ Position find( const T * p ) const;
+ bool contains( const T * p ) const;
+ bool insert( const T * p , Position i );
+ bool erase( const T * p );
+ template< std::ranges::random_access_range R >
+ void assign( const R & v );
+ void renumber( std::span< const Position > E );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t capacity() const;
+ void reserve( std::size_t n );
+ void clear();
+ template< class F > void forEach( F && f ) const;
+ void swap( PositionIndex & o ) noexcept;
+ };
+```
+
 ## 7.7 Cuckoo hashing {#sec-7-7}
 
 The cuckoo hashing of [Pagh and Rodler
@@ -1481,12 +1908,33 @@ $\mathit{maxLoop} = 8 \lceil \log_2 m \rceil + 16$.
 
 --8<-- "generated/CuckooHashing-CuckooHashTable-insert.pseudo.md"
 
-The walk of the evictions, after the two places of the new key have been
-found full, moves the key in hand to the other place of the key it evicts:
+We declare `CuckooHashTable` as follows.
 
 ```cpp
---8<-- "generated/CuckooHashing-walk.cpp"
+template< class K , class V , class H = std::hash< K > >
+class CuckooHashTable {
+ public:
+ using Key = K;
+ using Value = V;
+ explicit CuckooHashTable( std::size_t m = 16 , double maxLoad = 0.4 ,
+                           std::size_t s = 0 , std::uint64_t seed = 1 ,
+                           H h = H() );
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool contains( const K & k ) const;
+ std::size_t size() const;
+ std::size_t capacity() const;
+ std::size_t rehashes() const;
+ std::size_t evictions() const;
+ std::size_t stashed() const;
+ class const_iterator;
+ };
 ```
+
+The walk of the evictions (the loop of the insertion above), after the two
+places of the new key have been found full, moves the key in hand to the
+other place of the key it evicts.
 
 <span id="lem-7-12"></span>**Lemma 7.12.** *The keys can be placed if and
 only if each connected component of the cuckoo graph has at most one
@@ -1521,7 +1969,7 @@ on it, the components have at most one cycle with high probability while $n
 and halves below $\mathit{maxLoad} / 4$, the global rebuilding of
 [Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023). Also, the
 stash lowers the probability of a rehash from $\Theta( 1 / n )$ to $\Theta(
-1 / n^{s+1} )$. The two functions are simple tabulations of the hash of the
+1 / n^{s+1} )$. Both functions are simple tabulations of the hash of the
 key. [Pătrașcu and Thorup 2012](Z-bibliography.md#ref-patrascu2012) proved
 that they keep the failure probability of the cuckoo hashing at $O( 1 /
 n^{1/3} )$, while the analysis of Pagh and Rodler needs $O( \log n
@@ -1530,8 +1978,7 @@ n^{1/3} )$, while the analysis of Pagh and Rodler needs $O( \log n
 suffice with a stash. $\mathit{MaxLoop}$ is $8 \lceil \log_2 m \rceil +
 16$, against the $3 \log_{1 + \epsilon} m$ of the analysis of Pagh and
 Rodler. `rehashes()`, `evictions()` and `stashed()` count the rebuilds, the
-evictions and the keys in the stash. The invariant, that each key is in one
-of its places or in the stash and is counted once, is checked on the key of
+evictions and the keys in the stash. Its invariant, that each key is in one of its places or in the stash and is counted once, is checked on the key of
 the operation only past 1024 places. Compared with the open addressing, a
 search has no run to walk; the variants of today put several keys in a
 place (the blocked cuckoo hashing, with loads above 90 %) or use $d > 2$
@@ -1542,7 +1989,7 @@ buckets of 4 places and a search in breadth of [Li et al.
 2014](Z-bibliography.md#ref-li2014), the table of MemC3 ([Fan et al.
 2013](Z-bibliography.md#ref-fan2013)) and of libcuckoo. A key with the hash
 $h$ may be in any of the 4 places of two buckets, and hence a search looks at
-8 places in the worst case. The table reaches a load of 95 % and more
+8 places in the worst case. In practice the table usually reaches a load of 95 % and more
 before an insertion fails, against less than 50 % with one key per place.
 (The analysis of the bins of constant size is that of [Dietzfelbinger and
 Weidling 2007](Z-bibliography.md#ref-dietzfelbinger2007).) Each place has a
@@ -1586,6 +2033,33 @@ buckets in all.
 
 --8<-- "generated/BucketCuckooTable-insert.pseudo.md"
 
+In C++, `BucketCuckooTable` is declared as follows.
+
+```cpp
+template< class K , class V , class H = DefaultHash< K > ,
+    class Eq = std::equal_to< K > >
+class BucketCuckooTable {
+ public:
+ using Key = K;
+ using Value = V;
+ explicit BucketCuckooTable( std::size_t n = 0 , H h = H() ,
+                             Eq eq = Eq() );
+ std::optional< V > lookup( const K & k ) const;
+ const V * find( const K & k ) const;
+ V * find( const K & k );
+ bool insert( const K & k , const V & v );
+ bool remove( const K & k );
+ bool contains( const K & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t capacity() const;
+ double load() const;
+ std::size_t rehashes() const;
+ std::size_t moves() const;
+ class const_iterator;
+ };
+```
+
 ## 7.8 Perfect hashing {#sec-7-8}
 
 A function is *perfect* on a set $S$ of $n$ keys if it has no collision on
@@ -1612,11 +2086,9 @@ $j$ then becomes a table of $n_j^2$ places with a function $h_j$ of its
 own, drawn again until it has no collision on the $n_j$ keys ([Algorithm
 7.15](07-dictionary.md#alg-7-15), [Figure
 7.15](07-dictionary.md#fig-7-15)). A search computes $h$ and $h_j$ and
-compares one key, two accesses in the worst case:
+compares one key, two accesses in the worst case.
 
-```cpp
---8<-- "generated/PerfectHashing-contains.cpp"
-```
+--8<-- "generated/PerfectHashing-PerfectHashTable-contains.pseudo.md"
 
 ![Figure 7.15. A `PerfectHashTable` of the keys 10, 22, 37, 40, 52, 60: the first level sends them to 6 lists with $n_j = 2 , 0 , 1 , 3 , 0 , 0$ keys, $\sum_j n_j^2 = 14 < 24$, and each list $j$ becomes a table of $n_j^2$ places with a function $h_j$ that has no collision on its keys; `contains(40)` computes $h( 40 ) = 3$ and $h_3( 40 ) = 5$ and compares one key (in violet).](../figures/dictionary-fks.svg){#fig-7-15}
 
@@ -1626,6 +2098,30 @@ compares one key, two accesses in the worst case:
 is the number of the keys of $S$ with $h( k ) = j$.
 
 --8<-- "generated/PerfectHashing-PerfectHashTable-build.pseudo.md"
+
+Below are the declarations of `PerfectHashTable`, followed by an example of use.
+
+```cpp
+class PerfectHashTable {
+ public:
+ using Key = std::uint64_t;
+ explicit PerfectHashTable( const std::vector< std::uint64_t > & S ,
+                            std::uint64_t seed = 1 );
+ bool contains( std::uint64_t k ) const;
+ std::size_t size() const;
+ std::size_t space() const;
+ std::size_t trials() const;
+ class const_iterator;
+ };
+```
+
+```cpp
+const std::vector< std::uint64_t > keys = { 10 , 22 , 37 , 40 , 52 , 60 };
+const ADS::PerfectHashTable P( keys );
+const bool in = P.contains( 40 );                    // true
+const ADS::MinimalPerfectHash< std::uint64_t > M( keys );
+const std::size_t i = M( 37 );                       // a place in [ 0 , 6 )
+```
 
 <span id="lem-7-13"></span>**Lemma 7.13.** *(Fredman, Komlós and
 Szemerédi.) With $h$ drawn from a universal class into $n$ lists,
@@ -1653,10 +2149,8 @@ that the inequality of Markov does not bound away from 0, which is why the
 code waits for $4 n$. `space()` gives the places of the second level,
 $\sum_j n_j^2$, and `trials()` the functions drawn by the build. With the
 $n$ buckets of the first level the table has fewer than $5 n$ words, and
-it gives nothing for a key out of $S$ but a negative answer. The test
-`pearls_hashing.fks-example` replays the example of [Ferragina 2023,
-Figure 8.6](Z-bibliography.md#ref-ferragina2023). The compressed schemes
-of today need a few bits per key instead of words, and they rest on a lower
+it gives nothing for a key out of $S$ but a negative answer. In the test `pearls_hashing.fks-example` we replay the example of [Ferragina 2023,
+Figure 8.6](Z-bibliography.md#ref-ferragina2023). Today's compressed schemes need a few bits per key instead of words, and they rest on a lower
 bound that the next lemma states.
 
 <span id="lem-7-14"></span>**Lemma 7.14.** *A family of functions from a
@@ -1729,6 +2223,31 @@ of degree 1 knowing its edge as the XOR of the edges on it.
 
 --8<-- "generated/PerfectHashing-OrderedMinimalPerfectHash-labelByPeeling.pseudo.md"
 
+We declare `OrderedMinimalPerfectHash` as follows.
+
+```cpp
+template< class K >
+requires( std::integral< K > || std::convertible_to< const K & ,
+          std::string_view > )
+class OrderedMinimalPerfectHash {
+ public:
+ using Key = K;
+ explicit OrderedMinimalPerfectHash( const std::vector< K > & keys ,
+                                     int r = 2 , double c = 0 ,
+                                     std::uint64_t seed = 1 );
+ std::size_t operator()( const K & k ) const;
+ std::size_t size() const;
+ std::size_t vertices() const;
+ std::size_t trials() const;
+ static std::optional< std::vector< std::uint32_t > > labelAcyclicGraph( std::size_t m ,
+     const std::vector< std::size_t > & E ,
+     const std::vector< std::size_t > & h , std::size_t n );
+ static std::optional< std::vector< std::uint32_t > > labelByPeeling( std::size_t m ,
+     const std::vector< std::size_t > & E , int r ,
+     const std::vector< std::size_t > & h , std::size_t n );
+ };
+```
+
 <span id="lem-7-15"></span>**Lemma 7.15.** *If the graph is a forest, the
 labeling by visits satisfies each edge; if the hypergraph is peelable,
 the labeling in the reverse order of the peeling satisfies each edge. In
@@ -1794,8 +2313,7 @@ two passes over its keys. The first one sets in a vector $A$ the bit of each
 place and in a vector $C$ the bits of the places met twice, after which
 $A \gets A \wedge \lnot C$ a word at a time; the second one keeps the
 keys whose
-place is in $C$ ([Algorithm 7.17](07-dictionary.md#alg-7-17)). The vectors
-of a level take $2 \gamma n_i$ bits and stay in the cache of level 2 for a
+place is in $C$ ([Algorithm 7.17](07-dictionary.md#alg-7-17)). Here the vectors of a level take $2 \gamma n_i$ bits and stay in the cache of level 2 for a
 million keys. A query computes $h_0( k )$, tests its bit and, if it is 1,
 gives its rank. The number of 1s before each block of 512 bits is kept in
 32 bits, $1 / 16$ of the bits more, and therefore a rank costs at most 8
@@ -1814,6 +2332,24 @@ of the level $i$.
 
 --8<-- "generated/FingerprintPerfectHash-value.pseudo.md"
 
+In C++, `FingerprintPerfectHash` is declared as follows.
+
+```cpp
+template< class T , class H = DefaultHash< T > >
+class FingerprintPerfectHash {
+ public:
+ using Key = T;
+ explicit FingerprintPerfectHash( const std::vector< T > & keys ,
+                                  double gamma = 2 ,
+                                  std::uint64_t seed = 1 , H h = H() );
+ std::size_t operator()( const T & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t bits() const;
+ std::size_t levels() const;
+ };
+```
+
 `MinimalPerfectHash` is the method of PTHash of [Pibiri and Trani
 2021](Z-bibliography.md#ref-pibiri2021), in the line of [Fox et al.
 1992](Z-bibliography.md#ref-fox1992) and of the compressed displacement of
@@ -1824,8 +2360,7 @@ buckets of PTHash, so that the large buckets are placed while the table is
 still empty). It also goes to the place $p = \lfloor m \, g( h' \oplus
 \pi_{b( h )} ) / 2^{64} \rfloor$ of a table of $m = \lceil n / \alpha
 \rceil$ places, where $g$ is a folded product and $\pi_b$ is the pilot of
-the bucket, a product of the stored integer $k_b$ by an odd constant. The
-build places the buckets from the largest to the smallest, trying for each
+the bucket, a product of the stored integer $k_b$ by an odd constant. Its build places the buckets from the largest to the smallest, trying for each
 one the integers $k_b = 0 , 1 , 2 , \ldots$ until all its keys fall in free
 places, distinct among them ([Algorithm 7.18](07-dictionary.md#alg-7-18),
 [Figure 7.18](07-dictionary.md#fig-7-18)). On average, the number of trials of
@@ -1834,8 +2369,7 @@ larger buckets go first. The integers $k_b$ are stored in $\lceil \log_2 (
 \max_b k_b + 1 ) \rceil$ bits each (the compact encoding of PTHash), and a
 place $p \ge n$ of a key is sent to one of the places below $n$ left free,
 by a table $F$ of the $m - n$ places beyond $n$. An $\alpha < 1$ makes the
-search of the last buckets much faster, at the cost of this table. The
-search of the last buckets is the bottleneck of the build: with $\alpha$
+search of the last buckets much faster, at the cost of this table. Searching the last buckets is the bottleneck of the build: with $\alpha$
 near 1 some bucket may find no pilot within its limit; hence, $\lambda$
 should stay below about 7 for $\alpha = 0.99$, the defaults being $\lambda
 = 5$ and $\alpha = 0.99$. A bucket that tries $2^{24}$ pilots, or two keys
@@ -1858,6 +2392,25 @@ $k$, and $F$ the table of the free places below $n$.
 --8<-- "generated/MinimalPerfectHash-build.pseudo.md"
 
 --8<-- "generated/MinimalPerfectHash-value.pseudo.md"
+
+Below are the declarations of `MinimalPerfectHash`.
+
+```cpp
+template< class T , class H = DefaultHash< T > >
+class MinimalPerfectHash {
+ public:
+ using Key = T;
+ explicit MinimalPerfectHash( const std::vector< T > & keys ,
+                              double lambda = 5 , double alpha = 0.99 ,
+                              std::uint64_t seed = 1 , H h = H() );
+ std::size_t operator()( const T & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t bits() const;
+ std::size_t buckets() const;
+ std::size_t trials() const;
+ };
+```
 
 `RecSplit` is the method of [Esposito et al.
 2020](Z-bibliography.md#ref-esposito2020), which comes closest to the bound
@@ -1915,7 +2468,7 @@ golden ratio, a function of $m$ alone. A code of a seed then takes $c +
 takes $c t + m \log_2 e + O( \log m )$ bits, the bound of [Lemma
 7.14](07-dictionary.md#lem-7-14) plus the price of the nodes. The $r( p )$
 low bits of all the seeds of a bucket come first, then all their unary
-parts. The tables `RecSplitTables`, computed once for each $\ell$ and the
+parts. Both tables `RecSplitTables`, computed once for each $\ell$ and the
 sizes $m < 4096$, give $r$, the low bits of a subtree and its number of
 nodes. Hence, a subtree is skipped by moving a pointer on the low bits and
 by a select on the unary parts (`recSplitSelect()`, one PDEP and one count
@@ -1934,7 +2487,7 @@ and of $B$ are two masks of $m$ bits. A leaf takes the seed $x m + r$ for
 the first rotation $r$ of the mask of $B$ that fills the holes of the mask
 of $A$, a key of $B$ going to $( \rho_x + r ) \bmod m$. Each $x$ thus tries
 $m$ rotations and the leaf evaluates about $m$ times fewer hashes for the
-same expected seed. The leaves of $\ell \le 24$ keys fit in a word, and the
+same expected seed. Leaves of $\ell \le 24$ keys fit in a word, and the
 search grows as $e^\ell$, and therefore $1 \le L \le 24$ (a build at $\ell
 = 16$ is already slow) and the build takes $O( n \, e^\ell / ( \ell
 \sqrt{\ell} ) )$ expected time. An evaluation computes the two hashes and
@@ -1960,6 +2513,25 @@ the tables of the sizes.
 --8<-- "generated/RecSplit-split.pseudo.md"
 
 --8<-- "generated/RecSplit-value.pseudo.md"
+
+We declare `RecSplit` as follows.
+
+```cpp
+template< class T , unsigned L = 8 , class H = DefaultHash< T > >
+class RecSplit {
+ public:
+ using Key = T;
+ explicit RecSplit( const std::vector< T > & keys ,
+                    std::size_t b = 100 , std::uint64_t seed = 1 ,
+                    H h = H() );
+ std::size_t operator()( const T & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t bits() const;
+ std::size_t buckets() const;
+ std::size_t trials() const;
+ };
+```
 
 ## 7.9 Skip lists {#sec-7-9}
 
@@ -1997,7 +2569,7 @@ smaller than $x$, and down to the level $r - 1$ otherwise, until it reaches
 the last node before $x$ on the level 0. Those nodes where the path goes down
 are kept in a vector $U$, $U[ r ]$ the last node before $x$ on the level
 $r$ (the head where there is none), which an insertion and a removal use.
-The next result, proved in [§7.9.3](07-dictionary.md#sec-7-9-3), shows that
+Our next result, proved in [§7.9.3](07-dictionary.md#sec-7-9-3), shows that
 the path is short.
 
 <span id="lem-7-17"></span>**Lemma 7.17.** *([Morin 2013, Lemma
@@ -2031,10 +2603,6 @@ successor of $x$ on the level $l$, and the head is a node with no key.
 
 --8<-- "generated/SkipList-before.pseudo.md"
 
-```cpp
---8<-- "generated/SkipList-find.cpp"
-```
-
 [Figure 7.21](07-dictionary.md#fig-7-21) follows the searches of 2.5 and of
 5.5 on the list of [Figure 7.20](07-dictionary.md#fig-7-20) ([Morin 2013,
 exercise 4.1](Z-bibliography.md#ref-morin-cpp)). The search of 2.5 meets
@@ -2056,25 +2624,46 @@ the node after $U[ l ]$ on each of its levels. An insertion of a key
 already there replaces its value ([Algorithm
 7.21](07-dictionary.md#alg-7-21)). A removal unlinks the node from each of
 its levels after `before(k)`, i.e., after $U[ l ]$, and drops the levels
-left empty. The vector $U$ is the *stack* of Morin, and [Figure
+left empty. Here the vector $U$ is the *stack* of Morin, and [Figure
 7.22](07-dictionary.md#fig-7-22) shows the insertion of 0.5 with 2 levels
 and then of 3.5 with 3 levels ([Morin 2013, exercise
 4.2](Z-bibliography.md#ref-morin-cpp)), [Figure
 7.23](07-dictionary.md#fig-7-23) the removal of 1 and then of 3 ([Morin
 2013, exercise 4.3](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="alg-7-21"></span>**Algorithm 7.21.** The insertion of
-`SkipList` ([Pugh 1990](Z-bibliography.md#ref-pugh1990)), the level of a
+<span id="alg-7-21"></span>**Algorithm 7.21.** The insertion and the
+removal of `SkipList` ([Pugh 1990](Z-bibliography.md#ref-pugh1990)), the level of a
 new node drawn as the number of trailing 1s of a random word plus one.
 
 --8<-- "generated/SkipList-insert.pseudo.md"
 
-```cpp
---8<-- "generated/SkipList-add.cpp"
-```
+--8<-- "generated/SkipList-remove.pseudo.md"
+
+In C++, `SkipList` is declared as follows.
 
 ```cpp
---8<-- "generated/SkipList-remove.cpp"
+template< std::totally_ordered K , class V >
+class SkipList {
+ public:
+ class const_iterator;
+ using Key = K;
+ using Value = V;
+ explicit SkipList( std::uint64_t seed = 1 );
+ SkipList( SkipList && other ) noexcept;
+ ~SkipList();
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool contains( const K & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ int levels() const;
+ template< class F > void forEach( F && f ) const;
+ const_iterator lowerBound( const K & k ) const;
+ const K * findKey( const K & k ) const;
+ const K * lowerBoundKey( const K & k ) const;
+ std::optional< V > fingerLookup( const K & k );
+ };
 ```
 
 ![Figure 7.22. The `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) after `insert(0.5)` with $\ell = 2$ ($U = [ 0 , \mathit{head} , \ldots ]$), and then after `insert(3.5)` with $\ell = 3$ ($U = [ 3 , 3 , 3 , 2 , \mathit{head} , \mathit{head} ]$), the case of [Morin 2013, Figure 4.3](Z-bibliography.md#ref-morin-cpp) and of his exercise 4.2: the new node in orange, the nodes of $U$ whose links change, and those links, in violet.](../figures/dictionary-skiplist-insert.svg){#fig-7-22}
@@ -2143,8 +2732,7 @@ node before $x$ on the level 0: at each node it goes up if the node has a
 further level, and left otherwise, and this *reverse search path* is the
 search path reversed. On a level $r$, the steps to the left before going up
 are those of a coin tossed until it comes up heads (the node has a further
-level), at most $E[ T ] - 1 = 1$ in expectation by [Lemma 7.19](07-dictionary.md#lem-7-19). The bound
-also holds when the head stops the path earlier. Let $S_r$ be the number of
+level), at most $E[ T ] - 1 = 1$ in expectation by [Lemma 7.19](07-dictionary.md#lem-7-19). This bound also holds when the head stops the path earlier. Let $S_r$ be the number of
 the steps to the right of the search on the level $r$, with
 $E[ S_r ] \le \min\{ 1 , E[ | L_r | ] \} = \min\{ 1 , n / 2^r \}$, since
 the path cannot take more steps than $L_r$ has keys. The length of the path
@@ -2192,7 +2780,7 @@ key $( \frac{1}{p} - p ) \log_{1/p} n + O( 1 )$ times in expectation, i.e.,
 $1.5 \log_2 n + O( 1 )$ for $p = 1 / 2$, against
 $\frac{1}{p} \log_{1/p} n + O( 1 )$ for the search of Morin.*
 
-*Proof.* The search of Morin compares the key once per step to the right
+*Proof.* Morin's search compares the key once per step to the right
 and once per level to stop, about $\frac{1}{p}$ times per level by the
 proof of [Lemma 7.21](07-dictionary.md#lem-7-21). Ours skips the comparison that stops the level $l$
 when the successor on the level $l$ of the node where the search stands is
@@ -2216,8 +2804,7 @@ $F$ of the previous `fingerLookup()`, $F[ l ]$ the last node before the
 previous key on the level $l$ (the head counting as $-\infty$). It climbs
 the finger from the bottom while the node of the level is not before $k$
 or its successor is, and then goes down from the first one that brackets $k$,
-updating $F$ ([Algorithm 7.22](07-dictionary.md#alg-7-22)). The finger
-stays valid along the levels above the one the search starts from, whose
+updating $F$ ([Algorithm 7.22](07-dictionary.md#alg-7-22)). Note that the finger stays valid along the levels above the one the search starts from, whose
 nodes still bracket the new key, and an insertion or a removal brings it
 back to the head ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b)).
 
@@ -2226,10 +2813,6 @@ back to the head ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b)).
 exercise 4.10](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/SkipList-fingerLookup.pseudo.md"
-
-```cpp
---8<-- "generated/SkipList-finger.cpp"
-```
 
 <span id="lem-7-23"></span>**Lemma 7.23.** *A finger search of a key with
 $r$ keys between it and the key of the previous finger search takes
@@ -2267,8 +2850,7 @@ carry their widths. It is an SSET that also reaches a key by its rank
 (`select(i)`, the `get(i)` of [Morin 2013, exercise
 4.9](Z-bibliography.md#ref-morin-cpp)) and gives the rank of a key
 (`rank(k)`, the number of keys smaller than $k$), both in $O( \log n )$
-expected time; `forEach(f)` visits the pairs by increasing keys. The ranks
-are shifted by one, the head at 0 and the nil at $n + 1$; hence, the widths
+expected time; `forEach(f)` visits the pairs by increasing keys. Here the ranks are shifted by one, the head at 0 and the nil at $n + 1$; hence, the widths
 of each level sum to $n + 1$, the invariant that its contracts check
 ([Figure 7.24](07-dictionary.md#fig-7-24), [Algorithm
 7.23](07-dictionary.md#alg-7-23)). Morin gives no code for it, and
@@ -2278,8 +2860,8 @@ index.
 
 ![Figure 7.24. The `IndexedSkipList` of the keys 0 to 6 of [Figure 7.20](07-dictionary.md#fig-7-20) with the width of each link (the lengths of [Morin 2013, Figure 4.5](Z-bibliography.md#ref-morin-cpp), and the links to the nil), each level summing to $n + 1 = 8$, and `select(3)` (in violet): it moves from the head to 2 on the level 3 ($j = 3$) and from 2 to 3 on the level 2 ($j = 4$), and returns the key 3.](../figures/dictionary-skiplist-widths.svg){#fig-7-24}
 
-<span id="alg-7-23"></span>**Algorithm 7.23.** The search by rank and the
-insertion of `IndexedSkipList` ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b));
+<span id="alg-7-23"></span>**Algorithm 7.23.** The search by rank, the
+insertion and the removal of `IndexedSkipList` ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b));
 $x.w[ l ]$ is the width of the link of $x$ on the level $l$, $U[ l ]$ the
 last node before $k$ on the level $l$ and $r[ l ]$ its rank, the head of
 rank $-1$, and $y$ the new node of $\ell$ levels.
@@ -2290,15 +2872,7 @@ rank $-1$, and $y$ the new node of $\ell$ levels.
 
 The search by key sums the widths along the path, with the saving of the
 comparisons of `SkipList`, and the search by rank needs no comparison of
-keys:
-
-```cpp
---8<-- "generated/IndexedSkipList-find.cpp"
-```
-
-```cpp
---8<-- "generated/IndexedSkipList-select.cpp"
-```
+keys ([Algorithm 7.23](07-dictionary.md#alg-7-23)).
 
 An insertion splits the link that it crosses on each of its levels, and
 adds 1 to the width of those that pass over it. A removal does the reverse,
@@ -2306,12 +2880,40 @@ on each level of its node replacing the link that reaches it by the one that
 leaves it, their widths summed less 1, and subtracting 1 from the links that
 pass over it:
 
+--8<-- "generated/IndexedSkipList-remove.pseudo.md"
+
+Below are the declarations of `IndexedSkipList`, followed by an example of use.
+
 ```cpp
---8<-- "generated/IndexedSkipList-add.cpp"
+template< std::totally_ordered K , class V >
+class IndexedSkipList {
+ public:
+ class const_iterator;
+ using Key = K;
+ using Value = V;
+ explicit IndexedSkipList( std::uint64_t seed = 1 );
+ IndexedSkipList( IndexedSkipList && other ) noexcept;
+ ~IndexedSkipList();
+ std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool contains( const K & k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t rank( const K & k ) const;
+ template< class F > void forEach( F && f ) const;
+ const_iterator lowerBound( const K & k ) const;
+ const K * findKey( const K & k ) const;
+ const K * lowerBoundKey( const K & k ) const;
+ const_iterator select( std::size_t i ) const;
+ };
 ```
 
 ```cpp
---8<-- "generated/IndexedSkipList-remove.cpp"
+ADS::IndexedSkipList< int , char > S;
+for( int k : { 30 , 10 , 20 } ) S.insert( k , 'a' + k / 10 );
+const std::size_t r = S.rank( 20 );                  // 1
+const int * y = S.lowerBoundKey( 15 );               // *y == 20
 ```
 
 <span id="lem-7-24"></span>**Lemma 7.24.** *The insertion and the removal
@@ -2402,7 +3004,7 @@ alphabet of $\sigma$ ([Algorithm 7.24](07-dictionary.md#alg-7-24)). An
 insertion makes the nodes missing on the path of $k$, and a removal
 removes, bottom up, the nodes of its path left with no value and no child.
 `keysWithPrefix(p)` gives the keys below the node of $p$ in increasing
-order, and `nodes()` the number of nodes, the root included. The space is
+order, and `nodes()` the number of nodes, the root included. Its space is
 $O( N )$ nodes for keys of total length $N$, a node per character not
 shared with another key.
 
@@ -2414,6 +3016,47 @@ shared with another key.
 --8<-- "generated/Trie-lookup.pseudo.md"
 
 --8<-- "generated/Trie-RadixTree-insert.pseudo.md"
+
+We declare `Trie` and `RadixTree` as follows, followed by an example of use.
+
+```cpp
+template< class V >
+class Trie {
+ public:
+ using Key = std::string;
+ using Value = V;
+ std::optional< V > lookup( std::string_view k ) const;
+ void insert( std::string_view k , const V & v );
+ void remove( std::string_view k );
+ bool contains( std::string_view k ) const;
+ std::size_t size() const;
+ std::vector< std::string > keysWithPrefix( std::string_view p ) const;
+ std::size_t nodes() const;
+ class const_iterator;
+ };
+template< class V >
+class RadixTree {
+ public:
+ using Key = std::string;
+ using Value = V;
+ std::optional< V > lookup( std::string_view k ) const;
+ void insert( std::string_view k , const V & v );
+ void remove( std::string_view k );
+ bool contains( std::string_view k ) const;
+ std::size_t size() const;
+ std::vector< std::string > keysWithPrefix( std::string_view p ) const;
+ std::size_t nodes() const;
+ class const_iterator;
+ };
+```
+
+```cpp
+ADS::Trie< int > T;
+T.insert( "car" , 1 );
+T.insert( "cart" , 2 );
+T.insert( "dog" , 3 );
+const auto w = T.keysWithPrefix( "car" );            // { "car" , "cart" }
+```
 
 `RadixTree` is the compact trie (the Patricia of [Morrison
 1968](Z-bibliography.md#ref-morrison1968), on characters rather than on
@@ -2435,7 +3078,7 @@ label of the child.
 <span id="lem-7-25"></span>**Lemma 7.25.** *A compact trie of $n$ keys has
 at most $2 n$ nodes besides the root, however long the keys are.*
 
-*Proof.* The marked nodes are $n$. An unmarked node other than the root
+*Proof.* Marked nodes are $n$. An unmarked node other than the root
 has at least two children, and the leaves are all marked; a tree whose
 internal unmarked nodes branch has fewer such nodes than leaves, hence at
 most $n - 1$ of them. $\square$
@@ -2478,6 +3121,26 @@ longest common prefix of $D[ i - 1 ]$ and $D[ i ]$.
 
 --8<-- "generated/PatriciaTrie-build.pseudo.md"
 
+In C++, `PatriciaTrie` is declared as follows.
+
+```cpp
+class PatriciaTrie {
+ public:
+ explicit PatriciaTrie( std::vector< std::string > D );
+ std::size_t lexicographicPosition( std::string_view P ) const;
+ std::size_t prefixEnd( std::string_view P ) const;
+ std::pair< std::size_t ,
+     std::size_t > prefixRange( std::string_view P ) const;
+ std::size_t blindLeaf( std::string_view P ) const;
+ bool contains( std::string_view P ) const;
+ std::size_t size() const;
+ std::size_t nodes() const;
+ const std::string & string( std::size_t i ) const;
+ std::vector< std::pair< std::size_t , int > > shape() const;
+ using const_iterator = std::vector< std::string >::const_iterator;
+ };
+```
+
 <span id="lem-7-26"></span>**Lemma 7.26.** *The blind search returns the
 number of the strings of $D$ smaller than $P$.*
 
@@ -2516,8 +3179,7 @@ whose characters increase and whose strings are consecutive, and the test
 
 `TwoLevelDictionary` puts a Patricia trie over the front coding of the
 sorted strings with anchors (`FrontCodedDictionary` of
-`ADS/string/FrontCoding.h`, [§15.6.2](15-string.md#sec-15-6-2)). The
-anchors are the strings stored whole, one every $b$ (the bucketing) or as
+`ADS/string/FrontCoding.h`, [§15.6.2](15-string.md#sec-15-6-2)). Anchors are the strings stored whole, one every $b$ (the bucketing) or as
 the locality-preserving coding decides, and the trie holds the anchors
 alone ([Figure 7.29](07-dictionary.md#fig-7-29)). A search by prefix is the
 blind search of the pattern among the anchors, which reads one anchor, and
@@ -2548,6 +3210,24 @@ buckets of the coding on disk.
 
 --8<-- "generated/TwoLevelDictionary-prefixRange.pseudo.md"
 
+Below are the declarations of `TwoLevelDictionary`.
+
+```cpp
+class TwoLevelDictionary {
+ public:
+ explicit TwoLevelDictionary( FrontCodedDictionary F );
+ std::size_t lexicographicPosition( std::string_view Q ) const;
+ std::size_t prefixEnd( std::string_view P ) const;
+ std::pair< std::size_t ,
+     std::size_t > prefixRange( std::string_view P ) const;
+ std::string access( std::size_t i ) const;
+ std::size_t size() const;
+ const PatriciaTrie & upper() const;
+ const FrontCodedDictionary & lower() const;
+ using const_iterator = FrontCodedDictionary::const_iterator;
+ };
+```
+
 ### 7.10.3 The adaptive radix tree {#sec-7-10-3}
 
 `AdaptiveRadixTree` is the adaptive radix tree of [Leis et al.
@@ -2557,8 +3237,7 @@ the tries compares with the HAT-trie of tsl, with libart and with the
 B-trees of strings. A node at depth $d$ stands for the prefixes of $d$
 bytes of its keys and branches on their byte $d$, and it adapts its layout
 to the number of its children, and hence a node is never much larger than
-its pointers ([Figure 7.30](07-dictionary.md#fig-7-30)). The layouts
-`Node4` and `Node16` keep up to 4 and 16 bytes sorted beside the pointers
+its pointers ([Figure 7.30](07-dictionary.md#fig-7-30)). Layouts `Node4` and `Node16` keep up to 4 and 16 bytes sorted beside the pointers
 to the children of the same places; a `Node16` is searched by one
 comparison of vectors of SSE2 (or NEON), the 16 bytes against the byte of
 the key at once. `Node48` keeps an index of 256 bytes, the place of the
@@ -2600,6 +3279,36 @@ leaf on the whole key.
 
 --8<-- "generated/AdaptiveRadixTree-insert.pseudo.md"
 
+We declare `AdaptiveRadixTree` as follows.
+
+```cpp
+template< class V >
+class AdaptiveRadixTree {
+ public:
+ using Key = std::string;
+ using Value = V;
+ AdaptiveRadixTree() = default;
+ AdaptiveRadixTree( const AdaptiveRadixTree & o );
+ AdaptiveRadixTree( AdaptiveRadixTree && o ) noexcept;
+ ~AdaptiveRadixTree();
+ std::optional< V > lookup( std::string_view k ) const;
+ const V * find( std::string_view k ) const;
+ V * find( std::string_view k );
+ bool insert( std::string_view k , const V & v );
+ bool remove( std::string_view k );
+ bool contains( std::string_view k ) const;
+ std::size_t size() const;
+ bool empty() const;
+ void clear();
+ void swap( AdaptiveRadixTree & o ) noexcept;
+ template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forPrefix( std::string_view p , F && f ) const;
+ std::vector< std::string > keysWithPrefix( std::string_view p ) const;
+ class const_iterator;
+ };
+```
+
 <span id="lem-7-27"></span>**Lemma 7.27.** *An adaptive radix tree of $n$
 keys has at most $n - 1$ internal nodes and $n$ leaves, and a search, an
 insertion and a removal of a key of $k$ bytes take $O( k )$ time,
@@ -2619,7 +3328,7 @@ A leaf of a key of $k$ bytes and a value of 8 takes $\lceil ( 16 + k ) / 16
 \rceil$ slots of 16 bytes. A search prefetches the lines of the next node
 that it reads for its byte, whatever the layout, while the first line is on
 its way (`ahead()`), and the visits prefetch the children of a `Node4` or a
-`Node16` (`children()`). The iterators visit the pairs by increasing keys,
+`Node16` (`children()`). Its iterators visit the pairs by increasing keys,
 a key before the longer ones that begin with it and the children of a node
 by their bytes, as a `string_view` on the key of the leaf and a constant
 reference to its value. They keep a stack of the nodes on the way.
@@ -2691,12 +3400,11 @@ child, a `findClose()`, and `contains(Q)` is a lookup that found $Q$.
 In turn, `lexicographicPosition(Q)`, the number of strings smaller than $Q$,
 walks as the lookup up to the first mismatch and takes the rank of the end
 of a subtree there. `access(i)` walks up from the node of the string of
-rank $i$ by `findOpen()`, prepending the labels. The space is
+rank $i$ by `findOpen()`, prepending the labels. Its space is
 $2 N + o( N )$ bits for the parentheses with their range min-max tree,
 $8 ( N - 1 )$ for the first characters, $2 N + o( N )$ for the marks of the
 ends and of the nodes with a rest, and the rests of the labels, one after
-the other, with their places by Elias and Fano. The method `bytes()` reports the
-total. In contrast, the path-decomposed tries of [Grossi and Ottaviano
+the other, with their places by Elias and Fano. Finally, `bytes()` reports the total. In contrast, the path-decomposed tries of [Grossi and Ottaviano
 2015](Z-bibliography.md#ref-grossi2015) and the dictionaries of
 [Martínez-Prieto et al. 2016](Z-bibliography.md#ref-martinezprieto2016)
 compress the labels as well, by Re-Pair or by the codes of Hu and Tucker,
@@ -2721,6 +3429,26 @@ place and its degree, and $T$ the marks of the nodes where a string ends.
 
 --8<-- "generated/SuccinctPatriciaTrie-prefixRange.pseudo.md"
 
+In C++, `SuccinctPatriciaTrie` is declared as follows.
+
+```cpp
+class SuccinctPatriciaTrie {
+ public:
+ SuccinctPatriciaTrie();
+ explicit SuccinctPatriciaTrie( const std::vector< std::string > & D );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t nodes() const;
+ std::size_t lookup( std::string_view Q ) const;
+ bool contains( std::string_view Q ) const;
+ std::string access( std::size_t i ) const;
+ std::size_t lexicographicPosition( std::string_view Q ) const;
+ std::pair< std::size_t ,
+     std::size_t > prefixRange( std::string_view P ) const;
+ std::size_t bytes() const;
+ };
+```
+
 ## 7.11 Structures for integers {#sec-7-11}
 
 We return to the SORTED SET, now with keys that are integers of $w$ bits,
@@ -2733,13 +3461,12 @@ book is at least as fast. The x-fast trie brings `lowerBound()` to
 $O( \log w )$ expected time by hashing, but its updates still take
 $O( w )$ and its space is $O( n w )$. The y-fast trie stores in an x-fast
 trie only a sample of about one key in $w$, and the others in treaps,
-which brings the updates to $O( \log w )$ and the space to $O( n )$. The
-headers also have the simplified tries of the exercises of the book and its
+which brings the updates to $O( \log w )$ and the space to $O( n )$. Our headers also have the simplified tries of the exercises of the book and its
 extension to strings. In all of them `lowerBound(x)` is the `find(x)` of
 the SSET of the book, `find(x)` the search of $x$ itself (the `find(x)` of
 his USET), and the keys are below $2^w$, a precondition of each operation.
 Its parameter `W` is the width $w$, between 1 and the bits of the type of
-the keys (the concept `TrieWidth`). The helpers `triePrefix()`,
+the keys (the concept `TrieWidth`). Helpers `triePrefix()`,
 `trieBit()` and `trieKey()` of the namespace `detail` give the prefix of
 $i$ bits $\lfloor x / 2^{w - i} \rfloor$, the bit $i$ counted from the most
 significant one, and whether $x < 2^w$.
@@ -2785,10 +3512,6 @@ $x$.
 
 --8<-- "generated/BinaryTrie-JumpTrie-remove.pseudo.md"
 
-```cpp
---8<-- "generated/BinaryTrie-JumpTrie-successor.cpp"
-```
-
 ![Figure 7.33. The paths of `lowerBound(5)` and of `lowerBound(8)` in the trie of [Figure 7.32](07-dictionary.md#fig-7-32) ([Morin 2013, Figure 13.3](Z-bibliography.md#ref-morin-cpp)), in violet: 5 = 0101 leaves the trie at `0***`, whose child 1 is missing, and follows its jump pointer to the largest leaf below, 3, and the list to 9; 8 = 1000 leaves it at `100*`, whose child 0 is missing, and follows its jump pointer to the smallest leaf below, 9.](../figures/dictionary-binarytrie-find.svg){#fig-7-33}
 
 An insertion has more to do. It follows the path of $x$ down to the deepest
@@ -2804,14 +3527,6 @@ child. Then it walks up from the lowest node left to the root, redirecting
 to the next or to the previous leaf the jump pointers that pointed to the
 leaf of $x$ ([Figure 7.35](07-dictionary.md#fig-7-35)). Each of the two
 walks takes $O( w )$ time.
-
-```cpp
---8<-- "generated/BinaryTrie-JumpTrie-insert.cpp"
-```
-
-```cpp
---8<-- "generated/BinaryTrie-JumpTrie-remove.cpp"
-```
 
 ![Figure 7.34. The trie of [Figure 7.32](07-dictionary.md#fig-7-32) after `insert(2)` and `insert(15)` ([Morin 2013, Figure 13.4](Z-bibliography.md#ref-morin-cpp)): the new nodes `0010`, `111*` and `1111` in orange, and the jump pointers that change in violet, that of `00**` now to 2 and the new one of `111*` to 15, while those of `001*` and `11**` disappear, since these nodes now have both children.](../figures/dictionary-binarytrie-add.svg){#fig-7-34}
 
@@ -2829,8 +3544,7 @@ made one after another lie next to each other. Hence, the $w$ nodes of a
 new path seldom cost an allocation and the walk from the root misses the
 cache less. Also, the keys have any width up to 64 bits, where the book
 fixes $w = 32$; and `remove()` reads the links of the leaf before it frees
-it, while the code of the book reads them from the freed leaf. The class
-template `detail::JumpTrie` holds the code that `BinaryTrie` and the x-fast
+it, while the code of the book reads them from the freed leaf. A class template, `detail::JumpTrie`, holds the code that `BinaryTrie` and the x-fast
 trie share, and adds `find()`, `lookup()`, `contains()`, `min()`, `max()`,
 `clear()`, `size()`, `empty()`, `nodes()` and the bidirectional iterators
 along the list (`seek(x)` returns the iterator on the successor of $x$).
@@ -2859,8 +3573,57 @@ leftmost leaf.
 
 --8<-- "generated/BinaryTrie-SimpleBinaryTrie-lowerBound.pseudo.md"
 
+Below are the declarations of `BinaryTrie` and `SimpleBinaryTrie`.
+
 ```cpp
---8<-- "generated/BinaryTrie-SimpleBinaryTrie-lowerBound.cpp"
+template< std::unsigned_integral U , class V = std::monostate ,
+          int W = std::numeric_limits< U >::digits >
+requires TrieWidth< U , W >
+class BinaryTrie {
+ public:
+ class const_iterator;
+ using Key = U;
+ using Item = U;
+ using Value = V;
+ BinaryTrie();
+ BinaryTrie( BinaryTrie && o );
+ ~BinaryTrie();
+ const U * lowerBound( U x ) const;
+ const U * find( U x ) const;
+ std::optional< V > lookup( U x ) const;
+ bool contains( U x ) const;
+ bool insert( U x , const V & v = V() );
+ bool remove( U x );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t nodes() const;
+ std::optional< U > min() const;
+ std::optional< U > max() const;
+ void clear();
+ const_iterator seek( U x ) const;
+ };
+template< std::unsigned_integral U , class V = std::monostate ,
+    int W = std::numeric_limits< U >::digits >
+requires TrieWidth< U , W >
+class SimpleBinaryTrie {
+ public:
+ using Key = U;
+ using Item = U;
+ using Value = V;
+ SimpleBinaryTrie() = default;
+ SimpleBinaryTrie( SimpleBinaryTrie && o ) noexcept;
+ ~SimpleBinaryTrie();
+ const U * lowerBound( U x ) const;
+ const U * find( U x ) const;
+ std::optional< V > lookup( U x ) const;
+ bool contains( U x ) const;
+ bool insert( U x , const V & v = V() );
+ bool remove( U x );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t nodes() const;
+ template< class F > void forEach( F && f ) const;
+ };
 ```
 
 ![Figure 7.36. The `SimpleBinaryTrie` of 3, 9, 12, 13, with neither list nor jump pointers, and `lowerBound(5)` in violet ([Morin 2013, exercise 13.1](Z-bibliography.md#ref-morin-cpp)): the walk of 0101 leaves the trie at `0***`; $a$ = `1***` is the child 1 of the deepest node where the path went to the child 0 while the child 1 is there, and the leftmost walk from $a$ reaches 9.](../figures/dictionary-simpletrie.svg){#fig-7-36}
@@ -2895,10 +3658,6 @@ all larger than $x$ if that bit is 0 and all smaller if it is 1. Also, the keys 
 they differ from $x$ in a bit before the place $\ell$. $\square$
 
 ![Figure 7.37. The `XFastTrie` of 3, 9, 12, 13, with the hash table $t[ i ]$ of the prefixes of each depth, and `lowerBound(14)`, 14 = 1110 ([Morin 2013, Figure 13.6](Z-bibliography.md#ref-morin-cpp)): the binary search on the depth finds 11 in $t[ 2 ]$ and not 111 in $t[ 3 ]$, the node `11**` follows its jump pointer to 13, and the list ends there, so that no key is not smaller than 14 (in violet); beside it, the entries (smallest, largest key) of $t[ 2 ]$ in `ListXFastTrie`.](../figures/dictionary-xfast.svg){#fig-7-37}
-
-```cpp
---8<-- "generated/BinaryTrie-JumpTrie-deepest.cpp"
-```
 
 The insertion and the removal are those of the binary trie, which add and
 remove the entries of the nodes they create and free; they change $O( w )$
@@ -2943,10 +3702,6 @@ prefix $p$ of depth $i$, and $\ell$ the key $x$ in the list.
 
 --8<-- "generated/XFastTrie-ListXFastTrie-remove.pseudo.md"
 
-```cpp
---8<-- "generated/XFastTrie-ListXFastTrie-follow.cpp"
-```
-
 Both tries also have `findNear(x)`, the search of [Morin 2013, exercise
 13.4](Z-bibliography.md#ref-morin-cpp), whose time depends on the distance
 $d( x )$ between $x$ and its successor ($2^w$ if there is none) rather than
@@ -2984,19 +3739,66 @@ the prefix $p + 1$ from its entry.
 
 --8<-- "generated/XFastTrie-findNear.pseudo.md"
 
-```cpp
---8<-- "generated/XFastTrie-XFastTrie-findNear.cpp"
-```
+We declare the two x-fast tries as follows.
 
 ```cpp
---8<-- "generated/XFastTrie-ListXFastTrie-findNear.cpp"
+template< std::unsigned_integral U , class V = std::monostate ,
+          int W = std::numeric_limits< U >::digits >
+requires TrieWidth< U , W >
+class XFastTrie {
+ public:
+ class const_iterator;
+ using Key = U;
+ using Item = U;
+ using Value = V;
+ XFastTrie();
+ XFastTrie( XFastTrie && o );
+ ~XFastTrie();
+ const U * lowerBound( U x ) const;
+ const U * find( U x ) const;
+ std::optional< V > lookup( U x ) const;
+ bool contains( U x ) const;
+ bool insert( U x , const V & v = V() );
+ bool remove( U x );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t nodes() const;
+ std::optional< U > min() const;
+ std::optional< U > max() const;
+ void clear();
+ const_iterator seek( U x ) const;
+ const U * findNear( U x ) const;
+ };
+template< std::unsigned_integral U , class V = std::monostate ,
+    int W = std::numeric_limits< U >::digits >
+requires TrieWidth< U , W >
+class ListXFastTrie {
+ public:
+ class const_iterator;
+ using Key = U;
+ using Item = U;
+ using Value = V;
+ ListXFastTrie();
+ ListXFastTrie( ListXFastTrie && o );
+ ~ListXFastTrie();
+ const U * lowerBound( U x ) const;
+ const U * find( U x ) const;
+ const U * findNear( U x ) const;
+ std::optional< V > lookup( U x ) const;
+ bool contains( U x ) const;
+ bool insert( U x , const V & v = V() );
+ bool remove( U x );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t entries() const;
+ const_iterator seek( U x ) const;
+ };
 ```
 
 ### 7.11.3 The y-fast trie {#sec-7-11-3}
 
 Thus, the x-fast trie is exponentially faster than the binary trie in its
-searches, but its updates are not, and its space is $O( n w )$. The two
-defects are related, since $n$ insertions that build a structure of size $n
+searches, but its updates are not, and its space is $O( n w )$. These two defects are related, since $n$ insertions that build a structure of size $n
 w$ take at least that time. `YFastTrie` ([Morin 2013,
 §13.3](Z-bibliography.md#ref-morin-cpp), after [Willard
 1983](Z-bibliography.md#ref-willard1983)) stores in an `XFastTrie` only a
@@ -3035,16 +3837,37 @@ representatives.
 
 --8<-- "generated/YFastTrie-remove.pseudo.md"
 
+In C++, `YFastTrie` is declared as follows, followed by an example of use.
+
 ```cpp
---8<-- "generated/YFastTrie-YFastTrie-lowerBound.cpp"
+template< std::unsigned_integral U , class V = std::monostate ,
+    int W = std::numeric_limits< U >::digits >
+requires TrieWidth< U , W >
+class YFastTrie {
+ public:
+ using Key = U;
+ using Item = U;
+ using Value = V;
+ explicit YFastTrie( std::uint64_t seed = 1 );
+ YFastTrie( YFastTrie && o );
+ ~YFastTrie();
+ const U * lowerBound( U x ) const;
+ const U * find( U x ) const;
+ std::optional< V > lookup( U x ) const;
+ bool contains( U x ) const;
+ bool insert( U x , const V & v = V() );
+ bool remove( U x );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t groups() const;
+ template< class F > void forEach( F && f ) const;
+ };
 ```
 
 ```cpp
---8<-- "generated/YFastTrie-YFastTrie-insert.cpp"
-```
-
-```cpp
---8<-- "generated/YFastTrie-YFastTrie-remove.cpp"
+ADS::YFastTrie< std::uint32_t > Y;
+for( std::uint32_t x : { 3u , 9u , 12u , 13u } ) Y.insert( x );
+const std::uint32_t * s = Y.lowerBound( 10 );        // *s == 12
 ```
 
 The size of the groups rests on two coin experiments
@@ -3067,8 +3890,7 @@ $w - 1$. Hence $E[ n_x ] = E[ j ] + E[ k ] \le 2 w - 1$. $\square$
 ![Figure 7.39. The coins of the keys around $x$ in a `YFastTrie` ([Morin 2013, Figure 13.10](Z-bibliography.md#ref-morin-cpp)): the group of $x$ runs from the key after the last heads before $x$ ($k$ keys before $x$) to the first heads from $x$ on ($j$ keys from $x$ on), so that $n_x = j + k$; the heads in violet.](../figures/dictionary-yfast-sample.svg){#fig-7-39}
 
 By the inequality of Jensen, $E[ \log n_x ] \le \log E[ n_x ]$; hence, the
-operations on a treap of $n_x$ keys take $O( \log w )$ expected time. The
-insertions in the x-fast trie happen with probability $1 / w$ and cost
+operations on a treap of $n_x$ keys take $O( \log w )$ expected time. Insertions in the x-fast trie happen with probability $1 / w$ and cost
 $O( w )$, $O( 1 )$ in expectation, and so do the removals of the
 representatives.
 
@@ -3086,8 +3908,7 @@ representatives is the one of `XFastTrie.h`, with its faster tables. The
 search in a group descends its treap with no copy of a key, and the coin of
 an insertion is one word of `SplitMix64` reduced modulo $w$ instead of a
 call to `rand()`. `groups()` gives the number of groups, the last one
-included, and `forEach()` visits the pairs by increasing keys. The
-invariant (each group between two consecutive representatives, each
+included, and `forEach()` visits the pairs by increasing keys. Its invariant (each group between two consecutive representatives, each
 representative in its group but the last, and the count of the keys) is
 checked in $O( n )$ time at the contract level 3 while $n \le 256$.
 
@@ -3103,14 +3924,13 @@ whatever the number of the strings. The node at depth $i$ stands for a
 prefix of $i$ bytes, and a string ends at the node of its last byte. The
 strings are also a doubly linked list in increasing order, and each node
 keeps the smallest and the largest string below it, which play the part of
-the jump pointers ([Figure 7.40](07-dictionary.md#fig-7-40)). The exercise
-suggests a hash table of the children in each node. Here a node has instead
+the jump pointers ([Figure 7.40](07-dictionary.md#fig-7-40)). Indeed, the exercise suggests a hash table of the children in each node. Here a node has instead
 a bitmap of 256 bits of the bytes of its children and the children
 themselves in an array sorted by byte. Hence, the child of the byte $c$ is
 at the rank of $c$ among the bits set, a population count as in the hash
 array mapped tries of [Bagwell 2001](Z-bibliography.md#ref-bagwell2001),
 with no hashing; the next child after $c$ is the next bit set, which a hash
-table could not give. The methods `has()`, `rank()`, `child()`, `after()`
+table could not give. Methods `has()`, `rank()`, `child()`, `after()`
 and `before()` are these primitives.
 
 ![Figure 7.40. The `BitmapTrie` of `car`, `cat`, `cow`, `do` ([Morin 2013, exercise 13.3](Z-bibliography.md#ref-morin-cpp)), each node with the smallest and the largest string below it and the strings in a doubly linked list; the node `c` enlarged, with its bitmap of 256 bits (the bytes `a` to `p` shown) and the array of its children sorted by byte; `lowerBound(cb)` finds no child for `b`, the next bit set is `o`, of rank 1, and the smallest string below `co`, `cow`, is the result (in violet).](../figures/dictionary-bitmaptrie.svg){#fig-7-40}
@@ -3146,8 +3966,30 @@ $\ell$ the item of $s$ in the list.
 
 --8<-- "generated/BitmapTrie-remove.pseudo.md"
 
+Below are the declarations of `BitmapTrie`.
+
 ```cpp
---8<-- "generated/BitmapTrie-BitmapTrie-successor.cpp"
+template< class V = std::monostate >
+class BitmapTrie {
+ public:
+ class const_iterator;
+ using Key = std::string;
+ using Item = std::string;
+ using Value = V;
+ BitmapTrie();
+ BitmapTrie( BitmapTrie && o );
+ ~BitmapTrie();
+ const std::string * lowerBound( std::string_view s ) const;
+ const std::string * find( std::string_view s ) const;
+ std::optional< V > lookup( std::string_view s ) const;
+ bool contains( std::string_view s ) const;
+ bool insert( std::string_view s , const V & v = V() );
+ bool remove( std::string_view s );
+ std::size_t size() const;
+ bool empty() const;
+ std::size_t nodes() const;
+ const_iterator seek( std::string_view s ) const;
+ };
 ```
 
 
@@ -3163,7 +4005,7 @@ seems also to be one of the earliest descriptions of a linked list, and the
 open addressing to another group at IBM in the same years ([Peterson
 1957](Z-bibliography.md#ref-peterson1957); [Morris
 1968](Z-bibliography.md#ref-morris1968) surveys the scatter storage of the
-time). The universal hashing is due to [Carter and Wegman
+time). Universal hashing is due to [Carter and Wegman
 1979](Z-bibliography.md#ref-carter1979), who also introduced the simple
 tabulation, whose analysis for the linear inspection and the cuckoo hashing
 is due to [Pătrașcu and Thorup 2012](Z-bibliography.md#ref-patrascu2012).
@@ -3237,15 +4079,14 @@ Boas. Also, the fusion trees of [Fredman and Willard
 1993](Z-bibliography.md#ref-fredman1993) store $n$ integers of $w$ bits in
 $O( n )$ space with searches in $O( \log n / \log w )$ time, and the choice
 between a fusion tree and a y-fast trie, by whether $\log w > \sqrt{\log
-n}$, gives searches in $O( \sqrt{\log n} )$ time in $O( n )$ space. The
-lower bounds of [Pătrașcu and Thorup
+n}$, gives searches in $O( \sqrt{\log n} )$ time in $O( n )$ space. Lower bounds of [Pătrașcu and Thorup
 2007](Z-bibliography.md#ref-patrascu2007) show that these results are more
 or less optimal for the structures in $O( n )$ space.
 
 ## 7.13 Exercises {#sec-7-13}
 
 Each exercise names the test of the library that solves it (run it with
-`ctest -R <name>`). The exercises of [Morin
+`ctest -R <name>`). Exercises of [Morin
 2013](Z-bibliography.md#ref-morin-cpp) are numbered as in the book; those
 that ask to illustrate an operation are solved by the figures of this
 chapter, and the others by the lemmas and the code cited.

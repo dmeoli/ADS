@@ -136,6 +136,27 @@ class IndexedSkipList {
  /// time: on each level of its node the link that reaches it is replaced by
  /// the one that leaves it, their widths summed less 1, and the links that
  /// pass over it lose 1
+ ///
+ /// In pseudocode (Pugh, beyond the book), with \f$ U \f$ as in `insert()`
+ /// and \f$ y \f$ the node of \f$ k \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( k ) \cr
+ /// 2 & \quad U \gets \text{the search of } k;\ y \gets U[ 0
+ ///     ].\mathit{next}[ 0 ] \cr
+ /// 3 & \quad \textbf{if}\ y = \textbf{nil}\ \textbf{or}\ y.\mathit{key}
+ ///     \ne k\ \textbf{then return} \cr
+ /// 4 & \quad \textbf{for}\ l \gets 0\ \textbf{to}\ L - 1\ \textbf{do} \cr
+ /// 5 & \qquad x \gets U[ l ] \cr
+ /// 6 & \qquad \textbf{if}\ x.\mathit{next}[ l ] = y\ \textbf{then}
+ ///     \ x.w[ l ] \gets x.w[ l ] + y.w[ l ] - 1;\ x.\mathit{next}[ l ]
+ ///     \gets y.\mathit{next}[ l ] \cr
+ /// 7 & \qquad \textbf{else}\ x.w[ l ] \gets x.w[ l ] - 1 \cr
+ /// 8 & \quad \textbf{for}\ l \ge L\ \textbf{do}\ \mathit{head}.w[ l ]
+ ///     \gets \mathit{head}.w[ l ] - 1 \cr
+ /// 9 & \quad \text{free } y
+ /// \end{array}}
+ /// \f]
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 
