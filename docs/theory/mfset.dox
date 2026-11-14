@@ -123,8 +123,9 @@
  take \f$ O( \log n ) \f$.
 
  Indeed, by induction on the merges: a singleton has rank 0 and one node;
- a merge of two roots of different ranks keeps the rank and the height of
- the higher tree, and adds nodes to it; a merge of two roots of equal rank
+ a merge of two roots of different ranks keeps the rank of the higher
+ root and adds nodes to its tree, whose height stays at most that rank,
+ since the lower tree goes one level down; a merge of two roots of equal rank
  \f$ r \f$ gives rank \f$ r + 1 \f$ and height at most \f$ r + 1 \f$ to a
  tree of at least \f$ 2^r + 2^r = 2^{r+1} \f$ nodes. With the union by size
  the same bound holds by the argument of Lemma 1: a node goes one level
@@ -163,24 +164,25 @@
  input that fits in a computer; a single find may still cost
  \f$ \Theta( \log n ) \f$.
 
- The engineered forests of the area keep (1) and save memory and passes.
- `UnionFind` keeps the parents and, at each root, minus the size of its tree
- in one vector of integers, so that a find touches one array, and halves
- the paths in the single pass of the climb. `RemUnionFind` replaces the
- union by rank with the <em>link by index</em>: every parent is at least its
- child, \f$ p[ x ] \ge x \f$, so that a path increases strictly to its root,
- and `merge()` climbs from \f$ x \f$ and \f$ y \f$ together, always from the
- node of smaller parent, which, if it is a root, is linked under the parent
- of the other node; otherwise its parent is replaced by the larger parent of
- the other one, which keeps \f$ p[ x ] \ge x \f$. The climb stops as soon as
- the two components are joined, or the two nodes reach the same parent,
- often well below the roots; its postcondition, that the two have one root,
- climbs with no halving, so that the contracts leave the forest that the
- algorithm makes. The link by index alone gives the worst-case
- bound \f$ O( m \log_{1 + m / n} n ) \f$ (Tarjan and van Leeuwen), and the
- bound (1) in expectation when the elements are numbered in a random order
- (Goel, Khanna, Larkin and Tarjan); the experiments of Patwary, Blair and
- Manne found it among the fastest in practice.
+ Of the two engineered forests of the area, `UnionFind` keeps (1) and saves
+ memory and a pass, while `RemUnionFind` saves the sizes and gives up (1) in
+ the worst case. `UnionFind` keeps the parents and, at each root, minus the
+ size of its tree in one vector of integers, so that a find touches one array,
+ and halves the paths in the single pass of the climb. `RemUnionFind` replaces
+ the union by rank with the <em>link by index</em>: every parent is at least
+ its child, \f$ p[ x ] \ge x \f$, so that a path increases strictly to its
+ root, and `merge()` climbs from \f$ x \f$ and \f$ y \f$ together, always from
+ the node of smaller parent, which, if it is a root, is linked under the
+ parent of the other node; otherwise its parent is replaced by the larger
+ parent of the other one, which keeps \f$ p[ x ] \ge x \f$. The climb stops as
+ soon as the two components are joined, or the two nodes reach the same
+ parent, often well below the roots; its postcondition, that the two have one
+ root, climbs with no halving, so that the contracts leave the forest that the
+ algorithm makes. The link by index alone gives the worst-case bound \f$ O( m
+ \log_{1 + m / n} n ) \f$ (Tarjan and van Leeuwen), and the bound (1) in
+ expectation when the elements are numbered in a random order (Goel, Khanna,
+ Larkin and Tarjan); the experiments of Patwary, Blair and Manne found it
+ among the fastest in practice.
 
  \section theory_mfset_rollback Undo of the merges and offline connectivity
 
@@ -217,7 +219,9 @@
  is held by at most \f$ \max( 1 , 2 \lceil \log_2 q \rceil ) \f$ nodes of
  the segment tree, and when the visit reaches the leaf of a question the
  forest holds exactly the edges alive at its time; hence the answers are
- those of a union-find built again at each question, and the time is
+ those of a union-find built again at each question, and the time is, in
+ expectation over the hash table that pairs each deletion with its
+ insertion,
  \f[
    O( k \log q \log n ) = O( k \log k \log n ) . \tag{2}
  \f]

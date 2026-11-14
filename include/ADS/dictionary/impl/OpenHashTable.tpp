@@ -311,7 +311,6 @@ std::size_t OpenHashTable< K , V , H >::hashOf( const K & k ) const
 template< class K , class V , class H >
 std::size_t OpenHashTable< K , V , H >::scan( const K & k , bool insert ) const
 {
- //! [scan]
  const std::size_t m = f_T.size();
  const std::size_t h = hashOf( k );
  long firstDeleted = -1;
@@ -337,7 +336,6 @@ std::size_t OpenHashTable< K , V , H >::scan( const K & k , bool insert ) const
  if( insert && ! is( j , k ) && ( firstDeleted != -1 ) )
   return( firstDeleted );
  return( j );
- //! [scan]
  }
 
 template< class K , class V , class H >

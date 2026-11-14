@@ -117,7 +117,6 @@ bool CuckooFilter< T , F , H >::insertHash( std::uint64_t h )
  return( true );
  }
 
-//! [maybeHash]
 template< class T , class F , class H >
 ADS_FILTER_INLINE bool CuckooFilter< T , F , H >::maybeHash(
                                                    std::uint64_t h ) const
@@ -132,7 +131,6 @@ ADS_FILTER_INLINE bool CuckooFilter< T , F , H >::maybeHash(
   in |= ( f_vt == t ) & ( ( f_vb == b1 ) | ( f_vb == b2 ) );
  return( in );
  }
-//! [maybeHash]
 
 template< class T , class F , class H >
 bool CuckooFilter< T , F , H >::removeHash( std::uint64_t h )

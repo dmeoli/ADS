@@ -53,13 +53,11 @@ template< std::ranges::random_access_range S >
 std::uint64_t ZobristTable::hash( const S & s ) const
 {
  ADS_PRE( std::size_t( std::ranges::size( s ) ) == f_n );
- //! [zobrist]
  std::uint64_t h = 0;
  auto it = std::ranges::begin( s );
  for( std::size_t f = 0 ; f < f_n ; ++f )
   h ^= ( *this )( f , std::size_t( it[ std::ptrdiff_t( f ) ] ) );
  return( h );
- //! [zobrist]
  }
 
 inline std::uint64_t ZobristTable::update( std::uint64_t h , std::size_t f ,
@@ -79,12 +77,10 @@ inline TabulationHash::TabulationHash( std::uint64_t seed )
 
 inline std::uint64_t TabulationHash::operator()( std::uint64_t x ) const
 {
- //! [tabulation]
  std::uint64_t h = 0;
  for( int i = 0 ; i < 8 ; ++i , x >>= 8 )
   h ^= f_T[ i ][ x & 0xFF ];
  return( h );
- //! [tabulation]
  }
 
 inline std::size_t TabulationHash::place( std::uint64_t x ,

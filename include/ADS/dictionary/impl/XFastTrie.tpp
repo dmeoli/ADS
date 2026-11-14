@@ -30,7 +30,6 @@ const U * XFastTrie< U , V , W >::findNear( U x ) const
   return( nullptr );
  if( const auto * l = this->node( x , W ) )
   return( &l->key );
-//! [XFastTrie-findNear]
  int h = W;   // a depth whose prefix of x is not there
  for( int K = 1 ; ; K = std::min( 2 * K , W ) ) {
   const int d = W - K;
@@ -47,7 +46,6 @@ const U * XFastTrie< U , V , W >::findNear( U x ) const
     return( &this->leftmost( u , d )->key );
   h = d;
   }
-//! [XFastTrie-findNear]
  }
 
 /*--------------------------------------------------------------------------*/
@@ -119,7 +117,6 @@ template< std::unsigned_integral U , class V , int W >
 int ListXFastTrie< U , V , W >::deepest( U x , int lo , int hi ,
                                          Entry & e ) const
 {
-//! [ListXFastTrie-deepest]
  while( hi - lo > 1 ) {
   const int m = ( lo + hi ) / 2;
   if( entry( detail::triePrefix< U , W >( x , m ) , m , e ) )
@@ -130,7 +127,6 @@ int ListXFastTrie< U , V , W >::deepest( U x , int lo , int hi ,
  // e holds the entry of lo only if a probe found it: read it again
  ( void ) entry( detail::triePrefix< U , W >( x , lo ) , lo , e );
  return( lo );
-//! [ListXFastTrie-deepest]
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -138,11 +134,9 @@ template< std::unsigned_integral U , class V , int W >
 auto ListXFastTrie< U , V , W >::follow( U x , const Entry & e , int l ) const
  -> Leaf *
 {
-//! [ListXFastTrie-follow]
  if( l == W )
   return( e.min );
  return( detail::trieBit< U , W >( x , l ) == 0 ? e.min : e.max->next );
-//! [ListXFastTrie-follow]
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -191,7 +185,6 @@ const U * ListXFastTrie< U , V , W >::findNear( U x ) const
   return( nullptr );
  if( const Entry * f = f_t[ W ].find( x ) )
   return( &f->min->key );
-//! [ListXFastTrie-findNear]
  int h = W;
  for( int K = 1 ; ; K = std::min( 2 * K , W ) ) {
   const int d = W - K;
@@ -206,7 +199,6 @@ const U * ListXFastTrie< U , V , W >::findNear( U x ) const
    return( &e.min->key );
   h = d;
   }
-//! [ListXFastTrie-findNear]
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -247,7 +239,6 @@ bool ListXFastTrie< U , V , W >::insert( U x , const V & v )
   e->min->value = v;
   return( false );
   }
-//! [ListXFastTrie-insert]
  Leaf * s = successor( x );
  Leaf * l = f_pool.make();
  l->key = x;
@@ -268,7 +259,6 @@ bool ListXFastTrie< U , V , W >::insert( U x , const V & v )
   else
    f_t[ i ].insert( p , Entry{ l , l } );
   }
-//! [ListXFastTrie-insert]
  ADS_POST( contains( x ) );
  ADS_INVARIANT( consistent( x ) );
  return( true );
@@ -282,7 +272,6 @@ bool ListXFastTrie< U , V , W >::remove( U x )
  const Entry * f = f_t[ W ].find( x );
  if( ! f )
   return( false );
-//! [ListXFastTrie-remove]
  Leaf * l = f->min;
  for( int i = 1 ; i <= W ; ++i ) {
   const U p = detail::triePrefix< U , W >( x , i );
@@ -298,7 +287,6 @@ bool ListXFastTrie< U , V , W >::remove( U x )
  l->next->prev = l->prev;
  f_pool.free( l );
  --f_n;
-//! [ListXFastTrie-remove]
  ADS_POST( ! contains( x ) );
  ADS_INVARIANT( consistent( x ) );
  return( true );

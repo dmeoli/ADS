@@ -22,7 +22,8 @@
  * \f$ n \f$ nodes, each the insertion of an edge, its deletion or a question
  * (whether two nodes are connected, or how many components there are), the
  * questions in their order, by the segment tree over the times of Lemma 4 of
- * \ref theory_mfset_rollback, in \f$ O( k \log k \log n ) \f$ time and
+ * \ref theory_mfset_rollback, in \f$ O( k \log k \log n ) \f$ expected time
+ * (the hash table that pairs each deletion with its insertion) and
  * \f$ O( k \log k ) \f$ space.
  *
  * The contracts [see `Contract.h`]: \f$ n \ge 0 \f$, the elements in
@@ -135,10 +136,12 @@ class RollbackUnionFind {
  ///     \ \textbf{return}\ \textbf{false} \cr
  /// 4 & \quad \textbf{if}\ \mathit{rank}[ x ] > \mathit{rank}[ y ]
  ///     \ \textbf{then}\ \text{swap } x \text{ and } y \cr
- /// 5 & \quad p[ x ] \gets y;\ g \gets \mathit{rank}[ x ] =
- ///     \mathit{rank}[ y ];\ \textbf{if}\ g\ \textbf{then}
- ///     \ \mathit{rank}[ y ] \gets \mathit{rank}[ y ] + 1 \cr
- /// 6 & \quad \mathrm{push}( R , ( x , y , g ) );\ \textbf{return}
+ /// 5 & \quad p[ x ] \gets y;\ \mathit{size}[ y ] \gets \mathit{size}[ y ]
+ ///     + \mathit{size}[ x ] \cr
+ /// 6 & \quad g \gets \mathit{rank}[ x ] = \mathit{rank}[ y ];
+ ///     \ \textbf{if}\ g\ \textbf{then}\ \mathit{rank}[ y ] \gets
+ ///     \mathit{rank}[ y ] + 1 \cr
+ /// 7 & \quad \mathrm{push}( R , ( x , y , g ) );\ \textbf{return}
  ///     \ \textbf{true}
  /// \end{array}}
  /// \f]
@@ -170,7 +173,9 @@ class RollbackUnionFind {
  /// 2 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ k\ \textbf{do} \cr
  /// 3 & \qquad ( x , y , g ) \gets \mathrm{pop}( R ) \cr
  /// 4 & \qquad \textbf{if}\ x \ne \textbf{nil}\ \textbf{then}
- ///     \ p[ x ] \gets x;\ \textbf{if}\ g\ \textbf{then}
+ ///     \ p[ x ] \gets x;\ \mathit{size}[ y ] \gets \mathit{size}[ y ] -
+ ///     \mathit{size}[ x ] \cr
+ /// 5 & \qquad \quad \textbf{if}\ g\ \textbf{then}
  ///     \ \mathit{rank}[ y ] \gets \mathit{rank}[ y ] - 1
  /// \end{array}}
  /// \f]

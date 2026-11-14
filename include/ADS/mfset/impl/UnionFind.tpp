@@ -30,7 +30,6 @@ inline void DisjointSets< L , C >::reset( int n )
  f_count = n;
  }
 
-//! [find]
 template< Union L , Compression C >
 inline int DisjointSets< L , C >::find( int x )
 {
@@ -58,7 +57,6 @@ inline int DisjointSets< L , C >::find( int x )
   return( r );
   }
  }
-//! [find]
 
 template< Union L , Compression C >
 inline bool DisjointSets< L , C >::merge( int x , int y )

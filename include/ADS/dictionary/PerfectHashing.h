@@ -174,8 +174,18 @@ class PerfectHashTable {
                             std::uint64_t seed = 1 );
 
  /// whether \f$ k \f$ is in \f$ S \f$, any \f$ k \f$, in \f$ O( 1 ) \f$ time
-/// in the worst case: the key in the place \f$ h_j( k ) \f$ of the table
-/// \f$ j = h( k ) \f$ compared with \f$ k \f$
+ /// in the worst case: the key in the place \f$ h_j( k ) \f$ of the table
+ /// \f$ j = h( k ) \f$ compared with \f$ k \f$
+ ///
+ /// In pseudocode (Fredman, Komlós and Szemerédi, beyond the book),
+ /// \f$ T_j \f$ the table of \f$ n_j^2 \f$ places of the list \f$ j \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{contains}( k ) \cr
+ /// 2 & \quad j \gets h( k ) \cr
+ /// 3 & \quad \textbf{return}\ n_j > 0\ \textbf{and}\ T_j[ h_j( k ) ] = k
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] bool contains( std::uint64_t k ) const;
 
  /// the number of keys

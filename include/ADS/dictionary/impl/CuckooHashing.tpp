@@ -70,7 +70,6 @@ bool CuckooHashTable< K , V , H >::walk( Cell & c )
   f_T[ q ] = std::move( c );
   return( true );
   }
- //! [walk]
  const int maxLoop = 8 * int( std::bit_width( f_m - 1 ) ) + 16;
  for( int t = 0 ; t < maxLoop ; ++t ) {
   std::swap( c , f_T[ p ] );                // c is the key evicted from p
@@ -83,7 +82,6 @@ bool CuckooHashTable< K , V , H >::walk( Cell & c )
    }
   }
  return( false );
- //! [walk]
  }
 
 template< class K , class V , class H >
