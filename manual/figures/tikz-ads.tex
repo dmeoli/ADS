@@ -26,7 +26,7 @@
 \colorlet{adsAdded}{ads-triad-a}
 \colorlet{adsInk}{black!78}
 \colorlet{adsTint}{\goldentint{adsPrimary}{4}}
-\colorlet{adsFree}{\goldentint{adsPrimary}{7}}
+\colorlet{adsFree}{\goldentint{adsPrimary}{6}}
 \readableon{adsOnPrimary}{adsPrimary}{black}{white}
 \readableon{adsOnAdded}{adsAdded}{black}{white}
 \tikzset{
@@ -39,7 +39,8 @@
                   font=\small\ttfamily\bfseries},
   added/.style={cell,fill=adsAdded,text=adsOnAdded,
                 font=\small\ttfamily\bfseries},
-  free/.style={cell,fill=adsFree,text=adsInk!55},
+  free/.style={cell,fill=adsFree,text=adsInk!55,
+              draw=adsInk!14,line width=0.4pt},
   node/.style={rounded corners=2pt,minimum width=8mm,minimum height=6mm,
                font=\small\ttfamily,fill=adsTint,text=adsInk},
   node-touched/.style={node,fill=adsPrimary,text=adsOnPrimary,

@@ -119,7 +119,8 @@ figures keep their natural size, since the TikZ figures are drawn at it.
    `node-touched`, `vertex-touched`, `edge-touched`), what it adds in the
    first colour of its triad (`added`, `node-added`, `vertex-added`), the
    rest in golden tints of the primary (`cell`, `node`, `vertex`, `edge`,
-   and `free` for a free place); no outlines, gradients or shadows, and no
+   and `free` for a free place, the only shape with a hairline of ink, so
+   that an empty place shows on the white page); no outlines, gradients or shadows, and no
    colour outside the palette. The Makefile finds lamalunga in
    `~/GDrive/lamalunga` (variable `LAMALUNGA`).
 2. `make figures` writes the `.pdf` and the `.svg`.
