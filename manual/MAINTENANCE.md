@@ -106,8 +106,11 @@ make snippets  # rerun snarf.py on ../../include
 PDF acceptance check: zero `Overfull \hbox` and zero undefined
 references. `pandoc.yaml` lists the input files in reading order: keep it
 in sync with the `nav` of `mkdocs.yml` and the table of contents of
-`index.md`. `build/preamble.tex` differs from that of SMS++ in one point:
-figures keep their natural size, since the TikZ figures are drawn at it.
+`index.md`. `build/preamble.tex` differs from that of SMS++ in three points:
+figures keep their natural size, since the TikZ figures are drawn at it;
+figure captions have no LaTeX label, since they carry their hand-written
+number; and code blocks are framed by a breakable `tcolorbox`, since the
+`framed` package overran the text height when it split a block.
 
 ---
 
