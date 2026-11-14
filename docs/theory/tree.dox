@@ -222,6 +222,21 @@
  \f$ x \f$, which keeps the order of the keys and changes the depths of the
  subtrees by \f$ \pm 1 \f$, in \f$ O( 1 ) \f$ (figure 6.4 of the book).
 
+ The successor search, the `find( x )` of the sorted set of Morin (section
+ 6.2.1 of his book), returns the smallest key not smaller than \f$ x \f$
+ along the same path: it remembers the last node at which the path turned
+ left, and stops at a key equal to \f$ x \f$. The answer is that node.
+ Indeed, a node \f$ u \f$ at which the path turns right is smaller than
+ \f$ x \f$, and so is its left subtree; a node at which it turns left is
+ not, and its right subtree holds only larger keys; and the nodes of the
+ left turns decrease along the path, each in the left subtree of the
+ previous one; hence the last of them is the least key not smaller than
+ \f$ x \f$. `lowerBoundNode()` of `SearchTree` gives the node, in
+ \f$ O( h ) \f$ like the search, and every ordered dictionary of the
+ library gives the same answer by `lowerBound()`, as a pair, and by
+ `lowerBoundKey()`, as the address of the key, which makes
+ `DictionarySet` over it a sorted set [see \ref theory_set_morin].
+
  <table>
  <caption>The binary search trees of the area and the cost of their
           operations</caption>
@@ -753,7 +768,7 @@
  \f$ f( 1 ) = 2 \f$, \f$ f( 2 ) = 20 \cdot 4 = 80 \f$ and
  \f$ f( 3 ) = 3432 \cdot 6400 = 21964800 \f$ (exercise 7.3, checked by the
  test, which counts the 80 orders of 7 keys). `shuffleFast()` [see
- `RandomGenerators.h`] is the uniform shuffle of exercise 7.4 (Lemma 14 of
+ `RandomGenerators.h`] is the uniform shuffle of exercise 7.4 (Lemma 15 of
  \ref theory_sequence_morin). An insertion
  into a treap makes \f$ O( 1 ) \f$ rotations in expectation (exercise 7.5):
  each rotation that lifts the new node adds a node to the right spine of
@@ -908,10 +923,13 @@
  afresh at each operation, give.
 
  The order maintenance of exercise 8.11 is in the area of the sequences
- (`OrderMaintenanceList.h`): its labels, which encode the paths, change
+ (`OrderMaintenanceList.h`): labels that encode the paths of a tree change
  for a whole subtree at each rotation and are rewritten for free by the
  rebuild of a scapegoat tree, the case where Morin remarks that the
- partial rebuilding is the right choice.
+ partial rebuilding is the right choice, in \f$ O( \log n ) \f$ amortized;
+ the library takes instead the list labeling of Bender et al., which needs
+ no tree and costs \f$ O( 1 ) \f$ amortized (see
+ \ref theory_sequence_morin).
 
  \section theory_tree_llrb Left-leaning red-black trees
 
@@ -982,7 +1000,14 @@
  changes. A removal from the tree of Fibonacci of height \f$ h \f$ (the
  smallest AVL tree of that height, see (2)) of the deepest leaf on the side
  of the shorter subtrees makes every node of its path unbalanced in turn,
- \f$ \Theta( \log n ) \f$ rebalancings. The AVL tree, shallower
+ \f$ \Theta( \log n ) \f$ rebalancings: each rebalancing restores a
+ subtree whose height drops by 1, which unbalances its parent, whose
+ shorter side it was, and so on every other level at least.
+ `rebalancings()` counts them and their rotations, and the test of the
+ exercise checks both claims, at most one rebalancing (and two rotations)
+ per insertion, random or increasing, and at least \f$ h / 2 - 1 \f$ for
+ the removal from the tree of Fibonacci of height \f$ h \f$, built level
+ by level with no rotation, for \f$ h \f$ from 6 to 22. The AVL tree, shallower
  (\f$ 1.44 \log_2 n \f$ against \f$ 2 \log_2 n \f$), searches faster, the
  red-black tree changes less; the benchmark `bench/ssets.cpp` measures the
  searches, the insertions and the removals of all the sorted sets of the

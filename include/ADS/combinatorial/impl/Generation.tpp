@@ -39,15 +39,26 @@ long mixedRadix( const std::vector< int > & m , F && visit )
   return( x >= 1 ); } ) );
  const int n = int( m.size() );
  Tuple a( n , 0 );
+ std::vector< int > below( n );             // the place of radix > 1 before
+ int last = -1;                             // j, -1 if none
+ for( int j = 0 ; j < n ; ++j ) {
+  below[ j ] = last;
+  if( m[ j ] > 1 ) last = j;
+  }
  long count = 0;
+ //! [mixedRadix]
  for( ; ; ) {
   ++count;
   if( detail::visitStops( visit , a ) ) return( count );
-  int j = n - 1;                            // M3-M4: add 1 with carries
-  while( ( j >= 0 ) && ( a[ j ] == m[ j ] - 1 ) ) a[ j-- ] = 0;
+  int j = last;                             // M3-M4: add 1 with carries,
+  while( ( j >= 0 ) && ( a[ j ] == m[ j ] - 1 ) ) {   // over the places of
+   a[ j ] = 0;                              // radix > 1 only
+   j = below[ j ];
+   }
   if( j < 0 ) return( count );
   ++a[ j ];
   }
+ //! [mixedRadix]
  }
 
 //! [grayTuples]
@@ -105,12 +116,12 @@ template< class F >
 long plainChanges( int n , F && visit )
 {
  ADS_PRE( n >= 0 );
- Tuple a( n + 1 ) , c( n + 1 , 0 ) , o( n + 1 , 1 );   // 1-based, as P
- for( int i = 1 ; i <= n ; ++i ) a[ i ] = i - 1;
+ Tuple a( n ) , c( n + 1 , 0 ) , o( n + 1 , 1 );   // c and o 1-based, as
+ for( int i = 0 ; i < n ; ++i ) a[ i ] = i;         // P, a from 0
  long count = 0;
  for( ; ; ) {
-  ++count;                                  // P2
-  if( detail::visitStops( visit , Tuple( a.begin() + 1 , a.end() ) ) )
+  ++count;                                  // P2: the same a, in place
+  if( detail::visitStops( visit , a ) )
    return( count );
   int j = n , s = 0;                        // P3
   for( ; ; ) {
@@ -128,7 +139,7 @@ long plainChanges( int n , F && visit )
     --j;
     continue;
     }
-   std::swap( a[ j - c[ j ] + s ] , a[ j - q + s ] );   // P5
+   std::swap( a[ j - c[ j ] + s - 1 ] , a[ j - q + s - 1 ] );   // P5
    c[ j ] = q;
    break;
    }
@@ -229,24 +240,32 @@ long integerPartitions( int n , F && visit )
   (void) detail::visitStops( visit , Tuple() );
   return( count );
   }
- Tuple a = { n };                           // the parts, nonincreasing
+ Tuple a;                                   // a_1 .. a_m, nonincreasing
+ a.reserve( std::size_t( n ) );
+ //! [integerPartitions]
+ std::size_t q = 0;                         // a_q the last part > 1, from 1
+ int r = n;                                 // the sum of the parts to come
  for( ; ; ) {
-  ++count;
-  if( detail::visitStops( visit , a ) ) return( count );
-  int ones = 0;                             // the 1s at the end go away
-  while( ! a.empty() && ( a.back() == 1 ) ) {
-   a.pop_back();
-   ++ones;
+  a.push_back( r );                         // P2: the last part
+  q = a.size() - ( r == 1 ? 1 : 0 );
+  for( ; ; ) {
+   ++count;                                 // P3
+   if( detail::visitStops( visit , a ) ) return( count );
+   if( ( q == 0 ) || ( a[ q - 1 ] != 2 ) ) break;
+   a[ q - 1 ] = 1;                          // P4: 2 becomes 1 + 1
+   --q;
+   a.push_back( 1 );
    }
-  if( a.empty() ) return( count );
-  const int x = --a.back();                 // the last part > 1 drops by 1
-  int rest = ones + 1;                      // and the rest is split into
-  while( rest > x ) {                       // parts of x
+  if( q == 0 ) return( count );             // P5: a_q drops by 1, the 1s
+  const int x = --a[ q - 1 ];               // after it with the unit go
+  r = int( a.size() - q ) + 1;              // into parts of x
+  a.resize( q );
+  while( r > x ) {                          // P6
    a.push_back( x );
-   rest -= x;
+   r -= x;
    }
-  if( rest > 0 ) a.push_back( rest );
   }
+ //! [integerPartitions]
  }
 
 template< class F >

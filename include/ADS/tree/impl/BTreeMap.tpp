@@ -935,6 +935,20 @@ bool ADS_BTM::valid( const void * x , int h , const K * lo , const K * hi ,
  return( true );
  }
 
+ADS_BTM_T
+const K * ADS_BTM::findKey( const K & k ) const
+{
+ const K * p = lowerBoundKey( k );
+ return( ( p && ! f_less( k , *p ) ) ? p : nullptr );
+ }
+
+ADS_BTM_T
+const K * ADS_BTM::lowerBoundKey( const K & k ) const
+{
+ const const_iterator it = lowerBound( k );
+ return( it == end() ? nullptr : &( *it ).first );
+ }
+
 #undef ADS_BTM
 #undef ADS_BTM_T
 

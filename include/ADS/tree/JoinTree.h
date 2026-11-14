@@ -276,6 +276,21 @@ class JoinTree
  /// true if \f$ k \f$ is there
  [[nodiscard]] bool contains( const K & k ) const;
 
+ /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
+ /// (the `find( x )` of an SSet of Morin), in \f$ O( \log n ) \f$ time
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+  const K & k ) const;
+
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ time: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -406,6 +421,9 @@ class JoinTree
  /// the order, the sizes, the augmented values and the balance of the
  /// scheme, \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;   ///< the root
  SplitMix64 f_g;            ///< the priorities of a treap

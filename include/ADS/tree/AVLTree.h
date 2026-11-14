@@ -165,6 +165,21 @@ class AVLTree
  /// true if \f$ k \f$ is there
  [[nodiscard]] bool contains( const K & k ) const;
 
+ /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
+ /// (the `find( x )` of an SSet of Morin), in \f$ O( \log n ) \f$ time
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+  const K & k ) const;
+
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ time: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -177,6 +192,15 @@ class AVLTree
  /// `f( k , v )` on the pairs by increasing keys
  template< class F >
  void forEach( F && f ) const;
+
+ /// the rebalancings of `insert()` and `remove()` so far, i.e., the nodes
+ /// found unbalanced on their paths and mended by one or two rotations,
+ /// and those rotations (exercise 9.12 of Morin)
+ [[nodiscard]] std::pair< std::size_t , std::size_t > rebalancings( void )
+  const {
+  return( std::pair< std::size_t , std::size_t >( f_rebalances ,
+                                                  f_rotations ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -243,7 +267,7 @@ class AVLTree
  static void update( Ptr & t );
  static void rotateRight( Ptr & t );
  static void rotateLeft( Ptr & t );
- static void balance( Ptr & t );
+ void balance( Ptr & t );
  bool insert( Ptr & t , const K & k , const V & v );
  bool remove( Ptr & t , const K & k );
  template< class F >
@@ -253,8 +277,13 @@ class AVLTree
  /// \f$ O( n ) \f$
  static bool valid( const Ptr & t , const K * lo , const K * hi );
 
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
+
  Ptr f_root;              ///< the root
  std::size_t f_size = 0;  ///< the number of keys
+ std::size_t f_rebalances = 0;   ///< the rebalancings so far
+ std::size_t f_rotations = 0;    ///< their rotations
 
  };  // end( class AVLTree )
 

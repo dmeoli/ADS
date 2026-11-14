@@ -20,9 +20,13 @@
  * \f$, and all the \f$ P ( P - 1 ) \f$ samples, gathered by `MPI_Allgather`
  * and sorted, give the \f$ P - 1 \f$ splitters at the ranks
  * \f$ ( j + 1 ) ( P - 1 ) \f$; each process cuts its sorted items at the
- * splitters by binary searches (the items equal to a run of \f$ k \f$ equal
- * splitters are cut into \f$ k + 1 \f$ parts of the same size, so that a key
- * repeated many times is spread over as many processes as it fills), sends
+ * splitters by binary searches, the piece \f$ j \f$ taking its items
+ * strictly between the splitters \f$ j \f$ and \f$ j + 1 \f$ (the items
+ * equal to a run of \f$ k \f$ equal splitters are cut into \f$ k + 1 \f$
+ * parts of the same size, the remainder of the division to the highest of
+ * them, so that a key repeated many times is spread over as many processes
+ * as it fills and a single item equal to a splitter goes to the piece above
+ * it), sends
  * each piece to its process by one `MPI_Alltoallv` (after an `MPI_Alltoall`
  * of the counts), and merges the \f$ P \f$ sorted pieces it receives by
  * `multiwayMerge()` [see `MultiwayMerge.h` and `ParallelMerge.h`]. With the
@@ -245,8 +249,12 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
              all.begin() + std::ptrdiff_t( ( q + 1 ) * ( p - 1 ) ) );
  ADS::sort( S , less );
  //! [cuts]
- // the cuts: piece j of this process are its items in ( s_{j-1} , s_j ],
- // a run of splitters equal to x splitting the items equal to x evenly
+ // the cuts: piece j of this process holds its items strictly between
+ // the splitters j and j + 1 (none below the first piece, none above the
+ // last), and the items equal to a run of k equal splitters are cut into
+ // k + 1 parts by the floor of their size times 1 / ( k + 1 ), 2 / ( k + 1 ),
+ // ..., so that the remainder goes to the highest part, and a single item
+ // equal to a splitter goes to the piece above it
  std::vector< std::size_t > cut( p + 1 , 0 );
  cut[ p ] = n;
  for( std::size_t j = 1 ; j < p ; ++j ) {

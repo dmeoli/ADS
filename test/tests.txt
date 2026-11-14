@@ -466,6 +466,7 @@ taocp  sparse-matrix         liste ortogonali e passo di pivot
 taocp  sparse-pivot          pivot lungo le liste, Algoritmo 2.2.6S
 taocp  bitwise               trucchi sui bit, volume 4A
 taocp  generation            tuple, permutazioni, combinazioni, partizioni
+taocp  generation-costs      visite senza copie, Algoritmo P, radici 1
 taocp  generation-visits     visite che fermano o no la generazione
 taocp  random-numbers        generatori congruenziali e test statistici
 taocp  random-ranges         estrazioni limitate da generatori stretti
@@ -1859,6 +1860,8 @@ ods_lists  ods-ex3.5-3.12.dllist        esercizi su DLList
 ods_lists  ods-ex3.13.merge-sort        merge sort di una DLList
 ods_lists  ods-ex3.14.min-stack         MinStack
 ods_lists  ods-ex3.15.min-queue         MinQueue
+ods_lists  ods-ex3.15.real-time-min-queue  coda col minimo, O(1) nel caso peggiore
+ods_lists  ods-ex3.16.real-time-min-deque  deque col minimo, O(1) nel caso peggiore
 ods_lists  ods-ex3.16.min-deque         MinDeque
 ods_lists  ods-3.3.selist               SEList a blocchi
 ods_lists  ods-ex3.17-3.18.selist-ends  SEList agli estremi
@@ -1906,6 +1909,7 @@ ods_ints  ods.ex14.8.bplus-tree             Morin es. 14.8, B+-albero
 
 # the skip lists and the search trees of Morin, Open Data Structures,
 # chapters 4 and 6 to 9, with their exercises, beyond the book
+ods_trees  ods1.2.dictionary-sets              USet and SSet of each dictionary
 ods_trees  ods4.2.skiplist-sset                section 4.2, SkiplistSSet
 ods_trees  ods-ex4.8.no-redundant-comparisons  no comparison repeated
 ods_trees  ods-ex4.10.finger-search            finger search
@@ -1921,6 +1925,7 @@ ods_trees  ods-ex6.7.order-numbers             ex. 6.7 and 6.9, three numbers
 ods_trees  ods-ex6.10.pre-in-rebuild           tree from two visits
 ods_trees  ods-ex6.11.shape-code               shape in 2(n-1) bits
 ods_trees  ods-ex6.14.getLE                    getLE(x)
+ods_trees  ods6.2.searchtree-lowerbound        SearchTree, lowerBound(x)
 ods_trees  ods-ex6.19.size-depth-height        ex. 6.15, 6.18, 6.19, measures
 ods_trees  ods-ex7.4.permute                   permute(a), shuffleFast()
 ods_trees  ods-ex7.3.count-sequences           21964800 orders of a tree
@@ -1937,7 +1942,9 @@ ods_trees  ods-ex8.8.weight-rebuild            WeightBalancedTree by rebuilds
 ods_trees  ods-ex8.9.countdown                 CountdownTree
 ods_trees  ods-ex8.10.dynamite                 DynamiteTree
 ods_trees  ods-ex8.11.order-maintenance        Sequence, order maintenance
+ods_trees  ods-ex8.11.order-constant           O(1) amortized labels
 ods_trees  ods9.2.left-leaning-red-black       section 9.2, RedBlackTree
 ods_trees  ods-ex9.1.two-four-tree             ex. 9.1 and 9.8, 2-4 view
 ods_trees  ods-ex9.10.red-black-join           ex. 9.10 and 9.11, join
+ods_trees  ods-ex9.12.avl-rebalancing          one rebalancing per insertion
 ods_trees  ods-ex9.13.avl                      AVLTree

@@ -10,7 +10,9 @@
  * \f$ I \f$ in the reverse order, the front on top. Each item is pushed and
  * popped twice at most, so that a sequence of \f$ m \f$ operations costs
  * \f$ O( m ) \f$, and the least item is the lesser of the minima of the two
- * stacks.
+ * stacks. `RealTimeMinQueue` [see `RealTimeMinQueue.h`] spreads the move
+ * of the stack \f$ I \f$ over the operations, for \f$ O( 1 ) \f$ in the
+ * worst case.
  *
  * The contracts [see `Contract.h`]: `top()`, `dequeue()` and `min()` need a
  * queue that is not empty; `enqueue()` ensures one item more, `dequeue()`

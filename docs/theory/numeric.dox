@@ -402,9 +402,14 @@
  is exact only if the generator gives it so: `uniformBelow()` takes the high
  word of \f$ x j \f$ and rejects the low words below \f$ 2^{64} \bmod j \f$,
  which leaves each result \f$ \lfloor 2^{64} / j \rfloor \f$ words, while a
- plain \f$ x \bmod j \f$ (as in `shuffle()` and `reservoirSampling()` of
- `RandomNumbers.h`) is off by at most \f$ j / 2^{64} \f$ for a generator of
- 64 bits.
+ plain \f$ x \bmod j \f$ is off by at most \f$ j / 2^{64} \f$ for a
+ generator of 64 bits, and by much more on a narrow range (with the
+ numbers \f$ 1 , 2 , 3 \f$ and \f$ j = 2 \f$, one index comes twice as
+ often as the other); `shuffle()` and `reservoirSampling()` of
+ `RandomNumbers.h` draw by the method of Lemire on a full word and, on a
+ range of \f$ r + 1 < 2^{64} \f$ numbers, take
+ \f$ \lfloor x / q \rfloor \f$ with \f$ q = \lfloor ( r + 1 ) / j \rfloor \f$
+ and reject the \f$ x \ge q j \f$, so that they are exact on any generator.
 
  <em>Lemma 6 (the reservoir).</em> If the item \f$ t \f$ of a stream,
  \f$ t > n \f$ (from 1), replaces a uniform item of a reservoir of \f$ n \f$

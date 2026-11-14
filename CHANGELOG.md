@@ -66,6 +66,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nodes) and the two visits and strong_components() of Boost in the
   benchmark scc of bench/graphs.cpp
 
+- AVLTree::rebalancings(), the rebalancings of the insertions and of the
+  removals so far and their rotations, and the test
+  ods-ex9.12.avl-rebalancing, the numeric check of exercise 9.12 of
+  Morin: at most one rebalancing and two rotations per insertion, random
+  or increasing, and at least h / 2 - 1 rebalancings for the removal of the
+  deepest leaf on the shorter side of the tree of Fibonacci of height h
+
+- RealTimeMinQueue and RealTimeMinDeque, the queue and the deque with the
+  minimum of exercises 3.15 and 3.16 of Morin in O( 1 ) worst-case time
+  per operation, next to the amortized MinQueue and MinDeque: the queue by
+  the rotation of Hood and Melville on arrays with the place of the least
+  item, three moves per operation, the deque by the global rebuilding of
+  Overmars as Gajewska and Tarjan apply it to deques with heap order,
+  twelve copies per operation and the old arrays destroyed as many cells
+  per operation afterwards; the arrays are allocated with their final
+  size, so that no operation copies, moves or destroys more than a
+  constant number of items; the theory of the queues proves both bounds,
+  and the tests ods-ex3.15.real-time-min-queue and
+  ods-ex3.16.real-time-min-deque check them against std::deque and count
+  the copies and the moves of each operation
+
+- every dictionary of the library is a set of Morin through one adaptor,
+  DictionarySet: the concepts KeyedDictionary (findKey( k ), the address
+  of the key k held, nil if none) and OrderedDictionary (lowerBoundKey( k ),
+  the address of the smallest key not smaller than k) in SetInterfaces.h,
+  findKey() and lowerBoundKey() in SearchTree, Treap, AVLTree, SplayTree,
+  ScapegoatTree, LeftLeaningRedBlackTree, RandomizedSearchTree,
+  MeasuredSearchTree, JoinTree, FingerTreap, HashedTreap,
+  PartialRebuildingTree, SkipList, IndexedSkipList, BTree, BTreeMap,
+  BPlusTree and SortedArrayDictionary, findKey() in ChainedHashTable and
+  OpenHashTable, and lowerBound() with its value in the trees that had none
+  (AVLTree, SplayTree, JoinTree, BTree, SortedArrayDictionary); SplayTree
+  takes also contains() and a lowerBound() that splays the key found, and
+  SortedArrayDictionary contains(); DictionarySet over the first kind is a
+  USet, over the second an SSet, its insert() and remove() say whether they
+  changed the set, its values need not be bool, and it holds the
+  dictionary mutable, so that the constant find() of a set on a splay tree
+  splays; the test ods1.2.dictionary-sets asserts the concept for each and
+  checks each against std::set
+
+- SearchTree, the binary search tree and the red-black tree of the book,
+  takes the successor search of Morin's sorted set (section 6.2.1):
+  lowerBoundNode( x ), the node of the smallest key not smaller than x,
+  lowerBound( x ), that key with its value as in the other trees, and
+  findKey( x ) and lowerBoundKey( x ), the address of the key found, the
+  find() of a USet and of an SSet; the test ods6.2.searchtree-lowerbound
+  checks them against std::map on both trees
+
 - the manual (manual/), one chapter for each area of include/ADS on the
   plan of manual/OUTLINE.md, in Markdown built by Pandoc into
   manual/ADS-manual.pdf and by MkDocs into the folder manual of the site,
@@ -1630,6 +1678,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the balance of DualArrayDeque is done in place, for a vector as for a
+  RootishArrayStack (exercise 2.10): the t < n / 2 items at the bottom of
+  the larger stack move to the bottom of the other one, which grows by t
+  places, and the larger one then shifts down and gives back its t top
+  places, n moves and the places of n + t < 3 n / 2 items at the peak,
+  where two stacks built anew held 2 n; the theory of the sequences
+  explains why neither this balance nor the rebuild of ContiguousDeque is
+  spread over the operations (an amortized bound anyway for a list by
+  rank, and two representations at once with copies of the items), and
+  the test ods-ex2.10.rootish-deque counts the items alive during the
+  balances
+
+- the generators of Generation.h keep their O( 1 ) amortized bounds in the
+  code: plainChanges() passes its own vector to the visit, from the index
+  0, instead of a new vector of the n items for each permutation;
+  integerPartitions() is Algorithm 7.2.1.4P of Knuth, the 1s cut at once
+  by the length and the parts 2 split by one step, fewer than 3 p( n )
+  parts written in all, instead of the pops of the 1s one by one,
+  Theta( sqrt n ) per partition on the average; mixedRadix() carries over
+  the places of radix larger than 1 only, so that the radices 1 no longer
+  cost Theta( n ) per tuple; the theory of the combinatorial generation
+  and chapter 18 of the manual prove the bounds, and the test
+  generation-costs checks the visits in place, Algorithm P against a
+  recursive generation and the radices 1
+
+- OrderMaintenanceList inserts in O( 1 ) amortized time, removes in O( 1 )
+  in the worst case and keeps testBefore() in O( 1 ): it is now the list
+  labeling of Bender, Cole, Demaine, Farach-Colton and Zito on two levels,
+  buckets of at most 64 consecutive elements with local labels and labels
+  of the buckets kept by the densities ( 2 / T )^i of their first
+  algorithm, in place of the labels of the paths of a scapegoat tree,
+  O( log n ) amortized, which the theory of the sequences keeps as the
+  solution that exercise 8.11 has in mind, with the analysis of the new
+  one (fewer than 15 labels written per insertion, amortized);
+  relabelWork() replaces rebuildWork(), and the test
+  ods-ex8.11.order-constant checks that the labels written per insertion
+  do not grow from 2^12 to 2^17 insertions in four patterns
+
 - ArraySequence shifts its items by std::move() and std::move_backward(),
   one memmove() for the items trivially copyable (the FastArrayStack of
   Morin)
@@ -2468,6 +2554,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- texts that disagreed with the code: the theory of the parallel
+  algorithms said that the threads of gemm() share a packed panel of B,
+  while each runs the blocked loops of the sequential product on its rows
+  of C reading B in place, and only a CBLAS packs; the theory of the
+  strings gave editDistance() Theta( m n ) space and a solution read back,
+  while it keeps two rows on the shorter string and returns the value;
+  SizeClassAllocator.h gave the waste as below 25% of a block, while it is
+  below 20% of the block and below 25% of the request; the recurrence of
+  the selection of Hoare in Selection.h started at n, while the partition
+  makes n - 1 comparisons, as the theory of the searches has it; the
+  comment of the cuts of distributed::sort() gave the piece j as
+  ( s_{j-1} , s_j ], while it takes the items strictly between two
+  splitters and shares those equal to a run of splitters, the remainder to
+  the highest part, which the header now states
+
+- the comment of shuffle() and the theories of the numerics and of the
+  sequences still said that it draws by g() % j, biased, while it draws by
+  Lemire's method on a full word and by rejection on a narrower range
+  (the fix of g() % j below); the pseudocode draws an integer uniform in
+  [ 0 , j )
 
 - the comments of MultiStack said that its vector doubles, while it is a
   std::vector, which grows by a factor that the standard library fixes

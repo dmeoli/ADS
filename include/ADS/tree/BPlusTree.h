@@ -221,6 +221,16 @@ class BPlusTree {
  /// exercise 14.8 of Morin's book), in \f$ O( \log_m n ) \f$ nodes
  [[nodiscard]] const K * lowerBound( const K & x ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log_m n ) \f$
+ /// nodes: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log_m n ) \f$ nodes: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the next change
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the pairs with keys in \f$ ( x , y ] \f$, the `findRange( x , y )` of
  /// exercise 14.8 of Morin's book: `range()` with the first bound left out
  [[nodiscard]] std::vector< std::pair< K , V > > findRange( const K & x ,

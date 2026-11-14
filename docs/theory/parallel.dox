@@ -301,10 +301,15 @@
  \f$ 2 \mathit{nnz} \f$ operations, i.e., it is bound by the bandwidth of the
  memory, and its speedup is at most the ratio of the bandwidth of the socket
  to that of one core. The product of dense matrices (`gemm()`) is instead bound
- by the operations, \f$ 2 m n k \f$, and runs the loops of the sequential
- product on blocks that fit the caches, the thread of each range of rows of
- \f$ C \f$ packing its own blocks of \f$ A \f$ and all of them sharing the
- packed panel of \f$ B \f$ (Smith et al.).
+ by the operations, \f$ 2 m n k \f$: with the backend of a CBLAS it is one
+ call of it, which runs on its own threads and packs its own panels (Smith
+ et al. describe how the threads of such a library share them); without
+ it, each thread takes a range of the rows of \f$ C \f$ and runs on it the
+ loops of the sequential product by blocks of \f$ 256 \f$ columns and
+ \f$ 256 \f$ rows of \f$ B \f$ (`kGemmBlock`), read in place from the
+ matrix that all the threads share, with nothing packed, so that the sums
+ of each entry run in the order of the common index and the result is that
+ of the sequential product, bit for bit.
 
  \section theory_parallel_graph Visits of graphs and the LCP array
 

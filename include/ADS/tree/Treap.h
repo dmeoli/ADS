@@ -193,6 +193,16 @@ class Treap
  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
   const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
+ /// valid until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ expected time: the `find( x )` of an SSet of Morin
+ /// [see `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the pair of rank \f$ i \f$, i.e., with \f$ i \f$ smaller keys, in
  /// \f$ O( \log n ) \f$ expected time (exercise 7.10 of Morin)
  ///
@@ -315,6 +325,9 @@ class Treap
  template< class F >
  static void visit( const Ptr & t , F & f );
  static bool valid( const Ptr & t , const K * lo , const K * hi );
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Ptr f_root;
  std::size_t f_size = 0;

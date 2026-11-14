@@ -17,25 +17,7 @@
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
-/*------------------------------ #include "ADS/dictionary/IndexedSkipList.h"
-#include "ADS/dictionary/RandomHashing.h"
-#include "ADS/dictionary/SkipList.h"
-#include "ADS/sequence/OrderMaintenanceList.h"
-#include "ADS/sequence/Rearrangements.h"
-#include "ADS/sequence/SkipListSequence.h"
-#include "ADS/sequence/TreapList.h"
-#include "ADS/set/SpaceEfficientSortedSet.h"
-#include "ADS/tree/AVLTree.h"
-#include "ADS/tree/BinaryTreeAlgorithms.h"
-#include "ADS/tree/BinaryTree.h"
-#include "ADS/tree/FingerTreap.h"
-#include "ADS/tree/HashedTreap.h"
-#include "ADS/tree/LeftLeaningRedBlackTree.h"
-#include "ADS/tree/MeasuredSearchTree.h"
-#include "ADS/tree/PartialRebuildingTree.h"
-#include "ADS/tree/RandomizedSearchTree.h"
-#include "ADS/tree/ScapegoatTree.h"
-#include "ADS/tree/Treap.h" ----------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 #include "ADSTest.h"
@@ -43,21 +25,29 @@
 #include "ADS/dictionary/IndexedSkipList.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/SkipList.h"
+#include "ADS/dictionary/SortedArrayDictionary.h"
 #include "ADS/sequence/OrderMaintenanceList.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SkipListSequence.h"
 #include "ADS/sequence/TreapList.h"
+#include "ADS/set/DictionarySet.h"
 #include "ADS/set/SpaceEfficientSortedSet.h"
 #include "ADS/tree/AVLTree.h"
+#include "ADS/tree/BPlusTree.h"
+#include "ADS/tree/BTree.h"
+#include "ADS/tree/BTreeMap.h"
 #include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/BinaryTree.h"
 #include "ADS/tree/FingerTreap.h"
 #include "ADS/tree/HashedTreap.h"
+#include "ADS/tree/JoinTree.h"
 #include "ADS/tree/LeftLeaningRedBlackTree.h"
 #include "ADS/tree/MeasuredSearchTree.h"
 #include "ADS/tree/PartialRebuildingTree.h"
 #include "ADS/tree/RandomizedSearchTree.h"
 #include "ADS/tree/ScapegoatTree.h"
+#include "ADS/tree/SearchTree.h"
+#include "ADS/tree/SplayTree.h"
 #include "ADS/tree/Treap.h"
 
 #include <algorithm>
@@ -129,6 +119,137 @@ void differential( D & d , int steps , int m , unsigned seed , int every = 97 )
    CHECK( pairs( d ) == pairs( ref ) );
   }
  CHECK( pairs( d ) == pairs( ref ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*----------------------------- CHAPTER 1 ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// every ordered dictionary of the library is an SSet of Morin through
+// DictionarySet, and every hash table a USet
+template< class D >
+using SetOf = DictionarySet< D >;
+
+static_assert( SSet< SetOf< BinarySearchTree< int , bool > > > );
+static_assert( SSet< SetOf< RedBlackTree< int , bool > > > );
+static_assert( SSet< SetOf< Treap< int , bool > > > );
+static_assert( SSet< SetOf< AVLTree< int , bool > > > );
+static_assert( SSet< SetOf< SplayTree< int , bool > > > );
+static_assert( SSet< SetOf< ScapegoatTree< int , bool > > > );
+static_assert( SSet< SetOf< ScapegoatTree< int , bool , true > > > );
+static_assert( SSet< SetOf< LeftLeaningRedBlackTree< int , bool > > > );
+static_assert( SSet< SetOf< RandomizedSearchTree< int , bool > > > );
+static_assert( SSet< SetOf< MeasuredSearchTree< int , bool > > > );
+static_assert( SSet< SetOf< JoinAVLTree< int , bool > > > );
+static_assert( SSet< SetOf< JoinRedBlackTree< int , bool > > > );
+static_assert( SSet< SetOf< WeightBalancedTree< int , bool > > > );
+static_assert( SSet< SetOf< JoinTreap< int , bool > > > );
+static_assert( SSet< SetOf< FingerTreap< int , bool > > > );
+static_assert( SSet< SetOf< HashedTreap< int , bool > > > );
+static_assert( SSet< SetOf< WeightRebuildTree< int , bool > > > );
+static_assert( SSet< SetOf< CountdownTree< int , bool > > > );
+static_assert( SSet< SetOf< DynamiteTree< int , bool > > > );
+static_assert( SSet< SetOf< SkipList< int , bool > > > );
+static_assert( SSet< SetOf< IndexedSkipList< int , bool > > > );
+static_assert( SSet< SetOf< BTree< int , bool > > > );
+static_assert( SSet< SetOf< BTreeMap< int , bool > > > );
+static_assert( SSet< SetOf< BPlusTree< int , bool > > > );
+static_assert( SSet< SetOf< SortedArrayDictionary< int , bool > > > );
+static_assert( USet< ChainedHashSet< int > > &&
+               ! SSet< ChainedHashSet< int > > );
+static_assert( USet< OpenHashSet< int > > && ! SSet< OpenHashSet< int > > );
+
+/// random insertions and removals on the set `S` and on a `std::set`, the
+/// answers of `insert()`, `remove()`, `find()` and, for an SSet,
+/// `lowerBound()` checked against each other at every step
+template< class S >
+void setDifferential( S & s , unsigned seed )
+{
+ std::mt19937 g( seed );
+ std::set< int > ref;
+ for( int t = 0 ; t < 4000 ; ++t ) {
+  const int k = int( g() % 600 );
+  if( g() % 3 )
+   CHECK( s.insert( k ) == ref.insert( k ).second );
+  else
+   CHECK( s.remove( k ) == ( ref.erase( k ) == 1 ) );
+  CHECK( s.size() == ref.size() );
+  const int x = int( g() % 602 ) - 1;
+  const int * f = s.find( x );
+  CHECK( ref.contains( x ) ? ( f && ( *f == x ) ) : ! f );
+  if constexpr( SSet< S > ) {
+   const int * p = s.lowerBound( x );
+   const auto it = ref.lower_bound( x );
+   CHECK( ( it == ref.end() ) ? ! p : ( p && ( *p == *it ) ) );
+   }
+  }
+ std::vector< int > all;
+ s.forEach( [ & ]( const int & x ) { all.push_back( x ); } );
+ if constexpr( SSet< S > )
+  CHECK( all == std::vector< int >( ref.begin() , ref.end() ) );
+ else {
+  std::sort( all.begin() , all.end() );
+  CHECK( all == std::vector< int >( ref.begin() , ref.end() ) );
+  }
+ }
+
+ADS_TEST( "ods1.2.dictionary-sets" )
+{
+ // sections 1.2.3 and 1.2.4: the USet and the SSet of every dictionary
+ unsigned seed = 11;
+ auto run = [ & ]< class D >( auto... a ) {
+  SetOf< D > s( a... );
+  setDifferential( s , seed++ );
+  };
+ run.operator()< BinarySearchTree< int , bool > >();
+ run.operator()< RedBlackTree< int , bool > >();
+ run.operator()< Treap< int , bool > >();
+ run.operator()< AVLTree< int , bool > >();
+ run.operator()< SplayTree< int , bool > >();
+ run.operator()< ScapegoatTree< int , bool > >();
+ run.operator()< ScapegoatTree< int , bool , true > >();
+ run.operator()< LeftLeaningRedBlackTree< int , bool > >();
+ run.operator()< RandomizedSearchTree< int , bool > >();
+ run.operator()< MeasuredSearchTree< int , bool > >();
+ run.operator()< JoinAVLTree< int , bool > >();
+ run.operator()< JoinRedBlackTree< int , bool > >();
+ run.operator()< WeightBalancedTree< int , bool > >();
+ run.operator()< JoinTreap< int , bool > >();
+ run.operator()< FingerTreap< int , bool > >();
+ run.operator()< HashedTreap< int , bool > >();
+ run.operator()< WeightRebuildTree< int , bool > >();
+ run.operator()< CountdownTree< int , bool > >();
+ run.operator()< DynamiteTree< int , bool > >();
+ run.operator()< SkipList< int , bool > >();
+ run.operator()< IndexedSkipList< int , bool > >();
+ run.operator()< BTree< int , bool > >( 2 );
+ run.operator()< BTreeMap< int , bool > >();
+ run.operator()< BPlusTree< int , bool > >( 4 );
+ run.operator()< SortedArrayDictionary< int , bool > >();
+ run.operator()< ChainedHashTable< int , bool > >( 16 );
+ run.operator()< OpenHashTable< int , bool > >( 16 , Probing::linear() ,
+                                                  true );
+ // the values that are not bool, and a splay tree searched through a
+ // constant set
+ SetOf< Treap< int , std::string > > T;
+ CHECK( T.insert( 3 ) && ! T.insert( 3 ) && ( T.dictionary().lookup( 3 ) ==
+                                             std::string() ) );
+ SetOf< SplayTree< int , bool > > Y;
+ for( int i = 0 ; i < 100 ; i += 2 ) Y.insert( i );
+ const auto & C = Y;
+ CHECK( ( *C.lowerBound( 31 ) == 32 ) && ! C.find( 31 ) &&
+        ( *C.find( 40 ) == 40 ) && ! C.lowerBound( 99 ) );
+ // the keys found by the dictionaries themselves
+ SkipList< int , int > S;
+ BTreeMap< int , int > M;
+ for( int i = 0 ; i < 50 ; ++i ) {
+  S.insert( 3 * i , i );
+  M.insert( 3 * i , i );
+  }
+ CHECK( ( *S.lowerBoundKey( 4 ) == 6 ) && ! S.findKey( 4 ) &&
+        ( *S.findKey( 6 ) == 6 ) && ! S.lowerBoundKey( 148 ) );
+ CHECK( ( *M.lowerBoundKey( 4 ) == 6 ) && ! M.findKey( 4 ) &&
+        ( *M.findKey( 6 ) == 6 ) && ! M.lowerBoundKey( 148 ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -568,6 +689,40 @@ ADS_TEST( "ods-ex6.14.getLE" )
   }
  }
 
+ADS_TEST( "ods6.2.searchtree-lowerbound" )
+{
+ // section 6.2.1: the successor search of the binary search tree and of
+ // the red-black tree of the book, against std::map::lower_bound
+ auto check = [ & ]< class T >( T & t , unsigned seed ) {
+  std::mt19937 g( seed );
+  std::map< int , int > ref;
+  for( int s = 0 ; s < 6000 ; ++s ) {
+   const int k = int( g() % 800 );
+   if( g() % 3 ) { t.insert( k , s ); ref[ k ] = s; }
+   else { t.remove( k ); ref.erase( k ); }
+   const int x = int( g() % 802 ) - 1;
+   const auto it = ref.lower_bound( x );
+   const auto lb = t.lowerBound( x );
+   const int * p = t.lowerBoundKey( x ) , * q = t.findKey( x );
+   const auto u = t.lowerBoundNode( x );
+   if( it == ref.end() )
+    CHECK( ! lb && ! p && t.isNil( u ) );
+   else {
+    CHECK( lb && ( lb->first == it->first ) && ( lb->second == it->second ) );
+    CHECK( p && ( *p == it->first ) && ( p == &T::key( u ) ) );
+    }
+   CHECK( ( it != ref.end() && it->first == x ) ? ( q && ( *q == x ) &&
+                                                    ( q == p ) ) : ! q );
+   }
+  };
+ BinarySearchTree< int , int > B;
+ RedBlackTree< int , int > R;
+ check( B , 61 );
+ check( R , 62 );
+ const RedBlackTree< int , int > E;         // nothing in it
+ CHECK( ! E.lowerBound( 0 ) && ! E.lowerBoundKey( 0 ) && ! E.findKey( 0 ) );
+ }
+
 ADS_TEST( "ods-ex6.19.size-depth-height" )
 {
  MeasuredSearchTree< int , int > T;
@@ -971,6 +1126,47 @@ ADS_TEST( "ods-ex8.11.order-maintenance" )
  CHECK_THROWS( L.remove( nullptr ) , contract_violation );
  }
 
+ADS_TEST( "ods-ex8.11.order-constant" )
+{
+ // the labels written per insertion stay bounded as n grows (O( 1 )
+ // amortized), at the front, always after the newest element, always
+ // after the first one, and at random places, with removals among them
+ auto work = []( int n , int pattern ) {
+  OrderMaintenanceList< int > L;
+  using E = OrderMaintenanceList< int >::Element;
+  std::vector< E > all;
+  std::mt19937 g( unsigned( 89 + pattern ) );
+  E last = nullptr , head = nullptr;
+  for( int s = 0 ; s < n ; ++s ) {
+   E e = nullptr;
+   if( pattern == 1 ) e = last;
+   else if( pattern == 2 ) e = head;
+   else if( pattern == 3 && ! all.empty() ) e = all[ g() % all.size() ];
+   last = L.addAfter( e , s );
+   if( ! head ) head = last;
+   all.push_back( last );
+   if( ( pattern == 3 ) && ( g() % 5 == 0 ) ) {
+    const std::size_t i = g() % all.size();
+    if( all[ i ] != head ) {
+     if( all[ i ] == last ) last = nullptr;
+     L.remove( all[ i ] );
+     all[ i ] = all.back();
+     all.pop_back();
+     }
+    }
+   }
+  for( E x = L.first() , y = x ? L.next( x ) : nullptr ; y ;
+       x = y , y = L.next( y ) )
+   CHECK( L.testBefore( x , y ) && ! L.testBefore( y , x ) );
+  return( double( L.relabelWork().second ) / n );
+  };
+ for( int pattern = 0 ; pattern < 4 ; ++pattern ) {
+  const double small = work( 1 << 12 , pattern ) ,
+               large = work( 1 << 17 , pattern );
+  CHECK( ( large <= 8 ) && ( large <= small + 1 ) );
+  }
+ }
+
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CHAPTER 9 ----------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1045,6 +1241,67 @@ ADS_TEST( "ods-ex9.10.red-black-join" )
  X.insert( 5 , 5 );
  Y.insert( 3 , 3 );
  CHECK_THROWS( X.absorb( Y ) , contract_violation );
+ }
+
+ADS_TEST( "ods-ex9.12.avl-rebalancing" )
+{
+ // exercise 9.12: an insertion rebalances once at most, by one or two
+ // rotations; the removal of the deepest leaf on the shorter side of a
+ // tree of Fibonacci rebalances on the order of its height
+ AVLTree< int , int > T;
+ std::mt19937 g( 81 );
+ for( int s = 0 ; s < 20000 ; ++s ) {
+  const auto [ r0 , t0 ] = T.rebalancings();
+  T.insert( int( g() % 100000 ) , s );
+  const auto [ r1 , t1 ] = T.rebalancings();
+  CHECK( ( r1 - r0 <= 1 ) && ( t1 - t0 <= 2 ) );
+  }
+ for( int i = 0 ; i < 1 << 12 ; ++i ) {      // increasing, the worst order
+  const auto [ r0 , t0 ] = T.rebalancings();
+  T.insert( 200000 + i , i );
+  const auto [ r1 , t1 ] = T.rebalancings();
+  CHECK( ( r1 - r0 <= 1 ) && ( t1 - t0 <= 2 ) );
+  }
+ for( int h = 6 ; h <= 22 ; h += 4 ) {
+  // the tree of Fibonacci of height h, left subtree of height h - 1 and
+  // right of h - 2, its keys in symmetric order, inserted level by level,
+  // which keeps every prefix balanced and needs no rotation
+  struct Shape { int key , left , right , h; };
+  std::vector< Shape > S;
+  int next = 0;
+  auto build = [ & ]( auto & self , int k ) -> int {
+   if( k < 0 ) return( -1 );
+   const int u = int( S.size() );
+   S.push_back( { 0 , -1 , -1 , k } );
+   const int l = self( self , k - 1 );
+   S[ u ].key = next++;
+   const int r = self( self , k - 2 );
+   S[ u ].left = l;
+   S[ u ].right = r;
+   return( u );
+   };
+  build( build , h );
+  AVLTree< int , int > F;
+  std::vector< int > level = { 0 };
+  while( ! level.empty() ) {
+   std::vector< int > below;
+   for( const int u : level ) {
+    F.insert( S[ u ].key , 0 );
+    for( const int c : { S[ u ].left , S[ u ].right } )
+     if( c >= 0 ) below.push_back( c );
+    }
+   level = below;
+   }
+  CHECK( ( F.height() == h ) && ( F.rebalancings().first == 0 ) );
+  int u = 0;                                // the shorter side, down to a
+  for( ; ; ) {                              // leaf
+   const int c = S[ u ].right >= 0 ? S[ u ].right : S[ u ].left;
+   if( c < 0 ) break;
+   u = c;
+   }
+  F.remove( S[ u ].key );
+  CHECK( int( F.rebalancings().first ) >= h / 2 - 1 );
+  }
  }
 
 ADS_TEST( "ods-ex9.13.avl" )

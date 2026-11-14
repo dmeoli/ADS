@@ -249,8 +249,10 @@
  column of an optimal sequence of edits aligns \f$ P[ i - 1 ] \f$ with
  \f$ T[ j - 1 ] \f$, or deletes one of the two, and what precedes it is an
  optimal sequence for the shorter prefixes; the table costs
- \f$ \Theta( m n ) \f$ time, and two rows suffice for the value
- (`stringMatchingSingleRow()`). With \f$ D[ 0 ][ j ] = 0 \f$ instead, an
+ \f$ \Theta( m n ) \f$ time, and two rows suffice for the value, which is
+ all that `editDistance()` returns, its rows on the shorter string
+ (\f$ O( \min( m , n ) ) \f$ space), as `stringMatchingSingleRow()` does for
+ the approximate matching. With \f$ D[ 0 ][ j ] = 0 \f$ instead, an
  occurrence may start anywhere in \f$ T \f$, and \f$ D[ m ][ j ] \f$ is
  the least number of errors of an occurrence of \f$ P \f$ that ends at
  \f$ j \f$ (`stringMatching()`, the approximate matching of section 13.1,
@@ -346,9 +348,13 @@
  <table>
  <caption>The computations of the edit distance and of the LCS</caption>
  <tr><th>Function</th><th>Time</th><th>Space</th><th>Remarks</th></tr>
- <tr><td><tt>editDistance()</tt>, <tt>lcs()</tt></td>
+ <tr><td><tt>lcs()</tt></td>
      <td>\f$ \Theta( m n ) \f$</td><td>\f$ \Theta( m n ) \f$</td>
      <td>the table of the book, a solution read back</td></tr>
+ <tr><td><tt>editDistance()</tt></td>
+     <td>\f$ \Theta( m n ) \f$</td>
+     <td>\f$ O( \min( m , n ) ) \f$</td>
+     <td>two rows on the shorter string, the value alone</td></tr>
  <tr><td><tt>stringMatchingSingleRow()</tt></td>
      <td>\f$ \Theta( m n ) \f$</td><td>\f$ O( n ) \f$</td>
      <td>two rows, the value alone</td></tr>

@@ -165,6 +165,16 @@ class RandomizedSearchTree {
  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
   const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
+ /// valid until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ expected time: the `find( x )` of an SSet of Morin
+ /// [see `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the pair of rank \f$ i \f$, by the sizes, as `Treap::select()`
  /// \pre \f$ i < n \f$
  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
@@ -241,6 +251,9 @@ class RandomizedSearchTree {
  bool remove( Ptr & t , const K & k );
  static int height( const Ptr & t );
  static bool valid( const Ptr & t , const K * lo , const K * hi );
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Ptr f_root;                  ///< the root
  SplitMix64 f_g;              ///< the generator of the random choices

@@ -163,6 +163,27 @@ class SplayTree {
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 
+ /// true if \f$ k \f$ is there; \f$ k \f$, or the last node on its path,
+ /// goes to the root, in \f$ O( \log n ) \f$ amortized time
+ [[nodiscard]] bool contains( const K & k );
+
+ /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
+ /// (the `find( x )` of an SSet of Morin), by `lowerBoundNode()` in
+ /// \f$ O( \log n ) \f$ amortized time
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+  const K & k );
+
+ /// the address of the key \f$ k \f$, nil if absent, splayed as by
+ /// `lookup()` in \f$ O( \log n ) \f$ amortized time: the `find( x )` of a
+ /// USet of Morin [see `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * findKey( const K & k );
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if
+ /// none, by `lowerBoundNode()` in \f$ O( \log n ) \f$ amortized time: the
+ /// `find( x )` of an SSet of Morin [see `DictionarySet`]; valid until the
+ /// key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k );
+
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -240,6 +261,30 @@ class SplayTree {
  static void visit( const Node * t , F & f );
 
  static bool ordered( const Node * t , const K * lo , const K * hi );
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// splayed to the root or to the root of its right subtree, in
+ /// \f$ O( \log n ) \f$ amortized time
+ ///
+ /// In pseudocode (Sleator and Tarjan, beyond the book), on the `splay()`
+ /// of `lookup()`: after the first splay the root is \f$ k \f$, or the
+ /// last node on its path, i.e., the predecessor or the successor of
+ /// \f$ k \f$ among the keys; the second splay, of \f$ k \f$ in a subtree
+ /// whose keys are all larger, brings up its smallest key:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{lowerBoundNode}( k ) \cr
+ /// 2 & \quad \textbf{if}\ T = \textbf{nil}\ \textbf{then return nil} \cr
+ /// 3 & \quad T \gets \mathrm{splay}( T , k ) \cr
+ /// 4 & \quad \textbf{if not}\ T.\mathit{key} < k\ \textbf{then return}
+ ///     \ T \cr
+ /// 5 & \quad \textbf{if}\ T.\mathit{right} = \textbf{nil}\ \textbf{then
+ ///     return nil} \cr
+ /// 6 & \quad T.\mathit{right} \gets \mathrm{splay}( T.\mathit{right} , k
+ ///     );\ \textbf{return}\ T.\mathit{right}
+ /// \end{array}}
+ /// \f]
+ Node * lowerBoundNode( const K & k );
 
  Node * f_root = nullptr;
  std::size_t f_size = 0;

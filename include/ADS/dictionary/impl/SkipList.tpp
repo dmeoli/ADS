@@ -237,6 +237,21 @@ bool SkipList< K , V >::sorted( void ) const
  return( true );
  }
 
+template< std::totally_ordered K , class V >
+const K * SkipList< K , V >::findKey( const K & k ) const
+{
+ Node * update[ kMax ];
+ const Node * n = before( k , update );
+ return( n ? &n->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * SkipList< K , V >::lowerBoundKey( const K & k ) const
+{
+ const const_iterator it = lowerBound( k );
+ return( it == end() ? nullptr : &( *it ).first );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

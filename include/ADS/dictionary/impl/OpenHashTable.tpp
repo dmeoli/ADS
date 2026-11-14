@@ -401,6 +401,13 @@ void OpenHashTable< K , V , H >::rebuild( std::size_t m )
  f_moved += f_size;
  }
 
+template< class K , class V , class H >
+const K * OpenHashTable< K , V , H >::findKey( const K & k ) const
+{
+ const auto i = scan( k , false );
+ return( is( i , k ) ? &f_T[ i ].key : nullptr );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

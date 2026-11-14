@@ -253,6 +253,16 @@ class IndexedSkipList {
  /// `find(x)` of an SSet of Morin), `end()` if there is none
  [[nodiscard]] const_iterator lowerBound( const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
+ /// valid until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ expected time: the `find( x )` of an SSet of Morin
+ /// [see `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the iterator on the key of rank \f$ i \f$, i.e., with \f$ i \f$ keys
  /// smaller than it, in \f$ O( \log n ) \f$ expected time (the `get(i)` of
  /// exercise 4.9 of Morin)

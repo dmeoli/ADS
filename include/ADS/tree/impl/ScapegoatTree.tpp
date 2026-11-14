@@ -207,8 +207,8 @@ void ScapegoatTree< K , V , StoredSizes >::remove( const K & k )
  }
 
 template< std::totally_ordered K , class V , bool StoredSizes >
-auto ScapegoatTree< K , V , StoredSizes >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+auto ScapegoatTree< K , V , StoredSizes >::lowerBoundNode( const K & k ) const
+ -> const Node *
 {
  const Node * best = nullptr;
  for( const Node * t = f_root ; t ; )
@@ -218,9 +218,32 @@ auto ScapegoatTree< K , V , StoredSizes >::lowerBound( const K & k ) const
    if( !( k < t->key ) ) break;
    t = t->left;
    }
- return( best ? std::optional< std::pair< K , V > >(
-                 std::pair< K , V >( best->key , best->value ) )
-              : std::nullopt );
+ return( best );
+ }
+
+template< std::totally_ordered K , class V , bool StoredSizes >
+auto ScapegoatTree< K , V , StoredSizes >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? std::optional< std::pair< K , V > >(
+              std::pair< K , V >( b->key , b->value ) )
+           : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V , bool StoredSizes >
+const K * ScapegoatTree< K , V , StoredSizes >::findKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V , bool StoredSizes >
+const K * ScapegoatTree< K , V , StoredSizes >::lowerBoundKey(
+ const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? &b->key : nullptr );
  }
 
 template< std::totally_ordered K , class V , bool StoredSizes >

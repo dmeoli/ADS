@@ -95,6 +95,30 @@ bool SearchTree< K , V , RB >::contains( const K & k ) const
  }
 
 template< std::totally_ordered K , class V , bool RB >
+auto SearchTree< K , V , RB >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ Link * u = lowerBoundNode( k );
+ if( u == nil() )
+  return( std::nullopt );
+ return( std::pair< K , V >( key( u ) , value( u ) ) );
+ }
+
+template< std::totally_ordered K , class V , bool RB >
+const K * SearchTree< K , V , RB >::findKey( const K & k ) const
+{
+ Link * u = lookupNode( f_root , k );
+ return( u == nil() ? nullptr : &key( u ) );
+ }
+
+template< std::totally_ordered K , class V , bool RB >
+const K * SearchTree< K , V , RB >::lowerBoundKey( const K & k ) const
+{
+ Link * u = lowerBoundNode( k );
+ return( u == nil() ? nullptr : &key( u ) );
+ }
+
+template< std::totally_ordered K , class V , bool RB >
 std::size_t SearchTree< K , V , RB >::size( void ) const
 {
  return( f_size );
@@ -153,6 +177,19 @@ template< std::totally_ordered K , class V , bool RB >
 auto SearchTree< K , V , RB >::lookupNode( const K & x ) const -> Link *
 {
  return( lookupNode( f_root , x ) );
+ }
+
+template< std::totally_ordered K , class V , bool RB >
+auto SearchTree< K , V , RB >::lowerBoundNode( const K & x ) const -> Link *
+{
+ //! [lowerBoundNode]
+ Link * b = nil();
+ for( Link * T = f_root ; T != nil() ; )
+  if( key( T ) < x ) T = T->right;
+  else if( x < key( T ) ) { b = T; T = T->left; }
+  else return( T );
+ return( b );
+ //! [lowerBoundNode]
  }
 
 template< std::totally_ordered K , class V , bool RB >

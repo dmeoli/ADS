@@ -440,9 +440,13 @@ $O( k + 1 )$ and happens when that suffix is in decreasing order, i.e.,
 once every $k!$ permutations, and the sum becomes
 $\sum_{k \ge 0} ( k + 1 ) / k! = 2 e$. $\square$
 
-We remark that the radices 1, which the contract allows, break the bound.
-A place with $m_j = 1$ is always at the end of its range; hence, with the
-radices $( 2 , 1 , \ldots , 1 )$ each of the two steps scans all the places.
+We remark that the radices 1, which the contract allows, would break the
+bound of a plain carry. A place with $m_j = 1$ is always at the end of its
+range; hence, with the radices $( 2 , 1 , \ldots , 1 )$, each of the two
+steps would scan all the places. `mixedRadix()` therefore links each place
+to the last place of radix larger than 1 before it, and the carries walk
+over those places only, so that the bound of Lemma 18.6 holds whatever the
+radices.
 
 In the *reflected Gray order* of the tuples, two consecutive tuples differ
 by $\pm 1$ in one place. The order is defined as the lexicographic one with
@@ -529,11 +533,11 @@ places from 1.
 The algorithm costs $O( 1 )$ amortized time per permutation by the
 argument of [Lemma 18.6](18-combinatorial.md#lem-18-6), since the inner
 loop moves to the item $j - 1$ only when the item $j$ ends a sweep, i.e.,
-once every $j$ steps. It is fair to remark, however, that `plainChanges()`
-keeps the permutation in the places $1 , \ldots , n$ of its vector and
-passes to `visit` a new vector of the $n$ items. Its cost per permutation
-is therefore $\Theta( n )$ in the implementation, whereas
-`heapPermutations()` and `forEachPermutation()` pass their vector.
+once every $j$ steps. `plainChanges()` keeps the permutation from the
+index 0 of its vector, i.e., $a_j$ at the index $j - 1$, and passes that
+vector to `visit`, as `heapPermutations()` and `forEachPermutation()` do:
+a new vector of the $n$ items for each permutation would cost
+$\Theta( n )$ and hide the bound.
 
 *Heap's method* ([Heap 1963](Z-bibliography.md#ref-heap1963)) relaxes the
 adjacency and makes one swap per permutation with the least bookkeeping of
@@ -700,23 +704,27 @@ places. $\square$
 of $n$, i.e., the nonincreasing sequences of positive parts with sum $n$,
 in reverse lexicographic order, from $( n )$ to $( 1 , \ldots , 1 )$ (the
 order of Algorithm 7.2.1.4P of [Knuth
-2011](Z-bibliography.md#ref-knuth2011)). The trailing 1s are removed, and
-the last part larger than 1, say $x + 1$, drops to $x$; the removed units,
-with the one taken from that part, are split again into parts of $x$ and a
-remainder.
+2011](Z-bibliography.md#ref-knuth2011), which `integerPartitions()`
+follows). The last part larger than 1, say $x + 1$, drops to $x$, and the
+trailing 1s, with the unit taken from that part, are split again into
+parts of $x$ and a remainder; a last part 2 becomes $1 + 1$ at once.
 For $n = 6$ the order is $6 , 51 , 42 , 411 , 33 , 321 , 3111 , 222 ,
 2211 , 21111 , 111111$.
 
 --8<-- "generated/Generation-integerPartitions.pseudo.md"
 
-The implementation keeps the 1s explicitly and pops them one by one, and
-hence its cost is not constant per partition. Indeed, the 1s of all the
-partitions of $n$ are $\sum_{j \ge 1} p( n - j )$ (the partitions with at
-least $j$ ones are $p( n - j )$), i.e., about $p( n ) \sqrt{6 n} / \pi$;
-the pops therefore cost $\Theta( \sqrt{n} )$ per partition on the
-average. Algorithm P of Knuth reaches $O( 1 )$ amortized by keeping the
-index of the last part larger than 1 and by treating the parts equal to 2
-apart, which is a possible improvement of the header.
+Removing the 1s one by one would not cost a constant per partition: the
+1s of all the partitions of $n$ are $\sum_{j \ge 1} p( n - j )$ (the
+partitions with at least $j$ ones are $p( n - j )$), i.e., about
+$p( n ) \sqrt{6 n} / \pi$, and such pops would cost $\Theta( \sqrt{n} )$
+per partition on the average. Algorithm P keeps instead the index $q$ of
+the last part larger than 1, cuts the 1s at once by the length $m$, and
+treats the parts equal to 2 apart. Then it writes fewer than $3 p( n )$
+parts in all: with $\Phi$ the number of parts larger than 1, the step of a
+part 2 lowers $\Phi$ by 1, the other step raises it by the parts $x \ge 2$
+it writes plus at most 1, and $\Phi$ goes from 1 to 0; hence the parts $x$
+written over the run are at most the steps of a part 2, below $p( n )$, and
+each step writes at most two parts besides them.
 
 **Partitions of a set.** A partition of $\{ 0 , \ldots , n - 1 \}$ into
 blocks is encoded by its *restricted growth string* $a_0 a_1 \cdots

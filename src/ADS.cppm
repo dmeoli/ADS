@@ -269,6 +269,8 @@ module;
 #include "ADS/queue/MinQueue.h"
 #include "ADS/queue/QueueAlgorithms.h"
 #include "ADS/queue/RandomQueue.h"
+#include "ADS/queue/RealTimeMinDeque.h"
+#include "ADS/queue/RealTimeMinQueue.h"
 #include "ADS/queue/RingDeque.h"
 #include "ADS/queue/UniqueQueue.h"
 #include "ADS/search/BinarySearch.h"
@@ -1686,6 +1688,12 @@ export namespace ADS {
  // ADS/queue/RandomQueue.h
  using ADS::RandomQueue;
 
+ // ADS/queue/RealTimeMinDeque.h
+ using ADS::RealTimeMinDeque;
+
+ // ADS/queue/RealTimeMinQueue.h
+ using ADS::RealTimeMinQueue;
+
  // ADS/queue/RingDeque.h
  using ADS::RingDeque;
 
@@ -1901,6 +1909,8 @@ export namespace ADS {
  // ADS/set/SetInterfaces.h
  using ADS::ArraySSet;
  using ADS::ArrayUSet;
+ using ADS::KeyedDictionary;
+ using ADS::OrderedDictionary;
  using ADS::SSet;
  using ADS::USet;
 

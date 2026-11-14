@@ -195,6 +195,16 @@ class FingerTreap {
  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
   const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
+ /// valid until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ expected time: the `find( x )` of an SSet of Morin
+ /// [see `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the pair of rank \f$ i \f$, by the sizes, as `Treap::select()`
  /// \pre \f$ i < n \f$
  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
@@ -285,6 +295,9 @@ class FingerTreap {
 
  /// the order, the heap, the parents, the sizes and the extremes
  [[nodiscard]] bool valid( void ) const;
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;     ///< the root
  Node * f_finger = nullptr;   ///< the node of the last finger search

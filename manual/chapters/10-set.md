@@ -219,6 +219,21 @@ and $O( \log n )$ on the tree; `forEach()` costs $O( n + m )$ on the table
 with lists, since it reads the $m$ heads and the $n$ cells, $O( m )$ on the
 table with open addressing, and $O( n )$, in order, on the tree.
 
+The same adaptor makes every dictionary of the library a set of Morin.
+A dictionary that gives `findKey( k )`, the address of the key $k$ it
+holds (a `KeyedDictionary`), makes `DictionarySet` a `USet`, whose
+`find( x )` is that address; one that also gives `lowerBoundKey( k )`, the
+address of the smallest key not smaller than $k$ (an `OrderedDictionary`),
+makes it an `SSet`, whose `lowerBound( x )` is the successor search. The
+hash tables are of the first kind, and the search trees, the skip lists,
+the B-trees and the sorted array of the second, each at the cost of its
+own search; `insert()` and `remove()` say whether they changed the set.
+The trees keep their own `lowerBound()`, which gives the key with its
+value as a map does, and the adaptor reads the address instead, the item
+of the interfaces of Morin. A splay tree, whose searches move its nodes,
+sits in the adaptor as a `mutable` member, so that the constant `find()`
+of a `USet` still splays and keeps the amortized bound.
+
 The operations of two sets of `SetOperations.h` take any SET that can be
 copied and has a `forEach()`. The union copies $A$ and inserts the items of
 $B$, and the intersection copies the smaller set and removes its items not

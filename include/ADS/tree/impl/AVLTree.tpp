@@ -109,14 +109,22 @@ void AVLTree< K , V >::balance( Ptr & t )
 {
  update( t );
  const int b = h( t->left ) - h( t->right );
+ if( ( b > 1 ) || ( b < -1 ) ) {
+  ++f_rebalances;
+  ++f_rotations;
+  }
  if( b > 1 ) {                              // too high on the left
-  if( h( t->left->left ) < h( t->left->right ) )
+  if( h( t->left->left ) < h( t->left->right ) ) {
    rotateLeft( t->left );                   // double rotation
+   ++f_rotations;
+   }
   rotateRight( t );
   }
  else if( b < -1 ) {                        // too high on the right
-  if( h( t->right->right ) < h( t->right->left ) )
+  if( h( t->right->right ) < h( t->right->left ) ) {
    rotateRight( t->right );
+   ++f_rotations;
+   }
   rotateLeft( t );
   }
  }
@@ -249,6 +257,45 @@ struct AVLTreeNodes {
   return( new Node{ k , v , 0 , 1 , nullptr , nullptr } );
   }
  };
+
+template< std::totally_ordered K , class V >
+auto AVLTree< K , V >::lowerBoundNode( const K & k ) const
+ -> const Node *
+{
+ const Node * best = nullptr;
+ for( const Node * t = f_root.get() ; t ; )
+  if( t->key < k ) t = t->right.get();
+  else {
+   best = t;
+   if( !( k < t->key ) ) break;
+   t = t->left.get();
+   }
+ return( best );
+ }
+
+template< std::totally_ordered K , class V >
+auto AVLTree< K , V >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? std::optional< std::pair< K , V > >(
+              std::pair< K , V >( b->key , b->value ) )
+           : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V >
+const K * AVLTree< K , V >::findKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * AVLTree< K , V >::lowerBoundKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? &b->key : nullptr );
+ }
 
 /*--------------------------------------------------------------------------*/
 

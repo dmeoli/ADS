@@ -150,6 +150,55 @@ void SplayTree< K , V >::remove( const K & k )
  }
 
 template< std::totally_ordered K , class V >
+bool SplayTree< K , V >::contains( const K & k )
+{
+ return( findKey( k ) != nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+auto SplayTree< K , V >::lowerBoundNode( const K & k ) -> Node *
+{
+ //! [lowerBoundNode]
+ if( ! f_root )
+  return( nullptr );
+ f_root = splay( f_root , k );
+ if( !( f_root->key < k ) )
+  return( f_root );
+ if( ! f_root->right )
+  return( nullptr );
+ f_root->right = splay( f_root->right , k );   // its smallest key comes up
+ return( f_root->right );
+ //! [lowerBoundNode]
+ }
+
+template< std::totally_ordered K , class V >
+auto SplayTree< K , V >::lowerBound( const K & k )
+ -> std::optional< std::pair< K , V > >
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? std::optional< std::pair< K , V > >(
+              std::pair< K , V >( b->key , b->value ) )
+           : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V >
+const K * SplayTree< K , V >::findKey( const K & k )
+{
+ if( ! f_root )
+  return( nullptr );
+ f_root = splay( f_root , k );
+ return( !( f_root->key < k ) && !( k < f_root->key ) ? &f_root->key
+                                                      : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * SplayTree< K , V >::lowerBoundKey( const K & k )
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? &b->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
 std::size_t SplayTree< K , V >::size( void ) const
 {
  return( f_size );

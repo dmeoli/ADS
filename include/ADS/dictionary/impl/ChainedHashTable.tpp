@@ -284,6 +284,16 @@ void ChainedHashTable< K , V , C , H >::rebuild( std::size_t m )
  f_moved += f_size;
  }
 
+template< class K , class V , Chain C , class H >
+ requires( C != Chain::SORTED || std::totally_ordered< K > )
+const K * ChainedHashTable< K , V , C , H >::findKey( const K & k ) const
+{
+ auto & L = f_T[ place( k ) ];
+ auto p = find( L , k );
+ return( ! L.finished( p ) && ( L.read( p ).first == k )
+         ? &L.read( p ).first : nullptr );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

@@ -20,180 +20,190 @@ namespace ADS {
 template< class T >
 OrderMaintenanceList< T >::~OrderMaintenanceList()
 {
- for( Node * u = f_root ; u ; ) {           // by rotations, with no stack
-  if( u->left ) {
-   Node * l = u->left;
-   u->left = l->right;
-   l->right = u;
-   u = l;
-   }
-  else {
-   Node * r = u->right;
-   delete u;
-   u = r;
-   }
+ for( Node * u = f_first ; u ; ) {
+  Node * v = u->next;
+  delete u;
+  u = v;
+  }
+ for( Bucket * b = f_head.next ; b ; ) {
+  Bucket * c = b->next;
+  delete b;
+  b = c;
   }
  }
 
 template< class T >
-auto OrderMaintenanceList< T >::first( void ) const -> Element
+const std::array< double , 64 > & OrderMaintenanceList< T >::caps( void )
 {
- const Node * u = f_root;
- if( u ) while( u->left ) u = u->left;
- return( ( u && u->dead ) ? next( u ) : u );
+ static const std::array< double , 64 > c = [] {
+  std::array< double , 64 > a{};
+  for( std::size_t i = 0 ; i < a.size() ; ++i )
+   a[ i ] = std::pow( 2.0 / 1.4 , double( i ) );
+  return( a );
+  }();
+ return( c );
  }
 
 template< class T >
-auto OrderMaintenanceList< T >::next( Element e ) const -> Element
+auto OrderMaintenanceList< T >::addAfter( Element e , const T & v )
+ -> Element
 {
- const Node * u = e;
- do {                                       // the next in symmetric order,
-  if( u->right ) {                          // living
-   u = u->right;
-   while( u->left ) u = u->left;
-   }
-  else {
-   while( u->parent && ( u->parent->right == u ) ) u = u->parent;
-   u = u->parent;
-   }
-  } while( u && u->dead );
- return( u );
- }
-
-template< class T >
-void OrderMaintenanceList< T >::rebuild( Node * u )
-{
- //! [rebuild]
- Node * p = u->parent;
- const bool wasLeft = p && ( p->left == u );
- const std::uint64_t label = u->label;
- f_buf.clear();
- detail::Rebuild::flatten( u , f_buf );
- const std::size_t all = f_buf.size();
- std::size_t live = 0;
- for( Node * x : f_buf )                    // the dead ones freed
-  if( x->dead ) delete x;
-  else f_buf[ live++ ] = x;
- f_buf.resize( live );
- f_q -= all - live;
- auto set = []( Node * , std::size_t ) {};
- Node * r = detail::Rebuild::fromArray( f_buf.data() , 0 , live , set );
- if( ! p ) f_root = r;
- else ( wasLeft ? p->left : p->right ) = r;
- if( r ) {                                  // parents and labels, top down
-  r->parent = p;
-  r->label = label;
-  std::vector< Node * > & S = f_buf;
-  S.assign( 1 , r );
-  while( ! S.empty() ) {
-   Node * x = S.back();
-   S.pop_back();
-   const std::uint64_t h = ( x->label & ( 0 - x->label ) ) >> 1;
-   for( Node * c : { x->left , x->right } )
-    if( c ) {
-     ADS_PRE( h != 0 );                     // height above 63: too many
-     c->parent = x;
-     c->label = ( c == x->left ) ? x->label - h : x->label + h;
-     S.push_back( c );
-     }
-   }
-  }
- //! [rebuild]
- ++f_rebuilds;
- f_work += all;
- }
-
-template< class T >
-auto OrderMaintenanceList< T >::addAfter( Element e , const T & v ) -> Element
-{
- ADS_PRE( ( ! e || ! e->dead ) && ( f_q < 100000000000ULL ) );
- //! [add]
+ ADS_PRE( ! e || e->bucket );
+ //! [addAfter]
  Node * u = new Node{ v };
- Node * p = const_cast< Node * >( e );
- bool left;
- if( ! p ) {                                // at the front
-  p = f_root;
-  if( p ) while( p->left ) p = p->left;
-  left = true;
+ Bucket * b;
+ if( e ) {                                  // after e, in its bucket
+  Node * p = const_cast< Node * >( e );
+  b = p->bucket;
+  u->prev = p;
+  u->next = p->next;
+  if( p->next ) p->next->prev = u;
+  p->next = u;
   }
- else {
-  if( p->right ) {
-   p = p->right;
-   while( p->left ) p = p->left;
-   left = true;
+ else {                                     // at the front of the first
+  u->next = f_first;
+  if( f_first ) f_first->prev = u;
+  f_first = u;
+  if( u->next ) b = u->next->bucket;
+  else {
+   b = new Bucket;
+   addBucketAfter( &f_head , b );
    }
-  else left = false;
+  b->head = u;
   }
- u->parent = p;
- if( ! p ) f_root = u;
- else ( left ? p->left : p->right ) = u;
- ++f_q;
- ++f_live;
- const std::size_t d = p ? std::size_t( depth( p ) ) + 1 : 0;
- while( f_pow.size() <= d ) f_pow.push_back( f_pow.back() * 1.5 );
- if( f_pow[ d ] > double( f_q ) ) {         // too deep: the scapegoat
-  Node * c = u;
-  std::size_t sc = 1 , h = 1;
-  for( Node * w = p ; ; w = w->parent , ++h ) {
-   const std::size_t sw =
-    sc + 1 + detail::Rebuild::count( w->left == c ? w->right : w->left ,
-                                     f_buf );
-   if( ( f_pow[ h ] > double( sw ) ) || ! w->parent ) {   // b^h > s( w )
-    rebuild( w );
-    break;
-    }
-   c = w;
-   sc = sw;
-   }
-  }
- else if( p ) {
-  const std::uint64_t h = ( p->label & ( 0 - p->label ) ) >> 1;
-  u->label = left ? p->label - h : p->label + h;
-  }
+ u->bucket = b;
+ ++b->size;
+ ++f_n;
+ const std::uint64_t lo = ( u != b->head ) ? u->prev->label : 0 ,
+                     hi = ( u->next && ( u->next->bucket == b ) )
+                          ? u->next->label : kU;
+ if( hi - lo >= 2 )
+  u->label = lo + ( hi - lo ) / 2;
  else
-  u->label = kRoot;
- //! [add]
- ADS_INVARIANT( valid() );
+  relabelBucket( b );
+ if( b->size > B )
+  split( b );
+ //! [addAfter]
+ ADS_INVARIANT( valid( u->bucket ) );
  return( u );
  }
 
 template< class T >
 void OrderMaintenanceList< T >::remove( Element e )
 {
- ADS_PRE( e && ! e->dead );
- const_cast< Node * >( e )->dead = true;
- --f_live;
- if( 2 * f_live < f_q ) rebuild( f_root );  // the dead ones out
- ADS_INVARIANT( valid() );
+ ADS_PRE( e && e->bucket );
+ Node * u = const_cast< Node * >( e );
+ Bucket * b = u->bucket;
+ if( u->prev ) u->prev->next = u->next;
+ else f_first = u->next;
+ if( u->next ) u->next->prev = u->prev;
+ if( b->head == u ) b->head = ( b->size > 1 ) ? u->next : nullptr;
+ if( --b->size == 0 ) {                     // the bucket goes too
+  b->prev->next = b->next;
+  if( b->next ) b->next->prev = b->prev;
+  delete b;
+  }
+ else
+  ADS_INVARIANT( valid( b ) );
+ u->bucket = nullptr;
+ delete u;
+ --f_n;
  }
 
 template< class T >
-bool OrderMaintenanceList< T >::valid( void ) const
+void OrderMaintenanceList< T >::relabelBucket( Bucket * b )
 {
- std::size_t q = 0 , live = 0;
- std::vector< const Node * > S;
- if( f_root ) {
-  if( f_root->parent || ( f_root->label != kRoot ) ) return( false );
-  S.push_back( f_root );
+ const std::uint64_t gap = kU / ( b->size + 1 );
+ Node * x = b->head;
+ for( std::size_t k = 1 ; k <= b->size ; ++k , x = x->next )
+  x->label = k * gap;
+ f_work += b->size;
+ }
+
+template< class T >
+void OrderMaintenanceList< T >::split( Bucket * b )
+{
+ Bucket * c = new Bucket;
+ const std::size_t keep = b->size / 2;
+ Node * x = b->head;
+ for( std::size_t k = 0 ; k < keep ; ++k ) x = x->next;
+ c->head = x;
+ c->size = b->size - keep;
+ b->size = keep;
+ for( std::size_t k = 0 ; k < c->size ; ++k , x = x->next )
+  x->bucket = c;
+ addBucketAfter( b , c );
+ relabelBucket( b );
+ relabelBucket( c );
+ ADS_INVARIANT( valid( b ) );
+ }
+
+template< class T >
+void OrderMaintenanceList< T >::addBucketAfter( Bucket * b , Bucket * c )
+{
+ //! [addBucketAfter]
+ const std::uint64_t L = b->label , hi = b->next ? b->next->label : kU;
+ auto link = [ & ]( void ) {
+  c->prev = b;
+  c->next = b->next;
+  if( b->next ) b->next->prev = c;
+  b->next = c;
+  };
+ if( hi - L >= 2 ) {                        // room in the gap
+  link();
+  c->label = L + ( hi - L ) / 2;
+  return;
   }
- while( ! S.empty() ) {
-  const Node * x = S.back();
-  S.pop_back();
-  ++q;
-  live += ! x->dead;
-  const std::uint64_t h = ( x->label & ( 0 - x->label ) ) >> 1;
-  if( x->left && ( ( x->left->parent != x ) ||
-                   ( x->left->label != x->label - h ) ) )
-   return( false );
-  if( x->right && ( ( x->right->parent != x ) ||
-                    ( x->right->label != x->label + h ) ) )
-   return( false );
-  if( std::pow( 1.5 , depth( x ) ) > double( f_q ) * ( 1 + 1e-9 ) )
-   return( false );
-  if( x->left ) S.push_back( x->left );
-  if( x->right ) S.push_back( x->right );
+ Bucket * first = b , * last = b;
+ std::size_t m = 2;                         // b and c
+ int i = 1;
+ std::uint64_t lo = L;
+ for( ; ; ++i ) {                           // the smallest range of 2^i
+  ADS_PRE( i <= 63 );                       // labels not too dense
+  const std::uint64_t w = std::uint64_t( 1 ) << i;
+  lo = L & ~( w - 1 );
+  while( first->prev && ( first->prev->label >= lo ) ) {
+   first = first->prev;
+   ++m;
+   }
+  while( last->next && ( last->next->label - lo < w ) ) {
+   last = last->next;
+   ++m;
+   }
+  if( double( m ) <= caps()[ std::size_t( i ) ] )
+   break;
   }
- return( ( q == f_q ) && ( live == f_live ) );
+ link();
+ const std::uint64_t gap = ( std::uint64_t( 1 ) << i ) / m;
+ Bucket * x = first;
+ for( std::size_t k = 0 ; k < m ; ++k , x = x->next )
+  x->label = lo + k * gap;
+ //! [addBucketAfter]
+ ++f_relabels;
+ f_work += m;
+ }
+
+template< class T >
+bool OrderMaintenanceList< T >::valid( const Bucket * b ) const
+{
+ if( ( b->size < 1 ) || ( b->size > B ) || ! b->prev ||
+     ( b->prev->next != b ) || ( b->prev->label >= b->label ) ||
+     ( b->next && ( ( b->next->prev != b ) ||
+                    ( b->next->label <= b->label ) ) ) ||
+     ( b->label >= kU ) )
+  return( false );
+ const Node * x = b->head;
+ if( ( ( x->prev == nullptr ) != ( b->prev == &f_head ) ) ||
+     ( x->prev ? ( x->prev->bucket != b->prev ) : ( x != f_first ) ) )
+  return( false );
+ std::uint64_t last = 0;
+ for( std::size_t k = 0 ; k < b->size ; ++k , x = x->next ) {
+  if( ! x || ( x->bucket != b ) || ( x->label <= last ) ||
+      ( x->label >= kU ) || ( x->next && ( x->next->prev != x ) ) )
+   return( false );
+  last = x->label;
+  }
+ return( x ? ( x->bucket == b->next ) : ( b->next == nullptr ) );
  }
 
 /*--------------------------------------------------------------------------*/

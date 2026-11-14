@@ -338,6 +338,12 @@ class OpenHashTable {
  /// true if the key \f$ k \f$ is there
  [[nodiscard]] bool contains( const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( 1 ) \f$
+ /// expected time: the `find( x )` of a USet of Morin, which makes
+ /// `DictionarySet` a `USet` [see `SetInterfaces.h`]; valid until the next
+ /// change of the table
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
 

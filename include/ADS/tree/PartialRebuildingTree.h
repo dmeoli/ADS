@@ -193,6 +193,16 @@ class PartialRebuildingTree {
  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
   const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ time: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// `f( k , v )` on the pairs by increasing keys
  template< class F >
  void forEach( F && f ) const;
@@ -279,6 +289,9 @@ class PartialRebuildingTree {
 
  /// the order, the sizes and the balance of the weights
  [[nodiscard]] bool valid( void ) const;
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;          ///< the root
  std::vector< Node * > f_path;     ///< the path of the last operation

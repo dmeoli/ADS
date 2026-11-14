@@ -1645,8 +1645,11 @@ the item put in the place $j - 1$ is never moved again and it differs
 between the two sequences at the first draw in which they differ.
 $\square$
 
-The draw $g() \bmod j$ of `shuffle()` is that of the book, and it is off
-the uniform by at most $j / 2^{64}$ for a generator of 64 bits. By contrast,
+The draw $g() \bmod j$ of the book is off the uniform by at most
+$j / 2^{64}$ for a generator of 64 bits, and by much more on a narrow
+range; `shuffle()` draws instead by the method of Lemire on a full word
+and by rejection on a narrower range, so that its indices are exact on
+any generator. Moreover,
 `shuffleFast()` of `RandomGenerators.h` draws exact indices, and
 fewer words, after [Brackett-Rozinsky and Lemire
 2025](Z-bibliography.md#ref-brackettrozinsky2025). One word $x$ gives the
