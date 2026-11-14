@@ -57,25 +57,35 @@ std::size_t unboundedSearch( G && get , P && pred )
 template< std::unsigned_integral U >
 U integerSqrt( U n )
 {
- U lo = 0;                                  // lo^2 <= n
- U hi = U( U( 1 ) << ( std::numeric_limits< U >::digits / 2 ) );
- while( hi - lo > 1 ) {                     // hi^2 > n
-  const U m = lo + U( hi - lo ) / 2;
-  if( m <= n / m )
-   lo = m;
-  else
-   hi = m;
+ if constexpr( std::same_as< U , bool > )   // 1 bit, w / 2 = 0: the root
+  return( n );                              // of 0 and 1 is itself
+ else {
+  U lo = 0;                                 // lo^2 <= n
+  U hi = U( U( 1 ) << ( std::numeric_limits< U >::digits / 2 ) );
+  while( hi - lo > 1 ) {                    // hi^2 > n
+   const U m = lo + U( hi - lo ) / 2;
+   if( m <= n / m )
+    lo = m;
+   else
+    hi = m;
+   }
+  ADS_POST( ( ( lo == 0 ) || ( lo <= n / lo ) ) &&
+            ( U( lo + 1 ) > n / U( lo + 1 ) ) );
+  return( lo );
   }
- ADS_POST( ( ( lo == 0 ) || ( lo <= n / lo ) ) &&
-           ( U( lo + 1 ) > n / U( lo + 1 ) ) );
- return( lo );
  }
 
 template< std::unsigned_integral U >
 bool isPerfectSquare( U n )
 {
- const U r = integerSqrt( n );
- return( U( r * r ) == n );
+ if constexpr( std::same_as< U , bool > ) { // 0 and 1, both squares
+  ( void ) n;
+  return( true );
+  }
+ else {
+  const U r = integerSqrt( n );
+  return( U( r * r ) == n );
+  }
  }
 
 /*--------------------------------------------------------------------------*/

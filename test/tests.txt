@@ -669,6 +669,7 @@ lib_optimization  catalan              numeri di Catalan
 lib_search  local-optima        picco e minimo locale di vettore e albero
 lib_search  exponential-search  ricerca esponenziale e su sequenza illimitata
 lib_search  integer-sqrt        radice quadrata intera e quadrati perfetti
+lib_search  integer-sqrt-bool   radice quadrata intera di un bool
 lib_search  sorted-searches     minimo ruotato, valore vicino, coppia, k-esimo
 lib_search  rearrangements      bandiera olandese, wiggle, k-ordinato, scambi
 lib_search  sequence-queries    minori a destra, finestra, buco, assegnamento

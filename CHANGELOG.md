@@ -2719,6 +2719,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- integerSqrt() of a bool, an unsigned type of 1 bit for which the binary
+  search started with hi = 1 and made no step, gave 0 for true and failed
+  its postcondition, and isPerfectSquare( true ) was false; a bool is now
+  its own root and both values are squares, as the header says; the test
+  lib_search integer-sqrt-bool
+
 - offlineConnectivity() no longer asks the nodes of a COMPONENTS question,
   which it does not use, to lie in [ 0 , n ), so that it answers 0 with no
   nodes rather than failing its precondition; the test engineered_dynamic
