@@ -101,6 +101,20 @@ and there are $\log_2 n$ rounds. With the counter `relabels()` one can check
 the elements of the component of $x$, which a forest cannot give without
 a visit of all the elements.
 
+The class is declared as follows, in the namespace `ADS` as all those of the chapter.
+
+```cpp
+class ListMFSet {
+ public:
+ explicit ListMFSet( int n );
+ int n() const;
+ int find( int x ) const;
+ bool merge( int x , int y );
+ long relabels() const;
+ const std::vector< int > & members( int x ) const;
+ };
+```
+
 ## 11.3 A forest of parents {#sec-11-3}
 
 `MFSet` keeps the components as a forest, a vector $p$ of parents in
@@ -283,6 +297,39 @@ $\Theta( m \log_{1 + m / n} n )$ time in the worst case ([Tarjan and van
 Leeuwen 1984](Z-bibliography.md#ref-tarjan1984)), between the two bounds
 of [Table 11.1](11-mfset.md#tab-11-1).
 
+We declare `MFSet` and `components()` as follows; the example also uses the `UnionFind` of [§11.4](11-mfset.md#sec-11-4).
+
+```cpp
+class MFSet {
+ public:
+ enum class Union { NONE , RANK , SIZE };
+ explicit MFSet( int n , Union u = Union::RANK , bool compress = true );
+ int n() const;
+ int count() const;
+ int find( int x );
+ bool merge( int x , int y );
+ bool same( int x , int y );
+ int parent( int x ) const;
+ int rank( int x ) const;
+ int size( int x ) const;
+ long steps() const;
+ };
+template< Graph G >
+MFSet components( const G & g );
+```
+
+```cpp
+ADS::MFSet M( 6 );                                   // by rank, compressing
+M.merge( 0 , 1 );
+M.merge( 2 , 3 );
+M.merge( 1 , 3 );
+const bool together = M.same( 0 , 2 );               // true
+const int k = M.count();                             // 3 components
+ADS::UnionFind U( 6 );
+U.merge( 4 , 5 );
+const int s = U.size( 5 );                           // 2
+```
+
 ## 11.4 Engineered forests {#sec-11-4}
 
 `DisjointSets<L, C>` (and its instance `UnionFind`, i.e.,
@@ -310,6 +357,26 @@ constraint `requires` of the member), `size(x)`, the number of the elements
 of the component of $x$. At the highest level, its contracts check that the
 parents make a forest of `count()` trees whose roots hold their sizes, or
 ranks that bound their heights.
+
+Its declarations are the following.
+
+```cpp
+enum class Union { SIZE , RANK };
+enum class Compression { HALVING , FULL };
+template< Union L = Union::SIZE , Compression C = Compression::HALVING >
+class DisjointSets {
+ public:
+ explicit DisjointSets( int n = 0 );
+ void reset( int n );
+ int n() const;
+ int count() const;
+ int find( int x );
+ bool merge( int x , int y );
+ bool same( int x , int y );
+ int size( int x ) requires( L == Union::SIZE );
+ };
+using UnionFind = DisjointSets<>;
+```
 
 <span id="alg-11-4"></span>**Algorithm 11.4.** The operations of
 `UnionFind` (the halving of [Tarjan and van Leeuwen
@@ -346,6 +413,21 @@ in the same set ([Algorithm 11.5](11-mfset.md#alg-11-5) and
 [Table 11.2](11-mfset.md#tab-11-2)). Its `find()` halves the path, and the
 class also has `same()`, `n()`, `count()` and `parent(x)`; the elements
 are of type `std::uint32_t`, and the constructor requires $n < 2^{32}$.
+
+Its declarations are the following.
+
+```cpp
+class RemUnionFind {
+ public:
+ explicit RemUnionFind( std::size_t n = 0 );
+ std::size_t n() const;
+ std::size_t count() const;
+ std::uint32_t find( std::uint32_t x );
+ bool merge( std::uint32_t x , std::uint32_t y );
+ bool same( std::uint32_t x , std::uint32_t y );
+ std::uint32_t parent( std::uint32_t x ) const;
+ };
+```
 
 <span id="alg-11-5"></span>**Algorithm 11.5.** The operations of
 `RemUnionFind` (the algorithm of Rem with splicing as [Dijkstra
@@ -431,6 +513,33 @@ bytes per record. The class also has `same()`, `size(x)` (the number of
 the elements of the component of $x$), `n()`, `count()` and `reset(n)`,
 which returns to the $n$ singletons and empties the stack; `undo(k)`
 undoes the last $k$ merges, one by default.
+
+The class, the operations of the offline connectivity and their function are declared as follows.
+
+```cpp
+class RollbackUnionFind {
+ public:
+ explicit RollbackUnionFind( int n = 0 );
+ void reset( int n );
+ int n() const;
+ int count() const;
+ int find( int x ) const;
+ bool merge( int x , int y );
+ bool same( int x , int y ) const;
+ int size( int x ) const;
+ int checkpoint() const;
+ void undo( int k = 1 );
+ void rollback( int t );
+ };
+struct ConnectivityOp {
+ enum Kind { INSERT , DELETE , CONNECTED , COMPONENTS };
+ Kind kind;
+ int u = 0;
+ int v = 0;
+ };
+std::vector< int > offlineConnectivity( int n ,
+                                        const std::vector< ConnectivityOp > & ops );
+```
 
 ![Figure 11.4. A `RollbackUnionFind` with two roots of rank 0 and the stack $R$ of the records, before `merge(0, 1)`, after it (0 under 1, whose rank grew, and the record pushed) and after `undo()`, which pops the record and restores the forest.](../figures/mfset-rollback.svg){#fig-11-4}
 
