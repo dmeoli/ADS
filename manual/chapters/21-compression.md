@@ -147,9 +147,11 @@ $$
 H_0 \le \bar\ell_H < H_0 + 1 . \tag{21.4}
 $$
 
-*Proof.* An optimal code has the two least probable symbols as siblings at
-its deepest level, since swapping them with the pair at the deepest level
-does not lengthen it. Merging them turns an optimal code of $\sigma$
+*Proof.* Note that the tree of an optimal code is full (a node with one child could
+be replaced by the child, shortening the codewords below it), and hence its
+deepest level holds two sibling leaves. An optimal code therefore has the
+two least probable symbols as siblings at its deepest level, since swapping
+them with that pair does not lengthen it. Merging them turns an optimal code of $\sigma$
 symbols into a code of $\sigma - 1$ symbols whose average is less by the
 probability of the pair, which does not depend on the code; by induction on
 $\sigma$, the code built by the merges is optimal. As for (21.4), its lower bound is [Lemma 21.1](21-compression.md#lem-21-1), and its upper bound holds since the lengths $\lceil \log_2( 1 / P[ c ] ) \rceil$ satisfy (21.3) and
@@ -179,7 +181,7 @@ without rounding up. This is the same on the "complete" codes that the merges of
 decoder right on a code that is not complete, e.g., one cut by a limit on
 the lengths.
 
-![Figure 21.1. The canonical code of the lengths a 4, b 4, c 3, d 2, e 2, f 3, g 3 (those of the code of Huffman of the probabilities 0.05, 0.05, 0.1, 0.2, 0.3, 0.2, 0.1), with the codewords under the leaves, and the arrays $\mathit{fc}$ and $\mathit{symb}$ that replace the tree; the codeword 11 of e (violet) is decoded at $l = 2$, the first length at which the value of the bits read, 3, reaches $\mathit{fc}[ l ] = 2$.](../figures/compression-huffman.svg){#fig-21-1}
+![Figure 21.1. The canonical code of the lengths a 4, b 4, c 3, d 2, e 2, f 3, g 3 (a code of Huffman of the probabilities 0.05, 0.05, 0.1, 0.2, 0.3, 0.2, 0.1, whose ties `huffmanLengths()` breaks otherwise, into a 5, b 5, c 3, d 2, e 2, f 2, g 4, of the same average 2.6), with the codewords under the leaves, and the arrays $\mathit{fc}$ and $\mathit{symb}$ that replace the tree; the codeword 11 of e (violet) is decoded at $l = 2$, the first length at which the value of the bits read, 3, reaches $\mathit{fc}[ l ] = 2$.](../figures/compression-huffman.svg){#fig-21-1}
 
 <span id="alg-21-2"></span>**Algorithm 21.2.** The canonical code of given
 lengths, and the decoding of a codeword
@@ -259,13 +261,13 @@ largest frequency.*
 
 *Proof.* Halving with rounding up maps 1 to 1 and any frequency
 $f \ge 2$ to $\lceil f / 2 \rceil < f$, and after
-$\lceil \log_2 f_{\max} \rceil$ halvings all the frequencies are 1. The
-code of Huffman of $\sigma$ equal frequencies is a complete tree with its
+$\lceil \log_2 f_{\max} \rceil$ halvings all the frequencies are 1. On
+$\sigma$ equal frequencies the code of Huffman is a complete tree with its
 leaves on two consecutive levels, and thus of lengths at most
 $\lceil \log_2 \sigma \rceil \le L$, and the loop ends there at the latest.
 $\square$
 
-The halving is simple but (possibly) not optimal: when it comes to the end it gives a
+Halving is simple but (possibly) not optimal: when it comes to the end it gives a
 code of fixed length, whereas the package-merge of
 [Larmore and Hirschberg 1990](Z-bibliography.md#ref-larmore1990) finds the
 optimal code of lengths at most $L$ in $O( \sigma L )$ time (see
@@ -300,7 +302,7 @@ compression of a string of bytes.
 
 --8<-- "generated/HuffmanCoder-huffmanCompress.pseudo.md"
 
-The decoder peeks at the next $W$ bits of a stream, and hopefully finds more than one codeword there. In a table of $2^W$
+Our decoder peeks at the next $W$ bits of a stream, and hopefully finds more than one codeword there. In a table of $2^W$
 entries of 32 bits it finds the symbols whose codewords fit whole in them,
 up to 3 in the low 24 bits of the entry, followed by the number of their
 bits in 4 bits and by the number of the symbols in 2
@@ -355,7 +357,7 @@ area on a text of $n$ symbols, and their costs.
 As we have seen, a code of the symbols one by one may lose up to one bit per symbol against
 $H_0$ by (21.4), which is "much" on a skewed distribution: a symbol of
 probability 0.99 carries about 0.015 bits of information, and it costs 1
-bit anyway. The *arithmetic code* codes the text as one number. With
+bit anyway. Instead, the *arithmetic code* codes the text as one number. With
 the cumulative probabilities $f_c = \sum_{c' < c} P[ c' ]$, the symbols
 narrow an interval $[ l , l + s )$ of $[ 0 , 1 )$ in turn, each to the part
 of its probability,
@@ -381,8 +383,8 @@ $$
 *Proof.* Truncating $x = l_n + s_n / 2$ to $d$ bits loses less than
 $2^{-d} \le s_n / 2$. Hence the fraction $x'$ written, and every fraction
 that begins with its bits, lie in $[ x' , x' + 2^{-d} ) \subseteq
-[ l_n , l_n + s_n )$. The intervals of two texts of $n$ symbols are
-disjoint, since (21.6) splits each interval into disjoint parts, and
+[ l_n , l_n + s_n )$. Moreover, the intervals of two texts of $n$ symbols
+are disjoint, since (21.6) splits each interval into disjoint parts, and
 therefore no code is a prefix of another one. Finally, the sum in (21.7) is
 $\sum_c n_c \log_2( n / n_c ) = n H_0$, and
 $d < \log_2( 2 / s_n ) + 1 = 2 + \log_2( 1 / s_n )$. $\square$
@@ -406,7 +408,7 @@ code, and the decoding, in exact arithmetic.
 
 --8<-- "generated/ArithmeticCoding-arithmeticDecodeExact.pseudo.md"
 
-Note that the exact code needs numbers of $d$ bits. The coder of
+Note that the exact code needs numbers of $d$ bits. Instead, the coder of
 [Witten, Neal and Cleary 1987](Z-bibliography.md#ref-witten1987)
 (`RangeEncoder`, the range coding of the same chapter of Ferragina) keeps
 the interval in integers of $w$ bits, $[ L , H ) \subseteq [ 0 , M )$ with
@@ -474,14 +476,14 @@ static model of counts, and with the adaptive model of chapter 12 of
 
 --8<-- "generated/ArithmeticCoding-adaptiveArithmeticDecode.pseudo.md"
 
-The adaptive coder sends nothing in advance, which is perhaps its main convenience. It starts from
+An adaptive coder sends nothing in advance, which is perhaps its main convenience. It starts from
 $P[ c ] = 1 / \sigma$ and, after a prefix of length $l$ with $l_c$
 occurrences of $c$, takes $P[ c ] = ( l_c + 1 ) / ( l + \sigma )$. Its counts are halved, rounding up, when their total passes $\max( 2^{16} , 2 \sigma )$, which keeps the total below $M / 4$ and makes
 the model follow a text whose statistics change. Furthermore, the cumulative counts are in a tree of [Fenwick 1994](Z-bibliography.md#ref-fenwick1994), where an
 increment, a prefix sum and the search of the symbol of a cumulative count
 take $O( \log \sigma )$ time; hence a symbol costs $O( \log \sigma )$ time,
-for alphabets of up to $2^{20}$ symbols. The coders of the practice
-typically emit bytes instead of bits (the range coder of
+for alphabets of up to $2^{20}$ symbols. In practice the coders typically
+emit bytes instead of bits (the range coder of
 [Martin 1979](Z-bibliography.md#ref-martin1979)), or use the asymmetric
 numeral systems of the next section, which reach the same compression with
 a multiplication or a lookup per symbol. [Howard and Vitter
@@ -600,7 +602,7 @@ $$
 
 $v$ being the next $b$ bits of the stream; since $f_c + i \in
 [ f_c , 2 f_c )$, one has $( f_c + i ) 2^b \in [ L , 2 L )$ and
-$x' \in [ 0 , L )$. The encoder inverts (21.11). In the state
+$x' \in [ 0 , L )$. In turn, the encoder inverts (21.11). In the state
 $X \in [ L , 2 L )$ it emits the $k$ low bits of $X$, with $k$ the number
 of bits that brings $\lfloor X / 2^k \rfloor$ into $[ f_c , 2 f_c )$ (one
 of two values, found by one addition and a shift), and moves to $L$ plus
@@ -635,7 +637,7 @@ $\mathit{next}[ c_c + j ]$ is $L$ plus the $j$-th state dealt to $c$.
 
 --8<-- "generated/Tans-tansDecompress.pseudo.md"
 
-The text is cut in two halves, each with a stream of its own and four
+We cut the text in two halves, each with a stream of its own and four
 states that take its symbols in turn. A stream is written forward from the
 low bit of a word and read backward from its end, 4 symbols of at most 11
 bits between two loads of the reader, and the two halves are decoded
@@ -646,7 +648,7 @@ frequencies sum to the total and the stream fits in the input, so that a "corrup
 
 ## 21.6 Prediction by partial matching {#sec-21-6}
 
-The models that we have seen so far give a symbol a probability that does
+So far, our models give a symbol a probability that does
 not depend on the symbols before it. The *prediction by partial matching*
 of [Cleary and Witten 1984](Z-bibliography.md#ref-cleary1984) (`PPM.h`,
 `ppmEncode()` and its inverse `ppmDecode()`) codes each symbol arithmetically in the context of the $K$ symbols before
@@ -709,7 +711,7 @@ largest number of symbols seen in a context, since the contexts are kept in
 a balanced tree keyed by their strings. In practice they are kept in a trie
 of the contexts with links to the suffixes
 ([Moffat 1990](Z-bibliography.md#ref-moffat1990)), where the next shorter
-context is a step away. The escape methods of the literature are A,
+context is a step away. Among the escape methods of the literature are A,
 $1 / ( m + 1 )$, and B, $q / m$, of
 [Cleary and Witten 1984](Z-bibliography.md#ref-cleary1984); C, here; D,
 $q / 2 m$; P, X and XC of [Witten and Bell 1991](Z-bibliography.md#ref-witten1991),
@@ -759,7 +761,7 @@ $B( x )$ is the binary code of $x$, of $\lvert B( x ) \rvert = 1 +
 | variable byte | groups of 7 bits, a flag each | $8 \lceil \lvert B( x ) \rvert / 7 \rceil$ | whole bytes | 00001001 |
 | $( s , c )$-dense | continuers, then a stopper | $k$ words for $s c^{k-1}$ integers | the $s$ of `denseOptimalS()` | the word 9 ($s = c = 128$) |
 
-The unary code is optimal for $2^{-x}$, and it is the part of the other codes that gives a length. Then the $\gamma$ code of [Elias 1975](Z-bibliography.md#ref-elias1975) writes the length of
+Note that the unary code is optimal for $2^{-x}$, and it is the part of the other codes that gives a length. Then the $\gamma$ code of [Elias 1975](Z-bibliography.md#ref-elias1975) writes the length of
 $B( x )$ in unary, as $\lvert B( x ) \rvert - 1$ zeros, and then $B( x )$,
 whose leading 1 ends the unary part. Its decoder counts the zeros up to the
 first 1, a word at a time by the trailing zeros of the word, and reads as
@@ -844,7 +846,7 @@ each block by the cost of its exceptions, as `patchedPack()` of
 
 --8<-- "generated/IntegerCodes-encodePForDelta.pseudo.md"
 
-The codes above take one integer at a time. The *interpolative* code of
+The codes above take one integer at a time, while the *interpolative* code of
 [Moffat and Stuiver 2000](Z-bibliography.md#ref-moffat2000) (`encodeInterpolative()`, decoded by `decodeInterpolative()`) takes
 instead a strictly increasing sequence $x[ l .. r - 1 ]$ in $[ \mathit{low} , \mathit{hi} ]$ at once. It writes the middle item
 $x[ m ]$, $m = \lfloor ( l + r - 1 ) / 2 \rfloor$, in the range that the
@@ -871,7 +873,7 @@ $$
 bit.*
 
 *Proof.* Since the $m - l$ items before $x[ m ]$ are distinct integers of $[ \mathit{low} , x[ m ] - 1 ]$, $x[ m ] \ge \mathit{low} +
-m - l$; symmetrically, $x[ m ] \le \mathit{hi} - ( r - 1 - m )$. The range
+m - l$; symmetrically, $x[ m ] \le \mathit{hi} - ( r - 1 - m )$. Hence the range
 holds $\mathit{hi} - \mathit{low} - ( r - 1 - l ) + 1$ values, whose binary
 code takes (21.12) bits. When the $r - l$ items fill
 $[ \mathit{low} , \mathit{hi} ]$, the range of the middle item holds one
@@ -896,7 +898,7 @@ or by one shuffle of bytes.
 (`BinaryPacking.h`) cuts a sequence of integers of 32 bits into blocks of
 128. It writes a block with $b$ bits per integer, $b$ being the bits of its
 largest one, i.e., in $16 b$ bytes, and the widths of 16 blocks are 16
-bytes before them. The integers of a block are laid out vertically over the
+bytes before them. Inside a block the integers are laid out vertically over the
 4 lanes of a register of 128 bits, the integer $4 q + l$ in the lane $l$ at
 the bit $q b$ of the $32 b$ bits of the lane
 ([Figure 21.4](21-compression.md#fig-21-4)). Four integers are then packed
@@ -1009,7 +1011,7 @@ of the directory and one sideways sum.
 
 We write $n_s$ for the integers of more than $s$ bits ($n_0 = n$) and $w$ for the bits of the largest one; then a level that holds the bits $[ s , t )$ costs
 $n_s ( t - s )$ bits of chunks. Unless it is the last, it also costs $n_s$
-continuation bits, with a quarter more for their rank. The authors find the widths that minimize the sum by a dynamic program over the places of the cuts,
+continuation bits, with a quarter more for their rank. Its authors find the widths that minimize the sum by a dynamic program over the places of the cuts,
 
 $$
 \mathcal{C}( s ) = \min_{s < t \le w} \Big( n_s ( t - s ) +
@@ -1067,7 +1069,7 @@ $s[ p .. ]$ that starts in the window of the last $w$ symbols (and may end
 past it, overlapping $\alpha$ itself) gives the triple
 $\langle d , \lvert \alpha \rvert , c \rangle$, with $d$ the distance back
 to the copy and $c$ the symbol after it (none at the end of the text). Then the parse moves $\lvert \alpha \rvert + 1$ places, and among the longest
-prefixes the closest is chosen. The decoder copies one symbol at a time, which is right on an overlapping copy too (e.g., on a run of one symbol)
+prefixes the closest is chosen. Its decoder copies one symbol at a time, which is right on an overlapping copy too (e.g., on a run of one symbol)
 ([Figure 21.7](21-compression.md#fig-21-7)).
 
 ![Figure 21.7. The parse of LZ77 of aabbabab with no bound on the window: four phrases, the copies in violet and each symbol copied from the one at the tail of its arrow; the last phrase copies 3 symbols from 2 places back, and its third symbol is copied from its first one, which the decoder has just written.](../figures/compression-lz77.svg){#fig-21-7}
@@ -1102,7 +1104,7 @@ and `next`, the last one empty at the end of the text), `LZSSPhrase`
 (`id` and `next`), compared field by field.
 LZ78 ([Ziv and Lempel 1978](Z-bibliography.md#ref-ziv1978), `lz78Parse()`)
 keeps an explicit dictionary of phrases in a trie, which starts with the
-empty phrase 0. The longest phrase $f$ that prefixes the rest of the text
+empty phrase 0. There the longest phrase $f$ that prefixes the rest of the text
 gives $\langle \mathit{id}( f ) , c \rangle$, and $f c$ becomes a new
 phrase; the dictionary is therefore closed under prefixes, the trie has one
 symbol per edge, and a phrase costs one step of the trie per symbol. A text
@@ -1127,7 +1129,7 @@ decoders.
 
 --8<-- "generated/LempelZiv-lzwDecode.pseudo.md"
 
-The decoder of LZW adds $f c$ one step late, when it reads the next phrase
+Note that the decoder of LZW adds $f c$ one step late, when it reads the next phrase
 $f'$, whose first symbol is $c$. However, the identifier of $f'$ may be the one of
 the phrase about to be added, which the decoder does not know yet. This
 happens when the phrase that follows $f$ in the parse is $f c$ itself, the
@@ -1157,13 +1159,13 @@ $$
 $$
 
 *be the suffixes of the closest ranks before and after $r$ that start
-before $i$. Then the longest prefix of $s[ i .. ]$ that starts at an
+before $i$ (an absent one sharing no prefix with $s[ i .. ]$). Then the longest prefix of $s[ i .. ]$ that starts at an
 earlier place has the length
 $\ell( i ) = \max \{ \mathrm{lcp}( i , \mathit{PSV}( i ) ) ,
 \mathrm{lcp}( i , \mathit{NSV}( i ) ) \}$, and it starts at the one of the
 two that attains the maximum.*
 
-*Proof.* The longest common prefix of two suffixes is the least of the
+*Proof.* Recall that the longest common prefix of two suffixes is the least of the
 longest common prefixes of the suffixes adjacent in $\mathit{SA}$ between
 them, and it can therefore only decrease as the rank moves away from $r$.
 Among the suffixes that start before $i$, those of rank below $r$ share
@@ -1437,7 +1439,7 @@ the location in the FM-index on the wavelet tree of Huffman
 
 --8<-- "generated/HuffmanFMIndex-locate.pseudo.md"
 
-The samples every $\mu$ places cost $O( ( n / \mu ) \log n )$ bits. This may be far more than $L$ on a "repetitive" text (the versions of a document, the
+Also, the samples every $\mu$ places cost $O( ( n / \mu ) \log n )$ bits. This may be far more than $L$ on a "repetitive" text (the versions of a document, the
 genomes of a species), where the number $r$ of the runs of $L$ is far
 smaller than $n$. The r-index of
 [Gagie, Navarro and Prezza 2020](Z-bibliography.md#ref-gagie2020)
@@ -1491,8 +1493,8 @@ which ends a run, and its suffix is the sample at the end of that run less
 
 *Proof.* By [Lemma 21.14](21-compression.md#lem-21-14), the last row
 prefixed by $c Q$ is the image of the last row $k$ of the range with
-$L[ k ] = c$. The LF-mapping moves one place to the left in $s$, and the
-suffix of the image is therefore $\mathit{SA}[ k ] - 1$. If
+$L[ k ] = c$. Since the LF-mapping moves one place to the left in $s$, the
+suffix of the image is $\mathit{SA}[ k ] - 1$. If
 $k = \mathit{last} - 1$ this is $v - 1$. Otherwise $L[ k + 1 ] \ne c$,
 since either $k + 1 = \mathit{last} - 1$ or $k + 1$ is in the range after
 the last $c$; hence $k$ ends a run, whose sample is $\mathit{SA}[ k ]$.
@@ -1519,8 +1521,8 @@ the end of the run $j - 1$.*
 $L[ i - 1 ] = L[ i ]$, and [Lemma 21.12](21-compression.md#lem-21-12) maps
 the rows $i - 1$ and $i$ to adjacent rows, those of the suffixes
 $\phi( x ) - 1$ and $x - 1$. Hence $\phi( x - 1 ) = \phi( x ) - 1$, i.e.,
-$\phi$ shifts $x - 1$ and $x$ alike. The places $x$ whose row starts a run
-are the $\mathit{SA}[ p_j ]$, and (21.23) follows by induction on $x - y$.
+$\phi$ shifts $x - 1$ and $x$ alike. Now, the places $x$ whose row starts
+a run are the $\mathit{SA}[ p_j ]$, and (21.23) follows by induction on $x - y$.
 $\square$
 
 Hence one predecessor search among the $r$ places $\mathit{SA}[ p_j ]$,

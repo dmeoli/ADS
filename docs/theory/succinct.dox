@@ -276,11 +276,11 @@
  inventories of Vigna, with groups of constant size: a group of
  \f$ 2^\ell \f$ 1s spans 3072 to 6144 bits on average, its first place is
  written in 64 bits and the places of its 1s of rank multiple of
- \f$ 2^{\ell - 5} \f$ in 16 bits from it, so that the select reads one
- place and scans the words from it to the bit asked for. A group that spans
- \f$ 2^{16} \f$ bits or more has offsets that do not fit in 16 bits, and is
- searched by a binary search of the directory of rank between its ends
- instead; a group that spans less is scanned over less than
+ \f$ 2^{\max\{ \ell - 5 , 0 \}} \f$ in 16 bits from it, so that the select
+ reads one place and scans the words from it to the bit asked for. A group
+ that spans \f$ 2^{16} \f$ bits or more has offsets that do not fit in 16
+ bits, and is searched by a binary search of the directory of rank between
+ its ends instead; a group that spans less is scanned over less than
  \f$ 2^{16} / 64 = 1024 \f$ words, and over a few words when the 1s are
  spread evenly. The search ends in a word, where the place of the
  \f$ k \f$-th 1 is found by the broadword select of Vigna: the sideways
@@ -381,9 +381,13 @@
  children of the nodes in the order of the nodes, two per node, so that the
  children of the first \f$ x - 1 \f$ nodes take the places
  \f$ 2 , \ldots , 2 x - 1 \f$ and those of the \f$ x \f$-th one the next
- two. With rank and select in \f$ O( 1 ) \f$ time, a child is
- \f$ \mathrm{Rank}_1( 2 \, \mathrm{Select}_1( x ) ) \f$ and the parent
- \f$ \mathrm{Rank}_1( \lfloor \mathrm{Select}_1( x ) / 2 \rfloor ) \f$; hence
+ two. With rank and select in \f$ O( 1 ) \f$ time, the left child of the
+ \f$ x \f$-th node is the \f$ \mathrm{Rank}_1( 2 x ) \f$-th node, if
+ \f$ B[ 2 x ] = 1 \f$, and its parent the
+ \f$ \lfloor \mathrm{Select}_1( x ) / 2 \rfloor \f$-th (with a node named
+ by its place \f$ p \f$, as in Ferragina's book, the left child is at
+ \f$ 2 \, \mathrm{Rank}_1( p ) \f$ and the parent at
+ \f$ \mathrm{Select}_1( \lfloor p / 2 \rfloor ) \f$); hence
  `JacobsonTree` takes \f$ 2 n + 1 + o( n ) \f$ bits, within
  \f$ O( \log n ) \f$ of the lower bound.
 

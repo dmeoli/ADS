@@ -365,7 +365,7 @@ nondeterministic algorithm of polynomial time and an input $x$, a formula
 of polynomial size whose variables describe the contents of the memory at
 each step and whose clauses force each step to follow from the one before
 it; the formula is satisfiable if and only if a sequence of choices leads
-to success. Instead, the book starts the chain from BOUNDED TILING instead, whose
+to success. The book starts the chain from BOUNDED TILING instead, whose
 rows of tiles can encode the successive configurations of a computation in
 the same way (the tiles of [Wang 1961](Z-bibliography.md#ref-wang1961)),
 and reduces it to the other problems, as [Karp
@@ -402,8 +402,8 @@ square $( i , j )$ is $u_{hij}$, at the place $( h n + i ) n + j$ given by
 
 <span id="lem-20-3"></span>**Lemma 20.3.** *In the graph of
 `dominoToClique()`, with $m n^2$ nodes, the cliques of $n^2$ nodes are the
-legal coverings; hence BOUNDED TILING $\propto$ CLIQUE, in time $\Theta(
-m^2 n^4 )$.*
+legal coverings when $n \ge 2$; hence BOUNDED TILING $\propto$ CLIQUE, in
+time $\Theta( m^2 n^4 )$.*
 
 *Proof.* The graph joins $u_{hij}$ to all the nodes of the squares not
 adjacent to $( i , j )$, and to the nodes of the adjacent squares whose
@@ -413,7 +413,9 @@ clique of $n^2$ nodes takes one tile per square, the tile $d$ in $( 0 , 0
 )$; two of its tiles in adjacent squares are joined, i.e., they fit, and
 the clique is a legal covering. Conversely, the nodes of a legal covering
 are pairwise joined. Finally, the adjacency matrix has $( m n^2 )^2$ entries.
-$\square$
+For $n = 1$ an isolated node $u_{h00}$, $h \ne 0$, is a clique of one
+node too, but there both answers are YES (the tile $d$ alone covers the
+board), and the reduction still satisfies (20.3). $\square$
 
 `dominoToSat()` writes the same conditions as clauses on the variables
 $u_{hij}$, true if the tile $h$ is in $( i , j )$. They are the unit clause
@@ -578,7 +580,12 @@ false one ([Aspvall, Plass and Tarjan
 graph of the $2 n$ literals (the literal $\pm( v + 1 )$ at the node $2 v$
 or $2 v + 1$, by `literalNode()`) with each implication once. Then it ranks
 the strongly connected components in the topological order
-([Algorithm 20.11](20-complexity.md#alg-20-11)), in $O( n + m )$ time for
+([Algorithm 20.11](20-complexity.md#alg-20-11)): in the order of decreasing
+finish time of `topsort()`, the first node of a component is the one that
+finishes last, and for an edge between two components that node of the
+first finishes after every node of the second; hence ranking each component
+by its first node gives a topological order of the components. All this
+takes $O( n + m )$ time for
 $m$ clauses (up to the logarithmic factor of the set that removes the
 repeated implications).
 
@@ -851,8 +858,8 @@ tries $S^*$ itself. Otherwise it tries the $h$ largest elements of $S^*$,
 and the greedy completion either takes all of $S^*$, or leaves out an
 element $a$ of $S^*$, not larger than those $h$, with $z + a > k \ge z^*$.
 Since $( h + 1 ) a \le z^*$, one has $z > z^* - a \ge z^* ( 1 - 1 / ( h +
-1 ) )$. As for the time, the $O( n^h )$ sets of at most $h$ elements are each completed in
-$O( n )$. $\square$
+1 ) )$. As for the time, the $O( n^h )$ sets of at most $h$ elements are
+each built in $O( h )$ and completed in $O( n )$. $\square$
 
 <span id="alg-20-17"></span>**Algorithm 20.17.** The approximation of
 SUBSET SUM, the cover by the ends of a matching, and the approximation
@@ -968,8 +975,10 @@ there the least distance $A$ is taken from $S[ 0 ]$, which is the same for
 symmetric distances). We remark that two values of figure 19.6 of the
 book do not follow from this formula (21 for $1 , 2 , 3$ and for $1 , 5$,
 where it gives 19 and 20), and we found no rule that gives all the values
-of the figure. With the formula, the tree has 25 nodes instead of 23, and
-it ends with the same circuit of cost 19 (we suspect a slip in the figure, although we cannot exclude another rule). The second bound is that of the
+of the figure. With the formula and the circuit $1 , 4 , 3 , 2 , 5$ of cost
+21 to start from, the tree has 25 nodes instead of 23 (30 with no circuit
+to start from), and it ends with the same circuit $1 , 3 , 2 , 5 , 4$ of
+cost 19 (we suspect a slip in the figure, although we cannot exclude another rule). The second bound is that of the
 1-tree of [Held and Karp 1971](Z-bibliography.md#ref-held1971) (exercise
 19.10), which replaces the sum by the weight of a minimum spanning tree of
 the cities out of $S$. Also, `spanningTreeWeight()` and `oneTree()` compute the
@@ -1062,8 +1071,8 @@ first the node that sees the most colors among its neighbours, i.e., the
 most constrained, with the least color not on its neighbours, in $O( n^3 )$.
 `starAlignment()` (exercise 19.18, after [Gusfield
 1993](Z-bibliography.md#ref-gusfield1993)) aligns $k$ strings against the
-center, the string with the largest sum of the global scores against the
-others, in $O( k^2 \ell^2 )$ time for strings of length at most $\ell$.
+center, i.e., the string with the largest sum of the global scores against
+the others. This takes $O( k^2 \ell^2 )$ time for strings of length at most $\ell$.
 
 <span id="alg-20-21"></span>**Algorithm 20.21.** The greedy heuristics:
 the salesman, the superstring, the coloring by saturation degree and the
@@ -1091,8 +1100,8 @@ vector of nodes, each node knows its place in its two buckets, and
 `min( k )` and `max( k )` are the least and the largest bucket not empty
 ([Figure 20.3](20-complexity.md#fig-20-3)). `inc( k , u )` moves $u$ to
 the next bucket of side $k$, by taking it out of its bucket (the last node
-of the bucket fills its place) and appending it to the next one; `choose(
-k )` scans the least bucket of the other side for the node with the most
+of the bucket fills its place) and appending it to the next one. In
+turn, `choose( k )` scans the least bucket of the other side for the node with the most
 edges to $V_k$, `contains( u )` tells whether $u$ is still to be placed and
 `count( k , u )` gives its edges to $V_k$. The size of the cut that
 results, i.e., the number of edges between the two sides, is
@@ -1220,13 +1229,20 @@ $$
 moves, and each configuration is expanded at most once.*
 
 *Proof.* A move changes the place of one tile by one square, and so
-changes `manhattan()` by at most 1, which is (20.12); then $f$ never
-decreases along a path, and $h$ never exceeds the moves left. When a goal
-$x$ is extracted, every node of a shorter solution would have $f \le g^* <
-g( x ) = f( x )$, and it would have been extracted before $x$, with its
-successors. Finally, the map of the least level of each configuration lets a
-configuration enter the queue again only with fewer moves, and an entry
-with more moves than the map is stale and skipped. $\square$
+changes `manhattan()` by at most 1, which is (20.12). Summing (20.12) along
+a path to the goal shows that $h$ never exceeds the moves left, and adding
+$g$ shows that $f$ never decreases along a path. Let $\delta( y )$ be the
+fewest moves from the start to $y$. We first show that a configuration $y$
+is extracted (and not skipped as stale) only with $g( y ) = \delta( y )$.
+Otherwise, on a shortest path to $y$ let $z$ be the first configuration not
+yet expanded with $g( z ) = \delta( z )$; its predecessor was, and so $z$
+is in the queue with $g( z ) = \delta( z )$ and
+$f( z ) = \delta( z ) + h( z ) \le \delta( y ) + h( y ) < g( y ) + h( y )$
+by (20.12) along the path, and $z$ would have been extracted before $y$.
+Hence each configuration is expanded once, since a later entry would need
+fewer moves than $\delta( y )$, and the map skips it. Applied to the first
+goal $x$ extracted, $g( x ) = \delta( x )$, i.e., it is reached in the
+fewest moves. $\square$
 
 We made the map a parameter of `solvePuzzle()`, `std::map` by default, and
 the same search therefore runs with the maps of the standard library, of Boost or of
@@ -1257,8 +1273,11 @@ the goal.*
 unchanged. A move along a column moves one tile past the $n - 1$ tiles
 between its two places in the order by rows, which changes $I$ by an
 amount of the parity of $n - 1$, and changes $r$ by one. With $n$ odd,
-$n - 1$ is even; with $n$ even, $I$ and $r$ change parity together.
-$\square$
+$n - 1$ is even; with $n$ even, $I$ and $r$ change parity together. Since
+exchanging two tiles changes the parity of $I$ and leaves $r$, it maps the
+configurations of one parity one to one onto those of the other, and the
+two classes have the same size; those of the parity other than that of
+the goal cannot reach it. $\square$
 
 `solvable()` compares that parity with the one of the goal ([Johnson and
 Story 1879](Z-bibliography.md#ref-johnson1879)), which is also sufficient,
