@@ -4687,8 +4687,10 @@ book).
 
 With the parameter `R`, each internal node keeps also the number of the pairs
 below each of its children, $\mathit{cnt}[ j ]$. An insertion or a removal
-increments or decrements these counts along its way, and a split, a merge or a
-borrowing counts them again on the nodes it touches ($O( I )$ children each).
+increments or decrements these counts along its way. A split, a merge or a
+borrowing moves the counts with the children it moves, and only the two parts
+of a split are counted again, each as the sum of its own $O( I )$ counts;
+thus each node touched costs $O( I )$ time.
 Then `rank( k )`, the number of the keys smaller than $k$, is the sum of the
 counts of the children before the way down plus the place in the leaf.
 Conversely, the pair of rank $i$ from 0, `select( i )`, goes down to the child

@@ -141,6 +141,7 @@
 #include <iterator>
 #include <limits>
 #include <new>
+#include <numeric>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -517,9 +518,12 @@ class BTreeMap {
  /// the pairs below the node \f$ x \f$ of height \f$ h \f$
  [[nodiscard]] static std::size_t total( const void * x , int h );
 
- /// the counts of the children of \f$ u \f$, of height \f$ h \f$, from
- /// the children
- static void recount( Inner * u , int h );
+ /// the counts of the children \f$ j \f$ of \f$ u \f$, of height
+ /// \f$ h \f$, from \f$ \mathit{from} \le j < \mathit{to} \f$ (all by
+ /// default), from the children: \f$ O( I ) \f$ time per child, \f$ O( 1 )
+ /// \f$ if the children are leaves
+ static void recount( Inner * u , int h , std::uint32_t from = 0 ,
+                      std::uint32_t to = I + 1 );
 
  /// the place of an internal node on a path, and the child taken
  struct Step {

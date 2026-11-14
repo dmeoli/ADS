@@ -616,6 +616,7 @@ hashing  flat-try-emplace      try_emplace delle mappe piatte
 
 # the engineered ordered structures, beyond the book
 ordered  btree-map            B+-albero in memoria, nodi di 512 byte
+ordered  btree-map-counts     conteggi dei figli del B+-albero in memoria
 ordered  static-search        S+-albero di Slotin, ricerca senza salti
 ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
 ordered  pgm-compressed       PGM compresso, pendenze condivise ed Elias-Fano

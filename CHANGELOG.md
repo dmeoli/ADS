@@ -2719,6 +2719,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- BTreeMap with the ranks recounted every child of a node after a split, a
+  merge or a borrow, each count the sum of the counts of the child, O( I^2 )
+  time per node above the last internal level; the counts now move with
+  their children, and only the two parts of a split are summed again, O( I
+  ) per node, with the same counts; build() keeps its recount, once per
+  node; the test ordered btree-map-counts checks the ranks and the
+  selections on a tree of at least 4 levels
+
 - the invariant of BPlusTree, shaped(), took from 1 to m pairs in a leaf
   but the root, weaker than the ceil( m / 2 ) that the insertion and the
   removal keep and Lemma 8.52 of the manual proves; it now checks the
