@@ -41,6 +41,7 @@
 #include <memory>
 #include <random>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -105,6 +106,55 @@ ADS_TEST( "bucket-queue-cells" )
  Q.push( "c" , 2 , 4 );
  CHECK( Q.topG() == 4 && Q.pop() == "c" && Q.topG() == 0 );
  CHECK( Q.pop() == "b" && Q.empty() );
+ }
+
+// the limits of the 32 bits of the bucket queue: a second key past
+// 2^32 - 2 refused when a layer turns dense with it and when it comes into
+// a dense layer, the items left as they were, with both policies of ties
+template< class Q >
+void bucketLimits( void )
+{
+ const std::int64_t big = std::int64_t( 1 ) << 32;
+ {                                             // dense by the 65th run
+  Q q;
+  for( std::int64_t g = 256 ; g < 256 + 63 ; ++g )
+   q.push( int( g ) , 0 , g );
+  q.push( -1 , 0 , big );                      // the 64th run
+  bool thrown = false;
+  try { q.push( -2 , 0 , 500 ); }
+  catch( const std::length_error & ) { thrown = true; }
+  CHECK( thrown && ( q.size() == 64 ) );
+  std::size_t n = 0;
+  while( ! q.empty() ) {
+   const auto e = q.popEntry();
+   CHECK( e.item != -2 );
+   ++n;
+   }
+  CHECK( n == 64 );
+  }
+ {                                             // into a dense layer
+  Q q;
+  for( std::int64_t g = 256 ; g < 256 + 65 ; ++g )
+   q.push( int( g ) , 0 , g );
+  bool thrown = false;
+  try { q.push( -1 , 0 , big ); }
+  catch( const std::length_error & ) { thrown = true; }
+  CHECK( thrown && ( q.size() == 65 ) );
+  q.push( 7 , 0 , 400 );                       // a dense key still taken
+  CHECK( q.size() == 66 );
+  std::size_t n = 0;
+  while( ! q.empty() ) {
+   CHECK( q.pop() != -1 );
+   ++n;
+   }
+  CHECK( n == 66 );
+  }
+ }
+
+ADS_TEST( "bucket-queue-limits" )
+{
+ bucketLimits< BucketQueue< int , std::int64_t > >();
+ bucketLimits< BucketQueue< int , std::int64_t , LeastSecondKey > >();
  }
 
 /// the Dial queue of window for c against a multiset, the keys pushed up

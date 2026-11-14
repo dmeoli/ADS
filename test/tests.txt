@@ -597,6 +597,7 @@ sequences  small-vector           vettore con posto per N elementi dentro
 
 # the engineered priority queues beyond the d-ary heap
 heaps  bucket-queue-cells    coda a bucket sulle celle di un vettore
+heaps  bucket-queue-limits   limiti dei 32 bit della coda a bucket
 heaps  sequence-heap         sequence heap di Sanders
 heaps  double-ended-heaps    heap min-max e heap a intervalli
 heaps  dary-heap-bottom-up   heap d-ario con il pop dal basso

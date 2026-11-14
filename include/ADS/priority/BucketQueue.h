@@ -55,6 +55,11 @@
  * improves is pushed again, and the caller skips the stale copies when they
  * come out.
  *
+ * The cells and the second keys of the dense lists are numbered by 32 bits:
+ * a push that would hold more than \f$ 2^{32} - 1 \f$ items at once, or
+ * give a dense layer a second key past \f$ 2^{32} - 2 \f$, throws
+ * `std::length_error` and leaves the items of the queue as they were.
+ *
  * The contracts [see `Contract.h`]: the keys are nonnegative, and `top()`,
  * `topF()`, `topG()` and `pop()` need a queue that is not empty; the
  * invariant is that the counts of the layers add up to `size()`, and that the
@@ -99,6 +104,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 

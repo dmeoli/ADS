@@ -25,8 +25,12 @@ inline void BucketQueue< T , K , Tie >::push( const T & x , K f , K g )
   f_layers.resize( F + 1 );
  Layer & l = f_layers[ F ];
  if( ( G < D ) || l.dense() || ! pushRun( l , x , g ) ) {  // a dense list
-  if( ( G >= S ) && ( G - S >= l.big.size() ) )
+  if( ( G >= S ) && ( G - S >= l.big.size() ) ) {
+   if( G >= NIL )                           // topG would not hold it
+    throw( std::length_error( "BucketQueue::push: a second key of a dense "
+                              "layer past 2^32 - 2" ) );
    l.big.resize( G - S + 1 , NIL );
+   }
   Index & h = l.head( G );
   const Index c = cell( x );
   f_cells[ c ].next = h;
@@ -53,6 +57,8 @@ inline auto BucketQueue< T , K , Tie >::cell( const T & x ) -> Index
   f_free = f_cells[ c ].next;
   return( c );
   }
+ if( f_cells.size() >= NIL )                // the next index would be NIL
+  throw( std::length_error( "BucketQueue::push: more than 2^32 - 1 items" ) );
  f_cells.push_back( Cell{ x , NIL } );
  return( Index( f_cells.size() - 1 ) );
  }
@@ -115,6 +121,9 @@ void BucketQueue< T , K , Tie >::densify( Layer & l )
  const Runs & v = f_runs[ l.runs ];
  const std::size_t G = std::size_t( Tie::least ? v.front().g :
                                     v.back().g );
+ if( G >= NIL )                             // topG would not hold it
+  throw( std::length_error( "BucketQueue::push: a second key of a dense "
+                            "layer past 2^32 - 2" ) );
  l.big.resize( G - S + 1 , NIL );           // more than D - S: dense
  for( const Run & r : v )
   l.big[ std::size_t( r.g ) - S ] = r.head;

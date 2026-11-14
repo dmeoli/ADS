@@ -2719,6 +2719,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- BucketQueue refuses, by std::length_error and with its items as they
+  were, a push that would hold more than 2^32 - 1 items at once or give a
+  dense layer a second key past 2^32 - 2, where the 32-bit index of a cell
+  met NIL and wrapped and the top of a layer was truncated; the test heaps
+  bucket-queue-limits
+
 - the products of 128 bits of FastHash.tpp, FlatHashTable.tpp,
   NumberTheory.tpp and MultiwayMerge.tpp name unsigned __int128 by a
   typedef marked __extension__, as Portable.h does, so that a build with
