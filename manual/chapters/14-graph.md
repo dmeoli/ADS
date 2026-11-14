@@ -115,7 +115,10 @@ or the lists that an operation touches, state that the counts `n()` and
 `m()` agree with the representation. The class `GraphNodes<T>`, from which
 `MatrixGraph` and `ListGraph` derive, holds what these two share: the flag
 `directed()`, the counts, the vector of the names in use, and the labels,
-with `label(u)` and `setLabel(u, t)`. On that vector, the iterator `nodes()`
+with `label(u)` and `setLabel(u, t)`; to the classes derived from it it
+gives the checks of a node and of an edge (`check(u)` and `edge(u, v)`),
+`addNode(t)`, and `nodesCounted()`, the invariant that `n()` counts the
+names in use, each with its label. On that vector, the iterator `nodes()`
 visits the nodes in increasing order with no vector built, through the slots
 of `Alive` (whose `size()`, `occupied()` and `read()` give the number of the
 names, whether a name is in use and its node). The realizations name the
@@ -961,7 +964,7 @@ lists of adjacency. `gridDistances()` is the visit in breadth of
 [§14.5.2](14-graph.md#sec-14-5-2) from several sources at once, all of them
 at distance 0 in the queue. It gives each cell its distance in moves from
 the nearest source, `INF` if none reaches it ([Algorithm
-14.11](14-graph.md#alg-14-12)). This is the algorithm of [Lee
+14.12](14-graph.md#alg-14-12)). This is the algorithm of [Lee
 1961](Z-bibliography.md#ref-lee1961) for the routing of the wires on a
 board, after the maze of [Moore 1959](Z-bibliography.md#ref-moore1959). With
 the sources a whole set of pixels it is the distance transform of an image;
@@ -1040,7 +1043,7 @@ passes by two sides of the cell. The enumeration `Corners` states whether it
 may always cut the corner (`CUT`, as in the first jump point search),
 whether one of the two sides must be free (`NO_SQUEEZE`), or whether both
 must (`NO_CUT`, the rule of the benchmarks since 2012). [Figure
-14.10](14-graph.md#fig-14-11) shows the moves of a cell under the last rule.
+14.11](14-graph.md#fig-14-11) shows the moves of a cell under the last rule.
 All three rules are symmetric in the two ends of a move. Hence the graph is
 unoriented when the free cells cost the same and oriented otherwise
 (`directed()`), since under either model one of $( u , v )$ and $( v , u )$
@@ -1716,7 +1719,7 @@ by saturating the edges that leave $s$. Then a node $u$ with an excess
 either pushes it on an edge with $c_f( u , v ) > 0$ and $d( v ) = d( u ) -
 1$, or, if there is none, raises $d( u )$ to the least $d( v ) + 1$ over its
 residual edges, which keeps the labels valid ([Algorithm
-14.14](14-graph.md#alg-14-15)).
+14.15](14-graph.md#alg-14-15)).
 
 <span id="lem-14-21"></span>**Lemma 14.21.** *A label never decreases and
 stays below $2 n$; hence there are $O( n^2 )$ relabelings and $O( n m )$
@@ -1741,8 +1744,9 @@ This bound gives little indication of the speed, which comes from two
 heuristics of [Cherkassky and Goldberg
 1997](Z-bibliography.md#ref-cherkassky1997). The first is the *global
 relabeling*, a visit in breadth backwards from $t$ that sets each label to
-its distance, made again whenever the relabelings since the last one cost
-more than $6 n + m$. The second is the *gap*: when no node is left with some
+its distance, made again in the first phase whenever the relabelings since the last one,
+each of which counts 12 plus the degree of its node, cost more than half
+of $6 n + m$. The second is the *gap*: when no node is left with some
 label $k$, it puts out of the game all the nodes of label above $k$, since
 none of them reaches $t$ any more. In stopping each labeling at the last
 node with an excess, the code follows the HIPR of the same authors. It
@@ -1891,8 +1895,11 @@ size if and only if no path augments it ([Berge
 *Proof.* An augmenting path gives a larger matching. Conversely, if
 $\lvert M' \rvert > \lvert M \rvert$, the symmetric difference of the two
 is made of paths and of even cycles in which the edges of $M$ and of $M'$
-alternate, and one of its paths has more edges of $M'$ than of $M$: it
-augments $M$. $\square$
+alternate, and one of its paths has more edges of $M'$ than of $M$, so
+that it starts and ends with edges of $M'$. Each end of that path is free
+in $M$, since an edge of $M$ at it would be either in the symmetric
+difference, and then in the path, or in $M'$ too, and then the end would
+have two edges of $M'$; hence the path augments $M$. $\square$
 
 A search for such a path from a free node $r$ grows an alternating tree.
 The nodes at an even distance from $r$ along the tree are *even*, the
@@ -1911,13 +1918,21 @@ in $G / C$ ([Edmonds 1965](Z-bibliography.md#ref-edmonds1965b)).*
 *Proof.* A path of $G / C$ through the shrunk node enters it by an edge to
 some node of $C$, and goes on from the base: one of the two ways around
 the cycle from that node to the base has an even number of edges and
-alternates, and lifts the path to $G$. Conversely, an augmenting path of
-$G$ either misses $C$, or can be cut at its first node in $C$ after the
-stem from $r$ to the base has been exchanged with the matching, which keeps
-the sizes and makes the base free; the part before the cut is then
-augmenting in $G / C$. $\square$
+alternates, and lifts the path to $G$. Conversely, let the stem, the
+alternating path of the tree from $r$ to the base, be exchanged with the
+matching in $G$ and in $G / C$: this gives matchings $M'$ and $M' / C$ of
+the same sizes as $M$ and $M / C$, and in them the base and the shrunk node
+are free. If $M$ has an augmenting path, it is not of largest size, and by
+[Lemma 14.23](14-graph.md#lem-14-23) neither is $M'$, which then has an
+augmenting path $P$. At most one end of $P$ lies in $C$, whose only free
+node is now the base; if $P$ misses $C$ it augments $M' / C$ as it is,
+and otherwise its part from an end out of $C$ to its first node in $C$
+ends, in $G / C$, at the free shrunk node, and augments $M' / C$. Thus
+$M' / C$, and with it $M / C$, is not of largest size in $G / C$, and
+[Lemma 14.23](14-graph.md#lem-14-23) gives an augmenting path of
+$M / C$. $\square$
 
-![Figure 14.13. A blossom shrunk by `maxCardinalityMatching()`: the tree of the search from the free node $r$, the matched edges in violet, and the edge $[ d , e ]$ between two even nodes, which closes the odd cycle $b , c , d , e , f$ of base $b$ (in violet); the cycle becomes the node $B$ (in orange), and the edge $[ B , g ]$ to the free node $g$ ends an augmenting path, which lifts to $r , a , b , f , e , d , g$.](../figures/graph-blossom.svg){#fig-14-13}
+![Figure 14.13. A blossom shrunk by `maxCardinalityMatching()`: the tree of the search from the free node $r$, the matched edges in violet, and the edge $[ d , e ]$ between two even nodes, which closes the odd cycle $b , c , d , e , f$ of base $b$ (in violet); the cycle becomes the node $B$ (in orange), and the edge $[ B , g ]$ to the free node $g$ ends an augmenting path, which lifts to $r , a , b , c , d , g$, the even way from $d$ to the base $b$ around the cycle starting with the matched edge $[ d , c ]$.](../figures/graph-blossom.svg){#fig-14-13}
 
 Thus the search of `maxCardinalityMatching(g)` (beyond the book) shrinks
 each blossom it closes, each node of the cycle becoming even (the odd
@@ -2000,7 +2015,7 @@ primal-dual algorithm of Edmonds in the $O( n^3 )$ of Gabow and of
 [Lawler 1976](Z-bibliography.md#ref-lawler1976), as [Galil
 1986](Z-bibliography.md#ref-galil1986) surveys it
 ([Algorithm 14.18](14-graph.md#alg-14-18)). It keeps the conditions (i)
-and (iii), and approaches (ii): each $y_v$ starts at the largest weight and
+and (iii), and approaches (ii): each $y_v$ starts at the largest weight (0 if no weight is positive) and
 the matching empty, and the free nodes, whose duals are always equal and
 the least, are the roots of the trees grown on the edges of slack 0 alone,
 the blossoms with $z_B > 0$ being the odd sets of (iii). When no tight edge
@@ -2055,7 +2070,7 @@ on large sparse graphs.
 `branchAndBoundMatching(n, E)` solves the same problem on a graph of a few
 nodes by a branch and bound, sharing no code with the blossoms, and the
 tests use it as an independent oracle. In this search the first node not
-yet decided is left unmatched or matched to each free neighbour, and a
+yet decided is left unmatched or matched to each later neighbour still free, and a
 branch is cut when twice its weight plus the best weight at each node left
 cannot beat twice the best matching found (each edge touches two nodes).
 In the worst case it takes time proportional to the number of matchings of
@@ -2155,7 +2170,7 @@ graphs solve the assignment from scratch (LEMON by its minimum cost flows,
 SciPy by the algorithm of Crouse), and, as far as we know, none keeps the
 potentials for a warm start.
 
-![Figure 14.14. The reduced costs $c( i , j ) - u_i - v_j$ of an `Assignment` of $3 \times 3$ costs, with the potentials $v_j$ above the columns and $u_i$ beside the rows, before and after `setRow(1, (8, 0, 7))`: the pairs of the assignment (in violet) have reduced cost 0, the row changed is in orange, and every reduced cost stays nonnegative; one augmentation from the freed row gives the new assignment, of cost 6.](../figures/graph-assign.svg){#fig-14-14}
+![Figure 14.14. The reduced costs $c( i , j ) - u_i - v_j$ of an `Assignment` of the $3 \times 3$ costs of rows $( 4 , 1 , 3 )$, $( 2 , 0 , 5 )$ and $( 3 , 2 , 2 )$, with the potentials $v_j$ above the columns and $u_i$ beside the rows, before and after `setRow(1, (8, 0, 7))`: the pairs of the assignment (in violet) have reduced cost 0, the row changed is in orange, and every reduced cost stays nonnegative; one augmentation from the freed row gives the new assignment, of cost 6.](../figures/graph-assign.svg){#fig-14-14}
 
 ## 14.12 Eulerian cycles and trails {#sec-14-12}
 
@@ -2181,9 +2196,12 @@ gives the conditions, and connects its edges. Conversely, under them, a
 walk along unused edges from $s$ (from any node with an edge, if all are
 balanced) can stop only at $t$ (at its start), since each other node it
 enters has an unused edge to leave by. If the walk does not use all the
-edges, some node on it has an unused edge (by the connection), and the
-closed walk from that node, spliced into the first, gives a longer trail.
-$\square$
+edges, some node on it has an unused edge (by the connection); the unused
+edges leave each node balanced (each node of even degree, if unoriented),
+since the walk takes from every node as many edges entering as leaving,
+apart from $s$ and $t$, and so the walk along them from that node can stop
+only where it started, and the closed walk, spliced into the first, gives
+a longer trail. $\square$
 
 ### 14.12.2 The walk of Hierholzer {#sec-14-12-2}
 
@@ -2207,8 +2225,13 @@ that there is no trail, and the connection needs no other visit.*
 *Proof.* The walk uses each edge reachable from its start, by the splicing
 argument of [Lemma 14.28](14-graph.md#lem-14-28). A component in which each
 node is balanced is strongly connected (with the edge $( t , s )$ added in
-the open case), and so each of its edges is reachable from any of its
-nodes; the edges of another component are not reachable at all. $\square$
+the open case): if an edge $( u , v )$ had $u$ not reachable from $v$, the
+set $R$ of the nodes reachable from $v$ would have the edge $( u , v )$
+entering it and no edge leaving it, and the sum of the excesses over $R$,
+the edges leaving $R$ minus those entering it, would be negative instead
+of 0. Hence each of its edges is reachable from any of its nodes, while
+the edges of another component are not reachable at all; for an
+unoriented graph, the component is connected by definition. $\square$
 
 `eulerianTrail(g)` returns the nodes of a trail of a graph, oriented or
 not: closed (the first node repeated at the end) if there is an Eulerian
@@ -2216,8 +2239,8 @@ cycle, and open otherwise, from the node with $x( s ) = 1$ (the first of
 the two odd nodes, if unoriented); it returns no value if there is no
 trail, and an empty trail if the graph has no edge.
 `eulerianTrail(g, s)` starts from a given node, and returns no value if no
-trail starts from it. `eulerianCycle(g)` returns only a closed trail, now
-for an unoriented graph too, and `isEulerianTrail(g, c)` and
+trail starts from it. `eulerianCycle(g)` returns only a closed trail, for an
+oriented or an unoriented graph, and `isEulerianTrail(g, c)` and
 `isEulerianCycle(g, c)` check that a sequence of nodes is a trail, open or
 closed, or a cycle, using each edge exactly once (an unoriented edge in
 either direction). An unoriented graph must have no loop.
@@ -2365,12 +2388,14 @@ previous solution, and `CERTIFIED` (2) with no computation at all. Events
 are queued, and the work is done at the next query (the lazy flush), which
 the base class `EventQueue<W>` organizes. First, the queue $Q$ is coalesced
 by (14.11) into $P$. If $\lvert P \rvert > \rho \max( m , 1 )$, $\rho$ the
-ratio of `setRecomputeRatio()` ($1 / 4$ by default), the solution is
+ratio of `setRecomputeRatio()` ($1 / 4$ by default; the test is
+`tooMany()` of `EventQueue<W>`, which an observer derived from it calls),
+the solution is
 computed from scratch, since a repair that touches a large part of the graph
 costs as much and is usually slower by a constant. Otherwise each event of
 $P$ is tested against the certificate of the previous solution and found
 *harmless*, *repairable* or *fatal* ([Algorithm
-14.17](14-graph.md#alg-14-21)). Hence the outcome is from scratch if one
+14.21](14-graph.md#alg-14-21)). Hence the outcome is from scratch if one
 event is fatal, by a repair if one is repairable, and certified if all are
 harmless. `pending()` counts the events waiting, `count(o)` the queries of
 each outcome, and `mask()` contains all the kinds.

@@ -326,9 +326,9 @@ class FlowNetwork {
  ///     \text{ each } x \text{ with } d( x ) > d( u ) \cr
  /// 16 & \qquad\quad \textbf{else}\ d( u ) \gets \min( D , \lambda + 1 )
  ///     \cr
- /// 17 & \qquad \textbf{if}\ \text{the relabelings cost more than }
- ///     6 n + m \text{ since the last labels}\ \textbf{then}\ d \gets
- ///     \mathrm{labels}( z ) \cr
+ /// 17 & \qquad \textbf{if}\ z = t \textbf{ and } \text{the relabelings}
+ ///     \text{ since the last labels cost} > ( 6 n + m ) / 2 \cr
+ ///     & \qquad\quad \textbf{then}\ d \gets \mathrm{labels}( z ) \cr
  /// 18 & \textbf{function}\ \mathrm{labels}( z ) \cr
  /// 19 & \quad \text{visit in breadth backwards from } z \text{, level by}
  ///     \text{ level, } d( u ) \text{ the level of } u \cr

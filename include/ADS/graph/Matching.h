@@ -237,7 +237,8 @@ std::vector< int > maxCardinalityMatching( const G & g );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{maxWeightMatching}( n , E ) \cr
-/// 2 & \quad M \gets \emptyset;\ y_v \gets \max_e w( e )\ \forall v \cr
+/// 2 & \quad M \gets \emptyset;\ y_v \gets \max\{ 0 , \max_e w( e ) \}
+///     \ \forall v \cr
 /// 3 & \quad \textbf{repeat}\quad \triangleright\ \text{a stage} \cr
 /// 4 & \qquad \text{every free node is the root of a tree, label } S \cr
 /// 5 & \qquad \textbf{loop} \cr
