@@ -638,21 +638,12 @@ The `MinQueue` and the `MinDeque` of [Morin 2013, exercises 3.15 and
 give their least item by `min()`, in $O( 1 )$ amortized time per
 operation, under an order `C` (a strict weak order, `std::less<>` by
 default). Both are built on the `MinStack` of `ADS/stack/MinStack.h`
-([Morin 2013, exercise 3.14](Z-bibliography.md#ref-morin-cpp)). This is a
-stack that keeps, beside the vector $A$ of its items, a second vector $M$
-of the minima: an item is pushed on $M$ too when it is not larger than the
-top of $M$, and it leaves $M$ with the item.
-
---8<-- "generated/MinStack-push.pseudo.md"
-
---8<-- "generated/MinStack-pop.pseudo.md"
-
-The top of $M$ is then the least item of the stack, since the items above
-the one that put it there are not smaller. $M$ holds one item per record low
-from the bottom of the stack (all of them for a decreasing input, and
-usually far fewer). An item equal to the minimum goes to $M$ too, so that
-its removal leaves the minimum of the others. Each operation of `MinStack`
-costs $O( 1 )$ time, but for the doublings of the two vectors.
+([§3.5](03-stack.md#sec-3-5)), the stack of [Morin 2013, exercise
+3.14](Z-bibliography.md#ref-morin-cpp) that keeps, beside the vector of
+its items, a second vector of the record lows, whose top is the least item
+of the stack ([Algorithm 3.3](03-stack.md#alg-3-3) and
+[Lemma 3.2](03-stack.md#lem-3-2)); each of its operations costs $O( 1 )$
+time, but for the doublings of the two vectors.
 
 **A queue on two stacks.** `MinQueue` enqueues on a stack $I$ (the back, the
 last item on top) and dequeues from a stack $O$ (the front, the first item
@@ -989,20 +980,10 @@ to all the others.) Both functions check, as preconditions, that the two
 queues are distinct objects; `copyPositive()` also checks, as an audit,
 that $q$ holds its old items in their old order.
 
-A queue also reverses a stack. Popping all the items of a stack $s$ into a
-queue keeps them in the order in which they were popped, i.e., from the
-top down; pushing them back in the order in which they leave the queue
-puts the old top at the bottom. This is `reverseWithQueue()` of
-`ADS/stack/StackAlgorithms.h` ([Morin 2013, exercise
-1.4](Z-bibliography.md#ref-morin-cpp)), which uses the operations `push()`
-and `pop()` of the stack only ([Algorithm 4.15](04-queue.md#alg-4-15)). Its
-queue is a `LinkedQueue` unless another one is given, and it takes $O( n )$
-time and space.
-
-<span id="alg-4-15"></span>**Algorithm 4.15.** The order of a stack reversed
-by a queue ([Morin 2013, exercise 1.4](Z-bibliography.md#ref-morin-cpp)).
-
---8<-- "generated/StackAlgorithms-reverseWithQueue.pseudo.md"
+A queue also reverses a stack, since it keeps the order in which the items
+are popped: this is `reverseWithQueue()` of `ADS/stack/StackAlgorithms.h`
+([Morin 2013, exercise 1.4](Z-bibliography.md#ref-morin-cpp)), described
+with the algorithms on a stack ([Algorithm 3.7](03-stack.md#alg-3-7)).
 
 Three of the problems on the lines of a text of [Morin 2013, exercise
 1.1](Z-bibliography.md#ref-morin-cpp) call for a queue. The first writes,

@@ -267,7 +267,7 @@ A string of the brackets `()`, `[]` and `{}` is *matched* when the brackets
 pair up properly. For instance, `{{()[]}}` is matched, while `{{()]}` is
 not, since its second `{` faces a `]`. Similarly, `isMatched()`
 ([Algorithm 1.1](01-introduction.md#alg-1-1)) pushes each open bracket and
-pops one at each closed bracket, which must be of the same kind. It answers that the string is matched if no pop fails or mismatches and the stack is empty at the end.
+pops one at each closed bracket, which must be of the same kind. It answers that the string is matched if no pop fails or mismatches and the stack is empty at the end ([Lemma 3.5](03-stack.md#lem-3-5)).
 Each character costs $O( 1 )$ time, and the whole check $O( n )$. In fact,
 read with $+1$ for an open bracket and $-1$ for a closed one, a matched
 string is a Dyck word with $s_n = 0$ by [Lemma
@@ -276,9 +276,8 @@ themselves, also checks that each pair is of one kind. A third exercise
 reverses a stack through a queue (`reverseWithQueue()`). We pop all the
 items into the queue, and push them back in the order in which they leave
 it. Indeed, the queue keeps the order of the pops, i.e., from the top down, and the
-first item pushed back ends at the bottom; hence, the order is reversed.
-
---8<-- "generated/StackAlgorithms-reverseWithQueue.pseudo.md"
+first item pushed back ends at the bottom; hence, the order is reversed
+([Algorithm 3.7](03-stack.md#alg-3-7)).
 
 ### 1.3.2 Sequences and lists {#sec-1-3-2}
 

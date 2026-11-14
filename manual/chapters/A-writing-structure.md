@@ -111,7 +111,7 @@ and `MinStack` models it, since it has the type `Item`, `empty()`,
 `push()`, `top()` and a `pop()` that returns the item removed. Its
 `min()` is an addition that the concept neither requires nor forbids;
 hence the algorithms written on `Stack` (e.g., those of
-[§3.6](03-stack.md#sec-3-6)) run on a `MinStack` unchanged. A concept is
+[§3.7](03-stack.md#sec-3-7)) run on a `MinStack` unchanged. A concept is
 checked where this is cheapest, by a `static_assert` in the program of the
 tests that includes the header:
 
