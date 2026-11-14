@@ -14,7 +14,7 @@
     \node[node,fill=adsFree] (c\j) at (22mm+\j*22mm,0) {col \j};
   \foreach \i in {0,1,2}
     \node[node,fill=adsFree] (h\i) at (0,-13mm-\i*13mm) {row \i};
-  \foreach \i/\j/\v/\s in {0/0/a/node,0/2/b/node,1/1/c/node,2/0/d/node,2/2/e/touched}
+  \foreach \i/\j/\v/\s in {0/0/a/node,0/2/b/node,1/1/c/node,2/0/d/node,2/2/e/node-added}
     \node[\s,minimum width=8mm,minimum height=6mm,rounded corners=1pt]
       (n\i\j) at (22mm+\j*22mm,-13mm-\i*13mm) {\v};
   \draw[ptr] (h0) -- (n00);  \draw[ptr] (n00) -- (n02);

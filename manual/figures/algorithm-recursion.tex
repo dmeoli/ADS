@@ -9,21 +9,20 @@
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,
-    rec/.style={draw,rounded corners=1pt,minimum height=6mm,
-                minimum width=13mm,font=\small},
-    lvl/.style={font=\small,anchor=west}]
+    rec/.style={node,minimum height=6mm,minimum width=13mm,font=\small},
+    lvl/.style={font=\small,anchor=west,text=adsInk}]
   \node[rec] (r) at (0,0) {$g( n )$};
   \node[rec] (a) at (-2.6,-1.3) {$g( n / b )$};
   \node[rec] (b) at (2.6,-1.3) {$g( n / b )$};
   \foreach \k/\x in {1/-3.9,2/-1.3,3/1.3,4/3.9}
     \node[rec,minimum width=14mm] (l\k) at (\x,-2.6) {$g( n / b^2 )$};
-  \draw (r) -- (a); \draw (r) -- (b);
-  \draw (a) -- (l1); \draw (a) -- (l2);
-  \draw (b) -- (l3); \draw (b) -- (l4);
+  \draw[edge] (r) -- (a); \draw[edge] (r) -- (b);
+  \draw[edge] (a) -- (l1); \draw[edge] (a) -- (l2);
+  \draw[edge] (b) -- (l3); \draw[edge] (b) -- (l4);
   \foreach \x in {-3.9,-1.3,1.3,3.9}
     \node[font=\small] at (\x,-3.45) {$\vdots$};
   \foreach \x in {-4.4,-3.9,-3.4,-1.8,-1.3,-0.8,0.8,1.3,1.8,3.4,3.9,4.4}
-    \node[draw,circle,inner sep=1.3pt] at (\x,-4.2) {};
+    \node[vertex,minimum size=2.6mm] at (\x,-4.2) {};
   \node[lvl] at (5.4,0) {level 0: $g( n )$};
   \node[lvl] at (5.4,-1.3) {level 1: $a \, g( n / b )$};
   \node[lvl] at (5.4,-2.6) {level 2: $a^2 g( n / b^2 )$};

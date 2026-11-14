@@ -16,9 +16,9 @@
   \cells{B}{0,0}{e/cell,f/cell,g/cell,/free}
   \node[index,anchor=west] at ($(B-3.east)+(2mm,0)$) {$f = 3$};
   \node[var] (out1) at ($(B-0)+(0,-12mm)$) {consumer};
-  \draw[ptr] (out1) -- (B-0.south);
+  \draw[ptr,shorten <=1.5pt] (out1) -- (B-0.south);
   \node[var] (in1) at ($(B-3)+(0,11mm)$) {producer};
-  \draw[ptr] (in1) -- (B-3.north);
+  \draw[ptr,shorten <=1.5pt] (in1) -- (B-3.north);
   \node[var,inner sep=1.5pt] (gv) at (52mm,0) {given};
   \cells{A}{66mm,0}{/free,/free,/free,/free}
   \draw[ptr] (gv) -- (A-0.west);
@@ -26,8 +26,8 @@
   \cells{C}{0,-30mm}{/free,p/cell,q/cell,/free}
   \node[index,anchor=west] at ($(C-3.east)+(2mm,0)$) {$f = 3$};
   \node[var] (out2) at ($(C-1)+(0,-12mm)$) {consumer};
-  \draw[ptr] (out2) -- (C-1.south);
+  \draw[ptr,shorten <=1.5pt] (out2) -- (C-1.south);
   \node[var] (in2) at ($(C-3)+(0,11mm)$) {producer};
-  \draw[ptr] (in2) -- (C-3.north);
+  \draw[ptr,shorten <=1.5pt] (in2) -- (C-3.north);
 \end{tikzpicture}
 \end{document}

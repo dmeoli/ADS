@@ -19,15 +19,15 @@
   \node[var] (t1) at ($(A-3)+(0,11mm)$) {$t = 7$};
   \draw[ptr] (h1) -- (A-1.north);
   \draw[ptr] (t1) -- (A-3.north);
-  \indices{S}{4}
+  \indicesbelow{S}{4}
   \draw[ptr] (33mm,-3.5mm) -- node[above=1.5mm,font=\small\ttfamily]
     {push(z)} (52mm,-3.5mm);
-  \cells{B}{58mm,0}{/free,x/cell,y/cell,z/touched}
-  \cells{T}{58mm,-7mm}{8/free,6/cell,7/cell,8/touched}
+  \cells{B}{58mm,0}{/free,x/cell,y/cell,z/added}
+  \cells{T}{58mm,-7mm}{8/free,6/cell,7/cell,8/added}
   \node[var] (h2) at ($(B-1)+(0,11mm)$) {$h = 5$};
   \node[var] (t2) at ($(B-3)+(0,11mm)$) {$t = 8$};
   \draw[ptr] (h2) -- (B-1.north);
   \draw[ptr] (t2) -- (B-3.north);
-  \indices{T}{4}
+  \indicesbelow{T}{4}
 \end{tikzpicture}
 \end{document}

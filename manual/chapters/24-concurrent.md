@@ -481,7 +481,7 @@ $[ t , b )$, at the places of their indices modulo the size of the vector
 of relaxed order, and their type must therefore be trivially copyable
 (e.g., an index or a pointer to a task).
 
-![Figure 24.6. A `WorkStealingDeque` of 8 places with the items `a`, `b`, `c` in $[ t , b ) = [ 2 , 5 )$, after `take()` of the owner, which takes `c` at the bottom, and after `steal()` of a thief, which takes `a` at the top; the shaded cell is the place that the operation empties.](../figures/concurrent-deque.svg){#fig-24-6}
+![Figure 24.6. A `WorkStealingDeque` of 8 places with the items `a`, `b`, `c` in $[ t , b ) = [ 2 , 5 )$, after `take()` of the owner, which takes `c` at the bottom, and after `steal()` of a thief, which takes `a` at the top; the violet cell is the place that the operation empties.](../figures/concurrent-deque.svg){#fig-24-6}
 
 <span id="alg-24-5"></span>**Algorithm 24.5.** The operations of
 `WorkStealingDeque` ([Chase and Lev 2005](Z-bibliography.md#ref-chase2005),
@@ -589,7 +589,7 @@ of the parent of the larger ([Figure 24.7](24-concurrent.md#fig-24-7)). The
 compare-and-swap fails only if another thread hooked that root first, and
 it is then tried again from the roots found anew.
 
-![Figure 24.7. A `ConcurrentUnionFind` before and after `unite(6, 5)`: the splitting of `find(6)` gives 6 its grandparent 3, `find(5)` finds the root 0, and the larger root 3 is hooked under the smaller root 0; the shaded elements are those whose parent changed.](../figures/concurrent-unionfind.svg){#fig-24-7}
+![Figure 24.7. A `ConcurrentUnionFind` before and after `unite(6, 5)`: the splitting of `find(6)` gives 6 its grandparent 3, `find(5)` finds the root 0, and the larger root 3 is hooked under the smaller root 0; the violet elements are those whose parent changed.](../figures/concurrent-unionfind.svg){#fig-24-7}
 
 <span id="alg-24-6"></span>**Algorithm 24.6.** The operations of
 `ConcurrentUnionFind`: the splitting and the linking by index of [Jayanti

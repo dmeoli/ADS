@@ -13,7 +13,7 @@
   inn/.style={vertex,minimum size=6.5mm,font=\scriptsize},
   lf/.style={node,minimum width=5.5mm,minimum height=5.5mm},
   lab/.style={font=\small\ttfamily,text=adsInk,fill=white,inner sep=1pt},
-  sl/.style={->,edge,dashed}
+  sl/.style={guide,->}
 }
 \begin{document}
 \begin{tikzpicture}[ads,x=14mm,y=15mm]
@@ -28,9 +28,9 @@
   \node[lf] (l1) at (2.9,-3) {1};
   \node[lf] (l4) at (5,-2) {4};
   \node[lf] (l2) at (5.9,-2) {2};
-  \draw[edge] (r) -- node[lab] {\$} (l6);
+  \draw[edge] (r) -- node[lab,pos=0.7] {\$} (l6);
   \draw[edge] (r) -- node[lab] {a} (a);
-  \draw[edge] (r) -- node[lab] {banana\$} (l0);
+  \draw[edge] (r) -- node[lab,pos=0.3] {banana\$} (l0);
   \draw[edge] (r) -- node[lab] {na} (na);
   \draw[edge] (a) -- node[lab] {\$} (l5);
   \draw[edge] (a) -- node[lab] {na} (ana);
@@ -40,6 +40,6 @@
   \draw[edge] (na) -- node[lab] {na\$} (l2);
   \draw[sl] (ana.east) to[out=0,in=-135] (na.south west);
   \draw[sl] (na.west) -- (a.east);
-  \draw[sl] (a.north east) to[out=10,in=-110] (r.south west);
+  \draw[sl] (a.north) to[out=80,in=180] (r.west);
 \end{tikzpicture}
 \end{document}

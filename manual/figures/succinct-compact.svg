@@ -497,7 +497,7 @@
 <use xlink:href="#glyph-2-2" x="385.433869" y="33.898605"/>
 </g>
 <path fill-rule="nonzero" fill="rgb(43.920898%, 18.824768%, 62.745667%)" fill-opacity="1" d="M 270.878906 38.703125 L 270.878906 23.433594 L 278.515625 23.433594 L 278.515625 38.703125 Z M 270.878906 38.703125 "/>
-<path fill="none" stroke-width="1.0959" stroke-linecap="round" stroke-linejoin="miter" stroke="rgb(64.898682%, 64.898682%, 64.898682%)" stroke-opacity="1" stroke-dasharray="2.98883 1.99255" stroke-miterlimit="10" d="M 235.28039 -8.503081 L 235.28039 12.756122 " transform="matrix(0.997546, 0, 0, -0.997546, 43.812632, 31.068568)"/>
+<path fill="none" stroke-width="0.79701" stroke-linecap="round" stroke-linejoin="miter" stroke="rgb(64.898682%, 64.898682%, 64.898682%)" stroke-opacity="1" stroke-dasharray="2.98883 1.99255" stroke-miterlimit="10" d="M 235.28039 -8.503081 L 235.28039 12.756122 " transform="matrix(0.997546, 0, 0, -0.997546, 43.812632, 31.068568)"/>
 <g fill="rgb(57.099915%, 57.099915%, 57.099915%)" fill-opacity="1">
 <use xlink:href="#glyph-3-0" x="277.104706" y="17.863055"/>
 </g>

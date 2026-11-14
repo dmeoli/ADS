@@ -107,7 +107,7 @@ free block (4 words at least), the block is split and the request gets its
 *upper* part; hence, the lower part keeps its place on the list, and only
 its tags change.
 
-![Figure 5.1. A `BoundaryTagAllocator` of 24 words with the blocks at 0 and at 12 free (6 and 8 words) and those at 6 and at 20 in use (6 and 4 words), before and after `free(7)`; the tags hold $+s$ for a free block and $-s$ for a block in use, `nx` and `pv` are the links of a free block, the shaded block is the one freed, the grey ones are free.](../figures/memory-tags.svg){#fig-5-1}
+![Figure 5.1. A `BoundaryTagAllocator` of 24 words with the blocks at 0 and at 12 free (6 and 8 words) and those at 6 and at 20 in use (6 and 4 words), before and after `free(7)`; the tags hold $+s$ for a free block and $-s$ for a block in use, `nx` and `pv` are the links of a free block, the violet block is the one freed, those in the faintest tint are free.](../figures/memory-tags.svg){#fig-5-1}
 
 A freed block reads the tag just below it, which is the upper tag of the
 block below, and the tag just above it, which is the lower tag of the
@@ -254,7 +254,7 @@ next place, after appending a new block when the last one is full
 ([Algorithm 5.3](05-memory.md#alg-5-3) and
 [Figure 5.3](05-memory.md#fig-5-3)).
 
-![Figure 5.3. An `Arena` of blocks of $n = 4$ objects: the vector of the blocks, the first block full and the second one with $\mathit{used} = 2$, after `make(g)`; the shaded place is the one built.](../figures/memory-arena.svg){#fig-5-3}
+![Figure 5.3. An `Arena` of blocks of $n = 4$ objects: the vector of the blocks, the first block full and the second one with $\mathit{used} = 2$, after `make(g)`; the orange place is the one built.](../figures/memory-arena.svg){#fig-5-3}
 
 <span id="alg-5-3"></span>**Algorithm 5.3.** The construction of an object
 in an `Arena` ([Hanson 1990](Z-bibliography.md#ref-hanson1990)).
@@ -398,7 +398,7 @@ blocks given back of the class $c$ and $[ \mathit{next}_c ,
 
 --8<-- "generated/SizeClassAllocator-allocate.pseudo.md"
 
-![Figure 5.5. The page of the class 2 (blocks of 32 bytes) of a `SizeClassAllocator`, after its header: before, the block 1 is on $F_2$ and the blocks from 3 on were never given; `allocate(20)` pops the block 1, and `allocate(25)` cuts the block 3 from the page. The shaded cell is the block given, the grey ones are free.](../figures/memory-sizeclass.svg){#fig-5-5}
+![Figure 5.5. The page of the class 2 (blocks of 32 bytes) of a `SizeClassAllocator`, after its header: before, the block 1 is on $F_2$ and the blocks from 3 on were never given; `allocate(20)` pops the block 1, and `allocate(25)` cuts the block 3 from the page. The violet cell is the block given, those in the faintest tint are free.](../figures/memory-sizeclass.svg){#fig-5-5}
 
 <span id="lem-5-6"></span>**Lemma 5.6.** *A request of $n > 128$ bytes
 to `SizeClassAllocator` wastes less than 20% of its block, and less than
@@ -580,7 +580,7 @@ batches of snmalloc ([Lietar et al.
 2019](Z-bibliography.md#ref-lietar2019)), on the free lists by page of
 mimalloc ([Leijen et al. 2019](Z-bibliography.md#ref-leijen2019)).
 
-![Figure 5.7. The batch of the thread B for the class $c$, with two slots of the heap of A, and the stack of the returns of A for $c$, before and after `send()`, which links the batch on the top of the stack by one CAS (the shaded slots).](../figures/memory-concurrent.svg){#fig-5-7}
+![Figure 5.7. The batch of the thread B for the class $c$, with two slots of the heap of A, and the stack of the returns of A for $c$, before and after `send()`, which links the batch on the top of the stack by one CAS (the orange slots).](../figures/memory-concurrent.svg){#fig-5-7}
 
 <span id="alg-5-8"></span>**Algorithm 5.8.** The operations of
 `ConcurrentPoolResource` (the heaps of the threads of [Berger et al.
@@ -718,7 +718,7 @@ follows and restores it on the way back, with one bit per cell
 ($\mathit{side}$) for the field that holds the reversed pointer
 ([Figure 5.9](05-memory.md#fig-5-9)).
 
-![Figure 5.9. Three cells $a$, $b$, $c$ reachable from a root, and the same cells during the marking by pointer reversal, when the visit has gone down the `car` of $a$ and of $b$ and stands at the atom 1 ($c$) with $b$ as the previous cell ($p$); the dashed fields hold the reversed pointers, i.e., the path back to the root, and the shaded cells are marked.](../figures/memory-cellheap.svg){#fig-5-9}
+![Figure 5.9. Three cells $a$, $b$, $c$ reachable from a root, and the same cells during the marking by pointer reversal, when the visit has gone down the `car` of $a$ and of $b$ and stands at the atom 1 ($c$) with $b$ as the previous cell ($p$); the dashed violet arrows are the reversed pointers, i.e., the path back to the root, and the violet cells are marked.](../figures/memory-cellheap.svg){#fig-5-9}
 
 <span id="alg-5-10"></span>**Algorithm 5.10.** The operations of
 `CellHeap` ([Knuth 1997, §2.3.5 and Algorithm

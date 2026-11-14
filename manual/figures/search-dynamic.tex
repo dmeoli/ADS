@@ -11,11 +11,13 @@
 \usepackage{lamalunga}
 \input{tikz-ads}
 \usetikzlibrary{decorations.pathreplacing}
-\tikzset{c/.style={cell,minimum width=4mm,minimum height=5mm,font=\scriptsize\ttfamily}}
+\tikzset{c/.style={cell,minimum width=4mm,minimum height=5mm,font=\scriptsize\ttfamily},
+  cf/.style={free,minimum width=4mm,minimum height=5mm},
+  ct/.style={touched,minimum width=4mm,minimum height=5mm,font=\scriptsize\ttfamily}}
 % \lev{name}{y}{used}{free}{x}: a level of used cells, then free ones
 \newcommand{\lev}[5]{%
   \foreach \i in {1,...,#3} \node[c,#5] at (\i*4mm,#2) {};
-  \ifnum#4>0 \foreach \i in {1,...,#4} \node[c,fill=adsFree] at (#3*4mm+\i*4mm,#2) {};\fi}
+  \ifnum#4>0 \foreach \i in {1,...,#4} \node[cf] at (#3*4mm+\i*4mm,#2) {};\fi}
 \begin{document}
 \begin{tikzpicture}[ads]
   \node[var] at (34mm,8mm) {before};
@@ -24,12 +26,12 @@
   \node[c] at (8mm,-7mm) {x};
   \node[var,anchor=east] at (1mm,-14mm) {$L_2$}; \lev{c}{-14mm}{10}{6}{}
   \node[var] at (114mm,8mm) {after an insertion};
-  \node[var,anchor=east] at (81mm,0) {$L_0$}; \node[c,fill=adsFree] at (84mm,0) {}; \node[c,fill=adsFree] at (88mm,0) {}; \node[c,fill=adsFree] at (92mm,0) {}; \node[c,fill=adsFree] at (96mm,0) {};
+  \node[var,anchor=east] at (81mm,0) {$L_0$}; \node[cf] at (84mm,0) {}; \node[cf] at (88mm,0) {}; \node[cf] at (92mm,0) {}; \node[cf] at (96mm,0) {};
   \node[var,anchor=east] at (81mm,-7mm) {$L_1$};
-  \foreach \i in {1,...,8} \node[c,fill=adsTouched] at (80mm+\i*4mm,-7mm) {};
-  \node[c,fill=adsTouched] at (92mm,-7mm) {x};
+  \foreach \i in {1,...,8} \node[ct] at (80mm+\i*4mm,-7mm) {};
+  \node[ct] at (92mm,-7mm) {x};
   \node[var,anchor=east] at (81mm,-14mm) {$L_2$};
   \foreach \i in {1,...,10} \node[c] at (80mm+\i*4mm,-14mm) {};
-  \foreach \i in {11,...,16} \node[c,fill=adsFree] at (80mm+\i*4mm,-14mm) {};
+  \foreach \i in {11,...,16} \node[cf] at (80mm+\i*4mm,-14mm) {};
 \end{tikzpicture}
 \end{document}

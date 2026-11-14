@@ -23,7 +23,7 @@
   \bud{8}{16}{-14mm}{cell}{\rmfamily $2^3$, in use}
   \foreach \a/\b in {0/0000,4/0100,8/1000,16/10000}
     \node[index,anchor=north] at (\a*7mm,-18.5mm) {\b};
-  \draw[ptr] (0,8mm) node[above=0.5mm,font=\scriptsize\ttfamily] {free(0)}
+  \draw[ptr] (0,8mm) node[above=0.5mm,font=\scriptsize\ttfamily,text=adsInk] {free(0)}
     -- (0,3.5mm);
   \node[var,anchor=west,align=left] at (117mm,0)
     {$0 \oplus 2^2 = 4$ is free: merge};

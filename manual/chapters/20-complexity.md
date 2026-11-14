@@ -1143,7 +1143,7 @@ best circuit of the neighbourhood, costs $O( n^2 )$
 applies one move, reversing $\pi[ i + 1 .. j ]$, and the costs of the
 circuits visited go to `*trace`, if given.
 
-![Figure 20.4. A move of `twoOpt()` on eight cities: the edges $( 2 , 3 )$ and $( 5 , 6 )$ of $\pi$ (dashed), which cross, are replaced by $( 2 , 5 )$ and $( 3 , 6 )$, and the stretch $3 , 4 , 5$ is reversed.](../figures/intractable-twoopt.svg){#fig-20-4}
+![Figure 20.4. A move of `twoOpt()` on eight cities: the edges $( 2 , 3 )$ and $( 5 , 6 )$ of $\pi$ (dashed), which cross, are replaced by $( 2 , 5 )$ and $( 3 , 6 )$ (orange), and the stretch $3 , 4 , 5$ is reversed.](../figures/intractable-twoopt.svg){#fig-20-4}
 
 <span id="alg-20-23"></span>**Algorithm 20.23.** The local search on
 $I_2$, the size of $I_k$, and the local search for PARTITION
@@ -1188,7 +1188,7 @@ Fibonacci heap ([Figure 20.5](20-complexity.md#fig-20-5)). This is the
 algorithm A* of [Hart, Nilsson and Raphael
 1968](Z-bibliography.md#ref-hart1968) ([Algorithm 20.24](20-complexity.md#alg-20-24)).
 
-![Figure 20.5. A configuration of the $3 \times 3$ puzzle and the moves of the tiles 5 and 8 that reach the goal, with the moves $g$ from the start and the bound $h$ of `manhattan()`; the shaded tiles are those out of place, or just moved.](../figures/intractable-puzzle.svg){#fig-20-5}
+![Figure 20.5. A configuration of the $3 \times 3$ puzzle and the moves of the tiles 5 and 8 that reach the goal, with the moves $g$ from the start and the bound $h$ of `manhattan()`; the violet tiles are those out of place, or just moved.](../figures/intractable-puzzle.svg){#fig-20-5}
 
 <span id="alg-20-24"></span>**Algorithm 20.24.** The fifteen puzzle by
 A*, by the visit in breadth and by backtracking, and the test of

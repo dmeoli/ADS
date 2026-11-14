@@ -1,7 +1,7 @@
 % Source for the figure of LoudsTree, BalancedParentheses and BPTree (sec.
 % 22.8): an ordered tree of 8 nodes numbered by levels (and, in parentheses,
 % in preorder), its code by LOUDS after the dummy root, and its balanced
-% parentheses with their excess, the pair of the node 1 shaded.
+% parentheses with their excess, the pair of the node 1 in violet.
 % Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
@@ -48,6 +48,6 @@
   \node[index,anchor=east] at (40mm-3.5mm,-44mm) {0};
   \node[index,anchor=east] at (40mm-3.5mm,-38mm) {$E$};
   \draw[edge-touched] plot coordinates {(40mm-2.75mm,-44mm) (40.0mm,-42.5mm) (45.5mm,-41.0mm) (51.0mm,-39.5mm) (56.5mm,-41.0mm) (62.0mm,-39.5mm) (67.5mm,-38.0mm) (73.0mm,-39.5mm) (78.5mm,-41.0mm) (84.0mm,-42.5mm) (89.5mm,-41.0mm) (95.0mm,-42.5mm) (100.5mm,-41.0mm) (106.0mm,-39.5mm) (111.5mm,-41.0mm) (117.0mm,-42.5mm) (122.5mm,-44.0mm)};
-  \draw[edge,densely dashed] (45.5mm,-42.5mm) -- (84mm,-42.5mm);
+  \draw[guide] (45.5mm,-42.5mm) -- (84mm,-42.5mm);
 \end{tikzpicture}
 \end{document}

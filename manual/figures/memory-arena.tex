@@ -17,10 +17,11 @@
   \node[index,left=1.2mm of v-0] {0};
   \node[index,left=1.2mm of v-1] {1};
   \cells{a}{30mm,8mm}{a/cell,b/cell,c/cell,d/cell}
-  \cells{b}{30mm,-8mm}{e/cell,f/cell,g/touched,/free}
+  \cells{b}{30mm,-8mm}{e/cell,f/cell,g/added,/free}
   \draw[ptr] (v-0.center) -- (a-0.west);
   \draw[ptr] (v-1.center) -- (b-0.west);
-  \fill (v-0.center) circle (0.6mm); \fill (v-1.center) circle (0.6mm);
+  \fill[adsInk] (v-0.center) circle (0.6mm);
+  \fill[adsInk] (v-1.center) circle (0.6mm);
   \node[var,anchor=west] at (61mm,8mm) {full};
   \node[var,anchor=west] at (61mm,-8mm)
     {$\mathit{used}$ from 2 to 3 by \texttt{make(g)}};

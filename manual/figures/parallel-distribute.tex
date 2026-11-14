@@ -10,20 +10,21 @@
 \usepackage{tikz}
 \usepackage{lamalunga}
 \input{tikz-ads}
-\tikzset{b0/.style={cell},b1/.style={cell,fill=adsTouched},
-         b2/.style={cell,fill=adsFree}}
+\colorlet{adsDeep}{\goldentint{adsPrimary}{2}}
+\tikzset{b0/.style={cell},b1/.style={touched},
+         b2/.style={cell,fill=adsDeep}}
 \begin{document}
 \begin{tikzpicture}[ads]
   \node[var,anchor=east] at (-4mm,0) {$A$};
   \cells{A}{0,0}{b1/b1,a1/b0,c1/b2,b2/b1,a2/b0,a3/b0,c2/b2,b3/b1,c3/b2,b4/b1,a4/b0,a5/b0}
   \indices{A}{12}
-  \draw[thick] ($(A-3.north east)+(0,2mm)$) -- ($(A-3.south east)+(0,-6mm)$);
-  \draw[thick] ($(A-7.north east)+(0,2mm)$) -- ($(A-7.south east)+(0,-6mm)$);
-  \node[var] at ($(A-1.north east)+(0,4mm)$) {block 0};
-  \node[var] at ($(A-5.north east)+(0,4mm)$) {block 1};
-  \node[var] at ($(A-9.north east)+(0,4mm)$) {block 2};
+  \draw[draw=adsInk,line width=1.1pt] ($(A-3.north east)+(0,2mm)$) -- ($(A-3.south east)+(0,-6mm)$);
+  \draw[draw=adsInk,line width=1.1pt] ($(A-7.north east)+(0,2mm)$) -- ($(A-7.south east)+(0,-6mm)$);
+  \node[var] at ($(A-1.north east)+(0,9mm)$) {block 0};
+  \node[var] at ($(A-5.north east)+(0,9mm)$) {block 1};
+  \node[var] at ($(A-9.north east)+(0,9mm)$) {block 2};
   % the counts and the places
-  \node[anchor=north west,font=\small] at (90mm,7mm) {%
+  \node[anchor=north west,font=\small,text=adsInk] at (90mm,7mm) {%
     \begin{tabular}{@{}l@{\quad}ccc@{\qquad}ccc@{}}
       & \multicolumn{3}{c}{\itshape counts} &
         \multicolumn{3}{c}{\itshape places} \\

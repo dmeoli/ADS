@@ -12,19 +12,19 @@
 \begin{tikzpicture}[ads]
   \foreach \y/\n in {0/1,-10/2,-20/3}
     \node[var,anchor=east] at (-4mm,\y mm) {thread \n};
-  \draw[thick,|-|] (0,0) -- (60mm,0);
+  \draw[draw=adsInk,line width=1.1pt,|-|] (0,0) -- (60mm,0);
   \node[font=\small\ttfamily,above=1.8mm] at (30mm,0) {push(a)};
-  \draw[thick,|-|] (10mm,-10mm) -- (32mm,-10mm);
+  \draw[draw=adsInk,line width=1.1pt,|-|] (10mm,-10mm) -- (32mm,-10mm);
   \node[font=\small\ttfamily,above=1.8mm] at (21mm,-10mm) {push(b)};
-  \draw[thick,|-|] (45mm,-20mm) -- (95mm,-20mm);
+  \draw[draw=adsInk,line width=1.1pt,|-|] (45mm,-20mm) -- (95mm,-20mm);
   \node[font=\small\ttfamily,above=1.8mm] at (78mm,-20mm) {pop() returns b};
-  \fill (50mm,0) circle (1.1mm);
-  \fill (20mm,-10mm) circle (1.1mm);
-  \fill (62mm,-20mm) circle (1.1mm);
-  \draw[densely dotted,black!50] (20mm,-12mm) -- (20mm,-29mm);
-  \draw[densely dotted,black!50] (50mm,-2mm) -- (50mm,-29mm);
-  \draw[densely dotted,black!50] (62mm,-22mm) -- (62mm,-29mm);
-  \draw[->] (-2mm,-30mm) -- (100mm,-30mm) node[var,anchor=west] {time};
+  \node[point-touched] at (50mm,0) {};
+  \node[point-touched] at (20mm,-10mm) {};
+  \node[point-touched] at (62mm,-20mm) {};
+  \draw[guide] (20mm,-12mm) -- (20mm,-29mm);
+  \draw[guide] (50mm,-2mm) -- (50mm,-29mm);
+  \draw[guide] (62mm,-22mm) -- (62mm,-29mm);
+  \draw[axis] (-2mm,-30mm) -- (100mm,-30mm) node[var,anchor=west] {time};
   \node[index,below=1.5mm] at (20mm,-30mm) {push(b)};
   \node[index,below=1.5mm] at (50mm,-30mm) {push(a)};
   \node[index,below=1.5mm] at (63mm,-30mm) {pop};

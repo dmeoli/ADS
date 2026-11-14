@@ -14,9 +14,9 @@
 \begin{document}
 \begin{tikzpicture}[ads,x=12mm]
   % the address space, 2 MB a tick
-  \draw[->] (-0.6,0) -- (9.6,0);
+  \draw[axis] (-0.6,0) -- (9.6,0);
   \foreach \i in {0,2,...,8}
-    \draw (\i,-1mm) -- (\i,1mm);
+    \draw[adsInk!45,line width=0.6pt] (\i,-1mm) -- (\i,1mm);
   \foreach \i/\t in {0/$0$,2/$2$,4/$4$,6/$6$,8/$8$}
     \node[index,below=1.5mm] at (\i,0) {\t};
   \node[index,anchor=west] at (9.7,0) {MB};
@@ -25,7 +25,7 @@
     at (2,2mm) {$b = 5$ MB in use};
   \node[free,minimum width=12mm,minimum height=7mm,anchor=south west]
     at (7,2mm) {};
-  \draw[decorate,decoration={brace,amplitude=4pt}]
+  \draw[adsInk!55,decorate,decoration={brace,amplitude=4pt}]
     (2,10.5mm) -- (8,10.5mm) node[midway,above=2mm,var]
     {$r = P \lceil b / P \rceil = 6$ MB, aligned to $P = 2$ MB};
   \node[var,anchor=north] at (7.5,-6mm) {never touched};

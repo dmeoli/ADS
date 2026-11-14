@@ -13,15 +13,15 @@
 \begin{document}
 \begin{tikzpicture}[ads,fld/.style={cell,minimum height=7mm,font=\small}]
   % the block t: four words, the word 0 on the left, the bits of W[4t+2]
-  % before i shaded
+  % before i in violet
   \node[var,anchor=east] at (-2mm,0) {block $t$};
   \foreach \w/\p in {0/13,1/40,2/7,3/22}
     {\node[cell,minimum width=26mm,font=\small] (w\w) at (13mm+\w*26mm,0)
        {$W[ 4 t + \w ]$};
      \node[index,below=1.2mm of w\w] {popcount $= \p$};}
   \fill[adsPrimary] (52.3mm,-3.2mm) rectangle (56mm,3.2mm);
-  \draw[edge,densely dashed] (56mm,-3.5mm) -- (56mm,5.5mm);
-  \node[index,anchor=south] at (56mm,5.6mm) {$i$};
+  \draw[guide] (56mm,-3.5mm) -- (56mm,5.5mm);
+  \node[index,anchor=south] at (56mm,6.6mm) {$i$};
   % the entry D[t]
   \node[var,anchor=east] at (-2mm,-17mm) {$D[ t ]$};
   \node[fld,minimum width=52mm,anchor=west] (e0) at (0,-17mm)
@@ -38,13 +38,13 @@
   \draw[edge] (0,-40mm) -- (104mm,-40mm);
   \foreach \x in {4,21,38,55,72,89}
     {\draw[edge] (\x mm,-41.5mm) -- (\x mm,-38.5mm);
-     \fill[adsPrimary] (\x mm,-40mm) circle (0.9mm);}
+     \node[point-touched,minimum size=1.8mm] at (\x mm,-40mm) {};}
   \draw[edge] (104mm,-42mm) -- (104mm,-38mm);
-  \node[index,anchor=north] at (4mm,-42mm) {$P[ j ]$};
-  \node[index,anchor=north] at (104mm,-42.5mm) {$P[ j + 1 ]$};
+  \node[index,anchor=north] at (4mm,-43mm) {$P[ j ]$};
+  \node[index,anchor=north] at (104mm,-43mm) {$P[ j + 1 ]$};
   \foreach \x in {21,38,55,72,89}
-    \node[index,anchor=north] at (\x mm,-42mm) {$+ O[ \cdot ]$};
-  \node[index,anchor=west] at (0,-48mm)
+    \node[index,anchor=north] at (\x mm,-43mm) {$+ O[ \cdot ]$};
+  \node[index,anchor=west] at (0,-49mm)
     {the 1s of rank $0 , 2^g , 2 \cdot 2^g , \ldots$ of the group (dots), at offsets of 16 bits from $P[ j ]$};
 \end{tikzpicture}
 \end{document}

@@ -194,7 +194,7 @@ the vertices that make a turn not to the left
 choices made so far. [Figure 16.1](16-geometry.md#fig-16-1) shows the scan
 of a point that pops two vertices.
 
-![Figure 16.1. The scan of Graham on seven points sorted by angle around $o$: before the scan of $p_4$, the stack holds $o$, $p_1$, $p_2$, $p_3$ (violet, joined by the chain), and the other points are light; $p_4$ makes a right turn with $p_2$ and $p_3$, and then with $p_1$ and $p_2$, so that $p_3$ and $p_2$ are popped before $p_4$ is pushed (orange).](../figures/geometry-graham.svg){#fig-16-1}
+![Figure 16.1. The scan of Graham on seven points sorted by angle around $o$: before the scan of $p_4$, the stack holds $o$, $p_1$, $p_2$, $p_3$ (violet, joined by the chain), and the other points are grey; $p_4$ makes a right turn with $p_2$ and $p_3$, and then with $p_1$ and $p_2$, so that $p_3$ and $p_2$ are popped before $p_4$ is pushed (orange).](../figures/geometry-graham.svg){#fig-16-1}
 
 <span id="alg-16-2"></span>**Algorithm 16.2.** The scan of Graham
 ([Graham 1972](Z-bibliography.md#ref-graham1972); [Montresor 2025,
@@ -287,7 +287,7 @@ points left is $o( n )$ in expectation ([Devroye and Toussaint
 contrary, most points survive, and the filter costs one pass over $P$ with
 little or no benefit.
 
-![Figure 16.2. The filter of `convexHull()` on 58 random points: the extreme points in the eight directions (squares, here 7 distinct ones) span the octagon (shaded), whose inner points (light) are dropped; of the 11 points left (violet), the monotone chain keeps the 9 vertices of the hull (dashed).](../figures/geometry-octagon.svg){#fig-16-2}
+![Figure 16.2. The filter of `convexHull()` on 58 random points: the extreme points in the eight directions (squares, here 7 distinct ones) span the octagon (faintest tint), whose inner points (grey) are dropped; of the 11 points left (violet), the monotone chain keeps the 9 vertices of the hull (dashed).](../figures/geometry-octagon.svg){#fig-16-2}
 
 Second, sorting the points left by $x$ and then $y$,
 instead of by angle, allows a radix sort. With $| x | , | y | < 2^{31}$,
@@ -393,7 +393,7 @@ $x \ge x_m$; hence, a square on the left of the line holds at most one
 point of the left half, and similarly on the right. Thus the rectangle
 holds at most 8 points, $p$ included. $\square$
 
-![Figure 16.3. The strip of width $2 \delta$ about the split $x = x_m$ (light), with the points of each half at least $\delta$ apart; the points that follow $p$ in the strip by less than $\delta$ in ordinate lie in the rectangle above it (darker), whose 8 squares of side $\delta / 2$ hold at most one point each.](../figures/geometry-strip.svg){#fig-16-3}
+![Figure 16.3. The strip of width $2 \delta$ about the split $x = x_m$ (faintest tint), with the points of each half at least $\delta$ apart; the points that follow $p$ in the strip by less than $\delta$ in ordinate lie in the rectangle above it (in a deeper tint), whose 8 squares of side $\delta / 2$ hold at most one point each.](../figures/geometry-strip.svg){#fig-16-3}
 
 The recursion returns each range sorted by $y$, merging the two halves as
 mergesort does, so that the strip comes out in order of $y$ in linear time;

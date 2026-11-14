@@ -24,7 +24,7 @@
   \foreach \x/\l/\r in {0/191/128,55/127/64,110/63/0}
     {\node[index,anchor=north west] at (\x mm,-0.8mm) {\l};
      \node[index,anchor=north east] at (\x mm+64*\u,-0.8mm) {\r};}
-  \draw[edge,densely dashed] (55mm+28*\u,0) -- (55mm+28*\u,6mm);
+  \draw[guide] (55mm+28*\u,0) -- (55mm+28*\u,6mm);
   \node[font=\scriptsize,text=adsInk!55] at (32*\u,3mm) {all 0};
   \node[font=\scriptsize,text=adsInk!55] at (55mm+14*\u,3mm) {0};
   \node[index,anchor=north] at (55mm+28*\u,-0.8mm) {$n = 100$};

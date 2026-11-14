@@ -12,8 +12,8 @@
 \tikzset{
   pt/.style={vertex-touched,minimum size=2.8mm},
   new/.style={vertex-added,minimum size=2.8mm},
-  gone/.style={vertex,minimum size=2.8mm},
-  todo/.style={vertex,minimum size=2.8mm},
+  gone/.style={point},
+  todo/.style={point},
   chain/.style={edge-touched},
   lbl/.style={font=\small,text=adsInk}
 }
@@ -40,7 +40,7 @@
   % before: the stack o p1 p2 p3, and p4 to be scanned
   \pts{0mm}{pt}{pt}{todo}
   \draw[chain] (o) -- (p1) -- (p2) -- (p3);
-  \draw[edge,dashed] (p3) -- (p4);
+  \draw[guide] (p3) -- (p4);
   \node[var] at (24mm,-9mm) {before the scan of $p_4$};
   \cells{a}{10mm,-17mm}{o/cell,p1/cell,p2/cell,p3/cell}
   \node[index,anchor=east] at (5mm,-17mm) {bottom};

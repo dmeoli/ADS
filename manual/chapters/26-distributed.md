@@ -69,7 +69,7 @@ $\mathit{ex}$ inside each process, and without one.
 
 --8<-- "generated/DistributedSort-sort-2.pseudo.md"
 
-![Figure 26.1. Sort by regular sampling on $P = 3$ processes of nine items each: the samples at the places 3 and 6 of each process (shaded) give the sorted samples 8, 10, 15, 17, 19, 24, and hence the splitters 15 and 19; each process cuts its items before 15 and before 19 (thick lines), and after the exchange and the merge the processes hold 14, 4 and 9 items, fewer than $2 n / P = 18$ each.](../figures/distributed-sort.svg){#fig-26-1}
+![Figure 26.1. Sort by regular sampling on $P = 3$ processes of nine items each: the samples at the places 3 and 6 of each process (violet) give the sorted samples 8, 10, 15, 17, 19, 24, and hence the splitters 15 and 19; each process cuts its items before 15 and before 19 (thick lines), and after the exchange and the merge the processes hold 14, 4 and 9 items, fewer than $2 n / P = 18$ each.](../figures/distributed-sort.svg){#fig-26-1}
 
 Since all the processes cut at the same splitters, the items received by
 the process $j$ are those of all the processes in its interval, and their

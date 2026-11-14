@@ -9,10 +9,10 @@
 \usepackage{tikz}
 \usepackage{lamalunga}
 \input{tikz-ads}
-\tikzset{tl/.style={draw,minimum width=16mm,minimum height=8mm,
-                    font=\small,outer sep=0pt},
-         tlT/.style={tl,fill=adsTouched},
-         tlF/.style={tl,fill=adsFree,text=black!45}}
+\tikzset{tl/.style={cell,minimum width=16mm,minimum height=8mm,font=\small},
+         tlT/.style={touched,minimum width=16mm,minimum height=8mm,
+                     font=\small\bfseries},
+         tlF/.style={free,minimum width=16mm,minimum height=8mm,font=\small}}
 \begin{document}
 \begin{tikzpicture}[ads]
   \node[var,anchor=east] at (-4mm,0) {look-back};
@@ -30,10 +30,10 @@
   \node[tlT] (u4) at (72mm,-18mm) {2: $P_4$};
   \node[tl] (u5) at (88mm,-18mm) {1: $a_5$};
   \foreach \i in {0,...,5} \node[index,below=1.2mm of u\i] {\i};
-  \draw[ptr] (t4.north) to[bend right=50] (t3.north);
-  \draw[ptr] (t3.north) to[bend right=50] (t2.north);
-  \draw[ptr] (t2.north) to[bend right=50] (t1.north);
-  \draw[ptr] (t1.north) to[bend right=50] (t0.north);
+  \draw[arc-touched] (t4.north) to[bend right=50] (t3.north);
+  \draw[arc-touched] (t3.north) to[bend right=50] (t2.north);
+  \draw[arc-touched] (t2.north) to[bend right=50] (t1.north);
+  \draw[arc-touched] (t1.north) to[bend right=50] (t0.north);
   \node[var,anchor=west] at (100mm,0)
     {$e = P_0 \oplus a_1 \oplus a_2 \oplus a_3$};
   \node[var,anchor=west] at (100mm,-18mm) {$P_4 = e \oplus a_4$};

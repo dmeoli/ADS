@@ -12,17 +12,17 @@
 \begin{document}
 \begin{tikzpicture}[ads]
   \foreach \i/\k/\a in {0/0.5/2,1/1/1,2/1/2,3/0.5/2} {
-    \draw (\i*14mm,0) rectangle (\i*14mm+10mm,\k*24mm);
-    \node[font=\small\ttfamily] at (\i*14mm+5mm,\k*12mm) {\i};
+    \fill[adsTint,rounded corners=1.6pt] (\i*14mm,0) rectangle (\i*14mm+10mm,\k*24mm);
+    \node[font=\small\ttfamily,text=adsInk] at (\i*14mm+5mm,\k*12mm) {\i};
     \ifdim\k pt<1pt
-      \draw[fill=adsTouched] (\i*14mm,\k*24mm) rectangle (\i*14mm+10mm,24mm);
-      \node[font=\small\ttfamily] at (\i*14mm+5mm,\k*12mm+12mm) {\a};
+      \fill[adsPrimary,rounded corners=1.6pt] (\i*14mm,\k*24mm+0.6pt) rectangle (\i*14mm+10mm,24mm);
+      \node[font=\small\ttfamily\bfseries,text=adsOnPrimary] at (\i*14mm+5mm,\k*12mm+12mm) {\a};
     \fi
     \node[index] at (\i*14mm+5mm,-3mm) {cell \i};
   }
-  \draw (-4mm,0) -- (-4mm,24mm);
+  \draw[edge,line width=0.6pt] (-4mm,0) -- (-4mm,24mm);
   \foreach \y/\t in {0/0,12/{1/2},24/1} {
-    \draw (-5mm,\y mm) -- (-4mm,\y mm);
+    \draw[edge,line width=0.6pt] (-5mm,\y mm) -- (-4mm,\y mm);
     \node[index,anchor=east] at (-6mm,\y mm) {$\t$}; }
 \end{tikzpicture}
 \end{document}

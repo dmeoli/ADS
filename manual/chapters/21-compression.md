@@ -179,7 +179,7 @@ without rounding up. This is the same on the "complete" codes that the merges of
 decoder right on a code that is not complete, e.g., one cut by a limit on
 the lengths.
 
-![Figure 21.1. The canonical code of the lengths a 4, b 4, c 3, d 2, e 2, f 3, g 3 (those of the code of Huffman of the probabilities 0.05, 0.05, 0.1, 0.2, 0.3, 0.2, 0.1), with the codewords under the leaves, and the arrays $\mathit{fc}$ and $\mathit{symb}$ that replace the tree; the codeword 11 of e (shaded) is decoded at $l = 2$, the first length at which the value of the bits read, 3, reaches $\mathit{fc}[ l ] = 2$.](../figures/compression-huffman.svg){#fig-21-1}
+![Figure 21.1. The canonical code of the lengths a 4, b 4, c 3, d 2, e 2, f 3, g 3 (those of the code of Huffman of the probabilities 0.05, 0.05, 0.1, 0.2, 0.3, 0.2, 0.1), with the codewords under the leaves, and the arrays $\mathit{fc}$ and $\mathit{symb}$ that replace the tree; the codeword 11 of e (violet) is decoded at $l = 2$, the first length at which the value of the bits read, 3, reaches $\mathit{fc}[ l ] = 2$.](../figures/compression-huffman.svg){#fig-21-1}
 
 <span id="alg-21-2"></span>**Algorithm 21.2.** The canonical code of given
 lengths, and the decoding of a codeword
@@ -390,7 +390,7 @@ the code in exact rationals (`ADS/numeric/Rational.h`), in a time that may grow 
 ([Algorithm 21.6](21-compression.md#alg-21-6)). We use them as the reference for the integer coder below, and they give the numbers of the example of
 chapter 12 of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023).
 
-![Figure 21.3. The interval of abac narrowed symbol by symbol, with $P[ a ] = 1 / 2$ and $P[ b ] = P[ c ] = 1 / 4$: each row is the interval of the prefix read so far, split into the parts of the three symbols, and the part of the next symbol (shaded) becomes the next row. The last interval is $[ 19 / 64 , 20 / 64 )$, of size $s_4 = 1 / 64$, and the code is the first $d = 7$ bits of its midpoint, 0100111.](../figures/compression-arithmetic.svg){#fig-21-3}
+![Figure 21.3. The interval of abac narrowed symbol by symbol, with $P[ a ] = 1 / 2$ and $P[ b ] = P[ c ] = 1 / 4$: each row is the interval of the prefix read so far, split into the parts of the three symbols, and the part of the next symbol (violet) becomes the next row. The last interval is $[ 19 / 64 , 20 / 64 )$, of size $s_4 = 1 / 64$, and the code is the first $d = 7$ bits of its midpoint, 0100111.](../figures/compression-arithmetic.svg){#fig-21-3}
 
 <span id="alg-21-6"></span>**Algorithm 21.6.** The interval of a text, its
 code, and the decoding, in exact arithmetic.
@@ -902,7 +902,7 @@ prefix sum, for (typically) a fraction of a bit more per integer
 ([Algorithm 21.16](21-compression.md#alg-21-16)). On a processor without
 SSE2 the same layout is packed and unpacked a lane at a time.
 
-![Figure 21.4. The vertical layout of SIMD-BP128 for $b = 5$: the integer $4 q + l$ is in the lane $l$ at the bit $5 q$, the words 0 of the four lanes form the register $r_0$ and the words 1 the register $r_1$, and the field of $x_{24}, \ldots , x_{27}$ (shaded) crosses from one word of its lane to the next, which (21.13) reads from both.](../figures/compression-binarypacking.svg){#fig-21-4}
+![Figure 21.4. The vertical layout of SIMD-BP128 for $b = 5$: the integer $4 q + l$ is in the lane $l$ at the bit $5 q$, the words 0 of the four lanes form the register $r_0$ and the words 1 the register $r_1$, and the field of $x_{24}, \ldots , x_{27}$ (violet) crosses from one word of its lane to the next, which (21.13) reads from both.](../figures/compression-binarypacking.svg){#fig-21-4}
 
 <span id="alg-21-16"></span>**Algorithm 21.16.** The binary packing and its
 patched form ([Lemire and Boytsov 2015](Z-bibliography.md#ref-lemire2015)).
@@ -959,7 +959,7 @@ their bytes and moves their bytes by the shuffle of the inverse table. Its decod
 test while enough bytes follow; elsewhere the integers are moved one at a
 time, still with no test ([Algorithm 21.17](21-compression.md#alg-21-17)).
 
-![Figure 21.5. The integers 1024, 12, 70000 and 5 in Stream VByte: their control byte holds the lengths less 1 (1, 0, 2 and 0, the integer 0 in the low bits), their 7 bytes of data are little-endian, and one shuffle moves the bytes to the four places of 4 bytes of a register, the missing high bytes made 0 (grey).](../figures/compression-streamvbyte.svg){#fig-21-5}
+![Figure 21.5. The integers 1024, 12, 70000 and 5 in Stream VByte: their control byte holds the lengths less 1 (1, 0, 2 and 0, the integer 0 in the low bits), their 7 bytes of data are little-endian, and one shuffle moves the bytes to the four places of 4 bytes of a register, the missing high bytes made 0 (in the faintest tint).](../figures/compression-streamvbyte.svg){#fig-21-5}
 
 <span id="alg-21-17"></span>**Algorithm 21.17.** Stream VByte
 ([Lemire, Kurz and Rupp 2018](Z-bibliography.md#ref-lemire2018svb)), one
@@ -988,7 +988,7 @@ over the levels that $x_i$ reaches. Each level costs $O( 1 )$ time with
 the rank of `RankSelect` ([§22.3](22-succinct.md#sec-22-3)), i.e., one load
 of the directory and one sideways sum.
 
-![Figure 21.6. The sequence 5, 1, 18, 3, 260, 7, 40 in directly addressable codes with chunks of 3 bits: the level 0 holds the low chunk of every integer and the bits that mark which continue; the three that continue are, in their order, the items of the level 1, and so on. The access to $x_4$ (shaded) reads a chunk per level and moves by the rank of its bit.](../figures/compression-dac.svg){#fig-21-6}
+![Figure 21.6. The sequence 5, 1, 18, 3, 260, 7, 40 in directly addressable codes with chunks of 3 bits: the level 0 holds the low chunk of every integer and the bits that mark which continue; the three that continue are, in their order, the items of the level 1, and so on. The access to $x_4$ (violet) reads a chunk per level and moves by the rank of its bit.](../figures/compression-dac.svg){#fig-21-6}
 
 We write $n_s$ for the integers of more than $s$ bits ($n_0 = n$) and $w$ for the bits of the largest one; then a level that holds the bits $[ s , t )$ costs
 $n_s ( t - s )$ bits of chunks. Unless it is the last, it also costs $n_s$
@@ -1045,7 +1045,7 @@ to the copy and $c$ the symbol after it (none at the end of the text). Then the 
 prefixes the closest is chosen. The decoder copies one symbol at a time, which is right on an overlapping copy too (e.g., on a run of one symbol)
 ([Figure 21.7](21-compression.md#fig-21-7)).
 
-![Figure 21.7. The parse of LZ77 of aabbabab with no bound on the window: four phrases, the copies shaded and each symbol copied from the one at the tail of its arrow; the last phrase copies 3 symbols from 2 places back, and its third symbol is copied from its first one, which the decoder has just written.](../figures/compression-lz77.svg){#fig-21-7}
+![Figure 21.7. The parse of LZ77 of aabbabab with no bound on the window: four phrases, the copies in violet and each symbol copied from the one at the tail of its arrow; the last phrase copies 3 symbols from 2 places back, and its third symbol is copied from its first one, which the decoder has just written.](../figures/compression-lz77.svg){#fig-21-7}
 
 <span id="alg-21-19"></span>**Algorithm 21.19.** The parse of LZ77 by a
 search of the window, and its decoding.

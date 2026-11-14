@@ -18,8 +18,8 @@
   \node[#2,minimum width=14mm,font=\scriptsize\ttfamily] at (14mm,#1) {#3};
   \node[pg] at (28mm,#1) {P2 c=3};
   \node[pg] at (42mm,#1) {P3 c=1};
-  \node[pg,fill=adsFree] at (56mm,#1) {};
-  \node[font=\small] at (70mm,#1) {$\cdots$};}
+  \node[free,minimum width=14mm] at (56mm,#1) {};
+  \node[font=\small,text=adsInk] at (70mm,#1) {$\cdots$};}
 \begin{document}
 \begin{tikzpicture}[ads]
   \node[var,anchor=east] at (-9mm,0) {before};
@@ -36,7 +36,7 @@
   \node[cell,minimum width=26mm,font=\scriptsize\ttfamily,anchor=west]
     (h) at (-7mm,-30mm) {header, 64 bytes};
   \cells{s}{22.5mm,-30mm}{x/cell,y/cell,p/touched,z/cell,w/cell}
-  \node[font=\small] at (59mm,-30mm) {$\cdots$};
+  \node[font=\small,text=adsInk] at (59mm,-30mm) {$\cdots$};
   \node[var,anchor=west] at (65mm,-30mm)
     {$\mathrm{pageOf}( p ) = p \wedge \neg ( 2^{16} - 1 )$};
   \draw[ptr] (s-2.south) to[bend left=30] (h.south);

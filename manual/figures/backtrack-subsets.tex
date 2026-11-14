@@ -1,6 +1,6 @@
 % Source for the figure of subsets() (sec. 19.2): the tree of the choices
-% of the 2-subsets of 4 items, each place in (1) or out (0); the shaded
-% leaves are the solutions, the grey nodes are pruned. Build: make figures
+% of the 2-subsets of 4 items, each place in (1) or out (0); the violet
+% leaves are the solutions, the faintest nodes are pruned. Build: make figures
 % (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
@@ -12,10 +12,10 @@
 \begin{document}
 \begin{tikzpicture}[ads,
     n/.style={vertex,minimum size=3.6mm},
-    sol/.style={n,fill=adsPrimary},
+    sol/.style={vertex-touched,minimum size=3.6mm},
     cut/.style={n,fill=adsFree},
     e/.style={font=\scriptsize\ttfamily,text=adsInk!55,inner sep=2pt},
-    level distance=12mm,edge from parent/.style={edge,draw=adsInk!45},
+    level distance=12mm,edge from parent/.style={edge},
     level 1/.style={sibling distance=56mm},
     level 2/.style={sibling distance=28mm},
     level 3/.style={sibling distance=14mm},

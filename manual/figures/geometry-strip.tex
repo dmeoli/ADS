@@ -12,7 +12,7 @@
 \input{tikz-ads}
 \tikzset{
   pt/.style={vertex-touched,minimum size=2mm},
-  far/.style={vertex,minimum size=1.8mm}
+  far/.style={point,minimum size=1.8mm}
 }
 \begin{document}
 \begin{tikzpicture}[ads,x=8mm,y=8mm]
@@ -22,8 +22,8 @@
   \foreach \x in {-1,0,1} \draw[white,line width=1pt] (\x,1.4) -- (\x,3.4);
   \draw[white,line width=1pt] (-2,2.4) -- (2,2.4);
   
-  \draw[edge,dashed] (-2,-0.9) -- (-2,5.4);
-  \draw[edge,dashed] (2,-0.9) -- (2,5.4);
+  \draw[guide] (-2,-0.9) -- (-2,5.4);
+  \draw[guide] (2,-0.9) -- (2,5.4);
   \draw[edge-touched] (0,-1.0) -- (0,5.6);
   \node[var,anchor=south] at (0,5.7) {$x = x_m$};
   % the points: in the strip, and out of it on either side, those of a

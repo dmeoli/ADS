@@ -942,7 +942,7 @@ finds a free row. An equation that becomes 0 is redundant if its right side
 is 0 too (a repeated key), and makes the system unsolvable otherwise, in
 which case the build draws a new seed.
 
-![Figure 10.10. The system of a `RibbonFilter` in echelon form, with windows of 4 coefficients instead of 64: each row holds an equation whose first coefficient (in colour) is in its column, or none (pale), and $f$ is the right side.](../figures/set-ribbon.svg){#fig-10-10}
+![Figure 10.10. The system of a `RibbonFilter` in echelon form, with windows of 4 coefficients instead of 64: each row holds an equation whose first coefficient (in colour) is in its column, or none (faintest tint), and $f$ is the right side.](../figures/set-ribbon.svg){#fig-10-10}
 
 --8<-- "generated/RibbonFilter-build.pseudo.md"
 
