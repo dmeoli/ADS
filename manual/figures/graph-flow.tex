@@ -1,0 +1,31 @@
+% A maximum flow of value 5 in FlowNetwork (sec. 14.10), each edge with its
+% flow and capacity: the side S = {s, a, b} of the minimum cut, reached
+% from s in the residual network, and the two saturated edges that cross
+% it; on the right the head and the residual capacity of each arc, the
+% edge e and its twin e xor 1 side by side. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-touched] (s) at (0mm,0mm) {$s$};
+  \node[vertex-touched] (a) at (22mm,12mm) {$a$};
+  \node[vertex-touched] (b) at (22mm,-12mm) {$b$};
+  \node[vertex] (t) at (44mm,0mm) {$t$};
+  \draw[edge,->] (s) -- node[index,above left=0.3mm] {3/4} (a);
+  \draw[edge,->] (s) -- node[index,below left=0.3mm] {2/2} (b);
+  \draw[edge,->] (a) -- node[index,right=0.8mm] {2/3} (b);
+  \draw[edge-touched,->] (a) -- node[index,above right=0.3mm] {1/1} (t);
+  \draw[edge-touched,->] (b) -- node[index,below right=0.3mm] {4/4} (t);
+  \node[var,anchor=east] at (66mm,8mm) {$\mathit{to}$};
+  \cells{to}{70mm,8mm}{a/cell,s/cell,b/cell,s/cell,b/cell,a/cell,t/touched,a/cell,t/touched,b/cell}
+  \node[var,anchor=east] at (66mm,0mm) {$\mathit{res}$};
+  \cells{rs}{70mm,0mm}{1/cell,3/cell,0/cell,2/cell,1/cell,2/cell,0/touched,1/cell,0/touched,4/cell}
+  \foreach \i in {0,...,9} \node[index,above=1.6mm of to-\i] {\i};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,29 @@
+% The repair of Lemma 14.25 (sec. 14.13): the edge (r, a) of the tree of the
+% shortest paths raised from 2 to 9, the subtree A = {a, b, c} under its
+% head, whose distances are set to infinity and then to the least over the
+% edges that enter them, the dashed edges out of the tree. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (r) at (0mm,0mm) {$r$};
+  \node[vertex-touched] (a) at (-14mm,-13mm) {$a$};
+  \node[vertex] (d) at (14mm,-13mm) {$d$};
+  \node[vertex-touched] (b) at (-22mm,-26mm) {$b$};
+  \node[vertex-touched] (c) at (-6mm,-26mm) {$c$};
+  \node[vertex] (e) at (14mm,-26mm) {$e$};
+  \draw[edge-touched,->] (r) -- node[index,above left=0.3mm] {$2 \to 9$} (a);
+  \draw[edge,->] (r) -- node[index,above right=0.3mm] {3} (d);
+  \draw[edge,->] (a) -- node[index,left=0.6mm] {1} (b);
+  \draw[edge,->] (a) -- node[index,right=0.4mm] {2} (c);
+  \draw[edge,->] (d) -- node[index,right=0.6mm] {1} (e);
+  \draw[edge,dashed,->] (d) -- node[index,above=0.6mm] {4} (c);
+  \draw[edge,dashed,->] (e) .. controls (0mm,-38mm) .. node[index,below=0.4mm] {6} (b);
+\end{tikzpicture}
+\end{document}

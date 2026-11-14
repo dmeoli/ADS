@@ -1,0 +1,30 @@
+% The two static graphs in compressed rows of the same edges (sec. 14.4):
+% ArrayGraph keeps the order of the input in each row, StaticGraph sorts
+% the rows by head; the row of the node 2, between off[2] and off[3], is
+% what adj(2) reads. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=west] at (-8mm,9mm) {$E$: \texttt{(0,2) (1,3) (0,1) (2,4) (2,1) (3,0) (4,3) (3,4)}};
+  \node[var,anchor=west,text=adsInk] at (-8mm,3mm) {\texttt{ArrayGraph}};
+  \node[var,anchor=east] at (-4mm,-8mm) {$\mathit{off}$};
+  \cells{ao}{0,-8mm}{0/cell,2/cell,3/touched,5/touched,7/cell,8/cell}
+  \indices{ao}{6}
+  \node[var,anchor=east] at (-4mm,-17mm) {$\mathit{to}$};
+  \cells{at}{0,-17mm}{2/cell,1/cell,3/cell,4/touched,1/touched,0/cell,4/cell,3/cell}
+  \node[var,anchor=west,text=adsInk] at (-8mm,-26mm) {\texttt{StaticGraph}};
+  \node[var,anchor=east] at (-4mm,-37mm) {$\mathit{off}$};
+  \cells{so}{0,-37mm}{0/cell,2/cell,3/touched,5/touched,7/cell,8/cell}
+  \indices{so}{6}
+  \node[var,anchor=east] at (-4mm,-46mm) {$\mathit{arc}$};
+  \cells{st}{0,-46mm}{1/cell,2/cell,3/cell,1/touched,4/touched,0/cell,4/cell,3/cell}
+  \foreach \i in {0,...,7} \node[index,below=1.6mm of st-\i] {\i};
+  \foreach \i in {0,...,7} \node[index,below=1.6mm of at-\i] {\i};
+\end{tikzpicture}
+\end{document}

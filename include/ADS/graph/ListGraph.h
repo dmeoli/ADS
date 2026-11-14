@@ -84,7 +84,22 @@ class ListGraph : public GraphNodes< T > {
  int insertNode( const T & t = T() );
 
  /// the edge \f$ ( u , v ) \f$, or \f$ [ u , v ] \f$, of weight \f$ w \f$;
- /// only the weight changes if it is there
+ /// only the weight changes if it is there, \f$ O( \deg( u ) ) \f$ time
+ /// (\f$ O( \deg( u ) + \deg( v ) ) \f$ if unoriented) for the search of
+ /// the edge
+ ///
+ /// In pseudocode (section 9.4), \f$ L_u \f$ the list of \f$ u \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{insertEdge}( u , v , w ) \cr
+ /// 2 & \quad \textbf{if}\ ( v , \cdot ) \in L_u\ \textbf{then}
+ ///     \ \text{its weight} \gets w \text{ (and that of } ( u , \cdot )
+ ///     \in L_v \text{ if unoriented)} \cr
+ /// 3 & \quad \textbf{else} \cr
+ /// 4 & \qquad \text{append } ( v , w ) \text{ to } L_u \text{ (and } ( u
+ ///     , w ) \text{ to } L_v \text{ if unoriented)};\ m \gets m + 1
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes
  /// \post `hasEdge( u , v )`
  void insertEdge( int u , int v , const W & w = W() );
@@ -124,6 +139,18 @@ class ListGraph : public GraphNodes< T > {
  /// all the lists, \f$ O( n + m ) \f$ time (the `inEdges( i )` of the
  /// `AdjacencyLists` of section 12.2 of Morin's book); the lists of an
  /// unoriented graph give them in \f$ O( \deg( u ) ) \f$
+ ///
+ /// In pseudocode (section 12.2 of Morin's book), for an oriented graph:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{inAdj}( u ) \cr
+ /// 2 & \quad I \gets () \cr
+ /// 3 & \quad \textbf{foreach}\ v \in V\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{foreach}\ x \in G.\mathrm{adj}( v )\ \textbf{with}
+ ///     \ x = u\ \textbf{do}\ I \gets I \cdot ( v ) \cr
+ /// 5 & \quad \textbf{return}\ I
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::vector< int > inAdj( int u ) const;
 

@@ -78,6 +78,20 @@ class MatrixGraph : public GraphNodes< T > {
  /// a new node, a new row and a new column, \f$ O( n ) \f$ time
  int insertNode( const T & t = T() );
 
+ /// the edge \f$ ( u , v ) \f$, or \f$ [ u , v ] \f$, of weight \f$ w \f$,
+ /// \f$ O( 1 ) \f$ time; only the weight changes if it is there
+ ///
+ /// In pseudocode (section 9.3), \f$ M \f$ the matrix:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{insertEdge}( u , v , w ) \cr
+ /// 2 & \quad \textbf{if}\ M[ u ][ v ] = \textbf{nil}\ \textbf{then}\ m
+ ///     \gets m + 1 \cr
+ /// 3 & \quad M[ u ][ v ] \gets w \cr
+ /// 4 & \quad \textbf{if}\ G \text{ is unoriented }\ \textbf{then}\ M[ v
+ ///     ][ u ] \gets w
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes
  /// \post `hasEdge( u , v )`
  void insertEdge( int u , int v , const W & w = W() );
@@ -106,6 +120,19 @@ class MatrixGraph : public GraphNodes< T > {
  /// the nodes with an edge to \f$ u \f$, in increasing order, the
  /// column of \f$ u \f$, \f$ \Theta( n ) \f$ time (the `inEdges( i )` of
  /// the `AdjacencyMatrix` of section 12.1 of Morin's book)
+ ///
+ /// In pseudocode (section 12.1 of Morin's book), \f$ M \f$ the matrix:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{inAdj}( u ) \cr
+ /// 2 & \quad L \gets () \cr
+ /// 3 & \quad \textbf{for}\ v \gets 0\ \textbf{to}\ \mathrm{bound}() - 1
+ ///     \ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ M[ v ][ u ] \ne \textbf{nil}\ \textbf{then}
+ ///     \ L \gets L \cdot ( v ) \cr
+ /// 5 & \quad \textbf{return}\ L
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::vector< int > inAdj( int u ) const;
 

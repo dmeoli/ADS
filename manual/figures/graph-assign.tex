@@ -1,0 +1,51 @@
+% The reduced costs c(i, j) - u_i - v_j of an Assignment of 3 x 3 costs
+% (sec. 14.11), before and after setRow(1, (8, 0, 7)): the pairs of the
+% assignment have reduced cost 0, and every reduced cost stays
+% nonnegative. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (7.4mm,10mm) {before};
+  \node[index,anchor=east] at (-4mm,4.6mm) {$v_j$};
+  \node[index] at (26.5mm,4.6mm) {$u_i$};
+  \node[index] at (0mm,4.6mm) {$0$};
+  \node[index] at (9mm,4.6mm) {$-2$};
+  \node[index] at (18mm,4.6mm) {$0$};
+  \node[index] at (26.5mm,0mm) {$3$};
+  \node[cell] at (0mm,0mm) {1};
+  \node[touched] at (9mm,0mm) {0};
+  \node[cell] at (18mm,0mm) {0};
+  \node[index] at (26.5mm,-7.4mm) {$2$};
+  \node[touched] at (0mm,-7.4mm) {0};
+  \node[cell] at (9mm,-7.4mm) {0};
+  \node[cell] at (18mm,-7.4mm) {3};
+  \node[index] at (26.5mm,-14.8mm) {$2$};
+  \node[cell] at (0mm,-14.8mm) {1};
+  \node[cell] at (9mm,-14.8mm) {2};
+  \node[touched] at (18mm,-14.8mm) {0};
+  \node[var] at (59.4mm,10mm) {after \texttt{setRow(1, (8, 0, 7))}};
+  \node[index,anchor=east] at (48mm,4.6mm) {$v_j$};
+  \node[index] at (78.5mm,4.6mm) {$u_i$};
+  \node[index] at (52mm,4.6mm) {$0$};
+  \node[index] at (61mm,4.6mm) {$-3$};
+  \node[index] at (70mm,4.6mm) {$-1$};
+  \node[index] at (78.5mm,0mm) {$4$};
+  \node[touched] at (52mm,0mm) {0};
+  \node[cell] at (61mm,0mm) {0};
+  \node[cell] at (70mm,0mm) {0};
+  \node[index] at (78.5mm,-7.4mm) {$4$};
+  \node[added] at (52mm,-7.4mm) {5};
+  \node[touched] at (61mm,-7.4mm) {0};
+  \node[added] at (70mm,-7.4mm) {3};
+  \node[index] at (78.5mm,-14.8mm) {$3$};
+  \node[cell] at (52mm,-14.8mm) {0};
+  \node[cell] at (61mm,-14.8mm) {2};
+  \node[touched] at (70mm,-14.8mm) {0};
+\end{tikzpicture}
+\end{document}

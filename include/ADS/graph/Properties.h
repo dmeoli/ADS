@@ -90,7 +90,7 @@
  *      Journal on Computing 7(4), 413-423, 1978, doi:10.1137/0207033
  * \see K. N. King, B. Smith-Thomas, An optimal algorithm for sink-finding,
  *      Information Processing Letters 14(3), 109-111, 1982,
- *      doi:10.1016/0020-0190(82)90065-6
+ *      doi:10.1016/0020-0190(82)90064-3
  * \see A. B. Kahn, Topological sorting of large networks, Communications of
  *      the ACM 5(11), 558-562, 1962, doi:10.1145/368996.369025
  * \see R. M. Karp, Reducibility among combinatorial problems, Complexity of
