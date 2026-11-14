@@ -20,7 +20,9 @@
  vectors that change their size (see \ref theory_sequence_amortized), and,
  for the algorithms, the property on which each is correct and the argument
  behind its bound (see \ref theory_sequence_sort and
- \ref theory_sequence_rearr). The pseudocode of each operation and of each
+ \ref theory_sequence_rearr), and the lists by rank of chapters 2 and 3 of
+ Morin's Open Data Structures with the answers to their exercises (see
+ \ref theory_sequence_ods). The pseudocode of each operation and of each
  algorithm is on the page of its header, in the comment of its function,
  together with the section of the book, or the paper, that it follows.
 
@@ -358,6 +360,361 @@
  swap with \f$ m \f$, does the same \f$ k - 1 \f$ swaps, and is swapped back
  (Knuth, section 1.3.3, on the cycles of a permutation).
 
+ \section theory_sequence_ods Lists by rank (Morin's book)
+
+ The interface LIST of chapter 1 of Morin's book reaches the items by their
+ <em>rank</em>, \f$ \mathrm{get}( i ) \f$, \f$ \mathrm{set}( i , x ) \f$,
+ \f$ \mathrm{add}( i , x ) \f$ and \f$ \mathrm{remove}( i ) \f$ for
+ \f$ 0 \le i < n \f$ (\f$ i \le n \f$ for \f$ \mathrm{add} \f$), rather than
+ by positions; the concept `IndexedList` of `IndexedList.h` states it with
+ the names of the standard library (`operator[]`, `insert( i , x )`,
+ `erase( i )`), and `IndexedDeque` states the DEQUE, the sequence changed
+ at its two ends. The table gives the realizations of chapters 2 and 3 of
+ Morin and of their exercises; \f$ \mu = \min\{ i , n - i \} \f$ is the
+ distance of the rank from the nearer end.
+
+ <table>
+ <caption>The lists by rank and the cost of their operations, amortized
+          where the realization rebuilds, \f$ \mu = \min\{ i , n - i \} \f$
+          (chapters 2 and 3 of Morin's book)</caption>
+ <tr><th>Realization</th><th>Morin</th><th><tt>operator[]</tt></th>
+     <th><tt>insert()</tt>, <tt>erase()</tt></th><th>space beyond
+     \f$ n \f$ items</th></tr>
+ <tr><td><tt>ArraySequence</tt></td><td><tt>ArrayStack</tt>,
+     <tt>FastArrayStack</tt> (2.1, 2.2)</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 + n - i ) \f$</td><td>\f$ \le 3 n \f$ places</td></tr>
+ <tr><td><tt>RingDeque</tt></td><td><tt>ArrayQueue</tt>,
+     <tt>ArrayDeque</tt> (2.3, 2.4)</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 + \mu ) \f$</td><td>\f$ < n \f$ places, until
+     <tt>shrink_to_fit()</tt></td></tr>
+ <tr><td><tt>DualArrayDeque</tt></td><td><tt>DualArrayDeque</tt> (2.5)</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 + \mu ) \f$</td>
+     <td>those of its two stacks</td></tr>
+ <tr><td><tt>RootishArrayStack</tt></td><td><tt>RootishArrayStack</tt>
+     (2.6)</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 + n - i ) \f$</td>
+     <td>\f$ O( \sqrt{n} ) \f$</td></tr>
+ <tr><td><tt>DualArrayDeque</tt> on <tt>RootishArrayStack</tt></td>
+     <td>exercise 2.10</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 + \mu ) \f$</td><td>\f$ O( \sqrt{n} ) \f$</td></tr>
+ <tr><td><tt>Treque</tt></td><td>exercise 2.4</td><td>\f$ O( 1 ) \f$</td>
+     <td>\f$ O( 1 + \min\{ \mu , | n / 2 - i | \} ) \f$</td>
+     <td>those of two <tt>RingDeque</tt></td></tr>
+ <tr><td><tt>ContiguousDeque</tt></td><td>exercise 2.9</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 + \mu ) \f$</td>
+     <td>\f$ \le 8 n + 24 \f$ places</td></tr>
+ <tr><td><tt>TieredVector</tt></td><td>exercises 2.11, 2.12</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 + \min\{ \mu , \sqrt{n} \} ) \f$
+     </td><td>\f$ O( \sqrt{n} ) \f$</td></tr>
+ <tr><td><tt>CubishArrayStack</tt></td><td>exercise 2.13</td>
+     <td>\f$ O( 1 ) \f$</td><td>\f$ O( n^{1/3} ) \f$</td>
+     <td>\f$ O( n^{2/3} ) \f$</td></tr>
+ <tr><td><tt>SinglyList</tt></td><td><tt>SLList</tt> (3.1)</td>
+     <td>\f$ O( 1 + i ) \f$</td><td>\f$ O( 1 + i ) \f$</td>
+     <td>\f$ n \f$ pointers</td></tr>
+ <tr><td><tt>List</tt></td><td><tt>DLList</tt> (3.2)</td>
+     <td>\f$ O( 1 + \mu ) \f$</td><td>\f$ O( 1 + \mu ) \f$</td>
+     <td>\f$ 2 n \f$ pointers</td></tr>
+ <tr><td><tt>SEList</tt></td><td><tt>SEList</tt> (3.3), exercises 3.17,
+     3.18</td><td>\f$ O( 1 + \mu / b ) \f$</td>
+     <td>\f$ O( b + \mu / b ) \f$</td><td>\f$ O( b + n / b ) \f$</td></tr>
+ <tr><td><tt>XorList</tt></td><td>section 3.4</td><td>none</td>
+     <td>\f$ O( 1 ) \f$ at the ends</td><td>\f$ n \f$ words</td></tr>
+ </table>
+
+ The rest of this section gives the argument behind each bound that is not
+ the one of a shift of \f$ n - i \f$ items, and, for the exercises of the
+ three chapters that ask for a proof or a discussion, the answer.
+
+ \subsection theory_sequence_ods_arrays Deques on arrays
+
+ `ArraySequence` is the `ArrayStack` of Morin: Lemma 2 above is the lemma of
+ his section 2.1.2, with the halving at a quarter where Morin halves at a
+ third, which changes the constant only. Exercise 2.1 asks where the extra item
+ of the array is after a removal: in the place \f$ n \f$, the item that the
+ shift moved out of it, which in C++ is the husk left by a move, alive until an
+ insertion or a resize overwrites it; it keeps its resources only if its move
+ does not take them (a `std::string` or a `std::vector` gives them away).
+ Exercise 2.2 asks for `addAll( i , c )`: \f$ k \f$ calls of
+ \f$ \mathrm{add}( i , x ) \f$ move the \f$ n - i \f$ items after \f$ i \f$
+ \f$ k \f$ times, \f$ \Theta( k ( n - i ) ) \f$, while one shift by \f$ k \f$
+ places after one resize moves them once, \f$ O( n - i + k ) \f$ (the range
+ `insert()` of `ArraySequence`).
+
+ `RingDeque` is the `ArrayQueue` and the `ArrayDeque` of Morin: the items in
+ consecutive places of a circular vector, an insertion at the rank \f$ i \f$
+ moving the \f$ \min\{ i , n - i \} \f$ items of the shorter side by one
+ place. The capacity is a power of 2, so that the place of the rank
+ \f$ i \f$ is \f$ ( h + i ) \mathbin{\&} ( m - 1 ) \f$ (exercise 2.8: the
+ bitwise and in place of a division), and the shifts move the runs of
+ items contiguous in the vector, three at most, by `std::move()`, i.e., by
+ `memmove()` for the items trivially copyable (exercise 2.7, the
+ `System.arraycopy()` of the Java edition). `rotate( r )` moves
+ \f$ \min\{ r , n - r \} \f$ items from one end to the other, and none when
+ the vector is full, where moving the head is enough (exercise 2.6).
+
+ <em>Lemma 7 (the balance of two stacks, section 2.5.1 of Morin).</em> Let the
+ `DualArrayDeque` hold its \f$ n \f$ items in two stacks \f$ F \f$ and
+ \f$ B \f$, and deal them again into \f$ \lfloor n / 2 \rfloor \f$ and
+ \f$ \lceil n / 2 \rceil \f$ items whenever \f$ 3 |F| < |B| \f$ or
+ \f$ 3 |B| < |F| \f$. Then \f$ m \ge 1 \f$ operations from the empty deque
+ spend \f$ O( m ) \f$ time in the balances, and an operation at the rank
+ \f$ i \f$ shifts \f$ O( 1 + \min\{ i , n - i \} ) \f$ items.
+
+ Indeed, after a balance of \f$ n \f$ items the two stacks differ by one
+ item at most, and an operation changes \f$ |F| - |B| \f$ by one, while the
+ next balance needs \f$ \max \ge 3 \min \f$, i.e.,
+ \f$ | |F| - |B| | \ge ( n' - 2 ) / 2 \f$ for its \f$ n' \f$ items: at least
+ \f$ n' / 2 - 2 \f$ operations, which pay for its \f$ O( n' ) \f$. Between
+ two balances \f$ |F| \ge n / 4 \f$ and \f$ |B| \ge n / 4 \f$, so that a
+ rank \f$ i < |F| \f$ is at \f$ |F| - i \le 3 i + 3 \f$ places from the top
+ of \f$ F \f$ when \f$ i \le n / 4 \f$, and at
+ \f$ |F| - i \le n \le 4 ( n - i ) \f$ otherwise, and the same for
+ \f$ B \f$.
+
+ The `Treque` of exercise 2.4 splits the items in the middle instead, into
+ two circular deques \f$ L \f$ and \f$ R \f$ whose sizes differ by one at
+ most, kept so by one item moved from the back of one to the front of the
+ other after each operation: an operation at \f$ i < |L| \f$ shifts
+ \f$ \min\{ i , |L| - i \} \f$ items, i.e., \f$ \min\{ i , n / 2 - i \} \f$
+ up to a constant, and one at \f$ i \ge |L| \f$ shifts
+ \f$ \min\{ i - n / 2 , n - i \} \f$, together
+ \f$ O( 1 + \min\{ i , n - i , | n / 2 - i | \} ) \f$ with no amortization
+ but that of the doublings.
+
+ The `ContiguousDeque` of exercise 2.9 keeps the items in one contiguous
+ piece \f$ A[ h .. h + n - 1 ] \f$ of a vector of \f$ c \f$ places, with no
+ modular arithmetic; when an operation needs a place beyond an end, the
+ items are put in the middle of \f$ 3 n + 8 \f$ places, at least
+ \f$ n + 4 \f$ free on each side, so that at least \f$ n + 4 \f$ operations
+ come before the next rebuild, which pays its \f$ O( n ) \f$ (the hint of the
+ exercise asks for \f$ n / 2 \f$). A rebuild after a removal that leaves
+ more than \f$ 9 n + 24 \f$ places keeps the space linear, and a rebuild in
+ the same vector, by `memmove()`, costs no allocation when the vector is
+ already of the right size, the common case of a queue that runs along it.
+
+ \subsection theory_sequence_ods_rootish Rootish, tiered and cubish arrays
+
+ The `RootishArrayStack` of Brodnik, Carlsson, Demaine, Munro and Sedgewick
+ keeps its items in \f$ r \f$ blocks of \f$ 1 , \ldots , r \f$ places, the
+ rank \f$ i \f$ in the block
+ \f[
+   b( i ) = \Bigl\lceil \frac{ -3 + \sqrt{ 9 + 8 i } }{ 2 } \Bigr\rceil \; ,
+   \tag{6}
+ \f]
+ the least \f$ b \f$ with \f$ ( b + 1 ) ( b + 2 ) / 2 > i \f$, at the place
+ \f$ i - b ( b + 1 ) / 2 \f$ of it.
+
+ <em>Lemma 8 (the space of the rootish array, section 2.6.2 of Morin).</em> A
+ `RootishArrayStack` that adds a block when its \f$ r ( r + 1 ) / 2 \f$ places
+ are full and frees the last one while \f$ ( r - 2 ) ( r - 1 ) / 2 \ge n \f$
+ has \f$ ( r - 2 ) ( r - 1 ) / 2 < n \le r ( r + 1 ) / 2 \f$, hence
+ \f$ r \le \sqrt{ 2 n } + 2 \f$ and at most
+ \f$ 2 r - 1 \le \sqrt{ 8 n } + 3 \f$ places unused; no array of \f$ n \f$
+ items that grows and shrinks by one item in \f$ O( 1 ) \f$ time can waste
+ \f$ o( \sqrt{n} ) \f$ places.
+
+ Indeed, the places of the blocks are \f$ r ( r + 1 ) / 2 \f$ and
+ \f$ n > ( r - 2 ) ( r - 1 ) / 2 \f$, whose difference is \f$ 2 r - 1 \f$;
+ the lower bound is that of Brodnik et al., who show that after the
+ insertion of \f$ n \f$ items some sequence of operations must leave
+ \f$ \Omega( \sqrt{n} ) \f$ places wasted or allocated and not yet used.
+ The blocks added and freed cost \f$ O( 1 ) \f$ amortized, as in Lemma 2,
+ since one block of \f$ r \f$ places is added or freed after \f$ r - 1 \f$
+ operations at least. The test `ods-2.6.rootish-array-stack` checks the
+ bound \f$ 2 r + 1 \f$ (the block kept for the next insertions included)
+ after every operation of \f$ 10^5 \f$ insertions and removals.
+
+ Section 2.6.4 of Morin computes (6) with no floating point, by a table of
+ the square roots of the integers below \f$ 2^{16} \f$ and a table of the
+ logarithms; `RootishArrayStack::block()` takes the square root of a
+ `double`, exact on the integers below \f$ 2^{52} \f$, and corrects the
+ result by the two comparisons with \f$ b ( b + 1 ) / 2 \f$ and
+ \f$ ( b + 1 ) ( b + 2 ) / 2 \f$, which also absorb the rounding of the
+ root (Morin's code computes \f$ 9 + 8 i \f$ in an `int`, which overflows
+ for \f$ i > 2^{28} \f$). The tables cost two reads that may miss the
+ cache, the root of a `double` a latency of about 15 to 20 cycles on the
+ current processors, and the choice is left to the benchmarks.
+
+ A `DualArrayDeque` whose two stacks are `RootishArrayStack` (exercise
+ 2.10) wastes \f$ O( \sqrt{n} ) \f$ places in each stack, and shifts
+ \f$ O( 1 + \min\{ i , n - i \} ) \f$ items by Lemma 7; a balance holds the
+ items twice while it lasts.
+
+ <em>Lemma 9 (the tiered vector with a gap, exercises 2.11 and 2.12).</em>
+ Let a `TieredVector` keep its items in blocks of \f$ b \f$ places,
+ \f$ b^2 / 4 \le n \le 4 b^2 \f$, all full but the first, with
+ \f$ g < b \f$ places free at its front, and the last; let an insertion or a
+ removal at the rank \f$ i \f$ shift toward the back when \f$ i \ge n / 2 \f$
+ and toward the front otherwise. Then it moves
+ \f[
+   O\bigl( 1 + \min\{ \mu , b \} + \mu / b \bigr)
+   = O\bigl( 1 + \min\{ i , \sqrt{n} , n - i \} \bigr) \tag{7}
+ \f]
+ items, \f$ \mu = \min\{ i , n - i \} \f$, plus \f$ O( 1 ) \f$ amortized for
+ the blocks added and removed and for the rebuilds when \f$ b \f$ changes,
+ and wastes \f$ O( \sqrt{n} ) \f$ places.
+
+ Indeed, a shift toward the back moves the items of the block of \f$ i \f$
+ after \f$ i \f$, at most \f$ \min\{ b , n - i \} \f$, and then one item
+ between each two consecutive blocks after it, at most
+ \f$ ( n - i ) / b + 1 \f$ of them, in \f$ O( 1 ) \f$ each since a block is
+ circular; the shift toward the front is the mirror, the gap of the first
+ block playing the part of the free places of the last one, so that
+ \f$ \min\{ b , i \} + i / b + 1 \f$ items move. A block is added at the
+ front only when the gap is 0, after which \f$ b \f$ insertions at the
+ front come before the next one, and inserting the pointer to it in front
+ of the \f$ n / b \f$ others costs \f$ O( n / b ) = O( b ) \f$, i.e.,
+ \f$ O( 1 ) \f$ amortized. The bound of exercise 2.11,
+ \f$ O( 1 + \min\{ \sqrt{n} , n - i \} ) \f$, is (7) without the shifts
+ toward the front.
+
+ <em>Lemma 10 (the cubish array, exercise 2.13).</em> Let
+ `CubishArrayStack` keep its items in leaves of \f$ b \f$ places,
+ \f$ b^3 / 8 \le n \le 8 b^3 \f$, gathered into middle blocks of
+ \f$ b^2 \f$ items, all full but the last, each middle block being a
+ circular sequence of leaves all full but the first (with a gap) and the
+ last. Then `operator[]` takes \f$ O( 1 ) \f$ time, an insertion or a
+ removal \f$ O( n^{1/3} ) \f$ amortized time, and the places wasted are
+ \f$ O( n^{2/3} ) \f$.
+
+ Indeed, a middle block pushes an item at its front and pops one from its
+ back in \f$ O( 1 ) \f$ time, by its gap and the offset of its last leaf,
+ as the first and the last block of Lemma 9 do; an insertion moves the last
+ item of each full middle block after the one of \f$ i \f$ to the front of
+ the next one, \f$ O( n / b^2 + 1 ) = O( b ) \f$ of them, and inserts in
+ its middle block as a tiered vector of \f$ b \f$ leaves does,
+ \f$ O( b ) \f$ by Lemma 9. Each middle block wastes the free places of
+ its first and its last leaf and has a directory of \f$ 2 b \f$ leaves,
+ \f$ O( b ) \f$ for each of \f$ O( n / b^2 + 1 ) \f$ middle blocks, i.e.,
+ \f$ O( n / b ) = O( n^{2/3} ) \f$; the rebuilds, when \f$ n \f$ leaves
+ \f$ [ b^3 / 8 , 8 b^3 ] \f$, cost \f$ O( n ) \f$ once every
+ \f$ \Omega( n ) \f$ operations. This is the tiered vector of Goodrich and
+ Kloss with three levels; the deque of middle blocks makes the two
+ operations at the ends of a middle block cost \f$ O( 1 ) \f$, which the
+ cascade of an insertion needs.
+
+ \subsection theory_sequence_ods_linked Linked lists
+
+ `SinglyList` is the `SLList` of Morin: it keeps its last cell and its
+ size, so that it is a stack at its front and a queue from its back to its
+ front in \f$ O( 1 ) \f$ time. A dummy cell before the first one cannot
+ remove the special cases of these operations (exercise 3.1): the queue
+ removes at the front and adds at the back, and the back is the last cell,
+ which must be set apart from the dummy when the list is empty, while a
+ removal at the back would need the cell before the last one, which a
+ singly linked list reaches only by a scan. `secondLast()` (exercise 3.2)
+ stops at the cell whose successor has no successor, with no use of the
+ size; the operations by rank of exercise 3.3 walk \f$ i \f$ cells;
+ `reverse()` (exercise 3.4) turns each link back while it walks, three
+ pointers and no cell made; `checkSize()` (exercise 3.5) counts the cells.
+
+ `List` is the `DLList` of Morin: a cell of rank \f$ i \f$ is reached from
+ the sentinel by the nearer end, \f$ \min\{ i , n - i \} \f$ links
+ (`position()`, Morin's `getNode()`). `rotate( r )` (exercise 3.8) moves
+ the sentinel before the cell of rank \f$ n - r \f$, so that this cell is
+ the first one, in \f$ O( 1 + \min\{ r , n - r \} ) \f$ and with no item
+ moved; `truncate( i )` (exercise 3.9) cuts the chain before the cell of
+ rank \f$ i \f$ and hangs it on the sentinel of a new list, in
+ \f$ O( 1 + \min\{ i , n - i \} ) \f$; `absorb()` (exercise 3.10) links
+ the chain of the other list after the last cell, in \f$ O( 1 ) \f$;
+ `deal()` (exercise 3.11) relinks every second cell into a new list;
+ `reverse()` (exercise 3.12) exchanges the two links of each cell and of
+ the sentinel. These operations move cells between lists, which a list of
+ cells from `new` does as Morin's does; the cells of a pooled list belong
+ to its pool [see `ObjectPool.h`], so that `truncate()`, `deal()` and
+ `takeFirst()` move the items into cells of the other list, while
+ `absorb()` takes the pool of the other list together with its cells
+ (`ObjectPool::adopt()`, which walks the \f$ O( \log n ) \f$ blocks of a
+ pool).
+
+ <em>Lemma 11 (the merge sort of a list, exercise 3.13).</em> The merge
+ sort that cuts a list of \f$ n \f$ items in two halves by a walk to its
+ middle, sorts the two recursively and merges them by `takeFirst()` is
+ stable and takes \f$ O( n \log n ) \f$ time and \f$ O( \log n ) \f$ space.
+
+ Indeed, the walk and the merge of a list of \f$ n \f$ items take
+ \f$ O( n ) \f$, so that \f$ T( n ) = 2 T( n / 2 ) + O( n ) \f$, and the
+ merge takes the item of the first half among equal ones, which keeps
+ their order; the recursion is \f$ \lceil \log_2 n \rceil \f$ deep.
+ `List::mergeSort()` runs it on the chain of the cells of the list, the
+ halves cut by nil links and no list made, so that it relinks the cells of
+ a pooled list as well; `listSort()` [see `ListSort.h`] is the bottom up
+ natural merge sort, with \f$ n - 1 \f$ comparisons on a sorted list.
+
+ \subsection theory_sequence_ods_selist Space-efficient lists
+
+ The `SEList` of Morin keeps its items in a doubly linked list of blocks,
+ each a circular deque of at most \f$ b + 1 \f$ items, the blocks between
+ the first and the last holding at least \f$ b - 1 \f$ items each; hence
+ \f$ n \f$ items take \f$ n / ( b - 1 ) + 2 \f$ blocks at most, i.e.,
+ \f$ n + O( b + n / b ) \f$ places and \f$ O( n / b ) \f$ pointers, and the
+ block of the rank \f$ i \f$ is reached from the nearer end through
+ \f$ O( 1 + \min\{ i , n - i \} / b ) \f$ blocks.
+
+ <em>Lemma 12 (spreading and gathering, section 3.3.5 of Morin).</em> Starting
+ from the empty list, \f$ m \f$ insertions and removals take
+ \f$ O( b m ) \f$ time in their calls of `spread()` and `gather()`.
+
+ Indeed, let a middle block be <em>tight</em> when it holds \f$ b - 1 \f$
+ or \f$ b + 1 \f$ items, and let \f$ \Phi \f$ be \f$ b \f$ times the number
+ of tight blocks. An insertion or a removal that does not spread nor
+ gather changes the size of one block by one and moves one item between
+ neighbors, so that it makes at most one block tight, and raises
+ \f$ \Phi \f$ by \f$ b \f$ at most; a spread is called on \f$ b \f$ blocks of
+ \f$ b + 1 \f$ items and leaves \f$ b + 1 \f$ blocks of \f$ b \f$ items, and a
+ gather on \f$ b \f$ blocks of \f$ b - 1 \f$ items (one of \f$ b - 2 \f$)
+ and leaves \f$ b - 1 \f$ blocks of \f$ b \f$ items (two of \f$ b - 1 \f$ at
+ most), so that each lowers \f$ \Phi \f$ by \f$ b ( b - 2 ) \f$ at least
+ and pays its \f$ O( b^2 ) \f$.
+
+ Unlike Morin's, the first and the last block of `SEList` hold from 1 to
+ \f$ b + 1 \f$ items: an operation at an end adds a block when its block is
+ full and drops it when it is empty, and never spreads nor gathers, so that
+ the operations of a deque take \f$ O( 1 ) \f$ time independent of \f$ b \f$
+ (exercise 3.18), and those of a stack (exercise 3.17) a fortiori. With
+ Morin's invariant, where only the last block is free, the stack takes
+ \f$ O( 1 ) \f$ amortized time as well: a push on a full last block walks
+ one block to the dummy and adds a block, and a pop that leaves the last
+ block with fewer than \f$ b - 1 \f$ items borrows nothing, so that a
+ sequence of pushes and pops never spreads nor gathers; the deque needs the
+ relaxation at the front too, since a removal at the front of Morin's list
+ shifts one item out of each of the blocks that follow, up to \f$ b \f$ of
+ them.
+
+ \subsection theory_sequence_ods_xor XOR lists
+
+ The discussion of chapter 3 of Morin mentions the XOR list, whose cell
+ keeps \f$ \mathit{prev} \oplus \mathit{next} \f$, the exclusive or of the
+ addresses of its neighbors: a walk that knows where it comes from finds
+ where it goes by one exclusive or, both ways, since
+ \f$ ( \mathit{prev} \oplus \mathit{next} ) \oplus \mathit{prev} =
+ \mathit{next} \f$, and the list reversed is the same list read from its
+ other end, which `XorList::reverse()` does in \f$ O( 1 ) \f$. The same
+ identity, \f$ x \oplus x = 0 \f$ with \f$ \oplus \f$ associative and
+ commutative, swaps two integers with no third (exercise 3.19,
+ `xorSwap()`), except when both are the same variable, which the three
+ exclusive ors set to 0.
+
+ \subsection theory_sequence_ods_interfaces Interfaces and rotations
+
+ Exercise 1.6 asks for reference realizations of LIST, USET and SSET on an
+ array, the oracles of the tests: `ArraySequence` for the first and the
+ `ArrayUSet` and `ArraySSet` of `SetInterfaces.h` for the others (see
+ \ref theory_set). Exercise 1.7 asks how to make them faster: the shifts
+ of a list by block moves and on the shorter side (`RingDeque`), the
+ `find()` of an SSET by binary search on the sorted array, and its
+ insertions by one `memmove()`, as `ArraySSet` does; the other
+ realizations of the table above are the answers of chapters 2 and 3.
+
+ `rotateArray()` (exercise 2.5) rotates an array by three reversals: with
+ \f$ a = X Y \f$, \f$ |Y| = r \f$, the reversal of the whole gives
+ \f$ Y^R X^R \f$, and reversing each part gives \f$ Y X \f$, i.e., each item
+ \f$ r \f$ places on, with \f$ n \f$ swaps at most. `rotate()` on an
+ `IndexedList` with no `rotate()` of its own follows instead the
+ \f$ \gcd( n , r ) \f$ cycles of the permutation
+ \f$ i \mapsto ( i + r ) \bmod n \f$, each item moved once, plus one move
+ per cycle.
+
  \section theory_sequence_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 3.2.1, 4.1,
@@ -386,6 +743,19 @@
  \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
       Addison-Wesley, 1997, sections 1.3.3 (the permutations) and 2.2.3
       (the available space list)
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, chapters 1, 2 and 3
+ \see A. Brodnik, S. Carlsson, E. D. Demaine, J. I. Munro, R. Sedgewick,
+      Resizable arrays in optimal time and space, Algorithms and Data
+      Structures (WADS 1999), Lecture Notes in Computer Science 1663,
+      37-48, 1999, doi:10.1007/3-540-48447-7_4
+ \see Z. Shao, J. H. Reppy, A. W. Appel, Unrolling lists, Proceedings of
+      the 1994 ACM Conference on LISP and Functional Programming, 185-195,
+      1994, doi:10.1145/182409.182453
+ \see P. Sinha, A memory-efficient doubly linked list, Linux Journal 129,
+      2004
+ \see J. Bentley, Programming Pearls, 2nd ed., Addison-Wesley, 2000,
+      section 2.3 (the rotations)
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File sequence.dox --------------------------*/

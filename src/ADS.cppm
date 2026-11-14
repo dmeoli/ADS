@@ -256,7 +256,10 @@ module;
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/queue/Dequeue.h"
 #include "ADS/queue/LinkedQueue.h"
+#include "ADS/queue/MinDeque.h"
+#include "ADS/queue/MinQueue.h"
 #include "ADS/queue/QueueAlgorithms.h"
+#include "ADS/queue/RandomQueue.h"
 #include "ADS/queue/RingDeque.h"
 #include "ADS/queue/UniqueQueue.h"
 #include "ADS/search/BinarySearch.h"
@@ -276,15 +279,24 @@ module;
 #include "ADS/search/StaticSearch.h"
 #include "ADS/search/WordRangeMinimum.h"
 #include "ADS/sequence/ArraySequence.h"
+#include "ADS/sequence/ContiguousDeque.h"
+#include "ADS/sequence/CubishArrayStack.h"
 #include "ADS/sequence/CursorList.h"
+#include "ADS/sequence/DualArrayDeque.h"
+#include "ADS/sequence/IndexedList.h"
 #include "ADS/sequence/List.h"
 #include "ADS/sequence/ListSort.h"
 #include "ADS/sequence/Rearrangements.h"
+#include "ADS/sequence/RootishArrayStack.h"
+#include "ADS/sequence/SEList.h"
 #include "ADS/sequence/SequenceAlgorithms.h"
 #include "ADS/sequence/SequenceRange.h"
 #include "ADS/sequence/SinglyList.h"
 #include "ADS/sequence/SmallVector.h"
 #include "ADS/sequence/TieredVector.h"
+#include "ADS/sequence/Treque.h"
+#include "ADS/sequence/XorList.h"
+#include "ADS/set/Bag.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/BloomFilter.h"
@@ -299,6 +311,7 @@ module;
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 #include "ADS/set/RoaringBitmap.h"
+#include "ADS/set/SetInterfaces.h"
 #include "ADS/set/SetOperations.h"
 #include "ADS/set/SortedIntersection.h"
 #include "ADS/set/SortedListSet.h"
@@ -329,6 +342,7 @@ module;
 #include "ADS/sort/VectorQuickSort.h"
 #include "ADS/stack/ArrayStack.h"
 #include "ADS/stack/Expressions.h"
+#include "ADS/stack/MinStack.h"
 #include "ADS/stack/MultiStack.h"
 #include "ADS/stack/SequenceStack.h"
 #include "ADS/stack/StackAlgorithms.h"
@@ -426,6 +440,7 @@ export namespace ADS {
  using ADS::KeyIterator;
  using ADS::LinkedIterator;
  using ADS::PathIterator;
+ using ADS::RankIterator;
  using ADS::SlotIterator;
  using ADS::WalkIterator;
 
@@ -1602,9 +1617,18 @@ export namespace ADS {
  // ADS/queue/LinkedQueue.h
  using ADS::LinkedQueue;
 
+ // ADS/queue/MinDeque.h
+ using ADS::MinDeque;
+
+ // ADS/queue/MinQueue.h
+ using ADS::MinQueue;
+
  // ADS/queue/QueueAlgorithms.h
  using ADS::copyPositive;
  using ADS::extractPositive;
+
+ // ADS/queue/RandomQueue.h
+ using ADS::RandomQueue;
 
  // ADS/queue/RingDeque.h
  using ADS::RingDeque;
@@ -1681,9 +1705,24 @@ export namespace ADS {
  // ADS/sequence/ArraySequence.h
  using ADS::ArraySequence;
 
+ // ADS/sequence/ContiguousDeque.h
+ using ADS::ContiguousDeque;
+
+ // ADS/sequence/CubishArrayStack.h
+ using ADS::CubishArrayStack;
+
  // ADS/sequence/CursorList.h
  using ADS::CursorList;
  using ADS::CursorSpace;
+
+ // ADS/sequence/DualArrayDeque.h
+ using ADS::DualArrayDeque;
+
+ // ADS/sequence/IndexedList.h
+ using ADS::IndexedDeque;
+ using ADS::IndexedList;
+ using ADS::rotate;
+ using ADS::rotateArray;
 
  // ADS/sequence/List.h
  using ADS::List;
@@ -1696,6 +1735,12 @@ export namespace ADS {
  using ADS::minimumSwapSort;
  using ADS::sortKSorted;
  using ADS::wiggleSort;
+
+ // ADS/sequence/RootishArrayStack.h
+ using ADS::RootishArrayStack;
+
+ // ADS/sequence/SEList.h
+ using ADS::SEList;
 
  // ADS/sequence/SequenceAlgorithms.h
  using ADS::Order;
@@ -1720,6 +1765,16 @@ export namespace ADS {
 
  // ADS/sequence/TieredVector.h
  using ADS::TieredVector;
+
+ // ADS/sequence/Treque.h
+ using ADS::Treque;
+
+ // ADS/sequence/XorList.h
+ using ADS::XorList;
+ using ADS::xorSwap;
+
+ // ADS/set/Bag.h
+ using ADS::Bag;
 
  // ADS/set/BinaryFuseFilter.h
  using ADS::BinaryFuseFilter;
@@ -1777,6 +1832,12 @@ export namespace ADS {
 
  // ADS/set/RoaringBitmap.h
  using ADS::RoaringBitmap;
+
+ // ADS/set/SetInterfaces.h
+ using ADS::ArraySSet;
+ using ADS::ArrayUSet;
+ using ADS::SSet;
+ using ADS::USet;
 
  // ADS/set/SetOperations.h
  using ADS::IterableSet;
@@ -1922,6 +1983,9 @@ export namespace ADS {
  using ADS::toPostfix;
  using ADS::toPostfixParenthesized;
 
+ // ADS/stack/MinStack.h
+ using ADS::MinStack;
+
  // ADS/stack/MultiStack.h
  using ADS::MultiStack;
 
@@ -1930,8 +1994,11 @@ export namespace ADS {
 
  // ADS/stack/StackAlgorithms.h
  using ADS::forEachBottomUp;
+ using ADS::isDyckWord;
+ using ADS::isMatched;
  using ADS::isPalindrome;
  using ADS::removeGreater;
+ using ADS::reverseWithQueue;
  using ADS::sortStack;
 
  // ADS/string/AhoCorasick.h

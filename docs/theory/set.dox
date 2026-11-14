@@ -153,6 +153,30 @@
  space of a sorted array on the sparse chunks and that of a boolean vector on
  the dense ones.
 
+ \subsection theory_set_morin The sets of Morin's book
+
+ Chapter 1 of Morin's Open Data Structures has two interfaces of sets,
+ stated as concepts by `SetInterfaces.h`: the USET, whose `find( x )`
+ returns the item equal to \f$ x \f$ (an item may carry more than the key
+ that the equality reads), and the SSET, whose `find( x )` is the successor
+ search, the least item not smaller than \f$ x \f$, here `lowerBound( x )`;
+ `insert()` and `remove()` return whether they changed the set. `ArrayUSet`
+ and `ArraySSet` are their realizations on a vector that exercise 1.6 asks
+ for, the oracles of the faster ones: `find()` scans the unsorted vector in
+ \f$ O( n ) \f$, while the sorted one answers `find()` and `lowerBound()`
+ by binary search in \f$ O( \log n ) \f$ and moves the items after the
+ place of a change by one block move, which is what exercise 1.7 asks to
+ improve first.
+
+ The bag of exercise 1.5 keeps items equal to one another, all of them:
+ `Bag` is a USET of groups, a hash table from an item to the vector of the
+ items equal to it in the order of their insertions, so that `insert()`,
+ `remove()` (of the last one added), `find()` and `count()` take
+ \f$ O( 1 ) \f$ expected time and `findAll()` the time of the group it
+ returns. It differs from `HashMultiset`, which counts the copies of an item
+ and keeps one, in that the equal items need not be identical, e.g.,
+ records equal by their key.
+
  \section theory_set_ops Operations of two sets
 
  Each operation of two sets is a scan of one set with a query of the other:
@@ -562,6 +586,9 @@
       emptiness in constant time and optimal space, Proceedings of the
       26th ACM-SIAM Symposium on Discrete Algorithms (SODA), 769-775, 2015,
       doi:10.1137/1.9781611973730.52
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, sections 1.2.3 and
+      1.2.4, exercises 1.5, 1.6 and 1.7
 */
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File set.dox ----------------------------*/
