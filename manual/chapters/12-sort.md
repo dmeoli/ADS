@@ -1440,14 +1440,18 @@ avoids both. Furthermore, the bound of
 `heapsort()` on a vector in decreasing order, make at least
 $2 n \log_2 n - O( n )$ comparisons (exercise 11.8 there).*
 
-*Proof.* The vector is already a heap of the kind of the sort, and the
-construction moves nothing. At each extraction the item moved to the root
-is the last leaf, which is one of the smallest items left (for the
-max-heap), not larger than the items of the upper levels, and it sinks
-back to the bottom level of the heap, with two comparisons per level. A heap
-of $i$ items has $\lfloor \log_2 i \rfloor$ levels below the root, and
-$\sum_{i \le n} 2 \lfloor \log_2 i \rfloor \ge 2 \log_2 n! - 2 n = 2 n
-\log_2 n - O( n )$ by [Lemma 12.3](12-sort.md#lem-12-3). $\square$
+*Proof (incomplete).* The vector is already a heap of the kind of the
+sort, and the construction moves nothing. At each extraction the item moved
+to the root is the last leaf, and each level it sinks costs two
+comparisons, while a heap of $i$ items has $\lfloor \log_2 i \rfloor$
+levels below the root, with $\sum_{i \le n} 2 \lfloor \log_2 i \rfloor
+\ge 2 \log_2 n! - 2 n = 2 n \log_2 n - O( n )$ by [Lemma
+12.3](12-sort.md#lem-12-3). The item does not always sink to the bottom
+level, though (on the decreasing input of `heapsort()` it may stop several
+levels above it), and the lemma needs the levels missed over all the
+extractions to be $O( n )$. We have not proved this step: we only measured
+it, about $0.66 \, n$ levels missed for $n$ up to $2 \cdot 10^4$, and the
+test below checks the resulting count. $\square$
 
 The test `ods_ints.ods.ex11.8.heapsort-worst` checks the count against
 $2 n \log_2 n - 4 n$ for both sorts, on $n$ up to $10^5$. The heap of
@@ -1461,7 +1465,7 @@ Two more sorts of the area select by trees ([Algorithm
 `KnuthSorts.h`, plays a knockout tournament on a complete binary tree $W$
 whose $L$ leaves are the items (padded with $\bot$, which loses all its
 matches). Its winner, i.e., the least item, goes out, its leaf becomes $\bot$,
-and only the matches on its path are played again: $\lceil \log_2 n \rceil$
+and only the matches on its path are played again: at most $\lceil \log_2 n \rceil$
 comparisons per item, and $O( n \log n )$ in all with $O( n )$ extra places.
 This is the idea from which heapsort grew, and the sort is stable, since
 equal winners are decided by their places; the tree of losers of
@@ -1807,12 +1811,22 @@ bitonic sequence of zeros and ones gives two bitonic halves, no item of the
 first larger than an item of the second, one of the two halves
 being all zeros or all ones.*
 
-*Proof.* A bitonic sequence of zeros and ones is, up to the direction,
-$0^a 1^b 0^c$ or $1^a 0^b 1^c$. A half-cleaner pairs, at distance $k / 2$,
-the items of the two halves. A case analysis on where the block of ones (or of
-zeros) falls with respect to the middle shows that the minima and the maxima
-are bitonic, and that either the minima are all 0 or the maxima are all 1
-([Knuth 1998, §5.3.4](Z-bibliography.md#ref-knuth1998v3)).
+*Proof.* A sequence of zeros and ones is bitonic if and only if its ones,
+read cyclically on the places $0 , \ldots , k - 1$, form one block of
+consecutive places (possibly empty or wrapping around the end), and
+likewise its zeros. Let the block of the ones have $b$ places. If $b \le
+k / 2$, no pair $( i , i + k / 2 )$ of the half-cleaner holds two ones,
+since the block would then span more than $k / 2$ places; hence every
+minimum is 0, and the maxima carry the ones of the block, the one at the
+place $p$ going to the place $p \bmod ( k / 2 )$ of the second half. The
+block, of at most $k / 2$ consecutive places taken modulo $k$, falls
+modulo $k / 2$ onto as many consecutive places of the half taken
+cyclically, with no two of them on the same place; hence the maxima are
+bitonic, and so are the minima, all zeros. If $b > k / 2$, the block of
+the zeros has fewer than $k / 2$ places, and the same argument with the
+roles of zeros and ones exchanged makes every maximum 1 and the minima
+bitonic. In both cases one half is constant, the minima are 0 or the
+maxima are 1, and no item of the first half exceeds one of the second.
 $\square$
 
 By [Lemma 12.20](12-sort.md#lem-12-20) and induction, the half-cleaners of
