@@ -688,6 +688,31 @@ template< class KK , class VV >
 ADS_FLAT_INLINE bool
 FlatHashTable< K , V , H , Eq >::put( KK && k , VV && v )
 {
+ return( place< true >( std::forward< KK >( k ) ,
+                        std::forward< VV >( v ) ).second );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class ... A >
+ADS_FLAT_INLINE std::pair< V * , bool >
+FlatHashTable< K , V , H , Eq >::try_emplace( const K & k , A && ... a )
+{
+ return( place< false >( k , std::forward< A >( a )... ) );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class ... A >
+ADS_FLAT_INLINE std::pair< V * , bool >
+FlatHashTable< K , V , H , Eq >::try_emplace( K && k , A && ... a )
+{
+ return( place< false >( std::move( k ) , std::forward< A >( a )... ) );
+ }
+
+template< class K , class V , class H , class Eq >
+template< bool Assign , class KK , class ... A >
+ADS_FLAT_INLINE std::pair< V * , bool >
+FlatHashTable< K , V , H , Eq >::place( KK && k , A && ... a )
+{
  // the search of locate(), whose first group also gives the place of a
  // new key when it has an empty one, the common case
  const std::uint64_t x = mix( k );
@@ -698,19 +723,21 @@ FlatHashTable< K , V , H , Eq >::put( KK && k , VV && v )
   s = scan( g , m , k );
  if( ! s && ( c.c[ OVER ] & bit( x ) ) ) [[unlikely]]
   s = further( x , g , k );
- if( s ) {                                  // replaced in place
-  s->kv.second = std::forward< VV >( v );
+ if( s ) {
+  if constexpr( Assign )                     // replaced in place
+   ( ( s->kv.second = std::forward< A >( a ) ) , ... );
   ADS_INVARIANT( consistent( x ) );
-  return( false );
+  return( std::pair< V * , bool >( &s->kv.second , false ) );
   }
  std::size_t i;
  if( ( f_size + f_deleted >= f_max ) && ! recount() ) [[unlikely]]
-  i = grow( x , std::forward< KK >( k ) , std::forward< VV >( v ) );
+  i = grow( x , std::forward< KK >( k ) , std::forward< A >( a )... );
  else {
   const Mask e = empties( c );
   i = e ? g * GROUP + lowest( e ) : claim( x );
-  std::construct_at( &slot( i )->kv , std::forward< KK >( k ) ,
-                     std::forward< VV >( v ) );
+  std::construct_at( &slot( i )->kv , std::piecewise_construct ,
+                     std::forward_as_tuple( std::forward< KK >( k ) ) ,
+                     std::forward_as_tuple( std::forward< A >( a )... ) );
   // a place counted, by no branch past the test of the bound, 0 with no
   // removals; an empty place of a group with some overflow was emptied by
   // a removal, so that then the bound is at least 1
@@ -721,21 +748,24 @@ FlatHashTable< K , V , H , Eq >::put( KK && k , VV && v )
   }
  ADS_POST( locate( x , slot( i )->kv.first ) == slot( i ) );
  ADS_INVARIANT( consistent( x ) );
- return( true );
+ return( std::pair< V * , bool >( &slot( i )->kv.second , true ) );
  }
 
 template< class K , class V , class H , class Eq >
-template< class KK , class VV >
+template< class KK , class ... A >
 std::size_t FlatHashTable< K , V , H , Eq >::grow( std::uint64_t x ,
-                                                  KK && k , VV && v )
+                                                  KK && k , A && ... a )
 {
  const std::size_t G = f_cap ? f_mask + 1 : 0;
  std::size_t i = 0;
  rebuild( f_size + 1 > f_max / 2 ? ( G ? 2 * G : 2 ) : G ,
           [ & ]( FlatHashTable & o , auto & place ) {
            i = place( x );
-           std::construct_at( &o.slot( i )->kv , std::forward< KK >( k ) ,
-                              std::forward< VV >( v ) );
+           std::construct_at( &o.slot( i )->kv , std::piecewise_construct ,
+                              std::forward_as_tuple(
+                               std::forward< KK >( k ) ) ,
+                              std::forward_as_tuple(
+                               std::forward< A >( a )... ) );
            o.ctrl( i ) = std::uint8_t( tag( x ) );
            ++o.f_size;
            } );

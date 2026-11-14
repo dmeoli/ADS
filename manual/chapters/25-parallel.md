@@ -1837,7 +1837,9 @@ parameter of the template, merges them in the outbox, before they take a
 place in the channel and a call at the receiver; the default policy,
 `NoCoalescing`, adds no member and no code. `send( me , to , x , merge )`
 looks up the key `K()( x )` in a map `M` of the outbox (by default a
-`std::unordered_map`), which gives the place of the last message of that
+`std::unordered_map`, which allocates a node per new key, or a
+`DenseHashMap` or a `FlatHashTable`, which do not, by their
+`try_emplace()` of [§7.6](07-dictionary.md#sec-7-6)), which gives the place of the last message of that
 key sent with a merge since the last push. If there is one, `merge(
 pending , x )` either merges $x$ into it and returns true, or returns
 false; in the second case, as when the key is not found, $x$ is appended

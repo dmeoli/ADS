@@ -1084,6 +1084,56 @@ bool withinBound( std::size_t fp , std::size_t q , double p )
  return( double( fp ) <= m + 6 * std::sqrt( m ) + 8 );
  }
 
+/// try_emplace() of a flat map against that of std::unordered_map, with
+/// growth, removals and values changed through the pointer
+template< class M >
+void tryEmplaceOf( void )
+{
+ M T;
+ std::unordered_map< std::uint64_t , std::uint64_t > R;
+ std::mt19937_64 g( 43 );
+ for( int s = 0 ; s < 100000 ; ++s ) {
+  const std::uint64_t k = g() % 5000 , v = g();
+  if( g() % 4 == 0 ) {
+   CHECK( T.remove( k ) == ( R.erase( k ) == 1 ) );
+   continue;
+   }
+  const auto [ p , fresh ] = T.try_emplace( k , v );
+  const auto [ it , rfresh ] = R.try_emplace( k , v );
+  CHECK( ( fresh == rfresh ) && ( *p == it->second ) );
+  if( g() % 2 ) {
+   *p += 1;
+   it->second += 1;
+   }
+  CHECK( T.size() == R.size() );
+  }
+ for( const auto & [ k , v ] : R )
+  CHECK( T.find( k ) && ( *T.find( k ) == v ) );
+ }
+
+// try_emplace() of both flat maps, and a value built from its arguments
+// only when its key is new
+ADS_TEST( "flat-try-emplace" )
+{
+ tryEmplaceOf< DenseHashMap< std::uint64_t , std::uint64_t > >();
+ tryEmplaceOf< FlatHashTable< std::uint64_t , std::uint64_t > >();
+ auto moved = []< class M >( M & T ) {
+  const auto a = T.try_emplace( std::string( "a" ) , 3 , 'x' );
+  CHECK( a.second && ( *a.first == "xxx" ) );
+  const auto b = T.try_emplace( std::string( "a" ) , 5 , 'y' );
+  CHECK( ! b.second && ( *b.first == "xxx" ) );   // not touched
+  for( int i = 0 ; i < 1000 ; ++i )                 // through the growths
+   CHECK( T.try_emplace( std::to_string( i ) , std::size_t( i % 7 ) ,
+                         'z' ).second );
+  CHECK( ( T.size() == 1001 ) && ( *T.find( "a" ) == "xxx" ) &&
+         ( T.find( "13" )->size() == 6 ) );
+  };
+ DenseHashMap< std::string , std::string > D;
+ FlatHashTable< std::string , std::string > F;
+ moved( D );
+ moved( F );
+ }
+
 ADS_TEST( "grafite-filter" )
 {
  constexpr std::uint64_t kMax = ~std::uint64_t( 0 );

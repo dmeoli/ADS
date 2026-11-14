@@ -608,6 +608,7 @@ heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool
 heaps  linked-heap-pool      heap con puntatori, nodi in un pool
 heaps  pairing-heap          pairing heap a due passate e ausiliario
 hashing  dense-hash-map        mappa hash a vettore denso e indice
+hashing  flat-try-emplace      try_emplace delle mappe piatte
 
 # the engineered ordered structures, beyond the book
 ordered  btree-map            B+-albero in memoria, nodi di 512 byte

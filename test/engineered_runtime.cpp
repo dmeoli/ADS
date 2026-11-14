@@ -40,6 +40,8 @@
 
 #include "ADS/Modification.h"
 #include "ADS/concurrent/StealablePriorityQueue.h"
+#include "ADS/dictionary/DenseHashMap.h"
+#include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/parallel/Channels.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
@@ -1094,9 +1096,10 @@ bool lowest( Label & p , const Label & x )
  return( true );
  }
 
-/// a mailbox of labels coalesced by their vertex on the channels C
-template< class C >
-using LabelBox = Mailbox< Label , C , CoalesceBy< LabelHead > >;
+/// a mailbox of labels coalesced by their vertex on the channels C, by the
+/// map M (void for the default)
+template< class C , class M = void >
+using LabelBox = Mailbox< Label , C , CoalesceBy< LabelHead , M > >;
 
 /// no distance
 constexpr std::uint64_t kFar = ~std::uint64_t( 0 );
@@ -1203,14 +1206,14 @@ PathCounts pathWorker( MB & mb , const Arcs & a , std::uint32_t s ,
 /// same as Dijkstra's, and every message sent handed once or merged; with
 /// a stop by the worker 0, every message sent handed once, by a poll or by
 /// leftovers(), or merged; the merges, summed into *merged
-template< class C , class ... A >
+template< class C , class M = void , class ... A >
 void coalescedPaths( std::size_t p , std::size_t b , std::uint64_t seed ,
                      long stop , std::uint64_t * merged , A ... args )
 {
  const std::uint32_t n = 400;
  const Arcs a = randomArcs( n , seed );
  const auto ref = dijkstra( a , 0 );
- LabelBox< C > mb( p , b , args... );
+ LabelBox< C , M > mb( p , b , args... );
  std::vector< std::uint64_t > d( n , kFar );   // d[ v ] of its owner only
  std::atomic< std::uint64_t > sends{ 0 } , taken{ 0 };
  ThreadPool pool( p );
@@ -1244,17 +1247,19 @@ void coalescedPaths( std::size_t p , std::size_t b , std::uint64_t seed ,
  }
 
 /// the paths of a family on 1, 2 and 4 workers, batches of 1, 16 and 64,
-/// to the end and stopped after few and many vertices; some merge
-template< class C , class ... A >
+/// to the end and stopped after few and many vertices, by the map M (void
+/// for the default); some merge
+template< class C , class M = void , class ... A >
 void coalescedFamily( A ... args )
 {
  std::uint64_t merged = 0;
  for( std::size_t p : { 1 , 2 , 4 } )
   for( std::size_t b : { 1 , 16 , 64 } )
    for( std::uint64_t seed : { 1 , 2 } ) {
-    coalescedPaths< C >( p , b , seed , -1 , & merged , args... );
+    coalescedPaths< C , M >( p , b , seed , -1 , & merged , args... );
     for( long stop : { 1L , 30L } )
-     coalescedPaths< C >( p , b , seed + 10 , stop , & merged , args... );
+     coalescedPaths< C , M >( p , b , seed + 10 , stop , & merged ,
+                              args... );
     }
  CHECK( merged > 0 );
  }
@@ -1388,11 +1393,11 @@ void auditedPhases( std::size_t p , std::size_t b , A ... args )
 // the map, so that no merge reaches a place shifted, and one that takes
 // nothing keeps it; a merge after a stop, the counts of merged() and
 // sent(), and the plain send() unknown to the map
-ADS_TEST( "mailbox-coalesce" )
+/// the coalescing of one worker in an outbox by the map M (void for the
+/// default)
+template< class M >
+void coalescedUnit( void )
 {
- static_assert( MailboxCoalescing< NoCoalescing , Label > &&
-                MailboxCoalescing< CoalesceBy< LabelHead > , Label > &&
-                ! MailboxCoalescing< CoalesceBy< LabelHead > , int > );
  std::vector< Label > got;
  auto take = [ & ]( Label && x ) { got.push_back( x ); };
  auto is = [ & ]( std::size_t i , std::uint32_t v , std::uint64_t d ,
@@ -1401,7 +1406,7 @@ ADS_TEST( "mailbox-coalesce" )
           ( got[ i ].kind == k ) );
   };
  {
-  LabelBox< LockedChannels< Label > > mb( 2 , 4 );
+  LabelBox< LockedChannels< Label > , M > mb( 2 , 4 );
   mb.send( 0 , 1 , Label{ 5 , 10 , 0 } , lowest );
   mb.send( 0 , 1 , Label{ 5 , 7 , 0 } , lowest );    // merged
   mb.send( 0 , 1 , Label{ 6 , 3 , 0 } , lowest );
@@ -1442,7 +1447,7 @@ ADS_TEST( "mailbox-coalesce" )
   }
  {
   // a mesh of capacity 2, batches of 4: the push at 4 takes 1 and 2
-  LabelBox< MeshChannels< Label > > mb( 2 , 4 , std::size_t( 2 ) );
+  LabelBox< MeshChannels< Label > , M > mb( 2 , 4 , std::size_t( 2 ) );
   for( std::uint32_t v = 1 ; v <= 4 ; ++v )
    mb.send( 0 , 1 , Label{ v , 10 * v , 0 } , lowest );
   CHECK( mb.sent( 0 ) == 2 );
@@ -1469,10 +1474,27 @@ ADS_TEST( "mailbox-coalesce" )
   }
  }
 
+ADS_TEST( "mailbox-coalesce" )
+{
+ using Dense = DenseHashMap< std::uint32_t , std::size_t >;
+ using Flat = FlatHashTable< std::uint32_t , std::size_t >;
+ static_assert( MailboxCoalescing< NoCoalescing , Label > &&
+                MailboxCoalescing< CoalesceBy< LabelHead > , Label > &&
+                MailboxCoalescing< CoalesceBy< LabelHead , Dense > ,
+                                   Label > &&
+                MailboxCoalescing< CoalesceBy< LabelHead , Flat > ,
+                                   Label > &&
+                ! MailboxCoalescing< CoalesceBy< LabelHead > , int > );
+ coalescedUnit< void >();
+ coalescedUnit< Dense >();
+ coalescedUnit< Flat >();
+ }
+
 // the coalescing by many workers: the shortest paths by relaxations in any
 // order, merged by the least distance with probes in between, on every
-// family, the mesh also of capacity 2 (pushes of part of a batch), to the
-// end against Dijkstra and stopped, every message handed once or merged
+// family, the mesh also of capacity 2 (pushes of part of a batch), and
+// there also by the two flat maps, to the end against Dijkstra and
+// stopped, every message handed once or merged
 ADS_TEST( "mailbox-coalesce-paths" )
 {
  coalescedFamily< LockedChannels< Label > >();
@@ -1480,6 +1502,12 @@ ADS_TEST( "mailbox-coalesce-paths" )
  coalescedFamily< LaneChannels< Label > >();
  coalescedFamily< MeshChannels< Label > >( std::size_t( 2 ) );
  coalescedFamily< MeshChannels< Label > >( std::size_t( 1024 ) );
+ coalescedFamily< MeshChannels< Label > ,
+                  DenseHashMap< std::uint32_t , std::size_t > >(
+  std::size_t( 2 ) );
+ coalescedFamily< MeshChannels< Label > ,
+                  FlatHashTable< std::uint32_t , std::size_t > >(
+  std::size_t( 2 ) );
  }
 
 // the audit at a quiescent point: the phases of auditedPhases on every

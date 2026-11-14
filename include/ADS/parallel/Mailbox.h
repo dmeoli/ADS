@@ -185,8 +185,9 @@ struct NoCoalescing {};
 /// the coalescing of the messages of one key in an outbox of `Mailbox`:
 /// `K()( x )` the key of the message \f$ x \f$, and `M` the map from a key
 /// to the place of its last message in an outbox (`try_emplace()`,
-/// `clear()` and `empty()` as those of `std::unordered_map`), by default
-/// (`void`) a `std::unordered_map` of the keys to `std::size_t`
+/// `clear()` and `empty()` as those of `std::unordered_map`, or of
+/// `DenseHashMap` and `FlatHashTable`, which allocate no node per key), by
+/// default (`void`) a `std::unordered_map` of the keys to `std::size_t`
 template< class K , class M = void >
 struct CoalesceBy {
  using KeyOf = K;   ///< the function of the key
@@ -229,6 +230,17 @@ struct Coalescing< CoalesceBy< K , M > , Msg > {
  using Slots = std::vector< Map >;
  };
 
+/// the value that `try_emplace()` of a map gives: the second member of
+/// the iterator of a map of the standard, or the value a pointer of a flat
+/// map of ADS points to [see `DenseHashMap`, `FlatHashTable`]
+template< class I >
+[[nodiscard]] constexpr auto & mappedOf( const I & it ) {
+ if constexpr( std::is_pointer_v< I > )
+  return( *it );
+ else
+  return( it->second );
+ }
+
 }  // end( namespace detail )
 
 /// a policy of the coalescing of `Mailbox` for the messages `Msg`:
@@ -245,7 +257,8 @@ concept MailboxCoalescing =
    requires( typename detail::Coalescing< C , Msg >::Map & m ,
              const typename detail::Coalescing< C , Msg >::Key & k ,
              std::size_t i ) {
-    { m.try_emplace( k , i ).first->second } -> std::same_as< std::size_t & >;
+    { detail::mappedOf( m.try_emplace( k , i ).first ) }
+     -> std::same_as< std::size_t & >;
     { m.try_emplace( k , i ).second } -> std::convertible_to< bool >;
     m.clear();
     { m.empty() } -> std::convertible_to< bool >;
@@ -385,13 +398,13 @@ class Mailbox {
   auto [ it , fresh ] = w.slots[ to ].try_emplace(
                          typename Coalesce::KeyOf()( o.back() ) , i );
   if( ! fresh ) {
-   ADS_INVARIANT( it->second < i );
-   if( absorb( merge , o[ it->second ] , o.back() ) ) {
+   ADS_INVARIANT( detail::mappedOf( it ) < i );
+   if( absorb( merge , o[ detail::mappedOf( it ) ] , o.back() ) ) {
     o.pop_back();                         // never counted, never pushed
     ++w.merged;
     return;
     }
-   it->second = i;
+   detail::mappedOf( it ) = i;
    }
   if( ( o.size() >= w.next[ to ] ) && ! stopped() )
    push( me , to );

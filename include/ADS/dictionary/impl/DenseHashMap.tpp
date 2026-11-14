@@ -313,11 +313,37 @@ template< class KK , class VV >
 ADS_FLAT_INLINE bool
 DenseHashMap< K , V , H , Eq >::put( KK && k , VV && v )
 {
+ return( place< true >( std::forward< KK >( k ) ,
+                        std::forward< VV >( v ) ).second );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class ... A >
+ADS_FLAT_INLINE std::pair< V * , bool >
+DenseHashMap< K , V , H , Eq >::try_emplace( const K & k , A && ... a )
+{
+ return( place< false >( k , std::forward< A >( a )... ) );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class ... A >
+ADS_FLAT_INLINE std::pair< V * , bool >
+DenseHashMap< K , V , H , Eq >::try_emplace( K && k , A && ... a )
+{
+ return( place< false >( std::move( k ) , std::forward< A >( a )... ) );
+ }
+
+template< class K , class V , class H , class Eq >
+template< bool Assign , class KK , class ... A >
+ADS_FLAT_INLINE std::pair< V * , bool >
+DenseHashMap< K , V , H , Eq >::place( KK && k , A && ... a )
+{
  const std::uint64_t x = mix( k );
  if( const std::size_t p = locate( x , k ) ; p != ~std::size_t( 0 ) ) {
-  f_kv[ p ].second = std::forward< VV >( v );  // replaced in place
+  if constexpr( Assign )                     // replaced in place
+   ( ( f_kv[ p ].second = std::forward< A >( a ) ) , ... );
   ADS_INVARIANT( consistent( x ) );
-  return( false );
+  return( std::pair< V * , bool >( &f_kv[ p ].second , false ) );
   }
  ADS_PRE( f_kv.size() < 0xFFFFFFFFULL );
  if( ( f_kv.size() + f_deleted >= f_max ) && ! recount() ) [[unlikely]]
@@ -325,7 +351,7 @@ DenseHashMap< K , V , H , Eq >::put( KK && k , VV && v )
  // the pair first, so that an exception leaves the index as it was
  f_kv.emplace_back( std::piecewise_construct ,
                     std::forward_as_tuple( std::forward< KK >( k ) ) ,
-                    std::forward_as_tuple( std::forward< VV >( v ) ) );
+                    std::forward_as_tuple( std::forward< A >( a )... ) );
  const std::size_t g = home( x );
  const Mask e = empties( f_ctrl[ g ] );
  const std::size_t i = e ? g * 16 + std::size_t( std::countr_zero( e ) )
@@ -339,7 +365,7 @@ DenseHashMap< K , V , H , Eq >::put( KK && k , VV && v )
  c.at[ i % 16 ] = std::uint32_t( f_kv.size() - 1 );
  ADS_POST( locate( x , f_kv.back().first ) == f_kv.size() - 1 );
  ADS_INVARIANT( consistent( x ) );
- return( true );
+ return( std::pair< V * , bool >( &f_kv.back().second , true ) );
  }
 
 template< class K , class V , class H , class Eq >

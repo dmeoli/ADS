@@ -91,12 +91,13 @@
  * The iterators visit the pairs in the order of the places, as constant
  * pairs of references \f$ ( \mathit{key} , \mathit{value} ) \f$, a group at
  * a time by the mask of its full places [see `const_iterator`]; `find()`
- * gives a value to change in place. A removal moves no other pair and keeps
- * the iterators valid but the one on the removed pair (`erase( it )` returns
- * the next one), an insertion of a new key that rebuilds the table
- * invalidates all of them (one that does not rebuild it keeps them, the new
- * pair visited or not), and an insertion of a key already there replaces its
- * value in place.
+ * gives a value to change in place, and `try_emplace()` the value of a key
+ * found or inserted by one search, as that of `std::unordered_map`. A
+ * removal moves no other pair and keeps the iterators valid but the one on
+ * the removed pair (`erase( it )` returns the next one), an insertion of a
+ * new key that rebuilds the table invalidates all of them (one that does
+ * not rebuild it keeps them, the new pair visited or not), and an insertion
+ * of a key already there replaces its value in place.
  *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the table
  * and after `remove()` it is not; the invariant is that each full place is
@@ -162,6 +163,7 @@
 #include <memory>
 #include <new>
 #include <optional>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -325,6 +327,19 @@ class FlatHashTable {
 
  /// as `insert( k , v )`, moving the key and the value
  bool insert( K && k , V && v );
+
+ /// the value of the key \f$ k \f$, built from `a` if \f$ k \f$ was not
+ /// there, and true in that case; a key already there keeps its value and
+ /// `a` is not touched. The search is the one of `insert()`, so that a
+ /// value read and then changed costs one inspection; the pointer is
+ /// valid until the next removal of this pair or rebuild of the table
+ /// \post \f$ k \f$ is in the table
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( const K & k , A && ... a );
+
+ /// as `try_emplace( k , a )`, moving the key
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( K && k , A && ... a );
 
  /// removes the key \f$ k \f$, if it is there, emptying its place, with no
  /// deleted mark, and adding 1 to the bound \f$ d \f$ of the places still
@@ -548,11 +563,19 @@ class FlatHashTable {
  template< class KK , class VV >
  bool put( KK && k , VV && v );
 
- /// the table rebuilt for one more pair, the pair \f$ ( k , v ) \f$ of mixed
- /// hash \f$ x \f$ built in the new places before the old pairs move; its
- /// place
- template< class KK , class VV >
- ADS_FLAT_NOINLINE std::size_t grow( std::uint64_t x , KK && k , VV && v );
+ /// the search of \f$ k \f$ and, if it is not there, the insertion of
+ /// the pair of \f$ k \f$ and the value built from `a`; if it is there,
+ /// its value assigned from `a` (a single value) when `Assign`; the value
+ /// and true if \f$ k \f$ was not there
+ template< bool Assign , class KK , class ... A >
+ std::pair< V * , bool > place( KK && k , A && ... a );
+
+ /// the table rebuilt for one more pair, the pair of \f$ k \f$ and the
+ /// value built from `a`, of mixed hash \f$ x \f$, built in the new
+ /// places before the old pairs move; its place
+ template< class KK , class ... A >
+ ADS_FLAT_NOINLINE std::size_t grow( std::uint64_t x , KK && k ,
+                                     A && ... a );
 
  /// empties the place \f$ i \f$, whose pair is destroyed
  void drop( std::size_t i );

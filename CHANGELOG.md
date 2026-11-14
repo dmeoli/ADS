@@ -99,6 +99,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stopped) and mailbox-audit (a Shadow and a predicate of the consumer
   that catch a corrupted state at a barrier)
 
+- try_emplace( k , a... ) of DenseHashMap and FlatHashTable, as that of
+  std::unordered_map but giving a pointer to the value and whether the key
+  was new: one inspection finds the key or inserts it with the value built
+  from a..., which are not touched when the key is there; insert() runs on
+  the same search, with the same instructions for keys and values of
+  integers; either map serves as the map of CoalesceBy< K , M > in
+  parallel/Mailbox.h, which then allocates no node per key; the tests
+  hashing flat-try-emplace (against std::unordered_map, through the
+  growths, with values built from their arguments) and engineered_runtime
+  mailbox-coalesce and mailbox-coalesce-paths (also by the two flat maps)
+
 - rearm() and rearm( active ) in parallel/Mailbox.h, which make one
   mailbox serve a sequence of computations separated by barriers (the
   phases of an episode of an incremental search, or its episodes): called

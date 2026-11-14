@@ -56,8 +56,10 @@
  * order of the positions; an insertion of a new key may move the vector
  * and invalidates them, a removal moves the last pair into the position
  * of the removed one, and an insertion of a key already there replaces its
- * value in place. `find()` gives a value to change in place. The keys and
- * the values must be movable; there are fewer than \f$ 2^{32} \f$ pairs.
+ * value in place. `find()` gives a value to change in place, and
+ * `try_emplace()` the value of a key found or inserted by one search, as
+ * that of `std::unordered_map`. The keys and the values must be movable;
+ * there are fewer than \f$ 2^{32} \f$ pairs.
  *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the map
  * and after `remove()` it is not; the invariant is that each position of
@@ -209,6 +211,19 @@ class DenseHashMap {
 
  /// as `insert( k , v )`, moving the key and the value
  bool insert( K && k , V && v );
+
+ /// the value of the key \f$ k \f$, built from `a` if \f$ k \f$ was not
+ /// there, and true in that case; a key already there keeps its value and
+ /// `a` is not touched. The search is the one of `insert()`, so that a
+ /// value read and then changed costs one inspection; the pointer is
+ /// valid until the next insertion of a new key or removal
+ /// \post \f$ k \f$ is in the map
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( const K & k , A && ... a );
+
+ /// as `try_emplace( k , a )`, moving the key
+ template< class ... A >
+ std::pair< V * , bool > try_emplace( K && k , A && ... a );
 
  /// removes the key \f$ k \f$, if it is there, moving the last pair into its
  /// position; true if it was
@@ -375,6 +390,13 @@ class DenseHashMap {
  /// the insertion of a pair, the key and the value forwarded
  template< class KK , class VV >
  bool put( KK && k , VV && v );
+
+ /// the search of \f$ k \f$ and, if it is not there, the insertion of
+ /// the pair of \f$ k \f$ and the value built from `a`; if it is there,
+ /// its value assigned from `a` (a single value) when `Assign`; the value
+ /// and true if \f$ k \f$ was not there
+ template< bool Assign , class KK , class ... A >
+ std::pair< V * , bool > place( KK && k , A && ... a );
 
  /// the place \f$ j \f$ of the position \f$ p \f$ emptied in the group
  /// \f$ g \f$, the last pair moved into \f$ p \f$

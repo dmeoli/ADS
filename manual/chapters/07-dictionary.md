@@ -1331,6 +1331,13 @@ iterators valid but the one on the removed pair, while an insertion of a
 new key that rebuilds the table invalidates them all. `reserve(n)` makes
 room for $n$ pairs, `clear()` keeps the places, and `capacity()`, `load()`,
 `forEach()` and `swap()` have their usual meaning.
+`try_emplace(k, a...)` is the search of `insert()` followed, when $k$ is
+not there, by the construction of its value from `a...` in the new place;
+it returns a pointer to the value and whether $k$ was new, as
+`std::unordered_map` does with an iterator, and leaves `a...` untouched
+when $k$ is there. Hence, a value that is read and then changed (e.g., the
+place of the last message of a key in an outbox of `Mailbox`,
+[§25.15](25-parallel.md#sec-25-15)) costs one inspection, and `DenseHashMap` has the same member.
 
 <span id="alg-7-9"></span>**Algorithm 7.9.** The step of the iterator of
 `FlatHashTable`; $M$ is the mask of the full places of the group $g$ from
