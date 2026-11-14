@@ -8,9 +8,11 @@
  * `ArraySequence.h`] moves \f$ O( n ) \f$ items.
  *
  * The items are in blocks of \f$ b \f$ items, \f$ b \f$ a power of 2, each a
- * circular buffer with the offset of its first item, all full but the last
- * one; the item of index \f$ i \f$ is the item \f$ i \bmod b \f$ of the
- * block \f$ \lfloor i / b \rfloor \f$, a shift, a mask and two reads. An
+ * circular buffer with the offset of its first item, all full but the first
+ * and the last one, the first with \f$ g < b \f$ places free at its front;
+ * the item of index \f$ i \f$ is the item \f$ ( g + i ) \bmod b \f$ of the
+ * block \f$ \lfloor ( g + i ) / b \rfloor \f$, an addition, a shift, a mask
+ * and two reads. An
  * insertion at \f$ i \f$ moves the items of its block after \f$ i \f$ by one
  * place, at most \f$ b - 1 \f$ of them, and then the last item of each
  * following block to the front of the next one, \f$ O( 1 ) \f$ per block
@@ -23,11 +25,26 @@
  * costs \f$ O( \sqrt{n} ) \f$ amortized and the space is
  * \f$ n + O( \sqrt{n} ) \f$ items.
  *
+ * An insertion or a removal at \f$ i < n / 2 \f$ moves the items before
+ * \f$ i \f$ instead, toward the front: the items of its block before
+ * \f$ i \f$, and the first item of each block before it to the back of the
+ * block that precedes it, which costs \f$ O( 1 ) \f$ per block as above;
+ * the first block gives or takes a place of its gap \f$ g \f$, and a block
+ * is added at the front when \f$ g = 0 \f$ (removed when \f$ g = b \f$),
+ * once every \f$ b \f$ insertions at most. Hence an operation at
+ * \f$ i \f$ moves \f$ O( 1 + \min\{ i , b , n - i \} + \min\{ i , n - i \}
+ * / b ) \f$ items, i.e., \f$ O( 1 + \min\{ i , \sqrt{n} , n - i \} ) \f$
+ * amortized, which is the bound of exercise 2.12 of Morin's book (that of
+ * exercise 2.11, \f$ O( 1 + \min\{ \sqrt{n} , n - i \} ) \f$, holds already
+ * for the shifts toward the back), with \f$ O( \sqrt{n} ) \f$ places wasted:
+ * the gap, the free places of the last block and the directory of the
+ * blocks.
+ *
  * The contracts [see `Contract.h`]: an index is below `size()` (at most
  * `size()` for an insertion), and `pop_back()` needs a vector that is not
- * empty; the invariant, checked on vectors of at most 1024 items, is that
- * the blocks but the last are full and that they count `size()` items. The
- * operations are defined in `TieredVector.tpp`.
+ * empty, as `pop_front()`; the invariant is that the blocks but the first
+ * and the last are full, that the gap is below \f$ b \f$ and that they
+ * count `size()` items. The operations are defined in `TieredVector.tpp`.
  *
  * \see M. T. Goodrich, J. G. Kloss II, Tiered vectors: efficient dynamic
  *      arrays for rank-based sequences, Algorithms and Data Structures
@@ -37,6 +54,8 @@
  *      dynamic arrays, 25th Annual European Symposium on Algorithms (ESA
  *      2017), LIPIcs 87, 16:1-16:13, 2017,
  *      doi:10.4230/LIPIcs.ESA.2017.16
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, exercises 2.11 and 2.12
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -106,30 +125,51 @@ class TieredVector {
  /// the places \f$ b \f$ of a block
  [[nodiscard]] std::size_t block( void ) const { return( f_b ); }
 
+ /// the places of the blocks, \f$ n + O( \sqrt{n} ) \f$
+ [[nodiscard]] std::size_t capacity( void ) const {
+  return( f_blocks.size() * f_b );
+  }
+
  /// the item at the index \f$ i \f$, at the place
- /// \f$ ( \mathit{off} + i ) \bmod b \f$ of the block
- /// \f$ \lfloor i / b \rfloor \f$, \f$ \mathit{off} \f$ the offset of the
- /// block
+ /// \f$ ( \mathit{off} + g + i ) \bmod b \f$ of the block
+ /// \f$ \lfloor ( g + i ) / b \rfloor \f$, \f$ \mathit{off} \f$ the offset
+ /// of the block
  /// \pre \f$ i < n \f$
  [[nodiscard]] T & operator[]( std::size_t i ) {
   ADS_PRE( i < f_n );
-  Block & k = f_blocks[ i >> f_lg ];
-  return( k.a[ ( k.off + i ) & ( f_b - 1 ) ] );
+  const std::size_t j = f_g + i;
+  Block & k = f_blocks[ j >> f_lg ];
+  return( k.a[ ( k.off + j ) & ( f_b - 1 ) ] );
   }
  /// the item at the index \f$ i \f$, constant
  /// \pre \f$ i < n \f$
  [[nodiscard]] const T & operator[]( std::size_t i ) const {
   ADS_PRE( i < f_n );
-  const Block & k = f_blocks[ i >> f_lg ];
-  return( k.a[ ( k.off + i ) & ( f_b - 1 ) ] );
+  const std::size_t j = f_g + i;
+  const Block & k = f_blocks[ j >> f_lg ];
+  return( k.a[ ( k.off + j ) & ( f_b - 1 ) ] );
+  }
+
+ /// the first item
+ /// \pre the vector is not empty
+ [[nodiscard]] const T & front( void ) const { return( ( *this )[ 0 ] ); }
+
+ /// the last item
+ /// \pre the vector is not empty
+ [[nodiscard]] const T & back( void ) const {
+  return( ( *this )[ f_n - 1 ] );
   }
 
  /// \f$ x \f$ at the index \f$ i \f$, the items from \f$ i \f$ one place on,
- /// \f$ O( \sqrt{n} ) \f$ amortized
+ /// or those before \f$ i \f$ one place back if \f$ i < n / 2 \f$, in
+ /// \f$ O( 1 + \min\{ i , \sqrt{n} , n - i \} ) \f$ amortized time
  ///
  /// In pseudocode (Goodrich and Kloss, beyond the book), \f$ B_j \f$ the
- /// blocks, \f$ B_j.\mathit{off} \f$ their offsets and the places of a block
- /// taken modulo \f$ b \f$:
+ /// blocks, \f$ B_j.\mathit{off} \f$ their offsets, the places of a block
+ /// taken modulo \f$ b \f$ and the gap \f$ g = 0 \f$ (the shift toward the
+ /// front is the mirror, the first item of each block to the back of the
+ /// one before, with the gap in place of the free places of the last
+ /// block):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( i , x ) \cr
@@ -154,10 +194,11 @@ class TieredVector {
  void insert( std::size_t i , const T & x );
 
  /// removes the item at the index \f$ i \f$, the items after it one place
- /// back, \f$ O( \sqrt{n} ) \f$ amortized
+ /// back, or those before it one place on if \f$ i < n / 2 \f$, in
+ /// \f$ O( 1 + \min\{ i , \sqrt{n} , n - i \} ) \f$ amortized time
  ///
  /// In pseudocode (Goodrich and Kloss, beyond the book), the converse of
- /// `insert()`:
+ /// `insert()` with \f$ g = 0 \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{erase}( i ) \cr
@@ -186,6 +227,13 @@ class TieredVector {
  /// removes the last item, `erase( n - 1 )`
  /// \pre the vector is not empty
  void pop_back( void ) { erase( f_n - 1 ); }
+
+ /// \f$ x \f$ at the front, `insert( 0 , x )`, \f$ O( 1 ) \f$ amortized
+ void push_front( const T & x ) { insert( 0 , x ); }
+
+ /// removes the first item, `erase( 0 )`, \f$ O( 1 ) \f$ amortized
+ /// \pre the vector is not empty
+ void pop_front( void ) { erase( 0 ); }
 
  /// removes the items
  void clear( void );
@@ -304,11 +352,25 @@ class TieredVector {
  /// \f$ \sqrt{n} \f$
  void rebuild( std::size_t n );
 
- /// the blocks but the last full, and size() items in them
+ /// \f$ x \f$ at the index \f$ i \f$, the items before \f$ i \f$ one place
+ /// back
+ void insertFront( std::size_t i , T && x );
+
+ /// removes the item at the index \f$ i \f$, the items before it one place
+ /// on
+ void eraseFront( std::size_t i );
+
+ /// removes the item at the index \f$ i \f$, the items after it one place
+ /// back
+ void eraseBack( std::size_t i );
+
+ /// the blocks but the first and the last full, the gap below \f$ b \f$,
+ /// and size() items in them
  [[nodiscard]] bool full( void ) const;
 
  std::vector< Block > f_blocks;   ///< the blocks
  std::size_t f_n = 0;             ///< the number of items
+ std::size_t f_g = 0;             ///< the places free before the first item
  std::size_t f_b = 64;            ///< the places of a block
  unsigned f_lg = 6;               ///< \f$ \log_2 b \f$
 
