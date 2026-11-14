@@ -601,8 +601,13 @@ $( 4 + k ) s + 4 n$ bytes for keys of $k$ bytes and ids of 4 bytes. With
 the cache. `pushOrDecrease(id,k)` pushes an id that is not in the heap and
 lowers the key of one that is (the relaxation of an edge in the algorithm
 of Dijkstra), and returns whether the key changed. `contains()`, `key()`,
-`ids()`, `reset(n)` (the heap of $n$ ids emptied, its memory kept) and
-`clear()` complete the interface. Also, the heap models the concept
+`ids()`, `reset(n)` (the heap of $n$ ids emptied, its memory kept),
+`grow(n)` and `clear()` complete the interface. `grow(n)` raises the range
+of the ids to $[ 0 , n )$ keeping the items, the new ids absent; the vector
+$\mathit{pos}$ at least doubles when it is full, so that a search that
+numbers its nodes as it generates them grows the heap with them in
+$O( 1 )$ amortized time per node (test
+`engineered_search.indexed-heap-grow`). Also, the heap models the concept
 `PriorityQueue`, the ids being their own handles: `insert()` is `push()`,
 `min()` the id of `top()` and `deleteMin()` that of `pop()`. Hence the
 algorithms of [chapter 14](14-graph.md#ch-14) run on it unchanged (test
@@ -1138,6 +1143,22 @@ into a layer of $R$ runs turns the layer dense on all its $g$, by moving
 the heads of the runs (not the items) into an array as long as the
 largest $g$. The layer stays dense until it empties; it then frees the
 array and is sparse again.
+
+The order among the items of one $f$ is a policy, the third parameter of
+`BucketQueue<T,K,Tie>`. `LargestSecondKey`, the default, is the order
+above, while `LeastSecondKey` takes the least $g$ first, and among equal
+pairs the last item pushed, i.e., the lexicographic order of the pairs
+$( f , g )$, which is that of the keys $( k_1 , k_2 )$ of LPA* ([Koenig,
+Likhachev and Furcy 2004](Z-bibliography.md#ref-koenig2004)), $k_1$ the
+estimate of the cost through a node and $k_2$ its cost from the start. The
+two policies are mirror images: with the least $g$ first, the bound of the
+dense lists is scanned forward and moves only up between two pushes of a
+smaller $g$, the runs are kept by decreasing $g$, so that their last one is
+still the top, and a layer gives its dense lists, all of $g < D$ while it
+has runs, before its runs. The costs of [Lemma 9.15](09-priority.md#lem-9-15)
+hold for both, and
+the default compiles to the same code as before the policy existed (test
+`engineered.bucket-queue-lexicographic`).
 
 --8<-- "generated/BucketQueue-push.pseudo.md"
 

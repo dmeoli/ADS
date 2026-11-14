@@ -36,6 +36,10 @@
  * needs to take a node out of its frontier or to make it worse, e.g., when
  * a bound prunes it (see \ref theory_priority_heaps).
  *
+ * The range of the ids is set by the constructor and by `reset( n )`, which
+ * empties the heap, and raised by `grow( n )`, which keeps it, in
+ * \f$ O( 1 ) \f$ amortized time per new id.
+ *
  * The contracts [see `Contract.h`]: the ids are in \f$ [ 0 , n ) \f$,
  * `push()` needs an id not in the heap, `decrease()` one in the heap and a
  * key not greater than its own, `increase()` one in the heap and a key not
@@ -72,6 +76,7 @@
 
 #include "ADS/Contract.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -113,6 +118,14 @@ class IndexedDaryHeap {
  /// the empty heap of the ids \f$ [ 0 , n ) \f$, the room kept
  /// \pre \f$ n \ge 0 \f$
  void reset( int n );
+
+ /// the ids raised to \f$ [ 0 , n ) \f$, the new ones not in the heap and
+ /// the items kept, in \f$ O( 1 ) \f$ amortized time per new id: the
+ /// vector of the places grows at least twice as large when it is full, so
+ /// that a consumer whose ids appear one by one (the nodes of a search
+ /// numbered as they are generated) grows the heap with them
+ /// \pre \f$ n \ge \f$ `ids()`
+ void grow( int n );
 
  /// the number of ids, \f$ n \f$
  [[nodiscard]] int ids( void ) const { return( int( f_pos.size() ) ); }

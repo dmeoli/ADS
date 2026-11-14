@@ -2170,1678 +2170,1682 @@ its DOI when it has one.
      covering with colors on sparse sets.* Program, 2023,
      <https://cs.stanford.edu/~knuth/programs.html>.
 
-461. <span id="ref-kohli2007"></span>P. Kohli, P. H. S. Torr. *Dynamic
+461. <span id="ref-koenig2004"></span>S. Koenig, M. Likhachev, D. Furcy.
+     *Lifelong Planning A\*.* Artificial Intelligence **155**(1–2) (2004),
+     93–146, <https://doi.org/10.1016/j.artint.2003.12.001>.
+
+462. <span id="ref-kohli2007"></span>P. Kohli, P. H. S. Torr. *Dynamic
      graph cuts for efficient inference in Markov random fields.* IEEE
      Transactions on Pattern Analysis and Machine Intelligence **29**(12)
      (2007), 2079–2088, <https://doi.org/10.1109/TPAMI.2007.1128>.
 
-462. <span id="ref-konig1931"></span>D. Kőnig. *Gráfok és mátrixok.*
+463. <span id="ref-konig1931"></span>D. Kőnig. *Gráfok és mátrixok.*
      Matematikai és Fizikai Lapok **38** (1931), 116–119.
 
-463. <span id="ref-korf2008"></span>R. E. Korf. *Linear-time disk-based
+464. <span id="ref-korf2008"></span>R. E. Korf. *Linear-time disk-based
      implicit graph search.* Journal of the ACM **55**(6) (2008),
      26:1–26:40, <https://doi.org/10.1145/1455248.1455250>.
 
-464. <span id="ref-kosaraju2000"></span>S. R. Kosaraju, G. Manzini.
+465. <span id="ref-kosaraju2000"></span>S. R. Kosaraju, G. Manzini.
      *Compression of low entropy strings with Lempel-Ziv algorithms.* SIAM
      Journal on Computing **29**(3) (2000), 893–911,
      <https://doi.org/10.1137/S0097539797331105>.
 
-465. <span id="ref-kreutzer2014"></span>M. Kreutzer, G. Hager, G. Wellein,
+466. <span id="ref-kreutzer2014"></span>M. Kreutzer, G. Hager, G. Wellein,
      H. Fehske, A. R. Bishop. *A unified sparse matrix data format for
      efficient general sparse matrix-vector multiplication on modern
      processors with wide SIMD units.* SIAM Journal on Scientific Computing
      **36**(5) (2014), C401–C423, <https://doi.org/10.1137/130930352>.
 
-466. <span id="ref-kristo2020"></span>A. Kristo, K. Vaidya, U. Çetintemel,
+467. <span id="ref-kristo2020"></span>A. Kristo, K. Vaidya, U. Çetintemel,
      S. Misra, T. Kraska. *The case for a learned sorting algorithm.* ACM
      SIGMOD International Conference on Management of Data (2020),
      1001–1016, <https://doi.org/10.1145/3318464.3389752>.
 
-467. <span id="ref-kristo2021"></span>A. Kristo, K. Vaidya, T. Kraska.
+468. <span id="ref-kristo2021"></span>A. Kristo, K. Vaidya, T. Kraska.
      *Defeating duplicates: a re-design of the LearnedSort algorithm.*
      arXiv:2107.03290 (2021), <https://doi.org/10.48550/arXiv.2107.03290>.
 
-468. <span id="ref-kruskal1956"></span>J. B. Kruskal. *On the shortest
+469. <span id="ref-kruskal1956"></span>J. B. Kruskal. *On the shortest
      spanning subtree of a graph and the traveling salesman problem.*
      Proceedings of the American Mathematical Society **7**(1) (1956),
      48–50, <https://doi.org/10.1090/S0002-9939-1956-0078686-7>.
 
-469. <span id="ref-kuhn1955"></span>H. W. Kuhn. *The Hungarian method for
+470. <span id="ref-kuhn1955"></span>H. W. Kuhn. *The Hungarian method for
      the assignment problem.* Naval Research Logistics Quarterly **2**(1–2)
      (1955), 83–97, <https://doi.org/10.1002/nav.3800020109>.
 
-470. <span id="ref-kulukundis2017"></span>M. Kulukundis. *Designing a fast,
+471. <span id="ref-kulukundis2017"></span>M. Kulukundis. *Designing a fast,
      efficient, cache-friendly hash table, step by step.* Talk at CppCon
      2017, 2017.
 
-471. <span id="ref-kumar2003"></span>S. Kumar, P. Gupta. *An incremental
+472. <span id="ref-kumar2003"></span>S. Kumar, P. Gupta. *An incremental
      algorithm for the maximum flow problem.* Journal of Mathematical
      Modelling and Algorithms **2**(1) (2003), 1–16,
      <https://doi.org/10.1023/A:1023607406540>.
 
-472. <span id="ref-kurpicz2022"></span>F. Kurpicz. *Engineering compact
+473. <span id="ref-kurpicz2022"></span>F. Kurpicz. *Engineering compact
      data structures for rank and select queries on bit vectors.*
      Proceedings of the 29th Symposium on String Processing and Information
      Retrieval (SPIRE 2022), LNCS **13617**, 257–272, 2022,
      <https://doi.org/10.1007/978-3-031-20643-6_19>.
 
-473. <span id="ref-labeit2017"></span>J. Labeit, J. Shun, G. E. Blelloch.
+474. <span id="ref-labeit2017"></span>J. Labeit, J. Shun, G. E. Blelloch.
      *Parallel lightweight wavelet tree, suffix array and FM-index
      construction.* Journal of Discrete Algorithms **43** (2017), 2–17,
      <https://doi.org/10.1016/j.jda.2017.04.001>.
 
-474. <span id="ref-ladanmozes2011"></span>E. Ladan-Mozes, I.-T. A. Lee, D.
+475. <span id="ref-ladanmozes2011"></span>E. Ladan-Mozes, I.-T. A. Lee, D.
      Vyukov. *Location-based memory fences.* Proceedings of the 23rd ACM
      Symposium on Parallelism in Algorithms and Architectures (SPAA), 2011,
      75–84, <https://doi.org/10.1145/1989493.1989503>.
 
-475. <span id="ref-lamarca1996"></span>A. LaMarca, R. Ladner. *The
+476. <span id="ref-lamarca1996"></span>A. LaMarca, R. Ladner. *The
      influence of caches on the performance of heaps.* ACM Journal of
      Experimental Algorithmics **1** (1996), article 4,
      <https://doi.org/10.1145/235141.235145>.
 
-476. <span id="ref-lamport1983"></span>L. Lamport. *Specifying concurrent
+477. <span id="ref-lamport1983"></span>L. Lamport. *Specifying concurrent
      program modules.* ACM Transactions on Programming Languages and
      Systems **5**(2) (1983), 190–222,
      <https://doi.org/10.1145/69624.357207>.
 
-477. <span id="ref-landau1986"></span>G. M. Landau, U. Vishkin. *Efficient
+478. <span id="ref-landau1986"></span>G. M. Landau, U. Vishkin. *Efficient
      string matching with k mismatches.* Theoretical Computer Science
      **43** (1986), 239–249,
      <https://doi.org/10.1016/0304-3975(86)90178-7>.
 
-478. <span id="ref-landau1989"></span>G. M. Landau, U. Vishkin. *Fast
+479. <span id="ref-landau1989"></span>G. M. Landau, U. Vishkin. *Fast
      parallel and serial approximate string matching.* Journal of
      Algorithms **10**(2) (1989), 157–169,
      <https://doi.org/10.1016/0196-6774(89)90010-2>.
 
-479. <span id="ref-larkin2014"></span>D. H. Larkin, S. Sen, R. E. Tarjan.
+480. <span id="ref-larkin2014"></span>D. H. Larkin, S. Sen, R. E. Tarjan.
      *A back-to-basics empirical study of priority queues.* Proceedings of
      the 16th Workshop on Algorithm Engineering and Experiments (ALENEX),
      2014, 61–72, <https://doi.org/10.1137/1.9781611973198.7>.
 
-480. <span id="ref-larmore1990"></span>L. L. Larmore, D. S. Hirschberg. *A
+481. <span id="ref-larmore1990"></span>L. L. Larmore, D. S. Hirschberg. *A
      fast algorithm for optimal length-limited Huffman codes.* Journal of
      the ACM **37**(3) (1990), 464–473,
      <https://doi.org/10.1145/79147.79150>.
 
-481. <span id="ref-larsson2007"></span>N. J. Larsson, K. Sadakane. *Faster
+482. <span id="ref-larsson2007"></span>N. J. Larsson, K. Sadakane. *Faster
      suffix sorting.* Theoretical Computer Science **387**(3) (2007),
      258–272, <https://doi.org/10.1016/j.tcs.2007.07.017>.
 
-482. <span id="ref-lawler1976"></span>E. L. Lawler. *Combinatorial
+483. <span id="ref-lawler1976"></span>E. L. Lawler. *Combinatorial
      Optimization: Networks and Matroids.* Holt, Rinehart and Winston,
      1976.
 
-483. <span id="ref-lawler1978"></span>E. L. Lawler. *Sequencing jobs to
+484. <span id="ref-lawler1978"></span>E. L. Lawler. *Sequencing jobs to
      minimize total weighted completion time subject to precedence
      constraints.* Annals of Discrete Mathematics **2** (1978), 75–90,
      <https://doi.org/10.1016/S0167-5060(08)70323-6>.
 
-484. <span id="ref-laws2024"></span>M. D. Laws, J. Bliven, K. Conklin, E.
+485. <span id="ref-laws2024"></span>M. D. Laws, J. Bliven, K. Conklin, E.
      Laalai, S. McCauley, Z. S. Sturdevant. *SPIDER: improved succinct rank
      and select performance.* Proceedings of the 22nd Symposium on
      Experimental Algorithms (SEA 2024), LIPIcs **301**, article 21, 2024,
      <https://doi.org/10.4230/LIPIcs.SEA.2024.21>.
 
-485. <span id="ref-le2013"></span>N. M. Lê, A. Pop, A. Cohen, F. Zappa
+486. <span id="ref-le2013"></span>N. M. Lê, A. Pop, A. Cohen, F. Zappa
      Nardelli. *Correct and efficient work-stealing for weak memory
      models.* Proceedings of the 18th ACM SIGPLAN Symposium on Principles
      and Practice of Parallel Programming (PPoPP), 2013, 69–80,
      <https://doi.org/10.1145/2442516.2442524>.
 
-486. <span id="ref-lecroq2007"></span>T. Lecroq. *Fast exact string
+487. <span id="ref-lecroq2007"></span>T. Lecroq. *Fast exact string
      matching algorithms.* Information Processing Letters **102**(6)
      (2007), 229–235, <https://doi.org/10.1016/j.ipl.2007.01.002>.
 
-487. <span id="ref-lee1961"></span>C. Y. Lee. *An algorithm for path
+488. <span id="ref-lee1961"></span>C. Y. Lee. *An algorithm for path
      connections and its applications.* IRE Transactions on Electronic
      Computers **EC-10**(3) (1961), 346–365,
      <https://doi.org/10.1109/TEC.1961.5219222>.
 
-488. <span id="ref-lee2010"></span>P. P. C. Lee, T. Bu, G. Chandranmenon.
+489. <span id="ref-lee2010"></span>P. P. C. Lee, T. Bu, G. Chandranmenon.
      *A lock-free, cache-efficient multi-core synchronization mechanism for
      line-rate network traffic monitoring.* IEEE International Symposium on
      Parallel and Distributed Processing (IPDPS), 2010, 1–12,
      <https://doi.org/10.1109/IPDPS.2010.5470368>.
 
-489. <span id="ref-lehman2018"></span>E. Lehman, F. T. Leighton, A. R.
+490. <span id="ref-lehman2018"></span>E. Lehman, F. T. Leighton, A. R.
      Meyer. *Mathematics for Computer Science.* Massachusetts Institute of
      Technology, revised 2018,
      <https://courses.csail.mit.edu/6.042/spring18/mcs.pdf>.
 
-490. <span id="ref-lehmann2025"></span>H.-P. Lehmann, P. Sanders, S.
+491. <span id="ref-lehmann2025"></span>H.-P. Lehmann, P. Sanders, S.
      Walzer, J. Ziegler. *Combined search and encoding for seeds, with an
      application to minimal perfect hashing.* 33rd Annual European
      Symposium on Algorithms (ESA 2025), LIPIcs **351** (2025),
      109:1–109:18, <https://doi.org/10.4230/LIPIcs.ESA.2025.109>.
 
-491. <span id="ref-lehmer1938"></span>D. H. Lehmer. *Euclid's algorithm for
+492. <span id="ref-lehmer1938"></span>D. H. Lehmer. *Euclid's algorithm for
      large numbers.* The American Mathematical Monthly **45**(4) (1938),
      227–233, <https://doi.org/10.1080/00029890.1938.11990797>.
 
-492. <span id="ref-leighton1996"></span>T. Leighton. *Notes on better
+493. <span id="ref-leighton1996"></span>T. Leighton. *Notes on better
      master theorems for divide-and-conquer recurrences.* Lecture notes,
      MIT, 1996.
 
-493. <span id="ref-leijen2019"></span>D. Leijen, B. Zorn, L. de Moura.
+494. <span id="ref-leijen2019"></span>D. Leijen, B. Zorn, L. de Moura.
      *Mimalloc: free list sharding in action.* Programming Languages and
      Systems (APLAS 2019), Lecture Notes in Computer Science **11893**,
      Springer, 2019, 244–265,
      <https://doi.org/10.1007/978-3-030-34175-6_13>.
 
-494. <span id="ref-leis2013"></span>V. Leis, A. Kemper, T. Neumann. *The
+495. <span id="ref-leis2013"></span>V. Leis, A. Kemper, T. Neumann. *The
      adaptive radix tree: ARTful indexing for main-memory databases.*
      Proceedings of the 29th IEEE International Conference on Data
      Engineering (ICDE 2013), 2013, 38–49,
      <https://doi.org/10.1109/ICDE.2013.6544812>.
 
-495. <span id="ref-lemire2015"></span>D. Lemire, L. Boytsov. *Decoding
+496. <span id="ref-lemire2015"></span>D. Lemire, L. Boytsov. *Decoding
      billions of integers per second through vectorization.* Software:
      Practice and Experience **45**(1) (2015), 1–29,
      <https://doi.org/10.1002/spe.2203>.
 
-496. <span id="ref-lemire2016"></span>D. Lemire, L. Boytsov, N. Kurz. *SIMD
+497. <span id="ref-lemire2016"></span>D. Lemire, L. Boytsov, N. Kurz. *SIMD
      compression and the intersection of sorted integers.* Software:
      Practice and Experience **46**(6) (2016), 723–749,
      <https://doi.org/10.1002/spe.2326>.
 
-497. <span id="ref-lemire2018"></span>D. Lemire, O. Kaser, N. Kurz, L.
+498. <span id="ref-lemire2018"></span>D. Lemire, O. Kaser, N. Kurz, L.
      Deri, C. O'Hara, F. Saint-Jacques, G. Ssi-Yan-Kai. *Roaring bitmaps:
      implementation of an optimized software library.* Software: Practice
      and Experience **48**(4) (2018), 867–895,
      <https://doi.org/10.1002/spe.2560>.
 
-498. <span id="ref-lemire2018svb"></span>D. Lemire, N. Kurz, C. Rupp.
+499. <span id="ref-lemire2018svb"></span>D. Lemire, N. Kurz, C. Rupp.
      *Stream VByte: faster byte-oriented integer compression.* Information
      Processing Letters **130** (2018), 1–6,
      <https://doi.org/10.1016/j.ipl.2017.09.011>.
 
-499. <span id="ref-lemire2019"></span>D. Lemire. *Fast random integer
+500. <span id="ref-lemire2019"></span>D. Lemire. *Fast random integer
      generation in an interval.* ACM Transactions on Modeling and Computer
      Simulation **29**(1) (2019), 3:1–3:12,
      <https://doi.org/10.1145/3230636>.
 
-500. <span id="ref-leong2005"></span>P. H. W. Leong, G. Zhang, D.-U. Lee,
+501. <span id="ref-leong2005"></span>P. H. W. Leong, G. Zhang, D.-U. Lee,
      W. Luk, J. D. Villasenor. *A comment on the implementation of the
      ziggurat method.* Journal of Statistical Software **12**(7) (2005),
      <https://doi.org/10.18637/jss.v012.i07>.
 
-501. <span id="ref-levenshtein1966"></span>V. I. Levenshtein. *Binary codes
+502. <span id="ref-levenshtein1966"></span>V. I. Levenshtein. *Binary codes
      capable of correcting deletions, insertions, and reversals.* Soviet
      Physics Doklady **10**(8) (1966), 707–710.
 
-502. <span id="ref-levin1973"></span>L. A. Levin. *Universal sequential
+503. <span id="ref-levin1973"></span>L. A. Levin. *Universal sequential
      search problems.* Problems of Information Transmission **9**(3)
      (1973), 265–266.
 
-503. <span id="ref-li1994"></span>K.-H. Li. *Reservoir-sampling algorithms
+504. <span id="ref-li1994"></span>K.-H. Li. *Reservoir-sampling algorithms
      of time complexity $O( n ( 1 + \log( N / n ) ) )$.* ACM Transactions
      on Mathematical Software **20**(4) (1994), 481–493,
      <https://doi.org/10.1145/198429.198435>.
 
-504. <span id="ref-li2014"></span>X. Li, D. G. Andersen, M. Kaminsky, M. J.
+505. <span id="ref-li2014"></span>X. Li, D. G. Andersen, M. Kaminsky, M. J.
      Freedman. *Algorithmic improvements for fast concurrent cuckoo
      hashing.* Proceedings of the 9th European Conference on Computer
      Systems (EuroSys), 2014, article 27,
      <https://doi.org/10.1145/2592798.2592820>.
 
-505. <span id="ref-lietar2019"></span>P. Lietar, T. Butler, S. Clebsch, S.
+506. <span id="ref-lietar2019"></span>P. Lietar, T. Butler, S. Clebsch, S.
      Drossopoulou, J. Franco, M. J. Parkinson, A. Shamis, C. M.
      Wintersteiger, D. Chisnall. *snmalloc: a message passing allocator.*
      Proceedings of the 2019 ACM SIGPLAN International Symposium on Memory
      Management (ISMM 2019), 2019, 122–135,
      <https://doi.org/10.1145/3315573.3329980>.
 
-506. <span id="ref-limasset2017"></span>A. Limasset, G. Rizk, R. Chikhi, P.
+507. <span id="ref-limasset2017"></span>A. Limasset, G. Rizk, R. Chikhi, P.
      Peterlongo. *Fast and scalable minimal perfect hashing for massive key
      sets.* 16th International Symposium on Experimental Algorithms (SEA
      2017), LIPIcs **75** (2017), 25:1–25:16,
      <https://doi.org/10.4230/LIPIcs.SEA.2017.25>.
 
-507. <span id="ref-lin1965"></span>S. Lin. *Computer solutions of the
+508. <span id="ref-lin1965"></span>S. Lin. *Computer solutions of the
      traveling salesman problem.* Bell System Technical Journal **44**(10)
      (1965), 2245–2269,
      <https://doi.org/10.1002/j.1538-7305.1965.tb04146.x>.
 
-508. <span id="ref-lin2002"></span>Y.-L. Lin, T. Jiang, K.-M. Chao.
+509. <span id="ref-lin2002"></span>Y.-L. Lin, T. Jiang, K.-M. Chao.
      *Efficient algorithms for locating the length-constrained heaviest
      segments with applications to biomolecular sequence analysis.* Journal
      of Computer and System Sciences **65**(3) (2002), 570–586,
      <https://doi.org/10.1016/S0022-0000(02)00010-7>.
 
-509. <span id="ref-liskov1974"></span>B. Liskov, S. Zilles. *Programming
+510. <span id="ref-liskov1974"></span>B. Liskov, S. Zilles. *Programming
      with abstract data types.* ACM SIGPLAN Notices **9**(4) (1974), 50–59,
      <https://doi.org/10.1145/942572.807045>.
 
-510. <span id="ref-little1963"></span>J. D. C. Little, K. G. Murty, D. W.
+511. <span id="ref-little1963"></span>J. D. C. Little, K. G. Murty, D. W.
      Sweeney, C. Karel. *An algorithm for the traveling salesman problem.*
      Operations Research **11**(6) (1963), 972–989,
      <https://doi.org/10.1287/opre.11.6.972>.
 
-511. <span id="ref-lopezmunoz2022"></span>J. M. López Muñoz. *Inside
+512. <span id="ref-lopezmunoz2022"></span>J. M. López Muñoz. *Inside
      boost::unordered_flat_map.* 2022,
      <https://bannalia.blogspot.com/2022/11/inside-boostunorderedflatmap.html>.
 
-512. <span id="ref-luby1993"></span>M. Luby, A. Sinclair, D. Zuckerman.
+513. <span id="ref-luby1993"></span>M. Luby, A. Sinclair, D. Zuckerman.
      *Optimal speedup of Las Vegas algorithms.* Information Processing
      Letters **47**(4) (1993), 173–180,
      <https://doi.org/10.1016/0020-0190(93)90029-9>.
 
-513. <span id="ref-lueker1978"></span>G. S. Lueker. *A data structure for
+514. <span id="ref-lueker1978"></span>G. S. Lueker. *A data structure for
      orthogonal range queries.* Proceedings of the 19th Annual Symposium on
      Foundations of Computer Science (FOCS), 1978, 28–34,
      <https://doi.org/10.1109/SFCS.1978.1>.
 
-514. <span id="ref-lukasiewicz1929"></span>J. Łukasiewicz. *Elementy logiki
+515. <span id="ref-lukasiewicz1929"></span>J. Łukasiewicz. *Elementy logiki
      matematycznej.* Wydawnictwo Koła Matematyczno-Fizycznego Słuchaczy
      Uniwersytetu Warszawskiego, Warszawa, 1929.
 
-515. <span id="ref-luo2020"></span>S. Luo, S. Chatterjee, R. Ketsetsidis,
+516. <span id="ref-luo2020"></span>S. Luo, S. Chatterjee, R. Ketsetsidis,
      N. Dayan, W. Qin, S. Idreos. *Rosetta: a robust space-time optimized
      range filter for key-value stores.* In: Proceedings of the 2020 ACM
      SIGMOD International Conference on Management of Data, 2020,
      2071–2086, <https://doi.org/10.1145/3318464.3389731>.
 
-516. <span id="ref-maier1978"></span>D. Maier. *The complexity of some
+517. <span id="ref-maier1978"></span>D. Maier. *The complexity of some
      problems on subsequences and supersequences.* Journal of the ACM
      **25**(2) (1978), 322–336, <https://doi.org/10.1145/322063.322075>.
 
-517. <span id="ref-maier2019"></span>T. Maier, P. Sanders, R. Dementiev.
+518. <span id="ref-maier2019"></span>T. Maier, P. Sanders, R. Dementiev.
      *Concurrent hash tables: fast and general(?)!* ACM Transactions on
      Parallel Computing **5**(4) (2019), article 16,
      <https://doi.org/10.1145/3309206>.
 
-518. <span id="ref-majewski1996"></span>B. S. Majewski, N. C. Wormald, G.
+519. <span id="ref-majewski1996"></span>B. S. Majewski, N. C. Wormald, G.
      Havas, Z. J. Czech. *A family of perfect hashing methods.* The
      Computer Journal **39**(6) (1996), 547–554,
      <https://doi.org/10.1093/comjnl/39.6.547>.
 
-519. <span id="ref-makinen2005"></span>V. Mäkinen, G. Navarro. *Succinct
+520. <span id="ref-makinen2005"></span>V. Mäkinen, G. Navarro. *Succinct
      suffix arrays based on run-length encoding.* Proceedings of the 16th
      Symposium on Combinatorial Pattern Matching (CPM 2005), LNCS **3537**,
      45–56, 2005, <https://doi.org/10.1007/11496656_5>.
 
-520. <span id="ref-malhotra1978"></span>V. M. Malhotra, M. P. Kumar, S. N.
+521. <span id="ref-malhotra1978"></span>V. M. Malhotra, M. P. Kumar, S. N.
      Maheshwari. *An $O( |V|^3 )$ algorithm for finding maximum flows in
      networks.* Information Processing Letters **7**(6) (1978), 277–278,
      <https://doi.org/10.1016/0020-0190(78)90016-9>.
 
-521. <span id="ref-manacher1975"></span>G. Manacher. *A new linear-time
+522. <span id="ref-manacher1975"></span>G. Manacher. *A new linear-time
      "on-line" algorithm for finding the smallest initial palindrome of a
      string.* Journal of the ACM **22**(3) (1975), 346–351,
      <https://doi.org/10.1145/321892.321896>.
 
-522. <span id="ref-manber1993"></span>U. Manber, G. Myers. *Suffix arrays:
+523. <span id="ref-manber1993"></span>U. Manber, G. Myers. *Suffix arrays:
      a new method for on-line string searches.* SIAM Journal on Computing
      **22**(5) (1993), 935–948, <https://doi.org/10.1137/0222058>.
 
-523. <span id="ref-mannila1986"></span>H. Mannila, E. Ukkonen. *The set
+524. <span id="ref-mannila1986"></span>H. Mannila, E. Ukkonen. *The set
      union problem with backtracking.* Automata, Languages and Programming
      (ICALP 1986), Lecture Notes in Computer Science **226**, Springer,
      1986, 236–243, <https://doi.org/10.1007/3-540-16761-7_73>.
 
-524. <span id="ref-mansfield1983"></span>A. Mansfield. *On the
+525. <span id="ref-mansfield1983"></span>A. Mansfield. *On the
      computational complexity of a merge recognition problem.* Discrete
      Applied Mathematics **5**(1) (1983), 119–122,
      <https://doi.org/10.1016/0166-218X(83)90021-5>.
 
-525. <span id="ref-manzini2001"></span>G. Manzini. *An analysis of the
+526. <span id="ref-manzini2001"></span>G. Manzini. *An analysis of the
      Burrows-Wheeler transform.* Journal of the ACM **48**(3) (2001),
      407–430, <https://doi.org/10.1145/382780.382782>.
 
-526. <span id="ref-marcosola2021"></span>S. Marco-Sola, J. C. Moure, M.
+527. <span id="ref-marcosola2021"></span>S. Marco-Sola, J. C. Moure, M.
      Moreto, A. Espinosa. *Fast gap-affine pairwise alignment using the
      wavefront algorithm.* Bioinformatics **37**(4) (2021), 456–463,
      <https://doi.org/10.1093/bioinformatics/btaa777>.
 
-527. <span id="ref-marquessilva1999"></span>J. P. Marques-Silva, K. A.
+528. <span id="ref-marquessilva1999"></span>J. P. Marques-Silva, K. A.
      Sakallah. *GRASP: a search algorithm for propositional
      satisfiability.* IEEE Transactions on Computers **48**(5) (1999),
      506–521, <https://doi.org/10.1109/12.769433>.
 
-528. <span id="ref-marsaglia2000"></span>G. Marsaglia, W. W. Tsang. *The
+529. <span id="ref-marsaglia2000"></span>G. Marsaglia, W. W. Tsang. *The
      ziggurat method for generating random variables.* Journal of
      Statistical Software **5**(8) (2000),
      <https://doi.org/10.18637/jss.v005.i08>.
 
-529. <span id="ref-martello1990"></span>S. Martello, P. Toth. *Knapsack
+530. <span id="ref-martello1990"></span>S. Martello, P. Toth. *Knapsack
      Problems: Algorithms and Computer Implementations.* Wiley, 1990.
 
-530. <span id="ref-martin1979"></span>G. N. N. Martin. *Range encoding: an
+531. <span id="ref-martin1979"></span>G. N. N. Martin. *Range encoding: an
      algorithm for removing redundancy from a digitised message.* Video &
      Data Recording Conference, Southampton, 1979.
 
-531. <span id="ref-martinez1998"></span>C. Martínez, S. Roura. *Randomized
+532. <span id="ref-martinez1998"></span>C. Martínez, S. Roura. *Randomized
      binary search trees.* Journal of the ACM **45**(2) (1998), 288–323,
      <https://doi.org/10.1145/274787.274812>.
 
-532. <span id="ref-martinezprieto2016"></span>M. A. Martínez-Prieto, N. R.
+533. <span id="ref-martinezprieto2016"></span>M. A. Martínez-Prieto, N. R.
      Brisaboa, R. Cánovas, F. Claude, G. Navarro. *Practical compressed
      string dictionaries.* Information Systems **56** (2016), 73–108,
      <https://doi.org/10.1016/j.is.2015.08.008>.
 
-533. <span id="ref-masmano2004"></span>M. Masmano, I. Ripoll, A. Crespo, J.
+534. <span id="ref-masmano2004"></span>M. Masmano, I. Ripoll, A. Crespo, J.
      Real. *TLSF: a new dynamic memory allocator for real-time systems.*
      Proceedings of the 16th Euromicro Conference on Real-Time Systems
      (ECRTS 2004), 2004, 79–88,
      <https://doi.org/10.1109/EMRTS.2004.1311009>.
 
-534. <span id="ref-massart1990"></span>P. Massart. *The tight constant in
+535. <span id="ref-massart1990"></span>P. Massart. *The tight constant in
      the Dvoretzky-Kiefer-Wolfowitz inequality.* The Annals of Probability
      **18**(3) (1990), 1269–1283, <https://doi.org/10.1214/aop/1176990746>.
 
-535. <span id="ref-mattern1987"></span>F. Mattern. *Algorithms for
+536. <span id="ref-mattern1987"></span>F. Mattern. *Algorithms for
      distributed termination detection.* Distributed Computing **2**(3)
      (1987), 161–175, <https://doi.org/10.1007/BF01782776>.
 
-536. <span id="ref-mattern1989"></span>F. Mattern. *Global quiescence
+537. <span id="ref-mattern1989"></span>F. Mattern. *Global quiescence
      detection based on credit distribution and recovery.* Information
      Processing Letters **30**(4) (1989), 195–200,
      <https://doi.org/10.1016/0020-0190(89)90212-3>.
 
-537. <span id="ref-mccreight1976"></span>E. M. McCreight. *A
+538. <span id="ref-mccreight1976"></span>E. M. McCreight. *A
      space-economical suffix tree construction algorithm.* Journal of the
      ACM **23**(2) (1976), 262–272,
      <https://doi.org/10.1145/321941.321946>.
 
-538. <span id="ref-mccreight1985"></span>E. M. McCreight. *Priority search
+539. <span id="ref-mccreight1985"></span>E. M. McCreight. *Priority search
      trees.* SIAM Journal on Computing **14**(2) (1985), 257–276,
      <https://doi.org/10.1137/0214021>.
 
-539. <span id="ref-mcilroy1993"></span>P. M. McIlroy. *Optimistic sorting
+540. <span id="ref-mcilroy1993"></span>P. M. McIlroy. *Optimistic sorting
      and information theoretic complexity.* Proceedings of the 4th Annual
      ACM-SIAM Symposium on Discrete Algorithms (SODA), 1993, 467–474.
 
-540. <span id="ref-mcilroy1993b"></span>P. M. McIlroy, K. Bostic, M. D.
+541. <span id="ref-mcilroy1993b"></span>P. M. McIlroy, K. Bostic, M. D.
      McIlroy. *Engineering radix sort.* Computing Systems **6**(1) (1993),
      5–27.
 
-541. <span id="ref-mcilroy1993o"></span>P. M. McIlroy. *Optimistic sorting
+542. <span id="ref-mcilroy1993o"></span>P. M. McIlroy. *Optimistic sorting
      and information theoretic complexity.* Proceedings of the 4th ACM-SIAM
      Symposium on Discrete Algorithms (SODA), 1993, 467–474.
 
-542. <span id="ref-mcilroy1993r"></span>P. M. McIlroy, K. Bostic, M. D.
+543. <span id="ref-mcilroy1993r"></span>P. M. McIlroy, K. Bostic, M. D.
      McIlroy. *Engineering radix sort.* Computing Systems **6**(1) (1993),
      5–27.
 
-543. <span id="ref-mcilroy1999"></span>M. D. McIlroy. *A killer adversary
+544. <span id="ref-mcilroy1999"></span>M. D. McIlroy. *A killer adversary
      for quicksort.* Software: Practice and Experience **29**(4) (1999),
      341–344,
      <https://doi.org/10.1002/(SICI)1097-024X(19990410)29:4%3C341::AID-SPE237%3E3.0.CO;2-R>.
 
-544. <span id="ref-mcnaughton1959"></span>R. McNaughton. *Scheduling with
+545. <span id="ref-mcnaughton1959"></span>R. McNaughton. *Scheduling with
      deadlines and loss functions.* Management Science **6**(1) (1959),
      1–12, <https://doi.org/10.1287/mnsc.6.1.1>.
 
-545. <span id="ref-mehlhorn1975"></span>K. Mehlhorn. *Nearly optimal binary
+546. <span id="ref-mehlhorn1975"></span>K. Mehlhorn. *Nearly optimal binary
      search trees.* Acta Informatica **5**(4) (1975), 287–295,
      <https://doi.org/10.1007/BF00264563>.
 
-546. <span id="ref-mehlhorn1999"></span>K. Mehlhorn, S. Näher. *LEDA: A
+547. <span id="ref-mehlhorn1999"></span>K. Mehlhorn, S. Näher. *LEDA: A
      Platform for Combinatorial and Geometric Computing.* Cambridge
      University Press, 1999.
 
-547. <span id="ref-mellorcrummey1991"></span>J. M. Mellor-Crummey, M. L.
+548. <span id="ref-mellorcrummey1991"></span>J. M. Mellor-Crummey, M. L.
      Scott. *Algorithms for scalable synchronization on shared-memory
      multiprocessors.* ACM Transactions on Computer Systems **9**(1)
      (1991), 21–65, <https://doi.org/10.1145/103727.103729>.
 
-548. <span id="ref-menger1927"></span>K. Menger. *Zur allgemeinen
+549. <span id="ref-menger1927"></span>K. Menger. *Zur allgemeinen
      Kurventheorie.* Fundamenta Mathematicae **10** (1927), 96–115,
      <https://doi.org/10.4064/fm-10-1-96-115>.
 
-549. <span id="ref-merrill2016a"></span>D. Merrill, M. Garland.
+550. <span id="ref-merrill2016a"></span>D. Merrill, M. Garland.
      *Single-pass parallel prefix scan with decoupled look-back.* Technical
      Report NVR-2016-002, NVIDIA, 2016.
 
-550. <span id="ref-merrill2016b"></span>D. Merrill, M. Garland.
+551. <span id="ref-merrill2016b"></span>D. Merrill, M. Garland.
      *Merge-based parallel sparse matrix-vector multiplication.*
      International Conference for High Performance Computing, Networking,
      Storage and Analysis (SC) (2016), 678–689,
      <https://doi.org/10.1109/SC.2016.57>.
 
-551. <span id="ref-meyer1992"></span>B. Meyer. *Applying "design by
+552. <span id="ref-meyer1992"></span>B. Meyer. *Applying "design by
      contract".* Computer **25**(10) (1992), 40–51,
      <https://doi.org/10.1109/2.161279>.
 
-552. <span id="ref-meyer1997"></span>B. Meyer. *Object-Oriented Software
+553. <span id="ref-meyer1997"></span>B. Meyer. *Object-Oriented Software
      Construction.* 2nd edition, Prentice Hall, 1997.
 
-553. <span id="ref-meyer2003"></span>U. Meyer, P. Sanders.
+554. <span id="ref-meyer2003"></span>U. Meyer, P. Sanders.
      *$\Delta$-stepping: a parallelizable shortest path algorithm.* Journal
      of Algorithms **49**(1) (2003), 114–152,
      <https://doi.org/10.1016/S0196-6774(03)00076-2>.
 
-554. <span id="ref-micali1980"></span>S. Micali, V. V. Vazirani. *An $O(
+555. <span id="ref-micali1980"></span>S. Micali, V. V. Vazirani. *An $O(
      \sqrt{\lvert V \rvert} \, \lvert E \rvert )$ algorithm for finding
      maximum matching in general graphs.* Proceedings of the 21st Annual
      Symposium on Foundations of Computer Science (FOCS), 1980, 17–27,
      <https://doi.org/10.1109/SFCS.1980.12>.
 
-555. <span id="ref-miller1976"></span>G. L. Miller. *Riemann's hypothesis
+556. <span id="ref-miller1976"></span>G. L. Miller. *Riemann's hypothesis
      and tests for primality.* Journal of Computer and System Sciences
      **13**(3) (1976), 300–317,
      <https://doi.org/10.1016/S0022-0000(76)80043-8>.
 
-556. <span id="ref-millstettey2007"></span>G. A. Mills-Tettey, A. Stentz,
+557. <span id="ref-millstettey2007"></span>G. A. Mills-Tettey, A. Stentz,
      M. B. Dias. *The dynamic Hungarian algorithm for the assignment
      problem with changing costs.* Technical Report CMU-RI-TR-07-27,
      Robotics Institute, Carnegie Mellon University, 2007.
 
-557. <span id="ref-mirsky1971"></span>L. Mirsky. *A dual of Dilworth's
+558. <span id="ref-mirsky1971"></span>L. Mirsky. *A dual of Dilworth's
      decomposition theorem.* The American Mathematical Monthly **78**(8)
      (1971), 876–877, <https://doi.org/10.2307/2316481>.
 
-558. <span id="ref-mitzenmacher2002"></span>M. Mitzenmacher. *Compressed
+559. <span id="ref-mitzenmacher2002"></span>M. Mitzenmacher. *Compressed
      Bloom filters.* IEEE/ACM Transactions on Networking **10**(5) (2002),
      604–612, <https://doi.org/10.1109/TNET.2002.803864>.
 
-559. <span id="ref-moffat1990"></span>A. Moffat. *Implementing the PPM data
+560. <span id="ref-moffat1990"></span>A. Moffat. *Implementing the PPM data
      compression scheme.* IEEE Transactions on Communications **38**(11)
      (1990), 1917–1921, <https://doi.org/10.1109/26.61469>.
 
-560. <span id="ref-moffat1997"></span>A. Moffat, A. Turpin. *On the
+561. <span id="ref-moffat1997"></span>A. Moffat, A. Turpin. *On the
      implementation of minimum redundancy prefix codes.* IEEE Transactions
      on Communications **45**(10) (1997), 1200–1207,
      <https://doi.org/10.1109/26.634683>.
 
-561. <span id="ref-moffat2000"></span>A. Moffat, L. Stuiver. *Binary
+562. <span id="ref-moffat2000"></span>A. Moffat, L. Stuiver. *Binary
      interpolative coding for effective index compression.* Information
      Retrieval **3**(1) (2000), 25–47,
      <https://doi.org/10.1023/A:1013002601898>.
 
-562. <span id="ref-montgomery1985"></span>P. L. Montgomery. *Modular
+563. <span id="ref-montgomery1985"></span>P. L. Montgomery. *Modular
      multiplication without trial division.* Mathematics of Computation
      **44**(170) (1985), 519–521,
      <https://doi.org/10.1090/S0025-5718-1985-0777282-X>.
 
-563. <span id="ref-montresor2025"></span>A. Montresor. *Algoritmi e
+564. <span id="ref-montresor2025"></span>A. Montresor. *Algoritmi e
      Strutture Dati.* 2025, CC BY-NC 4.0,
      <https://algoritmicamente.it/materiali/libro/book.pdf>.
 
-564. <span id="ref-moore1959"></span>E. F. Moore. *The shortest path
+565. <span id="ref-moore1959"></span>E. F. Moore. *The shortest path
      through a maze.* Proceedings of an International Symposium on the
      Theory of Switching, Part II, Harvard University Press, 1959, 285–292.
 
-565. <span id="ref-morin-cpp"></span>P. Morin. *Open Data Structures (in
+566. <span id="ref-morin-cpp"></span>P. Morin. *Open Data Structures (in
      C++).* Edition 0.1Gβ, <https://opendatastructures.org/ods-cpp.pdf>.
 
-566. <span id="ref-morin2013"></span>P. Morin. *Open Data Structures: An
+567. <span id="ref-morin2013"></span>P. Morin. *Open Data Structures: An
      Introduction.* Athabasca University Press, 2013,
      <https://doi.org/10.15215/aupress/9781927356388.01>.
 
-567. <span id="ref-morris1968"></span>R. Morris. *Scatter storage
+568. <span id="ref-morris1968"></span>R. Morris. *Scatter storage
      techniques.* Communications of the ACM **11**(1) (1968), 38–44,
      <https://doi.org/10.1145/362851.362882>.
 
-568. <span id="ref-morrison1968"></span>D. R. Morrison. *PATRICIA:
+569. <span id="ref-morrison1968"></span>D. R. Morrison. *PATRICIA:
      practical algorithm to retrieve information coded in alphanumeric.*
      Journal of the ACM **15**(4) (1968), 514–534,
      <https://doi.org/10.1145/321479.321481>.
 
-569. <span id="ref-morton1966"></span>G. M. Morton. *A computer oriented
+570. <span id="ref-morton1966"></span>G. M. Morton. *A computer oriented
      geodetic data base and a new technique in file sequencing.* Technical
      report, IBM, Ottawa, 1966.
 
-570. <span id="ref-moskewicz2001"></span>M. W. Moskewicz, C. F. Madigan, Y.
+571. <span id="ref-moskewicz2001"></span>M. W. Moskewicz, C. F. Madigan, Y.
      Zhao, L. Zhang, S. Malik. *Chaff: engineering an efficient SAT
      solver.* In: Proceedings of the 38th Design Automation Conference (DAC
      2001), ACM, 2001, 530–535, <https://doi.org/10.1145/378239.379017>.
 
-571. <span id="ref-motwani1995"></span>R. Motwani, P. Raghavan. *Randomized
+572. <span id="ref-motwani1995"></span>R. Motwani, P. Raghavan. *Randomized
      Algorithms.* Cambridge University Press, 1995,
      <https://doi.org/10.1017/CBO9780511814075>.
 
-572. <span id="ref-mpi2023"></span>Message Passing Interface Forum. *MPI: A
+573. <span id="ref-mpi2023"></span>Message Passing Interface Forum. *MPI: A
      Message-Passing Interface Standard.* Version 4.1, 2023,
      <https://www.mpi-forum.org/docs/>.
 
-573. <span id="ref-mula2016"></span>W. Mula. *SIMD-friendly algorithms for
+574. <span id="ref-mula2016"></span>W. Mula. *SIMD-friendly algorithms for
      substring searching.* 2016,
      <http://0x80.pl/notesen/2016-11-28-simd-strfind.html>.
 
-574. <span id="ref-mula2018"></span>W. Muła, N. Kurz, D. Lemire. *Faster
+575. <span id="ref-mula2018"></span>W. Muła, N. Kurz, D. Lemire. *Faster
      population counts using AVX2 instructions.* The Computer Journal
      **61**(1) (2018), 111–120, <https://doi.org/10.1093/comjnl/bxx046>.
 
-575. <span id="ref-muller2014"></span>I. Müller, P. Sanders, R. Schulze, W.
+576. <span id="ref-muller2014"></span>I. Müller, P. Sanders, R. Schulze, W.
      Zhou. *Retrieval and perfect hashing using fingerprinting.*
      Proceedings of the 13th International Symposium on Experimental
      Algorithms (SEA 2014), LNCS **8504** (2014), 138–149,
      <https://doi.org/10.1007/978-3-319-07959-2_12>.
 
-576. <span id="ref-munkres1957"></span>J. Munkres. *Algorithms for the
+577. <span id="ref-munkres1957"></span>J. Munkres. *Algorithms for the
      assignment and transportation problems.* Journal of the Society for
      Industrial and Applied Mathematics **5**(1) (1957), 32–38,
      <https://doi.org/10.1137/0105003>.
 
-577. <span id="ref-munro1992"></span>J. I. Munro, T. Papadakis, R.
+578. <span id="ref-munro1992"></span>J. I. Munro, T. Papadakis, R.
      Sedgewick. *Deterministic skip lists.* Proceedings of the 3rd ACM-SIAM
      Symposium on Discrete Algorithms (SODA 1992), 1992, 367–375.
 
-578. <span id="ref-munro2001"></span>J. I. Munro, V. Raman. *Succinct
+579. <span id="ref-munro2001"></span>J. I. Munro, V. Raman. *Succinct
      representation of balanced parentheses and static trees.* SIAM Journal
      on Computing **31**(3) (2001), 762–776,
      <https://doi.org/10.1137/S0097539799364092>.
 
-579. <span id="ref-munro2018"></span>J. I. Munro, S. Wild. *Nearly-optimal
+580. <span id="ref-munro2018"></span>J. I. Munro, S. Wild. *Nearly-optimal
      mergesorts: fast, practical sorting methods that optimally adapt to
      existing runs.* 26th Annual European Symposium on Algorithms (ESA
      2018), LIPIcs **112** (2018), 63:1–63:16,
      <https://doi.org/10.4230/LIPIcs.ESA.2018.63>.
 
-580. <span id="ref-musser1989"></span>D. R. Musser, A. A. Stepanov.
+581. <span id="ref-musser1989"></span>D. R. Musser, A. A. Stepanov.
      *Generic programming.* In: Symbolic and Algebraic Computation (ISSAC
      '88), Lecture Notes in Computer Science **358**, Springer, 1989,
      13–25, <https://doi.org/10.1007/3-540-51084-2_2>.
 
-581. <span id="ref-musser1997"></span>D. R. Musser. *Introspective sorting
+582. <span id="ref-musser1997"></span>D. R. Musser. *Introspective sorting
      and selection algorithms.* Software: Practice and Experience **27**(8)
      (1997), 983–993,
      <https://doi.org/10.1002/(SICI)1097-024X(199708)27:8%3C983::AID-SPE117%3E3.0.CO;2-%23>.
 
-582. <span id="ref-myers1986"></span>E. W. Myers. *An O(ND) difference
+583. <span id="ref-myers1986"></span>E. W. Myers. *An O(ND) difference
      algorithm and its variations.* Algorithmica **1**(1–4) (1986),
      251–266, <https://doi.org/10.1007/BF01840446>.
 
-583. <span id="ref-myers1999"></span>G. Myers. *A fast bit-vector algorithm
+584. <span id="ref-myers1999"></span>G. Myers. *A fast bit-vector algorithm
      for approximate string matching based on dynamic programming.* Journal
      of the ACM **46**(3) (1999), 395–415,
      <https://doi.org/10.1145/316542.316550>.
 
-584. <span id="ref-navarro2002"></span>J. Navarro, S. Iyer, P. Druschel, A.
+585. <span id="ref-navarro2002"></span>J. Navarro, S. Iyer, P. Druschel, A.
      Cox. *Practical, transparent operating system support for superpages.*
      ACM SIGOPS Operating Systems Review **36**(SI) (2002), 89–104 (OSDI
      2002), <https://doi.org/10.1145/844128.844138>.
 
-585. <span id="ref-navarro2007"></span>G. Navarro, V. Mäkinen. *Compressed
+586. <span id="ref-navarro2007"></span>G. Navarro, V. Mäkinen. *Compressed
      full-text indexes.* ACM Computing Surveys **39**(1) (2007), 2,
      <https://doi.org/10.1145/1216370.1216372>.
 
-586. <span id="ref-navarro2010"></span>G. Navarro, R. Paredes. *On sorting,
+587. <span id="ref-navarro2010"></span>G. Navarro, R. Paredes. *On sorting,
      heaps, and minimum spanning trees.* Algorithmica **57**(4) (2010),
      585–620, <https://doi.org/10.1007/s00453-010-9400-6>.
 
-587. <span id="ref-navarro2012"></span>G. Navarro, E. Providel. *Fast,
+588. <span id="ref-navarro2012"></span>G. Navarro, E. Providel. *Fast,
      small, simple rank/select on bitmaps.* Proceedings of the 11th
      International Symposium on Experimental Algorithms (SEA 2012), LNCS
      **7276** (2012), 295–306,
      <https://doi.org/10.1007/978-3-642-30850-5_26>.
 
-588. <span id="ref-navarro2014a"></span>G. Navarro, K. Sadakane. *Fully
+589. <span id="ref-navarro2014a"></span>G. Navarro, K. Sadakane. *Fully
      functional static and dynamic succinct trees.* ACM Transactions on
      Algorithms **10**(3) (2014), 16, <https://doi.org/10.1145/2601073>.
 
-589. <span id="ref-navarro2014b"></span>G. Navarro. *Wavelet trees for
+590. <span id="ref-navarro2014b"></span>G. Navarro. *Wavelet trees for
      all.* Journal of Discrete Algorithms **25** (2014), 2–20,
      <https://doi.org/10.1016/j.jda.2013.07.004>.
 
-590. <span id="ref-navarro2016"></span>G. Navarro. *Compact Data
+591. <span id="ref-navarro2016"></span>G. Navarro. *Compact Data
      Structures: A Practical Approach.* Cambridge University Press, 2016,
      <https://doi.org/10.1017/CBO9781316588284>.
 
-591. <span id="ref-navarro2021"></span>G. Navarro. *Indexing highly
+592. <span id="ref-navarro2021"></span>G. Navarro. *Indexing highly
      repetitive string collections, part II: compressed indexes.* ACM
      Computing Surveys **54**(2) (2021), 26,
      <https://doi.org/10.1145/3432999>.
 
-592. <span id="ref-needleman1970"></span>S. B. Needleman, C. D. Wunsch. *A
+593. <span id="ref-needleman1970"></span>S. B. Needleman, C. D. Wunsch. *A
      general method applicable to the search for similarities in the amino
      acid sequence of two proteins.* Journal of Molecular Biology **48**(3)
      (1970), 443–453, <https://doi.org/10.1016/0022-2836(70)90057-4>.
 
-593. <span id="ref-nievergelt1973"></span>J. Nievergelt, E. M. Reingold.
+594. <span id="ref-nievergelt1973"></span>J. Nievergelt, E. M. Reingold.
      *Binary search trees of bounded balance.* SIAM Journal on Computing
      **2**(1) (1973), 33–43, <https://doi.org/10.1137/0202005>.
 
-594. <span id="ref-nikolaev2019"></span>R. Nikolaev. *A scalable, portable,
+595. <span id="ref-nikolaev2019"></span>R. Nikolaev. *A scalable, portable,
      and memory-efficient lock-free FIFO queue.* 33rd International
      Symposium on Distributed Computing (DISC), LIPIcs **146** (2019),
      28:1–28:16, <https://doi.org/10.4230/LIPIcs.DISC.2019.28>.
 
-595. <span id="ref-nishimoto2021"></span>T. Nishimoto, Y. Tabei.
+596. <span id="ref-nishimoto2021"></span>T. Nishimoto, Y. Tabei.
      *Optimal-time queries on BWT-runs compressed indexes.* Proceedings of
      the 48th International Colloquium on Automata, Languages, and
      Programming (ICALP 2021), LIPIcs **198**, article 101, 2021,
      <https://doi.org/10.4230/LIPIcs.ICALP.2021.101>.
 
-596. <span id="ref-nodine1995"></span>M. H. Nodine, J. S. Vitter. *Greed
+597. <span id="ref-nodine1995"></span>M. H. Nodine, J. S. Vitter. *Greed
      Sort: optimal deterministic sorting on parallel disks.* Journal of the
      ACM **42**(4) (1995), 919–933,
      <https://doi.org/10.1145/210332.210343>.
 
-597. <span id="ref-nong2011"></span>G. Nong, S. Zhang, W. H. Chan. *Two
+598. <span id="ref-nong2011"></span>G. Nong, S. Zhang, W. H. Chan. *Two
      efficient algorithms for linear time suffix array construction.* IEEE
      Transactions on Computers **60**(10) (2011), 1471–1484,
      <https://doi.org/10.1109/TC.2010.188>.
 
-598. <span id="ref-okanohara2007"></span>D. Okanohara, K. Sadakane.
+599. <span id="ref-okanohara2007"></span>D. Okanohara, K. Sadakane.
      *Practical entropy-compressed rank/select dictionary.* Proceedings of
      the 9th Workshop on Algorithm Engineering and Experiments (ALENEX
      2007), 60–70, 2007, <https://doi.org/10.1137/1.9781611972870.6>.
 
-599. <span id="ref-okasaki1995"></span>C. Okasaki. *Simple and efficient
+600. <span id="ref-okasaki1995"></span>C. Okasaki. *Simple and efficient
      purely functional queues and deques.* Journal of Functional
      Programming **5**(4) (1995), 583–592,
      <https://doi.org/10.1017/S0956796800001489>.
 
-600. <span id="ref-oneil1996"></span>P. O'Neil, E. Cheng, D. Gawlick, E.
+601. <span id="ref-oneil1996"></span>P. O'Neil, E. Cheng, D. Gawlick, E.
      O'Neil. *The log-structured merge-tree (LSM-tree).* Acta Informatica
      **33**(4) (1996), 351–385, <https://doi.org/10.1007/s002360050048>.
 
-601. <span id="ref-openmp2021"></span>OpenMP Architecture Review Board.
+602. <span id="ref-openmp2021"></span>OpenMP Architecture Review Board.
      *OpenMP Application Programming Interface, version 5.2.* 2021,
      <https://www.openmp.org/spec-html/5.2/>.
 
-602. <span id="ref-orourke1981"></span>J. O'Rourke. *An on-line algorithm
+603. <span id="ref-orourke1981"></span>J. O'Rourke. *An on-line algorithm
      for fitting straight lines between data ranges.* Communications of the
      ACM **24**(9) (1981), 574–578,
      <https://doi.org/10.1145/358746.358758>.
 
-603. <span id="ref-orourke1998"></span>J. O'Rourke. *Computational Geometry
+604. <span id="ref-orourke1998"></span>J. O'Rourke. *Computational Geometry
      in C.* 2nd edition, Cambridge University Press, 1998,
      <https://doi.org/10.1017/CBO9780511804120>.
 
-604. <span id="ref-osipov2009"></span>V. Osipov, P. Sanders, J. Singler.
+605. <span id="ref-osipov2009"></span>V. Osipov, P. Sanders, J. Singler.
      *The filter-Kruskal minimum spanning tree algorithm.* Workshop on
      Algorithm Engineering and Experiments (ALENEX) (2009), 52–61,
      <https://doi.org/10.1137/1.9781611972894.5>.
 
-605. <span id="ref-ottaviano2014"></span>G. Ottaviano, R. Venturini.
+606. <span id="ref-ottaviano2014"></span>G. Ottaviano, R. Venturini.
      *Partitioned Elias-Fano indexes.* Proceedings of the 37th ACM SIGIR
      Conference on Research and Development in Information Retrieval (SIGIR
      2014), 273–282, 2014, <https://doi.org/10.1145/2600428.2609615>.
 
-606. <span id="ref-overmars1982"></span>M. H. Overmars, J. van Leeuwen.
+607. <span id="ref-overmars1982"></span>M. H. Overmars, J. van Leeuwen.
      *Dynamic multi-dimensional data structures based on quad- and k-d
      trees.* Acta Informatica **17**(3) (1982), 267–285,
      <https://doi.org/10.1007/BF00264354>.
 
-607. <span id="ref-overmars1983"></span>M. H. Overmars. *The Design of
+608. <span id="ref-overmars1983"></span>M. H. Overmars. *The Design of
      Dynamic Data Structures.* LNCS **156**, Springer, 1983,
      <https://doi.org/10.1007/BFb0014927>.
 
-608. <span id="ref-pagh2004"></span>R. Pagh, F. F. Rodler. *Cuckoo
+609. <span id="ref-pagh2004"></span>R. Pagh, F. F. Rodler. *Cuckoo
      hashing.* Journal of Algorithms **51**(2) (2004), 122–144,
      <https://doi.org/10.1016/j.jalgor.2003.12.002>.
 
-609. <span id="ref-pandey2017"></span>P. Pandey, M. A. Bender, R. Johnson.
+610. <span id="ref-pandey2017"></span>P. Pandey, M. A. Bender, R. Johnson.
      *A fast x86 implementation of select.* arXiv:1706.00990, 2017,
      <https://arxiv.org/abs/1706.00990>.
 
-610. <span id="ref-papadakis1992"></span>T. Papadakis, J. I. Munro, P. V.
+611. <span id="ref-papadakis1992"></span>T. Papadakis, J. I. Munro, P. V.
      Poblete. *Average search and update costs in skip lists.* BIT
      **32**(2) (1992), 316–332, <https://doi.org/10.1007/BF01994884>.
 
-611. <span id="ref-pape1974"></span>U. Pape. *Implementation and efficiency
+612. <span id="ref-pape1974"></span>U. Pape. *Implementation and efficiency
      of Moore-algorithms for the shortest route problem.* Mathematical
      Programming **7**(1) (1974), 212–222,
      <https://doi.org/10.1007/BF01585517>.
 
-612. <span id="ref-paredes2006"></span>R. Paredes, G. Navarro. *Optimal
+613. <span id="ref-paredes2006"></span>R. Paredes, G. Navarro. *Optimal
      incremental sorting.* Proceedings of the 8th Workshop on Algorithm
      Engineering and Experiments (ALENEX), 2006, 171–182,
      <https://doi.org/10.1137/1.9781611972863.16>.
 
-613. <span id="ref-park1988"></span>S. K. Park, K. W. Miller. *Random
+614. <span id="ref-park1988"></span>S. K. Park, K. W. Miller. *Random
      number generators: good ones are hard to find.* Communications of the
      ACM **31**(10) (1988), 1192–1201,
      <https://doi.org/10.1145/63039.63042>.
 
-614. <span id="ref-parnas1972"></span>D. L. Parnas. *On the criteria to be
+615. <span id="ref-parnas1972"></span>D. L. Parnas. *On the criteria to be
      used in decomposing systems into modules.* Communications of the ACM
      **15**(12) (1972), 1053–1058, <https://doi.org/10.1145/361598.361623>.
 
-615. <span id="ref-parquet2019"></span>Apache Parquet. *Split block Bloom
+616. <span id="ref-parquet2019"></span>Apache Parquet. *Split block Bloom
      filter.* Specification of the format Parquet, 2019,
      <https://github.com/apache/parquet-format/blob/master/BloomFilter.md>.
 
-616. <span id="ref-patrascu2007"></span>M. Pătrașcu, M. Thorup.
+617. <span id="ref-patrascu2007"></span>M. Pătrașcu, M. Thorup.
      *Randomization does not help searching predecessors.* Proceedings of
      the 18th ACM-SIAM Symposium on Discrete Algorithms (SODA 2007), 2007,
      555–564.
 
-617. <span id="ref-patrascu2012"></span>M. Pătrașcu, M. Thorup. *The power
+618. <span id="ref-patrascu2012"></span>M. Pătrașcu, M. Thorup. *The power
      of simple tabulation hashing.* Journal of the ACM **59**(3) (2012),
      article 14, <https://doi.org/10.1145/2220357.2220361>.
 
-618. <span id="ref-patwary2010"></span>M. M. A. Patwary, J. R. S. Blair, F.
+619. <span id="ref-patwary2010"></span>M. M. A. Patwary, J. R. S. Blair, F.
      Manne. *Experiments on union-find algorithms for the disjoint-set data
      structure.* Experimental Algorithms (SEA 2010), Lecture Notes in
      Computer Science **6049**, Springer, 2010, 411–423,
      <https://doi.org/10.1007/978-3-642-13193-6_35>.
 
-619. <span id="ref-pearce2016"></span>D. J. Pearce. *A space-efficient
+620. <span id="ref-pearce2016"></span>D. J. Pearce. *A space-efficient
      algorithm for finding strongly connected components.* Information
      Processing Letters **116**(1) (2016), 47–52,
      <https://doi.org/10.1016/j.ipl.2015.08.010>.
 
-620. <span id="ref-pearl1982"></span>J. Pearl, J. H. Kim. *Studies in
+621. <span id="ref-pearl1982"></span>J. Pearl, J. H. Kim. *Studies in
      semi-admissible heuristics.* IEEE Transactions on Pattern Analysis and
      Machine Intelligence **PAMI-4**(4) (1982), 392–399,
      <https://doi.org/10.1109/TPAMI.1982.4767270>.
 
-621. <span id="ref-peng2019"></span>R. Peng, B. Sandlund, D. D. Sleator.
+622. <span id="ref-peng2019"></span>R. Peng, B. Sandlund, D. D. Sleator.
      *Optimal offline dynamic 2,3-edge/vertex connectivity.* Algorithms and
      Data Structures (WADS 2019), Lecture Notes in Computer Science
      **11646**, Springer, 2019, 553–565,
      <https://doi.org/10.1007/978-3-030-24766-9_40>.
 
-622. <span id="ref-perl1978"></span>Y. Perl, A. Itai, H. Avni.
+623. <span id="ref-perl1978"></span>Y. Perl, A. Itai, H. Avni.
      *Interpolation search: a log log N search.* Communications of the ACM
      **21**(7) (1978), 550–553, <https://doi.org/10.1145/359545.359557>.
 
-623. <span id="ref-perlis1960"></span>A. J. Perlis, C. Thornton. *Symbol
+624. <span id="ref-perlis1960"></span>A. J. Perlis, C. Thornton. *Symbol
      manipulation by threaded lists.* Communications of the ACM **3**(4)
      (1960), 195–204, <https://doi.org/10.1145/367177.367202>.
 
-624. <span id="ref-peters2002"></span>T. Peters. *listsort.txt.* The
+625. <span id="ref-peters2002"></span>T. Peters. *listsort.txt.* The
      documentation of the sort of CPython, 2002,
      <https://github.com/python/cpython/blob/main/Objects/listsort.txt>.
 
-625. <span id="ref-peters2021"></span>O. R. L. Peters. *Pattern-defeating
+626. <span id="ref-peters2021"></span>O. R. L. Peters. *Pattern-defeating
      quicksort.* arXiv:2106.05123, 2021,
      <https://doi.org/10.48550/arXiv.2106.05123>.
 
-626. <span id="ref-peterson1957"></span>W. W. Peterson. *Addressing for
+627. <span id="ref-peterson1957"></span>W. W. Peterson. *Addressing for
      random-access storage.* IBM Journal of Research and Development
      **1**(2) (1957), 130–146, <https://doi.org/10.1147/rd.12.0130>.
 
-627. <span id="ref-pettie2005"></span>S. Pettie. *Towards a final analysis
+628. <span id="ref-pettie2005"></span>S. Pettie. *Towards a final analysis
      of pairing heaps.* 46th Annual IEEE Symposium on Foundations of
      Computer Science (FOCS 2005), 2005, 174–183,
      <https://doi.org/10.1109/SFCS.2005.75>.
 
-628. <span id="ref-pibiri2020"></span>G. E. Pibiri, R. Venturini.
+629. <span id="ref-pibiri2020"></span>G. E. Pibiri, R. Venturini.
      *Techniques for inverted index compression.* ACM Computing Surveys
      **53**(6) (2020), 125, <https://doi.org/10.1145/3415148>.
 
-629. <span id="ref-pibiri2021"></span>G. E. Pibiri, R. Trani. *PTHash:
+630. <span id="ref-pibiri2021"></span>G. E. Pibiri, R. Trani. *PTHash:
      revisiting FCH minimal perfect hashing.* Proceedings of the 44th
      International ACM SIGIR Conference on Research and Development in
      Information Retrieval (SIGIR 2021), 2021, 1339–1348,
      <https://doi.org/10.1145/3404835.3462849>.
 
-630. <span id="ref-pibiri2024"></span>G. E. Pibiri, R. Trani. *Parallel and
+631. <span id="ref-pibiri2024"></span>G. E. Pibiri, R. Trani. *Parallel and
      external-memory construction of minimal perfect hash functions with
      PTHash.* IEEE Transactions on Knowledge and Data Engineering **36**(3)
      (2024), 1249–1259, <https://doi.org/10.1109/TKDE.2023.3303341>.
 
-631. <span id="ref-pipatsrisawat2007"></span>K. Pipatsrisawat, A. Darwiche.
+632. <span id="ref-pipatsrisawat2007"></span>K. Pipatsrisawat, A. Darwiche.
      *A lightweight component caching scheme for satisfiability solvers.*
      In: Theory and Applications of Satisfiability Testing (SAT 2007),
      Lecture Notes in Computer Science **4501**, Springer, 2007, 294–299,
      <https://doi.org/10.1007/978-3-540-72788-0_28>.
 
-632. <span id="ref-pohl1972"></span>I. Pohl. *A sorting problem and its
+633. <span id="ref-pohl1972"></span>I. Pohl. *A sorting problem and its
      complexity.* Communications of the ACM **15**(6) (1972), 462–464,
      <https://doi.org/10.1145/361405.361423>.
 
-633. <span id="ref-pollard1971"></span>J. M. Pollard. *The fast Fourier
+634. <span id="ref-pollard1971"></span>J. M. Pollard. *The fast Fourier
      transform in a finite field.* Mathematics of Computation **25**(114)
      (1971), 365–374, <https://doi.org/10.1090/S0025-5718-1971-0301966-0>.
 
-634. <span id="ref-pollard1975"></span>J. M. Pollard. *A Monte Carlo method
+635. <span id="ref-pollard1975"></span>J. M. Pollard. *A Monte Carlo method
      for factorization.* BIT **15**(3) (1975), 331–334,
      <https://doi.org/10.1007/BF01933667>.
 
-635. <span id="ref-polychroniou2014"></span>O. Polychroniou, K. A. Ross. *A
+636. <span id="ref-polychroniou2014"></span>O. Polychroniou, K. A. Ross. *A
      comprehensive study of main-memory partitioning and its application to
      large-scale comparison- and radix-sort.* Proceedings of the 2014 ACM
      SIGMOD International Conference on Management of Data, 2014, 755–766,
      <https://doi.org/10.1145/2588555.2610522>.
 
-636. <span id="ref-postnikova2022"></span>A. Postnikova, N. Koval, G.
+637. <span id="ref-postnikova2022"></span>A. Postnikova, N. Koval, G.
      Nadiradze, D. Alistarh. *Multi-queues can be state-of-the-art priority
      schedulers.* Proceedings of the 27th ACM SIGPLAN Symposium on
      Principles and Practice of Parallel Programming (PPoPP), 2022,
      353–367, <https://doi.org/10.1145/3503221.3508432>.
 
-637. <span id="ref-pratt1971"></span>V. R. Pratt. *Shellsort and sorting
+638. <span id="ref-pratt1971"></span>V. R. Pratt. *Shellsort and sorting
      networks.* PhD thesis, Stanford University, 1971.
 
-638. <span id="ref-preparata1985"></span>F. P. Preparata, M. I. Shamos.
+639. <span id="ref-preparata1985"></span>F. P. Preparata, M. I. Shamos.
      *Computational Geometry: An Introduction.* Springer, 1985,
      <https://doi.org/10.1007/978-1-4612-1098-6>.
 
-639. <span id="ref-priest2019"></span>B. Priest, T. Steil, G. Sanders, R.
+640. <span id="ref-priest2019"></span>B. Priest, T. Steil, G. Sanders, R.
      Pearce. *You've Got Mail (YGM): building missing asynchronous
      communication primitives.* IEEE International Parallel and Distributed
      Processing Symposium Workshops (IPDPSW), 2019, 221–230,
      <https://doi.org/10.1109/IPDPSW.2019.00045>.
 
-640. <span id="ref-prim1957"></span>R. C. Prim. *Shortest connection
+641. <span id="ref-prim1957"></span>R. C. Prim. *Shortest connection
      networks and some generalizations.* Bell System Technical Journal
      **36**(6) (1957), 1389–1401,
      <https://doi.org/10.1002/j.1538-7305.1957.tb01515.x>.
 
-641. <span id="ref-pugh1990"></span>W. Pugh. *Skip lists: a probabilistic
+642. <span id="ref-pugh1990"></span>W. Pugh. *Skip lists: a probabilistic
      alternative to balanced trees.* Communications of the ACM **33**(6)
      (1990), 668–676, <https://doi.org/10.1145/78973.78977>.
 
-642. <span id="ref-pugh1990b"></span>W. Pugh. *A skip list cookbook.*
+643. <span id="ref-pugh1990b"></span>W. Pugh. *A skip list cookbook.*
      Technical Report CS-TR-2286.1, University of Maryland, 1990.
 
-643. <span id="ref-puglisi2007"></span>S. J. Puglisi, W. F. Smyth, A. H.
+644. <span id="ref-puglisi2007"></span>S. J. Puglisi, W. F. Smyth, A. H.
      Turpin. *A taxonomy of suffix array construction algorithms.* ACM
      Computing Surveys **39**(2) (2007), 4,
      <https://doi.org/10.1145/1242471.1242472>.
 
-644. <span id="ref-purcell2005"></span>C. Purcell, T. Harris. *Non-blocking
+645. <span id="ref-purcell2005"></span>C. Purcell, T. Harris. *Non-blocking
      hashtables with open addressing.* Distributed Computing, DISC 2005,
      LNCS **3724** (2005), 108–121, <https://doi.org/10.1007/11561927_10>.
 
-645. <span id="ref-putze2009"></span>F. Putze, P. Sanders, J. Singler.
+646. <span id="ref-putze2009"></span>F. Putze, P. Sanders, J. Singler.
      *Cache-, hash-, and space-efficient Bloom filters.* ACM Journal of
      Experimental Algorithmics **14** (2009), 4.4,
      <https://doi.org/10.1145/1498698.1594230>.
 
-646. <span id="ref-rabin1976"></span>M. O. Rabin. *Probabilistic
+647. <span id="ref-rabin1976"></span>M. O. Rabin. *Probabilistic
      algorithms.* In J. F. Traub (ed.), Algorithms and Complexity: New
      Directions and Recent Results, Academic Press, 1976, 21–39.
 
-647. <span id="ref-rabin1980"></span>M. O. Rabin. *Probabilistic algorithm
+648. <span id="ref-rabin1980"></span>M. O. Rabin. *Probabilistic algorithm
      for testing primality.* Journal of Number Theory **12**(1) (1980),
      128–138, <https://doi.org/10.1016/0022-314X(80)90084-0>.
 
-648. <span id="ref-rabin1981"></span>M. O. Rabin. *Fingerprinting by random
+649. <span id="ref-rabin1981"></span>M. O. Rabin. *Fingerprinting by random
      polynomials.* Technical Report TR-15-81, Center for Research in
      Computing Technology, Harvard University, 1981.
 
-649. <span id="ref-rabin1986"></span>M. O. Rabin, J. O. Shallit.
+650. <span id="ref-rabin1986"></span>M. O. Rabin, J. O. Shallit.
      *Randomized algorithms in number theory.* Communications on Pure and
      Applied Mathematics **39**(S1) (1986), S239–S256,
      <https://doi.org/10.1002/cpa.3160390713>.
 
-650. <span id="ref-ramalingam1996"></span>G. Ramalingam, T. Reps. *An
+651. <span id="ref-ramalingam1996"></span>G. Ramalingam, T. Reps. *An
      incremental algorithm for a generalization of the shortest-path
      problem.* Journal of Algorithms **21**(2) (1996), 267–305,
      <https://doi.org/10.1006/jagm.1996.0046>.
 
-651. <span id="ref-ramalingam1996a"></span>G. Ramalingam, T. Reps. *On the
+652. <span id="ref-ramalingam1996a"></span>G. Ramalingam, T. Reps. *On the
      computational complexity of dynamic graph problems.* Theoretical
      Computer Science **158**(1–2) (1996), 233–277,
      <https://doi.org/10.1016/0304-3975(95)00079-8>.
 
-652. <span id="ref-raman2007"></span>R. Raman, V. Raman, S. S. Rao.
+653. <span id="ref-raman2007"></span>R. Raman, V. Raman, S. S. Rao.
      *Succinct indexable dictionaries with applications to encoding k-ary
      trees, prefix sums and multisets.* ACM Transactions on Algorithms
      **3**(4) (2007), 43, <https://doi.org/10.1145/1290672.1290680>.
 
-653. <span id="ref-rao1999"></span>J. Rao, K. A. Ross. *Cache conscious
+654. <span id="ref-rao1999"></span>J. Rao, K. A. Ross. *Cache conscious
      indexing for decision-support in main memory.* Proceedings of the 25th
      International Conference on Very Large Data Bases (VLDB 1999), 1999,
      78–89.
 
-654. <span id="ref-rao2000"></span>J. Rao, K. A. Ross. *Making B+-trees
+655. <span id="ref-rao2000"></span>J. Rao, K. A. Ross. *Making B+-trees
      cache conscious in main memory.* Proceedings of the 2000 ACM SIGMOD
      International Conference on Management of Data (SIGMOD 2000), 2000,
      475–486, <https://doi.org/10.1145/342009.335449>.
 
-655. <span id="ref-reed1979"></span>D. P. Reed, R. K. Kanodia.
+656. <span id="ref-reed1979"></span>D. P. Reed, R. K. Kanodia.
      *Synchronization with eventcounts and sequencers.* Communications of
      the ACM **22**(2) (1979), 115–123,
      <https://doi.org/10.1145/359060.359076>.
 
-656. <span id="ref-reed2003"></span>B. Reed. *The height of a random binary
+657. <span id="ref-reed2003"></span>B. Reed. *The height of a random binary
      search tree.* Journal of the ACM **50**(3) (2003), 306–332,
      <https://doi.org/10.1145/765568.765571>.
 
-657. <span id="ref-reinders2007"></span>J. Reinders. *Intel Threading
+658. <span id="ref-reinders2007"></span>J. Reinders. *Intel Threading
      Building Blocks: Outfitting C++ for Multi-core Processor Parallelism.*
      O'Reilly, 2007.
 
-658. <span id="ref-rice1979"></span>R. F. Rice. *Some practical universal
+659. <span id="ref-rice1979"></span>R. F. Rice. *Some practical universal
      noiseless coding techniques.* JPL Publication 79-22, Jet Propulsion
      Laboratory, Pasadena, 1979.
 
-659. <span id="ref-rihani2015"></span>H. Rihani, P. Sanders, R. Dementiev.
+660. <span id="ref-rihani2015"></span>H. Rihani, P. Sanders, R. Dementiev.
      *MultiQueues: simple relaxed concurrent priority queues.* Proceedings
      of the 27th ACM Symposium on Parallelism in Algorithms and
      Architectures (SPAA), 2015, 80–82,
      <https://doi.org/10.1145/2755573.2755616>.
 
-660. <span id="ref-rivest1978"></span>R. L. Rivest, A. Shamir, L. Adleman.
+661. <span id="ref-rivest1978"></span>R. L. Rivest, A. Shamir, L. Adleman.
      *A method for obtaining digital signatures and public-key
      cryptosystems.* Communications of the ACM **21**(2) (1978), 120–126,
      <https://doi.org/10.1145/359340.359342>.
 
-661. <span id="ref-robbins1955"></span>H. Robbins. *A remark on Stirling's
+662. <span id="ref-robbins1955"></span>H. Robbins. *A remark on Stirling's
      formula.* The American Mathematical Monthly **62**(1) (1955), 26–29,
      <https://doi.org/10.2307/2308012>.
 
-662. <span id="ref-rosenfeld1966"></span>A. Rosenfeld, J. L. Pfaltz.
+663. <span id="ref-rosenfeld1966"></span>A. Rosenfeld, J. L. Pfaltz.
      *Sequential operations in digital picture processing.* Journal of the
      ACM **13**(4) (1966), 471–494,
      <https://doi.org/10.1145/321356.321357>.
 
-663. <span id="ref-rosenkrantz1977"></span>D. J. Rosenkrantz, R. E.
+664. <span id="ref-rosenkrantz1977"></span>D. J. Rosenkrantz, R. E.
      Stearns, P. M. Lewis. *An analysis of several heuristics for the
      traveling salesman problem.* SIAM Journal on Computing **6**(3)
      (1977), 563–581, <https://doi.org/10.1137/0206041>.
 
-664. <span id="ref-rubinchik2018"></span>M. Rubinchik, A. M. Shur.
+665. <span id="ref-rubinchik2018"></span>M. Rubinchik, A. M. Shur.
      *EERTREE: an efficient data structure for processing palindromes in
      strings.* European Journal of Combinatorics **68** (2018), 249–265,
      <https://doi.org/10.1016/j.ejc.2017.07.021>.
 
-665. <span id="ref-russell2020"></span>S. Russell, P. Norvig. *Artificial
+666. <span id="ref-russell2020"></span>S. Russell, P. Norvig. *Artificial
      Intelligence: A Modern Approach.* 4th edition, Pearson, 2020, code at
      <https://github.com/aimacode/aima-python>.
 
-666. <span id="ref-saad2003"></span>Y. Saad. *Iterative Methods for Sparse
+667. <span id="ref-saad2003"></span>Y. Saad. *Iterative Methods for Sparse
      Linear Systems.* 2nd edition, SIAM, 2003,
      <https://doi.org/10.1137/1.9780898718003>.
 
-667. <span id="ref-salmon2011"></span>J. K. Salmon, M. A. Moraes, R. O.
+668. <span id="ref-salmon2011"></span>J. K. Salmon, M. A. Moraes, R. O.
      Dror, D. E. Shaw. *Parallel random numbers: as easy as 1, 2, 3.*
      International Conference for High Performance Computing, Networking,
      Storage and Analysis (SC), 2011, 1–12,
      <https://doi.org/10.1145/2063384.2063405>.
 
-668. <span id="ref-samelson1960"></span>K. Samelson, F. L. Bauer.
+669. <span id="ref-samelson1960"></span>K. Samelson, F. L. Bauer.
      *Sequential formula translation.* Communications of the ACM **3**(2)
      (1960), 76–83, <https://doi.org/10.1145/366959.366968>.
 
-669. <span id="ref-sanders1998"></span>P. Sanders. *Randomized priority
+670. <span id="ref-sanders1998"></span>P. Sanders. *Randomized priority
      queues for fast parallel access.* Journal of Parallel and Distributed
      Computing **49**(1) (1998), 86–97,
      <https://doi.org/10.1006/jpdc.1998.1429>.
 
-670. <span id="ref-sanders2000"></span>P. Sanders. *Fast priority queues
+671. <span id="ref-sanders2000"></span>P. Sanders. *Fast priority queues
      for cached memory.* ACM Journal of Experimental Algorithmics **5**
      (2000), article 7, <https://doi.org/10.1145/351827.384249>.
 
-671. <span id="ref-sanders2004"></span>P. Sanders, S. Winkel. *Super scalar
+672. <span id="ref-sanders2004"></span>P. Sanders, S. Winkel. *Super scalar
      sample sort.* European Symposium on Algorithms (ESA), LNCS 3221
      (2004), 784–796, <https://doi.org/10.1007/978-3-540-30140-0_69>.
 
-672. <span id="ref-sanders2007"></span>P. Sanders, F. Transier.
+673. <span id="ref-sanders2007"></span>P. Sanders, F. Transier.
      *Intersection in integer inverted indices.* In: Proceedings of the 9th
      Workshop on Algorithm Engineering and Experiments (ALENEX 2007), 2007,
      71–83, <https://doi.org/10.1137/1.9781611972870.7>.
 
-673. <span id="ref-sanders2019"></span>P. Sanders, K. Mehlhorn, M.
+674. <span id="ref-sanders2019"></span>P. Sanders, K. Mehlhorn, M.
      Dietzfelbinger, R. Dementiev. *Sequential and Parallel Algorithms and
      Data Structures: The Basic Toolbox.* Springer, 2019, chapter 6,
      <https://doi.org/10.1007/978-3-030-25209-0>.
 
-674. <span id="ref-sarbaziazad2000"></span>H. Sarbazi-Azad. *Stupid sort: a
+675. <span id="ref-sarbaziazad2000"></span>H. Sarbazi-Azad. *Stupid sort: a
      new sorting algorithm.* Newsletter 599, Department of Computing
      Science, University of Glasgow, 2000.
 
-675. <span id="ref-sato2024"></span>A. Sato, Y. Matsui. *PCF learned sort:
+676. <span id="ref-sato2024"></span>A. Sato, Y. Matsui. *PCF learned sort:
      a learning augmented sort algorithm with $O( n \log \log n )$ expected
      complexity.* arXiv:2405.07122 (2024),
      <https://doi.org/10.48550/arXiv.2405.07122>.
 
-676. <span id="ref-schaffer1993"></span>R. Schaffer, R. Sedgewick. *The
+677. <span id="ref-schaffer1993"></span>R. Schaffer, R. Sedgewick. *The
      analysis of heapsort.* Journal of Algorithms **15**(1) (1993),
      76–100, <https://doi.org/10.1006/jagm.1993.1031>.
 
-677. <span id="ref-schlegel2011"></span>B. Schlegel, T. Willhalm, W.
+678. <span id="ref-schlegel2011"></span>B. Schlegel, T. Willhalm, W.
      Lehner. *Fast sorted-set intersection using SIMD instructions.* In:
      Proceedings of the 2nd International Workshop on Accelerating Data
      Management Systems Using Modern Processor and Storage Architectures
      (ADMS 2011), 2011, 1–8.
 
-678. <span id="ref-schorr1967"></span>H. Schorr, W. M. Waite. *An efficient
+679. <span id="ref-schorr1967"></span>H. Schorr, W. M. Waite. *An efficient
      machine-independent procedure for garbage collection in various list
      structures.* Communications of the ACM **10**(8) (1967), 501–506,
      <https://doi.org/10.1145/363534.363554>.
 
-679. <span id="ref-schwartz1964"></span>E. S. Schwartz, B. Kallick.
+680. <span id="ref-schwartz1964"></span>E. S. Schwartz, B. Kallick.
      *Generating a canonical prefix encoding.* Communications of the ACM
      **7**(3) (1964), 166–169, <https://doi.org/10.1145/363958.363991>.
 
-680. <span id="ref-schwartz1980"></span>J. T. Schwartz. *Fast probabilistic
+681. <span id="ref-schwartz1980"></span>J. T. Schwartz. *Fast probabilistic
      algorithms for verification of polynomial identities.* Journal of the
      ACM **27**(4) (1980), 701–717,
      <https://doi.org/10.1145/322217.322225>.
 
-681. <span id="ref-sedgewick1977"></span>R. Sedgewick. *Permutation
+682. <span id="ref-sedgewick1977"></span>R. Sedgewick. *Permutation
      generation methods.* ACM Computing Surveys **9**(2) (1977), 137–164,
      <https://doi.org/10.1145/356689.356692>.
 
-682. <span id="ref-sedgewick1978"></span>R. Sedgewick. *Implementing
+683. <span id="ref-sedgewick1978"></span>R. Sedgewick. *Implementing
      Quicksort programs.* Communications of the ACM **21**(10) (1978),
      847–857, <https://doi.org/10.1145/359619.359631>.
 
-683. <span id="ref-sedgewick1998"></span>R. Sedgewick. *Algorithms in C++,
+684. <span id="ref-sedgewick1998"></span>R. Sedgewick. *Algorithms in C++,
      Parts 1–4.* 3rd edition, Addison-Wesley, 1998.
 
-684. <span id="ref-sedgewick2002"></span>R. Sedgewick. *Algorithms in C++,
+685. <span id="ref-sedgewick2002"></span>R. Sedgewick. *Algorithms in C++,
      Part 5: Graph Algorithms.* 3rd edition, Addison-Wesley, 2002.
 
-685. <span id="ref-sedgewick2008"></span>R. Sedgewick. *Left-leaning
+686. <span id="ref-sedgewick2008"></span>R. Sedgewick. *Left-leaning
      red-black trees.* Department of Computer Science, Princeton
      University, 2008.
 
-686. <span id="ref-sedgewick2011"></span>R. Sedgewick, K. Wayne.
+687. <span id="ref-sedgewick2011"></span>R. Sedgewick, K. Wayne.
      *Algorithms.* 4th edition, Addison-Wesley, 2011,
      <https://algs4.cs.princeton.edu>.
 
-687. <span id="ref-seidel1995"></span>R. Seidel. *On the
+688. <span id="ref-seidel1995"></span>R. Seidel. *On the
      all-pairs-shortest-path problem in unweighted undirected graphs.*
      Journal of Computer and System Sciences **51**(3) (1995), 400–403,
      <https://doi.org/10.1006/jcss.1995.1078>.
 
-688. <span id="ref-seidel1996"></span>R. Seidel, C. R. Aragon. *Randomized
+689. <span id="ref-seidel1996"></span>R. Seidel, C. R. Aragon. *Randomized
      search trees.* Algorithmica **16**(4-5) (1996), 464–497,
      <https://doi.org/10.1007/BF01940876>.
 
-689. <span id="ref-sellers1980"></span>P. H. Sellers. *The theory and
+690. <span id="ref-sellers1980"></span>P. H. Sellers. *The theory and
      computation of evolutionary distances: pattern recognition.* Journal
      of Algorithms **1**(4) (1980), 359–373,
      <https://doi.org/10.1016/0196-6774(80)90016-4>.
 
-690. <span id="ref-shamos1975"></span>M. I. Shamos, D. Hoey. *Closest-point
+691. <span id="ref-shamos1975"></span>M. I. Shamos, D. Hoey. *Closest-point
      problems.* Proceedings of the 16th Annual Symposium on Foundations of
      Computer Science (FOCS), 1975, 151–162,
      <https://doi.org/10.1109/SFCS.1975.8>.
 
-691. <span id="ref-shannon1948"></span>C. E. Shannon. *A mathematical
+692. <span id="ref-shannon1948"></span>C. E. Shannon. *A mathematical
      theory of communication.* Bell System Technical Journal **27**(3)
      (1948), 379–423, <https://doi.org/10.1002/j.1538-7305.1948.tb01338.x>.
 
-692. <span id="ref-shao1994"></span>Z. Shao, J. H. Reppy, A. W. Appel.
+693. <span id="ref-shao1994"></span>Z. Shao, J. H. Reppy, A. W. Appel.
      *Unrolling lists.* Proceedings of the 1994 ACM Conference on LISP and
      Functional Programming, 1994, 185–195,
      <https://doi.org/10.1145/182409.182453>.
 
-693. <span id="ref-sharir1981"></span>M. Sharir. *A strong-connectivity
+694. <span id="ref-sharir1981"></span>M. Sharir. *A strong-connectivity
      algorithm and its applications in data flow analysis.* Computers &
      Mathematics with Applications **7**(1) (1981), 67–72,
      <https://doi.org/10.1016/0898-1221(81)90008-0>.
 
-694. <span id="ref-shell1959"></span>D. L. Shell. *A high-speed sorting
+695. <span id="ref-shell1959"></span>D. L. Shell. *A high-speed sorting
      procedure.* Communications of the ACM **2**(7) (1959), 30–32,
      <https://doi.org/10.1145/368370.368387>.
 
-695. <span id="ref-shen2022"></span>Z. Shen, Z. Wan, Y. Gu, Y. Sun. *Many
+696. <span id="ref-shen2022"></span>Z. Shen, Z. Wan, Y. Gu, Y. Sun. *Many
      sequential iterative algorithms can be parallel and (nearly)
      work-efficient.* ACM Symposium on Parallelism in Algorithms and
      Architectures (SPAA) (2022), 273–286,
      <https://doi.org/10.1145/3490148.3538574>.
 
-696. <span id="ref-shi1992"></span>H. Shi, J. Schaeffer. *Parallel sorting
+697. <span id="ref-shi1992"></span>H. Shi, J. Schaeffer. *Parallel sorting
      by regular sampling.* Journal of Parallel and Distributed Computing
      **14**(4) (1992), 361–372,
      <https://doi.org/10.1016/0743-7315(92)90075-X>.
 
-697. <span id="ref-shiloach1982"></span>Y. Shiloach, U. Vishkin. *An $O(
+698. <span id="ref-shiloach1982"></span>Y. Shiloach, U. Vishkin. *An $O(
      \log n )$ parallel connectivity algorithm.* Journal of Algorithms
      **3**(1) (1982), 57–67,
      <https://doi.org/10.1016/0196-6774(82)90008-6>.
 
-698. <span id="ref-shkarin2002"></span>D. Shkarin. *PPM: one step to
+699. <span id="ref-shkarin2002"></span>D. Shkarin. *PPM: one step to
      practicality.* Proceedings of the Data Compression Conference (DCC
      2002), 202–211, 2002, <https://doi.org/10.1109/DCC.2002.999958>.
 
-699. <span id="ref-shun2014"></span>J. Shun, G. E. Blelloch.
+700. <span id="ref-shun2014"></span>J. Shun, G. E. Blelloch.
      *Phase-concurrent hash tables for determinism.* Proceedings of the
      26th ACM Symposium on Parallelism in Algorithms and Architectures
      (SPAA), 2014, 96–107, <https://doi.org/10.1145/2612669.2612687>.
 
-700. <span id="ref-shun2015"></span>J. Shun, Y. Gu, G. E. Blelloch, J. T.
+701. <span id="ref-shun2015"></span>J. Shun, Y. Gu, G. E. Blelloch, J. T.
      Fineman, P. B. Gibbons. *Sequential random permutation, list
      contraction and tree contraction are highly parallel.* ACM-SIAM
      Symposium on Discrete Algorithms (SODA) (2015), 431–448,
      <https://doi.org/10.1137/1.9781611973730.30>.
 
-701. <span id="ref-shun2015wt"></span>J. Shun. *Parallel wavelet tree
+702. <span id="ref-shun2015wt"></span>J. Shun. *Parallel wavelet tree
      construction.* Proceedings of the 25th Data Compression Conference
      (DCC 2015), 63–72, 2015, <https://doi.org/10.1109/DCC.2015.7>.
 
-702. <span id="ref-siek2002"></span>J. G. Siek, L.-Q. Lee, A. Lumsdaine.
+703. <span id="ref-siek2002"></span>J. G. Siek, L.-Q. Lee, A. Lumsdaine.
      *The Boost Graph Library: User Guide and Reference Manual.*
      Addison-Wesley, 2002.
 
-703. <span id="ref-sinclair"></span>J. Sinclair and others. *Deterministic
+704. <span id="ref-sinclair"></span>J. Sinclair and others. *Deterministic
      variants of the Miller-Rabin primality test.* Web page,
      <https://miller-rabin.appspot.com>.
 
-704. <span id="ref-sinclair-millerrabin"></span>J. Sinclair, et al.
+705. <span id="ref-sinclair-millerrabin"></span>J. Sinclair, et al.
      *Deterministic variants of the Miller-Rabin primality test.*
      <https://miller-rabin.appspot.com>.
 
-705. <span id="ref-singler2007"></span>J. Singler, P. Sanders, F. Putze.
+706. <span id="ref-singler2007"></span>J. Singler, P. Sanders, F. Putze.
      *MCSTL: the multi-core standard template library.* Euro-Par 2007, LNCS
      4641 (2007), 682–694, <https://doi.org/10.1007/978-3-540-74466-5_72>.
 
-706. <span id="ref-sinha2004"></span>P. Sinha. *A memory-efficient doubly
+707. <span id="ref-sinha2004"></span>P. Sinha. *A memory-efficient doubly
      linked list.* Linux Journal **129** (2004).
 
-707. <span id="ref-skarupke2016"></span>M. Skarupke. *I wrote a faster
+708. <span id="ref-skarupke2016"></span>M. Skarupke. *I wrote a faster
      sorting algorithm.* 2016,
      <https://probablydance.com/2016/12/27/i-wrote-a-faster-sorting-algorithm/>.
 
-708. <span id="ref-skiena2003"></span>S. S. Skiena, M. A. Revilla.
+709. <span id="ref-skiena2003"></span>S. S. Skiena, M. A. Revilla.
      *Programming Challenges.* Springer, 2003,
      <https://doi.org/10.1007/b97559>.
 
-709. <span id="ref-skiena2020"></span>S. S. Skiena. *The Algorithm Design
+710. <span id="ref-skiena2020"></span>S. S. Skiena. *The Algorithm Design
      Manual.* 3rd edition, Springer, 2020,
      <https://doi.org/10.1007/978-3-030-54256-6>.
 
-710. <span id="ref-sleator1983"></span>D. D. Sleator, R. E. Tarjan. *A data
+711. <span id="ref-sleator1983"></span>D. D. Sleator, R. E. Tarjan. *A data
      structure for dynamic trees.* Journal of Computer and System Sciences
      **26**(3) (1983), 362–391,
      <https://doi.org/10.1016/0022-0000(83)90006-5>.
 
-711. <span id="ref-sleator1985"></span>D. D. Sleator, R. E. Tarjan.
+712. <span id="ref-sleator1985"></span>D. D. Sleator, R. E. Tarjan.
      *Self-adjusting binary search trees.* Journal of the ACM **32**(3)
      (1985), 652–686, <https://doi.org/10.1145/3828.3835>.
 
-712. <span id="ref-sleator1986"></span>D. D. Sleator, R. E. Tarjan.
+713. <span id="ref-sleator1986"></span>D. D. Sleator, R. E. Tarjan.
      *Self-adjusting heaps.* SIAM Journal on Computing **15**(1) (1986),
      52–69, <https://doi.org/10.1137/0215004>.
 
-713. <span id="ref-slotin2022"></span>S. Slotin. *Algorithms for Modern
+714. <span id="ref-slotin2022"></span>S. Slotin. *Algorithms for Modern
      Hardware.* 2022, chapter 13.8 (Static B-trees),
      <https://en.algorithmica.org/hpc/data-structures/s-tree/>.
 
-714. <span id="ref-smith1956"></span>W. E. Smith. *Various optimizers for
+715. <span id="ref-smith1956"></span>W. E. Smith. *Various optimizers for
      single-stage production.* Naval Research Logistics Quarterly
      **3**(1–2) (1956), 59–66, <https://doi.org/10.1002/nav.3800030106>.
 
-715. <span id="ref-smith1979"></span>A. R. Smith. *Tint fill.* Proceedings
+716. <span id="ref-smith1979"></span>A. R. Smith. *Tint fill.* Proceedings
      of the 6th Annual Conference on Computer Graphics and Interactive
      Techniques (SIGGRAPH 1979), 1979, 276–283,
      <https://doi.org/10.1145/800249.807456>.
 
-716. <span id="ref-smith1981"></span>T. F. Smith, M. S. Waterman.
+717. <span id="ref-smith1981"></span>T. F. Smith, M. S. Waterman.
      *Identification of common molecular subsequences.* Journal of
      Molecular Biology **147**(1) (1981), 195–197,
      <https://doi.org/10.1016/0022-2836(81)90087-5>.
 
-717. <span id="ref-smith2014"></span>T. M. Smith, R. A. van de Geijn, M.
+718. <span id="ref-smith2014"></span>T. M. Smith, R. A. van de Geijn, M.
      Smelyanskiy, J. R. Hammond, F. G. Van Zee. *Anatomy of
      high-performance many-threaded matrix multiplication.* IEEE
      International Parallel and Distributed Processing Symposium (IPDPS)
      (2014), 1049–1059, <https://doi.org/10.1109/IPDPS.2014.110>.
 
-718. <span id="ref-sosic2017"></span>M. Šošić, M. Šikić. *Edlib: a C/C++
+719. <span id="ref-sosic2017"></span>M. Šošić, M. Šikić. *Edlib: a C/C++
      library for fast, exact sequence alignment using edit distance.*
      Bioinformatics **33**(9) (2017), 1394–1395,
      <https://doi.org/10.1093/bioinformatics/btw753>.
 
-719. <span id="ref-spira1975"></span>P. M. Spira, A. Pan. *On finding and
+720. <span id="ref-spira1975"></span>P. M. Spira, A. Pan. *On finding and
      updating spanning trees and shortest paths.* SIAM Journal on Computing
      **4**(3) (1975), 375–380, <https://doi.org/10.1137/0204032>.
 
-720. <span id="ref-stanley2015"></span>R. P. Stanley. *Catalan Numbers.*
+721. <span id="ref-stanley2015"></span>R. P. Stanley. *Catalan Numbers.*
      Cambridge University Press, 2015,
      <https://doi.org/10.1017/CBO9781139871495>.
 
-721. <span id="ref-stasko1987"></span>J. T. Stasko, J. S. Vitter. *Pairing
+722. <span id="ref-stasko1987"></span>J. T. Stasko, J. S. Vitter. *Pairing
      heaps: experiments and analysis.* Communications of the ACM **30**(3)
      (1987), 234–249, <https://doi.org/10.1145/214748.214759>.
 
-722. <span id="ref-steele2014"></span>G. L. Steele, D. Lea, C. H. Flood.
+723. <span id="ref-steele2014"></span>G. L. Steele, D. Lea, C. H. Flood.
      *Fast splittable pseudorandom number generators.* Proceedings of the
      2014 ACM International Conference on Object Oriented Programming
      Systems Languages and Applications (OOPSLA), 2014, 453–472,
      <https://doi.org/10.1145/2660193.2660195>.
 
-723. <span id="ref-stein1967"></span>J. Stein. *Computational problems
+724. <span id="ref-stein1967"></span>J. Stein. *Computational problems
      associated with Racah algebra.* Journal of Computational Physics
      **1**(3) (1967), 397–405,
      <https://doi.org/10.1016/0021-9991(67)90047-2>.
 
-724. <span id="ref-stepanov2009"></span>A. Stepanov, P. McJones. *Elements
+725. <span id="ref-stepanov2009"></span>A. Stepanov, P. McJones. *Elements
      of Programming.* Addison-Wesley, 2009.
 
-725. <span id="ref-storer1982"></span>J. A. Storer, T. G. Szymanski. *Data
+726. <span id="ref-storer1982"></span>J. A. Storer, T. G. Szymanski. *Data
      compression via textual substitution.* Journal of the ACM **29**(4)
      (1982), 928–951, <https://doi.org/10.1145/322344.322346>.
 
-726. <span id="ref-stout1986"></span>Q. F. Stout, B. L. Warren. *Tree
+727. <span id="ref-stout1986"></span>Q. F. Stout, B. L. Warren. *Tree
      rebalancing in optimal time and space.* Communications of the ACM
      **29**(9) (1986), 902–908, <https://doi.org/10.1145/6592.6599>.
 
-727. <span id="ref-strassen1969"></span>V. Strassen. *Gaussian elimination
+728. <span id="ref-strassen1969"></span>V. Strassen. *Gaussian elimination
      is not optimal.* Numerische Mathematik **13**(4) (1969), 354–356,
      <https://doi.org/10.1007/BF02165411>.
 
-728. <span id="ref-stroustrup2013"></span>B. Stroustrup. *The C++
+729. <span id="ref-stroustrup2013"></span>B. Stroustrup. *The C++
      Programming Language.* 4th edition, Addison-Wesley, 2013.
 
-729. <span id="ref-sturtevant-hog2"></span>N. R. Sturtevant. *HOG2.*
+730. <span id="ref-sturtevant-hog2"></span>N. R. Sturtevant. *HOG2.*
      Software, <https://github.com/MovingAILab/hog2>.
 
-730. <span id="ref-sturtevant2012"></span>N. R. Sturtevant. *Benchmarks for
+731. <span id="ref-sturtevant2012"></span>N. R. Sturtevant. *Benchmarks for
      grid-based pathfinding.* IEEE Transactions on Computational
      Intelligence and AI in Games **4**(2) (2012), 144–148,
      <https://doi.org/10.1109/TCIAIG.2012.2197681>.
 
-731. <span id="ref-sugiyama1981"></span>K. Sugiyama, S. Tagawa, M. Toda.
+732. <span id="ref-sugiyama1981"></span>K. Sugiyama, S. Tagawa, M. Toda.
      *Methods for visual understanding of hierarchical system structures.*
      IEEE Transactions on Systems, Man, and Cybernetics **11**(2) (1981),
      109–125, <https://doi.org/10.1109/TSMC.1981.4308636>.
 
-732. <span id="ref-sun2018"></span>Y. Sun, D. Ferizovic, G. E. Blelloch.
+733. <span id="ref-sun2018"></span>Y. Sun, D. Ferizovic, G. E. Blelloch.
      *PAM: parallel augmented maps.* Proceedings of the 23rd ACM SIGPLAN
      Symposium on Principles and Practice of Parallel Programming (PPoPP),
      2018, 290–304, <https://doi.org/10.1145/3178487.3178509>.
 
-733. <span id="ref-sun2019"></span>Y. Sun, G. E. Blelloch. *Parallel range,
+734. <span id="ref-sun2019"></span>Y. Sun, G. E. Blelloch. *Parallel range,
      segment and rectangle queries with augmented maps.* Proceedings of the
      21st Workshop on Algorithm Engineering and Experiments (ALENEX), 2019,
      159–173, <https://doi.org/10.1137/1.9781611975499.13>.
 
-734. <span id="ref-sutton2012"></span>A. Sutton, B. Stroustrup. *Design of
+735. <span id="ref-sutton2012"></span>A. Sutton, B. Stroustrup. *Design of
      concept libraries for C++.* In: Software Language Engineering (SLE
      2011), Lecture Notes in Computer Science **6940**, Springer, 2012,
      97–118, <https://doi.org/10.1007/978-3-642-28830-2_6>.
 
-735. <span id="ref-sutton2018"></span>M. Sutton, T. Ben-Nun, A. Barak.
+736. <span id="ref-sutton2018"></span>M. Sutton, T. Ben-Nun, A. Barak.
      *Optimizing parallel graph connectivity computation via subgraph
      sampling.* IEEE International Parallel and Distributed Processing
      Symposium (IPDPS) (2018), 12–21,
      <https://doi.org/10.1109/IPDPS.2018.00012>.
 
-736. <span id="ref-tapia2018"></span>F. J. Tapia. *Boost.Sort: spinsort,
+737. <span id="ref-tapia2018"></span>F. J. Tapia. *Boost.Sort: spinsort,
      flat_stable_sort.* Boost C++ Libraries 1.67, 2018,
      <https://www.boost.org/doc/libs/1_67_0/libs/sort/doc/html/index.html>.
 
-737. <span id="ref-tarjan1972"></span>R. Tarjan. *Depth-first search and
+738. <span id="ref-tarjan1972"></span>R. Tarjan. *Depth-first search and
      linear graph algorithms.* SIAM Journal on Computing **1**(2) (1972),
      146–160, <https://doi.org/10.1137/0201010>.
 
-738. <span id="ref-tarjan1973"></span>R. Tarjan. *Enumeration of the
+739. <span id="ref-tarjan1973"></span>R. Tarjan. *Enumeration of the
      elementary circuits of a directed graph.* SIAM Journal on Computing
      **2**(3) (1973), 211–216, <https://doi.org/10.1137/0202017>.
 
-739. <span id="ref-tarjan1975"></span>R. E. Tarjan. *Efficiency of a good
+740. <span id="ref-tarjan1975"></span>R. E. Tarjan. *Efficiency of a good
      but not linear set union algorithm.* Journal of the ACM **22**(2)
      (1975), 215–225, <https://doi.org/10.1145/321879.321884>.
 
-740. <span id="ref-tarjan1982"></span>R. E. Tarjan. *Sensitivity analysis
+741. <span id="ref-tarjan1982"></span>R. E. Tarjan. *Sensitivity analysis
      of minimum spanning trees and shortest path trees.* Information
      Processing Letters **14**(1) (1982), 30–33,
      <https://doi.org/10.1016/0020-0190(82)90137-5>.
 
-741. <span id="ref-tarjan1983"></span>R. E. Tarjan. *Data Structures and
+742. <span id="ref-tarjan1983"></span>R. E. Tarjan. *Data Structures and
      Network Algorithms.* SIAM, 1983, chapter 4 (the join of the Red-Black
      trees), <https://doi.org/10.1137/1.9781611970265>.
 
-742. <span id="ref-tarjan1984"></span>R. E. Tarjan, J. van Leeuwen.
+743. <span id="ref-tarjan1984"></span>R. E. Tarjan, J. van Leeuwen.
      *Worst-case analysis of set union algorithms.* Journal of the ACM
      **31**(2) (1984), 245–281, <https://doi.org/10.1145/62.2160>.
 
-743. <span id="ref-tarjan1985"></span>R. E. Tarjan. *Amortized
+744. <span id="ref-tarjan1985"></span>R. E. Tarjan. *Amortized
      computational complexity.* SIAM Journal on Algebraic and Discrete
      Methods **6**(2) (1985), 306–318, <https://doi.org/10.1137/0606031>.
 
-744. <span id="ref-tarjan1986"></span>R. E. Tarjan. *Sensitivity analysis
+745. <span id="ref-tarjan1986"></span>R. E. Tarjan. *Sensitivity analysis
      of minimum spanning trees and shortest path trees (corrigendum).*
      Information Processing Letters **23**(4) (1986), 219,
      <https://doi.org/10.1016/0020-0190(86)90139-0>.
 
-745. <span id="ref-tarjan2009"></span>R. E. Tarjan, R. F. Werneck. *Dynamic
+746. <span id="ref-tarjan2009"></span>R. E. Tarjan, R. F. Werneck. *Dynamic
      trees in practice.* ACM Journal of Experimental Algorithmics **14**
      (2009), article 4.5, <https://doi.org/10.1145/1498698.1594231>.
 
-746. <span id="ref-thayer2011"></span>J. T. Thayer, W. Ruml. *Bounded
+747. <span id="ref-thayer2011"></span>J. T. Thayer, W. Ruml. *Bounded
      suboptimal search: a direct approach using inadmissible estimates.*
      Proceedings of the 22nd International Joint Conference on Artificial
      Intelligence (IJCAI 2011), 2011, 674–679,
      <https://doi.org/10.5591/978-1-57735-516-8/IJCAI11-119>.
 
-747. <span id="ref-thorup2015"></span>M. Thorup. *High speed hashing for
+748. <span id="ref-thorup2015"></span>M. Thorup. *High speed hashing for
      integers and strings.* arXiv:1504.06804, 2015,
      <https://doi.org/10.48550/arXiv.1504.06804>.
 
-748. <span id="ref-toroslu2007"></span>I. H. Toroslu, G. Üçoluk.
+749. <span id="ref-toroslu2007"></span>I. H. Toroslu, G. Üçoluk.
      *Incremental assignment problem.* Information Sciences **177**(6)
      (2007), 1523–1529, <https://doi.org/10.1016/j.ins.2006.05.004>.
 
-749. <span id="ref-treiber1986"></span>R. K. Treiber. *Systems programming:
+750. <span id="ref-treiber1986"></span>R. K. Treiber. *Systems programming:
      coping with parallelism.* Technical Report RJ 5118, IBM Almaden
      Research Center, 1986.
 
-750. <span id="ref-trotter1962"></span>H. F. Trotter. *Algorithm 115:
+751. <span id="ref-trotter1962"></span>H. F. Trotter. *Algorithm 115:
      Perm.* Communications of the ACM **5**(8) (1962), 434–435,
      <https://doi.org/10.1145/368637.368660>.
 
-751. <span id="ref-tschoke1995"></span>S. Tschöke, R. Lüling, B. Monien.
+752. <span id="ref-tschoke1995"></span>S. Tschöke, R. Lüling, B. Monien.
      *Solving the traveling salesman problem with a distributed
      branch-and-bound algorithm on a 1024 processor network.* Proceedings
      of the 9th International Parallel Processing Symposium (IPPS), 1995,
      182–189, <https://doi.org/10.1109/IPPS.1995.395930>.
 
-752. <span id="ref-tseng2022"></span>T. Tseng, L. Dhulipala, J. Shun.
+753. <span id="ref-tseng2022"></span>T. Tseng, L. Dhulipala, J. Shun.
      *Parallel batch-dynamic minimum spanning forest and the efficiency of
      dynamic agglomerative graph clustering.* Proceedings of the 34th ACM
      Symposium on Parallelism in Algorithms and Architectures (SPAA 2022),
      2022, 233–245, <https://doi.org/10.1145/3490148.3538584>.
 
-753. <span id="ref-tukey1978"></span>J. W. Tukey. *The ninther, a technique
+754. <span id="ref-tukey1978"></span>J. W. Tukey. *The ninther, a technique
      for low-effort robust (resistant) location in large samples.* In: H.
      A. David (ed.), Contributions to Survey Sampling and Applied
      Statistics, Academic Press, 1978, 251–257,
      <https://doi.org/10.1016/B978-0-12-204750-3.50024-1>.
 
-754. <span id="ref-ukkonen1985a"></span>E. Ukkonen. *Algorithms for
+755. <span id="ref-ukkonen1985a"></span>E. Ukkonen. *Algorithms for
      approximate string matching.* Information and Control **64**(1–3)
      (1985), 100–118, <https://doi.org/10.1016/S0019-9958(85)80046-2>.
 
-755. <span id="ref-ukkonen1985b"></span>E. Ukkonen. *Finding approximate
+756. <span id="ref-ukkonen1985b"></span>E. Ukkonen. *Finding approximate
      patterns in strings.* Journal of Algorithms **6**(1) (1985), 132–137,
      <https://doi.org/10.1016/0196-6774(85)90023-9>.
 
-756. <span id="ref-ukkonen1995"></span>E. Ukkonen. *On-line construction of
+757. <span id="ref-ukkonen1995"></span>E. Ukkonen. *On-line construction of
      suffix trees.* Algorithmica **14**(3) (1995), 249–260,
      <https://doi.org/10.1007/BF01206331>.
 
-757. <span id="ref-vaidya2022"></span>K. Vaidya, S. Chatterjee, E. Knorr,
+758. <span id="ref-vaidya2022"></span>K. Vaidya, S. Chatterjee, E. Knorr,
      M. Mitzenmacher, S. Idreos, T. Kraska. *SNARF: a learning-enhanced
      range filter.* Proceedings of the VLDB Endowment **15**(8) (2022),
      1632–1644, <https://doi.org/10.14778/3529337.3529347>.
 
-758. <span id="ref-vanemdeboas1977"></span>P. van Emde Boas. *Preserving
+759. <span id="ref-vanemdeboas1977"></span>P. van Emde Boas. *Preserving
      order in a forest in less than logarithmic time and linear space.*
      Information Processing Letters **6**(3) (1977), 80–82,
      <https://doi.org/10.1016/0020-0190(77)90031-X>.
 
-759. <span id="ref-vanleeuwen1993"></span>J. van Leeuwen, D. Wood.
+760. <span id="ref-vanleeuwen1993"></span>J. van Leeuwen, D. Wood.
      *Interval heaps.* The Computer Journal **36**(3) (1993), 209–216,
      <https://doi.org/10.1093/comjnl/36.3.209>.
 
-760. <span id="ref-varman1991"></span>P. J. Varman, S. D. Scheufler, B. R.
+761. <span id="ref-varman1991"></span>P. J. Varman, S. D. Scheufler, B. R.
      Iyer, G. R. Ricard. *Merging multiple lists on hierarchical-memory
      multiprocessors.* Journal of Parallel and Distributed Computing
      **12**(2) (1991), 171–177,
      <https://doi.org/10.1016/0743-7315(91)90022-2>.
 
-761. <span id="ref-vigna2008"></span>S. Vigna. *Broadword implementation of
+762. <span id="ref-vigna2008"></span>S. Vigna. *Broadword implementation of
      rank/select queries.* In: Experimental Algorithms (WEA 2008), Lecture
      Notes in Computer Science **5038**, Springer, 2008, 154–168,
      <https://doi.org/10.1007/978-3-540-68552-4_12>.
 
-762. <span id="ref-vigna2013"></span>S. Vigna. *Quasi-succinct indices.*
+763. <span id="ref-vigna2013"></span>S. Vigna. *Quasi-succinct indices.*
      Proceedings of the 6th ACM Conference on Web Search and Data Mining
      (WSDM 2013), 83–92, 2013, <https://doi.org/10.1145/2433396.2433409>.
 
-763. <span id="ref-vitter1982"></span>J. S. Vitter. *Implementations for
+764. <span id="ref-vitter1982"></span>J. S. Vitter. *Implementations for
      coalesced hashing.* Communications of the ACM **25**(12) (1982),
      911–926, <https://doi.org/10.1145/358728.358745>.
 
-764. <span id="ref-vitter1984"></span>J. S. Vitter. *Faster methods for
+765. <span id="ref-vitter1984"></span>J. S. Vitter. *Faster methods for
      random sampling.* Communications of the ACM **27**(7) (1984), 703–718,
      <https://doi.org/10.1145/358105.893>.
 
-765. <span id="ref-vitter1985"></span>J. S. Vitter. *Random sampling with a
+766. <span id="ref-vitter1985"></span>J. S. Vitter. *Random sampling with a
      reservoir.* ACM Transactions on Mathematical Software **11**(1)
      (1985), 37–57, <https://doi.org/10.1145/3147.3165>.
 
-766. <span id="ref-vitter1987"></span>J. S. Vitter. *An efficient algorithm
+767. <span id="ref-vitter1987"></span>J. S. Vitter. *An efficient algorithm
      for sequential random sampling.* ACM Transactions on Mathematical
      Software **13**(1) (1987), 58–67,
      <https://doi.org/10.1145/23002.23003>.
 
-767. <span id="ref-vitter2001"></span>J. S. Vitter. *External memory
+768. <span id="ref-vitter2001"></span>J. S. Vitter. *External memory
      algorithms and data structures: dealing with massive data.* ACM
      Computing Surveys **33**(2) (2001), 209–271,
      <https://doi.org/10.1145/384192.384193>.
 
-768. <span id="ref-vocking2003"></span>B. Vöcking. *How asymmetry helps
+769. <span id="ref-vocking2003"></span>B. Vöcking. *How asymmetry helps
      load balancing.* Journal of the ACM **50**(4) (2003), 568–589,
      <https://doi.org/10.1145/792538.792546>.
 
-769. <span id="ref-volgenant2008"></span>A. Volgenant. *An addendum on the
+770. <span id="ref-volgenant2008"></span>A. Volgenant. *An addendum on the
      incremental assignment problem.* Information Sciences **178**(23)
      (2008), 4583, <https://doi.org/10.1016/j.ins.2008.07.020>.
 
-770. <span id="ref-vose1991"></span>M. D. Vose. *A linear algorithm for
+771. <span id="ref-vose1991"></span>M. D. Vose. *A linear algorithm for
      generating random numbers with a given distribution.* IEEE
      Transactions on Software Engineering **17**(9) (1991), 972–975,
      <https://doi.org/10.1109/32.92917>.
 
-771. <span id="ref-voss2019"></span>M. Voss, R. Asenjo, J. Reinders. *Pro
+772. <span id="ref-voss2019"></span>M. Voss, R. Asenjo, J. Reinders. *Pro
      TBB: C++ Parallel Programming with Threading Building Blocks.* Apress,
      2019, <https://doi.org/10.1007/978-1-4842-4398-5>.
 
-772. <span id="ref-vuillemin1978"></span>J. Vuillemin. *A data structure
+773. <span id="ref-vuillemin1978"></span>J. Vuillemin. *A data structure
      for manipulating priority queues.* Communications of the ACM **21**(4)
      (1978), 309–315, <https://doi.org/10.1145/359460.359478>.
 
-773. <span id="ref-vuillemin1980"></span>J. Vuillemin. *A unifying look at
+774. <span id="ref-vuillemin1980"></span>J. Vuillemin. *A unifying look at
      data structures.* Communications of the ACM **23**(4) (1980), 229–239,
      <https://doi.org/10.1145/358841.358852>.
 
-774. <span id="ref-vyukov2010"></span>D. Vyukov. *Bounded MPMC queue.*
+775. <span id="ref-vyukov2010"></span>D. Vyukov. *Bounded MPMC queue.*
      2010,
      <https://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue>.
 
-775. <span id="ref-wagner1993"></span>D. B. Wagner, B. G. Calder.
+776. <span id="ref-wagner1993"></span>D. B. Wagner, B. G. Calder.
      *Leapfrogging: a portable technique for implementing efficient
      futures.* ACM SIGPLAN Symposium on Principles and Practice of Parallel
      Programming (PPoPP) (1993), 208–217,
      <https://doi.org/10.1145/155332.155354>.
 
-776. <span id="ref-walker1977"></span>A. J. Walker. *An efficient method
+777. <span id="ref-walker1977"></span>A. J. Walker. *An efficient method
      for generating discrete random variables with general distributions.*
      ACM Transactions on Mathematical Software **3**(3) (1977), 253–256,
      <https://doi.org/10.1145/355744.355749>.
 
-777. <span id="ref-walzer2025"></span>S. Walzer, M. Williams. *A simple yet
+778. <span id="ref-walzer2025"></span>S. Walzer, M. Williams. *A simple yet
      exact analysis of the MultiQueue.* 33rd European Symposium on
      Algorithms (ESA), LIPIcs **351** (2025), 85:1–85:14,
      <https://doi.org/10.4230/LIPIcs.ESA.2025.85>.
 
-778. <span id="ref-wang1961"></span>H. Wang. *Proving theorems by pattern
+779. <span id="ref-wang1961"></span>H. Wang. *Proving theorems by pattern
      recognition II.* Bell System Technical Journal **40**(1) (1961), 1–41,
      <https://doi.org/10.1002/j.1538-7305.1961.tb03975.x>.
 
-779. <span id="ref-wang2013"></span>J. Wang, K. Zhang, X. Tang, B. Hua.
+780. <span id="ref-wang2013"></span>J. Wang, K. Zhang, X. Tang, B. Hua.
      *B-Queue: efficient and practical queuing for fast core-to-core
      communication.* International Journal of Parallel Programming
      **41**(1) (2013), 137–159,
      <https://doi.org/10.1007/s10766-012-0213-x>.
 
-780. <span id="ref-wang2019"></span>X. Wang, Y. Hong, H. Chang, K. Park, G.
+781. <span id="ref-wang2019"></span>X. Wang, Y. Hong, H. Chang, K. Park, G.
      Langdale, J. Hu, H. Zhu. *Hyperscan: a fast multi-pattern regex
      matcher for modern CPUs.* Proceedings of the 16th USENIX Symposium on
      Networked Systems Design and Implementation (NSDI), 2019, 631–648,
      <https://www.usenix.org/conference/nsdi19/presentation/wang-xiang>.
 
-781. <span id="ref-wangyi"></span>Wang Yi. *wyhash and wyrand.* Software,
+782. <span id="ref-wangyi"></span>Wang Yi. *wyhash and wyrand.* Software,
      <https://github.com/wangyi-fudan/wyhash>.
 
-782. <span id="ref-warmuth1984"></span>M. K. Warmuth, D. Haussler. *On the
+783. <span id="ref-warmuth1984"></span>M. K. Warmuth, D. Haussler. *On the
      complexity of iterated shuffle.* Journal of Computer and System
      Sciences **28**(3) (1984), 345–358,
      <https://doi.org/10.1016/0022-0000(84)90018-7>.
 
-783. <span id="ref-warnsdorf1823"></span>H. C. von Warnsdorf. *Des
+784. <span id="ref-warnsdorf1823"></span>H. C. von Warnsdorf. *Des
      Rösselsprunges einfachste und allgemeinste Lösung.* Schmalkalden,
      1823.
 
-784. <span id="ref-warren2012"></span>H. S. Warren. *Hacker's Delight.* 2nd
+785. <span id="ref-warren2012"></span>H. S. Warren. *Hacker's Delight.* 2nd
      edition, Addison-Wesley, 2012.
 
-785. <span id="ref-warshall1962"></span>S. Warshall. *A theorem on Boolean
+786. <span id="ref-warshall1962"></span>S. Warshall. *A theorem on Boolean
      matrices.* Journal of the ACM **9**(1) (1962), 11–12,
      <https://doi.org/10.1145/321105.321107>.
 
-786. <span id="ref-wassenberg2022"></span>J. Wassenberg, M. Blacher, J.
+787. <span id="ref-wassenberg2022"></span>J. Wassenberg, M. Blacher, J.
      Giesen, P. Sanders. *Vectorized and performance-portable quicksort.*
      Software: Practice and Experience **52**(12) (2022), 2684–2699,
      <https://doi.org/10.1002/spe.3142>.
 
-787. <span id="ref-wegener1993"></span>I. Wegener. *BOTTOM-UP-HEAPSORT, a
+788. <span id="ref-wegener1993"></span>I. Wegener. *BOTTOM-UP-HEAPSORT, a
      new variant of HEAPSORT beating, on an average, QUICKSORT (if n is not
      very small).* Theoretical Computer Science **118**(1) (1993), 81–98,
      <https://doi.org/10.1016/0304-3975(93)90364-Y>.
 
-788. <span id="ref-wegman1981"></span>M. N. Wegman, J. L. Carter. *New hash
+789. <span id="ref-wegman1981"></span>M. N. Wegman, J. L. Carter. *New hash
      functions and their use in authentication and set equality.* Journal
      of Computer and System Sciences **22**(3) (1981), 265–279,
      <https://doi.org/10.1016/0022-0000(81)90033-7>.
 
-789. <span id="ref-weiner1973"></span>P. Weiner. *Linear pattern matching
+790. <span id="ref-weiner1973"></span>P. Weiner. *Linear pattern matching
      algorithms.* Proceedings of the 14th Annual Symposium on Switching and
      Automata Theory (SWAT), 1973, 1–11,
      <https://doi.org/10.1109/SWAT.1973.13>.
 
-790. <span id="ref-weiss2014"></span>M. A. Weiss. *Data Structures and
+791. <span id="ref-weiss2014"></span>M. A. Weiss. *Data Structures and
      Algorithm Analysis in C++.* 4th edition, Pearson, 2014.
 
-791. <span id="ref-welch1984"></span>T. A. Welch. *A technique for
+792. <span id="ref-welch1984"></span>T. A. Welch. *A technique for
      high-performance data compression.* IEEE Computer **17**(6) (1984),
      8–19, <https://doi.org/10.1109/MC.1984.1659158>.
 
-792. <span id="ref-westbrook1989"></span>J. Westbrook, R. E. Tarjan.
+793. <span id="ref-westbrook1989"></span>J. Westbrook, R. E. Tarjan.
      *Amortized analysis of algorithms for set union with backtracking.*
      SIAM Journal on Computing **18**(1) (1989), 1–11,
      <https://doi.org/10.1137/0218001>.
 
-793. <span id="ref-wild2012"></span>S. Wild, M. E. Nebel. *Average case
+794. <span id="ref-wild2012"></span>S. Wild, M. E. Nebel. *Average case
      analysis of Java 7's dual pivot quicksort.* Proceedings of the 20th
      European Symposium on Algorithms (ESA 2012), LNCS **7501** (2012),
      825–836, <https://doi.org/10.1007/978-3-642-33090-2_71>.
 
-794. <span id="ref-willard1983"></span>D. E. Willard. *Log-logarithmic
+795. <span id="ref-willard1983"></span>D. E. Willard. *Log-logarithmic
      worst-case range queries are possible in space $\Theta( N )$.*
      Information Processing Letters **17**(2) (1983), 81–84,
      <https://doi.org/10.1016/0020-0190(83)90075-3>.
 
-795. <span id="ref-willard1985"></span>D. E. Willard. *New data structures
+796. <span id="ref-willard1985"></span>D. E. Willard. *New data structures
      for orthogonal range queries.* SIAM Journal on Computing **14**(1)
      (1985), 232–253, <https://doi.org/10.1137/0214019>.
 
-796. <span id="ref-williams1964"></span>J. W. J. Williams. *Algorithm 232:
+797. <span id="ref-williams1964"></span>J. W. J. Williams. *Algorithm 232:
      Heapsort.* Communications of the ACM **7**(6) (1964), 347–348,
      <https://doi.org/10.1145/512274.3734138>.
 
-797. <span id="ref-williams2009"></span>S. Williams, L. Oliker, R. Vuduc,
+798. <span id="ref-williams2009"></span>S. Williams, L. Oliker, R. Vuduc,
      J. Shalf, K. Yelick, J. Demmel. *Optimization of sparse matrix-vector
      multiplication on emerging multicore platforms.* Parallel Computing
      **35**(3) (2009), 178–194,
      <https://doi.org/10.1016/j.parco.2008.12.006>.
 
-798. <span id="ref-williams2019"></span>A. Williams. *C++ Concurrency in
+799. <span id="ref-williams2019"></span>A. Williams. *C++ Concurrency in
      Action.* 2nd edition, Manning, 2019.
 
-799. <span id="ref-williams2021"></span>M. Williams, P. Sanders, R.
+800. <span id="ref-williams2021"></span>M. Williams, P. Sanders, R.
      Dementiev. *Engineering MultiQueues: fast relaxed concurrent priority
      queues.* 29th European Symposium on Algorithms (ESA), LIPIcs **204**
      (2021), 81:1–81:17, <https://doi.org/10.4230/LIPIcs.ESA.2021.81>.
 
-800. <span id="ref-williams2025"></span>M. Williams, P. Sanders. *The
+801. <span id="ref-williams2025"></span>M. Williams, P. Sanders. *The
      MultiQueue: a simple and fast relaxed concurrent priority queue.* ACM
      Transactions on Parallel Computing **12**(4) (2025), 1–39,
      <https://doi.org/10.1145/3771738>.
 
-801. <span id="ref-wilson1995"></span>P. R. Wilson, M. S. Johnstone, M.
+802. <span id="ref-wilson1995"></span>P. R. Wilson, M. S. Johnstone, M.
      Neely, D. Boles. *Dynamic storage allocation: a survey and critical
      review.* Memory Management (IWMM 1995), Lecture Notes in Computer
      Science **986**, Springer, 1995, 1–116,
      <https://doi.org/10.1007/3-540-60368-9_19>.
 
-802. <span id="ref-wimmer2014"></span>M. Wimmer, F. Versaci, J. L. Träff,
+803. <span id="ref-wimmer2014"></span>M. Wimmer, F. Versaci, J. L. Träff,
      D. Cederman, P. Tsigas. *Data structures for task-based priority
      scheduling.* Proceedings of the 19th ACM SIGPLAN Symposium on
      Principles and Practice of Parallel Programming (PPoPP), 2014,
      379–380, <https://doi.org/10.1145/2555243.2555278>.
 
-803. <span id="ref-winkler2004"></span>P. Winkler. *Mathematical Puzzles: A
+804. <span id="ref-winkler2004"></span>P. Winkler. *Mathematical Puzzles: A
      Connoisseur's Collection.* A K Peters, 2004.
 
-804. <span id="ref-winograd1971"></span>S. Winograd. *On multiplication of
+805. <span id="ref-winograd1971"></span>S. Winograd. *On multiplication of
      2 x 2 matrices.* Linear Algebra and its Applications **4**(4) (1971),
      381–388, <https://doi.org/10.1016/0024-3795(71)90009-7>.
 
-805. <span id="ref-witten1987"></span>I. H. Witten, R. M. Neal, J. G.
+806. <span id="ref-witten1987"></span>I. H. Witten, R. M. Neal, J. G.
      Cleary. *Arithmetic coding for data compression.* Communications of
      the ACM **30**(6) (1987), 520–540,
      <https://doi.org/10.1145/214762.214771>.
 
-806. <span id="ref-witten1991"></span>I. H. Witten, T. C. Bell. *The
+807. <span id="ref-witten1991"></span>I. H. Witten, T. C. Bell. *The
      zero-frequency problem: estimating the probabilities of novel events
      in adaptive text compression.* IEEE Transactions on Information Theory
      **37**(4) (1991), 1085–1094, <https://doi.org/10.1109/18.87000>.
 
-807. <span id="ref-witten1999"></span>I. H. Witten, A. Moffat, T. C. Bell.
+808. <span id="ref-witten1999"></span>I. H. Witten, A. Moffat, T. C. Bell.
      *Managing Gigabytes.* 2nd edition, Morgan Kaufmann, 1999.
 
-808. <span id="ref-wu1994"></span>S. Wu, U. Manber. *A fast algorithm for
+809. <span id="ref-wu1994"></span>S. Wu, U. Manber. *A fast algorithm for
      multi-pattern searching.* Technical Report TR-94-17, Department of
      Computer Science, University of Arizona, 1994.
 
-809. <span id="ref-wyllie1979"></span>J. C. Wyllie. *The complexity of
+810. <span id="ref-wyllie1979"></span>J. C. Wyllie. *The complexity of
      parallel computations.* PhD thesis, Cornell University, 1979.
 
-810. <span id="ref-xie2014"></span>Q. Xie, C. Pang, X. Zhou, X. Zhang, K.
+811. <span id="ref-xie2014"></span>Q. Xie, C. Pang, X. Zhou, X. Zhang, K.
      Deng. *Maximum error-bounded piecewise linear representation for
      online stream approximation.* The VLDB Journal **23**(6) (2014),
      915–937, <https://doi.org/10.1007/s00778-014-0355-0>.
 
-811. <span id="ref-yan2009"></span>H. Yan, S. Ding, T. Suel. *Inverted
+812. <span id="ref-yan2009"></span>H. Yan, S. Ding, T. Suel. *Inverted
      index compression and query processing with optimized document
      ordering.* Proceedings of the 18th International World Wide Web
      Conference (WWW 2009), 401–410, 2009,
      <https://doi.org/10.1145/1526709.1526764>.
 
-812. <span id="ref-yao1980"></span>F. F. Yao. *Efficient dynamic
+813. <span id="ref-yao1980"></span>F. F. Yao. *Efficient dynamic
      programming using quadrangle inequalities.* Proceedings of the 12th
      ACM Symposium on Theory of Computing (1980), 429–435,
      <https://doi.org/10.1145/800141.804691>.
 
-813. <span id="ref-yao1981"></span>A. C.-C. Yao. *A lower bound to finding
+814. <span id="ref-yao1981"></span>A. C.-C. Yao. *A lower bound to finding
      convex hulls.* Journal of the ACM **28**(4) (1981), 780–787,
      <https://doi.org/10.1145/322276.322289>.
 
-814. <span id="ref-yap2002"></span>P. Yap. *Grid-based path-finding.*
+815. <span id="ref-yap2002"></span>P. Yap. *Grid-based path-finding.*
      Advances in Artificial Intelligence, LNCS **2338** (2002), 44–55,
      <https://doi.org/10.1007/3-540-47922-8_4>.
 
-815. <span id="ref-yaroslavskiy2009"></span>V. Yaroslavskiy. *Dual-pivot
+816. <span id="ref-yaroslavskiy2009"></span>V. Yaroslavskiy. *Dual-pivot
      quicksort.* 2009.
 
-816. <span id="ref-zhang2018"></span>H. Zhang, H. Lim, V. Leis, D. G.
+817. <span id="ref-zhang2018"></span>H. Zhang, H. Lim, V. Leis, D. G.
      Andersen, M. Kaminsky, K. Keeton, A. Pavlo. *SuRF: practical range
      query filtering with fast succinct tries.* In: Proceedings of the 2018
      ACM SIGMOD International Conference on Management of Data, 2018,
      323–336, <https://doi.org/10.1145/3183713.3196931>.
 
-817. <span id="ref-zhang2020"></span>Y. Zhang, A. Brahmakshatriya, X. Chen,
+818. <span id="ref-zhang2020"></span>Y. Zhang, A. Brahmakshatriya, X. Chen,
      L. Dhulipala, S. Kamil, S. Amarasinghe, J. Shun. *Optimizing ordered
      graph algorithms with GraphIt.* ACM/IEEE International Symposium on
      Code Generation and Optimization (CGO) (2020), 158–170,
      <https://doi.org/10.1145/3368826.3377909>.
 
-818. <span id="ref-zhou2013"></span>D. Zhou, D. G. Andersen, M. Kaminsky.
+819. <span id="ref-zhou2013"></span>D. Zhou, D. G. Andersen, M. Kaminsky.
      *Space-efficient, high-performance rank and select structures on
      uncompressed bit sequences.* Proceedings of the 12th Symposium on
      Experimental Algorithms (SEA 2013), LNCS **7933**, 151–163, 2013,
      <https://doi.org/10.1007/978-3-642-38527-8_15>.
 
-819. <span id="ref-zippel1979"></span>R. Zippel. *Probabilistic algorithms
+820. <span id="ref-zippel1979"></span>R. Zippel. *Probabilistic algorithms
      for sparse polynomials.* Proceedings of EUROSAM 1979, LNCS 72 (1979),
      216–226, <https://doi.org/10.1007/3-540-09519-5_73>.
 
-820. <span id="ref-ziv1977"></span>J. Ziv, A. Lempel. *A universal
+821. <span id="ref-ziv1977"></span>J. Ziv, A. Lempel. *A universal
      algorithm for sequential data compression.* IEEE Transactions on
      Information Theory **23**(3) (1977), 337–343,
      <https://doi.org/10.1109/TIT.1977.1055714>.
 
-821. <span id="ref-ziv1978"></span>J. Ziv, A. Lempel. *Compression of
+822. <span id="ref-ziv1978"></span>J. Ziv, A. Lempel. *Compression of
      individual sequences via variable-rate coding.* IEEE Transactions on
      Information Theory **24**(5) (1978), 530–536,
      <https://doi.org/10.1109/TIT.1978.1055934>.
 
-822. <span id="ref-zobrist1970"></span>A. L. Zobrist. *A new hashing method
+823. <span id="ref-zobrist1970"></span>A. L. Zobrist. *A new hashing method
      with application for game playing.* Technical Report 88, Computer
      Sciences Department, University of Wisconsin, 1970; reprinted in ICGA
      Journal **13**(2) (1990), 69–73,
      <https://doi.org/10.3233/ICG-1990-13203>.
 
-823. <span id="ref-zukowski2006"></span>M. Zukowski, S. Heman, N. Nes, P.
+824. <span id="ref-zukowski2006"></span>M. Zukowski, S. Heman, N. Nes, P.
      Boncz. *Super-scalar RAM-CPU cache compression.* Proceedings of the
      22nd International Conference on Data Engineering (ICDE 2006), 59,
      2006, <https://doi.org/10.1109/ICDE.2006.150>.

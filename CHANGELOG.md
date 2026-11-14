@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the policy of the ties of priority/BucketQueue.h, its third template
+  parameter: LargestSecondKey, the default, the least f and then the
+  largest g first as before (the same code, function by function), and
+  LeastSecondKey, the least f and then the least g first, the
+  lexicographic order of the keys ( k1 , k2 ) of LPA* and D* Lite, by the
+  mirror image of the structure (the bound of the dense lists scanned
+  forward, the runs kept by decreasing g, the dense lists of a layer before
+  its runs), where a search had to push the complement of k2 against a
+  bound; the concept BucketTie, the test engineered
+  bucket-queue-lexicographic (ties, the dense lists before the runs, the
+  conversion of a layer of R runs, the keys of LPA* against a sort, random
+  operations against a set), a paragraph of the theory of the priority
+  queues and section 9.9 of the manual
+
+- grow( n ) in priority/IndexedDaryHeap.h, which raises the range of the
+  ids fixed by the constructor or by reset( n ) keeping the items, in O( 1 )
+  amortized time per new id (the vector of the places at least doubles),
+  for a search that numbers its nodes as it generates them; the test
+  engineered_search indexed-heap-grow and section 9.5 of the manual
+
 - rearm() and rearm( active ) in parallel/Mailbox.h, which make one
   mailbox serve a sequence of computations separated by barriers (the
   phases of an episode of an incremental search, or its episodes): called

@@ -1611,6 +1611,9 @@ export namespace ADS {
 
  // ADS/priority/BucketQueue.h
  using ADS::BucketQueue;
+ using ADS::BucketTie;
+ using ADS::LargestSecondKey;
+ using ADS::LeastSecondKey;
 
  // ADS/priority/DaryHeap.h
  using ADS::DaryHeap;

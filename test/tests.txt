@@ -491,6 +491,7 @@ taocp  sat-solvers           DPLL e CDCL
 # the engineered structures, beyond the book
 engineered  bucket-queue         coda a bucket su due livelli
 engineered  bucket-queue-sparse  coda a bucket, g grandi in liste rade
+engineered  bucket-queue-lexicographic coda a bucket, f e poi g minimi (LPA*)
 engineered  dary-heap            heap d-ario di elementi semplici
 engineered  flat-hash-table      tabella con byte di controllo a gruppi
 engineered  pointer-table        tabella di puntatori, ispezione lineare
@@ -1833,6 +1834,7 @@ engineered_speculative  parallel-mis-matching  insieme indipendente, abbinamento
 # the structures of the searches in large spaces of states, beyond the book
 engineered_search  pointer-table-presize  tabella presizzata, pagine enormi
 engineered_search  indexed-heap-erase     heap indicizzato: increase, erase
+engineered_search  indexed-heap-grow      heap indicizzato: grow degli id
 engineered_search  pairing-heap-erase     pairing heap: erase, increase, update
 engineered_search  indexed-heap-pair      coppia di heap, chiave e limite
 engineered_search  ordered-frontier       B+-albero come frontiera ordinata

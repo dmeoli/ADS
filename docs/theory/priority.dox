@@ -214,7 +214,10 @@
  `decrease()`: the removal of any item and the raise of its key.
  `IndexedDaryHeap` raises the key of an id by the walk down of `pop()` from
  its place, and removes an id by moving the last item into its place and
- then up or down.
+ then up or down. A search that numbers its nodes as it generates them
+ also needs the range of the ids to grow with the heap: `grow( n )` extends
+ the vector of the places, at least doubling it when it is full, so that a
+ new id costs \f$ O( 1 ) \f$ amortized and the items stay where they are.
 
  <em>Lemma 2 (the hole of a removal).</em> Let the item at the place
  \f$ i \f$ of a heap be removed and the last item \f$ x \f$ be put in its
@@ -453,6 +456,17 @@
  per layer would cost \f$ O( \log m ) \f$ per operation, more than the dense
  lists on a layer of many items, and would lose the order of the lists, which
  the view of the standard interface walks.
+
+ The order among the items of one \f$ f \f$ is a policy of the queue: with
+ `LeastSecondKey` the least \f$ g \f$ comes first, i.e., the order of the
+ pairs \f$ ( f , g ) \f$ is lexicographic, that of the keys
+ \f$ ( k_1 , k_2 ) \f$ of LPA* (Koenig, Likhachev and Furcy). The structure
+ is then the mirror image of the one above: the bound of the dense lists is
+ scanned forward and moves only up between two pushes of a smaller
+ \f$ g \f$, the runs are kept by decreasing \f$ g \f$, so that the last is
+ still the top, and the dense lists of a layer, all of \f$ g < D \f$ while it
+ has runs, come before its runs. The argument of Lemma 5 holds word for word
+ with the directions exchanged.
 
  The order is the same in both ways (LIFO inside a list, the lists by
  \f$ g \f$), since the conversion moves the heads and not the items. The

@@ -130,15 +130,20 @@ ADS_TEST( "bucket-queue" )
  }
 
 /// a bucket queue of the items 0 , 1 , ... in the order of their pushes,
-/// with the set of ( f , -g , -t , t ) that orders them as it must
-struct BucketReference {
- BucketQueue< int > q;
+/// with the set of ( f , -g , -t , t ) that orders them as it must, or of
+/// ( f , g , -t , t ) if the least g comes first
+template< class Tie >
+struct BucketRef {
+ BucketQueue< int , int , Tie > q;
  std::set< std::tuple< int , int , int , int > > s;
  int t = 0;
 
+ /// g as the set orders it, and back
+ static int sg( int g ) { return( Tie::least ? g : -g ); }
+
  void push( int f , int g ) {
   q.push( t , f , g );
-  s.emplace( f , -g , -t , t );
+  s.emplace( f , sg( g ) , -t , t );
   ++t;
   }
  /// one pop, by popEntry() or by top(), topF(), topG() and pop()
@@ -146,10 +151,10 @@ struct BucketReference {
   const auto [ f , mg , mt , x ] = *s.begin();
   if( entry ) {
    const auto e = q.popEntry();
-   CHECK( e.item == x && e.f == f && e.g == -mg );
+   CHECK( e.item == x && e.f == f && e.g == sg( mg ) );
    }
   else {
-   CHECK( q.topF() == f && q.topG() == -mg && q.top() == x );
+   CHECK( q.topF() == f && q.topG() == sg( mg ) && q.top() == x );
    CHECK( q.pop() == x );
    }
   s.erase( s.begin() );
@@ -170,6 +175,38 @@ struct BucketReference {
   CHECK( q.empty() && q.begin() == q.end() );
   }
  };
+
+/// the reference of the default order, the largest g first
+using BucketReference = BucketRef< LargestSecondKey >;
+
+/// random operations on the bucket queue of the policy Tie against its
+/// reference, from the seed: g small, around D and spread above D, so that
+/// the layers keep runs, turn dense and are emptied, with the view of the
+/// standard interface now and then
+template< class Tie >
+void bucketRandom( unsigned seed , int steps )
+{
+ constexpr int D = int( BucketQueue< int >::D );
+ constexpr int R = int( BucketQueue< int >::R );
+ BucketRef< Tie > B;
+ std::mt19937 g( seed );
+ const int spread = seed % 2 ? 3000 : 2 * R;
+ for( int step = 0 ; step < steps ; ++step ) {
+  const unsigned c = g() % 10;
+  if( B.s.empty() || ( c < 6 ) ) {
+   const unsigned w = g() % 4;
+   const int x = w == 0 ? int( g() % 8 ) :
+                 w == 1 ? int( D - 3 + g() % 7 ) :
+                          int( D + g() % unsigned( spread ) );
+   B.push( int( g() % 10 ) , x );
+   }
+  else
+   B.pop( c % 2 );
+  if( step % 1000 == 0 ) B.view();
+  if( step % 7000 == 6999 ) B.drain();
+  }
+ B.drain();
+ }
 
 // the lists of large g of the bucket queue, kept as up to R sparse runs
 // in a layer and then dense: g just below, at and above D, ties of f and g
@@ -267,26 +304,117 @@ ADS_TEST( "bucket-queue-sparse" )
    }
   B.drain();
   }
- for( unsigned seed = 1 ; seed <= 4 ; ++seed ) {   // random
-  BucketReference B;
-  std::mt19937 g( seed );
-  const int spread = seed % 2 ? 3000 : 2 * R;
-  for( int step = 0 ; step < 20000 ; ++step ) {
-   const unsigned c = g() % 10;
-   if( B.s.empty() || ( c < 6 ) ) {
-    const unsigned w = g() % 4;
-    const int x = w == 0 ? int( g() % 8 ) :
-                  w == 1 ? int( D - 3 + g() % 7 ) :
-                           int( D + g() % unsigned( spread ) );
-    B.push( int( g() % 10 ) , x );
-    }
-   else
-    B.pop( c % 2 );
-   if( step % 1000 == 0 ) B.view();
-   if( step % 7000 == 6999 ) B.drain();
-   }
+ for( unsigned seed = 1 ; seed <= 4 ; ++seed )     // random
+  bucketRandom< LargestSecondKey >( seed , 20000 );
+ }
+
+// the bucket queue in the lexicographic order of LPA*, least f, then least
+// g, then last pushed (LeastSecondKey): ties on both keys, g below, at and
+// above D, the dense lists given before the runs of a layer, a layer of
+// runs only, a push below the lazy bound of g, the conversion of a layer of
+// R runs to dense with items in its dense lists, the layer emptied, freed
+// and filled again, the keys of LPA* from a pair ( k1 , k2 ), and random
+// operations against the set ordered so, with the view of the standard
+// interface, at the level 3 of the contracts; the default order is that of
+// bucket-queue and bucket-queue-sparse
+ADS_TEST( "bucket-queue-lexicographic" )
+{
+ using Q = BucketQueue< int , int , LeastSecondKey >;
+ constexpr int D = int( Q::D );
+ constexpr int R = int( Q::R );
+ static_assert( std::is_same_v< Q::Ties , LeastSecondKey > &&
+                std::is_same_v< BucketQueue< int >::Ties ,
+                                LargestSecondKey > );
+ {
+  Q q;                                        // all ties: LIFO
+  for( int x = 0 ; x < 5 ; ++x ) q.push( x , 0 , 0 );
+  for( int x = 5 ; x-- > 0 ; ) CHECK( q.pop() == x );
+  CHECK_THROWS( q.pop() , contract_violation );
+  q.push( 1 , 4 , 9 );                        // least g first
+  q.push( 2 , 4 , 3 );
+  q.push( 3 , 4 , 7 );
+  q.push( 4 , 5 , 0 );
+  CHECK( q.topF() == 4 && q.topG() == 3 && q.pop() == 2 );
+  q.push( 5 , 4 , 1 );                        // below the lazy bound
+  CHECK( q.topG() == 1 && q.pop() == 5 && q.pop() == 3 && q.pop() == 1 );
+  CHECK( q.topF() == 5 && q.pop() == 4 && q.empty() );
+  }
+ {
+  BucketRef< LeastSecondKey > B;              // around D, with ties
+  for( int g : { D + 1 , D , D - 1 , D + 1 , D , D - 1 , 0 , D } )
+   B.push( 1 , g );
+  B.view();
+  CHECK( B.q.topG() == 0 );
   B.drain();
   }
+ {
+  BucketRef< LeastSecondKey > B;              // runs only, then dense too
+  for( int k : { 5 , 2 , 9 , 2 , 7 } ) B.push( 3 , D + k );
+  B.view();
+  CHECK( B.q.topG() == D + 2 );
+  B.pop();
+  B.push( 3 , 6 );                            // before every run
+  B.push( 3 , D - 1 );
+  B.view();
+  CHECK( B.q.topG() == 6 );
+  B.pop();
+  B.pop( false );                             // the dense lists emptied
+  CHECK( B.q.topG() == D + 2 );               // back to the runs
+  B.push( 3 , 1 );
+  B.drain();
+  }
+ for( int how = 0 ; how < 2 ; ++how ) {      // the conversion, items in
+  BucketRef< LeastSecondKey > B;
+  std::mt19937 g( 15 + how );
+  for( int x : { 0 , 3 , 4 , D - 1 , 3 , 0 } )
+   B.push( 2 , x );
+  std::vector< int > G;
+  for( int k = 0 ; k < R ; ++k ) G.push_back( D + 2 * k );
+  std::shuffle( G.begin() , G.end() , g );
+  for( int x : G ) {
+   B.push( 2 , x );
+   if( g() % 3 == 0 ) B.push( 2 , x );        // a tie in a run
+   }
+  B.push( 7 , D + 5 );                        // another layer, untouched
+  B.view();
+  B.push( 2 , how ? D + 4 : D + 1 );          // a run of R + 1, or a tie
+  B.view();
+  CHECK( B.q.topF() == 2 && B.q.topG() == 0 );
+  for( int k = 0 ; k < 6 ; ++k ) B.pop( k % 2 );   // the dense g < D
+  CHECK( B.q.topG() == D );
+  for( int x : { D + 1 , 2 , D + 3 * R , D + 1 , D - 1 , D + 4 } )
+   B.push( 2 , x );                           // into the dense layer
+  B.view();
+  for( int k = 0 ; k < R / 2 ; ++k ) B.pop( k % 2 );
+  B.push( 2 , D + 6 );
+  B.push( 2 , 1 );
+  B.drain();
+  B.push( 2 , D + 8 );                        // freed, sparse again
+  B.push( 2 , D + 9 );
+  B.push( 2 , D + 3 );
+  CHECK( B.q.topG() == D + 3 );
+  B.drain();
+  }
+ {
+  // the keys of LPA*, k1 = min( g , rhs ) + h and k2 = min( g , rhs ):
+  // least k1, then least k2, against a sort of the pairs
+  Q q;
+  std::mt19937 g( 21 );
+  std::vector< std::tuple< int , int , int > > v;
+  for( int x = 0 ; x < 3000 ; ++x ) {
+   const int k2 = int( g() % 400 ) , k1 = k2 + int( g() % 50 );
+   q.push( x , k1 , k2 );
+   v.emplace_back( k1 , k2 , -x );
+   }
+  std::sort( v.begin() , v.end() );
+  for( const auto & [ k1 , k2 , mx ] : v ) {
+   const auto e = q.popEntry();
+   CHECK( e.f == k1 && e.g == k2 && e.item == -mx );
+   }
+  CHECK( q.empty() );
+  }
+ for( unsigned seed = 1 ; seed <= 4 ; ++seed )
+  bucketRandom< LeastSecondKey >( seed , 20000 );
  }
 
 // the d-ary heap of plain items for D = 2 , 3 , 4 , 8 against

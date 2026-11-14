@@ -14,6 +14,18 @@
  * a heap: the queue of Dial for the shortest paths with integer weights,
  * nested as in the search code of Burns et al.
  *
+ * The order among the items of one \f$ f \f$ is a policy, the third
+ * parameter: `LargestSecondKey`, the default, is the one above, while
+ * `LeastSecondKey` gives the item of least \f$ g \f$ first, and among those
+ * the last pushed, i.e., the lexicographic order of the pairs
+ * \f$ ( f , g ) \f$, the keys \f$ ( k_1 , k_2 ) \f$ of LPA* and D* Lite.
+ * The two are mirror images: with the least \f$ g \f$ first the bound of
+ * the dense lists is scanned forward instead of backward, the runs are
+ * kept by decreasing \f$ g \f$, so that their last one is still the least,
+ * and a layer gives its dense lists, all of \f$ g < D \f$ while it has
+ * runs, before its runs. The default compiles to the same code as before
+ * the policy existed.
+ *
  * A layer (the items of one \f$ f \f$) keeps the heads of its lists in two
  * ways. The lists of \f$ g < D \f$ (\f$ D = 256 \f$) are dense: an array
  * indexed by \f$ g \f$, the first \f$ S = 4 \f$ heads in the layer itself and
@@ -47,7 +59,8 @@
  * `topF()`, `topG()` and `pop()` need a queue that is not empty; the
  * invariant is that the counts of the layers add up to `size()`, and that the
  * runs of the layer changed are at most \f$ R \f$, of \f$ g \ge D \f$,
- * increasing and with items, and none in a dense layer. The operations are
+ * increasing (decreasing with `LeastSecondKey`) and with items, and none in
+ * a dense layer. The operations are
  * defined in `BucketQueue.tpp`.
  *
  * \see R. B. Dial, Algorithm 360: shortest-path forest with topological
@@ -57,6 +70,9 @@
  *      heuristic search code, Proceedings of the 5th Symposium on
  *      Combinatorial Search (SoCS), 25-32, 2012,
  *      doi:10.1609/socs.v3i1.18245
+ * \see S. Koenig, M. Likhachev, D. Furcy, Lifelong Planning A*,
+ *      Artificial Intelligence 155(1-2), 93-146, 2004,
+ *      doi:10.1016/j.artint.2003.12.001
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -93,19 +109,45 @@
 namespace ADS {
 
 /*--------------------------------------------------------------------------*/
+/*------------------------ THE POLICIES OF THE TIES ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the order of `BucketQueue` among the items of one \f$ f \f$: the largest
+/// \f$ g \f$ first (A*, towards the deeper nodes), the default
+struct LargestSecondKey {
+ static constexpr bool least = false;   ///< not the least g first
+ };
+
+/// the order of `BucketQueue` among the items of one \f$ f \f$: the least
+/// \f$ g \f$ first, i.e., the lexicographic order of the pairs
+/// \f$ ( f , g ) \f$ (the keys of LPA*)
+struct LeastSecondKey {
+ static constexpr bool least = true;    ///< the least g first
+ };
+
+/// a policy of the ties of `BucketQueue`: whether the least \f$ g \f$ comes
+/// first
+template< class P >
+concept BucketTie = requires {
+ { P::least } -> std::convertible_to< bool >;
+ };
+
+/*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS BucketQueue -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a two-level bucket queue: least \f$ f \f$ first, then largest \f$ g \f$,
-/// then LIFO
-template< class T , std::integral K = int >
+/// a two-level bucket queue: least \f$ f \f$ first, then largest (or, by
+/// the policy `Tie`, least) \f$ g \f$, then LIFO
+template< class T , std::integral K = int ,
+          BucketTie Tie = LargestSecondKey >
 class BucketQueue {
 
 /*--------------------------------------------------------------------------*/
  public:
 
- using Item = T;   ///< the type of the items
- using Key = K;    ///< the type of the keys
+ using Item = T;     ///< the type of the items
+ using Key = K;      ///< the type of the keys
+ using Ties = Tie;   ///< the order among the items of one f
 
  /// pushes \f$ x \f$ with the keys \f$ f \f$ and \f$ g \f$
  ///
@@ -138,11 +180,14 @@ class BucketQueue {
  ///     \ \mathit{minF} \gets \min\{ \mathit{minF} , f \}
  /// \end{array}}
  /// \f]
+ /// With `LeastSecondKey` the runs are kept by decreasing \f$ g \f$ (line 8
+ /// appends a run of a \f$ g \f$ less than the last), and line 7 lowers
+ /// \f$ \ell.\mathit{topG} \f$ to \f$ g \f$ instead of raising it.
  /// \pre \f$ f \ge 0 \f$ and \f$ g \ge 0 \f$
  void push( const T & x , K f , K g );
 
- /// an item of least \f$ f \f$ and, among those, of largest \f$ g \f$, the
- /// last pushed
+ /// an item of least \f$ f \f$ and, among those, of largest \f$ g \f$ (of
+ /// least \f$ g \f$ with `LeastSecondKey`), the last pushed
  ///
  /// In pseudocode, the two scans moving only forward in \f$ f \f$ and
  /// backward in \f$ g \f$ between two pushes:
@@ -161,6 +206,9 @@ class BucketQueue {
  ///     \ell.\mathit{topG} ]
  /// \end{array}}
  /// \f]
+ /// With `LeastSecondKey`, line 5 moves \f$ \ell.\mathit{topG} \f$
+ /// forward, up to the dense lists' end, and the runs are looked at, line 4,
+ /// only if no dense list has items.
  /// \pre the queue is not empty
  [[nodiscard]] const T & top( void );
 
@@ -168,8 +216,8 @@ class BucketQueue {
  /// \pre the queue is not empty
  [[nodiscard]] K topF( void );
 
- /// the \f$ g \f$ of `top()`, i.e., the largest \f$ g \f$ of the least
- /// \f$ f \f$
+ /// the \f$ g \f$ of `top()`, i.e., the largest (by `LeastSecondKey`, the
+ /// least) \f$ g \f$ of the least \f$ f \f$
  /// \pre the queue is not empty
  [[nodiscard]] K topG( void );
 
@@ -250,7 +298,8 @@ class BucketQueue {
  /// the items of one f
  struct Layer {
   Index count = 0;                      ///< the items in the layer
-  Index topG = 0;                       ///< no dense list above has items
+  Index topG = 0;                       ///< no dense list above (below,
+                                        ///< least g first) has items
   Index runs = NIL;                     ///< its runs in f_runs, if any
   Index small[ S ] = { NIL , NIL , NIL , NIL };   ///< the heads, g < S
   std::vector< Index > big;             ///< the dense heads, g >= S
@@ -272,10 +321,11 @@ class BucketQueue {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the items in the order of the extractions (by f
- // increasing, then by g decreasing, each list from the last item pushed),
- // forward: in a layer the runs from the last, then the dense lists from
- // the last; it skips the empty lists without touching the lazy bounds
- // that top() moves
+ // increasing, then by g decreasing, or increasing by LeastSecondKey, each
+ // list from the last item pushed), forward: in a layer the runs from the
+ // last, then the dense lists from the last (the dense lists from the
+ // first, then the runs from the last); it skips the empty lists without
+ // touching the lazy bounds that top() moves
 
  class const_iterator {
   public:
@@ -323,9 +373,16 @@ class BucketQueue {
     const Layer & l = L[ f_f ];
     const std::size_t r = l.runs == NIL ? 0 : f_q->f_runs[ l.runs ].size();
     if( l.count )
-     for( ; f_g < r + l.lists() ; ++f_g )
-      if( ( f_c = f_g < r ? f_q->f_runs[ l.runs ][ r - 1 - f_g ].head :
-                  l.head( r + l.lists() - 1 - f_g ) ) != NIL ) return;
+     for( ; f_g < r + l.lists() ; ++f_g ) {
+      if constexpr( Tie::least )
+       f_c = f_g < l.lists() ? l.head( f_g ) :
+             f_q->f_runs[ l.runs ][ r + l.lists() - 1 - f_g ].head;
+      else
+       f_c = f_g < r ? f_q->f_runs[ l.runs ][ r - 1 - f_g ].head :
+             l.head( r + l.lists() - 1 - f_g );
+      if( f_c != NIL )
+       return;
+      }
     }
    f_g = 0;
    f_c = NIL;
@@ -362,6 +419,9 @@ class BucketQueue {
  /// it has no run
  Layer & front( void );
 
+ /// whether top() is in the runs of l, after front()
+ [[nodiscard]] static bool inRuns( const Layer & l );
+
  /// the head of the list of top() in l, after front()
  Index & top( Layer & l );
 
@@ -397,8 +457,8 @@ class BucketQueue {
  /// the counts of the layers add up to size(), \f$ O( F ) \f$
  [[nodiscard]] bool counted( void ) const;
 
- /// the runs of l are at most R, of g >= D, increasing and with items,
- /// and none if l is dense, \f$ O( R ) \f$
+ /// the runs of l are at most R, of g >= D, increasing (decreasing,
+ /// least g first) and with items, and none if l is dense, \f$ O( R ) \f$
  [[nodiscard]] bool ordered( const Layer & l ) const;
 
  std::vector< Layer > f_layers;   ///< a layer per f
