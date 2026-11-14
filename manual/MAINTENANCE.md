@@ -41,15 +41,37 @@ the two read as one family.
   `chapters/Z-bibliography.md`, as `[Morin 2013, §2.1](Z-bibliography.md#ref-morin2013)`;
   every entry has its DOI when it has one, and the entries are those of
   the `\see` lines of the headers.
-- **Pseudocode and code are never copied into a chapter.** They are
-  included from `generated/` with a line `--8<-- "generated/<file>"`
-  (alone in a paragraph for pseudocode, alone in a fenced `cpp` block for
-  code), which MkDocs expands with `pymdownx.snippets` and Pandoc with
-  `build/snippets.lua`. `build/snarf.py` writes them from the headers:
-  `<File>-<name>.pseudo.md` from each `\class{pseudocode}` block of the
-  comments, `<File>-<name>.cpp` from the code between `//! [name]` markers
-  of a `.h` or `.tpp`. To change a pseudocode or a listing, change the
-  header.
+- **No implementation code in a chapter.** An algorithm is shown by its
+  pseudocode, which is never copied: it is included from `generated/` with
+  a line `--8<-- "generated/<File>-<name>.pseudo.md"` alone in a paragraph,
+  which MkDocs expands with `pymdownx.snippets` and Pandoc with
+  `build/snippets.lua`. `build/snarf.py` writes these files from the
+  `\class{pseudocode}` blocks of the comments of the headers (and writes
+  `<File>-<name>.cpp` from the code between `//! [name]` markers, which only
+  appendix A includes, in a fenced `cpp` block, since there the code itself
+  is the subject); to change a pseudocode, change the header.
+- **The only C++ of a chapter** is of two kinds, both written by hand and
+  both checked mechanically against the headers by `build/declcheck.py`:
+  (i) declaration blocks, the public members of a class or the signatures
+  of the functions a user calls, whose first line is the marker
+  `// declarations of <ADS/dir/File.h>` (more headers may follow in angle
+  brackets, on further `//` lines past 79 columns), and whose declarations
+  are copied from the named headers as they are there, defaults,
+  `noexcept`, `constexpr` and `requires` clauses included (attributes, the
+  macros that expand to them and `inline` may be dropped, a body may be
+  written `{ ... }`, a base class may be omitted, an initializer list may
+  not be shown); (ii) short examples of use, every other `cpp` block, which
+  must compile as the body of a function (or, if they hold a `main()`, as a
+  namespace) after the headers named by the declaration blocks of the same
+  chapter, an example that uses a header of another chapter naming it in
+  an `#include` line of its own. `make check` runs `declcheck.py`, which
+  looks for each declaration in the body of its class (or of a base class
+  of the same header) and compiles the examples of each chapter as one
+  translation unit with `g++ -std=c++20 -fsyntax-only` (about 20 s for the
+  whole manual, the examples of MPI through `mpicxx --showme:compile`);
+  `python3 declcheck.py ../../include ../chapters 08-tree.md` checks one
+  chapter, `--no-examples` the declarations alone. After a change of a
+  public signature, `make check` names the blocks to update.
 - **Lemmas and theorems** are paragraphs: `**Lemma 3.1.** *statement*`,
   then `*Proof.* ... $\square$`.
 - **Exercises** close each chapter, each one naming the ctest that solves
@@ -84,7 +106,7 @@ manual/
     tikz-ads.tex      # the styles shared by the figures of the memory
   generated/          # written by snarf.py, not committed
   build/
-    Makefile  pandoc.yaml  preamble.tex  mkdocs.yml  snarf.py
+    Makefile  pandoc.yaml  preamble.tex  mkdocs.yml  snarf.py  declcheck.py
     snippets.lua  figure-ext.lua  crossref-link.lua  break-code.lua
     katex-init.js  figcaption.js   # the second shows the captions on the site
 ```
@@ -101,6 +123,7 @@ make html      # -> ../../manual-site/   (MkDocs Material)
 make serve     # live preview at 127.0.0.1:8000
 make figures   # rebuild the .pdf and .svg of each changed figure
 make snippets  # rerun snarf.py on ../../include
+make check     # bibliography, map of chapter 1, C++ blocks (declcheck.py)
 ```
 
 PDF acceptance check: zero `Overfull \hbox` and zero undefined

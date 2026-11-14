@@ -6,7 +6,8 @@
 #   make serve     # live MkDocs preview at 127.0.0.1:8000
 #   make figures   # (re)build each figure .pdf and .svg from its TikZ source
 #   make snippets  # extract the code and the pseudocode of the headers
-#   make check     # the bibliography and the map of chapter 1 are complete
+#   make check     # the bibliography and the map of chapter 1 are complete,
+#                  # and the C++ blocks of the chapters match the headers
 #   make clean     # remove build artefacts
 #
 # Prerequisites:
@@ -58,11 +59,14 @@ $(FIGDIR)/%.svg: $(FIGDIR)/%.pdf
 snippets:
 	python3 snarf.py $(INCLUDE) $(GENDIR)
 
-# every work the library cites is in the bibliography, and every header and
-# class of the library is in the map of the structures of chapter 1
+# every work the library cites is in the bibliography, every header and
+# class of the library is in the map of the structures of chapter 1, and
+# every declaration block of a chapter is in its header and every example
+# compiles against the headers (declcheck.py)
 check: snippets
 	python3 bibcheck.py $(MANUAL)/..
 	python3 structmap.py $(INCLUDE) --check $(MANUAL)/chapters/01-introduction.md
+	python3 declcheck.py $(INCLUDE) $(MANUAL)/chapters
 
 clean:
 	rm -rf ../../manual-site $(GENDIR)
